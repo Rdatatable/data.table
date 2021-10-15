@@ -1204,7 +1204,7 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
     SET_VECTOR_ELT(ans, g, tmp=allocVector(TYPEOF(x), nx));
     #define SHIFT(CTYPE, RTYPE, ASSIGN) {                                                                         \
       const CTYPE *xd = (const CTYPE *)RTYPE(x);                                                                  \
-      const CTYPE fill = (const CTYPE)RTYPE(thisfill)[0];                                                         \
+      const CTYPE fill = RTYPE(thisfill)[0];                                                                      \
       for (int i=0; i<ngrp; ++i) {                                                                                \
         const int grpn = grpsize[i];                                                                              \
         const int mg = cycle ? (((m-1) % grpn) + 1) : m;                                                          \

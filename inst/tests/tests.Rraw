@@ -18243,20 +18243,38 @@ test(2217, DT1[, by = grp, .(agg = list(setNames(as.numeric(value), id)))], DT2)
 testnum = 2218
 funs = c(as.integer, as.double, as.complex, as.character, if (test_bit64) as.integer64)
 # when test_bit64==FALSE these all passed before; now passes with test_bit64==TRUE too
+# add grouping tests for #5205
+g = rep(c(1,2), each=2)
+options(datatable.optimize = 2L)
 for (f1 in funs) {
-  DT = data.table(x=f1(1:4))
+  DT = data.table(x=f1(1:4), g=g)
   for (f2 in funs) {
-    testnum = testnum + 0.01
+    testnum = testnum + 0.001
     test(testnum, DT[, shift(x)],               f1(c(NA, 1:3)))
-    testnum = testnum + 0.01
+    testnum = testnum + 0.001
     w = if (identical(f2,as.character) && !identical(f1,as.character)) "Coercing.*character.*to match the type of target vector"
     test(testnum, DT[, shift(x, fill=f2(NA))],  f1(c(NA, 1:3)), warning=w)
-    testnum = testnum + 0.01
+    testnum = testnum + 0.001
     if (identical(f1,as.character) && identical(f2,as.complex)) {
       # one special case due to as.complex(0)=="0+0i"!="0"
       test(testnum, DT[, shift(x, fill="0")],   f1(0:3))
     } else {
       test(testnum, DT[, shift(x, fill=f2(0))], f1(0:3), warning=w)
+    }
+
+    testnum = testnum + 0.001
+    test(testnum, DT[, shift(x), by=g],               data.table(g=g, V1=f1(c(NA, 1, NA, 3))))
+    testnum = testnum + 0.001
+    w = if (identical(f2,as.character) && !identical(f1,as.character)) "Coercing.*character.*to match the type of target vector"
+    f = f2(NA)
+    test(testnum, DT[, shift(x, fill=f), by=g],  data.table(g=g, V1=f1(c(NA, 1, NA, 3))), warning=w)
+    testnum = testnum + 0.001
+    if (identical(f1,as.character) && identical(f2,as.complex)) {
+      # one special case due to as.complex(0)=="0+0i"!="0"
+      test(testnum, DT[, shift(x, fill="0"), by=g],   data.table(g=g, V1=f1(c(0,1,0,3))))
+    } else {
+      f = f2(0)
+      test(testnum, DT[, shift(x, fill=f), by=g], data.table(g=g, V1=f1(c(0,1,0,3))), warning=w)
     }
   }
 }
@@ -18320,4 +18338,3 @@ test(2224.01, sapply(names(DT)[-1], function(col) {
 test(2224.02, DT[, shift(i, fill=1:10), by=x], error="fill must be a vector of length 1")
 a = 1:2  # fill argument with length > 1 which is not a call
 test(2224.03, DT[, shift(i, fill=a), by=x], error="fill must be a vector of length 1")
-
