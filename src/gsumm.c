@@ -1239,6 +1239,7 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
       case LGLSXP:  { int *ansd=LOGICAL(tmp);             SHIFT(int,     LOGICAL,   ansd[ansi++]=val); } break;
       case INTSXP:  { int *ansd=INTEGER(tmp);             SHIFT(int,     INTEGER,   ansd[ansi++]=val); } break;
       case REALSXP: { double *ansd=REAL(tmp);             SHIFT(double,  REAL,      ansd[ansi++]=val); } break;
+                    // integer64 is shifted as if it's REAL; what about fill and coerceAs?
       case CPLXSXP: { Rcomplex *ansd=COMPLEX(tmp);        SHIFT(Rcomplex, COMPLEX,  ansd[ansi++]=val); } break;
       case STRSXP: { SHIFT(SEXP, STRING_PTR,                          SET_STRING_ELT(tmp,ansi++,val)); } break;
       //case VECSXP: { SHIFT(SEXP, SEXPPTR_RO,                          SET_VECTOR_ELT(tmp,ansi++,val)); } break;
