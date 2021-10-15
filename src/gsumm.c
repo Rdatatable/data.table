@@ -1166,8 +1166,7 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
   const bool nosubset = irowslen == -1;
   const bool issorted = !isunsorted;
   const int n = nosubset ? length(x) : irowslen;
-  if (nrow != n)
-    error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gshift");
+  if (nrow != n) error(_("Internal error: nrow [%d] != length(x) [%d] in %s"), nrow, n, "gshift");
 
   int nprotect=0;
   enum {LAG, LEAD/*, SHIFT*/,CYCLIC} stype = LAG;
@@ -1245,8 +1244,8 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
       default:
         error(_("Type '%s' is not supported by GForce gshift. Either add the namespace prefix (e.g. data.table::shift(.)) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
     }
+    copyMostAttrib(x, tmp); // needed for integer64 because without not the correct class of int64 is assigned
   }
-  // no copyMostAttrib(x, ans); since shift does not auto-name columns compare #3905
   UNPROTECT(nprotect);
   return(ans);
 }

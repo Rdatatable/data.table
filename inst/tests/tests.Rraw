@@ -67,7 +67,6 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   which.first = data.table:::which.first
   which.last = data.table:::which.last
   `-.IDate` = data.table:::`-.IDate`
-  gshift = data.table:::gshift
 
   # Also, for functions that are masked by other packages, we need to map the data.table one. Or else,
   # the other package's function would be picked up. As above, we only need to do this because we desire
@@ -18287,10 +18286,11 @@ DT = data.table(x = sample(letters[1:5], 20, TRUE),
                 s = sample(c("foo","bar",NA), 20, TRUE),
                 c = sample(c(0+3i,1,-1-1i,NA), 20, TRUE),
                 l = sample(c(TRUE, FALSE, NA), 20, TRUE),
-                r = as.raw(sample(1:5, 20, TRUE)))
+                r = as.raw(sample(1:5, 20, TRUE)),
+if (test_bit64) i64 = as.integer64(sample(c(-2L,0L,2L,NA), 20, TRUE)))
 
 nn = list(1, 5, -1, -5, c(1,2), c(-1,1))
-cols = c("y", "i", "d", "s", "c", "l")
+cols = c("y", "i", "d", "s", "c", "l", if (test_bit64) "i64")
 testnum = 2224
 for (n in nn) {
   for (c in cols) {
@@ -18316,5 +18316,3 @@ test(2224.53, DT[, shift(r), by=x], error="Type 'raw' is not supported by GForce
 # use fill argument with length > 1 which is not a call
 a=1:2
 test(2224.54, DT[, shift(i, fill=a), by=x], error="fill must be a vector of length 1")
-# handle nrow != length as in #5203
-test(2224.55, DT[, gshift(i), by=x], error="nrow [20] != length(x) [3] in gshift")
