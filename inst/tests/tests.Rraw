@@ -7855,10 +7855,14 @@ read_table = function(str, ...) {
 test(1552.1, fread(str, na.strings="#N/A"), read_table(str, na.strings="#N/A"))
 test(1552.2, fread(str, na.strings=c("#N/A", "-999")), read_table(str, na.strings=c("#N/A", "-999")))
 test(1552.3, fread(str, na.strings=c("#N/A", "-999", "+1")), read_table(str, na.strings=c("#N/A", "-999", "+1")))
-test(1552.4, fread(str, na.strings=c("#N/A", "-999", "+1", "1")),
-             error="NAstring <<1>> is recognized as type boolean.*not permitted")
+test(1552.4, fread(str, na.strings=c("#N/A", "-999", "+1", "1")), read_table(str, na.strings=c("#N/A", "-999", "+1", "1"))) # enabled by FR #2927
 test(1552.5, fread(str, na.strings=c("#N/A", "-999", "FALSE")), error="NAstring <<FALSE>>.*boolean.*not permitted")
 test(1552.6, fread("A\n1.0\n2\n-", na.strings=c("-")), data.table(A=c(1.0, 2.0, NA)))
+test(1552.7, fread(str, na.strings=c("#N/A", "-999", "+1", "1"), logical01=TRUE),
+  error="NAstring <<1>> and logical01=TRUE.*not permitted")
+str = "a,b,c\n0,1,2\n1,0,2"
+test(1552.8, fread(str, na.strings = "0"), data.table(a=c(NA,1L), b=c(1L,NA), c=c(2L,2L)))
+test(1552.9, fread(str, na.strings = c("0","1")), data.table(a=c(NA,NA), b=c(NA,NA), c=c(2L,2L)))
 
 # FR #1177: 'quote' option of 'print.data.table'
 DT1 <- data.table(s1=paste(" ",LETTERS[1:5],sep=""),s2=LETTERS[1:5])
