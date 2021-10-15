@@ -175,6 +175,23 @@
 
 30. `shift()` is now GForce optimised, [#1534](https://github.com/Rdatatable/data.table/issues/1534). Thanks to Gerhard Nachtmann for requesting, and Benjamin Schwendinger for the PR.
 
+    ```R
+    # Benchmark
+    N = 1e7
+    DT = data.table(x = sample(N), y = sample(1e6,N,TRUE))
+    basic_shift = shift
+    microbenchmark::microbenchmark(
+      DT[, shift(x, 1, type="lag"), y],
+      DT[, basic_shift(x, 1, type="lag"), y],
+      DT[, c(NA, head(x,-1)), y],
+      times = 10L, unit = "s")
+    # Unit: seconds
+    #                                      expr     min      lq    mean  median      uq     max neval
+    #        DT[, shift(x, 1, type = "lag"), y]  0.4865  0.5238  0.5463  0.5446  0.5725  0.5982    10
+    #  DT[, basic_shift(x, 1, type = "lag"), y] 20.5500 20.9000 21.1600 21.3200 21.4400 21.5200    10
+    #               DT[, c(NA, head(x, -1)), y]  8.7620  9.0240  9.1870  9.2800  9.3700  9.4110    10
+    ```
+
 ## BUG FIXES
 
 1. `by=.EACHI` when `i` is keyed but `on=` different columns than `i`'s key could create an invalidly keyed result, [#4603](https://github.com/Rdatatable/data.table/issues/4603) [#4911](https://github.com/Rdatatable/data.table/issues/4911). Thanks to @myoung3 and @adamaltmejd for reporting, and @ColeMiller1 for the PR. An invalid key is where a `data.table` is marked as sorted by the key columns but the data is not sorted by those columns, leading to incorrect results from subsequent queries.
