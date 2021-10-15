@@ -155,7 +155,7 @@
     # [1] 5 1 2 3 4
     ```
 
-28. `shift` is now GForce optimised when `fill` is not a call, [#1534](https://github.com/Rdatatable/data.table/issues/1534). Thanks to Gerhard Nachtmann for requesting, and Benjamin Schwendinger for the PR.
+28. `shift()` is now GForce optimised, [#1534](https://github.com/Rdatatable/data.table/issues/1534). Thanks to Gerhard Nachtmann for requesting, and Benjamin Schwendinger for the PR.
 
 ## BUG FIXES
 
