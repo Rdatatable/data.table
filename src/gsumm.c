@@ -1235,6 +1235,7 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
       }                                                                                                           \
     }
     switch(TYPEOF(x)) {
+      case RAWSXP:  { Rbyte *ansd=RAW(tmp);               SHIFT(Rbyte,   RAW,       ansd[ansi++]=val); } break;
       case LGLSXP:  { int *ansd=LOGICAL(tmp);             SHIFT(int,     LOGICAL,   ansd[ansi++]=val); } break;
       case INTSXP:  { int *ansd=INTEGER(tmp);             SHIFT(int,     INTEGER,   ansd[ansi++]=val); } break;
       case REALSXP: { double *ansd=REAL(tmp);             SHIFT(double,  REAL,      ansd[ansi++]=val); } break;

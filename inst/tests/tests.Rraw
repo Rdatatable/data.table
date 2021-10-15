@@ -18294,7 +18294,7 @@ test(2223.2, DT[.(4), nomatch=NA_character_], data.table(A=4L, key="A"))
 
 # gshift, #5205
 options(datatable.optimize = 2L)
-esc = shift
+set.seed(123)
 DT = data.table(x = sample(letters[1:5], 20, TRUE),
                 y = rep.int(1:2, 10),  # to test 2 grouping columns get rep'd properly
                 i = sample(c(-2L,0L,3L,NA), 20, TRUE),
@@ -18302,31 +18302,22 @@ DT = data.table(x = sample(letters[1:5], 20, TRUE),
                 s = sample(c("foo","bar",NA), 20, TRUE),
                 c = sample(c(0+3i,1,-1-1i,NA), 20, TRUE),
                 l = sample(c(TRUE, FALSE, NA), 20, TRUE),
-                r = as.raw(sample(1:5, 20, TRUE)),
-if (test_bit64) i64 = as.integer64(sample(c(-2L,0L,2L,NA), 20, TRUE)))
-nn = list(1, 5, -1, -5, c(1,2), c(-1,1))
-testnum = 2224
-for (n in nn) {
-  for (c in names(x)[-1]) {
-    testnum = testnum + 0.001
-    test(testnum, EVAL(sprintf("DT[, shift(%s, %d, type='lag'), by=x]", c, n)),  EVAL(sprintf("DT[, esc(%s, %d, type='lag'), by=x]", c, n)))
-    testnum = testnum + 0.001
-    test(testnum, EVAL(sprintf("DT[, shift(%s, %d, type='lead'), by=x]", c, n)), EVAL(sprintf("DT[, esc(%s, %d, type='lead'), by=x]", c, n)))
-    testnum = testnum + 0.001
-    test(testnum, EVAL(sprintf("DT[, shift(%s, %d, type='shift'), by=x]", c, n)), EVAL(sprintf("DT[, esc(%s, %d, type='shift'), by=x]", c, n)))
-    testnum = testnum + 0.001
-    test(testnum, EVAL(sprintf("DT[, shift(%s, %d, type='cyclic'), by=x]", c, n)), EVAL(sprintf("DT[, esc(%s, %d, type='cyclic'), by=x]", c, n)))
-    # check if shift with opposite type is same as shift with n*-1
-    testnum = testnum + 0.001
-    test(testnum, EVAL(sprintf("DT[, shift(%s, %d, type='lag'), by=x]", c, n)),  EVAL(sprintf("DT[, esc(%s, %d, type='lead'), by=x]", c, -n)))
-    testnum = testnum + 0.001
-    test(testnum, EVAL(sprintf("DT[, shift(%s, %d, type='lead'), by=x]", c, n)), EVAL(sprintf("DT[, esc(%s, %d, type='lag'), by=x]", c, -n)))
-  }
+                r = as.raw(sample(1:5, 20, TRUE)))
+load(testDir("test2224.Rdata")) # ans array
+if (test_bit64) {
+  DT[, i64:=as.integer64(sample(c(-2L,0L,2L,NA), 20, TRUE))]
+} else {
+  ans = ans[, -match("i64",colnames(ans))]
 }
-test(2224.51, DT[, shift(i, fill=1:10), by=x], error="fill must be a vector of length 1")
-test(2224.52, DT[, shift(i, type="shift"), by=x], DT[, esc(i, type="shift"), by=x])
-test(2224.53, DT[, shift(r), by=x], error="Type 'raw' is not supported by GForce gshift")
-# use fill argument with length > 1 which is not a call
-a=1:2
-test(2224.54, DT[, shift(i, fill=a), by=x], error="fill must be a vector of length 1")
+test(2224.01, sapply(names(DT)[-1], function(col) {
+  sapply(list(1, 5, -1, -5, c(1,2), c(-1,1)), function(n) list(
+    EVAL(sprintf("DT[, shift(%s, %d, type='lag'),    by=x]$V1", col, n)),
+    EVAL(sprintf("DT[, shift(%s, %d, type='lead'),   by=x]$V1", col, n)),
+    EVAL(sprintf("DT[, shift(%s, %d, type='shift'),  by=x]$V1", col, n)),
+    EVAL(sprintf("DT[, shift(%s, %d, type='cyclic'), by=x]$V1", col, n))
+  ))
+}), ans)
+test(2224.02, DT[, shift(i, fill=1:10), by=x], error="fill must be a vector of length 1")
+a = 1:2  # fill argument with length > 1 which is not a call
+test(2224.03, DT[, shift(i, fill=a), by=x], error="fill must be a vector of length 1")
 
