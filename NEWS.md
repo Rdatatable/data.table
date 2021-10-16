@@ -139,11 +139,12 @@
 
 25. `setcolorder()` gains `before=` and `after=`, [#4385](https://github.com/Rdatatable/data.table/issues/4358). Thanks to Matthias Gomolka for the request, and both Benjamin Schwendinger and Xianghui Dong for implementing.
 
-26. `base::droplevels()` gains a fast method for `data.table`, [#647](https://github.com/Rdatatable/data.table/issues/647). Thanks to Steve Lianoglou for requesting, and Jan Gorecki and Benjamin Schwendinger for the PR. `fdroplevels()` for use on vectors has also been added.
+26. `base::droplevels()` gains a fast method for `data.table`, [#647](https://github.com/Rdatatable/data.table/issues/647). Thanks to Steve Lianoglou for requesting, Boniface Kamgang and Martin Binder for testing, and Jan Gorecki and Benjamin Schwendinger for the PR. `fdroplevels()` for use on vectors has also been added.
 
 27. `shift()` now also supports `type="cyclic"`, [#4451](https://github.com/Rdatatable/data.table/issues/4451). Arguments that are normally pushed out by `type="lag"` or `type="lead"` are re-introduced at this type at the first/last positions. Thanks to @RicoDiel for requesting, and Benjamin Schwendinger for the PR.
 
     ```R
+    # Usage
     shift(1:5, n=-1:1, type="cyclic")
     # [[1]]
     # [1] 2 3 4 5 1
@@ -153,7 +154,24 @@
     #
     # [[3]]
     # [1] 5 1 2 3 4
+
+    # Benchmark
+    x = sample(1e9) # 3.7 GB
+    microbenchmark::microbenchmark(
+      shift(x, 1, type="cyclic"),
+      c(tail(x, 1), head(x,-1)),
+      times = 10L,
+      unit = "s"
+    )
+    # Unit: seconds
+    #                          expr  min   lq mean  median   uq  max neval
+    #  shift(x, 1, type = "cyclic") 1.57 1.67 1.71    1.68 1.70 2.03    10
+    #    c(tail(x, 1), head(x, -1)) 6.96 7.16 7.49    7.32 7.64 8.60    10
     ```
+
+28. `fread()` now supports "0" and "1" in `na.strings`, [#2927](https://github.com/Rdatatable/data.table/issues/2927). Previously this was not permitted since "0" and "1" can be recognized as boolean values. Note that it is still not permitted to use "0" and "1" in `na.strings` in combination with `logical01 = TRUE`. Thanks to @msgoussi for the request, and Benjamin Schwendinger for the PR.
+
+29. `setkey()` now supports type `raw` as value columns (not as key columns), [#5100](https://github.com/Rdatatable/data.table/issues/5100). Thanks Hugh Parsonage for requesting, and Benjamin Schwendinger for the PR.
 
 ## BUG FIXES
 
@@ -375,6 +393,29 @@
 43. All-NA character key columns could segfault, [#5070](https://github.com/Rdatatable/data.table/issues/5070). Thanks to @JorisChau for reporting and Benjamin Schwendinger for the fix.
 
 44. In v1.13.2 a version of an old bug was reintroduced where during a grouping operation list columns could retain a pointer to the last group. This affected only attributes of list elements and only if those were updated during the grouping operation, [#4963](https://github.com/Rdatatable/data.table/issues/4963). Thanks to @fujiaxiang for reporting and @avimallu and Václav Tlapák for investigating and the PR.
+
+45. `shift(xInt64, fill=0)` and `shift(xInt64, fill=as.integer64(0))` (but not `shift(xInt64, fill=0L)`) would error with `INTEGER() can only be applied to a 'integer', not a 'double'` where `xInt64` conveys `bit64::integer64`, `0` is type `double` and `0L` is type integer, [#4865](https://github.com/Rdatatable/data.table/issues/4865). Thanks to @peterlittlejohn for reporting and Benjamin Schwendinger for the PR.
+
+46. `DT[i, strCol:=classVal]` did not coerce using the `as.character` method for the class, resulting in either an unexpected string value or an error such as `To assign integer64 to a target of type character, please use as.character() for clarity`. Discovered during work on the previous issue, [#5189](https://github.com/Rdatatable/data.table/pull/5189).
+
+    ```R
+    DT
+    #         A
+    #    <char>
+    # 1:      a
+    # 2:      b
+    # 3:      c
+    DT[2, A:=as.IDate("2021-02-03")]
+    DT[3, A:=bit64::as.integer64("4611686018427387906")]
+    DT
+    #                      A
+    #                 <char>
+    # 1:                   a
+    # 2:          2021-02-03  # was 18661
+    # 3: 4611686018427387906  # was error 'please use as.character'
+    ```
+    
+47. `tables()` failed with `argument "..." is missing` when called from within a function taking `...`; e.g. `function(...) { tables() }`, [#5197](https://github.com/Rdatatable/data.table/issues/5197). Thanks @greg-minshall for the report and @michaelchirico for the fix.
 
 ## NOTES
 

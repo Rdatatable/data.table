@@ -93,7 +93,15 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SEXP
     error(_("rollends must be a length 2 logical vector"));
   rollends = LOGICAL(rollendsArg);
 
-  nomatch = isNull(nomatchArg) ? 0 : INTEGER(nomatchArg)[0];
+  if (isNull(nomatchArg)) {
+    nomatch=0;
+  } else {
+    if (length(nomatchArg)!=1 || (!isLogical(nomatchArg) && !isInteger(nomatchArg)))
+      error(_("Internal error: nomatchArg must be NULL or length-1 logical/integer")); // # nocov
+    nomatch = INTEGER(nomatchArg)[0];
+    if (nomatch!=NA_INTEGER && nomatch!=0)
+      error(_("Internal error: nomatchArg must be NULL, NA, NA_integer_ or 0L")); // # nocov
+  }
 
   // mult arg
   if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "all")) mult = ALL;

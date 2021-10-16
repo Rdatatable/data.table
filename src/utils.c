@@ -345,8 +345,6 @@ SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg) {
   // copyArg does not update in place, but only IF an object is of the same type-class as class to be coerced, it will return with no copy
   if (!isVectorAtomic(x))
     error(_("'x' is not atomic"));
-  if (!isVectorAtomic(as))
-    error(_("'as' is not atomic"));
   if (!isNull(getAttrib(x, R_DimSymbol)))
     error(_("'x' must not be matrix or array"));
   if (!isNull(getAttrib(as, R_DimSymbol)))
