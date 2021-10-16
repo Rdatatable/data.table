@@ -33,6 +33,7 @@
 
   format_list_item(x, \dots)
   \method{format_list_item}{default}(x, \dots)
+  \method{format_list_item}{sfg}(x, \dots)
 }
 \arguments{
   \item{x}{ A \code{data.table}. }
@@ -57,7 +58,7 @@
 \details{
   By default, with an eye to the typically large number of observations in a \code{data.table}, only the beginning and end of the object are displayed (specifically, \code{head(x, topn)} and \code{tail(x, topn)} are displayed unless \code{nrow(x) < nrows}, in which case all rows will print).
 
-  \code{format_col} is applied at a column level; for example, \code{format_col.POSIXct} is used to tag the time zones of \code{POSIXct} columns. \code{format_list_item} is applied to the elements (rows) of \code{list} columns; see Examples.
+  \code{format_col} is applied at a column level; for example, \code{format_col.POSIXct} is used to tag the time zones of \code{POSIXct} columns. \code{format_list_item} is applied to the elements (rows) of \code{list} columns; see Examples. \code{format_list_item.sfg} uses the \pkg{sf} package's formatting method to print simple feature geometry columns (of class \code{"sfg"}).
 }
 \seealso{\code{\link{print.default}}}
 \examples{
