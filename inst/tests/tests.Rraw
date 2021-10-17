@@ -18347,4 +18347,3 @@ test(2225.1, groupingsets(data.table(iris), j=sum(Sepal.Length), by=c('Sp'='Spec
              data.table(Species=factor(c("setosa", "versicolor", "virginica")), V1=c(250.3, 296.8, 329.4)))
 test(2225.2, groupingsets(data.table(iris), j=mean(Sepal.Length), by=c('Sp'='Species'), sets=list('Species')),
              groupingsets(data.table(iris), j=mean(Sepal.Length), by=c('Species'), sets=list('Species')))
-
