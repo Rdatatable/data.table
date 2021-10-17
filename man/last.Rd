@@ -15,7 +15,7 @@ last(x, n=1L, na.rm=FALSE, \dots)
 \item{x}{ A vector, list, data.frame or data.table. Otherwise the S3 method
 of \code{xts::first} is deployed. }
 \item{n}{ A numeric vector length 1. How many items to select. }
-\item{na.rm}{ logical. Should missing values be skipped when selecting values? Defaults to \code{FALSE}. }
+\item{na.rm}{ logical. Should missing values be skipped when selecting values? Defaults to \code{FALSE}. Selects always at least 1 element. }
 \item{\dots}{ Not applicable for \code{data.table} first/last. Any arguments here
 are passed through to \code{xts}'s first/last. }
 }
@@ -39,10 +39,14 @@ last(x) # same as tail(x, 1)
 
 x = c(NA, 1, 2, NA)
 first(x)
+first(x, na.rm=TRUE)
 last(x)
+last(x, na.rm=TRUE)
 
 x = data.table(x=c(NA, 1, 2, NA), y=1:4)
 first(x)
+first(x, na.rm=TRUE)
 last(x)
+last(x, na.rm=TRUE)
 }
 \keyword{ data }
