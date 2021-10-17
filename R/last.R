@@ -8,7 +8,7 @@ last = function(x, n=1L, na.rm=FALSE, ...) {
 
   if (na.rm) {
     if (n!=1L)
-      stop("na.rm=TRUE is currently only supported for n=1. Try tail() instead of last().")
+      stop("na.rm=TRUE is currently only supported for n=1.")
     if (is.vector(x) && length(x)) {
       if (verbose) catf("%s: using %s(%s): na.rm=TRUE\n", "last", "last", "x[!is.na(x)]")
       x_na = x[!is.na(x)]
@@ -72,7 +72,7 @@ first = function(x, n=1L, na.rm=FALSE, ...) {
 
   if (na.rm) {
     if (n!=1L)
-      stop("na.rm=TRUE is currently only supported for n=1. Try head() instead of first().")
+      stop("na.rm=TRUE is currently only supported for n=1.")
     if (is.vector(x) && length(x)) {
       if (verbose) catf("%s: using %s(%s): na.rm=TRUE\n", "first", "first", "x[!is.na(x)]")
       x_na = x[!is.na(x)]
