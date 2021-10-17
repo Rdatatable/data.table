@@ -640,7 +640,7 @@ test(211, ncol(TESTDT), 2L)
 DT = data.table(a=1:6,key="a")
 test(212, DT[J(3)]$a, 3L) # correct class c("data.table","data.frame")
 class(DT) = "data.table"  # incorrect class, but as from 1.8.1 it works. By accident when moving from colnames() to names(), it was dimnames() doing the check, but rather than add a check that identical(class(DT),c("data.frame","data.table")) at the top of [.data.table, we'll leave it flexible to user (user might not want to inherit from data.frame for some reason).
-test(213, DT[J(3)]$a, error="x is not a data.table|frame")  # from v1.14.2, data.table must inherit from data.frame (internals are too hard to reason if a data.table may not be data.frame too)
+test(213, DT[J(3)]$a, 3L)
 
 # setkey now auto coerces double and character for convenience, and
 # to solve bug #953
@@ -1082,7 +1082,7 @@ test(353, DT[2,f:="c"], data.table(f=factor(c("a","c","a","b")),x=1:4))
 test(354, DT[3,f:=factor("foo")], data.table(f=factor(c("a","c","foo","b")),x=1:4))
 
 # Test growVector logic when adding levels  (don't need to grow levels for character cols)
-newlevels = as.character(as.hexmode(1:2000))
+newlevels = format(as.hexmode(1:2000))
 DT = data.table(f=factor("000"),x=1:2010)
 test(355, DT[11:2010,f:=newlevels], data.table(f=factor(c(rep("000",10),newlevels)),x=1:2010))
 
@@ -1902,7 +1902,7 @@ test(640, capture.output(print(DT,class=FALSE)), c("    a   b    c","1:  8  xy  
 DT=data.table(a=letters,b=1:26)
 test(641, tail(capture.output(print(DT[1:20], class=FALSE)),2), c("19: s 19","20: t 20"))
 test(642, tail(capture.output(print(DT[1:21], class=FALSE, nrows=100)),2), c("21: u 21","    a  b"))
-DT=data.table(a=as.character(as.hexmode(1:500)), b=1:500)
+DT=data.table(a=format(as.hexmode(1:500)), b=1:500)
 test(643, capture.output(print(DT, class=FALSE)), c("       a   b","  1: 001   1","  2: 002   2","  3: 003   3","  4: 004   4","  5: 005   5"," ---        ","496: 1f0 496","497: 1f1 497","498: 1f2 498","499: 1f3 499","500: 1f4 500"))
 
 # Test inconsistent length of columns error.
@@ -3186,6 +3186,12 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
   test(1035.25, melt(dt, id.vars=NULL, measure.vars=-1), error="One or more values in 'measure.vars'")
   test(1035.26, melt(dt, id.vars=5, measure.vars=-1), error="One or more values in 'id.vars'")
   test(1035.27, melt(dt, id.vars=1, measure.vars=-1), error="One or more values in 'measure.vars'")
+  test(1035.28, melt(dt, measure.vars=list("a")), error="One or more values in 'measure.vars'")
+  test(1035.29, melt(dt, measure.vars=NA_integer_, id.vars="y"), error="One or more values in 'measure.vars'")
+  test(1035.291, melt(dt, measure.vars=NA_integer_, id.vars=NULL), error="One or more values in 'measure.vars'")
+  test(1035.30, melt(dt, id.vars=NA_integer_), error="One or more values in 'id.vars'")
+  test(1035.31, melt(dt, measure.vars=NA_character_), error="One or more values in 'measure.vars'")
+  test(1035.32, melt(dt, id.vars=NA_character_), error="One or more values in 'id.vars'")
 
   if (test_R.utils) {
     # dup names in variable used to generate malformed factor error and/or segfault, #1754;  was test 1570
@@ -4155,6 +4161,10 @@ DT = data.table(A=c(utf8_strings, latin1_strings), B=1:4)
 test(1162.21, is.sorted(DT), FALSE)
 setkey(DT)
 test(1162.22, is.sorted(DT), TRUE)
+# Issue #5070
+DT = data.table(x2 = rep(NA_character_, 2))
+test(1162.23, is.sorted(DT))
+test(1162.24, is.sorted(rep(NA_character_, 2)))
 
 # FR #351 - last on length=0 arguments
 x <- character(0)
@@ -6599,63 +6609,88 @@ test(1462.3, DT[, sum(unlist(mget(cols, as.environment(-1)))), by=x], DT[, sum(u
 # test for 'shift'
 x=1:5
 y=factor(x)
-test(1463.01,  shift(x,1L),                  as.integer(c(NA, 1:4)))
-test(1463.02,  shift(x,1:2),                 list(as.integer(c(NA, 1:4)), as.integer(c(NA, NA, 1:3))))
-test(1463.03,  shift(x,1L, 0L),              as.integer(c(0L, 1:4)))
-test(1463.04,  shift(x,1L, type="lead"),     as.integer(c(2:5, NA)))
-test(1463.05,  shift(x,1:2, type="lead"),    list(as.integer(c(2:5, NA)), as.integer(c(3:5, NA, NA))))
-test(1463.06,  shift(x,1L, 0L, type="lead"), as.integer(c(2:5, 0L)))
-test(1463.07,  shift(y,1L),                  factor(c(NA,1:4), levels=1:5))
-test(1463.08,  shift(y,1L, type="lead"),     factor(c(2:5, NA), levels=1:5))
+test(1463.01, shift(x,1L),                   as.integer(c(NA, 1:4)))
+test(1463.02, shift(x,1:2),                  list(as.integer(c(NA, 1:4)), as.integer(c(NA, NA, 1:3))))
+test(1463.03, shift(x,1L, 0L),               as.integer(c(0L, 1:4)))
+test(1463.04, shift(x,1L,    type="lead"),   as.integer(c(2:5, NA)))
+test(1463.05, shift(x,1:2,   type="lead"),   list(as.integer(c(2:5, NA)), as.integer(c(3:5, NA, NA))))
+test(1463.06, shift(x,1L, 0L,type="lead"),   as.integer(c(2:5, 0L)))
+test(1463.07, shift(y,1L),                   factor(c(NA,1:4), levels=1:5))
+test(1463.08, shift(y,1L,    type="lead"),   factor(c(2:5, NA), levels=1:5))
+test(1463.09, shift(x,1L,    type="cyclic"), as.integer(c(5, 1:4)))
+test(1463.10, shift(x,1:2,   type="cyclic"), list(as.integer(c(5, 1:4)), as.integer(c(4:5, 1:3))))
+test(1463.11, shift(x,-1L,   type="cyclic"), as.integer(c(2:5, 1)))
+test(1463.12, shift(x,-(1:2),type="cyclic"), list(as.integer(c(2:5, 1)), as.integer(c(3:5,1:2))))
 
 x=as.numeric(x)
-test(1463.09,  shift(x,1L),                  as.numeric(c(NA, 1:4)))
-test(1463.10,  shift(x,1:2),                list(as.numeric(c(NA, 1:4)), as.numeric(c(NA, NA, 1:3))))
-test(1463.11, shift(x,1L, 0L),              as.numeric(c(0L, 1:4)))
-test(1463.12, shift(x,1L, type="lead"),     as.numeric(c(2:5, NA)))
-test(1463.13, shift(x,1:2, type="lead"),    list(as.numeric(c(2:5, NA)), as.numeric(c(3:5, NA, NA))))
-test(1463.14, shift(x,1L, 0L, type="lead"), as.numeric(c(2:5, 0L)))
+test(1463.13, shift(x,1L),                   as.numeric(c(NA, 1:4)))
+test(1463.14, shift(x,1:2),                  list(as.numeric(c(NA, 1:4)), as.numeric(c(NA, NA, 1:3))))
+test(1463.15, shift(x,1L, 0L),               as.numeric(c(0L, 1:4)))
+test(1463.16, shift(x,1L,    type="lead"),   as.numeric(c(2:5, NA)))
+test(1463.17, shift(x,1:2,   type="lead"),   list(as.numeric(c(2:5, NA)), as.numeric(c(3:5, NA, NA))))
+test(1463.18, shift(x,1L, 0L,type="lead"),   as.numeric(c(2:5, 0L)))
+test(1463.19, shift(x,1L,    type="cyclic"), as.numeric(c(5, 1:4)))
+test(1463.20, shift(x,1:2,   type="cyclic"), list(as.numeric(c(5, 1:4)), as.numeric(c(4:5, 1:3))))
+test(1463.21, shift(x,-1L,   type="cyclic"), as.numeric(c(2:5, 1)))
+test(1463.22, shift(x,-(1:2),type="cyclic"), list(as.numeric(c(2:5, 1)), as.numeric(c(3:5,1:2))))
+
 
 if (test_bit64) {
   x=as.integer64(x)
-  test(1463.15, shift(x,1L),                  as.integer64(c(NA, 1:4)))
-  test(1463.16, shift(x,1:2),                 list(as.integer64(c(NA, 1:4)), as.integer64(c(NA, NA, 1:3))))
-  test(1463.17, shift(x,1L, 0L),              as.integer64(c(0L, 1:4)))
-  test(1463.18, shift(x,1L, type="lead"),     as.integer64(c(2:5, NA)))
-  test(1463.19, shift(x,1:2, type="lead"),    list(as.integer64(c(2:5, NA)), as.integer64(c(3:5, NA, NA))))
-  test(1463.20, shift(x,1L, 0L, type="lead"), as.integer64(c(2:5, 0L)))
+  test(1463.23, shift(x,1L),                    as.integer64(c(NA, 1:4)))
+  test(1463.24, shift(x,1:2),                   list(as.integer64(c(NA, 1:4)), as.integer64(c(NA, NA, 1:3))))
+  test(1463.25, shift(x,1L, 0L),                as.integer64(c(0L, 1:4)))
+  test(1463.26, shift(x,1L,     type="lead"),   as.integer64(c(2:5, NA)))
+  test(1463.27, shift(x,1:2,    type="lead"),   list(as.integer64(c(2:5, NA)), as.integer64(c(3:5, NA, NA))))
+  test(1463.28, shift(x,1L, 0L, type="lead"),   as.integer64(c(2:5, 0L)))
+  test(1463.29, shift(x,1L,     type="cyclic"), as.integer64(c(5, 1:4)))
+  test(1463.30, shift(x,1:2,    type="cyclic"), list(as.integer64(c(5, 1:4)), as.integer64(c(4:5, 1:3))))
+  test(1463.31, shift(x,-1L,    type="cyclic"), as.integer64(c(2:5, 1)))
+  test(1463.32, shift(x,-(1:2), type="cyclic"), list(as.integer64(c(2:5, 1)), as.integer64(c(3:5,1:2))))
 }
 
 x=as.character(x)
-test(1463.21, shift(x,1L),                  as.character(c(NA, 1:4)))
-test(1463.22, shift(x,1:2),                 list(as.character(c(NA, 1:4)), as.character(c(NA, NA, 1:3))))
-test(1463.23, shift(x,1L, 0L),              as.character(c(0L, 1:4)))
-test(1463.24, shift(x,1L, type="lead"),     as.character(c(2:5, NA)))
-test(1463.25, shift(x,1:2, type="lead"),    list(as.character(c(2:5, NA)), as.character(c(3:5, NA, NA))))
-test(1463.26, shift(x,1L, 0L, type="lead"), as.character(c(2:5, 0L)))
+test(1463.33, shift(x,1L),                    as.character(c(NA, 1:4)))
+test(1463.34, shift(x,1:2),                   list(as.character(c(NA, 1:4)), as.character(c(NA, NA, 1:3))))
+test(1463.35, shift(x,1L, 0L),                as.character(c(0L, 1:4)))
+test(1463.36, shift(x,1L,     type="lead"),   as.character(c(2:5, NA)))
+test(1463.37, shift(x,1:2,    type="lead"),   list(as.character(c(2:5, NA)), as.character(c(3:5, NA, NA))))
+test(1463.38, shift(x,1L, 0L, type="lead"),   as.character(c(2:5, 0L)))
+test(1463.39, shift(x,1L,     type="cyclic"), as.character(c(5, 1:4)))
+test(1463.40, shift(x,1:2,    type="cyclic"), list(as.character(c(5, 1:4)), as.character(c(4:5, 1:3))))
+test(1463.41, shift(x,-1L,    type="cyclic"), as.character(c(2:5, 1)))
+test(1463.42, shift(x,-(1:2), type="cyclic"), list(as.character(c(2:5, 1)), as.character(c(3:5,1:2))))
 
 x=c(TRUE,FALSE,TRUE,FALSE,TRUE)
-test(1463.27, shift(x,1L),                  c(NA, x[-5L]))
-test(1463.28, shift(x,1:2),                 list(c(NA, x[-5L]), c(NA, NA, x[-(4:5)])))
-test(1463.29, shift(x,1L, 0L),              c(FALSE, x[-5L]))
-test(1463.30, shift(x,1L, type="lead"),     c(x[-1L], NA))
-test(1463.31, shift(x,1:2, type="lead"),    list(c(x[-1L],NA), c(x[-(1:2)],NA,NA)))
-test(1463.32, shift(x,1L, 0L, type="lead"), c(x[-(1)], FALSE))
+test(1463.43, shift(x,1L),                    c(NA, x[-5L]))
+test(1463.44, shift(x,1:2),                   list(c(NA, x[-5L]), c(NA, NA, x[-(4:5)])))
+test(1463.45, shift(x,1L, 0L),                c(FALSE, x[-5L]))
+test(1463.46, shift(x,1L,     type="lead"),   c(x[-1L], NA))
+test(1463.47, shift(x,1:2,    type="lead"),   list(c(x[-1L],NA), c(x[-(1:2)],NA,NA)))
+test(1463.48, shift(x,1L, 0L, type="lead"),   c(x[-(1)], FALSE))
+test(1463.49, shift(x,1L,     type="cyclic"), c(x[5L], x[-5L]))
+test(1463.50, shift(x,1:2,    type="cyclic"), list(c(x[5L], x[-5L]), c(x[4L:5L], x[-4L:-5L])))
+test(1463.51, shift(x,-1L,    type="cyclic"), c(x[-1L], x[1L]))
+test(1463.52, shift(x,-(1:2), type="cyclic"), list(c(x[-1L], x[1L]), c(x[-1L:-2L], x[1L:2L])))
 
 # for list of list, #1595
 x = data.table(foo = c(list(c("a","b","c")), list(c("b","c")), list(c("a","b")), list(c("a"))), id = c(1,1,2,2))
-test(1463.33, x[, shift(list(foo)), by=id],
+test(1463.53, x[, shift(list(foo)), by=id],
     data.table(id=c(1,1,2,2), V1=list(NA, c("a", "b", "c"), NA, c("a", "b"))))
-test(1463.34, x[, shift(list(foo), type="lead", fill=NA_integer_), by=id],
+test(1463.54, x[, shift(list(foo), type="lead", fill=NA_integer_), by=id],
     data.table(id=c(1,1,2,2), V1=list(c("b", "c"), NA_integer_, c("a"), NA_integer_)))
+test(1463.55, x[, shift(list(foo), 1, type="cyclic"), by=id],
+    data.table(id=c(1,1,2,2), V1=list(c("b","c"), c("a","b","c"), c("a"), c("a","b"))))
+test(1463.56, x[, shift(list(foo), -1, type="cyclic"), by=id],
+    data.table(id=c(1,1,2,2), V1=list(c("b","c"), c("a","b","c"), c("a"), c("a","b"))))
 
 # Fix for #1009 segfault in shift
 val = runif(1)
-test(1463.35, shift(val, 2L), NA_real_)
-test(1463.36, shift(val, 2L, type="lead"), NA_real_)
+test(1463.57, shift(val, 2L), NA_real_)
+test(1463.58, shift(val, 2L, type="lead"), NA_real_)
 
-test(1463.37, shift(1:5, 1L, fill=c(1:2)), error="fill must be a vector of length")
-test(1463.38, shift(mean), error="type 'closure' passed to shift(). Must be a vector, list, data.frame or data.table")
+test(1463.59, shift(1:5, 1L, fill=c(1:2)), error="fill must be a vector of length")
+test(1463.60, shift(mean), error="type 'closure' passed to shift(). Must be a vector, list, data.frame or data.table")
 
 # add tests for date and factor?
 
@@ -6664,12 +6699,25 @@ x = 1:10
 nm = c("x_lag_1", "x_lag_2")
 ans = list(as.integer(c(NA, 1:9)), as.integer(c(NA, NA, 1:8)))
 setattr(ans, 'names', nm)
-test(1463.39, shift(x, 1:2, give.names=TRUE), ans)
+test(1463.61, shift(x, 1:2, give.names=TRUE), ans)
 
 if (test_nanotime) {
-  test(1463.40, shift(nanotime(1:4)         ), c(nanotime::nanotime(NA), nanotime::nanotime(1:3)));
-  test(1463.41, shift(nanotime(1:4), fill=0L), c(nanotime::nanotime(0L), nanotime::nanotime(1:3)));
+  x=nanotime(1:4)
+  test(1463.62, shift(x         ),           c(nanotime::nanotime(NA), x[1:3]));
+  test(1463.63, shift(x, fill=0L),           c(nanotime::nanotime(0L), x[1:3]));
+  test(1463.64, shift(x, 1,  type="cyclic"), c(x[4L], x[-4L]));
+  test(1463.65, shift(x, -1, type="cyclic"), c(x[-1L], x[1L]));
 }
+
+# shift circular
+x = 1:5
+test(1463.66, shift(x, 5, type="cyclic"), x)
+test(1463.67, shift(x, -5, type="cyclic"), x)
+test(1463.68, shift(x, 6, type="cyclic"), shift(x, 1, type="cyclic"))
+test(1463.69, shift(x, -6, type="cyclic"), shift(x, -1, type="cyclic"))
+# test warning
+test(1463.70, shift(x, 1, fill=1, type="cyclic"), c(5L, 1L:4L), warning="Provided argument fill=1 will be ignored since type='shift'.")
+
 
 # FR #686
 DT = data.table(a=rep(c("A", "B", "C", "A", "B"), c(2,2,3,1,2)), foo=1:10)
@@ -7448,7 +7496,8 @@ test(1536, duplicated(dt, incomparables=TRUE), error = "argument 'incomparables 
 test(1537 , names(melt(dt, id.vars=1L, variable.name = "x", value.name="x")), c("x", "x.1", "x.2"), output = "Duplicate column names")
 
 # test for tables()
-test(1538, tables(), output = "Total:")
+test(1538.1, tables(), output="Total:")
+test(1538.2, !is.unsorted(tables(order.col="NROW")$NROW), output="Total:")
 
 # uniqueN not support list-of-list: reverted #1224
 d1 <- data.table(a = 1:4, l = list(list(letters[1:2]),list(Sys.time()),list(1:10),list(letters[1:2])))
@@ -7806,10 +7855,14 @@ read_table = function(str, ...) {
 test(1552.1, fread(str, na.strings="#N/A"), read_table(str, na.strings="#N/A"))
 test(1552.2, fread(str, na.strings=c("#N/A", "-999")), read_table(str, na.strings=c("#N/A", "-999")))
 test(1552.3, fread(str, na.strings=c("#N/A", "-999", "+1")), read_table(str, na.strings=c("#N/A", "-999", "+1")))
-test(1552.4, fread(str, na.strings=c("#N/A", "-999", "+1", "1")),
-             error="NAstring <<1>> is recognized as type boolean.*not permitted")
+test(1552.4, fread(str, na.strings=c("#N/A", "-999", "+1", "1")), read_table(str, na.strings=c("#N/A", "-999", "+1", "1"))) # enabled by FR #2927
 test(1552.5, fread(str, na.strings=c("#N/A", "-999", "FALSE")), error="NAstring <<FALSE>>.*boolean.*not permitted")
 test(1552.6, fread("A\n1.0\n2\n-", na.strings=c("-")), data.table(A=c(1.0, 2.0, NA)))
+test(1552.7, fread(str, na.strings=c("#N/A", "-999", "+1", "1"), logical01=TRUE),
+  error="NAstring <<1>> and logical01=TRUE.*not permitted")
+str = "a,b,c\n0,1,2\n1,0,2"
+test(1552.8, fread(str, na.strings = "0"), data.table(a=c(NA,1L), b=c(1L,NA), c=c(2L,2L)))
+test(1552.9, fread(str, na.strings = c("0","1")), data.table(a=c(NA,NA), b=c(NA,NA), c=c(2L,2L)))
 
 # FR #1177: 'quote' option of 'print.data.table'
 DT1 <- data.table(s1=paste(" ",LETTERS[1:5],sep=""),s2=LETTERS[1:5])
@@ -9907,7 +9960,7 @@ test(1658.34, fwrite(data.table(id=c("A","B","C"), v=c(1.1,0.0,9.9))), output="i
 test(1658.35, fwrite(data.table(id=1:3,bool=c(TRUE,NA,FALSE)),na="NA",logical01=TRUE), output="\"id\",\"bool\"\n1,1\n2,NA\n3,0")
 
 # POSIXct
-test(1658.36, fwrite(data.table(D = as.POSIXct(seq.Date(as.Date("2038-01-19"), as.Date("2038-01-20"), by = "day")))),
+test(1658.36, fwrite(data.table(D = as.POSIXct(seq(as.Date("2038-01-19"), as.Date("2038-01-20"), by = "day")))),
     output="D\n2038-01-19T00:00:00Z\n2038-01-20T00:00:00Z")
 
 # input is of class matrix
@@ -10834,13 +10887,13 @@ test(1738.5, as.integer(as.Date(c("0000-03-01","9999-12-31"))), c(-719468L,29328
 
 if (FALSE) {
   # Full range takes too long for CRAN.
-  dts = seq.Date(as.Date("0000-03-01"),as.Date("9999-12-31"),by="day")
+  dts = seq(as.Date("0000-03-01"), as.Date("9999-12-31"), by="day")
   dtsCh = as.character(dts)   # 36s
   dtsCh = gsub(" ","0",sprintf("%10s",dtsCh))  # R does not 0 pad years < 1000
   test(1739.1, length(dtsCh)==3652365 && identical(dtsCh[c(1,3652365)],c("0000-03-01","9999-12-31")))
 } else {
   # test on CRAN a reduced but important range
-  dts = seq.Date(as.Date("1899-12-31"),as.Date("2100-01-01"),by="day")
+  dts = seq(as.Date("1899-12-31"), as.Date("2100-01-01"), by="day")
   dtsCh = as.character(dts)
   test(1739.2, length(dtsCh)==73051 && identical(dtsCh[c(1,73051)],c("1899-12-31","2100-01-01")))
 }
@@ -13534,7 +13587,7 @@ test(1962.014, merge(DT1, DT2),
      data.table(a = integer(0), V = character(0)))
 setkey(DT1, a)
 test(1962.015, merge(DT1, DT2),
-     data.table(a = 2:3, V.x = c("a", "a"), V.y = c("b", "b"), key = 'a'))
+     ans<-data.table(a = 2:3, V.x = c("a", "a"), V.y = c("b", "b"), key = 'a'))
 test(1962.016, merge(DT1, DT2, by.x = 'a', by.y = c('a', 'V')),
      error = 'must be of same length')
 test(1962.017, merge(DT1, DT2, by = 'V', by.x = 'a', by.y = 'a'),
@@ -13544,8 +13597,8 @@ test(1962.018, merge(DT1, DT2, by.x = 'z', by.y = 'a'),
      error = 'Elements listed in `by.x`')
 test(1962.019, merge(DT1, DT2, by.x = 'a', by.y = 'z'),
      error = 'Elements listed in `by.y`')
-test(1962.020, merge(DT1, DT2, by = character(0L)),
-     error = 'non-empty vector of column names')
+test(1962.0201, merge(DT1, DT2, by=character(0L)), ans)  # was error before PR#5183
+test(1962.0202, merge(DT1, DT2, by=NULL),          ans)  # test explicit NULL too as missing() could be used inside merge()
 test(1962.021, merge(DT1, DT2, by = 'z'),
      error = 'must be valid column names in x and y')
 
@@ -13797,6 +13850,11 @@ test(1963.16, shift(DT, -3L, type="lag"), shift(DT, 3L, type="lead"))
 DT <- data.table(a = 1:3, b = 2:4)
 test(1963.17, DT[ , shift(.SD, 0:1, give.names = TRUE, type = "lead")],
      data.table(a_lead_0 = 1:3, a_lead_1 = c(2L, 3L, NA), b_lead_0 = 2:4, b_lead_1 = c(3L, 4L, NA)))
+DT = data.table(x = 1:10, y = 10:1)
+test(1963.18, shift(DT, 1L,  type="cyclic"), list(c(10L, 1L:9L), c(1L, 10L:2L)))
+test(1963.19, shift(DT, -1,  type="cyclic"), list(c(2L:10L, 1L), c(9L:1L, 10L)))
+test(1963.20, shift(DT, 3L,  type="cyclic"), shift(DT, -7L, type="cyclic"))
+test(1963.21, shift(DT, -3L, type="cyclic"), shift(DT, 7L, type="cyclic"))
 
 # 0 column data.table should not have rownames, #3149
 M0 = matrix(1:6, nrow=3, ncol=2, dimnames=list(rows=paste0("id",1:3), cols=c("v1","v2")))
@@ -14564,7 +14622,7 @@ if (test_bit64) {
                 warning="-1.*integer64.*position 1 taken as 0 when assigning.*raw.*column 3 named 'c'")
   test(2005.66, DT[2:3, f:=as.integer64(c(NA,"2147483648"))]$f, as.complex(c(-42,NA,2147483648)))
   DT[,h:=LETTERS[1:3]]
-  test(2005.67, DT[2:3, h:=as.integer64(1:2)], error="To assign integer64 to.*type character, please use as.character.")
+  test(2005.67, DT[2:3, h:=as.integer64(1:2)]$h, c("A","1","2"))   # PR#5189
 }
 
 # rbindlist raw type, #2819
@@ -15885,16 +15943,26 @@ test(2067.1, shift(z), c(NA, z[1:2]))
 test(2067.2, shift(z, type = 'lead'), c(z[2:3], NA))
 test(2067.3, shift(z, fill = 1i), c(1i, z[1:2]))
 test(2067.4, shift(list(z, 1:3)), list(c(NA, z[1:2]), c(NA, 1:2)))
+test(2067.5, shift(z, n=1,  type = 'cyclic'), c(z[3], z[1:2]))
+test(2067.6, shift(z, n=-1, type = 'cyclic'), c(z[2:3], z[1]))
+test(2067.7, shift(list(z, 1L:3L), n=1, type = 'cyclic'), list(c(z[3], z[1:2]), c(3L, 1:2)))
+test(2067.8, shift(list(z, 1L:3L), n=-1, type = 'cyclic'), list(c(z[2:3], z[1]), c(2:3, 1L)))
 
 # support for ordering tables with complex columns, #1444
 DT = data.table(a = 2:1, z = complex(0, 0:1))
 test(2068.1, setkey(copy(DT), a), data.table(a=1:2, z=complex(0, 1:0), key='a'))
 test(2068.2, DT[ , abs(z), by=a], data.table(a=2:1, V1=c(0, 1)))
-# raw continues not to be supported
+# support for ordering tables with raw columns, #5100
 DT = data.table(ID=2:1, r=as.raw(0:1))
-test(2068.3, setkey(DT, ID), error="Item 2 of list is type 'raw'")
+test(2068.3, setkey(copy(DT), ID), data.table(ID=1:2, r=as.raw(1:0), key='ID'))
+DT = data.table(x=c(1, 2, 1), y=raw(3))
+test(2068.4, setkey(copy(DT), x), data.table(x=c(1,1,2), y=raw(3), key='x'))
+test(2068.5, DT[, y[.N], x], data.table(x=c(1,2), V1=raw(2)))
+# expression continue to be not supported
+DT = data.table(ID=2:1, r=expression(1, 2))
+test(2068.6, setkey(DT, ID), error="Item 2 of list is type 'expression'")
 # setreordervec triggers !isNewList branch for coverage
-test(2068.4, setreordervec(DT$r, order(DT$ID)), error="reorder accepts vectors but this non-VECSXP")
+test(2068.7, setreordervec(DT$r, order(DT$ID)), error="reorder accepts vectors but this non-VECSXP")
 
 # forderv (and downstream functions) handles complex vector input, part of #3690
 DT = data.table(
@@ -16169,7 +16237,9 @@ test(2074.33, merge(DT, DT, by.x = 1i, by.y=1i), error="A non-empty vector of co
 
 # shift naming
 test(2074.34, shift(list(a=1:5, b=6:10), give.names=TRUE), list(a_lag_1=c(NA, 1:4), b_lag_1=c(NA, 6:9)))
+test(2074.345, shift(list(a=1:5, b=6:10), type="cyclic", give.names=TRUE), list(a_cyclic_1=c(5L, 1:4), b_cyclic_1=c(10L, 6:9)))
 test(2074.35, shift(1:5, 1:2, give.names=TRUE), list(V1_lag_1=c(NA, 1:4), V1_lag_2=c(NA, NA, 1:3)))
+test(2074.355, shift(1:5, 1:2, type="cyclic", give.names=TRUE), list(V1_cyclic_1=c(5L, 1:4), V1_cyclic_2=c(4L:5L, 1:3)))
 
 # bmerge.c
 x = data.table(a='a')
@@ -18074,7 +18144,7 @@ for (col in c("a","b","c")) {
   }
 }
 
-# DT() functional form, #4872 #5106 #5107
+# DT() functional form, #4872 #5106 #5107 #5129
 if (base::getRversion() >= "4.1.0") {
   # we have to EVAL "|>" here too otherwise this tests.Rraw file won't parse in R<4.1.0
   if (exists("DTfun")) DT=DTfun  # just in dev-mode restore DT() in .GlobalEnv as DT object overwrote it in tests above
@@ -18086,38 +18156,48 @@ if (base::getRversion() >= "4.1.0") {
   test(2212.013, EVAL("mtcars |> DT(mpg>20, .SD[hp>mean(hp)])"),
                  droprn(mtcars[ mtcars$mpg>20 & mtcars$hp>mean(mtcars$hp[mtcars$mpg>20]), ]))
   D = copy(mtcars)
-  test(2212.02, EVAL("D |> DT(,.SD)"), D)
-  test(2212.03, EVAL("D |> DT(, .SD, .SDcols=5:8)"), D[,5:8])
-  test(2212.04, EVAL("D |> DT(, 5:8)"), droprn(D[,5:8]))
-  test(2212.05, EVAL("D |> DT(, lapply(.SD, sum))"), as.data.frame(lapply(D,sum)))
-  test(2212.06, EVAL("D |> DT(, .SD, keyby=cyl) |> setkey(NULL)"), droprn(D[order(D$cyl),c(2,1,3:11)]))
-  test(2212.07, EVAL("D |> DT(1:20, .SD)"), droprn(D[1:20,]))
-  test(2212.08, EVAL("D |> DT(, .SD, by=cyl, .SDcols=5:8)"), droprn(D[unlist(tapply(1:32, D$cyl, c)[c(2,1,3)]), c(2,5:8)]))
-  test(2212.09, EVAL("D |> DT(1:20, .SD, .SDcols=5:8)"), droprn(D[1:20, 5:8]))
-  test(2212.10, EVAL("D |> DT(1:20, .SD, by=cyl, .SDcols=5:8)"), droprn(D[unlist(tapply(1:20, D$cyl[1:20], c)[c(2,1,3)]), c(2,5:8)]))
-  test(2212.11, EVAL("D |> DT(1:20, lapply(.SD, sum))"), as.data.frame(lapply(D[1:20,],sum)))
+  test(2212.02, EVAL("D |> DT(,.SD)"), mtcars)
+  test(2212.03, EVAL("D |> DT(, .SD, .SDcols=5:8)"), mtcars[,5:8])
+  test(2212.04, EVAL("D |> DT(, 5:8)"), droprn(mtcars[,5:8]))
+  test(2212.05, EVAL("D |> DT(, lapply(.SD, sum))"), as.data.frame(lapply(mtcars,sum)))
+  test(2212.06, EVAL("D |> DT(, .SD, keyby=cyl) |> setkey(NULL)"), droprn(mtcars[order(mtcars$cyl),c(2,1,3:11)]))
+  test(2212.07, EVAL("D |> DT(1:20, .SD)"), droprn(mtcars[1:20,]))
+  test(2212.08, EVAL("D |> DT(, .SD, by=cyl, .SDcols=5:8)"), droprn(mtcars[unlist(tapply(1:32, mtcars$cyl, c)[c(2,1,3)]), c(2,5:8)]))
+  test(2212.09, EVAL("D |> DT(1:20, .SD, .SDcols=5:8)"), droprn(mtcars[1:20, 5:8]))
+  test(2212.10, EVAL("D |> DT(1:20, .SD, by=cyl, .SDcols=5:8)"), droprn(mtcars[unlist(tapply(1:20, mtcars$cyl[1:20], c)[c(2,1,3)]), c(2,5:8)]))
+  test(2212.11, EVAL("D |> DT(1:20, lapply(.SD, sum))"), as.data.frame(lapply(mtcars[1:20,],sum)))
   test(2212.12, droprn(EVAL("D |> DT(1:20, c(N=.N, lapply(.SD, sum)), by=cyl)")[c(1,3),c("cyl","N","carb")]), data.frame(cyl=c(6,8), N=c(6L,8L), carb=c(18,27)))
-  test(2212.13, EVAL("D |> DT(cyl==4)"), droprn(D[D$cyl==4,]))
-  test(2212.14, EVAL("D |> DT(cyl==4 & vs==0)"), droprn(D[D$cyl==4 & D$vs==0,]))
-  test(2212.15, EVAL("D |> DT(cyl==4 & vs>0)"), droprn(D[D$cyl==4 & D$vs>0,]))
-  test(2212.16, EVAL("D |> DT(cyl>=4)"), droprn(D[D$cyl>=4,]))
-  test(2212.17, EVAL("D |> DT(cyl!=4)"), droprn(D[D$cyl!=4,]))
-  test(2212.18, EVAL("D |> DT(cyl!=4 & vs!=0)"), droprn(D[D$cyl!=4 & D$vs!=0,]))
+  test(2212.13, EVAL("D |> DT(cyl==4)"), droprn(mtcars[mtcars$cyl==4,]))
+  test(2212.14, EVAL("D |> DT(cyl==4 & vs==0)"), droprn(mtcars[mtcars$cyl==4 & mtcars$vs==0,]))
+  test(2212.15, EVAL("D |> DT(cyl==4 & vs>0)"), droprn(mtcars[mtcars$cyl==4 & mtcars$vs>0,]))
+  test(2212.16, EVAL("D |> DT(cyl>=4)"), droprn(mtcars[mtcars$cyl>=4,]))
+  test(2212.17, EVAL("D |> DT(cyl!=4)"), droprn(mtcars[mtcars$cyl!=4,]))
+  test(2212.18, EVAL("D |> DT(cyl!=4 & vs!=0)"), droprn(mtcars[mtcars$cyl!=4 & mtcars$vs!=0,]))
   test(2212.19, EVAL("iris |> DT(Sepal.Length==5.0 & Species=='setosa')"), droprn(iris[iris$Sepal.Length==5.0 & iris$Species=="setosa",]))
   test(2212.20, EVAL("iris |> DT(Sepal.Length==5.0)"), droprn(iris[iris$Sepal.Length==5.0,]))
   test(2212.21, EVAL("iris |> DT(Species=='setosa')"), droprn(iris[iris$Species=='setosa',]))
-  test(2212.22, EVAL("D |> DT(, cyl)"), droprn(D[,"cyl"]))
-  test(2212.23, EVAL("D |> DT(1:2, cyl)"), droprn(D[1:2, "cyl"]))
-  test(2212.24, EVAL("D |> DT(, list(cyl))"), droprn(D[,"cyl",drop=FALSE]))
-  test(2212.25, EVAL("D |> DT(1:2, .(cyl))"), droprn(D[1:2, "cyl", drop=FALSE]))
-  test(2212.26, EVAL("D |> DT(, z:=sum(cyl))"), cbind(D, z=sum(D$cyl)))
-  test(2212.27, EVAL("D |> DT(, z:=round(mean(mpg),2), by=cyl)"), cbind(D, z=c("6"=19.74, "4"=26.66, "8"=15.10)[as.character(D$cyl)]))
-  test(2212.28, EVAL("D |> DT(1:3, z:=5, by=cyl)"), cbind(D, z=c(5,5,5,rep(NA,nrow(D)-3))))
+  test(2212.22, EVAL("D |> DT(, cyl)"), droprn(mtcars[,"cyl"]))
+  test(2212.23, EVAL("D |> DT(1:2, cyl)"), droprn(mtcars[1:2, "cyl"]))
+  test(2212.24, EVAL("D |> DT(, list(cyl))"), droprn(mtcars[,"cyl",drop=FALSE]))
+  test(2212.25, EVAL("D |> DT(1:2, .(cyl))"), droprn(mtcars[1:2, "cyl", drop=FALSE]))
+  test(2212.26, EVAL("D |> DT(, z:=sum(cyl))"), cbind(mtcars, z=sum(mtcars$cyl)))
+  D = copy(mtcars)  # D was changed by := so recopy mtcars; TODO: remove this line when #5129 is fully closed
+  test(2212.27, EVAL("D |> DT(, z:=round(mean(mpg),2), by=cyl)"), cbind(mtcars, z=c("6"=19.74, "4"=26.66, "8"=15.10)[as.character(mtcars$cyl)]))
+  D = copy(mtcars)  # D was changed by := so recopy mtcars; TODO: remove this line when #5129 is fully closed
+  test(2212.28, EVAL("D |> DT(1:3, z:=5, by=cyl)"), cbind(mtcars, z=c(5,5,5,rep(NA,nrow(mtcars)-3))))
+  D = copy(mtcars)  # D was changed by := so recopy mtcars; TODO: remove this line when #5129 is fully closed
   test(2212.29, EVAL("D |> DT(1:3, z:=NULL)"), error="When deleting columns, i should not be provided")
-  test(2212.30, EVAL("D |> DT(data.table(cyl=4), on='cyl')"), droprn(D[D$cyl==4,]))
-  test(2212.31, EVAL("D |> DT(data.frame(cyl=4), on='cyl')"), droprn(D[D$cyl==4,]))
-  test(2212.32, EVAL("D |> DT(.(4), on='cyl')"), droprn(D[D$cyl==4,]))
+  test(2212.30, EVAL("D |> DT(data.table(cyl=4), on='cyl')"), droprn(mtcars[mtcars$cyl==4,]))
+  test(2212.31, EVAL("D |> DT(data.frame(cyl=4), on='cyl')"), droprn(mtcars[mtcars$cyl==4,]))
+  test(2212.32, EVAL("D |> DT(.(4), on='cyl')"), droprn(mtcars[mtcars$cyl==4,]))
   test(2212.33, EVAL("iris |> DT('setosa', on='Species')"), {tt=droprn(iris[iris$Species=="setosa",]); tt$Species=as.character(tt$Species); tt})
+  filter = mtcars                       # mask stats::filter
+  dt = df = D = as.data.table(filter)   # mask stats::D
+  test(2212.50, EVAL("df |> DT(df[, .I[which.max(mpg)], by=cyl]$V1)"),                 ans<-dt[c(4,20,25)])
+  test(2212.51, EVAL("dt |> DT(dt[, .I[which.max(mpg)], by=cyl]$V1)"),                 ans)
+  test(2212.52, EVAL("D  |> DT(D[, .I[which.max(mpg)], by=cyl]$V1)"),                  ans)
+  test(2212.53, EVAL("filter |> DT(filter[, .I[which.max(mpg)], by=cyl]$V1)"),         error="unused.*argument.*by.*cyl")  # R's [.data.frame error on filter[...]
+  test(2212.54, EVAL("filter |> DT((filter |> DT(, .I[which.max(mpg)], by=cyl))$V1)"), as.data.frame(ans))
 }
 
 # precision powers of 10^(-n), #4461
@@ -18126,22 +18206,93 @@ test(2213, identical(fread(text="A\n0.8060667366\n")$A, 0.8060667366))
 # droplevels.data.table method, and fdroplevels, #647
 x = factor(letters[1:10])
 DT = data.table(a = x)[1:5]
-test(2214.1, fdroplevels(factor()), droplevels(factor()))
-test(2214.2, fdroplevels(x[1:5]), droplevels(x[1:5]))
+test(2214.01, fdroplevels(factor()), droplevels(factor()))
+test(2214.02, fdroplevels(x[1:5]), droplevels(x[1:5]))
 if (base::getRversion() >= "3.4.0") {
   # bug fix in R 3.4.0: "droplevels(f) now keeps <NA> levels when present."
-  test(2214.3, fdroplevels(x[1:5], c("b", "d")), droplevels(x[1:5], c("b", "d")))
-  test(2214.4, fdroplevels(x[1:5], letters[1:5]), droplevels(x[1:5], letters[1:5]))
-  test(2214.5, droplevels(DT, exclude=c("b", "d"))[["a"]], droplevels(DT[1:5,a], c("b", "d")))
+  test(2214.03, fdroplevels(x[1:5], c("b", "d")), droplevels(x[1:5], c("b", "d")))
+  test(2214.04, fdroplevels(x[1:5], letters[1:5]), droplevels(x[1:5], letters[1:5]))
+  test(2214.05, droplevels(DT, exclude=c("b", "d"))[["a"]], droplevels(DT[1:5,a], c("b", "d")))
 }
-test(2214.6, droplevels(DT)[["a"]], droplevels(DT[1:5,a]))
-test(2214.7, droplevels(DT, 1)[["a"]], x[1:5])
-test(2214.8, droplevels(DT, in.place=TRUE), DT)
+test(2214.06, droplevels(DT)[["a"]], droplevels(DT[1:5,a]))
+test(2214.07, droplevels(DT, 1)[["a"]], x[1:5])
+test(2214.08, droplevels(DT, in.place=TRUE), DT)
+# support ordered factors in fdroplevels
+o = factor(letters[1:10], ordered=TRUE)
+test(2214.09, fdroplevels(o[1:5]), droplevels(o[1:5]))
+# edge case for empty table #5184
+test(2214.10, droplevels(DT[0]), DT[0])
+test(2214.11, droplevels(data.table()), data.table())
+
 
 # factor i should be just like character i and work, #1632
 DT = data.table(A=letters[1:3], B=4:6, key="A")
 test(2215.1, DT["b", B], 5L)  # has worked forever
 test(2215.2, DT[factor("b"), B], 5L)  # now works too, joining fact/fact, char/fact and fact/char have plenty of tests
+
+# segfault on merge keyed all-NA_character_ due to is.sorted, #5070
+DT1 = data.table(x1 = rep(letters[1:4], each=3), x2=NA_character_, key="x2")
+DT2 = data.table(x1 = letters[1:3])
+test(2216.1, DT1[DT2, on="x1"][,.(x1,x2)],        DT1[1:9])              # segfault in v1.14.0
+test(2216.2, merge(DT1, DT2, by="x1")[,.(x1,x2)], setkey(DT1[1:9], x1))  # ok before but included for completeness verbatim from issue
+
+# copy attributes assigned to elements of list columns in grouping #4963
+DT1 = data.table(id=1:3, grp=c('a', 'a', 'b'), value=4:6)
+DT2 = data.table(grp = c('a', 'b'), agg = list(c('1' = 4, '2' = 5), c('3' = 6)))
+test(2217, DT1[, by = grp, .(agg = list(setNames(as.numeric(value), id)))], DT2)
+
+# shift integer64 when fill isn't integer32, #4865
+testnum = 2218
+funs = c(as.integer, as.double, as.complex, as.character, if (test_bit64) as.integer64)
+# when test_bit64==FALSE these all passed before; now passes with test_bit64==TRUE too
+for (f1 in funs) {
+  DT = data.table(x=f1(1:4))
+  for (f2 in funs) {
+    testnum = testnum + 0.01
+    test(testnum, DT[, shift(x)],               f1(c(NA, 1:3)))
+    testnum = testnum + 0.01
+    w = if (identical(f2,as.character) && !identical(f1,as.character)) "Coercing.*character.*to match the type of target vector"
+    test(testnum, DT[, shift(x, fill=f2(NA))],  f1(c(NA, 1:3)), warning=w)
+    testnum = testnum + 0.01
+    if (identical(f1,as.character) && identical(f2,as.complex)) {
+      # one special case due to as.complex(0)=="0+0i"!="0"
+      test(testnum, DT[, shift(x, fill="0")],   f1(0:3))
+    } else {
+      test(testnum, DT[, shift(x, fill=f2(0))], f1(0:3), warning=w)
+    }
+  }
+}
+
+# subassign coerce a class to character, part of PR#5189
+DT = data.table(A=letters[1:3])
+test(2219.1, DT[2, A:=as.IDate("2021-02-03")],                              data.table(A=c("a","2021-02-03","c")))
+if (test_bit64) test(2219.2, DT[3, A:=as.integer64("4611686018427387906")], data.table(A=c("a","2021-02-03","4611686018427387906")))
+
+# gforce improve coverage
+DT = data.table(g=1:2, i=c(NA, 1:4, NA), f=factor(letters[1:6]), l=as.list(1:6))
+options(datatable.optimize = 2L)
+funs = c("sum", "mean", "min", "max", "median", "var", "sd", "prod")
+testnum = 2220
+for (fun in funs) {
+  testnum = testnum + 0.01
+  test(testnum, EVAL("DT[,",fun,"(i, na.rm='a'), g]"), error="na.rm must be TRUE or FALSE")
+  testnum = testnum + 0.01
+  test(testnum, EVAL("DT[,",fun,"(f), g]"), error=sprintf("%s is not meaningful for factors.", fun))
+}
+test(testnum+0.01, DT[, prod(l), g], error="GForce prod can only be applied to columns, not .SD or similar.")
+
+# tables() error when called from inside a function(...), #5197
+test(2221, (function(...) tables())(), output = "No objects of class data.table exist")
+
+# some revdeps do class(x)="data.table" without inheriting from data.frame, PR#5210
+DT = data.table(A=1:3)
+class(DT) = "data.table"
+test(2222, print(DT), output="A.*3")
+
+# retain nomatch=FALSE backwards compatibility #5214, and nomatch=NA_character_ PR#5216
+DT = data.table(A=1:3, key="A")
+test(2223.1, DT[.(4), nomatch=FALSE], data.table(A=integer(), key="A"))
+test(2223.2, DT[.(4), nomatch=NA_character_], data.table(A=4L, key="A"))
 
 # add na.rm argument to first/last #4446 #4239
 a = c(1L,1L,2L,2L,3L,3L,4L,4L)
@@ -18154,19 +18305,19 @@ c = c(1+1i, NA, 2+2i, NA)
 n = c(sqrt(2), NA, NA, sqrt(5))
 ll = list(NA, list(1,2), list(2,3), NA)
 DT2 = data.table(i, l, c, n, ll)
-test(2216.01, first(bi, na.rm=TRUE), 1L)
-test(2216.02, last(bi, na.rm=TRUE), 4L)
-test(2216.03, DT[, .(first(bi, na.rm=TRUE)), a], data.table(a=1L:4L, V1=c(NA,1L,2L,4L)))
-test(2216.04, DT[, .(last(bi, na.rm=TRUE)), a], data.table(a=1L:4L, V1=c(NA,1L,3L,4L)))
-test(2216.05, DT[, .(first(bs, na.rm=TRUE)), a], data.table(a=1L:4L, V1=c(NA,"a","b","d")))
-test(2216.06, DT[, .(last(bs, na.rm=TRUE)), a], data.table(a=1L:4L, V1=c(NA,"a","c","d")))
-test(2216.07, first(DT, na.rm=TRUE), data.table(a=2L, bi=1L, bs="a"))
-test(2216.08, setDT(last(DT, na.rm=TRUE)), data.table(a=4L, bi=4L, bs="d")) #see #3047 why setDT
+test(2224.01, first(bi, na.rm=TRUE), 1L)
+test(2224.02, last(bi, na.rm=TRUE), 4L)
+test(2224.03, DT[, .(first(bi, na.rm=TRUE)), a], data.table(a=1L:4L, V1=c(NA,1L,2L,4L)))
+test(2224.04, DT[, .(last(bi, na.rm=TRUE)), a], data.table(a=1L:4L, V1=c(NA,1L,3L,4L)))
+test(2224.05, DT[, .(first(bs, na.rm=TRUE)), a], data.table(a=1L:4L, V1=c(NA,"a","b","d")))
+test(2224.06, DT[, .(last(bs, na.rm=TRUE)), a], data.table(a=1L:4L, V1=c(NA,"a","c","d")))
+test(2224.07, first(DT, na.rm=TRUE), data.table(a=2L, bi=1L, bs="a"))
+test(2224.08, setDT(last(DT, na.rm=TRUE)), data.table(a=4L, bi=4L, bs="d")) #see #3047 why setDT
 comp = c(NA, NA, NA, sapply(-1:-4, as.complex), NA)
 DT = data.table(a, comp)
-test(2216.09, DT[, .(first(comp, na.rm=TRUE)), a],
+test(2224.09, DT[, .(first(comp, na.rm=TRUE)), a],
   data.table(a=1L:4L, V1=c(NA_complex_,-1+0i,-2+0i,-4+0i)))
-test(2216.10, DT[, .(last(comp, na.rm=TRUE)), a],
+test(2224.10, DT[, .(last(comp, na.rm=TRUE)), a],
   data.table(a=1L:4L, V1=c(NA_complex_,-1+0i,-3+0i,-4+0i)))
 i = c(1,2,1,2)
 l = c(FALSE, TRUE, NA, NA)
@@ -18175,15 +18326,15 @@ n = c(sqrt(2), NA, NA, sqrt(5))
 ll = list(NULL, list(1), list(2), NULL)
 DT2 = data.table(i, l, c, n, ll)
 DT2_res = data.table(i=i[c(1,2)], l=l[c(1,2)], c=c[c(3,4)], n=n[c(1,4)], ll=ll[c(3,2)])
-test(2216.11, DT2[, lapply(.SD, first, na.rm=TRUE), i], DT2_res)
-test(2216.12, DT2[, lapply(.SD, last, na.rm=TRUE), i], DT2_res)
-test(2216.13, DT2[, lapply(.SD, first, na.rm=NA), i], error="na.rm must be TRUE or FALSE")
-test(2216.14, first(1L:5L, -1L, na.rm=TRUE), error="na.rm=TRUE is currently only supported for n=1. Try head() instead of first().")
-test(2216.15,  last(1L:5L, -1L, na.rm=TRUE), error="na.rm=TRUE is currently only supported for n=1. Try tail() instead of last().")
-test(2216.16, first(list(), na.rm=TRUE), list())
-test(2216.17,  last(list(), na.rm=TRUE), list())
+test(2224.11, DT2[, lapply(.SD, first, na.rm=TRUE), i], DT2_res)
+test(2224.12, DT2[, lapply(.SD, last, na.rm=TRUE), i], DT2_res)
+test(2224.13, DT2[, lapply(.SD, first, na.rm=NA), i], error="na.rm must be TRUE or FALSE")
+test(2224.14, first(1L:5L, -1L, na.rm=TRUE), error="na.rm=TRUE is currently only supported for n=1. Try head() instead of first().")
+test(2224.15,  last(1L:5L, -1L, na.rm=TRUE), error="na.rm=TRUE is currently only supported for n=1. Try tail() instead of last().")
+test(2224.16, first(list(), na.rm=TRUE), list())
+test(2224.17,  last(list(), na.rm=TRUE), list())
 DT = data.table(a=c(1L,NA,NA,NA), b=c(1L,2L))
-test(2216.18, DT[, first(a, na.rm=TRUE), b], data.table(b=c(1L, 2L), V1=c(1L, NA)))
-test(2216.19, DT[,  last(a, na.rm=TRUE), b], data.table(b=c(1L, 2L), V1=c(1L, NA)))
-test(2216.20, first(rep(NA, 10), na.rm=TRUE), NA)
-test(2216.21,  last(rep(NA, 10), na.rm=TRUE), NA)
+test(2224.18, DT[, first(a, na.rm=TRUE), b], data.table(b=c(1L, 2L), V1=c(1L, NA)))
+test(2224.19, DT[,  last(a, na.rm=TRUE), b], data.table(b=c(1L, 2L), V1=c(1L, NA)))
+test(2224.20, first(rep(NA, 10), na.rm=TRUE), NA)
+test(2224.21,  last(rep(NA, 10), na.rm=TRUE), NA)

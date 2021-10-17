@@ -221,9 +221,12 @@ replace_dot_alias = function(e) {
   # TO DO (document/faq/example). Removed for now ... if ((roll || rolltolast) && missing(mult)) mult="last" # for when there is exact match to mult. This does not control cases where the roll is mult, that is always the last one.
   .unsafe.opt() #3585
   missingnomatch = missing(nomatch)
-  nomatch0 = identical(nomatch,0) || identical(nomatch,0L)  # for warning with row-numbers in i; #4353
-  if (nomatch0) nomatch=NULL  # retain nomatch=0 backwards compatibility; #857
-  if (!(is.null(nomatch) || (length(nomatch)==1L && is.na(nomatch)))) stopf("nomatch= must be either NA or NULL (or 0 for backwards compatibility which is the same as NULL but please use NULL)")
+  nomatch0 = identical(nomatch,0) || identical(nomatch,0L) || identical(nomatch, FALSE)  # for warning with row-numbers in i; #4353
+  if (nomatch0) nomatch=NULL  # retain nomatch=0|FALSE backwards compatibility, #857 #5214
+  if (!is.null(nomatch)) {
+    if (!(length(nomatch)==1L && is.na(nomatch))) stopf("nomatch= must be either NA or NULL (or 0 for backwards compatibility which is the same as NULL but please use NULL)")
+    nomatch=NA  # convert NA_character_ to NA-logical, PR#5216
+  }
   if (!is.logical(which) || length(which)>1L) stopf("which= must be a logical vector length 1. Either FALSE, TRUE or NA.")
   if ((isTRUE(which)||is.na(which)) && !missing(j)) stopf("which==%s (meaning return row numbers) but j is also supplied. Either you need row numbers or the result of j, but only one type of result can be returned.", which)
   if (is.null(nomatch) && is.na(which)) stopf("which=NA with nomatch=0|NULL would always return an empty vector. Please change or remove either which or nomatch.")
@@ -1946,7 +1949,11 @@ DT = function(x, ...) {  #4872
     options(datatable.optimize=2L)
     # GForce still on; building and storing indices in .prepareFastSubset off; see long paragraph in news item 22 of v1.14.2
   }
-  ans = `[.data.table`(x, ...)
+  fun = match.call()
+  fun[[1L]] = as.name("[.data.table")    # hence now exporting [.data.table method otherwise R CMD check can't find it in tests 2212.*
+  ans = eval(fun, envir=parent.frame(),  # for issue 2 in #5129 so that eval(.massagei(isub), x, ienv) finds objects in calling
+                                         # env, and likely other places inside [.data.table that look at the calling env
+                  enclos=parent.frame()) # including enclos= too as it has often been needed in the past
   options(datatable.optimize=old)
   .global$print = ""  # functional form should always print; #5106
   ans
@@ -2528,8 +2535,10 @@ copy = function(x) {
 }
 
 shallow = function(x, cols=NULL) {
-  if (!is.data.frame(x))
+  if (!is.data.frame(x) && !is.data.table(x)) {
+    #                      ^^ some revdeps do class(x)="data.table" without inheriting from data.frame, PR#5210
     stopf("x is not a data.table|frame. Shallow copy is a copy of the vector of column pointers (only), so is only meaningful for data.table|frame")
+  }
   ans = .shallow(x, cols=cols, retain.key=selfrefok(x))  # selfrefok for #5042
   ans
 }
