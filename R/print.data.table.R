@@ -222,7 +222,7 @@ format_list_item.default = function(x, ...) {
 
 # FR #2273 -- Use sf package's formatting method for simple feature geometry columns
 format_list_item.sfg = function(x, ...) {
-    format(x)
+    format(x, ...)
 }
 
 # FR #1091 for pretty printing of character
