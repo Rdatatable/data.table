@@ -7,20 +7,23 @@ last = function(x, n=1L, na.rm=FALSE, ...) {
   stopifnot(isTRUEorFALSE(na.rm))
 
   if (na.rm) {
-    if (n!=1)
-      stop("na.rm=TRUE is currently only supported for n=1.")
+    if (n!=1L)
+      stop("na.rm=TRUE is currently only supported for n=1. Try tail() instead of last().")
     if (is.vector(x) && length(x)) {
-      if (verbose) cat("last: using last(x[!is.na(x)]): na.rm=TRUE\n")
+      if (verbose) catf("%s: using %s(%s): na.rm=TRUE\n", "last", "last", "x[!is.na(x)]")
       x_na = x[!is.na(x)]
       if(length(x_na))
         return(x_na[length(x_na)])
       else
         return(x[length(x)])
-    } else if (is.data.table(x) && nrow(x)>0) {
-      if (verbose) cat("last: using x[, lapply(.SD, last, na.rm=TRUE)]): na.rm=TRUE\n")
-      return(x[, lapply(.SD, last, na.rm=TRUE)])
-    } else
-        stop("na.rm=TRUE is currently only supported for vectors and data.tables.")
+    } else if (is.data.frame(x) && nrow(x)>0) {
+      if (verbose) catf("%s: using %s(%s): na.rm=TRUE\n", "last", "last", "na.omit(x)")
+      x_na = na.omit(x)
+      if (nrow(x_na)>0)
+        return(x_na[nrow(x_na),])
+      else
+        return(x[nrow(x),])
+    }
   }
 
   if (!inherits(x, "xts")) {
@@ -68,20 +71,23 @@ first = function(x, n=1L, na.rm=FALSE, ...) {
   stopifnot(isTRUEorFALSE(na.rm))
 
   if (na.rm) {
-    if (n!=1)
-      stop("na.rm=TRUE is currently only supported for n=1.")
+    if (n!=1L)
+      stop("na.rm=TRUE is currently only supported for n=1. Try head() instead of first().")
     if (is.vector(x) && length(x)) {
-      if (verbose) cat("first: using first(x[!is.na(x)]): na.rm=TRUE\n")
+      if (verbose) catf("%s: using %s(%s): na.rm=TRUE\n", "first", "first", "x[!is.na(x)]")
       x_na = x[!is.na(x)]
-      if (length(x_na))
-        return(x_na[1L])
+      if(length(x_na))
+        return(x_na[1])
       else
-        return(x[1L])
-    } else if (is.data.table(x) && nrow(x)>0) {
-      if (verbose) cat("first: using x[, lapply(.SD, first, na.rm=TRUE)]): na.rm=TRUE\n")
-      return(x[, lapply(.SD, first, na.rm=TRUE)])
-    } else
-        stop("na.rm=TRUE is currently only supported for vectors and data.tables.")
+        return(x[1])
+    } else if (is.data.frame(x) && nrow(x)>0) {
+      if (verbose) catf("%s: using %s(%s): na.rm=TRUE\n", "first", "first", "na.omit(x)")
+      x_na = na.omit(x)
+      if (nrow(x_na)>0)
+        return(x_na[1,])
+      else
+        return(x[1,])
+    }
   }
 
   if (!inherits(x, "xts")) {

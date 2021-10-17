@@ -160,7 +160,7 @@
     #       b     a     c
     #   <int> <int> <int>
     #1:     1     3     1
-    #2:     2     2    NA
+    #2:     2     NA    NA
     ```
 ## BUG FIXES
 
