@@ -1626,8 +1626,8 @@ replace_dot_alias = function(e) {
         cal = match.call(fun, jsub)
         isTRUE(cal[["na.rm"]])
       }
-      # only lapply optimize if head/tail/first/last has na.rm=FALSE
-      headopt =  jsub[[1L]] == "head"  || jsub[[1L]] == "tail" && !narm_arg(head, jsub)
+      # only lapply optimize if first/last has na.rm=FALSE see also #5168
+      headopt =  jsub[[1L]] == "head"  || jsub[[1L]] == "tail"
       firstopt = jsub[[1L]] == "first" || jsub[[1L]] == "last" && !narm_arg(first, jsub) ## fix for #2030
       if ((length(jsub) >= 2L && jsub[[2L]] == ".SD") &&
           (subopt || headopt || firstopt)) {
