@@ -18293,4 +18293,5 @@ test(2223.1, DT[.(4), nomatch=FALSE], data.table(A=integer(), key="A"))
 test(2223.2, DT[.(4), nomatch=NA_character_], data.table(A=4L, key="A"))
 
 # groupingsets by named by argument
-test(2224.1, groupingsets(data.table(iris), j = mean(Sepal.Length), by = c('Species'), sets = list('Species')), as.data.table(iris)[, mean(Sepal.Length), Species])
+test(2224.1, groupingsets(data.table(iris), j = mean(Sepal.Length), by = c('Sp'='Species'), sets = list('Species')), as.data.table(iris)[, mean(Sepal.Length), Species])
+test(2224.2, groupingsets(data.table(iris), j = mean(Sepal.Length), by = c('Sp'='Species'), sets = list('Species')), groupingsets(data.table(iris), j = mean(Sepal.Length), by = c('Species'), sets = list('Species')))
