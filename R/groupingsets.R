@@ -92,7 +92,7 @@ groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, ...)
   int64.by.cols = intersect(int64.cols, by)
   # aggregate function called for each grouping set
   aggregate.set = function(by.set) {
-    r = if (length(.SDcols)) x[, eval(jj), by.set, .SDcols=.SDcols] else x[, eval(jj), by.set]
+    r = if (length(.SDcols)) x[, eval(jj), by=by.set, .SDcols=.SDcols] else x[, eval(jj), by=by.set]
     if (id) {
       # integer bit mask of aggregation levels: http://www.postgresql.org/docs/9.5/static/functions-aggregate.html#FUNCTIONS-GROUPING-TABLE
       # 3267: strtoi("", base = 2L) output apparently unstable across platforms
