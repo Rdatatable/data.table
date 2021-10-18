@@ -248,7 +248,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
 
   int lir = ilow + (iupp-ilow)/2;           // lir = logical i row.
   int ir = o ? o[lir]-1 : lir;              // ir = the actual i row if i were ordered
-  
+
   #define BINX(XVAL, CMP1, CMP2)                                                                  \
     while (xlow < xupp-1) {                                                                       \
       int mid = xlow + (xupp-xlow)/2;                                                             \
@@ -275,38 +275,38 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
         break;                                                                                    \
       }                                                                                           \
     }
-  
-  #define DO(TYPE, LOWDIST, UPPDIST)                                                              \
+
+  #define DO(TYPE, LOWDIST, UPPDIST, not_NA_REAL)                                                 \
     if (!isDataCol)                                                                               \
       break;                                                                                      \
     if (isRollCol && xlow==xupp-1) {  /* no match found in last column */                         \
       if (rollToNearest) {                                                                        \
         /* when rollToNearest you can't limit the distance currently */                           \
         /* rollToNearest not yet supported for STRSXP (checked up front) */                       \
-        if ( xlow>xlowIn && xupp<xuppIn ) {                             \
+        if ( xlow>xlowIn && xupp<xuppIn ) {                                                       \
           if ( LOWDIST <= UPPDIST )                                                               \
-            xlow--;                                                                         \
+            xlow--;                                                                               \
           else                                                                                    \
-            xupp++;                                                                         \
+            xupp++;                                                                               \
         }                                                                                         \
-        else if (xupp==xuppIn && rollends[1])                                           \
-          xlow--;                                                                         \
-        else if (xlow==xlowIn && rollends[0])                                           \
-          xupp++;                                                                            \
+        else if (xupp==xuppIn && rollends[1])                                                     \
+          xlow--;                                                                                 \
+        else if (xlow==xlowIn && rollends[0])                                                     \
+          xupp++;                                                                                 \
       } else {                                                                                    \
         /* Regular roll=TRUE|+ve|-ve */                                                           \
-        /* Rprintf("xlow=%d xlowIn=%d xupp=%d xuppIn=%d lowmax=%d uppmax=%d ilow=%d iupp=%d\n", xlow, xlowIn, xupp, xuppIn, lowmax, uppmax, ilow, iupp); */       \
-        if ((( roll>0.0 && xlow>xlowIn && (xupp<xuppIn || !uppmax || rollends[1]))   \
-          || ( roll<0.0 && xupp==xuppIn && uppmax && rollends[1]) )  /* test 933 */                        \
+        /* Rprintf("xlow=%d xlowIn=%d xupp=%d xuppIn=%d lowmax=%d uppmax=%d ilow=%d iupp=%d\n", xlow, xlowIn, xupp, xuppIn, lowmax, uppmax, ilow, iupp); */ \
+        if ((( roll>0.0 && xlow>xlowIn && (xupp<xuppIn || !uppmax || rollends[1]))                \
+          || ( roll<0.0 && xupp==xuppIn && uppmax && rollends[1]) )  /* test 933 */               \
           && ( isinf(rollabs) || ((LOWDIST)-(TYPE)rollabs <= (TYPE)1e-6) ))                       \
-          /*   ^^^^^^^^^^^^^^ always true for STRSXP where LOWDIST is a dummy,  TODO pre-save isinf() into const bool */                  \
-          xlow--;        \
+          /*   ^^^^^^^^^^^^^^ always true for STRSXP where LOWDIST is a dummy,  TODO pre-save isinf() into const bool */ \
+          xlow--;                                                                                 \
           /* ** AND NOW EXTEND iupp too for all irows that join to this same row */               \
         else                                                                                      \
-        if ((( roll<0.0 && xupp<xuppIn && (xlow>xlowIn || !lowmax || rollends[0]))   \
+        if ((( roll<0.0 && xupp<xuppIn && (xlow>xlowIn || !lowmax || rollends[0]))                \
           || ( roll>0.0 && xlow==xlowIn && lowmax && rollends[0]) )                               \
           && ( isinf(rollabs) || ((UPPDIST)-(TYPE)rollabs <= (TYPE)1e-6) ))                       \
-          xupp++;                                                                                \
+          xupp++;                                                                                 \
       }                                                                                           \
     }                                                                                             \
     if (op[col] != EQ) {                                                                          \
@@ -328,19 +328,22 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
         xlow = tmplow; /* tmplow is the index of last NA value */                                 \
       }                                                                                           \
     }                                                                                             \
-    int tmplow = lir;                                                                             \
-    while (tmplow<iupp-1) { /* TO DO: could double up from lir rather than halving from iupp */   \
-      int mid = tmplow + (iupp-tmplow)/2;                                                         \
-      if (WRAP(icv[ o ? o[mid]-1 : mid ]) == ival) tmplow=mid; else iupp=mid;                     \
-      /* if we could guarantee ivals to be *always* sorted for all columns independently          \
-         (= max(nestedid) = 1), could speed this up 2x by checking GE,GT,LE,LT separately */      \
-    }                                                                                             \
-    int tmpupp = lir;                                                                             \
-    while (ilow<tmpupp-1) {                                                                       \
-      int mid = ilow + (tmpupp-ilow)/2;                                                           \
-      if (WRAP(icv[ o ? o[mid]-1 : mid ]) == ival) tmpupp=mid; else ilow=mid;                     \
-    }                                                                                             \
-    /* ilow and iupp now surround the group in ic, too */
+    if (not_NA_REAL) {                                                                            \
+      /* NA_REAL was dealt with up front to avoid the == here */                                  \
+      int tmplow = lir;                                                                           \
+      while (tmplow<iupp-1) { /* TO DO: could double up from lir rather than halving from iupp */ \
+        int mid = tmplow + (iupp-tmplow)/2;                                                       \
+        if (WRAP(icv[ o ? o[mid]-1 : mid ]) == ival) tmplow=mid; else iupp=mid;                   \
+        /* if we could guarantee ivals to be *always* sorted for all columns independently */     \
+        /* (= max(nestedid) = 1), could speed this up 2x by checking GE,GT,LE,LT separately */    \
+      }                                                                                           \
+      int tmpupp = lir;                                                                           \
+      while (ilow<tmpupp-1) {                                                                     \
+        int mid = ilow + (tmpupp-ilow)/2;                                                         \
+        if (WRAP(icv[ o ? o[mid]-1 : mid ]) == ival) tmpupp=mid; else ilow=mid;                   \
+      }                                                                                           \
+      /* ilow and iupp now surround the group in ic, too */                                       \
+    }
 
   switch (TYPEOF(xc)) {
   case LGLSXP : case INTSXP : {  // including factors
@@ -350,7 +353,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     #define ISNAT(x) ((x)==NA_INTEGER)
     #define WRAP(x) (x)  // wrap not needed for int
     BINX(const int xval = xcv[XIND(mid)], xval<ival, xval>ival)
-    DO(int, ival-xcv[XIND(xlow)], xcv[XIND(xupp)]-ival)
+    DO(int, ival-xcv[XIND(xlow)], xcv[XIND(xupp)]-ival, true)
   } break;
   case STRSXP : {
     // op[col]==EQ checked up front to avoid an if() here and non-thread-safe error()
@@ -363,7 +366,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     #define ISNAT(x) (x) // ISNAT only used for non-equi which doesn't occur for STRSXP
     #define WRAP(x) (ENC2UTF8(x))
     BINX(int tmp=StrCmp(ENC2UTF8(xcv[XIND(mid)]), ival), tmp<0, tmp>0)
-    DO(int, 0, 0)
+    DO(int, 0, 0, true)
     // NA_STRING are allowed and joined to; does not do ENC2UTF8 again inside StrCmp
     // TO DO: deal with mixed encodings and locale optionally; could StrCmp non-ascii in a thread-safe non-alloc manner
   } break;
@@ -377,7 +380,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
       #define ISNAT(x) ((x)==NA_INTEGER64)
       #define WRAP(x) (x)
       BINX(const int64_t xval=xcv[XIND(mid)], xval<ival, xval>ival)
-      DO(int64_t, ival-xcv[XIND(xlow)], xcv[XIND(xupp)]-ival)
+      DO(int64_t, ival-xcv[XIND(xlow)], xcv[XIND(xupp)]-ival, true)
     } else {
       const double *icv = REAL(ic);
       const double *xcv = REAL(xc);
@@ -411,7 +414,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
           ilow = itmp2;
           iupp = itmp+1;
           someNAmatch=true;
-        }        
+        }
       }
       if (!someNAmatch) {
         xlow = xtmp;  // skip NA/NaN at the start of this subgroup of x because they don't match to any in i
@@ -426,9 +429,9 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
         }
       }
       if (xo) {
-        DO(double, ival-xcv[xo[xlow]-1], xcv[xo[xupp]-1]-ival)
+        DO(double, ival-xcv[xo[xlow]-1], xcv[xo[xupp]-1]-ival, !someNAmatch)
       } else {
-        DO(double, ival-xcv[xlow],       xcv[xupp]-ival)
+        DO(double, ival-xcv[xlow],       xcv[xupp]-ival, !someNAmatch)
       }
     }
     break;
