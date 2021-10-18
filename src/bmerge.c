@@ -406,6 +406,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
           xupp = xtmp2+1;
           iupp = itmp2+1;
           someNAmatch=true;
+          ival = NA_REAL;
         }
         else if (xtmp2<xtmp && itmp2<itmp) {
           // some NaN match to NaN
@@ -414,6 +415,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
           ilow = itmp2;
           iupp = itmp+1;
           someNAmatch=true;
+          ival = R_NaN;
         }
       }
       if (!someNAmatch) {
