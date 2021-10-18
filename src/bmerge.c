@@ -276,7 +276,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
       }                                                                                           \
     }
 
-  #define DO(TYPE, LOWDIST, UPPDIST, not_NA_REAL)                                                 \
+  #define DO(TYPE, LOWDIST, UPPDIST, SEARCH_EQUAL_IROW)                                           \
     if (!isDataCol)                                                                               \
       break;                                                                                      \
     if (isRollCol && xlow==xupp-1) {  /* no match found in last column */                         \
@@ -328,8 +328,8 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
         xlow = tmplow; /* tmplow is the index of last NA value */                                 \
       }                                                                                           \
     }                                                                                             \
-    if (not_NA_REAL) {                                                                            \
-      /* NA_REAL was dealt with up front to avoid the == here */                                  \
+    if (SEARCH_EQUAL_IROW) {                                                                      \
+      /* false when NA_REAL was dealt with up front and matches were found */                     \
       int tmplow = lir;                                                                           \
       while (tmplow<iupp-1) { /* TO DO: could double up from lir rather than halving from iupp */ \
         int mid = tmplow + (iupp-tmplow)/2;                                                       \
