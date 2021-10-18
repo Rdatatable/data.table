@@ -9767,7 +9767,7 @@ dt2 = nq_fun(50L)
 x = na.omit(dt1)
 y = na.omit(dt2)
 
-if (FALSE) {  # tmp off in dev to see where we are on removing twiddle  { .Machine$sizeof.pointer>4) {
+if (.Machine$sizeof.pointer>4) {
 
   # temporarily off due to hitting 2GB limit on 32bit, #2767
   # turn off temporarily using FALSE when using valgrind, too, as very slow
