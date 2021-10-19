@@ -396,6 +396,10 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
       int xtmp=xlow, itmp=ilow;
       while (xtmp<xupp-1 && ISNAN(xcv[XIND(xtmp+1)])) xtmp++;
       while (itmp<iupp-1 && ISNAN(icv[o ? o[itmp+1]-1 : itmp+1])) itmp++;
+      if (op[col]!=EQ && (xtmp==xupp-1 || itmp==iupp-1)) {
+        // all-NA/NaN on one or both sides, they never match under non-equi
+        return;
+      }
       if (xtmp>xlowIn && itmp>ilowIn) {
         // both x and i have some NA or NaN at the beginning; NA<NaN guaranteed
         int xtmp2=xtmp, itmp2=itmp;
@@ -419,6 +423,11 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
         }
       }
       if (!someNAmatch) {
+        if (xtmp==xupp-1 || itmp==iupp-1) {
+          // all NA/NaN on one or both sides and non of them match, so we're done; otherwise following code
+          // requires low and upp to straddle at least one row of x and i
+          return;
+        }
         xlow = xtmp;  // skip NA/NaN at the start of this subgroup of x because they don't match to any in i
         ilow = itmp;  // skip NA/NaN at the start of this subgroup of i because they don't match to any in x
         lir = ilow + (iupp-ilow)/2;  // recompute lir and ir in case NA/NaN were skipped and ilow increased
