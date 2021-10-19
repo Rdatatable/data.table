@@ -371,7 +371,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     // TO DO: deal with mixed encodings and locale optionally; could StrCmp non-ascii in a thread-safe non-alloc manner
   } break;
   case REALSXP :
-    if (isI64[col]) {  // use pre-stored result of INHERITS, PR#xxx
+    if (isI64[col]) {  // use pre-stored result of INHERITS, PR#5187
       const int64_t *icv = (const int64_t *)REAL(ic);
       const int64_t *xcv = (const int64_t *)REAL(xc);
       const int64_t ival = icv[ir];
@@ -392,14 +392,11 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
 
       // get NA and NaN out of the way; if any they are at the start so use that fact
       // -Inf and +Inf don't need to be dealt with because we now use cmp ops on double (no longer dtwiddle)
+      // under non-equiy <= and >=, NA match to NA and NaN match to NaN (the = part)
       bool someNAmatch=false;
       int xtmp=xlow, itmp=ilow;
       while (xtmp<xupp-1 && ISNAN(xcv[XIND(xtmp+1)])) xtmp++;
       while (itmp<iupp-1 && ISNAN(icv[o ? o[itmp+1]-1 : itmp+1])) itmp++;
-      if (op[col]!=EQ && (xtmp==xupp-1 || itmp==iupp-1)) {
-        // all-NA/NaN on one or both sides, they never match under non-equi
-        return;
-      }
       if (xtmp>xlowIn && itmp>ilowIn) {
         // both x and i have some NA or NaN at the beginning; NA<NaN guaranteed
         int xtmp2=xtmp, itmp2=itmp;
