@@ -1116,13 +1116,15 @@ SEXP gprod(SEXP x, SEXP narmArg) {
   //clock_t start = clock();
   SEXP ans;
   if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gprod");
-  long double *s = malloc(ngrp * sizeof(long double));
-  if (!s) error(_("Unable to allocate %d * %d bytes for gprod"), ngrp, sizeof(long double));
-  for (int i=0; i<ngrp; ++i) s[i] = 1.0;
   ans = PROTECT(allocVector(REALSXP, ngrp));
-  double *ansd = REAL(ans);
   switch(TYPEOF(x)) {
   case LGLSXP: case INTSXP: {
+    long double *s = malloc(ngrp * sizeof(long double));
+    if (!s) error(_("Unable to allocate %d * %d bytes for gprod"), ngrp, sizeof(long double));
+    for (int i=0; i<ngrp; ++i) s[i] = 1.0;
+    double min_bd = -DBL_MAX;
+    double max_bd = DBL_MAX;
+    double *ansd = REAL(ans);
     const int *xd = INTEGER(x);
     for (int i=0; i<n; ++i) {
       const int thisgrp = grp[i];
@@ -1132,30 +1134,66 @@ SEXP gprod(SEXP x, SEXP narmArg) {
         continue;
       }
       s[thisgrp] *= elem; // no under/overflow here, s is long double (like base)
-    }}
-    break;
-  case REALSXP: {
-    const double *xd = REAL(x);
-    for (int i=0; i<n; ++i) {
-      const int thisgrp = grp[i];
-      const double elem = nosubset ? xd[i] : (irows[i]==NA_INTEGER ? NA_REAL : xd[irows[i]-1]);
-      if (ISNAN(elem)) {
-        if (!narm) s[thisgrp] = NA_REAL;
-        continue;
-      }
-      s[thisgrp] *= elem;
-    }}
-    break;
-  default:
+    }
+    for (int i=0; i<ngrp; ++i) {
+      if (s[i] > DBL_MAX) ansd[i] = R_PosInf;
+      else if (s[i] < -DBL_MAX) ansd[i] = R_NegInf;
+      else ansd[i] = (double)s[i];
+    }
     free(s);
+  } break;
+  case REALSXP: {
+    if (INHERITS(x, char_integer64)) {
+      int64_t *s = malloc(ngrp * sizeof(int64_t));
+      for (int i=0; i<ngrp; ++i) s[i] = 1;
+      int64_t min_bd = INT64_MIN;
+      int64_t max_bd = INT64_MAX;
+      int64_t *ansd = (int64_t *)REAL(ans);
+      const int64_t *xd = (const int64_t *)REAL(x);
+      for (int i=0; i<n; ++i) {
+        const int thisgrp = grp[i];
+        const int64_t elem = nosubset ? xd[i] : (irows[i]==NA_INTEGER ? NA_INTEGER64 : xd[irows[i]-1]);
+        printf("elem: %" PRId64 "\n", elem);
+        if (elem == NA_INTEGER64) {
+          if (!narm) s[thisgrp] = NA_INTEGER64;
+          continue;
+        }
+        s[thisgrp] *= elem;
+        printf("s: %" PRId64 "\n", s[thisgrp]);
+      }
+      for (int i=0; i<ngrp; ++i) {
+        if (s[i] > max_bd) ansd[i] = R_PosInf;
+        else if (s[i] < min_bd) ansd[i] = R_NegInf;
+        else ansd[i] = (int64_t)s[i];
+      }
+      free(s);
+    } else {
+      long double *s = malloc(ngrp * sizeof(long double));
+      for (int i=0; i<ngrp; ++i) s[i] = 1.0;
+      double min_bd = -DBL_MAX;
+      double max_bd = DBL_MAX;
+      double *ansd = REAL(ans);
+      const double *xd = REAL(x);
+      for (int i=0; i<n; ++i) {
+        const int thisgrp = grp[i];
+        const double elem = nosubset ? xd[i] : (irows[i]==NA_INTEGER ? NA_REAL : xd[irows[i]-1]);
+        if (ISNAN(elem)) {
+          if (!narm) s[thisgrp] = NA_REAL;
+          continue;
+        }
+        s[thisgrp] *= elem;
+      }
+      for (int i=0; i<ngrp; ++i) {
+        if (s[i] > DBL_MAX) ansd[i] = R_PosInf;
+        else if (s[i] < -DBL_MAX) ansd[i] = R_NegInf;
+        else ansd[i] = (double)s[i];
+      }
+      free(s);
+    }
+  } break;
+  default:
     error(_("Type '%s' is not supported by GForce %s. Either add the prefix %s or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)), "prod (gprod)", "base::prod(.)");
   }
-  for (int i=0; i<ngrp; ++i) {
-    if (s[i] > DBL_MAX) ansd[i] = R_PosInf;
-    else if (s[i] < -DBL_MAX) ansd[i] = R_NegInf;
-    else ansd[i] = (double)s[i];
-  }
-  free(s);
   copyMostAttrib(x, ans);
   UNPROTECT(1);
   // Rprintf(_("this gprod took %8.3f\n"), 1.0*(clock()-start)/CLOCKS_PER_SEC);
