@@ -78,7 +78,7 @@ cc = function(test=FALSE, clean=FALSE, debug=FALSE, omp=!debug, cc_dir, path=Sys
   dyn.load("data_table.so")
   setwd(old)
   xx = getDLLRegisteredRoutines("data_table",TRUE)
-  for (Call xx$.Call)
+  for (Call in xx$.Call)
     .GlobalEnv[[Call$name]] = Call$address
   for (Extern in xx$.External)
     .GlobalEnv[[Extern$name]] = Extern$address
