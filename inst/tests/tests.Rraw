@@ -18340,3 +18340,10 @@ test(2224.02, DT[, shift(i, fill=a), by=x], error="fill must be a vector of leng
 DT = data.table(x=pairlist(1), g=1)
 # unsupported type as argument
 test(2224.03, DT[, shift(x), g], error="Type 'list' is not supported by GForce gshift.")
+
+# groupingsets by named by argument
+test(2225.1, groupingsets(data.table(iris), j=sum(Sepal.Length), by=c('Sp'='Species'), sets=list('Species')),
+             data.table(Species=factor(c("setosa", "versicolor", "virginica")), V1=c(250.3, 296.8, 329.4)))
+test(2225.2, groupingsets(data.table(iris), j=mean(Sepal.Length), by=c('Sp'='Species'), sets=list('Species')),
+             groupingsets(data.table(iris), j=mean(Sepal.Length), by=c('Species'), sets=list('Species')))
+
