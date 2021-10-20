@@ -18354,7 +18354,7 @@ st_as_text.sfg <- function (x, ...) {
            stop(paste("no print method available for object of class",
                       class(x)[2])))
 }
-.S3method("format", "sfg", format.sfg)
+registerS3method("format", "sfg", format.sfg)
 ## An sfc column composed of MULTIPOLYGON sfg objects
 sfc <- dget(textConnection(
 'structure(list(structure(list(list(structure(c(0, 0, 1, 1, 0,
