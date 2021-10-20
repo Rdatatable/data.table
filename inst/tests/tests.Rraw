@@ -18329,6 +18329,7 @@ if (test_bit64) {
 }
 test(2224.01, sapply(names(DT)[-1], function(col) {
   sapply(list(1, 5, -1, -5, c(1,2), c(-1,1)), function(n) list(
+    # fill is tested by group in tests 2218.*; see comments in #5205
     EVAL(sprintf("DT[, shift(%s, %d, type='lag'),    by=x]$V1", col, n)),
     EVAL(sprintf("DT[, shift(%s, %d, type='lead'),   by=x]$V1", col, n)),
     EVAL(sprintf("DT[, shift(%s, %d, type='shift'),  by=x]$V1", col, n)),
