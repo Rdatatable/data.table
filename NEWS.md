@@ -173,6 +173,40 @@
 
 29. `setkey()` now supports type `raw` as value columns (not as key columns), [#5100](https://github.com/Rdatatable/data.table/issues/5100). Thanks Hugh Parsonage for requesting, and Benjamin Schwendinger for the PR.
 
+30. `shift()` is now optimised by group, [#1534](https://github.com/Rdatatable/data.table/issues/1534). Thanks to Gerhard Nachtmann for requesting, and Benjamin Schwendinger for the PR.
+
+    ```R
+    N = 1e7
+    DT = data.table(x=sample(N), y=sample(1e6,N,TRUE))
+    shift_no_opt = shift  # different name not optimised as a way to compare
+    microbenchmark(
+      DT[, c(NA, head(x,-1)), y],
+      DT[, shift_no_opt(x, 1, type="lag"), y],
+      DT[, shift(x, 1, type="lag"), y],
+      times=10L, unit="s")
+    # Unit: seconds
+    #                                       expr     min      lq    mean  median      uq     max neval
+    #                DT[, c(NA, head(x, -1)), y]  8.7620  9.0240  9.1870  9.2800  9.3700  9.4110    10
+    #  DT[, shift_no_opt(x, 1, type = "lag"), y] 20.5500 20.9000 21.1600 21.3200 21.4400 21.5200    10
+    #         DT[, shift(x, 1, type = "lag"), y]  0.4865  0.5238  0.5463  0.5446  0.5725  0.5982    10
+    ```
+
+    Example from [stackoverflow](https://stackoverflow.com/questions/35179911/shift-in-data-table-v1-9-6-is-slow-for-many-groups)
+    ```R
+    set.seed(1)
+    mg = data.table(expand.grid(year=2012:2016, id=1:1000),
+                    value=rnorm(5000))
+    microbenchmark(v1.9.4  = mg[, c(value[-1], NA), by=id],
+                   v1.9.6  = mg[, shift_no_opt(value, n=1, type="lead"), by=id],
+                   v1.14.4 = mg[, shift(value, n=1, type="lead"), by=id],
+                   unit="ms")
+    # Unit: milliseconds
+    #     expr     min      lq    mean  median      uq    max neval
+    #   v1.9.4  3.6600  3.8250  4.4930  4.1720  4.9490 11.700   100
+    #   v1.9.6 18.5400 19.1800 21.5100 20.6900 23.4200 29.040   100
+    #  v1.14.4  0.4826  0.5586  0.6586  0.6329  0.7348  1.318   100
+    ```
+
 ## BUG FIXES
 
 1. `by=.EACHI` when `i` is keyed but `on=` different columns than `i`'s key could create an invalidly keyed result, [#4603](https://github.com/Rdatatable/data.table/issues/4603) [#4911](https://github.com/Rdatatable/data.table/issues/4911). Thanks to @myoung3 and @adamaltmejd for reporting, and @ColeMiller1 for the PR. An invalid key is where a `data.table` is marked as sorted by the key columns but the data is not sorted by those columns, leading to incorrect results from subsequent queries.
