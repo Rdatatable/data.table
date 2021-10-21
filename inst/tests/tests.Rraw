@@ -18354,4 +18354,3 @@ if (test_bit64) {
   test(2226.1, DT[, prod(x), g], DT[, base::prod(x), g])
   test(2226.2, DT[, prod(x, na.rm=TRUE), g], DT[, base::prod(x, na.rm=TRUE), g])
 }
-
