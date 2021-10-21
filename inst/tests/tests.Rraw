@@ -18243,20 +18243,38 @@ test(2217, DT1[, by = grp, .(agg = list(setNames(as.numeric(value), id)))], DT2)
 testnum = 2218
 funs = c(as.integer, as.double, as.complex, as.character, if (test_bit64) as.integer64)
 # when test_bit64==FALSE these all passed before; now passes with test_bit64==TRUE too
+# add grouping tests for #5205
+g = rep(c(1,2), each=2)
+options(datatable.optimize = 2L)
 for (f1 in funs) {
-  DT = data.table(x=f1(1:4))
+  DT = data.table(x=f1(1:4), g=g)
   for (f2 in funs) {
-    testnum = testnum + 0.01
+    testnum = testnum + 0.001
     test(testnum, DT[, shift(x)],               f1(c(NA, 1:3)))
-    testnum = testnum + 0.01
+    testnum = testnum + 0.001
     w = if (identical(f2,as.character) && !identical(f1,as.character)) "Coercing.*character.*to match the type of target vector"
     test(testnum, DT[, shift(x, fill=f2(NA))],  f1(c(NA, 1:3)), warning=w)
-    testnum = testnum + 0.01
+    testnum = testnum + 0.001
     if (identical(f1,as.character) && identical(f2,as.complex)) {
       # one special case due to as.complex(0)=="0+0i"!="0"
       test(testnum, DT[, shift(x, fill="0")],   f1(0:3))
     } else {
       test(testnum, DT[, shift(x, fill=f2(0))], f1(0:3), warning=w)
+    }
+
+    testnum = testnum + 0.001
+    test(testnum, DT[, shift(x), by=g],               data.table(g=g, V1=f1(c(NA, 1, NA, 3))))
+    testnum = testnum + 0.001
+    w = if (identical(f2,as.character) && !identical(f1,as.character)) "Coercing.*character.*to match the type of target vector"
+    f = f2(NA)
+    test(testnum, DT[, shift(x, fill=f), by=g],  data.table(g=g, V1=f1(c(NA, 1, NA, 3))), warning=w)
+    testnum = testnum + 0.001
+    if (identical(f1,as.character) && identical(f2,as.complex)) {
+      # one special case due to as.complex(0)=="0+0i"!="0"
+      test(testnum, DT[, shift(x, fill="0"), by=g],   data.table(g=g, V1=f1(c(0,1,0,3))))
+    } else {
+      f = f2(0)
+      test(testnum, DT[, shift(x, fill=f), by=g], data.table(g=g, V1=f1(c(0,1,0,3))), warning=w)
     }
   }
 }
@@ -18291,4 +18309,42 @@ test(2222, print(DT), output="A.*3")
 DT = data.table(A=1:3, key="A")
 test(2223.1, DT[.(4), nomatch=FALSE], data.table(A=integer(), key="A"))
 test(2223.2, DT[.(4), nomatch=NA_character_], data.table(A=4L, key="A"))
+
+# gshift, #5205
+options(datatable.optimize = 2L)
+set.seed(123)
+DT = data.table(x = sample(letters[1:5], 20, TRUE),
+                y = rep.int(1:2, 10),  # to test 2 grouping columns get rep'd properly
+                i = sample(c(-2L,0L,3L,NA), 20, TRUE),
+                d = sample(c(1.2,-3.4,5.6,NA), 20, TRUE),
+                s = sample(c("foo","bar",NA), 20, TRUE),
+                c = sample(c(0+3i,1,-1-1i,NA), 20, TRUE),
+                l = sample(c(TRUE, FALSE, NA), 20, TRUE),
+                r = as.raw(sample(1:5, 20, TRUE)))
+load(testDir("test2224.Rdata")) # ans array
+if (test_bit64) {
+  DT[, i64:=as.integer64(sample(c(-2L,0L,2L,NA), 20, TRUE))]
+} else {
+  ans = ans[, -match("i64",colnames(ans))]
+}
+test(2224.01, sapply(names(DT)[-1], function(col) {
+  sapply(list(1, 5, -1, -5, c(1,2), c(-1,1)), function(n) list(
+    # fill is tested by group in tests 2218.*; see comments in #5205
+    EVAL(sprintf("DT[, shift(%s, %d, type='lag'),    by=x]$V1", col, n)),
+    EVAL(sprintf("DT[, shift(%s, %d, type='lead'),   by=x]$V1", col, n)),
+    EVAL(sprintf("DT[, shift(%s, %d, type='shift'),  by=x]$V1", col, n)),
+    EVAL(sprintf("DT[, shift(%s, %d, type='cyclic'), by=x]$V1", col, n))
+  ))
+}), ans)
+a = 1:2  # fill argument with length > 1 which is not a call
+test(2224.02, DT[, shift(i, fill=a), by=x], error="fill must be a vector of length 1")
+DT = data.table(x=pairlist(1), g=1)
+# unsupported type as argument
+test(2224.03, DT[, shift(x), g], error="Type 'list' is not supported by GForce gshift.")
+
+# groupingsets by named by argument
+test(2225.1, groupingsets(data.table(iris), j=sum(Sepal.Length), by=c('Sp'='Species'), sets=list('Species')),
+             data.table(Species=factor(c("setosa", "versicolor", "virginica")), V1=c(250.3, 296.8, 329.4)))
+test(2225.2, groupingsets(data.table(iris), j=mean(Sepal.Length), by=c('Sp'='Species'), sets=list('Species')),
+             groupingsets(data.table(iris), j=mean(Sepal.Length), by=c('Species'), sets=list('Species')))
 

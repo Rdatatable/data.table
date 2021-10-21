@@ -1745,6 +1745,10 @@ replace_dot_alias = function(e) {
           if (!(is.call(q) && is.symbol(q[[1L]]) && is.symbol(q[[2L]]) && (q1 <- q[[1L]]) %chin% gfuns)) return(FALSE)
           if (!(q2 <- q[[2L]]) %chin% names(SDenv$.SDall) && q2 != ".I") return(FALSE)  # 875
           if ((length(q)==2L || (!is.null(names(q)) && startsWith(names(q)[3L], "na")))) return(TRUE)
+          if (length(q)>=2L && q[[1L]] == "shift") {
+            q_named = match.call(shift, q)
+            if (!is.call(q_named[["fill"]]) && is.null(q_named[["give.names"]])) return(TRUE)
+          } # add gshift support
           #                       ^^ base::startWith errors on NULL unfortunately
           #        head-tail uses default value n=6 which as of now should not go gforce ... ^^
           # otherwise there must be three arguments, and only in two cases:
@@ -1848,6 +1852,17 @@ replace_dot_alias = function(e) {
     gi = if (length(o__)) o__[f__] else f__
     g = lapply(grpcols, function(i) groups[[i]][gi])
 
+    # returns all rows instead of one per group
+    nrow_funs = c("gshift")
+    .is_nrows = function(q) {
+      if (!is.call(q)) return(FALSE)
+      if (q[[1L]] == "list") {
+        any(vapply(q, .is_nrows, FALSE))
+      } else {
+        q[[1L]] %chin% nrow_funs
+      }
+    }
+
     # adding ghead/gtail(n) support for n > 1 #5060 #523
     q3 = 0
     if (!is.symbol(jsub)) {
@@ -1865,6 +1880,8 @@ replace_dot_alias = function(e) {
     if (q3 > 0) {
       grplens = pmin.int(q3, len__)
       g = lapply(g, rep.int, times=grplens)
+    } else if (.is_nrows(jsub)) {
+      g = lapply(g, rep.int, times=len__)
     }
     ans = c(g, ans)
   } else {
@@ -2970,7 +2987,7 @@ rleidv = function(x, cols=seq_along(x), prefix=NULL) {
 #     (2) edit .gforce_ok (defined within `[`) to catch which j will apply the new function
 #     (3) define the gfun = function() R wrapper
 gfuns = c("[", "[[", "head", "tail", "first", "last", "sum", "mean", "prod",
-          "median", "min", "max", "var", "sd", ".N") # added .N for #334
+          "median", "min", "max", "var", "sd", ".N", "shift") # added .N for #334
 `g[` = `g[[` = function(x, n) .Call(Cgnthvalue, x, as.integer(n)) # n is of length=1 here.
 ghead = function(x, n) .Call(Cghead, x, as.integer(n)) # n is not used at the moment
 gtail = function(x, n) .Call(Cgtail, x, as.integer(n)) # n is not used at the moment
@@ -2984,6 +3001,11 @@ gmin = function(x, na.rm=FALSE) .Call(Cgmin, x, na.rm)
 gmax = function(x, na.rm=FALSE) .Call(Cgmax, x, na.rm)
 gvar = function(x, na.rm=FALSE) .Call(Cgvar, x, na.rm)
 gsd = function(x, na.rm=FALSE) .Call(Cgsd, x, na.rm)
+gshift = function(x, n=1L, fill=NA, type=c("lag", "lead", "shift", "cyclic")) {
+  type = match.arg(type)
+  stopifnot(is.numeric(n))
+  .Call(Cgshift, x, as.integer(n), fill, type)
+}
 gforce = function(env, jsub, o, f, l, rows) .Call(Cgforce, env, jsub, o, f, l, rows)
 
 .prepareFastSubset = function(isub, x, enclos, notjoin, verbose = FALSE){
