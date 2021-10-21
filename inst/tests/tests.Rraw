@@ -18342,9 +18342,92 @@ DT = data.table(x=pairlist(1), g=1)
 # unsupported type as argument
 test(2224.03, DT[, shift(x), g], error="Type 'list' is not supported by GForce gshift.")
 
+test(2224.1, groupingsets(data.table(iris), j = sum(Sepal.Length), by = c('Sp'='Species'), sets = list('Species')), data.table(Species = factor(c("setosa", "versicolor", "virginica")), V1=c(250.3, 296.8, 329.4)))
+test(2224.2, groupingsets(data.table(iris), j = mean(Sepal.Length), by = c('Sp'='Species'), sets = list('Species')), groupingsets(data.table(iris), j = mean(Sepal.Length), by = c('Species'), sets = list('Species')))
+
 # groupingsets by named by argument
 test(2225.1, groupingsets(data.table(iris), j=sum(Sepal.Length), by=c('Sp'='Species'), sets=list('Species')),
              data.table(Species=factor(c("setosa", "versicolor", "virginica")), V1=c(250.3, 296.8, 329.4)))
 test(2225.2, groupingsets(data.table(iris), j=mean(Sepal.Length), by=c('Sp'='Species'), sets=list('Species')),
              groupingsets(data.table(iris), j=mean(Sepal.Length), by=c('Species'), sets=list('Species')))
 
+# Test that format_list_item.sfg() is properly dispatched for a column
+# of simple feature geometry objects of class MULTIPOLYGON
+#
+# A local version of format.sfg() used to mimic the output of
+# sf:::format.sfg() when applied to an sfg of class MULTIPOLYGON
+format.sfg <- function (x, ..., width = 30) {
+    get_start <- function (x, n = 30) {
+        if (is.list(x))
+            structure(lapply(x, get_start, n = n), class = class(x))
+        else head(x, round(n/3))
+    }
+
+    if (is.null(width))
+        width = 30
+    if (object.size(x) > 1000 && width > 0)
+        x = get_start(x, n = width)
+    pr = st_as_text.sfg(x, ...)
+    if (width > 0 && nchar(pr) > width)
+        paste0(substr(pr, 1, width - 3), "...")
+    else pr
+}
+st_as_text.sfg <- function (x, ...) {
+    prnt.MULTIPOLYGON <- function (x, ..., EWKT = TRUE) {
+        WKT_name <- function (x, EWKT = TRUE) {
+            cls = class(x)
+            zm = substr(cls[1], 3, 4)
+            retval = if (zm == "")
+                cls[2]
+            else paste(cls[2], substr(cls[1], 3, 4))
+            if (EWKT && !is.null(attr(x, "epsg")) && !is.na(attr(x, "epsg")))
+                paste0("SRID=", attr(x, "epsg"), ";", retval)
+            else retval
+        }
+        prnt.MatrixListList <- function (x, ...) {
+            if (length(x) == 0)
+                empty
+            else paste0("(", paste0(unlist(lapply(x, prnt.MatrixList,
+                ...)), collapse = ", "), ")")
+        }
+	prnt.MatrixList <- function (x, ...) {
+            if (length(x) == 0)
+                empty
+            else paste0("(", paste0(unlist(lapply(x, prnt.Matrix, ...)),
+                collapse = ", "), ")")
+        }
+	prnt.Matrix <- function (x, nested_parens = FALSE, ...) {
+            pf = function(x, ..., collapse) paste0(fmt(x, ...), collapse = collapse)
+            if (nrow(x) == 0)
+                empty
+            else if (nested_parens)
+                paste0("((", paste0(apply(x, 1, pf, collapse = " ", ...),
+                    collapse = "), ("), "))")
+            else paste0("(", paste0(apply(x, 1, pf, collapse = " ", ...),
+                collapse = ", "), ")")
+        }
+	fmt <- function (x, ...) sub("^[ ]+", "", sapply(unclass(x), format, ...))
+        paste(WKT_name(x, EWKT = EWKT), prnt.MatrixListList(x, ...))
+    }
+    switch(class(x)[2], MULTIPOLYGON = prnt.MULTIPOLYGON(x, ...),
+           stop(paste("no print method available for object of class",
+                      class(x)[2])))
+}
+registerS3method("format", "sfg", format.sfg)
+## An sfc column composed of MULTIPOLYGON sfg objects
+sfc <- dget(textConnection(
+'structure(list(structure(list(list(structure(c(0, 0, 1, 1, 0,
+0, 1, 1, 0, 0), .Dim = c(5L, 2L))), list(structure(c(1, 1, 2,
+2, 1, 1, 2, 2, 1, 1), .Dim = c(5L, 2L)))), class = c("XY", "MULTIPOLYGON",
+"sfg")), structure(list(list(structure(c(3, 3, 4, 4, 3, 3, 4,
+4, 3, 3), .Dim = c(5L, 2L)))), class = c("XY", "MULTIPOLYGON",
+"sfg"))), n_empty = 0L, crs = structure(list(input = NA_character_,
+    wkt = NA_character_), class = "crs"), class = c("sfc_MULTIPOLYGON",
+"sfc"), precision = 0, bbox = structure(c(xmin = 0, ymin = 0,
+xmax = 4, ymax = 4), class = "bbox"))'
+))
+DT <- data.table(type = c("grassland", "savanna"), geometry = sfc)
+test(2225, capture.output(DT),
+     c("        type                       geometry",
+       "1: grassland MULTIPOLYGON (((0 0, 0 1, 1...",
+       "2:   savanna MULTIPOLYGON (((3 3, 3 4, 4..."))
