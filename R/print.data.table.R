@@ -208,7 +208,6 @@ format_list_item.default = function(x, ...) {
   else if (is.atomic(x) || inherits(x, "formula")) # FR #2591 - format.data.table issue with columns of class "formula"
     paste(c(format(head(x, 6L), ...), if (length(x) > 6L) "..."), collapse=",")  # fix for #5435 and #37 - format has to be added here...
   else if (!isS4(x) && (length(class(x)) > 1L || !class(x) %chin% c("list", "function")) && length(formatted <- format(x, ...)) == 1L) {
-    
     # if the items has a friendly format class, use it (inspired by #2273)
     #   see also more discussion in the PR, #5224.
     # but also skip some cases where format() is known to make uglier output, e.g.
