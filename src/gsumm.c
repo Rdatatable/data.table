@@ -1139,7 +1139,6 @@ SEXP gprod(SEXP x, SEXP narmArg) {
       else if (s[i] < min_val) ansd[i] = R_NegInf;
       else ansd[i] = (double)s[i];
     }
-    free(s);
   } break;
   case REALSXP: {
     if (INHERITS(x, char_integer64)) {
@@ -1160,7 +1159,6 @@ SEXP gprod(SEXP x, SEXP narmArg) {
         else if (s[i] < min_val) ansd[i] = R_NegInf;
         else ansd[i] = (int64_t)s[i];
       }
-      free(s);
     } else {
       double min_val = -DBL_MAX, max_val = DBL_MAX;
       double *ansd = REAL(ans);
@@ -1179,12 +1177,13 @@ SEXP gprod(SEXP x, SEXP narmArg) {
         else if (s[i] < min_val) ansd[i] = R_NegInf;
         else ansd[i] = (double)s[i];
       }
-      free(s);
     }
   } break;
   default:
+    free(s);
     error(_("Type '%s' is not supported by GForce %s. Either add the prefix %s or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)), "prod (gprod)", "base::prod(.)");
   }
+  free(s);
   copyMostAttrib(x, ans);
   UNPROTECT(1);
   // Rprintf(_("this gprod took %8.3f\n"), 1.0*(clock()-start)/CLOCKS_PER_SEC);
