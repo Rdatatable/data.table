@@ -33,7 +33,6 @@
 
   format_list_item(x, \dots)
   \method{format_list_item}{default}(x, \dots)
-  \method{format_list_item}{sfg}(x, \dots)
 }
 \arguments{
   \item{x}{ A \code{data.table}. }
