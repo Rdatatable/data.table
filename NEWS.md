@@ -448,8 +448,10 @@
     # 2:          2021-02-03  # was 18661
     # 3: 4611686018427387906  # was error 'please use as.character'
     ```
-    
+
 47. `tables()` failed with `argument "..." is missing` when called from within a function taking `...`; e.g. `function(...) { tables() }`, [#5197](https://github.com/Rdatatable/data.table/issues/5197). Thanks @greg-minshall for the report and @michaelchirico for the fix.
+
+48. `DT[, prod(int64Col), by=grp]` produced wrong results for `bit64::integer64`, [#5225](https://github.com/Rdatatable/data.table/issues/5225). Thanks to Benjamin Schwendinger for reporting and fixing.
 
 ## NOTES
 
