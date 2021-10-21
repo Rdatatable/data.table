@@ -6,7 +6,6 @@
 \alias{format_col.expression}
 \alias{format_list_item}
 \alias{format_list_item.default}
-\alias{format_list_item.sfg}
 \title{ data.table Printing Options }
 \description{
   \code{print.data.table} extends the functionalities of \code{print.data.frame}.
