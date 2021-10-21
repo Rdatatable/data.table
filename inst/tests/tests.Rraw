@@ -18348,3 +18348,10 @@ test(2225.1, groupingsets(data.table(iris), j=sum(Sepal.Length), by=c('Sp'='Spec
 test(2225.2, groupingsets(data.table(iris), j=mean(Sepal.Length), by=c('Sp'='Species'), sets=list('Species')),
              groupingsets(data.table(iris), j=mean(Sepal.Length), by=c('Species'), sets=list('Species')))
 
+# make gprod work for bit64 # 5225
+if (test_bit64) {
+  DT = data.table(x=c(lim.integer64(), 1, 1, NA, NA), g=1:2)
+  test(2226.1, DT[, prod(x), g], DT[, base::prod(x), g])
+  test(2226.2, DT[, prod(x, na.rm=TRUE), g], DT[, base::prod(x, na.rm=TRUE), g])
+}
+
