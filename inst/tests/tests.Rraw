@@ -18348,3 +18348,16 @@ test(2225.1, groupingsets(data.table(iris), j=sum(Sepal.Length), by=c('Sp'='Spec
 test(2225.2, groupingsets(data.table(iris), j=mean(Sepal.Length), by=c('Sp'='Species'), sets=list('Species')),
              groupingsets(data.table(iris), j=mean(Sepal.Length), by=c('Species'), sets=list('Species')))
 
+# merge.data.table ignores incomparables without warnings. #2587
+x <- data.frame(k1 = c(NA,NA,3,4,5), k2 = c(1,NA,NA,4,5), data = 1:5)
+y <- data.frame(k1 = c(NA,2,NA,4,5), k2 = c(NA,NA,3,4,5), data = 1:5)
+DT = as.data.table(x)
+test(2226.1, setDF(merge(DT, y, by = "k2", incomparables = NA)),         merge(x, y, by="k2", incomparables = NA))
+test(2226.2, setDF(merge(DT, y, by = "k2", incomparables = c(NA,4))),    merge(x, y, by="k2", incomparables = c(NA,4)))
+test(2226.3, setDF(merge(DT, y, by = "k2", incomparables = c(4,5))),     merge(x, y, by="k2", incomparables = c(4,5)))
+test(2226.4, setDF(merge(DT, y, by="k2", incomparables=c(1, NA, 4, 5))), merge(x, y, by="k2", incomparables=c(1, NA, 4, 5)))
+test(2226.5, setDF(merge(DT, y, by="k2", incomparables=c(NA, 3, 4, 5))), merge(x, y, by="k2", incomparables=c(NA, 3, 4, 5)))
+test(2226.6, merge(DT, y, by = "k2", unk=1), merge(DT, y, by = "k2"), warning="Unknown argument 'unk' has been passed.")
+test(2226.7, merge(DT, y, by = "k2", NULL, NULL, FALSE, FALSE, FALSE, TRUE, c(".x", ".y"), TRUE, getOption("datatable.allow.cartesian"), NULL, 1L),
+  merge(DT, y, by = "k2"), warning = c("Supplied both `by` and `by.x/by.y`. `by` argument will be ignored.", "Passed 1 unknown and unnamed arguments."))
+
