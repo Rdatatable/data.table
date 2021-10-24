@@ -764,12 +764,15 @@ replace_dot_alias = function(e) {
         # may evaluate to NULL | character() | "" | list(), likely a result of a user expression where no-grouping is one case being loop'd through
         bysubl = as.list.default(bysub)
         bysuborig = bysub
+
+        # support .I in by #1732
+        # use %in% to support by=.I, by=.(.I), by=c(.I) and by=list(.I)
+        if (".I" %in% bysubl) {
+          bysub = if (is.null(irows)) seq_len(nrow(x)) else irows
+          bysuborig = as.symbol("I")
+        }
         if (is.name(bysub) && !(bysub %chin% names_x)) {  # TO DO: names(x),names(i),and i. and x. prefixes
-          # support .I in by #1732
-          if (bysub == ".I") {
-            bysub = if (is.null(irows)) seq_len(nrow(x)) else irows
-            bysuborig = as.symbol("I")
-          } else bysub = eval(bysub, parent.frame(), parent.frame())
+          bysub = eval(bysub, parent.frame(), parent.frame())
           # fix for # 5106 - http://stackoverflow.com/questions/19983423/why-by-on-a-vector-not-from-a-data-table-column-is-very-slow
           # case where by=y where y is not a column name, and not a call/symbol/expression, but an atomic vector outside of DT.
           # note that if y is a list, this'll return an error (not sure if it should).
