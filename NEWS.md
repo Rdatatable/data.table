@@ -207,6 +207,19 @@
     #  v1.14.4  0.4826  0.5586  0.6586  0.6329  0.7348  1.318   100
     ```
 
+31. `.I` is now also available in `by`, [#1732](https://github.com/Rdatatable/data.table/issues/1732). Using `DT[, fun(.SD), by=.I]` leads to rowwise apply of `fun`. Thanks to Rafael H. M. Pereira for requesting, and Benjamin Schwendinger for the PR.
+
+    ```R
+    DT = data.table(V1=1:5, V2=3:7, V3=5:1)
+    DT[, sum(.SD), .I]
+    #    I V1
+    # 1: 1  9
+    # 2: 2 10
+    # 3: 3 11
+    # 4: 4 12
+    # 5: 5 13
+    ```
+
 ## BUG FIXES
 
 1. `by=.EACHI` when `i` is keyed but `on=` different columns than `i`'s key could create an invalidly keyed result, [#4603](https://github.com/Rdatatable/data.table/issues/4603) [#4911](https://github.com/Rdatatable/data.table/issues/4911). Thanks to @myoung3 and @adamaltmejd for reporting, and @ColeMiller1 for the PR. An invalid key is where a `data.table` is marked as sorted by the key columns but the data is not sorted by those columns, leading to incorrect results from subsequent queries.
