@@ -202,18 +202,18 @@ format_col.POSIXct = function(x, ..., timezone=FALSE) {
 # #3011 -- expression columns can wrap to newlines which breaks printing
 format_col.expression = function(x, ...) format(char.trunc(as.character(x)), ...)
 
-format_list_item.default = function(x, ...) {
+format_list_item.default <- function (x, ...) {
+  has_format_method <- function(x) {
+    !(is.null(getS3method("format", class = x, optional = TRUE)))
+  }
   if (is.null(x))  # NULL item in a list column
     ""
   else if (is.atomic(x) || inherits(x, "formula")) # FR #2591 - format.data.table issue with columns of class "formula"
-    paste(c(format(head(x, 6L), ...), if (length(x) > 6L) "..."), collapse=",")  # fix for #5435 and #37 - format has to be added here...
-  else if (!isS4(x) && (length(class(x)) > 1L || !class(x) %chin% c("list", "function")) && length(formatted <- format(x, ...)) == 1L) {
-    
+    paste(c(format(head(x, 6L), ...), if (length(x) > 6L) "..."), collapse = ",") # fix for #5435 and #37 - format has to be added here...
+  else if (any(sapply(class(x), has_format_method)) &&
+           length(formatted <- format(x, ...)) == 1L) {
     # if the items has a friendly format class, use it (inspired by #2273)
     #   see also more discussion in the PR, #5224.
-    # but also skip some cases where format() is known to make uglier output, e.g.
-    #   S4 classes, functions/primitives, and lists, where format() can make nested
-    #   list output look very similar to list output.
     formatted
   } else {
     paste0("<", class(x)[1L], paste_dims(x), ">")
