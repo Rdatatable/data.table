@@ -18348,3 +18348,19 @@ test(2225.1, groupingsets(data.table(iris), j=sum(Sepal.Length), by=c('Sp'='Spec
 test(2225.2, groupingsets(data.table(iris), j=mean(Sepal.Length), by=c('Sp'='Species'), sets=list('Species')),
              groupingsets(data.table(iris), j=mean(Sepal.Length), by=c('Species'), sets=list('Species')))
 
+
+# automatically infer known files signatures and attempt auto-unzip #3834
+DT = fread(testDir("russellCRLF.csv"))
+test(2226.1, fread(testDir("russellCRLF.zip")), DT)
+test(2226.2, fread(testDir("russellCRLF.tar")), DT)
+# guess binary file type
+f = tempfile()
+file.copy(testDir("russellCRLF.zip"), f, overwrite=TRUE)
+test(2226.3, fread(f), DT)
+if (test_R.utils) {
+  file.copy(testDir("ch11b.dat.bz2"), f, overwrite=TRUE)
+  test(2226.5, fread(f, logical01=FALSE)[,1], data.table(V1 = 1:100))
+  file.copy(testDir("issue_785_fread.txt.gz"), f, overwrite=TRUE)
+  test(2226.6, fread(f, logical01=FALSE)[,25], data.table(Sv3 = c(10,14,14,15)))
+}
+unlink(f)
