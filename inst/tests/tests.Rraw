@@ -18364,3 +18364,5 @@ if (test_R.utils) {
   test(2226.6, fread(f, logical01=FALSE)[,25], data.table(Sv3 = c(10,14,14,15)))
 }
 unlink(f)
+# not supporting multi file zips yet
+test(2226.7, fread(testDir("multi-file.zip")), error="Compressed files containing more than 1 file are currently not supported.")
