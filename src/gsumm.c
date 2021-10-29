@@ -717,6 +717,62 @@ SEXP gmean(SEXP x, SEXP narmArg)
   return(ans);
 }
 
+
+
+SEXP gweightedMean(SEXP x, SEXP w, SEXP narmArg)
+{
+  if (inherits(x, "factor"))
+    error(_("%s is not meaningful for factors."), "gweighted.mean");
+  if (!IS_TRUE_OR_FALSE(narmArg))
+    error(_("%s must be TRUE or FALSE"), "na.rm");
+  const bool narm = LOGICAL(narmArg)[0];
+  const bool nosubset = irowslen==-1;
+  const int n = nosubset ? length(x) : irowslen;
+  if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gweighted.mean");
+
+  SEXP ans;
+  int protecti=0;
+
+  switch(TYPEOF(x)) {
+  case LGLSXP: case INTSXP:
+    x = PROTECT(coerceAs(x, ScalarReal(1), ScalarLogical(FALSE))); protecti++;
+    w = PROTECT(coerceAs(x, ScalarReal(1), ScalarLogical(FALSE))); protecti++;
+  case REALSXP: {
+    if (INHERITS(x, char_integer64)) {
+      x = PROTECT(coerceAs(x, ScalarReal(1), ScalarLogical(TRUE))); protecti++;
+    }
+    if (INHERITS(w, char_integer64)) {
+      w = PROTECT(coerceAs(w, ScalarReal(1), ScalarLogical(TRUE))); protecti++;
+    }
+    const double *restrict xd = REAL(x);
+    const double *restrict wd = REAL(w);
+    ans = PROTECT(allocVector(REALSXP, ngrp)); protecti++;
+    double *ansd = REAL(ans);
+
+    for (int i=0; i<ngrp; ++i) {
+      const int thisgrpsize = grpsize[i];
+      long double sum=0., wsum=0.;
+      for (int j=0; j<thisgrpsize; ++j) {
+        int ix = ff[i]+j-1;
+        if (isunsorted) ix = oo[ix]-1;
+        if (nosubset ? ISNAN(xd[ix]) || ISNAN(wd[ix]) : (irows[ix]==NA_INTEGER || (ix=irows[ix]-1,ISNAN(xd[ix])||ISNAN(wd[ix])))) {
+          if (narm) continue; else break;
+        }
+        sum += xd[ix] * wd[ix];
+        wsum += wd[ix];
+      }
+      if (wsum == 0.) { ansd[i]=NA_REAL; continue; }
+      ansd[i] = (double)(sum/wsum);
+    }
+  } break;
+  default:
+    error(_("Type '%s' not supported by GForce weighted.mean (gweighted.mean). Either add the prefix stats::weighted.mean(.) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
+  }
+  copyMostAttrib(x, ans);
+  UNPROTECT(protecti);
+  return(ans);
+}
+
 static SEXP gminmax(SEXP x, SEXP narm, const bool min)
 {
   if (!IS_TRUE_OR_FALSE(narm))
