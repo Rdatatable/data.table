@@ -175,6 +175,7 @@ bool freadCleanup(void)
 static inline uint64_t umax(uint64_t a, uint64_t b) { return a > b ? a : b; }
 static inline uint64_t umin(uint64_t a, uint64_t b) { return a < b ? a : b; }
 static inline  int64_t imin( int64_t a,  int64_t b) { return a < b ? a : b; }
+static inline  int i32min( int a,  int b) { return a < b ? a : b; }
 
 /** Return value of `x` clamped to the range [upper, lower] */
 static inline int64_t clamp_szt(int64_t x, int64_t lower, int64_t upper) {
@@ -2400,7 +2401,6 @@ int freadMain(freadMainArgs _args) {
           int8_t thisSize = size[j];
           if (thisSize) ((char**) targets)[size[j]] += size[j];  // 'if' to avoid undefined NULL+=0 when rereading
           j++;
-          if (j > max_col) max_col = j;
           if (*tch==sep) { tch++; continue; }
           if (fill && (*tch=='\n' || *tch=='\r' || tch==eof) && j<ncol) continue;  // reuse processors to write appropriate NA to target; saves maintenance of a type switch down here
           break;
