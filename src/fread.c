@@ -2104,6 +2104,7 @@ int freadMain(freadMainArgs _args) {
   int nTypeBump=0, nTypeBumpCols=0;
   double tRead=0, tReread=0;
   double thRead=0, thPush=0;  // reductions of timings within the parallel region
+  int max_col=0;
   char *typeBumpMsg=NULL;  size_t typeBumpMsgSize=0;
   int typeCounts[NUMTYPE];  // used for verbose output; needs populating after first read and before reread (if any) -- see later comment
   #define internalErrSize 1000
@@ -2197,7 +2198,7 @@ int freadMain(freadMainArgs _args) {
     }
     prepareThreadContext(&ctx);
 
-    #pragma omp for ordered schedule(dynamic) reduction(+:thRead,thPush)
+    #pragma omp for ordered schedule(dynamic) reduction(+:thRead,thPush) reduction(max:max_col)
     for (int jump = jump0; jump < nJumps; jump++) {
       if (stopTeam) continue;  // must continue and not break. We desire not to depend on (relatively new) omp cancel directive, yet
       double tLast = 0.0;      // thread local wallclock time at last measuring point for verbose mode only.
@@ -2278,6 +2279,7 @@ int freadMain(freadMainArgs _args) {
             tch++;
             j++;
           }
+          if (j > max_col) max_col = j;
           //*** END HOT. START TEPID ***//
           if (tch==tLineStart) {
             skip_white(&tch);       // skips \0 before eof
@@ -2289,6 +2291,7 @@ int freadMain(freadMainArgs _args) {
             int8_t thisSize = size[j];
             if (thisSize) ((char **) targets)[thisSize] += thisSize;
             j++;
+            if (j > max_col) max_col = j;
             if (j==ncol) { tch++; myNrow++; continue; }  // next line. Back up to while (tch<nextJumpStart). Usually happens, fastest path
           }
           else {
@@ -2487,6 +2490,18 @@ int freadMain(freadMainArgs _args) {
     freeThreadContext(&ctx);
   }
   //-- end parallel ------------------
+
+  // cleanup since fill argument for number of columns was too high
+  if (fill>1 && max_col<ncol) {
+    if (verbose) DTPRINT(_("  Provided number of columns: %d but only found %d\n"), ncol, max_col);
+    for (int j=max_col; j<ncol; ++j) {
+      type[j] = CT_DROP;
+      size[j] = 0;
+      ndrop++;
+      nNonStringCols--;
+    }
+    if (verbose) DTPRINT(_("  nStringCols: %d\t nNonStringCols: %d\n"), nStringCols, nNonStringCols);
+  }
 
   if (stopTeam) {
     if (internalErr[0]!='\0') {
