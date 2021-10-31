@@ -62,7 +62,11 @@ handle cases where limitations in floating point representation is undesirable.
 
 \code{v1.9.4} introduces \code{anyDuplicated} method for data.tables and is
 similar to base in functionality. It also implements the logical argument
-\code{fromLast} for all three functions, with default value \code{FALSE}.
+\code{fromLast} for all three functions, with default value
+\code{FALSE}.
+
+Note: When \code{cols} is specified, the resulting table will have
+columns \code{c(by, cols)}, in that order.
 }
 \value{
 \code{duplicated} returns a logical vector of length \code{nrow(x)}

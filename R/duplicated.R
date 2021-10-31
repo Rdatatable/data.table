@@ -31,8 +31,9 @@ unique.data.table = function(x, incomparables=FALSE, fromLast=FALSE, by=seq_alon
   if (nrow(x) <= 1L) return(x)
   if (!length(by)) by = NULL  #4594
   o = forderv(x, by=by, sort=FALSE, retGrp=TRUE)
-  if (is.null(cols)) cols = names(x) else cols = c(by, cols)
-  x = .shallow(x, cols, retain.key=TRUE)
+  if (!is.null(cols)) {
+      x = .shallow(x, c(by, cols), retain.key=TRUE)
+  }
   # if by=key(x), forderv tests for orderedness within it quickly and will short-circuit
   # there isn't any need in unique() to call uniqlist like duplicated does; uniqlist returns a new nrow(x) vector anyway and isn't
   # as efficient as forderv returning empty o when input is already ordered
