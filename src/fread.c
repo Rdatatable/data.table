@@ -2496,7 +2496,7 @@ int freadMain(freadMainArgs _args) {
   //-- end parallel ------------------
 
   // cleanup since fill argument for number of columns was too high
-  if (fill>1 && max_col<ncol) {
+  if (fill>1 && max_col<ncol && max_col>0) {
     int ndropFill = ncol - max_col;
     if (verbose) {
       DTPRINT(_("  Provided number of fill columns: %d but only found %d\n"), ncol, max_col);
