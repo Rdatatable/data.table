@@ -175,7 +175,6 @@ bool freadCleanup(void)
 static inline uint64_t umax(uint64_t a, uint64_t b) { return a > b ? a : b; }
 static inline uint64_t umin(uint64_t a, uint64_t b) { return a < b ? a : b; }
 static inline  int64_t imin( int64_t a,  int64_t b) { return a < b ? a : b; }
-static inline  int i32min( int a,  int b) { return a < b ? a : b; }
 
 /** Return value of `x` clamped to the range [upper, lower] */
 static inline int64_t clamp_szt(int64_t x, int64_t lower, int64_t upper) {
