@@ -36,6 +36,7 @@ SEXP sym_datatable_locked;
 SEXP sym_tzone;
 SEXP sym_old_fread_datetime_character;
 SEXP sym_variable_table;
+SEXP sym_as_character;
 double NA_INT64_D;
 long long NA_INT64_LL;
 Rcomplex NA_CPLX;
@@ -106,6 +107,7 @@ SEXP dim();
 SEXP gvar();
 SEXP gsd();
 SEXP gprod();
+SEXP gshift();
 SEXP nestedid();
 SEXP setDTthreads();
 SEXP getDTthreads_R();
@@ -196,6 +198,7 @@ R_CallMethodDef callMethods[] = {
 {"Cgvar", (DL_FUNC) &gvar, -1},
 {"Cgsd", (DL_FUNC) &gsd, -1},
 {"Cgprod", (DL_FUNC) &gprod, -1},
+{"Cgshift", (DL_FUNC) &gshift, -1},
 {"Cnestedid", (DL_FUNC) &nestedid, -1},
 {"CsetDTthreads", (DL_FUNC) &setDTthreads, -1},
 {"CgetDTthreads", (DL_FUNC) &getDTthreads_R, -1},
@@ -366,6 +369,7 @@ void attribute_visible R_init_data_table(DllInfo *info)
   sym_tzone = install("tzone");
   sym_old_fread_datetime_character = install("datatable.old.fread.datetime.character");
   sym_variable_table = install("variable_table");
+  sym_as_character = install("as.character");
 
   initDTthreads();
   avoid_openmp_hang_within_fork();
@@ -425,6 +429,6 @@ SEXP initLastUpdated(SEXP var) {
 
 SEXP dllVersion() {
   // .onLoad calls this and checks the same as packageVersion() to ensure no R/C version mismatch, #3056
-  return(ScalarString(mkChar("1.14.1")));
+  return(ScalarString(mkChar("1.14.3")));
 }
 

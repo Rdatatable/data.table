@@ -50,7 +50,7 @@ cc = function(test=FALSE, clean=FALSE, debug=FALSE, omp=!debug, cc_dir, path=Sys
 
   # Make sure library .so is not loaded (neither installed package nor from dev)
   dll = unlist(do.call("rbind",getLoadedDLLs())[,"path"])
-  dll = grep("data_table.so",dll,value=TRUE)
+  dll = grep("data_table.so", dll, fixed=TRUE, value=TRUE)
   sapply(dll, dyn.unload)
   gc()
 
@@ -69,21 +69,24 @@ cc = function(test=FALSE, clean=FALSE, debug=FALSE, omp=!debug, cc_dir, path=Sys
   if (ret) return()
   # clang -Weverything includes -pedantic and issues many more warnings than gcc
   # system("R CMD SHLIB -o data_table.so *.c")
-  if (any(sapply(objects(envir=.GlobalEnv),function(x){inherits(get(x,.GlobalEnv),"data.table")}))) {
-    cat("ABOUT TO RELOAD .SO BUT THERE ARE DATA.TABLE OBJECTS IN .GLOBALENV SO FINALIZER MIGHT CRASH\n")
+  for (obj in ls(.GlobalEnv)) {
+    if (inherits(.GlobalEnv[[obj]], "data.table")) {
+      cat("ABOUT TO RELOAD .SO BUT THERE ARE DATA.TABLE OBJECTS IN .GLOBALENV SO FINALIZER MIGHT CRASH\n")
+      break
+    }
   }
   dyn.load("data_table.so")
   setwd(old)
   xx = getDLLRegisteredRoutines("data_table",TRUE)
-  for (i in seq_along(xx$.Call))
-    assign(xx$.Call[[i]]$name,  xx$.Call[[i]]$address, envir=.GlobalEnv)
-  for (i in seq_along(xx$.External))
-    assign(xx$.External[[i]]$name,  xx$.External[[i]]$address, envir=.GlobalEnv)
-  sourceDir(paste0(path,"/R"))
-  if (base::getRversion()<"4.0.0") rm(list=c("rbind.data.table","cbind.data.table"), envir=.GlobalEnv) # 3968 follow up
-  assign("testDir", function(x)paste0(path,"/inst/tests/",x), envir=.GlobalEnv)
+  for (Call in xx$.Call)
+    .GlobalEnv[[Call$name]] = Call$address
+  for (Extern in xx$.External)
+    .GlobalEnv[[Extern$name]] = Extern$address
+  sourceDir(file.path(path, "R"))
+  if (base::getRversion()<"4.0.0") rm(list=c("rbind.data.table", "cbind.data.table"), envir=.GlobalEnv) # 3968 follow up
+  .GlobalEnv$testDir = function(x) file.path(path,"inst/tests",x)
   .onLoad()
-  if (is.logical(test) && isTRUE(test)) test.data.table() else if (is.character(test)) test.data.table(script=test)
+  if (isTRUE(test)) test.data.table() else if (is.character(test)) test.data.table(script=test)
   gc()
   invisible()
 }

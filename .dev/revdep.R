@@ -200,7 +200,9 @@ status0 = function(bioc=FALSE) {
       if (length(ns)) paste0("NOT STARTED   : ",paste(sort(names(x)[head(ns,20)]),collapse=" "), if(length(ns)>20)paste(" +",length(ns)-20,"more"), "\n"),
       "\n"
       )
-  assign(if (bioc) ".fail.bioc" else ".fail.cran", c(sort(names(x)[e]), sort(names(x)[w])), envir=.GlobalEnv)
+  assign(if (bioc) ".fail.bioc" else ".fail.cran", c(sort(names(x)[e]), sort(names(x)[w])), envir=.GlobalEnv) 
+  assign(if (bioc) ".running.bioc" else ".running.cran", sort(names(x)[r]), envir=.GlobalEnv)
+  # if parallel finished then 'running' means killed; we want to see if status on CRAN (using cran()) shows FAIL with a log showing kill signal (or similar) due to taking too long
   invisible()
 }
 
@@ -263,23 +265,24 @@ status = function(bioc=FALSE) {
 
 cran = function()  # reports CRAN status of the .cran.fail packages
 {
-  if (!length(.fail.cran)) {
-    cat("No CRAN revdeps in error or warning status\n")
+  x = c(.fail.cran, .running.cran)
+  if (!length(x)) {
+    cat("No CRAN revdeps in error, warning or running status\n")
     return(invisible())
   }
   require(data.table)
   p = proc.time()
-  db = setDT(tools::CRAN_check_results())
+  db <<- setDT(tools::CRAN_check_results())
   cat("tools::CRAN_check_results() returned",prettyNum(nrow(db), big.mark=","),"rows in",timetaken(p),"\n")
-  ans = db[Package %chin% .fail.cran,
-    .(ERROR=sum(Status=="ERROR"),
-      WARN =sum(Status=="WARN"),
+  ans = db[Package %chin% x,
+    .(ERROR=sum(Status=="ERROR", na.rm=TRUE),
+      WARN =sum(Status=="WARN", na.rm=TRUE),
       cran =paste(unique(Version),collapse=";"),
       local=as.character(packageVersion(.BY[[1]]))),
     keyby=Package]
   ans[local==cran, c("cran","local"):=""]
   ans[, "right_click_in_bash":=paste0("https://cran.r-project.org/web/checks/check_results_",Package,".html")]
-  ans[]
+  setkey(ans, Package)[x,]
 }
 
 run = function(pkgs=NULL, R_CHECK_FORCE_SUGGESTS=TRUE, choose=NULL) {
@@ -327,7 +330,7 @@ run = function(pkgs=NULL, R_CHECK_FORCE_SUGGESTS=TRUE, choose=NULL) {
   }
   if (!identical(pkgs,"_ALL_")) for (i in pkgs) system(paste0("rm -rf ./",i,".Rcheck"))
   SUGG = paste0("_R_CHECK_FORCE_SUGGESTS_=",tolower(R_CHECK_FORCE_SUGGESTS))
-  cmd = paste0("ls -1 *.tar.gz ", filter, "| TZ='UTC' OMP_THREAD_LIMIT=2 ",SUGG," parallel --max-procs 50% ",R," CMD check")
+  cmd = paste0("ls -1 *.tar.gz ", filter, "| TZ='UTC' OMP_THREAD_LIMIT=2 ",SUGG," parallel --max-procs 50% --timeout 1200 ",R," CMD check")
   # TZ='UTC' because some packages have failed locally for me but not on CRAN or for their maintainer, due to sensitivity of tests to timezone
   if (as.integer(system("ps -e | grep perfbar | wc -l", intern=TRUE)) < 1) system("perfbar",wait=FALSE)
   system("touch /tmp/started.flag ; rm -f /tmp/finished.flag")

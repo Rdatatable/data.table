@@ -221,9 +221,12 @@ replace_dot_alias = function(e) {
   # TO DO (document/faq/example). Removed for now ... if ((roll || rolltolast) && missing(mult)) mult="last" # for when there is exact match to mult. This does not control cases where the roll is mult, that is always the last one.
   .unsafe.opt() #3585
   missingnomatch = missing(nomatch)
-  nomatch0 = identical(nomatch,0) || identical(nomatch,0L)  # for warning with row-numbers in i; #4353
-  if (nomatch0) nomatch=NULL  # retain nomatch=0 backwards compatibility; #857
-  if (!(is.null(nomatch) || (length(nomatch)==1L && is.na(nomatch)))) stopf("nomatch= must be either NA or NULL (or 0 for backwards compatibility which is the same as NULL but please use NULL)")
+  nomatch0 = identical(nomatch,0) || identical(nomatch,0L) || identical(nomatch, FALSE)  # for warning with row-numbers in i; #4353
+  if (nomatch0) nomatch=NULL  # retain nomatch=0|FALSE backwards compatibility, #857 #5214
+  if (!is.null(nomatch)) {
+    if (!(length(nomatch)==1L && is.na(nomatch))) stopf("nomatch= must be either NA or NULL (or 0 for backwards compatibility which is the same as NULL but please use NULL)")
+    nomatch=NA  # convert NA_character_ to NA-logical, PR#5216
+  }
   if (!is.logical(which) || length(which)>1L) stopf("which= must be a logical vector length 1. Either FALSE, TRUE or NA.")
   if ((isTRUE(which)||is.na(which)) && !missing(j)) stopf("which==%s (meaning return row numbers) but j is also supplied. Either you need row numbers or the result of j, but only one type of result can be returned.", which)
   if (is.null(nomatch) && is.na(which)) stopf("which=NA with nomatch=0|NULL would always return an empty vector. Please change or remove either which or nomatch.")
@@ -1742,6 +1745,10 @@ replace_dot_alias = function(e) {
           if (!(is.call(q) && is.symbol(q[[1L]]) && is.symbol(q[[2L]]) && (q1 <- q[[1L]]) %chin% gfuns)) return(FALSE)
           if (!(q2 <- q[[2L]]) %chin% names(SDenv$.SDall) && q2 != ".I") return(FALSE)  # 875
           if ((length(q)==2L || (!is.null(names(q)) && startsWith(names(q)[3L], "na")))) return(TRUE)
+          if (length(q)>=2L && q[[1L]] == "shift") {
+            q_named = match.call(shift, q)
+            if (!is.call(q_named[["fill"]]) && is.null(q_named[["give.names"]])) return(TRUE)
+          } # add gshift support
           #                       ^^ base::startWith errors on NULL unfortunately
           #        head-tail uses default value n=6 which as of now should not go gforce ... ^^
           # otherwise there must be three arguments, and only in two cases:
@@ -1845,6 +1852,17 @@ replace_dot_alias = function(e) {
     gi = if (length(o__)) o__[f__] else f__
     g = lapply(grpcols, function(i) groups[[i]][gi])
 
+    # returns all rows instead of one per group
+    nrow_funs = c("gshift")
+    .is_nrows = function(q) {
+      if (!is.call(q)) return(FALSE)
+      if (q[[1L]] == "list") {
+        any(vapply(q, .is_nrows, FALSE))
+      } else {
+        q[[1L]] %chin% nrow_funs
+      }
+    }
+
     # adding ghead/gtail(n) support for n > 1 #5060 #523
     q3 = 0
     if (!is.symbol(jsub)) {
@@ -1862,6 +1880,8 @@ replace_dot_alias = function(e) {
     if (q3 > 0) {
       grplens = pmin.int(q3, len__)
       g = lapply(g, rep.int, times=grplens)
+    } else if (.is_nrows(jsub)) {
+      g = lapply(g, rep.int, times=len__)
     }
     ans = c(g, ans)
   } else {
@@ -1941,7 +1961,11 @@ DT = function(x, ...) {  #4872
     options(datatable.optimize=2L)
     # GForce still on; building and storing indices in .prepareFastSubset off; see long paragraph in news item 22 of v1.14.2
   }
-  ans = `[.data.table`(x, ...)
+  fun = match.call()
+  fun[[1L]] = as.name("[.data.table")    # hence now exporting [.data.table method otherwise R CMD check can't find it in tests 2212.*
+  ans = eval(fun, envir=parent.frame(),  # for issue 2 in #5129 so that eval(.massagei(isub), x, ienv) finds objects in calling
+                                         # env, and likely other places inside [.data.table that look at the calling env
+                  enclos=parent.frame()) # including enclos= too as it has often been needed in the past
   options(datatable.optimize=old)
   .global$print = ""  # functional form should always print; #5106
   ans
@@ -2523,8 +2547,10 @@ copy = function(x) {
 }
 
 shallow = function(x, cols=NULL) {
-  if (!is.data.frame(x))
+  if (!is.data.frame(x) && !is.data.table(x)) {
+    #                      ^^ some revdeps do class(x)="data.table" without inheriting from data.frame, PR#5210
     stopf("x is not a data.table|frame. Shallow copy is a copy of the vector of column pointers (only), so is only meaningful for data.table|frame")
+  }
   ans = .shallow(x, cols=cols, retain.key=selfrefok(x))  # selfrefok for #5042
   ans
 }
@@ -2961,7 +2987,7 @@ rleidv = function(x, cols=seq_along(x), prefix=NULL) {
 #     (2) edit .gforce_ok (defined within `[`) to catch which j will apply the new function
 #     (3) define the gfun = function() R wrapper
 gfuns = c("[", "[[", "head", "tail", "first", "last", "sum", "mean", "prod",
-          "median", "min", "max", "var", "sd", ".N") # added .N for #334
+          "median", "min", "max", "var", "sd", ".N", "shift") # added .N for #334
 `g[` = `g[[` = function(x, n) .Call(Cgnthvalue, x, as.integer(n)) # n is of length=1 here.
 ghead = function(x, n) .Call(Cghead, x, as.integer(n)) # n is not used at the moment
 gtail = function(x, n) .Call(Cgtail, x, as.integer(n)) # n is not used at the moment
@@ -2975,6 +3001,11 @@ gmin = function(x, na.rm=FALSE) .Call(Cgmin, x, na.rm)
 gmax = function(x, na.rm=FALSE) .Call(Cgmax, x, na.rm)
 gvar = function(x, na.rm=FALSE) .Call(Cgvar, x, na.rm)
 gsd = function(x, na.rm=FALSE) .Call(Cgsd, x, na.rm)
+gshift = function(x, n=1L, fill=NA, type=c("lag", "lead", "shift", "cyclic")) {
+  type = match.arg(type)
+  stopifnot(is.numeric(n))
+  .Call(Cgshift, x, as.integer(n), fill, type)
+}
 gforce = function(env, jsub, o, f, l, rows) .Call(Cgforce, env, jsub, o, f, l, rows)
 
 .prepareFastSubset = function(isub, x, enclos, notjoin, verbose = FALSE){
