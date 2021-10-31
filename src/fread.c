@@ -2400,6 +2400,7 @@ int freadMain(freadMainArgs _args) {
           int8_t thisSize = size[j];
           if (thisSize) ((char**) targets)[size[j]] += size[j];  // 'if' to avoid undefined NULL+=0 when rereading
           j++;
+          if (j > max_col) max_col = j;
           if (*tch==sep) { tch++; continue; }
           if (fill && (*tch=='\n' || *tch=='\r' || tch==eof) && j<ncol) continue;  // reuse processors to write appropriate NA to target; saves maintenance of a type switch down here
           break;
@@ -2616,7 +2617,7 @@ int freadMain(freadMainArgs _args) {
       else {
         ch = headPos;
         int tt = countfields(&ch);
-        if (fill==1) {
+        if (fill>0) {
           DTWARN(_("Stopped early on line %"PRIu64". Expected %d fields but found %d. Consider fill=%d or even higher ncol estimate. First discarded non-empty line: <<%s>>"),
           (uint64_t)DTi+row1line, ncol, tt, tt, strlim(skippedFooter,500));
         } else {
