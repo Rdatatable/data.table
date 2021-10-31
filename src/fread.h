@@ -350,6 +350,11 @@ void setFinalNrow(size_t nrows);
 
 
 /**
+ * Called at the end to delete columns added due to too high user guess for fill.
+ */
+void dropFilledCols(int* dropArg, int ndrop);
+
+/**
  * Free any srtuctures associated with the thread-local parsing context.
  */
 void freeThreadContext(ThreadLocalFreadParsingContext *ctx);

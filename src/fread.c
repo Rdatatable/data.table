@@ -56,6 +56,7 @@ static bool blank_is_a_NAstring=false;
 static bool stripWhite=true;  // only applies to character columns; numeric fields always stripped
 static bool skipEmptyLines=false;
 static int fill=0;
+static int *dropFill = NULL;
 
 static double NA_FLOAT64;  // takes fread.h:NA_FLOAT64_VALUE
 
@@ -136,6 +137,7 @@ bool freadCleanup(void)
   free(tmpType); tmpType = NULL;
   free(size); size = NULL;
   free(colNames); colNames = NULL;
+  free(dropFill); dropFill = NULL;
   if (mmp != NULL) {
     // Important to unmap as OS keeps internal reference open on file. Process is not exiting as
     // we're a .so/.dll here. If this was a process exiting we wouldn't need to unmap.
@@ -2494,14 +2496,21 @@ int freadMain(freadMainArgs _args) {
 
   // cleanup since fill argument for number of columns was too high
   if (fill>1 && max_col<ncol) {
-    if (verbose) DTPRINT(_("  Provided number of columns: %d but only found %d\n"), ncol, max_col);
+    int ndropFill = ncol - max_col;
+    if (verbose) {
+      DTPRINT(_("  Provided number of fill columns: %d but only found %d\n"), ncol, max_col);
+      DTPRINT(_("  Dropping %d overallocated columns\n"), ndropFill);
+    }
+    dropFill = (int *)malloc((size_t)ndropFill * sizeof(int));
+    int i=0;
     for (int j=max_col; j<ncol; ++j) {
       type[j] = CT_DROP;
       size[j] = 0;
       ndrop++;
       nNonStringCols--;
+      dropFill[i++] = j;
     }
-    if (verbose) DTPRINT(_("  nStringCols: %d\t nNonStringCols: %d\n"), nStringCols, nNonStringCols);
+    dropFilledCols(dropFill, ndropFill);
   }
 
   if (stopTeam) {

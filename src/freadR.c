@@ -45,7 +45,7 @@ static int64_t dtnrows = 0;
 static bool verbose = false;
 static bool warningsAreErrors = false;
 static bool oldNoDateTime = false;
-
+static int *dropFill;
 
 SEXP freadR(
   // params passed to freadMain
@@ -531,6 +531,16 @@ void setFinalNrow(size_t nrow) {
   R_FlushConsole(); // # 2481. Just a convenient place; nothing per se to do with setFinalNrow()
 }
 
+void dropFilledCols(int* dropArg, int ndelete) {
+  dropFill = dropArg;
+  int ndt=length(DT);
+  for (int i=0; i<ndelete; ++i) {
+    SET_VECTOR_ELT(DT, dropFill[i], R_NilValue);
+    SET_STRING_ELT(colNamesSxp, dropFill[i], NA_STRING);
+  }
+  SETLENGTH(DT, ndt-ndelete);
+  SETLENGTH(colNamesSxp, ndt-ndelete);
+}
 
 void pushBuffer(ThreadLocalFreadParsingContext *ctx)
 {

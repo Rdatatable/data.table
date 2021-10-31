@@ -18354,4 +18354,5 @@ test(2226.1, fread(text = dt_str, fill=FALSE), data.table(1L, rep(2L, 100)), war
 test(2226.2, fread(text = dt_str, fill=TRUE), data.table(1L, rep(2L, 100)), warning="Stopped early on line 101.*First discarded non-empty line: <<1,2,3>>")
 test(2226.3, fread(text = dt_str, fill=2L), data.table(1L, rep(2L, 100)), warning="Stopped early on line 101.*First discarded non-empty line: <<1,2,3>>")
 test(2226.4, fread(text = dt_str, fill=3), data.table(1L, 2L, rep(c(NA,3L), each=100)))
-test(2226.5, fread(text = dt_str, fill=5L), data.table(1L, 2L, rep(c(NA,3L), each=100), NA, NA)) # too optimistic bound
+test(2226.5, fread(text = dt_str, fill=5L), data.table(1L, 2L, rep(c(NA,3L), each=100)))
+test(2226.6, fread(text = dt_str, fill=1000L), data.table(1L, 2L, rep(c(NA,3L), each=100)))
