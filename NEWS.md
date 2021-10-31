@@ -207,7 +207,7 @@
     #  v1.14.4  0.4826  0.5586  0.6586  0.6329  0.7348  1.318   100
     ```
 
-27. `fread(..., fill=FALSE)` now also accepts an `integer` in addition to boolean values. `fread` with `fill=TRUE` stops reading when the automatically estimated number of columns is too low. Providing an `integer` as argument for `fill` serves as estimate for the number of columns. Thanks to @christellacaze for requesting, and Benjamin Schwendinger for the PR.
+31. `fread(..., fill=FALSE)` now also accepts an `integer` in addition to boolean values. `fread` with `fill=TRUE` stops reading when the automatically estimated number of columns is too low. Providing an `integer` as argument for `fill` serves as estimate for the number of columns. Thanks to @christellacaze for requesting, and Benjamin Schwendinger for the PR.
 
 ## BUG FIXES
 
