@@ -1749,6 +1749,7 @@ replace_dot_alias = function(e) {
             q_named = match.call(shift, q)
             if (!is.call(q_named[["fill"]]) && is.null(q_named[["give.names"]])) return(TRUE)
           } # add gshift support
+          # weighted.mean #3977
           if (length(q)>=3 && q[[1L]] == "weighted.mean") return(TRUE)
           #                       ^^ base::startWith errors on NULL unfortunately
           #        head-tail uses default value n=6 which as of now should not go gforce ... ^^
@@ -2996,7 +2997,7 @@ gfirst = function(x) .Call(Cgfirst, x)
 glast = function(x) .Call(Cglast, x)
 gsum = function(x, na.rm=FALSE) .Call(Cgsum, x, na.rm)
 gmean = function(x, na.rm=FALSE) .Call(Cgmean, x, na.rm)
-gweighted.mean = function(x, w, mode=1L, na.rm=FALSE) { if (mode==2L) gsum(x*w)/gsum(w) else .Call(CgweightedMean, x, w, na.rm) }
+gweighted.mean = function(x, w, na.rm=FALSE) { if (missing(w)) gmean(x, na.rm) else gsum(x*w, na.rm)/gsum(w, na.rm) }
 gprod = function(x, na.rm=FALSE) .Call(Cgprod, x, na.rm)
 gmedian = function(x, na.rm=FALSE) .Call(Cgmedian, x, na.rm)
 gmin = function(x, na.rm=FALSE) .Call(Cgmin, x, na.rm)

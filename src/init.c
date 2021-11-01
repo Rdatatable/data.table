@@ -77,7 +77,6 @@ SEXP issorted();
 SEXP gforce();
 SEXP gsum();
 SEXP gmean();
-SEXP gweightedMean();
 SEXP gmin();
 SEXP gmax();
 SEXP isOrderedSubset();
@@ -168,7 +167,6 @@ R_CallMethodDef callMethods[] = {
 {"Cgforce", (DL_FUNC) &gforce, -1},
 {"Cgsum", (DL_FUNC) &gsum, -1},
 {"Cgmean", (DL_FUNC) &gmean, -1},
-{"CgweightedMean", (DL_FUNC) &gweightedMean, -1},
 {"Cgmin", (DL_FUNC) &gmin, -1},
 {"Cgmax", (DL_FUNC) &gmax, -1},
 {"CisOrderedSubset", (DL_FUNC) &isOrderedSubset, -1},
