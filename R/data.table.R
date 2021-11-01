@@ -1750,7 +1750,7 @@ replace_dot_alias = function(e) {
             if (!is.call(q_named[["fill"]]) && is.null(q_named[["give.names"]])) return(TRUE)
           } # add gshift support
           # weighted.mean #3977
-          if (length(q)>=3 && q[[1L]] == "weighted.mean") return(TRUE)
+          if (length(q)>=3L && q[[1L]] == "weighted.mean") return(TRUE)
           #                       ^^ base::startWith errors on NULL unfortunately
           #        head-tail uses default value n=6 which as of now should not go gforce ... ^^
           # otherwise there must be three arguments, and only in two cases:
@@ -1775,7 +1775,7 @@ replace_dot_alias = function(e) {
             # adding argument to ghead/gtail if none is supplied to g-optimized head/tail
             if (length(jsub) == 2L && jsub[[1L]] %chin% c("head", "tail")) jsub[["n"]] = 6L
             jsub[[1L]] = as.name(paste0("g", jsub[[1L]]))
-            if (length(jsub)==3L && !(jsub[[3L]] %chin% sdvars)) jsub[[3L]] = eval(jsub[[3L]], parent.frame())   # tests 1187.3 & 1187.5
+            if (length(jsub)==3L && is.symbol(jsub[[3L]]) && !(jsub[[3L]] %chin% sdvars) && exists(jsub[[3L]], parent.frame())) jsub[[3L]] = eval(jsub[[3L]], parent.frame())   # tests 1187.3 & 1187.5
           }
           if (verbose) catf("GForce optimized j to '%s'\n", deparse(jsub, width.cutoff=200L, nlines=1L))
         } else if (verbose) catf("GForce is on, left j unchanged\n");
