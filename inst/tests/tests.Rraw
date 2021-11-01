@@ -18412,60 +18412,60 @@ test(2225.2, groupingsets(data.table(iris), j=mean(Sepal.Length), by=c('Sp'='Spe
 # support := with GForce #1414
 options(datatable.optimize = 2L)
 DT = data.table(a=1:3,b=(1:9)/10)
-test(2226.01, DT[, v := min(b), a, verbose=TRUE],      data.table(a=1:3, b=(1:9)/10, v=(1:3)/10), output="GForce TRUE")
+test(2226.01, DT[, v := min(b), a, verbose=TRUE],      data.table(a=1:3, b=(1:9)/10, v=(1:3)/10), output="GForce optimized j to")
 # GForce returning full length
-test(2226.02, DT[, v := head(b, 3L), a, verbose=TRUE], data.table(a=1:3, b=(1:9)/10, v=(1:9)/10), output="GForce TRUE")
+test(2226.02, DT[, v := head(b, 3L), a, verbose=TRUE], data.table(a=1:3, b=(1:9)/10, v=(1:9)/10), output="GForce optimized j to")
 # GForce neither returning 1 per group nor full length
 test(2226.03, DT[, v := head(b, 2L), a], error="Supplied 6 items to be assigned to 9 items of column 'v'.")
 # compare to non GForce version
 DT = data.table(a=1:3,b=(1:9)/10)
-test(2226.04, copy(DT)[, v := min(b), a,      verbose=TRUE], copy(DT)[, v := base::min(b), a,     ], output="GForce TRUE")
-test(2226.05, copy(DT)[, v := head(b, 3L), a, verbose=TRUE], copy(DT)[, v := utils::head(b, 3L), a], output="GForce TRUE")
+test(2226.04, copy(DT)[, v := min(b), a,      verbose=TRUE], copy(DT)[, v := base::min(b), a,     ], output="GForce optimized j to")
+test(2226.05, copy(DT)[, v := head(b, 3L), a, verbose=TRUE], copy(DT)[, v := utils::head(b, 3L), a], output="GForce optimized j to")
 
 # with key and grouping by key
 DT = data.table(a=1:3,b=(1:9)/10, key="a")
-test(2226.06, DT[, v := min(b), a, verbose=TRUE],      data.table(a=1:3, b=(1:9)/10, v=(1:3)/10, key="a"), output="GForce TRUE")
-test(2226.07, DT[, v := head(b, 3L), a, verbose=TRUE], data.table(a=1:3, b=(1:9)/10, v=(1:9)/10, key="a"), output="GForce TRUE")
+test(2226.06, DT[, v := min(b), a, verbose=TRUE],      data.table(a=1:3, b=(1:9)/10, v=(1:3)/10, key="a"), output="GForce optimized j to")
+test(2226.07, DT[, v := head(b, 3L), a, verbose=TRUE], data.table(a=1:3, b=(1:9)/10, v=(1:9)/10, key="a"), output="GForce optimized j to")
 test(2226.08, DT[, v := head(b, 2L), a], error="Supplied 6 items to be assigned to 9 items of column 'v'.")
 DT = data.table(a=1:3,b=(1:9)/10, key="a")
-test(2226.09, copy(DT)[, v := min(b), a,      verbose=TRUE], copy(DT)[, v := base::min(b), a,     ], output="GForce TRUE")
-test(2226.10, copy(DT)[, v := head(b, 3L), a, verbose=TRUE], copy(DT)[, v := utils::head(b, 3L), a], output="GForce TRUE")
+test(2226.09, copy(DT)[, v := min(b), a,      verbose=TRUE], copy(DT)[, v := base::min(b), a,     ], output="GForce optimized j to")
+test(2226.10, copy(DT)[, v := head(b, 3L), a, verbose=TRUE], copy(DT)[, v := utils::head(b, 3L), a], output="GForce optimized j to")
 
 # with key and grouping by nonkey
 DT = data.table(a=1:3,b=(1:9)/10,c=(3:1),key="c")
-test(2226.11, DT[, v := min(b), a, verbose=TRUE],      data.table(a=1:3, b=(1:9)/10, c=(3:1), v=(1:3)/10, key="c"), output="GForce TRUE")
-test(2226.12, DT[, v := head(b, 3L), a, verbose=TRUE], data.table(a=1:3, b=(1:9)/10, c=(3:1), v=(1:9)/10, key="c"), output="GForce TRUE")
+test(2226.11, DT[, v := min(b), a, verbose=TRUE],      data.table(a=1:3, b=(1:9)/10, c=(3:1), v=(1:3)/10, key="c"), output="GForce optimized j to")
+test(2226.12, DT[, v := head(b, 3L), a, verbose=TRUE], data.table(a=1:3, b=(1:9)/10, c=(3:1), v=(1:9)/10, key="c"), output="GForce optimized j to")
 test(2226.13, DT[, v := head(b, 2L), a], error="Supplied 6 items to be assigned to 9 items of column 'v'.")
 DT = data.table(a=1:3,b=(1:9)/10,c=(3:1),key="c")
-test(2226.14, copy(DT)[, v := min(b), a,      verbose=TRUE], copy(DT)[, v := base::min(b), a,     ], output="GForce TRUE")
-test(2226.15, copy(DT)[, v := head(b, 3L), a, verbose=TRUE], copy(DT)[, v := utils::head(b, 3L), a], output="GForce TRUE")
+test(2226.14, copy(DT)[, v := min(b), a,      verbose=TRUE], copy(DT)[, v := base::min(b), a,     ], output="GForce optimized j to")
+test(2226.15, copy(DT)[, v := head(b, 3L), a, verbose=TRUE], copy(DT)[, v := utils::head(b, 3L), a], output="GForce optimized j to")
 
 # with key and keyby by nonkey
 DT = data.table(a=1:3,b=(1:9)/10,c=(3:1),key="c")
-test(2226.16, copy(DT)[, v := min(b),      keyby=a, verbose=TRUE], data.table(a=1:3, b=(1:9)/10, c=(3:1), v=(1:3)/10, key="a"), output="GForce TRUE")
-test(2226.17, copy(DT)[, v := head(b, 3L), keyby=a, verbose=TRUE], data.table(a=1:3, b=(1:9)/10, c=(3:1), v=(1:9)/10, key="a"), output="GForce TRUE")
+test(2226.16, copy(DT)[, v := min(b),      keyby=a, verbose=TRUE], data.table(a=1:3, b=(1:9)/10, c=(3:1), v=(1:3)/10, key="a"), output="GForce optimized j to")
+test(2226.17, copy(DT)[, v := head(b, 3L), keyby=a, verbose=TRUE], data.table(a=1:3, b=(1:9)/10, c=(3:1), v=(1:9)/10, key="a"), output="GForce optimized j to")
 test(2226.18, copy(DT)[, v := head(b, 2L), keyby=a], error="Supplied 6 items to be assigned to 9 items of column 'v'.")
 DT = data.table(a=1:3,b=(1:9)/10,c=(3:1),key="c")
-test(2226.19, copy(DT)[, v := min(b),      keyby=a, verbose=TRUE], copy(DT)[, v := base::min(b),       keyby=a], output="GForce TRUE")
-test(2226.20, copy(DT)[, v := head(b, 3L), keyby=a, verbose=TRUE], copy(DT)[, v := utils::head(b, 3L), keyby=a], output="GForce TRUE")
+test(2226.19, copy(DT)[, v := min(b),      keyby=a, verbose=TRUE], copy(DT)[, v := base::min(b),       keyby=a], output="GForce optimized j to")
+test(2226.20, copy(DT)[, v := head(b, 3L), keyby=a, verbose=TRUE], copy(DT)[, v := utils::head(b, 3L), keyby=a], output="GForce optimized j to")
 # with irows
 DT = data.table(a=1:3,b=(1:9)/10)
-test(2226.21, DT[a==2, v := min(b), a, verbose=TRUE],      data.table(a=1:3, b=(1:9)/10, v=c(NA,0.2,NA)), output="GForce TRUE")
-test(2226.22, DT[a!=4, v := head(b, 3L), a, verbose=TRUE], data.table(a=1:3, b=(1:9)/10, v=(1:9)/10),     output="GForce TRUE")
+test(2226.21, DT[a==2, v := min(b), a, verbose=TRUE],      data.table(a=1:3, b=(1:9)/10, v=c(NA,0.2,NA)), output="GForce optimized j to")
+test(2226.22, DT[a!=4, v := head(b, 3L), a, verbose=TRUE], data.table(a=1:3, b=(1:9)/10, v=(1:9)/10),     output="GForce optimized j to")
 test(2226.23, DT[a!=4, v := head(b, 2L), a], error="Supplied 6 items to be assigned to 9 items of column 'v'.")
 DT = data.table(a=1:3,b=(1:9)/10)
-test(2226.24, copy(DT)[a==2, v := min(b), a,      verbose=TRUE], copy(DT)[a==2, v := base::min(b), a,     ], output="GForce TRUE")
-test(2226.25, copy(DT)[a!=4, v := head(b, 3L), a, verbose=TRUE], copy(DT)[a!=4, v := utils::head(b, 3L), a], output="GForce TRUE")
+test(2226.24, copy(DT)[a==2, v := min(b), a,      verbose=TRUE], copy(DT)[a==2, v := base::min(b), a,     ], output="GForce optimized j to")
+test(2226.25, copy(DT)[a!=4, v := head(b, 3L), a, verbose=TRUE], copy(DT)[a!=4, v := utils::head(b, 3L), a], output="GForce optimized j to")
 
 # multiple assignments
 DT = data.table(a=1:3,b=(1:9)/10)
-test(2226.26, DT[, c("v1","v2") := .(min(b), max(b)), a,         verbose=TRUE], data.table(a=1:3, b=(1:9)/10, v1=(1:3)/10, v2=(7:9)/10), output="GForce TRUE")
-test(2226.27, DT[, c("v1","v2") := .(head(b,3L), tail(b,3L)), a, verbose=TRUE], data.table(a=1:3, b=(1:9)/10, v1=(1:9)/10, v2=(1:9)/10), output="GForce TRUE")
+test(2226.26, DT[, c("v1","v2") := .(min(b), max(b)), a,         verbose=TRUE], data.table(a=1:3, b=(1:9)/10, v1=(1:3)/10, v2=(7:9)/10), output="GForce optimized j to")
+test(2226.27, DT[, c("v1","v2") := .(head(b,3L), tail(b,3L)), a, verbose=TRUE], data.table(a=1:3, b=(1:9)/10, v1=(1:9)/10, v2=(1:9)/10), output="GForce optimized j to")
 test(2226.28, DT[, c("v1","v2") := .(head(b,3L), tail(b,2L)), a], error="Supplied 6 items to be assigned to 9 items of column 'v2'.")
 test(2226.29, DT[, c("v1","v2") := .(head(b,2L), tail(b,3L)), a], error="Supplied 6 items to be assigned to 9 items of column 'v1'.")
 test(2226.30, DT[, c("v1","v2") := .(head(b,2L), tail(b,2L)), a], error="Supplied 6 items to be assigned to 9 items of column 'v1'.")
-test(2226.31, DT[, c("v1","v2") := .(min(b), max(b)), a,         verbose=TRUE], DT[, c("v1","v2") := .(base::min(b), base::max(b)), a          ], output="GForce TRUE")
-test(2226.32, DT[, c("v1","v2") := .(head(b,3L), tail(b,3L)), a, verbose=TRUE], DT[, c("v1","v2") := .(utils::head(b,3L), utils::tail(b,3L)), a], output="GForce TRUE")
+test(2226.31, DT[, c("v1","v2") := .(min(b), max(b)), a,         verbose=TRUE], DT[, c("v1","v2") := .(base::min(b), base::max(b)), a          ], output="GForce optimized j to")
+test(2226.32, DT[, c("v1","v2") := .(head(b,3L), tail(b,3L)), a, verbose=TRUE], DT[, c("v1","v2") := .(utils::head(b,3L), utils::tail(b,3L)), a], output="GForce optimized j to")
 
 # gforce needs to evaluate variable arguments before calling C part (part of test 101.17 in programming.Rraw)
 set.seed(108)
@@ -18475,4 +18475,4 @@ ydt = data.table(symbol = rep(1:3, each = 100))
 ydt[, date := seq_len(.N), by = symbol]
 ydt[, ret := rnorm(.N)]
 f = shift
-test(2226.33, copy(ydt)[, (ycols) := shift(ret, yn, type = "lead"), by = symbol, verbose=TRUE], copy(ydt)[, (ycols) := f(ret, yn, type = "lead"), by = symbol], output="GForce TRUE")
+test(2226.33, copy(ydt)[, (ycols) := shift(ret, yn, type = "lead"), by = symbol, verbose=TRUE], copy(ydt)[, (ycols) := f(ret, yn, type = "lead"), by = symbol], output="GForce optimized j to")

@@ -1769,7 +1769,7 @@ replace_dot_alias = function(e) {
             for (ii in seq_along(jsub)[-1L]) {
               if (dotN(jsub[[ii]])) next; # For #334
               jsub[[ii]][[1L]] = as.name(paste0("g", jsub[[ii]][[1L]]))
-              if (length(jsub[[ii]])==3L) jsub[[ii]][[3L]] = eval(jsub[[ii]][[3L]], parent.frame())  # tests 1187.2 & 1187.4
+              if (length(jsub[[ii]])>=3L && is.symbol(jsub[[ii]][[3L]]) && exists(jsub[[ii]][[3L]], parent.frame())) jsub[[ii]][[3L]] = eval(jsub[[ii]][[3L]], parent.frame())  # tests 1187.2 & 1187.4
             }
           else {
             # adding argument to ghead/gtail if none is supplied to g-optimized head/tail
