@@ -1938,7 +1938,6 @@ replace_dot_alias = function(e) {
       }
       else warningf("The setkey() normally performed by keyby= has been skipped (as if by= was used) because := is being used together with keyby= but the keyby= contains some expressions. To avoid this warning, use by= instead, or provide existing column names to keyby=.\n")
     }
-    if (GForce) return(invisible(x))
     return(suppPrint(x))
   }
   if (is.null(ans)) {
