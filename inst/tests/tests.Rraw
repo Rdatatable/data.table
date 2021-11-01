@@ -18409,7 +18409,7 @@ test(2225.2, groupingsets(data.table(iris), j=mean(Sepal.Length), by=c('Sp'='Spe
              groupingsets(data.table(iris), j=mean(Sepal.Length), by=c('Species'), sets=list('Species')))
 
 
-# support := with GForce
+# support := with GForce #1414
 options(datatable.optimize = 2L)
 DT = data.table(a=1:3,b=(1:9)/10)
 test(2226.01, DT[, v := min(b), a, verbose=TRUE],      data.table(a=1:3, b=(1:9)/10, v=(1:3)/10), output="GForce TRUE")
