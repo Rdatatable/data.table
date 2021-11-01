@@ -18350,6 +18350,6 @@ test(2225.2, groupingsets(data.table(iris), j=mean(Sepal.Length), by=c('Sp'='Spe
 
 # weighted.mean GForce optimized #3977
 DT = data.table(x=c(3.7,3.3,3.5,2.8), w=c(5,5,4,1), b=1)
-test(2226.1, DT[, weighted.mean(x, w), b, verbose=TRUE], DT[, stats::weighted.mean(x, w), b], output="GForce TRUE")
-test(2226.2, DT[, weighted.mean(w, x), b, verbose=TRUE], DT[, stats::weighted.mean(w, x), b], output="GForce TRUE")
-test(2226.3, DT[, weighted.mean(x), b, verbose=TRUE], DT[, mean(x), b], output="GForce TRUE")
+test(2226.1, DT[, weighted.mean(x, w), b, verbose=TRUE], DT[, stats::weighted.mean(x, w), b], output="GForce optimized j to")
+test(2226.2, DT[, weighted.mean(w, x), b, verbose=TRUE], DT[, stats::weighted.mean(w, x), b], output="GForce optimized j to")
+test(2226.3, DT[, weighted.mean(x), b, verbose=TRUE], DT[, mean(x), b], output="GForce optimized j to")
