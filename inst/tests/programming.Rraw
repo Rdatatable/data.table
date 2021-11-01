@@ -536,9 +536,7 @@ ycols = paste0("y", yn)
 ydt = data.table(symbol = rep(1:3, each = 100))
 ydt[, date := seq_len(.N), by = symbol]
 ydt[, ret := rnorm(.N)]
-#options(datatable.optimize=1L)
 ydt[, (ycols) := shift(ret, yn, type = "lead"), by = symbol]
-#options(datatable.optimize=2L)
 xdt = data.table(symbol = rep(1:2, each = 20))
 xdt[, date := seq_len(.N), by = symbol]
 xdt[, `:=`(x1 = rnorm(.N), x2 = rnorm(.N))]
