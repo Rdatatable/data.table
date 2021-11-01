@@ -1775,7 +1775,7 @@ replace_dot_alias = function(e) {
             # adding argument to ghead/gtail if none is supplied to g-optimized head/tail
             if (length(jsub) == 2L && jsub[[1L]] %chin% c("head", "tail")) jsub[["n"]] = 6L
             jsub[[1L]] = as.name(paste0("g", jsub[[1L]]))
-            # check if function arguments are symbols and if so evaluate them
+            # check if function arguments are variables in parent frame and if so evaluate them for usage in gforce C
             if (length(jsub)>=3L && is.symbol(jsub[[3L]]) && exists(jsub[[3L]], parent.frame())) jsub[[3L]] = eval(jsub[[3L]], parent.frame())   # tests 1187.3 & 1187.5 & programming 101.17
           }
           if (verbose) catf("GForce optimized j to '%s'\n", deparse(jsub, width.cutoff=200L, nlines=1L))
@@ -1916,6 +1916,7 @@ replace_dot_alias = function(e) {
       # unwrap single column jvals for assign
       if (length(jvals)==1L) jvals = jvals[[1L]]
       .Call(Cassign, x, jrows, lhs, newnames, jvals)
+      .global$print = address(x)
     }
     if (any(names_x[cols] %chin% key(x)))
       setkey(x,NULL)
@@ -1937,7 +1938,7 @@ replace_dot_alias = function(e) {
       }
       else warningf("The setkey() normally performed by keyby= has been skipped (as if by= was used) because := is being used together with keyby= but the keyby= contains some expressions. To avoid this warning, use by= instead, or provide existing column names to keyby=.\n")
     }
-    if (GForce) return(suppPrint(x))
+    if (GForce) return(invisible(x))
     return(suppPrint(x))
   }
   if (is.null(ans)) {
