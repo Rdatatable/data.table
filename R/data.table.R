@@ -1729,13 +1729,15 @@ replace_dot_alias = function(e) {
     dotN = function(x) is.name(x) && x==".N" # For #334. TODO: Rprof() showed dotN() may be the culprit if iterated (#1470)?; avoid the == which converts each x to character?
     # FR #971, GForce kicks in on all subsets, no joins yet. Although joins could work with
     # nomatch=NULL even now.. but not switching it on yet, will deal it separately.
-    if (getOption("datatable.optimize")>=2L && !is.data.table(i) && !byjoin && length(f__) && !length(lhs)) {
+    if (getOption("datatable.optimize")>=2L && !is.data.table(i) && !byjoin && length(f__)) {
       if (!length(ansvars) && !use.I) {
         GForce = FALSE
-        if ( (is.name(jsub) && jsub==".N") || (jsub %iscall% 'list' && length(jsub)==2L && jsub[[2L]]==".N") ) {
+        if ( ((is.name(jsub) && jsub==".N") || (jsub %iscall% 'list' && length(jsub)==2L && jsub[[2L]]==".N")) && !length(lhs) ) {
           GForce = TRUE
           if (verbose) catf("GForce optimized j to '%s'\n",deparse(jsub, width.cutoff=200L, nlines=1L))
         }
+      } else if (length(lhs) && is.symbol(jsub)) { # turn off GForce for the combination of := and .N
+        GForce = FALSE
       } else {
         # Apply GForce
         .gforce_ok = function(q) {
@@ -1773,7 +1775,8 @@ replace_dot_alias = function(e) {
             # adding argument to ghead/gtail if none is supplied to g-optimized head/tail
             if (length(jsub) == 2L && jsub[[1L]] %chin% c("head", "tail")) jsub[["n"]] = 6L
             jsub[[1L]] = as.name(paste0("g", jsub[[1L]]))
-            if (length(jsub)==3L) jsub[[3L]] = eval(jsub[[3L]], parent.frame())   # tests 1187.3 & 1187.5
+            # check if function arguments are symbols and if so evaluate them
+            if (length(jsub)>=3L && is.symbol(jsub[[3L]]) && exists(jsub[[3L]], parent.frame())) jsub[[3L]] = eval(jsub[[3L]], parent.frame())   # tests 1187.3 & 1187.5 & programming 101.17
           }
           if (verbose) catf("GForce optimized j to '%s'\n", deparse(jsub, width.cutoff=200L, nlines=1L))
         } else if (verbose) catf("GForce is on, left j unchanged\n");
@@ -1905,6 +1908,15 @@ replace_dot_alias = function(e) {
   # Grouping by by: i is by val, icols NULL, o__ may be subset of x, f__ points to o__ (or x if !length o__)
   # TO DO: setkey could mark the key whether it is unique or not.
   if (!is.null(lhs)) {
+    if (GForce) { # GForce should work with := #1414
+      vlen = length(ans[[1L]])
+      # replicate vals if GForce returns 1 value per group
+      jvals = if (vlen==length(len__)) lapply(ans[-1], rep.int, times=len__) else ans[-1]
+      jrows = if (!is.null(irows) && length(irows)!=length(o__)) irows else { if (length(o__)==0L) NULL else o__}
+      # unwrap single column jvals for assign
+      if (length(jvals)==1L) jvals = jvals[[1L]]
+      .Call(Cassign, x, jrows, lhs, newnames, jvals)
+    }
     if (any(names_x[cols] %chin% key(x)))
       setkey(x,NULL)
     # fixes #1479. Take care of secondary indices, TODO: cleaner way of doing this
@@ -1925,6 +1937,7 @@ replace_dot_alias = function(e) {
       }
       else warningf("The setkey() normally performed by keyby= has been skipped (as if by= was used) because := is being used together with keyby= but the keyby= contains some expressions. To avoid this warning, use by= instead, or provide existing column names to keyby=.\n")
     }
+    if (GForce) return(suppPrint(x))
     return(suppPrint(x))
   }
   if (is.null(ans)) {
