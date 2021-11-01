@@ -1916,7 +1916,6 @@ replace_dot_alias = function(e) {
       # unwrap single column jvals for assign
       if (length(jvals)==1L) jvals = jvals[[1L]]
       .Call(Cassign, x, jrows, lhs, newnames, jvals)
-      .global$print = address(x)
     }
     if (any(names_x[cols] %chin% key(x)))
       setkey(x,NULL)
