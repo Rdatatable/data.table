@@ -1911,7 +1911,7 @@ replace_dot_alias = function(e) {
     if (GForce) { # GForce should work with := #1414
       vlen = length(ans[[1L]])
       # replicate vals if GForce returns 1 value per group
-      jvals = if (vlen==length(len__)) lapply(ans[-1], rep.int, times=len__) else ans[-1]
+      jvals = if (vlen==length(len__)) lapply(tail(ans, -length(g)), rep.int, times=len__) else tail(ans, -length(g))
       jrows = if (!is.null(irows) && length(irows)!=length(o__)) irows else { if (length(o__)==0L) NULL else o__}
       # unwrap single column jvals for assign
       if (length(jvals)==1L) jvals = jvals[[1L]]
