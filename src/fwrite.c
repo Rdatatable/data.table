@@ -424,7 +424,7 @@ void writePOSIXct(double *col, int64_t row, char **pch)
     int carry = m / 1000000; // Need to know if we rounded up to a whole second
     m -= carry * 1000000;
     xi += carry;
-    if (x>=0) {
+    if (xi>=0) {
       d = xi / 86400;
       t = xi % 86400;
     } else {
