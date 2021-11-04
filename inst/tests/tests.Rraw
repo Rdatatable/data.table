@@ -10969,7 +10969,7 @@ setattr(DT[[4]], "tzone", NULL)
 setattr(DT[[5]], "tzone", NULL)
 
 # format() now supports digits = 0, to display nsmall decimal places.
-options(digits.secs=0)
+old=options(digits.secs=0)
 test(1741.3, x1<-capture.output(fwrite(DT,dateTimeAs="write.csv")),
              capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
 options(digits.secs=3)
@@ -10980,6 +10980,7 @@ test(1741.5, x3<-capture.output(fwrite(DT,dateTimeAs="write.csv")),
              capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
 # check that extra digits made it into output
 test(1741.6, sum(nchar(x1)) < sum(nchar(x2)) && sum(nchar(x2)) < sum(nchar(x3)))
+options(old)
 
 # fread should properly handle NA in colClasses argument #1910
 test(1743.01, sapply(fread("a,b\n3,a", colClasses=c(NA, "factor")), class), c(a="integer", b="factor"))
