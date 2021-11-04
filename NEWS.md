@@ -451,6 +451,8 @@
     
 47. `tables()` failed with `argument "..." is missing` when called from within a function taking `...`; e.g. `function(...) { tables() }`, [#5197](https://github.com/Rdatatable/data.table/issues/5197). Thanks @greg-minshall for the report and @michaelchirico for the fix.
 
+48. When writing `POSIXct` objects, `fread()` did not correctly handle the case when microseconds were rounded up to a whole second, producing incorrect output that was also not ISO compliant [#5238](https://github.com/Rdatatable/data.table/issues/5238). Thanks to @avraam-inside for the report and Václav Tlapák for the fix.
+
 ## NOTES
 
 1. New feature 29 in v1.12.4 (Oct 2019) introduced zero-copy coercion. Our thinking is that requiring you to get the type right in the case of `0` (type double) vs `0L` (type integer) is too inconvenient for you the user. So such coercions happen in `data.table` automatically without warning. Thanks to zero-copy coercion there is no speed penalty, even when calling `set()` many times in a loop, so there's no speed penalty to warn you about either. However, we believe that assigning a character value such as `"2"` into an integer column is more likely to be a user mistake that you would like to be warned about. The type difference (character vs integer) may be the only clue that you have selected the wrong column, or typed the wrong variable to be assigned to that column. For this reason we view character to numeric-like coercion differently and will warn about it. If it is correct, then the warning is intended to nudge you to wrap the RHS with `as.<type>()` so that it is clear to readers of your code that a coercion from character to that type is intended. For example :
