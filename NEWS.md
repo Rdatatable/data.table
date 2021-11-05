@@ -451,7 +451,7 @@
     
 47. `tables()` failed with `argument "..." is missing` when called from within a function taking `...`; e.g. `function(...) { tables() }`, [#5197](https://github.com/Rdatatable/data.table/issues/5197). Thanks @greg-minshall for the report and @michaelchirico for the fix.
 
-48. When writing `POSIXct` objects, `fread()` did not correctly handle the case when microseconds were rounded up to a whole second, producing incorrect output that was also not ISO compliant [#5238](https://github.com/Rdatatable/data.table/issues/5238). Thanks to @avraam-inside for the report and Václav Tlapák for the fix.
+48. When writing `POSIXct` objects, `fwrite()` did not correctly handle the case when microseconds were rounded up to a whole second, producing incorrect output that was also not ISO compliant [#5238](https://github.com/Rdatatable/data.table/issues/5238). Thanks to @avraam-inside for the report and Václav Tlapák for the fix.
 
 ## NOTES
 
