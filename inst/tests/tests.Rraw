@@ -18349,7 +18349,7 @@ test(2225.2, groupingsets(data.table(iris), j=mean(Sepal.Length), by=c('Sp'='Spe
              groupingsets(data.table(iris), j=mean(Sepal.Length), by=c('Species'), sets=list('Species')))
 
 # weighted.mean GForce optimized #3977
-options(datatable.optimize=1L)
+old = options(datatable.optimize=1L)
 DT = data.table(x=c(3.7,3.3,3.5,2.8), w=c(5,5,4,1), g=1L)
 test(2226.01, DT[, weighted.mean(x, w), g, verbose=TRUE], data.table(g=1L, V1=3.45333333333333), output="GForce FALSE")
 test(2226.02, DT[, weighted.mean(w, x), g, verbose=TRUE], data.table(g=1L, V1=3.89473684210526), output="GForce FALSE")
@@ -18420,3 +18420,4 @@ test(2226.50, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table
 DT = data.table(x=c(1L,NA,NaN,3L,4L,5L,5L,6L), w=c(1L,NaN,NA,1L,2L,2L,2L,2L), g=rep(1L:2L, each=4L))
 test(2226.51, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA, 5)), output="GForce optimized j to")
 test(2226.52, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output="GForce optimized j to")
+options(old)
