@@ -2997,7 +2997,17 @@ gfirst = function(x) .Call(Cgfirst, x)
 glast = function(x) .Call(Cglast, x)
 gsum = function(x, na.rm=FALSE) .Call(Cgsum, x, na.rm)
 gmean = function(x, na.rm=FALSE) .Call(Cgmean, x, na.rm)
-gweighted.mean = function(x, w, na.rm=FALSE) { if (missing(w)) gmean(x, na.rm) else gsum(x*w, na.rm)/gsum(w, na.rm) }
+gweighted.mean = function(x, w, na.rm=FALSE) {
+  if (missing(w)) gmean(x, na.rm)
+  else {
+    if (na.rm) { # take those indices out of the equation by setting them to 0
+      ix <- is.na(x)
+      x[ix] <- 0
+      w[ix] <- 0
+    }
+    gsum((w!=0)*x*w, na.rm=FALSE)/gsum(w, na.rm=FALSE)
+  }
+}
 gprod = function(x, na.rm=FALSE) .Call(Cgprod, x, na.rm)
 gmedian = function(x, na.rm=FALSE) .Call(Cgmedian, x, na.rm)
 gmin = function(x, na.rm=FALSE) .Call(Cgmin, x, na.rm)
