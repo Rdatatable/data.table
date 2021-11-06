@@ -1579,7 +1579,7 @@ int freadMain(freadMainArgs _args) {
   int ncol;  // Detected number of columns in the file
   const char *firstJumpEnd=NULL; // remember where the winning jumpline from jump 0 ends, to know its size excluding header
   const char *prevStart = NULL;  // the start of the non-empty line before the first not-ignored row (for warning message later, or taking as column names)
-  int jumpLines = (int)umin(100,nrowLimit);   // how many lines from each jump point to use. If nrowLimit is supplied, nJumps is later set to 1 as well.
+  int jumpLines = (int)umin(100, umax(1,nrowLimit));   // how many lines from each jump point to use. If nrowLimit is supplied, nJumps is later set to 1 as well. // sample at least 1 line for files with header and nrows==0L #4029
   {
   if (verbose) DTPRINT(_("[06] Detect separator, quoting rule, and ncolumns\n"));
 

@@ -13487,13 +13487,18 @@ test(1958.01, fread('\U0001f64d', encoding = 'UTF-16'), error = "Argument 'encod
 test(1958.02, fread('a,b\n1,2', nrows = NA_real_),      data.table(a = 1L, b = 2L))
 test(1958.03, fread('a,b\n1,2', nrows = -1),            data.table(a = 1L, b = 2L))
 test(1958.04, fread('a,b\n1,2', key = 1),               error = 'must be a character vector naming columns')
-test(1958.05, fread("A,B,C\n1,2,3\n3,4,5\n0,0,0\n",   nrows=0),          data.table(A=logical(), B=logical(), C=logical()))  #2747
-test(1958.06, fread("A,B,C\n1,2,3\n3,4,5\n0,0,100\n", nrows=0, sep=','), data.table(A=logical(), B=logical(), C=logical()))
+test(1958.05, fread("A,B,C\n1,2,3\n3,4,5\n0,0,0\n",   nrows=0),          data.table(A=integer(), B=integer(), C=integer()))  #2747
+test(1958.06, fread("A,B,C\n1,2,3\n3,4,5\n0,0,100\n", nrows=0, sep=','), data.table(A=integer(), B=integer(), C=integer()))
 test(1958.07, fread('A,B,C,D\n"a,b",4,5,6\n"c,d",6,7\n', fill=TRUE), data.table(A=c("a,b","c,d"), B=INT(4,6), C=INT(5,7), D=INT(6,NA)))  # 2547
 test(1958.08, fread('A,B,C,D\n"a,b",4,5\n"c,d",6,7,8\n', fill=TRUE), data.table(A=c("a,b","c,d"), B=INT(4,6), C=INT(5,7), D=INT(NA,8)))
 # 4686
-test(1958.09, fread("A,B,C\n1,2,3\n3,4,5\n0,0,0\n",   nrows=0L),          data.table(A=logical(), B=logical(), C=logical()))
-test(1958.10, fread("A,B,C\n1,2,3\n3,4,5\n0,0,100\n", nrows=0L, sep=','), data.table(A=logical(), B=logical(), C=logical()))
+test(1958.09, fread("A,B,C\n1,2,3\n3,4,5\n0,0,0\n",   nrows=0L),          data.table(A=integer(), B=integer(), C=integer()))
+test(1958.10, fread("A,B,C\n1,2,3\n3,4,5\n0,0,100\n", nrows=0L, sep=','), data.table(A=integer(), B=integer(), C=integer()))
+# 4029 fread(file, nrows=0) file with header does not determine types
+test(1958.11, fread('A,B\n1,"CHAR"', nrows=0L), data.table(A=integer(), B=character()))
+iris_text = "Sepal.Length,Sepal.Width,Petal.Length,Petal.Width,Species\n5.1,3.5,1.4,0.2,setosa\n4.9,3,1.4,0.2,setosa\n4.7,3.2,1.3,0.2,setosa"
+test(1958.12, fread(text=iris_text, nrows=0L), data.table(Sepal.Length=numeric(), Sepal.Width=numeric(), Petal.Length=numeric(), Petal.Width=numeric(), Species=character()))
+test(1958.13, fread(text=iris_text, nrows=0L, skip=1L), data.table(V1=numeric(), V2=numeric(), V3=numeric(), V4=numeric(), V5=character()))
 
 # Skip should work with all types of newlines #3006
 eols = c("\n", "\r\n", "\r", "\n\r")
@@ -18347,4 +18352,3 @@ test(2225.1, groupingsets(data.table(iris), j=sum(Sepal.Length), by=c('Sp'='Spec
              data.table(Species=factor(c("setosa", "versicolor", "virginica")), V1=c(250.3, 296.8, 329.4)))
 test(2225.2, groupingsets(data.table(iris), j=mean(Sepal.Length), by=c('Sp'='Species'), sets=list('Species')),
              groupingsets(data.table(iris), j=mean(Sepal.Length), by=c('Species'), sets=list('Species')))
-
