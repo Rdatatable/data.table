@@ -18348,3 +18348,7 @@ test(2225.1, groupingsets(data.table(iris), j=sum(Sepal.Length), by=c('Sp'='Spec
 test(2225.2, groupingsets(data.table(iris), j=mean(Sepal.Length), by=c('Sp'='Species'), sets=list('Species')),
              groupingsets(data.table(iris), j=mean(Sepal.Length), by=c('Species'), sets=list('Species')))
 
+# 5255 set operations for DT containing x and y as column names
+DT = data.table(x=c(1,2,2,2), y=LETTERS[c(1,2,2,3)])
+test(2226.1, fintersect(DT, DT, all=TRUE), DT)
+test(2226.2, fsetdiff(DT, DT, all=TRUE), DT[0])
