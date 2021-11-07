@@ -11786,7 +11786,7 @@ test(1777.16, fread("A,B,3\nC,D,4\n", verbose=TRUE), data.table(V1=c("A","C"),V2
 test(1777.17, fread("A,B,C\nD,E,F\n", verbose=TRUE), data.table(A="D", B="E", C="F"),
               output="because all columns are type string and a better guess is not possible")
 test(1777.18, fread("A,B,C\nC,D,4\n", verbose=TRUE), data.table(A="C",B="D",C=4L),
-              output="due to column 3 containing a string on row 1 and a lower type.*in the rest of the.*sample rows")
+              output="contain a string \\(or miss\\) on row 1 and a lower type in the rest of the.*sample rows")
 
 # unquoted fields containing \r, #2371
 test(1778.1, fread("A,B,C\n0,,\n1,hello\rworld,2\n3,test,4\n", verbose=TRUE),
@@ -12484,9 +12484,12 @@ if (test_R.utils) {
 }
 
 # better colname detection by comparing potential column names to the whole sample not just the first row of the sample, #2526
-test(1870.1, fread("A,100,200\n,300,400\n,500,600"), data.table(A=NA, "100"=c(300L,500L), "200"=c(400L,600L)))
+test(1870.1, fread("A,100,200\n,300,400\n,500,600"), data.table(V1=c("A","",""), V2=c(100L,300L,500L), V3=c(200L,400L,600L)))
 test(1870.2, fread("A,100,\n,,\n,500,600"), data.table(A=NA, "100"=c(NA,500L), V3=c(NA,600L)))
 test(1870.3, fread("A,B,\n,,\n,500,3.4"), data.table(A=NA, B=c(NA,500L), V3=c(NA,3.4)))
+test(1870.4, fread("A,B,200\n,300,400\n,500,600"), data.table(A=NA, B=c(300L,500L), "200"=c(400L,600L)))
+test(1870.5, fread("A,B,\n,,\n,500,600"), data.table(A=NA, B=c(NA,500L), V3=c(NA,600L)))
+test(1870.6, fread("A,,\n,300,400\n,500,600"), data.table(A=NA, V2=c(300L,500L), V3=c(400L,600L)))
 
 # nrows= now ignores errors after those nrows as expected and skip= determines first row for sure, #1267
 txt = "V1, V2, V3\n2,3,4\nV4, V5, V6, V7\n4,5,6,7\n8,9,10,11\n"

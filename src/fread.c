@@ -1882,13 +1882,26 @@ int freadMain(freadMainArgs _args) {
     for (int j=0; j<ncol; j++) tmpType[j]=type0;   // reuse tmpType
     bool bumped=false;
     detect_types(&ch, tmpType, ncol, &bumped);
-    if (sampleLines>0) for (int j=0; j<ncol; j++) {
-      if (tmpType[j]==CT_STRING && type[j]<CT_STRING) {
-        // includes an all-blank column with a string at the top; e.g. test 1870.1 and 1870.2
-        args.header=true;
-        if (verbose) DTPRINT(_("  'header' determined to be true due to column %d containing a string on row 1 and a lower type (%s) in the rest of the %d sample rows\n"),
-                             j+1, typeName[type[j]], sampleLines);
-        break;
+    if (sampleLines>0) {
+      bool header_ltype = false;
+      int nHeaderLowerMiss = 0;
+      int nStringCol = 0;
+      for (int j=0; j<ncol; j++) {
+        if (type[j]<CT_STRING) {
+          if (tmpType[j]==CT_STRING) { header_ltype = true; nHeaderLowerMiss++; }
+          else if(tmpType[j]==CT_BOOL8_U) nHeaderLowerMiss++;
+        } else if(type[j]==CT_STRING) nStringCol++;
+      }
+      if (header_ltype) { // previous handling of header detection had args.header=true when header_lower > 0
+        if (nHeaderLowerMiss > ncol / 2) {
+          args.header=true;
+          if (verbose) DTPRINT(_("  'header' determined to be true due to %d out of %d columns (%.2f%%) contain a string (or miss) on row 1 and a lower type in the rest of the %d sample rows\n"),
+                                nHeaderLowerMiss, ncol, nHeaderLowerMiss * 100.0 / ncol, sampleLines);
+        } else if (nHeaderLowerMiss + nStringCol == ncol) {
+          args.header=true;
+          if (verbose) DTPRINT(_("  'header' determined to be true due to %d columns contain a string (or miss) on row 1 and a lower type in the rest of the %d sample rows and other columns are of type string\n"),
+                                nHeaderLowerMiss, sampleLines);
+        }
       }
     }
   }
