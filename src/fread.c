@@ -1892,7 +1892,7 @@ int freadMain(freadMainArgs _args) {
           else if(tmpType[j]==CT_BOOL8_U) nHeaderLowerMiss++;
         } else if(type[j]==CT_STRING) nStringCol++;
       }
-      if (header_ltype) { // previous handling of header detection had args.header=true when header_lower > 0
+      if (header_ltype) { // previous handling of header detection already set args.header=true when header_ltype==true
         if (nHeaderLowerMiss > ncol / 2) {
           args.header=true;
           if (verbose) DTPRINT(_("  'header' determined to be true due to %d out of %d columns (%.2f%%) contain a string (or miss) on row 1 and a lower type in the rest of the %d sample rows\n"),
