@@ -310,7 +310,9 @@ replace_dot_alias = function(e) {
         as.character(jsub[[1L]])[1L]
       } else ""
     }
-    if (root == ":=") {
+    if (root == ":=" || root == "let") {
+      if (root == "let")
+        jsub[[1L]] = as.symbol(":=")
       allow.cartesian=TRUE   # (see #800)
       if (!missing(i) && keyby)
         stopf(":= with keyby is only possible when i is not supplied since you can't setkey on a subset of rows. Either change keyby to by or remove i")
@@ -1107,7 +1109,7 @@ replace_dot_alias = function(e) {
         if (is.null(names(jsub))) {
           # regular LHS:=RHS usage, or `:=`(...) with no named arguments (an error)
           # `:=`(LHS,RHS) is valid though, but more because can't see how to detect that, than desire
-          if (length(jsub)!=3L) stopf("In `:=`(col1=val1, col2=val2, ...) form, all arguments must be named.")
+          if (length(jsub)!=3L) stopf("In %s(col1=val1, col2=val2, ...) form, all arguments must be named.", if (root == "let") "let" else "`:=`")
           lhs = jsub[[2L]]
           jsub = jsub[[3L]]
           if (is.name(lhs)) {
@@ -1119,7 +1121,7 @@ replace_dot_alias = function(e) {
         } else {
           # `:=`(c2=1L,c3=2L,...)
           lhs = names(jsub)[-1L]
-          if (any(lhs=="")) stopf("In `:=`(col1=val1, col2=val2, ...) form, all arguments must be named.")
+          if (any(lhs=="")) stopf("In %s(col1=val1, col2=val2, ...) form, all arguments must be named.", if (root == "let") "let" else "`:=`")
           names(jsub)=""
           jsub[[1L]]=as.name("list")
         }
@@ -2772,8 +2774,10 @@ address = function(x) .Call(Caddress, eval(substitute(x), parent.frame()))
 
 ":=" = function(...) {
   # this error is detected when eval'ing isub and replaced with a more helpful one when using := in i due to forgetting a comma, #4227
-  stopf('Check that is.data.table(DT) == TRUE. Otherwise, := and `:=`(...) are defined for use in j, once only and in particular ways. See help(":=").')
+  stopf('Check that is.data.table(DT) == TRUE. Otherwise, :=, `:=`(...) and let(...) are defined for use in j, once only and in particular ways. See help(":=").')
 }
+
+let = function(...) `:=`(...)
 
 setDF = function(x, rownames=NULL) {
   if (!is.list(x)) stopf("setDF only accepts data.table, data.frame or list of equal length as input")

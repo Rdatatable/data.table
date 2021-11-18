@@ -1169,7 +1169,7 @@ test(381, DT[,{if (a==2) {.SD$b[1]=10L;.SD} else .SD}, by=a], error=base_message
 
 # test that direct := is trapped, but := within a copy of .SD is allowed (FAQ 4.5). See also tests 556-557.
 test(382, DT[,b:=.N*2L,by=a], data.table(a=rep(1:3,1:3),b=rep(2L*(1:3),1:3)))
-test(383, DT[,{z=10L;b:=z},by=a], error=":= and `:=`(...) are defined for use in j, once only and in particular ways")
+test(383, DT[,{z=10L;b:=z},by=a], error="defined for use in j, once only and in particular ways")
 test(384, DT[,{mySD=copy(.SD);mySD[1,b:=99L];mySD},by=a], data.table(a=rep(1:3,1:3),b=c(99L,99L,4L,99L,6L,6L)))
 
 # somehow missed testing := on logical subset with mixed TRUE/FALSE, reported by Muhammad Waliji
@@ -2152,9 +2152,13 @@ test(738, DT[,c("c2", "c1"):=list(c1+1L, NULL)], data.table(c2=2:3))
 
 # `:=`(c1=v1,v2=v2,...) is now valid , #2254
 DT = data.table( c1=1:3 )
-test(739, DT[,`:=`(c2=4:6, c3=7:9)], data.table(c1=1:3,c2=4:6,c3=7:9))
-test(740, DT[,`:=`(4:6,c3=7:9)], error="all arguments must be named")
-test(741, DT[,`:=`(4:6,7:9,10:12)], error="all arguments must be named")  # test the same error message in the other branch
+test(739.1, DT[,`:=`(c2=4:6, c3=7:9)], data.table(c1=1:3,c2=4:6,c3=7:9))
+test(739.2, DT[,`:=`(4:6,c3=7:9)], error="all arguments must be named")
+test(739.3, DT[,`:=`(4:6,7:9,10:12)], error="all arguments must be named")  # test the same error message in the other branch
+DT = data.table( c1=1:3 )
+test(739.4, DT[,let(c2=4:6, c3=7:9)], data.table(c1=1:3,c2=4:6,c3=7:9))
+test(739.5, DT[,let(4:6,c3=7:9)], error="all arguments must be named")
+test(739.6, DT[,let(4:6,7:9,10:12)], error="all arguments must be named")  # tes
 
 # that out of bounds LHS is caught, root cause of #2254
 test(742, DT[,3:6:=1L], error="outside.*range")
@@ -2168,12 +2172,14 @@ test(746, DT["a",c("new1","new2"):=list(4L, 5L)],
           data.table(a=letters[c(1:3,3L)],new1=INT(4,NA,NA,NA),new2=INT(5,NA,NA,NA),key="a"))
 test(747.1, DT[,new1:=4:6], error="Supplied 3 items to be assigned to 4 items of column 'new1'")
 test(747.2, DT[,new1:=INT(4,5,6,4)], data.table(a=letters[c(1:3,3L)],new1=INT(4L,5L,6L,4L),new2=INT(5,NA,NA,NA),key="a"))
-test(748, DT[c("c","b"),`:=`(new3=.N,new2=sum(new1)+1L),by=.EACHI], data.table(a=letters[c(1:3,3L)],new1=INT(4,5,6,4),new2=INT(5,6,11,11),new3=INT(NA,1,2,2),key="a"))
+test(748.1, copy(DT)[c("c","b"),`:=`(new3=.N,new2=sum(new1)+1L),by=.EACHI], data.table(a=letters[c(1:3,3L)],new1=INT(4,5,6,4),new2=INT(5,6,11,11),new3=INT(NA,1,2,2),key="a"))
+test(748.2, copy(DT)[c("c","b"),let(new3=.N,new2=sum(new1)+1L),by=.EACHI], data.table(a=letters[c(1:3,3L)],new1=INT(4,5,6,4),new2=INT(5,6,11,11),new3=INT(NA,1,2,2),key="a"))
 
 # and multiple LHS by group, #1710
 DT = data.table(a=rep(6:8,1:3),b=1:6)
 test(749, DT[,c("c","d","e"):=list(.N,sum(b),a*10L),by=a], data.table(a=rep(6:8,1:3),b=1:6,c=rep(1:3,1:3),d=INT(rep(c(1,5,15),1:3)),e=rep(6:8,1:3)*10L))
-test(750, DT[a<8,`:=`(f=b+sum(d),g=.N),by=c][,6:7,with=FALSE], data.table(f=INT(2,12,13,NA,NA,NA),g=INT(1,2,2,NA,NA,NA)))
+test(750.1, copy(DT)[a<8,`:=`(f=b+sum(d),g=.N),by=c][,6:7,with=FALSE], data.table(f=INT(2,12,13,NA,NA,NA),g=INT(1,2,2,NA,NA,NA)))
+test(750.2, copy(DT)[a<8,let(f=b+sum(d),g=.N),by=c][,6:7,with=FALSE], data.table(f=INT(2,12,13,NA,NA,NA),g=INT(1,2,2,NA,NA,NA)))
 
 # varname holding colnames, by group, linked from #2120.
 DT = data.table(a=rep(1:3,1:3),b=1:6)
@@ -2271,7 +2277,8 @@ test(783, DT[,.I,by=a]$I, 1:8)
 test(784, DT[,.I[which.max(b)],by=a], data.table(a=1:4,V1=INT(2,4,6,8),key="a"))
 test(785, DT[J(2:4),.I,by=a%%2L], data.table(a=rep(0:1,c(4,2)),I=INT(3,4,7,8,5,6)))
 test(786, DT[J(c(3,2,4)),list(.I,.GRP),by=.EACHI], data.table(a=rep(c(3L,2L,4L),each=2),I=INT(5,6,3,4,7,8),GRP=rep(1:3,each=2L)))
-test(787, DT[J(3:2),`:=`(i=.I,grp=.GRP),by=.EACHI][,list(i,grp)], data.table(i=INT(NA,NA,3:6,NA,NA),grp=INT(NA,NA,2,2,1,1,NA,NA)))
+test(787.1, copy(DT)[J(3:2),`:=`(i=.I,grp=.GRP),by=.EACHI][,list(i,grp)], data.table(i=INT(NA,NA,3:6,NA,NA),grp=INT(NA,NA,2,2,1,1,NA,NA)))
+test(787.2, copy(DT)[J(3:2),let(i=.I,grp=.GRP),by=.EACHI][,list(i,grp)], data.table(i=INT(NA,NA,3:6,NA,NA),grp=INT(NA,NA,2,2,1,1,NA,NA)))
 
 # New not-join (a.k.a. not-select, since not just for data.table i but integer, logical and character too)
 DT = data.table(A=rep(1:3,each=2),B=1:6,key="A")
@@ -2776,7 +2783,8 @@ test(950, fread('A,B,C\n1,+,4\n2,-,5\n3,-,6\n'), data.table(A=1:3,B=c("+","-","-
 
 # catching misuse of `:=`
 x = data.table(a=1:5)
-test(951, x[,{b=a+3; `:=`(c=b)}], error="defined for use in j, once only and in particular ways")
+test(951.1, x[,{b=a+3; `:=`(c=b)}], error="defined for use in j, once only and in particular ways")
+test(951.2, x[,{b=a+3; let(c=b)}], error="defined for use in j, once only and in particular ways")
 
 # fread colClasses
 input = 'A,B,C\n01,foo,3.140\n002,bar,6.28000\n'
@@ -2827,7 +2835,8 @@ test(978.3, fread(input, skip=9), data.table(E=9:10, F=11:12))
 # mixed add and update in same `:=` bug/crash, #2528 and #2778
 DT = data.table(x=rep(1:2, c(3,2)), y=6:10)
 DT[, z:=.GRP, by=x]                 # first assignment
-test(979, DT[, `:=`(z=.GRP, w=2), by=x], data.table(x=INT(1,1,1,2,2),y=6:10,z=INT(1,1,1,2,2),w=2))  # mixed update and add
+test(979.1, copy(DT)[, `:=`(z=.GRP, w=2), by=x], data.table(x=INT(1,1,1,2,2),y=6:10,z=INT(1,1,1,2,2),w=2))  # mixed update and add
+test(979.2, copy(DT)[, let(z=.GRP, w=2), by=x], data.table(x=INT(1,1,1,2,2),y=6:10,z=INT(1,1,1,2,2),w=2))
 # and example from http://stackoverflow.com/a/14732348/403310 :
 dt1 = fread("Date,Time,A,B
 01/01/2013,08:00,10,30
@@ -2841,13 +2850,18 @@ dt2 = fread("Date,A,B,C
 02/01/2013,200,400,2")
 setkey(dt1, "Date")
 setkey(dt2, "Date")
-test(980, dt1[dt2, `:=`(A=A+i.A, B=B+i.B, C=i.C)][,list(A,B,C)],
+test(980.1, copy(dt1)[dt2, `:=`(A=A+i.A, B=B+i.B, C=i.C)][,list(A,B,C)],
+          data.table(A=INT(110,115,120,225,230,235),B=INT(330,325,320,415,410,405),C=rep(1:2,each=3)))
+test(980.2, copy(dt1)[dt2, `:=`(A=A+i.A, B=B+i.B, C=i.C)][,list(A,B,C)],
           data.table(A=INT(110,115,120,225,230,235),B=INT(330,325,320,415,410,405),C=rep(1:2,each=3)))
 DT = data.table(A=1:2,B=3:4,C=5:6)
-test(981, DT[,`:=`(D=B+4L,B=0:1,E=A*2L,F=A*3L,C=C+1L,G=C*2L),by=A], error="Supplied 2 items to be assigned to group 1 of size 1 in column 'B'")
+test(981.1, copy(DT)[,`:=`(D=B+4L,B=0:1,E=A*2L,F=A*3L,C=C+1L,G=C*2L),by=A], error="Supplied 2 items to be assigned to group 1 of size 1 in column 'B'")
+test(981.2, copy(DT)[,let(D=B+4L,B=0:1,E=A*2L,F=A*3L,C=C+1L,G=C*2L),by=A], error="Supplied 2 items to be assigned to group 1 of size 1 in column 'B'")
 DT = data.table(A=1:2,B=3:4,C=5:6)
-test(982, DT[,`:=`(D=B+4L,B=0L,E=A*2L,F=A*3L,C=C+1L,G=C*2L),by=A],
+test(982.1, copy(DT)[,`:=`(D=B+4L,B=0L,E=A*2L,F=A*3L,C=C+1L,G=C*2L),by=A],
           data.table(A=1:2,B=0L,C=6:7,D=7:8,E=c(2L,4L),F=c(3L,6L),G=c(10L,12L))) # Also note that G is not yet iterative. In future: c(12,14)
+test(982.2, copy(DT)[,`:=`(D=B+4L,B=0L,E=A*2L,F=A*3L,C=C+1L,G=C*2L),by=A],
+          data.table(A=1:2,B=0L,C=6:7,D=7:8,E=c(2L,4L),F=c(3L,6L),G=c(10L,12L)))
 
 # rbindlist binding factors, #2650
 test(983, rbindlist(list(data.table(factor(c("A","A","B","C","A"))), data.table(factor(c("B","F","A","G"))))), data.table(V1=factor(c("A","A","B","C","A","B","F","A","G"))))
@@ -3936,7 +3950,8 @@ test(1143.2, DT[, Z:=paste(X,.N,sep=" - "), by=list(X)], data.table(X=factor(200
 DT = data.table(x=as.POSIXct(c("2009-02-17 17:29:23.042", "2009-02-17 17:29:25.160")), y=c(1L,2L))
 test(1143.3, DT[, list(lx=x[.N]), by=x], data.table(x=DT$x, lx=DT$x))
 ans = copy(DT)
-test(1143.4, DT[,`:=`(lx=tail(x,1L)), by=y], ans[, lx := x])
+test(1143.4, copy(DT)[,`:=`(lx=tail(x,1L)), by=y], ans[, lx := x])
+test(1143.5, copy(DT)[,let(lx=tail(x,1L)), by=y], ans[, lx := x])
 
 # FR #2356 - retain names of named vector as column with keep.rownames=TRUE
 x <- 1:5
@@ -16822,7 +16837,9 @@ DT = data.table(id=1:9, grp=rep(1:3,each=3), val=c("a","b","c", "a","b","c", "a"
 test(2114.5, as.character(DT[, valfactor1 := factor(val), by = grp]$valfactor1), ans<-rep(c("a","b","c"),3))
 test(2114.6, as.character(DT[, valfactor2 := factor(val), by = id]$valfactor2), ans)
 DT = data.table(x = rep(letters[c(3, 1, 2)], each = 2))
-test(2114.7, DT[, `:=`(g=.GRP, f=factor(.GRP)), by = x],
+test(2114.7, copy(DT)[, `:=`(g=.GRP, f=factor(.GRP)), by = x],
+             data.table(x=rep(c("c","a","b"),each=2), g=rep(1:3,each=2), f=factor(rep(as.character(1:3),each=2))))
+test(2114.8, copy(DT)[, let(g=.GRP, f=factor(.GRP)), by = x],
              data.table(x=rep(c("c","a","b"),each=2), g=rep(1:3,each=2), f=factor(rep(as.character(1:3),each=2))))
 
 # extra tests from #996 for completeness; no warning no-alloc coerce here of 0 and 1 numerics
@@ -17953,7 +17970,8 @@ if (test_bit64) {
   # X[Y,,by=.EACHI] when Y contains integer64 also fixed in 1.12.4, #3779
   X = data.table(x=1:3)
   Y = data.table(x=1:2, y=as.integer64(c(10,20)))
-  test(2193.2, X[Y, `:=`(y=i.y), on="x", by=.EACHI], data.table(x=1:3, y=as.integer64(10L,20L,NA)))
+  test(2193.2, copy(X)[Y, `:=`(y=i.y), on="x", by=.EACHI], data.table(x=1:3, y=as.integer64(10L,20L,NA)))
+  test(2193.3, copy(X)[Y, let(y=i.y), on="x", by=.EACHI], data.table(x=1:3, y=as.integer64(10L,20L,NA)))
 }
 
 # endsWithAny added in #5097 for internal use replacing one use of base::endsWith (in fread.R)

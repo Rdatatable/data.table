@@ -207,6 +207,19 @@
     #  v1.14.4  0.4826  0.5586  0.6586  0.6329  0.7348  1.318   100
     ```
 
+31. `let(...)` is an alias for the functional form of the walrus operator `:=(...)`, [#3795](https://github.com/Rdatatable/data.table/issues/3795). Thanks to Elio Campitelli for requesting, and Benjamin Schwendinger for the PR.
+
+    ```R
+    DT = data.table(x=1:3)
+    DT[, let(i = 4:6, j = letters[1:3])]
+    DT
+    #        x     i      j
+    #    <int> <int> <char>
+    # 1:     1     4      a
+    # 2:     2     5      b
+    # 3:     3     6      c
+    ```
+
 ## BUG FIXES
 
 1. `by=.EACHI` when `i` is keyed but `on=` different columns than `i`'s key could create an invalidly keyed result, [#4603](https://github.com/Rdatatable/data.table/issues/4603) [#4911](https://github.com/Rdatatable/data.table/issues/4911). Thanks to @myoung3 and @adamaltmejd for reporting, and @ColeMiller1 for the PR. An invalid key is where a `data.table` is marked as sorted by the key columns but the data is not sorted by those columns, leading to incorrect results from subsequent queries.
