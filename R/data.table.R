@@ -310,7 +310,7 @@ replace_dot_alias = function(e) {
         as.character(jsub[[1L]])[1L]
       } else ""
     }
-    if (root == ":=" || root == "let") {
+    if (root == ":=" || root == "let") { # let(...) as alias for :=(...) (#3795)
       if (root == "let")
         jsub[[1L]] = as.symbol(":=")
       allow.cartesian=TRUE   # (see #800)
