@@ -13487,13 +13487,34 @@ test(1958.01, fread('\U0001f64d', encoding = 'UTF-16'), error = "Argument 'encod
 test(1958.02, fread('a,b\n1,2', nrows = NA_real_),      data.table(a = 1L, b = 2L))
 test(1958.03, fread('a,b\n1,2', nrows = -1),            data.table(a = 1L, b = 2L))
 test(1958.04, fread('a,b\n1,2', key = 1),               error = 'must be a character vector naming columns')
-test(1958.05, fread("A,B,C\n1,2,3\n3,4,5\n0,0,0\n",   nrows=0),          data.table(A=logical(), B=logical(), C=logical()))  #2747
-test(1958.06, fread("A,B,C\n1,2,3\n3,4,5\n0,0,100\n", nrows=0, sep=','), data.table(A=logical(), B=logical(), C=logical()))
+test(1958.05, fread("A,B,C\n1,2,3\n3,4,5\n0,0,0\n",   nrows=0),          data.table(A=integer(), B=integer(), C=integer()))  #2747
+test(1958.06, fread("A,B,C\n1,2,3\n3,4,5\n0,0,100\n", nrows=0, sep=','), data.table(A=integer(), B=integer(), C=integer()))
 test(1958.07, fread('A,B,C,D\n"a,b",4,5,6\n"c,d",6,7\n', fill=TRUE), data.table(A=c("a,b","c,d"), B=INT(4,6), C=INT(5,7), D=INT(6,NA)))  # 2547
 test(1958.08, fread('A,B,C,D\n"a,b",4,5\n"c,d",6,7,8\n', fill=TRUE), data.table(A=c("a,b","c,d"), B=INT(4,6), C=INT(5,7), D=INT(NA,8)))
-# 4686
-test(1958.09, fread("A,B,C\n1,2,3\n3,4,5\n0,0,0\n",   nrows=0L),          data.table(A=logical(), B=logical(), C=logical()))
-test(1958.10, fread("A,B,C\n1,2,3\n3,4,5\n0,0,100\n", nrows=0L, sep=','), data.table(A=logical(), B=logical(), C=logical()))
+test(1958.09, fread("A,B,C\n1,2,3\n3,4,5\n0,0,0\n",   nrows=0L),          data.table(A=integer(), B=integer(), C=integer()))  # nrows=0 vs 0L, 4686
+test(1958.10, fread("A,B,C\n1,2,3\n3,4,5\n0,0,100\n", nrows=0L, sep=','), data.table(A=integer(), B=integer(), C=integer()))
+# nrows=0 should perform a full sample to get the empty column types right as documented, #4029
+test(1958.11, fread('A,B,C,D\n1,CHAR,"CHAR",3.1', nrows=0L), data.table(A=integer(), B=character(), C=character(), D=numeric()))
+# .. one different type in the middle of under 100
+txt = paste(c("A,B\n1,2\n", rep("3,4\n",48), "3,4.1\n", rep("5,6\n",48)), collapse="")
+test(1958.12, fread(text=txt, nrows=0L),          data.table(A=integer(), B=numeric()))
+test(1958.13, fread(text=txt, nrows=0L, skip=1L), data.table(V1=integer(), V2=numeric()))
+test(1958.14, fread(text=txt, nrows=1L),          data.table(A=1L, B=2L))  # B integer not numeric because sample is min(nrows,100) when nrows>=1
+test(1958.15, fread(text=txt, nrows=1L, skip=1L), data.table(V1=1L, V2=2L))
+test(1958.16, fread(text=txt, nrows=2L),          data.table(A=c(1L,3L), B=c(2L,4L)))
+test(1958.17, fread(text=txt, nrows=2L, skip=1L), data.table(V1=c(1L,3L), V2=c(2L,4L)))
+# .. one different type on line 148 when there are just under 200 lines
+txt = paste(c("A,B\n1,2\n", rep("3,4\n",148), "3,4.1\n", rep("5,6\n",48)), collapse="")
+test(1958.18, fread(text=txt, nrows=0L, verbose=TRUE), data.table(A=integer(), B=numeric()),
+              output="Sampled 149 rows.*at 2 jump points")
+# .. one different type within sample for large number of lines
+txt = paste(c("A,B\n1,2\n", rep("3,4\n",5000), "3,4.1\n", rep("5,6\n",5000)), collapse="")
+test(1958.19, fread(text=txt, nrows=0L, verbose=TRUE), data.table(A=integer(), B=numeric()),
+              output="Sampled 1049 rows.*at 11 jump points")
+# .. one different type out of sample for large number of lines
+txt = paste(c("A,B\n1,2\n", rep("3,4\n",5100), "3,4.1\n", rep("5,6\n",4900)), collapse="")
+test(1958.20, fread(text=txt, nrows=0L, verbose=TRUE), data.table(A=integer(), B=integer()),
+              output="Sampled 1049 rows.*at 11 jump points")
 
 # Skip should work with all types of newlines #3006
 eols = c("\n", "\r\n", "\r", "\n\r")
