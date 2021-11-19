@@ -213,7 +213,7 @@
 
 2. `print(DT, trunc.cols=TRUE)` and the corresponding `datatable.print.trunc.cols` option (new feature 3 in v1.13.0) could incorrectly display an extra column, [#4266](https://github.com/Rdatatable/data.table/issues/4266). Thanks to @tdhock for the bug report and @MichaelChirico for the PR.
 
-3. `fread(..., nrows=0L)` now works as intended and the same as `nrows=0`; i.e. returning the column names and typed empty columns determined by the large sample, [#4686](https://github.com/Rdatatable/data.table/issues/4686). Thanks to @hongyuanjia for reporting, and Benjamin Schwendinger for the PR.
+3. `fread(..., nrows=0L)` now works as intended and the same as `nrows=0`; i.e. returning the column names and typed empty columns determined by the large sample, [#4686](https://github.com/Rdatatable/data.table/issues/4686), [#4029](https://github.com/Rdatatable/data.table/issues/4029). Thanks to @hongyuanjia and @michaelpaulhirsch for reporting, and Benjamin Schwendinger for the PR.
 
 4. Passing `.SD` to `frankv()` with `ties.method='random'` or with `na.last=NA` failed with `.SD is locked`, [#4429](https://github.com/Rdatatable/data.table/issues/4429). Thanks @smarches for the report.
 
@@ -451,7 +451,9 @@
 
 47. `tables()` failed with `argument "..." is missing` when called from within a function taking `...`; e.g. `function(...) { tables() }`, [#5197](https://github.com/Rdatatable/data.table/issues/5197). Thanks @greg-minshall for the report and @michaelchirico for the fix.
 
-48. `fintersect(DT, DT, all=TRUE)` and `fsetdiff(DT, DT, all=TRUE)` could return wrong results when `DT` had column names `x` and `y`, [#5255](https://github.com/Rdatatable/data.table/issues/5255). Thanks @Fpadt for the report, and @ben-schwen for the fix.
+48. `DT[, prod(int64Col), by=grp]` produced wrong results for `bit64::integer64` due to incorrect optimization, [#5225](https://github.com/Rdatatable/data.table/issues/5225). Thanks to Benjamin Schwendinger for reporting and fixing.
+
+49. `fintersect(..., all=TRUE)` and `fsetdiff(..., all=TRUE)` could return incorrect results when the inputs had columns named `x` and `y`, [#5255](https://github.com/Rdatatable/data.table/issues/5255). Thanks @Fpadt for the report, and @ben-schwen for the fix.
 
 ## NOTES
 
