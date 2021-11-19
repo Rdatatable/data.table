@@ -82,8 +82,9 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
       othercolsx = setdiff(nm_x, by)
       if (length(othercolsx)) {
         tmp = rep.int(NA_integer_, length(missingyidx))
-        # TO DO: use set() here instead..
-        yy = cbind(yy, x[tmp, othercolsx, with = FALSE])
+        nx = c(names(yy), names(x[tmp, othercolsx, with = FALSE]))
+        nx = make.unique(nx)
+        set(yy, NULL, tail(nx, -ncol(yy)), x[tmp, othercolsx, with = FALSE])
       }
       # empty data.tables (nrow =0, ncol>0) doesn't skip names anymore in new rbindlist
       # takes care of #24 without having to save names. This is how it should be, IMHO.
