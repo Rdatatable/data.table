@@ -59,6 +59,7 @@ fintersect = function(x, y, all=FALSE) {
   .set_ops_arg_check(x, y, all, .seqn = TRUE)
   if (!nrow(x) || !nrow(y)) return(x[0L])
   if (all) {
+    .seqn_id = NULL  # to avoid 'no visible binding for global variable' note from R CMD check
     x = shallow(x)[, ".seqn" := rowidv(.seqn_id), env=list(.seqn_id=x)]
     y = shallow(y)[, ".seqn" := rowidv(.seqn_id), env=list(.seqn_id=y)]
     jn.on = c(".seqn",setdiff(names(y),".seqn"))
@@ -75,6 +76,7 @@ fsetdiff = function(x, y, all=FALSE) {
   if (!nrow(x)) return(x)
   if (!nrow(y)) return(if (!all) funique(x) else x)
   if (all) {
+    .seqn_id = NULL  # to avoid 'no visible binding for global variable' note from R CMD check
     x = shallow(x)[, ".seqn" := rowidv(.seqn_id), env=list(.seqn_id=x)]
     y = shallow(y)[, ".seqn" := rowidv(.seqn_id), env=list(.seqn_id=y)]
     jn.on = c(".seqn",setdiff(names(x),".seqn"))
