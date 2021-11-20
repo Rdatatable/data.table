@@ -9,12 +9,13 @@
 \usage{
   \method{all.equal}{data.table}(target, current, trim.levels=TRUE, check.attributes=TRUE,
     ignore.col.order=FALSE, ignore.row.order=FALSE, tolerance=sqrt(.Machine$double.eps),
-    ...)
+    \dots)
 }
 
 \arguments{
   \item{target, current}{
-      \code{data.table}s to compare
+      \code{data.table}s to compare. If \code{current} is not a \code{data.table}, but \code{check.attributes} is FALSE,
+      it will be coerced to one via \link{as.data.table}.
   }
 
   \item{trim.levels}{
@@ -31,7 +32,7 @@
   }
 
   \item{ignore.row.order}{
-    A logical indicating whether or not to ignore rows order in \code{data.table}. This option requires datasets to use data types on which join can be made, so no support for \emph{list, complex, raw}, but still supports \link[bit64]{integer64}.
+    A logical indicating whether or not to ignore rows order in \code{data.table}. This option requires datasets to use data types on which join can be made, so no support for \emph{list, complex, raw}, but still supports \link[bit64:bit64-package]{integer64}.
   }
 
   \item{tolerance}{
@@ -77,6 +78,10 @@ all.equal(x, y, ignore.row.order = TRUE)
 # check.attributes
 x = copy(dt1)
 y = setkeyv(copy(dt1), NULL)
+all.equal(x, y)
+all.equal(x, y, check.attributes = FALSE)
+x = data.table(1L)
+y = 1L
 all.equal(x, y)
 all.equal(x, y, check.attributes = FALSE)
 

@@ -2,96 +2,95 @@
 #include <Rdefines.h>
 #include <time.h>
 
-SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg) {
+SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg) {
 
-  R_len_t i, j, k=0, maxlen=0, zerolen=0, anslen;
-  SEXP li, thisi, ans;
-  SEXPTYPE type, maxtype=0;
-  Rboolean coerce = FALSE;
-
+  int nprotect=0;
   if (!isNewList(l))
-    error("l must be a list.");
+    error(_("l must be a list."));
   if (!length(l))
-    return(duplicate(l));
-  if (!isLogical(ignoreArg) || LOGICAL(ignoreArg)[0] == NA_LOGICAL)
-    error("ignore.empty should be logical TRUE/FALSE.");
+    return(copyAsPlain(l));
+  if (!isLogical(ignoreArg) || LOGICAL(ignoreArg)[0]==NA_LOGICAL)
+    error(_("ignore.empty should be logical TRUE/FALSE."));
+  bool ignore = LOGICAL(ignoreArg)[0];
+  if (!(isNull(keepNamesArg) || (isString(keepNamesArg) && LENGTH(keepNamesArg)==1)))
+    error(_("keep.names should be either NULL, or the name of the first column of the result in which to place the names of the input"));
+  bool rn = !isNull(keepNamesArg);
   if (length(fill) != 1)
-    error("fill must be NULL or length=1 vector.");
+    error(_("fill must be a length 1 vector, such as the default NA"));
   R_len_t ln = LENGTH(l);
-  Rboolean ignore = LOGICAL(ignoreArg)[0];
 
   // preprocessing
-  R_len_t *len  = (R_len_t *)R_alloc(ln, sizeof(R_len_t));
-  for (i=0; i<ln; i++) {
-    li = VECTOR_ELT(l, i);
+  int maxlen=0, zerolen=0;
+  SEXPTYPE maxtype=0;
+  for (int i=0; i<ln; ++i) {
+    SEXP li = VECTOR_ELT(l, i);
     if (!isVectorAtomic(li) && !isNull(li))
-      error("Item %d of list input is not an atomic vector", i+1);
-    len[i] = length(li);
-    if (len[i] > maxlen)
-      maxlen = len[i];
-    zerolen += (len[i] == 0);
-    if (isFactor(li)) {
-      maxtype = STRSXP;
-    } else {
-      type = TYPEOF(li);
-      if (type > maxtype)
-        maxtype = type;
+      error(_("Item %d of list input is not an atomic vector"), i+1);
+    const int len = length(li);
+    if (len>maxlen) maxlen=len;
+    zerolen += (len==0);
+    SEXPTYPE type = TYPEOF(li);
+    if (isFactor(li)) type=STRSXP;
+    if (type>maxtype) maxtype=type;
+  }
+  fill = PROTECT(coerceVector(fill, maxtype)); nprotect++;
+
+  SEXP ans = PROTECT(allocVector(VECSXP, maxlen+rn)); nprotect++;
+  int anslen = (ignore) ? (ln - zerolen) : ln;
+  if (rn) {
+    SEXP tt;
+    SET_VECTOR_ELT(ans, 0, tt=allocVector(STRSXP, anslen));
+    SEXP lNames = PROTECT(getAttrib(l, R_NamesSymbol)); nprotect++;
+    for (int i=0, j=0; i<ln; ++i) {
+      if (length(VECTOR_ELT(l, i))) SET_STRING_ELT(tt, j++, STRING_ELT(lNames, i));
     }
   }
-  // coerce fill to maxtype
-  fill = PROTECT(coerceVector(fill, maxtype));
-
-  // allocate 'ans'
-  ans = PROTECT(allocVector(VECSXP, maxlen));
-  anslen = (!ignore) ? ln : (ln - zerolen);
-  for (i=0; i<maxlen; i++) {
-    thisi = allocVector(maxtype, anslen);
-    SET_VECTOR_ELT(ans, i, thisi);
+  for (int i=0; i<maxlen; ++i) {
+    SET_VECTOR_ELT(ans, i+rn, allocVector(maxtype, anslen));
   }
-
-  // transpose
-  for (i=0; i<ln; i++) {
-    if (ignore && !len[i]) continue;
-    li = VECTOR_ELT(l, i);
+  const SEXP *ansp = SEXPPTR_RO(ans);
+  for (int i=0, k=0; i<ln; ++i) {
+    SEXP li = VECTOR_ELT(l, i);
+    const int len = length(li);
+    if (ignore && len==0) continue;
     if (TYPEOF(li) != maxtype) {
-      coerce = TRUE;
-      if (!isFactor(li)) li = PROTECT(coerceVector(li, maxtype));
-      else li = PROTECT(asCharacterFactor(li));
-    }
+      li = PROTECT(isFactor(li) ? asCharacterFactor(li) : coerceVector(li, maxtype));
+    } else PROTECT(li); // extra PROTECT just to help rchk by avoiding two counter variables
     switch (maxtype) {
-    case INTSXP :
-      for (j=0; j<maxlen; j++) {
-        thisi = VECTOR_ELT(ans, j);
-        INTEGER(thisi)[k] = (j < len[i]) ? INTEGER(li)[j] : INTEGER(fill)[0];
+    case LGLSXP : {
+      const int *ili = LOGICAL(li);
+      const int ifill = LOGICAL(fill)[0];
+      for (int j=0; j<maxlen; ++j) {
+        LOGICAL(ansp[j+rn])[k] = j<len ? ili[j] : ifill;
       }
-      break;
-    case LGLSXP :
-      for (j=0; j<maxlen; j++) {
-        thisi = VECTOR_ELT(ans, j);
-        LOGICAL(thisi)[k] = (j < len[i]) ? LOGICAL(li)[j] : LOGICAL(fill)[0];
+    } break;
+    case INTSXP : {
+      const int *ili = INTEGER(li);
+      const int ifill = INTEGER(fill)[0];
+      for (int j=0; j<maxlen; ++j) {
+        INTEGER(ansp[j+rn])[k] = j<len ? ili[j] : ifill;
       }
-      break;
-    case REALSXP :
-      for (j=0; j<maxlen; j++) {
-        thisi = VECTOR_ELT(ans, j);
-        REAL(thisi)[k] = (j < len[i]) ? REAL(li)[j] : REAL(fill)[0];
+    } break;
+    case REALSXP : {
+      const double *dli = REAL(li);
+      const double dfill = REAL(fill)[0];
+      for (int j=0; j<maxlen; ++j) {
+        REAL(ansp[j+rn])[k] = j<len ? dli[j] : dfill;
       }
-      break;
-    case STRSXP :
-      for (j=0; j<maxlen; j++) {
-        thisi = VECTOR_ELT(ans, j);
-        SET_STRING_ELT(thisi, k, (j < len[i]) ? STRING_ELT(li, j) : STRING_ELT(fill, 0));
+    } break;
+    case STRSXP : {
+      const SEXP sfill = STRING_ELT(fill, 0);
+      for (int j=0; j<maxlen; ++j) {
+        SET_STRING_ELT(ansp[j+rn], k, j<len ? STRING_ELT(li, j) : sfill);
       }
-      break;
+    } break;
     default :
-        error("Unsupported column type '%s'", type2char(maxtype));
+      error(_("Unsupported column type '%s'"), type2char(maxtype));
     }
-    if (coerce) {
-      coerce = FALSE;
-      UNPROTECT(1);
-    }
+    UNPROTECT(1); // inside the loop to save the protection stack
     k++;
   }
-  UNPROTECT(2);
-  return(ans);
+  UNPROTECT(nprotect);
+  return ans;
 }
+

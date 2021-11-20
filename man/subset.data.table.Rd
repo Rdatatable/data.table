@@ -43,12 +43,12 @@
 \seealso{ \code{\link[base]{subset}} }
 \examples{
 
-dt <- data.table(a=sample(c('a', 'b', 'c'), 20, replace=TRUE),
+DT <- data.table(a=sample(c('a', 'b', 'c'), 20, replace=TRUE),
                  b=sample(c('a', 'b', 'c'), 20, replace=TRUE),
                  c=sample(20), key=c('a', 'b'))
 
-sub <- subset(dt, a == 'a')
-all.equal(key(sub), key(dt))
+sub <- subset(DT, a == 'a')
+all.equal(key(sub), key(DT))
 }
 \keyword{ data }
 

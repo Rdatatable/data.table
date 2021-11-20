@@ -5,7 +5,7 @@
 \description{
     Fast add, remove and update subsets of columns, by reference. \code{:=} operator can be used in two ways: \code{LHS := RHS} form, and \code{Functional form}. See \code{Usage}.
 
-    \code{set} is a low overhead loopable version of \code{:=}. It is particularly useful for repetitively updating rows of certain columns by reference (using a for-loop). See \code{Examples}. It can not perform grouping operations.
+    \code{set} is a low-overhead loop-able version of \code{:=}. It is particularly useful for repetitively updating rows of certain columns by reference (using a for-loop). See \code{Examples}. It can not perform grouping operations.
 
 }
 \usage{
@@ -27,11 +27,11 @@ set(x, i = NULL, j, value)
 \item{i}{ Optional. Indicates the rows on which the values must be updated with. If not provided, implies \emph{all rows}. The \code{:=} form is more powerful as it allows \emph{subsets} and \code{joins} based add/update columns by reference. See \code{Details}.
 
     In \code{set}, only integer type is allowed in \code{i} indicating which rows \code{value} should be assigned to. \code{NULL} represents all rows more efficiently than creating a vector such as \code{1:nrow(x)}. }
-\item{j}{ Column name(s) (character) or number(s) (integer) to be assigned \code{value} when column(s) already exist, and only column name(s) if they are to be added newly. }
+\item{j}{ Column name(s) (character) or number(s) (integer) to be assigned \code{value} when column(s) already exist, and only column name(s) if they are to be created. }
 \item{value}{ A list of replacement values to assign by reference to \code{x[i, j]}. }
 }
 \details{
-\code{:=} is defined for use in \code{j} only. It \emph{adds} or \emph{updates} or \emph{removes} column(s) by reference. It makes no copies of any part of memory at all. Read the \href{../doc/datatable-reference-semantics.html}{Reference Semantics HTML vignette} to follow with examples. Some typical usages are:
+\code{:=} is defined for use in \code{j} only. It \emph{adds} or \emph{updates} or \emph{removes} column(s) by reference. It makes no copies of any part of memory at all. Please read \href{../doc/datatable-reference-semantics.html}{\code{vignette("datatable-reference-semantics")}} and follow with examples. Some typical usages are:
 
 \preformatted{
     DT[, col := val]                              # update (or add at the end if doesn't exist) a column called "col" with value "val" (recycled if necessary).
@@ -44,6 +44,10 @@ set(x, i = NULL, j, value)
     DT[,`:=`(new1 = sum(colB), new2 = sum(colC))] # Functional form
 }
 
+The \code{\link{.Last.updated}} variable contains the number of rows updated by the most recent \code{:=} or \code{set} calls, which may be useful, for example, in production settings for testing assumptions about the number of rows affected by a statement; see \code{\link{.Last.updated}} for details.
+
+Note that for efficiency no check is performed for duplicate assignments, i.e. if multiple values are passed for assignment to the same index, assignment to this index will occur repeatedly and sequentially; for a given use case, consider whether it makes sense to create your own test for duplicates, e.g. in production code.
+
 All of the following result in a friendly error (by design) :
 
 \preformatted{
@@ -53,13 +57,13 @@ All of the following result in a friendly error (by design) :
     DT[, {col1 := 1L; col2 := 2L}]                # Use the functional form, `:=`(), instead (see above).
 }
 
-For additional resources, check the \href{../doc/datatable-faq.html}{FAQs vignette}. Also have a look at StackOverflow's \href{http://stackoverflow.com/search?q=\%5Bdata.table\%5D+reference}{data.table tag}.
+For additional resources, please read \href{../doc/datatable-faq.html}{\code{vignette("datatable-faq")}}. Also have a look at StackOverflow's \href{https://stackoverflow.com/search?q=\%5Bdata.table\%5D+reference}{data.table tag}.
 
-\code{:=} in \code{j} can be combined with all types of \code{i} (such as binary search), and all types of \code{by}. This a one reason why \code{:=} has been implemented in \code{j}. See the \href{../doc/datatable-reference-semantics}{Reference Semantics HTML vignette} and also \code{FAQ 2.16} for analogies to SQL.
+\code{:=} in \code{j} can be combined with all types of \code{i} (such as binary search), and all types of \code{by}. This a one reason why \code{:=} has been implemented in \code{j}. Please see \href{../doc/datatable-reference-semantics}{\code{vignette("datatable-reference-semantics")}} and also \code{FAQ 2.16} for analogies to SQL.
 
 When \code{LHS} is a factor column and \code{RHS} is a character vector with items missing from the factor levels, the new level(s) are automatically added (by reference, efficiently), unlike base methods.
 
-Unlike \code{<-} for \code{data.frame}, the (potentially large) LHS is not coerced to match the type of the (often small) RHS. Instead the RHS is coerced to match the type of the LHS, if necessary. Where this involves double precision values being coerced to an integer column, a warning is given (whether or not fractional data is truncated). The motivation for this is efficiency. It is best to get the column types correct up front and stick to them. Changing a column type is possible but deliberately harder: provide a whole column as the RHS. This RHS is then \emph{plonked} into that column slot and we call this \emph{plonk syntax}, or \emph{replace column syntax} if you prefer. By needing to construct a full length vector of a new type, you as the user are more aware of what is happening, and it's clearer to readers of your code that you really do intend to change the column type.
+Unlike \code{<-} for \code{data.frame}, the (potentially large) LHS is not coerced to match the type of the (often small) RHS. Instead the RHS is coerced to match the type of the LHS, if necessary. Where this involves double precision values being coerced to an integer column, a warning is given when fractional data is truncated. It is best to get the column types correct up front and stick to them. Changing a column type is possible but deliberately harder: provide a whole column as the RHS. This RHS is then \emph{plonked} into that column slot and we call this \emph{plonk syntax}, or \emph{replace column syntax} if you prefer. By needing to construct a full length vector of a new type, you as the user are more aware of what is happening and it is clearer to readers of your code that you really do intend to change the column type; e.g., \code{DT[, colA:=as.integer(colA)]}. A plonk occurs whenever you provide a RHS value to `:=` which is \code{nrow} long. When a column is \emph{plonked}, the original column is not updated by reference because that would entail updating every single element of that column whereas the plonk is just one column pointer update.
 
 \code{data.table}s are \emph{not} copied-on-change by \code{:=}, \code{setkey} or any of the other \code{set*} functions. See \code{\link{copy}}.
 }
@@ -68,7 +72,7 @@ Unlike \code{<-} for \code{data.frame}, the (potentially large) LHS is not coerc
 
 Since \code{[.data.table} incurs overhead to check the existence and type of arguments (for example), \code{set()} provides direct (but less flexible) assignment by reference with low overhead, appropriate for use inside a \code{for} loop. See examples. \code{:=} is more powerful and flexible than \code{set()} because \code{:=} is intended to be combined with \code{i} and \code{by} in single queries on large datasets.
 }
-\section{Note:}{
+\note{
     \code{DT[a > 4, b := c]} is different from \code{DT[a > 4][, b := c]}. The first expression updates (or adds) column \code{b} with the value \code{c} on those rows where \code{a > 4} evaluates to \code{TRUE}. \code{X} is updated \emph{by reference}, therefore no assignment needed.
 
     The second expression on the other hand updates a \emph{new} \code{data.table} that's returned by the subset operation. Since the subsetted data.table is ephemeral (it is not assigned to a symbol), the result would be lost; unless the result is assigned, for example, as follows: \code{ans <- DT[a > 4][, b := c]}.
@@ -76,7 +80,7 @@ Since \code{[.data.table} incurs overhead to check the existence and type of arg
 \value{
 \code{DT} is modified by reference and returned invisibly. If you require a copy, take a \code{\link{copy}} first (using \code{DT2 = copy(DT)}).
 }
-\seealso{ \code{\link{data.table}}, \code{\link{copy}}, \code{\link{alloc.col}}, \code{\link{truelength}}, \code{\link{set}}
+\seealso{ \code{\link{data.table}}, \code{\link{copy}}, \code{\link{setalloccol}}, \code{\link{truelength}}, \code{\link{set}}, \code{\link{.Last.updated}}
 }
 \examples{
 DT = data.table(a = LETTERS[c(3L,1:3)], b = 4:7)
@@ -100,8 +104,32 @@ setkey(DT, a)
 DT["A", b := 0L]            # binary search for group "A" and set column b using keys
 DT["B", f := mean(d)]       # subassign to new column, NA initialized
 
+# Adding multiple columns
+## by name
+DT[ , c('sin_d', 'log_e', 'cos_d') :=
+   .(sin(d), log(e), cos(d))]
+## by patterned name
+DT[ , paste(c('sin', 'cos'), 'b', sep = '_') :=
+   .(sin(b), cos(b))]
+## using lapply & .SD
+DT[ , paste0('tan_', c('b', 'd', 'e')) :=
+   lapply(.SD, tan), .SDcols = c('b', 'd', 'e')]
+## using forced evaluation to disambiguate a vector of names
+##   and overwrite existing columns with their squares
+sq_cols = c('b', 'd', 'e')
+DT[ , (sq_cols) := lapply(.SD, `^`, 2L), .SDcols = sq_cols]
+## by integer (NB: for robustness, it is not recommended
+##   to use explicit integers to update/define columns)
+DT[ , c(2L, 3L, 4L) := .(sqrt(b), sqrt(d), sqrt(e))]
+## by implicit integer
+DT[ , grep('a$', names(DT)) := tolower(a)]
+## by implicit integer, using forced evaluation
+sq_col_idx = grep('d$', names(DT))
+DT[ , (sq_col_idx) := lapply(.SD, dnorm),
+   .SDcols = sq_col_idx]
+
 \dontrun{
-# Speed example ...
+# Speed example:
 
 m = matrix(1, nrow = 2e6L, ncol = 100L)
 DF = as.data.frame(m)
@@ -121,5 +149,4 @@ system.time(for (i in 1:1000) set(DT, i, 1L, i))
 
 }
 \keyword{ data }
-
 

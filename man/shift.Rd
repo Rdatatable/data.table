@@ -10,14 +10,14 @@
 }
 
 \usage{
-shift(x, n=1L, fill=NA, type=c("lag", "lead"), give.names=FALSE)
+shift(x, n=1L, fill, type=c("lag", "lead", "shift", "cyclic"), give.names=FALSE)
 }
 \arguments{
   \item{x}{ A vector, list, data.frame or data.table. }
-  \item{n}{ Non-negative integer vector denoting the offset to lead or lag the input by. To create multiple lead/lag vectors, provide multiple values to \code{n}. }
-  \item{fill}{ Value to pad by. }
-  \item{type}{ default is \code{"lag"}. The other possible value is \code{"lead"}. }
-  \item{give.names}{default is \code{FALSE} which returns an unnamed list. When \code{TRUE}, names are automatically generated corresponding to \code{type} and \code{n}. }
+  \item{n}{ integer vector denoting the offset by which to lead or lag the input. To create multiple lead/lag vectors, provide multiple values to \code{n}; negative values of \code{n} will "flip" the value of \code{type}, i.e., \code{n=-1} and \code{type='lead'} is the same as \code{n=1} and \code{type='lag'}. }
+  \item{fill}{ default is \code{NA}. Value to use for padding when the window goes beyond the input length. }
+  \item{type}{ default is \code{"lag"} (look "backwards"). The other possible values \code{"lead"} (look "forwards"), \code{"shift"} (behave same as \code{"lag"} except given names) and \code{"cyclic"} where pushed out values are re-introduced at the front/back. }
+  \item{give.names}{ default is \code{FALSE} which returns an unnamed list. When \code{TRUE}, names are automatically generated corresponding to \code{type} and \code{n}. If answer is an atomic vector, then the argument is ignored. }
 }
 \details{
   \code{shift} accepts vectors, lists, data.frames or data.tables. It always returns a list except when the input is a \code{vector} and \code{length(n) == 1} in which case a \code{vector} is returned, for convenience. This is so that it can be used conveniently within data.table's syntax. For example, \code{DT[, (cols) := shift(.SD, 1L), by=id]} would lag every column of \code{.SD} by 1 for each group and \code{DT[, newcol := colA + shift(colB)]} would assign the sum of two \emph{vectors} to \code{newcol}.
@@ -37,6 +37,11 @@ x = 1:5
 shift(x, n=1, fill=NA, type="lag")
 # lag with n=1 and 2, and pad with 0 (returns list)
 shift(x, n=1:2, fill=0, type="lag")
+# getting a window by using positive and negative n:
+shift(x, n = -1:1)
+shift(x, n = -1:1, type = "shift", give.names = TRUE)
+# cyclic shift where pad uses pushed out values
+shift(x, n = -1:1, type = "cyclic")
 
 # on data.tables
 DT = data.table(year=2010:2014, v1=runif(5), v2=1:5, v3=letters[1:5])
@@ -68,6 +73,11 @@ ll = list(1:3, letters[4:1], runif(2))
 shift(ll, 1, type="lead")
 shift(ll, 1, type="lead", give.names=TRUE)
 shift(ll, 1:2, type="lead")
+
+# fill using first or last by group
+DT = data.table(x=1:6, g=rep(1:2, each=3))
+DT[ , shift(x, fill=x[1L]), by=g]
+DT[ , shift(x, fill=x[.N], type="lead"), by=g]
 
 }
 \seealso{

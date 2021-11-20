@@ -13,7 +13,7 @@ timetaken(started.at)
 % \details{
 % }
 \value{
-    A character vector of the form hh:mm:ss, or ss.mmm if under 60 seconds.
+    A character vector of the form HH:MM:SS, or SS.MMMsec if under 60 seconds.
 }
 \examples{
 started.at=proc.time()

@@ -4,7 +4,8 @@
 \title{Merge two data.tables}
 \description{
 Fast merge of two \code{data.table}s. The \code{data.table} method behaves
-very similarly to that of \code{data.frame}s except that, by default, it attempts to merge
+similarly to \code{data.frame} except that row order is specified, and by
+default the columns to merge on are chosen:
 
 \itemize{
   \item at first based on the shared key columns, and if there are none,
@@ -13,14 +14,14 @@ very similarly to that of \code{data.frame}s except that, by default, it attempt
   \item then based on the common columns between the two \code{data.table}s.
 }
 
-Set the \code{by}, or \code{by.x} and \code{by.y} arguments explicitly to override this default.
+Use the \code{by}, \code{by.x} and \code{by.y} arguments explicitly to override this default.
 }
 
 \usage{
-\method{merge}{data.table}(x, y, by = NULL, by.x = NULL, by.y = NULL,
-all = FALSE, all.x = all, all.y = all, sort = TRUE, suffixes = c(".x", ".y"),
+\method{merge}{data.table}(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FALSE,
+all.x = all, all.y = all, sort = TRUE, suffixes = c(".x", ".y"), no.dups = TRUE,
 allow.cartesian=getOption("datatable.allow.cartesian"),  # default FALSE
-...)
+\dots)
 }
 
 \arguments{
@@ -32,18 +33,23 @@ If \code{y} has no key columns, this defaults to the key of \code{x}.}
 \item{by.x, by.y}{Vectors of column names in \code{x} and \code{y} to merge on.}
 \item{all}{logical; \code{all = TRUE} is shorthand to save setting both
 \code{all.x = TRUE} and \code{all.y = TRUE}.}
-\item{all.x}{logical; if \code{TRUE}, then extra rows will be added to the
-output, one for each row in \code{x} that has no matching row in \code{y}.
-These rows will have 'NA's in those columns that are usually filled with values
-from \code{y}.  The default is \code{FALSE}, so that only rows with data from both
-\code{x} and \code{y} are included in the output.}
+\item{all.x}{logical; if \code{TRUE}, rows from \code{x} which have no matching row
+in \code{y} are included. These rows will have 'NA's in the columns that are usually
+filled with values from \code{y}. The default is \code{FALSE} so that only rows with
+data from both \code{x} and \code{y} are included in the output.}
 \item{all.y}{logical; analogous to \code{all.x} above.}
-\item{sort}{logical. If \code{TRUE} (default), the merged \code{data.table} is
-sorted by setting the key to the \code{by / by.x} columns. If \code{FALSE}, the
-result is not sorted.}
+\item{sort}{logical. If \code{TRUE} (default), the rows of the merged
+\code{data.table} are sorted by setting the key to the \code{by / by.x} columns. If
+\code{FALSE}, unlike base R's \code{merge} for which row order is unspecified, the
+row order in \code{x} is retained (including retaining the position of missings when
+\code{all.x=TRUE}), followed by \code{y} rows that don't match \code{x} (when \code{all.y=TRUE})
+retaining the order those appear in \code{y}.}
 \item{suffixes}{A \code{character(2)} specifying the suffixes to be used for
-making non-\code{by} column names unique. The suffix behavior works in a similar
+making non-\code{by} column names unique. The suffix behaviour works in a similar
 fashion as the \code{\link{merge.data.frame}} method does.}
+\item{no.dups}{logical indicating that \code{suffixes} are also appended to
+non-\code{by.y} column names in \code{y} when they have the same column name
+as any \code{by.x}.}
 \item{allow.cartesian}{See \code{allow.cartesian} in \code{\link{[.data.table}}.}
 \item{\dots}{Not used at this time.}
 }
@@ -51,21 +57,12 @@ fashion as the \code{\link{merge.data.frame}} method does.}
 \details{
 \code{\link{merge}} is a generic function in base R. It dispatches to either the
 \code{merge.data.frame} method or \code{merge.data.table} method depending on
-the class of its first argument. Note that, unlike \code{SQL}, \code{NA} is
+the class of its first argument. Note that, unlike \code{SQL} join, \code{NA} is
 matched against \code{NA} (and \code{NaN} against \code{NaN}) while merging.
 
-In versions \code{<= v1.9.4}, if the specified columns in \code{by} was not the
-key (or head of the key) of \code{x} or \code{y}, then a \code{\link{copy}} is
-first rekeyed prior to performing the merge. This was less performant and memory
-inefficient. The concept of secondary keys (implemented in \code{v1.9.4}) was
-used to overcome this limitation from \code{v1.9.6}+. No deep copies are made
-anymore and therefore very performant and memory efficient. Also there is better
-control for providing the columns to merge on with the help of newly implemented
-\code{by.x} and \code{by.y} arguments.
-
 For a more \code{data.table}-centric way of merging two \code{data.table}s, see
-\code{\link{[.data.table}}; e.g., \code{x[y, ...]}. See FAQ 1.12 for a detailed
-comparison of \code{merge} and \code{x[y, ...]}.
+\code{\link{[.data.table}}; e.g., \code{x[y, \dots]}. See FAQ 1.11 for a detailed
+comparison of \code{merge} and \code{x[y, \dots]}.
 }
 
 \value{
@@ -75,7 +72,7 @@ set to \code{TRUE}.
 }
 
 \seealso{
-\code{\link{data.table}}, \code{\link{as.data.table}}, \code{\link{[.data.table}},
+\code{\link{data.table}}, \code{\link{setkey}}, \code{\link{[.data.table}},
 \code{\link{merge.data.frame}}
 }
 
@@ -116,14 +113,14 @@ merge(d4, d1)
 merge(d1, d4, all=TRUE)
 merge(d4, d1, all=TRUE)
 
-# new feature, no need to set keys anymore
+# setkey is automatic by default
 set.seed(1L)
 d1 <- data.table(a=sample(rep(1:3,each=2)), z=1:6)
 d2 <- data.table(a=2:0, z=10:12)
 merge(d1, d2, by="a")
 merge(d1, d2, by="a", all=TRUE)
 
-# new feature, using by.x and by.y arguments
+# using by.x and by.y
 setnames(d2, "a", "b")
 merge(d1, d2, by.x="a", by.y="b")
 merge(d1, d2, by.x="a", by.y="b", all=TRUE)
@@ -131,5 +128,4 @@ merge(d2, d1, by.x="b", by.y="a")
 }
 
 \keyword{ data }
-
 

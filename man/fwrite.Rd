@@ -3,24 +3,28 @@
 \title{Fast CSV writer}
 \description{
 As \code{write.csv} but much faster (e.g. 2 seconds versus 1 minute) and just as flexible. Modern machines almost surely have more than one CPU so \code{fwrite} uses them; on all operating systems including Linux, Mac and Windows.
-
-This is new functionality as of Nov 2016. We may need to refine argument names and defaults.
 }
 \usage{
 fwrite(x, file = "", append = FALSE, quote = "auto",
-  sep = ",", sep2 = c("","|",""),
+  sep=getOption("datatable.fwrite.sep", ","),
+  sep2 = c("","|",""),
   eol = if (.Platform$OS.type=="windows") "\r\n" else "\n",
   na = "", dec = ".", row.names = FALSE, col.names = TRUE,
   qmethod = c("double","escape"),
-  logical01 = getOption("datatable.logical01", TRUE),
+  logical01 = getOption("datatable.logical01", FALSE),  # due to change to TRUE; see NEWS
   logicalAsInt = logical01,  # deprecated
+  scipen = getOption('scipen', 0L),
   dateTimeAs = c("ISO","squash","epoch","write.csv"),
-  buffMB = 8L, nThread = getDTthreads(),
-  showProgress = interactive(),
-  verbose = getOption("datatable.verbose", FALSE))
+  buffMB = 8L, nThread = getDTthreads(verbose),
+  showProgress = getOption("datatable.showProgress", interactive()),
+  compress = c("auto", "none", "gzip"),
+  yaml = FALSE,
+  bom = FALSE,
+  verbose = getOption("datatable.verbose", FALSE),
+  encoding = "")
 }
 \arguments{
-  \item{x}{Any \code{list} of same length vectors; e.g. \code{data.frame} and \code{data.table}.}
+  \item{x}{Any \code{list} of same length vectors; e.g. \code{data.frame} and \code{data.table}. If \code{matrix}, it gets internally coerced to \code{data.table} preserving col names but not row names}
   \item{file}{Output file name. \code{""} indicates output to the console. }
   \item{append}{If \code{TRUE}, the file is opened in append mode and column names (header row) are not written.}
   \item{quote}{When \code{"auto"}, character fields, factor fields and column names will only be surrounded by double quotes when they need to be; i.e., when the field contains the separator \code{sep}, a line ending \code{\\n}, the double quote itself or (when \code{list} columns are present) \code{sep2[2]} (see \code{sep2} below). If \code{FALSE} the fields are not wrapped with quotes even if this would break the CSV due to the contents of the field. If \code{TRUE} double quotes are always included other than around numeric fields, as \code{write.csv}.}
@@ -30,7 +34,7 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   \item{na}{The string to use for missing values in the data. Default is a blank string \code{""}.}
   \item{dec}{The decimal separator, by default \code{"."}. See link in references. Cannot be the same as \code{sep}.}
   \item{row.names}{Should row names be written? For compatibility with \code{data.frame} and \code{write.csv} since \code{data.table} never has row names. Hence default \code{FALSE} unlike \code{write.csv}.}
-  \item{col.names}{Should the column names (header row) be written? The default is TRUE. However, if missing, \code{append=TRUE} and the file already exists, the default is set to \code{FALSE} for convenience to prevent column names appearing again mid file.}
+  \item{col.names}{Should the column names (header row) be written? The default is \code{TRUE} for new files and when overwriting existing files (\code{append=FALSE}). Otherwise, the default is \code{FALSE} to prevent column names appearing again mid-file when stacking a set of \code{data.table}s or appending rows to the end of a file.}
   \item{qmethod}{A character string specifying how to deal with embedded double quote characters when quoting strings.
       \itemize{
 	\item{"escape" - the quote character (as well as the backslash character) is escaped in C style by a backslash, or}
@@ -38,6 +42,7 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
       }}
   \item{logical01}{Should \code{logical} values be written as \code{1} and \code{0} rather than \code{"TRUE"} and \code{"FALSE"}?}
   \item{logicalAsInt}{Deprecated. Old name for `logical01`. Name change for consistency with `fread` for which `logicalAsInt` would not make sense.}
+  \item{scipen}{ \code{integer} In terms of printing width, how much of a bias should there be towards printing whole numbers rather than scientific notation? See Details. }
   \item{dateTimeAs}{ How \code{Date}/\code{IDate}, \code{ITime} and \code{POSIXct} items are written.
       \itemize{
 	\item{"ISO" (default) - \code{2016-09-12}, \code{18:12:16} and \code{2016-09-12T18:12:16.999999Z}. 0, 3 or 6 digits of fractional seconds are printed if and when present for convenience, regardless of any R options such as \code{digits.secs}. The idea being that if milli and microseconds are present then you most likely want to retain them. R's internal UTC representation is written faithfully to encourage ISO standards, stymie timezone ambiguity and for speed. An option to consider is to start R in the UTC timezone simply with \code{"$ TZ='UTC' R"} at the shell (NB: it must be one or more spaces between \code{TZ='UTC'} and \code{R}, anything else will be silently ignored; this TZ setting applies just to that R process) or \code{Sys.setenv(TZ='UTC')} at the R prompt and then continue as if UTC were local time.}
@@ -52,16 +57,41 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   \item{buffMB}{The buffer size (MB) per thread in the range 1 to 1024, default 8MB. Experiment to see what works best for your data on your hardware.}
   \item{nThread}{The number of threads to use. Experiment to see what works best for your data on your hardware.}
   \item{showProgress}{ Display a progress meter on the console? Ignored when \code{file==""}. }
+  \item{compress}{If \code{compress = "auto"} and if \code{file} ends in \code{.gz} then output format is gzipped csv else csv. If \code{compress = "none"}, output format is always csv. If \code{compress = "gzip"} then format is gzipped csv. Output to the console is never gzipped even if \code{compress = "gzip"}. By default, \code{compress = "auto"}.}
+  \item{yaml}{If \code{TRUE}, \code{fwrite} will output a CSVY file, that is, a CSV file with metadata stored as a YAML header, using \code{\link[yaml]{as.yaml}}. See \code{Details}. }
+  \item{bom}{If \code{TRUE} a BOM (Byte Order Mark) sequence (EF BB BF) is added at the beginning of the file; format 'UTF-8 with BOM'.}
   \item{verbose}{Be chatty and report timings?}
+  \item{encoding}{ The encoding of the strings written to the CSV file. Default is \code{""}, which means writting raw bytes without considering the encoding. Other possible options are \code{"UTF-8"} and \code{"native"}. }
 }
 \details{
-\code{fwrite} began as a community contribution with \href{https://github.com/Rdatatable/data.table/pull/1613}{pull request #1613} by Otto Seiskari. This gave Matt Dowle the impetus to specialize the numeric formatting and to parallelize: \url{http://blog.h2o.ai/2016/04/fast-csv-writing-for-r/}. Final items were tracked in \href{https://github.com/Rdatatable/data.table/issues/1664}{issue #1664} such as automatic quoting, \code{bit64::integer64} support, decimal/scientific formatting exactly matching \code{write.csv} between 2.225074e-308 and 1.797693e+308 to 15 significant figures, \code{row.names}, dates (between 0000-03-01 and 9999-12-31), times and \code{sep2} for \code{list} columns where each cell can itself be a vector.
+\code{fwrite} began as a community contribution with \href{https://github.com/Rdatatable/data.table/pull/1613}{pull request #1613} by Otto Seiskari. This gave Matt Dowle the impetus to specialize the numeric formatting and to parallelize: \url{https://www.h2o.ai/blog/fast-csv-writing-for-r/}. Final items were tracked in \href{https://github.com/Rdatatable/data.table/issues/1664}{issue #1664} such as automatic quoting, \code{bit64::integer64} support, decimal/scientific formatting exactly matching \code{write.csv} between 2.225074e-308 and 1.797693e+308 to 15 significant figures, \code{row.names}, dates (between 0000-03-01 and 9999-12-31), times and \code{sep2} for \code{list} columns where each cell can itself be a vector.
+
+To save space, \code{fwrite} prefers to write wide numeric values in scientific notation -- e.g. \code{10000000000} takes up much more space than \code{1e+10}. Most file readers (e.g. \code{\link{fread}}) understand scientific notation, so there's no fidelity loss. Like in base R, users can control this by specifying the \code{scipen} argument, which follows the same rules as \code{\link[base]{options}('scipen')}. \code{fwrite} will see how much space a value will take to write in scientific vs. decimal notation, and will only write in scientific notation if the latter is more than \code{scipen} characters wider. For \code{10000000000}, then, \code{1e+10} will be written whenever \code{scipen<6}.
+
+\bold{CSVY Support:}
+
+The following fields will be written to the header of the file and surrounded by \code{---} on top and bottom:
+
+  \itemize{
+    \item{ \code{source} - Contains the R version and \code{data.table} version used to write the file }
+    \item{ \code{creation_time_utc} - Current timestamp in UTC time just before the header is written }
+    \item{ \code{schema} with element \code{fields} giving \code{name}-\code{type} (\code{class}) pairs for the table; multi-class objects (e.g. \code{c('POSIXct', 'POSIXt')}) will have their first class written. }
+    \item{ \code{header} - same as \code{col.names} (which is \code{header} on input) }
+    \item{ \code{sep} }
+    \item{ \code{sep2} }
+    \item{ \code{eol} }
+    \item{ \code{na.strings} - same as \code{na} }
+    \item{ \code{dec} }
+    \item{ \code{qmethod} }
+    \item{ \code{logical01} }
+  }
+
 }
 \seealso{
-  \code{\link{setDTthreads}}, \code{\link{fread}}, \code{\link[utils]{write.csv}}, \code{\link[utils]{write.table}}, \href{https://CRAN.R-project.org/package=bit64}{\code{bit64::integer64}}
+  \code{\link{setDTthreads}}, \code{\link{fread}}, \code{\link[utils:write.table]{write.csv}}, \code{\link[utils:write.table]{write.table}}, \href{https://CRAN.R-project.org/package=bit64}{\code{bit64::integer64}}
 }
 \references{
-  \url{http://howardhinnant.github.io/date_algorithms.html}\cr
+  \url{https://howardhinnant.github.io/date_algorithms.html}\cr
   \url{https://en.wikipedia.org/wiki/Decimal_mark}
 }
 \examples{

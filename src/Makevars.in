@@ -1,0 +1,15 @@
+PKG_CFLAGS = @PKG_CFLAGS@ @openmp_cflags@ @zlib_cflags@
+PKG_LIBS = @PKG_LIBS@ @openmp_cflags@ @zlib_libs@
+# See WRE $1.2.1.1. But retain user supplied PKG_* too, #4664.
+# WRE states ($1.6) that += isn't portable and that we aren't allowed to use it.
+# Otherwise we could use the much simpler PKG_LIBS += @openmp_cflags@ -lz.
+# Can't do PKG_LIBS = $(PKG_LIBS)...  either because that's a 'recursive variable reference' error in make
+# Hence the onerous @...@ substitution. Is it still appropriate in 2020 that we can't use +=?
+# Note that -lz is now escaped via @zlib_libs@ when zlib is not installed
+
+all: $(SHLIB)
+	@echo PKG_CFLAGS = $(PKG_CFLAGS)
+	@echo PKG_LIBS = $(PKG_LIBS)
+	if [ "$(SHLIB)" != "data_table$(SHLIB_EXT)" ]; then mv $(SHLIB) data_table$(SHLIB_EXT); fi
+	if [ "$(OS)" != "Windows_NT" ] && [ `uname -s` = 'Darwin' ]; then install_name_tool -id data_table$(SHLIB_EXT) data_table$(SHLIB_EXT); fi
+

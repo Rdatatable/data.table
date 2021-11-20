@@ -7,17 +7,17 @@
 
    \code{rowid} is intended for interactive use, particularly along with the function \code{dcast} to generate unique ids directly in the formula.
 
-   \code{rowidv(dt, cols=c("x", "y"))} is equivalent to column \code{N} in the code \code{dt[, N := seq_len(.N), by=c("x", "y")]}.
+   \code{rowidv(DT, cols=c("x", "y"))} is equivalent to column \code{N} in the code \code{DT[, N := seq_len(.N), by=c("x", "y")]}.
 
    See examples for more.
 }
 \usage{
-rowid(..., prefix=NULL)
+rowid(\dots, prefix=NULL)
 rowidv(x, cols=seq_along(x), prefix=NULL)
 }
 \arguments{
   \item{x}{ A vector, list, data.frame or data.table. }
-  \item{...}{ A sequence of numeric, integer64, character or logical vectors, all of same length. For interactive use.}
+  \item{\dots}{ A sequence of numeric, integer64, character or logical vectors, all of same length. For interactive use.}
   \item{cols}{ Only meaningful for lists, data.frames or data.tables. A character vector of column names (or numbers) of x. }
   \item{prefix}{ Either \code{NULL} (default) or a character vector of length=1 which is prefixed to the row ids, returning a character vector (instead of an integer vector).}
 }
