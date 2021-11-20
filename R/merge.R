@@ -81,8 +81,7 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
       yy = y[missingyidx]
       othercolsx = setdiff(nm_x, by)
       if (length(othercolsx)) {
-        nx = c(names(yy), paste0("V",seq_len(length(othercolsx))))
-        nx = make.unique(nx)
+        nx = make.unique(c(names(yy), othercolsx))
         set(yy, NULL, tail(nx, -ncol(yy)), rep(list(NA), length(othercolsx)))
       }
       # empty data.tables (nrow =0, ncol>0) doesn't skip names anymore in new rbindlist
