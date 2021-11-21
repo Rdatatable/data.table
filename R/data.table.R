@@ -2707,6 +2707,22 @@ setcolorder = function(x, neworder=key(x), before=NULL, after=NULL)  # before/af
 
 set = function(x,i=NULL,j,value)  # low overhead, loopable
 {
+  if (is.character(j)) {
+    newnames = NULL
+    names_x = names(x)
+    m = chmatch(j, names_x)
+    if (anyNA(m)) {
+      newnames = j[is.na(m)]
+    }
+    if (truelength(x) < ncol(x)+length(newnames)) {
+      name = substitute(x)
+      n = length(newnames) + eval(getOption("datatable.alloccol"))
+      setalloccol(x, n)
+      if (is.name(name)) {
+        assign(as.character(name),x,parent.frame(),inherits=TRUE)
+      }
+    }
+  }
   .Call(Cassign,x,i,j,NULL,value)
   invisible(x)
 }
