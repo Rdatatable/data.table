@@ -2707,7 +2707,7 @@ setcolorder = function(x, neworder=key(x), before=NULL, after=NULL)  # before/af
 
 set = function(x,i=NULL,j,value)  # low overhead, loopable
 {
-  if (is.character(j)) {
+  if (is.character(j) && truelength(x) < ncol(x)+length(j)) {
     newnames = NULL
     names_x = names(x)
     m = chmatch(j, names_x)
