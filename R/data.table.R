@@ -2715,9 +2715,9 @@ set = function(x,i=NULL,j,value)  # low overhead, loopable
       newnames = j[is.na(m)]
     }
     if (truelength(x) < ncol(x)+length(newnames)) {
-      name = substitute(x)
       n = length(newnames) + eval(getOption("datatable.alloccol"))
-      setalloccol(x, n)
+      name = substitute(x)
+      x = .Call(Calloccolwrapper, x, eval(n), getOption("datatable.verbose"))
       if (is.name(name)) {
         assign(as.character(name),x,parent.frame(),inherits=TRUE)
       }
