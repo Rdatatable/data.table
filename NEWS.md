@@ -453,7 +453,9 @@
 
 48. `DT[, prod(int64Col), by=grp]` produced wrong results for `bit64::integer64` due to incorrect optimization, [#5225](https://github.com/Rdatatable/data.table/issues/5225). Thanks to Benjamin Schwendinger for reporting and fixing.
 
-49. `set()` now automatically pre-allocates new column slots if needed, similarly as `:=` already does, [#496](https://github.com/Rdatatable/data.table/issues/496) [#4100](https://github.com/Rdatatable/data.table/issues/4100). Thanks to Huashan Chen and Benjamin Tyner for the report and Benjamin Schwendinger for the fix.
+49. `fintersect(..., all=TRUE)` and `fsetdiff(..., all=TRUE)` could return incorrect results when the inputs had columns named `x` and `y`, [#5255](https://github.com/Rdatatable/data.table/issues/5255). Thanks @Fpadt for the report, and @ben-schwen for the fix.
+
+50. `set()` now automatically pre-allocates new column slots if needed, similarly as `:=` already does, [#496](https://github.com/Rdatatable/data.table/issues/496) [#4100](https://github.com/Rdatatable/data.table/issues/4100). Thanks to Huashan Chen and Benjamin Tyner for the report and Benjamin Schwendinger for the fix.
 
 ## NOTES
 

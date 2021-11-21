@@ -18377,10 +18377,15 @@ if (test_bit64) {
   test(2226.3, DT[, prod(x,na.rm=TRUE), g], data.table(g=1:3, V1=as.integer64(c(NA,"9223372036854775807",-8L))))
 }
 
+# set ops when DT has column names x and y, #5255
+DT = data.table(x=c(1,2,2,2), y=LETTERS[c(1,2,2,3)])
+test(2227.1, fintersect(DT, DT, all=TRUE), DT)
+test(2227.2, fsetdiff(DT, DT, all=TRUE), DT[0])
+
 # re-overallocate in set if quota is reached #496 #4100
 opt = options(datatable.alloccol=1L)
 n = getOption("datatable.alloccol")
 DT = data.table()
 for (i in seq(2*n)) set(DT, j = paste0("V",i), value = i)
-test(2227.1, ncol(DT), 2L*n)
+test(2228.1, ncol(DT), 2L*n)
 options(opt)
