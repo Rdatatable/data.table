@@ -18378,7 +18378,9 @@ if (test_bit64) {
 }
 
 # re-overallocate in set if quota is reached #496 #4100
+opt = options(datatable.alloccol=1L)
 n = getOption("datatable.alloccol")
 DT = data.table()
 for (i in seq(2*n)) set(DT, j = paste0("V",i), value = i)
 test(2227.1, ncol(DT), 2L*n)
+options(opt)
