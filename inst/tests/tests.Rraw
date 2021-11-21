@@ -1265,7 +1265,8 @@ test(416, DT[J(2)], error="the columns to join by must be specified using")
 
 # Test shallow copy verbose message from := adding a column, and (TO DO) only when X is NAMED.
 DT = data.table(a=1:3,b=4:6)
-test(417, alloc.col(DT,3,verbose=TRUE), DT, output="Attempt to reduce allocation from.*to 5 ignored. Can only increase allocation via shallow copy")
+test(417.1, alloc.col(DT,3,verbose=TRUE), DT, output="Attempt to reduce allocation from.*to 5 ignored. Can only increase allocation via shallow copy")
+test(417.2, alloc.col(DT,3,verbose=1L), error="verbose must be TRUE or FALSE")
 options(datatable.alloccol=1L)
 DT = data.table(a=1:3,b=4:6)
 options(datatable.alloccol=1024L)
