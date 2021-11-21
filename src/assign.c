@@ -459,7 +459,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     oldtncol = TRUELENGTH(dt);   // TO DO: oldtncol can be just called tl now, as we won't realloc here any more.
 
     if (oldtncol<oldncol) {
-      if (oldtncol==0) error(_("This data.table has either been loaded from disk (e.g. using readRDS()/load()) or constructed manually (e.g. using structure()). Please run setDT() or setalloccol() on it first (to pre-allocate space for new columns) before assigning by reference to it."));   // #2996
+      // oldtncol=0 and oldtncol < oldncol can't occur longer because all functions which use assign (set and :=) pre-allocate column slots if needed
+      //if (oldtncol==0) error(_("This data.table has either been loaded from disk (e.g. using readRDS()/load()) or constructed manually (e.g. using structure()). Please run setDT() or setalloccol() on it first (to pre-allocate space for new columns) before assigning by reference to it."));   // #2996
       error(_("Internal error: oldtncol(%d) < oldncol(%d). Please report to data.table issue tracker, including result of sessionInfo()."), oldtncol, oldncol); // # nocov
     }
     if (oldtncol>oldncol+10000L) warning(_("truelength (%d) is greater than 10,000 items over-allocated (length = %d). See ?truelength. If you didn't set the datatable.alloccol option very large, please report to data.table issue tracker including the result of sessionInfo()."),oldtncol, oldncol);
