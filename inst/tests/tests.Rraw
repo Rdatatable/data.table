@@ -1876,7 +1876,7 @@ test(630.1, merge(DT1,DT2,all.x=TRUE), setkey(adt(merge(adf(DT1),adf(DT2),by="a"
 test(631, merge(DT1,DT2,all.y=TRUE), data.table(a=c(2,3,5),total.x=c(NA,1,1),total.y=c(5,1,2),key="a"))
 test(631.1, merge(DT1,DT2,all.y=TRUE), setkey(adt(merge(adf(DT1),adf(DT2),by="a",all.y=TRUE)),a))
 # ensure merge(x,y,all.y) does not alter input y
-test(631.2, merge(DT1[c(1,3)],DT2,all.y=TRUE), data.table(a=c(2,3,5),total.x=c(NA_real_,NA_real_,NA_real_),total.y=c(5,1,2),key="a"))
+test(631.2, merge(DT1[c(1,3)],DT2,all.y=TRUE), data.table(a=c(2,3,5),total.x=NA_real_,total.y=c(5,1,2),key="a"))
 test(631.3, DT2, data.table(a=c(2,3,5), total=c(5,1,2), key="a"))
 
 test(632, merge(DT1,DT2,all=TRUE), data.table(a=c(1,2,3,4,5),total.x=c(2,NA,1,3,1),total.y=c(NA,5,1,NA,2),key="a"))
