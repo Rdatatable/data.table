@@ -1863,6 +1863,8 @@ test(628.2, rbind(data.table(a=1:3,b=factor(letters[1:3]),c=factor("foo")), list
 # Test merge with common names and all.y=TRUE, #2011
 DT1 = data.table(a=c(1,3,4,5), total=c(2,1,3,1), key="a")
 DT2 = data.table(a=c(2,3,5), total=c(5,1,2), key="a")
+DT3 = data.table(a=c(2), total=c(5), key="a")
+DT4 = data.table(a=c(3), total=c(1), key="a")
 # 629+630 worked before anyway.  631+632 test the bug fix.
 adf=as.data.frame
 adt=as.data.table
@@ -1875,6 +1877,16 @@ test(630.1, merge(DT1,DT2,all.x=TRUE), setkey(adt(merge(adf(DT1),adf(DT2),by="a"
 
 test(631, merge(DT1,DT2,all.y=TRUE), data.table(a=c(2,3,5),total.x=c(NA,1,1),total.y=c(5,1,2),key="a"))
 test(631.1, merge(DT1,DT2,all.y=TRUE), setkey(adt(merge(adf(DT1),adf(DT2),by="a",all.y=TRUE)),a))
+# ensure merge(x,y,all.y) does not alter input y ...
+# .. i subset y with 1:nrow(y)
+test(631.2, merge(DT1[c(1,3)],DT2,all.y=TRUE), data.table(a=c(2,3,5),total.x=NA_real_,total.y=c(5,1,2),key="a"))
+test(631.3, DT2, data.table(a=c(2,3,5), total=c(5,1,2), key="a"))
+# .. nrow(y)=1, i subset y with 1 and no match with x
+test(631.4, merge(DT1,DT3,all.y=TRUE), data.table(a=c(2),total.x=NA_real_,total.y=c(5),key="a"))
+test(631.5, DT3, data.table(a=c(2), total=c(5), key="a"))
+# .. nrow(y)=1, i subset y with 1 and match with x
+test(631.6, merge(DT1,DT4,all.y=TRUE), data.table(a=c(3),total.x=c(1),total.y=c(1),key="a"))
+test(631.7, DT4, data.table(a=c(3), total=c(1), key="a"))
 
 test(632, merge(DT1,DT2,all=TRUE), data.table(a=c(1,2,3,4,5),total.x=c(2,NA,1,3,1),total.y=c(NA,5,1,NA,2),key="a"))
 test(632.1, merge(DT1,DT2,all=TRUE), setkey(adt(merge(adf(DT1),adf(DT2),by="a",all=TRUE)),a))
@@ -14577,8 +14589,11 @@ test(2002.12, rbind(DT1, DT2, idcol='id'),     data.table(id=integer(), a=logica
 test(2003.1, rbindlist(list(), use.names=1), error="use.names= should be TRUE, FALSE, or not used [(]\"check\" by default[)]")
 test(2003.2, rbindlist(list(), fill=1), error="fill= should be TRUE or FALSE")
 test(2003.3, rbindlist(list(data.table(a=1:2), data.table(b=3:4)), fill=TRUE, use.names=FALSE),
-             data.table(a=c(1:2,NA,NA), b=c(NA,NA,3:4)),
-             warning="use.names= cannot be FALSE when fill is TRUE. Setting use.names=TRUE")
+             data.table(a=c(1:4)))
+test(2003.4, rbindlist(list(data.table(a=1:2,c=5:6), data.table(b=3:4)), fill=TRUE, use.names=FALSE),
+             data.table(a=c(1:4), c=INT(5,6,NA,NA)))
+test(2003.5, rbindlist(list(data.table(a=1:2), data.table(b=3:4, c=5:6)), fill=TRUE, use.names=FALSE),
+             data.table(a=c(1:4), V1=INT(NA,NA,5,6)))
 
 # chmatch coverage for two different non-ascii encodings matching; issues mentioned in comments in chmatch.c #69 #2538 #111
 x1 = "fa\xE7ile"

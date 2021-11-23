@@ -12,8 +12,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
   if (TYPEOF(l) != VECSXP) error(_("Input to rbindlist must be a list. This list can contain data.tables, data.frames or plain lists."));
   Rboolean usenames = LOGICAL(usenamesArg)[0];
   const bool fill = LOGICAL(fillArg)[0];
-  if (fill && usenames!=TRUE) {
-    if (usenames==FALSE) warning(_("use.names= cannot be FALSE when fill is TRUE. Setting use.names=TRUE.")); // else no warning if usenames==NA (default)
+  if (fill && usenames==NA_LOGICAL) {
     usenames=TRUE;
   }
   const bool idcol = !isNull(idcolArg);
