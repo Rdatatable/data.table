@@ -17216,17 +17216,22 @@ test(2130.13, print(DT), output = "myclass:foo.*myclass:bar")
 rm(format_list_item.myclass)
 registerS3method("format_list_item", "myclass", format_list_item.default)
 
-# format_list_item.default attempts prettier printing first, inspired by #2273
+# format_list_item.default attempts prettier printing first, PR#5224
 DT = data.table(a = list(structure(list(1), class = "foo")))
 format.foo = function(x, ...) "All hail foo"
 registerS3method("format", "foo", format.foo)
 test(2130.14, print(DT), output="All hail foo")
+setattr(DT$a, "class", "bar")
+test(2130.15, print(DT), output="All hail foo")  # no print method for bar so foo on item is used
+format.bar = function(x, ...) "Column class first"
+registerS3method("format", "bar", format.bar)
+test(2130.16, print(DT), output="Column class first")  # e.g. sf:::format.sfc
 DT = data.table(num = 1:2,
                 formula = list(as.formula("mpg~cyl")),
                 model = list(lm(mpg~cyl, mtcars)),
                 shallow = list(1:3, 4:6),
                 nested = list(list(1:3), list(4:6)))
-test(2130.15, capture.output(DT),
+test(2130.17, capture.output(DT),
      c("   num   formula    model shallow    nested",
        "1:   1 mpg ~ cyl <lm[12]>   1,2,3 <list[1]>",
        "2:   2 mpg ~ cyl <lm[12]>   4,5,6 <list[1]>"))
