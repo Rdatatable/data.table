@@ -180,7 +180,7 @@ format_list_item = function(x, ...) {
   UseMethod("format_list_item")
 }
 
-has_format_method <- function(x) {
+has_format_method = function(x) {
   f = function(y) !is.null(getS3method("format", class=y, optional=TRUE))
   any(sapply(class(x), f))
 }
@@ -212,7 +212,7 @@ format_col.POSIXct = function(x, ..., timezone=FALSE) {
 # #3011 -- expression columns can wrap to newlines which breaks printing
 format_col.expression = function(x, ...) format(char.trunc(as.character(x)), ...)
 
-format_list_item.default <- function (x, ...) {
+format_list_item.default = function(x, ...) {
   if (is.null(x))  # NULL item in a list column
     ""
   else if (is.atomic(x) || inherits(x, "formula")) # FR #2591 - format.data.table issue with columns of class "formula"
@@ -228,7 +228,7 @@ format_list_item.default <- function (x, ...) {
 
 # FR #1091 for pretty printing of character
 # TODO: maybe instead of doing "this is...", we could do "this ... test"?
-char.trunc <- function(x, trunc.char = getOption("datatable.prettyprint.char")) {
+char.trunc = function(x, trunc.char = getOption("datatable.prettyprint.char")) {
   trunc.char = max(0L, suppressWarnings(as.integer(trunc.char[1L])), na.rm=TRUE)
   if (!is.character(x) || trunc.char <= 0L) return(x)
   idx = which(nchar(x) > trunc.char)
