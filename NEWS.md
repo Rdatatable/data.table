@@ -99,7 +99,7 @@
 
 16. `fwrite()` now accepts `sep=""`, [#4817](https://github.com/Rdatatable/data.table/issues/4817). The motivation is an example where the result of `paste0()` needs to be written to file but `paste0()` takes 40 minutes due to constructing a very large number of unique long strings in R's global character cache. Allowing `fwrite(, sep="")` avoids the `paste0` and saves 40 mins. Thanks to Jan Gorecki for the request, and Ben Schwen for the PR.
 
-17. `data.table` printing now supports customizable methods for both columns and list column row items, part of [#1523](https://github.com/Rdatatable/data.table/issues/1523). `format_col` is S3-generic for customizing how to print whole columns; `format_list_item` is S3-generic for customizing how to print each row of a list column. Thanks to @mllg who initially filed [#3338](https://github.com/Rdatatable/data.table/pulls/3338) with the seed of the idea, @franknarf1 who earlier suggested the idea of providing custom formatters, @fparages who submitted a patch to improve the printing of timezones for [#2842](https://github.com/Rdatatable/data.table/issues/2842), @RichardRedding for pointing out an error relating to printing wide `expression` columns in [#3011](https://github.com/Rdatatable/data.table/issues/3011), and @MichaelChirico for implementing. See `?print.data.table` for examples.
+17. `data.table` printing now supports customizable methods for both columns and list column row items, part of [#1523](https://github.com/Rdatatable/data.table/issues/1523). `format_col` is S3-generic for customizing how to print whole columns and by default defers to the S3 `format` method for the column's class if one exists; e.g. `format.sfc` for geometry columns from the `sf` package, [#2273](https://github.com/Rdatatable/data.table/issues/2273). Similarly, `format_list_item` is S3-generic for customizing how to print each row of list columns (which lack a format method at a column level) and also by default defers to the S3 `format` method for that item's class if one exists. Thanks to @mllg who initially filed [#3338](https://github.com/Rdatatable/data.table/pulls/3338) with the seed of the idea, @franknarf1 who earlier suggested the idea of providing custom formatters, @fparages who submitted a patch to improve the printing of timezones for [#2842](https://github.com/Rdatatable/data.table/issues/2842), @RichardRedding for pointing out an error relating to printing wide `expression` columns in [#3011](https://github.com/Rdatatable/data.table/issues/3011), @JoshOBrien for improving the output for geometry columns, and @MichaelChirico for implementing. See `?print.data.table` for examples.
 
 18. `tstrsplit(,type.convert=)` now accepts a named list of functions to apply to each part, [#5094](https://github.com/Rdatatable/data.table/issues/5094). Thanks to @Kamgang-B for the request and implementing.
 
@@ -206,7 +206,7 @@
     #   v1.9.6 18.5400 19.1800 21.5100 20.6900 23.4200 29.040   100
     #  v1.14.4  0.4826  0.5586  0.6586  0.6329  0.7348  1.318   100
     ```
-    
+
 31. `rbind()` and `rbindlist()` now support `fill=TRUE` with `use.names=FALSE` instead of issuing the warning `use.names= cannot be FALSE when fill is TRUE. Setting use.names=TRUE.`
 
     ```R
@@ -215,13 +215,13 @@
     #    <int> <int>
     # 1:     1     5
     # 2:     2     6
-    
+
     DT2
     #      foo
     #    <int>
     # 1:     3
     # 2:     4
-    
+
     rbind(DT1, DT2, fill=TRUE)   # no change
     #        A     B   foo
     #    <int> <int> <int>
@@ -231,7 +231,7 @@
     # 4:    NA    NA     4
 
     rbind(DT1, DT2, fill=TRUE, use.names=FALSE)
-    
+
     # was:
     #        A     B   foo
     #    <int> <int> <int>
@@ -242,7 +242,7 @@
     # Warning message:
     # In rbindlist(l, use.names, fill, idcol) :
     #   use.names= cannot be FALSE when fill is TRUE. Setting use.names=TRUE.
-    
+
     # now:
     #        A     B
     #    <int> <int>

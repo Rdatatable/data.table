@@ -21,6 +21,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   allNA = data.table:::allNA
   any_na = data.table:::any_na
   as.data.table.array = data.table:::as.data.table.array
+  as.data.table.default = data.table:::as.data.table.default
   as.IDate.default = data.table:::as.IDate.default
   as.ITime.default = data.table:::as.ITime.default
   binary = data.table:::binary
@@ -8801,16 +8802,16 @@ test(1613.605, all.equal(data.table(a=1), try(stop('this wont work'), silent = T
 L1 = list(a = data.table(1), b = setattr("foo1613", "tbl", data.table(1)))
 L2 = list(a = 1, b = setattr("foo1613", "tbl", 1))
 test(1613.606, all(grepl("target is data.table, current is numeric", all.equal(L1, L2))))
-as.data.table.foo1613 = function(x) { # test as.data.table coerce of 'current' argument
+registerS3method("as.data.table", "foo1613", function(x) { # test as.data.table coerce of 'current' argument
   if (!length(x)) warning("empty foo1613")
-  as.data.table(unclass(foo1613))
-}
-registerS3method("as.data.table", "foo1613", as.data.table.foo1613)
+  as.data.table(unclass(x))
+})
 foo1613 = structure(list(NULL), class="foo1613")
 test(1613.607, all.equal(data.table(), foo1613, check.attributes=FALSE))
 foo1613 = structure(list(), class="foo1613")
 test(1613.608, all.equal(data.table(), foo1613, check.attributes=FALSE), warning="empty")
-rm(as.data.table.foo1613, foo1613)
+registerS3method("as.data.table", "foo1613", as.data.table.default)
+# search below in this file for "registerS3method" for comments about it
 
 DT1 <- data.table(a = 1:4, b = letters[1:4], .seqn = 5L)
 DT2 <- data.table(a = 4:1, b = letters[4:1], .seqn = 5L)
@@ -17196,25 +17197,41 @@ test(2130.102, print(DT, timezone=FALSE), notOutput='UTC')
 # default expression printing can break format_col.default, #3011
 test(2130.11, print(data.table(e = expression(1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + 11 + 12 + 13))), output = '1 + 2 + 3')
 
-# format_col generic is used
-format_col.complex = function(x, ...) sprintf('(%.1f, %.1fi)', Re(x), Im(x))
-registerS3method("format_col", "complex", format_col.complex)
+# format_col and format_list_item generics, #2273 for package sf
+registerS3method("format_col", "complex", function(x, ...) sprintf('(%.1f, %.1fi)', Re(x), Im(x)))
 # this registerS3method does seem to be necessary to work within the test.data.table() environment
-# assigning the method using <<- probably works too, but we don't want to write to user's environment at all
-x = data.table(z = c(1 + 3i, 2 - 1i, pi + 2.718i))
-test(2130.12, x, output = '(1.0, 3.0i)')
-rm(format_col.complex)
+# assigning the method in .GlobalEnv might work too, but we don't want to write to user's environment at all (and is disallowed by CRAN policy)
+x = data.table(z = c(1+3i, 2-1i, pi+2.718i))
+test(2130.12, x, output="(1.0, 3.0i)")
 registerS3method("format_col", "complex", format_col.default)
-# otherwise it remains registered after test.data.table() and causes test 1610.1 to fail on the next run for example, and user display if they have complex data
-# haven't found a way to unregister an S3 method (tried registering NULL but there's an error that NULL isn't a function)
+# haven't found a way to unregister an S3 method; tried registering NULL but that's an error that NULL isn't a function
+# so registering the default method is the only known solution to clean up since the registered method persists after test.data.table() finishes and
+# then i) test 1610.1 fails if test.data.table() is rerun, ii) user display of complex data would be affected
+# did try wrapping with on.exit(,add=TRUE) but perhaps because this is a script that is sys.source'd, it ran straight away
 
-# format_list_item() generic is used
-format_list_item.myclass <- function(x, ...) paste0("<", class(x)[1L], ":", x$id, ">")
-registerS3method("format_list_item", "myclass", format_list_item.myclass)
-DT = data.table(row = 1:2, objs = list(structure(list(id = "foo"), class = "myclass"),  structure(list(id = "bar"), class = "myclass")))
-test(2130.13, print(DT), output = "myclass:foo.*myclass:bar")
-rm(format_list_item.myclass)
-registerS3method("format_list_item", "myclass", format_list_item.default)
+# format method for column takes predecedence over format method for each list item
+registerS3method("format", "myclass2130", function(x, ...) paste0("<", class(x)[1L], ":", x$id, ">"))
+DT = data.table(row=1:2, objs=list(structure(list(id="foo"), class="myclass2130"), structure(list(id="bar"), class="myclass2130")))
+test(2130.13, print(DT), output="myclass2130:foo.*myclass2130:bar")
+setattr(DT$objs, "class", "foo2130")
+registerS3method("format", "foo2130", function(x, ...) "All hail foo")
+test(2130.14, print(DT), output="myclass2130:foo.*myclass2130:bar") # because length 1 from format but needs to be length(x)
+registerS3method("format", "foo2130", function(x, ...) rep("All hail foo",length(x)))
+test(2130.15, print(DT), output="All hail foo")  # e.g. sf:::format.sfc rather than sf:::format.sfg on each item
+setattr(DT$objs, "class", "bar2130_with_no_method")
+test(2130.16, print(DT), output="myclass2130:foo.*myclass2130:bar")
+registerS3method("format", "myclass2130", format.default)
+registerS3method("format", "foo2130", format.default)
+
+DT = data.table(num = 1:2,
+                formula = list(as.formula("mpg~cyl")),
+                model = list(lm(mpg~cyl, mtcars)),
+                shallow = list(1:3, 4:6),
+                nested = list(list(1:3), list(4:6)))
+test(2130.17, capture.output(DT),
+     c("   num   formula    model shallow    nested",
+       "1:   1 mpg ~ cyl <lm[12]>   1,2,3 <list[1]>",
+       "2:   2 mpg ~ cyl <lm[12]>   4,5,6 <list[1]>"))
 
 # .SD from grouping should be unlocked, part of #4159
 x = data.table(a=1:3, b=4:6)
