@@ -206,7 +206,7 @@
     #   v1.9.6 18.5400 19.1800 21.5100 20.6900 23.4200 29.040   100
     #  v1.14.4  0.4826  0.5586  0.6586  0.6329  0.7348  1.318   100
     ```
-    
+
 31. `rbind()` and `rbindlist()` now support `fill=TRUE` with `use.names=FALSE` instead of issuing the warning `use.names= cannot be FALSE when fill is TRUE. Setting use.names=TRUE.`
 
     ```R
@@ -215,13 +215,13 @@
     #    <int> <int>
     # 1:     1     5
     # 2:     2     6
-    
+
     DT2
     #      foo
     #    <int>
     # 1:     3
     # 2:     4
-    
+
     rbind(DT1, DT2, fill=TRUE)   # no change
     #        A     B   foo
     #    <int> <int> <int>
@@ -231,7 +231,7 @@
     # 4:    NA    NA     4
 
     rbind(DT1, DT2, fill=TRUE, use.names=FALSE)
-    
+
     # was:
     #        A     B   foo
     #    <int> <int> <int>
@@ -242,7 +242,7 @@
     # Warning message:
     # In rbindlist(l, use.names, fill, idcol) :
     #   use.names= cannot be FALSE when fill is TRUE. Setting use.names=TRUE.
-    
+
     # now:
     #        A     B
     #    <int> <int>

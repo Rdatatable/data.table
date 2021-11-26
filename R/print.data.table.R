@@ -216,11 +216,11 @@ format_list_item.default = function(x, ...) {
   if (is.null(x))  # NULL item in a list column
     ""
   else if (is.atomic(x) || inherits(x, "formula")) # FR #2591 - format.data.table issue with columns of class "formula"
-    paste(c(format(head(x, 6L), ...), if (length(x) > 6L) "..."), collapse = ",") # fix for #5435 and #37 - format has to be added here...
+    paste(c(format(head(x, 6L), ...), if (length(x) > 6L) "..."), collapse=",") # fix for #5435 and #37 - format has to be added here...
   else if (has_format_method(x) && length(formatted<-format(x, ...))==1L) {
     # the column's class does not have a format method (otherwise it would have been used by format_col and this
-    # format_list_item would not be reached) but this particular list item does have a format method so use it 
-    formatted  
+    # format_list_item would not be reached) but this particular list item does have a format method so use it
+    formatted
   } else {
     paste0("<", class(x)[1L], paste_dims(x), ">")
   }
