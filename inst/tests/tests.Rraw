@@ -10982,7 +10982,7 @@ setattr(DT[[4]], "tzone", NULL)
 setattr(DT[[5]], "tzone", NULL)
 
 # format() now supports digits = 0, to display nsmall decimal places.
-options(digits.secs=0)
+old=options(digits.secs=0)
 test(1741.3, x1<-capture.output(fwrite(DT,dateTimeAs="write.csv")),
              capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
 options(digits.secs=3)
@@ -10993,6 +10993,7 @@ test(1741.5, x3<-capture.output(fwrite(DT,dateTimeAs="write.csv")),
              capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
 # check that extra digits made it into output
 test(1741.6, sum(nchar(x1)) < sum(nchar(x2)) && sum(nchar(x2)) < sum(nchar(x3)))
+options(old)
 
 # fread should properly handle NA in colClasses argument #1910
 test(1743.01, sapply(fread("a,b\n3,a", colClasses=c(NA, "factor")), class), c(a="integer", b="factor"))
@@ -18413,4 +18414,8 @@ if (test_bit64) {
 DT = data.table(x=c(1,2,2,2), y=LETTERS[c(1,2,2,3)])
 test(2227.1, fintersect(DT, DT, all=TRUE), DT)
 test(2227.2, fsetdiff(DT, DT, all=TRUE), DT[0])
+
+# fwrite POSIXct rounding, #5238
+DT = data.table(as.POSIXct(c(1678296152.99999952316284179688, -118944658.0000004, -.00000004), origin='1970-01-01 00:00:00'))
+test(2228, fwrite(DT), output="2023-03-08T17:22:33Z.*1966-03-26T07:49:02Z.*1970-01-01T00:00:00Z")
 
