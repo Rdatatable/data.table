@@ -18417,5 +18417,5 @@ test(2227.2, fsetdiff(DT, DT, all=TRUE), DT[0])
 
 # fwrite POSIXct rounding, #5238
 DT = data.table(as.POSIXct(c(1678296152.99999952316284179688, -118944658.0000004, -.00000004), origin='1970-01-01 00:00:00'))
-test(2228, capture.output(fwrite(DT))[-1], c('2023-03-08T17:22:33Z', '1966-03-26T07:49:02Z', '1970-01-01T00:00:00Z'))
+test(2228, fwrite(DT), output="2023-03-08T17:22:33Z.*1966-03-26T07:49:02Z.*1970-01-01T00:00:00Z")
 
