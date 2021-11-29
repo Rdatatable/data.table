@@ -81,7 +81,8 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     scipen = 0L,  # fwrite now respects scipen
     datatable.optimize = Inf,
     datatable.alloccol = 1024L,
-    datatable.print.class = FALSE,  # this is TRUE in cc.R and we like TRUE. But output= tests need to be updated (they assume FALSE currently)
+    datatable.print.class = FALSE,  # output= tests were written when default was FALSE
+    datatable.print.keys = FALSE,   # output= tests were written when default was FALSE
     datatable.print.trunc.cols = FALSE, #4552
     datatable.rbindlist.check = NULL,
     datatable.integer64 = "integer64",
