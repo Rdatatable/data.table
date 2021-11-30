@@ -254,6 +254,8 @@
     
 32. `fread()` already made a good guess as to whether column names are present by comparing the type of the fields in row 1 to the type of the fields in the sample. This guess is now improved when a column contains a string in row 1 (i.e. a potential column name) but all blank in the sample rows, [#2526](https://github.com/Rdatatable/data.table/issues/2526). Thanks @st-pasha for reporting, and @ben-schwen for the PR.
 
+33. `fread()` can now read `.zip` and `.tar` directly, [#3834](https://github.com/Rdatatable/data.table/issues/3834). Moreover, if a compressed file name is missing its extension, `fread()` attempts to infer the correct filetype from its magic bits. Thanks to Michael Chirico for the idea, and Benjamin Schwendinger for the PR.
+
 ## BUG FIXES
 
 1. `by=.EACHI` when `i` is keyed but `on=` different columns than `i`'s key could create an invalidly keyed result, [#4603](https://github.com/Rdatatable/data.table/issues/4603) [#4911](https://github.com/Rdatatable/data.table/issues/4911). Thanks to @myoung3 and @adamaltmejd for reporting, and @ColeMiller1 for the PR. An invalid key is where a `data.table` is marked as sorted by the key columns but the data is not sorted by those columns, leading to incorrect results from subsequent queries.

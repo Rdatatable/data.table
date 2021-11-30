@@ -18422,3 +18422,21 @@ test(2227.2, fsetdiff(DT, DT, all=TRUE), DT[0])
 DT = data.table(as.POSIXct(c(1678296152.99999952316284179688, -118944658.0000004, -.00000004), origin='1970-01-01 00:00:00'))
 test(2228, fwrite(DT), output="2023-03-08T17:22:33Z.*1966-03-26T07:49:02Z.*1970-01-01T00:00:00Z")
 
+# automatically infer known files signatures and attempt auto-unzip #3834
+DT = fread(testDir("russellCRLF.csv"))
+test(2229.1, fread(testDir("russellCRLF.zip")), DT)
+test(2229.2, fread(testDir("russellCRLF.tar")), DT)
+# guess binary file type
+f = tempfile()
+file.copy(testDir("russellCRLF.zip"), f, overwrite=TRUE)
+test(2229.3, fread(f), DT)
+if (test_R.utils) {
+  file.copy(testDir("ch11b.dat.bz2"), f, overwrite=TRUE)
+  test(2229.4, fread(f, logical01=FALSE)[,1], data.table(V1 = 1:100))
+  file.copy(testDir("issue_785_fread.txt.gz"), f, overwrite=TRUE)
+  test(2229.5, fread(f, logical01=FALSE)[,25], data.table(Sv3 = c(10,14,14,15)))
+}
+unlink(f)
+# not supporting multi file zips yet
+test(2229.6, fread(testDir("multi-file.zip")), error="Compressed files containing more than 1 file are currently not supported.")
+
