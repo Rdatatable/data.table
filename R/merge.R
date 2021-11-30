@@ -1,5 +1,5 @@
 merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FALSE, all.x = all,
-               all.y = all, sort = TRUE, suffixes = c(".x", ".y"), no.dups = TRUE, allow.cartesian=getOption("datatable.allow.cartesian"), ...) {
+               all.y = all, sort = TRUE, suffixes = c(".x", ".y"), no.dups = TRUE, allow.cartesian=getOption("datatable.allow.cartesian"), incomparables=NULL, ...) {
   if (!sort %in% c(TRUE, FALSE))
     stopf("Argument 'sort' should be logical TRUE/FALSE")
   if (!no.dups %in% c(TRUE, FALSE))
@@ -14,7 +14,7 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   x0 = length(x)==0L
   y0 = length(y)==0L
   if (x0 || y0) {
-    if (x0 && y0) 
+    if (x0 && y0)
       warningf("Neither of the input data.tables to join have columns.")
     else if (x0)
       warningf("Input data.table '%s' has no columns.", "x")
@@ -54,6 +54,15 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
     by = unname(by)
     by.x = by.y = by
   }
+
+  # warn about unused arguments #2587
+  if (length(list(...))) {
+    ell = as.list(substitute(list(...)))[-1L]
+    for (n in setdiff(names(ell), "")) warningf("Unknown argument '%s' has been passed.", n)
+    unnamed_n = length(ell) - sum(names(ell) != "")
+    if (unnamed_n)
+      warningf("Passed %d unknown and unnamed arguments.", unnamed_n)
+  }
   # with i. prefix in v1.9.3, this goes away. Left here for now ...
   ## sidestep the auto-increment column number feature-leading-to-bug by
   ## ensuring no names end in ".1", see unit test
@@ -72,6 +81,16 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
     end[chmatch(dupkeyx, end, 0L)] = paste0(dupkeyx, suffixes[2L])
   }
 
+  # implement incomparables argument #2587
+  if (!is.null(incomparables)) {
+    # %fin% to be replaced when #5232 is implemented/closed
+    "%fin%" = function(x, table) if (is.character(x) && is.character(table)) x %chin% table else x %in% table
+    xind = rowSums(x[, lapply(.SD, function(x) !(x %fin% incomparables)), .SDcols=by.x]) == length(by)
+    yind = rowSums(y[, lapply(.SD, function(x) !(x %fin% incomparables)), .SDcols=by.y]) == length(by)
+    # subset both so later steps still work
+    x = x[xind]
+    y = y[yind]
+  }
   dt = y[x, nomatch=if (all.x) NA else NULL, on=by, allow.cartesian=allow.cartesian]   # includes JIS columns (with a i. prefix if conflict with x names)
 
   if (all.y && nrow(y)) {  # If y does not have any rows, no need to proceed

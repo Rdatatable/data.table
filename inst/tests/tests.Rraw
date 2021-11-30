@@ -18458,3 +18458,16 @@ unlink(f)
 # not supporting multi file zips yet
 test(2229.6, fread(testDir("multi-file.zip")), error="Compressed files containing more than 1 file are currently not supported.")
 
+# merge.data.table ignored incomparables argument without warning, #2587
+x = data.frame(k1 = c(NA,NA,3,4,5), k2 = c(1,NA,NA,4,5), data = 1:5)
+y = data.frame(k1 = c(NA,2,NA,4,5), k2 = c(NA,NA,3,4,5), data = 1:5)
+DT = as.data.table(x)
+test(2230.1, setDF(merge(DT, y, by="k2", incomparables=NA)),         merge(x, y, by="k2", incomparables=NA))
+test(2230.2, setDF(merge(DT, y, by="k2", incomparables=c(NA,4))),    merge(x, y, by="k2", incomparables=c(NA,4)))
+test(2230.3, setDF(merge(DT, y, by="k2", incomparables=c(4,5))),     merge(x, y, by="k2", incomparables=c(4,5)))
+test(2230.4, setDF(merge(DT, y, by="k2", incomparables=c(1, NA, 4, 5))), merge(x, y, by="k2", incomparables=c(1,NA,4,5)))
+test(2230.5, setDF(merge(DT, y, by="k2", incomparables=c(NA, 3, 4, 5))), merge(x, y, by="k2", incomparables=c(NA,3,4,5)))
+test(2230.6, merge(DT, y, by="k2", unk=1), merge(DT, y, by="k2"), warning="Unknown argument 'unk' has been passed.")
+test(2230.7, merge(DT, y, by="k2", NULL, NULL, FALSE, FALSE, FALSE, TRUE, c(".x", ".y"), TRUE, getOption("datatable.allow.cartesian"), NULL, 1L),
+             merge(DT, y, by="k2"), warning=c("Supplied both `by` and `by.x/by.y`. `by` argument will be ignored.", "Passed 1 unknown and unnamed arguments."))
+
