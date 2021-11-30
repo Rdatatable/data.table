@@ -104,7 +104,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     file_signature = readBin(file, raw(), 8L)
 
     if ((w <- endsWithAny(file, c(".zip", ".tar"))) || identical(head(file_signature, 4L), zip_signature)) {
-      FUN = if ((w==1L) || identical(head(file_signature, 4L), zip_signature)) unzip else untar
+      FUN = if (w==2L) untar else unzip
       fnames = FUN(file, list=TRUE)
       if (is.data.frame(fnames)) fnames = fnames[,1L]
       if (length(fnames) > 1L)
@@ -117,10 +117,11 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
 
     gz_signature = as.raw(c(0x1F, 0x8B))
     bz2_signature = as.raw(c(0x42, 0x5A, 0x68))
-    if ((w <- endsWithAny(file, c(".gz",".bz2"))) || identical(head(file_signature, 2L), gz_signature) || identical(head(file_signature, 3L), bz2_signature)) {
+    gzsig = FALSE
+    if ((w <- endsWithAny(file, c(".gz",".bz2"))) || (gzsig <- identical(head(file_signature, 2L), gz_signature)) || identical(head(file_signature, 3L), bz2_signature)) {
       if (!requireNamespace("R.utils", quietly = TRUE))
         stopf("To read gz and bz2 files directly, fread() requires 'R.utils' package which cannot be found. Please install 'R.utils' using 'install.packages('R.utils')'.") # nocov
-      FUN = if ((w==1L) || identical(head(file_signature, 2L), gz_signature)) gzfile else bzfile
+      FUN = if (w==1L || gzsig) gzfile else bzfile
       R.utils::decompressFile(file, decompFile<-tempfile(tmpdir=tmpdir), ext=NULL, FUN=FUN, remove=FALSE)   # ext is not used by decompressFile when destname is supplied, but isn't optional
       file = decompFile   # don't use 'tmpFile' symbol again, as tmpFile might be the http://domain.org/file.csv.gz download
       on.exit(unlink(decompFile), add=TRUE)
