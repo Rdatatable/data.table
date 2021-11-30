@@ -82,9 +82,9 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   }
 
   # implement incomparables argument #2587
-  # %fin% to be replaced when #5232 is implemented/closed
-  "%fin%" = function(x, table) if (is.character(x) && is.character(table)) x %chin% table else x %in% table
   if (!is.null(incomparables)) {
+    # %fin% to be replaced when #5232 is implemented/closed
+    "%fin%" = function(x, table) if (is.character(x) && is.character(table)) x %chin% table else x %in% table
     xind = rowSums(x[, lapply(.SD, function(x) !(x %fin% incomparables)), .SDcols=by.x]) == length(by)
     yind = rowSums(y[, lapply(.SD, function(x) !(x %fin% incomparables)), .SDcols=by.y]) == length(by)
     # subset both so later steps still work
