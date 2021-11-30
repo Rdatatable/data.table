@@ -21,6 +21,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   allNA = data.table:::allNA
   any_na = data.table:::any_na
   as.data.table.array = data.table:::as.data.table.array
+  as.data.table.default = data.table:::as.data.table.default
   as.IDate.default = data.table:::as.IDate.default
   as.ITime.default = data.table:::as.ITime.default
   binary = data.table:::binary
@@ -1863,6 +1864,8 @@ test(628.2, rbind(data.table(a=1:3,b=factor(letters[1:3]),c=factor("foo")), list
 # Test merge with common names and all.y=TRUE, #2011
 DT1 = data.table(a=c(1,3,4,5), total=c(2,1,3,1), key="a")
 DT2 = data.table(a=c(2,3,5), total=c(5,1,2), key="a")
+DT3 = data.table(a=c(2), total=c(5), key="a")
+DT4 = data.table(a=c(3), total=c(1), key="a")
 # 629+630 worked before anyway.  631+632 test the bug fix.
 adf=as.data.frame
 adt=as.data.table
@@ -1875,6 +1878,16 @@ test(630.1, merge(DT1,DT2,all.x=TRUE), setkey(adt(merge(adf(DT1),adf(DT2),by="a"
 
 test(631, merge(DT1,DT2,all.y=TRUE), data.table(a=c(2,3,5),total.x=c(NA,1,1),total.y=c(5,1,2),key="a"))
 test(631.1, merge(DT1,DT2,all.y=TRUE), setkey(adt(merge(adf(DT1),adf(DT2),by="a",all.y=TRUE)),a))
+# ensure merge(x,y,all.y) does not alter input y ...
+# .. i subset y with 1:nrow(y)
+test(631.2, merge(DT1[c(1,3)],DT2,all.y=TRUE), data.table(a=c(2,3,5),total.x=NA_real_,total.y=c(5,1,2),key="a"))
+test(631.3, DT2, data.table(a=c(2,3,5), total=c(5,1,2), key="a"))
+# .. nrow(y)=1, i subset y with 1 and no match with x
+test(631.4, merge(DT1,DT3,all.y=TRUE), data.table(a=c(2),total.x=NA_real_,total.y=c(5),key="a"))
+test(631.5, DT3, data.table(a=c(2), total=c(5), key="a"))
+# .. nrow(y)=1, i subset y with 1 and match with x
+test(631.6, merge(DT1,DT4,all.y=TRUE), data.table(a=c(3),total.x=c(1),total.y=c(1),key="a"))
+test(631.7, DT4, data.table(a=c(3), total=c(1), key="a"))
 
 test(632, merge(DT1,DT2,all=TRUE), data.table(a=c(1,2,3,4,5),total.x=c(2,NA,1,3,1),total.y=c(NA,5,1,NA,2),key="a"))
 test(632.1, merge(DT1,DT2,all=TRUE), setkey(adt(merge(adf(DT1),adf(DT2),by="a",all=TRUE)),a))
@@ -8789,16 +8802,16 @@ test(1613.605, all.equal(data.table(a=1), try(stop('this wont work'), silent = T
 L1 = list(a = data.table(1), b = setattr("foo1613", "tbl", data.table(1)))
 L2 = list(a = 1, b = setattr("foo1613", "tbl", 1))
 test(1613.606, all(grepl("target is data.table, current is numeric", all.equal(L1, L2))))
-as.data.table.foo1613 = function(x) { # test as.data.table coerce of 'current' argument
+registerS3method("as.data.table", "foo1613", function(x) { # test as.data.table coerce of 'current' argument
   if (!length(x)) warning("empty foo1613")
-  as.data.table(unclass(foo1613))
-}
-registerS3method("as.data.table", "foo1613", as.data.table.foo1613)
+  as.data.table(unclass(x))
+})
 foo1613 = structure(list(NULL), class="foo1613")
 test(1613.607, all.equal(data.table(), foo1613, check.attributes=FALSE))
 foo1613 = structure(list(), class="foo1613")
 test(1613.608, all.equal(data.table(), foo1613, check.attributes=FALSE), warning="empty")
-rm(as.data.table.foo1613, foo1613)
+registerS3method("as.data.table", "foo1613", as.data.table.default)
+# search below in this file for "registerS3method" for comments about it
 
 DT1 <- data.table(a = 1:4, b = letters[1:4], .seqn = 5L)
 DT2 <- data.table(a = 4:1, b = letters[4:1], .seqn = 5L)
@@ -10969,7 +10982,7 @@ setattr(DT[[4]], "tzone", NULL)
 setattr(DT[[5]], "tzone", NULL)
 
 # format() now supports digits = 0, to display nsmall decimal places.
-options(digits.secs=0)
+old=options(digits.secs=0)
 test(1741.3, x1<-capture.output(fwrite(DT,dateTimeAs="write.csv")),
              capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
 options(digits.secs=3)
@@ -10980,6 +10993,7 @@ test(1741.5, x3<-capture.output(fwrite(DT,dateTimeAs="write.csv")),
              capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
 # check that extra digits made it into output
 test(1741.6, sum(nchar(x1)) < sum(nchar(x2)) && sum(nchar(x2)) < sum(nchar(x3)))
+options(old)
 
 # fread should properly handle NA in colClasses argument #1910
 test(1743.01, sapply(fread("a,b\n3,a", colClasses=c(NA, "factor")), class), c(a="integer", b="factor"))
@@ -12484,9 +12498,12 @@ if (test_R.utils) {
 }
 
 # better colname detection by comparing potential column names to the whole sample not just the first row of the sample, #2526
-test(1870.1, fread("A,100,200\n,300,400\n,500,600"), data.table(A=NA, "100"=c(300L,500L), "200"=c(400L,600L)))
-test(1870.2, fread("A,100,\n,,\n,500,600"), data.table(A=NA, "100"=c(NA,500L), V3=c(NA,600L)))
+test(1870.1, fread("A,100,200\n,300,400\n,500,600"), data.table(V1=c("A","",""), V2=c(100L,300L,500L), V3=c(200L,400L,600L)))
+test(1870.2, fread("A,100,\n,,\n,500,600"), data.table(V1=c("A","",""), V2=c(100L,NA,500L), V3=c(NA,NA,600L)))
 test(1870.3, fread("A,B,\n,,\n,500,3.4"), data.table(A=NA, B=c(NA,500L), V3=c(NA,3.4)))
+test(1870.4, fread("A,B,200\n,300,400\n,500,600"), data.table(A=NA, B=c(300L,500L), "200"=c(400L,600L)))
+test(1870.5, fread("A,B,\n,,\n,500,600"), data.table(A=NA, B=c(NA,500L), V3=c(NA,600L)))
+test(1870.6, fread("A,,\n,300,400\n,500,600"), data.table(V1=c("A","",""), V2=c(NA,300L,500L), V3=c(NA,400L,600L)))
 
 # nrows= now ignores errors after those nrows as expected and skip= determines first row for sure, #1267
 txt = "V1, V2, V3\n2,3,4\nV4, V5, V6, V7\n4,5,6,7\n8,9,10,11\n"
@@ -13487,13 +13504,34 @@ test(1958.01, fread('\U0001f64d', encoding = 'UTF-16'), error = "Argument 'encod
 test(1958.02, fread('a,b\n1,2', nrows = NA_real_),      data.table(a = 1L, b = 2L))
 test(1958.03, fread('a,b\n1,2', nrows = -1),            data.table(a = 1L, b = 2L))
 test(1958.04, fread('a,b\n1,2', key = 1),               error = 'must be a character vector naming columns')
-test(1958.05, fread("A,B,C\n1,2,3\n3,4,5\n0,0,0\n",   nrows=0),          data.table(A=logical(), B=logical(), C=logical()))  #2747
-test(1958.06, fread("A,B,C\n1,2,3\n3,4,5\n0,0,100\n", nrows=0, sep=','), data.table(A=logical(), B=logical(), C=logical()))
+test(1958.05, fread("A,B,C\n1,2,3\n3,4,5\n0,0,0\n",   nrows=0),          data.table(A=integer(), B=integer(), C=integer()))  #2747
+test(1958.06, fread("A,B,C\n1,2,3\n3,4,5\n0,0,100\n", nrows=0, sep=','), data.table(A=integer(), B=integer(), C=integer()))
 test(1958.07, fread('A,B,C,D\n"a,b",4,5,6\n"c,d",6,7\n', fill=TRUE), data.table(A=c("a,b","c,d"), B=INT(4,6), C=INT(5,7), D=INT(6,NA)))  # 2547
 test(1958.08, fread('A,B,C,D\n"a,b",4,5\n"c,d",6,7,8\n', fill=TRUE), data.table(A=c("a,b","c,d"), B=INT(4,6), C=INT(5,7), D=INT(NA,8)))
-# 4686
-test(1958.09, fread("A,B,C\n1,2,3\n3,4,5\n0,0,0\n",   nrows=0L),          data.table(A=logical(), B=logical(), C=logical()))
-test(1958.10, fread("A,B,C\n1,2,3\n3,4,5\n0,0,100\n", nrows=0L, sep=','), data.table(A=logical(), B=logical(), C=logical()))
+test(1958.09, fread("A,B,C\n1,2,3\n3,4,5\n0,0,0\n",   nrows=0L),          data.table(A=integer(), B=integer(), C=integer()))  # nrows=0 vs 0L, 4686
+test(1958.10, fread("A,B,C\n1,2,3\n3,4,5\n0,0,100\n", nrows=0L, sep=','), data.table(A=integer(), B=integer(), C=integer()))
+# nrows=0 should perform a full sample to get the empty column types right as documented, #4029
+test(1958.11, fread('A,B,C,D\n1,CHAR,"CHAR",3.1', nrows=0L), data.table(A=integer(), B=character(), C=character(), D=numeric()))
+# .. one different type in the middle of under 100
+txt = paste(c("A,B\n1,2\n", rep("3,4\n",48), "3,4.1\n", rep("5,6\n",48)), collapse="")
+test(1958.12, fread(text=txt, nrows=0L),          data.table(A=integer(), B=numeric()))
+test(1958.13, fread(text=txt, nrows=0L, skip=1L), data.table(V1=integer(), V2=numeric()))
+test(1958.14, fread(text=txt, nrows=1L),          data.table(A=1L, B=2L))  # B integer not numeric because sample is min(nrows,100) when nrows>=1
+test(1958.15, fread(text=txt, nrows=1L, skip=1L), data.table(V1=1L, V2=2L))
+test(1958.16, fread(text=txt, nrows=2L),          data.table(A=c(1L,3L), B=c(2L,4L)))
+test(1958.17, fread(text=txt, nrows=2L, skip=1L), data.table(V1=c(1L,3L), V2=c(2L,4L)))
+# .. one different type on line 148 when there are just under 200 lines
+txt = paste(c("A,B\n1,2\n", rep("3,4\n",148), "3,4.1\n", rep("5,6\n",48)), collapse="")
+test(1958.18, fread(text=txt, nrows=0L, verbose=TRUE), data.table(A=integer(), B=numeric()),
+              output="Sampled 149 rows.*at 2 jump points")
+# .. one different type within sample for large number of lines
+txt = paste(c("A,B\n1,2\n", rep("3,4\n",5000), "3,4.1\n", rep("5,6\n",5000)), collapse="")
+test(1958.19, fread(text=txt, nrows=0L, verbose=TRUE), data.table(A=integer(), B=numeric()),
+              output="Sampled 1049 rows.*at 11 jump points")
+# .. one different type out of sample for large number of lines
+txt = paste(c("A,B\n1,2\n", rep("3,4\n",5100), "3,4.1\n", rep("5,6\n",4900)), collapse="")
+test(1958.20, fread(text=txt, nrows=0L, verbose=TRUE), data.table(A=integer(), B=integer()),
+              output="Sampled 1049 rows.*at 11 jump points")
 
 # Skip should work with all types of newlines #3006
 eols = c("\n", "\r\n", "\r", "\n\r")
@@ -14556,8 +14594,11 @@ test(2002.12, rbind(DT1, DT2, idcol='id'),     data.table(id=integer(), a=logica
 test(2003.1, rbindlist(list(), use.names=1), error="use.names= should be TRUE, FALSE, or not used [(]\"check\" by default[)]")
 test(2003.2, rbindlist(list(), fill=1), error="fill= should be TRUE or FALSE")
 test(2003.3, rbindlist(list(data.table(a=1:2), data.table(b=3:4)), fill=TRUE, use.names=FALSE),
-             data.table(a=c(1:2,NA,NA), b=c(NA,NA,3:4)),
-             warning="use.names= cannot be FALSE when fill is TRUE. Setting use.names=TRUE")
+             data.table(a=c(1:4)))
+test(2003.4, rbindlist(list(data.table(a=1:2,c=5:6), data.table(b=3:4)), fill=TRUE, use.names=FALSE),
+             data.table(a=c(1:4), c=INT(5,6,NA,NA)))
+test(2003.5, rbindlist(list(data.table(a=1:2), data.table(b=3:4, c=5:6)), fill=TRUE, use.names=FALSE),
+             data.table(a=c(1:4), V1=INT(NA,NA,5,6)))
 
 # chmatch coverage for two different non-ascii encodings matching; issues mentioned in comments in chmatch.c #69 #2538 #111
 x1 = "fa\xE7ile"
@@ -17160,25 +17201,41 @@ test(2130.102, print(DT, timezone=FALSE), notOutput='UTC')
 # default expression printing can break format_col.default, #3011
 test(2130.11, print(data.table(e = expression(1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + 11 + 12 + 13))), output = '1 + 2 + 3')
 
-# format_col generic is used
-format_col.complex = function(x, ...) sprintf('(%.1f, %.1fi)', Re(x), Im(x))
-registerS3method("format_col", "complex", format_col.complex)
+# format_col and format_list_item generics, #2273 for package sf
+registerS3method("format_col", "complex", function(x, ...) sprintf('(%.1f, %.1fi)', Re(x), Im(x)))
 # this registerS3method does seem to be necessary to work within the test.data.table() environment
-# assigning the method using <<- probably works too, but we don't want to write to user's environment at all
-x = data.table(z = c(1 + 3i, 2 - 1i, pi + 2.718i))
-test(2130.12, x, output = '(1.0, 3.0i)')
-rm(format_col.complex)
+# assigning the method in .GlobalEnv might work too, but we don't want to write to user's environment at all (and is disallowed by CRAN policy)
+x = data.table(z = c(1+3i, 2-1i, pi+2.718i))
+test(2130.12, x, output="(1.0, 3.0i)")
 registerS3method("format_col", "complex", format_col.default)
-# otherwise it remains registered after test.data.table() and causes test 1610.1 to fail on the next run for example, and user display if they have complex data
-# haven't found a way to unregister an S3 method (tried registering NULL but there's an error that NULL isn't a function)
+# haven't found a way to unregister an S3 method; tried registering NULL but that's an error that NULL isn't a function
+# so registering the default method is the only known solution to clean up since the registered method persists after test.data.table() finishes and
+# then i) test 1610.1 fails if test.data.table() is rerun, ii) user display of complex data would be affected
+# did try wrapping with on.exit(,add=TRUE) but perhaps because this is a script that is sys.source'd, it ran straight away
 
-# format_list_item() generic is used
-format_list_item.myclass <- function(x, ...) paste0("<", class(x)[1L], ":", x$id, ">")
-registerS3method("format_list_item", "myclass", format_list_item.myclass)
-DT = data.table(row = 1:2, objs = list(structure(list(id = "foo"), class = "myclass"),  structure(list(id = "bar"), class = "myclass")))
-test(2130.13, print(DT), output = "myclass:foo.*myclass:bar")
-rm(format_list_item.myclass)
-registerS3method("format_list_item", "myclass", format_list_item.default)
+# format method for column takes predecedence over format method for each list item
+registerS3method("format", "myclass2130", function(x, ...) paste0("<", class(x)[1L], ":", x$id, ">"))
+DT = data.table(row=1:2, objs=list(structure(list(id="foo"), class="myclass2130"), structure(list(id="bar"), class="myclass2130")))
+test(2130.13, print(DT), output="myclass2130:foo.*myclass2130:bar")
+setattr(DT$objs, "class", "foo2130")
+registerS3method("format", "foo2130", function(x, ...) "All hail foo")
+test(2130.14, print(DT), output="myclass2130:foo.*myclass2130:bar") # because length 1 from format but needs to be length(x)
+registerS3method("format", "foo2130", function(x, ...) rep("All hail foo",length(x)))
+test(2130.15, print(DT), output="All hail foo")  # e.g. sf:::format.sfc rather than sf:::format.sfg on each item
+setattr(DT$objs, "class", "bar2130_with_no_method")
+test(2130.16, print(DT), output="myclass2130:foo.*myclass2130:bar")
+registerS3method("format", "myclass2130", format.default)
+registerS3method("format", "foo2130", format.default)
+
+DT = data.table(num = 1:2,
+                formula = list(as.formula("mpg~cyl")),
+                model = list(lm(mpg~cyl, mtcars)),
+                shallow = list(1:3, 4:6),
+                nested = list(list(1:3), list(4:6)))
+test(2130.17, capture.output(DT),
+     c("   num   formula    model shallow    nested",
+       "1:   1 mpg ~ cyl <lm[12]>   1,2,3 <list[1]>",
+       "2:   2 mpg ~ cyl <lm[12]>   4,5,6 <list[1]>"))
 
 # .SD from grouping should be unlocked, part of #4159
 x = data.table(a=1:3, b=4:6)
@@ -18348,21 +18405,38 @@ test(2225.1, groupingsets(data.table(iris), j=sum(Sepal.Length), by=c('Sp'='Spec
 test(2225.2, groupingsets(data.table(iris), j=mean(Sepal.Length), by=c('Sp'='Species'), sets=list('Species')),
              groupingsets(data.table(iris), j=mean(Sepal.Length), by=c('Species'), sets=list('Species')))
 
+# make gprod work for bit64, #5225
+if (test_bit64) {
+  test(2226.1, base::prod(2147483647L,2L), 4294967294)  # just to illustrate that base returns double
+  DT = data.table(x=c(lim.integer64(), 2, 1, NA, NA, -2, 4), g=INT(1,2,1,2,1,2,3,3))
+  test(2226.2, DT[, prod(x), g],            data.table(g=1:3, V1=as.integer64(c(NA,NA,-8L))))
+  test(2226.3, DT[, prod(x,na.rm=TRUE), g], data.table(g=1:3, V1=as.integer64(c(NA,"9223372036854775807",-8L))))
+}
+
+# set ops when DT has column names x and y, #5255
+DT = data.table(x=c(1,2,2,2), y=LETTERS[c(1,2,2,3)])
+test(2227.1, fintersect(DT, DT, all=TRUE), DT)
+test(2227.2, fsetdiff(DT, DT, all=TRUE), DT[0])
+
+# fwrite POSIXct rounding, #5238
+DT = data.table(as.POSIXct(c(1678296152.99999952316284179688, -118944658.0000004, -.00000004), origin='1970-01-01 00:00:00'))
+test(2228, fwrite(DT), output="2023-03-08T17:22:33Z.*1966-03-26T07:49:02Z.*1970-01-01T00:00:00Z")
 
 # automatically infer known files signatures and attempt auto-unzip #3834
 DT = fread(testDir("russellCRLF.csv"))
-test(2226.1, fread(testDir("russellCRLF.zip")), DT)
-test(2226.2, fread(testDir("russellCRLF.tar")), DT)
+test(2229.1, fread(testDir("russellCRLF.zip")), DT)
+test(2229.2, fread(testDir("russellCRLF.tar")), DT)
 # guess binary file type
 f = tempfile()
 file.copy(testDir("russellCRLF.zip"), f, overwrite=TRUE)
-test(2226.3, fread(f), DT)
+test(2229.3, fread(f), DT)
 if (test_R.utils) {
   file.copy(testDir("ch11b.dat.bz2"), f, overwrite=TRUE)
-  test(2226.5, fread(f, logical01=FALSE)[,1], data.table(V1 = 1:100))
+  test(2229.4, fread(f, logical01=FALSE)[,1], data.table(V1 = 1:100))
   file.copy(testDir("issue_785_fread.txt.gz"), f, overwrite=TRUE)
-  test(2226.6, fread(f, logical01=FALSE)[,25], data.table(Sv3 = c(10,14,14,15)))
+  test(2229.5, fread(f, logical01=FALSE)[,25], data.table(Sv3 = c(10,14,14,15)))
 }
 unlink(f)
 # not supporting multi file zips yet
-test(2226.7, fread(testDir("multi-file.zip")), error="Compressed files containing more than 1 file are currently not supported.")
+test(2229.6, fread(testDir("multi-file.zip")), error="Compressed files containing more than 1 file are currently not supported.")
+

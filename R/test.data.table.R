@@ -81,7 +81,8 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     scipen = 0L,  # fwrite now respects scipen
     datatable.optimize = Inf,
     datatable.alloccol = 1024L,
-    datatable.print.class = FALSE,  # this is TRUE in cc.R and we like TRUE. But output= tests need to be updated (they assume FALSE currently)
+    datatable.print.class = FALSE,  # output= tests were written when default was FALSE
+    datatable.print.keys = FALSE,   # output= tests were written when default was FALSE
     datatable.print.trunc.cols = FALSE, #4552
     datatable.rbindlist.check = NULL,
     datatable.integer64 = "integer64",
@@ -116,7 +117,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   assign("filename", fn, envir=env)
   assign("inittime", as.integer(Sys.time()), envir=env) # keep measures from various test.data.table runs
   assign("showProgress", showProgress, envir=env)
-  
+
   owd = setwd(tempdir()) # ensure writeable directory; e.g. tests that plot may write .pdf here depending on device option and/or batch mode; #5190
   on.exit(setwd(owd))
 
