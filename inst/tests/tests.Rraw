@@ -2171,7 +2171,7 @@ test(739.3, DT[,`:=`(4:6,7:9,10:12)], error="all arguments must be named")  # te
 DT = data.table( c1=1:3 )
 test(739.4, DT[,let(c2=4:6, c3=7:9)], data.table(c1=1:3,c2=4:6,c3=7:9))
 test(739.5, DT[,let(4:6,c3=7:9)], error="all arguments must be named")
-test(739.6, DT[,let(4:6,7:9,10:12)], error="all arguments must be named")  # tes
+test(739.6, DT[,let(4:6,7:9,10:12)], error="all arguments must be named")
 
 # that out of bounds LHS is caught, root cause of #2254
 test(742, DT[,3:6:=1L], error="outside.*range")
@@ -2865,7 +2865,7 @@ setkey(dt1, "Date")
 setkey(dt2, "Date")
 test(980.1, copy(dt1)[dt2, `:=`(A=A+i.A, B=B+i.B, C=i.C)][,list(A,B,C)],
           data.table(A=INT(110,115,120,225,230,235),B=INT(330,325,320,415,410,405),C=rep(1:2,each=3)))
-test(980.2, copy(dt1)[dt2, `:=`(A=A+i.A, B=B+i.B, C=i.C)][,list(A,B,C)],
+test(980.2, copy(dt1)[dt2,  let(A=A+i.A, B=B+i.B, C=i.C)][,list(A,B,C)],
           data.table(A=INT(110,115,120,225,230,235),B=INT(330,325,320,415,410,405),C=rep(1:2,each=3)))
 DT = data.table(A=1:2,B=3:4,C=5:6)
 test(981.1, copy(DT)[,`:=`(D=B+4L,B=0:1,E=A*2L,F=A*3L,C=C+1L,G=C*2L),by=A], error="Supplied 2 items to be assigned to group 1 of size 1 in column 'B'")
@@ -2873,7 +2873,7 @@ test(981.2, copy(DT)[,let(D=B+4L,B=0:1,E=A*2L,F=A*3L,C=C+1L,G=C*2L),by=A], error
 DT = data.table(A=1:2,B=3:4,C=5:6)
 test(982.1, copy(DT)[,`:=`(D=B+4L,B=0L,E=A*2L,F=A*3L,C=C+1L,G=C*2L),by=A],
           data.table(A=1:2,B=0L,C=6:7,D=7:8,E=c(2L,4L),F=c(3L,6L),G=c(10L,12L))) # Also note that G is not yet iterative. In future: c(12,14)
-test(982.2, copy(DT)[,`:=`(D=B+4L,B=0L,E=A*2L,F=A*3L,C=C+1L,G=C*2L),by=A],
+test(982.2, copy(DT)[, let(D=B+4L,B=0L,E=A*2L,F=A*3L,C=C+1L,G=C*2L),by=A],
           data.table(A=1:2,B=0L,C=6:7,D=7:8,E=c(2L,4L),F=c(3L,6L),G=c(10L,12L)))
 
 # rbindlist binding factors, #2650
