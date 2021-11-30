@@ -15,7 +15,7 @@ as.data.table.xts = function(x, keep.rownames = TRUE, key=NULL, ...) {
   r[]
 }
 
-as.xts.data.table = function(x, ..., numeric.only = TRUE) {
+as.xts.data.table = function(x, numeric.only = TRUE, ...) {
   stopifnot(requireNamespace("xts"), !missing(x), is.data.table(x))
   if (!xts::is.timeBased(x[[1L]])) stopf("data.table must have a time based column in first position, use `setcolorder` function to change the order, or see ?timeBased for supported types")
   r <- x[, -1L]# exclude first col, xts index
@@ -24,5 +24,5 @@ as.xts.data.table = function(x, ..., numeric.only = TRUE) {
     if (!all(colsNumeric)) warningf("Following columns are not numeric and will be omitted: %s", brackify(names(colsNumeric)[!colsNumeric]))
     r <- r[, .SD, .SDcols = names(colsNumeric)[colsNumeric]]
   }
-  return(xts::as.xts(as.matrix(r), order.by = if ("IDate" %chin% class(x[[1L]])) as.Date(x[[1L]]) else x[[1L]]))
+  return(xts::xts(as.matrix(r), order.by = if ("IDate" %chin% class(x[[1L]])) as.Date(x[[1L]]) else x[[1L]]))
 }
