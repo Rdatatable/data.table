@@ -518,7 +518,7 @@
 
 50. `fwrite()` could produce not-ISO-compliant timestamps such as `2023-03-08T17:22:32.:00Z` when under a whole second by less than numerical tolerance of one microsecond, [#5238](https://github.com/Rdatatable/data.table/issues/5238). Thanks to @avraam-inside for the report and Václav Tlapák for the fix.
 
-51. `merge.data.table()` silently ignored the `incomparables` argument, [#2587](https://github.com/Rdatatable/data.table/issues/2587). Thanks to @GBsuperman for the report and @ben-schwen for the fix.
+51. `merge.data.table()` silently ignored the `incomparables` argument, [#2587](https://github.com/Rdatatable/data.table/issues/2587). It is now implemented and any other ignored arguments (e.g. misspellings) are now warned about. Thanks to @GBsuperman for the report and @ben-schwen for the fix.
 
 ## NOTES
 
