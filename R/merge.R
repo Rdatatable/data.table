@@ -78,16 +78,7 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
     # Perhaps not very commonly used, so not a huge deal that the join is redone here.
     missingyidx = y[!x, which=TRUE, on=by, allow.cartesian=allow.cartesian]
     if (length(missingyidx)) {
-      yy = y[missingyidx]
-      othercolsx = setdiff(nm_x, by)
-      if (length(othercolsx)) {
-        tmp = rep.int(NA_integer_, length(missingyidx))
-        # TO DO: use set() here instead..
-        yy = cbind(yy, x[tmp, othercolsx, with = FALSE])
-      }
-      # empty data.tables (nrow =0, ncol>0) doesn't skip names anymore in new rbindlist
-      # takes care of #24 without having to save names. This is how it should be, IMHO.
-      dt = rbind(dt, yy, use.names=FALSE)
+      dt = rbind(dt, y[missingyidx], use.names=FALSE, fill=TRUE)
     }
   }
   # X[Y] syntax puts JIS i columns at the end, merge likes them alongside i.
