@@ -153,8 +153,8 @@ test-rel-lin: ## most comprehensive tests, force all suggests, also integration 
     OPENBLAS_MAIN_FREE: "1"
     TEST_DATA_TABLE_WITH_OTHER_PACKAGES: "FALSE"  #5274
   before_script:
-    # - Rscript -e 'source(".ci/ci.R"); eval(parse("inst/tests/other.Rraw", n=1L)); install.packages(c(dcf.dependencies("DESCRIPTION", which="all"), pkgs), quiet=TRUE, repos=c(getOption("repos"), file.path("file:", normalizePath("bus/mirror-other-packages/cran", mustWork=FALSE))))'
-    # removing pkgs from other.Rraw leaves dcf.dependencies("DESCRIPTION", which="all") but 'needs: mirror-packages' does that iiuc, let's see if it passes ...
+    - Rscript -e 'source(".ci/ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="all"), quiet=TRUE)'  ## does seem to be needed despite 'needs mirror-packages'
+    ## - Rscript -e 'eval(parse("inst/tests/other.Rraw", n=1L)); install.packages(pkgs, quiet=TRUE, repos=c(getOption("repos"), file.path("file:", normalizePath("bus/mirror-other-packages/cran", mustWork=FALSE))))'
     - *cp-src
     - rm -r bus
     - mkdir -p ~/.R
