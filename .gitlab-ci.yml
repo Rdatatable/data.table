@@ -40,19 +40,19 @@ mirror-packages: ## mirror all recursive dependencies, source and win.binary of 
     - Rscript -e 'sapply(simplify=FALSE, setNames(nm=Sys.getenv(c("R_REL_VERSION","R_DEVEL_VERSION","R_OLDREL_VERSION"))), function(binary.ver) mirror.packages(type="win.binary", dcf.dependencies("DESCRIPTION", "all"), repos=Sys.getenv("CRAN_MIRROR"), repodir="bus/mirror-packages/cran", binary.ver=binary.ver))'
   <<: *artifacts
 
-mirror-other-packages: ## mirror integration suggests from pkgs at the top of inst/tests/other.Rraw
-  stage: dependencies
-  tags:
-    - linux
-  image: registry.gitlab.com/jangorecki/dockerfiles/r-base-dev
-  cache:
-    paths:
-      - bus/$CI_BUILD_NAME/cran
-  script:
-    - echo 'source(".ci/ci.R")' >> .Rprofile
-    - mkdir -p bus/$CI_BUILD_NAME/cran/src/contrib
-    - Rscript -e 'eval(parse("inst/tests/other.Rraw", n=1L)); mirror.packages(pkgs, repos=Sys.getenv("CRAN_MIRROR"), repodir="bus/mirror-other-packages/cran")'
-  <<: *artifacts
+# mirror-other-packages: ## mirror integration suggests from pkgs at the top of inst/tests/other.Rraw;  off now #5274
+#  stage: dependencies
+#  tags:
+#    - linux
+#  image: registry.gitlab.com/jangorecki/dockerfiles/r-base-dev
+#  cache:
+#    paths:
+#      - bus/$CI_BUILD_NAME/cran
+#  script:
+#    - echo 'source(".ci/ci.R")' >> .Rprofile
+#    - mkdir -p bus/$CI_BUILD_NAME/cran/src/contrib
+#    - Rscript -e 'eval(parse("inst/tests/other.Rraw", n=1L)); mirror.packages(pkgs, repos=Sys.getenv("CRAN_MIRROR"), repodir="bus/mirror-other-packages/cran")'
+#  <<: *artifacts
 
 build: ## build data.table sources as tar.gz archive
   stage: build
@@ -144,16 +144,17 @@ build: ## build data.table sources as tar.gz archive
 test-rel-lin: ## most comprehensive tests, force all suggests, also integration tests, using gcc -O3 -flto -fno-common -Wunused-result
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-builder
-  needs: ["mirror-packages","mirror-other-packages","build"]
+  needs: ["mirror-packages","build"]  # "mirror-other-packages"
   variables:
     _R_CHECK_CRAN_INCOMING_: "FALSE"
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
     _R_CHECK_FORCE_SUGGESTS_: "TRUE"
     _R_CHECK_TESTS_NLINES_: "0"
     OPENBLAS_MAIN_FREE: "1"
-    TEST_DATA_TABLE_WITH_OTHER_PACKAGES: "TRUE"
+    TEST_DATA_TABLE_WITH_OTHER_PACKAGES: "FALSE"  #5274
   before_script:
-    - Rscript -e 'source(".ci/ci.R"); eval(parse("inst/tests/other.Rraw", n=1L)); install.packages(c(dcf.dependencies("DESCRIPTION", which="all"), pkgs), quiet=TRUE, repos=c(getOption("repos"), file.path("file:", normalizePath("bus/mirror-other-packages/cran", mustWork=FALSE))))'
+    # - Rscript -e 'source(".ci/ci.R"); eval(parse("inst/tests/other.Rraw", n=1L)); install.packages(c(dcf.dependencies("DESCRIPTION", which="all"), pkgs), quiet=TRUE, repos=c(getOption("repos"), file.path("file:", normalizePath("bus/mirror-other-packages/cran", mustWork=FALSE))))'
+    # removing pkgs from other.Rraw leaves dcf.dependencies("DESCRIPTION", which="all") but 'needs: mirror-packages' does that iiuc, let's see if it passes ...
     - *cp-src
     - rm -r bus
     - mkdir -p ~/.R
