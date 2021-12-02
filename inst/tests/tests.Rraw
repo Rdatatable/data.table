@@ -6861,6 +6861,11 @@ if (test_xts) {
   M = xts::as.xts(matrix(1, dimnames=list("2021-05-23", "x")))  # xts:: just to be extra robust; shouldn't be needed with rm(as.xts) above
   test(1465.19, inherits(as.data.table(M)$index,"POSIXct"))
 
+  # non-numeric xts coredata, #5268
+  x = xts::xts(x=c(TRUE,FALSE), order.by=Sys.Date()+(1:2))
+  colnames(x) = "value"  # perhaps relates to #4897
+  test(1465.20, identical(x, as.xts(as.data.table(x), numeric.only=FALSE)))
+
   Sys.setenv("_R_CHECK_LENGTH_1_LOGIC2_" = TRUE)
 }
 
