@@ -1114,13 +1114,10 @@ SEXP gprod(SEXP x, SEXP narmArg) {
   const bool nosubset = irowslen==-1;
   const int n = nosubset ? length(x) : irowslen;
   //clock_t start = clock();
-  SEXP ans;
   if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gprod");
   long double *s = malloc(ngrp * sizeof(long double));
   if (!s) error(_("Unable to allocate %d * %d bytes for gprod"), ngrp, sizeof(long double));
   for (int i=0; i<ngrp; ++i) s[i] = 1.0;
-  ans = PROTECT(allocVector(REALSXP, ngrp));
-  double *ansd = REAL(ans);
   switch(TYPEOF(x)) {
   case LGLSXP: case INTSXP: {
     const int *xd = INTEGER(x);
@@ -1135,31 +1132,53 @@ SEXP gprod(SEXP x, SEXP narmArg) {
     }}
     break;
   case REALSXP: {
-    const double *xd = REAL(x);
-    for (int i=0; i<n; ++i) {
-      const int thisgrp = grp[i];
-      const double elem = nosubset ? xd[i] : (irows[i]==NA_INTEGER ? NA_REAL : xd[irows[i]-1]);
-      if (ISNAN(elem)) {
-        if (!narm) s[thisgrp] = NA_REAL;
-        continue;
+    if (INHERITS(x, char_integer64)) {
+      const int64_t *xd = (const int64_t *)REAL(x);
+      for (int i=0; i<n; ++i) {
+        const int thisgrp = grp[i];
+        const int64_t elem = nosubset ? xd[i] : (irows[i]==NA_INTEGER ? NA_INTEGER64 : xd[irows[i]-1]);
+        if (elem==NA_INTEGER64) {
+          if (!narm) s[thisgrp] = NA_REAL;
+          continue;
+        }
+        s[thisgrp] *= elem;
       }
-      s[thisgrp] *= elem;
-    }}
-    break;
+    } else {
+      const double *xd = REAL(x);
+      for (int i=0; i<n; ++i) {
+        const int thisgrp = grp[i];
+        const double elem = nosubset ? xd[i] : (irows[i]==NA_INTEGER ? NA_REAL : xd[irows[i]-1]);
+        if (ISNAN(elem)) {
+          if (!narm) s[thisgrp] = NA_REAL;
+          continue;
+        }
+        s[thisgrp] *= elem;
+      }
+    }
+  } break;
   default:
     free(s);
     error(_("Type '%s' is not supported by GForce %s. Either add the prefix %s or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)), "prod (gprod)", "base::prod(.)");
   }
-  for (int i=0; i<ngrp; ++i) {
-    if (s[i] > DBL_MAX) ansd[i] = R_PosInf;
-    else if (s[i] < -DBL_MAX) ansd[i] = R_NegInf;
-    else ansd[i] = (double)s[i];
+  SEXP ans = PROTECT(allocVector(REALSXP, ngrp));
+  if (INHERITS(x, char_integer64)) {
+    int64_t *ansd = (int64_t *)REAL(ans);
+    for (int i=0; i<ngrp; ++i) {
+      ansd[i] = (s[i]>INT64_MAX || s[i]<=INT64_MIN) ? NA_INTEGER64 : (int64_t)s[i];
+    }
+  } else {
+    double *ansd = REAL(ans);
+    for (int i=0; i<ngrp; ++i) {
+      if (s[i] > DBL_MAX) ansd[i] = R_PosInf;
+      else if (s[i] < -DBL_MAX) ansd[i] = R_NegInf;
+      else ansd[i] = (double)s[i];
+    }
   }
   free(s);
   copyMostAttrib(x, ans);
   UNPROTECT(1);
   // Rprintf(_("this gprod took %8.3f\n"), 1.0*(clock()-start)/CLOCKS_PER_SEC);
-  return(ans);
+  return ans;
 }
 
 SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {

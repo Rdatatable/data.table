@@ -271,42 +271,13 @@ system.time(DT <- fread("testbig.csv"))
 
 all(mapply(all.equal, DF, DT))
 
-
-# Real data example (Airline data)
-# https://stat-computing.org/dataexpo/2009/the-data.html
-
-download.file("https://stat-computing.org/dataexpo/2009/2008.csv.bz2",
-              destfile="2008.csv.bz2")
-# 109MB (compressed)
-
-system("bunzip2 2008.csv.bz2")
-# 658MB (7,009,728 rows x 29 columns)
-
-colClasses = sapply(read.csv("2008.csv",nrows=100,stringsAsFactors=FALSE),class)
-# 4 character, 24 integer, 1 logical. Incorrect.
-
-colClasses = sapply(read.csv("2008.csv",nrows=200,stringsAsFactors=FALSE),class)
-# 5 character, 24 integer. Correct. Might have missed data only using 100 rows
-# since read.table assumes colClasses is correct.
-
-system.time(DF <- read.table("2008.csv", header=TRUE, sep=",",
-    quote="",stringsAsFactors=FALSE,comment.char="",nrows=7009730,
-    colClasses=colClasses))
-# 24.4 secs
-
-system.time(DT <- fread("2008.csv"))
-#  1.9 secs
-
-table(sapply(DT,class))
-# 5 character and 24 integer columns. Correct without needing to worry about colClasses
-# issue above.
-
-
 # Reads URLs directly :
 fread("https://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat")
 
 # Decompresses .gz and .bz2 automatically :
-fread("https://stat-computing.org/dataexpo/2009/1987.csv.bz2")
+fread("https://github.com/Rdatatable/data.table/raw/1.14.0/inst/tests/ch11b.dat.bz2")
+
+fread("https://github.com/Rdatatable/data.table/raw/1.14.0/inst/tests/issue_785_fread.txt.gz")
 
 }
 }
