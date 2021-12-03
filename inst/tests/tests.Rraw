@@ -18476,3 +18476,77 @@ test(2230.6, merge(DT, y, by="k2", unk=1), merge(DT, y, by="k2"), warning="Unkno
 test(2230.7, merge(DT, y, by="k2", NULL, NULL, FALSE, FALSE, FALSE, TRUE, c(".x", ".y"), TRUE, getOption("datatable.allow.cartesian"), NULL, 1L),
              merge(DT, y, by="k2"), warning=c("Supplied both `by` and `by.x/by.y`. `by` argument will be ignored.", "Passed 1 unknown and unnamed arguments."))
 
+# weighted.mean GForce optimized, #3977
+old = options(datatable.optimize=1L)
+DT = data.table(x=c(3.7,3.3,3.5,2.8), w=c(5,5,4,1), g=1L)
+test(2231.01, DT[, weighted.mean(x, w), g, verbose=TRUE], data.table(g=1L, V1=3.45333333333333), output="GForce FALSE")
+test(2231.02, DT[, weighted.mean(w, x), g, verbose=TRUE], data.table(g=1L, V1=3.89473684210526), output="GForce FALSE")
+test(2231.03, DT[, weighted.mean(x), g, verbose=TRUE], data.table(g=1L, V1=3.325), output="GForce FALSE")
+# multiple groups
+DT = data.table(x=c(1L,2L,2L,3L,4L,5L,5L,6L), w=c(1L,1L,1L,1L,2L,2L,2L,2L), g=rep(1L:2L, each=4L))
+test(2231.04, DT[, weighted.mean(x, w), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2,5)), output="GForce FALSE")
+test(2231.05, DT[, weighted.mean(x, w), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2,5)), output="GForce FALSE")
+test(2231.06, DT[, weighted.mean(x, w), seq(nrow(DT)), verbose=TRUE], data.table(seq=1L:8L, V1=c(1,2,2,3,4,5,5,6)), output="GForce FALSE")
+# (only x XOR w) containing NA
+DT = data.table(x=c(1L,NA,2L,3L,4L,5L,5L,6L), w=c(1L,1L,1L,1L,2L,NA,2L,2L), g=rep(1L:2L, each=4L))
+test(2231.07, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA_real_, NA_real_)), output="GForce FALSE")
+test(2231.08, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, NA_real_)), output="GForce FALSE")
+test(2231.09, DT[, weighted.mean(x, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA, 5)), output="GForce FALSE")
+test(2231.10, DT[, weighted.mean(x, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output="GForce FALSE")
+# (only x XOR w) containing NaN
+DT = data.table(x=c(1L,2L,NaN,3L,4L,5L,5L,6L), w=c(1L,1L,1L,1L,2L,2L,NaN,2L), g=rep(1L:2L, each=4L))
+test(2231.11, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NaN, NA)), output="GForce FALSE")
+test(2231.12, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, NA)), output="GForce FALSE")
+test(2231.13, DT[, weighted.mean(x, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NaN, 5)), output="GForce FALSE")
+test(2231.14, DT[, weighted.mean(x, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output="GForce FALSE")
+# (only x XOR w) containing NA and NaN
+DT = data.table(x=c(1L,NA,NaN,3L,4L,5L,5L,6L), w=c(1L,1L,1L,1L,2L,NA,NaN,2L), g=rep(1L:2L, each=4L))
+test(2231.15, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA_real_, NA_real_)), output="GForce FALSE")
+test(2231.16, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, NA)), output="GForce FALSE")
+test(2231.17, DT[, weighted.mean(x, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA, 5)), output="GForce FALSE")
+test(2231.18, DT[, weighted.mean(x, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output="GForce FALSE")
+# (x and w) containing NA and NaN
+DT = data.table(x=c(1L,NA,NaN,3L,4L,5L,5L,6L), w=c(1L,NA,NaN,1L,2L,2L,2L,2L), g=rep(1L:2L, each=4L))
+test(2231.19, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA, 5)), output="GForce FALSE")
+test(2231.20, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output="GForce FALSE")
+DT = data.table(x=c(1L,NA,NaN,3L,4L,5L,5L,6L), w=c(1L,NaN,NA,1L,2L,2L,2L,2L), g=rep(1L:2L, each=4L))
+test(2231.21, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA, 5)), output="GForce FALSE")
+test(2231.22, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output="GForce FALSE")
+# same as previous test cases but now GForce optimized
+options(datatable.optimize=2L)
+DT = data.table(x=c(3.7,3.3,3.5,2.8), w=c(5,5,4,1), g=1L)
+test(2231.31, DT[, weighted.mean(x, w), g, verbose=TRUE], data.table(g=1L, V1=3.45333333333333), output="GForce optimized j to")
+test(2231.32, DT[, weighted.mean(w, x), g, verbose=TRUE], data.table(g=1L, V1=3.89473684210526), output="GForce optimized j to")
+test(2231.33, DT[, weighted.mean(x), g, verbose=TRUE], data.table(g=1L, V1=3.325), output="GForce optimized j to")
+# multiple groups
+DT = data.table(x=c(1L,2L,2L,3L,4L,5L,5L,6L), w=c(1L,1L,1L,1L,2L,2L,2L,2L), g=rep(1L:2L, each=4L))
+test(2231.34, DT[, weighted.mean(x, w), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2,5)), output="GForce optimized j to")
+test(2231.35, DT[, weighted.mean(x, w), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2,5)), output="GForce optimized j to")
+test(2231.36, DT[, weighted.mean(x, w), seq(nrow(DT)), verbose=TRUE], data.table(seq=1L:8L, V1=c(1,2,2,3,4,5,5,6)), output="GForce optimized j to")
+# (only x XOR w) containing NA
+DT = data.table(x=c(1L,NA,2L,3L,4L,5L,5L,6L), w=c(1L,1L,1L,1L,2L,NA,2L,2L), g=rep(1L:2L, each=4L))
+test(2231.37, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA_real_, NA_real_)), output="GForce optimized j to")
+test(2231.38, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, NA_real_)), output="GForce optimized j to")
+test(2231.39, DT[, weighted.mean(x, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA, 5)), output="GForce optimized j to")
+test(2231.40, DT[, weighted.mean(x, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output="GForce optimized j to")
+# (only x XOR w) containing NaN
+DT = data.table(x=c(1L,2L,NaN,3L,4L,5L,5L,6L), w=c(1L,1L,1L,1L,2L,2L,NaN,2L), g=rep(1L:2L, each=4L))
+test(2231.41, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NaN, NA)), output="GForce optimized j to")
+test(2231.42, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, NA)), output="GForce optimized j to")
+test(2231.43, DT[, weighted.mean(x, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NaN, 5)), output="GForce optimized j to")
+test(2231.44, DT[, weighted.mean(x, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output="GForce optimized j to")
+# (only x XOR w) containing NA and NaN
+DT = data.table(x=c(1L,NA,NaN,3L,4L,5L,5L,6L), w=c(1L,1L,1L,1L,2L,NA,NaN,2L), g=rep(1L:2L, each=4L))
+test(2231.45, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA_real_, NA_real_)), output="GForce optimized j to")
+test(2231.46, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, NA)), output="GForce optimized j to")
+test(2231.47, DT[, weighted.mean(x, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA, 5)), output="GForce optimized j to")
+test(2231.48, DT[, weighted.mean(x, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output="GForce optimized j to")
+# (x and w) containing NA and NaN
+DT = data.table(x=c(1L,NA,NaN,3L,4L,5L,5L,6L), w=c(1L,NA,NaN,1L,2L,2L,2L,2L), g=rep(1L:2L, each=4L))
+test(2231.49, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA, 5)), output="GForce optimized j to")
+test(2231.50, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output="GForce optimized j to")
+DT = data.table(x=c(1L,NA,NaN,3L,4L,5L,5L,6L), w=c(1L,NaN,NA,1L,2L,2L,2L,2L), g=rep(1L:2L, each=4L))
+test(2231.51, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA, 5)), output="GForce optimized j to")
+test(2231.52, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output="GForce optimized j to")
+options(old)
+

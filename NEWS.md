@@ -267,6 +267,8 @@
     # 1:     1     3      a
     # 2:     2     4      b
     ```
+    
+35. `weighted.mean()` is now optimised by group, [#3977](https://github.com/Rdatatable/data.table/issues/3977). Thanks to @renkun-ken for requesting, and Benjamin Schwendinger for the PR.
 
 ## BUG FIXES
 
