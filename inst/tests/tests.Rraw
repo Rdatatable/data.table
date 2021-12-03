@@ -18550,3 +18550,12 @@ test(2231.51, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.tabl
 test(2231.52, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output="GForce optimized j to")
 options(old)
 
+# cols argument for unique.data.table, #5243
+DT = data.table(g = rep(letters, 3), v1=1:78, v2=78:1)
+test(2232.1, unique(DT, by='g', cols='v1'), DT[1:26, !'v2'])
+test(2232.2, unique(DT, by='g', cols='v2'), DT[1:26, !'v1'])
+## no duplicates
+test(2232.3, unique(DT[1:26], by='g', cols='v1'), DT[1:26, !'v2'])
+## invalid columns fail as expected
+test(2232.4, unique(DT, by='g', cols='v3'), error="non-existing column(s)")
+
