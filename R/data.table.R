@@ -310,7 +310,9 @@ replace_dot_alias = function(e) {
         as.character(jsub[[1L]])[1L]
       } else ""
     }
-    if (root == ":=") {
+    if (root == ":=" || root == "let") { # let(...) as alias for :=(...) (#3795)
+      if (root == "let")
+        jsub[[1L]] = as.symbol(":=")
       allow.cartesian=TRUE   # (see #800)
       if (!missing(i) && keyby)
         stopf(":= with keyby is only possible when i is not supplied since you can't setkey on a subset of rows. Either change keyby to by or remove i")
@@ -1107,7 +1109,7 @@ replace_dot_alias = function(e) {
         if (is.null(names(jsub))) {
           # regular LHS:=RHS usage, or `:=`(...) with no named arguments (an error)
           # `:=`(LHS,RHS) is valid though, but more because can't see how to detect that, than desire
-          if (length(jsub)!=3L) stopf("In `:=`(col1=val1, col2=val2, ...) form, all arguments must be named.")
+          if (length(jsub)!=3L) stopf("In %s(col1=val1, col2=val2, ...) form, all arguments must be named.", if (root == "let") "let" else "`:=`")
           lhs = jsub[[2L]]
           jsub = jsub[[3L]]
           if (is.name(lhs)) {
@@ -1119,7 +1121,7 @@ replace_dot_alias = function(e) {
         } else {
           # `:=`(c2=1L,c3=2L,...)
           lhs = names(jsub)[-1L]
-          if (any(lhs=="")) stopf("In `:=`(col1=val1, col2=val2, ...) form, all arguments must be named.")
+          if (any(lhs=="")) stopf("In %s(col1=val1, col2=val2, ...) form, all arguments must be named.", if (root == "let") "let" else "`:=`")
           names(jsub)=""
           jsub[[1L]]=as.name("list")
         }
@@ -1301,18 +1303,8 @@ replace_dot_alias = function(e) {
         #       But rather than that complex logic here at R level to catch that and do a shallow copy for efficiency, just do the check inside CsubsetDT
         #       to see if it passed 1:nrow(x) and then CsubsetDT should do the shallow copy safely and centrally.
         #       That R level branch was taken out in PR #3213
-
-        # TO DO: use CsubsetDT twice here and then remove this entire R level branch
-        for (s in seq_along(icols)) {
-          target = icolsAns[s]
-          source = icols[s]
-          ans[[target]] = .Call(CsubsetVector,i[[source]],ii)  # i.e. i[[source]][ii]
-        }
-        for (s in seq_along(xcols)) {
-          target = xcolsAns[s]
-          source = xcols[s]
-          ans[[target]] = .Call(CsubsetVector,x[[source]],irows)   # i.e. x[[source]][irows], but guaranteed new memory even for singleton logicals from R 3.1.0
-        }
+        ans[icolsAns] = .Call(CsubsetDT, i, ii,    icols)
+        ans[xcolsAns] = .Call(CsubsetDT, x, irows, xcols)
         setattr(ans, "names", ansvars)
         if (haskey(x)) {
           keylen = which.first(!key(x) %chin% ansvars)-1L
@@ -2774,8 +2766,10 @@ address = function(x) .Call(Caddress, eval(substitute(x), parent.frame()))
 
 ":=" = function(...) {
   # this error is detected when eval'ing isub and replaced with a more helpful one when using := in i due to forgetting a comma, #4227
-  stopf('Check that is.data.table(DT) == TRUE. Otherwise, := and `:=`(...) are defined for use in j, once only and in particular ways. See help(":=").')
+  stopf('Check that is.data.table(DT) == TRUE. Otherwise, :=, `:=`(...) and let(...) are defined for use in j, once only and in particular ways. See help(":=").')
 }
+
+let = function(...) `:=`(...)
 
 setDF = function(x, rownames=NULL) {
   if (!is.list(x)) stopf("setDF only accepts data.table, data.frame or list of equal length as input")

@@ -21,6 +21,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   allNA = data.table:::allNA
   any_na = data.table:::any_na
   as.data.table.array = data.table:::as.data.table.array
+  as.data.table.default = data.table:::as.data.table.default
   as.IDate.default = data.table:::as.IDate.default
   as.ITime.default = data.table:::as.ITime.default
   binary = data.table:::binary
@@ -1169,7 +1170,7 @@ test(381, DT[,{if (a==2) {.SD$b[1]=10L;.SD} else .SD}, by=a], error=base_message
 
 # test that direct := is trapped, but := within a copy of .SD is allowed (FAQ 4.5). See also tests 556-557.
 test(382, DT[,b:=.N*2L,by=a], data.table(a=rep(1:3,1:3),b=rep(2L*(1:3),1:3)))
-test(383, DT[,{z=10L;b:=z},by=a], error=":= and `:=`(...) are defined for use in j, once only and in particular ways")
+test(383, DT[,{z=10L;b:=z},by=a], error="defined for use in j, once only and in particular ways")
 test(384, DT[,{mySD=copy(.SD);mySD[1,b:=99L];mySD},by=a], data.table(a=rep(1:3,1:3),b=c(99L,99L,4L,99L,6L,6L)))
 
 # somehow missed testing := on logical subset with mixed TRUE/FALSE, reported by Muhammad Waliji
@@ -1863,6 +1864,8 @@ test(628.2, rbind(data.table(a=1:3,b=factor(letters[1:3]),c=factor("foo")), list
 # Test merge with common names and all.y=TRUE, #2011
 DT1 = data.table(a=c(1,3,4,5), total=c(2,1,3,1), key="a")
 DT2 = data.table(a=c(2,3,5), total=c(5,1,2), key="a")
+DT3 = data.table(a=c(2), total=c(5), key="a")
+DT4 = data.table(a=c(3), total=c(1), key="a")
 # 629+630 worked before anyway.  631+632 test the bug fix.
 adf=as.data.frame
 adt=as.data.table
@@ -1875,6 +1878,16 @@ test(630.1, merge(DT1,DT2,all.x=TRUE), setkey(adt(merge(adf(DT1),adf(DT2),by="a"
 
 test(631, merge(DT1,DT2,all.y=TRUE), data.table(a=c(2,3,5),total.x=c(NA,1,1),total.y=c(5,1,2),key="a"))
 test(631.1, merge(DT1,DT2,all.y=TRUE), setkey(adt(merge(adf(DT1),adf(DT2),by="a",all.y=TRUE)),a))
+# ensure merge(x,y,all.y) does not alter input y ...
+# .. i subset y with 1:nrow(y)
+test(631.2, merge(DT1[c(1,3)],DT2,all.y=TRUE), data.table(a=c(2,3,5),total.x=NA_real_,total.y=c(5,1,2),key="a"))
+test(631.3, DT2, data.table(a=c(2,3,5), total=c(5,1,2), key="a"))
+# .. nrow(y)=1, i subset y with 1 and no match with x
+test(631.4, merge(DT1,DT3,all.y=TRUE), data.table(a=c(2),total.x=NA_real_,total.y=c(5),key="a"))
+test(631.5, DT3, data.table(a=c(2), total=c(5), key="a"))
+# .. nrow(y)=1, i subset y with 1 and match with x
+test(631.6, merge(DT1,DT4,all.y=TRUE), data.table(a=c(3),total.x=c(1),total.y=c(1),key="a"))
+test(631.7, DT4, data.table(a=c(3), total=c(1), key="a"))
 
 test(632, merge(DT1,DT2,all=TRUE), data.table(a=c(1,2,3,4,5),total.x=c(2,NA,1,3,1),total.y=c(NA,5,1,NA,2),key="a"))
 test(632.1, merge(DT1,DT2,all=TRUE), setkey(adt(merge(adf(DT1),adf(DT2),by="a",all=TRUE)),a))
@@ -2152,9 +2165,13 @@ test(738, DT[,c("c2", "c1"):=list(c1+1L, NULL)], data.table(c2=2:3))
 
 # `:=`(c1=v1,v2=v2,...) is now valid , #2254
 DT = data.table( c1=1:3 )
-test(739, DT[,`:=`(c2=4:6, c3=7:9)], data.table(c1=1:3,c2=4:6,c3=7:9))
-test(740, DT[,`:=`(4:6,c3=7:9)], error="all arguments must be named")
-test(741, DT[,`:=`(4:6,7:9,10:12)], error="all arguments must be named")  # test the same error message in the other branch
+test(739.1, DT[,`:=`(c2=4:6, c3=7:9)], data.table(c1=1:3,c2=4:6,c3=7:9))
+test(739.2, DT[,`:=`(4:6,c3=7:9)], error="all arguments must be named")
+test(739.3, DT[,`:=`(4:6,7:9,10:12)], error="all arguments must be named")  # test the same error message in the other branch
+DT = data.table( c1=1:3 )
+test(739.4, DT[,let(c2=4:6, c3=7:9)], data.table(c1=1:3,c2=4:6,c3=7:9))
+test(739.5, DT[,let(4:6,c3=7:9)], error="all arguments must be named")
+test(739.6, DT[,let(4:6,7:9,10:12)], error="all arguments must be named")
 
 # that out of bounds LHS is caught, root cause of #2254
 test(742, DT[,3:6:=1L], error="outside.*range")
@@ -2168,12 +2185,14 @@ test(746, DT["a",c("new1","new2"):=list(4L, 5L)],
           data.table(a=letters[c(1:3,3L)],new1=INT(4,NA,NA,NA),new2=INT(5,NA,NA,NA),key="a"))
 test(747.1, DT[,new1:=4:6], error="Supplied 3 items to be assigned to 4 items of column 'new1'")
 test(747.2, DT[,new1:=INT(4,5,6,4)], data.table(a=letters[c(1:3,3L)],new1=INT(4L,5L,6L,4L),new2=INT(5,NA,NA,NA),key="a"))
-test(748, DT[c("c","b"),`:=`(new3=.N,new2=sum(new1)+1L),by=.EACHI], data.table(a=letters[c(1:3,3L)],new1=INT(4,5,6,4),new2=INT(5,6,11,11),new3=INT(NA,1,2,2),key="a"))
+test(748.1, copy(DT)[c("c","b"),`:=`(new3=.N,new2=sum(new1)+1L),by=.EACHI], data.table(a=letters[c(1:3,3L)],new1=INT(4,5,6,4),new2=INT(5,6,11,11),new3=INT(NA,1,2,2),key="a"))
+test(748.2, copy(DT)[c("c","b"),let(new3=.N,new2=sum(new1)+1L),by=.EACHI], data.table(a=letters[c(1:3,3L)],new1=INT(4,5,6,4),new2=INT(5,6,11,11),new3=INT(NA,1,2,2),key="a"))
 
 # and multiple LHS by group, #1710
 DT = data.table(a=rep(6:8,1:3),b=1:6)
 test(749, DT[,c("c","d","e"):=list(.N,sum(b),a*10L),by=a], data.table(a=rep(6:8,1:3),b=1:6,c=rep(1:3,1:3),d=INT(rep(c(1,5,15),1:3)),e=rep(6:8,1:3)*10L))
-test(750, DT[a<8,`:=`(f=b+sum(d),g=.N),by=c][,6:7,with=FALSE], data.table(f=INT(2,12,13,NA,NA,NA),g=INT(1,2,2,NA,NA,NA)))
+test(750.1, copy(DT)[a<8,`:=`(f=b+sum(d),g=.N),by=c][,6:7,with=FALSE], data.table(f=INT(2,12,13,NA,NA,NA),g=INT(1,2,2,NA,NA,NA)))
+test(750.2, copy(DT)[a<8,let(f=b+sum(d),g=.N),by=c][,6:7,with=FALSE], data.table(f=INT(2,12,13,NA,NA,NA),g=INT(1,2,2,NA,NA,NA)))
 
 # varname holding colnames, by group, linked from #2120.
 DT = data.table(a=rep(1:3,1:3),b=1:6)
@@ -2271,7 +2290,8 @@ test(783, DT[,.I,by=a]$I, 1:8)
 test(784, DT[,.I[which.max(b)],by=a], data.table(a=1:4,V1=INT(2,4,6,8),key="a"))
 test(785, DT[J(2:4),.I,by=a%%2L], data.table(a=rep(0:1,c(4,2)),I=INT(3,4,7,8,5,6)))
 test(786, DT[J(c(3,2,4)),list(.I,.GRP),by=.EACHI], data.table(a=rep(c(3L,2L,4L),each=2),I=INT(5,6,3,4,7,8),GRP=rep(1:3,each=2L)))
-test(787, DT[J(3:2),`:=`(i=.I,grp=.GRP),by=.EACHI][,list(i,grp)], data.table(i=INT(NA,NA,3:6,NA,NA),grp=INT(NA,NA,2,2,1,1,NA,NA)))
+test(787.1, copy(DT)[J(3:2),`:=`(i=.I,grp=.GRP),by=.EACHI][,list(i,grp)], data.table(i=INT(NA,NA,3:6,NA,NA),grp=INT(NA,NA,2,2,1,1,NA,NA)))
+test(787.2, copy(DT)[J(3:2),let(i=.I,grp=.GRP),by=.EACHI][,list(i,grp)], data.table(i=INT(NA,NA,3:6,NA,NA),grp=INT(NA,NA,2,2,1,1,NA,NA)))
 
 # New not-join (a.k.a. not-select, since not just for data.table i but integer, logical and character too)
 DT = data.table(A=rep(1:3,each=2),B=1:6,key="A")
@@ -2776,7 +2796,8 @@ test(950, fread('A,B,C\n1,+,4\n2,-,5\n3,-,6\n'), data.table(A=1:3,B=c("+","-","-
 
 # catching misuse of `:=`
 x = data.table(a=1:5)
-test(951, x[,{b=a+3; `:=`(c=b)}], error="defined for use in j, once only and in particular ways")
+test(951.1, x[,{b=a+3; `:=`(c=b)}], error="defined for use in j, once only and in particular ways")
+test(951.2, x[,{b=a+3; let(c=b)}], error="defined for use in j, once only and in particular ways")
 
 # fread colClasses
 input = 'A,B,C\n01,foo,3.140\n002,bar,6.28000\n'
@@ -2827,7 +2848,8 @@ test(978.3, fread(input, skip=9), data.table(E=9:10, F=11:12))
 # mixed add and update in same `:=` bug/crash, #2528 and #2778
 DT = data.table(x=rep(1:2, c(3,2)), y=6:10)
 DT[, z:=.GRP, by=x]                 # first assignment
-test(979, DT[, `:=`(z=.GRP, w=2), by=x], data.table(x=INT(1,1,1,2,2),y=6:10,z=INT(1,1,1,2,2),w=2))  # mixed update and add
+test(979.1, copy(DT)[, `:=`(z=.GRP, w=2), by=x], data.table(x=INT(1,1,1,2,2),y=6:10,z=INT(1,1,1,2,2),w=2))  # mixed update and add
+test(979.2, copy(DT)[, let(z=.GRP, w=2), by=x], data.table(x=INT(1,1,1,2,2),y=6:10,z=INT(1,1,1,2,2),w=2))
 # and example from http://stackoverflow.com/a/14732348/403310 :
 dt1 = fread("Date,Time,A,B
 01/01/2013,08:00,10,30
@@ -2841,13 +2863,18 @@ dt2 = fread("Date,A,B,C
 02/01/2013,200,400,2")
 setkey(dt1, "Date")
 setkey(dt2, "Date")
-test(980, dt1[dt2, `:=`(A=A+i.A, B=B+i.B, C=i.C)][,list(A,B,C)],
+test(980.1, copy(dt1)[dt2, `:=`(A=A+i.A, B=B+i.B, C=i.C)][,list(A,B,C)],
+          data.table(A=INT(110,115,120,225,230,235),B=INT(330,325,320,415,410,405),C=rep(1:2,each=3)))
+test(980.2, copy(dt1)[dt2,  let(A=A+i.A, B=B+i.B, C=i.C)][,list(A,B,C)],
           data.table(A=INT(110,115,120,225,230,235),B=INT(330,325,320,415,410,405),C=rep(1:2,each=3)))
 DT = data.table(A=1:2,B=3:4,C=5:6)
-test(981, DT[,`:=`(D=B+4L,B=0:1,E=A*2L,F=A*3L,C=C+1L,G=C*2L),by=A], error="Supplied 2 items to be assigned to group 1 of size 1 in column 'B'")
+test(981.1, copy(DT)[,`:=`(D=B+4L,B=0:1,E=A*2L,F=A*3L,C=C+1L,G=C*2L),by=A], error="Supplied 2 items to be assigned to group 1 of size 1 in column 'B'")
+test(981.2, copy(DT)[,let(D=B+4L,B=0:1,E=A*2L,F=A*3L,C=C+1L,G=C*2L),by=A], error="Supplied 2 items to be assigned to group 1 of size 1 in column 'B'")
 DT = data.table(A=1:2,B=3:4,C=5:6)
-test(982, DT[,`:=`(D=B+4L,B=0L,E=A*2L,F=A*3L,C=C+1L,G=C*2L),by=A],
+test(982.1, copy(DT)[,`:=`(D=B+4L,B=0L,E=A*2L,F=A*3L,C=C+1L,G=C*2L),by=A],
           data.table(A=1:2,B=0L,C=6:7,D=7:8,E=c(2L,4L),F=c(3L,6L),G=c(10L,12L))) # Also note that G is not yet iterative. In future: c(12,14)
+test(982.2, copy(DT)[, let(D=B+4L,B=0L,E=A*2L,F=A*3L,C=C+1L,G=C*2L),by=A],
+          data.table(A=1:2,B=0L,C=6:7,D=7:8,E=c(2L,4L),F=c(3L,6L),G=c(10L,12L)))
 
 # rbindlist binding factors, #2650
 test(983, rbindlist(list(data.table(factor(c("A","A","B","C","A"))), data.table(factor(c("B","F","A","G"))))), data.table(V1=factor(c("A","A","B","C","A","B","F","A","G"))))
@@ -3936,7 +3963,8 @@ test(1143.2, DT[, Z:=paste(X,.N,sep=" - "), by=list(X)], data.table(X=factor(200
 DT = data.table(x=as.POSIXct(c("2009-02-17 17:29:23.042", "2009-02-17 17:29:25.160")), y=c(1L,2L))
 test(1143.3, DT[, list(lx=x[.N]), by=x], data.table(x=DT$x, lx=DT$x))
 ans = copy(DT)
-test(1143.4, DT[,`:=`(lx=tail(x,1L)), by=y], ans[, lx := x])
+test(1143.4, copy(DT)[,`:=`(lx=tail(x,1L)), by=y], ans[, lx := x])
+test(1143.5, copy(DT)[,let(lx=tail(x,1L)), by=y], ans[, lx := x])
 
 # FR #2356 - retain names of named vector as column with keep.rownames=TRUE
 x <- 1:5
@@ -6833,6 +6861,11 @@ if (test_xts) {
   M = xts::as.xts(matrix(1, dimnames=list("2021-05-23", "x")))  # xts:: just to be extra robust; shouldn't be needed with rm(as.xts) above
   test(1465.19, inherits(as.data.table(M)$index,"POSIXct"))
 
+  # non-numeric xts coredata, #5268
+  x = xts::xts(x=c(TRUE,FALSE), order.by=Sys.Date()+(1:2))
+  colnames(x) = "value"  # perhaps relates to #4897
+  test(1465.20, identical(x, as.xts(as.data.table(x), numeric.only=FALSE)))
+
   Sys.setenv("_R_CHECK_LENGTH_1_LOGIC2_" = TRUE)
 }
 
@@ -8789,16 +8822,16 @@ test(1613.605, all.equal(data.table(a=1), try(stop('this wont work'), silent = T
 L1 = list(a = data.table(1), b = setattr("foo1613", "tbl", data.table(1)))
 L2 = list(a = 1, b = setattr("foo1613", "tbl", 1))
 test(1613.606, all(grepl("target is data.table, current is numeric", all.equal(L1, L2))))
-as.data.table.foo1613 = function(x) { # test as.data.table coerce of 'current' argument
+registerS3method("as.data.table", "foo1613", function(x) { # test as.data.table coerce of 'current' argument
   if (!length(x)) warning("empty foo1613")
-  as.data.table(unclass(foo1613))
-}
-registerS3method("as.data.table", "foo1613", as.data.table.foo1613)
+  as.data.table(unclass(x))
+})
 foo1613 = structure(list(NULL), class="foo1613")
 test(1613.607, all.equal(data.table(), foo1613, check.attributes=FALSE))
 foo1613 = structure(list(), class="foo1613")
 test(1613.608, all.equal(data.table(), foo1613, check.attributes=FALSE), warning="empty")
-rm(as.data.table.foo1613, foo1613)
+registerS3method("as.data.table", "foo1613", as.data.table.default)
+# search below in this file for "registerS3method" for comments about it
 
 DT1 <- data.table(a = 1:4, b = letters[1:4], .seqn = 5L)
 DT2 <- data.table(a = 4:1, b = letters[4:1], .seqn = 5L)
@@ -10969,7 +11002,7 @@ setattr(DT[[4]], "tzone", NULL)
 setattr(DT[[5]], "tzone", NULL)
 
 # format() now supports digits = 0, to display nsmall decimal places.
-options(digits.secs=0)
+old=options(digits.secs=0)
 test(1741.3, x1<-capture.output(fwrite(DT,dateTimeAs="write.csv")),
              capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
 options(digits.secs=3)
@@ -10980,6 +11013,7 @@ test(1741.5, x3<-capture.output(fwrite(DT,dateTimeAs="write.csv")),
              capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
 # check that extra digits made it into output
 test(1741.6, sum(nchar(x1)) < sum(nchar(x2)) && sum(nchar(x2)) < sum(nchar(x3)))
+options(old)
 
 # fread should properly handle NA in colClasses argument #1910
 test(1743.01, sapply(fread("a,b\n3,a", colClasses=c(NA, "factor")), class), c(a="integer", b="factor"))
@@ -12484,9 +12518,12 @@ if (test_R.utils) {
 }
 
 # better colname detection by comparing potential column names to the whole sample not just the first row of the sample, #2526
-test(1870.1, fread("A,100,200\n,300,400\n,500,600"), data.table(A=NA, "100"=c(300L,500L), "200"=c(400L,600L)))
-test(1870.2, fread("A,100,\n,,\n,500,600"), data.table(A=NA, "100"=c(NA,500L), V3=c(NA,600L)))
+test(1870.1, fread("A,100,200\n,300,400\n,500,600"), data.table(V1=c("A","",""), V2=c(100L,300L,500L), V3=c(200L,400L,600L)))
+test(1870.2, fread("A,100,\n,,\n,500,600"), data.table(V1=c("A","",""), V2=c(100L,NA,500L), V3=c(NA,NA,600L)))
 test(1870.3, fread("A,B,\n,,\n,500,3.4"), data.table(A=NA, B=c(NA,500L), V3=c(NA,3.4)))
+test(1870.4, fread("A,B,200\n,300,400\n,500,600"), data.table(A=NA, B=c(300L,500L), "200"=c(400L,600L)))
+test(1870.5, fread("A,B,\n,,\n,500,600"), data.table(A=NA, B=c(NA,500L), V3=c(NA,600L)))
+test(1870.6, fread("A,,\n,300,400\n,500,600"), data.table(V1=c("A","",""), V2=c(NA,300L,500L), V3=c(NA,400L,600L)))
 
 # nrows= now ignores errors after those nrows as expected and skip= determines first row for sure, #1267
 txt = "V1, V2, V3\n2,3,4\nV4, V5, V6, V7\n4,5,6,7\n8,9,10,11\n"
@@ -13487,13 +13524,34 @@ test(1958.01, fread('\U0001f64d', encoding = 'UTF-16'), error = "Argument 'encod
 test(1958.02, fread('a,b\n1,2', nrows = NA_real_),      data.table(a = 1L, b = 2L))
 test(1958.03, fread('a,b\n1,2', nrows = -1),            data.table(a = 1L, b = 2L))
 test(1958.04, fread('a,b\n1,2', key = 1),               error = 'must be a character vector naming columns')
-test(1958.05, fread("A,B,C\n1,2,3\n3,4,5\n0,0,0\n",   nrows=0),          data.table(A=logical(), B=logical(), C=logical()))  #2747
-test(1958.06, fread("A,B,C\n1,2,3\n3,4,5\n0,0,100\n", nrows=0, sep=','), data.table(A=logical(), B=logical(), C=logical()))
+test(1958.05, fread("A,B,C\n1,2,3\n3,4,5\n0,0,0\n",   nrows=0),          data.table(A=integer(), B=integer(), C=integer()))  #2747
+test(1958.06, fread("A,B,C\n1,2,3\n3,4,5\n0,0,100\n", nrows=0, sep=','), data.table(A=integer(), B=integer(), C=integer()))
 test(1958.07, fread('A,B,C,D\n"a,b",4,5,6\n"c,d",6,7\n', fill=TRUE), data.table(A=c("a,b","c,d"), B=INT(4,6), C=INT(5,7), D=INT(6,NA)))  # 2547
 test(1958.08, fread('A,B,C,D\n"a,b",4,5\n"c,d",6,7,8\n', fill=TRUE), data.table(A=c("a,b","c,d"), B=INT(4,6), C=INT(5,7), D=INT(NA,8)))
-# 4686
-test(1958.09, fread("A,B,C\n1,2,3\n3,4,5\n0,0,0\n",   nrows=0L),          data.table(A=logical(), B=logical(), C=logical()))
-test(1958.10, fread("A,B,C\n1,2,3\n3,4,5\n0,0,100\n", nrows=0L, sep=','), data.table(A=logical(), B=logical(), C=logical()))
+test(1958.09, fread("A,B,C\n1,2,3\n3,4,5\n0,0,0\n",   nrows=0L),          data.table(A=integer(), B=integer(), C=integer()))  # nrows=0 vs 0L, 4686
+test(1958.10, fread("A,B,C\n1,2,3\n3,4,5\n0,0,100\n", nrows=0L, sep=','), data.table(A=integer(), B=integer(), C=integer()))
+# nrows=0 should perform a full sample to get the empty column types right as documented, #4029
+test(1958.11, fread('A,B,C,D\n1,CHAR,"CHAR",3.1', nrows=0L), data.table(A=integer(), B=character(), C=character(), D=numeric()))
+# .. one different type in the middle of under 100
+txt = paste(c("A,B\n1,2\n", rep("3,4\n",48), "3,4.1\n", rep("5,6\n",48)), collapse="")
+test(1958.12, fread(text=txt, nrows=0L),          data.table(A=integer(), B=numeric()))
+test(1958.13, fread(text=txt, nrows=0L, skip=1L), data.table(V1=integer(), V2=numeric()))
+test(1958.14, fread(text=txt, nrows=1L),          data.table(A=1L, B=2L))  # B integer not numeric because sample is min(nrows,100) when nrows>=1
+test(1958.15, fread(text=txt, nrows=1L, skip=1L), data.table(V1=1L, V2=2L))
+test(1958.16, fread(text=txt, nrows=2L),          data.table(A=c(1L,3L), B=c(2L,4L)))
+test(1958.17, fread(text=txt, nrows=2L, skip=1L), data.table(V1=c(1L,3L), V2=c(2L,4L)))
+# .. one different type on line 148 when there are just under 200 lines
+txt = paste(c("A,B\n1,2\n", rep("3,4\n",148), "3,4.1\n", rep("5,6\n",48)), collapse="")
+test(1958.18, fread(text=txt, nrows=0L, verbose=TRUE), data.table(A=integer(), B=numeric()),
+              output="Sampled 149 rows.*at 2 jump points")
+# .. one different type within sample for large number of lines
+txt = paste(c("A,B\n1,2\n", rep("3,4\n",5000), "3,4.1\n", rep("5,6\n",5000)), collapse="")
+test(1958.19, fread(text=txt, nrows=0L, verbose=TRUE), data.table(A=integer(), B=numeric()),
+              output="Sampled 1049 rows.*at 11 jump points")
+# .. one different type out of sample for large number of lines
+txt = paste(c("A,B\n1,2\n", rep("3,4\n",5100), "3,4.1\n", rep("5,6\n",4900)), collapse="")
+test(1958.20, fread(text=txt, nrows=0L, verbose=TRUE), data.table(A=integer(), B=integer()),
+              output="Sampled 1049 rows.*at 11 jump points")
 
 # Skip should work with all types of newlines #3006
 eols = c("\n", "\r\n", "\r", "\n\r")
@@ -14556,8 +14614,11 @@ test(2002.12, rbind(DT1, DT2, idcol='id'),     data.table(id=integer(), a=logica
 test(2003.1, rbindlist(list(), use.names=1), error="use.names= should be TRUE, FALSE, or not used [(]\"check\" by default[)]")
 test(2003.2, rbindlist(list(), fill=1), error="fill= should be TRUE or FALSE")
 test(2003.3, rbindlist(list(data.table(a=1:2), data.table(b=3:4)), fill=TRUE, use.names=FALSE),
-             data.table(a=c(1:2,NA,NA), b=c(NA,NA,3:4)),
-             warning="use.names= cannot be FALSE when fill is TRUE. Setting use.names=TRUE")
+             data.table(a=c(1:4)))
+test(2003.4, rbindlist(list(data.table(a=1:2,c=5:6), data.table(b=3:4)), fill=TRUE, use.names=FALSE),
+             data.table(a=c(1:4), c=INT(5,6,NA,NA)))
+test(2003.5, rbindlist(list(data.table(a=1:2), data.table(b=3:4, c=5:6)), fill=TRUE, use.names=FALSE),
+             data.table(a=c(1:4), V1=INT(NA,NA,5,6)))
 
 # chmatch coverage for two different non-ascii encodings matching; issues mentioned in comments in chmatch.c #69 #2538 #111
 x1 = "fa\xE7ile"
@@ -16801,7 +16862,9 @@ DT = data.table(id=1:9, grp=rep(1:3,each=3), val=c("a","b","c", "a","b","c", "a"
 test(2114.5, as.character(DT[, valfactor1 := factor(val), by = grp]$valfactor1), ans<-rep(c("a","b","c"),3))
 test(2114.6, as.character(DT[, valfactor2 := factor(val), by = id]$valfactor2), ans)
 DT = data.table(x = rep(letters[c(3, 1, 2)], each = 2))
-test(2114.7, DT[, `:=`(g=.GRP, f=factor(.GRP)), by = x],
+test(2114.7, copy(DT)[, `:=`(g=.GRP, f=factor(.GRP)), by = x],
+             data.table(x=rep(c("c","a","b"),each=2), g=rep(1:3,each=2), f=factor(rep(as.character(1:3),each=2))))
+test(2114.8, copy(DT)[, let(g=.GRP, f=factor(.GRP)), by = x],
              data.table(x=rep(c("c","a","b"),each=2), g=rep(1:3,each=2), f=factor(rep(as.character(1:3),each=2))))
 
 # extra tests from #996 for completeness; no warning no-alloc coerce here of 0 and 1 numerics
@@ -17160,25 +17223,41 @@ test(2130.102, print(DT, timezone=FALSE), notOutput='UTC')
 # default expression printing can break format_col.default, #3011
 test(2130.11, print(data.table(e = expression(1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + 11 + 12 + 13))), output = '1 + 2 + 3')
 
-# format_col generic is used
-format_col.complex = function(x, ...) sprintf('(%.1f, %.1fi)', Re(x), Im(x))
-registerS3method("format_col", "complex", format_col.complex)
+# format_col and format_list_item generics, #2273 for package sf
+registerS3method("format_col", "complex", function(x, ...) sprintf('(%.1f, %.1fi)', Re(x), Im(x)))
 # this registerS3method does seem to be necessary to work within the test.data.table() environment
-# assigning the method using <<- probably works too, but we don't want to write to user's environment at all
-x = data.table(z = c(1 + 3i, 2 - 1i, pi + 2.718i))
-test(2130.12, x, output = '(1.0, 3.0i)')
-rm(format_col.complex)
+# assigning the method in .GlobalEnv might work too, but we don't want to write to user's environment at all (and is disallowed by CRAN policy)
+x = data.table(z = c(1+3i, 2-1i, pi+2.718i))
+test(2130.12, x, output="(1.0, 3.0i)")
 registerS3method("format_col", "complex", format_col.default)
-# otherwise it remains registered after test.data.table() and causes test 1610.1 to fail on the next run for example, and user display if they have complex data
-# haven't found a way to unregister an S3 method (tried registering NULL but there's an error that NULL isn't a function)
+# haven't found a way to unregister an S3 method; tried registering NULL but that's an error that NULL isn't a function
+# so registering the default method is the only known solution to clean up since the registered method persists after test.data.table() finishes and
+# then i) test 1610.1 fails if test.data.table() is rerun, ii) user display of complex data would be affected
+# did try wrapping with on.exit(,add=TRUE) but perhaps because this is a script that is sys.source'd, it ran straight away
 
-# format_list_item() generic is used
-format_list_item.myclass <- function(x, ...) paste0("<", class(x)[1L], ":", x$id, ">")
-registerS3method("format_list_item", "myclass", format_list_item.myclass)
-DT = data.table(row = 1:2, objs = list(structure(list(id = "foo"), class = "myclass"),  structure(list(id = "bar"), class = "myclass")))
-test(2130.13, print(DT), output = "myclass:foo.*myclass:bar")
-rm(format_list_item.myclass)
-registerS3method("format_list_item", "myclass", format_list_item.default)
+# format method for column takes predecedence over format method for each list item
+registerS3method("format", "myclass2130", function(x, ...) paste0("<", class(x)[1L], ":", x$id, ">"))
+DT = data.table(row=1:2, objs=list(structure(list(id="foo"), class="myclass2130"), structure(list(id="bar"), class="myclass2130")))
+test(2130.13, print(DT), output="myclass2130:foo.*myclass2130:bar")
+setattr(DT$objs, "class", "foo2130")
+registerS3method("format", "foo2130", function(x, ...) "All hail foo")
+test(2130.14, print(DT), output="myclass2130:foo.*myclass2130:bar") # because length 1 from format but needs to be length(x)
+registerS3method("format", "foo2130", function(x, ...) rep("All hail foo",length(x)))
+test(2130.15, print(DT), output="All hail foo")  # e.g. sf:::format.sfc rather than sf:::format.sfg on each item
+setattr(DT$objs, "class", "bar2130_with_no_method")
+test(2130.16, print(DT), output="myclass2130:foo.*myclass2130:bar")
+registerS3method("format", "myclass2130", format.default)
+registerS3method("format", "foo2130", format.default)
+
+DT = data.table(num = 1:2,
+                formula = list(as.formula("mpg~cyl")),
+                model = list(lm(mpg~cyl, mtcars)),
+                shallow = list(1:3, 4:6),
+                nested = list(list(1:3), list(4:6)))
+test(2130.17, capture.output(DT),
+     c("   num   formula    model shallow    nested",
+       "1:   1 mpg ~ cyl <lm[12]>   1,2,3 <list[1]>",
+       "2:   2 mpg ~ cyl <lm[12]>   4,5,6 <list[1]>"))
 
 # .SD from grouping should be unlocked, part of #4159
 x = data.table(a=1:3, b=4:6)
@@ -17932,7 +18011,8 @@ if (test_bit64) {
   # X[Y,,by=.EACHI] when Y contains integer64 also fixed in 1.12.4, #3779
   X = data.table(x=1:3)
   Y = data.table(x=1:2, y=as.integer64(c(10,20)))
-  test(2193.2, X[Y, `:=`(y=i.y), on="x", by=.EACHI], data.table(x=1:3, y=as.integer64(10L,20L,NA)))
+  test(2193.2, copy(X)[Y, `:=`(y=i.y), on="x", by=.EACHI], data.table(x=1:3, y=as.integer64(10L,20L,NA)))
+  test(2193.3, copy(X)[Y, let(y=i.y), on="x", by=.EACHI], data.table(x=1:3, y=as.integer64(10L,20L,NA)))
 }
 
 # endsWithAny added in #5097 for internal use replacing one use of base::endsWith (in fread.R)
@@ -18348,76 +18428,125 @@ test(2225.1, groupingsets(data.table(iris), j=sum(Sepal.Length), by=c('Sp'='Spec
 test(2225.2, groupingsets(data.table(iris), j=mean(Sepal.Length), by=c('Sp'='Species'), sets=list('Species')),
              groupingsets(data.table(iris), j=mean(Sepal.Length), by=c('Species'), sets=list('Species')))
 
-# weighted.mean GForce optimized #3977
+# make gprod work for bit64, #5225
+if (test_bit64) {
+  test(2226.1, base::prod(2147483647L,2L), 4294967294)  # just to illustrate that base returns double
+  DT = data.table(x=c(lim.integer64(), 2, 1, NA, NA, -2, 4), g=INT(1,2,1,2,1,2,3,3))
+  test(2226.2, DT[, prod(x), g],            data.table(g=1:3, V1=as.integer64(c(NA,NA,-8L))))
+  test(2226.3, DT[, prod(x,na.rm=TRUE), g], data.table(g=1:3, V1=as.integer64(c(NA,"9223372036854775807",-8L))))
+}
+
+# set ops when DT has column names x and y, #5255
+DT = data.table(x=c(1,2,2,2), y=LETTERS[c(1,2,2,3)])
+test(2227.1, fintersect(DT, DT, all=TRUE), DT)
+test(2227.2, fsetdiff(DT, DT, all=TRUE), DT[0])
+
+# fwrite POSIXct rounding, #5238
+DT = data.table(as.POSIXct(c(1678296152.99999952316284179688, -118944658.0000004, -.00000004), origin='1970-01-01 00:00:00'))
+test(2228, fwrite(DT), output="2023-03-08T17:22:33Z.*1966-03-26T07:49:02Z.*1970-01-01T00:00:00Z")
+
+# automatically infer known files signatures and attempt auto-unzip #3834
+DT = fread(testDir("russellCRLF.csv"))
+test(2229.1, fread(testDir("russellCRLF.zip")), DT)
+test(2229.2, fread(testDir("russellCRLF.tar")), DT)
+# guess binary file type
+f = tempfile()
+file.copy(testDir("russellCRLF.zip"), f, overwrite=TRUE)
+test(2229.3, fread(f), DT)
+if (test_R.utils) {
+  file.copy(testDir("ch11b.dat.bz2"), f, overwrite=TRUE)
+  test(2229.4, fread(f, logical01=FALSE)[,1], data.table(V1 = 1:100))
+  file.copy(testDir("issue_785_fread.txt.gz"), f, overwrite=TRUE)
+  test(2229.5, fread(f, logical01=FALSE)[,25], data.table(Sv3 = c(10,14,14,15)))
+}
+unlink(f)
+# not supporting multi file zips yet
+test(2229.6, fread(testDir("multi-file.zip")), error="Compressed files containing more than 1 file are currently not supported.")
+
+# merge.data.table ignored incomparables argument without warning, #2587
+x = data.frame(k1 = c(NA,NA,3,4,5), k2 = c(1,NA,NA,4,5), data = 1:5)
+y = data.frame(k1 = c(NA,2,NA,4,5), k2 = c(NA,NA,3,4,5), data = 1:5)
+DT = as.data.table(x)
+test(2230.1, setDF(merge(DT, y, by="k2", incomparables=NA)),         merge(x, y, by="k2", incomparables=NA))
+test(2230.2, setDF(merge(DT, y, by="k2", incomparables=c(NA,4))),    merge(x, y, by="k2", incomparables=c(NA,4)))
+test(2230.3, setDF(merge(DT, y, by="k2", incomparables=c(4,5))),     merge(x, y, by="k2", incomparables=c(4,5)))
+test(2230.4, setDF(merge(DT, y, by="k2", incomparables=c(1, NA, 4, 5))), merge(x, y, by="k2", incomparables=c(1,NA,4,5)))
+test(2230.5, setDF(merge(DT, y, by="k2", incomparables=c(NA, 3, 4, 5))), merge(x, y, by="k2", incomparables=c(NA,3,4,5)))
+test(2230.6, merge(DT, y, by="k2", unk=1), merge(DT, y, by="k2"), warning="Unknown argument 'unk' has been passed.")
+test(2230.7, merge(DT, y, by="k2", NULL, NULL, FALSE, FALSE, FALSE, TRUE, c(".x", ".y"), TRUE, getOption("datatable.allow.cartesian"), NULL, 1L),
+             merge(DT, y, by="k2"), warning=c("Supplied both `by` and `by.x/by.y`. `by` argument will be ignored.", "Passed 1 unknown and unnamed arguments."))
+
+# weighted.mean GForce optimized, #3977
 old = options(datatable.optimize=1L)
 DT = data.table(x=c(3.7,3.3,3.5,2.8), w=c(5,5,4,1), g=1L)
-test(2226.01, DT[, weighted.mean(x, w), g, verbose=TRUE], data.table(g=1L, V1=3.45333333333333), output="GForce FALSE")
-test(2226.02, DT[, weighted.mean(w, x), g, verbose=TRUE], data.table(g=1L, V1=3.89473684210526), output="GForce FALSE")
-test(2226.03, DT[, weighted.mean(x), g, verbose=TRUE], data.table(g=1L, V1=3.325), output="GForce FALSE")
+test(2231.01, DT[, weighted.mean(x, w), g, verbose=TRUE], data.table(g=1L, V1=3.45333333333333), output="GForce FALSE")
+test(2231.02, DT[, weighted.mean(w, x), g, verbose=TRUE], data.table(g=1L, V1=3.89473684210526), output="GForce FALSE")
+test(2231.03, DT[, weighted.mean(x), g, verbose=TRUE], data.table(g=1L, V1=3.325), output="GForce FALSE")
 # multiple groups
 DT = data.table(x=c(1L,2L,2L,3L,4L,5L,5L,6L), w=c(1L,1L,1L,1L,2L,2L,2L,2L), g=rep(1L:2L, each=4L))
-test(2226.04, DT[, weighted.mean(x, w), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2,5)), output="GForce FALSE")
-test(2226.05, DT[, weighted.mean(x, w), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2,5)), output="GForce FALSE")
-test(2226.06, DT[, weighted.mean(x, w), seq(nrow(DT)), verbose=TRUE], data.table(seq=1L:8L, V1=c(1,2,2,3,4,5,5,6)), output="GForce FALSE")
+test(2231.04, DT[, weighted.mean(x, w), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2,5)), output="GForce FALSE")
+test(2231.05, DT[, weighted.mean(x, w), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2,5)), output="GForce FALSE")
+test(2231.06, DT[, weighted.mean(x, w), seq(nrow(DT)), verbose=TRUE], data.table(seq=1L:8L, V1=c(1,2,2,3,4,5,5,6)), output="GForce FALSE")
 # (only x XOR w) containing NA
 DT = data.table(x=c(1L,NA,2L,3L,4L,5L,5L,6L), w=c(1L,1L,1L,1L,2L,NA,2L,2L), g=rep(1L:2L, each=4L))
-test(2226.07, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA_real_, NA_real_)), output="GForce FALSE")
-test(2226.08, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, NA_real_)), output="GForce FALSE")
-test(2226.09, DT[, weighted.mean(x, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA, 5)), output="GForce FALSE")
-test(2226.10, DT[, weighted.mean(x, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output="GForce FALSE")
+test(2231.07, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA_real_, NA_real_)), output="GForce FALSE")
+test(2231.08, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, NA_real_)), output="GForce FALSE")
+test(2231.09, DT[, weighted.mean(x, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA, 5)), output="GForce FALSE")
+test(2231.10, DT[, weighted.mean(x, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output="GForce FALSE")
 # (only x XOR w) containing NaN
 DT = data.table(x=c(1L,2L,NaN,3L,4L,5L,5L,6L), w=c(1L,1L,1L,1L,2L,2L,NaN,2L), g=rep(1L:2L, each=4L))
-test(2226.11, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NaN, NA)), output="GForce FALSE")
-test(2226.12, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, NA)), output="GForce FALSE")
-test(2226.13, DT[, weighted.mean(x, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NaN, 5)), output="GForce FALSE")
-test(2226.14, DT[, weighted.mean(x, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output="GForce FALSE")
+test(2231.11, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NaN, NA)), output="GForce FALSE")
+test(2231.12, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, NA)), output="GForce FALSE")
+test(2231.13, DT[, weighted.mean(x, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NaN, 5)), output="GForce FALSE")
+test(2231.14, DT[, weighted.mean(x, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output="GForce FALSE")
 # (only x XOR w) containing NA and NaN
 DT = data.table(x=c(1L,NA,NaN,3L,4L,5L,5L,6L), w=c(1L,1L,1L,1L,2L,NA,NaN,2L), g=rep(1L:2L, each=4L))
-test(2226.15, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA_real_, NA_real_)), output="GForce FALSE")
-test(2226.16, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, NA)), output="GForce FALSE")
-test(2226.17, DT[, weighted.mean(x, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA, 5)), output="GForce FALSE")
-test(2226.18, DT[, weighted.mean(x, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output="GForce FALSE")
+test(2231.15, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA_real_, NA_real_)), output="GForce FALSE")
+test(2231.16, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, NA)), output="GForce FALSE")
+test(2231.17, DT[, weighted.mean(x, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA, 5)), output="GForce FALSE")
+test(2231.18, DT[, weighted.mean(x, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output="GForce FALSE")
 # (x and w) containing NA and NaN
 DT = data.table(x=c(1L,NA,NaN,3L,4L,5L,5L,6L), w=c(1L,NA,NaN,1L,2L,2L,2L,2L), g=rep(1L:2L, each=4L))
-test(2226.19, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA, 5)), output="GForce FALSE")
-test(2226.20, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output="GForce FALSE")
+test(2231.19, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA, 5)), output="GForce FALSE")
+test(2231.20, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output="GForce FALSE")
 DT = data.table(x=c(1L,NA,NaN,3L,4L,5L,5L,6L), w=c(1L,NaN,NA,1L,2L,2L,2L,2L), g=rep(1L:2L, each=4L))
-test(2226.21, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA, 5)), output="GForce FALSE")
-test(2226.22, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output="GForce FALSE")
+test(2231.21, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA, 5)), output="GForce FALSE")
+test(2231.22, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output="GForce FALSE")
 # same as previous test cases but now GForce optimized
 options(datatable.optimize=2L)
 DT = data.table(x=c(3.7,3.3,3.5,2.8), w=c(5,5,4,1), g=1L)
-test(2226.31, DT[, weighted.mean(x, w), g, verbose=TRUE], data.table(g=1L, V1=3.45333333333333), output="GForce optimized j to")
-test(2226.32, DT[, weighted.mean(w, x), g, verbose=TRUE], data.table(g=1L, V1=3.89473684210526), output="GForce optimized j to")
-test(2226.33, DT[, weighted.mean(x), g, verbose=TRUE], data.table(g=1L, V1=3.325), output="GForce optimized j to")
+test(2231.31, DT[, weighted.mean(x, w), g, verbose=TRUE], data.table(g=1L, V1=3.45333333333333), output="GForce optimized j to")
+test(2231.32, DT[, weighted.mean(w, x), g, verbose=TRUE], data.table(g=1L, V1=3.89473684210526), output="GForce optimized j to")
+test(2231.33, DT[, weighted.mean(x), g, verbose=TRUE], data.table(g=1L, V1=3.325), output="GForce optimized j to")
 # multiple groups
 DT = data.table(x=c(1L,2L,2L,3L,4L,5L,5L,6L), w=c(1L,1L,1L,1L,2L,2L,2L,2L), g=rep(1L:2L, each=4L))
-test(2226.34, DT[, weighted.mean(x, w), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2,5)), output="GForce optimized j to")
-test(2226.35, DT[, weighted.mean(x, w), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2,5)), output="GForce optimized j to")
-test(2226.36, DT[, weighted.mean(x, w), seq(nrow(DT)), verbose=TRUE], data.table(seq=1L:8L, V1=c(1,2,2,3,4,5,5,6)), output="GForce optimized j to")
+test(2231.34, DT[, weighted.mean(x, w), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2,5)), output="GForce optimized j to")
+test(2231.35, DT[, weighted.mean(x, w), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2,5)), output="GForce optimized j to")
+test(2231.36, DT[, weighted.mean(x, w), seq(nrow(DT)), verbose=TRUE], data.table(seq=1L:8L, V1=c(1,2,2,3,4,5,5,6)), output="GForce optimized j to")
 # (only x XOR w) containing NA
 DT = data.table(x=c(1L,NA,2L,3L,4L,5L,5L,6L), w=c(1L,1L,1L,1L,2L,NA,2L,2L), g=rep(1L:2L, each=4L))
-test(2226.37, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA_real_, NA_real_)), output="GForce optimized j to")
-test(2226.38, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, NA_real_)), output="GForce optimized j to")
-test(2226.39, DT[, weighted.mean(x, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA, 5)), output="GForce optimized j to")
-test(2226.40, DT[, weighted.mean(x, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output="GForce optimized j to")
+test(2231.37, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA_real_, NA_real_)), output="GForce optimized j to")
+test(2231.38, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, NA_real_)), output="GForce optimized j to")
+test(2231.39, DT[, weighted.mean(x, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA, 5)), output="GForce optimized j to")
+test(2231.40, DT[, weighted.mean(x, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output="GForce optimized j to")
 # (only x XOR w) containing NaN
 DT = data.table(x=c(1L,2L,NaN,3L,4L,5L,5L,6L), w=c(1L,1L,1L,1L,2L,2L,NaN,2L), g=rep(1L:2L, each=4L))
-test(2226.41, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NaN, NA)), output="GForce optimized j to")
-test(2226.42, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, NA)), output="GForce optimized j to")
-test(2226.43, DT[, weighted.mean(x, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NaN, 5)), output="GForce optimized j to")
-test(2226.44, DT[, weighted.mean(x, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output="GForce optimized j to")
+test(2231.41, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NaN, NA)), output="GForce optimized j to")
+test(2231.42, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, NA)), output="GForce optimized j to")
+test(2231.43, DT[, weighted.mean(x, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NaN, 5)), output="GForce optimized j to")
+test(2231.44, DT[, weighted.mean(x, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output="GForce optimized j to")
 # (only x XOR w) containing NA and NaN
 DT = data.table(x=c(1L,NA,NaN,3L,4L,5L,5L,6L), w=c(1L,1L,1L,1L,2L,NA,NaN,2L), g=rep(1L:2L, each=4L))
-test(2226.45, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA_real_, NA_real_)), output="GForce optimized j to")
-test(2226.46, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, NA)), output="GForce optimized j to")
-test(2226.47, DT[, weighted.mean(x, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA, 5)), output="GForce optimized j to")
-test(2226.48, DT[, weighted.mean(x, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output="GForce optimized j to")
+test(2231.45, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA_real_, NA_real_)), output="GForce optimized j to")
+test(2231.46, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, NA)), output="GForce optimized j to")
+test(2231.47, DT[, weighted.mean(x, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA, 5)), output="GForce optimized j to")
+test(2231.48, DT[, weighted.mean(x, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output="GForce optimized j to")
 # (x and w) containing NA and NaN
 DT = data.table(x=c(1L,NA,NaN,3L,4L,5L,5L,6L), w=c(1L,NA,NaN,1L,2L,2L,2L,2L), g=rep(1L:2L, each=4L))
-test(2226.49, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA, 5)), output="GForce optimized j to")
-test(2226.50, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output="GForce optimized j to")
+test(2231.49, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA, 5)), output="GForce optimized j to")
+test(2231.50, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output="GForce optimized j to")
 DT = data.table(x=c(1L,NA,NaN,3L,4L,5L,5L,6L), w=c(1L,NaN,NA,1L,2L,2L,2L,2L), g=rep(1L:2L, each=4L))
-test(2226.51, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA, 5)), output="GForce optimized j to")
-test(2226.52, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output="GForce optimized j to")
+test(2231.51, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA, 5)), output="GForce optimized j to")
+test(2231.52, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output="GForce optimized j to")
 options(old)
+
