@@ -18688,8 +18688,8 @@ ydt[, ret := rnorm(.N)]
 f = shift
 test(2233.33, copy(ydt)[, (ycols) := shift(ret, yn, type = "lead"), by = symbol, verbose=TRUE], copy(ydt)[, (ycols) := f(ret, yn, type = "lead"), by = symbol], output="GForce optimized j to")
 
-# support by=.I #1732
-DT <- data.table(V1=1:5, V2=3:7, V3=5:1)
+# support by=.I; #1732
+DT = data.table(V1=1:5, V2=3:7, V3=5:1)
 test(2234.1, DT[, min(.SD), by=.I], setnames(DT[, min(.SD), by=1:nrow(DT)], "nrow", "I"))
 test(2234.2, DT[, min(.SD), by=.I], data.table(I=1L:5L, V1=c(1L, 2L, 3L, 2L, 1L)))
 # works also with i
@@ -18699,4 +18699,6 @@ test(2234.4, DT[c(4, NA), min(.SD), by=.I], data.table(I=c(4L, NA), V1=c(2L, NA)
 test(2234.5, DT[, min(.SD), by=.(.I)], data.table(I=1L:5L, V1=c(1L, 2L, 3L, 2L, 1L)))
 test(2234.6, DT[, min(.SD), by=list(.I)], data.table(I=1L:5L, V1=c(1L, 2L, 3L, 2L, 1L)))
 test(2234.7, DT[, min(.SD), by=c(.I)], data.table(I=1L:5L, V1=c(1L, 2L, 3L, 2L, 1L)))
+test(2234.8, DT[, min(.SD), by=.I%%2L], error="by.*contains .I.*supported")  # would be nice to support in future; i.e. by odd/even rows, and by=(.I+1L)%/%2L for pairs of rows; i.e. any expression of .I
+test(2234.9, DT[, min(.SD), by=somefun(.I)], error="by.*contains .I.*supported")
 

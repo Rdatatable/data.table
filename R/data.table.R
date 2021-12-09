@@ -766,10 +766,9 @@ replace_dot_alias = function(e) {
         # may evaluate to NULL | character() | "" | list(), likely a result of a user expression where no-grouping is one case being loop'd through
         bysubl = as.list.default(bysub)
         bysuborig = bysub
-
-        # support .I in by #1732
-        # use %in% to support by=.I, by=.(.I), by=c(.I) and by=list(.I)
-        if (".I" %in% bysubl) {
+        if (".I" %in% bysubl) {  #1732
+          if (!is.symbol(bysub) && (length(bysubl)!=2L || !is.symbol(bysubl[[2L]]) || !(bysubl[[1L]] %chin% c(".","c","list"))))
+            stopf("'by' contains .I but only the following are currently supported: by=.I, by=.(.I), by=c(.I), by=list(.I)")
           bysub = if (is.null(irows)) seq_len(nrow(x)) else irows
           bysuborig = as.symbol("I")
         }
