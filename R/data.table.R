@@ -766,6 +766,12 @@ replace_dot_alias = function(e) {
         # may evaluate to NULL | character() | "" | list(), likely a result of a user expression where no-grouping is one case being loop'd through
         bysubl = as.list.default(bysub)
         bysuborig = bysub
+        if (".I" %in% bysubl) {  #1732
+          if (!is.symbol(bysub) && (length(bysubl)!=2L || !is.symbol(bysubl[[2L]]) || !(bysubl[[1L]] %chin% c(".","c","list"))))
+            stopf("'by' contains .I but only the following are currently supported: by=.I, by=.(.I), by=c(.I), by=list(.I)")
+          bysub = if (is.null(irows)) seq_len(nrow(x)) else irows
+          bysuborig = as.symbol("I")
+        }
         if (is.name(bysub) && !(bysub %chin% names_x)) {  # TO DO: names(x),names(i),and i. and x. prefixes
           bysub = eval(bysub, parent.frame(), parent.frame())
           # fix for # 5106 - http://stackoverflow.com/questions/19983423/why-by-on-a-vector-not-from-a-data-table-column-is-very-slow

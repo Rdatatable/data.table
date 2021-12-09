@@ -10,7 +10,7 @@
 \alias{.NGRP}
 \title{ Special symbols }
 \description{
-    \code{.SD}, \code{.BY}, \code{.N}, \code{.I}, \code{.GRP}, and \code{.NGRP} are \emph{read-only} symbols for use in \code{j}. \code{.N} can be used in \code{i} as well. See the vignettes, Details and Examples here and in \code{\link{data.table}}.
+    \code{.SD}, \code{.BY}, \code{.N}, \code{.I}, \code{.GRP}, and \code{.NGRP} are \emph{read-only} symbols for use in \code{j}. \code{.N} can be used in \code{i} as well. \code{.I} can be used in \code{by} as well. See the vignettes, Details and Examples here and in \code{\link{data.table}}.
     \code{.EACHI} is a symbol passed to \code{by}; i.e. \code{by=.EACHI}.
 }
 \details{
@@ -22,13 +22,13 @@
         \item{\code{.SD} is a \code{data.table} containing the \bold{S}ubset of \code{x}'s \bold{D}ata for each group, excluding any columns used in \code{by} (or \code{keyby}).}
         \item{\code{.BY} is a \code{list} containing a length 1 vector for each item in \code{by}. This can be useful when \code{by} is not known in advance. The \code{by} variables are also available to \code{j} directly by name; useful for example for titles of graphs if \code{j} is a plot command, or to branch with \code{if()} depending on the value of a group variable.}
         \item{\code{.N} is an integer, length 1, containing the number of rows in the group. This may be useful when the column names are not known in advance and for convenience generally. When grouping by \code{i}, \code{.N} is the number of rows in \code{x} matched to, for each row of \code{i}, regardless of whether \code{nomatch} is \code{NA} or \code{NULL}. It is renamed to \code{N} (no dot) in the result (otherwise a column called \code{".N"} could conflict with the \code{.N} variable, see FAQ 4.6 for more details and example), unless it is explicitly named; e.g., \code{DT[,list(total=.N),by=a]}.}
-        \item{\code{.I} is an integer vector equal to \code{seq_len(nrow(x))}. While grouping, it holds for each item in the group, its row location in \code{x}. This is useful to subset in \code{j}; e.g. \code{DT[, .I[which.max(somecol)], by=grp]}.}
+        \item{\code{.I} is an integer vector equal to \code{seq_len(nrow(x))}. While grouping, it holds for each item in the group, its row location in \code{x}. This is useful to subset in \code{j}; e.g. \code{DT[, .I[which.max(somecol)], by=grp]}. If used in \code{by} it corresponds to applying a function rowwise. }
         \item{\code{.GRP} is an integer, length 1, containing a simple group counter. 1 for the 1st group, 2 for the 2nd, etc.}
         \item{\code{.NGRP} is an integer, length 1, containing the number of groups. }
     }
 
     \code{.EACHI} is defined as \code{NULL} but its value is not used. Its usage is \code{by=.EACHI} (or \code{keyby=.EACHI}) which invokes grouping-by-each-row-of-i; see \code{\link{data.table}}'s \code{by} argument for more details.
-    
+
     Note that \code{.N} in \code{i} is computed up-front, while that in \code{j} applies \emph{after filtering in \code{i}}. That means that even absent grouping, \code{.N} in \code{i} can be different from \code{.N} in \code{j}. See Examples.
 }
 \seealso{
@@ -58,5 +58,9 @@ X[, DT[.BY, y, on="x"], by=x]          # join within each group
 # .N can be different in i and j
 DT[{cat(sprintf('in i, .N is \%d\n', .N)); a < .N/2},
    {cat(sprintf('in j, .N is \%d\n', .N)); mean(a)}]
+
+# .I can be different in j and by, enabling rowwise operations in by
+DT[, .(.I, min(.SD[,-1]))]
+DT[, .(min(.SD[,-1])), by=.I]
 }
 \keyword{ data }
