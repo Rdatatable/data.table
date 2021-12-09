@@ -310,7 +310,9 @@ replace_dot_alias = function(e) {
         as.character(jsub[[1L]])[1L]
       } else ""
     }
-    if (root == ":=") {
+    if (root == ":=" || root == "let") { # let(...) as alias for :=(...) (#3795)
+      if (root == "let")
+        jsub[[1L]] = as.symbol(":=")
       allow.cartesian=TRUE   # (see #800)
       if (!missing(i) && keyby)
         stopf(":= with keyby is only possible when i is not supplied since you can't setkey on a subset of rows. Either change keyby to by or remove i")
@@ -1107,7 +1109,7 @@ replace_dot_alias = function(e) {
         if (is.null(names(jsub))) {
           # regular LHS:=RHS usage, or `:=`(...) with no named arguments (an error)
           # `:=`(LHS,RHS) is valid though, but more because can't see how to detect that, than desire
-          if (length(jsub)!=3L) stopf("In `:=`(col1=val1, col2=val2, ...) form, all arguments must be named.")
+          if (length(jsub)!=3L) stopf("In %s(col1=val1, col2=val2, ...) form, all arguments must be named.", if (root == "let") "let" else "`:=`")
           lhs = jsub[[2L]]
           jsub = jsub[[3L]]
           if (is.name(lhs)) {
@@ -1119,7 +1121,7 @@ replace_dot_alias = function(e) {
         } else {
           # `:=`(c2=1L,c3=2L,...)
           lhs = names(jsub)[-1L]
-          if (any(lhs=="")) stopf("In `:=`(col1=val1, col2=val2, ...) form, all arguments must be named.")
+          if (any(lhs=="")) stopf("In %s(col1=val1, col2=val2, ...) form, all arguments must be named.", if (root == "let") "let" else "`:=`")
           names(jsub)=""
           jsub[[1L]]=as.name("list")
         }
@@ -1301,18 +1303,8 @@ replace_dot_alias = function(e) {
         #       But rather than that complex logic here at R level to catch that and do a shallow copy for efficiency, just do the check inside CsubsetDT
         #       to see if it passed 1:nrow(x) and then CsubsetDT should do the shallow copy safely and centrally.
         #       That R level branch was taken out in PR #3213
-
-        # TO DO: use CsubsetDT twice here and then remove this entire R level branch
-        for (s in seq_along(icols)) {
-          target = icolsAns[s]
-          source = icols[s]
-          ans[[target]] = .Call(CsubsetVector,i[[source]],ii)  # i.e. i[[source]][ii]
-        }
-        for (s in seq_along(xcols)) {
-          target = xcolsAns[s]
-          source = xcols[s]
-          ans[[target]] = .Call(CsubsetVector,x[[source]],irows)   # i.e. x[[source]][irows], but guaranteed new memory even for singleton logicals from R 3.1.0
-        }
+        ans[icolsAns] = .Call(CsubsetDT, i, ii,    icols)
+        ans[xcolsAns] = .Call(CsubsetDT, x, irows, xcols)
         setattr(ans, "names", ansvars)
         if (haskey(x)) {
           keylen = which.first(!key(x) %chin% ansvars)-1L
@@ -1747,14 +1739,13 @@ replace_dot_alias = function(e) {
           if (!(is.call(q) && is.symbol(q[[1L]]) && is.symbol(q[[2L]]) && (q1 <- q[[1L]]) %chin% gfuns)) return(FALSE)
           if (!(q2 <- q[[2L]]) %chin% names(SDenv$.SDall) && q2 != ".I") return(FALSE)  # 875
           if ((length(q)==2L || (!is.null(names(q)) && startsWith(names(q)[3L], "na")))) return(TRUE)
+          #                       ^^ base::startWith errors on NULL unfortunately
           if (length(q)>=2L && q[[1L]] == "shift") {
             q_named = match.call(shift, q)
             if (!is.call(q_named[["fill"]]) && is.null(q_named[["give.names"]])) return(TRUE)
-          } # add gshift support
-          #                       ^^ base::startWith errors on NULL unfortunately
-          #        head-tail uses default value n=6 which as of now should not go gforce ... ^^
-          # otherwise there must be three arguments, and only in two cases:
-          #   1) head/tail(x, 1) or 2) x[n], n>0
+          }
+          if (length(q)>=3L && q[[1L]] == "weighted.mean") return(TRUE)  #3977
+          # otherwise there must be three arguments
           length(q)==3L && length(q3 <- q[[3L]])==1L && is.numeric(q3) &&
             ( (q1 %chin% c("head", "tail")) || ((q1 == "[" || (q1 == "[[" && eval(call('is.atomic', q[[2L]]), envir=x))) && q3>0L) )
         }
@@ -1769,14 +1760,13 @@ replace_dot_alias = function(e) {
             for (ii in seq_along(jsub)[-1L]) {
               if (dotN(jsub[[ii]])) next; # For #334
               jsub[[ii]][[1L]] = as.name(paste0("g", jsub[[ii]][[1L]]))
-              if (length(jsub[[ii]])>=3L && is.symbol(jsub[[ii]][[3L]]) && exists(jsub[[ii]][[3L]], parent.frame())) jsub[[ii]][[3L]] = eval(jsub[[ii]][[3L]], parent.frame())  # tests 1187.2 & 1187.4
+              if (length(jsub[[ii]])>=3L && is.symbol(jsub[[ii]][[3L]]) && !(jsub[[ii]][[3L]] %chin% sdvars)) jsub[[ii]][[3L]] = eval(jsub[[ii]][[3L]], parent.frame())  # tests 1187.2 & 1187.4
             }
           else {
             # adding argument to ghead/gtail if none is supplied to g-optimized head/tail
             if (length(jsub) == 2L && jsub[[1L]] %chin% c("head", "tail")) jsub[["n"]] = 6L
             jsub[[1L]] = as.name(paste0("g", jsub[[1L]]))
-            # check if function arguments are variables in parent frame and if so evaluate them for usage in gforce C
-            if (length(jsub)>=3L && is.symbol(jsub[[3L]]) && exists(jsub[[3L]], parent.frame())) jsub[[3L]] = eval(jsub[[3L]], parent.frame())   # tests 1187.3 & 1187.5 & programming 101.17
+            if (length(jsub)>=3L && is.symbol(jsub[[3L]]) && !(jsub[[3L]] %chin% sdvars)) jsub[[3L]] = eval(jsub[[3L]], parent.frame())   # tests 1187.3 & 1187.5
           }
           if (verbose) catf("GForce optimized j to '%s'\n", deparse(jsub, width.cutoff=200L, nlines=1L))
         } else if (verbose) catf("GForce is on, left j unchanged\n");
@@ -2784,8 +2774,10 @@ address = function(x) .Call(Caddress, eval(substitute(x), parent.frame()))
 
 ":=" = function(...) {
   # this error is detected when eval'ing isub and replaced with a more helpful one when using := in i due to forgetting a comma, #4227
-  stopf('Check that is.data.table(DT) == TRUE. Otherwise, := and `:=`(...) are defined for use in j, once only and in particular ways. See help(":=").')
+  stopf('Check that is.data.table(DT) == TRUE. Otherwise, :=, `:=`(...) and let(...) are defined for use in j, once only and in particular ways. See help(":=").')
 }
+
+let = function(...) `:=`(...)
 
 setDF = function(x, rownames=NULL) {
   if (!is.list(x)) stopf("setDF only accepts data.table, data.frame or list of equal length as input")
@@ -2999,7 +2991,7 @@ rleidv = function(x, cols=seq_along(x), prefix=NULL) {
 #     (2) edit .gforce_ok (defined within `[`) to catch which j will apply the new function
 #     (3) define the gfun = function() R wrapper
 gfuns = c("[", "[[", "head", "tail", "first", "last", "sum", "mean", "prod",
-          "median", "min", "max", "var", "sd", ".N", "shift") # added .N for #334
+          "median", "min", "max", "var", "sd", ".N", "shift", "weighted.mean") # added .N for #334
 `g[` = `g[[` = function(x, n) .Call(Cgnthvalue, x, as.integer(n)) # n is of length=1 here.
 ghead = function(x, n) .Call(Cghead, x, as.integer(n)) # n is not used at the moment
 gtail = function(x, n) .Call(Cgtail, x, as.integer(n)) # n is not used at the moment
@@ -3007,6 +2999,17 @@ gfirst = function(x) .Call(Cgfirst, x)
 glast = function(x) .Call(Cglast, x)
 gsum = function(x, na.rm=FALSE) .Call(Cgsum, x, na.rm)
 gmean = function(x, na.rm=FALSE) .Call(Cgmean, x, na.rm)
+gweighted.mean = function(x, w, na.rm=FALSE) {
+  if (missing(w)) gmean(x, na.rm)
+  else {
+    if (na.rm) { # take those indices out of the equation by setting them to 0
+      ix <- is.na(x)
+      x[ix] <- 0
+      w[ix] <- 0
+    }
+    gsum((w!=0)*x*w, na.rm=FALSE)/gsum(w, na.rm=FALSE)
+  }
+}
 gprod = function(x, na.rm=FALSE) .Call(Cgprod, x, na.rm)
 gmedian = function(x, na.rm=FALSE) .Call(Cgmedian, x, na.rm)
 gmin = function(x, na.rm=FALSE) .Call(Cgmin, x, na.rm)

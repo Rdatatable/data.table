@@ -98,10 +98,30 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
       warningf("File '%s' has size 0. Returning a NULL %s.", file, if (data.table) 'data.table' else 'data.frame')
       return(if (data.table) data.table(NULL) else data.frame(NULL))
     }
-    if (w <- endsWithAny(file, c(".gz",".bz2"))) {
+
+    # support zip and tar files #3834
+    zip_signature = charToRaw("PK\x03\x04")
+    file_signature = readBin(file, raw(), 8L)
+
+    if ((w <- endsWithAny(file, c(".zip", ".tar"))) || identical(head(file_signature, 4L), zip_signature)) {
+      FUN = if (w==2L) untar else unzip
+      fnames = FUN(file, list=TRUE)
+      if (is.data.frame(fnames)) fnames = fnames[,1L]
+      if (length(fnames) > 1L)
+        stopf("Compressed files containing more than 1 file are currently not supported.")
+      FUN(file, exdir=tmpdir)
+      decompFile = file.path(tmpdir, fnames)
+      file = decompFile
+      on.exit(unlink(decompFile), add=TRUE)
+    }
+
+    gz_signature = as.raw(c(0x1F, 0x8B))
+    bz2_signature = as.raw(c(0x42, 0x5A, 0x68))
+    gzsig = FALSE
+    if ((w <- endsWithAny(file, c(".gz",".bz2"))) || (gzsig <- identical(head(file_signature, 2L), gz_signature)) || identical(head(file_signature, 3L), bz2_signature)) {
       if (!requireNamespace("R.utils", quietly = TRUE))
         stopf("To read gz and bz2 files directly, fread() requires 'R.utils' package which cannot be found. Please install 'R.utils' using 'install.packages('R.utils')'.") # nocov
-      FUN = if (w==1L) gzfile else bzfile
+      FUN = if (w==1L || gzsig) gzfile else bzfile
       R.utils::decompressFile(file, decompFile<-tempfile(tmpdir=tmpdir), ext=NULL, FUN=FUN, remove=FALSE)   # ext is not used by decompressFile when destname is supplied, but isn't optional
       file = decompFile   # don't use 'tmpFile' symbol again, as tmpFile might be the http://domain.org/file.csv.gz download
       on.exit(unlink(decompFile), add=TRUE)
