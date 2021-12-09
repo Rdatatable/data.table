@@ -1809,25 +1809,41 @@ test(610.3, chorder(x), base::order(x))
 test(610.4, unique(x[chgroup(x)]), unique(x))
 
 # := by group
+options(datatable.optimize=0L)
 DT = data.table(a=1:3,b=(1:9)/10)
-test(611, DT[,v:=sum(b),by=a], data.table(a=1:3,b=(1:9)/10,v=c(1.2,1.5,1.8)))
+test(611.1, DT[,v:=sum(b),by=a], data.table(a=1:3,b=(1:9)/10,v=c(1.2,1.5,1.8)))
 setkey(DT,a)
-test(612, DT[,v:=min(b),by=a], data.table(a=1:3,b=(1:9)/10,v=(1:3)/10,key="a"))
+test(611.2, DT[,v:=min(b),by=a], data.table(a=1:3,b=(1:9)/10,v=(1:3)/10,key="a"))
+# Combining := by group with i
+test(611.3, DT[a>1,p:=sum(b)]$p, rep(c(NA,3.3),c(3,6)))
+test(611.4, DT[a>1,q:=sum(b),by=a]$q, rep(c(NA,1.5,1.8),each=3))
+options(datatable.optimize=2L)
+DT = data.table(a=1:3,b=(1:9)/10)
+test(612.1, DT[,v:=sum(b),by=a], data.table(a=1:3,b=(1:9)/10,v=c(1.2,1.5,1.8)))
+setkey(DT,a)
+test(612.2, DT[,v:=min(b),by=a], data.table(a=1:3,b=(1:9)/10,v=(1:3)/10,key="a"))
+# Combining := by group with i
+test(612.3, DT[a>1,p:=sum(b)]$p, rep(c(NA,3.3),c(3,6)))
+test(612.4, DT[a>1,q:=sum(b),by=a]$q, rep(c(NA,1.5,1.8),each=3))
 # Assign to subset ok (NA initialized in the other items) ok :
 test(613, DT[J(2),w:=8.3]$w, rep(c(NA,8.3,NA),each=3))
 test(614, DT[J(3),x:=9L]$x, rep(c(NA_integer_,NA_integer_,9L),each=3))
 test(615, DT[J(2),z:=list(list(c(10L,11L)))]$z, rep(list(NULL, 10:11, NULL),each=3))
-# Combining := by group with i
-test(616, DT[a>1,p:=sum(b)]$p, rep(c(NA,3.3),c(3,6)))
-test(617, DT[a>1,q:=sum(b),by=a]$q, rep(c(NA,1.5,1.8),each=3))
 
 # Empty i clause, #2034. Thanks to Chris for testing, tests from him. Plus changes from #759
 ans = copy(DT)[,r:=NA_real_]
-test(618, copy(DT)[a>3,r:=sum(b)],     ans)
-test(619, copy(DT)[J(-1),r:=sum(b)],   ans)
-test(620.1, copy(DT)[NA,r:=sum(b)],    ans)
-test(620.2, copy(DT)[0,r:=sum(b)],     ans)
-test(620.3, copy(DT)[NULL,r:=sum(b)],  null.data.table())
+options(datatable.optimize=0L)
+test(618.1, copy(DT)[a>3,r:=sum(b)],   ans)
+test(618.2, copy(DT)[J(-1),r:=sum(b)], ans)
+test(618.3, copy(DT)[NA,r:=sum(b)],    ans)
+test(618.4, copy(DT)[0,r:=sum(b)],     ans)
+test(618.5, copy(DT)[NULL,r:=sum(b)],  null.data.table())
+options(datatable.optimize=2L)
+test(619.1, copy(DT)[a>3,r:=sum(b)],   ans)
+test(619.2, copy(DT)[J(-1),r:=sum(b)], ans)
+test(619.3, copy(DT)[NA,r:=sum(b)],    ans)
+test(619.4, copy(DT)[0,r:=sum(b)],     ans)
+test(619.5, copy(DT)[NULL,r:=sum(b)],  null.data.table())
 
 DT = data.table(x=letters, key="x")
 test(621, copy(DT)[J("bb"), x:="foo"], DT)  # when no update, key should be retained
@@ -1835,7 +1851,10 @@ test(622, copy(DT)[J("bb"), x:="foo",nomatch=0], DT, warning="ignoring nomatch")
 
 set.seed(2)
 DT = data.table(a=rnorm(5)*10, b=1:5)
-test(623, DT[,s:=sum(b),by=round(a)%%2]$s, c(10L,5L,5L,10L,10L))
+options(datatable.optimize=0L)
+test(623.1, copy(DT)[,s:=sum(b),by=round(a)%%2]$s, c(10L,5L,5L,10L,10L))
+options(datatable.optimize=2L)
+test(623.2, copy(DT)[,s:=sum(b),by=round(a)%%2]$s, c(10L,5L,5L,10L,10L))
 
 # Tests on POSIXct attributes
 
@@ -1902,12 +1921,20 @@ test(635, names(DT[,list(x,y,a=y)]), c("x","y","a"))
 test(636, names(DT[,list(x,a=y)]), c("x","a"))
 
 # Test := by key, and that := to the key by key unsets the key. Make it non-trivial in size too.
+options(datatable.optimize=0L)
 set.seed(1)
 DT = data.table(a=sample(1:100,1e6,replace=TRUE),b=sample(1:1000,1e6,replace=TRUE),key="a")
-test(637, DT[,m:=sum(b),by=a][1:3], data.table(a=1L,b=c(156L,808L,848L),m=DT[J(1),sum(b)],key="a"))
-test(638, key(DT[J(43L),a:=99L]), NULL)
+test(637.1, DT[,m:=sum(b),by=a][1:3], data.table(a=1L,b=c(156L,808L,848L),m=DT[J(1),sum(b)],key="a"))
+test(637.2, key(DT[J(43L),a:=99L]), NULL)
 setkey(DT,a)
-test(639, key(DT[,a:=99L,by=a]), NULL)
+test(637.3, key(DT[,a:=99L,by=a]), NULL)
+options(datatable.optimize=2L)
+set.seed(1)
+DT = data.table(a=sample(1:100,1e6,replace=TRUE),b=sample(1:1000,1e6,replace=TRUE),key="a")
+test(638.1, DT[,m:=sum(b),by=a][1:3], data.table(a=1L,b=c(156L,808L,848L),m=DT[J(1),sum(b)],key="a"))
+test(638.2, key(DT[J(43L),a:=99L]), NULL)
+setkey(DT,a)
+test(638.3, key(DT[,a:=99L,by=a]), NULL)
 
 # Test printing is right aligned without quotes etc, and rownames are repeated ok for more than 20 rows
 DT=data.table(a=8:10,b=c("xy","x","xyz"),c=c(1.1,22.1,0))
@@ -1999,18 +2026,32 @@ test(668, DT[a<3,sum(b),by=eval(paste("a"))], DT[a<3,sum(b),by=a])
 test(669, DT[a<3,sum(b),by=c(2)], error="must evaluate to 'character'")
 
 # Test := keyby does setkey, #2065
+options(datatable.optimize=0L)
 DT = data.table(x=1:2, y=1:6)
 ans = data.table(x=rep(1:2,each=3),y=c(1L,3L,5L,2L,4L,6L),z=rep(c(9L,12L),each=3),key="x")
-test(670, DT[,z:=sum(y),keyby=x], ans)
+test(670.1, DT[,z:=sum(y),keyby=x], ans)
 DT = data.table(x=1:2, y=1:6)
-test(671, DT[,z:=sum(y),keyby="x"], ans)
+test(670.2, DT[,z:=sum(y),keyby="x"], ans)
 DT = data.table(x=1:2, y=1:6)
-test(672, DT[,z:=sum(y),keyby=x%%2], data.table(x=1:2,y=1:6,z=c(9L,12L)),
+test(670.3, DT[,z:=sum(y),keyby=x%%2], data.table(x=1:2,y=1:6,z=c(9L,12L)),
           warning="The setkey() normally performed by keyby= has been skipped (as if by= was used) because := is being used together with keyby= but the keyby= contains some expressions. To avoid this warning, use by= instead, or provide existing column names to keyby=")
 DT = data.table(x=1:2, y=1:6)
-test(673, DT[,z:=sum(y),by=x%%2], data.table(x=1:2,y=1:6,z=c(9L,12L)))
+test(670.4, DT[,z:=sum(y),by=x%%2], data.table(x=1:2,y=1:6,z=c(9L,12L)))
 DT = data.table(x=1:2, y=1:6)
-test(674, DT[x>1,z:=sum(y),keyby=x], error=":= with keyby is only possible when i is not supplied since")
+test(670.5, DT[x>1,z:=sum(y),keyby=x], error=":= with keyby is only possible when i is not supplied since")
+options(datatable.optimize=2L)
+DT = data.table(x=1:2, y=1:6)
+ans = data.table(x=rep(1:2,each=3),y=c(1L,3L,5L,2L,4L,6L),z=rep(c(9L,12L),each=3),key="x")
+test(671.1, DT[,z:=sum(y),keyby=x], ans)
+DT = data.table(x=1:2, y=1:6)
+test(671.2, DT[,z:=sum(y),keyby="x"], ans)
+DT = data.table(x=1:2, y=1:6)
+test(671.3, DT[,z:=sum(y),keyby=x%%2], data.table(x=1:2,y=1:6,z=c(9L,12L)),
+          warning="The setkey() normally performed by keyby= has been skipped (as if by= was used) because := is being used together with keyby= but the keyby= contains some expressions. To avoid this warning, use by= instead, or provide existing column names to keyby=")
+DT = data.table(x=1:2, y=1:6)
+test(671.4, DT[,z:=sum(y),by=x%%2], data.table(x=1:2,y=1:6,z=c(9L,12L)))
+DT = data.table(x=1:2, y=1:6)
+test(671.5, DT[x>1,z:=sum(y),keyby=x], error=":= with keyby is only possible when i is not supplied since")
 
 # Test new .()
 DT = data.table(x=1:2, y=1:6, key="x")
@@ -2195,13 +2236,22 @@ test(750.1, copy(DT)[a<8,`:=`(f=b+sum(d),g=.N),by=c][,6:7,with=FALSE], data.tabl
 test(750.2, copy(DT)[a<8,let(f=b+sum(d),g=.N),by=c][,6:7,with=FALSE], data.table(f=INT(2,12,13,NA,NA,NA),g=INT(1,2,2,NA,NA,NA)))
 
 # varname holding colnames, by group, linked from #2120.
+options(datatable.optimize=0L)
 DT = data.table(a=rep(1:3,1:3),b=1:6)
 colname = "newcol"
-test(751, DT[,(colname):=sum(b),by=a], data.table(a=rep(1:3,1:3),b=1:6,newcol=INT(1,5,5,15,15,15)))
+test(751.1, DT[,(colname):=sum(b),by=a], data.table(a=rep(1:3,1:3),b=1:6,newcol=INT(1,5,5,15,15,15)))
+options(datatable.optimize=2L)
+DT = data.table(a=rep(1:3,1:3),b=1:6)
+colname = "newcol"
+test(751.2, DT[,(colname):=sum(b),by=a], data.table(a=rep(1:3,1:3),b=1:6,newcol=INT(1,5,5,15,15,15)))
 
 # Add tests for nested := in j by group, #1987
+options(datatable.optimize=0L)
 DT = data.table(a=rep(1:3,2:4),b=1:9)
-test(752, DT[,head(.SD,2)[,new:=1:.N],by=a], data.table(a=rep(1:3,each=2),b=c(1:4,6:7),new=1:2))
+test(752.1, DT[,head(.SD,2)[,new:=1:.N],by=a], data.table(a=rep(1:3,each=2),b=c(1:4,6:7),new=1:2))
+options(datatable.optimize=2L)
+DT = data.table(a=rep(1:3,2:4),b=1:9)
+test(752.2, DT[,head(.SD,2)[,new:=1:.N],by=a], data.table(a=rep(1:3,each=2),b=c(1:4,6:7),new=1:2))
 
 # Test duplicate() of recycled plonking RHS, #2298
 DT = data.table(a=letters[3:1],x=1:3)
@@ -3871,7 +3921,10 @@ test(1133.3, DT[, new := c(1,2), by=x],   error="Supplied 2 items to be assigned
 test(1133.4, DT[, new := c(1L,2L), by=x], error="Supplied 2 items to be assigned to group 1 of size 5 in column 'new'")
 test(1133.5, DT, data.table(x=INT(1,1,1,1,1,2,2), new=99L))
 test(1133.6, DT[, new := rep(-.GRP, .N), by=x], data.table(x=INT(1,1,1,1,1,2,2), new=INT(-1,-1,-1,-1,-1,-2,-2)))
+options(datatable.optimize=0L)
 test(1133.7, DT[, new := .N, by=x], data.table(x=INT(1,1,1,1,1,2,2), new=INT(5,5,5,5,5,2,2)))
+options(datatable.optimize=2L)
+test(1133.75, DT[, new := .N, by=x], data.table(x=INT(1,1,1,1,1,2,2), new=INT(5,5,5,5,5,2,2)))
 # on a new column with warning on 2nd assign
 DT[,new:=NULL]
 test(1133.8, DT[, new := if (.GRP==1L) 7L else 3.4, by=x], data.table(x=INT(1,1,1,1,1,2,2), new=INT(7,7,7,7,7,3,3)),
@@ -3962,9 +4015,12 @@ DT<-data.table(X=factor(2006:2012),Y=rep(1:7,2))
 test(1143.2, DT[, Z:=paste(X,.N,sep=" - "), by=list(X)], data.table(X=factor(2006:2012),Y=rep(1:7,2), Z=paste(as.character(2006:2012), 2L, sep=" - ")))
 DT = data.table(x=as.POSIXct(c("2009-02-17 17:29:23.042", "2009-02-17 17:29:25.160")), y=c(1L,2L))
 test(1143.3, DT[, list(lx=x[.N]), by=x], data.table(x=DT$x, lx=DT$x))
-ans = copy(DT)
-test(1143.4, copy(DT)[,`:=`(lx=tail(x,1L)), by=y], ans[, lx := x])
-test(1143.5, copy(DT)[,let(lx=tail(x,1L)), by=y], ans[, lx := x])
+options(datatable.optimize=0L)
+test(1143.4, copy(DT)[,`:=`(lx=tail(x,1L)), by=y], copy(DT)[, lx:=x])
+test(1143.5, copy(DT)[, let(lx=tail(x,1L)), by=y], copy(DT)[, lx:=x])
+options(datatable.optimize=2L)
+test(1143.6, copy(DT)[,`:=`(lx=tail(x,1L)), by=y], copy(DT)[, lx:=x])
+test(1143.7, copy(DT)[, let(lx=tail(x,1L)), by=y], copy(DT)[, lx:=x])
 
 # FR #2356 - retain names of named vector as column with keep.rownames=TRUE
 x <- 1:5
@@ -14264,9 +14320,14 @@ x <- as.array(1:5)
 test(1980, names(data.table(x)), "x")
 
 # crash when n="lead", #3354
+options(datatable.optimize=0L)
 DT = data.table( id = 1:5 , val = letters[1:5] )
 test(1981.1, DT[, new_col := shift(val, "lead")],      error="is.numeric(n) is not TRUE")
 test(1981.2, DT[, new_col := shift(val, NA_integer_)], error="Item 1 of n is NA")
+options(datatable.optimize=Inf)
+DT = data.table( id = 1:5 , val = letters[1:5] )
+test(1981.3, DT[, new_col := shift(val, "lead")],      error="is.numeric(n) is not TRUE")
+test(1981.4, DT[, new_col := shift(val, NA_integer_)], error="Item 1 of n is NA")
 
 # print of DT with many columns reordered them, #3306.
 DT = as.data.table(lapply(1:255, function(i)rep.int(i, 105L)))  # 105 to be enough for 'top 5 ... bottom 5' to print
@@ -18558,4 +18619,72 @@ test(2232.2, unique(DT, by='g', cols='v2'), DT[1:26, !'v1'])
 test(2232.3, unique(DT[1:26], by='g', cols='v1'), DT[1:26, !'v2'])
 ## invalid columns fail as expected
 test(2232.4, unique(DT, by='g', cols='v3'), error="non-existing column(s)")
+
+# support := with GForce #1414
+options(datatable.optimize = 2L)
+DT = data.table(a=1:3,b=(1:9)/10)
+test(2233.01, DT[, v := min(b), a, verbose=TRUE],      data.table(a=1:3, b=(1:9)/10, v=(1:3)/10), output="GForce optimized j to")
+# GForce returning full length
+test(2233.02, DT[, v := head(b, 3L), a, verbose=TRUE], data.table(a=1:3, b=(1:9)/10, v=(1:9)/10), output="GForce optimized j to")
+# GForce neither returning 1 per group nor full length
+test(2233.03, DT[, v := head(b, 2L), a], error="Supplied 6 items to be assigned to 9 items of column 'v'.")
+# compare to non GForce version
+DT = data.table(a=1:3,b=(1:9)/10)
+test(2233.04, copy(DT)[, v := min(b), a,      verbose=TRUE], copy(DT)[, v := base::min(b), a,     ], output="GForce optimized j to")
+test(2233.05, copy(DT)[, v := head(b, 3L), a, verbose=TRUE], copy(DT)[, v := utils::head(b, 3L), a], output="GForce optimized j to")
+
+# with key and grouping by key
+DT = data.table(a=1:3,b=(1:9)/10, key="a")
+test(2233.06, DT[, v := min(b), a, verbose=TRUE],      data.table(a=1:3, b=(1:9)/10, v=(1:3)/10, key="a"), output="GForce optimized j to")
+test(2233.07, DT[, v := head(b, 3L), a, verbose=TRUE], data.table(a=1:3, b=(1:9)/10, v=(1:9)/10, key="a"), output="GForce optimized j to")
+test(2233.08, DT[, v := head(b, 2L), a], error="Supplied 6 items to be assigned to 9 items of column 'v'.")
+DT = data.table(a=1:3,b=(1:9)/10, key="a")
+test(2233.09, copy(DT)[, v := min(b), a,      verbose=TRUE], copy(DT)[, v := base::min(b), a,     ], output="GForce optimized j to")
+test(2233.10, copy(DT)[, v := head(b, 3L), a, verbose=TRUE], copy(DT)[, v := utils::head(b, 3L), a], output="GForce optimized j to")
+
+# with key and grouping by nonkey
+DT = data.table(a=1:3,b=(1:9)/10,c=(3:1),key="c")
+test(2233.11, DT[, v := min(b), a, verbose=TRUE],      data.table(a=1:3, b=(1:9)/10, c=(3:1), v=(1:3)/10, key="c"), output="GForce optimized j to")
+test(2233.12, DT[, v := head(b, 3L), a, verbose=TRUE], data.table(a=1:3, b=(1:9)/10, c=(3:1), v=(1:9)/10, key="c"), output="GForce optimized j to")
+test(2233.13, DT[, v := head(b, 2L), a], error="Supplied 6 items to be assigned to 9 items of column 'v'.")
+DT = data.table(a=1:3,b=(1:9)/10,c=(3:1),key="c")
+test(2233.14, copy(DT)[, v := min(b), a,      verbose=TRUE], copy(DT)[, v := base::min(b), a,     ], output="GForce optimized j to")
+test(2233.15, copy(DT)[, v := head(b, 3L), a, verbose=TRUE], copy(DT)[, v := utils::head(b, 3L), a], output="GForce optimized j to")
+
+# with key and keyby by nonkey
+DT = data.table(a=1:3,b=(1:9)/10,c=(3:1),key="c")
+test(2233.16, copy(DT)[, v := min(b),      keyby=a, verbose=TRUE], data.table(a=1:3, b=(1:9)/10, c=(3:1), v=(1:3)/10, key="a"), output="GForce optimized j to")
+test(2233.17, copy(DT)[, v := head(b, 3L), keyby=a, verbose=TRUE], data.table(a=1:3, b=(1:9)/10, c=(3:1), v=(1:9)/10, key="a"), output="GForce optimized j to")
+test(2233.18, copy(DT)[, v := head(b, 2L), keyby=a], error="Supplied 6 items to be assigned to 9 items of column 'v'.")
+DT = data.table(a=1:3,b=(1:9)/10,c=(3:1),key="c")
+test(2233.19, copy(DT)[, v := min(b),      keyby=a, verbose=TRUE], copy(DT)[, v := base::min(b),       keyby=a], output="GForce optimized j to")
+test(2233.20, copy(DT)[, v := head(b, 3L), keyby=a, verbose=TRUE], copy(DT)[, v := utils::head(b, 3L), keyby=a], output="GForce optimized j to")
+# with irows
+DT = data.table(a=1:3,b=(1:9)/10)
+test(2233.21, DT[a==2, v := min(b), a, verbose=TRUE],      data.table(a=1:3, b=(1:9)/10, v=c(NA,0.2,NA)), output="GForce optimized j to")
+test(2233.22, DT[a!=4, v := head(b, 3L), a, verbose=TRUE], data.table(a=1:3, b=(1:9)/10, v=(1:9)/10),     output="GForce optimized j to")
+test(2233.23, DT[a!=4, v := head(b, 2L), a], error="Supplied 6 items to be assigned to 9 items of column 'v'.")
+DT = data.table(a=1:3,b=(1:9)/10)
+test(2233.24, copy(DT)[a==2, v := min(b), a,      verbose=TRUE], copy(DT)[a==2, v := base::min(b), a,     ], output="GForce optimized j to")
+test(2233.25, copy(DT)[a!=4, v := head(b, 3L), a, verbose=TRUE], copy(DT)[a!=4, v := utils::head(b, 3L), a], output="GForce optimized j to")
+
+# multiple assignments
+DT = data.table(a=1:3,b=(1:9)/10)
+test(2233.26, DT[, c("v1","v2") := .(min(b), max(b)), a,         verbose=TRUE], data.table(a=1:3, b=(1:9)/10, v1=(1:3)/10, v2=(7:9)/10), output="GForce optimized j to")
+test(2233.27, DT[, c("v1","v2") := .(head(b,3L), tail(b,3L)), a, verbose=TRUE], data.table(a=1:3, b=(1:9)/10, v1=(1:9)/10, v2=(1:9)/10), output="GForce optimized j to")
+test(2233.28, DT[, c("v1","v2") := .(head(b,3L), tail(b,2L)), a], error="Supplied 6 items to be assigned to 9 items of column 'v2'.")
+test(2233.29, DT[, c("v1","v2") := .(head(b,2L), tail(b,3L)), a], error="Supplied 6 items to be assigned to 9 items of column 'v1'.")
+test(2233.30, DT[, c("v1","v2") := .(head(b,2L), tail(b,2L)), a], error="Supplied 6 items to be assigned to 9 items of column 'v1'.")
+test(2233.31, DT[, c("v1","v2") := .(min(b), max(b)), a,         verbose=TRUE], DT[, c("v1","v2") := .(base::min(b), base::max(b)), a          ], output="GForce optimized j to")
+test(2233.32, DT[, c("v1","v2") := .(head(b,3L), tail(b,3L)), a, verbose=TRUE], DT[, c("v1","v2") := .(utils::head(b,3L), utils::tail(b,3L)), a], output="GForce optimized j to")
+
+# gforce needs to evaluate variable arguments before calling C part (part of test 101.17 in programming.Rraw)
+set.seed(108)
+yn = c(1, 5, 10, 20)
+ycols = paste0("y", yn)
+ydt = data.table(symbol = rep(1:3, each = 100))
+ydt[, date := seq_len(.N), by = symbol]
+ydt[, ret := rnorm(.N)]
+f = shift
+test(2233.33, copy(ydt)[, (ycols) := shift(ret, yn, type = "lead"), by = symbol, verbose=TRUE], copy(ydt)[, (ycols) := f(ret, yn, type = "lead"), by = symbol], output="GForce optimized j to")
 
