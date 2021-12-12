@@ -1987,9 +1987,8 @@ int freadMain(freadMainArgs _args) {
       DTPRINT(_("  Initial alloc = %"PRIu64" rows (%"PRIu64" + %d%%) using bytes/max(mean-2*sd,min) clamped between [1.1*estn, 2.0*estn]\n"),
               (uint64_t)allocnrow, (uint64_t)estnrow, (int)(100.0*allocnrow/estnrow-100.0));
       DTPRINT(_("  =====\n"));
-    } else {
-      if (sampleLines > allocnrow) STOP(_("Internal error: sampleLines(%"PRIu64") > allocnrow(%"PRIu64")"), (uint64_t)sampleLines, (uint64_t)allocnrow); // # nocov
     }
+    if (nJumps != 1 && sampleLines > allocnrow) STOP(_("Internal error: sampleLines(%"PRIu64") > allocnrow(%"PRIu64")"), (uint64_t)sampleLines, (uint64_t)allocnrow); // # nocov
   }
   if (nrowLimit < allocnrow) {
     if (verbose) DTPRINT(_("  Alloc limited to lower nrows=%"PRIu64" passed in.\n"), (uint64_t)nrowLimit);
