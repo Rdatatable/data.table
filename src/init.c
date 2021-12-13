@@ -107,6 +107,7 @@ SEXP dim();
 SEXP gvar();
 SEXP gsd();
 SEXP gprod();
+SEXP gshift();
 SEXP nestedid();
 SEXP setDTthreads();
 SEXP getDTthreads_R();
@@ -197,6 +198,7 @@ R_CallMethodDef callMethods[] = {
 {"Cgvar", (DL_FUNC) &gvar, -1},
 {"Cgsd", (DL_FUNC) &gsd, -1},
 {"Cgprod", (DL_FUNC) &gprod, -1},
+{"Cgshift", (DL_FUNC) &gshift, -1},
 {"Cnestedid", (DL_FUNC) &nestedid, -1},
 {"CsetDTthreads", (DL_FUNC) &setDTthreads, -1},
 {"CgetDTthreads", (DL_FUNC) &getDTthreads_R, -1},

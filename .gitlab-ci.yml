@@ -40,19 +40,19 @@ mirror-packages: ## mirror all recursive dependencies, source and win.binary of 
     - Rscript -e 'sapply(simplify=FALSE, setNames(nm=Sys.getenv(c("R_REL_VERSION","R_DEVEL_VERSION","R_OLDREL_VERSION"))), function(binary.ver) mirror.packages(type="win.binary", dcf.dependencies("DESCRIPTION", "all"), repos=Sys.getenv("CRAN_MIRROR"), repodir="bus/mirror-packages/cran", binary.ver=binary.ver))'
   <<: *artifacts
 
-mirror-other-packages: ## mirror integration suggests from pkgs at the top of inst/tests/other.Rraw
-  stage: dependencies
-  tags:
-    - linux
-  image: registry.gitlab.com/jangorecki/dockerfiles/r-base-dev
-  cache:
-    paths:
-      - bus/$CI_BUILD_NAME/cran
-  script:
-    - echo 'source(".ci/ci.R")' >> .Rprofile
-    - mkdir -p bus/$CI_BUILD_NAME/cran/src/contrib
-    - Rscript -e 'eval(parse("inst/tests/other.Rraw", n=1L)); mirror.packages(pkgs, repos=Sys.getenv("CRAN_MIRROR"), repodir="bus/mirror-other-packages/cran")'
-  <<: *artifacts
+# mirror-other-packages: ## mirror integration suggests from pkgs at the top of inst/tests/other.Rraw;  off now #5274
+#  stage: dependencies
+#  tags:
+#    - linux
+#  image: registry.gitlab.com/jangorecki/dockerfiles/r-base-dev
+#  cache:
+#    paths:
+#      - bus/$CI_BUILD_NAME/cran
+#  script:
+#    - echo 'source(".ci/ci.R")' >> .Rprofile
+#    - mkdir -p bus/$CI_BUILD_NAME/cran/src/contrib
+#    - Rscript -e 'eval(parse("inst/tests/other.Rraw", n=1L)); mirror.packages(pkgs, repos=Sys.getenv("CRAN_MIRROR"), repodir="bus/mirror-other-packages/cran")'
+#  <<: *artifacts
 
 build: ## build data.table sources as tar.gz archive
   stage: build
@@ -96,7 +96,8 @@ build: ## build data.table sources as tar.gz archive
   - mkdir.exe -p cran/bin/windows/contrib/$R_VERSION; mv.exe $(ls.exe -1t data.table_*.zip | head.exe -n 1) cran/bin/windows/contrib/$R_VERSION
 
 .test-install-r-rel-win: &install-r-rel-win
-  - curl.exe -s -o ../R-rel.exe https://cloud.r-project.org/bin/windows/base/old/4.1.0/R-4.1.0-win.exe; Start-Process -FilePath ..\R-rel.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
+  - curl.exe -s -o ../R-rel.exe https://cloud.r-project.org/bin/windows/base/R-4.1.2-win.exe; Start-Process -FilePath ..\R-rel.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
+  # see #5198 for discussion about the https link used above; it will break each time R is released and the version number will need to be updated
 .test-install-r-devel-win: &install-r-devel-win
   - curl.exe -s -o ../R-devel.exe https://cloud.r-project.org/bin/windows/base/R-devel-win.exe; Start-Process -FilePath ..\R-devel.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
 .test-install-r-oldrel-win: &install-r-oldrel-win
@@ -144,16 +145,17 @@ build: ## build data.table sources as tar.gz archive
 test-rel-lin: ## most comprehensive tests, force all suggests, also integration tests, using gcc -O3 -flto -fno-common -Wunused-result
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-builder
-  needs: ["mirror-packages","mirror-other-packages","build"]
+  needs: ["mirror-packages","build"]  # "mirror-other-packages"
   variables:
     _R_CHECK_CRAN_INCOMING_: "FALSE"
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
     _R_CHECK_FORCE_SUGGESTS_: "TRUE"
     _R_CHECK_TESTS_NLINES_: "0"
     OPENBLAS_MAIN_FREE: "1"
-    TEST_DATA_TABLE_WITH_OTHER_PACKAGES: "TRUE"
+    TEST_DATA_TABLE_WITH_OTHER_PACKAGES: "FALSE"  #5274
   before_script:
-    - Rscript -e 'source(".ci/ci.R"); eval(parse("inst/tests/other.Rraw", n=1L)); install.packages(c(dcf.dependencies("DESCRIPTION", which="all"), pkgs), quiet=TRUE, repos=c(getOption("repos"), file.path("file:", normalizePath("bus/mirror-other-packages/cran", mustWork=FALSE))))'
+    - Rscript -e 'source(".ci/ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="all"), quiet=TRUE)'  ## does seem to be needed despite 'needs mirror-packages'
+    ## - Rscript -e 'eval(parse("inst/tests/other.Rraw", n=1L)); install.packages(pkgs, quiet=TRUE, repos=c(getOption("repos"), file.path("file:", normalizePath("bus/mirror-other-packages/cran", mustWork=FALSE))))'
     - *cp-src
     - rm -r bus
     - mkdir -p ~/.R

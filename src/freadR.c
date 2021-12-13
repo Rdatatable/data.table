@@ -24,9 +24,9 @@ Secondary separator for list() columns, such as columns 11 and 12 in BED (no nee
 
 #define NUT  NUMTYPE+2  // +1 for "numeric" alias for "double"; +1 for CLASS fallback using as.class() at R level afterwards
 
-static int  typeSxp[NUT] =     {NILSXP,  LGLSXP,     LGLSXP,     LGLSXP,     LGLSXP,     INTSXP,    REALSXP,     REALSXP,    REALSXP,        REALSXP,        INTSXP,          REALSXP,         STRSXP,      REALSXP,    STRSXP   };
-static char typeRName[NUT][10]={"NULL",  "logical",  "logical",  "logical",  "logical",  "integer", "integer64", "double",   "double",       "double",       "IDate",         "POSIXct",       "character", "numeric",  "CLASS"  };
-static int  typeEnum[NUT] =    {CT_DROP, CT_BOOL8_N, CT_BOOL8_U, CT_BOOL8_T, CT_BOOL8_L, CT_INT32,  CT_INT64,    CT_FLOAT64, CT_FLOAT64_HEX, CT_FLOAT64_EXT, CT_ISO8601_DATE, CT_ISO8601_TIME, CT_STRING,   CT_FLOAT64, CT_STRING};
+static int  typeSxp[NUT] =     {NILSXP,  LGLSXP,    LGLSXP,     LGLSXP,     LGLSXP,     LGLSXP,     INTSXP,    REALSXP,     REALSXP,    REALSXP,        REALSXP,        INTSXP,          REALSXP,         STRSXP,      REALSXP,    STRSXP   };
+static char typeRName[NUT][10]={"NULL",  "logical", "logical",  "logical",  "logical",  "logical",  "integer", "integer64", "double",   "double",       "double",       "IDate",         "POSIXct",       "character", "numeric",  "CLASS"  };
+static int  typeEnum[NUT] =    {CT_DROP, CT_EMPTY,  CT_BOOL8_N, CT_BOOL8_U, CT_BOOL8_T, CT_BOOL8_L, CT_INT32,  CT_INT64,    CT_FLOAT64, CT_FLOAT64_HEX, CT_FLOAT64_EXT, CT_ISO8601_DATE, CT_ISO8601_TIME, CT_STRING,   CT_FLOAT64, CT_STRING};
 static colType readInt64As=CT_INT64;
 static SEXP selectSxp;
 static SEXP dropSxp;

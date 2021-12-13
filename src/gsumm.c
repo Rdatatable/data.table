@@ -1150,13 +1150,10 @@ SEXP gprod(SEXP x, SEXP narmArg) {
   const bool nosubset = irowslen==-1;
   const int n = nosubset ? length(x) : irowslen;
   //clock_t start = clock();
-  SEXP ans;
   if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gprod");
   long double *s = malloc(ngrp * sizeof(long double));
   if (!s) error(_("Unable to allocate %d * %d bytes for gprod"), ngrp, sizeof(long double));
   for (int i=0; i<ngrp; ++i) s[i] = 1.0;
-  ans = PROTECT(allocVector(REALSXP, ngrp));
-  double *ansd = REAL(ans);
   switch(TYPEOF(x)) {
   case LGLSXP: case INTSXP: {
     const int *xd = INTEGER(x);
@@ -1171,30 +1168,142 @@ SEXP gprod(SEXP x, SEXP narmArg) {
     }}
     break;
   case REALSXP: {
-    const double *xd = REAL(x);
-    for (int i=0; i<n; ++i) {
-      const int thisgrp = grp[i];
-      const double elem = nosubset ? xd[i] : (irows[i]==NA_INTEGER ? NA_REAL : xd[irows[i]-1]);
-      if (ISNAN(elem)) {
-        if (!narm) s[thisgrp] = NA_REAL;
-        continue;
+    if (INHERITS(x, char_integer64)) {
+      const int64_t *xd = (const int64_t *)REAL(x);
+      for (int i=0; i<n; ++i) {
+        const int thisgrp = grp[i];
+        const int64_t elem = nosubset ? xd[i] : (irows[i]==NA_INTEGER ? NA_INTEGER64 : xd[irows[i]-1]);
+        if (elem==NA_INTEGER64) {
+          if (!narm) s[thisgrp] = NA_REAL;
+          continue;
+        }
+        s[thisgrp] *= elem;
       }
-      s[thisgrp] *= elem;
-    }}
-    break;
+    } else {
+      const double *xd = REAL(x);
+      for (int i=0; i<n; ++i) {
+        const int thisgrp = grp[i];
+        const double elem = nosubset ? xd[i] : (irows[i]==NA_INTEGER ? NA_REAL : xd[irows[i]-1]);
+        if (ISNAN(elem)) {
+          if (!narm) s[thisgrp] = NA_REAL;
+          continue;
+        }
+        s[thisgrp] *= elem;
+      }
+    }
+  } break;
   default:
     free(s);
     error(_("Type '%s' is not supported by GForce %s. Either add the prefix %s or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)), "prod (gprod)", "base::prod(.)");
   }
-  for (int i=0; i<ngrp; ++i) {
-    if (s[i] > DBL_MAX) ansd[i] = R_PosInf;
-    else if (s[i] < -DBL_MAX) ansd[i] = R_NegInf;
-    else ansd[i] = (double)s[i];
+  SEXP ans = PROTECT(allocVector(REALSXP, ngrp));
+  if (INHERITS(x, char_integer64)) {
+    int64_t *ansd = (int64_t *)REAL(ans);
+    for (int i=0; i<ngrp; ++i) {
+      ansd[i] = (s[i]>INT64_MAX || s[i]<=INT64_MIN) ? NA_INTEGER64 : (int64_t)s[i];
+    }
+  } else {
+    double *ansd = REAL(ans);
+    for (int i=0; i<ngrp; ++i) {
+      if (s[i] > DBL_MAX) ansd[i] = R_PosInf;
+      else if (s[i] < -DBL_MAX) ansd[i] = R_NegInf;
+      else ansd[i] = (double)s[i];
+    }
   }
   free(s);
   copyMostAttrib(x, ans);
   UNPROTECT(1);
   // Rprintf(_("this gprod took %8.3f\n"), 1.0*(clock()-start)/CLOCKS_PER_SEC);
+  return ans;
+}
+
+SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
+  const bool nosubset = irowslen == -1;
+  const bool issorted = !isunsorted;
+  const int n = nosubset ? length(x) : irowslen;
+  if (nrow != n) error(_("Internal error: nrow [%d] != length(x) [%d] in %s"), nrow, n, "gshift");
+
+  int nprotect=0;
+  enum {LAG, LEAD/*, SHIFT*/,CYCLIC} stype = LAG;
+  if (!(length(fillArg) == 1))
+    error(_("fill must be a vector of length 1"));
+
+  if (!isString(typeArg) || length(typeArg) != 1)
+    error(_("Internal error: invalid type for gshift(), should have been caught before. please report to data.table issue tracker")); // # nocov
+  if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "lag")) stype = LAG;
+  else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "lead")) stype = LEAD;
+  else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "shift")) stype = LAG;
+  else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "cyclic")) stype = CYCLIC;
+  else error(_("Internal error: invalid type for gshift(), should have been caught before. please report to data.table issue tracker")); // # nocov
+
+  bool lag;
+  const bool cycle = stype == CYCLIC;
+
+  R_xlen_t nx = xlength(x), nk = length(nArg);
+  if (!isInteger(nArg)) error(_("Internal error: n must be integer")); // # nocov
+  const int *kd = INTEGER(nArg);
+  for (int i=0; i<nk; i++) if (kd[i]==NA_INTEGER) error(_("Item %d of n is NA"), i+1);
+
+  SEXP ans = PROTECT(allocVector(VECSXP, nk)); nprotect++;
+  SEXP thisfill = PROTECT(coerceAs(fillArg, x, ScalarLogical(0))); nprotect++;
+  for (int g=0; g<nk; g++) {
+    lag = stype == LAG || stype == CYCLIC;
+    int m = kd[g];
+    // switch
+    if (m < 0) {
+      m = m * (-1);
+      lag = !lag;
+    }
+    R_xlen_t ansi = 0;
+    SEXP tmp;
+    SET_VECTOR_ELT(ans, g, tmp=allocVector(TYPEOF(x), nx));
+    #define SHIFT(CTYPE, RTYPE, ASSIGN) {                                                                         \
+      const CTYPE *xd = (const CTYPE *)RTYPE(x);                                                                  \
+      const CTYPE fill = RTYPE(thisfill)[0];                                                                      \
+      for (int i=0; i<ngrp; ++i) {                                                                                \
+        const int grpn = grpsize[i];                                                                              \
+        const int mg = cycle ? (((m-1) % grpn) + 1) : m;                                                          \
+        const int thisn = MIN(mg, grpn);                                                                          \
+        const int jstart = ff[i]-1+ (!lag)*(thisn);                                                               \
+        const int jend = jstart+ MAX(0, grpn-mg); /*if m > grpn -> jend = jstart */                               \
+        if (lag) {                                                                                                \
+          const int o = ff[i]-1+(grpn-thisn);                                                                     \
+          for (int j=0; j<thisn; ++j) {                                                                           \
+          const int k = issorted ? (o+j) : oo[o+j]-1;                                                             \
+            const CTYPE val = cycle ? (nosubset ? xd[k] : (irows[k]==NA_INTEGER ? fill : xd[irows[k]-1])) : fill; \
+            ASSIGN;                                                                                               \
+          }                                                                                                       \
+        }                                                                                                         \
+        for (int j=jstart; j<jend; ++j) {                                                                         \
+          const int k = issorted ? j : oo[j]-1;                                                                   \
+          const CTYPE val = nosubset ? xd[k] : (irows[k]==NA_INTEGER ? fill : xd[irows[k]-1]);                    \
+          ASSIGN;                                                                                                 \
+        }                                                                                                         \
+        if (!lag) {                                                                                               \
+          const int o = ff[i]-1;                                                                                  \
+          for (int j=0; j<thisn; ++j) {                                                                           \
+            const int k = issorted ? (o+j) : oo[o+j]-1;                                                           \
+            const CTYPE val = cycle ? (nosubset ? xd[k] : (irows[k]==NA_INTEGER ? fill : xd[irows[k]-1])) : fill; \
+            ASSIGN;                                                                                               \
+          }                                                                                                       \
+        }                                                                                                         \
+      }                                                                                                           \
+    }
+    switch(TYPEOF(x)) {
+      case RAWSXP:  { Rbyte *ansd=RAW(tmp);               SHIFT(Rbyte,   RAW,       ansd[ansi++]=val); } break;
+      case LGLSXP:  { int *ansd=LOGICAL(tmp);             SHIFT(int,     LOGICAL,   ansd[ansi++]=val); } break;
+      case INTSXP:  { int *ansd=INTEGER(tmp);             SHIFT(int,     INTEGER,   ansd[ansi++]=val); } break;
+      case REALSXP: { double *ansd=REAL(tmp);             SHIFT(double,  REAL,      ansd[ansi++]=val); } break;
+                    // integer64 is shifted as if it's REAL; and assigning fill=NA_INTEGER64 is ok as REAL
+      case CPLXSXP: { Rcomplex *ansd=COMPLEX(tmp);        SHIFT(Rcomplex, COMPLEX,  ansd[ansi++]=val); } break;
+      case STRSXP: { SHIFT(SEXP, STRING_PTR,                          SET_STRING_ELT(tmp,ansi++,val)); } break;
+      //case VECSXP: { SHIFT(SEXP, SEXPPTR_RO,                          SET_VECTOR_ELT(tmp,ansi++,val)); } break;
+      default:
+        error(_("Type '%s' is not supported by GForce gshift. Either add the namespace prefix (e.g. data.table::shift(.)) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
+    }
+    copyMostAttrib(x, tmp); // needed for integer64 because without not the correct class of int64 is assigned
+  }
+  UNPROTECT(nprotect);
   return(ans);
 }
 
