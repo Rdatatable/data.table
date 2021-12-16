@@ -279,7 +279,7 @@ cran = function()  # reports CRAN status of the .cran.fail packages
     .(ERROR=sum(Status=="ERROR", na.rm=TRUE),
       WARN =sum(Status=="WARN", na.rm=TRUE),
       cran =paste(unique(Version),collapse=";"),
-      local=as.character(packageVersion(.BY[[1]]))),
+      local=as.character(tryCatch(packageVersion(.BY[[1]]), error=function(e)"error"))),
     keyby=Package]
   ans[local==cran, c("cran","local"):=""]
   ans[, "right_click_in_bash":=paste0("https://cran.r-project.org/web/checks/check_results_",Package,".html")]
