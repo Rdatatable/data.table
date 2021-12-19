@@ -18702,7 +18702,7 @@ test(2234.7, DT[, min(.SD), by=c(.I)], data.table(I=1L:5L, V1=c(1L, 2L, 3L, 2L, 
 test(2234.8, DT[, min(.SD), by=.I%%2L], error="by.*contains .I.*supported")  # would be nice to support in future; i.e. by odd/even rows, and by=(.I+1L)%/%2L for pairs of rows; i.e. any expression of .I
 test(2234.9, DT[, min(.SD), by=somefun(.I)], error="by.*contains .I.*supported")
 
-# copying values of j could lead to recycling if j is a list containing NULL
+# copying values of j could lead to recycling if j is a list containing NULL #5284
 DT = data.table(x = 1)
 test(2235.1, copy(DT)[, c("z", "x") := {x = NULL; list(2, NULL)}], data.table(z = 2))
 test(2235.2, copy(DT)[, c("z", "x") := {list(2, NULL)}], data.table(z = 2))
