@@ -99,7 +99,7 @@
 
 16. `fwrite()` now accepts `sep=""`, [#4817](https://github.com/Rdatatable/data.table/issues/4817). The motivation is an example where the result of `paste0()` needs to be written to file but `paste0()` takes 40 minutes due to constructing a very large number of unique long strings in R's global character cache. Allowing `fwrite(, sep="")` avoids the `paste0` and saves 40 mins. Thanks to Jan Gorecki for the request, and Ben Schwen for the PR.
 
-17. `data.table` printing now supports customizable methods for both columns and list column row items, part of [#1523](https://github.com/Rdatatable/data.table/issues/1523). `format_col` is S3-generic for customizing how to print whole columns; `format_list_item` is S3-generic for customizing how to print each row of a list column. Thanks to @mllg who initially filed [#3338](https://github.com/Rdatatable/data.table/pulls/3338) with the seed of the idea, @franknarf1 who earlier suggested the idea of providing custom formatters, @fparages who submitted a patch to improve the printing of timezones for [#2842](https://github.com/Rdatatable/data.table/issues/2842), @RichardRedding for pointing out an error relating to printing wide `expression` columns in [#3011](https://github.com/Rdatatable/data.table/issues/3011), and @MichaelChirico for implementing. See `?print.data.table` for examples.
+17. `data.table` printing now supports customizable methods for both columns and list column row items, part of [#1523](https://github.com/Rdatatable/data.table/issues/1523). `format_col` is S3-generic for customizing how to print whole columns and by default defers to the S3 `format` method for the column's class if one exists; e.g. `format.sfc` for geometry columns from the `sf` package, [#2273](https://github.com/Rdatatable/data.table/issues/2273). Similarly, `format_list_item` is S3-generic for customizing how to print each row of list columns (which lack a format method at a column level) and also by default defers to the S3 `format` method for that item's class if one exists. Thanks to @mllg who initially filed [#3338](https://github.com/Rdatatable/data.table/pulls/3338) with the seed of the idea, @franknarf1 who earlier suggested the idea of providing custom formatters, @fparages who submitted a patch to improve the printing of timezones for [#2842](https://github.com/Rdatatable/data.table/issues/2842), @RichardRedding for pointing out an error relating to printing wide `expression` columns in [#3011](https://github.com/Rdatatable/data.table/issues/3011), @JoshOBrien for improving the output for geometry columns, and @MichaelChirico for implementing. See `?print.data.table` for examples.
 
 18. `tstrsplit(,type.convert=)` now accepts a named list of functions to apply to each part, [#5094](https://github.com/Rdatatable/data.table/issues/5094). Thanks to @Kamgang-B for the request and implementing.
 
@@ -205,6 +205,91 @@
     #   v1.9.4  3.6600  3.8250  4.4930  4.1720  4.9490 11.700   100
     #   v1.9.6 18.5400 19.1800 21.5100 20.6900 23.4200 29.040   100
     #  v1.14.4  0.4826  0.5586  0.6586  0.6329  0.7348  1.318   100
+    ```
+
+31. `rbind()` and `rbindlist()` now support `fill=TRUE` with `use.names=FALSE` instead of issuing the warning `use.names= cannot be FALSE when fill is TRUE. Setting use.names=TRUE.`
+
+    ```R
+    DT1
+    #        A     B
+    #    <int> <int>
+    # 1:     1     5
+    # 2:     2     6
+
+    DT2
+    #      foo
+    #    <int>
+    # 1:     3
+    # 2:     4
+
+    rbind(DT1, DT2, fill=TRUE)   # no change
+    #        A     B   foo
+    #    <int> <int> <int>
+    # 1:     1     5    NA
+    # 2:     2     6    NA
+    # 3:    NA    NA     3
+    # 4:    NA    NA     4
+
+    rbind(DT1, DT2, fill=TRUE, use.names=FALSE)
+
+    # was:
+    #        A     B   foo
+    #    <int> <int> <int>
+    # 1:     1     5    NA
+    # 2:     2     6    NA
+    # 3:    NA    NA     3
+    # 4:    NA    NA     4
+    # Warning message:
+    # In rbindlist(l, use.names, fill, idcol) :
+    #   use.names= cannot be FALSE when fill is TRUE. Setting use.names=TRUE.
+
+    # now:
+    #        A     B
+    #    <int> <int>
+    # 1:     1     5
+    # 2:     2     6
+    # 3:     3    NA
+    # 4:     4    NA
+    ```
+    
+32. `fread()` already made a good guess as to whether column names are present by comparing the type of the fields in row 1 to the type of the fields in the sample. This guess is now improved when a column contains a string in row 1 (i.e. a potential column name) but all blank in the sample rows, [#2526](https://github.com/Rdatatable/data.table/issues/2526). Thanks @st-pasha for reporting, and @ben-schwen for the PR.
+
+33. `fread()` can now read `.zip` and `.tar` directly, [#3834](https://github.com/Rdatatable/data.table/issues/3834). Moreover, if a compressed file name is missing its extension, `fread()` now attempts to infer the correct filetype from its magic bytes. Thanks to Michael Chirico for the idea, and Benjamin Schwendinger for the PR.
+
+34. `DT[, let(...)]` is a new alias for the functional form of `:=`; i.e. `DT[, ':='(...)]`, [#3795](https://github.com/Rdatatable/data.table/issues/3795). Thanks to Elio Campitelli for requesting, and Benjamin Schwendinger for the PR.
+
+    ```R
+    DT = data.table(A=1:2)
+    DT[, let(B=3:4, C=letters[1:2])]
+    DT
+    #        A     B      C
+    #    <int> <int> <char>
+    # 1:     1     3      a
+    # 2:     2     4      b
+    ```
+    
+35. `weighted.mean()` is now optimised by group, [#3977](https://github.com/Rdatatable/data.table/issues/3977). Thanks to @renkun-ken for requesting, and Benjamin Schwendinger for the PR.
+
+36. `as.xts.data.table()` now supports non-numeric xts coredata matrixes, [5268](https://github.com/Rdatatable/data.table/issues/5268). Existing numeric only functionality is supported by a new `numeric.only` parameter, which defaults to `TRUE` for backward compatability and the most common use case. To convert non-numeric columns, set this parameter to `FALSE`. Conversions of `data.table` columns to a `matrix` now uses `data.table::as.matrix`, with all its performance benefits. Thanks to @ethanbsmith for the report and fix.
+
+37. `unique.data.table()` gains `cols` to specify a subset of columns to include in the resulting `data.table`, [#5243](https://github.com/Rdatatable/data.table/issues/5243). This saves the memory overhead of subsetting unneeded columns, and provides a cleaner API for a common operation previously needing more convoluted code. Thanks to @MichaelChirico for the suggestion & implementation.
+
+38. `:=` is now optimized by group, [#1414](https://github.com/Rdatatable/data.table/issues/1414). Thanks to Arun Srinivasan for suggesting, and Benjamin Schwendinger for the PR.
+
+39. `.I` is now available in `by` for rowwise operations, [#1732](https://github.com/Rdatatable/data.table/issues/1732). Thanks to Rafael H. M. Pereira for requesting, and Benjamin Schwendinger for the PR.
+
+    ```R
+    DT
+    #       V1    V2
+    #    <int> <int>
+    # 1:     3     5
+    # 2:     4     6
+    
+    DT[, sum(.SD), by=.I]
+    #        I    V1
+    #    <int> <int>
+    # 1:     1     8
+    # 2:     2    10
     ```
 
 ## BUG FIXES
@@ -455,7 +540,11 @@
 
 49. `fintersect(..., all=TRUE)` and `fsetdiff(..., all=TRUE)` could return incorrect results when the inputs had columns named `x` and `y`, [#5255](https://github.com/Rdatatable/data.table/issues/5255). Thanks @Fpadt for the report, and @ben-schwen for the fix.
 
-50. `set()` now automatically pre-allocates new column slots if needed, similar to what `:=` already does, [#496](https://github.com/Rdatatable/data.table/issues/496) [#4100](https://github.com/Rdatatable/data.table/issues/4100). Thanks to Huashan Chen and Benjamin Tyner for the report and Benjamin Schwendinger for the fix.
+50. `fwrite()` could produce not-ISO-compliant timestamps such as `2023-03-08T17:22:32.:00Z` when under a whole second by less than numerical tolerance of one microsecond, [#5238](https://github.com/Rdatatable/data.table/issues/5238). Thanks to @avraam-inside for the report and Václav Tlapák for the fix.
+
+51. `merge.data.table()` silently ignored the `incomparables` argument, [#2587](https://github.com/Rdatatable/data.table/issues/2587). It is now implemented and any other ignored arguments (e.g. misspellings) are now warned about. Thanks to @GBsuperman for the report and @ben-schwen for the fix.
+
+52. `set()` now automatically pre-allocates new column slots if needed, similar to what `:=` already does, [#496](https://github.com/Rdatatable/data.table/issues/496) [#4100](https://github.com/Rdatatable/data.table/issues/4100). Thanks to Huashan Chen and Benjamin Tyner for the report and Benjamin Schwendinger for the fix.
 
 ## NOTES
 
@@ -507,6 +596,8 @@
     The message is now upgraded to warning that the option is now ignored.
 
 15. Many thanks to Kurt Hornik for investigating potential impact of a possible future change to `base::intersect()` on empty input, providing a patch so that `data.table` won't break if the change is made to R, and giving us plenty of notice, [#5183](https://github.com/Rdatatable/data.table/pull/5183).
+
+16. The options `datatable.print.class` and `datatable.print.keys` are now `TRUE` by default. They have been available since v1.9.8 (Nov 2016) and v1.11.0 (May 2018) respectively.
 
 
 # data.table [v1.14.2](https://github.com/Rdatatable/data.table/milestone/24?closed=1)  (27 Sep 2021)

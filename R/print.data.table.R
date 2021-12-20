@@ -180,10 +180,20 @@ format_list_item = function(x, ...) {
   UseMethod("format_list_item")
 }
 
+has_format_method = function(x) {
+  f = function(y) !is.null(getS3method("format", class=y, optional=TRUE))
+  any(sapply(class(x), f))
+}
+
 format_col.default = function(x, ...) {
-  if (!is.null(dim(x))) return("<multi-column>")
-  if (is.list(x)) return(vapply_1c(x, format_list_item, ...))
-  format(char.trunc(x), ...) # relevant to #37
+  if (!is.null(dim(x)))
+    "<multi-column>"
+  else if (has_format_method(x) && length(formatted<-format(x, ...))==length(x))
+    formatted  #PR5224 motivated by package sf where column class is c("sfc_MULTIPOLYGON","sfc") and sf:::format.sfc exists
+  else if (is.list(x))
+    vapply_1c(x, format_list_item, ...)
+  else
+    format(char.trunc(x), ...) # relevant to #37
 }
 
 # #2842 -- different columns can have different tzone, so force usage in output
@@ -206,14 +216,19 @@ format_list_item.default = function(x, ...) {
   if (is.null(x))  # NULL item in a list column
     ""
   else if (is.atomic(x) || inherits(x, "formula")) # FR #2591 - format.data.table issue with columns of class "formula"
-    paste(c(format(head(x, 6L), ...), if (length(x) > 6L) "..."), collapse=",")  # fix for #5435 and #37 - format has to be added here...
-  else
+    paste(c(format(head(x, 6L), ...), if (length(x) > 6L) "..."), collapse=",") # fix for #5435 and #37 - format has to be added here...
+  else if (has_format_method(x) && length(formatted<-format(x, ...))==1L) {
+    # the column's class does not have a format method (otherwise it would have been used by format_col and this
+    # format_list_item would not be reached) but this particular list item does have a format method so use it
+    formatted
+  } else {
     paste0("<", class(x)[1L], paste_dims(x), ">")
+  }
 }
 
 # FR #1091 for pretty printing of character
 # TODO: maybe instead of doing "this is...", we could do "this ... test"?
-char.trunc <- function(x, trunc.char = getOption("datatable.prettyprint.char")) {
+char.trunc = function(x, trunc.char = getOption("datatable.prettyprint.char")) {
   trunc.char = max(0L, suppressWarnings(as.integer(trunc.char[1L])), na.rm=TRUE)
   if (!is.character(x) || trunc.char <= 0L) return(x)
   idx = which(nchar(x) > trunc.char)

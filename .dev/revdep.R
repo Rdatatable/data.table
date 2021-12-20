@@ -96,9 +96,10 @@ update.packages(ask=FALSE, checkBuilt=TRUE)
 
 avail = available.packages()  # includes CRAN and Bioc, from getOption("repos") set above
 
-avail = avail[-match("cplexAPI",rownames(avail)),]
+avail = avail[!rownames(avail) %in% "cplexAPI", ]
 # cplexAPI is suggested by revdeps ivmte and prioritizr. I haven't succeeded to install IBM ILOG CPLEX which requires a license,
 # so consider cplexAPI not available when resolving missing suggests at the end of status().
+# Update: cplexAPI was removed from CRAN on 5 Nov 2021 so this is now redundant, but leave it in place for future use
 
 deps = tools::package_dependencies("data.table",
   db = available.packages(repos=getOption("repos")["CRAN"]),  # just CRAN revdeps though (not Bioc) from October 2020
@@ -278,7 +279,7 @@ cran = function()  # reports CRAN status of the .cran.fail packages
     .(ERROR=sum(Status=="ERROR", na.rm=TRUE),
       WARN =sum(Status=="WARN", na.rm=TRUE),
       cran =paste(unique(Version),collapse=";"),
-      local=as.character(packageVersion(.BY[[1]]))),
+      local=as.character(tryCatch(packageVersion(.BY[[1]]), error=function(e)"error"))),
     keyby=Package]
   ans[local==cran, c("cran","local"):=""]
   ans[, "right_click_in_bash":=paste0("https://cran.r-project.org/web/checks/check_results_",Package,".html")]

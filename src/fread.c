@@ -66,8 +66,8 @@ static int8_t *type = NULL, *tmpType = NULL, *size = NULL;
 static lenOff *colNames = NULL;
 static freadMainArgs args = {0};  // global for use by DTPRINT; static implies ={0} but include the ={0} anyway just in case for valgrind #4639
 
-const char typeName[NUMTYPE][10] = {"drop", "bool8", "bool8", "bool8", "bool8", "int32", "int64", "float64", "float64", "float64", "int32", "float64", "string"};
-int8_t     typeSize[NUMTYPE]     = { 0,      1,       1,       1,       1,       4,       8,       8,         8,         8,         4,       8       ,  8      };
+const char typeName[NUMTYPE][10] = {"drop", "bool8", "bool8", "bool8", "bool8", "bool8", "int32", "int64", "float64", "float64", "float64", "int32", "float64", "string"};
+int8_t     typeSize[NUMTYPE]     = { 0,      1,       1,       1,       1,       1,       4,       8,       8,         8,         8,         4,       8       ,  8      };
 
 // In AIX, NAN and INFINITY don't qualify as constant literals. Refer: PR #3043
 // So we assign them through below init function.
@@ -1076,6 +1076,12 @@ static void parse_iso8601_timestamp(FieldParseContext *ctx)
     *target = NA_FLOAT64;
 }
 
+static void parse_empty(FieldParseContext *ctx)
+{
+  int8_t *target = (int8_t*) ctx->targets[sizeof(int8_t)];
+  *target = NA_BOOL8;
+}
+
 /* Parse numbers 0 | 1 as boolean and ,, as NA (fwrite's default) */
 static void parse_bool_numeric(FieldParseContext *ctx)
 {
@@ -1152,7 +1158,8 @@ static void parse_bool_lowercase(FieldParseContext *ctx)
  */
 typedef void (*reader_fun_t)(FieldParseContext *ctx);
 static reader_fun_t fun[NUMTYPE] = {
-  (reader_fun_t) &Field,
+  (reader_fun_t) &Field,        // CT_DROP
+  (reader_fun_t) &parse_empty,  // CT_EMPTY
   (reader_fun_t) &parse_bool_numeric,
   (reader_fun_t) &parse_bool_uppercase,
   (reader_fun_t) &parse_bool_titlecase,
@@ -1167,7 +1174,7 @@ static reader_fun_t fun[NUMTYPE] = {
   (reader_fun_t) &Field
 };
 
-static int disabled_parsers[NUMTYPE] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+static int disabled_parsers[NUMTYPE] = {0};
 
 static int detect_types( const char **pch, int8_t type[], int ncol, bool *bumped) {
   // used in sampling column types and whether column names are present
@@ -1883,8 +1890,7 @@ int freadMain(freadMainArgs _args) {
     bool bumped=false;
     detect_types(&ch, tmpType, ncol, &bumped);
     if (sampleLines>0) for (int j=0; j<ncol; j++) {
-      if (tmpType[j]==CT_STRING && type[j]<CT_STRING) {
-        // includes an all-blank column with a string at the top; e.g. test 1870.1 and 1870.2
+      if (tmpType[j]==CT_STRING && type[j]<CT_STRING && type[j]>CT_EMPTY) {
         args.header=true;
         if (verbose) DTPRINT(_("  'header' determined to be true due to column %d containing a string on row 1 and a lower type (%s) in the rest of the %d sample rows\n"),
                              j+1, typeName[type[j]], sampleLines);
