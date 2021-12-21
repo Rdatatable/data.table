@@ -18704,4 +18704,6 @@ test(2234.9, DT[, min(.SD), by=somefun(.I)], error="by.*contains .I.*supported")
 
 # error message improvement, #5296
 DT = data.table(a = 1)
-test(2235, DT[, `:=`(a := b)], error="It looks like you re-used `:=`")
+test(2235.1, DT[, `:=`(a := b)], error="It looks like you re-used `:=`")
+# special case where length(jsub) == 3 that would have failed later
+test(2235.2, DT[, `:=`(a := b, c := d)], error="It looks like you re-used `:=`")
