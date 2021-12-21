@@ -18705,37 +18705,34 @@ test(2234.8, DT[, min(.SD), by=.I%%2L], error="by.*contains .I.*supported")  # w
 test(2234.9, DT[, min(.SD), by=somefun(.I)], error="by.*contains .I.*supported")
 
 # add na.rm argument to first/last #4446 #4239
-a = c(1L,1L,2L,2L,3L,3L,4L,4L)
-bi = c(NA, NA, NA, 1L:4L, NA)
-bs = c(NA, NA, NA, letters[1:4], NA)
-DT = data.table(a,bi,bs)
-i = c(1,1,2,2)
-l = c(NA, TRUE, FALSE, NA)
-c = c(1+1i, NA, 2+2i, NA)
-n = c(sqrt(2), NA, NA, sqrt(5))
-ll = list(NA, list(1,2), list(2,3), NA)
-DT2 = data.table(i, l, c, n, ll)
-test(2235.01, first(bi, na.rm=TRUE), 1L)
-test(2235.02, last(bi, na.rm=TRUE), 4L)
+DT = data.table( a  = c(1L,1L,2L,2L,3L,3L,4L,4L),
+                 bi = c(NA, NA, NA, 1L:4L, NA),
+                 bs = c(NA, NA, NA, letters[1:4], NA))
+DT2 = data.table(i  = c(1,1,2,2),
+                 l  = c(NA, TRUE, FALSE, NA),
+                 c  = c(1+1i, NA, 2+2i, NA),
+                 n  = c(sqrt(2), NA, NA, sqrt(5)),
+                 ll = list(NA, list(1,2), list(2,3), NA))
+vec = DT$bi
+test(2235.01, first(vec, na.rm=TRUE), 1L)
+test(2235.02, last(vec, na.rm=TRUE), 4L)
 test(2235.03, DT[, .(first(bi, na.rm=TRUE)), a], data.table(a=1L:4L, V1=c(NA,1L,2L,4L)))
 test(2235.04, DT[, .(last(bi, na.rm=TRUE)), a], data.table(a=1L:4L, V1=c(NA,1L,3L,4L)))
 test(2235.05, DT[, .(first(bs, na.rm=TRUE)), a], data.table(a=1L:4L, V1=c(NA,"a","b","d")))
 test(2235.06, DT[, .(last(bs, na.rm=TRUE)), a], data.table(a=1L:4L, V1=c(NA,"a","c","d")))
 test(2235.07, first(DT, na.rm=TRUE), data.table(a=2L, bi=1L, bs="a"))
 test(2235.08, setDT(last(DT, na.rm=TRUE)), data.table(a=4L, bi=4L, bs="d")) #see #3047 why setDT
-comp = c(NA, NA, NA, sapply(-1:-4, as.complex), NA)
-DT = data.table(a, comp)
+DT = data.table(a=c(1L,1L,2L,2L,3L,3L,4L,4L), comp=c(NA, NA, NA, sapply(-1:-4, as.complex), NA))
 test(2235.09, DT[, .(first(comp, na.rm=TRUE)), a],
   data.table(a=1L:4L, V1=c(NA_complex_,-1+0i,-2+0i,-4+0i)))
 test(2235.10, DT[, .(last(comp, na.rm=TRUE)), a],
   data.table(a=1L:4L, V1=c(NA_complex_,-1+0i,-3+0i,-4+0i)))
-i = c(1,2,1,2)
-l = c(FALSE, TRUE, NA, NA)
-c = c(NA, NA, 1+1i, 2+2i)
-n = c(sqrt(2), NA, NA, sqrt(5))
-ll = list(NULL, list(1), list(2), NULL)
-DT2 = data.table(i, l, c, n, ll)
-DT2_res = data.table(i=i[c(1,2)], l=l[c(1,2)], c=c[c(3,4)], n=n[c(1,4)], ll=ll[c(3,2)])
+DT2 = data.table(i=c(1,2,1,2),
+                 l=c(FALSE, TRUE, NA, NA),
+                 c=c(NA, NA, 1+1i, 2+2i),
+                 n=c(sqrt(2), NA, NA, sqrt(5)),
+                 ll=list(NULL, list(1), list(2), NULL))
+DT2_res = data.table(i=c(1,2), l=c(FALSE,TRUE), c=c(1+1i, 2+2i), n=c(sqrt(2), sqrt(5)), ll=list(list(2), list(1)))
 test(2235.11, DT2[, lapply(.SD, first, na.rm=TRUE), i], DT2_res)
 test(2235.12, DT2[, lapply(.SD, last, na.rm=TRUE), i], DT2_res)
 test(2235.13, DT2[, lapply(.SD, first, na.rm=NA), i], error="na.rm must be TRUE or FALSE")
