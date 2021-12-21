@@ -47,7 +47,8 @@ function (repos, type = getOption("pkgType"), ver)
 dcf.dependencies <-
 function(file = "DESCRIPTION",
          which = NA,
-         except.priority = "base") {
+         except.priority = "base",
+         exclude = NULL) {
   if (!is.character(file) || !length(file) || !all(file.exists(file)))
     stop("file argument must be character of filepath(s) to existing DESCRIPTION file(s)")
   if (!is.character(except.priority))
@@ -79,7 +80,13 @@ function(file = "DESCRIPTION",
   }
   x <- unlist(lapply(x, local.extract_dependency_package_names))
   except <- if (length(except.priority)) c("R", unlist(tools:::.get_standard_package_names()[except.priority], use.names = FALSE))
-  setdiff(x, except)
+  x = setdiff(x, except)
+  if (length(exclude)) {  # to exclude knitr/rmarkdown, 5294
+    if (!is.character(exclude) || anyDuplicated(exclude))
+      stop("exclude may be NULL or a character vector containing no duplicates")
+    x = setdiff(x, exclude)
+  }
+  x
 }
 
 ## returns additional repositories for dependency packages based on its DESCRIPTION file

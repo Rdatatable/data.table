@@ -74,8 +74,6 @@ build: ## build data.table sources as tar.gz archive
 
 .test-install-deps: &install-deps
   - Rscript -e 'source(".ci/ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="most"), quiet=TRUE)'
-.test-install-deps-win: &install-deps-win
-  - Rscript.exe -e "source('.ci/ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='most'), quiet=TRUE)"
 
 .test-cp-src: &cp-src
   - cp $(ls -1t bus/build/cran/src/contrib/data.table_*.tar.gz | head -n 1) .
@@ -249,7 +247,7 @@ test-rel-win: ## R-release on Windows, test and build binaries
     - *install-r-rel-win
     - *install-rtools-win
     - $ENV:PATH = "C:\R\bin;C:\rtools40\usr\bin;$ENV:PATH"
-    - *install-deps-win
+    - Rscript.exe -e "source('.ci/ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='most'), quiet=TRUE)"
     - *cp-src-win
     - rm.exe -r bus
   script:
@@ -260,15 +258,15 @@ test-rel-win: ## R-release on Windows, test and build binaries
     - *rm-src-win
     - *mv-bin-win
 
-test-dev-win: ## R-devel on Windows
+test-dev-win: ## R-devel on Windows; see #5294 for changes in Dec 2021 related to UCRT and Rtools42
   <<: *test-win
   variables:
     R_VERSION: "$R_DEVEL_VERSION"
   before_script:
     - *install-r-devel-win
-    - *install-rtools-win
-    - $ENV:PATH = "C:\R\bin;C:\rtools40\usr\bin;$ENV:PATH"
-    - *install-deps-win
+    - curl.exe -s -o ../rtools.exe https://www.r-project.org/nosvn/winutf8/ucrt3/rtools42-4911-4926.exe; Start-Process -FilePath ..\rtools.exe -ArgumentList "/VERYSILENT /DIR=C:\rtools42" -NoNewWindow -Wait
+    - $ENV:PATH = "C:\R\bin;C:\rtools42\usr\bin;$ENV:PATH"
+    - Rscript.exe -e "source('.ci/ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='most', exclude=c('knitr','rmarkdown')), quiet=TRUE)"  ## exclude= for #5294
     - *cp-src-win
     - rm.exe -r bus
   script:
@@ -287,7 +285,7 @@ test-old-win: ## R-oldrel on Windows
     - *install-r-oldrel-win
     - *install-rtools-win
     - $ENV:PATH = "C:\R\bin;C:\rtools40\usr\bin;$ENV:PATH"
-    - *install-deps-win
+    - Rscript.exe -e "source('.ci/ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='most', exclude=c('knitr','rmarkdown')), quiet=TRUE)"  ## exclude= for #5294
     - *cp-src-win
     - rm.exe -r bus
   script:
