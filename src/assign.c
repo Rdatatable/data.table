@@ -458,9 +458,10 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   if (length(newcolnames)) {
     tl = TRUELENGTH(dt);
     int overAlloc = checkOverAlloc(GetOption(install("datatable.alloccol"), R_NilValue));
-    // perform re-overallocation since DT has too less columns
+    // perform re-overallocation since DT has too less columns #1831 #4100
     if (tl < oldncol+LENGTH(newcolnames)) {
-      dt = alloccol(dt, MIN(oldncol-tl, 0) + length(newcolnames) + overAlloc, verbose);
+      // use MAX to mitigate case where data is loaded from disk (readRDS()/load()) or constructed manually (e.g. using structure())
+      dt = alloccol(dt, MAX(oldncol-tl, 0) + oldncol + length(newcolnames) + overAlloc, verbose);
       tl = TRUELENGTH(dt);
       names = PROTECT(getAttrib(dt, R_NamesSymbol)); protecti++;
     }
