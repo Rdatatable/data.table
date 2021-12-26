@@ -2715,23 +2715,11 @@ setcolorder = function(x, neworder=key(x), before=NULL, after=NULL)  # before/af
 
 set = function(x,i=NULL,j,value)  # low overhead, loopable
 {
-  if (is.character(j) && truelength(x) < ncol(x)+length(j)) {
-    newnames = NULL
-    names_x = names(x)
-    m = chmatch(j, names_x)
-    if (anyNA(m)) {
-      newnames = j[is.na(m)]
-    }
-    if (truelength(x) < ncol(x)+length(newnames)) {
-      n = length(newnames) + getOption("datatable.alloccol")
-      name = substitute(x)
-      x = .Call(Calloccolwrapper, x, eval(n), getOption("datatable.verbose"))
-      if (is.name(name)) {
-        assign(as.character(name),x,parent.frame(),inherits=TRUE)
-      }
-    }
+  name = substitute(x)
+  x = .Call(Cassign,x,i,j,NULL,value)
+  if (is.name(name)) {
+    assign(as.character(name),x,parent.frame(),inherits=TRUE)
   }
-  .Call(Cassign,x,i,j,NULL,value)
   invisible(x)
 }
 
