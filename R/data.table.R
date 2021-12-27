@@ -2718,7 +2718,8 @@ set = function(x,i=NULL,j,value)  # low overhead, loopable
   if (is.character(j)) {
     name = substitute(x)
     x = .Call(Cassign,x,i,j,NULL,value)
-    assign(as.character(name),x,parent.frame(),inherits=TRUE)
+    if (is.name(name))
+      assign(as.character(name),x,parent.frame(),inherits=TRUE)
   } else {
     .Call(Cassign,x,i,j,NULL,value)
   }
