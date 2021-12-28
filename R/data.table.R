@@ -2210,6 +2210,7 @@ tail.data.table = function(x, n=6L, ...) {
 as.data.frame.data.table = function(x, ...)
 {
   ans = copy(x)
+  .Call(Csettruelength, ans, 0L)
   setattr(ans,"row.names",.set_row_names(nrow(x)))   # since R 2.4.0, data.frames can have non-character row names
   setattr(ans,"class","data.frame")
   setattr(ans,"sorted",NULL)  # remove so if you convert to df, do something, and convert back, it is not sorted
@@ -2797,6 +2798,8 @@ setDF = function(x, rownames=NULL) {
         stopf("rownames incorrect length; expected %d names, got %d", nrow(x), length(rownames))
       rn = rownames
     }
+    # settruelength must be called on data.table
+    .Call(Csettruelength, x, 0L)
     setattr(x, "row.names", rn)
     setattr(x, "class", "data.frame")
     setattr(x, "sorted", NULL)

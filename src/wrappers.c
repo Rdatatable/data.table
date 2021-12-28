@@ -120,3 +120,13 @@ SEXP dim(SEXP x)
   return ans;
 }
 
+SEXP settruelength(SEXP x, SEXP i)
+{
+  R_len_t i2;
+  // Internal use only
+  if (!INHERITS(x, char_datatable)) error(_("First argument to settruelength must be a data.table"));
+  if (!isInteger(i) || LENGTH(i)!=1) error(_("Second argument to settruelength must be a length 1 integer vector"));
+  i2 = INTEGER(i)[0];
+  SET_TRUELENGTH(x, i2);
+  return(R_NilValue);
+}
