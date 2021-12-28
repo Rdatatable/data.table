@@ -18702,3 +18702,7 @@ test(2234.7, DT[, min(.SD), by=c(.I)], data.table(I=1L:5L, V1=c(1L, 2L, 3L, 2L, 
 test(2234.8, DT[, min(.SD), by=.I%%2L], error="by.*contains .I.*supported")  # would be nice to support in future; i.e. by odd/even rows, and by=(.I+1L)%/%2L for pairs of rows; i.e. any expression of .I
 test(2234.9, DT[, min(.SD), by=somefun(.I)], error="by.*contains .I.*supported")
 
+# reset truelength after coerce to data.frame #4754
+DT = data.table(a=1, b=2)
+test(2235.1, truelength(as.data.frame(DT)), 0L)
+test(2235.2, truelength(setDF(DT)), 0L)
