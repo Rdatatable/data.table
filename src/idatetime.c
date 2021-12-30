@@ -127,8 +127,6 @@ int convertDate_int(int x, datetype type)
         }
         return i % 4 + 1;
     }
-
-    return -1;
 }
 
 double convertDate_double(int x, datetype type)
@@ -181,6 +179,4 @@ double convertDate_double(int x, datetype type)
         }
         return year + ((i % 4) / 4.0);
     }
-
-    return -1;
 }
