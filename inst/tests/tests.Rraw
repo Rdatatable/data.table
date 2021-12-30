@@ -10449,15 +10449,17 @@ test(1692, capture.output(as.data.table(structure(57600L, class = "ITime"))),
 
 # testing all time part extraction routines (subsumes #874)
 t <- "2016-08-03 01:02:03.45"
-test(1693.1, second(t), 3L)
-test(1693.2, minute(t), 2L)
-test(1693.3, hour(t), 1L)
-test(1693.4, yday(t), 216L)
-test(1693.5, wday(t), 4L)
-test(1693.6, week(t), 31L)
-test(1693.7, month(t), 8L)
-test(1693.8, quarter(t), 3L)
-test(1693.9, year(t), 2016L)
+test(1693.01, second(t), 3L)
+test(1693.02, minute(t), 2L)
+test(1693.03, hour(t), 1L)
+test(1693.04, yday(t), 216L)
+test(1693.05, wday(t), 4L)
+test(1693.06, week(t), 31L)
+test(1693.07, month(t), 8L)
+test(1693.08, quarter(t), 3L)
+test(1693.09, year(t), 2016L)
+test(1693.10, yearmon(t), 2016+7/12)
+test(1693.11, yearqtr(t), 2016.5)
 
 # fix for #1740 - sub-assigning NAs for factors
 dt = data.table(x = 1:5, y = factor(c("","a","b","a", "")), z = 5:9)
@@ -18702,3 +18704,14 @@ test(2234.7, DT[, min(.SD), by=c(.I)], data.table(I=1L:5L, V1=c(1L, 2L, 3L, 2L, 
 test(2234.8, DT[, min(.SD), by=.I%%2L], error="by.*contains .I.*supported")  # would be nice to support in future; i.e. by odd/even rows, and by=(.I+1L)%/%2L for pairs of rows; i.e. any expression of .I
 test(2234.9, DT[, min(.SD), by=somefun(.I)], error="by.*contains .I.*supported")
 
+# move IDate calculating from POSIXlt to C, add yearquarter #649
+x = c("2019-01-01", "2019-02-28", "2019-03-01", "2019-12-31", "2020-02-29", "2020-03-01", "2020-12-31")
+test(2235.1, yday(x), c(1L, 59L, 60L, 365L, 60L, 61L, 366L))
+test(2235.2, mday(x), c(1L, 28L, 1L, 31L, 29L, 1L, 31L))
+test(2235.3, wday(x), c(3L, 5L, 6L, 3L, 7L, 1L, 5L))
+test(2235.4, week(x), c(1L, 9L, 9L, 53L, 9L, 9L, 53L))
+test(2235.5, month(x), c(1L, 2L, 3L, 12L, 2L, 3L, 12L))
+test(2235.6, quarter(x), c(1L, 1L, 1L, 4L, 1L, 1L, 4L))
+test(2235.7, year(x), c(2019L, 2019L, 2019L, 2019L, 2020L, 2020L, 2020L))
+test(2235.8, yearmon(x), c(2019, 2019+1/12, 2019+2/12, 2019+11/12, 2020+1/12, 2020+2/12, 2020+11/12))
+test(2235.9, yearqtr(x), c(2019, 2019, 2019, 2019.75, 2020, 2020, 2020.75))
