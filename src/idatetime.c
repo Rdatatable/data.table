@@ -119,14 +119,15 @@ int convertDate_int(int x, datetype type)
         return days+1;
     }
 
-    if (type == QUARTER) {
-        int i = 0;
-        while (quarter[i] <= days) {
-            days -= quarter[i];
-            i++;
-        }
-        return i % 4 + 1;
+    // LAST CASE: QUARTER
+    //if (type == QUARTER) {
+    int i = 0;
+    while (quarter[i] <= days) {
+        days -= quarter[i];
+        i++;
     }
+    return i % 4 + 1;
+    //}
 }
 
 double convertDate_double(int x, datetype type)
@@ -171,12 +172,13 @@ double convertDate_double(int x, datetype type)
         return year + ((i+2) % 12) / 12.0;
     }
 
-    if (type == YEARQTR) {
-        int i = 0;
-        while (quarter[i] <= days) {
-            days -= quarter[i];
-            i++;
-        }
-        return year + ((i % 4) / 4.0);
+    //LAST CASE: YEARQTR
+    //if (type == YEARQTR) {
+    int i = 0;
+    while (quarter[i] <= days) {
+        days -= quarter[i];
+        i++;
     }
+    return year + ((i % 4) / 4.0);
+    //}
 }
