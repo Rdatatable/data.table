@@ -211,6 +211,12 @@ as.character.ITime = format.ITime = function(x, ...) {
 }
 
 as.data.frame.ITime = function(x, ...) {
+  nm = names(get("x", envir=parent.frame()))
+  i = get0("i", parent.frame(), ifnotfound=1L)
+  if (length(nm) > 1)
+    nm = nm[[i]]
+  if (is.null(nm) || nm == "")
+    nm = paste0("V", i)
   # This method is just for ggplot2, #1713
   # Avoids the error "cannot coerce class '"ITime"' into a data.frame", but for some reason
   # ggplot2 doesn't seem to call the print method to get axis labels, so still prints integers.
@@ -220,7 +226,7 @@ as.data.frame.ITime = function(x, ...) {
   # ans = list(as.POSIXct(x,tzone=""))  # ggplot2 gives "Error: Discrete value supplied to continuous scale"
   setattr(ans, "class", "data.frame")
   setattr(ans, "row.names", .set_row_names(length(x)))
-  setattr(ans, "names", "V1")
+  setattr(ans, "names", nm)
   ans
 }
 
