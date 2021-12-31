@@ -213,7 +213,7 @@ as.character.ITime = format.ITime = function(x, ...) {
 as.data.frame.ITime = function(x, ...) {
   nm = names(get("x", envir=parent.frame()))
   i = get0("i", parent.frame(), ifnotfound=1L)
-  if (length(nm) > 1)
+  if (length(nm) > 1L)
     nm = nm[[i]]
   if (is.null(nm) || nm == "")
     nm = paste0("V", i)
