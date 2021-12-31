@@ -18702,3 +18702,22 @@ test(2234.7, DT[, min(.SD), by=c(.I)], data.table(I=1L:5L, V1=c(1L, 2L, 3L, 2L, 
 test(2234.8, DT[, min(.SD), by=.I%%2L], error="by.*contains .I.*supported")  # would be nice to support in future; i.e. by odd/even rows, and by=(.I+1L)%/%2L for pairs of rows; i.e. any expression of .I
 test(2234.9, DT[, min(.SD), by=somefun(.I)], error="by.*contains .I.*supported")
 
+# create data.frame with ITime will lose the colname #4673
+test(2235.01, names(data.frame(a=1, COL=as.ITime('12:00:00'))), c("a","COL"))
+test(2235.02, names(data.frame(COL=as.ITime('12:00:00'), a=1)), c("COL","a"))
+test(2235.03, names(data.frame(a=1, as.ITime('12:00:00'))), c("a","V2"))
+test(2235.04, names(data.frame(as.ITime('12:00:00'), a=1)), c("V1","a"))
+test(2235.05, names(data.frame(1, COL=as.ITime('12:00:00'))), c("X1","COL"))
+test(2235.06, names(data.frame(COL=as.ITime('12:00:00'), 1)), c("COL","X1"))
+test(2235.07, names(data.frame(1, as.ITime('12:00:00'))), c("X1","V2"))
+test(2235.08, names(data.frame(as.ITime('12:00:00'), 1)), c("V1","X1"))
+test(2235.09, names(data.frame(as.ITime('12:00:00'), as.ITime('14:00:00'))), c("V1","V2"))
+test(2235.11, names(data.table(a=1, COL=as.ITime('12:00:00'))), c("a","COL"))
+test(2235.12, names(data.table(COL=as.ITime('12:00:00'), a=1)), c("COL","a"))
+test(2235.13, names(data.table(a=1, as.ITime('12:00:00'))), c("a","V2"))
+test(2235.14, names(data.table(as.ITime('12:00:00'), a=1)), c("V1","a"))
+test(2235.15, names(data.table(1, COL=as.ITime('12:00:00'))), c("V1","COL"))
+test(2235.16, names(data.table(COL=as.ITime('12:00:00'), 1)), c("COL","V2"))
+test(2235.17, names(data.table(1, as.ITime('12:00:00'))), c("V1","V2"))
+test(2235.18, names(data.table(as.ITime('12:00:00'), 1)), c("V1","V2"))
+test(2235.19, names(data.table(as.ITime('12:00:00'), as.ITime('14:00:00'))), c("V1","V2"))
