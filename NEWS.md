@@ -544,7 +544,7 @@
 
 51. `merge.data.table()` silently ignored the `incomparables` argument, [#2587](https://github.com/Rdatatable/data.table/issues/2587). It is now implemented and any other ignored arguments (e.g. misspellings) are now warned about. Thanks to @GBsuperman for the report and @ben-schwen for the fix.
 
-52. Creating a `data.frame` from an `ITime` vector could lead to renaming of the column [#4673](https://github.com/Rdatatable/data.table/issues/4673). Thanks to @shrektan for reporting and @ben-schwen for fixing.
+52. Creating a `data.frame` from an `ITime` vector could lead to renaming of the column, [#4673](https://github.com/Rdatatable/data.table/issues/4673). Thanks to @shrektan for reporting and @ben-schwen for fixing.
 
 ## NOTES
 
