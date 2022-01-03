@@ -33,13 +33,15 @@ SEXP convertDate(SEXP x, SEXP type)
     SEXP ans;
     if (ansint) {
         ans = PROTECT(allocVector(INTSXP, n));
+        int *ansp = INTEGER(ans);
         for (int i=0; i < n; ++i) {
-            INTEGER(ans)[i] = convertDate_int(ix[i], ctype);
+            ansp[i] = convertDate_int(ix[i], ctype);
         }
     } else {
         ans = PROTECT(allocVector(REALSXP, n));
+        double *ansp = REAL(ans);
         for (int i=0; i < n; ++i) {
-            REAL(ans)[i] = convertDate_double(ix[i], ctype);
+            ansp[i] = convertDate_double(ix[i], ctype);
         }
     }
     UNPROTECT(1);
