@@ -193,7 +193,7 @@ See 'Details' in \code{\link{round}} for more information.
    for second, minute, hour, day of year, day of week,
    day of month, week, month, quarter, and year, respectively.
    \code{yearmon} and \code{yearqtr} return double values representing
-   `year + (month-1) / 12` respectively `year + (quarter-1) / 4`.
+   respectively `year + (month-1) / 12` and `year + (quarter-1) / 4`.
 
    \code{second}, \code{minute}, \code{hour} are taken directly from
    the \code{POSIXlt} representation.
