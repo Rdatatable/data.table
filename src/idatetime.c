@@ -127,21 +127,19 @@ SEXP convertDate(SEXP x, SEXP type)
     else error(_("Internal error: invalid type for convertDate, should have been caught before. please report to data.table issue tracker")); // # nocov
 
     SEXP ans;
-    int iout = 0;
-    double dout = 0;
+    int *ip = 0;
+    double *dp = 0;
     if (ansint) {
         ans = PROTECT(allocVector(INTSXP, n));
         int *ansp = INTEGER(ans);
         for (int i=0; i < n; ++i) {
-            convertSingleDate(ix[i], ctype, &iout, &dout);
-            ansp[i] = iout;
+            convertSingleDate(ix[i], ctype, &ansp[i], dp);
         }
     } else {
         ans = PROTECT(allocVector(REALSXP, n));
         double *ansp = REAL(ans);
         for (int i=0; i < n; ++i) {
-            convertSingleDate(ix[i], ctype, &iout, &dout);
-            ansp[i] = dout;
+            convertSingleDate(ix[i], ctype, ip, &ansp[i]);
         }
     }
     UNPROTECT(1);
