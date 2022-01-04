@@ -86,6 +86,19 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   last = data.table::last               # xts
   first = data.table::first             # xts, S4Vectors
   copy = data.table::copy               # bit64 v4; bit64 offered to rename though so this is just in case bit64 unoffers
+  second = data.table::second           # lubridate #1135
+  minute = data.table::minute           # lubridate
+  hour = data.table::hour               # lubridate
+  yday = data.table::yday               # lubridate
+  wday = data.table::wday               # lubridate
+  mday = data.table::mday               # lubridate
+  week = data.table::week               # lubridate
+  isoweek = data.table::isoweek         # lubridate
+  month = data.table::month             # lubridate
+  quarter = data.table::quarter         # lubridate
+  year = data.table::year               # lubridate
+  yearmon = data.table::yearmon         # zoo
+  yearqtr = data.table::yearqtr         # zoo
 }
 
 # Load optional Suggests packages, which are tested by Travis for code coverage, and on CRAN
