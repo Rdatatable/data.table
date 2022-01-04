@@ -362,7 +362,7 @@ year    = function(x) convertDate(as.IDate(x), "year")
 yearmon = function(x) convertDate(as.IDate(x), "yearmon")
 yearqtr = function(x) convertDate(as.IDate(x), "yearqtr")
 
-convertDate = function(x, type=c("yday", "wday", "mday", "week", "month", "quarter", "year", "yearmon", "yearqtr")) {
-  type = match.arg(type)
+convertDate = function(x, type) {
+  type = match.arg(type, c("yday", "wday", "mday", "week", "month", "quarter", "year", "yearmon", "yearqtr"))
   .Call(CconvertDate, x, type)
 }
