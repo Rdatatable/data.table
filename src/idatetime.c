@@ -15,13 +15,7 @@ void convertSingleDate(int x, datetype type, int *ip, double *dp)
     if (type == WDAY) {
         int wday = (x + 4) % 7;
         if (wday < 0) wday += 7;
-        *ip = wday+1;
-        return;
-    }
-
-    if (type == WEEK) {
-        convertSingleDate(x, YDAY, ip, dp);
-        *ip = (*ip / 7) + 1;
+        *ip = ++wday;
         return;
     }
 
@@ -44,7 +38,8 @@ void convertSingleDate(int x, datetype type, int *ip, double *dp)
     days %= YEARS1;
 
     int year = 2000 + years1 + 4*years4 + 100*years100 + 400*years400;
-    if (days > 305) ++year;
+    if (days > 305)
+        ++year;
 
     if (type == YEAR) {
         *ip = year;
@@ -53,11 +48,13 @@ void convertSingleDate(int x, datetype type, int *ip, double *dp)
 
     int leap = !years1 && (years4 || !years100);
 
-    if (type == YDAY) {
+    if (type == YDAY || type == WEEK) {
         int yday = days + 31 + 28 + leap;
         if (yday >= YEARS1 + leap)
             yday -= YEARS1 + leap;
         *ip = ++yday;
+        if (type == WEEK)
+            *ip = (*ip / 7) + 1;
         return;
     }
 
