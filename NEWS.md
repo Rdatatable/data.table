@@ -292,7 +292,7 @@
     # 2:     2    10
     ```
 
-40. Fast versions of `yearmon` and `yearqtr` are now available. Moreover, `yday`, `wday`, `mday`, `week`, `month` and `year` are now optimized regarding memory usage and speed by removing the `POSIXlt` dependency, [#649](https://github.com/Rdatatable/data.table/issues/649). Thanks to Matt Dowle for the request, and Benjamin Schwendinger for the PR.
+40.  New functions `yearmon()` and `yearqtr` give a combined representation of `year()` and `month()` respectively `year()` and `quarter()`. These and also `yday`, `wday`, `mday`, `week`, `month` and `year` are now optimized for memory and compute efficiency by removing the `POSIXlt` dependency, [#649](https://github.com/Rdatatable/data.table/issues/649). Thanks to Matt Dowle for the request, and Benjamin Schwendinger for the PR.
 
 ## BUG FIXES
 
