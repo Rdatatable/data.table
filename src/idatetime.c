@@ -7,6 +7,10 @@
 
 typedef enum { YDAY, WDAY, MDAY, WEEK, MONTH, QUARTER, YEAR, YEARMON, YEARQTR} datetype;
 
+static inline bool isLeapYear(int year) {
+    return (year % 100 != 0 || year % 400 == 0) && year % 4 == 0;
+}
+
 void convertSingleDate(int x, datetype type, int *ip, double *dp)
 {
     static const char months[] = {31, 30, 31, 30, 31, 31, 30, 31, 30, 31, 31, 29};
@@ -60,25 +64,28 @@ void convertSingleDate(int x, datetype type, int *ip, double *dp)
 
     if (type == MONTH || type == YEARMON) {
         int i;
-        if (days==0 && !leap && years1%4==0) {
-            i = 11;
+        if (days==0 && !leap && isLeapYear(year)) {
+            i = 1;
         } else {
-            i = 0;
-            while (months[i] <= days) {
-                days -= months[i];
+            i = 2;
+            while (months[i-2] <= days) {
+                days -= months[i-2];
                 i++;
             }
         }
+        if (i >= 12)
+            i -= 12;
+
         if (type == MONTH) {
-            *ip = (i+2) % 12 + 1;
+            *ip = i + 1;
         } else {
-            *dp = year + ((i+2) % 12) / 12.0;
+            *dp = year + i / 12.0;
         }
         return;
     }
 
     if (type == MDAY) {
-        if (days==0 && !leap && years1%4==0) {
+        if (days==0 && !leap && isLeapYear(year)) {
             *ip = 29;
             return;
         }
