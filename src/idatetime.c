@@ -11,7 +11,7 @@ static inline bool isLeapYear(int year) {
     return (year % 100 != 0 || year % 400 == 0) && year % 4 == 0;
 }
 
-void convertSingleDate(int x, datetype type, int *ip, double *dp)
+void convertSingleDate(int x, datetype type, void *out)
 {
     static const char months[] = {31, 30, 31, 30, 31, 31, 30, 31, 30, 31, 31, 29};
     static const int quarter[] = {31, 91, 92, 92, 60};
@@ -19,7 +19,7 @@ void convertSingleDate(int x, datetype type, int *ip, double *dp)
     if (type == WDAY) {
         int wday = (x + 4) % 7;
         if (wday < 0) wday += 7;
-        *ip = ++wday;
+        *(int *)out = ++wday;
         return;
     }
 
@@ -46,7 +46,7 @@ void convertSingleDate(int x, datetype type, int *ip, double *dp)
         ++year;
 
     if (type == YEAR) {
-        *ip = year;
+        *(int *)out = year;
         return;
     }
 
@@ -56,9 +56,9 @@ void convertSingleDate(int x, datetype type, int *ip, double *dp)
         int yday = days + 31 + 28 + leap;
         if (yday >= YEARS1 + leap)
             yday -= YEARS1 + leap;
-        *ip = ++yday;
+        *(int *)out = ++yday;
         if (type == WEEK)
-            *ip = (*ip / 7) + 1;
+            *(int *)out = (*(int *)out / 7) + 1;
         return;
     }
 
@@ -77,16 +77,16 @@ void convertSingleDate(int x, datetype type, int *ip, double *dp)
             i -= 12;
 
         if (type == MONTH) {
-            *ip = i + 1;
+            *(int *)out = i + 1;
         } else {
-            *dp = year + i / 12.0;
+            *(double *)out = year + i / 12.0;
         }
         return;
     }
 
     if (type == MDAY) {
         if (days==0 && !leap && isLeapYear(year)) {
-            *ip = 29;
+            *(int *)out = 29;
             return;
         }
         int i = 0;
@@ -94,7 +94,7 @@ void convertSingleDate(int x, datetype type, int *ip, double *dp)
             days -= months[i];
             i++;
         }
-        *ip = ++days;
+        *(int *)out = ++days;
         return;
     }
 
@@ -104,10 +104,12 @@ void convertSingleDate(int x, datetype type, int *ip, double *dp)
             days -= quarter[i];
             i++;
         }
+        if (i >= 4)
+            i -= 4;
         if (type == QUARTER) {
-            *ip = i % 4 + 1;
+            *(int *)out = i + 1;
         } else {
-            *dp = year + ((i % 4) / 4.0);
+            *(double *)out = year + (i / 4.0);
         }
         return;
     }
@@ -134,19 +136,17 @@ SEXP convertDate(SEXP x, SEXP type)
     else error(_("Internal error: invalid type for convertDate, should have been caught before. please report to data.table issue tracker")); // # nocov
 
     SEXP ans;
-    int *ip = 0;
-    double *dp = 0;
     if (ansint) {
         ans = PROTECT(allocVector(INTSXP, n));
         int *ansp = INTEGER(ans);
         for (int i=0; i < n; ++i) {
-            convertSingleDate(ix[i], ctype, &ansp[i], dp);
+            convertSingleDate(ix[i], ctype, &ansp[i]);
         }
     } else {
         ans = PROTECT(allocVector(REALSXP, n));
         double *ansp = REAL(ans);
         for (int i=0; i < n; ++i) {
-            convertSingleDate(ix[i], ctype, ip, &ansp[i]);
+            convertSingleDate(ix[i], ctype, &ansp[i]);
         }
     }
     UNPROTECT(1);
