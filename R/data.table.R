@@ -1620,12 +1620,9 @@ replace_dot_alias = function(e) {
         (jsub[[1L]] == "[" ||
            (jsub[[1L]] == "[[" && is.name(jsub[[2L]]) && eval(call('is.atomic', jsub[[2L]]), x, parent.frame()))) &&
         (is.numeric(jsub[[3L]]) || jsub[[3L]] == ".N")
-      narm_arg = function(fun, jsub) {
-        cal = match.call(fun, jsub)
-        isTRUE(cal[["na.rm"]])
-      }
-      headopt =  jsub[[1L]] == "head"  || jsub[[1L]] == "tail"
-      firstopt = (jsub[[1L]]=="first" || jsub[[1L]]=="last") # && !narm_arg(first, jsub) # 2030, 4239
+      headopt =   jsub[[1L]]=="head"  || jsub[[1L]]=="tail"
+      firstopt = (jsub[[1L]]=="first" || jsub[[1L]]=="last") &&         # 2030, 4239
+                 !identical(match.call(first, jsub)[["na.rm"]], "row")  # first's signature same as last's
       if ((length(jsub) >= 2L && jsub[[2L]] == ".SD") &&
           (subopt || headopt || firstopt)) {
         if (headopt && length(jsub)==2L) jsub[["n"]] = 6L # head-tail n=6 when missing #3462

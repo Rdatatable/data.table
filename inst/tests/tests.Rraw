@@ -16726,23 +16726,22 @@ setnames(DT, -(1:2), toupper)
 test(2107.4, names(DT), c('A','b','C'))
 
 # first and last should no longer load xts namespace, #3857, below commented test for interactive validation when xts present but not loaded or attached
-#stopifnot("xts"%in%installed.packages(), !"xts"%in%loadedNamespaces()); library(data.table); x=as.POSIXct("2019-01-01"); last(x); stopifnot(!"xts" %in% loadedNamespaces())
 x = as.POSIXct("2019-09-09")+0:1
 old = options(datatable.verbose=TRUE)
-test(2108.01, last(x), x[length(x)], output="!is.xts(x)")
-test(2108.02, first(x), x[1L], output="!is.xts(x)")
+test(2108.01, last(x), x[length(x)], notOutput="xts")
+test(2108.02, first(x), x[1L], notOutput="xts")
 if (test_xts) {
   xt = xts(1:2, x)
-  test(2108.03, last(xt, 2L), xt, output="using xts::last: is.xts(x)")
-  test(2108.04, first(xt, 2L), xt, output="using xts::first: is.xts(x)")
+  test(2108.03, last(xt, 2L), xt, output="using xts::last")
+  test(2108.04, first(xt, 2L), xt, output="using xts::first")
   xt = xts(matrix(1:4, 2L, 2L), x)
-  test(2108.05, last(xt, 2L), xt, output="using xts::last: is.xts(x)")
-  test(2108.06, first(xt, 2L), xt, output="using xts::first: is.xts(x)")
+  test(2108.05, last(xt, 2L), xt, output="using xts::last")
+  test(2108.06, first(xt, 2L), xt, output="using xts::first")
 }
 # first on empty df now match head(df, n=1L), #3858
 df = data.frame(a=integer(), b=integer())
-test(2108.11, first(df), df, output="!is.xts(x)")
-test(2108.12, last(df), df, output="!is.xts(x)")
+test(2108.11, first(df), df, notOutput="xts")
+test(2108.12, last(df), df, notOutput="xts")
 options(old)
 # xts last-first dispatch fix #4053
 x = 1:3
@@ -16761,10 +16760,10 @@ xt = structure(
 )
 old = options(datatable.verbose=TRUE)
 if (test_xts) {
-  test(2108.21, last(x, n=2L), 2:3, output="using xts::last: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
-  test(2108.22, last(y, n=2L), y[2:3], output="using xts::last: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
-  test(2108.23, last(x, n=1L), 3L, output="using xts::last: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
-  test(2108.24, last(y, n=1L), y[3L], output="using xts::last: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
+  test(2108.21, last(x, n=2L), 2:3, notOutput="xts")
+  test(2108.22, last(y, n=2L), y[2:3], notOutput="xts")
+  test(2108.23, last(x, n=1L), 3L, notOutput="xts")
+  test(2108.24, last(y, n=1L), y[3L], notOutput="xts")
   xt_last = structure(
     c(141.330002, 141.399994, 140.380005, 140.539993, 76645300, 108.360008),
     class = c("xts", "zoo"), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC",
@@ -16778,12 +16777,12 @@ if (test_xts) {
     index = structure(c(1167868800, 1167955200), tzone = "UTC", tclass = "Date"),
     .Dim = c(2L, 6L), .Dimnames = list(NULL, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "SPY.Adjusted"))
   )
-  test(2108.25, last(xt), xt_last, output="using xts::last: is.xts(x)")
-  test(2108.26, last(xt, n=2L), xt_last2, output="using xts::last: is.xts(x)")
-  test(2108.31, first(x, n=2L), 1:2, output="using xts::first: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
-  test(2108.32, first(y, n=2L), y[1:2], output="using xts::first: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
-  test(2108.33, first(x, n=1L), 1L, output="using xts::first: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
-  test(2108.34, first(y, n=1L), y[1L], output="using xts::first: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
+  test(2108.25, last(xt), xt_last, output="using xts::last")
+  test(2108.26, last(xt, n=2L), xt_last2, output="using xts::last")
+  test(2108.31, first(x, n=2L), 1:2, notOutput="xts")
+  test(2108.32, first(y, n=2L), y[1:2], notOutput="xts")
+  test(2108.33, first(x, n=1L), 1L, notOutput="xts")
+  test(2108.34, first(y, n=1L), y[1L], notOutput="xts")
   xt_first = structure(
     c(142.25, 142.860001, 140.570007, 141.369995, 94807600, 108.999954),
     class = c("xts", "zoo"), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC",
@@ -16796,39 +16795,24 @@ if (test_xts) {
     index = structure(c(1167782400, 1167868800), tzone = "UTC", tclass = "Date"),
     .Dim = c(2L, 6L), .Dimnames = list(NULL, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "SPY.Adjusted"))
   )
-  test(2108.35, first(xt), xt_first, output="using xts::first: is.xts(x)")
-  test(2108.36, first(xt, n=2L), xt_first2, output="using xts::first: is.xts(x)")
-} else {
-  test(2108.21, last(x, n=2L), 2:3, output="using utils::tail: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
-  test(2108.22, last(y, n=2L), y[2:3], output="using utils::tail: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
-  test(2108.23, last(x, n=1L), 3L, output="using utils::tail: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
-  test(2108.24, last(y, n=1L), y[3L], output="using utils::tail: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
-  test(2108.25, last(xt), error="you should have 'xts' installed already")
-  test(2108.26, last(xt, n=2L), error="you should have 'xts' installed already")
-  test(2108.31, first(x, n=2L), 1:2, output="using utils::head: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
-  test(2108.32, first(y, n=2L), y[1:2], output="using utils::head: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
-  test(2108.33, first(x, n=1L), 1L, output="using utils::head: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
-  test(2108.34, first(y, n=1L), y[1L], output="using utils::head: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
-  test(2108.35, first(xt), error="you should have 'xts' installed already")
-  test(2108.36, first(xt, n=2L), error="you should have 'xts' installed already")
+  test(2108.35, first(xt), xt_first, output="using xts::first")
+  test(2108.36, first(xt, n=2L), xt_first2, output="using xts::first")
 }
-test(2108.41, last(x), 3L, output="using 'x[[length(x)]]': !is.xts(x) & !nargs>1 & is.null(dim(x))")
-test(2108.42, last(y), y[3L], output="using 'x[[length(x)]]': !is.xts(x) & !nargs>1 & is.null(dim(x))")
-test(2108.51, first(x), 1L, output="using 'x[[1L]]': !is.xts(x) & !nargs>1 & is.null(dim(x))")
-test(2108.52, first(y), y[1L], output="using 'x[[1L]]': !is.xts(x) & !nargs>1 & is.null(dim(x))")
-test(2108.610, last(df), structure(list(a=2L, b=2L), row.names=2L, class="data.frame"), output="using 'x[nrow(x),]': !is.xts(x) & !nargs>1 & is.data.frame(x)")
-test(2108.611, last(as.data.table(df), na.rm=TRUE), data.table(a=2L,b=2L), output="last: using last(na.omit(x)): na.rm=TRUE")
-test(2108.62, last(dt), data.table(a=2L, b=2L), output="using 'x[nrow(x),]': !is.xts(x) & !nargs>1 & is.data.frame(x)")
-test(2108.710, first(df), structure(list(a=1L, b=3L), row.names=1L, class="data.frame"), output="using 'x[1L,]': !is.xts(x) & !nargs>1 & is.data.frame(x)")
-test(2108.711, first(as.data.table(df), na.rm=TRUE), data.table(a=1L, b=3L), output="first: using first(na.omit(x)): na.rm=TRUE")
-test(2108.72, first(dt), data.table(a=1L, b=3L), output="using 'x[1L,]': !is.xts(x) & !nargs>1 & is.data.frame(x)")
+test(2108.41, last(x), 3L)
+test(2108.42, last(y), y[3L])
+test(2108.51, first(x), 1L)
+test(2108.52, first(y), y[1L])
+test(2108.610, last(df), structure(list(a=2L, b=2L), row.names=2L, class="data.frame"))
+test(2108.611, last(as.data.table(df), na.rm=TRUE), data.table(a=2L,b=2L))
+test(2108.62, last(dt), data.table(a=2L, b=2L))
+test(2108.710, first(df), structure(list(a=1L, b=3L), row.names=1L, class="data.frame"))
+test(2108.711, first(as.data.table(df), na.rm=TRUE), data.table(a=1L, b=3L))
+test(2108.72, first(dt), data.table(a=1L, b=3L))
 # matrix/array utils::tail behavior is likely to change in future R, Michael is more in the topic
-test(2108.81, last(mx), structure(c(3L, 6L, 9L), .Dim = c(1L, 3L), .Dimnames = list("[3,]", NULL)), output="using utils::tail: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
-expected = if (base::getRversion() < "3.7.0") 27L else structure(c(3L, 6L, 9L, 12L, 15L, 18L, 21L, 24L, 27L), .Dim = c(1L, 3L, 3L), .Dimnames = list("[3,]", NULL, NULL)) #4127
-test(2108.82, last(ar), expected, output="using utils::tail: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
-test(2108.91, first(mx), structure(c(1L, 4L, 7L), .Dim = c(1L, 3L)), output="using utils::head: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
-expected = if (base::getRversion() < "3.7.0") 1L else structure(c(1L, 4L, 7L, 10L, 13L, 16L, 19L, 22L, 25L), .Dim = c(1L, 3L, 3L)) #4127
-test(2108.92, first(ar), expected, output="using utils::head: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
+test(2108.81, last(mx), structure(c(3L, 6L, 9L), .Dim = c(1L, 3L), .Dimnames = list("[3,]", NULL)))
+test(2108.82, last(ar), if (base::getRversion()<"3.7.0") 27L else structure(c(3L, 6L, 9L, 12L, 15L, 18L, 21L, 24L, 27L), .Dim = c(1L, 3L, 3L), .Dimnames = list("[3,]", NULL, NULL)))  # utils:tail, #4127
+test(2108.91, first(mx), structure(c(1L, 4L, 7L), .Dim = c(1L, 3L)))
+test(2108.92, first(ar), if (base::getRversion()<"3.7.0") 1L else structure(c(1L, 4L, 7L, 10L, 13L, 16L, 19L, 22L, 25L), .Dim = c(1L, 3L, 3L)))
 options(old)
 
 # error in autonaming by={...}, #3156
@@ -18704,49 +18688,78 @@ test(2234.7, DT[, min(.SD), by=c(.I)], data.table(I=1L:5L, V1=c(1L, 2L, 3L, 2L, 
 test(2234.8, DT[, min(.SD), by=.I%%2L], error="by.*contains .I.*supported")  # would be nice to support in future; i.e. by odd/even rows, and by=(.I+1L)%/%2L for pairs of rows; i.e. any expression of .I
 test(2234.9, DT[, min(.SD), by=somefun(.I)], error="by.*contains .I.*supported")
 
-# add na.rm argument to first/last #4446 #4239
-DT = data.table( a  = c(1L,1L,2L,2L,3L,3L,4L,4L),
-                 bi = c(NA, NA, NA, 1L:4L, NA),
-                 bs = c(NA, NA, NA, letters[1:4], NA))
-DT2 = data.table(i  = c(1,1,2,2),
-                 l  = c(NA, TRUE, FALSE, NA),
-                 c  = c(1+1i, NA, 2+2i, NA),
-                 n  = c(sqrt(2), NA, NA, sqrt(5)),
-                 ll = list(NA, list(1,2), list(2,3), NA))
-vec = DT$bi
-test(2235.01, first(vec, na.rm=TRUE), 1L)
-test(2235.02, last(vec, na.rm=TRUE), 4L)
-test(2235.03, DT[, .(first(bi, na.rm=TRUE)), a], data.table(a=1L:4L, V1=c(NA,1L,2L,4L)))
-test(2235.04, DT[, .(last(bi, na.rm=TRUE)), a], data.table(a=1L:4L, V1=c(NA,1L,3L,4L)))
-test(2235.05, DT[, .(first(bs, na.rm=TRUE)), a], data.table(a=1L:4L, V1=c(NA,"a","b","d")))
-test(2235.06, DT[, .(last(bs, na.rm=TRUE)), a], data.table(a=1L:4L, V1=c(NA,"a","c","d")))
-test(2235.07, first(DT, na.rm=TRUE), data.table(a=2L, bi=1L, bs="a"))
-test(2235.08, setDT(last(DT, na.rm=TRUE)), data.table(a=4L, bi=4L, bs="d")) #see #3047 why setDT
-DT = data.table(a=c(1L,1L,2L,2L,3L,3L,4L,4L), comp=c(NA, NA, NA, sapply(-1:-4, as.complex), NA))
-test(2235.09, DT[, .(first(comp, na.rm=TRUE)), a],
-  data.table(a=1L:4L, V1=c(NA_complex_,-1+0i,-2+0i,-4+0i)))
-test(2235.10, DT[, .(last(comp, na.rm=TRUE)), a],
-  data.table(a=1L:4L, V1=c(NA_complex_,-1+0i,-3+0i,-4+0i)))
-DT2 = data.table(i=c(1,2,1,2),
-                 l=c(FALSE, TRUE, NA, NA),
-                 c=c(NA, NA, 1+1i, 2+2i),
-                 n=c(sqrt(2), NA, NA, sqrt(5)),
-                 ll=list(NULL, list(1), list(2), NULL))
-DT2_res = data.table(i=c(1,2), l=c(FALSE,TRUE), c=c(1+1i, 2+2i), n=c(sqrt(2), sqrt(5)), ll=list(list(2), list(1)))
-test(2235.11, DT2[, lapply(.SD, first, na.rm=TRUE), i], DT2_res)
-test(2235.12, DT2[, lapply(.SD, last, na.rm=TRUE), i], DT2_res)
-test(2235.13, DT2[, lapply(.SD, first, na.rm=NA), i], error="na.rm must be TRUE or FALSE")
-test(2235.14, first(1L:5L, -1L, na.rm=TRUE), error="na.rm=TRUE is currently only supported for n=1.")
-test(2235.15,  last(1L:5L, -1L, na.rm=TRUE), error="na.rm=TRUE is currently only supported for n=1.")
-test(2235.16, first(list(), na.rm=TRUE), list())
-test(2235.17,  last(list(), na.rm=TRUE), list())
-DT = data.table(a=c(1L,NA,NA,NA), b=c(1L,2L))
-test(2235.18, DT[, first(a, na.rm=TRUE), b], data.table(b=c(1L, 2L), V1=c(1L, NA)))
-test(2235.19, DT[,  last(a, na.rm=TRUE), b], data.table(b=c(1L, 2L), V1=c(1L, NA)))
-old = options(datatable.verbose=TRUE)
-test(2235.20, first(rep(NA, 10), na.rm=TRUE), NA, output="first: using first(x[!is.na(x)]): na.rm=TRUE")
-test(2235.21,  last(rep(NA, 10), na.rm=TRUE), NA, output="last: using last(x[!is.na(x)]): na.rm=TRUE")
+# add na.rm argument to first/last, #4446 #4239
+DT = data.table( grp = INT(c(1,1,     2,2,2,               3,          4,4)),
+                 A =   INT(c(1,NA,    NA,2,NA,             NA,         3,3)),
+                 B =       c(NA,1,    pi,3,NA,             3,          pi,NA),
+                 C =       c("a",NA,  NA,"b",NA,           "c",        "d",NA),
+                 D =       c(NA,1i,   2i,3i,NA,            NA,         4i,NA),
+                 E =    list(NA,1:2,  NA,letters[1:2],NA,  list(1:2),  3:4,NA))
+# to encourage adding cases to DT above (some NAs, all NAs, NAs beginning and/or end within group, types, etc) we
+# define helper functions FNNA and LNNA here to construct the correct result to test against. Explicitly coding
+# all the results instead may reveal mistakes and be good but then might be inflexible to adding more cases.
+FNNA = function(x) {  # First Not NA
+  nna = which(!is.na(x))
+  if (length(nna)) x[nna[1L]]          else if (is.list(x)) list(NA) else x[NA_integer_]
+}
+LNNA = function(x) {  # Last Not NA
+  nna = which(!is.na(x))
+  if (length(nna)) x[nna[length(nna)]] else if (is.list(x)) list(NA) else x[NA_integer_]
+}
+test_no = 2235.0
+for (col in setdiff(names(DT), "grp")) {
+  # test vector input to first/last outside of DT[] query
+  test(test_no+.01, first(DT[[col]], na.rm=TRUE), ans<-FNNA(DT[[col]]))
+  test(test_no+.02, first(DT[[col]], na.rm="row"), ans)   # "row" same as TRUE for vectors
+  test(test_no+.03, last(DT[[col]], na.rm=TRUE), ans<-LNNA(DT[[col]]))
+  test(test_no+.04, last(DT[[col]], na.rm="row"), ans)
+  
+  # one function by group with and without .() wrapper
+  test(test_no+.05, EVAL("DT[, .(first(",col,",na.rm=TRUE)), by=grp, verbose=TRUE]"),
+               ans<-EVAL("DT[, .(FNNA(",col,")),             by=grp]"), output="GForce optimized.*gfirst")
+  if (col!="E")  # subets of list columns need to be done within .() otherwise j's result looks like multiple columns
+    test(test_no+.06, EVAL("DT[, first(",col,",na.rm=TRUE),  by=grp, verbose=TRUE]"),
+                      ans,                                              output="GForce optimized.*gfirst")
+  test(test_no+.07, EVAL("DT[, .(last(",col,",na.rm=TRUE)),  by=grp, verbose=TRUE]"),
+               ans<-EVAL("DT[, .(LNNA(",col,")),             by=grp]"), output="GForce optimized.*glast")
+  if (col!="E")
+    test(test_no+.08, EVAL("DT[, last(",col,",na.rm=TRUE),   by=grp, verbose=TRUE]"),
+                      ans,                                              output="GForce optimized.*glast")
+  test_no = test_no+.1
+}
+test(2236.01, first(DT), DT[1,])
+test(2236.02, first(DT, na.rm=TRUE), data.table(grp=1L, A=1L, B=1, C="a", D=1i, E=list(1:2)))  # first non-NA in each column
+test(2236.03, first(DT, na.rm="row"), DT[4])                                                   # first row with no NA
+test(2236.04, last(DT), DT[.N,])
+test(2236.05, last(DT, na.rm=TRUE),  data.table(grp=4L, A=3L, B=pi, C="d", D=4i, E=list(3:4)))
+test(2236.06, last(DT, na.rm="row"), DT[7])
+DF = as.data.frame(DT)
+test(2236.11, first(DF), DF[1,])
+test(2236.12, first(DF, na.rm=TRUE), {x=data.frame(grp=1L, A=1L, B=1, C="a", D=1i); x$E=list(1:2); x})  # with E inside data.frame() it recycles to 2 rows
+test(2236.13, first(DF, na.rm="row"), DF[4,])
+test(2236.14, last(DF), DF[8,])
+test(2236.15, last(DF, na.rm=TRUE),  {x=data.frame(grp=4L, A=3L, B=pi, C="d", D=4i); x$E=list(3:4); x})
+test(2236.16, last(DF, na.rm="row"), DF[7,])
+test(2236.21, first(list(), na.rm=TRUE), list())
+test(2236.22, last(list(), na.rm=TRUE), list())
+test(2236.31, DT[, first(.SD, na.rm=TRUE), by=grp, verbose=TRUE],
+              ans<-data.table(grp=1:4, A=c(1L,2L,NA,3L), B=c(1,pi,3,pi), C=c("a","b","c","d"), D=c(1i,2i,NA,4i), E=list(1:2,c("a","b"),list(1:2),3:4)),
+              output="GForce optimized.*gfirst")
+test(2236.32, DT[, lapply(.SD, first, na.rm=TRUE), by=grp, verbose=TRUE], ans, output="GForce optimized.*gfirst")
+old = options(datatable.optimize=0)
+test(2236.33, DT[, first(.SD, na.rm=TRUE), by=grp, verbose=TRUE], ans, notOutput="gfirst")
+test(2236.34, DT[, lapply(.SD, first, na.rm=TRUE), by=grp, verbose=TRUE], ans, notOutput="gfirst")
 options(old)
-test(2235.22, first(DT[2, "a"], na.rm=TRUE), data.table(a=NA_integer_))
-test(2235.23, last(DT[2, "a"], na.rm=TRUE), data.table(a=NA_integer_))
+test(2236.41, DT[, first(.SD, na.rm='row'), by=grp, verbose=TRUE],
+              ans<-data.table(grp=1:4, A=c(NA,2L,NA,3L), B=c(NA,3,NA,pi), C=c(NA,"b",NA,"d"), D=c(NA,3i,NA,4i), E=list(NULL,c("a","b"),NULL,3:4)),
+              notOutput="GForce optimized")   # TODO: could try and gforce optimize in future                          ^^ TODO should be NA; it's because DT[NA_integer_] returns NULL for list columns
+# TODO:
+# .(first(one col), last(another col)) by group optimized
+# n>1 implemented but not yet tested
+# first/last of .SD with na.rm TRUE and 'row' by group with n>1 too
+# test error if n<=0
+# E (type list) needs an all-NA group (e.g. group 3 then it can be a size-1 group that is all-NA too) and some NULLs
+# last versions for .31-.41
+# news item example of prior syntax for last(.SD, na.rm="row") and benchmark.
+# cover error if na.rm is not FALSE, TRUE or 'row' when optimized and not optimized by group, and outside query 
 

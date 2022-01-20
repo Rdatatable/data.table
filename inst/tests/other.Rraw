@@ -114,9 +114,10 @@ if (loaded[["xts"]]) {
 if (loaded[["gdata"]]) {
   if (!loaded[["xts"]]) warning("The gdata test expects xts loaded as well since all 3 have a last() function.")
   x = list("a",1:2,89)
-  test(6.1, xts::last(x), list(89))   # would prefer 89 here like data.table does, since "last" means the last one (never more than one) so why retain the one-item list() level?
-  test(6.2, gdata::last(x), list(89))
-  test(6.3, data.table::last(x), 89)
+  test(6.1, xts::last(x), list(89))
+  test(6.2, gdata::last(x), list(89))    
+  test(6.3, data.table::last(x), list(89))  # from 1.14.4 which supports n>1 more, last() retains list() so that a consistent type is return between n=1 and n>1.
+                                            # or we could divert users to head and tail and keep first() and last() as originally intended for n=1
   DT = data.table(a=7:9)
   test(6.4, setDT(xts::last(DT)), data.table(a=9L))        # xts 0.11-0 changes from 9L to data.table(a=9L), setDT added due to "Test 6.4 ran without errors but selfrefok(x) is FALSE", see #3047
   test(6.5, data.table::last(DT), DT[3L])

@@ -1,130 +1,63 @@
-# data.table defined last(x) with no arguments, just for last. If you need the last 10 then use tail(x,10).
-# for xts class objects it will dispatch to xts::last
-# reworked to avoid loading xts namespace (#3857) then again to fix dispatching of xts class (#4053)
-last = function(x, n=1L, na.rm=FALSE, ...) {
-  verbose = isTRUE(getOption("datatable.verbose", FALSE))
-
-  stopifnot(isTRUEorFALSE(na.rm))
-
-  if (na.rm) {
-    if (n!=1L)
-      stop("na.rm=TRUE is currently only supported for n=1.")
-    if (is.vector(x) && length(x)) {
-      if (verbose) catf("%s: using %s(%s): na.rm=TRUE\n", "last", "last", "x[!is.na(x)]")
-      x_na = x[!is.na(x)]
-      if(length(x_na))
-        return(x_na[length(x_na)])
-      else
-        return(x[length(x)])
-    } else if (is.data.frame(x) && nrow(x)>0) {
-      if (verbose) catf("%s: using %s(%s): na.rm=TRUE\n", "last", "last", "na.omit(x)")
-      x_na = na.omit(x)
-      if (nrow(x_na)>0)
-        return(x_na[nrow(x_na),])
-      else
-        return(x[nrow(x),])
-    }
-  }
-
-  if (!inherits(x, "xts")) {
-    if (nargs()>1L) {
-      if ("package:xts" %chin% search()) {
-        if (verbose)
-          catf("%s: using %s: %s\n", "last", "xts::last", "!is.xts(x) & nargs>1 & 'package:xts'%in%search()")
-        xts::last(x, n=n, ...)
-      } else {
-        # nocov start
-        if (verbose)
-          catf("%s: using %s: %s\n", "last", "utils::tail", "!is.xts(x) & nargs>1 & !'package:xts'%in%search()")
-        utils::tail(x, n=n, ...)
-        # nocov end
-      }
-    } else {
-      dx = dim(x)
-      if (is.null(dx)) {
-        if (verbose)
-          catf("%s: using %s: %s\n", "last", "'x[[length(x)]]'", "!is.xts(x) & !nargs>1 & is.null(dim(x))")
-        lx = length(x)
-        if (!lx) x else x[[lx]]
-      } else if (is.data.frame(x)) {
-        if (verbose)
-          catf("%s: using %s: %s\n", "last", "'x[nrow(x),]'", "!is.xts(x) & !nargs>1 & is.data.frame(x)")
-        x[dx[1L], , drop=FALSE]
-      } else {
-        if (verbose)
-          catf("%s: using %s: %s\n", "last", "utils::tail", "!is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
-        utils::tail(x, n=n, ...)
-      }
-    }
-  } else {
-    if (!requireNamespace("xts", quietly=TRUE))
-      stopf("'xts' class passed to %s function but 'xts' is not available, you should have 'xts' installed already", "data.table::last") # nocov
-    if (verbose)
-      catf("%s: using %s: %s\n", "last", "xts::last", "is.xts(x)")
-    xts::last(x, n=n, ...)
-  }
-}
+# data.table originally defined first(x) and last(x) with no arguments just for the single
+# first/last observation. Over time n= has been added since xts::last has n so now it makes
+# sense to support n. The difference to head/tail is that the default here is n=1 rather than n=6.
 
 first = function(x, n=1L, na.rm=FALSE, ...) {
-  verbose = isTRUE(getOption("datatable.verbose", FALSE))
-
-  stopifnot(isTRUEorFALSE(na.rm))
-
-  if (na.rm) {
-    if (n!=1L)
-      stop("na.rm=TRUE is currently only supported for n=1.")
-    if (is.vector(x) && length(x)) {
-      if (verbose) catf("%s: using %s(%s): na.rm=TRUE\n", "first", "first", "x[!is.na(x)]")
-      x_na = x[!is.na(x)]
-      if(length(x_na))
-        return(x_na[1])
-      else
-        return(x[1])
-    } else if (is.data.frame(x) && nrow(x)>0) {
-      if (verbose) catf("%s: using %s(%s): na.rm=TRUE\n", "first", "first", "na.omit(x)")
-      x_na = na.omit(x)
-      if (nrow(x_na)>0)
-        return(x_na[1,])
-      else
-        return(x[1,])
-    }
-  }
-
-  if (!inherits(x, "xts")) {
-    if (nargs()>1L) {
-      if ("package:xts" %chin% search()) {
-        if (verbose)
-          catf("%s: using %s: %s\n", "first", "xts::first", "!is.xts(x) & nargs>1 & 'package:xts'%in%search()")
-        xts::first(x, n=n, ...)
-      } else {
-        # nocov start
-        if (verbose)
-          catf("%s: using %s: %s\n", "first", "utils::head", "!is.xts(x) & nargs>1 & !'package:xts'%in%search()")
-        utils::head(x, n=n, ...)
-        # nocov end
-      }
-    } else {
-      dx = dim(x)
-      if (is.null(dx)) {
-        if (verbose)
-          catf("%s: using %s: %s\n", "first", "'x[[1L]]'", "!is.xts(x) & !nargs>1 & is.null(dim(x))")
-        lx = length(x)
-        if (!lx) x else x[[1L]]
-      } else if (is.data.frame(x)) {
-        if (verbose)
-          catf("%s: using %s: %s\n", "first", "'x[1L,]'", "!is.xts(x) & !nargs>1 & is.data.frame(x)")
-        if (!dx[1L]) x else x[1L, , drop=FALSE]
-      } else {
-        if (verbose)
-          catf("%s: using %s: %s\n", "first", "utils::head", "!is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
-        utils::head(x, n=n, ...)
-      }
-    }
-  } else {
-    if (!requireNamespace("xts", quietly=TRUE))
-      stopf("'xts' class passed to %s function but 'xts' is not available, you should have 'xts' installed already", "data.table::first") # nocov
-    if (verbose)
-      catf("%s: using %s: %s\n", "first", "xts::first", "is.xts(x)")
-    xts::first(x, n=n, ...)
-  }
+  .firstlast(x, n=n, na.rm=na.rm, first=TRUE, ...)
 }
+
+last = function(x, n=1L, na.rm=FALSE, ...) {
+  .firstlast(x, n=n, na.rm=na.rm, first=FALSE, ...)
+}
+
+.firstlast = function(x, n=1L, na.rm=FALSE, first=TRUE, ...) {
+  if (inherits(x, "xts")) {
+    if (isTRUE(getOption("datatable.verbose", FALSE)))
+      catf("using %s\n", if (first) "xts::first" else "xts::last")
+    return((if (first) xts::first else xts::last)(x, n=n, na.rm=na.rm, ...))
+  }
+  stopifnot(isTRUEorFALSE(na.rm) || identical(na.rm,"row"))
+  .headtail = if (first) utils::head else utils::tail
+  if (is.data.frame(x)) {
+    if (!nrow(x)) return(x)
+    if (identical(na.rm, "row")) {   # any NA on the row removes that row
+      nna = which_(.Call(Cdt_na, x, seq_along(x)), bool=FALSE)
+      # from na.omit.data.table without calling na.omit which would subset all non-NA rows
+      # TODO: n and first/last could be passed to Cdt_na and it could stop after finding n
+      nna = .headtail(nna, n=n)
+      if (!length(nna)) nna=NA_integer_    # TODO: extra argument all.na=NA|NULL could control this
+      return(x[nna,,drop=FALSE])
+    }
+    if (isTRUE(na.rm)) {  #  select the first/last non-NA within each column
+      ans = lapply(x, .narmVector, n=n, first=first)
+      l = sapply(ans, length)
+      m = max(l)
+      for (i in which(l<m)) {  # pad with NA
+        ans[[i]] = if (first) c(ans[[i]], rep(NA, m-l[i]))
+                   else       c(rep(NA, m-l[i]), ans[[i]])
+      }
+      if (is.data.table(x)) setDT(ans) else setDF(ans)
+      setattr(ans, "class", class(x))
+      return(ans)
+    }
+    # na.rm=FALSE
+    return(.headtail(x, n=n, ...))
+  }
+  if (!length(x))
+    return(x)
+  if (is.vector(x) && !isFALSE(na.rm))
+    return(.narmVector(x, n=n, first=first))
+  if (!isFALSE(na.rm))
+    stopf("na.rm=TRUE|'row' is not currently supported for '%s'", class(x)[1L])
+  .headtail(x, n=n, ...)  
+  # TODO when n=1, return(x[length(x)]) would save method dispatch overhead
+  # TODO and previous version had lx = length(x); if (!lx) x else x[[lx]].  So empty input returned empty
+}
+
+.narmVector = function(x, n, first) {
+  nna = which_(is.na(x), bool=FALSE)   # TODO: again, n and first/last could be passed to C here
+  if (!length(nna)) x[NA_integer_]
+  else if (n==1L)   x[nna[if (first) 1L else length(nna)]]
+  else              x[(if (first) utils::head else utils::tail)(nna, n)]  # TODO: avoid dispatch here and do ourselves since just a vector
+}
+
