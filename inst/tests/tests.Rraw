@@ -18764,13 +18764,17 @@ options(old)
 test(2236.45, DT[, last(.SD, na.rm='row'), by=grp, verbose=TRUE],
               ans<-data.table(grp=1:4, A=c(NA,2L,NA,3L), B=c(NA,3,NA,pi), C=c(NA,"b",NA,"d"), D=c(NA,3i,NA,4i), E=list(NULL,c("a","b"),NULL,3:4)),
               notOutput="GForce optimized")   # TODO: could try and gforce optimize in future                          ^^ TODO should be NA; it's because DT[NA_integer_] returns NULL for list columns
+test(2236.51, DT[, .(last(A,na.rm=TRUE), first(B, na.rm=TRUE), last(C)), by=grp, verbose=TRUE],
+              data.table(grp=1:4, V1=c(1L, 2L, NA, 3L), V2=c(1,pi,3,pi), V3=c(NA,NA,"c",NA)),
+              output="GForce optimized.*glast.*gfirst.*glast")
+              
 
 # TODO:
-# .(first(one col), last(another col)) by group optimized
 # n>1 implemented but not yet tested
 # first/last of .SD with na.rm TRUE and 'row' by group with n>1 too
 # test error if n<=0
 # E (type list) needs an all-NA group (e.g. group 3 then it can be a size-1 group that is all-NA too) and some NULLs
 # news item example of prior syntax for last(.SD, na.rm="row") and benchmark.
-# cover error if na.rm is not FALSE, TRUE or 'row' when optimized and not optimized by group, and outside query 
+# cover error if na.rm is not FALSE, TRUE or 'row' when optimized and not optimized by group, and outside query
+# NULL->NA in 2236.35 and 2236.45
 
