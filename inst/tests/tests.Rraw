@@ -18750,16 +18750,27 @@ old = options(datatable.optimize=0)
 test(2236.33, DT[, first(.SD, na.rm=TRUE), by=grp, verbose=TRUE], ans, notOutput="gfirst")
 test(2236.34, DT[, lapply(.SD, first, na.rm=TRUE), by=grp, verbose=TRUE], ans, notOutput="gfirst")
 options(old)
-test(2236.41, DT[, first(.SD, na.rm='row'), by=grp, verbose=TRUE],
+test(2236.35, DT[, first(.SD, na.rm='row'), by=grp, verbose=TRUE],
               ans<-data.table(grp=1:4, A=c(NA,2L,NA,3L), B=c(NA,3,NA,pi), C=c(NA,"b",NA,"d"), D=c(NA,3i,NA,4i), E=list(NULL,c("a","b"),NULL,3:4)),
               notOutput="GForce optimized")   # TODO: could try and gforce optimize in future                          ^^ TODO should be NA; it's because DT[NA_integer_] returns NULL for list columns
+test(2236.41, DT[, last(.SD, na.rm=TRUE), by=grp, verbose=TRUE],
+              ans<-data.table(grp=1:4, A=c(1L,2L,NA,3L), B=c(1,3,3,pi), C=c("a","b","c","d"), D=c(1i,3i,NA,4i), E=list(1:2,c("a","b"),list(1:2),3:4)),
+              output="GForce optimized.*glast")
+test(2236.42, DT[, lapply(.SD, last, na.rm=TRUE), by=grp, verbose=TRUE], ans, output="GForce optimized.*glast")
+old = options(datatable.optimize=0)
+test(2236.43, DT[, last(.SD, na.rm=TRUE), by=grp, verbose=TRUE], ans, notOutput="glast")
+test(2236.44, DT[, lapply(.SD, last, na.rm=TRUE), by=grp, verbose=TRUE], ans, notOutput="glast")
+options(old)
+test(2236.45, DT[, last(.SD, na.rm='row'), by=grp, verbose=TRUE],
+              ans<-data.table(grp=1:4, A=c(NA,2L,NA,3L), B=c(NA,3,NA,pi), C=c(NA,"b",NA,"d"), D=c(NA,3i,NA,4i), E=list(NULL,c("a","b"),NULL,3:4)),
+              notOutput="GForce optimized")   # TODO: could try and gforce optimize in future                          ^^ TODO should be NA; it's because DT[NA_integer_] returns NULL for list columns
+
 # TODO:
 # .(first(one col), last(another col)) by group optimized
 # n>1 implemented but not yet tested
 # first/last of .SD with na.rm TRUE and 'row' by group with n>1 too
 # test error if n<=0
 # E (type list) needs an all-NA group (e.g. group 3 then it can be a size-1 group that is all-NA too) and some NULLs
-# last versions for .31-.41
 # news item example of prior syntax for last(.SD, na.rm="row") and benchmark.
 # cover error if na.rm is not FALSE, TRUE or 'row' when optimized and not optimized by group, and outside query 
 

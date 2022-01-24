@@ -291,26 +291,51 @@
     # 1:     1     8
     # 2:     2    10
     ```
-    
-40. `first()` and `last()` gain `na.rm`, [#4446](https://github.com/Rdatatable/data.table/issues/4446). The additional argument `na.rm` is also added to the GForce optimized versions of `first` and `last` where `NA` is still returned as first/last for groups only consisting of `NA`s, [#4239](https://github.com/Rdatatable/data.table/issues/4239). Thanks to Nicolas Bennett and Michael Chirico for the requests, and Benjamin Schwendinger for the PR.
+
+40. `first()` and `last()` gain `na.rm` taking values `FALSE` (default), `TRUE` or `"row"`, [#4239](https://github.com/Rdatatable/data.table/issues/4239). For vector input, `TRUE` and `"row"` are the same. For `data.table|frame` input, `TRUE` returns the first/last non-NA observation in each column, while `"row"` returns the first/last row where all columns are non-NA. `TRUE` is optimized by group. `"row"` may be optimized by group in future. Thanks to Nicolas Bennett and Michael Chirico for the requests, and Benjamin Schwendinger for the PR.
 
     ```R
+    x
+    # [1] NA  1  2 NA
+
+    first(x)
+    # NA
+
+    first(x, na.rm=TRUE)
+    # 1
+
+    last(x, na.rm=TRUE)
+    # 2
+
     DT
-    #       a     b     c
+    #     grp     A     B
     #   <int> <int> <int>
-    #1:     1     1     1
-    #2:     2     2    NA
-    #3:     3     1    NA
-    #4:    NA     2    NA
+    #1:     1     3     7
+    #2:     1     4    NA
+    #3:     2     5    NA
+    #4:     2     6    NA
+
     last(DT, na.rm=TRUE)
-    #       a     b     c
+    #     grp     A     B
     #   <int> <int> <int>
-    #1:     1     1     1
-    DT[, last(.SD, na.rm=TRUE), b]
-    #       b     a     c
+    #1:     2     6     7
+
+    last(DT, na.rm="row")
+    #     grp     A     B
     #   <int> <int> <int>
-    #1:     1     1     1
-    #2:     2     NA    NA
+    #1:     1     3     7
+
+    DT[, last(.SD, na.rm=TRUE), by=grp]
+    #     grp     A     B
+    #   <int> <int> <int>
+    #1:     1     4     7
+    #2:     2     6    NA
+
+    DT[, last(.SD, na.rm="row"), by=grp]
+    #     grp     A     B
+    #   <int> <int> <int>
+    #1:     1     3     7
+    #2:     2    NA    NA    
     ```
 
 ## BUG FIXES
