@@ -2207,7 +2207,7 @@ tail.data.table = function(x, n=6L, ...) {
   set(x,j=name,value=value)  # important i is missing here
 }
 
-as.data.frame.data.table = function(x, ...)
+as.data.frame.data.table = function(x, row.names = NULL, ...)
 {
   ans = copy(x)
   setattr(ans,"row.names",.set_row_names(nrow(x)))   # since R 2.4.0, data.frames can have non-character row names
@@ -2216,6 +2216,10 @@ as.data.frame.data.table = function(x, ...)
   setattr(ans,"index",NULL)  #4889 #5042
   setattr(ans,".internal.selfref",NULL)
   # leave tl intact, no harm,
+  if(!is.null(row.names)) {
+      rownames(ans) =  ans[, row.names]
+      ans[, row.names] = NULL
+  }
   ans
 }
 
