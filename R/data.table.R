@@ -2209,17 +2209,7 @@ tail.data.table = function(x, n=6L, ...) {
 
 as.data.frame.data.table = function(x, row.names = NULL, ...)
 {
-  ans = copy(x)
-  setattr(ans,"row.names",.set_row_names(nrow(x)))   # since R 2.4.0, data.frames can have non-character row names
-  setattr(ans,"class","data.frame")
-  setattr(ans,"sorted",NULL)  # remove so if you convert to df, do something, and convert back, it is not sorted
-  setattr(ans,"index",NULL)  #4889 #5042
-  setattr(ans,".internal.selfref",NULL)
-  # leave tl intact, no harm,
-  if(!is.null(row.names)) {
-      rownames(ans) =  ans[, row.names]
-      ans[, row.names] = NULL
-  }
+  ans = setDF(copy(x), rownames = row.names)
   ans
 }
 

@@ -544,7 +544,7 @@
 
 51. `merge.data.table()` silently ignored the `incomparables` argument, [#2587](https://github.com/Rdatatable/data.table/issues/2587). It is now implemented and any other ignored arguments (e.g. misspellings) are now warned about. Thanks to @GBsuperman for the report and @ben-schwen for the fix.
 
-56. `as.data.frame.data.table()` now allows for the use of `row.names` argument; it moves the specified column to the `rownames` of the resulting `data.frame`.
+56. `as.data.frame.data.table()` bug fix `as.data.frame.data.table` `S3` method no longer silently ignores `row.names` argument; issue [#5319](https://github.com/Rdatatable/data.table/issues/5319). Usage as such: `as.data.frame(dt, row.names = dt$sample)`. Thanks to @dereckdemezquita for the fix and pull request.
 
 ## NOTES
 
