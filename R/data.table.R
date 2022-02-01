@@ -2209,7 +2209,7 @@ tail.data.table = function(x, n=6L, ...) {
 
 as.data.frame.data.table = function(x, row.names = NULL, ...)
 {
-  ans = setDF(copy(x), rownames = row.names)
+  ans = setDF(copy(x), rownames = row.names) # issue #5319
   ans
 }
 

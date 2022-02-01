@@ -18705,8 +18705,6 @@ test(2234.9, DT[, min(.SD), by=somefun(.I)], error="by.*contains .I.*supported")
 # test for #5320 `as.data.table(x)` `s3` method fixed, no longer ignoring `row.names` argument and simplified with use of `setDT`
 dt = data.table(a=1:2, b=3:4)
 df = structure(list(a=1:2, b=3:4), row.names=c("x", "y"), class="data.frame")
-
 test(2235.1, as.data.frame(dt, row.names=c("x", "y")), df)
-
 df = data.frame(a=1:2, b=3:4)
 test(2235.2, as.data.frame(dt, row.names=NULL), df)
