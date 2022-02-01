@@ -18703,7 +18703,10 @@ test(2234.8, DT[, min(.SD), by=.I%%2L], error="by.*contains .I.*supported")  # w
 test(2234.9, DT[, min(.SD), by=somefun(.I)], error="by.*contains .I.*supported")
 
 # test for #5320 `as.data.table(x)` `s3` method fixed, no longer ignoring `row.names` argument and simplified with use of `setDT`
-DT = data.table::data.table(iris)
-DF = data.frame(iris)
+dt = data.table(a=1:2, b=3:4)
+df = structure(list(a=1:2, b=3:4), row.names=c("x", "y"), class="data.frame")
 
-test(2235.1, as.data.frame(DT, row.names = paste("sample", 1:nrow(DT), sep = "_")), as.data.frame(DF, row.names = paste("sample", 1:nrow(DF), sep = "_")))
+test(2235.1, as.data.frame(dt, row.names=c("x", "y")), df)
+
+df = data.frame(a=1:2, b=3:4)
+test(2235.2, as.data.frame(dt, row.names=NULL), df)
