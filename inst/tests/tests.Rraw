@@ -18772,7 +18772,7 @@ test(2236.62, DT[, last(B,na.rm=TRUE,n=2), by=grp, verbose=TRUE], data.table(grp
 # first/last of .SD with na.rm TRUE and 'row' by group with n>1 too
 # test error if n<=0
 # E (type list) needs an all-NA group (e.g. group 3 then it can be a size-1 group that is all-NA too) and some NULLs
-# news item example of prior syntax for last(.SD, na.rm="row") and benchmark comparing to na.omit by group
+# news item example of prior syntax for last(.SD, na.rm="row")
 # cover error if na.rm is not FALSE, TRUE or 'row' when optimized and not optimized by group, and outside query
 # NULL->NA in 2236.35 and 2236.45
 
