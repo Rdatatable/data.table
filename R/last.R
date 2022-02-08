@@ -1,6 +1,7 @@
 # data.table originally defined first(x) and last(x) with no arguments just for the single
 # first/last observation. Over time n= has been added since xts::last has n so now it makes
-# sense to support n. The difference to head/tail is that the default here is n=1 rather than n=6.
+# sense to support n. The difference to head/tail is the default n=1 vs n=6, and
+# that first/last are not generic for speed by group.
 
 first = function(x, n=1L, na.rm=FALSE, ...) {
   .firstlast(x, n=n, na.rm=na.rm, first=TRUE, ...)

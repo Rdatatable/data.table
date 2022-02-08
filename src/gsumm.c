@@ -909,19 +909,21 @@ SEXP gmedian(SEXP x, SEXP narmArg) {
   return ans;
 }
 
-static SEXP gfirstlast(SEXP x, const bool first, const int w, const bool headw, SEXP narmArg) {
+static SEXP gfirstlast(const SEXP x, const bool first, const SEXP nArg, const bool nthvalue, const SEXP narmArg) {
   if (!IS_TRUE_OR_FALSE(narmArg))
-    error(_("%s must be TRUE or FALSE"), "na.rm");
+    error(_("%s must be TRUE or FALSE"), "na.rm");  // # nocov
   const bool narm = LOGICAL(narmArg)[0];
-  // w: which item (1 other than for gnthvalue when could be >1)
-  // headw: select 1:w of each group when first=true, and (n-w+1):n when first=false (i.e. tail)
+  if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<0)
+    error(_("Internal error, gfirstlast is not implemented for n<0. This should have been caught before. Please report to data.table issue tracker.")); // # nocov
+  const int w = INTEGER(nArg)[0];
+  // select 1:w when first=TRUE, and (n-w+1):n when first=FALSE
+  // or select w'th item when nthvalue=TRUE; e.g. the n=0 case in test 280
   const bool nosubset = irowslen == -1;
   const bool issorted = !isunsorted; // make a const-bool for use inside loops
   const int n = nosubset ? length(x) : irowslen;
   if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, first?"gfirst":"glast");
-  if (w==1 && headw) error(_("Internal error: gfirstlast headw should only be true when w>1"));
   int anslen = ngrp;
-  if (headw) {
+  if (!nthvalue && w>1) {
     anslen = 0;
     for (int i=0; i<ngrp; ++i) {
       anslen += MIN(w, grpsize[i]);
@@ -931,42 +933,35 @@ static SEXP gfirstlast(SEXP x, const bool first, const int w, const bool headw, 
   int ansi = 0;
   #define DO(CTYPE, RTYPE, RNA, ASSIGN) {                                                          \
     const CTYPE *xd = (const CTYPE *)RTYPE(x);                                                     \
-    if (headw) {                                                                                   \
-      /* returning more than 1 per group; w>1 */                                                   \
-      for (int i=0; i<ngrp; ++i) {                                                                 \
-        const int grpn = grpsize[i];                                                               \
+    if (w==1 || !nthvalue) {                                                                       \
+      const int inc = first ? +1 : -1;                                                             \
+      for (int g=0; g<ngrp; ++g) {                                                                 \
+        const int grpn = grpsize[g];                                                               \
         const int thisn = MIN(w, grpn);                                                            \
-        const int jstart = ff[i]-1+ (!first)*(grpn-thisn);                                         \
-        const int jend = jstart+thisn;                                                             \
-        for (int j=jstart; j<jend; ++j) {                                                          \
-          const int k = issorted ? j : oo[j]-1;                                                    \
-          /* ternary on const-bool assumed to be branch-predicted and ok inside loops */           \
+        const int jstart = ff[g]-1 + !first*(grpn-1);                                              \
+        if (!first) ansi+=thisn-1;                                                                 \
+        int read=0, write=0;                                                                       \
+        while (write<thisn && read<grpn) {                                                         \
+          const int k = issorted ? jstart+inc*read : oo[jstart+inc*read]-1;                        \
           const CTYPE val = nosubset ? xd[k] : (irows[k]==NA_INTEGER ? RNA : xd[irows[k]-1]);      \
-          ASSIGN;                                                                                  \
+          /* ternaries on const-bools isorted and nosubset above assumed branch-predicted and */   \
+          /* insignificant inside loop  */                                                         \
+          read++;                                                                                  \
+          if (narm && ISNAT(val)) continue;                                                        \
+          /* const-bool narm and short-circuit-&& means above if() insignificant */                \
+          ASSIGN; write++;                                                                         \
         }                                                                                          \
+        const CTYPE val = RNA;                                                                     \
+        while (write<thisn) { ASSIGN; write++; }  /* when not enough non-NA pad with NA */         \
+        if (!first) ansi+=thisn+1;                                                                 \
       }                                                                                            \
-    } else if (w==1) {                                                                             \
-      for (int i=0; i<ngrp; ++i) {                                                                 \
-        const int j = ff[i]-1 + (first ? 0 : grpsize[i]-1);                                        \
-        const int k = issorted ? j : oo[j]-1;                                                      \
-        CTYPE val = nosubset ? xd[k] : (irows[k]==NA_INTEGER ? RNA : xd[irows[k]-1]);              \
-        if (narm) {                                                                                \
-          for (int l=0; l < grpsize[i]; ++l) {                                                     \
-            const int m = first ? (issorted ? (j+l) : oo[j+l]-1) : (issorted ? (j-l) : oo[j-l]-1); \
-            if (!ISNAT(nosubset ? xd[m] : (irows[m]==NA_INTEGER ? RNA : xd[irows[m]-1]))) {        \
-              val = nosubset ? xd[m] : (xd[irows[m]-1]);                                           \
-              break;                                                                               \
-            }                                                                                      \
-          }                                                                                        \
-        }                                                                                          \
-        ASSIGN;                                                                                    \
-      }                                                                                            \
-    } else if (w>1 && first) {                                                                     \
+    } else if (first) {                                                                     \
       /* gnthvalue */                                                                              \
-      for (int i=0; i<ngrp; ++i) {                                                                 \
-        const int grpn = grpsize[i];                                                               \
-        if (w>grpn) { const CTYPE val=RNA; ASSIGN; continue; }                                     \
-        const int j = ff[i]-1+w-1;                                                                 \
+      const int inc=1;                                                                             \
+      for (int g=0; g<ngrp; ++g) {                                                                 \
+        const int grpn = grpsize[g];                                                               \
+        if (w>grpn || w==0) { const CTYPE val=RNA; ASSIGN; continue; }                                     \
+        const int j = ff[g]-1+w-1;                                                                 \
         const int k = issorted ? j : oo[j]-1;                                                      \
         const CTYPE val = nosubset ? xd[k] : (irows[k]==NA_INTEGER ? RNA : xd[irows[k]-1]);        \
         ASSIGN;                                                                                    \
@@ -974,43 +969,43 @@ static SEXP gfirstlast(SEXP x, const bool first, const int w, const bool headw, 
     } else {                                                                                       \
       /* w>1 && !first not supported because -i in R means everything-but-i and gnthvalue */       \
       /* currently takes n>0 only. However, we could still support n'th from the end, somehow */   \
-      error(_("Internal error: unanticipated case in gfirstlast first=%d w=%d headw=%d"),          \
-              first, w, headw);                                                                    \
+      error(_("Internal error: unanticipated case in gfirstlast first=%d w=%d nthvalue=%d"),       \
+              first, w, nthvalue);                                                                 \
     }                                                                                              \
   }
   switch(TYPEOF(x)) {
   case LGLSXP:  {
     #undef ISNAT
     #define ISNAT(x) ((x)==NA_INTEGER)
-    int      *ansd=LOGICAL(ans);        DO(int,      LOGICAL, NA_LOGICAL,   ansd[ansi++]=val)
+    int      *ansd=LOGICAL(ans);        DO(int,      LOGICAL, NA_LOGICAL,   ansd[ansi]=val; ansi+=inc)
   } break;
   case INTSXP:  {
     #undef ISNAT
     #define ISNAT(x) ((x)==NA_INTEGER)
-    int      *ansd=INTEGER(ans);        DO(int,      INTEGER, NA_INTEGER,   ansd[ansi++]=val)
+    int      *ansd=INTEGER(ans);        DO(int,      INTEGER, NA_INTEGER,   ansd[ansi]=val; ansi+=inc)
   } break;
   case REALSXP: if (INHERITS(x, char_integer64)) {
     #undef ISNAT
     #define ISNAT(x) ((x)==NA_INTEGER64)
-    int64_t *ansd=(int64_t *)REAL(ans); DO(int64_t,  REAL,    NA_INTEGER64, ansd[ansi++]=val)
+    int64_t *ansd=(int64_t *)REAL(ans); DO(int64_t,  REAL,    NA_INTEGER64, ansd[ansi]=val; ansi+=inc)
     } else {
     #undef ISNAT
     #define ISNAT(x) (ISNAN(x))
-    double      *ansd=REAL(ans);        DO(double,   REAL,    NA_REAL,      ansd[ansi++]=val)
+    double      *ansd=REAL(ans);        DO(double,   REAL,    NA_REAL,      ansd[ansi]=val; ansi+=inc)
   } break;
   case CPLXSXP: {
     #undef ISNAT
     #define ISNAT(x) (ISNAN_COMPLEX(x))
-    Rcomplex *ansd=COMPLEX(ans);        DO(Rcomplex, COMPLEX, NA_CPLX,      ansd[ansi++]=val)
+    Rcomplex *ansd=COMPLEX(ans);        DO(Rcomplex, COMPLEX, NA_CPLX,      ansd[ansi]=val; ansi+=inc)
   } break;
   case STRSXP: {
     #undef ISNAT
     #define ISNAT(x) ((x)==NA_STRING)
-    DO(SEXP, STRING_PTR, NA_STRING,                 SET_STRING_ELT(ans,ansi++,val)) } break;
+    DO(SEXP, STRING_PTR, NA_STRING,                 SET_STRING_ELT(ans,ansi,val); ansi+=inc) } break;
   case VECSXP: {
     #undef ISNAT
     #define ISNAT(x) (isLogical(x) && LENGTH(x)==1 && LOGICAL(x)[0]==NA_LOGICAL)
-    DO(SEXP, SEXPPTR_RO, ScalarLogical(NA_LOGICAL), SET_VECTOR_ELT(ans,ansi++,val))  } break;
+    DO(SEXP, SEXPPTR_RO, ScalarLogical(NA_LOGICAL), SET_VECTOR_ELT(ans,ansi,val); ansi+=inc) } break;
   default:
     error(_("Type '%s' is not supported by GForce head/tail/first/last/`[`. Either add the namespace prefix (e.g. utils::head(.)) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
   }
@@ -1019,29 +1014,24 @@ static SEXP gfirstlast(SEXP x, const bool first, const int w, const bool headw, 
   return(ans);
 }
 
-SEXP glast(SEXP x, SEXP narmArg) {
-  return gfirstlast(x, false, 1, false, narmArg);
+SEXP glast(const SEXP x, const SEXP nArg, const SEXP narmArg) {
+  return gfirstlast(x, /*first=*/false, nArg, /*nthvalue=*/false, narmArg);
 }
 
-SEXP gfirst(SEXP x, SEXP narmArg) {
-  return gfirstlast(x, true, 1, false, narmArg);
+SEXP gfirst(const SEXP x, const SEXP nArg, const SEXP narmArg) {
+  return gfirstlast(x, true, nArg, false, narmArg);
 }
 
-SEXP gtail(SEXP x, SEXP nArg) {
-  if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) error(_("Internal error, gtail is only implemented for n>0. This should have been caught before. please report to data.table issue tracker.")); // # nocov
-  const int n=INTEGER(nArg)[0];
-  return n==1 ? glast(x, ScalarLogical(0)) : gfirstlast(x, false, n, true, ScalarLogical(0));
+SEXP gtail(const SEXP x, const SEXP nArg) {
+  return gfirstlast(x, false, nArg, false, ScalarLogical(0));
 }
 
-SEXP ghead(SEXP x, SEXP nArg) {
-  if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) error(_("Internal error, gtail is only implemented for n>0. This should have been caught before. please report to data.table issue tracker.")); // # nocov
-  const int n=INTEGER(nArg)[0];
-  return n==1 ? gfirst(x, ScalarLogical(0)) : gfirstlast(x, true, n, true, ScalarLogical(0));
+SEXP ghead(const SEXP x, const SEXP nArg) {
+  return gfirstlast(x, true, nArg, false, ScalarLogical(0));
 }
 
-SEXP gnthvalue(SEXP x, SEXP nArg) {
-  if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) error(_("Internal error, `g[` (gnthvalue) is only implemented single value subsets with positive index, e.g., .SD[2]. This should have been caught before. please report to data.table issue tracker.")); // # nocov
-  return gfirstlast(x, true, INTEGER(nArg)[0], false, ScalarLogical(0));
+SEXP gnthvalue(const SEXP x, const SEXP nArg) {
+  return gfirstlast(x, /*first=*/true, nArg, /*nthvalue=*/true, ScalarLogical(0));
 }
 
 // TODO: gwhich.min, gwhich.max

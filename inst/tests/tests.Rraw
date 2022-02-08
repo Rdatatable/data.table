@@ -18388,11 +18388,9 @@ for (f1 in funs) {
     } else {
       test(testnum, DT[, shift(x, fill=f2(0))], f1(0:3), warning=w)
     }
-
     testnum = testnum + 0.001
     test(testnum, DT[, shift(x), by=g],               data.table(g=g, V1=f1(c(NA, 1, NA, 3))))
     testnum = testnum + 0.001
-    w = if (identical(f2,as.character) && !identical(f1,as.character)) "Coercing.*character.*to match the type of target vector"
     f = f2(NA)
     test(testnum, DT[, shift(x, fill=f), by=g],  data.table(g=g, V1=f1(c(NA, 1, NA, 3))), warning=w)
     testnum = testnum + 0.001
@@ -18767,14 +18765,14 @@ test(2236.45, DT[, last(.SD, na.rm='row'), by=grp, verbose=TRUE],
 test(2236.51, DT[, .(last(A,na.rm=TRUE), first(B, na.rm=TRUE), last(C)), by=grp, verbose=TRUE],
               data.table(grp=1:4, V1=c(1L, 2L, NA, 3L), V2=c(1,pi,3,pi), V3=c(NA,NA,"c",NA)),
               output="GForce optimized.*glast.*gfirst.*glast")
-              
+test(2236.61, DT[, last(D,na.rm=TRUE,n=2)], c(3i,4i))
+test(2236.62, DT[, last(B,na.rm=TRUE,n=2), by=grp, verbose=TRUE], data.table(grp=c(1L,1L,2L,2L,3L,4L,4L), V1=c(NA,1,pi,3,3,NA,pi)), output="GForce.*glast")
 
 # TODO:
-# n>1 implemented but not yet tested
 # first/last of .SD with na.rm TRUE and 'row' by group with n>1 too
 # test error if n<=0
 # E (type list) needs an all-NA group (e.g. group 3 then it can be a size-1 group that is all-NA too) and some NULLs
-# news item example of prior syntax for last(.SD, na.rm="row") and benchmark.
+# news item example of prior syntax for last(.SD, na.rm="row") and benchmark comparing to na.omit by group
 # cover error if na.rm is not FALSE, TRUE or 'row' when optimized and not optimized by group, and outside query
 # NULL->NA in 2236.35 and 2236.45
 
