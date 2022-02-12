@@ -18791,7 +18791,6 @@ test(2236.86, DT[,last(A, n=-1),by=grp,verbose=TRUE], error="n.*is not TRUE", ou
 
 # TODO:
 # E (type list) needs an all-NA group (e.g. group 3 then it can be a size-1 group that is all-NA too) and some NULLs
-# news item example of prior syntax for last(.SD, na.rm="row")
 # cover error if na.rm is not FALSE, TRUE or 'row' when optimized and not optimized by group, and outside query
 # NULL->NA in 2236.35 and 2236.45
 

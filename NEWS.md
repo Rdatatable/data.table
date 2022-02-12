@@ -336,6 +336,11 @@
     #   <int> <int> <int>
     #1:     1     3     7
     #2:     2    NA    NA
+    
+    DT[, last(na.omit(.SD)), by=grp]  # prior method for na.rm="row"
+    #     grp     A     B
+    #   <int> <int> <int>
+    #1:     1     3     7
 
     set.seed(1)
     DT = data.table(id=rep(1:1e6, each=10),
