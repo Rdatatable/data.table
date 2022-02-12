@@ -18782,9 +18782,14 @@ test(2236.73, DT[, first(.SD, na.rm=TRUE, n=2), by=grp, verbose=TRUE],
 test(2236.74, DT[, first(.SD, na.rm="row", n=2), by=grp, verbose=TRUE],
               data.table(grp=INT(1,1,2,2,3,4,4), A=c(NA,NA,2L,NA,NA,3L,NA), B=c(NA,NA,3,NA,NA,pi,NA), C=c(NA,NA,"b",NA,NA,"d",NA), D=c(NA,NA,3i,NA,NA,4i,NA), E=list(NULL,NULL,c("a","b"),NULL,NULL,3:4,NULL)),
               output="GForce FALSE")
+test(2236.81, first(DT$A, n=-1), error="n.*is not TRUE")
+test(2236.82, DT[,first(A, n=-1)], error="n.*is not TRUE")
+test(2236.83, DT[,first(A, n=-1),by=grp,verbose=TRUE], error="n.*is not TRUE", output="GForce FALSE")
+test(2236.84, last(DT$A, n=-1), error="n.*is not TRUE")
+test(2236.85, DT[,last(A, n=-1)], error="n.*is not TRUE")
+test(2236.86, DT[,last(A, n=-1),by=grp,verbose=TRUE], error="n.*is not TRUE", output="GForce FALSE")
 
 # TODO:
-# test error if n<=0
 # E (type list) needs an all-NA group (e.g. group 3 then it can be a size-1 group that is all-NA too) and some NULLs
 # news item example of prior syntax for last(.SD, na.rm="row")
 # cover error if na.rm is not FALSE, TRUE or 'row' when optimized and not optimized by group, and outside query

@@ -354,6 +354,27 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     }
     assign("prevtest", num, parent.frame(), inherits=TRUE)
   }
+  if (length(output) || length(notOutput)) {
+    if (out[length(out)] == "NULL") out = out[-length(out)]
+    out = paste(out, collapse="\n")
+    output = paste(output, collapse="\n")  # so that output= can be either a \n separated string, or a vector of strings.
+    if (length(output) && !string_match(output, out)) {
+      # nocov start
+      catf("Test %s did not produce correct output:\n", numStr)
+      catf("Expected: <<%s>>\n", encodeString(output))  # \n printed as '\\n' so the two lines of output can be compared vertically
+      catf("Observed: <<%s>>\n", encodeString(out))
+      fail = TRUE
+      # nocov end
+    }
+    if (length(notOutput) && string_match(notOutput, out, ignore.case=TRUE)) {
+      # nocov start
+      catf("Test %s produced output but should not have:\n", numStr)
+      catf("Expected absent (case insensitive): <<%s>>\n", encodeString(notOutput))
+      catf("Observed: <<%s>>\n", encodeString(out))
+      fail = TRUE
+      # nocov end
+    }
+  }
   if (!fail) for (type in c("warning","error","message")) {
     observed = actual[[type]]
     expected = get(type)
@@ -387,27 +408,6 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     catf("Output captured before unexpected warning/error/message:\n")
     writeLines(out)
     # nocov end
-  }
-  if (!fail && !length(error) && (length(output) || length(notOutput))) {
-    if (out[length(out)] == "NULL") out = out[-length(out)]
-    out = paste(out, collapse="\n")
-    output = paste(output, collapse="\n")  # so that output= can be either a \n separated string, or a vector of strings.
-    if (length(output) && !string_match(output, out)) {
-      # nocov start
-      catf("Test %s did not produce correct output:\n", numStr)
-      catf("Expected: <<%s>>\n", encodeString(output))  # \n printed as '\\n' so the two lines of output can be compared vertically
-      catf("Observed: <<%s>>\n", encodeString(out))
-      fail = TRUE
-      # nocov end
-    }
-    if (length(notOutput) && string_match(notOutput, out, ignore.case=TRUE)) {
-      # nocov start
-      catf("Test %s produced output but should not have:\n", numStr)
-      catf("Expected absent (case insensitive): <<%s>>\n", encodeString(notOutput))
-      catf("Observed: <<%s>>\n", encodeString(out))
-      fail = TRUE
-      # nocov end
-    }
   }
   if (!fail && !length(error) && (!length(output) || !missing(y))) {   # TODO test y when output=, too
     y = try(y,TRUE)

@@ -18,6 +18,7 @@ last = function(x, n=1L, na.rm=FALSE, ...) {
     return((if (first) xts::first else xts::last)(x, n=n, na.rm=na.rm, ...))
   }
   stopifnot(isTRUEorFALSE(na.rm) || identical(na.rm,"row"))
+  stopifnot(is.numeric(n), length(n)==1L, n>=0L) 
   .headtail = if (first) utils::head else utils::tail
   if (is.data.frame(x)) {
     if (!nrow(x)) return(x)
