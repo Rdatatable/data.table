@@ -18788,9 +18788,16 @@ test(2236.83, DT[,first(A, n=-1),by=grp,verbose=TRUE], error="n.*is not TRUE", o
 test(2236.84, last(DT$A, n=-1), error="n.*is not TRUE")
 test(2236.85, DT[,last(A, n=-1)], error="n.*is not TRUE")
 test(2236.86, DT[,last(A, n=-1),by=grp,verbose=TRUE], error="n.*is not TRUE", output="GForce FALSE")
+test(2236.91, first(DT$A, na.rm=NA), error="na.rm")
+test(2236.92, DT[,first(A, na.rm=NA),by=grp,verbose=TRUE], error="na.rm", output="GForce.*gfirst")
+test(2236.93, last(DT$A, na.rm=NA), error="na.rm")
+test(2236.94, DT[,last(A, na.rm=NA),by=grp,verbose=TRUE], error="na.rm", output="GForce.*glast")
+old=options(datatable.optimize=0)
+test(2236.95, DT[,first(A, na.rm=NA),by=grp,verbose=TRUE], error="na.rm", output="GForce FALSE")
+test(2236.96, DT[,last(A, na.rm=NA),by=grp,verbose=TRUE], error="na.rm", output="GForce FALSE")
+options(old)
 
 # TODO:
 # E (type list) needs an all-NA group (e.g. group 3 then it can be a size-1 group that is all-NA too) and some NULLs
-# cover error if na.rm is not FALSE, TRUE or 'row' when optimized and not optimized by group, and outside query
 # NULL->NA in 2236.35 and 2236.45
 
