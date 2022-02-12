@@ -26,7 +26,14 @@ last = function(x, n=1L, na.rm=FALSE, ...) {
       # from na.omit.data.table without calling na.omit which would subset all non-NA rows
       # TODO: n and first/last could be passed to Cdt_na and it could stop after finding n
       nna = .headtail(nna, n=n)
-      if (!length(nna)) nna=NA_integer_    # TODO: extra argument all.na=NA|NULL could control this
+      if (length(nna) < min(n,nrow(x))) {
+        # to match optimized na.rm=TRUE behavior; e.g. when .SD is one column
+        # TODO: extra argument all.na=NA|NULL (or pad.na=) could control this
+        pad = rep.int(NA, min(n,nrow(x))-length(nna))
+        # returning min(n,nrow(x)) is what optimized one-column does because GForce needs to be deterministic by group
+        # currently; i.e. number of items per group doesn't depend on how many NA there are
+        nna = if (first) c(nna, pad) else c(pad, nna)
+      }
       return(x[nna,,drop=FALSE])
     }
     if (isTRUE(na.rm)) {  #  select the first/last non-NA within each column

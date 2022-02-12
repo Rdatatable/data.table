@@ -18766,10 +18766,24 @@ test(2236.51, DT[, .(last(A,na.rm=TRUE), first(B, na.rm=TRUE), last(C)), by=grp,
               data.table(grp=1:4, V1=c(1L, 2L, NA, 3L), V2=c(1,pi,3,pi), V3=c(NA,NA,"c",NA)),
               output="GForce optimized.*glast.*gfirst.*glast")
 test(2236.61, DT[, last(D,na.rm=TRUE,n=2)], c(3i,4i))
-test(2236.62, DT[, last(B,na.rm=TRUE,n=2), by=grp, verbose=TRUE], data.table(grp=c(1L,1L,2L,2L,3L,4L,4L), V1=c(NA,1,pi,3,3,NA,pi)), output="GForce.*glast")
+test(2236.62, DT[, last(B,na.rm=TRUE,n=2), by=grp, verbose=TRUE], data.table(grp=INT(1,1,2,2,3,4,4), V1=c(NA,1,pi,3,3,NA,pi)), output="GForce.*glast")
+test(2236.63, DT[, first(D,na.rm=TRUE,n=2)], c(1i,2i))
+test(2236.64, DT[, first(B,na.rm=TRUE,n=2), by=grp, verbose=TRUE], data.table(grp=INT(1,1,2,2,3,4,4), V1=c(1,NA,pi,3,3,pi,NA)), output="GForce.*gfirst")
+test(2236.71, DT[, last(.SD, na.rm=TRUE, n=2), by=grp, verbose=TRUE],
+              data.table(grp=INT(1,1,2,2,3,4,4), A=INT(NA,1,NA,2,NA,3,3), B=c(NA,1,pi,3,3,NA,pi), C=c(NA,"a",NA,"b","c",NA,"d"), D=c(NA,1i,2i,3i,NA,NA,4i), E=list(NA,c(1,2),NA,c("a","b"),list(1:2),NA,3:4)),
+              output="GForce.*glast")
+test(2236.72, DT[, last(.SD, na.rm="row", n=2), by=grp, verbose=TRUE],
+              data.table(grp=INT(1,1,2,2,3,4,4), A=c(NA,NA,NA,2L,NA,NA,3L), B=c(NA,NA,NA,3,NA,NA,pi), C=c(NA,NA,NA,"b",NA,NA,"d"), D=c(NA,NA,NA,3i,NA,NA,4i), E=list(NULL,NULL,NULL,c("a","b"),NULL,NULL,3:4)),
+              # TODO more NULL should be NA in column E ...                                                                                                          ^^
+              output="GForce FALSE")
+test(2236.73, DT[, first(.SD, na.rm=TRUE, n=2), by=grp, verbose=TRUE],
+              data.table(grp=INT(1,1,2,2,3,4,4), A=INT(1,NA,2,NA,NA,3,3), B=c(1,NA,pi,3,3,pi,NA), C=c("a",NA,"b",NA,"c","d",NA), D=c(1i,NA,2i,3i,NA,4i,NA), E=list(c(1,2),NA,c("a","b"),NA,list(1:2),3:4,NA)),
+              output="GForce.*gfirst")
+test(2236.74, DT[, first(.SD, na.rm="row", n=2), by=grp, verbose=TRUE],
+              data.table(grp=INT(1,1,2,2,3,4,4), A=c(NA,NA,2L,NA,NA,3L,NA), B=c(NA,NA,3,NA,NA,pi,NA), C=c(NA,NA,"b",NA,NA,"d",NA), D=c(NA,NA,3i,NA,NA,4i,NA), E=list(NULL,NULL,c("a","b"),NULL,NULL,3:4,NULL)),
+              output="GForce FALSE")
 
 # TODO:
-# first/last of .SD with na.rm TRUE and 'row' by group with n>1 too
 # test error if n<=0
 # E (type list) needs an all-NA group (e.g. group 3 then it can be a size-1 group that is all-NA too) and some NULLs
 # news item example of prior syntax for last(.SD, na.rm="row")
