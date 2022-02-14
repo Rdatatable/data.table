@@ -35,7 +35,15 @@ last = function(x, n=1L, na.rm=FALSE, ...) {
         # currently; i.e. number of items per group doesn't depend on how many NA there are
         nna = if (first) c(nna, pad) else c(pad, nna)
       }
-      return(x[nna,,drop=FALSE])
+      ans = x[nna,,drop=FALSE]
+      # DT[NA] returns NULL for list columns. TODO: change [.data.table to return NA for list columns
+      # In the meantime, fix up the NULLs here in first/last
+      for (col in which(sapply(ans, is.list))) {
+        for (i in which(sapply(ans[[col]], is.null))) {
+          set(ans, i, col, NA)
+        }
+      }
+      return(ans)
     }
     if (isTRUE(na.rm)) {  #  select the first/last non-NA within each column
       ans = lapply(x, .narmVector, n=n, first=first)

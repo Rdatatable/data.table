@@ -18749,8 +18749,8 @@ test(2236.33, DT[, first(.SD, na.rm=TRUE), by=grp, verbose=TRUE], ans, notOutput
 test(2236.34, DT[, lapply(.SD, first, na.rm=TRUE), by=grp, verbose=TRUE], ans, notOutput="gfirst")
 options(old)
 test(2236.35, DT[, first(.SD, na.rm='row'), by=grp, verbose=TRUE],
-              ans<-data.table(grp=1:4, A=c(NA,2L,NA,3L), B=c(NA,3,NA,pi), C=c(NA,"b",NA,"d"), D=c(NA,3i,NA,4i), E=list(NULL,c("a","b"),NULL,3:4)),
-              notOutput="GForce optimized")   # TODO: could try and gforce optimize in future                          ^^ TODO should be NA; it's because DT[NA_integer_] returns NULL for list columns
+              ans<-data.table(grp=1:4, A=c(NA,2L,NA,3L), B=c(NA,3,NA,pi), C=c(NA,"b",NA,"d"), D=c(NA,3i,NA,4i), E=list(NA,c("a","b"),NA,3:4)),
+              notOutput="GForce optimized")   # TODO: could try and gforce optimize in future
 test(2236.41, DT[, last(.SD, na.rm=TRUE), by=grp, verbose=TRUE],
               ans<-data.table(grp=1:4, A=c(1L,2L,NA,3L), B=c(1,3,3,pi), C=c("a","b","c","d"), D=c(1i,3i,NA,4i), E=list(NA,c("a","b"),list(1:2),3:4)),
               output="GForce optimized.*glast")
@@ -18760,8 +18760,8 @@ test(2236.43, DT[, last(.SD, na.rm=TRUE), by=grp, verbose=TRUE], ans, notOutput=
 test(2236.44, DT[, lapply(.SD, last, na.rm=TRUE), by=grp, verbose=TRUE], ans, notOutput="glast")
 options(old)
 test(2236.45, DT[, last(.SD, na.rm='row'), by=grp, verbose=TRUE],
-              ans<-data.table(grp=1:4, A=c(NA,2L,NA,3L), B=c(NA,3,NA,pi), C=c(NA,"b",NA,"d"), D=c(NA,3i,NA,4i), E=list(NULL,c("a","b"),NULL,3:4)),
-              notOutput="GForce optimized")   # TODO: could try and gforce optimize in future                          ^^ TODO should be NA; it's because DT[NA_integer_] returns NULL for list columns
+              ans<-data.table(grp=1:4, A=c(NA,2L,NA,3L), B=c(NA,3,NA,pi), C=c(NA,"b",NA,"d"), D=c(NA,3i,NA,4i), E=list(NA,c("a","b"),NA,3:4)),
+              notOutput="GForce optimized")   # TODO: could try and gforce optimize in future
 test(2236.51, DT[, .(last(A,na.rm=TRUE), first(B, na.rm=TRUE), last(C)), by=grp, verbose=TRUE],
               data.table(grp=1:4, V1=c(1L, 2L, NA, 3L), V2=c(1,pi,3,pi), V3=c(NA,NA,"c",NA)),
               output="GForce optimized.*glast.*gfirst.*glast")
@@ -18773,14 +18773,13 @@ test(2236.71, DT[, last(.SD, na.rm=TRUE, n=2), by=grp, verbose=TRUE],
               data.table(grp=INT(1,1,2,2,3,4,4), A=INT(NA,1,NA,2,NA,3,3), B=c(NA,1,pi,3,3,NA,pi), C=c(NA,"a",NA,"b","c",NA,"d"), D=c(NA,1i,2i,3i,NA,NA,4i), E=list(NA,NA,NA,c("a","b"),list(1:2),NA,3:4)),
               output="GForce.*glast")
 test(2236.72, DT[, last(.SD, na.rm="row", n=2), by=grp, verbose=TRUE],
-              data.table(grp=INT(1,1,2,2,3,4,4), A=c(NA,NA,NA,2L,NA,NA,3L), B=c(NA,NA,NA,3,NA,NA,pi), C=c(NA,NA,NA,"b",NA,NA,"d"), D=c(NA,NA,NA,3i,NA,NA,4i), E=list(NULL,NULL,NULL,c("a","b"),NULL,NULL,3:4)),
-              # TODO more NULL should be NA in column E ...                                                                                                          ^^
+              data.table(grp=INT(1,1,2,2,3,4,4), A=c(NA,NA,NA,2L,NA,NA,3L), B=c(NA,NA,NA,3,NA,NA,pi), C=c(NA,NA,NA,"b",NA,NA,"d"), D=c(NA,NA,NA,3i,NA,NA,4i), E=list(NA,NA,NA,c("a","b"),NA,NA,3:4)),
               output="GForce FALSE")
 test(2236.73, DT[, first(.SD, na.rm=TRUE, n=2), by=grp, verbose=TRUE],
               data.table(grp=INT(1,1,2,2,3,4,4), A=INT(1,NA,2,NA,NA,3,3), B=c(1,NA,pi,3,3,pi,NA), C=c("a",NA,"b",NA,"c","d",NA), D=c(1i,NA,2i,3i,NA,4i,NA), E=list(NA,NA,c("a","b"),NA,list(1:2),3:4,NA)),
               output="GForce.*gfirst")
 test(2236.74, DT[, first(.SD, na.rm="row", n=2), by=grp, verbose=TRUE],
-              data.table(grp=INT(1,1,2,2,3,4,4), A=c(NA,NA,2L,NA,NA,3L,NA), B=c(NA,NA,3,NA,NA,pi,NA), C=c(NA,NA,"b",NA,NA,"d",NA), D=c(NA,NA,3i,NA,NA,4i,NA), E=list(NULL,NULL,c("a","b"),NULL,NULL,3:4,NULL)),
+              data.table(grp=INT(1,1,2,2,3,4,4), A=c(NA,NA,2L,NA,NA,3L,NA), B=c(NA,NA,3,NA,NA,pi,NA), C=c(NA,NA,"b",NA,NA,"d",NA), D=c(NA,NA,3i,NA,NA,4i,NA), E=list(NA,NA,c("a","b"),NA,NA,3:4,NA)),
               output="GForce FALSE")
 test(2236.81, first(DT$A, n=-1), error="n.*is not TRUE")
 test(2236.82, DT[,first(A, n=-1)], error="n.*is not TRUE")
@@ -18796,7 +18795,4 @@ old=options(datatable.optimize=0)
 test(2236.95, DT[,first(A, na.rm=NA),by=grp,verbose=TRUE], error="na.rm", output="GForce FALSE")
 test(2236.96, DT[,last(A, na.rm=NA),by=grp,verbose=TRUE], error="na.rm", output="GForce FALSE")
 options(old)
-
-# TODO:
-# NULL->NA in 2236.35 and 2236.45
 
