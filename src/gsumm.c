@@ -1004,7 +1004,7 @@ static SEXP gfirstlast(const SEXP x, const bool first, const SEXP nArg, const bo
     DO(SEXP, STRING_PTR, NA_STRING,                 SET_STRING_ELT(ans,ansi,val); ansi+=inc) } break;
   case VECSXP: {
     #undef ISNAT
-    #define ISNAT(x) (isLogical(x) && LENGTH(x)==1 && LOGICAL(x)[0]==NA_LOGICAL)
+    #define ISNAT(x) (isNull(x) || (isLogical(x) && LENGTH(x)==1 && LOGICAL(x)[0]==NA_LOGICAL))
     DO(SEXP, SEXPPTR_RO, ScalarLogical(NA_LOGICAL), SET_VECTOR_ELT(ans,ansi,val); ansi+=inc) } break;
   default:
     error(_("Type '%s' is not supported by GForce head/tail/first/last/`[`. Either add the namespace prefix (e.g. utils::head(.)) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));

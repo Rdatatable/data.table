@@ -64,8 +64,8 @@ last = function(x, n=1L, na.rm=FALSE, ...) {
 }
 
 .narmVector = function(x, n, first) {
-  nna = which_(is.na(x), bool=FALSE)   # TODO: again, n and first/last could be passed to C here
-  if (!length(nna)) x[NA_integer_]
+  nna = which_(is.na(x) | (is.list(x) & sapply(x,is.null)), bool=FALSE)   # TODO: again, n and first/last could be passed to C here
+  if (!length(nna)) if (is.list(x)) list(NA) else x[NA_integer_]
   else if (n==1L)   x[nna[if (first) 1L else length(nna)]]
   else              x[(if (first) utils::head else utils::tail)(nna, n)]  # TODO: avoid dispatch here and do ourselves since just a vector
 }
