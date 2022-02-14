@@ -3,33 +3,28 @@
 \alias{last}
 \title{ First/last item of an object }
 \description{
-Returns the first/last item of a vector or list, or the first/last row of a data.frame
-or data.table. The main difference to head/tail is that the default for \code{n} is 1
-rather than 6.
+Returns the first/last item of a vector, list, \code{data.frame} or \code{data.table}. The main difference
+to head/tail is that the default for \code{n} is 1 rather than 6.
 }
 \usage{
 first(x, n=1L, na.rm=FALSE, \dots)
 last(x, n=1L, na.rm=FALSE, \dots)
 }
 \arguments{
-\item{x}{ A vector, list, data.frame or data.table. Otherwise the S3 method
-of \code{xts::first} is deployed. }
+\item{x}{ A vector, list, \code{data.frame} or \code{data.table}. \code{xts} objects dispatch to the \code{xts} method. }
 \item{n}{ A numeric vector length 1. How many items to select. }
-\item{na.rm}{ logical. Should missing values be skipped when selecting values? Defaults to \code{FALSE}. Selects always at least 1 element. }
+\item{na.rm}{ \code{FALSE}, \code{TRUE} or \code{"row"}. Should missing values be skipped when selecting values? Selects always at least 1 element. }
 \item{\dots}{ Not applicable for \code{data.table} first/last. Any arguments here
 are passed through to \code{xts}'s first/last. }
 }
 \value{
-If no other arguments are supplied it depends on the type of \code{x}. The first/last item
-of a vector or list. The first/last row of a \code{data.frame} or \code{data.table}. If \code{na.rm} is \code{TRUE}
-the first/last row of a \code{data.frame} or \code{data.table} without missing values is selected.
-For other types, or if any argument is supplied in addition to \code{x} (such as \code{n}, or
-\code{keep} in \code{xts}) regardless of \code{x}'s type, then \code{xts::first}/
-\code{xts::last} is called if \code{xts} has been loaded, otherwise \code{utils::head}/\code{utils::tail}.
+The first/last \code{n} items of a vector or list.
+When \code{na.rm=TRUE} the first/last item in each column of a \code{data.frame} or \code{data.table}.
+When \code{na.rm="row"} the first/last \code{n} rows which contain no NA in any column; i.e. if an NA is found that row is removed.
 }
 \seealso{ \code{\link{NROW}}, \code{\link{head}}, \code{\link{tail}} }
 \examples{
-first(1:5) # [1] 1
+first(1:5)
 x = data.table(x=1:5, y=6:10)
 first(x) # same as head(x, 1)
 
@@ -46,7 +41,9 @@ last(x, na.rm=TRUE)
 x = data.table(x=c(NA, 1, 2, NA), y=1:4)
 first(x)
 first(x, na.rm=TRUE)
+first(x, na.rm="row")
 last(x)
 last(x, na.rm=TRUE)
+last(x, na.rm="row")
 }
 \keyword{ data }
