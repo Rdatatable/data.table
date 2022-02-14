@@ -18770,15 +18770,21 @@ test(2236.62, DT[, last(B,na.rm=TRUE,n=2), by=grp, verbose=TRUE], data.table(grp
 test(2236.63, DT[, first(D,na.rm=TRUE,n=2)], c(1i,2i))
 test(2236.64, DT[, first(B,na.rm=TRUE,n=2), by=grp, verbose=TRUE], data.table(grp=INT(1,1,2,2,3,4,4), V1=c(1,NA,pi,3,3,pi,NA)), output="GForce.*gfirst")
 test(2236.71, DT[, last(.SD, na.rm=TRUE, n=2), by=grp, verbose=TRUE],
-              data.table(grp=INT(1,1,2,2,3,4,4), A=INT(NA,1,NA,2,NA,3,3), B=c(NA,1,pi,3,3,NA,pi), C=c(NA,"a",NA,"b","c",NA,"d"), D=c(NA,1i,2i,3i,NA,NA,4i), E=list(NA,NA,NA,c("a","b"),list(1:2),NA,3:4)),
+              ans<-data.table(grp=INT(1,1,2,2,3,4,4), A=INT(NA,1,NA,2,NA,3,3), B=c(NA,1,pi,3,3,NA,pi), C=c(NA,"a",NA,"b","c",NA,"d"), D=c(NA,1i,2i,3i,NA,NA,4i), E=list(NA,NA,NA,c("a","b"),list(1:2),NA,3:4)),
               output="GForce.*glast")
-test(2236.72, DT[, last(.SD, na.rm="row", n=2), by=grp, verbose=TRUE],
+old = options(datatable.optimize=0)
+test(2236.72, DT[, last(.SD, na.rm=TRUE, n=2), by=grp, verbose=TRUE], ans, output="GForce FALSE")
+options(old)
+test(2236.73, DT[, last(.SD, na.rm="row", n=2), by=grp, verbose=TRUE],
               data.table(grp=INT(1,1,2,2,3,4,4), A=c(NA,NA,NA,2L,NA,NA,3L), B=c(NA,NA,NA,3,NA,NA,pi), C=c(NA,NA,NA,"b",NA,NA,"d"), D=c(NA,NA,NA,3i,NA,NA,4i), E=list(NA,NA,NA,c("a","b"),NA,NA,3:4)),
               output="GForce FALSE")
-test(2236.73, DT[, first(.SD, na.rm=TRUE, n=2), by=grp, verbose=TRUE],
-              data.table(grp=INT(1,1,2,2,3,4,4), A=INT(1,NA,2,NA,NA,3,3), B=c(1,NA,pi,3,3,pi,NA), C=c("a",NA,"b",NA,"c","d",NA), D=c(1i,NA,2i,3i,NA,4i,NA), E=list(NA,NA,c("a","b"),NA,list(1:2),3:4,NA)),
+test(2236.74, DT[, first(.SD, na.rm=TRUE, n=2), by=grp, verbose=TRUE],
+              ans<-data.table(grp=INT(1,1,2,2,3,4,4), A=INT(1,NA,2,NA,NA,3,3), B=c(1,NA,pi,3,3,pi,NA), C=c("a",NA,"b",NA,"c","d",NA), D=c(1i,NA,2i,3i,NA,4i,NA), E=list(NA,NA,c("a","b"),NA,list(1:2),3:4,NA)),
               output="GForce.*gfirst")
-test(2236.74, DT[, first(.SD, na.rm="row", n=2), by=grp, verbose=TRUE],
+old = options(datatable.optimize=0)
+test(2236.75, DT[, first(.SD, na.rm=TRUE, n=2), by=grp, verbose=TRUE], ans, output="GForce FALSE")
+options(old)
+test(2236.76, DT[, first(.SD, na.rm="row", n=2), by=grp, verbose=TRUE],
               data.table(grp=INT(1,1,2,2,3,4,4), A=c(NA,NA,2L,NA,NA,3L,NA), B=c(NA,NA,3,NA,NA,pi,NA), C=c(NA,NA,"b",NA,NA,"d",NA), D=c(NA,NA,3i,NA,NA,4i,NA), E=list(NA,NA,c("a","b"),NA,NA,3:4,NA)),
               output="GForce FALSE")
 test(2236.81, first(DT$A, n=-1), error="n.*is not TRUE")
@@ -18787,6 +18793,7 @@ test(2236.83, DT[,first(A, n=-1),by=grp,verbose=TRUE], error="n.*is not TRUE", o
 test(2236.84, last(DT$A, n=-1), error="n.*is not TRUE")
 test(2236.85, DT[,last(A, n=-1)], error="n.*is not TRUE")
 test(2236.86, DT[,last(A, n=-1),by=grp,verbose=TRUE], error="n.*is not TRUE", output="GForce FALSE")
+test(2236.87, first(matrix(1:12,nrow=3), na.rm=TRUE), error="na.rm.*not currently supported for.*matrix")
 test(2236.91, first(DT$A, na.rm=NA), error="na.rm")
 test(2236.92, DT[,first(A, na.rm=NA),by=grp,verbose=TRUE], error="na.rm", output="GForce.*gfirst")
 test(2236.93, last(DT$A, na.rm=NA), error="na.rm")

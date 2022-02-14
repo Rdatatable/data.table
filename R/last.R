@@ -48,7 +48,7 @@ last = function(x, n=1L, na.rm=FALSE, ...) {
     if (isTRUE(na.rm)) {  #  select the first/last non-NA within each column
       ans = lapply(x, .narmVector, n=n, first=first)
       l = sapply(ans, length)
-      m = max(l)
+      m = min(n, nrow(x))
       for (i in which(l<m)) {  # pad with NA
         ans[[i]] = if (first) c(ans[[i]], rep(NA, m-l[i]))
                    else       c(rep(NA, m-l[i]), ans[[i]])
