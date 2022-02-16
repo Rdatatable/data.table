@@ -331,7 +331,7 @@ run = function(pkgs=NULL, R_CHECK_FORCE_SUGGESTS=TRUE, choose=NULL) {
   }
   if (!identical(pkgs,"_ALL_")) for (i in pkgs) system(paste0("rm -rf ./",i,".Rcheck"))
   SUGG = paste0("_R_CHECK_FORCE_SUGGESTS_=",tolower(R_CHECK_FORCE_SUGGESTS))
-  cmd = paste0("ls -1 *.tar.gz ", filter, "| TZ='UTC' OMP_THREAD_LIMIT=2 ",SUGG," parallel --max-procs 50% --timeout 1200 ",R," CMD check")
+  cmd = paste0("ls -1 *.tar.gz ", filter, "| NOT_CRAN=true TZ='UTC' OMP_THREAD_LIMIT=2 ",SUGG," parallel --max-procs 50% --timeout 1200 ",R," CMD check")
   # TZ='UTC' because some packages have failed locally for me but not on CRAN or for their maintainer, due to sensitivity of tests to timezone
   if (as.integer(system("ps -e | grep perfbar | wc -l", intern=TRUE)) < 1) system("perfbar",wait=FALSE)
   system("touch /tmp/started.flag ; rm -f /tmp/finished.flag")
