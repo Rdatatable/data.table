@@ -22,6 +22,11 @@ The first/last \code{n} items of a vector or list.
 When \code{na.rm=TRUE} the first/last item in each column of a \code{data.frame} or \code{data.table}.
 When \code{na.rm="row"} the first/last \code{n} rows which contain no NA in any column; i.e. if an NA is found that row is removed.
 }
+\details{
+It may be natural to expect \code{na.rm="col"} to be supported to compliment \code{na.rm="row"}. But whereas \code{na.rm="row"}
+unambiguously conveys intent to remove rows, \code{na.rm="col"} may convey intent to remove columns where in fact NA are removed
+within each column and the column retained. Your feedback is sought on this point.
+}
 \seealso{ \code{\link{NROW}}, \code{\link{head}}, \code{\link{tail}} }
 \examples{
 first(1:5)
