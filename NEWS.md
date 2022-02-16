@@ -337,7 +337,7 @@
     #1:     1     3     7
     #2:     2    NA    NA
     
-    DT[, last(na.omit(.SD)), by=grp]  # prior method for na.rm="row"
+    DT[, last(na.omit(.SD)), by=grp]  # same as na.rm='row' but drops all-NA groups
     #     grp     A     B
     #   <int> <int> <int>
     #1:     1     3     7

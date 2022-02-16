@@ -4,7 +4,7 @@
 \title{ First/last item of an object }
 \description{
 Returns the first/last item of a vector, list, \code{data.frame} or \code{data.table}. The main difference
-to head/tail is that the default for \code{n} is 1 rather than 6.
+to head/tail is that the default for \code{n} is 1 rather than 6, and support for skipping missing entries.
 }
 \usage{
 first(x, n=1L, na.rm=FALSE, \dots)
@@ -13,7 +13,7 @@ last(x, n=1L, na.rm=FALSE, \dots)
 \arguments{
 \item{x}{ A vector, list, \code{data.frame} or \code{data.table}. \code{xts} objects dispatch to the \code{xts} method. }
 \item{n}{ A numeric vector length 1. How many items to select. }
-\item{na.rm}{ \code{FALSE}, \code{TRUE} or \code{"row"}. Should missing values be skipped when selecting values? Selects always at least 1 element. }
+\item{na.rm}{ \code{FALSE}, \code{TRUE} or \code{"row"}. Should missing values be skipped when selecting values? See examples. }
 \item{\dots}{ Not applicable for \code{data.table} first/last. Any arguments here
 are passed through to \code{xts}'s first/last. }
 }

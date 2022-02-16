@@ -1739,7 +1739,7 @@ replace_dot_alias = function(e) {
         GForce = FALSE
       } else {
         # Apply GForce
-        .gforce_ok = function(q) {
+        .gforce_ok = function(q) {  # TODO: move outside and test directly
           if (dotN(q)) return(TRUE) # #334
           # run GForce for gfuns(x, ...) where x is a column of .SD 
           # is.symbol() is for #1369, #1974 and #2949

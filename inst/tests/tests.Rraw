@@ -6977,7 +6977,7 @@ test(1469.6, key(DT[J(c(2,0)), roll="nearest"]), NULL)
 # 1007 fix, dealing with Inf and -Inf correctly in rolling joins.
 DT = data.table(x=c(-Inf, 3, Inf), y=1:3, key="x")
 test(1470.1, DT[J(c(2,-Inf,5,Inf)), roll=Inf], data.table(x=c(2,-Inf,5,Inf), y=c(1L, 1:3)))
-test(1470.2, DT[J(c(2,-Inf,5,Inf)), roll=10], data.table(x=c(2,-Inf,5,Inf), y=INT(c(NA, 1, 2, 3))))
+test(1470.2, DT[J(c(2,-Inf,5,Inf)), roll=10], data.table(x=c(2,-Inf,5,Inf), y=INT(NA, 1, 2, 3)))
 test(1470.3, DT[SJ(c(2,-Inf,5,Inf)), roll=Inf], data.table(x=c(-Inf,2,5,Inf), y=c(1L, 1:3), key="x"))
 
 # 1006, second bug with -Inf, now that #1007 is fixed.
@@ -8047,9 +8047,9 @@ test(1557.5, names(fread(str, col.names=1:2)), error="Passed a vector of type")
 
 # Fix for #773
 f = testDir("issue_773_fread.txt")
-ans = data.table(AAA=INT(c(4,7,rep(1,17),31,21)),
-                 BBB=INT(c(5,8,rep(2,17),32,22)),
-                 CCC=INT(c(6,9,rep(3,17),33,23)))
+ans = data.table(AAA=INT(4,7,rep(1,17),31,21),
+                 BBB=INT(5,8,rep(2,17),32,22),
+                 CCC=INT(6,9,rep(3,17),33,23))
 test(1558.1, fread(f), ans, warning=w<-"Stopped early on line 23. Expected 3 fields but found 2[.].*First discarded non-empty line: <<ZZZ.*YYY>>")
 test(1558.2, fread(f, nrows=21L), ans)
 test(1558.3, fread(f, nrows=21L, fill=TRUE), ans)
@@ -8916,9 +8916,9 @@ if (test_bit64) {
 # fix for #1571
 x = data.table(c(1,1,2,7,2,3,4,4,7), 1:9)
 y = data.table(c(2,3,4,4,4,5))
-test(1615.1, x[!y, on="V1", mult="first"], data.table(V1=c(1,7), V2=INT(c(1,4))))
-test(1615.2, x[!y, on="V1", mult="last"], data.table(V1=c(1,7), V2=INT(c(2,9))))
-test(1615.3, x[!y, on="V1", mult="all"], data.table(V1=c(1,1,7,7), V2=INT(c(1,2,4,9))))
+test(1615.1, x[!y, on="V1", mult="first"], data.table(V1=c(1,7), V2=INT(1,4)))
+test(1615.2, x[!y, on="V1", mult="last"], data.table(V1=c(1,7), V2=INT(2,9)))
+test(1615.3, x[!y, on="V1", mult="all"], data.table(V1=c(1,1,7,7), V2=INT(1,2,4,9)))
 
 # fix for #1287 and #1271
 set.seed(1L)
@@ -16674,7 +16674,7 @@ ID = as.IDate(INT(
   2113, 2305, 2497, 2689, 2882, 3074, 3266, 3458, 3650
 ))
 D = as.Date(ID)
-br = as.IDate(INT(c(0, 151, 243)))
+br = as.IDate(INT(0, 151, 243))
 test(2102.1, cut(ID, breaks = br), as.IDate(cut(D, breaks=br)))
 test(2102.2, cut(ID, breaks = '1 year'), as.IDate(cut(D, breaks = '1 year')))
 test(2102.3, cut(ID, breaks = '6 months'), as.IDate(cut(D, breaks = '6 months')))
@@ -16802,17 +16802,18 @@ test(2108.41, last(x), 3L)
 test(2108.42, last(y), y[3L])
 test(2108.51, first(x), 1L)
 test(2108.52, first(y), y[1L])
-test(2108.610, last(df), structure(list(a=2L, b=2L), row.names=2L, class="data.frame"))
+test(2108.610, last(df), data.frame(a=2L, b=2L, row.names=2L))
 test(2108.611, last(as.data.table(df), na.rm=TRUE), data.table(a=2L,b=2L))
 test(2108.62, last(dt), data.table(a=2L, b=2L))
-test(2108.710, first(df), structure(list(a=1L, b=3L), row.names=1L, class="data.frame"))
+test(2108.710, first(df), data.frame(a=1L, b=3L))
 test(2108.711, first(as.data.table(df), na.rm=TRUE), data.table(a=1L, b=3L))
 test(2108.72, first(dt), data.table(a=1L, b=3L))
-# matrix/array utils::tail behavior is likely to change in future R, Michael is more in the topic
-test(2108.81, last(mx), structure(c(3L, 6L, 9L), .Dim = c(1L, 3L), .Dimnames = list("[3,]", NULL)))
-test(2108.82, last(ar), if (base::getRversion()<"3.7.0") 27L else structure(c(3L, 6L, 9L, 12L, 15L, 18L, 21L, 24L, 27L), .Dim = c(1L, 3L, 3L), .Dimnames = list("[3,]", NULL, NULL)))  # utils:tail, #4127
-test(2108.91, first(mx), structure(c(1L, 4L, 7L), .Dim = c(1L, 3L)))
-test(2108.92, first(ar), if (base::getRversion()<"3.7.0") 1L else structure(c(1L, 4L, 7L, 10L, 13L, 16L, 19L, 22L, 25L), .Dim = c(1L, 3L, 3L)))
+test(2108.81, last(mx), matrix(c(3L,6L,9L), nrow=1, dimnames=list("[3,]", NULL)))  # same dimnames as utils::tail returns 
+test(2108.82, last(ar), if (base::getRversion()<"4.0.0") 27L  # head/tail changed for arrays in R 4.0.0, #4127
+                        else array(INT(3,6,9,12,15,18,21,24,27), dim=c(1,3,3), dimnames=list("[3,]",NULL,NULL)))
+test(2108.91, first(mx), matrix(c(1L,4L,7L), ncol=3L))
+test(2108.92, first(ar), if (base::getRversion()<"4.0.0") 1L
+                         else array(INT(1,4,7,10,13,16,19,22,25), dim=c(1,3,3)))
 options(old)
 
 # error in autonaming by={...}, #3156
@@ -18687,21 +18688,21 @@ test(2234.8, DT[, min(.SD), by=.I%%2L], error="by.*contains .I.*supported")  # w
 test(2234.9, DT[, min(.SD), by=somefun(.I)], error="by.*contains .I.*supported")
 
 # add na.rm argument to first/last, #4446 #4239
-DT = data.table( grp = INT(c(1,1,     2,2,2,               3,          4,4)),
-                 A =   INT(c(1,NA,    NA,2,NA,             NA,         3,3)),
-                 B =       c(NA,1,    pi,3,NA,             3,          pi,NA),
-                 C =       c("a",NA,  NA,"b",NA,           "c",        "d",NA),
-                 D =       c(NA,1i,   2i,3i,NA,            NA,         4i,NA),
-                 E =    list(NA,NA,   NA,c("a","b"),NULL,  list(1:2),  3:4,NA))
+DT = data.table( grp = INT(1,1,     2,2,2,               3,          4,4),
+                 A =   INT(1,NA,    NA,2,NA,             NA,         3,3),
+                 B =     c(NA,1,    pi,3,NA,             3,          pi,NA),
+                 C =     c("a",NA,  NA,"b",NA,           "c",        "d",NA),
+                 D =     c(NA,1i,   2i,3i,NA,            NA,         4i,NA),
+                 E =  list(NA,NA,   NA,c("a","b"),NULL,  list(1:2),  3:4,NA))
 # to encourage adding cases to DT above (some NAs, all NAs, NAs beginning and/or end within group, types, etc) we
 # define helper functions FNNA and LNNA here to construct the correct result to test against. Explicitly coding
 # all the results instead may reveal mistakes and be good but then might be inflexible to adding more cases.
 FNNA = function(x) {  # First Not NA
-  nna = which(!is.na(x) & !(is.list(x) & sapply(x,is.null)))
+  nna = which(if (is.list(x)) !is.na(x) & !sapply(x,is.null) else !is.na(x))
   if (length(nna)) x[nna[1L]]          else if (is.list(x)) list(NA) else x[NA_integer_]
 }
 LNNA = function(x) {  # Last Not NA
-  nna = which(!is.na(x) & !(is.list(x) & sapply(x,is.null)))
+  nna = which(if (is.list(x)) !is.na(x) & !sapply(x,is.null) else !is.na(x))
   if (length(nna)) x[nna[length(nna)]] else if (is.list(x)) list(NA) else x[NA_integer_]
 }
 test_no = 2235.0
@@ -18715,12 +18716,12 @@ for (col in setdiff(names(DT), "grp")) {
   # one function by group with and without .() wrapper
   test(test_no+.05, EVAL("DT[, .(first(",col,",na.rm=TRUE)), by=grp, verbose=TRUE]"),
                ans<-EVAL("DT[, .(FNNA(",col,")),             by=grp]"), output="GForce optimized.*gfirst")
-  if (col!="E")  # subets of list columns need to be done within .() otherwise j's result looks like multiple columns
+  if (col!="E")  # subsets of list columns need to be done within .() otherwise j's result looks like multiple columns
     test(test_no+.06, EVAL("DT[, first(",col,",na.rm=TRUE),  by=grp, verbose=TRUE]"),
                       ans,                                              output="GForce optimized.*gfirst")
   test(test_no+.07, EVAL("DT[, .(last(",col,",na.rm=TRUE)),  by=grp, verbose=TRUE]"),
                ans<-EVAL("DT[, .(LNNA(",col,")),             by=grp]"), output="GForce optimized.*glast")
-  if (col!="E")
+  if (col!="E")  # see comment above why !="E"
     test(test_no+.08, EVAL("DT[, last(",col,",na.rm=TRUE),   by=grp, verbose=TRUE]"),
                       ans,                                              output="GForce optimized.*glast")
   test_no = test_no+.1

@@ -38,8 +38,8 @@ last = function(x, n=1L, na.rm=FALSE, ...) {
       ans = x[nna,,drop=FALSE]
       # DT[NA] returns NULL for list columns. TODO: change [.data.table to return NA for list columns
       # In the meantime, fix up the NULLs here in first/last
-      for (col in which(sapply(ans, is.list))) {
-        for (i in which(sapply(ans[[col]], is.null))) {
+      for (col in which(vapply_1b(ans, is.list))) {
+        for (i in which(vapply_1b(ans[[col]], is.null))) {
           set(ans, i, col, NA)
         }
       }
@@ -47,7 +47,7 @@ last = function(x, n=1L, na.rm=FALSE, ...) {
     }
     if (isTRUE(na.rm)) {  #  select the first/last non-NA within each column
       ans = lapply(x, .narmVector, n=n, first=first)
-      l = sapply(ans, length)
+      l = vapply_1i(ans, length)
       m = min(n, nrow(x))
       for (i in which(l<m)) {  # pad with NA
         ans[[i]] = if (first) c(ans[[i]], rep(NA, m-l[i]))
@@ -72,7 +72,7 @@ last = function(x, n=1L, na.rm=FALSE, ...) {
 }
 
 .narmVector = function(x, n, first) {
-  nna = which_(is.na(x) | (is.list(x) & sapply(x,is.null)), bool=FALSE)   # TODO: again, n and first/last could be passed to C here
+  nna = which_(is.na(x) | (is.list(x) & vapply_1b(x,is.null)), bool=FALSE)   # TODO: again, n and first/last could be passed to C here
   if (!length(nna)) if (is.list(x)) list(NA) else x[NA_integer_]
   else if (n==1L)   x[nna[if (first) 1L else length(nna)]]
   else              x[(if (first) utils::head else utils::tail)(nna, n)]  # TODO: avoid dispatch here and do ourselves since just a vector
