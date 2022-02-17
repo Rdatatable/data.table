@@ -18788,6 +18788,10 @@ options(old)
 test(2236.76, DT[, first(.SD, na.rm="row", n=2), by=grp, verbose=TRUE],
               data.table(grp=INT(1,1,2,2,3,4,4), A=c(NA,NA,2L,NA,NA,3L,NA), B=c(NA,NA,3,NA,NA,pi,NA), C=c(NA,NA,"b",NA,NA,"d",NA), D=c(NA,NA,3i,NA,NA,4i,NA), E=list(NA,NA,c("a","b"),NA,NA,3:4,NA)),
               output="GForce FALSE")
+test(2236.771, DT[, first(.SD, na.rm=TRUE, n=0), by=grp, verbose=TRUE], DT[0], output="GForce FALSE")
+test(2236.772, DT[, last(.SD, na.rm=TRUE, n=0),  by=grp, verbose=TRUE], DT[0], output="GForce FALSE")
+test(2236.773, DT[, head(.SD, n=0),              by=grp, verbose=TRUE], DT[0], output="GForce FALSE")
+test(2236.774, DT[, tail(.SD, na.rm=TRUE, n=0),  by=grp, verbose=TRUE], DT[0], output="GForce FALSE")
 test(2236.81, first(DT$A, n=-1), error="n.*is not TRUE")
 test(2236.82, DT[,first(A, n=-1)], error="n.*is not TRUE")
 test(2236.83, DT[,first(A, n=-1),by=grp,verbose=TRUE], error="n.*is not TRUE", output="GForce FALSE")

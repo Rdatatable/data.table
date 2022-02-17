@@ -1762,7 +1762,7 @@ replace_dot_alias = function(e) {
               if (arg=="n") next # negative n is supported by optimized shift, and in test 2224.01 n=-1 appears as a call to '-'()
             }
             if (arg=="n") {
-              if (!is.atomic(q$n) || !isTRUE(q$n>=0L)) return(FALSE)  # n<0 not optimized for first/last, [, [[
+              if (!is.atomic(q$n) || !isTRUE(q$n>0L)) return(FALSE)  # n<=0 not optimized for first/last, [, [[
               next
             }
             if (arg!="") return(FALSE)  # e.g. trim= and fill's give.names= are not yet optimized

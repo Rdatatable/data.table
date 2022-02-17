@@ -18,8 +18,11 @@ last = function(x, n=1L, na.rm=FALSE, ...) {
     return((if (first) xts::first else xts::last)(x, n=n, na.rm=na.rm, ...))
   }
   stopifnot(isTRUEorFALSE(na.rm) || identical(na.rm,"row"))
-  stopifnot(is.numeric(n), length(n)==1L, n>=0L) 
+  stopifnot(is.numeric(n), length(n)==1L, n>=0L)
+  n = as.integer(n)
   .headtail = if (first) utils::head else utils::tail
+  if (isFALSE(na.rm) || n==0L)
+    return(.headtail(x, n=n, ...))
   if (is.data.frame(x)) {
     if (!nrow(x)) return(x)
     if (identical(na.rm, "row")) {   # any NA on the row removes that row
@@ -45,20 +48,17 @@ last = function(x, n=1L, na.rm=FALSE, ...) {
       }
       return(ans)
     }
-    if (isTRUE(na.rm)) {  #  select the first/last non-NA within each column
-      ans = lapply(x, .narmVector, n=n, first=first)
-      l = vapply_1i(ans, length)
-      m = min(n, nrow(x))
-      for (i in which(l<m)) {  # pad with NA
-        ans[[i]] = if (first) c(ans[[i]], rep(NA, m-l[i]))
-                   else       c(rep(NA, m-l[i]), ans[[i]])
-      }
-      if (is.data.table(x)) setDT(ans) else setDF(ans)
-      setattr(ans, "class", class(x))
-      return(ans)
+    # else na.rm==TRUE; select the first/last non-NA within each column
+    ans = lapply(x, .narmVector, n=n, first=first)
+    l = vapply_1i(ans, length)
+    m = min(n, nrow(x))
+    for (i in which(l<m)) {  # pad with NA
+      ans[[i]] = if (first) c(ans[[i]], rep(NA, m-l[i]))
+                 else       c(rep(NA, m-l[i]), ans[[i]])
     }
-    # na.rm=FALSE
-    return(.headtail(x, n=n, ...))
+    if (is.data.table(x)) setDT(ans) else setDF(ans)
+    setattr(ans, "class", class(x))
+    return(ans)
   }
   if (!length(x))
     return(x)
