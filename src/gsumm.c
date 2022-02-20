@@ -202,8 +202,13 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   if (isVectorAtomic(ans)) {
     SEXP tt = PROTECT(allocVector(VECSXP, 1));
     SET_VECTOR_ELT(tt, 0, ans);
-    UNPROTECT(2);
-    return tt;
+    UNPROTECT(1);
+    ans = tt;
+  }
+  for (int i=0; i<LENGTH(ans); ++i) {
+    SEXP tt = VECTOR_ELT(ans, i);
+    setAttrib(tt, sym_lens, R_NilValue);
+    setAttrib(tt, sym_first, R_NilValue);
   }
   UNPROTECT(1);
   return ans;
@@ -930,9 +935,18 @@ static SEXP gfirstlast(const SEXP x, const bool first, const SEXP nArg, const bo
     }
   }
   SEXP ans = PROTECT(allocVector(TYPEOF(x), anslen));
+  int *anslens = NULL;
+  if (narm) {
+    // how many non-NA were found for each group
+    SEXP v;
+    setAttrib(ans, sym_lens, v=allocVector(INTSXP, ngrp));
+    setAttrib(ans, sym_first, ScalarLogical(first)); // so gforce knows which end to pad if necessary
+    anslens = INTEGER(v);
+  }
   int ansi = 0;
   #define DO(CTYPE, RTYPE, RNA, ASSIGN) {                                                          \
     const CTYPE *xd = (const CTYPE *)RTYPE(x);                                                     \
+    CTYPE *ansd = (CTYPE *)RTYPE(ans);                                                             \
     if (w==1 || !nthvalue) {                                                                       \
       const int inc = first ? +1 : -1;                                                             \
       for (int g=0; g<ngrp; ++g) {                                                                 \
@@ -951,16 +965,32 @@ static SEXP gfirstlast(const SEXP x, const bool first, const SEXP nArg, const bo
           /* const-bool narm and short-circuit-&& means above if() insignificant */                \
           ASSIGN; write++;                                                                         \
         }                                                                                          \
-        const CTYPE val = RNA;                                                                     \
+        const CTYPE val = RNA;                   /* TODO remove these 2 lines */                   \
         while (write<thisn) { ASSIGN; write++; }  /* when not enough non-NA pad with NA */         \
-        if (!first) ansi+=thisn+1;                                                                 \
+        if (false /*put back narm*/) {                                                             \
+          anslens[g] = write;                                                                      \
+          if (write<thisn && !first) {                                                             \
+            /* fewer than MIN(w,grpn) non-NA are present which we wrote (working backwards) to */  \
+            /* the end of the allocation for the the group; budge them up to close the gap */      \
+            int gap = thisn-write;                                                                 \
+            memmove(ansd+ansi-gap+1, ansd+ansi+1, gap*sizeof(CTYPE));                              \
+            /* the memmove was behind the write-barrier so careful to now blank off the STRSXP */  \
+            /* and VECSXP pointers at the end of the group otherwise the next group will assign */ \
+            /* using the write-barrier and incorrectly decremement those as old values */          \
+            memset(ansd+ansi+write-gap+1, 0, gap*sizeof(CTYPE));                                   \
+            ansi -= gap;                                                                           \
+          }                                                                                        \
+          /* else when first there's nothing more to do for this group as we'll write the next */  \
+          /* group's non-NA values in the next row */                                              \
+        }                                                                                          \
+        if (!first) ansi+=write+1; /* we wrote backwards so pass over what we wrote */             \
       }                                                                                            \
-    } else if (first) {                                                                     \
+    } else if (first) {                                                                            \
       /* gnthvalue */                                                                              \
       const int inc=1;                                                                             \
       for (int g=0; g<ngrp; ++g) {                                                                 \
         const int grpn = grpsize[g];                                                               \
-        if (w>grpn || w==0) { const CTYPE val=RNA; ASSIGN; continue; }                                     \
+        if (w>grpn || w==0) { const CTYPE val=RNA; ASSIGN; continue; }                             \
         const int j = ff[g]-1+w-1;                                                                 \
         const int k = issorted ? j : oo[j]-1;                                                      \
         const CTYPE val = nosubset ? xd[k] : (irows[k]==NA_INTEGER ? RNA : xd[irows[k]-1]);        \
@@ -977,35 +1007,37 @@ static SEXP gfirstlast(const SEXP x, const bool first, const SEXP nArg, const bo
   case LGLSXP:  {
     #undef ISNAT
     #define ISNAT(x) ((x)==NA_INTEGER)
-    int      *ansd=LOGICAL(ans);        DO(int,      LOGICAL, NA_LOGICAL,   ansd[ansi]=val; ansi+=inc)
+    DO(int,      LOGICAL, NA_LOGICAL,   ansd[ansi]=val; ansi+=inc)
   } break;
   case INTSXP:  {
     #undef ISNAT
     #define ISNAT(x) ((x)==NA_INTEGER)
-    int      *ansd=INTEGER(ans);        DO(int,      INTEGER, NA_INTEGER,   ansd[ansi]=val; ansi+=inc)
+    DO(int,      INTEGER, NA_INTEGER,   ansd[ansi]=val; ansi+=inc)
   } break;
   case REALSXP: if (INHERITS(x, char_integer64)) {
     #undef ISNAT
     #define ISNAT(x) ((x)==NA_INTEGER64)
-    int64_t *ansd=(int64_t *)REAL(ans); DO(int64_t,  REAL,    NA_INTEGER64, ansd[ansi]=val; ansi+=inc)
+    DO(int64_t,  REAL,    NA_INTEGER64, ansd[ansi]=val; ansi+=inc)
     } else {
     #undef ISNAT
     #define ISNAT(x) (ISNAN(x))
-    double      *ansd=REAL(ans);        DO(double,   REAL,    NA_REAL,      ansd[ansi]=val; ansi+=inc)
+    DO(double,   REAL,    NA_REAL,      ansd[ansi]=val; ansi+=inc)
   } break;
   case CPLXSXP: {
     #undef ISNAT
     #define ISNAT(x) (ISNAN_COMPLEX(x))
-    Rcomplex *ansd=COMPLEX(ans);        DO(Rcomplex, COMPLEX, NA_CPLX,      ansd[ansi]=val; ansi+=inc)
+    DO(Rcomplex, COMPLEX, NA_CPLX,      ansd[ansi]=val; ansi+=inc)
   } break;
   case STRSXP: {
     #undef ISNAT
     #define ISNAT(x) ((x)==NA_STRING)
-    DO(SEXP, STRING_PTR, NA_STRING,                 SET_STRING_ELT(ans,ansi,val); ansi+=inc) } break;
+    DO(SEXP,  STRING_PTR, NA_STRING,    SET_STRING_ELT(ans,ansi,val); ansi+=inc)
+  } break;
   case VECSXP: {
     #undef ISNAT
     #define ISNAT(x) (isNull(x) || (isLogical(x) && LENGTH(x)==1 && LOGICAL(x)[0]==NA_LOGICAL))
-    DO(SEXP, SEXPPTR_RO, ScalarLogical(NA_LOGICAL), SET_VECTOR_ELT(ans,ansi,val); ansi+=inc) } break;
+    DO(SEXP, SEXPPTR_RO, ScalarLogical(NA_LOGICAL), SET_VECTOR_ELT(ans,ansi,val); ansi+=inc)       /* global replace ScalarLogical() with fixed constant R_FalseValue somehow */
+  } break;
   default:
     error(_("Type '%s' is not supported by GForce head/tail/first/last/`[`. Either add the namespace prefix (e.g. utils::head(.)) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
   }

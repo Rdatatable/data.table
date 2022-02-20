@@ -28,6 +28,8 @@ SEXP sym_index;
 SEXP sym_BY;
 SEXP sym_starts, char_starts;
 SEXP sym_maxgrpn;
+SEXP sym_lens;
+SEXP sym_first;
 SEXP sym_colClassesAs;
 SEXP sym_verbose;
 SEXP SelfRefSymbol;
@@ -334,7 +336,7 @@ void attribute_visible R_init_data_table(DllInfo *info)
   char_UTC =       PRINTNAME(install("UTC"));
   char_nanotime =  PRINTNAME(install("nanotime"));
   char_starts =    PRINTNAME(sym_starts = install("starts"));
-  char_lens =      PRINTNAME(install("lens"));
+  char_lens =      PRINTNAME(sym_lens = install("lens"));
   char_indices =   PRINTNAME(install("indices"));
   char_allLen1 =   PRINTNAME(install("allLen1"));
   char_allGrp1 =   PRINTNAME(install("allGrp1"));
@@ -361,6 +363,7 @@ void attribute_visible R_init_data_table(DllInfo *info)
   sym_index   = install("index");
   sym_BY      = install(".BY");
   sym_maxgrpn = install("maxgrpn");
+  sym_first   = install("first"); 
   sym_colClassesAs = install("colClassesAs");
   sym_verbose = install("datatable.verbose");
   SelfRefSymbol = install(".internal.selfref");
