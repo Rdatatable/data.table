@@ -1774,8 +1774,8 @@ replace_dot_alias = function(e) {
             jsub[[1L]] = as.name(paste0("g", jsub[[1L]]))
             if (length(jsub)>=3L && is.symbol(jsub[[3L]]) && !(jsub[[3L]] %chin% sdvars)) jsub[[3L]] = eval(jsub[[3L]], parent.frame())   # tests 1187.3 & 1187.5
           }
-          if (verbose) catf("GForce optimized j to '%s'\n", deparse(jsub, width.cutoff=200L, nlines=1L))
-        } else if (verbose) catf("GForce is on, left j unchanged\n");
+          if (verbose) catf("GForce optimized j to '%s' (see ?GForce)\n", deparse(jsub, width.cutoff=200L, nlines=1L))
+        } else if (verbose) catf("GForce is on, but not activated for this query; left j unchanged (see ?GForce)\n");
       }
     }
     if (!GForce && !is.name(jsub)) {
