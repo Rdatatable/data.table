@@ -1727,15 +1727,13 @@ replace_dot_alias = function(e) {
     dotN = function(x) is.name(x) && x==".N" # For #334. TODO: Rprof() showed dotN() may be the culprit if iterated (#1470)?; avoid the == which converts each x to character?
     # FR #971, GForce kicks in on all subsets, no joins yet. Although joins could work with
     # nomatch=NULL even now.. but not switching it on yet, will deal it separately.
-    if (getOption("datatable.optimize")>=2L && !is.data.table(i) && !byjoin && length(f__)) {
+    if (getOption("datatable.optimize")>=2L && !is.data.table(i) && !byjoin && length(f__) && !length(lhs)) {
       if (!length(ansvars) && !use.I) {
         GForce = FALSE
-        if ( ((is.name(jsub) && jsub==".N") || (jsub %iscall% 'list' && length(jsub)==2L && jsub[[2L]]==".N")) && !length(lhs) ) {
+        if ( (is.name(jsub) && jsub==".N") || (jsub %iscall% 'list' && length(jsub)==2L && jsub[[2L]]==".N") ) {
           GForce = TRUE
           if (verbose) catf("GForce optimized j to '%s'\n",deparse(jsub, width.cutoff=200L, nlines=1L))
         }
-      } else if (length(lhs) && is.symbol(jsub)) { # turn off GForce for the combination of := and .N
-        GForce = FALSE
       } else {
         # Apply GForce
         .gforce_ok = function(q) {
@@ -1766,13 +1764,13 @@ replace_dot_alias = function(e) {
             for (ii in seq_along(jsub)[-1L]) {
               if (dotN(jsub[[ii]])) next; # For #334
               jsub[[ii]][[1L]] = as.name(paste0("g", jsub[[ii]][[1L]]))
-              if (length(jsub[[ii]])>=3L && is.symbol(jsub[[ii]][[3L]]) && !(jsub[[ii]][[3L]] %chin% sdvars)) jsub[[ii]][[3L]] = eval(jsub[[ii]][[3L]], parent.frame())  # tests 1187.2 & 1187.4
+              if (length(jsub[[ii]])==3L && is.symbol(jsub[[ii]][[3L]]) && !(jsub[[ii]][[3L]] %chin% sdvars)) jsub[[ii]][[3L]] = eval(jsub[[ii]][[3L]], parent.frame())  # tests 1187.2 & 1187.4
             }
           else {
             # adding argument to ghead/gtail if none is supplied to g-optimized head/tail
             if (length(jsub) == 2L && jsub[[1L]] %chin% c("head", "tail")) jsub[["n"]] = 6L
             jsub[[1L]] = as.name(paste0("g", jsub[[1L]]))
-            if (length(jsub)>=3L && is.symbol(jsub[[3L]]) && !(jsub[[3L]] %chin% sdvars)) jsub[[3L]] = eval(jsub[[3L]], parent.frame())   # tests 1187.3 & 1187.5
+            if (length(jsub)==3L && is.symbol(jsub[[3L]]) && !(jsub[[3L]] %chin% sdvars)) jsub[[3L]] = eval(jsub[[3L]], parent.frame())   # tests 1187.3 & 1187.5
           }
           if (verbose) catf("GForce optimized j to '%s'\n", deparse(jsub, width.cutoff=200L, nlines=1L))
         } else if (verbose) catf("GForce is on, left j unchanged\n");
@@ -1904,15 +1902,6 @@ replace_dot_alias = function(e) {
   # Grouping by by: i is by val, icols NULL, o__ may be subset of x, f__ points to o__ (or x if !length o__)
   # TO DO: setkey could mark the key whether it is unique or not.
   if (!is.null(lhs)) {
-    if (GForce) { # GForce should work with := #1414
-      vlen = length(ans[[1L]])
-      # replicate vals if GForce returns 1 value per group
-      jvals = if (vlen==length(len__)) lapply(tail(ans, -length(g)), rep, times=len__) else tail(ans, -length(g))  # see comment in #4245 for why rep instead of rep.int
-      jrows = if (!is.null(irows) && length(irows)!=length(o__)) irows else { if (length(o__)==0L) NULL else o__}
-      # unwrap single column jvals for assign
-      if (length(jvals)==1L) jvals = jvals[[1L]]
-      .Call(Cassign, x, jrows, lhs, newnames, jvals)
-    }
     if (any(names_x[cols] %chin% key(x)))
       setkey(x,NULL)
     # fixes #1479. Take care of secondary indices, TODO: cleaner way of doing this
