@@ -205,10 +205,58 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     UNPROTECT(1);
     ans = tt;
   }
+  
+  // now replicate group values to match the number of rows in each group
+  // in most cases gfuns return one value per group and there is little to do here
+  // however, in first/last with na.rm=TRUE, each column could have a different
+  // number of non-NA values, so those need to be padded
+  lens = allocVector(INTSXP, ngrp);  // TODO: avoid allocatation if not necessary
+  int *anslens = INTEGER(lens);
+  memset(anslens, 0, ngrp*sizeof(int));
+  int anslen=0;
   for (int i=0; i<LENGTH(ans); ++i) {
     SEXP tt = VECTOR_ELT(ans, i);
+    SEXP lens = getAttrib(tt, sym_lens);
+    anslen=0;
+    if (!isNull(lens)) {
+      const int *ss = INTEGER(lens);
+      anslen=0; // count again as the next column might make it bigger
+      for (g=0; g<ngrp; ++g) {
+        if (ss[g]>anslens[g]) anslens[g]=ss[g];
+        anslen += anslens[g];
+      }
+    }
     setAttrib(tt, sym_lens, R_NilValue);
     setAttrib(tt, sym_first, R_NilValue);
+  }
+  // now we have the max size of each group across the columns, we can pad if necessary
+  
+  // so, we either create another column, or we budge up/down the padding within the same allocated column
+  // budging up/down many small groups will take a lot of reads and writes, albeit saving total memory. The extra
+  // memory is only one-at-a-time per column, so choose speed over memory here
+  
+  // now we know the final result size, allocate and fill
+  for (int i=0; i<LENGTH(ans); ++i) {
+    SEXP tt = VECTOR_ELT(ans, i);
+    SEXP lens = getAttrib(tt, sym_lens);  // how long the items are,  we will never parallelize within column so we can sweep forwards
+    const bool first = LOGICAL(getAttrib(tt, sym_first))[0];
+    
+    col = allocVector(TYPEOF(tt), anslen);
+    
+    anslen=0;
+    
+    if (!isNull(lens)) {
+      const int *ss = INTEGER(lens);
+      anslen=0; // count again as the next column might make it bigger
+      for (g=0; g<ngrp; ++g) {
+        const int targetlen = anslens[g];
+        thislen = ss[g];
+        const int napad = anslen[g]-ss[g];
+        if (!first) for (int i=0; i<napad; ++i) ASSIGNNA;
+        for (int i=0; i<thislen; ++i) COPYVAL;
+        if (first) for (int i=0; i<napad; ++i) ASSIGNNA;
+      }
+    }
   }
   UNPROTECT(1);
   return ans;
