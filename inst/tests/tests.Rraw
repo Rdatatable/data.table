@@ -18724,6 +18724,32 @@ options(datatable.optimize=0)
 test(2233.41, copy(mm)[a==2, e:=sum(b), by=d, verbose=TRUE], ans, output="GForce FALSE")
 options(datatable.optimize=Inf)
 test(2233.42, copy(mm)[a==2, e:=sum(b), by=d, verbose=TRUE], ans, output="GForce.*gsum")
+# test from #5345
+set.seed(1)
+DT = data.table(
+  t  = sample(c(1:3),       size=15, replace=TRUE),
+  id = sample(LETTERS[1:3], size=15, replace=TRUE),
+  v1 = sample(1:10,         size=15, replace=TRUE),
+  v2 = 1
+)
+load(testDir("test2233-43.Rdata"))  # ans
+setDT(ans)  # to silence verbose messages about internal.selfref being NULL when loaded from disk
+old = options(datatable.verbose=TRUE)
+testnum = 2233.43
+for (opt in c(0,Inf)) {
+  options(datatable.optimize=opt)
+  out = if (opt) "GForce.*gsum" else "GForce FALSE"
+  test(testnum,
+    copy(DT)[, sum_v2_idT:=sum(v2),       by=c("id", "t")
+           ][, n_idT     :=dim(.SD)[[1]], by=list(t, id)
+           ][, sum_v2_id :=sum(v2),       by=.(id)
+           ][, sum_v1_idT:=sum(v1),       by=c("id", "t")
+           ][, sum_v1_id :=sum(v1),       by=c("id")],
+    ans,
+    output=out)
+  testnum = 2233.44
+}
+options(old)
 
 # support by=.I; #1732
 DT = data.table(V1=1:5, V2=3:7, V3=5:1)
