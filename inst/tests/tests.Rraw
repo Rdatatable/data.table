@@ -18688,6 +18688,69 @@ ydt[, ret := rnorm(.N)]
 f = shift
 test(2233.33, copy(ydt)[, (ycols) := shift(ret, yn, type = "lead"), by = symbol, verbose=TRUE], copy(ydt)[, (ycols) := f(ret, yn, type = "lead"), by = symbol], output="GForce optimized j to")
 
+# optimized := by= with out-of-order groups broke in dev before release; #5307, #5326, #5337, #5345
+# verbatim from #5307
+DT = data.table(by1=c("a","a","b","b"), by2=c("c","d","c","d"), value=c("ac","ad","bc","bd"))
+test(2233.34, copy(DT)[, same_value:=value[1],    by=.(by1, by2), verbose=TRUE], ans<-copy(DT)[, same_value:=value], output=out<-"GForce.*g[[]")
+test(2233.35, copy(DT)[, same_value:=value[1],    by=.(by2, by1), verbose=TRUE], ans,                                output=out)
+test(2233.36, copy(DT)[, same_value:=value[1], keyby=.(by2, by1), verbose=TRUE], setkey(ans,by2,by1),                output=out)
+# similar to #5307 using integer
+DT = data.table(A=INT(2,1,2,1), B=6:3, v=11:14)                                                
+test(2233.37, copy(DT)[, val:=v[1L],    by=.(A,B), verbose=TRUE], copy(DT)[, val:=11:14], output=out)
+test(2233.38, copy(DT)[, val:=v[1L], keyby=.(A,B), verbose=TRUE], data.table(A=INT(1,1,2,2), B=INT(3,5,4,6), v=INT(14,12,13,11), val=INT(14,12,13,11), key=c("A","B")), output=out)
+# test from #5326 but with n=100 rather than n=100000; confirmed that n=100 fails tests 2233.403-405 before fix
+set.seed(10)
+n = 100
+a = data.table(id1=1:n, id2=sample(1:900,n,replace=TRUE), flag=sample(c(0,0,0,1),n,replace=TRUE))
+testnum = 2233.39
+for (opt in c(0,Inf)) {
+  options(datatable.optimize=opt)
+  out = if (opt) "GForce.*gsum" else "GForce FALSE"
+  B = copy(a)
+  A = a[sample(seq_len(nrow(a)), nrow(a))] # shuffle
+  test(testnum+0.001, A[, t1 := sum(flag, na.rm=TRUE), by=id2, verbose=TRUE], A, output=out)  # y=A dummy just to test output=
+  setorder(A, id1)
+  test(testnum+0.002, A[, t2 := sum(flag, na.rm=TRUE), by=id2, verbose=TRUE], A, output=out)
+  test(testnum+0.003, any(A[,t1!=t2]), FALSE)
+  test(testnum+0.004, any(A[, length(unique(t1))>1, by=id2]$V1), FALSE)
+  test(testnum+0.005, any(A[, length(unique(t2))>1, by=id2]$V1), FALSE)
+  testnum = 2233.40
+}
+# test from #5337
+n=4; k=2
+mm = data.table(a = rep(1:k,n), b=seq_len(n*k), d=rep(1:n,k))
+ans = copy(mm)[, e:=INT(NA,8,NA,12,NA,8,NA,12)]
+options(datatable.optimize=0)
+test(2233.41, copy(mm)[a==2, e:=sum(b), by=d, verbose=TRUE], ans, output="GForce FALSE")
+options(datatable.optimize=Inf)
+test(2233.42, copy(mm)[a==2, e:=sum(b), by=d, verbose=TRUE], ans, output="GForce.*gsum")
+# test from #5345
+set.seed(1)
+DT = data.table(
+  t  = sample(c(1:3),       size=15, replace=TRUE),
+  id = sample(LETTERS[1:3], size=15, replace=TRUE),
+  v1 = sample(1:10,         size=15, replace=TRUE),
+  v2 = 1
+)
+load(testDir("test2233-43.Rdata"))  # ans
+setDT(ans)  # to silence verbose messages about internal.selfref being NULL when loaded from disk
+old = options(datatable.verbose=TRUE)
+testnum = 2233.43
+for (opt in c(0,Inf)) {
+  options(datatable.optimize=opt)
+  out = if (opt) "GForce.*gsum" else "GForce FALSE"
+  test(testnum,
+    copy(DT)[, sum_v2_idT:=sum(v2),       by=c("id", "t")
+           ][, n_idT     :=dim(.SD)[[1]], by=list(t, id)
+           ][, sum_v2_id :=sum(v2),       by=.(id)
+           ][, sum_v1_idT:=sum(v1),       by=c("id", "t")
+           ][, sum_v1_id :=sum(v1),       by=c("id")],
+    ans,
+    output=out)
+  testnum = 2233.44
+}
+options(old)
+
 # support by=.I; #1732
 DT = data.table(V1=1:5, V2=3:7, V3=5:1)
 test(2234.1, DT[, min(.SD), by=.I], setnames(DT[, min(.SD), by=1:nrow(DT)], "nrow", "I"))
