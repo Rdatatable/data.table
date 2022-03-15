@@ -18698,7 +18698,7 @@ test(2233.36, copy(DT)[, same_value:=value[1], keyby=.(by2, by1), verbose=TRUE],
 DT = data.table(A=INT(2,1,2,1), B=6:3, v=11:14)                                                
 test(2233.37, copy(DT)[, val:=v[1L],    by=.(A,B), verbose=TRUE], copy(DT)[, val:=11:14], output=out)
 test(2233.38, copy(DT)[, val:=v[1L], keyby=.(A,B), verbose=TRUE], data.table(A=INT(1,1,2,2), B=INT(3,5,4,6), v=INT(14,12,13,11), val=INT(14,12,13,11), key=c("A","B")), output=out)
-# from #5326 but with n=100 rather than n=100000; confirmed that n=100 fails tests 2233.403-405 before fix
+# test from #5326 but with n=100 rather than n=100000; confirmed that n=100 fails tests 2233.403-405 before fix
 set.seed(10)
 n = 100
 a = data.table(id1=1:n, id2=sample(1:900,n,replace=TRUE), flag=sample(c(0,0,0,1),n,replace=TRUE))
@@ -18716,6 +18716,14 @@ for (opt in c(0,Inf)) {
   test(testnum+0.005, any(A[, length(unique(t2))>1, by=id2]$V1), FALSE)
   testnum = 2233.40
 }
+# test from #5337
+n=4; k=2
+mm = data.table(a = rep(1:k,n), b=seq_len(n*k), d=rep(1:n,k))
+ans = copy(mm)[, e:=INT(NA,8,NA,12,NA,8,NA,12)]
+options(datatable.optimize=0)
+test(2233.41, copy(mm)[a==2, e:=sum(b), by=d, verbose=TRUE], ans, output="GForce FALSE")
+options(datatable.optimize=Inf)
+test(2233.42, copy(mm)[a==2, e:=sum(b), by=d, verbose=TRUE], ans, output="GForce.*gsum")
 
 # support by=.I; #1732
 DT = data.table(V1=1:5, V2=3:7, V3=5:1)
