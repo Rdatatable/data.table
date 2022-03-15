@@ -18688,6 +18688,15 @@ ydt[, ret := rnorm(.N)]
 f = shift
 test(2233.33, copy(ydt)[, (ycols) := shift(ret, yn, type = "lead"), by = symbol, verbose=TRUE], copy(ydt)[, (ycols) := f(ret, yn, type = "lead"), by = symbol], output="GForce optimized j to")
 
+# optimized := by= with out-of-order groups broke in dev before release; #5307, #5326, #5337, #5345
+DT = data.table(by1=c("a","a","b","b"), by2=c("c","d","c","d"), value=c("ac","ad","bc","bd"))  # verbatim from #5307
+test(2233.34, copy(DT)[, same_value:=value[1],    by=.(by1, by2), verbose=TRUE], ans<-copy(DT)[, same_value:=value], output=out<-"GForce.*g[[]")
+test(2233.35, copy(DT)[, same_value:=value[1],    by=.(by2, by1), verbose=TRUE], ans,                                output=out)
+test(2233.36, copy(DT)[, same_value:=value[1], keyby=.(by2, by1), verbose=TRUE], setkey(ans,by2,by1),                output=out)
+DT = data.table(A=INT(2,1,2,1), B=6:3, v=11:14)                                                # similar to #5307 using integer
+test(2233.37, copy(DT)[, val:=v[1L],    by=.(A,B), verbose=TRUE], copy(DT)[, val:=11:14], output=out)
+test(2233.38, copy(DT)[, val:=v[1L], keyby=.(A,B), verbose=TRUE], data.table(A=INT(1,1,2,2), B=INT(3,5,4,6), v=INT(14,12,13,11), val=INT(14,12,13,11), key=c("A","B")), output=out)
+
 # support by=.I; #1732
 DT = data.table(V1=1:5, V2=3:7, V3=5:1)
 test(2234.1, DT[, min(.SD), by=.I], setnames(DT[, min(.SD), by=1:nrow(DT)], "nrow", "I"))

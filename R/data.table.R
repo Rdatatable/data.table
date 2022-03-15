@@ -1908,9 +1908,10 @@ replace_dot_alias = function(e) {
       vlen = length(ans[[1L]])
       # replicate vals if GForce returns 1 value per group
       jvals = if (vlen==length(len__)) lapply(tail(ans, -length(g)), rep, times=len__) else tail(ans, -length(g))  # see comment in #4245 for why rep instead of rep.int
-      jrows = if (!is.null(irows) && length(irows)!=length(o__)) irows else { if (length(o__)==0L) NULL else o__}
-      # unwrap single column jvals for assign
-      if (length(jvals)==1L) jvals = jvals[[1L]]
+      jrows = vecseq(f__,len__,NULL)
+      if (length(o__)) jrows = o__[jrows]
+      if (length(irows)) jrows = irows[jrows]
+      if (length(jvals)==1L) jvals = jvals[[1L]]  # unwrap single column jvals for assign
       .Call(Cassign, x, jrows, lhs, newnames, jvals)
     }
     if (any(names_x[cols] %chin% key(x)))
