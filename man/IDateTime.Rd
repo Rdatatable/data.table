@@ -41,6 +41,8 @@
 \alias{month}
 \alias{quarter}
 \alias{year}
+\alias{yearmon}
+\alias{yearqtr}
 \alias{IDate-class}
 \alias{ITime-class}
 
@@ -93,6 +95,8 @@ isoweek(x)
 month(x)
 quarter(x)
 year(x)
+yearmon(x)
+yearqtr(x)
 
 }
 
@@ -164,11 +168,11 @@ functions \code{weekdays}, \code{months}, and \code{quarters} can also
 be used, but these return character values, so they must be converted to
 factors for use with data.table. \code{isoweek} is ISO 8601-consistent.
 
-The \code{round} method for IDate's is useful for grouping and plotting. 
+The \code{round} method for IDate's is useful for grouping and plotting.
 It can round to weeks, months, quarters, and years. Similarly, the \code{round}
 and \code{trunc} methods for ITime's are useful for grouping and plotting.
-They can round or truncate to hours and minutes. 
-Note for ITime's with 30 seconds, rounding is inconsistent due to rounding off a 5. 
+They can round or truncate to hours and minutes.
+Note for ITime's with 30 seconds, rounding is inconsistent due to rounding off a 5.
 See 'Details' in \code{\link{round}} for more information.
 
 }
@@ -188,9 +192,14 @@ See 'Details' in \code{\link{round}} for more information.
    and \code{year} return integer values
    for second, minute, hour, day of year, day of week,
    day of month, week, month, quarter, and year, respectively.
+   \code{yearmon} and \code{yearqtr} return double values representing
+   respectively `year + (month-1) / 12` and `year + (quarter-1) / 4`.
 
-   These values are all taken directly from the \code{POSIXlt} representation 
-   of \code{x}, with the notable difference that while \code{yday}, \code{wday}, 
+   \code{second}, \code{minute}, \code{hour} are taken directly from
+   the \code{POSIXlt} representation.
+   All other values are computed from the underlying integer representation
+   and comparable with the values of their \code{POSIXlt} representation
+   of \code{x}, with the notable difference that while \code{yday}, \code{wday},
    and \code{mon} are all 0-based, here they are 1-based.
 
 }
@@ -253,7 +262,7 @@ round(seqdates, "months")
 (seqtimes <- seq(as.ITime("07:00"), as.ITime("08:00"), by = 20))
 round(seqtimes, "hours")
 trunc(seqtimes, "hours")
-   
+
 }
 \keyword{utilities}
 
