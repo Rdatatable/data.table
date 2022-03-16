@@ -2208,15 +2208,9 @@ tail.data.table = function(x, n=6L, ...) {
   set(x,j=name,value=value)  # important i is missing here
 }
 
-as.data.frame.data.table = function(x, ...)
+as.data.frame.data.table = function(x, row.names = NULL, ...)
 {
-  ans = copy(x)
-  setattr(ans,"row.names",.set_row_names(nrow(x)))   # since R 2.4.0, data.frames can have non-character row names
-  setattr(ans,"class","data.frame")
-  setattr(ans,"sorted",NULL)  # remove so if you convert to df, do something, and convert back, it is not sorted
-  setattr(ans,"index",NULL)  #4889 #5042
-  setattr(ans,".internal.selfref",NULL)
-  # leave tl intact, no harm,
+  ans = setDF(copy(x), rownames = row.names) # issue #5319
   ans
 }
 

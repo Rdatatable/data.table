@@ -18797,3 +18797,10 @@ test(2236.7, year(x), c(1111L, 2019L, 2019L, 2019L, 2019L, 2020L, 2020L, 2020L, 
 test(2236.8, yearmon(x), c(1111+10/12, 2019, 2019+1/12, 2019+2/12, 2019+11/12, 2020+1/12, 2020+2/12, 2020+11/12, 2040, 2040+11/12, 2100+2/12))
 test(2236.9, yearqtr(x), c(1111.75, 2019, 2019, 2019, 2019.75, 2020, 2020, 2020.75, 2040, 2040.75, 2100))
 
+# as.data.table() no longer ignores row.names=, #5319
+dt = data.table(a=1:2, b=3:4)
+df = structure(list(a=1:2, b=3:4), row.names=c("x", "y"), class="data.frame")
+test(2237.1, as.data.frame(dt, row.names=c("x", "y")), df)
+df = data.frame(a=1:2, b=3:4)
+test(2237.2, as.data.frame(dt, row.names=NULL), df)
+
