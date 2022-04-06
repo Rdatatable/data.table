@@ -1324,7 +1324,8 @@ replace_dot_alias = function(e) {
           ## check key on i as well!
           ichk = is.data.table(i) && haskey(i) &&
                  identical(head(key(i), length(leftcols)), names_i[leftcols]) # i has the correct key, #3061
-          if (keylen && (ichk || is.logical(i) || (.Call(CisOrderedSubset, irows, nrow(x)) && ((roll == FALSE) || length(irows) == 1L)))) # see #1010. don't set key when i has no key, but irows is ordered and roll != FALSE
+          if (keylen && (ichk || is.logical(i) || (.Call(CisOrderedSubset, irows, nrow(x)) && ((roll == FALSE) || length(irows) == 1L) # see #1010. don't set key when i has no key, but irows is ordered and roll != FALSE
+            && (identical(vapply_1c(ans[icolsAns[leftcols]], typeof), vapply_1c(ans[xcolsAns[rightcols]], typeof)) || is.sorted(ans, by=head(key(x),keylen)))))) #5361 merging on different key types, check if really sorted (e.g., character + factors)
             setattr(ans,"sorted",head(key(x),keylen))
         }
         setattr(ans, "class", class(x))  # retain class that inherits from data.table, #64
