@@ -7132,6 +7132,15 @@ test(1483.3, merge(x,y,by="country",all=TRUE), data.table(country=factor(c("US",
 setkey(y)
 test(1483.4, y[x], data.table(country="US", key="country"))
 
+# 5361 merge on character and factor should only have key(x) if result is really sorted
+x = data.table(x=c("c", "b", "a"))
+y = data.table(x=factor(c("a", "b", "c"), levels=c("c", "b", "a")), key="x")
+test(1483.5, x[y, on="x"], x)
+test(1483.6, y[x, on="x"], x)
+x = data.table(x=c("c", "b", "a"), key="x")
+y = data.table(x=factor(c("a", "b", "c"), levels=c("c", "b", "a")))
+test(1483.7, x[y, on="x"], x)
+test(1483.8, y[x, on="x"], data.table(x=c("a", "b", "c")))
 # NULL items should be removed when making data.table from list, #842
 # Original fix for #842 added a branch in as.data.table.list() using point()
 # Then PR#3471 moved logic from data.table() into as.data.table.list() and now removes NULL items up front, so longer need for the branch
