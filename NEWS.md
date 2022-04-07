@@ -550,7 +550,7 @@
 
 53. `as.data.frame(DT, row.names=)` no longer silently ignores `row.names`, [#5319](https://github.com/Rdatatable/data.table/issues/5319). Thanks to @dereckdemezquita for the fix and PR, and @ben-schwen for guidance.
 
-54. `X[Y, on="k"]` and `merge(X, Y, by="k")` could return a wrongly keyed `data.table` if `X` is keyed by `k` and `k` is `character` in `X` and `factor` in `Y` (or vice-versa), [#5361](https://github.com/Rdatatable/data.table/issues/5361). Thanks to @gbrunick for the report and Benjamin Schwendinger for the fix.
+54. `X[Y, on="k"]` and `merge(X, Y, by="k")` returned a wrongly keyed `data.table` if `X` is keyed by `k` and `k` is a `factor`, whose levels are not sorted, in `X` and `character` in `Y`, [#5361](https://github.com/Rdatatable/data.table/issues/5361). Thanks to @gbrunick for the report and Benjamin Schwendinger for the fix.
 
 ## NOTES
 
