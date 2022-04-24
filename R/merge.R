@@ -1,9 +1,9 @@
 merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FALSE, all.x = all,
-               all.y = all, sort = TRUE, suffixes = c(".x", ".y"), no.dups = TRUE, allow.cartesian=getOption("datatable.allow.cartesian"), ...) {
+               all.y = all, sort = TRUE, suffixes = c(".x", ".y"), no.dups = TRUE, allow.cartesian=getOption("datatable.allow.cartesian"), incomparables=NULL, ...) {
   if (!sort %in% c(TRUE, FALSE))
-    stop("Argument 'sort' should be logical TRUE/FALSE")
+    stopf("Argument 'sort' should be logical TRUE/FALSE")
   if (!no.dups %in% c(TRUE, FALSE))
-    stop("Argument 'no.dups' should be logical TRUE/FALSE")
+    stopf("Argument 'no.dups' should be logical TRUE/FALSE")
   class_x = class(x)
   if (!is.data.table(y)) {
     y = as.data.table(y)
@@ -13,43 +13,55 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   }
   x0 = length(x)==0L
   y0 = length(y)==0L
-  if (x0 || y0) warning(sprintf(ngettext(x0+y0,
-    "You are trying to join data.tables where %s has 0 columns.",
-    "You are trying to join data.tables where %s have 0 columns."),
-    if (x0 && y0) "'x' and 'y'" else if (x0) "'x'" else "'y'"
-  ))
+  if (x0 || y0) {
+    if (x0 && y0)
+      warningf("Neither of the input data.tables to join have columns.")
+    else if (x0)
+      warningf("Input data.table '%s' has no columns.", "x")
+    else
+      warningf("Input data.table '%s' has no columns.", "y")
+  }
   nm_x = names(x)
   nm_y = names(y)
-  if (anyDuplicated(nm_x)) stop(gettextf("%s has some duplicated column name(s): %s. Please remove or rename the duplicate(s) and try again.", "x", brackify(nm_x[duplicated(nm_x)])))
-  if (anyDuplicated(nm_y)) stop(gettextf("%s has some duplicated column name(s): %s. Please remove or rename the duplicate(s) and try again.", "y", brackify(nm_y[duplicated(nm_y)])))
+  if (anyDuplicated(nm_x)) stopf("%s has some duplicated column name(s): %s. Please remove or rename the duplicate(s) and try again.", "x", brackify(nm_x[duplicated(nm_x)]))
+  if (anyDuplicated(nm_y)) stopf("%s has some duplicated column name(s): %s. Please remove or rename the duplicate(s) and try again.", "y", brackify(nm_y[duplicated(nm_y)]))
 
   ## set up 'by'/'by.x'/'by.y'
   if ( (!is.null(by.x) || !is.null(by.y)) && length(by.x)!=length(by.y) )
-    stop("`by.x` and `by.y` must be of same length.")
+    stopf("`by.x` and `by.y` must be of same length.")
   if (!missing(by) && !missing(by.x))
-    warning("Supplied both `by` and `by.x/by.y`. `by` argument will be ignored.")
+    warningf("Supplied both `by` and `by.x/by.y`. `by` argument will be ignored.")
   if (!is.null(by.x)) {
     if (length(by.x)==0L || !is.character(by.x) || !is.character(by.y))
-      stop("A non-empty vector of column names is required for `by.x` and `by.y`.")
+      stopf("A non-empty vector of column names is required for `by.x` and `by.y`.")
     if (!all(by.x %chin% nm_x))
-      stop("Elements listed in `by.x` must be valid column names in x.")
+      stopf("Elements listed in `by.x` must be valid column names in x.")
     if (!all(by.y %chin% nm_y))
-      stop("Elements listed in `by.y` must be valid column names in y.")
+      stopf("Elements listed in `by.y` must be valid column names in y.")
     by = by.x
     names(by) = by.y
   } else {
     if (is.null(by))
       by = intersect(key(x), key(y))
-    if (is.null(by))
+    if (!length(by))   # was is.null() before PR#5183  changed to !length()
       by = key(x)
-    if (is.null(by))
+    if (!length(by))
       by = intersect(nm_x, nm_y)
     if (length(by) == 0L || !is.character(by))
-      stop("A non-empty vector of column names for `by` is required.")
+      stopf("A non-empty vector of column names for `by` is required.")
     if (!all(by %chin% intersect(nm_x, nm_y)))
-      stop("Elements listed in `by` must be valid column names in x and y")
+      stopf("Elements listed in `by` must be valid column names in x and y")
     by = unname(by)
     by.x = by.y = by
+  }
+
+  # warn about unused arguments #2587
+  if (length(list(...))) {
+    ell = as.list(substitute(list(...)))[-1L]
+    for (n in setdiff(names(ell), "")) warningf("Unknown argument '%s' has been passed.", n)
+    unnamed_n = length(ell) - sum(names(ell) != "")
+    if (unnamed_n)
+      warningf("Passed %d unknown and unnamed arguments.", unnamed_n)
   }
   # with i. prefix in v1.9.3, this goes away. Left here for now ...
   ## sidestep the auto-increment column number feature-leading-to-bug by
@@ -69,22 +81,23 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
     end[chmatch(dupkeyx, end, 0L)] = paste0(dupkeyx, suffixes[2L])
   }
 
+  # implement incomparables argument #2587
+  if (!is.null(incomparables)) {
+    # %fin% to be replaced when #5232 is implemented/closed
+    "%fin%" = function(x, table) if (is.character(x) && is.character(table)) x %chin% table else x %in% table
+    xind = rowSums(x[, lapply(.SD, function(x) !(x %fin% incomparables)), .SDcols=by.x]) == length(by)
+    yind = rowSums(y[, lapply(.SD, function(x) !(x %fin% incomparables)), .SDcols=by.y]) == length(by)
+    # subset both so later steps still work
+    x = x[xind]
+    y = y[yind]
+  }
   dt = y[x, nomatch=if (all.x) NA else NULL, on=by, allow.cartesian=allow.cartesian]   # includes JIS columns (with a i. prefix if conflict with x names)
 
   if (all.y && nrow(y)) {  # If y does not have any rows, no need to proceed
     # Perhaps not very commonly used, so not a huge deal that the join is redone here.
     missingyidx = y[!x, which=TRUE, on=by, allow.cartesian=allow.cartesian]
     if (length(missingyidx)) {
-      yy = y[missingyidx]
-      othercolsx = setdiff(nm_x, by)
-      if (length(othercolsx)) {
-        tmp = rep.int(NA_integer_, length(missingyidx))
-        # TO DO: use set() here instead..
-        yy = cbind(yy, x[tmp, othercolsx, with = FALSE])
-      }
-      # empty data.tables (nrow =0, ncol>0) doesn't skip names anymore in new rbindlist
-      # takes care of #24 without having to save names. This is how it should be, IMHO.
-      dt = rbind(dt, yy, use.names=FALSE)
+      dt = rbind(dt, y[missingyidx], use.names=FALSE, fill=TRUE)
     }
   }
   # X[Y] syntax puts JIS i columns at the end, merge likes them alongside i.
@@ -100,8 +113,7 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   # `suffixes=c("","")`, to match behaviour in base:::merge.data.frame)
   resultdupnames = names(dt)[duplicated(names(dt))]
   if (length(resultdupnames)) {
-    warning("column names ", paste0("'", resultdupnames, "'", collapse=", "),
-            " are duplicated in the result")
+    warningf("column names %s are duplicated in the result", brackify(resultdupnames))
   }
 
   # retain custom classes of first argument that resulted in dispatch to this method, #1378

@@ -5,6 +5,11 @@
 \alias{Ops.data.table}
 \alias{is.na.data.table}
 \alias{[.data.table}
+\alias{DT}
+\alias{.}
+\alias{.(}
+\alias{.()}
+\alias{..}
 \title{ Enhanced data.frame }
 \description{
    \code{data.table} \emph{inherits} from \code{data.frame}. It offers fast and memory efficient: file reader and writer, aggregations, updates, equi, non-equi, rolling, range and interval joins, in a short and flexible syntax, for faster development.
@@ -21,7 +26,7 @@
 data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFactors=FALSE)
 
 \method{[}{data.table}(x, i, j, by, keyby, with = TRUE,
-  nomatch = getOption("datatable.nomatch", NA),
+  nomatch = NA,
   mult = "all",
   roll = FALSE,
   rollends = if (roll=="nearest") c(TRUE,TRUE)
@@ -116,7 +121,7 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
 
         When \code{j} is a character vector of column names, a numeric vector of column positions to select or of the form \code{startcol:endcol}, and the value returned is always a \code{data.table}. \code{with=FALSE} is not necessary anymore to select columns dynamically. Note that \code{x[, cols]} is equivalent to \code{x[, ..cols]} and to \code{x[, cols, with=FALSE]} and to \code{x[, .SD, .SDcols=cols]}.}
 
-    \item{nomatch}{ When a row in \code{i} has no match to \code{x}, \code{nomatch=NA} (default) means \code{NA} is returned. \code{NULL} (or \code{0} for backward compatibility) means no rows will be returned for that row of \code{i}. Use \code{options(datatable.nomatch=NULL)} to change the default value (used when \code{nomatch} is not supplied).}
+    \item{nomatch}{ When a row in \code{i} has no match to \code{x}, \code{nomatch=NA} (default) means \code{NA} is returned. \code{NULL} (or \code{0} for backward compatibility) means no rows will be returned for that row of \code{i}. }
 
     \item{mult}{ When \code{i} is a \code{list} (or \code{data.frame} or \code{data.table}) and \emph{multiple} rows in \code{x} match to the row in \code{i}, \code{mult} controls which are returned: \code{"all"} (default), \code{"first"} or \code{"last"}.}
 
@@ -141,7 +146,7 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
 
     \item{which}{\code{TRUE} returns the row numbers of \code{x} that \code{i} matches to. If \code{NA}, returns the row numbers of \code{i} that have no match in \code{x}. By default \code{FALSE} and the rows in \code{x} that match are returned.}
 
-    \item{.SDcols}{ Specifies the columns of \code{x} to be included in the special symbol \code{\link{.SD}} which stands for \code{Subset of data.table}. May be character column names or numeric positions. This is useful for speed when applying a function through a subset of (possible very many) columns; e.g., \code{DT[, lapply(.SD, sum), by="x,y", .SDcols=301:350]}.
+    \item{.SDcols}{ Specifies the columns of \code{x} to be included in the special symbol \code{\link{.SD}} which stands for \code{Subset of data.table}. May be character column names, numeric positions, logical, a function name such as `is.numeric`, or a function call such as `patterns()`. `.SDcols` is particularly useful for speed when applying a function through a subset of (possible very many) columns by group; e.g., \code{DT[, lapply(.SD, sum), by="x,y", .SDcols=301:350]}.
 
     For convenient interactive use, the form \code{startcol:endcol} is also allowed (as in \code{by}), e.g., \code{DT[, lapply(.SD, sum), by=x:y, .SDcols=a:f]}.
 
@@ -213,6 +218,8 @@ The way to read this out loud is: "Take \code{DT}, subset rows by \code{i}, \emp
     # see ?assign to add/update/delete columns by reference using the same consistent interface
 }
 
+A \code{data.table} query may be invoked on a \code{data.frame} using functional form \code{DT(...)}, see examples. The class of the input is retained.
+
 A \code{data.table} is a \code{list} of vectors, just like a \code{data.frame}. However :
 \enumerate{
 \item it never has or uses rownames. Rownames based indexing can be done by setting a \emph{key} of one or more columns or done \emph{ad-hoc} using the \code{on} argument (now preferred).
@@ -276,9 +283,9 @@ DT[2:5, cat(v, "\n")]          # just for j's side effect
 
 # select columns the data.frame way
 DT[, 2]                        # 2nd column, returns a data.table always
-colNum = 2                     # to refer vars in `j` from the outside of data use `..` prefix
-DT[, ..colNum]                 # same, equivalent to DT[, .SD, .SDcols=colNum]
-DT[["v"]]                      # same as DT[, v] but much faster
+colNum = 2
+DT[, ..colNum]                 # same, .. prefix conveys one-level-up in calling scope
+DT[["v"]]                      # same as DT[, v] but faster if called in a loop
 
 # grouping operations - j and by
 DT[, sum(v), by=x]             # ad hoc by, order of groups preserved in result
@@ -426,6 +433,13 @@ dev.off()
 
 # using rleid, get max(y) and min of all cols in .SDcols for each consecutive run of 'v'
 DT[, c(.(y=max(y)), lapply(.SD, min)), by=rleid(v), .SDcols=v:b]
+
+# functional query DT(...)
+\dontshow{ #dontrun to pass R CMD check prior to R 4.1.0 when |> was added
+           # an if getRVersion()>"4.1.0" still has its code parsed }
+\dontrun{
+mtcars |> DT(mpg>20, .(mean_hp=mean(hp)), by=cyl)
+}
 
 # Support guide and links:
 # https://github.com/Rdatatable/data.table/wiki/Support

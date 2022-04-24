@@ -15,8 +15,10 @@ sugg = c(
   "nanotime"
 )
 for (s in sugg) {
-  assign(paste0("test_",s), loaded<-suppressWarnings(suppressMessages(require(s, character.only=TRUE))))
-  if (!loaded) cat("\n**** Suggested package",s,"is not installed. Tests using it will be skipped.\n\n")
+  assign(paste0("test_",s), loaded<-suppressWarnings(suppressMessages(
+    library(s, character.only=TRUE, logical.return=TRUE, quietly=TRUE, warn.conflicts=FALSE, pos="package:base")  # attach at the end for #5101
+  )))
+  if (!loaded) cat("\n**** Suggested package",s,"is not installed or has dependencies missing. Tests using it will be skipped.\n\n")
 }
 
 x = 1:10
@@ -130,15 +132,15 @@ test(4.03, colnamesInt(dt, 1), 1L)
 test(4.04, colnamesInt(dt, c("a","d")), c(1L, 3L))
 test(4.05, colnamesInt(dt, c(1L, 3L)), c(1L, 3L))
 test(4.06, colnamesInt(dt, c(1, 3)), c(1L, 3L))
-test(4.07, colnamesInt(dt, c("a", "e")), error="specify non existing column*.*e")
-test(4.08, colnamesInt(dt, c(1L, 4L)), error="specify non existing column*.*4")
-test(4.09, colnamesInt(dt, c(1, 4)), error="specify non existing column*.*4")
-test(4.10, colnamesInt(dt, c("a", NA)), error="specify non existing column*.*NA")
-test(4.11, colnamesInt(dt, c(1L, NA)), error="specify non existing column")
-test(4.12, colnamesInt(dt, c(1, NA)), error="specify non existing column")
-test(4.13, colnamesInt(dt, c("a","d","a"), check_dups=TRUE), error="specify duplicated column")
-test(4.14, colnamesInt(dt, c(1L, 3L, 1L), check_dups=TRUE), error="specify duplicated column")
-test(4.15, colnamesInt(dt, c(1, 3, 1), check_dups=TRUE), error="specify duplicated column")
+test(4.07, colnamesInt(dt, c("a", "e")), error="received non-existing column*.*e")
+test(4.08, colnamesInt(dt, c(1L, 4L)), error="received non-existing column*.*4")
+test(4.09, colnamesInt(dt, c(1, 4)), error="received non-existing column*.*4")
+test(4.10, colnamesInt(dt, c("a", NA)), error="received non-existing column*.*NA")
+test(4.11, colnamesInt(dt, c(1L, NA)), error="received non-existing column")
+test(4.12, colnamesInt(dt, c(1, NA)), error="received non-existing column")
+test(4.13, colnamesInt(dt, c("a","d","a"), check_dups=TRUE), error="received duplicate column(s)")
+test(4.14, colnamesInt(dt, c(1L, 3L, 1L), check_dups=TRUE), error="received duplicate column(s)")
+test(4.15, colnamesInt(dt, c(1, 3, 1), check_dups=TRUE), error="received duplicate column(s)")
 test(4.16, colnamesInt(dt, list("a")), error="must be character or numeric")
 test(4.17, colnamesInt(dt, NA), error="must be character or numeric")
 test(4.18, colnamesInt(dt, character()), integer())
@@ -279,7 +281,7 @@ if (test_bit64) {
   x = as.integer64(1L)
   test(10.81, coerceAs(x, 1), 1, output="double[integer64] into double[numeric]")
   test(10.82, coerceAs(x, 1L), 1L, output="double[integer64] into integer[integer]")
-  test(10.83, coerceAs(x, "1"), error="please use as.character", output="double[integer64] into character[character]") # not yet implemented
+  test(10.83, coerceAs(x, "1"), "1", output="double[integer64] into character[character]")
   test(10.84, coerceAs(1, x), x, output="double[numeric] into double[integer64]")
   test(10.85, coerceAs(1L, x), x, output="integer[integer] into double[integer64]")
   test(10.86, coerceAs("1", x), x, output="character[character] into double[integer64]", warning="Coercing.*character")
@@ -292,14 +294,15 @@ if (test_nanotime) {
   x = nanotime(1L)
   test(10.91, coerceAs(x, 1), 1, output="double[nanotime] into double[numeric]")
   test(10.92, coerceAs(x, 1L), 1L, output="double[nanotime] into integer[integer]")
-  test(10.93, coerceAs(x, "1"), error="please use as.character", output="double[nanotime] into character[character]") # not yet implemented
+  test(10.93, substring(coerceAs(x, "1"),1,11) %in% c("1","1970-01-01T"), output="double[nanotime] into character[character]")
+                                                     # ^ https://github.com/eddelbuettel/nanotime/issues/92; %in% so as not to break if nanotime adds as.character method
   test(10.94, coerceAs(1, x), x, output="double[numeric] into double[nanotime]")
   test(10.95, coerceAs(1L, x), x, output="integer[integer] into double[nanotime]")
   test(10.96, coerceAs("1", x), x, output="character[character] into double[nanotime]", warning="Coercing.*character")
 }
 options(datatable.verbose=FALSE)
 test(11.01, coerceAs(list(a=1), 1), error="is not atomic")
-test(11.02, coerceAs(1, list(a=1)), error="is not atomic")
+test(11.02, coerceAs(1, list(a=1)), list(1))
 test(11.03, coerceAs(sum, 1), error="is not atomic")
 test(11.04, coerceAs(quote(1+1), 1), error="is not atomic")
 test(11.05, coerceAs(as.name("x"), 1), error="is not atomic")

@@ -16,11 +16,12 @@ environment:
   global:
     CRAN: http://cloud.r-project.org
     WARNINGS_ARE_ERRORS: 1
-    R_CHECK_ARGS: --no-manual
+    R_CHECK_ARGS: --no-manual --no-multiarch
+    R_ARCH: i386
 # R_CHECK_ARGS specified in order to turn off --as-cran (on by default) as that can be slow
-    R_ARCH: x64
-# multiarch is on by default which runs tests on both 32bit R and 64bit R in one x64 job; i.e. very nice and convenient for all.
-# The default for R_ARCH is i386, though, for which multiarch would just compile and test 32bit, hence setting R_ARCH to x64
+# multiarch is on by default which (when R_ARCH: x64) compiles and tests both 32bit and 64bit in one x64 job
+# --no-multiarch so as to not run both 32bit and 64bit on every commit in PRs to save dev cycle time; GLCI after merge is full-strength
+# GHA has MacOS 64bit (test-coverage) and Ubuntu 64bit, therefore picked 32bit for Windows
     GCC_PATH: mingw_64
 # Default GCC_PATH appears to be gcc-4.6.3 which is now unsupported as from Rtools.exe v3.4.
     _R_CHECK_NO_STOP_ON_TEST_ERROR_: true

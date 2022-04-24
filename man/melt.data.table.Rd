@@ -58,9 +58,7 @@ variables.
 When all \code{measure.vars} are not of the same type, they'll be coerced
 according to the hierarchy \code{list} > \code{character} > \code{numeric >
 integer > logical}. For example, if any of the measure variables is a
-\code{list}, then entire value column will be coerced to a list. Note that,
-if the type of \code{value} column is a list, \code{na.rm = TRUE} will have no
-effect.
+\code{list}, then entire value column will be coerced to a list. 
 
 From version \code{1.9.6}, \code{melt} gains a feature with \code{measure.vars}
 accepting a list of \code{character} or \code{integer} vectors as well to melt
@@ -141,8 +139,11 @@ melt(DT, id.vars=1:2, measure.vars=patterns(f="^f_", d="^d_"), value.factor=TRUE
 # na.rm=TRUE removes rows with NAs in any 'value' columns
 melt(DT, id.vars=1:2, measure.vars=patterns("f_", "d_"), value.factor=TRUE, na.rm=TRUE)
 
-# return 'NA' for missing columns, 'na.rm=TRUE' ignored due to list column
-melt(DT, id.vars=1:2, measure.vars=patterns("l_", "c_"), na.rm=TRUE)
+# 'na.rm=TRUE' also works with list column, but note that is.na only
+# returns TRUE if the list element is a length=1 vector with an NA.
+is.na(list(one.NA=NA, two.NA=c(NA,NA)))
+melt(DT, id.vars=1:2, measure.vars=patterns("l_", "d_"), na.rm=FALSE)
+melt(DT, id.vars=1:2, measure.vars=patterns("l_", "d_"), na.rm=TRUE)
 
 # measure list with missing/short entries results in output with runs of NA
 DT.missing.cols <- DT[, .(d_1, d_2, c_1, f_2)]

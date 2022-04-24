@@ -101,10 +101,10 @@ int qsort_cmp(const void *a, const void *b) {
 SEXP fsort(SEXP x, SEXP verboseArg) {
   double t[10];
   t[0] = wallclock();
-  if (!isLogical(verboseArg) || LENGTH(verboseArg)!=1 || LOGICAL(verboseArg)[0]==NA_LOGICAL)
-    error(_("verbose must be TRUE or FALSE"));
+  if (!IS_TRUE_OR_FALSE(verboseArg))
+    error(_("%s must be TRUE or FALSE"), "verbose");
   Rboolean verbose = LOGICAL(verboseArg)[0];
-  if (!isNumeric(x)) error(_("x must be a vector of type 'double' currently"));
+  if (!isNumeric(x)) error(_("x must be a vector of type double currently"));
   // TODO: not only detect if already sorted, but if it is, just return x to save the duplicate
 
   SEXP ansVec = PROTECT(allocVector(REALSXP, xlength(x)));
