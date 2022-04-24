@@ -256,10 +256,22 @@ SEXP fwriteR(
   // so we need a separate boolean flag as well as the row names should they exist (rare)
   args.doRowNames = LOGICAL(rowNames_Arg)[0];
   args.rowNames = NULL;
+  args.rowNameFun = 0;
   if (args.doRowNames) {
     SEXP rn = PROTECT(getAttrib(DF, R_RowNamesSymbol));
     protecti++;
-    args.rowNames = isString(rn) ? DATAPTR_RO(rn) : NULL;
+    if (isInteger(rn)) {
+      if (xlength(rn)!=2 || INTEGER(rn)[0]==NA_INTEGER) {
+        // not R's default rownames c(NA,-nrow)
+        if (xlength(rn) != args.nrow)
+          error(_("input has specific integer rownames but their length (%"PRId64") != nrow (%"PRId64")"), xlength(rn), args.nrow);  // # nocov
+        args.rowNames = INTEGER(rn);
+        args.rowNameFun = WF_Int32;
+      }
+    } else if (isString(rn)) {
+      args.rowNames = DATAPTR_RO(rn);
+      args.rowNameFun = WF_String;
+    }
   }
 
   args.sep = *CHAR(STRING_ELT(sep_Arg, 0));  // DO NOT DO: allow multichar separator (bad idea)

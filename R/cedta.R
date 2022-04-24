@@ -18,11 +18,18 @@ cedta.pkgEvalsUserCode = c("gWidgetsWWW","statET","FastRWeb","slidify","rmarkdow
 #   .datatable.aware = TRUE
 # which makes them data.table-aware optionally and possibly variably.
 # http://stackoverflow.com/a/13131555/403310
+# .datatable.aware is not in data.table's namespace and it is not intended to ever be added here. Otherwise
+#   package authors could set it using assignInNamespace and then not revert its value properly which would
+#   cause subsequent calls from other packages to fail.
 
 # cedta = Calling Environment Data.Table-Aware
 cedta = function(n=2L) {
   # Calling Environment Data Table Aware
-  ns = topenv(parent.frame(n))
+  env = parent.frame(n)
+  if (isTRUE(env$.datatable.aware)) {  # dtplyr 184
+    return(TRUE)
+  }
+  ns = topenv(env)
   if (!isNamespace(ns)) {
     # e.g. DT queries at the prompt (.GlobalEnv) and knitr's eval(,envir=globalenv()) but not DF[...] inside knitr::kable v1.6
     return(TRUE)
@@ -47,4 +54,3 @@ cedta = function(n=2L) {
   }
   ans
 }
-

@@ -67,7 +67,7 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SEXP
     int xt = TYPEOF(VECTOR_ELT(xdt, xcols[col]-1));
     if (iN && it!=xt) error(_("typeof x.%s (%s) != typeof i.%s (%s)"), CHAR(STRING_ELT(getAttrib(xdt,R_NamesSymbol),xcols[col]-1)), type2char(xt), CHAR(STRING_ELT(getAttrib(idt,R_NamesSymbol),icols[col]-1)), type2char(it));
     if (iN && it!=LGLSXP && it!=INTSXP && it!=REALSXP && it!=STRSXP)
-      error(_("Type '%s' not supported for joining/merging"), type2char(it));
+      error(_("Type '%s' is not supported for joining/merging"), type2char(it));
   }
 
   // rollArg, rollendsArg
@@ -85,8 +85,15 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SEXP
     error(_("rollends must be a length 2 logical vector"));
   rollends = LOGICAL(rollendsArg);
 
-  // nomatch arg
-  nomatch = INTEGER(nomatchArg)[0];
+  if (isNull(nomatchArg)) {
+    nomatch=0;
+  } else {
+    if (length(nomatchArg)!=1 || (!isLogical(nomatchArg) && !isInteger(nomatchArg)))
+      error(_("Internal error: nomatchArg must be NULL or length-1 logical/integer")); // # nocov
+    nomatch = INTEGER(nomatchArg)[0];
+    if (nomatch!=NA_INTEGER && nomatch!=0)
+      error(_("Internal error: nomatchArg must be NULL, NA, NA_integer_ or 0L")); // # nocov
+  }
 
   // mult arg
   if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "all")) mult = ALL;
@@ -369,6 +376,8 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     }
     break;
   // supported types were checked up front to avoid handling an error here in (future) parallel region
+  default:
+    error(_("Type '%s' is not supported for joining/merging"), type2char(TYPEOF(xc)));
   }
 
   if (xlow<xupp-1 || rollLow || rollUpp) { // if value found, xlow and xupp surround it, unlike standard binary search where low falls on it

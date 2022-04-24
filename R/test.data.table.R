@@ -1,22 +1,24 @@
 test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=FALSE, showProgress=interactive()&&!silent) {
   stopifnot(isTRUEorFALSE(verbose), isTRUEorFALSE(silent), isTRUEorFALSE(showProgress))
-  if (exists("test.data.table", .GlobalEnv,inherits=FALSE)) {
+  if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
     # package developer
     # nocov start
-    if ("package:data.table" %chin% search()) stop("data.table package is loaded. Unload or start a fresh R session.")
+    if ("package:data.table" %chin% search()) stopf("data.table package is loaded. Unload or start a fresh R session.")
     rootdir = if (pkg!="." && pkg %chin% dir()) file.path(getwd(), pkg) else Sys.getenv("PROJ_PATH")
     subdir = file.path("inst","tests")
+    env = new.env(parent=.GlobalEnv)  # in dev cc() sources all functions in .GlobalEnv
     # nocov end
   } else {
     # i) R CMD check and ii) user running test.data.table()
     rootdir = getNamespaceInfo("data.table","path")
     subdir = "tests"
+    env = new.env(parent=parent.env(.GlobalEnv))  # when user runs test.data.table() we don't want their variables in .GlobalEnv affecting tests, #3705
   }
   fulldir = file.path(rootdir, subdir)
 
   stopifnot(is.character(script), length(script)==1L, !is.na(script), nzchar(script))
   if (!grepl(".Rraw$", script))
-    stop("script must end with '.Rraw'. If a file ending '.Rraw.bz2' exists, that will be found and used.") # nocov
+    stopf("script must end with '.Rraw'. If a file ending '.Rraw.bz2' exists, that will be found and used.") # nocov
 
   if (identical(script,"*.Rraw")) {
     # nocov start
@@ -46,7 +48,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     # nocov start
     fn2 = paste0(fn,".bz2")
     if (!file.exists(file.path(fulldir, fn2)))
-      stop(domain=NA, gettextf("Neither %s nor %s exist in %s",fn, fn2, fulldir))
+      stopf("Neither %s nor %s exist in %s",fn, fn2, fulldir)
     fn = fn2
     # nocov end
     # sys.source() below accepts .bz2 directly.
@@ -79,7 +81,8 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     scipen = 0L,  # fwrite now respects scipen
     datatable.optimize = Inf,
     datatable.alloccol = 1024L,
-    datatable.print.class = FALSE,  # this is TRUE in cc.R and we like TRUE. But output= tests need to be updated (they assume FALSE currently)
+    datatable.print.class = FALSE,  # output= tests were written when default was FALSE
+    datatable.print.keys = FALSE,   # output= tests were written when default was FALSE
     datatable.print.trunc.cols = FALSE, #4552
     datatable.rbindlist.check = NULL,
     datatable.integer64 = "integer64",
@@ -93,7 +96,6 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   cat("getDTthreads(verbose=TRUE):\n")         # for tracing on CRAN; output to log before anything is attempted
   getDTthreads(verbose=TRUE)                   # includes the returned value in the verbose output (rather than dangling '[1] 4'); e.g. "data.table is using 4 threads"
   catf("test.data.table() running: %s\n", fn)  # print fn to log before attempting anything on it (in case it is missing); on same line for slightly easier grep
-  env = new.env(parent=.GlobalEnv)
   assign("testDir", function(x) file.path(fulldir, x), envir=env)
 
   # are R's messages being translated to a foreign language? #3039, #630
@@ -115,6 +117,9 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   assign("filename", fn, envir=env)
   assign("inittime", as.integer(Sys.time()), envir=env) # keep measures from various test.data.table runs
   assign("showProgress", showProgress, envir=env)
+
+  owd = setwd(tempdir()) # ensure writeable directory; e.g. tests that plot may write .pdf here depending on device option and/or batch mode; #5190
+  on.exit(setwd(owd))
 
   err = try(sys.source(fn, envir=env), silent=silent)
 
@@ -151,7 +156,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   if (inherits(err,"try-error")) {
     # nocov start
     if (silent) return(FALSE)
-    stop("Failed after test ", env$prevtest, " before the next test() call in ",fn)
+    stopf("Failed after test %s before the next test() call in %s", env$prevtest, fn)
     # the try() above with silent=FALSE will have already printed the error itself
     # nocov end
   }
@@ -160,15 +165,11 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   ntest = env$ntest
   if (nfail > 0L) {
     # nocov start
-    # domain=NA since it's already translated by then
-    stop(domain = NA, sprintf(
-      ngettext(
-        nfail,
-        "%d error out of %d. Search %s for test number %s",
-        "%d errors out of %d. Search %s for test numbers %s"
-      ), nfail, ntest, names(fn), paste(env$whichfail, collapse=", ")
-    ))
-    # important to stop() here, so that 'R CMD check' fails
+    stopf(
+      "%d error(s) out of %d. Search %s for test number(s) %s",
+      nfail, ntest, names(fn), toString(env$whichfail)
+    )
+    # important to stopf() here, so that 'R CMD check' fails
     # nocov end
   }
 
@@ -176,12 +177,12 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   timings = env$timings
   DT = head(timings[-1L][order(-time)], 10L)   # exclude id 1 as in dev that includes JIT
   if ((x<-sum(timings[["nTest"]])) != ntest) {
-    warning("Timings count mismatch: ",x," vs ",ntest)  # nocov
+    warningf("Timings count mismatch: %d vs %d", x, ntest)  # nocov
   }
   catf("10 longest running tests took %ds (%d%% of %ds)\n", as.integer(tt<-DT[, sum(time)]), as.integer(100*tt/(ss<-timings[,sum(time)])), as.integer(ss))
   print(DT, class=FALSE)
 
-  catf("All %d tests (last %s) in %s completed ok in %s\n", ntest, env$prevtest, names(fn), timetaken(env$started.at))
+  catf("All %d tests (last %.8g) in %s completed ok in %s\n", ntest, env$prevtest, names(fn), timetaken(env$started.at))
 
   ## this chunk requires to include new suggested deps: graphics, grDevices
   #memtest.plot = function(.inittime) {
@@ -203,7 +204,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   #    graphics::par(p)
   #    grDevices::dev.off()
   #  } else {
-  #    warning("test.data.table runs with memory testing but did not collect any memory statistics.")
+  #    warningf("test.data.table runs with memory testing but did not collect any memory statistics.")
   #  }
   #}
   #if (memtest<-get("memtest", envir=env)) memtest.plot(get("inittime", envir=env))
@@ -305,7 +306,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     showProgress = FALSE     # nocov
   }
   if (!missing(error) && !missing(y))
-    stop("Test ",numStr," is invalid: when error= is provided it does not make sense to pass y as well")  # nocov
+    stopf("Test %s is invalid: when error= is provided it does not make sense to pass y as well", numStr)  # nocov
 
   string_match = function(x, y, ignore.case=FALSE) {
     length(grep(x, y, fixed=TRUE)) ||  # try treating x as literal first; useful for most messages containing ()[]+ characters
@@ -410,8 +411,8 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     y = try(y,TRUE)
     if (identical(x,y)) return(invisible(TRUE))
     all.equal.result = TRUE
-    if (is.data.table(x) && is.data.table(y)) {
-      if (!selfrefok(x) || !selfrefok(y)) {
+    if (is.data.frame(x) && is.data.frame(y)) {
+      if ((is.data.table(x) && !selfrefok(x)) || (is.data.table(y) && !selfrefok(y))) {
         # nocov start
         catf("Test %s ran without errors but selfrefok(%s) is FALSE\n", numStr, if (selfrefok(x)) "y" else "x")
         fail = TRUE
@@ -420,12 +421,14 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
         xc=copy(x)
         yc=copy(y)  # so we don't affect the original data which may be used in the next test
         # drop unused levels in factors
-        if (length(x)) for (i in which(vapply_1b(x,is.factor))) {.xi=x[[i]];xc[,(i):=factor(.xi)]}
-        if (length(y)) for (i in which(vapply_1b(y,is.factor))) {.yi=y[[i]];yc[,(i):=factor(.yi)]}
-        setattr(xc,"row.names",NULL)  # for test 165+, i.e. x may have row names set from inheritance but y won't, consider these equal
-        setattr(yc,"row.names",NULL)
+        if (length(x)) for (i in which(vapply_1b(x,is.factor))) {.xi=x[[i]];xc[[i]]<-factor(.xi)}
+        if (length(y)) for (i in which(vapply_1b(y,is.factor))) {.yi=y[[i]];yc[[i]]<-factor(.yi)}
+        if (is.data.table(xc)) setattr(xc,"row.names",NULL)  # for test 165+, i.e. x may have row names set from inheritance but y won't, consider these equal
+        if (is.data.table(yc)) setattr(yc,"row.names",NULL)
         setattr(xc,"index",NULL)   # too onerous to create test RHS with the correct index as well, just check result
         setattr(yc,"index",NULL)
+        setattr(xc,".internal.selfref",NULL)   # test 2212
+        setattr(yc,".internal.selfref",NULL)
         if (identical(xc,yc) && identical(key(x),key(y))) return(invisible(TRUE))  # check key on original x and y because := above might have cleared it on xc or yc
         if (isTRUE(all.equal.result<-all.equal(xc,yc,check.environment=FALSE)) && identical(key(x),key(y)) &&
                                                      # ^^ to pass tests 2022.[1-4] in R-devel from 5 Dec 2020, #4835

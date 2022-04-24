@@ -6,7 +6,7 @@ output:
     toc: true
     number_sections: true
 vignette: >
-  %\VignetteIndexEntry{Frequently asked questions}
+  %\VignetteIndexEntry{Frequently Asked Questions about data.table}
   %\VignetteEngine{knitr::rmarkdown}
   \usepackage[utf8]{inputenc}
 ---
@@ -66,22 +66,21 @@ Also continue reading and see the FAQ after next. Skim whole documents before ge
 
 The `j` expression is the 2nd argument. Try `DT[ , c("x","y","z")]` or `DT[ , .(x,y,z)]`.
 
-## I assigned a variable `mycol = "x"` but then `DT[ , mycol]` returns `"x"`. How do I get it to look up the column name contained in the `mycol` variable?
+## I assigned a variable `mycol="x"` but then `DT[, mycol]` returns an error. How do I get it to look up the column name contained in the `mycol` variable?
 
-What's happening is that the `j` expression sees objects in the calling scope. The variable `mycol` does not exist as a column name of `DT` so `data.table` then looked in the calling scope and found `mycol` there and returned its value `"x"`. This is correct behaviour currently. Had `mycol` been a column name, then that column's data would have been returned.
+The error is that column named `"mycol"` cannot be found, and this error is correct. `data.table`'s scoping is different to `data.frame` in that you can use column names as if they are variables directly inside `DT[...]` without prefixing each column name with `DT$`; see FAQ 1.1 above.
 
-To get the column `x` from `DT`, there are a few options:
+To use `mycol` to select the column `x` from `DT`, there are a few options:
 
 ```r
-# using .. to tell data.table the variable should be evaluated
-DT[ , ..mycol]
-# using with=FALSE to do the same
-DT[ , mycol, with=FALSE]
-# treating DT as a list and using [[
-DT[[mycol]]
+DT[, ..mycol]            # .. prefix conveys to look for the mycol one level up in calling scope
+DT[, mycol, with=FALSE]  # revert to data.frame behavior
+DT[[mycol]]               # treat DT as a list and use [[ from base R
 ```
 
-The `with` argument refers to the `base` function `with` -- when `with=TRUE`, `data.table` operates similar to `with`, i.e. `DT[ , mycol]` behaves like `with(DT, mycol)`. When `with=FALSE`, the standard `data.frame` evaluation rules apply.
+See `?data.table` for more details about the `..` prefix.
+
+The `with` argument takes its name from the `base` function `with()`. When `with=TRUE` (default), `data.table` operates similar to `with()`, i.e. `DT[, mycol]` behaves like `with(DT, mycol)`. When `with=FALSE`, the standard `data.frame` evaluation rules apply to all variables in `j` and you can no longer use column names directly.
 
 ## What are the benefits of being able to use column names as if they are variables inside `DT[...]`?
 
@@ -99,7 +98,7 @@ We _have_ proposed enhancements to R wherever possible, too. One of these was ac
 
 > `unique()` and `match()` are now faster on character vectors where all elements are in the global CHARSXP cache and have unmarked encoding (ASCII).  Thanks to Matt Dowle for suggesting improvements to the way the hash code is generated in unique.c.
 
-A second proposal was to use `memcpy` in duplicate.c, which is much faster than a for loop in C. This would improve the _way_ that R copies data internally (on some measures by 13 times). The thread on r-devel is [here](https://r.789695.n4.nabble.com/suggestion-how-to-use-memcpy-in-duplicate-c-td2019184.html).
+A second proposal was to use `memcpy` in duplicate.c, which is much faster than a for loop in C. This would improve the _way_ that R copies data internally (on some measures by 13 times). The thread on r-devel is [here](https://stat.ethz.ch/pipermail/r-devel/2010-April/057249.html).
 
 A third more significant proposal that was accepted is that R now uses data.table's radix sort code as from R 3.3.0 :
 

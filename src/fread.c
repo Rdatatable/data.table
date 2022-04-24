@@ -66,8 +66,8 @@ static int8_t *type = NULL, *tmpType = NULL, *size = NULL;
 static lenOff *colNames = NULL;
 static freadMainArgs args = {0};  // global for use by DTPRINT; static implies ={0} but include the ={0} anyway just in case for valgrind #4639
 
-const char typeName[NUMTYPE][10] = {"drop", "bool8", "bool8", "bool8", "bool8", "int32", "int64", "float64", "float64", "float64", "int32", "float64", "string"};
-int8_t     typeSize[NUMTYPE]     = { 0,      1,       1,       1,       1,       4,       8,       8,         8,         8,         4,       8       ,  8      };
+const char typeName[NUMTYPE][10] = {"drop", "bool8", "bool8", "bool8", "bool8", "bool8", "int32", "int64", "float64", "float64", "float64", "int32", "float64", "string"};
+int8_t     typeSize[NUMTYPE]     = { 0,      1,       1,       1,       1,       1,       4,       8,       8,         8,         8,         4,       8       ,  8      };
 
 // In AIX, NAN and INFINITY don't qualify as constant literals. Refer: PR #3043
 // So we assign them through below init function.
@@ -652,8 +652,8 @@ static void StrtoI64(FieldParseContext *ctx)
 // TODO: review ERANGE checks and tests; that range outside [1.7e-308,1.7e+308] coerces to [0.0,Inf]
 /*
 f = "~/data.table/src/freadLookups.h"
-cat("const long double pow10lookup[601] = {\n", file=f, append=FALSE)
-for (i in (-300):(299)) cat("1.0E",i,"L,\n", sep="", file=f, append=TRUE)
+cat("const long double pow10lookup[301] = {\n", file=f, append=FALSE)
+for (i in 0:299) cat("1.0E",i,"L,\n", sep="", file=f, append=TRUE)
 cat("1.0E300L\n};\n", file=f, append=TRUE)
 */
 
@@ -780,12 +780,13 @@ static void parse_double_regular_core(const char **pch, double *target)
     // fail to be encoded by the compiler, even though the values can actually
     // be stored correctly.
     int_fast8_t extra = e < 0 ? e + 300 : e - 300;
-    r *= pow10lookup[extra + 300];
+    r = extra<0 ? r/pow10lookup[-extra] : r*pow10lookup[extra];
     e -= extra;
   }
-  e += 300; // lookup table is arranged from -300 (0) to +300 (600)
 
-  r *= pow10lookup[e];
+  // pow10lookup[301] contains 10^(0:300). Storing negative powers there too
+  // avoids this ternary but is slightly less accurate in some cases, #4461
+  r = e < 0 ? r/pow10lookup[-e] : r*pow10lookup[e];
   *target = (double)(neg? -r : r);
   *pch = ch;
   return;
@@ -1075,6 +1076,12 @@ static void parse_iso8601_timestamp(FieldParseContext *ctx)
     *target = NA_FLOAT64;
 }
 
+static void parse_empty(FieldParseContext *ctx)
+{
+  int8_t *target = (int8_t*) ctx->targets[sizeof(int8_t)];
+  *target = NA_BOOL8;
+}
+
 /* Parse numbers 0 | 1 as boolean and ,, as NA (fwrite's default) */
 static void parse_bool_numeric(FieldParseContext *ctx)
 {
@@ -1151,7 +1158,8 @@ static void parse_bool_lowercase(FieldParseContext *ctx)
  */
 typedef void (*reader_fun_t)(FieldParseContext *ctx);
 static reader_fun_t fun[NUMTYPE] = {
-  (reader_fun_t) &Field,
+  (reader_fun_t) &Field,        // CT_DROP
+  (reader_fun_t) &parse_empty,  // CT_EMPTY
   (reader_fun_t) &parse_bool_numeric,
   (reader_fun_t) &parse_bool_uppercase,
   (reader_fun_t) &parse_bool_titlecase,
@@ -1166,7 +1174,7 @@ static reader_fun_t fun[NUMTYPE] = {
   (reader_fun_t) &Field
 };
 
-static int disabled_parsers[NUMTYPE] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+static int disabled_parsers[NUMTYPE] = {0};
 
 static int detect_types( const char **pch, int8_t type[], int ncol, bool *bumped) {
   // used in sampling column types and whether column names are present
@@ -1286,9 +1294,10 @@ int freadMain(freadMainArgs _args) {
       STOP(_("freadMain: NAstring <<%s>> has whitespace at the beginning or end"), ch);
     if (strcmp(ch,"T")==0    || strcmp(ch,"F")==0 ||
         strcmp(ch,"TRUE")==0 || strcmp(ch,"FALSE")==0 ||
-        strcmp(ch,"True")==0 || strcmp(ch,"False")==0 ||
-        strcmp(ch,"1")==0    || strcmp(ch,"0")==0)
+        strcmp(ch,"True")==0 || strcmp(ch,"False")==0)
       STOP(_("freadMain: NAstring <<%s>> is recognized as type boolean, this is not permitted."), ch);
+    if ((strcmp(ch,"1")==0 || strcmp(ch,"0")==0) && args.logical01)
+      STOP(_("freadMain: NAstring <<%s>> and logical01=%s, this is not permitted."), ch, args.logical01 ? "TRUE" : "FALSE");
     char *end;
     errno = 0;
     (void)strtod(ch, &end);  // careful not to let "" get to here (see continue above) as strtod considers "" numeric
@@ -1355,7 +1364,7 @@ int freadMain(freadMainArgs _args) {
     const char* fnam = args.filename;
     #ifndef WIN32
       int fd = open(fnam, O_RDONLY);
-      if (fd==-1) STOP(_("file not found: %s"),fnam);
+      if (fd==-1) STOP(_("File not found: %s"),fnam);
       struct stat stat_buf;
       if (fstat(fd, &stat_buf) == -1) {
         close(fd);                                                     // # nocov
@@ -1577,7 +1586,7 @@ int freadMain(freadMainArgs _args) {
   int ncol;  // Detected number of columns in the file
   const char *firstJumpEnd=NULL; // remember where the winning jumpline from jump 0 ends, to know its size excluding header
   const char *prevStart = NULL;  // the start of the non-empty line before the first not-ignored row (for warning message later, or taking as column names)
-  int jumpLines = (int)umin(100,nrowLimit);   // how many lines from each jump point to use. If nrowLimit is supplied, nJumps is later set to 1 as well.
+  int jumpLines = nrowLimit==0 ? 100 : (int)umin(100, nrowLimit);   // how many lines from each jump point to use. If nrows>0 is supplied, nJumps is later set to 1. #4029
   {
   if (verbose) DTPRINT(_("[06] Detect separator, quoting rule, and ncolumns\n"));
 
@@ -1598,8 +1607,8 @@ int freadMain(freadMainArgs _args) {
     ch = pos;
   } else {
     int nseps;
-    char seps[]=",|;\t ";  // default seps in order of preference. See ?fread.
-                           // seps[] not *seps for writeability (http://stackoverflow.com/a/164258/403310)
+    char seps__[] = ",|;\t ";  // default seps in order of preference; writeable http://stackoverflow.com/a/164258/403310
+    char *seps = dec!=',' ? seps__ : seps__+1;  // prevent guessing sep=',' when dec=',' #4483
     char topSep=127;       // which sep 'wins' top place (see top* below). By default 127 (ascii del) means no sep i.e. single-column input (1 field)
     if (args.sep == '\0') {
       if (verbose) DTPRINT(_("  Detecting sep automatically ...\n"));
@@ -1810,7 +1819,7 @@ int freadMain(freadMainArgs _args) {
                  (uint64_t)sz, (uint64_t)jump0size, (uint64_t)(sz/(2*jump0size)));
   }
   nJumps++; // the extra sample at the very end (up to eof) is sampled and format checked but not jumped to when reading
-  if (nrowLimit<INT64_MAX) nJumps=1; // when nrowLimit supplied by user, no jumps (not even at the end) and single threaded
+  if (nrowLimit<INT64_MAX && nrowLimit>0) nJumps=1; // when nrows>0 supplied by user, no jumps (not even at the end) and single threaded
 
   sampleLines = 0;
   double sumLen=0.0, sumLenSq=0.0;
@@ -1881,8 +1890,7 @@ int freadMain(freadMainArgs _args) {
     bool bumped=false;
     detect_types(&ch, tmpType, ncol, &bumped);
     if (sampleLines>0) for (int j=0; j<ncol; j++) {
-      if (tmpType[j]==CT_STRING && type[j]<CT_STRING) {
-        // includes an all-blank column with a string at the top; e.g. test 1870.1 and 1870.2
+      if (tmpType[j]==CT_STRING && type[j]<CT_STRING && type[j]>CT_EMPTY) {
         args.header=true;
         if (verbose) DTPRINT(_("  'header' determined to be true due to column %d containing a string on row 1 and a lower type (%s) in the rest of the %d sample rows\n"),
                              j+1, typeName[type[j]], sampleLines);
@@ -2361,6 +2369,9 @@ int freadMain(freadMainArgs _args) {
               if (j+fieldsRemaining != ncol) break;
               checkedNumberOfFields = true;
             }
+            if (thisType <= -NUMTYPE) {
+              break;  // Improperly quoted char field needs to be healed below, other columns will be filled #5041 and #4774
+            }
             #pragma omp critical
             {
               joldType = type[j];  // fetch shared value again in case another thread bumped it while I was waiting.
@@ -2369,8 +2380,8 @@ int freadMain(freadMainArgs _args) {
                 if (verbose) {
                   char temp[1001];
                   int len = snprintf(temp, 1000,
-                    _("Column %d (\"%.*s\") bumped from '%s' to '%s' due to <<%.*s>> on row %"PRIu64"\n"),
-                    j+1, colNames[j].len, colNamesAnchor + colNames[j].off,
+                    _("Column %d%s%.*s%s bumped from '%s' to '%s' due to <<%.*s>> on row %"PRIu64"\n"),
+                    j+1, colNames?" <<":"", colNames?(colNames[j].len):0, colNames?(colNamesAnchor+colNames[j].off):"", colNames?">>":"",
                     typeName[abs(joldType)], typeName[abs(thisType)],
                     (int)(tch-fieldStart), fieldStart, (uint64_t)(ctx.DTi+myNrow));
                   if (len > 1000) len = 1000;

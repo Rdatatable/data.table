@@ -1,3 +1,4 @@
+#include "myomp.h"     // first for clang-13-omp, #5122
 #include "dt_stdio.h"  // PRId64 and PRIu64
 #include <R.h>
 #include <Rversion.h>
@@ -10,7 +11,6 @@
 #define SEXPPTR_RO(x) ((const SEXP *)DATAPTR_RO(x))  // to avoid overhead of looped STRING_ELT and VECTOR_ELT
 #include <stdint.h>    // for uint64_t rather than unsigned long long
 #include <stdbool.h>
-#include "myomp.h"
 #include "types.h"
 #include "po.h"
 #ifdef WIN32  // positional specifiers (%n$) used in translations; #4402
@@ -103,6 +103,7 @@ extern SEXP sym_datatable_locked;
 extern SEXP sym_tzone;
 extern SEXP sym_old_fread_datetime_character;
 extern SEXP sym_variable_table;
+extern SEXP sym_as_character;
 extern double NA_INT64_D;
 extern long long NA_INT64_LL;
 extern Rcomplex NA_CPLX;  // initialized in init.c; see there for comments
@@ -123,7 +124,7 @@ SEXP growVector(SEXP x, R_len_t newlen);
 // assign.c
 SEXP allocNAVector(SEXPTYPE type, R_len_t n);
 SEXP allocNAVectorLike(SEXP x, R_len_t n);
-void writeNA(SEXP v, const int from, const int n);
+void writeNA(SEXP v, const int from, const int n, const bool listNA);
 void savetl_init(), savetl(SEXP s), savetl_end();
 int checkOverAlloc(SEXP x);
 
@@ -229,11 +230,11 @@ SEXP coalesce(SEXP x, SEXP inplace);
 
 // utils.c
 bool isRealReallyInt(SEXP x);
+SEXP isRealReallyIntR(SEXP x);
 SEXP isReallyReal(SEXP x);
 bool allNA(SEXP x, bool errorForBadType);
 SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups);
 bool INHERITS(SEXP x, SEXP char_);
-bool Rinherits(SEXP x, SEXP char_);
 SEXP copyAsPlain(SEXP x);
 void copySharedColumns(SEXP x);
 SEXP lock(SEXP x);
