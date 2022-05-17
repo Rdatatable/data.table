@@ -10071,6 +10071,7 @@ test(1658.37, fwrite(matrix("foo"), quote=TRUE), output='"V1"\n.*"foo"', message
 test(1658.38, fwrite(matrix(1:4, nrow=2, ncol=2), quote = TRUE), output = '"V1","V2"\n.*1,3\n2,4', message = "x being coerced from class: matrix to data.table")
 test(1658.39, fwrite(matrix(1:3, nrow=3, ncol=1), quote = TRUE), output = '"V1"\n.*1\n2\n3', message = "x being coerced from class: matrix to data.table")
 test(1658.40, fwrite(matrix(1:4, nrow=2, ncol=2, dimnames = list(c("ra","rb"),c("ca","cb"))), quote = TRUE), output = '"ca","cb"\n.*1,3\n2,4', message = "x being coerced from class: matrix to data.table")
+# keep row.names for matrix input #5315
 test(1658.401, fwrite(matrix(1:4, nrow=2, dimnames=list(c("a", "b"), NULL)), row.names=TRUE),  output = '"",V1,V2\na,1,3\nb,2,4', message = "x being coerced from class: matrix to data.table")
 test(1658.402, fwrite(matrix(1:4, nrow=2, dimnames=list(c("a", "b"), NULL)), row.names=FALSE), output = 'V1,V2\n1,3\n2,4', message = "x being coerced from class: matrix to data.table")
 test(1658.403, fwrite(matrix(1:4, nrow=2), row.names=TRUE),  output = '"",V1,V2\n1,1,3\n2,2,4', message = "x being coerced from class: matrix to data.table")
