@@ -18804,3 +18804,12 @@ test(2237.1, as.data.frame(dt, row.names=c("x", "y")), df)
 df = data.frame(a=1:2, b=3:4)
 test(2237.2, as.data.frame(dt, row.names=NULL), df)
 
+# 5392 split(x,f) does not work with formula f
+dt = data.table(x=1:4, y=factor(letters[1:2]))
+test(2238.1, split(dt, ~y), list(a=data.table(x=c(1L,3L), y=factor("a", levels=c("a", "b"))), b=data.table(x=c(2L, 4L), y=factor("b", levels=c("a", "b")))))
+dt = data.table(x=1:4, y=1:2)
+test(2238.2, split(dt, ~y), list(`1`=data.table(x=c(1L,3L), y=1L), `2`=data.table(x=c(2L, 4L), y=2L)))
+test(2238.3, setDT(do.call("rbind.data.frame", split(dt, ~y))), data.table(x=c(1L,3L,2L,4L), y=c(1L,1L,2L,2L)))
+test(2238.4, rbindlist(split(dt, ~y)), data.table(x=c(1L,3L,2L,4L), y=c(1L,1L,2L,2L)))
+dt = data.table(x=1:4, y=factor(letters[1:2]), z=factor(c(1,1,2,2), labels=c("c", "d")))
+test(2238.5, split(dt, ~y+z), list("a.c"=dt[1], "b.c"=dt[2], "a.d"=dt[3], "b.d"=dt[4]))
