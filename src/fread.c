@@ -1,3 +1,5 @@
+#include "fread.h"
+
 #if defined(CLOCK_REALTIME) && !defined(DISABLE_CLOCK_REALTIME)
 #define HAS_CLOCK_REALTIME
 #endif
@@ -24,7 +26,6 @@
   #include <math.h>      // ceil, sqrt, isfinite
 #endif
 #include <stdbool.h>
-#include "fread.h"
 #include "freadLookups.h"
 
 // Private globals to save passing all of them through to highly iterated field processors
