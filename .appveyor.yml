@@ -17,7 +17,7 @@ environment:
     CRAN: http://cloud.r-project.org
     WARNINGS_ARE_ERRORS: 1
     R_CHECK_ARGS: --no-manual --no-multiarch
-    R_ARCH: i386
+    R_ARCH: x64
 # R_CHECK_ARGS specified in order to turn off --as-cran (on by default) as that can be slow
 # multiarch is on by default which (when R_ARCH: x64) compiles and tests both 32bit and 64bit in one x64 job
 # --no-multiarch so as to not run both 32bit and 64bit on every commit in PRs to save dev cycle time; GLCI after merge is full-strength
