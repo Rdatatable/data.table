@@ -14852,8 +14852,6 @@ if (.Platform$OS.type == 'windows') local({
   test(2011, dt1$a, dt2$a)
   Sys.setlocale('LC_COLLATE', lc_collate)   # restore for further tests in this file
   Sys.setlocale('LC_CTYPE', lc_ctype)
-  cat("LC_COLLATE: ", lc_collate, "\n")
-  cat("LC_CTYPE: ", lc_ctype, "\n")
 })
 
 # cbind of zero-row data.table with empty data.table messed up columns, #3445
