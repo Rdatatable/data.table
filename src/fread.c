@@ -281,7 +281,7 @@ static inline const char *end_NA_string(const char *start) {
   // start should be at the beginning of any potential NA string, after leading whitespace skipped by caller
   const char* const* nastr = NAstrings;
   const char *mostConsumed = start; // tests 1550* includes both 'na' and 'nan' in nastrings. Don't stop after 'na' if 'nan' can be consumed too.
-  if (nastr) while (*nastr) {
+  while (*nastr) {
     const char *ch1 = start;
     const char *ch2 = *nastr;
     while (*ch1==*ch2 && *ch2!='\0') { ch1++; ch2++; }
@@ -1283,8 +1283,6 @@ int freadMain(freadMainArgs _args) {
   while (*nastr) {
     if (**nastr == '\0') {
       blank_is_a_NAstring = true;
-      // if blank is the only one, as is the default, clear NAstrings so that doesn't have to be checked
-      if (nastr==NAstrings && nastr+1==NULL) NAstrings=NULL;
       nastr++;
       continue;
     }
