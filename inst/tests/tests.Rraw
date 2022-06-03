@@ -2273,15 +2273,36 @@ test(753.1, DT[,c("x1","x2"):=4:6, verbose = TRUE], data.table(a=letters[1:3],x=
             output = "RHS for item 2 has been duplicated")
 test(753.2, DT[2,x2:=7L], data.table(a=letters[1:3],x=3:1,x1=4:6,x2=c(4L,7L,6L),key="a"))
 DT = data.table(a=letters[3:1],x=1:3,y=4:6)
-test(754.1, DT[,c("x1","y1","x2"):=list(x,y)], error="Supplied 3 columns to be assigned 2 items. Please see NEWS for v1.12.2")
-test(754.2, DT[,c("x1","y1","x2"):=list(x,y,x)], data.table(a=letters[3:1],x=1:3,y=4:6,x1=1:3,y1=4:6,x2=1:3))
+test(754.01, DT[,c("x1","y1","x2"):=list(x,y)], error="Supplied 3 columns to be assigned 2 items. Please see NEWS for v1.12.2")
+test(754.02, DT[,c("x1","y1","x2"):=list(x,y,x)], data.table(a=letters[3:1],x=1:3,y=4:6,x1=1:3,y1=4:6,x2=1:3))
 # And non-recycling i.e. that a single column copy does copy the column
 DT = data.table(a=1:3)
-test(754.3, DT[,b:=a][1,a:=4L][2,b:=5L], data.table(a=INT(4,2,3),b=INT(1,5,3)))
-test(754.4, DT[,b:=a][3,b:=6L], data.table(a=INT(4,2,3),b=INT(4,2,6)))
-test(754.5, DT[,a:=as.character(a),verbose=TRUE], output="Direct plonk.*no copy")
+test(754.03, DT[,b:=a][1,a:=4L][2,b:=5L], data.table(a=INT(4,2,3),b=INT(1,5,3)))
+test(754.04, DT[,b:=a][3,b:=6L], data.table(a=INT(4,2,3),b=INT(4,2,6)))
+test(754.05, DT[,a:=as.numeric(a),verbose=TRUE], output="Direct plonk.*no copy")
 RHS = as.integer(DT$a)
-test(754.6, DT[,a:=RHS,verbose=TRUE], output="RHS for item 1 has been duplicated")
+test(754.06, DT[,a:=RHS,verbose=TRUE], output="RHS for item 1 has been duplicated")
+# Expand ALTREPS in assign.c, #5400
+# String conversion gets deferred
+test(754.07, DT[,a:=as.character(a),verbose=TRUE], output="RHS for item 1 has been duplicated")
+# Executing the code inside of test expands the ALTREP so we repeat the code
+# in order to check the result after a further assignment
+DT = data.table(a=1:3)
+DT[,b:=as.character(a)]
+DT[, a:=5L]
+test(754.08, DT, data.table(a=5L, b=as.character(1:3)))
+# This function returns an ALTREP wrapper if the input is at least length 64
+testFun = function(x) {
+  x[FALSE] = 1
+  x
+}
+DT = data.table(id=1:64, col1=0, col2=0)
+test(754.09, DT[, col1 := testFun(col2), verbose = TRUE], output="RHS for item 1 has been duplicated")
+DT = data.table(id=1:64, col1=0, col2=0)
+DT[, col1 := testFun(col2)]
+DT[, col2 := 999]
+test(754.10, DT, data.table(id=1:64, col1=0, col2=999))
+rm(testFun)
 
 # Used to test warning on redundant by (#2282) but by=.EACHI has now superseded
 DT = data.table(a=letters[1:3],b=rep(c("d","e"),each=3),x=1:6,key="a,b")
