@@ -10,5 +10,8 @@ options(width=200)
 options(digits.secs=3)  # for POSIXct to print milliseconds
 suppressWarnings(RNGversion("3.5.0"))  # so when I create tests in dev there isn't a mismatch when run by cc()
 
+# set drat repo for drat::insertPackage see also https://eddelbuettel.github.io/drat/vignettes/dratforauthors/
+options(dratRepo="~/github/drat")
+
 Sys.setenv(PROJ_PATH=path.expand("~/GitHub/data.table"))
 source(paste0(Sys.getenv("PROJ_PATH"),"/.dev/cc.R"))
