@@ -108,7 +108,7 @@ Instead, in *data.tables* we set and use `keys`. Think of a `key` as **superchar
 
 #### Keys and their properties {#key-properties}
 
-1. We can set keys on *multiple columns* and the column can be of *different types* -- *integer*, *numeric*, *character*, *factor*, *integer64* etc. *list* and *complex* types are not supported yet.
+1. [ ] We can set keys on *multiple columns* and the column can be of *different types* -- *integer*, *numeric*, *character*, *factor*, *integer64* etc. *list* and *complex* types are not supported yet.
 
 2. Uniqueness is not enforced, i.e., duplicate key values are allowed. Since rows are sorted by key, any duplicates in the key columns will appear consecutively.
 
@@ -146,7 +146,7 @@ head(flights)
 
 #### set* and `:=`:
 
-In *data.table*, the `:=` operator and all the `set*` (e.g., `setkey`, `setorder`, `setnames` etc...) functions are the only ones which modify the input object *by reference*.
+In *data.table*, the `:=` operator and all the `set*` (e.g., `setkey`, `setorder`, `setnames` etc.) functions are the only ones which modify the input object *by reference*.
 
 Once you *key* a *data.table* by certain columns, you can subset by querying those key columns using the `.()` notation in `i`. Recall that `.()` is an *alias to* `list()`.
 
