@@ -38,7 +38,7 @@ Briefly, if you are interested in reducing *programming* and *compute* time trem
 
 ## Data {#data}
 
-In this vignette, we will use [NYC-flights14](https://raw.githubusercontent.com/Rdatatable/data.table/master/vignettes/flights14.csv) data obtained by [flights](https://github.com/arunsrinivasan/flights) package (available on GitHub only). It contains On-Time flights data from the Bureau of Transporation Statistics for all the flights that departed from New York City airports in 2014 (inspired by [nycflights13](https://github.com/tidyverse/nycflights13)). The data is available only for Jan-Oct'14.
+In this vignette, we will use [NYC-flights14](https://raw.githubusercontent.com/Rdatatable/data.table/master/vignettes/flights14.csv) data obtained by [flights](https://github.com/arunsrinivasan/flights) package (available on GitHub only). It contains On-Time flights data from the Bureau of Transportation Statistics for all the flights that departed from New York City airports in 2014 (inspired by [nycflights13](https://github.com/tidyverse/nycflights13)). The data is available only for Jan-Oct'14.
 
 We can use `data.table`'s fast-and-friendly file reader `fread` to load `flights` directly as follows:
 
@@ -185,7 +185,7 @@ head(ans)
 
 #### {.bs-callout .bs-callout-info}
 
-* We wrap the *variables* (column names) within `list()`, which ensures that a `data.table` is  returned. In case of a single column name, not wrapping with `list()` returns a vector instead, as seen in the [previous example](#select-j-1d).
+* We wrap the *variables* (column names) within `list()`, which ensures that a `data.table` is returned. In case of a single column name, not wrapping with `list()` returns a vector instead, as seen in the [previous example](#select-j-1d).
 
 * `data.table` also allows wrapping columns with `.()` instead of `list()`. It is an *alias* to `list()`; they both mean the same. Feel free to use whichever you prefer; we have noticed most users seem to prefer `.()` for conciseness, so we will continue to use `.()` hereafter.
 
@@ -247,7 +247,7 @@ ans
 
 * We first subset in `i` to find matching *row indices* where `origin` airport equals `"JFK"`, and `month` equals `6L`. We *do not* subset the _entire_ `data.table` corresponding to those rows _yet_.
 
-* Now, we look at `j` and find that it uses only *two columns*. And what we have to do is to compute their `mean()`. Therefore we subset just those columns corresponding to the matching rows, and compute their `mean()`.
+* Now, we look at `j` and find that it uses only *two columns*. And what we have to do is to compute their `mean()`. Therefore, we subset just those columns corresponding to the matching rows, and compute their `mean()`.
 
 Because the three main components of the query (`i`, `j` and `by`) are *together* inside `[...]`, `data.table` can see all three and optimise the query altogether *before evaluation*, not each separately. We are able to therefore avoid the entire subset (i.e., subsetting the columns _besides_ `arr_delay` and `dep_delay`), for both speed and memory efficiency.
 
@@ -277,9 +277,9 @@ ans
 
 * Once again, we subset in `i` to get the *row indices* where `origin` airport equals *"JFK"*, and `month` equals *6*.
 
-* We see that `j` uses only `.N` and no other columns. Therefore the entire subset is not materialised. We simply return the number of rows in the subset (which is just the length of row indices).
+* We see that `j` uses only `.N` and no other columns. Therefore, the entire subset is not materialised. We simply return the number of rows in the subset (which is just the length of row indices).
 
-* Note that we did not wrap `.N` with `list()` or `.()`. Therefore a vector is returned.
+* Note that we did not wrap `.N` with `list()` or `.()`. Therefore, a vector is returned.
 
 We could have accomplished the same operation by doing `nrow(flights[origin == "JFK" & month == 6L])`. However, it would have to subset the entire `data.table` first corresponding to the *row indices* in `i` *and then* return the rows using `nrow()`, which is unnecessary and inefficient. We will cover this and other optimisation aspects in detail under the *`data.table` design* vignette.
 
@@ -325,7 +325,7 @@ DF[with(DF, x > 1), ]
 
 * Using `with()` in (2) allows using `DF`'s column `x` as if it were a variable.
 
-    Hence the argument name `with` in `data.table`. Setting `with = FALSE` disables the ability to refer to columns as if they are variables, thereby restoring the "`data.frame` mode".
+    Hence, the argument name `with` in `data.table`. Setting `with = FALSE` disables the ability to refer to columns as if they are variables, thereby restoring the "`data.frame` mode".
 
 * We can also *deselect* columns using `-` or `!`. For example:
 
@@ -378,9 +378,9 @@ ans
 
 * By doing `head(flights)` you can see that the origin airports occur in the order *"JFK"*, *"LGA"* and *"EWR"*. The original order of grouping variables is preserved in the result. _This is important to keep in mind!_
 
-* Since we did not provide a name for the column returned in `j`, it was named `N`  automatically by recognising the special symbol `.N`.
+* Since we did not provide a name for the column returned in `j`, it was named `N` automatically by recognising the special symbol `.N`.
 
-* `by` also accepts a character vector of column names. This is particularly useful for  coding programmatically, e.g., designing a function with the grouping columns as a (`character` vector) function argument.
+* `by` also accepts a character vector of column names. This is particularly useful for coding programmatically, e.g., designing a function with the grouping columns as a (`character` vector) function argument.
 
 * When there's only one column or expression to refer to in `j` and `by`, we can drop the `.()` notation. This is purely for convenience. We could instead do:
 
@@ -477,7 +477,7 @@ head(ans)
 
 #### {.bs-callout .bs-callout-info}
 
-* Recall that we can use `-` on a `character` column in `order()` within the frame of a `data.table`. This is possible to due `data.table`'s internal query optimisation.
+* Recall that we can use `-` on a `character` column in `order()` within the frame of a `data.table`. This is possible to due to `data.table`'s internal query optimisation.
 
 * Also recall that `order(...)` with the frame of a `data.table` is *automatically optimised* to use `data.table`'s internal fast radix order `forder()` for speed. 
 
@@ -634,7 +634,7 @@ DT[, print(c(a,b)), by = ID]
 DT[, print(list(c(a,b))), by = ID]
 ```
 
-In (1), for each group, a vector is returned, with length = 6,4,2 here. However (2) returns a list of length 1 for each group, with its first element holding vectors of length 6,4,2. Therefore (1) results in a length of ` 6+4+2 = `r 6+4+2``, whereas (2) returns `1+1+1=`r 1+1+1``.
+In (1), for each group, a vector is returned, with length = 6,4,2 here. However, (2) returns a list of length 1 for each group, with its first element holding vectors of length 6,4,2. Therefore, (1) results in a length of ` 6+4+2 = `r 6+4+2``, whereas (2) returns `1+1+1=`r 1+1+1``.
 
 ## Summary
 
