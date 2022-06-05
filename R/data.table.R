@@ -1912,6 +1912,9 @@ replace_dot_alias = function(e) {
       if (length(o__)) jrows = o__[jrows]
       if (length(irows)) jrows = irows[jrows]
       if (length(jvals)==1L) jvals = jvals[[1L]]  # unwrap single column jvals for assign
+      if (.is_nrows(jsub)) { # 5403 unwrap multicolumn jvals for gfunctions that can return lists
+        jvals = if (length(jvals) != length(lhs)) split(unlist(jvals), rep(seq_along(jvals[[1L]]), length(jvals))) else lapply(jvals, unlist)
+      }
       .Call(Cassign, x, jrows, lhs, newnames, jvals)
     }
     if (any(names_x[cols] %chin% key(x)))
