@@ -294,7 +294,7 @@
 
 40.  New functions `yearmon()` and `yearqtr` give a combined representation of `year()` and `month()`/`quarter()`. These and also `yday`, `wday`, `mday`, `week`, `month` and `year` are now optimized for memory and compute efficiency by removing the `POSIXlt` dependency, [#649](https://github.com/Rdatatable/data.table/issues/649). Thanks to Matt Dowle for the request, and Benjamin Schwendinger for the PR.
 
-41. `split.data.table` also accepts now a formula for `f`, [#5392](https://github.com/Rdatatable/data.table/issues/5392). Thanks to @XiangyunHuang for the request, and @ben-schwen for the PR.
+41. `split.data.table` also accepts now a formula for `f`, [#5392](https://github.com/Rdatatable/data.table/issues/5392), mirroring the same in `base::split.data.frame` which has been added in R 4.1.0 (May 2021). Thanks to @XiangyunHuang for the request, and @ben-schwen for the PR.
 
 ## BUG FIXES
 
