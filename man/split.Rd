@@ -47,7 +47,7 @@ all.equal(
 split(DT, by=c("x1", "x2"))
 split(DT, by=c("x1", "x2"), flatten=FALSE)
 
-# use formula for instead of by
+# use formula instead of by
 split(DT, ~x1+x2)
 
 # dealing with factors
