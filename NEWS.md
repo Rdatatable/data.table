@@ -603,6 +603,7 @@
 
 16. The options `datatable.print.class` and `datatable.print.keys` are now `TRUE` by default. They have been available since v1.9.8 (Nov 2016) and v1.11.0 (May 2018) respectively.
 
+17. A defunct code path in `fread` was removed. The code, which had been present for four years, was intended as an optimization for `na.strings = ""` but due to an error was never actually used. The error was uncovered by CRAN's continuous testing which uses a variety of environments to build and test R packages. One of these uses the latest version of the GCC compiler which newly warns on the type of error present here. Thanks to Václav Tlapák for investigating [#5733](https://github.com/Rdatatable/data.table/issues/5377) and the PR [#5399](https://github.com/Rdatatable/data.table/pull/5399).
 
 # data.table [v1.14.2](https://github.com/Rdatatable/data.table/milestone/24?closed=1)  (27 Sep 2021)
 
