@@ -155,7 +155,7 @@ SEXP uniqlengths(SEXP x, SEXP n);
 
 // chmatch.c
 SEXP chmatch(SEXP x, SEXP table, int nomatch);
-SEXP chin(SEXP x, SEXP table, bool negate);
+SEXP chin(SEXP x, SEXP table);
 
 SEXP isOrderedSubset(SEXP, SEXP);
 void setselfref(SEXP);
@@ -259,3 +259,6 @@ int dt_win_snprintf(char *dest, size_t n, const char *fmt, ...);
 
 // programming.c
 SEXP substitute_call_arg_namesR(SEXP expr, SEXP env);
+
+//negate.c
+SEXP negate(SEXP x);
