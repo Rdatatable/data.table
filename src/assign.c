@@ -536,7 +536,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   if (length(key)) {
     // if assigning to at least one key column, the key is truncated to one position before the first changed column.
     //any() and subsetVector() don't seem to be exposed by R API at C level, so this is done here long hand.
-    PROTECT(tmp = chin(key, assignedNames, false)); protecti++;
+    PROTECT(tmp = chin(key, assignedNames)); protecti++;
     int newKeyLength = length(key);
     for (int i=0; i<LENGTH(tmp); ++i) if (LOGICAL(tmp)[i]) {
       // If a key column is being assigned to, set newKeyLength to the key element before since everything after that may have changed in order.
@@ -624,7 +624,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       } else if(newKeyLength < strlen(c1)) {
         SEXP s4Str = PROTECT(mkString(s4));
         if(indexLength == 0 && // shortened index can be kept since it is just information on the order (see #2372)
-           LOGICAL(chin(s4Str, indexNames, false))[0] == 0) {// index with shortened name not present yet
+           LOGICAL(chin(s4Str, indexNames))[0] == 0) {// index with shortened name not present yet
           SET_TAG(s, install(s4));
           SET_STRING_ELT(indexNames, indexNo, mkChar(s4));
           if (verbose)

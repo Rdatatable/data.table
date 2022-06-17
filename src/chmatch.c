@@ -1,6 +1,6 @@
 #include "data.table.h"
 
-static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatchdup, bool negate) {
+static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatchdup) {
   if (!isString(table) && !isNull(table))
     error(_("table is type '%s' (must be 'character' or NULL)"), type2char(TYPEOF(table)));
   if (chin && chmatchdup)
@@ -148,7 +148,7 @@ SEXP chin(SEXP x, SEXP table) {
 SEXP chmatch_R(SEXP x, SEXP table, SEXP nomatch) {
   return chmatchMain(x, table, INTEGER(nomatch)[0], false, false);
 }
-SEXP chin_R(SEXP x, SEXP table, SEXP negate) {
+SEXP chin_R(SEXP x, SEXP table) {
   return chmatchMain(x, table, 0,                   true,  false);
 }
 SEXP chmatchdup_R(SEXP x, SEXP table, SEXP nomatch) {
