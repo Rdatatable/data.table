@@ -230,6 +230,7 @@ R_CallMethodDef callMethods[] = {
 {"Csubstitute_call_arg_namesR", (DL_FUNC) &substitute_call_arg_namesR, -1},
 {"CstartsWithAny", (DL_FUNC)&startsWithAny, -1},
 {"CconvertDate", (DL_FUNC)&convertDate, -1},
+{"Cnegate", (DL_FUNC)&negate, -1},
 {NULL, NULL, 0}
 };
 
