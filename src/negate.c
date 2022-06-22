@@ -1,14 +1,20 @@
 #include "data.table.h"
 
-SEXP negate(SEXP x) {
+void negateByRef(SEXP x) {
   if(TYPEOF(x) != LGLSXP) {
     error("not logical or integer vector");
   }
   int n = length(x);
   int *ansd = INTEGER(x);
   for(int i=0;i<n;i++) {
-    ansd[i] = LOGICAL(x)[i] == TRUE?0:1;
+    if (ansd[i] != NA_LOGICAL) ansd[i] ^= 1;
   }
-  return x;
+}
+
+
+SEXP notchin(SEXP x, SEXP table) {
+  SEXP result = chin(x, table);
+  negateByRef(result);
+  return result;
 }
 
