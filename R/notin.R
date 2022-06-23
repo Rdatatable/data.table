@@ -1,9 +1,7 @@
 "%notin%" = function(x, table) {
   if (is.character(x) && is.character(table)) {
-    result = .Call(Cnotchin, x, table)
+    .Call(Cnotchin, x, table)
   } else {
-    result = match(x, table, nomatch = 0L) == 0
+    match(x, table, nomatch = 0L) == 0L
   }
-  return(result)
-  
 }

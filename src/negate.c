@@ -15,6 +15,7 @@ void negateByRef(SEXP x) {
 SEXP notchin(SEXP x, SEXP table) {
   SEXP result = PROTECT(chin(x, table));
   negateByRef(result);
+  UNPROTECT(1);
   return result;
 }
 
