@@ -30,7 +30,9 @@
   NULL.
 }
 \examples{
-  # data.table::update.dev.pkg()
+\dontrun{
+  data.table::update.dev.pkg()
+}
 }
 \seealso{
   \code{\link{data.table}}
