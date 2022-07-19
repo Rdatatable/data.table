@@ -30,9 +30,8 @@
   NULL.
 }
 \examples{
-\dontrun{
-  data.table::update.dev.pkg()
-}
+\dontshow{ # using if(FALSE) because \dontrun could still be run by  --run-dontrun; #5421 }
+  if (FALSE) data.table::update.dev.pkg()
 }
 \seealso{
   \code{\link{data.table}}
