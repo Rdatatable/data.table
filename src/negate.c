@@ -2,7 +2,7 @@
 
 void negateByRef(SEXP x) {
   if(TYPEOF(x) != LGLSXP) {
-    error("not logical or integer vector");
+    error("not logical or integer vector");  // # nocov
   }
   const int n = length(x);
   Rboolean *ansd = (Rboolean *)LOGICAL(x);
