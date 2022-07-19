@@ -5,7 +5,7 @@ void negateByRef(SEXP x) {
     error("not logical or integer vector");
   }
   const int n = length(x);
-  Rboolean *ansd = LOGICAL(x);
+  Rboolean *ansd = (Rboolean *)LOGICAL(x);
   for(int i=0; i<n; ++i) {
     ansd[i] ^= (ansd[i] != NA_LOGICAL);  // invert true/false but leave NA alone
   }
