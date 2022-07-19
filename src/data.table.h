@@ -259,3 +259,6 @@ int dt_win_snprintf(char *dest, size_t n, const char *fmt, ...);
 
 // programming.c
 SEXP substitute_call_arg_namesR(SEXP expr, SEXP env);
+
+//negate.c
+SEXP notchin(SEXP x, SEXP table);

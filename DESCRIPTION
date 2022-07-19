@@ -71,7 +71,8 @@ Authors@R: c(
   person("Boniface Christian","Kamgang", role="ctb"),
   person("Olivier","Delmarcell",   role="ctb"),
   person("Josh","O'Brien",         role="ctb"),
-  person("Dereck","de Mezquita",   role="ctb"))
+  person("Dereck","de Mezquita",   role="ctb"),
+  person("Michael","Czekanski",    role="ctb"))
 Depends: R (>= 3.1.0)
 Imports: methods
 Suggests: bit64 (>= 4.0.0), bit (>= 4.0.4), curl, R.utils, xts, nanotime, zoo (>= 1.8-1), yaml, knitr, rmarkdown, markdown

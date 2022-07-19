@@ -18804,3 +18804,13 @@ test(2237.1, as.data.frame(dt, row.names=c("x", "y")), df)
 df = data.frame(a=1:2, b=3:4)
 test(2237.2, as.data.frame(dt, row.names=NULL), df)
 
+# Test new feature %notin%, #4152
+test(2238.1, 11 %notin% 1:10, TRUE)
+test(2238.2, "a" %notin% c(), TRUE)
+test(2238.3, "a" %notin% c("a", "b", "c"), FALSE)
+test(2238.4, c(1, 2) %notin% c(1,2,3), c(FALSE, FALSE))
+test(2238.5, "a" %notin% character(), TRUE)
+test(2238.6, "a" %notin% integer(), TRUE)
+test(2238.7, "a" %notin% NULL, TRUE)
+test(2238.8, NA %notin% 1:5, TRUE)
+test(2238.9, NA %notin% c(1:5, NA), FALSE)

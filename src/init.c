@@ -131,6 +131,7 @@ SEXP test_dt_win_snprintf();
 SEXP dt_zlib_version();
 SEXP startsWithAny();
 SEXP convertDate();
+SEXP notchin();
 
 // .Externals
 SEXP fastmean();
@@ -230,6 +231,7 @@ R_CallMethodDef callMethods[] = {
 {"Csubstitute_call_arg_namesR", (DL_FUNC) &substitute_call_arg_namesR, -1},
 {"CstartsWithAny", (DL_FUNC)&startsWithAny, -1},
 {"CconvertDate", (DL_FUNC)&convertDate, -1},
+{"Cnotchin", (DL_FUNC)&notchin, -1},
 {NULL, NULL, 0}
 };
 
