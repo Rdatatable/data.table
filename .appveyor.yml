@@ -17,15 +17,12 @@ environment:
     CRAN: http://cloud.r-project.org
     WARNINGS_ARE_ERRORS: 1
     R_CHECK_ARGS: --no-manual
-    R_ARCH: x64
 # R_CHECK_ARGS specified in order to turn off --as-cran (on by default) as that can be slow
-# R stopped 32-bit windows support in R 4.2.0
-# GHA has MacOS 64bit (test-coverage) and Ubuntu 64bit, therefore picked 32bit for Windows
-# Default GCC_PATH appears to be gcc-4.6.3 which is now unsupported as from Rtools.exe v3.4.
     _R_CHECK_NO_STOP_ON_TEST_ERROR_: true
 # continue tests even if some script failed
     _R_CHECK_TESTS_NLINES_: 0
 # Block truncation of any error messages in R CMD check
+# R is 64-bit only on Windows from 4.2.0 (prior default was build and test both 32bit and 64bit) so we no longer use R_ARCH to pick one to reduce CI time in PRs
 
   matrix:
 
