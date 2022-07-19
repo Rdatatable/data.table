@@ -30,7 +30,9 @@
   NULL.
 }
 \examples{
-  # data.table::update.dev.pkg()
+  packageVersion("data.table")
+  ## data.table::update.dev.pkg()
+  ## data.table:::.git()
 }
 \seealso{
   \code{\link{data.table}}
