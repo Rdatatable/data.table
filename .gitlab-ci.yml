@@ -283,8 +283,9 @@ test-old-win: ## R-oldrel on Windows
     R_VERSION: "$R_OLDREL_VERSION"
   before_script:
     - *install-r-oldrel-win
-    - *install-rtools-win
-    - $ENV:PATH = "C:\R\bin;C:\rtools42\usr\bin;$ENV:PATH"
+    - curl.exe -s -o ../rtools.exe https://cloud.r-project.org/bin/windows/Rtools/rtools40-x86_64.exe; Start-Process -FilePath ..\rtools.exe -ArgumentList "/VERYSILENT /DIR=C:\rtools40" -NoNewWindow -Wait
+    ## rtools42 doesn't support 32bit so oldrel-win (currently R 4.1) needs rtools40. Can use install-rtools-win again here when oldrel is R 4.2+
+    - $ENV:PATH = "C:\R\bin;C:\rtools40\usr\bin;$ENV:PATH"
     - Rscript.exe -e "source('.ci/ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='most', exclude=c('knitr','rmarkdown')), quiet=TRUE)"  ## exclude= for #5294
     - *cp-src-win
     - rm.exe -r bus
