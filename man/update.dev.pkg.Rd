@@ -1,11 +1,10 @@
 \name{update.dev.pkg}
-\alias{update}
 \alias{update.dev.pkg}
 \title{Perform update of development version of a package}
 \description{
   It will download and install package from devel repository only when new commit is available there, otherwise only PACKAGES file is transferred. Defaults are set to update \code{data.table}, other packages can be used as well. Their repository has to include git commit information in PACKAGES file.
 }
-\usage{\method{update}{dev.pkg}(object="data.table",
+\usage{update.dev.pkg(object="data.table",
        repo="https://Rdatatable.gitlab.io/data.table",
        field="Revision", type=getOption("pkgType"), lib=NULL, \dots)
 }
