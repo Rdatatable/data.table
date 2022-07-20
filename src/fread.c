@@ -1,3 +1,5 @@
+#include "fread.h"
+// include fread.h should happen before include time.h to avoid compilation warning on windows about re-defining __USE_MINGW_ANSI_STDIO, PR#5395.
 #if defined(CLOCK_REALTIME) && !defined(DISABLE_CLOCK_REALTIME)
 #define HAS_CLOCK_REALTIME
 #endif
@@ -24,7 +26,6 @@
   #include <math.h>      // ceil, sqrt, isfinite
 #endif
 #include <stdbool.h>
-#include "fread.h"
 #include "freadLookups.h"
 
 // Private globals to save passing all of them through to highly iterated field processors
