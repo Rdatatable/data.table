@@ -6,9 +6,9 @@ variables:
   TZ: "UTC"  ## to avoid 'Failed to create bus connection' from timedatectl via Sys.timezone() on Docker with R 3.4.
              ## Setting TZ for all GLCI jobs to isolate them from timezone. We could have a new GLCI job to test under
              ## a non-UTC timezone, although, that's what we do routinely in dev.
-  R_REL_VERSION: "4.1"
-  R_DEVEL_VERSION: "4.2"
-  R_OLDREL_VERSION: "4.0"
+  R_REL_VERSION: "4.2"
+  R_DEVEL_VERSION: "4.3"
+  R_OLDREL_VERSION: "4.1"
 
 stages:
   - dependencies
