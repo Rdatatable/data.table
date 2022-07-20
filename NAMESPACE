@@ -131,7 +131,7 @@ S3method(melt, default)
 export(melt.data.table, dcast.data.table)
 
 import(utils)
-export(update.dev.pkg)
+export(update_dev_pkg)
 S3method(tail, data.table)
 S3method(head, data.table)
 import(stats)
