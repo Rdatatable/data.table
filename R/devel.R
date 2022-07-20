@@ -17,7 +17,7 @@ dcf.repo = function(pkg, repo, field, type) {
   dcf[dcf[,"Package"]==pkg, field][[1L]]
 }
 
-update.dev.pkg = function(object="data.table", repo="https://Rdatatable.gitlab.io/data.table", field="Revision", type=getOption("pkgType"), lib=NULL, ...) {
+update_dev_pkg = function(object="data.table", repo="https://Rdatatable.gitlab.io/data.table", field="Revision", type=getOption("pkgType"), lib=NULL, ...) {
   # this works for any package, not just data.table
   pkg = object
   # perform package upgrade when new Revision present
@@ -32,7 +32,7 @@ update.dev.pkg = function(object="data.table", repo="https://Rdatatable.gitlab.i
                 pkg, field, contrib.url(repo, type=type)))
   # see if Revision is different then currently installed Revision, note that installed package will have Revision info only when it was installed from remote devel repo
   upg = una || !identical(ups, dcf.lib(pkg, field, lib.loc=lib))
-  # update.dev.pkg fails on windows R 4.0.0, we have to unload package namespace before installing new version #4403
+  # update_dev_pkg fails on windows R 4.0.0, we have to unload package namespace before installing new version #4403
   on.exit({
     if (upg) {
       unloadNamespace(pkg) ## hopefully will release dll lock on Windows

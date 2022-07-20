@@ -435,8 +435,8 @@ if (interactive()) {
   # keep up to date with latest stable version on CRAN
   update.packages()
 
-  # get the latest devel version
-  update.dev.pkg()
+  # get the latest devel version that has passed all tests
+  update_dev_pkg()
   # read more at:
   # https://github.com/Rdatatable/data.table/wiki/Installation
 }
