@@ -42,8 +42,8 @@
 ```r
 install.packages("data.table")
 
-# latest development version:
-data.table::update.dev.pkg()
+# latest development version that has passed all tests:
+data.table::update_dev_pkg()
 ```
 
 See [the Installation wiki](https://github.com/Rdatatable/data.table/wiki/Installation) for more details.

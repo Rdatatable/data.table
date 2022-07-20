@@ -1,11 +1,10 @@
-\name{update.dev.pkg}
-\alias{update}
-\alias{update.dev.pkg}
+\name{update_dev_pkg}
+\alias{update_dev_pkg}
 \title{Perform update of development version of a package}
 \description{
-  It will download and install package from devel repository only when new commit is available there, otherwise only PACKAGES file is transferred. Defaults are set to update \code{data.table}, other packages can be used as well. Their repository has to include git commit information in PACKAGES file.
+  Downloads and installs latest development version only when a new commit is available which has also passed all tests. Defaults are set to update \code{data.table}, other packages can be used as well. Their repository has to include git commit information in PACKAGES file.
 }
-\usage{\method{update}{dev.pkg}(object="data.table",
+\usage{update_dev_pkg(object="data.table",
        repo="https://Rdatatable.gitlab.io/data.table",
        field="Revision", type=getOption("pkgType"), lib=NULL, \dots)
 }
@@ -30,7 +29,8 @@
   NULL.
 }
 \examples{
-  # data.table::update.dev.pkg()
+\dontshow{ # using if(FALSE) because \dontrun could still be run by  --run-dontrun; #5421 }
+  if (FALSE) data.table::update_dev_pkg()
 }
 \seealso{
   \code{\link{data.table}}
