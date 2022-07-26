@@ -34,6 +34,7 @@ patterns = function(..., cols=character(0L)) {
 }
 
 measure = function(..., sep="_", pattern, cols, multiple.keyword="value.name") {
+  Sys.sleep(1)
   mcall = match.call()
   L = as.list(mcall)[-1]
   formal.names = names(formals())
