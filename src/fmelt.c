@@ -780,7 +780,7 @@ SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data
 SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP varnames, SEXP valnames, SEXP narmArg, SEXP verboseArg) {
   SEXP dtnames, ansvals, ansvars, ansids, ansnames, ans;
   Rboolean narm=FALSE, verbose=FALSE;
-
+  sleep(0.5);
   if (!isNewList(DT)) error(_("Input is not of type VECSXP, expected a data.table, data.frame or list"));
   if (!isLogical(valfactor)) error(_("Argument 'value.factor' should be logical TRUE/FALSE"));
   if (!isLogical(varfactor)) error(_("Argument 'variable.factor' should be logical TRUE/FALSE"));
