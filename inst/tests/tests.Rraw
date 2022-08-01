@@ -8701,7 +8701,7 @@ dt = data.table(d1="1984-03-17")
 ans = data.table(d1="1984-03-17", d2=as.POSIXct("1984-03-17", tz='UTC'))
 test(1612.2, dt[, d2 := strptime(d1, "%Y-%m-%d", tz='UTC')], ans, warning="strptime() usage detected and wrapped with as.POSIXct()")
 ll = list(a=as.POSIXlt("2015-01-01"), b=2L)
-test(1612.3, setDT(ll), error="Column 1 is of POSIXlt type")
+test(1612.3, setDT(ll), error="Column 1 has class 'POSIXlt'")
 
 # tests for all.equal.data.table #1106
 # diff nrow
@@ -13996,7 +13996,9 @@ DT = as.data.table(M)
 test(1964.3, rownames(DT), character(0))
 test(1964.4, colnames(DT), c("v1","v2"))
 
-test(1965, setDT(list(1, 1:2)), error = 'profile of input lengths')   #3121
+test(1965.1, setDT(list(1, 1:2)), error = 'input 2 has length 2.*length 1')   #3121
+# setDT() skips NULL elements, so get the length from the first non-NULL
+test(1965.2, setDT(list(NULL, 1, 1:2)), error = 'input 3 has length 2.*length 1')
 
 # fread/fwrite file name in native and utf-8 encoding, #3078
 if (.Platform$OS.type=="windows") {
@@ -16564,7 +16566,7 @@ test(2088, x[, round(.SD, 1)][, c:=8.88], data.table(a=c(.8, -.4, 1.2), b=c(.6,.
 DF = data.frame(a=1:5)
 DF$m = matrix(6:15, ncol=2L)
 test(2089.1, names(setDT(DF)), c("a","m"),
-             warning="Some columns are a multi-column type.*[[]2[]].*setDT will retain these columns as-is but.*Please consider as.data.table")
+             warning="Some columns are a multi-column type.*for example column 2.*setDT will retain these columns as-is but.*Please consider as.data.table")
 test(2089.2, as.data.table(DF), data.table(a=1:5, m.V1=6:10, m.V2=11:15))  # the DF here is now a data.table, so as.data.table.data.table() is matrix-column-aware
 test(2089.3, print(DF), output="<multi-column>")
 DF = data.frame(a=1:5)
