@@ -2847,12 +2847,6 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
       stopf("Cannot convert '%1$s' to data.table by reference because binding is locked. It is very likely that '%1$s' resides within a package (or an environment) that is locked to prevent modifying its variable bindings. Try copying the object to your current environment, ex: var <- copy(var) and then using setDT again.", cname)
     }
   }
-  # check no matrix-like columns, #3760. Other than a single list(matrix) is unambiguous and depended on by some revdeps, #3581
-  if (length(x)>1L) {
-    idx = vapply_1i(x, function(xi) length(dim(xi)))>1L
-    if (any(idx))
-      warningf("Some columns are a multi-column type (such as a matrix column): %s. setDT will retain these columns as-is but subsequent operations like grouping and joining may fail. Please consider as.data.table() instead which will create a new column for each embedded column.", brackify(which(idx)))
-  }
   if (is.data.table(x)) {
     # fix for #1078 and #1128, see .resetclass() for explanation.
     setattr(x, 'class', .resetclass(x, 'data.table'))
@@ -2860,6 +2854,14 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     if (check.names) setattr(x, "names", make.names(names(x), unique=TRUE))
     if (selfrefok(x) > 0L) return(invisible(x)) else setalloccol(x)
   } else if (is.data.frame(x)) {
+    # check no matrix-like columns, #3760. Allow a single list(matrix) is unambiguous and depended on by some revdeps, #3581
+    # for performance, only warn on the first such column, #5426
+    for (jj in seq_along(x)) {
+      if (length(dim(x[[jj]])) > 1L) {
+        warningf("Some columns are a multi-column type (such as a matrix column), for example %d. setDT will retain these columns as-is but subsequent operations like grouping and joining may fail. Please consider as.data.table() instead which will create a new column for each embedded column.", jj)
+        break
+      }
+    }
     rn = if (!identical(keep.rownames, FALSE)) rownames(x) else NULL
     setattr(x, "row.names", .set_row_names(nrow(x)))
     if (check.names) setattr(x, "names", make.names(names(x), unique=TRUE))
@@ -2878,22 +2880,11 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     x = null.data.table()
   } else if (is.list(x)) {
     # copied from as.data.table.list - except removed the copy
-    for (i in seq_along(x)) {
-      if (is.null(x[[i]])) next   # allow NULL columns to be created by setDT(list) even though they are not really allowed
-                                  # many operations still work in the presence of NULL columns and it might be convenient
-                                  # e.g. in package eplusr which calls setDT on a list when parsing JSON. Operations which
-                                  # fail for NULL columns will give helpful error at that point, #3480 and #3471
-      if (inherits(x[[i]], "POSIXlt")) stopf("Column %d is of POSIXlt type. Please convert it to POSIXct using as.POSIXct and run setDT again. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date.", i)
-    }
-    n = vapply_1i(x, length)
-    n_range = range(n)
-    if (n_range[1L] != n_range[2L]) {
-      tbl = sort(table(n))
-      stopf("All elements in argument 'x' to 'setDT' must be of same length, but the profile of input lengths (length:frequency) is: %s\nThe first entry with fewer than %d entries is %d.", brackify(sprintf('%s:%d', names(tbl), tbl)), n_range[2L], which.max(n<n_range[2L]))
-    }
+    nrow = .Call(Ccheck_setdt_list_input, x)
+
     xn = names(x)
     if (is.null(xn)) {
-      setattr(x, "names", paste0("V",seq_len(length(x))))
+      setattr(x, "names", paste0("V", seq_along(x)))
     } else {
       idx = xn %chin% "" # names can be NA - test 1006 caught that!
       if (any(idx)) {
@@ -2902,8 +2893,8 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
       }
       if (check.names) setattr(x, "names", make.names(xn, unique=TRUE))
     }
-    setattr(x,"row.names",.set_row_names(n_range[2L]))
-    setattr(x,"class",c("data.table","data.frame"))
+    setattr(x, "row.names", .set_row_names(nrow))
+    setattr(x, "class", c("data.table", "data.frame"))
     setalloccol(x)
   } else {
     stopf("Argument 'x' to 'setDT' should be a 'list', 'data.frame' or 'data.table'")

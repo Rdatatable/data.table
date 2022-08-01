@@ -200,6 +200,42 @@ static SEXP shallow(SEXP dt, SEXP cols, R_len_t n)
   return(newdt);
 }
 
+// input validation for setDT() list input; assume length(x)>0 already tested & is.list(x)
+SEXP check_setdt_list_input(SEXP x)
+{
+  int base_length = 0;
+  bool test_matrix_cols = true;
+
+  for (R_len_t i = 0; i < LENGTH(x); ++i) {
+    SEXP xi = VECTOR_ELT(x, i);
+    /* allow NULL columns to be created by setDT(list) even though they are not really allowed
+     *   many operations still work in the presence of NULL columns and it might be convenient
+     *   e.g. in package eplusr which calls setDT on a list when parsing JSON. Operations which
+     *   fail for NULL columns will give helpful error at that point, #3480 and #3471 */
+    if (Rf_isNull(xi)) continue;
+    SEXP dim_xi = getAttrib(xi, R_DimSymbol);
+    R_len_t len_xi;
+    if (LENGTH(dim_xi)) {
+      if (test_matrix_cols && LENGTH(dim_xi) > 1) {
+        warning(_("Some columns are a multi-column type (such as a matrix column), for example %d. setDT will retain these columns as-is but subsequent operations like grouping and joining may fail. Please consider as.data.table() instead which will create a new column for each embedded column."), i+1);
+        test_matrix_cols = false;
+      }
+      len_xi = INTEGER(dim_xi)[0];
+    } else {
+      len_xi = LENGTH(xi);
+    }
+    if (!base_length) {
+      base_length = len_xi;
+    } else if (len_xi != base_length) {
+      error(_("All elements in argument 'x' to 'setDT' must be of equal length, but input %d has length %d whereas the first non-empty input had length %d"), i+1, len_xi, base_length);
+    }
+    if (Rf_inherits(xi, "POSIXlt")) {
+      error(_("Column %d has class 'POSIXlt'. Please convert it to POSIXct (using as.POSIXct) and run setDT() again. We do not recommend the use of POSIXlt at all because it uses 40 bytes to store one date."), i+1);
+    }
+  }
+  return ScalarInteger(base_length);
+}
+
 SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
 {
   SEXP names, klass;   // klass not class at request of pydatatable because class is reserved word in C++, PR #3129
