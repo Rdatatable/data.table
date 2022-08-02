@@ -37,7 +37,8 @@ static int nbit(int n)
   return nb;
 }
 
-SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
+SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg, SEXP grpcols) {
+  int nprotect=0;
   double started = wallclock();
   const bool verbose = GetVerbose();
   if (TYPEOF(env) != ENVSXP) error(_("env is not an environment"));
@@ -196,69 +197,217 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   oo = INTEGER(o);
   ff = INTEGER(f);
 
-  SEXP ans = PROTECT( eval(jsub, env) );
+  SEXP gans = PROTECT( eval(jsub, env) );  nprotect++; // just the gforce result columns; the group columns are added below when we know the shape
   if (verbose) { Rprintf(_("gforce eval took %.3f\n"), wallclock()-started); started=wallclock(); }
   // if this eval() fails with R error, R will release grp for us. Which is why we use R_alloc above.
-  if (isVectorAtomic(ans)) {
-    SEXP tt = PROTECT(allocVector(VECSXP, 1));
-    SET_VECTOR_ELT(tt, 0, ans);
-    UNPROTECT(1);
-    ans = tt;
+  if (isVectorAtomic(gans)) {
+    SEXP tt = PROTECT(allocVector(VECSXP, 1)); nprotect++;
+    SET_VECTOR_ELT(tt, 0, gans);
+    gans = tt;
   }
   
-  // now replicate group values to match the number of rows in each group
-  // in most cases gfuns return one value per group and there is little to do here
-  // however, in first/last with na.rm=TRUE, each column could have a different
-  // number of non-NA values, so those need to be padded
-  lens = allocVector(INTSXP, ngrp);  // TODO: avoid allocatation if not necessary
-  int *anslens = INTEGER(lens);
-  memset(anslens, 0, ngrp*sizeof(int));
-  int anslen=0;
-  for (int i=0; i<LENGTH(ans); ++i) {
-    SEXP tt = VECTOR_ELT(ans, i);
-    SEXP lens = getAttrib(tt, sym_lens);
-    anslen=0;
-    if (!isNull(lens)) {
-      const int *ss = INTEGER(lens);
-      anslen=0; // count again as the next column might make it bigger
-      for (g=0; g<ngrp; ++g) {
-        if (ss[g]>anslens[g]) anslens[g]=ss[g];
-        anslen += anslens[g];
+  // TODO: refine these comments
+  //
+  // Now replicate group values to match the number of rows in each group.
+  // In most cases (e.g. mean, sum) gfuns return one value per group and there is nothing left to do because
+  // each column in ans is ngrp long.
+  // gforce_fixed_over_1 and gforce_dynamic
+  // However, first/last with n>1 and na.rm=false results in MIN(grpsize[g], n) items per group. This is
+  // still referred to as gforce_dynamic (because it's not a fixed 1 per group) but the gfun doesn't need
+  // to return how many each group has (the lens att is null); all it needs return is the n it was passed.
+  // shift is the same as first/last with n>1 and na.rm=false; i.e., just returns n and lens can be empty.
+  // Currently just first/last with na.rm=true (regardless of n) returns the lens attribute because the
+  // number of items for each group does depend on the data in that case; e.g. it can be 0 when all NA. 
+  // Further, if the query consists of several calls to first/last, each call could have a
+  // different value of n and/or na.rm=TRUE which would result in the group results not being aligned
+  // across the columns of ans. Any gfun call which can result in not-1-value-per-group should attach
+  // sym_gforce_dynamic to tell us here how to align the groups across the columns in ans.
+  // For example, first/last with the default n=1 and na.rm=FALSE does not attach sym_gforce_dynamic
+  // because it it returns a length-ngrp result.
+  // If one of the ans columns contains a gforce_dynamic result, then the non-dynamic other columns
+  // are replicated to match.
+  // If there is only one column (very common) and it is gforce_dynamic then the gaps will now be removed
+  // since each group was allocated to accomodate the largest result per group: max(grpsize[], n).
+  
+  // If there are many columns (e.g. 10,000) and many small groups (e.g. size 1-5 rows) then we wish to
+  // avoid each dynamic gfun from allocating a new lens (ngrp long) if that can be avoided; e.g. shift(.SD)
+  // always returns .N rows for each group; that shape is known before calling shift. If lens was allocated
+  // and populated it would be the same as grpsize[], every time for each column.
+  
+  // 3 states :    i) no gforce_dynamic at all (including n=1 na.rm=false)
+  //              ii) 1 < n < maxgrpn meaning min(n, grp_size[g]) must be summed.  We might have less than ngrp when na.rm=TRUE due to all-NA groups
+  //             iii) n >= maxgrpn and na.rm=false meaning all groups are size grpsize[]; e.g. shift sets n=INT_MAX 
+  // If we have reached maxgrpn, then we can stop there; e.g. shifting a lot of small groups which is within scope to do a good job on
+  
+  // We can point lens to be the grpsize[] and find maximum n that clamps the grpsize
+  
+  // Having one final lens, though, with max_dynamic_n clamped, is desirable, to pass to the eval of rep.int for example. Just one allocation is dramatically better than on each of the 10,000 gans columns.
+  
+  const int ngans=length(gans);
+  SEXP lens=NULL;
+  int max_w=0;
+  bool lensCopied=false;
+  for (int i=0; i<ngans; ++i) {
+    SEXP tt;
+    if (!isNull(tt=getAttrib(VECTOR_ELT(gans, i), sym_gforce_dynamic))) {
+      if (isNull(VECTOR_ELT(tt, 0))) {
+        int this_w=INTEGER(VECTOR_ELT(tt, 2))[0];
+        if (this_w>max_w) max_w=this_w;
+      } else {
+        if (!lens) {
+          lens=VECTOR_ELT(tt, 0);  // find the first dynamic column's lens and use it directly without copying it if there are no other dynamic columns
+        } else {
+          if (!lensCopied) {
+            // upon the 2nd lens, we need to allocate a new lens to hold the max of the 2-or-more dynamic result with lens
+            // allocate a new lens to calc the max size of each group across the dynamic columns
+            // original gforce_dynamic attributes need to be retained so we can navigate those columns after we find the max
+            //int *newlens = (int *)R_alloc(ngrp, sizeof(int));
+            lens=PROTECT(duplicate(lens)); nprotect++;
+            lensCopied=true;
+          }
+          int *lensp=INTEGER(lens);
+          const int *ss=INTEGER(VECTOR_ELT(tt, 0));
+          for (int g=0; g<ngrp; ++g)
+            if (ss[g]>lensp[g]) lensp[g]=ss[g];
+        }
       }
     }
-    setAttrib(tt, sym_lens, R_NilValue);
-    setAttrib(tt, sym_first, R_NilValue);
   }
-  // now we have the max size of each group across the columns, we can pad if necessary
-  
-  // so, we either create another column, or we budge up/down the padding within the same allocated column
-  // budging up/down many small groups will take a lot of reads and writes, albeit saving total memory. The extra
-  // memory is only one-at-a-time per column, so choose speed over memory here
-  
-  // now we know the final result size, allocate and fill
-  for (int i=0; i<LENGTH(ans); ++i) {
-    SEXP tt = VECTOR_ELT(ans, i);
-    SEXP lens = getAttrib(tt, sym_lens);  // how long the items are,  we will never parallelize within column so we can sweep forwards
-    const bool first = LOGICAL(getAttrib(tt, sym_first))[0];
-    
-    col = allocVector(TYPEOF(tt), anslen);
-    
-    anslen=0;
-    
-    if (!isNull(lens)) {
-      const int *ss = INTEGER(lens);
-      anslen=0; // count again as the next column might make it bigger
-      for (g=0; g<ngrp; ++g) {
-        const int targetlen = anslens[g];
-        thislen = ss[g];
-        const int napad = anslen[g]-ss[g];
-        if (!first) for (int i=0; i<napad; ++i) ASSIGNNA;
-        for (int i=0; i<thislen; ++i) COPYVAL;
-        if (first) for (int i=0; i<napad; ++i) ASSIGNNA;
+  if (max_w) {
+    if (!lens) {
+      // construct a lens because we currently need it to pass to rep.int below
+      lens = PROTECT(allocVector(INTSXP, ngrp)); nprotect++;
+      int *lensp = INTEGER(lens);
+      for (int g=0; g<ngrp; ++g)
+        lensp[g]=MIN(grpsize[g], max_w);
+    } else {    
+      // there is a mixture of non-lens and lens; e.g. .(first(colA,n=3), first(colB,n=3,na.rm=TRUE))
+      if (!lensCopied) {
+        // there is a single dynamic column so it wasn't copied yet
+        lens=PROTECT(duplicate(lens)); nprotect++;
+        lensCopied=true;
+      }
+      int *lensp = INTEGER(lens);
+      for (int g=0; g<ngrp; ++g) {
+        int this_w=MIN(grpsize[g], max_w);
+        if (this_w>lensp[g]) lensp[g]=this_w;
       }
     }
   }
-  UNPROTECT(1);
+  // we have now maximized over any combination of over_1 and dynamic which determines the final shape in lens
+  // TODO if max_w>=grpsize_max then further savings can be made
+
+  // TODO: First we replicate group values to match the number of rows in each group if necessary
+  // TODO: DT[, .(first(A,n=2), last(B,n=3)), by=group] -- missing test
+  
+  // We could require that vector output functions have to be returned in a list column but that could be expensive and likely would be flattened afterwards by user anyway.
+  // If user really doesn't want flattening, then they can wrap with list().
+  
+  const int ngrpcol=length(grpcols);
+  SEXP ans = PROTECT(allocVector(VECSXP, ngrpcol+ngans)); nprotect++;
+  SEXP first_each_group = PROTECT( length(o) ? subsetVector(o, f) : f ); nprotect++;
+  
+  for (int i=0; i<ngrpcol; ++i) {
+    const SEXP in = VECTOR_ELT(grpcols, i);
+    SEXP out;
+    SET_VECTOR_ELT(ans, i, out=allocVector(TYPEOF(in), ngrp));
+    copyMostAttrib(in, out);
+    subsetVectorRaw(out, in, first_each_group, /*anyNA=*/false);
+    // avoiding subsetVector()'s check that idx is in bounds in case both ngrp and ngrpcol are large 
+    // this is rep.int'd below when group results have more than 1-row.
+    // TODO: for those cases avoid this subset first by enabling the rep.int to accept first_each_group
+  }
+  
+  if (!lens) {
+    // every group is length-1 (no dynamic or fixed_over_1 results) so can just use the gans as-is and we're done
+    for (int i=0; i<ngans; ++i) {
+      SET_VECTOR_ELT(ans, ngrpcol+i, VECTOR_ELT(gans, i));
+    }
+  } else {
+    // There is one or more gforce_dynamic columns, gap removal and/or padding within groups may be necessary
+    // and the non-gforce-dynamic columns (including group values) need to be replicated to align with the dynamic columns
+    // Either we create another column, or we budge up/down the padding within the same allocated column
+    // budging up/down many small groups will take a lot of reads and writes, albeit saving total memory. The
+    // extra memory is only one-at-a-time per column though, so choose speed over memory here.
+    // gforce_dynamic includes any result where the number of values per group may not be 1; e.g. shift() simply sets
+    // its lens to equal the grp lens to save an allocation
+    
+    int anslen=0;  // to be populated when no dynamic is just the length of the first ans column
+    const int *lensp = INTEGER(lens);
+    // if (lens==grpsize) {
+    //  if (max_dynamic_n <= 1) error("Internal error: max_dynamic_n<=1"); // is not considered dynamic and should not be marked as such
+    //  if (max_dynamic_n >= maxgrpn) anslen=nrow;                               // e.g. last(.SD, 2) where biggest group is 2 rows
+    //  else for (int g=0; g<ngrp; ++g) anslen+=MIN(grpsize[g], max_dynamic_n);  // e.g. last(.SD, 2) where biggest group is >2 rows, and there might be some 1-row groups
+    //} else {
+    
+    for (int g=0; g<ngrp; ++g) anslen+=lensp[g];  // contiguous sweep insignificant time not worth trying to save; e.g. by including the sum in the gforce_dynamic attribute returned for when there's just one column and it's dynamic
+    
+    for (int i=0; i<ngrpcol; ++i) {
+      SET_VECTOR_ELT(ans, i, eval(PROTECT(lang3(install("rep.int"), VECTOR_ELT(ans, i), lens)), R_GlobalEnv));
+      UNPROTECT(1);
+      // use R's rep.int for now, no C API for it afaik. R's rep.int will be summing lens here on each call which we can avoid (TODO).
+      // TODO: expand subsetVector to accept 'rep=' and 'len=' so that subset and rep.int can be done in one step avoiding intermediate subset of first_each_group, and pass len=anslen which we know already
+    }
+
+    for (int i=0; i<ngans; ++i) {
+      SEXP tt = VECTOR_ELT(gans, i);
+      SEXP att = getAttrib(tt, sym_gforce_dynamic);  // how long the items are, we won't parallelize within column so we can sweep forwards
+      if (isNull(att)) {
+        // e.g. the mean in .(mean(colA), first(colB, n=2));    TODO test
+        SET_VECTOR_ELT(ans, ngrpcol+i, eval(PROTECT(lang3(install("rep.int"), tt, lens)), R_GlobalEnv));
+        UNPROTECT(1);
+      } else {
+        // att can be i) empty lens vec in which case this ans col's shape is min(grpsize,w). If this matches the end result shape (i.e. all ans columns are the same, then no need to allocate copy)
+        //           ii) presence of lens vec always needs a copy and pad? (or could loop it and test if the same since looping through ngrp is much faster than nrow vector) 
+        const int *ss = isNull(VECTOR_ELT(att,0)) ? NULL : INTEGER(VECTOR_ELT(att,0));
+        const bool first = LOGICAL(VECTOR_ELT(att, 1))[0];
+        const int w = INTEGER(VECTOR_ELT(att,2))[0];
+        SEXP newcol = PROTECT(allocVector(TYPEOF(tt), anslen));
+        copyMostAttrib(tt, newcol);
+        setAttrib(newcol, sym_gforce_dynamic, R_NilValue);
+        int ansi=0, k=0;
+
+        #define DO(CTYPE, RTYPE, RNA, ASSIGN) {                                                        \
+        const CTYPE *xd = (const CTYPE *)RTYPE(tt);                                                    \
+        CTYPE *ansd = (CTYPE *)RTYPE(newcol);                                                          \
+        CTYPE val = RNA;                                                                               \
+        for (int g=0; g<ngrp; ++g) {                                                                   \
+          const int grp_allocated = MIN(grpsize[g], w);                                                \
+          const int thislen = ss ? ss[g] : grp_allocated;                                              \
+          const int targetlen = lensp[g];                                                              \
+          const int napad = targetlen-thislen;                                                         \
+          if (!first) {                                                                                \
+            val=RNA; for (int i=0; i<napad; ++i) ASSIGN;                                               \
+            k += grp_allocated-thislen;                                                                \
+          }                                                                                            \
+          for (int i=0; i<thislen; ++i) { val=xd[k++];       ASSIGN; }                                 \
+          if (first)  {                                                                                \
+            val=RNA; for (int i=0; i<napad; ++i) ASSIGN;                                               \
+            k += grp_allocated-thislen;                                                                \
+          }                                                                                            \
+        }                                                                                              \
+        ansd++; /* just to suppress unused-variable warning in STRSXP and VECSXP cases */              \
+        } break;
+
+        switch(TYPEOF(tt)) {
+        case RAWSXP:  DO(Rbyte,    RAW,     0,            ansd[ansi++]=val)
+        case LGLSXP:  DO(int,      LOGICAL, NA_LOGICAL,   ansd[ansi++]=val)
+        case INTSXP:  DO(int,      INTEGER, NA_INTEGER,   ansd[ansi++]=val)
+        case REALSXP: if (INHERITS(tt, char_integer64)) {
+                      DO(int64_t,  REAL,    NA_INTEGER64, ansd[ansi++]=val)
+             } else { DO(double,   REAL,    NA_REAL,      ansd[ansi++]=val) }
+        case CPLXSXP: DO(Rcomplex, COMPLEX, NA_CPLX,      ansd[ansi++]=val)
+        case STRSXP:  DO(SEXP,  STRING_PTR, NA_STRING,    SET_STRING_ELT(newcol,ansi++,val))
+        case VECSXP:  DO(SEXP,  SEXPPTR_RO, ScalarLogical(NA_LOGICAL), SET_VECTOR_ELT(newcol,ansi++,val))       /* TODO: global replace ScalarLogical() with fixed constant R_NAValue, depending on R dependency */
+        default:
+          error(_("Type '%s' is not supported by gforce padding."), type2char(TYPEOF(tt)));
+        }
+        SET_VECTOR_ELT(ans, ngrpcol+i, newcol);
+        UNPROTECT(1); // newcol
+      }
+    }
+  }
+  UNPROTECT(nprotect);
   return ans;
 }
 
@@ -984,14 +1133,19 @@ static SEXP gfirstlast(const SEXP x, const bool first, const SEXP nArg, const bo
   }
   SEXP ans = PROTECT(allocVector(TYPEOF(x), anslen));
   int *anslens = NULL;
-  if (narm) {
-    // how many non-NA were found for each group
-    SEXP v;
-    setAttrib(ans, sym_lens, v=allocVector(INTSXP, ngrp));
-    setAttrib(ans, sym_first, ScalarLogical(first)); // so gforce knows which end to pad if necessary
-    anslens = INTEGER(v);
+  if (narm || (w>1 && !nthvalue)) {  // w>1 because some groups may be smaller than w so we need to save w
+    // narm=true needing gforce_dynamic is clear
+    // when w>1 and narm=false, we could avoid gforce_dynamic since each group result in MIN(w,grpsize[g]) 
+    // how many non-NA were found for each group im
+    SEXP att, v;
+    setAttrib(ans, sym_gforce_dynamic, att=allocVector(VECSXP, 3));
+    SET_VECTOR_ELT(att, 0, v = narm ? allocVector(INTSXP, ngrp) : R_NilValue);
+    SET_VECTOR_ELT(att, 1, ScalarLogical(first)); // so gforce knows which end to pad if necessary
+    SET_VECTOR_ELT(att, 2, ScalarInteger(w));     // to know how many were allocated for each group; i.e. MIN(w,grpsize[i])
+    if (narm) anslens = INTEGER(v);
   }
   int ansi = 0;
+  #undef DO
   #define DO(CTYPE, RTYPE, RNA, ASSIGN) {                                                          \
     const CTYPE *xd = (const CTYPE *)RTYPE(x);                                                     \
     CTYPE *ansd = (CTYPE *)RTYPE(ans);                                                             \
@@ -1013,24 +1167,15 @@ static SEXP gfirstlast(const SEXP x, const bool first, const SEXP nArg, const bo
           /* const-bool narm and short-circuit-&& means above if() insignificant */                \
           ASSIGN; write++;                                                                         \
         }                                                                                          \
-        const CTYPE val = RNA;                   /* TODO remove these 2 lines */                   \
+        if (anslens) anslens[g]=write;                                                              \
+        const CTYPE val = RNA;                                                                     \
         while (write<thisn) { ASSIGN; write++; }  /* when not enough non-NA pad with NA */         \
-        if (false /*put back narm*/) {                                                             \
-          anslens[g] = write;                                                                      \
-          if (write<thisn && !first) {                                                             \
-            /* fewer than MIN(w,grpn) non-NA are present which we wrote (working backwards) to */  \
-            /* the end of the allocation for the the group; budge them up to close the gap */      \
-            int gap = thisn-write;                                                                 \
-            memmove(ansd+ansi-gap+1, ansd+ansi+1, gap*sizeof(CTYPE));                              \
-            /* the memmove was behind the write-barrier so careful to now blank off the STRSXP */  \
-            /* and VECSXP pointers at the end of the group otherwise the next group will assign */ \
-            /* using the write-barrier and incorrectly decremement those as old values */          \
-            memset(ansd+ansi+write-gap+1, 0, gap*sizeof(CTYPE));                                   \
-            ansi -= gap;                                                                           \
-          }                                                                                        \
-          /* else when first there's nothing more to do for this group as we'll write the next */  \
-          /* group's non-NA values in the next row */                                              \
-        }                                                                                          \
+        /* if NAs can be removed when narm=TRUE, that's done up in gforce() afterwards when     */ \
+        /* we know what the results are from the other gforce columns are to align with. When   */ \
+        /* there's just one column, and narm=TRUE too, and there are NAs removed, it would      */ \
+        /* save removing the NAs in gforce() by not doing the padding now and just continuing   */ \
+        /* to write the next group's results straight after this group. A special case and      */ \
+        /* likely only measureable speedup for string columns but relatively easy to do.        */ \
         if (!first) ansi+=write+1; /* we wrote backwards so pass over what we wrote */             \
       }                                                                                            \
     } else if (first) {                                                                            \
@@ -1050,6 +1195,7 @@ static SEXP gfirstlast(const SEXP x, const bool first, const SEXP nArg, const bo
       error(_("Internal error: unanticipated case in gfirstlast first=%d w=%d nthvalue=%d"),       \
               first, w, nthvalue);                                                                 \
     }                                                                                              \
+    ansd++; /* just to suppress unused-variable warning in STRSXP and VECSXP cases */              \
   }
   switch(TYPEOF(x)) {
   case LGLSXP:  {
@@ -1315,6 +1461,10 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
   for (int i=0; i<nk; i++) if (kd[i]==NA_INTEGER) error(_("Item %d of n is NA"), i+1);
 
   SEXP ans = PROTECT(allocVector(VECSXP, nk)); nprotect++;
+  SEXP att = PROTECT(allocVector(VECSXP, 3)); nprotect++;
+  SET_VECTOR_ELT(att, 0, R_NilValue);
+  SET_VECTOR_ELT(att, 1, ScalarLogical(true));    // first/last doesn't matter for gshift
+  SET_VECTOR_ELT(att, 2, ScalarInteger(INT_MAX)); // i.e. grpsize; TODO: perhaps point lens directly to grpsize instead
   SEXP thisfill = PROTECT(coerceAs(fillArg, x, ScalarLogical(0))); nprotect++;
   for (int g=0; g<nk; g++) {
     lag = stype == LAG || stype == CYCLIC;
@@ -1327,6 +1477,7 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
     R_xlen_t ansi = 0;
     SEXP tmp;
     SET_VECTOR_ELT(ans, g, tmp=allocVector(TYPEOF(x), nx));
+    setAttrib(tmp, sym_gforce_dynamic, att);
     #define SHIFT(CTYPE, RTYPE, ASSIGN) {                                                                         \
       const CTYPE *xd = (const CTYPE *)RTYPE(x);                                                                  \
       const CTYPE fill = RTYPE(thisfill)[0];                                                                      \

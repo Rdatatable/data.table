@@ -1863,43 +1863,8 @@ replace_dot_alias = function(e) {
     assign(".N", len__, thisEnv) # For #334
     #fix for #1683
     if (use.I) assign(".I", seq_len(nrow(x)), thisEnv)
-    ans = gforce(thisEnv, jsub, o__, f__, len__, irows) # irows needed for #971.
-    gi = if (length(o__)) o__[f__] else f__
-    g = lapply(grpcols, function(i) groups[[i]][gi])
-
-    # returns all rows instead of one per group
-    nrow_funs = c("gshift")
-    .is_nrows = function(q) {
-      if (!is.call(q)) return(FALSE)
-      if (q[[1L]] == "list") {
-        any(vapply(q, .is_nrows, FALSE))
-      } else {
-        q[[1L]] %chin% nrow_funs
-      }
-    }
-
-    # ghead/gtail/gfirst/glast(n) support for n>1 #5060 #523 #5168
-    qn = 0L
-    if (!is.symbol(jsub)) {
-      headTail_arg = function(q) {
-        if (length(q)<3L || !(q1=q[[1L]]) %chin% c("ghead", "gtail", "gfirst", "glast")) return(0L)
-        q = match.call(get(q1), q)
-        qn = q[["n"]] # not q$n because partial argument matching matches to na.rm when n isn't present
-        if (length(qn)==1L && is.numeric(qn) && qn!=1L) qn else 0L
-      }
-      if (jsub[[1L]] == "list"){
-        qn = max(sapply(jsub, headTail_arg))
-      } else if (length(jsub)>=3L) {
-        qn = headTail_arg(jsub)
-      }
-    }
-    if (qn > 0L) {
-      grplens = pmin.int(qn, len__)
-      g = lapply(g, rep.int, times=grplens)
-    } else if (.is_nrows(jsub)) {
-      g = lapply(g, rep.int, times=len__)
-    }
-    ans = c(g, ans)
+    ans = gforce(thisEnv, jsub, o__, f__, len__, irows,  # irows needed for #971
+                 .Call(CsubsetVector, groups, grpcols))  # just a list() subset to make C level neater; doesn't copy column contents
   } else {
     ans = .Call(Cdogroups, x, xcols, groups, grpcols, jiscols, xjiscols, grporder, o__, f__, len__, jsub, SDenv, cols, newnames, !missing(on), verbose)
   }
@@ -1922,9 +1887,9 @@ replace_dot_alias = function(e) {
   # TO DO: setkey could mark the key whether it is unique or not.
   if (!is.null(lhs)) {
     if (GForce) { # GForce should work with := #1414
-      vlen = length(ans[[1L]])
+      vlen = length(ans[[1L]])   # TODO: this might be ngrp when na.rm=TRUE and one group has 2 and another 0, so needs enhancing here (by passing all-1 back from gans?)
       # replicate vals if GForce returns 1 value per group
-      jvals = if (vlen==length(len__)) lapply(tail(ans, -length(g)), rep, times=len__) else tail(ans, -length(g))  # see comment in #4245 for why rep instead of rep.int
+      jvals = if (vlen==length(len__)) lapply(tail(ans, -length(grpcols)), rep, times=len__) else tail(ans, -length(grpcols))  # see comment in #4245 for why rep instead of rep.int
       jrows = vecseq(f__,len__,NULL)
       if (length(o__)) jrows = o__[jrows]
       if (length(irows)) jrows = irows[jrows]
@@ -3039,7 +3004,7 @@ gshift = function(x, n=1L, fill=NA, type=c("lag", "lead", "shift", "cyclic")) {
   stopifnot(is.numeric(n))
   .Call(Cgshift, x, as.integer(n), fill, type)
 }
-gforce = function(env, jsub, o, f, l, rows) .Call(Cgforce, env, jsub, o, f, l, rows)
+gforce = function(env, jsub, o, f, l, rows, grpcols) .Call(Cgforce, env, jsub, o, f, l, rows, grpcols)
 
 .prepareFastSubset = function(isub, x, enclos, notjoin, verbose = FALSE){
   ## helper that decides, whether a fast binary search can be performed, if i is a call

@@ -51,7 +51,7 @@ last = function(x, n=1L, na.rm=FALSE, ...) {
     # else na.rm==TRUE; select the first/last non-NA within each column
     ans = lapply(x, .narmVector, n=n, first=first)
     l = vapply_1i(ans, length)
-    m = min(n, nrow(x))
+    m = max(l)
     for (i in which(l<m)) {  # pad with NA
       ans[[i]] = if (first) c(ans[[i]], rep(NA, m-l[i]))
                  else       c(rep(NA, m-l[i]), ans[[i]])
@@ -73,7 +73,7 @@ last = function(x, n=1L, na.rm=FALSE, ...) {
 
 .narmVector = function(x, n, first) {
   nna = which_(is.na(x) | (is.list(x) & vapply_1b(x,is.null)), bool=FALSE)   # TODO: again, n and first/last could be passed to C here
-  if (!length(nna)) if (is.list(x)) list(NA) else x[NA_integer_]
+  if (!length(nna)) x[0L]
   else if (n==1L)   x[nna[if (first) 1L else length(nna)]]
   else              x[(if (first) utils::head else utils::tail)(nna, n)]  # TODO: avoid dispatch here and do ourselves since just a vector
 }

@@ -18801,11 +18801,11 @@ DT = data.table( grp = INT(1,1,     2,2,2,               3,          4,4),
 # all the results instead may reveal mistakes and be good but then might be inflexible to adding more cases.
 FNNA = function(x) {  # First Not NA
   nna = which(if (is.list(x)) !is.na(x) & !sapply(x,is.null) else !is.na(x))
-  if (length(nna)) x[nna[1L]]          else if (is.list(x)) list(NA) else x[NA_integer_]
+  if (length(nna)) x[nna[1L]]          else x[0L]
 }
 LNNA = function(x) {  # Last Not NA
   nna = which(if (is.list(x)) !is.na(x) & !sapply(x,is.null) else !is.na(x))
-  if (length(nna)) x[nna[length(nna)]] else if (is.list(x)) list(NA) else x[NA_integer_]
+  if (length(nna)) x[nna[length(nna)]] else x[0L]
 }
 test_no = 2238.0
 for (col in setdiff(names(DT), "grp")) {
@@ -18871,11 +18871,12 @@ test(2239.51, DT[, .(last(A,na.rm=TRUE), first(B, na.rm=TRUE), last(C)), by=grp,
               data.table(grp=1:4, V1=c(1L, 2L, NA, 3L), V2=c(1,pi,3,pi), V3=c(NA,NA,"c",NA)),
               output="GForce optimized.*glast.*gfirst.*glast")
 test(2239.61, DT[, last(D,na.rm=TRUE,n=2)], c(3i,4i))
-test(2239.62, DT[, last(B,na.rm=TRUE,n=2), by=grp, verbose=TRUE], data.table(grp=INT(1,1,2,2,3,4,4), V1=c(NA,1,pi,3,3,NA,pi)), output="GForce.*glast")
+test(2239.62, DT[, last(B,na.rm=TRUE,n=2), by=grp, verbose=TRUE], data.table(grp=INT(1,2,2,3,4), V1=c(1,pi,3,3,pi)), output="GForce.*glast")
 test(2239.63, DT[, first(D,na.rm=TRUE,n=2)], c(1i,2i))
-test(2239.64, DT[, first(B,na.rm=TRUE,n=2), by=grp, verbose=TRUE], data.table(grp=INT(1,1,2,2,3,4,4), V1=c(1,NA,pi,3,3,pi,NA)), output="GForce.*gfirst")
+test(2239.64, DT[, first(B,na.rm=TRUE,n=2), by=grp, verbose=TRUE], data.table(grp=INT(1,2,2,3,4), V1=c(1,pi,3,3,pi)), output="GForce.*gfirst")
+test(2239.65, DT[, last(D,na.rm=TRUE,n=1), by=grp, verbose=TRUE], data.table(grp=INT(1,2,4), V1=c(1i,3i,4i)), output="GForce.*glast")
 test(2239.71, DT[, last(.SD, na.rm=TRUE, n=2), by=grp, verbose=TRUE],
-              ans<-data.table(grp=INT(1,1,2,2,3,4,4), A=INT(NA,1,NA,2,NA,3,3), B=c(NA,1,pi,3,3,NA,pi), C=c(NA,"a",NA,"b","c",NA,"d"), D=c(NA,1i,2i,3i,NA,NA,4i), E=list(NA,NA,NA,c("a","b"),list(1:2),NA,3:4)),
+              ans<-data.table(grp=INT(1,2,2,3,4,4), A=INT(1,NA,2,NA,3,3), B=c(1,pi,3,3,NA,pi), C=c("a",NA,"b","c",NA,"d"), D=c(1i,2i,3i,NA,NA,4i), E=list(NA,NA,c("a","b"),list(1:2),NA,3:4)),
               output="GForce.*glast")
 old = options(datatable.optimize=0)
 test(2239.72, DT[, last(.SD, na.rm=TRUE, n=2), by=grp, verbose=TRUE], ans, output="GForce FALSE")
@@ -18884,7 +18885,7 @@ test(2239.73, DT[, last(.SD, na.rm="row", n=2), by=grp, verbose=TRUE],
               data.table(grp=INT(1,1,2,2,3,4,4), A=c(NA,NA,NA,2L,NA,NA,3L), B=c(NA,NA,NA,3,NA,NA,pi), C=c(NA,NA,NA,"b",NA,NA,"d"), D=c(NA,NA,NA,3i,NA,NA,4i), E=list(NA,NA,NA,c("a","b"),NA,NA,3:4)),
               output="GForce FALSE")
 test(2239.74, DT[, first(.SD, na.rm=TRUE, n=2), by=grp, verbose=TRUE],
-              ans<-data.table(grp=INT(1,1,2,2,3,4,4), A=INT(1,NA,2,NA,NA,3,3), B=c(1,NA,pi,3,3,pi,NA), C=c("a",NA,"b",NA,"c","d",NA), D=c(1i,NA,2i,3i,NA,4i,NA), E=list(NA,NA,c("a","b"),NA,list(1:2),3:4,NA)),
+              ans<-data.table(grp=INT(1,2,2,3,4,4), A=INT(1,2,NA,NA,3,3), B=c(1,pi,3,3,pi,NA), C=c("a","b",NA,"c","d",NA), D=c(1i,2i,3i,NA,4i,NA), E=list(NA,c("a","b"),NA,list(1:2),3:4,NA)),
               output="GForce.*gfirst")
 old = options(datatable.optimize=0)
 test(2239.75, DT[, first(.SD, na.rm=TRUE, n=2), by=grp, verbose=TRUE], ans, output="GForce FALSE")

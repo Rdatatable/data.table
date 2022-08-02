@@ -409,7 +409,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
           warning(_("Item %d of j's result for group %d is zero length. This will be filled with %d NAs to match the longest column in this result. Later groups may have a similar problem but only the first is reported to save filling the warning buffer."), j+1, i+1, maxn);
           NullWarnDone = TRUE;
         }
-        writeNA(target, thisansloc, maxn, false);
+        writeNA(target, thisansloc, maxn, true);
       } else {
         // thislen>0
         if (TYPEOF(source) != TYPEOF(target))
