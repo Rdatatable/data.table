@@ -14600,11 +14600,11 @@ oldenv1 = Sys.getenv("R_DATATABLE_NUM_PROCS_PERCENT")
 oldenv2 = Sys.getenv("R_DATATABLE_NUM_THREADS")
 Sys.setenv(R_DATATABLE_NUM_THREADS="")  # in case user has this set, so we can test PROCS_PERCENT
 Sys.setenv(R_DATATABLE_NUM_PROCS_PERCENT="3.0")
-test(1997.09, setDTthreads(), old, warning="Ignoring invalid.*Please remove any.*not a digit")
+test(1997.09, setDTthreads(), old, ignore.warning="Ignoring invalid.*Please remove any.*not a digit")
 new = getDTthreads()  # old above at (1) may not have been default. new now is.
 test(1997.10, getDTthreads(), new)
 Sys.setenv(R_DATATABLE_NUM_PROCS_PERCENT="1")
-test(1997.11, setDTthreads(), new, warning="Ignoring invalid.*integer between 2 and 100")
+test(1997.11, setDTthreads(), new, ignore.warning="Ignoring invalid.*integer between 2 and 100")
 test(1997.12, getDTthreads(), new)
 Sys.setenv(R_DATATABLE_NUM_PROCS_PERCENT="75")
 test(1997.13, setDTthreads(), new)
@@ -18789,6 +18789,17 @@ test(2237.1, as.data.frame(dt, row.names=c("x", "y")), df)
 df = data.frame(a=1:2, b=3:4)
 test(2237.2, as.data.frame(dt, row.names=NULL), df)
 
+# Test new feature %notin%, #4152
+test(2238.1, 11 %notin% 1:10, TRUE)
+test(2238.2, "a" %notin% c(), TRUE)
+test(2238.3, "a" %notin% c("a", "b", "c"), FALSE)
+test(2238.4, c(1, 2) %notin% c(1,2,3), c(FALSE, FALSE))
+test(2238.5, "a" %notin% character(), TRUE)
+test(2238.6, "a" %notin% integer(), TRUE)
+test(2238.7, "a" %notin% NULL, TRUE)
+test(2238.8, NA %notin% 1:5, TRUE)
+test(2238.9, NA %notin% c(1:5, NA), FALSE)
+
 # add na.rm argument to first/last, #4446 #4239
 DT = data.table( grp = INT(1,1,     2,2,2,               3,          4,4),
                  A =   INT(1,NA,    NA,2,NA,             NA,         3,3),
@@ -18807,7 +18818,7 @@ LNNA = function(x) {  # Last Not NA
   nna = which(if (is.list(x)) !is.na(x) & !sapply(x,is.null) else !is.na(x))
   if (length(nna)) x[nna[length(nna)]] else x[0L]
 }
-test_no = 2238.0
+test_no = 2239.0
 for (col in setdiff(names(DT), "grp")) {
   # test vector input to first/last outside of DT[] query
   test(test_no+.01, first(DT[[col]], na.rm=TRUE), ans<-FNNA(DT[[col]]))
@@ -18828,90 +18839,90 @@ for (col in setdiff(names(DT), "grp")) {
                       ans,                                              output="GForce optimized.*glast")
   test_no = test_no+.1
 }
-test(2239.01, first(DT), DT[1,])
-test(2239.02, first(DT, na.rm=TRUE), data.table(grp=1L, A=1L, B=1, C="a", D=1i, E=list(c("a","b"))))  # first non-NA in each column
-test(2239.03, first(DT, na.rm="row"), DT[4])                                                   # first row with no NA
-test(2239.04, last(DT), DT[.N,])
-test(2239.05, last(DT, na.rm=TRUE),  data.table(grp=4L, A=3L, B=pi, C="d", D=4i, E=list(3:4)))
-test(2239.06, last(DT, na.rm="row"), DT[7])
-test(2239.07, first(DT[0]), DT[0])
-test(2239.08, last(DT[0]), DT[0])
+test(2240.01, first(DT), DT[1,])
+test(2240.02, first(DT, na.rm=TRUE), data.table(grp=1L, A=1L, B=1, C="a", D=1i, E=list(c("a","b"))))  # first non-NA in each column
+test(2240.03, first(DT, na.rm="row"), DT[4])                                                   # first row with no NA
+test(2240.04, last(DT), DT[.N,])
+test(2240.05, last(DT, na.rm=TRUE),  data.table(grp=4L, A=3L, B=pi, C="d", D=4i, E=list(3:4)))
+test(2240.06, last(DT, na.rm="row"), DT[7])
+test(2240.07, first(DT[0]), DT[0])
+test(2240.08, last(DT[0]), DT[0])
 DF = as.data.frame(DT)
-test(2239.11, first(DF), DF[1,])
-test(2239.12, first(DF, na.rm=TRUE), {x=data.frame(grp=1L, A=1L, B=1, C="a", D=1i); x$E=list(c("a","b")); x})  # with E inside data.frame() it recycles to 2 rows
-test(2239.13, first(DF, na.rm="row"), DF[4,])
-test(2239.14, last(DF), DF[8,])
-test(2239.15, last(DF, na.rm=TRUE),  {x=data.frame(grp=4L, A=3L, B=pi, C="d", D=4i); x$E=list(3:4); x})
-test(2239.16, last(DF, na.rm="row"), DF[7,])
-test(2239.21, first(list(), na.rm=TRUE), list())
-test(2239.22, last(list(), na.rm=TRUE), list())
-test(2239.31, DT[, first(.SD, na.rm=TRUE), by=grp, verbose=TRUE],
+test(2240.11, first(DF), DF[1,])
+test(2240.12, first(DF, na.rm=TRUE), {x=data.frame(grp=1L, A=1L, B=1, C="a", D=1i); x$E=list(c("a","b")); x})  # with E inside data.frame() it recycles to 2 rows
+test(2240.13, first(DF, na.rm="row"), DF[4,])
+test(2240.14, last(DF), DF[8,])
+test(2240.15, last(DF, na.rm=TRUE),  {x=data.frame(grp=4L, A=3L, B=pi, C="d", D=4i); x$E=list(3:4); x})
+test(2240.16, last(DF, na.rm="row"), DF[7,])
+test(2240.21, first(list(), na.rm=TRUE), list())
+test(2240.22, last(list(), na.rm=TRUE), list())
+test(2240.31, DT[, first(.SD, na.rm=TRUE), by=grp, verbose=TRUE],
               ans<-data.table(grp=1:4, A=c(1L,2L,NA,3L), B=c(1,pi,3,pi), C=c("a","b","c","d"), D=c(1i,2i,NA,4i), E=list(NA,c("a","b"),list(1:2),3:4)),
               output="GForce optimized.*gfirst")
-test(2239.32, DT[, lapply(.SD, first, na.rm=TRUE), by=grp, verbose=TRUE], ans, output="GForce optimized.*gfirst")
+test(2240.32, DT[, lapply(.SD, first, na.rm=TRUE), by=grp, verbose=TRUE], ans, output="GForce optimized.*gfirst")
 old = options(datatable.optimize=0)
-test(2239.33, DT[, first(.SD, na.rm=TRUE), by=grp, verbose=TRUE], ans, notOutput="gfirst")
-test(2239.34, DT[, lapply(.SD, first, na.rm=TRUE), by=grp, verbose=TRUE], ans, notOutput="gfirst")
+test(2240.33, DT[, first(.SD, na.rm=TRUE), by=grp, verbose=TRUE], ans, notOutput="gfirst")
+test(2240.34, DT[, lapply(.SD, first, na.rm=TRUE), by=grp, verbose=TRUE], ans, notOutput="gfirst")
 options(old)
-test(2239.35, DT[, first(.SD, na.rm='row'), by=grp, verbose=TRUE],
+test(2240.35, DT[, first(.SD, na.rm='row'), by=grp, verbose=TRUE],
               ans<-data.table(grp=1:4, A=c(NA,2L,NA,3L), B=c(NA,3,NA,pi), C=c(NA,"b",NA,"d"), D=c(NA,3i,NA,4i), E=list(NA,c("a","b"),NA,3:4)),
               notOutput="GForce optimized")   # TODO: could try and gforce optimize in future
-test(2239.41, DT[, last(.SD, na.rm=TRUE), by=grp, verbose=TRUE],
+test(2240.41, DT[, last(.SD, na.rm=TRUE), by=grp, verbose=TRUE],
               ans<-data.table(grp=1:4, A=c(1L,2L,NA,3L), B=c(1,3,3,pi), C=c("a","b","c","d"), D=c(1i,3i,NA,4i), E=list(NA,c("a","b"),list(1:2),3:4)),
               output="GForce optimized.*glast")
-test(2239.42, DT[, lapply(.SD, last, na.rm=TRUE), by=grp, verbose=TRUE], ans, output="GForce optimized.*glast")
+test(2240.42, DT[, lapply(.SD, last, na.rm=TRUE), by=grp, verbose=TRUE], ans, output="GForce optimized.*glast")
 old = options(datatable.optimize=0)
-test(2239.43, DT[, last(.SD, na.rm=TRUE), by=grp, verbose=TRUE], ans, notOutput="glast")
-test(2239.44, DT[, lapply(.SD, last, na.rm=TRUE), by=grp, verbose=TRUE], ans, notOutput="glast")
+test(2240.43, DT[, last(.SD, na.rm=TRUE), by=grp, verbose=TRUE], ans, notOutput="glast")
+test(2240.44, DT[, lapply(.SD, last, na.rm=TRUE), by=grp, verbose=TRUE], ans, notOutput="glast")
 options(old)
-test(2239.45, DT[, last(.SD, na.rm='row'), by=grp, verbose=TRUE],
+test(2240.45, DT[, last(.SD, na.rm='row'), by=grp, verbose=TRUE],
               ans<-data.table(grp=1:4, A=c(NA,2L,NA,3L), B=c(NA,3,NA,pi), C=c(NA,"b",NA,"d"), D=c(NA,3i,NA,4i), E=list(NA,c("a","b"),NA,3:4)),
               notOutput="GForce optimized")   # TODO: could try and gforce optimize in future
-test(2239.51, DT[, .(last(A,na.rm=TRUE), first(B, na.rm=TRUE), last(C)), by=grp, verbose=TRUE],
+test(2240.51, DT[, .(last(A,na.rm=TRUE), first(B, na.rm=TRUE), last(C)), by=grp, verbose=TRUE],
               data.table(grp=1:4, V1=c(1L, 2L, NA, 3L), V2=c(1,pi,3,pi), V3=c(NA,NA,"c",NA)),
               output="GForce optimized.*glast.*gfirst.*glast")
-test(2239.61, DT[, last(D,na.rm=TRUE,n=2)], c(3i,4i))
-test(2239.62, DT[, last(B,na.rm=TRUE,n=2), by=grp, verbose=TRUE], data.table(grp=INT(1,2,2,3,4), V1=c(1,pi,3,3,pi)), output="GForce.*glast")
-test(2239.63, DT[, first(D,na.rm=TRUE,n=2)], c(1i,2i))
-test(2239.64, DT[, first(B,na.rm=TRUE,n=2), by=grp, verbose=TRUE], data.table(grp=INT(1,2,2,3,4), V1=c(1,pi,3,3,pi)), output="GForce.*gfirst")
-test(2239.65, DT[, last(D,na.rm=TRUE,n=1), by=grp, verbose=TRUE], data.table(grp=INT(1,2,4), V1=c(1i,3i,4i)), output="GForce.*glast")
-test(2239.71, DT[, last(.SD, na.rm=TRUE, n=2), by=grp, verbose=TRUE],
+test(2240.61, DT[, last(D,na.rm=TRUE,n=2)], c(3i,4i))
+test(2240.62, DT[, last(B,na.rm=TRUE,n=2), by=grp, verbose=TRUE], data.table(grp=INT(1,2,2,3,4), V1=c(1,pi,3,3,pi)), output="GForce.*glast")
+test(2240.63, DT[, first(D,na.rm=TRUE,n=2)], c(1i,2i))
+test(2240.64, DT[, first(B,na.rm=TRUE,n=2), by=grp, verbose=TRUE], data.table(grp=INT(1,2,2,3,4), V1=c(1,pi,3,3,pi)), output="GForce.*gfirst")
+test(2240.65, DT[, last(D,na.rm=TRUE,n=1), by=grp, verbose=TRUE], data.table(grp=INT(1,2,4), V1=c(1i,3i,4i)), output="GForce.*glast")
+test(2240.71, DT[, last(.SD, na.rm=TRUE, n=2), by=grp, verbose=TRUE],
               ans<-data.table(grp=INT(1,2,2,3,4,4), A=INT(1,NA,2,NA,3,3), B=c(1,pi,3,3,NA,pi), C=c("a",NA,"b","c",NA,"d"), D=c(1i,2i,3i,NA,NA,4i), E=list(NA,NA,c("a","b"),list(1:2),NA,3:4)),
               output="GForce.*glast")
 old = options(datatable.optimize=0)
-test(2239.72, DT[, last(.SD, na.rm=TRUE, n=2), by=grp, verbose=TRUE], ans, output="GForce FALSE")
+test(2240.72, DT[, last(.SD, na.rm=TRUE, n=2), by=grp, verbose=TRUE], ans, output="GForce FALSE")
 options(old)
-test(2239.73, DT[, last(.SD, na.rm="row", n=2), by=grp, verbose=TRUE],
+test(2240.73, DT[, last(.SD, na.rm="row", n=2), by=grp, verbose=TRUE],
               data.table(grp=INT(1,1,2,2,3,4,4), A=c(NA,NA,NA,2L,NA,NA,3L), B=c(NA,NA,NA,3,NA,NA,pi), C=c(NA,NA,NA,"b",NA,NA,"d"), D=c(NA,NA,NA,3i,NA,NA,4i), E=list(NA,NA,NA,c("a","b"),NA,NA,3:4)),
               output="GForce FALSE")
-test(2239.74, DT[, first(.SD, na.rm=TRUE, n=2), by=grp, verbose=TRUE],
+test(2240.74, DT[, first(.SD, na.rm=TRUE, n=2), by=grp, verbose=TRUE],
               ans<-data.table(grp=INT(1,2,2,3,4,4), A=INT(1,2,NA,NA,3,3), B=c(1,pi,3,3,pi,NA), C=c("a","b",NA,"c","d",NA), D=c(1i,2i,3i,NA,4i,NA), E=list(NA,c("a","b"),NA,list(1:2),3:4,NA)),
               output="GForce.*gfirst")
 old = options(datatable.optimize=0)
-test(2239.75, DT[, first(.SD, na.rm=TRUE, n=2), by=grp, verbose=TRUE], ans, output="GForce FALSE")
+test(2240.75, DT[, first(.SD, na.rm=TRUE, n=2), by=grp, verbose=TRUE], ans, output="GForce FALSE")
 options(old)
-test(2239.76, DT[, first(.SD, na.rm="row", n=2), by=grp, verbose=TRUE],
+test(2240.76, DT[, first(.SD, na.rm="row", n=2), by=grp, verbose=TRUE],
               data.table(grp=INT(1,1,2,2,3,4,4), A=c(NA,NA,2L,NA,NA,3L,NA), B=c(NA,NA,3,NA,NA,pi,NA), C=c(NA,NA,"b",NA,NA,"d",NA), D=c(NA,NA,3i,NA,NA,4i,NA), E=list(NA,NA,c("a","b"),NA,NA,3:4,NA)),
               output="GForce FALSE")
-test(2239.771, DT[, first(.SD, na.rm=TRUE, n=0), by=grp, verbose=TRUE], DT[0], output="GForce FALSE")
-test(2239.772, DT[, last(.SD, na.rm=TRUE, n=0),  by=grp, verbose=TRUE], DT[0], output="GForce FALSE")
-test(2239.773, DT[, head(.SD, n=0),              by=grp, verbose=TRUE], DT[0], output="GForce FALSE")
-test(2239.774, DT[, tail(.SD, na.rm=TRUE, n=0),  by=grp, verbose=TRUE], DT[0], output="GForce FALSE")
-test(2239.81, first(DT$A, n=-1), error="n.*is not TRUE")
-test(2239.82, DT[,first(A, n=-1)], error="n.*is not TRUE")
-test(2239.83, DT[,first(A, n=-1),by=grp,verbose=TRUE], error="n.*is not TRUE", output="GForce FALSE")
-test(2239.84, last(DT$A, n=-1), error="n.*is not TRUE")
-test(2239.85, DT[,last(A, n=-1)], error="n.*is not TRUE")
-test(2239.86, DT[,last(A, n=-1),by=grp,verbose=TRUE], error="n.*is not TRUE", output="GForce FALSE")
-test(2239.87, first(matrix(1:12,nrow=3), na.rm=TRUE), error="na.rm.*not currently supported for.*matrix")
-test(2239.88, first(matrix(1:12,nrow=3), na.rm='row'), error="na.rm.*not currently supported for.*matrix")
-test(2239.89, first(matrix(1:12,nrow=3)), matrix(INT(1,4,7,10),nrow=1))
-test(2239.91, first(DT$A, na.rm=NA), error="na.rm")
-test(2239.92, DT[,first(A, na.rm=NA),by=grp,verbose=TRUE], error="na.rm", output="GForce.*gfirst")
-test(2239.93, last(DT$A, na.rm=NA), error="na.rm")
-test(2239.94, DT[,last(A, na.rm=NA),by=grp,verbose=TRUE], error="na.rm", output="GForce.*glast")
+test(2240.771, DT[, first(.SD, na.rm=TRUE, n=0), by=grp, verbose=TRUE], DT[0], output="GForce FALSE")
+test(2240.772, DT[, last(.SD, na.rm=TRUE, n=0),  by=grp, verbose=TRUE], DT[0], output="GForce FALSE")
+test(2240.773, DT[, head(.SD, n=0),              by=grp, verbose=TRUE], DT[0], output="GForce FALSE")
+test(2240.774, DT[, tail(.SD, na.rm=TRUE, n=0),  by=grp, verbose=TRUE], DT[0], output="GForce FALSE")
+test(2240.81, first(DT$A, n=-1), error="n.*is not TRUE")
+test(2240.82, DT[,first(A, n=-1)], error="n.*is not TRUE")
+test(2240.83, DT[,first(A, n=-1),by=grp,verbose=TRUE], error="n.*is not TRUE", output="GForce FALSE")
+test(2240.84, last(DT$A, n=-1), error="n.*is not TRUE")
+test(2240.85, DT[,last(A, n=-1)], error="n.*is not TRUE")
+test(2240.86, DT[,last(A, n=-1),by=grp,verbose=TRUE], error="n.*is not TRUE", output="GForce FALSE")
+test(2240.87, first(matrix(1:12,nrow=3), na.rm=TRUE), error="na.rm.*not currently supported for.*matrix")
+test(2240.88, first(matrix(1:12,nrow=3), na.rm='row'), error="na.rm.*not currently supported for.*matrix")
+test(2240.89, first(matrix(1:12,nrow=3)), matrix(INT(1,4,7,10),nrow=1))
+test(2240.91, first(DT$A, na.rm=NA), error="na.rm")
+test(2240.92, DT[,first(A, na.rm=NA),by=grp,verbose=TRUE], error="na.rm", output="GForce.*gfirst")
+test(2240.93, last(DT$A, na.rm=NA), error="na.rm")
+test(2240.94, DT[,last(A, na.rm=NA),by=grp,verbose=TRUE], error="na.rm", output="GForce.*glast")
 old=options(datatable.optimize=0)
-test(2239.95, DT[,first(A, na.rm=NA),by=grp,verbose=TRUE], error="na.rm", output="GForce FALSE")
-test(2239.96, DT[,last(A, na.rm=NA),by=grp,verbose=TRUE], error="na.rm", output="GForce FALSE")
+test(2240.95, DT[,first(A, na.rm=NA),by=grp,verbose=TRUE], error="na.rm", output="GForce FALSE")
+test(2240.96, DT[,last(A, na.rm=NA),by=grp,verbose=TRUE], error="na.rm", output="GForce FALSE")
 options(old)
 

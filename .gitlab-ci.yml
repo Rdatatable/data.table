@@ -6,9 +6,9 @@ variables:
   TZ: "UTC"  ## to avoid 'Failed to create bus connection' from timedatectl via Sys.timezone() on Docker with R 3.4.
              ## Setting TZ for all GLCI jobs to isolate them from timezone. We could have a new GLCI job to test under
              ## a non-UTC timezone, although, that's what we do routinely in dev.
-  R_REL_VERSION: "4.1"
-  R_DEVEL_VERSION: "4.2"
-  R_OLDREL_VERSION: "4.0"
+  R_REL_VERSION: "4.2"
+  R_DEVEL_VERSION: "4.3"
+  R_OLDREL_VERSION: "4.1"
 
 stages:
   - dependencies
@@ -94,15 +94,15 @@ build: ## build data.table sources as tar.gz archive
   - mkdir.exe -p cran/bin/windows/contrib/$R_VERSION; mv.exe $(ls.exe -1t data.table_*.zip | head.exe -n 1) cran/bin/windows/contrib/$R_VERSION
 
 .test-install-r-rel-win: &install-r-rel-win
-  - curl.exe -s -o ../R-rel.exe https://cloud.r-project.org/bin/windows/base/R-4.1.3-win.exe; Start-Process -FilePath ..\R-rel.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
+  - curl.exe -s -o ../R-rel.exe https://cloud.r-project.org/bin/windows/base/R-4.2.1-win.exe; Start-Process -FilePath ..\R-rel.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
   # see #5198 for discussion about the https link used above; it will break each time R is released and the version number will need to be updated
 .test-install-r-devel-win: &install-r-devel-win
   - curl.exe -s -o ../R-devel.exe https://cloud.r-project.org/bin/windows/base/R-devel-win.exe; Start-Process -FilePath ..\R-devel.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
 .test-install-r-oldrel-win: &install-r-oldrel-win
-  - curl.exe -s -o ../R-oldrel.exe https://cloud.r-project.org/bin/windows/base/old/4.0.5/R-4.0.5-win.exe; Start-Process -FilePath ..\R-oldrel.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
+  - curl.exe -s -o ../R-oldrel.exe https://cloud.r-project.org/bin/windows/base/old/4.1.3/R-4.1.3-win.exe; Start-Process -FilePath ..\R-oldrel.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
 
 .test-install-rtools-win: &install-rtools-win
-  - curl.exe -s -o ../rtools.exe https://cloud.r-project.org/bin/windows/Rtools/rtools40-x86_64.exe; Start-Process -FilePath ..\rtools.exe -ArgumentList "/VERYSILENT /DIR=C:\rtools40" -NoNewWindow -Wait
+  - curl.exe -s -o ../rtools.exe https://cloud.r-project.org/bin/windows/Rtools/rtools42/files/rtools42-5253-5107-signed.exe; Start-Process -FilePath ..\rtools.exe -ArgumentList "/VERYSILENT /DIR=C:\rtools42" -NoNewWindow -Wait
 
 .test-template: &test
   stage: test
@@ -246,7 +246,7 @@ test-rel-win: ## R-release on Windows, test and build binaries
   before_script:
     - *install-r-rel-win
     - *install-rtools-win
-    - $ENV:PATH = "C:\R\bin;C:\rtools40\usr\bin;$ENV:PATH"
+    - $ENV:PATH = "C:\R\bin;C:\rtools42\usr\bin;$ENV:PATH"
     - Rscript.exe -e "source('.ci/ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='most'), quiet=TRUE)"
     - *cp-src-win
     - rm.exe -r bus
@@ -264,7 +264,7 @@ test-dev-win: ## R-devel on Windows; see #5294 for changes in Dec 2021 related t
     R_VERSION: "$R_DEVEL_VERSION"
   before_script:
     - *install-r-devel-win
-    - curl.exe -s -o ../rtools.exe https://www.r-project.org/nosvn/winutf8/ucrt3/rtools42-5038-5046.exe; Start-Process -FilePath ..\rtools.exe -ArgumentList "/VERYSILENT /DIR=C:\rtools42" -NoNewWindow -Wait
+    - *install-rtools-win
     - $ENV:PATH = "C:\R\bin;C:\rtools42\usr\bin;$ENV:PATH"
     - Rscript.exe -e "source('.ci/ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='most', exclude=c('knitr','rmarkdown')), quiet=TRUE)"  ## exclude= for #5294
     - *cp-src-win
@@ -283,7 +283,8 @@ test-old-win: ## R-oldrel on Windows
     R_VERSION: "$R_OLDREL_VERSION"
   before_script:
     - *install-r-oldrel-win
-    - *install-rtools-win
+    - curl.exe -s -o ../rtools.exe https://cloud.r-project.org/bin/windows/Rtools/rtools40-x86_64.exe; Start-Process -FilePath ..\rtools.exe -ArgumentList "/VERYSILENT /DIR=C:\rtools40" -NoNewWindow -Wait
+    ## rtools42 doesn't support 32bit so oldrel-win (currently R 4.1) needs rtools40. Can use install-rtools-win again here when oldrel is R 4.2+
     - $ENV:PATH = "C:\R\bin;C:\rtools40\usr\bin;$ENV:PATH"
     - Rscript.exe -e "source('.ci/ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='most', exclude=c('knitr','rmarkdown')), quiet=TRUE)"  ## exclude= for #5294
     - *cp-src-win

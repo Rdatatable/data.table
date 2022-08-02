@@ -294,7 +294,9 @@
 
 40.  New functions `yearmon()` and `yearqtr` give a combined representation of `year()` and `month()`/`quarter()`. These and also `yday`, `wday`, `mday`, `week`, `month` and `year` are now optimized for memory and compute efficiency by removing the `POSIXlt` dependency, [#649](https://github.com/Rdatatable/data.table/issues/649). Thanks to Matt Dowle for the request, and Benjamin Schwendinger for the PR.
 
-41. `first()` and `last()` gain `na.rm` taking values `FALSE` (default), `TRUE` or `"row"`, [#4239](https://github.com/Rdatatable/data.table/issues/4239). For vector input, `TRUE` and `"row"` are the same. For `data.table|frame` input, `TRUE` returns the first/last non-NA observation in each column, while `"row"` returns the first/last row where all columns are non-NA. `TRUE` is optimized by group and `"row"` may be optimized by group in future. `n>1` with `na.rm=TRUE` is also optimized by group. Thanks to Nicolas Bennett and Michael Chirico for the requests, and Benjamin Schwendinger for the PR.
+41. New function `%notin%` provides a convenient alternative to `!(x %in% y)`, [#4152](https://github.com/Rdatatable/data.table/issues/4152). Thanks to Jan Gorecki for suggesting and Michael Czekanski for the PR. `%notin%` uses half the memory because it computes the result directly as opposed to `!` which allocates a new vector to hold the negated result. If `x` is long enough to occupy more than half the remaining free memory, this can make the difference between the operation working, or failing with an out-of-memory error.
+
+42. `first()` and `last()` gain `na.rm` taking values `FALSE` (default), `TRUE` or `"row"`, [#4239](https://github.com/Rdatatable/data.table/issues/4239). For vector input, `TRUE` and `"row"` are the same. For `data.table|frame` input, `TRUE` returns the first/last non-NA observation in each column, while `"row"` returns the first/last row where all columns are non-NA. `TRUE` is optimized by group and `"row"` may be optimized by group in future. `n>1` with `na.rm=TRUE` is also optimized by group. Thanks to Nicolas Bennett and Michael Chirico for the requests, and Benjamin Schwendinger for the PR.
 
     ```R
     x
@@ -676,6 +678,8 @@
 15. Many thanks to Kurt Hornik for investigating potential impact of a possible future change to `base::intersect()` on empty input, providing a patch so that `data.table` won't break if the change is made to R, and giving us plenty of notice, [#5183](https://github.com/Rdatatable/data.table/pull/5183).
 
 16. The options `datatable.print.class` and `datatable.print.keys` are now `TRUE` by default. They have been available since v1.9.8 (Nov 2016) and v1.11.0 (May 2018) respectively.
+
+17. `update.dev.pkg()` has been renamed `update_dev_pkg()` to get out of the way of the `stats::update` generic function, [#5421](https://github.com/Rdatatable/data.table/pull/5421). This is a utility function which upgrades the version of `data.table` to the latest commit in development which has also passed all tests. As such we don't expect any backwards compatibility concerns.
 
 
 # data.table [v1.14.2](https://github.com/Rdatatable/data.table/milestone/24?closed=1)  (27 Sep 2021)
