@@ -53,8 +53,7 @@ last = function(x, n=1L, na.rm=FALSE, ...) {
     l = vapply_1i(ans, length)
     m = max(l)
     for (i in which(l<m)) {  # pad with NA
-      ans[[i]] = if (first) c(ans[[i]], rep(NA, m-l[i]))
-                 else       c(rep(NA, m-l[i]), ans[[i]])
+      ans[[i]] = c(ans[[i]], rep(NA, m-l[i]))
     }
     if (is.data.table(x)) setDT(ans) else setDF(ans)
     setattr(ans, "class", class(x))

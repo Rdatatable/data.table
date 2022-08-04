@@ -376,15 +376,10 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg, SEXP grp
           const int thislen = ss ? ss[g] : grp_allocated;                                              \
           const int targetlen = lensp[g];                                                              \
           const int napad = targetlen-thislen;                                                         \
-          if (!first) {                                                                                \
-            val=RNA; for (int i=0; i<napad; ++i) ASSIGN;                                               \
-            k += grp_allocated-thislen;                                                                \
-          }                                                                                            \
-          for (int i=0; i<thislen; ++i) { val=xd[k++];       ASSIGN; }                                 \
-          if (first)  {                                                                                \
-            val=RNA; for (int i=0; i<napad; ++i) ASSIGN;                                               \
-            k += grp_allocated-thislen;                                                                \
-          }                                                                                            \
+          k += (!first)*(grp_allocated-thislen);                                                       \
+          for (int i=0; i<thislen; ++i) { val=xd[k++]; ASSIGN; }                                       \
+          val=RNA; for (int i=0; i<napad; ++i) ASSIGN;                                                 \
+          k += (first)*(grp_allocated-thislen);                                                        \
         }                                                                                              \
         ansd++; /* just to suppress unused-variable warning in STRSXP and VECSXP cases */              \
         } break;

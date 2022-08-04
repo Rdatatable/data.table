@@ -18883,7 +18883,7 @@ for (opt in c(0, Inf)) {
   test(test_no+.34, DT[, first(B,na.rm=TRUE,n=2), by=grp, verbose=TRUE], data.table(grp=INT(1,2,2,3,4), V1=c(1,pi,3,3,pi)), output=out)
   test(test_no+.35, DT[, last(D,na.rm=TRUE,n=1), by=grp, verbose=TRUE], data.table(grp=INT(1,2,4), V1=c(1i,3i,4i)), output=out)
   test(test_no+.41, DT[, last(.SD, na.rm=TRUE, n=2), by=grp, verbose=TRUE],
-                data.table(grp=INT(1,2,2,3,4,4), A=INT(1,NA,2,NA,3,3), B=c(1,pi,3,3,NA,pi), C=c("a",NA,"b","c",NA,"d"), D=c(1i,2i,3i,NA,NA,4i), E=list(NA,NA,c("a","b"),list(1:2),NA,3:4)),
+                data.table(grp=INT(1,2,2,3,4,4), A=INT(1,2,NA,NA,3,3), B=c(1,pi,3,3,pi,NA), C=c("a","b",NA,"c","d",NA), D=c(1i,2i,3i,NA,4i,NA), E=list(NA,c("a","b"),NA,list(1:2),3:4,NA)),
                 output=out)
   test(test_no+.42, DT[, last(.SD, na.rm="row", n=2), by=grp, verbose=TRUE],
                 data.table(grp=INT(1,1,2,2,3,4,4), A=c(NA,NA,NA,2L,NA,NA,3L), B=c(NA,NA,NA,3,NA,NA,pi), C=c(NA,NA,NA,"b",NA,NA,"d"), D=c(NA,NA,NA,3i,NA,NA,4i), E=list(NA,NA,NA,c("a","b"),NA,NA,3:4)),
@@ -18911,6 +18911,15 @@ for (opt in c(0, Inf)) {
   test(test_no+.72, DT[,first(A, na.rm=NA),by=grp,verbose=TRUE], error="na.rm", output=out)
   test(test_no+.73, last(DT$A, na.rm=NA), error="na.rm")
   test(test_no+.74, DT[,last(A, na.rm=NA),by=grp,verbose=TRUE], error="na.rm", output=out)
+  
+  # aligning two gforce dynamic columns the same between optimized and unoptimized
+  #   needs to be top aligned otherwise dogroups.c would need knowledge of R first/last (last was aligned at the bottom in the PR before this test added)
+  #   but outstanding is that dogroups.c recycles length-1 whereas gforce_dynamic currently NA fills with vector output from
+  #     first/last n>1 na.rm=TRUE in mind. So this test fails when not optimized (2240.81) currently.
+  test(test_no+.81, DT[, .(first(B, n=2, na.rm=TRUE), last(C, na.rm=TRUE)), by=grp, verbose=TRUE],
+                         data.table(grp=INT(1,2,2,3,4), V1=c(1,pi,3,3,pi), V2=c("a","b",NA,"c","d")),
+                         output=out)
+  
   test_no = trunc(test_no)+1
 }
 
