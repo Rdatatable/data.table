@@ -277,6 +277,12 @@ SEXP truelength(SEXP x) {
   return ScalarInteger(isNull(x) ? 0 : TRUELENGTH(x));
 }
 
+SEXP settruelength(SEXP x, SEXP n) {
+  // currently just for first/last and dogroups.c; see comments at the end of last.R
+  SET_TRUELENGTH(x, INTEGER(n)[0]);
+  return R_NilValue;
+}
+
 SEXP selfrefokwrapper(SEXP x, SEXP verbose) {
   return ScalarInteger(_selfrefok(x,FALSE,LOGICAL(verbose)[0]));
 }

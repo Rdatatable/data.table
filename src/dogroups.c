@@ -414,15 +414,21 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         // thislen>0
         if (TYPEOF(source) != TYPEOF(target))
           error(_("Column %d of result for group %d is type '%s' but expecting type '%s'. Column types must be consistent for each group."), j+1, i+1, type2char(TYPEOF(source)), type2char(TYPEOF(target)));
-        if (thislen>1 && thislen!=maxn && grpn>0) {  // grpn>0 for grouping empty tables; test 1986
-          error(_("Supplied %d items for column %d of group %d which has %d rows. The RHS length must either be 1 (single values are ok) or match the LHS length exactly. If you wish to 'recycle' the RHS please use rep() explicitly to make this intent clear to readers of your code."), thislen, j+1, i+1, maxn);
-        }
         bool copied = false;
         if (isNewList(target) && anySpecialStatic(source)) {  // see comments in anySpecialStatic()
           source = PROTECT(copyAsPlain(source));
           copied = true;
         }
-        memrecycle(target, R_NilValue, thisansloc, maxn, source, 0, -1, 0, "");
+        if (TRUELENGTH(source)==LENGTH(source)) {
+          // first() and last() set truelength to mark that it is a true vector; see comments at the end of last.R and test 2240.81
+          // a true vector is not recycled when length-1 and is padded with NA to match the length of the longest result
+          memrecycle(target, R_NilValue, thisansloc, thislen, source, 0, -1, 0, "");  // just using memrecycle to copy contents
+          writeNA(target, thisansloc+thislen, maxn-thislen, true);                    // pad with NA
+        } else {
+          if (thislen>1 && thislen!=maxn && grpn>0)  // grpn>0 for grouping empty tables; test 1986
+            error(_("Supplied %d items for column %d of group %d which has %d rows. The RHS length must either be 1 (single values are ok) or match the LHS length exactly. If you wish to 'recycle' the RHS please use rep() explicitly to make this intent clear to readers of your code."), thislen, j+1, i+1, maxn);
+          memrecycle(target, R_NilValue, thisansloc, maxn, source, 0, -1, 0, "");
+        }
         if (copied) UNPROTECT(1);
       }
     }

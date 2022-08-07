@@ -18865,14 +18865,14 @@ for (opt in c(0, Inf)) {
                 output=out)
   test(test_no+.22, DT[, lapply(.SD, first, na.rm=TRUE), by=grp, verbose=TRUE], ans, output=out)
   test(test_no+.23, DT[, first(.SD, na.rm='row'), by=grp, verbose=TRUE],
-                data.table(grp=1:4, A=c(NA,2L,NA,3L), B=c(NA,3,NA,pi), C=c(NA,"b",NA,"d"), D=c(NA,3i,NA,4i), E=list(NA,c("a","b"),NA,3:4)),
+                data.table(grp=c(2L,4L), A=c(2L,3L), B=c(3,pi), C=c("b","d"), D=c(3i,4i), E=list(c("a","b"),3:4)),
                 notOutput="GForce optimized")   # TODO: could try to implement gforce optimized na.rm='row' in future
   test(test_no+.24, DT[, last(.SD, na.rm=TRUE), by=grp, verbose=TRUE],
                 ans<-data.table(grp=1:4, A=c(1L,2L,NA,3L), B=c(1,3,3,pi), C=c("a","b","c","d"), D=c(1i,3i,NA,4i), E=list(NA,c("a","b"),list(1:2),3:4)),
                 output=out)
   test(test_no+.25, DT[, lapply(.SD, last, na.rm=TRUE), by=grp, verbose=TRUE], ans, output=out)
   test(test_no+.26, DT[, last(.SD, na.rm='row'), by=grp, verbose=TRUE],
-                data.table(grp=1:4, A=c(NA,2L,NA,3L), B=c(NA,3,NA,pi), C=c(NA,"b",NA,"d"), D=c(NA,3i,NA,4i), E=list(NA,c("a","b"),NA,3:4)),
+                data.table(grp=c(2L,4L), A=c(2L,3L), B=c(3,pi), C=c("b","d"), D=c(3i,4i), E=list(c("a","b"),3:4)),
                 output="GForce FALSE")
   test(test_no+.27, DT[, .(last(A,na.rm=TRUE), first(B, na.rm=TRUE), last(C)), by=grp, verbose=TRUE],
                 data.table(grp=1:4, V1=c(1L, 2L, NA, 3L), V2=c(1,pi,3,pi), V3=c(NA,NA,"c",NA)),
@@ -18886,13 +18886,13 @@ for (opt in c(0, Inf)) {
                 data.table(grp=INT(1,2,2,3,4,4), A=INT(1,2,NA,NA,3,3), B=c(1,pi,3,3,pi,NA), C=c("a","b",NA,"c","d",NA), D=c(1i,2i,3i,NA,4i,NA), E=list(NA,c("a","b"),NA,list(1:2),3:4,NA)),
                 output=out)
   test(test_no+.42, DT[, last(.SD, na.rm="row", n=2), by=grp, verbose=TRUE],
-                data.table(grp=INT(1,1,2,2,3,4,4), A=c(NA,NA,NA,2L,NA,NA,3L), B=c(NA,NA,NA,3,NA,NA,pi), C=c(NA,NA,NA,"b",NA,NA,"d"), D=c(NA,NA,NA,3i,NA,NA,4i), E=list(NA,NA,NA,c("a","b"),NA,NA,3:4)),
+                data.table(grp=INT(2,4), A=c(2L,3L), B=c(3,pi), C=c("b","d"), D=c(3i,4i), E=list(c("a","b"),3:4)),
                 output="GForce FALSE")
   test(test_no+.43, DT[, first(.SD, na.rm=TRUE, n=2), by=grp, verbose=TRUE],
                 data.table(grp=INT(1,2,2,3,4,4), A=INT(1,2,NA,NA,3,3), B=c(1,pi,3,3,pi,NA), C=c("a","b",NA,"c","d",NA), D=c(1i,2i,3i,NA,4i,NA), E=list(NA,c("a","b"),NA,list(1:2),3:4,NA)),
                 output=out)
   test(test_no+.44, DT[, first(.SD, na.rm="row", n=2), by=grp, verbose=TRUE],
-                data.table(grp=INT(1,1,2,2,3,4,4), A=c(NA,NA,2L,NA,NA,3L,NA), B=c(NA,NA,3,NA,NA,pi,NA), C=c(NA,NA,"b",NA,NA,"d",NA), D=c(NA,NA,3i,NA,NA,4i,NA), E=list(NA,NA,c("a","b"),NA,NA,3:4,NA)),
+                data.table(grp=INT(2,4), A=c(2L,3L), B=c(3,pi), C=c("b","d"), D=c(3i,4i), E=list(c("a","b"),3:4)),
                 output="GForce FALSE")
   test(test_no+.51, DT[, first(.SD, na.rm=TRUE, n=0), by=grp, verbose=TRUE], DT[0], output="GForce FALSE")
   test(test_no+.52, DT[, last(.SD, na.rm=TRUE, n=0),  by=grp, verbose=TRUE], DT[0], output="GForce FALSE")
@@ -18913,9 +18913,8 @@ for (opt in c(0, Inf)) {
   test(test_no+.74, DT[,last(A, na.rm=NA),by=grp,verbose=TRUE], error="na.rm", output=out)
   
   # aligning two gforce dynamic columns the same between optimized and unoptimized
-  #   needs to be top aligned otherwise dogroups.c would need knowledge of R first/last (last was aligned at the bottom in the PR before this test added)
-  #   but outstanding is that dogroups.c recycles length-1 whereas gforce_dynamic currently NA fills with vector output from
-  #     first/last n>1 na.rm=TRUE in mind. So this test fails when not optimized (2240.81) currently.
+  # needs to be top aligned otherwise dogroups.c would need knowledge of whether first or last was called (last was aligned at the bottom in the PR before
+  # this test added). dogroups.c now just needs to know whether the vector is a true vector to know not to recycle length-1 and to pad with NA
   test(test_no+.81, DT[, .(first(B, n=2, na.rm=TRUE), last(C, na.rm=TRUE)), by=grp, verbose=TRUE],
                          data.table(grp=INT(1,2,2,3,4), V1=c(1,pi,3,3,pi), V2=c("a","b",NA,"c","d")),
                          output=out)

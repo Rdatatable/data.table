@@ -20,60 +20,64 @@ last = function(x, n=1L, na.rm=FALSE, ...) {
   stopifnot(isTRUEorFALSE(na.rm) || identical(na.rm,"row"))
   stopifnot(is.numeric(n), length(n)==1L, n>=0L)
   n = as.integer(n)
-  .headtail = if (first) utils::head else utils::tail
-  if (isFALSE(na.rm) || n==0L)
-    return(.headtail(x, n=n, ...))
   if (is.data.frame(x)) {
     if (!nrow(x)) return(x)
     if (identical(na.rm, "row")) {   # any NA on the row removes that row
       nna = which_(.Call(Cdt_na, x, seq_along(x)), bool=FALSE)
-      # from na.omit.data.table without calling na.omit which would subset all non-NA rows
-      # TODO: n and first/last could be passed to Cdt_na and it could stop after finding n
-      nna = .headtail(nna, n=n)
-      if (length(nna) < min(n,nrow(x))) {
-        # to match optimized na.rm=TRUE behavior; e.g. when .SD is one column
-        # TODO: extra argument all.na=NA|NULL (or pad.na=) could control this
-        pad = rep.int(NA, min(n,nrow(x))-length(nna))
-        # returning min(n,nrow(x)) is what optimized one-column does because GForce needs to be deterministic by group
-        # currently; i.e. number of items per group doesn't depend on how many NA there are
-        nna = if (first) c(nna, pad) else c(pad, nna)
-      }
-      ans = x[nna,,drop=FALSE]
-      # DT[NA] returns NULL for list columns. TODO: change [.data.table to return NA for list columns
-      # In the meantime, fix up the NULLs here in first/last
-      for (col in which(vapply_1b(ans, is.list))) {
-        for (i in which(vapply_1b(ans[[col]], is.null))) {
-          set(ans, i, col, NA)
+      # very similar to na.omit.data.table
+      # TODO: n and first/last could be passed to Cdt_na and it could stop after finding n (it already does that in gsumm.c when gforce optimized)
+      nna = .firstlastVector(nna, n=n, first=first, na.rm=FALSE)
+      ans = .Call(CsubsetDT, x, nna, seq_along(x))  # works on DF too
+    } else {
+      ans = lapply(x, .firstlastVector, n=n, first=first, na.rm=na.rm)
+      if (na.rm) {
+        l = vapply_1i(ans, length)
+        m = max(l)
+        for (i in which(l<m)) {
+          ans[[i]] = c(ans[[i]], rep(NA, m-l[i]))
         }
+        # any row.names won't align to the values now in the result so don't retain them
       }
-      return(ans)
-    }
-    # else na.rm==TRUE; select the first/last non-NA within each column
-    ans = lapply(x, .narmVector, n=n, first=first)
-    l = vapply_1i(ans, length)
-    m = max(l)
-    for (i in which(l<m)) {  # pad with NA
-      ans[[i]] = c(ans[[i]], rep(NA, m-l[i]))
     }
     if (is.data.table(x)) setDT(ans) else setDF(ans)
     setattr(ans, "class", class(x))
+    if (!isTRUE(na.rm) && length(rn<-attr(x,"row.names")))
+      setattr(ans, "row.names", if (isFALSE(na.rm)) .firstlastVector(rn, n=n, first=first, na.rm=FALSE)
+                                               else rn[nna])
     return(ans)
   }
   if (!length(x))
     return(x)
-  if (is.vector(x) && !isFALSE(na.rm))
-    return(.narmVector(x, n=n, first=first))
-  if (!isFALSE(na.rm))
-    stopf("na.rm=TRUE|'row' is not currently supported for '%s'", class(x)[1L])
-  .headtail(x, n=n, ...)  
-  # TODO when n=1, return(x[length(x)]) would save method dispatch overhead
-  # TODO and previous version had lx = length(x); if (!lx) x else x[[lx]].  So empty input returned empty
+  if (!is.vector(x)) {
+    if (!isFALSE(na.rm))
+      stopf("na.rm=TRUE|'row' is not currently supported for '%s'", class(x)[1L])
+    return((if (first) utils::head else utils::tail)(x, n=n, ...))  # e.g. matrix
+  }
+  return(.firstlastVector(x, n=n, first=first, na.rm=!isFALSE(na.rm)))  # !isFALSE to convert 'row' to TRUE
 }
 
-.narmVector = function(x, n, first) {
-  nna = which_(is.na(x) | (is.list(x) & vapply_1b(x,is.null)), bool=FALSE)   # TODO: again, n and first/last could be passed to C here
-  if (!length(nna)) x[0L]
-  else if (n==1L)   x[nna[if (first) 1L else length(nna)]]
-  else              x[(if (first) utils::head else utils::tail)(nna, n)]  # TODO: avoid dispatch here and do ourselves since just a vector
+.firstlastVector = function(x, n, first, na.rm) {
+  if (!length(x)) return(x)
+  if (n==0L) return(x[0L])
+  ans = if (na.rm) {
+    nna = which_(if (is.list(x)) vapply_1b(x,function(y){is.null(y)||(length(y)==1L&&is.na(y))})
+                            else is.na(x), bool=FALSE)   # TODO: again, n and first/last could be passed to C here
+    if (!length(nna)) x[0L]
+    else {y=min(n,length(nna)); x[nna[if (first) seq.int(1L,y) else seq.int(length(nna)-y+1L,length(nna))]]}
+  } else {
+    y=min(n,length(x)); x[if (first) seq.int(1L,y) else seq.int(length(x)-y+1L,length(x))] 
+  }
+  if (n>1L || na.rm)   # n!=length(ans)
+    .Call("Csettruelength", ans, length(ans))
+  # for dogroups.c to know that shorter results (including when na.rm results in a length-1) should be padded with NA to match the length of longer items
+  # head and tail with na.rm=TRUE are by their nature returning a vector and therefore shouldn't be recycled when length-1; test 2240.81
+  # TODO: new function pad() could be provided so user can do things like DT[, .(pad(na.omit(B)), pad(na.omit(C))), by=grp]
+  #         to avoid the error 'Supplied 2 items for column 1 of group 1 which has 3 rows ...'
+  #       and/or pad= could be added to [.data.table to allow padding all results
+  # Since gforce_dynamic optimizes head/tail it knows to pad and that's optimized. However, default last(x) and first(x) (i.e. n=1 na.rm=FALSE) are
+  # single-valued like mean,median etc and are recycled in the same way. This is consistent with n=1 na.rm=FALSE already not being treated as
+  # gforce_dynamic in gsumm.c either.
+  # ***** TODO *****: n=1 na.rm=TRUE is not vector result and should be recycled to be consistent with n=1 na.rm=FALSE. It's just n>1 that is true vector then.
+  ans
 }
 
