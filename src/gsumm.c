@@ -1135,7 +1135,7 @@ static SEXP gfirstlast(const SEXP x, const bool first, const SEXP nArg, const bo
     SEXP att, v;
     setAttrib(ans, sym_gforce_dynamic, att=allocVector(VECSXP, 3));
     SET_VECTOR_ELT(att, 0, v = narm ? allocVector(INTSXP, ngrp) : R_NilValue);
-    SET_VECTOR_ELT(att, 1, ScalarLogical(first)); // so gforce knows which end to pad if necessary
+    SET_VECTOR_ELT(att, 1, ScalarLogical(first)); // so gforce knows which end the data is (last writes from the end of the alloc)
     SET_VECTOR_ELT(att, 2, ScalarInteger(w));     // to know how many were allocated for each group; i.e. MIN(w,grpsize[i])
     if (narm) anslens = INTEGER(v);
   }

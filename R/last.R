@@ -76,8 +76,7 @@ last = function(x, n=1L, na.rm=FALSE, ...) {
   #       and/or pad= could be added to [.data.table to allow padding all results
   # Since gforce_dynamic optimizes head/tail it knows to pad and that's optimized. However, default last(x) and first(x) (i.e. n=1 na.rm=FALSE) are
   # single-valued like mean,median etc and are recycled in the same way. This is consistent with n=1 na.rm=FALSE already not being treated as
-  # gforce_dynamic in gsumm.c either.
-  # ***** TODO *****: n=1 na.rm=TRUE is not vector result and should be recycled to be consistent with n=1 na.rm=FALSE. It's just n>1 that is true vector then.
+  # gforce_dynamic in gsumm.c either. n=1 na.rm=TRUE returns empty when all-NA so is still a vector result not recycled when length-1.
   ans
 }
 
