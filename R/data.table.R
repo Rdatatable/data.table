@@ -1864,7 +1864,8 @@ replace_dot_alias = function(e) {
     #fix for #1683
     if (use.I) assign(".I", seq_len(nrow(x)), thisEnv)
     ans = gforce(thisEnv, jsub, o__, f__, len__, irows,  # irows needed for #971
-                 .Call(CsubsetVector, groups, grpcols))  # just a list() subset to make C level neater; doesn't copy column contents
+                 .Call(CsubsetVector, groups, grpcols),  # just a list() subset to make C level neater; doesn't copy column contents
+                 lhs)  # for now this just prevents := with new feature first/last n>1; in future see TODO below
   } else {
     ans = .Call(Cdogroups, x, xcols, groups, grpcols, jiscols, xjiscols, grporder, o__, f__, len__, jsub, SDenv, cols, newnames, !missing(on), verbose)
   }
@@ -1886,7 +1887,7 @@ replace_dot_alias = function(e) {
   # Grouping by by: i is by val, icols NULL, o__ may be subset of x, f__ points to o__ (or x if !length o__)
   # TO DO: setkey could mark the key whether it is unique or not.
   if (!is.null(lhs)) {
-    if (GForce) { # GForce should work with := #1414
+    if (GForce) { # GForce should work with := #1414. TODO: move down into gforce at C level to save creating/rep'ing ans and grpcols wastefully
       vlen = length(ans[[1L]])   # TODO: this might be ngrp when na.rm=TRUE and one group has 2 and another 0, so needs enhancing here (by passing all-1 back from gans?)
       # replicate vals if GForce returns 1 value per group
       jvals = if (vlen==length(len__)) lapply(tail(ans, -length(grpcols)), rep, times=len__) else tail(ans, -length(grpcols))  # see comment in #4245 for why rep instead of rep.int
@@ -3004,7 +3005,7 @@ gshift = function(x, n=1L, fill=NA, type=c("lag", "lead", "shift", "cyclic")) {
   stopifnot(is.numeric(n))
   .Call(Cgshift, x, as.integer(n), fill, type)
 }
-gforce = function(env, jsub, o, f, l, rows, grpcols) .Call(Cgforce, env, jsub, o, f, l, rows, grpcols)
+gforce = function(env, jsub, o, f, l, rows, grpcols, lhs) .Call(Cgforce, env, jsub, o, f, l, rows, grpcols, lhs)
 
 .prepareFastSubset = function(isub, x, enclos, notjoin, verbose = FALSE){
   ## helper that decides, whether a fast binary search can be performed, if i is a call

@@ -21,6 +21,9 @@ static int *oo = NULL;
 static int *ff = NULL;
 static int isunsorted = 0;
 
+// for first/last with n>1 to error when used with :=, until implemented
+static bool assignByRef = false;
+
 // from R's src/cov.c (for variance / sd)
 #ifdef HAVE_LONG_DOUBLE
 # define SQRTL sqrtl
@@ -37,10 +40,11 @@ static int nbit(int n)
   return nb;
 }
 
-SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg, SEXP grpcols) {
+SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg, SEXP grpcols, SEXP lhs) {
   int nprotect=0;
   double started = wallclock();
   const bool verbose = GetVerbose();
+  assignByRef = !isNull(lhs);
   if (TYPEOF(env) != ENVSXP) error(_("env is not an environment"));
   // The type of jsub is pretty flexible in R, so leave checking to eval() below.
   if (!isInteger(o)) error(_("%s is not an integer vector"), "o");
@@ -1113,6 +1117,8 @@ static SEXP gfirstlast(const SEXP x, const bool first, const SEXP nArg, const bo
   if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<0)
     error(_("Internal error, gfirstlast is not implemented for n<0. This should have been caught before. Please report to data.table issue tracker.")); // # nocov
   const int w = INTEGER(nArg)[0];
+  if (w>1 && assignByRef)
+    error(_("Is first/last/head/tail with n>1 and := by group intentional? Please provide a use case to the GitHub issue tracker. It could be implemented."));
   // select 1:w when first=TRUE, and (n-w+1):n when first=FALSE
   // or select w'th item when nthvalue=TRUE; e.g. the n=0 case in test 280
   const bool nosubset = irowslen == -1;
