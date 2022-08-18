@@ -132,11 +132,13 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
     dx[i] = REAL(VECTOR_ELT(x, i));                             // assign source columns to C pointers
   }
 
-  enum {MEAN, SUM} sfun;
+  enum {MEAN, SUM, MAX} sfun;
   if (!strcmp(CHAR(STRING_ELT(fun, 0)), "mean")) {
     sfun = MEAN;
   } else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "sum")) {
     sfun = SUM;
+  } else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "max")) {
+    sfun = MAX;
   } else {
     error(_("Internal error: invalid %s argument in %s function should have been caught earlier. Please report to the data.table issue tracker."), "fun", "rolling"); // # nocov
   }
@@ -161,6 +163,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
     ialgo = 1;                                                  // exact = 1
   else
     error(_("Internal error: invalid %s argument in %s function should have been caught earlier. Please report to the data.table issue tracker."), "algo", "rolling"); // # nocov
+  if (badaptive && ialgo == 0 && sfun==MAX) error("frollmax adaptive algo fast not yet implemented");
 
   int* iik = NULL;
   if (!badaptive) {
@@ -192,6 +195,12 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
           frollsum(ialgo, dx[i], inx[i], &dans[i*nk+j], iik[j], ialign, dfill, bnarm, ihasna, verbose);
         else
           fadaptiverollsum(ialgo, dx[i], inx[i], &dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, verbose);
+        break;
+      case MAX :
+        if (!badaptive)
+          frollmax(ialgo, dx[i], inx[i], &dans[i*nk+j], iik[j], ialign, dfill, bnarm, ihasna, verbose);
+        else
+          fadaptiverollmax(ialgo, dx[i], inx[i], &dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, verbose);
         break;
       default:
         error(_("Internal error: Unknown sfun value in froll: %d"), sfun); // #nocov

@@ -364,3 +364,166 @@ void fadaptiverollsumExact(double *x, uint64_t nx, ans_t *ans, int *k, double fi
     }
   }
 }
+
+/* fast adaptive rolling sum */
+void fadaptiverollmax(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
+  double tic = 0;
+  if (verbose)
+    tic = omp_get_wtime();
+  if (algo==0) {
+    fadaptiverollmaxFast(x, nx, ans, k, fill, narm, hasna, verbose);
+  } else if (algo==1) {
+    fadaptiverollmaxExact(x, nx, ans, k, fill, narm, hasna, verbose);
+  }
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: processing algo %u took %.3fs\n"), __func__, algo, omp_get_wtime()-tic);
+}
+void fadaptiverollmaxFast(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
+  // TODO
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", hasna %d, narm %d\n"), "fadaptiverollsumFast", (uint64_t)nx, hasna, (int) narm);
+  bool truehasna = hasna>0;
+  long double w = 0.0;
+  double *cs = malloc(nx*sizeof(double));
+  if (!cs) {                                                    // # nocov start
+    ans->status = 3;
+    snprintf(ans->message[3], 500, _("%s: Unable to allocate memory for cumsum"), __func__);
+    free(cs);
+    return;
+  }                                                             // # nocov end
+  if (!truehasna) {
+    for (uint64_t i=0; i<nx; i++) {
+      w += x[i];
+      cs[i] = (double) w;
+    }
+    if (R_FINITE((double) w)) {
+      #pragma omp parallel for num_threads(getDTthreads(nx, true))
+      for (uint64_t i=0; i<nx; i++) {
+        if (i+1 == k[i]) {
+          ans->dbl_v[i] = cs[i];
+        } else if (i+1 > k[i]) {
+          ans->dbl_v[i] = cs[i]-cs[i-k[i]];
+        } else {
+          ans->dbl_v[i] = fill;
+        }
+      }
+    } else {
+      if (hasna==-1) {
+        ans->status = 2;
+        snprintf(end(ans->message[2]), 500, _("%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning"), __func__);
+      }
+      if (verbose)
+        snprintf(end(ans->message[0]), 500, _("%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n"), __func__);
+      w = 0.0;
+      truehasna = true;
+    }
+  }
+  if (truehasna) {
+    uint64_t nc = 0;
+    uint64_t *cn = malloc(nx*sizeof(uint64_t));
+    if (!cn) {                                                  // # nocov start
+      ans->status = 3;
+      snprintf(ans->message[3], 500, _("%s: Unable to allocate memory for cum NA counter"), __func__);
+      free(cs);
+      free(cn);
+      return;
+    }                                                           // # nocov end
+    for (uint64_t i=0; i<nx; i++) {
+      if (R_FINITE(x[i])) {
+        w += x[i];
+      } else {
+        nc++;
+      }
+      cs[i] = (double) w;
+      cn[i] = nc;
+    }
+#pragma omp parallel for num_threads(getDTthreads(nx, true))
+    for (uint64_t i=0; i<nx; i++) {
+      if (i+1 < k[i]) {
+        ans->dbl_v[i] = fill;
+      } else if (!narm) {
+        if (i+1 == k[i]) {
+          ans->dbl_v[i] = cn[i]>0 ? NA_REAL : cs[i];
+        } else if (i+1 > k[i]) {
+          ans->dbl_v[i] = (cn[i] - cn[i-k[i]])>0 ? NA_REAL : cs[i]-cs[i-k[i]];
+        }
+      } else if (i+1 == k[i]) {
+        int thisk = k[i] - ((int) cn[i]);
+        ans->dbl_v[i] = thisk==0 ? 0.0 : cs[i];
+      } else if (i+1 > k[i]) {
+        int thisk = k[i] - ((int) (cn[i] - cn[i-k[i]]));
+        ans->dbl_v[i] = thisk==0 ? 0.0 : cs[i]-cs[i-k[i]];
+      }
+    }
+    free(cn);
+  }
+  free(cs);
+}
+void fadaptiverollmaxExact(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", hasna %d, narm %d\n"), "fadaptiverollmaxExact", (uint64_t)nx, hasna, (int) narm);
+  bool truehasna = hasna>0;
+  if (!truehasna || !narm) {
+    #pragma omp parallel for num_threads(getDTthreads(nx, true))
+    for (uint64_t i=0; i<nx; i++) {
+      if (narm && truehasna) {
+        continue;
+      }
+      if (i+1 < k[i]) {
+        ans->dbl_v[i] = fill;
+      } else {
+        double w = R_NegInf;
+        for (int j=-k[i]+1; j<=0; j++) {
+          // should be used with setDTthreads(1)
+          //Rprintf("x[%d+%d] > w: %f > %f: %d\n", i, j, x[i+j], w, x[i+j] > w);
+          if (x[i+j] > w)
+            w = x[i+j];
+        }
+        if (R_FINITE(w)) {
+          ans->dbl_v[i] = w;
+        } else {
+          if (!narm) {
+            ans->dbl_v[i] = w;
+          }
+          truehasna = true;
+        }
+      }
+    }
+    if (truehasna) {
+      if (hasna==-1) {
+        ans->status = 2;
+        snprintf(end(ans->message[2]), 500, _("%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning"), __func__);
+      }
+      if (verbose) {
+        if (narm) {
+          snprintf(end(ans->message[0]), 500, _("%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n"), __func__);
+        } else {
+          snprintf(end(ans->message[0]), 500, _("%s: NA (or other non-finite) value(s) are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run\n"), __func__);
+        }
+      }
+    }
+  }
+  if (truehasna && narm) {
+    #pragma omp parallel for num_threads(getDTthreads(nx, true))
+    for (uint64_t i=0; i<nx; i++) {
+      if (i+1 < k[i]) {
+        ans->dbl_v[i] = fill;
+      } else {
+        double w = R_NegInf;
+        int nc = 0;
+        for (int j=-k[i]+1; j<=0; j++) {
+          if (ISNAN(x[i+j])) {
+            nc++;
+          } else if (x[i+j] > w) {
+            w = x[i+j];
+          }
+        }
+        if (nc < k[i]) {
+          ans->dbl_v[i] = w;
+        } else {
+          ans->dbl_v[i] = R_NegInf;
+        }
+      }
+    }
+  }
+}

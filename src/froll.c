@@ -397,6 +397,237 @@ void frollsumExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool 
   }
 }
 
+/* fast rolling max */
+void frollmax(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasna, bool verbose) {
+  if (nx < k) {
+    if (verbose)
+      snprintf(end(ans->message[0]), 500, _("%s: window width longer than input vector, returning all NA vector\n"), __func__);
+    for (int i=0; i<nx; i++) {
+      ans->dbl_v[i] = fill;
+    }
+    return;
+  }
+  double tic = 0;
+  if (verbose)
+    tic = omp_get_wtime();
+  if (algo==0) {
+    frollmaxFast(x, nx, ans, k, fill, narm, hasna, verbose);
+  } else if (algo==1) {
+    frollmaxExact(x, nx, ans, k, fill, narm, hasna, verbose);
+  }
+  if (ans->status < 3 && align < 1) {
+    int k_ = align==-1 ? k-1 : floor(k/2);
+    if (verbose)
+      snprintf(end(ans->message[0]), 500, _("%s: align %d, shift answer by %d\n"), __func__, align, -k_);
+    memmove((char *)ans->dbl_v, (char *)ans->dbl_v + (k_*sizeof(double)), (nx-k_)*sizeof(double));
+    for (uint64_t i=nx-k_; i<nx; i++) {
+      ans->dbl_v[i] = fill;
+    }
+  }
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: processing algo %u took %.3fs\n"), __func__, algo, omp_get_wtime()-tic);
+}
+void frollmaxFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose) {
+  /*
+   * fast online algorithm do single pass over elements keeping track of recent max and its index
+   * if index of max is within progressing window then it keep running single pass
+   * whenever max is leaving the window (index of max is outside of iterator minus window size) then new maximum is computed via nested loop
+   * new max is used to continue outer single pass
+   *
+   * should scale well for bigger window size, may carry overhead for small window, needs benchmarking
+   */
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", window %d, hasna %d, narm %d\n"), "frollmaxFast", (uint64_t)nx, k, hasna, (int)narm);
+  double w = R_NegInf;
+  uint64_t iw = 0;
+  bool truehasna = hasna>0;
+  if (!truehasna) {
+    int i;
+    for (i=0; i<k-1; i++) { // #loop_counter_not_local_scope_ok
+      if (x[i] >= w) { // >= rather than > because we track most recent maximum using iw
+        iw = i;
+        w = x[iw];
+      }
+      ans->dbl_v[i] = fill;
+    }
+    if (x[i] >= w) {
+      iw = i;
+      w = x[iw];
+    } else {
+      // ensure iw ok, case when all window was -Inf or NA?
+    }
+    ans->dbl_v[i] = w;
+    if (R_FINITE(w)) {
+      for (uint64_t i=k; i<nx; i++) {
+        if (x[i] >= w) {
+          iw = i;
+          w = x[iw];
+        } else {
+          if (iw > i-k) { // max is still within window
+            // w and iw are still ok
+          } else { // max left the window, need to find max in this window
+            for (uint64_t ii=0, w=R_NegInf; i<k-1; ii++) {
+              if (x[i+ii-k] >= w) { // what if that is never satisfied? test!
+                iw = i+ii-k;
+                w = x[iw];
+              }
+            }
+          }
+        }
+        ans->dbl_v[i] = w;
+      }
+      if (!R_FINITE(w)) {
+        if (hasna==-1) {
+          ans->status = 2;
+          snprintf(end(ans->message[2]), 500, _("%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning"), __func__);
+        }
+        if (verbose)
+          snprintf(end(ans->message[0]), 500, _("%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n"), __func__);
+        w = 0.0;
+        truehasna = true;
+      }
+    } else {
+      if (hasna==-1) {
+        ans->status = 2;
+        snprintf(end(ans->message[2]), 500, _("%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning"), __func__);
+      }
+      if (verbose)
+        snprintf(end(ans->message[0]), 500, _("%s: NA (or other non-finite) value(s) are present in input, skip non-NA attempt and run with extra care for NAs\n"), __func__);
+      w = 0.0;
+      truehasna = true;
+    }
+  }
+  if (truehasna) {
+    int nc = 0;
+    int i;
+    double w = R_NegInf; // could be NA from !truehasna section above?
+    for (i=0; i<k-1; i++) { // #loop_counter_not_local_scope_ok
+      if (R_FINITE(x[i])) {
+        if (x[i] >= w) {
+          iw = i;
+          w = x[iw];
+        }
+      } else {
+        nc++;
+      }
+      ans->dbl_v[i] = fill;
+    }
+    if (R_FINITE(x[i])) {
+      if (x[i] >= w) {
+        iw = i;
+        w = x[iw];
+      }
+    } else {
+      nc++;
+    }
+    if (nc == 0) {
+      ans->dbl_v[i] = w;
+    } else if (nc == k) {
+      ans->dbl_v[i] = narm ? R_NegInf : NA_REAL;
+    } else {
+      ans->dbl_v[i] = narm ? w : NA_REAL;
+    }
+    for (uint64_t i=k; i<nx; i++) {
+      if (R_FINITE(x[i])) {
+        if (x[i] >= w) {
+          iw = i;
+          w = x[iw];
+        } else {
+          if (iw > i-k) { // max is still within window
+            // w and iw are still ok
+          } else { // max left the window, need to find max in this window
+            for (uint64_t ii=0, w=R_NegInf; i<k-1; ii++) {
+              nc = 0;
+              if (R_FINITE(x[i+ii-k])) {
+                if (x[i+ii-k] >= w) { // what if that is never satisfied? test!
+                  iw = i+ii-k;
+                  w = x[iw];
+                }
+              } else {
+                nc++; // this needs heavy testing
+              }
+            }
+          }
+        }
+        ans->dbl_v[i] = w;
+      } else {
+        nc++;
+      }
+      if (!R_FINITE(x[i-k])) {
+        nc--;
+      }
+      if (nc == 0) {
+        ans->dbl_v[i] = w;
+      } else if (nc == k) {
+        ans->dbl_v[i] = narm ? R_NegInf : NA_REAL;
+      } else {
+        ans->dbl_v[i] = narm ? w : NA_REAL;
+      }
+    }
+  }
+}
+void frollmaxExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose) {
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", window %d, hasna %d, narm %d\n"), "frollmaxExact", (uint64_t)nx, k, hasna, (int)narm);
+  for (int i=0; i<k-1; i++) {
+    ans->dbl_v[i] = fill;
+  }
+  bool truehasna = hasna>0;
+  if (!truehasna || !narm) {
+    #pragma omp parallel for num_threads(getDTthreads(nx, true))
+    for (uint64_t i=k-1; i<nx; i++) {
+      if (narm && truehasna) {
+        continue;
+      }
+      double w = R_NegInf;
+      for (int j=-k+1; j<=0; j++) {
+        if (x[i+j] > w)
+          w = x[i+j];
+      }
+      if (R_FINITE(w)) {
+        ans->dbl_v[i] = w;
+      } else {
+        if (!narm) {
+          ans->dbl_v[i] = w;
+        }
+        truehasna = true;
+      }
+    }
+    if (truehasna) {
+      if (hasna==-1) {
+        ans->status = 2;
+        snprintf(end(ans->message[2]), 500, _("%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning"), __func__);
+      }
+      if (verbose) {
+        if (narm) {
+          snprintf(end(ans->message[0]), 500, _("%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n"), __func__);
+        } else {
+          snprintf(end(ans->message[0]), 500, _("%s: NA (or other non-finite) value(s) are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run\n"), __func__);
+        }
+      }
+    }
+  }
+  if (truehasna && narm) {
+    #pragma omp parallel for num_threads(getDTthreads(nx, true))
+    for (uint64_t i=k-1; i<nx; i++) {
+      double w = R_NegInf;
+      int nc = 0;
+      for (int j=-k+1; j<=0; j++) {
+        if (ISNAN(x[i+j])) {
+          nc++;
+        } else if (x[i+j] > w) {
+          w = x[i+j];
+        }
+      }
+      if (nc < k) {
+          ans->dbl_v[i] = w;
+      } else {
+          ans->dbl_v[i] = R_NegInf;
+        }
+    }
+  }
+}
+
 /* fast rolling any R function
  * not plain C, not thread safe
  * R eval() allocates

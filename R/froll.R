@@ -12,6 +12,9 @@ frollmean = function(x, n, fill=NA, algo=c("fast", "exact"), align=c("right", "l
 frollsum = function(x, n, fill=NA, algo=c("fast","exact"), align=c("right", "left", "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE) {
   froll(fun="sum", x=x, n=n, fill=fill, algo=algo, align=align, na.rm=na.rm, hasNA=hasNA, adaptive=adaptive)
 }
+frollmax = function(x, n, fill=NA, algo=c("fast", "exact"), align=c("right", "left", "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE) {
+  froll(fun="max", x=x, n=n, fill=fill, algo=algo, align=align, na.rm=na.rm, hasNA=hasNA, adaptive=adaptive)
+}
 frollapply = function(x, n, FUN, ..., fill=NA, align=c("right", "left", "center")) {
   FUN = match.fun(FUN)
   align = match.arg(align)
