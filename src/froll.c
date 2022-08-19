@@ -427,6 +427,30 @@ void frollmax(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int k, int 
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: processing algo %u took %.3fs\n"), __func__, algo, omp_get_wtime()-tic);
 }
+inline void windowmax(double *x, uint64_t o, int k, double *w, uint64_t *iw) {
+  for (int i=0; i<k-1; i++) {
+    //Rprintf("windowmax iteration %d, offset %d, first x val %f, testing x[o+i-k+1] >= w[0]: x[%d-%d+1] >= w[0]: %f >= %f: %d\n", i, o, x[o], i, k, x[o+i-k+1], w[0], x[o+i-k+1] >= w[0]);
+    if (x[o+i-k+1] >= w[0]) { // what if that is never satisfied? test!
+      iw[0] = o+i-k+1;
+      w[0] = x[iw[0]];
+    }
+  }
+}
+inline void windowmaxnarm(double *x, uint64_t o, int k, bool narm, int *nc, double *w, uint64_t *iw) {
+  for (int i=0; i<k-1; i++) {
+    //Rprintf("windowmax iteration %d, offset %d, first x val %f, testing x[o+i-k+1] >= w[0]: x[%d-%d+1] >= w[0]: %f >= %f: %d\n", i, o, x[o], i, k, x[o+i-k+1], w[0], x[o+i-k+1] >= w[0]);
+    if (R_FINITE(x[o+i-k+1])) {
+      if (x[o+i-k+1] >= w[0]) { // what if that is never satisfied? test!
+        iw[0] = o+i-k+1;
+        w[0] = x[iw[0]];
+      }
+    } else if (narm) {
+      nc[0]++;
+    } else {
+      w[0] = NA_REAL;
+    }
+  }
+}
 void frollmaxFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose) {
   /*
    * fast online algorithm do single pass over elements keeping track of recent max and its index
@@ -438,52 +462,71 @@ void frollmaxFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool n
    */
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", window %d, hasna %d, narm %d\n"), "frollmaxFast", (uint64_t)nx, k, hasna, (int)narm);
-  double w = R_NegInf;
-  uint64_t iw = 0;
+  double w = R_NegInf; // window max
+  uint64_t cmax = 0; // counter of nested loops for verbose
+  uint64_t iw = 0; // index of window max
   bool truehasna = hasna>0;
   if (!truehasna) {
+    bool hadna = false;
     int i;
     for (i=0; i<k-1; i++) { // #loop_counter_not_local_scope_ok
+      if (!R_FINITE(x[i])) {
+        hadna = true;
+        break;
+      }
       if (x[i] >= w) { // >= rather than > because we track most recent maximum using iw
         iw = i;
         w = x[iw];
       }
       ans->dbl_v[i] = fill;
     }
-    if (x[i] >= w) {
-      iw = i;
-      w = x[iw];
+    if (!hadna && !R_FINITE(x[i])) {
+      if (x[i] >= w) {
+        iw = i;
+        w = x[iw];
+      } else {
+        // ensure iw ok, case when all window was -Inf or NA?
+      }
+      ans->dbl_v[i] = w;
     } else {
-      // ensure iw ok, case when all window was -Inf or NA?
+      hadna = true;
     }
-    ans->dbl_v[i] = w;
-    if (R_FINITE(w)) {
+    if (!hadna) {
       for (uint64_t i=k; i<nx; i++) {
+        if (!R_FINITE(x[i])) {
+          hadna = true;
+          break;
+        }
         if (x[i] >= w) {
+          //Rprintf("iteration %d, new max %f at %d, old max %f at %d\n", i, x[i], i, w, iw);
           iw = i;
           w = x[iw];
         } else {
           if (iw > i-k) { // max is still within window
             // w and iw are still ok
+            //Rprintf("iteration %d, max %f at %d bigger than current value %f\n", i, w, iw, x[i]);
           } else { // max left the window, need to find max in this window
-            for (uint64_t ii=0, w=R_NegInf; i<k-1; ii++) {
-              if (x[i+ii-k] >= w) { // what if that is never satisfied? test!
-                iw = i+ii-k;
-                w = x[iw];
-              }
-            }
+            //Rprintf("iteration %d, max %f at %d left the window, call windowmax from %d of size %d\n", i, w, iw, i, k);
+            w = R_NegInf;
+            iw = i-k;
+            windowmax(x, i, k, &w, &iw);
+            //Rprintf("iteration %d, windowmax found new max %f at %d\n", i, w, iw);
+            cmax++;
           }
         }
         ans->dbl_v[i] = w;
       }
-      if (!R_FINITE(w)) {
+      if (verbose)
+        snprintf(end(ans->message[0]), 500, _("%s: windowmax called %"PRIu64" time(s)\n"), __func__, cmax);
+      if (hadna) {
         if (hasna==-1) {
           ans->status = 2;
           snprintf(end(ans->message[2]), 500, _("%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning"), __func__);
         }
         if (verbose)
           snprintf(end(ans->message[0]), 500, _("%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n"), __func__);
-        w = 0.0;
+        w = R_NegInf;
+        cmax = 0;
         truehasna = true;
       }
     } else {
@@ -493,14 +536,14 @@ void frollmaxFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool n
       }
       if (verbose)
         snprintf(end(ans->message[0]), 500, _("%s: NA (or other non-finite) value(s) are present in input, skip non-NA attempt and run with extra care for NAs\n"), __func__);
-      w = 0.0;
+      w = R_NegInf;
+      cmax = 0;
       truehasna = true;
     }
   }
   if (truehasna) {
     int nc = 0;
     int i;
-    double w = R_NegInf; // could be NA from !truehasna section above?
     for (i=0; i<k-1; i++) { // #loop_counter_not_local_scope_ok
       if (R_FINITE(x[i])) {
         if (x[i] >= w) {
@@ -536,17 +579,11 @@ void frollmaxFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool n
           if (iw > i-k) { // max is still within window
             // w and iw are still ok
           } else { // max left the window, need to find max in this window
-            for (uint64_t ii=0, w=R_NegInf; i<k-1; ii++) {
-              nc = 0;
-              if (R_FINITE(x[i+ii-k])) {
-                if (x[i+ii-k] >= w) { // what if that is never satisfied? test!
-                  iw = i+ii-k;
-                  w = x[iw];
-                }
-              } else {
-                nc++; // this needs heavy testing
-              }
-            }
+            w = R_NegInf;
+            iw = i-k;
+            windowmaxnarm(x, i, k, narm, &nc, &w, &iw);
+            //Rprintf("iteration %d, windowmaxnarm found new max %f at %d\n", i, w, iw);
+            cmax++;
           }
         }
         ans->dbl_v[i] = w;
@@ -564,6 +601,8 @@ void frollmaxFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool n
         ans->dbl_v[i] = narm ? w : NA_REAL;
       }
     }
+    if (verbose)
+      snprintf(end(ans->message[0]), 500, _("%s: windowmaxnarm called %"PRIu64" time(s)\n"), __func__, cmax);
   }
 }
 void frollmaxExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose) {
