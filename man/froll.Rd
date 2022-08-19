@@ -7,7 +7,9 @@
 \alias{rollmean}
 \alias{frollmean}
 \alias{rollsum}
+\alias{rollmax}
 \alias{frollsum}
+\alias{frollmax}
 \alias{rollapply}
 \alias{frollapply}
 \title{Rolling functions}
@@ -18,6 +20,8 @@
 frollmean(x, n, fill=NA, algo=c("fast", "exact"),
           align=c("right", "left", "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE)
 frollsum(x, n, fill=NA, algo=c("fast","exact"),
+         align=c("right", "left", "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE)
+frollmax(x, n, fill=NA, algo=c("fast","exact"),
          align=c("right", "left", "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE)
 frollapply(x, n, FUN, \dots, fill=NA, align=c("right", "left", "center"))
 }
