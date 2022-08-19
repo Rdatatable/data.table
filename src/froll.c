@@ -467,11 +467,10 @@ void frollmaxFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool n
   uint64_t iw = 0; // index of window max
   bool truehasna = hasna>0;
   if (!truehasna) {
-    bool hadna = false;
     int i;
     for (i=0; i<k-1; i++) { // #loop_counter_not_local_scope_ok
       if (!R_FINITE(x[i])) {
-        hadna = true;
+        truehasna = true;
         break;
       }
       if (x[i] >= w) { // >= rather than > because we track most recent maximum using iw
@@ -480,7 +479,7 @@ void frollmaxFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool n
       }
       ans->dbl_v[i] = fill;
     }
-    if (!hadna && !R_FINITE(x[i])) {
+    if (!truehasna && !R_FINITE(x[i])) {
       if (x[i] >= w) {
         iw = i;
         w = x[iw];
@@ -489,12 +488,12 @@ void frollmaxFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool n
       }
       ans->dbl_v[i] = w;
     } else {
-      hadna = true;
+      truehasna = true;
     }
-    if (!hadna) {
+    if (!truehasna) {
       for (uint64_t i=k; i<nx; i++) {
         if (!R_FINITE(x[i])) {
-          hadna = true;
+          truehasna = true;
           break;
         }
         if (x[i] >= w) {
@@ -518,7 +517,7 @@ void frollmaxFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool n
       }
       if (verbose)
         snprintf(end(ans->message[0]), 500, _("%s: windowmax called %"PRIu64" time(s)\n"), __func__, cmax);
-      if (hadna) {
+      if (truehasna) {
         if (hasna==-1) {
           ans->status = 2;
           snprintf(end(ans->message[2]), 500, _("%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning"), __func__);
@@ -527,7 +526,6 @@ void frollmaxFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool n
           snprintf(end(ans->message[0]), 500, _("%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n"), __func__);
         w = R_NegInf;
         cmax = 0;
-        truehasna = true;
       }
     } else {
       if (hasna==-1) {
@@ -538,7 +536,6 @@ void frollmaxFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool n
         snprintf(end(ans->message[0]), 500, _("%s: NA (or other non-finite) value(s) are present in input, skip non-NA attempt and run with extra care for NAs\n"), __func__);
       w = R_NegInf;
       cmax = 0;
-      truehasna = true;
     }
   }
   if (truehasna) {

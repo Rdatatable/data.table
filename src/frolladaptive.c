@@ -365,7 +365,7 @@ void fadaptiverollsumExact(double *x, uint64_t nx, ans_t *ans, int *k, double fi
   }
 }
 
-/* fast adaptive rolling sum */
+/* fast adaptive rolling max */
 void fadaptiverollmax(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
   double tic = 0;
   if (verbose)
@@ -378,86 +378,83 @@ void fadaptiverollmax(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: processing algo %u took %.3fs\n"), __func__, algo, omp_get_wtime()-tic);
 }
+inline void windowadaptivemax(double *x, uint64_t o, int *k, double *w, uint64_t *iw) {
+  for (int i=0; i<k[o+i]-1; i++) {
+    Rprintf("windowmax iteration %d, offset %d, first x val %f, testing x[o+i-k[o+i]+1] >= w[0]: x[%d+%d-%d+1] >= w[0]: %f >= %f: %d\n",
+                                  i,         o,           x[o],                                     o, i, k[o+i],   x[o+i-k[o+i]+1], w[0], x[o+i-k[o+i]+1] >= w[0]);
+    if (x[o+i-k[o+i]+1] >= w[0]) { // what if that is never satisfied? test!
+      iw[0] = o+i-k[o+i]+1;
+      w[0] = x[iw[0]];
+    }
+  }
+}
+inline void windowadaptivemaxnarm(double *x, uint64_t o, int *k, bool narm, int *nc, double *w, uint64_t *iw) {
+  for (int i=0; i<k[o+i]-1; i++) {
+    //Rprintf("windowmax iteration %d, offset %d, first x val %f, testing x[o+i-k+1] >= w[0]: x[%d-%d+1] >= w[0]: %f >= %f: %d\n", i, o, x[o], i, k, x[o+i-k+1], w[0], x[o+i-k+1] >= w[0]);
+    if (x[o+i-k[o+i]+1] >= w[0]) { // what if that is never satisfied? test!
+      iw[0] = o+i-k[o+i]+1;
+      w[0] = x[iw[0]];
+    }
+  }
+}
 void fadaptiverollmaxFast(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
-  // TODO
   if (verbose)
-    snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", hasna %d, narm %d\n"), "fadaptiverollsumFast", (uint64_t)nx, hasna, (int) narm);
+    snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", hasna %d, narm %d\n"), "fadaptiverollmaxFast", (uint64_t)nx, hasna, (int) narm);
+  double w = R_NegInf; // window max
+  uint64_t cmax = 0; // counter of nested loops for verbose
+  uint64_t iw = 0; // index of window max
   bool truehasna = hasna>0;
-  long double w = 0.0;
-  double *cs = malloc(nx*sizeof(double));
-  if (!cs) {                                                    // # nocov start
-    ans->status = 3;
-    snprintf(ans->message[3], 500, _("%s: Unable to allocate memory for cumsum"), __func__);
-    free(cs);
-    return;
-  }                                                             // # nocov end
   if (!truehasna) {
     for (uint64_t i=0; i<nx; i++) {
-      w += x[i];
-      cs[i] = (double) w;
-    }
-    if (R_FINITE((double) w)) {
-      #pragma omp parallel for num_threads(getDTthreads(nx, true))
-      for (uint64_t i=0; i<nx; i++) {
-        if (i+1 == k[i]) {
-          ans->dbl_v[i] = cs[i];
-        } else if (i+1 > k[i]) {
-          ans->dbl_v[i] = cs[i]-cs[i-k[i]];
+      if (!R_FINITE(x[i])) {
+        truehasna = true;
+      } else {
+        if (x[i] >= w) {
+          Rprintf("iteration %d, new max %f at %d, old max %f at %d\n", i, x[i], i, w, iw);
+          iw = i;
+          w = x[iw];
         } else {
+          //Rprintf("iteration %d, test if (iw > i-k[i]): (%d > %d-%d): %d\n",i,                   iw, i, k[i], iw > i-k[i]);
+          //Rprintf("i-k[i] < 0: %d-k[%d] < 0: %d-%d < 0: %d < 0: %d\n", i, i, i, k[i], i-k[i], i-k[i] < 0);
+          //Rprintf("i < k[i]: %d\n", i < k[i]);
+          if (i < k[i] || iw > i-k[i]) { // max is still within window
+            Rprintf("iteration %d, max %f at %d bigger than current value %f\n", i, w, iw, x[i]);
+          } else { // max left the window, need to find max in this window
+            Rprintf("iteration %d, max %f at %d left the window, call windowmax from %d of size %d\n", i, w, iw, i, k[i]);
+            w = R_NegInf;
+            iw = i-k[i];
+            windowadaptivemax(x, i, k, &w, &iw);
+            Rprintf("iteration %d, windowmax found new max %f at %d\n", i, w, iw);
+            cmax++;
+          }
+        }
+        if (i+1 < k[i]) {
+          Rprintf("iteration %d, window size %d too big, skip\n", i, k[i]);
           ans->dbl_v[i] = fill;
+        } else {
+          ans->dbl_v[i] = w;
         }
       }
-    } else {
+    }
+    if (verbose)
+      snprintf(end(ans->message[0]), 500, _("%s: windowmax called %"PRIu64" time(s)\n"), __func__, cmax);
+    if (truehasna) {
       if (hasna==-1) {
         ans->status = 2;
         snprintf(end(ans->message[2]), 500, _("%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning"), __func__);
       }
       if (verbose)
         snprintf(end(ans->message[0]), 500, _("%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n"), __func__);
-      w = 0.0;
-      truehasna = true;
+      w = R_NegInf;
+      cmax = 0;
     }
   }
   if (truehasna) {
-    uint64_t nc = 0;
-    uint64_t *cn = malloc(nx*sizeof(uint64_t));
-    if (!cn) {                                                  // # nocov start
-      ans->status = 3;
-      snprintf(ans->message[3], 500, _("%s: Unable to allocate memory for cum NA counter"), __func__);
-      free(cs);
-      free(cn);
-      return;
-    }                                                           // # nocov end
-    for (uint64_t i=0; i<nx; i++) {
-      if (R_FINITE(x[i])) {
-        w += x[i];
-      } else {
-        nc++;
-      }
-      cs[i] = (double) w;
-      cn[i] = nc;
-    }
-#pragma omp parallel for num_threads(getDTthreads(nx, true))
-    for (uint64_t i=0; i<nx; i++) {
-      if (i+1 < k[i]) {
-        ans->dbl_v[i] = fill;
-      } else if (!narm) {
-        if (i+1 == k[i]) {
-          ans->dbl_v[i] = cn[i]>0 ? NA_REAL : cs[i];
-        } else if (i+1 > k[i]) {
-          ans->dbl_v[i] = (cn[i] - cn[i-k[i]])>0 ? NA_REAL : cs[i]-cs[i-k[i]];
-        }
-      } else if (i+1 == k[i]) {
-        int thisk = k[i] - ((int) cn[i]);
-        ans->dbl_v[i] = thisk==0 ? 0.0 : cs[i];
-      } else if (i+1 > k[i]) {
-        int thisk = k[i] - ((int) (cn[i] - cn[i-k[i]]));
-        ans->dbl_v[i] = thisk==0 ? 0.0 : cs[i]-cs[i-k[i]];
-      }
-    }
-    free(cn);
+    ans->status = 3;
+    snprintf(ans->message[3], 500, _("%s: frollmax adaptive algo='fast' having NAs not yet implemented, use algo='exact'"), __func__);
+    return;
+    // TODO
   }
-  free(cs);
 }
 void fadaptiverollmaxExact(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
   if (verbose)
