@@ -618,15 +618,7 @@ void frollmaxExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool 
  * not plain C, not thread safe
  * R eval() allocates
  */
-void frollapply(double *x, int64_t nx, double *w, int k, ans_t *ans, int align, double fill, SEXP call, SEXP rho, bool verbose) {
-  if (nx < k) {
-    if (verbose)
-      Rprintf(_("%s: window width longer than input vector, returning all NA vector\n"), __func__);
-    for (int i=0; i<nx; i++) {
-      ans->dbl_v[i] = fill;
-    }
-    return;
-  }
+void frollapply(double *x, int64_t nx, double *w, int k, ans_t *ans, double fill, SEXP call, SEXP rho, bool verbose) {
   double tic = 0;
   if (verbose)
     tic = omp_get_wtime();
@@ -665,15 +657,6 @@ void frollapply(double *x, int64_t nx, double *w, int k, ans_t *ans, int align, 
       SEXP evali = PROTECT(eval(call, rho));
       ans->dbl_v[i] = REAL(coerceVector(evali, REALSXP))[0];
       UNPROTECT(1); // evali
-    }
-  }
-  if (ans->status < 3 && align < 1) {
-    int k_ = align==-1 ? k-1 : floor(k/2);
-    if (verbose)
-      Rprintf(_("%s: align %d, shift answer by %d\n"), __func__, align, -k_);
-    memmove((char *)ans->dbl_v, (char *)ans->dbl_v + (k_*sizeof(double)), (nx-k_)*sizeof(double));
-    for (int64_t i=nx-k_; i<nx; i++) {
-      ans->dbl_v[i] = fill;
     }
   }
   if (verbose)
