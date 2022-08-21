@@ -321,7 +321,28 @@ SEXP frollapplyR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP rho) {
     pc = PROTECT(LCONS(fun, LCONS(pw, LCONS(R_DotsSymbol, R_NilValue))));
 
     for (R_len_t i=0; i<nx; i++) {
-      frollapply(dx[i], inx[i], dw, ik[j], &dans[i*nk+j], ialign, dfill, pc, rho, verbose);
+      // early stopping for window bigger than input
+      if (inx[i] < ik[j]) {
+        if (verbose)
+          Rprintf(_("%s: window width longer than input vector, returning all NA vector\n"), __func__);
+        for (uint64_t ii=0; ii<inx[i]; ii++) {
+          dans[i*nk+j].dbl_v[ii] = dfill;
+        }
+        continue;
+      }
+
+      frollapply(dx[i], inx[i], dw, ik[j], &dans[i*nk+j], dfill, pc, rho, verbose);
+
+      // align
+      if (ialign < 1 && dans[i*nk+j].status < 3) {
+        int k_ = ialign==-1 ? ik[j]-1 : floor(ik[j]/2);
+        if (verbose)
+          Rprintf(_("%s: align %d, shift answer by %d\n"), __func__, ialign, -k_);
+        memmove((char *)dans[i*nk+j].dbl_v, (char *)dans[i*nk+j].dbl_v + (k_*sizeof(double)), (inx[i]-k_)*sizeof(double));
+        for (uint64_t ii=inx[i]-k_; ii<inx[i]; ii++) {
+          dans[i*nk+j].dbl_v[ii] = dfill;
+        }
+      }
     }
 
     UNPROTECT(2);

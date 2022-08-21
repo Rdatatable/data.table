@@ -1091,9 +1091,9 @@ test(6010.525, frollapply(c(1,2,3,NA,NA,NA,NA), 3L, mean, na.rm=TRUE), c(NA,NA,2
 test(6010.526, frollapply(numeric(), 3L, sum), numeric())
 test(6010.527, frollapply(1:5, 3L, toString), error="frollapply: results from provided FUN are not of type double")
 options(datatable.verbose=TRUE)
-test(6010.551, frollapply(1:3, 4L, sum), c(NA_real_,NA_real_,NA_real_), output=c("frollapplyR: allocating memory.*","frollapply: window width longer than input vector.*","frollapplyR: processing.*took.*"))
+test(6010.551, frollapply(1:3, 4L, sum), c(NA_real_,NA_real_,NA_real_), output=c("frollapplyR: allocating memory.*","frollapplyR: window width longer than input vector.*","frollapplyR: processing.*took.*"))
 test(6010.552, frollapply(1:5, 3L, sum), c(NA,NA,6,9,12), output=c("frollapplyR: allocating memory.*","frollapply: took.*","frollapplyR: processing.*took.*"))
-test(6010.553, frollapply(1:5, 3L, sum, align="center"), c(NA,6,9,12,NA), output=c("frollapplyR: allocating memory.*","frollapply: align 0, shift.*","frollapply: took.*","frollapplyR: processing.*took.*"))
+test(6010.553, frollapply(1:5, 3L, sum, align="center"), c(NA,6,9,12,NA), output=c("frollapplyR: allocating memory.*","frollapply: took.*","frollapplyR: align 0, shift.*","frollapplyR: processing.*took.*"))
 options(datatable.verbose=FALSE)
 ma = function(x, n, na.rm=FALSE) {
   ans = rep(NA_real_, nx<-length(x))
