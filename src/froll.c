@@ -26,15 +26,6 @@ void frollmean(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int k, int
   } else if (algo==1) {
     frollmeanExact(x, nx, ans, k, fill, narm, hasna, verbose);
   }
-  if (ans->status < 3 && align < 1) {                           // align center or left, only when no errors occurred
-    int k_ = align==-1 ? k-1 : floor(k/2);                      // offset to shift
-    if (verbose)
-      snprintf(end(ans->message[0]), 500, _("%s: align %d, shift answer by %d\n"), __func__, align, -k_);
-    memmove((char *)ans->dbl_v, (char *)ans->dbl_v + (k_*sizeof(double)), (nx-k_)*sizeof(double)); // apply shift to achieve expected align
-    for (uint64_t i=nx-k_; i<nx; i++) {                         // fill from right side
-      ans->dbl_v[i] = fill;
-    }
-  }
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: processing algo %u took %.3fs\n"), __func__, algo, omp_get_wtime()-tic);
 }
@@ -234,15 +225,6 @@ void frollsum(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int k, int 
   } else if (algo==1) {
     frollsumExact(x, nx, ans, k, fill, narm, hasna, verbose);
   }
-  if (ans->status < 3 && align < 1) {
-    int k_ = align==-1 ? k-1 : floor(k/2);
-    if (verbose)
-      snprintf(end(ans->message[0]), 500, _("%s: align %d, shift answer by %d\n"), __func__, align, -k_);
-    memmove((char *)ans->dbl_v, (char *)ans->dbl_v + (k_*sizeof(double)), (nx-k_)*sizeof(double));
-    for (uint64_t i=nx-k_; i<nx; i++) {
-      ans->dbl_v[i] = fill;
-    }
-  }
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: processing algo %u took %.3fs\n"), __func__, algo, omp_get_wtime()-tic);
 }
@@ -414,15 +396,6 @@ void frollmax(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int k, int 
     frollmaxFast(x, nx, ans, k, fill, narm, hasna, verbose);
   } else if (algo==1) {
     frollmaxExact(x, nx, ans, k, fill, narm, hasna, verbose);
-  }
-  if (ans->status < 3 && align < 1) {
-    int k_ = align==-1 ? k-1 : floor(k/2);
-    if (verbose)
-      snprintf(end(ans->message[0]), 500, _("%s: align %d, shift answer by %d\n"), __func__, align, -k_);
-    memmove((char *)ans->dbl_v, (char *)ans->dbl_v + (k_*sizeof(double)), (nx-k_)*sizeof(double));
-    for (uint64_t i=nx-k_; i<nx; i++) {
-      ans->dbl_v[i] = fill;
-    }
   }
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: processing algo %u took %.3fs\n"), __func__, algo, omp_get_wtime()-tic);

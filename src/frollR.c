@@ -209,6 +209,20 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
 
   ansMsg(dans, nx*nk, verbose, __func__);                       // raise errors and warnings, as of now messages are not being produced
 
+  if (ialign < 1 && !badaptive) {                               // align center or left, adaptive align on R level
+    for (R_len_t i=0; i<nx; i++) {                              // loop over multiple columns
+      for (R_len_t j=0; j<nk; j++) {                            // loop over multiple windows
+        int k_ = ialign==-1 ? iik[j]-1 : floor(iik[j]/2);       // offset to shift
+        if (verbose)
+          Rprintf(_("%s: align %d, shift answer by %d\n"), __func__, ialign, -k_);
+        memmove((char *)dans[i*nk+j].dbl_v, (char *)dans[i*nk+j].dbl_v + (k_*sizeof(double)), (inx[i]-k_)*sizeof(double)); // apply shift to achieve expected align
+        for (uint64_t ii=inx[i]-k_; ii<inx[i]; ii++) {          // fill from right side
+          dans[i*nk+j].dbl_v[ii] = dfill;
+        }
+      }
+    }
+  }
+
   if (verbose)
     Rprintf(_("%s: processing of %d column(s) and %d window(s) took %.3fs\n"), __func__, nx, nk, omp_get_wtime()-tic);
 
