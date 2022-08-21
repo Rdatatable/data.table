@@ -1,23 +1,12 @@
 #include "data.table.h"
 
 /* fast rolling mean - router
- * early stopping for window bigger than input
- * also handles 'align' in single place
  * algo = 0: frollmeanFast
  *   adding/removing in/out of sliding window of observations
  * algo = 1: frollmeanExact
  *   recalculate whole mean for each observation, roundoff correction is adjusted, also support for NaN and Inf
  */
-void frollmean(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasna, bool verbose) {
-  if (nx < k) {                                                 // if window width bigger than input just return vector of fill values
-    if (verbose)
-      snprintf(end(ans->message[0]), 500, _("%s: window width longer than input vector, returning all NA vector\n"), __func__);
-    // implicit n_message limit discussed here: https://github.com/Rdatatable/data.table/issues/3423#issuecomment-487722586
-    for (int i=0; i<nx; i++) {
-      ans->dbl_v[i] = fill;
-    }
-    return;
-  }
+void frollmean(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose) {
   double tic = 0;
   if (verbose)
     tic = omp_get_wtime();
@@ -208,15 +197,7 @@ void frollmeanExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool
 }
 
 /* fast rolling sum */
-void frollsum(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasna, bool verbose) {
-  if (nx < k) {
-    if (verbose)
-      snprintf(end(ans->message[0]), 500, _("%s: window width longer than input vector, returning all NA vector\n"), __func__);
-    for (int i=0; i<nx; i++) {
-      ans->dbl_v[i] = fill;
-    }
-    return;
-  }
+void frollsum(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose) {
   double tic = 0;
   if (verbose)
     tic = omp_get_wtime();
@@ -380,15 +361,7 @@ void frollsumExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool 
 }
 
 /* fast rolling max */
-void frollmax(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasna, bool verbose) {
-  if (nx < k) {
-    if (verbose)
-      snprintf(end(ans->message[0]), 500, _("%s: window width longer than input vector, returning all NA vector\n"), __func__);
-    for (int i=0; i<nx; i++) {
-      ans->dbl_v[i] = fill;
-    }
-    return;
-  }
+void frollmax(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose) {
   double tic = 0;
   if (verbose)
     tic = omp_get_wtime();
