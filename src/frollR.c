@@ -108,8 +108,8 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   else
     error(_("Internal error: invalid %s argument in %s function should have been caught earlier. Please report to the data.table issue tracker."), "align", "rolling"); // # nocov
 
-  if (badaptive && ialign!=1)
-    error(_("using adaptive TRUE and align argument different than 'right' is not implemented"));
+  if (badaptive && ialign==0) // support for left added in #5441
+    error(_("using adaptive TRUE and align 'center' is not implemented"));
 
   SEXP ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++; // allocate list to keep results
   if (verbose)

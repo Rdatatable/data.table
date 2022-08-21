@@ -451,15 +451,14 @@ inline void windowmaxnarm(double *x, uint64_t o, int k, bool narm, int *nc, doub
     }
   }
 }
+/* fast rolling max - fast
+ * fast online algorithm do single pass over elements keeping track of recent max and its index
+ * if index of max is within progressing window then it keep running single pass
+ * whenever max is leaving the window (index of max is outside of iterator minus window size) then new maximum is computed via nested loop
+ * new max is used to continue outer single pass
+ * should scale well for bigger window size, may carry overhead for small window, needs benchmarking
+ */
 void frollmaxFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose) {
-  /*
-   * fast online algorithm do single pass over elements keeping track of recent max and its index
-   * if index of max is within progressing window then it keep running single pass
-   * whenever max is leaving the window (index of max is outside of iterator minus window size) then new maximum is computed via nested loop
-   * new max is used to continue outer single pass
-   *
-   * should scale well for bigger window size, may carry overhead for small window, needs benchmarking
-   */
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", window %d, hasna %d, narm %d\n"), "frollmaxFast", (uint64_t)nx, k, hasna, (int)narm);
   double w = R_NegInf; // window max
@@ -602,6 +601,10 @@ void frollmaxFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool n
       snprintf(end(ans->message[0]), 500, _("%s: windowmaxnarm called %"PRIu64" time(s)\n"), __func__, cmax);
   }
 }
+/* fast rolling max - exact
+ * for each observation in x compute max in window from scratch
+ * no proper support for NAs yet
+ */
 void frollmaxExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", window %d, hasna %d, narm %d\n"), "frollmaxExact", (uint64_t)nx, k, hasna, (int)narm);
