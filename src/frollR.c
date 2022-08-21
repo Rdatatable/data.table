@@ -154,7 +154,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   int ihasna =                                                  // plain C tri-state boolean as integer
     LOGICAL(hasna)[0]==NA_LOGICAL ? 0 :                         // hasna NA, default, no info about NA
     LOGICAL(hasna)[0]==TRUE ? 1 :                               // hasna TRUE, might be some NAs
-    -1;                                                         // hasna FALSE, there should be no NAs
+    -1;                                                         // hasna FALSE, there should be no NAs // or there must be no NAs for rollmax #5441
 
   unsigned int ialgo;                                           // decode algo to integer
   if (!strcmp(CHAR(STRING_ELT(algo, 0)), "fast"))

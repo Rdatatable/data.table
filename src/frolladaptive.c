@@ -379,69 +379,63 @@ void fadaptiverollmax(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int
     snprintf(end(ans->message[0]), 500, _("%s: processing algo %u took %.3fs\n"), __func__, algo, omp_get_wtime()-tic);
 }
 //void fadaptiverollmaxFast(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose); // does not exists as of now
+/* fast adaptive rolling max - exact
+ * for hasNA=FALSE it will not detect if any NAs were in the input, therefore could produce incorrect result, well documented
+ */
 void fadaptiverollmaxExact(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", hasna %d, narm %d\n"), "fadaptiverollmaxExact", (uint64_t)nx, hasna, (int) narm);
-  bool truehasna = hasna>0;
-  if (!truehasna || !narm) {
+  if (hasna==-1) { // fastest we can get for adaptive max as there is no algo='fast', therefore we drop any NA checks when hasNA=FALSE
     #pragma omp parallel for num_threads(getDTthreads(nx, true))
     for (uint64_t i=0; i<nx; i++) {
-      if (narm && truehasna) {
-        continue;
-      }
       if (i+1 < k[i]) {
         ans->dbl_v[i] = fill;
       } else {
         double w = R_NegInf;
-        for (int j=-k[i]+1; j<=0; j++) {
-          // should be used with setDTthreads(1)
-          //Rprintf("x[%d+%d] > w: %f > %f: %d\n", i, j, x[i+j], w, x[i+j] > w);
+        for (int j=-k[i]+1; j<=0; j++) { //Rprintf("x[%d+%d] > w: %f > %f: %d\n", i, j, x[i+j], w, x[i+j] > w);
           if (x[i+j] > w)
             w = x[i+j];
         }
-        if (R_FINITE(w)) {
-          ans->dbl_v[i] = w;
+        ans->dbl_v[i] = w;
+      }
+    }
+  } else {
+    if (narm) {
+      #pragma omp parallel for num_threads(getDTthreads(nx, true))
+      for (uint64_t i=0; i<nx; i++) {
+        if (i+1 < k[i]) {
+          ans->dbl_v[i] = fill;
         } else {
-          if (!narm) {
+          int nc = 0;
+          double w = R_NegInf;
+          for (int j=-k[i]+1; j<=0; j++) {
+            if (ISNAN(x[i+j]))
+              nc++;
+            else if (x[i+j] > w)
+              w = x[i+j];
+          }
+          if (nc < k[i])
             ans->dbl_v[i] = w;
-          }
-          truehasna = true;
+          else
+            ans->dbl_v[i] = R_NegInf;
         }
       }
-    }
-    if (truehasna) {
-      if (hasna==-1) {
-        ans->status = 2;
-        snprintf(end(ans->message[2]), 500, _("%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning"), __func__);
-      }
-      if (verbose) {
-        if (narm) {
-          snprintf(end(ans->message[0]), 500, _("%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n"), __func__);
+    } else {
+      #pragma omp parallel for num_threads(getDTthreads(nx, true))
+      for (uint64_t i=0; i<nx; i++) {
+        if (i+1 < k[i]) {
+          ans->dbl_v[i] = fill;
         } else {
-          snprintf(end(ans->message[0]), 500, _("%s: NA (or other non-finite) value(s) are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run\n"), __func__);
-        }
-      }
-    }
-  }
-  if (truehasna && narm) {
-    #pragma omp parallel for num_threads(getDTthreads(nx, true))
-    for (uint64_t i=0; i<nx; i++) {
-      if (i+1 < k[i]) {
-        ans->dbl_v[i] = fill;
-      } else {
-        double w = R_NegInf;
-        int nc = 0;
-        for (int j=-k[i]+1; j<=0; j++) {
-          if (ISNAN(x[i+j])) {
-            nc++;
-          } else if (x[i+j] > w) {
-            w = x[i+j];
+          double w = R_NegInf;
+          for (int j=-k[i]+1; j<=0; j++) {
+            if (ISNAN(x[i+j])) {
+              w = NA_REAL;
+              break;
+            } else if (x[i+j] > w) {
+              w = x[i+j];
+            }
           }
-        }
-        if (nc < k[i]) {
           ans->dbl_v[i] = w;
-        } else {
-          ans->dbl_v[i] = R_NegInf;
         }
       }
     }

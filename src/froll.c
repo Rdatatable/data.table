@@ -453,10 +453,11 @@ inline void windowmaxnarm(double *x, uint64_t o, int k, bool narm, int *nc, doub
 }
 /* fast rolling max - fast
  * fast online algorithm do single pass over elements keeping track of recent max and its index
- * if index of max is within progressing window then it keep running single pass
- * whenever max is leaving the window (index of max is outside of iterator minus window size) then new maximum is computed via nested loop
- * new max is used to continue outer single pass
+ * if index of max is within progressing window then it keeps running single pass
+ * whenever max is leaving the window (index of max is outside of iterator minus window size) then new maximum is computed via nested loop on current complete window
+ * new max is used to continue outer single pass as long as new max index is not leaving the running window
  * should scale well for bigger window size, may carry overhead for small window, needs benchmarking
+ * TODO NA handling
  */
 void frollmaxFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose) {
   if (verbose)
