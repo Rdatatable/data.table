@@ -54,7 +54,8 @@ frollapply(x, n, FUN, \dots, fill=NA, align=c("right", "left", "center"), adapti
 
   When multiple columns or multiple windows width are provided, then they
   are run in parallel. The exception is for \code{algo="exact"}, which runs in
-  parallel already.
+  parallel already. By default data.table uses only half of available CPUs,
+  see \code{\link{setDTthreads}} for details.
 }
 \section{\code{hasNA} argument}{
   \code{hasNA} can be used to speed up processing in cases when it is known
@@ -76,7 +77,11 @@ frollapply(x, n, FUN, \dots, fill=NA, align=c("right", "left", "center"), adapti
 \section{Implementation}{
   \itemize{
     \item{ \code{algo="fast"} uses \emph{"on-line"} algorithm, and
-  all of \code{NaN, +Inf, -Inf} are treated as \code{NA}. }
+  all of \code{NaN, +Inf, -Inf} are treated as \code{NA}. Not all functions
+  have \emph{fast} implementation available. As of now
+  \emph{max} and \code{adaptive=TRUE} does not have, therefore it will
+  automatically fall back to \emph{exact} implementation. \code{datatable.verbose}
+  option can be used to check that. }
     \item{ \code{algo="exact"} will make rolling functions to use a more
   computationally-intensive algorithm. For each observation from input vector
   it will compute a function on a window from scratch (complexity \eqn{O(n^2)}).

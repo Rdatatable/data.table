@@ -216,7 +216,7 @@ void fadaptiverollsum(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int
 void fadaptiverollsumFast(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
 void fadaptiverollsumExact(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
 void fadaptiverollmax(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
-void fadaptiverollmaxFast(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
+//void fadaptiverollmaxFast(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose); // does not exists as of now
 void fadaptiverollmaxExact(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose);
 
 // frollR.c

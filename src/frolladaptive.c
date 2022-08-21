@@ -370,92 +370,15 @@ void fadaptiverollmax(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int
   double tic = 0;
   if (verbose)
     tic = omp_get_wtime();
-  if (algo==0) {
-    fadaptiverollmaxFast(x, nx, ans, k, fill, narm, hasna, verbose);
-  } else if (algo==1) {
-    fadaptiverollmaxExact(x, nx, ans, k, fill, narm, hasna, verbose);
+  if (algo==0 && verbose) {
+    //fadaptiverollmaxFast(x, nx, ans, k, fill, narm, hasna, verbose); // fadaptiverollmaxFast does not exists as of now
+    snprintf(end(ans->message[0]), 500, _("%s: algo %u not implemented, fall back to %u\n"), __func__, algo, (unsigned int) 1);
   }
+  fadaptiverollmaxExact(x, nx, ans, k, fill, narm, hasna, verbose);
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: processing algo %u took %.3fs\n"), __func__, algo, omp_get_wtime()-tic);
 }
-inline void windowadaptivemax(double *x, uint64_t o, int *k, double *w, uint64_t *iw) {
-  for (int i=0; i<k[o+i]-1; i++) {
-    Rprintf("windowmax iteration %d, offset %d, first x val %f, testing x[o+i-k[o+i]+1] >= w[0]: x[%d+%d-%d+1] >= w[0]: %f >= %f: %d\n",
-                                  i,         o,           x[o],                                     o, i, k[o+i],   x[o+i-k[o+i]+1], w[0], x[o+i-k[o+i]+1] >= w[0]);
-    if (x[o+i-k[o+i]+1] >= w[0]) { // what if that is never satisfied? test!
-      iw[0] = o+i-k[o+i]+1;
-      w[0] = x[iw[0]];
-    }
-  }
-}
-inline void windowadaptivemaxnarm(double *x, uint64_t o, int *k, bool narm, int *nc, double *w, uint64_t *iw) {
-  for (int i=0; i<k[o+i]-1; i++) {
-    //Rprintf("windowmax iteration %d, offset %d, first x val %f, testing x[o+i-k+1] >= w[0]: x[%d-%d+1] >= w[0]: %f >= %f: %d\n", i, o, x[o], i, k, x[o+i-k+1], w[0], x[o+i-k+1] >= w[0]);
-    if (x[o+i-k[o+i]+1] >= w[0]) { // what if that is never satisfied? test!
-      iw[0] = o+i-k[o+i]+1;
-      w[0] = x[iw[0]];
-    }
-  }
-}
-void fadaptiverollmaxFast(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
-  if (verbose)
-    snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", hasna %d, narm %d\n"), "fadaptiverollmaxFast", (uint64_t)nx, hasna, (int) narm);
-  double w = R_NegInf; // window max
-  uint64_t cmax = 0; // counter of nested loops for verbose
-  uint64_t iw = 0; // index of window max
-  bool truehasna = hasna>0;
-  if (!truehasna) {
-    for (uint64_t i=0; i<nx; i++) {
-      if (!R_FINITE(x[i])) {
-        truehasna = true;
-      } else {
-        if (x[i] >= w) {
-          Rprintf("iteration %d, new max %f at %d, old max %f at %d\n", i, x[i], i, w, iw);
-          iw = i;
-          w = x[iw];
-        } else {
-          //Rprintf("iteration %d, test if (iw > i-k[i]): (%d > %d-%d): %d\n",i,                   iw, i, k[i], iw > i-k[i]);
-          //Rprintf("i-k[i] < 0: %d-k[%d] < 0: %d-%d < 0: %d < 0: %d\n", i, i, i, k[i], i-k[i], i-k[i] < 0);
-          //Rprintf("i < k[i]: %d\n", i < k[i]);
-          if (i < k[i] || iw > i-k[i]) { // max is still within window
-            Rprintf("iteration %d, max %f at %d bigger than current value %f\n", i, w, iw, x[i]);
-          } else { // max left the window, need to find max in this window
-            Rprintf("iteration %d, max %f at %d left the window, call windowmax from %d of size %d\n", i, w, iw, i, k[i]);
-            w = R_NegInf;
-            iw = i-k[i];
-            windowadaptivemax(x, i, k, &w, &iw);
-            Rprintf("iteration %d, windowmax found new max %f at %d\n", i, w, iw);
-            cmax++;
-          }
-        }
-        if (i+1 < k[i]) {
-          Rprintf("iteration %d, window size %d too big, skip\n", i, k[i]);
-          ans->dbl_v[i] = fill;
-        } else {
-          ans->dbl_v[i] = w;
-        }
-      }
-    }
-    if (verbose)
-      snprintf(end(ans->message[0]), 500, _("%s: windowmax called %"PRIu64" time(s)\n"), __func__, cmax);
-    if (truehasna) {
-      if (hasna==-1) {
-        ans->status = 2;
-        snprintf(end(ans->message[2]), 500, _("%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning"), __func__);
-      }
-      if (verbose)
-        snprintf(end(ans->message[0]), 500, _("%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n"), __func__);
-      w = R_NegInf;
-      cmax = 0;
-    }
-  }
-  if (truehasna) {
-    ans->status = 3;
-    snprintf(ans->message[3], 500, _("%s: frollmax adaptive algo='fast' having NAs not yet implemented, use algo='exact'"), __func__);
-    return;
-    // TODO
-  }
-}
+//void fadaptiverollmaxFast(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose); // does not exists as of now
 void fadaptiverollmaxExact(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", hasna %d, narm %d\n"), "fadaptiverollmaxExact", (uint64_t)nx, hasna, (int) narm);
