@@ -1,23 +1,65 @@
 #include "data.table.h"
 
-/* fast rolling mean - router
- * algo = 0: frollmeanFast
+/* rolling fun - router for fun and algo
+ * early stopping for window bigger than input
+ * handles 'align' in single place for center or left
+ * rfun enum rollfun_t routes to rolling function
+ * algo = 0: fast
  *   adding/removing in/out of sliding window of observations
- * algo = 1: frollmeanExact
- *   recalculate whole mean for each observation, roundoff correction is adjusted, also support for NaN and Inf
+ * algo = 1: exact
+ *   recalculate whole fun for each observation, for mean roundoff correction is adjusted, also support for NaN and Inf
  */
-void frollmean(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose) {
+void frollfun(rollfun_t rfun, unsigned int algo, double *x, uint64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasna, bool verbose) {
   double tic = 0;
   if (verbose)
     tic = omp_get_wtime();
-  if (algo==0) {
-    frollmeanFast(x, nx, ans, k, fill, narm, hasna, verbose);
-  } else if (algo==1) {
-    frollmeanExact(x, nx, ans, k, fill, narm, hasna, verbose);
+  if (nx < k) {                      // if window width bigger than input just return vector of fill values
+    if (verbose)
+      snprintf(end(ans->message[0]), 500, _("%s: window width longer than input vector, returning all NA vector\n"), __func__);
+    // implicit n_message limit discussed here: https://github.com/Rdatatable/data.table/issues/3423#issuecomment-487722586
+    for (uint64_t i=0; i<nx; i++) {
+      ans->dbl_v[i] = fill;
+    }
+    return;
+  }
+  switch (rfun) {
+  case MEAN :
+    if (algo==0) {
+      frollmeanFast(x, nx, ans, k, fill, narm, hasna, verbose);
+    } else if (algo==1) {
+      frollmeanExact(x, nx, ans, k, fill, narm, hasna, verbose);
+    }
+    break;
+  case SUM :
+    if (algo==0) {
+      frollsumFast(x, nx, ans, k, fill, narm, hasna, verbose);
+    } else if (algo==1) {
+      frollsumExact(x, nx, ans, k, fill, narm, hasna, verbose);
+    }
+    break;
+  case MAX :
+    if (algo==0) {
+      frollmaxFast(x, nx, ans, k, fill, narm, hasna, verbose);
+    } else if (algo==1) {
+      frollmaxExact(x, nx, ans, k, fill, narm, hasna, verbose);
+    }
+    break;
+  default:
+    error(_("Internal error: Unknown rfun value in froll: %d"), rfun); // #nocov
+  }
+  if (align < 1 && ans->status < 3) {
+    int k_ = align==-1 ? k-1 : floor(k/2);       // offset to shift
+    if (verbose)
+      snprintf(end(ans->message[0]), 500, _("%s: align %d, shift answer by %d\n"), __func__, align, -k_);
+    memmove((char *)ans->dbl_v, (char *)ans->dbl_v + (k_*sizeof(double)), (nx-k_)*sizeof(double)); // apply shift to achieve expected align
+    for (uint64_t i=nx-k_; i<nx; i++) {          // fill from right side
+      ans->dbl_v[i] = fill;
+    }
   }
   if (verbose)
-    snprintf(end(ans->message[0]), 500, _("%s: processing algo %u took %.3fs\n"), __func__, algo, omp_get_wtime()-tic);
+    snprintf(end(ans->message[0]), 500, _("%s: processing fun %d algo %u took %.3fs\n"), __func__, rfun, algo, omp_get_wtime()-tic);
 }
+
 /* fast rolling mean - fast
  * when no info on NA (hasNA argument) then assume no NAs run faster version
  * rollmean implemented as single pass sliding window for align="right"
@@ -196,19 +238,9 @@ void frollmeanExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool
   }
 }
 
-/* fast rolling sum */
-void frollsum(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose) {
-  double tic = 0;
-  if (verbose)
-    tic = omp_get_wtime();
-  if (algo==0) {
-    frollsumFast(x, nx, ans, k, fill, narm, hasna, verbose);
-  } else if (algo==1) {
-    frollsumExact(x, nx, ans, k, fill, narm, hasna, verbose);
-  }
-  if (verbose)
-    snprintf(end(ans->message[0]), 500, _("%s: processing algo %u took %.3fs\n"), __func__, algo, omp_get_wtime()-tic);
-}
+/* fast rolling sum - fast
+ * same as mean fast
+ */
 void frollsumFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", window %d, hasna %d, narm %d\n"), "frollsumFast", (uint64_t)nx, k, hasna, (int)narm);
@@ -293,6 +325,9 @@ void frollsumFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool n
     }
   }
 }
+/* fast rolling sum - exact
+ * same as mean exact
+ */
 void frollsumExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", window %d, hasna %d, narm %d\n"), "frollsumExact", (uint64_t)nx, k, hasna, (int)narm);
@@ -360,19 +395,6 @@ void frollsumExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool 
   }
 }
 
-/* fast rolling max */
-void frollmax(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose) {
-  double tic = 0;
-  if (verbose)
-    tic = omp_get_wtime();
-  if (algo==0) {
-    frollmaxFast(x, nx, ans, k, fill, narm, hasna, verbose);
-  } else if (algo==1) {
-    frollmaxExact(x, nx, ans, k, fill, narm, hasna, verbose);
-  }
-  if (verbose)
-    snprintf(end(ans->message[0]), 500, _("%s: processing algo %u took %.3fs\n"), __func__, algo, omp_get_wtime()-tic);
-}
 inline void windowmax(double *x, uint64_t o, int k, double *w, uint64_t *iw) {
   for (int i=0; i<k-1; i++) {
     //Rprintf("windowmax iteration %d, offset %d, first x val %f, testing x[o+i-k+1] >= w[0]: x[%d-%d+1] >= w[0]: %f >= %f: %d\n", i, o, x[o], i, k, x[o+i-k+1], w[0], x[o+i-k+1] >= w[0]);
@@ -618,7 +640,16 @@ void frollmaxExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool 
  * not plain C, not thread safe
  * R eval() allocates
  */
-void frollapply(double *x, int64_t nx, double *w, int k, ans_t *ans, double fill, SEXP call, SEXP rho, bool verbose) {
+void frollapply(double *x, int64_t nx, double *w, int k, ans_t *ans, int align, double fill, SEXP call, SEXP rho, bool verbose) {
+  // early stopping for window bigger than input
+  if (nx < k) {
+    if (verbose)
+      Rprintf(_("%s: window width longer than input vector, returning all NA vector\n"), __func__);
+    for (int i=0; i<nx; i++) {
+      ans->dbl_v[i] = fill;
+    }
+    return;
+  }
   double tic = 0;
   if (verbose)
     tic = omp_get_wtime();
@@ -657,6 +688,16 @@ void frollapply(double *x, int64_t nx, double *w, int k, ans_t *ans, double fill
       SEXP evali = PROTECT(eval(call, rho));
       ans->dbl_v[i] = REAL(coerceVector(evali, REALSXP))[0];
       UNPROTECT(1); // evali
+    }
+  }
+  // align
+  if (ans->status < 3 && align < 1) {
+    int k_ = align==-1 ? k-1 : floor(k/2);
+    if (verbose)
+      Rprintf(_("%s: align %d, shift answer by %d\n"), __func__, align, -k_);
+    memmove((char *)ans->dbl_v, (char *)ans->dbl_v + (k_*sizeof(double)), (nx-k_)*sizeof(double));
+    for (int64_t i=nx-k_; i<nx; i++) {
+      ans->dbl_v[i] = fill;
     }
   }
   if (verbose)

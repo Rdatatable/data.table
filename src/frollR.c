@@ -132,13 +132,13 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
     dx[i] = REAL(VECTOR_ELT(x, i));                             // assign source columns to C pointers
   }
 
-  enum {MEAN, SUM, MAX} sfun;
+  rollfun_t rfun; // adding fun needs to be here and data.table.h
   if (!strcmp(CHAR(STRING_ELT(fun, 0)), "mean")) {
-    sfun = MEAN;
+    rfun = MEAN;
   } else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "sum")) {
-    sfun = SUM;
+    rfun = SUM;
   } else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "max")) {
-    sfun = MAX;
+    rfun = MAX;
   } else {
     error(_("Internal error: invalid %s argument in %s function should have been caught earlier. Please report to the data.table issue tracker."), "fun", "rolling"); // # nocov
   }
@@ -183,53 +183,9 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   for (R_len_t i=0; i<nx; i++) {                                // loop over multiple columns
     for (R_len_t j=0; j<nk; j++) {                              // loop over multiple windows
       if (!badaptive) {
-        // early stopping for window bigger than input
-        if (inx[i] < iik[j]) {                      // if window width bigger than input just return vector of fill values
-          if (verbose)
-            snprintf(end(dans[i*nk+j].message[0]), 500, _("%s: window width longer than input vector, returning all NA vector\n"), __func__);
-          // implicit n_message limit discussed here: https://github.com/Rdatatable/data.table/issues/3423#issuecomment-487722586
-          for (uint64_t ii=0; ii<inx[i]; ii++) {
-            dans[i*nk+j].dbl_v[ii] = dfill;
-          }
-          continue;
-        }
-        switch (sfun) {
-        case MEAN :
-          frollmean(ialgo, dx[i], inx[i], &dans[i*nk+j], iik[j], dfill, bnarm, ihasna, verbose);
-          break;
-        case SUM :
-          frollsum(ialgo, dx[i], inx[i], &dans[i*nk+j], iik[j], dfill, bnarm, ihasna, verbose);
-          break;
-        case MAX :
-          frollmax(ialgo, dx[i], inx[i], &dans[i*nk+j], iik[j], dfill, bnarm, ihasna, verbose);
-          break;
-        default:
-          error(_("Internal error: Unknown sfun value in froll: %d"), sfun); // #nocov
-        }
-        // handles 'align' in single place for center or left, adaptive align on R level
-        if (ialign < 1 && dans[i*nk+j].status < 3) {
-          int k_ = ialign==-1 ? iik[j]-1 : floor(iik[j]/2);       // offset to shift
-          if (verbose)
-            snprintf(end(dans[i*nk+j].message[0]), 500, _("%s: align %d, shift answer by %d\n"), __func__, ialign, -k_);
-          memmove((char *)dans[i*nk+j].dbl_v, (char *)dans[i*nk+j].dbl_v + (k_*sizeof(double)), (inx[i]-k_)*sizeof(double)); // apply shift to achieve expected align
-          for (uint64_t ii=inx[i]-k_; ii<inx[i]; ii++) {          // fill from right side
-            dans[i*nk+j].dbl_v[ii] = dfill;
-          }
-        }
+        frollfun(rfun, ialgo, dx[i], inx[i], &dans[i*nk+j], iik[j], ialign, dfill, bnarm, ihasna, verbose);
       } else {
-        switch (sfun) {
-        case MEAN :
-          fadaptiverollmean(ialgo, dx[i], inx[i], &dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, verbose);
-          break;
-        case SUM :
-          fadaptiverollsum(ialgo, dx[i], inx[i], &dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, verbose);
-          break;
-        case MAX :
-          fadaptiverollmax(ialgo, dx[i], inx[i], &dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, verbose);
-          break;
-        default:
-          error(_("Internal error: Unknown sfun value in froll: %d"), sfun); // #nocov
-        }
+        frolladaptivefun(rfun, ialgo, dx[i], inx[i], &dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, verbose);
       }
     }
   }
@@ -321,28 +277,7 @@ SEXP frollapplyR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP rho) {
     pc = PROTECT(LCONS(fun, LCONS(pw, LCONS(R_DotsSymbol, R_NilValue))));
 
     for (R_len_t i=0; i<nx; i++) {
-      // early stopping for window bigger than input
-      if (inx[i] < ik[j]) {
-        if (verbose)
-          Rprintf(_("%s: window width longer than input vector, returning all NA vector\n"), __func__);
-        for (uint64_t ii=0; ii<inx[i]; ii++) {
-          dans[i*nk+j].dbl_v[ii] = dfill;
-        }
-        continue;
-      }
-
-      frollapply(dx[i], inx[i], dw, ik[j], &dans[i*nk+j], dfill, pc, rho, verbose);
-
-      // align
-      if (ialign < 1 && dans[i*nk+j].status < 3) {
-        int k_ = ialign==-1 ? ik[j]-1 : floor(ik[j]/2);
-        if (verbose)
-          Rprintf(_("%s: align %d, shift answer by %d\n"), __func__, ialign, -k_);
-        memmove((char *)dans[i*nk+j].dbl_v, (char *)dans[i*nk+j].dbl_v + (k_*sizeof(double)), (inx[i]-k_)*sizeof(double));
-        for (uint64_t ii=inx[i]-k_; ii<inx[i]; ii++) {
-          dans[i*nk+j].dbl_v[ii] = dfill;
-        }
-      }
+      frollapply(dx[i], inx[i], dw, ik[j], &dans[i*nk+j], ialign, dfill, pc, rho, verbose);
     }
 
     UNPROTECT(2);
