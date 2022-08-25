@@ -853,6 +853,59 @@ test(6000.225, frollsum(1:3, c(2,2,2), adaptive=TRUE), c(NA, 3, 5), output="frol
 test(6000.226, frollsum(c(NA,2,3), c(2,2,2), adaptive=TRUE), c(NA, NA, 5), output="re-running with extra care for NAs")
 options(datatable.verbose=FALSE)
 
+## frollmax
+options(datatable.verbose=TRUE) ## adaptive frollmax no fast algo
+test(6000.3, frollmax(1:4, c(2,2,2,2), adaptive=TRUE), output="frolladaptivefun: algo 0 not implemented, fall back to 1")
+test(6000.3001, frollmax(1:4, c(2,2,2,2), algo="fast", adaptive=TRUE), output="frolladaptivefun: algo 0 not implemented, fall back to 1")
+test(6000.3002, frollmax(1:4, c(2,2,2,2), algo="exact", adaptive=TRUE), notOutput="frolladaptivefun: algo 0 not implemented, fall back to 1")
+options(datatable.verbose=FALSE)
+n = c(3,2,2,4,2,1,4,8)
+x = c(7,2,3,6,3,2,6,6) # no NA
+test(6000.3111, frollmax(x, n, adaptive=TRUE), c(NA,7,3,7,6,2,6,7)) # hasNA=NA # narm=F
+test(6000.3112, frollmax(x, n, na.rm=TRUE, adaptive=TRUE), c(NA,7,3,7,6,2,6,7)) # narm=T
+test(6000.3121, frollmax(x, n, hasNA=FALSE, adaptive=TRUE), c(NA,7,3,7,6,2,6,7)) # hasNA=F
+test(6000.3122, frollmax(x, n, hasNA=FALSE, na.rm=TRUE, adaptive=TRUE), error="does not make sense")
+test(6000.3131, frollmax(x, n, hasNA=TRUE, adaptive=TRUE), c(NA,7,3,7,6,2,6,7)) # hasNA=T
+test(6000.3132, frollmax(x, n, hasNA=TRUE, na.rm=TRUE, adaptive=TRUE), c(NA,7,3,7,6,2,6,7))
+x = c(7,2,NA,6,3,NA,6,6) # NA
+test(6000.3211, frollmax(x, n, adaptive=TRUE), c(NA,7,NA,NA,6,NA,NA,NA))
+test(6000.3212, frollmax(x, n, na.rm=TRUE, adaptive=TRUE), c(NA,7,2,7,6,-Inf,6,7))
+test(6000.3221, frollmax(x, n, hasNA=FALSE, adaptive=TRUE), c(NA,7,2,7,6,-Inf,6,7)) ## expected incorrect results, see manual hasNA section for details, added in #5441
+test(6000.3222, frollmax(x, n, hasNA=FALSE, na.rm=TRUE, adaptive=TRUE), error="does not make sense")
+test(6000.3231, frollmax(x, n, hasNA=TRUE, adaptive=TRUE), c(NA,7,NA,NA,6,NA,NA,NA))
+test(6000.3232, frollmax(x, n, hasNA=TRUE, na.rm=TRUE, adaptive=TRUE), c(NA,7,2,7,6,-Inf,6,7))
+x = rep(NA_real_, 8) # all NA
+test(6000.3241, frollmax(x, n, adaptive=TRUE), rep(NA_real_, 8))
+test(6000.3242, frollmax(x, n, na.rm=TRUE, adaptive=TRUE), c(NA, rep(-Inf, 7)))
+test(6000.3251, frollmax(x, n, hasNA=FALSE, adaptive=TRUE), c(NA, rep(-Inf, 7)))
+test(6000.3252, frollmax(x, n, hasNA=FALSE, na.rm=TRUE, adaptive=TRUE), error="does not make sense")
+test(6000.3261, frollmax(x, n, hasNA=TRUE, adaptive=TRUE), rep(NA_real_, 8))
+test(6000.3262, frollmax(x, n, hasNA=TRUE, na.rm=TRUE, adaptive=TRUE), c(NA, rep(-Inf, 7)))
+x = c(NA,NaN,NA,NaN,NaN,NaN,NA,NA) # all NaN/NA
+test(6000.3271, frollmax(x, n, adaptive=TRUE), c(NA,NA,NA,NA,NaN,NaN,NA,NA))
+test(6000.3272, frollmax(x, n, na.rm=TRUE, adaptive=TRUE), c(NA,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf))
+test(6000.3281, frollmax(x, n, hasNA=FALSE, adaptive=TRUE), c(NA,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf)) ## expected incorrect results, see manual hasNA section for details, added in #5441
+test(6000.3282, frollmax(x, n, hasNA=FALSE, na.rm=TRUE, adaptive=TRUE), error="does not make sense")
+test(6000.3291, frollmax(x, n, hasNA=TRUE, adaptive=TRUE), c(NA,NA,NA,NA,NaN,NaN,NA,NA))
+test(6000.3292, frollmax(x, n, hasNA=TRUE, na.rm=TRUE, adaptive=TRUE), c(NA,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf))
+x = c(7,2,NA,6,3,Inf,6,6) # Inf
+test(6000.3311, frollmax(x, n, adaptive=TRUE), c(NA,7,NA,NA,6,Inf,Inf,NA))
+test(6000.3312, frollmax(x, n, na.rm=TRUE, adaptive=TRUE), c(NA,7,2,7,6,Inf,Inf,Inf))
+test(6000.3321, frollmax(x, n, hasNA=FALSE, adaptive=TRUE), c(NA,7,2,7,6,Inf,Inf,Inf)) ## expected incorrect results, see manual hasNA section for details, added in #5441
+test(6000.3322, frollmax(x, n, hasNA=FALSE, na.rm=TRUE, adaptive=TRUE), error="does not make sense")
+test(6000.3331, frollmax(x, n, hasNA=TRUE, adaptive=TRUE), c(NA,7,NA,NA,6,Inf,Inf,NA))
+test(6000.3332, frollmax(x, n, hasNA=TRUE, na.rm=TRUE, adaptive=TRUE), c(NA,7,2,7,6,Inf,Inf,Inf))
+x = c(7,2,-Inf,6,3,NA,6,6) # -Inf
+test(6000.3341, frollmax(x, n, adaptive=TRUE), c(NA,7,2,7,6,NA,NA,NA))
+test(6000.3342, frollmax(x, n, na.rm=TRUE, adaptive=TRUE), c(NA,7,2,7,6,-Inf,6,7))
+test(6000.3351, frollmax(x, n, hasNA=FALSE, adaptive=TRUE), c(NA,7,2,7,6,-Inf,6,7)) ## expected incorrect results, see manual hasNA section for details, added in #5441
+test(6000.3352, frollmax(x, n, hasNA=FALSE, na.rm=TRUE, adaptive=TRUE), error="does not make sense")
+test(6000.3361, frollmax(x, n, hasNA=TRUE, adaptive=TRUE), c(NA,7,2,7,6,NA,NA,NA))
+test(6000.3362, frollmax(x, n, hasNA=TRUE, na.rm=TRUE, adaptive=TRUE), c(NA,7,2,7,6,-Inf,6,7))
+
+#TODO frollmax dev
+#TODO frollmax tests
+
 ## validation
 
 set.seed(108)
