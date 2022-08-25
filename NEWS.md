@@ -319,7 +319,40 @@
 
 41. `tables()` is faster by default by excluding the size of character strings in R's global cache (which may be shared) and excluding the size of list column items (which also may be shared). `mb=` now accepts any function which accepts a `data.table` and returns a higher and better estimate of its size in bytes, albeit more slowly; e.g. `mb = utils::object.size`.
 
-42. New function `frollmax` has been implemented. It applies `max` over a rolling window. Request came from @gpierard who needed left aligned, adaptive, rolling max, [#5438](https://github.com/Rdatatable/data.table/issues/5438). Adaptive rolling functions did not have support for `align="left"`, therefore this feature has been added as well. It works for other adaptive rolling functions now. Adaptive `frollmax` has observed to be up to 50 time faster than second fastest solution using `max` and grouping `by=.EACHI`.
+42. Multiple improvements has been added to rolling functions. Request came from @gpierard who needed left aligned, adaptive, rolling max, [#5438](https://github.com/Rdatatable/data.table/issues/5438). There was no `frollmax` function yet. Adaptive rolling functions did not have support for `align="left"`. `frollapply` did not support `adaptive=TRUE`. Available alternatives were base R `mapply` or self-join using `max` and grouping `by=.EACHI`. As a follow up of his request, following features has been added:
+- new function `frollmax`, applies `max` over a rolling window.
+- support for `align="left"` for adaptive rolling function.
+- support for `adaptive=TRUE` in `frollapply`.
+- better support for non-double data types in `frollapply`.
+- better support for `Inf` and `-Inf` support in `algo="fast"` implementation.
+- `partial` argument to trim window width to available observations rather than returning `NA` whenever window is not complete.
+
+For a comprehensive description about all available features see `?froll` manual.
+
+Adaptive `frollmax` has observed to be up to 50 times faster than second fastest solution (data.table self-join + `max` + `by=.EACHI`).
+```r
+set.seed(108)
+setDTthreads(8)
+x = data.table(
+  value = cumsum(rnorm(1e6, 0.1)),
+  end_window = 1:1e6 + sample(50:500, 1e6, TRUE),
+  row = 1:1e6
+)[, "end_window" := pmin(end_window, .N)
+  ][, "len_window" := end_window-row+1L]
+
+baser = function(x) x[, mapply(function(from, to) max(value[from:to]), row, end_window)]
+sj = function(x) x[x, max(value), on=.(row >= row, row <= end_window), by=.EACHI]$V1
+fmax = function(x) x[, frollmax(value, len_window, adaptive=TRUE, align="left", hasNA=FALSE)]
+microbenchmark::microbenchmark(
+  baser(x), sj(x), fmax(x),
+  times=10, check="identical"
+)
+#Unit: milliseconds
+#     expr        min         lq       mean     median         uq      max neval
+# baser(x) 4290.98557 4529.82841 4573.94115 4604.85827 4654.39342 4883.991    10
+#    sj(x) 3600.42771 3752.19359 4118.21755 4235.45856 4329.08728 4884.080    10
+#  fmax(x)   64.48627   73.07978   88.84932   76.64569   82.56115  198.438    10
+```
 
 ## BUG FIXES
 
