@@ -392,7 +392,7 @@ void frolladaptivemaxExact(double *x, uint64_t nx, ans_t *ans, int *k, double fi
         ans->dbl_v[i] = fill;
       } else {
         double w = R_NegInf;
-        for (int j=-k[i]+1; j<=0; j++) { //Rprintf("x[%d+%d] > w: %f > %f: %d\n", i, j, x[i+j], w, x[i+j] > w);
+        for (int j=-k[i]+1; j<=0; j++) {
           if (x[i+j] > w)
             w = x[i+j];
         }
@@ -440,4 +440,77 @@ void frolladaptivemaxExact(double *x, uint64_t nx, ans_t *ans, int *k, double fi
       }
     }
   }
+}
+
+/* fast rolling adaptive any R function
+ * not plain C, not thread safe
+ * R eval() allocates
+ * takes SEXP because it has SETLENGTH for each window
+ */
+void frolladaptiveapply(double *x, int64_t nx, SEXP pw, int *k, ans_t *ans, double fill, SEXP call, SEXP rho, bool verbose) {
+  double tic = 0;
+  if (verbose)
+    tic = omp_get_wtime();
+
+  double *w = REAL(pw);
+  // this is i=k[0]-1 iteration - first full window - taken out from the loop
+  // we use it to add extra check that results of a FUN are length 1 numeric
+  SEXPTYPE teval0;
+  uint64_t i; // #loop_counter_not_local_scope_ok
+  for (i=0; i<nx; i++) {
+    if (i+1 < k[i]) {
+      ans->dbl_v[i] = fill;
+    } else {
+      SETLENGTH(pw, k[i]);
+      memcpy(w, x+(i-k[i]+1), k[i]*sizeof(double));
+      SEXP eval0 = PROTECT(eval(call, rho));
+      if (xlength(eval0) != 1)
+        error(_("%s: results from provided FUN are not length 1"), __func__);
+      teval0 = TYPEOF(eval0);
+      if (teval0 == REALSXP) {
+        ans->dbl_v[i] = REAL(eval0)[0];
+      } else {
+        if (teval0==INTSXP || teval0==LGLSXP) {
+          if (verbose)
+            Rprintf(_("%s: results from provided FUN are not of type double, coercion from integer or logical will be applied on each iteration\n"), __func__);
+          ans->dbl_v[i] = REAL(coerceVector(eval0, REALSXP))[0];
+        } else {
+          error(_("%s: results from provided FUN are not of type double"), __func__);
+        }
+      }
+      UNPROTECT(1); // eval0
+    }
+  }
+  if (i==nx) {
+    // none of the windows in k was small enough to cover length of x
+    return;
+  }
+  // for each row it sets length of current window because it is adaptive version
+  // then copies expected window data into w
+  // evaluate call which has been prepared to point into w
+  if (teval0 == REALSXP) {
+    for (; i<nx; i++) {
+      if (i+1 < k[i]) {
+        ans->dbl_v[i] = fill;
+      } else {
+        SETLENGTH(pw, k[i]);
+        memcpy(w, x+(i-k[i]+1), k[i]*sizeof(double));
+        ans->dbl_v[i] = REAL(eval(call, rho))[0]; // this may fail with for a not type-stable fun
+      }
+    }
+  } else {
+    for (; i<nx; i++) {
+      if (i+1 < k[i]) {
+        ans->dbl_v[i] = fill;
+      } else {
+        SETLENGTH(pw, k[i]);
+        memcpy(w, x+(i-k[i]+1), k[i]*sizeof(double));
+        SEXP evali = PROTECT(eval(call, rho));
+        ans->dbl_v[i] = REAL(coerceVector(evali, REALSXP))[0];
+        UNPROTECT(1); // evali
+      }
+    }
+  }
+  if (verbose)
+    Rprintf(_("%s: took %.3fs\n"), __func__, omp_get_wtime()-tic);
 }

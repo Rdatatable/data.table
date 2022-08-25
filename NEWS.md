@@ -320,8 +320,9 @@ x = data.table(
 baser = function(x) x[, mapply(function(from, to) max(value[from:to]), row, end_window)]
 sj = function(x) x[x, max(value), on=.(row >= row, row <= end_window), by=.EACHI]$V1
 frmax = function(x) x[, frollmax(value, len_window, adaptive=TRUE, align="left", hasNA=FALSE)]
+frapply = function(x) x[, frollapply(value, len_window, max, adaptive=TRUE, align="left")]
 microbenchmark::microbenchmark(
-  baser(x), sj(x), frmax(x),
+  baser(x), sj(x), frmax(x), frapply(x),
   times=10, check="identical"
 )
 #Unit: milliseconds
