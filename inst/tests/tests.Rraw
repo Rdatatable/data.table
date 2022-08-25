@@ -18852,3 +18852,7 @@ if (test_nanotime) {
   test(2239.21, rbind(x,y, fill = TRUE), data.table(a = c(1L, 2L), b=as.nanotime(c(0, NA))))
   test(2239.22, rbind(y,x, fill = TRUE), data.table(a = c(2L, 1L), b=as.nanotime(c(NA, 0))))
 }
+x = data.table(a = 1L, b = as.Date("2020-01-01"))
+y = data.table(a = 2L, b = NA)
+test(2239.23, merge(x, y, by="a", all=TRUE), data.table(a=1:2, b.x=as.Date(c("2020-01-01", NA)), b.y=NA, key="a"))
+test(2239.24, merge(y, x, by="a", all=TRUE), data.table(a=1:2, b.x=NA, key="a", b.y=as.Date(c("2020-01-01", NA))))
