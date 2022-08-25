@@ -277,6 +277,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
     bool int64=false;
     bool date=false;
     bool posixct=false;
+    bool itime=false;
     const char *foundName=NULL;
     bool anyNotStringOrFactor=false;
     SEXP firstCol=R_NilValue;
@@ -313,10 +314,13 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
       } else if (INHERITS(thisCol, char_POSIXct))  {
         if (firsti>=0 && !length(getAttrib(firstCol, R_ClassSymbol))) { firsti=i; firstw=w; firstCol=thisCol; }
         posixct=true;
+      } else if (INHERITS(thisCol, char_ITime)) {
+        if (firsti>=0 && !length(getAttrib(firstCol, R_ClassSymbol))) { firsti=i; firstw=w; firstCol=thisCol; }
+        itime=true;
       }
       if (firsti==-1) { firsti=i; firstw=w; firstCol=thisCol; }
       else {
-        if (!factor && !int64 && ((!date && !posixct) || (date && posixct))) { // prohibit binding of date and posixct
+        if (!factor && !int64 && ((!date && !posixct) || (date && posixct)) && !itime) { // prohibit binding of date and posixct
           if (!R_compute_identical(PROTECT(getAttrib(thisCol, R_ClassSymbol)),
                                    PROTECT(getAttrib(firstCol, R_ClassSymbol)),
                                    0)) {
