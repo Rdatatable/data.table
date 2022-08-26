@@ -17,13 +17,13 @@ partial2adaptive = function(x, n, align) {
       c(rep(n, len-n), rev(seq.int(n)))
   }
   if (is.list(n)) {
-    sapply(n, len, align, FUN=trimn)
+    sapply(n, len, align, FUN=trimn, simplify=FALSE)
   } else {
     trimn(n, len, align)
   }
 }
 
-froll = function(fun, x, n, fill=NA, algo=c("fast", "exact"), align=c("right", "left", "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE, partial=FALSE) {
+froll = function(fun, x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE, partial=FALSE) {
   stopifnot(!missing(fun), is.character(fun), length(fun)==1L, !is.na(fun))
   algo = match.arg(algo)
   align = match.arg(align)
@@ -53,17 +53,17 @@ froll = function(fun, x, n, fill=NA, algo=c("fast", "exact"), align=c("right", "
   }
 }
 
-frollmean = function(x, n, fill=NA, algo=c("fast", "exact"), align=c("right", "left", "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE, partial=FALSE) {
+frollmean = function(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE, partial=FALSE) {
   froll(fun="mean", x=x, n=n, fill=fill, algo=algo, align=align, na.rm=na.rm, hasNA=hasNA, adaptive=adaptive, partial=partial)
 }
-frollsum = function(x, n, fill=NA, algo=c("fast","exact"), align=c("right", "left", "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE, partial=FALSE) {
+frollsum = function(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE, partial=FALSE) {
   froll(fun="sum", x=x, n=n, fill=fill, algo=algo, align=align, na.rm=na.rm, hasNA=hasNA, adaptive=adaptive, partial=partial)
 }
-frollmax = function(x, n, fill=NA, algo=c("fast", "exact"), align=c("right", "left", "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE, partial=FALSE) {
+frollmax = function(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE, partial=FALSE) {
   froll(fun="max", x=x, n=n, fill=fill, algo=algo, align=align, na.rm=na.rm, hasNA=hasNA, adaptive=adaptive, partial=partial)
 }
 
-frollapply = function(x, n, FUN, ..., fill=NA, align=c("right", "left", "center"), adaptive=FALSE, partial=FALSE) {
+frollapply = function(x, n, FUN, ..., fill=NA, align=c("right","left","center"), adaptive=FALSE, partial=FALSE) {
   FUN = match.fun(FUN)
   align = match.arg(align)
   if (isTRUE(partial)) {

@@ -33,7 +33,7 @@
   \item{algo}{ Character, default \code{"fast"}. When set to \code{"exact"}, a slower (in some cases more accurate) algorithm is used. See \emph{Implementation} section below for details. }
   \item{align}{ Character, specifying the "alignment" of the rolling window, defaulting to \code{"right"}. \code{"right"} covers preceding rows (the window \emph{ends} on the current value); \code{"left"} covers following rows (the window \emph{starts} on the current value); \code{"center"} is halfway in between (the window is \emph{centered} on the current value, biased towards \code{"left"} when \code{n} is even). }
   \item{na.rm}{ Logical, default \code{FALSE}. Should missing values be removed when calculating window? }
-  \item{hasNA}{ Logical. If it is known that \code{x} contains \code{NA} (or \code{Nan}) then setting this to \code{TRUE} will speed up calculation. Defaults to \code{NA}. See \emph{hasNA argument} section below for details. }
+  \item{hasNA}{ Logical. If it is known that \code{x} contains (or not) \code{NA} (or \code{NaN}) then setting this to \code{TRUE}/\code{FALSE} will in most cases speed up computation. Defaults to \code{NA}. See \emph{hasNA argument} section below for details. }
   \item{adaptive}{ Logical, default \code{FALSE}. Should the rolling function be calculated adaptively? See \emph{Adaptive rolling functions} section below for details. }
   \item{partial}{ Logical, default \code{FALSE}. Should the rolling window size(s) provided in \code{n} be trimmed to available observations. See \emph{\code{partial} argument} section below for details. }
   \item{FUN}{ The function to be applied to the rolling window in \code{frollapply}; See \emph{frollaply} section below for details. }
@@ -55,7 +55,7 @@
   Be aware that rolling functions operates on the physical order of input. If the intent is to roll values in a vector by a logical window, for example an hour, or a day, then one has to ensure that there are no gaps in input. For details see \href{https://github.com/Rdatatable/data.table/issues/3241}{issue #3241}.
 }
 \section{\code{hasNA} argument}{
-  \code{hasNA} can be used to speed up processing in cases when it is known if \code{x} contains \code{NA} (or \code{NaN}).
+  \code{hasNA} can be used to speed up processing in cases when it is known if \code{x} contains (or not) \code{NA} (or \code{NaN}).
   \itemize{
     \item{ Default \code{hasNA=NA} will use faster NA inaware implementation, but when NAs are detected it will re-run NA aware implementation. }
     \item{ \code{hasNA=TRUE} will use NA aware implementation straightaway. }
@@ -69,8 +69,18 @@
 }
 \section{Implementation}{
   \itemize{
-    \item{ \code{algo="fast"} uses \emph{"on-line"} algorithm, and all of \code{NaN, +Inf, -Inf} are treated as \code{NA}. Not all functions have \emph{fast} implementation available. As of now \emph{max} and \code{adaptive=TRUE} does not have, therefore it will automatically fall back to \emph{exact} implementation. \code{datatable.verbose} option can be used to check that. }
-    \item{ \code{algo="exact"} will make rolling functions to use a more computationally-intensive algorithm. For each observation from input vector it will compute a function on a window from scratch (complexity \eqn{O(n^2)}). Depeneding on the function, this algorithm may suffers less from floating point rounding error (the same consideration applies to base \code{\link[base]{mean}}). Algorithm also handles \code{NaN, +Inf, -Inf} consistently to base R, unless - for some functions (e.g. \emph{max}) - \code{hasNA}is \code{FALSE} but NAs are present. In case of some functions (like \emph{mean}), it will additionally make extra pass to perform floating point error correction. Error corrections might not be truly exact on some platforms (like Windows) when using multiple threads. }
+    \item{ \code{algo="fast"} uses \emph{"on-line"}, single pass, algorithm.
+    \itemize{
+      \item{ At present moment for \emph{mean} and \emph{max} all of \code{NaN, +Inf, -Inf} are treated as \code{NA} - subject to change in future version. }
+      \item{ \emph{max} rolling function will not do only a single pass but, on average \code{length(x)/n}, nested loops will be computed. The bigger the window the bigger advantage over algo \emph{exact} which computes \code{length(x)} nested loops. Note that \emph{exact} uses multiple CPUs so for a small window size and many CPUs it is possible it will be actually faster than \emph{fast} but in those cases elapsed timings will likely be far below a single second. }
+      \item{ Not all functions have \emph{fast} implementation available. As of now \emph{max} and \code{adaptive=TRUE} does not have, therefore it will automatically fall back to \emph{exact} implementation. \code{datatable.verbose} option can be used to check that. }
+    }}
+    \item{ \code{algo="exact"} will make rolling functions to use a more computationally-intensive algorithm. For each observation from input vector it will compute a function on a window from scratch (complexity \eqn{O(n^2)}).
+    \itemize{
+      \item { Depeneding on the function, this algorithm may suffers less from floating point rounding error (the same consideration applies to base \code{\link[base]{mean}}). }
+      \item{ Algorithm also handles \code{NaN, +Inf, -Inf} consistently to base R, unless - for some functions (e.g. \emph{max}) - \code{hasNA} is \code{FALSE} but NAs are present. }
+      \item{ In case of some functions (like \emph{mean}), it will additionally make extra pass to perform floating point error correction. Error corrections might not be truly exact on some platforms (like Windows) when using multiple threads. }
+    }}
   }
 }
 \section{Adaptive rolling functions}{

@@ -853,7 +853,7 @@ test(6000.225, frollsum(1:3, c(2,2,2), adaptive=TRUE), c(NA, 3, 5), output="frol
 test(6000.226, frollsum(c(NA,2,3), c(2,2,2), adaptive=TRUE), c(NA, NA, 5), output="re-running with extra care for NAs")
 options(datatable.verbose=FALSE)
 
-## frollmax
+## frollmax adaptive
 options(datatable.verbose=TRUE) ## adaptive frollmax no fast algo
 test(6000.3, frollmax(1:4, c(2,2,2,2), adaptive=TRUE), output="frolladaptivefun: algo 0 not implemented, fall back to 1")
 test(6000.3001, frollmax(1:4, c(2,2,2,2), algo="fast", adaptive=TRUE), output="frolladaptivefun: algo 0 not implemented, fall back to 1")
@@ -903,8 +903,92 @@ test(6000.3352, frollmax(x, n, hasNA=FALSE, na.rm=TRUE, adaptive=TRUE), error="d
 test(6000.3361, frollmax(x, n, hasNA=TRUE, adaptive=TRUE), c(NA,7,2,7,6,NA,NA,NA))
 test(6000.3362, frollmax(x, n, hasNA=TRUE, na.rm=TRUE, adaptive=TRUE), c(NA,7,2,7,6,-Inf,6,7))
 
-#TODO frollmax dev
-#TODO frollmax tests
+## frollmax non-adaptive
+#options(datatable.verbose=TRUE) ## adaptive frollmax no fast algo
+#test(6000.4, frollmax(1:4, c(2,2,2,2)), output="frolladaptivefun: algo 0 not implemented, fall back to 1")
+#test(6000.4001, frollmax(1:4, c(2,2,2,2), algo="fast"), output="frolladaptivefun: algo 0 not implemented, fall back to 1")
+#test(6000.4002, frollmax(1:4, c(2,2,2,2), algo="exact"), notOutput="frolladaptivefun: algo 0 not implemented, fall back to 1")
+#options(datatable.verbose=FALSE)
+n = 3
+x = c(7,2,3,6,3,2,4,5) # no NA
+ans = c(NA,NA,7,6,6,6,4,5)
+test(6000.4111, frollmax(x, n), ans) # hasNA=NA # narm=F
+test(6000.4112, frollmax(x, n, na.rm=TRUE), ans) # narm=T
+test(6000.4113, frollmax(x, n, algo="exact"), ans) # hasNA=NA # narm=F
+test(6000.4114, frollmax(x, n, algo="exact", na.rm=TRUE), ans) # narm=T
+test(6000.4121, frollmax(x, n, hasNA=FALSE), ans) # hasNA=F
+test(6000.4122, frollmax(x, n, hasNA=FALSE, na.rm=TRUE), error="does not make sense")
+test(6000.4123, frollmax(x, n, algo="exact", hasNA=FALSE), ans) # hasNA=F
+test(6000.4124, frollmax(x, n, algo="exact", hasNA=FALSE, na.rm=TRUE), error="does not make sense")
+test(6000.4131, frollmax(x, n, hasNA=TRUE), ans) # hasNA=T
+test(6000.4132, frollmax(x, n, hasNA=TRUE, na.rm=TRUE), ans)
+test(6000.4133, frollmax(x, n, algo="exact", hasNA=TRUE), ans) # hasNA=T
+test(6000.4134, frollmax(x, n, algo="exact", hasNA=TRUE, na.rm=TRUE), ans)
+x = c(7,2,3,NA,3,2,4,NA) # NA
+test(6000.4211, frollmax(x, n), c(NA,NA,7,NA,NA,NA,4,NA))
+test(6000.4212, frollmax(x, n, na.rm=TRUE), c(NA,NA,7,3,3,3,4,4))
+test(6000.4213, frollmax(x, n, algo="exact"), c(NA,NA,7,NA,NA,NA,4,NA))
+test(6000.4214, frollmax(x, n, algo="exact", na.rm=TRUE), c(NA,NA,7,3,3,3,4,4))
+test(6000.4221, frollmax(x, n, hasNA=FALSE), c(NA,NA,7,3,3,3,4,4)) ## expected incorrect results, see manual hasNA section for details, added in #5441
+test(6000.4222, frollmax(x, n, hasNA=FALSE, na.rm=TRUE), error="does not make sense")
+test(6000.4223, frollmax(x, n, algo="exact", hasNA=FALSE), c(NA,NA,7,3,3,3,4,4)) ## expected incorrect results, see manual hasNA section for details, added in #5441
+test(6000.4224, frollmax(x, n, algo="exact", hasNA=FALSE, na.rm=TRUE), error="does not make sense")
+test(6000.4231, frollmax(x, n, hasNA=TRUE), c(NA,NA,7,NA,NA,NA,4,NA))
+test(6000.4232, frollmax(x, n, hasNA=TRUE, na.rm=TRUE), c(NA,NA,7,3,3,3,4,4))
+test(6000.4233, frollmax(x, n, algo="exact", hasNA=TRUE), c(NA,NA,7,NA,NA,NA,4,NA))
+test(6000.4234, frollmax(x, n, algo="exact", hasNA=TRUE, na.rm=TRUE), c(NA,NA,7,3,3,3,4,4))
+x = rep(NA_real_, 8) # all NA
+test(6000.4241, frollmax(x, n), rep(NA_real_, 8))
+test(6000.4242, frollmax(x, n, na.rm=TRUE), c(NA,NA, rep(-Inf, 6)))
+test(6000.4243, frollmax(x, n, algo="exact"), rep(NA_real_, 8))
+test(6000.4244, frollmax(x, n, algo="exact", na.rm=TRUE), c(NA,NA, rep(-Inf, 6)))
+test(6000.4251, frollmax(x, n, hasNA=FALSE), c(NA,NA, rep(-Inf, 6)))
+test(6000.4252, frollmax(x, n, hasNA=FALSE, na.rm=TRUE), error="does not make sense")
+test(6000.4253, frollmax(x, n, algo="exact", hasNA=FALSE), c(NA,NA, rep(-Inf, 6)))
+test(6000.4254, frollmax(x, n, algo="exact", hasNA=FALSE, na.rm=TRUE), error="does not make sense")
+test(6000.4261, frollmax(x, n, hasNA=TRUE), rep(NA_real_, 8))
+test(6000.4262, frollmax(x, n, hasNA=TRUE, na.rm=TRUE), c(NA,NA, rep(-Inf, 6)))
+test(6000.4263, frollmax(x, n, algo="exact", hasNA=TRUE), rep(NA_real_, 8))
+test(6000.4264, frollmax(x, n, algo="exact", hasNA=TRUE, na.rm=TRUE), c(NA,NA, rep(-Inf, 6)))
+x = c(NA,NaN,NA,NaN,NaN,NaN,NA,NA) # all NaN/NA
+test(6000.4271, frollmax(x, n), c(NA,NA,NA,NA,NA,NaN,NA,NA))
+test(6000.4272, frollmax(x, n, na.rm=TRUE), c(NA,NA,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf))
+test(6000.4273, frollmax(x, n, algo="exact"), c(NA,NA,NA,NA,NA,NaN,NA,NA))
+test(6000.4274, frollmax(x, n, algo="exact", na.rm=TRUE), c(NA,NA,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf))
+test(6000.4281, frollmax(x, n, hasNA=FALSE), c(NA,NA,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf)) ## expected incorrect results, see manual hasNA section for details, added in #5441
+test(6000.4282, frollmax(x, n, hasNA=FALSE, na.rm=TRUE), error="does not make sense")
+test(6000.4283, frollmax(x, n, algo="exact", hasNA=FALSE), c(NA,NA,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf)) ## expected incorrect results, see manual hasNA section for details, added in #5441
+test(6000.4284, frollmax(x, n, algo="exact", hasNA=FALSE, na.rm=TRUE), error="does not make sense")
+test(6000.4291, frollmax(x, n, hasNA=TRUE), c(NA,NA,NA,NA,NA,NaN,NA,NA))
+test(6000.4292, frollmax(x, n, hasNA=TRUE, na.rm=TRUE), c(NA,NA,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf))
+test(6000.4293, frollmax(x, n, algo="exact", hasNA=TRUE), c(NA,NA,NA,NA,NA,NaN,NA,NA))
+test(6000.4294, frollmax(x, n, algo="exact", hasNA=TRUE, na.rm=TRUE), c(NA,NA,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf))
+x = c(NA,2,6,3,Inf,2,4,5) # Inf
+test(6000.4311, frollmax(x, n), c(NA,NA,NA,6,Inf,Inf,Inf,5))
+test(6000.4312, frollmax(x, n, na.rm=TRUE), c(NA,NA,6,6,Inf,Inf,Inf,5))
+test(6000.4313, frollmax(x, n, algo="exact"), c(NA,NA,NA,6,Inf,Inf,Inf,5))
+test(6000.4314, frollmax(x, n, algo="exact", na.rm=TRUE), c(NA,NA,6,6,Inf,Inf,Inf,5))
+test(6000.4321, frollmax(x, n, hasNA=FALSE), c(NA,NA,6,6,Inf,Inf,Inf,5)) ## expected incorrect results, see manual hasNA section for details, added in #5441
+test(6000.4322, frollmax(x, n, hasNA=FALSE, na.rm=TRUE), error="does not make sense")
+test(6000.4323, frollmax(x, n, algo="exact", hasNA=FALSE), c(NA,NA,6,6,Inf,Inf,Inf,5)) ## expected incorrect results, see manual hasNA section for details, added in #5441
+test(6000.4324, frollmax(x, n, algo="exact", hasNA=FALSE, na.rm=TRUE), error="does not make sense")
+test(6000.4331, frollmax(x, n, hasNA=TRUE), c(NA,NA,NA,6,Inf,Inf,Inf,5))
+test(6000.4332, frollmax(x, n, hasNA=TRUE, na.rm=TRUE), c(NA,NA,6,6,Inf,Inf,Inf,5))
+test(6000.4333, frollmax(x, n, algo="exact", hasNA=TRUE), c(NA,NA,NA,6,Inf,Inf,Inf,5))
+test(6000.4334, frollmax(x, n, algo="exact", hasNA=TRUE, na.rm=TRUE), c(NA,NA,6,6,Inf,Inf,Inf,5))
+x = c(NA,2,-Inf,3,Inf,2,4,5) # -Inf
+test(6000.4341, frollmax(x, n), c(NA,NA,NA,3,Inf,Inf,Inf,5))
+test(6000.4342, frollmax(x, n, na.rm=TRUE), c(NA,NA,2,3,Inf,Inf,Inf,5))
+test(6000.4343, frollmax(x, n, algo="exact"), c(NA,NA,NA,3,Inf,Inf,Inf,5))
+test(6000.4344, frollmax(x, n, algo="exact", na.rm=TRUE), c(NA,NA,2,3,Inf,Inf,Inf,5))
+test(6000.4351, frollmax(x, n, hasNA=FALSE), c(NA,NA,2,3,Inf,Inf,Inf,5)) ## expected incorrect results, see manual hasNA section for details, added in #5441
+test(6000.4352, frollmax(x, n, hasNA=FALSE, na.rm=TRUE), error="does not make sense")
+test(6000.4353, frollmax(x, n, algo="exact", hasNA=FALSE), c(NA,NA,2,3,Inf,Inf,Inf,5)) ## expected incorrect results, see manual hasNA section for details, added in #5441
+test(6000.4354, frollmax(x, n, algo="exact", hasNA=FALSE, na.rm=TRUE), error="does not make sense")
+test(6000.4361, frollmax(x, n, hasNA=TRUE), c(NA,NA,NA,3,Inf,Inf,Inf,5))
+test(6000.4362, frollmax(x, n, hasNA=TRUE, na.rm=TRUE), c(NA,NA,2,3,Inf,Inf,Inf,5))
+test(6000.4363, frollmax(x, n, algo="exact", hasNA=TRUE), c(NA,NA,NA,3,Inf,Inf,Inf,5))
+test(6000.4364, frollmax(x, n, algo="exact", hasNA=TRUE, na.rm=TRUE), c(NA,NA,2,3,Inf,Inf,Inf,5))
 
 ## partial
 x = 1:6/2
@@ -931,6 +1015,12 @@ test(6006.906, frollmean(x, list(TRUE), partial=TRUE), error="n must be integer 
 
 ## validation
 
+#TODO add
+#align=c("right","left")
+#partial=c(FALSE,TRUE)
+#max
+#frollapply adaptive
+
 set.seed(108)
 makeNA = function(x, ratio=0.1, nf=FALSE) {
   n = as.integer(length(x) * ratio)
@@ -954,7 +1044,7 @@ rollfun = function(x, n, FUN, fill=NA_real_, na.rm=FALSE, nf.rm=FALSE) {
   for (i in n:nx) ans[i] = f(x[(i-n+1):i], na.rm=na.rm)
   ans
 }
-base_compare = function(x, n, funs=c("mean","sum"), algos=c("fast","exact")) {
+base_compare = function(x, n, funs=c("mean","sum","max"), algos=c("fast","exact")) {
   num.step = 0.001
   for (fun in funs) {
     for (na.rm in c(FALSE, TRUE)) {
@@ -965,7 +1055,7 @@ base_compare = function(x, n, funs=c("mean","sum"), algos=c("fast","exact")) {
             test(.num,
                  froll(.fun, x, n, fill=.fill, na.rm=.na.rm, algo=.algo),
                  rollfun(x, n, FUN=.fun, fill=.fill, na.rm=.na.rm, nf.rm=.nf.rm)),
-            list(.num=num, .fun=fun, .fill=fill, .na.rm=na.rm, .algo=algo, .nf.rm=algo!="exact")
+            list(.num=num, .fun=fun, .fill=fill, .na.rm=na.rm, .algo=algo, .nf.rm=algo!="exact"&&fun!="max")
           ))
         }
       }
@@ -1049,7 +1139,7 @@ arollfun = function(fun, x, n, na.rm=FALSE, fill=NA, nf.rm=FALSE) {
   }
   ans
 }
-afun_compare = function(x, n, funs=c("mean","sum"), algos=c("fast","exact")) {
+afun_compare = function(x, n, funs=c("mean","sum","max"), algos=c("fast","exact")) {
   num.step = 0.0001
   #### fun, na.rm, fill, algo
   for (fun in funs) {
@@ -1061,7 +1151,7 @@ afun_compare = function(x, n, funs=c("mean","sum"), algos=c("fast","exact")) {
             test(.num,
                  froll(.fun, x, n, fill=.fill, na.rm=.na.rm, algo=.algo, adaptive=TRUE),
                  arollfun(.fun, x, n, fill=.fill, na.rm=.na.rm, nf.rm=.nf.rm)),
-            list(.num=num, .fun=fun, .fill=fill, .na.rm=na.rm, .algo=algo, .nf.rm=algo!="exact")
+            list(.num=num, .fun=fun, .fill=fill, .na.rm=na.rm, .algo=algo, .nf.rm=algo!="exact"&&fun!="max")
           ))
         }
       }
@@ -1149,6 +1239,7 @@ options(datatable.verbose=FALSE)
 # frollapply adaptive
 test(6010.201, frollapply(1:3, c(3,3,3), sum, adaptive=TRUE), c(NA,NA,6))
 #TODO tests
+# none of the windows in k was small enough to cover length of x //TODO test
 
 #### test coverage
 test(6010.501, frollapply(1:3, "b", sum), error="n must be integer")

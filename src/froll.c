@@ -395,37 +395,44 @@ void frollsumExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool 
   }
 }
 
-inline void windowmax(double *x, uint64_t o, int k, double *w, uint64_t *iw) {
-  for (int i=0; i<k-1; i++) {
-    //Rprintf("windowmax iteration %d, offset %d, first x val %f, testing x[o+i-k+1] >= w[0]: x[%d-%d+1] >= w[0]: %f >= %f: %d\n", i, o, x[o], i, k, x[o+i-k+1], w[0], x[o+i-k+1] >= w[0]);
-    if (x[o+i-k+1] >= w[0]) { // what if that is never satisfied? test!
-      iw[0] = o+i-k+1;
-      w[0] = x[iw[0]];
-    }
-  }
-}
-inline void windowmaxnarm(double *x, uint64_t o, int k, bool narm, int *nc, double *w, uint64_t *iw) {
-  for (int i=0; i<k-1; i++) {
-    //Rprintf("windowmax iteration %d, offset %d, first x val %f, testing x[o+i-k+1] >= w[0]: x[%d-%d+1] >= w[0]: %f >= %f: %d\n", i, o, x[o], i, k, x[o+i-k+1], w[0], x[o+i-k+1] >= w[0]);
-    if (R_FINITE(x[o+i-k+1])) {
-      if (x[o+i-k+1] >= w[0]) { // what if that is never satisfied? test!
+inline void wmax(double *x, uint64_t o, int k, double *w, uint64_t *iw, bool narm) {
+  if (narm) {
+    for (int i=0; i<k; i++) {
+      //Rprintf("wmax iter %d, offset %d, first x val %f, testing x[o+i-k+1] >= w[0]: x[%d-%d+1] >= w[0]: %f >= %f: %d\n", i, o, x[o], i, k, x[o+i-k+1], w[0], x[o+i-k+1] >= w[0]);
+      if (x[o+i-k+1] >= w[0]) { // what if that is never satisfied? test! TODO
         iw[0] = o+i-k+1;
         w[0] = x[iw[0]];
       }
-    } else if (narm) {
-      nc[0]++;
-    } else {
-      w[0] = NA_REAL;
     }
+  } else {
+    double ww = R_NegInf;
+    uint64_t iww = 0;
+    for (int i=0; i<k; i++) {
+      uint64_t ii = o+i-k+1;
+      if (ISNAN(x[ii])) {
+        if (ISNA(x[ii])) {
+          iww = ii; ww = NA_REAL;
+        } else if (ISNA(ww)) {
+          // do nothing because w > x[i]: NA > NaN
+        } else { // no NA in window so NaN >= than any non-NA
+          iww = ii; ww = R_NaN;
+        }
+      } else if (ISNAN(ww)) {
+        // w still within the window and is NA or NaN, x[i] is not NA - already checked above, therefore to nothing
+      } else if (x[ii] >= ww) {
+        iww = ii; ww = x[iww];
+      }
+    }
+    iw[0] = iww;
+    w[0] = ww;
   }
 }
 /* fast rolling max - fast
  * fast online algorithm do single pass over elements keeping track of recent max and its index
  * if index of max is within progressing window then it keeps running single pass
- * whenever max is leaving the window (index of max is outside of iterator minus window size) then new maximum is computed via nested loop on current complete window
+ * whenever max is leaving the window (index of max is outside of iterator minus window size) then new maximum is computed via nested loop on current location
  * new max is used to continue outer single pass as long as new max index is not leaving the running window
  * should scale well for bigger window size, may carry overhead for small window, needs benchmarking
- * TODO NA handling
  */
 void frollmaxFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose) {
   if (verbose)
@@ -433,146 +440,94 @@ void frollmaxFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool n
   double w = R_NegInf; // window max
   uint64_t cmax = 0; // counter of nested loops for verbose
   uint64_t iw = 0; // index of window max
-  bool truehasna = hasna>0;
-  if (!truehasna) {
-    int i;
+  uint64_t i;
+  if (narm || hasna==-1) {
     for (i=0; i<k-1; i++) { // #loop_counter_not_local_scope_ok
-      if (!R_FINITE(x[i])) {
-        truehasna = true;
-        break;
-      }
       if (x[i] >= w) { // >= rather than > because we track most recent maximum using iw
-        iw = i;
-        w = x[iw];
+        iw = i; w = x[iw];
       }
       ans->dbl_v[i] = fill;
     }
-    if (!truehasna && !R_FINITE(x[i])) {
-      if (x[i] >= w) {
-        iw = i;
-        w = x[iw];
-      } else {
-        // ensure iw ok, case when all window was -Inf or NA?
+    for (i=k-1; i<nx; i++) {
+      if (iw+k <= i) { // max left current window
+        iw = i-k; w = R_NegInf;
+        if (i < k) error("should never happen as will result in uint underflow"); //TODO remove after tests
+        wmax(x, i, k, &w, &iw, true); cmax++;
+      } else if (x[i] >= w) {
+        iw = i; w = x[iw];
       }
       ans->dbl_v[i] = w;
-    } else {
-      truehasna = true;
     }
-    if (!truehasna) {
-      for (uint64_t i=k; i<nx; i++) {
-        if (!R_FINITE(x[i])) {
+  } else {
+    bool truehasna = hasna>0;
+    for (i=0; i<k-1; i++) { // #loop_counter_not_local_scope_ok
+      if (ISNAN(x[i])) {
+        truehasna = true;
+        if (ISNA(x[i])) {
+          iw = i; w = NA_REAL;
+        } else if (ISNA(w)) {
+          // do nothing because w > x[i]: NA > NaN
+        } else {
+          iw = i; w = R_NaN;
+        }
+      } else if (x[i] >= w) {
+        iw = i; w = x[iw];
+      }
+      ans->dbl_v[i] = fill;
+    }
+    if (!truehasna) { // maybe no NAs
+      //Rprintf("maybe no NAs\n");
+      //Rprintf("front k-1: iw=%d, w=%f\n", iw, w);
+      for (; i<nx; i++) {
+        if (ISNAN(x[i])) {
           truehasna = true;
           break;
         }
-        if (x[i] >= w) {
-          //Rprintf("iteration %d, new max %f at %d, old max %f at %d\n", i, x[i], i, w, iw);
-          iw = i;
-          w = x[iw];
-        } else {
-          if (iw > i-k) { // max is still within window
-            // w and iw are still ok
-            //Rprintf("iteration %d, max %f at %d bigger than current value %f\n", i, w, iw, x[i]);
-          } else { // max left the window, need to find max in this window
-            //Rprintf("iteration %d, max %f at %d left the window, call windowmax from %d of size %d\n", i, w, iw, i, k);
-            w = R_NegInf;
-            iw = i-k;
-            windowmax(x, i, k, &w, &iw);
-            //Rprintf("iteration %d, windowmax found new max %f at %d\n", i, w, iw);
-            cmax++;
-          }
+        if (iw+k <= i) { // max left current window
+          //Rprintf("max left current window: iw=%d, k=%d, i=%d, w=%f\n", iw, k, i, w);
+          iw = i-k; w = R_NegInf;
+          if (i < k) error("should never happen as will result in uint underflow"); //TODO remove after tests
+          //Rprintf("wmax(x, %d, %d, &w, &iw, true)\n", i, k);
+          wmax(x, i, k, &w, &iw, true); cmax++;
+          //Rprintf("iter %d new max from wmax: iw=%d, w=%f\n", i, iw, w);
+        } else if (x[i] >= w) {
+          //Rprintf("x[i] >= w: x[%d]=%f >= w=%f\n", i, x[i], w);
+          iw = i; w = x[iw];
         }
         ans->dbl_v[i] = w;
       }
-      if (verbose)
-        snprintf(end(ans->message[0]), 500, _("%s: windowmax called %"PRIu64" time(s)\n"), __func__, cmax);
-      if (truehasna) {
-        if (hasna==-1) {
-          ans->status = 2;
-          snprintf(end(ans->message[2]), 500, _("%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning"), __func__);
+    }
+    if (truehasna) {
+      for (; i<nx; i++) { // this loop continues from where "maybe no NAs" loop left
+        if (ISNAN(x[i])) {
+          if (ISNA(x[i])) {
+            iw = i; w = NA_REAL;
+          } else if (ISNA(w)) {
+            // do nothing because w > x[i]: NA > NaN
+          } else { // no NA in window so NaN >= than any non-NA
+            iw = i; w = R_NaN;
+          }
+        } else if (iw+k <= i) { // max left current window
+          iw = i-k; w = R_NegInf;
+          if (i < k) error("should never happen as will result in uint underflow"); //TODO remove after tests
+          wmax(x, i, k, &w, &iw, false); cmax++;
+        } else if (ISNAN(w)) {
+          // w still within the window and is NA or NaN, x[i] is not NA - already checked above, therefore do nothing
+        } else if (x[i] >= w) {
+          iw = i; w = x[iw];
         }
-        if (verbose)
-          snprintf(end(ans->message[0]), 500, _("%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n"), __func__);
-        w = R_NegInf;
-        cmax = 0;
+        ans->dbl_v[i] = w;
       }
-    } else {
-      if (hasna==-1) {
-        ans->status = 2;
-        snprintf(end(ans->message[2]), 500, _("%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning"), __func__);
-      }
-      if (verbose)
-        snprintf(end(ans->message[0]), 500, _("%s: NA (or other non-finite) value(s) are present in input, skip non-NA attempt and run with extra care for NAs\n"), __func__);
-      w = R_NegInf;
-      cmax = 0;
     }
   }
-  if (truehasna) {
-    int nc = 0;
-    int i;
-    for (i=0; i<k-1; i++) { // #loop_counter_not_local_scope_ok
-      if (R_FINITE(x[i])) {
-        if (x[i] >= w) {
-          iw = i;
-          w = x[iw];
-        }
-      } else {
-        nc++;
-      }
-      ans->dbl_v[i] = fill;
-    }
-    if (R_FINITE(x[i])) {
-      if (x[i] >= w) {
-        iw = i;
-        w = x[iw];
-      }
-    } else {
-      nc++;
-    }
-    if (nc == 0) {
-      ans->dbl_v[i] = w;
-    } else if (nc == k) {
-      ans->dbl_v[i] = narm ? R_NegInf : NA_REAL;
-    } else {
-      ans->dbl_v[i] = narm ? w : NA_REAL;
-    }
-    for (uint64_t i=k; i<nx; i++) {
-      if (R_FINITE(x[i])) {
-        if (x[i] >= w) {
-          iw = i;
-          w = x[iw];
-        } else {
-          if (iw > i-k) { // max is still within window
-            // w and iw are still ok
-          } else { // max left the window, need to find max in this window
-            w = R_NegInf;
-            iw = i-k;
-            windowmaxnarm(x, i, k, narm, &nc, &w, &iw);
-            //Rprintf("iteration %d, windowmaxnarm found new max %f at %d\n", i, w, iw);
-            cmax++;
-          }
-        }
-        ans->dbl_v[i] = w;
-      } else {
-        nc++;
-      }
-      if (!R_FINITE(x[i-k])) {
-        nc--;
-      }
-      if (nc == 0) {
-        ans->dbl_v[i] = w;
-      } else if (nc == k) {
-        ans->dbl_v[i] = narm ? R_NegInf : NA_REAL;
-      } else {
-        ans->dbl_v[i] = narm ? w : NA_REAL;
-      }
-    }
-    if (verbose)
-      snprintf(end(ans->message[0]), 500, _("%s: windowmaxnarm called %"PRIu64" time(s)\n"), __func__, cmax);
-  }
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: nested window max calculation called %"PRIu64" times\n"), __func__, cmax);
 }
 /* fast rolling max - exact
  * for each observation in x compute max in window from scratch
- * no proper support for NAs yet
+ * faster version ignores NAs (narm=T or hasNA=F), as they are not propagated by `>` operator
+ * otherwise we scan for NaN/NA and run either of two loops
+ * hasNA=FALSE can give incorrect results if NAs provided, documented to be used with care
  */
 void frollmaxExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasna, bool verbose) {
   if (verbose)
@@ -580,58 +535,64 @@ void frollmaxExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool 
   for (int i=0; i<k-1; i++) {
     ans->dbl_v[i] = fill;
   }
-  bool truehasna = hasna>0;
-  if (!truehasna || !narm) {
+  if (narm || hasna==-1) { // ignore NAs as > does not propagate
     #pragma omp parallel for num_threads(getDTthreads(nx, true))
     for (uint64_t i=k-1; i<nx; i++) {
-      if (narm && truehasna) {
-        continue;
-      }
       double w = R_NegInf;
       for (int j=-k+1; j<=0; j++) {
         if (x[i+j] > w)
           w = x[i+j];
       }
-      if (R_FINITE(w)) {
-        ans->dbl_v[i] = w;
-      } else {
-        if (!narm) {
-          ans->dbl_v[i] = w;
-        }
+      ans->dbl_v[i] = w;
+    }
+  } else {
+    bool *isnan = malloc(nx*sizeof(bool)); // isnan lookup - we use it to reduce ISNAN calls in nested loop
+    if (!isnan) {                                                    // # nocov start
+      ans->status = 3;                                              // raise error
+      snprintf(ans->message[3], 500, _("%s: Unable to allocate memory for isnan"), __func__);
+      free(isnan);
+      return;
+    }                                                               // # nocov end
+    bool truehasna = hasna>0;
+    for (uint64_t i=0; i<nx; i++) { // no openmp as this shuld be very fast
+      if (ISNAN(x[i])) {
         truehasna = true;
-      }
-    }
-    if (truehasna) {
-      if (hasna==-1) {
-        ans->status = 2;
-        snprintf(end(ans->message[2]), 500, _("%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning"), __func__);
-      }
-      if (verbose) {
-        if (narm) {
-          snprintf(end(ans->message[0]), 500, _("%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n"), __func__);
-        } else {
-          snprintf(end(ans->message[0]), 500, _("%s: NA (or other non-finite) value(s) are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run\n"), __func__);
-        }
-      }
-    }
-  }
-  if (truehasna && narm) {
-    #pragma omp parallel for num_threads(getDTthreads(nx, true))
-    for (uint64_t i=k-1; i<nx; i++) {
-      double w = R_NegInf;
-      int nc = 0;
-      for (int j=-k+1; j<=0; j++) {
-        if (ISNAN(x[i+j])) {
-          nc++;
-        } else if (x[i+j] > w) {
-          w = x[i+j];
-        }
-      }
-      if (nc < k) {
-          ans->dbl_v[i] = w;
+        isnan[i] = true;
       } else {
-          ans->dbl_v[i] = R_NegInf;
+        isnan[i] = false;
+      }
+    }
+    if (!truehasna) { // not found any NAs
+      #pragma omp parallel for num_threads(getDTthreads(nx, true))
+      for (uint64_t i=k-1; i<nx; i++) {
+        double w = R_NegInf;
+        for (int j=-k+1; j<=0; j++) {
+          if (x[i+j] > w)
+            w = x[i+j];
         }
+        ans->dbl_v[i] = w;
+      }
+    } else { // there are some NAs
+      #pragma omp parallel for num_threads(getDTthreads(nx, true))
+      for (uint64_t i=k-1; i<nx; i++) {
+        double w = R_NegInf;
+        if (isnan[i] && ISNA(x[i])) {
+          w = NA_REAL;
+        } else {
+          for (int j=-k+1; j<=0; j++) {
+            if (isnan[i+j]) {
+              if (ISNA(x[i+j])) {
+                w = NA_REAL;
+                break;
+              } else {
+                w = R_NaN;
+              }
+            } else if (x[i+j] > w)
+              w = x[i+j];
+          }
+        }
+        ans->dbl_v[i] = w;
+      }
     }
   }
 }
