@@ -90,6 +90,7 @@ extern SEXP char_datatable;
 extern SEXP char_dataframe;
 extern SEXP char_NULL;
 extern SEXP char_maxString;
+extern SEXP char_AsIs;
 extern SEXP sym_sorted;
 extern SEXP sym_index;
 extern SEXP sym_BY;

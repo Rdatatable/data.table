@@ -274,10 +274,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
     bool factor=false, orderedFactor=false;     // ordered factor is class c("ordered","factor"). isFactor() is true when isOrdered() is true.
     int longestLen=-1, longestW=-1, longestI=-1; // just for ordered factor; longestLen must be initialized as -1 so that rbind zero-length ordered factor could work #4795
     SEXP longestLevels=R_NilValue;              // just for ordered factor
-    bool int64=false;
-    bool date=false;
-    bool posixct=false;
-    bool itime=false;
+    bool int64=false, date=false, posixct=false, itime=false, asis=false;
     const char *foundName=NULL;
     bool anyNotStringOrFactor=false;
     SEXP firstCol=R_NilValue;
@@ -317,10 +314,12 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
       } else if (INHERITS(thisCol, char_ITime)) {
         if (firsti>=0 && !length(getAttrib(firstCol, R_ClassSymbol))) { firsti=i; firstw=w; firstCol=thisCol; }
         itime=true;
+      } else if (!asis && INHERITS(thisCol, char_AsIs)) {
+        asis=true;
       }
       if (firsti==-1) { firsti=i; firstw=w; firstCol=thisCol; }
       else {
-        if (!factor && !int64 && ((!date && !posixct) || (date && posixct)) && !itime) { // prohibit binding of date and posixct
+        if (!factor && !int64 && ((!date && !posixct) || (date && posixct)) && !itime &!asis) { // prohibit binding of date and posixct
           if (!R_compute_identical(PROTECT(getAttrib(thisCol, R_ClassSymbol)),
                                    PROTECT(getAttrib(firstCol, R_ClassSymbol)),
                                    0)) {
