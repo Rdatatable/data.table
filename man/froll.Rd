@@ -71,7 +71,7 @@
   \itemize{
     \item{ \code{algo="fast"} uses \emph{"on-line"}, single pass, algorithm.
     \itemize{
-      \item{ At present moment for \emph{mean} and \emph{max} all of \code{NaN, +Inf, -Inf} are treated as \code{NA} - subject to change in future version. }
+      \item{ At present moment for \emph{mean} and \emph{sum} all of \code{NaN, +Inf, -Inf} are treated as \code{NA} - subject to change in future version. }
       \item{ \emph{max} rolling function will not do only a single pass but, on average \code{length(x)/n}, nested loops will be computed. The bigger the window the bigger advantage over algo \emph{exact} which computes \code{length(x)} nested loops. Note that \emph{exact} uses multiple CPUs so for a small window size and many CPUs it is possible it will be actually faster than \emph{fast} but in those cases elapsed timings will likely be far below a single second. }
       \item{ Not all functions have \emph{fast} implementation available. As of now \emph{max} and \code{adaptive=TRUE} does not have, therefore it will automatically fall back to \emph{exact} implementation. \code{datatable.verbose} option can be used to check that. }
     }}
