@@ -457,7 +457,7 @@ void frolladaptiveapply(double *x, int64_t nx, SEXP pw, int *k, ans_t *ans, doub
   // we use it to add extra check that results of a FUN are length 1 numeric
   SEXPTYPE teval0;
   uint64_t i; // #loop_counter_not_local_scope_ok
-  for (i=0; i<nx; i++) {
+  for (i=0; i<nx; i++) { // this won't go to nx as there is break
     if (i+1 < k[i]) {
       ans->dbl_v[i] = fill;
     } else {
@@ -479,10 +479,11 @@ void frolladaptiveapply(double *x, int64_t nx, SEXP pw, int *k, ans_t *ans, doub
         }
       }
       UNPROTECT(1); // eval0
+      break;
     }
   }
   if (i==nx) {
-    // none of the windows in k was small enough to cover length of x
+    // none of the windows in k was small enough to cover length of x //TODO test
     return;
   }
   // for each row it sets length of current window because it is adaptive version
