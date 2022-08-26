@@ -521,7 +521,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
           // else coerces if needed within memrecycle; with a no-alloc direct coerce from 1.12.4 (PR #3909)
           const char *ret = memrecycle(target, R_NilValue, ansloc, thisnrow, thisCol, 0, -1, idcol+j+1, foundName);
           if (ret) warning(_("Column %d of item %d: %s"), w+1, i+1, ret);
-          if (listprotect) UNPROTECT(listprotect); // earlier unproject rbindlist calls with lots of lists #4536
+          if (listprotect) UNPROTECT(1); // earlier unprotect rbindlist calls with lots of lists #4536
           // e.g. when precision is lost like assigning 3.4 to integer64; test 2007.2
           // TODO: but maxType should handle that and this should never warn
         }
