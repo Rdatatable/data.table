@@ -77,9 +77,9 @@
     }}
     \item{ \code{algo="exact"} will make rolling functions to use a more computationally-intensive algorithm. For each observation from input vector it will compute a function on a window from scratch (complexity \eqn{O(n^2)}).
     \itemize{
+      \item{ In case of \emph{mean} and  \emph{sum} this algorithm can be preferred to treat \code{NaN, +Inf, -Inf} consistently to base R. }
       \item { Depeneding on the function, this algorithm may suffers less from floating point rounding error (the same consideration applies to base \code{\link[base]{mean}}). }
-      \item{ Algorithm also handles \code{NaN, +Inf, -Inf} consistently to base R, unless - for some functions (e.g. \emph{max}) - \code{hasNA} is \code{FALSE} but NAs are present. }
-      \item{ In case of some functions (like \emph{mean}), it will additionally make extra pass to perform floating point error correction. Error corrections might not be truly exact on some platforms (like Windows) when using multiple threads. }
+      \item{ In case of \emph{mean} (and possibly other functions in future), it will additionally make extra pass to perform floating point error correction. Error corrections might not be truly exact on some platforms (like Windows) when using multiple threads. }
     }}
   }
 }
