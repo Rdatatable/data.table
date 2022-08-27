@@ -399,7 +399,7 @@ inline void wmax(double *x, uint64_t o, int k, double *w, uint64_t *iw, bool nar
   if (narm) {
     for (int i=0; i<k; i++) {
       //Rprintf("wmax iter %d, offset %d, first x val %f, testing x[o+i-k+1] >= w[0]: x[%d-%d+1] >= w[0]: %f >= %f: %d\n", i, o, x[o], i, k, x[o+i-k+1], w[0], x[o+i-k+1] >= w[0]);
-      if (x[o+i-k+1] >= w[0]) { // what if that is never satisfied? test! TODO
+      if (x[o+i-k+1] >= w[0]) { // this never true if all x NAs and narm=TRUE
         iw[0] = o+i-k+1;
         w[0] = x[iw[0]];
       }
@@ -451,7 +451,6 @@ void frollmaxFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool n
     for (i=k-1; i<nx; i++) {
       if (iw+k <= i) { // max left current window
         iw = i-k; w = R_NegInf;
-        if (i < k) error("should never happen as will result in uint underflow"); //TODO remove after tests
         wmax(x, i, k, &w, &iw, true); cmax++;
       } else if (x[i] >= w) {
         iw = i; w = x[iw];
@@ -486,7 +485,6 @@ void frollmaxFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool n
         if (iw+k <= i) { // max left current window
           //Rprintf("max left current window: iw=%d, k=%d, i=%d, w=%f\n", iw, k, i, w);
           iw = i-k; w = R_NegInf;
-          if (i < k) error("should never happen as will result in uint underflow"); //TODO remove after tests
           //Rprintf("wmax(x, %d, %d, &w, &iw, true)\n", i, k);
           wmax(x, i, k, &w, &iw, true); cmax++;
           //Rprintf("iter %d new max from wmax: iw=%d, w=%f\n", i, iw, w);
@@ -509,7 +507,6 @@ void frollmaxFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool n
           }
         } else if (iw+k <= i) { // max left current window
           iw = i-k; w = R_NegInf;
-          if (i < k) error("should never happen as will result in uint underflow"); //TODO remove after tests
           wmax(x, i, k, &w, &iw, false); cmax++;
         } else if (ISNAN(w)) {
           // w still within the window and is NA or NaN, x[i] is not NA - already checked above, therefore do nothing

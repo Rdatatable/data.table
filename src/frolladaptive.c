@@ -482,8 +482,7 @@ void frolladaptiveapply(double *x, int64_t nx, SEXP pw, int *k, ans_t *ans, doub
       break;
     }
   }
-  if (i==nx) {
-    // none of the windows in k was small enough to cover length of x //TODO test
+  if (i==nx) { // none of the windows in k was small enough to cover length of x
     return;
   }
   // for each row it sets length of current window because it is adaptive version

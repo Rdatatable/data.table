@@ -1277,11 +1277,11 @@ options(datatable.verbose=FALSE)
 # frollapply adaptive
 r340 = base::getRversion() >= "3.4.0" ## support SET_GROWABLE_BIT
 if (!r340) {
-  test(6010.201, frollapply(1:3, c(3,3,3), sum, adaptive=TRUE), error="frollapply adaptive=TRUE requires at least R 3.4.0")
+  test(6010.2, frollapply(1:3, c(3,3,3), sum, adaptive=TRUE), error="frollapply adaptive=TRUE requires at least R 3.4.0")
 } else {
   test(6010.201, frollapply(1:3, c(3,3,3), sum, adaptive=TRUE), c(NA,NA,6))
+  test(6010.202, frollapply(1:3, c(4,4,4), sum, adaptive=TRUE), rep(NA_real_,3)) # none of the windows in k was small enough to cover length of x
   #TODO tests
-  # none of the windows in k was small enough to cover length of x //TODO test
 }
 
 #### test coverage
