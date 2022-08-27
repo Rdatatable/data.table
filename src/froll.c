@@ -178,23 +178,25 @@ void frollmeanExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool
           err += x[i+j] - res;                                  // measure difference of obs in sub-loop to calculated fun for obs
         }
         ans->dbl_v[i] = (double) (res + (err / k));             // adjust calculated rollfun with roundoff correction
-      } else {
+      } else if (ISNAN((double) w)) {
         if (!narm) {
           ans->dbl_v[i] = (double) (w / k);                     // NAs should be propagated
         }
         truehasna = true;                                       // NAs detected for this window, set flag so rest of windows will not be re-run
+      } else {
+        ans->dbl_v[i] = (double) w;                             // Inf and -Inf
       }
     }
     if (truehasna) {
       if (hasna==-1) {                                          // raise warning
         ans->status = 2;
-        snprintf(end(ans->message[2]), 500, _("%s: hasNA=FALSE used but NA (or other non-finite) value(s) are present in input, use default hasNA=NA to avoid this warning"), __func__);
+        snprintf(end(ans->message[2]), 500, _("%s: hasNA=FALSE used but NA/NaN values are present in input, use default hasNA=NA to avoid this warning"), __func__);
       }
       if (verbose) {
         if (narm) {
-          snprintf(end(ans->message[0]), 500, _("%s: NA (or other non-finite) value(s) are present in input, re-running with extra care for NAs\n"), __func__);
+          snprintf(end(ans->message[0]), 500, _("%s: NA/NaN values are present in input, re-running with extra care for NAs\n"), __func__);
         } else {
-          snprintf(end(ans->message[0]), 500, _("%s: NA (or other non-finite) value(s) are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run\n"), __func__);
+          snprintf(end(ans->message[0]), 500, _("%s: NA/NaN values are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run\n"), __func__);
         }
       }
     }
@@ -211,11 +213,7 @@ void frollmeanExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool
           w += x[i+j];                                          // add observation to current window
         }
       }
-      if (w > DBL_MAX) {
-        ans->dbl_v[i] = R_PosInf;                               // handle Inf for na.rm=TRUE consistently to base R
-      } else if (w < -DBL_MAX) {
-        ans->dbl_v[i] = R_NegInf;
-      } else {
+      if (R_FINITE((double) w)) {
         long double res = w / k;                                // keep results as long double for intermediate processing
         long double err = 0.0;                                  // roundoff corrector
         if (nc == 0) {                                          // no NAs in current window
@@ -233,6 +231,8 @@ void frollmeanExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool
         } else {                                                // nc == k
           ans->dbl_v[i] = R_NaN;                                // all values NAs and narm so produce expected values
         }
+      } else {
+        ans->dbl_v[i] = (double) w;                             // Inf and -Inf
       }
     }
   }
