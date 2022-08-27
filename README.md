@@ -33,10 +33,10 @@
 * fast and feature rich joins: **ordered joins** (e.g. rolling forwards, backwards, nearest and limited staleness), **[overlapping range joins](https://github.com/Rdatatable/data.table/wiki/talks/EARL2014_OverlapRangeJoin_Arun.pdf)** (similar to `IRanges::findOverlaps`), **[non-equi joins](https://github.com/Rdatatable/data.table/wiki/talks/ArunSrinivasanUseR2016.pdf)** (i.e. joins using operators `>, >=, <, <=`), **aggregate on join** (`by=.EACHI`), **update on join**
 * fast add/update/delete columns **by reference** by group using no copies at all
 * fast and feature rich **reshaping** data: **[`?dcast`](https://rdatatable.gitlab.io/data.table/reference/dcast.data.table.html)** (_pivot/wider/spread_) and **[`?melt`](https://rdatatable.gitlab.io/data.table/reference/melt.data.table.html)** (_unpivot/longer/gather_)
-* fast and feature rich various kinds of operations: [rolling statistics](https://rdatatable.gitlab.io/data.table/reference/froll.html) (_rolling mean, rolling max, rolling any R function_), [grouping sets](https://rdatatable.gitlab.io/data.table/reference/groupingsets.html) (_cube, rolllup_), [set operations](https://rdatatable.gitlab.io/data.table/reference/setops.html) (_union, intersect, setdiff_)
-* faster implementations of many functions `fsort`, `fifelse`, `fcase`, `fcoalesce`, `frank`, `between`, `nafill`, `rleid`, and more
+* fast and feature rich various kinds of operations: [**rolling statistics**](https://rdatatable.gitlab.io/data.table/reference/froll.html) (_rolling mean, rolling max, rolling any R function_), [**grouping sets**](https://rdatatable.gitlab.io/data.table/reference/groupingsets.html) (_cube, rolllup_), [**set operations**](https://rdatatable.gitlab.io/data.table/reference/setops.html) (_union, intersect, setdiff_)
+* faster implementations of many functions: `fsort`, `fifelse`, `fcase`, `fcoalesce`, `frank`, `between`, `nafill`, `rleid`, and more
 * **any R function from any R package** can be used in queries not just the subset of functions made available by a database backend, also columns of type `list` are supported
-* [meta-programming interface](https://rdatatable.gitlab.io/data.table/articles/datatable-programming.html) for convenience of R developers importing data.table in their packages
+* [**meta-programming interface**](https://rdatatable.gitlab.io/data.table/articles/datatable-programming.html) for convenience of R developers importing data.table in their packages
 * has **[no dependencies](https://en.wikipedia.org/wiki/Dependency_hell)** at all other than base R itself, for simpler production/maintenance
 * the R dependency is **as old as possible for as long as possible**, dated April 2014, and we continuously test against that version
 
