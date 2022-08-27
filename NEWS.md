@@ -4,6 +4,10 @@
 
 # data.table [v1.14.3](https://github.com/Rdatatable/data.table/milestone/20)  (in development)
 
+## POTENTIALLY BREAKING CHANGES
+
+1. Rolling functions `frollmean` and `frollsum` used to treat `Inf` and `-Inf` as `NA` when using default `algo="fast"`. It has been changed now and infinity values are not treated as `NA` anymore. If your input into those function has `Inf` or `-Inf` then you will be affected by this change. [#5441](https://github.com/Rdatatable/data.table/pull/5441).
+
 ## NEW FEATURES
 
 1. `nafill()` now applies `fill=` to the front/back of the vector when `type="locf|nocb"`, [#3594](https://github.com/Rdatatable/data.table/issues/3594). Thanks to @ben519 for the feature request. It also now returns a named object based on the input names. Note that if you are considering joining and then using `nafill(...,type='locf|nocb')` afterwards, please review `roll=`/`rollends=` which should achieve the same result in one step more efficiently. `nafill()` is for when filling-while-joining (i.e. `roll=`/`rollends=`/`nomatch=`) cannot be applied.
@@ -301,6 +305,7 @@
 - support for `align="left"` for adaptive rolling function.
 - support for `adaptive=TRUE` in `frollapply`.
 - `partial` argument to trim window width to available observations rather than returning `NA` whenever window is not complete.
+- `frollmean` and `frollsum` no longer treat `Inf` and `-Inf` as `NA`s as it used to be for `algo="fast"` (breaking change).
 
 For a comprehensive description about all available features see `?froll` manual.
 

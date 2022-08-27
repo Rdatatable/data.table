@@ -57,11 +57,11 @@
 \section{\code{hasNA} argument}{
   \code{hasNA} can be used to speed up processing in cases when it is known if \code{x} contains (or not) \code{NA} (or \code{NaN}).
   \itemize{
-    \item{ Default \code{hasNA=NA} will use faster NA inaware implementation, but when NAs are detected it will re-run NA aware implementation. }
-    \item{ \code{hasNA=TRUE} will use NA aware implementation straightaway. }
-    \item{ \code{hasNA=FALSE} will use faster NA inaware implementation. Then depending on the rolling function it will either:
+    \item{ Default \code{hasNA=NA} will use faster non-finite inaware implementation, but when non-finite values are detected it will re-run NA aware implementation. }
+    \item{ \code{hasNA=TRUE} will use non-finite aware implementation straightaway. }
+    \item{ \code{hasNA=FALSE} will use faster non-finite inaware implementation. Then depending on the rolling function it will either:
     \itemize{
-      \item{ (\emph{mean, sum}) detect NAs, raise warning, re-run NA aware. }
+      \item{ (\emph{mean, sum}) detect non-finite, re-run non-finite aware. }
       \item{ (\emph{max}) not detect NAs and may silently produce incorrect answer. }
     }
     Therefore \code{hasNA=FALSE} should be used with care. }
@@ -71,13 +71,11 @@
   \itemize{
     \item{ \code{algo="fast"} uses \emph{"on-line"}, single pass, algorithm.
     \itemize{
-      \item{ At present moment for \emph{mean} and \emph{sum} all of \code{NaN, +Inf, -Inf} are treated as \code{NA} - subject to change in future version. }
       \item{ \emph{max} rolling function will not do only a single pass but, on average \code{length(x)/n}, nested loops will be computed. The bigger the window the bigger advantage over algo \emph{exact} which computes \code{length(x)} nested loops. Note that \emph{exact} uses multiple CPUs so for a small window size and many CPUs it is possible it will be actually faster than \emph{fast} but in those cases elapsed timings will likely be far below a single second. }
       \item{ Not all functions have \emph{fast} implementation available. As of now \emph{max} and \code{adaptive=TRUE} does not have, therefore it will automatically fall back to \emph{exact} implementation. \code{datatable.verbose} option can be used to check that. }
     }}
     \item{ \code{algo="exact"} will make rolling functions to use a more computationally-intensive algorithm. For each observation from input vector it will compute a function on a window from scratch (complexity \eqn{O(n^2)}).
     \itemize{
-      \item{ In case of \emph{mean} and  \emph{sum} this algorithm can be preferred to treat \code{NaN, +Inf, -Inf} consistently to base R. }
       \item { Depeneding on the function, this algorithm may suffers less from floating point rounding error (the same consideration applies to base \code{\link[base]{mean}}). }
       \item{ In case of \emph{mean} (and possibly other functions in future), it will additionally make extra pass to perform floating point error correction. Error corrections might not be truly exact on some platforms (like Windows) when using multiple threads. }
     }}
