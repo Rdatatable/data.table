@@ -72,7 +72,13 @@ frollapply = function(x, n, FUN, ..., fill=NA, align=c("right","left","center"),
     n = partial2adaptive(x, n, align)
     adaptive = TRUE
   }
-  leftadaptive = isTRUE(adaptive) && align=="left"
+  if (isTRUE(adaptive)) {
+    if (base::getRversion() < "3.4.0") ## support SET_GROWABLE_BIT
+      stopf("frollapply adaptive=TRUE requires at least R 3.4.0"); # nocov
+    leftadaptive = align=="left"
+  } else {
+    leftadaptive = FALSE
+  }
   if (leftadaptive) {
     verbose = getOption("datatable.verbose")
     rev2 = function(x) if (is.list(x)) sapply(x, rev, simplify=FALSE) else rev(x)

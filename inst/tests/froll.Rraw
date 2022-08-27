@@ -1015,12 +1015,6 @@ test(6006.906, frollmean(x, list(TRUE), partial=TRUE), error="n must be integer 
 
 ## validation
 
-#TODO add
-#align=c("right","left")
-#partial=c(FALSE,TRUE)
-#max
-#frollapply adaptive
-
 set.seed(108)
 makeNA = function(x, ratio=0.1, nf=FALSE) {
   n = as.integer(length(x) * ratio)
@@ -1037,11 +1031,18 @@ makeNA = function(x, ratio=0.1, nf=FALSE) {
 }
 num = 6007.0
 ## against base to verify exactness of non-finite values, not handled in zoo
-rollfun = function(x, n, FUN, fill=NA_real_, na.rm=FALSE, nf.rm=FALSE) {
+rollfun = function(x, n, FUN, fill=NA_real_, na.rm=FALSE, nf.rm=FALSE, partial=FALSE) {
   ans = rep(fill, nx<-length(x))
   f = match.fun(FUN)
   if (nf.rm) x[is.infinite(x)] = NA_real_
-  for (i in n:nx) ans[i] = f(x[(i-n+1):i], na.rm=na.rm)
+  for (i in seq_along(x)) {
+    ans[i] = if (i >= n)
+      f(x[(i-n+1):i], na.rm=na.rm)
+    else if (partial)
+      f(x[max((i-n+1), 1L):i], na.rm=na.rm)
+    else
+      as.double(fill)
+  }
   ans
 }
 base_compare = function(x, n, funs=c("mean","sum","max"), algos=c("fast","exact")) {
@@ -1049,13 +1050,22 @@ base_compare = function(x, n, funs=c("mean","sum","max"), algos=c("fast","exact"
   for (fun in funs) {
     for (na.rm in c(FALSE, TRUE)) {
       for (fill in c(NA_real_, 0)) {
-        for (algo in algos) {
+        for (partial in c(FALSE,TRUE)) {
+          for (algo in algos) {
+            num <<- num + num.step
+            eval(substitute( # so we can have values displayed in output/log rather than variables
+              test(.num, ignore.warning="no non-missing arguments",
+                   rollfun(x, n, FUN=.fun, fill=.fill, na.rm=.na.rm, nf.rm=.nf.rm, partial=.partial),
+                   froll(.fun, x, n, fill=.fill, na.rm=.na.rm, algo=.algo, partial=.partial)),
+              list(.num=num, .fun=fun, .fill=fill, .na.rm=na.rm, .algo=algo, .nf.rm=algo!="exact"&&fun!="max", .partial=partial)
+            ))
+          }
           num <<- num + num.step
           eval(substitute( # so we can have values displayed in output/log rather than variables
-            test(.num,
-                 froll(.fun, x, n, fill=.fill, na.rm=.na.rm, algo=.algo),
-                 rollfun(x, n, FUN=.fun, fill=.fill, na.rm=.na.rm, nf.rm=.nf.rm)),
-            list(.num=num, .fun=fun, .fill=fill, .na.rm=na.rm, .algo=algo, .nf.rm=algo!="exact"&&fun!="max")
+            test(.num, ignore.warning="no non-missing arguments",
+                 frollapply(x, n, FUN=match.fun(.fun), fill=.fill, na.rm=.na.rm, partial=.partial),
+                 froll(.fun, x, n, fill=.fill, na.rm=.na.rm, algo="exact", partial=.partial)), # change to fast after inf support
+            list(.num=num, .fun=fun, .fill=fill, .na.rm=na.rm, .partial=partial)
           ))
         }
       }
@@ -1075,20 +1085,30 @@ num = 6008.0
 #### against zoo
 if (requireNamespace("zoo", quietly=TRUE)) {
   drollapply = function(...) as.double(zoo::rollapply(...)) # rollapply is not consistent in data type of answer, force to double
-  zoo_compare = function(x, n, funs=c("mean","sum"), algos=c("fast","exact")) {
+  zoo_compare = function(x, n, funs=c("mean","sum","max"), algos=c("fast","exact")) {
     num.step = 0.0001
-    #### fun, align, na.rm, fill, algo
+    #### fun, align, na.rm, fill, algo, partial
     for (fun in funs) {
       for (align in c("right","center","left")) {
         for (na.rm in c(FALSE, TRUE)) {
           for (fill in c(NA_real_, 0)) {
-            for (algo in algos) {
+            for (partial in c(FALSE,TRUE)) {
+              if (partial && align=="center") next
+              for (algo in algos) {
+                num <<- num + num.step
+                eval(substitute( # so we can have values displayed in output/log rather than variables
+                  test(.num, ignore.warning="no non-missing arguments",
+                       drollapply(x, n, FUN=.fun, fill=.fill, align=.align, na.rm=.na.rm, partial=.partial),
+                       froll(.fun, x, n, align=.align, fill=.fill, na.rm=.na.rm, algo=.algo, partial=.partial)),
+                  list(.num=num, .fun=fun, .align=align, .fill=fill, .na.rm=na.rm, .algo=algo, .partial=partial)
+                ))
+              }
               num <<- num + num.step
               eval(substitute( # so we can have values displayed in output/log rather than variables
-                test(.num,
-                     froll(.fun, x, n, align=.align, fill=.fill, na.rm=.na.rm, algo=.algo),
-                     drollapply(x, n, FUN=.fun, fill=.fill, align=.align, na.rm=.na.rm)),
-                list(.num=num, .fun=fun, .align=align, .fill=fill, .na.rm=na.rm, .algo=algo)
+                test(.num, ignore.warning="no non-missing arguments",
+                     frollapply(x, n, FUN=.fun, fill=.fill, align=.align, na.rm=.na.rm, partial=.partial),
+                     froll(.fun, x, n, align=.align, fill=.fill, na.rm=.na.rm, algo="exact", partial=.partial)), # change to fast after inf support
+                list(.num=num, .fun=fun, .align=align, .fill=fill, .na.rm=na.rm, .partial=partial)
               ))
             }
           }
@@ -1126,33 +1146,51 @@ if (requireNamespace("zoo", quietly=TRUE)) {
 }
 #### adaptive moving average compare
 num = 6009.0
-arollfun = function(fun, x, n, na.rm=FALSE, fill=NA, nf.rm=FALSE) {
+arollfun = function(FUN, x, n, na.rm=FALSE, align=c("right","left"), fill=NA, nf.rm=FALSE) { ## partial cannot be used with adaptive
   # adaptive moving average in R
   stopifnot((nx<-length(x))==length(n))
-  ans = rep(NA_real_, nx)
+  align = match.arg(align)
+  ans = rep(fill, nx)
   if (nf.rm) x[is.infinite(x)] = NA_real_
-  FUN = match.fun(fun)
-  for (i in seq_along(x)) {
-    ans[i] = if (i >= n[i])
-      FUN(x[(i-n[i]+1):i], na.rm=na.rm)
-    else as.double(fill)
+  f = match.fun(FUN)
+  if (align=="right") {
+    for (i in seq_along(x)) {
+      if (i >= n[i])
+        ans[i] = f(x[(i-n[i]+1):i], na.rm=na.rm)
+    }
+  } else {
+    for (i in seq_along(x)) {
+      if (i <= nx-n[i]+1)
+        ans[i] = f(x[i:(i+n[i]-1)], na.rm=na.rm)
+    }
   }
   ans
 }
 afun_compare = function(x, n, funs=c("mean","sum","max"), algos=c("fast","exact")) {
   num.step = 0.0001
-  #### fun, na.rm, fill, algo
+  #### fun, align, na.rm, fill, algo
   for (fun in funs) {
-    for (na.rm in c(FALSE, TRUE)) {
-      for (fill in c(NA_real_, 0)) {
-        for (algo in algos) {
-          num <<- num + num.step
-          eval(substitute(
-            test(.num,
-                 froll(.fun, x, n, fill=.fill, na.rm=.na.rm, algo=.algo, adaptive=TRUE),
-                 arollfun(.fun, x, n, fill=.fill, na.rm=.na.rm, nf.rm=.nf.rm)),
-            list(.num=num, .fun=fun, .fill=fill, .na.rm=na.rm, .algo=algo, .nf.rm=algo!="exact"&&fun!="max")
-          ))
+    for (align in c("right","left")) {
+      for (na.rm in c(FALSE, TRUE)) {
+        for (fill in c(NA_real_, 0)) {
+          for (algo in algos) {
+            num <<- num + num.step
+            eval(substitute(
+              test(.num, ignore.warning="no non-missing arguments",
+                   arollfun(.fun, x, n, fill=.fill, na.rm=.na.rm, nf.rm=.nf.rm, align=.align),
+                   froll(.fun, x, n, fill=.fill, na.rm=.na.rm, algo=.algo, adaptive=TRUE, align=.align)),
+              list(.num=num, .fun=fun, .fill=fill, .na.rm=na.rm, .algo=algo, .nf.rm=algo!="exact"&&fun!="max", .align=align)
+            ))
+          }
+          if (base::getRversion() >= "3.4.0") { ## SET_GROWABLE_BIT
+            num <<- num + num.step
+            eval(substitute(
+              test(.num, ignore.warning="no non-missing arguments",
+                   frollapply(x, n, FUN=match.fun(.fun), fill=.fill, na.rm=.na.rm, adaptive=TRUE, align=.align),
+                   froll(.fun, x, n, fill=.fill, na.rm=.na.rm, algo="exact", adaptive=TRUE, align=.align)), ## change to algo=fast when mean and sum will support Inf
+              list(.num=num, .fun=fun, .fill=fill, .na.rm=na.rm, .nf.rm=FALSE, .align=align)
+            ))
+          }
         }
       }
     }
@@ -1237,9 +1275,14 @@ f = function(x) {
 options(datatable.verbose=FALSE)
 
 # frollapply adaptive
-test(6010.201, frollapply(1:3, c(3,3,3), sum, adaptive=TRUE), c(NA,NA,6))
-#TODO tests
-# none of the windows in k was small enough to cover length of x //TODO test
+r340 = base::getRversion() >= "3.4.0" ## support SET_GROWABLE_BIT
+if (!r340) {
+  test(6010.201, frollapply(1:3, c(3,3,3), sum, adaptive=TRUE), error="frollapply adaptive=TRUE requires at least R 3.4.0")
+} else {
+  test(6010.201, frollapply(1:3, c(3,3,3), sum, adaptive=TRUE), c(NA,NA,6))
+  #TODO tests
+  # none of the windows in k was small enough to cover length of x //TODO test
+}
 
 #### test coverage
 test(6010.501, frollapply(1:3, "b", sum), error="n must be integer")
