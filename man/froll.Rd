@@ -18,11 +18,11 @@
 }
 \usage{
   frollmean(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"),
-    na.rm=FALSE, hasNA=NA, adaptive=FALSE, partial=FALSE)
+    na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, hasNA)
   frollsum(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"),
-    na.rm=FALSE, hasNA=NA, adaptive=FALSE, partial=FALSE)
+    na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, hasNA)
   frollmax(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"),
-    na.rm=FALSE, hasNA=NA, adaptive=FALSE, partial=FALSE)
+    na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, hasNA)
   frollapply(x, n, FUN, \dots, fill=NA, align=c("right","left","center"),
     adaptive=FALSE, partial=FALSE)
 }
@@ -33,11 +33,12 @@
   \item{algo}{ Character, default \code{"fast"}. When set to \code{"exact"}, a slower (in some cases more accurate) algorithm is used. See \emph{Implementation} section below for details. }
   \item{align}{ Character, specifying the "alignment" of the rolling window, defaulting to \code{"right"}. \code{"right"} covers preceding rows (the window \emph{ends} on the current value); \code{"left"} covers following rows (the window \emph{starts} on the current value); \code{"center"} is halfway in between (the window is \emph{centered} on the current value, biased towards \code{"left"} when \code{n} is even). }
   \item{na.rm}{ Logical, default \code{FALSE}. Should missing values be removed when calculating window? }
-  \item{hasNA}{ Logical. If it is known that \code{x} contains (or not) \code{NA} (or \code{NaN}) then setting this to \code{TRUE}/\code{FALSE} will in most cases speed up computation. Defaults to \code{NA}. See \emph{hasNA argument} section below for details. }
+  \item{has.nf}{ Logical. If it is known that \code{x} contains (or not) non-finite values (\code{NA, NaN, Inf, -Inf}) then setting this to \code{TRUE}/\code{FALSE} may speed up computation. Defaults to \code{NA}. See \emph{has.nf argument} section below for details. }
   \item{adaptive}{ Logical, default \code{FALSE}. Should the rolling function be calculated adaptively? See \emph{Adaptive rolling functions} section below for details. }
   \item{partial}{ Logical, default \code{FALSE}. Should the rolling window size(s) provided in \code{n} be trimmed to available observations. See \emph{\code{partial} argument} section below for details. }
   \item{FUN}{ The function to be applied to the rolling window in \code{frollapply}; See \emph{frollaply} section below for details. }
   \item{\dots}{ Extra arguments passed to \code{FUN} in \code{frollapply}. }
+  \item{hasNA}{ Logical. Deprecated, use \code{has.nf} argument instead. }
 }
 \details{
   \code{froll*} functions accept vector, list, \code{data.frame} or \code{data.table}. Functions operate on a single vector, when passing a non-atomic input, then function is applied column-by-column, not to a complete set of column at once.
@@ -52,22 +53,23 @@
   A list except when the input is a \code{vector} and \code{length(n)==1}, in which case a \code{vector} is returned, for convenience. Thus, rolling functions can be used conveniently within \code{data.table} syntax.
 }
 \note{
-  Be aware that rolling functions operates on the physical order of input. If the intent is to roll values in a vector by a logical window, for example an hour, or a day, then one has to ensure that there are no gaps in input. For details see \href{https://github.com/Rdatatable/data.table/issues/3241}{issue #3241}.
+  Be aware that rolling functions operates on the physical order of input. If the intent is to roll values in a vector by a logical window, for example an hour, or a day, then one has to ensure that there are no gaps in input. For details/upvote see \href{https://github.com/Rdatatable/data.table/issues/3241}{issue #3241}.
 }
-\section{\code{hasNA} argument}{
-  \code{hasNA} can be used to speed up processing in cases when it is known if \code{x} contains (or not) \code{NA} (or \code{NaN}).
+\section{\code{has.nf} argument}{
+  \code{has.nf} can be used to speed up processing in cases when it is known if \code{x} contains (or not) non-finite values (\code{NA, NaN, Inf, -Inf}).
   \itemize{
-    \item{ Default \code{hasNA=NA} will use faster non-finite inaware implementation, but when non-finite values are detected it will re-run NA aware implementation. }
-    \item{ \code{hasNA=TRUE} will use non-finite aware implementation straightaway. }
-    \item{ \code{hasNA=FALSE} will use faster non-finite inaware implementation. Then depending on the rolling function it will either:
+    \item{ Default \code{has.nf=NA} uses faster implementation that does not support non-finite values, but when non-finite values are detected it will re-run non-finite supported implementation. }
+    \item{ \code{has.nf=TRUE} uses non-finite aware implementation straightaway. }
+    \item{ \code{has.nf=FALSE} uses faster implementation that does not support non-finite values. Then depending on the rolling function it will either:
     \itemize{
       \item{ (\emph{mean, sum}) detect non-finite, re-run non-finite aware. }
-      \item{ (\emph{max}) not detect NAs and may silently produce incorrect answer. }
+      \item{ (\emph{max}) not detect NFs and may silently give incorrect answer. }
     }
-    Therefore \code{hasNA=FALSE} should be used with care. }
+    In general \code{has.nf=FALSE && any(!is.finite(x))} should be considered as undefined behavior. Therefore \code{has.nf=FALSE} should be used with care. }
   }
 }
 \section{Implementation}{
+  Each rolling function has 4 different implementations. First factor that decides which implementation is being used is \code{adaptive} argument, see setion below for details. Then for each of those two algorithms (adaptive \code{TRUE/FALSE}) there are two \code{algo} argument values.
   \itemize{
     \item{ \code{algo="fast"} uses \emph{"on-line"}, single pass, algorithm.
     \itemize{
@@ -106,9 +108,13 @@
     \item{ integers and logical are always coerced to double. }
     \item{ when \code{adaptive=FALSE} (default), then \code{n} must be a numeric vector. List is not accepted. }
     \item{ when \code{adaptive=TRUE}, then \code{n} must be vector of length equal to \code{nrow(x)}, or list of such vectors. }
+    \item{ \code{by.column} argument is not yet supported in \code{frollapply}. For details/upvote see \href{https://github.com/Rdatatable/data.table/issues/4887}{issue #4887}. }
   }
 }
 \examples{
+# single vector and single window
+frollmean(1:6, 3)
+
 d = as.data.table(list(1:6/2, 3:8/4))
 # rollmean of single vector and single window
 frollmean(d[, V1], 3)
@@ -120,27 +126,28 @@ frollmean(d[, .(V1)], c(3, 4))
 frollmean(d, c(3, 4))
 ## three calls above will use multiple cores when available
 
-# partial window using adaptive rolling function
-x = 1:6/2
-n = 3
-an = function(n, len) c(seq.int(n), rep(n, len-n))
-all.equal(
-  frollmean(x, an(n, length(x)), adaptive=TRUE),
-  frollmean(x, n, partial=TRUE)
-)
-# use partial only for incomplete observations in a window
-ans = frollmean(x, n)
-ans[seq.int(n-1L)] = frollmean(x[seq.int(n-1L)], n, partial=TRUE)
-all.equal(
-  ans,
-  frollmean(x, n, partial=TRUE)
-)
-
 # frollsum
 frollsum(d, 3:4)
 
 # frollmax
 frollmax(d, 3:4)
+
+# partial=TRUE
+x = 1:6/2
+n = 3
+ans1 = frollmean(x, n, partial=TRUE)
+# same using adaptive=TRUE
+an = function(n, len) c(seq.int(n), rep(n, len-n))
+ans2 = frollmean(x, an(n, length(x)), adaptive=TRUE)
+all.equal(ans1, ans2)
+# speed upby using partial only for incomplete observations
+ans3 = frollmean(x, n)
+ans3[seq.int(n-1L)] = frollmean(x[seq.int(n-1L)], n, partial=TRUE)
+all.equal(ans1, ans3)
+
+# has.nf=FALSE should be used with care
+frollmax(c(1,2,NA,4,5), 2)
+frollmax(c(1,2,NA,4,5), 2, has.nf=FALSE)
 
 # frollapply
 frollapply(d, 3:4, sum)

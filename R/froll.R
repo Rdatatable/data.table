@@ -23,8 +23,12 @@ partial2adaptive = function(x, n, align) {
   }
 }
 
-froll = function(fun, x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE, partial=FALSE) {
+froll = function(fun, x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"), na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, hasNA) {
   stopifnot(!missing(fun), is.character(fun), length(fun)==1L, !is.na(fun))
+  if (!missing(hasNA)) {
+    warning("hasNA is deprecated, use has.nf instead")
+    if (missing(has.nf)) has.nf = hasNA
+  } # remove check on next major release
   algo = match.arg(algo)
   align = match.arg(align)
   if (isTRUE(partial)) {
@@ -43,7 +47,7 @@ froll = function(fun, x, n, fill=NA, algo=c("fast","exact"), align=c("right","le
     n = rev2(n)
     align = "right"
   } ## support for left adaptive added in #5441
-  ans = .Call(CfrollfunR, fun, x, n, fill, algo, align, na.rm, hasNA, adaptive)
+  ans = .Call(CfrollfunR, fun, x, n, fill, algo, align, na.rm, has.nf, adaptive)
   if (!leftadaptive)
     ans
   else {
@@ -53,14 +57,14 @@ froll = function(fun, x, n, fill=NA, algo=c("fast","exact"), align=c("right","le
   }
 }
 
-frollmean = function(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE, partial=FALSE) {
-  froll(fun="mean", x=x, n=n, fill=fill, algo=algo, align=align, na.rm=na.rm, hasNA=hasNA, adaptive=adaptive, partial=partial)
+frollmean = function(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"), na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, hasNA) {
+  froll(fun="mean", x=x, n=n, fill=fill, algo=algo, align=align, na.rm=na.rm, has.nf=has.nf, adaptive=adaptive, partial=partial, hasNA=hasNA)
 }
-frollsum = function(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE, partial=FALSE) {
-  froll(fun="sum", x=x, n=n, fill=fill, algo=algo, align=align, na.rm=na.rm, hasNA=hasNA, adaptive=adaptive, partial=partial)
+frollsum = function(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"), na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, hasNA) {
+  froll(fun="sum", x=x, n=n, fill=fill, algo=algo, align=align, na.rm=na.rm, has.nf=has.nf, adaptive=adaptive, partial=partial, hasNA=hasNA)
 }
-frollmax = function(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE, partial=FALSE) {
-  froll(fun="max", x=x, n=n, fill=fill, algo=algo, align=align, na.rm=na.rm, hasNA=hasNA, adaptive=adaptive, partial=partial)
+frollmax = function(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"), na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, hasNA) {
+  froll(fun="max", x=x, n=n, fill=fill, algo=algo, align=align, na.rm=na.rm, has.nf=has.nf, adaptive=adaptive, partial=partial, hasNA=hasNA)
 }
 
 frollapply = function(x, n, FUN, ..., fill=NA, align=c("right","left","center"), adaptive=FALSE, partial=FALSE) {

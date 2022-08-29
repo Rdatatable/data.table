@@ -306,6 +306,7 @@
 - support for `adaptive=TRUE` in `frollapply`.
 - `partial` argument to trim window width to available observations rather than returning `NA` whenever window is not complete.
 - `frollmean` and `frollsum` no longer treat `Inf` and `-Inf` as `NA`s as it used to be for `algo="fast"` (breaking change).
+- `hasNA` argument has been renamed to `has.nf` to convey that it is not only related to `NA/NaN` but other non-finite values (`Inf/-Inf`) as well.
 
 For a comprehensive description about all available features see `?froll` manual.
 
