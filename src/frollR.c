@@ -332,7 +332,6 @@ SEXP frollapplyR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP adaptiv
     dx[i] = REAL(VECTOR_ELT(x, i));
   }
 
-  double* dw;
   SEXP pw, pc;
 
   // in the outer loop we handle vectorized k argument
@@ -341,10 +340,9 @@ SEXP frollapplyR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP adaptiv
   if (!badaptive) {
     for (R_len_t j=0; j<nk; j++) {
       pw = PROTECT(allocVector(REALSXP, iik[j]));
-      dw = REAL(pw);
       pc = PROTECT(LCONS(fun, LCONS(pw, LCONS(R_DotsSymbol, R_NilValue))));
       for (R_len_t i=0; i<nx; i++) {
-        frollapply(dx[i], inx[i], dw, iik[j], &dans[i*nk+j], ialign, dfill, pc, rho, verbose);
+        frollapply(dx[i], inx[i], REAL(pw), iik[j], &dans[i*nk+j], ialign, dfill, pc, rho, verbose);
       }
       UNPROTECT(2);
     }
