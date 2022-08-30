@@ -310,7 +310,7 @@
 
 For a comprehensive description about all available features see `?froll` manual.
 
-Adaptive `frollmax` has observed to be up to 50 times faster than second fastest solution (data.table self-join using `max` and grouping `by=.EACHI`).
+Adaptive `frollmax` has observed to be up to 50 times faster than second fastest solution (data.table self-join using `max` and grouping `by=.EACHI`). Note that important factor in performance is width of the rolling window. Code for the benchmark below has been taken from [this SO answer](https://stackoverflow.com/a/73408459/2490497).
 ```r
 set.seed(108)
 setDTthreads(8)
@@ -323,18 +323,18 @@ x = data.table(
 
 baser = function(x) x[, mapply(function(from, to) max(value[from:to]), row, end_window)]
 sj = function(x) x[x, max(value), on=.(row >= row, row <= end_window), by=.EACHI]$V1
-frmax = function(x) x[, frollmax(value, len_window, adaptive=TRUE, align="left", hasNA=FALSE)]
+frmax = function(x) x[, frollmax(value, len_window, adaptive=TRUE, align="left", has.nf=FALSE)]
 frapply = function(x) x[, frollapply(value, len_window, max, adaptive=TRUE, align="left")]
 microbenchmark::microbenchmark(
   baser(x), sj(x), frmax(x), frapply(x),
   times=10, check="identical"
 )
 #Unit: milliseconds
-#       expr       min         lq       mean     median         uq       max neval
-#   baser(x) 5472.2715 5596.11013 5763.93265 5659.06510 5935.11236 6338.0498    10
-#      sj(x) 4664.3359 4872.40122 4978.01860 4919.15975 5061.69718 5345.3508    10
-#   frmax(x)   70.0804   75.13598   91.35392   95.80486   99.99415  113.2648    10
-# frapply(x)  743.9082  833.65667  904.32891  893.75805  979.63510 1158.6030    10
+#       expr        min         lq      mean     median        uq       max neval
+#   baser(x) 5181.36076 5417.57505 5537.2929 5494.73652 5706.2721 5818.6627    10
+#      sj(x) 4608.28940 4627.57186 4792.4031 4785.35306 4856.4475 5054.3301    10
+#   frmax(x)   70.41253   75.28659   91.3774   91.40227  102.0248  116.8622    10
+# frapply(x)  713.23108  742.34657  865.2524  848.31641  965.3599 1114.0531    10
 ```
 
 ## BUG FIXES
