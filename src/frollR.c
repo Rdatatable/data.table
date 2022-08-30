@@ -1,7 +1,8 @@
 #include "data.table.h"  // first (before Rdefines.h) for clang-13-omp, #5122
 #include <Rdefines.h>
 
-SEXP coerceToRealListR(SEXP obj) {
+// validate and coerce to list of real
+SEXP coerceX(SEXP obj) {
   // accept atomic/list of integer/logical/real returns list of real
   int protecti = 0;
   if (isVectorAtomic(obj)) {
@@ -20,6 +21,53 @@ SEXP coerceToRealListR(SEXP obj) {
   UNPROTECT(protecti);
   return x;
 }
+// validate and coerce to integer or list of integer
+SEXP coerceK(SEXP k, bool adaptive) {
+  int protecti = 0;
+  SEXP ans = R_NilValue;
+  if (!adaptive) {
+    if (isNewList(k))
+      error(_("n must be integer, list is accepted for adaptive TRUE"));
+    if (isInteger(k)) {
+      ans = k;
+    } else if (isReal(k)) {
+      ans = PROTECT(coerceVector(k, INTSXP)); protecti++;
+    } else {
+      error(_("n must be integer"));
+    }
+    int nk = length(k);
+    R_len_t i = 0;
+    int *iik = INTEGER(ans);
+    while (i < nk && iik[i] > 0) i++;
+    if (i != nk)
+      error(_("n must be positive integer values (> 0)"));
+  } else {
+    if (isVectorAtomic(k)) {
+      ans = PROTECT(allocVector(VECSXP, 1)); protecti++;
+      if (isInteger(k)) {
+        SET_VECTOR_ELT(ans, 0, k);
+      } else if (isReal(k)) {
+        SET_VECTOR_ELT(ans, 0, coerceVector(k, INTSXP));
+      } else {
+        error(_("n must be integer vector or list of integer vectors"));
+      }
+    } else {
+      int nk = length(k);
+      ans = PROTECT(allocVector(VECSXP, nk)); protecti++;
+      for (int i=0; i<nk; i++) {
+        if (isInteger(VECTOR_ELT(k, i))) {
+          SET_VECTOR_ELT(ans, i, VECTOR_ELT(k, i));
+        } else if (isReal(VECTOR_ELT(k, i))) {
+          SET_VECTOR_ELT(ans, i, coerceVector(VECTOR_ELT(k, i), INTSXP));
+        } else {
+          error(_("n must be integer vector or list of integer vectors"));
+        }
+      }
+    }
+  }
+  UNPROTECT(protecti);
+  return ans;
+}
 
 SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEXP narm, SEXP hasnf, SEXP adaptive) {
   int protecti = 0;
@@ -30,7 +78,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   double tic = 0;
   if (verbose)
     tic = omp_get_wtime();
-  SEXP x = PROTECT(coerceToRealListR(obj)); protecti++;
+  SEXP x = PROTECT(coerceX(obj)); protecti++;
   R_len_t nx=length(x);                                         // number of columns to roll on
 
   if (xlength(k) == 0)                                          // check that window is non zero length
@@ -40,63 +88,21 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
     error(_("%s must be TRUE or FALSE"), "adaptive");
   bool badaptive = LOGICAL(adaptive)[0];
 
-  R_len_t nk = 0;                                               // number of rolling windows, for adaptive might be atomic to be wrapped into list, 0 for clang -Wall
-  SEXP ik = R_NilValue;                                         // holds integer window width, if doing non-adaptive roll fun
-  SEXP kl = R_NilValue;                                         // holds adaptive window width, if doing adaptive roll fun
-  if (!badaptive) {                                             // validating n input for adaptive=FALSE
-    if (isNewList(k))
-      error(_("n must be integer, list is accepted for adaptive TRUE"));
-
-    if (isInteger(k)) {                                        // check that k is integer vector
-      ik = k;
-    } else if (isReal(k)) {                                    // if n is double then convert to integer
-      ik = PROTECT(coerceVector(k, INTSXP)); protecti++;
-    } else {
-      error(_("n must be integer"));
-    }
-
-    nk = length(k);
-    R_len_t i=0;                                                // check that all window values positive
-    while (i < nk && INTEGER(ik)[i] > 0) i++;
-    if (i != nk)
-      error(_("n must be positive integer values (> 0)"));
-  } else {                                                      // validating n input for adaptive=TRUE
-    if (isVectorAtomic(k)) {                                    // if not-list then wrap into list
-      kl = PROTECT(allocVector(VECSXP, 1)); protecti++;
-      if (isInteger(k)) {                                       // check that k is integer vector
-        SET_VECTOR_ELT(kl, 0, k);
-      } else if (isReal(k)) {                                   // if n is double then convert to integer
-        SET_VECTOR_ELT(kl, 0, coerceVector(k, INTSXP));
-      } else {
-        error(_("n must be integer vector or list of integer vectors"));
-      }
-      nk = 1;
-    } else {
-      nk = length(k);
-      kl = PROTECT(allocVector(VECSXP, nk)); protecti++;
-      for (R_len_t i=0; i<nk; i++) {
-        if (isInteger(VECTOR_ELT(k, i))) {
-          SET_VECTOR_ELT(kl, i, VECTOR_ELT(k, i));
-        } else if (isReal(VECTOR_ELT(k, i))) {                  // coerce double types to integer
-          SET_VECTOR_ELT(kl, i, coerceVector(VECTOR_ELT(k, i), INTSXP));
-        } else {
-          error(_("n must be integer vector or list of integer vectors"));
-        }
-      }
-    }
-  }
-  int **ikl = (int**)R_alloc(nk, sizeof(int*));                 // to not recalculate `length(x[[i]])` we store it in extra array
+  SEXP ik = R_NilValue; // holds !adaptive k - vector
+  int *iik = NULL;
+  SEXP lk = R_NilValue; // holds adaptive k - list
+  int **ilk = NULL;
+  int nk = 0;
   if (badaptive) {
+    lk = PROTECT(coerceK(k, badaptive)); protecti++;
+    nk = length(lk);
+    ilk = (int**)R_alloc(nk, sizeof(int*));
     for (int j=0; j<nk; j++)
-      ikl[j] = INTEGER(VECTOR_ELT(kl, j));
-  }
-  int* iik = NULL;
-  if (!badaptive) {
-    if (!isInteger(ik))
-      error(_("Internal error: badaptive=%d but ik is not integer"), badaptive); // # nocov
-    iik = INTEGER(ik);                                          // pointer to non-adaptive window width, still can be vector when doing multiple windows
+      ilk[j] = INTEGER(VECTOR_ELT(lk, j));
   } else {
-    // ik is still R_NilValue from initialization. But that's ok as it's only needed below when !badaptive.
+    ik = PROTECT(coerceK(k, badaptive)); protecti++;
+    nk = length(ik);
+    iik = INTEGER(ik);
   }
 
   if (!IS_TRUE_OR_FALSE(narm))
@@ -132,7 +138,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
       if (badaptive) {                                          // extra input validation
         if (i > 0 && (inx[i]!=inx[i-1]))                        // variable length list input not allowed for adaptive roll
           error(_("adaptive rolling function can only process 'x' having equal length of elements, like data.table or data.frame; If you want to call rolling function on list having variable length of elements call it for each field separately"));
-        if (xlength(VECTOR_ELT(kl, j))!=inx[0])                 // check that length of integer vectors in n list match to xrows[0] ([0] and not [i] because there is above check for equal xrows)
+        if (xlength(VECTOR_ELT(lk, j))!=inx[0])                 // check that length of integer vectors in n list match to xrows[0] ([0] and not [i] because there is above check for equal xrows)
           error(_("length of integer vector(s) provided as list to 'n' argument must be equal to number of observations provided in 'x'"));
       }
       SET_VECTOR_ELT(ans, i*nk+j, allocVector(REALSXP, inx[i]));// allocate answer vector for this column-window
@@ -185,7 +191,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
       if (!badaptive) {
         frollfun(rfun, ialgo, dx[i], inx[i], &dans[i*nk+j], iik[j], ialign, dfill, bnarm, ihasnf, verbose);
       } else {
-        frolladaptivefun(rfun, ialgo, dx[i], inx[i], &dans[i*nk+j], ikl[j], dfill, bnarm, ihasnf, verbose);
+        frolladaptivefun(rfun, ialgo, dx[i], inx[i], &dans[i*nk+j], ilk[j], dfill, bnarm, ihasnf, verbose);
       }
     }
   }
@@ -221,7 +227,7 @@ SEXP frollapplyR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP adaptiv
   double tic = 0;
   if (verbose)
     tic = omp_get_wtime();
-  SEXP x = PROTECT(coerceToRealListR(obj)); protecti++;
+  SEXP x = PROTECT(coerceX(obj)); protecti++;
   R_len_t nx = length(x);
 
   if (xlength(k) == 0)
@@ -231,64 +237,21 @@ SEXP frollapplyR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP adaptiv
     error(_("%s must be TRUE or FALSE"), "adaptive");
   bool badaptive = LOGICAL(adaptive)[0];
 
-  R_len_t nk = 0;
-  SEXP ik = R_NilValue;
-  SEXP kl = R_NilValue;
-  if (!badaptive) {
-    if (isNewList(k))
-      error(_("n must be integer, list is accepted for adaptive TRUE"));
-
-    if (isInteger(k)) {
-      ik = k;
-    } else if (isReal(k)) {
-      ik = PROTECT(coerceVector(k, INTSXP)); protecti++;
-    } else {
-      error(_("n must be integer"));
-    }
-
-    nk = length(k);
-    R_len_t i=0;
-    while (i < nk && INTEGER(ik)[i] > 0) i++;
-    if (i != nk)
-      error(_("n must be positive integer values (> 0)"));
-  } else {
-    if (isVectorAtomic(k)) {
-      kl = PROTECT(allocVector(VECSXP, 1)); protecti++;
-      if (isInteger(k)) {
-        SET_VECTOR_ELT(kl, 0, k);
-      } else if (isReal(k)) {
-        SET_VECTOR_ELT(kl, 0, coerceVector(k, INTSXP));
-      } else {
-        error(_("n must be integer vector or list of integer vectors"));
-      }
-      nk = 1;
-    } else {
-      nk = length(k);
-      kl = PROTECT(allocVector(VECSXP, nk)); protecti++;
-      for (R_len_t i=0; i<nk; i++) {
-        if (isInteger(VECTOR_ELT(k, i))) {
-          SET_VECTOR_ELT(kl, i, VECTOR_ELT(k, i));
-        } else if (isReal(VECTOR_ELT(k, i))) {
-          SET_VECTOR_ELT(kl, i, coerceVector(VECTOR_ELT(k, i), INTSXP));
-        } else {
-          error(_("n must be integer vector or list of integer vectors"));
-        }
-      }
-    }
-  }
-  int **ikl = (int**)R_alloc(nk, sizeof(int*));
+  SEXP ik = R_NilValue; // holds !adaptive k - vector
+  int *iik = NULL;
+  SEXP lk = R_NilValue; // holds adaptive k - list
+  int **ilk = NULL;
+  int nk = 0;
   if (badaptive) {
+    lk = PROTECT(coerceK(k, badaptive)); protecti++;
+    nk = length(lk);
+    ilk = (int**)R_alloc(nk, sizeof(int*));
     for (int j=0; j<nk; j++)
-      ikl[j] = INTEGER(VECTOR_ELT(kl, j));
-  }
-
-  int* iik = NULL;
-  if (!badaptive) {
-    if (!isInteger(ik))
-      error(_("Internal error: badaptive=%d but ik is not integer"), badaptive); // # nocov
-    iik = INTEGER(ik);
+      ilk[j] = INTEGER(VECTOR_ELT(lk, j));
   } else {
-    // ik is still R_NilValue from initialization. But that's ok as it's only needed below when !badaptive.
+    ik = PROTECT(coerceK(k, badaptive)); protecti++;
+    nk = length(ik);
+    iik = INTEGER(ik);
   }
 
   int ialign;
@@ -323,7 +286,7 @@ SEXP frollapplyR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP adaptiv
       if (badaptive) {
         if (i > 0 && (inx[i]!=inx[i-1]))
           error(_("adaptive rolling function can only process 'x' having equal length of elements, like data.table or data.frame; If you want to call rolling function on list having variable length of elements call it for each field separately"));
-        if (xlength(VECTOR_ELT(kl, j))!=inx[0])
+        if (xlength(VECTOR_ELT(lk, j))!=inx[0])
           error(_("length of integer vector(s) provided as list to 'n' argument must be equal to number of observations provided in 'x'"));
       }
       SET_VECTOR_ELT(ans, i*nk+j, allocVector(REALSXP, inx[i]));
@@ -348,11 +311,11 @@ SEXP frollapplyR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP adaptiv
     }
   } else {
     for (R_len_t j=0; j<nk; j++) {
-      pw = PROTECT(allocVector(REALSXP, maxk(ikl[j], inx[0]))); // max window size, inx[0] because inx is constant for adaptive
+      pw = PROTECT(allocVector(REALSXP, maxk(ilk[j], inx[0]))); // max window size, inx[0] because inx is constant for adaptive
       SET_GROWABLE_BIT(pw); // so we can set length of window for each observation
       pc = PROTECT(LCONS(fun, LCONS(pw, LCONS(R_DotsSymbol, R_NilValue))));
       for (R_len_t i=0; i<nx; i++) {
-        frolladaptiveapply(dx[i], inx[i], pw, ikl[j], &dans[i*nk+j], dfill, pc, rho, verbose);
+        frolladaptiveapply(dx[i], inx[i], pw, ilk[j], &dans[i*nk+j], dfill, pc, rho, verbose);
       }
       UNPROTECT(2);
     }
