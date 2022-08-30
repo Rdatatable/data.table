@@ -22,7 +22,7 @@ SEXP coerceX(SEXP obj) {
   return x;
 }
 // validate and coerce to integer or list of integer
-SEXP coerceK(SEXP k, bool adaptive) {
+SEXP coerceN(SEXP k, bool adaptive) {
   int protecti = 0;
   SEXP ans = R_NilValue;
   if (!adaptive) {
@@ -94,13 +94,13 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   int **ilk = NULL;
   int nk = 0;
   if (badaptive) {
-    lk = PROTECT(coerceK(k, badaptive)); protecti++;
+    lk = PROTECT(coerceN(k, badaptive)); protecti++;
     nk = length(lk);
     ilk = (int**)R_alloc(nk, sizeof(int*));
     for (int j=0; j<nk; j++)
       ilk[j] = INTEGER(VECTOR_ELT(lk, j));
   } else {
-    ik = PROTECT(coerceK(k, badaptive)); protecti++;
+    ik = PROTECT(coerceN(k, badaptive)); protecti++;
     nk = length(ik);
     iik = INTEGER(ik);
   }
@@ -243,13 +243,13 @@ SEXP frollapplyR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP adaptiv
   int **ilk = NULL;
   int nk = 0;
   if (badaptive) {
-    lk = PROTECT(coerceK(k, badaptive)); protecti++;
+    lk = PROTECT(coerceN(k, badaptive)); protecti++;
     nk = length(lk);
     ilk = (int**)R_alloc(nk, sizeof(int*));
     for (int j=0; j<nk; j++)
       ilk[j] = INTEGER(VECTOR_ELT(lk, j));
   } else {
-    ik = PROTECT(coerceK(k, badaptive)); protecti++;
+    ik = PROTECT(coerceN(k, badaptive)); protecti++;
     nk = length(ik);
     iik = INTEGER(ik);
   }
