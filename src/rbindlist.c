@@ -78,7 +78,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
       if (!length(cn)) continue;
       const SEXP *cnp = STRING_PTR(cn);
       for (int j=0; j<thisncol; j++) {
-        SEXP s = cnp[j];
+        SEXP s = ENC2UTF8(cnp[j]); // ignore encodings for use.names #5452
         if (TRUELENGTH(s)<0) continue;  // seen this name before
         if (TRUELENGTH(s)>0) savetl(s);
         uniq[nuniq++] = s;
@@ -110,7 +110,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
       const SEXP *cnp = STRING_PTR(cn);
       memset(counts, 0, nuniq*sizeof(int));
       for (int j=0; j<thisncol; j++) {
-        SEXP s = cnp[j];
+        SEXP s = ENC2UTF8(cnp[j]); // ignore encodings for use.names #5452
         counts[ -TRUELENGTH(s)-1 ]++;
       }
       for (int u=0; u<nuniq; u++) {
@@ -150,7 +150,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
         const SEXP *cnp = STRING_PTR(cn);
         memset(counts, 0, nuniq*sizeof(int));
         for (int j=0; j<thisncol; j++) {
-          SEXP s = cnp[j];
+          SEXP s = ENC2UTF8(cnp[j]); // ignore encodings for use.names #5452
           int w = -TRUELENGTH(s)-1;
           int wi = counts[w]++; // how many dups have we seen before of this name within this item
           if (uniqMap[w]==-1) {
