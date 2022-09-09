@@ -433,7 +433,7 @@ void frollsumExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool 
   }
 }
 
-inline void wmax(double *x, uint64_t o, int k, double *w, uint64_t *iw, bool narm) {
+static inline void wmax(double *x, uint64_t o, int k, double *w, uint64_t *iw, bool narm) {
   if (narm) {
     for (int i=0; i<k; i++) {
       if (x[o+i-k+1] >= w[0]) { // this never true if all x NAs and narm=TRUE
