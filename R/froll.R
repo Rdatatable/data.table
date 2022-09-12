@@ -5,6 +5,7 @@ partial2adaptive = function(x, n, align) {
     stopf("'partial' does not support variable length of columns in 'x'")
   if (!(is.numeric(n) || (is.list(n) && all(vapply(n, is.numeric, FALSE)))))
     stopf("n must be integer vector or list of integer vectors")
+  n = as.list(n) ## test 6006.032
   len = if (is.list(x)) length(x[[1L]]) else length(x)
   verbose = getOption("datatable.verbose")
   if (verbose)
@@ -16,11 +17,7 @@ partial2adaptive = function(x, n, align) {
     else
       c(rep(n, len-n), rev(seq.int(n)))
   }
-  if (is.list(n)) {
-    sapply(n, len, align, FUN=trimn, simplify=FALSE)
-  } else {
-    trimn(n, len, align)
-  }
+  sapply(n, len, align, FUN=trimn, simplify=FALSE)
 }
 
 froll = function(fun, x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"), na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, hasNA) {
