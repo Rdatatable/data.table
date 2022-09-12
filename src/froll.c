@@ -447,9 +447,11 @@ static inline void wmax(double *x, uint64_t o, int k, double *w, uint64_t *iw, b
     for (int i=0; i<k; i++) {
       uint64_t ii = o+i-k+1;
       if (ISNAN(x[ii])) {
-        if (ISNA(x[ii])) { // this can happen only for n=1, otherwise NA couldnt be found at this location because we call wmax when the max leaves the window, and NA would be still considered max
-          iww = ii; ww = NA_REAL;
+        if (ISNA(x[ii])) {
+          error("internal error: frollmax reached untested branch of code, for now use frollmax algo='exact', please provide reproducible example of your frollmax usage to data.table github issue tracker\n"); // # nocov
+          //iww = ii; ww = NA_REAL;
         } else if (ISNA(ww)) {
+          error("internal error: frollmax reached untested branch of code, for now use frollmax algo='exact', please provide reproducible example of your frollmax usage to data.table github issue tracker\n"); // # nocov
           // do nothing because w > x[i]: NA > NaN
         } else { // no NA in window so NaN >= than any non-NA
           iww = ii; ww = R_NaN;

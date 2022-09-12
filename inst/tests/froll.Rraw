@@ -826,7 +826,7 @@ test(6000.191, frollmean(c(1:2,NA,4:10), rep(2L,10), adaptive=TRUE, has.nf=FALSE
 test(6000.192, frollmean(c(1:2,NA,4:10), rep(4L,10), adaptive=TRUE, has.nf=FALSE, algo="exact"), c(rep(NA_real_, 6), 5.5, 6.5, 7.5, 8.5), warning="has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning")
 test(6000.193, frollmean(c(1:2,NA,4:10), rep(2L,10), adaptive=TRUE, has.nf=FALSE, algo="exact"), c(NA, 1.5, NA, NA, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5), warning="has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning")
 test(6000.199, frollmean(1:2, 1, hasNA=TRUE), c(1,2), warning="hasNA is deprecated, use has.nf instead")
-test(6000.1991, frollmean(1:2, 1, has.nf=FALSE, hasNA=TRUE), c(1,2), warning="hasNA is deprecated, use has.nf instead")
+test(6000.1991, frollmean(1:2, 1, has.nf=FALSE, hasNA=TRUE), error="hasNA is deprecated, use has.nf instead")
 
 ## frollsum
 x = 1:6/2
@@ -999,7 +999,7 @@ test(6000.4362, frollmax(x, n, has.nf=TRUE, na.rm=TRUE), c(NA,NA,2,3,Inf,Inf,Inf
 test(6000.4363, frollmax(x, n, algo="exact", has.nf=TRUE), c(NA,NA,NA,3,Inf,Inf,Inf,5))
 test(6000.4364, frollmax(x, n, algo="exact", has.nf=TRUE, na.rm=TRUE), c(NA,NA,2,3,Inf,Inf,Inf,5))
 # edge cases
-test(6000.501, frollmax(c(5,NA,1), 1L), c(5,NA,1)) ## na.rm=FALSE window recalc and NA happens to be the first element in a nested loop
+test(6000.501, frollmax(c(5,NA,1), 1L), c(5,NA,1)) ## na.rm=FALSE window recalc and NA happens to be the first element in a nested loop ## didn't help for codecov, adding internal error to wmax till we have a data that can reach there
 test(6000.502, frollmax(c(5,NaN,1), 1L), c(5,NaN,1))
 test(6000.503, frollmax(c(5,1,1,NaN,1,1,1), 2L), c(NA,5,1,NaN,NaN,1,1))
 test(6000.504, frollmax(c(5,1,NA,NaN,1,1,1), 2L), c(NA,5,NA,NA,NaN,1,1))
@@ -1341,6 +1341,7 @@ if (!r340) {
   test(6010.204, frollapply(x, rep(3, length(x)), numUniqueN, adaptive=TRUE), ans, output=c("frollapplyR: allocating memory.*","frolladaptiveapply: took.*","frollapplyR: processing.*took.*"))
   test(6010.205, as.logical(frollapply(c(1,2,1,1,NA,2,NA,2), rep(3, length(x)), anyNA, adaptive=TRUE)), c(NA,NA,FALSE,FALSE,TRUE,TRUE,TRUE,TRUE), output=c("frollapplyR: allocating memory.*","frolladaptiveapply: results from provided FUN are not of type double, coercion from integer or logical will be applied on each iteration","frolladaptiveapply: took.*","frollapplyR: processing.*took.*"))
   options(datatable.verbose=FALSE)
+  test(6010.206, frollapply(c(2,2,2,3,4), c(1,3,3,2,3), uniqueN, adaptive=TRUE), c(1,NA,1,2,3)) ## window width bigger than location
 }
 
 #### test coverage

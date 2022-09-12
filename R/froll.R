@@ -23,8 +23,10 @@ partial2adaptive = function(x, n, align) {
 froll = function(fun, x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"), na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, hasNA) {
   stopifnot(!missing(fun), is.character(fun), length(fun)==1L, !is.na(fun))
   if (!missing(hasNA)) {
+    if (!is.na(has.nf))
+      stopf("hasNA is deprecated, use has.nf instead")
     warning("hasNA is deprecated, use has.nf instead")
-    if (missing(has.nf)) has.nf = hasNA
+    has.nf = hasNA
   } # remove check on next major release
   algo = match.arg(algo)
   align = match.arg(align)
