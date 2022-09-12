@@ -23,6 +23,7 @@ shift = function(x, n=1L, fill, type=c("lag", "lead", "shift", "cyclic"), give.n
     }
     setattr(ans, "names",  paste(rep(nx,each=length(n)), type, n, sep="_"))
   }
+  if (length(n)>1L) setDT(ans)
   ans
 }
 

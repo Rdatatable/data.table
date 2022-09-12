@@ -1462,10 +1462,16 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
   for (int i=0; i<nk; i++) if (kd[i]==NA_INTEGER) error(_("Item %d of n is NA"), i+1);
 
   SEXP ans = PROTECT(allocVector(VECSXP, nk)); nprotect++;
+  setDT(ans);  // to tell gforce() clearly that these are columns without ambiguity over being a list column when DT or the group has 1 row
+  
+  // TODO: do we still need to set gforce dynamic here???
   SEXP att = PROTECT(allocVector(VECSXP, 3)); nprotect++;
   SET_VECTOR_ELT(att, 0, R_NilValue);
-  SET_VECTOR_ELT(att, 1, ScalarLogical(true));    // first/last doesn't matter for gshift
+  SET_VECTOR_ELT(att, 1, ScalarLogical(true));    // first/last doesn't matter for gshift which returns the same length as its input
   SET_VECTOR_ELT(att, 2, ScalarInteger(INT_MAX)); // i.e. grpsize; TODO: perhaps point lens directly to grpsize instead
+  setAttrib(ans, sym_gforce_dynamic, att);
+  //
+  
   SEXP thisfill = PROTECT(coerceAs(fillArg, x, ScalarLogical(0))); nprotect++;
   for (int g=0; g<nk; g++) {
     lag = stype == LAG || stype == CYCLIC;
@@ -1478,7 +1484,6 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
     R_xlen_t ansi = 0;
     SEXP tmp;
     SET_VECTOR_ELT(ans, g, tmp=allocVector(TYPEOF(x), nx));
-    setAttrib(tmp, sym_gforce_dynamic, att);
     #define SHIFT(CTYPE, RTYPE, ASSIGN) {                                                                         \
       const CTYPE *xd = (const CTYPE *)RTYPE(x);                                                                  \
       const CTYPE fill = RTYPE(thisfill)[0];                                                                      \
