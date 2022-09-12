@@ -7,6 +7,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   require(data.table)
   test = data.table:::test
   froll = data.table:::froll
+  frollfun = data.table:::frollfun
 }
 
 exact_NaN = isTRUE(capabilities()["long.double"]) && identical(as.integer(.Machine$longdouble.digits), 64L)
@@ -1080,7 +1081,7 @@ base_compare = function(x, n, funs=c("mean","sum","max"), algos=c("fast","exact"
               eval(substitute( # so we can have values displayed in output/log rather than variables
                 test(.num, ignore.warning="no non-missing arguments",
                      rollfun(x, n, FUN=.fun, fill=.fill, na.rm=.na.rm, partial=.partial),
-                     froll(.fun, x, n, fill=.fill, na.rm=.na.rm, algo=.algo, partial=.partial, has.nf=.has.nf)),
+                     frollfun(.fun, x, n, fill=.fill, na.rm=.na.rm, algo=.algo, partial=.partial, has.nf=.has.nf)),
                 list(.num=num, .fun=fun, .fill=fill, .na.rm=na.rm, .algo=algo, .partial=partial, .has.nf=has.nf)
               ))
             }
@@ -1089,7 +1090,7 @@ base_compare = function(x, n, funs=c("mean","sum","max"), algos=c("fast","exact"
           eval(substitute( # so we can have values displayed in output/log rather than variables
             test(.num, ignore.warning="no non-missing arguments",
                  frollapply(x, n, FUN=match.fun(.fun), fill=.fill, na.rm=.na.rm, partial=.partial),
-                 froll(.fun, x, n, fill=.fill, na.rm=.na.rm, partial=.partial)),
+                 frollfun(.fun, x, n, fill=.fill, na.rm=.na.rm, partial=.partial)),
             list(.num=num, .fun=fun, .fill=fill, .na.rm=na.rm, .partial=partial)
           ))
         }
@@ -1132,7 +1133,7 @@ if (requireNamespace("zoo", quietly=TRUE)) {
                   eval(substitute( # so we can have values displayed in output/log rather than variables
                     test(.num, ignore.warning="no non-missing arguments",
                          drollapply(x, n, FUN=.fun, fill=.fill, align=.align, na.rm=.na.rm, partial=.partial),
-                         froll(.fun, x, n, align=.align, fill=.fill, na.rm=.na.rm, algo=.algo, partial=.partial, has.nf=.has.nf)),
+                         frollfun(.fun, x, n, align=.align, fill=.fill, na.rm=.na.rm, algo=.algo, partial=.partial, has.nf=.has.nf)),
                     list(.num=num, .fun=fun, .align=align, .fill=fill, .na.rm=na.rm, .algo=algo, .partial=partial, .has.nf=has.nf)
                   ))
                 }
@@ -1141,7 +1142,7 @@ if (requireNamespace("zoo", quietly=TRUE)) {
               eval(substitute( # so we can have values displayed in output/log rather than variables
                 test(.num, ignore.warning="no non-missing arguments",
                      frollapply(x, n, FUN=.fun, fill=.fill, align=.align, na.rm=.na.rm, partial=.partial),
-                     froll(.fun, x, n, align=.align, fill=.fill, na.rm=.na.rm, partial=.partial)),
+                     frollfun(.fun, x, n, align=.align, fill=.fill, na.rm=.na.rm, partial=.partial)),
                 list(.num=num, .fun=fun, .align=align, .fill=fill, .na.rm=na.rm, .partial=partial)
               ))
             }
@@ -1219,7 +1220,7 @@ afun_compare = function(x, n, funs=c("mean","sum","max"), algos=c("fast","exact"
               eval(substitute(
                 test(.num, ignore.warning="no non-missing arguments",
                      arollfun(.fun, x, n, fill=.fill, na.rm=.na.rm, align=.align),
-                     froll(.fun, x, n, fill=.fill, na.rm=.na.rm, algo=.algo, adaptive=TRUE, align=.align, has.nf=.has.nf)),
+                     frollfun(.fun, x, n, fill=.fill, na.rm=.na.rm, algo=.algo, adaptive=TRUE, align=.align, has.nf=.has.nf)),
                 list(.num=num, .fun=fun, .fill=fill, .na.rm=na.rm, .algo=algo, .align=align, .has.nf=has.nf)
               ))
             }
@@ -1229,7 +1230,7 @@ afun_compare = function(x, n, funs=c("mean","sum","max"), algos=c("fast","exact"
             eval(substitute(
               test(.num, ignore.warning="no non-missing arguments",
                    frollapply(x, n, FUN=match.fun(.fun), fill=.fill, na.rm=.na.rm, adaptive=TRUE, align=.align),
-                   froll(.fun, x, n, fill=.fill, na.rm=.na.rm, adaptive=TRUE, align=.align)),
+                   frollfun(.fun, x, n, fill=.fill, na.rm=.na.rm, adaptive=TRUE, align=.align)),
               list(.num=num, .fun=fun, .fill=fill, .na.rm=na.rm, .align=align)
             ))
           }
