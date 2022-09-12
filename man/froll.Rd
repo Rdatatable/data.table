@@ -87,7 +87,7 @@
   Adaptive rolling functions are a special case where each observation has its own corresponding rolling window width. Therefore values passed to \code{n} argument must be series corresponding to observations in \code{x}. If multiple windows is meant to be computed then a list of integer vectors is expected; each list element must be an integer vector of window size corresponding to observations in \code{x}; see Examples. Due to the logic or implementation of adaptive rolling functions, the following restrictions apply
   \itemize{
     \item{ \code{align} does not support \code{"center"}. }
-    \item{ if list of vectors is passed to \code{x}, then all vectors within it must have equal length. }
+    \item{ if list of vectors is passed to \code{x}, then all vectors within it must have equal length due to the fact that length of adaptive window widths must match the length of vectors in \code{x}. }
   }
 }
 \section{\code{partial} argument}{
