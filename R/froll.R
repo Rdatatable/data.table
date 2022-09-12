@@ -22,6 +22,8 @@ partial2adaptive = function(x, n, align) {
 
 froll = function(fun, x, n, fill=NA, algo, align=c("right","left","center"), na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, FUN, rho, give.names=FALSE) {
   align = match.arg(align)
+  if (isTRUE(give.names))
+    orig = list(n=n, adaptive=adaptive)
   if (isTRUE(partial)) {
     if (isTRUE(adaptive))
       stopf("'partial' argument cannot be used together with 'adaptive'")
@@ -47,7 +49,9 @@ froll = function(fun, x, n, fill=NA, algo, align=c("right","left","center"), na.
       cat("froll: adaptive=TRUE && align='left' post-processing from align='right'\n")
     ans = rev2(ans)
   }
-  if (give.names && is.list(ans)) {
+  if (isTRUE(give.names) && is.list(ans)) {
+    n = orig$n
+    adaptive = orig$adaptive
     nx = names(x)
     nn = names(n)
     if (is.null(nx)) nx = paste0("V", if (is.atomic(x)) 1L else seq_along(x))
