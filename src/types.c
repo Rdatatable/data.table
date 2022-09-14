@@ -9,9 +9,21 @@ char *end(char *start) {
 }
 
 /*
+ * logging status and messages, warnings, errors to ans_t
+ */
+void ansSetMsg(ans_t *ans, int n, uint8_t status, const char *func, const char *msg) { // func should be passed via ... really, thus this helper cannot replace all cases we need
+  for (int i=0; i<n; i++) { // we dont use this loop at the moment, its here to be aligned to ansGetMsg interface
+    if (status > ans[i].status)
+      ans[i].status = status;
+    snprintf(end(ans[i].message[status]), 500, _(msg), func);
+    // implicit n_message limit discussed here: https://github.com/Rdatatable/data.table/issues/3423#issuecomment-487722586
+  }
+}
+
+/*
  * function to print verbose messages, stderr messages, warnings and errors stored in ans_t struct
  */
-void ansMsg(ans_t *ans, int n, bool verbose, const char *func) {
+void ansGetMsg(ans_t *ans, int n, bool verbose, const char *func) {
   for (int i=0; i<n; i++) {
     if (verbose && (ans[i].message[0][0] != '\0'))
       Rprintf("%s: %d:\n%s", func, i+1, ans[i].message[0]);
@@ -25,30 +37,27 @@ void ansMsg(ans_t *ans, int n, bool verbose, const char *func) {
 }
 
 /*
- * R interface to test ansMsg function
+ * R interface to test ansGetMsg function
  * see inst/tests/types.Rraw
  */
 void testRaiseMsg(ans_t *ans, int istatus, bool verbose) {
   if (verbose) {
-    snprintf(end(ans->message[0]), 500, "%s: stdout 1 message\n", __func__);
-    snprintf(end(ans->message[0]), 500, "%s: stdout 2 message\n", __func__);
+    ansSetMsg(ans, 1, 0, __func__, "%s: stdout 1 message\n");
+    ansSetMsg(ans, 1, 0, __func__, "%s: stdout 2 message\n");
   }
   if (istatus == 1 || istatus == 12 || istatus == 13 || istatus == 123) {
-    snprintf(end(ans->message[1]), 500, "%s: stderr 1 message\n", __func__);
-    snprintf(end(ans->message[1]), 500, "%s: stderr 2 message\n", __func__);
-    ans->status = 1;
+    ansSetMsg(ans, 1, 1, __func__, "%s: stderr 1 message\n");
+    ansSetMsg(ans, 1, 1, __func__, "%s: stderr 2 message\n");
   }
   if (istatus == 2 || istatus == 12 || istatus == 23 || istatus == 123) {
-    snprintf(end(ans->message[2]), 500, "%s: stderr 1 warning\n", __func__);
-    snprintf(end(ans->message[2]), 500, "%s: stderr 2 warning\n", __func__);
-    ans->status = 2;
+    ansSetMsg(ans, 1, 2, __func__, "%s: stderr 1 warning\n");
+    ansSetMsg(ans, 1, 2, __func__, "%s: stderr 2 warning\n");
   }
   if (istatus == 3 || istatus == 13 || istatus == 23 || istatus == 123) {
-    snprintf(end(ans->message[3]), 500, "%s: stderr 1 error\n", __func__);
-    snprintf(end(ans->message[3]), 500, "%s: stderr 2 error\n", __func__); // printed too because errors appended and raised from ansMsg later on
-    ans->status = 3;
+    ansSetMsg(ans, 1, 3, __func__, "%s: stderr 1 error\n");
+    ansSetMsg(ans, 1, 3, __func__, "%s: stderr 2 error\n"); // printed too because errors appended and raised from ansGetMsg later on
   }
-  ans->int_v[0] = ans->status;
+  ans->int_v[0] = ans->status; // just a return value of status
 }
 SEXP testMsgR(SEXP status, SEXP x, SEXP k) {
   if (!isInteger(status) || !isInteger(x) || !isInteger(k))
@@ -76,7 +85,7 @@ SEXP testMsgR(SEXP status, SEXP x, SEXP k) {
     }
   }
 
-  ansMsg(vans, nx*nk, verbose, __func__);
+  ansGetMsg(vans, nx*nk, verbose, __func__);
   UNPROTECT(protecti);
   return ans;
 }
