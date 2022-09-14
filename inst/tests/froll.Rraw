@@ -1025,12 +1025,27 @@ test(6006.031, frollmean(1:6/2, list(3L,4L), partial=TRUE), ans)
 test(6006.032, frollmean(1:6/2, 3:4, partial=TRUE), ans)
 options(datatable.verbose=TRUE)
 test(6006.901, frollmean(x, n, partial=TRUE), c(0.5,0.75,1,1.5,2,2.5), output="froll partial=TRUE trimming 'n' and redirecting to adaptive=TRUE")
+test(6006.902, frollmean(x, rep(n, length(x)), adaptive=TRUE, partial=TRUE), c(0.5,0.75,1,1.5,2,2.5), output="trimming", notOutput="redirecting")
 options(datatable.verbose=FALSE)
-test(6006.902, frollmean(1:4, rep(2L,4L), adaptive=TRUE, partial=TRUE), error="'partial' argument cannot be used together with 'adaptive'")
 test(6006.903, frollmean(1:4, 2L, align="center", partial=TRUE), error="'partial' cannot be used together with align='center'")
 test(6006.904, frollmean(list(1:4, 2:4), n, partial=TRUE), error="'partial' does not support variable length of columns in 'x'")
 test(6006.905, frollmean(x, TRUE, partial=TRUE), error="n must be integer vector or list of integer vectors")
 test(6006.906, frollmean(x, list(TRUE), partial=TRUE), error="n must be integer vector or list of integer vectors")
+## partial adaptive
+test(6006.930, frollmean(1:4, rep(2L,4L), adaptive=TRUE, partial=TRUE), c(1,1.5,2.5,3.5))
+test(6006.9301, frollmean(1:4, list(1:4, 1:3), adaptive=TRUE, partial=TRUE), error="adaptive window provided in 'n' must not to have different lengths")
+test(6006.9302, frollmean(1:4, list(1:3), adaptive=TRUE, partial=TRUE), error="length of vectors in 'x' must match to length of adaptive window in 'n'")
+test(6006.9303, frollmean(1:4, list(rep(2L,4L)), adaptive=TRUE, partial=TRUE), c(1,1.5,2.5,3.5))
+test(6006.9311, frollsum(1:4, 1:4, adaptive=TRUE, partial=TRUE), c(1,3,6,10)) ## all same as index
+test(6006.9312, frollsum(1:4, 1:4, align="left", adaptive=TRUE, partial=TRUE), c(1,5,7,4))
+test(6006.9321, frollsum(1:4, c(2,3,1,1), adaptive=TRUE, partial=TRUE), c(1,3,3,4)) ## leading two bigger than index
+test(6006.9322, frollsum(1:4, c(2,3,1,1), align="left", adaptive=TRUE, partial=TRUE), c(3,9,3,4))
+test(6006.9323, frollsum(1:4, c(6,5,4,2), adaptive=TRUE, partial=TRUE), c(1,3,6,7)) ## leading two bigger than rev index
+test(6006.9324, frollsum(1:4, c(6,5,4,2), align="left", adaptive=TRUE, partial=TRUE), c(10,9,7,4))
+test(6006.9331, frollsum(1:4, c(2,4,5,6), adaptive=TRUE, partial=TRUE), c(1,3,6,10)) ## trailing two bigger than index
+test(6006.9332, frollsum(1:4, c(2,4,5,6), align="left", adaptive=TRUE, partial=TRUE), c(3,9,7,4))
+test(6006.9333, frollsum(1:4, c(1,1,3,2), adaptive=TRUE, partial=TRUE), c(1,2,6,7)) ## trailing two bigger than rev index
+test(6006.9334, frollsum(1:4, c(1,1,3,2), align="left", adaptive=TRUE, partial=TRUE), c(1,2,7,4))
 
 ## give.names
 test(6006.951, frollsum(1:3, 2, give.names=TRUE), c(NA,3,5))
@@ -1359,7 +1374,7 @@ if (!r340) {
   test(6010.2018, frollapply(1:5, rep(3, 5), function(x) head(x, 2), adaptive=TRUE), error="frolladaptiveapply: results from provided FUN are not length 1")
   test(6010.2019, frollapply(1:10, list(1:5), mean, adaptive=TRUE), error="length of integer vector(s) provided as list to 'n' argument must be equal to number of observations provided in 'x'")
   test(6010.2020, frollapply(1:10, 1:5, mean, adaptive=TRUE), error="length of integer vector(s) provided as list to 'n' argument must be equal to number of observations provided in 'x'")
-  test(6010.2021, frollapply(1:4, rep(2L,4L), mean, adaptive=TRUE, partial=TRUE), error="'partial' argument cannot be used together with 'adaptive'")
+  test(6010.2021, frollapply(1:4, rep(2L,4L), mean, adaptive=TRUE, partial=TRUE), c(1,1.5,2.5,3.5))
   options(datatable.verbose=TRUE)
   test(6010.2029, frollapply(c(1,3,4,2,0), c(3,2,2,3,2), sum, adaptive=TRUE, align="left"), c(8,7,6,NA,NA), output=c("processing from align='right'"))
   x = c(1,2,1,1,1,2,3,2)
