@@ -348,7 +348,7 @@ SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg) {
   if (!isNull(getAttrib(x, R_DimSymbol)))
     error(_("'x' must not be matrix or array"));
   if (!isNull(getAttrib(as, R_DimSymbol)))
-    error(_("'as' must not be matrix or array"));
+    error(_("input must not be matrix or array"));
   bool verbose = GetVerbose()>=2; // verbose level 2 required
   if (!LOGICAL(copyArg)[0] && TYPEOF(x)==TYPEOF(as) && class1(x)==class1(as)) {
     if (verbose)
