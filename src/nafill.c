@@ -220,7 +220,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
     }
   }
 
-  ansGetMsg(vans, nx, verbose, __func__);
+  ansGetMsgs(vans, nx, verbose, __func__);
 
   if (verbose)
     Rprintf(_("%s: parallel processing of %d column(s) took %.3fs\n"), __func__, nx, omp_get_wtime()-tic);

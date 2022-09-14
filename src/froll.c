@@ -109,16 +109,16 @@ void frollmeanFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool 
       }
       if (!R_FINITE((double) w)) {                              // mark to re-run with NA care
         if (hasnf==-1) 
-          ansSetMsg(ans, 1, 2, __func__, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning");
+          ansSetMsg(ans, 2, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning", __func__);
         if (verbose)
-          ansSetMsg(ans, 1, 0, __func__, "%s: non-finite values are present in input, re-running with extra care for NFs\n");
+          ansSetMsg(ans, 0, "%s: non-finite values are present in input, re-running with extra care for NFs\n", __func__);
         w = 0.0; truehasnf = true;
       }
     } else {                                                    // early stopping branch when NAs detected in first k obs
       if (hasnf==-1)
-        ansSetMsg(ans, 1, 2, __func__, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning");
+        ansSetMsg(ans, 2, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning", __func__);
       if (verbose)
-        ansSetMsg(ans, 1, 0, __func__, "%s: non-finite values are present in input, skip non-finite inaware attempt and run with extra care for NFs straighaway\n");
+        ansSetMsg(ans, 0, "%s: non-finite values are present in input, skip non-finite inaware attempt and run with extra care for NFs straighaway\n", __func__);
       w = 0.0; truehasnf = true;
     }
   }
@@ -213,12 +213,12 @@ void frollmeanExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool
     }
     if (truehasnf) {
       if (hasnf==-1)
-        ansSetMsg(ans, 1, 2, __func__, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning");
+        ansSetMsg(ans, 2, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning", __func__);
       if (verbose) {
         if (narm)
-          ansSetMsg(ans, 1, 0, __func__, "%s: non-finite values are present in input, re-running with extra care for NFs\n");
+          ansSetMsg(ans, 0, "%s: non-finite values are present in input, re-running with extra care for NFs\n", __func__);
         else
-          ansSetMsg(ans, 1, 0, __func__, "%s: non-finite values are present in input, na.rm=FALSE and algo='exact' propagates NFs properply, no need to re-run\n");
+          ansSetMsg(ans, 0, "%s: non-finite values are present in input, na.rm=FALSE and algo='exact' propagates NFs properply, no need to re-run\n", __func__);
       }
     }
   }
@@ -283,16 +283,16 @@ void frollsumFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool n
       }
       if (!R_FINITE((double) w)) {
         if (hasnf==-1)
-          ansSetMsg(ans, 1, 2, __func__, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning");
+          ansSetMsg(ans, 2, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning", __func__);
         if (verbose)
-          ansSetMsg(ans, 1, 0, __func__, "%s: non-finite values are present in input, re-running with extra care for NFs\n");
+          ansSetMsg(ans, 0, "%s: non-finite values are present in input, re-running with extra care for NFs\n", __func__);
         w = 0.0; truehasnf = true;
       }
     } else {
       if (hasnf==-1)
-        ansSetMsg(ans, 1, 2, __func__, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning");
+        ansSetMsg(ans, 2, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning", __func__);
       if (verbose)
-        ansSetMsg(ans, 1, 0, __func__, "%s: non-finite values are present in input, skip non-finite inaware attempt and run with extra care for NFs straighaway\n");
+        ansSetMsg(ans, 0, "%s: non-finite values are present in input, skip non-finite inaware attempt and run with extra care for NFs straighaway\n", __func__);
       w = 0.0; truehasnf = true;
     }
   }
@@ -380,12 +380,12 @@ void frollsumExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool 
     }
     if (truehasnf) {
       if (hasnf==-1)
-        ansSetMsg(ans, 1, 2, __func__, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning");
+        ansSetMsg(ans, 2, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning", __func__);
       if (verbose) {
         if (narm)
-          ansSetMsg(ans, 1, 0, __func__, "%s: non-finite values are present in input, re-running with extra care for NFs\n");
+          ansSetMsg(ans, 0, "%s: non-finite values are present in input, re-running with extra care for NFs\n", __func__);
         else
-          ansSetMsg(ans, 1, 0, __func__, "%s: non-finite values are present in input, na.rm=FALSE and algo='exact' propagates NFs properply, no need to re-run\n");
+          ansSetMsg(ans, 0, "%s: non-finite values are present in input, na.rm=FALSE and algo='exact' propagates NFs properply, no need to re-run\n", __func__);
       }
     }
   }
@@ -500,7 +500,7 @@ void frollmaxFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool n
       for (; i<nx; i++) {
         if (ISNAN(x[i])) { // Inf properly propagates
           if (verbose)
-            ansSetMsg(ans, 1, 0, __func__, "%s: non-finite values are present in input, continue with extra care for NFs\n");
+            ansSetMsg(ans, 0, "%s: non-finite values are present in input, continue with extra care for NFs\n", __func__);
           truehasnf = true;
           break; // does not increment, w stays as from previous iteration
         }
@@ -563,7 +563,7 @@ void frollmaxExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool 
   } else {
     bool *isnan = malloc(nx*sizeof(bool));                          // isnan lookup - we use it to reduce ISNAN calls in nested loop
     if (!isnan) {                                                   // # nocov start
-      ansSetMsg(ans, 1, 3, __func__, "%s: Unable to allocate memory for isnan"); // raise error
+      ansSetMsg(ans, 3, "%s: Unable to allocate memory for isnan", __func__); // raise error
       free(isnan);
       return;
     }                                                               // # nocov end
