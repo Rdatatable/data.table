@@ -707,8 +707,6 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
   if (colname==NULL)
     error(_("Internal error: memrecycle has received NULL colname")); // # nocov
   *memrecycle_message = '\0';
-  static char targetDesc[501];  // from 1.14.1 coerceAs reuses memrecycle for a target vector, PR#4491
-  snprintf(targetDesc, 500, colnum==0 ? _("target vector") : _("column %d named '%s'"), colnum, colname);
   int protecti=0;
   const bool sourceIsFactor=isFactor(source), targetIsFactor=isFactor(target);
   const bool sourceIsI64=isReal(source) && INHERITS(source, char_integer64);
@@ -730,6 +728,8 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
           for (int i=0; i<slen; ++i) {
             const int val = sd[i+soff];
             if ((val<1 && val!=NA_INTEGER) || val>nlevel) {
+              static char targetDesc[501];  // from 1.14.1 coerceAs reuses memrecycle for a target vector, PR#4491
+              snprintf(targetDesc, 500, colnum==0 ? _("target vector") : _("column %d named '%s'"), colnum, colname);
               error(_("Assigning factor numbers to %s. But %d is outside the level range [1,%d]"), targetDesc, val, nlevel);
             }
           }
@@ -738,6 +738,8 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
           for (int i=0; i<slen; ++i) {
             const double val = sd[i+soff];
             if (!ISNAN(val) && (!R_FINITE(val) || val!=(int)val || (int)val<1 || (int)val>nlevel)) {
+              static char targetDesc[501];
+              snprintf(targetDesc, 500, colnum==0 ? _("target vector") : _("column %d named '%s'"), colnum, colname);
               error(_("Assigning factor numbers to %s. But %f is outside the level range [1,%d], or is not a whole number."), targetDesc, val, nlevel);
             }
           }
@@ -830,12 +832,16 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
       }
     }
   } else if (isString(source) && !isString(target) && !isNewList(target)) {
+    static char targetDesc[501];
+    snprintf(targetDesc, 500, colnum==0 ? _("target vector") : _("column %d named '%s'"), colnum, colname);
     warning(_("Coercing 'character' RHS to '%s' to match the type of %s."), targetIsI64?"integer64":type2char(TYPEOF(target)), targetDesc);
     // this "Coercing ..." warning first to give context in case coerceVector warns 'NAs introduced by coercion'
     // and also because 'character' to integer/double coercion is often a user mistake (e.g. wrong target column, or wrong
     // variable on RHS) which they are more likely to appreciate than find inconvenient
     source = PROTECT(coerceVector(source, TYPEOF(target))); protecti++;
   } else if (isNewList(source) && !isNewList(target)) {
+    static char targetDesc[501];
+    snprintf(targetDesc, 500, colnum==0 ? _("target vector") : _("column %d named '%s'"), colnum, colname);
     if (targetIsI64) {
       error(_("Cannot coerce 'list' RHS to 'integer64' to match the type of %s."), targetDesc);
       // because R's coerceVector doesn't know about integer64
@@ -845,6 +851,8 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
     warning(_("Coercing 'list' RHS to '%s' to match the type of %s."), type2char(TYPEOF(target)), targetDesc);
     source = PROTECT(coerceVector(source, TYPEOF(target))); protecti++;
   } else if ((TYPEOF(target)!=TYPEOF(source) || targetIsI64!=sourceIsI64) && !isNewList(target)) {
+    static char targetDesc[501];
+    snprintf(targetDesc, 500, colnum==0 ? _("target vector") : _("column %d named '%s'"), colnum, colname);
     if (GetVerbose()>=3) {
       // only take the (small) cost of GetVerbose() (search of options() list) when types don't match
       Rprintf(_("Zero-copy coerce when assigning '%s' to '%s' %s.\n"),
