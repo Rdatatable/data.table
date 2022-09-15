@@ -141,7 +141,7 @@ ans1 = frollmean(x, n, partial=TRUE)
 an = function(n, len) c(seq.int(n), rep(n, len-n))
 ans2 = frollmean(x, an(n, length(x)), adaptive=TRUE)
 all.equal(ans1, ans2)
-# speed upby using partial only for incomplete observations
+# much faster by using partial only for incomplete observations
 ans3 = frollmean(x, n)
 ans3[seq.int(n-1L)] = frollmean(x[seq.int(n-1L)], n, partial=TRUE)
 all.equal(ans1, ans3)

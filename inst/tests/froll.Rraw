@@ -1223,7 +1223,7 @@ if (requireNamespace("zoo", quietly=TRUE)) {
 }
 #### adaptive moving average compare
 num = 6009.0
-arollfun = function(FUN, x, n, na.rm=FALSE, align=c("right","left"), fill=NA, nf.rm=FALSE) { ## partial cannot be used with adaptive
+arollfun = function(FUN, x, n, na.rm=FALSE, align=c("right","left"), fill=NA, nf.rm=FALSE, partial=FALSE) {
   # adaptive moving average in R
   stopifnot((nx<-length(x))==length(n))
   align = match.arg(align)
@@ -1234,11 +1234,15 @@ arollfun = function(FUN, x, n, na.rm=FALSE, align=c("right","left"), fill=NA, nf
     for (i in seq_along(x)) {
       if (i >= n[i])
         ans[i] = f(x[(i-n[i]+1):i], na.rm=na.rm)
+      else if (partial)
+        ans[i] = f(x[1L:i], na.rm=na.rm)
     }
   } else {
     for (i in seq_along(x)) {
       if (i <= nx-n[i]+1)
         ans[i] = f(x[i:(i+n[i]-1)], na.rm=na.rm)
+      else if (partial)
+        ans[i] = f(x[i:length(x)], na.rm=na.rm)
     }
   }
   ans
@@ -1250,31 +1254,33 @@ afun_compare = function(x, n, funs=c("mean","sum","max"), algos=c("fast","exact"
     for (align in c("right","left")) {
       for (na.rm in c(FALSE, TRUE)) {
         for (fill in c(NA_real_, 0)) {
-          for (has.nf in c(NA,TRUE,FALSE)) {
-            if (identical(has.nf, FALSE)) {
-              if (na.rm)
-                next ## errors "not make sense"
-              if (any(!is.finite(x)))
-                next ## do not test warnings (mean, sum) or incorrect expect results (max)
+          for (partial in c(FALSE,TRUE)) {
+            for (has.nf in c(NA,TRUE,FALSE)) {
+              if (identical(has.nf, FALSE)) {
+                if (na.rm)
+                  next ## errors "not make sense"
+                if (any(!is.finite(x)))
+                  next ## do not test warnings (mean, sum) or incorrect expect results (max)
+              }
+              for (algo in algos) {
+                num <<- num + num.step
+                eval(substitute(
+                  test(.num, ignore.warning="no non-missing arguments",
+                       arollfun(.fun, x, n, fill=.fill, na.rm=.na.rm, align=.align, partial=.partial),
+                       frollfun(.fun, x, n, fill=.fill, na.rm=.na.rm, algo=.algo, adaptive=TRUE, align=.align, has.nf=.has.nf, partial=.partial)),
+                  list(.num=num, .fun=fun, .fill=fill, .na.rm=na.rm, .algo=algo, .align=align, .has.nf=has.nf, .partial=partial)
+                ))
+              }
             }
-            for (algo in algos) {
+            if (base::getRversion() >= "3.4.0") { ## SET_GROWABLE_BIT
               num <<- num + num.step
               eval(substitute(
                 test(.num, ignore.warning="no non-missing arguments",
-                     arollfun(.fun, x, n, fill=.fill, na.rm=.na.rm, align=.align),
-                     frollfun(.fun, x, n, fill=.fill, na.rm=.na.rm, algo=.algo, adaptive=TRUE, align=.align, has.nf=.has.nf)),
-                list(.num=num, .fun=fun, .fill=fill, .na.rm=na.rm, .algo=algo, .align=align, .has.nf=has.nf)
+                     frollapply(x, n, FUN=match.fun(.fun), fill=.fill, na.rm=.na.rm, adaptive=TRUE, align=.align, partial=.partial),
+                     frollfun(.fun, x, n, fill=.fill, na.rm=.na.rm, adaptive=TRUE, align=.align, partial=.partial)),
+                list(.num=num, .fun=fun, .fill=fill, .na.rm=na.rm, .align=align, .partial=partial)
               ))
             }
-          }
-          if (base::getRversion() >= "3.4.0") { ## SET_GROWABLE_BIT
-            num <<- num + num.step
-            eval(substitute(
-              test(.num, ignore.warning="no non-missing arguments",
-                   frollapply(x, n, FUN=match.fun(.fun), fill=.fill, na.rm=.na.rm, adaptive=TRUE, align=.align),
-                   frollfun(.fun, x, n, fill=.fill, na.rm=.na.rm, adaptive=TRUE, align=.align)),
-              list(.num=num, .fun=fun, .fill=fill, .na.rm=na.rm, .align=align)
-            ))
           }
         }
       }
