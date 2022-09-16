@@ -1127,7 +1127,16 @@ replace_dot_alias = function(e) {
         } else {
           # `:=`(c2=1L,c3=2L,...)
           lhs = names(jsub)[-1L]
-          if (any(lhs=="")) stopf("In %s(col1=val1, col2=val2, ...) form, all arguments must be named.", if (root == "let") "let" else "`:=`")
+          if (!all(nzchar(lhs))) {
+            # friendly error for common case: trailing terminal comma
+            n_lhs = length(lhs)
+            # TODO(michaelchirico): use missing instead
+            if (lhs[n_lhs] == "" && all(nzchar(lhs[-n_lhs]))) {
+              stopf("In %s(col1=val1, col2=val2, ...) form, all arguments must be named, but the last argument has no name. Did you forget a trailing comma?", if (root == "let") "let" else "`:=`")
+            } else {
+              stopf("In %s(col1=val1, col2=val2, ...) form, all arguments must be named.", if (root == "let") "let" else "`:=`")
+            }
+          }
           names(jsub)=""
           jsub[[1L]]=as.name("list")
         }
