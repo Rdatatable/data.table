@@ -18534,6 +18534,9 @@ if (test_R.utils) {
   test(2229.4, fread(f, logical01=FALSE)[,1], data.table(V1 = 1:100))
   file.copy(testDir("issue_785_fread.txt.gz"), f, overwrite=TRUE)
   test(2229.5, fread(f, logical01=FALSE)[,25], data.table(Sv3 = c(10,14,14,15)))
+  # support .bgz with fread #5461
+  file.copy(testDir("ch11b.dat.bgz"), f, overwrite=TRUE)
+  test(2229.55, fread(f, logical01=FALSE)[,1], data.table(V1 = 1:100))
 }
 unlink(f)
 # not supporting multi file zips yet
