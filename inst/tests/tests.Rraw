@@ -18814,7 +18814,3 @@ test(2238.6, "a" %notin% integer(), TRUE)
 test(2238.7, "a" %notin% NULL, TRUE)
 test(2238.8, NA %notin% 1:5, TRUE)
 test(2238.9, NA %notin% c(1:5, NA), FALSE)
-
-# rbindlist segfault with fill=TRUE and usenames=FALSE #5444
-test(2239.1, rbindlist(list(list(1), list(2,3)), fill=TRUE, use.names=FALSE), data.table(c(1,2), c(NA, 3)))
-test(2239.2, rbindlist(list(list(1), list(2,factor(3))), fill=TRUE, use.names=FALSE), data.table(c(1,2), factor(c(NA, 3))))
