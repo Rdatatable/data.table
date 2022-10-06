@@ -28,6 +28,7 @@ SEXP sym_index;
 SEXP sym_BY;
 SEXP sym_starts, char_starts;
 SEXP sym_maxgrpn;
+SEXP sym_gforce_dynamic;
 SEXP sym_colClassesAs;
 SEXP sym_verbose;
 SEXP SelfRefSymbol;
@@ -53,6 +54,7 @@ SEXP shallowwrapper();
 SEXP alloccolwrapper();
 SEXP selfrefokwrapper();
 SEXP truelength();
+SEXP settruelength();
 SEXP setcharvec();
 SEXP setcolorder();
 SEXP chmatch_R();
@@ -147,6 +149,7 @@ R_CallMethodDef callMethods[] = {
 {"Calloccolwrapper", (DL_FUNC) &alloccolwrapper, -1},
 {"Cselfrefokwrapper", (DL_FUNC) &selfrefokwrapper, -1},
 {"Ctruelength", (DL_FUNC) &truelength, -1},
+{"Csettruelength", (DL_FUNC) &settruelength, -1},
 {"Csetcharvec", (DL_FUNC) &setcharvec, -1},
 {"Csetcolorder", (DL_FUNC) &setcolorder, -1},
 {"Cchmatch", (DL_FUNC) &chmatch_R, -1},
@@ -365,6 +368,7 @@ void attribute_visible R_init_data_table(DllInfo *info)
   sym_index   = install("index");
   sym_BY      = install(".BY");
   sym_maxgrpn = install("maxgrpn");
+  sym_gforce_dynamic = install("gforce_dynamic");
   sym_colClassesAs = install("colClassesAs");
   sym_verbose = install("datatable.verbose");
   SelfRefSymbol = install(".internal.selfref");

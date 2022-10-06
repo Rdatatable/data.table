@@ -406,3 +406,12 @@ SEXP startsWithAny(const SEXP x, const SEXP y, SEXP start) {
   return ScalarLogical(false);
 }
 
+SEXP setDT(SEXP x) {
+  // used by gsumm.c to return a barebones DT (e.g. no names, not over-allocated) to gforce when n is a vector of shifts
+  SEXP class;
+  setAttrib(x, R_ClassSymbol, class=allocVector(STRSXP, 2));
+  SET_STRING_ELT(class,0,char_datatable);
+  SET_STRING_ELT(class,1,char_dataframe);
+  return x;
+}
+

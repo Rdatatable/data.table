@@ -1620,8 +1620,9 @@ replace_dot_alias = function(e) {
         (jsub[[1L]] == "[" ||
            (jsub[[1L]] == "[[" && is.name(jsub[[2L]]) && eval(call('is.atomic', jsub[[2L]]), x, parent.frame()))) &&
         (is.numeric(jsub[[3L]]) || jsub[[3L]] == ".N")
-      headopt = jsub[[1L]] == "head" || jsub[[1L]] == "tail"
-      firstopt = jsub[[1L]] == "first" || jsub[[1L]] == "last" # fix for #2030
+      headopt =   jsub[[1L]]=="head"  || jsub[[1L]]=="tail"
+      firstopt = (jsub[[1L]]=="first" || jsub[[1L]]=="last") &&         # 2030, 4239
+                 !identical(match.call(first, jsub)[["na.rm"]], "row")  # first's signature same as last's
       if ((length(jsub) >= 2L && jsub[[2L]] == ".SD") &&
           (subopt || headopt || firstopt)) {
         if (headopt && length(jsub)==2L) jsub[["n"]] = 6L # head-tail n=6 when missing #3462
@@ -1738,22 +1739,37 @@ replace_dot_alias = function(e) {
         GForce = FALSE
       } else {
         # Apply GForce
-        .gforce_ok = function(q) {
-          if (dotN(q)) return(TRUE) # For #334
-          # run GForce for simple f(x) calls and f(x, na.rm = TRUE)-like calls where x is a column of .SD
+        .gforce_ok = function(q) {  # TODO: move outside and test directly
+          if (dotN(q)) return(TRUE) # #334
+          # run GForce for gfuns(x, ...) where x is a column of .SD 
           # is.symbol() is for #1369, #1974 and #2949
-          if (!(is.call(q) && is.symbol(q[[1L]]) && is.symbol(q[[2L]]) && (q1 <- q[[1L]]) %chin% gfuns)) return(FALSE)
-          if (!(q2 <- q[[2L]]) %chin% names(SDenv$.SDall) && q2 != ".I") return(FALSE)  # 875
-          if ((length(q)==2L || (!is.null(names(q)) && startsWith(names(q)[3L], "na")))) return(TRUE)
-          #                       ^^ base::startWith errors on NULL unfortunately
-          if (length(q)>=2L && q[[1L]] == "shift") {
-            q_named = match.call(shift, q)
-            if (!is.call(q_named[["fill"]]) && is.null(q_named[["give.names"]])) return(TRUE)
+          if (!(is.call(q) && is.symbol(q1<-q[[1L]]) && is.symbol(q2<-q[[2L]]) && q1 %chin% gfuns)) return(FALSE)
+          if (!q2 %chin% names(SDenv$.SDall) && q2!=".I") return(FALSE)  # 875
+          if (q1=="weighted.mean") return(TRUE)  #3977; the weight argument can be a symbol
+          if (length(q)==2L) return(TRUE)  # e.g. sum(colA) (i.e. no arguments)
+          # establish named arguments; e.g. if both na.rm and n have been passed to first/last, either one could appear first
+          f = get(q1)  # maybe a lookup table would be faster than get() but speed should be insignificant here up-front one-time
+          if (!is.primitive(f)) q = match.call(f, q)
+          # else the gfuns which are primitive functions (which match.call doesn't support and errors) are
+          # all of the form fun(..., na.rm=FALSE) so the na.rm arg has to be named in full by the user and
+          # so will be named in q already
+          for (argnum in seq.int(3L, length(q))) {
+            arg = if (is.null(names(q))) "" else names(q)[argnum]
+            if (arg=="na.rm") next
+            if (q1=="shift") {
+              if (arg=="fill" && (is.symbol(q$fill) || is.atomic(q$fill))) next
+              if (arg=="type" && (is.symbol(q$type) || is.atomic(q$type))) next # test 2224.01
+              if (arg=="n") next # negative n is supported by optimized shift, and in test 2224.01 n=-1 appears as a call to '-'()
+            }
+            if (arg=="n") {
+              if (!is.atomic(q$n) || !isTRUE(q$n>0L)) return(FALSE)  # n<=0 not optimized for first/last, [, [[
+              next
+            }
+            if (arg!="") return(FALSE)  # e.g. trim= and fill's give.names= are not yet optimized
+            if (length(q[[argnum]])!=1L || !is.atomic(q[[argnum]])) return(FALSE)  # test 173.1: DT[,B[B>3],by=A], and test 823: sum(b,a)
+            if (q1=="[[" && !eval(call('is.atomic', q2), envir=x)) return(FALSE)  # test 1581.16: dt[, .(l=l[[1L]]), by=a]
           }
-          if (length(q)>=3L && q[[1L]] == "weighted.mean") return(TRUE)  #3977
-          # otherwise there must be three arguments
-          length(q)==3L && length(q3 <- q[[3L]])==1L && is.numeric(q3) &&
-            ( (q1 %chin% c("head", "tail")) || ((q1 == "[" || (q1 == "[[" && eval(call('is.atomic', q[[2L]]), envir=x))) && q3>0L) )
+          TRUE
         }
         if (jsub[[1L]]=="list") {
           GForce = TRUE
@@ -1847,42 +1863,9 @@ replace_dot_alias = function(e) {
     assign(".N", len__, thisEnv) # For #334
     #fix for #1683
     if (use.I) assign(".I", seq_len(nrow(x)), thisEnv)
-    ans = gforce(thisEnv, jsub, o__, f__, len__, irows) # irows needed for #971.
-    gi = if (length(o__)) o__[f__] else f__
-    g = lapply(grpcols, function(i) groups[[i]][gi])
-
-    # returns all rows instead of one per group
-    nrow_funs = c("gshift")
-    .is_nrows = function(q) {
-      if (!is.call(q)) return(FALSE)
-      if (q[[1L]] == "list") {
-        any(vapply(q, .is_nrows, FALSE))
-      } else {
-        q[[1L]] %chin% nrow_funs
-      }
-    }
-
-    # adding ghead/gtail(n) support for n > 1 #5060 #523
-    q3 = 0
-    if (!is.symbol(jsub)) {
-      headTail_arg = function(q) {
-        if (length(q)==3L && length(q3 <- q[[3L]])==1L && is.numeric(q3) &&
-         (q1 <- q[[1L]]) %chin% c("ghead", "gtail") && q3!=1) q3
-        else 0
-      }
-      if (jsub[[1L]] == "list"){
-        q3 = max(sapply(jsub, headTail_arg))
-      } else if (length(jsub)==3L) {
-        q3 = headTail_arg(jsub)
-      }
-    }
-    if (q3 > 0) {
-      grplens = pmin.int(q3, len__)
-      g = lapply(g, rep.int, times=grplens)
-    } else if (.is_nrows(jsub)) {
-      g = lapply(g, rep.int, times=len__)
-    }
-    ans = c(g, ans)
+    ans = gforce(thisEnv, jsub, o__, f__, len__, irows,  # irows needed for #971
+                 .Call(CsubsetVector, groups, grpcols),  # just a list() subset to make C level neater; doesn't copy column contents
+                 lhs)  # for now this just prevents := with new feature first/last n>1; in future see TODO below
   } else {
     ans = .Call(Cdogroups, x, xcols, groups, grpcols, jiscols, xjiscols, grporder, o__, f__, len__, jsub, SDenv, cols, newnames, !missing(on), verbose)
   }
@@ -1904,10 +1887,10 @@ replace_dot_alias = function(e) {
   # Grouping by by: i is by val, icols NULL, o__ may be subset of x, f__ points to o__ (or x if !length o__)
   # TO DO: setkey could mark the key whether it is unique or not.
   if (!is.null(lhs)) {
-    if (GForce) { # GForce should work with := #1414
-      vlen = length(ans[[1L]])
+    if (GForce) { # GForce should work with := #1414. TODO: move down into gforce at C level to save creating/rep'ing ans and grpcols wastefully
+      vlen = length(ans[[1L]])   # TODO: this might be ngrp when na.rm=TRUE and one group has 2 and another 0, so needs enhancing here (by passing all-1 back from gans?)
       # replicate vals if GForce returns 1 value per group
-      jvals = if (vlen==length(len__)) lapply(tail(ans, -length(g)), rep, times=len__) else tail(ans, -length(g))  # see comment in #4245 for why rep instead of rep.int
+      jvals = if (vlen==length(len__)) lapply(tail(ans, -length(grpcols)), rep, times=len__) else tail(ans, -length(grpcols))  # see comment in #4245 for why rep instead of rep.int
       jrows = vecseq(f__,len__,NULL)
       if (length(o__)) jrows = o__[jrows]
       if (length(irows)) jrows = irows[jrows]
@@ -2994,10 +2977,10 @@ rleidv = function(x, cols=seq_along(x), prefix=NULL) {
 gfuns = c("[", "[[", "head", "tail", "first", "last", "sum", "mean", "prod",
           "median", "min", "max", "var", "sd", ".N", "shift", "weighted.mean") # added .N for #334
 `g[` = `g[[` = function(x, n) .Call(Cgnthvalue, x, as.integer(n)) # n is of length=1 here.
-ghead = function(x, n) .Call(Cghead, x, as.integer(n)) # n is not used at the moment
-gtail = function(x, n) .Call(Cgtail, x, as.integer(n)) # n is not used at the moment
-gfirst = function(x) .Call(Cgfirst, x)
-glast = function(x) .Call(Cglast, x)
+ghead = function(x, n) .Call(Cghead, x, as.integer(n))
+gtail = function(x, n) .Call(Cgtail, x, as.integer(n))
+gfirst = function(x, n=1L, na.rm=FALSE) .Call(Cgfirst, x, as.integer(n), na.rm)
+glast = function(x, n=1L, na.rm=FALSE) .Call(Cglast, x, as.integer(n), na.rm)
 gsum = function(x, na.rm=FALSE) .Call(Cgsum, x, na.rm)
 gmean = function(x, na.rm=FALSE) .Call(Cgmean, x, na.rm)
 gweighted.mean = function(x, w, na.rm=FALSE) {
@@ -3022,7 +3005,7 @@ gshift = function(x, n=1L, fill=NA, type=c("lag", "lead", "shift", "cyclic")) {
   stopifnot(is.numeric(n))
   .Call(Cgshift, x, as.integer(n), fill, type)
 }
-gforce = function(env, jsub, o, f, l, rows) .Call(Cgforce, env, jsub, o, f, l, rows)
+gforce = function(env, jsub, o, f, l, rows, grpcols, lhs) .Call(Cgforce, env, jsub, o, f, l, rows, grpcols, lhs)
 
 .prepareFastSubset = function(isub, x, enclos, notjoin, verbose = FALSE){
   ## helper that decides, whether a fast binary search can be performed, if i is a call

@@ -296,6 +296,78 @@
 
 41. New function `%notin%` provides a convenient alternative to `!(x %in% y)`, [#4152](https://github.com/Rdatatable/data.table/issues/4152). Thanks to Jan Gorecki for suggesting and Michael Czekanski for the PR. `%notin%` uses half the memory because it computes the result directly as opposed to `!` which allocates a new vector to hold the negated result. If `x` is long enough to occupy more than half the remaining free memory, this can make the difference between the operation working, or failing with an out-of-memory error.
 
+42. `first()` and `last()` gain `na.rm` taking values `FALSE` (default), `TRUE` or `"row"`, [#4239](https://github.com/Rdatatable/data.table/issues/4239). For vector input, `TRUE` and `"row"` are the same. For `data.table|frame` input, `TRUE` returns the first/last non-NA observation in each column, while `"row"` returns the first/last row where all columns are non-NA. `TRUE` is optimized by group and `"row"` may be optimized by group in future. `n>1` with `na.rm=TRUE` is also optimized by group. Thanks to Nicolas Bennett and Michael Chirico for the requests, and Benjamin Schwendinger for the PR.
+
+    ```R
+    x
+    # [1] NA  1  2 NA
+
+    first(x)
+    # NA
+
+    first(x, na.rm=TRUE)
+    # 1
+
+    last(x, na.rm=TRUE)
+    # 2
+
+    DT
+    #     grp     A     B
+    #   <int> <int> <int>
+    #1:     1     3     7
+    #2:     1     4    NA
+    #3:     2     5    NA
+    #4:     2     6    NA
+
+    last(DT, na.rm=TRUE)
+    #     grp     A     B
+    #   <int> <int> <int>
+    #1:     2     6     7
+
+    last(DT, na.rm="row")
+    #     grp     A     B
+    #   <int> <int> <int>
+    #1:     1     3     7
+
+    DT[, last(.SD, na.rm=TRUE), by=grp]
+    #     grp     A     B
+    #   <int> <int> <int>
+    #1:     1     4     7
+    #2:     2     6    NA
+
+    DT[, last(.SD, na.rm="row"), by=grp]
+    #     grp     A     B
+    #   <int> <int> <int>
+    #1:     1     3     7
+    #2:     2    NA    NA
+    
+    DT[, last(na.omit(.SD)), by=grp]  # same as na.rm='row' but drops all-NA groups
+    #     grp     A     B
+    #   <int> <int> <int>
+    #1:     1     3     7
+
+    set.seed(1)
+    DT = data.table(id=rep(1:1e6, each=10),
+                     v=sample(c(1:5,NA), 10e6, replace=TRUE))
+    DT
+    #                id     v
+    #             <int> <int>
+    #        1:       1     2
+    #        2:       1     3
+    #        3:       1     4
+    #        4:       1    NA
+    #        5:       1     2
+    #       ---              
+    #  9999996: 1000000     3
+    #  9999997: 1000000    NA
+    #  9999998: 1000000    NA
+    #  9999999: 1000000     1
+    # 10000000: 1000000     4
+    ans1 = DT[, last(na.omit(v)), by=id]       # 18.7 sec
+    ans2 = DT[, last(v, na.rm=TRUE), by=id]    #  0.1 sec
+    identical(ans1, ans2)                      # TRUE
+    ```
+
 ## BUG FIXES
 
 1. `by=.EACHI` when `i` is keyed but `on=` different columns than `i`'s key could create an invalidly keyed result, [#4603](https://github.com/Rdatatable/data.table/issues/4603) [#4911](https://github.com/Rdatatable/data.table/issues/4911). Thanks to @myoung3 and @adamaltmejd for reporting, and @ColeMiller1 for the PR. An invalid key is where a `data.table` is marked as sorted by the key columns but the data is not sorted by those columns, leading to incorrect results from subsequent queries.
@@ -552,6 +624,8 @@
 
 53. `as.data.frame(DT, row.names=)` no longer silently ignores `row.names`, [#5319](https://github.com/Rdatatable/data.table/issues/5319). Thanks to @dereckdemezquita for the fix and PR, and @ben-schwen for guidance.
 
+54. An empty result in one column by group would be correctly filled with `NA` with warning: `Item <n> of j's result for group <n> is zero length. This will be filled with <n> NAs to match the longest column in this result. Later groups may have a similar problem but only the first is reported to save filling the warning buffer.` However, this was not true for type `list` where the fill value was `NULL`. Empty list results are now filled with `NA`.
+
 ## NOTES
 
 1. New feature 29 in v1.12.4 (Oct 2019) introduced zero-copy coercion. Our thinking is that requiring you to get the type right in the case of `0` (type double) vs `0L` (type integer) is too inconvenient for you the user. So such coercions happen in `data.table` automatically without warning. Thanks to zero-copy coercion there is no speed penalty, even when calling `set()` many times in a loop, so there's no speed penalty to warn you about either. However, we believe that assigning a character value such as `"2"` into an integer column is more likely to be a user mistake that you would like to be warned about. The type difference (character vs integer) may be the only clue that you have selected the wrong column, or typed the wrong variable to be assigned to that column. For this reason we view character to numeric-like coercion differently and will warn about it. If it is correct, then the warning is intended to nudge you to wrap the RHS with `as.<type>()` so that it is clear to readers of your code that a coercion from character to that type is intended. For example :
@@ -676,7 +750,7 @@
 
 1. Continuous daily testing by CRAN using latest daily R-devel revealed, within one day of the change to R-devel, that a future version of R would break one of our tests, [#4769](https://github.com/Rdatatable/data.table/issues/4769). The characters "-alike" were added into one of R's error messages, so our too-strict test which expected the error `only defined on a data frame with all numeric variables` will fail when it sees the new error message `only defined on a data frame with all numeric-alike variables`. We have relaxed the pattern the test looks for to `data.*frame.*numeric` well in advance of the future version of R being released. Readers are reminded that CRAN is not just a host for packages. It is also a giant test suite for R-devel. For more information, [behind the scenes of cran, 2016](https://www.h2o.ai/blog/behind-the-scenes-of-cran/).
 
-2. `as.Date.IDate` is no longer exported as a function to solve a new error in R-devel `S3 method lookup found 'as.Date.IDate' on search path`, [#4777](https://github.com/Rdatatable/data.table/issues/4777). The S3 method is still exported; i.e. `as.Date(x)` will still invoke the `as.Date.IDate` method when `x` is class `IDate`. The function had been exported, in addition to exporting the method, to solve a compatibility issue with `zoo` (and `xts` which uses `zoo`) because `zoo` exports `as.Date` which masks `base::as.Date`. Happily, since zoo 1.8-1 (Jan 2018) made a change to its `as.IDate`, the workaround is no longer needed.
+2. `as.Date.IDate` is no longer exported as a function to solve a new error in R-devel `S3 method lookup found 'as.Date.IDate' on search path`, [#4777](https://github.com/Rdatatable/data.table/issues/4777). The S3 method is still exported; i.e. `as.Date(x)` will still invoke the `as.Date.IDate` method when `x` is class `IDate`. The function had been exported, in addition to exporting the method, to solve a compatibility issue with `zoo` (and `xts` which uses `zoo`) because `zoo` exports `as.Date` which masks `base::as.Date`. Happily, since zoo 1.8-1 (Jan 2018) made a change to its `as.Date`, the workaround is no longer needed.
 
 3. Thanks to @fredguinog for testing `fcase` in development before 1.13.0 was released and finding a segfault, [#4378](https://github.com/Rdatatable/data.table/issues/4378). It was found separately by the `rchk` tool (which uses static code analysis) in release procedures and fixed before `fcase` was released, but the reproducible example has now been added to the test suite for completeness. Thanks also to @shrektan for investigating, proposing a very similar fix at C level, and a different reproducible example which has also been added to the test suite.
 

@@ -95,6 +95,7 @@ extern SEXP sym_index;
 extern SEXP sym_BY;
 extern SEXP sym_starts, char_starts;
 extern SEXP sym_maxgrpn;
+extern SEXP sym_gforce_dynamic;
 extern SEXP sym_colClassesAs;
 extern SEXP sym_verbose;
 extern SEXP SelfRefSymbol;
@@ -244,6 +245,7 @@ SEXP islockedR(SEXP x);
 bool need2utf8(SEXP x);
 SEXP coerceUtf8IfNeeded(SEXP x);
 SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg);
+SEXP setDT(SEXP list);
 
 // types.c
 char *end(char *start);
