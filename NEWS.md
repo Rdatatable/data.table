@@ -2,7 +2,7 @@
 
 **Benchmarks are regularly updated: [here](https://h2oai.github.io/db-benchmark/)**
 
-# data.table [v1.14.3](https://github.com/Rdatatable/data.table/milestone/20)  (in development)
+# data.table [v1.14.5](https://github.com/Rdatatable/data.table/milestone/20)  (in development)
 
 ## NEW FEATURES
 
@@ -606,6 +606,13 @@
 16. The options `datatable.print.class` and `datatable.print.keys` are now `TRUE` by default. They have been available since v1.9.8 (Nov 2016) and v1.11.0 (May 2018) respectively.
 
 17. `update.dev.pkg()` has been renamed `update_dev_pkg()` to get out of the way of the `stats::update` generic function, [#5421](https://github.com/Rdatatable/data.table/pull/5421). This is a utility function which upgrades the version of `data.table` to the latest commit in development which has also passed all tests. As such we don't expect any backwards compatibility concerns.
+
+
+# data.table [v1.14.4](https://github.com/Rdatatable/data.table/milestone/26?closed=1)
+
+## NOTES
+
+1. gcc 12.1 (May 2022) now detects and warns about an always-false condition in `fread` which caused a small efficiency saving never to be invoked. Thanks to CRAN for testing latest versions of compilers.
 
 
 # data.table [v1.14.2](https://github.com/Rdatatable/data.table/milestone/24?closed=1)  (27 Sep 2021)

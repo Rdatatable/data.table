@@ -185,7 +185,7 @@ grep -En "for\s*[(]\s*[a-zA-Z0-9_]+\s*=" src/*.c | grep -Fv "#loop_counter_not_l
 
 cd ..
 R
-cc(test=TRUE, clean=TRUE, CC="gcc-10")  # to compile with -pedandic -Wall, latest gcc as CRAN: https://cran.r-project.org/web/checks/check_flavors.html
+cc(test=TRUE, clean=TRUE, CC="gcc-12")  # to compile with -pedandic -Wall, latest gcc as CRAN: https://cran.r-project.org/web/checks/check_flavors.html
 saf = options()$stringsAsFactors
 options(stringsAsFactors=!saf)    # check tests (that might be run by user) are insensitive to option, #2718
 test.data.table()
@@ -306,7 +306,7 @@ cd ~/build/R-devel-strict-clang
 make
 
 cd ~/build/R-devel-strict-gcc
-# gcc-10 (in dev currently) failed to build R, so using regular gcc-9 (9.3.0 as per focal/Pop!_OS 20.04)
+# gcc-10 failed to build R-devel at some point, so using regular gcc-9 (9.3.0 as per focal/Pop!_OS 20.04)
 ./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --enable-strict-barrier --disable-long-double CC="gcc-9 -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer"
 make
 
