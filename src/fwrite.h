@@ -3,6 +3,7 @@
 #else
   #define STRICT_R_HEADERS
   #include <R.h>
+  #include <Rinternals.h>  // for SEXP in writeList() prototype
   #include "po.h"
   #define STOP     error
   #define DTPRINT  Rprintf
