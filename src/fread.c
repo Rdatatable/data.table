@@ -1284,23 +1284,22 @@ int freadMain(freadMainArgs _args) {
   while (*nastr) {
     if (**nastr == '\0') {
       blank_is_a_NAstring = true;
-      nastr++;
-      continue;
+    } else {
+      const char *ch = *nastr;
+      size_t nchar = strlen(ch);
+      if (isspace(ch[0]) || isspace(ch[nchar-1]))
+        STOP(_("freadMain: NAstring <<%s>> has whitespace at the beginning or end"), ch);
+      if (strcmp(ch,"T")==0    || strcmp(ch,"F")==0 ||
+          strcmp(ch,"TRUE")==0 || strcmp(ch,"FALSE")==0 ||
+          strcmp(ch,"True")==0 || strcmp(ch,"False")==0)
+        STOP(_("freadMain: NAstring <<%s>> is recognized as type boolean, this is not permitted."), ch);
+      if ((strcmp(ch,"1")==0 || strcmp(ch,"0")==0) && args.logical01)
+        STOP(_("freadMain: NAstring <<%s>> and logical01=%s, this is not permitted."), ch, args.logical01 ? "TRUE" : "FALSE");
+      char *end;
+      errno = 0;
+      (void)strtod(ch, &end);  // careful not to let "" get to here (see continue above) as strtod considers "" numeric
+      if (errno==0 && (size_t)(end - ch) == nchar) any_number_like_NAstrings = true;
     }
-    const char *ch = *nastr;
-    size_t nchar = strlen(ch);
-    if (isspace(ch[0]) || isspace(ch[nchar-1]))
-      STOP(_("freadMain: NAstring <<%s>> has whitespace at the beginning or end"), ch);
-    if (strcmp(ch,"T")==0    || strcmp(ch,"F")==0 ||
-        strcmp(ch,"TRUE")==0 || strcmp(ch,"FALSE")==0 ||
-        strcmp(ch,"True")==0 || strcmp(ch,"False")==0)
-      STOP(_("freadMain: NAstring <<%s>> is recognized as type boolean, this is not permitted."), ch);
-    if ((strcmp(ch,"1")==0 || strcmp(ch,"0")==0) && args.logical01)
-      STOP(_("freadMain: NAstring <<%s>> and logical01=%s, this is not permitted."), ch, args.logical01 ? "TRUE" : "FALSE");
-    char *end;
-    errno = 0;
-    (void)strtod(ch, &end);  // careful not to let "" get to here (see continue above) as strtod considers "" numeric
-    if (errno==0 && (size_t)(end - ch) == nchar) any_number_like_NAstrings = true;
     nastr++;
   }
   disabled_parsers[CT_BOOL8_N] = !args.logical01;
@@ -1323,8 +1322,8 @@ int freadMain(freadMainArgs _args) {
     DTPRINT(_("  show progress = %d\n"), args.showProgress);
     DTPRINT(_("  0/1 column will be read as %s\n"), args.logical01? "boolean" : "integer");
   }
-  if (*NAstrings==NULL ||                             // user specified that blank is to be considered "" not NA
-      (**NAstrings=='\0' && *(NAstrings+1)==NULL)) {  // blank is the only value to be considered NA, as is the default
+  if (*NAstrings==NULL ||                             // user sets na.strings=NULL
+      (**NAstrings=='\0' && *(NAstrings+1)==NULL)) {  // user sets na.strings=""
     NAstrings=NULL;  // clear NAstrings to save end_NA_string() dealing with these cases (blank_is_a_NAstring was set to true above)
   }
 
