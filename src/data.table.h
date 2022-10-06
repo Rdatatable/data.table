@@ -262,3 +262,74 @@ SEXP substitute_call_arg_namesR(SEXP expr, SEXP env);
 
 //negate.c
 SEXP notchin(SEXP x, SEXP table);
+
+// functions called from R level .Call/.External and registered in init.c
+// these now live here to pass -Wstrict-prototypes, #5477
+// all arguments must be SEXP since they are called from R level
+// where there are no arguments, it must be (void) not () to be a strict prototype
+SEXP setattrib(SEXP, SEXP, SEXP);
+SEXP assign(SEXP, SEXP, SEXP, SEXP, SEXP);
+SEXP copy(SEXP);
+SEXP alloccolwrapper(SEXP, SEXP, SEXP);
+SEXP selfrefokwrapper(SEXP, SEXP);
+SEXP truelength(SEXP);
+SEXP setcharvec(SEXP, SEXP, SEXP);
+SEXP chmatch_R(SEXP, SEXP, SEXP);
+SEXP chmatchdup_R(SEXP, SEXP, SEXP);
+SEXP chin_R(SEXP, SEXP);
+SEXP freadR(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+SEXP fwriteR(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+SEXP rbindlist(SEXP, SEXP, SEXP, SEXP);
+SEXP setlistelt(SEXP, SEXP, SEXP);
+SEXP address(SEXP);
+SEXP expandAltRep(SEXP);
+SEXP fmelt(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+SEXP fcast(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+SEXP issorted(SEXP, SEXP);
+SEXP gforce(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+SEXP gsum(SEXP, SEXP);
+SEXP gmean(SEXP, SEXP);
+SEXP gmin(SEXP, SEXP);
+SEXP gmax(SEXP, SEXP);
+SEXP setNumericRounding(SEXP);
+SEXP getNumericRounding(void);
+SEXP binary(SEXP);
+SEXP subsetDT(SEXP, SEXP, SEXP);
+SEXP convertNegAndZeroIdx(SEXP, SEXP, SEXP, SEXP);
+SEXP frank(SEXP, SEXP, SEXP, SEXP);
+SEXP lookup(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+SEXP overlaps(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+SEXP whichwrapper(SEXP, SEXP);
+SEXP shift(SEXP, SEXP, SEXP, SEXP);
+SEXP transpose(SEXP, SEXP, SEXP, SEXP);
+SEXP anyNA(SEXP, SEXP);
+SEXP setlevels(SEXP, SEXP, SEXP);
+SEXP rleid(SEXP, SEXP);
+SEXP gmedian(SEXP, SEXP);
+SEXP gtail(SEXP, SEXP);
+SEXP ghead(SEXP, SEXP);
+SEXP glast(SEXP);
+SEXP gfirst(SEXP);
+SEXP gnthvalue(SEXP, SEXP);
+SEXP dim(SEXP);
+SEXP gvar(SEXP, SEXP);
+SEXP gsd(SEXP, SEXP);
+SEXP gprod(SEXP, SEXP);
+SEXP gshift(SEXP, SEXP, SEXP, SEXP);
+SEXP nestedid(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+SEXP setDTthreads(SEXP, SEXP, SEXP, SEXP);
+SEXP getDTthreads_R(SEXP);
+SEXP nqRecreateIndices(SEXP, SEXP, SEXP, SEXP, SEXP);
+SEXP fsort(SEXP, SEXP);
+SEXP inrange(SEXP, SEXP, SEXP, SEXP);
+SEXP hasOpenMP(void);
+SEXP uniqueNlogical(SEXP, SEXP);
+SEXP dllVersion(void);
+SEXP initLastUpdated(SEXP);
+SEXP allNAR(SEXP);
+SEXP test_dt_win_snprintf(void);
+SEXP dt_zlib_version(void);
+SEXP startsWithAny(SEXP, SEXP, SEXP);
+SEXP convertDate(SEXP, SEXP);
+SEXP fastmean(SEXP);
+
