@@ -22,6 +22,7 @@ nan_is_na = function(x) {
 }
 
 if (base::getRversion() < "3.2.0") {  # Apr 2015
+  lengths = function(x) vapply(x, length, 0L, USE.NAMES=FALSE)
   isNamespaceLoaded = function(x) x %chin% loadedNamespaces()
 }
 

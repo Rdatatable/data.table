@@ -1,30 +1,26 @@
-\name{roll}
-\alias{roll}
+\name{froll}
 \alias{froll}
+\alias{roll}
 \alias{rolling}
 \alias{sliding}
 \alias{moving}
-\alias{rollmean}
 \alias{frollmean}
-\alias{rollsum}
-\alias{rollmax}
 \alias{frollsum}
 \alias{frollmax}
-\alias{rollapply}
-\alias{frollapply}
+\alias{rollmean}
+\alias{rollsum}
+\alias{rollmax}
 \title{Rolling functions}
 \description{
-  Fast rolling functions to calculate aggregates on sliding windows.
+  Fast rolling functions to calculate aggregates on sliding windows. For user-defined rolling function see \code{\link{frollapply}}.
 }
 \usage{
   frollmean(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"),
-    na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, hasNA, give.names=FALSE)
+    na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, give.names=FALSE, hasNA)
   frollsum(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"),
-    na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, hasNA, give.names=FALSE)
+    na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, give.names=FALSE, hasNA)
   frollmax(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"),
-    na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, hasNA, give.names=FALSE)
-  frollapply(x, n, FUN, \dots, fill=NA, align=c("right","left","center"),
-    adaptive=FALSE, partial=FALSE, give.names=FALSE)
+    na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, give.names=FALSE, hasNA)
 }
 \arguments{
   \item{x}{ Vector, \code{data.frame} or \code{data.table} of integer, numeric or logical columns over which to calculate the windowed aggregations. May also be a list, in which case the rolling function is applied to each of its elements. }
@@ -36,25 +32,23 @@
   \item{has.nf}{ Logical. If it is known that \code{x} contains (or not) non-finite values (\code{NA, NaN, Inf, -Inf}) then setting this to \code{TRUE}/\code{FALSE} may speed up computation. Defaults to \code{NA}. See \emph{has.nf argument} section below for details. }
   \item{adaptive}{ Logical, default \code{FALSE}. Should the rolling function be calculated adaptively? See \emph{Adaptive rolling functions} section below for details. }
   \item{partial}{ Logical, default \code{FALSE}. Should the rolling window size(s) provided in \code{n} be trimmed to available observations. See \emph{\code{partial} argument} section below for details. }
-  \item{FUN}{ The function to be applied to the rolling window in \code{frollapply}; See \emph{frollaply} section below for details. }
-  \item{\dots}{ Extra arguments passed to \code{FUN} in \code{frollapply}. }
-  \item{hasNA}{ Logical. Deprecated, use \code{has.nf} argument instead. }
   \item{give.names}{ Logical, default \code{FALSE}. When \code{TRUE}, names are automatically generated corresponding to names of \code{x} and names of \code{n}. If answer is an atomic vector, then the argument is ignored, see examples. }
+  \item{hasNA}{ Logical. Deprecated, use \code{has.nf} argument instead. }
 }
 \details{
   \code{froll*} functions accept vector, list, \code{data.frame} or \code{data.table}. Functions operate on a single vector, when passing a non-atomic input, then function is applied column-by-column, not to a complete set of column at once.
 
   Argument \code{n} allows multiple values to apply rolling function on multiple window sizes. If \code{adaptive=TRUE}, then \code{n} can be a list to specify multiple window sizes for adaptive rolling computation. See \emph{Adaptive rolling functions} section below for details.
 
-  When multiple columns and/or multiple windows width are provided, then computation run in parallel (except for \code{frollapply}. The exception is for \code{algo="exact"}, which runs in parallel even for single column and single window width. By default data.table uses only half of available CPUs, see \code{\link{setDTthreads}} for details on how to tune CPU usage.
+  When multiple columns and/or multiple windows width are provided, then computation run in parallel. The exception is for \code{algo="exact"}, which runs in parallel even for single column and single window width. By default data.table uses only half of available CPUs, see \code{\link{setDTthreads}} for details on how to tune CPU usage.
 
   Setting \code{options(datatable.verbose=TRUE)} will display various information about how rolling function processed. It will not print information in a real-time but only at the end of the processing.
 }
 \value{
-  A list except when the input is a \code{vector} and \code{length(n)==1}, in which case a \code{vector} is returned, for convenience. Thus, rolling functions can be used conveniently within \code{data.table} syntax.
+  A list except when the input is not \emph{vectorized} (\code{x} is not a list, and \code{n} specify single rolling window), in which case a \code{vector} is returned, for convenience. Thus, rolling functions can be used conveniently within \code{data.table} syntax.
 }
 \note{
-  Be aware that rolling functions operates on the physical order of input. If the intent is to roll values in a vector by a logical window, for example an hour, or a day, then one has to use adaptive rolling function or has to ensure that there are no gaps in input. For details see \href{https://github.com/Rdatatable/data.table/issues/3241}{issue #3241}.
+  Be aware that rolling functions operates on the physical order of input. If the intent is to roll values in a vector by a logical window, for example an hour, or a day, then one has to ensure that there are no gaps in input or use adaptive rolling function to handle gaps by specifying expected window sizes. For details see \href{https://github.com/Rdatatable/data.table/issues/3241}{issue #3241}.
 }
 \section{\code{has.nf} argument}{
   \code{has.nf} can be used to speed up processing in cases when it is known if \code{x} contains (or not) non-finite values (\code{NA, NaN, Inf, -Inf}).
@@ -94,10 +88,6 @@
 \section{\code{partial} argument}{
   \code{partial=TRUE} will turn a function into adaptive function and trim window size in \code{n} argument using \code{n = c(seq.int(n), rep(n, len-n))} to available observations. It inherits limitations of adaptive rolling functions, see above. Adaptive functions uses more complex algorithms, therefore if performance is important then \code{partial=TRUE} should be avoided in favour of computing only missing observations separately after the rolling function; see examples.
 }
-\section{\code{frollapply}}{
-  \code{frollapply} computes rolling aggregate on arbitrary R functions. The input \code{x} (first argument) to the function \code{FUN} is coerced to \emph{numeric} beforehand and \code{FUN} has to return a scalar \emph{numeric} value. Checks for that are made only during the first iteration when \code{FUN} is evaluated. Edge cases can be found in examples below. Any R function is supported, but it is not optimized using our own C implementation -- hence, for example, using \code{frollapply} to compute a rolling average is inefficient. It is also always single-threaded because there is no thread-safe API to R's C \code{eval}. Nevertheless we've seen the computation speed up vis-a-vis versions implemented in base R, especially when combined with \code{adaptive=TRUE}.
-  Support for \code{adaptive=TRUE} in \code{frollapply} requires R 3.4.0 or higher.
-}
 \section{\code{zoo} package users notice}{
   Users coming from most popular package for rolling functions \code{zoo} might expect following differences in \code{data.table} implementation
   \itemize{
@@ -109,7 +99,6 @@
     \item{ integers and logical are always coerced to double. }
     \item{ when \code{adaptive=FALSE} (default), then \code{n} must be a numeric vector. List is not accepted. }
     \item{ when \code{adaptive=TRUE}, then \code{n} must be vector of length equal to \code{nrow(x)}, or list of such vectors. }
-    \item{ \code{by.column} argument is not yet supported in \code{frollapply}. For details/upvote see \href{https://github.com/Rdatatable/data.table/issues/4887}{issue #4887}. }
   }
 }
 \examples{
@@ -153,11 +142,6 @@ frollsum(list(x=1:5, y=5:1), c(tiny=2, big=4), give.names=TRUE)
 frollmax(c(1,2,NA,4,5), 2)
 frollmax(c(1,2,NA,4,5), 2, has.nf=FALSE)
 
-# frollapply
-frollapply(d, 3:4, sum)
-f = function(x, ...) if (sum(x, ...)>5) min(x, ...) else max(x, ...)
-frollapply(d, 3:4, f, na.rm=TRUE)
-
 # performance vs exactness
 set.seed(108)
 x = sample(c(rnorm(1e3, 1e6, 5e5), 5e9, 5e-9))
@@ -178,7 +162,7 @@ system.time(ans1<-ma(x, n))
 system.time(ans2<-fastma(x, n))
 system.time(ans3<-frollmean(x, n))
 system.time(ans4<-frollmean(x, n, algo="exact"))
-system.time(ans5<-frollapply(x, n, mean))
+system.time(ans5<-frollapply(x, n, mean, simplify=unlist))
 anserr = list(
   fastma = ans2-ans1,
   froll_fast = ans3-ans1,
@@ -187,38 +171,9 @@ anserr = list(
 )
 errs = sapply(lapply(anserr, abs), sum, na.rm=TRUE)
 sapply(errs, format, scientific=FALSE) # roundoff
-
-# frollapply corner cases
-f = function(x) head(x, 2)     ## FUN returns non length 1
-try(frollapply(1:5, 3, f))
-f = function(x) {              ## FUN sometimes returns non length 1
-  n = length(x)
-  # length 1 will be returned only for first iteration where we check length
-  if (n==x[n]) x[1L] else range(x) # range(x)[2L] is silently ignored!
-}
-frollapply(1:5, 3, f)
-options(datatable.verbose=TRUE)
-x = c(1,2,1,1,1,2,3,2)
-frollapply(x, 3, uniqueN)     ## FUN returns integer
-numUniqueN = function(x) as.numeric(uniqueN(x))
-frollapply(x, 3, numUniqueN)
-x = c(1,2,1,1,NA,2,NA,2)
-frollapply(x, 3, anyNA)       ## FUN returns logical
-as.logical(frollapply(x, 3, anyNA))
-options(datatable.verbose=FALSE)
-f = function(x) {             ## FUN returns character
-  if (sum(x)>5) "big" else "small"
-}
-try(frollapply(1:5, 3, f))
-f = function(x) {             ## FUN is not type-stable
-  n = length(x)
-  # double type will be returned only for first iteration where we check type
-  if (n==x[n]) 1 else NA # NA logical turns into garbage without coercion to double
-}
-try(frollapply(1:5, 3, f))
 }
 \seealso{
-  \code{\link{shift}}, \code{\link{data.table}}, \code{\link{setDTthreads}}
+  \code{\link{frollapply}}, \code{\link{shift}}, \code{\link{data.table}}, \code{\link{setDTthreads}}
 }
 \references{
   \href{https://en.wikipedia.org/wiki/Round-off_error}{Round-off error}
