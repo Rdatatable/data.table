@@ -29,7 +29,7 @@ static int getIntEnv(const char *name, int def)
 static inline int imin(int a, int b) { return a < b ? a : b; }
 static inline int imax(int a, int b) { return a > b ? a : b; }
 
-void initDTthreads() {
+void initDTthreads(void) {
   // called at package startup from init.c
   // also called by setDTthreads(threads=NULL) (default) to reread environment variables; see setDTthreads below
   // No verbosity here in this setter. Verbosity is in getDTthreads(verbose=TRUE)
@@ -168,16 +168,16 @@ SEXP setDTthreads(SEXP threads, SEXP restore_after_fork, SEXP percent, SEXP thro
 
 static int pre_fork_DTthreads = 0;
 
-void when_fork() {
+void when_fork(void) {
   pre_fork_DTthreads = DTthreads;
   DTthreads = 1;
 }
 
-void after_fork() {
+void after_fork(void) {
   if (RestoreAfterFork) DTthreads = pre_fork_DTthreads;
 }
 
-void avoid_openmp_hang_within_fork() {
+void avoid_openmp_hang_within_fork(void) {
   // Called once on loading data.table from init.c
 #ifdef _OPENMP
   pthread_atfork(&when_fork, &after_fork, NULL);

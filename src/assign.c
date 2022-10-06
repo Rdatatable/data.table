@@ -1137,7 +1137,7 @@ SEXP allocNAVectorLike(SEXP x, R_len_t n) {
 static SEXP *saveds=NULL;
 static R_len_t *savedtl=NULL, nalloc=0, nsaved=0;
 
-void savetl_init() {
+void savetl_init(void) {
   if (nsaved || nalloc || saveds || savedtl) {
     error(_("Internal error: savetl_init checks failed (%d %d %p %p). please report to data.table issue tracker."), nsaved, nalloc, saveds, savedtl); // # nocov
   }
@@ -1178,7 +1178,7 @@ void savetl(SEXP s)
   nsaved++;
 }
 
-void savetl_end() {
+void savetl_end(void) {
   // Can get called if nothing has been saved yet (nsaved==0), or even if _init() hasn't been called yet (pointers NULL). Such
   // as to clear up before error. Also, it might be that nothing needed to be saved anyway.
   for (int i=0; i<nsaved; i++) SET_TRUELENGTH(saveds[i],savedtl[i]);

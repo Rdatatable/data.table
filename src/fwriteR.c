@@ -14,7 +14,7 @@ static const char *sep2start, *sep2end;
 
 // Non-agnostic helpers ...
 
-const char *getString(SEXP *col, int64_t row) {   // TODO: inline for use in fwrite.c
+const char *getString(const SEXP *col, int64_t row) {   // TODO: inline for use in fwrite.c
   SEXP x = col[row];
   return x==NA_STRING ? NULL : CHAR(x);
 }
@@ -48,7 +48,7 @@ const char *getCategString(SEXP col, int64_t row) {
   return x==NA_INTEGER ? NULL : CHAR(STRING_ELT(getAttrib(col, R_LevelsSymbol), x-1));
 }
 
-writer_fun_t funs[] = {
+writer_fun_t *funs[] = {
   &writeBool8,
   &writeBool32,
   &writeBool32AsString,
@@ -68,8 +68,8 @@ writer_fun_t funs[] = {
 
 static int32_t whichWriter(SEXP);
 
-void writeList(SEXP *col, int64_t row, char **pch) {
-  SEXP v = col[row];
+void writeList(const void *col, int64_t row, char **pch) {
+  SEXP v = ((const SEXP *)col)[row];
   int32_t wf = whichWriter(v);
   if (TYPEOF(v)==VECSXP || wf==INT32_MIN || isFactor(v)) {
     error(_("Internal error: getMaxListItemLen should have caught this up front."));  // # nocov
@@ -77,7 +77,7 @@ void writeList(SEXP *col, int64_t row, char **pch) {
   char *ch = *pch;
   write_chars(sep2start, &ch);
   const void *data = DATAPTR_RO(v);
-  writer_fun_t fun = funs[wf];
+  writer_fun_t *fun = funs[wf];
   for (int j=0; j<LENGTH(v); j++) {
     (*fun)(data, j, &ch);
     *ch++ = sep2;

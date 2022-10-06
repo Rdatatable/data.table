@@ -68,14 +68,14 @@ static char msg[1001];
  * Therefore, using <<if (!malloc()) STOP(_("helpful context msg"))>> approach to cleanup() on error.
  */
 
-static void free_ustr() {
+static void free_ustr(void) {
   for(int i=0; i<ustr_n; i++)
     SET_TRUELENGTH(ustr[i],0);
   free(ustr); ustr=NULL;
   ustr_alloc=0; ustr_n=0; ustr_maxlen=0;
 }
 
-static void cleanup() {
+static void cleanup(void) {
   free(gs); gs=NULL;
   gs_alloc = 0;
   gs_n = 0;
@@ -110,7 +110,7 @@ static void push(const int *x, const int n) {
   gs_thread_n[me] += n;
 }
 
-static void flush() {
+static void flush(void) {
   if (!retgrp) return;
   int me = omp_get_thread_num();
   int n = gs_thread_n[me];
@@ -373,12 +373,12 @@ SEXP setNumericRounding(SEXP droundArg)
   return R_NilValue;
 }
 
-SEXP getNumericRounding()
+SEXP getNumericRounding(void)
 {
   return ScalarInteger(dround);
 }
 
-int getNumericRounding_C()
+int getNumericRounding_C(void)
 // for use in uniqlist.c
 {
   return dround;

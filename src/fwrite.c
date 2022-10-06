@@ -59,17 +59,17 @@ inline void write_chars(const char *x, char **pch)
   *pch = ch;
 }
 
-void writeBool8(int8_t *col, int64_t row, char **pch)
+void writeBool8(const void *col, int64_t row, char **pch)
 {
-  int8_t x = col[row];
+  int8_t x = ((const int8_t *)col)[row];
   char *ch = *pch;
   *ch++ = '0'+(x==1);
   *pch = ch-(x==INT8_MIN);  // if NA then step back, to save a branch
 }
 
-void writeBool32(int32_t *col, int64_t row, char **pch)
+void writeBool32(const void *col, int64_t row, char **pch)
 {
-  int32_t x = col[row];
+  int32_t x = ((const int32_t *)col)[row];
   char *ch = *pch;
   if (x==INT32_MIN) {  // TODO: when na=='\0' as recommended, use a branchless writer
     write_chars(na, &ch);
@@ -79,9 +79,9 @@ void writeBool32(int32_t *col, int64_t row, char **pch)
   *pch = ch;
 }
 
-void writeBool32AsString(int32_t *col, int64_t row, char **pch)
+void writeBool32AsString(const void *col, int64_t row, char **pch)
 {
-  int32_t x = col[row];
+  int32_t x = ((const int32_t *)col)[row];
   char *ch = *pch;
   if (x == INT32_MIN) {
     write_chars(na, &ch);
@@ -105,10 +105,10 @@ static inline void reverse(char *upp, char *low)
   }
 }
 
-void writeInt32(int32_t *col, int64_t row, char **pch)
+void writeInt32(const void *col, int64_t row, char **pch)
 {
   char *ch = *pch;
-  int32_t x = col[row];
+  int32_t x = ((const int32_t *)col)[row];
   if (x == INT32_MIN) {
     write_chars(na, &ch);
   } else {
@@ -121,10 +121,10 @@ void writeInt32(int32_t *col, int64_t row, char **pch)
   *pch = ch;
 }
 
-void writeInt64(int64_t *col, int64_t row, char **pch)
+void writeInt64(const void *col, int64_t row, char **pch)
 {
   char *ch = *pch;
-  int64_t x = col[row];
+  int64_t x = ((const int64_t *)col)[row];
   if (x == INT64_MIN) {
     write_chars(na, &ch);
   } else {
@@ -176,7 +176,7 @@ void genLookups() {
 }
 */
 
-void writeFloat64(double *col, int64_t row, char **pch)
+void writeFloat64(const void *col, int64_t row, char **pch)
 {
   // hand-rolled / specialized for speed
   // *pch is safely the output destination with enough space (ensured via calculating maxLineLen up front)
@@ -186,7 +186,7 @@ void writeFloat64(double *col, int64_t row, char **pch)
   //  ii) no C libary calls such as sprintf() where the fmt string has to be interpretted over and over
   // iii) no need to return variables or flags.  Just writes.
   //  iv) shorter, easier to read and reason with in one self contained place.
-  double x = col[row];
+  double x = ((const double *)col)[row];
   char *ch = *pch;
   if (!isfinite(x)) {
     if (isnan(x)) {
@@ -300,9 +300,9 @@ void writeFloat64(double *col, int64_t row, char **pch)
   *pch = ch;
 }
 
-void writeComplex(Rcomplex *col, int64_t row, char **pch)
+void writeComplex(const void *col, int64_t row, char **pch)
 {
-  Rcomplex x = col[row];
+  Rcomplex x = ((const Rcomplex *)col)[row];
   char *ch = *pch;
   writeFloat64(&x.r, 0, &ch);
   if (!ISNAN(x.i)) {
@@ -339,8 +339,8 @@ static inline void write_time(int32_t x, char **pch)
   *pch = ch;
 }
 
-void writeITime(int32_t *col, int64_t row, char **pch) {
-  write_time(col[row], pch);
+void writeITime(const void *col, int64_t row, char **pch) {
+  write_time(((const int32_t *)col)[row], pch);
 }
 
 static inline void write_date(int32_t x, char **pch)
@@ -393,15 +393,16 @@ static inline void write_date(int32_t x, char **pch)
   *pch = ch;
 }
 
-void writeDateInt32(int32_t *col, int64_t row, char **pch) {
-  write_date(col[row], pch);
+void writeDateInt32(const void *col, int64_t row, char **pch) {
+  write_date(((const int32_t *)col)[row], pch);
 }
 
-void writeDateFloat64(double *col, int64_t row, char **pch) {
-  write_date(isfinite(col[row]) ? (int)(col[row]) : INT32_MIN, pch);
+void writeDateFloat64(const void *col, int64_t row, char **pch) {
+  double x = ((const double *)col)[row];
+  write_date(isfinite(x) ? (int)(x) : INT32_MIN, pch);
 }
 
-void writePOSIXct(double *col, int64_t row, char **pch)
+void writePOSIXct(const void *col, int64_t row, char **pch)
 {
   // Write ISO8601 UTC by default to encourage ISO standards, stymie ambiguity and for speed.
   // R internally represents POSIX datetime in UTC always. Its 'tzone' attribute can be ignored.
@@ -410,7 +411,7 @@ void writePOSIXct(double *col, int64_t row, char **pch)
   // All positive integers up to 2^53 (9e15) are exactly representable by double which is relied
   // on in the ops here; number of seconds since epoch.
 
-  double x = col[row];
+  double x = ((const double *)col)[row];
   char *ch = *pch;
   if (!isfinite(x)) {
     write_chars(na, &ch);
@@ -461,9 +462,9 @@ void writePOSIXct(double *col, int64_t row, char **pch)
   *pch = ch;
 }
 
-void writeNanotime(int64_t *col, int64_t row, char **pch)
+void writeNanotime(const void *col, int64_t row, char **pch)
 {
-  int64_t x = col[row];
+  int64_t x = ((const int64_t *)col)[row];
   char *ch = *pch;
   if (x == INT64_MIN) {
     write_chars(na, &ch);
@@ -546,12 +547,12 @@ static inline void write_string(const char *x, char **pch)
 
 void writeString(const void *col, int64_t row, char **pch)
 {
-  write_string(getString(col, row), pch);
+  write_string(getString((const SEXP *)col, row), pch);
 }
 
 void writeCategString(const void *col, int64_t row, char **pch)
 {
-  write_string(getCategString(col, row), pch);
+  write_string(getCategString((const SEXP *)col, row), pch);
 }
 
 #ifndef NOZLIB
