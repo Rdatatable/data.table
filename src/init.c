@@ -241,7 +241,7 @@ R_ExternalMethodDef externalMethods[] = {
 {NULL, NULL, 0}
 };
 
-static void setSizes() {
+static void setSizes(void) {
   for (int i=0; i<100; ++i) { __sizes[i]=0; __typeorder[i]=0; }
   // only these types are currently allowed as column types :
   __sizes[LGLSXP] =  sizeof(int);       __typeorder[LGLSXP] =  0;
@@ -401,7 +401,7 @@ inline double LLtoD(long long x) {
   return u.d;
 }
 
-int GetVerbose() {
+int GetVerbose(void) {
   // don't call repetitively; save first in that case
   SEXP opt = GetOption(sym_verbose, R_NilValue);
   if ((!isLogical(opt) && !isInteger(opt)) || LENGTH(opt)!=1 || INTEGER(opt)[0]==NA_INTEGER)
@@ -410,7 +410,7 @@ int GetVerbose() {
 }
 
 // # nocov start
-SEXP hasOpenMP() {
+SEXP hasOpenMP(void) {
   // Just for use by onAttach (hence nocov) to avoid an RPRINTF from C level which isn't suppressable by CRAN
   // There is now a 'grep' in CRAN_Release.cmd to detect any use of RPRINTF in init.c, which is
   // why RPRINTF is capitalized in this comment to avoid that grep.
@@ -431,7 +431,7 @@ SEXP initLastUpdated(SEXP var) {
   return R_NilValue;
 }
 
-SEXP dllVersion() {
+SEXP dllVersion(void) {
   // .onLoad calls this and checks the same as packageVersion() to ensure no R/C version mismatch, #3056
   return(ScalarString(mkChar("1.14.5")));
 }

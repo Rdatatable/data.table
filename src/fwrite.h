@@ -11,21 +11,21 @@
 typedef void (*writer_fun_t)(const void *, int64_t, char **);
 
 // in the order of writer_fun_t in fwriteR.c
-void writeBool8();
-void writeBool32();
-void writeBool32AsString();
-void writeInt32();
-void writeInt64();
-void writeFloat64();
-void writeComplex();
-void writeITime();
-void writeDateInt32();
-void writeDateFloat64();
-void writePOSIXct();
-void writeNanotime();
-void writeString();
-void writeCategString();
-void writeList();
+void writeBool8          (int8_t     *, int64_t, char **);
+void writeBool32         (int32_t    *, int64_t, char **);
+void writeBool32AsString (int32_t    *, int64_t, char **);
+void writeInt32          (int32_t    *, int64_t, char **);
+void writeInt64          (int64_t    *, int64_t, char **);
+void writeFloat64        (double     *, int64_t, char **);
+void writeComplex        (Rcomplex   *, int64_t, char **);
+void writeITime          (int32_t    *, int64_t, char **);
+void writeDateInt32      (int32_t    *, int64_t, char **);
+void writeDateFloat64    (double     *, int64_t, char **);
+void writePOSIXct        (double     *, int64_t, char **);
+void writeNanotime       (int64_t    *, int64_t, char **);
+void writeString         (const void *, int64_t, char **);
+void writeCategString    (const void *, int64_t, char **);
+void writeList           (SEXP       *, int64_t, char **);
 
 void write_chars(const char *source, char **dest);
 

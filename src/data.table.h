@@ -112,7 +112,7 @@ extern size_t __typeorder[100]; // __ prefix otherwise if we use these names dir
 
 long long DtoLL(double x);
 double LLtoD(long long x);
-int GetVerbose();
+int GetVerbose(void);
 
 // cj.c
 SEXP cj(SEXP base_list);
@@ -125,14 +125,14 @@ SEXP growVector(SEXP x, R_len_t newlen);
 SEXP allocNAVector(SEXPTYPE type, R_len_t n);
 SEXP allocNAVectorLike(SEXP x, R_len_t n);
 void writeNA(SEXP v, const int from, const int n, const bool listNA);
-void savetl_init(), savetl(SEXP s), savetl_end();
+void savetl_init(void), savetl(SEXP s), savetl_end(void);
 int checkOverAlloc(SEXP x);
 
 // forder.c
 int StrCmp(SEXP x, SEXP y);
 uint64_t dtwiddle(double x);
 SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg);
-int getNumericRounding_C();
+int getNumericRounding_C(void);
 
 // reorder.c
 SEXP reorder(SEXP x, SEXP order);
@@ -189,12 +189,12 @@ double iquickselect(int *x, int n);
 double i64quickselect(int64_t *x, int n);
 
 // fread.c
-double wallclock();
+double wallclock(void);
 
 // openmp-utils.c
-void initDTthreads();
+void initDTthreads(void);
 int getDTthreads(const int64_t n, const bool throttle);
-void avoid_openmp_hang_within_fork();
+void avoid_openmp_hang_within_fork(void);
 
 // froll.c
 void frollmean(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasna, bool verbose);
