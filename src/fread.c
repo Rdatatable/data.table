@@ -1284,8 +1284,6 @@ int freadMain(freadMainArgs _args) {
   while (*nastr) {
     if (**nastr == '\0') {
       blank_is_a_NAstring = true;
-      // if blank is the only one, as is the default, clear NAstrings so that doesn't have to be checked
-      if (nastr==NAstrings && nastr+1==NULL) NAstrings=NULL;
       nastr++;
       continue;
     }
@@ -1324,6 +1322,10 @@ int freadMain(freadMainArgs _args) {
     if (args.skipString) DTPRINT(_("  skip to string = <<%s>>\n"), args.skipString);
     DTPRINT(_("  show progress = %d\n"), args.showProgress);
     DTPRINT(_("  0/1 column will be read as %s\n"), args.logical01? "boolean" : "integer");
+  }
+  if (*NAstrings==NULL ||                             // user specified that blank is to be considered "" not NA
+      (**NAstrings=='\0' && *(NAstrings+1)==NULL)) {  // blank is the only value to be considered NA, as is the default
+    NAstrings=NULL;  // clear NAstrings to save end_NA_string() dealing with these cases (blank_is_a_NAstring was set to true above)
   }
 
   stripWhite = args.stripWhite;
