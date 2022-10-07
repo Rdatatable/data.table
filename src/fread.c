@@ -1294,10 +1294,10 @@ int freadMain(freadMainArgs _args) {
           strcmp(ch,"True")==0 || strcmp(ch,"False")==0)
         STOP(_("freadMain: NAstring <<%s>> is recognized as type boolean, this is not permitted."), ch);
       if ((strcmp(ch,"1")==0 || strcmp(ch,"0")==0) && args.logical01)
-        STOP(_("freadMain: NAstring <<%s>> and logical01=%s, this is not permitted."), ch, args.logical01 ? "TRUE" : "FALSE");
+        STOP(_("freadMain: NAstring <<%s>> and logical01=TRUE, this is not permitted."), ch);
       char *end;
       errno = 0;
-      (void)strtod(ch, &end);  // careful not to let "" get to here (see continue above) as strtod considers "" numeric
+      (void)strtod(ch, &end);  // careful not to let "" get to here as strtod considers "" numeric
       if (errno==0 && (size_t)(end - ch) == nchar) any_number_like_NAstrings = true;
     }
     nastr++;
