@@ -11088,17 +11088,18 @@ setattr(DT[[5]], "tzone", NULL)
 # an R call to format.POSIXct in fwriteR.c. By default fwrite writes datetime in UTC for
 # consistent and reproducible research, which is different to write.csv.
 # TODO: revisit when R-devel has settled w.r.t. write.csv behavior.
+format_rows_as_csv = function(DT, digits) apply(sapply(DT, format, digits=digits), 1L, paste0, collapse=",")
 old=options(digits.secs=0)
 test(1741.3, x1<-capture.output(fwrite(DT,dateTimeAs="write.csv")),
-             c("A,B,C,D,E", apply(sapply(DT, format, digits=0L), 1L, paste0, collapse=",")))
+             c("A,B,C,D,E", format_rows_as_csv(DT, digits=0L)))
            # capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
 options(digits.secs=3)
 test(1741.4, x2<-capture.output(fwrite(DT,dateTimeAs="write.csv")),
-             c("A,B,C,D,E", apply(sapply(DT, format, digits=3L), 1L, paste0, collapse=",")))
+             c("A,B,C,D,E", format_rows_as_csv(DT, digits=3L)))
            # capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
 options(digits.secs=6)
 test(1741.5, x3<-capture.output(fwrite(DT,dateTimeAs="write.csv")),
-             c("A,B,C,D,E", apply(sapply(DT, format, digits=6L), 1L, paste0, collapse=",")))
+             c("A,B,C,D,E", format_rows_as_csv(DT, digits=6L)))
            # capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
 # check that extra digits made it into output
 test(1741.6, sum(nchar(x1)) < sum(nchar(x2)) && sum(nchar(x2)) < sum(nchar(x3)))
