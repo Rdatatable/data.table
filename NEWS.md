@@ -6,11 +6,35 @@
 
 ## NOTES
 
-1. gcc 12.1 (May 2022) now detects and warns about an always-false condition (`-Waddress`) in `fread` which caused a small efficiency saving never to be invoked. Thanks to CRAN for testing latest versions of compilers.
+1. gcc 12.1 (May 2022) now detects and warns about an always-false condition (`-Waddress`) in `fread` which caused a small efficiency saving never to be invoked, [#5476](https://github.com/Rdatatable/data.table/pull/5476). Thanks to CRAN for testing latest versions of compilers.
 
 2. `update.dev.pkg()` has been renamed `update_dev_pkg()` to get out of the way of the `stats::update` generic function, [#5421](https://github.com/Rdatatable/data.table/pull/5421). This is a utility function which upgrades the version of `data.table` to the latest commit in development which has passed all tests. As such we don't expect any backwards compatibility concerns. Its manual page was causing an intermittent hang/crash from `R CMD check` on Windows-only on CRAN which we hope will be worked around by changing its name.
 
-3. Internal C code now passes `-Wstrict-prototypes` to satisfy the warnings now displayed on CRAN.
+3. Internal C code now passes `-Wstrict-prototypes` to satisfy the warnings now displayed on CRAN, [#5477](https://github.com/Rdatatable/data.table/pull/5477).
+
+4. `write.csv` in R-devel no longer responds to `getOption("digits.secs")` for `POSIXct`, [#5478](https://github.com/Rdatatable/data.table/issues/5478). This caused our tests of `fwrite(, dateTimeAs="write.csv")` to fail on CRAN's daily checks using latest daily R-devel. While R-devel discussion continues, and currently it seems like the change is intended with further changes possible, this `data.table` release massages our tests to pass on latest R-devel. The idea is to try to get out of the way of R-devel changes in this regard until the new behavior of `write.csv` is released and confirmed. Package updates are not accepted on CRAN if they do not pass the latest daily version of R-devel, even if R-devel changes after the package update is submitted. If the change to `write.csv()` stands, then a future release of `data.table` will be needed to make `fwrite(, dateTimeAs="write.csv")` match `write.csv()` output again in that future version of R onwards. If you use an older version of `data.table` than said future one in the said future version of R, then `fwrite(, dateTimeAs="write.csv")` may not match `write.csv()` if you are using `getOption("digits.secs")` too. However, you can always check that your installation of `data.table` works in your version of R on your platform by simply running `test.data.table()` yourself. Doing so would detect such a situation for you: test 1741 would fail in this case. `test.data.table()` runs the entire suite of tests and is always available to you locally. This way you do not need to rely on our statements about which combinations of versions of R and `data.table` on which platforms we have tested and support; just run `test.data.table()` yourself. Having said that, because test 1741 has been relaxed in this release in order to be accepted on CRAN to pass latest R-devel, this won't be true for this particular release in regard to this particular test.
+
+    ```R
+    $ R --vanilla
+    R version 4.2.1 (2022-06-23) -- "Funny-Looking Kid"
+    > DF = data.frame(A=as.POSIXct("2022-10-01 01:23:45.012"))
+    > options(digits.secs=0)
+    > write.csv(DF)
+    "","A"
+    "1",2022-10-01 01:23:45
+    > options(digits.secs=3)
+    > write.csv(DF)
+    "","A"
+    "1",2022-10-01 01:23:45.012
+    
+    $ Rdevel --vanilla
+    R Under development (unstable) (2022-10-06 r83040) -- "Unsuffered Consequences"
+    > DF = data.frame(A=as.POSIXct("2022-10-01 01:23:45.012"))
+    > options(digits.secs=0)
+    > write.csv(DF)
+    "","A"
+    "1",2022-10-01 01:23:45.012
+    ```
 
 
 # data.table [v1.14.2](https://github.com/Rdatatable/data.table/milestone/24?closed=1)  (27 Sep 2021)
