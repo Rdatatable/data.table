@@ -295,6 +295,7 @@ tar xvf R-devel.tar.gz
 mv R-devel R-devel-strict-clang
 tar xvf R-devel.tar.gz
 
+sudo apt-get -y build-dep r-base
 cd R-devel  # may be used for revdep testing: .dev/revdep.R.
 # important to change directory name before building not after because the path is baked into the build, iiuc
 ./configure CFLAGS="-O0 -Wall -pedantic"
