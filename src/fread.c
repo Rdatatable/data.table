@@ -1281,10 +1281,9 @@ int freadMain(freadMainArgs _args) {
         STOP(_("freadMain: NAstring <<%s>> has whitespace at the beginning or end"), ch);
       if (strcmp(ch,"T")==0    || strcmp(ch,"F")==0 ||
           strcmp(ch,"TRUE")==0 || strcmp(ch,"FALSE")==0 ||
-          strcmp(ch,"True")==0 || strcmp(ch,"False")==0)
+          strcmp(ch,"True")==0 || strcmp(ch,"False")==0 ||
+          strcmp(ch,"1")==0    || strcmp(ch,"0")==0)
         STOP(_("freadMain: NAstring <<%s>> is recognized as type boolean, this is not permitted."), ch);
-      if ((strcmp(ch,"1")==0 || strcmp(ch,"0")==0) && args.logical01)
-        STOP(_("freadMain: NAstring <<%s>> and logical01=TRUE, this is not permitted."), ch);
       char *end;
       errno = 0;
       (void)strtod(ch, &end);  // careful not to let "" get to here as strtod considers "" numeric
