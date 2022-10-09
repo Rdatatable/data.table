@@ -22,8 +22,6 @@
 # c
 # test and step between R and C
 
-options(datatable.print.class = TRUE)
-
 sourceDir = function(path=getwd(), trace = TRUE, ...) {
   # copied verbatim from example(source) in base R
   for (nm in list.files(path, pattern = "\\.[RrSsQq]$")) {
@@ -41,7 +39,7 @@ cc = function(test=FALSE, clean=FALSE, debug=FALSE, omp=!debug, cc_dir, path=Sys
   stopifnot(is.character(CC), length(CC)==1L, !is.na(CC), nzchar(CC))
   gc()
 
-  xx = try(getDLLRegisteredRoutines("datatable",TRUE), silent=TRUE)
+  xx = try(getDLLRegisteredRoutines("data_table",TRUE), silent=TRUE)
   if (!inherits(xx, "try-error")) {
     remove(list=sapply(xx$.Call,'[[',"name"), pos=.GlobalEnv)
     remove(list=sapply(xx$.External,'[[',"name"), pos=.GlobalEnv)
@@ -50,7 +48,7 @@ cc = function(test=FALSE, clean=FALSE, debug=FALSE, omp=!debug, cc_dir, path=Sys
 
   # Make sure library .so is not loaded (neither installed package nor from dev)
   dll = unlist(do.call("rbind",getLoadedDLLs())[,"path"])
-  dll = grep("datatable.so",dll,value=TRUE)
+  dll = grep("data_table.so", dll, fixed=TRUE, value=TRUE)
   sapply(dll, dyn.unload)
   gc()
 
@@ -61,7 +59,7 @@ cc = function(test=FALSE, clean=FALSE, debug=FALSE, omp=!debug, cc_dir, path=Sys
   if (clean) system("rm *.o *.so")
   OMP = if (omp) "" else "no-"
   if (debug) {
-    ret = system(sprintf("MAKEFLAGS='-j CC=%s PKG_CFLAGS=-f%sopenmp CFLAGS=-std=c99\\ -O0\\ -ggdb\\ -pedantic' R CMD SHLIB -d -o datatable.so *.c", CC, OMP))
+    ret = system(sprintf("MAKEFLAGS='-j CC=%s PKG_CFLAGS=-f%sopenmp CFLAGS=-std=c99\\ -O0\\ -ggdb\\ -pedantic' R CMD SHLIB -d -o data_table.so *.c", CC, OMP))
   } else {
     ret = system(sprintf("MAKEFLAGS='-j CC=%s CFLAGS=-f%sopenmp\\ -std=c99\\ -O3\\ -pipe\\ -Wall\\ -pedantic\\ -Wstrict-prototypes\\ -isystem\\ /usr/share/R/include\\ -fno-common' R CMD SHLIB -o data_table.so *.c", CC, OMP))
     # the -isystem suppresses strict-prototypes warnings from R's headers, #5477. Look at the output to see what -I is and pass the same path to -isystem.
@@ -69,22 +67,25 @@ cc = function(test=FALSE, clean=FALSE, debug=FALSE, omp=!debug, cc_dir, path=Sys
   }
   if (ret) return()
   # clang -Weverything includes -pedantic and issues many more warnings than gcc
-  # system("R CMD SHLIB -o datatable.so *.c")
-  if (any(sapply(objects(envir=.GlobalEnv),function(x){inherits(get(x,.GlobalEnv),"data.table")}))) {
-    cat("ABOUT TO RELOAD .SO BUT THERE ARE DATA.TABLE OBJECTS IN .GLOBALENV SO FINALIZER MIGHT CRASH\n")
+  # system("R CMD SHLIB -o data_table.so *.c")
+  for (obj in ls(.GlobalEnv)) {
+    if (inherits(.GlobalEnv[[obj]], "data.table")) {
+      cat("ABOUT TO RELOAD .SO BUT THERE ARE DATA.TABLE OBJECTS IN .GLOBALENV SO FINALIZER MIGHT CRASH\n")
+      break
+    }
   }
-  dyn.load("datatable.so")
+  dyn.load("data_table.so")
   setwd(old)
-  xx = getDLLRegisteredRoutines("datatable",TRUE)
-  for (i in seq_along(xx$.Call))
-    assign(xx$.Call[[i]]$name,  xx$.Call[[i]]$address, envir=.GlobalEnv)
-  for (i in seq_along(xx$.External))
-    assign(xx$.External[[i]]$name,  xx$.External[[i]]$address, envir=.GlobalEnv)
-  sourceDir(paste0(path,"/R"))
-  if (base::getRversion()<"4.0.0") rm(list=c("rbind.data.table","cbind.data.table"), envir=.GlobalEnv) # 3968 follow up
-  assign("testDir", function(x)paste0(path,"/inst/tests/",x), envir=.GlobalEnv)
+  xx = getDLLRegisteredRoutines("data_table",TRUE)
+  for (Call in xx$.Call)
+    .GlobalEnv[[Call$name]] = Call$address
+  for (Extern in xx$.External)
+    .GlobalEnv[[Extern$name]] = Extern$address
+  sourceDir(file.path(path, "R"))
+  if (base::getRversion()<"4.0.0") rm(list=c("rbind.data.table", "cbind.data.table"), envir=.GlobalEnv) # 3968 follow up
+  .GlobalEnv$testDir = function(x) file.path(path,"inst/tests",x)
   .onLoad()
-  if (is.logical(test) && isTRUE(test)) test.data.table() else if (is.character(test)) test.data.table(script=test)
+  if (isTRUE(test)) test.data.table() else if (is.character(test)) test.data.table(script=test)
   gc()
   invisible()
 }
