@@ -1,6 +1,10 @@
 **If you are viewing this file on CRAN, please check [latest news on GitHub](https://github.com/Rdatatable/data.table/blob/master/NEWS.md) where the formatting is also better.**
 
-**Benchmarks are regularly updated: [here](https://h2oai.github.io/db-benchmark/)**
+# data.table [v1.14.6](https://github.com/Rdatatable/data.table/milestone/27?closed=1)
+
+## NOTES
+
+1. Test 1962.098 has been modified to pass latest changes to `POSIXt` in R-devel.
 
 # data.table [v1.14.4](https://github.com/Rdatatable/data.table/milestone/26?closed=1)  (17 Oct 2022)
 
