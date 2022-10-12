@@ -683,6 +683,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
 
 #define MSGSIZE 1000
 static char memrecycle_message[MSGSIZE+1]; // returned to rbindlist so it can prefix with which one of the list of data.table-like objects
+static char targetDesc[501]; // #5463
 
 const char *memrecycle(const SEXP target, const SEXP where, const int start, const int len, SEXP source, const int sourceStart, const int sourceLen, const int colnum, const char *colname)
 // like memcpy but recycles single-item source
@@ -728,7 +729,6 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
           for (int i=0; i<slen; ++i) {
             const int val = sd[i+soff];
             if ((val<1 && val!=NA_INTEGER) || val>nlevel) {
-              static char targetDesc[501];  // from 1.14.1 coerceAs reuses memrecycle for a target vector, PR#4491
               snprintf(targetDesc, 500, colnum==0 ? _("target vector") : _("column %d named '%s'"), colnum, colname);
               error(_("Assigning factor numbers to %s. But %d is outside the level range [1,%d]"), targetDesc, val, nlevel);
             }
@@ -738,7 +738,6 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
           for (int i=0; i<slen; ++i) {
             const double val = sd[i+soff];
             if (!ISNAN(val) && (!R_FINITE(val) || val!=(int)val || (int)val<1 || (int)val>nlevel)) {
-              static char targetDesc[501];
               snprintf(targetDesc, 500, colnum==0 ? _("target vector") : _("column %d named '%s'"), colnum, colname);
               error(_("Assigning factor numbers to %s. But %f is outside the level range [1,%d], or is not a whole number."), targetDesc, val, nlevel);
             }
@@ -832,7 +831,6 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
       }
     }
   } else if (isString(source) && !isString(target) && !isNewList(target)) {
-    static char targetDesc[501];
     snprintf(targetDesc, 500, colnum==0 ? _("target vector") : _("column %d named '%s'"), colnum, colname);
     warning(_("Coercing 'character' RHS to '%s' to match the type of %s."), targetIsI64?"integer64":type2char(TYPEOF(target)), targetDesc);
     // this "Coercing ..." warning first to give context in case coerceVector warns 'NAs introduced by coercion'
@@ -840,7 +838,6 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
     // variable on RHS) which they are more likely to appreciate than find inconvenient
     source = PROTECT(coerceVector(source, TYPEOF(target))); protecti++;
   } else if (isNewList(source) && !isNewList(target)) {
-    static char targetDesc[501];
     snprintf(targetDesc, 500, colnum==0 ? _("target vector") : _("column %d named '%s'"), colnum, colname);
     if (targetIsI64) {
       error(_("Cannot coerce 'list' RHS to 'integer64' to match the type of %s."), targetDesc);
@@ -851,7 +848,6 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
     warning(_("Coercing 'list' RHS to '%s' to match the type of %s."), type2char(TYPEOF(target)), targetDesc);
     source = PROTECT(coerceVector(source, TYPEOF(target))); protecti++;
   } else if ((TYPEOF(target)!=TYPEOF(source) || targetIsI64!=sourceIsI64) && !isNewList(target)) {
-    static char targetDesc[501];
     snprintf(targetDesc, 500, colnum==0 ? _("target vector") : _("column %d named '%s'"), colnum, colname);
     if (GetVerbose()>=3) {
       // only take the (small) cost of GetVerbose() (search of options() list) when types don't match
