@@ -1,7 +1,5 @@
 **If you are viewing this file on CRAN, please check [latest news on GitHub](https://github.com/Rdatatable/data.table/blob/master/NEWS.md) where the formatting is also better.**
 
-**Benchmarks are regularly updated: [here](https://h2oai.github.io/db-benchmark/)**
-
 # data.table [v1.14.5](https://github.com/Rdatatable/data.table/milestone/20)  (in development)
 
 ## NEW FEATURES
