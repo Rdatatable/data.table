@@ -860,21 +860,21 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
     //   inside BODY that cater for 'where' or not. Maybe there's a way to merge the two macros in future.
     // The idea is to do these range checks without calling coerceVector() (which allocates)
 
-#define CHECK_RANGE(STYPE, RFUN, COND, FMT, TO, FMTVAL) {{                                                              \
-  const STYPE *sd = (const STYPE *)RFUN(source);                                                                        \
-  for (int i=0; i<slen; ++i) {                                                                                          \
-    const STYPE val = sd[i+soff];                                                                                       \
-    if (COND) {                                                                                                         \
-      const char *sType = sourceIsI64 ? "integer64" : type2char(TYPEOF(source));                                        \
-      const char *tType = targetIsI64 ? "integer64" : type2char(TYPEOF(target));                                        \
-      snprintf(memrecycle_message, MSGSIZE,                                                                             \
-        "%"FMT" (type '%s') at RHS position %d "TO" when assigning to type '%s' (%s)",                                  \
-        FMTVAL, sType, i+1, tType, targetDesc(colnum, colname));                                                        \
-      /* string returned so that rbindlist/dogroups can prefix it with which item of its list this refers to  */        \
-      break;                                                                                                            \
-    }                                                                                                                   \
-  }                                                                                                                     \
-} break; }
+    #define CHECK_RANGE(STYPE, RFUN, COND, FMT, TO, FMTVAL) {{                                                              \
+      const STYPE *sd = (const STYPE *)RFUN(source);                                                                        \
+      for (int i=0; i<slen; ++i) {                                                                                          \
+        const STYPE val = sd[i+soff];                                                                                       \
+        if (COND) {                                                                                                         \
+          const char *sType = sourceIsI64 ? "integer64" : type2char(TYPEOF(source));                                        \
+          const char *tType = targetIsI64 ? "integer64" : type2char(TYPEOF(target));                                        \
+          snprintf(memrecycle_message, MSGSIZE,                                                                             \
+            "%"FMT" (type '%s') at RHS position %d "TO" when assigning to type '%s' (%s)",                                  \
+            FMTVAL, sType, i+1, tType, targetDesc(colnum, colname));                                                        \
+          /* string returned so that rbindlist/dogroups can prefix it with which item of its list this refers to  */        \
+          break;                                                                                                            \
+        }                                                                                                                   \
+      }                                                                                                                     \
+    } break; }
 
     switch(TYPEOF(target)) {
     case LGLSXP:
@@ -913,47 +913,47 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
     }
   }
 
-#undef BODY
-#define BODY(STYPE, RFUN, CTYPE, CAST, ASSIGN) {{    \
-  const STYPE *sd = (const STYPE *)RFUN(source);     \
-  if (length(where)) {                               \
-    if (slen==1) {                                   \
-      const STYPE val = sd[soff];                    \
-      const CTYPE cval = CAST;                       \
-      for (int wi=0; wi<len; ++wi) {                 \
-        const int w = wd[wi];                        \
-        if (w<1) continue; /*0 or NA*/               \
-        const int i = w-1;                           \
-        ASSIGN;                                      \
-      }                                              \
-    } else {                                         \
-      for (int wi=0; wi<len; ++wi) {                 \
-        const int w = wd[wi];                        \
-        if (w<1) continue;                           \
-        const STYPE val = sd[wi+soff];               \
-        const CTYPE cval = CAST;                     \
-        const int i = w-1;                           \
-        ASSIGN;                                      \
-      }                                              \
-    }                                                \
-  } else {                                           \
-    if (slen==1) {                                   \
-      const STYPE val = sd[soff];                    \
-      const CTYPE cval = CAST;                       \
-      for (int i=0; i<len; ++i) {                    \
-        ASSIGN;                                      \
-      }                                              \
-    } else {                                         \
-      for (int i=0; i<len; i++) {                    \
-        const STYPE val = sd[i+soff];                \
-        const CTYPE cval = CAST;                     \
-        ASSIGN;                                      \
-      }                                              \
-    }                                                \
-  }                                                  \
-} break; }
+  #undef BODY
+  #define BODY(STYPE, RFUN, CTYPE, CAST, ASSIGN) {{    \
+    const STYPE *sd = (const STYPE *)RFUN(source);     \
+    if (length(where)) {                               \
+      if (slen==1) {                                   \
+        const STYPE val = sd[soff];                    \
+        const CTYPE cval = CAST;                       \
+        for (int wi=0; wi<len; ++wi) {                 \
+          const int w = wd[wi];                        \
+          if (w<1) continue; /*0 or NA*/               \
+          const int i = w-1;                           \
+          ASSIGN;                                      \
+        }                                              \
+      } else {                                         \
+        for (int wi=0; wi<len; ++wi) {                 \
+          const int w = wd[wi];                        \
+          if (w<1) continue;                           \
+          const STYPE val = sd[wi+soff];               \
+          const CTYPE cval = CAST;                     \
+          const int i = w-1;                           \
+          ASSIGN;                                      \
+        }                                              \
+      }                                                \
+    } else {                                           \
+      if (slen==1) {                                   \
+        const STYPE val = sd[soff];                    \
+        const CTYPE cval = CAST;                       \
+        for (int i=0; i<len; ++i) {                    \
+          ASSIGN;                                      \
+        }                                              \
+      } else {                                         \
+        for (int i=0; i<len; i++) {                    \
+          const STYPE val = sd[i+soff];                \
+          const CTYPE cval = CAST;                     \
+          ASSIGN;                                      \
+        }                                              \
+      }                                                \
+    }                                                  \
+  } break; }
 
-#define COERCE_ERROR(targetType) error(_("type '%s' cannot be coerced to '%s'"), type2char(TYPEOF(source)), targetType); // 'targetType' for integer64 vs double
+  #define COERCE_ERROR(targetType) error(_("type '%s' cannot be coerced to '%s'"), type2char(TYPEOF(source)), targetType); // 'targetType' for integer64 vs double
 
   const int off = length(where) ? 0 : start;  // off = target offset; e.g. called from rbindlist with where=R_NilValue and start!=0
   const bool mc = length(where)==0 && slen>0 && slen==len && soff==0;  // mc=memcpy; only if types match and not for single items (a single assign faster than these non-const memcpy calls)
