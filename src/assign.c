@@ -683,7 +683,12 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
 
 #define MSGSIZE 1000
 static char memrecycle_message[MSGSIZE+1]; // returned to rbindlist so it can prefix with which one of the list of data.table-like objects
-static char targetDesc[501]; // #5463
+
+const char *targetDesc(const int colnum, const char *colname) {
+  static char str[501]; // #5463
+  snprintf(str, 500, colnum==0 ? _("target vector") : _("column %d named '%s'"), colnum, colname);
+  return str;
+}
 
 const char *memrecycle(const SEXP target, const SEXP where, const int start, const int len, SEXP source, const int sourceStart, const int sourceLen, const int colnum, const char *colname)
 // like memcpy but recycles single-item source
@@ -729,8 +734,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
           for (int i=0; i<slen; ++i) {
             const int val = sd[i+soff];
             if ((val<1 && val!=NA_INTEGER) || val>nlevel) {
-              snprintf(targetDesc, 500, colnum==0 ? _("target vector") : _("column %d named '%s'"), colnum, colname);
-              error(_("Assigning factor numbers to %s. But %d is outside the level range [1,%d]"), targetDesc, val, nlevel);
+              error(_("Assigning factor numbers to %s. But %d is outside the level range [1,%d]"), targetDesc(colnum, colname), val, nlevel);
             }
           }
         } else {
@@ -738,8 +742,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
           for (int i=0; i<slen; ++i) {
             const double val = sd[i+soff];
             if (!ISNAN(val) && (!R_FINITE(val) || val!=(int)val || (int)val<1 || (int)val>nlevel)) {
-              snprintf(targetDesc, 500, colnum==0 ? _("target vector") : _("column %d named '%s'"), colnum, colname);
-              error(_("Assigning factor numbers to %s. But %f is outside the level range [1,%d], or is not a whole number."), targetDesc, val, nlevel);
+              error(_("Assigning factor numbers to %s. But %f is outside the level range [1,%d], or is not a whole number."), targetDesc(colnum, colname), val, nlevel);
             }
           }
         }
@@ -831,30 +834,27 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
       }
     }
   } else if (isString(source) && !isString(target) && !isNewList(target)) {
-    snprintf(targetDesc, 500, colnum==0 ? _("target vector") : _("column %d named '%s'"), colnum, colname);
-    warning(_("Coercing 'character' RHS to '%s' to match the type of %s."), targetIsI64?"integer64":type2char(TYPEOF(target)), targetDesc);
+    warning(_("Coercing 'character' RHS to '%s' to match the type of %s."), targetIsI64?"integer64":type2char(TYPEOF(target)), targetDesc(colnum, colname));
     // this "Coercing ..." warning first to give context in case coerceVector warns 'NAs introduced by coercion'
     // and also because 'character' to integer/double coercion is often a user mistake (e.g. wrong target column, or wrong
     // variable on RHS) which they are more likely to appreciate than find inconvenient
     source = PROTECT(coerceVector(source, TYPEOF(target))); protecti++;
   } else if (isNewList(source) && !isNewList(target)) {
-    snprintf(targetDesc, 500, colnum==0 ? _("target vector") : _("column %d named '%s'"), colnum, colname);
     if (targetIsI64) {
-      error(_("Cannot coerce 'list' RHS to 'integer64' to match the type of %s."), targetDesc);
+      error(_("Cannot coerce 'list' RHS to 'integer64' to match the type of %s."), targetDesc(colnum, colname));
       // because R's coerceVector doesn't know about integer64
     }
     // as in base R; e.g. let as.double(list(1,2,3)) work but not as.double(list(1,c(2,4),3))
     // relied on by NNS, simstudy and table.express; tests 1294.*
-    warning(_("Coercing 'list' RHS to '%s' to match the type of %s."), type2char(TYPEOF(target)), targetDesc);
+    warning(_("Coercing 'list' RHS to '%s' to match the type of %s."), type2char(TYPEOF(target)), targetDesc(colnum, colname));
     source = PROTECT(coerceVector(source, TYPEOF(target))); protecti++;
   } else if ((TYPEOF(target)!=TYPEOF(source) || targetIsI64!=sourceIsI64) && !isNewList(target)) {
     if (GetVerbose()>=3) {
       // only take the (small) cost of GetVerbose() (search of options() list) when types don't match
-      snprintf(targetDesc, 500, colnum==0 ? _("target vector") : _("column %d named '%s'"), colnum, colname);
       Rprintf(_("Zero-copy coerce when assigning '%s' to '%s' %s.\n"),
               sourceIsI64 ? "integer64" : type2char(TYPEOF(source)),
               targetIsI64 ? "integer64" : type2char(TYPEOF(target)),
-              targetDesc);
+              targetDesc(colnum, colname));
     }
     // The following checks are up front here, otherwise we'd need them twice in the two branches
     //   inside BODY that cater for 'where' or not. Maybe there's a way to merge the two macros in future.
@@ -867,10 +867,9 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
     if (COND) {                                                                                                         \
       const char *sType = sourceIsI64 ? "integer64" : type2char(TYPEOF(source));                                        \
       const char *tType = targetIsI64 ? "integer64" : type2char(TYPEOF(target));                                        \
-      snprintf(targetDesc, 500, colnum==0 ? _("target vector") : _("column %d named '%s'"), colnum, colname);           \
       snprintf(memrecycle_message, MSGSIZE,                                                                             \
         "%"FMT" (type '%s') at RHS position %d "TO" when assigning to type '%s' (%s)",                                  \
-        FMTVAL, sType, i+1, tType, targetDesc);                                                                         \
+        FMTVAL, sType, i+1, tType, targetDesc(colnum, colname));                                                        \
       /* string returned so that rbindlist/dogroups can prefix it with which item of its list this refers to  */        \
       break;                                                                                                            \
     }                                                                                                                   \
