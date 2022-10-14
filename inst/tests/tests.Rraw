@@ -11073,15 +11073,34 @@ setattr(DT[[4]], "tzone", NULL)
 setattr(DT[[5]], "tzone", NULL)
 
 # format() now supports digits = 0, to display nsmall decimal places.
+# Oct 2022: R-devel changed write.csv behavior to no longer respect digits.secs, #5478.
+# For now we'll get out of the way while R-devel discussion is ongoing so that 1.14.4 can
+# be submitted to CRAN.
+# These tests test fwrite(, dateTimeAs="write.csv") whose
+# very point is to match write.csv. Rather than turn off these tests, we'll for now
+# continue to test that at least fwrite continues to work as intended. Otherwise
+# coverage will drop and we could miss a plain old crash or error bug.
+# Note that tzone has been removed above so these tests output the POSIXct in the
+# R session's timezone because here dateTimeAs="write.csv" and that's what write.csv does.
+# This is the reason `y` can't be fixed strings because depending on the timezone of the
+# session which is running test.data.table, the results will be different.
+# data.table's fwrite achieves local timezone writing (when dateTimeAs="write.csv") via
+# an R call to format.POSIXct in fwriteR.c. By default fwrite writes datetime in UTC for
+# consistent and reproducible research, which is different to write.csv.
+# TODO: revisit when R-devel has settled w.r.t. write.csv behavior.
+format_rows_as_csv = function(DT, digits) apply(sapply(DT, format, digits=digits), 1L, paste0, collapse=",")
 old=options(digits.secs=0)
 test(1741.3, x1<-capture.output(fwrite(DT,dateTimeAs="write.csv")),
-             capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
+             c("A,B,C,D,E", format_rows_as_csv(DT, digits=0L)))
+           # capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
 options(digits.secs=3)
 test(1741.4, x2<-capture.output(fwrite(DT,dateTimeAs="write.csv")),
-             capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
+             c("A,B,C,D,E", format_rows_as_csv(DT, digits=3L)))
+           # capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
 options(digits.secs=6)
 test(1741.5, x3<-capture.output(fwrite(DT,dateTimeAs="write.csv")),
-             capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
+             c("A,B,C,D,E", format_rows_as_csv(DT, digits=6L)))
+           # capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
 # check that extra digits made it into output
 test(1741.6, sum(nchar(x1)) < sum(nchar(x2)) && sum(nchar(x2)) < sum(nchar(x3)))
 options(old)

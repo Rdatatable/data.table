@@ -370,7 +370,7 @@ SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg) {
 #ifndef NOZLIB
 #include <zlib.h>
 #endif
-SEXP dt_zlib_version() {
+SEXP dt_zlib_version(void) {
   char out[71];
 #ifndef NOZLIB
   snprintf(out, 70, "zlibVersion()==%s ZLIB_VERSION==%s", zlibVersion(), ZLIB_VERSION);
