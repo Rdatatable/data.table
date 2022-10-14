@@ -848,9 +848,9 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
     warning(_("Coercing 'list' RHS to '%s' to match the type of %s."), type2char(TYPEOF(target)), targetDesc);
     source = PROTECT(coerceVector(source, TYPEOF(target))); protecti++;
   } else if ((TYPEOF(target)!=TYPEOF(source) || targetIsI64!=sourceIsI64) && !isNewList(target)) {
-    snprintf(targetDesc, 500, colnum==0 ? _("target vector") : _("column %d named '%s'"), colnum, colname);
     if (GetVerbose()>=3) {
       // only take the (small) cost of GetVerbose() (search of options() list) when types don't match
+      snprintf(targetDesc, 500, colnum==0 ? _("target vector") : _("column %d named '%s'"), colnum, colname);
       Rprintf(_("Zero-copy coerce when assigning '%s' to '%s' %s.\n"),
               sourceIsI64 ? "integer64" : type2char(TYPEOF(source)),
               targetIsI64 ? "integer64" : type2char(TYPEOF(target)),
@@ -867,6 +867,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
     if (COND) {                                                                                                         \
       const char *sType = sourceIsI64 ? "integer64" : type2char(TYPEOF(source));                                        \
       const char *tType = targetIsI64 ? "integer64" : type2char(TYPEOF(target));                                        \
+      snprintf(targetDesc, 500, colnum==0 ? _("target vector") : _("column %d named '%s'"), colnum, colname);           \
       snprintf(memrecycle_message, MSGSIZE,                                                                             \
         "%"FMT" (type '%s') at RHS position %d "TO" when assigning to type '%s' (%s)",                                  \
         FMTVAL, sType, i+1, tType, targetDesc);                                                                         \
