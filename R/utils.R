@@ -97,7 +97,7 @@ name_dots = function(...) {
   if (any(notnamed)) {
     syms = vapply_1b(dot_sub, is.symbol)  # save the deparse() in most cases of plain symbol
     for (i in which(notnamed)) {
-      tmp = if (syms[i]) as.character(dot_sub[[i]]) else deparse(dot_sub[[i]])[1L]
+      tmp = if (syms[i]) as.character(dot_sub[[i]]) else deparse(dot_sub[[i]], nlines=1)[1L]
       if (tmp == make.names(tmp)) vnames[i]=tmp
     }
   }
