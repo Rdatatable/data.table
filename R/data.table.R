@@ -2291,26 +2291,10 @@ transform.data.table = function (`_data`, ...)
 # basically transform.data.frame with data.table instead of data.frame, and retains key
 {
   if (!cedta()) return(NextMethod()) # nocov
-  `_data` = copy(`_data`) # 5492
-  e = eval(substitute(list(...)), `_data`, parent.frame())
-  tags = names(e)
-  inx = chmatch(tags, names(`_data`))
-  matched = !is.na(inx)
-  if (any(matched)) {
-    .Call(C_unlock, `_data`) # fix for #1641, now covered by test 104.2
-    `_data`[,inx[matched]] = e[matched]
-    `_data` = as.data.table(`_data`)
-  }
-  if (!all(matched)) {
-    ans = as.data.table(c(`_data`, e[!matched]))  # 5492
-  } else {
-    ans = `_data`
-  }
-  key.cols = key(`_data`)
-  if (!any(tags %chin% key.cols)) {
-    setattr(ans, "sorted", key.cols)
-  }
-  ans
+  `_data` = copy(`_data`)
+  e = eval(substitute(list(...)), `_data`, parent.frame()) 
+  set(`_data`, ,names(e), e)
+  `_data`
 }
 
 subset.data.table = function (x, subset, select, ...)
