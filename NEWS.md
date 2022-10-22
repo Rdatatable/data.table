@@ -551,7 +551,7 @@
 53. `as.data.frame(DT, row.names=)` no longer silently ignores `row.names`, [#5319](https://github.com/Rdatatable/data.table/issues/5319). Thanks to @dereckdemezquita for the fix and PR, and @ben-schwen for guidance.
 
 
-54. `transform` was extremely slow when creating new columns. Thanks to @OfekShilon for the report and PR. The implemented solution was proposed by @CobeMiller1
+54. `transform` was extremely slow when creating new columns. Thanks to @OfekShilon for the report and PR. The implemented solution was proposed by @ColeMiller1
 
 ## NOTES
 
