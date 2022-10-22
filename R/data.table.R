@@ -2301,7 +2301,7 @@ transform.data.table = function (`_data`, ...)
     `_data` = as.data.table(`_data`)
   }
   if (!all(matched)) {
-    ans = do.call("data.table", c(list(`_data`), e[!matched]))
+    ans = as.data.table(c(`_data`, e[!matched]))  # 5492
   } else {
     ans = `_data`
   }
