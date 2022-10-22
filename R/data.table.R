@@ -2291,6 +2291,7 @@ transform.data.table = function (`_data`, ...)
 # basically transform.data.frame with data.table instead of data.frame, and retains key
 {
   if (!cedta()) return(NextMethod()) # nocov
+  `_data` = copy(`_data`) # 5492
   e = eval(substitute(list(...)), `_data`, parent.frame())
   tags = names(e)
   inx = chmatch(tags, names(`_data`))
