@@ -48,7 +48,7 @@
   A list except when the input is not \emph{vectorized} (\code{x} is not a list, and \code{n} specify single rolling window), in which case a \code{vector} is returned, for convenience. Thus, rolling functions can be used conveniently within \code{data.table} syntax.
 }
 \note{
-  Be aware that rolling functions operates on the physical order of input. If the intent is to roll values in a vector by a logical window, for example an hour, or a day, then one has to ensure that there are no gaps in input or use adaptive rolling function to handle gaps by specifying expected window sizes. For details see \href{https://github.com/Rdatatable/data.table/issues/3241}{issue #3241}.
+  Be aware that rolling functions operates on the physical order of input. If the intent is to roll values in a vector by a logical window, for example an hour, or a day, then one has to ensure that there are no gaps in the input, or use adaptive rolling function to handle gaps, for which we provide helper function \code{\link{frolladapt}} to generate adaptive window size.
 }
 \section{\code{has.nf} argument}{
   \code{has.nf} can be used to speed up processing in cases when it is known if \code{x} contains (or not) non-finite values (\code{NA, NaN, Inf, -Inf}).
@@ -173,7 +173,7 @@ errs = sapply(lapply(anserr, abs), sum, na.rm=TRUE)
 sapply(errs, format, scientific=FALSE) # roundoff
 }
 \seealso{
-  \code{\link{frollapply}}, \code{\link{shift}}, \code{\link{data.table}}, \code{\link{setDTthreads}}
+  \code{\link{frollapply}}, \code{\link{frolladapt}}, \code{\link{shift}}, \code{\link{data.table}}, \code{\link{setDTthreads}}
 }
 \references{
   \href{https://en.wikipedia.org/wiki/Round-off_error}{Round-off error}

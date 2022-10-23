@@ -29,7 +29,7 @@
   A list except when the input is not \emph{vectorized} (\code{X} is not a list to apply function \emph{by column}, and \code{N} specify single rolling window), in which case a \code{vector} is returned, for convenience. Thus, rolling functions can be used conveniently within \code{data.table} syntax.
 }
 \note{
-  Be aware that rolling functions operates on the physical order of input. If the intent is to roll values in a vector by a logical window, for example an hour, or a day, then one has to ensure that there are no gaps in input or use adaptive rolling function to handle gaps by specifying expected window sizes. For details see \href{https://github.com/Rdatatable/data.table/issues/3241}{issue #3241}.
+  Be aware that rolling functions operates on the physical order of input. If the intent is to roll values in a vector by a logical window, for example an hour, or a day, then one has to ensure that there are no gaps in the input, or use adaptive rolling function to handle gaps, for which we provide helper function \code{\link{frolladapt}} to generate adaptive window size.
 }
 \section{\code{by.column} argument}{
   Setting \code{by.column} to \code{FALSE} allows to apply function on multiple variables rather than a single vector. Then \code{X} expects to be data.table, data.table or a list of equal length vectors, and window size provided in \code{N} refers to number of rows (or length of a vectors in a list). See examples for use cases. Error \code{incorrect number of dimensions} can be commonly observed when \code{by.column} was not set to \code{FALSE} when \code{FUN} expects its input to be a data.frame/data.table.
@@ -267,6 +267,6 @@ coef.fill = c("(Intercept)"=NA_real_, "v1"=NA_real_)
 frollapply(x, 4, f, by.column=FALSE, fill=coef.fill)
 }
 \seealso{
-  \code{\link{froll}}, \code{\link{shift}}, \code{\link{data.table}}, \code{\link{setDTthreads}}
+  \code{\link{froll}}, \code{\link{frolladapt}}, \code{\link{shift}}, \code{\link{data.table}}, \code{\link{setDTthreads}}
 }
 \keyword{ data }

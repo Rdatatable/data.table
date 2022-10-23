@@ -84,7 +84,7 @@ make.roll.names = function(x.len, n.len, n, x.nm, n.nm, fun, adaptive) {
   ans
 }
 
-## uneven timeseries, helper for creating adaptive window size
+## reference implementation for C frolladapt, will be removed after testing
 aw = function(x, n, partial=FALSE) {
   for (i in seq_along(x)[-1L])
     if (x[i] <= x[i-1L]) stop("not sorted or duplicates")
@@ -120,28 +120,45 @@ aw = function(x, n, partial=FALSE) {
         ans[i] = an                ## likely to be overwritten by smaller an if shrinking continues because i is not incremented
         j = j+1L
       } else if (lhs < rhs+n-1L) {
-        ans[i] = if (!partial && lhs-x0<n) n else an ## for i==j an=1L
+        ans[i] = if (!partial && lhs-x0<n) NA_integer_ else an ## for i==j an=1L
         i = i+1L
       }
     }
   }
   ans
 }
-adapt.window = function(x, n, partial=FALSE, validate=FALSE) {
+## irregularly spaced time series, helper for creating adaptive window size
+frolladapt = function(x, n, partial=FALSE, give.names=FALSE, .validate=FALSE) {
   x = unclass(x)
   if (!is.numeric(x))
     stopf("Index vector 'x' must of numeric type")
   if (!is.integer(x))
     x = as.integer(x)
-  if (!is.numeric(n))
+  if (!is.numeric(n)) {
     stopf("Window size 'n' must be numeric")
-  if (!is.integer(n))
-    n = as.integer(n)
+  } else {
+    nms = names(n) ## only for give.names
+    if (!is.integer(n))
+      n = as.integer(n)
+  }
+  if (length(n) < 1L || anyNA(n))
+    stopf("Argument 'n' must be non-zero length and must not have NAs")
   if (!isTRUEorFALSE(partial))
     stopf("Argument 'partial' must be TRUE or FALSE")
+  if (!isTRUEorFALSE(give.names))
+    stopf("Argument 'give.names' must be TRUE or FALSE")
 
-  ans = .Call(CadaptWindow, x, n, partial)
-  if (!validate) return(ans)
+  if (length(n) == 1L) {
+    ans = .Call(Cfrolladapt, x, n, partial)
+  } else {
+    ans = lapply(n, function(.n) .Call(Cfrolladapt, x, .n, partial))
+    if (give.names) {
+      if (is.null(nms))
+        nms = paste0("n", as.character(n))
+      setattr(ans, "names", nms)
+    }
+  }
+  if (!.validate) return(ans)
 
   ## validation1
   d = as.data.table(list(id=x))
@@ -150,7 +167,7 @@ adapt.window = function(x, n, partial=FALSE, validate=FALSE) {
   if (!partial) {
     first = x[1L]+n-1L
     incomplete = which(x < first)
-    an[incomplete] = rep.int(n, length(incomplete))
+    an[incomplete] = rep.int(NA_integer_, length(incomplete))
   }
   an1 = an
   ok1 = all.equal(an1, ans)
