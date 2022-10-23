@@ -84,6 +84,86 @@ make.roll.names = function(x.len, n.len, n, x.nm, n.nm, fun, adaptive) {
   ans
 }
 
+## uneven timeseries, helper for creating adaptive window size
+aw = function(x, n, partial=FALSE) {
+  for (i in seq_along(x)[-1L])
+    if (x[i] <= x[i-1L]) stop("not sorted or duplicates")
+  ans = rep.int(NA_integer_, length(x))
+  x0 = x[1]
+  i = 1
+  j = 1
+  while (i <= length(x)) {
+    lhs = x[i]
+    rhs = x[j]
+    an = i-j+1L                 ## window we are currently looking at in this iteration
+    #cat(sprintf("i=%d, j=%d\n", i, j))
+    #browser()
+    if (an > n)
+      stop("internal error: an > n, should not increment i in the first place")
+    else if (an == n) {         ## an is same size as n, so we either have no gaps or will need to shrink an by j++
+      if (lhs == rhs+n-1L) {    ## no gaps - or a k gaps and a k dups?
+        ans[i] = n              ## could skip if pre-fill
+        i = i+1L
+        j = j+1L
+      } else if (lhs > rhs+n-1L) { ## need to shrink an
+        j = j+1L
+      } else {
+        stop("internal error: no sorted, should be been detected by now")
+      }
+    }
+    else if (an < n) {          ## there are some gaps
+      if (lhs == rhs+n-1L) {    ## gap and rhs matches the bound, so increment i and j
+        ans[i] = an
+        i = i+1L
+        j = j+1L
+      } else if (lhs > rhs+n-1L) { ## need to shrink an
+        ans[i] = an                ## likely to be overwritten by smaller an if shrinking continues because i is not incremented
+        j = j+1L
+      } else if (lhs < rhs+n-1L) {
+        ans[i] = if (!partial && lhs-x0<n) n else an ## for i==j an=1L
+        i = i+1L
+      }
+    }
+  }
+  ans
+}
+adapt.window = function(x, n, partial=FALSE, validate=FALSE) {
+  x = unclass(x)
+  if (!is.numeric(x))
+    stopf("Index vector 'x' must of numeric type")
+  if (!is.integer(x))
+    x = as.integer(x)
+  if (!is.numeric(n))
+    stopf("Window size 'n' must be numeric")
+  if (!is.integer(n))
+    n = as.integer(n)
+  if (!isTRUEorFALSE(partial))
+    stopf("Argument 'partial' must be TRUE or FALSE")
+
+  ans = .Call(CadaptWindow, x, n, partial)
+  if (!validate) return(ans)
+
+  ## validation1
+  d = as.data.table(list(id=x))
+  set(d,, "from", x-n+1L)
+  an = d[d, on=.(id <= id, id >= from), .N, by=.EACHI]$N
+  if (!partial) {
+    first = x[1L]+n-1L
+    incomplete = which(x < first)
+    an[incomplete] = rep.int(n, length(incomplete))
+  }
+  an1 = an
+  ok1 = all.equal(an1, ans)
+  ## validation2
+  an2 = aw(x, n, partial)
+  ok2 = all.equal(an2, ans)
+
+  if (isTRUE(ok1) && isTRUE(ok2)) ans else {
+    warning("results does not match")
+    list(ans=ans, an1=an1, an2=an2)
+  }
+}
+
 froll = function(fun, x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"), na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, give.names=FALSE, hasNA=NA) {
   stopifnot(!missing(fun), is.character(fun), length(fun)==1L, !is.na(fun))
   if (!missing(hasNA)) {
