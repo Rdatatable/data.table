@@ -76,6 +76,8 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   if (is.null(options()$warnPartialMatchAttr))   options(warnPartialMatchAttr=FALSE)   # now otherwise options(oldOptions) fails later.
   if (is.null(options()$warnPartialMatchDollar)) options(warnPartialMatchDollar=FALSE)
   oldOptions = options(
+    warn=1,
+    digits=7,
     datatable.verbose = verbose,
     encoding = "UTF-8",  # just for tests 708-712 on Windows
     scipen = 0L,  # fwrite now respects scipen
