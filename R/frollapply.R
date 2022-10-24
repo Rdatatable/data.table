@@ -223,10 +223,12 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
     has.growable = base::getRversion() >= "3.4.0"
     cpy = if (has.growable) function(x) .Call(Csetgrowable, copy(x)) else copy
     ansMask = function(len, n) {
-      seq_len(len) >= n
+      mask = seq_len(len) >= n
+      mask[is.na(mask)] = FALSE ## test 6010.206
+      mask
     }
     if (by.column) {
-      allocWindow = function(x, n) x[seq_len(max(n))]
+      allocWindow = function(x, n) x[seq_len(max(n, na.rm=TRUE))]
       if (has.growable) {
         tight = function(i, dest, src, n) FUN(.Call(CmemcpyVectoradaptive, dest, src, i, n), ...)
       } else {
@@ -234,7 +236,7 @@ frollapply = function(X, N, FUN, ..., by.column=TRUE, fill=NA, align=c("right","
       }
     } else {
       if (!list.df) {
-        allocWindow = function(x, n) x[seq_len(max(n)), , drop=FALSE]
+        allocWindow = function(x, n) x[seq_len(max(n, na.rm=TRUE)), , drop=FALSE]
       } else {
         allocWindow = function(x, n) lapply(x, `[`, seq_len(max(n)))
       }

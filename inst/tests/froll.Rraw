@@ -1224,6 +1224,7 @@ options(datatable.verbose=FALSE)
 test(6010.203, frollapply(c(1,2,1,1,1,2,3,2), rep(3, 8), uniqueN, adaptive=TRUE), c(NA,NA,2L,2L,1L,2L,3L,2L))
 test(6010.204, frollapply(c(1,2,1,1,NA,2,NA,2), rep(3, 8), anyNA, adaptive=TRUE), c(NA,NA,FALSE,FALSE,TRUE,TRUE,TRUE,TRUE))
 test(6010.205, frollapply(c(2,2,2,3,4), c(1,3,3,2,3), uniqueN, adaptive=TRUE), c(1L,NA,1L,2L,3L)) ## window width bigger than location
+test(6010.206, frollapply(1:5, c(NA,NA,3,2,3), sum, adaptive=TRUE), c(NA,NA,6L,7L,12L)) ## NAs in adaptive window are ok
 
 #### test coverage
 test(6010.501, frollapply(1:3, "b", sum), error="'N' must be integer")
