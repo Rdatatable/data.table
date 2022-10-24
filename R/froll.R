@@ -135,11 +135,14 @@ frolladapt = function(x, n, partial=FALSE, give.names=FALSE, .validate=FALSE) {
   if (!is.integer(x))
     x = as.integer(x)
   if (!is.numeric(n)) {
-    stopf("Window size 'n' must be numeric")
+    stopf("Window size 'n' must be integer")
   } else {
     nms = names(n) ## only for give.names
-    if (!is.integer(n))
+    if (!is.integer(n)) {
+      if (!isRealReallyInt(n))
+        stopf("Window size 'n' must be integer")
       n = as.integer(n)
+    }
   }
   if (length(n) < 1L || anyNA(n))
     stopf("Argument 'n' must be non-zero length and must not have NAs")

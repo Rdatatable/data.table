@@ -1461,6 +1461,61 @@ test(6010.9967, frollapply(FUN=sum, list(c(1,2,3)), c(2,2,2), adaptive=TRUE, par
 test(6010.9968, frollapply(FUN=sum, list(c(1,2,3)), list(n1=c(2,2,2)), adaptive=TRUE, partial=TRUE, give.names=TRUE), list(V1_n1=c(1,3,5)))
 test(6010.9969, frollapply(FUN=sum, list(x1=c(1,2,3)), list(n1=c(2,2,2)), adaptive=TRUE, partial=TRUE, give.names=TRUE), list(x1_n1=c(1,3,5)))
 
+## frolladapt
+test(6015.001, frolladapt(integer(), -1L), error="n must be positive integer values")
+test(6015.002, frolladapt(integer(), 0L), error="n must be positive integer values")
+test(6015.003, frolladapt(integer(), 1L), integer())
+test(6015.004, frolladapt(integer(), 2L), integer())
+test(6015.005, frolladapt(integer(), integer()), error="must be non-zero length and must not have NAs")
+test(6015.006, frolladapt(integer(), NA_integer_), error="must be non-zero length and must not have NAs")
+test(6015.007, frolladapt(integer(), 0), error="n must be positive integer values")
+test(6015.008, frolladapt(integer(), 1), integer())
+test(6015.011, frolladapt(0L, 0L), error="n must be positive integer values")
+test(6015.012, frolladapt(0L, 0L, partial=TRUE), error="n must be positive integer values")
+test(6015.013, frolladapt(0L, 1L), 1L)
+test(6015.014, frolladapt(0L, 1L, partial=TRUE), 1L)
+test(6015.015, frolladapt(0L, 2L), NA_integer_)
+test(6015.016, frolladapt(0L, 2L, partial=TRUE), 1L)
+test(6015.017, frolladapt(0L, 0), error="n must be positive integer values")
+test(6015.018, frolladapt(0L, 0, partial=TRUE), error="n must be positive integer values")
+test(6015.019, frolladapt(0L, 1), 1L)
+test(6015.020, frolladapt(0L, 1, partial=TRUE), 1L)
+
+x = as.Date("2022-10-24") + c(0:1,4,6,7)
+test(6015.401, frolladapt(x, 2L), c(NA,2L,1L,1L,2L))
+test(6015.402, frolladapt(x, 2L, partial=TRUE), c(1L,2L,1L,1L,2L))
+
+x = as.IDate("2022-10-24") + c(0:1,4,6,7)
+test(6015.501, frolladapt(x, 2L), c(NA,2L,1L,1L,2L))
+test(6015.502, frolladapt(x, 2L, partial=TRUE), c(1L,2L,1L,1L,2L))
+
+x = as.ITime(as.ITime("19:33:30") + c(0:1,4,6,7)*60)
+test(6015.601, frolladapt(x, 2*60), c(NA,NA,1L,1L,2L)) ## 2 minutes
+test(6015.602, frolladapt(x, 2*60, partial=TRUE), c(1L,2L,1L,1L,2L))
+
+x = as.POSIXct("2022-10-24 19:34:30") + c(0:1,4,6,7)*60
+test(6015.701, frolladapt(x, 2*60), c(NA,NA,1L,1L,2L)) ## 2 minutes
+test(6015.702, frolladapt(x, 2*60, partial=TRUE), c(1L,2L,1L,1L,2L))
+
+x = as.POSIXct("2022-10-24 19:34:30.005") + c(0:1,4,6,7)*60
+test(6015.801, frolladapt(x, 2*60), c(NA,NA,1L,1L,2L))
+test(6015.802, frolladapt(x, 2*60, partial=TRUE), c(1L,2L,1L,1L,2L))
+x = c(as.POSIXct("2022-10-24 19:34:00.900"), as.POSIXct("2022-10-24 19:36:00.005"), as.POSIXct("2022-10-24 19:38:00.006"))
+test(6015.803, frolladapt(x, 2*60), c(NA,1L,1L)) ## sub seconds truncation
+test(6015.804, frolladapt(x, 2*60, partial=TRUE), c(1L,1L,1L))
+test(6015.803, frolladapt(as.POSIXct(round(x)), 2*60), c(NA,2L,1L))
+test(6015.804, frolladapt(as.POSIXct(round(x)), 2*60, partial=TRUE), c(1L,2L,1L))
+
+test(6015.901, frolladapt(TRUE, 1L), error="must of numeric type")
+test(6015.902, frolladapt(1L, FALSE), error="must be integer")
+test(6015.903, frolladapt(1L, 1.1), error="must be integer")
+test(6015.904, frolladapt(1L, 1L, partial=NA), error="must be TRUE or FALSE")
+test(6015.905, frolladapt(1L, 1L, give.names=NA), error="must be TRUE or FALSE")
+test(6015.906, frolladapt(c(1L,3L,2L), 2L), error="be sorted, have no duplicates, have no NAs")
+test(6015.907, frolladapt(c(1L,2L,2L), 2L), error="be sorted, have no duplicates, have no NAs")
+test(6015.908, frolladapt(c(1L,2L,NA_integer_), 2L), error="be sorted, have no duplicates, have no NAs") ## loop that checks for sorted will detect NAs as well, except for first element
+test(6015.909, frolladapt(c(NA_integer_,1L,2L), 2L), error="be sorted, have no duplicates, have no NAs") ## first NA is detected by extra check
+
 # batch validation
 
 set.seed(108)

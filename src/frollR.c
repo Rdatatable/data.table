@@ -204,19 +204,25 @@ SEXP frolladapt(SEXP xobj, SEXP kobj, SEXP partial) {
 
   bool p = LOGICAL(partial)[0];
   int n = INTEGER(kobj)[0];
+  if (n < 1L)
+    error("n must be positive integer values (> 0)");
   int *x = INTEGER(xobj);
-  int64_t len = XLENGTH(xobj);
+  int64_t len = XLENGTH(xobj); // can be 0
+
+  if (len && x[0] == NA_INTEGER)
+    error("Index provided to 'x' must: be sorted, have no duplicates, have no NAs"); // error text for consistency to the one below
+  for (int64_t i=1; i<len; i++) {
+    if (x[i] <= x[i-1L])
+      error("Index provided to 'x' must: be sorted, have no duplicates, have no NAs");
+  }
 
   SEXP ans = PROTECT(allocVector(INTSXP, len));
   int *ians = INTEGER(ans);
 
-  for (int64_t i=1; i<len; i++) {
-    if (x[i] <= x[i-1L])
-      error("Index provided to 'x' must be sorted and must not have duplicates");
-  }
-
   int64_t i = 0, j = 0;
-  int first = x[0]+n-1;
+  int first;
+  if (len)
+    first = x[0]+n-1;
   while (i < len) {
     int lhs = x[i], rhs = x[j];
     int an = i-j+1;                 // window we are currently looking at in this iteration
