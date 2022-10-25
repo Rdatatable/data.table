@@ -148,7 +148,7 @@ lib.copy <- function(lib.from, repodir="bus/integration/cran"){
   pkg.copy <- function(pkg.from, lib.to) {
     pkg<-basename(pkg.from);
     dir.create(file.path(lib.to, pkg), recursive=TRUE)
-    lib.dirs<-intersect(c("html","doc"), all.lib.dirs<-list.dirs(pkg.from, full.names=FALSE))
+    lib.dirs<-intersect(c("help","html","doc"), all.lib.dirs<-list.dirs(pkg.from, full.names=FALSE))
     ans1<-setNames(file.copy(file.path(pkg.from, lib.dirs), file.path(lib.to, pkg), recursive=TRUE), lib.dirs)
     lib.files<-setdiff(list.files(pkg.from), all.lib.dirs)
     ans2<-setNames(file.copy(file.path(pkg.from, lib.files), file.path(lib.to, pkg)), lib.files)
