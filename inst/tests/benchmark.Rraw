@@ -168,3 +168,12 @@ test(1742.5, substr(x, nchar(x)-10L, nchar(x)), c("50,28,95,76","62,87,23,40"))
 
 # Add scaled-up non-ASCII forder test 1896
 
+
+# Test performance of constructing one DT from another via do.call, #5492
+# Before the fix this went through a large `deparse` and dt2/dt1 was >30.
+# Currently it is typically ~0.15
+t1 <- system.time(dt1 <- data.table(a=runif(1e5), b=runif(1e5)))
+t2 <- system.time(dt2 <- do.call(data.table, list(dt1)))
+
+test(2239.1, all.equal(dt1,dt2), TRUE)
+test(2239.2, t2["elapsed"]/t1["elapsed"]<5, TRUE)
