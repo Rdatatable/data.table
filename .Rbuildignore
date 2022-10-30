@@ -37,5 +37,6 @@
 
 ^bus$
 ^pkgdown$
+^docs$
 ^lib$
 ^library$

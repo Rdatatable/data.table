@@ -43,3 +43,6 @@ library
 *.RDS
 *.diff
 *.patch
+
+# pkgdown
+docs
