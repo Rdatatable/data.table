@@ -117,9 +117,18 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   assign("filename", fn, envir=env)
   assign("inittime", as.integer(Sys.time()), envir=env) # keep measures from various test.data.table runs
   assign("showProgress", showProgress, envir=env)
+  assign("stderr_sink", tempfile(), envir=env)
 
   owd = setwd(tempdir()) # ensure writeable directory; e.g. tests that plot may write .pdf here depending on device option and/or batch mode; #5190
   on.exit(setwd(owd))
+  
+  if (sink.number()>0L) {
+    catf("**** sink.number()>0 so not sinking stderr and test() will not error on UBSAN errors on stderr for example\n")
+  } else {
+    # capture stderr to detect UBSAN errors, errors, warning and R level messages are still 
+    sink(file(env$stderr_sink), type="message", split=TRUE)
+    on.exit({sink(NULL, type="message"); unlink(env$stderr_sink)})
+  }
 
   err = try(sys.source(fn, envir=env), silent=silent)
 
@@ -282,6 +291,8 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     filename = get("filename", parent.frame())
     foreign = get("foreign", parent.frame())
     showProgress = get("showProgress", parent.frame())
+    stderr_sink = get("stderr_sink", parent_frame())
+    last_stderr = file.info(tmp)$mtime
     time = nTest = NULL  # to avoid 'no visible binding' note
     if (num>0) on.exit( {
        now = proc.time()[3L]
@@ -304,6 +315,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     filename = NA_character_ # nocov
     foreign = FALSE          # nocov ; assumes users of 'cc(F); test(...)' has LANGUAGE=en
     showProgress = FALSE     # nocov
+    stderr_sink = NULL       # nocov
   }
   if (!missing(error) && !missing(y))
     stopf("Test %s is invalid: when error= is provided it does not make sense to pass y as well", numStr)  # nocov
@@ -353,6 +365,10 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
       # nocov end
     }
     assign("prevtest", num, parent.frame(), inherits=TRUE)
+  }
+  if (!fail && !is.null(stderr_sink) && !is.na(tt<-file.info(stderr_sink)$mtime) && (is.na(last_stderr) || tt>last_stderr)) {
+    catf("Test %s produced output on stderr\n", numStr)
+    fail = TRUE
   }
   if (!fail) for (type in c("warning","error","message")) {
     observed = actual[[type]]
