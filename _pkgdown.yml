@@ -1,6 +1,7 @@
 url: https://Rdatatable.gitlab.io/data.table
 
 template:
+  bootstrap: 5
   params:
     ganalytics: UA-129166154-2
 
