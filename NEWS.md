@@ -10,6 +10,41 @@
 
 ## NEW FEATURES
 
+0. (needs to be moved after rebase anyway) New `frolladapt` helper function has been added to aid in preparing adaptive length rolling window width when dealing with _irregularly spaced ordered data_. This lets the user to apply a rolling function over a period without having to deal with gaps in a data where some periods might be missing.
+
+```r
+idx = as.IDate("2022-10-23") + c(0,1,4,5,6,7,9,10,14)
+dt = data.table(index=idx, value=seq_along(idx))
+dt
+#        index value
+#       <Date> <int>
+#1: 2022-10-23     1
+#2: 2022-10-24     2
+#3: 2022-10-27     3
+#4: 2022-10-28     4
+#5: 2022-10-29     5
+#6: 2022-10-30     6
+#7: 2022-11-01     7
+#8: 2022-11-02     8
+#9: 2022-11-06     9
+dt[, c("rollmean3","rollmean3days") := list(
+  frollmean(value, 3),
+  frollmean(value, frolladapt(index, 3), adaptive=TRUE)
+  )]
+dt
+#        index value rollmean3 rollmean3days
+#       <IDat> <int>     <num>         <num>
+#1: 2022-10-23     1        NA            NA
+#2: 2022-10-24     2        NA            NA
+#3: 2022-10-27     3         2           3.0
+#4: 2022-10-28     4         3           3.5
+#5: 2022-10-29     5         4           4.0
+#6: 2022-10-30     6         5           5.0
+#7: 2022-11-01     7         6           6.5
+#8: 2022-11-02     8         7           7.5
+#9: 2022-11-06     9         8           9.0
+```
+
 1. `nafill()` now applies `fill=` to the front/back of the vector when `type="locf|nocb"`, [#3594](https://github.com/Rdatatable/data.table/issues/3594). Thanks to @ben519 for the feature request. It also now returns a named object based on the input names. Note that if you are considering joining and then using `nafill(...,type='locf|nocb')` afterwards, please review `roll=`/`rollends=` which should achieve the same result in one step more efficiently. `nafill()` is for when filling-while-joining (i.e. `roll=`/`rollends=`/`nomatch=`) cannot be applied.
 
 2. `mean(na.rm=TRUE)` by group is now GForce optimized, [#4849](https://github.com/Rdatatable/data.table/issues/4849). Thanks to the [h2oai/db-benchmark](https://github.com/h2oai/db-benchmark) project for spotting this issue. The 1 billion row example in the issue shows 48s reduced to 14s. The optimization also applies to type `integer64` resulting in a difference to the `bit64::mean.integer64` method: `data.table` returns a `double` result whereas `bit64` rounds the mean to the nearest integer.
