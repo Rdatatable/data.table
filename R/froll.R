@@ -84,49 +84,6 @@ make.roll.names = function(x.len, n.len, n, x.nm, n.nm, fun, adaptive) {
   ans
 }
 
-## reference implementation for C frolladapt, will be removed after testing
-aw = function(x, n, partial=FALSE) {
-  for (i in seq_along(x)[-1L])
-    if (x[i] <= x[i-1L]) stop("not sorted or duplicates")
-  ans = rep.int(NA_integer_, length(x))
-  x0 = x[1]
-  i = 1
-  j = 1
-  while (i <= length(x)) {
-    lhs = x[i]
-    rhs = x[j]
-    an = i-j+1L                 ## window we are currently looking at in this iteration
-    #cat(sprintf("i=%d, j=%d\n", i, j))
-    #browser()
-    if (an > n)
-      stop("internal error: an > n, should not increment i in the first place")
-    else if (an == n) {         ## an is same size as n, so we either have no gaps or will need to shrink an by j++
-      if (lhs == rhs+n-1L) {    ## no gaps - or a k gaps and a k dups?
-        ans[i] = n              ## could skip if pre-fill
-        i = i+1L
-        j = j+1L
-      } else if (lhs > rhs+n-1L) { ## need to shrink an
-        j = j+1L
-      } else {
-        stop("internal error: no sorted, should be been detected by now")
-      }
-    }
-    else if (an < n) {          ## there are some gaps
-      if (lhs == rhs+n-1L) {    ## gap and rhs matches the bound, so increment i and j
-        ans[i] = an
-        i = i+1L
-        j = j+1L
-      } else if (lhs > rhs+n-1L) { ## need to shrink an
-        ans[i] = an                ## likely to be overwritten by smaller an if shrinking continues because i is not incremented
-        j = j+1L
-      } else if (lhs < rhs+n-1L) {
-        ans[i] = if (!partial && lhs-x0<n) NA_integer_ else an ## for i==j an=1L
-        i = i+1L
-      }
-    }
-  }
-  ans
-}
 ## irregularly spaced time series, helper for creating adaptive window size
 frolladapt = function(x, n, partial=FALSE, give.names=FALSE) {
   x = unclass(x)
