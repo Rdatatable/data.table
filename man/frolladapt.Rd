@@ -12,7 +12,6 @@
   \item{n}{ Integer vector giving rolling window size(s). This is the \emph{total} number of included values in aggregate function. Value corresponds to unit of \code{x}. When \code{x} is a \code{POSIXct} then \code{n} are seconds, when \code{x} is a \code{Date} then \code{n} are days. }
   \item{partial}{ Logical, default \code{FALSE}. Should the rolling window size(s) provided in \code{N} be trimmed to available observations. For details see \code{\link{froll}}. }
   \item{give.names}{ Logical, default \code{FALSE}. When \code{TRUE}, names are automatically generated corresponding to names of \code{N}. If answer is an integer vector, then the argument is ignored, see examples. }
-  \item{.validate}{ Logical, default \code{FALSE}. Makes extra validation vs reference implementation. Will be removed before merging to master branch. }
 }
 \details{
   Argument \code{n} allows multiple values to generate multiple adaptive windows, unlike \code{x}, as mixing different time series would make no sense.

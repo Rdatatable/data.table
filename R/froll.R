@@ -128,7 +128,7 @@ aw = function(x, n, partial=FALSE) {
   ans
 }
 ## irregularly spaced time series, helper for creating adaptive window size
-frolladapt = function(x, n, partial=FALSE, give.names=FALSE, .validate=FALSE) {
+frolladapt = function(x, n, partial=FALSE, give.names=FALSE) {
   x = unclass(x)
   if (!is.numeric(x))
     stopf("Index vector 'x' must of numeric type")
@@ -161,27 +161,7 @@ frolladapt = function(x, n, partial=FALSE, give.names=FALSE, .validate=FALSE) {
       setattr(ans, "names", nms)
     }
   }
-  if (!.validate) return(ans)
-
-  ## validation1
-  d = as.data.table(list(id=x))
-  set(d,, "from", x-n+1L)
-  an = d[d, on=.(id <= id, id >= from), .N, by=.EACHI]$N
-  if (!partial) {
-    first = x[1L]+n-1L
-    incomplete = which(x < first)
-    an[incomplete] = rep.int(NA_integer_, length(incomplete))
-  }
-  an1 = an
-  ok1 = all.equal(an1, ans)
-  ## validation2
-  an2 = aw(x, n, partial)
-  ok2 = all.equal(an2, ans)
-
-  if (isTRUE(ok1) && isTRUE(ok2)) ans else {
-    warning("results does not match")
-    list(ans=ans, an1=an1, an2=an2)
-  }
+  ans
 }
 
 froll = function(fun, x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"), na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, give.names=FALSE, hasNA=NA) {
