@@ -63,7 +63,7 @@ build: ## build data.table sources as tar.gz archive
   before_script:
     - Rscript -e 'install.packages(c("knitr","rmarkdown"), repos=file.path("file:",normalizePath("bus/mirror-packages/cran")), quiet=TRUE)'
     - rm -r bus
-    - sed -i '${/^$/d;}' ./DESCRIPTION ## remove last empty line in DCF
+    - sed -i '${/^$/d;}' ./DESCRIPTION ## make last line end abruptly; i.e. without a final \n
     - echo "Revision:" $CI_BUILD_REF >> ./DESCRIPTION
   script:
     - R CMD build .
