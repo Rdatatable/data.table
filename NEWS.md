@@ -10,6 +10,60 @@
 
 ## NEW FEATURES
 
+0. (needs to be moved after rebase anyway) Function `frollapply` has been completely rewritten. Be sure to read `frollapply` manual before using the function.
+
+- All basic types are now supported on input/output, not only double. Users code could possibly break if it depends on forced coercion of input/output to double type.
+```r
+frollapply(c(F,T,F,F,F,T), 2, any)
+#[1]    NA  TRUE  TRUE FALSE FALSE  TRUE
+## used to be: NA,1,1,0,0,1
+```
+
+- new argument `by.column` allowing to pass a multi-column subset of a data.table into a rolling function, closes [#4887](https://github.com/Rdatatable/data.table/issues/4887).
+```r
+x = as.data.table(iris)
+flow = function(x) {
+  v1 = x[[1L]]
+  v2 = x[[2L]]
+  (v1[2L] - v1[1L] * (1+v2[2L])) / v1[1L]
+}
+x[, "flow" := frollapply(.(Sepal.Length, Sepal.Width), 2, flow, by.column=FALSE),
+  by = Species][]
+#     Sepal.Length Sepal.Width Petal.Length Petal.Width   Species      flow
+#            <num>       <num>        <num>       <num>    <fctr>     <num>
+#  1:          5.1         3.5          1.4         0.2    setosa        NA
+#  2:          4.9         3.0          1.4         0.2    setosa -3.039216
+#  3:          4.7         3.2          1.3         0.2    setosa -3.240816
+#  4:          4.6         3.1          1.5         0.2    setosa -3.121277
+#  5:          5.0         3.6          1.4         0.2    setosa -3.513043
+# ---
+#146:          6.7         3.0          5.2         2.3 virginica -3.000000
+#147:          6.3         2.5          5.0         1.9 virginica -2.559701
+#148:          6.5         3.0          5.2         2.0 virginica -2.968254
+#149:          6.2         3.4          5.4         2.3 virginica -3.446154
+#150:          5.9         3.0          5.1         1.8 virginica -3.048387
+```
+
+- uses multiple CPU threads; evaluate UDF is inherently slow so this can be a big help.
+```r
+x = rnorm(1e5)
+n = 500
+setDTthreads(1)
+system.time(
+  th1 <- frollapply(x, n, median, simplify=unlist)
+)
+#   user  system elapsed
+#  4.106   0.008   4.115
+setDTthreads(4)
+system.time(
+  th4 <- frollapply(x, n, median, simplify=unlist)
+)
+#   user  system elapsed
+#  5.778   0.140   1.498
+all.equal(th1, th4)
+#[1] TRUE
+```
+
 1. `nafill()` now applies `fill=` to the front/back of the vector when `type="locf|nocb"`, [#3594](https://github.com/Rdatatable/data.table/issues/3594). Thanks to @ben519 for the feature request. It also now returns a named object based on the input names. Note that if you are considering joining and then using `nafill(...,type='locf|nocb')` afterwards, please review `roll=`/`rollends=` which should achieve the same result in one step more efficiently. `nafill()` is for when filling-while-joining (i.e. `roll=`/`rollends=`/`nomatch=`) cannot be applied.
 
 2. `mean(na.rm=TRUE)` by group is now GForce optimized, [#4849](https://github.com/Rdatatable/data.table/issues/4849). Thanks to the [h2oai/db-benchmark](https://github.com/h2oai/db-benchmark) project for spotting this issue. The 1 billion row example in the issue shows 48s reduced to 14s. The optimization also applies to type `integer64` resulting in a difference to the `bit64::mean.integer64` method: `data.table` returns a `double` result whereas `bit64` rounds the mean to the nearest integer.
