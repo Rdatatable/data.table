@@ -302,7 +302,6 @@ cd R-devel  # may be used for revdep testing: .dev/revdep.R.
 make
 
 # use latest available `apt-cache search gcc-` or `clang-`
-
 # wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|sudo apt-key add -
 # sudo add-apt-repository 'deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-15 main'
 # sudo apt-get install clang-15
