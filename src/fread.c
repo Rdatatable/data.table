@@ -2523,9 +2523,8 @@ int freadMain(freadMainArgs _args) {
       rowSize1 = rowSize4 = rowSize8 = 0;
       nStringCols = 0;
       nNonStringCols = 0;
-      for (int j=0, resj=-1; j<ncol; j++) {
+      for (int j=0; j<ncol; ++j) {
         if (type[j] == CT_DROP) continue;
-        resj++;
         if (type[j]<0) {
           // column was bumped due to out-of-sample type exception
           type[j] = -type[j];
