@@ -13935,10 +13935,7 @@ y = as.ITime('543210', format = '%S%M%H')
 test(1962.095, y, structure(37974L, class = "ITime"))
 test(1962.096, capture.output(print(y)), '[1] "10:32:54"')
 test(1962.097, rep(y, 2L), structure(c(37974L, 37974L), class = "ITime"))
-test(1962.098, as.POSIXlt(y, date = '2018-12-01', tz = 'UTC'),
-     structure(list(sec = 54, min = 32L, hour = 10L, mday = 1L, mon = 11L,
-                    year = 118L, wday = 6L, yday = 334L, isdst = 0L),
-               class = c("POSIXlt", "POSIXt"), tzone = "UTC"))
+test(1962.098, format(as.POSIXlt(y, date='2018-12-01', tz='UTC'), usetz=TRUE), "2018-12-01 10:32:54 UTC")
 
 test(1962.099, as.POSIXct(x, y),
      structure(1533119574, tzone = "UTC", class = c("POSIXct", "POSIXt")))
