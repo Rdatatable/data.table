@@ -342,12 +342,13 @@ Rdevel-strict-[gcc|clang] CMD check data.table_1.14.5.tar.gz
 Rdevel-strict-[gcc|clang]
 isTRUE(.Machine$sizeof.longdouble==0)  # check noLD is being tested
 options(repos = "http://cloud.r-project.org")
-install.packages(c("bit64", "bit", "curl", "R.utils", "xts","nanotime", "zoo", "yaml", "knitr", "rmarkdown"))
+install.packages(c("bit64", "bit", "curl", "R.utils", "xts","nanotime", "zoo", "yaml", "knitr", "rmarkdown", "markdown"),
+                 Ncpus=4)
 # Issue #5491 showed that CRAN is running UBSAN on .Rd examples which found an error so we now run full R CMD check
 q("no")
 Rdevel-strict-[gcc|clang] CMD check data.table_1.14.5.tar.gz
 # UBSAN errors occur on stderr and don't affect R CMD check result. Made many failed attempts to capture them. So grep for them. 
-find data.table.Rcheck -name "*.Rout" -exec grep -H "runtime error" {} \;
+find data.table.Rcheck -name "*Rout*" -exec grep -H "runtime error" {} \;
 
 require(data.table)
 test.data.table(script="*.Rraw") # 7 mins (vs 1min normally) under UBSAN, ASAN and --strict-barrier
