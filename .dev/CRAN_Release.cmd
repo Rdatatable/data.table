@@ -335,19 +335,19 @@ alias Rdevel-strict-clang='~/build/R-devel-strict-clang/bin/R --vanilla'
 cd ~/GitHub/data.table
 Rdevel-strict-[gcc|clang] CMD INSTALL data.table_1.14.5.tar.gz
 # Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with them so they should be
-# passed through to here. However, our configure script seems to get in the way and get them from {R_HOME}/bin/R
-# so I needed to edit my ~/.R/Makevars to get CFLAGS the way I needed.
+# passed through to here. However, our configure script seems to get in the way and gets them from {R_HOME}/bin/R
+# So I needed to edit my ~/.R/Makevars to get CFLAGS the way I needed.
 Rdevel-strict-[gcc|clang] CMD check data.table_1.14.5.tar.gz
-# use the (failed) output to get the list of currently needed packages :
+# Use the (failed) output to get the list of currently needed packages and install them
 Rdevel-strict-[gcc|clang]
 isTRUE(.Machine$sizeof.longdouble==0)  # check noLD is being tested
 options(repos = "http://cloud.r-project.org")
 install.packages(c("bit64", "bit", "curl", "R.utils", "xts","nanotime", "zoo", "yaml", "knitr", "rmarkdown"))
-# R CMD check doesn't allow any tests to be skipped by test.data.table due to missing packages
-# Issue #5491 showed that CRAN is running UBSAN on .Rd examples too which found an error so we now run full R CMD check here
+# Issue #5491 showed that CRAN is running UBSAN on .Rd examples which found an error so we now run full R CMD check
 q("no")
 Rdevel-strict-[gcc|clang] CMD check data.table_1.14.5.tar.gz
-
+# UBSAN errors occur on stderr and don't affect R CMD check result. Made many failed attempts to capture them. So grep for them. 
+find data.table.Rcheck -name "*.Rout" -exec grep -H "runtime error" {} \;
 
 require(data.table)
 test.data.table(script="*.Rraw") # 7 mins (vs 1min normally) under UBSAN, ASAN and --strict-barrier
