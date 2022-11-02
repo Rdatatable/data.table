@@ -289,11 +289,11 @@ cd ~/build
 wget -N https://stat.ethz.ch/R/daily/R-devel.tar.gz
 rm -rf R-devel
 rm -rf R-devel-strict-*
-tar xvf R-devel.tar.gz
+tar xf R-devel.tar.gz
 mv R-devel R-devel-strict-gcc
-tar xvf R-devel.tar.gz
+tar xf R-devel.tar.gz
 mv R-devel R-devel-strict-clang
-tar xvf R-devel.tar.gz
+tar xf R-devel.tar.gz
 
 sudo apt-get -y build-dep r-base
 cd R-devel  # may be used for revdep testing: .dev/revdep.R.
@@ -302,8 +302,12 @@ cd R-devel  # may be used for revdep testing: .dev/revdep.R.
 make
 
 # use latest available `apt-cache search gcc-` or `clang-`
+# wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|sudo apt-key add -
+# sudo add-apt-repository 'deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-15 main'
+# sudo apt-get install clang-15
+
 cd ~/build/R-devel-strict-clang
-./configure --without-recommended-packages --disable-byte-compiled-packages --enable-strict-barrier --disable-long-double CC="clang-11 -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer"
+./configure --without-recommended-packages --disable-byte-compiled-packages --enable-strict-barrier --disable-long-double CC="clang-15 -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-sanitize=alignment -fno-omit-frame-pointer" CFLAGS="-g -O3 -Wall -pedantic"
 make
 
 cd ~/build/R-devel-strict-gcc
@@ -329,15 +333,22 @@ alias Rdevel-strict-gcc='~/build/R-devel-strict-gcc/bin/R --vanilla'
 alias Rdevel-strict-clang='~/build/R-devel-strict-clang/bin/R --vanilla'
 
 cd ~/GitHub/data.table
-Rdevel-strict-gcc CMD INSTALL data.table_1.14.1.tar.gz
-Rdevel-strict-clang CMD INSTALL data.table_1.14.1.tar.gz
-# Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with them so should be passed through to here
-Rdevel-strict-gcc
-Rdevel-strict-clang  # repeat below with clang and gcc
+Rdevel-strict-[gcc|clang] CMD INSTALL data.table_1.14.5.tar.gz
+# Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with them so they should be
+# passed through to here. However, our configure script seems to get in the way and gets them from {R_HOME}/bin/R
+# So I needed to edit my ~/.R/Makevars to get CFLAGS the way I needed.
+Rdevel-strict-[gcc|clang] CMD check data.table_1.14.5.tar.gz
+# Use the (failed) output to get the list of currently needed packages and install them
+Rdevel-strict-[gcc|clang]
 isTRUE(.Machine$sizeof.longdouble==0)  # check noLD is being tested
 options(repos = "http://cloud.r-project.org")
-install.packages(c("bit64","xts","nanotime","R.utils","yaml")) # minimum packages needed to not skip any tests in test.data.table()
-# install.packages(c("curl","knitr"))                          # for `R CMD check` when not strict. Too slow to install when strict
+install.packages(c("bit64", "bit", "curl", "R.utils", "xts","nanotime", "zoo", "yaml", "knitr", "rmarkdown"))
+# Issue #5491 showed that CRAN is running UBSAN on .Rd examples which found an error so we now run full R CMD check
+q("no")
+Rdevel-strict-[gcc|clang] CMD check data.table_1.14.5.tar.gz
+# UBSAN errors occur on stderr and don't affect R CMD check result. Made many failed attempts to capture them. So grep for them. 
+find data.table.Rcheck -name "*.Rout" -exec grep -H "runtime error" {} \;
+
 require(data.table)
 test.data.table(script="*.Rraw") # 7 mins (vs 1min normally) under UBSAN, ASAN and --strict-barrier
                                  # without the fix in PR#3515, the --disable-long-double lumped into this build does now work and correctly reproduces the noLD problem
