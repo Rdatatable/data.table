@@ -109,6 +109,7 @@ typedef struct fwriteMainArgs
   int nth;
   bool showProgress;
   bool is_gzip;
+  int gzip_ratio;
   bool bom;
   const char *yaml;
   bool verbose;

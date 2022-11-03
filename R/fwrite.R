@@ -10,6 +10,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
            buffMB=8, nThread=getDTthreads(verbose),
            showProgress=getOption("datatable.showProgress", interactive()),
            compress = c("auto", "none", "gzip"),
+           gzip_ratio = 0:9,
            yaml = FALSE,
            bom = FALSE,
            verbose=getOption("datatable.verbose", FALSE),
@@ -20,6 +21,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   }
   if (missing(qmethod)) qmethod = qmethod[1L]
   if (missing(compress)) compress = compress[1L]
+  if (missing(gzip_ratio)) gzip_ratio = gzip_ratio[1L]
   if (missing(dateTimeAs)) { dateTimeAs = dateTimeAs[1L] }
   else if (length(dateTimeAs)>1L) stopf("dateTimeAs must be a single string")
   dateTimeAs = chmatch(dateTimeAs, c("ISO","squash","epoch","write.csv"))-1L
@@ -34,6 +36,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   scipen = if (is.numeric(scipen)) as.integer(scipen) else 0L
   buffMB = as.integer(buffMB)
   nThread = as.integer(nThread)
+  gzip_ratio = as.integer(gzip_ratio)
   # write.csv default is 'double' so fwrite follows suit. write.table's default is 'escape'
   # validate arguments
   if (is.matrix(x)) { # coerce to data.table if input object is matrix
@@ -49,6 +52,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
     is.character(eol) && length(eol)==1L,
     length(qmethod) == 1L && qmethod %chin% c("double", "escape"),
     length(compress) == 1L && compress %chin% c("auto", "none", "gzip"),
+    length(gzip_ratio) == 1L && 0L<=gzip_ratio && gzip_ratio<=9L,
     isTRUEorFALSE(col.names), isTRUEorFALSE(append), isTRUEorFALSE(row.names),
     isTRUEorFALSE(verbose), isTRUEorFALSE(showProgress), isTRUEorFALSE(logical01),
     isTRUEorFALSE(bom),
@@ -111,7 +115,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   file = enc2native(file) # CfwriteR cannot handle UTF-8 if that is not the native encoding, see #3078.
   .Call(CfwriteR, x, file, sep, sep2, eol, na, dec, quote, qmethod=="escape", append,
         row.names, col.names, logical01, scipen, dateTimeAs, buffMB, nThread,
-        showProgress, is_gzip, bom, yaml, verbose, encoding)
+        showProgress, is_gzip, gzip_ratio, bom, yaml, verbose, encoding)
   invisible()
 }
 

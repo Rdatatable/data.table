@@ -43,6 +43,7 @@ static bool qmethodEscape=false;       // when quoting fields, how to escape dou
 static int scipen;
 static bool squashDateTime=false;      // 0=ISO(yyyy-mm-dd) 1=squash(yyyymmdd)
 static bool verbose=false;
+static int gzip_ratio;
 
 extern const char *getString(const void *, int64_t);
 extern int getStringLen(const void *, int64_t);
@@ -567,7 +568,7 @@ int init_stream(z_stream *stream) {
   stream->opaque = Z_NULL;
 
   // 31 comes from : windows bits 15 | 16 gzip format
-  int err = deflateInit2(stream, Z_DEFAULT_COMPRESSION, Z_DEFLATED, 31, 8, Z_DEFAULT_STRATEGY);
+  int err = deflateInit2(stream, gzip_ratio==0 ? Z_DEFAULT_COMPRESSION : gzip_ratio, Z_DEFLATED, 31, 8, Z_DEFAULT_STRATEGY);
   return err;  // # nocov
 }
 
@@ -600,6 +601,7 @@ void fwriteMain(fwriteMainArgs args)
   scipen = args.scipen;
   doQuote = args.doQuote;
   verbose = args.verbose;
+  gzip_ratio = args.gzip_ratio;
 
   // When NA is a non-empty string, then we must quote all string fields in case they contain the na string
   // na is recommended to be empty, though
