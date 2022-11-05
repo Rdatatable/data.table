@@ -113,7 +113,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   assign("started.at", proc.time(), envir=env)
   assign("lasttime", proc.time()[3L], envir=env)  # used by test() to attribute time inbetween tests to the next test
   assign("timings", data.table( ID = seq_len(9999L), time=0.0, nTest=0L ), envir=env)   # test timings aggregated to integer id
-  assign("memtest", as.logical(Sys.getenv("TEST_DATA_TABLE_MEMTEST", "FALSE")), envir=env)
+  assign("memtest", TRUE, envir=env)  # as.logical(Sys.getenv("TEST_DATA_TABLE_MEMTEST", "FALSE")), envir=env)
   assign("filename", fn, envir=env)
   assign("inittime", as.integer(Sys.time()), envir=env) # keep measures from various test.data.table runs
   assign("showProgress", showProgress, envir=env)
@@ -174,13 +174,21 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   }
 
   # There aren't any errors, so we can use up 11 lines for the timings table
-  timings = env$timings
-  DT = head(timings[-1L][order(-time)], 10L)   # exclude id 1 as in dev that includes JIT
-  if ((x<-sum(timings[["nTest"]])) != ntest) {
-    warningf("Timings count mismatch: %d vs %d", x, ntest)  # nocov
+  timings = env$timings[nTest>0]
+  if (!env$memtest) {
+    ans = head(timings[-1L][order(-time)], 10L)   # exclude id 1 as in dev that includes JIT
+    if ((x<-sum(timings[["nTest"]])) != ntest) {
+      warningf("Timings count mismatch: %d vs %d", x, ntest)  # nocov
+    }
+    catf("10 longest running tests took %ds (%d%% of %ds)\n", as.integer(tt<-DT[, sum(time)]), as.integer(100*tt/(ss<-timings[,sum(time)])), as.integer(ss))
+    print(ans, class=FALSE)
+  } else {
+    y = head(order(-diff(timings$RSS)), 10L)
+    ans = timings[, diff:=c(NA,round(diff(RSS),1))][y+1L][,time:=NULL]  # time is distracting and influenced by gc() calls; just focus on RAM usage here
+    catf("10 largest RAM increases (MB); see plot for cummulative effect (if any)\n")
+    print(ans, class=FALSE)
+    plot(timings$RSS)
   }
-  catf("10 longest running tests took %ds (%d%% of %ds)\n", as.integer(tt<-DT[, sum(time)]), as.integer(100*tt/(ss<-timings[,sum(time)])), as.integer(ss))
-  print(DT, class=FALSE)
 
   catf("All %d tests (last %.8g) in %s completed ok in %s\n", ntest, env$prevtest, names(fn), timetaken(env$started.at))
 
@@ -209,7 +217,9 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   #}
   #if (memtest<-get("memtest", envir=env)) memtest.plot(get("inittime", envir=env))
 
-  invisible(nfail==0L)
+  ans = nfail==0L
+  attr(ans, "timings") = timings  # as attr to not upset callers who expect a TRUE/FALSE result
+  invisible(ans)
 }
 
 # nocov start
@@ -278,16 +288,20 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     lasttime = get("lasttime", parent.frame())
     timings = get("timings", parent.frame())
     memtest = get("memtest", parent.frame())
-    inittime = get("inittime", parent.frame())
+    # inittime = get("inittime", parent.frame())
     filename = get("filename", parent.frame())
     foreign = get("foreign", parent.frame())
     showProgress = get("showProgress", parent.frame())
     time = nTest = NULL  # to avoid 'no visible binding' note
     if (num>0) on.exit( {
-       now = proc.time()[3L]
-       took = now-lasttime  # so that prep time between tests is attributed to the following test
-       assign("lasttime", now, parent.frame(), inherits=TRUE)
-       timings[ as.integer(num), `:=`(time=time+took, nTest=nTest+1L), verbose=FALSE ]
+       took = proc.time()[3L]-lasttime  # so that prep time between tests is attributed to the following test
+       # mem = as.list(c(inittime=inittime, filename=basename(filename), timestamp=timestamp, test=num, ps_mem(), gc_mem())) # nocov
+       timings[as.integer(num), `:=`(time=time+took, nTest=nTest+1L), verbose=FALSE]
+       if (memtest) {
+         gc() # force gc so we can find tests that use relatively larger amounts of RAM and don't rm() them
+         timings[as.integer(num), RSS:=max(ps_mem(),RSS,na.rm=TRUE), verbose=FALSE]
+       }
+       assign("lasttime", proc.time()[3L], parent.frame(), inherits=TRUE)  # proc.time() after gc() to exclude gc() time when memtest
     } )
     if (showProgress)
       # \r can't be in gettextf msg
@@ -340,10 +354,11 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
   } else {
     out = capture.output(print(x <- suppressMessages(withCallingHandlers(tryCatch(x, error=eHandler), warning=wHandler, message=mHandler))))
   }
-  if (memtest) {
-    mem = as.list(c(inittime=inittime, filename=basename(filename), timestamp=timestamp, test=num, ps_mem(), gc_mem())) # nocov
-    fwrite(mem, "memtest.csv", append=TRUE, verbose=FALSE)                                                                             # nocov
-  }
+  #if (memtest) {
+  #  mem = as.list(c(inittime=inittime, filename=basename(filename), timestamp=timestamp, test=num, ps_mem(), gc_mem())) # nocov
+  #  
+  #  fwrite(mem, "memtest.csv", append=TRUE, verbose=FALSE)                                                                             # nocov
+  #}
   fail = FALSE
   if (.test.data.table && num>0) {
     if (num<prevtest+0.0000005) {
