@@ -120,6 +120,8 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
 
   owd = setwd(tempdir()) # ensure writeable directory; e.g. tests that plot may write .pdf here depending on device option and/or batch mode; #5190
   on.exit(setwd(owd))
+  
+  if (memtest) catf("\n***\n*** memtest=TRUE. This should be the first task in a fresh R session for best results. Ctrl-C now if not.\n***\n\n")
 
   err = try(sys.source(fn, envir=env), silent=silent)
 
