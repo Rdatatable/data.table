@@ -189,36 +189,10 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     ans = timings[, diff:=c(NA,round(diff(RSS),1))][y+1L][,time:=NULL]  # time is distracting and influenced by gc() calls; just focus on RAM usage here
     catf("10 largest RAM increases (MB); see plot for cumulative effect (if any)\n")
     print(ans, class=FALSE)
-    plot(timings$RSS, main=fn, ylab="RSS (MB)")
+    plot(timings$RSS, main=basename(fn), ylab="RSS (MB)")
   }
 
   catf("All %d tests (last %.8g) in %s completed ok in %s\n", ntest, env$prevtest, names(fn), timetaken(env$started.at))
-
-  ## this chunk requires to include new suggested deps: graphics, grDevices
-  #memtest.plot = function(.inittime) {
-  #  if (!all(requireNamespace(c("graphics","grDevices"), quietly=TRUE))) return(invisible())
-  #  inittime=PS_rss=GC_used=GC_max_used=NULL
-  #  m = fread("memtest.csv")[inittime==.inittime]
-  #  if (nrow(m)) {
-  #    ps_na = allNA(m[["PS_rss"]]) # OS with no 'ps -o rss R' support
-  #    grDevices::png("memtest.png")
-  #    p = graphics::par(mfrow=c(if (ps_na) 2 else 3, 2))
-  #    if (!ps_na) {
-  #      m[, graphics::plot(test, PS_rss, pch=18, xlab="test num", ylab="mem MB", main="ps -o rss R")]
-  #      m[, graphics::plot(timestamp, PS_rss, type="l", xlab="timestamp", ylab="mem MB", main="ps -o rss R")]
-  #    }
-  #    m[, graphics::plot(test, GC_used, pch=18, xlab="test num", ylab="mem MB", main="gc used")]
-  #    m[, graphics::plot(timestamp, GC_used, type="l", xlab="timestamp", ylab="mem MB", main="gc used")]
-  #    m[, graphics::plot(test, GC_max_used, pch=18, xlab="test num", ylab="mem MB", main="gc max used")]
-  #    m[, graphics::plot(timestamp, GC_max_used, type="l", xlab="timestamp", ylab="mem MB", main="gc max used")]
-  #    graphics::par(p)
-  #    grDevices::dev.off()
-  #  } else {
-  #    warningf("test.data.table runs with memory testing but did not collect any memory statistics.")
-  #  }
-  #}
-  #if (memtest<-get("memtest", envir=env)) memtest.plot(get("inittime", envir=env))
-
   ans = nfail==0L
   attr(ans, "timings") = timings  # as attr to not upset callers who expect a TRUE/FALSE result
   invisible(ans)
