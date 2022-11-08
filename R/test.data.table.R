@@ -4,6 +4,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
     # package developer
     # nocov start
+    dev = TRUE
     if ("package:data.table" %chin% search()) stopf("data.table package is loaded. Unload or start a fresh R session.")
     rootdir = if (pkg!="." && pkg %chin% dir()) file.path(getwd(), pkg) else Sys.getenv("PROJ_PATH")
     subdir = file.path("inst","tests")
@@ -11,6 +12,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     # nocov end
   } else {
     # i) R CMD check and ii) user running test.data.table()
+    dev = FALSE
     rootdir = getNamespaceInfo("data.table","path")
     subdir = "tests"
     env = new.env(parent=parent.env(.GlobalEnv))  # when user runs test.data.table() we don't want their variables in .GlobalEnv affecting tests, #3705
@@ -182,7 +184,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   nTest = RSS = NULL  # to avoid 'no visible binding' note
   timings = env$timings[nTest>0]
   if (!memtest) {
-    ans = head(timings[-1L][order(-time)], 10L)[,RSS:=NULL]   # exclude id 1 as in dev that includes JIT
+    ans = head(timings[if (dev) -1L else TRUE][order(-time)], 10L)[,RSS:=NULL]   # exclude id 1 in dev as that includes JIT
     if ((x<-sum(timings[["nTest"]])) != ntest) {
       warningf("Timings count mismatch: %d vs %d", x, ntest)  # nocov
     }
