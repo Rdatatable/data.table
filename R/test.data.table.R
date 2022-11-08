@@ -1,6 +1,8 @@
 test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=FALSE, showProgress=interactive()&&!silent,
-                           memtest=as.logical(Sys.getenv("TEST_DATA_TABLE_MEMTEST", "FALSE"))) {
+                           memtest=Sys.getenv("TEST_DATA_TABLE_MEMTEST", 0)) {
   stopifnot(isTRUEorFALSE(verbose), isTRUEorFALSE(silent), isTRUEorFALSE(showProgress))
+  memtest = as.integer(memtest)
+  stopifnot(length(memtest)==1L, memtest %in% 0:2)
   if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
     # package developer
     # nocov start
@@ -124,7 +126,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   on.exit(setwd(owd))
   
   if (memtest) {
-    catf("\n***\n*** memtest=TRUE. This should be the first task in a fresh R session for best results. Ctrl-C now if not.\n***\n\n")
+    catf("\n***\n*** memtest=%d. This should be the first task in a fresh R session for best results. Ctrl-C now if not.\n***\n\n", memtest)
     if (is.na(ps_mem())) stopf("memtest intended for Linux. Step through ps_mem() to see what went wrong.")
   }
 
@@ -277,8 +279,9 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
        took = proc.time()[3L]-lasttime  # so that prep time between tests is attributed to the following test
        timings[as.integer(num), `:=`(time=time+took, nTest=nTest+1L), verbose=FALSE]
        if (memtest) {
-         gc() # force gc so we can find tests that use relatively larger amounts of RAM
+         if (memtest==1L) gc()  # see #5515 for before/after
          timings[as.integer(num), RSS:=max(ps_mem(),RSS), verbose=FALSE]
+         if (memtest==2L) gc()
        }
        assign("lasttime", proc.time()[3L], parent.frame(), inherits=TRUE)  # after gc() to exclude gc() time from next test when memtest
     } )
@@ -293,7 +296,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     # not be flushed to the output upon segfault, depending on OS).
   } else {
     # not `test.data.table` but developer running tests manually; i.e. `cc(F); test(...)`
-    memtest = FALSE          # nocov
+    memtest = 0L             # nocov
     filename = NA_character_ # nocov
     foreign = FALSE          # nocov ; assumes users of 'cc(F); test(...)' has LANGUAGE=en
     showProgress = FALSE     # nocov
