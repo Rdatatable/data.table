@@ -179,6 +179,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   }
 
   # There aren't any errors, so we can use up 11 lines for the timings table
+  nTest = RSS = NULL  # to avoid 'no visible binding' note
   timings = env$timings[nTest>0]
   if (!memtest) {
     ans = head(timings[-1L][order(-time)], 10L)[,RSS:=NULL]   # exclude id 1 as in dev that includes JIT
@@ -269,7 +270,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     filename = get("filename", parent.frame())
     foreign = get("foreign", parent.frame())
     showProgress = get("showProgress", parent.frame())
-    time = nTest = NULL  # to avoid 'no visible binding' note
+    time = nTest = RSS = NULL  # to avoid 'no visible binding' note
     if (num>0) on.exit( {
        took = proc.time()[3L]-lasttime  # so that prep time between tests is attributed to the following test
        timings[as.integer(num), `:=`(time=time+took, nTest=nTest+1L), verbose=FALSE]
