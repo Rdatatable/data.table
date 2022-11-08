@@ -10,6 +10,10 @@
 
 1. Test 1962.098 has been modified to pass latest changes to `POSIXt` in R-devel.
 
+2. `test.data.table()` no longer creates `DT` in `.GlobalEnv`, a CRAN policy violation, [#5514](https://github.com/Rdatatable/data.table/issues/5514). No other writes occurred to `.GlobalEnv` and release procedures have been improved to prevent this happening again.
+
+3. The memory usage of the test suite has been halved, [#5507](https://github.com/Rdatatable/data.table/issues/5507).
+
 
 # data.table [v1.14.4](https://github.com/Rdatatable/data.table/milestone/26?closed=1)  (17 Oct 2022)
 

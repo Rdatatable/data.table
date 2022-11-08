@@ -104,7 +104,8 @@ if (!test_longdouble) {
 ##########################
 
 test(1.1, tables(env=new.env()), null.data.table(), output = "No objects of class")
-test(1.2, tables(silent=TRUE), data.table(NAME="timings", NROW=9999L, NCOL=3L, MB=0, COLS=list(c("ID","time","nTest")), KEY=list(NULL)))
+test(1.2, tables(silent=TRUE)[,.(NAME,NROW,MB)], # memtest=TRUE adds some columns so exclude NCOL and COLS here
+          data.table(NAME="timings", NROW=9999L, MB=0))
 
 TESTDT = data.table(a=as.integer(c(1,3,4,4,4,4,7)), b=as.integer(c(5,5,6,6,9,9,2)), v=1:7)
 setkey(TESTDT,a,b)
@@ -14954,10 +14955,10 @@ test(2035.3, fread('A,B\n"foo","ba"r"', quote=""), ans)
 # source() printing edge case; #2369
 setup = c('DT = data.table(a = 1)')
 writeLines(c(setup, 'DT[ , a := 1]'), tmp<-tempfile())
-test(2036.1, !any(grepl("1:     1", capture.output(source(tmp, echo = TRUE)), fixed = TRUE)))
+test(2036.1, !any(grepl("1:     1", capture.output(source(tmp, echo=TRUE, local=TRUE)), fixed=TRUE)))  # local= #5514
 ## test force-printing still works
 writeLines(c(setup, 'DT[ , a := 1][]'), tmp)
-test(2036.2, source(tmp, echo = TRUE), output = "1:\\s+1")
+test(2036.2, source(tmp, echo=TRUE, local=TRUE), output="1:\\s+1")
 
 # more helpful guidance when assigning before setDT() after readRDS(); #1729
 DT = data.table(a = 1:3)
@@ -17279,3 +17280,4 @@ if (identical(x, enc2native(x))) {
 
 # fintersect now preserves order of first argument like intersect, #4716
 test(2163, fintersect(data.table(x=c("b", "c", "a")), data.table(x=c("a","c")))$x, c("c", "a"))
+
