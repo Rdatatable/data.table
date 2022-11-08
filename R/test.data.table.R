@@ -121,7 +121,10 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   owd = setwd(tempdir()) # ensure writeable directory; e.g. tests that plot may write .pdf here depending on device option and/or batch mode; #5190
   on.exit(setwd(owd))
   
-  if (memtest) catf("\n***\n*** memtest=TRUE. This should be the first task in a fresh R session for best results. Ctrl-C now if not.\n***\n\n")
+  if (memtest) {
+    catf("\n***\n*** memtest=TRUE. This should be the first task in a fresh R session for best results. Ctrl-C now if not.\n***\n\n")
+    if (is.na(ps_mem())) stopf("memtest intended for Linux. Step through ps_mem() to see what went wrong.")
+  }
 
   err = try(sys.source(fn, envir=env), silent=silent)
 
@@ -221,17 +224,16 @@ INT = function(...) { as.integer(c(...)) }   # utility used in tests.Rraw
 
 ps_mem = function() {
   # nocov start
-  cmd = sprintf("ps -o rss %s | tail -1", Sys.getpid())
-  ans = tryCatch(as.numeric(system(cmd, intern=TRUE, ignore.stderr=TRUE)), warning=function(w) NA_real_, error=function(e) NA_real_)
-  stopifnot(length(ans)==1L) # extra check if other OSes would not handle 'tail -1' properly for some reason
-  # returns RSS memory occupied by current R process in MB rounded to 1 decimal places (as in gc), ps already returns KB
-  c("PS_rss"=round(ans / 1024, 1L))
+  cmd = paste0("ps -o rss --no-headers ", Sys.getpid()) # ps returns KB
+  ans = tryCatch(as.numeric(system(cmd, intern=TRUE)), warning=function(w) NA_real_, error=function(e) NA_real_)
+  if (length(ans)!=1L || !is.numeric(ans)) ans=NA_real_ # just in case
+  round(ans / 1024, 1L)  # return MB
   # nocov end
 }
 
 gc_mem = function() {
   # nocov start
-  # gc reported memory in MB
+  # gc reports memory in MB
   m = apply(gc()[, c(2L, 4L, 6L)], 2L, sum)
   names(m) = c("GC_used", "GC_gc_trigger", "GC_max_used")
   m
