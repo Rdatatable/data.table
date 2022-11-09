@@ -1,9 +1,16 @@
-pkgs = c("ggplot2", "hexbin", "plyr", "dplyr", "caret", "zoo", "xts", "gdata", "nlme", "bit64", "knitr", "parallel", "sf")
+pkgs = c("ggplot2", "hexbin", "plyr", "dplyr", "caret", "zoo", "xts", "gdata", "nlme", "bit64", "knitr", "parallel", "sf", "nanotime", "R.utils", "yaml")
 # First expression of this file must be as above: .gitlab-ci.yml uses parse(,n=1L) to read one expression from this file and installs pkgs.
 # So that these dependencies of other.Rraw are maintained in a single place.
 # TEST_DATA_TABLE_WITH_OTHER_PACKAGES is off by default so this other.Rraw doesn't run on CRAN. It is run by GLCI, locally in dev, and by
 # users running test.data.table("other.Rraw").
 # zoo needs to be before xts for #5101 otherwise xts's dependency zoo gets attached at position 2 if xts is loaded first
+
+# Optional Suggest-ed package tests were moved from tests.Rraw to here, #5516, other than bit64. Retaining their comments:
+#  "xts",            # we have xts methods in R/xts.R
+#  "nanotime",       # fwrite looks for the 'nanotime' class name at C level (but we have our own writer in C, though)
+#  "R.utils",        # for fread to accept .gz and .bz2 files directly
+#  "yaml"            # for fread's yaml argument (csvy capability)
+#  # zoo             # In DESCRIPTION:Suggests otherwise R CMD check warning: '::' or ':::' import not declared from: 'zoo'; it is tested in other.Rraw though
 
 if (exists("test.data.table",.GlobalEnv,inherits=FALSE) ||
     !"package:data.table" %in% search()) {
