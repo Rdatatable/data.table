@@ -618,4 +618,18 @@ expected = if (base::getRversion() < "3.7.0") 1L else structure(c(1L, 4L, 7L, 10
 test(19.92, first(ar), expected, output="using utils::head: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
 options(old)
 
+if (loaded[["xts"]]) {  # was 2133 in tests.Rraw, #5516
+  # keep.rownames in as.data.table.xts() supports a string, #4232
+  xts = xts::xts(1:10, structure(1:10, class = "Date"))
+  colnames(xts) = "VALUE"
+  DT = as.data.table(xts, keep.rownames = "DATE", key = "DATE")
+  test(20.1, colnames(DT), c("DATE", "VALUE"))
+  test(20.2, key(DT), "DATE")
+  test(20.3, as.data.table(xts, keep.rownames = "VALUE"),
+       error = "Input xts object should not have 'VALUE' column because it would result in duplicate column names. Rename 'VALUE' column in xts or use `keep.rownames` to change the index column name.")
+  test(20.4, as.data.table(xts, keep.rownames = character()),
+       error = "keep.rownames must be length 1")
+  test(20.5, as.data.table(xts, keep.rownames = NA_character_),
+       error = "keep.rownames must not be NA")
+}
 
