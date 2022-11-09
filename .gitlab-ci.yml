@@ -171,7 +171,7 @@ test-rel-vanilla-lin: ## minimal, no suggested deps, no vignettes or manuals, me
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-base-dev
   variables:
-    TEST_DATA_TABLE_MEMTEST: "TRUE"
+    TEST_DATA_TABLE_MEMTEST: "1"
   before_script:
     - *cp-src
     - rm -r bus
