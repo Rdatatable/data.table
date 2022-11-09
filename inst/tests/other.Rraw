@@ -633,3 +633,62 @@ if (loaded[["xts"]]) {  # was 2133 in tests.Rraw, #5516
        error = "keep.rownames must not be NA")
 }
 
+if (loaded[["nanotime"]]) {
+
+  # was 1463.62-65 in tests.Rraw, #5516
+  x=nanotime(1:4)
+  test(21.1, shift(x         ),           c(nanotime::nanotime(NA), x[1:3]))
+  test(21.2, shift(x, fill=0L),           c(nanotime::nanotime(0L), x[1:3]))
+  test(21.3, shift(x, 1,  type="cyclic"), c(x[4L], x[-4L]))
+  test(21.4, shift(x, -1, type="cyclic"), c(x[-1L], x[1L]))
+  
+  # was 1752 in tests.Rraw, #5516
+  DT = data.table(A=nanotime(tt<-c("2016-09-28T15:30:00.000000070Z",
+                                   "2016-09-29T23:59:00.000000001Z",
+                                   "2016-09-29T23:59:00.000000999Z",
+                                   "1970-01-01T00:01:01.000001000Z",
+                                   "1970-01-01T00:00:00.000000000Z",
+                                   "1969-12-31T23:59:59.999999999Z",
+                                   "1969-12-31T23:59:59.000000089Z",
+                                   "1969-12-31T12:13:14.000000000Z",
+                                   "1969-12-31T12:13:14.999999999Z",
+                                   "1969-12-31T12:13:14.000000001Z",
+                                   "1967-03-15T00:00:00.300000002Z",
+                                   "1967-03-15T23:59:59.300000002Z")))
+  test(22, capture.output(fwrite(DT, verbose=FALSE))[-1], tt)
+  
+  # was 2060.401-405 in tests.Rraw, #5516
+  nt = nanotime(c(1L, 2L, NA_integer_, 4L))
+  nt_val = nanotime(1:4)
+  test(23.1, as.character(fcoalesce(nt, nanotime(3L))), as.character(nt_val)) # as.character due to eddelbuettel/nanotime#46
+  test(23.2, as.character(fcoalesce(nt, nanotime(NA), nanotime(3L))), as.character(nt_val))
+  test(23.3, as.character(fcoalesce(nt, nanotime(rep(3, 4L)))), as.character(nt_val))
+  test(23.4, fcoalesce(nt, 1), error='Item 2 has a different class than item 1')
+  test(23.5, fcoalesce(nt, 1L), error = 'Item 2 is type integer but the first item is type double')
+  
+  # was 2080.01-05 in tests.Rraw, #5516
+  n = nanotime(1:4)
+  n[2L] = NA
+  opt = options(datatable.verbose=TRUE)
+  test(24.1, between(n, nanotime(2), nanotime(10)), c(FALSE, NA, TRUE, TRUE), output="between parallel processing of integer64")
+  test(24.2, between(n, nanotime(3), nanotime(10), incbounds=FALSE), c(FALSE, NA, FALSE, TRUE), output="between parallel processing of integer64")
+  test(24.3, between(n, nanotime(3), nanotime(NA), incbounds=FALSE, NAbounds=NA), c(FALSE, NA, FALSE, NA), output="between parallel processing of integer64")
+  options(opt)
+  test(24.4, between(1:10, nanotime(3), nanotime(6)), error="x is not integer64 but.*Please align classes")
+  test(24.5, between(1:10, 3, nanotime(6)),           error="x is not integer64 but.*Please align classes")
+  
+  # was 2085.11 in tests.Rraw, #5516
+  n = nanotime(1:4)
+  test(25, fifelse(c(TRUE,FALSE,NA,TRUE), n, n+100), c(n[1L], n[2L]+100, nanotime(NA), n[4]))
+
+  # was 2127.27 in tests.Rraw, #5516
+  n = nanotime(1:12)
+  test(26, fcase(c(-5L:5L<0L,NA), n, c(-5L:5L>0L,NA), n+100), c(n[1L:5L], nanotime(NA), n[7L:11L]+100, as.integer64(NA)))
+  
+  # na.omit works for nanotime, #4744. Was 2205 in tests.Rraw, #5516
+  DT = data.table(time=nanotime(c(1,NA,3)))
+  test(27, na.omit(DT), DT[c(1,3)])
+
+}
+
+
