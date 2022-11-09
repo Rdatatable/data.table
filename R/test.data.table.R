@@ -33,7 +33,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     return(sapply(scripts, function(fn) {
       err = try(test.data.table(script=fn, verbose=verbose, pkg=pkg, silent=silent, showProgress=showProgress))
       cat("\n");
-      identical(err, TRUE)
+      isTRUE(err)
     }))
     # nocov end
   }

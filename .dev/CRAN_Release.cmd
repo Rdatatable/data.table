@@ -227,9 +227,17 @@ PKG_CFLAGS='-fopenmp' PKG_LIBS=-lz R CMD INSTALL data.table_1.14.1.tar.gz
 R
 remove.packages("xml2")    # we checked the URLs; don't need to do it again (many minutes)
 require(data.table)
+f1 = tempfile()
+f2 = tempfile()
+suppressWarnings(try(rm(list=c(".Last",".Random.seed"))))
+save.image(f1)
 test.data.table(script="other.Rraw")
 test.data.table(script="*.Rraw")
 test.data.table(verbose=TRUE)   # since main.R no longer tests verbose mode
+suppressWarnings(try(rm(list=c(".Last",".Random.seed"))))
+save.image(f2)
+system(paste("diff",f1,f2))  # to detect any changes to .GlobalEnv, #5514
+# print(load(f1)); print(load(f2)) # run if diff found any difference
 
 # check example() works on every exported function, with these sticter options too, and also that all help pages have examples
 options(warn=2, warnPartialMatchArgs=TRUE, warnPartialMatchAttr=TRUE, warnPartialMatchDollar=TRUE)
