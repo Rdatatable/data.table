@@ -1920,21 +1920,7 @@ DT = data.table(x=1:3,y=1:3)
 test(635, names(DT[,list(x,y,a=y)]), c("x","y","a"))
 test(636, names(DT[,list(x,a=y)]), c("x","a"))
 
-# Test := by key, and that := to the key by key unsets the key. Make it non-trivial in size too.
-options(datatable.optimize=0L)
-set.seed(1)
-DT = data.table(a=sample(1:100,1e6,replace=TRUE),b=sample(1:1000,1e6,replace=TRUE),key="a")
-test(637.1, DT[,m:=sum(b),by=a][1:3], data.table(a=1L,b=c(156L,808L,848L),m=DT[J(1),sum(b)],key="a"))
-test(637.2, key(DT[J(43L),a:=99L]), NULL)
-setkey(DT,a)
-test(637.3, key(DT[,a:=99L,by=a]), NULL)
-options(datatable.optimize=2L)
-set.seed(1)
-DT = data.table(a=sample(1:100,1e6,replace=TRUE),b=sample(1:1000,1e6,replace=TRUE),key="a")
-test(638.1, DT[,m:=sum(b),by=a][1:3], data.table(a=1L,b=c(156L,808L,848L),m=DT[J(1),sum(b)],key="a"))
-test(638.2, key(DT[J(43L),a:=99L]), NULL)
-setkey(DT,a)
-test(638.3, key(DT[,a:=99L,by=a]), NULL)
+# 637-638 moved to benchmark.Rraw, #5517
 
 # Test printing is right aligned without quotes etc, and rownames are repeated ok for more than 20 rows
 DT=data.table(a=8:10,b=c("xy","x","xyz"),c=c(1.1,22.1,0))
@@ -2413,16 +2399,7 @@ mycols = 2
 test(814.12, DT[,!..mycols], ans)
 test(814.13, DT[,-..mycols], ans)
 
-
-# Test X[Y] slowdown, #2216
-# Many minutes in 1.8.2!  Now well under 1s, but 10s for very wide tolerance for CRAN. We'd like CRAN to tell us if any changes
-# in R or elsewhere cause the 2 minute (!) bug to return. Hence not moving out to benmark.Rraw.
-X = CJ(a=seq_len(1e3),b=seq_len(1e3))
-Y = copy(X)
-X[4,b:=3L]     # create a dup group, to force allLen1=FALSE
-setkey(X)
-test(819, system.time(X[Y,allow.cartesian=TRUE])["user.self"] < 10)   # this system.time usage ok in this case
-test(820, system.time(X[Y,mult="first"])["user.self"] < 10)           # this system.time usage ok in this case
+# 819-820 moved to benchmark.Rraw, #5517
 
 # Optimization of lapply(,"+"), #2212
 DT = data.table(a=rep(1:3,each=2L),b=1:6,c=7:12)
@@ -4094,16 +4071,7 @@ if (test_longdouble) {
 test(1149.1, forderv(integer(0)), integer(0))
 test(1149.2, forderv(numeric(0)), integer(0))
 
-# test uniqlengths
-set.seed(45)
-x <- sample(c(NA_integer_, 1:1e4), 1e6, TRUE)
-ox <- forderv(x)
-o1 <- uniqlist(list(x), ox)
-test(1151.1, c(diff(o1), length(x)-tail(o1, 1L)+1L), uniqlengths(o1, length(x)))
-o1 <- uniqlist(list(x))
-test(1151.2, c(diff(o1), length(x)-tail(o1, 1L)+1L), uniqlengths(o1, length(x)))
-rm(list=c("x","ox","o1"))
-gc()
+# 1151 moved to benchmark.Rraw, #5517
 
 # #67 fix - grouping with .SDcols gave "symbol not subsettable error" - consequence of FR #355 implementation
 dt = data.table(grp = sample(letters[1:3],20, replace = TRUE), v1 = rnorm(20), v2 = rnorm(20))

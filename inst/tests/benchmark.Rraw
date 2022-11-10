@@ -168,7 +168,7 @@ test(1742.5, substr(x, nchar(x)-10L, nchar(x)), c("50,28,95,76","62,87,23,40"))
 
 # Add scaled-up non-ASCII forder test 1896
 
-# top 10 tests by ram usage moved out of tests.Rraw, #5517
+# largest tests by ram usage moved out of tests.Rraw, #5517
 
 # Test ad hoc by of more than 100,000 levels, see 2nd part of bug #1387 (100,000 from the limit of base::sort.list radix)
 # This does need to be this large, like this in CRAN checks, because sort.list(method="radix") has this limit, which
@@ -178,4 +178,40 @@ test(301, nrow(DT[,sum(B),by=C])==100010)
 DT = data.table(A=1:10,B=rnorm(10),C=paste("a",1:100010,sep=""))
 test(301.1, nrow(DT[,sum(B),by=C])==100010)
 
+# Test := by key, and that := to the key by key unsets the key. Make it non-trivial in size too.
+options(datatable.optimize=0L)
+set.seed(1)
+DT = data.table(a=sample(1:100,1e6,replace=TRUE),b=sample(1:1000,1e6,replace=TRUE),key="a")
+test(637.1, DT[,m:=sum(b),by=a][1:3], data.table(a=1L,b=c(156L,808L,848L),m=DT[J(1),sum(b)],key="a"))
+test(637.2, key(DT[J(43L),a:=99L]), NULL)
+setkey(DT,a)
+test(637.3, key(DT[,a:=99L,by=a]), NULL)
+options(datatable.optimize=2L)
+set.seed(1)
+DT = data.table(a=sample(1:100,1e6,replace=TRUE),b=sample(1:1000,1e6,replace=TRUE),key="a")
+test(638.1, DT[,m:=sum(b),by=a][1:3], data.table(a=1L,b=c(156L,808L,848L),m=DT[J(1),sum(b)],key="a"))
+test(638.2, key(DT[J(43L),a:=99L]), NULL)
+setkey(DT,a)
+test(638.3, key(DT[,a:=99L,by=a]), NULL)
+
+# Test X[Y] slowdown, #2216
+# Many minutes in 1.8.2!  Now well under 1s, but 10s for very wide tolerance for CRAN. We'd like CRAN to tell us if any changes
+# in R or elsewhere cause the 2 minute (!) bug to return. Hence not moving out to benmark.Rraw.
+X = CJ(a=seq_len(1e3),b=seq_len(1e3))
+Y = copy(X)
+X[4,b:=3L]     # create a dup group, to force allLen1=FALSE
+setkey(X)
+test(819, system.time(X[Y,allow.cartesian=TRUE])["user.self"] < 10)   # this system.time usage ok in this case
+test(820, system.time(X[Y,mult="first"])["user.self"] < 10)           # this system.time usage ok in this case
+
+# test uniqlengths
+set.seed(45)
+x <- sample(c(NA_integer_, 1:1e4), 1e6, TRUE)
+ox <- forderv(x)
+o1 <- uniqlist(list(x), ox)
+test(1151.1, c(diff(o1), length(x)-tail(o1, 1L)+1L), uniqlengths(o1, length(x)))
+o1 <- uniqlist(list(x))
+test(1151.2, c(diff(o1), length(x)-tail(o1, 1L)+1L), uniqlengths(o1, length(x)))
+rm(list=c("x","ox","o1"))
+gc()
 
