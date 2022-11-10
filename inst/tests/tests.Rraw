@@ -520,11 +520,7 @@ test(164, foo(f), DT[,mean(b),by=d])
 test(165, subset(DT,a>2), DT[a>2])
 test(166, suppressWarnings(split(DT,DT$grp)[[2]]), DT[grp==2])
 
-# and that plotting works
-test(167.1, DT[,plot(b,f)], NULL)
-test(167.2, as.integer(DT[,hist(b)]$breaks), seq.int(10L,50L,by=5L)) # as.integer needed for R 3.1.0
-test(167.3, DT[,plot(b,f),by=.(grp)], data.table(grp=integer()))
-try(graphics.off(),silent=TRUE)
+# 167 tested graphics::plot, moved to other.Rraw 28 to save ram, #5517
 
 # IDateTime conversion methods that ggplot2 uses (it calls as.data.frame method)
 # Since %b is e.g. "nov." in LC_TIME=fr_FR.UTF-8 locale, we need to
@@ -961,13 +957,7 @@ DT = data.table(a=1:3,b=1:9,v=1:9,key="a,b")
 test(300, DT[J(1),sum(v),by=b], data.table(b=c(1L,4L,7L),V1=c(1L,4L,7L)))   # should not retain key because by= is not on head(key(DT))
 test(300.1, DT[J(1:2),sum(v),by=b], data.table(b=c(1L,4L,7L,2L,5L,8L),V1=c(1L,4L,7L,2L,5L,8L)))
 
-# Test ad hoc by of more than 100,000 levels, see 2nd part of bug #1387 (100,000 from the limit of base::sort.list radix)
-# This does need to be this large, like this in CRAN checks, because sort.list(method="radix") has this limit, which
-# this tests. But it's well under 10 seconds.
-DT = data.table(A=1:10,B=rnorm(10),C=factor(paste("a",1:100010,sep="")))
-test(301, nrow(DT[,sum(B),by=C])==100010)
-DT = data.table(A=1:10,B=rnorm(10),C=paste("a",1:100010,sep=""))
-test(301.1, nrow(DT[,sum(B),by=C])==100010)
+# 301 moved to benchmark.Rraw, #5517
 
 # Test fast assign
 DT = data.table(a=c(1L,2L,2L,3L),b=4:7,key="a")
@@ -12751,11 +12741,7 @@ test(1889, chmatch(x,x), 1:1000)
 rm(list=x)
 gc()
 
-# test DT$.<- in a data.table-unaware package
-DT = data.table(A=1:5)
-test(1890.1, stats::ts.plot(gpars=DT), error="object must have one or more observations")
-# Inside ts.plot is a gpars$ylab<- which happens before its error. That dispatches to our $<- which does the alloc.col()
-test(1890.2, DT, data.table(A=1:5))
+# 1890 used stats::ts.plot, moved to other.Rraw 29 to save ram, #5517
 
 # na="" default, #2524
 test(1891.1, fread('A,B,C\n1,foo,4\n2,,5\n3,bar,6\n', na.strings=""), data.table(A=1:3, B=c("foo",NA,"bar"), C=4:6))
