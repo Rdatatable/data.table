@@ -10822,31 +10822,7 @@ test(1738.3, sapply(DT,typeof), c(A="double",B="integer"))
 test(1738.4, capture.output(fwrite(DT)), capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
 test(1738.5, as.integer(as.Date(c("0000-03-01","9999-12-31"))), c(-719468L,2932896L))
 
-if (FALSE) {
-  # Full range takes too long for CRAN.
-  dts = seq(as.Date("0000-03-01"), as.Date("9999-12-31"), by="day")
-  dtsCh = as.character(dts)   # 36s
-  dtsCh = gsub(" ","0",sprintf("%10s",dtsCh))  # R does not 0 pad years < 1000
-  test(1739.1, length(dtsCh)==3652365 && identical(dtsCh[c(1,3652365)],c("0000-03-01","9999-12-31")))
-} else {
-  # test on CRAN a reduced but important range
-  dts = seq(as.Date("1899-12-31"), as.Date("2100-01-01"), by="day")
-  dtsCh = as.character(dts)
-  test(1739.2, length(dtsCh)==73051 && identical(dtsCh[c(1,73051)],c("1899-12-31","2100-01-01")))
-}
-DT = data.table(A=dts, B=as.IDate(dts))
-test(1739.3, sapply(DT,typeof), c(A="double",B="integer"))
-test(1739.4, typeof(dts), "double")
-f = tempfile()
-g = tempfile()                               # Full range
-fwrite(DT,f)                                 #     0.092s
-write.csv(DT,g,row.names=FALSE,quote=FALSE)  #    65.250s
-test(1739.5, readLines(f), c("A,B",paste(dtsCh,dtsCh,sep=",")))
-test(1739.6, readLines(f), readLines(g))
-unlink(f)
-unlink(g)
-rm(list=c("dtsCh","dts"))
-gc()
+# 1739 moved to benchmark.Rraw, #5517
 
 # dateTimeAs
 DT = data.table(
@@ -12162,7 +12138,7 @@ rand_strings = function(n) {
   apply(M, 1, function(x) paste0(letters[x], collapse=""))
 }
 set.seed(123)  # the random data here doesn't match the data in issue 2275 because they used stringi::stri_rand_strings which has a different RNG
-n = 100000
+n = 1000   # reduced from 100000 to 1000 for #5517
 DT1 = data.table(RANDOM_STRING = rand_strings(n),
                  DATE = sample(seq(as.Date('2016-01-01'), as.Date('2016-12-31'), by="day"), n, replace=TRUE))
 DT2 = data.table(RANDOM_STRING = rand_strings(n),
@@ -14149,11 +14125,7 @@ test(1977.4, DT["D", -"GRP"], data.table(ID="D", X=NA_real_, key="ID"))
 test(1977.5, DT["D", c("ID","GRP")], data.table(ID="D", GRP=NA_integer_, key="ID"))
 test(1977.6, DT[c("A","D"), c("ID","GRP")], data.table(ID=c("A","A","D"), GRP=INT(1,1,NA)))
 
-# catch malformed factor in rbindlist, #3315
-set.seed(32940)
-NN=7e5; KK=4e4; TT=25
-DT = data.table( id = sample(KK, NN, TRUE), tt = sample(TT, NN, TRUE), ff = factor(sample(3, NN, TRUE)) )
-test(1978, print(DT[ , diff(ff), by = id]), error="Column 2 of item 1 has type 'factor' but has no levels; i.e. malformed.") # the print invokes rbindlist which bites
+# 1978 moved to benchmark.Rraw, #5517
 
 # Drop Null Values from `j` list elements #1406
 DT = data.table(a = 1:3,b = letters[1:3],c = LETTERS[1:3])
