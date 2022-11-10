@@ -165,7 +165,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   if (inherits(err,"try-error")) {
     # nocov start
     if (silent) return(FALSE)
-    stopf("Failed after test %s before the next test() call in %s", env$prevtest, fn)
+    stopf("Failed in %s after test %s before the next test() call in %s", timetaken(env$started.at), env$prevtest, fn)
     # the try() above with silent=FALSE will have already printed the error itself
     # nocov end
   }
@@ -175,8 +175,8 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   if (nfail > 0L) {
     # nocov start
     stopf(
-      "%d error(s) out of %d. Search %s for test number(s) %s",
-      nfail, ntest, names(fn), toString(env$whichfail)
+      "%d error(s) out of %d. Search %s for test number(s) %s. Elapsed time: %s.",
+      nfail, ntest, names(fn), toString(env$whichfail), timetaken(env$started.at)
     )
     # important to stopf() here, so that 'R CMD check' fails
     # nocov end
