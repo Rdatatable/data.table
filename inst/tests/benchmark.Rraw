@@ -215,3 +215,25 @@ test(1151.2, c(diff(o1), length(x)-tail(o1, 1L)+1L), uniqlengths(o1, length(x)))
 rm(list=c("x","ox","o1"))
 gc()
 
+# Fix for (usually small) memory leak when grouping, #2648.
+# Deliberate worst case: largest group (100000 rows) followed last by a small group (1 row).
+DT = data.table(A=rep(1:2,c(100000,1)), B=runif(100001))
+before = gc()["Vcells",2]
+for (i in 1:50) DT[, sum(B), by=A]
+after = gc()["Vcells",2]
+test(1157, after < before+3)  # +3 = 3MB
+# Before the patch, Vcells grew dramatically from 6MB to 60MB. Now stable at 6MB. Increase 50 to 1000 and it grew to over 1GB for this case.
+
+#  fix DT[TRUE, :=] using too much working memory for i, #1249
+if (!inherits(try(Rprofmem(NULL), silent=TRUE), "try-error")) {  # in case R not compiled with memory profiling enabled
+  f = tempfile()
+  N = 1000000           # or any large number of rows
+  DT = data.table(A=1:N, B=rnorm(N))
+  DT[TRUE, B := B * 2] # stabilize with initial dummy update
+  Rprofmem(f)
+  DT[TRUE, B := B * 2] # or some in-place update
+  Rprofmem(NULL)
+  test(1542, length(grep("000",readLines(f, warn=FALSE))), 1L)  # one allocation for the RHS only
+  unlink(f)
+}
+
