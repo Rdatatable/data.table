@@ -5,10 +5,9 @@ pkgs = c("ggplot2", "hexbin", "plyr", "dplyr", "caret", "zoo", "xts", "gdata", "
 # users running test.data.table("other.Rraw").
 # zoo needs to be before xts for #5101 otherwise xts's dependency zoo gets attached at position 2 if xts is loaded first
 
-# Optional Suggest-ed package tests were moved from tests.Rraw to here, #5516, other than bit64. Retaining their comments:
+# Optional Suggest-ed package tests moved from tests.Rraw to here in #5516. Retaining their comments:
 #  "xts",            # we have xts methods in R/xts.R
 #  "nanotime",       # fwrite looks for the 'nanotime' class name at C level (but we have our own writer in C, though)
-#  "R.utils",        # for fread to accept .gz and .bz2 files directly
 #  "yaml"            # for fread's yaml argument (csvy capability)
 #  # zoo             # In DESCRIPTION:Suggests otherwise R CMD check warning: '::' or ':::' import not declared from: 'zoo'; it is tested in other.Rraw though
 

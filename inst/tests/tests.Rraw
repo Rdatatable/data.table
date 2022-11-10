@@ -101,8 +101,12 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
 }
 
 # Optional suggests are now tested in other.Rraw, #5516. No calls to require() or library() should occur
-# in this file other than for methods and data.table above, and bit64 does remain here (see #5516 for reason).
-sugg = "bit64"  # e.g. if big integers are detected in file, fread reads them as bit64::integer64 if installed (warning if not)
+# in this file other than for methods and data.table above, and these here.
+# These are included in code coverage, and on CRAN. The reason for inclusion is stated next to each package.
+sugg = c(
+  "bit64",          # if big integers are detected in file, fread reads them as bit64::integer64 if installed (warning if not)
+  "R.utils"         # many fread test input files are compressed to save space; fundamental to test environment
+)
 for (s in sugg) {
   assign(paste0("test_",s), loaded<-suppressWarnings(suppressMessages(
     library(s, character.only=TRUE, logical.return=TRUE, quietly=TRUE, warn.conflicts=FALSE, pos="package:base")  # attach at the end for #5101
