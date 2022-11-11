@@ -269,3 +269,63 @@ NN=7e5; KK=4e4; TT=25
 DT = data.table( id = sample(KK, NN, TRUE), tt = sample(TT, NN, TRUE), ff = factor(sample(3, NN, TRUE)) )
 test(1978, print(DT[ , diff(ff), by = id]), error="Column 2 of item 1 has type 'factor' but has no levels; i.e. malformed.") # the print invokes rbindlist which bites
 
+# print.data.table row id in non-scientific notation, #1167
+DT <- data.table(a = rep(1:5,3*1e5), b = rep(letters[1:3],5*1e5))
+test(1549, capture.output(print(DT)), c("         a b", "      1: 1 a", "      2: 2 b", "      3: 3 c", "      4: 4 a", "      5: 5 b", "     ---    ", "1499996: 1 b", "1499997: 2 c", "1499998: 3 a", "1499999: 4 b", "1500000: 5 c"))
+rm(DT)
+
+# Create a file to test a sample jump being skipped due to format error. It will fail later in the read step because
+# this is a real error. Currently have not constructed an error for which nextGoodLine looks good, but in fact is not.
+# Would need a very complicated construction of embedded new lines in quoted fields, to test that.
+# This test size with default buffMB results in 2 threads being used. 2 is important to pass on CRAN.
+DT = as.data.table(CO2)
+f = tempfile()
+for (i in 0:1000) {
+  start = nrow(CO2)*i
+  fwrite(DT[,Plant:=start:(start+nrow(CO2)-1)], f, append=TRUE, col.names=FALSE)
+  if (i==502) write("-999,Bad,Line,0.0,0.0,extra\n", f, append=TRUE)
+}
+test(1835, fread(f, verbose=TRUE),
+  output = "A line with too-many.*jump 50.*jump landed awkwardly.*skipped",
+  warning = "Stopped.*line 42253. Expected 5 fields but found 6.*discarded.*<<-999,Bad,Line,0.0,0.0,extra>>")
+unlink(f)
+
+# test no memory leak, #2191 and #2284
+# These take a few seconds each, and it's important to run these on CRAN to check no leak
+gc(); before = gc()["Vcells","(Mb)"]
+for (i in 1:2000) { DT = data.table(1:3); rm(DT) }  # in 1.8.2 would leak 3MB
+gc(); after = gc()["Vcells","(Mb)"]
+test(861, after < before+0.5)   # close to 0.0 difference, but 0.5 for safe margin
+gc(); before = gc()["Vcells","(Mb)"]
+DF = data.frame(x=1:20, y=runif(20))
+for (i in 1:2000) { DT = as.data.table(DF); rm(DT) }
+gc(); after = gc()["Vcells","(Mb)"]
+test(862, after < before+0.5)
+gc(); before = gc()["Vcells","(Mb)"]
+DT = data.table(x=1:20, y=runif(20))
+for (i in 1:2000) { x <- DT[1:5,]; rm(x) }
+gc(); after = gc()["Vcells","(Mb)"]
+test(863, after < before+0.5)
+
+# fread should use multiple threads on single column input.
+# tests 2 threads; the very reasonable limit on CRAN
+# file needs to be reasonably large for threads to kick in (minimum chunkSize is 1MB currently)
+if (getDTthreads() == 1L) {
+  cat("Test 1760 not run because this session either has no OpenMP or has been limited to one thread (e.g. under UBSAN and ASAN)\n")
+} else {
+  N = if (TRUE) 2e6 else 1e9   # offline speed check
+  fwrite(data.table(A=sample(10,N,replace=TRUE)), f<-tempfile())
+  test(1760.1, file.info(f)$size > 4*1024*1024)
+  test(1760.2, fread(f, verbose=TRUE, nThread=2), output="using 2 threads")
+  unlink(f)
+}
+
+# segfault of unprotected var caught with the help of address sanitizer; was test 1509
+# in #5517 I figured this test shouldn't be reduced in size due to its nature
+set.seed(1)
+val = sample(c(1:5, NA), 1e4L, TRUE)
+dt <- setDT(replicate(100L, val, simplify=FALSE))
+## to ensure there's no segfault...
+ans <- melt(dt, measure.vars=names(dt), na.rm=TRUE)
+test(1035.21, ans, ans)
+
