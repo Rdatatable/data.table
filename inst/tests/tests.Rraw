@@ -4528,7 +4528,7 @@ if (base::getRversion() < "3.3.0") {
 
 # Test for optimisation of 'order' to 'forder'. Copied to benchmarks.Rraw too.
 set.seed(45L)
-DT = data.table(x=sample(1e2, 1e5, TRUE), y=sample(1e2, 1e5, TRUE))
+DT = data.table(x=sample.int(1e2, 1e3, TRUE), y=sample.int(1e2, 1e3, TRUE))  # 1e5 reduced again to 1e3, #5517
 test(1241, DT[order(x,-y)],       # optimized to forder()
            DT[base_order(x,-y)])  # not optimized
 
@@ -5124,8 +5124,8 @@ DT = DT[1L]
 set(DT,1L,"b",FALSE)  # passing 1L as i here is needed to avoid column plonk, so changes the logical singleton in place
 test(1297, as.integer(TRUE[1]), 1L)   # In R 3.1, TRUE[1] returns the global TRUE but TRUE doesn't yet (parses as new vector)
 test(1298, as.integer(TRUE), 1L)
-# orignal example, verbatim from James Sams :
-upc_table = data.table(upc=1:100000, upc_ver_uc=rep(c(1,2), times=50000), is_PL=rep(c(TRUE, FALSE, FALSE, TRUE), each=25000), product_module_code=rep(1:4, times=25000), ignore.column=2:100001)
+# orignal example, verbatim from James Sams; sizes reduced to save ram in #5517
+upc_table = data.table(upc=1:1000, upc_ver_uc=rep(c(1,2), times=500), is_PL=rep(c(TRUE, FALSE, FALSE, TRUE), each=250), product_module_code=rep(1:4, times=250), ignore.column=2:1001)
 test(1299, upc_table[, .N, by=list(upc, upc_ver_uc)][,max(N)], 1L)  # all size 1 groups
 test(1300, upc_table[, list(is_PL, product_module_code), keyby=list(upc, upc_ver_uc)][,upc[1:3]], 1:3L)   # was warning "internal TRUE value has been modified"
 rm(list="upc_table")
@@ -9567,10 +9567,10 @@ test(1640.2, x[y, c(.SD, .(x.aa=x.aa)), on=c(aa="bb")], data.table(aa=3:5, cc=c(
 # tests for non-equi joins
 # function to create a random data.table with all necessary columns
 nq_fun = function(n=100L) {
-  i1 = sample(sample(n, 10L), n, TRUE)
-  i2 = sample(-n/2:n/2, n, TRUE)
-  i3 = sample(-1e6:1e6, n, TRUE)
-  i4 = sample(c(NA_integer_, sample(-n:n, 10L, FALSE)), n, TRUE)
+  i1 = sample(sample.int(n, 10L), n, TRUE)
+  i2 = sample.int(n, n, TRUE) - as.integer(n/2)    # this used to be type numeric before #5517 which didn't seem intentional
+  i3 = sample.int(2e6, n, TRUE) - as.integer(1e6)  # used to sample from -1e6:1e6 which if allocated would be 8MB, #5517
+  i4 = sample(c(NA_integer_, sample.int(n*2L, 10L, FALSE)-n), n, TRUE)
 
   d1 = sample(rnorm(10L), n, TRUE)
   d2 = sample(rnorm(50), n, TRUE)
@@ -9582,10 +9582,10 @@ nq_fun = function(n=100L) {
 
   dt = data.table(i1,i2,i3,i4, d1,d2,d3,d4, c1,c2)
   if (test_bit64) {
-    I1 = as.integer64(sample(sample(n, 10L), n, TRUE))
-    I2 = as.integer64(sample(-n/2:n/2, n, TRUE))
-    I3 = as.integer64(sample(-1e6:1e6, n, TRUE))
-    I4 = as.integer64(sample(c(NA_integer_, sample(-n:n, 10L, FALSE)), n, TRUE))
+    I1 = as.integer64(sample(sample.int(n, 10L), n, TRUE))
+    I2 = as.integer64(sample.int(n, n, TRUE) - as.integer(n/2))
+    I3 = as.integer64(sample.int(2e6, n, TRUE) - as.integer(1e6))  # there used to be another -1e6:1e6 here whose altrep likely allocated when sample accessed it, #5517
+    I4 = as.integer64(sample(c(NA_integer_, sample.int(n*2L, 10L, FALSE)-n), n, TRUE))
     dt = cbind(dt, data.table(I1,I2,I3,I4))
   }
   dt
@@ -11869,14 +11869,7 @@ fwrite(DT, f)
 test(1825.22, fread(f, colClasses = c(a = "numeric", b = "integer")), DT, warning="Attempt to override column 2.*ignored")
 unlink(f)
 
-# issue 2351
-set.seed(1)
-DT = data.table(id=paste0("id",1:1e5), v=sample(100,1e5,replace=TRUE))
-fwrite(DT, file=f<-tempfile(), eol="\r")
-test(1826.1, fread(f)[c(1,2,.N-1,.N)], data.table(id=c("id1","id2","id99999","id100000"), v=c(27L,38L,10L,13L)))
-cat("id888,42", file=f, append=TRUE)  # without final \r after last line
-test(1826.2, fread(f)[c(1,2,.N-1,.N)], data.table(id=c("id1","id2","id100000","id888"), v=c(27L,38L,13L,42L)))
-unlink(f)
+# 1826 moved to benchmark.Rraw, #5517
 
 # Issue 2222
 test(1827.1, fread("A,B\n1987,1\n1987,3\n", na.strings=c("1987", "NA")), data.table(A=c(NA,NA),B=c(1L,3L)))
@@ -12114,13 +12107,7 @@ test(1849.9, fread(f, select=c("Date", "Description", "Balance")),
              data.table(Date=20150725L,Description="abcd",Balance="$5,006"))
 unlink(f)
 
-# segfault when rbindlist is asked to create a DT with more than 2bn rows
-DT = data.table(1:1e6)
-L = vector("list", 2148)
-for (i in seq_along(L)) L[[i]] = DT   # many references to the same DT to avoid actually using large RAM for this test
-test(1850, rbindlist(L), error="Total rows in the list is 2148000000 which is larger than the maximum number of rows, currently 2147483647")
-rm(list=c("L","DT"))
-gc()
+# 1850 moved to benchmark.Rraw, #5517
 
 # by=.EACHI missings to list columns, #2300
 dt = data.table(a=factor(1:5, levels=1:10), b=as.list(letters[1:5]))
@@ -17441,18 +17428,7 @@ d[1:50, "a"] = d[51:100, "a"]
 setDT(d)
 test(2200, nrow(d[a==99]), 2L)
 
-# segfault in forder when nrow/throttle<nth && ngrp>=255 && nrow>=65536; #5077
-# Matt ran these on clang's ASAN+OpenMP which correctly faulted v1.14.0; these tests segfault consistently without ASAN too
-set.seed(1)
-DT = data.table(grp=sample(255L, 65536L ,replace=TRUE))  # >=255 && >=65536 necessary
-setDTthreads(throttle=nrow(DT))      # increase throttle to reduce threads to 1 for this nrow
-test(2201.1, nrow(DT[, .N, by=grp]), 255L)
-test(2201.2, nrow(setkey(DT, grp)), 65536L)
-set.seed(1)
-DT = data.table(grp=sample(65536L))  # extra case with all size 1 groups too just for fun
-test(2201.3, nrow(DT[, .N, by=grp]), 65536L)
-test(2201.4, nrow(setkey(DT, grp)), 65536L)
-setDTthreads()    # restore default throttle
+# 2201 moved to benchmark.Rraw, #5517
 
 # fwrite now allows sep="", #4817
 test(2202.1, fwrite(data.frame(a="id", b=letters[1:5], c=1:5), sep=""),

@@ -440,3 +440,37 @@ y = sample(letters, 1e6, TRUE)
 test(2000, c(head(ans<-chmatchdup(x,y,0L)),tail(ans)), INT(7,49,11,20,69,25,99365,100750,97596,99671,103320,99406))
 rm(list=c("x","y"))
 
+# Add nq tests 1641-1652 here with larger sizes and calls that have been turned off in the past as took too long, and
+# restore the exact parameters w.r.t. Jan's comment: https://github.com/Rdatatable/data.table/pull/5520#discussion_r1020180583
+
+# issue 2351
+set.seed(1)
+DT = data.table(id=paste0("id",1:1e5), v=sample(100,1e5,replace=TRUE))
+fwrite(DT, file=f<-tempfile(), eol="\r")
+test(1826.1, fread(f)[c(1,2,.N-1,.N)], data.table(id=c("id1","id2","id99999","id100000"), v=c(27L,38L,10L,13L)))
+cat("id888,42", file=f, append=TRUE)  # without final \r after last line
+test(1826.2, fread(f)[c(1,2,.N-1,.N)], data.table(id=c("id1","id2","id100000","id888"), v=c(27L,38L,13L,42L)))
+unlink(f)
+
+# segfault when rbindlist is asked to create a DT with more than 2bn rows
+DT = data.table(1:1e6)
+L = vector("list", 2148)
+for (i in seq_along(L)) L[[i]] = DT   # many references to the same DT to avoid actually using large RAM for this test
+test(1850, rbindlist(L), error="Total rows in the list is 2148000000 which is larger than the maximum number of rows, currently 2147483647")
+rm(L, DT)
+gc()
+
+# segfault in forder when nrow/throttle<nth && ngrp>=255 && nrow>=65536; #5077
+# Matt ran these on clang's ASAN+OpenMP which correctly faulted v1.14.0; these tests segfault consistently without ASAN too
+set.seed(1)
+DT = data.table(grp=sample(255L, 65536L ,replace=TRUE))  # >=255 && >=65536 necessary
+setDTthreads(throttle=nrow(DT))      # increase throttle to reduce threads to 1 for this nrow
+test(2201.1, nrow(DT[, .N, by=grp]), 255L)
+test(2201.2, nrow(setkey(DT, grp)), 65536L)
+set.seed(1)
+DT = data.table(grp=sample(65536L))  # extra case with all size 1 groups too just for fun
+test(2201.3, nrow(DT[, .N, by=grp]), 65536L)
+test(2201.4, nrow(setkey(DT, grp)), 65536L)
+setDTthreads()    # restore default throttle
+
+
