@@ -11060,6 +11060,10 @@ indices(DT, vectors = TRUE)
 test(1749.1, indices(DT), c("A__B","A","B"))
 test(1749.2, indices(DT, vectors = TRUE), list(c("A","B"),"A","B"))
 
+rss = function() as.integer(as.numeric(system(paste0("ps -o rss --no-headers ",Sys.getpid()),intern=TRUE))/1024)
+dttest = test
+test = function(...){ dttest(...); print(rss()); invisible() }
+
 # Grouping Sets #1377
 n = 24L
 set.seed(25)
@@ -11260,6 +11264,8 @@ if (test_bit64) {
     dt[, lapply(.SD, sum), .(color=rep(NA_character_,n), id1), .SDcols=c("amount","value","id2")]
   )
 }
+rss()
+test = dttest
 # end Grouping Sets
 
 # for completeness, added test for NA problem to close #1837.
