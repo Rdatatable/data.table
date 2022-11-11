@@ -704,3 +704,18 @@ test(29.1, stats::ts.plot(gpars=DT), error="object must have one or more observa
 # Inside ts.plot is a gpars$ylab<- which happens before its error. That dispatches to our $<- which does the alloc.col()
 test(29.2, DT, data.table(A=1:5))
 
+if (FALSE) {  # moved from tests.Rraw in #5517 and not yet back on; wasn't sure we need to still test reshape2
+  # test dispatch for non-data.table objects, #4864.
+  if (inherits(try(getNamespace("reshape2"), silent=TRUE),"try-error")) {
+    test(1038.001, melt(as.data.frame(DT), id.vars=1:2, measure.vars=5:6),
+                   error="The melt generic in data.table has been passed a data.frame")
+  } else {
+    #  1) GLCI rel-cran has reshape2 installed because caret in other.Rraw depends on reshape2
+    #  2) a user running test.data.table() with reshape2 installed (doesn't have to be loaded)
+    #  3) in dev locally I have reshape2 installed to run caret in other.Rraw
+    test(1038.002, melt(as.data.frame(DT), id.vars=1:2, measure.vars=5:6),
+                   as.data.frame(melt(DT, id.vars=1:2, measure.vars=5:6)),
+                   warning="The melt generic in data.table has been passed a data.frame")
+  }
+}
+
