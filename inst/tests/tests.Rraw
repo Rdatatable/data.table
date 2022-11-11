@@ -11060,10 +11060,6 @@ indices(DT, vectors = TRUE)
 test(1749.1, indices(DT), c("A__B","A","B"))
 test(1749.2, indices(DT, vectors = TRUE), list(c("A","B"),"A","B"))
 
-rss = function() as.integer(as.numeric(system(paste0("ps -o rss --no-headers ",Sys.getpid()),intern=TRUE))/1024)
-dttest = test
-test = function(...){ dttest(...); print(rss()); invisible() }
-
 # Grouping Sets #1377
 n = 24L
 set.seed(25)
@@ -11102,12 +11098,13 @@ test(1750.07, # 0 length `by`, must also use `sets=list()`, so 0L rows result
   nrow(groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = character(), .SDcols=c("amount","value"), sets=list(), id=TRUE)),
   0L
 )
-test(1750.08, all( # for any single value from dataset there should be always same aggregate result on any level of grouping
-  sapply(seq_len(nrow(dt)), function(i) uniqueN(
+# for any single value from dataset there should be always be the same aggregate result on any level of grouping
+# changed from all(sapply()) to for() to save ram, #5517
+for (i in seq_len(nrow(dt))) {
+  test(1750.08+i/10000, uniqueN(
     groupingsets(dt[i], j = lapply(.SD, sum), by = c("color","year","status"), sets=list(c("color","year","status"), c("year"), c("status"), character())),
-    by=c("amount","value")
-  )) == 1L
-), TRUE)
+    by=c("amount","value")) == 1L)
+}
 # all grouping id matches in all totals
 r = groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), sets=list(c("color","year","status"), c("year"), c("status"), character()), id=TRUE)
 test(1750.09, uniqueN(
@@ -11264,8 +11261,6 @@ if (test_bit64) {
     dt[, lapply(.SD, sum), .(color=rep(NA_character_,n), id1), .SDcols=c("amount","value","id2")]
   )
 }
-rss()
-test = dttest
 # end Grouping Sets
 
 # for completeness, added test for NA problem to close #1837.
