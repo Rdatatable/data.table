@@ -1372,7 +1372,7 @@ replace_dot_alias = function(e) {
     # Temp fix for #921 - check address and copy *after* evaluating 'jval'.  #75 also related.
     if (is.null(irows)) {
       if (!is.list(jval)) { # performance improvement when i-arg is S4, but not list, #1438, Thanks @DCEmilberg.
-        jcpy = address(jval) %in% vapply_1c(SDenv$.SD, address) # %chin% errors when RHS is list()
+        jcpy = address(jval) %chin% vapply_1c(SDenv$.SD, address)
         if (jcpy) jval = copy(jval)
       } else if (address(jval) == address(SDenv$.SD)) {
         jval = copy(jval)
