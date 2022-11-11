@@ -17745,26 +17745,30 @@ DT = data.table(x = sample(letters[1:5], 20, TRUE),
                 c = sample(c(0+3i,1,-1-1i,NA), 20, TRUE),
                 l = sample(c(TRUE, FALSE, NA), 20, TRUE),
                 r = as.raw(sample(1:5, 20, TRUE)))
-load(testDir("test2224.Rdata")) # ans array
+load(testDir("test2224.Rdata")) # 47KB array 24x8 where each cell contains a length-20 result
 if (test_bit64) {
   DT[, i64:=as.integer64(sample(c(-2L,0L,2L,NA), 20, TRUE))]
 } else {
   ans = ans[, -match("i64",colnames(ans))]
 }
-test(2224.01, sapply(names(DT)[-1], function(col) {
-  sapply(list(1, 5, -1, -5, c(1,2), c(-1,1)), function(n) list(
-    # fill is tested by group in tests 2218.*; see comments in #5205
-    EVAL(sprintf("DT[, shift(%s, %d, type='lag'),    by=x]$V1", col, n)),
-    EVAL(sprintf("DT[, shift(%s, %d, type='lead'),   by=x]$V1", col, n)),
-    EVAL(sprintf("DT[, shift(%s, %d, type='shift'),  by=x]$V1", col, n)),
-    EVAL(sprintf("DT[, shift(%s, %d, type='cyclic'), by=x]$V1", col, n))
-  ))
-}), ans)
+i = 1L
+for (col in names(DT)[-1]) {
+  for (n in list(1, 5, -1, -5, c(1,2), c(-1,1))) {
+    for (type in c('lag','lead','shift','cyclic')) {
+      # fill is tested by group in tests 2218.*; see comments in #5205
+      # sapply(sapply()) changed to for(for(for())) to save 29MB, #5517
+      test(2224.1+i/10000,  # 192 tests here when test_bit64=TRUE; 168 when FALSE
+           EVAL(sprintf("DT[, shift(%s, %d, type='%s'), by=x]$V1", col, n, type)),
+           ans[[i]])
+      i = i+1L
+    }
+  }
+}
 a = 1:2  # fill argument with length > 1 which is not a call
-test(2224.02, DT[, shift(i, fill=a), by=x], error="fill must be a vector of length 1")
+test(2224.2, DT[, shift(i, fill=a), by=x], error="fill must be a vector of length 1")
 DT = data.table(x=pairlist(1), g=1)
 # unsupported type as argument
-test(2224.03, DT[, shift(x), g], error="Type 'list' is not supported by GForce gshift.")
+test(2224.3, DT[, shift(x), g], error="Type 'list' is not supported by GForce gshift.")
 
 # groupingsets by named by argument
 test(2225.1, groupingsets(data.table(iris), j=sum(Sepal.Length), by=c('Sp'='Species'), sets=list('Species')),
