@@ -175,7 +175,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   if (nfail > 0L) {
     # nocov start
     stopf(
-      "%d error(s) out of %d. Search %s for test number(s) %s. Elapsed time: %s.",
+      "%d error(s) out of %d. Search %s for test number(s) %s. Duration: %s.",
       nfail, ntest, names(fn), toString(env$whichfail), timetaken(env$started.at)
     )
     # important to stopf() here, so that 'R CMD check' fails
