@@ -1,5 +1,5 @@
 # globals to pass NOTE from R CMD check, see http://stackoverflow.com/questions/9439256
-MB = NCOL = NROW = NULL
+MB = NCOL = NROW = INDICES = NULL
 
 type_size = function(DT) {
   # for speed and ram efficiency, a lower bound by not descending into character string lengths or list items
