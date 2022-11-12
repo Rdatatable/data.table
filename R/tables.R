@@ -1,7 +1,24 @@
 # globals to pass NOTE from R CMD check, see http://stackoverflow.com/questions/9439256
 MB = NCOL = NROW = NULL
 
-tables = function(mb=TRUE, order.col="NAME", width=80,
+type_size = function(DT) {
+  # for speed and ram efficiency, a lower bound by not descending into character string lengths or list items
+  # if a more accurate and higher estimate is needed then user can pass object.size or alternative to mb=
+  # in case number of columns is very large (e.g. 1e6 columns) then we use a for() to avoid allocation of sapply()
+  ans = 0L
+  lookup = c("raw"=1L, "integer"=4L, "double"=8L, "complex"=16L)
+  for (i in seq_along(DT)) {
+    col = DT[[i]]
+    tt = lookup[storage.mode(col)]
+    if (is.na(tt)) tt = .Machine$sizeof.pointer
+    tt = tt*nrow(DT)
+    if (is.factor(col)) tt = tt + length(levels(col))*.Machine$sizeof.pointer
+    ans = ans + tt
+  }
+  ans + ncol(DT)*.Machine$sizeof.pointer  # column name pointers
+}
+
+tables = function(mb=type_size, order.col="NAME", width=80,
                   env=parent.frame(), silent=FALSE, index=FALSE)
 {
   # Prints name, size and colnames of all data.tables in the calling environment by default
@@ -13,6 +30,7 @@ tables = function(mb=TRUE, order.col="NAME", width=80,
     if (!silent) catf("No objects of class data.table exist in %s\n", if (identical(env, .GlobalEnv)) ".GlobalEnv" else format(env))
     return(invisible(data.table(NULL)))
   }
+  if (isTRUE(mb)) mb=type_size  # can still use TRUE, although TRUE will now be the lower faster type_size method
   DT_names = all_obj[is_DT]
   info = rbindlist(lapply(DT_names, function(dt_n){
     DT = get(dt_n, envir=env)   # doesn't copy
@@ -20,7 +38,7 @@ tables = function(mb=TRUE, order.col="NAME", width=80,
       NAME = dt_n,
       NROW = nrow(DT),
       NCOL = ncol(DT),
-      MB = if (mb) round(as.numeric(object.size(DT))/1024^2), # object.size() is slow hence optional; TODO revisit
+      MB = if (is.function(mb)) round(as.numeric(mb(DT))/1024^2),
       COLS = list(names(DT)),
       KEY = list(key(DT)),
       INDICES = if (index) list(indices(DT)))
@@ -38,9 +56,9 @@ tables = function(mb=TRUE, order.col="NAME", width=80,
     tt = copy(info)
     tt[ , NROW := pretty_format(NROW, width=4L)]
     tt[ , NCOL := pretty_format(NCOL, width=4L)]
-    if (mb) tt[ , MB := pretty_format(MB, width=2L)]
+    if (is.function(mb)) tt[ , MB := pretty_format(MB, width=2L)]
     print(tt, class=FALSE, nrows=Inf)
-    if (mb) catf("Total: %sMB\n", prettyNum(sum(info$MB), big.mark=","))
+    if (is.function(mb)) catf("Total: %sMB\n", prettyNum(sum(info$MB), big.mark=","))
   }
   invisible(info)
 }
