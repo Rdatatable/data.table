@@ -34,15 +34,18 @@ tables = function(mb=type_size, order.col="NAME", width=80,
   DT_names = all_obj[is_DT]
   info = rbindlist(lapply(DT_names, function(dt_n){
     DT = get(dt_n, envir=env)   # doesn't copy
-    data.table(  # data.table excludes any NULL items (MB and INDICES optional) unlike list()
-      NAME = dt_n,
-      NROW = nrow(DT),
-      NCOL = ncol(DT),
-      MB = if (is.function(mb)) round(as.numeric(mb(DT))/1024^2),
-      COLS = list(names(DT)),
-      KEY = list(key(DT)),
-      INDICES = if (index) list(indices(DT)))
+    list(  # list() here was 9MB better than data.table() for tests.Rraw 1538, #5517
+      dt_n,
+      nrow(DT),
+      ncol(DT),
+      if (is.function(mb)) round(as.numeric(mb(DT))/1024^2) else NA,
+      list(names(DT)),
+      list(key(DT)),
+      if (index) list(indices(DT)) else NA)
   }))
+  setnames(info, c("NAME","NROW","NCOL","MB","COLS","KEY","INDICES"))
+  if (!is.function(mb)) info[,MB:=NULL]
+  if (!index)           info[,INDICES:=NULL]
   if (order.col != "NAME") {
     if (!order.col %chin% names(info)) stopf("order.col='%s' not a column name of info", order.col)
     info = info[base::order(info[[order.col]])]  # base::order to maintain locale ordering of table names
