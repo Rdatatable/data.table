@@ -550,7 +550,7 @@
 
 53. `as.data.frame(DT, row.names=)` no longer silently ignores `row.names`, [#5319](https://github.com/Rdatatable/data.table/issues/5319). Thanks to @dereckdemezquita for the fix and PR, and @ben-schwen for guidance.
 
-54. data.table construction uses `deparse` to try and automatically name un-named cols. The attempt is now limited to 1- line which gives substantial speedup in [some edge cases](https://github.com/Rdatatable/data.table/pull/5501). Thanks @OfekShilon for the report and fix, @michaelchirico for guidance.
+54. Certain flavours of data.table construction try to use `deparse` to automatically name un-named cols. The attempt is now limited to 1 line of the `deparse` input which gives substantial speedup in [some cases](https://github.com/Rdatatable/data.table/pull/5501). Thanks @OfekShilon for the report and fix, @michaelchirico for guidance.
 
 ## NOTES
 
