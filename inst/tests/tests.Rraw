@@ -9633,36 +9633,25 @@ nq <- function(x, y, cols, ops, nomatch=0L, mult="all") {
 is_only_na <- function(x) is.na(x) & !is.nan(x)
 
 nqjoin_test <- function(x, y, k=1L, test_no, mult="all") {
-  if (as.integer(test_no)==1642L) cat(0, rss(), "\n")
   ops = c("==", ">=", "<=", ">", "<")
-  if (as.integer(test_no)==1642L) cat(1, rss(), "\n")
   xclass = sapply(x, class)
-  if (as.integer(test_no)==1642L) cat(2, rss(), "\n")
   runcmb = combn(names(x), k)
-  if (as.integer(test_no)==1642L) cat(3, rss(), "\n")
   runcmb = as.data.table(runcmb[, 1:min(100L, ncol(runcmb)), drop=FALSE]) # max 100 combinations to test
-  if (as.integer(test_no)==1642L) cat(4, rss(), "\n")
   runops = lapply(runcmb, function(cols) {
     thisops = sample(ops, k, TRUE)
     thisops[startsWith(cols, "c")] = "=="
     thisops
   })
-  if (as.integer(test_no)==1642L) cat(5, rss(), "\n")
   for (i in seq_along(runcmb)) {
     thiscols = runcmb[[i]]
     thisops = runops[[i]]
     # cat("k = ", k, "\ti = ", i, "\t thiscols = [", paste0(thiscols,collapse=","), "]\t thisops = [", paste0(thisops,collapse=","), "]\t ", sep="")
-    if (as.integer(test_no)==1642L) cat(6, rss(), "\n")
     ans1 = nq(x, y, thiscols, thisops, 0L, mult=mult)
-    if (as.integer(test_no)==1642L) cat(7, rss(), "\n")
     ans2 = check(x, y, thiscols, thisops, mult=mult)
-    if (as.integer(test_no)==1642L) cat(8, rss(), "\n")
     test_no = test_no + .001
     test(test_no, ans1, ans2)
   }
-  if (as.integer(test_no)==1642L) cat(9, rss(), "\n")
   gc()  # no longer needed but left in place just in case, no harm
-  if (as.integer(test_no)==1642L) cat(10, rss(), "\n")
 }
 
 dt1 = nq_fun(100L)  # 400 reduced to 100, #5517 
@@ -9680,9 +9669,7 @@ if (.Machine$sizeof.pointer>4) {
   # 2nd pass with random seed too removed as taking too long, contributing towards win-builder/cran limits
 
   # without NAs in x and i
-  print(rss())
   nqjoin_test(x, y, 1L, 1641, mult="all")
-  print(rss())   # 116.8MB
   nqjoin_test(x, y, 2L, 1642, mult="all")
   nqjoin_test(x, y, 1L, 1643, mult="first")
   nqjoin_test(x, y, 2L, 1644, mult="first")
