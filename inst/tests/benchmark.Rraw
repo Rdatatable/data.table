@@ -168,3 +168,10 @@ test(1742.5, substr(x, nchar(x)-10L, nchar(x)), c("50,28,95,76","62,87,23,40"))
 
 # Add scaled-up non-ASCII forder test 1896
 
+# Before #5501 do.call(data.table,) fully deparsed large unnamed args, #5492.
+DF = data.frame(a=runif(1e6), b=runif(1e6))
+t1 = system.time(DT1 <- data.table(DF))                 # 0.02s before and after
+t2 = system.time(DT2 <- do.call(data.table, list(DF)))  # 3.07s before, 0.02s after
+test(, identical(DT1, DT2))
+test(, t2["elapsed"]/t1["elapsed"]<2)
+
