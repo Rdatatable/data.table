@@ -482,3 +482,13 @@ test(2201.3, nrow(DT[, .N, by=grp]), 65536L)
 test(2201.4, nrow(setkey(DT, grp)), 65536L)
 setDTthreads()    # restore default throttle
 
+# print of DT with many columns reordered them, #3306.
+DT = as.data.table(lapply(1:255, function(i)rep.int(i, 105L)))  # 105 to be enough for 'top 5 ... bottom 5' to print
+out = capture.output(print(DT))
+tt = out[grep("V",out)]
+tt = unlist(strsplit(gsub(" ","",tt), "V"))
+test(1982.1, tt[1L], "")
+tt = as.integer(tt[tt!=""])
+test(1982.2, tt, seq_along(tt))
+
+
