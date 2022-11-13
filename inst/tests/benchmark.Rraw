@@ -168,7 +168,16 @@ test(1742.5, substr(x, nchar(x)-10L, nchar(x)), c("50,28,95,76","62,87,23,40"))
 
 # Add scaled-up non-ASCII forder test 1896
 
+# Before #5501 do.call(data.table,) fully deparsed large unnamed args, #5492.
+DF = data.frame(a=runif(1e6), b=runif(1e6))
+t1 = system.time(DT1 <- data.table(DF))                 # 0.02s before and after
+t2 = system.time(DT2 <- do.call(data.table, list(DF)))  # 3.07s before, 0.02s after
+test(, identical(DT1, DT2))
+test(, t2["elapsed"]/t1["elapsed"]<2)
+
+###########################################################
 # largest tests by ram usage moved out of tests.Rraw, #5517
+###########################################################
 
 # Test ad hoc by of more than 100,000 levels, see 2nd part of bug #1387 (100,000 from the limit of base::sort.list radix)
 # This does need to be this large, like this in CRAN checks, because sort.list(method="radix") has this limit, which
@@ -472,5 +481,4 @@ DT = data.table(grp=sample(65536L))  # extra case with all size 1 groups too jus
 test(2201.3, nrow(DT[, .N, by=grp]), 65536L)
 test(2201.4, nrow(setkey(DT, grp)), 65536L)
 setDTthreads()    # restore default throttle
-
 
