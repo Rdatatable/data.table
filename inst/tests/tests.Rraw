@@ -4402,48 +4402,46 @@ seed = as.integer(Sys.time()) # sample(9999L, 1L) temporary fix, because all the
 seedInfo = paste("forder decreasing argument test: seed = ", seed,"  ", sep="")
 # no NaN (because it's hard to match with base::order); tested below in 1988.4-8
 set.seed(seed)
-foo <- function(n) apply(matrix(sample(letters, n*8L, TRUE), ncol=8L), 1, paste, sep="")
+foo <- function(n) apply(matrix(sample(letters, n*8L, TRUE), ncol=8L), 1, paste, collapse="")
 i1 = as.integer(sample(c(-100:100), 1e3, TRUE))
 i2 = as.integer(sample(c(-100:100, -1e6, 1e6), 1e3, TRUE))
 d1 = as.numeric(sample(c(-100:100,Inf,-Inf), 1e3, TRUE))
 d2 = as.numeric(rnorm(1e3))
-c1 = sample(c(letters), 1e3, TRUE)
-c2 = sample(foo(200), 1e3, TRUE)
+c1 = sample(letters, 1e3, TRUE)
+c2 = sample(foo(50), 1e3, TRUE)
 
 DT = data.table(i1, i2, d1, d2, c1, c2)
 # randomise col order as well
 colorder=sample(ncol(DT))
 setcolorder(DT, names(DT)[colorder])
 seedInfo = paste(seedInfo, "colorder = ", paste(colorder, collapse=","), sep="")
-ans = vector("list", length(names(DT)))
 
 test_no = 1223.0
 oldnfail = nfail
-for (i in seq_along(names(DT))) {
-  cj = as.matrix(do.call(CJ, split(rep(c(1L,-1L), each=i), 1:i)))
-  ans[[i]] = combn(names(DT), i, function(x) {
-    tmp = apply(cj, 1, function(y) {
+for (nvars in seq_along(names(DT))) {
+  signs = expand.grid(replicate(nvars, c(-1L,1L), simplify=FALSE))
+  combn(names(DT), nvars, function(x) {
+    for (i in seq_len(nrow(signs))) {
       test_no <<- signif(test_no+.001, 7)
       ll = as.call(c(as.name("order"),
         lapply(seq_along(x), function(j) {
-          if (y[j] == 1L)
+          if (signs[i,j] == 1L)
             as.name(x[j])
           else {
-            if (class(DT[[x[j]]]) =="character")
+            if (is.character(DT[[x[j]]]))
               as.call(c(as.name("-"), as.call(list(as.name("xtfrm"), as.name(x[j])))))
             else
               as.call(list(as.name("-"), as.name(x[j])))
           }
         })
       ))
-      test(test_no, forderv(DT, by=x, order=y), with(DT, eval(ll)))
-    })
-    dim(tmp)=NULL
-    list(tmp)
+      test(test_no, forderv(DT, by=x, order=signs[i,]), with(DT, eval(ll)))
+    }
+    integer()
   })
 }
-ans = NULL
 if (nfail > oldnfail) cat(seedInfo, "\n")  # to reproduce
+rm_all()
 
 # fix for bug #44 - unique on null data.table should return null data.table
 test(1224, unique(data.table(NULL)), data.table(NULL))
