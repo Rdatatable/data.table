@@ -7,6 +7,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   }
   if ((tt<-compiler::enableJIT(-1))>0)
     cat("This is dev mode and JIT is enabled (level ", tt, ") so there will be a brief pause around the first test.\n", sep="")
+  rm_all = function() {}
 } else {
   require(data.table)
   # Make symbols to the installed version's ::: so that we can i) test internal-only not-exposed R functions
@@ -99,6 +100,13 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   year = data.table::year               # lubridate
   yearmon = data.table::yearmon         # zoo
   yearqtr = data.table::yearqtr         # zoo
+  
+  rm_all = function(env=parent.frame()) {
+    tt = setdiff(ls(envir=env), .do_not_rm)
+    rm(list=tt, envir=env)
+    gc()
+    invisible()
+  }
 }
 
 # Optional suggests are now tested in other.Rraw, #5516. No calls to require() or library() should occur
@@ -157,6 +165,8 @@ base_messages = list(
   mixed_subscripts = get_msg(letters[-1:1])
 )
 
+##########################
+.do_not_rm = ls()  # objects that exist at this point should not be removed by rm_all(); e.g. test_*, base_messages, Ctest_dt_win_snprintf, prevtest, etc
 ##########################
 
 test(1.1, tables(env=new.env()), null.data.table(), output = "No objects of class")
@@ -9093,6 +9103,8 @@ dt = data.table(x=1:5, y=6:10, z=c(1,1,1,2,2))
 test(1638, dt[, .SD, by=z, verbose=TRUE], output="All optimizations are turned off")
 options(datatable.optimize=Inf)
 
+rm_all()
+
 #1389 - split.data.table - big chunk of unit tests
 set.seed(123)
 dt = data.table(x1 = rep(letters[1:2], 6), x2 = rep(letters[3:5], 4), x3 = rep(letters[5:8], 3), y = rnorm(12))
@@ -9184,14 +9196,14 @@ test(1639.056, TRUE, all(
   sapply(l, sapply, ncol) == rep(4L, 4)
 ))
 l = split(fdt, by = c("x1","x2","x3"), flatten=FALSE) # empty levels in x3 after subset are expanded
-test(1639.057, TRUE, all(
-  is.list(l), identical(names(l), c("b","a")),
-  sapply(l, function(x) !is.data.table(x) && is.list(x)),
-  sapply(l, sapply, function(x) !is.data.table(x) && is.list(x)),
-  identical(lapply(l, lapply, names), list(b=list(d=c("h","f","e","g"), e=c("h","f","e","g"), c=c("f","h","e","g")), a=list(e=c("g","e","f","h"), d=c("e","g","f","h"), c=c("e","g","f","h")))),
-  sapply(l, sapply, sapply, nrow) == rep(c(1L,1L,0L,0L), 6),
-  sapply(l, sapply, sapply, ncol) == rep(4L, 24)
-))
+# memtest tracing in #5520 showed this split() and the one before 1639.188 (both by 3 columns) account for the RAM usage in 1639. But they should be gc()'d eventually after rm_all().
+test(1639.0571, is.list(l))
+test(1639.0572, names(l), c("b","a"))
+test(1639.0573, all(sapply(l, function(x) !is.data.table(x) && is.list(x))))
+test(1639.0574, all(sapply(l, sapply, function(x) !is.data.table(x) && is.list(x))))
+test(1639.0575, lapply(l, lapply, names), list(b=list(d=c("h","f","e","g"), e=c("h","f","e","g"), c=c("f","h","e","g")), a=list(e=c("g","e","f","h"), d=c("e","g","f","h"), c=c("e","g","f","h"))))
+test(1639.0576, all(sapply(l, sapply, sapply, nrow) == rep(c(1L,1L,0L,0L), 6)))
+test(1639.0577, all(sapply(l, sapply, sapply, ncol) == rep(4L, 24)))
 l = split(fdt, by = c("x3","x1"), drop=TRUE, flatten=FALSE) # multi col rev
 test(1639.058, TRUE, all(
   is.list(l), identical(names(l), c("h","f","g","e")),
@@ -9556,6 +9568,7 @@ test(1639.141, all(sapply(dtL, truelength) > 1000))
 dt <- data.table(x = factor("a"), y = 1)
 test(1639.142, x = split(dt, by = "x"), y = list(a = dt))
 test(1639.143, x = split(dt, by = "y"), y = list(`1` = dt))
+rm_all()
 
 # allow x's cols (specifically x's join cols) to be referred to using 'x.' syntax
 # patch for #1615. Note that I specifically have not implemented x[y, aa, on=c(aa="bb")]
