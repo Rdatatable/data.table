@@ -4420,7 +4420,7 @@ test_no = 1223.0
 oldnfail = nfail
 for (nvars in seq_along(names(DT))) {
   signs = expand.grid(replicate(nvars, c(-1L,1L), simplify=FALSE))
-  combn(names(DT), nvars, function(x) {
+  combn(names(DT), nvars, simplify=FALSE, function(x) {  # simplify=FALSE needed for R 3.1.0
     for (i in seq_len(nrow(signs))) {
       test_no <<- signif(test_no+.001, 7)
       ll = as.call(c(as.name("order"),
