@@ -126,8 +126,8 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   on.exit(setwd(owd))
   
   if (memtest) {
-    cat("\n***\n*** memtest=",memtest,". This should be the first task in a fresh R session for best results. Ctrl-C now if not.\n***\n\n", sep="")
-    if (is.na(ps_mem())) stop("memtest intended for Linux. Step through ps_mem() to see what went wrong.")
+    cat("\n***\n*** memtest=",memtest,". This should be the first call in a fresh R_GC_MEM_GROW=0 R session for best results. Ctrl-C now if not.\n***\n\n", sep="")
+    if (is.na(rss())) stop("memtest intended for Linux. Step through data.table:::rss() to see what went wrong.")
   }
 
   err = try(sys.source(fn, envir=env), silent=silent)
@@ -195,7 +195,12 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     ans = timings[, diff:=c(NA,round(diff(RSS),1))][y+1L][,time:=NULL]  # time is distracting and influenced by gc() calls; just focus on RAM usage here
     cat("10 largest RAM increases (MB); see plot for cumulative effect (if any)\n")
     print(ans, class=FALSE)
-    plot(timings$RSS, main=basename(fn), ylab="RSS (MB)")
+    get("dev.new")(width=14, height=7)
+    get("par")(mfrow=c(1,2))
+    get("plot")(timings$RSS, main=paste(basename(fn),"\nylim[0]=0 for context"), ylab="RSS (MB)", ylim=c(0,max(timings$RSS)))
+    get("mtext")(lastRSS<-as.integer(ceiling(last(timings$RSS))), side=4, at=lastRSS, las=1, font=2)
+    get("plot")(timings$RSS, main=paste(basename(fn),"\nylim=range for inspection"), ylab="RSS (MB)")
+    get("mtext")(lastRSS, side=4, at=lastRSS, las=1, font=2)
   }
   cat("All ",ntest," tests (last ",env$prevtest,") in ",names(fn)," completed ok in ",timetaken(env$started.at),"\n",sep="")
   ans = nfail==0L
@@ -223,15 +228,6 @@ compactprint = function(DT, topn=2L) {
 # nocov end
 
 INT = function(...) { as.integer(c(...)) }   # utility used in tests.Rraw
-
-ps_mem = function() {
-  # nocov start
-  cmd = paste0("ps -o rss --no-headers ", Sys.getpid()) # ps returns KB
-  ans = tryCatch(as.numeric(system(cmd, intern=TRUE)), warning=function(w) NA_real_, error=function(e) NA_real_)
-  if (length(ans)!=1L || !is.numeric(ans)) ans=NA_real_ # just in case
-  round(ans / 1024, 1L)  # return MB
-  # nocov end
-}
 
 gc_mem = function() {
   # nocov start
@@ -276,7 +272,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
        timings[as.integer(num), `:=`(time=time+took, nTest=nTest+1L), verbose=FALSE]
        if (memtest) {
          if (memtest==1L) gc()  # see #5515 for before/after
-         timings[as.integer(num), RSS:=max(ps_mem(),RSS), verbose=FALSE]
+         timings[as.integer(num), RSS:=max(rss(),RSS), verbose=FALSE]
          if (memtest==2L) gc()
        }
        assign("lasttime", proc.time()[3L], parent.frame(), inherits=TRUE)  # after gc() to exclude gc() time from next test when memtest
