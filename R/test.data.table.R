@@ -126,7 +126,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   on.exit(setwd(owd))
   
   if (memtest) {
-    catf("\n***\n*** memtest=%d. This should be the first task in a fresh R session for best results. Ctrl-C now if not.\n***\n\n", memtest)
+    catf("\n***\n*** memtest=%d. This should be the first call in a fresh R_GC_MEM_GROW=0 R session for best results. Ctrl-C now if not.\n***\n\n", memtest)
     if (is.na(rss())) stopf("memtest intended for Linux. Step through data.table:::rss() to see what went wrong.")
   }
 
@@ -197,7 +197,12 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     ans = timings[, diff:=c(NA,round(diff(RSS),1))][y+1L][,time:=NULL]  # time is distracting and influenced by gc() calls; just focus on RAM usage here
     catf("10 largest RAM increases (MB); see plot for cumulative effect (if any)\n")
     print(ans, class=FALSE)
-    plot(timings$RSS, main=basename(fn), ylab="RSS (MB)")
+    dev.new(width=14, height=7)
+    par(mfrow=c(1,2))
+    plot(timings$RSS, main=paste(basename(fn),"\nylim[0]=0 for context"), ylab="RSS (MB)", ylim=c(0,max(timings$RSS)))
+    mtext(lastRSS<-as.integer(ceiling(last(timings$RSS))), side=4, at=lastRSS, las=1, font=2)
+    plot(timings$RSS, main=paste(basename(fn),"\nylim=range for inspection"), ylab="RSS (MB)")
+    mtext(lastRSS, side=4, at=lastRSS, las=1, font=2)
   }
 
   catf("All %d tests (last %.8g) in %s completed ok in %s\n", ntest, env$prevtest, names(fn), timetaken(env$started.at))
