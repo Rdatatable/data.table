@@ -561,7 +561,7 @@
     identical(DT1, DT2)                  # TRUE
     ```
 
-55. `fread()` could leak memory leak in `fread()`, [#3293](https://github.com/Rdatatable/data.table/issues/3292). Thanks to @patrickhowerter for posting the issue, and Jim Hester for the fix.
+55. `fread()` could leak memory, [#3292](https://github.com/Rdatatable/data.table/issues/3292). Thanks to @patrickhowerter for reporting, and Jim Hester for the fix. The fix requires R 3.4.0 or later. Loading `data.table` in earlier versions now warns that known problems exist, asks users to upgrade R, and warns that we intend to upgrade `data.table`'s dependency from 8-year-old R 3.1.0 (April 2014) to 5-year-old R 3.4.0 (April 2017).
 
 ## NOTES
 

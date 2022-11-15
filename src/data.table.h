@@ -323,6 +323,7 @@ SEXP nqRecreateIndices(SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP fsort(SEXP, SEXP);
 SEXP inrange(SEXP, SEXP, SEXP, SEXP);
 SEXP hasOpenMP(void);
+SEXP beforeR340(void);
 SEXP uniqueNlogical(SEXP, SEXP);
 SEXP dllVersion(void);
 SEXP initLastUpdated(SEXP);
