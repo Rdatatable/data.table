@@ -32,6 +32,10 @@
         else
           paste0("This is ", Sys.info()["sysname"], ". This warning should not normally occur on Windows or Linux where OpenMP is turned on by data.table's configure script by passing -fopenmp to the compiler. If you see this warning on Windows or Linux, please file a GitHub issue."),
         "\n**********")
+    if (.Call(CbeforeR340)) {
+      # not base::getRversion()<"3.4.0" in case the user upgrades R but does not reinstall data.table; a reasonable mistake since data.table would seem to be the latest version
+      packageStartupMessage("**********\nThis data.table installation was compiled for R < 3.4.0 (Apr 2017) where fread() is known to leak memory. Please upgrade R and reinstall data.table to fix the leak. Maintaining and testing code branches to support very old versions increases development time so please do upgrade R. We intend to bump data.table's dependency from 8 year old R 3.1.0 (Apr 2014) to 5 year old R 3.4.0 (Apr 2017).\n**********")
+    }
   }
 }
 

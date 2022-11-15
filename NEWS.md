@@ -2,9 +2,14 @@
 
 # data.table [v1.14.6](https://github.com/Rdatatable/data.table/milestone/27?closed=1)
 
+## BUG FIXES
+
+1. `fread()` could leak memory, [#3292](https://github.com/Rdatatable/data.table/issues/3292). Thanks to @patrickhowerter for reporting, and Jim Hester for the fix. The fix requires R 3.4.0 or later. Loading `data.table` in earlier versions now highlights this issue on startup, asks users to upgrade R, and warns that we intend to upgrade `data.table`'s dependency from 8 year old R 3.1.0 (April 2014) to 5 year old R 3.4.0 (April 2017).
+
 ## NOTES
 
 1. Test 1962.098 has been modified to pass latest changes to `POSIXt` in R-devel.
+
 
 # data.table [v1.14.4](https://github.com/Rdatatable/data.table/milestone/26?closed=1)  (17 Oct 2022)
 

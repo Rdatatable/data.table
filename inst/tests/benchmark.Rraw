@@ -168,3 +168,11 @@ test(1742.5, substring(x,nchar(x)-10,nchar(x)), c("50,28,95,76","62,87,23,40"))
 
 # Add scaled-up non-ASCII forder test 1896
 
+# fread leak, #3292
+dummy = rep("1\t2\t3\t4\t5", 10000000)
+writeLines(dummy, "out.tsv")
+start = gc()["Vcells",2]
+for (i in 1:10) data.table::fread("out.tsv")
+end = gc()["Vcells",2]
+test(, end/start < 1.05)
+

@@ -526,9 +526,11 @@ void setFinalNrow(size_t nrow) {
   if (length(DT)) {
     if (nrow == dtnrows)
       return;
-    for (int i=0; i<LENGTH(DT); i++) {
-      SETLENGTH(VECTOR_ELT(DT,i), nrow);  // TODO: realloc
-      SET_TRUELENGTH(VECTOR_ELT(DT,i), nrow);
+    const int ncol=LENGTH(DT);
+    for (int i=0; i<ncol; i++) {
+      SETLENGTH(VECTOR_ELT(DT,i), nrow);
+      SET_TRUELENGTH(VECTOR_ELT(DT,i), dtnrows);
+      SET_GROWABLE_BIT(VECTOR_ELT(DT,i));  // #3292
     }
   }
   R_FlushConsole(); // # 2481. Just a convenient place; nothing per se to do with setFinalNrow()
