@@ -491,4 +491,12 @@ test(1982.1, tt[1L], "")
 tt = as.integer(tt[tt!=""])
 test(1982.2, tt, seq_along(tt))
 
+# fread leak, #3292
+dummy = rep("1\t2\t3\t4\t5", 10000000)
+writeLines(dummy, "out.tsv")
+start = gc()["Vcells",2]
+for (i in 1:10) data.table::fread("out.tsv")
+end = gc()["Vcells",2]
+test(, end/start < 1.05)
+
 
