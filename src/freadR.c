@@ -24,9 +24,9 @@ Secondary separator for list() columns, such as columns 11 and 12 in BED (no nee
 
 #define NUT  NUMTYPE+2  // +1 for "numeric" alias for "double"; +1 for CLASS fallback using as.class() at R level afterwards
 
-static int  typeSxp[NUT] =     {NILSXP,  LGLSXP,     LGLSXP,     LGLSXP,     LGLSXP,     INTSXP,    REALSXP,     REALSXP,    REALSXP,        REALSXP,        INTSXP,          REALSXP,         STRSXP,      REALSXP,    STRSXP   };
-static char typeRName[NUT][10]={"NULL",  "logical",  "logical",  "logical",  "logical",  "integer", "integer64", "double",   "double",       "double",       "IDate",         "POSIXct",       "character", "numeric",  "CLASS"  };
-static int  typeEnum[NUT] =    {CT_DROP, CT_BOOL8_N, CT_BOOL8_U, CT_BOOL8_T, CT_BOOL8_L, CT_INT32,  CT_INT64,    CT_FLOAT64, CT_FLOAT64_HEX, CT_FLOAT64_EXT, CT_ISO8601_DATE, CT_ISO8601_TIME, CT_STRING,   CT_FLOAT64, CT_STRING};
+static int  typeSxp[NUT] =     {NILSXP,  LGLSXP,    LGLSXP,     LGLSXP,     LGLSXP,     LGLSXP,     INTSXP,    REALSXP,     REALSXP,    REALSXP,        REALSXP,        INTSXP,          REALSXP,         STRSXP,      REALSXP,    STRSXP   };
+static char typeRName[NUT][10]={"NULL",  "logical", "logical",  "logical",  "logical",  "logical",  "integer", "integer64", "double",   "double",       "double",       "IDate",         "POSIXct",       "character", "numeric",  "CLASS"  };
+static int  typeEnum[NUT] =    {CT_DROP, CT_EMPTY,  CT_BOOL8_N, CT_BOOL8_U, CT_BOOL8_T, CT_BOOL8_L, CT_INT32,  CT_INT64,    CT_FLOAT64, CT_FLOAT64_HEX, CT_FLOAT64_EXT, CT_ISO8601_DATE, CT_ISO8601_TIME, CT_STRING,   CT_FLOAT64, CT_STRING};
 static colType readInt64As=CT_INT64;
 static SEXP selectSxp;
 static SEXP dropSxp;
@@ -50,6 +50,7 @@ static bool oldNoDateTime = false;
 SEXP freadR(
   // params passed to freadMain
   SEXP inputArg,
+  SEXP isFileNameArg,
   SEXP sepArg,
   SEXP decArg,
   SEXP quoteArg,
@@ -81,22 +82,20 @@ SEXP freadR(
   freadMainArgs args;
   ncol = 0;
   dtnrows = 0;
-  const char *ch, *ch2;
+  
   if (!isString(inputArg) || LENGTH(inputArg)!=1)
     error(_("Internal error: freadR input not a single character string: a filename or the data itself. Should have been caught at R level."));  // # nocov
-  ch = ch2 = (const char *)CHAR(STRING_ELT(inputArg,0));
-  while (*ch2!='\n' && *ch2!='\r' && *ch2!='\0') ch2++;
-  args.input = (*ch2=='\0') ? R_ExpandFileName(ch) : ch; // for convenience so user doesn't have to call path.expand()
-
-  ch = args.input;
-  while (*ch!='\0' && *ch!='\n' && *ch!='\r') ch++;
-  if (*ch!='\0' || args.input[0]=='\0') {
-    if (verbose) DTPRINT(_("Input contains a \\n or is \")\". Taking this to be text input (not a filename)\n"));
-    args.filename = NULL;
-  } else {
-    if (verbose) DTPRINT(_("Input contains no \\n. Taking this to be a filename to open\n"));
-    args.filename = args.input;
+  const char *ch = (const char *)CHAR(STRING_ELT(inputArg,0));
+  if (!isLogical(isFileNameArg) || LENGTH(isFileNameArg)!=1 || LOGICAL(isFileNameArg)[0]==NA_LOGICAL)
+    error(_("Internal error: freadR isFileNameArg not TRUE or FALSE"));  // # nocov
+  if (LOGICAL(isFileNameArg)[0]) {
+    if (verbose) DTPRINT(_("freadR.c has been passed a filename: %s\n"), ch);
+    args.filename = R_ExpandFileName(ch);  // for convenience so user doesn't have to call path.expand()
     args.input = NULL;
+  } else {
+    if (verbose) DTPRINT(_("freadR.c has been passed the data as text input (not a filename)\n"));
+    args.filename = NULL;
+    args.input = ch;
   }
 
   if (!isString(sepArg) || LENGTH(sepArg)!=1 || strlen(CHAR(STRING_ELT(sepArg,0)))>1)

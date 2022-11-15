@@ -1,22 +1,38 @@
 \name{print.data.table}
 \alias{print.data.table}
+\alias{format_col}
+\alias{format_col.default}
+\alias{format_col.POSIXct}
+\alias{format_col.expression}
+\alias{format_list_item}
+\alias{format_list_item.default}
 \title{ data.table Printing Options }
 \description{
   \code{print.data.table} extends the functionalities of \code{print.data.frame}.
 
   Key enhancements include automatic output compression of many observations and concise column-wise \code{class} summary.
+
+  \code{format_col} and \code{format_list_item} generics provide flexibility for end-users to define custom printing methods for generic classes.
 }
 \usage{
   \method{print}{data.table}(x,
     topn=getOption("datatable.print.topn"),             # default: 5
     nrows=getOption("datatable.print.nrows"),           # default: 100
-    class=getOption("datatable.print.class"),           # default: FALSE
+    class=getOption("datatable.print.class"),           # default: TRUE
     row.names=getOption("datatable.print.rownames"),    # default: TRUE
     col.names=getOption("datatable.print.colnames"),    # default: "auto"
-    print.keys=getOption("datatable.print.keys"),       # default: FALSE
+    print.keys=getOption("datatable.print.keys"),       # default: TRUE
     trunc.cols=getOption("datatable.print.trunc.cols"), # default: FALSE
     quote=FALSE,
     timezone=FALSE, \dots)
+
+  format_col(x, \dots)
+  \method{format_col}{default}(x, \dots)
+  \method{format_col}{POSIXct}(x, \dots, timezone=FALSE)
+  \method{format_col}{expression}(x, \dots)
+
+  format_list_item(x, \dots)
+  \method{format_list_item}{default}(x, \dots)
 }
 \arguments{
   \item{x}{ A \code{data.table}. }
@@ -31,8 +47,17 @@
   \item{timezone}{ If \code{TRUE}, time columns of class POSIXct or POSIXlt will be printed with their timezones (if attribute is available). }
   \item{\dots}{ Other arguments ultimately passed to \code{format}. }
 }
+\value{
+  \code{print.data.table} returns \code{x} invisibly.
+
+  \code{format_col} returns a \code{length(x)}-size \code{character} vector.
+
+  \code{format_list_item} returns a length-1 \code{character} scalar.
+}
 \details{
   By default, with an eye to the typically large number of observations in a \code{data.table}, only the beginning and end of the object are displayed (specifically, \code{head(x, topn)} and \code{tail(x, topn)} are displayed unless \code{nrow(x) < nrows}, in which case all rows will print).
+
+  \code{format_col} is applied at a column level; for example, \code{format_col.POSIXct} is used to tag the time zones of \code{POSIXct} columns. \code{format_list_item} is applied to the elements (rows) of \code{list} columns; see Examples. The default \code{format_col} method uses \code{\link[utils]{getS3method}} to test if a \code{format} method exists for the column, and if so uses it. Otherwise, the default \code{format_list_item} method uses the S3 format method (if one exists) for each item of a \code{list} column.
 }
 \seealso{\code{\link{print.default}}}
 \examples{
@@ -72,5 +97,15 @@
                    thing_61 = vector("complex", 3))
   print(DT, trunc.cols=TRUE)
   options(old_width)
+
+  # Formatting customization
+  format_col.complex = function(x, ...) sprintf('(\%.1f, \%.1fi)', Re(x), Im(x))
+  x = data.table(z = c(1 + 3i, 2 - 1i, pi + 2.718i))
+  print(x)
+
+  iris = as.data.table(iris)
+  iris_agg = iris[ , .(reg = list(lm(Sepal.Length ~ Petal.Length))), by = Species]
+  format_list_item.lm = function(x, ...) sprintf('<lm:\%s>', format(x$call$formula))
+  print(iris_agg)
 }
 

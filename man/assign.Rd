@@ -1,11 +1,14 @@
 \name{:=}
 \alias{:=}
 \alias{set}
+\alias{let}
 \title{ Assignment by reference }
 \description{
     Fast add, remove and update subsets of columns, by reference. \code{:=} operator can be used in two ways: \code{LHS := RHS} form, and \code{Functional form}. See \code{Usage}.
 
     \code{set} is a low-overhead loop-able version of \code{:=}. It is particularly useful for repetitively updating rows of certain columns by reference (using a for-loop). See \code{Examples}. It can not perform grouping operations.
+
+    \code{let} is an alias for the functional form and behaves exactly like \code{`:=`}.
 
 }
 \usage{
@@ -13,8 +16,13 @@
 # DT[i, LHS := RHS, by = ...]
 # DT[i, c("LHS1", "LHS2") := list(RHS1, RHS2), by = ...]
 
-# 2. Functional form
+# 2a. Functional form with `:=`
 # DT[i, `:=`(LHS1 = RHS1,
+#            LHS2 = RHS2,
+#            ...), by = ...]
+
+# 2b. Functional form with let
+# DT[i, let(LHS1 = RHS1,
 #            LHS2 = RHS2,
 #            ...), by = ...]
 
@@ -42,6 +50,7 @@ set(x, i = NULL, j, value)
     DT[i, (colvector) := val]                     # same (NOW PREFERRED) shorthand syntax. The parens are enough to stop the LHS being a symbol; same as c(colvector).
     DT[i, colC := mean(colB), by = colA]          # update (or add) column called "colC" by reference by group. A major feature of `:=`.
     DT[,`:=`(new1 = sum(colB), new2 = sum(colC))] # Functional form
+    DT[, let(new1 = sum(colB), new2 = sum(colC))] # New alias for functional form.
 }
 
 The \code{\link{.Last.updated}} variable contains the number of rows updated by the most recent \code{:=} or \code{set} calls, which may be useful, for example, in production settings for testing assumptions about the number of rows affected by a statement; see \code{\link{.Last.updated}} for details.
@@ -63,7 +72,7 @@ For additional resources, please read \href{../doc/datatable-faq.html}{\code{vig
 
 When \code{LHS} is a factor column and \code{RHS} is a character vector with items missing from the factor levels, the new level(s) are automatically added (by reference, efficiently), unlike base methods.
 
-Unlike \code{<-} for \code{data.frame}, the (potentially large) LHS is not coerced to match the type of the (often small) RHS. Instead the RHS is coerced to match the type of the LHS, if necessary. Where this involves double precision values being coerced to an integer column, a warning is given (whether or not fractional data is truncated). The motivation for this is efficiency. It is best to get the column types correct up front and stick to them. Changing a column type is possible but deliberately harder: provide a whole column as the RHS. This RHS is then \emph{plonked} into that column slot and we call this \emph{plonk syntax}, or \emph{replace column syntax} if you prefer. By needing to construct a full length vector of a new type, you as the user are more aware of what is happening, and it is clearer to readers of your code that you really do intend to change the column type.
+Unlike \code{<-} for \code{data.frame}, the (potentially large) LHS is not coerced to match the type of the (often small) RHS. Instead the RHS is coerced to match the type of the LHS, if necessary. Where this involves double precision values being coerced to an integer column, a warning is given when fractional data is truncated. It is best to get the column types correct up front and stick to them. Changing a column type is possible but deliberately harder: provide a whole column as the RHS. This RHS is then \emph{plonked} into that column slot and we call this \emph{plonk syntax}, or \emph{replace column syntax} if you prefer. By needing to construct a full length vector of a new type, you as the user are more aware of what is happening and it is clearer to readers of your code that you really do intend to change the column type; e.g., \code{DT[, colA:=as.integer(colA)]}. A plonk occurs whenever you provide a RHS value to `:=` which is \code{nrow} long. When a column is \emph{plonked}, the original column is not updated by reference because that would entail updating every single element of that column whereas the plonk is just one column pointer update.
 
 \code{data.table}s are \emph{not} copied-on-change by \code{:=}, \code{setkey} or any of the other \code{set*} functions. See \code{\link{copy}}.
 }
@@ -72,7 +81,7 @@ Unlike \code{<-} for \code{data.frame}, the (potentially large) LHS is not coerc
 
 Since \code{[.data.table} incurs overhead to check the existence and type of arguments (for example), \code{set()} provides direct (but less flexible) assignment by reference with low overhead, appropriate for use inside a \code{for} loop. See examples. \code{:=} is more powerful and flexible than \code{set()} because \code{:=} is intended to be combined with \code{i} and \code{by} in single queries on large datasets.
 }
-\section{Note:}{
+\note{
     \code{DT[a > 4, b := c]} is different from \code{DT[a > 4][, b := c]}. The first expression updates (or adds) column \code{b} with the value \code{c} on those rows where \code{a > 4} evaluates to \code{TRUE}. \code{X} is updated \emph{by reference}, therefore no assignment needed.
 
     The second expression on the other hand updates a \emph{new} \code{data.table} that's returned by the subset operation. Since the subsetted data.table is ephemeral (it is not assigned to a symbol), the result would be lost; unless the result is assigned, for example, as follows: \code{ans <- DT[a > 4][, b := c]}.

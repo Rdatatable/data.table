@@ -7,36 +7,9 @@
 ##     ideally, we are including _() wrapping in
 ##     new PRs throughout dev cycle, and this step
 ##     becomes about tying up loose ends
-## Appending _() char array wrapping to all messages
-##   that might be shown to the user. This step is slightly
-##   too greedy, as it includes too many msg, some of which
-##   need not be translated [more work to do here to make
-##   this less manual] some things to watch out for:
-##     * quote embedded (and escaped) within message [could be fixed with smarter regex]
-##     * multi-line implicit-concat arrays (in C, `"a" "b"` is the same as `"ab"`) should be wrapped "on the outside" not individually
-##     * `data.table` shares some of its `src` with `pydatatable`, so the requirement to `#include <R.h>` before the `#define _` macro meant we need to be careful about including this macro only in the R headers for these files (hence I created `po.h`)
-##     * Can't use `_()` _inside_ another functional macro. Only wrap the string passed to the macro later.
-for MSG in error warning DTWARN DTPRINT Rprintf STOP Error;
-  do for SRC_FILE in src/*.c;
-    # no inplace -i in default mac sed
-    do sed -E "s/$MSG[(](\"[^\"]*\")/$MSG(_(\1)/g" $SRC_FILE > out;
-    mv out $SRC_FILE;
-  done
-done
-
-## checking for other lines calling these that didn't get _()-wrapped
-for MSG in error warning DTWARN DTPRINT Rprintf STOP Error;
-  do grep -Er "\b$MSG[(]" src --include=*.c | grep -v _ | grep -Ev "(?:\s*//|[*]).*$MSG[(]"
-done
-
-## similar, but a bit more manual to check snprintf usage
-
-## look for char array that haven't been covered yet
-grep -Er '"[^"]+"' src --include=*.c | grep -Fv '_("' | \
-  grep -Ev '#include|//.*".*"|strcmp|COERCE_ERROR|install\("|\{"'
-
-## look for lines starting with a char array (likely continued from prev line & can be combined)
-grep -Er '^\s*"' src/*.c
+## Check the output here for translatable messages
+xgettext -o /dev/stdout ./*.c \
+  --keyword=Rprintf --keyword=error --keyword=warning --keyword=STOP --keyword=DTWARN --keyword=Error --keyword=DTPRINT --keyword=snprintf:3
 
 ## (b) Update R template file: src/R-data.table.pot
 ##  NB: this relies on R >= 4.0 to remove a bug in update_pkg_po
@@ -154,13 +127,23 @@ grep -n "[^A-Za-z0-9]F[^A-Za-z0-9]" ./inst/tests/tests.Rraw
 grep -Enr "^[^#]*(?:\[|==|>|<|>=|<=|,|\(|\+)\s*[-]?[0-9]+[^0-9L:.e]" R | grep -Ev "stop|warning|tolerance"
 
 # Never use ifelse. fifelse for vectors when necessary (nothing yet)
- grep -Enr "\bifelse" R
+grep -Enr "\bifelse" R
+
+# use substr() instead of substring(), #4447
+grep -Fnr "substring" R
 
 # No system.time in main tests.Rraw. Timings should be in benchmark.Rraw
-grep -n "system[.]time" ./inst/tests/tests.Rraw
+grep -Fn "system.time" ./inst/tests/*.Rraw | grep -Fv "benchmark.Rraw" | grep -Fv "this system.time usage ok"
+
+# No tryCatch in *.Rraw -- tryCatch should be handled only in test() itself to avoid silently missed warnings/errors/output
+grep -Fn "tryCatch" ./inst/tests/*.Rraw
 
 # All % in *.Rd should be escaped otherwise text gets silently chopped
 grep -n "[^\]%" ./man/*.Rd
+
+# if (a & b) is either invalid or inefficient (ditto for replace & with |);
+#   if(any(a [&|] b)) is appropriate b/c of collapsing the logical vector to scalar
+grep -nr "^[^#]*if[^&#]*[^&#\"][&][^&]" R | grep -Ev "if\s*[(](?:any|all)"
 
 # seal leak potential where two unprotected API calls are passed to the same
 # function call, usually involving install() or mkChar()
@@ -196,9 +179,13 @@ grep allocVector *.c | grep -v PROTECT | grep -v SET_VECTOR_ELT | grep -v setAtt
 grep coerceVector *.c | grep -v PROTECT | grep -v SET_VECTOR_ELT | grep -v setAttrib | grep -v return
 grep asCharacter *.c | grep -v PROTECT | grep -v SET_VECTOR_ELT | grep -v setAttrib | grep -v return
 
+# Enforce local scope for loop index (`for (int i=0; ...)` instead of `int i; for (i=0; ...)`)
+#   exceptions are tagged with #loop_counter_not_local_scope_ok
+grep -En "for\s*[(]\s*[a-zA-Z0-9_]+\s*=" src/*.c | grep -Fv "#loop_counter_not_local_scope_ok"
+
 cd ..
 R
-cc(test=TRUE, clean=TRUE, CC="gcc-10")  # to compile with -pedandic -Wall, latest gcc as CRAN: https://cran.r-project.org/web/checks/check_flavors.html
+cc(test=TRUE, clean=TRUE, CC="gcc-12")  # to compile with -pedandic -Wall, latest gcc as CRAN: https://cran.r-project.org/web/checks/check_flavors.html
 saf = options()$stringsAsFactors
 options(stringsAsFactors=!saf)    # check tests (that might be run by user) are insensitive to option, #2718
 test.data.table()
@@ -240,9 +227,22 @@ PKG_CFLAGS='-fopenmp' PKG_LIBS=-lz R CMD INSTALL data.table_1.14.1.tar.gz
 R
 remove.packages("xml2")    # we checked the URLs; don't need to do it again (many minutes)
 require(data.table)
+f1 = tempfile()
+f2 = tempfile()
+suppressWarnings(try(rm(list=c(".Last",".Random.seed"))))
+save.image(f1)
 test.data.table(script="other.Rraw")
 test.data.table(script="*.Rraw")
 test.data.table(verbose=TRUE)   # since main.R no longer tests verbose mode
+suppressWarnings(try(rm(list=c(".Last",".Random.seed"))))
+save.image(f2)
+system(paste("diff",f1,f2))  # to detect any changes to .GlobalEnv, #5514
+# print(load(f1)); print(load(f2)) # run if diff found any difference
+
+# check example() works on every exported function, with these sticter options too, and also that all help pages have examples
+options(warn=2, warnPartialMatchArgs=TRUE, warnPartialMatchAttr=TRUE, warnPartialMatchDollar=TRUE)
+invisible(lapply(objects(pos="package:data.table"), example, character.only=TRUE, echo=FALSE, ask=FALSE))
+
 gctorture2(step=50)
 system.time(test.data.table(script="*.Rraw"))  # apx 8h = froll 3h + nafill 1m + main 5h
 
@@ -260,7 +260,7 @@ cd ~/build
 wget http://cran.stat.ucla.edu/src/base/R-3/R-3.1.0.tar.gz
 tar xvf R-3.1.0.tar.gz
 cd R-3.1.0
-./configure --without-recommended-packages
+CFLAGS="-fcommon" FFLAGS="-fallow-argument-mismatch" ./configure --without-recommended-packages
 make
 alias R310=~/build/R-3.1.0/bin/R
 ### END ONE TIME BUILD
@@ -297,24 +297,29 @@ cd ~/build
 wget -N https://stat.ethz.ch/R/daily/R-devel.tar.gz
 rm -rf R-devel
 rm -rf R-devel-strict-*
-tar xvf R-devel.tar.gz
+tar xf R-devel.tar.gz
 mv R-devel R-devel-strict-gcc
-tar xvf R-devel.tar.gz
+tar xf R-devel.tar.gz
 mv R-devel R-devel-strict-clang
-tar xvf R-devel.tar.gz
+tar xf R-devel.tar.gz
 
+sudo apt-get -y build-dep r-base
 cd R-devel  # may be used for revdep testing: .dev/revdep.R.
 # important to change directory name before building not after because the path is baked into the build, iiuc
 ./configure CFLAGS="-O0 -Wall -pedantic"
 make
 
 # use latest available `apt-cache search gcc-` or `clang-`
+# wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|sudo apt-key add -
+# sudo add-apt-repository 'deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-15 main'
+# sudo apt-get install clang-15
+
 cd ~/build/R-devel-strict-clang
-./configure --without-recommended-packages --disable-byte-compiled-packages --enable-strict-barrier --disable-long-double CC="clang-11 -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer"
+./configure --without-recommended-packages --disable-byte-compiled-packages --enable-strict-barrier --disable-long-double CC="clang-15 -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-sanitize=alignment -fno-omit-frame-pointer" CFLAGS="-g -O3 -Wall -pedantic"
 make
 
 cd ~/build/R-devel-strict-gcc
-# gcc-10 (in dev currently) failed to build R, so using regular gcc-9 (9.3.0 as per focal/Pop!_OS 20.04)
+# gcc-10 failed to build R-devel at some point, so using regular gcc-9 (9.3.0 as per focal/Pop!_OS 20.04)
 ./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --enable-strict-barrier --disable-long-double CC="gcc-9 -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer"
 make
 
@@ -336,15 +341,23 @@ alias Rdevel-strict-gcc='~/build/R-devel-strict-gcc/bin/R --vanilla'
 alias Rdevel-strict-clang='~/build/R-devel-strict-clang/bin/R --vanilla'
 
 cd ~/GitHub/data.table
-Rdevel-strict-gcc CMD INSTALL data.table_1.14.1.tar.gz
-Rdevel-strict-clang CMD INSTALL data.table_1.14.1.tar.gz
-# Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with them so should be passed through to here
-Rdevel-strict-gcc
-Rdevel-strict-clang  # repeat below with clang and gcc
+Rdevel-strict-[gcc|clang] CMD INSTALL data.table_1.14.5.tar.gz
+# Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with them so they should be
+# passed through to here. However, our configure script seems to get in the way and gets them from {R_HOME}/bin/R
+# So I needed to edit my ~/.R/Makevars to get CFLAGS the way I needed.
+Rdevel-strict-[gcc|clang] CMD check data.table_1.14.5.tar.gz
+# Use the (failed) output to get the list of currently needed packages and install them
+Rdevel-strict-[gcc|clang]
 isTRUE(.Machine$sizeof.longdouble==0)  # check noLD is being tested
 options(repos = "http://cloud.r-project.org")
-install.packages(c("bit64","xts","nanotime","R.utils","yaml")) # minimum packages needed to not skip any tests in test.data.table()
-# install.packages(c("curl","knitr"))                          # for `R CMD check` when not strict. Too slow to install when strict
+install.packages(c("bit64", "bit", "curl", "R.utils", "xts","nanotime", "zoo", "yaml", "knitr", "rmarkdown", "markdown"),
+                 Ncpus=4)
+# Issue #5491 showed that CRAN is running UBSAN on .Rd examples which found an error so we now run full R CMD check
+q("no")
+Rdevel-strict-[gcc|clang] CMD check data.table_1.14.5.tar.gz
+# UBSAN errors occur on stderr and don't affect R CMD check result. Made many failed attempts to capture them. So grep for them. 
+find data.table.Rcheck -name "*Rout*" -exec grep -H "runtime error" {} \;
+
 require(data.table)
 test.data.table(script="*.Rraw") # 7 mins (vs 1min normally) under UBSAN, ASAN and --strict-barrier
                                  # without the fix in PR#3515, the --disable-long-double lumped into this build does now work and correctly reproduces the noLD problem
@@ -531,6 +544,7 @@ sudo apt-get -y install cargo  # for gifski, a suggest of nasoi
 sudo apt-get -y install libgit2-dev  # for gert
 sudo apt-get -y install cmake  # for symengine for RxODE
 sudo apt-get -y install libxslt1-dev  # for xslt
+sudo apt-get -y install flex  # for RcppCWB
 sudo R CMD javareconf
 # ENDIF
 
