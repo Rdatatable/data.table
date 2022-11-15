@@ -40,7 +40,7 @@ static bool qmethodEscape=false;       // when quoting fields, how to escape dou
 static int scipen;
 static bool squashDateTime=false;      // 0=ISO(yyyy-mm-dd) 1=squash(yyyymmdd)
 static bool verbose=false;
-static int gzip_ratio;
+static int gzip_level;
 
 extern const char *getString(const void *, int64_t);
 extern int getStringLen(const void *, int64_t);
@@ -563,7 +563,7 @@ int init_stream(z_stream *stream) {
   stream->zalloc = Z_NULL;
   stream->zfree = Z_NULL;
   stream->opaque = Z_NULL;
-  int err = deflateInit2(stream, gzip_ratio==0 ? Z_DEFAULT_COMPRESSION : gzip_ratio, Z_DEFLATED,
+  int err = deflateInit2(stream, gzip_level==0 ? Z_DEFAULT_COMPRESSION : gzip_level, Z_DEFLATED,
           -15, 8, Z_DEFAULT_STRATEGY);
   return err;  // # nocov
 }
@@ -596,7 +596,7 @@ void fwriteMain(fwriteMainArgs args)
   doQuote = args.doQuote;
   int8_t quoteHeaders = args.doQuote;
   verbose = args.verbose;
-  gzip_ratio = args.gzip_ratio;
+  gzip_level = args.gzip_level;
 
   size_t len;
   unsigned int crc;
