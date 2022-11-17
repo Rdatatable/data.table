@@ -3279,3 +3279,19 @@ gforce = function(env, jsub, o, f, l, rows) .Call(Cgforce, env, jsub, o, f, l, r
   names(on) = xCols
   return(list(on = on, ops = idx_op))
 }
+
+setsubset = function(x, i) {
+  stopifnot(is.data.table(x), is.integer(i))
+  if (!length(i)) return(x)
+  if (anyNA(i) || anyDuplicated(i) || any(i < 1L) || any(i > nrow(x)) || is.unsorted(i))
+    stop("i must be non-NA, no dups, in range of 1:nrow(x) and sorted")
+  drop = setdiff(seq_len(nrow(x)), i)
+  last_ii = drop[1L]-1L
+  do_i = i[i > last_ii]
+  for (ii in do_i) {
+    last_ii = last_ii+1L
+    set(x, last_ii, names(x), unclass(x[ii]))
+  }
+  .Call("Csettruelength", x, length(i))
+  invisible(x)
+}

@@ -406,3 +406,12 @@ SEXP startsWithAny(const SEXP x, const SEXP y, SEXP start) {
   return ScalarLogical(false);
 }
 
+SEXP settruelength(SEXP x, SEXP len) {
+  int n = INTEGER(len)[0];
+  for (int i=0; i<LENGTH(x); ++i) {
+    SEXP col = VECTOR_ELT(x, i);
+    SETLENGTH(col, n);
+    SET_TRUELENGTH(col, n);
+  }
+  return x;
+}

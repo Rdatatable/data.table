@@ -247,6 +247,7 @@ SEXP islockedR(SEXP x);
 bool need2utf8(SEXP x);
 SEXP coerceUtf8IfNeeded(SEXP x);
 SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg);
+SEXP settruelength(SEXP x, SEXP len);
 
 // types.c
 char *end(char *start);
@@ -336,4 +337,3 @@ SEXP dt_zlib_version(void);
 SEXP startsWithAny(SEXP, SEXP, SEXP);
 SEXP convertDate(SEXP, SEXP);
 SEXP fastmean(SEXP);
-
