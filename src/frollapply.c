@@ -80,12 +80,12 @@ SEXP memcpyDTadaptive(SEXP dest, SEXP src, SEXP offset, SEXP size) {
 SEXP setgrowable(SEXP x) {
   if (!isNewList(x)) {
     SET_GROWABLE_BIT(x);
-    SET_TRUELENGTH(x, LENGTH(x)); // doesn't seems to be necessary but for future compatibility to R it is more safe to set it up
+    SET_TRUELENGTH(x, LENGTH(x)); // we just reset length, doesn't seems to be necessary but for future compatibility to R it is more safe to set it up
   } else {
     for (int i=0; i<LENGTH(x); ++i) {
       SEXP col = VECTOR_ELT(x, i);
       SET_GROWABLE_BIT(col);
-      SET_TRUELENGTH(x, LENGTH(col));
+      SET_TRUELENGTH(col, LENGTH(col));
     }
   }
   return x;
