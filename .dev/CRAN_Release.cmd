@@ -490,14 +490,15 @@ shutdown now   # doesn't return you to host prompt properly so just kill the win
 #  Downstream dependencies
 ###############################################
 
-# IF NOT ALREADY INSTALLED
+# IF NOT ALREADY INSTALLED, OR AFTER AN OS UPGRADE
+# No harm rerunning these commands; they do not reinstall if already latest version
 sudo apt-get update
 sudo apt-get -y install htop
 sudo apt-get -y install r-base r-base-dev
 sudo apt-get -y build-dep r-base-dev
 sudo apt-get -y build-dep qpdf
 sudo apt-get -y install aptitude
-sudo aptitude -y build-dep r-cran-rgl   # leads to libglu1-mesa-dev
+sudo apt-get -y build-dep r-cran-rgl   # leads to libglu1-mesa-dev
 sudo apt-get -y build-dep r-cran-rmpi
 sudo apt-get -y build-dep r-cran-cairodevice
 sudo apt-get -y build-dep r-cran-tkrplot
@@ -545,6 +546,8 @@ sudo apt-get -y install libgit2-dev  # for gert
 sudo apt-get -y install cmake  # for symengine for RxODE
 sudo apt-get -y install libxslt1-dev  # for xslt
 sudo apt-get -y install flex  # for RcppCWB
+sudo apt-get -y install libavfilter-dev libsodium-dev libgmp-dev libssh-dev librdf0-dev
+sudo apt-get -y install libmariadb-dev mariadb-client   # RMySQL for xQTLbiolinks
 sudo R CMD javareconf
 # ENDIF
 
@@ -553,6 +556,7 @@ inst()   # *** ensure latest dev version of data.table installed into revdeplib 
 run()    # prints menu of options
 status() # includes timestamp of installed data.table that is being tested.
 log()    # cats all fail logs to ~/fail.log
+cran()   # compare packages with error or warning to their status on CRAN
 
 # Once all issues resolved with CRAN packages, tackle long-term unfixed bioconductor packages as follows.
 # 1. Note down all error and warning bioc packages
