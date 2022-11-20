@@ -155,7 +155,6 @@ for (p in deps) {
   }
 }
 cat("New downloaded:",new," Already had latest:", old, " TOTAL:", length(deps), "\n")
-update.packages(checkBuilt=TRUE, ask=FALSE)  # won't rebuild packages which are no longer available on CRAN
 
 # Remove the tar.gz no longer needed :
 for (p in deps) {
@@ -166,12 +165,12 @@ for (p in deps) {
     cat("Removing",i,"because",f,"is newer\n")
     system(paste0("rm ",i))
   }
-  all = system("ls *.tar.gz", intern=TRUE)
-  all = sapply(strsplit(all, split="_"),'[',1)
-  for (i in all[!all %in% deps]) {
-    cat("Removing",i,"because it", if (!i %in% rownames(avail)) "has been removed from CRAN\n" else "no longer uses data.table\n")
-    system(paste0("rm ",i,"_*.tar.gz"))
-  }
+}
+all = system("ls *.tar.gz", intern=TRUE)
+all = sapply(strsplit(all, split="_"),'[',1)
+for (i in all[!all %in% deps]) {
+  cat("Removing",i,"because it", if (!i %in% rownames(avail)) "has been removed from CRAN\n" else "no longer uses data.table\n")
+  system(paste0("rm ",i,"_*.tar.gz"))
 }
 num_tar.gz = as.integer(system("ls *.tar.gz | wc -l", intern=TRUE))
 if (length(deps) != num_tar.gz) stop("num_tar.gz==",num_tar.gz," but length(deps)==",length(deps))
