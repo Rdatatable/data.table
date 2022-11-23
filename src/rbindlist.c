@@ -12,8 +12,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
   if (TYPEOF(l) != VECSXP) error(_("Input to rbindlist must be a list. This list can contain data.tables, data.frames or plain lists."));
   Rboolean usenames = LOGICAL(usenamesArg)[0];
   const bool fill = LOGICAL(fillArg)[0];
-  if (fill && usenames!=TRUE) {
-    if (usenames==FALSE) warning(_("use.names= cannot be FALSE when fill is TRUE. Setting use.names=TRUE.")); // else no warning if usenames==NA (default)
+  if (fill && usenames==NA_LOGICAL) {
     usenames=TRUE;
   }
   const bool idcol = !isNull(idcolArg);
@@ -406,7 +405,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
         if (!length(li)) continue;  // NULL items in the list() of DT/DF; not if thisnrow==0 because we need to retain (unused) factor levels (#3508)
         int w = usenames ? colMap[i*ncol + j] : j;
         if (w==-1) {
-          writeNA(target, ansloc, thisnrow);
+          writeNA(target, ansloc, thisnrow, false);
         } else {
           SEXP thisCol = VECTOR_ELT(li, w);
           SEXP thisColStr = isFactor(thisCol) ? getAttrib(thisCol, R_LevelsSymbol) : (isString(thisCol) ? thisCol : VECTOR_ELT(coercedForFactor, i));
@@ -512,7 +511,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
         int w = usenames ? colMap[i*ncol + j] : j;
         SEXP thisCol;
         if (w==-1 || !length(thisCol=VECTOR_ELT(li, w))) {  // !length for zeroCol warning above; #1871
-          writeNA(target, ansloc, thisnrow);  // writeNA is integer64 aware and writes INT64_MIN
+          writeNA(target, ansloc, thisnrow, false);  // writeNA is integer64 aware and writes INT64_MIN
         } else {
           if ((TYPEOF(target)==VECSXP || TYPEOF(target)==EXPRSXP) && TYPEOF(thisCol)!=TYPEOF(target)) {
             // do an as.list() on the atomic column; #3528

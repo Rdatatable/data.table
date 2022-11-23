@@ -15,7 +15,6 @@
 ^\.graphics$
 ^\.github$
 
-^\.travis\.yml$
 ^\.appveyor\.yml$
 ^\.gitlab-ci\.yml$
 
@@ -32,6 +31,7 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^\.idea$
+^\.libs$
 
 ^.*\.dll$
 

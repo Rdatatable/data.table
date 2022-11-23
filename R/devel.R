@@ -13,11 +13,11 @@ dcf.repo = function(pkg, repo, field, type) {
   idx = file(file.path(contrib.url(repo, type=type),"PACKAGES"))
   on.exit(close(idx))
   dcf = read.dcf(idx, fields=c("Package",field))
-  if (!pkg %in% dcf[,"Package"]) stop(domain=NA, gettextf("There is no package %s in provided repository.", pkg))
+  if (!pkg %in% dcf[,"Package"]) stopf("There is no package %s in provided repository.", pkg)
   dcf[dcf[,"Package"]==pkg, field][[1L]]
 }
 
-update.dev.pkg = function(object="data.table", repo="https://Rdatatable.gitlab.io/data.table", field="Revision", type=getOption("pkgType"), lib=NULL, ...) {
+update_dev_pkg = function(object="data.table", repo="https://Rdatatable.gitlab.io/data.table", field="Revision", type=getOption("pkgType"), lib=NULL, ...) {
   # this works for any package, not just data.table
   pkg = object
   # perform package upgrade when new Revision present
@@ -28,11 +28,11 @@ update.dev.pkg = function(object="data.table", repo="https://Rdatatable.gitlab.i
   # get Revision field from remote repository PACKAGES file
   una = is.na(ups<-dcf.repo(pkg, repo, field, type))
   if (una)
-    cat(sprintf("No revision information found in DESCRIPTION file for %s package. Unsure '%s' is correct field in PACKAGES file in your package repository '%s'. Otherwise package will be re-installed every time, proceeding to installation.\n",
-                pkg, field, contrib.url(repo, type=type)))
+    catf("No revision information found in DESCRIPTION file for %s package. Unsure '%s' is correct field in PACKAGES file in your package repository '%s'. Otherwise package will be re-installed every time, proceeding to installation.\n",
+         pkg, field, contrib.url(repo, type=type))
   # see if Revision is different then currently installed Revision, note that installed package will have Revision info only when it was installed from remote devel repo
   upg = una || !identical(ups, dcf.lib(pkg, field, lib.loc=lib))
-  # update.dev.pkg fails on windows R 4.0.0, we have to unload package namespace before installing new version #4403
+  # update_dev_pkg fails on windows R 4.0.0, we have to unload package namespace before installing new version #4403
   on.exit({
     if (upg) {
       unloadNamespace(pkg) ## hopefully will release dll lock on Windows
@@ -50,7 +50,7 @@ update.dev.pkg = function(object="data.table", repo="https://Rdatatable.gitlab.i
 .git = function(quiet=FALSE, lib.loc=NULL) {
   ans = unname(read.dcf(system.file("DESCRIPTION", package="data.table", lib.loc=lib.loc, mustWork=TRUE), fields="Revision")[, "Revision"])
   if (!quiet && is.na(ans))
-    cat("Git revision is not available. Most likely data.table was installed from CRAN or local archive.\nGit revision is available when installing from our repositories 'https://Rdatatable.gitlab.io/data.table' and 'https://Rdatatable.github.io/data.table'.\n")
+    catf("Git revision is not available. Most likely data.table was installed from CRAN or local archive.\nGit revision is available when installing from our repositories 'https://Rdatatable.gitlab.io/data.table' and 'https://Rdatatable.github.io/data.table'.\n")
   ans
 }
 
