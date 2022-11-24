@@ -6,9 +6,9 @@ variables:
   TZ: "UTC"  ## to avoid 'Failed to create bus connection' from timedatectl via Sys.timezone() on Docker with R 3.4.
              ## Setting TZ for all GLCI jobs to isolate them from timezone. We could have a new GLCI job to test under
              ## a non-UTC timezone, although, that's what we do routinely in dev.
-  R_REL_VERSION: "4.1"
-  R_DEVEL_VERSION: "4.2"
-  R_OLDREL_VERSION: "4.0"
+  R_REL_VERSION: "4.2"
+  R_DEVEL_VERSION: "4.3"
+  R_OLDREL_VERSION: "4.1"
 
 stages:
   - dependencies
@@ -40,19 +40,19 @@ mirror-packages: ## mirror all recursive dependencies, source and win.binary of 
     - Rscript -e 'sapply(simplify=FALSE, setNames(nm=Sys.getenv(c("R_REL_VERSION","R_DEVEL_VERSION","R_OLDREL_VERSION"))), function(binary.ver) mirror.packages(type="win.binary", dcf.dependencies("DESCRIPTION", "all"), repos=Sys.getenv("CRAN_MIRROR"), repodir="bus/mirror-packages/cran", binary.ver=binary.ver))'
   <<: *artifacts
 
-mirror-other-packages: ## mirror integration suggests from pkgs at the top of inst/tests/other.Rraw
-  stage: dependencies
-  tags:
-    - linux
-  image: registry.gitlab.com/jangorecki/dockerfiles/r-base-dev
-  cache:
-    paths:
-      - bus/$CI_BUILD_NAME/cran
-  script:
-    - echo 'source(".ci/ci.R")' >> .Rprofile
-    - mkdir -p bus/$CI_BUILD_NAME/cran/src/contrib
-    - Rscript -e 'eval(parse("inst/tests/other.Rraw", n=1L)); mirror.packages(pkgs, repos=Sys.getenv("CRAN_MIRROR"), repodir="bus/mirror-other-packages/cran")'
-  <<: *artifacts
+# mirror-other-packages: ## mirror integration suggests from pkgs at the top of inst/tests/other.Rraw;  off now #5274
+#  stage: dependencies
+#  tags:
+#    - linux
+#  image: registry.gitlab.com/jangorecki/dockerfiles/r-base-dev
+#  cache:
+#    paths:
+#      - bus/$CI_BUILD_NAME/cran
+#  script:
+#    - echo 'source(".ci/ci.R")' >> .Rprofile
+#    - mkdir -p bus/$CI_BUILD_NAME/cran/src/contrib
+#    - Rscript -e 'eval(parse("inst/tests/other.Rraw", n=1L)); mirror.packages(pkgs, repos=Sys.getenv("CRAN_MIRROR"), repodir="bus/mirror-other-packages/cran")'
+#  <<: *artifacts
 
 build: ## build data.table sources as tar.gz archive
   stage: build
@@ -63,6 +63,7 @@ build: ## build data.table sources as tar.gz archive
   before_script:
     - Rscript -e 'install.packages(c("knitr","rmarkdown"), repos=file.path("file:",normalizePath("bus/mirror-packages/cran")), quiet=TRUE)'
     - rm -r bus
+    - sed -i '/^[[:space:]]*$/d' ./DESCRIPTION ## make last line end abruptly; i.e. without a final \n
     - echo "Revision:" $CI_BUILD_REF >> ./DESCRIPTION
   script:
     - R CMD build .
@@ -74,8 +75,6 @@ build: ## build data.table sources as tar.gz archive
 
 .test-install-deps: &install-deps
   - Rscript -e 'source(".ci/ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="most"), quiet=TRUE)'
-.test-install-deps-win: &install-deps-win
-  - Rscript.exe -e "source('.ci/ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='most'), quiet=TRUE)"
 
 .test-cp-src: &cp-src
   - cp $(ls -1t bus/build/cran/src/contrib/data.table_*.tar.gz | head -n 1) .
@@ -96,14 +95,15 @@ build: ## build data.table sources as tar.gz archive
   - mkdir.exe -p cran/bin/windows/contrib/$R_VERSION; mv.exe $(ls.exe -1t data.table_*.zip | head.exe -n 1) cran/bin/windows/contrib/$R_VERSION
 
 .test-install-r-rel-win: &install-r-rel-win
-  - curl.exe -s -o ../R-rel.exe https://cloud.r-project.org/bin/windows/base/old/4.1.0/R-4.1.0-win.exe; Start-Process -FilePath ..\R-rel.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
+  - curl.exe -s -o ../R-rel.exe https://cloud.r-project.org/bin/windows/base/R-4.2.1-win.exe; Start-Process -FilePath ..\R-rel.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
+  # see #5198 for discussion about the https link used above; it will break each time R is released and the version number will need to be updated
 .test-install-r-devel-win: &install-r-devel-win
   - curl.exe -s -o ../R-devel.exe https://cloud.r-project.org/bin/windows/base/R-devel-win.exe; Start-Process -FilePath ..\R-devel.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
 .test-install-r-oldrel-win: &install-r-oldrel-win
-  - curl.exe -s -o ../R-oldrel.exe https://cloud.r-project.org/bin/windows/base/old/4.0.5/R-4.0.5-win.exe; Start-Process -FilePath ..\R-oldrel.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
+  - curl.exe -s -o ../R-oldrel.exe https://cloud.r-project.org/bin/windows/base/old/4.1.3/R-4.1.3-win.exe; Start-Process -FilePath ..\R-oldrel.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
 
 .test-install-rtools-win: &install-rtools-win
-  - curl.exe -s -o ../rtools.exe https://cloud.r-project.org/bin/windows/Rtools/rtools40-x86_64.exe; Start-Process -FilePath ..\rtools.exe -ArgumentList "/VERYSILENT /DIR=C:\rtools40" -NoNewWindow -Wait
+  - curl.exe -s -o ../rtools.exe https://cloud.r-project.org/bin/windows/Rtools/rtools42/files/rtools42-5355-5357.exe; Start-Process -FilePath ..\rtools.exe -ArgumentList "/VERYSILENT /DIR=C:\rtools42" -NoNewWindow -Wait
 
 .test-template: &test
   stage: test
@@ -144,16 +144,17 @@ build: ## build data.table sources as tar.gz archive
 test-rel-lin: ## most comprehensive tests, force all suggests, also integration tests, using gcc -O3 -flto -fno-common -Wunused-result
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-builder
-  needs: ["mirror-packages","mirror-other-packages","build"]
+  needs: ["mirror-packages","build"]  # "mirror-other-packages"
   variables:
     _R_CHECK_CRAN_INCOMING_: "FALSE"
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
     _R_CHECK_FORCE_SUGGESTS_: "TRUE"
     _R_CHECK_TESTS_NLINES_: "0"
     OPENBLAS_MAIN_FREE: "1"
-    TEST_DATA_TABLE_WITH_OTHER_PACKAGES: "TRUE"
+    TEST_DATA_TABLE_WITH_OTHER_PACKAGES: "FALSE"  #5274
   before_script:
-    - Rscript -e 'source(".ci/ci.R"); eval(parse("inst/tests/other.Rraw", n=1L)); install.packages(c(dcf.dependencies("DESCRIPTION", which="all"), pkgs), quiet=TRUE, repos=c(getOption("repos"), file.path("file:", normalizePath("bus/mirror-other-packages/cran", mustWork=FALSE))))'
+    - Rscript -e 'source(".ci/ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="all"), quiet=TRUE)'  ## does seem to be needed despite 'needs mirror-packages'
+    ## - Rscript -e 'eval(parse("inst/tests/other.Rraw", n=1L)); install.packages(pkgs, quiet=TRUE, repos=c(getOption("repos"), file.path("file:", normalizePath("bus/mirror-other-packages/cran", mustWork=FALSE))))'
     - *cp-src
     - rm -r bus
     - mkdir -p ~/.R
@@ -170,7 +171,7 @@ test-rel-vanilla-lin: ## minimal, no suggested deps, no vignettes or manuals, me
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-base-dev
   variables:
-    TEST_DATA_TABLE_MEMTEST: "TRUE"
+    TEST_DATA_TABLE_MEMTEST: "1"
   before_script:
     - *cp-src
     - rm -r bus
@@ -246,8 +247,8 @@ test-rel-win: ## R-release on Windows, test and build binaries
   before_script:
     - *install-r-rel-win
     - *install-rtools-win
-    - $ENV:PATH = "C:\R\bin;C:\rtools40\usr\bin;$ENV:PATH"
-    - *install-deps-win
+    - $ENV:PATH = "C:\R\bin;C:\rtools42\usr\bin;$ENV:PATH"
+    - Rscript.exe -e "source('.ci/ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='most'), quiet=TRUE)"
     - *cp-src-win
     - rm.exe -r bus
   script:
@@ -258,15 +259,15 @@ test-rel-win: ## R-release on Windows, test and build binaries
     - *rm-src-win
     - *mv-bin-win
 
-test-dev-win: ## R-devel on Windows
+test-dev-win: ## R-devel on Windows; see #5294 for changes in Dec 2021 related to UCRT and Rtools42
   <<: *test-win
   variables:
     R_VERSION: "$R_DEVEL_VERSION"
   before_script:
     - *install-r-devel-win
     - *install-rtools-win
-    - $ENV:PATH = "C:\R\bin;C:\rtools40\usr\bin;$ENV:PATH"
-    - *install-deps-win
+    - $ENV:PATH = "C:\R\bin;C:\rtools42\usr\bin;$ENV:PATH"
+    - Rscript.exe -e "source('.ci/ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='most', exclude=c('knitr','rmarkdown')), quiet=TRUE)"  ## exclude= for #5294
     - *cp-src-win
     - rm.exe -r bus
   script:
@@ -283,9 +284,10 @@ test-old-win: ## R-oldrel on Windows
     R_VERSION: "$R_OLDREL_VERSION"
   before_script:
     - *install-r-oldrel-win
-    - *install-rtools-win
+    - curl.exe -s -o ../rtools.exe https://cloud.r-project.org/bin/windows/Rtools/rtools40-x86_64.exe; Start-Process -FilePath ..\rtools.exe -ArgumentList "/VERYSILENT /DIR=C:\rtools40" -NoNewWindow -Wait
+    ## rtools42 doesn't support 32bit so oldrel-win (currently R 4.1) needs rtools40. Can use install-rtools-win again here when oldrel is R 4.2+
     - $ENV:PATH = "C:\R\bin;C:\rtools40\usr\bin;$ENV:PATH"
-    - *install-deps-win
+    - Rscript.exe -e "source('.ci/ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='most', exclude=c('knitr','rmarkdown')), quiet=TRUE)"  ## exclude= for #5294
     - *cp-src-win
     - rm.exe -r bus
   script:

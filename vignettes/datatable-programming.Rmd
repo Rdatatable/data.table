@@ -102,7 +102,7 @@ my_subset = function(data, col, val) {
 my_subset(iris, Species, "setosa")
 ```
 
-Here, we used the base R `substitute` function to transform the call `subset(data, col == val)` into `subset(iris, Species == "setosa")` by substituting `data`, `col`, and `val` with their original names (or values) from their parent environment. The benefits of this approach to the previous ones should be clear. Note that because we operate at the level of language objects, and don't have to resort to string manipulation, we refer to this as *computing on the language*. There is a dedicated chapter on *Computing on the language* in [R language manual](https://cloud.r-project.org/doc/manuals/r-release/R-lang.html). Although it is not necessary for *programming on data.table*, we encourage readers to read this chapter for the sake of better understanding this powerful and unique feature.
+Here, we used the base R `substitute` function to transform the call `subset(data, col == val)` into `subset(iris, Species == "setosa")` by substituting `data`, `col`, and `val` with their original names (or values) from their parent environment. The benefits of this approach to the previous ones should be clear. Note that because we operate at the level of language objects, and don't have to resort to string manipulation, we refer to this as *computing on the language*. There is a dedicated chapter on *Computing on the language* in [R language manual](https://cran.r-project.org/doc/manuals/r-release/R-lang.html). Although it is not necessary for *programming on data.table*, we encourage readers to read this chapter for the sake of better understanding this powerful and unique feature.
 
 #### Use third party packages
 

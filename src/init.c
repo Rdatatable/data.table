@@ -37,101 +37,13 @@ SEXP sym_tzone;
 SEXP sym_old_fread_datetime_character;
 SEXP sym_variable_table;
 SEXP sym_alloccol;
+SEXP sym_as_character;
+
 double NA_INT64_D;
 long long NA_INT64_LL;
 Rcomplex NA_CPLX;
 size_t __sizes[100];
 size_t __typeorder[100];
-
-// .Calls
-SEXP setattrib();
-SEXP bmerge();
-SEXP assign();
-SEXP dogroups();
-SEXP copy();
-SEXP shallow();
-SEXP alloccolwrapper();
-SEXP selfrefokwrapper();
-SEXP truelength();
-SEXP setcharvec();
-SEXP setcolorder();
-SEXP chmatch_R();
-SEXP chmatchdup_R();
-SEXP chin_R();
-SEXP fifelseR();
-SEXP fcaseR();
-SEXP freadR();
-SEXP fwriteR();
-SEXP reorder();
-SEXP rbindlist();
-SEXP vecseq();
-SEXP setlistelt();
-SEXP address();
-SEXP expandAltRep();
-SEXP fmelt();
-SEXP fcast();
-SEXP uniqlist();
-SEXP uniqlengths();
-SEXP forder();
-SEXP issorted();
-SEXP gforce();
-SEXP gsum();
-SEXP gmean();
-SEXP gmin();
-SEXP gmax();
-SEXP isOrderedSubset();
-SEXP setNumericRounding();
-SEXP getNumericRounding();
-SEXP binary();
-SEXP subsetDT();
-SEXP subsetVector();
-SEXP convertNegAndZeroIdx();
-SEXP frank();
-SEXP dt_na();
-SEXP lookup();
-SEXP overlaps();
-SEXP whichwrapper();
-SEXP shift();
-SEXP transpose();
-SEXP anyNA();
-SEXP isReallyReal();
-SEXP setlevels();
-SEXP rleid();
-SEXP gmedian();
-SEXP gtail();
-SEXP ghead();
-SEXP glast();
-SEXP gfirst();
-SEXP gnthvalue();
-SEXP dim();
-SEXP gvar();
-SEXP gsd();
-SEXP gprod();
-SEXP nestedid();
-SEXP setDTthreads();
-SEXP getDTthreads_R();
-SEXP nqRecreateIndices();
-SEXP fsort();
-SEXP inrange();
-SEXP between();
-SEXP hasOpenMP();
-SEXP uniqueNlogical();
-SEXP frollfunR();
-SEXP dllVersion();
-SEXP nafillR();
-SEXP colnamesInt();
-SEXP initLastUpdated();
-SEXP cj();
-SEXP lock();
-SEXP unlock();
-SEXP islockedR();
-SEXP allNAR();
-SEXP test_dt_win_snprintf();
-SEXP dt_zlib_version();
-SEXP startsWithAny();
-
-// .Externals
-SEXP fastmean();
 
 static const
 R_CallMethodDef callMethods[] = {
@@ -197,6 +109,7 @@ R_CallMethodDef callMethods[] = {
 {"Cgvar", (DL_FUNC) &gvar, -1},
 {"Cgsd", (DL_FUNC) &gsd, -1},
 {"Cgprod", (DL_FUNC) &gprod, -1},
+{"Cgshift", (DL_FUNC) &gshift, -1},
 {"Cnestedid", (DL_FUNC) &nestedid, -1},
 {"CsetDTthreads", (DL_FUNC) &setDTthreads, -1},
 {"CgetDTthreads", (DL_FUNC) &getDTthreads_R, -1},
@@ -205,6 +118,7 @@ R_CallMethodDef callMethods[] = {
 {"Cinrange", (DL_FUNC) &inrange, -1},
 {"Cbetween", (DL_FUNC) &between, -1},
 {"ChasOpenMP", (DL_FUNC) &hasOpenMP, -1},
+{"CbeforeR340", (DL_FUNC) &beforeR340, -1},
 {"CuniqueNlogical", (DL_FUNC) &uniqueNlogical, -1},
 {"CfrollfunR", (DL_FUNC) &frollfunR, -1},
 {"CdllVersion", (DL_FUNC) &dllVersion, -1},
@@ -226,6 +140,8 @@ R_CallMethodDef callMethods[] = {
 {"Cdt_zlib_version", (DL_FUNC)&dt_zlib_version, -1},
 {"Csubstitute_call_arg_namesR", (DL_FUNC) &substitute_call_arg_namesR, -1},
 {"CstartsWithAny", (DL_FUNC)&startsWithAny, -1},
+{"CconvertDate", (DL_FUNC)&convertDate, -1},
+{"Cnotchin", (DL_FUNC)&notchin, -1},
 {NULL, NULL, 0}
 };
 
@@ -235,7 +151,7 @@ R_ExternalMethodDef externalMethods[] = {
 {NULL, NULL, 0}
 };
 
-static void setSizes() {
+static void setSizes(void) {
   for (int i=0; i<100; ++i) { __sizes[i]=0; __typeorder[i]=0; }
   // only these types are currently allowed as column types :
   __sizes[LGLSXP] =  sizeof(int);       __typeorder[LGLSXP] =  0;
@@ -368,6 +284,7 @@ void attribute_visible R_init_data_table(DllInfo *info)
   sym_old_fread_datetime_character = install("datatable.old.fread.datetime.character");
   sym_variable_table = install("variable_table");
   sym_alloccol = install("datatable.alloccol");
+  sym_as_character = install("as.character");
 
   initDTthreads();
   avoid_openmp_hang_within_fork();
@@ -395,7 +312,7 @@ inline double LLtoD(long long x) {
   return u.d;
 }
 
-int GetVerbose() {
+int GetVerbose(void) {
   // don't call repetitively; save first in that case
   SEXP opt = GetOption(sym_verbose, R_NilValue);
   if ((!isLogical(opt) && !isInteger(opt)) || LENGTH(opt)!=1 || INTEGER(opt)[0]==NA_INTEGER)
@@ -404,7 +321,7 @@ int GetVerbose() {
 }
 
 // # nocov start
-SEXP hasOpenMP() {
+SEXP hasOpenMP(void) {
   // Just for use by onAttach (hence nocov) to avoid an RPRINTF from C level which isn't suppressable by CRAN
   // There is now a 'grep' in CRAN_Release.cmd to detect any use of RPRINTF in init.c, which is
   // why RPRINTF is capitalized in this comment to avoid that grep.
@@ -417,6 +334,16 @@ SEXP hasOpenMP() {
 }
 // # nocov end
 
+SEXP beforeR340(void) {
+  // used in onAttach.R for message about fread memory leak fix needing R 3.4.0
+  // at C level to catch if user upgrades R but does not reinstall data.table
+  #if defined(R_VERSION) && R_VERSION<R_Version(3,4,0)
+  return ScalarLogical(true);
+  #else
+  return ScalarLogical(false);
+  #endif
+}
+
 extern int *_Last_updated;  // assign.c
 
 SEXP initLastUpdated(SEXP var) {
@@ -425,8 +352,8 @@ SEXP initLastUpdated(SEXP var) {
   return R_NilValue;
 }
 
-SEXP dllVersion() {
+SEXP dllVersion(void) {
   // .onLoad calls this and checks the same as packageVersion() to ensure no R/C version mismatch, #3056
-  return(ScalarString(mkChar("1.14.1")));
+  return(ScalarString(mkChar("1.14.7")));
 }
 

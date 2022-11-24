@@ -21,7 +21,7 @@ Use the \code{by}, \code{by.x} and \code{by.y} arguments explicitly to override 
 \method{merge}{data.table}(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FALSE,
 all.x = all, all.y = all, sort = TRUE, suffixes = c(".x", ".y"), no.dups = TRUE,
 allow.cartesian=getOption("datatable.allow.cartesian"),  # default FALSE
-\dots)
+incomparables = NULL, \dots)
 }
 
 \arguments{
@@ -51,6 +51,7 @@ fashion as the \code{\link{merge.data.frame}} method does.}
 non-\code{by.y} column names in \code{y} when they have the same column name
 as any \code{by.x}.}
 \item{allow.cartesian}{See \code{allow.cartesian} in \code{\link{[.data.table}}.}
+\item{incomparables}{values which cannot be matched and therefore are excluded from by columns.}
 \item{\dots}{Not used at this time.}
 }
 
@@ -125,6 +126,12 @@ setnames(d2, "a", "b")
 merge(d1, d2, by.x="a", by.y="b")
 merge(d1, d2, by.x="a", by.y="b", all=TRUE)
 merge(d2, d1, by.x="b", by.y="a")
+
+# using incomparables values
+d1 <- data.table(a=c(1,2,NA,NA,3,1), z=1:6)
+d2 <- data.table(a=c(1,2,NA), z=10:12)
+merge(d1, d2, by="a")
+merge(d1, d2, by="a", incomparables=NA)
 }
 
 \keyword{ data }
