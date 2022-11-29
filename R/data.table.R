@@ -2258,7 +2258,7 @@ dimnames.data.table = function(x) {
 {
   # Support names<- on a data.table the best we can so that names<- works for non-data.table-aware packages 
   #   i) if a key or index column is having its name changed, update the sorted/index attribute which setnames() does
-  #  ii) restore over-allocatation because R drops overallocation in subassign via *tmp* before this method is reached
+  #  ii) restore over-allocation because R drops overallocation in subassign via *tmp* before this method is reached
   # If call is names(DT)[2]="newname", R will call this names<-.data.table function (notice no i) with 'value' already prepared to be same length as ncol
   x = .shallow(x, retain.key=TRUE) # `names<-` (i.e. no subassign) should not modify by reference in R 3.1.0+. Related to #1015, #476 and #825.
   # TO DO: ********** optional warning when cedta() *************
