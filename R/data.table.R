@@ -1748,7 +1748,8 @@ replace_dot_alias = function(e) {
           #                       ^^ base::startWith errors on NULL unfortunately
           if (length(q)>=2L && q[[1L]] == "shift") {
             q_named = match.call(shift, q)
-            if (!is.call(q_named[["fill"]]) && is.null(q_named[["give.names"]])) return(TRUE)
+            vars = all.vars(q_named)
+            if (!is.call(q_named[["fill"]]) && is.null(q_named[["give.names"]]) && (length(vars) == 0L || !any(vars %chin% ls(envir=parent.frame()))) ) return(TRUE)
           }
           if (length(q)>=3L && q[[1L]] == "weighted.mean") return(TRUE)  #3977
           # otherwise there must be three arguments
