@@ -3,6 +3,13 @@
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 // raise(SIGINT);
 
+bool any_NA_int(int N_data, int *idx){
+  for (int data_i=0; data_i<N_data; ++data_i) {
+    if(idx[data_i] == NA_INTEGER)return true;
+  }
+  return false;
+}  
+
 // TO DO: margins
 SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fill, SEXP fill_d, SEXP is_agg) {
   int nrows=INTEGER(nrowArg)[0], ncols=INTEGER(ncolArg)[0];
@@ -15,19 +22,13 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
     SET_VECTOR_ELT(ans, i, VECTOR_ELT(lhs, i));
   }
   // get val cols
+  bool some_fill = any_NA_int(nrows*ncols, idx);
   for (int i=0; i<nval; ++i) {
     SEXP thiscol = VECTOR_ELT(val, i);
     SEXP thisfill = fill;
     SEXPTYPE thistype = TYPEOF(thiscol);
     int nprotect = 0;
-    int nfill = 0;
-    for (int j=0; j<ncols; ++j) {
-      for (int k=0; k<nrows; ++k) {
-	int thisidx = idx[k*ncols + j];
-	if(thisidx == NA_INTEGER)nfill++;
-      }
-    }
-    if(0 < nfill){
+    if(some_fill){
       if (isNull(fill)) {
 	if (LOGICAL(is_agg)[0]) {
 	  thisfill = PROTECT(allocNAVector(thistype, 1)); nprotect++;
