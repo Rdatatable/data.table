@@ -561,7 +561,7 @@
     identical(DT1, DT2)                  # TRUE
     ```
 
-55. `dcast(fill=NULL)` only computes default fill value if necessary, which eliminates some previous warnings which were potentially confusing, [#5512](https://github.com/Rdatatable/data.table/issues/5512). Thanks to Toby Dylan Hocking for the PR.
+55. `dcast(fill=NULL)` only computes default fill value if necessary, which eliminates some previous warnings (for example, when fun.aggregate=min or max, warning was NAs introduced by coercion to integer range) which were potentially confusing, [#5512](https://github.com/Rdatatable/data.table/issues/5512). Thanks to Toby Dylan Hocking for the PR.
 
 ## NOTES
 
