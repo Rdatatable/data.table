@@ -43,11 +43,12 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
     case LGLSXP: {
       for (int j=0; j<ncols; ++j) {
         SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(thistype, nrows) );
+	const int *ithiscol = INTEGER(thiscol);
         int *itarget = INTEGER(target);
         copyMostAttrib(thiscol, target);
         for (int k=0; k<nrows; ++k) {
           int thisidx = idx[k*ncols + j];
-          itarget[k] = (thisidx == NA_INTEGER) ? INTEGER(thisfill)[0] : INTEGER(thiscol)[thisidx-1];
+          itarget[k] = (thisidx == NA_INTEGER) ? INTEGER(thisfill)[0] : ithiscol[thisidx-1];
         }
       }
     } break;
