@@ -406,3 +406,18 @@ SEXP startsWithAny(const SEXP x, const SEXP y, SEXP start) {
   return ScalarLogical(false);
 }
 
+SEXP dataptrLoop(const SEXP x, const SEXP type) {
+  int itype = INTEGER(type)[0];
+  int len = LENGTH(x);
+  if (itype==1) {
+    int *xp = INTEGER(x);
+    for (int i=0; i<len; ++i)
+      if (xp[i] == NA_INTEGER)
+        return ScalarInteger(0);
+  } else if (itype==2) {
+    for (int i=0; i<len; ++i)
+      if (INTEGER(x)[i] == NA_INTEGER)
+        return ScalarInteger(0);
+  }
+  return ScalarInteger(1);
+}

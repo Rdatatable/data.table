@@ -140,6 +140,7 @@ R_CallMethodDef callMethods[] = {
 {"CstartsWithAny", (DL_FUNC)&startsWithAny, -1},
 {"CconvertDate", (DL_FUNC)&convertDate, -1},
 {"Cnotchin", (DL_FUNC)&notchin, -1},
+{"CdataptrLoop", (DL_FUNC) &dataptrLoop, -1},
 {NULL, NULL, 0}
 };
 

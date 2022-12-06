@@ -336,4 +336,4 @@ SEXP dt_zlib_version(void);
 SEXP startsWithAny(SEXP, SEXP, SEXP);
 SEXP convertDate(SEXP, SEXP);
 SEXP fastmean(SEXP);
-
+SEXP dataptrLoop(SEXP, SEXP);

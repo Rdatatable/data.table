@@ -166,3 +166,7 @@ rss = function() {  #5515 #5517
   # nocov end
 }
 
+dataptrLoop = function(x, type) {
+  stopifnot(is.integer(x), is.integer(type))
+  .Call(CdataptrLoop, x, type)
+}
