@@ -41,36 +41,44 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
     switch (thistype) {
     case INTSXP:
     case LGLSXP: {
+      const int *ithiscol = INTEGER(thiscol);
+      const int *ithisfill = 0;
+      if (some_fill) ithisfill = INTEGER(thisfill);
       for (int j=0; j<ncols; ++j) {
         SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(thistype, nrows) );
-	const int *ithiscol = INTEGER(thiscol);
         int *itarget = INTEGER(target);
         copyMostAttrib(thiscol, target);
         for (int k=0; k<nrows; ++k) {
           int thisidx = idx[k*ncols + j];
-          itarget[k] = (thisidx == NA_INTEGER) ? INTEGER(thisfill)[0] : ithiscol[thisidx-1];
+          itarget[k] = (thisidx == NA_INTEGER) ? ithisfill[0] : ithiscol[thisidx-1];
         }
       }
     } break;
     case REALSXP: {
+      const double *dthiscol = REAL(thiscol);
+      const double *dthisfill = 0;
+      if (some_fill) dthisfill = REAL(thisfill);
       for (int j=0; j<ncols; ++j) {
         SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(thistype, nrows) );
         double *dtarget = REAL(target);
         copyMostAttrib(thiscol, target);
         for (int k=0; k<nrows; ++k) {
           int thisidx = idx[k*ncols + j];
-          dtarget[k] = (thisidx == NA_INTEGER) ? REAL(thisfill)[0] : REAL(thiscol)[thisidx-1];
+          dtarget[k] = (thisidx == NA_INTEGER) ? dthisfill[0] : dthiscol[thisidx-1];
         }
       }
     } break;
     case CPLXSXP: {
+      const Rcomplex *zthiscol = COMPLEX(thiscol);
+      const Rcomplex *zthisfill = 0;
+      if (some_fill) zthisfill = COMPLEX(thisfill);
       for (int j=0; j<ncols; ++j) {
         SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(thistype, nrows) );
         Rcomplex *ztarget = COMPLEX(target);
         copyMostAttrib(thiscol, target);
         for (int k=0; k<nrows; ++k) {
           int thisidx = idx[k*ncols + j];
-          ztarget[k] = (thisidx == NA_INTEGER) ? COMPLEX(thisfill)[0] : COMPLEX(thiscol)[thisidx-1];
+          ztarget[k] = (thisidx == NA_INTEGER) ? zthisfill[0] : zthiscol[thisidx-1];
         }
       }
     } break;
