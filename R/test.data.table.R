@@ -422,6 +422,8 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     setattr(yc,"row.names",NULL)
     setattr(xc,"index",NULL)   # too onerous to create test RHS with the correct index as well, just check result
     setattr(yc,"index",NULL)
+    setattr(xc,".internal.selfref",NULL)   # test 2212
+    setattr(yc,".internal.selfref",NULL)
     setattr(xc,"allow.assign.inplace",NULL)  # Following the discussion here: https://github.com/Rdatatable/data.table/pull/4978#pullrequestreview-656062798
     setattr(yc,"allow.assign.inplace",NULL)
     if (identical(xc,yc) && identical(key(x),key(y))) return(TRUE)  # check key on original x and y because := above might have cleared it on xc or yc
