@@ -14047,7 +14047,7 @@ test(1984.242, na.omit(data.table(A=c(1,NA,2)), cols=character()), data.table(A=
 test(1984.25, rbindlist(list(DT[1L], DT[2L]), idcol = TRUE), data.table(.id=1:2, a=1:2))
 test(1984.26, setalloccol(`*tmp*`), error='setalloccol attempting to modify `*tmp*`')
 DF = as.data.frame(DT)
-test(1984.27, shallow(DF), DF)  # shallow (which is not exported) works on DF from v1.14.2
+test(1984.27, identical(shallow(DF), DF), TRUE)  # shallow (which is not exported) works on DF from v1.14.2
 test(1984.28, split.data.table(DF), error='argument must be a data.table')
 test(1984.29, split(DT, by='a', f='a'), error="passing 'f' argument together with 'by' is not allowed")
 test(1984.30, split(DT), error="Either 'by' or 'f' argument must be supplied")
