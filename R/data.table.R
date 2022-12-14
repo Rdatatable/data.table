@@ -1766,13 +1766,13 @@ replace_dot_alias = function(e) {
             for (ii in seq_along(jsub)[-1L]) {
               if (dotN(jsub[[ii]])) next; # For #334
               jsub[[ii]][[1L]] = as.name(paste0("g", jsub[[ii]][[1L]]))
-              if (length(jsub[[ii]])>=3L && is.symbol(jsub[[ii]][[3L]]) && !(jsub[[ii]][[3L]] %chin% sdvars)) jsub[[ii]][[3L]] = eval(jsub[[ii]][[3L]], parent.frame())  # tests 1187.2 & 1187.4
+              if (length(jsub[[ii]])==3L && is.symbol(jsub[[ii]][[3L]]) && !(jsub[[ii]][[3L]] %chin% sdvars) && exists(jsub[[ii]][[3L]], parent.frame())) jsub[[ii]][[3L]] = eval(jsub[[ii]][[3L]], parent.frame())  # tests 1187.2 & 1187.4
             }
           else {
             # adding argument to ghead/gtail if none is supplied to g-optimized head/tail
             if (length(jsub) == 2L && jsub[[1L]] %chin% c("head", "tail")) jsub[["n"]] = 6L
             jsub[[1L]] = as.name(paste0("g", jsub[[1L]]))
-            if (length(jsub)>=3L && is.symbol(jsub[[3L]]) && !(jsub[[3L]] %chin% sdvars)) jsub[[3L]] = eval(jsub[[3L]], parent.frame())   # tests 1187.3 & 1187.5
+            if (length(jsub)==3L && is.symbol(jsub[[3L]]) && !(jsub[[3L]] %chin% sdvars) && exists(jsub[[3L]], parent.frame())) jsub[[3L]] = eval(jsub[[3L]], parent.frame())   # tests 1187.3 & 1187.5
           }
           if (verbose) catf("GForce optimized j to '%s'\n", deparse(jsub, width.cutoff=200L, nlines=1L))
         } else if (verbose) catf("GForce is on, left j unchanged\n");
