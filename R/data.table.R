@@ -1849,13 +1849,7 @@ replace_dot_alias = function(e) {
     if (use.I) assign(".I", seq_len(nrow(x)), thisEnv)
     ans = gforce(thisEnv, jsub, o__, f__, len__, irows) # irows needed for #971.
     gi = if (length(o__)) o__[f__] else f__
-    g = lapply(grpcols, function(i) groups[[i]][gi])
-    cl = lapply(groups, class) 
-    if (vapply_1b(cl, function(x) length(x)>1L)) { # copy classes for grouping variables #5567
-      for (i in seq_along(g)) {
-        setattr(g[[i]], 'class', cl[[i]])
-      }
-    }
+    g = lapply(grpcols, function(i) .Call(CsubsetVector, groups[[i]], gi)) # use CsubsetVector instead of [ since this preserves attributes #5567
 
     # returns all rows instead of one per group
     nrow_funs = c("gshift")
