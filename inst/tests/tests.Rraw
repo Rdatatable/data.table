@@ -18097,5 +18097,9 @@ test(2238.9, NA %notin% c(1:5, NA), FALSE)
 
 # GForce drops classes in by arguments #5567
 dt = data.table(a=letters[1:4], b=structure(1:4, class = c("class_b", "integer")), c=structure(c(1L,2L,1L,2L), class = c("class_c", "integer")))
-test(2239.1, dt[, .N, b], data.table(b=dt$b, N=1L))
-test(2239.2, dt[, .N, .(b,c)], data.table(b=dt$b, c=dt$c, N=1L))
+options(datatable.optimize=0)
+test(2239.1, dt[, .N, b], data.table(b=dt$b, N=1L),  output="GForce FALSE")
+test(2239.2, dt[, .N, .(b,c)], data.table(b=dt$b, c=dt$c, N=1L), output="GForce FALSE")
+options(datatable.optimize=Inf)
+test(2239.3, dt[, .N, b], data.table(b=dt$b, N=1L),  output="GForce TRUE")
+test(2239.4, dt[, .N, .(b,c)], data.table(b=dt$b, c=dt$c, N=1L), output="GForce TRUE")
