@@ -296,6 +296,7 @@
 
 42. `tables()` is faster by default by excluding the size of character strings in R's global cache (which may be shared) and excluding the size of list column items (which also may be shared). `mb=` now accepts any function which accepts a `data.table` and returns a higher and better estimate of its size in bytes, albeit more slowly; e.g. `mb = utils::object.size`.
 
+43. `rbind` and `rbindlist` gained new argument `retain.attr` for retaining attributes of first object in list/call, [#5569](https://github.com/Rdatatable/data.table/issues/5569). Thanks to @cthombor for reporting and Benjamin Schwendinger for the PR.
 ## BUG FIXES
 
 1. `by=.EACHI` when `i` is keyed but `on=` different columns than `i`'s key could create an invalidly keyed result, [#4603](https://github.com/Rdatatable/data.table/issues/4603) [#4911](https://github.com/Rdatatable/data.table/issues/4911). Thanks to @myoung3 and @adamaltmejd for reporting, and @ColeMiller1 for the PR. An invalid key is where a `data.table` is marked as sorted by the key columns but the data is not sorted by those columns, leading to incorrect results from subsequent queries.
@@ -1327,7 +1328,6 @@ has a better chance of working on Mac.
 
 46. Adding a `list` column containing an item of type `list` to a one row `data.table` could fail, [#3626](https://github.com/Rdatatable/data.table/issues/3626). Thanks to Jakob Richter for reporting.
 
-47. `rbind` and `rbindlist` silently dropped attributes of all arguments, now attributes of first input argument are retained, [#5569](https://github.com/Rdatatable/data.table/issues/5569). Thanks to @cthombor for reporting and Benjamin Schwendinger for the fix.
 ## NOTES
 
 1. `rbindlist`'s `use.names="check"` now emits its message for automatic column names (`"V[0-9]+"`) too, [#3484](https://github.com/Rdatatable/data.table/pull/3484). See news item 5 of v1.12.2 below.
