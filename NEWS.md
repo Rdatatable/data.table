@@ -1327,6 +1327,7 @@ has a better chance of working on Mac.
 
 46. Adding a `list` column containing an item of type `list` to a one row `data.table` could fail, [#3626](https://github.com/Rdatatable/data.table/issues/3626). Thanks to Jakob Richter for reporting.
 
+47. `rbind` and `rbindlist` silently dropped attributes of all arguments, now arguments of first input argument are retained, [#5569](https://github.com/Rdatatable/data.table/issues/5569). Thanks to @cthombor for reporting and Benjamin Schwendinger for the fix.
 ## NOTES
 
 1. `rbindlist`'s `use.names="check"` now emits its message for automatic column names (`"V[0-9]+"`) too, [#3484](https://github.com/Rdatatable/data.table/pull/3484). See news item 5 of v1.12.2 below.

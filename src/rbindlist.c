@@ -527,6 +527,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
       }
     }
   }
+  copyMostAttrib(VECTOR_ELT(l, 0), ans); // # 5569 preserve attributes of first object in l (length(l)>0 checked at start)
   UNPROTECT(nprotect);  // ans, coercedForFactor, thisCol
   return(ans);
 }
