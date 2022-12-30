@@ -7,7 +7,7 @@
   Same as \code{do.call("rbind", l)} on \code{data.frame}s, but much faster.
 }
 \usage{
-rbindlist(l, use.names="check", fill=FALSE, idcol=NULL)
+rbindlist(l, use.names="check", fill=FALSE, idcol=NULL, ignore.attr=FALSE)
 # rbind(..., use.names=TRUE, fill=FALSE, idcol=NULL)
 }
 \arguments{
