@@ -2,16 +2,19 @@
 #include <Rdefines.h>
 #include <ctype.h>   // for isdigit
 
-SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
+SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignoreattrArg)
 {
   if (!isLogical(fillArg) || LENGTH(fillArg) != 1 || LOGICAL(fillArg)[0] == NA_LOGICAL)
     error(_("fill= should be TRUE or FALSE"));
   if (!isLogical(usenamesArg) || LENGTH(usenamesArg)!=1)
     error(_("use.names= should be TRUE, FALSE, or not used (\"check\" by default)"));  // R levels converts "check" to NA
+  if (!isLogical(ignoreattrArg) || LENGTH(ignoreattrArg)!=1)
+    error(_("ignore.attr= should be TRUE or FALSE"));
   if (!length(l)) return(l);
   if (TYPEOF(l) != VECSXP) error(_("Input to rbindlist must be a list. This list can contain data.tables, data.frames or plain lists."));
   Rboolean usenames = LOGICAL(usenamesArg)[0];
   const bool fill = LOGICAL(fillArg)[0];
+  const bool ignoreatt = LOGICAL(ignoreattrArg)[0];
   if (fill && usenames==NA_LOGICAL) {
     usenames=TRUE;
   }
@@ -322,8 +325,8 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
         if (!factor && !int64 && ((!date && !posixct) || (date && posixct)) && !itime &!asis) { // prohibit binding of date and posixct
           if (!R_compute_identical(PROTECT(getAttrib(thisCol, R_ClassSymbol)),
                                    PROTECT(getAttrib(firstCol, R_ClassSymbol)),
-                                   0)) {
-            error(_("Class attribute on column %d of item %d does not match with column %d of item %d."), w+1, i+1, firstw+1, firsti+1);
+                                   0) && !ignoreatt) {
+            error(_("Class attribute on column %d of item %d does not match with column %d of item %d. You can deactivate this safety-check by using ignore.attr=TRUE"), w+1, i+1, firstw+1, firsti+1);
           }
           UNPROTECT(2);
         }
