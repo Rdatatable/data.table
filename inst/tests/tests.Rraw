@@ -14330,6 +14330,7 @@ test(2003.4, rbindlist(list(data.table(a=1:2,c=5:6), data.table(b=3:4)), fill=TR
              data.table(a=c(1:4), c=INT(5,6,NA,NA)))
 test(2003.5, rbindlist(list(data.table(a=1:2), data.table(b=3:4, c=5:6)), fill=TRUE, use.names=FALSE),
              data.table(a=c(1:4), V1=INT(NA,NA,5,6)))
+test(2003.6, rbindlist(list(), ignore.attr=1), error="ignore.attr= should be TRUE or FALSE")
 
 # chmatch coverage for two different non-ascii encodings matching; issues mentioned in comments in chmatch.c #69 #2538 #111
 x1 = "fa\xE7ile"
