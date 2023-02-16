@@ -26,7 +26,7 @@ SEXP nqRecreateIndices(SEXP xo, SEXP len, SEXP indices, SEXP nArg, SEXP nomatch)
   // TODO: revisit to see if this be simplified further when I've some time.
   R_len_t j=0, tmp=0;
   for (int i=0; i<n; ++i) {
-    if (ixo[j] <= 0 || j >= xn) {
+    if (j>=xn || ixo[j]<=0) {
       // NA_integer_ = INT_MIN is checked in init.c
       // j >= xn needed for special nomatch=0L case, see issue#4388 (due to xo[irows] from R removing '0' value in xo)
       inewstarts[i] = inomatch[0];
