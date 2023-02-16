@@ -613,11 +613,11 @@
 
 # data.table [v1.14.8](https://github.com/Rdatatable/data.table/milestone/28?closed=1)
 
-## BUG FIXES
-
 ## NOTES
 
 1. Test 1613.605 now passes changes to `as.data.frame()` in R-devel, [#5597](https://github.com/Rdatatable/data.table/pull/5597). Thanks to Avraham Adler for reporting.
+
+2. An out of bounds read when combining non-equi join with `by=.EACHI` has been found and fixed thanks to clang ASAN, [#5598](https://github.com/Rdatatable/data.table/issues/5598). There was no bug or consequence because the read was followed (now preceded) by a bounds test.
 
 
 # data.table [v1.14.6](https://github.com/Rdatatable/data.table/milestone/27?closed=1)  (16 Nov 2022)
