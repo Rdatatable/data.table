@@ -335,6 +335,6 @@ SEXP initLastUpdated(SEXP var) {
 
 SEXP dllVersion(void) {
   // .onLoad calls this and checks the same as packageVersion() to ensure no R/C version mismatch, #3056
-  return(ScalarString(mkChar("1.14.6")));
+  return(ScalarString(mkChar("1.14.8")));
 }
 
