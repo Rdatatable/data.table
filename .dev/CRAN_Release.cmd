@@ -195,15 +195,15 @@ R CMD build .
 export GITHUB_PAT="f1c.. github personal access token ..7ad"
 # avoids many too-many-requests in --as-cran's ping-all-URLs step (20 mins) inside the `checking CRAN incoming feasibility...` step.
 # Many thanks to Dirk for the tipoff that setting this env variable solves the problem, #4832.
-R CMD check data.table_1.14.7.tar.gz --as-cran
-R CMD INSTALL data.table_1.14.7.tar.gz --html
+R CMD check data.table_1.14.9.tar.gz --as-cran
+R CMD INSTALL data.table_1.14.9.tar.gz --html
 
 # Test C locale doesn't break test suite (#2771)
 echo LC_ALL=C > ~/.Renviron
 R
 Sys.getlocale()=="C"
 q("no")
-R CMD check data.table_1.14.7.tar.gz
+R CMD check data.table_1.14.9.tar.gz
 rm ~/.Renviron
 
 # Test non-English does not break test.data.table() due to translation of messages; #3039, #630
@@ -220,9 +220,9 @@ q("no")
 
 # User supplied PKG_CFLAGS and PKG_LIBS passed through, #4664
 # Next line from https://mac.r-project.org/openmp/. Should see the arguments passed through and then fail with gcc on linux.
-PKG_CFLAGS='-Xclang -fopenmp' PKG_LIBS=-lomp R CMD INSTALL data.table_1.14.7.tar.gz
+PKG_CFLAGS='-Xclang -fopenmp' PKG_LIBS=-lomp R CMD INSTALL data.table_1.14.9.tar.gz
 # Next line should work on Linux, just using superfluous and duplicate but valid parameters here to see them retained and work 
-PKG_CFLAGS='-fopenmp' PKG_LIBS=-lz R CMD INSTALL data.table_1.14.7.tar.gz
+PKG_CFLAGS='-fopenmp' PKG_LIBS=-lz R CMD INSTALL data.table_1.14.9.tar.gz
 
 R
 remove.packages("xml2")    # we checked the URLs; don't need to do it again (many minutes)
@@ -266,7 +266,7 @@ alias R310=~/build/R-3.1.0/bin/R
 ### END ONE TIME BUILD
 
 cd ~/GitHub/data.table
-R310 CMD INSTALL ./data.table_1.14.7.tar.gz
+R310 CMD INSTALL ./data.table_1.14.9.tar.gz
 R310
 require(data.table)
 test.data.table(script="*.Rraw")
@@ -278,7 +278,7 @@ test.data.table(script="*.Rraw")
 vi ~/.R/Makevars
 # Make line SHLIB_OPENMP_CFLAGS= active to remove -fopenmp
 R CMD build .
-R CMD INSTALL data.table_1.14.7.tar.gz   # ensure that -fopenmp is missing and there are no warnings
+R CMD INSTALL data.table_1.14.9.tar.gz   # ensure that -fopenmp is missing and there are no warnings
 R
 require(data.table)   # observe startup message about no OpenMP detected
 test.data.table()
@@ -286,7 +286,7 @@ q("no")
 vi ~/.R/Makevars
 # revert change above
 R CMD build .
-R CMD check data.table_1.14.7.tar.gz
+R CMD check data.table_1.14.9.tar.gz
 
 
 #####################################################
@@ -320,7 +320,7 @@ make
 
 cd ~/build/R-devel-strict-gcc
 # gcc-10 failed to build R-devel at some point, so using regular gcc-9 (9.3.0 as per focal/Pop!_OS 20.04)
-./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --enable-strict-barrier --disable-long-double CC="gcc-9 -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer"
+./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --enable-strict-barrier --disable-long-double CC="gcc-11 -fsanitize=undefined,address -fno-sanitize=float-divide-by-zero -fno-omit-frame-pointer"
 make
 
 # See R-exts#4.3.3
@@ -341,11 +341,11 @@ alias Rdevel-strict-gcc='~/build/R-devel-strict-gcc/bin/R --vanilla'
 alias Rdevel-strict-clang='~/build/R-devel-strict-clang/bin/R --vanilla'
 
 cd ~/GitHub/data.table
-Rdevel-strict-[gcc|clang] CMD INSTALL data.table_1.14.7.tar.gz
+Rdevel-strict-[gcc|clang] CMD INSTALL data.table_1.14.9.tar.gz
 # Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with them so they should be
 # passed through to here. However, our configure script seems to get in the way and gets them from {R_HOME}/bin/R
 # So I needed to edit my ~/.R/Makevars to get CFLAGS the way I needed.
-Rdevel-strict-[gcc|clang] CMD check data.table_1.14.7.tar.gz
+Rdevel-strict-[gcc|clang] CMD check data.table_1.14.9.tar.gz
 # Use the (failed) output to get the list of currently needed packages and install them
 Rdevel-strict-[gcc|clang]
 isTRUE(.Machine$sizeof.longdouble==0)  # check noLD is being tested
@@ -354,7 +354,7 @@ install.packages(c("bit64", "bit", "curl", "R.utils", "xts","nanotime", "zoo", "
                  Ncpus=4)
 # Issue #5491 showed that CRAN is running UBSAN on .Rd examples which found an error so we now run full R CMD check
 q("no")
-Rdevel-strict-[gcc|clang] CMD check data.table_1.14.7.tar.gz
+Rdevel-strict-[gcc|clang] CMD check data.table_1.14.9.tar.gz
 # UBSAN errors occur on stderr and don't affect R CMD check result. Made many failed attempts to capture them. So grep for them. 
 find data.table.Rcheck -name "*Rout*" -exec grep -H "runtime error" {} \;
 
@@ -391,7 +391,7 @@ cd R-devel-valgrind
 make
 cd ~/GitHub/data.table
 vi ~/.R/Makevars  # make the -O2 -g line active, for info on source lines with any problems
-Rdevel-valgrind CMD INSTALL data.table_1.14.7.tar.gz
+Rdevel-valgrind CMD INSTALL data.table_1.14.9.tar.gz
 R_DONT_USE_TK=true Rdevel-valgrind -d "valgrind --tool=memcheck --leak-check=full --track-origins=yes --show-leak-kinds=definite,possible --gen-suppressions=all --suppressions=./.dev/valgrind.supp -s"
 # the default for --show-leak-kinds is 'definite,possible' which we're setting explicitly here as a reminder. CRAN uses the default too.
 #   including 'reachable' (as 'all' does) generates too much output from R itself about by-design permanent blocks
@@ -429,7 +429,7 @@ cd ~/build/rchk/trunk
 . ../scripts/config.inc
 . ../scripts/cmpconfig.inc
 vi ~/.R/Makevars   # set CFLAGS=-O0 -g so that rchk can provide source line numbers
-echo 'install.packages("~/GitHub/data.table/data.table_1.14.7.tar.gz",repos=NULL)' | ./bin/R --slave
+echo 'install.packages("~/GitHub/data.table/data.table_1.14.9.tar.gz",repos=NULL)' | ./bin/R --slave
 # objcopy warnings (if any) can be ignored: https://github.com/kalibera/rchk/issues/17#issuecomment-497312504
 . ../scripts/check_package.sh data.table
 cat packages/lib/data.table/libs/*check
@@ -594,7 +594,7 @@ du -k inst/tests                # 0.75MB after
 R CMD build .
 export GITHUB_PAT="f1c.. github personal access token ..7ad"
 Rdevel -q -e "packageVersion('xml2')"   # ensure installed
-Rdevel CMD check data.table_1.14.8.tar.gz --as-cran  # use latest Rdevel as it may have extra checks
+Rdevel CMD check data.table_1.14.10.tar.gz --as-cran  # use latest Rdevel as it may have extra checks
 #
 bunzip2 inst/tests/*.Rraw.bz2  # decompress *.Rraw again so as not to commit compressed *.Rraw to git
 #
@@ -621,8 +621,8 @@ When CRAN's email contains "Pretest results OK pending a manual inspection" (or 
 3. Add new heading in NEWS for the next dev version. Add "(submitted to CRAN on <today>)" on the released heading.
 4. Bump dllVersion() in init.c
 5. Bump 3 version numbers in Makefile
-6. Search and replace this .dev/CRAN_Release.cmd to update 1.14.7 to 1.14.9 inc below, 1.14.8 to 1.14.10 above, 1.14.6 to 1.14.8 below
+6. Search and replace this .dev/CRAN_Release.cmd to update 1.14.9 to 1.14.11 inc below, 1.14.10 to 1.14.12 above, 1.14.8 to 1.14.10 below
 7. Another final gd to view all diffs using meld. (I have `alias gd='git difftool &> /dev/null'` and difftool meld: http://meldmerge.org/)
-8. Push to master with this consistent commit message: "1.14.6 on CRAN. Bump to 1.14.7"
-9. Take sha from step 8 and run `git tag 1.14.6 96c..sha..d77` then `git push origin 1.14.6` (not `git push --tags` according to https://stackoverflow.com/a/5195913/403310)
+8. Push to master with this consistent commit message: "1.14.8 on CRAN. Bump to 1.14.10"
+9. Take sha from step 8 and run `git tag 1.14.8 96c..sha..d77` then `git push origin 1.14.8` (not `git push --tags` according to https://stackoverflow.com/a/5195913/403310)
 ######
