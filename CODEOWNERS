@@ -1,0 +1,5 @@
+#https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+* @mattdowle
+/R/fmelt.R @tdhock
+/src/fmelt.c @tdhock
+/man/melt.data.table.Rd @tdhock
