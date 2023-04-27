@@ -12,3 +12,10 @@
 /man/substitute2.Rd @jangorecki
 /src/programming.c @jangorecki
 /vignettes/datatable-programming.Rmd @jangorecki
+/src/gsumm.c @ben-schwen
+/R/IDateTime.R @ben-schwen
+/src/idatetime.c @ben-schwen
+/man/IDateTime.Rd @ben-schwen
+/R/shift.R @ben-schwen
+/src/shift.c @ben-schwen
+/man/shift.Rd @ben-schwen
