@@ -3,3 +3,8 @@
 /R/fmelt.R @tdhock
 /src/fmelt.c @tdhock
 /man/melt.data.table.Rd @tdhock
+/R/froll.R @jangorecki
+/man/froll.Rd @jangorecki
+/src/froll.c @jangorecki
+/src/frollR.c @jangorecki
+/src/frolladaptive.c @jangorecki
