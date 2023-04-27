@@ -8,3 +8,7 @@
 /src/froll.c @jangorecki
 /src/frollR.c @jangorecki
 /src/frolladaptive.c @jangorecki
+/R/programming.R @jangorecki
+/man/substitute2.Rd @jangorecki
+/src/programming.c @jangorecki
+/vignettes/datatable-programming.Rmd @jangorecki
