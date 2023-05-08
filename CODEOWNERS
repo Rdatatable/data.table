@@ -38,5 +38,8 @@
 /R/translation.R @michaelchirico
 /src/po.h @michaelchirico
 
+# printing
+/R/print.data.table.R @michaelchirico
+
 # .SD vignette
 /vignettes/datatable-sd-usage.Rmd @michaelchirico
