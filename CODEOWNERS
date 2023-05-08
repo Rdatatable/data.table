@@ -1,4 +1,4 @@
-#https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 * @mattdowle
 
 # melt
@@ -31,3 +31,12 @@
 /R/shift.R @ben-schwen
 /src/shift.c @ben-schwen
 /man/shift.Rd @ben-schwen
+
+# translations
+/inst/po/ @michaelchirico
+/po/ @michaelchirico
+/R/translation.R @michaelchirico
+/src/po.h @michaelchirico
+
+# .SD vignette
+/vignettes/datatable-sd-usage.Rmd @michaelchirico
