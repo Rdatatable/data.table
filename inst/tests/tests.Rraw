@@ -12902,8 +12902,8 @@ test(1914.04, dt.s4.list, as.list(dt))  # Underlying data not identical
 # simple S4 conversion-isms work
 df = data.frame(a=sample(letters, 10), b=1:10)
 dt = as.data.table(df)
-test(1914.05, identical(as(df, 'data.table'), dt))
-test(1914.06, identical(as(dt, 'data.frame'), df))
+test(1914.05, identical(methods::as(df, 'data.table'), dt))
+test(1914.06, identical(methods::as(dt, 'data.frame'), df))
 # data.table can be used in an S4 slot
 dt <- data.table(a=sample(letters[1:3], 10, replace=TRUE), score=rnorm(10))
 dt.comp <- new("S4Composition", data=dt)
