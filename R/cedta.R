@@ -42,6 +42,9 @@ cedta = function(n=2L) {
   if (isTRUE(env$.datatable.aware)) {  # dtplyr 184
     return(TRUE)
   }
+  if (isFALSE(env$.datatable.aware)) {  #5654
+    return(FALSE)
+  }
   ns = topenv(env)
   if (!isNamespace(ns)) {
     # e.g. DT queries at the prompt (.GlobalEnv) and knitr's eval(,envir=globalenv()) but not DF[...] inside knitr::kable v1.6
