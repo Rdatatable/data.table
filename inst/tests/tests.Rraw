@@ -16567,6 +16567,7 @@ test(2128.2, names(DT[, .SD, .SDcols=!is.numeric]), 'c')
 test(2128.3, DT[, .SD, .SDcols=function(x) x==1], error='conditions were not met for: [a, b, c]')
 test(2128.4, DT[, .SD, .SDcols=function(x) 2L],   error='conditions were not met for: [a, b, c]')
 test(2128.5, DT[, .SD, .SDcols=function(x) NA],   error='conditions were not met for: [a, b, c]')
+test(2128.6, names(DT[, .SD, .SDcols=function(cols)grep('a',cols,perl=TRUE)]), 'a')
 
 # expression columns in rbindlist, #546
 A = data.table(c1 = 1, c2 = 'asd', c3 = expression(as.character(Sys.time())))
