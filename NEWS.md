@@ -296,7 +296,7 @@
 
 42. `tables()` is faster by default by excluding the size of character strings in R's global cache (which may be shared) and excluding the size of list column items (which also may be shared). `mb=` now accepts any function which accepts a `data.table` and returns a higher and better estimate of its size in bytes, albeit more slowly; e.g. `mb = utils::object.size`.
 
-43. User-defined pattern matching functions are supported for .SDcols, `.SDcols=user_patterns_fun("regexp")` where `user_patterns_fun` should have an argument named `cols` that is not provided by the user, but will be filled in with the data table column names.
+43. User-defined pattern matching functions are supported for .SDcols, `.SDcols=user_patterns_fun("regexp")` where `user_patterns_fun` should have an argument named `cols` that is not provided by the user, but will be filled in with the data table column names. Also `data.table:::patterns(perl=TRUE)` passes `perl` argument onto `grep`, #5387. Thanks to @iago-pssjd for the feature request, and @tdhock for the implementation.
 
 ## BUG FIXES
 
