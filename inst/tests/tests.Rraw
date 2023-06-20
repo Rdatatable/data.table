@@ -16574,7 +16574,7 @@ rm(patterns)
 not = function(regex, cols)grep(regex, cols, invert=TRUE)
 test(2128.7, names(DT[, .SD, .SDcols=not("[bc]")]), 'a')
 # patterns with PCRE.
-test(2128.8, names(DT[, .SD, .SDcols=patterns('^(?!W)a')],perl=TRUE), 'a')
+test(2128.8, names(DT[, .SD, .SDcols=patterns('^(?!W)a',perl=TRUE)]), 'a')
 
 # expression columns in rbindlist, #546
 A = data.table(c1 = 1, c2 = 'asd', c3 = expression(as.character(Sys.time())))
