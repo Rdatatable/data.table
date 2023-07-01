@@ -1,8 +1,6 @@
 **If you are viewing this file on CRAN, please check [latest news on GitHub](https://github.com/Rdatatable/data.table/blob/master/NEWS.md) where the formatting is also better.**
 
-**Benchmarks are regularly updated: [here](https://h2oai.github.io/db-benchmark/)**
-
-# data.table [v1.14.1](https://github.com/Rdatatable/data.table/milestone/20)  (in development)
+# data.table [v1.14.9](https://github.com/Rdatatable/data.table/milestone/20)  (in development)
 
 ## NEW FEATURES
 
@@ -99,7 +97,7 @@
 
 16. `fwrite()` now accepts `sep=""`, [#4817](https://github.com/Rdatatable/data.table/issues/4817). The motivation is an example where the result of `paste0()` needs to be written to file but `paste0()` takes 40 minutes due to constructing a very large number of unique long strings in R's global character cache. Allowing `fwrite(, sep="")` avoids the `paste0` and saves 40 mins. Thanks to Jan Gorecki for the request, and Ben Schwen for the PR.
 
-17. `data.table` printing now supports customizable methods for both columns and list column row items, part of [#1523](https://github.com/Rdatatable/data.table/issues/1523). `format_col` is S3-generic for customizing how to print whole columns; `format_list_item` is S3-generic for customizing how to print each row of a list column. Thanks to @mllg who initially filed [#3338](https://github.com/Rdatatable/data.table/pulls/3338) with the seed of the idea, @franknarf1 who earlier suggested the idea of providing custom formatters, @fparages who submitted a patch to improve the printing of timezones for [#2842](https://github.com/Rdatatable/data.table/issues/2842), @RichardRedding for pointing out an error relating to printing wide `expression` columns in [#3011](https://github.com/Rdatatable/data.table/issues/3011), and @MichaelChirico for implementing. See `?print.data.table` for examples.
+17. `data.table` printing now supports customizable methods for both columns and list column row items, part of [#1523](https://github.com/Rdatatable/data.table/issues/1523). `format_col` is S3-generic for customizing how to print whole columns and by default defers to the S3 `format` method for the column's class if one exists; e.g. `format.sfc` for geometry columns from the `sf` package, [#2273](https://github.com/Rdatatable/data.table/issues/2273). Similarly, `format_list_item` is S3-generic for customizing how to print each row of list columns (which lack a format method at a column level) and also by default defers to the S3 `format` method for that item's class if one exists. Thanks to @mllg who initially filed [#3338](https://github.com/Rdatatable/data.table/pulls/3338) with the seed of the idea, @franknarf1 who earlier suggested the idea of providing custom formatters, @fparages who submitted a patch to improve the printing of timezones for [#2842](https://github.com/Rdatatable/data.table/issues/2842), @RichardRedding for pointing out an error relating to printing wide `expression` columns in [#3011](https://github.com/Rdatatable/data.table/issues/3011), @JoshOBrien for improving the output for geometry columns, and @MichaelChirico for implementing. See `?print.data.table` for examples.
 
 18. `tstrsplit(,type.convert=)` now accepts a named list of functions to apply to each part, [#5094](https://github.com/Rdatatable/data.table/issues/5094). Thanks to @Kamgang-B for the request and implementing.
 
@@ -114,7 +112,7 @@
     ```R
     mtcars |> DT(mpg>20, .(mean_hp=mean(hp)), by=cyl)
     ```
-    
+
     When `data.table` queries (either `[...]` or `|> DT(...)`) receive a `data.table`, the operations maintain `data.table`'s attributes such as its key and any indices. For example, if a `data.table` is reordered by `data.table`, or a key column has a value changed by `:=` in `data.table`, its key and indices will either be dropped or reordered appropriately. Some `data.table` operations automatically add and store an index on a `data.table` for reuse in future queries, if `options(datatable.auto.index=TRUE)`, which is `TRUE` by default. `data.table`'s are also over-allocated, which means there are spare column pointer slots allocated in advance so that a `data.table` in the `.GlobalEnv` can have a column added to it truly by reference, like an in-memory database with multiple client sessions connecting to one server R process, as a `data.table` video has shown in the past. But because R and other packages don't maintain `data.table`'s attributes or over-allocation (e.g. a subset or reorder by R or another package will create invalid `data.table` attributes) `data.table` cannot use these attributes when it detects that base R or another package has touched the `data.table` in the meantime, even if the attributes may sometimes still be valid. So, please realize that, `DT()` on a `data.table` should realize better speed and memory usage than `DT()` on a `data.frame`. `DT()` on a `data.frame` may still be useful to use `data.table`'s syntax (e.g. sub-queries within group: `|> DT(i, .SD[sub-query], by=grp)`) without needing to convert to a `data.table` first.
 
 23. `DT[i, nomatch=NULL]` where `i` contains row numbers now excludes `NA` and any outside the range [1,nrow], [#3109](https://github.com/Rdatatable/data.table/issues/3109) [#3666](https://github.com/Rdatatable/data.table/issues/3666). Before, `NA` rows were returned always for such values; i.e. `nomatch=0|NULL` was ignored. Thanks Michel Lang and Hadley Wickham for the requests, and Jan Gorecki for the PR. Using `nomatch=0` in this case when `i` is row numbers generates the warning `Please use nomatch=NULL instead of nomatch=0; see news item 5 in v1.12.0 (Jan 2019)`.
@@ -137,7 +135,166 @@
 
 24. `DT[, head(.SD,n), by=grp]` and `tail` are now optimized when `n>1`, [#5060](https://github.com/Rdatatable/data.table/issues/5060) [#523](https://github.com/Rdatatable/data.table/issues/523#issuecomment-162934391). `n==1` was already optimized. Thanks to Jan Gorecki and Michael Young for requesting, and Benjamin Schwendinger for the PR.
 
-25 `setcolorder()` gains `before=` and `after=`, [#4385](https://github.com/Rdatatable/data.table/issues/4358). Thanks to Matthias Gomolka for the request, and both Benjamin Schwendinger and Xianghui Dong for implementing.
+25. `setcolorder()` gains `before=` and `after=`, [#4385](https://github.com/Rdatatable/data.table/issues/4358). Thanks to Matthias Gomolka for the request, and both Benjamin Schwendinger and Xianghui Dong for implementing.
+
+26. `base::droplevels()` gains a fast method for `data.table`, [#647](https://github.com/Rdatatable/data.table/issues/647). Thanks to Steve Lianoglou for requesting, Boniface Kamgang and Martin Binder for testing, and Jan Gorecki and Benjamin Schwendinger for the PR. `fdroplevels()` for use on vectors has also been added.
+
+27. `shift()` now also supports `type="cyclic"`, [#4451](https://github.com/Rdatatable/data.table/issues/4451). Arguments that are normally pushed out by `type="lag"` or `type="lead"` are re-introduced at this type at the first/last positions. Thanks to @RicoDiel for requesting, and Benjamin Schwendinger for the PR.
+
+    ```R
+    # Usage
+    shift(1:5, n=-1:1, type="cyclic")
+    # [[1]]
+    # [1] 2 3 4 5 1
+    #
+    # [[2]]
+    # [1] 1 2 3 4 5
+    #
+    # [[3]]
+    # [1] 5 1 2 3 4
+
+    # Benchmark
+    x = sample(1e9) # 3.7 GB
+    microbenchmark::microbenchmark(
+      shift(x, 1, type="cyclic"),
+      c(tail(x, 1), head(x,-1)),
+      times = 10L,
+      unit = "s"
+    )
+    # Unit: seconds
+    #                          expr  min   lq mean  median   uq  max neval
+    #  shift(x, 1, type = "cyclic") 1.57 1.67 1.71    1.68 1.70 2.03    10
+    #    c(tail(x, 1), head(x, -1)) 6.96 7.16 7.49    7.32 7.64 8.60    10
+    ```
+
+28. `fread()` now supports "0" and "1" in `na.strings`, [#2927](https://github.com/Rdatatable/data.table/issues/2927). Previously this was not permitted since "0" and "1" can be recognized as boolean values. Note that it is still not permitted to use "0" and "1" in `na.strings` in combination with `logical01 = TRUE`. Thanks to @msgoussi for the request, and Benjamin Schwendinger for the PR.
+
+29. `setkey()` now supports type `raw` as value columns (not as key columns), [#5100](https://github.com/Rdatatable/data.table/issues/5100). Thanks Hugh Parsonage for requesting, and Benjamin Schwendinger for the PR.
+
+30. `shift()` is now optimised by group, [#1534](https://github.com/Rdatatable/data.table/issues/1534). Thanks to Gerhard Nachtmann for requesting, and Benjamin Schwendinger for the PR.
+
+    ```R
+    N = 1e7
+    DT = data.table(x=sample(N), y=sample(1e6,N,TRUE))
+    shift_no_opt = shift  # different name not optimised as a way to compare
+    microbenchmark(
+      DT[, c(NA, head(x,-1)), y],
+      DT[, shift_no_opt(x, 1, type="lag"), y],
+      DT[, shift(x, 1, type="lag"), y],
+      times=10L, unit="s")
+    # Unit: seconds
+    #                                       expr     min      lq    mean  median      uq     max neval
+    #                DT[, c(NA, head(x, -1)), y]  8.7620  9.0240  9.1870  9.2800  9.3700  9.4110    10
+    #  DT[, shift_no_opt(x, 1, type = "lag"), y] 20.5500 20.9000 21.1600 21.3200 21.4400 21.5200    10
+    #         DT[, shift(x, 1, type = "lag"), y]  0.4865  0.5238  0.5463  0.5446  0.5725  0.5982    10
+    ```
+
+    Example from [stackoverflow](https://stackoverflow.com/questions/35179911/shift-in-data-table-v1-9-6-is-slow-for-many-groups)
+    ```R
+    set.seed(1)
+    mg = data.table(expand.grid(year=2012:2016, id=1:1000),
+                    value=rnorm(5000))
+    microbenchmark(v1.9.4  = mg[, c(value[-1], NA), by=id],
+                   v1.9.6  = mg[, shift_no_opt(value, n=1, type="lead"), by=id],
+                   v1.14.4 = mg[, shift(value, n=1, type="lead"), by=id],
+                   unit="ms")
+    # Unit: milliseconds
+    #     expr     min      lq    mean  median      uq    max neval
+    #   v1.9.4  3.6600  3.8250  4.4930  4.1720  4.9490 11.700   100
+    #   v1.9.6 18.5400 19.1800 21.5100 20.6900 23.4200 29.040   100
+    #  v1.14.4  0.4826  0.5586  0.6586  0.6329  0.7348  1.318   100
+    ```
+
+31. `rbind()` and `rbindlist()` now support `fill=TRUE` with `use.names=FALSE` instead of issuing the warning `use.names= cannot be FALSE when fill is TRUE. Setting use.names=TRUE.`
+
+    ```R
+    DT1
+    #        A     B
+    #    <int> <int>
+    # 1:     1     5
+    # 2:     2     6
+
+    DT2
+    #      foo
+    #    <int>
+    # 1:     3
+    # 2:     4
+
+    rbind(DT1, DT2, fill=TRUE)   # no change
+    #        A     B   foo
+    #    <int> <int> <int>
+    # 1:     1     5    NA
+    # 2:     2     6    NA
+    # 3:    NA    NA     3
+    # 4:    NA    NA     4
+
+    rbind(DT1, DT2, fill=TRUE, use.names=FALSE)
+
+    # was:
+    #        A     B   foo
+    #    <int> <int> <int>
+    # 1:     1     5    NA
+    # 2:     2     6    NA
+    # 3:    NA    NA     3
+    # 4:    NA    NA     4
+    # Warning message:
+    # In rbindlist(l, use.names, fill, idcol) :
+    #   use.names= cannot be FALSE when fill is TRUE. Setting use.names=TRUE.
+
+    # now:
+    #        A     B
+    #    <int> <int>
+    # 1:     1     5
+    # 2:     2     6
+    # 3:     3    NA
+    # 4:     4    NA
+    ```
+    
+32. `fread()` already made a good guess as to whether column names are present by comparing the type of the fields in row 1 to the type of the fields in the sample. This guess is now improved when a column contains a string in row 1 (i.e. a potential column name) but all blank in the sample rows, [#2526](https://github.com/Rdatatable/data.table/issues/2526). Thanks @st-pasha for reporting, and @ben-schwen for the PR.
+
+33. `fread()` can now read `.zip` and `.tar` directly, [#3834](https://github.com/Rdatatable/data.table/issues/3834). Moreover, if a compressed file name is missing its extension, `fread()` now attempts to infer the correct filetype from its magic bytes. Thanks to Michael Chirico for the idea, and Benjamin Schwendinger for the PR.
+
+34. `DT[, let(...)]` is a new alias for the functional form of `:=`; i.e. `DT[, ':='(...)]`, [#3795](https://github.com/Rdatatable/data.table/issues/3795). Thanks to Elio Campitelli for requesting, and Benjamin Schwendinger for the PR.
+
+    ```R
+    DT = data.table(A=1:2)
+    DT[, let(B=3:4, C=letters[1:2])]
+    DT
+    #        A     B      C
+    #    <int> <int> <char>
+    # 1:     1     3      a
+    # 2:     2     4      b
+    ```
+    
+35. `weighted.mean()` is now optimised by group, [#3977](https://github.com/Rdatatable/data.table/issues/3977). Thanks to @renkun-ken for requesting, and Benjamin Schwendinger for the PR.
+
+36. `as.xts.data.table()` now supports non-numeric xts coredata matrixes, [5268](https://github.com/Rdatatable/data.table/issues/5268). Existing numeric only functionality is supported by a new `numeric.only` parameter, which defaults to `TRUE` for backward compatability and the most common use case. To convert non-numeric columns, set this parameter to `FALSE`. Conversions of `data.table` columns to a `matrix` now uses `data.table::as.matrix`, with all its performance benefits. Thanks to @ethanbsmith for the report and fix.
+
+37. `unique.data.table()` gains `cols` to specify a subset of columns to include in the resulting `data.table`, [#5243](https://github.com/Rdatatable/data.table/issues/5243). This saves the memory overhead of subsetting unneeded columns, and provides a cleaner API for a common operation previously needing more convoluted code. Thanks to @MichaelChirico for the suggestion & implementation.
+
+38. `:=` is now optimized by group, [#1414](https://github.com/Rdatatable/data.table/issues/1414). Thanks to Arun Srinivasan for suggesting, and Benjamin Schwendinger for the PR. Thanks to @clerousset, @dcaseykc, @OfekShilon, and @SeanShao98 for testing dev and filing detailed bug reports which were fixed before release and their tests added to the test suite.
+
+39. `.I` is now available in `by` for rowwise operations, [#1732](https://github.com/Rdatatable/data.table/issues/1732). Thanks to Rafael H. M. Pereira for requesting, and Benjamin Schwendinger for the PR.
+
+    ```R
+    DT
+    #       V1    V2
+    #    <int> <int>
+    # 1:     3     5
+    # 2:     4     6
+    
+    DT[, sum(.SD), by=.I]
+    #        I    V1
+    #    <int> <int>
+    # 1:     1     8
+    # 2:     2    10
+    ```
+
+40.  New functions `yearmon()` and `yearqtr` give a combined representation of `year()` and `month()`/`quarter()`. These and also `yday`, `wday`, `mday`, `week`, `month` and `year` are now optimized for memory and compute efficiency by removing the `POSIXlt` dependency, [#649](https://github.com/Rdatatable/data.table/issues/649). Thanks to Matt Dowle for the request, and Benjamin Schwendinger for the PR.
+
+41. New function `%notin%` provides a convenient alternative to `!(x %in% y)`, [#4152](https://github.com/Rdatatable/data.table/issues/4152). Thanks to Jan Gorecki for suggesting and Michael Czekanski for the PR. `%notin%` uses half the memory because it computes the result directly as opposed to `!` which allocates a new vector to hold the negated result. If `x` is long enough to occupy more than half the remaining free memory, this can make the difference between the operation working, or failing with an out-of-memory error.
+
+42. `tables()` is faster by default by excluding the size of character strings in R's global cache (which may be shared) and excluding the size of list column items (which also may be shared). `mb=` now accepts any function which accepts a `data.table` and returns a higher and better estimate of its size in bytes, albeit more slowly; e.g. `mb = utils::object.size`.
 
 ## BUG FIXES
 
@@ -145,7 +302,7 @@
 
 2. `print(DT, trunc.cols=TRUE)` and the corresponding `datatable.print.trunc.cols` option (new feature 3 in v1.13.0) could incorrectly display an extra column, [#4266](https://github.com/Rdatatable/data.table/issues/4266). Thanks to @tdhock for the bug report and @MichaelChirico for the PR.
 
-3. `fread(..., nrows=0L)` now works as intended and the same as `nrows=0`; i.e. returning the column names and typed empty columns determined by the large sample, [#4686](https://github.com/Rdatatable/data.table/issues/4686). Thanks to @hongyuanjia for reporting, and Benjamin Schwendinger for the PR.
+3. `fread(..., nrows=0L)` now works as intended and the same as `nrows=0`; i.e. returning the column names and typed empty columns determined by the large sample, [#4686](https://github.com/Rdatatable/data.table/issues/4686), [#4029](https://github.com/Rdatatable/data.table/issues/4029). Thanks to @hongyuanjia and @michaelpaulhirsch for reporting, and Benjamin Schwendinger for the PR.
 
 4. Passing `.SD` to `frankv()` with `ties.method='random'` or with `na.last=NA` failed with `.SD is locked`, [#4429](https://github.com/Rdatatable/data.table/issues/4429). Thanks @smarches for the report.
 
@@ -177,7 +334,7 @@
 
 18. `as.data.table()` on `xts` objects containing a column named `x` would return an `index` of type plain `integer` rather than `POSIXct`, [#4897](https://github.com/Rdatatable/data.table/issues/4897). Thanks to Emil Sjørup for reporting, and Jan Gorecki for the PR.
 
-19. A fix to `as.Date(c("", ...))` in R 4.0.3, [17909](https://bugs.r-project.org/bugzilla3/show_bug.cgi?id=17909), has been backported to `data.table::as.IDate()` so that it too now returns `NA` for the first item when it is blank, even in older versions of R back to 3.1.0, rather than the incorrect error `character string is not in a standard unambiguous format`, [#4676](https://github.com/Rdatatable/data.table/issues/4676). Thanks to Arun Srinivasan for reporting, and Michael Chirico both for the `data.table` PR and for submitting the patch to R that was accepted and included in R 4.0.3.
+19. A fix to `as.Date(c("", ...))` in R 4.0.3, [17909](https://bugs.r-project.org/show_bug.cgi?id=17909), has been backported to `data.table::as.IDate()` so that it too now returns `NA` for the first item when it is blank, even in older versions of R back to 3.1.0, rather than the incorrect error `character string is not in a standard unambiguous format`, [#4676](https://github.com/Rdatatable/data.table/issues/4676). Thanks to Arun Srinivasan for reporting, and Michael Chirico both for the `data.table` PR and for submitting the patch to R that was accepted and included in R 4.0.3.
 
 20. `uniqueN(DT, by=character())` is now equivalent to `uniqueN(DT)` rather than internal error `'by' is either not integer or is length 0`, [#4594](https://github.com/Rdatatable/data.table/issues/4594). Thanks Marco Colombo for the report, and Michael Chirico for the PR. Similarly for `unique()`, `duplicated()` and `anyDuplicated()`.
 
@@ -253,6 +410,35 @@
                                    # no inconvenient warning
     ```
 
+    On the same basis, `min` and `max` methods for empty `IDate` input now return `NA_integer_` of class `IDate`, rather than `NA_double_` of class `IDate` together with base R's warning `no non-missing arguments to min; returning Inf`, [#2256](https://github.com/Rdatatable/data.table/issues/2256). The type change and warning would cause an error in grouping, see example below. Since `NA` was returned before it seems clear that still returning `NA` but of the correct type and with no warning is appropriate, backwards compatible, and a bug fix. Thanks to Frank Narf for reporting, and Matt Dowle for fixing.
+
+    ```R
+    DT
+    #             d      g
+    #        <IDat> <char>
+    # 1: 2020-01-01      a
+    # 2: 2020-01-02      a
+    # 3: 2019-12-31      b
+
+    DT[, min(d[d>"2020-01-01"]), by=g]
+
+    # was:
+
+    # Error in `[.data.table`(DT, , min(d[d > "2020-01-01"]), by = g) :
+    #   Column 1 of result for group 2 is type 'double' but expecting type
+    #   'integer'. Column types must be consistent for each group.
+    # In addition: Warning message:
+    # In min.default(integer(0), na.rm = FALSE) :
+    #   no non-missing arguments to min; returning Inf
+
+    # now :
+
+    #         g         V1
+    #    <char>     <IDat>
+    # 1:      a 2020-01-02
+    # 2:      b       <NA>
+    ```
+
 36. `DT[, min(int64Col), by=grp]` (and `max`) would return incorrect results for `bit64::integer64` columns, [#4444](https://github.com/Rdatatable/data.table/issues/4444). Thanks to @go-see for reporting, and Michael Chirico for the PR.
 
 37. `fread(dec=',')` was able to guess `sep=','` and return an incorrect result, [#4483](https://github.com/Rdatatable/data.table/issues/4483). Thanks to Michael Chirico for reporting and fixing. It was already an error to provide both `sep=','` and `dec=','` manually.
@@ -295,6 +481,86 @@
 
 39. `DT[i, sum(b), by=grp]` (and other optimized-by-group aggregates: `mean`, `var`, `sd`, `median`, `prod`, `min`, `max`, `first`, `last`, `head` and `tail`) could segfault if `i` contained row numbers and one or more were NA, [#1994](https://github.com/Rdatatable/data.table/issues/1994). Thanks to Arun Srinivasan for reporting, and Benjamin Schwendinger for the PR.
 
+40. `identical(fread(text="A\n0.8060667366\n")$A, 0.8060667366)` is now TRUE, [#4461](https://github.com/Rdatatable/data.table/issues/4461). This is one of 13 numbers in the set of 100,000 between 0.80606 and 0.80607 in 0.0000000001 increments that were not already identical. In all 13 cases R's parser (same as `read.table`) and `fread` straddled the true value by a very similar small amount. `fread` now uses `/10^n` rather than `*10^-n` to match R identically in all cases. Thanks to Gabe Becker for requesting consistency, and Michael Chirico for the PR.
+
+    ```R
+    for (i in 0:99999) {
+      s = sprintf("0.80606%05d", i)
+      r = eval(parse(text=s))
+      f = fread(text=paste0("A\n",s,"\n"))$A
+      if (!identical(r, f))
+        cat(s, sprintf("%1.18f", c(r, f, r)), "\n")
+    }
+    #        input    eval & read.table         fread before            fread now
+    # 0.8060603509 0.806060350899999944 0.806060350900000055 0.806060350899999944
+    # 0.8060614740 0.806061473999999945 0.806061474000000056 0.806061473999999945
+    # 0.8060623757 0.806062375699999945 0.806062375700000056 0.806062375699999945
+    # 0.8060629084 0.806062908399999944 0.806062908400000055 0.806062908399999944
+    # 0.8060632774 0.806063277399999945 0.806063277400000056 0.806063277399999945
+    # 0.8060638101 0.806063810099999944 0.806063810100000055 0.806063810099999944
+    # 0.8060647118 0.806064711799999944 0.806064711800000055 0.806064711799999944
+    # 0.8060658349 0.806065834899999945 0.806065834900000056 0.806065834899999945
+    # 0.8060667366 0.806066736599999945 0.806066736600000056 0.806066736599999945
+    # 0.8060672693 0.806067269299999944 0.806067269300000055 0.806067269299999944
+    # 0.8060676383 0.806067638299999945 0.806067638300000056 0.806067638299999945
+    # 0.8060681710 0.806068170999999944 0.806068171000000055 0.806068170999999944
+    # 0.8060690727 0.806069072699999944 0.806069072700000055 0.806069072699999944
+    #
+    # remaining 99,987 of these 100,000 were already identical
+    ```
+
+41. `dcast(empty-DT)` now returns an empty `data.table` rather than error `Cannot cast an empty data.table`, [#1215](https://github.com/Rdatatable/data.table/issues/1215). Thanks to Damian Betebenner for reporting, and Matt Dowle for fixing.
+
+42. `DT[factor("id")]` now works rather than error `i has evaluated to type integer. Expecting logical, integer or double`, [#1632](https://github.com/Rdatatable/data.table/issues/1632). `DT["id"]` has worked forever by automatically converting to `DT[.("id")]` for convenience, and joins have worked forever between char/fact, fact/char and fact/fact even when levels mismatch, so it was unfortunate that `DT[factor("id")]` managed to escape the simple automatic conversion to `DT[.(factor("id"))]` which is now in place. Thanks to @aushev for reporting, and Matt Dowle for the fix.
+
+43. All-NA character key columns could segfault, [#5070](https://github.com/Rdatatable/data.table/issues/5070). Thanks to @JorisChau for reporting and Benjamin Schwendinger for the fix.
+
+44. In v1.13.2 a version of an old bug was reintroduced where during a grouping operation list columns could retain a pointer to the last group. This affected only attributes of list elements and only if those were updated during the grouping operation, [#4963](https://github.com/Rdatatable/data.table/issues/4963). Thanks to @fujiaxiang for reporting and @avimallu and Václav Tlapák for investigating and the PR.
+
+45. `shift(xInt64, fill=0)` and `shift(xInt64, fill=as.integer64(0))` (but not `shift(xInt64, fill=0L)`) would error with `INTEGER() can only be applied to a 'integer', not a 'double'` where `xInt64` conveys `bit64::integer64`, `0` is type `double` and `0L` is type integer, [#4865](https://github.com/Rdatatable/data.table/issues/4865). Thanks to @peterlittlejohn for reporting and Benjamin Schwendinger for the PR.
+
+46. `DT[i, strCol:=classVal]` did not coerce using the `as.character` method for the class, resulting in either an unexpected string value or an error such as `To assign integer64 to a target of type character, please use as.character() for clarity`. Discovered during work on the previous issue, [#5189](https://github.com/Rdatatable/data.table/pull/5189).
+
+    ```R
+    DT
+    #         A
+    #    <char>
+    # 1:      a
+    # 2:      b
+    # 3:      c
+    DT[2, A:=as.IDate("2021-02-03")]
+    DT[3, A:=bit64::as.integer64("4611686018427387906")]
+    DT
+    #                      A
+    #                 <char>
+    # 1:                   a
+    # 2:          2021-02-03  # was 18661
+    # 3: 4611686018427387906  # was error 'please use as.character'
+    ```
+
+47. `tables()` failed with `argument "..." is missing` when called from within a function taking `...`; e.g. `function(...) { tables() }`, [#5197](https://github.com/Rdatatable/data.table/issues/5197). Thanks @greg-minshall for the report and @michaelchirico for the fix.
+
+48. `DT[, prod(int64Col), by=grp]` produced wrong results for `bit64::integer64` due to incorrect optimization, [#5225](https://github.com/Rdatatable/data.table/issues/5225). Thanks to Benjamin Schwendinger for reporting and fixing.
+
+49. `fintersect(..., all=TRUE)` and `fsetdiff(..., all=TRUE)` could return incorrect results when the inputs had columns named `x` and `y`, [#5255](https://github.com/Rdatatable/data.table/issues/5255). Thanks @Fpadt for the report, and @ben-schwen for the fix.
+
+50. `fwrite()` could produce not-ISO-compliant timestamps such as `2023-03-08T17:22:32.:00Z` when under a whole second by less than numerical tolerance of one microsecond, [#5238](https://github.com/Rdatatable/data.table/issues/5238). Thanks to @avraam-inside for the report and Václav Tlapák for the fix.
+
+51. `merge.data.table()` silently ignored the `incomparables` argument, [#2587](https://github.com/Rdatatable/data.table/issues/2587). It is now implemented and any other ignored arguments (e.g. misspellings) are now warned about. Thanks to @GBsuperman for the report and @ben-schwen for the fix.
+
+52. `DT[, c('z','x') := {x=NULL; list(2,NULL)}]` now removes column `x` as expected rather than incorrectly assigning `2` to `x` as well as `z`, [#5284](https://github.com/Rdatatable/data.table/issues/5284). The `x=NULL` is superfluous while the `list(2,NULL)` is the final value of `{}` whose items correspond to `c('z','x')`. Thanks @eutwt for the report, and @ben-schwen for the fix.
+
+53. `as.data.frame(DT, row.names=)` no longer silently ignores `row.names`, [#5319](https://github.com/Rdatatable/data.table/issues/5319). Thanks to @dereckdemezquita for the fix and PR, and @ben-schwen for guidance.
+
+54. `data.table(...)` unnamed arguments are deparsed in an attempt to name the columns but when called from `do.call()` the input data itself was deparsed taking a very long time, [#5501](https://github.com/Rdatatable/data.table/pull/5501). Many thanks to @OfekShilon for the report and fix, and @michaelchirico for guidance. Unnamed arguments to `data.table(...)` may now be faster in other cases not involving `do.call()` too; e.g. expressions spanning a lot of lines or other function call constructions that led to the data itself being deparsed.
+
+    ```R
+    DF = data.frame(a=runif(1e6), b=runif(1e6))
+    DT1 = data.table(DF)                 # 0.02s before and after
+    DT2 = do.call(data.table, list(DF))  # 3.07s before, 0.02s after
+    identical(DT1, DT2)                  # TRUE
+    ```
+
 ## NOTES
 
 1. New feature 29 in v1.12.4 (Oct 2019) introduced zero-copy coercion. Our thinking is that requiring you to get the type right in the case of `0` (type double) vs `0L` (type integer) is too inconvenient for you the user. So such coercions happen in `data.table` automatically without warning. Thanks to zero-copy coercion there is no speed penalty, even when calling `set()` many times in a loop, so there's no speed penalty to warn you about either. However, we believe that assigning a character value such as `"2"` into an integer column is more likely to be a user mistake that you would like to be warned about. The type difference (character vs integer) may be the only clue that you have selected the wrong column, or typed the wrong variable to be assigned to that column. For this reason we view character to numeric-like coercion differently and will warn about it. If it is correct, then the warning is intended to nudge you to wrap the RHS with `as.<type>()` so that it is clear to readers of your code that a coercion from character to that type is intended. For example :
@@ -329,17 +595,94 @@
 
 12. `?merge` and `?setkey` have been updated to clarify that the row order is retained when `sort=FALSE`, and why `NA`s are always first when `sort=TRUE`, [#2574](https://github.com/Rdatatable/data.table/issues/2574) [#2594](https://github.com/Rdatatable/data.table/issues/2594). Thanks to Davor Josipovic and Markus Bonsch for the reports, and Jan Gorecki for the PR.
 
-13. `datatable.[dll|so]` has changed name to `data_table.[dll|so]`, [#4442](https://github.com/Rdatatable/data.table/pull/4442). Thanks to Jan Gorecki for the PR. We had previously removed the `.` since `.` is not allowed by the following paragraph in the Writing-R-Extensions manual. Replacing `.` with `_` instead now seems more consistent with the last sentence.
-
-    > ... the basename of the DLL needs to be both a valid file name and valid as part of a C entry point (e.g. it cannot contain ‘.’): for portable code it is best to confine DLL names to be ASCII alphanumeric plus underscore. If entry point R_init_lib is not found it is also looked for with ‘.’ replaced by ‘_’.
-
-14. For nearly two years, since v1.12.4 (Oct 2019) (note 11 below in this NEWS file), using `options(datatable.nomatch=0)` has produced the following message :
+13. For nearly two years, since v1.12.4 (Oct 2019) (note 11 below in this NEWS file), using `options(datatable.nomatch=0)` has produced the following message :
 
     ```
-    The option 'datatable.nomatch' is being used and is not set to the default NA. This option is still honored for now but will be deprecated in future. Please see NEWS for 1.12.4 for detailed information and motivation. To specify inner join, please specify `nomatch=NULL` explicitly in your calls rather than changing the default using this option.
+    The option 'datatable.nomatch' is being used and is not set to the default NA. This option
+    is still honored for now but will be deprecated in future. Please see NEWS for 1.12.4 for
+    detailed information and motivation. To specify inner join, please specify `nomatch=NULL`
+    explicitly in your calls rather than changing the default using this option.
     ```
 
     The message is now upgraded to warning that the option is now ignored.
+
+14. The options `datatable.print.class` and `datatable.print.keys` are now `TRUE` by default. They have been available since v1.9.8 (Nov 2016) and v1.11.0 (May 2018) respectively.
+
+15. Thanks to @ssh352, Václav Tlapák, Cole Miller, András Svraka and Toby Dylan Hocking for reporting and bisecting a significant performance regression in dev. This was fixed before release thanks to a PR by Jan Gorecki, [#5463](https://github.com/Rdatatable/data.table/pull/5463). 
+
+
+# data.table [v1.14.8](https://github.com/Rdatatable/data.table/milestone/28?closed=1)  (17 Feb 2023)
+
+## NOTES
+
+1. Test 1613.605 now passes changes to `as.data.frame()` in R-devel, [#5597](https://github.com/Rdatatable/data.table/pull/5597). Thanks to Avraham Adler for reporting.
+
+2. An out of bounds read when combining non-equi join with `by=.EACHI` has been found and fixed thanks to clang ASAN, [#5598](https://github.com/Rdatatable/data.table/issues/5598). There was no bug or consequence because the read was followed (now preceded) by a bounds test.
+
+3. `.rbind.data.table` (note the leading `.`) is no longer exported when `data.table` is installed in R>=4.0.0 (Apr 2020), [#5600](https://github.com/Rdatatable/data.table/pull/5600). It was never documented which R-devel now detects and warns about. It is only needed by `data.table` internals to support R<4.0.0; see note 1 in v1.12.6 (Oct 2019) below in this file for more details.
+
+
+# data.table [v1.14.6](https://github.com/Rdatatable/data.table/milestone/27?closed=1)  (16 Nov 2022)
+
+## BUG FIXES
+
+1. `fread()` could leak memory, [#3292](https://github.com/Rdatatable/data.table/issues/3292). Thanks to @patrickhowerter for reporting, and Jim Hester for the fix. The fix requires R 3.4.0 or later. Loading `data.table` in earlier versions now highlights this issue on startup, asks users to upgrade R, and warns that we intend to upgrade `data.table`'s dependency from 8 year old R 3.1.0 (April 2014) to 5 year old R 3.4.0 (April 2017).
+
+## NOTES
+
+1. Test 1962.098 has been modified to pass latest changes to `POSIXt` in R-devel.
+
+2. `test.data.table()` no longer creates `DT` in `.GlobalEnv`, a CRAN policy violation, [#5514](https://github.com/Rdatatable/data.table/issues/5514). No other writes occurred to `.GlobalEnv` and release procedures have been improved to prevent this happening again.
+
+3. The memory usage of the test suite has been halved, [#5507](https://github.com/Rdatatable/data.table/issues/5507).
+
+
+# data.table [v1.14.4](https://github.com/Rdatatable/data.table/milestone/26?closed=1)  (17 Oct 2022)
+
+## NOTES
+
+1. gcc 12.1 (May 2022) now detects and warns about an always-false condition (`-Waddress`) in `fread` which caused a small efficiency saving never to be invoked, [#5476](https://github.com/Rdatatable/data.table/pull/5476). Thanks to CRAN for testing latest versions of compilers.
+
+2. `update.dev.pkg()` has been renamed `update_dev_pkg()` to get out of the way of the `stats::update` generic function, [#5421](https://github.com/Rdatatable/data.table/pull/5421). This is a utility function which upgrades the version of `data.table` to the latest commit in development which has passed all tests. As such we don't expect any backwards compatibility concerns. Its manual page was causing an intermittent hang/crash from `R CMD check` on Windows-only on CRAN which we hope will be worked around by changing its name.
+
+3. Internal C code now passes `-Wstrict-prototypes` to satisfy the warnings now displayed on CRAN, [#5477](https://github.com/Rdatatable/data.table/pull/5477).
+
+4. `write.csv` in R-devel no longer responds to `getOption("digits.secs")` for `POSIXct`, [#5478](https://github.com/Rdatatable/data.table/issues/5478). This caused our tests of `fwrite(, dateTimeAs="write.csv")` to fail on CRAN's daily checks using latest daily R-devel. While R-devel discussion continues, and currently it seems like the change is intended with further changes possible, this `data.table` release massages our tests to pass on latest R-devel. The idea is to try to get out of the way of R-devel changes in this regard until the new behavior of `write.csv` is released and confirmed. Package updates are not accepted on CRAN if they do not pass the latest daily version of R-devel, even if R-devel changes after the package update is submitted. If the change to `write.csv()` stands, then a future release of `data.table` will be needed to make `fwrite(, dateTimeAs="write.csv")` match `write.csv()` output again in that future version of R onwards. If you use an older version of `data.table` than said future one in the said future version of R, then `fwrite(, dateTimeAs="write.csv")` may not match `write.csv()` if you are using `getOption("digits.secs")` too. However, you can always check that your installation of `data.table` works in your version of R on your platform by simply running `test.data.table()` yourself. Doing so would detect such a situation for you: test 1741 would fail in this case. `test.data.table()` runs the entire suite of tests and is always available to you locally. This way you do not need to rely on our statements about which combinations of versions of R and `data.table` on which platforms we have tested and support; just run `test.data.table()` yourself. Having said that, because test 1741 has been relaxed in this release in order to be accepted on CRAN to pass latest R-devel, this won't be true for this particular release in regard to this particular test.
+
+    ```R
+    $ R --vanilla
+    R version 4.2.1 (2022-06-23) -- "Funny-Looking Kid"
+    > DF = data.frame(A=as.POSIXct("2022-10-01 01:23:45.012"))
+    > options(digits.secs=0)
+    > write.csv(DF)
+    "","A"
+    "1",2022-10-01 01:23:45
+    > options(digits.secs=3)
+    > write.csv(DF)
+    "","A"
+    "1",2022-10-01 01:23:45.012
+    
+    $ Rdevel --vanilla
+    R Under development (unstable) (2022-10-06 r83040) -- "Unsuffered Consequences"
+    > DF = data.frame(A=as.POSIXct("2022-10-01 01:23:45.012"))
+    > options(digits.secs=0)
+    > write.csv(DF)
+    "","A"
+    "1",2022-10-01 01:23:45.012
+    ```
+
+5. Many thanks to Kurt Hornik for investigating potential impact of a possible future change to `base::intersect()` on empty input, providing a patch so that `data.table` won't break if the change is made to R, and giving us plenty of notice, [#5183](https://github.com/Rdatatable/data.table/pull/5183).
+
+6. `datatable.[dll|so]` has changed name to `data_table.[dll|so]`, [#4442](https://github.com/Rdatatable/data.table/pull/4442). Thanks to Jan Gorecki for the PR. We had previously removed the `.` since `.` is not allowed by the following paragraph in the Writing-R-Extensions manual. Replacing `.` with `_` instead now seems more consistent with the last sentence.
+
+    > ... the basename of the DLL needs to be both a valid file name and valid as part of a C entry point (e.g. it cannot contain ‘.’): for portable code it is best to confine DLL names to be ASCII alphanumeric plus underscore. If entry point R_init_lib is not found it is also looked for with ‘.’ replaced by ‘_’.
+
+
+# data.table [v1.14.2](https://github.com/Rdatatable/data.table/milestone/24?closed=1)  (27 Sep 2021)
+
+## NOTES
+
+1. clang 13.0.0 (Sep 2021) requires the system header `omp.h` to be included before R's headers, [#5122](https://github.com/Rdatatable/data.table/issues/5122). Many thanks to Prof Ripley for testing and providing a patch file.
 
 
 # data.table [v1.14.0](https://github.com/Rdatatable/data.table/milestone/23?closed=1)  (21 Feb 2021)
@@ -348,7 +691,7 @@
 
 1. In v1.13.0 (July 2020) native parsing of datetime was added to `fread` by Michael Chirico which dramatically improved performance. Before then datetime was read as type character by default which was slow. Since v1.13.0, UTC-marked datetime (e.g. `2020-07-24T10:11:12.134Z` where the final `Z` is present) has been read automatically as POSIXct and quickly. We provided the migration option `datatable.old.fread.datetime.character` to revert to the previous slow character behavior. We also added the `tz=` argument to control unmarked datetime; i.e. where the `Z` (or equivalent UTC postfix) is missing in the data. The default `tz=""` reads unmarked datetime as character as before, slowly. We gave you the ability to set `tz="UTC"` to turn on the new behavior and read unmarked datetime as UTC, quickly. R sessions that are running in UTC by setting the TZ environment variable, as is good practice and common in production, have also been reading unmarked datetime as UTC since v1.13.0, much faster. Note 1 of v1.13.0 (below in this file) ended `In addition to convenience, fread is now significantly faster in the presence of dates, UTC-marked datetimes, and unmarked datetime when tz="UTC" is provided.`.
 
-    At `rstudio::global(2021)`, Neal Richardson, Director of Engineering at Ursa Labs, compared Arrow CSV performance to `data.table` CSV performance, [Bigger Data With Ease Using Apache Arrow](https://rstudio.com/resources/rstudioglobal-2021/bigger-data-with-ease-using-apache-arrow/). He opened by comparing to `data.table` as his main point. Arrow was presented as 3 times faster than `data.table`. He talked at length about this result. However, no reproducible code was provided and we were not contacted in advance in case we had any comments. He mentioned New York Taxi data in his talk which is a dataset known to us as containing unmarked datetime. [Rebuttal](https://twitter.com/MattDowle/status/1360073970498875394).
+    At `rstudio::global(2021)`, Neal Richardson, Director of Engineering at Ursa Labs, compared Arrow CSV performance to `data.table` CSV performance, [Bigger Data With Ease Using Apache Arrow](https://www.rstudio.com/resources/rstudioglobal-2021/bigger-data-with-ease-using-apache-arrow/). He opened by comparing to `data.table` as his main point. Arrow was presented as 3 times faster than `data.table`. He talked at length about this result. However, no reproducible code was provided and we were not contacted in advance in case we had any comments. He mentioned New York Taxi data in his talk which is a dataset known to us as containing unmarked datetime. [Rebuttal](https://twitter.com/MattDowle/status/1360073970498875394).
 
     `tz=`'s default is now changed from `""` to `"UTC"`. If you have been using `tz=` explicitly then there should be no change. The change to read UTC-marked datetime as POSIXct rather than character already happened in v1.13.0. The change now is that unmarked datetimes are now read as UTC too by default without needing to set `tz="UTC"`. None of the 1,017 CRAN packages directly using `data.table` are affected. As before, the migration option `datatable.old.fread.datetime.character` can still be set to TRUE to revert to the old character behavior. This migration option is temporary and will be removed in the near future.
 
@@ -394,7 +737,7 @@
 
 ## NOTES
 
-1. Continuous daily testing by CRAN using latest daily R-devel revealed, within one day of the change to R-devel, that a future version of R would break one of our tests, [#4769](https://github.com/Rdatatable/data.table/issues/4769). The characters "-alike" were added into one of R's error messages, so our too-strict test which expected the error `only defined on a data frame with all numeric variables` will fail when it sees the new error message `only defined on a data frame with all numeric-alike variables`. We have relaxed the pattern the test looks for to `data.*frame.*numeric` well in advance of the future version of R being released. Readers are reminded that CRAN is not just a host for packages. It is also a giant test suite for R-devel. For more information, [behind the scenes of cran, 2016](https://www.h2o.ai/blog/behind-the-scenes-of-cran/).
+1. Continuous daily testing by CRAN using latest daily R-devel revealed, within one day of the change to R-devel, that a future version of R would break one of our tests, [#4769](https://github.com/Rdatatable/data.table/issues/4769). The characters "-alike" were added into one of R's error messages, so our too-strict test which expected the error `only defined on a data frame with all numeric variables` will fail when it sees the new error message `only defined on a data frame with all numeric-alike variables`. We have relaxed the pattern the test looks for to `data.*frame.*numeric` well in advance of the future version of R being released. Readers are reminded that CRAN is not just a host for packages. It is also a giant test suite for R-devel. For more information, [behind the scenes of cran, 2016](https://h2o.ai/blog/behind-the-scenes-of-cran/).
 
 2. `as.Date.IDate` is no longer exported as a function to solve a new error in R-devel `S3 method lookup found 'as.Date.IDate' on search path`, [#4777](https://github.com/Rdatatable/data.table/issues/4777). The S3 method is still exported; i.e. `as.Date(x)` will still invoke the `as.Date.IDate` method when `x` is class `IDate`. The function had been exported, in addition to exporting the method, to solve a compatibility issue with `zoo` (and `xts` which uses `zoo`) because `zoo` exports `as.Date` which masks `base::as.Date`. Happily, since zoo 1.8-1 (Jan 2018) made a change to its `as.IDate`, the workaround is no longer needed.
 
@@ -1246,7 +1589,7 @@ has a better chance of working on Mac.
 
 ## NOTES
 
-1. When data.table loads it now checks its DLL version against the version of its R level code. This is to detect installation issues on Windows when i) the DLL is in use by another R session and ii) the CRAN source version > CRAN binary binary which happens just after a new release (R prompts users to install from source until the CRAN binary is available). This situation can lead to a state where the package's new R code calls old C code in the old DLL; [R#17478](https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478), [#3056](https://github.com/Rdatatable/data.table/issues/3056). This broken state can persist until, hopefully, you experience a strange error caused by the mismatch. Otherwise, wrong results may occur silently. This situation applies to any R package with compiled code not just data.table, is Windows-only, and is long-standing. It has only recently been understood as it typically only occurs during the few days after each new release until binaries are available on CRAN.
+1. When data.table loads it now checks its DLL version against the version of its R level code. This is to detect installation issues on Windows when i) the DLL is in use by another R session and ii) the CRAN source version > CRAN binary binary which happens just after a new release (R prompts users to install from source until the CRAN binary is available). This situation can lead to a state where the package's new R code calls old C code in the old DLL; [R#17478](https://bugs.r-project.org/show_bug.cgi?id=17478), [#3056](https://github.com/Rdatatable/data.table/issues/3056). This broken state can persist until, hopefully, you experience a strange error caused by the mismatch. Otherwise, wrong results may occur silently. This situation applies to any R package with compiled code not just data.table, is Windows-only, and is long-standing. It has only recently been understood as it typically only occurs during the few days after each new release until binaries are available on CRAN.
 
 2. When `on=` is provided but not `i=`, a helpful error is now produced rather than silently ignoring `on=`. Thanks to Dirk Eddelbuettel for the idea.
 
@@ -1303,7 +1646,7 @@ has a better chance of working on Mac.
 
 4. `fread()` has always accepted literal data; e.g. `fread("A,B\n1,2\n3,4")`. It now gains explicit `text=`; e.g. `fread(text="A,B\n1,2\n3,4")`. Unlike the first general purpose `input=` argument, the `text=` argument accepts multi-line input; e.g. `fread(text=c("A,B","1,2","3,4"))`, [#1423](https://github.com/Rdatatable/data.table/issues/1423). Thanks to Douglas Clark for the request and Hugh Parsonage for the PR.
 
-5. `fread()` has always accepted system commands; e.g. `fread("grep blah file.txt")`. It now gains explicit `cmd=`; e.g. `fread(cmd="grep blah file.txt")`. Further, if and only if `input=` is a system command and a variable was used to hold that command (`fread(someCommand)` not `fread("grep blah file.txt")`) or a variable is used to construct it (`fread(paste("grep",variable,"file.txt"))`), a message is now printed suggesting `cmd=`. This is to inform all users that there is a potential security concern if you are i) creating apps, and ii) your app takes input from a public user who could be malicious, and iii) input from the malicious user (such as a filename) is passed by your app to `fread()`, and iv) your app in not running in a protected environment. If all 4 conditions hold then the malicious user could provide a system command instead of a filename which `fread()` would run, and that would be a problem too. If the app is not running in a protected environment (e.g. app is running as root) then this could do damage or obtain data you did not intend. Public facing apps should be running with limited operating system permission so that any breach from any source is contained. We agree with [Linus Torvald's advice](https://lkml.org/lkml/2017/11/21/356) on this which boils down to: "when addressing security concerns the first step is do no harm, just inform". If you aren't creating apps or apis that could have a malicious user then there is no risk but we can't distinguish you so we have to inform everyone. Please change to `fread(cmd=...)` at your leisure. The new message can be suppressed with `options(datatable.fread.input.cmd.message=FALSE)`. Passing system commands to `fread()` continues to be recommended and encouraged and is widely used; e.g. via the techniques gathered together in the book [Data Science at the Command Line](https://www.datascienceatthecommandline.com/). A `warning()` is too strong because best-practice for production systems is to set `options(warn=2)` to tolerate no warnings. Such production systems have no user input and so there is no security risk; we don't want to do harm by breaking production systems via a `warning()` which gets turned into an error by `options(warn=2)`. Now that we have informed all users, we request feedback. There are 3 options for future releases: i) remove the message, ii) leave the message in place, iii) upgrade the message to warning and then eventually error. The default choice is the middle one: leave the message in place.
+5. `fread()` has always accepted system commands; e.g. `fread("grep blah file.txt")`. It now gains explicit `cmd=`; e.g. `fread(cmd="grep blah file.txt")`. Further, if and only if `input=` is a system command and a variable was used to hold that command (`fread(someCommand)` not `fread("grep blah file.txt")`) or a variable is used to construct it (`fread(paste("grep",variable,"file.txt"))`), a message is now printed suggesting `cmd=`. This is to inform all users that there is a potential security concern if you are i) creating apps, and ii) your app takes input from a public user who could be malicious, and iii) input from the malicious user (such as a filename) is passed by your app to `fread()`, and iv) your app in not running in a protected environment. If all 4 conditions hold then the malicious user could provide a system command instead of a filename which `fread()` would run, and that would be a problem too. If the app is not running in a protected environment (e.g. app is running as root) then this could do damage or obtain data you did not intend. Public facing apps should be running with limited operating system permission so that any breach from any source is contained. We agree with [Linus Torvald's advice](https://lkml.org/lkml/2017/11/21/356) on this which boils down to: "when addressing security concerns the first step is do no harm, just inform". If you aren't creating apps or apis that could have a malicious user then there is no risk but we can't distinguish you so we have to inform everyone. Please change to `fread(cmd=...)` at your leisure. The new message can be suppressed with `options(datatable.fread.input.cmd.message=FALSE)`. Passing system commands to `fread()` continues to be recommended and encouraged and is widely used; e.g. via the techniques gathered together in the book [Data Science at the Command Line](https://datascienceatthecommandline.com/). A `warning()` is too strong because best-practice for production systems is to set `options(warn=2)` to tolerate no warnings. Such production systems have no user input and so there is no security risk; we don't want to do harm by breaking production systems via a `warning()` which gets turned into an error by `options(warn=2)`. Now that we have informed all users, we request feedback. There are 3 options for future releases: i) remove the message, ii) leave the message in place, iii) upgrade the message to warning and then eventually error. The default choice is the middle one: leave the message in place.
 
 6. New `options(datatable.CJ.names=TRUE)` changes `CJ()` to auto-name its inputs exactly as `data.table()` does, [#1596](https://github.com/Rdatatable/data.table/issues/1596). Thanks @franknarf1 for the suggestion. Current default is `FALSE`; i.e. no change. The option's default will be changed to `TRUE` in v1.12.0 and then eventually the option will be removed. Any code that depends on `CJ(x,y)$V1` will need to be changed to `CJ(x,y)$x` and is more akin to a bug fix due to the inconsistency with `data.table()`.
 

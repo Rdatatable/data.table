@@ -1,5 +1,5 @@
 merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FALSE, all.x = all,
-               all.y = all, sort = TRUE, suffixes = c(".x", ".y"), no.dups = TRUE, allow.cartesian=getOption("datatable.allow.cartesian"), ...) {
+               all.y = all, sort = TRUE, suffixes = c(".x", ".y"), no.dups = TRUE, allow.cartesian=getOption("datatable.allow.cartesian"), incomparables=NULL, ...) {
   if (!sort %in% c(TRUE, FALSE))
     stopf("Argument 'sort' should be logical TRUE/FALSE")
   if (!no.dups %in% c(TRUE, FALSE))
@@ -14,7 +14,7 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   x0 = length(x)==0L
   y0 = length(y)==0L
   if (x0 || y0) {
-    if (x0 && y0) 
+    if (x0 && y0)
       warningf("Neither of the input data.tables to join have columns.")
     else if (x0)
       warningf("Input data.table '%s' has no columns.", "x")
@@ -43,9 +43,9 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   } else {
     if (is.null(by))
       by = intersect(key(x), key(y))
-    if (is.null(by))
+    if (!length(by))   # was is.null() before PR#5183  changed to !length()
       by = key(x)
-    if (is.null(by))
+    if (!length(by))
       by = intersect(nm_x, nm_y)
     if (length(by) == 0L || !is.character(by))
       stopf("A non-empty vector of column names for `by` is required.")
@@ -53,6 +53,15 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
       stopf("Elements listed in `by` must be valid column names in x and y")
     by = unname(by)
     by.x = by.y = by
+  }
+
+  # warn about unused arguments #2587
+  if (length(list(...))) {
+    ell = as.list(substitute(list(...)))[-1L]
+    for (n in setdiff(names(ell), "")) warningf("Unknown argument '%s' has been passed.", n)
+    unnamed_n = length(ell) - sum(names(ell) != "")
+    if (unnamed_n)
+      warningf("Passed %d unknown and unnamed arguments.", unnamed_n)
   }
   # with i. prefix in v1.9.3, this goes away. Left here for now ...
   ## sidestep the auto-increment column number feature-leading-to-bug by
@@ -72,22 +81,23 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
     end[chmatch(dupkeyx, end, 0L)] = paste0(dupkeyx, suffixes[2L])
   }
 
+  # implement incomparables argument #2587
+  if (!is.null(incomparables)) {
+    # %fin% to be replaced when #5232 is implemented/closed
+    "%fin%" = function(x, table) if (is.character(x) && is.character(table)) x %chin% table else x %in% table
+    xind = rowSums(x[, lapply(.SD, function(x) !(x %fin% incomparables)), .SDcols=by.x]) == length(by)
+    yind = rowSums(y[, lapply(.SD, function(x) !(x %fin% incomparables)), .SDcols=by.y]) == length(by)
+    # subset both so later steps still work
+    x = x[xind]
+    y = y[yind]
+  }
   dt = y[x, nomatch=if (all.x) NA else NULL, on=by, allow.cartesian=allow.cartesian]   # includes JIS columns (with a i. prefix if conflict with x names)
 
   if (all.y && nrow(y)) {  # If y does not have any rows, no need to proceed
     # Perhaps not very commonly used, so not a huge deal that the join is redone here.
     missingyidx = y[!x, which=TRUE, on=by, allow.cartesian=allow.cartesian]
     if (length(missingyidx)) {
-      yy = y[missingyidx]
-      othercolsx = setdiff(nm_x, by)
-      if (length(othercolsx)) {
-        tmp = rep.int(NA_integer_, length(missingyidx))
-        # TO DO: use set() here instead..
-        yy = cbind(yy, x[tmp, othercolsx, with = FALSE])
-      }
-      # empty data.tables (nrow =0, ncol>0) doesn't skip names anymore in new rbindlist
-      # takes care of #24 without having to save names. This is how it should be, IMHO.
-      dt = rbind(dt, yy, use.names=FALSE)
+      dt = rbind(dt, y[missingyidx], use.names=FALSE, fill=TRUE)
     }
   }
   # X[Y] syntax puts JIS i columns at the end, merge likes them alongside i.

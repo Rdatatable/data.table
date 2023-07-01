@@ -184,7 +184,7 @@ int dt_win_snprintf(char *dest, const size_t n, const char *fmt, ...)
   return nc;
 }
 
-SEXP test_dt_win_snprintf()
+SEXP test_dt_win_snprintf(void)
 {
   char buff[50];
 
