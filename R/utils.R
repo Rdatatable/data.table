@@ -132,8 +132,12 @@ eval_with_cols = function(orig_call, all_cols) {
   })
   if (!is.primitive(fun)) {
     named_call = match.call(fun, orig_call)
-    if ("cols" %in% names(formals(fun)) && !"cols" %in% names(named_call)) {
-      named_call[["cols"]] = all_cols
+    if ("cols" %in% names(formals(fun))) {
+      if ("cols" %in% names(named_call)) {
+        stopf("user should not provide cols argument to %s", paste(fun_uneval))
+      } else {
+        named_call[["cols"]] = all_cols
+      }
     }
     named_call[[1L]] = fun
     eval(named_call, parent)
