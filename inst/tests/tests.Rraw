@@ -12362,7 +12362,7 @@ DTout = data.table(
   value1 = 1:10,
   value2 = c("a", "b", "c", "d", "e", "f", "g", "h", "i", "j")
 )
-test(1866.6, melt(DT, measure.vars = patterns("^x", "^y", cols=names(DT))), DTout)
+test(1866.6, melt(DT, measure.vars = patterns("^x", "^y")), DTout)
 
 # auto fill too few column names (#1625) and auto fill=TRUE when too many column names
 test(1867.01, fread("A,B\n1,3,5,7\n2,4,6,8\n"), data.table(A=1:2, B=3:4, V3=5:6, V4=7:8),
