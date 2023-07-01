@@ -16,18 +16,25 @@ patterns(\dots, cols=character(0))
 }
 \arguments{
   \item{\dots}{A set of regular expression patterns.}
-  \item{cols}{A character vector of names to which each pattern is matched.}
+  \item{cols}{A character vector of column names to match with
+    patterns. When used in the context of
+    \code{melt(measure.vars=patterns())} or
+    \code{DT[, .SDcols=patterns()]}, the
+    user should not provide the \code{cols} argument, which is
+    automatically set to all of the column names of the input data table.
+  }
 }
 \seealso{
-  \code{\link{melt}},
-  \url{https://github.com/Rdatatable/data.table/wiki/Getting-started}
+  \code{\link{melt}}, \code{\link{.SD}},
+  \url{https://github.com/Rdatatable/data.table/wiki/Getting-started},
+  \url{https://cloud.r-project.org/web/packages/data.table/vignettes/datatable-reshape.html},
+  \url{https://cloud.r-project.org/web/packages/data.table/vignettes/datatable-sd-usage.html}
 }
 \examples{
 DT = data.table(x1 = 1:5, x2 = 6:10, y1 = letters[1:5], y2 = letters[6:10])
 # melt all columns that begin with 'x' & 'y', respectively, into separate columns
-melt(DT, measure.vars = patterns("^x", "^y", cols=names(DT)))
-# when used with melt, 'cols' is implicitly assumed to be names of input
-# data.table, if not provided.
-melt(DT, measure.vars = patterns("^x", "^y"))
+melt(DT, measure.vars = patterns(x="^x", y="^y"))
+# summarize all columns that contain x
+DT[, lapply(.SD, sum), .SDcols=patterns("x")]
 }
 \keyword{data}
