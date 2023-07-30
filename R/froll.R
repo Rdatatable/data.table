@@ -85,7 +85,7 @@ make.roll.names = function(x.len, n.len, n, x.nm, n.nm, fun, adaptive) {
 }
 
 ## irregularly spaced time series, helper for creating adaptive window size
-frolladapt = function(x, n, partial=FALSE, give.names=FALSE) {
+frolladapt = function(x, n, align="right", partial=FALSE, give.names=FALSE) {
   x = unclass(x)
   if (!is.numeric(x))
     stopf("Index vector 'x' must of numeric type")
@@ -103,6 +103,8 @@ frolladapt = function(x, n, partial=FALSE, give.names=FALSE) {
   }
   if (length(n) < 1L || anyNA(n))
     stopf("Argument 'n' must be non-zero length and must not have NAs")
+  if (!identical(align, "right"))
+    stopf("Argument 'align' other than 'right' has not yet been implemented")
   if (!isTRUEorFALSE(partial))
     stopf("Argument 'partial' must be TRUE or FALSE")
   if (!isTRUEorFALSE(give.names))

@@ -5,11 +5,12 @@
   Helper function to generate adaptive window size based on the irregularly spaced time series index. Generated adaptive window can be then used in rolling functions. See \code{\link{froll}} and \code{\link{frollapply}} for details.
 }
 \usage{
-  frolladapt(x, n, partial=FALSE, give.names=FALSE, .validate=FALSE)
+  frolladapt(x, n, align="right", partial=FALSE, give.names=FALSE)
 }
 \arguments{
   \item{x}{ Integer. Other objects of type numeric (including \code{Date}, \code{POSIXct} and any others numeric-based class) will be coerced to integer, which, for example, in case of \code{POSIXct} means truncating to whole seconds. Must be sorted, have no duplicate and have no missing values. }
   \item{n}{ Integer vector giving rolling window size(s). This is the \emph{total} number of included values in aggregate function. Value corresponds to unit of \code{x}. When \code{x} is a \code{POSIXct} then \code{n} are seconds, when \code{x} is a \code{Date} then \code{n} are days. }
+  \item{align}{ Character, default \code{"right"}. Other aligntment than the ddefault has not yet been implemented. }
   \item{partial}{ Logical, default \code{FALSE}. Should the rolling window size(s) provided in \code{N} be trimmed to available observations. For details see \code{\link{froll}}. }
   \item{give.names}{ Logical, default \code{FALSE}. When \code{TRUE}, names are automatically generated corresponding to names of \code{N}. If answer is an integer vector, then the argument is ignored, see examples. }
 }
