@@ -62,7 +62,7 @@
     \item{ \code{has.nf=FALSE} uses faster implementation that does not support non-finite values. Then depending on the rolling function it will either:
     \itemize{
       \item{ (\emph{mean, sum}) detect non-finite, re-run non-finite aware. }
-      \item{ (\emph{max}) not detect NFs and may silently give incorrect answer. }
+      \item{ (\emph{max, min}) not detect NFs and may silently give incorrect answer. }
     }
     In general \code{has.nf=FALSE && any(!is.finite(x))} should be considered as undefined behavior. Therefore \code{has.nf=FALSE} should be used with care. }
   }
@@ -72,8 +72,8 @@
   \itemize{
     \item{ \code{algo="fast"} uses \emph{"on-line"}, single pass, algorithm.
     \itemize{
-      \item{ \emph{max} rolling function will not do only a single pass but, on average \code{length(x)/n}, nested loops will be computed. The bigger the window the bigger advantage over algo \emph{exact} which computes \code{length(x)} nested loops. Note that \emph{exact} uses multiple CPUs so for a small window size and many CPUs it is possible it will be actually faster than \emph{fast} but in those cases elapsed timings will likely be far below a single second. }
-      \item{ Not all functions have \emph{fast} implementation available. As of now \emph{max} and \code{adaptive=TRUE} does not have, therefore it will automatically fall back to \emph{exact} implementation. \code{datatable.verbose} option can be used to check that. }
+      \item{ \emph{max} and \emph{min} rolling function will not do only a single pass but, on average \code{length(x)/n}, nested loops will be computed. The bigger the window the bigger advantage over algo \emph{exact} which computes \code{length(x)} nested loops. Note that \emph{exact} uses multiple CPUs so for a small window size and many CPUs it is possible it will be actually faster than \emph{fast} but in those cases elapsed timings will likely be far below a single second. }
+      \item{ Not all functions have \emph{fast} implementation available. As of now \emph{max} and \emph(min) in case of \code{adaptive=TRUE} do not not have \emph{fast} implementation, therefore it will automatically fall back to \emph{exact} implementation. \code{datatable.verbose} option can be used to check that. }
     }}
     \item{ \code{algo="exact"} will make rolling functions to use a more computationally-intensive algorithm. For each observation from input vector it will compute a function on a window from scratch (complexity \eqn{O(n^2)}).
     \itemize{
@@ -120,11 +120,10 @@ frollmean(d[, .(V1)], c(3, 4))
 frollmean(d, c(3, 4))
 ## three calls above will use multiple cores when available
 
-# frollsum
+# other functions
 frollsum(d, 3:4)
-
-# frollmax
 frollmax(d, 3:4)
+frollmin(d, 3:4)
 
 # partial=TRUE
 x = 1:6/2
