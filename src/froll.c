@@ -67,7 +67,14 @@ void frollfun(rollfun_t rfun, unsigned int algo, double *x, uint64_t nx, ans_t *
       frollmaxExact(x, nx, ans, k, fill, narm, hasnf, verbose);
     }
     break;
-  default:
+  case MIN :
+    if (algo==0) {
+      frollminFast(x, nx, ans, k, fill, narm, hasnf, verbose);
+    } else if (algo==1) {
+      frollminExact(x, nx, ans, k, fill, narm, hasnf, verbose);
+    }
+    break;
+    default:
     error(_("Internal error: Unknown rfun value in froll: %d"), rfun); // #nocov
   }
   if (align < 1 && ans->status < 3) {
@@ -602,6 +609,194 @@ void frollmaxExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool 
                 w = R_NaN;                                          // continue nested loop in case there is NA there
               }
             } else if (x[i+j] > w)
+              w = x[i+j];
+          }
+        }
+        ans->dbl_v[i] = w;
+      }
+    }
+  }
+}
+
+static inline void wmin(double *x, uint64_t o, int k, double *w, uint64_t *iw, bool narm) {
+  if (narm) {
+    for (int i=0; i<k; i++) {
+      if (x[o+i-k+1] <= w[0]) { // this never true if all x NAs and narm=TRUE
+        iw[0] = o+i-k+1;
+        w[0] = x[iw[0]];
+      }
+    }
+  } else {
+    double ww = R_PosInf;
+    uint64_t iww = 0;
+    for (int i=0; i<k; i++) {
+      uint64_t ii = o+i-k+1;
+      if (ISNAN(x[ii])) {
+        if (ISNA(x[ii])) {
+          error("internal error: frollmin reached untested branch of code, for now use frollmin algo='exact', please provide reproducible example of your frollmin usage to data.table github issue tracker\n"); // # nocov
+          //iww = ii; ww = NA_REAL;
+        } else if (ISNA(ww)) {
+          error("internal error: frollmin reached untested branch of code, for now use frollmin algo='exact', please provide reproducible example of your frollmin usage to data.table github issue tracker\n"); // # nocov
+          // do nothing because w > x[i]: NA > NaN
+        } else { // no NA in window so NaN >= than any non-NA
+          iww = ii; ww = R_NaN;
+        }
+      } else if (ISNAN(ww)) {
+        // w still within the window and is NA or NaN, x[i] is not NA - already checked above, therefore to nothing
+      } else if (x[ii] <= ww) {
+        iww = ii; ww = x[iww];
+      }
+    }
+    iw[0] = iww;
+    w[0] = ww;
+  }
+}
+/* fast rolling min - fast
+ * see rolling max fast details
+ */
+void frollminFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollminFast", (uint64_t)nx, k, hasnf, (int)narm);
+  double w = R_PosInf; // window min
+  uint64_t cmin = 0; // counter of nested loops for verbose
+  uint64_t iw = 0; // index of window min
+  uint64_t i;
+  if (narm || hasnf==-1) {
+    for (i=0; i<k-1; i++) { // #loop_counter_not_local_scope_ok
+      if (x[i] <= w) { // <= rather than < because we track most recent minimum using iw
+        iw = i; w = x[iw];
+      }
+      ans->dbl_v[i] = fill;
+    }
+    for (i=k-1; i<nx; i++) {
+      if (iw+k <= i) { // min left current window // note that it is still <= same as in max
+        iw = i-k; w = R_PosInf;
+        wmin(x, i, k, &w, &iw, true); cmin++;
+      } else if (x[i] <= w) {
+        iw = i; w = x[iw];
+      }
+      ans->dbl_v[i] = w;
+    }
+  } else {
+    bool truehasnf = hasnf>0;
+    for (i=0; i<k-1; i++) { // up to first full window only #loop_counter_not_local_scope_ok
+      if (ISNAN(x[i])) {
+        truehasnf = true;
+        if (ISNA(x[i])) {
+          iw = i; w = NA_REAL;
+        } else if (ISNA(w)) {
+          // do nothing because w > x[i]: NA > NaN
+        } else {
+          iw = i; w = R_NaN;
+        }
+      } else if (x[i] <= w) {
+        iw = i; w = x[iw];
+      }
+      ans->dbl_v[i] = fill;
+    }
+    if (!truehasnf) { // maybe no NAs
+      for (; i<nx; i++) {
+        if (ISNAN(x[i])) { // Inf properly propagates
+          if (verbose)
+            ansSetMsg(ans, 0, "%s: non-finite values are present in input, continue with extra care for NFs\n", __func__);
+          truehasnf = true;
+          break; // does not increment, w stays as from previous iteration
+        }
+        if (iw+k <= i) { // min left current window // note that it is still <= same as in max
+          iw = i-k; w = R_PosInf;
+          wmin(x, i, k, &w, &iw, true); cmin++;
+        } else if (x[i] <= w) {
+          iw = i; w = x[iw];
+        }
+        ans->dbl_v[i] = w;
+      }
+    }
+    if (truehasnf) {
+      for (; i<nx; i++) { // this loop continues from where "maybe no NAs" loop left
+        if (ISNAN(x[i])) {
+          if (ISNA(x[i])) {
+            iw = i; w = NA_REAL;
+          } else if (ISNA(w)) {
+            // do nothing because w > x[i]: NA > NaN
+          } else { // no NA in window so NaN >= than any non-NA
+            iw = i; w = R_NaN;
+          }
+        } else if (iw+k <= i) { // min left current window // note that it is still <= same as in max
+          iw = i-k; w = R_PosInf;
+          wmin(x, i, k, &w, &iw, false); cmin++;
+        } else if (ISNAN(w)) {
+          // w still within the window and is NA or NaN, x[i] is not NA - already checked above, therefore do nothing
+        } else if (x[i] <= w) {
+          iw = i; w = x[iw];
+        }
+        ans->dbl_v[i] = w;
+      }
+    }
+  }
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: nested window min calculation called %"PRIu64" times\n"), __func__, cmin);
+}
+/* fast rolling min - exact
+ * see rolling max exact details
+ */
+void frollminExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollminExact", (uint64_t)nx, k, hasnf, (int)narm);
+  for (int i=0; i<k-1; i++) {
+    ans->dbl_v[i] = fill;
+  }
+  if (narm || hasnf==-1) {                                          // ignore NAs as > does not propagate
+#pragma omp parallel for num_threads(getDTthreads(nx, true))
+    for (uint64_t i=k-1; i<nx; i++) {
+      double w = R_PosInf;
+      for (int j=-k+1; j<=0; j++) {
+        if (x[i+j] < w)
+          w = x[i+j];
+      }
+      ans->dbl_v[i] = w;
+    }
+  } else {
+    bool *isnan = malloc(nx*sizeof(bool));                          // isnan lookup - we use it to reduce ISNAN calls in nested loop
+    if (!isnan) {                                                   // # nocov start
+      ansSetMsg(ans, 3, "%s: Unable to allocate memory for isnan", __func__); // raise error
+      free(isnan);
+      return;
+    }                                                               // # nocov end
+    bool truehasnf = hasnf>0;
+    for (uint64_t i=0; i<nx; i++) {                                 // no openmp as this should be very fast
+      if (ISNAN(x[i])) {
+        truehasnf = true;
+        isnan[i] = true;
+      } else {
+        isnan[i] = false;
+      }
+    }
+    if (!truehasnf) {                                               // not found any NAs
+#pragma omp parallel for num_threads(getDTthreads(nx, true))
+      for (uint64_t i=k-1; i<nx; i++) {
+        double w = R_PosInf;
+        for (int j=-k+1; j<=0; j++) {
+          if (x[i+j] < w)
+            w = x[i+j];
+        }
+        ans->dbl_v[i] = w;
+      }
+    } else {                                                        // there are some NAs
+#pragma omp parallel for num_threads(getDTthreads(nx, true))
+      for (uint64_t i=k-1; i<nx; i++) {
+        double w = R_PosInf;
+        if (isnan[i] && ISNA(x[i])) {
+          w = NA_REAL;
+        } else {
+          for (int j=-k+1; j<=0; j++) {
+            if (isnan[i+j]) {
+              if (ISNA(x[i+j])) {
+                w = NA_REAL;
+                break;                                              // break because NA > NaN
+              } else {
+                w = R_NaN;                                          // continue nested loop in case there is NA there
+              }
+            } else if (x[i+j] < w)
               w = x[i+j];
           }
         }

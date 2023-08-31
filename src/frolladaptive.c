@@ -33,6 +33,13 @@ void frolladaptivefun(rollfun_t rfun, unsigned int algo, double *x, uint64_t nx,
     }
     frolladaptivemaxExact(x, nx, ans, k, fill, narm, hasnf, verbose);
     break;
+  case MIN :
+    if (algo==0 && verbose) {
+      //frolladaptiveminFast(x, nx, ans, k, fill, narm, hasnf, verbose); // frolladaptiveminFast does not exists as of now
+      snprintf(end(ans->message[0]), 500, _("%s: algo %u not implemented, fall back to %u\n"), __func__, algo, (unsigned int) 1);
+    }
+    frolladaptiveminExact(x, nx, ans, k, fill, narm, hasnf, verbose);
+    break;
   default:
     error(_("Internal error: Unknown rfun value in froll: %d"), rfun); // #nocov
   }
@@ -540,6 +547,85 @@ void frolladaptivemaxExact(double *x, uint64_t nx, ans_t *ans, int *k, double fi
                   w = R_NaN;
                 }
               } else if (x[i+j] > w)
+                w = x[i+j];
+            }
+          }
+          ans->dbl_v[i] = w;
+        }
+      }
+    }
+  }
+}
+
+/* fast rolling adaptive min - exact
+ * for has.nf=FALSE it will not detect if any NAs were in the input, therefore could produce incorrect result, well documented
+ */
+void frolladaptiveminExact(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasnf, bool verbose) {
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", hasnf %d, narm %d\n"), "frolladaptiveminExact", (uint64_t)nx, hasnf, (int) narm);
+  if (narm || hasnf==-1) { // fastest we can get for adaptive max as there is no algo='fast', therefore we drop any NA checks when has.nf=FALSE
+#pragma omp parallel for num_threads(getDTthreads(nx, true))
+    for (uint64_t i=0; i<nx; i++) {
+      if (i+1 < k[i]) {
+        ans->dbl_v[i] = fill;
+      } else {
+        double w = R_PosInf;
+        for (int j=-k[i]+1; j<=0; j++) {
+          if (x[i+j] < w)
+            w = x[i+j];
+        }
+        ans->dbl_v[i] = w;
+      }
+    }
+  } else {
+    bool *isnan = malloc(nx*sizeof(bool)); // isnan lookup - we use it to reduce ISNAN calls in nested loop
+    if (!isnan) {                                                    // # nocov start
+      ansSetMsg(ans, 3, "%s: Unable to allocate memory for isnan", __func__); // raise error
+      free(isnan);
+      return;
+    }                                                               // # nocov end
+    bool truehasnf = hasnf>0;
+    for (uint64_t i=0; i<nx; i++) { // no openmp as this should be very fast
+      if (ISNAN(x[i])) {
+        truehasnf = true;
+        isnan[i] = true;
+      } else {
+        isnan[i] = false;
+      }
+    }
+    if (!truehasnf) { // not found any NAs
+#pragma omp parallel for num_threads(getDTthreads(nx, true))
+      for (uint64_t i=0; i<nx; i++) {
+        if (i+1 < k[i]) {
+          ans->dbl_v[i] = fill;
+        } else {
+          double w = R_PosInf;
+          for (int j=-k[i]+1; j<=0; j++) {
+            if (x[i+j] < w)
+              w = x[i+j];
+          }
+          ans->dbl_v[i] = w;
+        }
+      }
+    } else { // there are some NAs
+#pragma omp parallel for num_threads(getDTthreads(nx, true))
+      for (uint64_t i=0; i<nx; i++) {
+        if (i+1 < k[i]) {
+          ans->dbl_v[i] = fill;
+        } else {
+          double w = R_PosInf;
+          if (isnan[i] && ISNA(x[i])) {
+            w = NA_REAL;
+          } else {
+            for (int j=-k[i]+1; j<=0; j++) {
+              if (isnan[i+j]) {
+                if (ISNA(x[i+j])) {
+                  w = NA_REAL;
+                  break;
+                } else {
+                  w = R_NaN;
+                }
+              } else if (x[i+j] < w)
                 w = x[i+j];
             }
           }

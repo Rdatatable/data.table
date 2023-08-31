@@ -7,9 +7,11 @@
 \alias{frollmean}
 \alias{frollsum}
 \alias{frollmax}
+\alias{frollmin}
 \alias{rollmean}
 \alias{rollsum}
 \alias{rollmax}
+\alias{rollmin}
 \title{Rolling functions}
 \description{
   Fast rolling functions to calculate aggregates on sliding windows. For user-defined rolling function see \code{\link{frollapply}}.
@@ -20,6 +22,8 @@
   frollsum(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"),
     na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, give.names=FALSE, hasNA)
   frollmax(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"),
+    na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, give.names=FALSE, hasNA)
+  frollmin(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"),
     na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, give.names=FALSE, hasNA)
 }
 \arguments{
