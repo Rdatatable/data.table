@@ -174,8 +174,8 @@ void frollmeanFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool 
     SUM_WINDOW_STEP_FRONT                                       // i==k-1
     MEAN_WINDOW_STEP_VALUE
     for (uint64_t i=k; i<nx; i++) {                             // loop over obs, complete window, all remaining after partial window
-      SUM_WINDOW_STEP_FRONT
       SUM_WINDOW_STEP_BACK
+      SUM_WINDOW_STEP_FRONT
       MEAN_WINDOW_STEP_VALUE
     }
   }
@@ -348,8 +348,8 @@ if (nc == 0) {                                                 \
     SUM_WINDOW_STEP_FRONT                                       // i==k-1
     SUM_WINDOW_STEP_VALUE
     for (uint64_t i=k; i<nx; i++) {                             // loop over obs, complete window, all remaining after partial window
-      SUM_WINDOW_STEP_FRONT
       SUM_WINDOW_STEP_BACK
+      SUM_WINDOW_STEP_FRONT
       SUM_WINDOW_STEP_VALUE
     }
   }
