@@ -150,6 +150,8 @@ SEXP frollfunR(SEXP fun, SEXP xobj, SEXP kobj, SEXP fill, SEXP algo, SEXP align,
     rfun = MAX;
   } else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "min")) {
     rfun = MIN;
+  } else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "prod")) {
+    rfun = PROD;
   } else {
     error(_("Internal error: invalid %s argument in %s function should have been caught earlier. Please report to the data.table issue tracker."), "fun", "rolling"); // # nocov
   }

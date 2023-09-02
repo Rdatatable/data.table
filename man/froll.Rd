@@ -8,10 +8,12 @@
 \alias{frollsum}
 \alias{frollmax}
 \alias{frollmin}
+\alias{frollprod}
 \alias{rollmean}
 \alias{rollsum}
 \alias{rollmax}
 \alias{rollmin}
+\alias{rollprod}
 \title{Rolling functions}
 \description{
   Fast rolling functions to calculate aggregates on sliding windows. For user-defined rolling function see \code{\link{frollapply}}.
@@ -24,6 +26,8 @@
   frollmax(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"),
     na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, give.names=FALSE, hasNA)
   frollmin(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"),
+    na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, give.names=FALSE, hasNA)
+  frollprod(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"),
     na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, give.names=FALSE, hasNA)
 }
 \arguments{
@@ -61,7 +65,7 @@
     \item{ \code{has.nf=TRUE} uses non-finite aware implementation straightaway. }
     \item{ \code{has.nf=FALSE} uses faster implementation that does not support non-finite values. Then depending on the rolling function it will either:
     \itemize{
-      \item{ (\emph{mean, sum}) detect non-finite, re-run non-finite aware. }
+      \item{ (\emph{mean, sum, prod}) detect non-finite, re-run non-finite aware. }
       \item{ (\emph{max, min}) not detect NFs and may silently give incorrect answer. }
     }
     In general \code{has.nf=FALSE && any(!is.finite(x))} should be considered as undefined behavior. Therefore \code{has.nf=FALSE} should be used with care. }
@@ -124,6 +128,7 @@ frollmean(d, c(3, 4))
 frollsum(d, 3:4)
 frollmax(d, 3:4)
 frollmin(d, 3:4)
+frollprod(d, 3:4)
 
 # partial=TRUE
 x = 1:6/2

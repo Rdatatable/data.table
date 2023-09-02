@@ -21,7 +21,7 @@ if (R_FINITE(x[i-k])) {                                        \
   pinf--;                                                      \
 } else if (x[i-k]==R_NegInf) {                                 \
   ninf--;                                                      \
-}                                                              \
+}
 
 /* rolling fun - router for fun and algo
  * early stopping for window bigger than input
@@ -72,6 +72,13 @@ void frollfun(rollfun_t rfun, unsigned int algo, double *x, uint64_t nx, ans_t *
       frollminFast(x, nx, ans, k, fill, narm, hasnf, verbose);
     } else if (algo==1) {
       frollminExact(x, nx, ans, k, fill, narm, hasnf, verbose);
+    }
+    break;
+  case PROD :
+    if (algo==0) {
+      frollprodFast(x, nx, ans, k, fill, narm, hasnf, verbose);
+    } else if (algo==1) {
+      frollprodExact(x, nx, ans, k, fill, narm, hasnf, verbose);
     }
     break;
     default:
@@ -801,6 +808,173 @@ void frollminExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool 
           }
         }
         ans->dbl_v[i] = w;
+      }
+    }
+  }
+}
+
+/* fast rolling prod - fast
+ * same as mean fast
+ */
+void frollprodFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollprodFast", (uint64_t)nx, k, hasnf, (int)narm);
+  long double w = 1.0;
+  bool truehasnf = hasnf>0;
+  if (!truehasnf) {
+    int i;
+    for (i=0; i<k-1; i++) { // #loop_counter_not_local_scope_ok
+      w *= x[i];
+      ans->dbl_v[i] = fill;
+    }
+    w *= x[i];
+    ans->dbl_v[i] = (double) w;
+    if (R_FINITE((double) w)) {
+      for (uint64_t i=k; i<nx; i++) {
+        w /= x[i-k];
+        w *= x[i];
+        ans->dbl_v[i] = (double) w;
+      }
+      if (!R_FINITE((double) w)) {
+        if (hasnf==-1)
+          ansSetMsg(ans, 2, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning", __func__);
+        if (verbose)
+          ansSetMsg(ans, 0, "%s: non-finite values are present in input, re-running with extra care for NFs\n", __func__);
+        w = 1.0; truehasnf = true;
+      }
+    } else {
+      if (hasnf==-1)
+        ansSetMsg(ans, 2, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning", __func__);
+      if (verbose)
+        ansSetMsg(ans, 0, "%s: non-finite values are present in input, skip non-finite inaware attempt and run with extra care for NFs straighaway\n", __func__);
+      w = 1.0; truehasnf = true;
+    }
+  }
+  if (truehasnf) {
+    int nc = 0, pinf = 0, ninf = 0;                             // NA counter within sliding window
+    int i;                                                      // iterator declared here because it is being used after for loop
+
+#undef PROD_WINDOW_STEP_FRONT
+#define PROD_WINDOW_STEP_FRONT                                      \
+    if (R_FINITE(x[i])) {                                          \
+      w *= x[i];                                                   \
+    } else if (ISNAN(x[i])) {                                      \
+      nc++;                                                        \
+    } else if (x[i]==R_PosInf) {                                   \
+      pinf++;                                                      \
+    } else if (x[i]==R_NegInf) {                                   \
+      ninf++;                                                      \
+    }
+#undef PROD_WINDOW_STEP_BACK
+#define PROD_WINDOW_STEP_BACK                                     \
+  if (R_FINITE(x[i-k])) {                                        \
+    w /= x[i-k];                                                 \
+  } else if (ISNAN(x[i-k])) {                                    \
+    nc--;                                                        \
+  } else if (x[i-k]==R_PosInf) {                                 \
+    pinf--;                                                      \
+  } else if (x[i-k]==R_NegInf) {                                 \
+    ninf--;                                                      \
+  }
+#undef PROD_WINDOW_STEP_VALUE
+#define PROD_WINDOW_STEP_VALUE                                   \
+    if (nc == 0) {                                               \
+      if (pinf == 0 && ninf == 0) {                              \
+        ans->dbl_v[i] = (double) w;                              \
+      } else {                                                   \
+        ans->dbl_v[i] = (ninf+(w<0))%2 ? R_NegInf : R_PosInf;    \
+      }                                                          \
+    } else if (nc == k) {                                          \
+      ans->dbl_v[i] = narm ? 1.0 : NA_REAL;                        \
+    } else {                                                       \
+      if (narm) {                                                  \
+        if (pinf == 0 && ninf == 0) {                              \
+          ans->dbl_v[i] = (double) w;                              \
+        } else {                                                   \
+          ans->dbl_v[i] = (ninf+(w<0))%2 ? R_NegInf : R_PosInf;    \
+        }                                                          \
+      } else {                                                     \
+        ans->dbl_v[i] = NA_REAL;                                   \
+      }                                                            \
+    }
+
+    for (i=0; i<k-1; i++) {                                     // loop over leading observation, all partial window only; #loop_counter_not_local_scope_ok
+      PROD_WINDOW_STEP_FRONT
+      ans->dbl_v[i] = fill;                                     // partial window fill all
+    }
+    PROD_WINDOW_STEP_FRONT                                       // i==k-1
+    PROD_WINDOW_STEP_VALUE
+    for (uint64_t i=k; i<nx; i++) {                             // loop over obs, complete window, all remaining after partial window
+      PROD_WINDOW_STEP_BACK
+      PROD_WINDOW_STEP_FRONT
+      PROD_WINDOW_STEP_VALUE
+    }
+  }
+}
+/* fast rolling prod - exact
+ * same as mean exact
+ */
+void frollprodExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollprodExact", (uint64_t)nx, k, hasnf, (int)narm);
+  for (int i=0; i<k-1; i++) {
+    ans->dbl_v[i] = fill;
+  }
+  bool truehasnf = hasnf>0;
+  if (!truehasnf || !narm) {
+#pragma omp parallel for num_threads(getDTthreads(nx, true))
+    for (uint64_t i=k-1; i<nx; i++) {
+      if (narm && truehasnf) {
+        continue;
+      }
+      long double w = 1.0;
+      for (int j=-k+1; j<=0; j++) {
+        w *= x[i+j];
+      }
+      if (R_FINITE((double) w)) {
+        ans->dbl_v[i] = (double) w;
+      } else if (ISNAN((double) w)) {
+        if (!narm) {
+          ans->dbl_v[i] = (double) w;
+        }
+        truehasnf = true;
+      } else {
+        ans->dbl_v[i] = (double) w;
+      }
+    }
+    if (truehasnf) {
+      if (hasnf==-1)
+        ansSetMsg(ans, 2, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning", __func__);
+      if (verbose) {
+        if (narm)
+          ansSetMsg(ans, 0, "%s: non-finite values are present in input, re-running with extra care for NFs\n", __func__);
+        else
+          ansSetMsg(ans, 0, "%s: non-finite values are present in input, na.rm=FALSE and algo='exact' propagates NFs properply, no need to re-run\n", __func__);
+      }
+    }
+  }
+  if (truehasnf && narm) {
+#pragma omp parallel for num_threads(getDTthreads(nx, true))
+    for (uint64_t i=k-1; i<nx; i++) {
+      long double w = 1.0;
+      int nc = 0;
+      for (int j=-k+1; j<=0; j++) {
+        if (ISNAN(x[i+j])) {
+          nc++;
+        } else {
+          w *= x[i+j];
+        }
+      }
+      if (w > DBL_MAX) { // in contrast to mean, here we can overflow long double more than DBL_MAX
+        ans->dbl_v[i] = R_PosInf;
+      } else if (w < -DBL_MAX) {
+        ans->dbl_v[i] = R_NegInf;
+      } else {
+        if (nc < k) {
+          ans->dbl_v[i] = (double) w;
+        } else {
+          ans->dbl_v[i] = 1.0;
+        }
       }
     }
   }

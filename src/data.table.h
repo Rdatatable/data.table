@@ -203,7 +203,8 @@ typedef enum { // adding rolling functions here and in frollfunR in frollR.c
   MEAN = 0,
   SUM = 1,
   MAX = 2,
-  MIN = 3
+  MIN = 3,
+  PROD = 4
 } rollfun_t;
 // froll.c
 void frollfun(rollfun_t rfun, unsigned int algo, double *x, uint64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasnf, bool verbose);
@@ -215,6 +216,8 @@ void frollmaxFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool n
 void frollmaxExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose);
 void frollminFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose);
 void frollminExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose);
+void frollprodFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose);
+void frollprodExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose);
 
 // frolladaptive.c
 void frolladaptivefun(rollfun_t rfun, unsigned int algo, double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasnf, bool verbose);
@@ -226,6 +229,8 @@ void frolladaptivesumExact(double *x, uint64_t nx, ans_t *ans, int *k, double fi
 void frolladaptivemaxExact(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasnf, bool verbose);
 //void frolladaptiveminFast(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasnf, bool verbose); // does not exists as of now
 void frolladaptiveminExact(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasnf, bool verbose);
+void frolladaptiveprodFast(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasnf, bool verbose);
+void frolladaptiveprodExact(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasnf, bool verbose);
 
 // frollR.c
 SEXP frollfunR(SEXP fun, SEXP xobj, SEXP kobj, SEXP fill, SEXP algo, SEXP align, SEXP narm, SEXP hasnf, SEXP adaptive);

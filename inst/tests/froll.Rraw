@@ -1149,6 +1149,46 @@ test(6000.802, frollmin(c(5,NaN,1), 1L), c(5,NaN,1))
 test(6000.803, frollmin(c(1,5,5,NaN,5,5,5), 2L), c(NA,1,5,NaN,NaN,5,5))
 test(6000.804, frollmin(c(1,5,NA,NaN,5,5,5), 2L), c(NA,1,NA,NA,NaN,5,5))
 
+# frollprod
+test(6000.901, frollprod(c(1,1,1), 1), c(1,1,1))
+test(6000.902, frollprod(c(1,1,1), 2), c(NA,1,1))
+test(6000.903, frollprod(c(1,1,1), 2, partial=TRUE), c(1,1,1))
+test(6000.904, frollprod(c(1,1,1), 2, align="left"), c(1,1,NA))
+test(6000.905, frollprod(c(1,1,1), 2, align="left", partial=TRUE), c(1,1,1))
+test(6000.906, frollprod(c(1,1,1), 2, align="center"), c(1,1,NA))
+test(6000.907, frollprod(c(1,1,1,1), 2, align="center"), c(1,1,1,NA))
+test(6000.908, frollprod(1:5, 2, partial=TRUE), c(1,2,6,12,20))
+test(6000.909, frollprod(5:1, 2, partial=TRUE), c(5,20,12,6,2))
+test(6000.910, frollprod(c(Inf,Inf,-Inf), 3), c(NA,NA,-Inf))
+test(6000.911, frollprod(c(Inf,-Inf,-Inf), 3), c(NA,NA,Inf))
+test(6000.912, frollprod(c(-Inf,-Inf), 2), c(NA,Inf))
+test(6000.913, frollprod(c(-Inf,-Inf, -1), 3), c(NA,NA,-Inf))
+test(6000.914, frollprod(1:5, rep(2,5), adaptive=TRUE), c(NA,2,6,12,20))
+test(6000.915, frollprod(1:6/2, 3), c(rep(NA_real_,2), c(0.75, 3, 7.5, 15)))
+test(6000.916, frollprod(1:6/2, c(2L, 2L, 3L, 4L, 2L, 3L), adaptive=TRUE), c(NA, 0.5, 0.75, 1.5, 5, 15))
+options(datatable.verbose=TRUE)
+test(6000.921, frollprod(1:5, 6), rep(NA_real_, 5L), output="window width longer than input vector")
+options(datatable.verbose=FALSE)
+test(6000.922, frollprod(c(1:2,NA,4:10), 4, has.nf=FALSE), c(rep(NA_real_, 6), 840, 1680, 3024, 5040), warning="has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning")
+test(6000.923, frollprod(c(1:2,NA,4:10), 2, has.nf=FALSE), c(NA, 2, NA, NA, 20, 30, 42, 56, 72, 90), warning="has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning")
+test(6000.924, frollprod(c(1:2,NA,4:10), 4, has.nf=FALSE, algo="exact"), c(rep(NA_real_, 6), 840, 1680, 3024, 5040), warning="has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning")
+options(datatable.verbose=TRUE)
+test(6000.925, frollprod(c(1:2,NA,4:10), 4, algo="exact", na.rm=TRUE), c(NA, NA, NA, 8, 40, 120, 840, 1680, 3024, 5040), output="non-finite values are present in input, re-running with extra care for NFs")
+test(6000.926, frollprod(c(1:2,NA,4:10), 4, algo="exact"), c(NA, NA, NA, NA, NA, NA, 840, 1680, 3024, 5040), output="non-finite values are present in input, na.rm=FALSE and algo='exact' propagates NFs properply, no need to re-run")
+options(datatable.verbose=FALSE)
+test(6000.927, frollprod(c(1:2,NA,4:10), rep(4L,10), adaptive=TRUE, has.nf=FALSE), c(NA, NA, NA, NA, NA, NA, 840, 1680, 3024, 5040), warning="has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning")
+test(6000.928, frollprod(c(1:2,NA,4:10), rep(4L,10), adaptive=TRUE, has.nf=FALSE, algo="exact"), c(NA, NA, NA, NA, NA, NA, 840, 1680, 3024, 5040), warning="has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning")
+options(datatable.verbose=TRUE)
+test(6000.929, frollprod(c(1:2,NA,4:10), rep(4L,10), adaptive=TRUE, algo="exact", na.rm=TRUE), c(NA, NA, NA, 8, 40, 120, 840, 1680, 3024, 5040), output="non-finite values are present in input, re-running with extra care for NFs")
+test(6000.930, frollprod(c(1:2,NA,4:10), rep(4L,10), adaptive=TRUE, algo="exact"), c(NA, NA, NA, NA, NA, NA, 840, 1680, 3024, 5040), output="non-finite values are present in input, na.rm=FALSE and algo='exact' propagates NFs properply, no need to re-run")
+test(6000.931, frollprod(1:3, 2), c(NA, 2, 6), output="frollprodFast: running for input length")
+test(6000.932, frollprod(1:3, 2, align="left"), c(2, 6, NA), output="frollfun: align")
+test(6000.933, frollprod(c(1,2,NA), 2), c(NA, 2, NA), output="non-finite values are present in input, re-running with extra care for NFs")
+test(6000.934, frollprod(c(NA,2,3), 2), c(NA, NA, 6), output="non-finite values are present in input, skip non-finite inaware attempt and run with extra care for NFs straighaway")
+test(6000.935, frollprod(1:3, c(2,2,2), adaptive=TRUE), c(NA, 2, 6), output="frolladaptiveprodFast: running for input length")
+test(6000.936, frollprod(c(NA,2,3), c(2,2,2), adaptive=TRUE), c(NA, NA, 6), output="non-finite values are present in input, re-running with extra care for NFs")
+options(datatable.verbose=FALSE)
+
 ## partial
 x = 1:6/2
 n = 3
@@ -1763,7 +1803,7 @@ rollfun = function(x, n, FUN, fill=NA_real_, na.rm=FALSE, nf.rm=FALSE, partial=F
   }
   ans
 }
-base_compare = function(x, n, funs=c("mean","sum","max","min"), algos=c("fast","exact")) {
+base_compare = function(x, n, funs=c("mean","sum","max","min","prod"), algos=c("fast","exact")) {
   num.step = 0.001
   for (fun in funs) {
     for (na.rm in c(FALSE, TRUE)) {
@@ -1774,7 +1814,7 @@ base_compare = function(x, n, funs=c("mean","sum","max","min"), algos=c("fast","
               if (na.rm)
                 next ## errors "not make sense"
               if (any(!is.finite(x)))
-                next ## do not test warnings (mean, sum) or incorrect expect results (max, min)
+                next ## do not test warnings (mean, sum, prod) or incorrect expect results (max, min)
             }
             for (algo in algos) {
               num <<- num + num.step
@@ -1812,7 +1852,7 @@ base_compare(x, n)
 #### against zoo
 if (requireNamespace("zoo", quietly=TRUE)) {
   drollapply = function(...) as.double(zoo::rollapply(...)) # rollapply is not consistent in data type of answer, force to double
-  zoo_compare = function(x, n, funs=c("mean","sum","max","min"), algos=c("fast","exact")) {
+  zoo_compare = function(x, n, funs=c("mean","sum","max","min","prod"), algos=c("fast","exact")) {
     num.step = 0.0001
     #### fun, align, na.rm, fill, algo, partial
     for (fun in funs) {
@@ -1827,7 +1867,7 @@ if (requireNamespace("zoo", quietly=TRUE)) {
                   if (na.rm)
                     next ## errors "not make sense"
                   if (any(!is.finite(x)))
-                    next ## do not test warnings (mean, sum) or incorrect expect results (max, min)
+                    next ## do not test warnings (mean, sum, prod) or incorrect expect results (max, min)
                 }
                 for (algo in algos) {
                   num <<- num + num.step
@@ -1906,7 +1946,7 @@ arollfun = function(FUN, x, n, na.rm=FALSE, align=c("right","left"), fill=NA, nf
   }
   ans
 }
-afun_compare = function(x, n, funs=c("mean","sum","max","min"), algos=c("fast","exact")) {
+afun_compare = function(x, n, funs=c("mean","sum","max","min","prod"), algos=c("fast","exact")) {
   num.step = 0.0001
   #### fun, align, na.rm, fill, algo
   for (fun in funs) {
@@ -1919,7 +1959,7 @@ afun_compare = function(x, n, funs=c("mean","sum","max","min"), algos=c("fast","
                 if (na.rm)
                   next ## errors "not make sense"
                 if (any(!is.finite(x)))
-                  next ## do not test warnings (mean, sum) or incorrect expect results (max, min)
+                  next ## do not test warnings (mean, sum, prod) or incorrect expect results (max, min)
               }
               for (algo in algos) {
                 num <<- num + num.step

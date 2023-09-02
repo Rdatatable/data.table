@@ -40,6 +40,13 @@ void frolladaptivefun(rollfun_t rfun, unsigned int algo, double *x, uint64_t nx,
     }
     frolladaptiveminExact(x, nx, ans, k, fill, narm, hasnf, verbose);
     break;
+  case PROD :
+    if (algo==0) {
+      frolladaptiveprodFast(x, nx, ans, k, fill, narm, hasnf, verbose);
+    } else if (algo==1) {
+      frolladaptiveprodExact(x, nx, ans, k, fill, narm, hasnf, verbose);
+    }
+    break;
   default:
     error(_("Internal error: Unknown rfun value in froll: %d"), rfun); // #nocov
   }
@@ -180,7 +187,7 @@ void frolladaptivemeanFast(double *x, uint64_t nx, ans_t *ans, int *k, double fi
   } // end of truehasnf
   free(cs);
 }
-/* fast rolling adaptive mean exact
+/* fast rolling adaptive mean - exact
  * extra nested loop to calculate mean of each obs and error correction
  * requires much more cpu
  * uses multiple cores
@@ -630,6 +637,199 @@ void frolladaptiveminExact(double *x, uint64_t nx, ans_t *ans, int *k, double fi
             }
           }
           ans->dbl_v[i] = w;
+        }
+      }
+    }
+  }
+}
+
+/* fast rolling adaptive prod - fast
+ * same as adaptive mean fast
+ */
+void frolladaptiveprodFast(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasnf, bool verbose) {
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", hasnf %d, narm %d\n"), "frolladaptiveprodFast", (uint64_t)nx, hasnf, (int) narm);
+  bool truehasnf = hasnf>0;
+  long double w = 1.0;
+  double *cs = malloc(nx*sizeof(double));
+  if (!cs) {                                                    // # nocov start
+    ansSetMsg(ans, 3, "%s: Unable to allocate memory for cumprod", __func__); // raise error
+    free(cs);
+    return;
+  }                                                             // # nocov end
+  if (!truehasnf) {
+    for (uint64_t i=0; i<nx; i++) {
+      w *= x[i];
+      cs[i] = (double) w;
+    }
+    if (R_FINITE((double) w)) {
+#pragma omp parallel for num_threads(getDTthreads(nx, true))
+      for (uint64_t i=0; i<nx; i++) {
+        if (i+1 == k[i]) {
+          ans->dbl_v[i] = cs[i];
+        } else if (i+1 > k[i]) {
+          ans->dbl_v[i] = cs[i]/cs[i-k[i]];
+        } else {
+          ans->dbl_v[i] = fill;
+        }
+      }
+    } else {
+      if (hasnf==-1)
+        ansSetMsg(ans, 2, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning", __func__);
+      if (verbose)
+        ansSetMsg(ans, 0, "%s: non-finite values are present in input, re-running with extra care for NFs\n", __func__);
+      w = 1.0; truehasnf = true;
+    }
+  }
+  if (truehasnf) {
+    uint64_t nc = 0, pinf = 0, ninf = 0;                        // running NA counter
+    uint64_t *cn = malloc(nx*sizeof(uint64_t));                 // cumulative NA counter, used the same way as cumprod, same as uint64_t cn[nx] but no segfault
+    if (!cn) {                                                  // # nocov start
+      ansSetMsg(ans, 3, "%s: Unable to allocate memory for cum NA counter", __func__); // raise error
+      free(cs); free(cn);
+      return;
+    }                                                           // # nocov end
+    uint64_t *cpinf = malloc(nx*sizeof(uint64_t));
+    if (!cpinf) {                                               // # nocov start
+      ansSetMsg(ans, 3, "%s: Unable to allocate memory for cum Inf counter", __func__); // raise error
+      free(cs); free(cn); free(cpinf);
+      return;
+    }                                                           // # nocov end
+    uint64_t *cninf = malloc(nx*sizeof(uint64_t));
+    if (!cninf) {                                               // # nocov start
+      ansSetMsg(ans, 3, "%s: Unable to allocate memory for cum -Inf counter", __func__); // raise error
+      free(cs); free(cn); free(cpinf); free(cninf);
+      return;
+    }                                                           // # nocov end
+    for (uint64_t i=0; i<nx; i++) {                             // loop over observations to calculate cumprod and cum NA counter
+      if (R_FINITE(x[i])) {
+        w *= x[i];                                              // add observation to running prod
+      } else if (ISNAN(x[i])) {
+        nc++;                                                   // increment non-finite counter
+      } else if (x[i]==R_PosInf) {
+        pinf++;
+      } else if (x[i]==R_NegInf) {
+        ninf++;
+      }
+      cs[i] = (double) w;                                       // cumprod, na.rm=TRUE always, NAs handled using cum NA counter
+      cn[i] = nc;                                               // cum NA counter
+      cpinf[i] = pinf;
+      cninf[i] = ninf;
+    }
+
+#undef PROD_WINDOW_STEP_VALUE
+#define PROD_WINDOW_STEP_VALUE                                      \
+    if (wn>0) {                                                    \
+      if (narm) {                                                  \
+        if (wpinf == 0 && wninf == 0) {                            \
+          int thisk = k[i] - ((int) wn);                           \
+          ans->dbl_v[i] = thisk==0 ? 1.0 : (double) ws;            \
+        } else {                                                   \
+          ans->dbl_v[i] = (wninf+(ws<0))%2 ? R_NegInf : R_PosInf;  \
+        }                                                          \
+      } else {                                                     \
+        ans->dbl_v[i] = NA_REAL;                                   \
+      }                                                            \
+    } else {                                                       \
+      if (wpinf == 0 && wninf == 0) {                              \
+        ans->dbl_v[i] = (double) ws;                               \
+      } else {                                                     \
+        ans->dbl_v[i] = (wninf+(ws<0))%2 ? R_NegInf : R_PosInf;    \
+      }                                                            \
+    }
+
+#pragma omp parallel for num_threads(getDTthreads(nx, true))
+    for (uint64_t i=0; i<nx; i++) {
+      uint64_t wn, wpinf, wninf;
+      double ws;
+      if (i+1 < k[i]) {                                         // partial window
+        ans->dbl_v[i] = fill;
+      } else if (i+1 == k[i]) {                                 // first full window
+        wn = cn[i];
+        wpinf = cpinf[i];
+        wninf = cninf[i];
+        ws = cs[i];
+        PROD_WINDOW_STEP_VALUE
+      } else {                                                  // all the remaining full windows
+        wn = cn[i] - cn[i-k[i]];                                // NAs in current window
+        wpinf = cpinf[i] - cpinf[i-k[i]];                       // Inf in current window
+        wninf = cninf[i] - cninf[i-k[i]];                       // -Inf in current window
+        ws = cs[i] / cs[i-k[i]];                                // cumprod in current window
+        PROD_WINDOW_STEP_VALUE
+      }
+    }
+    free(cninf); free(cpinf); free(cn);
+  }
+  free(cs);
+}
+/* fast rolling adaptive prod - exact
+ * same as adaptive mean exact
+ */
+void frolladaptiveprodExact(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasnf, bool verbose) {
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", hasnf %d, narm %d\n"), "frolladaptiveprodExact", (uint64_t)nx, hasnf, (int) narm);
+  bool truehasnf = hasnf>0;
+  if (!truehasnf || !narm) {
+#pragma omp parallel for num_threads(getDTthreads(nx, true))
+    for (uint64_t i=0; i<nx; i++) {
+      if (narm && truehasnf) {
+        continue;
+      }
+      if (i+1 < k[i]) {
+        ans->dbl_v[i] = fill;
+      } else {
+        long double w = 1.0;
+        for (int j=-k[i]+1; j<=0; j++) {
+          w *= x[i+j];
+        }
+        if (R_FINITE((double) w)) {
+          ans->dbl_v[i] = (double) w;
+        } else if (ISNAN((double) w)) {
+          if (!narm) {
+            ans->dbl_v[i] = (double) w;
+          }
+          truehasnf = true;                                     // NAs detected for this window, set flag so rest of windows will not be re-run
+        } else {
+          ans->dbl_v[i] = (double) w;                           // Inf and -Inf
+        }
+      }
+    }
+    if (truehasnf) {
+      if (hasnf==-1)
+        ansSetMsg(ans, 2, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning", __func__);
+      if (verbose) {
+        if (narm)
+          ansSetMsg(ans, 0, "%s: non-finite values are present in input, re-running with extra care for NFs\n", __func__);
+        else
+          ansSetMsg(ans, 0, "%s: non-finite values are present in input, na.rm=FALSE and algo='exact' propagates NFs properply, no need to re-run\n", __func__);
+      }
+    }
+  }
+  if (truehasnf && narm) {
+#pragma omp parallel for num_threads(getDTthreads(nx, true))
+    for (uint64_t i=0; i<nx; i++) {
+      if (i+1 < k[i]) {
+        ans->dbl_v[i] = fill;
+      } else {
+        long double w = 1.0;
+        int nc = 0;
+        for (int j=-k[i]+1; j<=0; j++) {
+          if (ISNAN(x[i+j])) {
+            nc++;
+          } else {
+            w *= x[i+j];
+          }
+        }
+        if (w > DBL_MAX) {
+          ans->dbl_v[i] = R_PosInf;
+        } else if (w < -DBL_MAX) {
+          ans->dbl_v[i] = R_NegInf;
+        } else {
+          if (nc < k[i]) {
+            ans->dbl_v[i] = (double) w;
+          } else {
+            ans->dbl_v[i] = 1.0;
+          }
         }
       }
     }
