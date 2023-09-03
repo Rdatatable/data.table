@@ -1188,6 +1188,23 @@ test(6000.934, frollprod(c(NA,2,3), 2), c(NA, NA, 6), output="non-finite values 
 test(6000.935, frollprod(1:3, c(2,2,2), adaptive=TRUE), c(NA, 2, 6), output="frolladaptiveprodFast: running for input length")
 test(6000.936, frollprod(c(NA,2,3), c(2,2,2), adaptive=TRUE), c(NA, NA, 6), output="non-finite values are present in input, re-running with extra care for NFs")
 options(datatable.verbose=FALSE)
+# floating point overflow
+test(6000.941, frollprod(c(1e100, 1e100, 1e100, 1e100, 1e100), 5), c(NA,NA,NA,NA,Inf))
+test(6000.942, frollprod(c(1e100, 1e100, 1e100, 1e100, 1e100), 4), c(NA,NA,NA,Inf,Inf))
+test(6000.943, frollprod(c(1e100, 1e100, 1e100, 1e100, -1e100), 5), c(NA,NA,NA,NA,-Inf))
+test(6000.944, frollprod(c(1e100, 1e100, 1e100, 1e100, -1e100), 4), c(NA,NA,NA,Inf,-Inf))
+test(6000.945, frollprod(c(1e100, 1e100, 1e100, 1e100, 1e100), 5, algo="exact"), c(NA,NA,NA,NA,Inf))
+test(6000.946, frollprod(c(1e100, 1e100, 1e100, 1e100, 1e100), 4, algo="exact"), c(NA,NA,NA,Inf,Inf))
+test(6000.947, frollprod(c(1e100, 1e100, 1e100, 1e100, -1e100), 5, algo="exact"), c(NA,NA,NA,NA,-Inf))
+test(6000.948, frollprod(c(1e100, 1e100, 1e100, 1e100, -1e100), 4, algo="exact"), c(NA,NA,NA,Inf,-Inf))
+test(6000.949, frollprod(c(1e100, 1e100, 1e100, 1e100, 1e100), rep(5, 5), adaptive=TRUE), c(NA,NA,NA,NA,Inf))
+test(6000.950, frollprod(c(1e100, 1e100, 1e100, 1e100, 1e100), rep(4, 5), adaptive=TRUE), c(NA,NA,NA,Inf,Inf))
+test(6000.951, frollprod(c(1e100, 1e100, 1e100, 1e100, -1e100), rep(5, 5), adaptive=TRUE), c(NA,NA,NA,NA,-Inf))
+test(6000.952, frollprod(c(1e100, 1e100, 1e100, 1e100, -1e100), rep(4, 5), adaptive=TRUE), c(NA,NA,NA,Inf,-Inf))
+test(6000.953, frollprod(c(1e100, 1e100, 1e100, 1e100, 1e100), rep(5, 5), algo="exact", adaptive=TRUE), c(NA,NA,NA,NA,Inf))
+test(6000.954, frollprod(c(1e100, 1e100, 1e100, 1e100, 1e100), rep(4, 5), algo="exact", adaptive=TRUE), c(NA,NA,NA,Inf,Inf))
+test(6000.955, frollprod(c(1e100, 1e100, 1e100, 1e100, -1e100), rep(5, 5), algo="exact", adaptive=TRUE), c(NA,NA,NA,NA,-Inf))
+test(6000.956, frollprod(c(1e100, 1e100, 1e100, 1e100, -1e100), rep(4, 5), algo="exact", adaptive=TRUE), c(NA,NA,NA,Inf,-Inf))
 
 ## partial
 x = 1:6/2
