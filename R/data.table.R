@@ -1749,9 +1749,13 @@ replace_dot_alias = function(e) {
           if (length(q)>=2L && q[[1L]] == "shift") {
             q_named = match.call(shift, q)
             vars = all.vars(q_named)
-            # check if argument
-            if (!is.call(q_named[["fill"]]) && is.null(q_named[["give.names"]])
-              && (is.null(q_named[["fill"]]) || exists(q_named[["fill"]]))) return(TRUE)
+            #browser()
+            # evaluate arguments
+            if (is.symbol(q_named[["fill"]]) && !(q_named["fill"] %chin% sdvars)) {
+              pos = which(names(q_named) == "fill")
+              jsub[[pos]] = eval(jsub[[pos]], parent.frame())
+            } 
+            if (!is.call(q_named[["fill"]]) && is.null(q_named[["give.names"]])) return(TRUE)
               #&& (length(vars) == 0L || all(vars %chin% ls(envir=parent.frame()))) ) return(TRUE)
             #return(!is.call(q_named[["fill"]]) && !is.null(q_named[["give.names"]]))
           }
