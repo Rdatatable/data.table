@@ -10,6 +10,8 @@
 
 ## NEW FEATURES
 
+0. (needs to be moved after rebase anyway) New `frollmin` and `frollprod` has been implemented, towards[#2778](https://github.com/Rdatatable/data.table/issues/2778).
+
 0. (needs to be moved after rebase anyway) New `frolladapt` helper function has been added to aid in preparing adaptive length rolling window width when dealing with _irregularly spaced ordered data_. This lets the user to apply a rolling function over a period without having to deal with gaps in a data where some periods might be missing.
 
 ```r
