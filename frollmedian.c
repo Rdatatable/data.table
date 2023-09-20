@@ -15,9 +15,13 @@ SEXP frollmedianR(SEXP x, SEXP k) {
   SEXP ans = PROTECT(allocVector(REALSXP, nx));
   double *ansp = REAL(ans);
   //Rprintf("ans set 0\n");
-  for (int i=0; i<nx; i++) ansp[i] = 0; //temp
+  //for (int i=0; i<nx; i++) ansp[i] = 0; //temp
   //Rprintf("frollmedianFast\n");
-  frollmedianFast(xp, nx, ansp, ik, /*fill=*/NA_REAL, /*narm=*/0, /*hasnf=*/0, /*verbose=*/0);
+  if (ik <= nx) {
+    frollmedianFast(xp, nx, ansp, ik, /*fill=*/NA_REAL, /*narm=*/0, /*hasnf=*/0, /*verbose=*/0);
+  } else {
+    for (int i=0; i<nx; i++) ansp[i] = NA_REAL;
+  }
 
   UNPROTECT(1);
   return ans;
@@ -268,7 +272,8 @@ void frollmedianFast(double *x, uint64_t nx, /*to be ans_t*/double *ans, int k, 
     }
     esc = true;
   } else if (k==2) {
-    Rprintf("k==2\n");
+    if (verbose)
+      Rprintf("k==2\n");
     ans[0] = fill;
     if (narm) {
       // TODO na.rm handling
