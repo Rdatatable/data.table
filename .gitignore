@@ -10,6 +10,9 @@ data.table_*.tar.gz
 data.table.Rcheck
 src/Makevars
 
+# Package install
+inst/cc
+
 # Emacs IDE files
 .emacs.desktop
 .emacs.desktop.lock
