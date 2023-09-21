@@ -10,6 +10,31 @@
 
 ## NEW FEATURES
 
+0. (needs to be moved after rebase anyway) New `frollmedian` has been implemented, towards[#2778](https://github.com/Rdatatable/data.table/issues/2778). It uses algorithm described by Jukka Suomela in [Median Filtering is Equivalent to Sorting (2014)](https://arxiv.org/abs/1406.1717) which scales very well, not only for size of input vector but also for size of rolling window.
+
+```r
+rollmedian = function(x, n, na.rm=FALSE) {
+  ans = rep(NA_real_, nx<-length(x))
+  if (n<=nx) for (i in n:nx) ans[i] = median(x[(i-n+1L):(i)], na.rm)
+  ans
+}
+setDTthreads(8) ## for frollapply
+set.seed(108)
+x = rnorm(1e5)
+n = 100
+system.time(rollmedian(x, n))
+system.time(frollapply(x, n, median, simplify=unlist))
+system.time(frollmedian(x, n))
+n = 1000
+system.time(rollmedian(x, n))
+system.time(frollapply(x, n, median, simplify=unlist))
+system.time(frollmedian(x, n))
+n = 10000
+system.time(rollmedian(x, n))
+system.time(frollapply(x, n, median, simplify=unlist))
+system.time(frollmedian(x, n))
+```
+
 0. (needs to be moved after rebase anyway) New `frollmin` and `frollprod` has been implemented, towards[#2778](https://github.com/Rdatatable/data.table/issues/2778).
 
 0. (needs to be moved after rebase anyway) New `frolladapt` helper function has been added to aid in preparing adaptive length rolling window width when dealing with _irregularly spaced ordered data_. This lets the user to apply a rolling function over a period without having to deal with gaps in a data where some periods might be missing.

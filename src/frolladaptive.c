@@ -47,6 +47,13 @@ void frolladaptivefun(rollfun_t rfun, unsigned int algo, double *x, uint64_t nx,
       frolladaptiveprodExact(x, nx, ans, k, fill, narm, hasnf, verbose);
     }
     break;
+  case MEDIAN :
+    if (algo==0) {
+      //frolladaptivemedianFast(x, nx, ans, k, fill, narm, hasnf, verbose);
+    } else if (algo==1) {
+      //frolladaptivemedianExact(x, nx, ans, k, fill, narm, hasnf, verbose);
+    }
+    break;
   default:
     error(_("Internal error: Unknown rfun value in froll: %d"), rfun); // #nocov
   }

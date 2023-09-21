@@ -1,10 +1,10 @@
-stopifnot(!system("R CMD SHLIB frollmedian.c"))
+#stopifnot(!system("R CMD SHLIB frollmedian.c"))
 #dyn.unload("frollmedian.so")
-dyn.load("frollmedian.so")
-
-frollmedian = function(x, n, na.rm=FALSE, verbose=FALSE){
-  .Call("frollmedianR", as.double(x), as.integer(n), as.logical(na.rm), as.logical(verbose))
-}
+#dyn.load("frollmedian.so")
+cc()
+#frollmedian = function(x, n, na.rm=FALSE, verbose=FALSE){
+#  .Call("frollmedianR", as.double(x), as.integer(n), as.logical(na.rm), as.logical(verbose))
+#}
 rollmedian = function(x, k, na.rm=FALSE) {
   ans = rep(NA_real_, length(x))
   if (k <= length(x)) {
@@ -115,13 +115,20 @@ if (test_regression<-FALSE) {
   #}
 }
 
-x = c(1,2,3,4,NA,7,8,9,8,NA,NA,1,2,3)
-#x = c(1,2,3,4,Inf,7,8,9,8,-Inf,Inf,1,2,3)
-x
-k = 3
-frollmedian(x, k, na.rm=FALSE)
-frollmedian(x, k, na.rm=TRUE)
-rollmedian(x, k, na.rm=FALSE)
-rollmedian(x, k, na.rm=TRUE)
+if (test_narm<-FALSE) {
+  x = c(1,2,3,4,NA,7,8,9,8,NA,NA,1,2,3)
+  #x = c(1,2,3,4,Inf,7,8,9,8,-Inf,Inf,1,2,3)
+  k = 3
+  frollmedian(x, k, na.rm=FALSE)
+  rollmedian(x, k, na.rm=FALSE)
+  frollmedian(nafill(x, type="locf"), k, na.rm=TRUE)
+  rollmedian(x, k, na.rm=TRUE)
+}
+
+set.seed(108)
+x = rnorm(40)
+k = 4
+options(datatable.verbose=TRUE)
+stopifnot(isTRUE(all.equal(rollmedian(x, k), frollmedian(x, k))))
 
 cat("OK\n")

@@ -152,6 +152,8 @@ SEXP frollfunR(SEXP fun, SEXP xobj, SEXP kobj, SEXP fill, SEXP algo, SEXP align,
     rfun = MIN;
   } else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "prod")) {
     rfun = PROD;
+  } else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "median")) {
+    rfun = MEDIAN;
   } else {
     error(_("Internal error: invalid %s argument in %s function should have been caught earlier. Please report to the data.table issue tracker."), "fun", "rolling"); // # nocov
   }
@@ -177,13 +179,19 @@ SEXP frollfunR(SEXP fun, SEXP xobj, SEXP kobj, SEXP fill, SEXP algo, SEXP align,
   else
     error(_("Internal error: invalid %s argument in %s function should have been caught earlier. Please report to the data.table issue tracker."), "algo", "rolling"); // # nocov
 
+  bool par = ialgo==0 && nx*nk>1 && rfun!=MEDIAN;
   if (verbose) {
-    if (ialgo==0)
-      Rprintf(_("%s: %d column(s) and %d window(s), if product > 1 then entering parallel execution\n"), __func__, nx, nk);
-    else if (ialgo==1)
-      Rprintf(_("%s: %d column(s) and %d window(s), not entering parallel execution here because algo='exact' will compute results in parallel\n"), __func__, nx, nk);
+    if (par) {
+      Rprintf(_("%s: computing %d column(s) and %d window(s) in parallel\n"), __func__, nx, nk);
+    } else if (nx*nk==1) {
+      Rprintf(_("%s: computing %d column(s) and %d window(s) sequentially as there is only single rolling computation\n"), __func__, nx, nk);
+    } else if (ialgo==1) {
+      Rprintf(_("%s: computing %d column(s) and %d window(s) sequentially because algo='exact' is already parallelised within each rolling computation\n"), __func__, nx, nk);
+    } else if (rfun==MEDIAN) {
+      Rprintf(_("%s: computing %d column(s) and %d window(s) sequentially because rolling median is not yet thread safe\n"), __func__, nx, nk);
+    }
   }
-  #pragma omp parallel for if (ialgo==0) schedule(dynamic) collapse(2) num_threads(getDTthreads(nx*nk, false))
+  #pragma omp parallel for if (par) schedule(dynamic) collapse(2) num_threads(getDTthreads(nx*nk, false))
   for (R_len_t i=0; i<nx; i++) {                                // loop over multiple columns
     for (R_len_t j=0; j<nk; j++) {                              // loop over multiple windows
       if (!badaptive) {
