@@ -5,13 +5,13 @@
 #endif
 #define MIN(a,b) (((a)<(b))?(a):(b))
 
-SEXP frollmedianR(SEXP x, SEXP k, SEXP algo, SEXP verbose) {
+SEXP frollmedianR(SEXP x, SEXP k, SEXP narm, SEXP verbose) {
   double *xp = REAL(x);
   uint64_t nx = LENGTH(x);
   int ik = INTEGER(k)[0];
-  int ialgo = INTEGER(algo)[0];
-  if (ialgo < 1 || ialgo > 2) {
-    error("'algo' must be 1 or 2");
+  int inarm = INTEGER(narm)[0];
+  if (inarm!=0 && inarm!=1) {
+    error("'inarm' must be TRUE or FALSE");
   }
   int iverbose = LOGICAL(verbose)[0];
   if (iverbose!=0 && iverbose!=1) {
@@ -20,7 +20,7 @@ SEXP frollmedianR(SEXP x, SEXP k, SEXP algo, SEXP verbose) {
   SEXP ans = PROTECT(allocVector(REALSXP, nx));
   double *ansp = REAL(ans);
   if (ik <= nx) {
-    frollmedianFast(xp, nx, ansp, ik, /*fill=*/NA_REAL, /*narm=*/0, /*hasnf=*/0, /*verbose=*/iverbose);
+    frollmedianFast(xp, nx, ansp, ik, /*fill=*/NA_REAL, /*narm=*/inarm, /*hasnf=*/0, /*verbose=*/iverbose);
   } else {
     for (int i=0; i<nx; i++) ansp[i] = NA_REAL;
   }
@@ -250,19 +250,29 @@ void frollmedianFast(double *x, uint64_t nx, /*to be ans_t*/double *ans, int k, 
   if (k==1) {
     if (verbose)
       Rprintf("k==1\n");
-    if (narm) {
-      // TODO na.rm handling
-    } else {
-      for (int i=0; i<nx; i++)
-        ans[i] = x[i];
-    }
+    for (int i=0; i<nx; i++) // na.rm included
+      ans[i] = x[i];
     esc = true;
   } else if (k==2) {
     if (verbose)
       Rprintf("k==2\n");
     ans[0] = fill;
     if (narm) {
-      // TODO na.rm handling
+      for (int i=1; i<nx; i++) {
+        if (ISNAN(x[i])) {
+          if (ISNAN(x[i-1])) {
+            ans[i] = NA_REAL;
+          } else {
+            ans[i] = x[i-1];
+          }
+        } else {
+          if (ISNAN(x[i-1])) {
+            ans[i] = x[i];
+          } else {
+            ans[i] = (x[i]+x[i-1])/2;
+          }
+        }
+      }
     } else {
       for (int i=1; i<nx; i++)
         ans[i] = (x[i]+x[i-1])/2;
@@ -339,6 +349,7 @@ void frollmedianFast(double *x, uint64_t nx, /*to be ans_t*/double *ans, int k, 
   if (verbose)
     tic = omp_get_wtime();
   // even-k-aware supports uneven-k as well without much overhead, disabled branch is left for potential future internal use and for reference of the algo as in paper
+  // TODO add a switch to fall back to this uneven-k only version for testing in case of uneven k and no NAs
   if (false && !even) {
     ans[k-1] = PEEK(0);
     if (verbose) {

@@ -2,14 +2,14 @@ stopifnot(!system("R CMD SHLIB frollmedian.c"))
 #dyn.unload("frollmedian.so")
 dyn.load("frollmedian.so")
 
-frollmedian = function(x, n, algo=1L, verbose=FALSE){
-  .Call("frollmedianR", as.double(x), as.integer(n), as.integer(algo), as.logical(verbose))
+frollmedian = function(x, n, na.rm=FALSE, verbose=FALSE){
+  .Call("frollmedianR", as.double(x), as.integer(n), as.logical(na.rm), as.logical(verbose))
 }
-rollmedian = function(x, k) {
+rollmedian = function(x, k, na.rm=FALSE) {
   ans = rep(NA_real_, length(x))
   if (k <= length(x)) {
     for (i in k:length(x)) {
-      ans[i] = median(x[(i-k+1L):(i)])
+      ans[i] = median(x[(i-k+1L):(i)], na.rm=na.rm)
     }
   }
   ans
@@ -90,5 +90,38 @@ if (test_algo<-FALSE) {
   cat("k=1e5+1\n")
   print(system.time(frollmedian(x, 1e5+1)))
 }
+
+if (test_regression<-FALSE) {
+  set.seed(108)
+  stopifnot(requireNamespace("roll", quietly=TRUE))
+  roll = function(x, k, na.rm=FALSE) roll::roll_median(x, k, na_restore=!na.rm)
+  N = c(1e2, 1e2+1, 1e3, 1e3+1)
+  K = c(10, 11, 100, 101)
+  for (n in N) {
+    x = rnorm(n)
+    for (k in K) {
+      stopifnot(isTRUE(all.equal(roll(x, k), rollmedian(x, k))))
+      stopifnot(isTRUE(all.equal(roll(x, k), frollmedian(x, k))))
+    }
+  }
+  #for (n in N) {
+  #  x = rnorm(n)
+  #  na = sample(n, n/10)
+  #  x[na] = NA_real_
+  #  for (k in K) {
+  #    stopifnot(isTRUE(all.equal(rollmedian(x, k, na.rm=FALSE), frollmedian(x, k, na.rm=FALSE))))
+  #    stopifnot(isTRUE(all.equal(rollmedian(x, k, na.rm=TRUE), frollmedian(x, k, na.rm=TRUE))))
+  #  }
+  #}
+}
+
+x = c(1,2,3,4,NA,7,8,9,8,NA,NA,1,2,3)
+#x = c(1,2,3,4,Inf,7,8,9,8,-Inf,Inf,1,2,3)
+x
+k = 3
+frollmedian(x, k, na.rm=FALSE)
+frollmedian(x, k, na.rm=TRUE)
+rollmedian(x, k, na.rm=FALSE)
+rollmedian(x, k, na.rm=TRUE)
 
 cat("OK\n")
