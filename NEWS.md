@@ -13,9 +13,9 @@
 0. (needs to be moved after rebase anyway) New `frollmedian` has been implemented, towards[#2778](https://github.com/Rdatatable/data.table/issues/2778). It uses algorithm described by Jukka Suomela in [Median Filtering is Equivalent to Sorting (2014)](https://arxiv.org/abs/1406.1717) which scales very well, not only for size of input vector but also for size of rolling window.
 
 ```r
-rollmedian = function(x, n, na.rm=FALSE) {
+rollmedian = function(x, n) {
   ans = rep(NA_real_, nx<-length(x))
-  if (n<=nx) for (i in n:nx) ans[i] = median(x[(i-n+1L):(i)], na.rm)
+  if (n<=nx) for (i in n:nx) ans[i] = median(x[(i-n+1L):(i)])
   ans
 }
 setDTthreads(8) ## for frollapply

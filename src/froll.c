@@ -1279,19 +1279,19 @@ void frollmedianFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, boo
     return;
   }
   bool hasna = false;
-  for (uint64_t i=0; i<nx; i++) {
-    if (ISNAN(x[i])) {
-      hasna = true;
-      break;
+  if (hasnf>=0) {
+    for (uint64_t i=0; i<nx; i++) {
+      if (ISNAN(x[i])) {
+        hasna = true;
+        break;
+      }
     }
-  }
-  if (hasna) {
-    if (hasnf==-1)
-      ansSetMsg(ans, 2, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning", __func__);
-    if (verbose)
-      snprintf(end(ans->message[0]), 500, _("%s: NAs detected, fall back to frollmedianExact\n"), "frollmedianFast");
-    frollmedianExact(x, nx, ans, k, fill, narm, true, verbose);
-    return;
+    if (hasna) {
+      if (verbose)
+        snprintf(end(ans->message[0]), 500, _("%s: NAs detected, fall back to frollmedianExact\n"), "frollmedianFast");
+      frollmedianExact(x, nx, ans, k, fill, narm, true, verbose);
+      return;
+    }
   }
   double tic = 0;
   double *ansv = ans->dbl_v;
@@ -1361,6 +1361,9 @@ void frollmedianFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, boo
   } // # nocov end
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: finding order for %d blocks took %.3fs\n"), "frollmedianFast", b, omp_get_wtime()-tic);
+  // order could detect NAs and update hasna flag, then the following warning may be reached
+  if (hasna && hasnf==-1)
+    ansSetMsg(ans, 2, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning", __func__);
   // initialize pointer in blocks
   if (verbose)
     tic = omp_get_wtime();

@@ -70,7 +70,7 @@
     \item{ \code{has.nf=FALSE} uses faster implementation that does not support non-finite values. Then depending on the rolling function it will either:
     \itemize{
       \item{ (\emph{mean, sum, prod}) detect non-finite, re-run non-finite aware. }
-      \item{ (\emph{max, min}) not detect NFs and may silently give incorrect answer. }
+      \item{ (\emph{max, min, median}) not detect NFs and may silently give incorrect answer. }
     }
     In general \code{has.nf=FALSE && any(!is.finite(x))} should be considered as undefined behavior. Therefore \code{has.nf=FALSE} should be used with care. }
   }
