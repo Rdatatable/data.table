@@ -1216,9 +1216,8 @@ rollmedian = function(x, k, na.rm=FALSE) {
   }
   ans
 } ## used for dput
-## escape for n < 3
 options(datatable.verbose=TRUE)
-x = c(5, 1, 2, 2.5, 1.5, 4, 4.5, 0.5, 3.5, 3)
+x = c(5, 1, 2, 2.5, 1.5, 4, 4.5, 0.5, 3.5, 3) ## escape for n < 3
 test(6001.001, frollmedian(x, 1), c(5, 1, 2, 2.5, 1.5, 4, 4.5, 0.5, 3.5, 3), output="window size is 1 so can skip whole median")
 test(6001.002, frollmedian(x, 2), c(NA, 3, 1.5, 2.25, 2, 2.75, 4.25, 2.5, 2, 3.25), output="window size is 2 so can skip whole median")
 x = c(5, 1, NA, 2.5, 1.5, 4, NA, NA, 3.5, 3)
@@ -1229,11 +1228,42 @@ test(6001.006, frollmedian(x, 2, na.rm=TRUE), c(NA, 3, 1, 2.5, 2, 2.75, 4, NA, 3
 x = c(5, 1, Inf, 2.5, 1.5, 4, Inf, -Inf, 3.5, 3)
 test(6001.007, frollmedian(x, 1), c(5, 1, Inf, 2.5, 1.5, 4, Inf, -Inf, 3.5, 3), output="window size is 1 so can skip whole median")
 test(6001.008, frollmedian(x, 2), c(NA, 3, Inf, Inf, 2, 2.75, Inf, NaN, -Inf, 3.25), output="window size is 2 so can skip whole median")
+test(6001.011, frollmedian(1:9, 3), as.double(c(NA,NA,2:8)), output="running implementation as described in the paper by Jukka Suomela, for uneven window size, length of input a multiple of window size, no NAs in the input data")
+test(6001.012, frollmedian(1:10, 3), as.double(c(NA,NA,2:9)), notOutput="running implementation as described in the paper by Jukka Suomela, for uneven window size, length of input a multiple of window size, no NAs in the input data", output="padding with 2 elements")
+test(6001.013, frollmedian(c(1,2,3,4,NA,6), 3), c(NA, NA, 2, 3, NA, NA), output="NAs detected, fall back to frollmedianExact\nfrollmedianExact: running not yet in parallel for input length 6, window 3, hasnf 1, narm 0")
 options(datatable.verbose=FALSE)
-#DEV
-#x = c(5, 1, 2, 2.5, 1.5, 4, 4.5, 0.5, 3.5, 3)
-#test(6001.001, frollmedian(x, 3), frollapply(x, 3, median))
-#test(6001.002, frollmedian(x, 4), frollapply(x, 4, median))
+test(6001.051, frollmedian(c(1,2,3,4,NA,6), 3, has.nf=FALSE), c(NA, NA, 2, 3, NA, NA), warning="has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning")
+
+x = c(1,2,3,4,NA,6)
+k = 3
+test(6001.101, frollmedian(x, k, na.rm=FALSE), c(NA, NA, 2, 3, NA, NA))
+test(6001.102, frollmedian(x, k, na.rm=TRUE), c(NA, NA, 2, 3, 3.5, 5))
+x = c(1,2,3,4,NA,NA,6)
+k = 3
+test(6001.103, frollmedian(x, k, na.rm=FALSE), c(NA, NA, 2, 3, NA, NA, NA))
+test(6001.104, frollmedian(x, k, na.rm=TRUE), c(NA, NA, 2, 3, 3.5, 4, 6))
+x = c(1,2,3,4,NA,6)
+k = 4
+test(6001.105, frollmedian(x, k, na.rm=FALSE), c(NA, NA, NA, 2.5, NA, NA))
+test(6001.106, frollmedian(x, k, na.rm=TRUE), c(NA, NA, NA, 2.5, 3, 4))
+x = c(1,2,3,4,NA,NA,6)
+k = 4
+test(6001.107, frollmedian(x, k, na.rm=FALSE), c(NA, NA, NA, 2.5, NA, NA, NA))
+test(6001.108, frollmedian(x, k, na.rm=TRUE), c(NA, NA, NA, 2.5, 3, 3.5, 5))
+x = c(1,2,3,4,NA,NA,NA,NA,6)
+k = 3
+test(6001.109, frollmedian(x, k, na.rm=FALSE), c(NA, NA, 2, 3, NA, NA, NA, NA, NA))
+test(6001.110, frollmedian(x, k, na.rm=TRUE), c(NA, NA, 2, 3, 3.5, 4, NA, NA, 6))
+k = 4
+test(6001.111, frollmedian(x, k, na.rm=FALSE), c(NA, NA, NA, 2.5, NA, NA, NA, NA, NA))
+test(6001.112, frollmedian(x, k, na.rm=TRUE), c(NA, NA, NA, 2.5, 3, 3.5, 4, NA, 6))
+x = rep(NA_real_,10)
+k = 3
+test(6001.113, frollmedian(x, k, na.rm=FALSE), rep(NA_real_,10))
+test(6001.114, frollmedian(x, k, na.rm=TRUE), rep(NA_real_,10))
+k = 4
+test(6001.115, frollmedian(x, k, na.rm=FALSE), rep(NA_real_,10))
+test(6001.116, frollmedian(x, k, na.rm=TRUE), rep(NA_real_,10))
 
 ## bigger sets for uneven k vs stats::runmed Turlach
 runmedr = function(x, k) {
@@ -1872,7 +1902,7 @@ rollfun = function(x, n, FUN, fill=NA_real_, na.rm=FALSE, nf.rm=FALSE, partial=F
   }
   ans
 }
-base_compare = function(x, n, funs=c("mean","sum","max","min","prod"), algos=c("fast","exact")) {
+base_compare = function(x, n, funs=c("mean","sum","max","min","prod","median"), algos=c("fast","exact")) {
   num.step = 0.001
   for (fun in funs) {
     for (na.rm in c(FALSE, TRUE)) {
@@ -1921,7 +1951,7 @@ base_compare(x, n)
 #### against zoo
 if (requireNamespace("zoo", quietly=TRUE)) {
   drollapply = function(...) as.double(zoo::rollapply(...)) # rollapply is not consistent in data type of answer, force to double
-  zoo_compare = function(x, n, funs=c("mean","sum","max","min","prod"), algos=c("fast","exact")) {
+  zoo_compare = function(x, n, funs=c("mean","sum","max","min","prod","median"), algos=c("fast","exact")) {
     num.step = 0.0001
     #### fun, align, na.rm, fill, algo, partial
     for (fun in funs) {
@@ -1929,8 +1959,8 @@ if (requireNamespace("zoo", quietly=TRUE)) {
         for (na.rm in c(FALSE, TRUE)) {
           for (fill in c(NA_real_, 0)) {
             for (partial in c(FALSE,TRUE)) {
-            if (partial && align=="center")
-              next ## center does not work with adaptive, so partial as well
+              if (partial && align=="center")
+                next ## center does not work with adaptive, so partial as well
               for (has.nf in c(NA,TRUE,FALSE)) {
                 if (identical(has.nf, FALSE)) {
                   if (na.rm)
@@ -2015,7 +2045,7 @@ arollfun = function(FUN, x, n, na.rm=FALSE, align=c("right","left"), fill=NA, nf
   }
   ans
 }
-afun_compare = function(x, n, funs=c("mean","sum","max","min","prod"), algos=c("fast","exact")) {
+afun_compare = function(x, n, funs=c("mean","sum","max","min","prod","median"), algos=c("fast","exact")) {
   num.step = 0.0001
   #### fun, align, na.rm, fill, algo
   for (fun in funs) {

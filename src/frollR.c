@@ -185,10 +185,10 @@ SEXP frollfunR(SEXP fun, SEXP xobj, SEXP kobj, SEXP fill, SEXP algo, SEXP align,
       Rprintf(_("%s: computing %d column(s) and %d window(s) in parallel\n"), __func__, nx, nk);
     } else if (nx*nk==1) {
       Rprintf(_("%s: computing %d column(s) and %d window(s) sequentially as there is only single rolling computation\n"), __func__, nx, nk);
-    } else if (ialgo==1) {
+    } else if (ialgo==1 && rfun!=MEDIAN) {
       Rprintf(_("%s: computing %d column(s) and %d window(s) sequentially because algo='exact' is already parallelised within each rolling computation\n"), __func__, nx, nk);
     } else if (rfun==MEDIAN) {
-      Rprintf(_("%s: computing %d column(s) and %d window(s) sequentially because rolling median is not yet thread safe\n"), __func__, nx, nk);
+      Rprintf(_("%s: computing %d column(s) and %d window(s) sequentially because rolling median is (not yet thread) safe\n"), __func__, nx, nk);
     }
   }
   #pragma omp parallel for if (par) schedule(dynamic) collapse(2) num_threads(getDTthreads(nx*nk, false))

@@ -48,11 +48,11 @@ void frolladaptivefun(rollfun_t rfun, unsigned int algo, double *x, uint64_t nx,
     }
     break;
   case MEDIAN :
-    if (algo==0) {
-      //frolladaptivemedianFast(x, nx, ans, k, fill, narm, hasnf, verbose);
-    } else if (algo==1) {
-      //frolladaptivemedianExact(x, nx, ans, k, fill, narm, hasnf, verbose);
+    if (algo==0 && verbose) {
+      //frolladaptivemedianFast(x, nx, ans, k, fill, narm, hasnf, verbose); // frolladaptivemedianFast does not exists as of now
+      snprintf(end(ans->message[0]), 500, _("%s: algo %u not implemented, fall back to %u\n"), __func__, algo, (unsigned int) 1);
     }
+    frolladaptivemedianExact(x, nx, ans, k, fill, narm, hasnf, verbose);
     break;
   default:
     error(_("Internal error: Unknown rfun value in froll: %d"), rfun); // #nocov
@@ -837,6 +837,54 @@ void frolladaptiveprodExact(double *x, uint64_t nx, ans_t *ans, int *k, double f
           } else {
             ans->dbl_v[i] = 1.0;
           }
+        }
+      }
+    }
+  }
+}
+
+/* fast rolling adaptive median - exact
+ */
+void frolladaptivemedianExact(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasnf, bool verbose) {
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: running not yet in parallel for input length %"PRIu64", hasnf %d, narm %d\n"), "frolladaptivemedianExact", (uint64_t)nx, hasnf, (int) narm);
+  // find largest window size
+  int maxk = k[0];
+  for (int i=1; i<nx; i++) {
+    if (k[i] > maxk)
+      maxk = k[i];
+  }
+  int nth = 1; //getDTthreads(nx, true); // sequential
+  int *o = malloc(nth*maxk*sizeof(int));
+  if (!o) { // # nocov start
+    ansSetMsg(ans, 3, "%s: Unable to allocate memory for o", __func__); // raise error
+    free(o);
+    return;
+  } // # nocov end
+  //#pragma omp parallel for num_threads(nth)
+  for (uint64_t i=0; i<nx; i++) {
+    if (i+1 < k[i]) {
+      ans->dbl_v[i] = fill;
+    } else {
+      int ik = k[i];
+      int nc = 0;
+      double *ix = &x[i-ik+1];
+      //int *tho = o[th*maxk]; // thread-specific o
+      int r = order_d(ix, o, ik, &nc);
+      if (!r) { // # nocov start
+        ansSetMsg(ans, 3, "%s: order_d failed", __func__); // raise error
+        return;
+      } // # nocov end
+      if (!nc) {
+        ans->dbl_v[i] = !(ik%2) ? (ix[o[ik/2-1]]+ix[o[ik/2]])/2 : ix[o[(ik-1)/2]];
+      } else {
+        if (hasnf==-1)
+          ansSetMsg(ans, 2, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning", __func__);
+        if (!narm || nc==ik) {
+          ans->dbl_v[i] = NA_REAL;
+        } else {
+          ik = ik-nc; // NAs are at the end for orderVector1
+          ans->dbl_v[i] = !(ik%2) ? (ix[o[ik/2-1]]+ix[o[ik/2]])/2 : ix[o[(ik-1)/2]];
         }
       }
     }

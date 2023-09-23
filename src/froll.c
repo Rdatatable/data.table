@@ -85,7 +85,7 @@ void frollfun(rollfun_t rfun, unsigned int algo, double *x, uint64_t nx, ans_t *
     if (algo==0) {
       frollmedianFast(x, nx, ans, k, fill, narm, hasnf, verbose);
     } else if (algo==1) {
-      //frollmedianExact(x, nx, ans, k, fill, narm, hasnf, verbose);
+      frollmedianExact(x, nx, ans, k, fill, narm, hasnf, verbose);
     }
     break;
     default:
@@ -1231,10 +1231,23 @@ static SEXP try_order_d(double *x, int *o, int k, int b) {
   struct order_d_args args = { .x = x, .o = o, .k = k, .b = b };
   return R_tryCatchError(do_order_d, &args, NULL, NULL);
 }
+int loop_order_d(double *x, int *o, int k, int b) {
+  SEXP try_order_ok = PROTECT(try_order_d(x, o, k, b));
+  bool ok = try_order_ok!=R_NilValue;
+  UNPROTECT(1);
+  return ok;
+}
+int order_d(double *x, int *o, int k, int *nc) {
+  SEXP try_order_ok = PROTECT(try_order_d(x, o, k, 1));
+  bool ok = try_order_ok!=R_NilValue;
+  UNPROTECT(1);
+  for (int i=0; i<k; i++) if (ISNAN(x[i])) nc[0]++;
+  return ok;
+}
 void frollmedianFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollmedianFast", (uint64_t)nx, k, hasnf, (int)narm);
-  if (k==1 || k==2) { // special case for k==1 and k==2
+  if (k==1 || k==2) { // special case for k==1 and k==2, wont rise warning for NAs present and hasnf=FALSE
     if (verbose)
       snprintf(end(ans->message[0]), 500, _("%s: window size is %d so can skip whole median and use simple loop\n"), "frollmedianFast", k);
     if (k==1) {
@@ -1265,210 +1278,240 @@ void frollmedianFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, boo
     }
     return;
   }
-  bool truehasnf = hasnf>0;
-  if (truehasnf) {
-    bool hasna = false;
-    for (uint64_t i=0; i<nx; i++) {
-      if (ISNAN(x[i])) {
-        hasna = true;
-        break;
-      }
-    }
-    if (hasna) {
-      if (verbose)
-        snprintf(end(ans->message[0]), 500, _("%s: NAs detected, fall back to frollmedianExact\n"), "frollmedianFast");
-      //frollmedianExact(x, nx, ans, k, fill, narm, true, verbose);
-      return;
-    } else {
-      truehasnf = false; // inf are not a problem for median
+  bool hasna = false;
+  for (uint64_t i=0; i<nx; i++) {
+    if (ISNAN(x[i])) {
+      hasna = true;
+      break;
     }
   }
-  if (!truehasnf) {
-    double tic = 0;
-    double *ansv = ans->dbl_v;
-    // handling of nx not multiple of k
-    int nx_mod_k = nx % k;
-    if (nx_mod_k) {
-      if (verbose)
-        snprintf(end(ans->message[0]), 500, _("%s: nx=%"PRIu64" is not multiple of k=%d, padding with %d elements, new nx=%"PRIu64"\n"), "frollmedianFast", nx, k, k-nx_mod_k, nx+(k-nx_mod_k));
-      nx = nx + (k-nx_mod_k);
-      // TODO
-      // x = realloc(x, nx); // to avoid memory sanitizer issues, possibly we could branch forder calls and then no need to realloc but only new nx is enough
-      // OR
-      // handle last block finding order when nx%k > 0, otherwise memory sanitizers will warn, *x is initialized for original nx, not padded
-    }
-    int b = nx/k;
-    bool even = !(k % 2);
-    int h = even ? k/2-1 : (k-1)/2;
-    int tail = k;
+  if (hasna) {
+    if (hasnf==-1)
+      ansSetMsg(ans, 2, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning", __func__);
     if (verbose)
-      tic = omp_get_wtime();
-    int *o = malloc(nx*sizeof(int)); // permutation that sorts input vector x
-    if (!o) { // # nocov start
-      ansSetMsg(ans, 3, "%s: Unable to allocate memory for o", __func__); // raise error
-      free(o);
-      return;
-    } // # nocov end
-    int *m = malloc(b*sizeof(int)); // pointer to median candidate in that L, initialized to first large element in L
-    if (!m) { // # nocov start
-      ansSetMsg(ans, 3, "%s: Unable to allocate memory for m", __func__); // raise error
-      free(m); free(o);
-      return;
-    } // # nocov end
-    int *n = malloc(b*sizeof(int)); // pointer to median candidate of a pair mid values in that L for even k, initialized to second large element
-    if (!n) { // # nocov start
-      ansSetMsg(ans, 3, "%s: Unable to allocate memory for n", __func__); // raise error
-      free(n); free(m); free(o);
-      return;
-    } // # nocov end
-    int *s = malloc(b*sizeof(int)); // counter between 0 and k, number of 'small' elements in list L
-    if (!s) { // # nocov start
-      ansSetMsg(ans, 3, "%s: Unable to allocate memory for s", __func__); // raise error
-      free(s); free(n); free(m); free(o);
-      return;
-    } // # nocov end
-    int *prev = malloc(b*(k+1)*sizeof(int)); // pointer to previous element in list L
-    if (!prev) { // # nocov start
-      ansSetMsg(ans, 3, "%s: Unable to allocate memory for prev", __func__); // raise error
-      free(prev); free(s); free(n); free(m); free(o);
-      return;
-    } // # nocov end
-    int *next = malloc(b*(k+1)*sizeof(int)); // pointer to next element in list L
-    if (!next) { // # nocov start
-      ansSetMsg(ans, 3, "%s: Unable to allocate memory for next", __func__); // raise error
-      free(next); free(prev); free(s); free(n); free(m); free(o);
-      return;
-    } // # nocov end
+      snprintf(end(ans->message[0]), 500, _("%s: NAs detected, fall back to frollmedianExact\n"), "frollmedianFast");
+    frollmedianExact(x, nx, ans, k, fill, narm, true, verbose);
+    return;
+  }
+  double tic = 0;
+  double *ansv = ans->dbl_v;
+  // handling of nx not multiple of k
+  int nx_mod_k = nx % k;
+  if (nx_mod_k) {
     if (verbose)
-      snprintf(end(ans->message[0]), 500, _("%s: allocations took %.3fs\n"), "frollmedianFast", omp_get_wtime()-tic);
-
+      snprintf(end(ans->message[0]), 500, _("%s: nx=%"PRIu64" is not multiple of k=%d, padding with %d elements, new nx=%"PRIu64"\n"), "frollmedianFast", nx, k, k-nx_mod_k, nx+(k-nx_mod_k));
+    nx = nx + (k-nx_mod_k);
+    // TODO?
+    // handle last block finding order when nx%k > 0, otherwise memory sanitizers may warn, *x is initialized for original nx, not padded
+  }
+  // number of blocks, even k, h number of small elements in list
+  int b = nx/k;
+  bool even = !(k % 2);
+  int h = even ? k/2-1 : (k-1)/2;
+  int tail = k;
+  // allocation as long arrays rather than block structs
+  if (verbose)
+    tic = omp_get_wtime();
+  int *o = malloc(nx*sizeof(int)); // permutation that sorts input vector x
+  if (!o) { // # nocov start
+    ansSetMsg(ans, 3, "%s: Unable to allocate memory for o", __func__); // raise error
+    free(o);
+    return;
+  } // # nocov end
+  int *m = malloc(b*sizeof(int)); // pointer to median candidate in that L, initialized to first large element in L
+  if (!m) { // # nocov start
+    ansSetMsg(ans, 3, "%s: Unable to allocate memory for m", __func__); // raise error
+    free(m); free(o);
+    return;
+  } // # nocov end
+  int *n = malloc(b*sizeof(int)); // pointer to median candidate of a pair mid values in that L for even k, initialized to second large element
+  if (!n) { // # nocov start
+    ansSetMsg(ans, 3, "%s: Unable to allocate memory for n", __func__); // raise error
+    free(n); free(m); free(o);
+    return;
+  } // # nocov end
+  int *s = malloc(b*sizeof(int)); // counter between 0 and k, number of 'small' elements in list L
+  if (!s) { // # nocov start
+    ansSetMsg(ans, 3, "%s: Unable to allocate memory for s", __func__); // raise error
+    free(s); free(n); free(m); free(o);
+    return;
+  } // # nocov end
+  int *prev = malloc(b*(k+1)*sizeof(int)); // pointer to previous element in list L
+  if (!prev) { // # nocov start
+    ansSetMsg(ans, 3, "%s: Unable to allocate memory for prev", __func__); // raise error
+    free(prev); free(s); free(n); free(m); free(o);
+    return;
+  } // # nocov end
+  int *next = malloc(b*(k+1)*sizeof(int)); // pointer to next element in list L
+  if (!next) { // # nocov start
+    ansSetMsg(ans, 3, "%s: Unable to allocate memory for next", __func__); // raise error
+    free(next); free(prev); free(s); free(n); free(m); free(o);
+    return;
+  } // # nocov end
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: allocations took %.3fs\n"), "frollmedianFast", omp_get_wtime()-tic);
+  // find ordering permutation for each block
+  if (verbose)
+    tic = omp_get_wtime();
+  int r = loop_order_d(x, o, k, b); // TODO replace by non-R order function, collect NA stats
+  if (!r) { // # nocov start
+    ansSetMsg(ans, 3, "%s: loop_order_d failed", __func__); // raise error
+    free(next); free(prev); free(s); free(n); free(m); free(o);
+    return;
+  } // # nocov end
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: finding order for %d blocks took %.3fs\n"), "frollmedianFast", b, omp_get_wtime()-tic);
+  // initialize pointer in blocks
+  if (verbose)
+    tic = omp_get_wtime();
+  for (int j=0; j<b; j++) { // easily parallel now but nothing to gain
+    m[j] = o[j*k+h];
+    if (even) n[j] = o[j*k+h+1];
+    s[j] = h;
+    setlinks(&o[j*k], &next[j*(k+1)], &prev[j*(k+1)], tail);
+  }
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: initialization for %d blocks took %.3fs\n"), "frollmedianFast", b, omp_get_wtime()-tic);
+  // fill leading partial window
+  for (int i=0; i<k-1; i++)
+    ansv[i] = fill;
+  // double check NAs were redirected before
+  if (hasna) { // # nocov start
+    ansSetMsg(ans, 3, "%s: internal error, 'hasna' must not be true at this point, unless NA handling has been implemented in frollmedianFast, then this error check should be removed ", __func__); // raise error
+    free(next); free(prev); free(s); free(n); free(m); free(o);
+    return;
+  } // # nocov end
+  // main rolling loop - called post processing in the paper
+  if (verbose)
+    tic = omp_get_wtime();
+  if (!nx_mod_k && !even && !hasna) {
     if (verbose)
-      tic = omp_get_wtime();
-    SEXP try_order_ok = PROTECT(try_order_d(x, o, k, b));
-    bool order_error = try_order_ok==R_NilValue;
-    UNPROTECT(1);
-    if (order_error) { // # nocov start
-      ansSetMsg(ans, 3, "%s: try_order_d failed", __func__); // raise error
-      free(next); free(prev); free(s); free(n); free(m); free(o);
-      return;
-    } // # nocov end
-    if (verbose)
-      snprintf(end(ans->message[0]), 500, _("%s: finding order for %d blocks took %.3fs\n"), "frollmedianFast", b, omp_get_wtime()-tic);
-
-    if (verbose)
-      tic = omp_get_wtime();
-    for (int j=0; j<b; j++) { // easily parallel now but nothing to gain
-      m[j] = o[j*k+h];
-      if (even) n[j] = o[j*k+h+1];
-      s[j] = h;
-      setlinks(&o[j*k], &next[j*(k+1)], &prev[j*(k+1)], tail);
-    }
-    if (verbose)
-      snprintf(end(ans->message[0]), 500, _("%s: initialization for %d blocks took %.3fs\n"), "frollmedianFast", b, omp_get_wtime()-tic);
-
-    for (int i=0; i<k-1; i++)
-      ansv[i] = fill;
-    if (verbose)
-      tic = omp_get_wtime();
-    // even-k-aware supports uneven-k as well without much overhead, disabled branch is left for potential future internal use and for reference of the algo as in paper
-    // TODO add a switch to fall back to this uneven-k only version for testing in case of uneven k and no NAs
-    if (false && !even) {
-      ansv[k-1] = PEEK(0);
-      if (verbose)
-        snprintf(end(ans->message[0]), 500, _("%s: running original uneven-k implementation as described in the paper by Jukka Suomela, extended only for arbitrary nx via padding\n"), "frollmedianFast");
-      for (int j=1; j<b; j++) {
-        int A = j-1, B = j;
-        UNWIND(B);
-        /*stopifnot*/ if (!(s[A] == h)) {
-          snprintf(end(ans->message[3]), 500, _("%s: 's[A] == h' is not true\n"), "frollmedianFast");
-          return;
-        }
-        /*stopifnot*/ if (!(s[B] == 0)) {
-          snprintf(end(ans->message[3]), 500, _("%s: 's[B] == 0' is not true\n"), "frollmedianFast");
-          return;
-        }
-        for (int i=0; i<k; i++) {
-          if (nx_mod_k && j==b-1) {
-            if (verbose && i==nx_mod_k)
-              snprintf(end(ans->message[0]), 500, _("%s: skip rolling for %d padded elements\n"), "frollmedianFast", k-nx_mod_k);
-            if (i>=nx_mod_k)
-              continue;
-          }
-          DELETE(A);
-          UNDELETE(B);
-          /*stopifnot*/ if (!(s[A] + s[B] <= h)) {
-            snprintf(end(ans->message[3]), 500, _("%s: 's[A] + s[B] <= h' is not true\n"), "frollmedianFast");
-            return;
-          }
-          if (s[A] + s[B] < h) {
-            if (PEEK(A) <= PEEK(B)) {
-              ADVANCE(A);
-            } else {
-              ADVANCE(B);
-            }
-          }
-          /*stopifnot*/ if (!(s[A] + s[B] == h)) {
-            snprintf(end(ans->message[3]), 500, _("%s: 's[A] + s[B] == h' is not true\n"), "frollmedianFast");
-            return;
-          }
-          ansv[j*k+i] = MED(A, B);
-        }
+      snprintf(end(ans->message[0]), 500, _("%s: running implementation as described in the paper by Jukka Suomela, for uneven window size, length of input a multiple of window size, no NAs in the input data\n"), "frollmedianFast");
+    ansv[k-1] = PEEK(0);
+    for (int j=1; j<b; j++) {
+      int A = j-1, B = j;
+      UNWIND(B);
+      /*stopifnot*/ if (!(s[A] == h)) {
+        snprintf(end(ans->message[3]), 500, _("%s: 's[A] == h' is not true\n"), "frollmedianFast");
+        return;
       }
+      /*stopifnot*/ if (!(s[B] == 0)) {
+        snprintf(end(ans->message[3]), 500, _("%s: 's[B] == 0' is not true\n"), "frollmedianFast");
+        return;
+      }
+      for (int i=0; i<k; i++) {
+        DELETE(A);
+        UNDELETE(B);
+        /*stopifnot*/ if (!(s[A] + s[B] <= h)) {
+          snprintf(end(ans->message[3]), 500, _("%s: 's[A] + s[B] <= h' is not true\n"), "frollmedianFast");
+          return;
+        }
+        if (s[A] + s[B] < h) {
+          if (PEEK(A) <= PEEK(B)) {
+            ADVANCE(A);
+          } else {
+            ADVANCE(B);
+          }
+        }
+        /*stopifnot*/ if (!(s[A] + s[B] == h)) {
+          snprintf(end(ans->message[3]), 500, _("%s: 's[A] + s[B] == h' is not true\n"), "frollmedianFast");
+          return;
+        }
+        ansv[j*k+i] = MED(A, B);
+      }
+    }
+  } else {
+    ansv[k-1] = even ? (PEEK(0) + PEEK2(0)) / 2 : PEEK(0);
+    for (int j=1; j<b; j++) { //Rprintf("j=%d\n", j);
+      int A = j-1, B = j;
+      UNWIND2(B);
+      /*stopifnot*/ if (!(s[A] == h)) {
+        snprintf(end(ans->message[3]), 500, _("%s: 's[A] == h' is not true\n"), "frollmedianFast");
+        return;
+      }
+      /*stopifnot*/ if (!(s[B] == 0)) {
+        snprintf(end(ans->message[3]), 500, _("%s: 's[B] == 0' is not true\n"), "frollmedianFast");
+        return;
+      }
+      for (int i=0; i<k; i++) { //Rprintf("i=%d\n", i);
+        //bool debug = k; //j*k+i==5;
+        //if (debug) Rprintf("  # after\t\tA\t\tB\n", m[A], n[A], m[B], n[B]);
+        //if (debug) Rprintf("  # init\t\tm=%d, n=%d, s=%d\tm=%d, n=%d, s=%d\n", m[A], n[A], s[A], m[B], n[B], s[B]);
+        if (nx_mod_k && j==b-1) {
+          if (verbose && i==nx_mod_k)
+            snprintf(end(ans->message[0]), 500, _("%s: skip rolling for %d padded elements\n"), "frollmedianFast", k-nx_mod_k);
+          if (i>=nx_mod_k)
+            continue;
+        }
+        DELETE2(A);
+        //if (debug) Rprintf("  # delete\t\tm=%d, n=%d, s=%d\n", m[A], n[A], s[A]);
+        UNDELETE2(B);
+        //if (debug) Rprintf("  # undelete\t\t\t\tm=%d, n=%d, s=%d\n", m[B], n[B], s[B]);
+        /*stopifnot*/ if (!(s[A] + s[B] <= h)) {
+          snprintf(end(ans->message[3]), 500, _("%s: 's[A] + s[B] <= h' is not true\n"), "frollmedianFast");
+          return;
+        }
+        if (s[A] + s[B] < h) {
+          if (PEEK(A) <= PEEK(B)) {
+            ADVANCE2(A);
+          } else {
+            ADVANCE2(B);
+          }
+        }
+        /*stopifnot*/ if (!(s[A] + s[B] == h)) {
+          snprintf(end(ans->message[3]), 500, _("%s: 's[A] + s[B] == h' is not true\n"), "frollmedianFast");
+          return;
+        }
+        if (n[A]!=tail && m[A] == n[A]) {
+          n[A] = tail;
+        }
+        if (n[B]!=tail && m[B] == n[B]) {
+          n[B] = tail;
+        }
+        //if (debug) Rprintf("  # advance\t\tm=%d, n=%d, s=%d\tm=%d, n=%d, s=%d\n", m[A], n[A], s[A], m[B], n[B], s[B]);
+        //DEBUG(B, i);
+        ansv[j*k+i] = even ? MED2(A, B) : MED(A, B);
+      }
+    }
+  }
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: rolling took %.3f\n"), "frollmedianFast", omp_get_wtime()-tic);
+}
+
+void frollmedianExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: running not yet in parallel for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollmedianExact", (uint64_t)nx, k, hasnf, (int)narm);
+  for (int i=0; i<k-1; i++) {
+    ans->dbl_v[i] = fill;
+  }
+  int nth = 1; //getDTthreads(nx, true); // sequential
+  int *o = malloc(nth*k*sizeof(int));
+  if (!o) { // # nocov start
+    ansSetMsg(ans, 3, "%s: Unable to allocate memory for o", __func__); // raise error
+    free(o);
+    return;
+  } // # nocov end
+  //#pragma omp parallel for num_threads(nth)
+  for (uint64_t i=k-1; i<nx; i++) {
+    int nc = 0;
+    double *ix = &x[i-k+1];
+    //int *tho = o[th*k]; // thread-specific o
+    int r = order_d(ix, o, k, &nc);
+    if (!r) { // # nocov start
+      ansSetMsg(ans, 3, "%s: order_d failed", __func__); // raise error
+      return;
+    } // # nocov end
+    if (!nc) {
+      ans->dbl_v[i] = !(k%2) ? (ix[o[k/2-1]]+ix[o[k/2]])/2 : ix[o[(k-1)/2]];
     } else {
-      ansv[k-1] = even ? (PEEK(0) + PEEK2(0)) / 2 : PEEK(0);
-      for (int j=1; j<b; j++) { //Rprintf("j=%d\n", j);
-        int A = j-1, B = j;
-        UNWIND2(B);
-        /*stopifnot*/ if (!(s[A] == h)) {
-          snprintf(end(ans->message[3]), 500, _("%s: 's[A] == h' is not true\n"), "frollmedianFast");
-          return;
-        }
-        /*stopifnot*/ if (!(s[B] == 0)) {
-          snprintf(end(ans->message[3]), 500, _("%s: 's[B] == 0' is not true\n"), "frollmedianFast");
-          return;
-        }
-        for (int i=0; i<k; i++) { //Rprintf("i=%d\n", i);
-          //bool debug = k; //j*k+i==5;
-          //if (debug) Rprintf("  # after\t\tA\t\tB\n", m[A], n[A], m[B], n[B]);
-          //if (debug) Rprintf("  # init\t\tm=%d, n=%d, s=%d\tm=%d, n=%d, s=%d\n", m[A], n[A], s[A], m[B], n[B], s[B]);
-          if (nx_mod_k && j==b-1) {
-            if (verbose && i==nx_mod_k)
-              snprintf(end(ans->message[0]), 500, _("%s: skip rolling for %d padded elements\n"), "frollmedianFast", k-nx_mod_k);
-            if (i>=nx_mod_k)
-              continue;
-          }
-          DELETE2(A);
-          //if (debug) Rprintf("  # delete\t\tm=%d, n=%d, s=%d\n", m[A], n[A], s[A]);
-          UNDELETE2(B);
-          //if (debug) Rprintf("  # undelete\t\t\t\tm=%d, n=%d, s=%d\n", m[B], n[B], s[B]);
-          /*stopifnot*/ if (!(s[A] + s[B] <= h)) {
-            snprintf(end(ans->message[3]), 500, _("%s: 's[A] + s[B] <= h' is not true\n"), "frollmedianFast");
-            return;
-          }
-          if (s[A] + s[B] < h) {
-            if (PEEK(A) <= PEEK(B)) {
-              ADVANCE2(A);
-            } else {
-              ADVANCE2(B);
-            }
-          }
-          /*stopifnot*/ if (!(s[A] + s[B] == h)) {
-            snprintf(end(ans->message[3]), 500, _("%s: 's[A] + s[B] == h' is not true\n"), "frollmedianFast");
-            return;
-          }
-          if (n[A]!=tail && m[A] == n[A]) {
-            n[A] = tail;
-          }
-          if (n[B]!=tail && m[B] == n[B]) {
-            n[B] = tail;
-          }
-          //if (debug) Rprintf("  # advance\t\tm=%d, n=%d, s=%d\tm=%d, n=%d, s=%d\n", m[A], n[A], s[A], m[B], n[B], s[B]);
-          //DEBUG(B, i);
-          ansv[j*k+i] = even ? MED2(A, B) : MED(A, B);
-        }
+      if (hasnf==-1)
+        ansSetMsg(ans, 2, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning", __func__);
+      if (!narm || nc==k) {
+        ans->dbl_v[i] = NA_REAL;
+      } else {
+        int ik = k-nc; // NAs are at the end for orderVector1
+        ans->dbl_v[i] = !(ik%2) ? (ix[o[ik/2-1]]+ix[o[ik/2]])/2 : ix[o[(ik-1)/2]];
       }
     }
-    if (verbose)
-      snprintf(end(ans->message[0]), 500, _("%s: rolling took %.3f\n"), "frollmedianFast", omp_get_wtime()-tic);
   }
 }

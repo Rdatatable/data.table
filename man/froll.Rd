@@ -76,20 +76,20 @@
   }
 }
 \section{Implementation}{
-  Most of the rolling functions have 4 different implementations. First factor that decides which implementation is being used is \code{adaptive} argument, see setion below for details. Then for each of those two algorithms (adaptive \code{TRUE/FALSE}) there are usually two \code{algo} argument values.
+  Each rolling function has 4 different implementations. First factor that decides which implementation is being used is \code{adaptive} argument, see setion below for details. Then for each of those two algorithms (adaptive \code{TRUE/FALSE}) there are usually two implementations decided depending on the \code{algo} argument.
   \itemize{
     \item{ \code{algo="fast"} uses \emph{"online"}, single pass, algorithm.
     \itemize{
-      \item{ \emph{max} and \emph{min} rolling function will not do only a single pass but, on average \code{length(x)/n}, nested loops will be computed. The bigger the window the bigger advantage over algo \emph{exact} which computes \code{length(x)} nested loops. Note that \emph{exact} uses multiple CPUs so for a small window size and many CPUs it is possible it will be actually faster than \emph{fast} but in those cases elapsed timings will likely be close to zero. }
-      \item{ Not all functions have \emph{fast} implementation available. As of now \emph{max} and \emph{min} in case of \code{adaptive=TRUE} do not not have \emph{fast} implementation, therefore it will automatically fall back to \emph{exact} implementation. \code{datatable.verbose} option can be used to check that. }
+      \item{ \emph{max} and \emph{min} rolling functions will not do only a single pass but, on average \code{length(x)/n}, nested loops will be computed. The bigger the window the bigger advantage over algo \emph{exact} which computes \code{length(x)} nested loops. Note that \emph{exact} uses multiple CPUs so for a small window size and many CPUs it is possible it will be actually faster than \emph{fast} but in those cases elapsed timings will likely be close to zero. }
+      \item{ \emph{median} will use a novel algorithm described by \emph{Jukka Suomela} in his paper \emph{Median Filtering is Equivalent to Sorting (2014)}. See references section for the link. Implementation here is extended to support arbitrary length of input and an even window size. Despite extensive validation of results this function should be considered experimental. When missing values are detected it will fall back to slower \code{algo="exact"} implementation. }
+      \item{ Not all functions have \emph{fast} implementation available. As of now \emph{max}, \emph{min} and \emph{median} (in case of \code{adaptive=TRUE}) do not not have \emph{fast} implementation, therefore it will automatically fall back to \emph{exact} implementation. \code{datatable.verbose} option can be used to check that. }
     }}
     \item{ \code{algo="exact"} will make rolling functions to use a more computationally-intensive algorithm. For each observation from input vector it will compute a function on a window from scratch (complexity \eqn{O(n^2)}).
     \itemize{
       \item { Depeneding on the function, this algorithm may suffers less from floating point rounding error (the same consideration applies to base \code{\link[base]{mean}}). }
-      \item{ In case of \emph{mean} (and possibly other functions in future), it will additionally make extra pass to perform floating point error correction. Error corrections might not be truly exact on some platforms (like Windows) when using multiple threads. }
+      \item{ In case of \emph{mean} it will additionally make extra pass to perform floating point error correction. Error corrections might not be truly exact on some platforms (like Windows) when using multiple threads. }
     }}
   }
-  Rolling median is implemented according to a novel algorithm described by \emph{Jukka Suomela} in his paper \emph{Median Filtering is Equivalent to Sorting (2014)}. See references section for the link. Implementation here is extended to support arbitrary length of input and as well an even window size. Despite extensive validation of results this function should be considered experimental.
 }
 \section{Adaptive rolling functions}{
   Adaptive rolling functions are a special case where each observation has its own corresponding rolling window width. Therefore values passed to \code{n} argument must be series corresponding to observations in \code{x}. If multiple windows is meant to be computed then a list of integer vectors is expected; each list element must be an integer vector of window size corresponding to observations in \code{x}; see Examples. Due to the logic or implementation of adaptive rolling functions, the following restrictions apply
