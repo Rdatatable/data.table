@@ -169,7 +169,7 @@ is.sorted = function(x, by=NULL) {
 ORDERING_TYPES = c('logical', 'integer', 'double', 'complex', 'character')
 forderv = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L, na.last=FALSE)
 {
-  if (is.atomic(x)) {  # including forderv(NULL) which returns error consistent with base::order(NULL),
+  if (is.atomic(x) || is.null(x)) {  # including forderv(NULL) which returns error consistent with base::order(NULL),
     if (!missing(by) && !is.null(by)) stop("x is a single vector, non-NULL 'by' doesn't make sense")
     by = NULL
   } else {

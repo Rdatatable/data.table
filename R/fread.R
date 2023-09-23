@@ -121,7 +121,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     if (!allNA(colClasses)) stop("colClasses is type 'logical' which is ok if all NA but it has some TRUE or FALSE values in it which is not allowed. Please consider the drop= or select= argument instead. See ?fread.")
     colClasses = NULL
   }
-  if (!is.null(colClasses) && is.atomic(colClasses)) {
+  if (!is.null(colClasses) && is.atomic(colClasses)) { ## future R can use  if (is.atomic(.))
     if (!is.character(colClasses)) stop("colClasses is not type list or character vector")
     if (!length(colClasses)) {
       colClasses=NULL;

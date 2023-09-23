@@ -810,7 +810,7 @@ replace_dot_alias = function(e) {
           bynames = allbyvars = NULL
           # the rest now fall through
         } else bynames = names(byval)
-        if (is.atomic(byval)) {
+        if (is.atomic(byval) || is.null(byval)) {
           if (is.character(byval) && length(byval)<=ncol(x) && !(is.name(bysub) && bysub %chin% names_x) ) {
             stop("'by' appears to evaluate to column names but isn't c() or key(). Use by=list(...) if you can. Otherwise, by=eval",deparse(bysub)," should work. This is for efficiency so data.table can detect which columns are needed.")
           } else {
