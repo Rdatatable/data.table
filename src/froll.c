@@ -1263,7 +1263,7 @@ void frollmedianFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, boo
   for (int j=0; j<b; j++)
     shellsort(&x[j*k], k, &o[j*k]);
   if (verbose)
-    snprintf(end(ans->message[0]), 500, _("%s: finding order for %d blocks took %.3fs\n"), "frollmedianFast", b, omp_get_wtime()-tic);
+    snprintf(end(ans->message[0]), 500, _("%s: finding order for %d blocks in parallel took %.3fs\n"), "frollmedianFast", b, omp_get_wtime()-tic);
   // order could detect NAs and update hasna flag, then the following warning may be reached
   if (hasna && hasnf==-1)
     ansSetMsg(ans, 2, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning", __func__);

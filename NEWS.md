@@ -18,21 +18,40 @@ rollmedian = function(x, n) {
   if (n<=nx) for (i in n:nx) ans[i] = median(x[(i-n+1L):(i)])
   ans
 }
-setDTthreads(8) ## for frollapply
+library(data.table)
 set.seed(108)
 x = rnorm(1e5)
 n = 100
 system.time(rollmedian(x, n))
+#   user  system elapsed
+#  4.389   0.000   4.389
 system.time(frollapply(x, n, median, simplify=unlist))
+#   user  system elapsed
+#  5.603   0.163   1.465
 system.time(frollmedian(x, n))
+#   user  system elapsed
+#  0.016   0.000   0.009
 n = 1000
 system.time(rollmedian(x, n))
+#   user  system elapsed
+#  7.011   0.028   7.040
 system.time(frollapply(x, n, median, simplify=unlist))
+#   user  system elapsed
+#  8.720   0.173   2.240
 system.time(frollmedian(x, n))
+#   user  system elapsed
+#  0.015   0.004   0.009
 n = 10000
 system.time(rollmedian(x, n))
+#   user  system elapsed
+# 34.190   0.012  34.206
 system.time(frollapply(x, n, median, simplify=unlist))
+#   user  system elapsed
+# 40.500   0.456  10.288
 system.time(frollmedian(x, n))
+#   user  system elapsed
+#  0.023   0.016   0.016
+
 ```
 
 0. (needs to be moved after rebase anyway) New `frollmin` and `frollprod` has been implemented, towards[#2778](https://github.com/Rdatatable/data.table/issues/2778).
