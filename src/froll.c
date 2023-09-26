@@ -1183,7 +1183,7 @@ void frollmedianFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, boo
     if (hasna) {
       if (verbose)
         snprintf(end(ans->message[0]), 500, _("%s: NAs detected, fall back to frollmedianExact\n"), "frollmedianFast");
-      frollmedianExact(x, nx, ans, k, fill, narm, true, verbose);
+      frollmedianExact(x, nx, ans, k, fill, narm, /*hasnf=*/true, verbose);
       return;
     }
   }
@@ -1390,6 +1390,16 @@ void frollmedianExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bo
     free(o);
     return;
   } // # nocov end
+  if (hasnf==0) { // detect NAs
+    for (uint64_t i=0; i<nx; i++) {
+      if (ISNAN(x[i])) {
+        hasnf=1;
+        break;
+      }
+    }
+    if (hasnf==0)
+      hasnf=-1;
+  }
   if (hasnf==-1) {
     #pragma omp parallel for num_threads(nth)
     for (uint64_t i=k-1; i<nx; i++) {

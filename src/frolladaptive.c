@@ -849,9 +849,19 @@ void frolladaptivemedianExact(double *x, uint64_t nx, ans_t *ans, int *k, double
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", hasnf %d, narm %d\n"), "frolladaptivemedianExact", (uint64_t)nx, hasnf, (int) narm);
   int maxk = k[0]; // find largest window size
-  for (int i=1; i<nx; i++) {
+  for (uint64_t i=1; i<nx; i++) {
     if (k[i] > maxk)
       maxk = k[i];
+  }
+  if (hasnf==0) { // detect NAs
+    for (uint64_t i=0; i<nx; i++) {
+      if (ISNAN(x[i])) {
+        hasnf=1;
+        break;
+      }
+    }
+    if (hasnf==0)
+      hasnf=-1;
   }
   int nth = getDTthreads(nx, true);
   int *o = malloc(nth*maxk*sizeof(int));
