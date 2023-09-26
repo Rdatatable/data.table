@@ -199,6 +199,10 @@ void initDTthreads();
 int getDTthreads(const int64_t n, const bool throttle);
 void avoid_openmp_hang_within_fork();
 
+// shellsort.c
+void shellsort(double *x, int n, int *o);
+int shellsortna(double *x, int n, int *o, bool *isna);
+
 typedef enum { // adding rolling functions here and in frollfunR in frollR.c
   MEAN = 0,
   SUM = 1,

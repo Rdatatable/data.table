@@ -990,6 +990,7 @@ void frollprodExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool
 /* fast rolling median - fast
  sort median: https://arxiv.org/pdf/1406.1717.pdf
  extended for arbitrary nx and for even k
+ NA handling redirected to algo="exact"
  */
 #ifdef MIN
 #  undef MIN
@@ -1014,9 +1015,58 @@ static double peek(double *x, int m, int tail) {
   return m == tail ? R_PosInf : x[m];
 }
 #define PEEK(j) peek(&x[(j)*k], m[(j)], tail)
-#define PEEK2(j) peek(&x[(j)*k], n[(j)], tail)
 // return median, for even k, from x_A[m_a], x_A[n_A], x_B[m_B], x_B[n_B] - having two sets of sorted 2 elements, take two smallest and give their mean
 #define MED(A, B) MIN(PEEK(A), PEEK(B))
+// delete all elements from B in reverse order
+static void unwind(int *prev, int *next, int *m, int *s, int k, int tail) {
+   for (int i=k-1; i>=0; i--) {
+     next[prev[i]] = next[i];
+     prev[next[i]] = prev[i];
+   }
+   m[0] = tail;
+   s[0] = 0;
+ }
+#define UNWIND(j) unwind(&prev[(j)*(k+1)], &next[(j)*(k+1)], &m[(j)], &s[(j)], k, tail);
+// checks if object i is "small" - smaller than value(s) used for median answer
+bool small(int i, double *x, int m, int tail) {
+  return (m == tail) || (x[i] < x[m]) || ((x[i] == x[m]) && (i < m));
+}
+#define SMALL(i) small((i), x, m[0], tail)
+// delete element from A
+static void delete(int i, double *x, int *prev, int *next, int *m, int *s, int tail) {
+  next[prev[i]] = next[i];
+  prev[next[i]] = prev[i];
+  if (SMALL(i)) {
+    s[0]--;
+  } else {
+    if (m[0] == i) {
+      m[0] = next[m[0]];
+    }
+    if (s[0] > 0) {
+      m[0] = prev[m[0]];
+      s[0]--;
+    }
+  }
+}
+#define DELETE(j) delete(i, &x[(j)*k], &prev[(j)*(k+1)], &next[(j)*(k+1)], &m[(j)], &s[(j)], tail)
+// undelete element from B
+static void undelete(int i, double *x, int *prev, int *next, int *m, int tail) {
+  next[prev[i]] = i;
+  prev[next[i]] = i;
+  if (SMALL(i)) {
+    m[0] = prev[m[0]];
+  }
+}
+#define UNDELETE(j) undelete(i, &x[(j)*k], &prev[(j)*(k+1)], &next[(j)*(k+1)], &m[(j)], tail)
+// advance - balance block after delete/undelete, fixed m (and n) pointers and s counter
+static void advance(int *next, int* m, int *s) {
+  m[0] = next[m[0]];
+  s[0]++;
+}
+#define ADVANCE(j) advance(&next[(j)*(k+1)], &m[(j)], &s[(j)])
+
+// same helper functions supporting any k and any nx_mod_k
+#define PEEK2(j) peek(&x[(j)*k], n[(j)], tail)
 static double med2(double *xa, double *xb, int ma, int na, int mb, int nb, int tail) {
   double xam = ma==tail ? R_PosInf : xa[ma];
   double xan = na==tail ? R_PosInf : xa[na];
@@ -1039,91 +1089,6 @@ static double med2(double *xa, double *xb, int ma, int na, int mb, int nb, int t
   }
 }
 #define MED2(A, B) med2(&x[(A)*k], &x[(B)*k], m[(A)], n[(A)], m[(B)], n[(B)], tail)
-// print debug info about currently rolling window
-/*
-void debug(int j, int i, int k, double *x, int *m, int *n, int *s, int tail, bool even) {
-  Rprintf("window for %d element using block", j*k+i);
-  j ? Rprintf("s A=%d B=%d", j-1, j) : Rprintf(" B=%d", j);
-  // x
-  Rprintf("\n  x_A:       [");
-  if (j) for (int ii=0; ii<k; ii++) ii<k-1 ? Rprintf("%.0f, ", x[(j-1)*k+ii]) : Rprintf("%.0f", x[(j-1)*k+ii]);
-  Rprintf("]");
-  Rprintf("\n  x_B:       [");
-  for (int ii=0; ii<k; ii++) ii<k-1 ? Rprintf("%.0f, ", x[j*k+ii]) : Rprintf("%.0f", x[j*k+ii]);
-  Rprintf("]");
-  // L // not sorted
-  Rprintf("\n  L_A:       [");
-  //for (int ii=i+1; ii<k; ii++) Rprintf("%d, ", (j-1)*k+ii);
-  for (int ii=i+1; ii<k; ii++) ii<k-1 ? Rprintf("%.0f, ", x[(j-1)*k+ii]) : Rprintf("%.0f", x[(j-1)*k+ii]);
-  Rprintf("]");
-  Rprintf("\n  L_B:       [");
-  //for (int ii=0; ii<i+1; ii++) Rprintf("%d, ", j*k+ii);
-  for (int ii=0; ii<i+1; ii++) ii<i ? Rprintf("%.0f, ", x[j*k+ii]) : Rprintf("%.0f", x[j*k+ii]);
-  Rprintf("]");
-  // L_A + L_B // not sorted
-  Rprintf("\n  L_A + L_B: [");
-  //for (int ii=i-k+1; ii<i+1; ii++) Rprintf("%d, ", ii);
-  for (int ii=i-k+1; ii<i+1; ii++) ii<i ? Rprintf("%.0f, ", x[j*k+ii]) : Rprintf("%.0f", x[j*k+ii]);
-  Rprintf("]");
-  // s
-  Rprintf("\n  s_A:       %d", j ? s[j-1] : 0);
-  Rprintf("\n  s_B:       %d", s[j]);
-  // m
-  Rprintf("\n  m_A:       ");
-  if (j) {
-    if (m[j-1]==k) Rprintf("END");
-    else Rprintf("%d; x_A[%d] = %.0f", m[j-1], m[j-1], x[(j-1)*k+m[j-1]]);
-  } else {
-    Rprintf("NA");
-  }
-  Rprintf("\n  n_A:       ");
-  if (j && even) {
-    if (n[j-1]==k) Rprintf("END");
-    else Rprintf("%d; x_A[%d] = %.0f", n[j-1], n[j-1], x[(j-1)*k+n[j-1]]);
-  } else {
-    Rprintf("NA");
-  }
-  Rprintf("\n  m_B:       ");
-  if (m[j]==k) Rprintf("END");
-  else Rprintf("%d; x_B[%d] = %.0f", m[j], m[j], x[j*k+m[j]]);
-  Rprintf("\n  n_B:       ");
-  if (even) {
-    if (n[j]==k) Rprintf("END");
-    else Rprintf("%d; x_B[%d] = %.0f", n[j], n[j], x[j*k+n[j]]);
-  } else {
-    Rprintf("NA");
-  }
-  // median
-  if (j) {
-    if (even) {
-      Rprintf("\n  PEEK(A):   %.1f", PEEK(j-1));
-      Rprintf("\n  PEEK2(A):  %.1f", PEEK2(j-1));
-      Rprintf("\n  PEEK(B):   %.1f", PEEK(j));
-      Rprintf("\n  PEEK2(B):  %.1f", PEEK2(j));
-      Rprintf("\n  MED2:      %.1f", MED2(j-1, j));
-      Rprintf("\n  Y[%d]:      %.1f", j*k+i, MED2(j-1, j));
-    } else {
-      Rprintf("\n  Y[%d]:      %.1f", j*k+i, MED(j-1, j));
-    }
-  } else {
-    Rprintf("\n  PEEK(B):   %.1f", PEEK(j));
-    Rprintf("\n  PEEK2(B):  %.1f", PEEK2(j));
-    Rprintf("\n  Y[%d]:      %.1f", j*k+i, even ? (PEEK(j)+PEEK2(j))/2 : PEEK(j));
-  }
-  Rprintf("\n");
-}
-#define DEBUG(j, i) debug(j, i, k, x, m, n, s, tail, even);
-*/
-// delete all elements from B in reverse order
-static void unwind(int *prev, int *next, int *m, int *s, int k, int tail) {
-   for (int i=k-1; i>=0; i--) {
-     next[prev[i]] = next[i];
-     prev[next[i]] = prev[i];
-   }
-   m[0] = tail;
-   s[0] = 0;
- }
-#define UNWIND(j) unwind(&prev[(j)*(k+1)], &next[(j)*(k+1)], &m[(j)], &s[(j)], k, tail);
 static void unwind2(int *prev, int *next, int *m, int *n, int *s, int k, int tail, bool even) {
   for (int i=k-1; i>=0; i--) {
     next[prev[i]] = next[i];
@@ -1134,29 +1099,7 @@ static void unwind2(int *prev, int *next, int *m, int *n, int *s, int k, int tai
   s[0] = 0;
 }
 #define UNWIND2(j) unwind2(&prev[(j)*(k+1)], &next[(j)*(k+1)], &m[(j)], &n[(j)], &s[(j)], k, tail, even);
-// checks if object i is "small" - smaller than value(s) used for median answer
-bool small(int i, double *x, int m, int tail) {
-  return (m == tail) || (x[i] < x[m]) || ((x[i] == x[m]) && (i < m));
-}
-#define SMALL(i) small((i), x, m[0], tail)
 #define SMALL2(i) small((i), x, n[0], tail)
-// delete element from A
-static void delete(int i, double *x, int *prev, int *next, int *m, int *s, int tail) {
-  next[prev[i]] = next[i];
-  prev[next[i]] = prev[i];
-  if (SMALL(i)) {
-    s[0]--;
-  } else {
-    if (m[0] == i) {
-      m[0] = next[m[0]];
-    }
-    if (s[0] > 0) {
-      m[0] = prev[m[0]];
-      s[0]--;
-    }
-  }
-}
-#define DELETE(j) delete(i, &x[(j)*k], &prev[(j)*(k+1)], &next[(j)*(k+1)], &m[(j)], &s[(j)], tail)
 static void delete2(int i, double *x, int *prev, int *next, int *m, int *n, int *s, int tail, bool even) {
   next[prev[i]] = next[i];
   prev[next[i]] = prev[i];
@@ -1177,15 +1120,6 @@ static void delete2(int i, double *x, int *prev, int *next, int *m, int *n, int 
   }
 }
 #define DELETE2(j) delete2(i, &x[(j)*k], &prev[(j)*(k+1)], &next[(j)*(k+1)], &m[(j)], &n[(j)], &s[(j)], tail, even)
-// undelete element from B
-static void undelete(int i, double *x, int *prev, int *next, int *m, int tail) {
-  next[prev[i]] = i;
-  prev[next[i]] = i;
-  if (SMALL(i)) {
-    m[0] = prev[m[0]];
-  }
-}
-#define UNDELETE(j) undelete(i, &x[(j)*k], &prev[(j)*(k+1)], &next[(j)*(k+1)], &m[(j)], tail)
 static void undelete2(int i, double *x, int *prev, int *next, int *m, int *n, int tail, bool even) {
   next[prev[i]] = i;
   prev[next[i]] = i;
@@ -1197,53 +1131,13 @@ static void undelete2(int i, double *x, int *prev, int *next, int *m, int *n, in
   }
 }
 #define UNDELETE2(j) undelete2(i, &x[(j)*k], &prev[(j)*(k+1)], &next[(j)*(k+1)], &m[(j)], &n[(j)], tail, even)
-// advance - balance block after delete/undelete, fixed m (and n) pointers and s counter
-static void advance(int *next, int* m, int *s) {
-  m[0] = next[m[0]];
-  s[0]++;
-}
-#define ADVANCE(j) advance(&next[(j)*(k+1)], &m[(j)], &s[(j)])
 static void advance2(int *next, int* m, int* n, int *s, bool even) {
   m[0] = next[m[0]];
   if (even) n[0] = next[n[0]];
   s[0]++;
 }
 #define ADVANCE2(j) advance2(&next[(j)*(k+1)], &m[(j)], &n[(j)], &s[(j)], even)
-// find order, we need to try to avoid longjmp by R's failed to alloc
-// TODO: replace R_orderVector1 by R agnostic routine, use parallel for
-struct order_d_args { double *x; int *o; int k; int b; };
-static SEXP do_order_d(void * arguments) {
-  struct order_d_args * args = arguments;
-  double *x = args->x;
-  int *o = args->o;
-  int k = args->k;
-  int b = args->b;
-  SEXP rx = PROTECT(allocVector(REALSXP, k));
-  double *rxp = REAL(rx);
-  for (int j=0; j<b; j++) {
-    memcpy(rxp, &x[j*k], k*sizeof(double));
-    R_orderVector1(&o[j*k], k, rx, 1, 0);
-  }
-  UNPROTECT(1); // rx
-  return ScalarLogical(1);
-}
-static SEXP try_order_d(double *x, int *o, int k, int b) {
-  struct order_d_args args = { .x = x, .o = o, .k = k, .b = b };
-  return R_tryCatchError(do_order_d, &args, NULL, NULL);
-}
-int loop_order_d(double *x, int *o, int k, int b) {
-  SEXP try_order_ok = PROTECT(try_order_d(x, o, k, b));
-  bool ok = try_order_ok!=R_NilValue;
-  UNPROTECT(1);
-  return ok;
-}
-int order_d(double *x, int *o, int k, int *nc) {
-  SEXP try_order_ok = PROTECT(try_order_d(x, o, k, 1));
-  bool ok = try_order_ok!=R_NilValue;
-  UNPROTECT(1);
-  for (int i=0; i<k; i++) if (ISNAN(x[i])) nc[0]++;
-  return ok;
-}
+
 void frollmedianFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollmedianFast", (uint64_t)nx, k, hasnf, (int)narm);
@@ -1353,12 +1247,21 @@ void frollmedianFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, boo
   // find ordering permutation for each block
   if (verbose)
     tic = omp_get_wtime();
-  int r = loop_order_d(x, o, k, b); // TODO replace by non-R order function, collect NA stats
-  if (!r) { // # nocov start
-    ansSetMsg(ans, 3, "%s: loop_order_d failed", __func__); // raise error
-    free(next); free(prev); free(s); free(n); free(m); free(o);
-    return;
-  } // # nocov end
+  /*int bb = nx_mod_k ? b-1 : b; // we don't want to sort virtually padded elements so last block has special handling
+  #pragma omp parallel for num_threads(getDTthreads(bb, false))
+  for (int j=0; j<bb; j++)
+    shellsort(&x[j*k], k, &o[j*k]);
+  if (nx_mod_k > 1) { // for nx_mod_k==1 the last group has 1 element only so not need to be sorted
+    if (verbose)
+      snprintf(end(ans->message[0]), 500, _("%s: finding order for last block %d skips %d padded elements\n"), "frollmedianFast", bb, k-nx_mod_k);
+    shellsort(&x[bb*k], nx_mod_k, &o[bb*k]);
+  } else if (nx_mod_k==1 && verbose) {
+    snprintf(end(ans->message[0]), 500, _("%s: finding order for last block %d skipped completely because it had only single element before padding so is already sorted\n"), "frollmedianFast", bb);
+  }*/
+  // for now no special handling of last group, needs to be handled later on as well
+  #pragma omp parallel for num_threads(getDTthreads(b, false))
+  for (int j=0; j<b; j++)
+    shellsort(&x[j*k], k, &o[j*k]);
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: finding order for %d blocks took %.3fs\n"), "frollmedianFast", b, omp_get_wtime()-tic);
   // order could detect NAs and update hasna flag, then the following warning may be reached
@@ -1387,28 +1290,28 @@ void frollmedianFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, boo
   // main rolling loop - called post processing in the paper
   if (verbose)
     tic = omp_get_wtime();
-  if (!nx_mod_k && !even && !hasna) {
+  if (!nx_mod_k && !even && /*this one already escaped before*/!hasna) {
     if (verbose)
       snprintf(end(ans->message[0]), 500, _("%s: running implementation as described in the paper by Jukka Suomela, for uneven window size, length of input a multiple of window size, no NAs in the input data\n"), "frollmedianFast");
     ansv[k-1] = PEEK(0);
     for (int j=1; j<b; j++) {
       int A = j-1, B = j;
       UNWIND(B);
-      /*stopifnot*/ if (!(s[A] == h)) {
+      /*stopifnot*/ /*if (!(s[A] == h)) {
         snprintf(end(ans->message[3]), 500, _("%s: 's[A] == h' is not true\n"), "frollmedianFast");
         return;
-      }
-      /*stopifnot*/ if (!(s[B] == 0)) {
+      }*/
+      /*stopifnot*/ /*if (!(s[B] == 0)) {
         snprintf(end(ans->message[3]), 500, _("%s: 's[B] == 0' is not true\n"), "frollmedianFast");
         return;
-      }
+      }*/
       for (int i=0; i<k; i++) {
         DELETE(A);
         UNDELETE(B);
-        /*stopifnot*/ if (!(s[A] + s[B] <= h)) {
+        /*stopifnot*/ /*if (!(s[A] + s[B] <= h)) {
           snprintf(end(ans->message[3]), 500, _("%s: 's[A] + s[B] <= h' is not true\n"), "frollmedianFast");
           return;
-        }
+        }*/
         if (s[A] + s[B] < h) {
           if (PEEK(A) <= PEEK(B)) {
             ADVANCE(A);
@@ -1416,30 +1319,27 @@ void frollmedianFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, boo
             ADVANCE(B);
           }
         }
-        /*stopifnot*/ if (!(s[A] + s[B] == h)) {
+        /*stopifnot*/ /*if (!(s[A] + s[B] == h)) {
           snprintf(end(ans->message[3]), 500, _("%s: 's[A] + s[B] == h' is not true\n"), "frollmedianFast");
           return;
-        }
+        }*/
         ansv[j*k+i] = MED(A, B);
       }
     }
   } else {
     ansv[k-1] = even ? (PEEK(0) + PEEK2(0)) / 2 : PEEK(0);
-    for (int j=1; j<b; j++) { //Rprintf("j=%d\n", j);
+    for (int j=1; j<b; j++) {
       int A = j-1, B = j;
       UNWIND2(B);
-      /*stopifnot*/ if (!(s[A] == h)) {
+      /*stopifnot*/ /*if (!(s[A] == h)) {
         snprintf(end(ans->message[3]), 500, _("%s: 's[A] == h' is not true\n"), "frollmedianFast");
         return;
-      }
-      /*stopifnot*/ if (!(s[B] == 0)) {
+      }*/
+      /*stopifnot*/ /*if (!(s[B] == 0)) {
         snprintf(end(ans->message[3]), 500, _("%s: 's[B] == 0' is not true\n"), "frollmedianFast");
         return;
-      }
-      for (int i=0; i<k; i++) { //Rprintf("i=%d\n", i);
-        //bool debug = k; //j*k+i==5;
-        //if (debug) Rprintf("  # after\t\tA\t\tB\n", m[A], n[A], m[B], n[B]);
-        //if (debug) Rprintf("  # init\t\tm=%d, n=%d, s=%d\tm=%d, n=%d, s=%d\n", m[A], n[A], s[A], m[B], n[B], s[B]);
+      }*/
+      for (int i=0; i<k; i++) {
         if (nx_mod_k && j==b-1) {
           if (verbose && i==nx_mod_k)
             snprintf(end(ans->message[0]), 500, _("%s: skip rolling for %d padded elements\n"), "frollmedianFast", k-nx_mod_k);
@@ -1447,13 +1347,11 @@ void frollmedianFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, boo
             continue;
         }
         DELETE2(A);
-        //if (debug) Rprintf("  # delete\t\tm=%d, n=%d, s=%d\n", m[A], n[A], s[A]);
         UNDELETE2(B);
-        //if (debug) Rprintf("  # undelete\t\t\t\tm=%d, n=%d, s=%d\n", m[B], n[B], s[B]);
-        /*stopifnot*/ if (!(s[A] + s[B] <= h)) {
+        /*stopifnot*/ /*if (!(s[A] + s[B] <= h)) {
           snprintf(end(ans->message[3]), 500, _("%s: 's[A] + s[B] <= h' is not true\n"), "frollmedianFast");
           return;
-        }
+        }*/
         if (s[A] + s[B] < h) {
           if (PEEK(A) <= PEEK(B)) {
             ADVANCE2(A);
@@ -1461,18 +1359,16 @@ void frollmedianFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, boo
             ADVANCE2(B);
           }
         }
-        /*stopifnot*/ if (!(s[A] + s[B] == h)) {
+        /*stopifnot*/ /*if (!(s[A] + s[B] == h)) {
           snprintf(end(ans->message[3]), 500, _("%s: 's[A] + s[B] == h' is not true\n"), "frollmedianFast");
           return;
-        }
+        }*/
         if (n[A]!=tail && m[A] == n[A]) {
           n[A] = tail;
         }
         if (n[B]!=tail && m[B] == n[B]) {
           n[B] = tail;
         }
-        //if (debug) Rprintf("  # advance\t\tm=%d, n=%d, s=%d\tm=%d, n=%d, s=%d\n", m[A], n[A], s[A], m[B], n[B], s[B]);
-        //DEBUG(B, i);
         ansv[j*k+i] = even ? MED2(A, B) : MED(A, B);
       }
     }
@@ -1483,37 +1379,56 @@ void frollmedianFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, boo
 
 void frollmedianExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
   if (verbose)
-    snprintf(end(ans->message[0]), 500, _("%s: running not yet in parallel for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollmedianExact", (uint64_t)nx, k, hasnf, (int)narm);
+    snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollmedianExact", (uint64_t)nx, k, hasnf, (int)narm);
   for (int i=0; i<k-1; i++) {
     ans->dbl_v[i] = fill;
   }
-  int nth = 1; //getDTthreads(nx, true); // sequential
+  int nth = getDTthreads(nx-k+1, true);
   int *o = malloc(nth*k*sizeof(int));
   if (!o) { // # nocov start
     ansSetMsg(ans, 3, "%s: Unable to allocate memory for o", __func__); // raise error
     free(o);
     return;
   } // # nocov end
-  //#pragma omp parallel for num_threads(nth)
-  for (uint64_t i=k-1; i<nx; i++) {
-    int nc = 0;
-    double *ix = &x[i-k+1];
-    //int *tho = o[th*k]; // thread-specific o
-    int r = order_d(ix, o, k, &nc);
-    if (!r) { // # nocov start
-      ansSetMsg(ans, 3, "%s: order_d failed", __func__); // raise error
+  if (hasnf==-1) {
+    #pragma omp parallel for num_threads(nth)
+    for (uint64_t i=k-1; i<nx; i++) {
+      int th = omp_get_thread_num();
+      double *ix = &x[i-k+1];
+      int *tho = &o[th*k];
+      shellsort(ix, k, tho);
+      ans->dbl_v[i] = !(k%2) ? (ix[tho[k/2-1]]+ix[tho[k/2]])/2 : ix[tho[(k-1)/2]];
+    }
+  } else {
+    double *xx = malloc(nth*k*sizeof(double)); // we copy to deal with NAs by imputing Inf
+    if (!xx) { // # nocov start
+      ansSetMsg(ans, 3, "%s: Unable to allocate memory for xx", __func__); // raise error
+      free(xx); free(o);
       return;
     } // # nocov end
-    if (!nc) {
-      ans->dbl_v[i] = !(k%2) ? (ix[o[k/2-1]]+ix[o[k/2]])/2 : ix[o[(k-1)/2]];
-    } else {
-      if (hasnf==-1)
-        ansSetMsg(ans, 2, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning", __func__);
-      if (!narm || nc==k) {
-        ans->dbl_v[i] = NA_REAL;
+    bool *isna = malloc(nth*k*sizeof(bool));
+    if (!isna) { // # nocov start
+      ansSetMsg(ans, 3, "%s: Unable to allocate memory for isna", __func__); // raise error
+      free(isna); free(xx); free(o);
+      return;
+    } // # nocov end
+    #pragma omp parallel for num_threads(nth)
+    for (uint64_t i=k-1; i<nx; i++) {
+      int th = omp_get_thread_num();
+      double *thx = &xx[th*k]; // thread-specific x, o, isna
+      int *tho = &o[th*k];
+      bool *thisna = &isna[th*k];
+      memcpy(thx, &x[i-k+1], k*sizeof(double));
+      int nc = shellsortna(thx, k, tho, thisna);
+      if (!nc) {
+        ans->dbl_v[i] = !(k%2) ? (thx[tho[k/2-1]]+thx[tho[k/2]])/2 : thx[tho[(k-1)/2]];
       } else {
-        int ik = k-nc; // NAs are at the end for orderVector1
-        ans->dbl_v[i] = !(ik%2) ? (ix[o[ik/2-1]]+ix[o[ik/2]])/2 : ix[o[(ik-1)/2]];
+        if (!narm || nc==k) {
+          ans->dbl_v[i] = NA_REAL;
+        } else {
+          int ik = k-nc; // NAs are at the end
+          ans->dbl_v[i] = !(ik%2) ? (thx[tho[ik/2-1]]+thx[tho[ik/2]])/2 : thx[tho[(ik-1)/2]];
+        }
       }
     }
   }

@@ -179,7 +179,7 @@ SEXP frollfunR(SEXP fun, SEXP xobj, SEXP kobj, SEXP fill, SEXP algo, SEXP align,
   else
     error(_("Internal error: invalid %s argument in %s function should have been caught earlier. Please report to the data.table issue tracker."), "algo", "rolling"); // # nocov
 
-  bool par = ialgo==0 && nx*nk>1 && rfun!=MEDIAN;
+  bool par = nx*nk>1 && ialgo==0 && rfun!=MEDIAN;
   if (verbose) {
     if (par) {
       Rprintf(_("%s: computing %d column(s) and %d window(s) in parallel\n"), __func__, nx, nk);
@@ -188,7 +188,7 @@ SEXP frollfunR(SEXP fun, SEXP xobj, SEXP kobj, SEXP fill, SEXP algo, SEXP align,
     } else if (ialgo==1 && rfun!=MEDIAN) {
       Rprintf(_("%s: computing %d column(s) and %d window(s) sequentially because algo='exact' is already parallelised within each rolling computation\n"), __func__, nx, nk);
     } else if (rfun==MEDIAN) {
-      Rprintf(_("%s: computing %d column(s) and %d window(s) sequentially because rolling median is (not yet thread) safe\n"), __func__, nx, nk);
+      Rprintf(_("%s: computing %d column(s) and %d window(s) sequentially because median is already parallelised within each rolling computation\n"), __func__, nx, nk);
     }
   }
   #pragma omp parallel for if (par) schedule(dynamic) collapse(2) num_threads(getDTthreads(nx*nk, false))

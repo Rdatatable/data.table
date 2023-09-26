@@ -1230,7 +1230,7 @@ test(6001.007, frollmedian(x, 1), c(5, 1, Inf, 2.5, 1.5, 4, Inf, -Inf, 3.5, 3), 
 test(6001.008, frollmedian(x, 2), c(NA, 3, Inf, Inf, 2, 2.75, Inf, NaN, -Inf, 3.25), output="window size is 2 so can skip whole median")
 test(6001.011, frollmedian(1:9, 3), as.double(c(NA,NA,2:8)), output="running implementation as described in the paper by Jukka Suomela, for uneven window size, length of input a multiple of window size, no NAs in the input data")
 test(6001.012, frollmedian(1:10, 3), as.double(c(NA,NA,2:9)), notOutput="running implementation as described in the paper by Jukka Suomela, for uneven window size, length of input a multiple of window size, no NAs in the input data", output="padding with 2 elements")
-test(6001.013, frollmedian(c(1,2,3,4,NA,6), 3), c(NA, NA, 2, 3, NA, NA), output="NAs detected, fall back to frollmedianExact\nfrollmedianExact: running not yet in parallel for input length 6, window 3, hasnf 1, narm 0")
+test(6001.013, frollmedian(c(1,2,3,4,NA,6), 3), c(NA, NA, 2, 3, NA, NA), output="NAs detected, fall back to frollmedianExact\nfrollmedianExact: running in parallel for input length 6, window 3, hasnf 1, narm 0")
 options(datatable.verbose=FALSE)
 #test(6001.051, frollmedian(c(1,2,3,4,NA,6), 3, has.nf=FALSE), c(NA, NA, 2, 3, NA, NA), warning="has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning") ## as of now wrong results, once our own order detects NAs then we can warn
 
@@ -1238,32 +1238,48 @@ x = c(1,2,3,4,NA,6)
 k = 3
 test(6001.101, frollmedian(x, k, na.rm=FALSE), c(NA, NA, 2, 3, NA, NA))
 test(6001.102, frollmedian(x, k, na.rm=TRUE), c(NA, NA, 2, 3, 3.5, 5))
+test(6001.103, frollmedian(x, k, na.rm=FALSE, algo="exact"), c(NA, NA, 2, 3, NA, NA))
+test(6001.104, frollmedian(x, k, na.rm=TRUE, algo="exact"), c(NA, NA, 2, 3, 3.5, 5))
 x = c(1,2,3,4,NA,NA,6)
 k = 3
-test(6001.103, frollmedian(x, k, na.rm=FALSE), c(NA, NA, 2, 3, NA, NA, NA))
-test(6001.104, frollmedian(x, k, na.rm=TRUE), c(NA, NA, 2, 3, 3.5, 4, 6))
+test(6001.105, frollmedian(x, k, na.rm=FALSE), c(NA, NA, 2, 3, NA, NA, NA))
+test(6001.106, frollmedian(x, k, na.rm=TRUE), c(NA, NA, 2, 3, 3.5, 4, 6))
+test(6001.107, frollmedian(x, k, na.rm=FALSE, algo="exact"), c(NA, NA, 2, 3, NA, NA, NA))
+test(6001.108, frollmedian(x, k, na.rm=TRUE, algo="exact"), c(NA, NA, 2, 3, 3.5, 4, 6))
 x = c(1,2,3,4,NA,6)
 k = 4
-test(6001.105, frollmedian(x, k, na.rm=FALSE), c(NA, NA, NA, 2.5, NA, NA))
-test(6001.106, frollmedian(x, k, na.rm=TRUE), c(NA, NA, NA, 2.5, 3, 4))
+test(6001.109, frollmedian(x, k, na.rm=FALSE), c(NA, NA, NA, 2.5, NA, NA))
+test(6001.110, frollmedian(x, k, na.rm=TRUE), c(NA, NA, NA, 2.5, 3, 4))
+test(6001.111, frollmedian(x, k, na.rm=FALSE, algo="exact"), c(NA, NA, NA, 2.5, NA, NA))
+test(6001.112, frollmedian(x, k, na.rm=TRUE, algo="exact"), c(NA, NA, NA, 2.5, 3, 4))
 x = c(1,2,3,4,NA,NA,6)
 k = 4
-test(6001.107, frollmedian(x, k, na.rm=FALSE), c(NA, NA, NA, 2.5, NA, NA, NA))
-test(6001.108, frollmedian(x, k, na.rm=TRUE), c(NA, NA, NA, 2.5, 3, 3.5, 5))
+test(6001.113, frollmedian(x, k, na.rm=FALSE), c(NA, NA, NA, 2.5, NA, NA, NA))
+test(6001.114, frollmedian(x, k, na.rm=TRUE), c(NA, NA, NA, 2.5, 3, 3.5, 5))
+test(6001.115, frollmedian(x, k, na.rm=FALSE, algo="exact"), c(NA, NA, NA, 2.5, NA, NA, NA))
+test(6001.116, frollmedian(x, k, na.rm=TRUE, algo="exact"), c(NA, NA, NA, 2.5, 3, 3.5, 5))
 x = c(1,2,3,4,NA,NA,NA,NA,6)
 k = 3
-test(6001.109, frollmedian(x, k, na.rm=FALSE), c(NA, NA, 2, 3, NA, NA, NA, NA, NA))
-test(6001.110, frollmedian(x, k, na.rm=TRUE), c(NA, NA, 2, 3, 3.5, 4, NA, NA, 6))
+test(6001.117, frollmedian(x, k, na.rm=FALSE), c(NA, NA, 2, 3, NA, NA, NA, NA, NA))
+test(6001.118, frollmedian(x, k, na.rm=TRUE), c(NA, NA, 2, 3, 3.5, 4, NA, NA, 6))
+test(6001.119, frollmedian(x, k, na.rm=FALSE, algo="exact"), c(NA, NA, 2, 3, NA, NA, NA, NA, NA))
+test(6001.120, frollmedian(x, k, na.rm=TRUE, algo="exact"), c(NA, NA, 2, 3, 3.5, 4, NA, NA, 6))
 k = 4
-test(6001.111, frollmedian(x, k, na.rm=FALSE), c(NA, NA, NA, 2.5, NA, NA, NA, NA, NA))
-test(6001.112, frollmedian(x, k, na.rm=TRUE), c(NA, NA, NA, 2.5, 3, 3.5, 4, NA, 6))
+test(6001.121, frollmedian(x, k, na.rm=FALSE), c(NA, NA, NA, 2.5, NA, NA, NA, NA, NA))
+test(6001.122, frollmedian(x, k, na.rm=TRUE), c(NA, NA, NA, 2.5, 3, 3.5, 4, NA, 6))
+test(6001.123, frollmedian(x, k, na.rm=FALSE, algo="exact"), c(NA, NA, NA, 2.5, NA, NA, NA, NA, NA))
+test(6001.124, frollmedian(x, k, na.rm=TRUE, algo="exact"), c(NA, NA, NA, 2.5, 3, 3.5, 4, NA, 6))
 x = rep(NA_real_,10)
 k = 3
-test(6001.113, frollmedian(x, k, na.rm=FALSE), rep(NA_real_,10))
-test(6001.114, frollmedian(x, k, na.rm=TRUE), rep(NA_real_,10))
+test(6001.125, frollmedian(x, k, na.rm=FALSE), rep(NA_real_,10))
+test(6001.126, frollmedian(x, k, na.rm=TRUE), rep(NA_real_,10))
+test(6001.127, frollmedian(x, k, na.rm=FALSE, algo="exact"), rep(NA_real_,10))
+test(6001.128, frollmedian(x, k, na.rm=TRUE, algo="exact"), rep(NA_real_,10))
 k = 4
-test(6001.115, frollmedian(x, k, na.rm=FALSE), rep(NA_real_,10))
-test(6001.116, frollmedian(x, k, na.rm=TRUE), rep(NA_real_,10))
+test(6001.129, frollmedian(x, k, na.rm=FALSE), rep(NA_real_,10))
+test(6001.130, frollmedian(x, k, na.rm=TRUE), rep(NA_real_,10))
+test(6001.131, frollmedian(x, k, na.rm=FALSE, algo="exact"), rep(NA_real_,10))
+test(6001.132, frollmedian(x, k, na.rm=TRUE, algo="exact"), rep(NA_real_,10))
 
 ## bigger sets for uneven k vs stats::runmed Turlach
 runmedr = function(x, k) {

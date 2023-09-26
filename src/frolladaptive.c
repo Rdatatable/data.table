@@ -847,44 +847,67 @@ void frolladaptiveprodExact(double *x, uint64_t nx, ans_t *ans, int *k, double f
  */
 void frolladaptivemedianExact(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasnf, bool verbose) {
   if (verbose)
-    snprintf(end(ans->message[0]), 500, _("%s: running not yet in parallel for input length %"PRIu64", hasnf %d, narm %d\n"), "frolladaptivemedianExact", (uint64_t)nx, hasnf, (int) narm);
-  // find largest window size
-  int maxk = k[0];
+    snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", hasnf %d, narm %d\n"), "frolladaptivemedianExact", (uint64_t)nx, hasnf, (int) narm);
+  int maxk = k[0]; // find largest window size
   for (int i=1; i<nx; i++) {
     if (k[i] > maxk)
       maxk = k[i];
   }
-  int nth = 1; //getDTthreads(nx, true); // sequential
+  int nth = getDTthreads(nx, true);
   int *o = malloc(nth*maxk*sizeof(int));
   if (!o) { // # nocov start
     ansSetMsg(ans, 3, "%s: Unable to allocate memory for o", __func__); // raise error
     free(o);
     return;
   } // # nocov end
-  //#pragma omp parallel for num_threads(nth)
-  for (uint64_t i=0; i<nx; i++) {
-    if (i+1 < k[i]) {
-      ans->dbl_v[i] = fill;
-    } else {
+  if (hasnf==-1) {
+    #pragma omp parallel for num_threads(nth)
+    for (uint64_t i=0; i<nx; i++) {
       int ik = k[i];
-      int nc = 0;
-      double *ix = &x[i-ik+1];
-      //int *tho = o[th*maxk]; // thread-specific o
-      int r = order_d(ix, o, ik, &nc);
-      if (!r) { // # nocov start
-        ansSetMsg(ans, 3, "%s: order_d failed", __func__); // raise error
-        return;
-      } // # nocov end
-      if (!nc) {
-        ans->dbl_v[i] = !(ik%2) ? (ix[o[ik/2-1]]+ix[o[ik/2]])/2 : ix[o[(ik-1)/2]];
+      if (i+1 < ik) {
+        ans->dbl_v[i] = fill;
       } else {
-        if (hasnf==-1)
-          ansSetMsg(ans, 2, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning", __func__);
-        if (!narm || nc==ik) {
-          ans->dbl_v[i] = NA_REAL;
+        int th = omp_get_thread_num();
+        double *ix = &x[i-ik+1];
+        int *tho = &o[th*maxk];
+        shellsort(ix, ik, tho);
+        ans->dbl_v[i] = !(ik%2) ? (ix[tho[ik/2-1]]+ix[tho[ik/2]])/2 : ix[tho[(ik-1)/2]];
+      }
+    }
+  } else {
+    double *xx = malloc(nth*maxk*sizeof(double));
+    if (!xx) { // # nocov start
+      ansSetMsg(ans, 3, "%s: Unable to allocate memory for xx", __func__); // raise error
+      free(xx); free(o);
+      return;
+    } // # nocov end
+    bool *isna = malloc(nth*maxk*sizeof(bool));
+    if (!isna) { // # nocov start
+      ansSetMsg(ans, 3, "%s: Unable to allocate memory for isna", __func__); // raise error
+      free(isna); free(xx); free(o);
+      return;
+    } // # nocov end
+    #pragma omp parallel for num_threads(nth)
+    for (uint64_t i=0; i<nx; i++) {
+      int ik = k[i];
+      if (i+1 < ik) {
+        ans->dbl_v[i] = fill;
+      } else {
+        int th = omp_get_thread_num();
+        double *thx = &xx[th*maxk]; // thread-specific x, o, isna
+        int *tho = &o[th*maxk];
+        bool *thisna = &isna[th*maxk];
+        memcpy(thx, &x[i-ik+1], ik*sizeof(double));
+        int nc = shellsortna(thx, ik, tho, thisna);
+        if (!nc) {
+          ans->dbl_v[i] = !(ik%2) ? (thx[tho[ik/2-1]]+thx[tho[ik/2]])/2 : thx[tho[(ik-1)/2]];
         } else {
-          ik = ik-nc; // NAs are at the end for orderVector1
-          ans->dbl_v[i] = !(ik%2) ? (ix[o[ik/2-1]]+ix[o[ik/2]])/2 : ix[o[(ik-1)/2]];
+          if (!narm || nc==ik) {
+            ans->dbl_v[i] = NA_REAL;
+          } else {
+            ik = ik-nc; // NAs are at the end
+            ans->dbl_v[i] = !(ik%2) ? (thx[tho[ik/2-1]]+thx[tho[ik/2]])/2 : thx[tho[(ik-1)/2]];
+          }
         }
       }
     }
