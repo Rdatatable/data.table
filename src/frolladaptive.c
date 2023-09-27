@@ -962,5 +962,7 @@ void frolladaptivemedianExact(double *x, uint64_t nx, ans_t *ans, int *k, double
         }
       }
     }
+    free(isna); free(rollnc);
   }
+  free(xx);
 }

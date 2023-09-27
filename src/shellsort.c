@@ -46,20 +46,12 @@ void shellsort(double *x, int n, int *o) {
  *
  * not used anymore as frollmedian algo="exact" switched from shellshort to quickselect
  * could be used when algo="fast" will have NA support
+ *
+ * NAs has to be decoded to Inf inside x
+ * isna mask must be computed
 */
-int shellsortna(double *x, int n, int *o, bool *isna) {
-  for (int i=0; i<n; i++) {
-    o[i] = i;
-    isna[i] = false;
-  }
-  int nc = 0;
-  for (int i=0; i<n; i++) {
-    if (ISNAN(x[i])) {
-      isna[i] = true;
-      x[i] = R_PosInf;
-      nc++;
-    }
-  }
+void shellsortna(double *x, int n, int *o, bool *isna) {
+  for (int i=0; i<n; i++) o[i] = i;
   int gap = 0;
   while (sedgewick1982[gap] > n) gap++;
   for (int h=sedgewick1982[gap]; gap<NGAPS; h=sedgewick1982[++gap]) {
@@ -77,5 +69,4 @@ int shellsortna(double *x, int n, int *o, bool *isna) {
       o[j] = io;
     }
   }
-  return nc;
 }

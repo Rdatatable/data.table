@@ -987,13 +987,8 @@ void frollprodExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool
   }
 }
 
-/* fast rolling median - fast
- sort median: https://arxiv.org/pdf/1406.1717.pdf
- extended for arbitrary nx and for even k
- finding order of blocks of input is made in parallel
- NA handling redirected to algo="exact"
-
- below functions and macros are helpers for sort-median
+/* fast rolling median - fast - helper functions/macros
+ algo="fast" is a novel sort-median algorithm
  names suffixed with "2" are corresponding versions that support even k window size
  */
 #ifdef MIN
@@ -1141,6 +1136,12 @@ static void advance2(int *next, int* m, int* n, int *s, bool even) {
 }
 #define ADVANCE2(j) advance2(&next[(j)*(k+1)], &m[(j)], &n[(j)], &s[(j)], even)
 
+/* fast rolling median - fast
+ sort median: https://arxiv.org/pdf/1406.1717.pdf
+ extended for arbitrary nx and for even k
+ finding order of blocks of input is made in parallel
+ NA handling redirected to algo="exact"
+ */
 void frollmedianFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollmedianFast", (uint64_t)nx, k, hasnf, (int)narm);
@@ -1250,50 +1251,23 @@ void frollmedianFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, boo
   // find ordering permutation for each block
   if (verbose)
     tic = omp_get_wtime();
-  /*int bb = nx_mod_k ? b-1 : b; // we don't want to sort virtually padded elements so last block has special handling
-  #pragma omp parallel for num_threads(getDTthreads(bb, false))
-  for (int j=0; j<bb; j++)
-    shellsort(&x[j*k], k, &o[j*k]);
-  if (nx_mod_k > 1) { // for nx_mod_k==1 the last group has 1 element only so not need to be sorted
-    if (verbose)
-      snprintf(end(ans->message[0]), 500, _("%s: finding order for last block %d skips %d padded elements\n"), "frollmedianFast", bb, k-nx_mod_k);
-    shellsort(&x[bb*k], nx_mod_k, &o[bb*k]);
-  } else if (nx_mod_k==1 && verbose) {
-    snprintf(end(ans->message[0]), 500, _("%s: finding order for last block %d skipped completely because it had only single element before padding so is already sorted\n"), "frollmedianFast", bb);
-  }*/
-  // for now no special handling of last group, needs to be handled later on as well
   #pragma omp parallel for num_threads(getDTthreads(b, false))
-  for (int j=0; j<b; j++)
+  for (int j=0; j<b; j++) {
     shellsort(&x[j*k], k, &o[j*k]);
-  if (verbose)
-    snprintf(end(ans->message[0]), 500, _("%s: finding order for %d blocks in parallel took %.3fs\n"), "frollmedianFast", b, omp_get_wtime()-tic);
-  // order could detect NAs and update hasna flag, then the following warning may be reached
-  if (hasna && hasnf==-1)
-    ansSetMsg(ans, 2, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning", __func__);
-  // initialize pointer in blocks
-  if (verbose)
-    tic = omp_get_wtime();
-  for (int j=0; j<b; j++) { // easily parallel now but nothing to gain
     m[j] = o[j*k+h];
     if (even) n[j] = o[j*k+h+1];
     s[j] = h;
     setlinks(&o[j*k], &next[j*(k+1)], &prev[j*(k+1)], tail);
   }
   if (verbose)
-    snprintf(end(ans->message[0]), 500, _("%s: initialization for %d blocks took %.3fs\n"), "frollmedianFast", b, omp_get_wtime()-tic);
+    snprintf(end(ans->message[0]), 500, _("%s: finding order and initializing links for %d blocks in parallel took %.3fs\n"), "frollmedianFast", b, omp_get_wtime()-tic);
   // fill leading partial window
   for (int i=0; i<k-1; i++)
     ansv[i] = fill;
-  // double check NAs were redirected before
-  if (hasna) { // # nocov start
-    ansSetMsg(ans, 3, "%s: internal error, 'hasna' must not be true at this point, unless NA handling has been implemented in frollmedianFast, then this error check should be removed ", __func__); // raise error
-    free(next); free(prev); free(s); free(n); free(m); free(o);
-    return;
-  } // # nocov end
   // main rolling loop - called post processing in the paper
   if (verbose)
     tic = omp_get_wtime();
-  if (!nx_mod_k && !even && /*this one already escaped before*/!hasna) {
+  if (!nx_mod_k && !even) {
     if (verbose)
       snprintf(end(ans->message[0]), 500, _("%s: running implementation as described in the paper by Jukka Suomela, for uneven window size, length of input a multiple of window size, no NAs in the input data\n"), "frollmedianFast");
     ansv[k-1] = PEEK(0);
@@ -1376,6 +1350,7 @@ void frollmedianFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, boo
       }
     }
   }
+  free(next); free(prev); free(s); free(n); free(m);
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: rolling took %.3f\n"), "frollmedianFast", omp_get_wtime()-tic);
 }
@@ -1385,6 +1360,8 @@ void frollmedianFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, boo
  * updates:
  *   nc for rolling NA count
  *   isna for NA mask
+ * isna must be initialized to false
+ * nc doesn't have to be initialized
  */
 static int frollNAFast(double *x, uint64_t nx, int k, int *nc, bool *isna) {
   int w = 0; // rolling nc
@@ -1413,6 +1390,7 @@ static int frollNAFast(double *x, uint64_t nx, int k, int *nc, bool *isna) {
   }
   return NC;
 }
+
 /* fast rolling median - exact
  * loop in parallel for each element of x and call quickselect
  */
@@ -1490,5 +1468,7 @@ void frollmedianExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bo
         }
       }
     }
+    free(isna); free(rollnc);
   }
+  free(xx);
 }
