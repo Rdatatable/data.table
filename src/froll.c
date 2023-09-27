@@ -990,7 +990,11 @@ void frollprodExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool
 /* fast rolling median - fast
  sort median: https://arxiv.org/pdf/1406.1717.pdf
  extended for arbitrary nx and for even k
+ finding order of blocks of input is made in parallel
  NA handling redirected to algo="exact"
+
+ below functions and macros are helpers for sort-median
+ names suffixed with "2" are corresponding versions that support even k window size
  */
 #ifdef MIN
 #  undef MIN
@@ -1064,8 +1068,7 @@ static void advance(int *next, int* m, int *s) {
   s[0]++;
 }
 #define ADVANCE(j) advance(&next[(j)*(k+1)], &m[(j)], &s[(j)])
-
-// same helper functions supporting any k and any nx_mod_k
+// same helper functions supporting any k
 #define PEEK2(j) peek(&x[(j)*k], n[(j)], tail)
 static double med2(double *xa, double *xb, int ma, int na, int mb, int nb, int tail) {
   double xam = ma==tail ? R_PosInf : xa[ma];
@@ -1377,20 +1380,49 @@ void frollmedianFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, boo
     snprintf(end(ans->message[0]), 500, _("%s: rolling took %.3f\n"), "frollmedianFast", omp_get_wtime()-tic);
 }
 
+/* fast rolling NA stats - fast
+ * returns total number of NA/NaN in x
+ * updates:
+ *   nc for rolling NA count
+ *   isna for NA mask
+ */
+static int frollNAFast(double *x, uint64_t nx, int k, int *nc, bool *isna) {
+  int w = 0; // rolling nc
+  for (int i=0; i<k-1; i++) {
+    if (ISNAN(x[i])) {
+      isna[i] = true;
+      w++;
+    }
+    nc[i] = w;
+  }
+  if (ISNAN(x[k-1])) {
+    isna[k-1] = true;
+    w++;
+  }
+  nc[k-1] = w;
+  int NC = w;
+  for (uint64_t i=k; i<nx; i++) {
+    if (ISNAN(x[i-k]))
+      w--;
+    if (ISNAN(x[i])) {
+      isna[i] = true;
+      w++;
+      NC++;
+    }
+    nc[i] = w;
+  }
+  return NC;
+}
+/* fast rolling median - exact
+ * loop in parallel for each element of x and call quickselect
+ */
 void frollmedianExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollmedianExact", (uint64_t)nx, k, hasnf, (int)narm);
   for (int i=0; i<k-1; i++) {
     ans->dbl_v[i] = fill;
-  }
-  int nth = getDTthreads(nx-k+1, true);
-  int *o = malloc(nth*k*sizeof(int));
-  if (!o) { // # nocov start
-    ansSetMsg(ans, 3, "%s: Unable to allocate memory for o", __func__); // raise error
-    free(o);
-    return;
-  } // # nocov end
-  if (hasnf==0) { // detect NAs
+  } // fill leading partial window
+  if (hasnf==0) {
     for (uint64_t i=0; i<nx; i++) {
       if (ISNAN(x[i])) {
         hasnf=1;
@@ -1399,45 +1431,62 @@ void frollmedianExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bo
     }
     if (hasnf==0)
       hasnf=-1;
-  }
+  }  // detect NAs
+  int nth = getDTthreads(nx-k+1, true);
+  double *xx = malloc(nth*k*sizeof(double)); // quickselect sorts in-place so we need to copy
+  if (!xx) { // # nocov start
+    ansSetMsg(ans, 3, "%s: Unable to allocate memory for xx", __func__); // raise error
+    free(xx);
+    return;
+  } // # nocov end
   if (hasnf==-1) {
     #pragma omp parallel for num_threads(nth)
     for (uint64_t i=k-1; i<nx; i++) {
       int th = omp_get_thread_num();
-      double *ix = &x[i-k+1];
-      int *tho = &o[th*k];
-      shellsort(ix, k, tho);
-      ans->dbl_v[i] = !(k%2) ? (ix[tho[k/2-1]]+ix[tho[k/2]])/2 : ix[tho[(k-1)/2]];
+      double *thx = &xx[th*k]; // thread-specific x
+      memcpy(thx, &x[i-k+1], k*sizeof(double));
+      ans->dbl_v[i] = dquickselect(thx, k);
     }
   } else {
-    double *xx = malloc(nth*k*sizeof(double)); // we copy to deal with NAs by imputing Inf
-    if (!xx) { // # nocov start
-      ansSetMsg(ans, 3, "%s: Unable to allocate memory for xx", __func__); // raise error
-      free(xx); free(o);
+    int *rollnc = malloc(nx*sizeof(int));
+    if (!rollnc) { // # nocov start
+      ansSetMsg(ans, 3, "%s: Unable to allocate memory for rollnc", __func__); // raise error
+      free(rollnc); free(xx);
       return;
     } // # nocov end
-    bool *isna = malloc(nth*k*sizeof(bool));
+    bool *isna = calloc(nx, sizeof(bool));
     if (!isna) { // # nocov start
       ansSetMsg(ans, 3, "%s: Unable to allocate memory for isna", __func__); // raise error
-      free(isna); free(xx); free(o);
+      free(isna); free(rollnc); free(xx);
       return;
     } // # nocov end
+    int nc = frollNAFast(x, nx, k, rollnc, isna);
+    if (!nc) { // total NA for x
+      if (verbose)
+        snprintf(end(ans->message[0]), 500, _("%s: no NAs detected, redirecting to frollmedianExact has.nf=FALSE\n"), "frollmedianExact");
+      frollmedianExact(x, nx, ans, k, fill, narm, /*hasnf=*/false, verbose);
+      return;
+    }
     #pragma omp parallel for num_threads(nth)
     for (uint64_t i=k-1; i<nx; i++) {
+      double *ix = &x[i-k+1];
       int th = omp_get_thread_num();
-      double *thx = &xx[th*k]; // thread-specific x, o, isna
-      int *tho = &o[th*k];
-      bool *thisna = &isna[th*k];
-      memcpy(thx, &x[i-k+1], k*sizeof(double));
-      int nc = shellsortna(thx, k, tho, thisna);
-      if (!nc) {
-        ans->dbl_v[i] = !(k%2) ? (thx[tho[k/2-1]]+thx[tho[k/2]])/2 : thx[tho[(k-1)/2]];
+      double *thx = &xx[th*k];
+      int inc = rollnc[i];
+      if (!inc) {
+        memcpy(thx, ix, k*sizeof(double));
+        ans->dbl_v[i] = dquickselect(thx, k);
       } else {
-        if (!narm || nc==k) {
+        if (!narm || inc==k) {
           ans->dbl_v[i] = NA_REAL;
         } else {
-          int ik = k-nc; // NAs are at the end
-          ans->dbl_v[i] = !(ik%2) ? (thx[tho[ik/2-1]]+thx[tho[ik/2]])/2 : thx[tho[(ik-1)/2]];
+          bool *iisna = &isna[i-k+1];
+          int thxn = 0;
+          for (int j=0; j<k; j++) {
+            if (!iisna[j])
+              thx[thxn++] = ix[j];
+          }
+          ans->dbl_v[i] = dquickselect(thx, k-inc);
         }
       }
     }

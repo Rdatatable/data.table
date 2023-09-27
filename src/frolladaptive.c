@@ -843,7 +843,38 @@ void frolladaptiveprodExact(double *x, uint64_t nx, ans_t *ans, int *k, double f
   }
 }
 
+/* fast rolling adaptive NA stats - exact
+ * returns total number of NA/NaN in x
+ * updates:
+ *   nc for rolling NA count
+ *   isna for NA mask
+ */
+static int frolladaptiveNAExact(double *x, uint64_t nx, int *k, int *nc, bool *isna) {
+  int NC = 0;
+  for (uint64_t i=0; i<nx; i++) {
+    if (ISNAN(x[i])) {
+      isna[i] = true;
+      NC++;
+    }
+  }
+  if (NC) {
+    for (uint64_t i=0; i<nx; i++) {
+      int ik = k[i];
+      if (i+1 < ik) {
+        nc[i] = NA_INTEGER;
+      } else {
+        bool *iisna = &isna[i-ik+1];
+        for (int j=0; j<ik; j++) {
+          if (iisna[j])
+            nc[i]++;
+        }
+      }
+    }
+  }
+  return NC;
+}
 /* fast rolling adaptive median - exact
+ * loop in parallel for each element of x and call quickselect
  */
 void frolladaptivemedianExact(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasnf, bool verbose) {
   if (verbose)
@@ -853,7 +884,7 @@ void frolladaptivemedianExact(double *x, uint64_t nx, ans_t *ans, int *k, double
     if (k[i] > maxk)
       maxk = k[i];
   }
-  if (hasnf==0) { // detect NAs
+  if (hasnf==0) {
     for (uint64_t i=0; i<nx; i++) {
       if (ISNAN(x[i])) {
         hasnf=1;
@@ -862,12 +893,12 @@ void frolladaptivemedianExact(double *x, uint64_t nx, ans_t *ans, int *k, double
     }
     if (hasnf==0)
       hasnf=-1;
-  }
+  } // detect NAs
   int nth = getDTthreads(nx, true);
-  int *o = malloc(nth*maxk*sizeof(int));
-  if (!o) { // # nocov start
-    ansSetMsg(ans, 3, "%s: Unable to allocate memory for o", __func__); // raise error
-    free(o);
+  double *xx = malloc(nth*maxk*sizeof(double)); // quickselect sorts in-place so we need to copy
+  if (!xx) { // # nocov start
+    ansSetMsg(ans, 3, "%s: Unable to allocate memory for xx", __func__); // raise error
+    free(xx);
     return;
   } // # nocov end
   if (hasnf==-1) {
@@ -878,45 +909,55 @@ void frolladaptivemedianExact(double *x, uint64_t nx, ans_t *ans, int *k, double
         ans->dbl_v[i] = fill;
       } else {
         int th = omp_get_thread_num();
-        double *ix = &x[i-ik+1];
-        int *tho = &o[th*maxk];
-        shellsort(ix, ik, tho);
-        ans->dbl_v[i] = !(ik%2) ? (ix[tho[ik/2-1]]+ix[tho[ik/2]])/2 : ix[tho[(ik-1)/2]];
+        double *thx = &xx[th*maxk]; // thread-specific x
+        memcpy(thx, &x[i-ik+1], ik*sizeof(double));
+        ans->dbl_v[i] = dquickselect(thx, ik);
       }
     }
   } else {
-    double *xx = malloc(nth*maxk*sizeof(double));
-    if (!xx) { // # nocov start
-      ansSetMsg(ans, 3, "%s: Unable to allocate memory for xx", __func__); // raise error
-      free(xx); free(o);
+    int *rollnc = calloc(nx, sizeof(int));
+    if (!rollnc) { // # nocov start
+      ansSetMsg(ans, 3, "%s: Unable to allocate memory for rollnc", __func__); // raise error
+      free(rollnc); free(xx);
       return;
     } // # nocov end
-    bool *isna = malloc(nth*maxk*sizeof(bool));
+    bool *isna = calloc(nx, sizeof(bool));
     if (!isna) { // # nocov start
       ansSetMsg(ans, 3, "%s: Unable to allocate memory for isna", __func__); // raise error
-      free(isna); free(xx); free(o);
+      free(isna); free(rollnc); free(xx);
       return;
     } // # nocov end
+    int nc = frolladaptiveNAExact(x, nx, k, rollnc, isna);
+    if (!nc) { // total NA for x
+      if (verbose)
+        snprintf(end(ans->message[0]), 500, _("%s: no NAs detected, redirecting to frolladaptivemedianExact has.nf=FALSE\n"), "frolladaptivemedianExact");
+      frolladaptivemedianExact(x, nx, ans, k, fill, narm, /*hasnf=*/false, verbose);
+      return;
+    }
     #pragma omp parallel for num_threads(nth)
     for (uint64_t i=0; i<nx; i++) {
       int ik = k[i];
       if (i+1 < ik) {
         ans->dbl_v[i] = fill;
       } else {
+        double *ix = &x[i-ik+1];
         int th = omp_get_thread_num();
-        double *thx = &xx[th*maxk]; // thread-specific x, o, isna
-        int *tho = &o[th*maxk];
-        bool *thisna = &isna[th*maxk];
-        memcpy(thx, &x[i-ik+1], ik*sizeof(double));
-        int nc = shellsortna(thx, ik, tho, thisna);
-        if (!nc) {
-          ans->dbl_v[i] = !(ik%2) ? (thx[tho[ik/2-1]]+thx[tho[ik/2]])/2 : thx[tho[(ik-1)/2]];
+        double *thx = &xx[th*maxk];
+        int inc = rollnc[i];
+        if (!inc) {
+          memcpy(thx, ix, ik*sizeof(double));
+          ans->dbl_v[i] = dquickselect(thx, ik);
         } else {
-          if (!narm || nc==ik) {
+          if (!narm || inc==ik) {
             ans->dbl_v[i] = NA_REAL;
           } else {
-            ik = ik-nc; // NAs are at the end
-            ans->dbl_v[i] = !(ik%2) ? (thx[tho[ik/2-1]]+thx[tho[ik/2]])/2 : thx[tho[(ik-1)/2]];
+            bool *iisna = &isna[i-ik+1];
+            int thxn = 0;
+            for (int j=0; j<ik; j++) {
+              if (!iisna[j])
+                thx[thxn++] = ix[j];
+            }
+            ans->dbl_v[i] = dquickselect(thx, ik-inc);
           }
         }
       }

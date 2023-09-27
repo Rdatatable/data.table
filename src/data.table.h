@@ -201,7 +201,7 @@ void avoid_openmp_hang_within_fork();
 
 // shellsort.c
 void shellsort(double *x, int n, int *o);
-int shellsortna(double *x, int n, int *o, bool *isna);
+int shellsortna(double *x, int n, int *o, bool *isna); // not used till NA support added to frollmedian algo="fast"
 
 typedef enum { // adding rolling functions here and in frollfunR in frollR.c
   MEAN = 0,
@@ -224,7 +224,6 @@ void frollminExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool 
 void frollprodFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose);
 void frollprodExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose);
 void frollmedianFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose);
-int order_d(double *x, int *o, int k, int *nc);
 void frollmedianExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose);
 
 // frolladaptive.c

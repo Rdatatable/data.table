@@ -1929,7 +1929,7 @@ base_compare = function(x, n, funs=c("mean","sum","max","min","prod","median"), 
               if (na.rm)
                 next ## errors "not make sense"
               if (any(!is.finite(x)))
-                next ## do not test warnings (mean, sum, prod) or incorrect expect results (max, min)
+                next ## do not test warnings (mean, sum, prod) or incorrect expect results (max, min, median)
             }
             for (algo in algos) {
               num <<- num + num.step
@@ -1982,7 +1982,7 @@ if (requireNamespace("zoo", quietly=TRUE)) {
                   if (na.rm)
                     next ## errors "not make sense"
                   if (any(!is.finite(x)))
-                    next ## do not test warnings (mean, sum, prod) or incorrect expect results (max, min)
+                    next ## do not test warnings (mean, sum, prod) or incorrect expect results (max, min, median)
                 }
                 for (algo in algos) {
                   num <<- num + num.step
@@ -2074,7 +2074,7 @@ afun_compare = function(x, n, funs=c("mean","sum","max","min","prod","median"), 
                 if (na.rm)
                   next ## errors "not make sense"
                 if (any(!is.finite(x)))
-                  next ## do not test warnings (mean, sum, prod) or incorrect expect results (max, min)
+                  next ## do not test warnings (mean, sum, prod) or incorrect expect results (max, min, median)
               }
               for (algo in algos) {
                 num <<- num + num.step
