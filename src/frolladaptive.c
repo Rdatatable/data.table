@@ -843,13 +843,44 @@ void frolladaptiveprodExact(double *x, uint64_t nx, ans_t *ans, int *k, double f
   }
 }
 
+/* fast rolling adaptive NA stats - fast
+ * returns total number of NA/NaN in x
+ * no nested loops, first loop cum NA count, second loop uses cum NA count to get rolling count
+ * updates:
+ *   nc for rolling NA count
+ *   isna for NA mask
+ */
+static int frolladaptiveNAFast(double *x, uint64_t nx, int *k, int *nc, bool *isna) {
+  int cnc = 0; // cumulative na count
+  for (uint64_t i=0; i<nx; i++) {
+    if (ISNAN(x[i])) {
+      isna[i] = true;
+      cnc++;
+    }
+    nc[i] = cnc;
+  }
+  if (cnc) {
+    for (int64_t i=nx-1; i>=0; i--) {
+      int ik = k[i];
+      if (i+1 == ik) {
+        // nc[i] = nc[i];
+      } else if (i+1 < ik) {
+        nc[i] = NA_INTEGER;
+      } else {
+        nc[i] = nc[i] - nc[i-ik];
+      }
+    }
+  }
+  return cnc;
+}
 /* fast rolling adaptive NA stats - exact
  * returns total number of NA/NaN in x
  * updates:
  *   nc for rolling NA count
  *   isna for NA mask
+ * not used as of now
  */
-static int frolladaptiveNAExact(double *x, uint64_t nx, int *k, int *nc, bool *isna) {
+/*static int frolladaptiveNAExact(double *x, uint64_t nx, int *k, int *nc, bool *isna) {
   int NC = 0;
   for (uint64_t i=0; i<nx; i++) {
     if (ISNAN(x[i])) {
@@ -872,7 +903,7 @@ static int frolladaptiveNAExact(double *x, uint64_t nx, int *k, int *nc, bool *i
     }
   }
   return NC;
-}
+}*/
 /* fast rolling adaptive median - exact
  * loop in parallel for each element of x and call quickselect
  */
@@ -915,7 +946,7 @@ void frolladaptivemedianExact(double *x, uint64_t nx, ans_t *ans, int *k, double
       }
     }
   } else {
-    int *rollnc = calloc(nx, sizeof(int));
+    int *rollnc = malloc(nx*sizeof(int)); // for frolladaptiveNAExact we need calloc, for fast malloc is ok
     if (!rollnc) { // # nocov start
       ansSetMsg(ans, 3, "%s: Unable to allocate memory for rollnc", __func__); // raise error
       free(rollnc); free(xx);
@@ -927,7 +958,7 @@ void frolladaptivemedianExact(double *x, uint64_t nx, ans_t *ans, int *k, double
       free(isna); free(rollnc); free(xx);
       return;
     } // # nocov end
-    int nc = frolladaptiveNAExact(x, nx, k, rollnc, isna);
+    int nc = frolladaptiveNAFast(x, nx, k, rollnc, isna);
     if (!nc) { // total NA for x
       if (verbose)
         snprintf(end(ans->message[0]), 500, _("%s: no NAs detected, redirecting to frolladaptivemedianExact has.nf=FALSE\n"), "frolladaptivemedianExact");
