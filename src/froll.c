@@ -1208,8 +1208,6 @@ void frollmedianFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, boo
   int h = even ? k/2-1 : (k-1)/2;
   int tail = k;
   // allocation as long arrays rather than block structs
-  if (verbose)
-    tic = omp_get_wtime();
   int *o = malloc(nx*sizeof(int)); // permutation that sorts input vector x
   if (!o) { // # nocov start
     ansSetMsg(ans, 3, "%s: Unable to allocate memory for o", __func__); // raise error
@@ -1246,8 +1244,6 @@ void frollmedianFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, boo
     free(next); free(prev); free(s); free(n); free(m); free(o);
     return;
   } // # nocov end
-  if (verbose)
-    snprintf(end(ans->message[0]), 500, _("%s: allocations took %.3fs\n"), "frollmedianFast", omp_get_wtime()-tic);
   // find ordering permutation for each block
   if (verbose)
     tic = omp_get_wtime();

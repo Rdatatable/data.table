@@ -434,7 +434,7 @@ test(6000.1195, frollmean(1:5, 2, na.rm=TRUE, has.nf=FALSE), error="using has.nf
 options(datatable.verbose=TRUE)
 test(6000.1196, frollmean(c(1:5,NA), 1:6, algo="exact", na.rm=TRUE, adaptive=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: .*sequentially.*single rolling computation.*",
+  "frollfunR: .*algo='exact' is already parallelised.*",
   "frollfunR: 1:",
   "frolladaptivemeanExact: running in parallel for input length 6, hasnf 0, narm 1",
   "frolladaptivemeanExact: non-finite values are present in input, re-running with extra care for NFs",
@@ -444,7 +444,7 @@ test(6000.1196, frollmean(c(1:5,NA), 1:6, algo="exact", na.rm=TRUE, adaptive=TRU
 #### exact na.rm=TRUE verbose=TRUE
 test(6000.1197, frollmean(c(1:5,NA), 2, algo="exact", na.rm=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: .*sequentially.*single rolling computation.*",
+  "frollfunR: .*algo='exact' is already parallelised.*",
   "frollfunR: 1:",
   "frollmeanExact: running in parallel for input length 6, window 2, hasnf 0, narm 1",
   "frollmeanExact: non-finite values are present in input, re-running with extra care for NFs",
@@ -717,7 +717,7 @@ test(6000.174, frollmean(list(x, x+1), c(n, n+1)), output=c(
   "frollfunR: processing.*took.*"))
 test(6000.175, frollmean(x, n, algo="exact"), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: .*sequentially.*single rolling computation.*",
+  "frollfunR: .*algo='exact' is already parallelised.*",
   "frollfunR: 1:",
   "frollmeanExact: running in parallel for input length 10, window 3, hasnf 0, narm 0",
   "frollfun: processing fun 0 algo 1 took.*",
@@ -748,7 +748,7 @@ test(6000.178, frollmean(x, nn, adaptive=TRUE), output=c(
   "frollfunR: processing.*took.*"))
 test(6000.179, frollmean(x, nn, algo="exact", adaptive=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: .*sequentially.*single rolling computation.*",
+  "frollfunR: .*algo='exact' is already parallelised.*",
   "frollfunR: 1:",
   "frolladaptivemeanExact: running in parallel for input length 10, hasnf 0, narm 0",
   "frolladaptivefun: processing fun 0 algo 1 took.*",
@@ -765,7 +765,7 @@ test(6000.180, frollmean(x, n), output=c(
   "frollfunR: processing.*took.*"))
 test(6000.181, frollmean(x, n, algo="exact"), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: .*sequentially.*single rolling computation.*",
+  "frollfunR: .*algo='exact' is already parallelised.*",
   "frollfunR: 1:",
   "frollmeanExact: running in parallel for input length 10, window 3, hasnf 0, narm 0",
   "frollmeanExact: non-finite values are present in input, na.rm=FALSE and algo='exact' propagates NFs properply, no need to re-run",
@@ -781,7 +781,7 @@ test(6000.182, frollmean(x, nn, adaptive=TRUE), output=c(
   "frollfunR: processing.*took.*"))
 test(6000.183, frollmean(x, nn, algo="exact", adaptive=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: .*sequentially.*single rolling computation.*",
+  "frollfunR: .*algo='exact' is already parallelised.*",
   "frollfunR: 1:",
   "frolladaptivemeanExact: running in parallel for input length 10, hasnf 0, narm 0",
   "frolladaptivemeanExact: non-finite values are present in input, na.rm=FALSE and algo='exact' propagates NFs properply, no need to re-run",
@@ -791,7 +791,7 @@ test(6000.183, frollmean(x, nn, algo="exact", adaptive=TRUE), output=c(
 d = as.data.table(list(1:10/2, 10:1/4))
 test(6000.184, frollmean(d[,1], 3, algo="exact"), output=c(
   "frollfunR: allocating memory for results 1x1",
-  "frollfunR: .*sequentially.*single rolling computation.*",
+  "frollfunR: .*algo='exact' is already parallelised.*",
   "frollfunR: 1:",
   "frollmeanExact: running in parallel for input length 10, window 3, hasnf 0, narm 0",
   "frollfun: processing fun 0 algo 1 took.*",
@@ -1209,11 +1209,7 @@ test(6000.956, frollprod(c(1e100, 1e100, 1e100, 1e100, -1e100), rep(4, 5), algo=
 # frollmedian
 rollmedian = function(x, k, na.rm=FALSE) {
   ans = rep(NA_real_, length(x))
-  if (k <= length(x)) {
-    for (i in k:length(x)) {
-      ans[i] = median(x[(i-k+1L):(i)], na.rm=na.rm)
-    }
-  }
+  for (i in k:length(x)) ans[i] = median(x[(i-k+1L):(i)], na.rm=na.rm)
   ans
 } ## used for dput
 options(datatable.verbose=TRUE)
@@ -1230,17 +1226,29 @@ test(6001.007, frollmedian(x, 1), c(5, 1, Inf, 2.5, 1.5, 4, Inf, -Inf, 3.5, 3), 
 test(6001.008, frollmedian(x, 2), c(NA, 3, Inf, Inf, 2, 2.75, Inf, NaN, -Inf, 3.25), output="window size is 2 so can skip whole median")
 test(6001.011, frollmedian(1:9, 3), as.double(c(NA,NA,2:8)), output="running implementation as described in the paper by Jukka Suomela, for uneven window size, length of input a multiple of window size, no NAs in the input data")
 test(6001.012, frollmedian(1:10, 3), as.double(c(NA,NA,2:9)), notOutput="running implementation as described in the paper by Jukka Suomela, for uneven window size, length of input a multiple of window size, no NAs in the input data", output="padding with 2 elements")
-test(6001.013, frollmedian(c(1,2,3,4,NA,6), 3), c(NA, NA, 2, 3, NA, NA), output="NAs detected, fall back to frollmedianExact\nfrollmedianExact: running in parallel for input length 6, window 3, hasnf 1, narm 0")
+test(6001.013, frollmedian(1:8, 4), c(NA, NA, NA, 2.5, 3.5, 4.5, 5.5, 6.5), notOutput="running implementation as described in the paper by Jukka Suomela, for uneven window size, length of input a multiple of window size, no NAs in the input data")
+test(6001.014, frollmedian(c(NA,2:9), 3), as.double(c(NA,NA,NA,3:8)), notOutput="running implementation as described in the paper by Jukka Suomela, for uneven window size, length of input a multiple of window size, no NAs in the input data", output="NAs detected")
+test(6001.015, frollmedian(c(1,2,3,4,NA,6), 3), c(NA, NA, 2, 3, NA, NA), output="NAs detected, fall back to frollmedianExact\nfrollmedianExact: running in parallel for input length 6, window 3, hasnf 1, narm 0")
+test(6001.016, frollmedian(c(1,2,3,4,NA,6), 3), c(NA, NA, 2, 3, NA, NA), output="sequentially because median is already parallelised")
 options(datatable.verbose=FALSE)
-test(6001.051, frollmedian(c(1,2,3,4,NA,6), 3, has.nf=FALSE), c(NA, NA, 2, 3, 4, NA)) ## incorrect results due to misuse of has.nf=T documented
+test(6001.021, frollmedian(c(1,2,3,4,NA,6), 3, has.nf=FALSE), c(NA, NA, 2, 3, 4, NA)) ## incorrect results due to misuse of has.nf=T documented
+test(6001.022, frollmedian(c(1,2,3,4,NA,6), 3, algo="exact", has.nf=FALSE), c(NA, NA, 2, 3, 4, NA)) ## incorrect results due to misuse of has.nf=T documented
+test(6001.023, frollmedian(c(1,2,3,4,NA,6), rep(3, 6), has.nf=FALSE, adaptive=TRUE), c(NA, NA, 2, 3, 4, NA)) ## incorrect results due to misuse of has.nf=T documented
+test(6001.024, frollmedian(c(1,2,3,4,NA,6), rep(3, 6), algo="exact", has.nf=FALSE, adaptive=TRUE), c(NA, NA, 2, 3, 4, NA)) ## incorrect results due to misuse of has.nf=T documented
 
 x = 1:6/2
-test(6001.101, frollmedian(x, 3), c(rep(NA_real_,2), c(NA, NA, 1, 1.5, 2, 2.5)))
-test(6001.102, frollmedian(x, c(2L, 2L, 3L, 4L, 2L, 3L), adaptive=TRUE), c(NA, 0.75, 1, 1.25, 2.25, 2.5))
+test(6001.031, frollmedian(x, 3), c(NA,NA,1,1.5,2,2.5))
+test(6001.032, frollmedian(x, c(2L, 2L, 3L, 4L, 2L, 3L), adaptive=TRUE), c(NA, 0.75, 1, 1.25, 2.25, 2.5))
 options(datatable.verbose=TRUE)
-test(6001.103, frollmedian(1:3, 2), c(NA, 1.5, 2.5), output="frollmedianFast: running for input length")
-test(6001.104, frollmedian(1:3, c(2,2,2), adaptive=TRUE), c(NA, 1.5, 2.5), output="frolladaptivemedianExact: running in parallel")
+test(6001.033, frollmedian(1:3, 2), c(NA, 1.5, 2.5), output="frollmedianFast: running for input length")
+test(6001.034, frollmedian(1:3, c(2,2,2), adaptive=TRUE), c(NA, 1.5, 2.5), output="frolladaptivemedianExact: running in parallel")
 options(datatable.verbose=FALSE)
+test(6001.035, frollmedian(rep(NA_real_, 9), 3), rep(NA_real_, 9))
+test(6001.036, frollmedian(rep(NA_real_, 10), 3), rep(NA_real_, 10))
+test(6001.037, frollmedian(rep(NA_real_, 10), 4), rep(NA_real_, 10))
+test(6001.038, frollmedian(rep(NA_real_, 12), 4), rep(NA_real_, 12))
+d = as.data.table(list(1:6/2, 3:8/4))
+test(6001.039, frollmedian(d, 3:4), list(c(NA, NA, 1, 1.5, 2, 2.5), c(NA, NA, NA, 1.25, 1.75, 2.25), c(NA, NA, 1, 1.25, 1.5, 1.75), c(NA, NA, NA, 1.125, 1.375, 1.625)))
 
 x = c(1,2,3,4,NA,6)
 k = 3
