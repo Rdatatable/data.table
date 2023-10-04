@@ -212,7 +212,7 @@ typedef enum { // adding rolling functions here and in frollfunR in frollR.c
   MEDIAN = 5
 } rollfun_t;
 // froll.c
-void frollfun(rollfun_t rfun, unsigned int algo, double *x, uint64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasnf, bool verbose);
+void frollfun(rollfun_t rfun, unsigned int algo, double *x, uint64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasnf, bool verbose, bool par);
 void frollmeanFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose);
 void frollmeanExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose);
 void frollsumFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose);
@@ -223,7 +223,7 @@ void frollminFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool n
 void frollminExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose);
 void frollprodFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose);
 void frollprodExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose);
-void frollmedianFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose);
+void frollmedianFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose, bool par);
 void frollmedianExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose);
 
 // frolladaptive.c

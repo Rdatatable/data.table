@@ -32,7 +32,7 @@ if (R_FINITE(x[i-k])) {                                        \
  * algo = 1: exact
  *   recalculate whole fun for each observation, for mean roundoff correction is adjusted
  */
-void frollfun(rollfun_t rfun, unsigned int algo, double *x, uint64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasnf, bool verbose) {
+void frollfun(rollfun_t rfun, unsigned int algo, double *x, uint64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasnf, bool verbose, bool par) {
   double tic = 0;
   if (verbose)
     tic = omp_get_wtime();
@@ -83,7 +83,7 @@ void frollfun(rollfun_t rfun, unsigned int algo, double *x, uint64_t nx, ans_t *
     break;
   case MEDIAN :
     if (algo==0) {
-      frollmedianFast(x, nx, ans, k, fill, narm, hasnf, verbose);
+      frollmedianFast(x, nx, ans, k, fill, narm, hasnf, verbose, par);
     } else if (algo==1) {
       frollmedianExact(x, nx, ans, k, fill, narm, hasnf, verbose);
     }
@@ -1142,7 +1142,7 @@ static void advance2(int *next, int* m, int* n, int *s, bool even) {
  finding order of blocks of input is made in parallel
  NA handling redirected to algo="exact"
  */
-void frollmedianFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose) {
+void frollmedianFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool narm, int hasnf, bool verbose, bool par) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", window %d, hasnf %d, narm %d\n"), "frollmedianFast", (uint64_t)nx, k, hasnf, (int)narm);
   if (k==1 || k==2) { // special case for k==1 and k==2, wont rise warning for NAs present and hasnf=FALSE
@@ -1250,8 +1250,8 @@ void frollmedianFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, boo
   // find ordering permutation for each block
   if (verbose)
     tic = omp_get_wtime();
-  #pragma omp parallel for num_threads(getDTthreads(b, false))
-  for (int j=0; j<b; j++) {
+  #pragma omp parallel for if (par) num_threads(getDTthreads(b, false))
+  for (int j=0; j<b; j++) { // par ensures no nested parallelism so if input is not already vectorized (and therefore parallel) then we can use omp here
     shellsort(&x[j*k], (nx_mod_k && j==b-1) ? nx_mod_k : k, &o[j*k]);
     m[j] = o[j*k+h];
     if (even) n[j] = o[j*k+h+1];
@@ -1259,7 +1259,7 @@ void frollmedianFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, boo
     setlinks(&o[j*k], &next[j*(k+1)], &prev[j*(k+1)], tail);
   }
   if (verbose)
-    snprintf(end(ans->message[0]), 500, _("%s: finding order and initializing links for %d blocks in parallel took %.3fs\n"), "frollmedianFast", b, omp_get_wtime()-tic);
+    snprintf(end(ans->message[0]), 500, _("%s: finding order and initializing links for %d blocks %stook %.3fs\n"), "frollmedianFast", b, par ? "in parallel " : "", omp_get_wtime()-tic);
   // fill leading partial window
   for (int i=0; i<k-1; i++)
     ansv[i] = fill;
