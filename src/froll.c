@@ -1195,12 +1195,11 @@ void frollmedianFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, boo
   double *ansv = ans->dbl_v;
   // handling of nx not multiple of k
   int nx_mod_k = nx % k;
+  int onx = nx;
   if (nx_mod_k) {
     if (verbose)
       snprintf(end(ans->message[0]), 500, _("%s: nx=%"PRIu64" is not multiple of k=%d, padding with %d elements, new nx=%"PRIu64"\n"), "frollmedianFast", nx, k, k-nx_mod_k, nx+(k-nx_mod_k));
     nx = nx + (k-nx_mod_k);
-    // TODO?
-    // handle last block finding order when nx%k > 0, otherwise memory sanitizers may warn, *x is initialized for original nx, not padded
   }
   // number of blocks, even k, h number of small elements in list
   int b = nx/k;
@@ -1214,6 +1213,10 @@ void frollmedianFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, boo
     free(o);
     return;
   } // # nocov end
+  if (nx_mod_k) { // initialize padded elements, otherwise setlinks could crash
+    for (int i=0; i<k-nx_mod_k; i++)
+      o[onx+i] = nx_mod_k+i;
+  }
   int *m = malloc(b*sizeof(int)); // pointer to median candidate in that L, initialized to first large element in L
   if (!m) { // # nocov start
     ansSetMsg(ans, 3, "%s: Unable to allocate memory for m", __func__); // raise error
@@ -1249,7 +1252,7 @@ void frollmedianFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, boo
     tic = omp_get_wtime();
   #pragma omp parallel for num_threads(getDTthreads(b, false))
   for (int j=0; j<b; j++) {
-    shellsort(&x[j*k], k, &o[j*k]);
+    shellsort(&x[j*k], (nx_mod_k && j==b-1) ? nx_mod_k : k, &o[j*k]);
     m[j] = o[j*k+h];
     if (even) n[j] = o[j*k+h+1];
     s[j] = h;
