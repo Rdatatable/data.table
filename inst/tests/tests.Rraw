@@ -18094,3 +18094,15 @@ test(2238.6, "a" %notin% integer(), TRUE)
 test(2238.7, "a" %notin% NULL, TRUE)
 test(2238.8, NA %notin% 1:5, TRUE)
 test(2238.9, NA %notin% c(1:5, NA), FALSE)
+
+# as.data.table should remove extra attributes from extended data.frames #5699
+x = data.frame(a=c(1,5,3), b=c(2,4,6))
+class(x) = c("tbl","data.frame")
+attr(x, "t1") = "a"
+as.data.frame.tbl = function(x) {
+  attr(x, "t1") = NULL
+  class(x) = "data.frame"
+  x
+}
+y = as.data.table(x)
+test(2239.1, attr(y, "t1", TRUE), NULL)
