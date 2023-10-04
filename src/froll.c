@@ -1349,7 +1349,7 @@ void frollmedianFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, boo
       }
     }
   }
-  free(next); free(prev); free(s); free(n); free(m);
+  free(next); free(prev); free(s); free(n); free(m); free(o);
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: rolling took %.3f\n"), "frollmedianFast", omp_get_wtime()-tic);
 }
