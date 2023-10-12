@@ -66,10 +66,8 @@ into multiple columns in a single function call efficiently.
 If a vector in the list contains missing values, or is shorter than the
 max length of the list elements, then the output will include runs of
 missing values at the specified position, or at the end.
-The function
-\code{\link{patterns}} can be used to provide regular expression patterns. When
-used along with \code{melt}, if \code{cols} argument is not provided, the
-patterns will be matched against \code{names(data)}, for convenience.
+The functions \code{\link{patterns}} and \code{\link{measure}}
+can be used in \code{measure.vars} to melt all columns matching a regular expression.
 
 Attributes are preserved if all \code{value} columns are of the same type. By
 default, if any of the columns to be melted are of type \code{factor}, it'll
