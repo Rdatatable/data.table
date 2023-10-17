@@ -15,6 +15,12 @@
 
 `data.table` provides a high-performance version of [base R](https://www.r-project.org/about.html)'s `data.frame` with syntax and feature enhancements for ease of use, convenience and programming speed.
 
+---
+
+**NEW:** Take part in the [data.table 2023 community survey](https://tinyurl.com/datatable-survey/) and help shape the future of the project! The survey closes on **December 1st**.
+
+---
+
 ## Why `data.table`?
 
 * concise syntax: fast to type, fast to read
