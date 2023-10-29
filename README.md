@@ -1,6 +1,12 @@
 
 # data.table <a href="https://r-datatable.com"><img src="https://raw.githubusercontent.com/Rdatatable/data.table/master/.graphics/logo.png" align="right" height="140" /></a>
 
+The data.table 2023 community survey is now live! Click on https://tinyurl.com/datatable-survey to fill it out. The survey will remain open until **December 1st, 2023**.
+
+In addition to filling out the survey, it would be great if you could share it with others who might be interested in participating.
+
+---
+
 <!-- badges: start -->
 [![CRAN status](https://cranchecks.info/badges/flavor/release/data.table)](https://cran.r-project.org/web/checks/check_results_data.table.html)
 [![R-CMD-check](https://github.com/Rdatatable/data.table/workflows/R-CMD-check/badge.svg)](https://github.com/Rdatatable/data.table/actions)
