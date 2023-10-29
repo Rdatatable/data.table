@@ -1,7 +1,7 @@
 
 # data.table <a href="https://r-datatable.com"><img src="https://raw.githubusercontent.com/Rdatatable/data.table/master/.graphics/logo.png" align="right" height="140" /></a>
 
-the data.table 2023 community survey is now live! Click on https://tinyurl.com/datatable-survey to fill it out, it will remain open until **December 1st**.
+The data.table 2023 community survey is now live! Click on https://tinyurl.com/datatable-survey to fill it out. The survey will remain open until **December 1st, 2023**.
 
 In addition to filling out the survey, it would be great if you could share it with others who might be interested in participating.
 
