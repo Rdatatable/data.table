@@ -41,7 +41,7 @@ jobs:
         if: github.ref == 'refs/heads/master'
         run: |
           cp -R ${{ env.R_LIBS_USER }} library
-          R_LIBS_USER="library" R CMD INSTALL $(ls -1t data.table_*.tar.gz | head -n 1) --html
+          R CMD INSTALL --library="library" $(ls -1t data.table_*.tar.gz | head -n 1) --html
           mkdir -p doc/html
           cp /usr/share/R/doc/html/{left.jpg,up.jpg,Rlogo.svg,R.css,index.html} doc/html
           Rscript -e 'utils::make.packages.html("library", docdir="doc")'
