@@ -24,7 +24,7 @@ sudo lshw -class disk
 sudo hdparm -t /dev/sda
 ```
 
-When comparing `fread` to non-R solutions be aware that R requires values of character columns to be added to _R's global string cache_. This takes time when reading data but later operations benefit since the character strings have already been cached. Consequently, as well as timing isolated tasks (such as `fread` alone), it's a good idea to benchmark a pipeline of tasks such as reading data, computing operators and producing final output and report the total time of the pipeline.
+When comparing `fread` to non-R solutions be aware that R requires values of character columns to be added to _R's global string cache_. This takes time when reading data but later operations benefit since the character strings have already been cached. Consequently, in addition to timing isolated tasks (such as `fread` alone), it's a good idea to benchmark the total time of an end-to-end pipeline of tasks such as reading data, manipulating it, and producing final output.
 
 # subset: threshold for index optimization on compound queries
 
