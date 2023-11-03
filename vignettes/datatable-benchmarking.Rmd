@@ -72,7 +72,7 @@ Those options affect many more optimizations and thus should not be used when on
 
 # _by reference_ operations
 
-When benchmarking `set*` functions it makes sense to measure the first run only. These functions update their input by reference, so subsequent runs will use already-processed `data.table`, biasing the results. 
+When benchmarking `set*` functions it only makes sense to measure the first run. These functions update their input by reference, so subsequent runs will use already-processed `data.table`, biasing the results. 
 
 Protecting your `data.table` from being updated by reference operations can be achieved using `copy` or `data.table:::shallow` functions. Be aware `copy` might be very expensive as it needs to duplicate whole object. It is unlikely we want to include duplication time in time of the actual task we are benchmarking.
 
