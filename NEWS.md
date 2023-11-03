@@ -1,5 +1,18 @@
 **If you are viewing this file on CRAN, please check [latest news on GitHub](https://github.com/Rdatatable/data.table/blob/master/NEWS.md) where the formatting is also better.**
 
+# data.table [v1.14.9](https://github.com/Rdatatable/data.table/milestone/20)  (in development)
+
+## NOTES
+
+1. Maintainer of the package for CRAN releases is from now on Tyson Barrett, [#5710](https://github.com/Rdatatable/data.table/issues/5710).
+
+2. Updated internal code for breaking change of `is.atomic(NULL)` in R-devel, [#5691](https://github.com/Rdatatable/data.table/pull/5691). Thanks to Martin Maechler for the patch.
+
+3. Amend the way that `shift` creates `NA_complex` values to match the way introduced in R-devel, [#5695](https://github.com/Rdatatable/data.table/issues/5695). Thanks to ??? for the patch.
+
+4. `update_dev_pkg` was not serving recent development version of the package, [#5718](https://github.com/Rdatatable/data.table/issues/5718). Function now by default points to R packages repository on github.io where we believe it will be easier to publish the package. For the current moment only package tarballs are available and not binaries. Thanks to Jan Gorecki for the patch.
+
+
 # data.table [v1.14.8](https://github.com/Rdatatable/data.table/milestone/28?closed=1)  (17 Feb 2023)
 
 ## NOTES
