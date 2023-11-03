@@ -143,7 +143,7 @@ substitute2(
 )
 ```
 
-We can see in the output that both the functions names, as well as the names of the variables passed to those functions, have been replaced... We used `substitute2` for convenience. In this simple case, base R's `substitute` could have been used as well, though it would've required usage of `lapply(env, as.name)`.
+We can see in the output that both the functions names, as well as the names of the variables passed to those functions, have been replaced. We used `substitute2` for convenience. In this simple case, base R's `substitute` could have been used as well, though it would've required usage of `lapply(env, as.name)`.
 
 Now, to use substitution inside `[.data.table`, we don't need to call the `substitute2` function. As it is now being used internally, all we have to do is to provide `env` argument, the same way as we've provided it to the `substitute2` function in the example above. Substitution can be applied to the `i`, `j` and `by` (or `keyby`) arguments of the `[.data.table` method. Note that setting the `verbose` argument to `TRUE` can be used to print expressions after substitution is applied. This is very useful for debugging.
 
