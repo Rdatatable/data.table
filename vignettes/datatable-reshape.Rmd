@@ -138,7 +138,7 @@ Check `?dcast` for other useful arguments and additional examples.
 
 ## 2. Limitations in current `melt/dcast` approaches
 
-So far we've seen features of `melt` and `dcast` that are implemented efficiently for `data.table`s, using internal `data.table` machinery (*fast radix ordering*, *binary search* etc...).
+So far we've seen features of `melt` and `dcast` that are implemented efficiently for `data.table`s, using internal `data.table` machinery (*fast radix ordering*, *binary search* etc.).
 
 However, there are situations we might run into where the desired operation is not expressed in a straightforward manner. For example, consider the `data.table` shown below:
 
