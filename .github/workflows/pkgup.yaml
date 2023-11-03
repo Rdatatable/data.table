@@ -51,7 +51,6 @@ jobs:
           mv doc public/doc
           cp -r --parents library/*/{html,help,doc,demo,DESCRIPTION,README,NEWS,README.md,NEWS.md} public 2>/dev/null || :
           sed -i 's|"/doc/html/|"/data.table/doc/html/|g' public/library/data.table/doc/index.html 2>/dev/null || :
-          echo '<!DOCTYPE html>\n<html><head><meta http-equiv="refresh" content="0; url=library/data.table/html/00Index.html"><title>HTTP redirect</title></head><body></body></html>' > public/index.html
       - name: repo
         if: github.ref == 'refs/heads/master'
         run: |
