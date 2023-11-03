@@ -212,7 +212,7 @@ The way to read this out loud is: "Take \code{DT}, subset rows by \code{i}, \emp
     X[c>1, sum(a), by=c]        # get rows where c>1 is TRUE, and on those rows, get sum(a) grouped by 'c'
     X[Y, .(a, b), on="c"]       # get rows where Y$c == X$c, and select columns 'X$a' and 'X$b' for those rows
     X[Y, .(a, i.a), on="c"]     # get rows where Y$c == X$c, and then select 'X$a' and 'Y$a' (=i.a)
-    X[Y, sum(a*i.a), on="c" by=.EACHI] # for *each* 'Y$c', get sum(a*i.a) on matching rows in 'X$c'
+    X[Y, sum(a*i.a), on="c", by=.EACHI] # for *each* 'Y$c', get sum(a*i.a) on matching rows in 'X$c'
 
     X[, plot(a, b), by=c]       # j accepts any expression, generates plot for each group and returns no data
     # see ?assign to add/update/delete columns by reference using the same consistent interface
