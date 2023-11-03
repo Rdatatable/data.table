@@ -57,7 +57,7 @@ jobs:
         run: |
           mkdir -p public/src/contrib
           mv $(ls -1t data.table_*.tar.gz | head -n 1) public/src/contrib
-          Rscript -e 'tools::write_PACKAGES("public/src/contrib")'
+          Rscript -e 'tools::write_PACKAGES("public/src/contrib", fields="Revision")'
       - name: upload
         if: github.ref == 'refs/heads/master'
         uses: actions/upload-pages-artifact@v1
