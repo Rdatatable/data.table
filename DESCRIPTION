@@ -1,8 +1,9 @@
 Package: data.table
-Version: 1.14.8
+Version: 1.14.10
 Title: Extension of `data.frame`
 Authors@R: c(
-  person("Matt","Dowle",           role=c("aut","cre"), email="mattjdowle@gmail.com"),
+  person("Tyson", "Barrett",       role=c("aut","cre"), email="t.barrett88@gmail.com"),
+  person("Matt","Dowle",           role=c("aut"),       email="mattjdowle@gmail.com"),
   person("Arun","Srinivasan",      role="aut",          email="asrini@pm.me"),
   person("Jan","Gorecki",          role="ctb"),
   person("Michael","Chirico",      role="ctb"),
@@ -50,7 +51,6 @@ Authors@R: c(
   person("Davis","Vaughan",        role="ctb"),
   person("Toby","Hocking",         role="ctb"),
   person("Leonardo","Silvestri",   role="ctb"),
-  person("Tyson","Barrett",        role="ctb"),
   person("Jim","Hester",           role="ctb"),
   person("Anthony","Damico",       role="ctb"),
   person("Sebastian","Freundt",    role="ctb"),
