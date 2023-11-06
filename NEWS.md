@@ -1,6 +1,6 @@
 **If you are viewing this file on CRAN, please check [latest news on GitHub](https://github.com/Rdatatable/data.table/blob/master/NEWS.md) where the formatting is also better.**
 
-# data.table [v1.14.9](https://github.com/Rdatatable/data.table/milestone/20)  (in development)
+# data.table [v1.14.11](https://github.com/Rdatatable/data.table/milestone/29)  (in development)
 
 ## NEW FEATURES
 
@@ -609,6 +609,19 @@
 14. The options `datatable.print.class` and `datatable.print.keys` are now `TRUE` by default. They have been available since v1.9.8 (Nov 2016) and v1.11.0 (May 2018) respectively.
 
 15. Thanks to @ssh352, Václav Tlapák, Cole Miller, András Svraka and Toby Dylan Hocking for reporting and bisecting a significant performance regression in dev. This was fixed before release thanks to a PR by Jan Gorecki, [#5463](https://github.com/Rdatatable/data.table/pull/5463). 
+
+
+# data.table [v1.14.10](https://github.com/Rdatatable/data.table/milestone/20?closed=1)  (update-CRAN-release-date)
+
+## NOTES
+
+1. Maintainer of the package for CRAN releases is from now on Tyson Barrett, [#5710](https://github.com/Rdatatable/data.table/issues/5710).
+
+2. Updated internal code for breaking change of `is.atomic(NULL)` in R-devel, [#5691](https://github.com/Rdatatable/data.table/pull/5691). Thanks to Martin Maechler for the patch.
+
+3. Fix a test concerning coercion to missing complex numbers in `shift()`, [#5695](https://github.com/Rdatatable/data.table/issues/5695). Thanks to @MichaelChirico for the minimal patch in this release, and @ben-schwen for a more comprehensive fix to follow.
+
+4. `update_dev_pkg` was not serving recent development version of the package, [#5718](https://github.com/Rdatatable/data.table/issues/5718). Function now by default points to R packages repository on github.io where we believe it will be easier to publish the package. For the current moment only package tarballs are available and not binaries. Thanks to Jan Gorecki for the patch.
 
 
 # data.table [v1.14.8](https://github.com/Rdatatable/data.table/milestone/28?closed=1)  (17 Feb 2023)
