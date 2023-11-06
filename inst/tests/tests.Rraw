@@ -15150,7 +15150,8 @@ z = c(1:3) + c(3:1)*1i
 test(2067.1, shift(z), c(NA, z[1:2]))
 test(2067.2, shift(z, type = 'lead'), c(z[2:3], NA))
 test(2067.3, shift(z, fill = 1i), c(1i, z[1:2]))
-test(2067.4, shift(list(z, 1:3)), list(c(NA, z[1:2]), c(NA, 1:2)))
+## NB: as.complex(NA) here covers for a change in behavior in R on whether Im(as.complex(NA)) is '0' or 'NA' (#5695)
+test(2067.4, shift(list(z, 1:3)), list(c(as.complex(NA), z[1:2]), c(NA, 1:2)))
 
 # support for ordering tables with complex columns, #1444
 DT = data.table(a = 2:1, z = complex(0, 0:1))
