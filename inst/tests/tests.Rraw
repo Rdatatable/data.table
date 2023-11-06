@@ -8,6 +8,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   if ((tt<-compiler::enableJIT(-1))>0)
     cat("This is dev mode and JIT is enabled (level ", tt, ") so there will be a brief pause around the first test.\n", sep="")
   rm_all = function() {}
+  DTfun = DT ## otherwise DT would be re-defined by many tests
 } else {
   require(data.table)
   # Make symbols to the installed version's ::: so that we can i) test internal-only not-exposed R functions
@@ -32,6 +33,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   compactprint = data.table:::compactprint
   cube.data.table = data.table:::cube.data.table
   dcast.data.table = data.table:::dcast.data.table
+  DTfun = data.table:::DT
   endsWith = data.table:::endsWith
   endsWithAny = data.table:::endsWithAny
   forder = data.table:::forder
@@ -348,7 +350,7 @@ test(83, TESTDT[,list("a","b")], data.table(V1="a",V2="b"))
 test(83.1, TESTDT[,list("sum(a),sum(b)")], data.table("sum(a),sum(b)"))
 test(83.2, TESTDT[,list("sum(a),sum(b)"),by=a], {tt=data.table(a=c("a","c","d","g"),V1="sum(a),sum(b)",key="a");tt$V1=as.character(tt$V1);tt})
 test(84, TESTDT[1:2,list(a,b)], data.table(a=c("a","c"), b=c("e","e"), key = 'a,b'))
-# test(85, TESTDT[1:2,DT(a,b)], data.table(a=c("a","c"), b=c("e","e")))  #DT() now deprecated
+# test(85, TESTDT[1:2,DT(a,b)], data.table(a=c("a","c"), b=c("e","e")))  #DT() now deprecated ## this is very old DT() functionality, completely different than DT() discussed recently
 
 test(86, TESTDT[,sum(v),by="b"], data.table(b=c("e","f","i","b"),V1=INT(3,7,11,7)))  # TESTDT is key'd by a,b, so correct that grouping by b should not be key'd in the result by default
 test(87, TESTDT[,list(MySum=sum(v)),by="b"], data.table(b=c("e","f","i","b"),MySum=INT(3,7,11,7)))
@@ -17577,6 +17579,7 @@ for (col in c("a","b","c")) {
 
 # DT() functional form, #4872 #5106 #5107 #5129
 if (base::getRversion() >= "4.1.0") {
+  DT = DTfun
   # we have to EVAL "|>" here too otherwise this tests.Rraw file won't parse in R<4.1.0
   droprn = function(df) { rownames(df)=NULL; df }  # TODO: could retain rownames where droprn is currently used below
   test(2212.011, EVAL("mtcars |> DT(mpg>20, .(mean_hp=round(mean(hp),2)), by=cyl)"),
@@ -17628,6 +17631,7 @@ if (base::getRversion() >= "4.1.0") {
   test(2212.52, EVAL("D  |> DT(D[, .I[which.max(mpg)], by=cyl]$V1)"),                  ans)
   test(2212.53, EVAL("filter |> DT(filter[, .I[which.max(mpg)], by=cyl]$V1)"),         error="unused.*argument.*by.*cyl")  # R's [.data.frame error on filter[...]
   test(2212.54, EVAL("filter |> DT((filter |> DT(, .I[which.max(mpg)], by=cyl))$V1)"), as.data.frame(ans))
+  rm(DT)
 }
 
 # precision powers of 10^(-n), #4461
