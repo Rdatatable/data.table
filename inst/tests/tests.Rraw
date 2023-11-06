@@ -14473,8 +14473,8 @@ options(datatable.rbindlist.check=NULL)  # this option is set to NULL at the top
 if (.Platform$OS.type == 'windows') local({
   lc_collate <- Sys.getlocale(c('LC_COLLATE'))
   lc_ctype <- Sys.getlocale(c('LC_CTYPE'))
-  Sys.setlocale('LC_COLLATE', "Chinese (Simplified)_China.936")
-  Sys.setlocale('LC_CTYPE', "Chinese (Simplified)_China.936")
+  suppressWarnings(Sys.setlocale('LC_COLLATE', "Chinese (Simplified)_China.936")) ## fix CRAN warning #5696
+  suppressWarnings(Sys.setlocale('LC_CTYPE', "Chinese (Simplified)_China.936"))
   on.exit({
     Sys.setlocale('LC_COLLATE', lc_collate)
     Sys.setlocale('LC_CTYPE', lc_ctype)
