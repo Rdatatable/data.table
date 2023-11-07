@@ -7,7 +7,11 @@ concurrency:
   group: "pages"
   cancel-in-progress: true
 
-on: [push]
+on:
+  push:
+    branches:
+      - 'master'
+
 jobs:
   build:
     name: data.table
