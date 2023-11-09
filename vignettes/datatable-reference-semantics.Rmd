@@ -92,7 +92,7 @@ It can be used in `j` in two ways:
     # when you have only one column to assign to you
     # can drop the quotes and list(), for convenience
     DT[, colA := valA]
-	  ```
+    ```
 
 (b) The functional form
 
