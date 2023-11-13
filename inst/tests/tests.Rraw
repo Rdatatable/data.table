@@ -18094,3 +18094,9 @@ test(2238.6, "a" %notin% integer(), TRUE)
 test(2238.7, "a" %notin% NULL, TRUE)
 test(2238.8, NA %notin% 1:5, TRUE)
 test(2238.9, NA %notin% c(1:5, NA), FALSE)
+
+# Add list column to null data.table #5738
+x = list("a", 1)
+dt = data.table(a = x)
+test(2239.1, null.data.table()[, a := x], dt)
+test(2239.2, set(null.data.table(), j="a", value=x), dt)
