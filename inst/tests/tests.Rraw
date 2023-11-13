@@ -18097,6 +18097,9 @@ test(2238.9, NA %notin% c(1:5, NA), FALSE)
 
 # Add list column to null data.table #5738
 x = list("a", 1)
-dt = data.table(a = x)
-test(2239.1, null.data.table()[, a := x], dt)
-test(2239.2, set(null.data.table(), j="a", value=x), dt)
+dt1 = data.table(a = x)
+dt2 = data.table(a = "a", b=1)
+test(2239.1, null.data.table()[, a := x], dt1)
+test(2239.2, set(null.data.table(), j="a", value=x), dt1)
+test(2239.3, null.data.table()[, c("a","b") := x], dt2)
+test(2239.4, set(null.data.table(), j=c("a","b"), value=x), dt2)
