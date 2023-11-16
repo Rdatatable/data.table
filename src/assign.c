@@ -318,7 +318,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     // Not possible to test because R won't permit attributes be attached to NULL (which is good and we like); warning from R 3.4.0+ tested by 944.5
   }
   const int nrow = LENGTH(dt) ? length(VECTOR_ELT(dt,0)) :
-                                (isNewList(values) && length(values) && (length(values)==length(newcolnames)) ? length(VECTOR_ELT(values,0)) : length(values));
+                                (isNewList(values) && length(values) && (length(values)==length(cols)) ? length(VECTOR_ELT(values,0)) : length(values));
   //                            ^ when null data.table the new nrow becomes the fist column added
   //                                                              #5738 ^ distinguish between adding list column or multiple columns at once
   if (isNull(rows)) {
