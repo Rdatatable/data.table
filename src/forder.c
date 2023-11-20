@@ -10,9 +10,9 @@
   http://stereopsis.com/radix.html
 
   Previous version of this file was promoted into base R, see ?base::sort.
-  Denmark useR! presentation <link>
-  Stanford DSC presentation <link>
-  JSM presentation <link>
+  Denmark useR! presentation https://github.com/Rdatatable/data.table/wiki/talks/useR2015_Matt.pdf
+  Stanford DSC presentation https://github.com/Rdatatable/data.table/wiki/talks/DSC2016_ParallelSort.pdf
+  JSM presentation https://github.com/Rdatatable/data.table/wiki/talks/JSM2018_Matt.pdf
   Techniques used :
     skewed groups are split in parallel
     finds unique bytes to save 256 sweeping

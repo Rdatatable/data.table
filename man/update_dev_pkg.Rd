@@ -5,7 +5,7 @@
   Downloads and installs latest development version only when a new commit is available which has also passed all tests. Defaults are set to update \code{data.table}, other packages can be used as well. Their repository has to include git commit information in PACKAGES file.
 }
 \usage{update_dev_pkg(object="data.table",
-       repo="https://Rdatatable.gitlab.io/data.table",
+       repo="https://Rdatatable.github.io/data.table",
        field="Revision", type=getOption("pkgType"), lib=NULL, \dots)
 }
 \arguments{
