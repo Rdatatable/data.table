@@ -78,12 +78,11 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
       tmpFile = tempfile(fileext = paste0(".",tools::file_ext(file)), tmpdir=tmpdir)  # retain .gz extension in temp filename so it knows to be decompressed further below
       if (w<=2L && base::getRversion()<"3.2.2") { # https: or ftps:
         stopf("URL requires download.file functionalities from R >=3.2.2. You can still manually download the file and fread the downloaded file.")
-      } else {
-        method = if (w==5L) "internal"  # force 'auto' when file: to ensure we don't use an invalid option (e.g. wget), #1668
-                 else getOption("download.file.method", default="auto")  # http: or ftp:
-        download.file(file, tmpFile, method=method, mode="wb", quiet=!showProgress)
-        # In text mode on Windows-only, R doubles up \r to make \r\r\n line endings. mode="wb" avoids that. See ?connections:"CRLF"
       }
+      method = if (w==5L) "internal"  # force 'auto' when file: to ensure we don't use an invalid option (e.g. wget), #1668
+               else getOption("download.file.method", default="auto")  # http: or ftp:
+      # In text mode on Windows-only, R doubles up \r to make \r\r\n line endings. mode="wb" avoids that. See ?connections:"CRLF"
+      download.file(file, tmpFile, method=method, mode="wb", quiet=!showProgress)
       file = tmpFile
       on.exit(unlink(tmpFile), add=TRUE)
       # nocov end
