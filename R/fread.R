@@ -76,11 +76,8 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     if (w <- startsWithAny(file, c("https://", "ftps://", "http://", "ftp://", "file://"))) {  # avoid grepl() for #2531
       # nocov start
       tmpFile = tempfile(fileext = paste0(".",tools::file_ext(file)), tmpdir=tmpdir)  # retain .gz extension in temp filename so it knows to be decompressed further below
-      if (w<=2L) { # https: or ftps:
-        if (!requireNamespace("curl", quietly = TRUE))
-          stopf("URL requires https:// connection for which fread() requires 'curl' package which cannot be found. Please install 'curl' using 'install.packages('curl')'.") # nocov
-        
-        curl::curl_download(file, tmpFile, mode="wb", quiet = !showProgress)
+      if (w<=2L && base::getRversion()<"3.2.2") {
+        stopf("URL requires download.file functionalities from R >=3.2.2. You can still manually download the file and fread the downloaded file.")
       } else {
         method = if (w==5L) "internal"  # force 'auto' when file: to ensure we don't use an invalid option (e.g. wget), #1668
                  else getOption("download.file.method", default="auto")  # http: or ftp:
