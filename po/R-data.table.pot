@@ -1,14 +1,15 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: data.table 1.13.1\n"
-"POT-Creation-Date: 2020-10-17 12:05\n"
+"Project-Id-Version: data.table 1.14.9\n"
+"POT-Creation-Date: 2023-11-22 23:21\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
-
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 
 msgid "data.table package loaded. When developing don't load package"
 msgstr ""
@@ -584,6 +585,12 @@ msgid "length(rownames.value)=="
 msgstr ""
 
 msgid "but should be nrow(x)=="
+msgstr ""
+
+msgid "Internal error: as.matrix.data.table length(X)=="
+msgstr ""
+
+msgid "but a dimension is zero"
 msgstr ""
 
 msgid "When i is a matrix in DT[i]<-value syntax, it doesn't make sense to provide j"
@@ -1405,6 +1412,9 @@ msgstr ""
 msgid ". This warning should not normally occur on Windows or Linux where OpenMP is turned on by data.table's configure script by passing -fopenmp to the compiler. If you see this warning on Windows or Linux, please file a GitHub issue."
 msgstr ""
 
+msgid "**********\nThis data.table installation was compiled for R < 3.4.0 (Apr 2017) where fread() is known to leak memory. Please upgrade R and reinstall data.table to fix the leak. Maintaining and testing code branches to support very old versions increases development time so please do upgrade R. We intend to bump data.table's dependency from 8 year old R 3.1.0 (Apr 2014) to 5 year old R 3.4.0 (Apr 2017).\n**********"
+msgstr ""
+
 msgid "The option 'datatable.nomatch' is being used and is not set to the default NA. This option is still honored for now but will be deprecated in future. Please see NEWS for 1.12.4 for detailed information and motivation. To specify inner join, please specify `nomatch=NULL` explicitly in your calls rather than changing the default using this option."
 msgstr ""
 
@@ -1658,6 +1668,9 @@ msgid "script must end with '.Rraw'. If a file ending '.Rraw.bz2' exists, that w
 msgstr ""
 
 msgid "Neither %s nor %s exist in %s"
+msgstr ""
+
+msgid "memtest intended for Linux. Step through data.table:::rss() to see what went wrong."
 msgstr ""
 
 msgid "Failed after test"
