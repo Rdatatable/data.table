@@ -70,9 +70,9 @@ frollapply(x, n, FUN, \dots, fill=NA, align=c("right", "left", "center"))
   observation has own corresponding rolling window width. Due to the logic
   of adaptive rolling functions, following restrictions apply:
   \itemize{
-    \item{ \code{align} only \code{"right"}. }
-    \item{ if list of vectors is passed to \code{x}, then all
-      list vectors must have equal length. }
+    \item \code{align} only \code{"right"}.
+    \item if list of vectors is passed to \code{x}, then all
+      list vectors must have equal length.
   }
 
   When multiple columns or multiple windows width are provided, then they
@@ -99,21 +99,21 @@ frollapply(x, n, FUN, \dots, fill=NA, align=c("right", "left", "center"))
   \code{zoo} might expect following differences in \code{data.table}
   implementation.
   \itemize{
-    \item{ rolling function will always return result of the same length
-      as input. }
-    \item{ \code{fill} defaults to \code{NA}. }
-    \item{ \code{fill} accepts only constant values. It does not support
-      for \emph{na.locf} or other functions. }
-    \item{ \code{align} defaults to \code{"right"}. }
-    \item{ \code{na.rm} is respected, and other functions are not needed
-      when input contains \code{NA}. }
-    \item{ integers and logical are always coerced to double. }
-    \item{ when \code{adaptive=FALSE} (default), then \code{n} must be a
-      numeric vector. List is not accepted. }
-    \item{ when \code{adaptive=TRUE}, then \code{n} must be vector of
-      length equal to \code{nrow(x)}, or list of such vectors. }
-    \item{ \code{partial} window feature is not supported, although it can
-      be accomplished by using \code{adaptive=TRUE}, see examples. }
+    \item rolling function will always return result of the same length
+      as input.
+    \item \code{fill} defaults to \code{NA}.
+    \item \code{fill} accepts only constant values. It does not support
+      for \emph{na.locf} or other functions.
+    \item \code{align} defaults to \code{"right"}.
+    \item \code{na.rm} is respected, and other functions are not needed
+      when input contains \code{NA}.
+    \item integers and logical are always coerced to double.
+    \item when \code{adaptive=FALSE} (default), then \code{n} must be a
+      numeric vector. List is not accepted.
+    \item when \code{adaptive=TRUE}, then \code{n} must be vector of
+      length equal to \code{nrow(x)}, or list of such vectors.
+    \item \code{partial} window feature is not supported, although it can
+      be accomplished by using \code{adaptive=TRUE}, see examples.
   }
 
   Be aware that rolling functions operates on the physical order of input.

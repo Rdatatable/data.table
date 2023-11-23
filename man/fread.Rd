@@ -87,15 +87,15 @@ On Windows, "French_France.1252" is tried which should be available as standard 
 When \code{quote} is a single character,
 
   \itemize{
-      \item{Spaces and other whitespace (other than \code{sep} and \code{\\n}) may appear in unquoted character fields, e.g., \code{\dots,2,Joe Bloggs,3.14,\dots}.}
+      \item Spaces and other whitespace (other than \code{sep} and \code{\\n}) may appear in unquoted character fields, e.g., \code{\dots,2,Joe Bloggs,3.14,\dots}.
 
-      \item{When \code{character} columns are \emph{quoted}, they must start and end with that quoting character immediately followed by \code{sep} or \code{\\n}, e.g., \code{\dots,2,"Joe Bloggs",3.14,\dots}.
+      \item When \code{character} columns are \emph{quoted}, they must start and end with that quoting character immediately followed by \code{sep} or \code{\\n}, e.g., \code{\dots,2,"Joe Bloggs",3.14,\dots}.
 
       In essence quoting character fields are \emph{required} only if \code{sep} or \code{\\n} appears in the string value. Quoting may be used to signify that numeric data should be read as text. Unescaped quotes may be present in a quoted field, e.g., \code{\dots,2,"Joe, "Bloggs"",3.14,\dots}, as well as escaped quotes, e.g., \code{\dots,2,"Joe \",Bloggs\"",3.14,\dots}.
 
       If an embedded quote is followed by the separator inside a quoted field, the embedded quotes up to that point in that field must be balanced; e.g. \code{\dots,2,"www.blah?x="one",y="two"",3.14,\dots}.
 
-      On those fields that do not satisfy these conditions, e.g., fields with unbalanced quotes, \code{fread} re-attempts that field as if it isn't quoted. This is quite useful in reading files that contains fields with unbalanced quotes as well, automatically.}
+      On those fields that do not satisfy these conditions, e.g., fields with unbalanced quotes, \code{fread} re-attempts that field as if it isn't quoted. This is quite useful in reading files that contains fields with unbalanced quotes as well, automatically.
   }
 
 To read fields \emph{as is} instead, use \code{quote = ""}.
@@ -105,11 +105,11 @@ To read fields \emph{as is} instead, use \code{quote = ""}.
 Currently, the \code{yaml} setting is somewhat inflexible with respect to incorporating metadata to facilitate file reading. Information on column classes should be stored at the top level under the heading \code{schema} and subheading \code{fields}; those with both a \code{type} and a \code{name} sub-heading will be merged into \code{colClasses}. Other supported elements are as follows:
 
   \itemize{
-    \item{ \code{sep} (or alias \code{delimiter}) }
-    \item{ \code{header} }
-    \item{ \code{quote} (or aliases \code{quoteChar}, \code{quote_char}) }
-    \item{ \code{dec} (or alias \code{decimal}) }
-    \item{ \code{na.strings} }
+    \item \code{sep} (or alias \code{delimiter}) 
+    \item \code{header} 
+    \item \code{quote} (or aliases \code{quoteChar}, \code{quote_char}) 
+    \item \code{dec} (or alias \code{decimal}) 
+    \item \code{na.strings} 
   }
 
 \bold{File Download:}
