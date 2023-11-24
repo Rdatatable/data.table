@@ -185,6 +185,7 @@ test-rel-cran-lin:
     _R_CHECK_CRAN_INCOMING_TARBALL_THRESHOLD_: "7500000"
     #_R_CHECK_PKG_SIZES_THRESHOLD_: "7"        ## 'checking installed package size' NOTE - possibly not yet needed bc -g0 (see flags below)
   before_script:
+    - apt-get update -q && apt-get install -y --no-install-recommends tidy ## TODO this should go inside r-builder image but tidying up images is not work so we keep it here for the moment
     - *install-deps
     - *cp-src
     - rm -r bus
