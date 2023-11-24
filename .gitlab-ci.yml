@@ -339,6 +339,7 @@ integration:
     - glci5 ## testing before merge
   needs: ["mirror-packages","build","test-rel-lin","test-rel-cran-lin","test-dev-cran-lin","test-rel-vanilla-lin","test-310-cran-lin","test-rel-win","test-dev-win","test-old-win"]
   script:
+    - R --version
     - Rscript -e 'pkgdown::build_site(override=list(destination="./pkgdown"))'
     ## html manual, vignettes, repos, cran_web, cran_checks
     - echo 'source(".ci/ci.R"); source(".ci/publish.R")' >> .Rprofile
