@@ -6,9 +6,9 @@ variables:
   TZ: "UTC"  ## to avoid 'Failed to create bus connection' from timedatectl via Sys.timezone() on Docker with R 3.4.
              ## Setting TZ for all GLCI jobs to isolate them from timezone. We could have a new GLCI job to test under
              ## a non-UTC timezone, although, that's what we do routinely in dev.
-  R_REL_VERSION: "4.2"
-  R_DEVEL_VERSION: "4.3"
-  R_OLDREL_VERSION: "4.1"
+  R_REL_VERSION: "4.3"
+  R_DEVEL_VERSION: "4.4"
+  R_OLDREL_VERSION: "4.2"
 
 stages:
   - dependencies
@@ -36,23 +36,8 @@ mirror-packages: ## mirror all recursive dependencies, source and win.binary of 
     - echo 'source(".ci/ci.R")' >> .Rprofile
     - mkdir -p bus/$CI_BUILD_NAME/cran/src/contrib
     - Rscript -e 'mirror.packages(dcf.dependencies("DESCRIPTION", "all"), repos=Sys.getenv("CRAN_MIRROR"), repodir="bus/mirror-packages/cran")'
-    - rm bus/$CI_BUILD_NAME/cran/src/contrib/PACKAGES.rds ## fallback to PACKAGES dcf so available.packages:3.4.4 works
     - Rscript -e 'sapply(simplify=FALSE, setNames(nm=Sys.getenv(c("R_REL_VERSION","R_DEVEL_VERSION","R_OLDREL_VERSION"))), function(binary.ver) mirror.packages(type="win.binary", dcf.dependencies("DESCRIPTION", "all"), repos=Sys.getenv("CRAN_MIRROR"), repodir="bus/mirror-packages/cran", binary.ver=binary.ver))'
   <<: *artifacts
-
-# mirror-other-packages: ## mirror integration suggests from pkgs at the top of inst/tests/other.Rraw;  off now #5274
-#  stage: dependencies
-#  tags:
-#    - linux
-#  image: registry.gitlab.com/jangorecki/dockerfiles/r-base-dev
-#  cache:
-#    paths:
-#      - bus/$CI_BUILD_NAME/cran
-#  script:
-#    - echo 'source(".ci/ci.R")' >> .Rprofile
-#    - mkdir -p bus/$CI_BUILD_NAME/cran/src/contrib
-#    - Rscript -e 'eval(parse("inst/tests/other.Rraw", n=1L)); mirror.packages(pkgs, repos=Sys.getenv("CRAN_MIRROR"), repodir="bus/mirror-other-packages/cran")'
-#  <<: *artifacts
 
 build: ## build data.table sources as tar.gz archive
   stage: build
@@ -70,7 +55,6 @@ build: ## build data.table sources as tar.gz archive
     - mkdir -p bus/$CI_BUILD_NAME/cran/src/contrib
     - mv $(ls -1t data.table_*.tar.gz | head -n 1) bus/$CI_BUILD_NAME/cran/src/contrib/.
     - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/build/cran"), fields="Revision", addFiles=TRUE)'
-    - rm bus/$CI_BUILD_NAME/cran/src/contrib/PACKAGES.rds ## fallback to PACKAGES dcf so available.packages:3.4.4 works
   <<: *artifacts
 
 .test-install-deps: &install-deps
@@ -95,12 +79,11 @@ build: ## build data.table sources as tar.gz archive
   - mkdir.exe -p cran/bin/windows/contrib/$R_VERSION; mv.exe $(ls.exe -1t data.table_*.zip | head.exe -n 1) cran/bin/windows/contrib/$R_VERSION
 
 .test-install-r-rel-win: &install-r-rel-win
-  - curl.exe -s -o ../R-rel.exe https://cloud.r-project.org/bin/windows/base/R-4.2.2-win.exe; Start-Process -FilePath ..\R-rel.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
-  # see #5198 for discussion about the https link used above; it will break each time R is released and the version number will need to be updated
+  - curl.exe -s -o ../R-rel.exe https://cloud.r-project.org/bin/windows/base/old/4.3.2/R-4.3.2-win.exe; Start-Process -FilePath ..\R-rel.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
 .test-install-r-devel-win: &install-r-devel-win
   - curl.exe -s -o ../R-devel.exe https://cloud.r-project.org/bin/windows/base/R-devel-win.exe; Start-Process -FilePath ..\R-devel.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
 .test-install-r-oldrel-win: &install-r-oldrel-win
-  - curl.exe -s -o ../R-oldrel.exe https://cloud.r-project.org/bin/windows/base/old/4.1.3/R-4.1.3-win.exe; Start-Process -FilePath ..\R-oldrel.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
+  - curl.exe -s -o ../R-oldrel.exe https://cloud.r-project.org/bin/windows/base/old/4.2.3/R-4.2.3-win.exe; Start-Process -FilePath ..\R-oldrel.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
 
 .test-template: &test
   stage: test
@@ -148,10 +131,8 @@ test-rel-lin: ## most comprehensive tests, force all suggests, also integration 
     _R_CHECK_FORCE_SUGGESTS_: "TRUE"
     _R_CHECK_TESTS_NLINES_: "0"
     OPENBLAS_MAIN_FREE: "1"
-    TEST_DATA_TABLE_WITH_OTHER_PACKAGES: "FALSE"  #5274
   before_script:
-    - Rscript -e 'source(".ci/ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="all"), quiet=TRUE)'  ## does seem to be needed despite 'needs mirror-packages'
-    ## - Rscript -e 'eval(parse("inst/tests/other.Rraw", n=1L)); install.packages(pkgs, quiet=TRUE, repos=c(getOption("repos"), file.path("file:", normalizePath("bus/mirror-other-packages/cran", mustWork=FALSE))))'
+    - Rscript -e 'source(".ci/ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="all"), quiet=TRUE)'
     - *cp-src
     - rm -r bus
     - mkdir -p ~/.R
@@ -188,6 +169,7 @@ test-rel-cran-lin: ## R-release on Linux, extra NOTEs check and build pdf manual
     _R_CHECK_CRAN_INCOMING_: "TRUE"           ## stricter --as-cran checks should run in dev pipelines continuously (not sure what they are though)
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"   ## Other than no URL checking (takes many minutes) or 'Days since last update 0' NOTEs needed, #3284
     _R_CHECK_CRAN_INCOMING_TARBALL_THRESHOLD_: "7500000" ## effective from R 4.1.0
+    #_R_CHECK_PKG_SIZES_THRESHOLD_: "7"## 'checking installed package size' NOTE - check if really needed before adding
   before_script:
     - *install-deps
     - *cp-src
@@ -203,7 +185,7 @@ test-rel-cran-lin: ## R-release on Linux, extra NOTEs check and build pdf manual
     - >-
         Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); if (!identical(l, "Status: OK")) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote("Status: OK"), " but ", shQuote(l)) else q("no")'
 
-test-dev-cran-lin: ## R-devel on Linux, --enable-strict-barrier --disable-long-double, check for new notes and compilation warnings, thus allow_failure
+test-dev-cran-lin: ## R-devel on Linux, currently NOT: --enable-strict-barrier --disable-long-double, check for new notes and compilation warnings, thus allow_failure
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-devel
   allow_failure: true
@@ -229,22 +211,14 @@ test-310-cran-lin: ## R-3.1.0 on Linux, stated dependency of R
   <<: *test-cran-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-3.1.0
 
-test-344-cran-lin: ## R-3.4.4 on Linux, last R non-altrep version
-  <<: *test-cran-lin
-  image: registry.gitlab.com/jangorecki/dockerfiles/r-3.4.4
-
-test-350-cran-lin: ## R-3.5.0 on Linux, first R altrep version
-  <<: *test-cran-lin
-  image: registry.gitlab.com/jangorecki/dockerfiles/r-3.5.0
-
 test-rel-win: ## R-release on Windows, test and build binaries
   <<: *test-win
   variables:
     R_VERSION: "$R_REL_VERSION"
   before_script:
     - *install-r-rel-win
-    - curl.exe -s -o ../rtools.exe https://cloud.r-project.org/bin/windows/Rtools/rtools42/files/rtools42-5355-5357.exe; Start-Process -FilePath ..\rtools.exe -ArgumentList "/VERYSILENT /DIR=C:\rtools42" -NoNewWindow -Wait
-    - $ENV:PATH = "C:\R\bin;C:\rtools42\usr\bin;$ENV:PATH"
+    - curl.exe -s -o ../rtools.exe https://cloud.r-project.org/bin/windows/Rtools/rtools43/files/rtools43-5863-5818.exe; Start-Process -FilePath ..\rtools.exe -ArgumentList "/VERYSILENT /DIR=C:\rtools43" -NoNewWindow -Wait
+    - $ENV:PATH = "C:\R\bin;C:\rtools43\usr\bin;$ENV:PATH"
     - Rscript.exe -e "source('.ci/ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='most'), quiet=TRUE)"
     - *cp-src-win
     - rm.exe -r bus
@@ -256,15 +230,15 @@ test-rel-win: ## R-release on Windows, test and build binaries
     - *rm-src-win
     - *mv-bin-win
 
-test-dev-win: ## R-devel on Windows; see #5294 for changes in Dec 2021 related to UCRT and Rtools42
+test-dev-win: ## R-devel on Windows
   <<: *test-win
   variables:
     R_VERSION: "$R_DEVEL_VERSION"
   before_script:
     - *install-r-devel-win
-    - curl.exe -s -o ../rtools.exe https://cloud.r-project.org/bin/windows/Rtools/rtools43/files/rtools43-5493-5475.exe; Start-Process -FilePath ..\rtools.exe -ArgumentList "/VERYSILENT /DIR=C:\rtools43" -NoNewWindow -Wait
+    - curl.exe -s -o ../rtools.exe https://cloud.r-project.org/bin/windows/Rtools/rtools43/files/rtools43-5863-5818.exe; Start-Process -FilePath ..\rtools.exe -ArgumentList "/VERYSILENT /DIR=C:\rtools43" -NoNewWindow -Wait
     - $ENV:PATH = "C:\R\bin;C:\rtools43\usr\bin;$ENV:PATH"
-    - Rscript.exe -e "source('.ci/ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='most', exclude=c('knitr','rmarkdown')), quiet=TRUE)"  ## exclude= for #5294
+    - Rscript.exe -e "source('.ci/ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='most'), quiet=TRUE)"
     - *cp-src-win
     - rm.exe -r bus
   script:
@@ -281,10 +255,9 @@ test-old-win: ## R-oldrel on Windows
     R_VERSION: "$R_OLDREL_VERSION"
   before_script:
     - *install-r-oldrel-win
-    - curl.exe -s -o ../rtools.exe https://cloud.r-project.org/bin/windows/Rtools/rtools40-x86_64.exe; Start-Process -FilePath ..\rtools.exe -ArgumentList "/VERYSILENT /DIR=C:\rtools40" -NoNewWindow -Wait
-    ## rtools42 doesn't support 32bit so oldrel-win (currently R 4.1) needs rtools40
-    - $ENV:PATH = "C:\R\bin;C:\rtools40\usr\bin;$ENV:PATH"
-    - Rscript.exe -e "source('.ci/ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='most', exclude=c('knitr','rmarkdown')), quiet=TRUE)"  ## exclude= for #5294
+    - curl.exe -s -o ../rtools.exe https://cloud.r-project.org/bin/windows/Rtools/rtools42/files/rtools42-5355-5357.exe; Start-Process -FilePath ..\rtools.exe -ArgumentList "/VERYSILENT /DIR=C:\rtools42" -NoNewWindow -Wait
+    - $ENV:PATH = "C:\R\bin;C:\rtools42\usr\bin;$ENV:PATH"
+    - Rscript.exe -e "source('.ci/ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='most'), quiet=TRUE)"
     - *cp-src-win
     - rm.exe -r bus
   script:
@@ -321,7 +294,7 @@ integration: ## merging all artifacts to produce single R repository, documentat
   only:
     - master
     - tags
-  needs: ["mirror-packages","build","test-rel-lin","test-rel-cran-lin","test-dev-cran-lin","test-rel-vanilla-lin","test-310-cran-lin","test-344-cran-lin","test-350-cran-lin","test-rel-win","test-dev-win","test-old-win"]
+  needs: ["mirror-packages","build","test-rel-lin","test-rel-cran-lin","test-dev-cran-lin","test-rel-vanilla-lin","test-310-cran-lin","test-rel-win","test-dev-win","test-old-win"]
   script:
     - Rscript -e 'pkgdown::build_site(override=list(destination="./pkgdown"))'
     ## html manual, vignettes, repos, cran_web, cran_checks
@@ -389,61 +362,6 @@ integration: ## merging all artifacts to produce single R repository, documentat
     - rm -r bus
     - mv tmpbus bus
   <<: *artifacts
-
-.docker-template: &docker
-  stage: deploy
-  tags:
-    - linux
-  image: docker
-  services:
-    - docker:dind
-  needs:
-    - job: build
-    - job: integration
-      artifacts: false
-  before_script:
-    - sed "s/SRC_IMAGE_NAME/$SRC_IMAGE_NAME/" < .ci/Dockerfile.in > Dockerfile
-    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
-  script:
-    - docker build --pull -t "$CI_REGISTRY_IMAGE/$IMAGE_NAME:$IMAGE_TAG" -f Dockerfile .
-    - docker run --rm "$CI_REGISTRY_IMAGE/$IMAGE_NAME:$IMAGE_TAG" Rscript -e 'cat(R.version.string, "\ndata.table revision", read.dcf(system.file("DESCRIPTION", package="data.table"), fields="Revision")[[1L]], "\n"); require(data.table); test.data.table()'
-    - docker push "$CI_REGISTRY_IMAGE/$IMAGE_NAME:$IMAGE_TAG"
-
-docker-r-release: ## data.table on R-release
-  only:
-    - master
-  variables:
-    SRC_IMAGE_NAME: "r-base-dev"
-    IMAGE_NAME: "r-release"
-    IMAGE_TAG: "latest"
-  <<: *docker
-
-docker-r-release-builder: ## data.table on R-release extended for Rmd vignettes build dependencies
-  only:
-    - master
-  variables:
-    SRC_IMAGE_NAME: "r-builder"
-    IMAGE_NAME: "r-release-builder"
-    IMAGE_TAG: "latest"
-  <<: *docker
-
-docker-r-devel: ## data.table on R-devel
-  only:
-    - master
-  variables:
-    SRC_IMAGE_NAME: "r-devel"
-    IMAGE_NAME: "r-devel"
-    IMAGE_TAG: "latest"
-  <<: *docker
-
-docker-tags: ## data.table on R-release fixed version images
-  only:
-    - tags
-  variables:
-    SRC_IMAGE_NAME: "r-base-dev"
-    IMAGE_NAME: "r-release"
-    IMAGE_TAG: $CI_COMMIT_TAG
-  <<: *docker
 
 pages: ## publish R repository, test jobs summaries, html documentation of all packages in repo, pkgdown
   stage: deploy
