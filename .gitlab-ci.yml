@@ -121,7 +121,7 @@ build: ## build data.table sources as tar.gz archive
 #  tags:
 #    - macosx
 
-test-rel-lin: ## most comprehensive tests, force all suggests, also integration tests, using gcc -O3 -flto -fno-common -Wunused-result
+.test-rel-lin: ## most comprehensive tests, force all suggests, also integration tests, using gcc -O3 -flto -fno-common -Wunused-result
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-builder
   needs: ["mirror-packages","build"]  # "mirror-other-packages"
@@ -151,6 +151,11 @@ test-rel-vanilla-lin: ## minimal, no suggested deps, no vignettes or manuals, me
   variables:
     TEST_DATA_TABLE_MEMTEST: "1"
   before_script:
+    - ls bus/
+    - ls bus/build/
+    - ls bus/build/cran/
+    - ls bus/build/cran/src/
+    - ls bus/build/cran/src/contrib/
     - *cp-src
     - rm -r bus
     - mkdir -p ~/.R
@@ -162,7 +167,7 @@ test-rel-vanilla-lin: ## minimal, no suggested deps, no vignettes or manuals, me
     - R CMD check --no-manual --ignore-vignettes $(ls -1t data.table_*.tar.gz | head -n 1)
     - *rm-src
 
-test-rel-cran-lin: ## R-release on Linux, extra NOTEs check and build pdf manual thus not from cran-lin template
+.test-rel-cran-lin: ## R-release on Linux, extra NOTEs check and build pdf manual thus not from cran-lin template
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-builder
   variables:
@@ -185,7 +190,7 @@ test-rel-cran-lin: ## R-release on Linux, extra NOTEs check and build pdf manual
     - >-
         Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); if (!identical(l, "Status: OK")) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote("Status: OK"), " but ", shQuote(l)) else q("no")'
 
-test-dev-cran-lin: ## R-devel on Linux, currently NOT: --enable-strict-barrier --disable-long-double, check for new notes and compilation warnings, thus allow_failure
+.test-dev-cran-lin: ## R-devel on Linux, currently NOT: --enable-strict-barrier --disable-long-double, check for new notes and compilation warnings, thus allow_failure
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-devel
   allow_failure: true
@@ -207,7 +212,7 @@ test-dev-cran-lin: ## R-devel on Linux, currently NOT: --enable-strict-barrier -
     - >-
         Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); if (!identical(l, "Status: 3 NOTEs")) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote("Status: 3 NOTEs"), " (size of tarball, installed package size, top-level files) but ", shQuote(l)) else q("no")'
 
-test-310-cran-lin: ## R-3.1.0 on Linux, stated dependency of R
+.test-310-cran-lin: ## R-3.1.0 on Linux, stated dependency of R
   <<: *test-cran-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-3.1.0
 
@@ -230,7 +235,7 @@ test-rel-win: ## R-release on Windows, test and build binaries
     - *rm-src-win
     - *mv-bin-win
 
-test-dev-win: ## R-devel on Windows
+.test-dev-win: ## R-devel on Windows
   <<: *test-win
   variables:
     R_VERSION: "$R_DEVEL_VERSION"
@@ -249,7 +254,7 @@ test-dev-win: ## R-devel on Windows
     - *rm-src-win
     - *mv-bin-win
 
-test-old-win: ## R-oldrel on Windows
+.test-old-win: ## R-oldrel on Windows
   <<: *test-win
   variables:
     R_VERSION: "$R_OLDREL_VERSION"
@@ -286,7 +291,7 @@ test-old-win: ## R-oldrel on Windows
 #    - *rm-src
 #    - *mv-bin-mac
 
-integration: ## merging all artifacts to produce single R repository, documentation and website
+.integration: ## merging all artifacts to produce single R repository, documentation and website
   stage: integration
   image: registry.gitlab.com/jangorecki/dockerfiles/r-pkgdown
   tags:
@@ -363,7 +368,7 @@ integration: ## merging all artifacts to produce single R repository, documentat
     - mv tmpbus bus
   <<: *artifacts
 
-pages: ## publish R repository, test jobs summaries, html documentation of all packages in repo, pkgdown
+.pages: ## publish R repository, test jobs summaries, html documentation of all packages in repo, pkgdown
   stage: deploy
   environment: production
   tags:
