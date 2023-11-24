@@ -383,7 +383,7 @@ replace_dot_alias = function(e) {
 
     if (is.null(isub)) return( null.data.table() )
 
-    if (length(o <- .prepareFastSubset(isub = isub, x = x,
+    if (length(o <- .prepareFastSubset(isub = isub, jsub = jsub, x = x,
                                               enclos =  parent.frame(),
                                               notjoin = notjoin, verbose = verbose))){
       ## redirect to the is.data.table(x) == TRUE branch.
@@ -3024,12 +3024,13 @@ gshift = function(x, n=1L, fill=NA, type=c("lag", "lead", "shift", "cyclic")) {
 }
 gforce = function(env, jsub, o, f, l, rows) .Call(Cgforce, env, jsub, o, f, l, rows)
 
-.prepareFastSubset = function(isub, x, enclos, notjoin, verbose = FALSE){
+.prepareFastSubset = function(isub, jsub, x, enclos, notjoin, verbose = FALSE){
   ## helper that decides, whether a fast binary search can be performed, if i is a call
   ## For details on the supported queries, see \code{\link{datatable-optimize}}
   ## Additional restrictions are imposed if x is .SD, or if options indicate that no optimization
   ## is to be performed
   #' @param isub the substituted i
+  #' @param jsub the substituted j
   #' @param x the data.table
   #' @param enclos The environment where to evaluate when RHS is not a column of x
   #' @param notjoin boolean that is set before, indicating whether i started with '!'.
@@ -3051,6 +3052,28 @@ gforce = function(env, jsub, o, f, l, rows) .Call(Cgforce, env, jsub, o, f, l, r
   i = list()
   on = character(0L)
   nonEqui = FALSE
+  lhs = NULL
+
+  # extract lhs of := call
+  if (is.call(jsub) && jsub[[1L]] == ":=") {
+    if (is.null(names(jsub))) {
+      # regular LHS:=RHS usage, or `:=`(...) with no named arguments (an error)
+      # `:=`(LHS,RHS) is valid though, but more because can't see how to detect that, than desire
+      if (length(jsub)!=3L) stopf("In :=(col1=val1, col2=val2, ...) form, all arguments must be named.")
+      lhs = jsub[[2L]]
+      if (is.name(lhs)) {
+        lhs = as.character(lhs)
+      } else {
+        # e.g. (MyVar):= or get("MyVar"):=
+        lhs = eval(lhs, parent.frame(), parent.frame())
+      }
+    } else {
+      # `:=`(c2=1L,c3=2L,...)
+      lhs = names(jsub)[-1L]
+      if (any(lhs=="")) stopf("In :=(col1=val1, col2=val2, ...) form, all arguments must be named.")
+    }
+  }
+
   while(length(remainingIsub)){
     if(is.call(remainingIsub)){
       if (length(remainingIsub[[1L]]) != 1L) return(NULL) ## only single symbol, either '&' or one of validOps allowed.
@@ -3083,6 +3106,7 @@ gforce = function(env, jsub, o, f, l, rows) .Call(Cgforce, env, jsub, o, f, l, r
     col = as.character(stub[[2L]])
     if (!col %chin% names(x)) return(NULL) ## any non-column name prevents fast subsetting
     if(col %chin% names(i)) return(NULL) ## repeated appearance of the same column not supported (e.g. DT[x < 3 & x < 5])
+    if (col %chin% lhs) return(NULL) ## skip auto-indexing if column is modified #1264
     ## now check the RHS of stub
     RHS = eval(stub[[3L]], x, enclos)
     if (is.list(RHS)) RHS = as.character(RHS)  # fix for #961
