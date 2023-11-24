@@ -68,7 +68,7 @@ build:
 .test-install-deps: &install-deps
   - Rscript -e 'source(".ci/ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="all"), repos=file.path("file:", normalizePath("bus/mirror-packages/cran", mustWork=FALSE)), quiet=TRUE)'
 .test-install-deps-win: &install-deps-win
-  - Rscript.exe -e "source('.ci/ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='all'), repos=file.path("file://",getwd(),"bus/mirror-packages/cran"), quiet=TRUE)"
+  - Rscript.exe -e "source('.ci/ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='all'), repos=file.path('file://',getwd(),'bus/mirror-packages/cran'), quiet=TRUE)"
 
 ## copy data.table tar.gz from bus R repo to current directory
 .test-cp-src: &cp-src
