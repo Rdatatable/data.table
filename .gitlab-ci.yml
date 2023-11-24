@@ -32,7 +32,7 @@ mirror-packages:
   stage: dependencies
   tags:
     - linux
-  image: registry.gitlab.com/jangorecki/dockerfiles/r-base-dev
+  image: registry.gitlab.com/jangorecki/dockerfiles/r-base-minimal
   cache:
     paths:
       - bus/$CI_JOB_NAME/cran
@@ -50,7 +50,7 @@ build:
   stage: build
   tags:
     - linux
-  image: registry.gitlab.com/jangorecki/dockerfiles/r-builder
+  image: registry.gitlab.com/jangorecki/dockerfiles/r-base
   needs: ["mirror-packages"]
   before_script:
     - Rscript -e 'install.packages(c("knitr","rmarkdown"), repos=file.path("file:",normalizePath("bus/mirror-packages/cran")), quiet=TRUE)'
