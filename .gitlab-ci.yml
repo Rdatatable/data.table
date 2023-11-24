@@ -31,10 +31,10 @@ mirror-packages: ## mirror all recursive dependencies, source and win.binary of 
   image: registry.gitlab.com/jangorecki/dockerfiles/r-base-dev
   cache:
     paths:
-      - bus/$CI_BUILD_NAME/cran
+      - bus/$CI_JOB_NAME/cran
   script:
     - echo 'source(".ci/ci.R")' >> .Rprofile
-    - mkdir -p bus/$CI_BUILD_NAME/cran/src/contrib
+    - mkdir -p bus/$CI_JOB_NAME/cran/src/contrib
     - Rscript -e 'mirror.packages(dcf.dependencies("DESCRIPTION", "all"), repos=Sys.getenv("CRAN_MIRROR"), repodir="bus/mirror-packages/cran")'
     - Rscript -e 'sapply(simplify=FALSE, setNames(nm=Sys.getenv(c("R_REL_VERSION","R_DEVEL_VERSION","R_OLDREL_VERSION"))), function(binary.ver) mirror.packages(type="win.binary", dcf.dependencies("DESCRIPTION", "all"), repos=Sys.getenv("CRAN_MIRROR"), repodir="bus/mirror-packages/cran", binary.ver=binary.ver))'
   <<: *artifacts
@@ -49,11 +49,11 @@ build: ## build data.table sources as tar.gz archive
     - Rscript -e 'install.packages(c("knitr","rmarkdown"), repos=file.path("file:",normalizePath("bus/mirror-packages/cran")), quiet=TRUE)'
     - rm -r bus
     - sed -i '/^[[:space:]]*$/d' ./DESCRIPTION ## make last line end abruptly; i.e. without a final \n
-    - echo "Revision:" $CI_BUILD_REF >> ./DESCRIPTION
+    - echo "Revision:" $CI_COMMIT_SHA >> ./DESCRIPTION
   script:
     - R CMD build .
-    - mkdir -p bus/$CI_BUILD_NAME/cran/src/contrib
-    - mv $(ls -1t data.table_*.tar.gz | head -n 1) bus/$CI_BUILD_NAME/cran/src/contrib/.
+    - mkdir -p bus/$CI_JOB_NAME/cran/src/contrib
+    - mv $(ls -1t data.table_*.tar.gz | head -n 1) bus/$CI_JOB_NAME/cran/src/contrib/.
     - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/build/cran"), fields="Revision", addFiles=TRUE)'
   <<: *artifacts
 
@@ -66,9 +66,9 @@ build: ## build data.table sources as tar.gz archive
   - cp.exe $(ls.exe -1t bus/build/cran/src/contrib/data.table_*.tar.gz | head.exe -n 1) .
 
 .test-mv-src: &mv-src
-  - mkdir -p bus/$CI_BUILD_NAME && mv $(ls -1t data.table_*.tar.gz | head -n 1) bus/$CI_BUILD_NAME
+  - mkdir -p bus/$CI_JOB_NAME && mv $(ls -1t data.table_*.tar.gz | head -n 1) bus/$CI_JOB_NAME
 .test-mv-src-win: &mv-src-win
-  - mkdir.exe -p bus/$CI_BUILD_NAME; mv.exe $(ls.exe -1t data.table_*.tar.gz | head.exe -n 1) bus/$CI_BUILD_NAME
+  - mkdir.exe -p bus/$CI_JOB_NAME; mv.exe $(ls.exe -1t data.table_*.tar.gz | head.exe -n 1) bus/$CI_JOB_NAME
 
 .test-rm-src: &rm-src
   - rm $(ls -1t data.table_*.tar.gz | head -n 1)
@@ -106,7 +106,7 @@ build: ## build data.table sources as tar.gz archive
     - rm -r bus
   script:
     - *mv-src
-    - cd bus/$CI_BUILD_NAME
+    - cd bus/$CI_JOB_NAME
     - R CMD check --as-cran --no-manual $(ls -1t data.table_*.tar.gz | head -n 1)
     - *rm-src
 
@@ -140,7 +140,7 @@ build: ## build data.table sources as tar.gz archive
     - echo 'CXXFLAGS=-g -O3 -flto -fno-common -Wunused-result -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
   script:
     - *mv-src
-    - cd bus/$CI_BUILD_NAME
+    - cd bus/$CI_JOB_NAME
     - R CMD check $(ls -1t data.table_*.tar.gz | head -n 1)
     - *rm-src
     - (! grep "warning:" data.table.Rcheck/00install.out)
@@ -163,7 +163,7 @@ test-rel-vanilla-lin: ## minimal, no suggested deps, no vignettes or manuals, me
     - echo 'CXXFLAGS=-g -O0 -fno-openmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
   script:
     - *mv-src
-    - cd bus/$CI_BUILD_NAME
+    - cd bus/$CI_JOB_NAME
     - R CMD check --no-manual --ignore-vignettes $(ls -1t data.table_*.tar.gz | head -n 1)
     - *rm-src
 
@@ -184,7 +184,7 @@ test-rel-vanilla-lin: ## minimal, no suggested deps, no vignettes or manuals, me
     - echo 'CXXFLAGS=-g0 -O2 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
   script:
     - *mv-src
-    - cd bus/$CI_BUILD_NAME
+    - cd bus/$CI_JOB_NAME
     - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
     - *rm-src
     - >-
@@ -205,7 +205,7 @@ test-rel-vanilla-lin: ## minimal, no suggested deps, no vignettes or manuals, me
     - rm -r bus
   script:
     - *mv-src
-    - cd bus/$CI_BUILD_NAME
+    - cd bus/$CI_JOB_NAME
     - R CMD check --as-cran --no-manual $(ls -1t data.table_*.tar.gz | head -n 1)
     - *rm-src
     - (! grep "warning:" data.table.Rcheck/00install.out)
@@ -229,7 +229,7 @@ test-rel-win: ## R-release on Windows, test and build binaries
     - rm.exe -r bus
   script:
     - *mv-src-win
-    - cd bus/$CI_BUILD_NAME
+    - cd bus/$CI_JOB_NAME
     - R.exe CMD check --no-manual $(ls.exe -1t data.table_*.tar.gz | head.exe -n 1)
     - R.exe CMD INSTALL --build $(ls.exe -1t data.table_*.tar.gz | head.exe -n 1)
     - *rm-src-win
@@ -248,7 +248,7 @@ test-rel-win: ## R-release on Windows, test and build binaries
     - rm.exe -r bus
   script:
     - *mv-src-win
-    - cd bus/$CI_BUILD_NAME
+    - cd bus/$CI_JOB_NAME
     - R.exe CMD check --no-manual --ignore-vignettes $(ls.exe -1t data.table_*.tar.gz | head.exe -n 1)
     - R.exe CMD INSTALL --build $(ls.exe -1t data.table_*.tar.gz | head.exe -n 1)
     - *rm-src-win
@@ -267,7 +267,7 @@ test-rel-win: ## R-release on Windows, test and build binaries
     - rm.exe -r bus
   script:
     - *mv-src-win
-    - cd bus/$CI_BUILD_NAME
+    - cd bus/$CI_JOB_NAME
     - R.exe CMD check --no-manual --ignore-vignettes $(ls.exe -1t data.table_*.tar.gz | head.exe -n 1)
     - R.exe CMD INSTALL --build $(ls.exe -1t data.table_*.tar.gz | head.exe -n 1)
     - *rm-src-win
@@ -283,7 +283,7 @@ test-rel-win: ## R-release on Windows, test and build binaries
 #    - rm -r bus
 #  script:
 #    - *mv-src
-#    - cd bus/$CI_BUILD_NAME
+#    - cd bus/$CI_JOB_NAME
 #    - R CMD check $(ls -1t data.table_*.tar.gz | head -n 1)
 #    - R CMD INSTALL --build $(ls -1t data.table_*.tar.gz | head -n 1)
 #    - mkdir -p cran/bin/macosx/el-capitan/contrib/$R_VERSION
@@ -307,7 +307,7 @@ test-rel-win: ## R-release on Windows, test and build binaries
     ## list of available test-* jobs dynamically based on bus/test-* directories
     - Rscript -e 'cat("\ntest.jobs <- c(\n"); cat(paste0("  \"",list.files("bus",pattern="^test-"),"\" = \"data.table\""), sep=",\n"); cat(")\n")' >> .Rprofile
     - Rscript -e 'sapply(names(test.jobs), check.test, pkg="data.table", simplify=FALSE)'
-    - mkdir -p bus/$CI_BUILD_NAME
+    - mkdir -p bus/$CI_JOB_NAME
     ## delete any existing non-dev version of data.table
     - rm -f bus/mirror-packages/cran/src/contrib/data.table_*.tar.gz
     - rm -f bus/mirror-packages/cran/bin/windows/contrib/$R_REL_VERSION/data.table_*.zip
@@ -317,10 +317,10 @@ test-rel-win: ## R-release on Windows, test and build binaries
     #- rm -f bus/mirror-packages/cran/bin/macosx/el-capitan/contrib/$R_DEVEL_VERSION/data.table_*.tgz
     #- rm -f bus/mirror-packages/cran/bin/macosx/el-capitan/contrib/$R_OLDREL_VERSION/data.table_*.tgz
     ## merge mirror-packages and R devel packages
-    - mv bus/mirror-packages/cran bus/$CI_BUILD_NAME/
+    - mv bus/mirror-packages/cran bus/$CI_JOB_NAME/
     ## publish package sources
-    - mkdir -p bus/$CI_BUILD_NAME/cran/library bus/$CI_BUILD_NAME/cran/doc
-    - mv $(ls -1t bus/build/cran/src/contrib/data.table_*.tar.gz | head -n 1) bus/$CI_BUILD_NAME/cran/src/contrib
+    - mkdir -p bus/$CI_JOB_NAME/cran/library bus/$CI_JOB_NAME/cran/doc
+    - mv $(ls -1t bus/build/cran/src/contrib/data.table_*.tar.gz | head -n 1) bus/$CI_JOB_NAME/cran/src/contrib
     - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="source"), type="source", fields="Revision", addFiles=TRUE)'
     ## publish binaries
     - Rscript -e 'move.bin("test-rel-win", Sys.getenv("R_REL_VERSION"), os.type="windows")'
@@ -363,7 +363,7 @@ test-rel-win: ## R-release on Windows, test and build binaries
     - mv pkgdown/* bus/integration/cran/
     ## cleanup artifacts from other jobs
     - mkdir tmpbus
-    - mv bus/$CI_BUILD_NAME tmpbus
+    - mv bus/$CI_JOB_NAME tmpbus
     - rm -r bus
     - mv tmpbus bus
   <<: *artifacts
