@@ -10,8 +10,6 @@
 
 3. Fix a test concerning coercion to missing complex numbers in `shift()`, [#5695](https://github.com/Rdatatable/data.table/issues/5695). Thanks to @MichaelChirico for the minimal patch in this release, and @ben-schwen for a more comprehensive fix to follow.
 
-4. `update_dev_pkg` was not serving recent development version of the package, [#5718](https://github.com/Rdatatable/data.table/issues/5718). Function now by default points to R packages repository on github.io where we believe it will be easier to publish the package. For the current moment only package tarballs are available and not binaries. Thanks to Jan Gorecki for the patch.
-
 
 # data.table [v1.14.8](https://github.com/Rdatatable/data.table/milestone/28?closed=1)  (17 Feb 2023)
 
