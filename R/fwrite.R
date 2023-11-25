@@ -115,3 +115,5 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   invisible()
 }
 
+nozlib = function() identical(.Call(Cdt_zlib_version), "zlib header files were not found when data.table was compiled")
+
