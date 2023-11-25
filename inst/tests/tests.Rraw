@@ -69,6 +69,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   which.first = data.table:::which.first
   which.last = data.table:::which.last
   `-.IDate` = data.table:::`-.IDate`
+  nozlib = data.table:::nozlib
 
   # Also, for functions that are masked by other packages, we need to map the data.table one. Or else,
   # the other package's function would be picked up. As above, we only need to do this because we desire
@@ -9880,16 +9881,20 @@ test(1658.39, fwrite(matrix(1:3, nrow=3, ncol=1), quote = TRUE), output = '"V1"\
 test(1658.40, fwrite(matrix(1:4, nrow=2, ncol=2, dimnames = list(c("ra","rb"),c("ca","cb"))), quote = TRUE), output = '"ca","cb"\n.*1,3\n2,4', message = "x being coerced from class: matrix to data.table")
 
 # fwrite compress
-test(1658.41, fwrite(data.table(a=c(1:3), b=c(1:3)), compress="gzip"), output='a,b\n1,1\n2,2\n3,3')  # compress ignored on console
-DT = data.table(a=rep(1:2,each=100), b=rep(1:4,each=25))
-test(1658.421, fwrite(DT, file=f1<-tempfile(fileext=".gz"), verbose=TRUE), NULL,
-               output="args.nrow=200 args.ncol=2.*maxLineLen=5[12].*Writing 200 rows in 1 batches of 200 rows.*nth=1")  # [12] for Windows where eolLen==2
-test(1658.422, fwrite(DT, file=f2<-tempfile()), NULL)
-test(1658.423, file.info(f1)$size < file.info(f2)$size)  # 74 < 804  (file.size() isn't available in R 3.1.0)
-if (test_R.utils) test(1658.43, fread(f1), DT)  # use fread to decompress gz (works cross-platform)
-fwrite(DT, file=f3<-tempfile(), compress="gzip")   # compress to filename not ending .gz
-test(1658.44, file.info(f3)$size, file.info(f1)$size)
-unlink(c(f1,f2,f3))
+if (nozlib()) {
+  test(1658.409, fwrite(data.table(a=1), file=tempfile(), compress="gzip"), error="header files were not found at the time data.table was compiled")
+} else {
+  test(1658.41, fwrite(data.table(a=c(1:3), b=c(1:3)), compress="gzip"), output='a,b\n1,1\n2,2\n3,3')  # compress ignored on console
+  DT = data.table(a=rep(1:2,each=100), b=rep(1:4,each=25))
+  test(1658.421, fwrite(DT, file=f1<-tempfile(fileext=".gz"), verbose=TRUE), NULL,
+                 output="args.nrow=200 args.ncol=2.*maxLineLen=5[12].*Writing 200 rows in 1 batches of 200 rows.*nth=1")  # [12] for Windows where eolLen==2
+  test(1658.422, fwrite(DT, file=f2<-tempfile()), NULL)
+  test(1658.423, file.info(f1)$size < file.info(f2)$size)  # 74 < 804  (file.size() isn't available in R 3.1.0)
+  if (test_R.utils) test(1658.43, fread(f1), DT)  # use fread to decompress gz (works cross-platform)
+  fwrite(DT, file=f3<-tempfile(), compress="gzip")   # compress to filename not ending .gz
+  test(1658.441, file.info(f3)$size, file.info(f1)$size)
+  unlink(c(f1,f2,f3))
+}
 DT = data.table(a=1:3, b=list(1:4, c(3.14, 100e10), c("foo", "bar", "baz")))
 test(1658.45, fwrite(DT), output=c("a,b","1,1|2|3|4","2,3.14|1e+12","3,foo|bar|baz"))
 DT[3,b:=as.raw(0:2)]
@@ -9916,10 +9921,12 @@ test(1658.52, file.info(f1)$size, file.info(f2)$size)
 unlink(c(f1, f2))
 
 # compression error -5 due to only 3 bytes (bom) in first block; #3599
-DT = data.table(l=letters, n=1:26)
-test(1658.53, fwrite(DT, file=f<-tempfile(fileext=".gz"), bom=TRUE, col.names=FALSE), NULL)
-if (test_R.utils) test(1658.54, fread(f), setnames(DT,c("V1","V2")))
-unlink(f)
+if (!nozlib()) {
+  DT = data.table(l=letters, n=1:26)
+  test(1658.53, fwrite(DT, file=f<-tempfile(fileext=".gz"), bom=TRUE, col.names=FALSE), NULL)
+  if (test_R.utils) test(1658.54, fread(f), setnames(DT,c("V1","V2")))
+  unlink(f)
+}
 
 # complex column support for fwrite, part of #3690
 DT = data.table(a=1:3, z=0:2 - (2:0)*1i)
