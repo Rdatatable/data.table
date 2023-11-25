@@ -50,7 +50,7 @@ build:
   stage: build
   tags:
     - linux
-  image: registry.gitlab.com/jangorecki/dockerfiles/r-base
+  image: registry.gitlab.com/jangorecki/dockerfiles/r-base ## r-base-gcc after rstudio/markdown#108
   needs: ["mirror-packages"]
   before_script:
     - Rscript -e 'install.packages(c("knitr","rmarkdown"), repos=file.path("file:",normalizePath("bus/mirror-packages/cran")), quiet=TRUE)'
@@ -92,13 +92,19 @@ build:
 .test-rm-src-win: &rm-src-win
   - rm.exe $(ls.exe -1t data.table_*.tar.gz | head.exe -n 1)
 
-## install R and Rtools on windows
+## install R on windows
 .test-install-r-rel-win: &install-r-rel-win
   - curl.exe -s -o ../R-rel.exe https://cloud.r-project.org/bin/windows/base/old/4.3.2/R-4.3.2-win.exe; Start-Process -FilePath ..\R-rel.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
 .test-install-r-devel-win: &install-r-devel-win
   - curl.exe -s -o ../R-devel.exe https://cloud.r-project.org/bin/windows/base/R-devel-win.exe; Start-Process -FilePath ..\R-devel.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
 .test-install-r-oldrel-win: &install-r-oldrel-win
   - curl.exe -s -o ../R-oldrel.exe https://cloud.r-project.org/bin/windows/base/old/4.2.3/R-4.2.3-win.exe; Start-Process -FilePath ..\R-oldrel.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
+
+## install Rtools on windows
+.test-install-rtools42-win: &install-rtools42-win
+  - curl.exe -s -o ../rtools.exe https://cloud.r-project.org/bin/windows/Rtools/rtools42/files/rtools42-5355-5357.exe; Start-Process -FilePath ..\rtools.exe -ArgumentList "/VERYSILENT /DIR=C:\rtools42" -NoNewWindow -Wait
+.test-install-rtools43-win: &install-rtools43-win
+  - curl.exe -s -o ../rtools.exe https://cloud.r-project.org/bin/windows/Rtools/rtools43/files/rtools43-5863-5818.exe; Start-Process -FilePath ..\rtools.exe -ArgumentList "/VERYSILENT /DIR=C:\rtools43" -NoNewWindow -Wait
 
 .test-template: &test
   stage: test
@@ -127,7 +133,7 @@ build:
 # tests for compilation warnings
 test-rel-lin:
   <<: *test-lin
-  image: registry.gitlab.com/jangorecki/dockerfiles/r-builder
+  image: registry.gitlab.com/jangorecki/dockerfiles/r-base
   needs: ["mirror-packages","build"]
   variables:
     _R_CHECK_CRAN_INCOMING_: "FALSE"
@@ -136,6 +142,7 @@ test-rel-lin:
     _R_CHECK_TESTS_NLINES_: "0"
     OPENBLAS_MAIN_FREE: "1"
   before_script:
+    - apt-get update -q && apt-get install -y --no-install-recommends zlib1g-dev ## remove after #5753
     - *install-deps
     - *cp-src
     - rm -r bus
@@ -150,7 +157,7 @@ test-rel-lin:
     - (! grep "warning:" data.table.Rcheck/00install.out)
 
 ## vanilla minimal
-# TODO: no OS deps: libcurl zlib
+# TODO: remove install zlib
 # no suggested deps
 # no vignettes or manuals
 # no openmp
@@ -158,10 +165,11 @@ test-rel-lin:
 # flags: gcc -O0 -fno-openmp
 test-rel-vanilla-lin:
   <<: *test-lin
-  image: registry.gitlab.com/jangorecki/dockerfiles/r-base-dev
+  image: registry.gitlab.com/jangorecki/dockerfiles/r-base-gcc
   variables:
     TEST_DATA_TABLE_MEMTEST: "1"
   before_script:
+    - apt-get update -q && apt-get install -y --no-install-recommends zlib1g-dev ## remove after #5753
     - *cp-src
     - rm -r bus
     - mkdir -p ~/.R
@@ -178,19 +186,19 @@ test-rel-vanilla-lin:
 # extra NOTEs check and build pdf manual thus not from cran-lin template
 test-rel-cran-lin:
   <<: *test-lin
-  image: registry.gitlab.com/jangorecki/dockerfiles/r-builder
+  image: registry.gitlab.com/jangorecki/dockerfiles/r-base
   variables:
     _R_CHECK_CRAN_INCOMING_: "TRUE"           ## stricter --as-cran checks should run in dev pipelines continuously (not sure what they are though)
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"   ## Other than no URL checking (takes many minutes) or 'Days since last update 0' NOTEs needed, #3284
-    _R_CHECK_CRAN_INCOMING_TARBALL_THRESHOLD_: "7500000"
-    _R_CHECK_PKG_SIZES_THRESHOLD_: "7"        ## 'checking installed package size' NOTE
+    _R_CHECK_CRAN_INCOMING_TARBALL_THRESHOLD_: "7500000" ## bytes
+    _R_CHECK_PKG_SIZES_THRESHOLD_: "7"        ## MB 'checking installed package size' NOTE
   before_script:
-    - apt-get update -q && apt-get install -y --no-install-recommends tidy ## TODO this should go inside r-builder image but tidying up images is not work so we keep it here for the moment
+    - apt-get update -q && apt-get install -y --no-install-recommends zlib1g-dev ## remove after #5753
     - *install-deps
     - *cp-src
     - rm -r bus
     - mkdir -p ~/.R
-    - echo 'CFLAGS=-g -O2 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2'> ~/.R/Makevars
+    - echo 'CFLAGS=-g -O2 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
     - echo 'CXXFLAGS=-g -O2 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
   script:
     - *mv-src
@@ -215,6 +223,7 @@ test-dev-cran-lin:
     _R_S3_METHOD_LOOKUP_BASEENV_AFTER_GLOBALENV_: "FALSE" ## detects S3 method lookup found on search path #4777
     _R_S3_METHOD_LOOKUP_REPORT_SEARCH_PATH_USES_: "TRUE"
   before_script:
+    - apt-get update -q && apt-get install -y --no-install-recommends zlib1g-dev ## remove after #5753
     - *install-deps
     - *cp-src
     - rm -r bus
@@ -224,7 +233,7 @@ test-dev-cran-lin:
     - R CMD check --as-cran --no-manual $(ls -1t data.table_*.tar.gz | head -n 1)
     - *rm-src
     - (! grep "warning:" data.table.Rcheck/00install.out)
-    - >-
+    - >- ## this likely need an update but check fails now on complex NA so CI is not reaching here anyway
         Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); if (!identical(l, "Status: 3 NOTEs")) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote("Status: 3 NOTEs"), " (size of tarball, installed package size, top-level files) but ", shQuote(l)) else q("no")'
 
 ## R 3.1.0
@@ -250,7 +259,7 @@ test-rel-win:
     R_VERSION: "$R_REL_VERSION"
   before_script:
     - *install-r-rel-win
-    - curl.exe -s -o ../rtools.exe https://cloud.r-project.org/bin/windows/Rtools/rtools43/files/rtools43-5863-5818.exe; Start-Process -FilePath ..\rtools.exe -ArgumentList "/VERYSILENT /DIR=C:\rtools43" -NoNewWindow -Wait
+    - *install-rtools43-win
     - $ENV:PATH = "C:\R\bin;C:\rtools43\usr\bin;$ENV:PATH"
     - *install-deps-win
     - *cp-src-win
@@ -272,7 +281,7 @@ test-dev-win:
   allow_failure: true ## temporarily as we want to publish to GLCI
   before_script:
     - *install-r-devel-win
-    - curl.exe -s -o ../rtools.exe https://cloud.r-project.org/bin/windows/Rtools/rtools43/files/rtools43-5863-5818.exe; Start-Process -FilePath ..\rtools.exe -ArgumentList "/VERYSILENT /DIR=C:\rtools43" -NoNewWindow -Wait
+    - *install-rtools43-win
     - $ENV:PATH = "C:\R\bin;C:\rtools43\usr\bin;$ENV:PATH"
     - *install-deps-win
     - *cp-src-win
@@ -293,7 +302,7 @@ test-old-win:
     R_VERSION: "$R_OLDREL_VERSION"
   before_script:
     - *install-r-oldrel-win
-    - curl.exe -s -o ../rtools.exe https://cloud.r-project.org/bin/windows/Rtools/rtools42/files/rtools42-5355-5357.exe; Start-Process -FilePath ..\rtools.exe -ArgumentList "/VERYSILENT /DIR=C:\rtools42" -NoNewWindow -Wait
+    - *install-rtools42-win
     - $ENV:PATH = "C:\R\bin;C:\rtools42\usr\bin;$ENV:PATH"
     - *install-deps-win
     - *cp-src-win
@@ -338,6 +347,7 @@ integration:
     - linux
   only:
     - master
+    - glci5
   needs: ["mirror-packages","build","test-rel-lin","test-rel-cran-lin","test-dev-cran-lin","test-rel-vanilla-lin","test-310-cran-lin","test-rel-win","test-dev-win","test-old-win"]
   script:
     - R --version
@@ -408,7 +418,12 @@ integration:
     - mv tmpbus bus
   <<: *artifacts
 
-pages: ## publish R repository, test jobs summaries, html documentation of all packages in repo, pkgdown
+## publish
+# R repository
+# test jobs summaries
+# html documentation of all packages in repo
+# pkgdown website
+pages:
   stage: deploy
   environment: production
   tags:
@@ -421,7 +436,7 @@ pages: ## publish R repository, test jobs summaries, html documentation of all p
     - mkdir -p public
     - cp -r bus/integration/cran/* public
     - cat public/src/contrib/PACKAGES
-  artifacts: ## publish only when no failure
+  artifacts:
     expire_in: 2 weeks
     paths:
       - public
