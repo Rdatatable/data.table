@@ -166,7 +166,7 @@ test-rel-lin:
 test-rel-vanilla-lin:
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-base-gcc
-  allow_failure: true ## temporarily as we want to publish to GLCI
+  allow_failure: true ## temp workaround #5484
   before_script:
     - *cp-src
     - rm -r bus
@@ -190,9 +190,8 @@ test-rel-cran-lin:
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"   ## Other than no URL checking (takes many minutes) or 'Days since last update 0' NOTEs needed, #3284
     _R_CHECK_CRAN_INCOMING_TARBALL_THRESHOLD_: "7500000" ## bytes
     _R_CHECK_PKG_SIZES_THRESHOLD_: "7"        ## MB 'checking installed package size' NOTE
-  allow_failure: true ## temporarily as we want to publish to GLCI
   before_script:
-    - apt-get update -q && apt-get install -y --no-install-recommends libcurl4-openssl-dev ## remove after #5749
+    - apt-get update -q && apt-get install -y --no-install-recommends libcurl4-openssl-dev ## temp workaround #5749
     - *install-deps
     - *cp-src
     - rm -r bus
@@ -215,7 +214,7 @@ test-rel-cran-lin:
 test-dev-cran-lin:
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-devel
-  allow_failure: true
+  allow_failure: true ## to not be blocked by changes in r-devel
   variables:
     _R_CHECK_CRAN_INCOMING_: "TRUE"
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
@@ -276,7 +275,7 @@ test-dev-win:
   <<: *test-win
   variables:
     R_VERSION: "$R_DEVEL_VERSION"
-  allow_failure: true ## temporarily as we want to publish to GLCI
+  allow_failure: true ## temp workaround #5748
   before_script:
     - *install-r-devel-win
     - *install-rtools43-win
