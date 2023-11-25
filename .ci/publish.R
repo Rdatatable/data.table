@@ -102,15 +102,6 @@ package.index <- function(package, lib.loc, repodir="bus/integration/cran") {
     sprintf("<tr><td> Windows binaries: </td><td> %s </td></tr>", format.bins(ver=c("r-devel","r-release","r-oldrel"), bin_ver=c(r_devel_ver, r_rel_ver, r_oldrel_ver), cran.home=cran.home, os.type="windows", pkg=pkg, version=version, repodir=repodir)),
     sprintf("<tr><td> macOS binaries: </td><td> %s </td></tr>", format.bins(ver=c("r-release","r-oldrel"), bin_ver=c(r_rel_ver, r_oldrel_ver), cran.home=cran.home, os.type="macosx", pkg=pkg, version=version, repodir=repodir))
   )
-  if (pkg=="data.table") { ## docker images
-    registry = Sys.getenv("CI_REGISTRY", "registry.gitlab.com")
-    namespace = Sys.getenv("CI_PROJECT_NAMESPACE", "Rdatatable")
-    project = Sys.getenv("CI_PROJECT_NAME", "data.table")
-    images = c("r-release","r-devel","r-release-builder")
-    images.title = c("Base R release", "Base R development", "R release package builder")
-    tags = rep("latest", 3)
-    docker.dl = sprintf("<tr><td> %s: </td><td> <pre><code>docker pull %s/%s/%s/%s:%s</code></pre> </td></tr>", images.title, tolower(registry), tolower(namespace), tolower(project), tolower(images), tags)
-  }
   index.file = file.path(repodir, "web/packages", pkg, "index.html")
   if (!dir.exists(dirname(index.file))) dir.create(dirname(index.file), recursive=TRUE)
   writeLines(c(
@@ -131,11 +122,6 @@ package.index <- function(package, lib.loc, repodir="bus/integration/cran") {
     sprintf("<table summary=\"Package %s downloads\">", pkg),
     tbl.dl,
     "</table>",
-    if (pkg=="data.table")
-      c("<h4>Docker images:</h4>",
-        sprintf("<table summary=\"Package %s docker images\">", pkg),
-        docker.dl,
-        "</table>"),
     "</body>",
     "</html>"
   ), index.file)
