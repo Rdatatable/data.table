@@ -131,9 +131,10 @@ build:
 # force all suggests
 # flags: gcc -O3 -flto -fno-common -Wunused-result
 # tests for compilation warnings
+# measure memory usage during tests
 test-rel-lin:
   <<: *test-lin
-  image: registry.gitlab.com/jangorecki/dockerfiles/r-base
+  image: registry.gitlab.com/jangorecki/dockerfiles/r-data.table
   needs: ["mirror-packages","build"]
   variables:
     _R_CHECK_CRAN_INCOMING_: "FALSE"
@@ -141,8 +142,9 @@ test-rel-lin:
     _R_CHECK_FORCE_SUGGESTS_: "TRUE"
     _R_CHECK_TESTS_NLINES_: "0"
     OPENBLAS_MAIN_FREE: "1"
+    TEST_DATA_TABLE_MEMTEST: "1"
   before_script:
-    - apt-get update -q && apt-get install -y --no-install-recommends zlib1g-dev ## remove after #5753
+    - apt-get update -q && apt-get install -y --no-install-recommends libcurl4-openssl-dev ## remove after #5749
     - *install-deps
     - *cp-src
     - rm -r bus
@@ -157,19 +159,14 @@ test-rel-lin:
     - (! grep "warning:" data.table.Rcheck/00install.out)
 
 ## vanilla minimal
-# TODO: remove install zlib
 # no suggested deps
 # no vignettes or manuals
 # no openmp
-# measure memory
 # flags: gcc -O0 -fno-openmp
 test-rel-vanilla-lin:
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-base-gcc
-  variables:
-    TEST_DATA_TABLE_MEMTEST: "1"
   before_script:
-    - apt-get update -q && apt-get install -y --no-install-recommends zlib1g-dev ## remove after #5753
     - *cp-src
     - rm -r bus
     - mkdir -p ~/.R
@@ -193,7 +190,6 @@ test-rel-cran-lin:
     _R_CHECK_CRAN_INCOMING_TARBALL_THRESHOLD_: "7500000" ## bytes
     _R_CHECK_PKG_SIZES_THRESHOLD_: "7"        ## MB 'checking installed package size' NOTE
   before_script:
-    - apt-get update -q && apt-get install -y --no-install-recommends zlib1g-dev ## remove after #5753
     - *install-deps
     - *cp-src
     - rm -r bus
@@ -223,7 +219,6 @@ test-dev-cran-lin:
     _R_S3_METHOD_LOOKUP_BASEENV_AFTER_GLOBALENV_: "FALSE" ## detects S3 method lookup found on search path #4777
     _R_S3_METHOD_LOOKUP_REPORT_SEARCH_PATH_USES_: "TRUE"
   before_script:
-    - apt-get update -q && apt-get install -y --no-install-recommends zlib1g-dev ## remove after #5753
     - *install-deps
     - *cp-src
     - rm -r bus
