@@ -131,7 +131,6 @@ build:
 # force all suggests
 # flags: gcc -O3 -flto=auto -fno-common -Wunused-result
 # tests for compilation warnings
-# measure memory usage during tests
 test-rel-lin:
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-data.table
@@ -142,7 +141,6 @@ test-rel-lin:
     _R_CHECK_FORCE_SUGGESTS_: "TRUE"
     _R_CHECK_TESTS_NLINES_: "0"
     OPENBLAS_MAIN_FREE: "1"
-    TEST_DATA_TABLE_MEMTEST: "1"
   before_script:
     - apt-get update -q && apt-get install -y --no-install-recommends libcurl4-openssl-dev ## remove after #5749
     - *install-deps
@@ -396,7 +394,7 @@ integration:
     - mv /tmp/opencran/doc bus/integration/cran/
     ## library html manual, vignettes
     - Rscript -e 'lib.copy(lib.from="/tmp/opencran/library")'
-    ## web/checks/$pkg/$job 00install.out, 00check.log, *.Rout, memtest.csv, memtest.png
+    ## web/checks/$pkg/$job 00install.out, 00check.log, *.Rout, memtest.csv, memtest.png ## memtest not available for now #5764
     - Rscript -e 'sapply(names(test.jobs), check.copy, simplify=FALSE)'
     ## web/packages/$pkg/$pkg.pdf
     - Rscript -e 'pdf.copy("data.table", "test-rel-lin")'
