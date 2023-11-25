@@ -136,7 +136,6 @@ test-rel-lin:
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-data.table
   needs: ["mirror-packages","build"]
-  allow_failure: true ## temp workaround #5760
   variables:
     _R_CHECK_CRAN_INCOMING_: "FALSE"
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
