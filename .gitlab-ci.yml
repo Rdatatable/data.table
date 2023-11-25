@@ -345,7 +345,6 @@ integration:
     - linux
   only:
     - master
-    - glci5
   needs: ["mirror-packages","build","test-rel-lin","test-rel-cran-lin","test-dev-cran-lin","test-rel-vanilla-lin","test-310-cran-lin","test-rel-win","test-dev-win","test-old-win"]
   script:
     - R --version
