@@ -214,7 +214,7 @@ SEXP test_dt_win_snprintf(void)
   
   int res = dt_win_snprintf(buff, 10, "%4$d%2$d%3$d%5$d%1$d", 111, 222, 33, 44, 555); // fmt longer than n
   if (strlen(buff)!=9 || strcmp(buff, "442223355"))                                 error(_("dt_win_snprintf test %d failed: %s"), 9, buff);
-  if (res!=13) /* should return what would have been written if not chopped */      error(_("dt_win_snprintf test %d failed: %s"), 10, res);
+  if (res!=13) /* should return what would have been written if not chopped */      error(_("dt_win_snprintf test %d failed: %d"), 10, res);
   
   dt_win_snprintf(buff, 39, "%l", 3);
   if (strlen(buff)!=38 || strcmp(buff, "0 %l    does not end with recognized t"))   error(_("dt_win_snprintf test %d failed: %s"), 11, buff);

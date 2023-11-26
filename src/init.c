@@ -150,7 +150,7 @@ static void setSizes(void) {
   __sizes[CPLXSXP] = sizeof(Rcomplex);  __typeorder[CPLXSXP] = 4;
   __sizes[STRSXP] =  sizeof(SEXP *);    __typeorder[STRSXP] =  5;
   __sizes[VECSXP] =  sizeof(SEXP *);    __typeorder[VECSXP] =  6;   // list column
-  if (sizeof(char *)>8) error(_("Pointers are %d bytes, greater than 8. We have not tested on any architecture greater than 64bit yet."), sizeof(char *));
+  if (sizeof(char *)>8) error(_("Pointers are %lu bytes, greater than 8. We have not tested on any architecture greater than 64bit yet."), sizeof(char *));
   // One place we need the largest sizeof is the working memory malloc in reorder.c
 }
 
@@ -165,19 +165,19 @@ void attribute_visible R_init_data_table(DllInfo *info)
   const char *msg = "... failed. Please forward this message to maintainer('data.table').";
   if ((int)NA_INTEGER != (int)INT_MIN) error(_("Checking NA_INTEGER [%d] == INT_MIN [%d] %s"), NA_INTEGER, INT_MIN, msg);
   if ((int)NA_INTEGER != (int)NA_LOGICAL) error(_("Checking NA_INTEGER [%d] == NA_LOGICAL [%d] %s"), NA_INTEGER, NA_LOGICAL, msg);
-  if (sizeof(int) != 4) error(_("Checking sizeof(int) [%d] is 4 %s"), sizeof(int), msg);
-  if (sizeof(double) != 8) error(_("Checking sizeof(double) [%d] is 8 %s"), sizeof(double), msg);     // 8 on both 32bit and 64bit
+  if (sizeof(int) != 4) error(_("Checking sizeof(int) [%lu] is 4 %s"), sizeof(int), msg);
+  if (sizeof(double) != 8) error(_("Checking sizeof(double) [%lu] is 8 %s"), sizeof(double), msg);     // 8 on both 32bit and 64bit
   // alignof not available in C99: if (alignof(double) != 8) error(_("Checking alignof(double) [%d] is 8 %s"), alignof(double), msg);  // 8 on both 32bit and 64bit
-  if (sizeof(long long) != 8) error(_("Checking sizeof(long long) [%d] is 8 %s"), sizeof(long long), msg);
-  if (sizeof(char *) != 4 && sizeof(char *) != 8) error(_("Checking sizeof(pointer) [%d] is 4 or 8 %s"), sizeof(char *), msg);
-  if (sizeof(SEXP) != sizeof(char *)) error(_("Checking sizeof(SEXP) [%d] == sizeof(pointer) [%d] %s"), sizeof(SEXP), sizeof(char *), msg);
-  if (sizeof(uint64_t) != 8) error(_("Checking sizeof(uint64_t) [%d] is 8 %s"), sizeof(uint64_t), msg);
-  if (sizeof(int64_t) != 8) error(_("Checking sizeof(int64_t) [%d] is 8 %s"), sizeof(int64_t), msg);
-  if (sizeof(signed char) != 1) error(_("Checking sizeof(signed char) [%d] is 1 %s"), sizeof(signed char), msg);
-  if (sizeof(int8_t) != 1) error(_("Checking sizeof(int8_t) [%d] is 1 %s"), sizeof(int8_t), msg);
-  if (sizeof(uint8_t) != 1) error(_("Checking sizeof(uint8_t) [%d] is 1 %s"), sizeof(uint8_t), msg);
-  if (sizeof(int16_t) != 2) error(_("Checking sizeof(int16_t) [%d] is 2 %s"), sizeof(int16_t), msg);
-  if (sizeof(uint16_t) != 2) error(_("Checking sizeof(uint16_t) [%d] is 2 %s"), sizeof(uint16_t), msg);
+  if (sizeof(long long) != 8) error(_("Checking sizeof(long long) [%lu] is 8 %s"), sizeof(long long), msg);
+  if (sizeof(char *) != 4 && sizeof(char *) != 8) error(_("Checking sizeof(pointer) [%lu] is 4 or 8 %s"), sizeof(char *), msg);
+  if (sizeof(SEXP) != sizeof(char *)) error(_("Checking sizeof(SEXP) [%lu] == sizeof(pointer) [%d] %s"), sizeof(SEXP), sizeof(char *), msg);
+  if (sizeof(uint64_t) != 8) error(_("Checking sizeof(uint64_t) [%lu] is 8 %s"), sizeof(uint64_t), msg);
+  if (sizeof(int64_t) != 8) error(_("Checking sizeof(int64_t) [%lu] is 8 %s"), sizeof(int64_t), msg);
+  if (sizeof(signed char) != 1) error(_("Checking sizeof(signed char) [%lu] is 1 %s"), sizeof(signed char), msg);
+  if (sizeof(int8_t) != 1) error(_("Checking sizeof(int8_t) [%lu] is 1 %s"), sizeof(int8_t), msg);
+  if (sizeof(uint8_t) != 1) error(_("Checking sizeof(uint8_t) [%lu] is 1 %s"), sizeof(uint8_t), msg);
+  if (sizeof(int16_t) != 2) error(_("Checking sizeof(int16_t) [%lu] is 2 %s"), sizeof(int16_t), msg);
+  if (sizeof(uint16_t) != 2) error(_("Checking sizeof(uint16_t) [%lu] is 2 %s"), sizeof(uint16_t), msg);
 
   SEXP tmp = PROTECT(allocVector(INTSXP,2));
   if (LENGTH(tmp)!=2) error(_("Checking LENGTH(allocVector(INTSXP,2)) [%d] is 2 %s"), LENGTH(tmp), msg);
