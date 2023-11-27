@@ -129,13 +129,12 @@ build:
 
 ## most comprehensive tests
 # force all suggests
-# flags: gcc -O3 -flto -fno-common -Wunused-result
+# flags: gcc -O3 -flto=auto -fno-common -Wunused-result
 # tests for compilation warnings
 test-rel-lin:
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-data.table
   needs: ["mirror-packages","build"]
-  allow_failure: true ## temp workaround #5760
   variables:
     _R_CHECK_CRAN_INCOMING_: "FALSE"
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
@@ -148,8 +147,8 @@ test-rel-lin:
     - *cp-src
     - rm -r bus
     - mkdir -p ~/.R
-    - echo 'CFLAGS=-g -O3 -flto -fno-common -Wunused-result -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
-    - echo 'CXXFLAGS=-g -O3 -flto -fno-common -Wunused-result -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
+    - echo 'CFLAGS=-g -O3 -flto=auto -fno-common -Wunused-result -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
+    - echo 'CXXFLAGS=-g -O3 -flto=auto -fno-common -Wunused-result -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
   script:
     - *mv-src
     - cd bus/$CI_JOB_NAME
