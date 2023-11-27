@@ -136,6 +136,7 @@ R_CallMethodDef callMethods[] = {
 {"CcoerceAs", (DL_FUNC) &coerceAs, -1},
 {"Ctest_dt_win_snprintf", (DL_FUNC)&test_dt_win_snprintf, -1},
 {"Cdt_zlib_version", (DL_FUNC)&dt_zlib_version, -1},
+{"Cdt_has_zlib", (DL_FUNC)&dt_has_zlib, -1},
 {"Csubstitute_call_arg_namesR", (DL_FUNC) &substitute_call_arg_namesR, -1},
 {"CstartsWithAny", (DL_FUNC)&startsWithAny, -1},
 {"CconvertDate", (DL_FUNC)&convertDate, -1},
