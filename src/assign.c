@@ -467,8 +467,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       // Can growVector at this point easily enough, but it shouldn't happen in first place so leave it as
       // strong error message for now.
     else if (TRUELENGTH(names) != oldtncol)
-      // Use (long) to cast R_xlen_t to a fixed type to robustly avoid -Wformat compiler warnings
-      error(_("Internal error: selfrefnames is ok but tl names [%ld] != tl [%ld]"), (long)TRUELENGTH(names), (long)oldtncol);  // # nocov
+      // Use (long long) to cast R_xlen_t to a fixed type to robustly avoid -Wformat compiler warnings, see #5768
+      error(_("Internal error: selfrefnames is ok but tl names [%ld] != tl [%ld]"), (long long)TRUELENGTH(names), (long long)oldtncol);  // # nocov
     SETLENGTH(dt, oldncol+LENGTH(newcolnames));
     SETLENGTH(names, oldncol+LENGTH(newcolnames));
     for (i=0; i<LENGTH(newcolnames); i++)
