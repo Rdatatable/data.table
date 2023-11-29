@@ -209,7 +209,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
           const char *str = isString(s) ? CHAR(STRING_ELT(s,w2)) : "";
           snprintf(buff, 1000, _("Column %d ['%s'] of item %d is missing in item %d. Use fill=TRUE to fill with NA (NULL for list columns), or use.names=FALSE to ignore column names.%s"),
                         w2+1, str, i+1, missi+1, extra );
-          if (usenames==TRUE) error(buff);
+          if (usenames==TRUE) error("%s", buff);
           i = LENGTH(l); // break from outer i loop
           break;         // break from inner j loop
         }
@@ -230,8 +230,8 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
         }
         const char *o = isNull(opt) ? "message" : CHAR(STRING_ELT(opt,0));
         if      (strcmp(o,"message")==0) { eval(PROTECT(lang2(install("message"),PROTECT(ScalarString(mkChar(buff))))), R_GlobalEnv); UNPROTECT(2); }
-        else if (strcmp(o,"warning")==0) warning(buff);
-        else if (strcmp(o,"error")==0)   error(buff);
+        else if (strcmp(o,"warning")==0) warning("%s", buff);
+        else if (strcmp(o,"error")==0)   error("%s", buff);
         else if (strcmp(o,"none")!=0)    warning(_("options()$datatable.rbindlist.check=='%s' which is not 'message'|'warning'|'error'|'none'. See news item 5 in v1.12.2."), o);
       }
     }
@@ -491,7 +491,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
       }
       for (int k=0; k<nLevel; ++k) SET_TRUELENGTH(levelsRaw[k], 0);
       savetl_end();
-      if (warnStr[0]) warning(warnStr);  // now savetl_end() has happened it's safe to call warning (could error if options(warn=2))
+      if (warnStr[0]) warning("%s", warnStr);  // now savetl_end() has happened it's safe to call warning (could error if options(warn=2))
       SEXP levelsSxp;
       setAttrib(target, R_LevelsSymbol, levelsSxp=allocVector(STRSXP, nLevel));
       for (int k=0; k<nLevel; ++k) SET_STRING_ELT(levelsSxp, k, levelsRaw[k]);
