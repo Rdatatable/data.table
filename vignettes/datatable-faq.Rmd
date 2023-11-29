@@ -2,12 +2,13 @@
 title: "Frequently Asked Questions about data.table"
 date: "`r Sys.Date()`"
 output:
-  rmarkdown::html_vignette:
-    toc: true
-    number_sections: true
+  markdown::html_format:
+    options:
+      toc: true
+      number_sections: true
 vignette: >
   %\VignetteIndexEntry{Frequently Asked Questions about data.table}
-  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEngine{knitr::knitr}
   \usepackage[utf8]{inputenc}
 ---
 
