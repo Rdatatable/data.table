@@ -30,7 +30,7 @@ The current scope of package functionality includes:
 
 Functionality that is out of scope:
 * plotting/graphics (like ggplot2)
-* manipulating data stored on disk (or remote SQL DB) rather than in memory (like sqldf / dbplyr)
+* manipulating out-of-memory data, e.g. data stored on disk or remote SQL DB, (as opposed e.g. to sqldf / dbplyr)
 * machine learning / modeling (like mlr3)
 * regular expression builders (like rex and nc packages) 
 
