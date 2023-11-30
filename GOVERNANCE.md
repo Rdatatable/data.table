@@ -62,7 +62,7 @@ Functionality that is out of scope:
 
 ## CRAN maintainer
 
-* Definition: in charge of communication with CRAN. Responsible for submitting releases to CRAN on a regular basis, and in response to requests from CRAN. 
+* Definition: in charge of communication with CRAN. Responsible for submitting releases to CRAN on a regular basis, and for responding to requests from CRAN.
 * How to obtain this role: (1) merge into master a PR adding role="cre" to DESCRIPTION, and (2) submit updated package to CRAN (previous CRAN maintainer will have to confirm change by email to CRAN). 
 * How this role is recognized: credited via role="cre" in DESCRIPTION, so they appear as Maintainer on CRAN. 
 
