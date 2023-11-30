@@ -4,7 +4,7 @@ Governance for the R data.table project
 
 ## This document
 
-The purpose of this document is to define how people related to the project work together, so that the project can expand to handle more contributions, from a larger and more diverse group of contributors.
+The purpose of this document is to define how people related to the project work together, so that the project can expand to handle a larger and more diverse group of contributors.
 
 ## The R package
 
