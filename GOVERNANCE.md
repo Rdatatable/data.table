@@ -82,7 +82,7 @@ to obtain this role.
 
 ## Pull Requests
 
-A pull request can be merged, as long as there is one approving review
+A pull request can be merged as long as there is one approving review
 (ideally from a reviewer of the affected files, different person from
 author of PR), and no opposing/blocking comments from
 Reviewers/Committers.
