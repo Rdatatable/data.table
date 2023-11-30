@@ -15,7 +15,7 @@ which is guided by the following principles:
 * Time & memory efficiency
 * Concise syntax (minimal redundancy in code)
 * Stable code base (easy for users to upgrade to new data.table, and compatible with old R versions)
-* Comprehensive and accessible documentation
+* Comprehensive and accessible documentation and run-time signals (errors, warnings)
 * Clear error and warning messages
 
 To prioritize developer time, we define what is in and out of scope.
