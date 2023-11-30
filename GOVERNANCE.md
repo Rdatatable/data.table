@@ -8,8 +8,7 @@ The purpose of this document is to define how people related to the project work
 
 ## The R package
 
-The purpose of the project is to maintain the R data.table package,
-which is guided by the following principles:
+The purpose of the project is to maintain the R data.table package, which is guided by the following principles:
 
 * No external Imports/LinkingTo/Depends dependencies (external meaning those not maintained by the project)
 * Few (if any) Suggests/Enhances dependencies
@@ -19,7 +18,8 @@ which is guided by the following principles:
 * Comprehensive and accessible documentation and run-time signals (errors, warnings)
 * Clear error and warning messages
 
-To prioritize developer time, we define what is in and out of current scope.
+To prioritize developer time, we define what is in and out of current scope. Feature requests in issues and pull requests that are out of current scope should be closed immediately, because they are not the current priority. If someone wants to contribute code that is currently out of scope, they first have to make a pull request that changes the scope as defined below.
+
 The current scope of package functionality includes:
 * Data manipulation and analysis 
     * reshaping/pivoting
