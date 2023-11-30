@@ -91,7 +91,7 @@ Reviewers/Committers.
 
 * Regular CRAN releases should ideally occur twice per year, and can include new features.
 * A hotfix/patch CRAN release should occur when CRAN asks for one, at which time the CRAN maintainer should post an issue on github, and ask others to help fix/prepare the release.
-* Both kinds of releases should be discussed in an issue, and the release should happen only if there is general consensus that it is ok to go ahead (no Reviewer/Committer has expressed major blocking concerns).
+* Both kinds of releases should be discussed in an issue, and the release should happen only if there is general consensus that it is OK to go ahead (no Reviewer/Committer has expressed major blocking concerns).
 * It is the responsibility of the CRAN maintainer to ensure quality prior to release. This includes CRAN checks, unit tests, performance tests, etc, and these tasks can be delegated to others. 
 
 ## Changing this GOVERNANCE.md document
