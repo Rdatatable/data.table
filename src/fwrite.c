@@ -736,7 +736,7 @@ void fwriteMain(fwriteMainArgs args)
     }
     if (f==-1) {
       *ch = '\0';
-      DTPRINT(buff);
+      DTPRINT("%s", buff);
       free(buff);
     } else {
       int ret1=0, ret2=0;
@@ -926,7 +926,7 @@ void fwriteMain(fwriteMainArgs args)
           errno=0;
           if (f==-1) {
             *ch='\0';  // standard C string end marker so DTPRINT knows where to stop
-            DTPRINT(myBuff);
+            DTPRINT("%s", myBuff);
           } else if ((args.is_gzip ? WRITE(f, myzBuff, (int)myzbuffUsed)
                                    : WRITE(f, myBuff,  (int)(ch-myBuff))) == -1) {
             failed=true;         // # nocov
