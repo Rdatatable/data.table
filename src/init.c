@@ -170,7 +170,7 @@ void attribute_visible R_init_data_table(DllInfo *info)
   // alignof not available in C99: if (alignof(double) != 8) error(_("Checking alignof(double) [%d] is 8 %s"), alignof(double), msg);  // 8 on both 32bit and 64bit
   if (sizeof(long long) != 8) error(_("Checking sizeof(long long) [%lu] is 8 %s"), sizeof(long long), msg);
   if (sizeof(char *) != 4 && sizeof(char *) != 8) error(_("Checking sizeof(pointer) [%lu] is 4 or 8 %s"), sizeof(char *), msg);
-  if (sizeof(SEXP) != sizeof(char *)) error(_("Checking sizeof(SEXP) [%lu] == sizeof(pointer) ["PRId64"] %s"), sizeof(SEXP), sizeof(char *), msg);
+  if (sizeof(SEXP) != sizeof(char *)) error(_("Checking sizeof(SEXP) [%lu] == sizeof(pointer) [%"PRId64"] %s"), sizeof(SEXP), sizeof(char *), msg);
   if (sizeof(uint64_t) != 8) error(_("Checking sizeof(uint64_t) [%lu] is 8 %s"), sizeof(uint64_t), msg);
   if (sizeof(int64_t) != 8) error(_("Checking sizeof(int64_t) [%lu] is 8 %s"), sizeof(int64_t), msg);
   if (sizeof(signed char) != 1) error(_("Checking sizeof(signed char) [%lu] is 1 %s"), sizeof(signed char), msg);

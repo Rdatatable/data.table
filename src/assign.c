@@ -468,7 +468,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       // strong error message for now.
     else if (TRUELENGTH(names) != oldtncol)
       // Use (long long) to cast R_xlen_t to a fixed type to robustly avoid -Wformat compiler warnings, see #5768
-      error(_("Internal error: selfrefnames is ok but tl names ["PRId64"] != tl ["PRId64"]"), (long long)TRUELENGTH(names), (long long)oldtncol);  // # nocov
+      error(_("Internal error: selfrefnames is ok but tl names [%"PRId64"] != tl [%"PRId64"]"), (long long)TRUELENGTH(names), (long long)oldtncol);  // # nocov
     SETLENGTH(dt, oldncol+LENGTH(newcolnames));
     SETLENGTH(names, oldncol+LENGTH(newcolnames));
     for (i=0; i<LENGTH(newcolnames); i++)
