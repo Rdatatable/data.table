@@ -320,7 +320,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
           ++totlen;
       }
       break;
-    default: error(_("Internal error: unknown type in mult=ALL in overlaps: %d"), mult, type); // #nocov
+    default: error(_("Internal error: unknown type in mult=ALL in overlaps: %d"), type); // #nocov
     }
   } else totlen = rows;
   end1 = clock() - start;
