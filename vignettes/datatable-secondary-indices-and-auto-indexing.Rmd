@@ -2,10 +2,10 @@
 title: "Secondary indices and auto indexing"
 date: "`r Sys.Date()`"
 output:
-  rmarkdown::html_vignette
+  markdown::html_format
 vignette: >
   %\VignetteIndexEntry{Secondary indices and auto indexing}
-  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEngine{knitr::knitr}
   \usepackage[utf8]{inputenc}
 ---
 
