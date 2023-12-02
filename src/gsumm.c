@@ -616,7 +616,7 @@ SEXP gmean(SEXP x, SEXP narmArg)
     } else {
       // narm==true and anyNA==true
       int *restrict nna_counts = calloc(ngrp, sizeof(int));
-      if (!nna_counts) error(_("Unable to allocate %d * %d bytes for non-NA counts in gmean na.rm=TRUE"), ngrp, sizeof(int));
+      if (!nna_counts) error(_("Unable to allocate %d * %lu bytes for non-NA counts in gmean na.rm=TRUE"), ngrp, sizeof(int));
       #pragma omp parallel for num_threads(getDTthreads(highSize, false))
       for (int h=0; h<highSize; h++) {
           double *restrict _ans = ansp + (h<<bitshift);
@@ -673,7 +673,7 @@ SEXP gmean(SEXP x, SEXP narmArg)
         // # nocov start
         free(nna_counts_r);  // free(NULL) is allowed and does nothing. Avoids repeating the error() call here.
         free(nna_counts_i);
-        error(_("Unable to allocate %d * %d bytes for non-NA counts in gmean na.rm=TRUE"), ngrp, sizeof(int));
+        error(_("Unable to allocate %d * %lu bytes for non-NA counts in gmean na.rm=TRUE"), ngrp, sizeof(int));
         // # nocov end
       }
       #pragma omp parallel for num_threads(getDTthreads(highSize, false))
