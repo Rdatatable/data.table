@@ -105,7 +105,7 @@ setkey(flights, origin)
 flights["JFK"] # or flights[.("JFK")]
 ```
 
-#### `setkey()` requires: {.bs-callout .bs-callout-info}
+#### `setkey()` requires:
 
 a) computing the order vector for the column(s) provided, here, `origin`, and
 
@@ -139,7 +139,7 @@ Since there can be multiple secondary indices, and creating an index is as simpl
 
 As we will see in the next section, the `on` argument provides several advantages:
 
-#### `on` argument {.bs-callout .bs-callout-info}
+#### `on` argument
 
 * enables subsetting by computing secondary indices on the fly. This eliminates having to do `setindex()` every time.
 

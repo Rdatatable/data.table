@@ -25,8 +25,16 @@ knitr::opts_chunk$set(
 
 `data.table`, from its very first releases, enabled the usage of `subset` and `with` (or `within`) functions by defining the`[.data.table` method. `subset` and `with` are base R functions that are useful for reducing repetition in code, enhancing readability, and reducing number the total characters the user has to type. This functionality is possible in R because of a quite unique feature called *lazy evaluation*. This feature allows a function to catch its arguments, before they are evaluated, and to evaluate them in a different scope than the one in which they were called. Let's recap usage of the `subset` function.
 
-```{r opt_max_print_10, include = FALSE}
-options(max.print = 10L) # 2 rows
+```{r df_print, echo=FALSE}
+registerS3method("print", "data.frame", function(x, ...) {
+  base::print.data.frame(head(x, 2L), ...)
+  cat("...\n")
+  invisible(x)
+})
+.opts = options(
+  datatable.print.topn=2L,
+  datatable.print.nrows=20L
+)
 ```
 
 ```{r subset}
@@ -149,20 +157,18 @@ Now, to use substitution inside `[.data.table`, we don't need to call the `subst
 
 Let's use the `iris` data set as a demonstration. Just as an example, let's pretend we want to compute the `Sepal.Hypotenuse`, treating the sepal width and length as if they were legs of a right triangle.
 
-```{r opt_max_print_8, include = FALSE}
-options(max.print = 8L) # 2 rows
-```
-
 ```{r hypotenuse_datatable}
 DT = as.data.table(iris)
 
-DT[, outer(inner(var1) + inner(var2)),
-   env = list(
-     outer = "sqrt",
-     inner = "square",
-     var1 = "Sepal.Length",
-     var2 = "Sepal.Width"
-  )]
+str(
+  DT[, outer(inner(var1) + inner(var2)),
+     env = list(
+       outer = "sqrt",
+       inner = "square",
+       var1 = "Sepal.Length",
+       var2 = "Sepal.Width"
+    )]
+)
 
 # return as a data.table
 DT[, .(Species, var1, var2, out = outer(inner(var1) + inner(var2))),
@@ -234,10 +240,6 @@ substitute2(   # 'a' and 'd' should stay as character
 The example presented above illustrates a neat and powerful way to make your code more dynamic. However, there are many other much more complex cases that a developer might have to deal with. One common problem handling a list of arguments of arbitrary length.
 
 An obvious use case could be to mimic `.SD` functionality by injecting a `list` call into the `j` argument.
-
-```{r opt_max_print_4, include = FALSE}
-options(max.print = 4L) # 2 rows
-```
 
 ```{r splice_sd}
 cols = c("Sepal.Length", "Sepal.Width")
@@ -316,10 +318,6 @@ It takes arbitrary number of variables on input, but now we cannot just *splice*
 
 First, we have to construct calls to the `square` function for each of the variables (see `inner_calls`). Then, we have to reduce the list of calls into a single call, having a nested sequence of `+` calls (see `add_calls`). Lastly, we have to substitute the constructed call into the surrounding expression (see `rms`).
 
-```{r opt_max_print_12, include = FALSE}
-options(max.print = 12L) # 2 rows
-```
-
 ```{r complex}
 outer = "sqrt"
 inner = "square"
@@ -344,15 +342,19 @@ rms = substitute2(
 )
 print(rms)
 
-DT[, j, env = list(j = rms)]
+str(
+  DT[, j, env = list(j = rms)]
+)
 
 # same, but skipping last substitute2 call and using add_calls directly
-DT[, outer((add_calls) / len),
-   env = list(
-     outer = outer,
-     add_calls = add_calls,
-     len = length(vars)
-  )]
+str(
+  DT[, outer((add_calls) / len),
+     env = list(
+       outer = outer,
+       add_calls = add_calls,
+       len = length(vars)
+    )]
+)
 
 # return as data.table
 j = substitute2(j, list(j = as.list(setNames(nm = c(vars, "Species", "rms")))))
@@ -376,10 +378,6 @@ DT[, j, env = list(j = j)]
 In `[.data.table`, it is also possible to use other mechanisms for variable substitution or for passing quoted expressions. These include `get` and `mget` for inline injection of variables by providing their names as strings, and `eval` that tells `[.data.table` that the expression we passed into an argument is a quoted expression and that it should be handled differently. Those interfaces should now be considered retired and we recommend using the new `env` argument, instead.
 
 ### `get`
-
-```{r opt_max_print_4b, include = FALSE}
-options(max.print = 4L) # 2 rows
-```
 
 ```{r old_get}
 v1 = "Petal.Width"
@@ -417,4 +415,9 @@ cl = quote(
 DT[, eval(cl)]
 
 DT[, cl, env = list(cl = cl)]
+```
+
+```{r cleanup, echo=FALSE}
+options(.opts)
+registerS3method("print", "data.frame", base::print.data.frame)
 ```
