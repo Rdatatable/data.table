@@ -184,7 +184,7 @@ head(ans)
 
 `data.table`s (and `data.frame`s) are internally `list`s as well, with the stipulation that each element has the same length and the `list` has a `class` attribute. Allowing `j` to return a `list` enables converting and returning `data.table` very efficiently.
 
-#### Tip: {#tip-1}}
+#### Tip: {#tip-1}
 
 As long as `j-expression` returns a `list`, each element of the list will be converted to a column in the resulting `data.table`. This makes `j` quite powerful, as we will see shortly. It is also very important to understand this for when you'd like to make more complicated queries!!
 

@@ -31,8 +31,10 @@ registerS3method("print", "data.frame", function(x, ...) {
   cat("...\n")
   invisible(x)
 })
-.topn = options("datatable.print.topn"=2L)
-.nrows = options("datatable.print.nrows"=20L)
+.opts = options(
+  datatable.print.topn=2L,
+  datatable.print.nrows=20L
+)
 ```
 
 ```{r subset}
@@ -416,7 +418,6 @@ DT[, cl, env = list(cl = cl)]
 ```
 
 ```{r cleanup, echo=FALSE}
-options(.topn)
-options(.nrows)
+options(.opts)
 registerS3method("print", "data.frame", base::print.data.frame)
 ```
