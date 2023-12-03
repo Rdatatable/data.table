@@ -10132,7 +10132,7 @@ test(1702.2, isoweek(as.Date(test_cases)), test_values)
 test(1702.3, isoweek(as.POSIXct(test_cases)), test_values)
 
 # 1% sample of a 400-year cycle of dates for extra robustness
-if (test_R.utils) test(1702.4, isoweek((DT<-fread(testDir('isoweek_test.csv.bz2')))$input_date), DT$expected_output)
+if (test_R.utils) test(1702.4, isoweek((DT<-fread(testDir('isoweek_test.csv.bz2')))$input_date), DT$expected_output, ignore.warning="datetimes before") ## ignore.warning due to #5785
 
 # fread, ensure no shell commands #1702
 if (.Platform$OS.type=="unix") {
