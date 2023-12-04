@@ -1140,7 +1140,7 @@ static R_len_t *savedtl=NULL, nalloc=0, nsaved=0;
 
 void savetl_init(void) {
   if (nsaved || nalloc || saveds || savedtl) {
-    error(_("Internal error: savetl_init checks failed (%d %d %p %p). please report to data.table issue tracker."), nsaved, nalloc, saveds, savedtl); // # nocov
+    error(_("Internal error: savetl_init checks failed (%d %d %p %p). please report to data.table issue tracker."), nsaved, nalloc, (void *)saveds, (void *)savedtl); // # nocov
   }
   nsaved = 0;
   nalloc = 100;
