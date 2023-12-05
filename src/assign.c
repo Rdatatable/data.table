@@ -809,7 +809,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
             // # nocov start
             for (int k=0; k<nSourceLevels; ++k) SET_TRUELENGTH(sourceLevelsD[k], 0);
             savetl_end();
-            error(_("Unable to allocate working memory of %lu bytes to combine factor levels"), nAdd*sizeof(SEXP *));
+            error(_("Unable to allocate working memory of %zu bytes to combine factor levels"), nAdd*sizeof(SEXP *));
             // # nocov end
           }
           for (int k=0, thisAdd=0; thisAdd<nAdd; ++k) {   // thisAdd<nAdd to stop early when the added ones are all reached
