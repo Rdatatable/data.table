@@ -14,7 +14,7 @@ The purpose of the project is to maintain the R data.table package, which is gui
 * Few (if any) Suggests/Enhances dependencies
 * Time & memory efficiency
 * Concise syntax (minimal redundancy in code)
-* Stable code base (easy for users to upgrade to new data.table, and compatible with old R versions)
+* Stable code base (strong preference for user-friendly back-compatibility with data.table itself and with old versions of R)
 * Comprehensive and accessible documentation and run-time signals (errors, warnings)
 * Clear error and warning messages
 
