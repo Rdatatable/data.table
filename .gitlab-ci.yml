@@ -58,9 +58,9 @@ mirror-packages:
     - Rscript -e 'sapply(simplify=FALSE, setNames(nm=Sys.getenv(c("R_REL_VERSION","R_DEV_VERSION","R_OLD_VERSION"))), function(binary.ver) mirror.packages(type="win.binary", dcf.dependencies("DESCRIPTION", "all"), repos=Sys.getenv("CRAN_MIRROR"), repodir="bus/mirror-packages/cran", binary.ver=binary.ver))'
   <<: *artifacts
 
-## install deps aliases
+## install deps alias
 .test-install-deps: &install-deps
-  - Rscript -e 'source(".ci/ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="all"), repos=file.path("file:", normalizePath("bus/mirror-packages/cran", mustWork=FALSE)), quiet=FALSE)'
+  - Rscript -e 'source(".ci/ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="all"), repos=file.path("file:", normalizePath("bus/mirror-packages/cran", mustWork=FALSE)), quiet=TRUE)'
 
 ## build
 # sources as tar.gz archive
@@ -116,7 +116,6 @@ test-lin-rel:
     _R_CHECK_TESTS_NLINES_: "0"
     OPENBLAS_MAIN_FREE: "1"
   script:
-    - apt-get update -q && apt-get install -y --no-install-recommends libcurl4-openssl-dev ## remove after #5749
     - *install-deps
     - echo 'CFLAGS=-g -O3 -flto=auto -fno-common -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
     - echo 'CXXFLAGS=-g -O3 -flto=auto -fno-common -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
@@ -149,7 +148,6 @@ test-lin-rel-cran:
     _R_CHECK_CRAN_INCOMING_TARBALL_THRESHOLD_: "7500000" ## bytes
     _R_CHECK_PKG_SIZES_THRESHOLD_: "7"        ## MB 'checking installed package size' NOTE
   script:
-    - apt-get -qq update && apt-get install -y --no-install-recommends libcurl4-openssl-dev ## temp workaround for curl dep #5749
     - *install-deps
     - echo 'CFLAGS=-g -O2 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
     - echo 'CXXFLAGS=-g -O2 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
@@ -176,7 +174,7 @@ test-lin-dev-gcc-strict-cran:
     - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
     - (! grep "warning:" data.table.Rcheck/00install.out)
     - >-
-        Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); if (!identical(l, "Status: 3 NOTEs")) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote("Status: 3 NOTEs"), " (size of tarball, suggested but not available for checking: 'curl', installed package size) but ", shQuote(l)) else q("no")'
+        Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); notes<-"Status: 2 NOTEs"; if (!identical(l, notes)) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote(notes), " (size of tarball, installed package size) but ", shQuote(l)) else q("no")'
 
 ## R-devel on Linux clang
 # R compiled with clang
@@ -197,7 +195,7 @@ test-lin-dev-clang-cran:
     - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
     - (! grep "warning:" data.table.Rcheck/00install.out)
     - >-
-        Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); if (!identical(l, "Status: 3 NOTEs")) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote("Status: 3 NOTEs"), " (size of tarball, suggested but not available for checking: 'curl', installed package size) but ", shQuote(l)) else q("no")'
+        Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); notes<-"Status: 2 NOTEs"; if (!identical(l, notes)) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote(notes), " (size of tarball, installed package size) but ", shQuote(l)) else q("no")'
 
 ## R 3.1.0
 # stated dependency on R
@@ -221,14 +219,15 @@ test-lin-310-cran:
   script:
     - R.exe CMD check --no-manual $(ls.exe -1t data.table_*.tar.gz | head.exe -n 1)
     - R.exe CMD INSTALL --build $(ls.exe -1t data.table_*.tar.gz | head.exe -n 1)
+    - -not (grep.exe "warning:" data.table.Rcheck\00install.out)
   after_script:
     - $env:PATH = "C:\R\bin;C:\rtools\usr\bin;$env:PATH"
     - mkdir.exe -p bus/$CI_JOB_NAME
     - Rscript.exe -e "cat(Sys.getenv('CI_JOB_ID'), file=file.path('bus', Sys.getenv('CI_JOB_NAME'), 'id'))"
     - Rscript.exe -e "cat(Sys.getenv('CI_JOB_STATUS'), file=file.path('bus', Sys.getenv('CI_JOB_NAME'), 'status'))"
     - Rscript.exe -e "cat(Sys.getenv('CI_JOB_IMAGE'), file=file.path('bus', Sys.getenv('CI_JOB_NAME'), 'image'))"
-    - Rscript.exe -e "if (dir.exists(from<-'data.table.Rcheck')) file.rename(from, file.path('bus', Sys.getenv('CI_JOB_NAME'), 'data.table.Rcheck'))"
-    - Rscript.exe -e "if (length(from<-tail(list.files('^data\\.table_.*\\.zip$'), 1L))) file.rename(from, file.path('bus', Sys.getenv('CI_JOB_NAME'), from))"
+    - Rscript.exe -e "to<-file.path('bus', Sys.getenv('CI_JOB_NAME'), 'data.table.Rcheck'); if (dir.exists(from<-'data.table.Rcheck')) invisible(file.rename(from, to)); dir.exists(to)"
+    - Rscript.exe -e "from<-tail(list.files(pattern='^data\\.table_.*\\.zip$'), 1L); to<-file.path('bus', Sys.getenv('CI_JOB_NAME'), from); if (length(from)) invisible(file.rename(from, to)); length(to)&&file.exists(to)"
 
 ## R-release on Windows
 # test and build binaries
@@ -262,12 +261,12 @@ test-win-old:
   tags:
     - saas-macos-medium-m1
   before_script:
+    - *install-deps
     - cp $(ls -1t bus/build/data.table_*.tar.gz | head -n 1) .
   after_script:
     - mkdir -p bus/$CI_JOB_NAME
     - '[ -d data.table.Rcheck ] && mv data.table.Rcheck bus/$CI_JOB_NAME/'
-    ## no pattern matching in [, TODO when macos available
-    #- '[ -f data.table_*.tgz ] && mv $(ls -1t data.table_*.tgz | head -n 1) bus/$CI_JOB_NAME/'
+    - '[ -f data.table_*.tgz ] && mv $(ls -1t data.table_*.tgz | head -n 1) bus/$CI_JOB_NAME/'
     - echo $CI_JOB_ID > bus/$CI_JOB_NAME/id
     - echo $CI_JOB_STATUS > bus/$CI_JOB_NAME/status
     - echo $CI_JOB_IMAGE > bus/$CI_JOB_NAME/image
@@ -279,7 +278,6 @@ test-win-old:
   variables:
     R_VERSION: "$R_REL_VERSION"
   script:
-    - *install-deps
     - R CMD check $(ls -1t data.table_*.tar.gz | head -n 1)
     - R CMD INSTALL --build $(ls -1t data.table_*.tar.gz | head -n 1)
 
@@ -326,8 +324,11 @@ integration:
     - mkdir -p bus/integration/cran/bin/windows/contrib/$R_DEV_VERSION/
     - mkdir -p bus/integration/cran/bin/windows/contrib/$R_OLD_VERSION/
     - '[ -f bus/test-win-rel/data.table_*.zip ] && cp bus/test-win-rel/data.table_*.zip bus/integration/cran/bin/windows/contrib/$R_REL_VERSION/'
+    - ls -1 "bus/integration/cran/bin/windows/contrib/$R_REL_VERSION"/data.table_*.zip || true
     - '[ -f bus/test-win-dev/data.table_*.zip ] && cp bus/test-win-dev/data.table_*.zip bus/integration/cran/bin/windows/contrib/$R_DEV_VERSION/'
+    - ls -1 "bus/integration/cran/bin/windows/contrib/$R_DEV_VERSION"/data.table_*.zip || true
     - '[ -f bus/test-win-old/data.table_*.zip ] && cp bus/test-win-old/data.table_*.zip bus/integration/cran/bin/windows/contrib/$R_OLD_VERSION/'
+    - ls -1 "bus/integration/cran/bin/windows/contrib/$R_OLD_VERSION"/data.table_*.zip || true
     - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="win.binary", ver=Sys.getenv("R_REL_VERSION")), type="win.binary", fields="Revision", addFiles=TRUE)'
     - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="win.binary", ver=Sys.getenv("R_DEV_VERSION")), type="win.binary", fields="Revision", addFiles=TRUE)'
     - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="win.binary", ver=Sys.getenv("R_OLD_VERSION")), type="win.binary", fields="Revision", addFiles=TRUE)'
