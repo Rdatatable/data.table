@@ -1408,7 +1408,7 @@ SEXP gprod(SEXP x, SEXP narm)
   SEXP ans;
   if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gprod");
   long double *s = malloc(ngrp * sizeof(long double));
-  if (!s) error(_("Unable to allocate %d * %lu bytes for gprod"), ngrp, sizeof(long double));
+  if (!s) error(_("Unable to allocate %d * %zu bytes for gprod"), ngrp, sizeof(long double));
   for (i=0; i<ngrp; i++) s[i] = 1.0;
   ans = PROTECT(allocVector(REALSXP, ngrp));
   switch(TYPEOF(x)) {
