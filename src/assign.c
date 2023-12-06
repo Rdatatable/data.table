@@ -471,7 +471,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       // strong error message for now.
     else if (TRUELENGTH(names) != oldtncol)
       // Use (long long) to cast R_xlen_t to a fixed type to robustly avoid -Wformat compiler warnings, see #5768, PRId64 didnt work
-      error(_("Internal error: selfrefnames is ok but tl names [%ld] != tl [%d]"), TRUELENGTH(names), oldtncol);  // # nocov
+      error(_("Internal error: selfrefnames is ok but tl names [%lld] != tl [%d]"), (long long)TRUELENGTH(names), oldtncol);  // # nocov
     SETLENGTH(dt, oldncol+LENGTH(newcolnames));
     SETLENGTH(names, oldncol+LENGTH(newcolnames));
     for (int i=0; i<LENGTH(newcolnames); ++i)
@@ -809,7 +809,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
             // # nocov start
             for (int k=0; k<nSourceLevels; ++k) SET_TRUELENGTH(sourceLevelsD[k], 0);
             savetl_end();
-            error(_("Unable to allocate working memory of %lu bytes to combine factor levels"), nAdd*sizeof(SEXP *));
+            error(_("Unable to allocate working memory of %zu bytes to combine factor levels"), nAdd*sizeof(SEXP *));
             // # nocov end
           }
           for (int k=0, thisAdd=0; thisAdd<nAdd; ++k) {   // thisAdd<nAdd to stop early when the added ones are all reached

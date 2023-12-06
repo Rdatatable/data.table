@@ -1,8 +1,4 @@
-url: https://Rdatatable.gitlab.io/data.table
-
-template:
-  params:
-    ganalytics: UA-129166154-2
+url: https://rdatatable.gitlab.io/data.table
 
 development:
   version_tooltip: "Development version"
@@ -11,6 +7,8 @@ home:
   links:
   - text: CRAN-like website
     href: web/packages/data.table/index.html
+  - text: CRAN-like checks
+    href: web/checks/check_results_data.table.html
 
 navbar:
   structure:
@@ -22,30 +20,30 @@ navbar:
       href: index.html
     introduction:
       text: Introduction
-      href: articles/datatable-intro.html
+      href: library/data.table/doc/datatable-intro.html
     articles:
       text: Vignettes
       menu:
       - text: "Introduction to data.table"
-        href: articles/datatable-intro.html
+        href: library/data.table/doc/datatable-intro.html
       - text: "Reference semantics"
-        href: articles/datatable-reference-semantics.html
+        href: library/data.table/doc/datatable-reference-semantics.html
       - text: "Using .SD for Data Analysis"
-        href: articles/datatable-sd-usage.html
+        href: library/data.table/doc/datatable-sd-usage.html
       - text: "Keys and fast binary search based subset"
-        href: articles/datatable-keys-fast-subset.html
+        href: library/data.table/doc/datatable-keys-fast-subset.html
       - text: "Secondary indices and auto indexing"
-        href: articles/datatable-secondary-indices-and-auto-indexing.html
+        href: library/data.table/doc/datatable-secondary-indices-and-auto-indexing.html
       - text: "Efficient reshaping using data.table"
-        href: articles/datatable-reshape.html
+        href: library/data.table/doc/datatable-reshape.html
       - text: "Programming on data.table"
-        href: articles/datatable-programming.html
+        href: library/data.table/doc/datatable-programming.html
       - text: "Frequently asked questions"
-        href: articles/datatable-faq.html
+        href: library/data.table/doc/datatable-faq.html
       - text: "Importing data.table"
-        href: articles/datatable-importing.html
+        href: library/data.table/doc/datatable-importing.html
       - text: "Benchmarking data.table"
-        href: articles/datatable-benchmarking.html
+        href: library/data.table/doc/datatable-benchmarking.html
     news:
       text: News
       href: news/index.html

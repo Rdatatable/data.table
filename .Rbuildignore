@@ -12,6 +12,7 @@
 
 ^\.ci$
 ^\.dev$
+^\.devcontainer$
 ^\.graphics$
 ^\.github$
 
