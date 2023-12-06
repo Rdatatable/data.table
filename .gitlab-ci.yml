@@ -58,9 +58,9 @@ mirror-packages:
     - Rscript -e 'sapply(simplify=FALSE, setNames(nm=Sys.getenv(c("R_REL_VERSION","R_DEV_VERSION","R_OLD_VERSION"))), function(binary.ver) mirror.packages(type="win.binary", dcf.dependencies("DESCRIPTION", "all"), repos=Sys.getenv("CRAN_MIRROR"), repodir="bus/mirror-packages/cran", binary.ver=binary.ver))'
   <<: *artifacts
 
-## install deps aliases
+## install deps alias
 .test-install-deps: &install-deps
-  - Rscript -e 'source(".ci/ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="all"), repos=file.path("file:", normalizePath("bus/mirror-packages/cran", mustWork=FALSE)), quiet=FALSE)'
+  - Rscript -e 'source(".ci/ci.R"); install.packages(dcf.dependencies("DESCRIPTION", which="all"), repos=file.path("file:", normalizePath("bus/mirror-packages/cran", mustWork=FALSE)), quiet=TRUE)'
 
 ## build
 # sources as tar.gz archive
@@ -326,15 +326,15 @@ integration:
     - mkdir -p bus/integration/cran/bin/windows/contrib/$R_REL_VERSION/
     - mkdir -p bus/integration/cran/bin/windows/contrib/$R_DEV_VERSION/
     - mkdir -p bus/integration/cran/bin/windows/contrib/$R_OLD_VERSION/
-    - ls -1 bus/test-win-rel/data.table_*.zip
+    - ls -1 bus/test-win-rel/data.table_*.zip || true
     - '[ -f bus/test-win-rel/data.table_*.zip ] && cp bus/test-win-rel/data.table_*.zip bus/integration/cran/bin/windows/contrib/$R_REL_VERSION/'
-    - ls -1 "bus/integration/cran/bin/windows/contrib/$R_REL_VERSION"/data.table_*.zip
-    - ls -1 bus/test-win-dev/data.table_*.zip
+    - ls -1 "bus/integration/cran/bin/windows/contrib/$R_REL_VERSION"/data.table_*.zip || true
+    - ls -1 bus/test-win-dev/data.table_*.zip || true
     - '[ -f bus/test-win-dev/data.table_*.zip ] && cp bus/test-win-dev/data.table_*.zip bus/integration/cran/bin/windows/contrib/$R_DEV_VERSION/'
     - ls -1 "bus/integration/cran/bin/windows/contrib/$R_DEV_VERSION"/data.table_*.zip
-    - ls -1 bus/test-win-old/data.table_*.zip
+    - ls -1 bus/test-win-old/data.table_*.zip || true
     - '[ -f bus/test-win-old/data.table_*.zip ] && cp bus/test-win-old/data.table_*.zip bus/integration/cran/bin/windows/contrib/$R_OLD_VERSION/'
-    - ls -1 "bus/integration/cran/bin/windows/contrib/$R_OLD_VERSION"/data.table_*.zip
+    - ls -1 "bus/integration/cran/bin/windows/contrib/$R_OLD_VERSION"/data.table_*.zip || true
     - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="win.binary", ver=Sys.getenv("R_REL_VERSION")), type="win.binary", fields="Revision", addFiles=TRUE)'
     - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="win.binary", ver=Sys.getenv("R_DEV_VERSION")), type="win.binary", fields="Revision", addFiles=TRUE)'
     - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="win.binary", ver=Sys.getenv("R_OLD_VERSION")), type="win.binary", fields="Revision", addFiles=TRUE)'
