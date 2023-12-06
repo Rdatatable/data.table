@@ -89,7 +89,7 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg, SEXP return
       }
     } break;
     case VECSXP : {
-      const SEXP vfill = R_NilValue;
+      const SEXP vfill = VECTOR_ELT(fill, 0);
       for (int j=0; j<maxlen; ++j) {
         SET_VECTOR_ELT(ansp[j+rn], k, j<len ? VECTOR_ELT(li, j) : vfill);
       }
