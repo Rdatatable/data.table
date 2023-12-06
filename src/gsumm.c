@@ -606,10 +606,10 @@ SEXP gmean(SEXP x, SEXP narm)
   if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gsum");
 
   long double *s = calloc(ngrp, sizeof(long double)), *si=NULL;  // s = sum; si = sum imaginary just for complex
-  if (!s) error(_("Unable to allocate %d * %lu bytes for sum in gmean na.rm=TRUE"), ngrp, sizeof(long double));
+  if (!s) error(_("Unable to allocate %d * %zu bytes for sum in gmean na.rm=TRUE"), ngrp, sizeof(long double));
 
   int *c = calloc(ngrp, sizeof(int));
-  if (!c) error(_("Unable to allocate %d * %lu bytes for counts in gmean na.rm=TRUE"), ngrp, sizeof(int));
+  if (!c) error(_("Unable to allocate %d * %zu bytes for counts in gmean na.rm=TRUE"), ngrp, sizeof(int));
 
   switch(TYPEOF(x)) {
   case LGLSXP: case INTSXP: {
@@ -635,7 +635,7 @@ SEXP gmean(SEXP x, SEXP narm)
   case CPLXSXP: {
     const Rcomplex *xd = COMPLEX(x);
     si = calloc(ngrp, sizeof(long double));
-    if (!si) error(_("Unable to allocate %d * %lu bytes for si in gmean na.rm=TRUE"), ngrp, sizeof(long double));
+    if (!si) error(_("Unable to allocate %d * %zu bytes for si in gmean na.rm=TRUE"), ngrp, sizeof(long double));
     for (int i=0; i<n; i++) {
       int thisgrp = grp[i];
       int ix = (irowslen == -1) ? i : irows[i]-1;
