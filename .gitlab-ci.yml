@@ -69,7 +69,7 @@ build:
   stage: build
   tags:
     - linux
-  image: registry.gitlab.com/jangorecki/dockerfiles/r-base-gcc
+  image: registry.gitlab.com/jangorecki/dockerfiles/r-base ## so it can install rmarkdown - requires c++ compiler
   needs: ["mirror-packages"]
   before_script:
     - *install-deps
@@ -93,6 +93,7 @@ build:
   tags:
     - linux
   before_script:
+    - apt-get -qq update && apt-get install -y zlib1g-dev
     - cp $(ls -1t bus/build/data.table_*.tar.gz | head -n 1) .
     - mkdir -p ~/.R
   after_script:
