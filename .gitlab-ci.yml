@@ -222,7 +222,6 @@ test-lin-310-cran:
     - -not (grep.exe "warning:" data.table.Rcheck\00install.out)
   after_script:
     - $env:PATH = "C:\R\bin;C:\rtools\usr\bin;$env:PATH"
-    - ls.exe -l
     - mkdir.exe -p bus/$CI_JOB_NAME
     - Rscript.exe -e "cat(Sys.getenv('CI_JOB_ID'), file=file.path('bus', Sys.getenv('CI_JOB_NAME'), 'id'))"
     - Rscript.exe -e "cat(Sys.getenv('CI_JOB_STATUS'), file=file.path('bus', Sys.getenv('CI_JOB_NAME'), 'status'))"
