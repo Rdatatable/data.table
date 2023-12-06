@@ -1894,7 +1894,7 @@ int freadMain(freadMainArgs _args) {
     if (sampleLines>0) for (int j=0; j<ncol; j++) {
       if (tmpType[j]==CT_STRING && type[j]<CT_STRING && type[j]>CT_EMPTY) {
         args.header=true;
-        if (verbose) DTPRINT(_("  'header' determined to be true due to column %d containing a string on row 1 and a lower type (%s) in the rest of the %d sample rows\n"),
+        if (verbose) DTPRINT(_("  'header' determined to be true due to column %d containing a string on row 1 and a lower type (%s) in the rest of the %"PRId64" sample rows\n"),
                              j+1, typeName[type[j]], sampleLines);
         break;
       }
