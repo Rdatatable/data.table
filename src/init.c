@@ -160,7 +160,7 @@ static void setSizes(void) {
   __sizes[CPLXSXP] = sizeof(Rcomplex);  __typeorder[CPLXSXP] = 4;
   __sizes[STRSXP] =  sizeof(SEXP *);    __typeorder[STRSXP] =  5;
   __sizes[VECSXP] =  sizeof(SEXP *);    __typeorder[VECSXP] =  6;   // list column
-  if (sizeof(char *)>8) error(_("Pointers are %lu bytes, greater than 8. We have not tested on any architecture greater than 64bit yet."), sizeof(char *));
+  if (sizeof(char *)>8) error(_("Pointers are %zu bytes, greater than 8. We have not tested on any architecture greater than 64bit yet."), sizeof(char *));
   // One place we need the largest sizeof is the working memory malloc in reorder.c
 }
 
