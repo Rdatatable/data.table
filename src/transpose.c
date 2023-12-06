@@ -61,14 +61,7 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg, SEXP return
       li = PROTECT(isFactor(li) ? asCharacterFactor(li) : coerceVector(li, maxtype));
     } else PROTECT(li); // extra PROTECT just to help rchk by avoiding two counter variables
     switch (maxtype) {
-    case LGLSXP : {
-      const int *ili = LOGICAL(li);
-      const int ifill = LOGICAL(fill)[0];
-      for (int j=0; j<maxlen; ++j) {
-        LOGICAL(ansp[j+rn])[k] = j<len ? ili[j] : ifill;
-      }
-    } break;
-    case INTSXP : {
+    case INTSXP : case LGLSXP : {
       const int *ili = INTEGER(li);
       const int ifill = INTEGER(fill)[0];
       for (int j=0; j<maxlen; ++j) {
