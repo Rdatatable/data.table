@@ -266,6 +266,7 @@ test-win-old:
   after_script:
     - mkdir -p bus/$CI_JOB_NAME
     - '[ -d data.table.Rcheck ] && mv data.table.Rcheck bus/$CI_JOB_NAME/'
+    ## no pattern matching in [, TODO when macos available
     #- '[ -f data.table_*.tgz ] && mv $(ls -1t data.table_*.tgz | head -n 1) bus/$CI_JOB_NAME/'
     - echo $CI_JOB_ID > bus/$CI_JOB_NAME/id
     - echo $CI_JOB_STATUS > bus/$CI_JOB_NAME/status
@@ -300,7 +301,6 @@ integration:
     - *install-deps ## markdown pkg not present in r-pkgdown image
     - rm -rf ./vignettes ## r-lib/pkgdown#2383
     - Rscript -e 'pkgdown::build_site(override=list(destination="./pkgdown"))'
-    - sed -i 's!<head>!<head><script defer data-domain="rdatatable.gitlab.io/data.table" src="https://plausible.io/js/script.js"></script>!g' pkgdown/index.html
     ## html manual, vignettes, repos, cran_web, cran_checks
     - echo 'source(".ci/ci.R"); source(".ci/publish.R")' >> .Rprofile
     ## list of available test-* jobs dynamically based on bus/test-* directories
@@ -363,6 +363,8 @@ integration:
     ## pkgdown merge
     - Rscript -e 'common_files<-function(path1, path2) intersect(list.files(path1, all.files=TRUE, no..=TRUE), list.files(path2, all.files=TRUE, no..=TRUE)); msg = if (length(f<-common_files("pkgdown","bus/integration/cran"))) paste(c("Following artifacts will be overwritten by pkgdown artifacts:", paste0("  ", f)), collapse="\n") else "No overlapping files from pkgdown artifacts"; message(msg); q("no")'
     - mv pkgdown/* bus/integration/cran/
+    ## add plausible.io stats
+    - find bus/integration/cran -type f -iname "*.html" | xargs sed -i 's!<head>!<head><script defer data-domain="rdatatable.gitlab.io/data.table" src="https://plausible.io/js/script.js"></script>!g'
   <<: *artifacts
 
 ## publish
