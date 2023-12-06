@@ -35,6 +35,7 @@ SEXP sym_inherits;
 SEXP sym_datatable_locked;
 SEXP sym_tzone;
 SEXP sym_old_fread_datetime_character;
+SEXP sym_allow_assign_inplace;
 SEXP sym_variable_table;
 SEXP sym_as_character;
 double NA_INT64_D;
@@ -282,6 +283,7 @@ void attribute_visible R_init_data_table(DllInfo *info)
   sym_datatable_locked = install(".data.table.locked");
   sym_tzone = install("tzone");
   sym_old_fread_datetime_character = install("datatable.old.fread.datetime.character");
+  sym_allow_assign_inplace = install("allow.assign.inplace");
   sym_variable_table = install("variable_table");
   sym_as_character = install("as.character");
 

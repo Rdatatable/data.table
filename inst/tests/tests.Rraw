@@ -18101,3 +18101,16 @@ test(2238.6, "a" %notin% integer(), TRUE)
 test(2238.7, "a" %notin% NULL, TRUE)
 test(2238.8, NA %notin% 1:5, TRUE)
 test(2238.9, NA %notin% c(1:5, NA), FALSE)
+
+# Fix: In-place assignment can leak to origin DF, #4783
+d <- data.frame(a=c(1,2), b=c(1,2))
+df <- d
+setDT(d)
+d[!is.na(a), b:=c(3, 4)]  # Change shouldn't leak to df
+test(2239.1, df$b[1], 1)
+
+d <- data.table(a=c(1,2), b=c(1,2))
+orig.address <- address(d$b)
+d[!is.na(a), b:=c(3, 4)]
+test(2239.2, d$b[1], 3)  # For Codecov: go over the case where assign-inplace is allowed
+test(2239.3, orig.address, address(d$b))

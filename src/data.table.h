@@ -105,6 +105,7 @@ extern SEXP sym_inherits;
 extern SEXP sym_datatable_locked;
 extern SEXP sym_tzone;
 extern SEXP sym_old_fread_datetime_character;
+extern SEXP sym_allow_assign_inplace;
 extern SEXP sym_variable_table;
 extern SEXP sym_as_character;
 extern double NA_INT64_D;

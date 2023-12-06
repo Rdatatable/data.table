@@ -560,6 +560,7 @@
     DT2 = do.call(data.table, list(DF))  # 3.07s before, 0.02s after
     identical(DT1, DT2)                  # TRUE
     ```
+55. If a data.table was generated from an existing data.frame, as in `df2 <- df1; dt <- setDT(df1)`, some (but not all!) modifications to `dt` would leak to `df2`,  [#4783](https://github.com/Rdatatable/data.table/issues/4783). Thanks to @OfekShilon for investigating and the PR.
 
 55. `fread(URL)` with `https:` and `ftps:` could timeout if proxy settings were not guessed right by `curl::curl_download`, [#1686](https://github.com/Rdatatable/data.table/issues/1686). `fread(URL)` now uses `download.file()` as default for downloading files from urls. Thanks to @cderv for the report and Benjamin Schwendinger for the fix.
 

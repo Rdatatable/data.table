@@ -515,6 +515,11 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       continue;
     }
 
+    SEXP attrib = PROTECT(getAttrib(dt, sym_allow_assign_inplace)); protecti++;
+    Rboolean allow_assign_in_place = (attrib == R_NilValue) ?
+                TRUE :
+                isLogical(attrib) && LENGTH(attrib)==1 && LOGICAL(attrib)[0]==1;
+    
     if (coln+1 > oldncol) {  // new column
       SET_VECTOR_ELT(dt, coln, targetcol=allocNAVectorLike(thisvalue, nrow));
       // initialize with NAs for when 'rows' is a subset and it doesn't touch
@@ -523,9 +528,13 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       if (isVectorAtomic(thisvalue)) copyMostAttrib(thisvalue,targetcol);  // class etc but not names
       // else for lists (such as data.frame and data.table) treat them as raw lists and drop attribs
       if (vlen<1) continue;   // e.g. DT[,newcol:=integer()] (adding new empty column)
-    } else {                 // existing column
+    } else if (allow_assign_in_place) {
+      // overwrite rows in existing column - risking data leakage, #4784
       targetcol = VECTOR_ELT(dt,coln);
+    }  else { // #4783: ensure regular "copy on modify" R semantics for an existing column
+      SET_VECTOR_ELT(dt, coln, targetcol=duplicate(VECTOR_ELT(dt, coln)));
     }
+    
     const char *ret = memrecycle(targetcol, rows, 0, targetlen, thisvalue, 0, -1, coln+1, CHAR(STRING_ELT(names, coln)));
     if (ret) warning("%s", ret);
   }
@@ -697,7 +706,6 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
 // assigns to target[start:start+len-1] or target[where[start:start+len-1]] where start is 0-based
 // if sourceLen==-1 then all of source is used (if it is 1 item then it is recycled, or its length must match) for convenience to avoid
 //   having to use length(source) (repeating source expression) in each call
-// sourceLen==1 is used in dogroups to recycle the group values into ans to match the nrow of each group's result; sourceStart is set to each group value row.
 {
   if (len<1) return NULL;
   int slen = sourceLen>=0 ? sourceLen : length(source); // since source may get reassigned to a scalar, we should not mark it as const

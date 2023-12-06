@@ -66,7 +66,7 @@ as.data.table.matrix = function(x, keep.rownames=FALSE, key=NULL, ...) {
     for (i in ic) value[[i]] <- as.vector(x[, i])       # to drop any row.names that would otherwise be retained inside every column of the data.table
   }
   col_labels = dimnames(x)[[2L]]
-  setDT(value)
+  setDT(value, prevent.assign.inplace=FALSE)
   if (length(col_labels) == ncols) {
     if (any(empty <- !nzchar(col_labels)))
       col_labels[empty] = paste0("V", ic[empty])
@@ -196,7 +196,7 @@ as.data.table.list = function(x,
   if (any(vnames==".SD")) stopf("A column may not be called .SD. That has special meaning.")
   if (check.names) vnames = make.names(vnames, unique=TRUE)
   setattr(ans, "names", vnames)
-  setDT(ans, key=key) # copy ensured above; also, setDT handles naming
+  setDT(ans, key=key, prevent.assign.inplace=FALSE) # copy ensured above; also, setDT handles naming
   if (length(origListNames)==length(ans)) setattr(ans, "names", origListNames)  # PR 3854 and tests 2058.15-17
   ans
 }

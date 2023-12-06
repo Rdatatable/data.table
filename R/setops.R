@@ -176,7 +176,7 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
 
     # Trim any extra row.names attributes that came from some inheritance
     # Trim ".internal.selfref" as long as there is no `all.equal.externalptr` method
-    exclude.attrs = function(x, attrs = c("row.names",".internal.selfref")) x[!names(x) %chin% attrs]
+    exclude.attrs = function(x, attrs = c("row.names",".internal.selfref", "allow.assign.inplace")) x[!names(x) %chin% attrs]
     a1 = exclude.attrs(attributes(target))
     a2 = exclude.attrs(attributes(current))
     if (length(a1) != length(a2)) return(sprintf("Datasets has different number of (non-excluded) attributes: target %s, current %s", length(a1), length(a2)))
