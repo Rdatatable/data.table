@@ -262,12 +262,12 @@ test-win-old:
   tags:
     - saas-macos-medium-m1
   before_script:
+    - *install-deps
     - cp $(ls -1t bus/build/data.table_*.tar.gz | head -n 1) .
   after_script:
     - mkdir -p bus/$CI_JOB_NAME
     - '[ -d data.table.Rcheck ] && mv data.table.Rcheck bus/$CI_JOB_NAME/'
-    ## no pattern matching in [, TODO when macos available
-    #- '[ -f data.table_*.tgz ] && mv $(ls -1t data.table_*.tgz | head -n 1) bus/$CI_JOB_NAME/'
+    - '[ -f data.table_*.tgz ] && mv $(ls -1t data.table_*.tgz | head -n 1) bus/$CI_JOB_NAME/'
     - echo $CI_JOB_ID > bus/$CI_JOB_NAME/id
     - echo $CI_JOB_STATUS > bus/$CI_JOB_NAME/status
     - echo $CI_JOB_IMAGE > bus/$CI_JOB_NAME/image
@@ -279,7 +279,6 @@ test-win-old:
   variables:
     R_VERSION: "$R_REL_VERSION"
   script:
-    - *install-deps
     - R CMD check $(ls -1t data.table_*.tar.gz | head -n 1)
     - R CMD INSTALL --build $(ls -1t data.table_*.tar.gz | head -n 1)
 
@@ -295,7 +294,6 @@ integration:
     - linux
   only:
     - master
-    - ci-dev
   needs: ["mirror-packages","build","test-lin-rel","test-lin-rel-cran","test-lin-dev-gcc-strict-cran","test-lin-dev-clang-cran","test-lin-rel-vanilla","test-lin-310-cran","test-win-rel","test-win-dev" ,"test-win-old"]
   script:
     - R --version
@@ -326,13 +324,10 @@ integration:
     - mkdir -p bus/integration/cran/bin/windows/contrib/$R_REL_VERSION/
     - mkdir -p bus/integration/cran/bin/windows/contrib/$R_DEV_VERSION/
     - mkdir -p bus/integration/cran/bin/windows/contrib/$R_OLD_VERSION/
-    - ls -1 bus/test-win-rel/data.table_*.zip || true
     - '[ -f bus/test-win-rel/data.table_*.zip ] && cp bus/test-win-rel/data.table_*.zip bus/integration/cran/bin/windows/contrib/$R_REL_VERSION/'
     - ls -1 "bus/integration/cran/bin/windows/contrib/$R_REL_VERSION"/data.table_*.zip || true
-    - ls -1 bus/test-win-dev/data.table_*.zip || true
     - '[ -f bus/test-win-dev/data.table_*.zip ] && cp bus/test-win-dev/data.table_*.zip bus/integration/cran/bin/windows/contrib/$R_DEV_VERSION/'
-    - ls -1 "bus/integration/cran/bin/windows/contrib/$R_DEV_VERSION"/data.table_*.zip
-    - ls -1 bus/test-win-old/data.table_*.zip || true
+    - ls -1 "bus/integration/cran/bin/windows/contrib/$R_DEV_VERSION"/data.table_*.zip || true
     - '[ -f bus/test-win-old/data.table_*.zip ] && cp bus/test-win-old/data.table_*.zip bus/integration/cran/bin/windows/contrib/$R_OLD_VERSION/'
     - ls -1 "bus/integration/cran/bin/windows/contrib/$R_OLD_VERSION"/data.table_*.zip || true
     - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="win.binary", ver=Sys.getenv("R_REL_VERSION")), type="win.binary", fields="Revision", addFiles=TRUE)'
