@@ -221,14 +221,16 @@ test-lin-310-cran:
   script:
     - R.exe CMD check --no-manual $(ls.exe -1t data.table_*.tar.gz | head.exe -n 1)
     - R.exe CMD INSTALL --build $(ls.exe -1t data.table_*.tar.gz | head.exe -n 1)
+    - -not (grep.exe "warning:" data.table.Rcheck\00install.out)
   after_script:
     - $env:PATH = "C:\R\bin;C:\rtools\usr\bin;$env:PATH"
+    - ls.exe -l
     - mkdir.exe -p bus/$CI_JOB_NAME
     - Rscript.exe -e "cat(Sys.getenv('CI_JOB_ID'), file=file.path('bus', Sys.getenv('CI_JOB_NAME'), 'id'))"
     - Rscript.exe -e "cat(Sys.getenv('CI_JOB_STATUS'), file=file.path('bus', Sys.getenv('CI_JOB_NAME'), 'status'))"
     - Rscript.exe -e "cat(Sys.getenv('CI_JOB_IMAGE'), file=file.path('bus', Sys.getenv('CI_JOB_NAME'), 'image'))"
-    - Rscript.exe -e "if (dir.exists(from<-'data.table.Rcheck')) file.rename(from, file.path('bus', Sys.getenv('CI_JOB_NAME'), 'data.table.Rcheck'))"
-    - Rscript.exe -e "if (length(from<-tail(list.files('^data\\.table_.*\\.zip$'), 1L))) file.rename(from, file.path('bus', Sys.getenv('CI_JOB_NAME'), from))"
+    - Rscript.exe -e "if (dir.exists(from<-'data.table.Rcheck')) file.rename(from, to<-file.path('bus', Sys.getenv('CI_JOB_NAME'), 'data.table.Rcheck')); dir.exists(to)"
+    - Rscript.exe -e "if (length(from<-tail(list.files('^data\\.table_.*\\.zip$'), 1L))) file.rename(from, to<-file.path('bus', Sys.getenv('CI_JOB_NAME'), from)); file.exists(to)"
 
 ## R-release on Windows
 # test and build binaries
@@ -325,9 +327,15 @@ integration:
     - mkdir -p bus/integration/cran/bin/windows/contrib/$R_REL_VERSION/
     - mkdir -p bus/integration/cran/bin/windows/contrib/$R_DEV_VERSION/
     - mkdir -p bus/integration/cran/bin/windows/contrib/$R_OLD_VERSION/
+    - ls -1 bus/test-win-rel/data.table_*.zip
     - '[ -f bus/test-win-rel/data.table_*.zip ] && cp bus/test-win-rel/data.table_*.zip bus/integration/cran/bin/windows/contrib/$R_REL_VERSION/'
+    - ls -1 "bus/integration/cran/bin/windows/contrib/$R_REL_VERSION"/data.table_*.zip
+    - ls -1 bus/test-win-dev/data.table_*.zip
     - '[ -f bus/test-win-dev/data.table_*.zip ] && cp bus/test-win-dev/data.table_*.zip bus/integration/cran/bin/windows/contrib/$R_DEV_VERSION/'
+    - ls -1 "bus/integration/cran/bin/windows/contrib/$R_DEV_VERSION"/data.table_*.zip
+    - ls -1 bus/test-win-old/data.table_*.zip
     - '[ -f bus/test-win-old/data.table_*.zip ] && cp bus/test-win-old/data.table_*.zip bus/integration/cran/bin/windows/contrib/$R_OLD_VERSION/'
+    - ls -1 "bus/integration/cran/bin/windows/contrib/$R_OLD_VERSION"/data.table_*.zip
     - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="win.binary", ver=Sys.getenv("R_REL_VERSION")), type="win.binary", fields="Revision", addFiles=TRUE)'
     - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="win.binary", ver=Sys.getenv("R_DEV_VERSION")), type="win.binary", fields="Revision", addFiles=TRUE)'
     - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="win.binary", ver=Sys.getenv("R_OLD_VERSION")), type="win.binary", fields="Revision", addFiles=TRUE)'
