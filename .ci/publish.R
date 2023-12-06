@@ -379,6 +379,7 @@ check.test <- function(job, pkg) {
 }
 
 move.bin <- function(job, bin.version, os.type, file="DESCRIPTION", silent=TRUE) {
+  ## currently not used, if not used for macos in future then can be removed
   if (os.type=="unix") {
     stop("publish of linux binaries not supported")
   } else if (os.type=="windows") {
