@@ -1,5 +1,6 @@
 #include "fread.h"
-// include fread.h should happen before include time.h to avoid compilation warning on windows about re-defining __USE_MINGW_ANSI_STDIO, PR#5395.#if defined(CLOCK_REALTIME) && !defined(DISABLE_CLOCK_REALTIME)
+// include fread.h should happen before include time.h to avoid compilation warning on windows about re-defining __USE_MINGW_ANSI_STDIO, PR#5395.
+#if defined(CLOCK_REALTIME) && !defined(DISABLE_CLOCK_REALTIME)
 #define HAS_CLOCK_REALTIME
 #endif
 
