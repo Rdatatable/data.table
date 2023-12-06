@@ -62,8 +62,3 @@ navbar:
     github:
       icon: fab fa-github fa-lg
       href: https://github.com/Rdatatable/data.table
-
-templates:
-  includes:
-    in_header: |
-      <script defer data-domain="rdatatable.gitlab.io/data.table" src="https://plausible.io/js/script.js"></script>
