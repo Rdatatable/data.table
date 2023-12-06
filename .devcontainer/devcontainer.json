@@ -1,3 +1,3 @@
 {
-  "image": "registry.gitlab.com/jangorecki/dockerfiles/r-devel-gcc"
+  "build": { "dockerfile": "Dockerfile" }
 }
