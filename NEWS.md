@@ -8,7 +8,7 @@
 
 2. Updated internal code for breaking change of `is.atomic(NULL)` in R-devel, [#5691](https://github.com/Rdatatable/data.table/pull/5691). Thanks to Martin Maechler for the patch.
 
-3. Fix a test concerning coercion to missing complex numbers in `shift()`, [#5695](https://github.com/Rdatatable/data.table/issues/5695). Thanks to @MichaelChirico for the minimal patch in this release, and @ben-schwen for a more comprehensive fix to follow.
+3. Fix multiple test concerning coercion to missing complex numbers, [#5695](https://github.com/Rdatatable/data.table/issues/5695) and [#5748](https://github.com/Rdatatable/data.table/issues/5748). Thanks to @MichaelChirico and @ben-schwen for the patches.
 
 
 # data.table [v1.14.8](https://github.com/Rdatatable/data.table/milestone/28?closed=1)  (17 Feb 2023)
