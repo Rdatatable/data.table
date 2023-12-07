@@ -6899,6 +6899,7 @@ test(1477.23, transpose(la, list.cols=TRUE), lb)
 test(1477.24, transpose(lb, list.cols=TRUE), la)
 test(1477.25, transpose(list(list(1L,"a"), list(2L), list(3L,"c")), list.cols=TRUE, fill="b"), la)
 test(1477.26, transpose(list(1:2, c("a","b","c")), list.cols=TRUE, fill=3L), lb)
+test(1477.41, transpose(la, list.cols=NA), error="list.cols should be logical TRUE/FALSE.")
 
 
 # #480 `setDT` and 'lapply'
