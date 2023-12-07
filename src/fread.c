@@ -24,6 +24,7 @@
   #include <stdarg.h>    // va_list, va_start
   #include <stdio.h>     // snprintf
   #include <math.h>      // ceil, sqrt, isfinite
+  #include <sys/sysinfo.h> // use sysinfo for looking up totalram
 #endif
 #include <stdbool.h>
 #include "freadLookups.h"
@@ -1274,6 +1275,10 @@ int freadMain(freadMainArgs _args) {
   memcpy(&NA_FLOAT64, &ui64, 8);
 
   int64_t nrowLimit = args.nrowLimit;
+  struct sysinfo info;
+  uint64_t totalram = 0;
+  if (sysinfo(&info) != -1)
+    totalram = ((uint64_t) info.totalram * info.mem_unit);
   NAstrings = args.NAstrings;
   if (NAstrings==NULL) STOP(_("Internal error: NAstrings is itself NULL. When empty it should be pointer to NULL.")); // # nocov
   any_number_like_NAstrings = false;
@@ -1374,6 +1379,10 @@ int freadMain(freadMainArgs _args) {
         STOP(_("Opened file ok but couldn't obtain its size: %s"), fnam); // # nocov
       }
       fileSize = (size_t) stat_buf.st_size;
+      if (nrowLimit < INT64_MAX && fileSize > totalram) {
+        if (verbose) DTPRINT(_("  Total memory of system [%ld] < filesize [%ld]. Reading file only up to 10\% of total ram."), totalram, fileSize);
+        fileSize = totalram / 10;
+      }
       if (fileSize == 0) {close(fd); STOP(_("File is empty: %s"), fnam);}
       if (verbose) DTPRINT(_("  File opened, size = %s.\n"), filesize_to_str(fileSize));
 
@@ -1402,6 +1411,10 @@ int freadMain(freadMainArgs _args) {
       LARGE_INTEGER liFileSize;
       if (GetFileSizeEx(hFile,&liFileSize)==0) { CloseHandle(hFile); STOP(_("GetFileSizeEx failed (returned 0) on file: %s"), fnam); }
       fileSize = (size_t)liFileSize.QuadPart;
+      if (nrowLimit < INT64_MAX && fileSize > totalram) {
+        if (verbose) DTPRINT(_("  Total memory of system [%ld] < filesize [%ld]. Reading file only up to 10\% of total ram."), totalram, fileSize);
+        fileSize = totalram / 10;
+      }
       if (fileSize<=0) { CloseHandle(hFile); STOP(_("File is empty: %s"), fnam); }
       if (verbose) DTPRINT(_("  File opened, size = %s.\n"), filesize_to_str(fileSize));
       HANDLE hMap=CreateFileMapping(hFile, NULL, PAGE_WRITECOPY, 0, 0, NULL);
