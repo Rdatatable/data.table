@@ -16,13 +16,18 @@ static int getIntEnv(const char *name, int def)
   size_t nchar = strlen(val);
   if (nchar==0) return def;
   char *end;
-  long int ans = strtol(val, &end, 10);  // ignores leading whitespace. If it fully consumed the string, *end=='\0' and isspace('\0')==false
+  double number = strtod(val, &end);  // ignores leading whitespace. If it fully consumed the string, *end=='\0' and isspace('\0')==false
   while (isspace(*end)) end++;  // ignore trailing whitespace
-  if (ans<1 || ans>INT_MAX) {
-    warning(_("Ignoring invalid %s==\"%s\". Not an integer >= 1. Please remove any characters that are not a digit [0-9]. See ?data.table::setDTthreads."), name, val);
+  int ans = number;
+  if ((size_t)(end-val)!=nchar) {
+    warning(_("Ignoring invalid %s==\"%s\", which should be interpretable as a number. See ?data.table::setDTthreads."), name, val);
     return def;
   }
-  return (int)ans;
+  if (ans<1 || ans>INT_MAX) {
+    warning(_("Environment variable %s==\"%s\" was interpreted as %d, which is not a positive integer, so instead using default %d. See ?data.table::setDTthreads."), name, val, ans, def);
+    return def;
+  }
+  return ans;
 }
 
 static inline int imin(int a, int b) { return a < b ? a : b; }
