@@ -14,6 +14,7 @@ transpose(l, fill=NA, ignore.empty=FALSE, keep.names=NULL, make.names=NULL)
   \item{ignore.empty}{Default is \code{FALSE}. \code{TRUE} will ignore length-0 list elements.}
   \item{keep.names}{The name of the first column in the result containing the names of the input; e.g. \code{keep.names="rn"}. By default \code{NULL} and the names of the input are discarded.}
   \item{make.names}{The name or number of a column in the input to use as names of the output; e.g. \code{make.names="rn"}. By default \code{NULL} and default names are given to the output columns.}
+  \item{list.cols}{Default is \code{FALSE}. \code{TRUE} will avoid promoting types and return columns of type \code{list} instead.}
 }
 \details{
   The list elements (or columns of \code{data.frame}/\code{data.table}) should be all \code{atomic}. If list elements are of unequal lengths, the value provided in \code{fill} will be used so that the resulting list always has all elements of identical lengths. The class of input object is also preserved in the transposed result.
@@ -35,6 +36,9 @@ setDT(transpose(ll, fill=0))[]
 
 DT = data.table(x=1:5, y=6:10)
 transpose(DT)
+
+DT = data.table(x=1:3, y=c("a","b","c"))
+transpose(DT, list.cols=TRUE)
 }
 \seealso{
   \code{\link{data.table}}, \code{\link{tstrsplit}}

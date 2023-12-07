@@ -27,8 +27,8 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg, SEXP listCo
   SEXPTYPE maxtype=0;
   for (int i=0; i<ln; ++i) {
     SEXP li = VECTOR_ELT(l, i);
-    if (!isVectorAtomic(li) && !isNull(li))
-      error(_("Item %d of list input is not an atomic vector"), i+1);
+    if (!isVectorAtomic(li) && !isNull(li) && !isNewList(li))
+      error(_("Item %d of list input is not either an atomic vector, or a list"), i+1);
     const int len = length(li);
     if (len>maxlen) maxlen=len;
     zerolen += (len==0);
