@@ -616,3 +616,6 @@ Sure. You're more likely to get a faster answer from the Issues page or Stack Ov
 
 Please see [this answer](https://stackoverflow.com/a/10529888/403310).
 
+```{r, echo=FALSE}
+setDTthreads()
+```

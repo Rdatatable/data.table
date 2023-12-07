@@ -326,3 +326,8 @@ In recent version we extended auto indexing to expressions involving more than o
 We will discuss fast *subsets* using keys and secondary indices to *joins* in the next vignette, *"Joins and rolling joins"*.
 
 ***
+
+```{r, echo=FALSE}
+setDTthreads()
+```
+

@@ -349,6 +349,10 @@ However we could improve this functionality further by *shallow* copying instead
 
 * We can use `:=` for its side effect or use `copy()` to not modify the original object while updating by reference.
 
+```{r, echo=FALSE}
+setDTthreads()
+```
+
 #
 
 So far we have seen a whole lot in `j`, and how to combine it with `by` and little of `i`. Let's turn our attention back to `i` in the next vignette *"Keys and fast binary search based subset"* to perform *blazing fast subsets* by *keying data.tables*.

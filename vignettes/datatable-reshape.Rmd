@@ -315,6 +315,10 @@ DT.c2
 
 You can also provide *multiple functions* to `fun.aggregate` to `dcast` for *data.tables*. Check the examples in `?dcast` which illustrates this functionality.
 
+```{r, echo=FALSE}
+setDTthreads()
+```
+
 #
 
 ***
