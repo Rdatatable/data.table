@@ -6,7 +6,7 @@
 }
 
 \usage{
-transpose(l, fill=NA, ignore.empty=FALSE, keep.names=NULL, make.names=NULL)
+transpose(l, fill=NA, ignore.empty=FALSE, keep.names=NULL, make.names=NULL, list.cols=FALSE)
 }
 \arguments{
   \item{l}{ A list, data.frame or data.table. }
