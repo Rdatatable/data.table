@@ -2,7 +2,7 @@
 #include <Rdefines.h>
 #include <time.h>
 
-SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg, SEXP returnListArg) {
+SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg, SEXP listColsArg) {
 
   int nprotect=0;
   if (!isNewList(l))
@@ -18,9 +18,9 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg, SEXP return
   if (length(fill) != 1)
     error(_("fill must be a length 1 vector, such as the default NA"));
   R_len_t ln = LENGTH(l);
-  if (!isLogical(returnListArg) || LOGICAL(returnListArg)[0]==NA_LOGICAL)
-    error(_("ignore.empty should be logical TRUE/FALSE."));
-  bool returnList = LOGICAL(returnListArg)[0];
+  if (!isLogical(listColsArg) || LOGICAL(listColsArg)[0]==NA_LOGICAL)
+    error(_("list.cols should be logical TRUE/FALSE."));
+  bool listCol = LOGICAL(listColsArg)[0];
 
   // preprocessing
   int maxlen=0, zerolen=0;
@@ -36,7 +36,7 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg, SEXP return
     if (isFactor(li)) type=STRSXP;
     if (type>maxtype) maxtype=type;
   }
-  if (returnList) maxtype=VECSXP; // need to keep preprocessing for zerolen
+  if (listCol) maxtype=VECSXP; // need to keep preprocessing for zerolen
   fill = PROTECT(coerceVector(fill, maxtype)); nprotect++;
 
   SEXP ans = PROTECT(allocVector(VECSXP, maxlen+rn)); nprotect++;
