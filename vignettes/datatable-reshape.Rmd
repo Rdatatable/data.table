@@ -17,6 +17,7 @@ knitr::opts_chunk$set(
      tidy = FALSE,
     cache = FALSE,
  collapse = TRUE)
+setDTthreads(1)
 ```
 
 This vignette discusses the default usage of reshaping functions `melt` (wide to long) and `dcast` (long to wide) for *data.tables* as well as the **new extended functionalities** of melting and casting on *multiple columns* available from `v1.9.6`.

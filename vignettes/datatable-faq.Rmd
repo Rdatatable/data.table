@@ -29,6 +29,7 @@ knitr::opts_chunk$set(
      tidy = FALSE,
     cache = FALSE,
  collapse = TRUE)
+setDTthreads(1)
 ```
 
 The first section, Beginner FAQs, is intended to be read in order, from start to finish.  It's just written in a FAQ style to be digested more easily. It isn't really the most frequently asked questions. A better measure for that is looking on Stack Overflow.
