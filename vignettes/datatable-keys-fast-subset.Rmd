@@ -495,3 +495,8 @@ In this vignette, we have learnt another method to subset rows in `i` by keying 
 * combine key based subsets with `j` and `by`. Note that the `j` and `by` operations are exactly the same as before.
 
 Key based subsets are **incredibly fast** and are particularly useful when the task involves *repeated subsetting*. But it may not be always desirable to set key and physically reorder the *data.table*. In the next vignette, we will address this using a *new* feature -- *secondary indexes*.
+
+
+```{r, echo=FALSE}
+setDTthreads()
+```

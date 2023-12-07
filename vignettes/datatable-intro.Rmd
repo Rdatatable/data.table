@@ -693,3 +693,6 @@ We will see how to *add/update/delete* columns *by reference* and how to combine
 
 ***
 
+```{r, echo=FALSE}
+setDTthreads()
+```

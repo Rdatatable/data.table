@@ -248,3 +248,6 @@ You can also provide *multiple functions* to `fun.aggregate` to `dcast` for *dat
 
 ***
 
+```{r, echo=FALSE}
+setDTthreads()
+```

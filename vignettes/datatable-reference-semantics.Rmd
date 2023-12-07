@@ -369,3 +369,6 @@ So far we have seen a whole lot in `j`, and how to combine it with `by` and litt
 
 ***
 
+```{r, echo=FALSE}
+setDTthreads()
+```
