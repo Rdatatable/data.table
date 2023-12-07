@@ -59,7 +59,7 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg, SEXP listCo
     const int len = length(li);
     if (ignore && len==0) continue;
     if (TYPEOF(li) != maxtype) {
-      li = PROTECT(isFactor(li) ? asCharacterFactor(li) : coerceVector(li, maxtype));
+      li = PROTECT(isFactor(li) && !listCol ? asCharacterFactor(li) : coerceVector(li, maxtype));
     } else PROTECT(li); // extra PROTECT just to help rchk by avoiding two counter variables
     switch (maxtype) {
     case INTSXP : case LGLSXP : {
