@@ -16,10 +16,9 @@ static int getIntEnv(const char *name, int def)
   size_t nchar = strlen(val);
   if (nchar==0) return def;
   char *end;
-  errno = 0;
   long int ans = strtol(val, &end, 10);  // ignores leading whitespace. If it fully consumed the string, *end=='\0' and isspace('\0')==false
   while (isspace(*end)) end++;  // ignore trailing whitespace
-  if (errno || (size_t)(end-val)!=nchar || ans<1 || ans>INT_MAX) {
+  if (ans<1 || ans>INT_MAX) {
     warning(_("Ignoring invalid %s==\"%s\". Not an integer >= 1. Please remove any characters that are not a digit [0-9]. See ?data.table::setDTthreads."), name, val);
     return def;
   }
@@ -52,6 +51,7 @@ void initDTthreads(void) {
   // max_threads() -vs- num_procs(): https://software.intel.com/en-us/forums/intel-visual-fortran-compiler-for-windows/topic/302866
   ans = imin(ans, getIntEnv("OMP_THREAD_LIMIT", INT_MAX));  // user might expect `Sys.setenv(OMP_THREAD_LIMIT=2);setDTthreads()` to work. Satisfy this
   ans = imin(ans, getIntEnv("OMP_NUM_THREADS", INT_MAX));   //   expectation by reading them again now. OpenMP just reads them on startup (quite reasonably)
+  ans = imin(ans, getIntEnv("_R_CHECK_EXAMPLE_TIMING_CPU_TO_ELAPSED_THRESHOLD_", INT_MAX));// CRAN sets this to 2.5 during checks.
   ans = imax(ans, 1);  // just in case omp_get_* returned <=0 for any reason, or the env variables above are set <=0
   DTthreads = ans;
   DTthrottle = imax(1, getIntEnv("R_DATATABLE_THROTTLE", 1024)); // 2nd thread is used only when n>1024, 3rd thread when n>2048, etc
