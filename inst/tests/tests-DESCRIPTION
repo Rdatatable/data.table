@@ -1,7 +1,0 @@
-Package: test.data.table
-Version: 0.1
-Type: Backend
-Title: List of data.table dependencies used in integration tests
-Authors@R: c(person("data.table team", role = c("aut", "cre", "cph"), email="mattjdowle@gmail.com"))
-Description: Standalone R DESCRIPTION file which defines R dependencies for integration tests of data.table package.
-Suggests: ggplot2 (>= 0.9.0), reshape, hexbin, fastmatch, nlme, gdata, caret, plm, rmarkdown, parallel

@@ -4,7 +4,7 @@
 \description{
   In \code{data.table} parlance, all \code{set*} functions change their input \emph{by reference}. That is, no copy is made at all, other than temporary working memory, which is as large as one column.. The only other \code{data.table} operator that modifies input by reference is \code{\link{:=}}. Check out the \code{See Also} section below for other \code{set*} function \code{data.table} provides.
 
-  \code{setDT} converts lists (both named and unnamed) and data.frames to data.tables \emph{by reference}. This feature was requested on \href{http://stackoverflow.com/questions/20345022/convert-a-data-frame-to-a-data-table-without-copy}{Stackoverflow}.
+  \code{setDT} converts lists (both named and unnamed) and data.frames to data.tables \emph{by reference}. This feature was requested on \href{https://stackoverflow.com/questions/20345022/convert-a-data-frame-to-a-data-table-without-copy}{Stackoverflow}.
 
 }
 \usage{
@@ -12,7 +12,7 @@ setDT(x, keep.rownames=FALSE, key=NULL, check.names=FALSE)
 }
 \arguments{
   \item{x}{ A named or unnamed \code{list}, \code{data.frame} or \code{data.table}. }
-  \item{keep.rownames}{ For \code{data.frame}s, \code{TRUE} retains the \code{data.frame}'s row names under a new column \code{rn}. }
+  \item{keep.rownames}{ For \code{data.frame}s, \code{TRUE} retains the \code{data.frame}'s row names under a new column \code{rn}. \code{keep.rownames = "id"} names the column \code{"id"} instead. } 
   \item{key}{Character vector of one or more column names which is passed to \code{\link{setkeyv}}. It may be a single comma separated string such as \code{key="x,y,z"}, or a vector of names such as \code{key=c("x","y","z")}. }
   \item{check.names}{ Just as \code{check.names} in \code{\link{data.frame}}. }
 }

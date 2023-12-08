@@ -1,14 +1,14 @@
-rollup <- function(x, ...) {
+rollup = function(x, ...) {
   UseMethod("rollup")
 }
-rollup.data.table <- function(x, j, by, .SDcols, id = FALSE, ...) {
+rollup.data.table = function(x, j, by, .SDcols, id = FALSE, ...) {
   # input data type basic validation
   if (!is.data.table(x))
-    stop("Argument 'x' must be data.table object")
+    stopf("Argument 'x' must be a data.table object")
   if (!is.character(by))
-    stop("Argument 'by' must be character vector of column names used in grouping.")
+    stopf("Argument 'by' must be a character vector of column names used in grouping.")
   if (!is.logical(id))
-    stop("Argument 'id' must be logical scalar.")
+    stopf("Argument 'id' must be a logical scalar.")
   # generate grouping sets for rollup
   sets = lapply(length(by):0L, function(i) by[0L:i])
   # redirect to workhorse function
@@ -16,95 +16,89 @@ rollup.data.table <- function(x, j, by, .SDcols, id = FALSE, ...) {
   groupingsets.data.table(x, by=by, sets=sets, .SDcols=.SDcols, id=id, jj=jj)
 }
 
-cube <- function(x, ...) {
+cube = function(x, ...) {
   UseMethod("cube")
 }
-cube.data.table <- function(x, j, by, .SDcols, id = FALSE, ...) {
+cube.data.table = function(x, j, by, .SDcols, id = FALSE, ...) {
   # input data type basic validation
   if (!is.data.table(x))
-    stop("Argument 'x' must be data.table object")
+    stopf("Argument 'x' must be a data.table object")
   if (!is.character(by))
-    stop("Argument 'by' must be character vector of column names used in grouping.")
+    stopf("Argument 'by' must be a character vector of column names used in grouping.")
   if (!is.logical(id))
-    stop("Argument 'id' must be logical scalar.")
+    stopf("Argument 'id' must be a logical scalar.")
+  if (missing(j))
+    stopf("Argument 'j' is required")
   # generate grouping sets for cube - power set: http://stackoverflow.com/a/32187892/2490497
   n = length(by)
-  keepBool = sapply(2L^(seq_len(n) - 1L), function(k) rep(c(FALSE, TRUE), each=k, times=(2L^n / (2L*k))))
-  sets = lapply((2L^n):1L, function(j) by[keepBool[j, ]])
+  keepBool = sapply(2L^(seq_len(n)-1L), function(k) rep(c(FALSE, TRUE), times=k, each=((2L^n)/(2L*k))))
+  sets = lapply((2L^n):1L, function(jj) by[keepBool[jj, ]])
   # redirect to workhorse function
   jj = substitute(j)
   groupingsets.data.table(x, by=by, sets=sets, .SDcols=.SDcols, id=id, jj=jj)
 }
 
-groupingsets <- function(x, ...) {
+groupingsets = function(x, ...) {
   UseMethod("groupingsets")
 }
-groupingsets.data.table <- function(x, j, by, sets, .SDcols, id = FALSE, jj, ...) {
+groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, ...) {
   # input data type basic validation
   if (!is.data.table(x))
-    stop("Argument 'x' must be data.table object")
+    stopf("Argument 'x' must be a data.table object")
   if (ncol(x) < 1L)
-    stop("Argument 'x' is 0 column data.table, no measure to apply grouping over.")
-  if (length(names(x)) != uniqueN(names(x)))
-    stop("data.table must not contains duplicate column names.")
+    stopf("Argument 'x' is a 0-column data.table; no measure to apply grouping over.")
+  if (anyDuplicated(names(x)) > 0L)
+    stopf("Input data.table must not contain duplicate column names.")
   if (!is.character(by))
-    stop("Argument 'by' must be character vector of column names used in grouping.")
-  if (length(by) != uniqueN(by))
-    stop("Argument 'by' must have unique column names for grouping.")
-  if (!is.list(sets) || !all(sapply(sets, is.character)))
-    stop("Argument 'sets' must be a list of character vectors.")
+    stopf("Argument 'by' must be a character vector of column names used in grouping.")
+  if (anyDuplicated(by) > 0L)
+    stopf("Argument 'by' must have unique column names for grouping.")
+  if (!is.list(sets) || !all(vapply_1b(sets, is.character)))
+    stopf("Argument 'sets' must be a list of character vectors.")
   if (!is.logical(id))
-    stop("Argument 'id' must be logical scalar.")
+    stopf("Argument 'id' must be a logical scalar.")
   # logic constraints validation
   if (!all((sets.all.by <- unique(unlist(sets))) %chin% by))
-    stop(sprintf("All columns used in 'sets' argument must be in 'by' too. Columns used in 'sets' but not present in 'by': %s.", paste(setdiff(sets.all.by, by), collapse=", ")))
+    stopf("All columns used in 'sets' argument must be in 'by' too. Columns used in 'sets' but not present in 'by': %s", brackify(setdiff(sets.all.by, by)))
   if (id && "grouping" %chin% names(x))
-    stop("When using `id=TRUE` the 'x' data.table must not have column named 'grouping'.")
-  if (!all(sapply(sets, function(x) length(x)==uniqueN(x))))
-    stop("Character vectors in 'sets' list must not have duplicated column names within single grouping set.")
-  if (!identical(lapply(sets, sort), unique(lapply(sets, sort))))
-    warning("Double counting is going to happen. Argument 'sets' should be unique without taking order into account, unless you really want double counting, then get used to that warning. Otherwise `sets=unique(lapply(sets, sort))` will do the trick.")
+    stopf("When using `id=TRUE` the 'x' data.table must not have a column named 'grouping'.")
+  if (any(vapply_1i(sets, anyDuplicated)))  # anyDuplicated returns index of first duplicate, otherwise 0L
+    stopf("Character vectors in 'sets' list must not have duplicated column names within a single grouping set.")
+  if (length(sets) > 1L && (idx<-anyDuplicated(lapply(sets, sort))))
+    warningf("'sets' contains a duplicate (i.e., equivalent up to sorting) element at index %d; as such, there will be duplicate rows in the output -- note that grouping by A,B and B,A will produce the same aggregations. Use `sets=unique(lapply(sets, sort))` to eliminate duplicates.", idx)
   # input arguments handling
   jj = if (!missing(jj)) jj else substitute(j)
   av = all.vars(jj, TRUE)
   if (":=" %chin% av)
-    stop("Expression passed to grouping sets function must not update by reference. Use ':=' on results of your grouping function.")
+    stopf("Expression passed to grouping sets function must not update by reference. Use ':=' on results of your grouping function.")
   if (missing(.SDcols))
     .SDcols = if (".SD" %chin% av) setdiff(names(x), by) else NULL
+  if (length(names(by))) by = unname(by)
   # 0 rows template data.table to keep colorder and type
-  if (length(by)) {
-    empty = if (length(.SDcols)) x[0L, eval(jj), by, .SDcols=.SDcols] else x[0L, eval(jj), by]
-  } else {
-    empty = if (length(.SDcols)) x[0L, eval(jj), .SDcols=.SDcols] else x[0L, eval(jj)]
-    if (!is.data.table(empty)) empty = setDT(list(empty)) # improve after #648, see comment in aggr.set
-  }
+  empty = if (length(.SDcols)) x[0L, eval(jj), by, .SDcols=.SDcols] else x[0L, eval(jj), by]
   if (id && "grouping" %chin% names(empty)) # `j` could have been evaluated to `grouping` field
-    stop("When using `id=TRUE` the 'j' expression must not evaluate to column named 'grouping'.")
-  if (length(names(empty)) != uniqueN(names(empty)))
-    stop("There exists duplicated column names in the results, ensure the column passed/evaluated in `j` and those in `by` are not overlapping.")
+    stopf("When using `id=TRUE` the 'j' expression must not evaluate to a column named 'grouping'.")
+  if (anyDuplicated(names(empty)) > 0L)
+    stopf("There exists duplicated column names in the results, ensure the column passed/evaluated in `j` and those in `by` are not overlapping.")
   # adding grouping column to template - aggregation level identifier
   if (id) {
     set(empty, j = "grouping", value = integer())
     setcolorder(empty, c("grouping", by, setdiff(names(empty), c("grouping", by))))
   }
   # workaround for rbindlist fill=TRUE on integer64 #1459
-  int64.cols = vapply(empty, inherits, logical(1L), "integer64")
+  int64.cols = vapply_1b(empty, inherits, "integer64")
   int64.cols = names(int64.cols)[int64.cols]
   if (length(int64.cols) && !requireNamespace("bit64", quietly=TRUE))
-    stop("Using integer64 class columns require to have 'bit64' package installed.")
+    stopf("Using integer64 class columns require to have 'bit64' package installed.") # nocov
   int64.by.cols = intersect(int64.cols, by)
   # aggregate function called for each grouping set
-  aggregate.set <- function(by.set) {
-    if (length(by.set)) {
-      r = if (length(.SDcols)) x[, eval(jj), by.set, .SDcols=.SDcols] else x[, eval(jj), by.set]
-    } else {
-      r = if (length(.SDcols)) x[, eval(jj), .SDcols=.SDcols] else x[, eval(jj)]
-      # workaround for grand total single var as data.table too, change to drop=FALSE after #648 solved
-      if (!is.data.table(r)) r = setDT(list(r))
-    }
+  aggregate.set = function(by.set) {
+    r = if (length(.SDcols)) x[, eval(jj), by.set, .SDcols=.SDcols] else x[, eval(jj), by.set]
     if (id) {
       # integer bit mask of aggregation levels: http://www.postgresql.org/docs/9.5/static/functions-aggregate.html#FUNCTIONS-GROUPING-TABLE
-      set(r, j = "grouping", value = strtoi(paste(c("1", "0")[by %chin% by.set + 1L], collapse=""), base=2L))
+      # 3267: strtoi("", base = 2L) output apparently unstable across platforms
+      i_str = paste(c("1", "0")[by %chin% by.set + 1L], collapse="")
+      set(r, j = "grouping", value = if (nzchar(i_str)) strtoi(i_str, base=2L) else 0L)
     }
     if (length(int64.by.cols)) {
       # workaround for rbindlist fill=TRUE on integer64 #1459

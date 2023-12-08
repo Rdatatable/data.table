@@ -20,7 +20,7 @@ foverlaps(x, y, by.x = if (!is.null(key(x))) key(x) else key(y),
     by.y = key(y), maxgap = 0L, minoverlap = 1L,
     type = c("any", "within", "start", "end", "equal"),
     mult = c("all", "first", "last"),
-    nomatch = getOption("datatable.nomatch"),
+    nomatch = NA,
     which = FALSE, verbose = getOption("datatable.verbose"))
 }
 \arguments{
@@ -43,9 +43,7 @@ intervals \code{[a,b]} and \code{[c,d]}, where \code{a<=b} and \code{c<=d}, when
 between these two intervals is \code{>= minoverlap}, then these two intervals are
 considered to be overlapping. Note: This is not yet implemented.}
 \item{type}{ Default value is \code{any}. Allowed values are \code{any},
-\code{within}, \code{start}, \code{end} and \code{equal}. Note: \code{equal} is
-not yet implemented. But this is just a normal join of the type \code{y[x, \dots]},
-unless you require also using \code{maxgap} and \code{minoverlap} arguments.
+\code{within}, \code{start}, \code{end} and \code{equal}.
 
 The types shown here are identical in functionality to the function
 \code{findOverlaps} in the bioconductor package \code{IRanges}. Let \code{[a,b]}
@@ -64,16 +62,15 @@ of the overlap. This will be updated once \code{maxgap} is implemented.}
 \item{mult}{ When multiple rows in \code{y} match to the row in \code{x},
 \code{mult=.} controls which values are returned - \code{"all"} (default),
 \code{"first"} or \code{"last"}.}
-\item{nomatch}{ Same as \code{nomatch} in \code{\link{match}}. When a row (with
-interval say, \code{[a,b]}) in \code{x} has no match in \code{y}, \code{nomatch=NA}
-(default) means \code{NA} is returned for \code{y}'s non-\code{by.y} columns for
-that row of \code{x}. \code{nomatch=0} means no rows will be returned for that
-row of \code{x}. The default value (used when \code{nomatch} is not supplied)
-can be changed from \code{NA} to \code{0} using \code{options(datatable.nomatch=0)}.}
+\item{nomatch}{ When a row (with interval say, \code{[a,b]}) in \code{x} has no
+match in \code{y}, \code{nomatch=NA} (default) means \code{NA} is returned for
+\code{y}'s non-\code{by.y} columns for that row of \code{x}. \code{nomatch=NULL}
+(or \code{0} for backward compatibility) means no rows will be returned for that
+row of \code{x}. }
 \item{which}{ When \code{TRUE}, if \code{mult="all"} returns a two column
 \code{data.table} with the first column corresponding to \code{x}'s row number
-and the second corresponding to \code{y}'s. when \code{nomatch=NA}, no matches
-return \code{NA} for \code{y}, and if \code{nomatch=0}, those rows where no
+and the second corresponding to \code{y}'s. When \code{nomatch=NA}, no matches
+return \code{NA} for \code{y}, and if \code{nomatch=NULL}, those rows where no
 match is found will be skipped; if \code{mult="first" or "last"}, a vector of
 length equal to the number of rows in \code{x} is returned, with no-match entries
 filled with \code{NA} or \code{0} corresponding to the \code{nomatch} argument.
@@ -118,7 +115,7 @@ NB: When \code{which=TRUE}: \code{a)} \code{mult="first" or "last"} returns a
 containing row numbers of \code{x} and the second column with corresponding
 row numbers of \code{y}.
 
-\code{nomatch=NA or 0} also influences whether non-matching rows are returned
+\code{nomatch=NA|NULL} also influences whether non-matching rows are returned
 or not, as explained above.
 }
 
@@ -141,7 +138,7 @@ y = data.table(chr=c("Chr1", "Chr1", "Chr2"), start=c(1, 15,1),
 setkey(y, chr, start, end)
 foverlaps(x, y, type="any", which=TRUE)
 foverlaps(x, y, type="any")
-foverlaps(x, y, type="any", nomatch=0L)
+foverlaps(x, y, type="any", nomatch=NULL)
 foverlaps(x, y, type="within", which=TRUE)
 foverlaps(x, y, type="within")
 foverlaps(x, y, type="start")
@@ -157,7 +154,7 @@ foverlaps(x, y, by.x=c("seq", "start", "end"),
 }
 \seealso{
 \code{\link{data.table}},
-\url{http://www.bioconductor.org/packages/release/bioc/html/IRanges.html},
+\url{https://www.bioconductor.org/packages/release/bioc/html/IRanges.html},
 \code{\link{setNumericRounding}}
 }
 \keyword{ data }

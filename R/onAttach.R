@@ -1,6 +1,6 @@
 # nocov start
 
-.onAttach <- function(libname, pkgname) {
+.onAttach = function(libname, pkgname) {
   # Runs when attached to search() path such as by library() or require()
   if (!interactive()) return()
   v = packageVersion("data.table")
@@ -17,45 +17,29 @@
       g = ""
   }
   dev = as.integer(v[1L, 3L]) %% 2L == 1L  # version number odd => dev
-  packageStartupMessage("data.table ", v, if(dev)paste0(" IN DEVELOPMENT built ",d,g), "  Latest news: r-datatable.com")
-  if (dev && (Sys.Date() - as.Date(d))>28)
-    packageStartupMessage("**********\nThis development version of data.table was built more than 4 weeks ago. Please update: data.table::update.dev.pkg()\n**********")
-  if (!.Call(ChasOpenMP))
-    packageStartupMessage("**********\nThis installation of data.table has not detected OpenMP support. It should still work but in single-threaded mode. If this is a Mac, please ensure you are using R>=3.4.0 and have followed our Mac instructions here: https://github.com/Rdatatable/data.table/wiki/Installation. This warning message should not occur on Windows or Linux. If it does, please file a GitHub issue.\n**********")
-}
-
-dcf.lib = function(pkg, field){
-  # get DESCRIPTION metadata field from local library
-  stopifnot(is.character(pkg), is.character(field), length(pkg)==1L, length(field)==1L)
-  dcf = system.file("DESCRIPTION", package=pkg)
-  if (nzchar(dcf)) read.dcf(dcf, fields=field)[1L] else NA_character_
-}
-
-dcf.repo = function(pkg, repo, field){
-  # get DESCRIPTION metadata field from remote PACKAGES file
-  stopifnot(is.character(pkg), is.character(field), length(pkg)==1L, length(field)==1L, is.character(repo), length(repo)==1L, field!="Package")
-  idx = file(file.path(contrib.url(repo),"PACKAGES"))
-  on.exit(close(idx))
-  dcf = read.dcf(idx, fields=c("Package",field))
-  if (!pkg %in% dcf[,"Package"]) stop(sprintf("There is no %s package in provided repository.", pkg))
-  dcf[dcf[,"Package"]==pkg, field][[1L]]
-}
-
-update.dev.pkg = function(object="data.table", repo="https://Rdatatable.github.io/data.table", field="Revision", ...){
-  pkg = object
-  # perform package upgrade when new Revision present
-  stopifnot(is.character(pkg), length(pkg)==1L, !is.na(pkg),
-            is.character(repo), length(repo)==1L, !is.na(repo),
-            is.character(field), length(field)==1L, !is.na(field))
-  una = is.na(ups<-dcf.repo(pkg, repo, field))
-  upg = una | !identical(ups, dcf.lib(pkg, field))
-  if (upg) utils::install.packages(pkg, repos=repo, ...)
-  if (una) cat(sprintf("No commit information found in DESCRIPTION file for %s package. Unsure '%s' is correct field name in PACKAGES file in your devel repository '%s'.\n", pkg, field, file.path(repo, "src","contrib","PACKAGES")))
-  cat(sprintf("R %s package %s %s (%s)\n",
-              pkg,
-              c("is up-to-date at","has been updated to")[upg+1L],
-              dcf.lib(pkg, field),
-              utils::packageVersion(pkg)))
+  if (!isTRUE(getOption("datatable.quiet"))) {   # new option in v1.12.4, #3489
+    nth = getDTthreads(verbose=FALSE)
+    if (dev)
+      packageStartupMessagef("data.table %s IN DEVELOPMENT built %s%s using %d threads (see ?getDTthreads).  ", v, d, g, nth, appendLF=FALSE)
+    else 
+      packageStartupMessagef("data.table %s using %d threads (see ?getDTthreads).  ", v, nth, appendLF=FALSE)
+    packageStartupMessagef("Latest news: r-datatable.com")
+    if (gettext("TRANSLATION CHECK") != "TRANSLATION CHECK")
+      packageStartupMessagef("**********\nRunning data.table in English; package support is available in English only. When searching for online help, be sure to also check for the English error message. This can be obtained by looking at the po/R-<locale>.po and po/<locale>.po files in the package source, where the native language and English error messages can be found side-by-side\n**********")
+    if (dev && (Sys.Date() - as.Date(d))>28L)
+      packageStartupMessagef("**********\nThis development version of data.table was built more than 4 weeks ago. Please update: data.table::update_dev_pkg()\n**********")
+    if (!.Call(ChasOpenMP)) {
+      packageStartupMessagef("**********\nThis installation of data.table has not detected OpenMP support. It should still work but in single-threaded mode.\n", appendLF=FALSE)
+      if (Sys.info()["sysname"] == "Darwin")
+        packageStartupMessagef("This is a Mac. Please read https://mac.r-project.org/openmp/. Please engage with Apple and ask them for support. Check r-datatable.com for updates, and our Mac instructions here: https://github.com/Rdatatable/data.table/wiki/Installation. After several years of many reports of installation problems on Mac, it's time to gingerly point out that there have been no similar problems on Windows or Linux.\n**********")
+      else
+        packageStartupMessagef("This is %s. This warning should not normally occur on Windows or Linux where OpenMP is turned on by data.table's configure script by passing -fopenmp to the compiler. If you see this warning on Windows or Linux, please file a GitHub issue.\n**********", Sys.info()["sysname"])
+    }
+    if (.Call(CbeforeR340)) {
+      # not base::getRversion()<"3.4.0" in case the user upgrades R but does not reinstall data.table; a reasonable mistake since data.table would seem to be the latest version
+      packageStartupMessagef("**********\nThis data.table installation was compiled for R < 3.4.0 (Apr 2017) and is known to leak memory. Please upgrade R and reinstall data.table to fix the leak. Maintaining and testing code branches to support very old versions increases development time so please do upgrade R. We intend to bump data.table's dependency from 8 year old R 3.1.0 (Apr 2014) to 5 year old R 3.4.0 (Apr 2017).\n**********")
+    }
+  }
 }
 
 # nocov end

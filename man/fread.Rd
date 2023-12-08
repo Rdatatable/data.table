@@ -2,11 +2,11 @@
 \alias{fread}
 \title{ Fast and friendly file finagler }
 \description{
-   Similar to \code{read.table} but faster and more convenient. All controls such as \code{sep}, \code{colClasses} and \code{nrows} are automatically detected. \code{bit64::integer64} types are also detected and read directly without needing to read as character before converting.
+   Similar to \code{read.table} but faster and more convenient. All controls such as \code{sep}, \code{colClasses} and \code{nrows} are automatically detected.
 
-   Dates are read as character currently. They can be converted afterwards using the excellent \code{fasttime} package or standard base functions.
+   \code{bit64::integer64}, \code{\link{IDate}}, and \code{\link{POSIXct}} types are also detected and read directly without needing to read as character before converting.
 
-   `fread` is for \emph{regular} delimited files; i.e., where every row has the same number of columns. In future, secondary separator (\code{sep2}) may be specified \emph{within} each column. Such columns will be read as type \code{list} where each cell is itself a vector.
+   \code{fread} is for \emph{regular} delimited files; i.e., where every row has the same number of columns. In future, secondary separator (\code{sep2}) may be specified \emph{within} each column. Such columns will be read as type \code{list} where each cell is itself a vector.
 }
 \usage{
 fread(input, file, text, cmd, sep="auto", sep2="auto", dec=".", quote="\"",
@@ -23,27 +23,31 @@ showProgress=getOption("datatable.showProgress", interactive()),
 data.table=getOption("datatable.fread.datatable", TRUE),
 nThread=getDTthreads(verbose),
 logical01=getOption("datatable.logical01", FALSE),  # due to change to TRUE; see NEWS
-autostart=NA
+keepLeadingZeros = getOption("datatable.keepLeadingZeros", FALSE),
+yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC"
 )
 }
 \arguments{
   \item{input}{ A single character string. The value is inspected and deferred to either \code{file=} (if no \\n present), \code{text=} (if at least one \\n is present) or \code{cmd=} (if no \\n is present, at least one space is present, and it isn't a file name). Exactly one of \code{input=}, \code{file=}, \code{text=}, or \code{cmd=} should be used in the same call. }
-  \item{file}{ File name in working directory, path to file (passed through \code{\link[base]{path.expand}} for convenience), or a URL starting http://, file://, etc. Compressed files ending \code{.gz} and \code{.bz2} are supported if the \code{R.utils} package is installed. }
+  \item{file}{ File name in working directory, path to file (passed through \code{\link[base]{path.expand}} for convenience), or a URL starting http://, file://, etc. Compressed files with extension \file{.gz} and \file{.bz2} are supported if the \code{R.utils} package is installed. }
   \item{text}{ The input data itself as a character vector of one or more lines, for example as returned by \code{readLines()}. }
-  \item{cmd}{ A shell command that pre-processes the file; e.g. \code{fread(cmd=paste("grep",word,"filename")}. }
+  \item{cmd}{ A shell command that pre-processes the file; e.g. \code{fread(cmd=paste("grep",word,"filename"))}. See Details. }
   \item{sep}{ The separator between columns. Defaults to the character in the set \code{[,\\t |;:]} that separates the sample of rows into the most number of lines with the same number of fields. Use \code{NULL} or \code{""} to specify no separator; i.e. each line a single character column like \code{base::readLines} does.}
   \item{sep2}{ The separator \emph{within} columns. A \code{list} column will be returned where each cell is a vector of values. This is much faster using less working memory than \code{strsplit} afterwards or similar techniques. For each column \code{sep2} can be different and is the first character in the same set above [\code{,\\t |;}], other than \code{sep}, that exists inside each field outside quoted regions in the sample. NB: \code{sep2} is not yet implemented. }
-  \item{nrows}{ The maximum number of rows to read. Unlike \code{read.table}, you do not need to set this to an estimate of the number of rows in the file for better speed because that is already automatically determined by \code{fread} almost instantly using the large sample of lines. `nrows=0` returns the column names and typed empty columns determined by the large sample; useful for a dry run of a large file or to quickly check format consistency of a set of files before starting to read any of them. }
+  \item{nrows}{ The maximum number of rows to read. Unlike \code{read.table}, you do not need to set this to an estimate of the number of rows in the file for better speed because that is already automatically determined by \code{fread} almost instantly using the large sample of lines. \code{nrows=0} returns the column names and typed empty columns determined by the large sample; useful for a dry run of a large file or to quickly check format consistency of a set of files before starting to read any of them. }
   \item{header}{ Does the first data line contain column names? Defaults according to whether every non-empty field on the first data line is type character. If so, or TRUE is supplied, any empty column names are given a default name. }
-  \item{na.strings}{ A character vector of strings which are to be interpreted as \code{NA} values. By default, \code{",,"} for columns of all types, including type `character` is read as \code{NA} for consistency. \code{,"",} is unambiguous and read as an empty string. To read \code{,NA,} as \code{NA}, set \code{na.strings="NA"}. To read \code{,,} as blank string \code{""}, set \code{na.strings=NULL}. When they occur in the file, the strings in \code{na.strings} should not appear quoted since that is how the string literal \code{,"NA",} is distinguished from \code{,NA,}, for example, when \code{na.strings="NA"}. }
-  \item{stringsAsFactors}{ Convert all character columns to factors? }
+  \item{na.strings}{ A character vector of strings which are to be interpreted as \code{NA} values. By default, \code{",,"} for columns of all types, including type \code{character} is read as \code{NA} for consistency. \code{,"",} is unambiguous and read as an empty string. To read \code{,NA,} as \code{NA}, set \code{na.strings="NA"}. To read \code{,,} as blank string \code{""}, set \code{na.strings=NULL}. When they occur in the file, the strings in \code{na.strings} should not appear quoted since that is how the string literal \code{,"NA",} is distinguished from \code{,NA,}, for example, when \code{na.strings="NA"}. }
+  \item{stringsAsFactors}{ Convert all or some character columns to factors? Acceptable inputs are \code{TRUE}, \code{FALSE}, or a decimal value between 0.0 and 1.0. For \code{stringsAsFactors = FALSE}, all string columns are stored as \code{character} vs. all stored as \code{factor} when \code{TRUE}. When \code{stringsAsFactors = p} for \code{0 <= p <= 1}, string columns \code{col} are stored as \code{factor} if \code{uniqueN(col)/nrow < p}. 
+  }
   \item{verbose}{ Be chatty and report timings? }
   \item{skip}{ If 0 (default) start on the first line and from there finds the first row with a consistent number of columns. This automatically avoids irregular header information before the column names row. \code{skip>0} means ignore the first \code{skip} rows manually. \code{skip="string"} searches for \code{"string"} in the file (e.g. a substring of the column names row) and starts on that line (inspired by read.xls in package gdata). }
-  \item{select}{ Vector of column names or numbers to keep, drop the rest. }
+  \item{select}{ A vector of column names or numbers to keep, drop the rest. \code{select} may specify types too in the same way as \code{colClasses}; i.e., a vector of \code{colname=type} pairs, or a \code{list} of \code{type=col(s)} pairs. In all forms of \code{select}, the order that the columns are specified determines the order of the columns in the result. }
   \item{drop}{ Vector of column names or numbers to drop, keep the rest. }
-  \item{colClasses}{ A character vector of classes (named or unnamed), as read.csv. Or a named list of vectors of column names or numbers, see examples. colClasses in fread is intended for rare overrides, not for routine use. fread will only promote a column to a higher type if colClasses requests it. It won't downgrade a column to a lower type since NAs would result. You have to coerce such columns afterwards yourself, if you really require data loss. }
-  \item{integer64}{ "integer64" (default) reads columns detected as containing integers larger than 2^31 as type \code{bit64::integer64}. Alternatively, \code{"double"|"numeric"} reads as \code{base::read.csv} does; i.e., possibly with loss of precision and if so silently. Or, "character". }
-  \item{dec}{ The decimal separator as in \code{base::read.csv}. If not "." (default) then usually ",". See details. }
+  \item{colClasses}{ As in \code{\link[utils:read.table]{utils::read.csv}}; i.e., an unnamed vector of types corresponding to the columns in the file, or a named vector specifying types for a subset of the columns by name. The default, \code{NULL} means types are inferred from the data in the file. Further, \code{data.table} supports a named \code{list} of vectors of column names \emph{or numbers} where the \code{list} names are the class names; see examples. The \code{list} form makes it easier to set a batch of columns to be a particular class. When column numbers are used in the \code{list} form, they refer to the column number in the file not the column number after \code{select} or \code{drop} has been applied.
+    If type coercion results in an error, introduces \code{NA}s, or would result in loss of accuracy, the coercion attempt is aborted for that column with warning and the column's type is left unchanged. If you really desire data loss (e.g. reading \code{3.14} as \code{integer}) you have to truncate such columns afterwards yourself explicitly so that this is clear to future readers of your code.
+  }
+  \item{integer64}{ "integer64" (default) reads columns detected as containing integers larger than 2^31 as type \code{bit64::integer64}. Alternatively, \code{"double"|"numeric"} reads as \code{utils::read.csv} does; i.e., possibly with loss of precision and if so silently. Or, "character". }
+  \item{dec}{ The decimal separator as in \code{utils::read.csv}. If not "." (default) then usually ",". See details. }
   \item{col.names}{ A vector of optional names for the variables (columns). The default is to use the header column if present or detected, or if not "V" followed by the column number. This is applied after \code{check.names} and before \code{key} and \code{index}. }
   \item{check.names}{default is \code{FALSE}. If \code{TRUE} then the names of the variables in the \code{data.table} are checked to ensure that they are syntactically valid variable names. If necessary they are adjusted (by \code{\link{make.names}}) so that they are, and also to ensure that there are no duplicates.}
   \item{encoding}{ default is \code{"unknown"}. Other possible options are \code{"UTF-8"} and \code{"Latin-1"}.  Note: it is not used to re-encode the input, rather enables handling of encoded strings in their native encoding. }
@@ -57,7 +61,11 @@ autostart=NA
   \item{data.table}{ TRUE returns a \code{data.table}. FALSE returns a \code{data.frame}. The default for this argument can be changed with \code{options(datatable.fread.datatable=FALSE)}.}
   \item{nThread}{The number of threads to use. Experiment to see what works best for your data on your hardware.}
   \item{logical01}{If TRUE a column containing only 0s and 1s will be read as logical, otherwise as integer.}
+  \item{keepLeadingZeros}{If TRUE a column containing numeric data with leading zeros will be read as character, otherwise leading zeros will be removed and converted to numeric.}
+  \item{yaml}{ If \code{TRUE}, \code{fread} will attempt to parse (using \code{\link[yaml]{yaml.load}}) the top of the input as YAML, and further to glean parameters relevant to improving the performance of \code{fread} on the data itself. The entire YAML section is returned as parsed into a \code{list} in the \code{yaml_metadata} attribute. See \code{Details}. }
   \item{autostart}{ Deprecated and ignored with warning. Please use \code{skip} instead. }
+  \item{tmpdir}{ Directory to use as the \code{tmpdir} argument for any \code{tempfile} calls, e.g. when the input is a URL or a shell command. The default is \code{tempdir()} which can be controlled by setting \code{TMPDIR} before starting the R session; see \code{\link[base:tempfile]{base::tempdir}}. }
+  \item{tz}{ Relevant to datetime values which have no Z or UTC-offset at the end, i.e. \emph{unmarked} datetime, as written by \code{\link[utils:write.table]{utils::write.csv}}. The default \code{tz="UTC"} reads unmarked datetime as UTC POSIXct efficiently. \code{tz=""} reads unmarked datetime as type character (slowly) so that \code{as.POSIXct} can interpret (slowly) the character datetimes in local timezone; e.g. by using \code{"POSIXct"} in \code{colClasses=}. Note that \code{fwrite()} by default writes datetime in UTC including the final Z and therefore \code{fwrite}'s output will be read by \code{fread} consistently and quickly without needing to use \code{tz=} or \code{colClasses=}. If the \code{TZ} environment variable is set to \code{"UTC"} (or \code{""} on non-Windows where unset vs `""` is significant) then the R session's timezone is already UTC and \code{tz=""} will result in unmarked datetimes being read as UTC POSIXct. For more information, please see the news items from v1.13.0 and v1.14.0. }
 }
 \details{
 
@@ -80,22 +88,38 @@ On Windows, "French_France.1252" is tried which should be available as standard 
 When \code{quote} is a single character,
 
   \itemize{
-      \item{Spaces and other whitespace (other than \code{sep} and \code{\\n}) may appear in unquoted character fields, e.g., \code{\dots,2,Joe Bloggs,3.14,\dots}.}
+      \item Spaces and other whitespace (other than \code{sep} and \code{\\n}) may appear in unquoted character fields, e.g., \code{\dots,2,Joe Bloggs,3.14,\dots}.
 
-      \item{When \code{character} columns are \emph{quoted}, they must start and end with that quoting character immediately followed by \code{sep} or \code{\\n}, e.g., \code{\dots,2,"Joe Bloggs",3.14,\dots}.
+      \item When \code{character} columns are \emph{quoted}, they must start and end with that quoting character immediately followed by \code{sep} or \code{\\n}, e.g., \code{\dots,2,"Joe Bloggs",3.14,\dots}.
 
       In essence quoting character fields are \emph{required} only if \code{sep} or \code{\\n} appears in the string value. Quoting may be used to signify that numeric data should be read as text. Unescaped quotes may be present in a quoted field, e.g., \code{\dots,2,"Joe, "Bloggs"",3.14,\dots}, as well as escaped quotes, e.g., \code{\dots,2,"Joe \",Bloggs\"",3.14,\dots}.
 
       If an embedded quote is followed by the separator inside a quoted field, the embedded quotes up to that point in that field must be balanced; e.g. \code{\dots,2,"www.blah?x="one",y="two"",3.14,\dots}.
 
-      On those fields that do not satisfy these conditions, e.g., fields with unbalanced quotes, \code{fread} re-attempts that field as if it isn't quoted. This is quite useful in reading files that contains fields with unbalanced quotes as well, automatically.}
+      On those fields that do not satisfy these conditions, e.g., fields with unbalanced quotes, \code{fread} re-attempts that field as if it isn't quoted. This is quite useful in reading files that contains fields with unbalanced quotes as well, automatically.
   }
 
 To read fields \emph{as is} instead, use \code{quote = ""}.
 
+\bold{CSVY Support:}
+
+Currently, the \code{yaml} setting is somewhat inflexible with respect to incorporating metadata to facilitate file reading. Information on column classes should be stored at the top level under the heading \code{schema} and subheading \code{fields}; those with both a \code{type} and a \code{name} sub-heading will be merged into \code{colClasses}. Other supported elements are as follows:
+
+  \itemize{
+    \item \code{sep} (or alias \code{delimiter}) 
+    \item \code{header} 
+    \item \code{quote} (or aliases \code{quoteChar}, \code{quote_char}) 
+    \item \code{dec} (or alias \code{decimal}) 
+    \item \code{na.strings} 
+  }
+
 \bold{File Download:}
 
-When \code{input} begins with http://, https://, ftp://, ftps://, or file://, \code{fread} detects this and \emph{downloads} the target to a temporary file (at \code{tempfile()}) before proceeding to read the file as usual. Secure URLS (ftps:// and https://) are downloaded with \code{curl::curl_download}; ftp:// and http:// paths are downloaded with \code{download.file} and \code{method} set to \code{getOption("download.file.method")}, defaulting to \code{"auto"}; and file:// is downloaded with \code{download.file} with \code{method="internal"}. NB: this implies that for file://, even files found on the current machine will be "downloaded" (i.e., hard-copied) to a temporary file. See \code{\link{download.file}} for more details.
+When \code{input} begins with http://, https://, ftp://, ftps://, or file://, \code{fread} detects this and \emph{downloads} the target to a temporary file (at \code{tempfile()}) before proceeding to read the file as usual. URLS (ftps:// and https:// as well as ftp:// and http://) paths are downloaded with \code{download.file} and \code{method} set to \code{getOption("download.file.method")}, defaulting to \code{"auto"}; and file:// is downloaded with \code{download.file} with \code{method="internal"}. NB: this implies that for file://, even files found on the current machine will be "downloaded" (i.e., hard-copied) to a temporary file. See \code{\link{download.file}} for more details.
+
+\bold{Shell commands:}
+
+\code{fread} accepts shell commands for convenience. The input command is run and its output written to a file in \code{tmpdir} (\code{\link{tempdir}()} by default) to which \code{fread} is applied "as normal". The details are platform dependent -- \code{system} is used on UNIX environments, \code{shell} otherwise; see \code{\link[base]{system}}.
 
 }
 \value{
@@ -104,134 +128,25 @@ When \code{input} begins with http://, https://, ftp://, ftps://, or file://, \c
 \references{
 Background :\cr
 \url{https://cran.r-project.org/doc/manuals/R-data.html}\cr
-\url{http://stackoverflow.com/questions/1727772/quickly-reading-very-large-tables-as-dataframes-in-r}\cr
-\url{http://www.biostat.jhsph.edu/~rpeng/docs/R-large-tables.html}\cr
-\url{http://www.cerebralmastication.com/2009/11/loading-big-data-into-r/}\cr
-\url{http://stackoverflow.com/questions/9061736/faster-than-scan-with-rcpp}\cr
-\url{http://stackoverflow.com/questions/415515/how-can-i-read-and-manipulate-csv-file-data-in-c}\cr
-\url{http://stackoverflow.com/questions/9352887/strategies-for-reading-in-csv-files-in-pieces}\cr
-\url{http://stackoverflow.com/questions/11782084/reading-in-large-text-files-in-r}\cr
-\url{http://stackoverflow.com/questions/45972/mmap-vs-reading-blocks}\cr
-\url{http://stackoverflow.com/questions/258091/when-should-i-use-mmap-for-file-access}\cr
-\url{http://stackoverflow.com/a/9818473/403310}\cr
-\url{http://stackoverflow.com/questions/9608950/reading-huge-files-using-memory-mapped-files}
+\url{https://stackoverflow.com/questions/1727772/quickly-reading-very-large-tables-as-dataframes-in-r}\cr
+\url{https://cerebralmastication.com/2009/11/loading-big-data-into-r/}\cr
+\url{https://stackoverflow.com/questions/9061736/faster-than-scan-with-rcpp}\cr
+\url{https://stackoverflow.com/questions/415515/how-can-i-read-and-manipulate-csv-file-data-in-c}\cr
+\url{https://stackoverflow.com/questions/9352887/strategies-for-reading-in-csv-files-in-pieces}\cr
+\url{https://stackoverflow.com/questions/11782084/reading-in-large-text-files-in-r}\cr
+\url{https://stackoverflow.com/questions/45972/mmap-vs-reading-blocks}\cr
+\url{https://stackoverflow.com/questions/258091/when-should-i-use-mmap-for-file-access}\cr
+\url{https://stackoverflow.com/a/9818473/403310}\cr
+\url{https://stackoverflow.com/questions/9608950/reading-huge-files-using-memory-mapped-files}
 
-finagler = "to get or achieve by guile or manipulation" \url{http://dictionary.reference.com/browse/finagler}
+finagler = "to get or achieve by guile or manipulation" \url{https://dictionary.reference.com/browse/finagler}
+
+On YAML, see \url{https://yaml.org/}; on csvy, see \url{https://csvy.org/}.
 }
-\seealso{ \code{\link[utils:read.table]{read.csv}}, \code{\link[base:connections]{url}}, \code{\link[base:locales]{Sys.setlocale}}
+\seealso{
+  \code{\link[utils:read.table]{read.csv}}, \code{\link[base:connections]{url}}, \code{\link[base:locales]{Sys.setlocale}}, \code{\link{setDTthreads}}, \code{\link{fwrite}}, \href{https://CRAN.R-project.org/package=bit64}{\code{bit64::integer64}}
 }
 \examples{
-\dontrun{
-
-# Demo speed-up
-n = 1e6
-DT = data.table( a=sample(1:1000,n,replace=TRUE),
-                 b=sample(1:1000,n,replace=TRUE),
-                 c=rnorm(n),
-                 d=sample(c("foo","bar","baz","qux","quux"),n,replace=TRUE),
-                 e=rnorm(n),
-                 f=sample(1:1000,n,replace=TRUE) )
-DT[2,b:=NA_integer_]
-DT[4,c:=NA_real_]
-DT[3,d:=NA_character_]
-DT[5,d:=""]
-DT[2,e:=+Inf]
-DT[3,e:=-Inf]
-
-write.table(DT,"test.csv",sep=",",row.names=FALSE,quote=FALSE)
-cat("File size (MB):", round(file.info("test.csv")$size/1024^2),"\n")
-# 50 MB (1e6 rows x 6 columns)
-
-system.time(DF1 <-read.csv("test.csv",stringsAsFactors=FALSE))
-# 60 sec (first time in fresh R session)
-
-system.time(DF1 <- read.csv("test.csv",stringsAsFactors=FALSE))
-# 30 sec (immediate repeat is faster, varies)
-
-system.time(DF2 <- read.table("test.csv",header=TRUE,sep=",",quote="",
-    stringsAsFactors=FALSE,comment.char="",nrows=n,
-    colClasses=c("integer","integer","numeric",
-                 "character","numeric","integer")))
-# 10 sec (consistently). All known tricks and known nrows, see references.
-
-require(data.table)
-if(all(sapply(c("sqldf", "ff"), requireNamespace, quietly = TRUE))) {
-  require(sqldf)
-  require(ff)
-
-  system.time(DT <- fread("test.csv"))
-  #  3 sec (faster and friendlier)
-
-  system.time(SQLDF <- read.csv.sql("test.csv",dbname=NULL))
-  # 20 sec (friendly too, good defaults)
-
-  system.time(FFDF <- read.csv.ffdf(file="test.csv",nrows=n))
-  # 20 sec (friendly too, good defaults)
-
-  identical(DF1,DF2)
-  all.equal(as.data.table(DF1), DT)
-  identical(DF1,within(SQLDF,{b<-as.integer(b);c<-as.numeric(c)}))
-  identical(DF1,within(as.data.frame(FFDF),d<-as.character(d)))
-}
-
-# Scaling up ...
-l = vector("list",10)
-for (i in 1:10) l[[i]] = DT
-DTbig = rbindlist(l)
-tables()
-write.table(DTbig,"testbig.csv",sep=",",row.names=FALSE,quote=FALSE)
-# 500MB (10 million rows x 6 columns)
-
-system.time(DF <- read.table("testbig.csv",header=TRUE,sep=",",
-    quote="",stringsAsFactors=FALSE,comment.char="",nrows=1e7,
-    colClasses=c("integer","integer","numeric",
-                 "character","numeric","integer")))
-# 100-200 sec (varies)
-
-system.time(DT <- fread("testbig.csv"))
-# 30-40 sec
-
-all(mapply(all.equal, DF, DT))
-
-
-# Real data example (Airline data)
-# http://stat-computing.org/dataexpo/2009/the-data.html
-
-download.file("http://stat-computing.org/dataexpo/2009/2008.csv.bz2",
-              destfile="2008.csv.bz2")
-# 109MB (compressed)
-
-system("bunzip2 2008.csv.bz2")
-# 658MB (7,009,728 rows x 29 columns)
-
-colClasses = sapply(read.csv("2008.csv",nrows=100),class)
-# 4 character, 24 integer, 1 logical. Incorrect.
-
-colClasses = sapply(read.csv("2008.csv",nrows=200),class)
-# 5 character, 24 integer. Correct. Might have missed data only using 100 rows
-# since read.table assumes colClasses is correct.
-
-system.time(DF <- read.table("2008.csv", header=TRUE, sep=",",
-    quote="",stringsAsFactors=FALSE,comment.char="",nrows=7009730,
-    colClasses=colClasses))
-# 360 secs
-
-system.time(DT <- fread("2008.csv"))
-#  40 secs
-
-table(sapply(DT,class))
-# 5 character and 24 integer columns. Correct without needing to worry about colClasses
-# issue above.
-
-
-# Reads URLs directly :
-fread("http://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat")
-
-# Decompresses .gz and .bz2 automatically :
-fread("http://stat-computing.org/dataexpo/2009/2008.csv.bz2")
-
-}
-
 # Reads text input directly :
 fread("A,B\n1,2\n3,4")
 
@@ -282,6 +197,10 @@ fread(data, drop=2:3)             # same using column numbers
 fread(data, select=c("A","D"))    # less typing, easier to read
 fread(data, select=c(1,4))        # same using column numbers
 
+# select and types combined
+fread(data, select=c(A="numeric", D="character"))
+fread(data, select=list(numeric="A", character="D"))
+
 # skip blank lines
 fread("a,b\n1,a\n2,b\n\n\n3,c\n", blank.lines.skip=TRUE)
 # fill
@@ -294,6 +213,72 @@ fread("a,b\n\n1,a\n2\n\n3,c\n\n", fill=TRUE, blank.lines.skip=TRUE)
 # check.names usage
 fread("a b,a b\n1,2\n")
 fread("a b,a b\n1,2\n", check.names=TRUE) # no duplicates + syntactically valid names
+
+\dontrun{
+# Demo speed-up
+n = 1e6
+DT = data.table( a=sample(1:1000,n,replace=TRUE),
+                 b=sample(1:1000,n,replace=TRUE),
+                 c=rnorm(n),
+                 d=sample(c("foo","bar","baz","qux","quux"),n,replace=TRUE),
+                 e=rnorm(n),
+                 f=sample(1:1000,n,replace=TRUE) )
+DT[2,b:=NA_integer_]
+DT[4,c:=NA_real_]
+DT[3,d:=NA_character_]
+DT[5,d:=""]
+DT[2,e:=+Inf]
+DT[3,e:=-Inf]
+
+write.table(DT,"test.csv",sep=",",row.names=FALSE,quote=FALSE)
+cat("File size (MB):", round(file.info("test.csv")$size/1024^2),"\n")
+# 50 MB (1e6 rows x 6 columns)
+
+system.time(DF1 <-read.csv("test.csv",stringsAsFactors=FALSE))
+# 5.4 sec (first time in fresh R session)
+
+system.time(DF1 <- read.csv("test.csv",stringsAsFactors=FALSE))
+# 3.9 sec (immediate repeat is faster, varies)
+
+system.time(DF2 <- read.table("test.csv",header=TRUE,sep=",",quote="",
+    stringsAsFactors=FALSE,comment.char="",nrows=n,
+    colClasses=c("integer","integer","numeric",
+                 "character","numeric","integer")))
+# 1.2 sec (consistently). All known tricks and known nrows, see references.
+
+system.time(DT <- fread("test.csv"))
+# 0.1 sec (faster and friendlier)
+
+identical(DF1, DF2)
+all.equal(as.data.table(DF1), DT)
+
+# Scaling up ...
+l = vector("list",10)
+for (i in 1:10) l[[i]] = DT
+DTbig = rbindlist(l)
+tables()
+write.table(DTbig,"testbig.csv",sep=",",row.names=FALSE,quote=FALSE)
+# 500MB csv (10 million rows x 6 columns)
+
+system.time(DF <- read.table("testbig.csv",header=TRUE,sep=",",
+    quote="",stringsAsFactors=FALSE,comment.char="",nrows=1e7,
+    colClasses=c("integer","integer","numeric",
+                 "character","numeric","integer")))
+# 17.0 sec (varies)
+
+system.time(DT <- fread("testbig.csv"))
+#  0.8 sec
+
+all(mapply(all.equal, DF, DT))
+
+# Reads URLs directly :
+fread("https://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat")
+
+# Decompresses .gz and .bz2 automatically :
+fread("https://github.com/Rdatatable/data.table/raw/1.14.0/inst/tests/ch11b.dat.bz2")
+
+fread("https://github.com/Rdatatable/data.table/raw/1.14.0/inst/tests/issue_785_fread.txt.gz")
+
+}
 }
 \keyword{ data }
-

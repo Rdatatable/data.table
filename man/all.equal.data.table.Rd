@@ -14,7 +14,8 @@
 
 \arguments{
   \item{target, current}{
-      \code{data.table}s to compare
+      \code{data.table}s to compare. If \code{current} is not a \code{data.table}, but \code{check.attributes} is FALSE,
+      it will be coerced to one via \link{as.data.table}.
   }
 
   \item{trim.levels}{
@@ -77,6 +78,10 @@ all.equal(x, y, ignore.row.order = TRUE)
 # check.attributes
 x = copy(dt1)
 y = setkeyv(copy(dt1), NULL)
+all.equal(x, y)
+all.equal(x, y, check.attributes = FALSE)
+x = data.table(1L)
+y = 1L
 all.equal(x, y)
 all.equal(x, y, check.attributes = FALSE)
 

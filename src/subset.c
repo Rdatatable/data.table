@@ -1,283 +1,333 @@
 #include "data.table.h"
 
-static SEXP subsetVectorRaw(SEXP target, SEXP source, SEXP idx, Rboolean any0orNA)
-// Only for use by subsetDT() or subsetVector() below, hence static
+void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
+// Used here by subsetDT() and by dogroups.c
 {
-  if (!length(target)) return target;
+  const int n = length(idx);
+  if (length(ans)!=n) error(_("Internal error: subsetVectorRaw length(ans)==%d n=%d"), length(ans), n);
 
-  const int max=length(source);
+  const int *restrict idxp = INTEGER(idx);
+  // anyNA refers to NA _in idx_; if there's NA in the data (source) that's just regular data to be copied
+  // negatives, zeros and out-of-bounds have already been dealt with in convertNegAndZero so we can rely
+  // here on idx in range [1,length(ans)].
+
+  int nth = getDTthreads(n, /*throttle=*/true);   // not const for Solaris, #4638
+  // For small n such as 2,3,4 etc we had hoped OpenMP would be sensible inside it and not create a team
+  // with each thread doing just one item. Otherwise, call overhead would be too high for highly iterated
+  // calls on very small subsets. Timings were tested in #3175. However, the overhead does seem to add up
+  // significantly. Hence the throttle was introduced, #4484. And not having the OpenMP region at all here
+  // when nth==1 (the ifs below in PARLOOP) seems to help too, #4200.
+  // To stress test the code for correctness by forcing multi-threading on for small data, the throttle can
+  // be turned off using setDThreads() or R_DATATABLE_THROTTLE environment variable.
+
+  #define PARLOOP(_NAVAL_)                                        \
+  if (anyNA) {                                                    \
+    if (nth>1) {                                                  \
+      _Pragma("omp parallel for num_threads(nth)")                \
+      for (int i=0; i<n; ++i) {                                   \
+        int elem = idxp[i];                                       \
+        ap[i] = elem==NA_INTEGER ? _NAVAL_ : sp[elem-1];          \
+      }                                                           \
+    } else {                                                      \
+      for (int i=0; i<n; ++i) {                                   \
+        int elem = idxp[i];                                       \
+        ap[i] = elem==NA_INTEGER ? _NAVAL_ : sp[elem-1];          \
+      }                                                           \
+    }                                                             \
+  } else {                                                        \
+    if (nth>1) {                                                  \
+      _Pragma("omp parallel for num_threads(nth)")                \
+      for (int i=0; i<n; ++i) {                                   \
+        ap[i] = sp[idxp[i]-1];                                    \
+      }                                                           \
+    } else {                                                      \
+      for (int i=0; i<n; ++i) {                                   \
+        ap[i] = sp[idxp[i]-1];                                    \
+      }                                                           \
+    }                                                             \
+  }
+
   switch(TYPEOF(source)) {
-  case INTSXP : case LGLSXP :
-    if (any0orNA) {
-      // any 0 or NA *in idx*; if there's 0 or NA in the data that's just regular data to be copied
-      for (int i=0, ansi=0; i<LENGTH(idx); i++) {
-        int this = INTEGER(idx)[i];
-        if (this==0) continue;
-        INTEGER(target)[ansi++] = (this==NA_INTEGER || this>max) ? NA_INTEGER : INTEGER(source)[this-1];
-        // negatives are checked before (in check_idx()) not to have reached here
-        // NA_INTEGER == NA_LOGICAL is checked in init.c
-      }
+  case INTSXP: case LGLSXP: {
+    int *sp = INTEGER(source);
+    int *ap = INTEGER(ans);
+    PARLOOP(NA_INTEGER)
+  } break;
+  case REALSXP : {
+    if (INHERITS(source, char_integer64)) {
+      int64_t *sp = (int64_t *)REAL(source);
+      int64_t *ap = (int64_t *)REAL(ans);
+      PARLOOP(INT64_MIN)
     } else {
-      // totally branch free to give optimizer/hardware best chance on all platforms
-      // We keep the branchless version together here inside the same switch to keep
-      // the code together by type
-      // INTEGER and LENGTH are up front to isolate in preparation to stop using USE_RINTERNALS
-      int *vd = INTEGER(source);
-      int *vi = INTEGER(idx);
-      int *p =  INTEGER(target);
-      const int upp = LENGTH(idx);
-      for (int i=0; i<upp; i++) *p++ = vd[vi[i]-1];
+      double *sp = REAL(source);
+      double *ap = REAL(ans);
+      PARLOOP(NA_REAL)
     }
-    break;
-  case REALSXP :
-    if (any0orNA) {
-      // define needed vars just when we need them. To registerize and to limit scope related bugs
-      union { double d; long long ll; } naval;
-      if (INHERITS(source, char_integer64)) naval.ll = NA_INT64_LL;
-      else naval.d = NA_REAL;
-      for (int i=0, ansi=0; i<LENGTH(idx); i++) {
-        int this = INTEGER(idx)[i];
-        if (this==0) continue;
-        REAL(target)[ansi++] = (this==NA_INTEGER || this>max) ? naval.d : REAL(source)[this-1];
-      }
-    } else {
-      double *vd = REAL(source);
-      int *vi =    INTEGER(idx);
-      double *p =  REAL(target);
-      const int upp = LENGTH(idx);
-      for (int i=0; i<upp; i++) *p++ = vd[vi[i]-1];
-    }
-    break;
+  } break;
   case STRSXP : {
-    #pragma omp critical
-    // write barrier is not thread safe. We can and do do non-STRSXP at the same time, though.
-    // we don't strictly need the critical since subsetDT has been written to dispatch one-thread only to
-    // do all the STRSXP columns, but keep the critical here anyway for safety. So long as it's once at high
-    // level as it is here and not deep.
-    // We could go parallel here but would need access to NODE_IS_OLDER, at least. Given gcgen, mark and named
+    // write barrier (assigning strings/lists) is not thread safe. Hence single threaded.
+    // To go parallel here would need access to NODE_IS_OLDER, at least. Given gcgen, mark and named
     // are upper bounded and max 3, REFCNT==REFCNTMAX could be checked first and then critical SET_ if not.
     // Inside that critical just before SET_ it could check REFCNT<REFCNTMAX still held. Similarly for gcgen.
     // TODO - discuss with Luke Tierney. Produce benchmarks on integer/double to see if it's worth making a safe
-    // API interface for package use for STRSXP.
-    {
-      if (any0orNA) {
-      for (int i=0, ansi=0; i<LENGTH(idx); i++) {
-        int this = INTEGER(idx)[i];
-        if (this==0) continue;
-        SET_STRING_ELT(target, ansi++, (this==NA_INTEGER || this>max) ? NA_STRING : STRING_ELT(source, this-1));
-      }
-      } else {
-      SEXP *vd = (SEXP *)DATAPTR(source);
-      int *vi =    INTEGER(idx);
-      const int upp = LENGTH(idx);
-      for (int i=0; i<upp; i++) SET_STRING_ELT(target, i, vd[vi[i]-1]);
-      // Aside: setkey() knows it always receives a permutation (it does a shuffle in-place) and so doesn't
-      // need to use SET_*. setkey() can do its own parallelism therefore, including STRSXP and VECSXP.
-      }
-    }}
-    break;
+    //        API interface for package use for STRSXP.
+    // Aside: setkey() is a separate special case (a permutation) and does do this in parallel without using SET_*.
+    const SEXP *sp = SEXPPTR_RO(source);
+    if (anyNA) {
+      for (int i=0; i<n; i++) { int elem = idxp[i]; SET_STRING_ELT(ans, i, elem==NA_INTEGER ? NA_STRING : sp[elem-1]); }
+    } else {
+      for (int i=0; i<n; i++) {                     SET_STRING_ELT(ans, i, sp[idxp[i]-1]); }
+    }
+  } break;
   case VECSXP : {
-    #pragma omp critical
-    {
-      if (any0orNA) {
-      for (int i=0, ansi=0; i<LENGTH(idx); i++) {
-        int this = INTEGER(idx)[i];
-        if (this==0) continue;
-        SET_VECTOR_ELT(target, ansi++, (this==NA_INTEGER || this>max) ? R_NilValue : VECTOR_ELT(source, this-1));
-      }
-      } else {
-      for (int i=0; i<LENGTH(idx); i++) {
-        SET_VECTOR_ELT(target, i, VECTOR_ELT(source, INTEGER(idx)[i]-1));
-      }
-      }
-    }}
-    break;
-  case CPLXSXP :
-    if (any0orNA) {
-      for (int i=0, ansi=0; i<LENGTH(idx); i++) {
-        int this = INTEGER(idx)[i];
-        if (this==0) continue;
-        if (this==NA_INTEGER || this>max) {
-          COMPLEX(target)[ansi].r = NA_REAL;
-          COMPLEX(target)[ansi++].i = NA_REAL;
-        } else COMPLEX(target)[ansi++] = COMPLEX(source)[this-1];
-      }
+    const SEXP *sp = SEXPPTR_RO(source);
+    if (anyNA) {
+      for (int i=0; i<n; i++) { int elem = idxp[i]; SET_VECTOR_ELT(ans, i, elem==NA_INTEGER ? R_NilValue : sp[elem-1]); }
     } else {
-      for (int i=0; i<LENGTH(idx); i++)
-        COMPLEX(target)[i] = COMPLEX(source)[INTEGER(idx)[i]-1];
+      for (int i=0; i<n; i++) {                     SET_VECTOR_ELT(ans, i, sp[idxp[i]-1]); }
     }
-    break;
-  case RAWSXP :
-    if (any0orNA) {
-      for (int i=0, ansi=0; i<LENGTH(idx); i++) {
-        int this = INTEGER(idx)[i];
-        if (this==0) continue;
-        RAW(target)[ansi++] = (this==NA_INTEGER || this>max) ? (Rbyte) 0 : RAW(source)[this-1];
-      }
-    } else {
-      for (int i=0; i<LENGTH(idx); i++)
-        RAW(target)[i] = RAW(source)[INTEGER(idx)[i]-1];
-    }
-    break;
-  // default :
-  // no error() needed here as caught earlier when single threaded; error() here not thread-safe.
+  } break;
+  case CPLXSXP : {
+    Rcomplex *sp = COMPLEX(source);
+    Rcomplex *ap = COMPLEX(ans);
+    PARLOOP(NA_CPLX)
+  } break;
+  case RAWSXP : {
+    Rbyte *sp = RAW(source);
+    Rbyte *ap = RAW(ans);
+    PARLOOP(0)
+  } break;
+  default :
+    error(_("Internal error: column type '%s' not supported by data.table subset. All known types are supported so please report as bug."), type2char(TYPEOF(source)));  // # nocov
   }
-  return target;
 }
 
-static void check_idx(SEXP idx, int max, /*outputs...*/int *ansLen, Rboolean *any0orNA, Rboolean *monotonic)
-// count non-0 in idx => the length of the subset result stored in *ansLen
-// return whether any 0, NA (or >max) exist and set any0orNA if so, for branchless subsetVectorRaw
-// >max is treated as NA for consistency with [.data.frame and operations like cbind(DT[w],DT[w+1])
-// if any negatives then error since they should have been dealt with by convertNegativeIdx() called
-// from R level first.
-// do this once up-front and reuse the result for each column
-// single cache efficient sweep so no need to go parallel (well, very low priority to go parallel)
+const char *check_idx(SEXP idx, int max, bool *anyNA_out, bool *orderedSubset_out)
+// set anyNA for branchless subsetVectorRaw
+// error if any negatives, zeros or >max since they should have been dealt with by convertNegAndZeroIdx() called ealier at R level.
+// single cache efficient sweep with prefetch, so very low priority to go parallel
 {
-  if (!isInteger(idx)) error("Internal error. 'idx' is type '%s' not 'integer'", type2char(TYPEOF(idx))); // # nocov
-  Rboolean anyNeg=FALSE, anyNA=FALSE, anyLess=FALSE;
-  int ans=0;
+  if (!isInteger(idx)) error(_("Internal error. Argument '%s' to %s is type '%s' not '%s'"), "idx", "check_idx", type2char(TYPEOF(idx)), "integer"); // # nocov
+  bool anyLess=false, anyNA=false;
   int last = INT32_MIN;
-  for (int i=0; i<LENGTH(idx); i++) {
-    int this = INTEGER(idx)[i];
-    ans += (this!=0);
-    anyNeg |= this<0 && this!=NA_INTEGER;
-    anyNA |= this==NA_INTEGER || this>max;
-    anyLess |= this<last;
-    last = this;
+  int *idxp = INTEGER(idx), n=LENGTH(idx);
+  for (int i=0; i<n; i++) {
+    int elem = idxp[i];
+    if (elem<=0 && elem!=NA_INTEGER) return "Internal inefficiency: idx contains negatives or zeros. Should have been dealt with earlier.";  // e.g. test 762  (TODO-fix)
+    if (elem>max) return "Internal inefficiency: idx contains an item out-of-range. Should have been dealt with earlier.";                   // e.g. test 1639.64
+    anyNA |= elem==NA_INTEGER;
+    anyLess |= elem<last;
+    last = elem;
   }
-  if (anyNeg) error("Internal error: idx contains negatives. Should have been dealt with earlier."); // # nocov
-  *ansLen = ans;
-  *any0orNA = ans<LENGTH(idx) || anyNA;
-  *monotonic = !anyLess; // for the purpose of ordered keys, this==last is allowed
+  *anyNA_out = anyNA;
+  *orderedSubset_out = !anyLess; // for the purpose of ordered keys elem==last is allowed
+  return NULL;
 }
 
-// TODO - currently called from R level first. Can it be called from check_idx instead?
-SEXP convertNegativeIdx(SEXP idx, SEXP maxArg)
+SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax, SEXP allowNAArg)
 {
+  // called from [.data.table to massage user input, creating a new strictly positive idx if there are any negatives or zeros
   // + more precise and helpful error messages telling user exactly where the problem is (saving user debugging time)
   // + a little more efficient than negativeSubscript in src/main/subscript.c (it's private to R so we can't call it anyway)
+  // allowOverMaxArg is false when := (test 1024), otherwise true for selecting
+  // allowNAArg is false when nomatch=NULL #3109 #3666
 
-  if (!isInteger(idx)) error("Internal error. 'idx' is type '%s' not 'integer'", type2char(TYPEOF(idx))); // # nocov
-  if (!isInteger(maxArg) || length(maxArg)!=1) error("Internal error. 'maxArg' is type '%s' and length %d, should be an integer singleton", type2char(TYPEOF(maxArg)), length(maxArg)); // # nocov
-  int max = INTEGER(maxArg)[0];
-  // NA also an error which'll print as INT_MIN
-  if (max<0) error("Internal error. max is %d, must be >= 0.", max); // # nocov
-  int firstNegative = 0, firstPositive = 0, firstNA = 0, num0 = 0;
-  for (int i=0; i<LENGTH(idx); i++) {
-    int this = INTEGER(idx)[i];
-    if (this==NA_INTEGER) { if (firstNA==0) firstNA = i+1;  continue; }
-    if (this==0)          { num0++;  continue; }
-    if (this>0)           { if (firstPositive==0) firstPositive=i+1; continue; }
-    if (firstNegative==0) firstNegative=i+1;
+  if (!isInteger(idx)) error(_("Internal error. 'idx' is type '%s' not 'integer'"), type2char(TYPEOF(idx))); // # nocov
+  if (!isInteger(maxArg) || length(maxArg)!=1) error(_("Internal error. 'maxArg' is type '%s' and length %d, should be an integer singleton"), type2char(TYPEOF(maxArg)), length(maxArg)); // # nocov
+  if (!isLogical(allowOverMax) || LENGTH(allowOverMax)!=1 || LOGICAL(allowOverMax)[0]==NA_LOGICAL) error(_("Internal error: allowOverMax must be TRUE/FALSE"));  // # nocov
+  const int max = INTEGER(maxArg)[0], n=LENGTH(idx);
+  if (max<0) error(_("Internal error. max is %d, must be >= 0."), max); // # nocov    includes NA which will print as INT_MIN
+  if (!isLogical(allowNAArg) || LENGTH(allowNAArg)!=1 || LOGICAL(allowNAArg)[0]==NA_LOGICAL) error(_("Internal error: allowNAArg must be TRUE/FALSE"));  // # nocov
+  const bool allowNA = LOGICAL(allowNAArg)[0];
+
+  const int *idxp = INTEGER(idx);
+  bool stop = false;
+  #pragma omp parallel for num_threads(getDTthreads(n, true))
+  for (int i=0; i<n; ++i) {
+    if (stop) continue;
+    int elem = idxp[i];
+    if ((elem<1 && (elem!=NA_INTEGER || !allowNA)) || elem>max) stop=true;
   }
-  if (firstNegative==0) return(idx);  // 0's and NA can be mixed with positives, there are no negatives present, so we're done
-  if (firstPositive) error("Item %d of i is %d and item %d is %d. Cannot mix positives and negatives.",
-         firstNegative, INTEGER(idx)[firstNegative-1], firstPositive, INTEGER(idx)[firstPositive-1]);
-  if (firstNA)       error("Item %d of i is %d and item %d is NA. Cannot mix negatives and NA.",
-         firstNegative, INTEGER(idx)[firstNegative-1], firstNA);
+  if (!stop) return(idx); // most common case to return early: no 0, no negative; all idx either NA (if allowNA) or in range [1-max]
 
-  // idx is all negative without any NA but perhaps 0 present (num0) ...
+  // ---------
+  // else massage the input to a standard idx where all items are either in range [1,max], or NA (if allowNA)
 
-  char *tmp = (char *)R_alloc(max, sizeof(char));    // 4 times less memory that INTSXP in src/main/subscript.c
-  for (int i=0; i<max; i++) tmp[i] = 0;
-  // Not using Calloc as valgrind shows it leaking (I don't see why) - just changed to R_alloc to be done with it.
-  // Maybe R needs to be rebuilt with valgrind before Calloc's Free can be matched up by valgrind?
-  int firstDup = 0, numDup = 0, firstBeyond = 0, numBeyond = 0;
-  for (int i=0; i<LENGTH(idx); i++) {
-    int this = -INTEGER(idx)[i];
-    if (this==0) continue;
-    if (this>max) {
-      numBeyond++;
-      if (firstBeyond==0) firstBeyond=i+1;
-      continue;
+  int countNeg=0, countZero=0, countNA=0, firstOverMax=0, countOverMax=0;
+  for (int i=0; i<n; ++i) {
+    int elem = idxp[i];
+    if (elem==NA_INTEGER) countNA++;
+    else if (elem<0) countNeg++;
+    else if (elem==0) countZero++;
+    else if (elem>max && ++countOverMax && firstOverMax==0) firstOverMax=i+1;
+  }
+  if (firstOverMax && LOGICAL(allowOverMax)[0]==FALSE) {
+    error(_("i[%d] is %d which is out of range [1,nrow=%d]"), firstOverMax, idxp[firstOverMax-1], max);
+  }
+
+  int countPos = n-countNeg-countZero-countNA;
+  if (countPos && countNeg) {
+    int i=0, firstNeg=0, firstPos=0;
+    while (i<n && (firstNeg==0 || firstPos==0)) {
+      int elem = idxp[i];
+      if (firstPos==0 && elem>0) firstPos=i+1;
+      if (firstNeg==0 && elem<0 && elem!=NA_INTEGER) firstNeg=i+1;
+      i++;
     }
-    if (tmp[this-1]==1) {
-      numDup++;
-      if (firstDup==0) firstDup=i+1;
-    } else tmp[this-1] = 1;
+    error(_("Item %d of i is %d and item %d is %d. Cannot mix positives and negatives."), firstNeg, idxp[firstNeg-1], firstPos, idxp[firstPos-1]);
   }
-  if (numBeyond)
-    warning("Item %d of i is %d but there are only %d rows. Ignoring this and %d more like it out of %d.", firstBeyond, INTEGER(idx)[firstBeyond-1], max, numBeyond-1, LENGTH(idx));
-  if (numDup)
-    warning("Item %d of i is %d which has occurred before. Ignoring this and %d other duplicates out of %d.", firstDup, INTEGER(idx)[firstDup-1], numDup-1, LENGTH(idx));
+  if (countNeg && countNA) {
+    int i=0, firstNeg=0, firstNA=0;
+    while (i<n && (firstNeg==0 || firstNA==0)) {
+      int elem = idxp[i];
+      if (firstNeg==0 && elem<0 && elem!=NA_INTEGER) firstNeg=i+1;
+      if (firstNA==0 && elem==NA_INTEGER) firstNA=i+1;
+      i++;
+    }
+    error(_("Item %d of i is %d and item %d is NA. Cannot mix negatives and NA."), firstNeg, idxp[firstNeg-1], firstNA);
+  }
 
-  SEXP ans = PROTECT(allocVector(INTSXP, max-LENGTH(idx)+num0+numDup+numBeyond));
-  int ansi = 0;
-  for (int i=0; i<max; i++) if (tmp[i]==0) INTEGER(ans)[ansi++] = i+1;
+  SEXP ans;
+  if (countNeg==0) {
+    if (allowNA) {
+      // remove zeros, convert >max to NA
+      ans = PROTECT(allocVector(INTSXP, n-countZero));
+      int *ansp = INTEGER(ans);
+      for (int i=0, ansi=0; i<n; ++i) {
+        int elem = idxp[i];
+        if (elem==0) continue;
+        ansp[ansi++] = elem>max ? NA_INTEGER : elem;
+      }
+    } else {
+      // remove zeros, NA and >max
+      ans = PROTECT(allocVector(INTSXP, n-countZero-countNA-countOverMax));
+      int *ansp = INTEGER(ans);
+      for (int i=0, ansi=0; i<n; ++i) {
+        int elem = idxp[i];
+        if (elem<1 || elem>max) continue;
+        ansp[ansi++] = elem;
+      }
+    }
+  } else {
+    // idx is all negative without any NA but perhaps some zeros
+    bool *keep = (bool *)R_alloc(max, sizeof(bool));    // 4 times less memory that INTSXP in src/main/subscript.c
+    for (int i=0; i<max; i++) keep[i] = true;
+    int countRemoved=0, countDup=0, countBeyond=0;   // idx=c(-10,-5,-10) removing row 10 twice
+    int firstBeyond=0, firstDup=0;
+    for (int i=0; i<n; i++) {
+      int elem = -idxp[i];
+      if (elem==0) continue;
+      if (elem>max) {
+        countBeyond++;
+        if (firstBeyond==0) firstBeyond=i+1;
+        continue;
+      }
+      if (!keep[elem-1]) {
+        countDup++;
+        if (firstDup==0) firstDup=i+1;
+      } else {
+        keep[elem-1] = false;
+        countRemoved++;
+      }
+    }
+    if (countBeyond)
+      warning(_("Item %d of i is %d but there are only %d rows. Ignoring this and %d more like it out of %d."), firstBeyond, idxp[firstBeyond-1], max, countBeyond-1, n);
+    if (countDup)
+      warning(_("Item %d of i is %d which removes that item but that has occurred before. Ignoring this dup and %d other dups."), firstDup, idxp[firstDup-1], countDup-1);
+    int ansn = max-countRemoved;
+    ans = PROTECT(allocVector(INTSXP, ansn));
+    int *ansp = INTEGER(ans);
+    for (int i=0, ansi=0; i<max; i++) {
+      if (keep[i]) ansp[ansi++] = i+1;
+    }
+  }
   UNPROTECT(1);
-  if (ansi != max-LENGTH(idx)+num0+numDup+numBeyond) error("Internal error: ansi[%d] != max[%d]-LENGTH(idx)[%d]+num0[%d]+numDup[%d]+numBeyond[%d] in convertNegativeIdx",ansi,max,LENGTH(idx),num0,numDup,numBeyond); // # nocov
-  return(ans);
+  return ans;
+}
+
+static void checkCol(SEXP col, int colNum, int nrow, SEXP x)
+{
+  if (isNull(col)) error(_("Column %d is NULL; malformed data.table."), colNum);
+  if (isNewList(col) && INHERITS(col, char_dataframe)) {
+    SEXP names = getAttrib(x, R_NamesSymbol);
+    error(_("Column %d ['%s'] is a data.frame or data.table; malformed data.table."),
+          colNum, isNull(names)?"":CHAR(STRING_ELT(names,colNum-1)));
+  }
+  if (length(col)!=nrow) {
+    SEXP names = getAttrib(x, R_NamesSymbol);
+    error(_("Column %d ['%s'] is length %d but column 1 is length %d; malformed data.table."),
+          colNum, isNull(names)?"":CHAR(STRING_ELT(names,colNum-1)), length(col), nrow);
+  }
 }
 
 /*
 * subsetDT - Subsets a data.table
 * NOTE:
 *   1) 'rows' and 'cols' are 1-based, passed from R level
-*   2) Originally for subsetting vectors in fcast and now the beginnings of
-*       [.data.table ported to C
-*   3) Immediate need is for R 3.1 as lglVec[1] now returns R's global TRUE
-*       and we don't want := to change that global [think 1 row data.tables]
-*   4) Could do it other ways but may as well go to C now as we were going to
-*       do that anyway
+*   2) Originally for subsetting vectors in fcast and now the beginnings of [.data.table ported to C
+*   3) Immediate need is for R 3.1 as lglVec[1] now returns R's global TRUE and we don't want := to change that global [think 1 row data.tables]
+*   4) Could do it other ways but may as well go to C now as we were going to do that anyway
 */
 
-SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
+SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md and man/cdt.Rd
   int nprotect=0;
-  if (!isNewList(x)) error("Internal error. Argument 'x' to CsubsetDT is type '%s' not 'list'", type2char(TYPEOF(rows))); // # nocov
+  if (!isNewList(x)) error(_("Internal error. Argument '%s' to %s is type '%s' not '%s'"), "x", "CsubsetDT", type2char(TYPEOF(rows)), "list"); // # nocov
   if (!length(x)) return(x);  // return empty list
 
-  // check index once up front for 0 or NA, for branchless subsetVectorRaw
-  R_len_t ansn=0;
-  Rboolean any0orNA=FALSE, orderedSubset=FALSE;
-  check_idx(rows, length(VECTOR_ELT(x,0)), &ansn, &any0orNA, &orderedSubset);
+  const int nrow = length(VECTOR_ELT(x,0));
+  // check index once up front for 0 or NA, for branchless subsetVectorRaw which is repeated for each column
+  bool anyNA=false, orderedSubset=true;   // true for when rows==null (meaning all rows)
+  if (!isNull(rows) && check_idx(rows, nrow, &anyNA, &orderedSubset)!=NULL) {
+    SEXP max = PROTECT(ScalarInteger(nrow)); nprotect++;
+    rows = PROTECT(convertNegAndZeroIdx(rows, max, ScalarLogical(TRUE), ScalarLogical(TRUE))); nprotect++;
+    const char *err = check_idx(rows, nrow, &anyNA, &orderedSubset);
+    if (err!=NULL) error("%s", err);
+  }
 
-  if (!isInteger(cols)) error("Internal error. Argument 'cols' to Csubset is type '%s' not 'integer'", type2char(TYPEOF(cols))); // # nocov
-  if (ALTREP(cols)) { cols = PROTECT(duplicate(cols)); nprotect++; }
-  if (ALTREP(rows)) { rows = PROTECT(duplicate(rows)); nprotect++; }
+  if (!isInteger(cols)) error(_("Internal error. Argument '%s' to %s is type '%s' not '%s'"), "cols", "Csubset", type2char(TYPEOF(cols)), "integer"); // # nocov
   for (int i=0; i<LENGTH(cols); i++) {
     int this = INTEGER(cols)[i];
-    if (this<1 || this>LENGTH(x)) error("Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]", i+1, this, LENGTH(x));
+    if (this<1 || this>LENGTH(x)) error(_("Item %d of cols is %d which is outside the range [1,ncol(x)=%d]"), i+1, this, LENGTH(x));
   }
-  SEXP ans = PROTECT(allocVector(VECSXP, LENGTH(cols)+64)); nprotect++;  // just do alloc.col directly, eventually alloc.col can be deprecated.
-  copyMostAttrib(x, ans);  // other than R_NamesSymbol, R_DimSymbol and R_DimNamesSymbol
-               // so includes row.names (oddly, given other dims aren't) and "sorted", dealt with below
+
+  int overAlloc = checkOverAlloc(GetOption(install("datatable.alloccol"), R_NilValue));
+  SEXP ans = PROTECT(allocVector(VECSXP, LENGTH(cols)+overAlloc)); nprotect++;  // doing alloc.col directly here; eventually alloc.col can be deprecated.
+
+  // user-defined and superclass attributes get copied as from v1.12.0
+  copyMostAttrib(x, ans);
+  // most means all except R_NamesSymbol, R_DimSymbol and R_DimNamesSymbol
+  // includes row.names (oddly, given other dims aren't) and "sorted" dealt with below
+  // class is also copied here which retains superclass name in class vector as has been the case for many years; e.g. tests 1228.* for #64
+
   SET_TRUELENGTH(ans, LENGTH(ans));
   SETLENGTH(ans, LENGTH(cols));
-  for (int i=0; i<LENGTH(cols); i++) {
-    SEXP source = VECTOR_ELT(x, INTEGER(cols)[i]-1);
-    if (ALTREP(source)) SET_VECTOR_ELT(x, INTEGER(cols)[i]-1, source=duplicate(source));
-    SEXP target = PROTECT(allocVector(TYPEOF(source), ansn));
-    SETLENGTH(target, ansn);
-    SET_TRUELENGTH(target, ansn);
-    copyMostAttrib(source, target);
-    SET_VECTOR_ELT(ans, i, target);
-    UNPROTECT(1);
-  }
-  #pragma omp parallel num_threads(MIN(getDTthreads(),LENGTH(cols)))
-  {
-    #pragma omp master
-    // this thread and this thread only handles all the STRSXP and VECSXP columns, one by one
-    // it doesn't have to be master; the directive is just convenient.
+  int ansn;
+  if (isNull(rows)) {
+    ansn = nrow;
+    const int *colD = INTEGER(cols);
     for (int i=0; i<LENGTH(cols); i++) {
-    SEXP target = VECTOR_ELT(ans, i);
-    if (isString(target) || isNewList(target))
-      subsetVectorRaw(target, VECTOR_ELT(x, INTEGER(cols)[i]-1), rows, any0orNA);
+      SEXP thisCol = VECTOR_ELT(x, colD[i]-1);
+      checkCol(thisCol, colD[i], nrow, x);
+      SET_VECTOR_ELT(ans, i, copyAsPlain(thisCol));
+      // materialize the column subset as we have always done for now, until REFCNT is on by default in R (TODO)
     }
-    #pragma omp for schedule(dynamic)
-    // slaves get on with the other non-STRSXP non-VECSXP columns at the same time.
-    // master may join in when it's finished, straight away if there are no STRSXP or VECSXP columns
+  } else {
+    ansn = LENGTH(rows);  // has been checked not to contain zeros or negatives, so this length is the length of result
+    const int *colD = INTEGER(cols);
     for (int i=0; i<LENGTH(cols); i++) {
-      SEXP target = VECTOR_ELT(ans, i);
-      if (!isString(target) && !isNewList(target))
-        subsetVectorRaw(target, VECTOR_ELT(x, INTEGER(cols)[i]-1), rows, any0orNA);
+      SEXP source = VECTOR_ELT(x, colD[i]-1);
+      checkCol(source, colD[i], nrow, x);
+      SEXP target;
+      SET_VECTOR_ELT(ans, i, target=allocVector(TYPEOF(source), ansn));
+      copyMostAttrib(source, target);
+      subsetVectorRaw(target, source, rows, anyNA);  // parallel within column
     }
   }
-  SEXP tmp = PROTECT(allocVector(STRSXP, LENGTH(cols)+64)); nprotect++;
+  SEXP tmp = PROTECT(allocVector(STRSXP, LENGTH(cols)+overAlloc)); nprotect++;
   SET_TRUELENGTH(tmp, LENGTH(tmp));
   SETLENGTH(tmp, LENGTH(cols));
   setAttrib(ans, R_NamesSymbol, tmp);
-  subsetVectorRaw(tmp, getAttrib(x, R_NamesSymbol), cols, /*any0orNA=*/FALSE);
+  subsetVectorRaw(tmp, getAttrib(x, R_NamesSymbol), cols, /*anyNA=*/false);
 
   tmp = PROTECT(allocVector(INTSXP, 2)); nprotect++;
   INTEGER(tmp)[0] = NA_INTEGER;
@@ -289,35 +339,35 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) {
   // but maintain key if ordered subset
   SEXP key = getAttrib(x, sym_sorted);
   if (length(key)) {
-    SEXP in = PROTECT(chmatch(key,getAttrib(ans,R_NamesSymbol), 0, TRUE)); nprotect++; // (nomatch ignored when in=TRUE)
+    SEXP in = PROTECT(chin(key, getAttrib(ans,R_NamesSymbol))); nprotect++;
     int i = 0;  while(i<LENGTH(key) && LOGICAL(in)[i]) i++;
     // i is now the keylen that can be kept. 2 lines above much easier in C than R
-    if (i==0) {
-      setAttrib(ans, sym_sorted, R_NilValue);
+    if (i==0 || !orderedSubset) {
       // clear key that was copied over by copyMostAttrib() above
+      setAttrib(ans, sym_sorted, R_NilValue);
     } else {
-      if (orderedSubset) {
-        setAttrib(ans, sym_sorted, tmp=allocVector(STRSXP, i));
-        for (int j=0; j<i; j++) SET_STRING_ELT(tmp, j, STRING_ELT(key, j));
-      }
+      // make a new key attribute; shorter if i<LENGTH(key) or same length copied so this key is safe to change by ref (setnames)
+      setAttrib(ans, sym_sorted, tmp=allocVector(STRSXP, i));
+      for (int j=0; j<i; j++) SET_STRING_ELT(tmp, j, STRING_ELT(key, j));
     }
   }
-  setAttrib(ans, install(".data.table.locked"), R_NilValue);
+  unlock(ans);
   setselfref(ans);
   UNPROTECT(nprotect);
   return ans;
 }
 
 SEXP subsetVector(SEXP x, SEXP idx) { // idx is 1-based passed from R level
-  int ansn;
-  Rboolean any0orNA, orderedSubset;
-  check_idx(idx, length(x), &ansn, &any0orNA, &orderedSubset);
-  SEXP ans = PROTECT(allocVector(TYPEOF(x), ansn));
-  SETLENGTH(ans, ansn);
-  SET_TRUELENGTH(ans, ansn);
+  bool anyNA=false, orderedSubset=false;
+  int nprotect=0;
+  if (isNull(x))
+    error(_("Internal error: NULL can not be subset. It is invalid for a data.table to contain a NULL column."));      // # nocov
+  if (check_idx(idx, length(x), &anyNA, &orderedSubset) != NULL)
+    error(_("Internal error: CsubsetVector is internal-use-only but has received negatives, zeros or out-of-range"));  // # nocov
+  SEXP ans = PROTECT(allocVector(TYPEOF(x), length(idx))); nprotect++;
   copyMostAttrib(x, ans);
-  subsetVectorRaw(ans, x, idx, any0orNA);
-  UNPROTECT(1);
+  subsetVectorRaw(ans, x, idx, anyNA);
+  UNPROTECT(nprotect);
   return ans;
 }
 

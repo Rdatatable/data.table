@@ -2,12 +2,15 @@
 title: "Frequently Asked Questions about data.table"
 date: "`r Sys.Date()`"
 output:
-  rmarkdown::html_vignette:
-    toc: true
-    number_sections: true
+  markdown::html_format:
+    options:
+      toc: true
+      number_sections: true
+    meta:
+      css: [default, css/toc.css]
 vignette: >
-  %\VignetteIndexEntry{Frequently asked questions}
-  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteIndexEntry{Frequently Asked Questions about data.table}
+  %\VignetteEngine{knitr::knitr}
   \usepackage[utf8]{inputenc}
 ---
 
@@ -15,6 +18,7 @@ vignette: >
 h2 {
     font-size: 20px;
 }
+#TOC { width: 100%; }
 </style>
 
 ```{r, echo = FALSE, message = FALSE}
@@ -25,6 +29,7 @@ knitr::opts_chunk$set(
      tidy = FALSE,
     cache = FALSE,
  collapse = TRUE)
+.old.th = setDTthreads(1)
 ```
 
 The first section, Beginner FAQs, is intended to be read in order, from start to finish.  It's just written in a FAQ style to be digested more easily. It isn't really the most frequently asked questions. A better measure for that is looking on Stack Overflow.
@@ -65,11 +70,21 @@ Also continue reading and see the FAQ after next. Skim whole documents before ge
 
 The `j` expression is the 2nd argument. Try `DT[ , c("x","y","z")]` or `DT[ , .(x,y,z)]`.
 
-## I assigned a variable `mycol = "x"` but then `DT[ , mycol]` returns `"x"`. How do I get it to look up the column name contained in the `mycol` variable?
+## I assigned a variable `mycol="x"` but then `DT[, mycol]` returns an error. How do I get it to look up the column name contained in the `mycol` variable?
 
-In v1.9.8 released Nov 2016 there is an ability to turn on new behaviour: `options(datatable.WhenJisSymbolThenCallingScope=TRUE)`. It will then work as you expected, just like data.frame. If you are a new user of data.table, you should probably do this. You can place this command in your .Rprofile file so you don't have to remember again. See the long item in release notes about this. The release notes are linked at the top of the data.table homepage: [NEWS](https://github.com/Rdatatable/data.table/blob/master/NEWS.md).
+The error is that column named `"mycol"` cannot be found, and this error is correct. `data.table`'s scoping is different to `data.frame` in that you can use column names as if they are variables directly inside `DT[...]` without prefixing each column name with `DT$`; see FAQ 1.1 above.
 
-Without turning on that new behaviour, what's happening is that the `j` expression sees objects in the calling scope. The variable `mycol` does not exist as a column name of `DT` so data.table then looked in the calling scope and found `mycol` there and returned its value `"x"`. This is correct behaviour currently. Had `mycol` been a column name, then that column's data would have been returned. What has been done to date has been `DT[ , mycol, with = FALSE]` which will return the `x` column's data as required. That will still work in the future, too. Alternatively, since a data.table _is_ a `list`, too, you have been and still will be able to write and rely on `DT[[mycol]]`.
+To use `mycol` to select the column `x` from `DT`, there are a few options:
+
+```r
+DT[, ..mycol]            # .. prefix conveys to look for the mycol one level up in calling scope
+DT[, mycol, with=FALSE]  # revert to data.frame behavior
+DT[[mycol]]               # treat DT as a list and use [[ from base R
+```
+
+See `?data.table` for more details about the `..` prefix.
+
+The `with` argument takes its name from the `base` function `with()`. When `with=TRUE` (default), `data.table` operates similar to `with()`, i.e. `DT[, mycol]` behaves like `with(DT, mycol)`. When `with=FALSE`, the standard `data.frame` evaluation rules apply to all variables in `j` and you can no longer use column names directly.
 
 ## What are the benefits of being able to use column names as if they are variables inside `DT[...]`?
 
@@ -81,15 +96,15 @@ This runs the `j` expression on the set of rows where the `i` expression is true
 
 As [highlighted above](#j-num), `j` in `[.data.table` is fundamentally different from `j` in `[.data.frame`. Even if something as simple as `DF[ , 1]` was changed in base R to return a data.frame rather than a vector, that would break existing code in many 1000's of CRAN packages and user code. As soon as we took the step to create a new class that inherited from data.frame, we had the opportunity to change a few things and we did. We want data.table to be slightly different and to work this way for more complicated syntax to work. There are other differences, too (see [below](#SmallerDiffs) ).
 
-Furthermore, data.table _inherits_ from `data.frame`. It _is_ a `data.frame`, too. A data.table can be passed to any package that only accepts `data.frame` and that package can use `[.data.frame` syntax on the data.table. See [this answer](http://stackoverflow.com/a/10529888/403310) for how that is achieved.
+Furthermore, data.table _inherits_ from `data.frame`. It _is_ a `data.frame`, too. A data.table can be passed to any package that only accepts `data.frame` and that package can use `[.data.frame` syntax on the data.table. See [this answer](https://stackoverflow.com/a/10529888/403310) for how that is achieved.
 
-We _have_ proposed enhancements to R wherever possible, too. One of these was accepted as a new feature in R 2.12.0 :
+We _have_ proposed enhancements to R wherever possible, too. One of these was accepted as a new feature in R 2.12.0:
 
 > `unique()` and `match()` are now faster on character vectors where all elements are in the global CHARSXP cache and have unmarked encoding (ASCII).  Thanks to Matt Dowle for suggesting improvements to the way the hash code is generated in unique.c.
 
-A second proposal was to use `memcpy` in duplicate.c, which is much faster than a for loop in C. This would improve the _way_ that R copies data internally (on some measures by 13 times). The thread on r-devel is [here](http://r.789695.n4.nabble.com/suggestion-how-to-use-memcpy-in-duplicate-c-td2019184.html).
+A second proposal was to use `memcpy` in duplicate.c, which is much faster than a for loop in C. This would improve the _way_ that R copies data internally (on some measures by 13 times). The thread on r-devel is [here](https://stat.ethz.ch/pipermail/r-devel/2010-April/057249.html).
 
-A third more significant proposal that was accepted is that R now uses data.table's radix sort code as from R 3.3.0 :
+A third more significant proposal that was accepted is that R now uses data.table's radix sort code as from R 3.3.0:
 
 > The radix sort algorithm and implementation from data.table (forder) replaces the previous radix (counting) sort and adds a new method for order(). Contributed by Matt Dowle and Arun Srinivasan, the new algorithm supports logical, integer (even with large values), real, and character vectors. It outperforms all other methods, but there are some caveats (see ?sort).
 
@@ -225,7 +240,7 @@ Then you are using a version prior to 1.5.3. Prior to 1.5.3 `[.data.table` detec
 
 ## What are the scoping rules for `j` expressions?
 
-Think of the subset as an environment where all the column names are variables. When a variable `foo` is used in the `j` of a query such as `X[Y, sum(foo)]`, `foo` is looked for in the following order :
+Think of the subset as an environment where all the column names are variables. When a variable `foo` is used in the `j` of a query such as `X[Y, sum(foo)]`, `foo` is looked for in the following order:
 
  1. The scope of `X`'s subset; _i.e._, `X`'s column names.
  2. The scope of each row of `Y`; _i.e._, `Y`'s column names (_join inherited scope_)
@@ -284,18 +299,18 @@ The `Z[Y]` part is not a single name so that is evaluated within the frame of `X
 
 ## Can you explain further why data.table is inspired by `A[B]` syntax in `base`?
 
-Consider `A[B]` syntax using an example matrix `A` :
+Consider `A[B]` syntax using an example matrix `A`:
 ```{r}
 A = matrix(1:12, nrow = 4)
 A
 ```
 
-To obtain cells `(1, 2) = 5` and `(3, 3) = 11` many users (we believe) may try this first :
+To obtain cells `(1, 2) = 5` and `(3, 3) = 11` many users (we believe) may try this first:
 ```{r}
 A[c(1, 3), c(2, 3)]
 ```
 
-However, this returns the union of those rows and columns. To reference the cells, a 2-column matrix is required. `?Extract` says :
+However, this returns the union of those rows and columns. To reference the cells, a 2-column matrix is required. `?Extract` says:
 
 > When indexing arrays by `[` a single argument `i` can be a matrix with as many columns as there are dimensions of `x`; the result is then a vector with elements corresponding to the sets of indices in each row of `i`.
 
@@ -343,7 +358,7 @@ Furthermore, matrices, especially sparse matrices, are often stored in a 3-colum
 data.table _inherits_ from `data.frame`. It _is_ a `data.frame`, too. A data.table _can_ be passed to any package that _only_ accepts `data.frame`. When that package uses `[.data.frame` syntax on the data.table, it works. It works because `[.data.table` looks to see where it was called from. If it was called from such a package, `[.data.table` diverts to `[.data.frame`.
 
 ## I've heard that data.table syntax is analogous to SQL.
-Yes :
+Yes:
 
  - `i`  $\Leftrightarrow$ where
  - `j`  $\Leftrightarrow$  select
@@ -356,7 +371,7 @@ Yes :
  - `mult = "first"|"last"`  $\Leftrightarrow$  N/A because SQL is inherently unordered
  - `roll = TRUE`  $\Leftrightarrow$  N/A because SQL is inherently unordered
 
-The general form is :
+The general form is:
 
 ```{r, eval = FALSE}
 DT[where, select|update, group by][order by][...] ... [...]
@@ -371,7 +386,7 @@ A key advantage of column vectors in R is that they are _ordered_, unlike SQL[^2
  - `DT[3]` refers to the 3rd _row_, but `DF[3]` refers to the 3rd _column_
  - `DT[3, ] == DT[3]`, but `DF[ , 3] == DF[3]` (somewhat confusingly in data.frame, whereas data.table is consistent)
  - For this reason we say the comma is _optional_ in `DT`, but not optional in `DF`
- - `DT[[3]] == DF[3] == DF[[3]]`
+ - `DT[[3]] == DF[, 3] == DF[[3]]`
  - `DT[i, ]`, where `i` is a single integer, returns a single row, just like `DF[i, ]`, but unlike a matrix single-row subset which returns a vector.
  - `DT[ , j]` where `j` is a single integer returns a one-column data.table, unlike `DF[, j]` which returns a vector by default
  - `DT[ , "colA"][[1]] == DF[ , "colA"]`.
@@ -383,7 +398,7 @@ A key advantage of column vectors in R is that they are _ordered_, unlike SQL[^2
  - `DT[ColA == ColB]` is simpler than `DF[!is.na(ColA) & !is.na(ColB) & ColA == ColB, ]`
  - `data.frame(list(1:2, "k", 1:4))` creates 3 columns, data.table creates one `list` column.
  - `check.names` is by default `TRUE` in `data.frame` but `FALSE` in data.table, for convenience.
- - `stringsAsFactors` is by default `TRUE` in `data.frame` but `FALSE` in data.table, for efficiency. Since a global string cache was added to R, characters items are a pointer to the single cached string and there is no longer a performance benefit of converting to `factor`.
+ - `data.table` has always set `stringsAsFactors=FALSE` by default. In R 4.0.0 (Apr 2020), `data.frame`'s default was changed from `TRUE` to `FALSE` and there is no longer a difference in this regard; see [stringsAsFactors, Kurt Hornik, Feb 2020](https://developer.r-project.org/Blog/public/2020/02/16/stringsasfactors/).
  - Atomic vectors in `list` columns are collapsed when printed using `", "` in `data.frame`, but `","` in data.table with a trailing comma after the 6th item to avoid accidental printing of large embedded objects.
 
 In `[.data.frame` we very often set `drop = FALSE`. When we forget, bugs can arise in edge cases where single columns are selected and all of a sudden a vector is returned rather than a single column `data.frame`. In `[.data.table` we took the opportunity to make it consistent and dropped `drop`.
@@ -422,34 +437,21 @@ This is an unfortunate downside to get [#869](https://github.com/Rdatatable/data
 
 ## I've noticed that `base::cbind.data.frame` (and `base::rbind.data.frame`) appear to be changed by data.table. How is this possible? Why?
 
-It is a temporary, last resort solution until we discover a better way to solve the problems listed below. Essentially, the issue is that data.table inherits from `data.frame`, _and_ `base::cbind` and `base::rbind` (uniquely) do their own S3 dispatch internally as documented by `?cbind`. The change is adding one `for` loop to the start of each function directly in `base`; _e.g._,
+It was a temporary, last resort solution before rbind and cbind S3 method dispatch was fixed in R >= 4.0.0. Essentially, the issue was that `data.table` inherits from `data.frame`, _and_ `base::cbind` and `base::rbind` (uniquely) do their own S3 dispatch internally as documented by `?cbind`. The `data.table` workaround was adding one `for` loop to the start of each function directly in `base`. That modification was made dynamically, _i.e._, the `base` definition of `cbind.data.frame` was fetched, the `for` loop added to the beginning, and then assigned back to `base`. This solution was designed to be robust to different definitions of `base::cbind.data.frame` in different versions of R, including unknown future changes. It worked well. The competing requirements were:
 
-```{r}
-base::cbind.data.frame
-```
+ - `cbind(DT, DF)` needs to work. Defining `cbind.data.table` didn't work because `base::cbind` does its own S3 dispatch and required (before R 4.0.0) that the _first_ `cbind` method for each object it is passed is _identical_. This is not true in `cbind(DT, DF)` because the first method for `DT` is `cbind.data.table` but the first method for `DF` is `cbind.data.frame`. `base::cbind` then fell through to its internal `bind` code which appears to treat `DT` as a regular `list` and returns very odd looking and unusable `matrix` output. See [below](#cbinderror). We cannot just advise users not to call `cbind(DT, DF)` because packages such as `ggplot2` make such a call ([test 167.2](https://github.com/Rdatatable/data.table/blob/master/inst/tests/tests.Rraw#L444-L447)).
 
-That modification is made dynamically, _i.e._, the `base` definition of `cbind.data.frame` is fetched, the `for` loop added to the beginning and then assigned back to `base`. This solution is intended to be robust to different definitions of `base::cbind.data.frame` in different versions of R, including unknown future changes. Again, it is a last resort until a better solution is known or made available. The competing requirements are:
-
- - `cbind(DT, DF)` needs to work. Defining `cbind.data.table` doesn't work because `base::cbind` does its own S3 dispatch and requires that the _first_ `cbind` method for each object it is passed is _identical_. This is not true in `cbind(DT, DF)` because the first method for `DT` is `cbind.data.table` but the first method for `DF` is `cbind.data.frame`. `base::cbind` then falls through to its internal `bind` code which appears to treat `DT` as a regular `list` and returns very odd looking and unusable `matrix` output. See [below](#cbinderror). We cannot just advise users not to call `cbind(DT, DF)` because packages such as `ggplot2` make such a call ([test 167.2](https://github.com/Rdatatable/data.table/blob/master/inst/tests/tests.Rraw#L444-L447)).
-
- - This naturally leads to trying to mask `cbind.data.frame` instead. Since a data.table is a `data.frame`, `cbind` would find the same method for both `DT` and `DF`. However, this doesn't work either because `base::cbind` appears to find methods in `base` first; _i.e._, `base::cbind.data.frame` isn't maskable. This is reproducible as follows :
-
-```{r}
-foo = data.frame(a = 1:3)
-cbind.data.frame = function(...) cat("Not printed\n")
-cbind(foo)
-rm("cbind.data.frame")
-```
+ - This naturally led to trying to mask `cbind.data.frame` instead. Since a data.table is a `data.frame`, `cbind` would find the same method for both `DT` and `DF`. However, this didn't work either because `base::cbind` appears to find methods in `base` first; _i.e._, `base::cbind.data.frame` isn't maskable.
 
  - Finally, we tried masking `cbind` itself (v1.6.5 and v1.6.6). This allowed `cbind(DT, DF)` to work, but introduced compatibility issues with package `IRanges`, since `IRanges` also masks `cbind`. It worked if `IRanges` was lower on the `search()` path than data.table, but if `IRanges` was higher then data.table's, `cbind` would never be called and the strange-looking `matrix` output occurs again (see [below](#cbinderror)).
 
-If you know of a better solution that still solves all the issues above, then please let us know and we'll gladly change it.
+Many thanks to the R core team for fixing the issue in Sep 2019. data.table v1.12.6+ no longer applies the workaround in R >= 4.0.0.
 
 ## I've read about method dispatch (_e.g._ `merge` may or may not dispatch to `merge.data.table`) but _how_ does R know how to dispatch? Are dots significant or special? How on earth does R know which function to dispatch and when? {#r-dispatch}
 
 This comes up quite a lot but it's really earth-shatteringly simple. A function such as `merge` is _generic_ if it consists of a call to `UseMethod`. When you see people talking about whether or not functions are _generic_ functions they are merely typing the function without `()` afterwards, looking at the program code inside it and if they see a call to `UseMethod` then it is _generic_.  What does `UseMethod` do? It literally slaps the function name together with the class of the first argument, separated by period (`.`) and then calls that function, passing along the same arguments. It's that simple. For example, `merge(X, Y)` contains a `UseMethod` call which means it then _dispatches_ (i.e. calls) `paste("merge", class(X), sep = ".")`. Functions with dots in their name may or may not be methods. The dot is irrelevant really, other than dot being the separator that `UseMethod` uses. Knowing this background should now highlight why, for example, it is obvious to R folk that `as.data.table.data.frame`  is the `data.frame` method for the `as.data.table` generic function. Further, it may help to elucidate that, yes, you are correct, it is not obvious from its name alone that `ls.fit` is not the fit method of the `ls` generic function. You only know that by typing `ls` (not `ls()`) and observing it isn't a single call to `UseMethod`.
 
-You might now ask: where is this documented in R? Answer: it's quite clear, but, you need to first know to look in `?UseMethod` and _that_ help file contains :
+You might now ask: where is this documented in R? Answer: it's quite clear, but, you need to first know to look in `?UseMethod` and _that_ help file contains:
 
 > When a function calling `UseMethod('fun')` is applied to an object with class attribute `c('first', 'second')`, the system searches for a function called `fun.first` and, if it finds it, applies it to the object. If no such function is found a function called `fun.second` is tried. If no class name produces a suitable function, the function `fun.default` is used, if it exists, or an error results.
 
@@ -483,7 +485,7 @@ copied in bulk (`memcpy` in C) rather than looping in C.
 ## What are primary and secondary indexes in data.table?
 
 Manual: [`?setkey`](https://www.rdocumentation.org/packages/data.table/functions/setkey)
-S.O. : [What is the purpose of setting a key in data.table?](https://stackoverflow.com/questions/20039335/what-is-the-purpose-of-setting-a-key-in-data-table/20057411#20057411)
+S.O.: [What is the purpose of setting a key in data.table?](https://stackoverflow.com/questions/20039335/what-is-the-purpose-of-setting-a-key-in-data-table/20057411#20057411)
 
 `setkey(DT, col1, col2)` orders the rows by column `col1` then within each group of `col1` it orders by `col2`. This is a _primary index_. The row order is changed _by reference_ in RAM. Subsequent joins and groups on those key columns then take advantage of the sort order for efficiency. (Imagine how difficult looking for a phone number in a printed telephone directory would be if it wasn't sorted by surname then forename. That's literally all `setkey` does. It sorts the rows by the columns you specify.) The index doesn't use any RAM. It simply changes the row order in RAM and marks the key columns. Analogous to a _clustered index_ in SQL.
 
@@ -523,7 +525,7 @@ DT[ , { mySD = copy(.SD)
 
 Please upgrade to v1.8.1 or later. From this version, if `.N` is returned by `j` it is renamed to `N` to avoid any ambiguity in any subsequent grouping between the `.N` special variable and a column called `".N"`.
 
-The old behaviour can be reproduced by forcing `.N` to be called `.N`, like this :
+The old behaviour can be reproduced by forcing `.N` to be called `.N`, like this:
 ```{r}
 DT = data.table(a = c(1,1,2,2,2), b = c(1,2,2,2,1))
 DT
@@ -535,7 +537,7 @@ cat(try(
 
 If you are already running v1.8.1 or later then the error message is now more helpful than the "cannot change value of locked binding" error, as you can see above, since this vignette was produced using v1.8.1 or later.
 
-The more natural syntax now works :
+The more natural syntax now works:
 ```{r}
 if (packageVersion("data.table") >= "1.8.1") {
     DT[ , .N, by = list(a, b)][ , unique(N), by = a]
@@ -557,7 +559,7 @@ Hopefully, this is self explanatory. The full message is:
 Coerced numeric RHS to integer to match the column's type; may have truncated precision. Either change the column to numeric first by creating a new numeric vector length 5 (nrows of entire table) yourself and assigning that (i.e. 'replace' column), or coerce RHS to integer yourself (e.g. 1L or as.integer) to make your intent clear (and for speed). Or, set the column type correctly up front when you create the table and stick to it, please.
 
 
-To generate it, try :
+To generate it, try:
 
 ```{r}
 DT = data.table(a = 1:5, b = 1:5)
@@ -572,7 +574,7 @@ DT[ , b := rnorm(5)]  # 'replace' integer column with a numeric column
 
 ## Reading data.table from RDS or RData file
 
-`*.RDS` and `*.RData` are file types which can store in-memory R objects on disk efficiently. However, storing data.table into the binary file loses its column over-allocation. This isn't a big deal -- your data.table will be copied in memory on the next _by reference_ operation and throw a warning. Therefore it is recommended to call `alloc.col()` on each data.table loaded with `readRDS()` or `load()` calls.
+`*.RDS` and `*.RData` are file types which can store in-memory R objects on disk efficiently. However, storing data.table into the binary file loses its column over-allocation. This isn't a big deal -- your data.table will be copied in memory on the next _by reference_ operation and throw a warning. Therefore it is recommended to call `setalloccol()` on each data.table loaded with `readRDS()` or `load()` calls.
 
 # General questions about the package
 
@@ -595,7 +597,7 @@ Please file suggestions, bug reports and enhancement requests on our [issues tra
 
 Please do star the package on [GitHub](https://github.com/Rdatatable/data.table/wiki). This helps encourage the developers and helps other R users find the package.
 
-You can submit pull requests to change the code and/or documentation yourself; see our [Contribution Guidelines](https://github.com/Rdatatable/data.table/blob/master/CONTRIBUTING.md).
+You can submit pull requests to change the code and/or documentation yourself; see our [Contribution Guidelines](https://github.com/Rdatatable/data.table/wiki/Contributing).
 
 ## I think it's not great. How do I warn others about my experience?
 
@@ -612,5 +614,8 @@ Sure. You're more likely to get a faster answer from the Issues page or Stack Ov
 
 ## I have created a package that uses data.table. How do I ensure my package is data.table-aware so that inheritance from `data.frame` works?
 
-Please see [this answer](http://stackoverflow.com/a/10529888/403310).
+Please see [this answer](https://stackoverflow.com/a/10529888/403310).
 
+```{r, echo=FALSE}
+setDTthreads(.old.th)
+```

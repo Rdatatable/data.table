@@ -3,84 +3,45 @@
 #include <R_ext/Rdynload.h>
 #include <R_ext/Visibility.h>
 
-// .Calls
-SEXP setattrib();
-SEXP bmerge();
-SEXP assign();
-SEXP dogroups();
-SEXP copy();
-SEXP shallowwrapper();
-SEXP alloccolwrapper();
-SEXP selfrefokwrapper();
-SEXP truelength();
-SEXP setcharvec();
-SEXP setcolorder();
-SEXP chmatchwrapper();
-SEXP freadR();
-SEXP fwriteR();
-SEXP reorder();
-SEXP rbindlist();
-SEXP vecseq();
-SEXP copyattr();
-SEXP setlistelt();
-SEXP setmutable();
-SEXP address();
-SEXP copyNamedInList();
-SEXP expandAltRep();
-SEXP fmelt();
-SEXP fcast();
-SEXP uniqlist();
-SEXP uniqlengths();
-SEXP setrev();
-SEXP forder();
-SEXP fsorted();
-SEXP gforce();
-SEXP gsum();
-SEXP gmean();
-SEXP gmin();
-SEXP gmax();
-SEXP isOrderedSubset();
-SEXP pointWrapper();
-SEXP setNumericRounding();
-SEXP getNumericRounding();
-SEXP binary();
-SEXP chmatch2();
-SEXP subsetDT();
-SEXP subsetVector();
-SEXP convertNegativeIdx();
-SEXP frank();
-SEXP dt_na();
-SEXP lookup();
-SEXP overlaps();
-SEXP whichwrapper();
-SEXP shift();
-SEXP transpose();
-SEXP anyNA();
-SEXP isReallyReal();
-SEXP setlevels();
-SEXP rleid();
-SEXP gmedian();
-SEXP gtail();
-SEXP ghead();
-SEXP glast();
-SEXP gfirst();
-SEXP gnthvalue();
-SEXP dim();
-SEXP gvar();
-SEXP gsd();
-SEXP gprod();
-SEXP nestedid();
-SEXP setDTthreads();
-SEXP getDTthreads_R();
-SEXP nqRecreateIndices();
-SEXP fsort();
-SEXP inrange();
-SEXP between();
-SEXP hasOpenMP();
-SEXP uniqueNlogical();
-
-// .Externals
-SEXP fastmean();
+// global constants extern in data.table.h for gcc10 -fno-common; #4091
+// these are written to once here on initialization, but because of that write they can't be declared const
+SEXP char_integer64;
+SEXP char_ITime;
+SEXP char_IDate;
+SEXP char_Date;
+SEXP char_POSIXct;
+SEXP char_POSIXt;
+SEXP char_UTC;
+SEXP char_nanotime;
+SEXP char_lens;
+SEXP char_indices;
+SEXP char_allLen1;
+SEXP char_allGrp1;
+SEXP char_factor;
+SEXP char_ordered;
+SEXP char_datatable;
+SEXP char_dataframe;
+SEXP char_NULL;
+SEXP char_maxString;
+SEXP sym_sorted;
+SEXP sym_index;
+SEXP sym_BY;
+SEXP sym_starts, char_starts;
+SEXP sym_maxgrpn;
+SEXP sym_colClassesAs;
+SEXP sym_verbose;
+SEXP SelfRefSymbol;
+SEXP sym_inherits;
+SEXP sym_datatable_locked;
+SEXP sym_tzone;
+SEXP sym_old_fread_datetime_character;
+SEXP sym_variable_table;
+SEXP sym_as_character;
+double NA_INT64_D;
+long long NA_INT64_LL;
+Rcomplex NA_CPLX;
+size_t __sizes[100];
+size_t __typeorder[100];
 
 static const
 R_CallMethodDef callMethods[] = {
@@ -95,39 +56,35 @@ R_CallMethodDef callMethods[] = {
 {"Ctruelength", (DL_FUNC) &truelength, -1},
 {"Csetcharvec", (DL_FUNC) &setcharvec, -1},
 {"Csetcolorder", (DL_FUNC) &setcolorder, -1},
-{"Cchmatchwrapper", (DL_FUNC) &chmatchwrapper, -1},
+{"Cchmatch", (DL_FUNC) &chmatch_R, -1},
+{"Cchmatchdup", (DL_FUNC) &chmatchdup_R, -1},
+{"Cchin", (DL_FUNC) &chin_R, -1},
 {"CfreadR", (DL_FUNC) &freadR, -1},
 {"CfwriteR", (DL_FUNC) &fwriteR, -1},
 {"Creorder", (DL_FUNC) &reorder, -1},
 {"Crbindlist", (DL_FUNC) &rbindlist, -1},
 {"Cvecseq", (DL_FUNC) &vecseq, -1},
-{"Ccopyattr", (DL_FUNC) &copyattr, -1},
 {"Csetlistelt", (DL_FUNC) &setlistelt, -1},
-{"Csetmutable", (DL_FUNC) &setmutable, -1},
 {"Caddress", (DL_FUNC) &address, -1},
-{"CcopyNamedInList", (DL_FUNC) &copyNamedInList, -1},
 {"CexpandAltRep", (DL_FUNC) &expandAltRep, -1},
 {"Cfmelt", (DL_FUNC) &fmelt, -1},
 {"Cfcast", (DL_FUNC) &fcast, -1},
 {"Cuniqlist", (DL_FUNC) &uniqlist, -1},
 {"Cuniqlengths", (DL_FUNC) &uniqlengths, -1},
-{"Csetrev", (DL_FUNC) &setrev, -1},
 {"Cforder", (DL_FUNC) &forder, -1},
-{"Cfsorted", (DL_FUNC) &fsorted, -1},
+{"Cissorted", (DL_FUNC) &issorted, -1},
 {"Cgforce", (DL_FUNC) &gforce, -1},
 {"Cgsum", (DL_FUNC) &gsum, -1},
 {"Cgmean", (DL_FUNC) &gmean, -1},
 {"Cgmin", (DL_FUNC) &gmin, -1},
 {"Cgmax", (DL_FUNC) &gmax, -1},
 {"CisOrderedSubset", (DL_FUNC) &isOrderedSubset, -1},
-{"CpointWrapper", (DL_FUNC) &pointWrapper, -1},
 {"CsetNumericRounding", (DL_FUNC) &setNumericRounding, -1},
 {"CgetNumericRounding", (DL_FUNC) &getNumericRounding, -1},
 {"Cbinary", (DL_FUNC) &binary, -1},
-{"Cchmatch2", (DL_FUNC) &chmatch2, -1},
 {"CsubsetDT", (DL_FUNC) &subsetDT, -1},
 {"CsubsetVector", (DL_FUNC) &subsetVector, -1},
-{"CconvertNegativeIdx", (DL_FUNC) &convertNegativeIdx, -1},
+{"CconvertNegAndZeroIdx", (DL_FUNC) &convertNegAndZeroIdx, -1},
 {"Cfrank", (DL_FUNC) &frank, -1},
 {"Cdt_na", (DL_FUNC) &dt_na, -1},
 {"Clookup", (DL_FUNC) &lookup, -1},
@@ -137,6 +94,7 @@ R_CallMethodDef callMethods[] = {
 {"Ctranspose", (DL_FUNC) &transpose, -1},
 {"CanyNA", (DL_FUNC) &anyNA, -1},
 {"CisReallyReal", (DL_FUNC) &isReallyReal, -1},
+{"CisRealReallyIntR", (DL_FUNC) &isRealReallyIntR, -1},
 {"Csetlevels", (DL_FUNC) &setlevels, -1},
 {"Crleid", (DL_FUNC) &rleid, -1},
 {"Cgmedian", (DL_FUNC) &gmedian, -1},
@@ -149,6 +107,7 @@ R_CallMethodDef callMethods[] = {
 {"Cgvar", (DL_FUNC) &gvar, -1},
 {"Cgsd", (DL_FUNC) &gsd, -1},
 {"Cgprod", (DL_FUNC) &gprod, -1},
+{"Cgshift", (DL_FUNC) &gshift, -1},
 {"Cnestedid", (DL_FUNC) &nestedid, -1},
 {"CsetDTthreads", (DL_FUNC) &setDTthreads, -1},
 {"CgetDTthreads", (DL_FUNC) &getDTthreads_R, -1},
@@ -157,10 +116,33 @@ R_CallMethodDef callMethods[] = {
 {"Cinrange", (DL_FUNC) &inrange, -1},
 {"Cbetween", (DL_FUNC) &between, -1},
 {"ChasOpenMP", (DL_FUNC) &hasOpenMP, -1},
+{"CbeforeR340", (DL_FUNC) &beforeR340, -1},
 {"CuniqueNlogical", (DL_FUNC) &uniqueNlogical, -1},
+{"CfrollfunR", (DL_FUNC) &frollfunR, -1},
+{"CdllVersion", (DL_FUNC) &dllVersion, -1},
+{"CnafillR", (DL_FUNC) &nafillR, -1},
+{"CcolnamesInt", (DL_FUNC) &colnamesInt, -1},
+{"CinitLastUpdated", (DL_FUNC) &initLastUpdated, -1},
+{"Ccj", (DL_FUNC) &cj, -1},
+{"Ccoalesce", (DL_FUNC) &coalesce, -1},
+{"CfifelseR", (DL_FUNC) &fifelseR, -1},
+{"CfcaseR", (DL_FUNC) &fcaseR, -1},
+{"C_lock", (DL_FUNC) &lock, -1},  // _ for these 3 to avoid Clock as in time
+{"C_unlock", (DL_FUNC) &unlock, -1},
+{"C_islocked", (DL_FUNC) &islockedR, -1},
+{"CfrollapplyR", (DL_FUNC) &frollapplyR, -1},
+{"CtestMsgR", (DL_FUNC) &testMsgR, -1},
+{"C_allNAR", (DL_FUNC) &allNAR, -1},
+{"CcoerceAs", (DL_FUNC) &coerceAs, -1},
+{"Ctest_dt_win_snprintf", (DL_FUNC)&test_dt_win_snprintf, -1},
+{"Cdt_zlib_version", (DL_FUNC)&dt_zlib_version, -1},
+{"Cdt_has_zlib", (DL_FUNC)&dt_has_zlib, -1},
+{"Csubstitute_call_arg_namesR", (DL_FUNC) &substitute_call_arg_namesR, -1},
+{"CstartsWithAny", (DL_FUNC)&startsWithAny, -1},
+{"CconvertDate", (DL_FUNC)&convertDate, -1},
+{"Cnotchin", (DL_FUNC)&notchin, -1},
 {NULL, NULL, 0}
 };
-
 
 static const
 R_ExternalMethodDef externalMethods[] = {
@@ -168,66 +150,88 @@ R_ExternalMethodDef externalMethods[] = {
 {NULL, NULL, 0}
 };
 
-void attribute_visible R_init_datatable(DllInfo *info)
-// relies on pkg/src/Makevars to mv data.table.so to datatable.so
+static void setSizes(void) {
+  for (int i=0; i<100; ++i) { __sizes[i]=0; __typeorder[i]=0; }
+  // only these types are currently allowed as column types :
+  __sizes[LGLSXP] =  sizeof(int);       __typeorder[LGLSXP] =  0;
+  __sizes[RAWSXP] =  sizeof(Rbyte);     __typeorder[RAWSXP] =  1;
+  __sizes[INTSXP] =  sizeof(int);       __typeorder[INTSXP] =  2;   // integer and factor
+  __sizes[REALSXP] = sizeof(double);    __typeorder[REALSXP] = 3;   // numeric and integer64
+  __sizes[CPLXSXP] = sizeof(Rcomplex);  __typeorder[CPLXSXP] = 4;
+  __sizes[STRSXP] =  sizeof(SEXP *);    __typeorder[STRSXP] =  5;
+  __sizes[VECSXP] =  sizeof(SEXP *);    __typeorder[VECSXP] =  6;   // list column
+  if (sizeof(char *)>8) error(_("Pointers are %zu bytes, greater than 8. We have not tested on any architecture greater than 64bit yet."), sizeof(char *));
+  // One place we need the largest sizeof is the working memory malloc in reorder.c
+}
+
+void attribute_visible R_init_data_table(DllInfo *info)
 {
+  // C exported routines
+  // must be also listed in inst/include/datatableAPI.h
+  // for end user documentation see ?cdt
+  R_RegisterCCallable("data.table", "DT_subsetDT", (DL_FUNC) &subsetDT);
+
   R_registerRoutines(info, NULL, callMethods, NULL, externalMethods);
   R_useDynamicSymbols(info, FALSE);
   setSizes();
-  const char *msg = "... failed. Please forward this message to maintainer('data.table').";
-  if ((int)NA_INTEGER != (int)INT_MIN) error("Checking NA_INTEGER [%d] == INT_MIN [%d] %s", NA_INTEGER, INT_MIN, msg);
-  if ((int)NA_INTEGER != (int)NA_LOGICAL) error("Checking NA_INTEGER [%d] == NA_LOGICAL [%d] %s", NA_INTEGER, NA_LOGICAL, msg);
-  if (sizeof(int) != 4) error("Checking sizeof(int) [%d] is 4 %s", sizeof(int), msg);
-  if (sizeof(double) != 8) error("Checking sizeof(double) [%d] is 8 %s", sizeof(double), msg);     // 8 on both 32bit and 64bit
-  // alignof not available in C99: if (alignof(double) != 8) error("Checking alignof(double) [%d] is 8 %s", alignof(double), msg);  // 8 on both 32bit and 64bit
-  if (sizeof(long long) != 8) error("Checking sizeof(long long) [%d] is 8 %s", sizeof(long long), msg);
-  if (sizeof(char *) != 4 && sizeof(char *) != 8) error("Checking sizeof(pointer) [%d] is 4 or 8 %s", sizeof(char *), msg);
-  if (sizeof(SEXP) != sizeof(char *)) error("Checking sizeof(SEXP) [%d] == sizeof(pointer) [%d] %s", sizeof(SEXP), sizeof(char *), msg);
-  if (sizeof(uint64_t) != 8) error("Checking sizeof(uint64_t) [%d] is 8 %s", sizeof(uint64_t), msg);
-  if (sizeof(int64_t) != 8) error("Checking sizeof(int64_t) [%d] is 8 %s", sizeof(int64_t), msg);
-  if (sizeof(signed char) != 1) error("Checking sizeof(signed char) [%d] is 1 %s", sizeof(signed char), msg);
-  if (sizeof(int8_t) != 1) error("Checking sizeof(int8_t) [%d] is 1 %s", sizeof(int8_t), msg);
-  if (sizeof(uint8_t) != 1) error("Checking sizeof(uint8_t) [%d] is 1 %s", sizeof(uint8_t), msg);
-  if (sizeof(int16_t) != 2) error("Checking sizeof(int16_t) [%d] is 2 %s", sizeof(int16_t), msg);
-  if (sizeof(uint16_t) != 2) error("Checking sizeof(uint16_t) [%d] is 2 %s", sizeof(uint16_t), msg);
+  const char *msg = _("... failed. Please forward this message to maintainer('data.table').");
+  if ((int)NA_INTEGER != (int)INT_MIN) error(_("Checking NA_INTEGER [%d] == INT_MIN [%d] %s"), NA_INTEGER, INT_MIN, msg);
+  if ((int)NA_INTEGER != (int)NA_LOGICAL) error(_("Checking NA_INTEGER [%d] == NA_LOGICAL [%d] %s"), NA_INTEGER, NA_LOGICAL, msg);
+  if (sizeof(int) != 4)       error(_("Checking sizeof(%s) [%zu] is %d %s"), "int", sizeof(int), 4, msg);
+  if (sizeof(double) != 8)    error(_("Checking sizeof(%s) [%zu] is %d %s"), "double", sizeof(double), 8, msg);     // 8 on both 32bit and 64bit
+  // alignof not available in C99: if (alignof(double) != 8) error(_("Checking alignof(double) [%lu] is 8 %s"), alignof(double), msg);  // 8 on both 32bit and 64bit
+  if (sizeof(long long) != 8) error(_("Checking sizeof(%s) [%zu] is %d %s"), "long long", sizeof(long long), 8, msg);
+  if (sizeof(char *) != 4 && sizeof(char *) != 8) error(_("Checking sizeof(pointer) [%zu] is 4 or 8 %s"), sizeof(char *), msg);
+  if (sizeof(SEXP) != sizeof(char *)) error(_("Checking sizeof(SEXP) [%zu] == sizeof(pointer) [%zu] %s"), sizeof(SEXP), sizeof(char *), msg);
+  if (sizeof(uint64_t) != 8) error(_("Checking sizeof(%s) [%zu] is %d %s"), "uint64_t", sizeof(uint64_t), 8, msg);
+  if (sizeof(int64_t) != 8)  error(_("Checking sizeof(%s) [%zu] is %d %s"), "int64_t", sizeof(int64_t), 8, msg);
+  if (sizeof(signed char) != 1) error(_("Checking sizeof(%s) [%zu] is %d %s"), "signed char", sizeof(signed char), 1, msg);
+  if (sizeof(int8_t) != 1)   error(_("Checking sizeof(%s) [%zu] is %d %s"), "int8_t", sizeof(int8_t), 1, msg);
+  if (sizeof(uint8_t) != 1)  error(_("Checking sizeof(%s) [%zu] is %d %s"), "uint8_t", sizeof(uint8_t), 1, msg);
+  if (sizeof(int16_t) != 2)  error(_("Checking sizeof(%s) [%zu] is %d %s"), "int16_t", sizeof(int16_t), 2, msg);
+  if (sizeof(uint16_t) != 2) error(_("Checking sizeof(%s) [%zu] is %d %s"), "uint16_t", sizeof(uint16_t), 2 ,msg);
 
   SEXP tmp = PROTECT(allocVector(INTSXP,2));
-  if (LENGTH(tmp)!=2) error("Checking LENGTH(allocVector(INTSXP,2)) [%d] is 2 %s", LENGTH(tmp), msg);
-  if (TRUELENGTH(tmp)!=0) error("Checking TRUELENGTH(allocVector(INTSXP,2)) [%d] is 0 %s", TRUELENGTH(tmp), msg);
+  if (LENGTH(tmp)!=2) error(_("Checking LENGTH(allocVector(INTSXP,2)) [%d] is 2 %s"), LENGTH(tmp), msg);
+  // Use (long long) to cast R_xlen_t to a fixed type to robustly avoid -Wformat compiler warnings, see #5768
+  if (TRUELENGTH(tmp)!=0) error(_("Checking TRUELENGTH(allocVector(INTSXP,2)) [%lld] is 0 %s"), (long long)TRUELENGTH(tmp), msg);
   UNPROTECT(1);
 
   // According to IEEE (http://en.wikipedia.org/wiki/IEEE_754-1985#Zero) we can rely on 0.0 being all 0 bits.
   // But check here anyway just to be sure, just in case this answer is right (http://stackoverflow.com/a/2952680/403310).
   int i = 314;
   memset(&i, 0, sizeof(int));
-  if (i != 0) error("Checking memset(&i,0,sizeof(int)); i == (int)0 %s", msg);
+  if (i != 0) error(_("Checking memset(&i,0,sizeof(int)); i == (int)0 %s"), msg);
   unsigned int ui = 314;
   memset(&ui, 0, sizeof(unsigned int));
-  if (ui != 0) error("Checking memset(&ui, 0, sizeof(unsigned int)); ui == (unsigned int)0 %s", msg);
+  if (ui != 0) error(_("Checking memset(&ui, 0, sizeof(unsigned int)); ui == (unsigned int)0 %s"), msg);
   double d = 3.14;
   memset(&d, 0, sizeof(double));
-  if (d != 0.0) error("Checking memset(&d, 0, sizeof(double)); d == (double)0.0 %s", msg);
+  if (d != 0.0) error(_("Checking memset(&d, 0, sizeof(double)); d == (double)0.0 %s"), msg);
   long double ld = 3.14;
   memset(&ld, 0, sizeof(long double));
-  if (ld != 0.0) error("Checking memset(&ld, 0, sizeof(long double)); ld == (long double)0.0 %s", msg);
+  if (ld != 0.0) error(_("Checking memset(&ld, 0, sizeof(long double)); ld == (long double)0.0 %s"), msg);
 
   // Check unsigned cast used in fread.c. This isn't overflow/underflow, just cast.
-  if ((uint_fast8_t)('0'-'/') != 1) error("The ascii character '/' is not just before '0'");
-  if ((uint_fast8_t)('/'-'0') < 10) error("The C expression (uint_fast8_t)('/'-'0')<10 is true. Should be false.");
-  if ((uint_fast8_t)(':'-'9') != 1) error("The ascii character ':' is not just after '9'");
-  if ((uint_fast8_t)('9'-':') < 10) error("The C expression (uint_fast8_t)('9'-':')<10 is true. Should be false.");
+  if ((uint_fast8_t)('0'-'/') != 1) error(_("The ascii character '/' is not just before '0'"));
+  if ((uint_fast8_t)('/'-'0') < 10) error(_("The C expression (uint_fast8_t)('/'-'0')<10 is true. Should be false."));
+  if ((uint_fast8_t)(':'-'9') != 1) error(_("The ascii character ':' is not just after '9'"));
+  if ((uint_fast8_t)('9'-':') < 10) error(_("The C expression (uint_fast8_t)('9'-':')<10 is true. Should be false."));
 
   // Variables rather than #define for NA_INT64 to ensure correct usage; i.e. not casted
   NA_INT64_LL = LLONG_MIN;
   NA_INT64_D = LLtoD(NA_INT64_LL);
-  if (NA_INT64_LL != DtoLL(NA_INT64_D)) error("Conversion of NA_INT64 via double failed %lld!=%lld", NA_INT64_LL, DtoLL(NA_INT64_D));
+  if (NA_INT64_LL != DtoLL(NA_INT64_D)) error(_("Conversion of NA_INT64 via double failed %"PRId64"!=%"PRId64), (int64_t)NA_INT64_LL, (int64_t)DtoLL(NA_INT64_D));
   // LLONG_MIN when punned to double is the sign bit set and then all zeros in exponent and significand i.e. -0.0
   //   That's why we must never test for NA_INT64_D using == in double type. Must always DtoLL and compare long long types.
   //   Assigning NA_INT64_D to a REAL is ok however.
-  if (NA_INT64_D != 0.0)  error("NA_INT64_D (negative -0.0) is not == 0.0.");
-  if (NA_INT64_D != -0.0) error("NA_INT64_D (negative -0.0) is not ==-0.0.");
-  if (ISNAN(NA_INT64_D)) error("ISNAN(NA_INT64_D) is TRUE but should not be");
-  if (isnan(NA_INT64_D)) error("isnan(NA_INT64_D) is TRUE but should not be");
+  if (NA_INT64_D != 0.0)  error(_("NA_INT64_D (negative -0.0) is not == 0.0."));
+  if (NA_INT64_D != -0.0) error(_("NA_INT64_D (negative -0.0) is not ==-0.0."));
+  if (ISNAN(NA_INT64_D)) error(_("ISNAN(NA_INT64_D) is TRUE but should not be"));
+  if (isnan(NA_INT64_D)) error(_("isnan(NA_INT64_D) is TRUE but should not be"));
+
+  NA_CPLX.r = NA_REAL;  // NA_REAL is defined as R_NaReal which is not a strict constant and thus initializer {NA_REAL, NA_REAL} can't be used in .h
+  NA_CPLX.i = NA_REAL;  // https://github.com/Rdatatable/data.table/pull/3689/files#r304117234
 
   setNumericRounding(PROTECT(ScalarInteger(0))); // #1642, #1728, #1463, #485
   UNPROTECT(1);
@@ -237,19 +241,27 @@ void attribute_visible R_init_datatable(DllInfo *info)
   // either use PRINTNAME(install()) or R_PreserveObject(mkChar()) here.
   char_integer64 = PRINTNAME(install("integer64"));
   char_ITime =     PRINTNAME(install("ITime"));
+  char_IDate =     PRINTNAME(install("IDate"));
   char_Date =      PRINTNAME(install("Date"));   // used for IDate too since IDate inherits from Date
   char_POSIXct =   PRINTNAME(install("POSIXct"));
+  char_POSIXt =    PRINTNAME(install("POSIXt"));
+  char_UTC =       PRINTNAME(install("UTC"));
   char_nanotime =  PRINTNAME(install("nanotime"));
   char_starts =    PRINTNAME(sym_starts = install("starts"));
   char_lens =      PRINTNAME(install("lens"));
   char_indices =   PRINTNAME(install("indices"));
   char_allLen1 =   PRINTNAME(install("allLen1"));
   char_allGrp1 =   PRINTNAME(install("allGrp1"));
+  char_factor =    PRINTNAME(install("factor"));
+  char_ordered =   PRINTNAME(install("ordered"));
+  char_datatable = PRINTNAME(install("data.table"));
+  char_dataframe = PRINTNAME(install("data.frame"));
+  char_NULL =      PRINTNAME(install("NULL"));
+  char_maxString = PRINTNAME(install("\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"));
 
   if (TYPEOF(char_integer64) != CHARSXP) {
     // checking one is enough in case of any R-devel changes
-    error("PRINTNAME(install(\"integer64\")) has returned %s not %s",
-      type2char(TYPEOF(char_integer64)), type2char(CHARSXP));
+    error(_("PRINTNAME(install(\"integer64\")) has returned %s not %s"), type2char(TYPEOF(char_integer64)), type2char(CHARSXP));  // # nocov
   }
 
   // create commonly used symbols, same as R_*Symbol but internal to DT
@@ -263,26 +275,18 @@ void attribute_visible R_init_datatable(DllInfo *info)
   sym_index   = install("index");
   sym_BY      = install(".BY");
   sym_maxgrpn = install("maxgrpn");
+  sym_colClassesAs = install("colClassesAs");
+  sym_verbose = install("datatable.verbose");
+  SelfRefSymbol = install(".internal.selfref");
+  sym_inherits = install("inherits");
+  sym_datatable_locked = install(".data.table.locked");
+  sym_tzone = install("tzone");
+  sym_old_fread_datetime_character = install("datatable.old.fread.datetime.character");
+  sym_variable_table = install("variable_table");
+  sym_as_character = install("as.character");
 
+  initDTthreads();
   avoid_openmp_hang_within_fork();
-}
-
-inline bool INHERITS(SEXP x, SEXP char_) {
-  // Thread safe inherits() by pre-calling install() above in init first then
-  // passing those char_* in here for simple and fast non-API pointer compare.
-  // The thread-safety aspect here is only currently actually needed for list columns in
-  // fwrite() where the class of the cell's vector is tested; the class of the column
-  // itself is pre-stored by fwrite (for example in isInteger64[] and isITime[]).
-  // Thread safe in the limited sense of correct and intended usage :
-  // i) no API call such as install() or mkChar() must be passed in.
-  // ii) no attrib writes must be possible in other threads.
-  SEXP class;
-  if (isString(class = getAttrib(x, R_ClassSymbol))) {
-    for (int i=0; i<LENGTH(class); i++) {
-      if (STRING_ELT(class, i) == char_) return true;
-    }
-  }
-  return false;
 }
 
 inline long long DtoLL(double x) {
@@ -292,7 +296,7 @@ inline long long DtoLL(double x) {
   // under clang 3.9.1 -O3 and solaris-sparc but not solaris-x86 or gcc.
   // There is now a grep in CRAN_Release.cmd; use this union method instead.
   // int64_t may help rather than 'long long' (TODO: replace all long long with int64_t)
-  // The two types must be the same size. That is checked in R_init_datatable (above)
+  // The two types must be the same size. That is checked in R_init_data_table (above)
   // where sizeof(int64_t)==sizeof(double)==8 is checked.
   // Endianness should not matter because whether big or little, endianness is the same
   // inside this process, and the two types are the same size.
@@ -307,16 +311,48 @@ inline double LLtoD(long long x) {
   return u.d;
 }
 
+int GetVerbose(void) {
+  // don't call repetitively; save first in that case
+  SEXP opt = GetOption(sym_verbose, R_NilValue);
+  if ((!isLogical(opt) && !isInteger(opt)) || LENGTH(opt)!=1 || INTEGER(opt)[0]==NA_INTEGER)
+    error(_("verbose option must be length 1 non-NA logical or integer"));
+  return INTEGER(opt)[0];
+}
 
-SEXP hasOpenMP() {
-  // Just for use by onAttach to avoid an RPRINTF from C level which isn't suppressable by CRAN
+// # nocov start
+SEXP hasOpenMP(void) {
+  // Just for use by onAttach (hence nocov) to avoid an RPRINTF from C level which isn't suppressable by CRAN
   // There is now a 'grep' in CRAN_Release.cmd to detect any use of RPRINTF in init.c, which is
   // why RPRINTF is capitalized in this comment to avoid that grep.
-  // TODO: perhaps .Platform or .Machine in R itself could contain whether OpenMP is available.
+  // .Platform or .Machine in R itself does not contain whether OpenMP is available because compiler and flags are per-package.
   #ifdef _OPENMP
-  return ScalarLogical(TRUE);
+  return ScalarInteger(_OPENMP); // return the version; e.g. 201511 (i.e. 4.5)
   #else
-  return ScalarLogical(FALSE);
+  return ScalarInteger(0);       // 0 rather than NA so that if() can be used on the result
   #endif
+}
+// # nocov end
+
+SEXP beforeR340(void) {
+  // used in onAttach.R for message about fread memory leak fix needing R 3.4.0
+  // at C level to catch if user upgrades R but does not reinstall data.table
+  #if defined(R_VERSION) && R_VERSION<R_Version(3,4,0)
+  return ScalarLogical(true);
+  #else
+  return ScalarLogical(false);
+  #endif
+}
+
+extern int *_Last_updated;  // assign.c
+
+SEXP initLastUpdated(SEXP var) {
+  if (!isInteger(var) || LENGTH(var)!=1) error(_(".Last.value in namespace is not a length 1 integer"));
+  _Last_updated = INTEGER(var);
+  return R_NilValue;
+}
+
+SEXP dllVersion(void) {
+  // .onLoad calls this and checks the same as packageVersion() to ensure no R/C version mismatch, #3056
+  return(ScalarString(mkChar("1.14.99")));
 }
 

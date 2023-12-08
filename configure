@@ -1,0 +1,124 @@
+#!/usr/bin/env sh
+
+# Find R compilers
+CC=`${R_HOME}/bin/R CMD config CC`
+CFLAGS=`${R_HOME}/bin/R CMD config CFLAGS`
+# compiler and flags to 'cc' file
+echo "CC=${CC}" > inst/cc
+echo "CFLAGS=${CFLAGS}" >> inst/cc
+
+# gcc compiler info to output #3291
+case $CC in gcc*)
+  GCCV=`${CC} -dumpfullversion -dumpversion`
+  echo "$CC $GCCV"
+esac
+
+# Let's keep this simple. If pkg-config is available, use it. Otherwise print
+# the helpful message to aid user if compilation does fail. Note 25 of R-exts:
+# "[pkg-config] is available on the machines used to produce the CRAN binary packages"
+# This script should pass `checkbashisms` for portability; e.g. CRAN's Solaris 10,
+# and R-exts note 24 now suggests 'checkbashisms' as we proposed.
+
+msg=0
+NOZLIB=1 # if pkg-config is not available then zlib will be disabled for higher chance of compilation success
+pkg-config --version >/dev/null 2>&1
+if [ $? -ne 0 ]; then
+  echo "*** pkg-config is not installed."
+  msg=1
+else
+  pkg-config --exists zlib
+  if [ $? -ne 0 ]; then
+    echo "*** pkg-config is installed but 'pkg-config --exists zlib' did not return 0."
+    msg=1
+  else
+    NOZLIB=0
+    lib=`pkg-config --libs zlib`
+    expr -- "$lib" : ".*-lz$" >/dev/null  # -- for FreeBSD, #4652
+    if [ $? -ne 0 ]; then
+      expr -- "$lib" : ".*-lz " >/dev/null
+      # would use \b in one expr but MacOS does not support \b
+      if [ $? -ne 0 ]; then
+        echo "*** pkg-config is installed and 'pkg-config --exists zlib' succeeds but"
+        echo "*** 'pkg-config --libs zlib' returns '${lib}' which does not include the standard -lz."
+        msg=1
+      fi
+    fi
+  fi
+fi
+
+if [ $msg -ne 0 ]; then
+  echo "*** Compilation will now be attempted and if it works you can ignore this message. In"
+  echo "*** particular, this should be the case on Mac where zlib is built in or pkg-config"
+  echo "*** is not installed. However, if compilation fails, try 'locate zlib.h zconf.h' and"
+  echo "*** ensure the zlib development library is installed :"
+  echo "***   deb: zlib1g-dev (Debian, Ubuntu, ...)"
+  echo "***   rpm: zlib-devel (Fedora, EPEL, ...)"
+  echo "***   There is a zlib in brew for OSX but the built in zlib should work."
+  echo "*** Note that zlib is required to compile R itself so you may find the advice in the R-admin"
+  echo "*** guide helpful regarding zlib. On Debian/Ubuntu, zlib1g-dev is a dependency of r-base as"
+  echo "*** shown by 'apt-cache showsrc r-base | grep ^Build-Depends | grep zlib', and therefore"
+  echo "*** 'sudo apt-get build-dep r-base' should be sufficient too."
+  echo "*** To silence this message, please ensure that :"
+  echo "***   1) 'pkg-config --exists zlib' succeeds (i.e. \$? -eq 0)"
+  echo "***   2) 'pkg-config --libs zlib' contains -lz"
+  echo "*** Compilation will now be attempted ..."
+else
+  version=`pkg-config --modversion zlib`
+  echo "zlib ${version} is available ok"
+fi
+
+# Test if we have a OPENMP compatible compiler
+# Aside: ${SHLIB_OPENMP_CFLAGS} does not appear to be defined at this point according to Matt's testing on
+# Linux, and R CMD config SHLIB_OPENMP_CFLAGS also returns 'no information for variable'. That's not
+# inconsistent with R-exts$1.2.1.1, though, which states it's 'available for use in Makevars' (so not
+# necessarily here in configure). Hence use -fopenmp directly for this detection step.
+# printf not echo to pass checkbashisms w.r.t. to the \n
+
+cat <<EOF > test-omp.c
+#include <omp.h>
+int main() {
+  return omp_get_num_threads();
+}
+EOF
+
+# First, try R CMD SHLIB to see if R can already compile
+# things using OpenMP without any extra help from data.table
+"${R_HOME}/bin/R" CMD SHLIB test-omp.c >/dev/null 2>&1 || R_NO_OPENMP=1
+
+if [ "$R_NO_OPENMP" = "1" ]; then
+  # Compilation failed -- try forcing -fopenmp instead.
+  R_NO_OPENMP=0
+  "${CC}" "${CFLAGS}" -fopenmp test-omp.c || R_NO_OPENMP=1
+  # TODO: and then nothing seems to be done with this outcome
+else
+  echo "R CMD SHLIB supports OpenMP without any extra hint"
+fi
+
+# Clean up.
+rm -f test-omp.* a.out
+
+# Write to Makevars
+if [ "$R_NO_OPENMP" = "1" ]; then
+  echo "*** OpenMP not supported! data.table uses OpenMP to automatically"
+  echo "***   parallelize operations like sorting, grouping, file reading, etc."
+  echo "*** For details on how to install the necessary toolchains on your OS see:"
+  echo "***   https://github.com/Rdatatable/data.table/wiki/Installation"
+  echo "*** Continuing installation without OpenMP support..."
+  sed -e "s|@openmp_cflags@||" src/Makevars.in > src/Makevars
+else
+  sed -e "s|@openmp_cflags@|\$(SHLIB_OPENMP_CFLAGS)|" src/Makevars.in > src/Makevars
+fi
+# retain user supplied PKG_ env variables, #4664. See comments in Makevars.in too.
+sed -e "s|@PKG_CFLAGS@|$PKG_CFLAGS|" src/Makevars > src/Makevars.tmp && mv src/Makevars.tmp src/Makevars
+sed -e "s|@PKG_LIBS@|$PKG_LIBS|" src/Makevars > src/Makevars.tmp && mv src/Makevars.tmp src/Makevars
+# optional dependency on zlib
+if [ "$NOZLIB" = "1" ]; then
+  echo "*** Compilation without compression support in fwrite"
+  sed -e "s|@zlib_cflags@|-DNOZLIB|" src/Makevars > src/Makevars.tmp && mv src/Makevars.tmp src/Makevars
+  sed -e "s|@zlib_libs@||" src/Makevars > src/Makevars.tmp && mv src/Makevars.tmp src/Makevars
+else
+  sed -e "s|@zlib_cflags@||" src/Makevars > src/Makevars.tmp && mv src/Makevars.tmp src/Makevars
+  sed -e "s|@zlib_libs@|-lz|" src/Makevars > src/Makevars.tmp && mv src/Makevars.tmp src/Makevars
+fi
+
+exit 0

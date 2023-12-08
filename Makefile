@@ -18,7 +18,9 @@ some:
 
 .PHONY: clean
 clean:
-	rm -f data.table_1.11.9.tar.gz
+	$(RM) data.table_1.14.99.tar.gz
+	$(RM) src/*.o
+	$(RM) src/*.so
 
 .PHONY: build
 build:
@@ -26,7 +28,11 @@ build:
 
 .PHONY: install
 install:
-	$(R) CMD INSTALL data.table_1.11.9.tar.gz
+	$(R) CMD INSTALL data.table_1.14.99.tar.gz
+
+.PHONY: uninstall
+uninstall:
+	$(R) CMD REMOVE data.table || true
 
 .PHONY: test
 test:
@@ -34,5 +40,8 @@ test:
 
 .PHONY: check
 check:
-	$(R) CMD check data.table_1.11.9.tar.gz --as-cran --ignore-vignettes --no-stop-on-test-error
+	_R_CHECK_CRAN_INCOMING_REMOTE_=false $(R) CMD check data.table_1.14.99.tar.gz --as-cran --ignore-vignettes --no-stop-on-test-error
 
+.PHONY: revision
+revision:
+	echo "Revision: $(shell git rev-parse HEAD)" >> DESCRIPTION

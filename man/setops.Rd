@@ -12,9 +12,7 @@
 \alias{fsetequal}
 \title{ Set operations for data tables }
 \description{
-  Similar to base's set functions, \code{union}, \code{intersect}, \code{setdiff} and \code{setequal} but for \code{data.table}s. Additional \code{all} argument controls if/how \code{duplicate} rows are returned. \code{bit64::integer64} is also supported.
-
-  Unlike SQL, data.table functions will retain order of rows in result.
+  Similar to base R set functions, \code{union}, \code{intersect}, \code{setdiff} and \code{setequal} but for \code{data.table}s. Additional \code{all} argument controls how duplicated rows are handled. Functions \code{fintersect}, \code{setdiff} (\code{MINUS} or \code{EXCEPT} in SQL) and \code{funion} are meant to provide functionality of corresponding SQL operators. Unlike SQL, data.table functions will retain row order.
 }
 \usage{
 fintersect(x, y, all = FALSE)
@@ -23,22 +21,18 @@ funion(x, y, all = FALSE)
 fsetequal(x, y, all = TRUE)
 }
 \arguments{
-	\item{x,y}{\code{data.table}s.}
+	\item{x, y}{\code{data.table}s.}
 	\item{all}{Logical. Default is \code{FALSE} and removes duplicate rows on the result. When \code{TRUE}, if there are \code{xn} copies of a particular row in \code{x} and \code{yn} copies of the same row in \code{y}, then:
-		\itemize{
-
-			\item{\code{fintersect} will return \code{min(xn, yn)} copies of that row.}
-
-			\item{\code{fsetdiff} will return \code{max(0, xn-yn)} copies of that row.}
-
-			\item{\code{funion} will return \code{xn+yn} copies of that row.}
-			
-			\item{\code{fsetequal} will return \code{FALSE} unless \code{xn == yn}.}
-		}
+	  \itemize{
+	    \item\code{fintersect} will return \code{min(xn, yn)} copies of that row.
+	    \item\code{fsetdiff} will return \code{max(0, xn-yn)} copies of that row.
+	    \item\code{funion} will return \code{xn+yn} copies of that row.
+	    \item\code{fsetequal} will return \code{FALSE} unless \code{xn == yn}.
+	  }
 	}
 }
 \details{
-  Columns of type \code{complex} and \code{list} are not supported except for \code{funion}.
+  \code{bit64::integer64} columns are supported but not \code{complex} and \code{list}, except for \code{funion}.
 }
 \value{
     A data.table in case of \code{fintersect}, \code{funion} and \code{fsetdiff}. Logical \code{TRUE} or \code{FALSE} for \code{fsetequal}.
