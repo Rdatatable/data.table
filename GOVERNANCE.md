@@ -16,7 +16,6 @@ The purpose of the project is to maintain the R data.table package, which is gui
 * Concise syntax (minimal redundancy in code)
 * Stable code base (strong preference for user-friendly back-compatibility with data.table itself and with old versions of R)
 * Comprehensive and accessible documentation and run-time signals (errors, warnings)
-* Clear error and warning messages
 
 To prioritize developer time, we define what is in and out of current scope. Feature requests in issues and pull requests that are out of current scope should be closed immediately, because they are not the current priority. If someone wants to contribute code that is currently out of scope, they first have to make a pull request that changes the scope as defined below.
 
@@ -31,9 +30,10 @@ The current scope of package functionality includes:
 * Reading/writing of data from/to flat (plain text) files like CSV
 
 Functionality that is out of current scope:
-* plotting/graphics (like ggplot2)
-* manipulating out-of-memory data, e.g. data stored on disk or remote SQL DB, (as opposed e.g. to sqldf / dbplyr)
-* machine learning / modeling (like mlr3)
+* Plotting/graphics (like ggplot2)
+* Manipulating out-of-memory data, e.g. data stored on disk or remote SQL DB, (as opposed e.g. to sqldf / dbplyr)
+* Machine learning / modeling (like mlr3)
+* Reading/writing of data from/to binary files like parquet
 
 # Roles 
 
@@ -45,7 +45,7 @@ Functionality that is out of current scope:
 ## Project member
 
 * Definition: some one who has submitted at least one PR with code contributions, that has been merged into master. (spelling fixes in docs do not count)
-* How to obtain this role: any user can become a member by submitting a PR, then having it reviewed and merged into master. Contributors who have written issues should be encouraged to submit their first PR to become a project member.
+* How to obtain this role: any user/contributor can become a member by submitting a PR with code contributions, then having it reviewed and merged into master. Contributors who have written issues should be encouraged to submit their first PR to become a project member. Contributors can look at https://github.com/Rdatatable/data.table/labels/beginner-task for easy issues to work on.
 * How this role is recognized: Members are credited via role="ctb" in DESCRIPTION (so they appear in Author list on CRAN), and they are added to https://github.com/orgs/Rdatatable/teams/project-members so they can create new branches in the Rdatatable/data.table GitHub repo. They also appear on https://github.com/Rdatatable/data.table/graphs/contributors (Contributions to master, excluding merge commits).
 
 ## Reviewer
@@ -124,3 +124,8 @@ data.table Version line in DESCRIPTION typically has the following meanings
 * z is even for CRAN releases, odd for GitHub development.
 * z=99 for master branch with new features (for example 1.14.99 or 1.15.99), which eventually becomes a regular CRAN release, with incremented y and z=0 (for example 1.15.0 or 1.16.0).
 * patch/hotfix development should occur on GitHub as z=odd (1.15.1) and release to CRAN as z=even (1.15.2).
+
+# Governance history
+
+Nov-Dec 2023: initial version drafted by Toby Dylan Hocking and
+reviewed by Tyson Barrett, Jan Gorecki, Michael Chirico.
