@@ -12,6 +12,7 @@
 
 ^\.ci$
 ^\.dev$
+^\.devcontainer$
 ^\.graphics$
 ^\.github$
 
@@ -39,3 +40,4 @@
 ^pkgdown$
 ^lib$
 ^library$
+^devwd$

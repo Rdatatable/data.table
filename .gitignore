@@ -41,6 +41,8 @@ vignettes/plots/figures
 .Renviron
 lib
 library
+devwd
+dev.R
 *.csv
 *.csvy
 *.RDS

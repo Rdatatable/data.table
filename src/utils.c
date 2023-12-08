@@ -379,6 +379,13 @@ SEXP dt_zlib_version(void) {
 #endif
   return ScalarString(mkChar(out));
 }
+SEXP dt_has_zlib(void) {
+#ifndef NOZLIB
+  return ScalarLogical(1);
+#else
+  return ScalarLogical(0);
+#endif
+}
 
 SEXP startsWithAny(const SEXP x, const SEXP y, SEXP start) {
   // for is_url in fread.R added in #5097
