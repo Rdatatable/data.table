@@ -583,11 +583,12 @@ ls -1 *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | TZ='UTC' para
 #  Release to CRAN
 ###############################################
 
-Bump version to even release number in 3 places :
-  1) DESCRIPTION
-  2) NEWS; add ?closed=1 to the milestone link, don't add date yet as that published-on-CRAN date isn't yet known
-  3) dllVersion() at the end of init.c
-DO NOT push to GitHub. Prevents even a slim possibility of user getting premature version. Even release numbers must have been obtained from CRAN and only CRAN. There were too many support problems in the past before this procedure was brought in.
+# Bump version to even release number in 3 places :
+#  1) DESCRIPTION
+#  2) NEWS; add ?closed=1 to the milestone link, don't add date yet as that published-on-CRAN date isn't yet known
+#  3) dllVersion() at the end of init.c
+# DO NOT push to GitHub's master branch. Prevents even a slim possibility of user getting premature version. 
+# Even release numbers must have been obtained from CRAN and only CRAN. There were too many support problems in the past before this procedure was brought in.
 du -k inst/tests                # 1.5MB before
 bzip2 inst/tests/*.Rraw         # compress *.Rraw just for release to CRAN; do not commit compressed *.Rraw to git
 du -k inst/tests                # 0.75MB after
@@ -598,22 +599,22 @@ Rdevel CMD check data.table_1.16.0.tar.gz --as-cran  # use latest Rdevel as it m
 #
 bunzip2 inst/tests/*.Rraw.bz2  # decompress *.Rraw again so as not to commit compressed *.Rraw to git
 #
-Resubmit to winbuilder (R-release, R-devel and R-oldrelease)
-Submit to CRAN. Message template :
+# Resubmit to winbuilder (R-release, R-devel and R-oldrelease)
+# Submit to CRAN. Message template :
 ------------------------------------------------------------
 Hello,
 1,016 CRAN revdeps checked. None are impacted.
 Many thanks!
 Best, Matt
 ------------------------------------------------------------
-DO NOT commit or push to GitHub. Leave 4 files (.dev/CRAN_Release.cmd, DESCRIPTION, NEWS and init.c) edited and not committed. Include these in a single and final bump commit below.
-DO NOT even use a PR. Because PRs build binaries and we don't want any binary versions of even release numbers available from anywhere other than CRAN.
-Leave milestone open with a 'release checks' issue open. Keep updating status there.
-** If on EC2, shutdown instance. Otherwise get charged for potentially many days/weeks idle time with no alerts **
-If it's evening, SLEEP.
-It can take a few days for CRAN's checks to run. If any issues arise, backport locally. Resubmit the same even version to CRAN.
-CRAN's first check is automatic and usually received within an hour. WAIT FOR THAT EMAIL.
-When CRAN's email contains "Pretest results OK pending a manual inspection" (or similar), or if not and it is known why not and ok, then bump dev.
+# DO NOT commit or push to GitHub. Leave 4 files (.dev/CRAN_Release.cmd, DESCRIPTION, NEWS and init.c) edited and not committed. Include these in a single and final bump commit below.
+# DO NOT even use a PR. Because PRs build binaries and we don't want any binary versions of even release numbers available from anywhere other than CRAN.
+# Leave milestone open with a 'release checks' issue open. Keep updating status there.
+# ** If on EC2, shutdown instance. Otherwise get charged for potentially many days/weeks idle time with no alerts **
+# If it's evening, SLEEP.
+# It can take a few days for CRAN's checks to run. If any issues arise, backport locally. Resubmit the same even version to CRAN.
+# CRAN's first check is automatic and usually received within an hour. WAIT FOR THAT EMAIL.
+# When CRAN's email contains "Pretest results OK pending a manual inspection" (or similar), or if not and it is known why not and ok, then bump dev.
 
 ###### Bump dev for NON-PATCH RELEASE
 0. Close milestone to prevent new issues being tagged with it. The final 'release checks' issue can be left open in a closed milestone.
