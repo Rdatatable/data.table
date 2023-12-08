@@ -370,7 +370,7 @@ SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg) {
 #ifndef NOZLIB
 #include <zlib.h>
 #endif
-SEXP dt_zlib_version() {
+SEXP dt_zlib_version(void) {
   char out[71];
 #ifndef NOZLIB
   snprintf(out, 70, "zlibVersion()==%s ZLIB_VERSION==%s", zlibVersion(), ZLIB_VERSION);
@@ -378,6 +378,13 @@ SEXP dt_zlib_version() {
   snprintf(out, 70, _("zlib header files were not found when data.table was compiled"));
 #endif
   return ScalarString(mkChar(out));
+}
+SEXP dt_has_zlib(void) {
+#ifndef NOZLIB
+  return ScalarLogical(1);
+#else
+  return ScalarLogical(0);
+#endif
 }
 
 SEXP startsWithAny(const SEXP x, const SEXP y, SEXP start) {
