@@ -350,7 +350,7 @@ Rdevel-strict-[gcc|clang] CMD check data.table_1.14.99.tar.gz
 Rdevel-strict-[gcc|clang]
 isTRUE(.Machine$sizeof.longdouble==0)  # check noLD is being tested
 options(repos = "http://cloud.r-project.org")
-install.packages(c("bit64", "bit", "curl", "R.utils", "xts","nanotime", "zoo", "yaml", "knitr", "rmarkdown", "markdown"),
+install.packages(c("bit64", "bit", "R.utils", "xts", "zoo", "yaml", "knitr", "markdown"),
                  Ncpus=4)
 # Issue #5491 showed that CRAN is running UBSAN on .Rd examples which found an error so we now run full R CMD check
 q("no")
@@ -372,7 +372,7 @@ print(Sys.time()); started.at<-proc.time(); try(test.data.table()); print(Sys.ti
 ## apt-get update
 ## apt-get install libc6:i386 libstdc++6:i386 gcc-multilib g++-multilib gfortran-multilib libbz2-dev:i386 liblzma-dev:i386 libpcre3-dev:i386 libcurl3-dev:i386 libstdc++-7-dev:i386
 ## sudo apt-get purge libcurl4-openssl-dev    # cannot coexist, it seems
-## sudo apt-get install libcurl4-openssl-dev:i386
+## sudo apt-get install libcurl4-openssl-dev:i386 ## may not be needed anymore as we dropped dependency on curl, try and update when reproducing
 ## cd ~/build/32bit/R-devel
 ## ./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --without-readline --without-x CC="gcc -m32" CXX="g++ -m32" F77="gfortran -m32" FC=${F77} OBJC=${CC} LDFLAGS="-L/usr/local/lib" LIBnn=lib LIBS="-lpthread" CFLAGS="-O0 -g -Wall -pedantic"
 ##

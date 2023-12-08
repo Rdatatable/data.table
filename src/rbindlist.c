@@ -282,7 +282,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
     for (int i=0; i<LENGTH(l); ++i) {
       SEXP li = VECTOR_ELT(l, i);
       if (!length(li)) continue;
-      int w = usenames ? colMap[i*ncol + j] : j;  // colMap tells us which item to fetch for each of the final result columns, so we can stack column-by-column
+      int w = usenames ? colMap[i*ncol + j] : (j<length(li) ? j : -1);  // colMap tells us which item to fetch for each of the final result columns, so we can stack column-by-column // check if j exceeds length for fill=TRUE and usenames=FALSE #5444
       if (w==-1) continue;  // column j of final result has no input from this item (fill must be true)
       if (!foundName) {
         SEXP cn=PROTECT(getAttrib(li, R_NamesSymbol));
@@ -333,9 +333,10 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
       // before the savetl_init() because we have no hook to clean up tl if coerceVector fails.
       if (coercedForFactor==NULL) { coercedForFactor=PROTECT(allocVector(VECSXP, LENGTH(l))); nprotect++; }
       for (int i=0; i<LENGTH(l); ++i) {
-        int w = usenames ? colMap[i*ncol + j] : j;
+        SEXP li = VECTOR_ELT(l, i);
+        int w = usenames ? colMap[i*ncol + j] : (j<length(li) ? j : -1); // check if j exceeds length for fill=TRUE and usenames=FALSE #5444
         if (w==-1) continue;
-        SEXP thisCol = VECTOR_ELT(VECTOR_ELT(l, i), w);
+        SEXP thisCol = VECTOR_ELT(li, w);
         if (!isFactor(thisCol) && !isString(thisCol)) {
           SET_VECTOR_ELT(coercedForFactor, i, coerceVector(thisCol, STRSXP));
         }
@@ -366,9 +367,10 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
           SET_TRUELENGTH(s,-k-1);
         }
         for (int i=0; i<LENGTH(l); ++i) {
-          int w = usenames ? colMap[i*ncol + j] : j;
+          SEXP li = VECTOR_ELT(l, i);
+          int w = usenames ? colMap[i*ncol + j] : (j<length(li) ? j : -1); // check if j exceeds length for fill=TRUE and usenames=FALSE #5444
           if (w==-1) continue;
-          SEXP thisCol = VECTOR_ELT(VECTOR_ELT(l, i), w);
+          SEXP thisCol = VECTOR_ELT(li, w);
           if (isOrdered(thisCol)) {
             SEXP levels = getAttrib(thisCol, R_LevelsSymbol);
             const SEXP *levelsD = STRING_PTR(levels);
@@ -403,7 +405,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
         const int thisnrow = eachMax[i];
         SEXP li = VECTOR_ELT(l, i);
         if (!length(li)) continue;  // NULL items in the list() of DT/DF; not if thisnrow==0 because we need to retain (unused) factor levels (#3508)
-        int w = usenames ? colMap[i*ncol + j] : j;
+        int w = usenames ? colMap[i*ncol + j] : (j<length(li) ? j : -1); // check if j exceeds length for fill=TRUE and usenames=FALSE #5444
         if (w==-1) {
           writeNA(target, ansloc, thisnrow, false);
         } else {
@@ -508,7 +510,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
         const int thisnrow = eachMax[i];
         if (thisnrow==0) continue;
         SEXP li = VECTOR_ELT(l, i);
-        int w = usenames ? colMap[i*ncol + j] : j;
+        int w = usenames ? colMap[i*ncol + j] : (j<length(li) ? j : -1); // check if j exceeds length for fill=TRUE and usenames=FALSE #5444
         SEXP thisCol;
         if (w==-1 || !length(thisCol=VECTOR_ELT(li, w))) {  // !length for zeroCol warning above; #1871
           writeNA(target, ansloc, thisnrow, false);  // writeNA is integer64 aware and writes INT64_MIN
