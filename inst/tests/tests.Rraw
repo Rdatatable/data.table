@@ -18108,3 +18108,6 @@ test(2238.6, "a" %notin% integer(), TRUE)
 test(2238.7, "a" %notin% NULL, TRUE)
 test(2238.8, NA %notin% 1:5, TRUE)
 test(2238.9, NA %notin% c(1:5, NA), FALSE)
+
+# shift actionable error on matrix input #5287
+test(2239.1, shift(matrix(1:10, ncol = 1)), error="consider wrapping")
