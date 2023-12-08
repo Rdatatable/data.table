@@ -22,6 +22,7 @@ knitr::opts_chunk$set(
   out.width = '100%',
   dpi = 144
 )
+.old.th = setDTthreads(1)
 ```
 
 This vignette will explain the most common ways to use the `.SD` variable in your `data.table` analyses. It is an adaptation of [this answer](https://stackoverflow.com/a/47406952/3576984) given on StackOverflow.
@@ -252,3 +253,7 @@ abline(v = overall_coef, lty = 2L, col = 'red')
 While there is indeed a fair amount of heterogeneity, there's a distinct concentration around the observed overall value.
 
 The above is just a short introduction of the power of `.SD` in facilitating beautiful, efficient code in `data.table`!
+
+```{r, echo=FALSE}
+setDTthreads(.old.th)
+```

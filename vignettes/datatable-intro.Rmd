@@ -18,6 +18,7 @@ knitr::opts_chunk$set(
     cache = FALSE,
  collapse = TRUE
 )
+.old.th = setDTthreads(1)
 ```
 
 This vignette introduces the `data.table` syntax, its general form, how to *subset* rows, *select and compute* on columns, and perform aggregations *by group*. Familiarity with `data.frame` data structure from base R is useful, but not essential to follow this vignette.
@@ -692,3 +693,6 @@ We will see how to *add/update/delete* columns *by reference* and how to combine
 
 ***
 
+```{r, echo=FALSE}
+setDTthreads(.old.th)
+```

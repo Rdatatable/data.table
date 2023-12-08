@@ -183,4 +183,4 @@ S3method(unique, IDate)
 S3method(unique, ITime)
 S3method('[<-', IDate)
 S3method(edit, data.table)
-
+S3method(as.IDate, IDate)

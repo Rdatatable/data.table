@@ -26,6 +26,7 @@ knitr::opts_chunk$set(
      tidy = FALSE,
     cache = FALSE,
  collapse = TRUE)
+.old.th = setDTthreads(1)
 ```
 
 The first section, Beginner FAQs, is intended to be read in order, from start to finish.  It's just written in a FAQ style to be digested more easily. It isn't really the most frequently asked questions. A better measure for that is looking on Stack Overflow.
@@ -602,3 +603,6 @@ Sure. You're more likely to get a faster answer from the Issues page or Stack Ov
 
 Please see [this answer](https://stackoverflow.com/a/10529888/403310).
 
+```{r, echo=FALSE}
+setDTthreads(.old.th)
+```
