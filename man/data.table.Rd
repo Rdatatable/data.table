@@ -5,7 +5,6 @@
 \alias{Ops.data.table}
 \alias{is.na.data.table}
 \alias{[.data.table}
-\alias{DT}
 \alias{.}
 \alias{.(}
 \alias{.()}
@@ -434,13 +433,6 @@ dev.off()
 
 # using rleid, get max(y) and min of all cols in .SDcols for each consecutive run of 'v'
 DT[, c(.(y=max(y)), lapply(.SD, min)), by=rleid(v), .SDcols=v:b]
-
-# functional query DT(...)
-\dontshow{ #dontrun to pass R CMD check prior to R 4.1.0 when |> was added
-           # an if getRVersion()>"4.1.0" still has its code parsed }
-\dontrun{
-mtcars |> DT(mpg>20, .(mean_hp=mean(hp)), by=cyl)
-}
 
 # Support guide and links:
 # https://github.com/Rdatatable/data.table/wiki/Support
