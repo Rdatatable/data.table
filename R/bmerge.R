@@ -43,74 +43,76 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     xc = xcols[a]
     xclass = getClass(x[[xc]])
     iclass = getClass(i[[ic]])
-    if (!xclass %chin% supported) stop("x.", names(x)[xc]," is type ", xclass, " which is not supported by data.table join")
-    if (!iclass %chin% supported) stop("i.", names(i)[ic]," is type ", iclass, " which is not supported by data.table join")
+    xname = paste0("x.", names(x)[xc])
+    iname = paste0("i.", names(i)[ic])
+    if (!xclass %chin% supported) stopf("%s is type %s which is not supported by data.table join", xname, xclass)
+    if (!iclass %chin% supported) stopf("%s is type %s which is not supported by data.table join", iname, iclass)
     if (xclass=="factor" || iclass=="factor") {
       if (roll!=0.0 && a==length(icols))
-        stop("Attempting roll join on factor column when joining x.",names(x)[xc]," to i.",names(i)[ic],". Only integer, double or character columns may be roll joined.")
+        stopf("Attempting roll join on factor column when joining %s to %s. Only integer, double or character columns may be roll joined.", xname, iname)
       if (xclass=="factor" && iclass=="factor") {
-        if (verbose) cat("Matching i.",names(i)[ic]," factor levels to x.",names(x)[xc]," factor levels.\n",sep="")
+        if (verbose) catf("Matching %s factor levels to %s factor levels.\n", iname, xname)
         set(i, j=ic, value=chmatch(levels(i[[ic]]), levels(x[[xc]]), nomatch=0L)[i[[ic]]])  # nomatch=0L otherwise a level that is missing would match to NA values
         next
       } else {
         if (xclass=="character") {
-          if (verbose) cat("Coercing factor column i.",names(i)[ic]," to type character to match type of x.",names(x)[xc],".\n",sep="")
+          if (verbose) catf("Coercing factor column %s to type character to match type of %s.\n", iname, xname)
           set(i, j=ic, value=val<-as.character(i[[ic]]))
           set(callersi, j=ic, value=val)  # factor in i joining to character in x will return character and not keep x's factor; e.g. for antaresRead #3581
           next
         } else if (iclass=="character") {
-          if (verbose) cat("Matching character column i.",names(i)[ic]," to factor levels in x.",names(x)[xc],".\n",sep="")
+          if (verbose) catf("Matching character column %s to factor levels in %s.\n", iname, xname)
           newvalue = chmatch(i[[ic]], levels(x[[xc]]), nomatch=0L)
           if (anyNA(i[[ic]])) newvalue[is.na(i[[ic]])] = NA_integer_  # NA_character_ should match to NA in factor, #3809
           set(i, j=ic, value=newvalue)
           next
         }
       }
-      stop("Incompatible join types: x.", names(x)[xc], " (",xclass,") and i.", names(i)[ic], " (",iclass,"). Factor columns must join to factor or character columns.")
+      stopf("Incompatible join types: %s (%s) and %s (%s). Factor columns must join to factor or character columns.", xname, xclass, iname, iclass)
     }
     if (xclass == iclass) {
-      if (verbose) cat("i.",names(i)[ic]," has same type (",xclass,") as x.",names(x)[xc],". No coercion needed.\n", sep="")
+      if (verbose) catf("%s has same type (%s) as %s. No coercion needed.\n", iname, xclass, xname)
       next
     }
     if (xclass=="character" || iclass=="character" ||
         xclass=="logical" || iclass=="logical" ||
         xclass=="factor" || iclass=="factor") {
       if (anyNA(i[[ic]]) && allNA(i[[ic]])) {
-        if (verbose) cat("Coercing all-NA i.",names(i)[ic]," (",iclass,") to type ",xclass," to match type of x.",names(x)[xc],".\n",sep="")
+        if (verbose) catf("Coercing all-NA %s (%s) to type %s to match type of %s.\n", iname, iclass, xclass, xname)
         set(i, j=ic, value=match.fun(paste0("as.", xclass))(i[[ic]]))
         next
       }
       else if (anyNA(x[[xc]]) && allNA(x[[xc]])) {
-        if (verbose) cat("Coercing all-NA x.",names(x)[xc]," (",xclass,") to type ",iclass," to match type of i.",names(i)[ic],".\n",sep="")
+        if (verbose) catf("Coercing all-NA %s (%s) to type %s to match type of %s.\n", xname, xclass, iclass, iname)
         set(x, j=xc, value=match.fun(paste0("as.", iclass))(x[[xc]]))
         next
       }
-      stop("Incompatible join types: x.", names(x)[xc], " (",xclass,") and i.", names(i)[ic], " (",iclass,")")
+      stopf("Incompatible join types: %s (%s) and %s (%s)", xname, xclass, iname, iclass)
     }
     if (xclass=="integer64" || iclass=="integer64") {
-      nm = paste0(c("i.","x."), c(names(i)[ic], names(x)[xc]))
+      nm = c(iname, xname)
       if (xclass=="integer64") { w=i; wc=ic; wclass=iclass; } else { w=x; wc=xc; wclass=xclass; nm=rev(nm) }  # w is which to coerce
       if (wclass=="integer" || (wclass=="double" && !isReallyReal(w[[wc]]))) {
-        if (verbose) cat("Coercing ",wclass," column ", nm[1L], if(wclass=="double")" (which contains no fractions)"," to type integer64 to match type of ", nm[2L],".\n",sep="")
+        if (verbose) catf("Coercing %s column %s%s to type integer64 to match type of %s.\n", wclass, nm[1L], if (wclass=="double") " (which contains no fractions)" else "", nm[2L])
         set(w, j=wc, value=bit64::as.integer64(w[[wc]]))
-      } else stop("Incompatible join types: ", nm[2L], " is type integer64 but ", nm[1L], " is type double and contains fractions")
+      } else stopf("Incompatible join types: %s is type integer64 but %s is type double and contains fractions", nm[2L], nm[1L])
     } else {
       # just integer and double left
       if (iclass=="double") {
         if (!isReallyReal(i[[ic]])) {
           # common case of ad hoc user-typed integers missing L postfix joining to correct integer keys
           # we've always coerced to int and returned int, for convenience.
-          if (verbose) cat("Coercing double column i.",names(i)[ic]," (which contains no fractions) to type integer to match type of x.",names(x)[xc],".\n",sep="")
+          if (verbose) catf("Coercing double column %s (which contains no fractions) to type integer to match type of %s", iname, xname)
           val = as.integer(i[[ic]])
           if (!is.null(attributes(i[[ic]]))) attributes(val) = attributes(i[[ic]])  # to retain Date for example; 3679
           set(i, j=ic, value=val)
           set(callersi, j=ic, value=val)       # change the shallow copy of i up in [.data.table to reflect in the result, too.
         } else {
-          if (verbose) cat("Coercing integer column x.",names(x)[xc]," to type double to match type of i.",names(i)[ic]," which contains fractions.\n",sep="")
+          if (verbose) catf("Coercing integer column %s to type double to match type of %s which contains fractions.\n", xname, iname)
           set(x, j=xc, value=as.double(x[[xc]]))
         }
       } else {
-        if (verbose) cat("Coercing integer column i.",names(i)[ic]," to type double for join to match type of x.",names(x)[xc],".\n",sep="")
+        if (verbose) catf("Coercing integer column %s to type double for join to match type of %s.\n", iname, xname)
         set(i, j=ic, value=as.double(i[[ic]]))
       }
     }
@@ -126,17 +128,17 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     # equi join. use existing key (#1825) or existing secondary index (#1439)
     if (identical(xcols, head(chmatch(key(x), names(x)), length(xcols)))) {
       xo = integer(0L)
-      if (verbose) cat("on= matches existing key, using key\n")
+      if (verbose) catf("on= matches existing key, using key\n")
     } else {
       xo = NULL
       if (isTRUE(getOption("datatable.use.index"))) {
         xo = getindex(x, names(x)[xcols])
-        if (verbose && !is.null(xo)) cat("on= matches existing index, using index\n")
+        if (verbose && !is.null(xo)) catf("on= matches existing index, using index\n")
       }
       if (is.null(xo)) {
         if (verbose) {last.started.at=proc.time(); flush.console()}
         xo = forderv(x, by = xcols)
-        if (verbose) {cat("Calculated ad hoc index in",timetaken(last.started.at),"\n"); flush.console()}
+        if (verbose) {catf("Calculated ad hoc index in %s\n", timetaken(last.started.at)); flush.console()}
         # TODO: use setindex() instead, so it's cached for future reuse
       }
     }
@@ -147,9 +149,9 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     # non-equi operators present.. investigate groups..
     nqgrp = integer(0L)
     nqmaxgrp = 1L
-    if (verbose) cat("Non-equi join operators detected ... \n")
-    if (roll != FALSE) stop("roll is not implemented for non-equi joins yet.")
-    if (verbose) {last.started.at=proc.time();cat("  forder took ... ");flush.console()}
+    if (verbose) catf("Non-equi join operators detected ... \n")
+    if (roll != FALSE) stopf("roll is not implemented for non-equi joins yet.")
+    if (verbose) {last.started.at=proc.time();catf("  forder took ... ");flush.console()}
     # TODO: could check/reuse secondary indices, but we need 'starts' attribute as well!
     xo = forderv(x, xcols, retGrp=TRUE)
     if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
@@ -158,28 +160,28 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     if (length(resetcols)) {
       # TODO: can we get around having to reorder twice here?
       # or at least reuse previous order?
-      if (verbose) {last.started.at=proc.time();cat("  Generating group lengths ... ");flush.console()}
+      if (verbose) {last.started.at=proc.time();catf("  Generating group lengths ... ");flush.console()}
       resetlen = attr(forderv(x, resetcols, retGrp=TRUE), 'starts', exact=TRUE)
       resetlen = .Call(Cuniqlengths, resetlen, nrow(x))
-      if (verbose) {cat("done in",timetaken(last.started.at),"\n"); flush.console()}
+      if (verbose) {catf("done in %s\n",timetaken(last.started.at)); flush.console()}
     } else resetlen = integer(0L)
-    if (verbose) {last.started.at=proc.time();cat("  Generating non-equi group ids ... ");flush.console()}
+    if (verbose) {last.started.at=proc.time();catf("  Generating non-equi group ids ... ");flush.console()}
     nqgrp = .Call(Cnestedid, x, xcols[non_equi:length(xcols)], xo, xg, resetlen, mult)
-    if (verbose) {cat("done in",timetaken(last.started.at),"\n"); flush.console()}
+    if (verbose) {catf("done in %s\n",timetaken(last.started.at)); flush.console()}
     if (length(nqgrp)) nqmaxgrp = max(nqgrp) # fix for #1986, when 'x' is 0-row table max(.) returns -Inf.
     if (nqmaxgrp > 1L) { # got some non-equi join work to do
-      if ("_nqgrp_" %in% names(x)) stop("Column name '_nqgrp_' is reserved for non-equi joins.")
-      if (verbose) {last.started.at=proc.time();cat("  Recomputing forder with non-equi ids ... ");flush.console()}
+      if ("_nqgrp_" %in% names(x)) stopf("Column name '_nqgrp_' is reserved for non-equi joins.")
+      if (verbose) {last.started.at=proc.time();catf("  Recomputing forder with non-equi ids ... ");flush.console()}
       set(nqx<-shallow(x), j="_nqgrp_", value=nqgrp)
       xo = forderv(nqx, c(ncol(nqx), xcols))
-      if (verbose) {cat("done in",timetaken(last.started.at),"\n"); flush.console()}
+      if (verbose) {catf("done in %s\n",timetaken(last.started.at)); flush.console()}
     } else nqgrp = integer(0L)
-    if (verbose) cat("  Found", nqmaxgrp, "non-equi group(s) ...\n")
+    if (verbose) catf("  Found %d non-equi group(s) ...\n", nqmaxgrp)
   }
 
-  if (verbose) {last.started.at=proc.time();cat("Starting bmerge ...\n");flush.console()}
+  if (verbose) {last.started.at=proc.time();catf("Starting bmerge ...\n");flush.console()}
   ans = .Call(Cbmerge, i, x, as.integer(icols), as.integer(xcols), io, xo, roll, rollends, nomatch, mult, ops, nqgrp, nqmaxgrp)
-  if (verbose) {cat("bmerge done in",timetaken(last.started.at),"\n"); flush.console()}
+  if (verbose) {catf("bmerge done in %s\n",timetaken(last.started.at)); flush.console()}
   # TO DO: xo could be moved inside Cbmerge
 
   ans$xo = xo  # for further use by [.data.table

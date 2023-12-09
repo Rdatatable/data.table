@@ -9,16 +9,23 @@
 \title{ Create key on a data.table }
 \description{
 \code{setkey} sorts a \code{data.table} and marks it as sorted with an
-attribute \code{sorted}. The sorted columns are the key. The key can be any
-number of columns. The columns are always sorted in \emph{ascending} order. The table
-is changed \emph{by reference} and \code{setkey} is very memory efficient.
+attribute \code{"sorted"}. The sorted columns are the key. The key can be any
+number of columns. The data is always sorted in \emph{ascending} order with \code{NA}s
+(if any) always first. The table is changed \emph{by reference} and there is
+no memory used for the key (other than marking which columns the data is sorted by).
 
-There are three reasons \code{setkey} is desirable: i) binary search and joins are faster
-when they detect they can use an existing key, ii) grouping by a leading subset of the key
-columns is faster because the groups are already gathered contiguously in RAM, iii)
-simpler shorter syntax; e.g. \code{DT["id",]} finds the group "id" in the first column
-of DT's key using binary search. It may be helpful to think of a key as
-super-charged rownames: multi-column and multi-type rownames.
+There are three reasons \code{setkey} is desirable:
+\itemize{
+  \item binary search and joins are faster when they detect they can use an existing key
+  \item grouping by a leading subset of the key columns is faster because the groups are already gathered contiguously in RAM
+  \item simpler shorter syntax; e.g. \code{DT["id",]} finds the group "id" in the first column of \code{DT}'s key using binary search. It may be helpful to think of a key as super-charged rownames: multi-column and multi-type.
+}
+
+\code{NA}s are always first because:
+\itemize{
+  \item \code{NA} is internally \code{INT_MIN} (a large negative number) in R. Keys and indexes are always in increasing order so if \code{NA}s are first, no special treatment or branch is needed in many \code{data.table} internals involving binary search. It is not optional to place \code{NA}s last for speed, simplicity and rubustness of internals at C level.
+  \item if any \code{NA}s are present then we believe it is better to display them up front (rather than hiding them at the end) to reduce the risk of not realizing \code{NA}s are present.
+}
 
 In \code{data.table} parlance, all \code{set*} functions change their input
 \emph{by reference}. That is, no copy is made at all other than for temporary

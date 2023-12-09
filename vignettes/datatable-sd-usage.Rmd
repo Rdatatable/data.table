@@ -2,12 +2,15 @@
 title: "Using .SD for Data Analysis"
 date: "`r Sys.Date()`"
 output:
-  rmarkdown::html_vignette:
-    toc: true
-    number_sections: true
+  markdown::html_format:
+    options:
+      toc: true
+      number_sections: true
+    meta:
+      css: [default, css/toc.css]
 vignette: >
   %\VignetteIndexEntry{Using .SD for Data Analysis}
-  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEngine{knitr::knitr}
   \usepackage[utf8]{inputenc}
 ---
 
@@ -22,6 +25,7 @@ knitr::opts_chunk$set(
   out.width = '100%',
   dpi = 144
 )
+.old.th = setDTthreads(1)
 ```
 
 This vignette will explain the most common ways to use the `.SD` variable in your `data.table` analyses. It is an adaptation of [this answer](https://stackoverflow.com/a/47406952/3576984) given on StackOverflow.
@@ -34,7 +38,7 @@ The simpler usage of `.SD` is for column subsetting (i.e., when `.SDcols` is spe
 
 ## Loading and Previewing Lahman Data
 
-To give this a more real-world feel, rather than making up data, let's load some data sets about baseball from the [Lahman database](http://www.seanlahman.com/baseball-archive/statistics/). In typical R usage, we'd simply load these data sets from the `Lahman` R package; in this vignette, we've pre-downloaded them directly from the package's GitHub page instead.
+To give this a more real-world feel, rather than making up data, let's load some data sets about baseball from the [Lahman database](https://github.com/cdalzell/Lahman). In typical R usage, we'd simply load these data sets from the `Lahman` R package; in this vignette, we've pre-downloaded them directly from the package's GitHub page instead.
 
 ```{r download_lahman}
 load('Teams.RData')
@@ -46,7 +50,7 @@ setDT(Pitching)
 Pitching
 ```
 
-Readers up on baseball lingo should find the tables' contents familiar; `Teams` records some statistics for a given team in a given year, while `Pitching` records statistics for a given pitcher in a given year. Please do check out the [documentation](http://www.seanlahman.com/files/database/readme2017.txt) and explore the data yourself a bit before proceeding to familiarize yourself with their structure.
+Readers up on baseball lingo should find the tables' contents familiar; `Teams` records some statistics for a given team in a given year, while `Pitching` records statistics for a given pitcher in a given year. Please do check out the [documentation](https://github.com/cdalzell/Lahman) and explore the data yourself a bit before proceeding to familiarize yourself with their structure.
 
 # `.SD` on Ungrouped Data
 
@@ -143,7 +147,7 @@ Varying model specification is a core feature of robust statistical analysis. Le
 
 Here's a short script leveraging the power of `.SD` which explores this question:
 
-```{r sd_for_lm, cache = FALSE}
+```{r sd_for_lm, cache = FALSE, fig.cap="Fit OLS coefficient on W, various specifications, depicted as bars with distinct colors."}
 # this generates a list of the 2^k possible extra variables
 #   for models of the form ERA ~ G + (...)
 extra_var = c('yearID', 'teamID', 'G', 'L')
@@ -199,9 +203,8 @@ Note that the `x[y]` syntax returns `nrow(y)` values (i.e., it's a right join), 
 
 Often, we'd like to perform some operation on our data _at the group level_. When we specify `by =` (or `keyby = `), the mental model for what happens when `data.table` processes `j` is to think of your `data.table` as being split into many component sub-`data.table`s, each of which corresponds to a single value of your `by` variable(s):
 
-```{r grouping_png, fig.cap = "Grouping, Illustrated", echo = FALSE}
-knitr::include_graphics('plots/grouping_illustration.png')
-```
+![Grouping, Illustrated](plots/grouping_illustration.png)
+<!-- 'A visual depiction of how grouping works. On the left is a grid. The first column is titled "ID COLUMN" with values the capital letters A through G, and the rest of the data is unlabelled, but is in a darker color and simply has "Data" written to indicate that's arbitrary. A right arrow shows how this data is split into groups. Each capital letter A through G has a grid on the right-hand side; the grid on the left has been subdivided to create that on the right.' -->
 
 In the case of grouping, `.SD` is multiple in nature -- it refers to _each_ of these sub-`data.table`s, _one-at-a-time_ (slightly more accurately, the scope of `.SD` is a single sub-`data.table`). This allows us to concisely express an operation that we'd like to perform on _each sub-`data.table`_ before the re-assembled result is returned to us.
 
@@ -237,7 +240,7 @@ _NB_: `.SD[1L]` is currently optimized by [_`GForce`_](https://Rdatatable.gitlab
 
 Returning to the inquiry above regarding the relationship between `ERA` and `W`, suppose we expect this relationship to differ by team (i.e., there's a different slope for each team). We can easily re-run this regression to explore the heterogeneity in this relationship as follows (noting that the standard errors from this approach are generally incorrect -- the specification `ERA ~ W*teamID` will be better -- this approach is easier to read and the _coefficients_ are OK):
 
-```{r group_lm, results = 'hide'}
+```{r group_lm, results = 'hide', fig.cap="A histogram depicting the distribution of fitted coefficients. It is vaguely bell-shaped and concentrated around -.2"}
 # Overall coefficient for comparison
 overall_coef = Pitching[ , coef(lm(ERA ~ W))['W']]
 # use the .N > 20 filter to exclude teams with few observations
@@ -252,3 +255,7 @@ abline(v = overall_coef, lty = 2L, col = 'red')
 While there is indeed a fair amount of heterogeneity, there's a distinct concentration around the observed overall value.
 
 The above is just a short introduction of the power of `.SD` in facilitating beautiful, efficient code in `data.table`!
+
+```{r, echo=FALSE}
+setDTthreads(.old.th)
+```

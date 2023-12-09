@@ -1,10 +1,6 @@
 # mergelist join tester vs SQLite, based on v1.9.8 non-equi join tester
-
-if (!all(
-  packageVersion("RSQLite") > "1.0.0", ## we use window function which is not available in RSQLite v1.0.0 (sqlite 3.8.6)
-  packageVersion("RSQLite") < "1.1.0"  ## we don't want upstream RSQLite because it is not lite anymore
-))
-  stop('Use RSQLite which is up-to-date and lightweight:\ninstall.packages(c("DBI","RSQLite"), repos="https://jangorecki.gitlab.io/rsqlite")')
+library(data.table)
+stopifnot(requireNamespace("RSQLite", quietly=TRUE))
 
 # funs ----
 
@@ -85,8 +81,8 @@ join.sql.equal = function(l, on, how="inner", mult="all", allow.cartesian=TRUE, 
   # preparing sql environment
   conn = if (new.conn <- missing(.conn)) DBI::dbConnect(RSQLite::SQLite()) else .conn
   if (.drop) {
-    try(DBI::dbSendQuery(conn, "DROP TABLE lhs;"), silent=TRUE)
-    try(DBI::dbSendQuery(conn, "DROP TABLE rhs;"), silent=TRUE)
+    try(suppressWarnings(DBI::dbSendQuery(conn, "DROP TABLE lhs;")), silent=TRUE)
+    try(suppressWarnings(DBI::dbSendQuery(conn, "DROP TABLE rhs;")), silent=TRUE)
     DBI::dbWriteTable(conn, name="lhs", value=lhs)
     DBI::dbWriteTable(conn, name="rhs", value=rhs)
   }
@@ -129,8 +125,8 @@ join.sql.equal = function(l, on, how="inner", mult="all", allow.cartesian=TRUE, 
     }
   }
   if (.drop) {
-    DBI::dbSendQuery(conn, "DROP TABLE lhs;")
-    DBI::dbSendQuery(conn, "DROP TABLE rhs;")
+    suppressWarnings(DBI::dbSendQuery(conn, "DROP TABLE lhs;"))
+    suppressWarnings(DBI::dbSendQuery(conn, "DROP TABLE rhs;"))
   }
   if (new.conn) suppressWarnings(DBI::dbDisconnect(conn))
   if (isTRUE(b) && !isTRUE(a)) {
@@ -160,8 +156,8 @@ batch.join.sql.equal = function(cases, on, hows=c("inner","left","right","full")
     lhs = l$lhs; rhs = l$rhs
     ans[[case]] = list()
     # reuse tables, to test if affects sqlite efficiency
-    try(DBI::dbSendQuery(conn, "DROP TABLE lhs;"), silent = TRUE)
-    try(DBI::dbSendQuery(conn, "DROP TABLE rhs;"), silent = TRUE)
+    try(suppressWarnings(DBI::dbSendQuery(conn, "DROP TABLE lhs;")), silent = TRUE)
+    try(suppressWarnings(DBI::dbSendQuery(conn, "DROP TABLE rhs;")), silent = TRUE)
     # row_id column required as SQL is not ordered, creating on R side
     if (!"row_id" %in% names(lhs)) lhs = copy(lhs)[, "row_id" := seq_len(.N)]
     if (!"row_id" %in% names(rhs)) rhs = copy(rhs)[, "row_id" := seq_len(.N)]
@@ -180,8 +176,8 @@ batch.join.sql.equal = function(cases, on, hows=c("inner","left","right","full")
         ans[[case]][[how]][[mult]] = join.sql.equal(list(lhs=lhs, rhs=rhs), on=on, how=how, mult=mult, .conn=conn, .drop=FALSE, .debug=.debug)
       }
     }
-    DBI::dbSendQuery(conn, "DROP TABLE lhs;")
-    DBI::dbSendQuery(conn, "DROP TABLE rhs;")
+    suppressWarnings(DBI::dbSendQuery(conn, "DROP TABLE lhs;"))
+    suppressWarnings(DBI::dbSendQuery(conn, "DROP TABLE rhs;"))
   }
   suppressWarnings(DBI::dbDisconnect(conn))
   cat(sprintf("batch.join.sql.equal: %s%s tests completed in %.1fs\n",
