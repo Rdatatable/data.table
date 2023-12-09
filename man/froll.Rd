@@ -49,6 +49,30 @@
   When multiple columns and/or multiple windows width are provided, then computation run in parallel (except for \code{frollapply}. The exception is for \code{algo="exact"}, which runs in parallel even for single column and single window width. By default data.table uses only half of available CPUs, see \code{\link{setDTthreads}} for details on how to tune CPU usage.
 
   Setting \code{options(datatable.verbose=TRUE)} will display various information about how rolling function processed. It will not print information in a real-time but only at the end of the processing.
+
+  Adaptive rolling functions are a special case where each
+  observation has its own corresponding rolling window width. Due to the logic
+  of adaptive rolling functions, the following restrictions apply:
+  \itemize{
+    \item \code{align} only \code{"right"}. 
+    \item if list of vectors is passed to \code{x}, then all
+      vectors within it must have equal length.
+  }
+
+  When multiple columns or multiple windows width are provided, then they
+  are run in parallel. The exception is for \code{algo="exact"}, which runs in
+  parallel already.
+
+  \code{frollapply} computes rolling aggregate on arbitrary R functions.
+  The input \code{x} (first argument) to the function \code{FUN}
+  is coerced to \emph{numeric} beforehand and \code{FUN}
+  has to return a scalar \emph{numeric} value. Checks for that are made only
+  during the first iteration when \code{FUN} is evaluated. Edge cases can be
+  found in examples below. Any R function is supported, but it is not optimized
+  using our own C implementation -- hence, for example, using \code{frollapply}
+  to compute a rolling average is inefficient. It is also always single-threaded
+  because there is no thread-safe API to R's C \code{eval}. Nevertheless we've
+  seen the computation speed up vis-a-vis versions implemented in base R.
 }
 \value{
   A list except when the input is a \code{vector} and \code{length(n)==1}, in which case a \code{vector} is returned, for convenience. Thus, rolling functions can be used conveniently within \code{data.table} syntax.
@@ -59,36 +83,36 @@
 \section{\code{has.nf} argument}{
   \code{has.nf} can be used to speed up processing in cases when it is known if \code{x} contains (or not) non-finite values (\code{NA, NaN, Inf, -Inf}).
   \itemize{
-    \item{ Default \code{has.nf=NA} uses faster implementation that does not support non-finite values, but when non-finite values are detected it will re-run non-finite supported implementation. }
-    \item{ \code{has.nf=TRUE} uses non-finite aware implementation straightaway. }
-    \item{ \code{has.nf=FALSE} uses faster implementation that does not support non-finite values. Then depending on the rolling function it will either:
+    \item Default \code{has.nf=NA} uses faster implementation that does not support non-finite values, but when non-finite values are detected it will re-run non-finite supported implementation.
+    \item \code{has.nf=TRUE} uses non-finite aware implementation straightaway.
+    \item \code{has.nf=FALSE} uses faster implementation that does not support non-finite values. Then depending on the rolling function it will either:
     \itemize{
-      \item{ (\emph{mean, sum}) detect non-finite, re-run non-finite aware. }
-      \item{ (\emph{max}) not detect NFs and may silently give incorrect answer. }
+      \item (\emph{mean, sum}) detect non-finite, re-run non-finite aware.
+      \item (\emph{max}) not detect NFs and may silently give incorrect answer.
     }
-    In general \code{has.nf=FALSE && any(!is.finite(x))} should be considered as undefined behavior. Therefore \code{has.nf=FALSE} should be used with care. }
+    In general \code{has.nf=FALSE && any(!is.finite(x))} should be considered as undefined behavior. Therefore \code{has.nf=FALSE} should be used with care.
   }
 }
 \section{Implementation}{
   Each rolling function has 4 different implementations. First factor that decides which implementation is being used is \code{adaptive} argument, see setion below for details. Then for each of those two algorithms (adaptive \code{TRUE/FALSE}) there are two \code{algo} argument values.
   \itemize{
-    \item{ \code{algo="fast"} uses \emph{"on-line"}, single pass, algorithm.
+    \item \code{algo="fast"} uses \emph{"on-line"}, single pass, algorithm.
     \itemize{
-      \item{ \emph{max} rolling function will not do only a single pass but, on average \code{length(x)/n}, nested loops will be computed. The bigger the window the bigger advantage over algo \emph{exact} which computes \code{length(x)} nested loops. Note that \emph{exact} uses multiple CPUs so for a small window size and many CPUs it is possible it will be actually faster than \emph{fast} but in those cases elapsed timings will likely be far below a single second. }
-      \item{ Not all functions have \emph{fast} implementation available. As of now \emph{max} and \code{adaptive=TRUE} does not have, therefore it will automatically fall back to \emph{exact} implementation. \code{datatable.verbose} option can be used to check that. }
-    }}
-    \item{ \code{algo="exact"} will make rolling functions to use a more computationally-intensive algorithm. For each observation from input vector it will compute a function on a window from scratch (complexity \eqn{O(n^2)}).
+      \item \emph{max} rolling function will not do only a single pass but, on average \code{length(x)/n}, nested loops will be computed. The bigger the window the bigger advantage over algo \emph{exact} which computes \code{length(x)} nested loops. Note that \emph{exact} uses multiple CPUs so for a small window size and many CPUs it is possible it will be actually faster than \emph{fast} but in those cases elapsed timings will likely be far below a single second.
+      \item Not all functions have \emph{fast} implementation available. As of now \emph{max} and \code{adaptive=TRUE} does not have, therefore it will automatically fall back to \emph{exact} implementation. \code{datatable.verbose} option can be used to check that.
+    }
+    \item \code{algo="exact"} will make rolling functions to use a more computationally-intensive algorithm. For each observation from input vector it will compute a function on a window from scratch (complexity \eqn{O(n^2)}).
     \itemize{
-      \item { Depeneding on the function, this algorithm may suffers less from floating point rounding error (the same consideration applies to base \code{\link[base]{mean}}). }
-      \item{ In case of \emph{mean} (and possibly other functions in future), it will additionally make extra pass to perform floating point error correction. Error corrections might not be truly exact on some platforms (like Windows) when using multiple threads. }
-    }}
+      \item Depeneding on the function, this algorithm may suffers less from floating point rounding error (the same consideration applies to base \code{\link[base]{mean}}).
+      \item In case of \emph{mean} (and possibly other functions in future), it will additionally make extra pass to perform floating point error correction. Error corrections might not be truly exact on some platforms (like Windows) when using multiple threads.
+    }
   }
 }
 \section{Adaptive rolling functions}{
   Adaptive rolling functions are a special case where each observation has its own corresponding rolling window width. Therefore values passed to \code{n} argument must be series corresponding to observations in \code{x}. If multiple windows is meant to be computed then a list of integer vectors is expected; each list element must be an integer vector of window size corresponding to observations in \code{x}; see Examples. Due to the logic or implementation of adaptive rolling functions, the following restrictions apply
   \itemize{
-    \item{ \code{align} does not support \code{"center"}. }
-    \item{ if list of vectors is passed to \code{x}, then all vectors within it must have equal length due to the fact that length of adaptive window widths must match the length of vectors in \code{x}. }
+    \item \code{align} does not support \code{"center"}.
+    \item if list of vectors is passed to \code{x}, then all vectors within it must have equal length due to the fact that length of adaptive window widths must match the length of vectors in \code{x}.
   }
 }
 \section{\code{partial} argument}{
@@ -101,15 +125,15 @@
 \section{\code{zoo} package users notice}{
   Users coming from most popular package for rolling functions \code{zoo} might expect following differences in \code{data.table} implementation
   \itemize{
-    \item{ rolling function will always return result of the same length as input. }
-    \item{ \code{fill} defaults to \code{NA}. }
-    \item{ \code{fill} accepts only constant values. No support for \emph{na.locf} or other functions. }
-    \item{ \code{align} defaults to \code{"right"}. }
-    \item{ \code{na.rm} is respected, and other functions are not needed when input contains \code{NA}. }
-    \item{ integers and logical are always coerced to double. }
-    \item{ when \code{adaptive=FALSE} (default), then \code{n} must be a numeric vector. List is not accepted. }
-    \item{ when \code{adaptive=TRUE}, then \code{n} must be vector of length equal to \code{nrow(x)}, or list of such vectors. }
-    \item{ \code{by.column} argument is not yet supported in \code{frollapply}. For details/upvote see \href{https://github.com/Rdatatable/data.table/issues/4887}{issue #4887}. }
+    \item rolling function will always return result of the same length as input.
+    \item \code{fill} defaults to \code{NA}.
+    \item \code{fill} accepts only constant values. No support for \emph{na.locf} or other functions.
+    \item \code{align} defaults to \code{"right"}.
+    \item \code{na.rm} is respected, and other functions are not needed when input contains \code{NA}.
+    \item integers and logical are always coerced to double.
+    \item when \code{adaptive=FALSE} (default), then \code{n} must be a numeric vector. List is not accepted.
+    \item when \code{adaptive=TRUE}, then \code{n} must be vector of length equal to \code{nrow(x)}, or list of such vectors.
+    \item \code{by.column} argument is not yet supported in \code{frollapply}. For details/upvote see \href{https://github.com/Rdatatable/data.table/issues/4887}{issue #4887}.
   }
 }
 \examples{
