@@ -52,7 +52,8 @@ fdistinct = function(x, on=key(x), mult=c("first","last"), cols=seq_along(x), co
     stop("'copy' must be TRUE or FALSE")
   ## do not compute sort=F for mult="first" if index (sort=T) already available, sort=T is needed only for mult="last"
   ## this short circuit will work after #4386 because it requires retGrp=T
-  sort = mult!="first" || hasindex(x, by=on, retGrp=TRUE)
+  #### sort = mult!="first" || hasindex(x, by=on, retGrp=TRUE)
+  sort = TRUE ## above line does not work for the moment, test 302.02
   o = forderv(x, by=on, sort=sort, retGrp=TRUE)
   if (attr(o, "maxgrpn", TRUE) <= 1L) {
     ans = .shallow(x, someCols(x, cols, keep=on), retain.key=TRUE)
