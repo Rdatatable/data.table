@@ -1,21 +1,30 @@
+.dir-locals.el
 ^\.Rprofile$
 ^data\.table_.*\.tar\.gz$
 ^vignettes/plots/figures$
+^\.Renviron$
+^[^/]+\.R$
+^[^/]+\.csv$
+^[^/]+\.csvy$
+^[^/]+\.RDS$
+^[^/]+\.diff$
+^[^/]+\.patch$
 
 ^\.ci$
 ^\.dev$
+^\.devcontainer$
 ^\.graphics$
 ^\.github$
 
-^\.travis\.yml$
 ^\.appveyor\.yml$
 ^\.gitlab-ci\.yml$
 
 ^Makefile$
 ^NEWS\.0\.md$
-^README\.md$
+^NEWS\.1\.md$
 ^_pkgdown\.yml$
 ^src/Makevars$
+^CODEOWNERS$
 
 ^\.RData$
 ^\.Rhistory$
@@ -25,8 +34,13 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^\.idea$
+^\.libs$
 
 ^.*\.dll$
 
 ^bus$
 ^pkgdown$
+^docs$
+^lib$
+^library$
+^devwd$
