@@ -75,25 +75,27 @@ SEXP uniqlist(SEXP l, SEXP order)
       }
     } break;
     case REALSXP : {
-      const uint64_t *vd=(const uint64_t *)REAL(v);
-      uint64_t prev, elem;
       // grouping by integer64 makes sense (ids). grouping by float supported but a good use-case for that is harder to imagine
       if (getNumericRounding_C()==0 /*default*/ || inherits(v, "integer64")) {
+        const uint64_t *vd=(const uint64_t *)REAL(v);
+        uint64_t prev, elem;
         if (via_order) {
           COMPARE1_VIA_ORDER COMPARE2
         } else {
           COMPARE1           COMPARE2
         }
       } else {
+        const double *vd=(const double *)REAL(v);
+        double prev, elem;
         if (via_order) {
-          COMPARE1_VIA_ORDER && dtwiddle(&elem, 0)!=dtwiddle(&prev, 0) COMPARE2
+          COMPARE1_VIA_ORDER && dtwiddle(elem)!=dtwiddle(prev) COMPARE2
         } else {
-          COMPARE1           && dtwiddle(&elem, 0)!=dtwiddle(&prev, 0) COMPARE2
+          COMPARE1           && dtwiddle(elem)!=dtwiddle(prev) COMPARE2
         }
       }
     } break;
     default :
-      error(_("Type '%s' not supported"), type2char(TYPEOF(v)));  // # nocov
+      error(_("Type '%s' is not supported"), type2char(TYPEOF(v)));  // # nocov
     }
   } else {
     // ncol>1
@@ -119,13 +121,13 @@ SEXP uniqlist(SEXP l, SEXP order)
           ulv = (unsigned long long *)REAL(v);
           b = ulv[thisi] == ulv[previ]; // (gives >=2x speedup)
           if (!b && !i64[j]) {
-            b = dtwiddle(ulv, thisi) == dtwiddle(ulv, previ);
+            b = dtwiddle(REAL(v)[thisi]) == dtwiddle(REAL(v)[previ]);
             // could store LHS for use next time as RHS (to save calling dtwiddle twice). However: i) there could be multiple double columns so vector of RHS would need
             // to be stored, ii) many short-circuit early before the if (!b) anyway (negating benefit) and iii) we may not have needed LHS this time so logic would be complex.
           }
           break;
         default :
-          error(_("Type '%s' not supported"), type2char(TYPEOF(v)));  // # nocov
+          error(_("Type '%s' is not supported"), type2char(TYPEOF(v)));  // # nocov
         }
       }
       if (!b) {
@@ -169,7 +171,7 @@ SEXP rleid(SEXP l, SEXP cols) {
   int *icols = INTEGER(cols);
   for (int i=0; i<lencols; i++) {
     int elem = icols[i];
-    if (elem<1 || elem>ncol) error(_("Item %d of cols is %d which is outside range of l [1,length(l)=%d]"), i+1, elem, ncol);
+    if (elem<1 || elem>ncol) error(_("Item %d of cols is %d which is outside the range [1,length(l)=%d]"), i+1, elem, ncol);
   }
   for (int i=1; i<ncol; i++) {
     if (xlength(VECTOR_ELT(l,i)) != nrow) error(_("All elements to input list must be of same length. Element [%d] has length %"PRIu64" != length of first element = %"PRIu64"."), i+1, (uint64_t)xlength(VECTOR_ELT(l,i)), (uint64_t)nrow);
@@ -206,7 +208,7 @@ SEXP rleid(SEXP l, SEXP cols) {
           same = memcmp(&pz[i], &pz[i-1], sizeof(Rcomplex))==0; // compiler optimization should replace library call with best 16-byte fixed method
         } break;
         default :
-          error(_("Type '%s' not supported"), type2char(TYPEOF(jcol)));  // # nocov
+          error(_("Type '%s' is not supported"), type2char(TYPEOF(jcol)));  // # nocov
         }
       }
       ians[i] = (grp+=!same);
@@ -243,7 +245,7 @@ SEXP rleid(SEXP l, SEXP cols) {
       }
     } break;
     default :
-      error(_("Type '%s' not supported"), type2char(TYPEOF(jcol)));
+      error(_("Type '%s' is not supported"), type2char(TYPEOF(jcol)));
     }
   }
   UNPROTECT(1);
@@ -262,7 +264,7 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
   bool *i64 = (bool *)R_alloc(ncols, sizeof(bool));
   if (ngrps==0) error(_("Internal error: nrows[%d]>0 but ngrps==0"), nrows); // # nocov
   R_len_t resetctr=0, rlen = length(resetvals) ? INTEGER(resetvals)[0] : 0;
-  if (!isInteger(cols) || ncols == 0) error(_("cols must be an integer vector of positive length"));
+  if (!isInteger(cols) || ncols == 0) error(_("cols must be an integer vector with length >= 1"));
   // mult arg
   enum {ALL, FIRST, LAST} mult = ALL;
   if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "all")) mult = ALL;
@@ -313,10 +315,10 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
         case REALSXP: {
           double *xd = REAL(v);
           b = i64[j] ? ((int64_t *)xd)[thisi] >= ((int64_t *)xd)[previ] :
-                       dtwiddle(xd, thisi) >= dtwiddle(xd, previ);
+                       dtwiddle(xd[thisi]) >= dtwiddle(xd[previ]);
         } break;
         default:
-          error(_("Type '%s' not supported"), type2char(TYPEOF(v)));  // # nocov
+          error(_("Type '%s' is not supported"), type2char(TYPEOF(v)));  // # nocov
         }
       }
       if (b) break;
@@ -348,7 +350,8 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
 SEXP uniqueNlogical(SEXP x, SEXP narmArg) {
   // single pass; short-circuit and return as soon as all 3 values are found
   if (!isLogical(x)) error(_("x is not a logical vector"));
-  if (!isLogical(narmArg) || length(narmArg)!=1 || INTEGER(narmArg)[0]==NA_INTEGER) error(_("na.rm must be TRUE or FALSE"));
+  if (!IS_TRUE_OR_FALSE(narmArg))
+    error(_("%s must be TRUE or FALSE"), "na.rm");
   bool narm = LOGICAL(narmArg)[0]==1;
   const R_xlen_t n = xlength(x);
   if (n==0)

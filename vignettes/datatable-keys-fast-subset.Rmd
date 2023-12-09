@@ -2,10 +2,10 @@
 title: "Keys and fast binary search based subset"
 date: "`r Sys.Date()`"
 output:
-  rmarkdown::html_vignette
+  markdown::html_format
 vignette: >
   %\VignetteIndexEntry{Keys and fast binary search based subset}
-  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEngine{knitr::knitr}
   \usepackage[utf8]{inputenc}
 ---
 
@@ -17,6 +17,7 @@ knitr::opts_chunk$set(
      tidy = FALSE,
     cache = FALSE,
  collapse = TRUE)
+.old.th = setDTthreads(1)
 ```
 
 This vignette is aimed at those who are already familiar with *data.table* syntax, its general form, how to subset rows in `i`, select and compute on columns, add/modify/delete columns *by reference* in `j` and  group by using `by`. If you're not familiar with these concepts, please read the *"Introduction to data.table"* and *"Reference semantics"* vignettes first.
@@ -138,7 +139,7 @@ head(flights)
 
 * Alternatively you can pass a character vector of column names to the function `setkeyv()`. This is particularly useful while designing functions to pass columns to set key on as function arguments.
 
-* Note that we did not have to assign the result back to a variable. This is because like the `:=` function we saw in the *"Introduction to data.table"* vignette, `setkey()` and `setkeyv()` modify the input *data.table* *by reference*. They return the result invisibly.
+* Note that we did not have to assign the result back to a variable. This is because like the `:=` function we saw in the *"Reference semantics"* vignette, `setkey()` and `setkeyv()` modify the input *data.table* *by reference*. They return the result invisibly.
 
 * The *data.table* is now reordered (or sorted) by the column we provided - `origin`. Since we reorder by reference, we only require additional memory of one column of length equal to the number of rows in the *data.table*, and is therefore very memory efficient.
 
@@ -242,7 +243,7 @@ flights[.(unique(origin), "MIA")]
 
 * *"MIA"* is automatically recycled to fit the length of `unique(origin)` which is *3*.
 
-## 2) Combining keys with `j` and `by`
+## 2. Combining keys with `j` and `by`
 
 All we have seen so far is the same concept -- obtaining *row indices* in `i`, but just using a different method -- using `keys`. It shouldn't be surprising that we can do exactly the same things in `j` and `by` as seen from the previous vignettes. We will highlight this with a few examples.
 
@@ -340,7 +341,7 @@ key(ans)
 
 * We use `keyby` to automatically key that result by *month*. Now we understand what that means. In addition to ordering, it also sets *month* as the `key` column.
 
-## 3) Additional arguments - `mult` and `nomatch`
+## 3. Additional arguments - `mult` and `nomatch`
 
 ### a) The *mult* argument
 
@@ -376,7 +377,7 @@ flights[.(c("LGA", "JFK", "EWR"), "XNA"), mult = "last", nomatch = NULL]
 
 * The query “JFK”, “XNA” doesn’t match any rows in flights and therefore is skipped.
 
-## 4) binary search vs vector scans
+## 4. binary search vs vector scans
 
 We have seen so far how we can set and use keys to subset. But what's the advantage? For example, instead of doing:
 
@@ -494,3 +495,8 @@ In this vignette, we have learnt another method to subset rows in `i` by keying 
 * combine key based subsets with `j` and `by`. Note that the `j` and `by` operations are exactly the same as before.
 
 Key based subsets are **incredibly fast** and are particularly useful when the task involves *repeated subsetting*. But it may not be always desirable to set key and physically reorder the *data.table*. In the next vignette, we will address this using a *new* feature -- *secondary indexes*.
+
+
+```{r, echo=FALSE}
+setDTthreads(.old.th)
+```

@@ -20,7 +20,8 @@
 typedef enum {
   NEG = -1,        // dummy to force signed type; sign bit used for out-of-sample type bump management
   CT_DROP = 0,     // skip column requested by user; it is navigated as a string column with the prevailing quoteRule
-  CT_BOOL8_N,      // int8_t; first enum value must be 1 not 0(=CT_DROP) so that it can be negated to -1.
+  CT_EMPTY,        // int8_t; first enum value must be 1 not 0(=CT_DROP) so that it can be negated to -1. EMPTY to help column heading guess, #5257
+  CT_BOOL8_N,      // int8_t
   CT_BOOL8_U,
   CT_BOOL8_T,
   CT_BOOL8_L,
@@ -37,7 +38,7 @@ typedef enum {
 
 extern int8_t typeSize[NUMTYPE];
 extern const char typeName[NUMTYPE][10];
-extern const long double pow10lookup[601];
+extern const long double pow10lookup[301];
 extern const uint8_t hexdigits[256];
 
 
@@ -145,7 +146,7 @@ typedef struct freadMainArgs
   bool logical01;
 
   bool keepLeadingZeros;
-  
+
   // should datetime with no Z or UTZ-offset be read as UTC?
   bool noTZasUTC;
 
