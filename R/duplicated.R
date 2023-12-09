@@ -1,14 +1,12 @@
 duplicated.data.table = function(x, incomparables=FALSE, fromLast=FALSE, by=seq_along(x), ...) {
   if (!cedta()) return(NextMethod("duplicated")) #nocov
-  if (!identical(incomparables, FALSE)) {
+  if (!isFALSE(incomparables)) {
     .NotYetUsed("incomparables != FALSE")
   }
   if (nrow(x) == 0L || ncol(x) == 0L) return(logical(0L)) # fix for bug #28
-  if (is.na(fromLast) || !is.logical(fromLast)) stop("'fromLast' must be TRUE or FALSE")
+  if (is.na(fromLast) || !is.logical(fromLast)) stopf("'fromLast' must be TRUE or FALSE")
+  if (!length(by)) by = NULL  #4594
   query = .duplicated.helper(x, by)
-  # fix for bug #44 - unique on null data table returns error (because of 'forderv')
-  # however, in this case we can bypass having to go to forderv at all.
-  if (!length(query$by)) return(logical(0L))
 
   if (query$use.keyprefix) {
     f = uniqlist(shallow(x, query$by))
@@ -25,13 +23,17 @@ duplicated.data.table = function(x, incomparables=FALSE, fromLast=FALSE, by=seq_
   res
 }
 
-unique.data.table = function(x, incomparables=FALSE, fromLast=FALSE, by=seq_along(x), ...) {
+unique.data.table = function(x, incomparables=FALSE, fromLast=FALSE, by=seq_along(x), cols=NULL, ...) {
   if (!cedta()) return(NextMethod("unique")) # nocov
-  if (!identical(incomparables, FALSE)) {
+  if (!isFALSE(incomparables)) {
     .NotYetUsed("incomparables != FALSE")
   }
   if (nrow(x) <= 1L) return(x)
+  if (!length(by)) by = NULL  #4594
   o = forderv(x, by=by, sort=FALSE, retGrp=TRUE)
+  if (!is.null(cols)) {
+      x = .shallow(x, c(by, cols), retain.key=TRUE)
+  }
   # if by=key(x), forderv tests for orderedness within it quickly and will short-circuit
   # there isn't any need in unique() to call uniqlist like duplicated does; uniqlist returns a new nrow(x) vector anyway and isn't
   # as efficient as forderv returning empty o when input is already ordered
@@ -100,19 +102,20 @@ anyDuplicated.data.table = function(x, incomparables=FALSE, fromLast=FALSE, by=s
 uniqueN = function(x, by = if (is.list(x)) seq_along(x) else NULL, na.rm=FALSE) { # na.rm, #1455
   if (is.null(x)) return(0L)
   if (!is.atomic(x) && !is.data.frame(x))
-    stop("x must be an atomic vector or data.frames/data.tables")
+    stopf("x must be an atomic vector or data.frames/data.tables")
   if (is.atomic(x)) {
     if (is.logical(x)) return(.Call(CuniqueNlogical, x, na.rm=na.rm))
     x = as_list(x)
   }
+  if (!length(by)) by = NULL  #4594
   o = forderv(x, by=by, retGrp=TRUE, na.last=if (!na.rm) FALSE else NA)
   starts = attr(o, 'starts', exact=TRUE)
-  if (!na.rm) {
-    length(starts)
-  } else {
+  if (na.rm) {
     # TODO: internal efficient sum
     # fix for #1771, account for already sorted input
     sum( (if (length(o)) o[starts] else starts) != 0L)
+  } else {
+    length(starts)
   }
 }
 

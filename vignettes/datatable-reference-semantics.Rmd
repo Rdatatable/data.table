@@ -2,10 +2,10 @@
 title: "Reference semantics"
 date: "`r Sys.Date()`"
 output:
-  rmarkdown::html_vignette
+  markdown::html_format
 vignette: >
   %\VignetteIndexEntry{Reference semantics}
-  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEngine{knitr::knitr}
   \usepackage[utf8]{inputenc}
 ---
 
@@ -17,6 +17,7 @@ knitr::opts_chunk$set(
      tidy = FALSE,
     cache = FALSE,
  collapse = TRUE)
+.old.th = setDTthreads(1)
 ```
 This vignette discusses *data.table*'s reference semantics which allows to *add/update/delete* columns of a *data.table by reference*, and also combine them with `i` and `by`. It is aimed at those who are already familiar with *data.table* syntax, its general form, how to subset rows in `i`, select and compute on columns, and perform aggregations by group. If you're not familiar with these concepts, please read the *"Introduction to data.table"* vignette first.
 
@@ -71,7 +72,7 @@ both (1) and (2) resulted in deep copy of the entire data.frame in versions of `
 
 Great performance improvements were made in `R v3.1` as a result of which only a *shallow* copy is made for (1) and not *deep* copy. However, for (2) still, the entire column is *deep* copied even in `R v3.1+`. This means the more columns one subassigns to in the *same query*, the more *deep* copies R does.
 
-#### *shallow* vs *deep* copy {.bs-callout .bs-callout-info}
+#### *shallow* vs *deep* copy
 
 A *shallow* copy is just a copy of the vector of column pointers (corresponding to the columns in a *data.frame* or *data.table*). The actual data is not physically copied in memory.
 
@@ -86,30 +87,26 @@ It can be used in `j` in two ways:
 
 (a) The `LHS := RHS` form
 
-    ```{r eval = FALSE}
-    DT[, c("colA", "colB", ...) := list(valA, valB, ...)]
+```{r eval = FALSE}
+DT[, c("colA", "colB", ...) := list(valA, valB, ...)]
 
-    # when you have only one column to assign to you
-    # can drop the quotes and list(), for convenience
-    DT[, colA := valA]
-	  ```
+# when you have only one column to assign to you
+# can drop the quotes and list(), for convenience
+DT[, colA := valA]
+```
 
 (b) The functional form
 
-	```{r eval = FALSE}
-	DT[, `:=`(colA = valA, # valA is assigned to colA
-	          colB = valB, # valB is assigned to colB
-	          ...
-	)]
-	```
-
-#### {.bs-callout .bs-callout-warning}
+```{r eval = FALSE}
+DT[, `:=`(colA = valA, # valA is assigned to colA
+          colB = valB, # valB is assigned to colB
+          ...
+)]
+```
 
 Note that the code above explains how `:=` can be used. They are not working examples. We will start using them on `flights` *data.table* from the next section.
 
 #
-
-#### {.bs-callout .bs-callout-info}
 
 * In (a), `LHS` takes a character vector of column names and `RHS` a *list of values*. `RHS` just needs to be a `list`, irrespective of how its generated (e.g., using `lapply()`, `list()`, `mget()`, `mapply()` etc.). This form is usually easy to program with and is particularly useful when you don't know the columns to assign values to in advance.
 
@@ -140,7 +137,7 @@ head(flights)
 # flights[, c("speed", "delay") := list(distance/(air_time/60), arr_delay + dep_delay)]
 ```
 
-#### Note that {.bs-callout .bs-callout-info}
+#### Note that
 
 * We did not have to assign the result back to `flights`.
 
@@ -166,8 +163,6 @@ We see that there are totally `25` unique values in the data. Both *0* and *24* 
 flights[hour == 24L, hour := 0L]
 ```
 
-#### {.bs-callout .bs-callout-info}
-
 * We can use `i` along with `:=` in `j` the very same way as we have already seen in the *"Introduction to data.table"* vignette.
 
 * Column `hour` is replaced with `0` only on those *row indices* where the condition `hour == 24L` specified in `i` evaluates to `TRUE`.
@@ -186,7 +181,7 @@ Let's look at all the `hours` to verify.
 flights[, sort(unique(hour))]
 ```
 
-#### Exercise: {.bs-callout .bs-callout-warning #update-by-reference-question}
+#### Exercise: {#update-by-reference-question}
 
 What is the difference between `flights[hour == 24L, hour := 0L]` and `flights[hour == 24L][, hour := 0L]`? Hint: The latter needs an assignment (`<-`) if you would want to use the result later.
 
@@ -204,7 +199,7 @@ head(flights)
 # flights[, `:=`(delay = NULL)]
 ```
 
-#### {.bs-callout .bs-callout-info #delete-convenience}
+#### {#delete-convenience}
 
 * Assigning `NULL` to a column *deletes* that column. And it happens *instantly*.
 
@@ -229,8 +224,6 @@ flights[, max_speed := max(speed), by = .(origin, dest)]
 head(flights)
 ```
 
-#### {.bs-callout .bs-callout-info}
-
 * We add a new column `max_speed` using the `:=` operator by reference.
 
 * We provide the columns to group by the same way as shown in the *Introduction to data.table* vignette. For each group, `max(speed)` is computed, which returns a single value. That value is recycled to fit the length of the group. Once again, no copies are being made at all. `flights` *data.table* is modified *in-place*.
@@ -249,7 +242,6 @@ out_cols = c("max_dep_delay", "max_arr_delay")
 flights[, c(out_cols) := lapply(.SD, max), by = month, .SDcols = in_cols]
 head(flights)
 ```
-#### {.bs-callout .bs-callout-info}
 
 * We use the `LHS := RHS` form. We store the input column names and the new columns to add in separate variables and provide them to `.SDcols` and for `LHS` (for better readability).
 
@@ -266,7 +258,7 @@ flights[, c("speed", "max_speed", "max_dep_delay", "max_arr_delay") := NULL]
 head(flights)
 ```
 
-## 3) `:=` and `copy()`
+## 3. `:=` and `copy()`
 
 `:=` modifies the input object by reference. Apart from the features we have discussed already, sometimes we might want to use the update by reference feature for its side effect. And at other times it may not be desirable to modify the original object, in which case we can use `copy()` function, as we will see in a moment.
 
@@ -283,7 +275,6 @@ ans = foo(flights)
 head(flights)
 head(ans)
 ```
-#### {.bs-callout .bs-callout-info}
 
 * Note that the new column `speed` has been added to `flights` *data.table*. This is because `:=` performs operations by reference. Since `DT` (the function argument) and `flights` refer to the same object in memory, modifying `DT` also reflects on `flights`.
 
@@ -292,8 +283,6 @@ head(ans)
 ### b) The `copy()` function
 
 In the previous section, we used `:=` for its side effect. But of course this may not be always desirable. Sometimes, we would like to pass a *data.table* object to a function, and might want to use the `:=` operator, but *wouldn't* want to update the original object. We can accomplish this using the function `copy()`.
-
-#### {.bs-callout .bs-callout-info}
 
 The `copy()` function *deep* copies the input object and therefore any subsequent update by reference operations performed on the copied object will not affect the original object.
 
@@ -320,8 +309,6 @@ There are two particular places where `copy()` function is essential:
     head(flights)
     head(ans)
     ```
-
-#### {.bs-callout .bs-callout-info}
 
 * Using `copy()` function did not update `flights` *data.table* by reference. It doesn't contain the column `speed`.
 
@@ -354,7 +341,7 @@ However we could improve this functionality further by *shallow* copying instead
 
 ## Summary
 
-#### The `:=` operator {.bs-callout .bs-callout-info}
+#### The `:=` operator
 
 * It is used to *add/update/delete* columns by reference.
 
@@ -362,9 +349,12 @@ However we could improve this functionality further by *shallow* copying instead
 
 * We can use `:=` for its side effect or use `copy()` to not modify the original object while updating by reference.
 
+```{r, echo=FALSE}
+setDTthreads(.old.th)
+```
+
 #
 
 So far we have seen a whole lot in `j`, and how to combine it with `by` and little of `i`. Let's turn our attention back to `i` in the next vignette *"Keys and fast binary search based subset"* to perform *blazing fast subsets* by *keying data.tables*.
 
 ***
-

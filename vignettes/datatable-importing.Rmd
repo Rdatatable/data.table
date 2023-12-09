@@ -2,10 +2,10 @@
 title: "Importing data.table"
 date: "`r Sys.Date()`"
 output:
-  rmarkdown::html_vignette
+  markdown::html_format
 vignette: >
   %\VignetteIndexEntry{Importing data.table}
-  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEngine{knitr::knitr}
   \usepackage[utf8]{inputenc}
 ---
 
@@ -132,7 +132,7 @@ If you don't mind having `id` and `grp` registered as variables globally in your
 
 Common practice by R packages is to provide customization options set by `options(name=val)` and fetched using `getOption("name", default)`. Function arguments often specify a call to `getOption()` so that the user knows (from `?fun` or `args(fun)`) the name of the option controlling the default for that parameter; e.g. `fun(..., verbose=getOption("datatable.verbose", FALSE))`. All `data.table` options start with `datatable.` so as to not conflict with options in other packages. A user simply calls `options(datatable.verbose=TRUE)` to turn on verbosity. This affects all calls to `fun()` other the ones which have been provided `verbose=` explicity; e.g. `fun(..., verbose=FALSE)`.
 
-The option mechanism in R is _global_. Meaning that if a user sets a `data.table` option for their own use, that setting also affects code inside any package that is using `data.table` too. For an option like `datatable.verbose`, this is exactly the desired behavior since the desire is to trace and log all `data.table` operations from wherever they originate; turning on verbosity does not affect the results. Another unique-to-R and excellent-for-production option is R's `options(warn=2)` which turns all warnings into errors. Again, the desire is to affect any warning in any package so as to not missing any warnings in production. There are 6 `datatable.print.*` options and 3 optimization options which do not affect the result of operations, either. However, there is one `data.table` option that does and is now a concern: `datatable.nomatch`. This option changes the default join from outer to inner. [Aside, the default join is outer because outer is safer; it doesn't drop missing data silently; moreover it is consistent to base R way of matching by names and indices.] Some users prefer inner join to be the default and we provided this option for them. However, a user setting this option can unintentionally change the behavior of joins inside packages that use `data.table`. Accordingly, in v1.12.4, we have started the process to deprecate the `datatable.nomatch` option. It is the only `data.table` option with this concern.
+The option mechanism in R is _global_. Meaning that if a user sets a `data.table` option for their own use, that setting also affects code inside any package that is using `data.table` too. For an option like `datatable.verbose`, this is exactly the desired behavior since the desire is to trace and log all `data.table` operations from wherever they originate; turning on verbosity does not affect the results. Another unique-to-R and excellent-for-production option is R's `options(warn=2)` which turns all warnings into errors. Again, the desire is to affect any warning in any package so as to not miss any warnings in production. There are 6 `datatable.print.*` options and 3 optimization options which do not affect the result of operations. However, there is one `data.table` option that does and is now a concern: `datatable.nomatch`. This option changes the default join from outer to inner. [Aside, the default join is outer because outer is safer; it doesn't drop missing data silently; moreover it is consistent to base R way of matching by names and indices.] Some users prefer inner join to be the default and we provided this option for them. However, a user setting this option can unintentionally change the behavior of joins inside packages that use `data.table`. Accordingly, in v1.12.4 (Oct 2019) a message was printed when the `datatable.nomatch` option was used, and from v1.14.2 it is now ignored with warning. It was the only `data.table` option with this concern.
 
 ## Troubleshooting
 
@@ -173,8 +173,8 @@ my.write = function (x) {
 }
 ```
 
-When using a package as a suggested dependency, you should not `import` it in the `NAMESPACE` file. Just mention it in the `DESCRIPTION` file. 
-When using `data.table` functions in package code (R/* files) you need to use the `data.table::` prefix because none of them are imported. 
+When using a package as a suggested dependency, you should not `import` it in the `NAMESPACE` file. Just mention it in the `DESCRIPTION` file.
+When using `data.table` functions in package code (R/* files) you need to use the `data.table::` prefix because none of them are imported.
 When using `data.table` in package tests (e.g. tests/testthat/test* files), you need to declare `.datatable.aware=TRUE` in one of the R/* files.
 
 ## `data.table` in `Imports` but nothing imported

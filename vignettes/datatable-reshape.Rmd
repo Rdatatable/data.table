@@ -2,10 +2,10 @@
 title: "Efficient reshaping using data.tables"
 date: "`r Sys.Date()`"
 output:
-  rmarkdown::html_vignette
+  markdown::html_format
 vignette: >
   %\VignetteIndexEntry{Efficient reshaping using data.tables}
-  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEngine{knitr::knitr}
   \usepackage[utf8]{inputenc}
 ---
 
@@ -17,6 +17,7 @@ knitr::opts_chunk$set(
      tidy = FALSE,
     cache = FALSE,
  collapse = TRUE)
+.old.th = setDTthreads(1)
 ```
 
 This vignette discusses the default usage of reshaping functions `melt` (wide to long) and `dcast` (long to wide) for *data.tables* as well as the **new extended functionalities** of melting and casting on *multiple columns* available from `v1.9.6`.
@@ -77,8 +78,6 @@ DT.m1
 str(DT.m1)
 ```
 
-#### {.bs-callout .bs-callout-info}
-
 * `measure.vars` specify the set of columns we would like to collapse (or combine) together.
 
 * We can also specify column *indices* instead of *names*.
@@ -98,8 +97,6 @@ DT.m1 = melt(DT, measure.vars = c("dob_child1", "dob_child2", "dob_child3"),
 DT.m1
 ```
 
-#### {.bs-callout .bs-callout-info}
-
 * By default, when one of `id.vars` or `measure.vars` is missing, the rest of the columns are *automatically assigned* to the missing argument.
 
 * When neither `id.vars` nor `measure.vars` are specified, as mentioned under `?melt`, all *non*-`numeric`, `integer`, `logical` columns will be assigned to `id.vars`.
@@ -110,7 +107,7 @@ DT.m1
 
 In the previous section, we saw how to get from wide form to long form. Let's see the reverse operation in this section.
 
-#### - How can we get back to the original data table `DT` from `DT.m`?
+#### - How can we get back to the original data table `DT` from `DT.m1`?
 
 That is, we'd like to collect all *child* observations corresponding to each `family_id, age_mother` together under the same row. We can accomplish it using `dcast` as follows:
 
@@ -118,15 +115,13 @@ That is, we'd like to collect all *child* observations corresponding to each `fa
 dcast(DT.m1, family_id + age_mother ~ child, value.var = "dob")
 ```
 
-#### {.bs-callout .bs-callout-info}
-
 * `dcast` uses *formula* interface. The variables on the *LHS* of formula represents the *id* vars and *RHS* the *measure*  vars.
 
 * `value.var` denotes the column to be filled in with while casting to wide format.
 
 * `dcast` also tries to preserve attributes in result wherever possible.
 
-#### - Starting from `DT.m`, how can we get the number of children in each family?
+#### - Starting from `DT.m1`, how can we get the number of children in each family?
 
 You can also pass a function to aggregate by in `dcast` with the argument `fun.aggregate`. This is particularly essential when the formula provided does not identify single observation for each cell.
 
@@ -165,7 +160,7 @@ DT.c1
 str(DT.c1) ## gender column is character type now!
 ```
 
-#### Issues {.bs-callout .bs-callout-info}
+#### Issues
 
 1. What we wanted to do was to combine all the `dob` and `gender` type columns together respectively. Instead we are combining *everything* together, and then splitting them again. I think it's easy to see that it's quite roundabout (and inefficient).
 
@@ -190,13 +185,17 @@ Since we'd like for `data.table`s to perform this operation straightforward and 
 The idea is quite simple. We pass a list of columns to `measure.vars`, where each element of the list contains the columns that should be combined together.
 
 ```{r}
-colA = paste("dob_child", 1:3, sep = "")
-colB = paste("gender_child", 1:3, sep = "")
+colA = paste0("dob_child", 1:3)
+colB = paste0("gender_child", 1:3)
 DT.m2 = melt(DT, measure = list(colA, colB), value.name = c("dob", "gender"))
 DT.m2
 
 str(DT.m2) ## col type is preserved
 ```
+
+* We can remove the `variable` column if necessary.
+
+* The functionality is implemented entirely in C, and is therefore both *fast* and *memory efficient* in addition to being *straightforward*.
 
 #### - Using `patterns()`
 
@@ -207,13 +206,88 @@ DT.m2 = melt(DT, measure = patterns("^dob", "^gender"), value.name = c("dob", "g
 DT.m2
 ```
 
-That's it!
+#### - Using `measure()` to specify `measure.vars` via separator or pattern
 
-#### {.bs-callout .bs-callout-info}
+If, as in the data above, the input columns to melt have regular
+names, then we can use `measure`, which allows specifying the columns
+to melt via a separator or a regex. For example consider the iris
+data,
 
-* We can remove the `variable` column if necessary.
+```{r}
+(two.iris = data.table(datasets::iris)[c(1,150)])
+```
 
-* The functionality is implemented entirely in C, and is therefore both *fast* and *memory efficient* in addition to being *straightforward*.
+The iris data has four numeric columns with a regular structure: first
+the flower part, then a period, then the measurement dimension. To
+specify that we want to melt those four columns, we can use `measure`
+with `sep="."` which means to use `strsplit` on all column names; the
+columns which result in the maximum number of groups after splitting
+will be used as `measure.vars`:
+
+```{r}
+melt(two.iris, measure.vars = measure(part, dim, sep="."))
+```
+
+The first two arguments to `measure` in the code above (`part` and
+`dim`) are used to name the output columns; the number of arguments
+must equal the max number of groups after splitting with `sep`.
+
+If we want two value columns, one for each part, we can use the
+special `value.name` keyword, which means to output a value column
+for each unique name found in that group:
+
+```{r}
+melt(two.iris, measure.vars = measure(value.name, dim, sep="."))
+```
+
+Using the code above we get one value column per flower part. If we
+instead want a value column for each measurement dimension, we can do
+
+```{r}
+melt(two.iris, measure.vars = measure(part, value.name, sep="."))
+```
+
+Going back to the example of the data with families and children, we
+can see a more complex usage of `measure`, involving a function which
+is used to convert the `child` string values to integers:
+
+```{r}
+DT.m3 = melt(DT, measure = measure(value.name, child=as.integer, sep="_child"))
+DT.m3
+```
+
+In the code above we used `sep="_child"` which results in melting only
+the columns which contain that string (six column names split into two
+groups each). The `child=as.integer` argument means the second group
+will result in an output column named `child` with values defined by
+plugging the character strings from that group into the function
+`as.integer`.
+
+Finally we consider an example (borrowed from tidyr package) where we
+need to define the groups using a regular expression rather than a
+separator.
+
+```{r}
+(who <- data.table(id=1, new_sp_m5564=2, newrel_f65=3))
+melt(who, measure.vars = measure(
+  diagnosis, gender, ages, pattern="new_?(.*)_(.)(.*)"))
+```
+
+When using the `pattern` argument, it must be a Perl-compatible
+regular expression containing the same number of capture groups
+(parenthesized sub-expressions) as the number other arguments (group
+names). The code below shows how to use a more complex regex with five
+groups, two numeric output columns, and an anonymous type conversion
+function,
+
+```{r}
+melt(who, measure.vars = measure(
+  diagnosis, gender, ages,
+  ymin=as.numeric,
+  ymax=function(y)ifelse(y=="", Inf, as.numeric(y)),
+  pattern="new_?(.*)_(.)(([0-9]{2})([0-9]{0,2}))"
+))
+```
 
 ### b) Enhanced `dcast`
 
@@ -231,19 +305,20 @@ DT.c2 = dcast(DT.m2, family_id + age_mother ~ variable, value.var = c("dob", "ge
 DT.c2
 ```
 
-#### {.bs-callout .bs-callout-info}
-
 * Attributes are preserved in result wherever possible.
 
 * Everything is taken care of internally, and efficiently. In addition to being fast, it is also very memory efficient.
 
 #
 
-#### Multiple functions to `fun.aggregate`: {.bs-callout .bs-callout-info}
+#### Multiple functions to `fun.aggregate`:
 
 You can also provide *multiple functions* to `fun.aggregate` to `dcast` for *data.tables*. Check the examples in `?dcast` which illustrates this functionality.
+
+```{r, echo=FALSE}
+setDTthreads(.old.th)
+```
 
 #
 
 ***
-

@@ -4,7 +4,7 @@ guess = function(x) {
   if ("(all)" %chin% names(x))
     return("(all)")
   var = names(x)[ncol(x)]
-  message("Using '", var, "' as value column. Use 'value.var' to override")
+  messagef("Using '%s' as value column. Use 'value.var' to override", var)
   return(var)
 }
 
@@ -17,8 +17,8 @@ dcast <- function(
   else {
     data_name = deparse(substitute(data))
     ns = tryCatch(getNamespace("reshape2"), error=function(e)
-      stop("The dcast generic in data.table has been passed a ",class(data)[1L],", but data.table::dcast currently only has a method for data.tables. Please confirm your input is a data.table, with setDT(", data_name, ") or as.data.table(", data_name, "). If you intend to use a reshape2::dcast, try installing that package first, but do note that reshape2 is deprecated and you should be migrating your code away from using it."))
-    warning("The dcast generic in data.table has been passed a ", class(data)[1L], " and will attempt to redirect to the reshape2::dcast; please note that reshape2 is deprecated, and this redirection is now deprecated as well. Please do this redirection yourself like reshape2::dcast(", data_name, "). In the next version, this warning will become an error.")
+      stopf("The %1$s generic in data.table has been passed a %2$s, but data.table::%1$s currently only has a method for data.tables. Please confirm your input is a data.table, with setDT(%3$s) or as.data.table(%3$s). If you intend to use a method from reshape2, try installing that package first, but do note that reshape2 is superseded and is no longer actively developed.", "dcast", class(data)[1L], data_name))
+    warningf("The %1$s generic in data.table has been passed a %2$s and will attempt to redirect to the relevant reshape2 method; please note that reshape2 is superseded and is no longer actively developed, and this redirection is now deprecated. Please do this redirection yourself like reshape2::%1$s(%3$s). In the next version, this warning will become an error.", "dcast", class(data)[1L], data_name)
     ns$dcast(data, formula, fun.aggregate = fun.aggregate, ..., margins = margins,
              subset = subset, fill = fill, value.var = value.var)
   }
@@ -28,12 +28,12 @@ dcast <- function(
 check_formula = function(formula, varnames, valnames) {
   if (is.character(formula)) formula = as.formula(formula)
   if (!inherits(formula, "formula") || length(formula) != 3L)
-    stop("Invalid formula. Cast formula should be of the form LHS ~ RHS, for e.g., a + b ~ c.")  # nocov; couldn't find a way to construct a test formula with length!=3L
+    stopf("Invalid formula. Cast formula should be of the form LHS ~ RHS, for e.g., a + b ~ c.")  # nocov; couldn't find a way to construct a test formula with length!=3L
   vars = all.vars(formula)
   vars = vars[!vars %chin% c(".", "...")]
   allvars = c(vars, valnames)
   if (any(allvars %chin% varnames[duplicated(varnames)]))
-    stop('data.table to cast must have unique column names')
+    stopf('data.table to cast must have unique column names')
   deparse_formula(as.list(formula)[-1L], varnames, allvars)
 }
 
@@ -57,7 +57,7 @@ value_vars = function(value.var, varnames) {
   valnames = unique(unlist(value.var))
   iswrong = which(!valnames %chin% varnames)
   if (length(iswrong))
-    stop("value.var values [", paste(value.var[iswrong], collapse=", "), "] are not found in 'data'.")
+    stopf("value.var values %s are not found in 'data'.", brackify(value.var[iswrong]))
   value.var
 }
 
@@ -73,7 +73,7 @@ aggregate_funs = function(funs, vals, sep="_", ...) {
   if (length(funs) != length(vals)) {
     if (length(vals) == 1L)
       vals = replicate(length(funs), vals)
-    else stop("When 'fun.aggregate' and 'value.var' are both lists, 'value.var' must be either of length =1 or =length(fun.aggregate).")
+    else stopf("When 'fun.aggregate' and 'value.var' are both lists, 'value.var' must be either of length =1 or =length(fun.aggregate).")
   }
   only_one_fun = length(unlist(funs)) == 1L
   dots = list(...)
@@ -106,9 +106,9 @@ aggregate_funs = function(funs, vals, sep="_", ...) {
 }
 
 dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ..., margins = NULL, subset = NULL, fill = NULL, drop = TRUE, value.var = guess(data), verbose = getOption("datatable.verbose")) {
-  if (!is.data.table(data)) stop("'data' must be a data.table.")
+  if (!is.data.table(data)) stopf("'data' must be a data.table.")
   drop = as.logical(rep(drop, length.out=2L))
-  if (anyNA(drop)) stop("'drop' must be logical TRUE/FALSE")
+  if (anyNA(drop)) stopf("'drop' must be logical TRUE/FALSE")
   # #2980 if explicitly providing fun.aggregate=length but not a value.var,
   #   just use the last column (as guess(data) would do) because length will be
   #   the same on all columns
@@ -125,7 +125,7 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
     x = allcols[[i]]
     dat[[i]] = if (identical(x, quote(`.`))) rep(".", nrow(data)) else eval(x, data, parent.frame())
     if (is.function(dat[[i]]))
-      stop("Column [", deparse(x), "] not found or of unknown type.")
+      stopf("Column [%s] not found or of unknown type.", deparse(x))
   }
   setattr(lvars, 'names', c("lhs", "rhs"))
   # Have to take care of duplicate names, and provide names for expression columns properly.
@@ -140,7 +140,7 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
   rhsnames = tail(varnames, -length(lvars$lhs))
   setattr(dat, 'names', c(varnames, valnames))
   if (any(vapply_1b(dat[varnames], is.list))) {
-    stop("Columns specified in formula can not be of type list")
+    stopf("Columns specified in formula can not be of type list")
   }
   setDT(dat)
 
@@ -151,23 +151,22 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
     idx = which(eval(subset, data, parent.frame())) # any advantage thro' secondary keys?
     dat = .Call(CsubsetDT, dat, idx, seq_along(dat))
   }
-  if (!nrow(dat) || !ncol(dat)) stop("Can not cast an empty data.table")
   fun.call = m[["fun.aggregate"]]
   fill.default = NULL
   if (is.null(fun.call)) {
     oo = forderv(dat, by=varnames, retGrp=TRUE)
     if (attr(oo, 'maxgrpn', exact=TRUE) > 1L) {
-      message("Aggregate function missing, defaulting to 'length'")
+      messagef("Aggregate function missing, defaulting to 'length'")
       fun.call = quote(length)
     }
   }
   if (!is.null(fun.call)) {
     fun.call = aggregate_funs(fun.call, lvals, sep, ...)
-    errmsg = "Aggregating function(s) should take vector inputs and return a single value (length=1). However, function(s) returns length!=1. This value will have to be used to fill any missing combinations, and therefore must be length=1. Either override by setting the 'fill' argument explicitly or modify your function to handle this case appropriately."
+    errmsg = gettext("Aggregating function(s) should take vector inputs and return a single value (length=1). However, function(s) returns length!=1. This value will have to be used to fill any missing combinations, and therefore must be length=1. Either override by setting the 'fill' argument explicitly or modify your function to handle this case appropriately.")
     if (is.null(fill)) {
       fill.default = suppressWarnings(dat[0L][, eval(fun.call)])
-      # tryCatch(fill.default <- dat[0L][, eval(fun.call)], error = function(x) stop(errmsg, call.=FALSE))
-      if (nrow(fill.default) != 1L) stop(errmsg, call.=FALSE)
+      # tryCatch(fill.default <- dat[0L][, eval(fun.call)], error = function(x) stopf(errmsg))
+      if (nrow(fill.default) != 1L) stopf(errmsg)
     }
     dat = dat[, eval(fun.call), by=c(varnames)]
   }
@@ -220,6 +219,6 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
       # removed 'setcolorder()' here, #1153
     setattr(ans, 'names', c(lhsnames, allcols))
     setDT(ans); setattr(ans, 'sorted', lhsnames)
-  } else stop("Internal error -- empty rhsnames in dcast; please report") # nocov
+  } else stopf("Internal error -- empty rhsnames in dcast; please report") # nocov
   return (ans)
 }
