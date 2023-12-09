@@ -415,6 +415,7 @@ SEXP startsWithAny(const SEXP x, const SEXP y, SEXP start) {
 
 // if (length(x)) length(x[[1L]]) else 0L
 int NROW(SEXP x) {
+  // used in src/mergelist.c and below in commented out set_row_names
   if (!LENGTH(x))
     return 0; // # nocov # not yet reached from anywhere, cbindlist uses it but escapes for !NCOL(x)
   return length(VECTOR_ELT(x, 0));
@@ -422,6 +423,8 @@ int NROW(SEXP x) {
 
 // length(x)
 int NCOL(SEXP x) {
+  // used in src/mergelist.c
+  // to be an abstraction layer on C level
   return LENGTH(x);
 }
 

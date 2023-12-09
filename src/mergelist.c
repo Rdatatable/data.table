@@ -2,6 +2,7 @@
 
 // set(x, NULL, cols, copy(unclass(x)[cols])) ## but keeps the index
 SEXP copyCols(SEXP x, SEXP cols) {
+  // used in R/mergelist.R
   if (!isDataTable(x))
     error("'x' must be a data.table"); // # nocov
   if (!isInteger(cols))

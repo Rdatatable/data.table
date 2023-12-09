@@ -46,6 +46,7 @@ SEXP vecseq(SEXP x, SEXP len, SEXP clamp) {
 }
 
 SEXP seqexp(SEXP x) {
+  // used in R/mergelist.R
   // function(x) unlist(lapply(seq_along(x), function(i) rep(i, x[[i]])))
   // used to expand bmerge()$lens, when $starts does not have NAs (or duplicates?)
   // replaces rep.int(indices__, len__) where indices__ was seq_along(x)
