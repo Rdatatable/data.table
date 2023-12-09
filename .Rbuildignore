@@ -40,6 +40,7 @@
 
 ^bus$
 ^pkgdown$
+^docs$
 ^lib$
 ^library$
 ^devwd$
