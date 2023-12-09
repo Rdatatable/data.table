@@ -7,6 +7,9 @@
 #  define USE_RINTERNALS  // #3301
 #  define DATAPTR_RO(x) ((const void *)DATAPTR(x))
 #endif
+#if !defined(R_VERSION) || R_VERSION < R_Version(3, 4, 0)
+#  define SET_GROWABLE_BIT(x)  // #3292
+#endif
 #include <Rinternals.h>
 #define SEXPPTR_RO(x) ((const SEXP *)DATAPTR_RO(x))  // to avoid overhead of looped STRING_ELT and VECTOR_ELT
 #include <stdint.h>    // for uint64_t rather than unsigned long long
@@ -323,12 +326,14 @@ SEXP nqRecreateIndices(SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP fsort(SEXP, SEXP);
 SEXP inrange(SEXP, SEXP, SEXP, SEXP);
 SEXP hasOpenMP(void);
+SEXP beforeR340(void);
 SEXP uniqueNlogical(SEXP, SEXP);
 SEXP dllVersion(void);
 SEXP initLastUpdated(SEXP);
 SEXP allNAR(SEXP);
 SEXP test_dt_win_snprintf(void);
 SEXP dt_zlib_version(void);
+SEXP dt_has_zlib(void);
 SEXP startsWithAny(SEXP, SEXP, SEXP);
 SEXP convertDate(SEXP, SEXP);
 SEXP fastmean(SEXP);

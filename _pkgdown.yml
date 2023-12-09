@@ -1,4 +1,4 @@
-url: https://Rdatatable.gitlab.io/data.table
+url: https://rdatatable.gitlab.io/data.table
 
 template:
   bootstrap: 5
@@ -12,6 +12,8 @@ home:
   links:
   - text: CRAN-like website
     href: web/packages/data.table/index.html
+  - text: CRAN-like checks
+    href: web/checks/check_results_data.table.html
 
 navbar:
   structure:
