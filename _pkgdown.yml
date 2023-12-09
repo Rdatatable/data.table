@@ -1,5 +1,8 @@
 url: https://rdatatable.gitlab.io/data.table
 
+template:
+  bootstrap: 5
+
 development:
   version_tooltip: "Development version"
 

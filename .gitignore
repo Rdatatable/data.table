@@ -48,3 +48,6 @@ dev.R
 *.RDS
 *.diff
 *.patch
+
+# pkgdown
+docs
