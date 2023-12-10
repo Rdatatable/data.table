@@ -177,7 +177,7 @@ test-lin-dev-gcc-strict-cran:
         Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); notes<-"Status: 2 NOTEs"; if (!identical(l, notes)) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote(notes), " (size of tarball, installed package size) but ", shQuote(l)) else q("no")'
 
 ## R-devel on Linux clang
-# R compiled with clang
+# R compiled with clang, flags removed: -flto=auto -fopenmp
 # tests for compilation warnings
 # tests for new notes
 test-lin-dev-clang-cran:
@@ -189,8 +189,8 @@ test-lin-dev-clang-cran:
     _R_S3_METHOD_LOOKUP_BASEENV_AFTER_GLOBALENV_: "FALSE"
     _R_S3_METHOD_LOOKUP_REPORT_SEARCH_PATH_USES_: "TRUE"
   script:
-    - echo 'CFLAGS=-g -O2 -flto=auto -fno-common -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
-    - echo 'CXXFLAGS=-g -O2 -flto=auto -fno-common -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
+    - echo 'CFLAGS=-g -O2 -fno-common -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
+    - echo 'CXXFLAGS=-g -O2 -fno-common -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
     - *install-deps
     - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
     - (! grep "warning:" data.table.Rcheck/00install.out)
