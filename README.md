@@ -42,8 +42,11 @@
 ```r
 install.packages("data.table")
 
-# latest development version
+# latest development version (only if newer available)
 data.table::update_dev_pkg()
+
+# latest development version (force install)
+install.packages("data.table", repos="https://rdatatable.gitlab.io/data.table")
 ```
 
 See [the Installation wiki](https://github.com/Rdatatable/data.table/wiki/Installation) for more details.
