@@ -8,7 +8,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
     error(_("fill= should be TRUE or FALSE"));
   if (!isLogical(usenamesArg) || LENGTH(usenamesArg)!=1)
     error(_("use.names= should be TRUE, FALSE, or not used (\"check\" by default)"));  // R levels converts "check" to NA
-  if (!isLogical(ignoreattrArg) || LENGTH(ignoreattrArg)!=1)
+  if (!isLogical(ignoreattrArg) || LENGTH(ignoreattrArg)!=1 || LOGICAL(ignoreattrArg)[0] == NA_LOGICAL)
     error(_("ignore.attr= should be TRUE or FALSE"));
   if (!length(l)) return(l);
   if (TYPEOF(l) != VECSXP) error(_("Input to rbindlist must be a list. This list can contain data.tables, data.frames or plain lists."));
