@@ -177,7 +177,7 @@ test-lin-dev-gcc-strict-cran:
         Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); notes<-"Status: 2 NOTEs"; if (!identical(l, notes)) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote(notes), " (size of tarball, installed package size) but ", shQuote(l)) else q("no")'
 
 ## R-devel on Linux clang
-# R compiled with clang
+# R compiled with clang, flags removed: -flto=auto -fopenmp
 # tests for compilation warnings
 # tests for new notes
 test-lin-dev-clang-cran:
@@ -189,8 +189,8 @@ test-lin-dev-clang-cran:
     _R_S3_METHOD_LOOKUP_BASEENV_AFTER_GLOBALENV_: "FALSE"
     _R_S3_METHOD_LOOKUP_REPORT_SEARCH_PATH_USES_: "TRUE"
   script:
-    - echo 'CFLAGS=-g -O2 -flto=auto -fno-common -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
-    - echo 'CXXFLAGS=-g -O2 -flto=auto -fno-common -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
+    - echo 'CFLAGS=-g -O2 -fno-common -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
+    - echo 'CXXFLAGS=-g -O2 -fno-common -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
     - *install-deps
     - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
     - (! grep "warning:" data.table.Rcheck/00install.out)
@@ -332,20 +332,17 @@ integration:
     - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="win.binary", ver=Sys.getenv("R_REL_VERSION")), type="win.binary", fields="Revision", addFiles=TRUE)'
     - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="win.binary", ver=Sys.getenv("R_DEV_VERSION")), type="win.binary", fields="Revision", addFiles=TRUE)'
     - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="win.binary", ver=Sys.getenv("R_OLD_VERSION")), type="win.binary", fields="Revision", addFiles=TRUE)'
-    #- Rscript -e 'move.bin("test-mac-rel", Sys.getenv("R_REL_VERSION"), os.type="macosx")'
-    #- Rscript -e 'move.bin("test-mac-dev", Sys.getenv("R_DEV_VERSION"), os.type="macosx")'
-    #- Rscript -e 'move.bin("test-mac-old", Sys.getenv("R_OLD_VERSION"), os.type="macosx")'
-    #- Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="mac.binary.el-capitan", ver=Sys.getenv("R_REL_VERSION")), type="mac.binary.el-capitan", fields="Revision", addFiles=TRUE)'
-    #- Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="mac.binary.el-capitan", ver=Sys.getenv("R_DEV_VERSION")), type="mac.binary.el-capitan", fields="Revision", addFiles=TRUE)'
-    #- Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="mac.binary.el-capitan", ver=Sys.getenv("R_OLD_VERSION")), type="mac.binary.el-capitan", fields="Revision", addFiles=TRUE)'
-    ## install all pkgs to render html and double check successful installation of all devel packages
-    - mkdir -p /tmp/opencran/library /tmp/opencran/doc/html ## reset R_LIBS_USER to re-install all with html because pkgdown image has pre installed curl knitr
-    - R_LIBS_USER="" Rscript -e 'install.packages("data.table", dependencies=TRUE, lib="/tmp/opencran/library", repos=file.path("file:",normalizePath("bus/integration/cran")), INSTALL_opts="--html", quiet=TRUE)'
+    #### macos mkdir cran/bin/.../contrib/...
+    #### macos move binaries
+    #### macos write_PACKAGES
+    ## install pkg to render html
+    - mkdir -p /tmp/opencran/library /tmp/opencran/doc/html
+    - Rscript -e 'install.packages("data.table", lib="/tmp/opencran/library", repos=file.path("file:",normalizePath("bus/integration/cran")), INSTALL_opts="--html", quiet=TRUE)'
     - Rscript -e 'packageVersion("data.table", lib.loc="/tmp/opencran/library")'
     ## CRAN style web/CRAN_web.css
     - wget -q -P bus/integration/cran/web https://cran.r-project.org/web/CRAN_web.css
     ## web/packages/$pkg/index.html
-    - Rscript -e 'sapply(rownames(installed.packages(lib.loc="/tmp/opencran/library", priority="NA")), package.index, lib.loc="/tmp/opencran/library")'
+    - Rscript -e 'sapply(setNames(nm=rownames(installed.packages(lib.loc="/tmp/opencran/library", priority="NA"))), package.index, lib.loc="/tmp/opencran/library")'
     ## R docs, html, css, icons
     - Rscript -e 'doc.copy(repodir="/tmp/opencran")'
     ## Update packages.html, fix paths
@@ -353,8 +350,8 @@ integration:
     - mv /tmp/opencran/doc bus/integration/cran/
     ## library html manual, vignettes
     - Rscript -e 'lib.copy(lib.from="/tmp/opencran/library")'
-    ## web/checks/$pkg/$job 00install.out, 00check.log, *.Rout, memtest.csv, memtest.png ## memtest not available for now #5764
-    - Rscript -e 'sapply(names(test.jobs), check.copy, simplify=FALSE)'
+    ## web/checks/$pkg/$job 00install.out, 00check.log, *.Rout
+    - Rscript -e 'sapply(names(test.jobs), check.copy)'
     ## web/packages/$pkg/$pkg.pdf
     - Rscript -e 'pdf.copy("data.table", "test-lin-rel")'
     ## web/checks/check_results_$pkg.html

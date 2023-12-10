@@ -57,7 +57,7 @@ export(setnafill)
 export(.Last.updated)
 export(fcoalesce)
 export(substitute2)
-export(DT)  # mtcars |> DT(i,j,by)  #4872
+#export(DT)  # mtcars |> DT(i,j,by)  #4872 #5472
 
 S3method("[", data.table)
 export("[.data.table")  # so that functional DT() finds it; PR#5176
@@ -158,6 +158,7 @@ S3method(as.IDate, Date)
 S3method(as.IDate, POSIXct)
 S3method(as.IDate, default)
 S3method(as.IDate, numeric)
+S3method(as.IDate, IDate)
 S3method(as.ITime, character)
 S3method(as.ITime, default)
 S3method(as.ITime, POSIXct)

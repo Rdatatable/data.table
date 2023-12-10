@@ -21,8 +21,10 @@
 
 ^Makefile$
 ^NEWS\.0\.md$
+^NEWS\.1\.md$
 ^_pkgdown\.yml$
 ^src/Makevars$
+^CODEOWNERS$
 
 ^\.RData$
 ^\.Rhistory$
@@ -38,6 +40,7 @@
 
 ^bus$
 ^pkgdown$
+^docs$
 ^lib$
 ^library$
 ^devwd$

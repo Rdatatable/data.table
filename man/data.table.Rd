@@ -5,7 +5,6 @@
 \alias{Ops.data.table}
 \alias{is.na.data.table}
 \alias{[.data.table}
-\alias{DT}
 \alias{.}
 \alias{.(}
 \alias{.()}
@@ -177,7 +176,7 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
         See examples as well as \href{../doc/datatable-secondary-indices-and-auto-indexing.html}{\code{vignette("datatable-secondary-indices-and-auto-indexing")}}.
     }
 
-  \item{env}{ List or an environment, passed to \code{\link{substitute2}} for substitution of parameters in \code{i}, \code{j} and \code{by} (or \code{keyby}). Use \code{verbose} to preview constructed expressions. }
+  \item{env}{ List or an environment, passed to \code{\link{substitute2}} for substitution of parameters in \code{i}, \code{j} and \code{by} (or \code{keyby}). Use \code{verbose} to preview constructed expressions. For more details see \href{../doc/datatable-programming.html}{\code{vignette("datatable-programming")}}. }
 }
 \details{
 \code{data.table} builds on base \R functionality to reduce 2 types of time:\cr
@@ -434,13 +433,6 @@ dev.off()
 
 # using rleid, get max(y) and min of all cols in .SDcols for each consecutive run of 'v'
 DT[, c(.(y=max(y)), lapply(.SD, min)), by=rleid(v), .SDcols=v:b]
-
-# functional query DT(...)
-\dontshow{ #dontrun to pass R CMD check prior to R 4.1.0 when |> was added
-           # an if getRVersion()>"4.1.0" still has its code parsed }
-\dontrun{
-mtcars |> DT(mpg>20, .(mean_hp=mean(hp)), by=cyl)
-}
 
 # Support guide and links:
 # https://github.com/Rdatatable/data.table/wiki/Support
