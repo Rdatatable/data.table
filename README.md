@@ -42,7 +42,7 @@
 ```r
 install.packages("data.table")
 
-# latest development version that has passed all tests:
+# latest development version
 data.table::update_dev_pkg()
 ```
 
