@@ -30,6 +30,7 @@ vignettes/plots/figures
 *.o
 *.so
 *.dll
+*.dSYM
 
 # temp files
 *~

@@ -518,7 +518,7 @@ replace_dot_alias = function(e) {
       # If using secondary key of x, f__ will refer to xo
       if (is.na(which)) {
         w = if (notjoin) f__!=0L else is.na(f__)
-        return( if (length(xo)) fsort(xo[w], internal=TRUE) else which(w) )
+        return( if (length(xo) && notjoin) fsort(xo[w], internal=TRUE) else which(w) )
       }
       if (mult=="all") {
         # is by=.EACHI along with non-equi join?
