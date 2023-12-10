@@ -351,7 +351,7 @@ integration:
     ## library html manual, vignettes
     - Rscript -e 'lib.copy(lib.from="/tmp/opencran/library")'
     ## web/checks/$pkg/$job 00install.out, 00check.log, *.Rout
-    - Rscript -e 'sapply(names(test.jobs), check.copy, simplify=TRUE)'
+    - Rscript -e 'sapply(names(test.jobs), check.copy)'
     ## web/packages/$pkg/$pkg.pdf
     - Rscript -e 'pdf.copy("data.table", "test-lin-rel")'
     ## web/checks/check_results_$pkg.html
