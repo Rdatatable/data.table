@@ -297,7 +297,7 @@ integration:
   script:
     - R --version
     - *install-deps ## markdown pkg not present in r-pkgdown image
-    - rm -rf ./pkgdown && mkdir -p ./pkgdown/favicon/ && cp .graphics/favicon/* ./pkgdown/favicon/ #copy favicons
+    - rm -rf ./pkgdown && mkdir -p ./pkgdown/favicon/ && cp .graphics/favicon/* ./pkgdown/favicon/ ## copy favicons
     - rm -rf ./vignettes ## r-lib/pkgdown#2383
     - Rscript -e 'pkgdown::build_site(override=list(destination="./website"))'
     ## html manual, vignettes, repos, cran_web, cran_checks
