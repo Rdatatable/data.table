@@ -348,7 +348,7 @@ SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg) {
   if (!isNull(getAttrib(x, R_DimSymbol)))
     error(_("'x' must not be matrix or array"));
   if (!isNull(getAttrib(as, R_DimSymbol)))
-    error(_("'as' must not be matrix or array"));
+    error(_("input must not be matrix or array"));
   bool verbose = GetVerbose()>=2; // verbose level 2 required
   if (!LOGICAL(copyArg)[0] && TYPEOF(x)==TYPEOF(as) && class1(x)==class1(as)) {
     if (verbose)
@@ -378,6 +378,13 @@ SEXP dt_zlib_version(void) {
   snprintf(out, 70, _("zlib header files were not found when data.table was compiled"));
 #endif
   return ScalarString(mkChar(out));
+}
+SEXP dt_has_zlib(void) {
+#ifndef NOZLIB
+  return ScalarLogical(1);
+#else
+  return ScalarLogical(0);
+#endif
 }
 
 SEXP startsWithAny(const SEXP x, const SEXP y, SEXP start) {
