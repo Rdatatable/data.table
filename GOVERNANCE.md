@@ -49,8 +49,8 @@ Functionality that is out of current scope:
 
 ## Project member
 
-* Definition: some one who has submitted at least one PR with code contributions, that has been merged into master. (spelling fixes in docs do not count)
-* How to obtain this role: any user/contributor can become a member by submitting a PR with code contributions, then having it reviewed and merged into master. Contributors who have written issues should be encouraged to submit their first PR to become a project member. Contributors can look at https://github.com/Rdatatable/data.table/labels/beginner-task for easy issues to work on.
+* Definition: some one who has submitted at least one PR with substantial contributions, that has been merged into master. PRs improving documentation are welcome, and substantial contributions to the docs should count toward membership, but minor contributions such as spelling fixes do not count toward membership.
+* How to obtain this role: any user/contributor can become a member by submitting a PR with substantial contributions, then having it reviewed and merged into master. Contributors who have written issues should be encouraged to submit their first PR to become a project member. Contributors can look at https://github.com/Rdatatable/data.table/labels/beginner-task for easy issues to work on.
 * How this role is recognized: Members are credited via role="ctb" in DESCRIPTION (so they appear in Author list on CRAN), and they are added to https://github.com/orgs/Rdatatable/teams/project-members so they can create new branches in the Rdatatable/data.table GitHub repo. They also appear on https://github.com/Rdatatable/data.table/graphs/contributors (Contributions to master, excluding merge commits).
 
 ## Reviewer
