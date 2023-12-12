@@ -74,8 +74,7 @@ Functionality that is out of current scope:
 
 ## Other roles
 
-Each of the below roles is important, and a wiki page should be
-created to explain (1) details of responsibilities, (2) who to contact
+Each of the below roles is important, , (2) who to contact
 to obtain this role. 
 
 * Triage manager (to decide which issues/PRs to include in next releases), no special permissions.
@@ -136,4 +135,5 @@ data.table Version line in DESCRIPTION typically has the following meanings
 # Governance history
 
 Nov-Dec 2023: initial version drafted by Toby Dylan Hocking and
-reviewed by Tyson Barrett, Jan Gorecki, Michael Chirico.
+reviewed by Tyson Barrett, Jan Gorecki, Michael Chirico, Benjamin
+Schwendinger.
