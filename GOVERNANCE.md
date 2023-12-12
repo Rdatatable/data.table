@@ -124,7 +124,7 @@ This Code of Conduct is adapted from Tidyverse code of conduct.
 
 data.table Version line in DESCRIPTION typically has the following meanings
 
-* x.y.z where x=major, y=minor, z=patch/hotfix.
+* x.y.z where x=major, y=minor, z=patch/hotfix/devel.
 * x should be incremented only for major backwards-incompatible changes.
 * z is even for CRAN releases, odd for GitHub development.
 * z=99 for master branch with new features (for example 1.14.99 or 1.15.99), which eventually becomes a regular CRAN release, with incremented y and z=0 (for example 1.15.0 or 1.16.0).
