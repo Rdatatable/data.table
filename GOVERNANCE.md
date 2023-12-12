@@ -26,7 +26,11 @@ The current scope of package functionality includes:
     * subset/bind rows (rbindlist)
     * all sorts of joins
     * adding/updating/deleting columns
-* Sorting (forder)
+* high-performance common functions (`frank`, `fcase`, `fifelse`, `transpose`, `chmatch`, `fsort`, `forder`, `uniqueN`, ...)
+* common convenience functions (`%like%`, `%notin%`, `timetaken`, `substitute2`, ...)
+* ordered data functions (rleid, shift, coalesce, _locf_/_nocb_ nafill, rolling functions)
+* date and time related classes and functions (`IDate`, `ITime`)
+* technical functions (`address`, `tables`, `update_dev_pkg`)
 * Reading/writing of data from/to flat (plain text) files like CSV
 
 Functionality that is out of current scope:
