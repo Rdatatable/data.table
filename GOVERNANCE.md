@@ -23,7 +23,7 @@ The current scope of package functionality includes:
 * Data manipulation and analysis 
     * reshaping/pivoting
     * aggregation/summarizing (via `[,, by=...]` and _grouping sets_)
-    * subset/bind rows (rbindlist)
+    * filtering rows
     * all sorts of joins
     * adding/updating/deleting columns
     * set operations (union/rbind, intersection, difference)
