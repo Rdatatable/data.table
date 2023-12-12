@@ -26,6 +26,7 @@ The current scope of package functionality includes:
     * subset/bind rows (rbindlist)
     * all sorts of joins
     * adding/updating/deleting columns
+    * set operations (union/rbind, intersection, difference)
 * high-performance common functions (`frank`, `fcase`, `fifelse`, `transpose`, `chmatch`, `fsort`, `forder`, `uniqueN`, ...)
 * common convenience functions (`%like%`, `%notin%`, `timetaken`, `substitute2`, ...)
 * ordered data functions (rleid, shift, coalesce, _locf_/_nocb_ nafill, rolling functions)
