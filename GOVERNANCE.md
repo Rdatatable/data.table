@@ -22,7 +22,7 @@ To prioritize developer time, we define what is in and out of current scope. Fea
 The current scope of package functionality includes:
 * Data manipulation and analysis 
     * reshaping/pivoting
-    * aggregation/summarizing
+    * aggregation/summarizing (via `[,, by=...]` and _grouping sets_)
     * subset/bind rows (rbindlist)
     * all sorts of joins
     * adding/updating/deleting columns
