@@ -29,7 +29,7 @@ The current scope of package functionality includes:
     * set operations (union/rbind, intersection, difference)
 * high-performance common functions (`frank`, `fcase`, `fifelse`, `transpose`, `chmatch`, `fsort`, `forder`, `uniqueN`, ...)
 * common convenience functions (`%like%`, `%notin%`, `timetaken`, `substitute2`, ...)
-* ordered data functions (rleid, shift, coalesce, _locf_/_nocb_ nafill, rolling functions)
+* ordered data functions (`rleid`, `shift`, `fcoalesce`, _locf_/_nocb_ `nafill`, rolling functions)
 * date and time related classes and functions (`IDate`, `ITime`)
 * technical functions (`address`, `tables`, `update_dev_pkg`)
 * Reading/writing of data from/to flat (plain text) files like CSV
@@ -127,7 +127,7 @@ This Code of Conduct is adapted from Tidyverse code of conduct.
 
 data.table Version line in DESCRIPTION typically has the following meanings
 
-* x.y.z where x=major, y=minor, z=patch/hotfix.
+* x.y.z where x=major, y=minor, z=patch/hotfix/devel.
 * x should be incremented only for major backwards-incompatible changes.
 * z is even for CRAN releases, odd for GitHub development.
 * z=99 for master branch with new features (for example 1.14.99 or 1.15.99), which eventually becomes a regular CRAN release, with incremented y and z=0 (for example 1.15.0 or 1.16.0).
