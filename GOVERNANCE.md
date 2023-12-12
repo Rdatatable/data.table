@@ -92,7 +92,10 @@ Most decisions in the project happen by Consensus, which means that no active pe
 
 ## Pull Requests
 
-A pull request can be merged as long as there is one approving review (ideally from a reviewer of the affected files, different person from author of PR), and Consensus from active Reviewers and Committers.
+A pull request can be merged by any committer, if there is one approving review, and Consensus from active Reviewers and Committers. 
+* approving review must come from different person from author of PR.
+* approving review ideally comes from a reviewer of the affected files.
+* approving review can be same as committer who merges the PR.
 
 ## CRAN updates
 
@@ -108,7 +111,7 @@ and ask for review).
 
 # Code of conduct
 
-As contributors and maintainers of this project, we pledge to respect all people who contribute through reporting issues, posting feature requests, updating documentation, submitting pull requests or patches, and other activities.
+As contributors of this project, we pledge to respect all people who contribute through reporting issues, posting feature requests, updating documentation, submitting pull requests or patches, and other activities.
 
 We are committed to making participation in this project a harassment-free experience for everyone, regardless of level of experience, gender, gender identity and expression, sexual orientation, disability, personal appearance, body size, race, ethnicity, age, religion, etc.
 
