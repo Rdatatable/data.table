@@ -58,6 +58,7 @@ export(.Last.updated)
 export(fcoalesce)
 export(substitute2)
 #export(DT)  # mtcars |> DT(i,j,by)  #4872 #5472
+export(fctr)
 
 S3method("[", data.table)
 export("[.data.table")  # so that functional DT() finds it; PR#5176

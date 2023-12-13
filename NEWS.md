@@ -8,6 +8,20 @@
 
 ## NEW FEATURES
 
+0. New helper function `fctr` has been added, [#4837](https://github.com/Rdatatable/data.table/issues/4837). It is wrapper around base R `factor` using default arguments adjusted to retain original order. It has been added for convenience in case when order of elements needs be preserved, for example when using `dcast` or adding legend to plot.
+
+```r
+d = data.table(id1=1:2, id2=letters[c(4:3,3:4)], v1=1:4)
+dcast(d, id1 ~ id2)
+#     id1     c     d
+#1:     1     3     1
+#2:     2     2     4
+dcast(d, id1 ~ fctr(id2))
+#     id1     d     c
+#1:     1     1     3
+#2:     2     4     2
+```
+
 1. `nafill()` now applies `fill=` to the front/back of the vector when `type="locf|nocb"`, [#3594](https://github.com/Rdatatable/data.table/issues/3594). Thanks to @ben519 for the feature request. It also now returns a named object based on the input names. Note that if you are considering joining and then using `nafill(...,type='locf|nocb')` afterwards, please review `roll=`/`rollends=` which should achieve the same result in one step more efficiently. `nafill()` is for when filling-while-joining (i.e. `roll=`/`rollends=`/`nomatch=`) cannot be applied.
 
 2. `mean(na.rm=TRUE)` by group is now GForce optimized, [#4849](https://github.com/Rdatatable/data.table/issues/4849). Thanks to the [h2oai/db-benchmark](https://github.com/h2oai/db-benchmark) project for spotting this issue. The 1 billion row example in the issue shows 48s reduced to 14s. The optimization also applies to type `integer64` resulting in a difference to the `bit64::mean.integer64` method: `data.table` returns a `double` result whereas `bit64` rounds the mean to the nearest integer.
