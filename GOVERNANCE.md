@@ -37,7 +37,7 @@ The current scope of package functionality includes:
 Functionality that is out of current scope:
 * Plotting/graphics (like ggplot2)
 * Manipulating out-of-memory data, e.g. data stored on disk or remote SQL DB, (as opposed e.g. to sqldf / dbplyr)
-* Machine learning / modeling (like mlr3)
+* Machine learning (like mlr3)
 * Reading/writing of data from/to binary files like parquet
 
 # Roles 
