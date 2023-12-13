@@ -34,14 +34,17 @@ check_formula = function(formula, varnames, valnames) {
   allvars = c(vars, valnames)
   if (any(allvars %chin% varnames[duplicated(varnames)]))
     stopf('data.table to cast must have unique column names')
-  deparse_formula(as.list(formula)[-1L], varnames, allvars)
+  deparse_formula(as.list(formula)[-1L], varnames, vars, valnames)
 }
 
-deparse_formula = function(expr, varnames, allvars) {
-  lvars = lapply(expr, function(this) {
+deparse_formula = function(expr, varnames, vars, valnames) {
+  expr = list(list(expr[[1]], vars), list(expr[[2]], c(vars, valnames))) # assume expr[[1]] is LHS and expr[[2]] is RHS
+  lvars = lapply(expr, function(thisList) {
+    this = thisList[[1]]
     if (!is.language(this)) return(NULL)
-    if (this %iscall% '+') return(unlist(deparse_formula(this[-1L], varnames, allvars)))
+    if (this %iscall% '+') return(unlist(deparse_formula(this[-1L], varnames, vars, valnames)))
     if (is.name(this) && this == quote(`...`)) {
+      allvars = thisList[[2]]
       subvars = setdiff(varnames, allvars)
       return(lapply(subvars, as.name))
     }
