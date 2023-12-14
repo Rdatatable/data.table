@@ -26,9 +26,7 @@ jobs:
           needs: lint
 
       - name: Lint
-        run: |
-          for (f in list.files('ci/linters', full.names=TRUE)) source(f)
-          lintr::lint_package()
+        run: lintr::lint_package()
         shell: Rscript {0}
         env:
           LINTR_ERROR_ON_LINT: true
