@@ -8,6 +8,8 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type)
   if (!xlength(obj)) return(obj); // NULL, list()
   SEXP x;
   if (isVectorAtomic(obj)) {
+    if (!isNull(getAttrib(obj, R_DimSymbol)))
+      error(_("shift input must not be matrix or array, consider wrapping it into data.table() or c()"));
     x = PROTECT(allocVector(VECSXP, 1)); nprotect++;
     SET_VECTOR_ELT(x, 0, obj);
   } else {

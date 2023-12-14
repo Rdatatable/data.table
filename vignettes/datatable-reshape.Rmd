@@ -2,10 +2,10 @@
 title: "Efficient reshaping using data.tables"
 date: "`r Sys.Date()`"
 output:
-  rmarkdown::html_vignette
+  markdown::html_format
 vignette: >
   %\VignetteIndexEntry{Efficient reshaping using data.tables}
-  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEngine{knitr::knitr}
   \usepackage[utf8]{inputenc}
 ---
 
@@ -17,6 +17,7 @@ knitr::opts_chunk$set(
      tidy = FALSE,
     cache = FALSE,
  collapse = TRUE)
+.old.th = setDTthreads(1)
 ```
 
 This vignette discusses the default usage of reshaping functions `melt` (wide to long) and `dcast` (long to wide) for *data.tables* as well as the **new extended functionalities** of melting and casting on *multiple columns* available from `v1.9.6`.
@@ -77,8 +78,6 @@ DT.m1
 str(DT.m1)
 ```
 
-#### {.bs-callout .bs-callout-info}
-
 * `measure.vars` specify the set of columns we would like to collapse (or combine) together.
 
 * We can also specify column *indices* instead of *names*.
@@ -98,8 +97,6 @@ DT.m1 = melt(DT, measure.vars = c("dob_child1", "dob_child2", "dob_child3"),
 DT.m1
 ```
 
-#### {.bs-callout .bs-callout-info}
-
 * By default, when one of `id.vars` or `measure.vars` is missing, the rest of the columns are *automatically assigned* to the missing argument.
 
 * When neither `id.vars` nor `measure.vars` are specified, as mentioned under `?melt`, all *non*-`numeric`, `integer`, `logical` columns will be assigned to `id.vars`.
@@ -117,8 +114,6 @@ That is, we'd like to collect all *child* observations corresponding to each `fa
 ```{r}
 dcast(DT.m1, family_id + age_mother ~ child, value.var = "dob")
 ```
-
-#### {.bs-callout .bs-callout-info}
 
 * `dcast` uses *formula* interface. The variables on the *LHS* of formula represents the *id* vars and *RHS* the *measure*  vars.
 
@@ -165,7 +160,7 @@ DT.c1
 str(DT.c1) ## gender column is character type now!
 ```
 
-#### Issues {.bs-callout .bs-callout-info}
+#### Issues
 
 1. What we wanted to do was to combine all the `dob` and `gender` type columns together respectively. Instead we are combining *everything* together, and then splitting them again. I think it's easy to see that it's quite roundabout (and inefficient).
 
@@ -198,8 +193,6 @@ DT.m2
 str(DT.m2) ## col type is preserved
 ```
 
-#### {.bs-callout .bs-callout-info}
-
 * We can remove the `variable` column if necessary.
 
 * The functionality is implemented entirely in C, and is therefore both *fast* and *memory efficient* in addition to being *straightforward*.
@@ -210,7 +203,7 @@ Usually in these problems, the columns we'd like to melt can be distinguished by
 
 ```{r}
 DT.m2 = melt(DT, measure = patterns("^dob", "^gender"), value.name = c("dob", "gender"))
-print(DT.m2, class=TRUE)
+DT.m2
 ```
 
 #### - Using `measure()` to specify `measure.vars` via separator or pattern
@@ -260,7 +253,7 @@ is used to convert the `child` string values to integers:
 
 ```{r}
 DT.m3 = melt(DT, measure = measure(value.name, child=as.integer, sep="_child"))
-print(DT.m3, class=TRUE)
+DT.m3
 ```
 
 In the code above we used `sep="_child"` which results in melting only
@@ -288,12 +281,12 @@ groups, two numeric output columns, and an anonymous type conversion
 function,
 
 ```{r}
-print(melt(who, measure.vars = measure(
+melt(who, measure.vars = measure(
   diagnosis, gender, ages,
   ymin=as.numeric,
   ymax=function(y)ifelse(y=="", Inf, as.numeric(y)),
   pattern="new_?(.*)_(.)(([0-9]{2})([0-9]{0,2}))"
-)), class=TRUE)
+))
 ```
 
 ### b) Enhanced `dcast`
@@ -312,17 +305,19 @@ DT.c2 = dcast(DT.m2, family_id + age_mother ~ variable, value.var = c("dob", "ge
 DT.c2
 ```
 
-#### {.bs-callout .bs-callout-info}
-
 * Attributes are preserved in result wherever possible.
 
 * Everything is taken care of internally, and efficiently. In addition to being fast, it is also very memory efficient.
 
 #
 
-#### Multiple functions to `fun.aggregate`: {.bs-callout .bs-callout-info}
+#### Multiple functions to `fun.aggregate`:
 
 You can also provide *multiple functions* to `fun.aggregate` to `dcast` for *data.tables*. Check the examples in `?dcast` which illustrates this functionality.
+
+```{r, echo=FALSE}
+setDTthreads(.old.th)
+```
 
 #
 

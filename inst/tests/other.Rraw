@@ -690,4 +690,32 @@ if (loaded[["nanotime"]]) {
 
 }
 
+# that plot works; moved from tests.Rraw 167 to here to save ram of loading graphics package and possible screen device issues on overloaded servers, #5517
+DT = data.table( a=1:5, b=11:50, d=c("A","B","C","D"), f=1:5, grp=1:5 )
+test(28.1, DT[,plot(b,f)], NULL)
+test(28.2, as.integer(DT[,hist(b)]$breaks), seq.int(10L,50L,by=5L)) # as.integer needed for R 3.1.0
+test(28.3, DT[,plot(b,f),by=.(grp)], data.table(grp=integer()))
+try(graphics.off(),silent=TRUE)
+
+# test DT$.<- in a data.table-unaware package
+# moved from tests.Rraw 1890 to here to save ram of loading stats package and plot, #5517
+DT = data.table(A=1:5)
+test(29.1, stats::ts.plot(gpars=DT), error="object must have one or more observations")
+# Inside ts.plot is a gpars$ylab<- which happens before its error. That dispatches to our $<- which does the alloc.col()
+test(29.2, DT, data.table(A=1:5))
+
+if (FALSE) {  # moved from tests.Rraw in #5517 and not yet back on; wasn't sure we need to still test reshape2
+  # test dispatch for non-data.table objects, #4864.
+  if (inherits(try(getNamespace("reshape2"), silent=TRUE),"try-error")) {
+    test(1038.001, melt(as.data.frame(DT), id.vars=1:2, measure.vars=5:6),
+                   error="The melt generic in data.table has been passed a data.frame")
+  } else {
+    #  1) GLCI rel-cran has reshape2 installed because caret in other.Rraw depends on reshape2
+    #  2) a user running test.data.table() with reshape2 installed (doesn't have to be loaded)
+    #  3) in dev locally I have reshape2 installed to run caret in other.Rraw
+    test(1038.002, melt(as.data.frame(DT), id.vars=1:2, measure.vars=5:6),
+                   as.data.frame(melt(DT, id.vars=1:2, measure.vars=5:6)),
+                   warning="The melt generic in data.table has been passed a data.frame")
+  }
+}
 
