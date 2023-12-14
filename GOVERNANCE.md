@@ -10,7 +10,12 @@ The purpose of this document is to define how people related to the project work
 
 The purpose of the project is to maintain the R data.table package, which is guided by the following principles:
 
+* Time & memory efficiency
+* Concise syntax (minimal redundancy in code)
 * No external Imports/LinkingTo/Depends dependencies (external meaning those not maintained by the project)
+* Few (if any) Suggests/Enhances dependencies
+* Stable code base (strong preference for user-friendly back-compatibility with data.table itself and with old versions of R)
+* Comprehensive and accessible documentation and run-time signals (errors, warnings)
 * Few (if any) Suggests/Enhances dependencies
 * Time & memory efficiency
 * Concise syntax (minimal redundancy in code)
