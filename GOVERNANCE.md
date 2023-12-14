@@ -77,17 +77,6 @@ Functionality that is out of current scope:
 * How to obtain this role: (1) merge into master a PR adding role="cre" to DESCRIPTION, and (2) submit updated package to CRAN (previous CRAN maintainer will have to confirm change by email to CRAN). 
 * How this role is recognized: credited via role="cre" in DESCRIPTION, so they appear as Maintainer on CRAN. 
 
-## Other roles
-
-Each of the below roles is important, , (2) who to contact
-to obtain this role. 
-
-* Triage manager (to decide which issues/PRs to include in next releases), no special permissions.
-* Translation manager (to communicate with translators, and source code changes related to i18n, for example making sure messages are translation-ready, updating the .pot template), no special permissions (updates should happen in a pull request as usual).
-* Performance testing manager (to prevent performance regressions), no special permissions (updates should happen in a pull request as usual).
-* Continuous integration/deployment manager (to maintain script which run tests and build binaries of development branches for user testing before release), no special permissions (updates should happen in a pull request as usual).
-* Reverse dependency manager (to ensure compatibility with other CRAN packages), need access to a computer that can run revdep checks in parallel.
-
 # Decision-making processes
 
 ## Definition of Consensus
