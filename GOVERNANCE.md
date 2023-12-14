@@ -25,7 +25,7 @@ The purpose of the project is to maintain the R data.table package, which is gui
 To prioritize developer time, we define what is in and out of current scope. Feature requests in issues and pull requests that are out of current scope should be closed immediately, because they are not the current priority. If someone wants to contribute code that is currently out of scope, they first have to make a pull request that changes the scope as defined below.
 
 The current scope of package functionality includes:
-* Data manipulation and analysis 
+* data manipulation and analysis 
     * reshaping/pivoting
     * aggregation/summarizing (via `[,, by=...]` and _grouping sets_)
     * filtering rows
