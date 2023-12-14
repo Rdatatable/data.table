@@ -41,10 +41,23 @@ deparse_formula = function(expr, varnames, vars, valnames) {
   expr = list(list(expr[[1]], vars), list(expr[[2]], c(vars, valnames))) # assume expr[[1]] is LHS and expr[[2]] is RHS
   lvars = lapply(expr, function(thisList) {
     this = thisList[[1]]
+    allvars = thisList[[2]]
     if (!is.language(this)) return(NULL)
-    if (this %iscall% '+') return(unlist(deparse_formula(this[-1L], varnames, vars, valnames)))
+    if (this %iscall% '+') return(unlist(auxiliar_deparsing(this[-1L], varnames, allvars)))
     if (is.name(this) && this == quote(`...`)) {
-      allvars = thisList[[2]]
+      subvars = setdiff(varnames, allvars)
+      return(lapply(subvars, as.name))
+    }
+    this
+  })
+  lvars = lapply(lvars, function(x) if (length(x) && !is.list(x)) list(x) else x)
+}
+
+auxiliar_deparsing = function(expr, varnames, allvars) {
+  lvars = lapply(expr, function(this) {
+    if (!is.language(this)) return(NULL)
+    if (this %iscall% '+') return(unlist(auxiliar_deparsing(this[-1L], varnames, allvars)))
+    if (is.name(this) && this == quote(`...`)) {
       subvars = setdiff(varnames, allvars)
       return(lapply(subvars, as.name))
     }
