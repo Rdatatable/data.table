@@ -165,4 +165,3 @@ rss = function() {  #5515 #5517
   round(ans / 1024, 1L)  # return MB
   # nocov end
 }
-
