@@ -26,7 +26,7 @@
       stopf("The data_table.%s version (%s) does not match the package (%s). Please close all R sessions to release the old %s and reinstall data.table in a fresh R session. The root cause is that R's package installer can in some unconfirmed circumstances leave a package in a state that is apparently functional but where new R code is calling old C code silently: https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478. Once a package is in this mismatch state it may produce wrong results silently until you next upgrade the package. Please help by adding precise circumstances to 17478 to move the status to confirmed. This mismatch between R and C code can happen with any package not just data.table. It is just that data.table has added this check.", dll, dllV, RV, toupper(dll))
     }
     builtPath = system.file("Meta/package.rds",package="data.table")
-    if (builtPath != "" && !identical(base::getRversion()>="4.0.0", readRDS(builtPath)$Built$R>="4.0.0")) {
+    if (builtPath != "" && !identical(base::getRversion()>="4.0.0", (builtUsing<-readRDS(builtPath)$Built$R)>="4.0.0")) {
       stopf("This is R %s but data.table has been installed using R %s. The major version must match. Please reinstall data.table.", base::getRversion(), builtUsing)
       # the if(R>=4.0.0) in NAMESPACE when registering S3 methods rbind.data.table and cbind.data.table happens on install; #3968
     }
