@@ -2,10 +2,10 @@
 title: "Introduction to data.table"
 date: "`r Sys.Date()`"
 output:
-  rmarkdown::html_vignette
+  markdown::html_format
 vignette: >
   %\VignetteIndexEntry{Introduction to data.table}
-  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEngine{knitr::knitr}
   \usepackage[utf8]{inputenc}
 ---
 
@@ -18,6 +18,7 @@ knitr::opts_chunk$set(
     cache = FALSE,
  collapse = TRUE
 )
+.old.th = setDTthreads(1)
 ```
 
 This vignette introduces the `data.table` syntax, its general form, how to *subset* rows, *select and compute* on columns, and perform aggregations *by group*. Familiarity with `data.frame` data structure from base R is useful, but not essential to follow this vignette.
@@ -86,7 +87,7 @@ class(DT$ID)
 
 You can also convert existing objects to a `data.table` using `setDT()` (for `data.frame`s and `list`s) and `as.data.table()` (for other structures); the difference is beyond the scope of this vignette, see `?setDT` and `?as.data.table` for more details.
 
-#### Note that: {.bs-callout .bs-callout-info}
+#### Note that:
 
 * Row numbers are printed with a `:` in order to visually separate the row number from the first column.
 
@@ -111,7 +112,7 @@ DT[i, j, by]
 
 Users who have an SQL background might perhaps immediately relate to this syntax.
 
-#### The way to read it (out loud) is: {.bs-callout .bs-callout-info}
+#### The way to read it (out loud) is:
 
 Take `DT`, subset/reorder rows using `i`, then calculate `j`, grouped by `by`.
 
@@ -126,8 +127,6 @@ ans <- flights[origin == "JFK" & month == 6L]
 head(ans)
 ```
 
-#### {.bs-callout .bs-callout-info}
-
 * Within the frame of a `data.table`, columns can be referred to *as if they are variables*, much like in SQL or Stata. Therefore, we simply refer to `origin` and `month` as if they are variables. We do not need to add the prefix `flights$` each time. Nevertheless, using `flights$origin` and `flights$month` would work just fine.
 
 * The *row indices* that satisfy the condition `origin == "JFK" & month == 6L` are computed, and since there is nothing else left to do, all columns from `flights` at rows corresponding to those *row indices* are simply returned as a `data.table`.
@@ -140,7 +139,6 @@ head(ans)
 ans <- flights[1:2]
 ans
 ```
-#### {.bs-callout .bs-callout-info}
 
 * In this case, there is no condition. The row indices are already provided in `i`. We therefore return a `data.table` with all columns from `flights` at rows for those *row indices*.
 
@@ -153,7 +151,7 @@ ans <- flights[order(origin, -dest)]
 head(ans)
 ```
 
-#### `order()` is internally optimised {.bs-callout .bs-callout-info}
+#### `order()` is internally optimised
 
 * We can use "-" on a `character` columns within the frame of a `data.table` to sort in decreasing order.
 
@@ -170,8 +168,6 @@ ans <- flights[, arr_delay]
 head(ans)
 ```
 
-#### {.bs-callout .bs-callout-info}
-
 * Since columns can be referred to as if they are variables within the frame of `data.table`s, we directly refer to the *variable* we want to subset. Since we want *all the rows*, we simply skip `i`.
 
 * It returns *all* the rows for the column `arr_delay`.
@@ -183,15 +179,13 @@ ans <- flights[, list(arr_delay)]
 head(ans)
 ```
 
-#### {.bs-callout .bs-callout-info}
-
 * We wrap the *variables* (column names) within `list()`, which ensures that a `data.table` is  returned. In case of a single column name, not wrapping with `list()` returns a vector instead, as seen in the [previous example](#select-j-1d).
 
 * `data.table` also allows wrapping columns with `.()` instead of `list()`. It is an *alias* to `list()`; they both mean the same. Feel free to use whichever you prefer; we have noticed most users seem to prefer `.()` for conciseness, so we will continue to use `.()` hereafter.
 
 `data.table`s (and `data.frame`s) are internally `list`s as well, with the stipulation that each element has the same length and the `list` has a `class` attribute. Allowing `j` to return a `list` enables converting and returning `data.table` very efficiently.
 
-#### Tip: {.bs-callout .bs-callout-warning #tip-1}
+#### Tip: {#tip-1}
 
 As long as `j-expression` returns a `list`, each element of the list will be converted to a column in the resulting `data.table`. This makes `j` quite powerful, as we will see shortly. It is also very important to understand this for when you'd like to make more complicated queries!!
 
@@ -204,8 +198,6 @@ head(ans)
 ## alternatively
 # ans <- flights[, list(arr_delay, dep_delay)]
 ```
-
-#### {.bs-callout .bs-callout-info}
 
 * Wrap both columns within `.()`, or `list()`. That's it.
 
@@ -229,7 +221,7 @@ ans <- flights[, sum( (arr_delay + dep_delay) < 0 )]
 ans
 ```
 
-#### What's happening here? {.bs-callout .bs-callout-info}
+#### What's happening here?
 
 * `data.table`'s `j` can handle more than just *selecting columns* - it can handle *expressions*, i.e., *computing on columns*. This shouldn't be surprising, as columns can be referred to as if they are variables. Then we should be able to *compute* by calling functions on those variables. And that's what precisely happens here.
 
@@ -242,8 +234,6 @@ ans <- flights[origin == "JFK" & month == 6L,
                .(m_arr = mean(arr_delay), m_dep = mean(dep_delay))]
 ans
 ```
-
-#### {.bs-callout .bs-callout-info}
 
 * We first subset in `i` to find matching *row indices* where `origin` airport equals `"JFK"`, and `month` equals `6L`. We *do not* subset the _entire_ `data.table` corresponding to those rows _yet_.
 
@@ -262,7 +252,7 @@ The function `length()` requires an input argument. We just needed to compute th
 
 This type of operation occurs quite frequently, especially while grouping (as we will see in the next section), to the point where `data.table` provides a *special symbol* `.N` for it.
 
-#### Special symbol `.N`: {.bs-callout .bs-callout-info #special-N}
+#### Special symbol `.N`: {#special-N}
 
 `.N` is a special built-in variable that holds the number of observations _in the current group_. It is particularly useful when combined with `by` as we'll see in the next section. In the absence of group by operations, it simply returns the number of rows in the subset.
 
@@ -272,8 +262,6 @@ So we can now accomplish the same task by using `.N` as follows:
 ans <- flights[origin == "JFK" & month == 6L, .N]
 ans
 ```
-
-#### {.bs-callout .bs-callout-info}
 
 * Once again, we subset in `i` to get the *row indices* where `origin` airport equals *"JFK"*, and `month` equals *6*.
 
@@ -372,8 +360,6 @@ ans
 # ans <- flights[, .(.N), by = "origin"]
 ```
 
-#### {.bs-callout .bs-callout-info}
-
 * We know `.N` [is a special variable](#special-N) that holds the number of rows in the current group. Grouping by `origin` obtains the number of rows, `.N`, for each group.
 
 * By doing `head(flights)` you can see that the origin airports occur in the order *"JFK"*, *"LGA"* and *"EWR"*. The original order of grouping variables is preserved in the result. _This is important to keep in mind!_
@@ -400,8 +386,6 @@ ans <- flights[carrier == "AA", .N, by = origin]
 ans
 ```
 
-#### {.bs-callout .bs-callout-info}
-
 * We first obtain the row indices for the expression `carrier == "AA"` from `i`.
 
 * Using those *row indices*, we obtain the number of rows while grouped by `origin`. Once again no columns are actually materialised here, because the `j-expression` does not require any columns to be actually subsetted and is therefore fast and memory efficient.
@@ -416,8 +400,6 @@ head(ans)
 # ans <- flights[carrier == "AA", .N, by = c("origin", "dest")]
 ```
 
-#### {.bs-callout .bs-callout-info}
-
 * `by` accepts multiple columns. We just provide all the columns by which to group by. Note the use of `.()` again in `by` -- again, this is just shorthand for `list()`, and `list()` can be used here as well. Again, we'll stick with `.()` in this vignette.
 
 #### -- How can we get the average arrival and departure delay for each `orig,dest` pair for each month for carrier code `"AA"`? {#origin-dest-month}
@@ -428,8 +410,6 @@ ans <- flights[carrier == "AA",
         by = .(origin, dest, month)]
 ans
 ```
-
-#### {.bs-callout .bs-callout-info}
 
 * Since we did not provide column names for the expressions in `j`, they were automatically generated as `V1` and `V2`.
 
@@ -449,8 +429,6 @@ ans <- flights[carrier == "AA",
         keyby = .(origin, dest, month)]
 ans
 ```
-
-#### {.bs-callout .bs-callout-info}
 
 * All we did was to change `by` to `keyby`. This automatically orders the result by the grouping variables in increasing order. In fact, due to the internal implementation of `by` first requiring a sort before recovering the original table's order, `keyby` is typically faster than `by` because it doesn't require this second step.
 
@@ -475,8 +453,6 @@ ans <- ans[order(origin, -dest)]
 head(ans)
 ```
 
-#### {.bs-callout .bs-callout-info}
-
 * Recall that we can use `-` on a `character` column in `order()` within the frame of a `data.table`. This is possible to due `data.table`'s internal query optimisation.
 
 * Also recall that `order(...)` with the frame of a `data.table` is *automatically optimised* to use `data.table`'s internal fast radix order `forder()` for speed. 
@@ -487,8 +463,6 @@ But this requires having to assign the intermediate result and then overwriting 
 ans <- flights[carrier == "AA", .N, by = .(origin, dest)][order(origin, -dest)]
 head(ans, 10)
 ```
-
-#### {.bs-callout .bs-callout-info}
 
 * We can tack expressions one after another, *forming a chain* of operations, i.e., `DT[ ... ][ ... ][ ... ]`.
 
@@ -512,8 +486,6 @@ ans <- flights[, .N, .(dep_delay>0, arr_delay>0)]
 ans
 ```
 
-#### {.bs-callout .bs-callout-info}
-
 * The last row corresponds to `dep_delay > 0 = TRUE` and `arr_delay > 0 = FALSE`. We can see that `r flights[!is.na(arr_delay) & !is.na(dep_delay), .N, .(dep_delay>0, arr_delay>0)][, N[4L]]` flights started late but arrived early (or on time).
 
 * Note that we did not provide any names to `by-expression`. Therefore, names have been automatically assigned in the result. As with `j`, you can name these expressions as you would elements of any `list`, e.g. `DT[, .N, .(dep_delayed = dep_delay>0, arr_delayed = arr_delay>0)]`.
@@ -528,7 +500,7 @@ It is of course not practical to have to type `mean(myCol)` for every column one
 
 How can we do this efficiently, concisely? To get there, refresh on [this tip](#tip-1) - *"As long as the `j`-expression returns a `list`, each element of the `list` will be converted to a column in the resulting `data.table`"*. Suppose we can refer to the *data subset for each group* as a variable *while grouping*, then we can loop through all the columns of that variable using the already- or soon-to-be-familiar base function `lapply()`. No new names to learn specific to `data.table`.
 
-#### Special symbol `.SD`: {.bs-callout .bs-callout-info #special-SD}
+#### Special symbol `.SD`: {#special-SD}
 
 `data.table` provides a *special* symbol, called `.SD`. It stands for **S**ubset of **D**ata. It by itself is a `data.table` that holds the data for *the current group* defined using `by`.
 
@@ -542,8 +514,6 @@ DT
 DT[, print(.SD), by = ID]
 ```
 
-#### {.bs-callout .bs-callout-info}
-
 * `.SD` contains all the columns *except the grouping columns* by default.
 
 * It is also generated by preserving the original order - data corresponding to `ID = "b"`, then `ID = "a"`, and then `ID = "c"`.
@@ -553,8 +523,6 @@ To compute on (multiple) columns, we can then simply use the base R function `la
 ```{r}
 DT[, lapply(.SD, mean), by = ID]
 ```
-
-#### {.bs-callout .bs-callout-info}
 
 * `.SD` holds the rows corresponding to columns `a`, `b` and `c` for that group. We compute the `mean()` on each of these columns using the already-familiar base function `lapply()`.
 
@@ -566,7 +534,7 @@ We are almost there. There is one little thing left to address. In our `flights`
 
 #### -- How can we specify just the columns we would like to compute the `mean()` on?
 
-#### .SDcols {.bs-callout .bs-callout-info}
+#### .SDcols
 
 Using the argument `.SDcols`. It accepts either column names or column indices. For example, `.SDcols = c("arr_delay", "dep_delay")` ensures that `.SD` contains only these two columns for each group.
 
@@ -590,8 +558,6 @@ ans <- flights[, head(.SD, 2), by = month]
 head(ans)
 ```
 
-#### {.bs-callout .bs-callout-info}
-
 * `.SD` is a `data.table` that holds all the rows for *that group*. We simply subset the first two rows as we have seen [here](#subset-rows-integer) already.
 
 * For each group, `head(.SD, 2)` returns the first two rows as a `data.table`, which is also a `list`, so we do not have to wrap it with `.()`.
@@ -606,8 +572,6 @@ So that we have a consistent syntax and keep using already existing (and familia
 DT[, .(val = c(a,b)), by = ID]
 ```
 
-#### {.bs-callout .bs-callout-info}
-
 * That's it. There is no special syntax required. All we need to know is the base function `c()` which concatenates vectors and [the tip from before](#tip-1).
 
 #### -- What if we would like to have all the values of column `a` and `b` concatenated, but returned as a list column?
@@ -615,8 +579,6 @@ DT[, .(val = c(a,b)), by = ID]
 ```{r}
 DT[, .(val = list(c(a,b))), by = ID]
 ```
-
-#### {.bs-callout .bs-callout-info}
 
 * Here, we first concatenate the values with `c(a,b)` for each group, and wrap that with `list()`. So for each group, we return a list of all concatenated values.
 
@@ -646,7 +608,7 @@ DT[i, j, by]
 
 We have seen so far that,
 
-#### Using `i`: {.bs-callout .bs-callout-info}
+#### Using `i`:
 
 * We can subset rows similar to a `data.frame`- except you don't have to use `DT$` repetitively since columns within the frame of a `data.table` are seen as if they are *variables*.
 
@@ -654,7 +616,7 @@ We have seen so far that,
 
 We can do much more in `i` by keying a `data.table`, which allows blazing fast subsets and joins. We will see this in the *"Keys and fast binary search based subsets"* and *"Joins and rolling joins"* vignette.
 
-#### Using `j`: {.bs-callout .bs-callout-info}
+#### Using `j`:
 
 1. Select columns the `data.table` way: `DT[, .(colA, colB)]`.
 
@@ -666,7 +628,7 @@ We can do much more in `i` by keying a `data.table`, which allows blazing fast s
 
 5. Combine with `i`: `DT[colA > value, sum(colB)]`.
 
-#### Using `by`: {.bs-callout .bs-callout-info}
+#### Using `by`:
 
 * Using `by`, we can group by columns by specifying a *list of columns* or a *character vector of column names* or even *expressions*. The flexibility of `j`, combined with `by` and `i` makes for a very powerful syntax.
 
@@ -682,7 +644,7 @@ We can do much more in `i` by keying a `data.table`, which allows blazing fast s
 
     3. `DT[col > val, head(.SD, 1), by = ...]` - combine `i` along with `j` and `by`.
 
-#### And remember the tip: {.bs-callout .bs-callout-warning}
+#### And remember the tip:
 
 As long as `j` returns a `list`, each element of the list will become a column in the resulting `data.table`.
 
@@ -690,3 +652,6 @@ We will see how to *add/update/delete* columns *by reference* and how to combine
 
 ***
 
+```{r, echo=FALSE}
+setDTthreads(.old.th)
+```
