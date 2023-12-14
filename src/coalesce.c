@@ -74,7 +74,7 @@ SEXP coalesce(SEXP x, SEXP inplaceArg) {
     }
   } break;
   case REALSXP: {
-    if (Rinherits(first, char_integer64)) { // Rinherits() is true for nanotime
+    if (INHERITS(first, char_integer64)) {
       int64_t *xP=(int64_t *)REAL(first), finalVal=NA_INTEGER64;
       int k=0;
       for (int j=0; j<nval; ++j) {
@@ -163,7 +163,7 @@ SEXP coalesce(SEXP x, SEXP inplaceArg) {
     }
   } break;
   default:
-    error(_("Unsupported type: %s"), type2char(TYPEOF(first))); // e.g. raw is tested
+    error(_("Type '%s' is not supported"), type2char(TYPEOF(first))); // e.g. raw is tested
   }
   UNPROTECT(nprotect);
   return first;

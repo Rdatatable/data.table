@@ -5,7 +5,7 @@
 \alias{openmp}
 \title{ Set or get number of threads that data.table should use }
 \description{
-  Set and get number of threads to be used in \code{data.table} functions that are parallelized with OpenMP. The number of threads is initialized when \code{data.table} is first loaded in the R session using optional envioronment variables. Thereafter, the number of threads may be changed by calling \code{setDTthreads}. If you change an environment variable using \code{Sys.setenv} you will need to call \code{setDTthreads} again to reread the environment variables.
+  Set and get number of threads to be used in \code{data.table} functions that are parallelized with OpenMP. The number of threads is initialized when \code{data.table} is first loaded in the R session using optional environment variables. Thereafter, the number of threads may be changed by calling \code{setDTthreads}. If you change an environment variable using \code{Sys.setenv} you will need to call \code{setDTthreads} again to reread the environment variables.
 }
 \usage{
   setDTthreads(threads = NULL, restore_after_fork = NULL, percent = NULL, throttle = NULL)
@@ -37,18 +37,21 @@
   Internally parallelized code is used in the following places:
 
   \itemize{
-    \item{\file{between.c} - \code{\link{between}()}}
-    \item{\file{cj.c} - \code{\link{CJ}()}}
-    \item{\file{coalesce.c} - \code{\link{fcoalesce}()}}
-    \item{\file{fifelse.c} - \code{\link{fifelse}()}}
-    \item{\file{fread.c} - \code{\link{fread}()}}
-    \item{\file{forder.c}, \file{fsort.c}, and \file{reorder.c} - \code{\link{forder}()} and related}
-    \item{\file{froll.c}, \file{frolladaptive.c}, and \file{frollR.c} - \code{\link{froll}()} and family}
-    \item{\file{fwrite.c} - \code{\link{fwrite}()}}
-    \item{\file{gsumm.c} - GForce in various places, see \link{GForce}}
-    \item{\file{nafill.c} - \code{\link{nafill}()}}
-    \item{\file{subset.c} - Used in \code{\link[=data.table]{[.data.table}} subsetting}
-    \item{\file{types.c} - Internal testing usage}
+    \item\file{between.c} - \code{\link{between}()}
+    \item\file{cj.c} - \code{\link{CJ}()}
+    \item\file{coalesce.c} - \code{\link{fcoalesce}()}
+    \item\file{fifelse.c} - \code{\link{fifelse}()}
+    \item\file{fread.c} - \code{\link{fread}()}
+    \item\file{forder.c}, \file{fsort.c}, and \file{reorder.c} - \code{\link{forder}()} and related
+    \item\file{froll.c}, \file{frolladaptive.c}, and \file{frollR.c} - \code{\link{froll}()} and family
+    \item\file{fwrite.c} - \code{\link{fwrite}()}
+    \item\file{gsumm.c} - GForce in various places, see \link{GForce}
+    \item\file{nafill.c} - \code{\link{nafill}()}
+    \item\file{subset.c} - Used in \code{\link[=data.table]{[.data.table}} subsetting
+    \item\file{types.c} - Internal testing usage
   }
+}
+\examples{
+  getDTthreads(verbose=TRUE)
 }
 \keyword{ data }

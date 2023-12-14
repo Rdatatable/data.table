@@ -29,7 +29,7 @@ static int getIntEnv(const char *name, int def)
 static inline int imin(int a, int b) { return a < b ? a : b; }
 static inline int imax(int a, int b) { return a > b ? a : b; }
 
-void initDTthreads() {
+void initDTthreads(void) {
   // called at package startup from init.c
   // also called by setDTthreads(threads=NULL) (default) to reread environment variables; see setDTthreads below
   // No verbosity here in this setter. Verbosity is in getDTthreads(verbose=TRUE)
@@ -61,7 +61,7 @@ int getDTthreads(const int64_t n, const bool throttle) {
   // this is the main getter used by all parallel regions; they specify num_threads(n, true|false).
   // Keep this light, simple and robust. initDTthreads() ensures 1 <= DTthreads <= omp_get_num_proc()
   // throttle introduced in 1.12.10 (see NEWS item); #4484
-  // throttle==true  : a number of iterations per thread (DTthrottle) is applied before a second thread is utilized 
+  // throttle==true  : a number of iterations per thread (DTthrottle) is applied before a second thread is utilized
   // throttle==false : parallel region is already pre-chunked such as in fread; e.g. two batches intended for two threads
   if (n<1) return 1; // 0 or negative could be deliberate in calling code for edge cases where loop is not intended to run at all
   int64_t ans = throttle ? 1+(n-1)/DTthrottle :  // 1 thread for n<=1024, 2 thread for n<=2048, etc
@@ -75,10 +75,13 @@ static const char *mygetenv(const char *name, const char *unset) {
 }
 
 SEXP getDTthreads_R(SEXP verbose) {
-  if (!isLogical(verbose) || LENGTH(verbose)!=1 || INTEGER(verbose)[0]==NA_LOGICAL) error(_("'verbose' must be TRUE or FALSE"));
+  if(!IS_TRUE_OR_FALSE(verbose))
+    error(_("%s must be TRUE or FALSE"), "verbose");
   if (LOGICAL(verbose)[0]) {
     #ifndef _OPENMP
       Rprintf(_("This installation of data.table has not been compiled with OpenMP support.\n"));
+    #else
+      Rprintf(_("  OpenMP version (_OPENMP)       %d\n"), _OPENMP); // user can use Google to map 201511 to 4.5; it's odd that OpenMP API does not provide 4.5
     #endif
     // this output is captured, paste0(collapse="; ")'d, and placed at the end of test.data.table() for display in the last 13 lines of CRAN check logs
     // it is also printed at the start of test.data.table() so that we can trace any Killed events on CRAN before the end is reached
@@ -166,16 +169,16 @@ SEXP setDTthreads(SEXP threads, SEXP restore_after_fork, SEXP percent, SEXP thro
 
 static int pre_fork_DTthreads = 0;
 
-void when_fork() {
+void when_fork(void) {
   pre_fork_DTthreads = DTthreads;
   DTthreads = 1;
 }
 
-void after_fork() {
+void after_fork(void) {
   if (RestoreAfterFork) DTthreads = pre_fork_DTthreads;
 }
 
-void avoid_openmp_hang_within_fork() {
+void avoid_openmp_hang_within_fork(void) {
   // Called once on loading data.table from init.c
 #ifdef _OPENMP
   pthread_atfork(&when_fork, &after_fork, NULL);

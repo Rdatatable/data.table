@@ -4,11 +4,11 @@ rollup = function(x, ...) {
 rollup.data.table = function(x, j, by, .SDcols, id = FALSE, ...) {
   # input data type basic validation
   if (!is.data.table(x))
-    stop("Argument 'x' must be a data.table object")
+    stopf("Argument 'x' must be a data.table object")
   if (!is.character(by))
-    stop("Argument 'by' must be a character vector of column names used in grouping.")
+    stopf("Argument 'by' must be a character vector of column names used in grouping.")
   if (!is.logical(id))
-    stop("Argument 'id' must be a logical scalar.")
+    stopf("Argument 'id' must be a logical scalar.")
   # generate grouping sets for rollup
   sets = lapply(length(by):0L, function(i) by[0L:i])
   # redirect to workhorse function
@@ -22,15 +22,17 @@ cube = function(x, ...) {
 cube.data.table = function(x, j, by, .SDcols, id = FALSE, ...) {
   # input data type basic validation
   if (!is.data.table(x))
-    stop("Argument 'x' must be a data.table object")
+    stopf("Argument 'x' must be a data.table object")
   if (!is.character(by))
-    stop("Argument 'by' must be a character vector of column names used in grouping.")
+    stopf("Argument 'by' must be a character vector of column names used in grouping.")
   if (!is.logical(id))
-    stop("Argument 'id' must be a logical scalar.")
+    stopf("Argument 'id' must be a logical scalar.")
+  if (missing(j))
+    stopf("Argument 'j' is required")
   # generate grouping sets for cube - power set: http://stackoverflow.com/a/32187892/2490497
   n = length(by)
   keepBool = sapply(2L^(seq_len(n)-1L), function(k) rep(c(FALSE, TRUE), times=k, each=((2L^n)/(2L*k))))
-  sets = lapply((2L^n):1L, function(j) by[keepBool[j, ]])
+  sets = lapply((2L^n):1L, function(jj) by[keepBool[jj, ]])
   # redirect to workhorse function
   jj = substitute(j)
   groupingsets.data.table(x, by=by, sets=sets, .SDcols=.SDcols, id=id, jj=jj)
@@ -42,41 +44,42 @@ groupingsets = function(x, ...) {
 groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, ...) {
   # input data type basic validation
   if (!is.data.table(x))
-    stop("Argument 'x' must be a data.table object")
+    stopf("Argument 'x' must be a data.table object")
   if (ncol(x) < 1L)
-    stop("Argument 'x' is a 0-column data.table; no measure to apply grouping over.")
+    stopf("Argument 'x' is a 0-column data.table; no measure to apply grouping over.")
   if (anyDuplicated(names(x)) > 0L)
-    stop("Input data.table must not contain duplicate column names.")
+    stopf("Input data.table must not contain duplicate column names.")
   if (!is.character(by))
-    stop("Argument 'by' must be a character vector of column names used in grouping.")
+    stopf("Argument 'by' must be a character vector of column names used in grouping.")
   if (anyDuplicated(by) > 0L)
-    stop("Argument 'by' must have unique column names for grouping.")
-  if (!is.list(sets) || !all(sapply(sets, is.character)))
-    stop("Argument 'sets' must be a list of character vectors.")
+    stopf("Argument 'by' must have unique column names for grouping.")
+  if (!is.list(sets) || !all(vapply_1b(sets, is.character)))
+    stopf("Argument 'sets' must be a list of character vectors.")
   if (!is.logical(id))
-    stop("Argument 'id' must be a logical scalar.")
+    stopf("Argument 'id' must be a logical scalar.")
   # logic constraints validation
   if (!all((sets.all.by <- unique(unlist(sets))) %chin% by))
-    stop("All columns used in 'sets' argument must be in 'by' too. Columns used in 'sets' but not present in 'by': ", brackify(setdiff(sets.all.by, by)))
+    stopf("All columns used in 'sets' argument must be in 'by' too. Columns used in 'sets' but not present in 'by': %s", brackify(setdiff(sets.all.by, by)))
   if (id && "grouping" %chin% names(x))
-    stop("When using `id=TRUE` the 'x' data.table must not have a column named 'grouping'.")
-  if (any(sapply(sets, anyDuplicated)))
-    stop("Character vectors in 'sets' list must not have duplicated column names within a single grouping set.")
+    stopf("When using `id=TRUE` the 'x' data.table must not have a column named 'grouping'.")
+  if (any(vapply_1i(sets, anyDuplicated)))  # anyDuplicated returns index of first duplicate, otherwise 0L
+    stopf("Character vectors in 'sets' list must not have duplicated column names within a single grouping set.")
   if (length(sets) > 1L && (idx<-anyDuplicated(lapply(sets, sort))))
-    warning("'sets' contains a duplicate (i.e., equivalent up to sorting) element at index ", idx, "; as such, there will be duplicate rows in the output -- note that grouping by A,B and B,A will produce the same aggregations. Use `sets=unique(lapply(sets, sort))` to eliminate duplicates.")
+    warningf("'sets' contains a duplicate (i.e., equivalent up to sorting) element at index %d; as such, there will be duplicate rows in the output -- note that grouping by A,B and B,A will produce the same aggregations. Use `sets=unique(lapply(sets, sort))` to eliminate duplicates.", idx)
   # input arguments handling
   jj = if (!missing(jj)) jj else substitute(j)
   av = all.vars(jj, TRUE)
   if (":=" %chin% av)
-    stop("Expression passed to grouping sets function must not update by reference. Use ':=' on results of your grouping function.")
+    stopf("Expression passed to grouping sets function must not update by reference. Use ':=' on results of your grouping function.")
   if (missing(.SDcols))
     .SDcols = if (".SD" %chin% av) setdiff(names(x), by) else NULL
+  if (length(names(by))) by = unname(by)
   # 0 rows template data.table to keep colorder and type
   empty = if (length(.SDcols)) x[0L, eval(jj), by, .SDcols=.SDcols] else x[0L, eval(jj), by]
   if (id && "grouping" %chin% names(empty)) # `j` could have been evaluated to `grouping` field
-    stop("When using `id=TRUE` the 'j' expression must not evaluate to a column named 'grouping'.")
+    stopf("When using `id=TRUE` the 'j' expression must not evaluate to a column named 'grouping'.")
   if (anyDuplicated(names(empty)) > 0L)
-    stop("There exists duplicated column names in the results, ensure the column passed/evaluated in `j` and those in `by` are not overlapping.")
+    stopf("There exists duplicated column names in the results, ensure the column passed/evaluated in `j` and those in `by` are not overlapping.")
   # adding grouping column to template - aggregation level identifier
   if (id) {
     set(empty, j = "grouping", value = integer())
@@ -86,7 +89,7 @@ groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, ...)
   int64.cols = vapply_1b(empty, inherits, "integer64")
   int64.cols = names(int64.cols)[int64.cols]
   if (length(int64.cols) && !requireNamespace("bit64", quietly=TRUE))
-    stop("Using integer64 class columns require to have 'bit64' package installed.") # nocov
+    stopf("Using integer64 class columns require to have 'bit64' package installed.") # nocov
   int64.by.cols = intersect(int64.cols, by)
   # aggregate function called for each grouping set
   aggregate.set = function(by.set) {
