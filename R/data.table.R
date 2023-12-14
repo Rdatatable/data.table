@@ -1981,7 +1981,7 @@ replace_dot_alias = function(e) {
     attrs = attr(x, 'index', exact=TRUE)
     skeys = names(attributes(attrs))
     if (!is.null(skeys)) {
-      hits  = unlist(lapply(paste0("__", names_x[cols]), function(x) grep(x, skeys, fixed = TRUE)))
+      hits  = unlist(lapply(paste0("__", names_x[cols]), grep, skeys, fixed = TRUE))
       hits  = skeys[unique(hits)]
       for (i in seq_along(hits)) setattr(attrs, hits[i], NULL) # does by reference
     }
@@ -2145,7 +2145,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     }
     if (!is.logical(xj))
       all.logical = FALSE
-    if (length(levels(xj)) > 0L || !(is.numeric(xj) || is.complex(xj) || is.logical(xj)) ||
+    if (nlevels(xj) > 0L || !(is.numeric(xj) || is.complex(xj) || is.logical(xj)) ||
         (!is.null(cl <- attr(xj, "class", exact=TRUE)) && any(cl %chin%
         c("Date", "POSIXct", "POSIXlt"))))
       non.numeric = TRUE
@@ -2165,7 +2165,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
       if (is.character(X[[j]])) next
       xj = X[[j]]
       miss = is.na(xj)
-      xj = if (length(levels(xj))) as.vector(xj) else format(xj)
+      xj = if (nlevels(xj)) as.vector(xj) else format(xj)
       is.na(xj) = miss
       X[[j]] = xj
     }

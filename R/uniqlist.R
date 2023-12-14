@@ -21,4 +21,3 @@ uniqlengths = function(x, len) {
   ans = .Call(Cuniqlengths, as.integer(x), as.integer(len))
   ans
 }
-

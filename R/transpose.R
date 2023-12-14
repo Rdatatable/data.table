@@ -56,7 +56,7 @@ tstrsplit = function(x, ..., fill=NA, type.convert=FALSE, keep, names=FALSE) {
         if (!(sum(!is_named) == 1L && !is_named[n] && is.function(type.convert[[n]])))
           stopf("When the argument 'type.convert' contains an unnamed element, it is expected to be the last element and should be a function. More than one unnamed element is not allowed unless all elements are functions with length equal to %d (the length of the transpose list or 'keep' argument if it is specified).", length(keep))
         else {
-          fothers = type.convert[[n]]         
+          fothers = type.convert[[n]]
           type.convert = type.convert[-n]
         }
       }
@@ -90,4 +90,3 @@ tstrsplit = function(x, ..., fill=NA, type.convert=FALSE, keep, names=FALSE) {
   setattr(ans, 'names', names)
   ans
 }
-
