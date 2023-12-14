@@ -1,5 +1,14 @@
 # data.table developer
 
+## Setup
+
+One needs to set up the project path and source `.dev/cc.R` to use `cc()` conveniently. This works through creating an additional `.Rprofile` in the `data.table` directory.
+```r
+# content of ~/git/data.table/.Rprofile
+Sys.setenv(PROJ_PATH="~/git/data.table")
+source(".dev/cc.R")
+```
+
 ## Utilities
 
 ### [`cc.R`](./cc.R)
