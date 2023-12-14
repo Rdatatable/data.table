@@ -88,7 +88,7 @@ Most decisions in the project happen by Consensus, which means that no active pe
 A pull request can be merged by any committer, if there is one approving review, and Consensus from active Reviewers and Committers. 
 * approving review must come from someone other than the author of the PR.
 * approving review ideally comes from a reviewer of the affected files.
-* approving review can be same as committer who merges the PR.
+* approving review can and often will be by the committer who merges the PR.
 
 ## CRAN updates
 
