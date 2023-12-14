@@ -16,11 +16,6 @@ The purpose of the project is to maintain the R data.table package, which is gui
 * Few (if any) Suggests/Enhances dependencies
 * Stable code base (strong preference for user-friendly back-compatibility with data.table itself and with old versions of R)
 * Comprehensive and accessible documentation and run-time signals (errors, warnings)
-* Few (if any) Suggests/Enhances dependencies
-* Time & memory efficiency
-* Concise syntax (minimal redundancy in code)
-* Stable code base (strong preference for user-friendly back-compatibility with data.table itself and with old versions of R)
-* Comprehensive and accessible documentation and run-time signals (errors, warnings)
 
 To prioritize developer time, we define what is in and out of current scope. Feature requests in issues and pull requests that are out of current scope should be closed immediately, because they are not the current priority. If someone wants to contribute code that is currently out of scope, they first have to make a pull request that changes the scope as defined below.
 
