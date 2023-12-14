@@ -93,7 +93,7 @@ A pull request can be merged by any committer, if there is one approving review,
 ## CRAN updates
 
 * Regular CRAN releases should ideally occur twice per year, and can include new features.
-* A hotfix/patch CRAN release should occur when CRAN asks for one, at which time the CRAN maintainer should post an issue on github, and ask others to help fix/prepare the release.
+* A hotfix/patch CRAN release should occur when CRAN asks for one, at which time the CRAN maintainer should post an issue on github, and ask others to help fix/prepare the release. It should not include new features.
 * Both kinds of releases should be discussed in an issue, and the release should happen only if there is Consensus among active Reviewers and Committers.
 * It is the responsibility of the CRAN maintainer to ensure quality prior to release. This includes CRAN checks, unit tests, performance tests, etc, and these tasks can be delegated to others. 
 
