@@ -163,7 +163,7 @@ system.time(DT[id \%in\% 100:500])    # only binary search subset again
 #   of this exercise. Sorry if that's not the case.
 old_lc_collate = Sys.getlocale("LC_COLLATE")
 
-if (old == "C") {
+if (old_lc_collate == "C") {
   Sys.setlocale("LC_COLLATE", "")
 }
 DT = data.table(
