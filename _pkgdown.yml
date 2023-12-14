@@ -1,8 +1,7 @@
-url: https://Rdatatable.gitlab.io/data.table
+url: https://rdatatable.gitlab.io/data.table
 
 template:
-  params:
-    ganalytics: UA-129166154-2
+  bootstrap: 5
 
 development:
   version_tooltip: "Development version"
@@ -11,6 +10,8 @@ home:
   links:
   - text: CRAN-like website
     href: web/packages/data.table/index.html
+  - text: CRAN-like checks
+    href: web/checks/check_results_data.table.html
 
 navbar:
   structure:
