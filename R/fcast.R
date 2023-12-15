@@ -25,7 +25,7 @@ dcast <- function(
   # nocov end
 }
 
-check_formula = function(formula, varnames, valnames) {
+check_formula = function(formula, varnames, valnames, value.var.in.LHSdots, value.var.in.RHSdots) {
   if (is.character(formula)) formula = as.formula(formula)
   if (!inherits(formula, "formula") || length(formula) != 3L)
     stopf("Invalid formula. Cast formula should be of the form LHS ~ RHS, for e.g., a + b ~ c.")  # nocov; couldn't find a way to construct a test formula with length!=3L
@@ -34,16 +34,23 @@ check_formula = function(formula, varnames, valnames) {
   allvars = c(vars, valnames)
   if (any(allvars %chin% varnames[duplicated(varnames)]))
     stopf('data.table to cast must have unique column names')
-  deparse_formula(as.list(formula)[-1L], varnames, vars, valnames)
+  if (value.var.in.LHSdots == value.var.in.RHSdots && isFALSE(value.var.in.LHSdots))
+    deparse_formula(as.list(formula)[-1L], varnames, allvars)
+  else if (value.var.in.LHSdots == value.var.in.RHSdots && isTRUE(value.var.in.LHSdots))
+    deparse_formula(as.list(formula)[-1L], varnames, vars)
+  else if (isTRUE(value.var.in.LHSdots) && isFALSE(value.var.in.RHSdots))
+    split_deparsing(as.list(formula)[-1L], varnames, vars, allvars)
+  else
+    split_deparsing(as.list(formula)[-1L], varnames, allvars, vars)
 }
 
-deparse_formula = function(expr, varnames, vars, valnames) {
-  expr = list(list(expr[[1]], vars), list(expr[[2]], c(vars, valnames))) # assume expr[[1]] is LHS and expr[[2]] is RHS
+split_deparsing = function(expr, varnames, LHSallvars, RHSallvars) {
+  expr = list(list(expr[[1]], LHSallvars), list(expr[[2]], c(RHSallvars))) # assume expr[[1]] is LHS and expr[[2]] is RHS
   lvars = lapply(expr, function(thisList) {
     this = thisList[[1]]
     allvars = thisList[[2]]
     if (!is.language(this)) return(NULL)
-    if (this %iscall% '+') return(unlist(auxiliar_deparsing(this[-1L], varnames, allvars)))
+    if (this %iscall% '+') return(unlist(deparse_formula(this[-1L], varnames, allvars)))
     if (is.name(this) && this == quote(`...`)) {
       subvars = setdiff(varnames, allvars)
       return(lapply(subvars, as.name))
@@ -53,10 +60,10 @@ deparse_formula = function(expr, varnames, vars, valnames) {
   lvars = lapply(lvars, function(x) if (length(x) && !is.list(x)) list(x) else x)
 }
 
-auxiliar_deparsing = function(expr, varnames, allvars) {
+deparse_formula = function(expr, varnames, allvars) {
   lvars = lapply(expr, function(this) {
     if (!is.language(this)) return(NULL)
-    if (this %iscall% '+') return(unlist(auxiliar_deparsing(this[-1L], varnames, allvars)))
+    if (this %iscall% '+') return(unlist(deparse_formula(this[-1L], varnames, allvars)))
     if (is.name(this) && this == quote(`...`)) {
       subvars = setdiff(varnames, allvars)
       return(lapply(subvars, as.name))
@@ -121,10 +128,14 @@ aggregate_funs = function(funs, vals, sep="_", ...) {
   as.call(c(quote(list), unlist(ans)))
 }
 
-dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ..., margins = NULL, subset = NULL, fill = NULL, drop = TRUE, value.var = guess(data), verbose = getOption("datatable.verbose")) {
+dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ..., margins = NULL, subset = NULL, fill = NULL, drop = TRUE, value.var = guess(data), verbose = getOption("datatable.verbose"), value.var.in.dots = FALSE, value.var.in.LHSdots = value.var.in.dots, value.var.in.RHSdots = value.var.in.dots) {
   if (!is.data.table(data)) stopf("'data' must be a data.table.")
   drop = as.logical(rep(drop, length.out=2L))
   if (anyNA(drop)) stopf("'drop' must be logical TRUE/FALSE")
+  if (!value.var.in.dots %in% c(TRUE, FALSE))
+    stopf("Argument 'value.var.in.dots' should be logical TRUE/FALSE")
+  if (!value.var.in.LHSdots %in% c(TRUE, FALSE) || ! value.var.in.RHSdots %in% c(TRUE, FALSE))
+    stopf("Arguments 'value.var.in.LHSdots', 'value.var.in.RHSdots' should be logical TRUE/FALSE")
   # #2980 if explicitly providing fun.aggregate=length but not a value.var,
   #   just use the last column (as guess(data) would do) because length will be
   #   the same on all columns
@@ -132,7 +143,7 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
     value.var = names(data)[ncol(data)]
   lvals = value_vars(value.var, names(data))
   valnames = unique(unlist(lvals))
-  lvars = check_formula(formula, names(data), valnames)
+  lvars = check_formula(formula, names(data), valnames, value.var.in.LHSdots, value.var.in.RHSdots)
   lvars = lapply(lvars, function(x) if (length(x)) x else quote(`.`))
   # tired of lapply and the way it handles environments!
   allcols = c(unlist(lvars), lapply(valnames, as.name))
