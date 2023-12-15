@@ -39,6 +39,11 @@ transpose(DT)
 
 DT = data.table(x=1:3, y=c("a","b","c"))
 transpose(DT, list.cols=TRUE)
+
+# base R equivalent of transpose
+l = list(1:3, c("a", "b", "c"))
+lapply(seq(length(l[[1]])), function(x) lapply(l, `[[`, x))
+transpose(l, list.cols=TRUE)
 }
 \seealso{
   \code{\link{data.table}}, \code{\link{tstrsplit}}
