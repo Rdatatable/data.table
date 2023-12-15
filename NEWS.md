@@ -293,7 +293,7 @@
 
 41. `tables()` is faster by default by excluding the size of character strings in R's global cache (which may be shared) and excluding the size of list column items (which also may be shared). `mb=` now accepts any function which accepts a `data.table` and returns a higher and better estimate of its size in bytes, albeit more slowly; e.g. `mb = utils::object.size`.
 
-42. `transpose` gains `list.cols=` argument, [#5639](https://github.com/Rdatatable/data.table/issues/5639). This enables to return output with list columns and avoids promoting type to maximum type. `Factor` columns are still promoted to `character` to avoid copying levels. Thans to @MLopez-Ibanez for the request, and Benjamin Schwendinger for the PR.
+42. `transpose` gains `list.cols=` argument, [#5639](https://github.com/Rdatatable/data.table/issues/5639). This enables to return output with list columns and avoids promoting type to maximum type. The only exception are `factor` columns which are promoted to `character` so `transpose(, list.cols=TRUE)` and `transpose(, list.cols=FALSE)` keep same behavior for `factor`. Thanks to @MLopez-Ibanez for the request, and Benjamin Schwendinger for the PR.
 
 ## BUG FIXES
 
