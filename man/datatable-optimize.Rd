@@ -158,9 +158,6 @@ system.time(ans2 <- DT[id == 100L]) # only binary search subset
 system.time(DT[id \%in\% 100:500])    # only binary search subset again
 
 # sensitivity to collate order
-# reader beware -- this example assumes your
-#   system locale and the "C" locale differ for the purposes
-#   of this exercise. Sorry if that's not the case.
 old_lc_collate = Sys.getlocale("LC_COLLATE")
 
 if (old_lc_collate == "C") {
