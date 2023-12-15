@@ -86,8 +86,8 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   // TODO: enable stress-test mode in tests only (#3205) which can be turned off by default in release to decrease overhead on small data
   //       if that is established to be biting (it may be fine).
   if (nBatch<1 || batchSize<1 || lastBatchSize<1) {
-    error(_("Internal error: nrow=%d  ngrp=%d  nbit=%d  bitshift=%d  highSize=%d  nBatch=%d  batchSize=%d  lastBatchSize=%d\n"),  // # nocov
-           nrow, ngrp, nb, bitshift, highSize, nBatch, batchSize, lastBatchSize);                                              // # nocov
+    error(_("Internal error: nrow=%d  ngrp=%d  nbit=%d  bitshift=%d  highSize=%zu  nBatch=%zu  batchSize=%zu  lastBatchSize=%zu\n"),  // # nocov
+           nrow, ngrp, nb, bitshift, highSize, nBatch, batchSize, lastBatchSize);                                                     // # nocov
   }
   // initial population of g:
   #pragma omp parallel for num_threads(getDTthreads(ngrp, false))
@@ -616,7 +616,7 @@ SEXP gmean(SEXP x, SEXP narmArg)
     } else {
       // narm==true and anyNA==true
       int *restrict nna_counts = calloc(ngrp, sizeof(int));
-      if (!nna_counts) error(_("Unable to allocate %d * %d bytes for non-NA counts in gmean na.rm=TRUE"), ngrp, sizeof(int));
+      if (!nna_counts) error(_("Unable to allocate %d * %zu bytes for non-NA counts in gmean na.rm=TRUE"), ngrp, sizeof(int));
       #pragma omp parallel for num_threads(getDTthreads(highSize, false))
       for (int h=0; h<highSize; h++) {
           double *restrict _ans = ansp + (h<<bitshift);
@@ -673,7 +673,7 @@ SEXP gmean(SEXP x, SEXP narmArg)
         // # nocov start
         free(nna_counts_r);  // free(NULL) is allowed and does nothing. Avoids repeating the error() call here.
         free(nna_counts_i);
-        error(_("Unable to allocate %d * %d bytes for non-NA counts in gmean na.rm=TRUE"), ngrp, sizeof(int));
+        error(_("Unable to allocate %d * %zu bytes for non-NA counts in gmean na.rm=TRUE"), ngrp, sizeof(int));
         // # nocov end
       }
       #pragma omp parallel for num_threads(getDTthreads(highSize, false))
@@ -1116,7 +1116,7 @@ SEXP gprod(SEXP x, SEXP narmArg) {
   //clock_t start = clock();
   if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gprod");
   long double *s = malloc(ngrp * sizeof(long double));
-  if (!s) error(_("Unable to allocate %d * %d bytes for gprod"), ngrp, sizeof(long double));
+  if (!s) error(_("Unable to allocate %d * %zu bytes for gprod"), ngrp, sizeof(long double));
   for (int i=0; i<ngrp; ++i) s[i] = 1.0;
   switch(TYPEOF(x)) {
   case LGLSXP: case INTSXP: {

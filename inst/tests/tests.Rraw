@@ -8,6 +8,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   if ((tt<-compiler::enableJIT(-1))>0)
     cat("This is dev mode and JIT is enabled (level ", tt, ") so there will be a brief pause around the first test.\n", sep="")
   rm_all = function() {}
+  DTfun = DT ## otherwise DT would be re-defined by many tests
 } else {
   require(data.table)
   # Make symbols to the installed version's ::: so that we can i) test internal-only not-exposed R functions
@@ -32,6 +33,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   compactprint = data.table:::compactprint
   cube.data.table = data.table:::cube.data.table
   dcast.data.table = data.table:::dcast.data.table
+  DTfun = data.table:::DT
   endsWith = data.table:::endsWith
   endsWithAny = data.table:::endsWithAny
   forder = data.table:::forder
@@ -69,6 +71,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   which.first = data.table:::which.first
   which.last = data.table:::which.last
   `-.IDate` = data.table:::`-.IDate`
+  haszlib = data.table:::haszlib
 
   # Also, for functions that are masked by other packages, we need to map the data.table one. Or else,
   # the other package's function would be picked up. As above, we only need to do this because we desire
@@ -348,7 +351,7 @@ test(83, TESTDT[,list("a","b")], data.table(V1="a",V2="b"))
 test(83.1, TESTDT[,list("sum(a),sum(b)")], data.table("sum(a),sum(b)"))
 test(83.2, TESTDT[,list("sum(a),sum(b)"),by=a], {tt=data.table(a=c("a","c","d","g"),V1="sum(a),sum(b)",key="a");tt$V1=as.character(tt$V1);tt})
 test(84, TESTDT[1:2,list(a,b)], data.table(a=c("a","c"), b=c("e","e"), key = 'a,b'))
-# test(85, TESTDT[1:2,DT(a,b)], data.table(a=c("a","c"), b=c("e","e")))  #DT() now deprecated
+# test(85, TESTDT[1:2,DT(a,b)], data.table(a=c("a","c"), b=c("e","e")))  #DT() now deprecated ## this is very old DT() functionality, completely different than DT() discussed in 2023
 
 test(86, TESTDT[,sum(v),by="b"], data.table(b=c("e","f","i","b"),V1=INT(3,7,11,7)))  # TESTDT is key'd by a,b, so correct that grouping by b should not be key'd in the result by default
 test(87, TESTDT[,list(MySum=sum(v)),by="b"], data.table(b=c("e","f","i","b"),MySum=INT(3,7,11,7)))
@@ -8703,7 +8706,7 @@ test(1613.601, all.equal(data.table(a=1), data.frame(a=1)), "target is data.tabl
 test(1613.602, all.equal(data.table(a=1), data.frame(a=1), check.attributes = FALSE))
 test(1613.603, all.equal(data.table(a=1), list(a=1), check.attributes = FALSE))
 test(1613.604, all.equal(data.table(a=1), 1, check.attributes = FALSE))
-test(1613.605, all.equal(data.table(a=1), try(stop('this wont work'), silent = TRUE), check.attributes = FALSE), "target is data.table but current is not and failed to be coerced to it")
+test(1613.605, !isTRUE(all.equal(data.table(a=1), try(stop('this wont work'), silent = TRUE), check.attributes = FALSE)))
 L1 = list(a = data.table(1), b = setattr("foo1613", "tbl", data.table(1)))
 L2 = list(a = 1, b = setattr("foo1613", "tbl", 1))
 test(1613.606, all(grepl("target is data.table, current is numeric", all.equal(L1, L2))))
@@ -9896,16 +9899,20 @@ test(1658.39, fwrite(matrix(1:3, nrow=3, ncol=1), quote = TRUE), output = '"V1"\
 test(1658.40, fwrite(matrix(1:4, nrow=2, ncol=2, dimnames = list(c("ra","rb"),c("ca","cb"))), quote = TRUE), output = '"ca","cb"\n.*1,3\n2,4', message = "x being coerced from class: matrix to data.table")
 
 # fwrite compress
-test(1658.41, fwrite(data.table(a=c(1:3), b=c(1:3)), compress="gzip"), output='a,b\n1,1\n2,2\n3,3')  # compress ignored on console
-DT = data.table(a=rep(1:2,each=100), b=rep(1:4,each=25))
-test(1658.421, fwrite(DT, file=f1<-tempfile(fileext=".gz"), verbose=TRUE), NULL,
-               output="args.nrow=200 args.ncol=2.*maxLineLen=5[12].*Writing 200 rows in 1 batches of 200 rows.*nth=1")  # [12] for Windows where eolLen==2
-test(1658.422, fwrite(DT, file=f2<-tempfile()), NULL)
-test(1658.423, file.info(f1)$size < file.info(f2)$size)  # 74 < 804  (file.size() isn't available in R 3.1.0)
-if (test_R.utils) test(1658.43, fread(f1), DT)  # use fread to decompress gz (works cross-platform)
-fwrite(DT, file=f3<-tempfile(), compress="gzip")   # compress to filename not ending .gz
-test(1658.44, file.info(f3)$size, file.info(f1)$size)
-unlink(c(f1,f2,f3))
+if (!haszlib()) {
+  test(1658.409, fwrite(data.table(a=1), file=tempfile(), compress="gzip"), error="header files were not found at the time data.table was compiled")
+} else {
+  test(1658.41, fwrite(data.table(a=c(1:3), b=c(1:3)), compress="gzip"), output='a,b\n1,1\n2,2\n3,3')  # compress ignored on console
+  DT = data.table(a=rep(1:2,each=100), b=rep(1:4,each=25))
+  test(1658.421, fwrite(DT, file=f1<-tempfile(fileext=".gz"), verbose=TRUE), NULL,
+                 output="args.nrow=200 args.ncol=2.*maxLineLen=5[12].*Writing 200 rows in 1 batches of 200 rows.*nth=1")  # [12] for Windows where eolLen==2
+  test(1658.422, fwrite(DT, file=f2<-tempfile()), NULL)
+  test(1658.423, file.info(f1)$size < file.info(f2)$size)  # 74 < 804  (file.size() isn't available in R 3.1.0)
+  if (test_R.utils) test(1658.43, fread(f1), DT)  # use fread to decompress gz (works cross-platform)
+  fwrite(DT, file=f3<-tempfile(), compress="gzip")   # compress to filename not ending .gz
+  test(1658.441, file.info(f3)$size, file.info(f1)$size)
+  unlink(c(f1,f2,f3))
+}
 DT = data.table(a=1:3, b=list(1:4, c(3.14, 100e10), c("foo", "bar", "baz")))
 test(1658.45, fwrite(DT), output=c("a,b","1,1|2|3|4","2,3.14|1e+12","3,foo|bar|baz"))
 DT[3,b:=as.raw(0:2)]
@@ -9932,10 +9939,12 @@ test(1658.52, file.info(f1)$size, file.info(f2)$size)
 unlink(c(f1, f2))
 
 # compression error -5 due to only 3 bytes (bom) in first block; #3599
-DT = data.table(l=letters, n=1:26)
-test(1658.53, fwrite(DT, file=f<-tempfile(fileext=".gz"), bom=TRUE, col.names=FALSE), NULL)
-if (test_R.utils) test(1658.54, fread(f), setnames(DT,c("V1","V2")))
-unlink(f)
+if (haszlib()) {
+  DT = data.table(l=letters, n=1:26)
+  test(1658.53, fwrite(DT, file=f<-tempfile(fileext=".gz"), bom=TRUE, col.names=FALSE), NULL)
+  if (test_R.utils) test(1658.54, fread(f), setnames(DT,c("V1","V2")))
+  unlink(f)
+}
 
 # complex column support for fwrite, part of #3690
 DT = data.table(a=1:3, z=0:2 - (2:0)*1i)
@@ -9944,7 +9953,7 @@ test(1658.56, fwrite(data.table(exp(1) - pi*1i)), output='2.718[0-9]*-3.141[0-9]
 ## formerly 1658.46
 DT = data.table(a=1:3, b=list(1:4, c(3.14, 100e10), c(3i,4i,5i)))
 test(1658.57, fwrite(DT), output='0+3i|0+4i|0+5i')
-DT[ , b := c(1i, -1-1i, NA)]
+DT[ , b := c(1i, -1-1i, NA_complex_)]
 test(1658.58, fwrite(DT), output='a,b\n1,0\\+1i\n2,-1-1i\n3,$')
 
 # more coverage
@@ -10413,7 +10422,7 @@ test(1702.2, isoweek(as.Date(test_cases)), test_values)
 test(1702.3, isoweek(as.POSIXct(test_cases)), test_values)
 
 # 1% sample of a 400-year cycle of dates for extra robustness
-if (test_R.utils) test(1702.4, isoweek((DT<-fread(testDir('isoweek_test.csv.bz2')))$input_date), DT$expected_output)
+if (test_R.utils) test(1702.4, isoweek((DT<-fread(testDir('isoweek_test.csv.bz2')))$input_date), DT$expected_output, ignore.warning="datetimes before") ## ignore.warning due to #5785
 
 # fread, ensure no shell commands #1702
 if (.Platform$OS.type=="unix") {
@@ -10973,7 +10982,7 @@ test(1743.217, sapply(fread("a,b,c,d,e,f\na,b,c,d,e,f", colClasses = list(factor
 test(1743.218, sapply(fread("a,b,c,d,e,f\na,b,c,d,e,f", colClasses = list(factor = c(1, 2, 4), factor = 3), select = c(5, 4, 2, 3)), class), y = c(e = "character", d = "factor", b = "factor", c = "factor"))
 
 test(1743.22, fread("a,b,c\n1999/01/01,2,f", colClasses=list(Date=1L), drop="a"), data.table(b=2L, c="f"))
-test(1743.231, fread("a,b,c\n2,1,4i", colClasses=list(complex="c", integer=2L), drop="a"), data.table(b=1L, c="4i"),
+test(1743.231, fread("a,b,c\n2,1,4j", colClasses=list(complex="c", integer=2L), drop="a"), data.table(b=1L, c="4j"),
      warning=paste0(base_messages$coerce_na, ".*left as type 'character'"))
 test(1743.232, fread("a,b,c\n2,1,3+4i", colClasses=list(complex="c", integer=2L), drop="a"), data.table(b=1L, c=3+4i))
 test(1743.241, fread("a,b,c\n2,2,f", colClasses = list(character="c", integer="b"), drop="a"), data.table(b=2L, c="f"))
@@ -12918,8 +12927,8 @@ test(1914.04, dt.s4.list, as.list(dt))  # Underlying data not identical
 # simple S4 conversion-isms work
 df = data.frame(a=sample(letters, 10), b=1:10)
 dt = as.data.table(df)
-test(1914.05, identical(as(df, 'data.table'), dt))
-test(1914.06, identical(as(dt, 'data.frame'), df))
+test(1914.05, identical(methods::as(df, 'data.table'), dt))
+test(1914.06, identical(methods::as(dt, 'data.frame'), df))
 # data.table can be used in an S4 slot
 dt <- data.table(a=sample(letters[1:3], 10, replace=TRUE), score=rnorm(10))
 dt.comp <- new("S4Composition", data=dt)
@@ -14345,7 +14354,10 @@ test(2003.3, rbindlist(list(data.table(a=1:2), data.table(b=3:4)), fill=TRUE, us
 test(2003.4, rbindlist(list(data.table(a=1:2,c=5:6), data.table(b=3:4)), fill=TRUE, use.names=FALSE),
              data.table(a=c(1:4), c=INT(5,6,NA,NA)))
 test(2003.5, rbindlist(list(data.table(a=1:2), data.table(b=3:4, c=5:6)), fill=TRUE, use.names=FALSE),
-             data.table(a=c(1:4), V1=INT(NA,NA,5,6)))
+             data.table(a=c(1:4), c=INT(NA,NA,5,6)))
+# rbindlist segfault with fill=TRUE and usenames=FALSE #5444
+test(2003.6, rbindlist(list(list(1), list(2,3)), fill=TRUE, use.names=FALSE), data.table(c(1,2), c(NA, 3)))
+test(2003.7, rbindlist(list(list(1), list(2,factor(3))), fill=TRUE, use.names=FALSE), data.table(c(1,2), factor(c(NA, 3))))
 
 # chmatch coverage for two different non-ascii encodings matching; issues mentioned in comments in chmatch.c #69 #2538 #111
 x1 = "fa\xE7ile"
@@ -14489,8 +14501,8 @@ options(datatable.rbindlist.check=NULL)  # this option is set to NULL at the top
 if (.Platform$OS.type == 'windows') local({
   lc_collate <- Sys.getlocale(c('LC_COLLATE'))
   lc_ctype <- Sys.getlocale(c('LC_CTYPE'))
-  Sys.setlocale('LC_COLLATE', "Chinese (Simplified)_China.936")
-  Sys.setlocale('LC_CTYPE', "Chinese (Simplified)_China.936")
+  suppressWarnings(Sys.setlocale('LC_COLLATE', "Chinese (Simplified)_China.936")) ## fix CRAN warning #5696
+  suppressWarnings(Sys.setlocale('LC_CTYPE', "Chinese (Simplified)_China.936"))
   on.exit({
     Sys.setlocale('LC_COLLATE', lc_collate)
     Sys.setlocale('LC_CTYPE', lc_ctype)
@@ -15415,9 +15427,9 @@ test(2060.503, xx_addr, address(xx))
 test(2060.504, xx, x)
 test(2060.505, address(setcoalesce(xx)), xx_addr)
 # complex support for fcoalesce
-z1 = c(1i, NA, 1-1i, NA, 0+3i, NA)
-z2 = c(NA, 4-2i, 0+0i, NA, NA, NA)
-z3 = c(2, NA, 3+6i, 5-1i, NA, NA)
+z1 = c(1i, NA_complex_, 1-1i, NA_complex_, 0+3i, NA_complex_)
+z2 = c(NA_complex_, 4-2i, 0+0i, NA_complex_, NA_complex_, NA_complex_)
+z3 = c(2, NA_complex_, 3+6i, 5-1i, NA_complex_, NA_complex_)
 na_idx = c(2L, 4L, 6L)
 test(2060.600, fcoalesce(z1, 0+0i), `[<-`(z1, na_idx, 0+0i))
 test(2060.601, fcoalesce(z1, z2), `[<-`(z1, na_idx, c(4-2i, NA, NA)))
@@ -15518,7 +15530,7 @@ z = c(1:3) + c(3:1)*1i
 test(2067.1, shift(z), c(NA, z[1:2]))
 test(2067.2, shift(z, type = 'lead'), c(z[2:3], NA))
 test(2067.3, shift(z, fill = 1i), c(1i, z[1:2]))
-test(2067.4, shift(list(z, 1:3)), list(c(NA, z[1:2]), c(NA, 1:2)))
+test(2067.4, shift(list(z, 1:3)), list(c(NA_complex_, z[1:2]), c(NA, 1:2)))
 test(2067.5, shift(z, n=1,  type = 'cyclic'), c(z[3], z[1:2]))
 test(2067.6, shift(z, n=-1, type = 'cyclic'), c(z[2:3], z[1]))
 test(2067.7, shift(list(z, 1L:3L), n=1, type = 'cyclic'), list(c(z[3], z[1:2]), c(3L, 1:2)))
@@ -17593,6 +17605,7 @@ for (col in c("a","b","c")) {
 
 # DT() functional form, #4872 #5106 #5107 #5129
 if (base::getRversion() >= "4.1.0") {
+  DT = DTfun
   # we have to EVAL "|>" here too otherwise this tests.Rraw file won't parse in R<4.1.0
   droprn = function(df) { rownames(df)=NULL; df }  # TODO: could retain rownames where droprn is currently used below
   test(2212.011, EVAL("mtcars |> DT(mpg>20, .(mean_hp=round(mean(hp),2)), by=cyl)"),
@@ -17644,6 +17657,7 @@ if (base::getRversion() >= "4.1.0") {
   test(2212.52, EVAL("D  |> DT(D[, .I[which.max(mpg)], by=cyl]$V1)"),                  ans)
   test(2212.53, EVAL("filter |> DT(filter[, .I[which.max(mpg)], by=cyl]$V1)"),         error="unused.*argument.*by.*cyl")  # R's [.data.frame error on filter[...]
   test(2212.54, EVAL("filter |> DT((filter |> DT(, .I[which.max(mpg)], by=cyl))$V1)"), as.data.frame(ans))
+  rm(DT)
 }
 
 # precision powers of 10^(-n), #4461
@@ -18082,16 +18096,16 @@ test(2235.1, copy(DT)[, c("z", "x") := {x = NULL; list(2, NULL)}], data.table(z 
 test(2235.2, copy(DT)[, c("z", "x") := {list(2, NULL)}], data.table(z = 2))
 
 # move IDate from POSIXlt to C, add yearquarter; #649
-x = c("1111-11-11", "2019-01-01", "2019-02-28", "2019-03-01", "2019-12-31", "2020-02-29", "2020-03-01", "2020-12-31", "2040-01-01", "2040-12-31", "2100-03-01")
-test(2236.1, yday(x), c(315L, 1L, 59L, 60L, 365L, 60L, 61L, 366L, 1L, 366L, 60L))
-test(2236.2, mday(x), c(11L, 1L, 28L, 1L, 31L, 29L, 1L, 31L, 1L, 31L, 1L))
-test(2236.3, wday(x), c(7L, 3L, 5L, 6L, 3L, 7L, 1L, 5L, 1L, 2L, 2L))
-test(2236.4, week(x), c(46L, 1L, 9L, 9L, 53L, 9L, 9L, 53L, 1L, 53L, 9L))
-test(2236.5, month(x), c(11L, 1L, 2L, 3L, 12L, 2L, 3L, 12L, 1L, 12L, 3L))
-test(2236.6, quarter(x), c(4L, 1L, 1L, 1L, 4L, 1L, 1L, 4L, 1L, 4L, 1L))
-test(2236.7, year(x), c(1111L, 2019L, 2019L, 2019L, 2019L, 2020L, 2020L, 2020L, 2040L, 2040L, 2100L))
-test(2236.8, yearmon(x), c(1111+10/12, 2019, 2019+1/12, 2019+2/12, 2019+11/12, 2020+1/12, 2020+2/12, 2020+11/12, 2040, 2040+11/12, 2100+2/12))
-test(2236.9, yearqtr(x), c(1111.75, 2019, 2019, 2019, 2019.75, 2020, 2020, 2020.75, 2040, 2040.75, 2100))
+x = c("1111-11-11", "2019-01-01", "2019-02-28", "2019-03-01", "2019-12-31", "2020-02-29", "2020-03-01", "2020-12-31", "2040-01-01", "2040-12-31", "2100-03-01", NA)
+test(2236.1, yday(x), c(315L, 1L, 59L, 60L, 365L, 60L, 61L, 366L, 1L, 366L, 60L, NA))
+test(2236.2, mday(x), c(11L, 1L, 28L, 1L, 31L, 29L, 1L, 31L, 1L, 31L, 1L, NA))
+test(2236.3, wday(x), c(7L, 3L, 5L, 6L, 3L, 7L, 1L, 5L, 1L, 2L, 2L, NA))
+test(2236.4, week(x), c(46L, 1L, 9L, 9L, 53L, 9L, 9L, 53L, 1L, 53L, 9L, NA))
+test(2236.5, month(x), c(11L, 1L, 2L, 3L, 12L, 2L, 3L, 12L, 1L, 12L, 3L, NA))
+test(2236.6, quarter(x), c(4L, 1L, 1L, 1L, 4L, 1L, 1L, 4L, 1L, 4L, 1L, NA))
+test(2236.7, year(x), c(1111L, 2019L, 2019L, 2019L, 2019L, 2020L, 2020L, 2020L, 2040L, 2040L, 2100L, NA))
+test(2236.8, yearmon(x), c(1111+10/12, 2019, 2019+1/12, 2019+2/12, 2019+11/12, 2020+1/12, 2020+2/12, 2020+11/12, 2040, 2040+11/12, 2100+2/12, NA))
+test(2236.9, yearqtr(x), c(1111.75, 2019, 2019, 2019, 2019.75, 2020, 2020, 2020.75, 2040, 2040.75, 2100, NA))
 
 # as.data.table() no longer ignores row.names=, #5319
 dt = data.table(a=1:2, b=3:4)
@@ -18110,3 +18124,6 @@ test(2238.6, "a" %notin% integer(), TRUE)
 test(2238.7, "a" %notin% NULL, TRUE)
 test(2238.8, NA %notin% 1:5, TRUE)
 test(2238.9, NA %notin% c(1:5, NA), FALSE)
+
+# shift actionable error on matrix input #5287
+test(2239.1, shift(matrix(1:10, ncol = 1)), error="consider wrapping")

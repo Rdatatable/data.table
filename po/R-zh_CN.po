@@ -206,7 +206,7 @@ msgstr ""
 "列才可以联结"
 
 msgid "%s has same type (%s) as %s. No coercion needed."
-msgstr "%s 有 %s 的类型。不需要强制转换。"
+msgstr "%1$s 与 %3$s 为相同类型 (%2$s)。不需要强制转换。"
 
 msgid "Coercing all-NA %s (%s) to type %s to match type of %s."
 msgstr "强制转换 all-NA %s (%s) 为 %s 类型用来匹配 %s 类型。"
@@ -769,7 +769,7 @@ msgid ""
 "Assigning to 0 row subset of %d rows"
 msgstr ""
 "没有找到匹配 i 的行。无法增加新的列所以无法运算 RHS of :=\n"
-"指定一个 0 行的子集"
+"从 %d 行中分配 0 行"
 
 msgid ""
 "Invalid .internal.selfref detected and fixed by taking a (shallow) copy of "
