@@ -3886,7 +3886,7 @@ test(1133.75, DT[, new := .N, by=x], data.table(x=INT(1,1,1,1,1,2,2), new=INT(5,
 # on a new column with warning on 2nd assign
 DT[,new:=NULL]
 test(1133.8, DT[, new := if (.GRP==1L) 7L else 3.4, by=x], data.table(x=INT(1,1,1,1,1,2,2), new=INT(7,7,7,7,7,3,3)),
-             warning="Group 2 column 'new': 3.4.*double.*at RHS position.*truncated.*precision lost.*integer")
+             warning="Group 2 column 'new': 3.4.*double.*at RHS position 1.*truncated.*precision lost.*integer")
 
 # Fix for FR #2496 - catch `{` in `:=` expression in `j`:
 DT <- data.table(x=c("A", "A", "B", "B"), val =1:4)
