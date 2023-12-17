@@ -1,11 +1,16 @@
 #include "data.table.h"
 
+bool inside_int32_range(double x) {
+  // N.B. if x = 2147483647.99 then (int)2147483647.99 is not undefined behaviour
+  return x < 2147483648 && x > -2147483648;
+}
+
 static R_xlen_t firstNonInt(SEXP x) {
   R_xlen_t n=xlength(x), i=0;
   const double *dx = REAL(x);
   while (i<n &&
          ( ISNA(dx[i]) ||
-         ( R_FINITE(dx[i]) && dx[i]==(int)(dx[i]) && (int)(dx[i])!=NA_INTEGER))) {  // NA_INTEGER == INT_MIN == -2147483648
+         ( R_FINITE(dx[i]) && inside_int32_range(dx[i]) && dx[i]==(int)(dx[i]) && (int)(dx[i])!=NA_INTEGER))) {  // NA_INTEGER == INT_MIN == -2147483648
     i++;
   }
   return i==n ? 0 : i+1;
