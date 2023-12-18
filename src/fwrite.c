@@ -714,7 +714,7 @@ void fwriteMain(fwriteMainArgs args)
   }
   if (headerLen) {
     char *buff = malloc(headerLen);
-    if (!buff) STOP(_("Unable to allocate %d MiB for header: %s"), headerLen / 1024 / 1024, strerror(errno));
+    if (!buff) STOP(_("Unable to allocate %zu MiB for header: %s"), headerLen / 1024 / 1024, strerror(errno));
     char *ch = buff;
     if (args.bom) {*ch++=(char)0xEF; *ch++=(char)0xBB; *ch++=(char)0xBF; }  // 3 appears above (search for "bom")
     memcpy(ch, args.yaml, yamlLen);
@@ -736,7 +736,7 @@ void fwriteMain(fwriteMainArgs args)
     }
     if (f==-1) {
       *ch = '\0';
-      DTPRINT(buff);
+      DTPRINT("%s", buff);
       free(buff);
     } else {
       int ret1=0, ret2=0;
@@ -753,7 +753,7 @@ void fwriteMain(fwriteMainArgs args)
         char *zbuff = malloc(zbuffSize);
         if (!zbuff) {
           free(buff);                                                                                   // # nocov
-          STOP(_("Unable to allocate %d MiB for zbuffer: %s"), zbuffSize / 1024 / 1024, strerror(errno));  // # nocov
+          STOP(_("Unable to allocate %zu MiB for zbuffer: %s"), zbuffSize / 1024 / 1024, strerror(errno));  // # nocov
         }
         size_t zbuffUsed = zbuffSize;
         ret1 = compressbuff(&stream, zbuff, &zbuffUsed, buff, (size_t)(ch-buff));
@@ -820,7 +820,7 @@ void fwriteMain(fwriteMainArgs args)
   char *buffPool = malloc(nth*(size_t)buffSize);
   if (!buffPool) {
     // # nocov start
-    STOP(_("Unable to allocate %d MB * %d thread buffers; '%d: %s'. Please read ?fwrite for nThread, buffMB and verbose options."),
+    STOP(_("Unable to allocate %zu MB * %d thread buffers; '%d: %s'. Please read ?fwrite for nThread, buffMB and verbose options."),
          (size_t)buffSize/(1024^2), nth, errno, strerror(errno));
     // # nocov end
   }
@@ -831,7 +831,7 @@ void fwriteMain(fwriteMainArgs args)
     if (!zbuffPool) {
       // # nocov start
       free(buffPool);
-      STOP(_("Unable to allocate %d MB * %d thread compressed buffers; '%d: %s'. Please read ?fwrite for nThread, buffMB and verbose options."),
+      STOP(_("Unable to allocate %zu MB * %d thread compressed buffers; '%d: %s'. Please read ?fwrite for nThread, buffMB and verbose options."),
          (size_t)zbuffSize/(1024^2), nth, errno, strerror(errno));
       // # nocov end
     }
@@ -926,7 +926,7 @@ void fwriteMain(fwriteMainArgs args)
           errno=0;
           if (f==-1) {
             *ch='\0';  // standard C string end marker so DTPRINT knows where to stop
-            DTPRINT(myBuff);
+            DTPRINT("%s", myBuff);
           } else if ((args.is_gzip ? WRITE(f, myzBuff, (int)myzbuffUsed)
                                    : WRITE(f, myBuff,  (int)(ch-myBuff))) == -1) {
             failed=true;         // # nocov
