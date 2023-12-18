@@ -2,10 +2,10 @@
 title: "Programming on data.table"
 date: "`r Sys.Date()`"
 output:
-  rmarkdown::html_vignette
+  markdown::html_format
 vignette: >
   %\VignetteIndexEntry{Programming on data.table}
-  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEngine{knitr::knitr}
   \usepackage[utf8]{inputenc}
 ---
 
@@ -23,10 +23,18 @@ knitr::opts_chunk$set(
 
 ## Introduction
 
-`data.table`, from its very first releases, enabled the usage of `subset` and `with` (or `within`) functions by defining the`[.data.table` method. `subset` and `with` are base R functions that are useful for reducing repetition in code, enhancing readability, and reducing number the total characters the user has to type. This functionality is possible in R because of a quite unique feature called *lazy evaluation*. This feature allows a function to catch its arguments, before they are evaluated, and to evaluate them in a different scope than the one in which they were called. Let's recap usage of the `subset` function.
+`data.table`, from its very first releases, enabled the usage of `subset` and `with` (or `within`) functions by defining the `[.data.table` method. `subset` and `with` are base R functions that are useful for reducing repetition in code, enhancing readability, and reducing number the total characters the user has to type. This functionality is possible in R because of a quite unique feature called *lazy evaluation*. This feature allows a function to catch its arguments, before they are evaluated, and to evaluate them in a different scope than the one in which they were called. Let's recap usage of the `subset` function.
 
-```{r opt_max_print_10, include = FALSE}
-options(max.print = 10L) # 2 rows
+```{r df_print, echo=FALSE}
+registerS3method("print", "data.frame", function(x, ...) {
+  base::print.data.frame(head(x, 2L), ...)
+  cat("...\n")
+  invisible(x)
+})
+.opts = options(
+  datatable.print.topn=2L,
+  datatable.print.nrows=20L
+)
 ```
 
 ```{r subset}
@@ -63,7 +71,7 @@ my_subset = function(data, col, val) {
 my_subset(iris, col = "Species", val = "setosa")
 ```
 
-Here, we compute a logical vector of length `nrow(iris)`, then this vector is supplied to the `i` argument of `[.data.frame` to perform ordinary logical vector subsetting. It works well for this simple example, but it lacks flexibility, introduces variable repetition, and requires user to change the function interface to pass the column name as a character rather than unquoted symbol. The more complex the expression we need to parameterize, the less practical this approach becomes.
+Here, we compute a logical vector of length `nrow(iris)`, then this vector is supplied to the `i` argument of `[.data.frame` to perform ordinary "logical vector"-based subsetting. It works well for this simple example, but it lacks flexibility, introduces variable repetition, and requires user to change the function interface to pass the column name as a character rather than unquoted symbol. The more complex the expression we need to parameterize, the less practical this approach becomes.
 
 #### Use of `parse` / `eval`
 
@@ -102,7 +110,7 @@ my_subset = function(data, col, val) {
 my_subset(iris, Species, "setosa")
 ```
 
-Here, we used the base R `substitute` function to transform the call `subset(data, col == val)` into `subset(iris, Species == "setosa")` by substituting `data`, `col`, and `val` with their original names (or values) from their parent environment. The benefits of this approach to the previous ones should be clear. Note that because we operate at the level of language objects, and don't have to resort to string manipulation, we refer to this as *computing on the language*. There is a dedicated chapter on *Computing on the language* in [R language manual](https://cran.r-project.org/doc/manuals/r-release/R-lang.html). Although it is not necessary for *programming on data.table*, we encourage readers to read this chapter for the sake of better understanding this powerful and unique feature.
+Here, we used the base R `substitute` function to transform the call `subset(data, col == val)` into `subset(iris, Species == "setosa")` by substituting `data`, `col`, and `val` with their original names (or values) from their parent environment. The benefits of this approach to the previous ones should be clear. Note that because we operate at the level of language objects, and don't have to resort to string manipulation, we refer to this as *computing on the language*. There is a dedicated chapter on *Computing on the language* in [R language manual](https://cran.r-project.org/doc/manuals/r-release/R-lang.html). Although it is not necessary for *programming on data.table*, we encourage readers to read this chapter for the sake of better understanding this powerful and unique feature of R language.
 
 #### Use third party packages
 
@@ -114,7 +122,7 @@ Though these can be helpful, we will be discussing a `data.table`-unique approac
 
 Now that we've established the proper way to parameterize code that uses *lazy evaluation*, we can move on to the main subject of this vignette, *programming on data.table*.
 
-Starting from version 1.14.2, data.table provides a robust mechanism for parameterizing expressions passed to the `i`, `j`, and `by` (or `keyby`) arguments of `[.data.table`. It is built upon the base R `substitute` function, and mimics its interface. Here, we introduce `substitute2` as a more robust and more user-friendly version of base R's `substitute`. For a complete list of differences between `base::substitute` and `data.table::substitute2` please read the [`substitute2` manual](https://rdatatable.gitlab.io/data.table/library/data.table/html/substitute2.html).
+Starting from version 1.15.0, data.table provides a robust mechanism for parameterizing expressions passed to the `i`, `j`, and `by` (or `keyby`) arguments of `[.data.table`. It is built upon the base R `substitute` function, and mimics its interface. Here, we introduce `substitute2` as a more robust and more user-friendly version of base R's `substitute`. For a complete list of differences between `base::substitute` and `data.table::substitute2` please read the [`substitute2` manual](https://rdatatable.gitlab.io/data.table/library/data.table/html/substitute2.html).
 
 ### Substituting variables and names
 
@@ -149,20 +157,18 @@ Now, to use substitution inside `[.data.table`, we don't need to call the `subst
 
 Let's use the `iris` data set as a demonstration. Just as an example, let's pretend we want to compute the `Sepal.Hypotenuse`, treating the sepal width and length as if they were legs of a right triangle.
 
-```{r opt_max_print_8, include = FALSE}
-options(max.print = 8L) # 2 rows
-```
-
 ```{r hypotenuse_datatable}
 DT = as.data.table(iris)
 
-DT[, outer(inner(var1) + inner(var2)),
-   env = list(
-     outer = "sqrt",
-     inner = "square",
-     var1 = "Sepal.Length",
-     var2 = "Sepal.Width"
-  )]
+str(
+  DT[, outer(inner(var1) + inner(var2)),
+     env = list(
+       outer = "sqrt",
+       inner = "square",
+       var1 = "Sepal.Length",
+       var2 = "Sepal.Width"
+    )]
+)
 
 # return as a data.table
 DT[, .(Species, var1, var2, out = outer(inner(var1) + inner(var2))),
@@ -197,7 +203,7 @@ DT[filter_col %in% filter_val,
 
 ### Substitute variables and character values
 
-In the above example, we have seen a convenient feature of `substitute2`: automatic conversion from strings into names/symbols. An obvious question arises: what if we actually want to substitute a parameter with a *character* value, so as to have base R `substitute` behaviour. We provide a mechanism to escape automatic conversion by wrapping the elements into base R `I()` call. The `I` function marks an object as *AsIs*, preventing its arguments from substitution. (Read the `?AsIs` documentation for more details.) If base R behaviour is desired for the whole `env` argument, then it's best to wrap the whole argument in `I()`. Alternatively, each list element can be wrapped in `I()` individually. Let's explore both cases below.
+In the above example, we have seen a convenient feature of `substitute2`: automatic conversion from strings into names/symbols. An obvious question arises: what if we actually want to substitute a parameter with a *character* value, so as to have base R `substitute` behaviour. We provide a mechanism to escape automatic conversion by wrapping the elements into base R `I()` call. The `I` function marks an object as *AsIs*, preventing its arguments from character-to-symbol automatic conversion. (Read the `?AsIs` documentation for more details.) If base R behaviour is desired for the whole `env` argument, then it's best to wrap the whole argument in `I()`. Alternatively, each list element can be wrapped in `I()` individually. Let's explore both cases below.
 
 ```{r rank}
 substitute(    # base R behaviour
@@ -235,10 +241,6 @@ The example presented above illustrates a neat and powerful way to make your cod
 
 An obvious use case could be to mimic `.SD` functionality by injecting a `list` call into the `j` argument.
 
-```{r opt_max_print_4, include = FALSE}
-options(max.print = 4L) # 2 rows
-```
-
 ```{r splice_sd}
 cols = c("Sepal.Length", "Sepal.Width")
 DT[, .SD, .SDcols = cols]
@@ -251,7 +253,7 @@ DT[, list(Sepal.Length, Sepal.Width)]
 ```
 
 *Splicing* is an operation where a list of objects have to be inlined into an expression as a sequence of arguments to call.
-In base R, splicing `cols` into a `list` can be achieved using `as.call(c(quote(list), cols))`. Additionally, starting from R 4.0.0, there is new interface for such an operation in the `bquote` function.
+In base R, splicing `cols` into a `list` can be achieved using `as.call(c(quote(list), lapply(cols, as.name)))`. Additionally, starting from R 4.0.0, there is new interface for such an operation in the `bquote` function.
 
 In data.table, we make it easier by automatically _enlist_-ing a list of objects into a list call with those objects. This means that any `list` object inside the `env` list argument will be turned into list `call`, making the API for that use case as simple as presented below.
 
@@ -316,10 +318,6 @@ It takes arbitrary number of variables on input, but now we cannot just *splice*
 
 First, we have to construct calls to the `square` function for each of the variables (see `inner_calls`). Then, we have to reduce the list of calls into a single call, having a nested sequence of `+` calls (see `add_calls`). Lastly, we have to substitute the constructed call into the surrounding expression (see `rms`).
 
-```{r opt_max_print_12, include = FALSE}
-options(max.print = 12L) # 2 rows
-```
-
 ```{r complex}
 outer = "sqrt"
 inner = "square"
@@ -344,15 +342,19 @@ rms = substitute2(
 )
 print(rms)
 
-DT[, j, env = list(j = rms)]
+str(
+  DT[, j, env = list(j = rms)]
+)
 
 # same, but skipping last substitute2 call and using add_calls directly
-DT[, outer((add_calls) / len),
-   env = list(
-     outer = outer,
-     add_calls = add_calls,
-     len = length(vars)
-  )]
+str(
+  DT[, outer((add_calls) / len),
+     env = list(
+       outer = outer,
+       add_calls = add_calls,
+       len = length(vars)
+    )]
+)
 
 # return as data.table
 j = substitute2(j, list(j = as.list(setNames(nm = c(vars, "Species", "rms")))))
@@ -376,10 +378,6 @@ DT[, j, env = list(j = j)]
 In `[.data.table`, it is also possible to use other mechanisms for variable substitution or for passing quoted expressions. These include `get` and `mget` for inline injection of variables by providing their names as strings, and `eval` that tells `[.data.table` that the expression we passed into an argument is a quoted expression and that it should be handled differently. Those interfaces should now be considered retired and we recommend using the new `env` argument, instead.
 
 ### `get`
-
-```{r opt_max_print_4b, include = FALSE}
-options(max.print = 4L) # 2 rows
-```
 
 ```{r old_get}
 v1 = "Petal.Width"
@@ -417,4 +415,9 @@ cl = quote(
 DT[, eval(cl)]
 
 DT[, cl, env = list(cl = cl)]
+```
+
+```{r cleanup, echo=FALSE}
+options(.opts)
+registerS3method("print", "data.frame", base::print.data.frame)
 ```

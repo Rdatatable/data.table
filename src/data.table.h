@@ -333,6 +333,7 @@ SEXP initLastUpdated(SEXP);
 SEXP allNAR(SEXP);
 SEXP test_dt_win_snprintf(void);
 SEXP dt_zlib_version(void);
+SEXP dt_has_zlib(void);
 SEXP startsWithAny(SEXP, SEXP, SEXP);
 SEXP convertDate(SEXP, SEXP);
 SEXP fastmean(SEXP);
