@@ -37,8 +37,6 @@ Data manipulation operations such as *subset*, *group*, *update*, *join*, etc. a
 
 Briefly, if you are interested in reducing *programming* and *compute* time tremendously, then this package is for you. The philosophy that `data.table` adheres to makes this possible. Our goal is to illustrate it through this series of vignettes.
 
-# tremendously reducing the time taken to program and compute
-
 ## Data {#data}
 
 In this vignette, we will use [NYC-flights14](https://raw.githubusercontent.com/Rdatatable/data.table/master/vignettes/flights14.csv) data obtained by [flights](https://github.com/arunsrinivasan/flights) package (available on GitHub only). It contains On-Time flights data from the Bureau of Transporation Statistics for all the flights that departed from New York City airports in 2014 (inspired by [nycflights13](https://github.com/tidyverse/nycflights13)). The data is available only for Jan-Oct'14.
