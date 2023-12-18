@@ -904,7 +904,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
     case REALSXP:
       switch (TYPEOF(source)) {
       case REALSXP: if (targetIsI64 && !sourceIsI64)
-                    CHECK_RANGE(double, REAL,  !ISNAN(val) && (!R_FINITE(val) || (int)val!=val),        "f",     "truncated (precision lost)", val)
+                    CHECK_RANGE(double, REAL,  !ISNAN(val) && (!R_FINITE(val) || (int64_t)val!=val),        "f",     "truncated (precision lost)", val)
                     break;
       case CPLXSXP: if (targetIsI64)
                     CHECK_RANGE(Rcomplex, COMPLEX, !((ISNAN(val.i) || (R_FINITE(val.i) && val.i==0.0)) &&
