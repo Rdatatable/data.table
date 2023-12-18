@@ -2766,7 +2766,14 @@ rbindlist = function(l, use.names="check", fill=FALSE, idcol=NULL, retain.attr=F
   ans = .Call(Crbindlist, l, use.names, fill, idcol, retain.attr)
   if (!length(ans)) return(null.data.table())
   setDT(ans)
-  if (retain.attr && haskey(ans) && !is.sorted(ans)) setorderv(ans, key(ans))
+  if (retain.attr && !is.null(key<-key(ans)) && !is.sorted(ans)) {
+    setattr(ans, "sorted", NULL)
+    setkeyv(ans, key, physical=TRUE)
+  }
+  if (retain.attr && !is.null(idx<-indices(ans))) {
+    setattr(ans, "index", NULL)
+    setkeyv(ans, idx, physical=FALSE)
+  }
   ans
 }
 
