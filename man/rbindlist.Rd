@@ -15,7 +15,7 @@ rbindlist(l, use.names="check", fill=FALSE, idcol=NULL, retain.attr=FALSE)
   \item{use.names}{\code{TRUE} binds by matching column name, \code{FALSE} by position. `check` (default) warns if all items don't have the same names in the same order and then currently proceeds as if `use.names=FALSE` for backwards compatibility (\code{TRUE} in future); see news for v1.12.2.}
   \item{fill}{\code{TRUE} fills missing columns with NAs. By default \code{FALSE}.}
   \item{idcol}{Creates a column in the result showing which list item those rows came from. \code{TRUE} names this column \code{".id"}. \code{idcol="file"} names this column \code{"file"}. If the input list has names, those names are the values placed in this id column, otherwise the values are an integer vector \code{1:length(l)}. See \code{examples}.}
-  \item{retain.attr}{\code{TRUE} retains attributes (including keys) of first object in list. By default \code{FALSE}.}
+  \item{retain.attr}{\code{TRUE} retains attributes (including keys and indices) of first object in list. By default \code{FALSE}.}
 }
 \details{
 Each item of \code{l} can be a \code{data.table}, \code{data.frame} or \code{list}, including \code{NULL} (skipped) or an empty object (0 rows). \code{rbindlist} is most useful when there are an unknown number of (potentially many) objects to stack, such as returned by \code{lapply(fileNames, fread)}. \code{rbind} is most useful to stack two or three objects which you know in advance. \code{\dots} should contain at least one \code{data.table} for \code{rbind(\dots)} to call the fast method and return a \code{data.table}, whereas \code{rbindlist(l)} always returns a \code{data.table} even when stacking a plain \code{list} with a \code{data.frame}, for example.
