@@ -742,7 +742,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
           const double *sd = REAL(source);
           for (int i=0; i<slen; ++i) {
             const double val = sd[i+soff];
-            if (!ISNAN(val) && (!R_FINITE(val) || !within_int32_repres(val) || val!=(int)val || (int)val<1 || (int)val>nlevel)) {
+            if (!ISNAN(val) && (!within_int32_repres(val) || val!=(int)val || (int)val<1 || (int)val>nlevel)) {
               error(_("Assigning factor numbers to %s. But %f is outside the level range [1,%d], or is not a whole number."), targetDesc(colnum, colname), val, nlevel);
             }
           }
@@ -897,9 +897,9 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
       switch (TYPEOF(source)) {
       case REALSXP: if (sourceIsI64)
                     CHECK_RANGE(int64_t, REAL, val!=NA_INTEGER64 && (val<=NA_INTEGER || val>INT_MAX),   PRId64,  "out-of-range (NA)", val)
-              else  CHECK_RANGE(double, REAL,  !ISNAN(val) && (!R_FINITE(val) || !within_int32_repres(val) || (int)val!=val),        "f",     "out-of-range(NA) or truncated (precision lost)", val)
+              else  CHECK_RANGE(double, REAL,  !ISNAN(val) && (!within_int32_repres(val) || (int)val!=val),        "f",     "out-of-range(NA) or truncated (precision lost)", val)
       case CPLXSXP: CHECK_RANGE(Rcomplex, COMPLEX, !((ISNAN(val.i) || (R_FINITE(val.i) && val.i==0.0)) &&
-                                                     (ISNAN(val.r) || (R_FINITE(val.r) && within_int32_repres(val.r) && (int)val.r==val.r))), "f", "either imaginary part discarded or real part truncated (precision lost)", val.r)
+                                                     (ISNAN(val.r) || (within_int32_repres(val.r) && (int)val.r==val.r))), "f", "either imaginary part discarded or real part truncated (precision lost)", val.r)
       } break;
     case REALSXP:
       switch (TYPEOF(source)) {
