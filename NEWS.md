@@ -293,7 +293,7 @@
 
 41. `tables()` is faster by default by excluding the size of character strings in R's global cache (which may be shared) and excluding the size of list column items (which also may be shared). `mb=` now accepts any function which accepts a `data.table` and returns a higher and better estimate of its size in bytes, albeit more slowly; e.g. `mb = utils::object.size`.
 
-43. `rbind` and `rbindlist` gained new argument `retain.attr` for retaining attributes of first object in list/call, [#5569](https://github.com/Rdatatable/data.table/issues/5569). Thanks to @cthombor for reporting and Benjamin Schwendinger for the PR.
+42. `rbind` and `rbindlist` gained new argument `retain.attr` for retaining attributes of first object in list/call, [#5569](https://github.com/Rdatatable/data.table/issues/5569). Thanks to @cthombor for reporting and Benjamin Schwendinger for the PR.
 ## BUG FIXES
 
 1. `by=.EACHI` when `i` is keyed but `on=` different columns than `i`'s key could create an invalidly keyed result, [#4603](https://github.com/Rdatatable/data.table/issues/4603) [#4911](https://github.com/Rdatatable/data.table/issues/4911). Thanks to @myoung3 and @adamaltmejd for reporting, and @ColeMiller1 for the PR. An invalid key is where a `data.table` is marked as sorted by the key columns but the data is not sorted by those columns, leading to incorrect results from subsequent queries.
