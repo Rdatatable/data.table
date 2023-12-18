@@ -1,7 +1,9 @@
 #include "data.table.h"
 
-bool inside_int32_range(double x) {
-  // N.B. if x = 2147483647.99 then (int)2147483647.99 is not undefined behaviour
+bool within_int32_repres(double x) {
+  // N.B. (int)2147483647.99 is not undefined behaviour since s 6.3.1.4 of the C
+  // standard states that behaviour is undefined only if the integral part of a
+  // finite value of standard floating type cannot be represented.
   return x < 2147483648 && x > -2147483648;
 }
 
@@ -10,7 +12,7 @@ static R_xlen_t firstNonInt(SEXP x) {
   const double *dx = REAL(x);
   while (i<n &&
          ( ISNA(dx[i]) ||
-         ( R_FINITE(dx[i]) && inside_int32_range(dx[i]) && dx[i]==(int)(dx[i]) && (int)(dx[i])!=NA_INTEGER))) {  // NA_INTEGER == INT_MIN == -2147483648
+         ( R_FINITE(dx[i]) && within_int32_repres(dx[i]) && dx[i]==(int)(dx[i]) && (int)(dx[i])!=NA_INTEGER))) {  // NA_INTEGER == INT_MIN == -2147483648
     i++;
   }
   return i==n ? 0 : i+1;
