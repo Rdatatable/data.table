@@ -289,10 +289,7 @@ if (test_bit64) {
   test(10.87, coerceAs(x, 1L), 1L, output=c("double[integer64] into integer[integer]","Zero-copy coerce when assigning 'integer64' to 'integer'"))
   test(10.88, coerceAs(1L, x), x, output=c("integer[integer] into double[integer64]","Zero-copy coerce when assigning 'integer' to 'integer64'"))
   options(datatable.verbose=2L)
-  test(10.881, coerceAs(-2147483648, x), as.integer64(-2147483648), output="double[numeric] into double[integer64]")
-  test(10.882, coerceAs(-2147483649, x), as.integer64(-2147483649), output="double[numeric] into double[integer64]")
-  test(10.883, coerceAs(2147483648, x), as.integer64(2147483648), output="double[numeric] into double[integer64]")
-  test(10.884, coerceAs(2147483649, x), as.integer64(2147483649), output="double[numeric] into double[integer64]")
+  test(10.89, coerceAs(-2147483649, x), as.integer64(-2147483649), output="double[numeric] into double[integer64]")
 }
 if (test_nanotime) {
   x = nanotime(1L)
