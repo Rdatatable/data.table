@@ -187,7 +187,7 @@ if (test_bit64) {
   test(6.50, identical(coerceFill(x<-as.integer64(-2147483648)), list(NA_integer_, -2147483648, x)), warning="out-of-range")
   test(6.51, identical(coerceFill(x<-as.integer64(-2147483649)), list(NA_integer_, -2147483649, x)), warning="out-of-range")
   test(6.52, identical(coerceFill(-2147483647), list(-2147483647L, -2147483647, as.integer64("-2147483647"))))
-  test(6.53, identical(coerceFill(-2147483648), list(NA_integer_, -2147483648,  as.integer64("-2147483648"))))
+  test(6.53, identical(coerceFill(-2147483648), list(NA_integer_, -2147483648,  as.integer64("-2147483648"))), warning="precision lost")
   test(6.54, identical(coerceFill(-2147483649), list(NA_integer_, -2147483649,  as.integer64("-2147483649"))), warning="precision lost")
 }
 
