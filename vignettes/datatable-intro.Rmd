@@ -477,7 +477,7 @@ head(ans, 10)
 
 #### -- Can `by` accept *expressions* as well or does it just take columns?
 
-Yes it does. As an example, if we would like to find out how many flights departed and arrived late, we can do:
+Yes it does. As an example, if we would like to find out how many flights started late but arrived early (or on time), started and arrived late etc...
 
 ```{r}
 ans <- flights[, .N, .(dep_delay>0, arr_delay>0)]
@@ -562,7 +562,7 @@ head(ans)
 
 ### g) Why keep `j` so flexible?
 
-So that we have a consistent syntax and keep using already existing (and familiar) base functions instead of learning new functions. To illustrate, let us use the `data.table` `DT` that we created at the very beginning under the [What is a data.table?](#what-is-datatable-1a) section.
+So that we have a consistent syntax and keep using already existing (and familiar) base functions instead of learning new functions. To illustrate, let us use the `data.table` `DT` that we created at the very beginning under the section [What is a data.table?](#what-is-datatable-1a).
 
 #### -- How can we concatenate columns `a` and `b` for each group in `ID`?
 
