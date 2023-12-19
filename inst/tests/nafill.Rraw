@@ -181,14 +181,14 @@ if (test_bit64) {
   test(6.44, identical(coerceFill(NaN), list(NA_integer_, NaN, as.integer64(NA))))
   test(6.45, identical(coerceFill(Inf), list(NA_integer_, Inf, as.integer64(NA))), warning=c("precision lost","precision lost"))
   test(6.46, identical(coerceFill(-Inf), list(NA_integer_, -Inf, as.integer64(NA))), warning=c("precision lost","precision lost"))
-  test(6.47, identical(coerceFill(-(2^62)), list(NA_integer_, -(2^62), as.integer64("-4611686018427387904"))), warning=c("precision lost","precision lost"))
+  test(6.47, identical(coerceFill(-(2^62)), list(NA_integer_, -(2^62), as.integer64("-4611686018427387904"))), warning="precision lost")
   test(6.48, identical(coerceFill(-(2^64)), list(NA_integer_, -(2^64), as.integer64(NA))), warning=c("precision lost","precision lost"))
   test(6.49, identical(coerceFill(x<-as.integer64(-2147483647)), list(-2147483647L, -2147483647, x)))
   test(6.50, identical(coerceFill(x<-as.integer64(-2147483648)), list(NA_integer_, -2147483648, x)), warning="out-of-range")
   test(6.51, identical(coerceFill(x<-as.integer64(-2147483649)), list(NA_integer_, -2147483649, x)), warning="out-of-range")
   test(6.52, identical(coerceFill(-2147483647), list(-2147483647L, -2147483647, as.integer64("-2147483647"))))
   test(6.53, identical(coerceFill(-2147483648), list(NA_integer_, -2147483648,  as.integer64("-2147483648"))))
-  test(6.54, identical(coerceFill(-2147483649), list(NA_integer_, -2147483649,  as.integer64("-2147483649"))), warning=c("precision lost","precision lost"))
+  test(6.54, identical(coerceFill(-2147483649), list(NA_integer_, -2147483649,  as.integer64("-2147483649"))), warning="precision lost")
 }
 
 # nan argument to treat NaN as NA in nafill, #4020
@@ -289,6 +289,7 @@ if (test_bit64) {
   test(10.87, coerceAs(x, 1L), 1L, output=c("double[integer64] into integer[integer]","Zero-copy coerce when assigning 'integer64' to 'integer'"))
   test(10.88, coerceAs(1L, x), x, output=c("integer[integer] into double[integer64]","Zero-copy coerce when assigning 'integer' to 'integer64'"))
   options(datatable.verbose=2L)
+  test(10.89, coerceAs(-2147483649, x), as.integer64(-2147483649), output="double[numeric] into double[integer64]")
 }
 if (test_nanotime) {
   x = nanotime(1L)
