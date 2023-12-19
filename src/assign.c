@@ -742,7 +742,8 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
           const double *sd = REAL(source);
           for (int i=0; i<slen; ++i) {
             const double val = sd[i+soff];
-            if (!ISNAN(val) && (!within_int32_repres(val) || val!=(int)val || (int)val<1 || (int)val>nlevel)) {
+            // Since nlevel is an int, val < 1 || val > nlevel will deflect UB guarded against in PR #5832
+            if (!ISNAN(val) && (val < 1 || val > nlevel || val != (int)val)) {
               error(_("Assigning factor numbers to %s. But %f is outside the level range [1,%d], or is not a whole number."), targetDesc(colnum, colname), val, nlevel);
             }
           }
