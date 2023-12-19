@@ -12,7 +12,7 @@ static R_xlen_t firstNonInt(SEXP x) {
   const double *dx = REAL(x);
   while (i<n &&
          ( ISNA(dx[i]) ||
-         (within_int32_repres(dx[i]) && dx[i]==(int)(dx[i]) && (int)(dx[i])!=NA_INTEGER))) {  // NA_INTEGER == INT_MIN == -2147483648
+         (within_int32_repres(dx[i]) && dx[i]==(int)(dx[i])))) {
     i++;
   }
   return i==n ? 0 : i+1;
