@@ -52,7 +52,7 @@ navbar:
       href: news/index.html
     benchmarks:
       text: Benchmarks
-      href: https://h2oai.github.io/db-benchmark
+      href: https://duckdblabs.github.io/db-benchmark
     presentations:
       text: Presentations
       href: https://github.com/Rdatatable/data.table/wiki/Presentations
