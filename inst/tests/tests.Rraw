@@ -67,7 +67,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   shallow = data.table:::shallow # until exported
   .shallow = data.table:::.shallow
   split.data.table = data.table:::split.data.table
-  if (!exists('startsWith', 'package:base', inherits=FALSE)) startsWith = data.table:::startsWith
+  if (!exists('startsWith', 'package:base', inherits=FALSE)) startsWith = data.table:::startsWith # R 3.3.0
   stopf = data.table:::stopf
   test = data.table:::test
   uniqlengths = data.table:::uniqlengths
@@ -1472,13 +1472,13 @@ test(462, DT[,foo:=10L], data.table(a=1:3,v=4:9,foo=10L,key="a"))
 unlink(f)
 
 # Test CJ problems with v1.7.4, #1689
-test(463, all(sapply(CJ(1:2,1:3),length)==6L))
+test(463, all(lengths(CJ(1:2,1:3)) == 6L))
 DT = data.table(x=1:4,y=1:2,cnt=1L,key=c('x', 'y'))
 test(464, DT[CJ(1:4,1:4)]$cnt, INT(1,rep(NA,4),1,NA,NA,1,rep(NA,4),1,NA,NA))
 test(465, DT[CJ(1:4,1:4), sum(cnt>0), by=.EACHI]$y, rep(1:4,4))
 f1 = factor(c("READING","MATHEMATICS"))
 f2 = factor(c("2010_2011","2009_2010","2008_2009"), levels=paste(2006:2010,2007:2011,sep="_"))
-test(466, all(sapply(CJ(f1, f2),length)==6L))
+test(466, all(lengths(CJ(f1, f2))==6L))
 
 # Test list(.SD,newcol=..) gives error with guidance
 DT = data.table(a=1:2,v=3:6)
@@ -2882,7 +2882,7 @@ test(966, fread(input, colClasses=list(character=2:4)), data.table(A=1:2, B=c("f
                        warning="Column number 4 (colClasses[[1]][3]) is out of range [1,ncol=3]")
 
 # Character input more than 4096 bytes (used to be passed through path.expand which imposed the limit), #2649
-test(967, nrow(fread( paste( rep('a\tb\n', 10000), collapse=''), header=FALSE)), 10000L)
+test(967, nrow(fread( strrep('a\tb\n', 10000L), header=FALSE)), 10000L)
 
 # Test fread warns about removal of any footer (and autostart skips up over it)
 test(968, fread("A,B\n1,3\n2,4\n\nRowcount: 2\n"), data.table(A=1:2,B=3:4), warning="Discarded single-line footer.*Rowcount: 2")
@@ -7005,7 +7005,7 @@ test(1477.22, transpose(la, list.cols=NA), error="list.cols should be logical TR
 ll = list(data.frame(a=1), data.frame(x=1, y=2), NULL, list())
 ll <- lapply(ll, setDT)
 test(1478.1, sapply(ll, truelength), c(1025L, 1026L, 1024L, 1024L))
-test(1478.2, sapply(ll, length), INT(1,2,0,0))
+test(1478.2, lengths(ll), INT(1,2,0,0))
 
 # rbindlist stack imbalance issue, #980.
 test(1479, rbindlist(replicate(4,rbindlist(replicate(47, NULL),
@@ -11630,7 +11630,7 @@ set.seed(1L)
 ar.dimnames = list(color = sort(c("green","yellow","red")),
                    year = as.character(2011:2015),
                    status = sort(c("active","inactive","archived","removed")))
-ar.dim = sapply(ar.dimnames, length)
+ar.dim = lengths(ar.dimnames)
 ar = array(sample(c(rep(NA, 4), 4:7/2), prod(ar.dim), TRUE),
            unname(ar.dim), # array() having length(dims) < 3 will be created as matrix in R so will not be dispatched here but as.data.table.matrix
            ar.dimnames)
@@ -11638,7 +11638,7 @@ dt = as.data.table(ar, na.rm=FALSE)
 dimcols = head(names(dt), -1L)
 test(1774.01, TRUE, all(
   nrow(dt) == 60L,
-  prod(sapply(ar.dimnames, length)) == dt[, prod(sapply(.SD, uniqueN)), .SDcols = dimcols],
+  prod(lengths(ar.dimnames)) == dt[, prod(sapply(.SD, uniqueN)), .SDcols = dimcols],
   dt[is.na(value), .N] == 30L,
   dt[, .N==1L, c(dimcols)]$V1
 ))
@@ -11646,7 +11646,7 @@ dt = as.data.table(ar)
 dimcols = head(names(dt), -1L)
 test(1774.02, TRUE, all(
   nrow(dt) == 30L,
-  prod(sapply(ar.dimnames, length)) == dt[, prod(sapply(.SD, uniqueN)), .SDcols = dimcols],
+  prod(lengths(ar.dimnames)) == dt[, prod(sapply(.SD, uniqueN)), .SDcols = dimcols],
   dt[is.na(value), .N] == 0L,
   dt[, .N==1L, c(dimcols)]$V1
 ))
@@ -11856,7 +11856,7 @@ test(1800.2, fread("A\n1e55555555\n-1e+234056\n2e-59745"), data.table(A=c("1e555
 # Test files with "round" sizes (different multiples of 2, from 512B to 64KB)
 for (mul in c(16, 128, 512, 1024, 2048)) {
   ff = file(f<-tempfile(), open="wb")
-  cat(paste(rep("1234,5678,9012,3456,7890,abcd,4\x0A", mul), collapse=""), file=ff)
+  cat(strrep("1234,5678,9012,3456,7890,abcd,4\x0A", mul), file=ff)
   close(ff)
   DT = data.table(V1=rep(1234L, mul), V2=5678L, V3=9012L, V4=3456L, V5=7890L, V6="abcd", V7=4L)
   test(1801 + log2(mul)/100 + 0.001, file.info(f)$size, mul*32)
@@ -12067,8 +12067,8 @@ if (test_longdouble) {  #3258
 
 # Test that integers just above 128 or 256 characters in length parse as strings, not as integers/floats
 # This guards against potential overflows in the count of digits
-src1 = paste0(rep("1234567890", 13), collapse="")  # length = 130, slightly above 128
-src2 = paste0(rep("12345678900987654321", 13), collapse="")  # length = 260, slightly above 256
+src1 = strrep("1234567890", 13L)  # length = 130, slightly above 128
+src2 = strrep("12345678900987654321", 13L)  # length = 260, slightly above 256
 test(1831.1, fread(paste0("A\n", src1)), data.table(A=src1))
 test(1831.2, fread(paste0("A\n", src2)), data.table(A=src2))
 test(1831.3, fread(paste0("A\n", src2, ".33")), data.table(A=1.2345678900987655e+259))
@@ -16996,7 +16996,7 @@ test(2156.1, DT[,list(list({attr(value,"class")<-"newclass";value})),by=series]$
              DT[1,value])
 test(2156.2, truelength(DT[,list(list(value)),by=series]$V1[[1L]])>=0L)  # not -64 carried over by duplicate() of the .SD column
 # cover NULL case in copyAsPlain by putting a NULL alongside a dogroups .SD column. The 'if(.GRP==1L)' is just for fun.
-test(2156.3, sapply(DT[, list(if (.GRP==1L) list(value,NULL) else list(NULL,value)), by=series]$V1, length),
+test(2156.3, lengths(DT[, list(if (.GRP==1L) list(value,NULL) else list(NULL,value)), by=series]$V1),
              INT(64,0,0,64))
 
 # CornerstoneR usage revealed copySharedColumns needed work afer PR#4655

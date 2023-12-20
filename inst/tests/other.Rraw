@@ -520,7 +520,7 @@ if (loaded[["xts"]]) {  # was 1465 in tests.Rraw, #5516
 
 # was 2108 in tests.Rraw, #5516
 # first and last should no longer load xts namespace, #3857, below commented test for interactive validation when xts present but not loaded or attached
-# stopifnot("xts"%in%installed.packages(), !"xts"%in%loadedNamespaces()); library(data.table); x=as.POSIXct("2019-01-01"); last(x); stopifnot(!"xts" %in% loadedNamespaces())
+# stopifnot("xts"%in%installed.packages(), !isNamespaceLoaded("xts")); library(data.table); x=as.POSIXct("2019-01-01"); last(x); stopifnot(!isNamespaceLoaded("xts"))
 x = as.POSIXct("2019-09-09")+0:1
 old = options(datatable.verbose=TRUE)
 test(19.01, last(x), x[length(x)], output="!is.xts(x)")

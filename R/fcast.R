@@ -235,7 +235,7 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
       .Call(Csetlistelt, mapunique, 2L, seq_len(nrow(rhs_)))
       lhs = lhs_; rhs = rhs_
     }
-    maplen = vapply_1i(mapunique, length)
+    maplen = lengths(mapunique)
     idx = do.call("CJ", mapunique)[map, 'I' := .I][["I"]] # TO DO: move this to C and avoid materialising the Cross Join.
     some_fill = anyNA(idx)
     fill.default = if (run_agg_funs && is.null(fill) && some_fill) dat_for_default_fill[, maybe_err(eval(fun.call))]
