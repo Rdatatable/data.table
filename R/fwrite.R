@@ -3,7 +3,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
            sep2=c("","|",""), eol=if (.Platform$OS.type=="windows") "\r\n" else "\n",
            na="", dec=".", row.names=FALSE, col.names=TRUE,
            qmethod=c("double","escape"),
-           logical01=getOption("datatable.logical01", FALSE), # due to change to TRUE; see NEWS
+           logical01=getOption("datatable.logical01", TRUE),
            logicalAsInt=logical01,
            scipen=getOption('scipen', 0L),
            dateTimeAs = c("ISO","squash","epoch","write.csv"),

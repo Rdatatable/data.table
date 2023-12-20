@@ -2,9 +2,11 @@
 
 # data.table [v1.14.99](https://github.com/Rdatatable/data.table/milestone/29)  (in development)
 
-## BREAKING CHANGE
+## BREAKING CHANGES
 
 1. `shift` and `nafill` will now raise error `input must not be matrix or array` when `matrix` or `array` is provided on input, rather than giving useless result, [#5287](https://github.com/Rdatatable/data.table/issues/5287). Thanks to @ethanbsmith for reporting.
+
+2. The `logical01=` arguments in `fread()` and `fwrite()` change their default from `getOption("datatable.logical01", FALSE)` to `getOption("datatable.logical01", TRUE)`. That is, they change from `FALSE` to `TRUE`, but for now you can retain the old behavior by setting option `datatable.logical01`. See the discussion in v1.11.0 (May 2018) release notes where this planned deprecation was first discussed. In the future, the option will be removed.
 
 ## NEW FEATURES
 
