@@ -2950,7 +2950,6 @@ yy <- sample(2L)
 yy_sort = base::sort.int(yy)
 # 996.01, 996.02 tested the now-ineffectual datatable.CJ.names option
 test(996.03, CJ(xx, yy), setkey(data.table(xx = rep(xx, each=2L), yy = rep(yy_sort, 2L))))
-options(old)
 
 # #3597 -- CJ properly informs sorted can't apply to list input
 test(996.04, CJ(list(1:2, 3L)), error = "non-atomic, which can't be sorted")
