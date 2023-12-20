@@ -1591,7 +1591,7 @@ test(505, DT[J(a=1,b=6),sum(i.b*b),by=.EACHI]$V1, 24)  # 24 now 'double' because
 
 # Test := after a key<-
 DT = data.table(a=3:1,b=4:6)
-test(506, key(DT)<-"a", "a", error="deprecated")
+test(506, key(DT)<-"a", error="deprecated")
 
 # tests 508, 509, 510 related to follow-up operations after key<-, which are now irrelevant
 
