@@ -18111,3 +18111,11 @@ test(2238.9, NA %notin% c(1:5, NA), FALSE)
 
 # shift actionable error on matrix input #5287
 test(2239.1, shift(matrix(1:10, ncol = 1)), error="consider wrapping")
+
+# names<- retains index and key, #5125, #5126, #5126, #5128
+DT <- data.table(a = 1, b = 2)
+setkey(DT, a)
+setindex(DT, b)
+names(DT) <- c("c", "d")
+test(2240.1, key(DT), "c")
+test(2240.2, indices(DT), "d")
