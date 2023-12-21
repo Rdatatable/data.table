@@ -14,6 +14,6 @@ RUN echo 'Sys.setenv(PROJ_PATH="/workspaces/data.table")\nsource(".dev/cc.R")' >
 
 # set ubsan flags
 RUN mkdir -p ~/.R \
-        && echo 'CC=clang -fsanitize=undefined -fno-omit-frame-pointer' > ~/.R/Makevars \
-        && echo 'CXX=clang++ -stdlib=libc++ -fsanitize=undefined -fno-omit-frame-pointer' >> ~/.R/Makevars \
-        && echo 'LDFLAGS=-L/usr/local/clang/lib64 -L/usr/local/lib64 -lubsan' >> ~/.R/Makevars
+  && echo 'CC=clang -fsanitize=undefined -fno-omit-frame-pointer' > ~/.R/Makevars \
+  && echo 'CXX=clang++ -stdlib=libc++ -fsanitize=undefined -fno-omit-frame-pointer' >> ~/.R/Makevars \
+  && echo 'LDFLAGS=-L/usr/local/clang/lib64 -L/usr/local/lib64 -lubsan' >> ~/.R/Makevars
