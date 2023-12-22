@@ -12,6 +12,8 @@ home:
     href: web/packages/data.table/index.html
   - text: CRAN-like checks
     href: web/checks/check_results_data.table.html
+  - text: Community blog
+    href: https://rdatatable-community.github.io/The-Raft/
 
 navbar:
   structure:
