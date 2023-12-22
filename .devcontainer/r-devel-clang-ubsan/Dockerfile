@@ -16,10 +16,10 @@ read.dcf("DESCRIPTION", c("Imports", "Suggests")) |>      \
 
 # setup cc()
 WORKDIR /workspaces/data.table
-
-RUN ln -s /workspaces ~/GitHub
-COPY .devcontainer/r-devel-clang-ubsan/.Rprofile ./
+COPY .devcontainer/r-devel-clang-ubsan/.Rprofile .
 
 # set ubsan flags
-WORKDIR ~/.R
-COPY .devcontainer/r-devel-clang-ubsan/Makevars ./
+WORKDIR /root/.R
+COPY .devcontainer/r-devel-clang-ubsan/Makevars .
+
+RUN ln -s /workspaces ~/GitHub
