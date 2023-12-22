@@ -233,6 +233,7 @@ SEXP coalesce(SEXP x, SEXP inplace);
 
 // utils.c
 bool within_int32_repres(double x);
+bool within_int64_repres(double x);
 bool isRealReallyInt(SEXP x);
 SEXP isRealReallyIntR(SEXP x);
 SEXP isReallyReal(SEXP x);

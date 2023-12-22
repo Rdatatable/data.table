@@ -7,6 +7,10 @@ bool within_int32_repres(double x) {
   return R_FINITE(x) && x < 2147483648 && x > -2147483648;
 }
 
+bool within_int64_repres(double x) {
+  return R_FINITE(x) && x < (double)INT64_MAX && x > (double)INT64_MIN;
+}
+
 static R_xlen_t firstNonInt(SEXP x) {
   R_xlen_t n=xlength(x), i=0;
   const double *dx = REAL(x);

@@ -14417,7 +14417,7 @@ test(2006.2, rbindlist(list(data.table(x = as.raw(1:2), y=as.raw(5:6)), data.tab
 if (test_bit64) {
   test(2007.1, rbindlist(list( list(a=as.integer64(1), b=3L),  list(a=2L, b=4L) )), data.table(a=as.integer64(1:2), b=3:4))
   test(2007.2, rbindlist(list( list(a=3.4, b=5L),  list(a=as.integer64(4), b=6L) )), data.table(a=as.integer64(3:4), b=5:6),
-               warning="Column 1 of item 1: 3.4.*double.*position 1 truncated.*precision lost.*when assigning.*integer64.*column 1 named 'a'")
+               warning="Column 1 of item 1: 3.4.*double.*position 1.*truncated.*precision lost.*when assigning.*integer64.*column 1 named 'a'")
   test(2007.3, rbindlist(list( list(a=3.0, b=5L),  list(a=as.integer64(4), b=6L) )), data.table(a=as.integer64(3:4), b=5:6))
   test(2007.4, rbindlist(list( list(b=5:6),  list(a=as.integer64(4), b=7L)), fill=TRUE), data.table(b=5:7, a=as.integer64(c(NA,NA,4))))  # tests writeNA of integer64
   test(2007.5, rbindlist(list( list(a=INT(1,NA,-2)),  list(a=as.integer64(c(3,NA))) )), data.table(a=as.integer64(c(1,NA,-2,3,NA))))   # int NAs combined with int64 NA
