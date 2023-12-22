@@ -10,7 +10,6 @@ read.dcf("DESCRIPTION", c("Imports", "Suggests")) |>      \
   tools:::.split_dependencies() |>                        \
   names() |>                                              \
   setdiff(tools:::.get_standard_package_names()$base) |>  \
-  c("languageserver")                                     \
   install.packages()                                      \
 '
 
