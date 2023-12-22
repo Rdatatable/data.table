@@ -905,7 +905,8 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
     case REALSXP:
       switch (TYPEOF(source)) {
       case REALSXP: if (targetIsI64 && !sourceIsI64)
-                    CHECK_RANGE(double, REAL,  !ISNAN(val) && (!R_FINITE(val) || (int64_t)val!=val),        "f",     "truncated (precision lost)", val)
+                    CHECK_RANGE(double, REAL,  !ISNAN(val) &&
+                                               (!R_FINITE(val) || val < (double)INT64_MIN || val > (double)INT64_MAX || (int64_t)val!=val), "f",     "truncated (precision lost)", val)
                     break;
       case CPLXSXP: if (targetIsI64)
                     CHECK_RANGE(Rcomplex, COMPLEX, !((ISNAN(val.i) || (R_FINITE(val.i) && val.i==0.0)) &&
@@ -1022,7 +1023,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
           if (mc) {
                     memcpy(td, (int64_t *)REAL(source), slen*sizeof(int64_t)); break;
           } else    BODY(int64_t, REAL, int64_t, val,                                   td[i]=cval)
-        } else      BODY(double, REAL,  int64_t, R_FINITE(val) ? val : NA_INTEGER64,    td[i]=cval)
+        } else      BODY(double, REAL,  int64_t, R_FINITE(val) && val > (double)INT64_MIN && val < (double)INT64_MAX ? val : NA_INTEGER64,    td[i]=cval)
       case CPLXSXP: BODY(Rcomplex, COMPLEX, int64_t, ISNAN(val.r) ? NA_INTEGER64 : (int64_t)val.r, td[i]=cval)
       default:      COERCE_ERROR("integer64");
       }
