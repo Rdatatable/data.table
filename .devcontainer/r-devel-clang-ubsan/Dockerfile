@@ -3,6 +3,8 @@ FROM registry.gitlab.com/jangorecki/dockerfiles/r-devel-clang
 RUN apt-get -qq update \
   && apt-get install -y --no-install-recommends git
 
+COPY DESCRIPTION .
+
 # install dependencies without ubsan flags
 RUN Rscript -e '                                          \ 
 read.dcf("DESCRIPTION", c("Imports", "Suggests")) |>      \
@@ -16,8 +18,8 @@ read.dcf("DESCRIPTION", c("Imports", "Suggests")) |>      \
 WORKDIR /workspaces/data.table
 
 RUN ln -s /workspaces ~/GitHub
-COPY .devcontainer/r-devel-clang-ubsan/.Rprofile /workspaces/data.table
+COPY .devcontainer/r-devel-clang-ubsan/.Rprofile ./
 
 # set ubsan flags
-RUN mkdir -p ~/.R
-COPY .devcontainer/r-devel-clang-ubsan/Makevars ~/.R
+WORKDIR ~/.R
+COPY .devcontainer/r-devel-clang-ubsan/Makevars ./
