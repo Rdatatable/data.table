@@ -1,5 +1,3 @@
-ARG DEVCONTAINER_DIR=.devcontainer/r-devel-clang-ubsan
-
 FROM registry.gitlab.com/jangorecki/dockerfiles/r-devel-clang
 
 RUN apt-get -qq update \
@@ -18,8 +16,8 @@ read.dcf("DESCRIPTION", c("Imports", "Suggests")) |>      \
 WORKDIR /workspaces/data.table
 
 RUN ln -s /workspaces ~/GitHub
-COPY ${DEVCONTAINER_DIR}/.Rprofile /workspaces/data.table
+COPY .devcontainer/r-devel-clang-ubsan/.Rprofile /workspaces/data.table
 
 # set ubsan flags
 RUN mkdir -p ~/.R
-COPY ${DEVCONTAINER_DIR}/Makevars ~/.R
+COPY .devcontainer/r-devel-clang-ubsan/Makevars ~/.R
