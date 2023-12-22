@@ -2,16 +2,19 @@
 #include <Rdefines.h>
 #include <ctype.h>   // for isdigit
 
-SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
+SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP retainattrArg)
 {
   if (!isLogical(fillArg) || LENGTH(fillArg) != 1 || LOGICAL(fillArg)[0] == NA_LOGICAL)
     error(_("fill= should be TRUE or FALSE"));
   if (!isLogical(usenamesArg) || LENGTH(usenamesArg)!=1)
     error(_("use.names= should be TRUE, FALSE, or not used (\"check\" by default)"));  // R levels converts "check" to NA
+  if (!isLogical(retainattrArg) || LENGTH(retainattrArg)!=1)
+    error(_("retain.attr= should be TRUE OR FALSE"));
   if (!length(l)) return(l);
   if (TYPEOF(l) != VECSXP) error(_("Input to rbindlist must be a list. This list can contain data.tables, data.frames or plain lists."));
   Rboolean usenames = LOGICAL(usenamesArg)[0];
   const bool fill = LOGICAL(fillArg)[0];
+  const bool retainattr = LOGICAL(retainattrArg)[0];
   if (fill && usenames==NA_LOGICAL) {
     usenames=TRUE;
   }
@@ -529,6 +532,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
       }
     }
   }
+  if (retainattr) copyMostAttrib(VECTOR_ELT(l, 0), ans); // # 5569 preserve attributes of first object in l (length(l)>0 checked at start)
   UNPROTECT(nprotect);  // ans, coercedForFactor, thisCol
   return(ans);
 }

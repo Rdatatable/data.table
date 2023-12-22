@@ -18111,3 +18111,22 @@ test(2238.9, NA %notin% c(1:5, NA), FALSE)
 
 # shift actionable error on matrix input #5287
 test(2239.1, shift(matrix(1:10, ncol = 1)), error="consider wrapping")
+
+# rbindlist retains attributes of first argument #5569
+x = data.table(a=0)
+y = data.table(a=1, key="a")
+z = data.table()
+setattr(x, "xa", 0)
+setattr(z, "za", 2)
+test(2240.1, attr(rbind(x, y, retain.attr=TRUE), "xa"), 0)
+test(2240.2, attr(rbind(x, z, retain.attr=TRUE), "za"), NULL)
+test(2240.3, attr(rbind(z, x, retain.attr=TRUE), "za"), 2)
+test(2240.4, rbind(y, x, retain.attr=FALSE), data.table(a=c(1,0)))
+test(2240.5, rbind(y, x, retain.attr=TRUE), data.table(a=c(0,1), key="a"))
+x = data.table(a=c(4,2), b=c(3,1), key=c("b", "a"))
+test(2240.6, rbind(x, y, retain.attr=TRUE, fill=TRUE), data.table(a=c(1,2,4), b=c(NA,1,3), key=c("b", "a")))
+test(2240.7, rbind(y, x, retain.attr=TRUE, fill=TRUE), data.table(a=c(1,2,4), b=c(NA,1,3), key=c("a")))
+setindex(x <- data.table(a=c(3,4)), "a")
+setindex(y <- data.table(a=c(1,2)), "a")
+test(2240.8, rbind(x, y, retain.attr=TRUE), setindex(data.table(a=c(3,4,1,2)), "a"))
+test(2240.9, rbind(y, x, retain.attr=TRUE), setindex(data.table(a=c(1,2,3,4)), "a"))
