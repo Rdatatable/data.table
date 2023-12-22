@@ -91,6 +91,7 @@ DT[Petal.Width > 1.0, mean(Petal.Length), by = Species]
 - click the **Watch** button at the top and right of GitHub project page
 - read [NEWS file](https://github.com/Rdatatable/data.table/blob/master/NEWS.md)
 - follow [#rdatatable](https://twitter.com/hashtag/rdatatable) on twitter
+- follow [#rdatatable](https://fosstodon.org/tags/rdatatable) on fosstodon
 - watch recent [Presentations](https://github.com/Rdatatable/data.table/wiki/Presentations)
 - read recent [Articles](https://github.com/Rdatatable/data.table/wiki/Articles)
 
