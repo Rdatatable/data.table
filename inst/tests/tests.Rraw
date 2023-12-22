@@ -18111,3 +18111,35 @@ test(2238.9, NA %notin% c(1:5, NA), FALSE)
 
 # shift actionable error on matrix input #5287
 test(2239.1, shift(matrix(1:10, ncol = 1)), error="consider wrapping")
+
+# names<- retains index and key, #5125, #5126, #5126, #5128
+DT <- data.table(a = 1, b = 2)
+setkey(DT, a)
+setindex(DT, b)
+names(DT) <- c("c", "d")
+test(2240.1, key(DT), "c")
+test(2240.2, indices(DT), "d")
+
+# Test warnings for names<- and colnames<-, but only warnings when caller is data.table aware.
+DT = data.table(a=1:3, b=4:6, key="a")
+test(2241.01, names(DT)[1]<-"A", "A")
+test(2241.02, DT, data.table(A=1:3, b=4:6, key="A"))  # key wasn't retained in dev after #5084
+test(2241.03, DT[, C:=1], data.table(A=1:3, b=4:6, C=1, key="A"))  # ensure over-allocated ok and no warning
+test(2241.04, set(DT, j="D", value=2), data.table(A=1:3, b=4:6, C=1, D=2, key="A"))  # using set() too
+test(2241.05, colnames(DT)[2]<-"B", "B")
+test(2241.06, DT, data.table(A=1:3, B=4:6, C=1, D=2, key="A"))
+test(2241.07, set(DT, j="E", value=3), data.table(A=1:3, B=4:6, C=1, D=2, E=3, key="A"))
+test(2241.08, names(DT)<-letters[1:5], letters[1:5])  # R doesn't copy *tmp* when assigning to all names 
+test(2241.09, DT, data.table(a=1:3, b=4:6, c=1, d=2, e=3, key="a"))
+test(2241.10, set(DT, j="f", value=4), data.table(a=1:3, b=4:6, c=1, d=2, e=3, f=4, key="a"))
+
+# spotted by @ColeMiller1 in https://github.com/Rdatatable/data.table/pull/5133/files#r1320780851
+DT = data.table(id=1:2, x=1:2)
+r = copy(DT)[, x := 5L]
+test(2241.11, DT, data.table(id=1:2, x=1:2))
+test(2241.12, r, data.table(id=1:2, x=c(5L,5L)))
+
+DT = data.table(id=1:2, x=1:2)
+r = copy(DT)[1L, x:= 5L]
+test(2241.13, DT, data.table(id=1:2, x=1:2))
+test(2241.14, r, data.table(id=1:2, x=c(5L,2L)))
