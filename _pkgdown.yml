@@ -12,6 +12,8 @@ home:
     href: web/packages/data.table/index.html
   - text: CRAN-like checks
     href: web/checks/check_results_data.table.html
+  - text: Community blog
+    href: https://rdatatable-community.github.io/The-Raft/
 
 navbar:
   structure:
@@ -52,7 +54,7 @@ navbar:
       href: news/index.html
     benchmarks:
       text: Benchmarks
-      href: https://h2oai.github.io/db-benchmark
+      href: https://duckdblabs.github.io/db-benchmark
     presentations:
       text: Presentations
       href: https://github.com/Rdatatable/data.table/wiki/Presentations
