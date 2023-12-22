@@ -1158,7 +1158,7 @@ replace_dot_alias = function(e) {
             if (verbose) {
               catf("No rows match i. No new columns to add so not evaluating RHS of :=\nAssigning to 0 row subset of %d rows\n", nrow(x))
             }
-            .Call(Cassign, x, irows, NULL, NULL, NULL) # only purpose is to write 0 to .Last.updated
+            x = .Call(Cassign, x, irows, NULL, NULL, NULL) # only purpose is to write 0 to .Last.updated
             .global$print = address(x)
             return(invisible(x))
           }
@@ -2145,6 +2145,10 @@ tail.data.table = function(x, n=6L, ...) {
     return(setalloccol(x))    # over-allocate (again).   Avoid all this by using :=.
   }
   # TO DO: warningf("Please use DT[i,j:=value] syntax instead of DT[i,j]<-value, for efficiency. See ?':='")
+  
+  # x has already been copied by R before entry to this method, and selfrefok is already false. If an error occurs
+  # R already changed the x in calling scope. Which is odd and difficult to deal with, hence set*.
+  
   if (!missing(i)) {
     isub=substitute(i)
     i = eval(.massagei(isub), x, parent.frame())
@@ -2183,12 +2187,12 @@ tail.data.table = function(x, n=6L, ...) {
     # code did).
     reinstatekey=key(x)
   }
-  if (!selfrefok(x) || truelength(x) < ncol(x)+length(newnames)) {
-    x = setalloccol(x, length(x)+length(newnames)) # because [<- copies via *tmp* and main/duplicate.c copies at length but copies truelength over too
-    # search for one other .Call to assign in [.data.table to see how it differs
-  }
+  #if (!selfrefok(x) || truelength(x) < ncol(x)+length(newnames)) {
+  #  x = setalloccol(x, length(x)+length(newnames)) # because [<- copies via *tmp* and main/duplicate.c copies at length but copies truelength over too
+  #  # search for one other .Call to assign in [.data.table to see how it differs
+  #}
   x = .Call(Cassign,copy(x),i,cols,newnames,value) # From 3.1.0, DF[2,"b"] = 7 no longer copies DF$a (so in this [<-.data.table method we need to copy)
-  setalloccol(x)  #  can maybe avoid this realloc, but this is (slow) [<- anyway, so just be safe.
+  #setalloccol(x)  #  can maybe avoid this realloc, but this is (slow) [<- anyway, so just be safe.
   if (length(reinstatekey)) setkeyv(x,reinstatekey)
   invisible(x)
   # no copy at all if user calls directly; i.e. `[<-.data.table`(x,i,j,value)
@@ -2252,9 +2256,12 @@ dimnames.data.table = function(x) {
 
 "names<-.data.table" = function(x,value)
 {
-  # When non data.table aware packages change names, we'd like to maintain the key.
+  # Support names<- on a data.table the best we can so that names<- works for non-data.table-aware packages 
+  #   i) if a key or index column is having its name changed, update the sorted/index attribute which setnames() does
+  #  ii) restore over-allocation because R drops overallocation in subassign via *tmp* before this method is reached
   # If call is names(DT)[2]="newname", R will call this names<-.data.table function (notice no i) with 'value' already prepared to be same length as ncol
-  x = shallow(x) # `names<-` should not modify by reference. Related to #1015, #476 and #825. Needed for R v3.1.0+.  TO DO: revisit
+  x = .shallow(x, retain.key=TRUE) # `names<-` (i.e. no subassign) should not modify by reference in R 3.1.0+. Related to #1015, #476 and #825.
+  # TO DO: ********** optional warning when cedta() *************
   if (is.null(value))
     setattr(x,"names",NULL)   # e.g. plyr::melt() calls base::unname()
   else
@@ -2509,7 +2516,7 @@ copy = function(x) {
 .shallow = function(x, cols = NULL, retain.key = FALSE, unlock = FALSE) {
   wasnull = is.null(cols)
   cols = colnamesInt(x, cols, check_dups=FALSE)
-  ans = .Call(Cshallowwrapper, x, cols)  # copies VECSXP only
+  ans = .Call(Cshallow, x, cols)  # copies VECSXP only
 
   if(retain.key){
     if (wasnull) return(ans) # handle most frequent case first

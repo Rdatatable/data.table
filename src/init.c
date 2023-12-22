@@ -36,7 +36,9 @@ SEXP sym_datatable_locked;
 SEXP sym_tzone;
 SEXP sym_old_fread_datetime_character;
 SEXP sym_variable_table;
+SEXP sym_alloccol;
 SEXP sym_as_character;
+
 double NA_INT64_D;
 long long NA_INT64_LL;
 Rcomplex NA_CPLX;
@@ -50,7 +52,7 @@ R_CallMethodDef callMethods[] = {
 {"Cassign", (DL_FUNC) &assign, -1},
 {"Cdogroups", (DL_FUNC) &dogroups, -1},
 {"Ccopy", (DL_FUNC) &copy, -1},
-{"Cshallowwrapper", (DL_FUNC) &shallowwrapper, -1},
+{"Cshallow", (DL_FUNC) &shallow, -1},
 {"Calloccolwrapper", (DL_FUNC) &alloccolwrapper, -1},
 {"Cselfrefokwrapper", (DL_FUNC) &selfrefokwrapper, -1},
 {"Ctruelength", (DL_FUNC) &truelength, -1},
@@ -283,6 +285,7 @@ void attribute_visible R_init_data_table(DllInfo *info)
   sym_tzone = install("tzone");
   sym_old_fread_datetime_character = install("datatable.old.fread.datetime.character");
   sym_variable_table = install("variable_table");
+  sym_alloccol = install("datatable.alloccol");
   sym_as_character = install("as.character");
 
   initDTthreads();

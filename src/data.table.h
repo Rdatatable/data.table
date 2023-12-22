@@ -106,6 +106,7 @@ extern SEXP sym_datatable_locked;
 extern SEXP sym_tzone;
 extern SEXP sym_old_fread_datetime_character;
 extern SEXP sym_variable_table;
+extern SEXP sym_alloccol;
 extern SEXP sym_as_character;
 extern double NA_INT64_D;
 extern long long NA_INT64_LL;
@@ -130,6 +131,7 @@ SEXP allocNAVectorLike(SEXP x, R_len_t n);
 void writeNA(SEXP v, const int from, const int n, const bool listNA);
 void savetl_init(void), savetl(SEXP s), savetl_end(void);
 int checkOverAlloc(SEXP x);
+int allocColOpt(void);
 
 // forder.c
 int StrCmp(SEXP x, SEXP y);
@@ -174,7 +176,7 @@ SEXP dt_na(SEXP x, SEXP cols);
 // assign.c
 SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose);
 const char *memrecycle(const SEXP target, const SEXP where, const int start, const int len, SEXP source, const int sourceStart, const int sourceLen, const int colnum, const char *colname);
-SEXP shallowwrapper(SEXP dt, SEXP cols);
+SEXP shallow(SEXP dt, SEXP cols);
 
 SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols,
                 SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts,
