@@ -1,4 +1,4 @@
-FROM registry.gitlab.com/jangorecki/dockerfiles/r-devel-clang
+FROM rocker/r-devel-ubsan-clang:latest
 
 RUN apt-get -qq update \
   && apt-get install -y --no-install-recommends git
