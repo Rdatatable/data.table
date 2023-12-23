@@ -8,7 +8,7 @@ bool within_int32_repres(double x) {
 }
 
 bool within_int64_repres(double x) {
-  return R_FINITE(x) && x < (double)INT64_MAX && x > (double)INT64_MIN;
+  return R_FINITE(x) && x <= (double)INT64_MAX && x >= (double)INT64_MIN;
 }
 
 static R_xlen_t firstNonInt(SEXP x) {
