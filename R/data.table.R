@@ -1776,7 +1776,11 @@ replace_dot_alias = function(e) {
             # adding argument to ghead/gtail if none is supplied to g-optimized head/tail
             if (length(jsub) == 2L && jsub[[1L]] %chin% c("head", "tail")) jsub[["n"]] = 6L
             jsub[[1L]] = as.name(paste0("g", jsub[[1L]]))
-            if (length(jsub)>=3L && is.symbol(jsub[[3L]]) && !(jsub[[3L]] %chin% sdvars)) jsub[[3L]] = eval(jsub[[3L]], parent.frame())   # tests 1187.3 & 1187.5
+            if (length(jsub)>=3L) {
+              for (i in 3:length(jsub)) {
+                if(is.symbol(jsub[[i]]) && !(jsub[[i]] %chin% sdvars)) jsub[[i]] = eval(jsub[[i]], parent.frame())   # tests 1187.3 & 1187.5
+              }
+            }
           }
           if (verbose) catf("GForce optimized j to '%s'\n", deparse(jsub, width.cutoff=200L, nlines=1L))
         } else if (verbose) catf("GForce is on, left j unchanged\n");
