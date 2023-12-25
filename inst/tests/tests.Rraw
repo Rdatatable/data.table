@@ -18059,16 +18059,6 @@ for (opt in c(0,Inf)) {
   testnum = 2233.44
 }
 options(old)
-# turn off GForce for shift where arguments are calls, #5547
-DT = data.table(x=letters[1:4], y=1:2)
-yn = c(0,1)
-t = "lead"
-f = shift
-test(2233.51, copy(DT)[, shift(x, yn, type=t), by=y, verbose=TRUE], copy(DT)[, f(x, yn, type=t), by=y], output="GForce optimized j to")
-test(2233.52, copy(DT)[, shift(x, abs(yn), type=t), by=y, verbose=TRUE], copy(DT)[, f(x, yn, type=t), by=y], output="GForce FALSE")
-test(2233.53, copy(DT)[, shift(x, yn, type=as.character(t)), by=y, verbose=TRUE], copy(DT)[, f(x, yn, type=t), by=y], output="GForce FALSE")
-test(2233.54, copy(DT)[, shift(x, yn, type=t, fill=1), by=y, verbose=TRUE], copy(DT)[, f(x, yn, type=t, fill=1), by=y], output="GForce optimized j to")
-test(2233.55, copy(DT)[, shift(x, yn, type=t, fill=abs(1)), by=y, verbose=TRUE], copy(DT)[, f(x, yn, type=t, fill=1), by=y], output="GForce FALSE")
 
 # support by=.I; #1732
 DT = data.table(V1=1:5, V2=3:7, V3=5:1)
@@ -18153,3 +18143,14 @@ DT = data.table(id=1:2, x=1:2)
 r = copy(DT)[1L, x:= 5L]
 test(2241.13, DT, data.table(id=1:2, x=1:2))
 test(2241.14, r, data.table(id=1:2, x=c(5L,2L)))
+
+# turn off GForce for shift where arguments are calls, #5547
+DT = data.table(x=letters[1:4], y=1:2)
+yn = c(0,1)
+t = "lead"
+f = shift
+test(2242.1, copy(DT)[, shift(x, yn, type=t), by=y, verbose=TRUE], copy(DT)[, f(x, yn, type=t), by=y], output="GForce optimized j to")
+test(2242.2, copy(DT)[, shift(x, abs(yn), type=t), by=y, verbose=TRUE], copy(DT)[, f(x, yn, type=t), by=y], output="GForce FALSE")
+test(2242.3, copy(DT)[, shift(x, yn, type=as.character(t)), by=y, verbose=TRUE], copy(DT)[, f(x, yn, type=t), by=y], output="GForce FALSE")
+test(2242.4, copy(DT)[, shift(x, yn, type=t, fill=1), by=y, verbose=TRUE], copy(DT)[, f(x, yn, type=t, fill=1), by=y], output="GForce optimized j to")
+test(2242.5, copy(DT)[, shift(x, yn, type=t, fill=abs(1)), by=y, verbose=TRUE], copy(DT)[, f(x, yn, type=t, fill=1), by=y], output="GForce FALSE")
