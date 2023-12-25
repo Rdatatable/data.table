@@ -7760,14 +7760,14 @@ read_table = function(str, ...) {
 test(1552.1, fread(str, na.strings="#N/A"), read_table(str, na.strings="#N/A"))
 test(1552.2, fread(str, na.strings=c("#N/A", "-999")), read_table(str, na.strings=c("#N/A", "-999")))
 test(1552.3, fread(str, na.strings=c("#N/A", "-999", "+1")), read_table(str, na.strings=c("#N/A", "-999", "+1")))
-test(1552.4, fread(str, na.strings=c("#N/A", "-999", "+1", "1"), logical01=FALSE), read_table(str, na.strings=c("#N/A", "-999", "+1", "1"))) # enabled by FR #2927
+test(1552.4, fread(str, na.strings=c("#N/A", "-999", "+1", "1")), read_table(str, na.strings=c("#N/A", "-999", "+1", "1"))) # enabled by FR #2927
 test(1552.5, fread(str, na.strings=c("#N/A", "-999", "FALSE")), error="NAstring <<FALSE>>.*boolean.*not permitted")
 test(1552.6, fread("A\n1.0\n2\n-", na.strings=c("-")), data.table(A=c(1.0, 2.0, NA)))
 test(1552.7, fread(str, na.strings=c("#N/A", "-999", "+1", "1"), logical01=TRUE),
   error="NAstring <<1>> and logical01=TRUE.*not permitted")
 str = "a,b,c\n0,1,2\n1,0,2"
-test(1552.8, fread(str, na.strings = "0", logical01=FALSE), data.table(a=c(NA,1L), b=c(1L,NA), c=c(2L,2L)))
-test(1552.9, fread(str, na.strings = c("0","1"), logical01=FALSE), data.table(a=c(NA,NA), b=c(NA,NA), c=c(2L,2L)))
+test(1552.8, fread(str, na.strings = "0"), data.table(a=c(NA,1L), b=c(1L,NA), c=c(2L,2L)))
+test(1552.9, fread(str, na.strings = c("0","1")), data.table(a=c(NA,NA), b=c(NA,NA), c=c(2L,2L)))
 
 # FR #1177: 'quote' option of 'print.data.table'
 DT1 <- data.table(s1=paste(" ",LETTERS[1:5],sep=""),s2=LETTERS[1:5])
@@ -10445,8 +10445,8 @@ d = tempfile("dir")
 test(1703.16, fread(text=c('a,b','1,2'), tmpdir=d),
      error=base_messages$cant_open_file, warning=base_messages$missing_file)
 dir.create(d)
-test(1703.17, fread(text=c('a,b','1,2'), tmpdir=d), data.table(a=TRUE, b=2L))
-test(1703.18, fread(text=c('a,b','1,2')), data.table(a=TRUE, b=2L))
+test(1703.17, fread(text=c('a,b','1,2'), tmpdir=d), data.table(a=1L,b=2L))
+test(1703.18, fread(text=c('a,b','1,2')), data.table(a=1L, b=2L))
 unlink(d)
 test(1703.19, fread(text="a b c"), data.table(a=logical(), b=logical(), c=logical()))  # text= with no \n, #4689
 
@@ -10904,10 +10904,10 @@ test(1743.03, fread("a,b\n1,a", colClasses=c(NA, TRUE)), error="colClasses is.*l
 test(1743.04, fread("a,b\n1,a", colClasses=c("character", "factor")), data.table(a="1", b=factor("a")))
 
 # and the length-1 character case; #4237
-test(1743.041, fread("a,b\n1,a", colClasses=NA_character_), data.table(a=TRUE, b="a"))
-test(1743.042, fread("a,b\n1,a", colClasses=""), data.table(a=TRUE, b="a"))
-test(1743.043, fread("a\n1", colClasses=NA_character_), data.table(a=TRUE))
-test(1743.044, fread("a\n1", colClasses=""), data.table(a=TRUE))
+test(1743.041, fread("a,b\n1,a", colClasses=NA_character_), data.table(a=1L, b="a"))
+test(1743.042, fread("a,b\n1,a", colClasses=""), data.table(a=1L, b="a"))
+test(1743.043, fread("a\n1", colClasses=NA_character_), data.table(a=1L))
+test(1743.044, fread("a\n1", colClasses=""), data.table(a=1L))
 
 # Issue #1634: 'fread doesn't check colClasses to be valid type'
 # Currently using BioGenerics, which doesn't support USE.NAMES
@@ -13255,8 +13255,8 @@ test(1957.3, fread("A,B\na,b\nc,d\n", stringsAsFactors=TRUE, verbose=TRUE), data
 
 # misc. coverage tests in fread
 test(1958.01, fread('\U0001f64d', encoding = 'UTF-16'), error = "Argument 'encoding' must be")
-test(1958.02, fread('a,b\n1,2', nrows = NA_real_),      data.table(a=TRUE, b=2L))
-test(1958.03, fread('a,b\n1,2', nrows = -1),            data.table(a=TRUE, b=2L))
+test(1958.02, fread('a,b\n1,2', nrows = NA_real_),      data.table(a = 1L, b = 2L))
+test(1958.03, fread('a,b\n1,2', nrows = -1),            data.table(a = 1L, b = 2L))
 test(1958.04, fread('a,b\n1,2', key = 1),               error = 'must be a character vector naming columns')
 test(1958.05, fread("A,B,C\n1,2,3\n3,4,5\n0,0,0\n",   nrows=0),          data.table(A=integer(), B=integer(), C=integer()))  #2747
 test(1958.06, fread("A,B,C\n1,2,3\n3,4,5\n0,0,100\n", nrows=0, sep=','), data.table(A=integer(), B=integer(), C=integer()))
@@ -13265,12 +13265,12 @@ test(1958.08, fread('A,B,C,D\n"a,b",4,5\n"c,d",6,7,8\n', fill=TRUE), data.table(
 test(1958.09, fread("A,B,C\n1,2,3\n3,4,5\n0,0,0\n",   nrows=0L),          data.table(A=integer(), B=integer(), C=integer()))  # nrows=0 vs 0L, 4686
 test(1958.10, fread("A,B,C\n1,2,3\n3,4,5\n0,0,100\n", nrows=0L, sep=','), data.table(A=integer(), B=integer(), C=integer()))
 # nrows=0 should perform a full sample to get the empty column types right as documented, #4029
-test(1958.11, fread('A,B,C,D\n1,CHAR,"CHAR",3.1', nrows=0L), data.table(A=logical(), B=character(), C=character(), D=numeric()))
+test(1958.11, fread('A,B,C,D\n1,CHAR,"CHAR",3.1', nrows=0L), data.table(A=integer(), B=character(), C=character(), D=numeric()))
 # .. one different type in the middle of under 100
 txt = paste(c("A,B\n1,2\n", rep("3,4\n",48), "3,4.1\n", rep("5,6\n",48)), collapse="")
 test(1958.12, fread(text=txt, nrows=0L),          data.table(A=integer(), B=numeric()))
 test(1958.13, fread(text=txt, nrows=0L, skip=1L), data.table(V1=integer(), V2=numeric()))
-test(1958.14, fread(text=txt, nrows=1L),          data.table(A=TRUE, B=2L))  # B integer not numeric because sample is min(nrows,100) when nrows>=1
+test(1958.14, fread(text=txt, nrows=1L),          data.table(A=1L, B=2L))  # B integer not numeric because sample is min(nrows,100) when nrows>=1
 test(1958.15, fread(text=txt, nrows=1L, skip=1L), data.table(V1=1L, V2=2L))
 test(1958.16, fread(text=txt, nrows=2L),          data.table(A=c(1L,3L), B=c(2L,4L)))
 test(1958.17, fread(text=txt, nrows=2L, skip=1L), data.table(V1=c(1L,3L), V2=c(2L,4L)))
@@ -13292,10 +13292,10 @@ eols = c("\n", "\r\n", "\r", "\n\r")
 for (i in 1:4) {
   eol = eols[i]
   src = paste(c("A", "B", "...", ",,,,,", "c1,c2,c3", "1,2,3"), collapse=eol)
-  test(1959 + (i*0.1), fread(text=src, skip=4), data.table(c1=TRUE, c2=2L, c3=3L))
+  test(1959 + (i*0.1), fread(text=src, skip=4), data.table(c1=1L, c2=2L, c3=3L))
 }
 test(1959.5, fread("A\n\nB\n\nC\n1\n", skip=2), data.table(B=c("", "C", "1")))
-test(1959.6, fread("A,B\r\r\nX,Y\r\r\nB,C\r\r\n1,2", skip=4), data.table(B=TRUE, C=2L))
+test(1959.6, fread("A,B\r\r\nX,Y\r\r\nB,C\r\r\n1,2", skip=4), data.table(B=1L, C=2L))
 
 # empty set with constant j, #3173
 DT = data.table(
@@ -14519,9 +14519,9 @@ test(2013.3, DT[2], error="Column 2 ['b'] is length 4 but column 1 is length 3; 
 ## new fread keepLeadingZeros parameter in v1.12.2
 # leading zeros in both integer and float numbers are converted to character when keepLeadingZeros=TRUE
 test_data_single <- "0, 00, 01, 00010, 002.01\n"
-test(2014.1, fread(test_data_single), data.table(FALSE, 0L, 1L, 10L, 2.01))
-test(2014.2, fread(test_data_single, keepLeadingZeros = FALSE), data.table(FALSE, 0L, 1L, 10L, 2.01))
-test(2014.3, fread(test_data_single, keepLeadingZeros = TRUE),  data.table(FALSE, "00","01","00010","002.01"))
+test(2014.1, fread(test_data_single), data.table(0L, 0L, 1L, 10L, 2.01))
+test(2014.2, fread(test_data_single, keepLeadingZeros = FALSE), data.table(0L, 0L, 1L, 10L, 2.01))
+test(2014.3, fread(test_data_single, keepLeadingZeros = TRUE),  data.table(0L, "00","01","00010","002.01"))
 # converts whole column to character when keepLeadingZeros = TRUE and at least 1 value contains a leading zero
 test_data_mult <- paste0(c(sample(1:100),"0010",sample(1:100)), collapse="\n")
 test(2014.4, class(fread(test_data_mult, keepLeadingZeros = TRUE)[[1]]), "character")
