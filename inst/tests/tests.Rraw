@@ -17590,6 +17590,7 @@ for (col in c("a","b","c")) {
 
 # DT() functional form, #4872 #5106 #5107 #5129
 if (base::getRversion() >= "4.1.0") {
+  DT = DTfun
   # we have to EVAL "|>" here too otherwise this tests.Rraw file won't parse in R<4.1.0
   droprn = function(df) { rownames(df)=NULL; df }  # TODO: could retain rownames where droprn is currently used below
   test(2212.011, EVAL("mtcars |> DT(mpg>20, .(mean_hp=round(mean(hp),2)), by=cyl)"),
