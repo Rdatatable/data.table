@@ -18144,7 +18144,7 @@ r = copy(DT)[1L, x:= 5L]
 test(2241.13, DT, data.table(id=1:2, x=1:2))
 test(2241.14, r, data.table(id=1:2, x=c(5L,2L)))
 
-# turn off GForce for shift where arguments are calls, #5547
+# turn off GForce for shift where arguments are calls but still allow variables, #5547
 options(datatable.optimize=2L)
 DT = data.table(x=c("a","b","c","d"), y=c(1L,1L,2L,2L))
 yn = c(0,1)
