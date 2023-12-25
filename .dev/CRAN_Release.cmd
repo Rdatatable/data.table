@@ -195,15 +195,15 @@ R CMD build .
 export GITHUB_PAT="f1c.. github personal access token ..7ad"
 # avoids many too-many-requests in --as-cran's ping-all-URLs step (20 mins) inside the `checking CRAN incoming feasibility...` step.
 # Many thanks to Dirk for the tipoff that setting this env variable solves the problem, #4832.
-R CMD check data.table_1.14.9.tar.gz --as-cran
-R CMD INSTALL data.table_1.14.9.tar.gz --html
+R CMD check data.table_1.14.99.tar.gz --as-cran
+R CMD INSTALL data.table_1.14.99.tar.gz --html
 
 # Test C locale doesn't break test suite (#2771)
 echo LC_ALL=C > ~/.Renviron
 R
 Sys.getlocale()=="C"
 q("no")
-R CMD check data.table_1.14.9.tar.gz
+R CMD check data.table_1.14.99.tar.gz
 rm ~/.Renviron
 
 # Test non-English does not break test.data.table() due to translation of messages; #3039, #630
@@ -220,9 +220,9 @@ q("no")
 
 # User supplied PKG_CFLAGS and PKG_LIBS passed through, #4664
 # Next line from https://mac.r-project.org/openmp/. Should see the arguments passed through and then fail with gcc on linux.
-PKG_CFLAGS='-Xclang -fopenmp' PKG_LIBS=-lomp R CMD INSTALL data.table_1.14.9.tar.gz
+PKG_CFLAGS='-Xclang -fopenmp' PKG_LIBS=-lomp R CMD INSTALL data.table_1.14.99.tar.gz
 # Next line should work on Linux, just using superfluous and duplicate but valid parameters here to see them retained and work 
-PKG_CFLAGS='-fopenmp' PKG_LIBS=-lz R CMD INSTALL data.table_1.14.9.tar.gz
+PKG_CFLAGS='-fopenmp' PKG_LIBS=-lz R CMD INSTALL data.table_1.14.99.tar.gz
 
 R
 remove.packages("xml2")    # we checked the URLs; don't need to do it again (many minutes)
@@ -266,7 +266,7 @@ alias R310=~/build/R-3.1.0/bin/R
 ### END ONE TIME BUILD
 
 cd ~/GitHub/data.table
-R310 CMD INSTALL ./data.table_1.14.9.tar.gz
+R310 CMD INSTALL ./data.table_1.14.99.tar.gz
 R310
 require(data.table)
 test.data.table(script="*.Rraw")
@@ -278,7 +278,7 @@ test.data.table(script="*.Rraw")
 vi ~/.R/Makevars
 # Make line SHLIB_OPENMP_CFLAGS= active to remove -fopenmp
 R CMD build .
-R CMD INSTALL data.table_1.14.9.tar.gz   # ensure that -fopenmp is missing and there are no warnings
+R CMD INSTALL data.table_1.14.99.tar.gz   # ensure that -fopenmp is missing and there are no warnings
 R
 require(data.table)   # observe startup message about no OpenMP detected
 test.data.table()
@@ -286,7 +286,7 @@ q("no")
 vi ~/.R/Makevars
 # revert change above
 R CMD build .
-R CMD check data.table_1.14.9.tar.gz
+R CMD check data.table_1.14.99.tar.gz
 
 
 #####################################################
@@ -341,20 +341,20 @@ alias Rdevel-strict-gcc='~/build/R-devel-strict-gcc/bin/R --vanilla'
 alias Rdevel-strict-clang='~/build/R-devel-strict-clang/bin/R --vanilla'
 
 cd ~/GitHub/data.table
-Rdevel-strict-[gcc|clang] CMD INSTALL data.table_1.14.9.tar.gz
+Rdevel-strict-[gcc|clang] CMD INSTALL data.table_1.14.99.tar.gz
 # Check UBSAN and ASAN flags appear in compiler output above. Rdevel was compiled with them so they should be
 # passed through to here. However, our configure script seems to get in the way and gets them from {R_HOME}/bin/R
 # So I needed to edit my ~/.R/Makevars to get CFLAGS the way I needed.
-Rdevel-strict-[gcc|clang] CMD check data.table_1.14.9.tar.gz
+Rdevel-strict-[gcc|clang] CMD check data.table_1.14.99.tar.gz
 # Use the (failed) output to get the list of currently needed packages and install them
 Rdevel-strict-[gcc|clang]
 isTRUE(.Machine$sizeof.longdouble==0)  # check noLD is being tested
 options(repos = "http://cloud.r-project.org")
-install.packages(c("bit64", "bit", "curl", "R.utils", "xts","nanotime", "zoo", "yaml", "knitr", "rmarkdown", "markdown"),
+install.packages(c("bit64", "bit", "R.utils", "xts", "zoo", "yaml", "knitr", "markdown"),
                  Ncpus=4)
 # Issue #5491 showed that CRAN is running UBSAN on .Rd examples which found an error so we now run full R CMD check
 q("no")
-Rdevel-strict-[gcc|clang] CMD check data.table_1.14.9.tar.gz
+Rdevel-strict-[gcc|clang] CMD check data.table_1.14.99.tar.gz
 # UBSAN errors occur on stderr and don't affect R CMD check result. Made many failed attempts to capture them. So grep for them. 
 find data.table.Rcheck -name "*Rout*" -exec grep -H "runtime error" {} \;
 
@@ -372,7 +372,7 @@ print(Sys.time()); started.at<-proc.time(); try(test.data.table()); print(Sys.ti
 ## apt-get update
 ## apt-get install libc6:i386 libstdc++6:i386 gcc-multilib g++-multilib gfortran-multilib libbz2-dev:i386 liblzma-dev:i386 libpcre3-dev:i386 libcurl3-dev:i386 libstdc++-7-dev:i386
 ## sudo apt-get purge libcurl4-openssl-dev    # cannot coexist, it seems
-## sudo apt-get install libcurl4-openssl-dev:i386
+## sudo apt-get install libcurl4-openssl-dev:i386 ## may not be needed anymore as we dropped dependency on curl, try and update when reproducing
 ## cd ~/build/32bit/R-devel
 ## ./configure --without-recommended-packages --disable-byte-compiled-packages --disable-openmp --without-readline --without-x CC="gcc -m32" CXX="g++ -m32" F77="gfortran -m32" FC=${F77} OBJC=${CC} LDFLAGS="-L/usr/local/lib" LIBnn=lib LIBS="-lpthread" CFLAGS="-O0 -g -Wall -pedantic"
 ##
@@ -391,7 +391,7 @@ cd R-devel-valgrind
 make
 cd ~/GitHub/data.table
 vi ~/.R/Makevars  # make the -O2 -g line active, for info on source lines with any problems
-Rdevel-valgrind CMD INSTALL data.table_1.14.9.tar.gz
+Rdevel-valgrind CMD INSTALL data.table_1.14.99.tar.gz
 R_DONT_USE_TK=true Rdevel-valgrind -d "valgrind --tool=memcheck --leak-check=full --track-origins=yes --show-leak-kinds=definite,possible --gen-suppressions=all --suppressions=./.dev/valgrind.supp -s"
 # the default for --show-leak-kinds is 'definite,possible' which we're setting explicitly here as a reminder. CRAN uses the default too.
 #   including 'reachable' (as 'all' does) generates too much output from R itself about by-design permanent blocks
@@ -429,7 +429,7 @@ cd ~/build/rchk/trunk
 . ../scripts/config.inc
 . ../scripts/cmpconfig.inc
 vi ~/.R/Makevars   # set CFLAGS=-O0 -g so that rchk can provide source line numbers
-echo 'install.packages("~/GitHub/data.table/data.table_1.14.9.tar.gz",repos=NULL)' | ./bin/R --slave
+echo 'install.packages("~/GitHub/data.table/data.table_1.14.99.tar.gz",repos=NULL)' | ./bin/R --slave
 # objcopy warnings (if any) can be ignored: https://github.com/kalibera/rchk/issues/17#issuecomment-497312504
 . ../scripts/check_package.sh data.table
 cat packages/lib/data.table/libs/*check
@@ -583,46 +583,61 @@ ls -1 *.tar.gz | grep -E 'Chicago|dada2|flowWorkspace|LymphoSeq' | TZ='UTC' para
 #  Release to CRAN
 ###############################################
 
-Bump version to even release number in 3 places :
-  1) DESCRIPTION
-  2) NEWS; add ?closed=1 to the milestone link, don't add date yet as that published-on-CRAN date isn't yet known
-  3) dllVersion() at the end of init.c
-DO NOT push to GitHub. Prevents even a slim possibility of user getting premature version. Even release numbers must have been obtained from CRAN and only CRAN. There were too many support problems in the past before this procedure was brought in.
+# Bump version to even release number in 3 places :
+#  1) DESCRIPTION
+#  2) NEWS; add ?closed=1 to the milestone link, don't add date yet as that published-on-CRAN date isn't yet known
+#  3) dllVersion() at the end of init.c
+# DO NOT push to GitHub's master branch. Prevents even a slim possibility of user getting premature version. 
+# Even release numbers must have been obtained from CRAN and only CRAN. There were too many support problems in the past before this procedure was brought in.
 du -k inst/tests                # 1.5MB before
 bzip2 inst/tests/*.Rraw         # compress *.Rraw just for release to CRAN; do not commit compressed *.Rraw to git
 du -k inst/tests                # 0.75MB after
 R CMD build .
 export GITHUB_PAT="f1c.. github personal access token ..7ad"
 Rdevel -q -e "packageVersion('xml2')"   # ensure installed
-Rdevel CMD check data.table_1.14.10.tar.gz --as-cran  # use latest Rdevel as it may have extra checks
-#
+Rdevel CMD check data.table_1.16.0.tar.gz --as-cran  # use latest Rdevel as it may have extra checks
 bunzip2 inst/tests/*.Rraw.bz2  # decompress *.Rraw again so as not to commit compressed *.Rraw to git
-#
-Resubmit to winbuilder (R-release, R-devel and R-oldrelease)
-Submit to CRAN. Message template :
-------------------------------------------------------------
-Hello,
-1,016 CRAN revdeps checked. None are impacted.
-Many thanks!
-Best, Matt
-------------------------------------------------------------
-DO NOT commit or push to GitHub. Leave 4 files (.dev/CRAN_Release.cmd, DESCRIPTION, NEWS and init.c) edited and not committed. Include these in a single and final bump commit below.
-DO NOT even use a PR. Because PRs build binaries and we don't want any binary versions of even release numbers available from anywhere other than CRAN.
-Leave milestone open with a 'release checks' issue open. Keep updating status there.
-** If on EC2, shutdown instance. Otherwise get charged for potentially many days/weeks idle time with no alerts **
-If it's evening, SLEEP.
-It can take a few days for CRAN's checks to run. If any issues arise, backport locally. Resubmit the same even version to CRAN.
-CRAN's first check is automatic and usually received within an hour. WAIT FOR THAT EMAIL.
-When CRAN's email contains "Pretest results OK pending a manual inspection" (or similar), or if not and it is known why not and ok, then bump dev.
-###### Bump dev
-0. Close milestone to prevent new issues being tagged with it. Update its name to the even release. The final 'release checks' issue can be left open in a closed milestone.
-1. Check that 'git status' shows 4 files in modified and uncommitted state: DESCRIPTION, NEWS.md, init.c and this .dev/CRAN_Release.cmd
-2. Bump version in DESCRIPTION to next odd number. Note that DESCRIPTION was in edited and uncommitted state so even number never appears in git.
-3. Add new heading in NEWS for the next dev version. Add "(submitted to CRAN on <today>)" on the released heading.
-4. Bump dllVersion() in init.c
-5. Bump 3 version numbers in Makefile
-6. Search and replace this .dev/CRAN_Release.cmd to update 1.14.9 to 1.14.11 inc below, 1.14.10 to 1.14.12 above, 1.14.8 to 1.14.10 below
-7. Another final gd to view all diffs using meld. (I have `alias gd='git difftool &> /dev/null'` and difftool meld: http://meldmerge.org/)
-8. Push to master with this consistent commit message: "1.14.8 on CRAN. Bump to 1.14.10"
-9. Take sha from step 8 and run `git tag 1.14.8 96c..sha..d77` then `git push origin 1.14.8` (not `git push --tags` according to https://stackoverflow.com/a/5195913/403310)
+
+# Resubmit to winbuilder (R-release, R-devel and R-oldrelease)
+# Submit to CRAN. Message template :
+# ------------------------------------------------------------
+# Hello,
+# 1,016 CRAN revdeps checked. None are impacted.
+# Many thanks!
+# Best, Matt
+# ------------------------------------------------------------
+# DO NOT commit or push to GitHub. Leave 4 files (.dev/CRAN_Release.cmd, DESCRIPTION, NEWS and init.c) edited and not committed. Include these in a single and final bump commit below.
+# DO NOT even use a PR. Because PRs build binaries and we don't want any binary versions of even release numbers available from anywhere other than CRAN.
+# Leave milestone open with a 'release checks' issue open. Keep updating status there.
+# ** If on EC2, shutdown instance. Otherwise get charged for potentially many days/weeks idle time with no alerts **
+# If it's evening, SLEEP.
+# It can take a few days for CRAN's checks to run. If any issues arise, backport locally. Resubmit the same even version to CRAN.
+# CRAN's first check is automatic and usually received within an hour. WAIT FOR THAT EMAIL.
+# When CRAN's email contains "Pretest results OK pending a manual inspection" (or similar), or if not and it is known why not and ok, then bump dev.
+
+###### Bump dev for NON-PATCH RELEASE
+# 0. Close milestone to prevent new issues being tagged with it. The final 'release checks' issue can be left open in a closed milestone.
+# 1. Check that 'git status' shows 4 files in modified and uncommitted state: DESCRIPTION, NEWS.md, init.c and this .dev/CRAN_Release.cmd
+# 2. Bump minor version in DESCRIPTION to next odd number. Note that DESCRIPTION was in edited and uncommitted state so even number never appears in git.
+# 3. Add new heading in NEWS for the next dev version. Add "(submitted to CRAN on <today>)" on the released heading.
+# 4. Bump minor version in dllVersion() in init.c
+# 5. Bump 3 minor version numbers in Makefile
+# 6. Search and replace this .dev/CRAN_Release.cmd to update 1.14.99 to 1.15.99 inc below, 1.15.0 to 1.16.0 above, 1.14.0 to 1.15.0 below
+# 7. Another final gd to view all diffs using meld. (I have `alias gd='git difftool &> /dev/null'` and difftool meld: http://meldmerge.org/)
+# 8. Push to master with this consistent commit message: "1.15.0 on CRAN. Bump to 1.14.10"
+# 9. Take sha from step 8 and run `git tag 1.15.0 96c..sha..d77` then `git push origin 1.15.0` (not `git push --tags` according to https://stackoverflow.com/a/5195913/403310)
+######
+
+###### Bump dev for PATCH RELEASE
+## WARNING: review this process during the next first patch release (x.y.2) from a regular release (x,y,0), possibly during 1.15.2 release.
+# 0. Close milestone to prevent new issues being tagged with it. The final 'release checks' issue can be left open in a closed milestone.
+# 1. Check that 'git status' shows 4 files in modified and uncommitted state: DESCRIPTION, NEWS.md, init.c and this .dev/CRAN_Release.cmd
+# 2. Bump patch version in DESCRIPTION to next odd number. Note that DESCRIPTION was in edited and uncommitted state so even number never appears in git.
+# 3. Add new heading in NEWS for the next dev PATCH version. Add "(submitted to CRAN on <today>)" on the released heading.
+# 4. Bump patch version in dllVersion() in init.c
+# 5. Bump 3 patch version numbers in Makefile
+# 6. Search and replace this .dev/CRAN_Release.cmd to update 1.14.9 to 1.14.11 inc below, 1.14.10 to 1.14.12 above, 1.14.8 to 1.14.10 below
+# 7. Another final gd to view all diffs using meld. (I have `alias gd='git difftool &> /dev/null'` and difftool meld: http://meldmerge.org/)
+# 8. Push to master with this consistent commit message: "1.14.8 on CRAN. Bump to 1.14.10"
+# 9. Take sha from step 8 and run `git tag 1.14.8 96c..sha..d77` then `git push origin 1.14.8` (not `git push --tags` according to https://stackoverflow.com/a/5195913/403310)
 ######
