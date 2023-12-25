@@ -13618,6 +13618,7 @@ test(1963.07, shift(DT, -1:1),
 ## some coverage tests for good measure
 test(1963.08, shift(DT$x, type = 'some_other_type'), error='should be one of.*lag.*lead')
 test(1963.09, shift(as.raw(0:1)), as.raw(c(0,0)))
+test(1963.095, shift(list(expression(1))), error = "Type 'expression' is not supported")
 test(1963.10, shift(DT, -1:1, type="shift", give.names = TRUE), # new type="shift" #3223
      ans <- list(`x_shift_-1` = c(2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, NA),
           x_shift_0 = 1:10,
@@ -17589,7 +17590,6 @@ for (col in c("a","b","c")) {
 
 # DT() functional form, #4872 #5106 #5107 #5129
 if (base::getRversion() >= "4.1.0") {
-  DT = DTfun
   # we have to EVAL "|>" here too otherwise this tests.Rraw file won't parse in R<4.1.0
   droprn = function(df) { rownames(df)=NULL; df }  # TODO: could retain rownames where droprn is currently used below
   test(2212.011, EVAL("mtcars |> DT(mpg>20, .(mean_hp=round(mean(hp),2)), by=cyl)"),
