@@ -17996,6 +17996,11 @@ ydt[, date := seq_len(.N), by = symbol]
 ydt[, ret := rnorm(.N)]
 f = shift
 test(2233.33, copy(ydt)[, (ycols) := shift(ret, yn, type = "lead"), by = symbol, verbose=TRUE], copy(ydt)[, (ycols) := f(ret, yn, type = "lead"), by = symbol], output="GForce optimized j to")
+# turn off GForce for shift where arguments are calls, #5547
+test(2233.34, copy(ydt)[, (ycols) := shift(ret, abs(yn), type = "lead"), by = symbol, verbose=TRUE], copy(ydt)[, (ycols) := f(ret, yn, type = "lead"), by = symbol], output="GForce FALSE")
+test(2233.35, copy(ydt)[, (ycols) := shift(ret, yn, type = as.character("lead")), by = symbol, verbose=TRUE], copy(ydt)[, (ycols) := f(ret, yn, type = "lead"), by = symbol], output="GForce FALSE")
+test(2233.36, copy(ydt)[, (ycols) := shift(ret, yn, type = "lead", fill=1), by = symbol, verbose=TRUE], copy(ydt)[, (ycols) := f(ret, yn, type = "lead", fill=1), by = symbol], output="GForce optimized j to")
+test(2233.37, copy(ydt)[, (ycols) := shift(ret, yn, type = "lead", fill=abs(1)), by = symbol, verbose=TRUE], copy(ydt)[, (ycols) := f(ret, yn, type = "lead", fill=1), by = symbol], output="GForce FALSE")
 
 # optimized := by= with out-of-order groups broke in dev before release; #5307, #5326, #5337, #5345
 # verbatim from #5307
