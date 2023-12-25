@@ -1777,6 +1777,7 @@ replace_dot_alias = function(e) {
             if (length(jsub) == 2L && jsub[[1L]] %chin% c("head", "tail")) jsub[["n"]] = 6L
             jsub[[1L]] = as.name(paste0("g", jsub[[1L]]))
             if (length(jsub)>=3L) {
+              # gforce needs to evaluate arguments before calling C part TODO: move the evaluation into gforce_ok
               for (i in 3:length(jsub)) {
                 if(is.symbol(jsub[[i]]) && !(jsub[[i]] %chin% sdvars)) jsub[[i]] = eval(jsub[[i]], parent.frame())   # tests 1187.3 & 1187.5
               }
