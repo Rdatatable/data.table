@@ -103,7 +103,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   year = data.table::year               # lubridate
   yearmon = data.table::yearmon         # zoo
   yearqtr = data.table::yearqtr         # zoo
-  
+
   rm_all = function(env=parent.frame()) {
     tt = setdiff(ls(envir=env), .do_not_rm)
     rm(list=tt, envir=env)
@@ -3886,7 +3886,7 @@ test(1133.75, DT[, new := .N, by=x], data.table(x=INT(1,1,1,1,1,2,2), new=INT(5,
 # on a new column with warning on 2nd assign
 DT[,new:=NULL]
 test(1133.8, DT[, new := if (.GRP==1L) 7L else 3.4, by=x], data.table(x=INT(1,1,1,1,1,2,2), new=INT(7,7,7,7,7,3,3)),
-             warning="Group 2 column 'new': 3.4.*double.*at RHS position 1 truncated.*precision lost.*integer")
+             warning="Group 2 column 'new': 3.4.*double.*at RHS position 1.*truncated.*precision lost.*integer")
 
 # Fix for FR #2496 - catch `{` in `:=` expression in `j`:
 DT <- data.table(x=c("A", "A", "B", "B"), val =1:4)
@@ -5071,7 +5071,7 @@ dt <- data.table(a=1:3, b=c(7,8,9), c=c(TRUE, NA, FALSE), d=as.list(4:6), e=c("a
 
 test(1294.01, dt[, a := 1]$a, rep(1L, 3L))
 test(1294.02, dt[, a := 1.5]$a, rep(1L, 3L),
-              warning="1.5.*double.*position 1 truncated.*integer.*column 1 named 'a'")
+              warning="1.5.*double.*position 1.*truncated.*integer.*column 1 named 'a'")
 test(1294.03, dt[, a := NA]$a, rep(NA_integer_, 3L))
 test(1294.04, dt[, a := "a"]$a, rep(NA_integer_, 3L),
               warning=c("Coercing 'character' RHS to 'integer'.*column 1 named 'a'",
@@ -9668,7 +9668,7 @@ nqjoin_test <- function(x, y, k=1L, test_no, mult="all") {
   gc()  # no longer needed but left in place just in case, no harm
 }
 
-dt1 = nq_fun(100L)  # 400 reduced to 100, #5517 
+dt1 = nq_fun(100L)  # 400 reduced to 100, #5517
 dt2 = nq_fun(50L)
 x = na.omit(dt1)
 y = na.omit(dt2)
@@ -14365,7 +14365,7 @@ DT[,foo:=factor(c("a","b","c"))]
 test(2005.05, DT[2, foo:=8i], error="Can't assign to column 'foo' (type 'factor') a value of type 'complex' (not character, factor, integer or numeric)")
 test(2005.06, DT[2, a:=9, verbose=TRUE], notOutput="Coerced")
 test(2005.07, DT[2, a:=NA, verbose=TRUE], notOutput="Coerced")
-test(2005.08, DT[2, a:=9.9]$a, INT(1,9,3), warning="9.9.*double.*position 1 truncated.*integer.*column 1 named 'a'")
+test(2005.08, DT[2, a:=9.9]$a, INT(1,9,3), warning="9.9.*double.*position 1.*truncated.*integer.*column 1 named 'a'")
 test(2005.09, set(DT, 1L, "c", expression(x+2)), error="type 'expression' cannot be coerced to 'raw'")
 test(2005.10, set(DT, 1L, "d", expression(x+2)), error="type 'expression' cannot be coerced to 'logical'")
 test(2005.11, set(DT, 1L, "e", expression(x+2)), error="type 'expression' cannot be coerced to 'double'")
@@ -14417,7 +14417,7 @@ test(2006.2, rbindlist(list(data.table(x = as.raw(1:2), y=as.raw(5:6)), data.tab
 if (test_bit64) {
   test(2007.1, rbindlist(list( list(a=as.integer64(1), b=3L),  list(a=2L, b=4L) )), data.table(a=as.integer64(1:2), b=3:4))
   test(2007.2, rbindlist(list( list(a=3.4, b=5L),  list(a=as.integer64(4), b=6L) )), data.table(a=as.integer64(3:4), b=5:6),
-               warning="Column 1 of item 1: 3.4.*double.*position 1 truncated.*precision lost.*when assigning.*integer64.*column 1 named 'a'")
+               warning="Column 1 of item 1: 3.4.*double.*position 1.*truncated.*precision lost.*when assigning.*integer64.*column 1 named 'a'")
   test(2007.3, rbindlist(list( list(a=3.0, b=5L),  list(a=as.integer64(4), b=6L) )), data.table(a=as.integer64(3:4), b=5:6))
   test(2007.4, rbindlist(list( list(b=5:6),  list(a=as.integer64(4), b=7L)), fill=TRUE), data.table(b=5:7, a=as.integer64(c(NA,NA,4))))  # tests writeNA of integer64
   test(2007.5, rbindlist(list( list(a=INT(1,NA,-2)),  list(a=as.integer64(c(3,NA))) )), data.table(a=as.integer64(c(1,NA,-2,3,NA))))   # int NAs combined with int64 NA
@@ -18004,7 +18004,7 @@ test(2233.34, copy(DT)[, same_value:=value[1],    by=.(by1, by2), verbose=TRUE],
 test(2233.35, copy(DT)[, same_value:=value[1],    by=.(by2, by1), verbose=TRUE], ans,                                output=out)
 test(2233.36, copy(DT)[, same_value:=value[1], keyby=.(by2, by1), verbose=TRUE], setkey(ans,by2,by1),                output=out)
 # similar to #5307 using integer
-DT = data.table(A=INT(2,1,2,1), B=6:3, v=11:14)                                                
+DT = data.table(A=INT(2,1,2,1), B=6:3, v=11:14)
 test(2233.37, copy(DT)[, val:=v[1L],    by=.(A,B), verbose=TRUE], copy(DT)[, val:=11:14], output=out)
 test(2233.38, copy(DT)[, val:=v[1L], keyby=.(A,B), verbose=TRUE], data.table(A=INT(1,1,2,2), B=INT(3,5,4,6), v=INT(14,12,13,11), val=INT(14,12,13,11), key=c("A","B")), output=out)
 # test from #5326 but with n=100 rather than n=100000; confirmed that n=100 fails tests 2233.403-405 before fix
