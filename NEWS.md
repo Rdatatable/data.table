@@ -609,5 +609,10 @@
 
 15. Thanks to @ssh352, Václav Tlapák, Cole Miller, András Svraka and Toby Dylan Hocking for reporting and bisecting a significant performance regression in dev. This was fixed before release thanks to a PR by Jan Gorecki, [#5463](https://github.com/Rdatatable/data.table/pull/5463). 
 
+16. `key(x) <- value` is now fully deprecated (from warning to error). Use `setkey()` to set a table's key. We started warning not to use this approach in 2012, with a stronger warning starting in 2019 (1.12.2). This function will be removed in the next release.
+
+17. Argument `logicalAsInt` to `fwrite()` now warns. Use `logical01` instead. We stated the intention to begin removing this option in 2018 (v1.11.0). It will be upgraded to an error in the next release before being removed in the subsequent release.
+
+18. Option `datatable.CJ.names` no longer has any effect, after becoming `TRUE` by default in v1.12.2 (2019). Setting it now gives a warning, which will be dropped in the next release.
 
 # data.table v1.14.10 (Dec 2023) back to v1.10.0 (Dec 2016) has been moved to [NEWS.1.md](https://github.com/Rdatatable/data.table/blob/master/NEWS.1.md)

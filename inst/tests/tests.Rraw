@@ -1591,11 +1591,9 @@ test(505, DT[J(a=1,b=6),sum(i.b*b),by=.EACHI]$V1, 24)  # 24 now 'double' because
 
 # Test := after a key<-
 DT = data.table(a=3:1,b=4:6)
-test(506, key(DT)<-"a", "a", warning="deprecated")
-test(508, DT, data.table(a=1:3,b=6:4,key="a"))
-test(509, DT[,b:=10L], data.table(a=1:3,b=10L,key="a"))
-test(510, DT[,c:=11L], data.table(a=1:3,b=10L,c=11L,key="a"),     # no warning between 1.8.3 and 1.12.2 due to (now removed) setmutable and SET_NAMED in setalloccol, #3729
-          warning="Invalid .internal.selfref detected and fixed") # but the warning makes sense after the (deprecated) key(DT)<- above, so this warns again from 1.12.4
+test(506, key(DT)<-"a", error="deprecated")
+
+# tests 508, 509, 510 related to follow-up operations after key<-, which are now irrelevant
 
 # Test new functons chmatch and %chin%
 y=letters
@@ -2950,12 +2948,8 @@ test(995, DT[CJ(c(5,3), c(5,1), sorted=FALSE)], OUT)
 xx <- factor(letters[1:2], ordered=TRUE)
 yy <- sample(2L)
 yy_sort = base::sort.int(yy)
-old = options(datatable.CJ.names=FALSE)
-test(996.01, CJ(xx, yy), setkey(data.table(rep(xx, each=2L), rep(yy_sort, 2L))))
-test(996.02, CJ(a = xx, yy), setkey(data.table(a = rep(xx, each=2L), V2 = rep(yy_sort, 2L))))
-options(datatable.CJ.names=TRUE)
+# 996.01, 996.02 tested the now-ineffectual datatable.CJ.names option
 test(996.03, CJ(xx, yy), setkey(data.table(xx = rep(xx, each=2L), yy = rep(yy_sort, 2L))))
-options(old)
 
 # #3597 -- CJ properly informs sorted can't apply to list input
 test(996.04, CJ(list(1:2, 3L)), error = "non-atomic, which can't be sorted")
@@ -7305,12 +7299,10 @@ test(1524, ans1, ans2)
 x = c(1, 2, 1)
 y = c(5, 8, 8, 4)
 w = c(10, 12, 12, 13)  # already sorted but has dups; more efficient case to cover
-options(datatable.CJ.names=FALSE)
-test(1525.1, CJ(x, y, unique=TRUE), CJ(V1=c(1,2), V2=c(4,5,8)))
-test(1525.2, CJ(x, z=y, unique=TRUE), ans<-data.table(V1=rep(c(1,2), each=3), z=c(4,5,8), key="V1,z")) # naming of one but not both, too
-options(datatable.CJ.names=TRUE)
+# tests 1525.1, 1525.2 tested the now-ineffectual datatable.CJ.names option.
+ans<-data.table(V1=rep(c(1,2), each=3), z=c(4,5,8), key="V1,z")
 test(1525.3, CJ(x, y, unique=TRUE), CJ( x=c(1,2),  y=c(4,5,8)))
-test(1525.4, CJ(x, z=y, unique=TRUE), setnames(ans,c("x","z")))
+test(1525.4, CJ(x, z=y, unique=TRUE), setnames(copy(ans),c("x","z")))
 test(1525.5, CJ(x, w, unique=TRUE), data.table(x=(rep(c(1,2), each=3)), w=c(10,12,13), key="x,w"))
 
 # `key` argument fix for `setDT` when input is already a `data.table`,  #1169
@@ -10779,7 +10771,8 @@ test(1736.05, capture.output(fwrite(DT, sep='|', sep2=c("c(",",",")"), logical01
  "2|c(15,16,17,18)|c(1.2,2.3,3.4,3.14159265358979,-9)", "3|c(7)|c(foo,bar)", "4|c(9,10)|c(TRUE,TRUE,FALSE)"))
 test(1736.06, capture.output(fwrite(DT, sep='|', sep2=c("{",",","}"), logicalAsInt=TRUE)),
  c("A|B|C", "1|{1,2,3,4,5,6,7,8,9,10}|{s,t,u,v,w}",
- "2|{15,16,17,18}|{1.2,2.3,3.4,3.14159265358979,-9}", "3|{7}|{foo,bar}", "4|{9,10}|{1,1,0}"))
+ "2|{15,16,17,18}|{1.2,2.3,3.4,3.14159265358979,-9}", "3|{7}|{foo,bar}", "4|{9,10}|{1,1,0}"),
+ warning="logicalAsInt has been renamed logical01")
 DT = data.table(A=c("foo","ba|r","baz"))
 test(1736.07, capture.output(fwrite(DT,na="")), c("A","foo","ba|r","baz"))    # no list column so no need to quote
 test(1736.08, capture.output(fwrite(DT)), c("A","foo","ba|r","baz"))
