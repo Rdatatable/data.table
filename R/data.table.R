@@ -1770,7 +1770,12 @@ replace_dot_alias = function(e) {
             for (ii in seq_along(jsub)[-1L]) {
               if (dotN(jsub[[ii]])) next; # For #334
               jsub[[ii]][[1L]] = as.name(paste0("g", jsub[[ii]][[1L]]))
-              if (length(jsub[[ii]])>=3L && is.symbol(jsub[[ii]][[3L]]) && !(jsub[[ii]][[3L]] %chin% sdvars)) jsub[[ii]][[3L]] = eval(jsub[[ii]][[3L]], parent.frame())  # tests 1187.2 & 1187.4
+              if (length(jsub[[ii]])>=3L) {
+                # gforce needs to evaluate arguments before calling C part TODO: move the evaluation into gforce_ok
+                for (i in 3:length(jsub[[ii]])) {
+                  if(is.symbol(jsub[[ii]][[i]]) && !(jsub[[ii]][[i]] %chin% sdvars)) jsub[[ii]][[i]] = eval(jsub[[ii]][[i]], parent.frame())  # tests 1187.2 & 1187.4
+                }
+              }
             }
           else {
             # adding argument to ghead/gtail if none is supplied to g-optimized head/tail
