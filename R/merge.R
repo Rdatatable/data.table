@@ -102,6 +102,7 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
       yy = y[missingyidx]
       othercolsx = setdiff(nm_x, by)
       if (length(othercolsx)) {
+        # create NA rectangle with correct types of x to cbind to y
         tmp = rep.int(NA_integer_, length(missingyidx))
         # TO DO: use set() here instead..
         yy = cbind(yy, x[tmp, othercolsx, with = FALSE])
