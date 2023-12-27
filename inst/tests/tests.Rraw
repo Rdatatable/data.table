@@ -1919,6 +1919,11 @@ test(631.5, DT3, data.table(a=c(2), total=c(5), key="a"))
 # .. nrow(y)=1, i subset y with 1 and match with x
 test(631.6, merge(DT1,DT4,all.y=TRUE), data.table(a=c(3),total.x=c(1),total.y=c(1),key="a"))
 test(631.7, DT4, data.table(a=c(3), total=c(1), key="a"))
+# merge columns with different attributes #5309
+x = data.table(a=1L, b=as.IDate(16801))
+y = data.table(a=2L, b=NA)
+test(631.8, merge(x,y,by="a",all=TRUE), data.table(a=c(1L,2L), b.x=as.IDate(c(16801,NA)), b.y=NA, key="a"))
+test(631.9, merge(y,x,by="a",all=TRUE), data.table(a=c(1L,2L), b.x=NA, b.y=as.IDate(c(16801,NA)), key="a"))
 
 test(632, merge(DT1,DT2,all=TRUE), data.table(a=c(1,2,3,4,5),total.x=c(2,NA,1,3,1),total.y=c(NA,5,1,NA,2),key="a"))
 test(632.1, merge(DT1,DT2,all=TRUE), setkey(adt(merge(adf(DT1),adf(DT2),by="a",all=TRUE)),a))
@@ -14335,6 +14340,14 @@ test(2003.5, rbindlist(list(data.table(a=1:2), data.table(b=3:4, c=5:6)), fill=T
 # rbindlist segfault with fill=TRUE and usenames=FALSE #5444
 test(2003.6, rbindlist(list(list(1), list(2,3)), fill=TRUE, use.names=FALSE), data.table(c(1,2), c(NA, 3)))
 test(2003.7, rbindlist(list(list(1), list(2,factor(3))), fill=TRUE, use.names=FALSE), data.table(c(1,2), factor(c(NA, 3))))
+# rbind with different attributes #5309
+x=data.table(a=as.Date(NA))
+y=data.table(a=as.Date('2021-10-05'), b=as.POSIXct("2021-10-06 13:58:00 UTC"))
+ans=data.table(a=as.Date(c(NA_character_, '2021-10-05')), b=as.POSIXct(c(NA_character_, "2021-10-06 13:58:00 UTC")))
+test(2003.81, rbind(x, y, fill=TRUE, use.names=TRUE), ans)
+test(2003.82, rbind(y, x, fill=TRUE, use.names=TRUE), ans[2:1,])
+test(2003.83, rbind(x, y, fill=TRUE, use.names=FALSE), ans)
+test(2003.84, rbind(y, x, fill=TRUE, use.names=FALSE), ans[2:1,])
 
 # chmatch coverage for two different non-ascii encodings matching; issues mentioned in comments in chmatch.c #69 #2538 #111
 x1 = "fa\xE7ile"
