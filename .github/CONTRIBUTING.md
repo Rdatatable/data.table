@@ -35,7 +35,7 @@ A few minor points of style that you should adhere to in your PR:
   + Argument spacing style: `fun(arg1=value1, arg2=val2, ...)`
   + Add a whitespace between `if` and opening bracket, also before opening curly bracket: `if (condition) {`
 - Use `L` suffix for integer; i.e. `x[1L]` not `x[1]` (to save coercion)
-- Use `stop(domain=NA, gettextf(fmt, arg1, arg2, ..., domain="R-data.table"))` not `error(paste(...))` or `error(sprintf(...))` to facilitate translation as per [Writing R Extensions#1.7 point 2](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Diagnostic-messages)
+- Use `stop(domain=NA, gettextf(fmt, arg1, arg2, ..., domain="R-data.table"))` not `stop(paste(...))` or `stop(sprintf(...))` to facilitate translation as per [Writing R Extensions#1.7 point 2](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Diagnostic-messages)
 
 ### Testing
 
