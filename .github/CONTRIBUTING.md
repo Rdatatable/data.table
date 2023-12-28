@@ -99,6 +99,11 @@ $ git checkout -b my_new_branch
 ```
 and then the `commit` and `push` shown above would push to the branch in the main project. The next time you refresh the GitHub page in your browser, a button appears which you can click to create the PR from the branch. And that's all there is to it.
 
+data.table developer utilities
+------------------------------
+
+There are few utilities that some of regular `data.table` contributors are using. They are very helpful to speed up testing new changes, and to improve productivity in general. You can read more in [.dev/README.md](https://github.com/Rdatatable/data.table/blob/master/.dev/README.md).
+
 (advanced) Tips for your dev environment
 -----------------------------
 
