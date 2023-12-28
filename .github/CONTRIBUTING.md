@@ -27,14 +27,15 @@ Example of a good pull request: [PR#2332](https://github.com/Rdatatable/data.tab
 
 A few minor points of style that you should adhere to in your PR:
 
- - Use `=` for assignment (not `<-`); see [here](https://github.com/Rdatatable/data.table/pull/3582#discussion_r287075480), [here](https://github.com/Rdatatable/data.table/issues/3590#issuecomment-495776200), [here](https://stackoverflow.com/questions/1741820/what-are-the-differences-between-and-in-r#comment14293879_1742591) and [here](https://twitter.com/kdpsinghlab/status/1044568690346393606)
- - Spacing
-   + 2-space indentation
-   + No trailing white space
-   + In tests use long lines and vertical alignment to easily spot small differences
-   + Argument spacing style: `fun(arg1=value1, arg2=val2, ...)`
- - Use `L` suffix for integer; i.e. `x[1L]` not `x[1]` (to save coercion)
- - Use `error(fmt, arg1, arg2, ...)` not `error(paste(...))` or `error(sprintf(...))` as per [Writing R Extensions#1.7 point 2](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Diagnostic-messages)
+- Use `=` for assignment (not `<-`); see [here](https://github.com/Rdatatable/data.table/pull/3582#discussion_r287075480), [here](https://github.com/Rdatatable/data.table/issues/3590#issuecomment-495776200), [here](https://stackoverflow.com/questions/1741820/what-are-the-differences-between-and-in-r#comment14293879_1742591) and [here](https://twitter.com/kdpsinghlab/status/1044568690346393606)
+- Spacing
+  + 2-space indentation
+  + No trailing white space
+  + In tests use long lines and vertical alignment to easily spot small differences
+  + Argument spacing style: `fun(arg1=value1, arg2=val2, ...)`
+  + Add a whitespace between `if` and opening bracket, also before opening curly bracket: `if (condition) {`
+- Use `L` suffix for integer; i.e. `x[1L]` not `x[1]` (to save coercion)
+- Use `error(fmt, arg1, arg2, ...)` not `error(paste(...))` or `error(sprintf(...))` as per [Writing R Extensions#1.7 point 2](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Diagnostic-messages)
 
 ### Testing
 
@@ -46,17 +47,17 @@ When you file a pull request, you should add some tests to this file with this i
 
 The [function signature of `test`](https://github.com/Rdatatable/data.table/blob/master/R/test.data.table.R#L65) is `test(num, x, y=TRUE, error=NULL, warning=NULL, output=NULL, message=NULL)`:
 
- - `num` is a unique identifier for a test, helpful in identifying the source of failure when testing is not working. Currently, we use a manually-incremented system with tests formatted as `n.m`, where essentially `n` indexes an issue and `m` indexes aspects of that issue. For the most part, your new PR should only have one value of `n` (scroll to the end of `tests.Rraw` to see the next available ID) and then index the tests within your PR by increasing `m`. Note -- `n.m` is interpreted as a number, so `123.4` and `123.40` are actually the same -- please `0`-pad as appropriate.
+- `num` is a unique identifier for a test, helpful in identifying the source of failure when testing is not working. Currently, we use a manually-incremented system with tests formatted as `n.m`, where essentially `n` indexes an issue and `m` indexes aspects of that issue. For the most part, your new PR should only have one value of `n` (scroll to the end of `tests.Rraw` to see the next available ID) and then index the tests within your PR by increasing `m`. Note -- `n.m` is interpreted as a number, so `123.4` and `123.40` are actually the same -- please `0`-pad as appropriate.
 
- - `x` is an input object to be evaluated, `y` is the pre-defined output against which you are testing `x`. For example, to check that `sum` is working, you might set `x = sum(1:5)` and `y = 15`.
+- `x` is an input object to be evaluated, `y` is the pre-defined output against which you are testing `x`. For example, to check that `sum` is working, you might set `x = sum(1:5)` and `y = 15`.
 
- - `error`: when you are testing behavior of code that you _expect_ to fail _with an error_, supply the expected error message to this argument. `error` is interpreted as a regular expression, so you can be abbreviated, but try to include the key portion of the error so as not to accidentally include a _different_ error message.
+- `error`: when you are testing behavior of code that you _expect_ to fail _with an error_, supply the expected error message to this argument. `error` is interpreted as a regular expression, so you can be abbreviated, but try to include the key portion of the error so as not to accidentally include a _different_ error message.
 
- - `warning` is the same as `error`, in the case that you expect your code to issue a warning. Note that since the code evaluates successfully, you should still supply `y`.
+- `warning` is the same as `error`, in the case that you expect your code to issue a warning. Note that since the code evaluates successfully, you should still supply `y`.
 
- - Use `output` if you are testing the printing/console output behavior of some feature. Again, regex-compatible.
+- Use `output` if you are testing the printing/console output behavior of some feature. Again, regex-compatible.
 
- - Use `message` if you are testing output send as a `message`
+- Use `message` if you are testing output send as a `message`
 
 **References:** If you are not sure how to issue a PR, but would like to contribute, these links should help get you started:
 
@@ -111,6 +112,6 @@ This can be turned on with `mv .git/hooks/pre-commit.sample .git/hooks/pre-commi
 
 Other helpful tests for common mistakes:
 
- - `grep -Fr "browser()" .` - remove `browser()` calls that were inserted during debugging
+- `grep -Fr "browser()" .` - remove `browser()` calls that were inserted during debugging
 
 We may eventually implement some [pre-receive hooks](https://help.github.com/en/enterprise/2.15/admin/developer-workflow/creating-a-pre-receive-hook-script) to formalize some of these requirements.
