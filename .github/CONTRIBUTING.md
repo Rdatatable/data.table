@@ -24,17 +24,30 @@ If you are not fixing an open issue and you are confident, you do not need to fi
 
 Example of a good pull request: [PR#2332](https://github.com/Rdatatable/data.table/pull/2332). It has a NEWS entry. It passed existing tests and added a new one. One test was removed but the PR description clearly explained why upfront (without us having to ask). Benchmark results were included, which made the need for the change compelling. We didn't need to run anything ourselves. Everything was including in one PR in one place. In short, it was a pleasure to review and merge.
 
+### Coding Style
+
+A few minor points of style that you should adhere to in your PR:
+
+ - Spacing
+   + No trailing white space
+   + Space after every comma
+   + No space before/after named arguments (e.g. `argument=value`)
+   + Space before and after operators
+   + 2-space indentation (incrementally)
+ - Explicitly use `integer` type wherever possible, e.g. `x[1L]` not `x[1]`
+ - Avoid `error(paste`, `error(sprintf`, `message(sprintf`, etc.-like constructions, per [Writing R Extensions](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Diagnostic-messages)
+
 ### Testing
 
-`data.table` uses a series of tests to exhibit code that is expected to work. These are stored in [`inst/tests/tests.Rraw`](https://github.com/Rdatatable/data.table/blob/master/inst/tests/tests.Rraw). They come primarily from two places -- when new features are implemented, the author constructs minimal examples demonstrating the expected common usage of said feature, including expected failures/invalid use cases (e.g., the [initial assay of `fwrite` includes 28 tests](https://github.com/Rdatatable/data.table/blob/master/inst/tests/tests.Rraw#L9123-L9245)). Second, when kind users such as yourself happen upon some aberrant behavior in their everyday use of `data.table` (typically, some edge case that slipped through the cracks in the coding logic of the original author). We try to be thorough -- for example there were initially [141 tests of `split.data.table`](https://github.com/Rdatatable/data.table/blob/master/inst/tests/tests.Rraw#L8493-L8952), and that number has since grown!
+`data.table` uses a series of unit tests to exhibit code that is expected to work. These are primarily stored in [`inst/tests/tests.Rraw`](https://github.com/Rdatatable/data.table/blob/master/inst/tests/tests.Rraw). They come primarily from two places -- when new features are implemented, the author constructs minimal examples demonstrating the expected common usage of said feature, including expected failures/invalid use cases (e.g., the [initial assay of `fwrite` includes 28 tests](https://github.com/Rdatatable/data.table/blob/master/inst/tests/tests.Rraw#L9123-L9245)). Second, when kind users such as yourself happen upon some aberrant behavior in their everyday use of `data.table` (typically, some edge case that slipped through the cracks in the coding logic of the original author). We try to be thorough -- for example there were initially [141 tests of `split.data.table`](https://github.com/Rdatatable/data.table/blob/master/inst/tests/tests.Rraw#L8493-L8952), and that number has since grown!
 
-When you file a pull request, you should add some tests to this file with this in mind -- for new features, try to cover possible use cases extensively; for bug fixes, include a minimal version of the problem you've identified and write a test to ensure that your fix indeed works, and thereby guarantee that your fix continues to work as the codebase is further modified in the future. We encourage you to scroll around in `tests.Rraw` a bit to get a feel for the types of examples that are being created, and how bugs are tested/features evaluated.
+When you file a pull request, you should add some tests to this file with this in mind -- for new features, try to cover possible use cases extensively (we use [Codecov](https://codecov.io/gh/Rdatatable/data.table) to make it a bit easier to see how well you've done to minimally cover any new code you've added); for bug fixes, include a minimal version of the problem you've identified and write a test to ensure that your fix indeed works, and thereby guarantee that your fix continues to work as the codebase is further modified in the future. We encourage you to scroll around in `tests.Rraw` a bit to get a feel for the types of examples that are being created, and how bugs are tested/features evaluated.
 
 #### Using `test`
 
-The [function signature of `test`](https://github.com/Rdatatable/data.table/blob/master/R/test.data.table.R#L65) is `test(num, x, y, error=NULL, warning=NULL, output=NULL)`:
+The [function signature of `test`](https://github.com/Rdatatable/data.table/blob/master/R/test.data.table.R#L65) is `test(num, x, y=TRUE, error=NULL, warning=NULL, output=NULL, message=NULL)`:
 
- - `num` is a unique identifier for a test, helpful in identifying the source of failure when testing is not working. Currently, we use a manually-incremented system with tests formatted as `n.m`, where essentially `n` indexes an issue and `m` indexes aspects of that issue. For the most part, your new PR should only have one value of `n` (scroll to the end of `tests.Rraw` to see the next available ID) and then index the tests within your PR by increasing `m`.
+ - `num` is a unique identifier for a test, helpful in identifying the source of failure when testing is not working. Currently, we use a manually-incremented system with tests formatted as `n.m`, where essentially `n` indexes an issue and `m` indexes aspects of that issue. For the most part, your new PR should only have one value of `n` (scroll to the end of `tests.Rraw` to see the next available ID) and then index the tests within your PR by increasing `m`. Note -- `n.m` is interpreted as a number, so `123.4` and `123.40` are actually the same -- please `0`-pad as appropriate.
 
  - `x` is an input object to be evaluated, `y` is the pre-defined output against which you are testing `x`. For example, to check that `sum` is working, you might set `x = sum(1:5)` and `y = 15`.
 
@@ -43,6 +56,8 @@ The [function signature of `test`](https://github.com/Rdatatable/data.table/blob
  - `warning` is the same as `error`, in the case that you expect your code to issue a warning. Note that since the code evaluates successfully, you should still supply `y`.
 
  - Use `output` if you are testing the printing/console output behavior of some feature. Again, regex-compatible.
+
+ - Use `message` if you are testing output send as a `message`
 
 **References:** If you are not sure how to issue a PR, but would like to contribute, these links should help get you started:
 
