@@ -64,7 +64,7 @@ split_deparsing = function(expr, varnames, LHSallvars, RHSallvars) {
     }
     this
   })
-  lvars = lapply(lvars, function(x) if (length(x) && !is.list(x)) list(x) else unique(x))
+  lvars = lapply(lvars, function(x) if (length(x) && !is.list(x)) list(x) else tryCatch(unique(x), error = function(e) x))
 }
 
 deparse_formula = function(expr, varnames, allvars) {
