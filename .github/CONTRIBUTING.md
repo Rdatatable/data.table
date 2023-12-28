@@ -37,6 +37,14 @@ A few minor points of style that you should adhere to in your PR:
 - Use `L` suffix for integer; i.e. `x[1L]` not `x[1]` (to save coercion)
 - Use `stop(domain=NA, gettextf(fmt, arg1, arg2, ..., domain="R-data.table"))` not `stop(paste(...))` or `stop(sprintf(...))` to facilitate translation as per [Writing R Extensions#1.7 point 2](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Diagnostic-messages)
 
+### Translations
+
+`data.table` offers some translations for non-native English speakers (currently, it's limited to just Mandarin). For development, there's a few minor points:
+
+ - You _don't_ need to update the `po` files in your PR. We update these in one PR before each release. This makes it much easier for translators to update the messages in one go, rather than greenlighting each PR.
+ - For R code, when writing error messages (or `warning`s, or `message`s), use a single string where possible. Bad: `stop("This is ", "an error")` vs. Good: `stop("This is an error")`. If you need to construct the error message from several parts, use `gettextf` (and rarely, `ngettext`). Bad: `stop("Error in column ", j, ". Please fix."))` vs. Good: `stop(domain=NA, gettextf("Error in column %d. Please fix.", j, domain="R-data.table"))`. Note the usage of `domain` in both `stop()` and `gettextf()`. More uncommonly, when using `cat()`, always use `gettextf`.
+ - For C code, any `char` array that will be shown to users should be wrapped in `_()` (which marks the array for translation). Bad: `error("Error in column %d. Please fix.", j);` vs. Good: `error(_("Error in column %d. Please fix."), j);`.
+
 ### Testing
 
 `data.table` uses a series of unit tests to exhibit code that is expected to work. These are primarily stored in [`inst/tests/tests.Rraw`](https://github.com/Rdatatable/data.table/blob/master/inst/tests/tests.Rraw). They come primarily from two places -- when new features are implemented, the author constructs minimal examples demonstrating the expected common usage of said feature, including expected failures/invalid use cases (e.g., the [initial assay of `fwrite` includes 28 tests](https://github.com/Rdatatable/data.table/blob/master/inst/tests/tests.Rraw#L9123-L9245)). Second, when kind users such as yourself happen upon some aberrant behavior in their everyday use of `data.table` (typically, some edge case that slipped through the cracks in the coding logic of the original author). We try to be thorough -- for example there were initially [141 tests of `split.data.table`](https://github.com/Rdatatable/data.table/blob/master/inst/tests/tests.Rraw#L8493-L8952), and that number has since grown!
