@@ -1739,7 +1739,7 @@ replace_dot_alias = function(e) {
       } else {
         # Apply GForce
         .gforce_ok = function(q) {
-          noCall_noVars = function(expr) !is.call(expr) || length(all.vars(expr, max.names=1L))==0
+          noCall_noVars = function(expr) (!is.call(expr) || length(all.vars(expr, max.names=1L))==0) && !dotN(expr)
           if (dotN(q)) return(TRUE) # For #334
           # run GForce for simple f(x) calls and f(x, na.rm = TRUE)-like calls where x is a column of .SD
           # is.symbol() is for #1369, #1974 and #2949
@@ -1758,7 +1758,7 @@ replace_dot_alias = function(e) {
           if (length(q)>=3L && q[[1L]] == "weighted.mean") return(TRUE)  #3977
           # otherwise there must be three arguments
           length(q)==3L && length(q3 <- q[[3L]])==1L && noCall_noVars(q3) &&
-            ( (q1 %chin% c("head", "tail")) || (q1 == "[" || (q1 == "[[" && eval(call('is.atomic', q[[2L]]), envir=x))) )
+            ( (q1 %chin% c("head", "tail")) || ((q1 == "[" || (q1 == "[[" && eval(call('is.atomic', q[[2L]]), envir=x))) && eval(q3, parent.frame())>0L) )
         }
         if (jsub[[1L]]=="list") {
           GForce = TRUE
