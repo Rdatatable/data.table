@@ -28,7 +28,7 @@ Example of a good pull request: [PR#2332](https://github.com/Rdatatable/data.tab
 
 A few minor points of style that you should adhere to in your PR:
 
- - Use `=` for assignment (not `<-`); see [here](https://github.com/Rdatatable/data.table/pull/3582#discussion_r287075480), [here](https://github.com/Rdatatable/data.table/issues/3590#issuecomment-495776200), and [here](https://stackoverflow.com/questions/1741820/what-are-the-differences-between-and-in-r#comment14293879_1742591)
+ - Use `=` for assignment (not `<-`); see [here](https://github.com/Rdatatable/data.table/pull/3582#discussion_r287075480), [here](https://github.com/Rdatatable/data.table/issues/3590#issuecomment-495776200), [here](https://stackoverflow.com/questions/1741820/what-are-the-differences-between-and-in-r#comment14293879_1742591) and [here](https://twitter.com/kdpsinghlab/status/1044568690346393606)
  - Spacing
    + 2-space indentation
    + No trailing white space
