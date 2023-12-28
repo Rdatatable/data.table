@@ -1897,7 +1897,10 @@ replace_dot_alias = function(e) {
     } else if (.is_nrows(jsub)) {
       g = lapply(g, rep.int, times=len__)
       # unpack list of lists for nrows functions
-      # if (all(vapply_1b(ans, is.list))) ans = lapply(ans, transpose)
+      zip = function(ll) do.call(mapply, c(list(c), ll, SIMPLIFY=FALSE, USE.NAMES=FALSE))
+      if (all(vapply_1b(ans, is.list))) {
+        ans = lapply(ans, zip)
+      }
     }
     ans = c(g, ans)
   } else {
