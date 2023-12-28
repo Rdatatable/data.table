@@ -82,6 +82,10 @@ Congratulations - you've just compiled and tested the very latest version of dat
 $ R CMD build .
 $ R CMD check data.table_1.11.5.tar.gz
 ```
+or if your OS supports makefile
+```
+$ make build && make check
+```
 Fix the problems and repeat the `build` and `check` steps until you get `Status: OK`.
 Now commit the change and push. Since this is a first time PR and you're not a project member, this step should automatically ask you if you wish to fork the project. Say 'yes'. If that's not the case, please edit this wiki page to show what exactly happens for non project members.
 ```
