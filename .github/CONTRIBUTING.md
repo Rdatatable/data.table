@@ -51,6 +51,8 @@ A few minor points of style that you should adhere to in your PR:
 
 When you file a pull request, you should add some tests to this file with this in mind -- for new features, try to cover possible use cases extensively (we use [Codecov](https://codecov.io/gh/Rdatatable/data.table) to make it a bit easier to see how well you've done to minimally cover any new code you've added); for bug fixes, include a minimal version of the problem you've identified and write a test to ensure that your fix indeed works, and thereby guarantee that your fix continues to work as the codebase is further modified in the future. We encourage you to scroll around in `tests.Rraw` a bit to get a feel for the types of examples that are being created, and how bugs are tested/features evaluated.
 
+What numbers should be used for new tests? Numbers should be new relative to current master at the time of your PR. If another PR is merged before yours, then there may be a conflict, but that is no problem, as [Matt will fix the test numbers when he merges your PR](https://github.com/Rdatatable/data.table/pull/4731#issuecomment-768858134).
+
 #### Using `test`
 
 See [`test` function manual](https://rdatatable.gitlab.io/data.table/reference/test.html).
