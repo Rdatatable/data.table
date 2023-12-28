@@ -48,3 +48,32 @@ The [function signature of `test`](https://github.com/Rdatatable/data.table/blob
 1. **[How to Github: Fork, Branch, Track, Squash and Pull request](https://gun.io/blog/how-to-github-fork-branch-and-pull-request/)**.
 2. **[Squashing Github pull requests into a single commit](http://eli.thegreenplace.net/2014/02/19/squashing-github-pull-requests-into-a-single-commit)**.
 3. **[Github help](https://help.github.com/articles/using-pull-requests/)** - you'll need the *fork and pull* model.
+
+Minimal first time PR
+---------------------
+
+```
+$ cd /tmp      # or anywhere safe to play
+$ git clone https://github.com/Rdatatable/data.table.git
+$ cd data.table
+$ R CMD build .
+$ R CMD check data.table_1.11.5.tar.gz
+...
+Status: OK
+```
+Congratulations - you've just compiled and tested the very latest version of data.table in development. Everything looks good. Now make your changes. Using an editor of your choice, edit the appropriate `.R`, `.md`, `NEWS` and `tests.Rraw` files. Test your changes : 
+```
+$ R CMD build .
+$ R CMD check data.table_1.11.5.tar.gz
+```
+Fix the problems and repeat the `build` and `check` steps until you get `Status: OK`.
+Now commit the change and push. Since this is a first time PR and you're not a project member, this step should automatically ask you if you wish to fork the project. Say 'yes'. If that's not the case, please edit this wiki page to show what exactly happens for non project members.
+```
+$ git commit -am "Added/fixed something in somewhere"
+$ git push
+```
+After your first successful non-trivial PR you'll likely be invited to be a project member. When you're a member, before making your changes, you would create a branch first : 
+```
+$ git checkout -b my_new_branch
+```
+and then the `commit` and `push` shown above would push to the branch in the main project. The next time you refresh the GitHub page in your browser, a button appears which you can click to create the PR from the branch. And that's all there is to it.
