@@ -18159,19 +18159,14 @@ test(2241.14, r, data.table(id=1:2, x=c(5L,2L)))
 
 # turn off GForce for shift where arguments are calls but still allow variables, #5547
 options(datatable.optimize=2L)
-DT = data.table(x=c("a","b","c","d"), y=c(1L,1L,2L,2L))
-yn = c(0,1)
+dt = data.table(x=c("a","b","c","d"), y=c(1L,1L,2L,2L))
+i = c(0,1)
 t = "lead"
 f = shift
-o1 = DT[, f(x, c(0,1), type="lead"), by=y]
-o2 = DT[, f(x, c(0,1), fill=1, type="lead"), by=y]
-test(2242.01, DT[, shift(x, yn, type=t), by=y, verbose=TRUE], o1, output="GForce optimized j to")
-test(2242.02, DT[, shift(x, abs(yn), type=t), by=y, verbose=TRUE], o1, output="GForce FALSE")
-test(2242.03, DT[, shift(x, yn, type=as.character(t)), by=y, verbose=TRUE], o1, output="GForce FALSE")
-test(2242.04, DT[, shift(x, yn, type=t, fill=1), by=y, verbose=TRUE], o2, output="GForce optimized j to")
-test(2242.05, DT[, shift(x, yn, type=t, fill=abs(1)), by=y, verbose=TRUE], o2, output="GForce FALSE")
-# test(2242.11, DT[, list(shift(x, yn, type=t)), by=y, verbose=TRUE], data.table(y=c(1L,1L,2L,2L), V1=c("a","b","c","d"), V2=c("b",NA,"d",NA)), output="GForce optimized j to")
-# test(2242.12, DT[, .(shift(x, abs(yn), type=t)), by=y, verbose=TRUE], data.table(y=c(1L,1L,2L,2L), V1=c("a","b","c","d"), V2=c("b",NA,"d",NA)), output="GForce FALSE")
-# test(2242.13, DT[, .(shift(x, yn, type=as.character(t))), by=y, verbose=TRUE], data.table(y=c(1L,1L,2L,2L), V1=c("a","b","c","d"), V2=c("b",NA,"d",NA)), output="GForce FALSE")
-# test(2242.14, DT[, .(shift(x, yn, type=t, fill=1)), by=y, verbose=TRUE], data.table(y=c(1L,1L,2L,2L), V1=c("a","b","c","d"), V2=c("b","1","d","1")), output="GForce optimized j to")
-# test(2242.15, DT[, .(shift(x, yn, type=t, fill=abs(1))), by=y, verbose=TRUE], data.table(y=c(1L,1L,2L,2L), V1=c("a","b","c","d"), V2=c("b","1","d","1")), output="GForce FALSE")
+o1 = dt[, f(x, c(0,1), type="lead"), by=y]
+o2 = dt[, f(x, c(0,1), fill=1, type="lead"), by=y]
+test(2242.01, dt[, shift(x, i, type=t), by=y, verbose=TRUE], o1, output="GForce optimized j to")
+test(2242.02, dt[, shift(x, abs(i), type=t), by=y, verbose=TRUE], o1, output="GForce FALSE")
+test(2242.03, dt[, shift(x, i, type=as.character(t)), by=y, verbose=TRUE], o1, output="GForce FALSE")
+test(2242.04, dt[, shift(x, i, type=t, fill=1), by=y, verbose=TRUE], o2, output="GForce optimized j to")
+test(2242.05, dt[, shift(x, i, type=t, fill=abs(1)), by=y, verbose=TRUE], o2, output="GForce FALSE")

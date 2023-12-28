@@ -1748,9 +1748,10 @@ replace_dot_alias = function(e) {
           #                       ^^ base::startWith errors on NULL unfortunately
           if (length(q)>=2L && q[[1L]] == "shift") {
             q_named = match.call(shift, q)
-            if (!is.call(q_named[["n"]]) &&
-                !is.call(q_named[["fill"]]) &&
-                !is.call(q_named[["type"]]) &&
+            noCall_or_noVars = function(expr) !is.call(expr) || length(all.vars(expr, max.names=1L))==0
+            if (noCall_or_noVars(q_named[["n"]]) &&
+                noCall_or_noVars(q_named[["fill"]]) &&
+                noCall_or_noVars(q_named[["type"]]) &&
                 is.null(q_named[["give.names"]])) 
               return(TRUE)
           }
@@ -1895,6 +1896,8 @@ replace_dot_alias = function(e) {
       g = lapply(g, rep.int, times=grplens)
     } else if (.is_nrows(jsub)) {
       g = lapply(g, rep.int, times=len__)
+      # unpack list of lists for nrows functions
+      # if (all(vapply_1b(ans, is.list))) ans = lapply(ans, transpose)
     }
     ans = c(g, ans)
   } else {
