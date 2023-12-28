@@ -54,7 +54,7 @@ Minimal first time PR
 
 ```
 $ cd /tmp      # or anywhere safe to play
-$ git config --global core.autocrlf false   # Windows-only to preserve \n in test data files as-is
+$ git config --global core.autocrlf false   # Windows-only preserve \n in test data
 $ git clone https://github.com/Rdatatable/data.table.git
 $ cd data.table
 $ R CMD build .
