@@ -34,14 +34,21 @@ check_formula = function(formula, varnames, valnames, value.var.in.LHSdots, valu
   allvars = c(vars, valnames)
   if (any(allvars %chin% varnames[duplicated(varnames)]))
     stopf('data.table to cast must have unique column names')
-  if (value.var.in.LHSdots == value.var.in.RHSdots && isFALSE(value.var.in.LHSdots))
+  if (value.var.in.LHSdots == value.var.in.RHSdots && isFALSE(value.var.in.LHSdots)) {
     deparse_formula(as.list(formula)[-1L], varnames, allvars)
-  else if (value.var.in.LHSdots == value.var.in.RHSdots && isTRUE(value.var.in.LHSdots))
-    deparse_formula(as.list(formula)[-1L], varnames, vars)
-  else if (isTRUE(value.var.in.LHSdots) && isFALSE(value.var.in.RHSdots))
+  }
+  else if (value.var.in.LHSdots == value.var.in.RHSdots && isTRUE(value.var.in.LHSdots)) {
+    vars = setdiff(vars, valnames)
+    split_deparsing(as.list(formula)[-1L], varnames, vars, vars)
+  }
+  else if (isTRUE(value.var.in.LHSdots) && isFALSE(value.var.in.RHSdots)) {
+    vars = setdiff(vars, valnames)
     split_deparsing(as.list(formula)[-1L], varnames, vars, allvars)
-  else
+  }
+  else {
+    vars = setdiff(vars, valnames)
     split_deparsing(as.list(formula)[-1L], varnames, allvars, vars)
+  }
 }
 
 split_deparsing = function(expr, varnames, LHSallvars, RHSallvars) {
@@ -57,7 +64,7 @@ split_deparsing = function(expr, varnames, LHSallvars, RHSallvars) {
     }
     this
   })
-  lvars = lapply(lvars, function(x) if (length(x) && !is.list(x)) list(x) else x)
+  lvars = lapply(lvars, function(x) if (length(x) && !is.list(x)) list(x) else unique(x))
 }
 
 deparse_formula = function(expr, varnames, allvars) {
