@@ -97,6 +97,16 @@ $ git checkout -b my_new_branch
 ```
 and then the `commit` and `push` shown above would push to the branch in the main project. The next time you refresh the GitHub page in your browser, a button appears which you can click to create the PR from the branch. And that's all there is to it.
 
+#### Translations
+
+`data.table` offers some translations so that our users can get feedback (errors, warnings, verbose messages) in their native language. Currently we only support Mandarin Chinese.
+
+The data for these translations lives in the `po` folder. You do not need to make any changes here for your PR -- translations are updated in a batch before each CRAN release.
+
+If you are writing R code, please avoid breaking up strings into multiple parts (i.e., wide lines are OK for error messages).
+
+If you are writing C code, please wrap your message strings (`char` arrays) with `_()`, e.g. `error(_("step %d failed"), ii)` instead of `error("step %d failed", ii)`. Common functions for this are `error`, `warning`, and `Rprintf`.
+
 data.table developer utilities
 ------------------------------
 
