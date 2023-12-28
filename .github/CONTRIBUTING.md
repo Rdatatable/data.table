@@ -28,13 +28,12 @@ Example of a good pull request: [PR#2332](https://github.com/Rdatatable/data.tab
 
 A few minor points of style that you should adhere to in your PR:
 
- - Use `=` for assignment (not `<-`) where possible, please
+ - Use `=` for assignment (not `<-`); see [here](https://github.com/Rdatatable/data.table/pull/3582#discussion_r287075480), [here](https://github.com/Rdatatable/data.table/issues/3590#issuecomment-495776200), [here](https://stackoverflow.com/questions/1741820/what-are-the-differences-between-and-in-r#comment14293879_1742591)
  - Spacing
+   + 2-space indentation
    + No trailing white space
-   + Space after every comma
-   + No space before/after named arguments (e.g. `argument=value`)
-   + Space before and after operators
-   + 2-space indentation (incrementally)
+   + In tests use long lines and vertical alignment to easily spot small differences
+   + Argument spacing style: `fun(arg1=value1, arg2=val2, ...)`
  - Explicitly use `integer` type wherever possible, e.g. `x[1L]` not `x[1]`
  - Avoid `error(paste`, `error(sprintf`, `message(sprintf`, etc.-like constructions, per [Writing R Extensions](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Diagnostic-messages)
 
