@@ -3016,8 +3016,8 @@ rleidv = function(x, cols=seq_along(x), prefix=NULL) {
 gfuns = c("[", "[[", "head", "tail", "first", "last", "sum", "mean", "prod",
           "median", "min", "max", "var", "sd", ".N", "shift", "weighted.mean") # added .N for #334
 `g[` = `g[[` = function(x, n) .Call(Cgnthvalue, x, as.integer(n)) # n is of length=1 here.
-ghead = function(x, n) .Call(Cghead, x, as.integer(n)) # n is not used at the moment
-gtail = function(x, n) .Call(Cgtail, x, as.integer(n)) # n is not used at the moment
+ghead = function(x, n) .Call(Cghead, x, as.integer(n))
+gtail = function(x, n) .Call(Cgtail, x, as.integer(n))
 gfirst = function(x) .Call(Cgfirst, x)
 glast = function(x) .Call(Cglast, x)
 gsum = function(x, na.rm=FALSE) .Call(Cgsum, x, na.rm)
