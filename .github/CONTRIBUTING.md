@@ -45,19 +45,7 @@ When you file a pull request, you should add some tests to this file with this i
 
 #### Using `test`
 
-The [function signature of `test`](https://github.com/Rdatatable/data.table/blob/master/R/test.data.table.R#L65) is `test(num, x, y=TRUE, error=NULL, warning=NULL, output=NULL, message=NULL)`:
-
-- `num` is a unique identifier for a test, helpful in identifying the source of failure when testing is not working. Currently, we use a manually-incremented system with tests formatted as `n.m`, where essentially `n` indexes an issue and `m` indexes aspects of that issue. For the most part, your new PR should only have one value of `n` (scroll to the end of `tests.Rraw` to see the next available ID) and then index the tests within your PR by increasing `m`. Note -- `n.m` is interpreted as a number, so `123.4` and `123.40` are actually the same -- please `0`-pad as appropriate.
-
-- `x` is an input object to be evaluated, `y` is the pre-defined output against which you are testing `x`. For example, to check that `sum` is working, you might set `x = sum(1:5)` and `y = 15`.
-
-- `error`: when you are testing behavior of code that you _expect_ to fail _with an error_, supply the expected error message to this argument. `error` is interpreted as a regular expression, so you can be abbreviated, but try to include the key portion of the error so as not to accidentally include a _different_ error message.
-
-- `warning` is the same as `error`, in the case that you expect your code to issue a warning. Note that since the code evaluates successfully, you should still supply `y`.
-
-- Use `output` if you are testing the printing/console output behavior of some feature. Again, regex-compatible.
-
-- Use `message` if you are testing output send as a `message`
+See [`test` function manual](https://rdatatable.gitlab.io/data.table/reference/test.html).
 
 **References:** If you are not sure how to issue a PR, but would like to contribute, these links should help get you started:
 
