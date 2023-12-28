@@ -17,7 +17,7 @@ setcolorder(x, neworder=key(x), before=NULL, after=NULL)
   \item{before, after}{ If one of them (not both) was provided with a column name or number, \code{neworder} will be inserted before or after that column. }
 }
 \details{
-  To reorder \code{data.table} columns, the idiomatic way is to use \code{setcolorder(x, neworder)}, instead of doing \code{x <- x[, neworder, with=FALSE]}. This is because the latter makes an entire copy of the \code{data.table}, which maybe unnecessary in most situations. \code{setcolorder} also allows column numbers instead of names for \code{neworder} argument, although we recommend using names as a good programming practice.
+  To reorder \code{data.table} columns, the idiomatic way is to use \code{setcolorder(x, neworder)}, instead of doing \code{x <- x[, ..neworder]} (or \code{x <- x[, neworder, with=FALSE]}). This is because the latter makes an entire copy of the \code{data.table}, which maybe unnecessary in most situations. \code{setcolorder} also allows column numbers instead of names for \code{neworder} argument, although we recommend using names as a good programming practice.
 }
 \value{
     The input is modified by reference, and returned (invisibly) so it can be used in compound statements. If you require a copy, take a copy first (using \code{DT2 = copy(DT)}). See \code{?copy}.

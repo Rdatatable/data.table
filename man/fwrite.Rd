@@ -37,18 +37,18 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   \item{col.names}{Should the column names (header row) be written? The default is \code{TRUE} for new files and when overwriting existing files (\code{append=FALSE}). Otherwise, the default is \code{FALSE} to prevent column names appearing again mid-file when stacking a set of \code{data.table}s or appending rows to the end of a file.}
   \item{qmethod}{A character string specifying how to deal with embedded double quote characters when quoting strings.
       \itemize{
-	\item{"escape" - the quote character (as well as the backslash character) is escaped in C style by a backslash, or}
-	\item{"double" (default, same as \code{write.csv}), in which case the double quote is doubled with another one.}
+	\item "escape" - the quote character (as well as the backslash character) is escaped in C style by a backslash, or
+	\item "double" (default, same as \code{write.csv}), in which case the double quote is doubled with another one.
       }}
   \item{logical01}{Should \code{logical} values be written as \code{1} and \code{0} rather than \code{"TRUE"} and \code{"FALSE"}?}
   \item{logicalAsInt}{Deprecated. Old name for `logical01`. Name change for consistency with `fread` for which `logicalAsInt` would not make sense.}
   \item{scipen}{ \code{integer} In terms of printing width, how much of a bias should there be towards printing whole numbers rather than scientific notation? See Details. }
   \item{dateTimeAs}{ How \code{Date}/\code{IDate}, \code{ITime} and \code{POSIXct} items are written.
       \itemize{
-	\item{"ISO" (default) - \code{2016-09-12}, \code{18:12:16} and \code{2016-09-12T18:12:16.999999Z}. 0, 3 or 6 digits of fractional seconds are printed if and when present for convenience, regardless of any R options such as \code{digits.secs}. The idea being that if milli and microseconds are present then you most likely want to retain them. R's internal UTC representation is written faithfully to encourage ISO standards, stymie timezone ambiguity and for speed. An option to consider is to start R in the UTC timezone simply with \code{"$ TZ='UTC' R"} at the shell (NB: it must be one or more spaces between \code{TZ='UTC'} and \code{R}, anything else will be silently ignored; this TZ setting applies just to that R process) or \code{Sys.setenv(TZ='UTC')} at the R prompt and then continue as if UTC were local time.}
-	\item{"squash" - \code{20160912}, \code{181216} and \code{20160912181216999}. This option allows fast and simple extraction of \code{yyyy}, \code{mm}, \code{dd} and (most commonly to group by) \code{yyyymm} parts using integer div and mod operations. In R for example, one line helper functions could use \code{\%/\%10000}, \code{\%/\%100\%\%100}, \code{\%\%100} and \code{\%/\%100} respectively. POSIXct UTC is squashed to 17 digits (including 3 digits of milliseconds always, even if \code{000}) which may be read comfortably as \code{integer64} (automatically by \code{fread()}).}
-	\item{"epoch" - \code{17056}, \code{65536} and \code{1473703936.999999}. The underlying number of days or seconds since the relevant epoch (1970-01-01, 00:00:00 and 1970-01-01T00:00:00Z respectively), negative before that (see \code{?Date}). 0, 3 or 6 digits of fractional seconds are printed if and when present.}
-	\item{"write.csv" - this currently affects \code{POSIXct} only. It is written as \code{write.csv} does by using the \code{as.character} method which heeds \code{digits.secs} and converts from R's internal UTC representation back to local time (or the \code{"tzone"} attribute) as of that historical date. Accordingly this can be slow. All other column types (including \code{Date}, \code{IDate} and \code{ITime} which are independent of timezone) are written as the "ISO" option using fast C code which is already consistent with \code{write.csv}.}
+	\item "ISO" (default) - \code{2016-09-12}, \code{18:12:16} and \code{2016-09-12T18:12:16.999999Z}. 0, 3 or 6 digits of fractional seconds are printed if and when present for convenience, regardless of any R options such as \code{digits.secs}. The idea being that if milli and microseconds are present then you most likely want to retain them. R's internal UTC representation is written faithfully to encourage ISO standards, stymie timezone ambiguity and for speed. An option to consider is to start R in the UTC timezone simply with \code{"$ TZ='UTC' R"} at the shell (NB: it must be one or more spaces between \code{TZ='UTC'} and \code{R}, anything else will be silently ignored; this TZ setting applies just to that R process) or \code{Sys.setenv(TZ='UTC')} at the R prompt and then continue as if UTC were local time.
+	\item "squash" - \code{20160912}, \code{181216} and \code{20160912181216999}. This option allows fast and simple extraction of \code{yyyy}, \code{mm}, \code{dd} and (most commonly to group by) \code{yyyymm} parts using integer div and mod operations. In R for example, one line helper functions could use \code{\%/\%10000}, \code{\%/\%100\%\%100}, \code{\%\%100} and \code{\%/\%100} respectively. POSIXct UTC is squashed to 17 digits (including 3 digits of milliseconds always, even if \code{000}) which may be read comfortably as \code{integer64} (automatically by \code{fread()}).
+	\item "epoch" - \code{17056}, \code{65536} and \code{1473703936.999999}. The underlying number of days or seconds since the relevant epoch (1970-01-01, 00:00:00 and 1970-01-01T00:00:00Z respectively), negative before that (see \code{?Date}). 0, 3 or 6 digits of fractional seconds are printed if and when present.
+	\item "write.csv" - this currently affects \code{POSIXct} only. It is written as \code{write.csv} does by using the \code{as.character} method which heeds \code{digits.secs} and converts from R's internal UTC representation back to local time (or the \code{"tzone"} attribute) as of that historical date. Accordingly this can be slow. All other column types (including \code{Date}, \code{IDate} and \code{ITime} which are independent of timezone) are written as the "ISO" option using fast C code which is already consistent with \code{write.csv}.
       }
   The first three options are fast due to new specialized C code. The epoch to date-part conversion uses a fast approach by Howard Hinnant (see references) using a day-of-year starting on 1 March. You should not be able to notice any difference in write speed between those three options. The date range supported for \code{Date} and \code{IDate} is [0000-03-01, 9999-12-31]. Every one of these 3,652,365 dates have been tested and compared to base R including all 2,790 leap days in this range. \cr \cr
   This option applies to vectors of date/time in list column cells, too. \cr \cr
@@ -64,7 +64,7 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   \item{encoding}{ The encoding of the strings written to the CSV file. Default is \code{""}, which means writting raw bytes without considering the encoding. Other possible options are \code{"UTF-8"} and \code{"native"}. }
 }
 \details{
-\code{fwrite} began as a community contribution with \href{https://github.com/Rdatatable/data.table/pull/1613}{pull request #1613} by Otto Seiskari. This gave Matt Dowle the impetus to specialize the numeric formatting and to parallelize: \url{https://h2o.ai/blog/fast-csv-writing-for-r/}. Final items were tracked in \href{https://github.com/Rdatatable/data.table/issues/1664}{issue #1664} such as automatic quoting, \code{bit64::integer64} support, decimal/scientific formatting exactly matching \code{write.csv} between 2.225074e-308 and 1.797693e+308 to 15 significant figures, \code{row.names}, dates (between 0000-03-01 and 9999-12-31), times and \code{sep2} for \code{list} columns where each cell can itself be a vector.
+\code{fwrite} began as a community contribution with \href{https://github.com/Rdatatable/data.table/pull/1613}{pull request #1613} by Otto Seiskari. This gave Matt Dowle the impetus to specialize the numeric formatting and to parallelize: \url{https://h2o.ai/blog/2016/fast-csv-writing-for-r/}. Final items were tracked in \href{https://github.com/Rdatatable/data.table/issues/1664}{issue #1664} such as automatic quoting, \code{bit64::integer64} support, decimal/scientific formatting exactly matching \code{write.csv} between 2.225074e-308 and 1.797693e+308 to 15 significant figures, \code{row.names}, dates (between 0000-03-01 and 9999-12-31), times and \code{sep2} for \code{list} columns where each cell can itself be a vector.
 
 To save space, \code{fwrite} prefers to write wide numeric values in scientific notation -- e.g. \code{10000000000} takes up much more space than \code{1e+10}. Most file readers (e.g. \code{\link{fread}}) understand scientific notation, so there's no fidelity loss. Like in base R, users can control this by specifying the \code{scipen} argument, which follows the same rules as \code{\link[base]{options}('scipen')}. \code{fwrite} will see how much space a value will take to write in scientific vs. decimal notation, and will only write in scientific notation if the latter is more than \code{scipen} characters wider. For \code{10000000000}, then, \code{1e+10} will be written whenever \code{scipen<6}.
 
@@ -73,17 +73,17 @@ To save space, \code{fwrite} prefers to write wide numeric values in scientific 
 The following fields will be written to the header of the file and surrounded by \code{---} on top and bottom:
 
   \itemize{
-    \item{ \code{source} - Contains the R version and \code{data.table} version used to write the file }
-    \item{ \code{creation_time_utc} - Current timestamp in UTC time just before the header is written }
-    \item{ \code{schema} with element \code{fields} giving \code{name}-\code{type} (\code{class}) pairs for the table; multi-class objects (e.g. \code{c('POSIXct', 'POSIXt')}) will have their first class written. }
-    \item{ \code{header} - same as \code{col.names} (which is \code{header} on input) }
-    \item{ \code{sep} }
-    \item{ \code{sep2} }
-    \item{ \code{eol} }
-    \item{ \code{na.strings} - same as \code{na} }
-    \item{ \code{dec} }
-    \item{ \code{qmethod} }
-    \item{ \code{logical01} }
+    \item \code{source} - Contains the R version and \code{data.table} version used to write the file
+    \item \code{creation_time_utc} - Current timestamp in UTC time just before the header is written
+    \item \code{schema} with element \code{fields} giving \code{name}-\code{type} (\code{class}) pairs for the table; multi-class objects (e.g. \code{c('POSIXct', 'POSIXt')}) will have their first class written.
+    \item \code{header} - same as \code{col.names} (which is \code{header} on input)
+    \item \code{sep}
+    \item \code{sep2}
+    \item \code{eol}
+    \item \code{na.strings} - same as \code{na}
+    \item \code{dec}
+    \item \code{qmethod}
+    \item \code{logical01}
   }
 
 }

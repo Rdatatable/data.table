@@ -90,10 +90,9 @@
     eval(parse(text=paste0("options(",i,"=",opts[i],")")))
   }
 
-  if (!is.null(getOption("datatable.old.bywithoutby")))
-    warningf("Option 'datatable.old.bywithoutby' has been removed as warned for 2 years. It is now ignored. Please use by=.EACHI instead and stop using this option.")
-  if (!is.null(getOption("datatable.old.unique.by.key")))
-    warningf("Option 'datatable.old.unique.by.key' has been removed as warned for 4 years. It is now ignored. Please use by=key(DT) instead and stop using this option.")
+  # default TRUE from v1.12.0, FALSE before. Now ineffectual. Remove this warning after 1.15.0.
+  if (!is.null(getOption("datatable.CJ.names")))
+    warningf("Option 'datatable.CJ.names' no longer has any effect, as promised for 4 years. It is now ignored. Manually name `...` entries as needed if you still prefer the old behavior.")
 
   # Test R behaviour that changed in v3.1 and is now depended on
   x = 1L:3L

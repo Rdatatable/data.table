@@ -10,9 +10,9 @@
   http://stereopsis.com/radix.html
 
   Previous version of this file was promoted into base R, see ?base::sort.
-  Denmark useR! presentation <link>
-  Stanford DSC presentation <link>
-  JSM presentation <link>
+  Denmark useR! presentation https://github.com/Rdatatable/data.table/wiki/talks/useR2015_Matt.pdf
+  Stanford DSC presentation https://github.com/Rdatatable/data.table/wiki/talks/DSC2016_ParallelSort.pdf
+  JSM presentation https://github.com/Rdatatable/data.table/wiki/talks/JSM2018_Matt.pdf
   Techniques used :
     skewed groups are split in parallel
     finds unique bytes to save 256 sweeping
@@ -56,7 +56,7 @@ static int *anso = NULL;
 static bool notFirst=false;
 
 static char msg[1001];
-#define STOP(...) do {snprintf(msg, 1000, __VA_ARGS__); cleanup(); error(msg);} while(0)      // http://gcc.gnu.org/onlinedocs/cpp/Swallowing-the-Semicolon.html#Swallowing-the-Semicolon
+#define STOP(...) do {snprintf(msg, 1000, __VA_ARGS__); cleanup(); error("%s", msg);} while(0)      // http://gcc.gnu.org/onlinedocs/cpp/Swallowing-the-Semicolon.html#Swallowing-the-Semicolon
 // use STOP in this file (not error()) to ensure cleanup() is called first
 // snprintf to msg first in case nrow (just as an example) is provided in the message because cleanup() sets nrow to 0
 #undef warning
