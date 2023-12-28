@@ -18157,7 +18157,7 @@ r = copy(DT)[1L, x:= 5L]
 test(2241.13, DT, data.table(id=1:2, x=1:2))
 test(2241.14, r, data.table(id=1:2, x=c(5L,2L)))
 
-# turn off GForce for shift where arguments are calls but still allow variables, #5547
+# turn off GForce where arguments are calls but still allow variables, #5547
 options(datatable.optimize=2L)
 dt = data.table(x=c("a","b","c","d"), y=c(1L,1L,2L,2L))
 i = c(0,1)
@@ -18172,13 +18172,13 @@ test(2242.05, dt[, shift(x, i, type=t, fill=1), by=y, verbose=TRUE],       dt[, 
 test(2242.06, dt[, shift(x, i, type=t, fill=abs(1)), by=y, verbose=TRUE],  dt[, f(x, c(0,1), type="lead", fill=1), by=y], output="GForce optimized j to")
 test(2242.07, dt[, shift(x, i, type=t, fill=abs(j)), by=y, verbose=TRUE],  dt[, f(x, c(0,1), type="lead", fill=1), by=y], output="GForce FALSE")
 test(2242.08, dt[, .(shift(x, i, type=t)), by=y, verbose=TRUE],            dt[, .(f(x, c(0,1), type="lead")), by=y], output="GForce optimized j to")
-# allow variable as n of head(x, n), "["(x, n) #5547
+# GForce only var or call without vars as n of head/tail/"["(x, n)
 dt = data.table(id = c(1L,1L,2L), v = 1:3)
 j=1L
 test(2242.11, dt[, head(v, j), id, verbose=TRUE], data.table(id=c(1L,2L), V1=c(1L,3L)), output="GForce optimized j to")
 test(2242.12, dt[, tail(v, j), id, verbose=TRUE], data.table(id=c(1L,2L), V1=c(2L,3L)), output="GForce optimized j to")
 test(2242.13, dt[, v[j], id,       verbose=TRUE], data.table(id=c(1L,2L), V1=c(1L,3L)), output="GForce optimized j to")
-# allow variable as na.rm of sum, mean, median, prod, min, max, var, sd #5547
+# GForce only var or call without vars as na.rm of sum, mean, median, prod, min, max, var
 dt = data.table(id = c(1L,1L,2L), v = 1:3)
 j=FALSE
 test(2242.21, dt[, sum(v, na.rm=j),  id, verbose=TRUE], data.table(id=c(1L,2L), V1=c(3L,3L)),        output="GForce optimized j to")
