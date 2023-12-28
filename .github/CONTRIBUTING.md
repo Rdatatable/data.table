@@ -97,3 +97,22 @@ After your first successful non-trivial PR you'll likely be invited to be a proj
 $ git checkout -b my_new_branch
 ```
 and then the `commit` and `push` shown above would push to the branch in the main project. The next time you refresh the GitHub page in your browser, a button appears which you can click to create the PR from the branch. And that's all there is to it.
+
+Filing issues
+-------------
+
+Tips for your dev environment
+
+### `pre-commit` hook 
+
+[`git` hooks](https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks) are a great way to try and catch common code linting-style problems on your local machine before pushing to GitHub.
+
+The sample pre-commit hook will already do some useful checks for you, e.g. making sure there are no non-ASCII filenames and checking if there are any `git` conflict markers (like `<<<<<<<`) left over in your code.
+
+This can be turned on with `mv .git/hooks/pre-commit.sample .git/hooks/pre-commit` from the `data.table` top-level directory on your clone.
+
+Other helpful tests for common mistakes:
+
+ - `grep -Fr "browser()" .` - remove `browser()` calls that were inserted during debugging
+
+We may eventually implement some [pre-receive hooks](https://help.github.com/en/enterprise/2.15/admin/developer-workflow/creating-a-pre-receive-hook-script) to formalize some of these requirements.
