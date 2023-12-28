@@ -28,6 +28,7 @@ Example of a good pull request: [PR#2332](https://github.com/Rdatatable/data.tab
 
 A few minor points of style that you should adhere to in your PR:
 
+ - Use `=` for assignment (not `<-`) where possible, please
  - Spacing
    + No trailing white space
    + Space after every comma
