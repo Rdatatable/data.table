@@ -15,4 +15,4 @@ read.dcf("DESCRIPTION", c("Imports", "Suggests")) |>      \
 
 # setup cc()
 WORKDIR /root
-COPY .devcontainer/r-devel-gcc/.Rprofile .
+COPY .devcontainer/.Rprofile .
