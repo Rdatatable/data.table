@@ -10,11 +10,11 @@ Filing issues
 Pull Requests (PRs)
 -------------------
 
-If you are not fixing an open issue and you are confident, you do not need to file a new issue before submitting the PR. It's easier for us to accept and merge a self-contained PR with everything in one place. If discussion is needed, it can be done in the PR. However, **the PR's status must be passing tests before we will start to look at it**. So, before you spend the time getting to that stage, it may save you time to create an issue first and start a discussion to see if your idea would be accepted in principle. If you are going to spend more than a day on the PR, creating an issue first lets other people know you are working on it to save duplicating effort.
+If you are not fixing an open issue and you are confident, you do not need to file a new issue before submitting the PR. It's easier for us to accept and merge a self-contained PR with everything in one place. If discussion is needed, it can be done in the PR. However, **the PR's status must be passing tests before we will start to look at it**. So, before you spend the time getting to that stage, it may save you time to create an issue first and start a discussion to see if your idea would be accepted in principle. If you are going to spend more than a day on the PR, creating an issue first lets other people know you are working on it to save duplicate effort.
 
 1. Every new feature or bug fix must have one or more new tests in [`inst/tests/tests.Rraw`](https://github.com/Rdatatable/data.table/blob/master/inst/tests/tests.Rraw); see below for a bit more on how this file works. You _must please_ check that the tests fail _without_ the fix, since the build system only checks that the new test passes _with_ the fix, which is not sufficient. For example, run your new test with the current DEV version and verify that it actually fails. The test's comment should contain `#<issue number>` so we can quickly find the issue in future.
 
-1. Unless the change is trivial (e.g. typo fix) there must be a new entry in [NEWS](https://github.com/Rdatatable/data.table/blob/master/NEWS.md). Please use the name of the user-visible function at the start to aid users quickly scanning the news item, explain the feature/bug, and thank issue/pr contributors by name. Follow the prevailing style at the top of the file; e.g. "fread with X in Y circumstance would error/segfault, [#123](issue link). Thanks to _(them)_ for reporting and _(me)_ for fixing". These are the release notes that others quickly skim and search so please use relevant helpful keywords with that in mind. If the problem was an error/warning/message, please include the error/warning/message in the news item so that folk searching for it will have a better chance of finding the news item, and to make the news item more specific. Bug fixes are under the bug fixes section heading so there is no need to include words such as "is fixed" in the first sentence because that is implicit. Please link to the issue(s) not to the PR (unless there is just a PR and no issue); if folk are interested in the detail of the fix they can get to the PR from the issue. Again: please follow the prevailing style of news items. Doing so makes it much easier and faster to review and merge.
+1. Unless the change is trivial (e.g. typo fix) there must be a new entry in [NEWS](https://github.com/Rdatatable/data.table/blob/master/NEWS.md). Please use the name of the user-visible function at the start to aid users quickly scanning the news item, explain the feature/bug, and thank issue/PR contributors by name. Follow the prevailing style at the top of the file; e.g. "fread with X in Y circumstance would error/segfault, [#123](issue link). Thanks to _(them)_ for reporting and _(me)_ for fixing". These are the release notes that others quickly skim and search so please use relevant helpful keywords with that in mind. If the problem was an error/warning/message, please include the error/warning/message in the news item so that folks searching for it will have a better chance of finding the news item, and to make the news item more specific. Bug fixes are under the bug fixes section heading so there is no need to include words such as "is fixed" in the first sentence because that is implicit. Please link to the issue(s) not to the PR (unless there is just a PR and no issue); if folk are interested in the detail of the fix they can get to the PR from the issue. Again: please follow the prevailing style of news items. Doing so makes it much easier and faster to review and merge.
 
 1. Please create the PR against the `master` branch. You can do that by forking the repository, creating a new branch for your feature/bugfix in the forked project, and then using that as a base for your pull requests. After your first successful merged PR you will very likely be invited to be a project member. This will allow you to create your next branch directly in the project which is easier and more convenient than forking, both for you and for Rdatatable's maintainers. Working on _branches_ on this (Rdatatable) project will _not_ affect the core code, so you can feel free to experiment as a project member; the core code is on the `master` branch, and only data.table Project Members can push/merge code there. Remember to do `git pull upstream your_branch` (where `upstream` is the name of the remote for `Rdatatable/data.table` seen in `git remote -v`) each time you want to add something; this will keep your local branch up to date with remote, in case anyone makes commits you don't yet have locally. This will reduce the number of merge conflicts you will need to deal with. Do not use `git rebase` on a branch where other users are pushing.
 
@@ -22,11 +22,11 @@ If you are not fixing an open issue and you are confident, you do not need to fi
 
 1. You do not need to separate formatting-only changes. Just make the format changes in your PR. When the PR is passing tests and we look at the PR's unified diff, we will subtract the formatting-only changes and make those to master directly for you. That will reduce your PR to logic changes only so that it can be more easily reviewed now and easier to look back on in future.
 
-1. GitHub enables us to squash commits together when merging, so you don't have to squash yourself.
+1. GitHub enables us to squash commits together in one click when merging, so you don't have to squash yourself.
 
-1. Your pull request's description is the place to put any benchmark results and be a bit more verbose than the entry in the NEWS file, if you think that's appropriate. Include text "Closes #ISSUE_NUM" (case insensitive but the space must be present) for GitHub to link and close the corresponding issue when the PR is merged. If multiple issues are being closed, add that many "Closes #ISSUE" lines.
+1. Your pull request's description is the place to put any benchmark results and be a bit more verbose than the entry in the NEWS file, if you think that's appropriate. Include text "Closes #ISSUE_NUM" (case insensitive but the space must be present) for GitHub to link and close the corresponding issue when the PR is merged. If multiple issues are being closed, add that many "Closes #ISSUE" lines -- "Closes #ISSUE1, #ISSUE2" **does not work**.
 
-1. Ensure that all tests pass by typing `test.data.table()` after installing your branch. It's also better to `R CMD check --as-cran` against your branch source package archive `.tar.gz` file. You may want to add `--no-manual`, `--no-build-vignettes` or `--ignore-vignettes` (R 3.3.0+) options to reduce dependencies required to perform check. PRs with failed tests can't be merged and it is hard to debug every PR and explain why it fails and how to fix it. The lesser the feedback required, the faster it is likely to be merged. Matt Dowle added his dev cycle script [here](https://github.com/Rdatatable/data.table/blob/master/.dev/cc.R) and Pasha Stetshenko added a Makefile [here](https://github.com/Rdatatable/data.table/blob/master/Makefile). The `.Rprofile` setup for how to use Matt's dev cycle script can be found [here](https://github.com/Rdatatable/data.table/issues/5131).
+1. Ensure that all tests pass by typing `test.data.table()` after installing your branch. It's also better to `R CMD check --as-cran` against your branch source package archive `.tar.gz` file. You may want to add `--no-manual`, `--no-build-vignettes` or `--ignore-vignettes` options to reduce dependencies required to perform check. PRs with failed tests can't be merged and it is hard to debug every PR and explain why it fails and how to fix it. The lesser the feedback required, the faster it is likely to be merged. So that your dev setup can most closely match that of data.table developers, Matt Dowle added his dev cycle script [here](https://github.com/Rdatatable/data.table/blob/master/.dev/cc.R) and Pasha Stetshenko added a Makefile [here](https://github.com/Rdatatable/data.table/blob/master/Makefile). The `.Rprofile` setup for how to use Matt's dev cycle script can be found [here](https://github.com/Rdatatable/data.table/issues/5131).
 
 Example of a good pull request: [PR#2332](https://github.com/Rdatatable/data.table/pull/2332). It has a NEWS entry. It passed existing tests and added a new one. One test was removed but the PR description clearly explained why upfront (without us having to ask). Benchmark results were included, which made the need for the change compelling. We didn't need to run anything ourselves. Everything was including in one PR in one place. In short, it was a pleasure to review and merge.
 
@@ -41,7 +41,7 @@ A few minor points of style that you should adhere to in your PR:
   + In tests use long lines and vertical alignment to easily spot small differences
   + Argument spacing style: `fun(arg1=value1, arg2=val2, ...)`
   + Add a whitespace between `if` and opening bracket, also before opening curly bracket: `if (condition) {`
-- Use `L` suffix for integer; i.e. `x[1L]` not `x[1]` (to save coercion)
+- Use `L` suffix for integer; i.e. `x[1L]` not `x[1]` (to save coercion). `:` is an exception, e.g. `1:10` is fine. Use e.g. `1.0` to emphasize when a literal is really numeric (and not integer).
 - Use `stopf(fmt, arg1, arg2, ...))` not `stop(paste(...))` or `stop(sprintf(...))` to facilitate translation as per [Writing R Extensions#1.7 point 2](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Diagnostic-messages). There's also `warningf()`, `messagef()`, `packageStartupMessagef()`, and `catf()`.
 
 ### Testing
@@ -54,7 +54,7 @@ What numbers should be used for new tests? Numbers should be new relative to cur
 
 #### Using `test`
 
-See [`test` function manual](https://rdatatable.gitlab.io/data.table/reference/test.html).
+See [`?test`](https://rdatatable.gitlab.io/data.table/reference/test.html).
 
 **References:** If you are not sure how to issue a PR, but would like to contribute, these links should help get you started:
 
@@ -91,7 +91,7 @@ make build && make check
 ```
 
 Fix the problems and repeat the `build` and `check` steps until you get `Status: OK`.
-Now commit the change and push. Since this is a first time PR and you're not a project member, this step should automatically ask you if you wish to fork the project. Say 'yes'. If that's not the case, please edit this wiki page to show what exactly happens for non project members.
+Now commit the change and push. Since this is a first time PR and you're not a project member, this step should automatically ask you if you wish to fork the project. Say 'yes'. If that's not the case, please edit this page to show what exactly happens for non-project members.
 
 ```shell
 git commit -am "Added/fixed something in somewhere"
@@ -124,7 +124,7 @@ There are few utilities that some of regular `data.table` contributors are using
 (advanced) Tips for your dev environment
 -----------------------------
 
-### `pre-commit` hook 
+### `pre-commit` hook
 
 [`git` hooks](https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks) are a great way to try and catch common code linting-style problems on your local machine before pushing to GitHub.
 
