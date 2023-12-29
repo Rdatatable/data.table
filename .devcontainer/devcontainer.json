@@ -1,5 +1,5 @@
 {
-  "build": { "dockerfile": "Dockerfile", "context": "../.." },
+  "build": { "dockerfile": "r-devel-gcc/Dockerfile", "context": ".." },
   "customizations": { "vscode": {
      "extensions": [
       "REditorSupport.r",

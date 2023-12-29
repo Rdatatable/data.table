@@ -202,7 +202,7 @@
     #  v1.14.4  0.4826  0.5586  0.6586  0.6329  0.7348  1.318   100
     ```
 
-30. `rbind()` and `rbindlist()` now support `fill=TRUE` with `use.names=FALSE` instead of issuing the warning `use.names= cannot be FALSE when fill is TRUE. Setting use.names=TRUE.`, [#5444](https://github.com/Rdatatable/data.table/issues/5444). Thanks to @sindribaldur for testing dev and filing a bug report which was fixed before release.
+30. `rbind()` and `rbindlist()` now support `fill=TRUE` with `use.names=FALSE` instead of issuing the warning `use.names= cannot be FALSE when fill is TRUE. Setting use.names=TRUE.`, [#5444](https://github.com/Rdatatable/data.table/issues/5444). Thanks to @sindribaldur, @dcaseykc, @fox34, @adrian-quintario and @berg-michael for testing dev and filing a bug report which was fixed before release.
 
     ```R
     DT1
