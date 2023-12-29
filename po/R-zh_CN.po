@@ -1452,10 +1452,9 @@ msgid "x must be an atomic vector or data.frames/data.tables"
 msgstr "x 必须是原子向量或data.frame/data.table"
 
 #: fcast.R:7
-#, fuzzy, c-format
-#| msgid "' as value column. Use 'value.var' to override"
+#, c-format
 msgid "Using '%s' as value column. Use 'value.var' to override"
-msgstr "' 作为 value 列。可使用 'value.var' 修改"
+msgstr "用 '%s' 作为 value 列。可使用 'value.var' 修改"
 
 #: fcast.R:20 fmelt.R:16
 #, c-format
@@ -1521,10 +1520,9 @@ msgid "'drop' must be logical TRUE/FALSE"
 msgstr "'drop' 必须为逻辑 TRUE/FALSE"
 
 #: fcast.R:128
-#, fuzzy, c-format
-#| msgid "] not found or of unknown type."
+#, c-format
 msgid "Column [%s] not found or of unknown type."
-msgstr "] 无法找到或其类型未知。"
+msgstr "列 [%s]] 无法找到或其类型未知。"
 
 #: fcast.R:143
 #, c-format
@@ -1768,15 +1766,12 @@ msgid "maxgap and minoverlap arguments are not yet implemented."
 msgstr "maxgap 和 minoverlap 参数还未实现。"
 
 #: foverlaps.R:22
-#, fuzzy, c-format
-#| msgid ""
-#| "'y' must be keyed (i.e., sorted, and, marked as sorted). Call "
-#| "setkey(y, ...) first, see ?setkey. Also check the examples in ?foverlaps."
+#, c-format
 msgid ""
 "y must be keyed (i.e., sorted, and, marked as sorted). Call setkey(y, ...) "
 "first, see ?setkey. Also check the examples in ?foverlaps."
 msgstr ""
-"'y' 必须有键（key:已经排序并且标记为已排序）。请先用 setkey(y, ...) 设置主"
+"y 必须有键（key:已经排序并且标记为已排序）。请先用 setkey(y, ...) 设置主"
 "键，可以参考 ?setkey 以及 ?foverlaps 中提供的例子。"
 
 #: foverlaps.R:24
@@ -1824,10 +1819,9 @@ msgid ""
 msgstr "在'by.y'中，y键(key)的列必须与指定的列相同"
 
 #: foverlaps.R:42
-#, fuzzy, c-format
-#| msgid "Elements listed in 'by.x' must be valid names in data.table 'x'"
+#, c-format
 msgid "Elements listed in 'by.x' must be valid names in data.table x"
-msgstr "对于data.table中的'X'，'by.x'中的元素必须是有效名称"
+msgstr "'by.x'中的元素必须是有效名称对于data.table x"
 
 #: foverlaps.R:44
 #, c-format
@@ -1852,15 +1846,12 @@ msgid ""
 msgstr "请移除或者重命名重复项并重试"
 
 #: foverlaps.R:56
-#, fuzzy, c-format
-#| msgid ""
-#| "The last two columns in by.x should correspond to the 'start' and 'end' "
-#| "intervals in data.table 'x' and must be integer/numeric type."
+#, c-format
 msgid ""
 "The last two columns in by.x should correspond to the 'start' and 'end' "
 "intervals in data.table x and must be integer/numeric type."
 msgstr ""
-"'by.x'的最后两列应该与data.table 'x'中的'开始'与'结尾'的间隔对应且必须是整数/"
+"'by.x'的最后两列应该与data.table x中的'开始'与'结尾'的间隔对应且必须是整数/"
 "数字类型"
 
 #: foverlaps.R:60 foverlaps.R:62 foverlaps.R:69 foverlaps.R:71
@@ -1882,15 +1873,12 @@ msgid ""
 msgstr "应该<=列中相应的条目"
 
 #: foverlaps.R:66
-#, fuzzy, c-format
-#| msgid ""
-#| "The last two columns in by.y should correspond to the 'start' and 'end' "
-#| "intervals in data.table 'y' and must be integer/numeric type."
+#, c-format
 msgid ""
 "The last two columns in by.y should correspond to the 'start' and 'end' "
 "intervals in data.table y and must be integer/numeric type."
 msgstr ""
-"'by.y'的最后两列应该与data.table 'y'中的'开始'与'结尾'的间隔对应且必须是整数/"
+"'by.y'的最后两列应该与data.table y中的'开始'与'结尾'的间隔对应且必须是整数/"
 "数字类型"
 
 #: foverlaps.R:72
@@ -2051,22 +2039,19 @@ msgid ""
 msgstr ""
 
 #: fread.R:91
-#, fuzzy, c-format
-#| msgid "' does not exist or is non-readable. getwd()=='"
+#, c-format
 msgid "File '%s' does not exist or is non-readable. getwd()=='%s'"
-msgstr "' 不存在, 或不可读. getwd()=='"
+msgstr "文件 '%s' 不存在, 或不可读. getwd()=='%s'"
 
 #: fread.R:92
-#, fuzzy, c-format
-#| msgid "' is a directory. Not yet implemented."
+#, c-format
 msgid "File '%s' is a directory. Not yet implemented."
-msgstr "'是个目录。还没有编程实现。"
+msgstr "文件 '%s' 是个目录。还没有编程实现。"
 
 #: fread.R:94
-#, fuzzy, c-format
-#| msgid "' has size 0. Returning a NULL"
+#, c-format
 msgid "File '%s' has size 0. Returning a NULL %s."
-msgstr "' 的大小为0. 返回一个NULL"
+msgstr "文件 '%s' 的大小为0. 返回一个NULL %s."
 
 #: fread.R:107
 #, c-format
@@ -2121,39 +2106,30 @@ msgid "na.strings[%d]==\"%s\" consists only of whitespace, ignoring"
 msgstr ""
 
 #: fread.R:155
-#, fuzzy, c-format
-#| msgid ""
-#| "strip.white==TRUE (default) and \"\" is present in na.strings, so any "
-#| "number of spaces in string columns will already be read as <NA>."
+#, c-format
 msgid ""
 "%s. strip.white==TRUE (default) and \"\" is present in na.strings, so any "
 "number of spaces in string columns will already be read as <NA>."
 msgstr ""
-"na.strings 中包含 strip.white==TRUE (默认情况) 和 \"\", 因此(字符类型的)列中"
+"%s. na.strings 中包含 strip.white==TRUE (默认情况) 和 \"\", 因此(字符类型的)列中"
 "的空格会被当作 <NA>."
 
 #: fread.R:157
-#, fuzzy, c-format
-#| msgid ""
-#| "Since strip.white=TRUE (default), use na.strings=\"\" to specify that any "
-#| "number of spaces in a string column should be read as <NA>."
+#, c-format
 msgid ""
 "%s. Since strip.white=TRUE (default), use na.strings=\"\" to specify that "
 "any number of spaces in a string column should be read as <NA>."
 msgstr ""
-"因为 strip.white=TRUE (默认情况), 请使用 na.strings=\"\" 以使得(字符类型的)列"
+"%s. 因为 strip.white=TRUE (默认情况), 请使用 na.strings=\"\" 以使得(字符类型的)列"
 "中的空格会被当作 <NA>."
 
 #: fread.R:161
-#, fuzzy, c-format
-#| msgid ""
-#| "But strip.white=FALSE. Use strip.white=TRUE (default) together with na."
-#| "strings=\"\" to turn any number of spaces in string columns into <NA>"
+#, c-format
 msgid ""
 "%s. But strip.white=FALSE. Use strip.white=TRUE (default) together with na."
 "strings=\"\" to turn any number of spaces in string columns into <NA>"
 msgstr ""
-"但是 strip.white=FALSE. 请使用 strip.white=TRUE (默认情况), 同时na."
+"%s. 但是 strip.white=FALSE. 请使用 strip.white=TRUE (默认情况), 同时na."
 "strings=\"\", 以使得(字符类型的)列中的空格转成 <NA>."
 
 #: fread.R:167
@@ -2264,10 +2240,9 @@ msgstr ""
 "过）"
 
 #: fwrite.R:19
-#, fuzzy, c-format
-#| msgid "Argument 'encoding' must be 'unknown', 'UTF-8' or 'Latin-1'."
+#, c-format
 msgid "Argument 'encoding' must be '', 'UTF-8' or 'native'."
-msgstr "参数 'encoding' 必须为 'unknown', 'UTF-8' 或 'Latin-1'."
+msgstr "参数 'encoding' 必须为 '', 'unknown', 'UTF-8' 或 'native'."
 
 #: fwrite.R:24
 #, c-format
@@ -2307,10 +2282,9 @@ msgid ""
 msgstr "为空文件，请先使用 file.remove。"
 
 #: fwrite.R:80
-#, fuzzy, c-format
-#| msgid "Input has no columns; doing nothing."
+#, c-format
 msgid "Input has no columns; doing nothing.%s"
-msgstr "输入没有列，不执行任何操作。"
+msgstr "输入没有列，不执行任何操作。%s"
 
 #: fwrite.R:83
 #, fuzzy, c-format
@@ -2370,16 +2344,13 @@ msgid "Argument 'sets' must be a list of character vectors."
 msgstr "'sets' 参数必须是一个字符向量的列表。"
 
 #: groupingsets.R:62
-#, fuzzy, c-format
-#| msgid ""
-#| "All columns used in 'sets' argument must be in 'by' too. Columns used in "
-#| "'sets' but not present in 'by':"
+#, c-format
 msgid ""
 "All columns used in 'sets' argument must be in 'by' too. Columns used in "
 "'sets' but not present in 'by': %s"
 msgstr ""
 "在 'sets' 参数中应用的所有列也必须在 'by' 中。当前 'sets' 包含而 'by' 中不含"
-"的列有："
+"的列有：%s"
 
 #: groupingsets.R:64
 #, c-format
@@ -2514,10 +2485,9 @@ msgid "Passed %d unknown and unnamed arguments."
 msgstr ""
 
 #: merge.R:128
-#, fuzzy, c-format
-#| msgid "are duplicated in the result"
+#, c-format
 msgid "column names %s are duplicated in the result"
-msgstr "在结果中是重复的"
+msgstr "列名 %s 在结果中是重复的"
 
 #: onAttach.R:23
 #, c-format
@@ -2531,10 +2501,9 @@ msgid "data.table %s using %d threads (see ?getDTthreads)."
 msgstr ""
 
 #: onAttach.R:26
-#, fuzzy, c-format
-#| msgid "threads (see ?getDTthreads).  Latest news: r-datatable.com"
+#, c-format
 msgid "Latest news: r-datatable.com"
-msgstr "线程（请参阅?getDTthreads）。最新的消息：r-datatable.com"
+msgstr "最新的消息：r-datatable.com"
 
 #: onAttach.R:27
 msgid "TRANSLATION CHECK"
@@ -2570,25 +2539,17 @@ msgstr ""
 "**********"
 
 #: onAttach.R:32
-#, fuzzy, c-format
-#| msgid ""
-#| "This installation of data.table has not detected OpenMP support. It "
-#| "should still work but in single-threaded mode."
+#, c-format
 msgid ""
 "**********\n"
 "This installation of data.table has not detected OpenMP support. It should "
 "still work but in single-threaded mode."
-msgstr "data.table的安装未检测到OpenMP支持。在单线程模式下应该仍能运行"
+msgstr ""
+"**********\n"
+"data.table的安装未检测到OpenMP支持。在单线程模式下应该仍能运行"
 
 #: onAttach.R:34
-#, fuzzy, c-format
-#| msgid ""
-#| "This is a Mac. Please read https://mac.r-project.org/openmp/. Please "
-#| "engage with Apple and ask them for support. Check r-datatable.com for "
-#| "updates, and our Mac instructions here: https://github.com/Rdatatable/"
-#| "data.table/wiki/Installation. After several years of many reports of "
-#| "installation problems on Mac, it's time to gingerly point out that there "
-#| "have been no similar problems on Windows or Linux."
+#, c-format
 msgid ""
 "This is a Mac. Please read https://mac.r-project.org/openmp/. Please engage "
 "with Apple and ask them for support. Check r-datatable.com for updates, and "
@@ -2602,15 +2563,11 @@ msgstr ""
 "获取支持。查看 r-datatable.com 以获取更新，并参阅我们的 Mac 设备说明："
 "https://github.com/Rdatatable/data.table/wiki/Installation在 Mac 上出现相关安"
 "装问题的报告已数年之久，需要指出的是在 Windows 或 Linux 平台上一般不存在类似"
-"问题。"
+"问题。\n"
+"**********""
 
 #: onAttach.R:36
-#, fuzzy, c-format
-#| msgid ""
-#| ". This warning should not normally occur on Windows or Linux where OpenMP "
-#| "is turned on by data.table's configure script by passing -fopenmp to the "
-#| "compiler. If you see this warning on Windows or Linux, please file a "
-#| "GitHub issue."
+#, c-format
 msgid ""
 "This is %s. This warning should not normally occur on Windows or Linux where "
 "OpenMP is turned on by data.table's configure script by passing -fopenmp to "
@@ -2618,7 +2575,7 @@ msgid ""
 "GitHub issue.\n"
 "**********"
 msgstr ""
-"。此警告一般不应出现在 Windows 或 Linux 平台中，因为data.table 的 configure "
+"这是 %s。此警告一般不应出现在 Windows 或 Linux 平台中，因为data.table 的 configure "
 "脚本中已通过向编译器传递 -fopenmp 参数启用了 OpenMP。如果你在 Windows 或 "
 "Linux 平台中发现此警告，请在 GitHub 中提交 issue。"
 
@@ -2643,19 +2600,7 @@ msgid ""
 msgstr ""
 
 #: onLoad.R:26
-#, fuzzy, c-format
-#| msgid ""
-#| "The datatable.%s version (%s) does not match the package (%s). Please "
-#| "close all R sessions to release the old %s and reinstall data.table in a "
-#| "fresh R session. The root cause is that R's package installer can in some "
-#| "unconfirmed circumstances leave a package in a state that is apparently "
-#| "functional but where new R code is calling old C code silently: https://"
-#| "bugs.r-project.org/bugzilla/show_bug.cgi?id=17478. Once a package is in "
-#| "this mismatch state it may produce wrong results silently until you next "
-#| "upgrade the package. Please help by adding precise circumstances to 17478 "
-#| "to move the status to confirmed. This mismatch between R and C code can "
-#| "happen with any package not just data.table. It is just that data.table "
-#| "has added this check."
+#, c-format
 msgid ""
 "The data_table.%s version (%s) does not match the package (%s). Please close "
 "all R sessions to release the old %s and reinstall data.table in a fresh R "
@@ -2669,7 +2614,7 @@ msgid ""
 "any package not just data.table. It is just that data.table has added this "
 "check."
 msgstr ""
-"data.table.%s版本(%s)和包不匹配版本(%s)。请关闭所有R会话以释放旧%s并在全新的R"
+"data_table.%s版本(%s)和包不匹配版本(%s)。请关闭所有R会话以释放旧%s并在全新的R"
 "会话中重新安装data.table。根本原因是R包安装程序可能在某些未经确认的条件下将包"
 "置于显然可以正常工作的状态，但是新的R代码正在默默地调用旧的C代码：https://"
 "bugs.r-project.org/bugzilla/show_bug.cgi?id=17478。一旦安装包处于这不匹配的状"
@@ -2728,16 +2673,14 @@ msgid "Provide either threads= or percent= but not both"
 msgstr "提供threads=或percent=，但不能两者都提供"
 
 #: openmp-utils.R:4
-#, fuzzy, c-format
-#| msgid "percent= is provided but is length"
+#, c-format
 msgid "percent= is provided but is length %d"
-msgstr "提供了percent =，但为长度"
+msgstr "提供了percent=，但为长度 %d"
 
 #: openmp-utils.R:6
-#, fuzzy, c-format
-#| msgid "but should be a number between 2 and 100"
+#, c-format
 msgid "percent==%d but should be a number between 2 and 100"
-msgstr "但应为2到100之间的数字"
+msgstr "percent==%d 但应为2到100之间的数字"
 
 #: print.data.table.R:17
 #, c-format
@@ -2745,10 +2688,9 @@ msgid "Valid options for col.names are 'auto', 'top', and 'none'"
 msgstr "对col.names有效的参数为'auto', 'top', and 'none'"
 
 #: print.data.table.R:19
-#, fuzzy, c-format
-#| msgid "Valid options for col.names are 'auto', 'top', and 'none'"
+#, c-format
 msgid "Valid options for trunc.cols are TRUE and FALSE"
-msgstr "对col.names有效的参数为'auto', 'top', and 'none'"
+msgstr "对trunc.cols有效的参数为TRUE和FALSE"
 
 #: print.data.table.R:21
 #, c-format
@@ -2762,10 +2704,9 @@ msgid ""
 msgstr "内部类型可能不是一个列表，该操作可能会损坏data.table"
 
 #: programming.R:14 programming.R:40
-#, fuzzy, c-format
-#| msgid "'data' must be a data.table"
+#, c-format
 msgid "'x' must be a list"
-msgstr "'data' 必须是一个 data.table"
+msgstr "'x' 必须是一个 list"
 
 #: programming.R:22
 #, c-format
@@ -2785,10 +2726,9 @@ msgid "'env' must be a list or an environment"
 msgstr ""
 
 #: programming.R:63
-#, fuzzy, c-format
-#| msgid "data.tables do not have rownames"
+#, c-format
 msgid "'env' argument does not have names"
-msgstr "data.tables没有rownames"
+msgstr "参数 'env' 没有名"
 
 #: programming.R:65
 #, c-format
@@ -2796,16 +2736,14 @@ msgid "'env' argument has zero char names"
 msgstr ""
 
 #: programming.R:67
-#, fuzzy, c-format
-#| msgid "'x' argument is"
+#, c-format
 msgid "'env' argument has NA names"
-msgstr "参数'x'的值为"
+msgstr "参数 'env' 有 NA 的名`"
 
 #: programming.R:69
-#, fuzzy, c-format
-#| msgid "rownames contains duplicates"
+#, c-format
 msgid "'env' argument has duplicated names"
-msgstr "行名含有重复"
+msgstr "参数 'env' 的名含有重复"
 
 #: setkey.R:3
 #, c-format
@@ -2868,10 +2806,9 @@ msgid "cols contains some blanks."
 msgstr "列中包含空白"
 
 #: setkey.R:51 setkey.R:281
-#, fuzzy, c-format
-#| msgid "some columns are not in the data.table:"
+#, c-format
 msgid "some columns are not in the data.table: %s"
-msgstr "一些列不在data.table中"
+msgstr "一些列不在data.table中：%ｓ"
 
 #: setkey.R:73 setkey.R:282
 #, c-format
@@ -3054,10 +2991,9 @@ msgid "x and y must have the same column order"
 msgstr "x 和 y 的列顺序必须保持一致"
 
 #: setops.R:45
-#, fuzzy, c-format
-#| msgid "unsupported column type"
+#, c-format
 msgid "unsupported column type(s) found in x or y: %s"
-msgstr "不支持的列类型"
+msgstr "找到不支持的列类型在 x 或 y: %s"
 
 #: setops.R:53
 #, fuzzy, c-format
@@ -3096,26 +3032,20 @@ msgid "None of the datasets to compare should contain a column named '.seqn'"
 msgstr "所有参与比较的数据集都不应该包含名为 '.seqn' 的列"
 
 #: setops.R:193
-#, fuzzy, c-format
-#| msgid ""
-#| "Datasets to compare with 'ignore.row.order' must not have unsupported "
-#| "column types:"
+#, c-format
 msgid ""
 "Datasets to compare with 'ignore.row.order' must not have unsupported column "
 "types: %s"
-msgstr "与 'ignore.row.order' 进行比较的数据集，不能存在不支持的列类型："
+msgstr "与 'ignore.row.order' 进行比较的数据集，不能存在不支持的列类型：%s"
 
 #: setops.R:195
-#, fuzzy, c-format
-#| msgid ""
-#| "Argument 'tolerance' was forced to lowest accepted value `sqrt(."
-#| "Machine$double.eps)` from provided"
+#, c-format
 msgid ""
 "Argument 'tolerance' was forced to lowest accepted value `sqrt(."
 "Machine$double.eps)` from provided %s"
 msgstr ""
 "参数 'tolerance' 被强制设定为最低接受值 `sqrt(.Machine$double.eps)`，此值来自"
-"于："
+"于 %s"
 
 #: setops.R:208
 #, c-format
@@ -3147,10 +3077,9 @@ msgid "will be ignored since type='shift'."
 msgstr ""
 
 #: tables.R:46
-#, fuzzy, c-format
-#| msgid "' not a column name of info"
+#, c-format
 msgid "order.col='%s' not a column name of info"
-msgstr "' 并非info的一个列名"
+msgstr "order.col='%s' 并非info的一个列名"
 
 #: test.data.table.R:17
 #, c-format
@@ -3196,20 +3125,16 @@ msgid "%d error(s) out of %d. Search %s for test number(s) %s. Duration: %s."
 msgstr "%d错误总数为%d. %s中搜索测试编号%s"
 
 #: test.data.table.R:199
-#, fuzzy, c-format
-#| msgid "Timings count mismatch:"
+#, c-format
 msgid "Timings count mismatch: %d vs %d"
-msgstr "计时不一致:"
+msgstr "计时不一致: %d 对 %d"
 
 #: test.data.table.R:312
-#, fuzzy, c-format
-#| msgid ""
-#| "is invalid: when error= is provided it does not make sense to pass y as "
-#| "well"
+#, c-format
 msgid ""
 "Test %s is invalid: when error= is provided it does not make sense to pass y "
 "as well"
-msgstr "无效：当使用了error=，不应再输入y"
+msgstr "%s 无效：当使用了error=，不应再输入y"
 
 #: timetaken.R:3
 #, c-format
@@ -3217,16 +3142,14 @@ msgid "Use started.at=proc.time() not Sys.time() (POSIXt and slow)"
 msgstr "使用started.at=proc.time()而非Sys.time() (返回POSIXt类型，处理较慢)"
 
 #: transpose.R:7
-#, fuzzy, c-format
-#| msgid "' not found in names of input"
+#, c-format
 msgid "make.names='%s' not found in names of input"
-msgstr "'不存在于输入的名字里"
+msgstr "make.names='%s' 不存在于输入的名字里"
 
 #: transpose.R:12
-#, fuzzy, c-format
-#| msgid "is out of range [1,ncol="
+#, c-format
 msgid "make.names=%d is out of range [1,ncol=%d]"
-msgstr "不在以下区间[1,ncol="
+msgstr "make.names=%d 不在以下区间[1,ncol=%d]"
 
 #: transpose.R:28
 #, c-format
@@ -3234,10 +3157,9 @@ msgid "'names' must be TRUE/FALSE or a character vector."
 msgstr "'names'必须为TRUE/FALSE，或一个字符（character）向量。"
 
 #: transpose.R:34
-#, fuzzy, c-format
-#| msgid "'keep' should contain integer values between"
+#, c-format
 msgid "'keep' should contain integer values between %d and %d."
-msgstr "'keep'所含整数值应在区间"
+msgstr "'keep'所含整数值应在 %d 和 %d 间"
 
 #: transpose.R:51
 #, c-format
@@ -3288,10 +3210,9 @@ msgid ""
 msgstr ""
 
 #: transpose.R:88
-#, fuzzy, c-format
-#| msgid ") is not equal to length("
+#, c-format
 msgid "length(names) (= %d) is not equal to length(%s) (= %d)."
-msgstr ") 并不等于(="
+msgstr "length(names) (= %d) 并不等于 length(%s) (= %d)。"
 
 #: uniqlist.R:12
 #, c-format
@@ -3360,18 +3281,14 @@ msgstr ""
 "顺序，或者通过?timeBased来查看支持的类型"
 
 #: xts.R:24
-#, fuzzy, c-format
-#| msgid "Following columns are not numeric and will be omitted:"
+#, c-format
 msgid "Following columns are not numeric and will be omitted: %s"
-msgstr "以下的列并非数值类型，将被忽略："
+msgstr "以下的列并非数值类型，将被忽略：%s"
 
 #: print.data.table.R:51
-#, fuzzy
-#| msgid "Index: "
-#| msgid_plural "Indices: "
 msgid "Index: %s\n"
 msgid_plural "Indices: %s\n"
-msgstr[0] "索引(index): "
+msgstr[0] "索引(index): %s\n"
 
 #~ msgid "'nearest', and 'ceil'."
 #~ msgstr "'nearest'和'ceil'"
