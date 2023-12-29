@@ -58,36 +58,45 @@ See [`test` function manual](https://rdatatable.gitlab.io/data.table/reference/t
 Minimal first time PR
 ---------------------
 
+```shell
+cd /tmp      # or anywhere safe to play
+git config --global core.autocrlf false   # Windows-only preserve \n in test data
+git clone https://github.com/Rdatatable/data.table.git
+cd data.table
+R CMD build .
+R CMD check data.table_*.tar.gz
+# ...
+# Status: OK
 ```
-$ cd /tmp      # or anywhere safe to play
-$ git config --global core.autocrlf false   # Windows-only preserve \n in test data
-$ git clone https://github.com/Rdatatable/data.table.git
-$ cd data.table
-$ R CMD build .
-$ R CMD check data.table_*.tar.gz
-...
-Status: OK
+
+Congratulations - you've just compiled and tested the very latest version of data.table in development. Everything looks good. Now make your changes. Using an editor of your choice, edit the appropriate `.R`, `.md`, `NEWS` and `tests.Rraw` files. Test your changes:
+
+```shell
+rm data.table_*.tar.gz # clean-up old build(s)
+R CMD build .
+R CMD check data.table_*.tar.gz
 ```
-Congratulations - you've just compiled and tested the very latest version of data.table in development. Everything looks good. Now make your changes. Using an editor of your choice, edit the appropriate `.R`, `.md`, `NEWS` and `tests.Rraw` files. Test your changes : 
+
+or if your OS supports `make`:
+
+```shell
+make build && make check
 ```
-$ rm data.table_*.tar.gz # clean-up old build(s)
-$ R CMD build .
-$ R CMD check data.table_*.tar.gz
-```
-or if your OS supports makefile
-```
-$ make build && make check
-```
+
 Fix the problems and repeat the `build` and `check` steps until you get `Status: OK`.
 Now commit the change and push. Since this is a first time PR and you're not a project member, this step should automatically ask you if you wish to fork the project. Say 'yes'. If that's not the case, please edit this wiki page to show what exactly happens for non project members.
+
+```shell
+git commit -am "Added/fixed something in somewhere"
+git push
 ```
-$ git commit -am "Added/fixed something in somewhere"
-$ git push
+
+After your first successful non-trivial PR you'll likely be invited to be a project member. When you're a member, before making your changes, you would create a branch first:
+
+```shell
+git checkout -b my_new_branch
 ```
-After your first successful non-trivial PR you'll likely be invited to be a project member. When you're a member, before making your changes, you would create a branch first : 
-```
-$ git checkout -b my_new_branch
-```
+
 and then the `commit` and `push` shown above would push to the branch in the main project. The next time you refresh the GitHub page in your browser, a button appears which you can click to create the PR from the branch. And that's all there is to it.
 
 #### Translations
