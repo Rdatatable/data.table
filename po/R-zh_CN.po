@@ -54,10 +54,9 @@ msgstr ""
 "内部错误 -- 不能与IDate类型中减去'difftime'对象但是正确操作应该防止此行为发生"
 
 #: IDateTime.R:309
-#, fuzzy, c-format
-#| msgid "Valid options for ms are 'truncate',"
+#, c-format
 msgid "Valid options for ms are 'truncate', 'nearest', and 'ceil'."
-msgstr "'ms'有效的选项为'truncate'"
+msgstr "'ms'有效的选项为'truncate', 'nearest', 或 'ceil'."
 
 #: as.data.table.R:86
 #, c-format
@@ -90,12 +89,10 @@ msgid "Please provide either 'key' or 'sorted', but not both."
 msgstr "请提供参数'key'或'sorted',但不可同时提供"
 
 #: as.data.table.R:108
-#, fuzzy, c-format
-#| msgid ""
-#| "Argument 'value.name' should not overlap with column names in result:"
+#, c-format
 msgid ""
 "Argument 'value.name' should not overlap with column names in result: %s"
-msgstr "参数'value.name'不能与结果中已有列名重复"
+msgstr "参数'value.name'不能与结果中已有列名重复: %s"
 
 #: as.data.table.R:140
 #, c-format
@@ -128,16 +125,13 @@ msgid "between has been passed an argument x of type logical"
 msgstr "传入 between 的参数 x 为逻辑（logical）型"
 
 #: between.R:13 between.R:15
-#, fuzzy, c-format
-#| msgid ""
-#| "'between' function the 'x' argument is a POSIX class while 'lower' was "
-#| "not, coercion to POSIX failed with:"
+#, c-format
 msgid ""
 "'between' function the 'x' argument is a POSIX class while '%s' was not, "
 "coercion to POSIX failed with: %s"
 msgstr ""
 "'between' 中的 'x' 参数为 POSIX 类，而 'lower' 并不是，将 'lower' 自动转换成 "
-"POSIX 失败："
+"POSIX 失败：%s"
 
 #: between.R:27
 #, fuzzy, c-format
@@ -244,34 +238,29 @@ msgid "key argument of data.table() must be character"
 msgstr "data.table() 的key参数必须是字符"
 
 #: data.table.R:132
-#, fuzzy, c-format
-#| msgid "' not found. Perhaps you intended"
+#, c-format
 msgid "Object '%s' not found. Perhaps you intended %s"
-msgstr "' 不存在， 可能你打算"
+msgstr "对象 '%s' 不存在， 可能你打算 %s"
 
 #: data.table.R:134
-#, fuzzy, c-format
-#| msgid "' not found amongst"
+#, c-format
 msgid "Object '%s' not found amongst %s"
-msgstr "' 不存在"
+msgstr "%2$s 中对象 '%1$s' 不存在"
 
 #: data.table.R:157
-#, fuzzy, c-format
-#| msgid "rollends must be a logical vector"
+#, c-format
 msgid "verbose must be logical or integer"
-msgstr "rollends必须是一个逻辑向量"
+msgstr "verbose必须是一个逻辑向量"
 
 #: data.table.R:158
-#, fuzzy, c-format
-#| msgid "rollends must be length 1 or 2"
+#, c-format
 msgid "verbose must be length 1 non-NA"
-msgstr "rollends 的长度必须是 1 或者 2"
+msgstr "verbose 的长度必须是 1 和不NA"
 
 #: data.table.R:166
-#, fuzzy, c-format
-#| msgid "Ignoring keyby= because j= is not supplied"
+#, c-format
 msgid "Ignoring by/keyby because 'j' is not supplied"
-msgstr "因为没有提供 j= ，所以忽略 keyby= "
+msgstr "因为没有提供 j= ，所以忽略 by/keyby"
 
 #: data.table.R:180
 #, c-format
@@ -279,18 +268,14 @@ msgid "When by and keyby are both provided, keyby must be TRUE or FALSE"
 msgstr ""
 
 #: data.table.R:192
-#, fuzzy, c-format
-#| msgid ""
-#| "When on= is provided but not i=, on= must be a named list or data.table|"
-#| "frame, and a natural join (i.e. join on common names) is invoked. "
-#| "Ignoring on= which is '"
+#, c-format
 msgid ""
 "When on= is provided but not i=, on= must be a named list or data.table|"
 "frame, and a natural join (i.e. join on common names) is invoked. Ignoring "
 "on= which is '%s'."
 msgstr ""
 "当提供 on= 而不提供 i= 的时候， on= 必须是带名称的 list 或者 data.table 或者 "
-"data.frame，并且会调用自然联结（例如，按照共有名称联结），忽略 on= "
+"data.frame，并且会调用自然联结（例如，按照共有名称联结），忽略 on= %s"
 
 #: data.table.R:205
 #, c-format
@@ -314,10 +299,9 @@ msgstr ""
 "+Inf ， -Inf 或 'nearest'"
 
 #: data.table.R:213
-#, fuzzy, c-format
-#| msgid "' (type character). Only valid character value is 'nearest'."
+#, c-format
 msgid "roll is '%s' (type character). Only valid character value is 'nearest'."
-msgstr "'(字符类型)。 唯一有效的字符值是'nearest'。"
+msgstr "roll 是 '%s'(字符类型)。 唯一有效的字符值是'nearest'。"
 
 #: data.table.R:218
 #, c-format
@@ -330,14 +314,11 @@ msgid "rollends must be length 1 or 2"
 msgstr "rollends 的长度必须是 1 或者 2"
 
 #: data.table.R:227
-#, fuzzy, c-format
-#| msgid ""
-#| "nomatch= must be either NA or NULL (or 0 for backwards compatibility "
-#| "which is the same as NULL)"
+#, c-format
 msgid ""
 "nomatch= must be either NA or NULL (or 0 for backwards compatibility which "
 "is the same as NULL but please use NULL)"
-msgstr "nomatch= 必须是 NA 或 NULL (或者在向后兼容的情形下为 0，这等同于 NULL)"
+msgstr "nomatch= 必须是 NA 或 NULL (或者在向后兼容的情形下为 0，这等同于 NULL但是请用 NULL)"
 
 #: data.table.R:230
 #, c-format
@@ -345,28 +326,22 @@ msgid "which= must be a logical vector length 1. Either FALSE, TRUE or NA."
 msgstr "which= 必须是一个长度为 1 的逻辑向量。其取值为 FALSE，TRUE 或者 NA。"
 
 #: data.table.R:231
-#, fuzzy, c-format
-#| msgid ""
-#| "(meaning return row numbers) but j is also supplied. Either you need row "
-#| "numbers or the result of j, but only one type of result can be returned."
+#, c-format
 msgid ""
 "which==%s (meaning return row numbers) but j is also supplied. Either you "
 "need row numbers or the result of j, but only one type of result can be "
 "returned."
 msgstr ""
-"(表示行数会被返回) 但是 j 也被提供了。你可能需要行数或者是 j 的结果，但是只能"
+"which==%s (表示行数会被返回) 但是 j 也被提供了。你可能需要行数或者是 j 的结果，但是只能"
 "返回一种结果。"
 
 #: data.table.R:232
-#, fuzzy, c-format
-#| msgid ""
-#| "which=NA with nomatch=0 would always return an empty vector. Please "
-#| "change or remove either which or nomatch."
+#, c-format
 msgid ""
 "which=NA with nomatch=0|NULL would always return an empty vector. Please "
 "change or remove either which or nomatch."
 msgstr ""
-"同时使用 which=NA 和 nomatch=0 会得到一个空向量。请改变或者是移除 which或 "
+"同时使用 which=NA 和 nomatch=0或NULL 会得到一个空向量。请改变或者是移除 which或 "
 "nomatch 的取值"
 
 #: data.table.R:233
@@ -382,24 +357,18 @@ msgid ""
 msgstr "符号 .. 是无效的。前缀 .. 之后必须要有至少一个字符"
 
 #: data.table.R:276
-#, fuzzy, c-format
-#| msgid ""
-#| "' does exist in calling scope though, so please just removed the .. "
-#| "prefix from that variable name in calling scope."
+#, c-format
 msgid ""
 "Variable '..%s' does exist in calling scope though, so please just removed "
 "the .. prefix from that variable name in calling scope."
-msgstr "' 并不存在于调用环境中。所以请移除在调用环境中那个变量名字的..前缀"
+msgstr "变量 '%s' 并不存在于调用环境中。所以请移除在调用环境中那个变量名字的..前缀"
 
 #: data.table.R:280
-#, fuzzy, c-format
-#| msgid ""
-#| "' is not found in calling scope. Looking in calling scope because you "
-#| "used the .. prefix."
+#, c-format
 msgid ""
 "Variable '%s' is not found in calling scope. Looking in calling scope "
 "because you used the .. prefix.%s"
-msgstr "' 并没有存在于调用环境中。之所以在调用环境中寻找是因为你使用了..的前缀"
+msgstr "变量 '%s' 并没有存在于调用环境中。之所以在调用环境中寻找是因为你使用了..的前缀.%s"
 
 #: data.table.R:282
 #, fuzzy, c-format
@@ -418,16 +387,13 @@ msgid ""
 msgstr "内部错误: DT[, ..var]应该被分支处理中。"
 
 #: data.table.R:290
-#, fuzzy, c-format
-#| msgid ""
-#| "' is not found in calling scope. Looking in calling scope because you set "
-#| "with=FALSE. Also, please use .. symbol prefix and remove with=FALSE."
+#, c-format
 msgid ""
 "Variable '%s' is not found in calling scope. Looking in calling scope "
 "because you set with=FALSE. Also, please use .. symbol prefix and remove "
 "with=FALSE."
 msgstr ""
-"' 并没有存在于调用环境中。之所以在调用环境中搜索是因为你使用了with=FALSE。请"
+"变量 '%s' 并没有存在于调用环境中。之所以在调用环境中搜索是因为你使用了with=FALSE。请"
 "使用 .. 符号前缀并且移除 with=FALSE。"
 
 #: data.table.R:298
@@ -496,15 +462,12 @@ msgid ""
 msgstr ""
 
 #: data.table.R:422
-#, fuzzy, c-format
-#| msgid ""
-#| "When the first argument inside DT[...] is a single symbol (e.g. DT[var]), "
-#| "data.table looks for var in calling scope."
+#, c-format
 msgid ""
 "%s. When the first argument inside DT[...] is a single symbol (e.g. "
 "DT[var]), data.table looks for var in calling scope."
 msgstr ""
-"当DT[...]的第一个参数是一个单个的符号(e.g. DT[var])，data.table会在调用环境中"
+"%s。 当DT[...]的第一个参数是一个单个的符号(e.g. DT[var])，data.table会在调用环境中"
 "搜寻var。"
 
 #: data.table.R:434
@@ -612,16 +575,14 @@ msgstr ""
 "当使用 :=. 的时候，with=FALSE 是多余的，会被忽略。输入 ?':=' 参看例子。"
 
 #: data.table.R:726
-#, fuzzy, c-format
-#| msgid "column(s) not removed because not found:"
+#, c-format
 msgid "column(s) not removed because not found: %s"
-msgstr "列未被删除因为不存在："
+msgstr "列未被删除因为不存在：%s"
 
 #: data.table.R:740
-#, fuzzy, c-format
-#| msgid "column(s) not found:"
+#, c-format
 msgid "column(s) not found: %s"
-msgstr "列不存在"
+msgstr "列不存在: %s"
 
 #: data.table.R:746
 #, fuzzy, c-format
@@ -712,24 +673,19 @@ msgid ""
 msgstr ""
 
 #: data.table.R:906
-#, fuzzy, c-format
-#| msgid ""
-#| "The items in the 'by' or 'keyby' list are length(s) (%s). Each must be "
-#| "length %d; the same length as there are rows in x (after subsetting if i "
-#| "is provided)."
+#, c-format
 msgid ""
 "The items in the 'by' or 'keyby' list are length(s) %s. Each must be length "
 "%d; the same length as there are rows in x (after subsetting if i is "
 "provided)."
 msgstr ""
-"在'by'或'keyby'列表中的项长度为 %s。每一项的长度须均为%d，即应与 x （或经 i "
+"在'by'或'keyby'列表中的项长度为 %s (%s)。每一项的长度须均为%d，即应与 x （或经 i "
 "筛选后的子集）中所包含行数相同。"
 
 #: data.table.R:940
-#, fuzzy, c-format
-#| msgid "Internal error: drop_dot passed"
+#, c-format
 msgid "Internal error: drop_dot passed %d items"
-msgstr "内部错误：drop_dot 传入的参数有"
+msgstr "内部错误：drop_dot 传入的参数有 %d"
 
 #: data.table.R:959
 #, c-format
@@ -756,24 +712,19 @@ msgid ""
 msgstr ""
 
 #: data.table.R:1030
-#, fuzzy, c-format
-#| msgid ""
-#| "When .SDcols is a function, it is applied to each column; the output of "
-#| "this function must be a non-missing boolean scalar signalling inclusion/"
-#| "exclusion of the column. However, these conditions were not met for:"
+#, c-format
 msgid ""
 "When .SDcols is a function, it is applied to each column; the output of this "
 "function must be a non-missing boolean scalar signalling inclusion/exclusion "
 "of the column. However, these conditions were not met for: %s"
 msgstr ""
 "当传入 .SDcols 的参数为一个方程时，该方程将应用于每一列，并须返回单个非缺失值"
-"的布尔值指示该列是否应当被包含/排除。然而上述条件对如下列并不满足："
+"的布尔值指示该列是否应当被包含/排除。然而上述条件对如下列并不满足：%s"
 
 #: data.table.R:1036
-#, fuzzy, c-format
-#| msgid ".SDcols missing at the following indices:"
+#, c-format
 msgid ".SDcols missing at the following indices: %s"
-msgstr ".SDcols 的如下位置为缺失值："
+msgstr ".SDcols 的如下位置为缺失值：%s"
 
 #: data.table.R:1038
 #, c-format
@@ -786,10 +737,9 @@ msgid ".SDcols is numeric but has both +ve and -ve indices"
 msgstr ".SDcols 为数值，但同时具有 +ve 和 -ve 索引"
 
 #: data.table.R:1046
-#, fuzzy, c-format
-#| msgid ".SDcols is numeric but out of bounds [1,"
+#, c-format
 msgid ".SDcols is numeric but out of bounds [1, %d] at: %s"
-msgstr ".SDcols 为数值但超出了 [1,"
+msgstr ".SDcols 为数值但在 %2$s 超出了 [1, %1$d]"
 
 #: data.table.R:1050
 #, c-format
@@ -797,10 +747,9 @@ msgid ".SDcols should be column numbers or names"
 msgstr ".SDcols 应为列数或是列名"
 
 #: data.table.R:1052
-#, fuzzy, c-format
-#| msgid "Some items of .SDcols are not column names:"
+#, c-format
 msgid "Some items of .SDcols are not column names: %s"
-msgstr ".SDcols 中的部份项目不是列名:"
+msgstr ".SDcols 中的部份项目不是列名: %s"
 
 #: data.table.R:1094
 #, c-format
@@ -820,11 +769,9 @@ msgstr ""
 "以供未来使用请直接在 j 中使用 := 依照引用进行分组修改"
 
 #: data.table.R:1118 data.table.R:1130
-#, fuzzy, c-format
-#| msgid ""
-#| "In `:=`(col1=val1, col2=val2, ...) form, all arguments must be named."
+#, c-format
 msgid "In %s(col1=val1, col2=val2, ...) form, all arguments must be named."
-msgstr "在`:=`(col1=val1, col2=val2, ...) 中，所有参数必须被指名"
+msgstr "在 %s(col1=val1, col2=val2, ...) 中，所有参数必须被指名"
 
 #: data.table.R:1135
 #, c-format
@@ -866,16 +813,13 @@ msgstr ""
 "于修复根本原因或改进本讯息"
 
 #: data.table.R:1205
-#, fuzzy, c-format
-#| msgid ""
-#| "Cannot assign to an under-allocated recursively indexed list -- L[[i]][,:"
-#| "=] syntax is only valid when i is length 1, but it's length"
+#, c-format
 msgid ""
 "Cannot assign to an under-allocated recursively indexed list -- L[[i]][,:=] "
 "syntax is only valid when i is length 1, but its length is %d"
 msgstr ""
 "无法指定配置不足的递归索引列表-- L[[i]][,:=] 语法只有在 i 长度为1时有效，但它"
-"的長度"
+"的長度是 %d"
 
 #: data.table.R:1207
 #, fuzzy, c-format
@@ -884,10 +828,9 @@ msgid "Internal error -- item '%s' not found in names of list"
 msgstr "' 未能在名称列表中找到"
 
 #: data.table.R:1236 data.table.R:1249
-#, fuzzy, c-format
-#| msgid "Internal error -- column(s) not found:"
+#, c-format
 msgid "Internal error -- column(s) not found: %s"
-msgstr "内部错误 -- 找不到此列:"
+msgstr "内部错误 -- 找不到此列: %s"
 
 #: data.table.R:1261
 #, c-format
@@ -914,10 +857,9 @@ msgstr ""
 "作为前缀"
 
 #: data.table.R:1290
-#, fuzzy, c-format
-#| msgid "Internal error: xcolAns does not pass checks:"
+#, c-format
 msgid "Internal error: xcolAns does not pass checks: %d/%d/%d/%s"
-msgstr "内部错误 : xcolAns 无法通过检查:"
+msgstr "内部错误 : xcolAns 无法通过检查: %d/%d/%d/%s"
 
 #: data.table.R:1300
 #, c-format
@@ -1021,14 +963,11 @@ msgid "rownames and rownames.value cannot both be used at the same time"
 msgstr "rownames和rownames.value 不能同时使用"
 
 #: data.table.R:2025
-#, fuzzy, c-format
-#| msgid ""
-#| ". The rownames argument specifies a single column name or number. "
-#| "Consider rownames.value= instead."
+#, c-format
 msgid ""
 "length(rownames)==%d but nrow(DT)==%d. The rownames argument specifies a "
 "single column name or number. Consider rownames.value= instead."
-msgstr "。 rownames参数为单一列名或单一数值。请考虑使用`rownames.values=`。"
+msgstr "length(rownames)==%d 但 nrow(DT)==%d。 rownames参数为单一列名或单一数值。请考虑使用`rownames.values=`。"
 
 #: data.table.R:2029
 #, c-format
@@ -1046,24 +985,21 @@ msgid ""
 msgstr "rownames是TRUE但键(key)不只一个列"
 
 #: data.table.R:2043
-#, fuzzy, c-format
-#| msgid "' is not a column of x"
+#, c-format
 msgid "'%s' is not a column of x"
-msgstr "' 不是x的一个列"
+msgstr "'%s' 不是x的一个列"
 
 #: data.table.R:2049
-#, fuzzy, c-format
-#| msgid "which is outside the column number range [1,ncol="
+#, c-format
 msgid ""
 "as.integer(rownames)==%d which is outside the column number range [1,"
 "ncol=%d]."
-msgstr "不在列索引范围内 [1,ncol="
+msgstr "as.integer(rownames)==%d 不在列索引范围内 [1,ncol%d]。"
 
 #: data.table.R:2054
-#, fuzzy, c-format
-#| msgid "length(rownames.value)=="
+#, c-format
 msgid "length(rownames.value)==%d but should be nrow(x)==%d"
-msgstr "length(rownames.value)=="
+msgstr "length(rownames.value)==%d 但应该是 nrow(x)==%d"
 
 #: data.table.R:2116
 #, c-format
@@ -1178,26 +1114,20 @@ msgid "Argument 'by' must refer to column names in x"
 msgstr "参数 'by' 只适用于 x 中的列名"
 
 #: data.table.R:2427
-#, fuzzy, c-format
-#| msgid ""
-#| "Argument 'by' must refer only to atomic-type columns, but the following "
-#| "columns are non-atomic:"
+#, c-format
 msgid ""
 "Argument 'by' must refer only to atomic-type columns, but the following "
 "columns are non-atomic: %s"
-msgstr "参数 'by' 只适用于原子类型的纵列，但现在关联的纵列不是原子类型"
+msgstr "参数 'by' 只适用于原子类型的纵列，但现在关联的纵列不是原子类型: %s"
 
 #: data.table.R:2557
-#, fuzzy, c-format
-#| msgid ""
-#| "x is not a data.table. Shallow copy is a copy of the vector of column "
-#| "pointers (only), so is only meaningful for data.table"
+#, c-format
 msgid ""
 "x is not a data.table|frame. Shallow copy is a copy of the vector of column "
 "pointers (only), so is only meaningful for data.table|frame"
 msgstr ""
-"浅拷贝（shallow copy）只是列指针向量的拷贝，因此仅对 data.table 有意义，而 x "
-"不是 data.table"
+"浅拷贝（shallow copy）只是列指针向量的拷贝，因此仅对 data.table或data.frame 有意义，而 x "
+"不是 data.table或data.frame"
 
 #: data.table.R:2566
 #, c-format
@@ -1220,10 +1150,9 @@ msgid "x is not a data.table or data.frame"
 msgstr "x 不是 data.table 或 data.frame."
 
 #: data.table.R:2618
-#, fuzzy, c-format
-#| msgid "columns but its names are length"
+#, c-format
 msgid "x has %d columns but its names are length %d"
-msgstr " 列，但其列名的数为 "
+msgstr "x有%d列，但其列名的长度为%d"
 
 #: data.table.R:2625
 #, fuzzy, c-format
@@ -1237,16 +1166,14 @@ msgid "'new' is not a character vector or a function"
 msgstr "'new' 既不是特征向量也不是 function"
 
 #: data.table.R:2640
-#, fuzzy, c-format
-#| msgid "NA in 'new' at positions"
+#, c-format
 msgid "NA in 'new' at positions %s"
-msgstr "在 'new' 中有NA值"
+msgstr "在 'new' 中有NA值 %s"
 
 #: data.table.R:2641
-#, fuzzy, c-format
-#| msgid "Some duplicates exist in 'old':"
+#, c-format
 msgid "Some duplicates exist in 'old': %s"
-msgstr "在'old' 中存在重复名称"
+msgstr "在'old' 中存在重复名称: %s"
 
 #: data.table.R:2643
 #, fuzzy, c-format
@@ -1255,16 +1182,14 @@ msgid "'old' is type %s but should be integer, double or character"
 msgstr "应该为整型,浮点型或者字符型"
 
 #: data.table.R:2644
-#, fuzzy, c-format
-#| msgid "but 'new' is length"
+#, c-format
 msgid "'old' is length %d but 'new' is length %d"
-msgstr "'new' 的长度为"
+msgstr "'old' 长度为 %d 但 'new' 的长度为 %d"
 
 #: data.table.R:2645
-#, fuzzy, c-format
-#| msgid "NA (or out of bounds) in 'old' at positions"
+#, c-format
 msgid "NA (or out of bounds) in 'old' at positions %s"
-msgstr "NA(或超出界限)出现在'old' 的位置"
+msgstr "NA(或超出界限)出现在'old' 的位置 %s"
 
 #: data.table.R:2648
 #, fuzzy, c-format
@@ -1298,10 +1223,9 @@ msgid ""
 msgstr "请移除或者重命名重复项并重试"
 
 #: data.table.R:2697
-#, fuzzy, c-format
-#| msgid "Provide either by= or keyby= but not both"
+#, c-format
 msgid "Provide either before= or after= but not both"
-msgstr "提供 by= 或 keyby= ，但两者不能同时存在"
+msgstr "提供 before= 或 after= ，但两者不能同时存在"
 
 #: data.table.R:2699
 #, c-format
@@ -1309,10 +1233,9 @@ msgid "before=/after= accept a single column name or number, not more than one"
 msgstr ""
 
 #: data.table.R:2754
-#, fuzzy, c-format
-#| msgid "but should be a plain list of items to be stacked"
+#, c-format
 msgid "Input is %s but should be a plain list of items to be stacked"
-msgstr "应该叠加普通列表项"
+msgstr "项是 %s 但应该叠加普通列表项"
 
 #: data.table.R:2758
 #, c-format
@@ -1338,15 +1261,12 @@ msgstr ""
 "用表示默认模式详见 ?rbindlist"
 
 #: data.table.R:2780
-#, fuzzy, c-format
-#| msgid ""
-#| "Check that is.data.table(DT) == TRUE. Otherwise, := and `:=`(...) are "
-#| "defined for use in j, once only and in particular ways. See help(\":=\")."
+#, c-format
 msgid ""
 "Check that is.data.table(DT) == TRUE. Otherwise, :=, `:=`(...) and let(...) "
 "are defined for use in j, once only and in particular ways. See help(\":=\")."
 msgstr ""
-"检查是否is.data.table(DT) == TRUE,否则,:= and `:=`(...) 为被界定在j使用，仅一"
+"检查是否is.data.table(DT) == TRUE,否则,:=, `:=`(...), 和 let(...) 为被界定在j使用，仅一"
 "次以特别的方式使用,详见help(\":=\")"
 
 #: data.table.R:2786
@@ -1361,10 +1281,9 @@ msgid "rownames contains duplicates"
 msgstr "行名含有重复"
 
 #: data.table.R:2794 data.table.R:2805 data.table.R:2828
-#, fuzzy, c-format
-#| msgid "rownames incorrect length; expected"
+#, c-format
 msgid "rownames incorrect length; expected %d names, got %d"
-msgstr "行名长度不正确;需要"
+msgstr "行名长度不正确;需要 %d 名 受到 %d"
 
 #: data.table.R:2813
 #, c-format
@@ -1372,10 +1291,9 @@ msgid "All elements in argument 'x' to 'setDF' must be of same length"
 msgstr "'setDF'中的参数'x'的所有元素必须同等长度"
 
 #: data.table.R:2842
-#, fuzzy, c-format
-#| msgid "Cannot find symbol"
+#, c-format
 msgid "Cannot find symbol %s"
-msgstr "无法找到符号"
+msgstr "无法找到符号 %s"
 
 #: data.table.R:2849
 #, fuzzy, c-format
