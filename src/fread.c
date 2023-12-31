@@ -2503,7 +2503,7 @@ int freadMain(freadMainArgs _args) {
     }
     stopTeam = false;
 
-    if (extraAllocRows) {
+    if (extraAllocRows && nrowLimit>0) {
       allocnrow += extraAllocRows;
       if (allocnrow > nrowLimit) allocnrow = nrowLimit;
       if (verbose) DTPRINT(_("  Too few rows allocated. Allocating additional %"PRIu64" rows (now nrows=%"PRIu64") and continue reading from jump %d\n"),
@@ -2512,7 +2512,7 @@ int freadMain(freadMainArgs _args) {
       extraAllocRows = 0;
       goto read;
     }
-    if (restartTeam) {
+    if (restartTeam && nrowLimit>0) {
       if (verbose) DTPRINT(_("  Restarting team from jump %d. nSwept==%d quoteRule==%d\n"), jump0, nSwept, quoteRule);
       ASSERT(nSwept>0 || quoteRuleBumpedCh!=NULL, "Internal error: team restart but nSwept==%d and quoteRuleBumpedCh==%p", nSwept, quoteRuleBumpedCh); // # nocov
       goto read;
