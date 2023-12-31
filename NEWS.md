@@ -299,7 +299,7 @@
 
 2. `print(DT, trunc.cols=TRUE)` and the corresponding `datatable.print.trunc.cols` option (new feature 3 in v1.13.0) could incorrectly display an extra column, [#4266](https://github.com/Rdatatable/data.table/issues/4266). Thanks to @tdhock for the bug report and @MichaelChirico for the PR.
 
-3. `fread(..., nrows=0L)` now works as intended and the same as `nrows=0`; i.e. returning the column names and typed empty columns determined by the large sample, [#4686](https://github.com/Rdatatable/data.table/issues/4686), [#4029](https://github.com/Rdatatable/data.table/issues/4029). Thanks to @hongyuanjia and @michaelpaulhirsch for reporting, and Benjamin Schwendinger for the PR.
+3. `fread(..., nrows=0L)` now works as intended and the same as `nrows=0`; i.e. returning the column names and typed empty columns determined by the large sample, [#4686](https://github.com/Rdatatable/data.table/issues/4686), [#4029](https://github.com/Rdatatable/data.table/issues/4029). Thanks to @hongyuanjia and @michaelpaulhirsch for reporting, and Benjamin Schwendinger for the PR. Also thanks to @HughParsonage for testing dev and reporting a bug which was fixed before release.
 
 4. Passing `.SD` to `frankv()` with `ties.method='random'` or with `na.last=NA` failed with `.SD is locked`, [#4429](https://github.com/Rdatatable/data.table/issues/4429). Thanks @smarches for the report.
 
