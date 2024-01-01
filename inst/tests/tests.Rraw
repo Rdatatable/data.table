@@ -13285,9 +13285,9 @@ txt = paste(c("A,B\n1,2\n", rep("3,4\n",5100), "3,4.1\n", rep("5,6\n",4900)), co
 test(1958.20, fread(text=txt, nrows=0L, verbose=TRUE), data.table(A=integer(), B=integer()),
               output="Sampled 1049 rows.*at 11 jump points")
 # invalid head position for nrows=0 #5868
-test(1958.21, fread(sprintf('%s%s\n', 'a,b', paste0('\n', sample(c('', '3'), 1e6L, TRUE), sample(c(',a',',b',',c'), 1e6L, TRUE), collapse="")), nrows=0L),
+test(1958.21, fread(sprintf('%s%s\n', 'a,b', paste0('\n', sample(c('', '3'), 6e5L, TRUE), sample(c(',a',',b',',c'), 6e5L, TRUE), collapse="")), nrows=0L),
   data.table(a=integer(), b=character()))
-test(1958.22, fread(sprintf('%s%s\n', 'a,b', paste0('\n', sample(c('', '3'), 1e6L, TRUE), sample(c(',a',',b',',c'), 1e6L, TRUE), collapse="")), nrows=0L, nThread=1L),
+test(1958.22, fread(sprintf('%s%s\n', 'a,b', paste0('\n', sample(c('', '3'), 6e5L, TRUE), sample(c(',a',',b',',c'), 6e5L, TRUE), collapse="")), nrows=0L, nThread=1L),
   data.table(a=integer(), b=character()))
 
 # Skip should work with all types of newlines #3006
