@@ -43,7 +43,6 @@ jobs:
         with:
           r-version: ${{ matrix.config.r }}
 
-      - uses: r-lib/actions/setup-pandoc@v2
 
       - name: Query dependencies
         run: |
