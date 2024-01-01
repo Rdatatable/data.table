@@ -1814,9 +1814,6 @@ int freadMain(freadMainArgs _args) {
     else if (jump0size*10*2 < sz) nJumps=10;
     // *2 to get a good spacing. We don't want overlaps resulting in double counting.
   }
-  nJumps++; // the extra sample at the very end (up to eof) is sampled and format checked but not jumped to when reading
-  if (nrowLimit<INT64_MAX) nJumps=1; // when nrows>0 supplied by user, no jumps (not even at the end) and single threaded
-  
   if (verbose) {
     DTPRINT(_("  Number of sampling jump points = %d because "), nJumps);
     if (nrowLimit<INT64_MAX) DTPRINT(_("nrow limit (%"PRIu64") supplied\n"), (uint64_t)nrowLimit);
@@ -1824,6 +1821,8 @@ int freadMain(freadMainArgs _args) {
     else DTPRINT(_("(%"PRIu64" bytes from row 1 to eof) / (2 * %"PRIu64" jump0size) == %"PRIu64"\n"),
                  (uint64_t)sz, (uint64_t)jump0size, (uint64_t)(sz/(2*jump0size)));
   }
+  nJumps++; // the extra sample at the very end (up to eof) is sampled and format checked but not jumped to when reading
+  if (nrowLimit<INT64_MAX && nrowLimit>0) nJumps=1; // when nrows>0 supplied by user, no jumps (not even at the end) and single threaded
 
   sampleLines = 0;
   double sumLen=0.0, sumLenSq=0.0;
@@ -2432,7 +2431,7 @@ int freadMain(freadMainArgs _args) {
         if (stopTeam) {             // A previous thread stopped while I was waiting my turn to enter ordered
           myNrow = 0;               // # nocov; discard my buffer
         }
-        else if (headPos!=thisJumpStart) {
+        else if (headPos!=thisJumpStart && nrowLimit>0) { // do not care for dirty jumps since we do not read data and only want to know types
            // # nocov start
           snprintf(internalErr, internalErrSize, _("Internal error: invalid head position. jump=%d, headPos=%p, thisJumpStart=%p, sof=%p"), jump, (void*)headPos, (void*)thisJumpStart, (void*)sof);
           stopTeam = true;
@@ -2504,7 +2503,7 @@ int freadMain(freadMainArgs _args) {
     }
     stopTeam = false;
 
-    if (extraAllocRows) {
+    if (extraAllocRows && nrowLimit>0) {
       allocnrow += extraAllocRows;
       if (allocnrow > nrowLimit) allocnrow = nrowLimit;
       if (verbose) DTPRINT(_("  Too few rows allocated. Allocating additional %"PRIu64" rows (now nrows=%"PRIu64") and continue reading from jump %d\n"),
@@ -2513,7 +2512,7 @@ int freadMain(freadMainArgs _args) {
       extraAllocRows = 0;
       goto read;
     }
-    if (restartTeam) {
+    if (restartTeam && nrowLimit>0) {
       if (verbose) DTPRINT(_("  Restarting team from jump %d. nSwept==%d quoteRule==%d\n"), jump0, nSwept, quoteRule);
       ASSERT(nSwept>0 || quoteRuleBumpedCh!=NULL, "Internal error: team restart but nSwept==%d and quoteRuleBumpedCh==%p", nSwept, quoteRuleBumpedCh); // # nocov
       goto read;
