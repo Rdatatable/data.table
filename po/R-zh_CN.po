@@ -141,7 +141,7 @@ msgstr ""
 msgid ""
 "'between' lower= and upper= are both POSIXct but have different tzone "
 "attributes: %s. Please align their time zones."
-msgstr ""
+msgstr "<fix fuzzy translation>"
 "'between' 中的 lower= 和 upper= 均为 POSIXct 类型但却有不同的时区属性"
 "（tzone）："
 
@@ -152,7 +152,7 @@ msgstr ""
 msgid ""
 "'between' arguments are all POSIXct but have mismatched tzone attributes: "
 "%s. The UTC times will be compared."
-msgstr "'between' 的参数均为 POSIXct 类型但时区属性（tzone）不匹配："
+msgstr "<fix fuzzy translation>'between' 的参数均为 POSIXct 类型但时区属性（tzone）不匹配："
 
 #: between.R:36
 #, c-format
@@ -450,7 +450,7 @@ msgstr ""
 #| "' is not found in calling scope. Looking in calling scope because you "
 #| "used the .. prefix."
 msgid "'%s' is not found in calling scope and it is not a column name either"
-msgstr "' 并没有存在于调用环境中。之所以在调用环境中寻找是因为你使用了..的前缀"
+msgstr "<fix fuzzy translation>' 并没有存在于调用环境中。之所以在调用环境中寻找是因为你使用了..的前缀"
 
 #: data.table.R:419
 #, c-format
@@ -520,7 +520,7 @@ msgstr "逻辑错误。当 i 并非一个 data.table时，不应提供'on'参数
 #, fuzzy, c-format
 #| msgid ". Expecting logical, integer or double."
 msgid "i has evaluated to type %s. Expecting logical, integer or double."
-msgstr "。期望布尔类型，整型或浮点型。"
+msgstr "<fix fuzzy translation>。期望布尔类型，整型或浮点型。"
 
 #: data.table.R:605
 #, c-format
@@ -825,7 +825,7 @@ msgstr ""
 #, fuzzy, c-format
 #| msgid "' not found in names of list"
 msgid "Internal error -- item '%s' not found in names of list"
-msgstr "' 未能在名称列表中找到"
+msgstr "<fix fuzzy translation>' 未能在名称列表中找到"
 
 #: data.table.R:1236 data.table.R:1249
 #, c-format
@@ -852,7 +852,7 @@ msgstr ""
 msgid ""
 "Variable '%s' is not found in calling scope. Looking in calling scope "
 "because this symbol was prefixed with .. in the j= parameter."
-msgstr ""
+msgstr "<fix fuzzy translation>"
 "' 未能在调用范围 (calling scope) 中找到，请查看调用范围因为  j= 的参数以 .. "
 "作为前缀"
 
@@ -955,7 +955,7 @@ msgstr ""
 #, fuzzy, c-format
 #| msgid "Internal error: jvnames is length"
 msgid "Internal error: jvnames is length %d but ans is %d and bynames is %d"
-msgstr "内部错误:jvnames 是长度"
+msgstr "<fix fuzzy translation>内部错误:jvnames 是长度"
 
 #: data.table.R:2020
 #, c-format
@@ -1062,7 +1062,7 @@ msgstr "data.tables没有rownames"
 #, fuzzy, c-format
 #| msgid "Can not cast an empty data.table"
 msgid "Can't assign %d names to a %d-column data.table"
-msgstr "无法转换一个空的data.table"
+msgstr "<fix fuzzy translation>无法转换一个空的data.table"
 
 #: data.table.R:2327
 #, c-format
@@ -1158,7 +1158,7 @@ msgstr "x有%d列，但其列名的长度为%d"
 #, fuzzy, c-format
 #| msgid "'. Needs to be type 'character'."
 msgid "Passed a vector of type '%s'. Needs to be type 'character'."
-msgstr ". 需要是 'character' 类型."
+msgstr "<fix fuzzy translation>. 需要是 'character' 类型."
 
 #: data.table.R:2638
 #, c-format
@@ -1179,7 +1179,7 @@ msgstr "在'old' 中存在重复名称: %s"
 #, fuzzy, c-format
 #| msgid "but should be integer, double or character"
 msgid "'old' is type %s but should be integer, double or character"
-msgstr "应该为整型,浮点型或者字符型"
+msgstr "<fix fuzzy translation>应该为整型,浮点型或者字符型"
 
 #: data.table.R:2644
 #, c-format
@@ -1200,7 +1200,7 @@ msgid ""
 "Item %d of 'old' is '%s' which appears several times in column names. Just "
 "the first will be changed. There are %d other items in 'old' that are also "
 "duplicated in column names."
-msgstr "在列名中重复出现,仅第一个会改动，如下:"
+msgstr "<fix fuzzy translation>在列名中重复出现,仅第一个会改动，如下:"
 
 #: data.table.R:2656
 #, fuzzy, c-format
@@ -1336,7 +1336,7 @@ msgid ""
 "Column %d is of POSIXlt type. Please convert it to POSIXct using as.POSIXct "
 "and run setDT again. We do not recommend use of POSIXlt at all because it "
 "uses 40 bytes to store one date."
-msgstr ""
+msgstr "<fix fuzzy translation>"
 "属于 POSIXlt 类型。请使用 as.POSIXct 转换为 POSIXct 并再次执行setDT。我们非常"
 "不推荐使用 POSIXlt 因为它要用 40 字节来存储一个日期。"
 
@@ -1365,7 +1365,7 @@ msgstr ""
 #, fuzzy, c-format
 #| msgid "' not found in names of input list"
 msgid "Item '%s' not found in names of input list"
-msgstr "' 不存在于输入列表的子项名中"
+msgstr "<fix fuzzy translation>' 不存在于输入列表的子项名中"
 
 #: data.table.R:2951 data.table.R:2976
 #, c-format
@@ -1412,7 +1412,7 @@ msgstr ""
 msgid ""
 "Found more than one operator in one 'on' statement: %s. Please specify a "
 "single operator."
-msgstr "在一个 'on' 语句中出现了多于一个的操作符（operator）："
+msgstr "<fix fuzzy translation>在一个 'on' 语句中出现了多于一个的操作符（operator）："
 
 #: data.table.R:3271
 #, fuzzy, c-format
@@ -1420,7 +1420,7 @@ msgstr "在一个 'on' 语句中出现了多于一个的操作符（operator）�
 msgid ""
 "'on' contains no column name: %s. Each 'on' clause must contain one or two "
 "column names."
-msgstr "。每个'on' 子句必须包含一个或两个列名。"
+msgstr "<fix fuzzy translation>。每个'on' 子句必须包含一个或两个列名。"
 
 #: data.table.R:3273
 #, fuzzy, c-format
@@ -1428,13 +1428,13 @@ msgstr "。每个'on' 子句必须包含一个或两个列名。"
 msgid ""
 "'on' contains more than 2 column names: %s. Each 'on' clause must contain "
 "one or two column names."
-msgstr "。每个'on' 子句必须包含一个或两个列名。"
+msgstr "<fix fuzzy translation>。每个'on' 子句必须包含一个或两个列名。"
 
 #: data.table.R:3278
 #, fuzzy, c-format
 #| msgid ". Only allowed operators are"
 msgid "Invalid join operators %s. Only allowed operators are %s."
-msgstr "。只有这些操作符是有效的"
+msgstr "<fix fuzzy translation>。只有这些操作符是有效的"
 
 #: devel.R:16
 #, c-format
@@ -1618,7 +1618,7 @@ msgstr "<needs translation>"
 #| msgid ""
 #| "Argument 'by' must be a character vector of column names used in grouping."
 msgid "cols must be a character vector of column names"
-msgstr "'by' 参数必须是一个字符向量，向量的元素是列名，用于分组。"
+msgstr "<fix fuzzy translation>'by' 参数必须是一个字符向量，向量的元素是列名，用于分组。"
 
 #: fmelt.R:88
 #, c-format
@@ -1639,7 +1639,7 @@ msgstr "<needs translation>"
 #, fuzzy, c-format
 #| msgid "but must be character."
 msgid "pattern must be character string"
-msgstr "但必须是字符."
+msgstr "<fix fuzzy translation>但必须是字符."
 
 #: fmelt.R:111
 #, c-format
@@ -1658,7 +1658,7 @@ msgstr "<needs translation>"
 #, fuzzy, c-format
 #| msgid "but must be character."
 msgid "sep must be character string"
-msgstr "但必须是字符."
+msgstr "<fix fuzzy translation>但必须是字符."
 
 #: fmelt.R:129
 #, c-format
@@ -1816,7 +1816,7 @@ msgstr "'by.y'应该是具有列名或者数字非空向量"
 msgid ""
 "The first %d columns of y's key must be identical to the columns specified "
 "in by.y."
-msgstr "在'by.y'中，y键(key)的列必须与指定的列相同"
+msgstr "<fix fuzzy translation>在'by.y'中，y键(key)的列必须与指定的列相同"
 
 #: foverlaps.R:42
 #, c-format
@@ -1970,7 +1970,7 @@ msgstr "参数 'encoding' 必须为 'unknown', 'UTF-8' 或 'Latin-1'."
 #, fuzzy, c-format
 #| msgid "but must be character."
 msgid "'text=' is type %s but must be character."
-msgstr "但必须是字符."
+msgstr "<fix fuzzy translation>但必须是字符."
 
 #: fread.R:53
 #, c-format
@@ -2279,7 +2279,7 @@ msgstr "x 的类将强制从 matrix 转变为 data.table"
 msgid ""
 "If you intended to overwrite the file at %s with an empty one, please use "
 "file.remove first."
-msgstr "为空文件，请先使用 file.remove。"
+msgstr "<fix fuzzy translation>为空文件，请先使用 file.remove。"
 
 #: fwrite.R:80
 #, c-format
@@ -2431,13 +2431,13 @@ msgstr "参数 'no.dups' 应为逻辑值 TRUE 或 FALSE"
 #, fuzzy, c-format
 #| msgid "Input data.table must not contain duplicate column names."
 msgid "Neither of the input data.tables to join have columns."
-msgstr "作为输入的 data.table 对象不能含有重复的列名。"
+msgstr "<fix fuzzy translation>作为输入的 data.table 对象不能含有重复的列名。"
 
 #: merge.R:20 merge.R:22
 #, fuzzy, c-format
 #| msgid "Input data.table must not contain duplicate column names."
 msgid "Input data.table '%s' has no columns."
-msgstr "作为输入的 data.table 对象不能含有重复的列名。"
+msgstr "<fix fuzzy translation>作为输入的 data.table 对象不能含有重复的列名。"
 
 #: merge.R:31
 #, c-format
@@ -2628,7 +2628,7 @@ msgstr ""
 msgid ""
 "This is R %s but data.table has been installed using R %s. The major version "
 "must match. Please reinstall data.table."
-msgstr "。主要的版本必须匹配。 请重新安装data.table"
+msgstr "<fix fuzzy translation>。主要的版本必须匹配。 请重新安装data.table"
 
 #: onLoad.R:95
 #, c-format
@@ -2822,7 +2822,7 @@ msgstr "x包含一个叫做'.xi'的列。这与data.table中使用的内部名�
 msgid ""
 "Column '%s' is type '%s' which is not supported as a key column type, "
 "currently."
-msgstr "目前不是一种被支持的键(key)列类型"
+msgstr "<fix fuzzy translation>目前不是一种被支持的键(key)列类型"
 
 #: setkey.R:78 setkey.R:287
 #, c-format
@@ -2835,7 +2835,7 @@ msgstr "内部错误： 目前在setkey中，'cols'应该是字符类型, 请报
 #, fuzzy, c-format
 #| msgid "Internal error: byindex not the index name"
 msgid "Internal error: index '%s' exists but is invalid"
-msgstr "内部错误 : byindex 不是索引(index)名称"
+msgstr "<fix fuzzy translation>内部错误 : byindex 不是索引(index)名称"
 
 #: setkey.R:157
 #, c-format
@@ -2920,7 +2920,7 @@ msgstr ""
 #, fuzzy, c-format
 #| msgid "' which is not supported for ordering currently."
 msgid "Column '%s' is type '%s' which is not supported for ordering currently."
-msgstr "'，该类型目前尚不支持排序。"
+msgstr "<fix fuzzy translation>'，该类型目前尚不支持排序。"
 
 #: setkey.R:329
 #, fuzzy, c-format
@@ -2999,7 +2999,7 @@ msgstr "找到不支持的列类型在 x 或 y: %s"
 #, fuzzy, c-format
 #| msgid "' but the corresponding item of y is '"
 msgid "Item %d of x is '%s' but the corresponding item of y is '%s'."
-msgstr "' 然而 y 中对应的项是：'"
+msgstr "<fix fuzzy translation>' 然而 y 中对应的项是：'"
 
 #: setops.R:55
 #, c-format

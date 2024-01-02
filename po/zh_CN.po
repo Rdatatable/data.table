@@ -483,7 +483,7 @@ msgstr "<needs translation>"
 #, fuzzy, c-format
 #| msgid "Column %d of item %d: %s"
 msgid "column %d named '%s'"
-msgstr "第 %2$d 项的第 %1$d 列: %3$s"
+msgstr "<fix fuzzy translation>第 %2$d 项的第 %1$d 列: %3$s"
 
 #: assign.c:706
 #, c-format
@@ -1253,7 +1253,7 @@ msgstr "'na'长度是%<PRId64>但长度必须是1或者等于'test'的长度 (%<
 msgid ""
 "'no' is of type %s but '%s' is %s. Please make all arguments have the same "
 "type."
-msgstr "'yes'是%s类型，但'no'是%s类型。请确认两个参数是同一类型。"
+msgstr "<fix fuzzy translation>'yes'是%s类型，但'no'是%s类型。请确认两个参数是同一类型。"
 
 #: fifelse.c:52
 #, fuzzy, c-format
@@ -1263,7 +1263,7 @@ msgstr "'yes'是%s类型，但'no'是%s类型。请确认两个参数是同一�
 msgid ""
 "'na' is of type %s but '%s' is %s. Please make all arguments have the same "
 "type."
-msgstr "'yes'是%s类型，但'na'是%s类型。请确认两个参数是同一类型。"
+msgstr "<fix fuzzy translation>'yes'是%s类型，但'na'是%s类型。请确认两个参数是同一类型。"
 
 #: fifelse.c:57
 msgid ""
@@ -2730,7 +2730,7 @@ msgstr ""
 #| msgid ""
 #| "Internal error in coalesce.c: argument 'inplaceArg' must be TRUE or FALSE"
 msgid "Internal error: freadR isFileNameArg not TRUE or FALSE"
-msgstr "内部错误：coalesce.c 中 'inplaceArg' 参数必须为 TRUE 或 FALSE"
+msgstr "<fix fuzzy translation>内部错误：coalesce.c 中 'inplaceArg' 参数必须为 TRUE 或 FALSE"
 
 #: freadR.c:92
 #, c-format
@@ -2760,7 +2760,7 @@ msgstr "quote= 必须是单个字符，空白 \"\"，或者 FALSE"
 #| msgid ""
 #| "Internal error: freadR sep not a single character. R level catches this."
 msgid "Internal error: freadR nrows not a single real. R level catches this."
-msgstr "内部错误：freadR sep 不是单个字符。R 中应该捕获此错误。"
+msgstr "<fix fuzzy translation>内部错误：freadR sep 不是单个字符。R 中应该捕获此错误。"
 
 #: freadR.c:141
 msgid "Internal error: skip not integer or string in freadR.c"
@@ -3046,7 +3046,7 @@ msgstr "%s: 使用了 %.3fs\n"
 msgid ""
 "x must be of type numeric or logical, or a list, data.frame or data.table of "
 "such"
-msgstr ""
+msgstr "<fix fuzzy translation>"
 "x 必须是列表 (list), 或由数值或者逻辑类型组成的数据框 (data.frame 或 data."
 "table)"
 
@@ -3090,7 +3090,7 @@ msgstr ""
 msgid ""
 "Internal error: invalid %s argument in %s function should have been caught "
 "earlier. Please report to the data.table issue tracker."
-msgstr ""
+msgstr "<fix fuzzy translation>"
 "内部错误：函数 nafillR 中有无效类型的参数, 该错误理应已被捕获，请向data.table"
 "的issue通道报告"
 
@@ -3978,7 +3978,7 @@ msgstr "PRINTNAME(install(\"integer64\")) 返回了 %s , 而不是 %s"
 #, fuzzy
 #| msgid "rollends must be a length 2 logical vector"
 msgid "verbose option must be length 1 non-NA logical or integer"
-msgstr "rollends 必须是一个长度为2的逻辑向量"
+msgstr "<fix fuzzy translation>rollends 必须是一个长度为2的逻辑向量"
 
 #: init.c:349
 msgid ".Last.value in namespace is not a length 1 integer"
@@ -4002,13 +4002,13 @@ msgstr "参数'x'必须是数字类型，或者是数字类型的list/data.table
 #, fuzzy
 #| msgid "fill must be a vector of length 1"
 msgid "fill must be a vector of length 1 or a list of length of x"
-msgstr "fill 必须是长度为1的向量"
+msgstr "<fix fuzzy translation>fill 必须是长度为1的向量"
 
 #: nafill.c:187
 #, fuzzy
 #| msgid "internal error: 'rho' should be an environment"
 msgid "internal error: 'fill' should be recycled as list already"
-msgstr "内部错误: 'rho' 应该为一个环境 (environment)"
+msgstr "<fix fuzzy translation>内部错误: 'rho' 应该为一个环境 (environment)"
 
 #: nafill.c:226
 #, c-format
@@ -4674,7 +4674,7 @@ msgstr "指定列的参数受到了重复的列"
 #, fuzzy, c-format
 #| msgid "Internal error: type '%s' not caught earlier in fastmean"
 msgid "Internal error: type '%s' not supported in %s"
-msgstr "内部错误：先前fastmean没有侦测到类型 '%s' "
+msgstr "<fix fuzzy translation>内部错误：先前fastmean没有侦测到类型 '%s' "
 
 #: utils.c:234
 #, c-format
@@ -4690,7 +4690,7 @@ msgstr "发现并拷贝了具有相同的内存地址的%d列%s\n"
 #, fuzzy
 #| msgid "x is not a logical vector"
 msgid "'x' is not atomic"
-msgstr "x不是一个逻辑向量"
+msgstr "<fix fuzzy translation>x不是一个逻辑向量"
 
 #: utils.c:360
 msgid "'x' must not be matrix or array"
