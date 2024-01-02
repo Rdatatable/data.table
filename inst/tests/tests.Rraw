@@ -18156,3 +18156,14 @@ y = data.table(a = 2:3, key="a")
 test(2240.31, merge(x,y, all.y=TRUE), data.table(a=structure(2:3, class=c("a", "integer")), key="a"))
 test(2240.32, rbind(x,y), error="Class attribute .* does not match with .*")
 test(2240.33, rbind(x,y, ignore.attr=TRUE), data.table(a=structure(c(1L, 2L, 2L, 3L), class=c("a", "integer"))))
+# rbind ignore attributes and do not copy for integer64 and higher types #5504
+if (test_bit64) {
+  a = data.table(as.integer64(1))
+  b = data.table("a")
+  c = data.table(as.complex(2))
+  test(2240.41, rbind(a,b), data.table(c("1","a")))
+  test(2240.42, rbind(b,a), data.table(c("a","1")))
+  test(2240.43, rbind(a,c), data.table(as.complex(1:2)))
+  test(2240.44, rbind(c,a), data.table(as.complex(2:1)))
+  test(2240.45, rbind(a, data.table(list(1))), error="integer64 but maxType=='list'")
+}
