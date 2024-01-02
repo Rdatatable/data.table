@@ -34,6 +34,13 @@ setcolorder(DT, c("C", "A", "B"))
 
 #incomplete specification
 setcolorder(DT, "A")
+
+# insert new column as first column
+set(DT, j="D", value=sample(10))
+setcolorder(DT, "D", before=1)
+
+# move column to last column place
+setcolorder(DT, "A", after=ncol(DT))
 }
 \keyword{ data }
 
