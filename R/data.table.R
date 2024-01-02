@@ -1758,7 +1758,8 @@ replace_dot_alias = function(e) {
           if (length(q)>=3L && q[[1L]] == "weighted.mean") return(TRUE)  #3977
           # otherwise there must be three arguments
           length(q)==3L && length(q3 <- q[[3L]])==1L && noCall_noVars(q3) &&
-            ( (q1 %chin% c("head", "tail")) || ((q1 == "[" || (q1 == "[[" && eval(call('is.atomic', q[[2L]]), envir=x))) && eval(q3, parent.frame())>0L) )
+            ( (q1 %chin% c("head", "tail")) || ((q1 == "[" || (q1 == "[[" && eval(call('is.atomic', q[[2L]]), envir=x))) && eval(q3, parent.frame(2L))>0L) )
+                                                                                                                                  # ^ eval outside of [
         }
         if (jsub[[1L]]=="list") {
           GForce = TRUE
