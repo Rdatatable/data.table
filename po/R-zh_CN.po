@@ -184,7 +184,7 @@ msgstr "或许你想用的是 %s？"
 msgid ""
 "RHS has length() %d; expecting length 2. %sThe first element should be the "
 "lower bound(s); the second element should be the upper bound(s)."
-msgstr ""
+msgstr "<needs translation>"
 
 #: bmerge.R:48 bmerge.R:49
 #, c-format
@@ -265,7 +265,7 @@ msgstr "因为没有提供 j= ，所以忽略 by/keyby"
 #: data.table.R:180
 #, c-format
 msgid "When by and keyby are both provided, keyby must be TRUE or FALSE"
-msgstr ""
+msgstr "<needs translation>"
 
 #: data.table.R:192
 #, c-format
@@ -459,7 +459,7 @@ msgid ""
 "wish to select rows where that column contains TRUE, or perhaps that column "
 "contains row numbers of itself to select, try DT[(col)], DT[DT$col], or "
 "DT[col==TRUE} is particularly clear and is optimized"
-msgstr ""
+msgstr "<needs translation>"
 
 #: data.table.R:422
 #, c-format
@@ -527,7 +527,7 @@ msgstr "。期望布尔类型，整型或浮点型。"
 msgid ""
 "internal error: notjoin and which=NA (non-matches), huh? please provide "
 "reproducible example to issue tracker"
-msgstr ""
+msgstr "<needs translation>"
 
 #: data.table.R:623
 #, fuzzy, c-format
@@ -548,7 +548,7 @@ msgstr ""
 msgid ""
 "Please use nomatch=NULL instead of nomatch=0; see news item 5 in v1.12.0 "
 "(Jan 2019)"
-msgstr ""
+msgstr "<needs translation>"
 
 #: data.table.R:639
 #, c-format
@@ -607,7 +607,7 @@ msgstr "当 with=FALSE，参数 j 必须为布尔型/字符型/整型之一，�
 msgid ""
 "'by' contains .I but only the following are currently supported: by=.I, by=."
 "(.I), by=c(.I), by=list(.I)"
-msgstr ""
+msgstr "<needs translation>"
 
 #: data.table.R:795
 #, c-format
@@ -633,7 +633,7 @@ msgstr ""
 
 #: data.table.R:812
 msgid "At least one entry of by is empty"
-msgstr ""
+msgstr "<needs translation>"
 
 #: data.table.R:853
 #, c-format
@@ -670,7 +670,7 @@ msgid ""
 "https://github.com/Rdatatable/data.table/issues/1597. As a workaround, "
 "consider converting the column to a supported type, e.g. by=sapply(list_col, "
 "toString), whilst taking care to maintain distinctness in the process."
-msgstr ""
+msgstr "<needs translation>"
 
 #: data.table.R:906
 #, c-format
@@ -698,7 +698,7 @@ msgid ""
 "j may not evaluate to the same number of columns for each group; if you're "
 "sure this warning is in error, please put the branching logic outside of "
 "[ for efficiency"
-msgstr ""
+msgstr "<needs translation>"
 
 #: data.table.R:967
 #, c-format
@@ -709,7 +709,7 @@ msgid ""
 "controlled by a function argument), please (1) pull this branch out of the "
 "call; (2) explicitly provide missing defaults for each branch in all cases; "
 "or (3) use the same name for each branch and re-name it in a follow-up call."
-msgstr ""
+msgstr "<needs translation>"
 
 #: data.table.R:1030
 #, c-format
@@ -729,7 +729,7 @@ msgstr ".SDcols 的如下位置为缺失值：%s"
 #: data.table.R:1038
 #, c-format
 msgid ".SDcols is a logical vector length %d but there are %d columns"
-msgstr ""
+msgstr "<needs translation>"
 
 #: data.table.R:1044
 #, c-format
@@ -877,7 +877,7 @@ msgid ""
 "is not found. If you intended to select columns using a variable in calling "
 "scope, please try DT[, ..%1$s]. The .. prefix conveys one-level-up similar "
 "to a file system path."
-msgstr ""
+msgstr "<needs translation>"
 
 #: data.table.R:1419
 #, c-format
@@ -1005,7 +1005,7 @@ msgstr "length(rownames.value)==%d 但应该是 nrow(x)==%d"
 #, c-format
 msgid ""
 "Internal error: as.matrix.data.table length(X)==%d but a dimension is zero"
-msgstr ""
+msgstr "<needs translation>"
 
 #: data.table.R:2152
 #, c-format
@@ -1230,7 +1230,7 @@ msgstr "提供 before= 或 after= ，但两者不能同时存在"
 #: data.table.R:2699
 #, c-format
 msgid "before=/after= accept a single column name or number, not more than one"
-msgstr ""
+msgstr "<needs translation>"
 
 #: data.table.R:2754
 #, c-format
@@ -1464,7 +1464,7 @@ msgid ""
 "data.table, with setDT(%3$s) or as.data.table(%3$s). If you intend to use a "
 "method from reshape2, try installing that package first, but do note that "
 "reshape2 is superseded and is no longer actively developed."
-msgstr ""
+msgstr "<needs translation>"
 
 #: fcast.R:21
 #, fuzzy, c-format
@@ -1541,7 +1541,7 @@ msgid ""
 "be used to fill any missing combinations, and therefore must be length=1. "
 "Either override by setting the 'fill' argument explicitly or modify your "
 "function to handle this case appropriately."
-msgstr ""
+msgstr "<needs translation>"
 
 #: fcast.R:222
 #, c-format
@@ -1585,33 +1585,33 @@ msgstr "列不存在"
 msgid ""
 "each ... argument to measure must be either a symbol without argument name, "
 "or a function with argument name, problems: %s"
-msgstr ""
+msgstr "<needs translation>"
 
 #: fmelt.R:54
 #, c-format
 msgid ""
 "group names specified in ... conflict with measure argument names; please "
 "fix by changing group names: %s"
-msgstr ""
+msgstr "<needs translation>"
 
 #: fmelt.R:60
 #, c-format
 msgid ""
 "each ... argument to measure must be a function with at least one argument, "
 "problem: %s"
-msgstr ""
+msgstr "<needs translation>"
 
 #: fmelt.R:74
 #, c-format
 msgid ""
 "both sep and pattern arguments used; must use either sep or pattern (not "
 "both)"
-msgstr ""
+msgstr "<needs translation>"
 
 #: fmelt.R:77
 #, c-format
 msgid "multiple.keyword must be a character string with nchar>0"
-msgstr ""
+msgstr "<needs translation>"
 
 #: fmelt.R:80
 #, fuzzy, c-format
@@ -1623,17 +1623,17 @@ msgstr "'by' 参数必须是一个字符向量，向量的元素是列名，用�
 #: fmelt.R:88
 #, c-format
 msgid "in measurev, %s must be named, problems: %s"
-msgstr ""
+msgstr "<needs translation>"
 
 #: fmelt.R:94
 #, c-format
 msgid "%s should be uniquely named, problems: %s"
-msgstr ""
+msgstr "<needs translation>"
 
 #: fmelt.R:99
 #, c-format
 msgid "number of %s =%d must be same as %s =%d"
-msgstr ""
+msgstr "<needs translation>"
 
 #: fmelt.R:106
 #, fuzzy, c-format
@@ -1646,13 +1646,13 @@ msgstr "但必须是字符."
 msgid ""
 "pattern did not match any cols, so nothing would be melted; fix by changing "
 "pattern"
-msgstr ""
+msgstr "<needs translation>"
 
 #: fmelt.R:115
 #, c-format
 msgid ""
 "pattern must contain at least one capture group (parenthesized sub-pattern)"
-msgstr ""
+msgstr "<needs translation>"
 
 #: fmelt.R:123
 #, fuzzy, c-format
@@ -1667,51 +1667,51 @@ msgid ""
 "means that all columns would be melted; to fix please either specify melt on "
 "all columns directly without using measure, or use a different sep/pattern "
 "specification"
-msgstr ""
+msgstr "<needs translation>"
 
 #: fmelt.R:138
 #, c-format
 msgid ""
 "number of unique column IDs =%d is less than number of melted columns =%d; "
 "fix by changing pattern/sep"
-msgstr ""
+msgstr "<needs translation>"
 
 #: fmelt.R:148
 #, c-format
 msgid ""
 "in the measurev fun.list, each non-NULL element must be a function with at "
 "least one argument, problem: %s"
-msgstr ""
+msgstr "<needs translation>"
 
 #: fmelt.R:152
 #, c-format
 msgid ""
 "each conversion function must return an atomic vector with same length as "
 "its first argument, problem: %s"
-msgstr ""
+msgstr "<needs translation>"
 
 #: fmelt.R:155
 #, c-format
 msgid "%s conversion function returned vector of all NA"
-msgstr ""
+msgstr "<needs translation>"
 
 #: fmelt.R:161
 #, c-format
 msgid ""
 "number of unique groups after applying type conversion functions less than "
 "number of groups, change type conversion"
-msgstr ""
+msgstr "<needs translation>"
 
 #: fmelt.R:166
 #, c-format
 msgid ""
 "%s column class=%s after applying conversion function, but must be character"
-msgstr ""
+msgstr "<needs translation>"
 
 #: fmelt.R:170
 #, c-format
 msgid "%s is the only group; fix by creating at least one more group"
-msgstr ""
+msgstr "<needs translation>"
 
 #: fmelt.R:193
 #, c-format
@@ -1723,7 +1723,7 @@ msgstr "'data' 必须是一个 data.table"
 msgid ""
 "'value.name' provided in both 'measure.vars' and 'value.name argument'; "
 "value provided in 'measure.vars' is given precedence."
-msgstr ""
+msgstr "<needs translation>"
 
 #: fmelt.R:215
 #, c-format
@@ -1947,14 +1947,14 @@ msgstr "x是一个list, 'cols'不能为0长度"
 msgid ""
 "Input column '..na_prefix..' conflicts with data.table internal usage; "
 "please rename"
-msgstr ""
+msgstr "<needs translation>"
 
 #: frank.R:46
 #, c-format
 msgid ""
 "Input column '..stats_runif..' conflicts with data.table internal usage; "
 "please rename"
-msgstr ""
+msgstr "<needs translation>"
 
 #: fread.R:10
 #, c-format
@@ -2036,7 +2036,7 @@ msgstr ""
 msgid ""
 "URL requires download.file functionalities from R >=3.2.2. You can still "
 "manually download the file and fread the downloaded file."
-msgstr ""
+msgstr "<needs translation>"
 
 #: fread.R:91
 #, c-format
@@ -2057,7 +2057,7 @@ msgstr "文件 '%s' 的大小为0. 返回一个NULL %s."
 #, c-format
 msgid ""
 "Compressed files containing more than 1 file are currently not supported."
-msgstr ""
+msgstr "<needs translation>"
 
 #: fread.R:119
 #, c-format
@@ -2103,7 +2103,7 @@ msgstr ""
 #: fread.R:152
 #, c-format
 msgid "na.strings[%d]==\"%s\" consists only of whitespace, ignoring"
-msgstr ""
+msgstr "<needs translation>"
 
 #: fread.R:155
 #, c-format
@@ -2148,7 +2148,7 @@ msgid ""
 "as expected -- currently, reading will proceed to search for 'skip' from the "
 "beginning of the file, NOT from the end of the metadata; please file an "
 "issue on GitHub if you'd like to see more intuitive behavior supported."
-msgstr ""
+msgstr "<needs translation>"
 
 #: fread.R:181
 #, c-format
@@ -2156,7 +2156,7 @@ msgid ""
 "Encountered <%s%s> at the first unskipped line (%d), which does not "
 "constitute the start to a valid YAML header (expecting something matching "
 "regex \"%s\"); please check your input and try again."
-msgstr ""
+msgstr "<needs translation>"
 
 #: fread.R:193
 #, fuzzy, c-format
@@ -2191,7 +2191,7 @@ msgid ""
 "input was an intentional override and will ignore the type(s) implied by the "
 "YAML header; please exclude the column(s) from colClasses if this was "
 "unintentional."
-msgstr ""
+msgstr "<needs translation>"
 
 #: fread.R:255
 #, c-format
@@ -2220,7 +2220,7 @@ msgid ""
 "%s:\n"
 "\t%s\n"
 "so the column has been left as type '%s'"
-msgstr ""
+msgstr "<needs translation>"
 
 #: fread.R:340
 #, c-format
@@ -2266,7 +2266,7 @@ msgid ""
 "logicalAsInt has been renamed logical01 for consistency with fread. It works "
 "fine for now but please change to logical01 at your convenience so we can "
 "remove logicalAsInt in future."
-msgstr ""
+msgstr "<needs translation>"
 
 #: fwrite.R:40
 #, c-format
@@ -2320,7 +2320,7 @@ msgstr "'id' 参数必须是一个逻辑标量。"
 #: groupingsets.R:31
 #, c-format
 msgid "Argument 'j' is required"
-msgstr ""
+msgstr "<needs translation>"
 
 #: groupingsets.R:49
 #, c-format
@@ -2477,12 +2477,12 @@ msgstr "`by`中的列名必须是x和y的有效列"
 #: merge.R:61
 #, c-format
 msgid "Unknown argument '%s' has been passed."
-msgstr ""
+msgstr "<needs translation>"
 
 #: merge.R:64
 #, c-format
 msgid "Passed %d unknown and unnamed arguments."
-msgstr ""
+msgstr "<needs translation>"
 
 #: merge.R:128
 #, c-format
@@ -2493,12 +2493,12 @@ msgstr "列名 %s 在结果中是重复的"
 #, c-format
 msgid ""
 "data.table %s IN DEVELOPMENT built %s%s using %d threads (see ?getDTthreads)."
-msgstr ""
+msgstr "<needs translation>"
 
 #: onAttach.R:25
 #, c-format
 msgid "data.table %s using %d threads (see ?getDTthreads)."
-msgstr ""
+msgstr "<needs translation>"
 
 #: onAttach.R:26
 #, c-format
@@ -2590,14 +2590,14 @@ msgid ""
 "table's dependency from 8 year old R 3.1.0 (Apr 2014) to 5 year old R 3.4.0 "
 "(Apr 2017).\n"
 "**********"
-msgstr ""
+msgstr "<needs translation>"
 
 #: onLoad.R:9
 #, c-format
 msgid ""
 "Option 'datatable.nomatch' is defined but is now ignored. Please see note 11 "
 "in v1.12.4 NEWS (Oct 2019), and note 14 in v1.14.2."
-msgstr ""
+msgstr "<needs translation>"
 
 #: onLoad.R:26
 #, c-format
@@ -2636,7 +2636,7 @@ msgid ""
 "Option 'datatable.CJ.names' no longer has any effect, as promised for 4 "
 "years. It is now ignored. Manually name `...` entries as needed if you still "
 "prefer the old behavior."
-msgstr ""
+msgstr "<needs translation>"
 
 #: onLoad.R:100
 #, c-format
@@ -2713,17 +2713,17 @@ msgstr "'x' 必须是一个 list"
 msgid ""
 "Character objects provided in the input are not scalar objects, if you need "
 "them as character vector rather than a name, then wrap each into 'I' call: %s"
-msgstr ""
+msgstr "<needs translation>"
 
 #: programming.R:50
 #, c-format
 msgid "'env' must not be missing"
-msgstr ""
+msgstr "<needs translation>"
 
 #: programming.R:56
 #, c-format
 msgid "'env' must be a list or an environment"
-msgstr ""
+msgstr "<needs translation>"
 
 #: programming.R:63
 #, c-format
@@ -2733,7 +2733,7 @@ msgstr "参数 'env' 没有名"
 #: programming.R:65
 #, c-format
 msgid "'env' argument has zero char names"
-msgstr ""
+msgstr "<needs translation>"
 
 #: programming.R:67
 #, c-format
@@ -3014,17 +3014,17 @@ msgstr "内部错误：ncol(current)==ncol(target) 之前已经检查"
 #: setops.R:159 setops.R:170
 #, c-format
 msgid "Datasets have different %s. 'target': %s. 'current': %s."
-msgstr ""
+msgstr "<needs translation>"
 
 #: setops.R:161 setops.R:162
 #, c-format
 msgid "has no key"
-msgstr ""
+msgstr "<needs translation>"
 
 #: setops.R:172 setops.R:173
 #, c-format
 msgid "has no index"
-msgstr ""
+msgstr "<needs translation>"
 
 #: setops.R:190
 #, c-format
@@ -3070,11 +3070,11 @@ msgstr "内部错误：此时不匹配的因子类型应已被发现"
 
 #: shift.R:3
 msgid "Provided argument fill="
-msgstr ""
+msgstr "<needs translation>"
 
 #: shift.R:3
 msgid "will be ignored since type='shift'."
-msgstr ""
+msgstr "<needs translation>"
 
 #: tables.R:46
 #, c-format
@@ -3102,14 +3102,14 @@ msgstr "%3$s 中 %1$s 也 %2$s 不存在"
 
 #: test.data.table.R:114
 msgid "object '%s' not found"
-msgstr ""
+msgstr "<needs translation>"
 
 #: test.data.table.R:138
 #, c-format
 msgid ""
 "memtest intended for Linux. Step through data.table:::rss() to see what went "
 "wrong."
-msgstr ""
+msgstr "<needs translation>"
 
 #: test.data.table.R:176
 #, fuzzy, c-format
@@ -3164,7 +3164,7 @@ msgstr "'keep'所含整数值应在 %d 和 %d 间"
 #: transpose.R:51
 #, c-format
 msgid "The argument 'type.convert' does not support empty list."
-msgstr ""
+msgstr "<needs translation>"
 
 #: transpose.R:57
 #, c-format
@@ -3174,7 +3174,7 @@ msgid ""
 "element is not allowed unless all elements are functions with length equal "
 "to %d (the length of the transpose list or 'keep' argument if it is "
 "specified)."
-msgstr ""
+msgstr "<needs translation>"
 
 #: transpose.R:66
 #, c-format
@@ -3182,7 +3182,7 @@ msgid ""
 "When the argument 'type.convert' contains transpose list indices, it should "
 "be a named list of non-missing integer values (with no duplicate) except the "
 "last element that should be unnamed if it is a function."
-msgstr ""
+msgstr "<needs translation>"
 
 #: transpose.R:68
 #, c-format
@@ -3191,7 +3191,7 @@ msgid ""
 "should be integer values contained in the argument 'keep' (if it is "
 "specified) or be between %d and %d (if it is not). But '%s' is/are not "
 "contained in '%s'."
-msgstr ""
+msgstr "<needs translation>"
 
 #: transpose.R:74
 #, c-format
@@ -3199,7 +3199,7 @@ msgid ""
 "In the argument 'type.convert', '%s' was ignored because all elements in the "
 "transpose list or elements corrisponding to indices specified in the 'keep' "
 "argument have already been converted."
-msgstr ""
+msgstr "<needs translation>"
 
 #: transpose.R:83
 #, c-format
@@ -3207,7 +3207,7 @@ msgid ""
 "The argument 'type.convert' should be TRUE/FALSE, a function, a list of "
 "functions, or a named list of pairs 'fun=indices' with optionally one "
 "unnamed element (a function) but an object of type '%s' was provided."
-msgstr ""
+msgstr "<needs translation>"
 
 #: transpose.R:88
 #, c-format
@@ -3231,7 +3231,7 @@ msgstr "参数 'nan' 必须为 NA 或 NaN"
 
 #: utils.R:32
 msgid "Internal error: use endsWithAny instead of base::endsWith"
-msgstr ""
+msgstr "<needs translation>"
 
 #: utils.R:43 utils.R:52
 #, c-format

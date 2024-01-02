@@ -477,7 +477,7 @@ msgstr ""
 #: assign.c:690
 #, c-format
 msgid "target vector"
-msgstr ""
+msgstr "<needs translation>"
 
 #: assign.c:690
 #, fuzzy, c-format
@@ -1485,20 +1485,20 @@ msgstr "'variable.name' 必须是长度1的字符/整数向量。"
 msgid ""
 "variable_table attribute of measure.vars should be a data table with at "
 "least one column"
-msgstr ""
+msgstr "<needs translation>"
 
 #: fmelt.c:373
 #, c-format
 msgid ""
 "variable_table attribute of measure.vars should be a data table with same "
 "number of rows as max length of measure.vars vectors =%d"
-msgstr ""
+msgstr "<needs translation>"
 
 #: fmelt.c:377
 msgid ""
 "variable_table attribute of measure.vars should be either NULL or a data "
 "table"
-msgstr ""
+msgstr "<needs translation>"
 
 #: fmelt.c:394
 msgid ""
@@ -2735,11 +2735,11 @@ msgstr "内部错误：coalesce.c 中 'inplaceArg' 参数必须为 TRUE 或 FALS
 #: freadR.c:92
 #, c-format
 msgid "freadR.c has been passed a filename: %s\n"
-msgstr ""
+msgstr "<needs translation>"
 
 #: freadR.c:96
 msgid "freadR.c has been passed the data as text input (not a filename)\n"
-msgstr ""
+msgstr "<needs translation>"
 
 #: freadR.c:102
 msgid ""
@@ -3250,7 +3250,7 @@ msgstr "%zu 通过排除0和1的counts\n"
 msgid ""
 "OpenMP %d did not assign threads to iterations monotonically. Please search "
 "Stack Overflow for this message."
-msgstr ""
+msgstr "<needs translation>"
 
 #: fsort.c:317
 msgid "Unable to allocate working memory"
@@ -3331,7 +3331,7 @@ msgid ""
 "Compression in fwrite uses zlib library. Its header files were not found at "
 "the time data.table was compiled. To enable fwrite compression, please "
 "reinstall data.table and study the output for further guidance."
-msgstr ""
+msgstr "<needs translation>"
 
 #: fwrite.c:704
 #, c-format
@@ -3384,7 +3384,7 @@ msgstr ""
 #: fwrite.c:814
 #, c-format
 msgid "zbuffSize=%d returned from deflateBound\n"
-msgstr ""
+msgstr "<needs translation>"
 
 #: fwrite.c:823
 #, c-format
@@ -3476,7 +3476,7 @@ msgstr "列%d的类型是'%s' - 尚未在fwrite中实施"
 msgid ""
 "input has specific integer rownames but their length (%<PRId64>) != nrow "
 "(%<PRId64>)"
-msgstr ""
+msgstr "<needs translation>"
 
 #: fwriteR.c:282
 msgid ""
@@ -3671,7 +3671,7 @@ msgstr "内部错误：chin 和 chmatchdup 不能同时为真"
 #: gsumm.c:965
 #, c-format
 msgid "Internal error: unanticipated case in gfirstlast first=%d w=%d headw=%d"
-msgstr ""
+msgstr "<needs translation>"
 
 #: gsumm.c:979
 #, fuzzy, c-format
@@ -3874,7 +3874,7 @@ msgstr "指针是%zu个字节，大于8。我们尚未在大于64位的任何体
 
 #: init.c:177
 msgid "... failed. Please forward this message to maintainer('data.table')."
-msgstr ""
+msgstr "<needs translation>"
 
 #: init.c:178
 #, c-format
@@ -4041,7 +4041,7 @@ msgstr "安装的data.table并不是获得OpenMP支持的编译\n"
 #: openmp-utils.c:84
 #, c-format
 msgid "  OpenMP version (_OPENMP)       %d\n"
-msgstr ""
+msgstr "<needs translation>"
 
 #: openmp-utils.c:89
 #, c-format
@@ -4129,7 +4129,7 @@ msgid ""
 "be 'symbol' type when substituting name of the call argument, functions 'as."
 "name' and 'I' can be used to work out proper substitution, see ?substitute2 "
 "examples."
-msgstr ""
+msgstr "<needs translation>"
 
 #: rbindlist.c:8
 msgid "fill= should be TRUE or FALSE"
@@ -4409,7 +4409,7 @@ msgstr "内部错误: setcolorder读取到的dt有 %d 列但是有 %d 个名字�
 msgid ""
 "shift input must not be matrix or array, consider wrapping it into data."
 "table() or c()"
-msgstr ""
+msgstr "<needs translation>"
 
 #: shift.c:17
 #, c-format
@@ -4694,26 +4694,26 @@ msgstr "x不是一个逻辑向量"
 
 #: utils.c:360
 msgid "'x' must not be matrix or array"
-msgstr ""
+msgstr "<needs translation>"
 
 #: utils.c:362
 msgid "input must not be matrix or array"
-msgstr ""
+msgstr "<needs translation>"
 
 #: utils.c:366
 #, c-format
 msgid "copy=false and input already of expected type and class %s[%s]\n"
-msgstr ""
+msgstr "<needs translation>"
 
 #: utils.c:373
 #, c-format
 msgid "Coercing %s[%s] into %s[%s]\n"
-msgstr ""
+msgstr "<needs translation>"
 
 #: utils.c:389
 #, c-format
 msgid "zlib header files were not found when data.table was compiled"
-msgstr ""
+msgstr "<needs translation>"
 
 #: vecseq.c:14
 msgid "len must be an integer vector"
