@@ -3,7 +3,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
            sep2=c("","|",""), eol=if (.Platform$OS.type=="windows") "\r\n" else "\n",
            na="", dec=".", row.names=FALSE, col.names=TRUE,
            qmethod=c("double","escape"),
-           logical01=getOption("datatable.logical01", TRUE),
+           logical01=getOption("datatable.logical01", FALSE), # due to change to TRUE; see NEWS
            logicalAsInt=logical01,
            scipen=getOption('scipen', 0L),
            dateTimeAs = c("ISO","squash","epoch","write.csv"),
@@ -27,7 +27,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   if (!missing(logical01) && !missing(logicalAsInt))
     stopf("logicalAsInt has been renamed logical01. Use logical01 only, not both.")
   if (!missing(logicalAsInt)) {
-    # TODO: warningf("logicalAsInt has been renamed logical01 for consistency with fread. It will work fine but please change to logical01 at your convenience so we can remove logicalAsInt in future.")
+    warningf("logicalAsInt has been renamed logical01 for consistency with fread. It works fine for now but please change to logical01 at your convenience so we can remove logicalAsInt in future.")
     logical01 = logicalAsInt
     logicalAsInt=NULL
   }

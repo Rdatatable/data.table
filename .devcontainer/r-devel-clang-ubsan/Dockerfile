@@ -16,7 +16,7 @@ read.dcf("DESCRIPTION", c("Imports", "Suggests")) |>      \
 
 # setup cc()
 WORKDIR /root
-COPY .devcontainer/r-devel-clang-ubsan/.Rprofile .
+COPY .devcontainer/.Rprofile .
 
 # set ubsan flags
 WORKDIR .R

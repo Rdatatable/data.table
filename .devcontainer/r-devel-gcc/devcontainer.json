@@ -1,4 +1,0 @@
-{
-  "build": { "dockerfile": "Dockerfile", "context": "../.." },
-  "customizations": { "vscode": { "extensions": [ "REditorSupport.r" ] } }
-}

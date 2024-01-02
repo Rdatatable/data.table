@@ -103,7 +103,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   year = data.table::year               # lubridate
   yearmon = data.table::yearmon         # zoo
   yearqtr = data.table::yearqtr         # zoo
-  
+
   rm_all = function(env=parent.frame()) {
     tt = setdiff(ls(envir=env), .do_not_rm)
     rm(list=tt, envir=env)
@@ -1090,6 +1090,7 @@ test(351.2, DT[, c("a","b"):=13:15, verbose=TRUE],       ans,
             notOutput="revised")
 test(352.1, DT[,letters[1:4]:=list(1L,NULL)], error="Supplied 4 columns to be assigned 2 items. Please see NEWS for v1.12.2")
 test(352.2, DT[,letters[1:4]:=list(1L,NULL,2L,NULL)], data.table(a=c(1L,1L,1L),c=c(2L,2L,2L)))
+test(352.3, DT[,letters[1:2]:=list(1L,NULL,2L,NULL)], error="Supplied 2 columns to be assigned 4 items. Please see NEWS for v1.12.2")
 
 # Test assigning new levels into factor columns
 DT = data.table(f=factor(c("a","b")),x=1:4)
@@ -1591,11 +1592,9 @@ test(505, DT[J(a=1,b=6),sum(i.b*b),by=.EACHI]$V1, 24)  # 24 now 'double' because
 
 # Test := after a key<-
 DT = data.table(a=3:1,b=4:6)
-test(506, key(DT)<-"a", "a", warning="deprecated")
-test(508, DT, data.table(a=1:3,b=6:4,key="a"))
-test(509, DT[,b:=10L], data.table(a=1:3,b=10L,key="a"))
-test(510, DT[,c:=11L], data.table(a=1:3,b=10L,c=11L,key="a"),     # no warning between 1.8.3 and 1.12.2 due to (now removed) setmutable and SET_NAMED in setalloccol, #3729
-          warning="Invalid .internal.selfref detected and fixed") # but the warning makes sense after the (deprecated) key(DT)<- above, so this warns again from 1.12.4
+test(506, key(DT)<-"a", error="deprecated")
+
+# tests 508, 509, 510 related to follow-up operations after key<-, which are now irrelevant
 
 # Test new functons chmatch and %chin%
 y=letters
@@ -1921,6 +1920,11 @@ test(631.5, DT3, data.table(a=c(2), total=c(5), key="a"))
 # .. nrow(y)=1, i subset y with 1 and match with x
 test(631.6, merge(DT1,DT4,all.y=TRUE), data.table(a=c(3),total.x=c(1),total.y=c(1),key="a"))
 test(631.7, DT4, data.table(a=c(3), total=c(1), key="a"))
+# merge columns with different attributes #5309
+x = data.table(a=1L, b=as.IDate(16801))
+y = data.table(a=2L, b=NA)
+test(631.8, merge(x,y,by="a",all=TRUE), data.table(a=c(1L,2L), b.x=as.IDate(c(16801,NA)), b.y=NA, key="a"))
+test(631.9, merge(y,x,by="a",all=TRUE), data.table(a=c(1L,2L), b.x=NA, b.y=as.IDate(c(16801,NA)), key="a"))
 
 test(632, merge(DT1,DT2,all=TRUE), data.table(a=c(1,2,3,4,5),total.x=c(2,NA,1,3,1),total.y=c(NA,5,1,NA,2),key="a"))
 test(632.1, merge(DT1,DT2,all=TRUE), setkey(adt(merge(adf(DT1),adf(DT2),by="a",all=TRUE)),a))
@@ -2950,12 +2954,8 @@ test(995, DT[CJ(c(5,3), c(5,1), sorted=FALSE)], OUT)
 xx <- factor(letters[1:2], ordered=TRUE)
 yy <- sample(2L)
 yy_sort = base::sort.int(yy)
-old = options(datatable.CJ.names=FALSE)
-test(996.01, CJ(xx, yy), setkey(data.table(rep(xx, each=2L), rep(yy_sort, 2L))))
-test(996.02, CJ(a = xx, yy), setkey(data.table(a = rep(xx, each=2L), V2 = rep(yy_sort, 2L))))
-options(datatable.CJ.names=TRUE)
+# 996.01, 996.02 tested the now-ineffectual datatable.CJ.names option
 test(996.03, CJ(xx, yy), setkey(data.table(xx = rep(xx, each=2L), yy = rep(yy_sort, 2L))))
-options(old)
 
 # #3597 -- CJ properly informs sorted can't apply to list input
 test(996.04, CJ(list(1:2, 3L)), error = "non-atomic, which can't be sorted")
@@ -3886,7 +3886,7 @@ test(1133.75, DT[, new := .N, by=x], data.table(x=INT(1,1,1,1,1,2,2), new=INT(5,
 # on a new column with warning on 2nd assign
 DT[,new:=NULL]
 test(1133.8, DT[, new := if (.GRP==1L) 7L else 3.4, by=x], data.table(x=INT(1,1,1,1,1,2,2), new=INT(7,7,7,7,7,3,3)),
-             warning="Group 2 column 'new': 3.4.*double.*at RHS position 1 truncated.*precision lost.*integer")
+             warning="Group 2 column 'new': 3.4.*double.*at RHS position 1.*truncated.*precision lost.*integer")
 
 # Fix for FR #2496 - catch `{` in `:=` expression in `j`:
 DT <- data.table(x=c("A", "A", "B", "B"), val =1:4)
@@ -5071,7 +5071,7 @@ dt <- data.table(a=1:3, b=c(7,8,9), c=c(TRUE, NA, FALSE), d=as.list(4:6), e=c("a
 
 test(1294.01, dt[, a := 1]$a, rep(1L, 3L))
 test(1294.02, dt[, a := 1.5]$a, rep(1L, 3L),
-              warning="1.5.*double.*position 1 truncated.*integer.*column 1 named 'a'")
+              warning="1.5.*double.*position 1.*truncated.*integer.*column 1 named 'a'")
 test(1294.03, dt[, a := NA]$a, rep(NA_integer_, 3L))
 test(1294.04, dt[, a := "a"]$a, rep(NA_integer_, 3L),
               warning=c("Coercing 'character' RHS to 'integer'.*column 1 named 'a'",
@@ -7317,12 +7317,10 @@ test(1524, ans1, ans2)
 x = c(1, 2, 1)
 y = c(5, 8, 8, 4)
 w = c(10, 12, 12, 13)  # already sorted but has dups; more efficient case to cover
-options(datatable.CJ.names=FALSE)
-test(1525.1, CJ(x, y, unique=TRUE), CJ(V1=c(1,2), V2=c(4,5,8)))
-test(1525.2, CJ(x, z=y, unique=TRUE), ans<-data.table(V1=rep(c(1,2), each=3), z=c(4,5,8), key="V1,z")) # naming of one but not both, too
-options(datatable.CJ.names=TRUE)
+# tests 1525.1, 1525.2 tested the now-ineffectual datatable.CJ.names option.
+ans<-data.table(V1=rep(c(1,2), each=3), z=c(4,5,8), key="V1,z")
 test(1525.3, CJ(x, y, unique=TRUE), CJ( x=c(1,2),  y=c(4,5,8)))
-test(1525.4, CJ(x, z=y, unique=TRUE), setnames(ans,c("x","z")))
+test(1525.4, CJ(x, z=y, unique=TRUE), setnames(copy(ans),c("x","z")))
 test(1525.5, CJ(x, w, unique=TRUE), data.table(x=(rep(c(1,2), each=3)), w=c(10,12,13), key="x,w"))
 
 # `key` argument fix for `setDT` when input is already a `data.table`,  #1169
@@ -7772,14 +7770,14 @@ read_table = function(str, ...) {
 test(1552.1, fread(str, na.strings="#N/A"), read_table(str, na.strings="#N/A"))
 test(1552.2, fread(str, na.strings=c("#N/A", "-999")), read_table(str, na.strings=c("#N/A", "-999")))
 test(1552.3, fread(str, na.strings=c("#N/A", "-999", "+1")), read_table(str, na.strings=c("#N/A", "-999", "+1")))
-test(1552.4, fread(str, na.strings=c("#N/A", "-999", "+1", "1"), logical01=FALSE), read_table(str, na.strings=c("#N/A", "-999", "+1", "1"))) # enabled by FR #2927
+test(1552.4, fread(str, na.strings=c("#N/A", "-999", "+1", "1")), read_table(str, na.strings=c("#N/A", "-999", "+1", "1"))) # enabled by FR #2927
 test(1552.5, fread(str, na.strings=c("#N/A", "-999", "FALSE")), error="NAstring <<FALSE>>.*boolean.*not permitted")
 test(1552.6, fread("A\n1.0\n2\n-", na.strings=c("-")), data.table(A=c(1.0, 2.0, NA)))
 test(1552.7, fread(str, na.strings=c("#N/A", "-999", "+1", "1"), logical01=TRUE),
   error="NAstring <<1>> and logical01=TRUE.*not permitted")
 str = "a,b,c\n0,1,2\n1,0,2"
-test(1552.8, fread(str, na.strings = "0", logical01=FALSE), data.table(a=c(NA,1L), b=c(1L,NA), c=c(2L,2L)))
-test(1552.9, fread(str, na.strings = c("0","1"), logical01=FALSE), data.table(a=c(NA,NA), b=c(NA,NA), c=c(2L,2L)))
+test(1552.8, fread(str, na.strings = "0"), data.table(a=c(NA,1L), b=c(1L,NA), c=c(2L,2L)))
+test(1552.9, fread(str, na.strings = c("0","1")), data.table(a=c(NA,NA), b=c(NA,NA), c=c(2L,2L)))
 
 # FR #1177: 'quote' option of 'print.data.table'
 DT1 <- data.table(s1=paste(" ",LETTERS[1:5],sep=""),s2=LETTERS[1:5])
@@ -9680,7 +9678,7 @@ nqjoin_test <- function(x, y, k=1L, test_no, mult="all") {
   gc()  # no longer needed but left in place just in case, no harm
 }
 
-dt1 = nq_fun(100L)  # 400 reduced to 100, #5517 
+dt1 = nq_fun(100L)  # 400 reduced to 100, #5517
 dt2 = nq_fun(50L)
 x = na.omit(dt1)
 y = na.omit(dt2)
@@ -10457,8 +10455,8 @@ d = tempfile("dir")
 test(1703.16, fread(text=c('a,b','1,2'), tmpdir=d),
      error=base_messages$cant_open_file, warning=base_messages$missing_file)
 dir.create(d)
-test(1703.17, fread(text=c('a,b','1,2'), tmpdir=d), data.table(a=TRUE, b=2L))
-test(1703.18, fread(text=c('a,b','1,2')), data.table(a=TRUE, b=2L))
+test(1703.17, fread(text=c('a,b','1,2'), tmpdir=d), data.table(a=1L,b=2L))
+test(1703.18, fread(text=c('a,b','1,2')), data.table(a=1L, b=2L))
 unlink(d)
 test(1703.19, fread(text="a b c"), data.table(a=logical(), b=logical(), c=logical()))  # text= with no \n, #4689
 
@@ -10791,7 +10789,8 @@ test(1736.05, capture.output(fwrite(DT, sep='|', sep2=c("c(",",",")"), logical01
  "2|c(15,16,17,18)|c(1.2,2.3,3.4,3.14159265358979,-9)", "3|c(7)|c(foo,bar)", "4|c(9,10)|c(TRUE,TRUE,FALSE)"))
 test(1736.06, capture.output(fwrite(DT, sep='|', sep2=c("{",",","}"), logicalAsInt=TRUE)),
  c("A|B|C", "1|{1,2,3,4,5,6,7,8,9,10}|{s,t,u,v,w}",
- "2|{15,16,17,18}|{1.2,2.3,3.4,3.14159265358979,-9}", "3|{7}|{foo,bar}", "4|{9,10}|{1,1,0}"))
+ "2|{15,16,17,18}|{1.2,2.3,3.4,3.14159265358979,-9}", "3|{7}|{foo,bar}", "4|{9,10}|{1,1,0}"),
+ warning="logicalAsInt has been renamed logical01")
 DT = data.table(A=c("foo","ba|r","baz"))
 test(1736.07, capture.output(fwrite(DT,na="")), c("A","foo","ba|r","baz"))    # no list column so no need to quote
 test(1736.08, capture.output(fwrite(DT)), c("A","foo","ba|r","baz"))
@@ -10916,10 +10915,10 @@ test(1743.03, fread("a,b\n1,a", colClasses=c(NA, TRUE)), error="colClasses is.*l
 test(1743.04, fread("a,b\n1,a", colClasses=c("character", "factor")), data.table(a="1", b=factor("a")))
 
 # and the length-1 character case; #4237
-test(1743.041, fread("a,b\n1,a", colClasses=NA_character_), data.table(a=TRUE, b="a"))
-test(1743.042, fread("a,b\n1,a", colClasses=""), data.table(a=TRUE, b="a"))
-test(1743.043, fread("a\n1", colClasses=NA_character_), data.table(a=TRUE))
-test(1743.044, fread("a\n1", colClasses=""), data.table(a=TRUE))
+test(1743.041, fread("a,b\n1,a", colClasses=NA_character_), data.table(a=1L, b="a"))
+test(1743.042, fread("a,b\n1,a", colClasses=""), data.table(a=1L, b="a"))
+test(1743.043, fread("a\n1", colClasses=NA_character_), data.table(a=1L))
+test(1743.044, fread("a\n1", colClasses=""), data.table(a=1L))
 
 # Issue #1634: 'fread doesn't check colClasses to be valid type'
 # Currently using BioGenerics, which doesn't support USE.NAMES
@@ -13267,8 +13266,8 @@ test(1957.3, fread("A,B\na,b\nc,d\n", stringsAsFactors=TRUE, verbose=TRUE), data
 
 # misc. coverage tests in fread
 test(1958.01, fread('\U0001f64d', encoding = 'UTF-16'), error = "Argument 'encoding' must be")
-test(1958.02, fread('a,b\n1,2', nrows = NA_real_),      data.table(a=TRUE, b=2L))
-test(1958.03, fread('a,b\n1,2', nrows = -1),            data.table(a=TRUE, b=2L))
+test(1958.02, fread('a,b\n1,2', nrows = NA_real_),      data.table(a = 1L, b = 2L))
+test(1958.03, fread('a,b\n1,2', nrows = -1),            data.table(a = 1L, b = 2L))
 test(1958.04, fread('a,b\n1,2', key = 1),               error = 'must be a character vector naming columns')
 test(1958.05, fread("A,B,C\n1,2,3\n3,4,5\n0,0,0\n",   nrows=0),          data.table(A=integer(), B=integer(), C=integer()))  #2747
 test(1958.06, fread("A,B,C\n1,2,3\n3,4,5\n0,0,100\n", nrows=0, sep=','), data.table(A=integer(), B=integer(), C=integer()))
@@ -13277,12 +13276,12 @@ test(1958.08, fread('A,B,C,D\n"a,b",4,5\n"c,d",6,7,8\n', fill=TRUE), data.table(
 test(1958.09, fread("A,B,C\n1,2,3\n3,4,5\n0,0,0\n",   nrows=0L),          data.table(A=integer(), B=integer(), C=integer()))  # nrows=0 vs 0L, 4686
 test(1958.10, fread("A,B,C\n1,2,3\n3,4,5\n0,0,100\n", nrows=0L, sep=','), data.table(A=integer(), B=integer(), C=integer()))
 # nrows=0 should perform a full sample to get the empty column types right as documented, #4029
-test(1958.11, fread('A,B,C,D\n1,CHAR,"CHAR",3.1', nrows=0L), data.table(A=logical(), B=character(), C=character(), D=numeric()))
+test(1958.11, fread('A,B,C,D\n1,CHAR,"CHAR",3.1', nrows=0L), data.table(A=integer(), B=character(), C=character(), D=numeric()))
 # .. one different type in the middle of under 100
 txt = paste(c("A,B\n1,2\n", rep("3,4\n",48), "3,4.1\n", rep("5,6\n",48)), collapse="")
 test(1958.12, fread(text=txt, nrows=0L),          data.table(A=integer(), B=numeric()))
 test(1958.13, fread(text=txt, nrows=0L, skip=1L), data.table(V1=integer(), V2=numeric()))
-test(1958.14, fread(text=txt, nrows=1L),          data.table(A=TRUE, B=2L))  # B integer not numeric because sample is min(nrows,100) when nrows>=1
+test(1958.14, fread(text=txt, nrows=1L),          data.table(A=1L, B=2L))  # B integer not numeric because sample is min(nrows,100) when nrows>=1
 test(1958.15, fread(text=txt, nrows=1L, skip=1L), data.table(V1=1L, V2=2L))
 test(1958.16, fread(text=txt, nrows=2L),          data.table(A=c(1L,3L), B=c(2L,4L)))
 test(1958.17, fread(text=txt, nrows=2L, skip=1L), data.table(V1=c(1L,3L), V2=c(2L,4L)))
@@ -13298,16 +13297,22 @@ test(1958.19, fread(text=txt, nrows=0L, verbose=TRUE), data.table(A=integer(), B
 txt = paste(c("A,B\n1,2\n", rep("3,4\n",5100), "3,4.1\n", rep("5,6\n",4900)), collapse="")
 test(1958.20, fread(text=txt, nrows=0L, verbose=TRUE), data.table(A=integer(), B=integer()),
               output="Sampled 1049 rows.*at 11 jump points")
+# invalid head position for nrows=0 #5868
+# following example has to be big enough to trigger a jump and enough blanks so we get an invalid header position after a jump (at least n=599101 for following two cols)
+test(1958.21, fread(sprintf('%s%s\n', 'a,b', paste0('\n', sample(c('', '3'), 6e5L, TRUE), sample(c(',a',',b',',c'), 6e5L, TRUE), collapse="")), nrows=0L),
+  data.table(a=integer(), b=character()))
+test(1958.22, fread(sprintf('%s%s\n', 'a,b', paste0('\n', sample(c('', '3'), 6e5L, TRUE), sample(c(',a',',b',',c'), 6e5L, TRUE), collapse="")), nrows=0L, nThread=1L),
+  data.table(a=integer(), b=character()))
 
 # Skip should work with all types of newlines #3006
 eols = c("\n", "\r\n", "\r", "\n\r")
 for (i in 1:4) {
   eol = eols[i]
   src = paste(c("A", "B", "...", ",,,,,", "c1,c2,c3", "1,2,3"), collapse=eol)
-  test(1959 + (i*0.1), fread(text=src, skip=4), data.table(c1=TRUE, c2=2L, c3=3L))
+  test(1959 + (i*0.1), fread(text=src, skip=4), data.table(c1=1L, c2=2L, c3=3L))
 }
 test(1959.5, fread("A\n\nB\n\nC\n1\n", skip=2), data.table(B=c("", "C", "1")))
-test(1959.6, fread("A,B\r\r\nX,Y\r\r\nB,C\r\r\n1,2", skip=4), data.table(B=TRUE, C=2L))
+test(1959.6, fread("A,B\r\r\nX,Y\r\r\nB,C\r\r\n1,2", skip=4), data.table(B=1L, C=2L))
 
 # empty set with constant j, #3173
 DT = data.table(
@@ -14355,6 +14360,14 @@ test(2003.5, rbindlist(list(data.table(a=1:2), data.table(b=3:4, c=5:6)), fill=T
 # rbindlist segfault with fill=TRUE and usenames=FALSE #5444
 test(2003.6, rbindlist(list(list(1), list(2,3)), fill=TRUE, use.names=FALSE), data.table(c(1,2), c(NA, 3)))
 test(2003.7, rbindlist(list(list(1), list(2,factor(3))), fill=TRUE, use.names=FALSE), data.table(c(1,2), factor(c(NA, 3))))
+# rbind with different attributes #5309
+x=data.table(a=as.Date(NA))
+y=data.table(a=as.Date('2021-10-05'), b=as.POSIXct("2021-10-06 13:58:00 UTC"))
+ans=data.table(a=as.Date(c(NA_character_, '2021-10-05')), b=as.POSIXct(c(NA_character_, "2021-10-06 13:58:00 UTC")))
+test(2003.81, rbind(x, y, fill=TRUE, use.names=TRUE), ans)
+test(2003.82, rbind(y, x, fill=TRUE, use.names=TRUE), ans[2:1,])
+test(2003.83, rbind(x, y, fill=TRUE, use.names=FALSE), ans)
+test(2003.84, rbind(y, x, fill=TRUE, use.names=FALSE), ans[2:1,])
 
 # chmatch coverage for two different non-ascii encodings matching; issues mentioned in comments in chmatch.c #69 #2538 #111
 x1 = "fa\xE7ile"
@@ -14378,7 +14391,7 @@ DT[,foo:=factor(c("a","b","c"))]
 test(2005.05, DT[2, foo:=8i], error="Can't assign to column 'foo' (type 'factor') a value of type 'complex' (not character, factor, integer or numeric)")
 test(2005.06, DT[2, a:=9, verbose=TRUE], notOutput="Coerced")
 test(2005.07, DT[2, a:=NA, verbose=TRUE], notOutput="Coerced")
-test(2005.08, DT[2, a:=9.9]$a, INT(1,9,3), warning="9.9.*double.*position 1 truncated.*integer.*column 1 named 'a'")
+test(2005.08, DT[2, a:=9.9]$a, INT(1,9,3), warning="9.9.*double.*position 1.*truncated.*integer.*column 1 named 'a'")
 test(2005.09, set(DT, 1L, "c", expression(x+2)), error="type 'expression' cannot be coerced to 'raw'")
 test(2005.10, set(DT, 1L, "d", expression(x+2)), error="type 'expression' cannot be coerced to 'logical'")
 test(2005.11, set(DT, 1L, "e", expression(x+2)), error="type 'expression' cannot be coerced to 'double'")
@@ -14430,7 +14443,7 @@ test(2006.2, rbindlist(list(data.table(x = as.raw(1:2), y=as.raw(5:6)), data.tab
 if (test_bit64) {
   test(2007.1, rbindlist(list( list(a=as.integer64(1), b=3L),  list(a=2L, b=4L) )), data.table(a=as.integer64(1:2), b=3:4))
   test(2007.2, rbindlist(list( list(a=3.4, b=5L),  list(a=as.integer64(4), b=6L) )), data.table(a=as.integer64(3:4), b=5:6),
-               warning="Column 1 of item 1: 3.4.*double.*position 1 truncated.*precision lost.*when assigning.*integer64.*column 1 named 'a'")
+               warning="Column 1 of item 1: 3.4.*double.*position 1.*truncated.*precision lost.*when assigning.*integer64.*column 1 named 'a'")
   test(2007.3, rbindlist(list( list(a=3.0, b=5L),  list(a=as.integer64(4), b=6L) )), data.table(a=as.integer64(3:4), b=5:6))
   test(2007.4, rbindlist(list( list(b=5:6),  list(a=as.integer64(4), b=7L)), fill=TRUE), data.table(b=5:7, a=as.integer64(c(NA,NA,4))))  # tests writeNA of integer64
   test(2007.5, rbindlist(list( list(a=INT(1,NA,-2)),  list(a=as.integer64(c(3,NA))) )), data.table(a=as.integer64(c(1,NA,-2,3,NA))))   # int NAs combined with int64 NA
@@ -14532,9 +14545,9 @@ test(2013.3, DT[2], error="Column 2 ['b'] is length 4 but column 1 is length 3; 
 ## new fread keepLeadingZeros parameter in v1.12.2
 # leading zeros in both integer and float numbers are converted to character when keepLeadingZeros=TRUE
 test_data_single <- "0, 00, 01, 00010, 002.01\n"
-test(2014.1, fread(test_data_single), data.table(FALSE, 0L, 1L, 10L, 2.01))
-test(2014.2, fread(test_data_single, keepLeadingZeros = FALSE), data.table(FALSE, 0L, 1L, 10L, 2.01))
-test(2014.3, fread(test_data_single, keepLeadingZeros = TRUE),  data.table(FALSE, "00","01","00010","002.01"))
+test(2014.1, fread(test_data_single), data.table(0L, 0L, 1L, 10L, 2.01))
+test(2014.2, fread(test_data_single, keepLeadingZeros = FALSE), data.table(0L, 0L, 1L, 10L, 2.01))
+test(2014.3, fread(test_data_single, keepLeadingZeros = TRUE),  data.table(0L, "00","01","00010","002.01"))
 # converts whole column to character when keepLeadingZeros = TRUE and at least 1 value contains a leading zero
 test_data_mult <- paste0(c(sample(1:100),"0010",sample(1:100)), collapse="\n")
 test(2014.4, class(fread(test_data_mult, keepLeadingZeros = TRUE)[[1]]), "character")
@@ -18017,7 +18030,7 @@ test(2233.34, copy(DT)[, same_value:=value[1],    by=.(by1, by2), verbose=TRUE],
 test(2233.35, copy(DT)[, same_value:=value[1],    by=.(by2, by1), verbose=TRUE], ans,                                output=out)
 test(2233.36, copy(DT)[, same_value:=value[1], keyby=.(by2, by1), verbose=TRUE], setkey(ans,by2,by1),                output=out)
 # similar to #5307 using integer
-DT = data.table(A=INT(2,1,2,1), B=6:3, v=11:14)                                                
+DT = data.table(A=INT(2,1,2,1), B=6:3, v=11:14)
 test(2233.37, copy(DT)[, val:=v[1L],    by=.(A,B), verbose=TRUE], copy(DT)[, val:=11:14], output=out)
 test(2233.38, copy(DT)[, val:=v[1L], keyby=.(A,B), verbose=TRUE], data.table(A=INT(1,1,2,2), B=INT(3,5,4,6), v=INT(14,12,13,11), val=INT(14,12,13,11), key=c("A","B")), output=out)
 # test from #5326 but with n=100 rather than n=100000; confirmed that n=100 fails tests 2233.403-405 before fix
@@ -18071,6 +18084,14 @@ for (opt in c(0,Inf)) {
     output=out)
   testnum = 2233.44
 }
+options(old)
+# optimized := with gforce functions that can return lists #5403
+old = options(datatable.verbose=TRUE)
+DT = data.table(grp=1:2, x=1:4)
+out = "Making each group and running j (GForce TRUE)"
+test(2233.45, copy(DT)[, c("y", "z") := .(shift(x, type="lag", n=1), shift(x, type="lead", n=1)), by=grp], data.table(grp=1:2, x=1:4, y=c(NA, NA, 1:2), z=c(3:4, NA, NA)), output=out)
+test(2233.46, copy(DT)[, l := shift(x, n=c(0, 0)), by=grp], data.table(grp=1:2, x=1:4, l=list(INT(1, 1), INT(2, 2), INT(3, 3), INT(4, 4))), output=out)
+test(2233.47, copy(DT)[, c("l1", "l2") := shift(x, n=c(-1, 1)), by=grp], data.table(grp=1:2, x=1:4, l1=c(3:4,NA,NA), l2=c(NA,NA,1:2)), output=out)
 options(old)
 
 # support by=.I; #1732

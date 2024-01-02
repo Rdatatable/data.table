@@ -180,7 +180,7 @@ replace_dot_alias = function(e) {
         stopf("When by and keyby are both provided, keyby must be TRUE or FALSE")
     }
     if (missing(by)) { missingby=TRUE; by=bysub=NULL }  # possible when env is used, PR#4304
-    else if (verbose) catf("Argument '%s' after substitute: %s\n", "by", paste(deparse(bysub, width.cutoff=500L), collapse=" "))
+    else if (verbose && !is.null(env)) catf("Argument '%s' after substitute: %s\n", "by", paste(deparse(bysub, width.cutoff=500L), collapse=" "))
   }
   bynull = !missingby && is.null(by) #3530
   byjoin = !is.null(by) && is.symbol(bysub) && bysub==".EACHI"
@@ -244,7 +244,7 @@ replace_dot_alias = function(e) {
         substitute2(.j, env),
         list(.j = substitute(j))
       ))
-      if (missing(jsub)) {j = substitute(); jsub=NULL} else if (verbose) catf("Argument '%s' after substitute: %s\n", "j", paste(deparse(jsub, width.cutoff=500L), collapse=" "))
+      if (missing(jsub)) {j = substitute(); jsub=NULL} else if (verbose && !is.null(env)) catf("Argument '%s' after substitute: %s\n", "j", paste(deparse(jsub, width.cutoff=500L), collapse=" "))
     }
   }
   if (!missing(j)) {
@@ -332,7 +332,7 @@ replace_dot_alias = function(e) {
         substitute2(.i, env),
         list(.i = substitute(i))
       ))
-      if (missing(isub)) {i = substitute(); isub=NULL} else if (verbose) catf("Argument '%s' after substitute: %s\n", "i", paste(deparse(isub, width.cutoff=500L), collapse=" "))
+      if (missing(isub)) {i = substitute(); isub=NULL} else if (verbose && !is.null(env)) catf("Argument '%s' after substitute: %s\n", "i", paste(deparse(isub, width.cutoff=500L), collapse=" "))
     }
   }
   if (!missing(i)) {
@@ -1932,6 +1932,9 @@ replace_dot_alias = function(e) {
       if (length(o__)) jrows = o__[jrows]
       if (length(irows)) jrows = irows[jrows]
       if (length(jvals)==1L) jvals = jvals[[1L]]  # unwrap single column jvals for assign
+      if (.is_nrows(jsub)) { # 5403 unwrap multicolumn jvals for gfunctions that can return lists
+        jvals = if (length(jvals) != length(lhs)) split(unlist(jvals), rep(seq_along(jvals[[1L]]), length(jvals))) else lapply(jvals, unlist)
+      }
       .Call(Cassign, x, jrows, lhs, newnames, jvals)
     }
     if (any(names_x[cols] %chin% key(x)))
