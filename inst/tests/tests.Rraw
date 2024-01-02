@@ -18164,3 +18164,15 @@ DT = data.table(id=1:2, x=1:2)
 r = copy(DT)[1L, x:= 5L]
 test(2241.13, DT, data.table(id=1:2, x=1:2))
 test(2241.14, r, data.table(id=1:2, x=c(5L,2L)))
+
+# rbind ignore attributes and do not copy for integer64 and higher types #5504
+if (test_bit64) {
+  a = data.table(as.integer64(1))
+  b = data.table("a")
+  c = data.table(as.complex(2))
+  test(2242.41, rbind(a,b), data.table(c("1","a")))
+  test(2242.42, rbind(b,a), data.table(c("a","1")))
+  test(2242.43, rbind(a,c), data.table(as.complex(1:2)))
+  test(2242.44, rbind(c,a), data.table(as.complex(2:1)))
+  test(2242.45, rbind(a, data.table(list(1))), error="integer64 but maxType=='list'")
+}

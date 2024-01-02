@@ -321,11 +321,13 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
 
     if (!foundName) { static char buff[12]; snprintf(buff,12,"V%d",j+1), SET_STRING_ELT(ansNames, idcol+j, mkChar(buff)); foundName=buff; }
     if (factor) maxType=INTSXP;  // if any items are factors then a factor is created (could be an option)
-    if (int64 && maxType!=REALSXP)
-      error(_("Internal error: column %d of result is determined to be integer64 but maxType=='%s' != REALSXP"), j+1, type2char(maxType)); // # nocov
+    if (int64 && maxType!=REALSXP && !(maxType==16||maxType==15))
+      error(_("Column %d of result is determined to be integer64 but maxType=='%s' != REALSXP"), j+1, type2char(maxType));
+    if (date && INHERITS(firstCol, char_IDate)) maxType=INTSXP; // first encountered Date determines class and type #5309
     SEXP target;
     SET_VECTOR_ELT(ans, idcol+j, target=allocVector(maxType, nrow));  // does not initialize logical & numerics, but does initialize character and list
-    if (!factor) copyMostAttrib(firstCol, target); // all but names,dim and dimnames; mainly for class. And if so, we want a copy here, not keepattr's SET_ATTRIB.
+    // #5504 do not copy class for mixing int64 and higher maxtypes CPLSXP and STRSXP
+    if (!factor && !(int64 && (maxType==16||maxType==15))) copyMostAttrib(firstCol, target); // all but names,dim and dimnames; mainly for class. And if so, we want a copy here, not keepattr's SET_ATTRIB.
 
     if (factor && anyNotStringOrFactor) {
       // in future warn, or use list column instead ... warning(_("Column %d contains a factor but not all items for the column are character or factor"), idcol+j+1);
