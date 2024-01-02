@@ -1090,6 +1090,7 @@ test(351.2, DT[, c("a","b"):=13:15, verbose=TRUE],       ans,
             notOutput="revised")
 test(352.1, DT[,letters[1:4]:=list(1L,NULL)], error="Supplied 4 columns to be assigned 2 items. Please see NEWS for v1.12.2")
 test(352.2, DT[,letters[1:4]:=list(1L,NULL,2L,NULL)], data.table(a=c(1L,1L,1L),c=c(2L,2L,2L)))
+test(352.3, DT[,letters[1:2]:=list(1L,NULL,2L,NULL)], error="Supplied 2 columns to be assigned 4 items. Please see NEWS for v1.12.2")
 
 # Test assigning new levels into factor columns
 DT = data.table(f=factor(c("a","b")),x=1:4)
@@ -18070,6 +18071,14 @@ for (opt in c(0,Inf)) {
     output=out)
   testnum = 2233.44
 }
+options(old)
+# optimized := with gforce functions that can return lists #5403
+old = options(datatable.verbose=TRUE)
+DT = data.table(grp=1:2, x=1:4)
+out = "Making each group and running j (GForce TRUE)"
+test(2233.45, copy(DT)[, c("y", "z") := .(shift(x, type="lag", n=1), shift(x, type="lead", n=1)), by=grp], data.table(grp=1:2, x=1:4, y=c(NA, NA, 1:2), z=c(3:4, NA, NA)), output=out)
+test(2233.46, copy(DT)[, l := shift(x, n=c(0, 0)), by=grp], data.table(grp=1:2, x=1:4, l=list(INT(1, 1), INT(2, 2), INT(3, 3), INT(4, 4))), output=out)
+test(2233.47, copy(DT)[, c("l1", "l2") := shift(x, n=c(-1, 1)), by=grp], data.table(grp=1:2, x=1:4, l1=c(3:4,NA,NA), l2=c(NA,NA,1:2)), output=out)
 options(old)
 
 # support by=.I; #1732
