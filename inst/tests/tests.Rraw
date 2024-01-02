@@ -18165,7 +18165,7 @@ r = copy(DT)[1L, x:= 5L]
 test(2241.13, DT, data.table(id=1:2, x=1:2))
 test(2241.14, r, data.table(id=1:2, x=c(5L,2L)))
 
-# rbind ignore attributes and do not copy for integer64 and higher types #5504
+# rbind do not copy class/attributes for integer64 and STRSXP/CPLSXP #5504
 if (test_bit64) {
   a = data.table(as.integer64(1))
   b = data.table("a")

@@ -326,7 +326,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
     if (date && INHERITS(firstCol, char_IDate)) maxType=INTSXP; // first encountered Date determines class and type #5309
     SEXP target;
     SET_VECTOR_ELT(ans, idcol+j, target=allocVector(maxType, nrow));  // does not initialize logical & numerics, but does initialize character and list
-    // #5504 do not copy class for mixing int64 and higher maxtypes CPLSXP and STRSXP
+    // #5504 do not copy class for mixing int64 and higher maxTypes CPLSXP and STRSXP
     if (!factor && !(int64 && (maxType==16||maxType==15))) copyMostAttrib(firstCol, target); // all but names,dim and dimnames; mainly for class. And if so, we want a copy here, not keepattr's SET_ATTRIB.
 
     if (factor && anyNotStringOrFactor) {
