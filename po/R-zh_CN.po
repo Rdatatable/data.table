@@ -1848,7 +1848,7 @@ msgstr "data.table %s 的 '%s' 列中存在缺失值：'%s'。若使 foverlaps()
 msgid ""
 "All entries in column '%s' should be <= corresponding entries in column '%s' "
 "in data.table x."
-msgstr "<needs update>应该<=列中相应的条目"
+msgstr "应该<=列中相应的条目"
 
 #: foverlaps.R:66
 #, c-format
@@ -2698,17 +2698,17 @@ msgstr "'x' 必须是一个 list"
 msgid ""
 "Character objects provided in the input are not scalar objects, if you need "
 "them as character vector rather than a name, then wrap each into 'I' call: %s"
-msgstr "<needs translation>"
+msgstr ""
 
 #: programming.R:50
 #, c-format
 msgid "'env' must not be missing"
-msgstr "<needs translation>"
+msgstr ""
 
 #: programming.R:56
 #, c-format
 msgid "'env' must be a list or an environment"
-msgstr "<needs translation>"
+msgstr ""
 
 #: programming.R:63
 #, c-format
@@ -2718,7 +2718,7 @@ msgstr "参数 'env' 没有名"
 #: programming.R:65
 #, c-format
 msgid "'env' argument has zero char names"
-msgstr "<needs translation>"
+msgstr ""
 
 #: programming.R:67
 #, c-format
@@ -2991,17 +2991,17 @@ msgstr "内部错误：ncol(current)==ncol(target) 之前已经检查"
 #: setops.R:159 setops.R:170
 #, c-format
 msgid "Datasets have different %s. 'target': %s. 'current': %s."
-msgstr "<needs translation>"
+msgstr ""
 
 #: setops.R:161 setops.R:162
 #, c-format
 msgid "has no key"
-msgstr "<needs translation>"
+msgstr ""
 
 #: setops.R:172 setops.R:173
 #, c-format
 msgid "has no index"
-msgstr "<needs translation>"
+msgstr ""
 
 #: setops.R:190
 #, c-format
@@ -3047,11 +3047,11 @@ msgstr "内部错误：此时不匹配的因子类型应已被发现"
 
 #: shift.R:3
 msgid "Provided argument fill="
-msgstr "<needs translation>"
+msgstr ""
 
 #: shift.R:3
 msgid "will be ignored since type='shift'."
-msgstr "<needs translation>"
+msgstr ""
 
 #: tables.R:46
 #, c-format
@@ -3079,14 +3079,14 @@ msgstr "%3$s 中 %1$s 也 %2$s 不存在"
 
 #: test.data.table.R:114
 msgid "object '%s' not found"
-msgstr "<needs translation>"
+msgstr ""
 
 #: test.data.table.R:138
 #, c-format
 msgid ""
 "memtest intended for Linux. Step through data.table:::rss() to see what went "
 "wrong."
-msgstr "<needs translation>"
+msgstr ""
 
 #: test.data.table.R:176
 #, c-format
@@ -3138,7 +3138,7 @@ msgstr "'keep'所含整数值应在 %d 和 %d 间"
 #: transpose.R:51
 #, c-format
 msgid "The argument 'type.convert' does not support empty list."
-msgstr "<needs translation>"
+msgstr ""
 
 #: transpose.R:57
 #, c-format
@@ -3148,7 +3148,7 @@ msgid ""
 "element is not allowed unless all elements are functions with length equal "
 "to %d (the length of the transpose list or 'keep' argument if it is "
 "specified)."
-msgstr "<needs translation>"
+msgstr ""
 
 #: transpose.R:66
 #, c-format
@@ -3156,7 +3156,7 @@ msgid ""
 "When the argument 'type.convert' contains transpose list indices, it should "
 "be a named list of non-missing integer values (with no duplicate) except the "
 "last element that should be unnamed if it is a function."
-msgstr "<needs translation>"
+msgstr ""
 
 #: transpose.R:68
 #, c-format
@@ -3165,7 +3165,7 @@ msgid ""
 "should be integer values contained in the argument 'keep' (if it is "
 "specified) or be between %d and %d (if it is not). But '%s' is/are not "
 "contained in '%s'."
-msgstr "<needs translation>"
+msgstr ""
 
 #: transpose.R:74
 #, c-format
@@ -3173,7 +3173,7 @@ msgid ""
 "In the argument 'type.convert', '%s' was ignored because all elements in the "
 "transpose list or elements corrisponding to indices specified in the 'keep' "
 "argument have already been converted."
-msgstr "<needs translation>"
+msgstr ""
 
 #: transpose.R:83
 #, c-format
@@ -3181,7 +3181,7 @@ msgid ""
 "The argument 'type.convert' should be TRUE/FALSE, a function, a list of "
 "functions, or a named list of pairs 'fun=indices' with optionally one "
 "unnamed element (a function) but an object of type '%s' was provided."
-msgstr "<needs translation>"
+msgstr ""
 
 #: transpose.R:88
 #, c-format
