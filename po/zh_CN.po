@@ -480,8 +480,7 @@ msgid "target vector"
 msgstr "目标向量"
 
 #: assign.c:690
-#, fuzzy, c-format
-#| msgid "Column %d of item %d: %s"
+#, c-format
 msgid "column %d named '%s'"
 msgstr "第 %d 列名为 '%s'"
 
@@ -566,8 +565,7 @@ msgid "Coercing 'list' RHS to '%s' to match the type of %s."
 msgstr "将'list' RHS 强制转换成 '%s' 来匹配目 %s 的类型"
 
 #: assign.c:856
-#, fuzzy, c-format
-#| msgid "Zero-copy coerce when assigning '%s' to '%s' column %d named '%s'.\n"
+#, c-format
 msgid "Zero-copy coerce when assigning '%s' to '%s' %s.\n"
 msgstr "在 %s 中将 '%s' 赋值成 '%s' 时发生了零拷贝强制转换。\n"
 
@@ -785,14 +783,10 @@ msgid "rollends must be a length 2 logical vector"
 msgstr "rollends 必须是一个长度为2的逻辑向量"
 
 #: bmerge.c:92
-#, fuzzy
-#| msgid "Internal error: issorted 'by' must be NULL or integer vector"
 msgid "Internal error: nomatchArg must be NULL or length-1 logical/integer"
 msgstr "内部错误：nomatchArg 须为 NULL 或一长度为 1 的逻辑/整形变量"
 
 #: bmerge.c:95
-#, fuzzy
-#| msgid "Internal error: nqgrpArg must be an integer vector"
 msgid "Internal error: nomatchArg must be NULL, NA, NA_integer_ or 0L"
 msgstr "内部错误：nomatchArg 须为 NULL、NA、NA_integer_ 或 0L"
 
@@ -1246,20 +1240,14 @@ msgid ""
 msgstr "'na'长度是%<PRId64>但长度必须是1或者等于'test'的长度 (%<PRId64>)。"
 
 #: fifelse.c:46
-#, fuzzy, c-format
-#| msgid ""
-#| "'yes' is of type %s but 'no' is of type %s. Please make sure that both "
-#| "arguments have the same type."
+#, c-format
 msgid ""
 "'no' is of type %s but '%s' is %s. Please make all arguments have the same "
 "type."
 msgstr "'no' 是 %s 类型，但 'no' 是 %s 类型。请确保所有参数为同一类型。"
 
 #: fifelse.c:52
-#, fuzzy, c-format
-#| msgid ""
-#| "'yes' is of type %s but 'na' is of type %s. Please make sure that both "
-#| "arguments have the same type."
+#, c-format
 msgid ""
 "'na' is of type %s but '%s' is %s. Please make all arguments have the same "
 "type."
@@ -1536,8 +1524,7 @@ msgid "Internal error: fmelt.c:getvarcols %d %d"
 msgstr "内部错误：fmelt.c : getvarcols %d %d"
 
 #: fmelt.c:679
-#, fuzzy, c-format
-#| msgid "Unknown column type '%s' for column '%s'."
+#, c-format
 msgid "variable_table does not support column type '%s' for column '%s'."
 msgstr "variable_table 不支持列 '%2$s' 所包含的数据类型 '%1$s'。"
 
@@ -1697,8 +1684,7 @@ msgid "internal error: 'by' value %d out of range [1,%d]"
 msgstr "内部错误：参数 'by' 的值%d超出[1，%d]的范围"
 
 #: forder.c:455
-#, fuzzy, c-format
-#| msgid "Column %d is length %d which differs from length of column 1 (%d)\n"
+#, c-format
 msgid ""
 "Column %d is length %d which differs from length of column 1 (%d), are you "
 "attempting to order by a list column?\n"
@@ -1920,10 +1906,7 @@ msgid ""
 msgstr "freadMain: NAstring <<%s>> 被识别为布尔型，这是不允许"
 
 #: fread.c:1298
-#, fuzzy, c-format
-#| msgid ""
-#| "freadMain: NAstring <<%s>> is recognized as type boolean, this is not "
-#| "permitted."
+#, c-format
 msgid "freadMain: NAstring <<%s>> and logical01=TRUE, this is not permitted."
 msgstr "freadMain: NAstring 为 <<%s>> 同时 logical01=TRUE，不允许这种情况。"
 
@@ -2570,10 +2553,7 @@ msgid "Internal error: Master thread is not thread 0 but thread %d.\n"
 msgstr "内部错误：主线程并非线程0而是线程%d\n"
 
 #: fread.c:2386
-#, fuzzy, c-format
-#| msgid ""
-#| "Column %d (\"%.*s\") bumped from '%s' to '%s' due to <<%.*s>> on row "
-#| "%<PRIu64>\n"
+#, c-format
 msgid ""
 "Column %d%s%.*s%s bumped from '%s' to '%s' due to <<%.*s>> on row %<PRIu64>\n"
 msgstr ""
@@ -2729,9 +2709,6 @@ msgstr ""
 "被捕获。"
 
 #: freadR.c:90
-#, fuzzy
-#| msgid ""
-#| "Internal error in coalesce.c: argument 'inplaceArg' must be TRUE or FALSE"
 msgid "Internal error: freadR isFileNameArg not TRUE or FALSE"
 msgstr "内部错误：freadR 中 isFileNameArg 并非 TRUE 或 FALSE"
 
@@ -2759,9 +2736,6 @@ msgid "quote= must be a single character, blank \"\", or FALSE"
 msgstr "quote= 必须是单个字符，空白 \"\"，或者 FALSE"
 
 #: freadR.c:125
-#, fuzzy
-#| msgid ""
-#| "Internal error: freadR sep not a single character. R level catches this."
 msgid "Internal error: freadR nrows not a single real. R level catches this."
 msgstr "内部错误：freadR nrows 并非为一单一实数。R 中应该捕获此错误。"
 
@@ -3044,8 +3018,6 @@ msgid "%s: took %.3fs\n"
 msgstr "%s: 使用了 %.3fs\n"
 
 #: frollR.c:17
-#, fuzzy
-#| msgid "x must be list, data.frame or data.table of numeric or logical types"
 msgid ""
 "x must be of type numeric or logical, or a list, data.frame or data.table of "
 "such"
@@ -3084,10 +3056,7 @@ msgstr ""
 "TRUE, 在其他情况可以让它保留默认值NA"
 
 #: frollR.c:109 frollR.c:141 frollR.c:163 frollR.c:253 nafill.c:170
-#, fuzzy, c-format
-#| msgid ""
-#| "Internal error: invalid type argument in nafillR function, should have "
-#| "been caught before. Please report to data.table issue tracker."
+#, c-format
 msgid ""
 "Internal error: invalid %s argument in %s function should have been caught "
 "earlier. Please report to the data.table issue tracker."
@@ -3619,10 +3588,7 @@ msgid "Unable to allocate %d * %zu bytes for non-NA counts in gmean na.rm=TRUE"
 msgstr "无法为 gmean na.rm=TRUE 的不 NA 计数（counts）分配 %d * %zu 字节空间"
 
 #: gsumm.c:712
-#, fuzzy, c-format
-#| msgid ""
-#| "Type '%s' not supported by GForce min (gmin). Either add the prefix base::"
-#| "min(.) or turn off GForce optimization using options(datatable.optimize=1)"
+#, c-format
 msgid ""
 "Type '%s' not supported by GForce mean (gmean). Either add the prefix base::"
 "mean(.) or turn off GForce optimization using options(datatable.optimize=1)"
@@ -3631,12 +3597,6 @@ msgstr ""
 "者使用 options(datatable.optimize=1) 关闭 GForce 优化"
 
 #: gsumm.c:724
-#, fuzzy
-#| msgid ""
-#| "GForce min can only be applied to columns, not .SD or similar. To find "
-#| "min of all items in a list such as .SD, either add the prefix base::min(."
-#| "SD) or turn off GForce optimization using options(datatable.optimize=1). "
-#| "More likely, you may be looking for 'DT[,lapply(.SD,min),by=,.SDcols=]'"
 msgid ""
 "GForce min/max can only be applied to columns, not .SD or similar. To find "
 "min/max of all items in a list such as .SD, either add the prefix base::min(."
@@ -3649,8 +3609,6 @@ msgstr ""
 "要使用的命令是 'DT[,lapply(.SD,median),by=,.SDcols=]'"
 
 #: gsumm.c:835
-#, fuzzy
-#| msgid "Type 'complex' has no well-defined min"
 msgid "Type 'complex' has no well-defined min/max"
 msgstr "'complex' 类型没有明确定义的最小值/最大值"
 
@@ -3668,8 +3626,6 @@ msgstr ""
 "的命令是 'DT[,lapply(.SD,median),by=,.SDcols=]'"
 
 #: gsumm.c:919
-#, fuzzy
-#| msgid "Internal error: either chin or chmatchdup should be true not both"
 msgid "Internal error: gfirstlast headw should only be true when w>1"
 msgstr "内部错误：gfirstlast 中的 headw 参数在当 w>1 时应只能为真"
 
@@ -3679,11 +3635,7 @@ msgid "Internal error: unanticipated case in gfirstlast first=%d w=%d headw=%d"
 msgstr "内部错误：未预料到 gfirstlast 中的 first=%d w=%d headw=%d 这种情况
 
 #: gsumm.c:979
-#, fuzzy, c-format
-#| msgid ""
-#| "Type '%s' not supported by GForce head (ghead). Either add the prefix "
-#| "utils::head(.) or turn off GForce optimization using options(datatable."
-#| "optimize=1)"
+#, c-format
 msgid ""
 "Type '%s' is not supported by GForce head/tail/first/last/`[`. Either add "
 "the namespace prefix (e.g. utils::head(.)) or turn off GForce optimization "
@@ -3762,10 +3714,7 @@ msgid "Item %d of n is NA"
 msgstr "n 的第 %d 项是NA"
 
 #: gsumm.c:1266
-#, fuzzy, c-format
-#| msgid ""
-#| "Type '%s' not supported by GForce sd (gsd). Either add the prefix stats::"
-#| "sd(.) or turn off GForce optimization using options(datatable.optimize=1)"
+#, c-format
 msgid ""
 "Type '%s' is not supported by GForce gshift. Either add the namespace prefix "
 "(e.g. data.table::shift(.)) or turn off GForce optimization using "
@@ -3981,8 +3930,6 @@ msgid "PRINTNAME(install(\"integer64\")) has returned %s not %s"
 msgstr "PRINTNAME(install(\"integer64\")) 返回了 %s , 而不是 %s"
 
 #: init.c:318
-#, fuzzy
-#| msgid "rollends must be a length 2 logical vector"
 msgid "verbose option must be length 1 non-NA logical or integer"
 msgstr "verbose 选项必须为一个长度为 1 的非 NA 逻辑值或整数"
 
@@ -4005,14 +3952,10 @@ msgid "'x' argument must be numeric type, or list/data.table of numeric types"
 msgstr "参数'x'必须是数字类型，或者是数字类型的list/data.table"
 
 #: nafill.c:179
-#, fuzzy
-#| msgid "fill must be a vector of length 1"
 msgid "fill must be a vector of length 1 or a list of length of x"
 msgstr "fill 必须是一个长度为 1 的向量或长度为 x 的列表"
 
 #: nafill.c:187
-#, fuzzy
-#| msgid "internal error: 'rho' should be an environment"
 msgid "internal error: 'fill' should be recycled as list already"
 msgstr "内部错误: 'fill' 应该已被循环补齐为一个列表"
 
@@ -4537,9 +4480,7 @@ msgid ""
 msgstr "%d ['%s'] 长度为 %d ，而列 1 的长度为 %d ；data.table 格式错误。"
 
 #: subset.c:290
-#, fuzzy, c-format
-#| msgid ""
-#| "Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]"
+#, c-format
 msgid "Item %d of cols is %d which is outside the range [1,ncol(x)=%d]"
 msgstr "'cols' 的 第 %d 项为 %d ，超出范围 [1,ncol(x)=%d]"
 
@@ -4680,8 +4621,7 @@ msgid "argument specifying columns received duplicate column(s)"
 msgstr "指定列的参数受到了重复的列"
 
 #: utils.c:229
-#, fuzzy, c-format
-#| msgid "Internal error: type '%s' not caught earlier in fastmean"
+#, c-format
 msgid "Internal error: type '%s' not supported in %s"
 msgstr "内部错误：类型 '%s' 不支持应用 %s"
 
@@ -4696,8 +4636,6 @@ msgid "Found and copied %d column%s with a shared memory address\n"
 msgstr "发现并拷贝了具有相同的内存地址的%d列%s\n"
 
 #: utils.c:358
-#, fuzzy
-#| msgid "x is not a logical vector"
 msgid "'x' is not atomic"
 msgstr "x 不是一个原子向量"
 
