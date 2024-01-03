@@ -477,7 +477,7 @@ msgstr ""
 #: assign.c:690
 #, c-format
 msgid "target vector"
-msgstr ""
+msgstr "目标向量"
 
 #: assign.c:690
 #, fuzzy, c-format
@@ -1485,7 +1485,7 @@ msgstr "'variable.name' 必须是长度1的字符/整数向量。"
 msgid ""
 "variable_table attribute of measure.vars should be a data table with at "
 "least one column"
-msgstr ""
+msgstr "measure.vars 的 variable_table 属性应为一个至少有一列的 data.table"
 
 #: fmelt.c:373
 #, c-format
@@ -1493,12 +1493,14 @@ msgid ""
 "variable_table attribute of measure.vars should be a data table with same "
 "number of rows as max length of measure.vars vectors =%d"
 msgstr ""
+"measure.vars 的 variable_table 属性应为一个 data.table，且该 data.table 的行"
+"应与 measure.vars 向量中的最大长度（=%d）一致"
 
 #: fmelt.c:377
 msgid ""
 "variable_table attribute of measure.vars should be either NULL or a data "
 "table"
-msgstr ""
+msgstr "measure.vars 的 variable_table 属性应为 NULL 或一个 data.table"
 
 #: fmelt.c:394
 msgid ""
@@ -2736,11 +2738,11 @@ msgstr "内部错误：freadR 中 isFileNameArg 并非 TRUE 或 FALSE"
 #: freadR.c:92
 #, c-format
 msgid "freadR.c has been passed a filename: %s\n"
-msgstr ""
+msgstr "freadR.c 接收到了一个文件名：%s\n"
 
 #: freadR.c:96
 msgid "freadR.c has been passed the data as text input (not a filename)\n"
-msgstr ""
+msgstr "freadR.c 接收到了文字输入（非文件名）\n"
 
 #: freadR.c:102
 msgid ""
@@ -3250,6 +3252,7 @@ msgid ""
 "OpenMP %d did not assign threads to iterations monotonically. Please search "
 "Stack Overflow for this message."
 msgstr ""
+"OpenMP %d 没有按照顺序分配线程进行迭代。请在 Stack Overflow 上搜索此消息。
 
 #: fsort.c:317
 msgid "Unable to allocate working memory"
@@ -3331,6 +3334,9 @@ msgid ""
 "the time data.table was compiled. To enable fwrite compression, please "
 "reinstall data.table and study the output for further guidance."
 msgstr ""
+"fwrite 中的压缩功能使用了 zlib 库。并未在 data.table 编译时找到它的头文件。"
+"若想启用 fwrite 的压缩功能，请重新安装 data.table 并查看输出以获得进一步的指"
+"导。"
 
 #: fwrite.c:704
 #, c-format
@@ -3383,7 +3389,7 @@ msgstr ""
 #: fwrite.c:814
 #, c-format
 msgid "zbuffSize=%d returned from deflateBound\n"
-msgstr ""
+msgstr "zbuffSize=%d 从 deflateBound 返回\n"
 
 #: fwrite.c:823
 #, c-format
@@ -3475,7 +3481,7 @@ msgstr "列%d的类型是'%s' - 尚未在fwrite中实施"
 msgid ""
 "input has specific integer rownames but their length (%<PRId64>) != nrow "
 "(%<PRId64>)"
-msgstr ""
+msgstr "输入具有特定的整数行名但是他们的长度(%<PRId64>) != nrow (%<PRId64>)"
 
 #: fwriteR.c:282
 msgid ""
@@ -3670,7 +3676,7 @@ msgstr "内部错误：gfirstlast 中的 headw 参数在当 w>1 时应只能为�
 #: gsumm.c:965
 #, c-format
 msgid "Internal error: unanticipated case in gfirstlast first=%d w=%d headw=%d"
-msgstr ""
+msgstr "内部错误：未预料到 gfirstlast 中的 first=%d w=%d headw=%d 这种情况
 
 #: gsumm.c:979
 #, fuzzy, c-format
@@ -3874,7 +3880,7 @@ msgstr "指针是%zu个字节，大于8。我们尚未在大于64位的任何体
 
 #: init.c:177
 msgid "... failed. Please forward this message to maintainer('data.table')."
-msgstr ""
+msgstr "... 失败。请将此消息转发给 maintainer('data.table')。
 
 #: init.c:178
 #, c-format
@@ -4041,7 +4047,7 @@ msgstr "安装的data.table并不是获得OpenMP支持的编译\n"
 #: openmp-utils.c:84
 #, c-format
 msgid "  OpenMP version (_OPENMP)       %d\n"
-msgstr ""
+msgstr "  OpenMP 版本 (_OPENMP)       %d\n"
 
 #: openmp-utils.c:89
 #, c-format
@@ -4130,6 +4136,8 @@ msgid ""
 "name' and 'I' can be used to work out proper substitution, see ?substitute2 "
 "examples."
 msgstr ""
+"尝试用 '%s' 元素替换 '%s' 类型的对象，但当替换调用参数的名称时，它必须是
+'symbol' 类型，函数 'as.name' 和 'I' 可以用来实现适当的替换，参见 ?substitute2"
 
 #: rbindlist.c:8
 msgid "fill= should be TRUE or FALSE"
@@ -4410,6 +4418,7 @@ msgid ""
 "shift input must not be matrix or array, consider wrapping it into data."
 "table() or c()"
 msgstr ""
+"shift 的输入不能为矩阵或数组，考虑将其放入 data.table() 或 c() 中。"
 
 #: shift.c:17
 #, c-format
@@ -4694,26 +4703,26 @@ msgstr "x 不是一个原子向量"
 
 #: utils.c:360
 msgid "'x' must not be matrix or array"
-msgstr ""
+msgstr "'x' 不能是矩阵或者数组"
 
 #: utils.c:362
 msgid "input must not be matrix or array"
-msgstr ""
+msgstr "输入不能是矩阵或者数组"
 
 #: utils.c:366
 #, c-format
 msgid "copy=false and input already of expected type and class %s[%s]\n"
-msgstr ""
+msgstr "copy=false 并且输入已经是预期的类型和类 %s[%s]\n"
 
 #: utils.c:373
 #, c-format
 msgid "Coercing %s[%s] into %s[%s]\n"
-msgstr ""
+msgstr "强制转换 %s[%s] 为 %s[%s]\n"
 
 #: utils.c:389
 #, c-format
 msgid "zlib header files were not found when data.table was compiled"
-msgstr ""
+msgstr "zlib头文件在 data.table 编译时没有找到"
 
 #: vecseq.c:14
 msgid "len must be an integer vector"

@@ -186,6 +186,8 @@ msgid ""
 "RHS has length() %d; expecting length 2. %sThe first element should be the "
 "lower bound(s); the second element should be the upper bound(s)."
 msgstr ""
+"右侧（RHS）的长度为 %d；期望长度为 2。%s第一个元素应为下界；第二个元素应为上"
+"界。"
 
 #: bmerge.R:48 bmerge.R:49
 #, c-format
@@ -266,7 +268,7 @@ msgstr "因为没有提供 j= ，所以忽略 by/keyby"
 #: data.table.R:180
 #, c-format
 msgid "When by and keyby are both provided, keyby must be TRUE or FALSE"
-msgstr ""
+msgstr "当 by 和 keyby 都提供的时候，keyby 必须是 TRUE 或 FALSE"
 
 #: data.table.R:192
 #, c-format
@@ -462,6 +464,9 @@ msgid ""
 "contains row numbers of itself to select, try DT[(col)], DT[DT$col], or "
 "DT[col==TRUE} is particularly clear and is optimized"
 msgstr ""
+"'%s' 并不存在于调用环境中，但是它是一个类型为 %s 的列。如果你想要选择包含 "
+"TRUE 值的列中的行，或者选择本身包含行号的列中的行，尝试 DT[(col)]、"
+"DT[DT$col]，或者 DT[col==TRUE]，它们表意非常清晰且效率高。
 
 #: data.table.R:422
 #, c-format
@@ -530,6 +535,8 @@ msgid ""
 "internal error: notjoin and which=NA (non-matches), huh? please provide "
 "reproducible example to issue tracker"
 msgstr ""
+"内部错误：notjoin 并且 which=NA (非匹配)？请提供可重现的例子给问题追踪器"
+"（issue tracker）"
 
 #: data.table.R:623
 #, fuzzy, c-format
@@ -552,6 +559,7 @@ msgid ""
 "Please use nomatch=NULL instead of nomatch=0; see news item 5 in v1.12.0 "
 "(Jan 2019)"
 msgstr ""
+"请使用 nomatch=NULL 而非 nomatch=0；参见 v1.12.0 (2019年1月) 中更新条目 5"
 
 #: data.table.R:639
 #, c-format
@@ -611,6 +619,7 @@ msgid ""
 "'by' contains .I but only the following are currently supported: by=.I, by=."
 "(.I), by=c(.I), by=list(.I)"
 msgstr ""
+"'by' 包含 .I，但目前仅支持以下用法：by=.I、by=.(.I)、by=c(.I)、by=list(.I)"
 
 #: data.table.R:795
 #, c-format
@@ -636,7 +645,7 @@ msgstr ""
 
 #: data.table.R:812
 msgid "At least one entry of by is empty"
-msgstr ""
+msgstr "至少有一个 by 的元素为空"
 
 #: data.table.R:853
 #, c-format
@@ -675,6 +684,10 @@ msgid ""
 "consider converting the column to a supported type, e.g. by=sapply(list_col, "
 "toString), whilst taking care to maintain distinctness in the process."
 msgstr ""
+"列或表达式 %d 的 'by' 或 'keyby' 为 '%s' 类型，目前并不支持。如确实需要该功"
+"能，请在 https://github.com/Rdatatable/data.table/issues/1597 中提出。"
+"暂时的解决办法是，将列转换为支持的类型，例如 by=sapply(list_col, toString)，"
+"同时请确保在转换后其值仍保持不同。"
 
 #: data.table.R:906
 #, c-format
@@ -703,6 +716,8 @@ msgid ""
 "sure this warning is in error, please put the branching logic outside of "
 "[ for efficiency"
 msgstr ""
+"j 在每个组中可能不会计算出相同的列数；如果您确定该警告信息是错误的，请将分支"
+"逻辑放在 [ 之外以提高运行效率"
 
 #: data.table.R:967
 #, c-format
@@ -714,6 +729,10 @@ msgid ""
 "call; (2) explicitly provide missing defaults for each branch in all cases; "
 "or (3) use the same name for each branch and re-name it in a follow-up call."
 msgstr ""
+"j 表达式的不同分支产生了不同的自动命名列：%s；将使用“最后”一个得到的名字。"
+"如果这是有意为之（如，您知道在给定的查询中只有一个分支会被使用，因为该分支"
+"由函数参数控制），请（1）将该分支从调用中分离出来；（2）在所有情况下为每个分"
+"支提供缺失的默认值；或（3）为每个分支使用相同的名字，并在后续调用中重新命名。"
 
 #: data.table.R:1030
 #, c-format
@@ -733,7 +752,7 @@ msgstr ".SDcols 的如下位置为缺失值：%s"
 #: data.table.R:1038
 #, c-format
 msgid ".SDcols is a logical vector length %d but there are %d columns"
-msgstr ""
+msgstr ".SDcols 为长度为 %d 的逻辑向量，但共计只有 %d 列"
 
 #: data.table.R:1044
 #, c-format
@@ -882,6 +901,9 @@ msgid ""
 "scope, please try DT[, ..%1$s]. The .. prefix conveys one-level-up similar "
 "to a file system path."
 msgstr ""
+"j（在 [...] 中的第二个参数）是单一符号，但未找到列名 '%1$s'。如果你打算在调用"
+"环境中使用变量选择列，请尝试 DT[, ..%1$s]。.. 前缀表示上一级，类似于文件系统"
+"路径。"
 
 #: data.table.R:1419
 #, c-format
@@ -1010,6 +1032,7 @@ msgstr "length(rownames.value)==%d 但应该是 nrow(x)==%d"
 msgid ""
 "Internal error: as.matrix.data.table length(X)==%d but a dimension is zero"
 msgstr ""
+"内部错误: as.matrix.data.table length(X)==%d 但有一个维度为零"
 
 #: data.table.R:2152
 #, c-format
@@ -1235,7 +1258,7 @@ msgstr "提供 before= 或 after= ，但两者不能同时存在"
 #: data.table.R:2699
 #, c-format
 msgid "before=/after= accept a single column name or number, not more than one"
-msgstr ""
+msgstr "before=/after= 只接受一个列名或列号，不能多于一个"
 
 #: data.table.R:2754
 #, c-format
@@ -1475,6 +1498,10 @@ msgid ""
 "method from reshape2, try installing that package first, but do note that "
 "reshape2 is superseded and is no longer actively developed."
 msgstr ""
+"data.table 中的 %1$s 泛型方法接收到了一个 %2$s 对象，但 data.table::%1$s 目前"
+"只有一个针对 data.table 的方法。请确认你的输入是一个 data.table，或使用 "
+"setDT(%3$s) 或 as.data.table(%3$s)。如果你想使用 reshape2 中的方法，请先安装"
+"该包，但请注意 reshape2 已被其它包取代且不再积极开发。"
 
 #: fcast.R:21
 #, fuzzy, c-format
@@ -1554,6 +1581,9 @@ msgid ""
 "Either override by setting the 'fill' argument explicitly or modify your "
 "function to handle this case appropriately."
 msgstr ""
+"聚合函数应接收向量输入并返回单个值（长度为1）。然而，当前函数返回的长度不为1。"
+"因为该单个值将用于填充任何缺失的组合，故必须为长度为1。你可以通过显式设置"
+"'fill' 参数来覆盖该值，或修改你的函数以处理该情况。"
 
 #: fcast.R:222
 #, c-format
@@ -1599,6 +1629,7 @@ msgid ""
 "each ... argument to measure must be either a symbol without argument name, "
 "or a function with argument name, problems: %s"
 msgstr ""
+"measure 中的每个 ... 参数必须为无参数名的符号，或带有参数名的函数，问题：%s"
 
 #: fmelt.R:54
 #, c-format
@@ -1606,6 +1637,7 @@ msgid ""
 "group names specified in ... conflict with measure argument names; please "
 "fix by changing group names: %s"
 msgstr ""
+"在 ... 中指定的组名与 measure 参数名冲突；请通过修改组名来解决：%s"
 
 #: fmelt.R:60
 #, c-format
@@ -1613,6 +1645,7 @@ msgid ""
 "each ... argument to measure must be a function with at least one argument, "
 "problem: %s"
 msgstr ""
+"measure 中的每个 ... 参数必须为至少带有一个参数的函数，问题：%s"
 
 #: fmelt.R:74
 #, c-format
@@ -1620,11 +1653,12 @@ msgid ""
 "both sep and pattern arguments used; must use either sep or pattern (not "
 "both)"
 msgstr ""
+"同时使用了 sep 和 pattern 参数；必须使用 sep 或 pattern（不能同时使用）”
 
 #: fmelt.R:77
 #, c-format
 msgid "multiple.keyword must be a character string with nchar>0"
-msgstr ""
+msgstr "multiple.keyword 必须为一个字符长度大于0(nchar>0)的字符串
 
 #: fmelt.R:80
 #, fuzzy, c-format
@@ -1636,17 +1670,17 @@ msgstr "cols 必须是一个由列名组成的字符串向量"
 #: fmelt.R:88
 #, c-format
 msgid "in measurev, %s must be named, problems: %s"
-msgstr ""
+msgstr "在 measurev 中，%s 必须命名，问题：%s"
 
 #: fmelt.R:94
 #, c-format
 msgid "%s should be uniquely named, problems: %s"
-msgstr ""
+msgstr "%s 应命名唯一，问题：%s"
 
 #: fmelt.R:99
 #, c-format
 msgid "number of %s =%d must be same as %s =%d"
-msgstr ""
+msgstr "%s 的数量 =%d 必须与 %s 的数量 =%d 相同"
 
 #: fmelt.R:106
 #, fuzzy, c-format
@@ -1660,12 +1694,14 @@ msgid ""
 "pattern did not match any cols, so nothing would be melted; fix by changing "
 "pattern"
 msgstr ""
+"pattern 未匹配到任何列，因此不会有任何列被融合；请通过修改 pattern 来解决"
 
 #: fmelt.R:115
 #, c-format
 msgid ""
 "pattern must contain at least one capture group (parenthesized sub-pattern)"
 msgstr ""
+"pattern 必须包含至少一个捕获组（括号子模式）"
 
 #: fmelt.R:123
 #, fuzzy, c-format
@@ -1681,6 +1717,8 @@ msgid ""
 "all columns directly without using measure, or use a different sep/pattern "
 "specification"
 msgstr ""
+"使用 sep 分割后，每个列名只产生一个条目，这意味着所有列都将被融合；请通过直接"
+"指定所有列同时不使用 measure 来解决，或使用其他 sep/pattern 来解决"
 
 #: fmelt.R:138
 #, c-format
@@ -1688,6 +1726,7 @@ msgid ""
 "number of unique column IDs =%d is less than number of melted columns =%d; "
 "fix by changing pattern/sep"
 msgstr ""
+"唯一列 ID 的数量 =%d 少于融合的列数量 =%d；请通过修改 pattern/sep 来解决"
 
 #: fmelt.R:148
 #, c-format
@@ -1695,6 +1734,8 @@ msgid ""
 "in the measurev fun.list, each non-NULL element must be a function with at "
 "least one argument, problem: %s"
 msgstr ""
+"在 measurev 的 fun.list 中，每个非 NULL 元素必须为至少带有一个参数的函数，"
+"问题：%s"
 
 #: fmelt.R:152
 #, c-format
@@ -1702,11 +1743,12 @@ msgid ""
 "each conversion function must return an atomic vector with same length as "
 "its first argument, problem: %s"
 msgstr ""
+"每个转换函数必须返回一个与其第一个参数长度相同的原子向量，问题：%s"
 
 #: fmelt.R:155
 #, c-format
 msgid "%s conversion function returned vector of all NA"
-msgstr ""
+msgstr "%s 转换函数返回了全为 NA 的向量"
 
 #: fmelt.R:161
 #, c-format
@@ -1714,17 +1756,19 @@ msgid ""
 "number of unique groups after applying type conversion functions less than "
 "number of groups, change type conversion"
 msgstr ""
+"应用类型转换函数后，唯一组数量少于组总数量，请修改类型转换函数"
 
 #: fmelt.R:166
 #, c-format
 msgid ""
 "%s column class=%s after applying conversion function, but must be character"
 msgstr ""
+"应用转换函数后，%s 列的类型=%s，但此处要求必须为字符串类型"
 
 #: fmelt.R:170
 #, c-format
 msgid "%s is the only group; fix by creating at least one more group"
-msgstr ""
+msgstr "%s 是唯一的组；请通过再创建至少一个组来解决"
 
 #: fmelt.R:193
 #, c-format
@@ -1737,6 +1781,8 @@ msgid ""
 "'value.name' provided in both 'measure.vars' and 'value.name argument'; "
 "value provided in 'measure.vars' is given precedence."
 msgstr ""
+"在 'measure.vars' 和 'value.name' 参数中都提供了 'value.name'；"
+"将优先使用 'measure.vars' 中的值。
 
 #: fmelt.R:215
 #, c-format
@@ -1962,6 +2008,7 @@ msgid ""
 "Input column '..na_prefix..' conflicts with data.table internal usage; "
 "please rename"
 msgstr ""
+"输入列 '..na_prefix..' 与 data.table 内部使用变量冲突，请重命名"
 
 #: frank.R:46
 #, c-format
@@ -1969,6 +2016,7 @@ msgid ""
 "Input column '..stats_runif..' conflicts with data.table internal usage; "
 "please rename"
 msgstr ""
+"输入列 '..stats_runif..' 与 data.table 内部使用变量冲突，请重命名"
 
 #: fread.R:10
 #, c-format
@@ -2052,6 +2100,8 @@ msgid ""
 "URL requires download.file functionalities from R >=3.2.2. You can still "
 "manually download the file and fread the downloaded file."
 msgstr ""
+"URL 需要 R >=3.2.2 的 download.file 功能。不过你仍可手动下载该文件并使用"
+"fread 来读取它。"
 
 #: fread.R:91
 #, c-format
@@ -2073,6 +2123,7 @@ msgstr "文件 '%s' 的大小为0. 返回一个NULL %s."
 msgid ""
 "Compressed files containing more than 1 file are currently not supported."
 msgstr ""
+"目前不支持包含多个文件的压缩文件。"
 
 #: fread.R:119
 #, c-format
@@ -2118,7 +2169,7 @@ msgstr ""
 #: fread.R:152
 #, c-format
 msgid "na.strings[%d]==\"%s\" consists only of whitespace, ignoring"
-msgstr ""
+msgstr "na.strings[%d]==\"%s\" 仅包含空格, 已忽略"
 
 #: fread.R:155
 #, c-format
@@ -2164,6 +2215,9 @@ msgid ""
 "beginning of the file, NOT from the end of the metadata; please file an "
 "issue on GitHub if you'd like to see more intuitive behavior supported."
 msgstr ""
+"将搜索字符串作为 'skip' 参数的同时读取 YAML 文件头可能会出错 —— 目前读取文件"
+"时, 将从文件的开头开始搜索 'skip', 而 不是 从元数据的结尾开始；如果你想要"
+"fread 提供更直观的功能支持, 请在 GitHub 上提交一个 issue。"
 
 #: fread.R:181
 #, c-format
@@ -2172,6 +2226,8 @@ msgid ""
 "constitute the start to a valid YAML header (expecting something matching "
 "regex \"%s\"); please check your input and try again."
 msgstr ""
+"在第一个未被跳过的行 (%d) 中遇到 <%s%s>。它不是一个有效的 YAML 文件头的开头"
+"（有效的开头应符合正则表达式 \"%s\"）；请检查你的输入并重试。"
 
 #: fread.R:193
 #, fuzzy, c-format
@@ -2207,6 +2263,9 @@ msgid ""
 "YAML header; please exclude the column(s) from colClasses if this was "
 "unintentional."
 msgstr ""
+"用户输入的 colClasses 和从 YAML 文件头中读取的 colClasses 冲突（冲突列为 [%s]"
+"）；程序会假设用户输入是有意要覆盖 YAML 文件头，因此，YAML 文件头中的类型将被"
+"忽略；如果这并非有意为之，请在 colClasses 中排除这些列。"
 
 #: fread.R:255
 #, c-format
@@ -2236,6 +2295,10 @@ msgid ""
 "\t%s\n"
 "so the column has been left as type '%s'"
 msgstr ""
+"列 '%s' 被指定为 '%s' 类型，但 fread 却遇到了以下"
+"%s：\n"
+"\t%s\n"
+"故该列的类型将被定为 '%s'"
 
 #: fread.R:340
 #, c-format
@@ -2282,6 +2345,8 @@ msgid ""
 "fine for now but please change to logical01 at your convenience so we can "
 "remove logicalAsInt in future."
 msgstr ""
+"logicalAsInt 参数已重命名为 logical01 参数以与 fread 保持一致。目前它可以正常"
+"工作，但请在方便的时候将其改为 logical01，以便我们在未来删除 logicalAsInt 参数。"
 
 #: fwrite.R:40
 #, c-format
@@ -2335,7 +2400,7 @@ msgstr "'id' 参数必须是一个逻辑标量。"
 #: groupingsets.R:31
 #, c-format
 msgid "Argument 'j' is required"
-msgstr ""
+msgstr "参数 'j' 是必须的"
 
 #: groupingsets.R:49
 #, c-format
@@ -2493,12 +2558,12 @@ msgstr "`by`中的列名必须是x和y的有效列"
 #: merge.R:61
 #, c-format
 msgid "Unknown argument '%s' has been passed."
-msgstr ""
+msgstr "传入了未知参数 '%s'。"
 
 #: merge.R:64
 #, c-format
 msgid "Passed %d unknown and unnamed arguments."
-msgstr ""
+msgstr "传入了 %d 个未知和未命名的参数。"
 
 #: merge.R:128
 #, c-format
@@ -2510,11 +2575,12 @@ msgstr "列名 %s 在结果中是重复的"
 msgid ""
 "data.table %s IN DEVELOPMENT built %s%s using %d threads (see ?getDTthreads)."
 msgstr ""
+"正在开发中的 data.table %s，构建于 %s%s，使用了 %d 个线程（参见 ?getDTthreads）。"
 
 #: onAttach.R:25
 #, c-format
 msgid "data.table %s using %d threads (see ?getDTthreads)."
-msgstr ""
+msgstr "data.table %s，使用了 %d 个线程（参见 ?getDTthreads）。
 
 #: onAttach.R:26
 #, c-format
@@ -2607,6 +2673,12 @@ msgid ""
 "(Apr 2017).\n"
 "**********"
 msgstr ""
+"**********\n"
+"该 data.table 使用 R < 3.4.0（2017年4月）进行编译，已知会存在内存泄露问题。请"
+"升级R 后重新安装 data.table 以修复内存泄露问题。维护和测试支持旧版本的代码分支会"
+"增加开发时间，所以请升级 R。我们打算将 data.table 的依赖从 8 年前的 R 3.1.0（"
+"2014年4月）升级到 5 年前的 R 3.4.0（2017年4月）。\n"
+"**********"
 
 #: onLoad.R:9
 #, c-format
@@ -2614,6 +2686,8 @@ msgid ""
 "Option 'datatable.nomatch' is defined but is now ignored. Please see note 11 "
 "in v1.12.4 NEWS (Oct 2019), and note 14 in v1.14.2."
 msgstr ""
+"选项 'datatable.nomatch' 虽定义，但现在已被忽略。请参见 v1.12.4 NEWS（2019年10月）"
+"的第11条说明，以及 v1.14.2 的第14条说明。"
 
 #: onLoad.R:26
 #, c-format
@@ -2654,6 +2728,8 @@ msgid ""
 "years. It is now ignored. Manually name `...` entries as needed if you still "
 "prefer the old behavior."
 msgstr ""
+"选项 'datatable.CJ.names' 已经没有任何效果。这一变更早在 4 年前就已决定。现在"
+"该选项已被忽略。如果你仍倾向于旧的行为，请按需手动命名 `...` 条目。"
 
 #: onLoad.R:100
 #, c-format
@@ -3249,7 +3325,7 @@ msgstr "参数 'nan' 必须为 NA 或 NaN"
 
 #: utils.R:32
 msgid "Internal error: use endsWithAny instead of base::endsWith"
-msgstr ""
+msgstr "内部错误：使用 endsWithAny 而非 base::endsWith"
 
 #: utils.R:43 utils.R:52
 #, c-format
