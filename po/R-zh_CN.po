@@ -129,7 +129,7 @@ msgid ""
 "'between' function the 'x' argument is a POSIX class while '%s' was not, "
 "coercion to POSIX failed with: %s"
 msgstr ""
-"'between' 中的 'x' 参数为 POSIX 类，而 '%s' 并不是，将自动转换成 POSIX 失败：%s"
+"'between' 中的 'x' 参数为 POSIX 类，而 '%s' 并不是，将其强制转换成 POSIX 时失败：%s"
 
 #: between.R:27
 #, c-format
