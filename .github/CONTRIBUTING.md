@@ -10,7 +10,7 @@ Filing issues
 Pull Requests (PRs)
 -------------------
 
-Contributors are requested not to use code assistants if they are not able to evaluate license of the code provided by an assistant, and to provide proper citation. Taking GitHub Copilot as an example, as explained in [GitHub Copilot documentation](https://docs.github.com/en/copilot/overview-of-github-copilot/about-github-copilot-individual#using-github-copilot)
+Contributors are requested not to use code assistants if they are not able to evaluate license of the code provided by an assistant, and to provide proper citation. Taking GitHub Copilot as an example, as explained in [GitHub Copilot documentation](https://docs.github.com/en/copilot/overview-of-github-copilot/about-github-copilot-individual#using-github-copilot):
 
 > You are respon­si­ble for ensur­ing the secu­rity and qual­ity of your code. We rec­om­mend you take the same pre­cau­tions when using code gen­er­ated by GitHub Copi­lot that you would when using any code you didn’t write your­self. These pre­cau­tions include rig­or­ous test­ing, IP [(= intel­lec­tual prop­erty)] scan­ning, and track­ing for secu­rity vul­ner­a­bil­i­ties.
 
