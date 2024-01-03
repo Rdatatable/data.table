@@ -518,14 +518,11 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
         } else {
           if ((TYPEOF(target)==VECSXP || TYPEOF(target)==EXPRSXP) && TYPEOF(thisCol)!=TYPEOF(target)) {
             // do an as.list() on the atomic column; #3528
-            // use coerceAs for VECSXP and coerceVector for
+            // coerceAs for int64 to copy attributes and coerceVector otherwise
             thisCol = PROTECT(INHERITS(thisCol, char_integer64) ? coerceAs(thisCol, target, ScalarLogical(TRUE)) : coerceVector(thisCol, TYPEOF(target))); nprotect++;
           }
           // else coerces if needed within memrecycle; with a no-alloc direct coerce from 1.12.4 (PR #3909)
           const char *ret = memrecycle(target, R_NilValue, ansloc, thisnrow, thisCol, 0, -1, idcol+j+1, foundName);
-          if (TYPEOF(target)==VECSXP && INHERITS(thisCol, char_integer64)) {
-            for (int i=ansloc; i<=ansloc+thisnrow; ++i) copyMostAttrib(thisCol, VECTOR_ELT(target, i));
-          }
           if (ret) warning(_("Column %d of item %d: %s"), w+1, i+1, ret);
           // e.g. when precision is lost like assigning 3.4 to integer64; test 2007.2
           // TODO: but maxType should handle that and this should never warn
