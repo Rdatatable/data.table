@@ -1848,7 +1848,7 @@ msgstr "data.table %s 的 '%s' 列中存在缺失值：'%s'。若使 foverlaps()
 msgid ""
 "All entries in column '%s' should be <= corresponding entries in column '%s' "
 "in data.table x."
-msgstr "<needs update>应该<=列中相应的条目"
+msgstr "列 '%s' 中所有条目应该 <= data.table x 中列 '%s' 中对应的条目。"
 
 #: foverlaps.R:66
 #, c-format
@@ -2698,17 +2698,19 @@ msgstr "'x' 必须是一个 list"
 msgid ""
 "Character objects provided in the input are not scalar objects, if you need "
 "them as character vector rather than a name, then wrap each into 'I' call: %s"
-msgstr "<needs translation>"
+msgstr ""
+"输入中所提供的字符串对象不是标量(长度为 1 )对象，如果您需要它们作为字符串向量而"
+"非名称，请将每个对象放入到 'I' 调用中：%s"
 
 #: programming.R:50
 #, c-format
 msgid "'env' must not be missing"
-msgstr "<needs translation>"
+msgstr "必须提供 'env' 参数"
 
 #: programming.R:56
 #, c-format
 msgid "'env' must be a list or an environment"
-msgstr "<needs translation>"
+msgstr "'env' 必须为一列表或环境"
 
 #: programming.R:63
 #, c-format
@@ -2718,7 +2720,7 @@ msgstr "参数 'env' 没有名"
 #: programming.R:65
 #, c-format
 msgid "'env' argument has zero char names"
-msgstr "<needs translation>"
+msgstr "'env' 参数的名字为零字符长度（即\"\"）"
 
 #: programming.R:67
 #, c-format
@@ -2991,17 +2993,17 @@ msgstr "内部错误：ncol(current)==ncol(target) 之前已经检查"
 #: setops.R:159 setops.R:170
 #, c-format
 msgid "Datasets have different %s. 'target': %s. 'current': %s."
-msgstr "<needs translation>"
+msgstr "输入的数据拥有不同的%s。'target'：%s，'current'：%s。"
 
 #: setops.R:161 setops.R:162
 #, c-format
 msgid "has no key"
-msgstr "<needs translation>"
+msgstr "没有键列"
 
 #: setops.R:172 setops.R:173
 #, c-format
 msgid "has no index"
-msgstr "<needs translation>"
+msgstr "没有索引"
 
 #: setops.R:190
 #, c-format
@@ -3051,7 +3053,7 @@ msgstr "<needs translation>"
 
 #: shift.R:3
 msgid "will be ignored since type='shift'."
-msgstr "<needs translation>"
+msgstr "将被忽略，因为 type='shift'。"
 
 #: tables.R:46
 #, c-format
@@ -3079,14 +3081,14 @@ msgstr "%3$s 中 %1$s 也 %2$s 不存在"
 
 #: test.data.table.R:114
 msgid "object '%s' not found"
-msgstr "<needs translation>"
+msgstr "未找到 '%s' 对象"
 
 #: test.data.table.R:138
 #, c-format
 msgid ""
 "memtest intended for Linux. Step through data.table:::rss() to see what went "
 "wrong."
-msgstr "<needs translation>"
+msgstr "memtest 仅适用于 Linux。请逐步执行 data.table:::rss() 以查看错误原因。"
 
 #: test.data.table.R:176
 #, c-format
@@ -3138,7 +3140,7 @@ msgstr "'keep'所含整数值应在 %d 和 %d 间"
 #: transpose.R:51
 #, c-format
 msgid "The argument 'type.convert' does not support empty list."
-msgstr "<needs translation>"
+msgstr "参数 'type.convert' 不支持空列表。"
 
 #: transpose.R:57
 #, c-format
@@ -3148,7 +3150,10 @@ msgid ""
 "element is not allowed unless all elements are functions with length equal "
 "to %d (the length of the transpose list or 'keep' argument if it is "
 "specified)."
-msgstr "<needs translation>"
+msgstr ""
+"当参数 'type.convert' 包含一个未命名元素时，此元素应为最后一个元素，且应为一"
+"个函数。不允许包含多个未命名元素，除非所有元素都为函数，且所有元素的总个数为"
+"%d（即输入列表转置后的长度或 'keep' 参数指定的长度）。"
 
 #: transpose.R:66
 #, c-format
@@ -3156,7 +3161,10 @@ msgid ""
 "When the argument 'type.convert' contains transpose list indices, it should "
 "be a named list of non-missing integer values (with no duplicate) except the "
 "last element that should be unnamed if it is a function."
-msgstr "<needs translation>"
+msgstr ""
+"当参数 'type.convert' 包含转置列表的索引时，它应该为一个命名列表，其中仅包含"
+"非缺失的整数值（且无重复）。除非该列表的最后一个元素是一个函数，这时该元素应"
+"未命名。"
 
 #: transpose.R:68
 #, c-format
@@ -3165,7 +3173,10 @@ msgid ""
 "should be integer values contained in the argument 'keep' (if it is "
 "specified) or be between %d and %d (if it is not). But '%s' is/are not "
 "contained in '%s'."
-msgstr "<needs translation>"
+msgstr ""
+"当参数 'type.convert' 包含转置列表的索引时，它们应该是参数 'keep' （如果"
+"提供了的话）中的整数值，或者（如果 'keep' 没有指定的话）应介于 %d 和 %d 之间。"
+"但 '%s' 并不包含在 '%s' 中。"
 
 #: transpose.R:74
 #, c-format
@@ -3173,7 +3184,9 @@ msgid ""
 "In the argument 'type.convert', '%s' was ignored because all elements in the "
 "transpose list or elements corrisponding to indices specified in the 'keep' "
 "argument have already been converted."
-msgstr "<needs translation>"
+msgstr ""
+"忽略参数 'type.convert' 中的 '%s'，因为转置列表中的所有元素或参数 'keep'"
+"中索引对应的元素已经被转换。"
 
 #: transpose.R:83
 #, c-format
