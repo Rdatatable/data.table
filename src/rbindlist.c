@@ -321,12 +321,12 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
 
     if (!foundName) { static char buff[12]; snprintf(buff,12,"V%d",j+1), SET_STRING_ELT(ansNames, idcol+j, mkChar(buff)); foundName=buff; }
     if (factor) maxType=INTSXP;  // if any items are factors then a factor is created (could be an option)
-    if (int64 && maxType!=REALSXP && !(maxType==16||maxType==15))
-      error(_("Column %d of result is determined to be integer64 but maxType=='%s' != REALSXP"), j+1, type2char(maxType));
+    if (int64 && !(maxType==REALSXP || maxType==STRSXP || maxType==VECSXP || maxType==CPLXSXP))
+      error(_("Internal error: column %d of result is determined to be integer64 but maxType=='%s' != REALSXP"), j+1, type2char(maxType)); // # nocov
     SEXP target;
     SET_VECTOR_ELT(ans, idcol+j, target=allocVector(maxType, nrow));  // does not initialize logical & numerics, but does initialize character and list
-    // #5504 do not copy class for mixing int64 and higher maxTypes CPLSXP and STRSXP
-    if (!factor && !(int64 && (maxType==16||maxType==15))) copyMostAttrib(firstCol, target); // all but names,dim and dimnames; mainly for class. And if so, we want a copy here, not keepattr's SET_ATTRIB.
+    // #5504 do not copy class for mixing int64 and higher maxTypes CPLXSXP/STRSXP/VECSXP
+    if (!factor && !(int64 && (maxType==STRSXP || maxType==VECSXP || maxType==CPLXSXP))) copyMostAttrib(firstCol, target); // all but names,dim and dimnames; mainly for class. And if so, we want a copy here, not keepattr's SET_ATTRIB.
 
     if (factor && anyNotStringOrFactor) {
       // in future warn, or use list column instead ... warning(_("Column %d contains a factor but not all items for the column are character or factor"), idcol+j+1);
@@ -518,10 +518,14 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
         } else {
           if ((TYPEOF(target)==VECSXP || TYPEOF(target)==EXPRSXP) && TYPEOF(thisCol)!=TYPEOF(target)) {
             // do an as.list() on the atomic column; #3528
-            thisCol = PROTECT(coerceVector(thisCol, TYPEOF(target))); nprotect++;
+            // use coerceAs for VECSXP and coerceVector for
+            thisCol = PROTECT(INHERITS(thisCol, char_integer64) ? coerceAs(thisCol, target, ScalarLogical(TRUE)) : coerceVector(thisCol, TYPEOF(target))); nprotect++;
           }
           // else coerces if needed within memrecycle; with a no-alloc direct coerce from 1.12.4 (PR #3909)
           const char *ret = memrecycle(target, R_NilValue, ansloc, thisnrow, thisCol, 0, -1, idcol+j+1, foundName);
+          if (TYPEOF(target)==VECSXP && INHERITS(thisCol, char_integer64)) {
+            for (int i=ansloc; i<=ansloc+thisnrow; ++i) copyMostAttrib(thisCol, VECTOR_ELT(target, i));
+          }
           if (ret) warning(_("Column %d of item %d: %s"), w+1, i+1, ret);
           // e.g. when precision is lost like assigning 3.4 to integer64; test 2007.2
           // TODO: but maxType should handle that and this should never warn
