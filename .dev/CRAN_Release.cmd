@@ -21,9 +21,7 @@ Rscript -e "tools::update_pkg_po('.')"
 ##   [or perhaps, if we get several languages, each to open
 ##    its own PR and merge to main translation PR]
 
-## 3) Check validity
-##   update_pkg_po('.') to be run again for the PR
-##     [can this be done via Travis?]
+## 3) Check validity with tools::checkPoFiles("zh_CN")
 
 ###############################################
 #  Basic checks
