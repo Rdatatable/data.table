@@ -1244,7 +1244,7 @@ msgstr "'na'长度是%<PRId64>但长度必须是1或者等于'test'的长度 (%<
 msgid ""
 "'no' is of type %s but '%s' is %s. Please make all arguments have the same "
 "type."
-msgstr "'no' 是 %s 类型，但 'no' 是 %s 类型。请确保所有参数为同一类型。"
+msgstr "'no' 是 %s 类型，但 '%s' 是 %s 类型。请确保所有参数为同一类型。"
 
 #: fifelse.c:52
 #, c-format

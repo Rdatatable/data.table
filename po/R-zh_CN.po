@@ -129,8 +129,7 @@ msgid ""
 "'between' function the 'x' argument is a POSIX class while '%s' was not, "
 "coercion to POSIX failed with: %s"
 msgstr ""
-"'between' 中的 'x' 参数为 POSIX 类，而 'lower' 并不是，将 'lower' 自动转换成 "
-"POSIX 失败：%s"
+"'between' 中的 'x' 参数为 POSIX 类，而 '%s' 并不是，将其强制转换成 POSIX 时失败：%s"
 
 #: between.R:27
 #, c-format
@@ -670,7 +669,7 @@ msgid ""
 "%d; the same length as there are rows in x (after subsetting if i is "
 "provided)."
 msgstr ""
-"在'by'或'keyby'列表中的项长度为 %s (%s)。每一项的长度须均为%d，即应与 x （或经 i "
+"在'by'或'keyby'列表中的项长度为 %s 。每一项的长度须均为%d，即应与 x （或经 i "
 "筛选后的子集）中所包含行数相同。"
 
 #: data.table.R:940
@@ -976,7 +975,7 @@ msgstr ""
 msgid ""
 "rownames is TRUE but key has multiple columns %s; taking first column x[,1] "
 "as rownames"
-msgstr "rownames 为 TRUE但键(key)为多个列；将使用第一列 x[,1] 为行名。"
+msgstr "rownames 为 TRUE但键(key)为多个列 %s；将使用第一列 x[,1] 为行名。"
 
 #: data.table.R:2043
 #, c-format
@@ -1293,7 +1292,7 @@ msgid ""
 "setDT again."
 msgstr ""
 "无法通过引用直接将 '%1$s' 转换成 data.table，因其与所在环境已绑定。 这有很大"
-"可能是因为 '%1%s' 存在于一个包（或环境）中，该包（或环境）已被锁定从而无法修"
+"可能是因为 '%1$s' 存在于一个包（或环境）中，该包（或环境）已被锁定从而无法修"
 "改其绑定的变量。可以尝试将该对象复制到你的现有环境中，如：var <- copy(var)"
 "然后再运行 setDT。"
 
@@ -1326,9 +1325,9 @@ msgid ""
 "profile of input lengths (length:frequency) is: %s\n"
 "The first entry with fewer than %d entries is %d."
 msgstr ""
-"'setDT' 参数 'x' 中所有的元素均须为同一长度，但输入元素的长度频数表（长度:频
-数）为：%s\n"
-"x中第一个长度比 %s 少的元素为第 %d 项。"
+"'setDT' 参数 'x' 中所有的元素均须为同一长度，但输入元素的长度频数表（长度:频"
+"数）为：%s\n"
+"x中第一个长度比 %d 少的元素为第 %d 项。"
 
 #: data.table.R:2911
 #, c-format
@@ -2129,8 +2128,8 @@ msgid ""
 "constitute the start to a valid YAML header (expecting something matching "
 "regex \"%s\"); please check your input and try again."
 msgstr ""
-"在第一个未被跳过的行 (%d) 中遇到 <%s%s>。它不是一个有效的 YAML 文件头的开头"
-"（有效的开头应符合正则表达式 \"%s\"）；请检查你的输入并重试。"
+"在第一个未被跳过的行 (%3$d) 中遇到 <%1$s%2$s>。它不是一个有效的 YAML 文件头的开头"
+"（有效的开头应符合正则表达式 \"%4$s\"）；请检查你的输入并重试。"
 
 #: fread.R:193
 #, c-format
@@ -2790,7 +2789,7 @@ msgstr "列中包含空白"
 #: setkey.R:51 setkey.R:281
 #, c-format
 msgid "some columns are not in the data.table: %s"
-msgstr "一些列不在data.table中：%ｓ"
+msgstr "一些列不在data.table中：%s"
 
 #: setkey.R:73 setkey.R:282
 #, c-format
@@ -3097,7 +3096,7 @@ msgstr "测试于 %s 后失败，失败发生在测试 %s 之后、下一 test()
 #: test.data.table.R:186
 #, c-format
 msgid "%d error(s) out of %d. Search %s for test number(s) %s. Duration: %s."
-msgstr "%2$d 中共产生 %1$d 个错误。搜索 %s 以定位测试编号 %s。用时：%s。"
+msgstr "%2$d 中共产生 %1$d 个错误。搜索 %3$s 以定位测试编号 %4$s。用时：%5$s。"
 
 #: test.data.table.R:199
 #, c-format
