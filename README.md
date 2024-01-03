@@ -97,4 +97,4 @@ DT[Petal.Width > 1.0, mean(Petal.Length), by = Species]
 
 ### Contributing
 
-Guidelines for filing issues / pull requests: [Contribution Guidelines](https://github.com/Rdatatable/data.table/wiki/Contributing).
+Guidelines for filing issues / pull requests: [Contribution Guidelines](https://github.com/Rdatatable/data.table/blob/master/.github/CONTRIBUTING.md).

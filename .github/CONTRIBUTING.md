@@ -10,16 +10,23 @@ Filing issues
 Pull Requests (PRs)
 -------------------
 
-If you are not fixing an open issue and you are confident, you do not need to file a new issue before submitting the PR. It's easier for us to accept and merge a self-contained PR with everything in one place. If discussion is needed, it can be done in the PR. However, **the PR's status must be passing tests before we will start to look at it**. So, before you spend the time getting to that stage, it may save you time to create an issue first and start a discussion to see if your idea would be accepted in principle. If you are going to spend more than a day on the PR, creating an issue first lets other people know you are working on it to save duplicating effort.
+If you are not fixing an open issue and you are confident, you do not need to file a new issue before submitting the PR. It's easier for us to accept and merge a self-contained PR with everything in one place. If discussion is needed, it can be done in the PR. However, **the PR's status must be passing tests before we will start to look at it**. So, before you spend the time getting to that stage, it may save you time to create an issue first and start a discussion to see if your idea would be accepted in principle. If you are going to spend more than a day on the PR, creating an issue first lets other people know you are working on it to save duplicate effort.
 
 1. Every new feature or bug fix must have one or more new tests in [`inst/tests/tests.Rraw`](https://github.com/Rdatatable/data.table/blob/master/inst/tests/tests.Rraw); see below for a bit more on how this file works. You _must please_ check that the tests fail _without_ the fix, since the build system only checks that the new test passes _with_ the fix, which is not sufficient. For example, run your new test with the current DEV version and verify that it actually fails. The test's comment should contain `#<issue number>` so we can quickly find the issue in future.
-2. Unless the change is trivial (e.g. typo fix) there must be a new entry in [NEWS](https://github.com/Rdatatable/data.table/blob/master/NEWS.md). Please use the name of the user-visible function at the start to aid users quickly scanning the news item, explain the feature/bug, and thank issue/pr contributors by name. Follow the prevailing style at the top of the file; e.g. "fread with X in Y circumstance would error/segfault, [#123](issue link). Thanks to _(them)_ for reporting and _(me)_ for fixing". These are the release notes that others quickly skim and search so please use relevant helpful keywords with that in mind. If the problem was an error/warning/message, please include the error/warning/message in the news item so that folk searching for it will have a better chance of finding the news item, and to make the news item more specific. Bug fixes are under the bug fixes section heading so there is no need to include words such as "is fixed" in the first sentence because that is implicit. Please link to the issue(s) not to the PR (unless there is just a PR and no issue); if folk are interested in the detail of the fix they can get to the PR from the issue. Again: please follow the prevailing style of news items. Doing so makes it much easier and faster to review and merge.
-3. Please create the PR against the `master` branch. You can do that by forking the repository, creating a new branch for your feature/bugfix in the forked project, and then using that as a base for your pull requests. After your first successful merged PR you will very likely be invited to be a project member. This will allow you to create your next branch directly in the project which is easier and more convenient than forking, both for you and for Rdatatable's maintainers. Working on _branches_ on this (Rdatatable) project will _not_ affect the core code, so you can feel free to experiment as a project member; the core code is on the `master` branch, and only Matt & Arun can push/merge code there. Remember to do `git pull upstream your_branch` (where `upstream` is the name of the remote for `Rdatatable/data.table` seen in `git remote -v`) each time you want to add something; this will keep your local branch up to date with remote, in case anyone makes commits you don't yet have locally. This will reduce the number of merge conflicts you will need to deal with. Do not use `git rebase` on a branch where other users are pushing.
-4. Just one feature/bugfix per PR please. Small changes are easier to review and accept than big sweeping changes. Sometimes big sweeping changes are needed and we just have to discuss those case by case.
-5. You do not need to separate formatting-only changes. Just make the format changes in your PR. When the PR is passing tests and we look at the PR's unified diff, we will subtract the formatting-only changes and make those to master directly for you. That will reduce your PR to logic changes only so that it can be more easily reviewed now and easier to look back on in future.
-6. GitHub enables us to squash commits together when merging, so you don't have to squash yourself.
-7. Your pull request's description is the place to put any benchmark results and be a bit more verbose than the entry in the NEWS file, if you think that's appropriate. Include text "Closes #ISSUE_NUM" (case insensitive but the space must be present) for GitHub to link and close the corresponding issue when the PR is merged. If multiple issues are being closed, add that many "Closes #ISSUE" lines.
-8. Ensure that all tests pass by typing `test.data.table()` after installing your branch. It's also better to `R CMD check --as-cran` against your branch source package archive `.tar.gz` file. You may want to add `--no-manual`, `--no-build-vignettes` or `--ignore-vignettes` (R 3.3.0+) options to reduce dependencies required to perform check. PRs with failed tests can't be merged and it is hard to debug every PR and explain why it fails and how to fix it. The lesser the feedback required, the faster it is likely to be merged. Matt has added his dev cycle script [here](https://github.com/Rdatatable/data.table/blob/master/.dev/cc.R) and Pasha has added a Makefile [here](https://github.com/Rdatatable/data.table/blob/master/Makefile). The `.rprofile` setup for how to use Matt's dev cycle script can be found [here](https://github.com/Rdatatable/data.table/issues/5131).
+
+1. Unless the change is trivial (e.g. typo fix) there must be a new entry in [NEWS](https://github.com/Rdatatable/data.table/blob/master/NEWS.md). Please use the name of the user-visible function at the start to aid users quickly scanning the news item, explain the feature/bug, and thank issue/PR contributors by name. Follow the prevailing style at the top of the file; e.g. "fread with X in Y circumstance would error/segfault, [#123](issue link). Thanks to _(them)_ for reporting and _(me)_ for fixing". These are the release notes that others quickly skim and search so please use relevant helpful keywords with that in mind. If the problem was an error/warning/message, please include the error/warning/message in the news item so that folks searching for it will have a better chance of finding the news item, and to make the news item more specific. Bug fixes are under the bug fixes section heading so there is no need to include words such as "is fixed" in the first sentence because that is implicit. Please link to the issue(s) not to the PR (unless there is just a PR and no issue); if folk are interested in the detail of the fix they can get to the PR from the issue. Again: please follow the prevailing style of news items. Doing so makes it much easier and faster to review and merge.
+
+1. Please create the PR against the `master` branch. You can do that by forking the repository, creating a new branch for your feature/bugfix in the forked project, and then using that as a base for your pull requests. After your first successful merged PR you will very likely be invited to be a [project member](https://github.com/orgs/Rdatatable/teams/project-members). This will allow you to create your next branch directly in the project which is easier and more convenient than forking, both for you and for Rdatatable's maintainers. Working on _branches_ on this (Rdatatable) project will _not_ affect the core code, so you can feel free to experiment as a project member; the core code is on the `master` branch, and only data.table [committers](https://github.com/orgs/Rdatatable/teams/maintainers) can push/merge code there. Remember to do `git pull upstream your_branch` (where `upstream` is the name of the remote for `Rdatatable/data.table` seen in `git remote -v`) each time you want to add something; this will keep your local branch up to date with remote, in case anyone makes commits you don't yet have locally. This will reduce the number of merge conflicts you will need to deal with. Do not use `git rebase` on a branch where other users are pushing.
+
+1. Just one feature/bugfix per PR please. Small changes are easier to review and accept than big sweeping changes. Sometimes big sweeping changes are needed and we just have to discuss those case by case.
+
+1. You do not need to separate formatting-only changes. Just make the format changes in your PR. When the PR is passing tests and we look at the PR's unified diff, we will subtract the formatting-only changes and make those to master directly for you. That will reduce your PR to logic changes only so that it can be more easily reviewed now and easier to look back on in future.
+
+1. GitHub enables us to squash commits together in one click when merging, so you don't have to squash yourself.
+
+1. Your pull request's description is the place to put any benchmark results and be a bit more verbose than the entry in the NEWS file, if you think that's appropriate. Include text "Closes #ISSUE_NUM" (case insensitive but the space must be present) for GitHub to link and close the corresponding issue when the PR is merged. If multiple issues are being closed, add that many "Closes #ISSUE" lines -- "Closes #ISSUE1, #ISSUE2" **does not work**.
+
+1. Ensure that all tests pass by typing `test.data.table()` after installing your branch. It's also better to `R CMD check --as-cran` against your branch source package archive `.tar.gz` file. You may want to add `--no-manual`, `--no-build-vignettes` or `--ignore-vignettes` options to reduce dependencies required to perform check. PRs with failed tests can't be merged and it is hard to debug every PR and explain why it fails and how to fix it. The lesser the feedback required, the faster it is likely to be merged. So that your dev setup can most closely match that of data.table developers, Matt Dowle added his dev cycle script [here](https://github.com/Rdatatable/data.table/blob/master/.dev/cc.R) and Pasha Stetshenko added a Makefile [here](https://github.com/Rdatatable/data.table/blob/master/Makefile). The `.Rprofile` setup for how to use Matt's dev cycle script can be found [here](https://github.com/Rdatatable/data.table/issues/5131).
 
 Example of a good pull request: [PR#2332](https://github.com/Rdatatable/data.table/pull/2332). It has a NEWS entry. It passed existing tests and added a new one. One test was removed but the PR description clearly explained why upfront (without us having to ask). Benchmark results were included, which made the need for the change compelling. We didn't need to run anything ourselves. Everything was including in one PR in one place. In short, it was a pleasure to review and merge.
 
@@ -34,67 +41,69 @@ A few minor points of style that you should adhere to in your PR:
   + In tests use long lines and vertical alignment to easily spot small differences
   + Argument spacing style: `fun(arg1=value1, arg2=val2, ...)`
   + Add a whitespace between `if` and opening bracket, also before opening curly bracket: `if (condition) {`
-- Use `L` suffix for integer; i.e. `x[1L]` not `x[1]` (to save coercion)
-- Use `stop(domain=NA, gettextf(fmt, arg1, arg2, ..., domain="R-data.table"))` not `stop(paste(...))` or `stop(sprintf(...))` to facilitate translation as per [Writing R Extensions#1.7 point 2](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Diagnostic-messages)
-
-### Translations
-
-`data.table` offers some translations for non-native English speakers (currently, it's limited to just Mandarin). For development, there's a few minor points:
-
- - You _don't_ need to update the `po` files in your PR. We update these in one PR before each release. This makes it much easier for translators to update the messages in one go, rather than greenlighting each PR.
- - For R code, when writing error messages (or `warning`s, or `message`s), use a single string where possible. Bad: `stop("This is ", "an error")` vs. Good: `stop("This is an error")`. If you need to construct the error message from several parts, use `gettextf` (and rarely, `ngettext`). Bad: `stop("Error in column ", j, ". Please fix."))` vs. Good: `stop(domain=NA, gettextf("Error in column %d. Please fix.", j, domain="R-data.table"))`. Note the usage of `domain` in both `stop()` and `gettextf()`. More uncommonly, when using `cat()`, always use `gettextf`.
- - For C code, any `char` array that will be shown to users should be wrapped in `_()` (which marks the array for translation). Bad: `error("Error in column %d. Please fix.", j);` vs. Good: `error(_("Error in column %d. Please fix."), j);`.
+- Use `L` suffix for integer; i.e. `x[1L]` not `x[1]` (to save coercion). `:` is an exception, e.g. `1:10` is fine. Use e.g. `1.0` to emphasize when a literal is really numeric (and not integer).
+- Use `stopf(fmt, arg1, arg2, ...))` not `stop(paste(...))` or `stop(sprintf(...))` to facilitate translation as per [Writing R Extensions#1.7 point 2](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Diagnostic-messages). There's also `warningf()`, `messagef()`, `packageStartupMessagef()`, and `catf()`.
 
 ### Testing
 
-`data.table` uses a series of unit tests to exhibit code that is expected to work. These are primarily stored in [`inst/tests/tests.Rraw`](https://github.com/Rdatatable/data.table/blob/master/inst/tests/tests.Rraw). They come primarily from two places -- when new features are implemented, the author constructs minimal examples demonstrating the expected common usage of said feature, including expected failures/invalid use cases (e.g., the [initial assay of `fwrite` includes 28 tests](https://github.com/Rdatatable/data.table/blob/master/inst/tests/tests.Rraw#L9123-L9245)). Second, when kind users such as yourself happen upon some aberrant behavior in their everyday use of `data.table` (typically, some edge case that slipped through the cracks in the coding logic of the original author). We try to be thorough -- for example there were initially [141 tests of `split.data.table`](https://github.com/Rdatatable/data.table/blob/master/inst/tests/tests.Rraw#L8493-L8952), and that number has since grown!
+`data.table` uses a series of unit tests to exhibit code that is expected to work. These are primarily stored in [`inst/tests/tests.Rraw`](https://github.com/Rdatatable/data.table/blob/master/inst/tests/tests.Rraw). They come primarily from two places -- when new features are implemented, the author constructs minimal examples demonstrating the expected common usage of said feature, including expected failures/invalid use cases (e.g., the [initial assay of `fwrite` included 24 tests](https://github.com/Rdatatable/data.table/pull/1613/files#diff-e3243f3780ce7d303c3317f73945310bfc37e45d193568246246aca20e3270ae)). Second, when kind users such as yourself happen upon some aberrant behavior in their everyday use of `data.table` (typically, some edge case that slipped through the cracks in the coding logic of the original author). We try to be thorough -- for example there were initially [141 tests of `split.data.table`](https://github.com/Rdatatable/data.table/commit/5f7a435fea5622bfbe1d5f1ffa99fa94a6a054ae#diff-e3243f3780ce7d303c3317f73945310bfc37e45d193568246246aca20e3270ae), and that number has since grown!
 
-When you file a pull request, you should add some tests to this file with this in mind -- for new features, try to cover possible use cases extensively (we use [Codecov](https://codecov.io/gh/Rdatatable/data.table) to make it a bit easier to see how well you've done to minimally cover any new code you've added); for bug fixes, include a minimal version of the problem you've identified and write a test to ensure that your fix indeed works, and thereby guarantee that your fix continues to work as the codebase is further modified in the future. We encourage you to scroll around in `tests.Rraw` a bit to get a feel for the types of examples that are being created, and how bugs are tested/features evaluated.
+When you file a pull request, you should add some tests to this file with this in mind -- for new features, try to cover possible use cases extensively (we use [Codecov](https://app.codecov.io/gh/Rdatatable/data.table) to make it a bit easier to see how well you've done to minimally cover any new code you've added); for bug fixes, include a minimal version of the problem you've identified and write a test to ensure that your fix indeed works, and thereby guarantee that your fix continues to work as the codebase is further modified in the future. We encourage you to scroll around in `tests.Rraw` a bit to get a feel for the types of examples that are being created, and how bugs are tested/features evaluated.
 
-What numbers should be used for new tests? Numbers should be new relative to current master at the time of your PR. If another PR is merged before yours, then there may be a conflict, but that is no problem, as [Matt will fix the test numbers when he merges your PR](https://github.com/Rdatatable/data.table/pull/4731#issuecomment-768858134).
+What numbers should be used for new tests? Numbers should be new relative to current master at the time of your PR. If another PR is merged before yours, then there may be a conflict, but that is no problem, as [a Committer will fix the test numbers when merging your PR](https://github.com/Rdatatable/data.table/pull/4731#issuecomment-768858134).
 
 #### Using `test`
 
-See [`test` function manual](https://rdatatable.gitlab.io/data.table/reference/test.html).
+See [`?test`](https://rdatatable.gitlab.io/data.table/reference/test.html).
 
 **References:** If you are not sure how to issue a PR, but would like to contribute, these links should help get you started:
 
 1. **[How to Github: Fork, Branch, Track, Squash and Pull request](https://gun.io/blog/how-to-github-fork-branch-and-pull-request/)**.
-2. **[Squashing Github pull requests into a single commit](http://eli.thegreenplace.net/2014/02/19/squashing-github-pull-requests-into-a-single-commit)**.
-3. **[Github help](https://help.github.com/articles/using-pull-requests/)** - you'll need the *fork and pull* model.
+1. **[Squashing Github pull requests into a single commit](http://eli.thegreenplace.net/2014/02/19/squashing-github-pull-requests-into-a-single-commit)**.
+1. **[Github help](https://help.github.com/articles/using-pull-requests/)** - you'll need the *fork and pull* model.
 
 Minimal first time PR
 ---------------------
 
+```shell
+cd /tmp      # or anywhere safe to play
+git config --global core.autocrlf false   # Windows-only preserve \n in test data
+git clone https://github.com/Rdatatable/data.table.git
+cd data.table
+R CMD build .
+R CMD check data.table_*.tar.gz
+# ...
+# Status: OK
 ```
-$ cd /tmp      # or anywhere safe to play
-$ git config --global core.autocrlf false   # Windows-only preserve \n in test data
-$ git clone https://github.com/Rdatatable/data.table.git
-$ cd data.table
-$ R CMD build .
-$ R CMD check data.table_1.11.5.tar.gz
-...
-Status: OK
+
+Congratulations - you've just compiled and tested the very latest version of data.table in development. Everything looks good. Now make your changes. Using an editor of your choice, edit the appropriate `.R`, `.md`, `NEWS` and `tests.Rraw` files. Test your changes:
+
+```shell
+rm data.table_*.tar.gz # clean-up old build(s)
+R CMD build .
+R CMD check data.table_*.tar.gz
 ```
-Congratulations - you've just compiled and tested the very latest version of data.table in development. Everything looks good. Now make your changes. Using an editor of your choice, edit the appropriate `.R`, `.md`, `NEWS` and `tests.Rraw` files. Test your changes : 
+
+or if your OS supports `make`:
+
+```shell
+make build && make check
 ```
-$ R CMD build .
-$ R CMD check data.table_1.11.5.tar.gz
-```
-or if your OS supports makefile
-```
-$ make build && make check
-```
+
 Fix the problems and repeat the `build` and `check` steps until you get `Status: OK`.
-Now commit the change and push. Since this is a first time PR and you're not a project member, this step should automatically ask you if you wish to fork the project. Say 'yes'. If that's not the case, please edit this wiki page to show what exactly happens for non project members.
+Now commit the change and push. Since this is a first time PR and you're not a project member, this step should automatically ask you if you wish to fork the project. Say 'yes'. If that's not the case, please edit this page to show what exactly happens for non-project members.
+
+```shell
+git commit -am "Added/fixed something in somewhere"
+git push
 ```
-$ git commit -am "Added/fixed something in somewhere"
-$ git push
+
+After your first successful non-trivial PR you'll likely be invited to be a project member. When you're a project member, before making your changes, you would create a branch first:
+
+```shell
+git checkout -b my_new_branch
 ```
-After your first successful non-trivial PR you'll likely be invited to be a project member. When you're a member, before making your changes, you would create a branch first : 
-```
-$ git checkout -b my_new_branch
-```
+
 and then the `commit` and `push` shown above would push to the branch in the main project. The next time you refresh the GitHub page in your browser, a button appears which you can click to create the PR from the branch. And that's all there is to it.
 
 #### Translations
@@ -115,7 +124,7 @@ There are few utilities that some of regular `data.table` contributors are using
 (advanced) Tips for your dev environment
 -----------------------------
 
-### `pre-commit` hook 
+### `pre-commit` hook
 
 [`git` hooks](https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks) are a great way to try and catch common code linting-style problems on your local machine before pushing to GitHub.
 

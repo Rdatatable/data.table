@@ -135,12 +135,17 @@ if (!test_longdouble) {
 # generate simple error messages from base that are checked against in our tests. this helps
 #   protect us against these messages evolving in base in the future, and against these messages
 #   potentially not being produced in English.
+# If the target condition only appears on certain platforms/R versions, this will return NULL
+#   whenever the code succeeds, or the message matcher wherever it fails. Thus we can flexibly
+#   pass e.g. 'warning = NULL | warning = <warning>' concisely as 'test(., warning = get_msg())'.
 # Three use cases:
 #   (1) match message exactly [missing delim]
 #   (2) match message pattern after dropping anything between delimeters [delim, fmt=FALSE]
 #   (3) function factory for matching messages exactly by substituting anything between delimeters [delim, fmt=TRUE]
 get_msg = function(e, delim, fmt=FALSE) {
-  msg = tryCatch(e, error=identity, warning=identity)$message
+  condition = tryCatch({e; NULL}, error=identity, warning=identity)
+  if (is.null(condition)) return(condition)
+  msg = condition$message
   if (missing(delim)) return(msg)
   if (length(delim) == 1L) delim[2L] = delim[1L]
   msg = gsub(
@@ -165,7 +170,8 @@ base_messages = list(
   missing_file = get_msg({tmp <- tempfile(tmpdir=tempfile("xxx")); file(tmp, "w")}, "'"),
   # gives both error & warning but tryCatch returns the warning first, so suppress
   cant_open_file = get_msg(suppressWarnings({con<-file(tempfile()); open(con, 'r')})),
-  mixed_subscripts = get_msg(letters[-1:1])
+  mixed_subscripts = get_msg(letters[-1:1]),
+  maybe_invalid_old_posixct = get_msg(as.POSIXct("1893-12-28 05:15:36", tz = ""))
 )
 
 ##########################
@@ -1090,6 +1096,7 @@ test(351.2, DT[, c("a","b"):=13:15, verbose=TRUE],       ans,
             notOutput="revised")
 test(352.1, DT[,letters[1:4]:=list(1L,NULL)], error="Supplied 4 columns to be assigned 2 items. Please see NEWS for v1.12.2")
 test(352.2, DT[,letters[1:4]:=list(1L,NULL,2L,NULL)], data.table(a=c(1L,1L,1L),c=c(2L,2L,2L)))
+test(352.3, DT[,letters[1:2]:=list(1L,NULL,2L,NULL)], error="Supplied 2 columns to be assigned 4 items. Please see NEWS for v1.12.2")
 
 # Test assigning new levels into factor columns
 DT = data.table(f=factor(c("a","b")),x=1:4)
@@ -13284,6 +13291,12 @@ test(1958.19, fread(text=txt, nrows=0L, verbose=TRUE), data.table(A=integer(), B
 txt = paste(c("A,B\n1,2\n", rep("3,4\n",5100), "3,4.1\n", rep("5,6\n",4900)), collapse="")
 test(1958.20, fread(text=txt, nrows=0L, verbose=TRUE), data.table(A=integer(), B=integer()),
               output="Sampled 1049 rows.*at 11 jump points")
+# invalid head position for nrows=0 #5868
+# following example has to be big enough to trigger a jump and enough blanks so we get an invalid header position after a jump (at least n=599101 for following two cols)
+test(1958.21, fread(sprintf('%s%s\n', 'a,b', paste0('\n', sample(c('', '3'), 6e5L, TRUE), sample(c(',a',',b',',c'), 6e5L, TRUE), collapse="")), nrows=0L),
+  data.table(a=integer(), b=character()))
+test(1958.22, fread(sprintf('%s%s\n', 'a,b', paste0('\n', sample(c('', '3'), 6e5L, TRUE), sample(c(',a',',b',',c'), 6e5L, TRUE), collapse="")), nrows=0L, nThread=1L),
+  data.table(a=integer(), b=character()))
 
 # Skip should work with all types of newlines #3006
 eols = c("\n", "\r\n", "\r", "\n\r")
@@ -16847,8 +16860,17 @@ if (.Platform$OS.type!="windows") {
   # blank TZ env variable on non-Windows is recognized as UTC consistent with C and R; but R's tz= argument is the opposite and uses "" for local
 }
 Sys.unsetenv("TZ")
-tt = fread(tmp, colClasses=list(POSIXct="times"), tz="")   # from v1.14.0 tz="" needed
-test(2150.025, attr(tt$times, "tzone"), "") # as.POSIXct puts "" on the result (testing the write.csv version here with missing tzone)
+# Notes:
+#  - from v1.14.0 tz="" needed
+#  - as.POSIXct puts "" on the result (testing the write.csv version here with missing tzone)
+#  - Per #5866, this test is complicated by some interaction with very specific builds of R where
+#    as.POSIXct() might fail for very old timestamps when 'tz=""' is used. On such systems,
+#    as.POSIXct() failure means 'times' is returned as a character, hence no 'tzone' attribute.
+#    fread() will also throw a warning, one substring of which will be the reproduced base R error.
+test(2150.025,
+     attr(fread(tmp, colClasses=list(POSIXct="times"), tz="")$times, "tzone"),
+     if (is.null(base_messages$maybe_invalid_old_posixct)) "" else NULL,
+     warning=base_messages$maybe_invalid_old_posixct)
 # the times will be different though here because as.POSIXct read them as local time.
 if (is.na(oldtz)) Sys.unsetenv("TZ") else Sys.setenv(TZ=oldtz)
 fwrite(copy(DT)[ , times := format(times, '%FT%T+00:00')], tmp)
@@ -18064,6 +18086,14 @@ for (opt in c(0,Inf)) {
     output=out)
   testnum = 2233.44
 }
+options(old)
+# optimized := with gforce functions that can return lists #5403
+old = options(datatable.verbose=TRUE)
+DT = data.table(grp=1:2, x=1:4)
+out = "Making each group and running j (GForce TRUE)"
+test(2233.45, copy(DT)[, c("y", "z") := .(shift(x, type="lag", n=1), shift(x, type="lead", n=1)), by=grp], data.table(grp=1:2, x=1:4, y=c(NA, NA, 1:2), z=c(3:4, NA, NA)), output=out)
+test(2233.46, copy(DT)[, l := shift(x, n=c(0, 0)), by=grp], data.table(grp=1:2, x=1:4, l=list(INT(1, 1), INT(2, 2), INT(3, 3), INT(4, 4))), output=out)
+test(2233.47, copy(DT)[, c("l1", "l2") := shift(x, n=c(-1, 1)), by=grp], data.table(grp=1:2, x=1:4, l1=c(3:4,NA,NA), l2=c(NA,NA,1:2)), output=out)
 options(old)
 
 # support by=.I; #1732
