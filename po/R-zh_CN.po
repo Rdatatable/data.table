@@ -371,8 +371,8 @@ msgstr "变量 '%s' 并没有存在于调用环境中。之所以在调用环境
 msgid ""
 "Both '%1$s' and '..%1$s' exist in calling scope. Please remove the '..%1$s' "
 "variable in calling scope for clarity."
-msgstr "'%1%s'和'..%1$s'均在当前调用环境中。为清晰起见，请移除在调用环境中名为
-'..%1$s' 的变量。"
+msgstr "'%1%s'和'..%1$s'均在当前调用环境中。为清晰起见，请移除在调用环境中名为"
+"..%1$s' 的变量。"
 
 #: data.table.R:288
 #, c-format
@@ -453,7 +453,7 @@ msgid ""
 msgstr ""
 "'%s' 并不存在于调用环境中，但是它是一个类型为 %s 的列。如果你想要选择包含 "
 "TRUE 值的列中的行，或者选择本身包含行号的列中的行，尝试 DT[(col)]、"
-"DT[DT$col]，或者 DT[col==TRUE]，它们表意非常清晰且效率高。
+"DT[DT$col]，或者 DT[col==TRUE]，它们表意非常清晰且效率高。"
 
 #: data.table.R:422
 #, c-format
@@ -532,8 +532,8 @@ msgid ""
 "rare convenience. Explicitly use rep(...,length=.N) if you really need to "
 "recycle."
 msgstr ""
-"经计算 i 为长度为 %d 的逻辑向量，但数据框有 %d 行。循环补齐“
-”循环补齐逻辑向量 i 的特性虽然在少数情况下使用方便，但这种行为会隐藏更多的 bug，"
+"经计算 i 为长度为 %d 的逻辑向量，但数据框有 %d 行。循环补齐"
+"循环补齐逻辑向量 i 的特性虽然在少数情况下使用方便，但这种行为会隐藏更多的 bug，"
 "因此现已不被允许。若确实需要循环补齐，请直接使用 rep(...,length=.N)。"
 
 #: data.table.R:626
@@ -1305,7 +1305,7 @@ msgid ""
 "a new column for each embedded column."
 msgstr ""
 "某些列为包含多列的类型（如矩阵列）：%s。setDT 会保留这些列，但后续的操作如分"
-组（grouping）和联接（joining）等操作可能会失败。请考虑使用 as.data.table() 因"
+"组（grouping）和联接（joining）等操作可能会失败。请考虑使用 as.data.table() 因"
 "为它会为每个内嵌列建立一个新列。"
 
 #: data.table.R:2888
@@ -1580,12 +1580,12 @@ msgid ""
 "both sep and pattern arguments used; must use either sep or pattern (not "
 "both)"
 msgstr ""
-"同时使用了 sep 和 pattern 参数；必须使用 sep 或 pattern（不能同时使用）”
+"同时使用了 sep 和 pattern 参数；必须使用 sep 或 pattern（不能同时使用）"
 
 #: fmelt.R:77
 #, c-format
 msgid "multiple.keyword must be a character string with nchar>0"
-msgstr "multiple.keyword 必须为一个字符长度大于0(nchar>0)的字符串
+msgstr "multiple.keyword 必须为一个字符长度大于0(nchar>0)的字符串"
 
 #: fmelt.R:80
 #, c-format
@@ -1705,7 +1705,7 @@ msgid ""
 "value provided in 'measure.vars' is given precedence."
 msgstr ""
 "在 'measure.vars' 和 'value.name' 参数中都提供了 'value.name'；"
-"将优先使用 'measure.vars' 中的值。
+"将优先使用 'measure.vars' 中的值。"
 
 #: fmelt.R:215
 #, c-format
@@ -1993,8 +1993,8 @@ msgid ""
 "file= must be a single character string containing a filename, or URL "
 "starting 'http[s]://', 'ftp[s]://' or 'file://'"
 msgstr ""
-"file= 须为包含文件名的字符串，或以 'http[s]://'、'ftp[s]://' 或 'file://' 开头
-的URL字符串。"
+"file= 须为包含文件名的字符串，或以 'http[s]://'、'ftp[s]://' 或 'file://' 开头"
+"的URL字符串。"
 
 #: fread.R:80
 #, c-format
@@ -2471,7 +2471,7 @@ msgstr ""
 #: onAttach.R:25
 #, c-format
 msgid "data.table %s using %d threads (see ?getDTthreads)."
-msgstr "data.table %s，使用了 %d 个线程（参见 ?getDTthreads）。
+msgstr "data.table %s，使用了 %d 个线程（参见 ?getDTthreads）。"
 
 #: onAttach.R:26
 #, c-format

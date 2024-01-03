@@ -1689,7 +1689,7 @@ msgid ""
 "Column %d is length %d which differs from length of column 1 (%d), are you "
 "attempting to order by a list column?\n"
 msgstr "第 %d 列的长度是 %d，与第 1 列的长度(%d)不同。你是在尝试通过一个列表类"
-"型的列来排序吗？"
+"型的列来排序吗？\n"
 
 #: forder.c:465
 msgid "At least one of retGrp= or sort= must be TRUE"
@@ -3221,7 +3221,7 @@ msgid ""
 "OpenMP %d did not assign threads to iterations monotonically. Please search "
 "Stack Overflow for this message."
 msgstr ""
-"OpenMP %d 没有按照顺序分配线程进行迭代。请在 Stack Overflow 上搜索此消息。
+"OpenMP %d 没有按照顺序分配线程进行迭代。请在 Stack Overflow 上搜索此消息。"
 
 #: fsort.c:317
 msgid "Unable to allocate working memory"
@@ -3632,7 +3632,7 @@ msgstr "内部错误：gfirstlast 中的 headw 参数在当 w>1 时应只能为�
 #: gsumm.c:965
 #, c-format
 msgid "Internal error: unanticipated case in gfirstlast first=%d w=%d headw=%d"
-msgstr "内部错误：未预料到 gfirstlast 中的 first=%d w=%d headw=%d 这种情况
+msgstr "内部错误：未预料到 gfirstlast 中的 first=%d w=%d headw=%d 这种情况"
 
 #: gsumm.c:979
 #, c-format
@@ -3641,8 +3641,8 @@ msgid ""
 "the namespace prefix (e.g. utils::head(.)) or turn off GForce optimization "
 "using options(datatable.optimize=1)"
 msgstr ""
-"类型 '%s' 不支持应用 GForce head/tail/first/last/`[` 优化。你可以添加命名空间前
-缀（如 utils::head(.)）或者使用 options(datatable.optimize=1) 关闭 GForce 优化"
+"类型 '%s' 不支持应用 GForce head/tail/first/last/`[` 优化。你可以添加命名空间前"
+"缀（如 utils::head(.)）或者使用 options(datatable.optimize=1) 关闭 GForce 优化"
 
 #: gsumm.c:995 gsumm.c:1001
 msgid ""
@@ -3720,8 +3720,8 @@ msgid ""
 "(e.g. data.table::shift(.)) or turn off GForce optimization using "
 "options(datatable.optimize=1)"
 msgstr ""
-"类型 '%s' 不支持应用 GForce gshift 优化。你可以添加命名空间前
-缀（如 data.table::shift(.)）或者使用 options(datatable.optimize=1) 关闭 GForce"
+"类型 '%s' 不支持应用 GForce gshift 优化。你可以添加命名空间前"
+"缀（如 data.table::shift(.)）或者使用 options(datatable.optimize=1) 关闭 GForce"
 "优化"
 
 #: idatetime.c:126 vecseq.c:13
@@ -3829,7 +3829,7 @@ msgstr "指针是%zu个字节，大于8。我们尚未在大于64位的任何体
 
 #: init.c:177
 msgid "... failed. Please forward this message to maintainer('data.table')."
-msgstr "... 失败。请将此消息转发给 maintainer('data.table')。
+msgstr "... 失败。请将此消息转发给 maintainer('data.table')。"
 
 #: init.c:178
 #, c-format
@@ -4079,8 +4079,8 @@ msgid ""
 "name' and 'I' can be used to work out proper substitution, see ?substitute2 "
 "examples."
 msgstr ""
-"尝试用 '%s' 元素替换 '%s' 类型的对象，但当替换调用参数的名称时，它必须是
-'symbol' 类型，函数 'as.name' 和 'I' 可以用来实现适当的替换，参见 ?substitute2"
+"尝试用 '%s' 元素替换 '%s' 类型的对象，但当替换调用参数的名称时，它必须是"
+"'symbol' 类型，函数 'as.name' 和 'I' 可以用来实现适当的替换，参见 ?substitute2"
 
 #: rbindlist.c:8
 msgid "fill= should be TRUE or FALSE"
