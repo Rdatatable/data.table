@@ -3049,7 +3049,7 @@ msgstr "内部错误：此时不匹配的因子类型应已被发现"
 
 #: shift.R:3
 msgid "Provided argument fill="
-msgstr "<needs translation>"
+msgstr "提供的 fill= 参数"
 
 #: shift.R:3
 msgid "will be ignored since type='shift'."
@@ -3194,7 +3194,10 @@ msgid ""
 "The argument 'type.convert' should be TRUE/FALSE, a function, a list of "
 "functions, or a named list of pairs 'fun=indices' with optionally one "
 "unnamed element (a function) but an object of type '%s' was provided."
-msgstr "<needs translation>"
+msgstr ""
+"参数 'type.convert' 应为 TRUE/FALSE、一个函数、一个包含函数的列表，或一个包含"
+"元素 'fun=indices' (函数=索引) 的命名列表，其中可以有一个未命名元素（必须为一"
+"个函数），但当前输入中提供了一个类型为 '%s' 的对象。"
 
 #: transpose.R:88
 #, c-format
