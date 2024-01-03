@@ -49,3 +49,7 @@
 
 # utils
 /src/utils.c @HughParsonage
+
+# rbind
+/src/rbindlist.c @ben-schwen
+/man/rbindlist.Rd @ben-schwen
