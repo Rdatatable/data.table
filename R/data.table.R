@@ -1739,6 +1739,9 @@ replace_dot_alias = function(e) {
         GForce = FALSE
       } else {
         # Apply GForce
+        # GForce needs to evaluate all arguments not present in the data.table before calling C part #5547
+        # Safe cases: variables [i], calls without variables [c(0,1), list(1)] # TODO extend this list
+        # Unsafe cases: functions containing variables [c(i), abs(i)], .N
         noCall_noVars = function(expr) (!is.call(expr) || length(all.vars(expr, max.names=1L, unique=FALSE))==0L) && !dotN(expr)
         .gshift_ok = function(q) {
           q = match.call(shift, q)
