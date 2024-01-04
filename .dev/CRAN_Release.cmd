@@ -16,14 +16,14 @@ xgettext -o /dev/stdout ./*.c \
 Rscript -e "tools::update_pkg_po('.')"
 
 # 2) Open a PR with the new templates & contact the translators
-#   * zh_CN:
+#   * zh_CN: @hongyuanjia
 ## Translators to submit commits with translations to this PR
 ##   [or perhaps, if we get several languages, each to open
 ##    its own PR and merge to main translation PR]
 
-## 3) Check validity
-##   update_pkg_po('.') to be run again for the PR
-##     [can this be done via Travis?]
+## 3) Check validity with tools::checkPoFiles("zh_CN")
+
+## 4) Compile the new .mo binary files with potools::po_compile()
 
 ###############################################
 #  Basic checks
