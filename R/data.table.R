@@ -1776,7 +1776,6 @@ replace_dot_alias = function(e) {
             "shift" = .gshift_ok(q),
             "weighted.mean" = .gweighted.mean_ok(q, x),
             "tail" = , "head" = .ghead_ok(q),
-            "tail" = .ghead_ok(q),
             "[" = `.g[_ok`(q, x),
             "[[" = `.g[_ok`(q, x),
             FALSE
