@@ -1761,7 +1761,7 @@ replace_dot_alias = function(e) {
         ".g[_ok" = function(q, x) {
           length(q) == 3L &&
             is_constantish(q[[3L]], function(x_) length(x_) == 1L) &&
-            (q[[1L]] == "[" || (q[[1L]] == "[[" && eval(call('is.atomic', q[[2L]]), envir=x))) &&
+            (q[[1L]] != "[[" || eval(call('is.atomic', q[[2L]]), envir=x)) &&
             eval(q[[3L]], parent.frame(3L)) > 0L
         }
         .gweighted.mean_ok = function(q, x) { #3977
