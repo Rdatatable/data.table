@@ -1758,7 +1758,7 @@ replace_dot_alias = function(e) {
           length(q) == 3L &&
             is_constantish(q[[3L]], function(x_) length(x_) == 1L)
         }
-        ".g[_ok" = function(q, x) {
+        `.g[_ok` = function(q, x) {
           length(q) == 3L &&
             is_constantish(q[[3L]], function(x_) length(x_) == 1L) &&
             (q[[1L]] != "[[" || eval(call('is.atomic', q[[2L]]), envir=x)) &&
