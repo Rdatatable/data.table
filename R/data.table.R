@@ -1791,30 +1791,27 @@ replace_dot_alias = function(e) {
             if (!.gforce_ok(jsub[[ii]])) {GForce = FALSE; break}
           }
         } else GForce = .gforce_ok(jsub)
+        gforce_jsub = function(x, names_x) {
+          x[[1L]] = as.name(paste0("g", x[[1L]]))
+          # gforce needs to evaluate arguments before calling C part TODO: move the evaluation into gforce_ok
+          # do not evaluate vars present as columns in x
+          if (length(x)>=3L) {
+            for (i in 3:length(x)) {
+              if (is.symbol(x[[i]]) && !(x[[i]] %chin% names_x)) x[[i]] = eval(x[[i]], parent.frame(2L)) # tests 1187.2 & 1187.4
+            }
+          }
+          x
+        }
         if (GForce) {
           if (jsub[[1L]]=="list")
             for (ii in seq_along(jsub)[-1L]) {
               if (dotN(jsub[[ii]])) next; # For #334
-              jsub[[ii]][[1L]] = as.name(paste0("g", jsub[[ii]][[1L]]))
-              if (length(jsub[[ii]])>=3L) {
-                # gforce needs to evaluate arguments before calling C part TODO: move the evaluation into gforce_ok
-                # do not evaluate vars present as columns in x
-                for (i in 3:length(jsub[[ii]])) {
-                  if(is.symbol(jsub[[ii]][[i]]) && !(jsub[[ii]][[i]] %chin% names_x)) jsub[[ii]][[i]] = eval(jsub[[ii]][[i]], parent.frame())  # tests 1187.2 & 1187.4
-                }
-              }
+              jsub[[ii]] = gforce_jsub(jsub[[ii]], names_x)
             }
           else {
             # adding argument to ghead/gtail if none is supplied to g-optimized head/tail
             if (length(jsub) == 2L && jsub[[1L]] %chin% c("head", "tail")) jsub[["n"]] = 6L
-            jsub[[1L]] = as.name(paste0("g", jsub[[1L]]))
-            if (length(jsub)>=3L) {
-              # gforce needs to evaluate arguments before calling C part TODO: move the evaluation into gforce_ok
-              # do not evaluate vars present as columns in x
-              for (i in 3:length(jsub)) {
-                if(is.symbol(jsub[[i]]) && !(jsub[[i]] %chin% names_x)) jsub[[i]] = eval(jsub[[i]], parent.frame())   # tests 1187.3 & 1187.5
-              }
-            }
+            jsub = gforce_jsub(jsub, names_x)
           }
           if (verbose) catf("GForce optimized j to '%s'\n", deparse(jsub, width.cutoff=200L, nlines=1L))
         } else if (verbose) catf("GForce is on, left j unchanged\n");
