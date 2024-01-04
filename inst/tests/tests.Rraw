@@ -18179,3 +18179,8 @@ DT = data.table(id=1:2, x=1:2)
 r = copy(DT)[1L, x:= 5L]
 test(2241.13, DT, data.table(id=1:2, x=1:2))
 test(2241.14, r, data.table(id=1:2, x=c(5L,2L)))
+
+# .SDcols using binary '-' is evaluated correctly (#5826 exposed this)
+DT = data.table(a=1, b=2, c=3)
+test(2242.1, DT[, .SD, .SDcols=2-1], DT[, .(a)])
+test(2242.2, DT[, .SD, .SDcols=length(DT)-1], DT[, .SD, .SDcols=2])
