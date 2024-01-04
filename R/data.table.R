@@ -1742,7 +1742,11 @@ replace_dot_alias = function(e) {
         # GForce needs to evaluate all arguments not present in the data.table before calling C part #5547
         # Safe cases: variables [i], calls without variables [c(0,1), list(1)] # TODO extend this list
         # Unsafe cases: functions containing variables [c(i), abs(i)], .N
-        noCall_noVars = function(expr) (!is.call(expr) || length(all.vars(expr, max.names=1L, unique=FALSE))==0L) && !dotN(expr)
+        noCall_noVars = function(expr, check) {
+          (!is.call(expr) || length(all.vars(expr, max.names=1L, unique=FALSE))==0L) && 
+            !dotN(expr) &&
+            (missing(check) || check(expr))
+        }
         .gshift_ok = function(q) {
           q = match.call(shift, q)
           noCall_noVars(q[["n"]]) &&
@@ -1752,13 +1756,11 @@ replace_dot_alias = function(e) {
         }
         .ghead_ok = function(q) {
           length(q) == 3L &&
-            length(q[[3L]]) == 1L &&
-            noCall_noVars(q[[3L]])
+            noCall_noVars(q[[3L]], function(x_) length(x_) == 1L)
         }
         ".g[_ok" = function(q, x) {
           length(q) == 3L &&
-            length(q[[3L]]) == 1L &&
-            noCall_noVars(q[[3L]]) &&
+            noCall_noVars(q[[3L]], function(x_) length(x_) == 1L) &&
             (q[[1L]] == "[" || (q[[1L]] == "[[" && eval(call('is.atomic', q[[2L]]), envir=x))) &&
             eval(q[[3L]], parent.frame(3L)) > 0L
         }
@@ -1779,7 +1781,6 @@ replace_dot_alias = function(e) {
             "shift" = .gshift_ok(q),
             "weighted.mean" = .gweighted.mean_ok(q, x),
             "tail" = , "head" = .ghead_ok(q),
-            "tail" = .ghead_ok(q),
             "[" = `.g[_ok`(q, x),
             "[[" = `.g[_ok`(q, x),
             FALSE
