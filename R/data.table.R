@@ -1738,8 +1738,32 @@ replace_dot_alias = function(e) {
         GForce = FALSE
       } else {
         # Apply GForce
+        noCall_noVars = function(expr) (!is.call(expr) || length(all.vars(expr, max.names=1L))==0) && !dotN(expr)
+        .gshift_ok = function(q) {
+          q_named = match.call(shift, q)
+          noCall_noVars(q_named[["n"]]) &&
+            noCall_noVars(q_named[["fill"]]) &&
+            noCall_noVars(q_named[["type"]]) &&
+            is.null(q_named[["give.names"]])
+        }
+        .ghead_ok = function(q) {
+          length(q)==3L &&
+            length(q[[3L]])==1L &&
+            noCall_noVars(q[[3L]])
+        }
+        ".g[_ok" = function(q, x) {
+          length(q)==3L &&
+            length(q[[3L]])==1L &&
+            noCall_noVars(q[[3L]]) &&
+            (q[[1L]] == "[" || (q[[1L]] == "[[" && eval(call('is.atomic', q[[2L]]), envir=x))) &&
+            eval(q[[3L]], parent.frame(3L))>0L
+        }
+        .gweighted.mean_ok = function(q, x) { #3977
+          q_named = match.call(function(x, w, ..., na.rm=FALSE) {}, q)
+          noCall_noVars(q_named[["na.rm"]]) &&
+            (is.null(q_named[["w"]]) || eval(call('is.numeric', q_named[["w"]]), envir=x))
+        }
         .gforce_ok = function(q) {
-          noCall_noVars = function(expr) (!is.call(expr) || length(all.vars(expr, max.names=1L))==0) && !dotN(expr)
           if (dotN(q)) return(TRUE) # For #334
           # run GForce for simple f(x) calls and f(x, na.rm = TRUE)-like calls where x is a column of .SD
           # is.symbol() is for #1369, #1974 and #2949
@@ -1747,19 +1771,15 @@ replace_dot_alias = function(e) {
           if (!(q2 <- q[[2L]]) %chin% names(SDenv$.SDall) && q2 != ".I") return(FALSE)  # 875
           if (length(q)==2L || (!is.null(names(q)) && startsWith(names(q)[3L], "na") && noCall_noVars(q[[3L]]))) return(TRUE)
           #                       ^^ base::startWith errors on NULL unfortunately
-          if (length(q)>=2L && q[[1L]] == "shift") {
-            q_named = match.call(shift, q)
-            if (noCall_noVars(q_named[["n"]]) &&
-                noCall_noVars(q_named[["fill"]]) &&
-                noCall_noVars(q_named[["type"]]) &&
-                is.null(q_named[["give.names"]])) 
-              return(TRUE)
-          }
-          if (length(q)>=3L && q[[1L]] == "weighted.mean") return(TRUE)  #3977
-          # otherwise there must be three arguments
-          length(q)==3L && length(q3 <- q[[3L]])==1L && noCall_noVars(q3) &&
-            ( (q1 %chin% c("head", "tail")) || ((q1 == "[" || (q1 == "[[" && eval(call('is.atomic', q[[2L]]), envir=x))) && eval(q3, parent.frame(2L))>0L) )
-                                                                                                                                  # ^ eval outside of [
+          switch(as.character(q[[1L]]), 
+            "shift" = .gshift_ok(q),
+            "weighted.mean" = .gweighted.mean_ok(q, x),
+            "head" = .ghead_ok(q),
+            "tail" = .ghead_ok(q),
+            "[" = `.g[_ok`(q, x),
+            "[[" = `.g[_ok`(q, x),
+            FALSE
+          )
         }
         if (jsub[[1L]]=="list") {
           GForce = TRUE
@@ -3026,7 +3046,7 @@ gfirst = function(x) .Call(Cgfirst, x)
 glast = function(x) .Call(Cglast, x)
 gsum = function(x, na.rm=FALSE) .Call(Cgsum, x, na.rm)
 gmean = function(x, na.rm=FALSE) .Call(Cgmean, x, na.rm)
-gweighted.mean = function(x, w, na.rm=FALSE) {
+gweighted.mean = function(x, w, ..., na.rm=FALSE) {
   if (missing(w)) gmean(x, na.rm)
   else {
     if (na.rm) { # take those indices out of the equation by setting them to 0
