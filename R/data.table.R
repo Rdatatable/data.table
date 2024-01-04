@@ -1768,7 +1768,7 @@ replace_dot_alias = function(e) {
           if (dotN(q)) return(TRUE) # For #334
           # run GForce for simple f(x) calls and f(x, na.rm = TRUE)-like calls where x is a column of .SD
           # is.symbol() is for #1369, #1974 and #2949
-          if (!(is.call(q) && is.symbol(q[[1L]]) && is.symbol(q[[2L]]) && (q1 <- q[[1L]]) %chin% gfuns)) return(FALSE)
+          if (!(is.call(q) && is.symbol(q[[1L]]) && is.symbol(q[[2L]]) && (q[[1L]]) %chin% gfuns)) return(FALSE)
           if (!(q2 <- q[[2L]]) %chin% names(SDenv$.SDall) && q2 != ".I") return(FALSE)  # 875
           if (length(q)==2L || (!is.null(names(q)) && startsWith(names(q)[3L], "na") && noCall_noVars(q[[3L]]))) return(TRUE)
           #                       ^^ base::startWith errors on NULL unfortunately
@@ -1904,7 +1904,7 @@ replace_dot_alias = function(e) {
     if (!is.symbol(jsub)) {
       headTail_arg = function(q) {
         if (length(q)==3L && length(q3 <- q[[3L]])==1L && is.numeric(q3) &&
-         (q1 <- q[[1L]]) %chin% c("ghead", "gtail") && q3!=1) q3
+         (q[[1L]]) %chin% c("ghead", "gtail") && q3!=1) q3
         else 0
       }
       if (jsub[[1L]] == "list"){
