@@ -1739,7 +1739,7 @@ replace_dot_alias = function(e) {
         GForce = FALSE
       } else {
         # Apply GForce
-        noCall_noVars = function(expr) (!is.call(expr) || length(all.vars(expr, max.names=1L))==0) && !dotN(expr)
+        noCall_noVars = function(expr) (!is.call(expr) || length(all.vars(expr, max.names=1L, unique=FALSE))==0L) && !dotN(expr)
         .gshift_ok = function(q) {
           q = match.call(shift, q)
           noCall_noVars(q[["n"]]) &&
@@ -1757,7 +1757,7 @@ replace_dot_alias = function(e) {
             length(q[[3L]]) == 1L &&
             noCall_noVars(q[[3L]]) &&
             (q[[1L]] == "[" || (q[[1L]] == "[[" && eval(call('is.atomic', q[[2L]]), envir=x))) &&
-            eval(q[[3L]], parent.frame(3L))>0L
+            eval(q[[3L]], parent.frame(3L)) > 0L
         }
         .gweighted.mean_ok = function(q, x) { #3977
           q = match.call(function(x, w, ..., na.rm=FALSE) {}, q)
