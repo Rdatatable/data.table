@@ -1748,13 +1748,13 @@ replace_dot_alias = function(e) {
             is.null(q_named[["give.names"]])
         }
         .ghead_ok = function(q) {
-          length(q)==3L &&
-            length(q[[3L]])==1L &&
+          length(q) == 3L &&
+            length(q[[3L]]) == 1L &&
             noCall_noVars(q[[3L]])
         }
         ".g[_ok" = function(q, x) {
-          length(q)==3L &&
-            length(q[[3L]])==1L &&
+          length(q) == 3L &&
+            length(q[[3L]]) == 1L &&
             noCall_noVars(q[[3L]]) &&
             (q[[1L]] == "[" || (q[[1L]] == "[[" && eval(call('is.atomic', q[[2L]]), envir=x))) &&
             eval(q[[3L]], parent.frame(3L))>0L
