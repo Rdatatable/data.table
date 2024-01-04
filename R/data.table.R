@@ -1742,31 +1742,31 @@ replace_dot_alias = function(e) {
         # GForce needs to evaluate all arguments not present in the data.table before calling C part #5547
         # Safe cases: variables [i], calls without variables [c(0,1), list(1)] # TODO extend this list
         # Unsafe cases: functions containing variables [c(i), abs(i)], .N
-        noCall_noVars = function(expr, check) {
+        is_constantish = function(expr, check) {
           (!is.call(expr) || length(all.vars(expr, max.names=1L, unique=FALSE))==0L) && 
             !dotN(expr) &&
             (missing(check) || check(expr))
         }
         .gshift_ok = function(q) {
           q = match.call(shift, q)
-          noCall_noVars(q[["n"]]) &&
-            noCall_noVars(q[["fill"]]) &&
-            noCall_noVars(q[["type"]]) &&
+          is_constantish(q[["n"]]) &&
+            is_constantish(q[["fill"]]) &&
+            is_constantish(q[["type"]]) &&
             is.null(q[["give.names"]])
         }
         .ghead_ok = function(q) {
           length(q) == 3L &&
-            noCall_noVars(q[[3L]], function(x_) length(x_) == 1L)
+            is_constantish(q[[3L]], function(x_) length(x_) == 1L)
         }
         ".g[_ok" = function(q, x) {
           length(q) == 3L &&
-            noCall_noVars(q[[3L]], function(x_) length(x_) == 1L) &&
+            is_constantish(q[[3L]], function(x_) length(x_) == 1L) &&
             (q[[1L]] == "[" || (q[[1L]] == "[[" && eval(call('is.atomic', q[[2L]]), envir=x))) &&
             eval(q[[3L]], parent.frame(3L)) > 0L
         }
         .gweighted.mean_ok = function(q, x) { #3977
           q = match.call(function(x, w, ..., na.rm=FALSE) {}, q)
-          noCall_noVars(q[["na.rm"]]) &&
+          is_constantish(q[["na.rm"]]) &&
             (is.null(q[["w"]]) || eval(call('is.numeric', q[["w"]]), envir=x))
         }
         .gforce_ok = function(q) {
@@ -1775,7 +1775,7 @@ replace_dot_alias = function(e) {
           # is.symbol() is for #1369, #1974 and #2949
           if (!(is.call(q) && is.symbol(q[[1L]]) && is.symbol(q[[2L]]) && (q[[1L]]) %chin% gfuns)) return(FALSE)
           if (!(q2 <- q[[2L]]) %chin% names(SDenv$.SDall) && q2 != ".I") return(FALSE)  # 875
-          if (length(q)==2L || (!is.null(names(q)) && startsWith(names(q)[3L], "na") && noCall_noVars(q[[3L]]))) return(TRUE)
+          if (length(q)==2L || (!is.null(names(q)) && startsWith(names(q)[3L], "na") && is_constantish(q[[3L]]))) return(TRUE)
           #                       ^^ base::startWith errors on NULL unfortunately
           switch(as.character(q[[1L]]), 
             "shift" = .gshift_ok(q),
