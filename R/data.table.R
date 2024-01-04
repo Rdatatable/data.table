@@ -1797,7 +1797,7 @@ replace_dot_alias = function(e) {
                 # gforce needs to evaluate arguments before calling C part TODO: move the evaluation into gforce_ok
                 # do not evaluate vars present as columns in x
                 for (i in 3:length(jsub[[ii]])) {
-                  if(is.symbol(jsub[[ii]][[i]]) && !(jsub[[ii]][[i]] %chin% c(sdvars, names_x))) jsub[[ii]][[i]] = eval(jsub[[ii]][[i]], parent.frame())  # tests 1187.2 & 1187.4
+                  if(is.symbol(jsub[[ii]][[i]]) && !(jsub[[ii]][[i]] %chin% names_x)) jsub[[ii]][[i]] = eval(jsub[[ii]][[i]], parent.frame())  # tests 1187.2 & 1187.4
                 }
               }
             }
@@ -1809,7 +1809,7 @@ replace_dot_alias = function(e) {
               # gforce needs to evaluate arguments before calling C part TODO: move the evaluation into gforce_ok
               # do not evaluate vars present as columns in x
               for (i in 3:length(jsub)) {
-                if(is.symbol(jsub[[i]]) && !(jsub[[i]] %chin% c(sdvars, names_x))) jsub[[i]] = eval(jsub[[i]], parent.frame())   # tests 1187.3 & 1187.5
+                if(is.symbol(jsub[[i]]) && !(jsub[[i]] %chin% names_x)) jsub[[i]] = eval(jsub[[i]], parent.frame())   # tests 1187.3 & 1187.5
               }
             }
           }
