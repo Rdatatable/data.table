@@ -1765,7 +1765,7 @@ replace_dot_alias = function(e) {
             eval(q[[3L]], parent.frame(3L)) > 0L
         }
         .gweighted.mean_ok = function(q, x) { #3977
-          q = match.call(function(x, w, ..., na.rm=FALSE) {}, q)
+          q = match.call(gweighted.mean, q)
           is_constantish(q[["na.rm"]]) &&
             (is.null(q[["w"]]) || eval(call('is.numeric', q[["w"]]), envir=x))
         }
