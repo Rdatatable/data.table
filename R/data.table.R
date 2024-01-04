@@ -1741,11 +1741,11 @@ replace_dot_alias = function(e) {
         # Apply GForce
         noCall_noVars = function(expr) (!is.call(expr) || length(all.vars(expr, max.names=1L))==0) && !dotN(expr)
         .gshift_ok = function(q) {
-          q_named = match.call(shift, q)
-          noCall_noVars(q_named[["n"]]) &&
-            noCall_noVars(q_named[["fill"]]) &&
-            noCall_noVars(q_named[["type"]]) &&
-            is.null(q_named[["give.names"]])
+          q = match.call(shift, q)
+          noCall_noVars(q[["n"]]) &&
+            noCall_noVars(q[["fill"]]) &&
+            noCall_noVars(q[["type"]]) &&
+            is.null(q[["give.names"]])
         }
         .ghead_ok = function(q) {
           length(q) == 3L &&
@@ -1760,9 +1760,9 @@ replace_dot_alias = function(e) {
             eval(q[[3L]], parent.frame(3L))>0L
         }
         .gweighted.mean_ok = function(q, x) { #3977
-          q_named = match.call(function(x, w, ..., na.rm=FALSE) {}, q)
-          noCall_noVars(q_named[["na.rm"]]) &&
-            (is.null(q_named[["w"]]) || eval(call('is.numeric', q_named[["w"]]), envir=x))
+          q = match.call(function(x, w, ..., na.rm=FALSE) {}, q)
+          noCall_noVars(q[["na.rm"]]) &&
+            (is.null(q[["w"]]) || eval(call('is.numeric', q[["w"]]), envir=x))
         }
         .gforce_ok = function(q) {
           if (dotN(q)) return(TRUE) # For #334
