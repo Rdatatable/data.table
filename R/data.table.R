@@ -1008,6 +1008,7 @@ replace_dot_alias = function(e) {
           # peel from parentheses before negation so (-1L) works as well: as.data.table(as.list(1:3))[, .SD,.SDcols=(-1L)] #4231
           while(colsub %iscall% "(") colsub = as.list(colsub)[[-1L]]
           # fix for R-Forge #5190. colsub[[1L]] gave error when it's a symbol.
+          # NB: _unary_ '-', not _binary_ '-' (#5826)
           if (colsub %iscall% "!" || (colsub %iscall% "-" && length(colsub) == 2L)) {
             negate_sdcols = TRUE
             colsub = colsub[[2L]]
