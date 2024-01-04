@@ -1924,9 +1924,9 @@ replace_dot_alias = function(e) {
     } else if (.is_nrows(jsub)) {
       g = lapply(g, rep.int, times=len__)
       # unpack list of lists for nrows functions
-      zip = function(ll) do.call(mapply, c(list(c), ll, SIMPLIFY=FALSE, USE.NAMES=FALSE))
+      zip_items = function(ll) do.call(mapply, c(list(FUN = c), ll, SIMPLIFY=FALSE, USE.NAMES=FALSE))
       if (all(vapply_1b(ans, is.list))) {
-        ans = lapply(ans, zip)
+        ans = lapply(ans, zip_items)
       }
     }
     ans = c(g, ans)
