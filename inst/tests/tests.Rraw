@@ -18248,13 +18248,13 @@ test(2243.38, dt[, sd(y,   na.rm=as.logical(j)),   g, verbose=TRUE], data.table(
 
 # fread(...,fill) can also be used to specify a guess on the maximum number of columns #2691 #1812 #4130 #3436 #2727
 dt_str = paste(rep(c("1,2\n", "1,2,3\n"), each=100), collapse="")
-test(2244.01, fread(text = dt_str, fill=FALSE), data.table(1L, rep(2L, 100)), warning="Stopped early on line 101.*First discarded non-empty line: <<1,2,3>>")
-test(2244.02, fread(text = dt_str, fill=TRUE), data.table(1L, rep(2L, 100)), warning="Stopped early on line 101.*First discarded non-empty line: <<1,2,3>>")
-test(2244.03, fread(text = dt_str, fill=2L), data.table(1L, rep(2L, 100)), warning="Stopped early on line 101.*First discarded non-empty line: <<1,2,3>>")
-test(2244.04, fread(text = dt_str, fill=3), data.table(1L, 2L, rep(c(NA,3L), each=100)))
+test(2244.01, fread(text = dt_str, fill=FALSE), data.table(1L, rep(2L, 100)), warning=".*Consider fill=TRUE.*")
+test(2244.02, fread(text = dt_str, fill=TRUE), data.table(1L, rep(2L, 100)), warning=".*Consider fill=3.*")
+test(2244.03, fread(text = dt_str, fill=2L), data.table(1L, rep(2L, 100)), warning=".*Consider fill=3.*")
+test(2244.04, fread(text = dt_str, fill=3L), data.table(1L, 2L, rep(c(NA,3L), each=100)))
 test(2244.05, fread(text = dt_str, fill=5L, verbose=TRUE), data.table(1L, 2L, rep(c(NA,3L), each=100)), output="Provided number of fill columns: 5 but only found 3\n  Dropping 2 overallocated columns") # user guess slightly too big
 test(2244.06, fread(text = dt_str, fill=1000L), data.table(1L, 2L, rep(c(NA,3L), each=100))) # user guess much too big
-# 2691
+# example from 2691
 text = "12223, University\n12227, bridge, Sky\n12828, Sunset\n13801, Ground\n14853, Tranceamerica\n14854, San Francisco\n15595, shibuya, Shrine\n16126, fog, San Francisco\n16520, California, ocean, summer, golden gate, beach, San Francisco\n"
 test(2244.07, dim(fread(text)), c(6L, 3L), warning=c("fill=TRUE", "Discarded"))
 test(2244.08, dim(fread(text, fill=TRUE)), c(9L, 9L))
