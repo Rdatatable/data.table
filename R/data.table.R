@@ -1742,10 +1742,10 @@ replace_dot_alias = function(e) {
         # GForce needs to evaluate all arguments not present in the data.table before calling C part #5547
         # Safe cases: variables [i], calls without variables [c(0,1), list(1)] # TODO extend this list
         # Unsafe cases: functions containing variables [c(i), abs(i)], .N
-        is_constantish = function(expr, check) {
-          (!is.call(expr) || length(all.vars(expr, max.names=1L, unique=FALSE))==0L) && 
+        is_constantish = function(expr, check_singleton = FALSE) {
+          (!is.call(expr) || length(all.vars(expr, max.names=1L, unique=FALSE)) == 0L) && 
             !dotN(expr) &&
-            (missing(check) || check(expr))
+            (!check_singleton || length(expr) == 1L)
         }
         .gshift_ok = function(q) {
           q = match.call(shift, q)
@@ -1756,11 +1756,11 @@ replace_dot_alias = function(e) {
         }
         .ghead_ok = function(q) {
           length(q) == 3L &&
-            is_constantish(q[[3L]], function(x_) length(x_) == 1L)
+            is_constantish(q[[3L]], check_singleton = TRUE)
         }
         `.g[_ok` = function(q, x) {
           length(q) == 3L &&
-            is_constantish(q[[3L]], function(x_) length(x_) == 1L) &&
+            is_constantish(q[[3L]], check_singleton = TRUE) &&
             (q[[1L]] != "[[" || eval(call('is.atomic', q[[2L]]), envir=x)) &&
             eval(q[[3L]], parent.frame(3L)) > 0L
         }
