@@ -1739,22 +1739,56 @@ replace_dot_alias = function(e) {
         GForce = FALSE
       } else {
         # Apply GForce
+        # GForce needs to evaluate all arguments not present in the data.table before calling C part #5547
+        # Safe cases: variables [i], calls without variables [c(0,1), list(1)] # TODO extend this list
+        # Unsafe cases: functions containing variables [c(i), abs(i)], .N
+        is_constantish = function(expr, check_singleton=FALSE) {
+          if (!is.call(expr)) {
+            return(!dotN(expr))
+          }
+          if (check_singleton) {
+            return(FALSE)
+          }
+          # calls are allowed <=> there's no SYMBOLs in the sub-AST
+          return(length(all.vars(expr, max.names=1L, unique=FALSE)) == 0L)
+        }
+        .gshift_ok = function(q) {
+          q = match.call(shift, q)
+          is_constantish(q[["n"]]) &&
+            is_constantish(q[["fill"]]) &&
+            is_constantish(q[["type"]]) &&
+            !"give.names" %chin% names(q)
+        }
+        .ghead_ok = function(q) {
+          length(q) == 3L &&
+            is_constantish(q[[3L]], check_singleton = TRUE)
+        }
+        `.g[_ok` = function(q, x) {
+          length(q) == 3L &&
+            is_constantish(q[[3L]], check_singleton = TRUE) &&
+            (q[[1L]] != "[[" || eval(call('is.atomic', q[[2L]]), envir=x)) &&
+            eval(q[[3L]], parent.frame(3L)) > 0L
+        }
+        .gweighted.mean_ok = function(q, x) { #3977
+          q = match.call(gweighted.mean, q)
+          is_constantish(q[["na.rm"]]) &&
+            (is.null(q[["w"]]) || eval(call('is.numeric', q[["w"]]), envir=x))
+        }
         .gforce_ok = function(q) {
           if (dotN(q)) return(TRUE) # For #334
           # run GForce for simple f(x) calls and f(x, na.rm = TRUE)-like calls where x is a column of .SD
           # is.symbol() is for #1369, #1974 and #2949
-          if (!(is.call(q) && is.symbol(q[[1L]]) && is.symbol(q[[2L]]) && (q1 <- q[[1L]]) %chin% gfuns)) return(FALSE)
+          if (!(is.call(q) && is.symbol(q[[1L]]) && is.symbol(q[[2L]]) && (q[[1L]]) %chin% gfuns)) return(FALSE)
           if (!(q2 <- q[[2L]]) %chin% names(SDenv$.SDall) && q2 != ".I") return(FALSE)  # 875
-          if ((length(q)==2L || (!is.null(names(q)) && startsWith(names(q)[3L], "na")))) return(TRUE)
+          if (length(q)==2L || (!is.null(names(q)) && startsWith(names(q)[3L], "na") && is_constantish(q[[3L]]))) return(TRUE)
           #                       ^^ base::startWith errors on NULL unfortunately
-          if (length(q)>=2L && q[[1L]] == "shift") {
-            q_named = match.call(shift, q)
-            if (!is.call(q_named[["fill"]]) && is.null(q_named[["give.names"]])) return(TRUE)
-          }
-          if (length(q)>=3L && q[[1L]] == "weighted.mean") return(TRUE)  #3977
-          # otherwise there must be three arguments
-          length(q)==3L && length(q3 <- q[[3L]])==1L && is.numeric(q3) &&
-            ( (q1 %chin% c("head", "tail")) || ((q1 == "[" || (q1 == "[[" && eval(call('is.atomic', q[[2L]]), envir=x))) && q3>0L) )
+          switch(as.character(q[[1L]]), 
+            "shift" = .gshift_ok(q),
+            "weighted.mean" = .gweighted.mean_ok(q, x),
+            "tail" = , "head" = .ghead_ok(q),
+            "[[" = , "[" = `.g[_ok`(q, x),
+            FALSE
+          )
         }
         if (jsub[[1L]]=="list") {
           GForce = TRUE
@@ -1762,18 +1796,27 @@ replace_dot_alias = function(e) {
             if (!.gforce_ok(jsub[[ii]])) {GForce = FALSE; break}
           }
         } else GForce = .gforce_ok(jsub)
+        gforce_jsub = function(x, names_x) {
+          x[[1L]] = as.name(paste0("g", x[[1L]]))
+          # gforce needs to evaluate arguments before calling C part TODO: move the evaluation into gforce_ok
+          # do not evaluate vars present as columns in x
+          if (length(x) >= 3L) {
+            for (i in 3:length(x)) {
+              if (is.symbol(x[[i]]) && !(x[[i]] %chin% names_x)) x[[i]] = eval(x[[i]], parent.frame(2L)) # tests 1187.2 & 1187.4
+            }
+          }
+          x
+        }
         if (GForce) {
           if (jsub[[1L]]=="list")
             for (ii in seq_along(jsub)[-1L]) {
               if (dotN(jsub[[ii]])) next; # For #334
-              jsub[[ii]][[1L]] = as.name(paste0("g", jsub[[ii]][[1L]]))
-              if (length(jsub[[ii]])>=3L && is.symbol(jsub[[ii]][[3L]]) && !(jsub[[ii]][[3L]] %chin% sdvars)) jsub[[ii]][[3L]] = eval(jsub[[ii]][[3L]], parent.frame())  # tests 1187.2 & 1187.4
+              jsub[[ii]] = gforce_jsub(jsub[[ii]], names_x)
             }
           else {
             # adding argument to ghead/gtail if none is supplied to g-optimized head/tail
             if (length(jsub) == 2L && jsub[[1L]] %chin% c("head", "tail")) jsub[["n"]] = 6L
-            jsub[[1L]] = as.name(paste0("g", jsub[[1L]]))
-            if (length(jsub)>=3L && is.symbol(jsub[[3L]]) && !(jsub[[3L]] %chin% sdvars)) jsub[[3L]] = eval(jsub[[3L]], parent.frame())   # tests 1187.3 & 1187.5
+            jsub = gforce_jsub(jsub, names_x)
           }
           if (verbose) catf("GForce optimized j to '%s'\n", deparse(jsub, width.cutoff=200L, nlines=1L))
         } else if (verbose) catf("GForce is on, left j unchanged\n");
@@ -1868,7 +1911,7 @@ replace_dot_alias = function(e) {
     if (!is.symbol(jsub)) {
       headTail_arg = function(q) {
         if (length(q)==3L && length(q3 <- q[[3L]])==1L && is.numeric(q3) &&
-         (q1 <- q[[1L]]) %chin% c("ghead", "gtail") && q3!=1) q3
+         (q[[1L]]) %chin% c("ghead", "gtail") && q3!=1) q3
         else 0
       }
       if (jsub[[1L]] == "list"){
@@ -1882,6 +1925,11 @@ replace_dot_alias = function(e) {
       g = lapply(g, rep.int, times=grplens)
     } else if (.is_nrows(jsub)) {
       g = lapply(g, rep.int, times=len__)
+      # unpack list of lists for nrows functions
+      zip_items = function(ll) do.call(mapply, c(list(FUN = c), ll, SIMPLIFY=FALSE, USE.NAMES=FALSE))
+      if (all(vapply_1b(ans, is.list))) {
+        ans = lapply(ans, zip_items)
+      }
     }
     ans = c(g, ans)
   } else {
@@ -3000,13 +3048,13 @@ rleidv = function(x, cols=seq_along(x), prefix=NULL) {
 gfuns = c("[", "[[", "head", "tail", "first", "last", "sum", "mean", "prod",
           "median", "min", "max", "var", "sd", ".N", "shift", "weighted.mean") # added .N for #334
 `g[` = `g[[` = function(x, n) .Call(Cgnthvalue, x, as.integer(n)) # n is of length=1 here.
-ghead = function(x, n) .Call(Cghead, x, as.integer(n)) # n is not used at the moment
-gtail = function(x, n) .Call(Cgtail, x, as.integer(n)) # n is not used at the moment
+ghead = function(x, n) .Call(Cghead, x, as.integer(n))
+gtail = function(x, n) .Call(Cgtail, x, as.integer(n))
 gfirst = function(x) .Call(Cgfirst, x)
 glast = function(x) .Call(Cglast, x)
 gsum = function(x, na.rm=FALSE) .Call(Cgsum, x, na.rm)
 gmean = function(x, na.rm=FALSE) .Call(Cgmean, x, na.rm)
-gweighted.mean = function(x, w, na.rm=FALSE) {
+gweighted.mean = function(x, w, ..., na.rm=FALSE) {
   if (missing(w)) gmean(x, na.rm)
   else {
     if (na.rm) { # take those indices out of the equation by setting them to 0

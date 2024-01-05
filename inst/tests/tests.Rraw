@@ -6736,6 +6736,18 @@ test(1463.69, shift(x, -6, type="cyclic"), shift(x, -1, type="cyclic"))
 # test warning
 test(1463.70, shift(x, 1, fill=1, type="cyclic"), c(5L, 1L:4L), warning="Provided argument fill=1 will be ignored since type='shift'.")
 
+# test raw #5547
+x=as.raw(1:5)
+test(1463.71, shift(x,1L),                   as.raw(c(0L, 1:4)))
+test(1463.72, shift(x,1:2),                  list(as.raw(c(0L, 1:4)), as.raw(c(0L, 0L, 1:3))))
+test(1463.73, shift(x,1L, fill=0L),               as.raw(c(0L, 1:4)))
+test(1463.74, shift(x,1L,    type="lead"),   as.raw(c(2:5, 0L)))
+test(1463.75, shift(x,1:2,   type="lead"),   list(as.raw(c(2:5, 0L)), as.raw(c(3:5, 0L, 0L))))
+test(1463.76, shift(x,1L, fill=0L,type="lead"),   as.raw(c(2:5, 0L)))
+test(1463.77, shift(x,1L,    type="cyclic"), as.raw(c(5, 1:4)))
+test(1463.78, shift(x,1:2,   type="cyclic"), list(as.raw(c(5, 1:4)), as.raw(c(4:5, 1:3))))
+test(1463.79, shift(x,-1L,   type="cyclic"), as.raw(c(2:5, 1)))
+test(1463.80, shift(x,-(1:2),type="cyclic"), list(as.raw(c(2:5, 1)), as.raw(c(3:5,1:2))))
 
 # FR #686
 DT = data.table(a=rep(c("A", "B", "C", "A", "B"), c(2,2,3,1,2)), foo=1:10)
@@ -13628,7 +13640,8 @@ test(1963.07, shift(DT, -1:1),
           c(NA, 10L, 9L, 8L, 7L, 6L, 5L, 4L, 3L, 2L)))
 ## some coverage tests for good measure
 test(1963.08, shift(DT$x, type = 'some_other_type'), error='should be one of.*lag.*lead')
-test(1963.09, shift(as.raw(0:1)), error = "Type 'raw' is not supported")
+test(1963.09, shift(as.raw(0:1)), as.raw(c(0,0)))
+test(1963.095, shift(list(expression(1))), error = "Type 'expression' is not supported")
 test(1963.10, shift(DT, -1:1, type="shift", give.names = TRUE), # new type="shift" #3223
      ans <- list(`x_shift_-1` = c(2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, NA),
           x_shift_0 = 1:10,
@@ -17946,6 +17959,12 @@ test(2231.50, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table
 DT = data.table(x=c(1L,NA,NaN,3L,4L,5L,5L,6L), w=c(1L,NaN,NA,1L,2L,2L,2L,2L), g=rep(1L:2L, each=4L))
 test(2231.51, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA, 5)), output="GForce optimized j to")
 test(2231.52, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output="GForce optimized j to")
+# let wrongly named arguments get lost in ellipsis #5543
+DT = data.table(x=c(3.7,3.3,3.5,2.8), w=c(5,5,4,1), g=1L)
+test(2231.61, DT[, weighted.mean(x, w),        g, verbose=TRUE], data.table(g=1L, V1=3.45+1/300), output="GForce optimized j to")
+test(2231.62, DT[, weighted.mean(x, weight=w), g, verbose=TRUE], data.table(g=1L, V1=3.325),      output="GForce optimized j to")
+test(2231.63, DT[, weighted.mean(x, w, na.rm=FALSE), g],    DT[, stats::weighted.mean(x, w, na.rm=FALSE), g])
+test(2231.64, DT[, weighted.mean(x, weight=w, na.rm=TRUE)], DT[, stats::weighted.mean(x, weight=w, na.rm=TRUE)])
 options(old)
 
 # cols argument for unique.data.table, #5243
@@ -18184,3 +18203,45 @@ test(2241.14, r, data.table(id=1:2, x=c(5L,2L)))
 DT = data.table(a=1, b=2, c=3)
 test(2242.1, DT[, .SD, .SDcols=2-1], DT[, .(a)])
 test(2242.2, DT[, .SD, .SDcols=length(DT)-1], DT[, .SD, .SDcols=2])
+
+# turn off GForce where arguments are calls but still allow variables, #5547
+options(datatable.optimize=2L)
+dt = data.table(x=c("a","b","c","d"), y=c(1L,1L,2L,2L))
+i = c(0,1)
+j = 1L
+t = "lead"
+f = shift
+test(2243.01, dt[, shift(x, i, type=t), by=y, verbose=TRUE],               dt[, f(x, c(0,1), type="lead"), by=y],         output="GForce optimized j to")
+test(2243.02, dt[, shift(x, abs(c(0,1)), type=t), by=y, verbose=TRUE],     dt[, f(x, c(0,1), type="lead"), by=y],         output="GForce optimized j to")
+test(2243.03, dt[, shift(x, abs(i), type=t), by=y, verbose=TRUE],          dt[, f(x, c(0,1), type="lead"), by=y],         output="GForce FALSE")
+test(2243.04, dt[, shift(x, i, type=as.character(t)), by=y, verbose=TRUE], dt[, f(x, c(0,1), type="lead"), by=y],         output="GForce FALSE")
+test(2243.05, dt[, shift(x, i, type=t, fill=1), by=y, verbose=TRUE],       dt[, f(x, c(0,1), type="lead", fill=1), by=y], output="GForce optimized j to")
+test(2243.06, dt[, shift(x, i, type=t, fill=abs(1)), by=y, verbose=TRUE],  dt[, f(x, c(0,1), type="lead", fill=1), by=y], output="GForce optimized j to")
+test(2243.07, dt[, shift(x, i, type=t, fill=abs(j)), by=y, verbose=TRUE],  dt[, f(x, c(0,1), type="lead", fill=1), by=y], output="GForce FALSE")
+test(2243.08, dt[, .(shift(x, i, type=t)), by=y, verbose=TRUE],            dt[, .(f(x, c(0,1), type="lead")), by=y],      output="GForce optimized j to")
+# GForce only var or call without vars as n of head/tail/"["(x, n)
+dt = data.table(id=c(1L,1L,2L), v=1:3)
+j = 1L
+test(2243.11, dt[, head(v, j), id, verbose=TRUE], data.table(id=c(1L,2L), V1=c(1L,3L)), output="GForce optimized j to")
+test(2243.12, dt[, tail(v, j), id, verbose=TRUE], data.table(id=c(1L,2L), V1=c(2L,3L)), output="GForce optimized j to")
+test(2243.13, dt[, v[j], id,       verbose=TRUE], data.table(id=c(1L,2L), V1=c(1L,3L)), output="GForce optimized j to")
+# GForce only var or call without vars as na.rm of sum, mean, median, prod, min, max, var
+j = FALSE
+test(2243.21, dt[, sum(v,  na.rm=j),   id, verbose=TRUE], data.table(id=c(1L,2L), V1=c(3L,3L)),        output="GForce optimized j to")
+test(2243.22, dt[, mean(v, na.rm=j),   id, verbose=TRUE], data.table(id=c(1L,2L), V1=c(1.5,3)),        output="GForce optimized j to")
+test(2243.23, dt[, median(v, na.rm=j), id, verbose=TRUE], data.table(id=c(1L,2L), V1=c(1.5,3)),        output="GForce optimized j to")
+test(2243.24, dt[, prod(v, na.rm=j),   id, verbose=TRUE], data.table(id=c(1L,2L), V1=c(2,3)),          output="GForce optimized j to")
+test(2243.25, dt[, min(v,  na.rm=j),   id, verbose=TRUE], data.table(id=c(1L,2L), V1=c(1L,3L)),        output="GForce optimized j to")
+test(2243.26, dt[, max(v,  na.rm=j),   id, verbose=TRUE], data.table(id=c(1L,2L), V1=c(2L,3L)),        output="GForce optimized j to")
+test(2243.27, dt[, var(v,  na.rm=j),   id, verbose=TRUE], data.table(id=c(1L,2L), V1=c(0.5,NA)),       output="GForce optimized j to")
+test(2243.28, dt[, sd(v,   na.rm=j),   id, verbose=TRUE], data.table(id=c(1L,2L), V1=c(sqrt(0.5),NA)), output="GForce optimized j to")
+dt = data.table(g=1:2, y=1:4)
+j = TRUE
+test(2243.31, dt[, sum(y,  na.rm=as.logical(j)),   g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(4L,6L)),        output="GForce FALSE")
+test(2243.32, dt[, mean(y, na.rm=as.logical(j)),   g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2,3)),          output="GForce FALSE")
+test(2243.33, dt[, median(y, na.rm=as.logical(j)), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2,3)),          output="GForce FALSE")
+test(2243.34, dt[, prod(y, na.rm=as.logical(j)),   g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(3,8)),          output="GForce FALSE")
+test(2243.35, dt[, min(y,  na.rm=as.logical(j)),   g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(1L,2L)),        output="GForce FALSE")
+test(2243.36, dt[, max(y,  na.rm=as.logical(j)),   g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(3L,4L)),        output="GForce FALSE")
+test(2243.37, dt[, var(y,  na.rm=as.logical(j)),   g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2,2)),          output="GForce FALSE")
+test(2243.38, dt[, sd(y,   na.rm=as.logical(j)),   g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(sqrt(c(2,2)))), output="GForce FALSE")
