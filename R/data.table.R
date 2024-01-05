@@ -1750,7 +1750,7 @@ replace_dot_alias = function(e) {
             return(FALSE)
           }
           # calls are allowed <=> there's no SYMBOLs in the sub-AST
-          return(length(all.vars(expr, max.names=1L, unique=FALSE))==0L)
+          return(length(all.vars(expr, max.names=1L, unique=FALSE)) == 0L)
         }
         .gshift_ok = function(q) {
           q = match.call(shift, q)
