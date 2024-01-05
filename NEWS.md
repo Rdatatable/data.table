@@ -168,7 +168,7 @@
 
 28. `setkey()` now supports type `raw` as value columns (not as key columns), [#5100](https://github.com/Rdatatable/data.table/issues/5100). Thanks Hugh Parsonage for requesting, and Benjamin Schwendinger for the PR.
 
-29. `shift()` is now optimised by group, [#1534](https://github.com/Rdatatable/data.table/issues/1534). Thanks to Gerhard Nachtmann for requesting, and Benjamin Schwendinger for the PR. Thanks to @neovom for testing dev and filing a bug report which was fixed before release.
+29. `shift()` is now optimised by group, [#1534](https://github.com/Rdatatable/data.table/issues/1534). Thanks to Gerhard Nachtmann for requesting, and Benjamin Schwendinger for the PR. Thanks to @neovom for testing dev and filing a bug report, [#5547](https://github.com/Rdatatable/data.table/issues/5547) which was fixed before release. This helped also in improving the logic for when to turn on optimization by group in general, making it more robust.
 
     ```R
     N = 1e7
