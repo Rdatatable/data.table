@@ -1752,7 +1752,7 @@ replace_dot_alias = function(e) {
           is_constantish(q[["n"]]) &&
             is_constantish(q[["fill"]]) &&
             is_constantish(q[["type"]]) &&
-            is.null(q[["give.names"]])
+            !"give.names" %chin% names(q)
         }
         .ghead_ok = function(q) {
           length(q) == 3L &&
