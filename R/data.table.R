@@ -1795,7 +1795,7 @@ replace_dot_alias = function(e) {
           x[[1L]] = as.name(paste0("g", x[[1L]]))
           # gforce needs to evaluate arguments before calling C part TODO: move the evaluation into gforce_ok
           # do not evaluate vars present as columns in x
-          if (length(x)>=3L) {
+          if (length(x) >= 3L) {
             for (i in 3:length(x)) {
               if (is.symbol(x[[i]]) && !(x[[i]] %chin% names_x)) x[[i]] = eval(x[[i]], parent.frame(2L)) # tests 1187.2 & 1187.4
             }
