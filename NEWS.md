@@ -90,6 +90,8 @@
 
 14. `setNumericRounding()` now invisibly returns the old rounding value instead of `NULL`, which is now consistent with similar behavior by `setwd()`, `options()`, etc. Thanks @MichaelChirico for the report and @joshhwuu for the fix.
 
+15. data.table now depends on R 3.2.0 (2015) instead of 3.1.0 (2014). 1.17.0 will likely move to R 3.3.0 (2016). Recent versions of R have good features that we would gradually like to incorporate, and we see next to no usage of these very old versions of R.
+
 # data.table [v1.15.0](https://github.com/Rdatatable/data.table/milestone/29)  (30 Jan 2024)
 
 ## BREAKING CHANGE
@@ -710,7 +712,5 @@
 19. In the NEWS for v1.11.0 (May 2018), section "NOTICE OF INTENDED FUTURE POTENTIAL BREAKING CHANGES" item 2, we stated the intention to eventually change `logical01` to be `TRUE` by default. After some consideration, reflection, and community input, we have decided not to move forward with this plan, i.e., `logical01` will remain `FALSE` by default in both `fread()` and `fwrite()`. See discussion in #5856; most importantly, we think changing the default would be a major disruption to reading "sharded" CSVs where data with the same schema is split into many files, some of which could be converted to `logical` while others remain `integer`. We will retain the option `datatable.logical01` for users who wish to use a different default -- for example, if you are doing input/output on tables with a large number of logical columns, where writing '0'/'1' to the CSV many millions of times is preferable to writing 'TRUE'/'FALSE'.
 
 20. Some clarity is added to `?GForce` for the case when subtle changes to `j` produce different results because of differences in locale. Because `data.table` _always_ uses the "C" locale, small changes to queries which activate/deactivate GForce might cause confusingly different results when sorting is involved, [#5331](https://github.com/Rdatatable/data.table/issues/5331). The inspirational example compared `DT[, .(max(a), max(b)), by=grp]` and `DT[, .(max(a), max(tolower(b))), by=grp]` -- in the latter case, GForce is deactivated owing to the _ad-hoc_ column, so the result for `max(a)` might differ for the two queries. An example is added to `?GForce`. As always, there are several options to guarantee consistency, for example (1) use namespace qualification to deactivate GForce: `DT[, .(base::max(a), base::max(b)), by=grp]`; (2) turn off all optimizations with `options(datatable.optimize = 0)`; or (3) set your R session to always sort in C locale with `Sys.setlocale("LC_COLLATE", "C")` (or temporarily with e.g. `withr::with_locale()`). Thanks @markseeto for the example and @michaelchirico for the improved documentation.
-
-21. data.table now depends on R 3.2.0 (2015) instead of 3.1.0 (2014). 1.17.0 will likely move to R 3.3.0 (2016). Recent versions of R have good features that we would gradually like to incorporate, and we see next to no usage of these very old versions of R.
 
 # data.table v1.14.10 (Dec 2023) back to v1.10.0 (Dec 2016) has been moved to [NEWS.1.md](https://github.com/Rdatatable/data.table/blob/master/NEWS.1.md)
