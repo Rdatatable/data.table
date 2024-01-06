@@ -394,7 +394,7 @@ flights[origin == "JFK" & dest == "MIA"]
 
 One advantage very likely is shorter syntax. But even more than that, *binary search based subsets* are **incredibly fast**.  
 
-As the time goes `data.table` gets new optimisation and currently the latter call is automatically optimized to use *binary search*.  
+As the time goes `data.table` gets new optimization and currently the latter call is automatically optimized to use *binary search*.  
 To use slow *vector scan* key needs to be removed.  
 
 ```{r eval = FALSE}
