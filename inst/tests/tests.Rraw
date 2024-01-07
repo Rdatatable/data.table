@@ -18245,3 +18245,12 @@ test(2243.35, dt[, min(y,  na.rm=as.logical(j)),   g, verbose=TRUE], data.table(
 test(2243.36, dt[, max(y,  na.rm=as.logical(j)),   g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(3L,4L)),        output="GForce FALSE")
 test(2243.37, dt[, var(y,  na.rm=as.logical(j)),   g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2,2)),          output="GForce FALSE")
 test(2243.38, dt[, sd(y,   na.rm=as.logical(j)),   g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(sqrt(c(2,2)))), output="GForce FALSE")
+# revdeps
+dt = data.table(x = c(2,2,1,1), y = 1:4, z=letters[1:4])
+old = options(datatable.optimize=1L)
+test(2243.41, dt[, .I[TRUE], by = .(x)]$V1, 1:4)
+test(2243.42, dt[, z[y], x], data.table(x=c(2,2,1,1), V1=c("a","b",NA,NA)))
+options(datatable.optimize=2L)
+test(2243.51, dt[, .I[TRUE], by = .(x)]$V1, 1:4)
+test(2243.52, dt[, z[y], x], data.table(x=c(2,2,1,1), V1=c("a","b",NA,NA)))
+options(old)
