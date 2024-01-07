@@ -1,5 +1,6 @@
 fwrite = function(x, file="", append=FALSE, quote="auto",
-           sep=",", sep2=c("","|",""), eol=if (.Platform$OS.type=="windows") "\r\n" else "\n",
+           sep=getOption("datatable.fwrite.sep", ","),
+           sep2=c("","|",""), eol=if (.Platform$OS.type=="windows") "\r\n" else "\n",
            na="", dec=".", row.names=FALSE, col.names=TRUE,
            qmethod=c("double","escape"),
            logical01=getOption("datatable.logical01", FALSE), # due to change to TRUE; see NEWS
@@ -11,18 +12,22 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
            compress = c("auto", "none", "gzip"),
            yaml = FALSE,
            bom = FALSE,
-           verbose=getOption("datatable.verbose", FALSE)) {
+           verbose=getOption("datatable.verbose", FALSE),
+           encoding = "") {
   na = as.character(na[1L]) # fix for #1725
+  if (length(encoding) != 1L || !encoding %chin% c("", "UTF-8", "native")) {
+    stopf("Argument 'encoding' must be '', 'UTF-8' or 'native'.")
+  }
   if (missing(qmethod)) qmethod = qmethod[1L]
   if (missing(compress)) compress = compress[1L]
   if (missing(dateTimeAs)) { dateTimeAs = dateTimeAs[1L] }
-  else if (length(dateTimeAs)>1L) stop("dateTimeAs must be a single string")
+  else if (length(dateTimeAs)>1L) stopf("dateTimeAs must be a single string")
   dateTimeAs = chmatch(dateTimeAs, c("ISO","squash","epoch","write.csv"))-1L
-  if (is.na(dateTimeAs)) stop("dateTimeAs must be 'ISO','squash','epoch' or 'write.csv'")
+  if (is.na(dateTimeAs)) stopf("dateTimeAs must be 'ISO','squash','epoch' or 'write.csv'")
   if (!missing(logical01) && !missing(logicalAsInt))
-    stop("logicalAsInt has been renamed logical01. Use logical01 only, not both.")
+    stopf("logicalAsInt has been renamed logical01. Use logical01 only, not both.")
   if (!missing(logicalAsInt)) {
-    # TODO: warning("logicalAsInt has been renamed logical01 for consistency with fread. It will work fine but please change to logical01 at your convenience so we can remove logicalAsInt in future.")
+    warningf("logicalAsInt has been renamed logical01 for consistency with fread. It works fine for now but please change to logical01 at your convenience so we can remove logicalAsInt in future.")
     logical01 = logicalAsInt
     logicalAsInt=NULL
   }
@@ -32,12 +37,12 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   # write.csv default is 'double' so fwrite follows suit. write.table's default is 'escape'
   # validate arguments
   if (is.matrix(x)) { # coerce to data.table if input object is matrix
-    message("x being coerced from class: matrix to data.table")
+    messagef("x being coerced from class: matrix to data.table")
     x = as.data.table(x)
   }
   stopifnot(is.list(x),
     identical(quote,"auto") || isTRUEorFALSE(quote),
-    is.character(sep) && length(sep)==1L && nchar(sep) == 1L,
+    is.character(sep) && length(sep)==1L && (nchar(sep) == 1L || sep == ""),
     is.character(sep2) && length(sep2)==3L && nchar(sep2[2L])==1L,
     is.character(dec) && length(dec)==1L && nchar(dec) == 1L,
     dec != sep,  # sep2!=dec and sep2!=sep checked at C level when we know if list columns are present
@@ -58,7 +63,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   file = path.expand(file)  # "~/foo/bar"
   if (append && (file=="" || file.exists(file))) {
     if (missing(col.names)) col.names = FALSE
-    if (verbose) cat("Appending to existing file so setting bom=FALSE and yaml=FALSE\n")
+    if (verbose) catf("Appending to existing file so setting bom=FALSE and yaml=FALSE\n")
     bom = FALSE
     yaml = FALSE
   }
@@ -71,20 +76,18 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   }
   if (NCOL(x)==0L && file!="") {
     if (file.exists(file)) {
-      warning("Input has no columns; doing nothing.",
-              if (!append)
-                paste("\nIf you intended to overwrite the file at",
-                      file, "with an empty one, please use file.remove first."))
+      suggested <- if (append) "" else gettextf("\nIf you intended to overwrite the file at %s with an empty one, please use file.remove first.", file)
+      warningf("Input has no columns; doing nothing.%s", suggested)
       return(invisible())
     } else {
-      warning("Input has no columns; creating an empty file at '", file, "' and exiting.")
+      warningf("Input has no columns; creating an empty file at '%s' and exiting.", file)
       file.create(file)
       return(invisible())
     }
   }
   yaml = if (!yaml) "" else {
     if (!requireNamespace('yaml', quietly=TRUE))
-      stop("'data.table' relies on the package 'yaml' to write the file header; please add this to your library with install.packages('yaml') and try again.") # nocov
+      stopf("'data.table' relies on the package 'yaml' to write the file header; please add this to your library with install.packages('yaml') and try again.") # nocov
     schema_vec = sapply(x, class)
     # multi-class objects reduced to first class
     if (is.list(schema_vec)) schema_vec = sapply(schema_vec, `[`, 1L)
@@ -108,7 +111,9 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   file = enc2native(file) # CfwriteR cannot handle UTF-8 if that is not the native encoding, see #3078.
   .Call(CfwriteR, x, file, sep, sep2, eol, na, dec, quote, qmethod=="escape", append,
         row.names, col.names, logical01, scipen, dateTimeAs, buffMB, nThread,
-        showProgress, is_gzip, bom, yaml, verbose)
+        showProgress, is_gzip, bom, yaml, verbose, encoding)
   invisible()
 }
+
+haszlib = function() .Call(Cdt_has_zlib)
 
