@@ -37,6 +37,9 @@ setDT(transpose(ll, fill=0))[]
 
 DT = data.table(x=1:5, y=6:10)
 transpose(DT)
+
+ll = list(nm=c('x', 'y'), 1:2, 3:4)
+transpose(ll, make.names="nm")
 }
 \seealso{
   \code{\link{data.table}}, \code{\link{tstrsplit}}
