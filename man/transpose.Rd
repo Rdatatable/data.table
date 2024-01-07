@@ -27,7 +27,7 @@ transpose(l, fill=NA, ignore.empty=FALSE, keep.names=NULL, make.names=NULL)
 \value{
   A transposed \code{list}, \code{data.frame} or \code{data.table}.
 
-  \code{list} outputs will be unnamed.
+  \code{list} outputs will only be named according to \code{make.names}.
 }
 
 \examples{
