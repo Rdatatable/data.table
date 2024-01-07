@@ -6,7 +6,7 @@
 
 1. `transform` method for data.table sped up substantially when creating new columns on large tables. Thanks to @OfekShilon for the report and PR. The implemented solution was proposed by @ColeMiller1.
 
-2. The documentation for the `fill` argument in `rbind()` and `rbindlist()` now notes the expected behaviour for missing `list` columns when `fill=TRUE`. For clarity, `NULL` entries in `list` columns are now also shown as `NULL` instead of empty when showing the contents of a data.table [#4199](https://github.com/Rdatatable/data.table/pull/4199).
+2. The documentation for the `fill` argument in `rbind()` and `rbindlist()` now notes the expected behaviour for missing `list` columns when `fill=TRUE`, namely to use `NULL` (not `NA`). For clarity, `NULL` entries in `list` columns are now also shown as `[NULL]` instead of empty when printing a data.table [#4199](https://github.com/Rdatatable/data.table/pull/4199).
 
 # data.table [v1.14.99](https://github.com/Rdatatable/data.table/milestone/29)  (in development)
 
