@@ -8,7 +8,7 @@
 
 ## POTENTIALLY BREAKING CHANGES
 
-1. Rolling functions `frollmean` and `frollsum` used to treat `Inf` and `-Inf` as `NA` when using default `algo="fast"`. It has been changed now and infinity values are not treated as `NA` anymore. If your input into those function has `Inf` or `-Inf` then you will be affected by this change. [#5441](https://github.com/Rdatatable/data.table/pull/5441).
+1. Rolling functions `frollmean` and `frollsum` used to treat `Inf` and `-Inf` as `NA` when using default `algo="fast"`; this is no longer the case, and the behavior now matches that of `base::mean()` and `base::sum()`, respectively. If you use these functions with `Inf` or `-Inf` inputs then you will be affected by this change. [#5441](https://github.com/Rdatatable/data.table/pull/5441).
 
 ## NEW FEATURES
 
