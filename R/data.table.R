@@ -1761,15 +1761,13 @@ replace_dot_alias = function(e) {
         }
         .ghead_ok = function(q) {
           length(q) == 3L &&
-            q[[2L]] %chin% names_x && !(q[[3L]] %chin% names_x) &&
             is_constantish(q[[3L]], check_singleton = TRUE)
         }
         `.g[_ok` = function(q, x) {
           length(q) == 3L &&
             is_constantish(q[[3L]], check_singleton = TRUE) &&
             (q[[1L]] != "[[" || eval(call('is.atomic', q[[2L]]), envir=x)) &&
-            q[[2L]] %chin% names_x && !(q[[3L]] %chin% names_x) &&
-            eval(q[[3L]], parent.frame(3L)) > 0L
+            !(as.character(q[[3L]]) %chin% names_x) && (q3<-eval(q[[3L]], parent.frame(3L)))>0L && !is.logical(q3)
         }
         .gweighted.mean_ok = function(q, x) { #3977
           q = match.call(gweighted.mean, q)
