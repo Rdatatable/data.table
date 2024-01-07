@@ -4,7 +4,15 @@
 
 ## NEW FEATURES
 
-1. `print.data.table()` shows empty (`NULL`) list column entries as `[NULL]` for emphasis. Previously they would just print nothing (empty string). Part of [#4198](https://github.com/Rdatatable/data.table/issues/4198). Thanks @sritchie73 for the proposal and fix.
+1. `print.data.table()` shows empty (`NULL`) list column entries as `[NULL]` for emphasis. Previously they would just print nothing (same as for empty string). Part of [#4198](https://github.com/Rdatatable/data.table/issues/4198). Thanks @sritchie73 for the proposal and fix.
+
+    ```R
+    data.table(a=list(NULL, ""))
+    #         a
+    #    <list>
+    # 1: [NULL]
+    # 2:
+    ```
 
 ## NOTES
 
