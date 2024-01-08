@@ -8,7 +8,6 @@ froll = function(fun, x, n, fill=NA, algo=c("fast", "exact"), align=c("right", "
     verbose = getOption("datatable.verbose")
     if (verbose)
       cat("froll: adaptive=TRUE && align='left' pre-processing for align='right'\n")
-    ## TODO test atomic x but list of lists n (multiple windows)!
     x = rev2(x)
     n = rev2(n)
     align = "right"

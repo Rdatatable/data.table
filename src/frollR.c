@@ -132,13 +132,13 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
     dx[i] = REAL(VECTOR_ELT(x, i));                             // assign source columns to C pointers
   }
 
-  enum {MEAN, SUM, MAX} sfun;
+  rollfun_t rfun; // adding fun needs to be here and data.table.h
   if (!strcmp(CHAR(STRING_ELT(fun, 0)), "mean")) {
-    sfun = MEAN;
+    rfun = MEAN;
   } else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "sum")) {
-    sfun = SUM;
+    rfun = SUM;
   } else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "max")) {
-    sfun = MAX;
+    rfun = MAX;
   } else {
     error(_("Internal error: invalid %s argument in %s function should have been caught earlier. Please report to the data.table issue tracker."), "fun", "rolling"); // # nocov
   }
@@ -182,27 +182,10 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   #pragma omp parallel for if (ialgo==0) schedule(dynamic) collapse(2) num_threads(getDTthreads(nx*nk, false))
   for (R_len_t i=0; i<nx; i++) {                                // loop over multiple columns
     for (R_len_t j=0; j<nk; j++) {                              // loop over multiple windows
-      switch (sfun) {
-      case MEAN :
-        if (!badaptive)
-          frollmean(ialgo, dx[i], inx[i], &dans[i*nk+j], iik[j], ialign, dfill, bnarm, ihasna, verbose);
-        else
-          fadaptiverollmean(ialgo, dx[i], inx[i], &dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, verbose);
-        break;
-      case SUM :
-        if (!badaptive)
-          frollsum(ialgo, dx[i], inx[i], &dans[i*nk+j], iik[j], ialign, dfill, bnarm, ihasna, verbose);
-        else
-          fadaptiverollsum(ialgo, dx[i], inx[i], &dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, verbose);
-        break;
-      case MAX :
-        if (!badaptive)
-          frollmax(ialgo, dx[i], inx[i], &dans[i*nk+j], iik[j], ialign, dfill, bnarm, ihasna, verbose);
-        else
-          fadaptiverollmax(ialgo, dx[i], inx[i], &dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, verbose);
-        break;
-      default:
-        error(_("Internal error: Unknown sfun value in froll: %d"), sfun); // #nocov
+      if (!badaptive) {
+        frollfun(rfun, ialgo, dx[i], inx[i], &dans[i*nk+j], iik[j], ialign, dfill, bnarm, ihasna, verbose);
+      } else {
+        frolladaptivefun(rfun, ialgo, dx[i], inx[i], &dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, verbose);
       }
     }
   }
