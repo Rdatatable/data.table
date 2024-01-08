@@ -52,7 +52,7 @@ frollapply(x, n, FUN, \dots, fill=NA, align=c("right", "left", "center"), adapti
   multiple window sizes. If \code{adaptive=TRUE}, then \code{n} must be a list,
   see \emph{Adaptive rolling functions} section below for details.
 
-  When multiple columns or multiple windows width are provided, then they
+  When multiple columns or multiple window widths are provided, then they
   are run in parallel. The exception is for \code{algo="exact"}, which runs in
   parallel already. By default data.table uses only half of available CPUs,
   see \code{\link{setDTthreads}} for details.

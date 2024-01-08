@@ -296,7 +296,7 @@
 
 41. New function `%notin%` provides a convenient alternative to `!(x %in% y)`, [#4152](https://github.com/Rdatatable/data.table/issues/4152). Thanks to Jan Gorecki for suggesting and Michael Czekanski for the PR. `%notin%` uses half the memory because it computes the result directly as opposed to `!` which allocates a new vector to hold the negated result. If `x` is long enough to occupy more than half the remaining free memory, this can make the difference between the operation working, or failing with an out-of-memory error.
 
-42. New function `frollmax` has been implemented. It applies `max` over a rolling window. Request came from @gpierard who needed 1left aligned, adaptive, rolling max, [#5438](https://github.com/Rdatatable/data.table/issues/5438). Adaptive rolling functions did not have support for `align="left"`, therefore this feature has been added as well. It works for other adaptive rolling functions now. Adaptive `frollmax` has observed to be up to 50 time faster than second fastest solution using `max` and grouping `by=.EACHI`.
+42. New function `frollmax` has been implemented. It applies `max` over a rolling window. Request came from @gpierard who needs left-aligned, adaptive, rolling max, [#5438](https://github.com/Rdatatable/data.table/issues/5438). Adaptive rolling functions did not have support for `align="left"`, therefore this feature has been added as well. It works for other adaptive rolling functions now. Adaptive `frollmax` has been observed to be up to 50 times faster than the next fastest solution using `max` and grouping `by=.EACHI`.
 
 ## BUG FIXES
 

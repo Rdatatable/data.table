@@ -7,7 +7,7 @@ froll = function(fun, x, n, fill=NA, algo=c("fast", "exact"), align=c("right", "
     rev2 = function(x) if (is.list(x)) sapply(x, rev, simplify=FALSE) else rev(x)
     verbose = getOption("datatable.verbose")
     if (verbose)
-      cat("froll: adaptive=TRUE && align='left' pre-processing for align='right'\n")
+      catf("froll: adaptive=TRUE && align='left' pre-processing for align='right'\n")
     ## TODO test atomic x but list of lists n (multiple windows)!
     x = rev2(x)
     n = rev2(n)
@@ -18,7 +18,7 @@ froll = function(fun, x, n, fill=NA, algo=c("fast", "exact"), align=c("right", "
     ans
   else {
     if (verbose)
-      cat("froll: adaptive=TRUE && align='left' post-processing from align='right'\n")
+      catf("froll: adaptive=TRUE && align='left' post-processing from align='right'\n")
     rev2(ans)
   }
 }
