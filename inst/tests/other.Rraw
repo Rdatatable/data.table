@@ -211,6 +211,9 @@ test(14.2, {example('CJ', package='data.table', local=TRUE, echo=FALSE); TRUE})
 if (loaded[["sf"]]) {  #2273
   DT = as.data.table(st_read(system.file("shape/nc.shp", package = "sf")))
   test(15, DT[1:3, .(NAME, FIPS, geometry)], output="Ashe.*-81.4.*Surry.*-80.4")
+
+  dsf = sf::st_as_sf(data.table(x=1:10, y=1:10, s=sample(1:2, 10, TRUE)), coords=1:2)
+  test(16, split(dsf, dsf$s), list(`1` = dsf[dsf$s == 1, ], `2` = dsf[dsf$s == 2, ]))
 }
 
 if (loaded[["yaml"]]) {  # csvy; #1701. Was 2032-2033 in tests.Rraw, #5516
