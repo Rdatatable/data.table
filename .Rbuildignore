@@ -25,6 +25,7 @@
 ^_pkgdown\.yml$
 ^src/Makevars$
 ^CODEOWNERS$
+^GOVERNANCE\.md$
 
 ^\.RData$
 ^\.Rhistory$
