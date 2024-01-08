@@ -1164,7 +1164,7 @@ SEXP gprod(SEXP x, SEXP narmArg) {
   if (INHERITS(x, char_integer64)) {
     int64_t *ansd = (int64_t *)REAL(ans);
     for (int i=0; i<ngrp; ++i) {
-      ansd[i] = (s[i]>INT64_MAX || s[i]<=INT64_MIN) ? NA_INTEGER64 : (int64_t)s[i];
+      ansd[i] = (ISNAN(s[i]) || s[i]>INT64_MAX || s[i]<=INT64_MIN) ? NA_INTEGER64 : (int64_t)s[i];
     }
   } else {
     double *ansd = REAL(ans);

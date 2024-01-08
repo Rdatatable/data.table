@@ -2431,7 +2431,7 @@ int freadMain(freadMainArgs _args) {
         if (stopTeam) {             // A previous thread stopped while I was waiting my turn to enter ordered
           myNrow = 0;               // # nocov; discard my buffer
         }
-        else if (headPos!=thisJumpStart) {
+        else if (headPos!=thisJumpStart && nrowLimit>0) { // do not care for dirty jumps since we do not read data and only want to know types
            // # nocov start
           snprintf(internalErr, internalErrSize, _("Internal error: invalid head position. jump=%d, headPos=%p, thisJumpStart=%p, sof=%p"), jump, (void*)headPos, (void*)thisJumpStart, (void*)sof);
           stopTeam = true;
@@ -2503,7 +2503,7 @@ int freadMain(freadMainArgs _args) {
     }
     stopTeam = false;
 
-    if (extraAllocRows) {
+    if (extraAllocRows && nrowLimit>0) { // no allocating needed for nrows=0
       allocnrow += extraAllocRows;
       if (allocnrow > nrowLimit) allocnrow = nrowLimit;
       if (verbose) DTPRINT(_("  Too few rows allocated. Allocating additional %"PRIu64" rows (now nrows=%"PRIu64") and continue reading from jump %d\n"),
@@ -2512,7 +2512,7 @@ int freadMain(freadMainArgs _args) {
       extraAllocRows = 0;
       goto read;
     }
-    if (restartTeam) {
+    if (restartTeam && nrowLimit>0) { // no restarting needed for nrows=0 since we discard read data anyway
       if (verbose) DTPRINT(_("  Restarting team from jump %d. nSwept==%d quoteRule==%d\n"), jump0, nSwept, quoteRule);
       ASSERT(nSwept>0 || quoteRuleBumpedCh!=NULL, "Internal error: team restart but nSwept==%d and quoteRuleBumpedCh==%p", nSwept, quoteRuleBumpedCh); // # nocov
       goto read;

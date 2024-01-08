@@ -344,7 +344,6 @@ setkey(kDT,x)                         # set a 1-column key. No quotes, for conve
 setkeyv(kDT,"x")                      # same (v in setkeyv stands for vector)
 v="x"
 setkeyv(kDT,v)                        # same
-# key(kDT)<-"x"                       # copies whole table, please use set* functions instead
 haskey(kDT)                           # TRUE
 key(kDT)                              # "x"
 
