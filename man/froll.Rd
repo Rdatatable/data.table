@@ -69,7 +69,7 @@
 }
 \section{Implementation}{
   \itemize{
-    \item{ \code{algo="fast"} uses \emph{"on-line"} algorithm, and all of \code{NaN, +Inf, -Inf} (Inf are to be changed!!) are treated as \code{NA}. Not all functions have \emph{fast} implementation available. As of now \emph{max} and \code{adaptive=TRUE} does not have, therefore it will automatically fall back to \emph{exact} implementation. \code{datatable.verbose} option can be used to check that. }
+    \item{ \code{algo="fast"} uses \emph{"on-line"} algorithm, and all of \code{NaN, +Inf, -Inf} are treated as \code{NA}. Not all functions have \emph{fast} implementation available. As of now \emph{max} and \code{adaptive=TRUE} does not have, therefore it will automatically fall back to \emph{exact} implementation. \code{datatable.verbose} option can be used to check that. }
     \item{ \code{algo="exact"} will make rolling functions to use a more computationally-intensive algorithm. For each observation from input vector it will compute a function on a window from scratch (complexity \eqn{O(n^2)}). Depeneding on the function, this algorithm may suffers less from floating point rounding error (the same consideration applies to base \code{\link[base]{mean}}). Algorithm also handles \code{NaN, +Inf, -Inf} consistently to base R, unless - for some functions (e.g. \emph{max}) - \code{hasNA}is \code{FALSE} but NAs are present. In case of some functions (like \emph{mean}), it will additionally make extra pass to perform floating point error correction. Error corrections might not be truly exact on some platforms (like Windows) when using multiple threads. }
   }
 }
@@ -78,15 +78,13 @@
   \itemize{
     \item{ \code{align} does not support \code{"center"}. }
     \item{ if list of vectors is passed to \code{x}, then all vectors within it must have equal length. }
-    \item{ \code{partial=TRUE} is not supported. }
-    \item{ functionality in not suported in \code{frollapply} (to be changed). }
   }
 }
 \section{\code{partial} argument}{
   \code{partial=TRUE} will turn a function into adaptive function and trim window size in \code{n} argument using \code{n = c(seq.int(n), rep(n, len-n))} to available observations. It inherits limitations of adaptive rolling functions, see above. Adaptive functions uses more complex algorithms, therefore if performance is important then \code{partial=TRUE} should be avoided in favour of computing missing observations "by hand" after the rolling function; see examples.
 }
 \section{\code{frollapply}}{
-  \code{frollapply} computes rolling aggregate on arbitrary R functions. \code{adaptive} argument is not supported (to be changed). The input \code{x} (first argument) to the function \code{FUN} is coerced to \emph{numeric} beforehand(to be changed) and \code{FUN} has to return a scalar \emph{numeric} value (to be changed). Checks for that are made only during the first iteration when \code{FUN} is evaluated. Edge cases can be found in examples below. Any R function is supported, but it is not optimized using our own C implementation -- hence, for example, using \code{frollapply} to compute a rolling average is inefficient. It is also always single-threaded because there is no thread-safe API to R's C \code{eval}. Nevertheless we've seen the computation speed up vis-a-vis versions implemented in base R.
+  \code{frollapply} computes rolling aggregate on arbitrary R functions. The input \code{x} (first argument) to the function \code{FUN} is coerced to \emph{numeric} beforehand and \code{FUN} has to return a scalar \emph{numeric} value. Checks for that are made only during the first iteration when \code{FUN} is evaluated. Edge cases can be found in examples below. Any R function is supported, but it is not optimized using our own C implementation -- hence, for example, using \code{frollapply} to compute a rolling average is inefficient. It is also always single-threaded because there is no thread-safe API to R's C \code{eval}. Nevertheless we've seen the computation speed up vis-a-vis versions implemented in base R, especially when combined with \code{adaptive=TRUE}.
 }
 \section{\code{zoo} package users notice}{
   Users coming from most popular package for rolling functions \code{zoo} might expect following differences in \code{data.table} implementation
@@ -96,7 +94,7 @@
     \item{ \code{fill} accepts only constant values. No support for \emph{na.locf} or other functions. }
     \item{ \code{align} defaults to \code{"right"}. }
     \item{ \code{na.rm} is respected, and other functions are not needed when input contains \code{NA}. }
-    \item{ integers and logical are always coerced to double (to be changed for frollapply). }
+    \item{ integers and logical are always coerced to double. }
     \item{ when \code{adaptive=FALSE} (default), then \code{n} must be a numeric vector. List is not accepted. }
     \item{ when \code{adaptive=TRUE}, then \code{n} must be vector of length equal to \code{nrow(x)}, or list of such vectors. }
   }

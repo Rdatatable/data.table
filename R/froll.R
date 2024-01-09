@@ -72,9 +72,23 @@ frollapply = function(x, n, FUN, ..., fill=NA, align=c("right", "left", "center"
     n = partial2adaptive(x, n, align)
     adaptive = TRUE
   }
-  if (!missing(adaptive))
-    stopf("frollapply does not support 'adaptive' argument yet")
+  leftadaptive = isTRUE(adaptive) && align=="left"
+  if (leftadaptive) {
+    verbose = getOption("datatable.verbose")
+    rev2 = function(x) if (is.list(x)) sapply(x, rev, simplify=FALSE) else rev(x)
+    if (verbose)
+      cat("frollapply: adaptive=TRUE && align='left' pre-processing for align='right'\n")
+    x = rev2(x)
+    n = rev2(n)
+    align = "right"
+  }
   rho = new.env()
-  ans = .Call(CfrollapplyR, FUN, x, n, fill, align, rho)
-  ans
+  ans = .Call(CfrollapplyR, FUN, x, n, fill, align, adaptive, rho)
+  if (!leftadaptive)
+    ans
+  else {
+    if (verbose)
+      cat("frollapply: adaptive=TRUE && align='left' post-processing from align='right'\n")
+    rev2(ans)
+  }
 }
