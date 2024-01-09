@@ -412,7 +412,7 @@ void frollmax(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int k, int 
     tic = omp_get_wtime();
   if (algo==0) {
     frollmaxFast(x, nx, ans, k, fill, narm, hasna, verbose);
-  } else if (algo==1) {
+  } else { // algo==1
     frollmaxExact(x, nx, ans, k, fill, narm, hasna, verbose);
   }
   if (ans->status < 3 && align < 1) {
