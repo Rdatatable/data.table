@@ -18,13 +18,13 @@
 }
 \usage{
   frollmean(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"),
-    na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, hasNA)
+    na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, hasNA, give.names=FALSE)
   frollsum(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"),
-    na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, hasNA)
+    na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, hasNA, give.names=FALSE)
   frollmax(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"),
-    na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, hasNA)
+    na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, hasNA, give.names=FALSE)
   frollapply(x, n, FUN, \dots, fill=NA, align=c("right","left","center"),
-    adaptive=FALSE, partial=FALSE)
+    adaptive=FALSE, partial=FALSE, give.names=FALSE)
 }
 \arguments{
   \item{x}{ Vector, \code{data.frame} or \code{data.table} of integer, numeric or logical columns over which to calculate the windowed aggregations. May also be a list, in which case the rolling function is applied to each of its elements. }
@@ -39,6 +39,7 @@
   \item{FUN}{ The function to be applied to the rolling window in \code{frollapply}; See \emph{frollaply} section below for details. }
   \item{\dots}{ Extra arguments passed to \code{FUN} in \code{frollapply}. }
   \item{hasNA}{ Logical. Deprecated, use \code{has.nf} argument instead. }
+  \item{give.names}{ Logical, default \code{FALSE}. When \code{TRUE}, names are automatically generated corresponding to names of \code{x} and names of \code{n}. If answer is an atomic vector, then the argument is ignored, see examples. }
 }
 \details{
   \code{froll*} functions accept vector, list, \code{data.frame} or \code{data.table}. Functions operate on a single vector, when passing a non-atomic input, then function is applied column-by-column, not to a complete set of column at once.
@@ -144,6 +145,9 @@ all.equal(ans1, ans2)
 ans3 = frollmean(x, n)
 ans3[seq.int(n-1L)] = frollmean(x[seq.int(n-1L)], n, partial=TRUE)
 all.equal(ans1, ans3)
+
+# give.names
+frollsum(list(x=1:5, y=5:1), c(tiny=2, big=4), give.names=TRUE)
 
 # has.nf=FALSE should be used with care
 frollmax(c(1,2,NA,4,5), 2)
