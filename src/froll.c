@@ -433,10 +433,9 @@ void frollsumExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool 
   }
 }
 
-inline void wmax(double *x, uint64_t o, int k, double *w, uint64_t *iw, bool narm) {
+static inline void wmax(double *x, uint64_t o, int k, double *w, uint64_t *iw, bool narm) {
   if (narm) {
     for (int i=0; i<k; i++) {
-      //Rprintf("wmax iter %d, offset %d, first x val %f, testing x[o+i-k+1] >= w[0]: x[%d-%d+1] >= w[0]: %f >= %f: %d\n", i, o, x[o], i, k, x[o+i-k+1], w[0], x[o+i-k+1] >= w[0]);
       if (x[o+i-k+1] >= w[0]) { // this never true if all x NAs and narm=TRUE
         iw[0] = o+i-k+1;
         w[0] = x[iw[0]];
@@ -449,8 +448,10 @@ inline void wmax(double *x, uint64_t o, int k, double *w, uint64_t *iw, bool nar
       uint64_t ii = o+i-k+1;
       if (ISNAN(x[ii])) {
         if (ISNA(x[ii])) {
-          iww = ii; ww = NA_REAL;
+          error("internal error: frollmax reached untested branch of code, for now use frollmax algo='exact', please provide reproducible example of your frollmax usage to data.table github issue tracker\n"); // # nocov
+          //iww = ii; ww = NA_REAL;
         } else if (ISNA(ww)) {
+          error("internal error: frollmax reached untested branch of code, for now use frollmax algo='exact', please provide reproducible example of your frollmax usage to data.table github issue tracker\n"); // # nocov
           // do nothing because w > x[i]: NA > NaN
         } else { // no NA in window so NaN >= than any non-NA
           iww = ii; ww = R_NaN;

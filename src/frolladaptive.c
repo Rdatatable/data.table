@@ -106,21 +106,21 @@ void frolladaptivemeanFast(double *x, uint64_t nx, ans_t *ans, int *k, double fi
       snprintf(ans->message[3], 500, _("%s: Unable to allocate memory for cum NA counter"), __func__);
       free(cs); free(cn);
       return;
-    }                                              // # nocov end
+    }                                                           // # nocov end
     uint64_t *cpinf = malloc(nx*sizeof(uint64_t));
     if (!cpinf) {                                               // # nocov start
       ans->status = 3;
       snprintf(ans->message[3], 500, _("%s: Unable to allocate memory for cum Inf counter"), __func__);
       free(cs); free(cn); free(cpinf);
       return;
-    }                                           // # nocov end
+    }                                                           // # nocov end
     uint64_t *cninf = malloc(nx*sizeof(uint64_t));
-    if (!cninf) {
+    if (!cninf) {                                               // # nocov start
       ans->status = 3;                                          // raise error
       snprintf(ans->message[3], 500, _("%s: Unable to allocate memory for cum -Inf counter"), __func__);
       free(cs); free(cn); free(cpinf); free(cninf);
       return;
-    }                                           // # nocov end
+    }                                                           // # nocov end
     for (uint64_t i=0; i<nx; i++) {                             // loop over observations to calculate cumsum and cum NA counter
       if (R_FINITE(x[i])) {
         w += x[i];                                              // add observation to running sum
@@ -329,21 +329,21 @@ void frolladaptivesumFast(double *x, uint64_t nx, ans_t *ans, int *k, double fil
       snprintf(ans->message[3], 500, _("%s: Unable to allocate memory for cum NA counter"), __func__);
       free(cs); free(cn);
       return;
-    }                                              // # nocov end
+    }                                                           // # nocov end
     uint64_t *cpinf = malloc(nx*sizeof(uint64_t));
     if (!cpinf) {                                               // # nocov start
       ans->status = 3;
       snprintf(ans->message[3], 500, _("%s: Unable to allocate memory for cum Inf counter"), __func__);
       free(cs); free(cn); free(cpinf);
       return;
-    }                                           // # nocov end
+    }                                                           // # nocov end
     uint64_t *cninf = malloc(nx*sizeof(uint64_t));
-    if (!cninf) {
+    if (!cninf) {                                               // # nocov start
       ans->status = 3;                                          // raise error
       snprintf(ans->message[3], 500, _("%s: Unable to allocate memory for cum -Inf counter"), __func__);
       free(cs); free(cn); free(cpinf); free(cninf);
       return;
-    }                                           // # nocov end
+    }                                                           // # nocov end
     for (uint64_t i=0; i<nx; i++) {                             // loop over observations to calculate cumsum and cum NA counter
       if (R_FINITE(x[i])) {
         w += x[i];                                              // add observation to running sum

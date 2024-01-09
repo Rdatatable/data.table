@@ -53,7 +53,7 @@
   A list except when the input is a \code{vector} and \code{length(n)==1}, in which case a \code{vector} is returned, for convenience. Thus, rolling functions can be used conveniently within \code{data.table} syntax.
 }
 \note{
-  Be aware that rolling functions operates on the physical order of input. If the intent is to roll values in a vector by a logical window, for example an hour, or a day, then one has to ensure that there are no gaps in input. For details/upvote see \href{https://github.com/Rdatatable/data.table/issues/3241}{issue #3241}.
+  Be aware that rolling functions operates on the physical order of input. If the intent is to roll values in a vector by a logical window, for example an hour, or a day, then one has to use adaptive rolling function or has to ensure that there are no gaps in input. For details see \href{https://github.com/Rdatatable/data.table/issues/3241}{issue #3241}.
 }
 \section{\code{has.nf} argument}{
   \code{has.nf} can be used to speed up processing in cases when it is known if \code{x} contains (or not) non-finite values (\code{NA, NaN, Inf, -Inf}).
@@ -87,7 +87,7 @@
   Adaptive rolling functions are a special case where each observation has its own corresponding rolling window width. Therefore values passed to \code{n} argument must be series corresponding to observations in \code{x}. If multiple windows is meant to be computed then a list of integer vectors is expected; each list element must be an integer vector of window size corresponding to observations in \code{x}; see Examples. Due to the logic or implementation of adaptive rolling functions, the following restrictions apply
   \itemize{
     \item{ \code{align} does not support \code{"center"}. }
-    \item{ if list of vectors is passed to \code{x}, then all vectors within it must have equal length. }
+    \item{ if list of vectors is passed to \code{x}, then all vectors within it must have equal length due to the fact that length of adaptive window widths must match the length of vectors in \code{x}. }
   }
 }
 \section{\code{partial} argument}{
