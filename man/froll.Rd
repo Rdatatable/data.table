@@ -78,16 +78,16 @@ frollapply(x, n, FUN, \dots, fill=NA, align=c("right", "left", "center"), adapti
     \item{ \code{algo="fast"} uses \emph{"on-line"} algorithm, and
   all of \code{NaN, +Inf, -Inf} are treated as \code{NA}. Not all functions
   have \emph{fast} implementation available. As of now
-  \emph{max} and \code{adaptive=TRUE} does not have, therefore it will
+  \emph{max} and \code{adaptive=TRUE} do not have it, therefore it will
   automatically fall back to \emph{exact} implementation. \code{datatable.verbose}
   option can be used to check that. }
-    \item{ \code{algo="exact"} will make rolling functions to use a more
+    \item{ \code{algo="exact"} will make rolling functions use a more
   computationally-intensive algorithm. For each observation from input vector
   it will compute a function on a window from scratch (complexity \eqn{O(n^2)}).
-  Depeneding on the function, this algorithm may suffers less from
+  Depending on the function, this algorithm may suffers less from
   floating point rounding error (the same consideration applies to base \code{\link[base]{mean}}).
   Algorithm also handles \code{NaN, +Inf, -Inf} consistently to
-  base R, unless - for some functions (e.g. \emph{max}) - \code{hasNA}is \code{FALSE}
+  base R, unless - for some functions (e.g. \emph{max}) - \code{hasNA} is \code{FALSE}
   but NAs are present. In case of some functions (like \emph{mean}), it will additionally
   make extra pass to perform floating point error correction. Error
   corrections might not be truly exact on some platforms (like Windows)
@@ -105,7 +105,7 @@ frollapply(x, n, FUN, \dots, fill=NA, align=c("right", "left", "center"), adapti
     \item \code{align} does not support \code{"center"}.
     \item if list of vectors is passed to \code{x}, then all
       vectors within it must have equal length.
-    \item functionality in not suported in \code{frollapply}.
+    \item functionality is not suported in \code{frollapply}.
   }
 }
 \section{\code{frollapply}}{
@@ -126,7 +126,7 @@ frollapply(x, n, FUN, \dots, fill=NA, align=c("right", "left", "center"), adapti
   \code{zoo} might expect following differences in \code{data.table}
   implementation.
   \itemize{
-    \item rolling function will always return result of the same length
+    \item rolling functions will always return result of the same length
       as input.
     \item \code{fill} defaults to \code{NA}.
     \item \code{fill} accepts only constant values. It does not support
