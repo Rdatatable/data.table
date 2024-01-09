@@ -14,6 +14,8 @@
     # 2:
     ```
 
+2. New window function `frollmax` computes the rolling maximum. Request came from @gpierard who needs left-aligned, adaptive, rolling max, [#5438](https://github.com/Rdatatable/data.table/issues/5438). Adaptive rolling functions did not have support for `align="left"`, therefore we added this feature as well for all adaptive rolling functions. We measure adaptive `frollmax` to be up to 50 times faster than the next fastest solution using `max` and grouping `by=.EACHI`.
+
 ## NOTES
 
 1. `transform` method for data.table sped up substantially when creating new columns on large tables. Thanks to @OfekShilon for the report and PR. The implemented solution was proposed by @ColeMiller1.
@@ -312,8 +314,6 @@
 40. New function `%notin%` provides a convenient alternative to `!(x %in% y)`, [#4152](https://github.com/Rdatatable/data.table/issues/4152). Thanks to Jan Gorecki for suggesting and Michael Czekanski for the PR. `%notin%` uses half the memory because it computes the result directly as opposed to `!` which allocates a new vector to hold the negated result. If `x` is long enough to occupy more than half the remaining free memory, this can make the difference between the operation working, or failing with an out-of-memory error.
 
 41. `tables()` is faster by default by excluding the size of character strings in R's global cache (which may be shared) and excluding the size of list column items (which also may be shared). `mb=` now accepts any function which accepts a `data.table` and returns a higher and better estimate of its size in bytes, albeit more slowly; e.g. `mb = utils::object.size`.
-
-42. New window function `frollmax` computes the rolling maximum. Request came from @gpierard who needs left-aligned, adaptive, rolling max, [#5438](https://github.com/Rdatatable/data.table/issues/5438). Adaptive rolling functions did not have support for `align="left"`, therefore we added this feature as well for all adaptive rolling functions. We measure adaptive `frollmax` to be up to 50 times faster than the next fastest solution using `max` and grouping `by=.EACHI`.
 
 ## BUG FIXES
 
