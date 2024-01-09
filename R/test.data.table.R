@@ -1,8 +1,19 @@
-test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=FALSE, showProgress=interactive()&&!silent) {
+test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=FALSE, showProgress=interactive()&&!silent,
+                           memtest=Sys.getenv("TEST_DATA_TABLE_MEMTEST", 0), memtest.id=NULL) {
   stopifnot(isTRUEorFALSE(verbose), isTRUEorFALSE(silent), isTRUEorFALSE(showProgress))
+  memtest = as.integer(memtest)
+  stopifnot(length(memtest)==1L, memtest %in% 0:2)
+  memtest.id = as.integer(memtest.id)
+  if (length(memtest.id)) {
+    if (length(memtest.id)==1L) memtest.id = rep(memtest.id, 2L)  # for convenience of supplying one id rather than always a range
+    stopifnot(length(memtest.id)<=2L,  # conditions quoted to user when false so "<=2L" even though following conditions rely on ==2L
+                     !anyNA(memtest.id), memtest.id[1L]<=memtest.id[2L]) 
+    if (memtest==0L) memtest=1L  # using memtest.id implies memtest
+  }
   if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
     # package developer
     # nocov start
+    dev = TRUE
     if ("package:data.table" %chin% search()) stopf("data.table package is loaded. Unload or start a fresh R session.")
     rootdir = if (pkg!="." && pkg %chin% dir()) file.path(getwd(), pkg) else Sys.getenv("PROJ_PATH")
     subdir = file.path("inst","tests")
@@ -10,6 +21,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     # nocov end
   } else {
     # i) R CMD check and ii) user running test.data.table()
+    dev = FALSE
     rootdir = getNamespaceInfo("data.table","path")
     subdir = "tests"
     env = new.env(parent=parent.env(.GlobalEnv))  # when user runs test.data.table() we don't want their variables in .GlobalEnv affecting tests, #3705
@@ -28,7 +40,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     return(sapply(scripts, function(fn) {
       err = try(test.data.table(script=fn, verbose=verbose, pkg=pkg, silent=silent, showProgress=showProgress))
       cat("\n");
-      identical(err, TRUE)
+      isTRUE(err)
     }))
     # nocov end
   }
@@ -112,14 +124,19 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   assign("whichfail", NULL, envir=env)
   assign("started.at", proc.time(), envir=env)
   assign("lasttime", proc.time()[3L], envir=env)  # used by test() to attribute time inbetween tests to the next test
-  assign("timings", data.table( ID = seq_len(9999L), time=0.0, nTest=0L ), envir=env)   # test timings aggregated to integer id
-  assign("memtest", as.logical(Sys.getenv("TEST_DATA_TABLE_MEMTEST", "FALSE")), envir=env)
+  assign("timings", data.table( ID = seq_len(9999L), time=0.0, nTest=0L, RSS=0.0 ), envir=env)   # test timings aggregated to integer id
+  assign("memtest", memtest, envir=env)
+  assign("memtest.id", memtest.id, envir=env)
   assign("filename", fn, envir=env)
-  assign("inittime", as.integer(Sys.time()), envir=env) # keep measures from various test.data.table runs
   assign("showProgress", showProgress, envir=env)
 
   owd = setwd(tempdir()) # ensure writeable directory; e.g. tests that plot may write .pdf here depending on device option and/or batch mode; #5190
   on.exit(setwd(owd))
+  
+  if (memtest) {
+    catf("\n***\n*** memtest=%d. This should be the first call in a fresh R_GC_MEM_GROW=0 R session for best results. Ctrl-C now if not.\n***\n\n", memtest)
+    if (is.na(rss())) stopf("memtest intended for Linux. Step through data.table:::rss() to see what went wrong.")
+  }
 
   err = try(sys.source(fn, envir=env), silent=silent)
 
@@ -156,7 +173,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   if (inherits(err,"try-error")) {
     # nocov start
     if (silent) return(FALSE)
-    stopf("Failed after test %s before the next test() call in %s", env$prevtest, fn)
+    stopf("Failed in %s after test %s before the next test() call in %s", timetaken(env$started.at), env$prevtest, fn)
     # the try() above with silent=FALSE will have already printed the error itself
     # nocov end
   }
@@ -166,50 +183,40 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   if (nfail > 0L) {
     # nocov start
     stopf(
-      "%d error(s) out of %d. Search %s for test number(s) %s",
-      nfail, ntest, names(fn), toString(env$whichfail)
+      "%d error(s) out of %d. Search %s for test number(s) %s. Duration: %s.",
+      nfail, ntest, names(fn), toString(env$whichfail), timetaken(env$started.at)
     )
     # important to stopf() here, so that 'R CMD check' fails
     # nocov end
   }
 
   # There aren't any errors, so we can use up 11 lines for the timings table
-  timings = env$timings
-  DT = head(timings[-1L][order(-time)], 10L)   # exclude id 1 as in dev that includes JIT
-  if ((x<-sum(timings[["nTest"]])) != ntest) {
-    warningf("Timings count mismatch: %d vs %d", x, ntest)  # nocov
+  nTest = RSS = NULL  # to avoid 'no visible binding' note
+  timings = env$timings[nTest>0]
+  if (!memtest) {
+    ans = head(timings[if (dev) -1L else TRUE][order(-time)], 10L)[,RSS:=NULL]   # exclude id 1 in dev as that includes JIT
+    if ((x<-sum(timings[["nTest"]])) != ntest) {
+      warningf("Timings count mismatch: %d vs %d", x, ntest)  # nocov
+    }
+    catf("10 longest running tests took %ds (%d%% of %ds)\n", as.integer(tt<-ans[, sum(time)]), as.integer(100*tt/(ss<-timings[,sum(time)])), as.integer(ss))
+    print(ans, class=FALSE)
+  } else {
+    y = head(order(-diff(timings$RSS)), 10L)
+    ans = timings[, diff:=c(NA,round(diff(RSS),1))][y+1L][,time:=NULL]  # time is distracting and influenced by gc() calls; just focus on RAM usage here
+    catf("10 largest RAM increases (MB); see plot for cumulative effect (if any)\n")
+    print(ans, class=FALSE)
+    get("dev.new")(width=14, height=7)
+    get("par")(mfrow=c(1,2))
+    get("plot")(timings$RSS, main=paste(basename(fn),"\nylim[0]=0 for context"), ylab="RSS (MB)", ylim=c(0,max(timings$RSS)))
+    get("mtext")(lastRSS<-as.integer(ceiling(last(timings$RSS))), side=4, at=lastRSS, las=1, font=2)
+    get("plot")(timings$RSS, main=paste(basename(fn),"\nylim=range for inspection"), ylab="RSS (MB)")
+    get("mtext")(lastRSS, side=4, at=lastRSS, las=1, font=2)
   }
-  catf("10 longest running tests took %ds (%d%% of %ds)\n", as.integer(tt<-DT[, sum(time)]), as.integer(100*tt/(ss<-timings[,sum(time)])), as.integer(ss))
-  print(DT, class=FALSE)
 
   catf("All %d tests (last %.8g) in %s completed ok in %s\n", ntest, env$prevtest, names(fn), timetaken(env$started.at))
-
-  ## this chunk requires to include new suggested deps: graphics, grDevices
-  #memtest.plot = function(.inittime) {
-  #  if (!all(requireNamespace(c("graphics","grDevices"), quietly=TRUE))) return(invisible())
-  #  inittime=PS_rss=GC_used=GC_max_used=NULL
-  #  m = fread("memtest.csv")[inittime==.inittime]
-  #  if (nrow(m)) {
-  #    ps_na = allNA(m[["PS_rss"]]) # OS with no 'ps -o rss R' support
-  #    grDevices::png("memtest.png")
-  #    p = graphics::par(mfrow=c(if (ps_na) 2 else 3, 2))
-  #    if (!ps_na) {
-  #      m[, graphics::plot(test, PS_rss, pch=18, xlab="test num", ylab="mem MB", main="ps -o rss R")]
-  #      m[, graphics::plot(timestamp, PS_rss, type="l", xlab="timestamp", ylab="mem MB", main="ps -o rss R")]
-  #    }
-  #    m[, graphics::plot(test, GC_used, pch=18, xlab="test num", ylab="mem MB", main="gc used")]
-  #    m[, graphics::plot(timestamp, GC_used, type="l", xlab="timestamp", ylab="mem MB", main="gc used")]
-  #    m[, graphics::plot(test, GC_max_used, pch=18, xlab="test num", ylab="mem MB", main="gc max used")]
-  #    m[, graphics::plot(timestamp, GC_max_used, type="l", xlab="timestamp", ylab="mem MB", main="gc max used")]
-  #    graphics::par(p)
-  #    grDevices::dev.off()
-  #  } else {
-  #    warningf("test.data.table runs with memory testing but did not collect any memory statistics.")
-  #  }
-  #}
-  #if (memtest<-get("memtest", envir=env)) memtest.plot(get("inittime", envir=env))
-
-  invisible(nfail==0L)
+  ans = nfail==0L
+  attr(ans, "timings") = timings  # as attr to not upset callers who expect a TRUE/FALSE result
+  invisible(ans)
 }
 
 # nocov start
@@ -233,19 +240,9 @@ compactprint = function(DT, topn=2L) {
 
 INT = function(...) { as.integer(c(...)) }   # utility used in tests.Rraw
 
-ps_mem = function() {
-  # nocov start
-  cmd = sprintf("ps -o rss %s | tail -1", Sys.getpid())
-  ans = tryCatch(as.numeric(system(cmd, intern=TRUE, ignore.stderr=TRUE)), warning=function(w) NA_real_, error=function(e) NA_real_)
-  stopifnot(length(ans)==1L) # extra check if other OSes would not handle 'tail -1' properly for some reason
-  # returns RSS memory occupied by current R process in MB rounded to 1 decimal places (as in gc), ps already returns KB
-  c("PS_rss"=round(ans / 1024, 1L))
-  # nocov end
-}
-
 gc_mem = function() {
   # nocov start
-  # gc reported memory in MB
+  # gc reports memory in MB
   m = apply(gc()[, c(2L, 4L, 6L)], 2L, sum)
   names(m) = c("GC_used", "GC_gc_trigger", "GC_max_used")
   m
@@ -278,16 +275,22 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     lasttime = get("lasttime", parent.frame())
     timings = get("timings", parent.frame())
     memtest = get("memtest", parent.frame())
-    inittime = get("inittime", parent.frame())
+    memtest.id = get("memtest.id", parent.frame())
     filename = get("filename", parent.frame())
     foreign = get("foreign", parent.frame())
     showProgress = get("showProgress", parent.frame())
-    time = nTest = NULL  # to avoid 'no visible binding' note
+    time = nTest = RSS = NULL  # to avoid 'no visible binding' note
     if (num>0) on.exit( {
-       now = proc.time()[3L]
-       took = now-lasttime  # so that prep time between tests is attributed to the following test
-       assign("lasttime", now, parent.frame(), inherits=TRUE)
-       timings[ as.integer(num), `:=`(time=time+took, nTest=nTest+1L), verbose=FALSE ]
+       took = proc.time()[3L]-lasttime  # so that prep time between tests is attributed to the following test
+       timings[as.integer(num), `:=`(time=time+took, nTest=nTest+1L), verbose=FALSE]
+       if (memtest) {
+         if (memtest==1L) gc()  # see #5515 for before/after
+         inum = as.integer(num)
+         timings[inum, RSS:=max(rss(),RSS), verbose=FALSE]  # TODO prefix inum with .. for clarity when that works
+         if (length(memtest.id) && memtest.id[1L]<=inum && inum<=memtest.id[2L]) cat(rss(),"\n") # after 'testing id ...' output; not using between() as it has verbose output when getOption(datatable.verbose)
+         if (memtest==2L) gc()
+       }
+       assign("lasttime", proc.time()[3L], parent.frame(), inherits=TRUE)  # after gc() to exclude gc() time from next test when memtest
     } )
     if (showProgress)
       # \r can't be in gettextf msg
@@ -300,7 +303,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     # not be flushed to the output upon segfault, depending on OS).
   } else {
     # not `test.data.table` but developer running tests manually; i.e. `cc(F); test(...)`
-    memtest = FALSE          # nocov
+    memtest = 0L             # nocov
     filename = NA_character_ # nocov
     foreign = FALSE          # nocov ; assumes users of 'cc(F); test(...)' has LANGUAGE=en
     showProgress = FALSE     # nocov
@@ -330,19 +333,12 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     actual$message <<- c(actual$message, conditionMessage(m))
     m
   }
-  if (memtest) {
-    timestamp = as.numeric(Sys.time())   # nocov
-  }
   if (is.null(output) && is.null(notOutput)) {
     x = suppressMessages(withCallingHandlers(tryCatch(x, error=eHandler), warning=wHandler, message=mHandler))
     # save the overhead of capture.output() since there are a lot of tests, often called in loops
     # Thanks to tryCatch2 by Jan here : https://github.com/jangorecki/logR/blob/master/R/logR.R#L21
   } else {
     out = capture.output(print(x <- suppressMessages(withCallingHandlers(tryCatch(x, error=eHandler), warning=wHandler, message=mHandler))))
-  }
-  if (memtest) {
-    mem = as.list(c(inittime=inittime, filename=basename(filename), timestamp=timestamp, test=num, ps_mem(), gc_mem())) # nocov
-    fwrite(mem, "memtest.csv", append=TRUE, verbose=FALSE)                                                                             # nocov
   }
   fail = FALSE
   if (.test.data.table && num>0) {

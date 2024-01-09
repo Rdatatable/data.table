@@ -1,0 +1,72 @@
+# permissions and concurrency settings for GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+on:
+  push:
+    branches:
+      - 'master'
+
+jobs:
+  build:
+    name: data.table
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: r-lib/actions/setup-pandoc@v2
+      - uses: r-lib/actions/setup-r@v2
+      - name: cache-r-dependencies
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.R_LIBS_USER }}/*
+          key: library-cache-${{ github.run_id }}
+          restore-keys: library-cache
+      - name: setup-os-dependencies
+        run: |
+          sudo apt-get install -y libcurl4-openssl-dev
+      - name: setup-r-dependencies
+        run: |
+          Rscript -e 'stopifnot(file.copy("DESCRIPTION", file.path(tdir<-tempdir(), "PACKAGES"))); db<-available.packages(paste0("file://", tdir)); deps<-setdiff(tools::package_dependencies(read.dcf("DESCRIPTION", fields="Package")[[1L]], db, which="most")[[1L]], installed.packages(priority="high")[,"Package"]); if (length(deps)) { ap<-available.packages()[,"Version"]; ap<-ap[names(ap) %in% deps]; if (!all(deps%in%names(ap))) stop("dependencies are not avaiable in repository: ",paste(setdiff(deps, names(ap)), collapse=", ")); ip<-installed.packages()[,"Version"]; ip<-ip[names(ip) %in% deps]; pkgs<-ap[deps]>ip[deps]; install.packages(names(pkgs[pkgs|is.na(pkgs)]), INSTALL_opts="--html") }'
+      - name: build
+        run: |
+          echo "Revision:" $GITHUB_SHA >> ./DESCRIPTION
+          R CMD build .
+      - name: check
+        run: |
+          R CMD check --as-cran --no-manual $(ls -1t data.table_*.tar.gz | head -n 1)
+      - name: manual
+        if: github.ref == 'refs/heads/master'
+        run: |
+          cp -R ${{ env.R_LIBS_USER }} library
+          R CMD INSTALL --library="library" $(ls -1t data.table_*.tar.gz | head -n 1) --html
+          mkdir -p doc/html
+          cp /usr/share/R/doc/html/{left.jpg,up.jpg,Rlogo.svg,R.css,index.html} doc/html
+          Rscript -e 'utils::make.packages.html("library", docdir="doc")'
+          sed -i "s|file://|../..|g" doc/html/packages.html
+          mkdir -p public
+          mv doc public/doc
+          cp -r --parents library/*/{html,help,doc,demo,DESCRIPTION,README,NEWS,README.md,NEWS.md} public 2>/dev/null || :
+          sed -i 's|"/doc/html/|"/data.table/doc/html/|g' public/library/data.table/doc/index.html 2>/dev/null || :
+      - name: repo
+        if: github.ref == 'refs/heads/master'
+        run: |
+          mkdir -p public/src/contrib
+          mv $(ls -1t data.table_*.tar.gz | head -n 1) public/src/contrib
+          Rscript -e 'tools::write_PACKAGES("public/src/contrib", fields="Revision")'
+      - name: upload
+        if: github.ref == 'refs/heads/master'
+        uses: actions/upload-pages-artifact@v1
+        with:
+          path: "public"
+      - name: deploy
+        if: github.ref == 'refs/heads/master'
+        id: deployment
+        uses: actions/deploy-pages@v1

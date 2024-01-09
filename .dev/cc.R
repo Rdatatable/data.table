@@ -61,7 +61,8 @@ cc = function(test=FALSE, clean=FALSE, debug=FALSE, omp=!debug, cc_dir, path=Sys
   if (debug) {
     ret = system(sprintf("MAKEFLAGS='-j CC=%s PKG_CFLAGS=-f%sopenmp CFLAGS=-std=c99\\ -O0\\ -ggdb\\ -pedantic' R CMD SHLIB -d -o data_table.so *.c", CC, OMP))
   } else {
-    ret = system(sprintf("MAKEFLAGS='-j CC=%s CFLAGS=-f%sopenmp\\ -std=c99\\ -O3\\ -pipe\\ -Wall\\ -pedantic\\ -fno-common' R CMD SHLIB -o data_table.so *.c", CC, OMP))
+    ret = system(sprintf("MAKEFLAGS='-j CC=%s CFLAGS=-f%sopenmp\\ -std=c99\\ -O3\\ -pipe\\ -Wall\\ -pedantic\\ -Wstrict-prototypes\\ -isystem\\ /usr/share/R/include\\ -fno-common' R CMD SHLIB -o data_table.so *.c", CC, OMP))
+    # the -isystem suppresses strict-prototypes warnings from R's headers, #5477. Look at the output to see what -I is and pass the same path to -isystem.
     # TODO add -Wextra too?
   }
   if (ret) return()

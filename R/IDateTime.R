@@ -315,8 +315,8 @@ clip_msec = function(secs, action) {
 #   Adapted from Hadley Wickham's routines cited below to ensure
 #   integer results.
 #     http://gist.github.com/10238
-#   See also Hadley's more advanced and complex lubridate package:
-#     http://github.com/hadley/lubridate
+#   See also Hadley et al's more advanced and complex lubridate package:
+#     https://github.com/tidyverse/lubridate
 #   lubridate routines do not return integer values.
 ###################################################################
 

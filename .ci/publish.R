@@ -91,26 +91,17 @@ package.index <- function(package, lib.loc, repodir="bus/integration/cran") {
   )
   vign = tools::getVignetteInfo(pkg, lib.loc=lib.loc)
   r_rel_ver = Sys.getenv("R_REL_VERSION")
-  r_devel_ver = Sys.getenv("R_DEVEL_VERSION")
-  r_oldrel_ver = Sys.getenv("R_OLDREL_VERSION")
-  stopifnot(nzchar(r_rel_ver), nzchar(r_devel_ver), nzchar(r_oldrel_ver))
+  r_dev_ver = Sys.getenv("R_DEV_VERSION")
+  r_old_ver = Sys.getenv("R_OLD_VERSION")
+  stopifnot(nzchar(r_rel_ver), nzchar(r_dev_ver), nzchar(r_old_ver))
   cran.home = "../../.."
   tbl.dl = c(
     sprintf("<tr><td> Reference manual: </td><td> <a href=\"%s.pdf\">%s.pdf</a>, <a href=\"%s/library/%s/html/00Index.html\">00Index.html</a> </td></tr>", pkg, pkg, cran.home, pkg),
     if (nrow(vign)) sprintf("<tr><td>Vignettes:</td><td>%s</td></tr>", paste(sprintf("<a href=\"%s/library/data.table/doc/%s\">%s</a><br/>", cran.home, vign[,"PDF"], vign[,"Title"]), collapse="\n")), # location unline cran web/pkg/vignettes to not duplicate content, documentation is in ../../../library
     sprintf("<tr><td> Package source: </td><td> <a href=\"%s/src/contrib/%s_%s.tar.gz\"> %s_%s.tar.gz </a> </td></tr>", cran.home,pkg, version, pkg, version),
-    sprintf("<tr><td> Windows binaries: </td><td> %s </td></tr>", format.bins(ver=c("r-devel","r-release","r-oldrel"), bin_ver=c(r_devel_ver, r_rel_ver, r_oldrel_ver), cran.home=cran.home, os.type="windows", pkg=pkg, version=version, repodir=repodir)),
-    sprintf("<tr><td> macOS binaries: </td><td> %s </td></tr>", format.bins(ver=c("r-release","r-oldrel"), bin_ver=c(r_rel_ver, r_oldrel_ver), cran.home=cran.home, os.type="macosx", pkg=pkg, version=version, repodir=repodir))
+    sprintf("<tr><td> Windows binaries: </td><td> %s </td></tr>", format.bins(ver=c("r-devel","r-release","r-oldrel"), bin_ver=c(r_dev_ver, r_rel_ver, r_old_ver), cran.home=cran.home, os.type="windows", pkg=pkg, version=version, repodir=repodir)),
+    sprintf("<tr><td> macOS binaries: </td><td> %s </td></tr>", format.bins(ver=c("r-release","r-oldrel"), bin_ver=c(r_rel_ver, r_old_ver), cran.home=cran.home, os.type="macosx", pkg=pkg, version=version, repodir=repodir))
   )
-  if (pkg=="data.table") { ## docker images
-    registry = Sys.getenv("CI_REGISTRY", "registry.gitlab.com")
-    namespace = Sys.getenv("CI_PROJECT_NAMESPACE", "Rdatatable")
-    project = Sys.getenv("CI_PROJECT_NAME", "data.table")
-    images = c("r-release","r-devel","r-release-builder")
-    images.title = c("Base R release", "Base R development", "R release package builder")
-    tags = rep("latest", 3)
-    docker.dl = sprintf("<tr><td> %s: </td><td> <pre><code>docker pull %s/%s/%s/%s:%s</code></pre> </td></tr>", images.title, tolower(registry), tolower(namespace), tolower(project), tolower(images), tags)
-  }
   index.file = file.path(repodir, "web/packages", pkg, "index.html")
   if (!dir.exists(dirname(index.file))) dir.create(dirname(index.file), recursive=TRUE)
   writeLines(c(
@@ -131,11 +122,6 @@ package.index <- function(package, lib.loc, repodir="bus/integration/cran") {
     sprintf("<table summary=\"Package %s downloads\">", pkg),
     tbl.dl,
     "</table>",
-    if (pkg=="data.table")
-      c("<h4>Docker images:</h4>",
-        sprintf("<table summary=\"Package %s docker images\">", pkg),
-        docker.dl,
-        "</table>"),
     "</body>",
     "</html>"
   ), index.file)
@@ -148,7 +134,7 @@ lib.copy <- function(lib.from, repodir="bus/integration/cran"){
   pkg.copy <- function(pkg.from, lib.to) {
     pkg<-basename(pkg.from);
     dir.create(file.path(lib.to, pkg), recursive=TRUE)
-    lib.dirs<-intersect(c("html","doc"), all.lib.dirs<-list.dirs(pkg.from, full.names=FALSE))
+    lib.dirs<-intersect(c("help","html","doc"), all.lib.dirs<-list.dirs(pkg.from, full.names=FALSE))
     ans1<-setNames(file.copy(file.path(pkg.from, lib.dirs), file.path(lib.to, pkg), recursive=TRUE), lib.dirs)
     lib.files<-setdiff(list.files(pkg.from), all.lib.dirs)
     ans2<-setNames(file.copy(file.path(pkg.from, lib.files), file.path(lib.to, pkg)), lib.files)
@@ -169,24 +155,30 @@ plat <- function(x) if (grepl("^.*win", x)) "Windows" else if (grepl("^.*mac", x
 
 r.ver <- function(x) {
   tmp = strsplit(x, "-", fixed=TRUE)[[1L]]
-  if (length(tmp) < 2L) stop("test job names must be test-[r.version]-...")
-  v = tmp[2L]
+  if (length(tmp) < 3L) stop("test job names must be test-[lin|win|mac]-[r.version]-...")
+  v = tmp[3L]
   if (identical(v, "rel")) "r-release"
   else if (identical(v, "dev")) "r-devel"
   else if (identical(v, "old")) "r-oldrel"
   else {
-    if (grepl("\\D", v)) stop("second word in test job name must be rel/dev/old or numbers of R version")
+    if (grepl("\\D", v)) stop("third word in test job name must be rel/dev/old or numbers of R version")
     paste0("r-", paste(strsplit(v, "")[[1L]], collapse="."))
   }
 }
 
 # this for now is constant but when we move to independent pipelines (commit, daily, weekly) those values can be different
 pkg.version <- function(job, pkg) {
-  dcf = read.dcf(file.path("bus", job, paste(pkg, "Rcheck", sep="."), pkg, "DESCRIPTION"))
+  Rcheck = file.path("bus", job, paste(pkg, "Rcheck", sep="."))
+  if (!dir.exists(Rcheck))
+    return(NA_character_)
+  dcf = read.dcf(file.path(Rcheck, "00_pkg_src", pkg, "DESCRIPTION"))
   dcf[,"Version"]
 }
 pkg.revision <- function(job, pkg) {
-  dcf = read.dcf(file.path("bus", job, paste(pkg, "Rcheck", sep="."), pkg, "DESCRIPTION"))
+  Rcheck = file.path("bus", job, paste(pkg, "Rcheck", sep="."))
+  if (!dir.exists(Rcheck))
+    return(NA_character_)
+  dcf = read.dcf(file.path(Rcheck, "00_pkg_src", pkg, "DESCRIPTION"))
   if ("Revision" %in% colnames(dcf)) {
     proj.url = Sys.getenv("CI_PROJECT_URL", "")
     if (!nzchar(proj.url)) {
@@ -198,7 +190,10 @@ pkg.revision <- function(job, pkg) {
   } else ""
 }
 pkg.flags <- function(job, pkg) {
-  cc = file.path("bus", job, paste(pkg, "Rcheck", sep="."), pkg, "cc") ## data.table style cc file
+  Rcheck = file.path("bus", job, paste(pkg, "Rcheck", sep="."))
+  if (!dir.exists(Rcheck))
+    return(NA_character_)
+  cc = file.path(Rcheck, pkg, "cc") ## data.table style cc file
   if (file.exists(cc)) {
     d = readLines(cc)
     w.cflags = substr(d, 1, 7)=="CFLAGS="
@@ -268,6 +263,34 @@ check.flavors <- function(jobs, repodir="bus/integration/cran") {
   setNames(file.exists(file), file)
 }
 
+log.copy <- function(job, repodir="bus/integration/cran") {
+  dir.create(job.checks<-file.path(repodir, "web", "checks", pkg<-"data.table", job), recursive=TRUE, showWarnings=FALSE)
+  to = file.path(job.checks, "log")
+  if (!file.exists(job_id_file <- file.path("bus", job, "id")))
+    return(setNames(file.exists(to), "log"))
+  job_id = readLines(job_id_file, warn=FALSE)[1L]
+  from = sprintf("https://gitlab.com/Rdatatable/data.table/-/jobs/%s/raw", job_id)
+  download.file(from, to, method="wget", quiet=TRUE)
+  Sys.sleep(0.1) ## to not get ban from gitlab.com
+  setNames(file.exists(to), "log")
+}
+
+ci.status <- function(job) {
+  if (!file.exists(status_file <- file.path("bus", job, "status")))
+    return(NA_character_)
+  readLines(status_file, warn=FALSE)[1L]
+}
+
+ci.log <- function(jobs, repodir="bus/integration/cran") {
+  pkg = "data.table"
+  ans = vector("character", length(jobs))
+  logs = sapply(jobs, log.copy, repodir=repodir)
+  statuses = sapply(jobs, ci.status)
+  ans[!logs] = statuses[!logs]
+  ans[logs] = sprintf('<a href=\"%s/%s/log\">%s</a>', pkg[any(logs)], jobs[logs], statuses[logs])
+  ans
+}
+
 check.index <- function(pkg, jobs, repodir="bus/integration/cran") {
   status = function(x) if (grepl("^.*ERROR", x)) "ERROR" else if (grepl("^.*WARNING", x)) "WARNING" else if (grepl("^.*NOTE", x)) "NOTE" else if (grepl("^.*OK", x)) "OK" else NA_character_
   test.files = function(job, files, trim.name=FALSE, trim.exts=0L, pkg="data.table") {
@@ -308,17 +331,18 @@ check.index <- function(pkg, jobs, repodir="bus/integration/cran") {
     }
     memouts
   })
-  th = "<th>Flavor</th><th>Version</th><th>Revision</th><th>Install</th><th>Status</th><th>Flags</th><th>Rout.fail</th><th>Memtest</th>"
+  th = "<th>Flavor</th><th>Version</th><th>Revision</th><th>Install</th><th>Status</th><th>Flags</th><th>Rout.fail</th><th>Log</th><th>Memtest</th>"
   tbl = sprintf(
-    "<tr><td><a href=\"check_flavors.html\">%s</a></td><td>%s</td><td>%s</td><td><a href=\"%s/%s/00install.out\">out</a></td><td><a href=\"%s/%s/00check.log\">%s</a></td><td>%s</td><td>%s</td><td>%s</td></tr>",
-    sub("test-", "", jobs, fixed=TRUE),
-    sapply(jobs, pkg.version, pkg),
-    sapply(jobs, pkg.revision, pkg),
-    pkg, jobs, ## install
-    pkg, jobs, sapply(sapply(jobs, check.test, pkg="data.table"), status), ## check
-    sapply(jobs, pkg.flags, pkg),
-    mapply(test.files, jobs, routs, trim.exts=2L), # 1st fail, 2nd Rout, keep just: tests_x64/main
-    mapply(test.files, jobs, memouts, trim.name=TRUE)
+    "<tr><td><a href=\"check_flavors.html\">%s</a></td><td>%s</td><td>%s</td><td><a href=\"%s/%s/00install.out\">out</a></td><td><a href=\"%s/%s/00check.log\">%s</a></td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>",
+    sub("test-", "", jobs, fixed=TRUE), ## Flavor
+    sapply(jobs, pkg.version, pkg),     ## Version
+    sapply(jobs, pkg.revision, pkg),    ## Revision
+    pkg, jobs,                          ## Install
+    pkg, jobs, sapply(sapply(jobs, check.test, pkg="data.table"), status), ## Status
+    sapply(jobs, pkg.flags, pkg),                                          ## Flags
+    mapply(test.files, jobs, routs, trim.exts=2L),                         ## Rout.fail: 1st fail, 2nd Rout, keep just: tests_x64/main
+    ci.log(jobs),                                                          ## CI job logs
+    mapply(test.files, jobs, memouts, trim.name=TRUE)                      ## Memtest // currently not used
   )
   file = file.path(repodir, "web/checks", sprintf("check_results_%s.html", pkg))
   writeLines(c(
@@ -354,7 +378,8 @@ check.test <- function(job, pkg) {
   check[length(check)]
 }
 
-move.bin <- function(job, bin.version, os.type, file="DESCRIPTION", silent=FALSE) {
+move.bin <- function(job, bin.version, os.type, file="DESCRIPTION", silent=TRUE) {
+  ## currently not used, if not used for macos in future then can be removed
   if (os.type=="unix") {
     stop("publish of linux binaries not supported")
   } else if (os.type=="windows") {

@@ -1,0 +1,45 @@
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+* @mattdowle
+
+# melt
+/R/fmelt.R @tdhock
+/src/fmelt.c @tdhock
+/man/melt.data.table.Rd @tdhock
+/vignettes/datatable-reshape.Rmd @tdhock
+
+# rolling statistics
+/R/froll.R @jangorecki
+/man/froll.Rd @jangorecki
+/src/froll.c @jangorecki
+/src/frollR.c @jangorecki
+/src/frolladaptive.c @jangorecki
+
+# meta-programming
+/R/programming.R @jangorecki
+/man/substitute2.Rd @jangorecki
+/src/programming.c @jangorecki
+/vignettes/datatable-programming.Rmd @jangorecki
+
+# GForce groupby
+/src/gsumm.c @ben-schwen
+# datetime classes
+/R/IDateTime.R @ben-schwen @michaelchirico
+/src/idatetime.c @ben-schwen @michaelchirico
+/man/IDateTime.Rd @ben-schwen @michaelchirico
+
+# shift
+/R/shift.R @ben-schwen @michaelchirico
+/src/shift.c @ben-schwen @michaelchirico
+/man/shift.Rd @ben-schwen @michaelchirico
+
+# translations
+/inst/po/ @michaelchirico
+/po/ @michaelchirico
+/R/translation.R @michaelchirico
+/src/po.h @michaelchirico
+
+# printing
+/R/print.data.table.R @michaelchirico
+
+# .SD vignette
+/vignettes/datatable-sd-usage.Rmd @michaelchirico
