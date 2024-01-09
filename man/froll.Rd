@@ -18,12 +18,13 @@
 }
 \usage{
   frollmean(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"),
-    na.rm=FALSE, hasNA=NA, adaptive=FALSE)
+    na.rm=FALSE, hasNA=NA, adaptive=FALSE, partial=FALSE)
   frollsum(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"),
-    na.rm=FALSE, hasNA=NA, adaptive=FALSE)
+    na.rm=FALSE, hasNA=NA, adaptive=FALSE, partial=FALSE)
   frollmax(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"),
-    na.rm=FALSE, hasNA=NA, adaptive=FALSE)
-  frollapply(x, n, FUN, \dots, fill=NA, align=c("right","left","center"), adaptive)
+    na.rm=FALSE, hasNA=NA, adaptive=FALSE, partial=FALSE)
+  frollapply(x, n, FUN, \dots, fill=NA, align=c("right","left","center"),
+    adaptive=FALSE, partial=FALSE)
 }
 \arguments{
   \item{x}{ Vector, \code{data.frame} or \code{data.table} of integer, numeric or logical columns over which to calculate the windowed aggregations. May also be a list, in which case the rolling function is applied to each of its elements. }
@@ -34,6 +35,7 @@
   \item{na.rm}{ Logical, default \code{FALSE}. Should missing values be removed when calculating window? }
   \item{hasNA}{ Logical. If it is known that \code{x} contains \code{NA} (or \code{Nan}) then setting this to \code{TRUE} will speed up calculation. Defaults to \code{NA}. See \emph{hasNA argument} section below for details. }
   \item{adaptive}{ Logical, default \code{FALSE}. Should the rolling function be calculated adaptively? See \emph{Adaptive rolling functions} section below for details. }
+  \item{partial}{ Logical, default \code{FALSE}. Should the rolling window size(s) provided in \code{n} be trimmed to available observations. See \emph{\code{partial} argument} section below for details. }
   \item{FUN}{ The function to be applied to the rolling window in \code{frollapply}; See \emph{frollaply} section below for details. }
   \item{\dots}{ Extra arguments passed to \code{FUN} in \code{frollapply}. }
 }
@@ -76,8 +78,12 @@
   \itemize{
     \item{ \code{align} does not support \code{"center"}. }
     \item{ if list of vectors is passed to \code{x}, then all vectors within it must have equal length. }
+    \item{ \code{partial=TRUE} is not supported. }
     \item{ functionality in not suported in \code{frollapply} (to be changed). }
   }
+}
+\section{\code{partial} argument}{
+  \code{partial=TRUE} will turn a function into adaptive function and trim window size in \code{n} argument using \code{n = c(seq.int(n), rep(n, len-n))} to available observations. It inherits limitations of adaptive rolling functions, see above. Adaptive functions uses more complex algorithms, therefore if performance is important then \code{partial=TRUE} should be avoided in favour of computing missing observations "by hand" after the rolling function; see examples.
 }
 \section{\code{frollapply}}{
   \code{frollapply} computes rolling aggregate on arbitrary R functions. \code{adaptive} argument is not supported (to be changed). The input \code{x} (first argument) to the function \code{FUN} is coerced to \emph{numeric} beforehand(to be changed) and \code{FUN} has to return a scalar \emph{numeric} value (to be changed). Checks for that are made only during the first iteration when \code{FUN} is evaluated. Edge cases can be found in examples below. Any R function is supported, but it is not optimized using our own C implementation -- hence, for example, using \code{frollapply} to compute a rolling average is inefficient. It is also always single-threaded because there is no thread-safe API to R's C \code{eval}. Nevertheless we've seen the computation speed up vis-a-vis versions implemented in base R.
@@ -93,7 +99,6 @@
     \item{ integers and logical are always coerced to double (to be changed for frollapply). }
     \item{ when \code{adaptive=FALSE} (default), then \code{n} must be a numeric vector. List is not accepted. }
     \item{ when \code{adaptive=TRUE}, then \code{n} must be vector of length equal to \code{nrow(x)}, or list of such vectors. }
-    \item{ \code{partial} window feature is not supported, although it can be accomplished by using \code{adaptive=TRUE}, see examples (to be changed). \code{NA} is always returned for incomplete windows. }
   }
 }
 \examples{
@@ -109,9 +114,20 @@ frollmean(d, c(3, 4))
 ## three calls above will use multiple cores when available
 
 # partial window using adaptive rolling function
+x = 1:6/2
+n = 3
 an = function(n, len) c(seq.int(n), rep(n, len-n))
-n = an(3, nrow(d))
-frollmean(d, n, adaptive=TRUE)
+all.equal(
+  frollmean(x, an(n, length(x)), adaptive=TRUE),
+  frollmean(x, n, partial=TRUE)
+)
+# use partial only for incomplete observations in a window
+ans = frollmean(x, n)
+ans[seq.int(n-1L)] = frollmean(x[seq.int(n-1L)], n, partial=TRUE)
+all.equal(
+  ans,
+  frollmean(x, n, partial=TRUE)
+)
 
 # frollsum
 frollsum(d, 3:4)

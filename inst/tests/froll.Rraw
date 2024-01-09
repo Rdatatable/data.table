@@ -906,6 +906,29 @@ test(6000.3362, frollmax(x, n, hasNA=TRUE, na.rm=TRUE, adaptive=TRUE), c(NA,7,2,
 #TODO frollmax dev
 #TODO frollmax tests
 
+## partial
+x = 1:6/2
+n = 3
+an = function(n, len) c(seq.int(n), rep(n, len-n))
+test(6006.011, frollmean(x, an(n, length(x)), adaptive=TRUE), c(0.5,0.75,1,1.5,2,2.5))
+test(6006.012, frollmean(x, n, partial=TRUE), c(0.5,0.75,1,1.5,2,2.5))
+ans = frollmean(x, n)
+ans[seq.int(n-1L)] = frollmean(x[seq.int(n-1L)], n, partial=TRUE)
+test(6006.013, ans, c(0.5,0.75,1,1.5,2,2.5))
+test(6006.021, frollmean(x, rev(an(rev(n), length(x))), adaptive=TRUE, align="left"), c(1,1.5,2,2.5,2.75,3))
+test(6006.022, frollmean(x, n, partial=TRUE, align="left"), c(1,1.5,2,2.5,2.75,3))
+ans = frollmean(x, n, align="left")
+ans[(length(x)-n-1L):length(x)] = frollmean(x[(length(x)-n-1L):length(x)], n, partial=TRUE, align="left")
+test(6006.023, ans, c(1,1.5,2,2.5,2.75,3))
+options(datatable.verbose=TRUE)
+test(6006.901, frollmean(x, n, partial=TRUE), c(0.5,0.75,1,1.5,2,2.5), output="froll partial=TRUE trimming 'n' and redirecting to adaptive=TRUE")
+options(datatable.verbose=FALSE)
+test(6006.902, frollmean(1:4, rep(2L,4L), adaptive=TRUE, partial=TRUE), error="'partial' argument cannot be used together with 'adaptive'")
+test(6006.903, frollmean(1:4, 2L, align="center", partial=TRUE), error="'partial' cannot be used together with align='center'")
+test(6006.904, frollmean(list(1:4, 2:4), n, partial=TRUE), error="'partial' does not support variable length of columns in 'x'")
+test(6006.905, frollmean(x, TRUE, partial=TRUE), error="n must be integer vector or list of integer vectors")
+test(6006.906, frollmean(x, list(TRUE), partial=TRUE), error="n must be integer vector or list of integer vectors")
+
 ## validation
 
 set.seed(108)
@@ -922,7 +945,7 @@ makeNA = function(x, ratio=0.1, nf=FALSE) {
   }
   x
 }
-num = 6001.0
+num = 6007.0
 ## against base to verify exactness of non-finite values, not handled in zoo
 rollfun = function(x, n, FUN, fill=NA_real_, na.rm=FALSE, nf.rm=FALSE) {
   ans = rep(fill, nx<-length(x))
@@ -958,7 +981,7 @@ x = makeNA(rnorm(1e3), nf=TRUE); n = 51
 base_compare(x, n)
 x = makeNA(rnorm(1e3+1), nf=TRUE); n = 51
 base_compare(x, n)
-num = 6002.0
+num = 6008.0
 #### against zoo
 if (requireNamespace("zoo", quietly=TRUE)) {
   drollapply = function(...) as.double(zoo::rollapply(...)) # rollapply is not consistent in data type of answer, force to double
@@ -1012,7 +1035,7 @@ if (requireNamespace("zoo", quietly=TRUE)) {
   zoo_compare(x, n)
 }
 #### adaptive moving average compare
-num = 6003.0
+num = 6009.0
 arollfun = function(fun, x, n, na.rm=FALSE, fill=NA, nf.rm=FALSE) {
   # adaptive moving average in R
   stopifnot((nx<-length(x))==length(n))
