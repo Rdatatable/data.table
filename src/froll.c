@@ -401,7 +401,7 @@ void frollsumExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool 
 void frollmax(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasna, bool verbose) {
   if (nx < k) {
     if (verbose)
-      snprintf(end(ans->message[0]), 500, _("%s: window width longer than input vector, returning all NA vector\n"), __func__);
+      snprintf(end(ans->message[0]), 500, _("%s: window width longer than input vector, returning all %f vector\n"), __func__, fill);
     for (int i=0; i<nx; i++) {
       ans->dbl_v[i] = fill;
     }
@@ -427,7 +427,7 @@ void frollmax(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int k, int 
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: processing algo %u took %.3fs\n"), __func__, algo, omp_get_wtime()-tic);
 }
-inline void windowmax(double *x, uint64_t o, int k, double *w, uint64_t *iw) {
+inline void windowmax(double *x, uint64_t o, int k, /* max of current window */ double *w, /* index of w within window */ uint64_t *iw) {
   for (int i=0; i<k-1; i++) {
     //Rprintf("windowmax iteration %d, offset %d, first x val %f, testing x[o+i-k+1] >= w[0]: x[%d-%d+1] >= w[0]: %f >= %f: %d\n", i, o, x[o], i, k, x[o+i-k+1], w[0], x[o+i-k+1] >= w[0]);
     if (x[o+i-k+1] >= w[0]) { // what if that is never satisfied? test!
@@ -436,7 +436,7 @@ inline void windowmax(double *x, uint64_t o, int k, double *w, uint64_t *iw) {
     }
   }
 }
-inline void windowmaxnarm(double *x, uint64_t o, int k, bool narm, int *nc, double *w, uint64_t *iw) {
+inline void windowmaxnarm(double *x, uint64_t o, int k, bool narm, /* NA counter */ int *nc, double *w, uint64_t *iw) {
   for (int i=0; i<k-1; i++) {
     //Rprintf("windowmax iteration %d, offset %d, first x val %f, testing x[o+i-k+1] >= w[0]: x[%d-%d+1] >= w[0]: %f >= %f: %d\n", i, o, x[o], i, k, x[o+i-k+1], w[0], x[o+i-k+1] >= w[0]);
     if (R_FINITE(x[o+i-k+1])) {
