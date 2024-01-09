@@ -54,21 +54,20 @@ frollapply(x, n, FUN, \dots, fill=NA, align=c("right", "left", "center"), adapti
 
   When multiple columns or multiple window widths are provided, then they
   are run in parallel. The exception is for \code{algo="exact"}, which runs in
-  parallel already. By default data.table uses only half of available CPUs,
-  see \code{\link{setDTthreads}} for details.
+  parallel already. See \code{\link{setDTthreads}} for defaults and further details on parallelism in data.table.
 }
 \section{\code{hasNA} argument}{
   \code{hasNA} can be used to speed up processing in cases when it is known
-  if \code{x} contains \code{NA, NaN, +Inf, -Inf}.
+  whether \code{x} contains infinite values \code{NA, NaN, +Inf, -Inf}.
   \itemize{
-    \item{ Default \code{hasNA=NA} will use faster NA inaware implementation,
-    but when NAs are detected it will re-run NA aware implementation. }
-    \item{ \code{hasNA=TRUE} will use NA aware implementation straightaway. }
-    \item{ \code{hasNA=FALSE} will use faster NA inaware implementation.
+    \item{ Default \code{hasNA=NA} will use faster \code{NA} agnostic implementation,
+    but when \code{NA}s are detected it will re-run \code{NA} aware implementation. }
+    \item{ \code{hasNA=TRUE} will use \code{NA} aware implementation straightaway. }
+    \item{ \code{hasNA=FALSE} will use faster \code{NA} agnostic implementation.
     Then depending on the rolling function it will either
     \itemize{
-      \item{ (\emph{mean, sum}) detect NAs, raise warning, re-run NA aware. }
-      \item{ (\emph{max}) not detect NAs and may silently produce incorrect
+      \item{ (\emph{mean, sum}) detect \code{NA}s, raise warning, re-run \code{NA} aware. }
+      \item{ (\emph{max}) not detect \code{NA}s and may silently produce an incorrect
       answer. }}
     Therefore \code{hasNA=FALSE} should be used with care.
     }
