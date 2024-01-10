@@ -8,9 +8,9 @@ exportClasses(data.table, IDate, ITime)
 export(data.table, tables, setkey, setkeyv, key, "key<-", haskey, CJ, SJ, copy)
 export(setindex, setindexv, indices)
 export(as.data.table,is.data.table,test.data.table)
-export(last,first,like,"%like%","%ilike%","%flike%","%plike%",between,"%between%",inrange,"%inrange%")
+export(last,first,like,"%like%","%ilike%","%flike%","%plike%",between,"%between%",inrange,"%inrange%", "%notin%")
 export(timetaken)
-export(truelength, setalloccol, alloc.col, ":=")
+export(truelength, setalloccol, alloc.col, ":=", let)
 export(setattr, setnames, setcolorder, set, setDT, setDF)
 export(setorder, setorderv)
 export(setNumericRounding, getNumericRounding)
@@ -57,9 +57,10 @@ export(setnafill)
 export(.Last.updated)
 export(fcoalesce)
 export(substitute2)
-export(DT)  # mtcars |> DT(i,j,by)  #4872
+#export(DT)  # mtcars |> DT(i,j,by)  #4872 #5472
 
 S3method("[", data.table)
+export("[.data.table")  # so that functional DT() finds it; PR#5176
 S3method("[<-", data.table)
 # S3method("[[", data.table)
 # S3method("[[<-", data.table)
@@ -89,23 +90,23 @@ if (getRversion() >= "4.0.0") {
   # if we register these (new in v1.12.6) methods always though, the previous workaround no longer works in R<4.0.0. Hence only register in R>=4.0.0.
   S3method(cbind, data.table)
   S3method(rbind, data.table)
+} else {
+  # and if we export but don't register in R < 4.0.0 we get this note:
+  # > Found the following apparent S3 methods exported but not registered:
+  # > cbind.data.table rbind.data.table
+  # in addition to errors in tests 324, 326, 414.1, 414.2, 442, 445, 451
+  # export(cbind.data.table)
+  # export(rbind.data.table)
+  # A revdep using rbind.data.frame() directly before (which data.table changed in base) should change to rbind() generic and that should work
+  # in all combinations of R before/after 4.0.0 and data.table before/after 1.12.6, so long as data.table is installed using the same major
+  # version of R (and that is checked in .onLoad with error if not).
+  export(.rbind.data.table) # only export in R<4.0.0 where it is still used; R-devel now detects it is missing doc, #5600
 }
-# else {
-#  # and if we export but don't register in R < 4.0.0 we get this note:
-#  # > Found the following apparent S3 methods exported but not registered:
-#  # > cbind.data.table rbind.data.table
-#  # in addition to errors in tests 324, 326, 414.1, 414.2, 442, 445, 451
-#  export(cbind.data.table)
-#  export(rbind.data.table)
-#  # A revdep using rbind.data.frame() directly before (which data.table changed in base) should change to rbind() generic and that should work
-#  # in all combinations of R before/after 4.0.0 and data.table before/after 1.12.6, so long as data.table is installed using the same major
-#  # version of R (and that is checked in .onLoad with error if not).
-# }
-export(.rbind.data.table) # continue to export for now because it has been exported in the past so it may be depended on
 S3method(dim, data.table)
 S3method(dimnames, data.table)
 S3method("dimnames<-", data.table)
 S3method("names<-", data.table)
+S3method("colnames<-", data.table)
 S3method(duplicated, data.table)
 S3method(unique, data.table)
 S3method(merge, data.table)
@@ -130,8 +131,7 @@ S3method(melt, default)
 export(melt.data.table, dcast.data.table)
 
 import(utils)
-S3method(update, dev.pkg)
-export(update.dev.pkg)
+export(update_dev_pkg)
 S3method(tail, data.table)
 S3method(head, data.table)
 import(stats)
@@ -147,7 +147,7 @@ if (getRversion() >= "3.6.0") {
 
 # IDateTime support:
 export(as.IDate,as.ITime,IDateTime)
-export(second,minute,hour,yday,wday,mday,week,isoweek,month,quarter,year)
+export(second,minute,hour,yday,wday,mday,week,isoweek,month,quarter,year,yearmon,yearqtr)
 
 S3method("[", ITime)
 S3method("+", IDate)
@@ -159,6 +159,7 @@ S3method(as.IDate, Date)
 S3method(as.IDate, POSIXct)
 S3method(as.IDate, default)
 S3method(as.IDate, numeric)
+S3method(as.IDate, IDate)
 S3method(as.ITime, character)
 S3method(as.ITime, default)
 S3method(as.ITime, POSIXct)

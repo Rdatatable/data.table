@@ -18,10 +18,10 @@
   \method{print}{data.table}(x,
     topn=getOption("datatable.print.topn"),             # default: 5
     nrows=getOption("datatable.print.nrows"),           # default: 100
-    class=getOption("datatable.print.class"),           # default: FALSE
+    class=getOption("datatable.print.class"),           # default: TRUE
     row.names=getOption("datatable.print.rownames"),    # default: TRUE
     col.names=getOption("datatable.print.colnames"),    # default: "auto"
-    print.keys=getOption("datatable.print.keys"),       # default: FALSE
+    print.keys=getOption("datatable.print.keys"),       # default: TRUE
     trunc.cols=getOption("datatable.print.trunc.cols"), # default: FALSE
     quote=FALSE,
     timezone=FALSE, \dots)
@@ -57,7 +57,7 @@
 \details{
   By default, with an eye to the typically large number of observations in a \code{data.table}, only the beginning and end of the object are displayed (specifically, \code{head(x, topn)} and \code{tail(x, topn)} are displayed unless \code{nrow(x) < nrows}, in which case all rows will print).
 
-  \code{format_col} is applied at a column level; for example, \code{format_col.POSIXct} is used to tag the time zones of \code{POSIXct} columns. \code{format_list_item} is applied to the elements (rows) of \code{list} columns; see Examples.
+  \code{format_col} is applied at a column level; for example, \code{format_col.POSIXct} is used to tag the time zones of \code{POSIXct} columns. \code{format_list_item} is applied to the elements (rows) of \code{list} columns; see Examples. The default \code{format_col} method uses \code{\link[utils]{getS3method}} to test if a \code{format} method exists for the column, and if so uses it. Otherwise, the default \code{format_list_item} method uses the S3 format method (if one exists) for each item of a \code{list} column.
 }
 \seealso{\code{\link{print.default}}}
 \examples{

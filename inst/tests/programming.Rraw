@@ -603,3 +603,15 @@ test(103.02, nadt, data.table(x1 = c(1, 2, 0, 0), x2 = c(2, 0, 3, 0), x3 = c(0, 
 test(201.1, substitute2(dt, env=list(dt = data.table(a=1:9, b=1:9))), data.table(a=1:9, b=1:9))
 test(201.2, substitute2(dt, env=list(dt = data.table(a=1:9, b=as.character(1:9)))), data.table(a=1:9, b=as.character(1:9)))
 test(201.3, substitute2(dt, env=list(dt = data.table(a=1:2, b=as.character(1:2)))), data.table(a=1:2, b=as.character(1:2)))
+
+# ensure env argument is a standard evaluation argument #4994 #4995
+dt = data.table(x=1:2, y=2:1)
+jpar = list(.j=list("y"))
+test(202.1, dt[, .j, env=jpar], data.table(y=2:1))
+f = function(d, params) {
+  d[, .j, env=params]
+}
+test(202.2, f(dt, params=jpar), data.table(y=2:1))
+"." = function(...) list(.j=list("x"))
+test(202.3, dt[, .j, env=.(.j=list("y"))], data.table(x=1:2))
+rm(list=".")
