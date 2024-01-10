@@ -18161,9 +18161,17 @@ for (i in seq.int(x)) {
   l = length(x[[i]])
   s = sample(l-1L, 1L)
   for (j in nrow(b)) {
-    test(testnum, topn(x[[i]], l, na.last=b[[j,1]], decreasing=b[[j,2]]), order(x[[i]], na.last=b[[j,1]], decreasing=b[[j,2]]))
+    test(testnum, topn(x[[i]], l, na.last=b[[j,1]], decreasing=b[[j,2]], sorted=TRUE),
+      order(x[[i]], na.last=b[[j,1]], decreasing=b[[j,2]]))
     testnum = testnum + 0.01
-    test(testnum, topn(x[[i]], s, na.last=b[[j,1]], decreasing=b[[j,2]]), order(x[[i]], na.last=b[[j,1]], decreasing=b[[j,2]])[1L:s])
+    test(testnum, topn(x[[i]], s, na.last=b[[j,1]], decreasing=b[[j,2]], sorted=TRUE),
+      order(x[[i]], na.last=b[[j,1]], decreasing=b[[j,2]])[1L:s])
+    testnum = testnum + 0.01
+    test(testnum, sort(topn(x[[i]], l, na.last=b[[j,1]], decreasing=b[[j,2]], sorted=FALSE)),
+      sort(order(x[[i]], na.last=b[[j,1]], decreasing=b[[j,2]])))
+    testnum = testnum + 0.01
+    test(testnum, sort(topn(x[[i]], s, na.last=b[[j,1]], decreasing=b[[j,2]], sorted=FALSE)),
+      sort(order(x[[i]], na.last=b[[j,1]], decreasing=b[[j,2]])[1L:s]))
     testnum = testnum + 0.01
   }
 }

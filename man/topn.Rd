@@ -8,7 +8,6 @@
 
   Especially, for large vectors this method will be faster and less memory intensive than \code{order} since no full sort is performed.
 
-
   \code{bit64::integer64} type is also supported.
 }
 
@@ -19,7 +18,8 @@ topn(x, n, na.last=TRUE, decreasing=FALSE)
   \item{x}{ A numeric, complex, character or logical vector. }
   \item{n}{ A numeric vector length 1. How many indices to select. }
   \item{na.last}{ Control treatment of \code{NA}s. If \code{TRUE}, missing values in the data are put last; if \code{FALSE}, they are put first. }
-  \item{decreasing}{ Logical. Indicating whether the order should be increasing or decreasing. }
+  \item{decreasing}{ Logical. Default is \code{FALSE}. Indicating whether the order should be increasing or decreasing. }
+  \item[{sorted}{ Logical. Default is \code{FALSE}. Indicating whether order should be sorted with respect to decreasing. }
 }
 
 \value{

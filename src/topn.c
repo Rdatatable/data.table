@@ -65,7 +65,7 @@ static inline bool ccmp(const Rcomplex *x, const int a, const int b, const bool 
 // for finding decreasing topn build minheap and add values if they exceed
 // minimum by overwriting minimum and following down sifting
 #undef TOPN
-#define TOPN(CTYPE, RTYPE, CMP) {                         \
+#define TOPN(CTYPE, RTYPE, CMP, SORTED) {                 \
   const CTYPE *restrict VAL = (const CTYPE *)RTYPE(x);    \
   for (int i=n/2; i>=0; --i) { k=i; len=n; SIFT(CMP); }   \
   for (int i=n; i<xlen; ++i) {                            \
@@ -74,18 +74,25 @@ static inline bool ccmp(const Rcomplex *x, const int a, const int b, const bool 
       k=0; len=n; SIFT(CMP);                              \
     }                                                     \
   }                                                       \
-  for (int i=0; i<n; ++i) {                               \
-    swap(&INDEX[0], &INDEX[n-1-i]);                       \
-    k=0; len=n-1-i; SIFT(CMP);                            \
-    ians[n-1-i] = INDEX[n-1-i]+1;                         \
+  if (SORTED) {                                           \
+    for (int i=0; i<n; ++i) {                             \
+      swap(&INDEX[0], &INDEX[n-1-i]);                     \
+      k=0; len=n-1-i; SIFT(CMP);                          \
+      ians[n-1-i] = INDEX[n-1-i]+1;                       \
+    }                                                     \
+  } else {                                                \
+    for (int i=0; i<n; ++i) {                             \
+      ians[i] = INDEX[i]+1;                               \
+    }                                                     \
   }                                                       \
   free(INDEX);                                            \
 }
 
-SEXP topn(SEXP x, SEXP nArg, SEXP naArg, SEXP ascArg) {
+SEXP topn(SEXP x, SEXP nArg, SEXP naArg, SEXP ascArg, SEXP sortedArg) {
   if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<=0 || INTEGER(nArg)[0]==NA_INTEGER) error(_("topn(x,n) only implemented for n > 0."));
   if (!IS_TRUE_OR_FALSE(ascArg)) error(_("%s must be TRUE or FALSE"), "decreasing");
   if (!IS_TRUE_OR_FALSE(naArg)) error(_("%s must be TRUE or FALSE"), "na.last");
+  if (!IS_TRUE_OR_FALSE(sortedArg)) error(_("%s must be TRUE or FALSE"), "sorted");
 
   const int xlen = LENGTH(x);
   int n = INTEGER(nArg)[0];
@@ -96,6 +103,7 @@ SEXP topn(SEXP x, SEXP nArg, SEXP naArg, SEXP ascArg) {
 
   const bool min = LOGICAL(ascArg)[0];
   const bool nalast = LOGICAL(naArg)[0];
+  const bool sorted = LOGICAL(sortedArg)[0];
 
   SEXP ans;
   int k, len;
@@ -104,12 +112,12 @@ SEXP topn(SEXP x, SEXP nArg, SEXP naArg, SEXP ascArg) {
   int *restrict INDEX = malloc(n*sizeof(int));
   for (int i=0; i<n; ++i) INDEX[i] = i;
   switch(TYPEOF(x)) {
-  case LGLSXP: case INTSXP: {          TOPN(int,      INTEGER,    icmp); } break;
+  case LGLSXP: case INTSXP: {          TOPN(int,      INTEGER,    icmp,   sorted); } break;
   case REALSXP: {
-    if (INHERITS(x, char_integer64)) { TOPN(int64_t,  REAL,       i64cmp); }
-    else {                             TOPN(double,   REAL,       dcmp); } break; }
-  case CPLXSXP: {                      TOPN(Rcomplex, COMPLEX,    ccmp); } break;
-  case STRSXP: {                       TOPN(SEXP,     STRING_PTR, scmp); } break;
+    if (INHERITS(x, char_integer64)) { TOPN(int64_t,  REAL,       i64cmp, sorted); }
+    else {                             TOPN(double,   REAL,       dcmp,   sorted); } break; }
+  case CPLXSXP: {                      TOPN(Rcomplex, COMPLEX,    ccmp,   sorted); } break;
+  case STRSXP: {                       TOPN(SEXP,     STRING_PTR, scmp,   sorted); } break;
   default:
     free(INDEX); error(_("Type '%s' not supported by topn."), type2char(TYPEOF(x)));
   }
