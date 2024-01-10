@@ -298,12 +298,15 @@
     ```R
     set.seed(123)
     x = rnorm(1e8)
-    system.time(topn(x, 5L))
-    #    user  system elapsed
-    #   0.249   0.000   0.250
+    system.time(topn(x, 5L,sorted=TRUE))
+    #   user  system elapsed
+    #  0.287   0.000   0.288
+    system.time(topn(x, 5L,sorted=FALSE))
+    #   user  system elapsed
+    #  0.283   0.000   0.282
     system.time(order(x)[1L:5L])
-    #    user  system elapsed
-    #   4.710   0.369   5.078
+    #   user  system elapsed
+    #  6.658   0.620   7.279
     ```
 
 ## BUG FIXES
