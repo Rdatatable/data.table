@@ -19,7 +19,7 @@ topn(x, n, na.last=TRUE, decreasing=FALSE)
   \item{n}{ A numeric vector length 1. How many indices to select. }
   \item{na.last}{ Control treatment of \code{NA}s. If \code{TRUE}, missing values in the data are put last; if \code{FALSE}, they are put first. }
   \item{decreasing}{ Logical. Default is \code{FALSE}. Indicating whether the order should be increasing or decreasing. }
-  \item[{sorted}{ Logical. Default is \code{FALSE}. Indicating whether order should be sorted with respect to decreasing. }
+  \item{sorted}{ Logical. Default is \code{FALSE}. Indicating whether order should be sorted with respect to decreasing. }
 }
 
 \value{
