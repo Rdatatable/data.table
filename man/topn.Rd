@@ -12,7 +12,7 @@
 }
 
 \usage{
-topn(x, n, na.last=TRUE, decreasing=FALSE)
+topn(x, n, na.last=TRUE, decreasing=FALSE, sorted=FALSE)
 }
 \arguments{
   \item{x}{ A numeric, complex, character or logical vector. }
