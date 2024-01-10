@@ -733,8 +733,8 @@ static SEXP gminmax(SEXP x, SEXP narm, const bool min)
   switch(TYPEOF(x)) {
   case LGLSXP: case INTSXP: {
     ans = PROTECT(allocVector(INTSXP, ngrp));
-    int *ansd = INTEGER(ans);
-    const int *xd = INTEGER(x);
+    int *restrict ansd = INTEGER(ans);
+    const int *restrict xd = INTEGER(x);
     if (!LOGICAL(narm)[0]) {
       const int init = min ? INT_MAX : INT_MIN+1;  // NA_INTEGER==INT_MIN checked in init.c
       #pragma omp parallel for num_threads(getDTthreads(ngrp, false))
@@ -764,8 +764,8 @@ static SEXP gminmax(SEXP x, SEXP narm, const bool min)
     break;
   case STRSXP: {
     ans = PROTECT(allocVector(STRSXP, ngrp));
-    const SEXP *ansd = STRING_PTR(ans);
-    const SEXP *xd = STRING_PTR(x);
+    const SEXP *restrict ansd = STRING_PTR(ans);
+    const SEXP *restrict xd = STRING_PTR(x);
     if (!LOGICAL(narm)[0]) {
       const SEXP init = min ? char_maxString : R_BlankString;  // char_maxString == "\xFF\xFF..." in init.c
       #pragma omp parallel for num_threads(getDTthreads(ngrp, false))
@@ -796,8 +796,8 @@ static SEXP gminmax(SEXP x, SEXP narm, const bool min)
   case REALSXP: {
     ans = PROTECT(allocVector(REALSXP, ngrp));
     if (INHERITS(x, char_integer64)) {
-      int64_t *ansd = (int64_t *)REAL(ans);
-      const int64_t *xd = (const int64_t *)REAL(x);
+      int64_t *restrict ansd = (int64_t *)REAL(ans);
+      const int64_t *restrict xd = (const int64_t *)REAL(x);
       if (!LOGICAL(narm)[0]) {
         const int64_t init = min ? INT64_MAX : INT64_MIN+1;
         #pragma omp parallel for num_threads(getDTthreads(ngrp, false))
@@ -825,8 +825,8 @@ static SEXP gminmax(SEXP x, SEXP narm, const bool min)
         }
       }
     } else {
-      double *ansd = REAL(ans);
-      const double *xd = REAL(x);
+      double *restrict ansd = REAL(ans);
+      const double *restrict xd = REAL(x);
       if (!LOGICAL(narm)[0]) {
         const double init = min ? R_PosInf : R_NegInf;
         #pragma omp parallel for num_threads(getDTthreads(ngrp, false))
