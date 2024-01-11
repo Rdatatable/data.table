@@ -587,7 +587,7 @@ void frollmaxFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool n
       } else {
         nc++;
       }
-      if (!R_FINITE(x[i-k])) {
+      if (!R_FINITE(x[i-k])) { // value leaving rolling window is non-finite, decrement NF counter
         nc--;
       }
       if (nc == 0) {
