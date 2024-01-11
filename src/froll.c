@@ -49,7 +49,7 @@ void frollmeanFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool 
   long double w = 0.0;                                          // sliding window aggregate
   bool truehasna = hasna>0;                                     // flag to re-run with NA support if NAs detected
   if (!truehasna) {
-    int i;                                                      // iterator declared here because it is being used after for loop
+    int i;                                                      // iterator declared here because it is being used after for loop, it is int32 rather than int64 because first loop over k-1 observations cannot exceed int32 range
     for (i=0; i<k-1; i++) {                                     // loop over leading observation, all partial window only; #loop_counter_not_local_scope_ok
       w += x[i];                                                // add current row to sliding window
       ans->dbl_v[i] = fill;                                     // answers are fill for partial window
