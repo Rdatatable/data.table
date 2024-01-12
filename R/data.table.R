@@ -1767,7 +1767,7 @@ replace_dot_alias = function(e) {
           length(q) == 3L &&
             is_constantish(q[[3L]], check_singleton = TRUE) &&
             (q[[1L]] != "[[" || eval(call('is.atomic', q[[2L]]), envir=x)) &&
-            eval(q[[3L]], parent.frame(3L)) > 0L
+            !(as.character(q[[3L]]) %chin% names_x) && is.numeric(q3<-eval(q[[3L]], parent.frame(3L))) && length(q3)==1L && q3>0L
         }
         .gweighted.mean_ok = function(q, x) { #3977
           q = match.call(gweighted.mean, q)

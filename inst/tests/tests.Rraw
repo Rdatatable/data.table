@@ -18245,3 +18245,18 @@ test(2243.35, dt[, min(y,  na.rm=as.logical(j)),   g, verbose=TRUE], data.table(
 test(2243.36, dt[, max(y,  na.rm=as.logical(j)),   g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(3L,4L)),        output="GForce FALSE")
 test(2243.37, dt[, var(y,  na.rm=as.logical(j)),   g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2,2)),          output="GForce FALSE")
 test(2243.38, dt[, sd(y,   na.rm=as.logical(j)),   g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(sqrt(c(2,2)))), output="GForce FALSE")
+# revdeps
+dt = data.table(x = c(2,2,1,1), y = 1:4, z=letters[1:4])
+i=c(1,2)
+j=1L
+old = options(datatable.optimize=1L)
+test(2243.41, dt[, .I[TRUE], x]$V1, 1:4)
+test(2243.42, dt[, z[y], x], data.table(x=c(2,2,1,1), V1=c("a","b",NA,NA)))
+options(datatable.optimize=2L, datatable.verbose=TRUE)
+test(2243.51, dt[, .I[TRUE], x]$V1, 1:4, output="GForce FALSE")
+test(2243.52, dt[, z[y], x], data.table(x=c(2,2,1,1), V1=c("a","b",NA,NA)), output="GForce FALSE")
+test(2243.53, dt[, .I[1], x]$V1, c(1L, 3L), output="GForce TRUE")
+test(2243.54, dt[, .I[j], x]$V1, c(1L, 3L), output="GForce TRUE")
+test(2243.55, dt[, .I[i], x]$V1, 1:4, output="GForce FALSE")
+test(2243.56, dt[, .I[1:2], x]$V1, 1:4, output="GForce FALSE")
+options(old)
