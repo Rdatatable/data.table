@@ -320,7 +320,7 @@ test(69.4, names(tables(silent=TRUE, mb=FALSE, index=TRUE)),
 
 xenv = new.env()   # to control testing tables()
 xenv$DT = data.table(a = 1)
-test(69.5, nrow(tables(env=xenv)), 1L, output="NAME NROW NCOL MB COLS    KEY\n1:   DT    1    1  0    a [NULL]\nTotal: 0MB")
+test(69.5, nrow(tables(env=xenv)), 1L, output="NAME NROW NCOL MB COLS KEY\n1:   DT    1    1  0    a.*Total: 0MB")
 xenv$DT = data.table(A=1:2, B=3:4, C=5:6, D=7:8, E=9:10, F=11:12, G=13:14, H=15:16, key="A,D,F,G")
 test(69.6, nrow(tables(env=xenv)), 1L, output="NAME NROW NCOL MB            COLS     KEY\n1:   DT    2    8  0 A,B,C,D,E,F,... A,D,F,G.*Total: 0MB")
 rm(xenv)
