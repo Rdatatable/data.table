@@ -399,9 +399,10 @@ inline void wmax(double *x, uint64_t o, int k, double *w, uint64_t *iw, bool nar
   if (narm) {
     for (int i=0; i<k; i++) {
       //Rprintf("wmax iter %d, offset %d, first x val %f, testing x[o+i-k+1] >= w[0]: x[%d-%d+1] >= w[0]: %f >= %f: %d\n", i, o, x[o], i, k, x[o+i-k+1], w[0], x[o+i-k+1] >= w[0]);
-      if (x[o+i-k+1] >= w[0]) { // this never true if all x NAs and narm=TRUE
-        iw[0] = o+i-k+1;
-        w[0] = x[iw[0]];
+      const uint64_t ii = o+i-k+1;
+      if (x[ii] >= w[0]) { // this never true if all x NAs and narm=TRUE
+        iw[0] = ii;
+        w[0] = x[ii];
       }
     }
   } else {
