@@ -35,7 +35,7 @@
 * fast and feature rich **reshaping** data: **[`?dcast`](https://rdatatable.gitlab.io/data.table/reference/dcast.data.table.html)** (_pivot/wider/spread_) and **[`?melt`](https://rdatatable.gitlab.io/data.table/reference/melt.data.table.html)** (_unpivot/longer/gather_)
 * **any R function from any R package** can be used in queries not just the subset of functions made available by a database backend, also columns of type `list` are supported
 * has **[no dependencies](https://en.wikipedia.org/wiki/Dependency_hell)** at all other than base R itself, for simpler production/maintenance
-* the R dependency is **as old as possible for as long as possible**, dated April 2014, and we continuously test against that version; e.g. v1.11.0 released on 5 May 2018 bumped the dependency up from 5 year old R 3.0.0 to 4 year old R 3.1.0
+* the R dependency is **as old as possible for as long as possible**, dated May 2018, and we continuously test against that version; e.g. upcoming release v1.16.0 bumps the dependency up from 10 year old R 3.1.0 to 6 year old R 3.2.0
 
 ## Installation
 

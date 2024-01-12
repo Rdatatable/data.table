@@ -197,10 +197,10 @@ test-lin-dev-clang-cran:
     - >-
         Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); notes<-"Status: 2 NOTEs"; if (!identical(l, notes)) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote(notes), " (size of tarball, installed package size) but ", shQuote(l)) else q("no")'
 
-## R 3.1.0
+## R 3.2.0
 # stated dependency on R
-test-lin-310-cran:
-  image: registry.gitlab.com/jangorecki/dockerfiles/r-3.1.0
+test-lin-320-cran:
+  image: registry.gitlab.com/jangorecki/dockerfiles/r-3.2.0
   <<: *test-lin
   script:
     - *install-deps
@@ -293,7 +293,7 @@ integration:
     - linux
   only:
     - master
-  needs: ["mirror-packages","build","test-lin-rel","test-lin-rel-cran","test-lin-dev-gcc-strict-cran","test-lin-dev-clang-cran","test-lin-rel-vanilla","test-lin-310-cran","test-win-rel","test-win-dev" ,"test-win-old"]
+  needs: ["mirror-packages","build","test-lin-rel","test-lin-rel-cran","test-lin-dev-gcc-strict-cran","test-lin-dev-clang-cran","test-lin-rel-vanilla","test-lin-320-cran","test-win-rel","test-win-dev" ,"test-win-old"]
   script:
     - R --version
     - *install-deps ## markdown pkg not present in r-pkgdown image
