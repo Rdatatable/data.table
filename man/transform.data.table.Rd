@@ -7,7 +7,9 @@
 \description{
   Utilities for \code{data.table} transformation.
 
-  \code{within}, \code{transform} and other similar functions in \code{data.table} are not just provided for users who expect them to work, but for non-data.table-aware packages to retain keys, for example. Hopefully the faster and more convenient \code{data.table} syntax will be used in time. See examples.
+  \strong{\code{transform} by group is particularly slow. Please use \code{:=} by group instead.}
+
+  \code{within}, \code{transform} and other similar functions in \code{data.table} are not just provided for users who expect them to work, but for non-data.table-aware packages to retain keys, for example. Hopefully the (much) faster and more convenient \code{data.table} syntax will be used in time. See examples.
 }
 \usage{
 \method{transform}{data.table}(`_data`, \ldots)
