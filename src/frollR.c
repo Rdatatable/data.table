@@ -108,8 +108,8 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   else
     error(_("Internal error: invalid %s argument in %s function should have been caught earlier. Please report to the data.table issue tracker."), "align", "rolling"); // # nocov
 
-  if (badaptive && ialign!=1)
-    error(_("using adaptive TRUE and align argument different than 'right' is not implemented"));
+  if (badaptive && ialign==0) // support for left added in #5441
+    error(_("using adaptive TRUE and align 'center' is not implemented"));
 
   SEXP ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++; // allocate list to keep results
   if (verbose)
@@ -132,11 +132,13 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
     dx[i] = REAL(VECTOR_ELT(x, i));                             // assign source columns to C pointers
   }
 
-  enum {MEAN, SUM} sfun;
+  enum {MEAN, SUM, MAX} sfun;
   if (!strcmp(CHAR(STRING_ELT(fun, 0)), "mean")) {
     sfun = MEAN;
   } else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "sum")) {
     sfun = SUM;
+  } else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "max")) {
+    sfun = MAX;
   } else {
     error(_("Internal error: invalid %s argument in %s function should have been caught earlier. Please report to the data.table issue tracker."), "fun", "rolling"); // # nocov
   }
@@ -152,7 +154,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   int ihasna =                                                  // plain C tri-state boolean as integer
     LOGICAL(hasna)[0]==NA_LOGICAL ? 0 :                         // hasna NA, default, no info about NA
     LOGICAL(hasna)[0]==TRUE ? 1 :                               // hasna TRUE, might be some NAs
-    -1;                                                         // hasna FALSE, there should be no NAs
+    -1;                                                         // hasna FALSE, there should be no NAs // or there must be no NAs for rollmax #5441
 
   unsigned int ialgo;                                           // decode algo to integer
   if (!strcmp(CHAR(STRING_ELT(algo, 0)), "fast"))
@@ -192,6 +194,12 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
           frollsum(ialgo, dx[i], inx[i], &dans[i*nk+j], iik[j], ialign, dfill, bnarm, ihasna, verbose);
         else
           fadaptiverollsum(ialgo, dx[i], inx[i], &dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, verbose);
+        break;
+      case MAX :
+        if (!badaptive)
+          frollmax(ialgo, dx[i], inx[i], &dans[i*nk+j], iik[j], ialign, dfill, bnarm, ihasna, verbose);
+        else
+          fadaptiverollmax(ialgo, dx[i], inx[i], &dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, verbose);
         break;
       default:
         error(_("Internal error: Unknown sfun value in froll: %d"), sfun); // #nocov

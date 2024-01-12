@@ -14,6 +14,8 @@
     # 2:
     ```
 
+2. New window function `frollmax` computes the rolling maximum. Request came from @gpierard who needs left-aligned, adaptive, rolling max, [#5438](https://github.com/Rdatatable/data.table/issues/5438). Adaptive rolling functions did not have support for `align="left"`, therefore we added this feature as well for all adaptive rolling functions. We measure adaptive `frollmax` to be up to 50 times faster than the next fastest solution using `max` and grouping `by=.EACHI`.
+
 ## NOTES
 
 1. `transform` method for data.table sped up substantially when creating new columns on large tables. Thanks to @OfekShilon for the report and PR. The implemented solution was proposed by @ColeMiller1.
