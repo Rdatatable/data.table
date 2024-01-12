@@ -217,6 +217,7 @@ void frollmeanExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool
 }
 
 /* fast rolling sum */
+// see frollmean code for comments describing online implementations for rolling functions
 void frollsum(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasna, bool verbose) {
   if (nx < k) {
     if (verbose)
@@ -398,6 +399,7 @@ void frollsumExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool 
 }
 
 /* fast rolling max */
+// ssee frollmean code for comments describing online implementations for rolling functions
 void frollmax(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasna, bool verbose) {
   if (nx < k) {
     if (verbose)
