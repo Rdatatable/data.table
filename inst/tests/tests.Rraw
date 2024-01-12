@@ -14918,7 +14918,7 @@ test(2041.2, DT[, median(time), by=g], DT[c(2,5),.(g=g, V1=time)])
 # They could run in level 1 with level 2 off, but output= would need to be changed and there's no need.
 test(2042.1, DT[ , as.character(mean(date)), by=g, verbose=TRUE ],
              data.table(g=c("a","b"), V1=c("2018-01-04","2018-01-21")),
-     output=msg<-"GForce is on, left j unchanged.*Old mean optimization is on, left j unchanged")
+     output=msg<-"GForce is on, but not activated.*Old mean optimization is on, left j unchanged")
 # Since %b is e.g. "janv." in LC_TIME=fr_FR.UTF-8 locale, we need to
 # have the target/y value in these tests depend on the locale as well, #3450.
 Jan.2018 = format(strptime("2018-01-01", "%Y-%m-%d"), "%b-%Y")
