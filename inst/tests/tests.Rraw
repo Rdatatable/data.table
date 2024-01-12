@@ -18248,7 +18248,7 @@ test(2243.38, dt[, sd(y,   na.rm=as.logical(j)),   g, verbose=TRUE], data.table(
 
 DT = data.table(1)
 test(2244.1, DT[, `:=`(a=1, )], error="`:=`.*Did you forget a trailing comma\\?")
-test(2244.1, DT[, let(a=1, )], error="let.*Did you forget a trailing comma\\?")
-test(2244.1, DT[, `:=`(a=1, , b=2)], error="`:=`.*\\[2\\]")
-test(2244.1, DT[, let(a=1, , b=2)], error="let.*\\[2\\]")
-test(2244.1, DT[, `:=`(a=1, , b=2, )], error="[2, 4]")
+test(2244.2, DT[, let(a=1, )], error="let.*Did you forget a trailing comma\\?")
+test(2244.3, DT[, `:=`(a=1, , b=2)], error="`:=`.*\\[2\\]")
+test(2244.4, DT[, let(a=1, , b=2)], error="let.*\\[2\\]")
+test(2244.5, DT[, `:=`(a=1, , b=2, )], error="[2, 4]")
