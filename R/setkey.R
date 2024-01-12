@@ -18,15 +18,9 @@ setindexv = function(x, cols, verbose=getOption("datatable.verbose")) {
   }
 }
 
-# upgrade to error after Mar 2020. Has already been warning since 2012, and stronger warning in Mar 2019 (note in news for 1.12.2); #3399
+# Has been warning since 2012, with stronger warning in Mar 2019 (note in news for 1.12.2); #3399
 "key<-" = function(x,value) {
-  warningf("key(x)<-value is deprecated and not supported. Please change to use setkey() with perhaps copy(). Has been warning since 2012 and will be an error in future.")
-  setkeyv(x,value)
-  # The returned value here from key<- is then copied by R before assigning to x, it seems. That's
-  # why we can't do anything about it without a change in R itself. If we return NULL (or invisible()) from this key<-
-  # method, the table gets set to NULL. So, although we call setkeyv(x,cols) here, and that doesn't copy, the
-  # returned value (x) then gets copied by R.
-  # So, solution is that caller has to call setkey or setkeyv directly themselves, to avoid <- dispatch and its copy.
+  stopf("key(x)<-value is deprecated and not supported. Please change to use setkey() with perhaps copy(). Has been warning since 2012.")
 }
 
 setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRUE)
@@ -325,13 +319,8 @@ CJ = function(..., sorted = TRUE, unique = FALSE)
   # Cross Join will then produce a join table with the combination of all values (cross product).
   # The last vector is varied the quickest in the table, so dates should be last for roll for example
   l = list(...)
-  if (isFALSE(getOption("datatable.CJ.names", TRUE))) {  # default TRUE from v1.12.0, FALSE before. TODO: remove option in v1.13.0 as stated in news
-    if (is.null(vnames <- names(l))) vnames = paste0("V", seq_len(length(l)))
-    else if (any(tt <- vnames=="")) vnames[tt] = paste0("V", which(tt))
-  } else {
-    vnames = name_dots(...)$vnames
-    if (any(tt <- vnames=="")) vnames[tt] = paste0("V", which(tt))
-  }
+  vnames = name_dots(...)$vnames
+  if (any(tt <- !nzchar(vnames))) vnames[tt] = paste0("V", which(tt))
   dups = FALSE # fix for #1513
   for (i in seq_along(l)) {
     y = l[[i]]
