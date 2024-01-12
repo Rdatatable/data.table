@@ -364,3 +364,80 @@ void fadaptiverollsumExact(double *x, uint64_t nx, ans_t *ans, int *k, double fi
     }
   }
 }
+
+/* fast adaptive rolling max */
+void fadaptiverollmax(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
+  double tic = 0;
+  if (verbose)
+    tic = omp_get_wtime();
+  if (algo==0 && verbose) {
+    //fadaptiverollmaxFast(x, nx, ans, k, fill, narm, hasna, verbose); // fadaptiverollmaxFast does not exists as of now
+    snprintf(end(ans->message[0]), 500, _("%s: algo %u not implemented, fall back to %u\n"), __func__, algo, (unsigned int) 1);
+  }
+  fadaptiverollmaxExact(x, nx, ans, k, fill, narm, hasna, verbose);
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: processing algo %u took %.3fs\n"), __func__, algo, omp_get_wtime()-tic);
+}
+//void fadaptiverollmaxFast(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose); // does not exists as of now
+/* fast adaptive rolling max - exact
+ * for hasNA=FALSE it will not detect if any NAs were in the input, therefore could produce incorrect result, well documented
+ */
+void fadaptiverollmaxExact(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", hasna %d, narm %d\n"), "fadaptiverollmaxExact", (uint64_t)nx, hasna, (int) narm);
+  if (hasna==-1) { // fastest we can get for adaptive max as there is no algo='fast', therefore we drop any NA checks when hasNA=FALSE
+    #pragma omp parallel for num_threads(getDTthreads(nx, true))
+    for (uint64_t i=0; i<nx; i++) {
+      if (i+1 < k[i]) {
+        ans->dbl_v[i] = fill;
+      } else {
+        double w = R_NegInf;
+        for (int j=-k[i]+1; j<=0; j++) { //Rprintf("x[%d+%d] > w: %f > %f: %d\n", i, j, x[i+j], w, x[i+j] > w);
+          if (x[i+j] > w)
+            w = x[i+j];
+        }
+        ans->dbl_v[i] = w;
+      }
+    }
+  } else {
+    if (narm) {
+      #pragma omp parallel for num_threads(getDTthreads(nx, true))
+      for (uint64_t i=0; i<nx; i++) {
+        if (i+1 < k[i]) {
+          ans->dbl_v[i] = fill;
+        } else {
+          int nc = 0;
+          double w = R_NegInf;
+          for (int j=-k[i]+1; j<=0; j++) {
+            if (ISNAN(x[i+j]))
+              nc++;
+            else if (x[i+j] > w)
+              w = x[i+j];
+          }
+          if (nc < k[i])
+            ans->dbl_v[i] = w;
+          else
+            ans->dbl_v[i] = R_NegInf;
+        }
+      }
+    } else {
+      #pragma omp parallel for num_threads(getDTthreads(nx, true))
+      for (uint64_t i=0; i<nx; i++) {
+        if (i+1 < k[i]) {
+          ans->dbl_v[i] = fill;
+        } else {
+          double w = R_NegInf;
+          for (int j=-k[i]+1; j<=0; j++) {
+            if (ISNAN(x[i+j])) {
+              w = NA_REAL;
+              break;
+            } else if (x[i+j] > w) {
+              w = x[i+j];
+            }
+          }
+          ans->dbl_v[i] = w;
+        }
+      }
+    }
+  }
+}
