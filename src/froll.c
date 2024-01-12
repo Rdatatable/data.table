@@ -415,7 +415,7 @@ void frollmax(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int k, int 
   } else { // algo==1
     frollmaxExact(x, nx, ans, k, fill, narm, hasna, verbose);
   }
-  if (ans->status < 3 && align < 1) { // non-error && align!="right" // see comment in frollmean function
+  if (ans->status < 3 && align < 1) {
     int k_ = align==-1 ? k-1 : floor(k/2);
     if (verbose)
       snprintf(end(ans->message[0]), 500, _("%s: align %d, shift answer by %d\n"), __func__, align, -k_);
