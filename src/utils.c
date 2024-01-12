@@ -424,3 +424,50 @@ SEXP startsWithAny(const SEXP x, const SEXP y, SEXP start) {
   return ScalarLogical(false);
 }
 
+#define REV(CTYPE, RTYPE, ASSIGN) {                                \
+  CTYPE *xd = (CTYPE *)RTYPE(x);                                   \
+  for (int i=0; i<LEN; ++i) {                                      \
+    const CTYPE tmp = xd[i];                                       \
+    ASSIGN;                                                        \
+  }                                                                \
+}
+
+SEXP freverse(SEXP x, SEXP copyArg) {
+  int n = LENGTH(x);
+  int ansi = 0;
+  if (!LOGICAL(copyArg)[0]) {
+    const int LEN=n/2;
+    switch (TYPEOF(x)) {
+      case LGLSXP:  { REV(int,      LOGICAL, xd[ansi]=xd[n-1-ansi];                         xd[n-1-ansi++]=tmp) }               break;
+      case INTSXP:  { REV(int,      INTEGER, xd[ansi]=xd[n-1-ansi];                         xd[n-1-ansi++]=tmp) }               break;
+      case REALSXP: if (INHERITS(x, char_integer64)) {
+                      REV(int64_t,     REAL, xd[ansi]=xd[n-1-ansi];                         xd[n-1-ansi++]=tmp) }
+               else { REV(double,      REAL, xd[ansi]=xd[n-1-ansi];                         xd[n-1-ansi++]=tmp) }               break;
+      case CPLXSXP: { REV(Rcomplex, COMPLEX, xd[ansi]=xd[n-1-ansi];                         xd[n-1-ansi++]=tmp) }               break;
+      case RAWSXP:  { REV(Rbyte,        RAW, xd[ansi]=xd[n-1-ansi];                         xd[n-1-ansi++]=tmp) }               break;
+      case STRSXP:  { REV(SEXP,  STRING_PTR, SET_STRING_ELT(x,ansi,STRING_ELT(x,n-1-ansi)); SET_STRING_ELT(x,n-1-ansi++,tmp)) } break;
+      case VECSXP:  { REV(SEXP,  SEXPPTR_RO, SET_VECTOR_ELT(x,ansi,VECTOR_ELT(x,n-1-ansi)); SET_VECTOR_ELT(x,n-1-ansi++,tmp)) } break;
+    default :
+        error(_("Type '%s' is not supported"), type2char(TYPEOF(x)));
+    }
+    return x;
+  } else {
+    SEXP ans = PROTECT(allocVector(TYPEOF(x), n));
+    const int LEN=n;                                                        
+    switch (TYPEOF(x)) {
+      case LGLSXP: {int *ansd =        LOGICAL(ans); REV(int,      LOGICAL, ansd[n-1-ansi++]=tmp) }               break;
+      case INTSXP: {int *ansd =        INTEGER(ans); REV(int,      INTEGER, ansd[n-1-ansi++]=tmp) }               break;
+      case REALSXP: if (INHERITS(x, char_integer64)) {
+              int64_t *ansd = (int64_t *) REAL(ans); REV(int64_t,     REAL, ansd[n-1-ansi++]=tmp) }
+        else { double *ansd = REAL(ans);             REV(double,      REAL, ansd[n-1-ansi++]=tmp) }               break;
+      case CPLXSXP: { Rcomplex *ansd = COMPLEX(ans); REV(Rcomplex, COMPLEX, ansd[n-1-ansi++]=tmp) }               break;
+      case RAWSXP:  { Rbyte * ansd =       RAW(ans); REV(Rbyte,        RAW, ansd[n-1-ansi++]=tmp) }               break;
+      case STRSXP:  {                                REV(SEXP,  STRING_PTR, SET_STRING_ELT(ans,n-1-ansi++,tmp)) } break;
+      case VECSXP:  {                                REV(SEXP,  SEXPPTR_RO, SET_VECTOR_ELT(ans,n-1-ansi++,tmp)) } break;
+    default:
+      error(_("Type '%s' is not supported"), type2char(TYPEOF(x)));
+    }
+    UNPROTECT(1);
+    return ans;
+  }
+}
