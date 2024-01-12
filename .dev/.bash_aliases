@@ -15,7 +15,7 @@ alias Rdevel-strict-gcc='~/build/R-devel-strict-gcc/bin/R --vanilla'
 alias Rdevel-strict-clang='~/build/R-devel-strict-clang/bin/R --vanilla'
 alias Rdevel-valgrind='~/build/R-devel-valgrind/bin/R --vanilla'
 alias Rdevel32='~/build/32bit/R-devel/bin/R --vanilla'
-alias R310='~/build/R-3.1.0/bin/R --vanilla'
+alias R320='~/build/R-3.2.0/bin/R --vanilla'
 
 alias revdepsh='cd ~/build/revdeplib/ && export TZ=UTC && export R_LIBS_SITE=NULL && export R_LIBS=~/build/revdeplib/ && export _R_CHECK_FORCE_SUGGESTS_=true'
 alias revdepr='revdepsh; R_PROFILE_USER=~/GitHub/data.table/.dev/revdep.R R'
