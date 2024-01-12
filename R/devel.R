@@ -17,9 +17,8 @@ dcf.repo = function(pkg, repo, field, type) {
   dcf[dcf[,"Package"]==pkg, field][[1L]]
 }
 
-update_dev_pkg = function(object="data.table", repo="https://Rdatatable.gitlab.io/data.table", field="Revision", type=getOption("pkgType"), lib=NULL, ...) {
+update_dev_pkg = function(pkg="data.table", repo="https://Rdatatable.gitlab.io/data.table", field="Revision", type=getOption("pkgType"), lib=NULL, ...) {
   # this works for any package, not just data.table
-  pkg = object
   # perform package upgrade when new Revision present
   stopifnot(is.character(pkg), length(pkg)==1L, !is.na(pkg),
             is.character(repo), length(repo)==1L, !is.na(repo),
@@ -28,7 +27,7 @@ update_dev_pkg = function(object="data.table", repo="https://Rdatatable.gitlab.i
   # get Revision field from remote repository PACKAGES file
   una = is.na(ups<-dcf.repo(pkg, repo, field, type))
   if (una)
-    catf("No revision information found in DESCRIPTION file for %s package. Unsure '%s' is correct field in PACKAGES file in your package repository '%s'. Otherwise package will be re-installed every time, proceeding to installation.\n",
+    catf("No revision information found in DESCRIPTION file for %s package. Make sure that '%s' is correct field in PACKAGES file in your package repository '%s'. Otherwise package will be re-installed every time, proceeding to installation.\n",
          pkg, field, contrib.url(repo, type=type))
   # see if Revision is different then currently installed Revision, note that installed package will have Revision info only when it was installed from remote devel repo
   upg = una || !identical(ups, dcf.lib(pkg, field, lib.loc=lib))
@@ -44,6 +43,7 @@ update_dev_pkg = function(object="data.table", repo="https://Rdatatable.gitlab.i
                 unname(read.dcf(system.file("DESCRIPTION", package=pkg, lib.loc=lib, mustWork=TRUE), fields=field)[, field]),
                 utils::packageVersion(pkg, lib.loc=lib)))
   })
+  invisible(upg)
 }
 
 # non-exported utility when using devel version #3272: data.table:::.git()
