@@ -10,12 +10,12 @@
 frev(x, copy=TRUE)
 }
 \arguments{
-  \item{x}{ A atomic \code{vector} or \code{list}. }
+  \item{x}{ An atomic \code{vector} or \code{list}. }
   \item{copy}{ logical (default is \code{TRUE}). If \code{FALSE} reversing happens in-place. }
 }
 
 \value{
-  \code{frev} returns a \code{factor}.
+  \code{frev} returns the input reversed.
 }
 
 \examples{
