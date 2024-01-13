@@ -27,7 +27,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   if (!missing(logical01) && !missing(logicalAsInt))
     stopf("logicalAsInt has been renamed logical01. Use logical01 only, not both.")
   if (!missing(logicalAsInt)) {
-    # TODO: warningf("logicalAsInt has been renamed logical01 for consistency with fread. It will work fine but please change to logical01 at your convenience so we can remove logicalAsInt in future.")
+    warningf("logicalAsInt has been renamed logical01 for consistency with fread. It works fine for now but please change to logical01 at your convenience so we can remove logicalAsInt in future.")
     logical01 = logicalAsInt
     logicalAsInt=NULL
   }
@@ -114,4 +114,6 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
         showProgress, is_gzip, bom, yaml, verbose, encoding)
   invisible()
 }
+
+haszlib = function() .Call(Cdt_has_zlib)
 
