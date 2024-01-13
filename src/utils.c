@@ -425,11 +425,20 @@ SEXP startsWithAny(const SEXP x, const SEXP y, SEXP start) {
 }
 
 SEXP frev(SEXP x, SEXP copyArg) {
-  int n = LENGTH(x);
   if (INHERITS(x, char_dataframe) || INHERITS(x, char_datatable))
     error(_("'x' should not be data.frame or data.table."));
-  SEXP names = getAttrib(x, R_NamesSymbol);
-  if (!LOGICAL(copyArg)[0]) {
+  if (!IS_TRUE_OR_FALSE(copyArg))
+    error(_("%s must be TRUE or FALSE."), "copy");
+  int n = LENGTH(x);
+  bool copy = LOGICAL(copyArg)[0];
+  int nprotect = 0;
+  if (copy) {
+    x = PROTECT(duplicate(x));
+    nprotect++;
+    copy = false;
+  }
+  if (!copy) {
+    SEXP names = getAttrib(x, R_NamesSymbol);
     if (n==0) return x;
     switch (TYPEOF(x)) {
       case LGLSXP: case INTSXP: {
@@ -505,8 +514,9 @@ SEXP frev(SEXP x, SEXP copyArg) {
     if (!isNull(names)) {
       frev(names, ScalarLogical(FALSE));
     }
+    UNPROTECT(nprotect);
     return x;
   } else {
-    return frev(duplicate(x), ScalarLogical(FALSE));
+    error(_("Internal error: Please report to issue tracker."));
   }
 }
