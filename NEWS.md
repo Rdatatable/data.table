@@ -295,6 +295,22 @@
 
 42. `base::rev` gains a fast method `frev(x, copy)` for atomic vectors, [#5885](https://github.com/Rdatatable/data.table/issues/5885). Thanks to Benjamin Schwendinger for suggesting and implementing.
 
+    ```R
+    x = sample(2e8)
+    microbenchmark::microbenchmark(
+      base = rev(x),
+      frev_copy = frev(x, copy=TRUE),
+      frev_inPlace = frev(x, copy=FALSE),
+      times = 10L,
+      unit = "s"
+    )
+    # Unit: seconds
+    #          expr        min         lq       mean     median         uq        max neval cld
+    #          base 1.37616865 1.39689379 1.86418194 1.54417404 1.91734152 4.27381571    10 a  
+    #     frev_copy 0.52941553 0.59072669 0.76882781 0.65942025 0.72746099 1.35119930    10  b 
+    #  frev_inPlace 0.06466391 0.06529963 0.06621053 0.06580863 0.06682197 0.06955259    10   c
+    ```
+
 ## BUG FIXES
 
 1. `by=.EACHI` when `i` is keyed but `on=` different columns than `i`'s key could create an invalidly keyed result, [#4603](https://github.com/Rdatatable/data.table/issues/4603) [#4911](https://github.com/Rdatatable/data.table/issues/4911). Thanks to @myoung3 and @adamaltmejd for reporting, and @ColeMiller1 for the PR. An invalid key is where a `data.table` is marked as sorted by the key columns but the data is not sorted by those columns, leading to incorrect results from subsequent queries.
