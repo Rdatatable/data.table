@@ -249,7 +249,7 @@ SEXP islockedR(SEXP x);
 bool need2utf8(SEXP x);
 SEXP coerceUtf8IfNeeded(SEXP x);
 SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg);
-SEXP freverse(SEXP x, SEXP copyArg);
+SEXP frev(SEXP x, SEXP copyArg);
 
 // types.c
 char *end(char *start);
