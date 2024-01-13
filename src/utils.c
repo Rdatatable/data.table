@@ -427,6 +427,7 @@ SEXP startsWithAny(const SEXP x, const SEXP y, SEXP start) {
 SEXP frev(SEXP x, SEXP copyArg) {
   int n = LENGTH(x);
   if (!LOGICAL(copyArg)[0]) {
+    if (n==0) return x;
     switch (TYPEOF(x)) {
       case LGLSXP: case INTSXP: {
         int *restrict xd = INTEGER(x);
@@ -501,6 +502,11 @@ SEXP frev(SEXP x, SEXP copyArg) {
     return x;
   } else {
     SEXP ans = PROTECT(allocVector(TYPEOF(x), n));
+    if (n==0) {
+      UNPROTECT(1);
+      return ans;
+    }
+    const bool factor = isFactor(x);
     switch (TYPEOF(x)) {
       case LGLSXP: case INTSXP: {
         int *restrict ansd = INTEGER(ans);
@@ -556,6 +562,7 @@ SEXP frev(SEXP x, SEXP copyArg) {
       default:
         error(_("Type '%s' is not supported"), type2char(TYPEOF(x)));
     }
+    copyMostAttrib(x, ans);
     UNPROTECT(1);
     return ans;
   }
