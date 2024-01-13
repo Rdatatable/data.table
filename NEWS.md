@@ -293,7 +293,7 @@
 
 41. `tables()` is faster by default by excluding the size of character strings in R's global cache (which may be shared) and excluding the size of list column items (which also may be shared). `mb=` now accepts any function which accepts a `data.table` and returns a higher and better estimate of its size in bytes, albeit more slowly; e.g. `mb = utils::object.size`.
 
-42. `base::rev` gains a fast method for atomic vectors and classes solely consisting of a single atomic vector and attributes, [#5885](https://github.com/Rdatatable/data.table/issues/5885). Thanks to Benjamin Schwendinger for suggesting and implementing.
+42. `base::rev` gains a fast method `frev(x, copy)` for atomic vectors, [#5885](https://github.com/Rdatatable/data.table/issues/5885). Thanks to Benjamin Schwendinger for suggesting and implementing.
 
 ## BUG FIXES
 

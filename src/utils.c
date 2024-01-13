@@ -426,6 +426,9 @@ SEXP startsWithAny(const SEXP x, const SEXP y, SEXP start) {
 
 SEXP frev(SEXP x, SEXP copyArg) {
   int n = LENGTH(x);
+  if (INHERITS(x, char_dataframe) || INHERITS(x, char_datatable))
+    error(_("'x' should not be data.frame or data.table."));
+  SEXP names = getAttrib(x, R_NamesSymbol);
   if (!LOGICAL(copyArg)[0]) {
     if (n==0) return x;
     switch (TYPEOF(x)) {
@@ -499,11 +502,15 @@ SEXP frev(SEXP x, SEXP copyArg) {
     default:
       error(_("Type '%s' is not supported"), type2char(TYPEOF(x)));
     }
+    if (!isNull(names)) {
+      frev(names, ScalarLogical(FALSE));
+    }
     return x;
   } else {
     SEXP ans = PROTECT(allocVector(TYPEOF(x), n));
+    int nprotect = 1;
     if (n==0) {
-      UNPROTECT(1);
+      UNPROTECT(nprotect);
       return ans;
     }
     const bool factor = isFactor(x);
@@ -563,7 +570,12 @@ SEXP frev(SEXP x, SEXP copyArg) {
         error(_("Type '%s' is not supported"), type2char(TYPEOF(x)));
     }
     copyMostAttrib(x, ans);
-    UNPROTECT(1);
+    if (!isNull(names)) {
+      SEXP newNames = PROTECT(frev(names, ScalarLogical(TRUE)));
+      nprotect++;
+      setAttrib(ans, R_NamesSymbol, newNames);
+    }
+    UNPROTECT(nprotect);
     return ans;
   }
 }
