@@ -41,6 +41,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   format.data.table = data.table:::format.data.table
   format_col.default = data.table:::format_col.default
   format_list_item.default = data.table:::format_list_item.default
+  frev = data.table:::frev
   getdots = data.table:::getdots
   groupingsets.data.table = data.table:::groupingsets.data.table
   guess = data.table:::guess

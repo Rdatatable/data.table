@@ -202,4 +202,3 @@ S3method(format_list_item, default)
 
 export(fdroplevels)
 S3method(droplevels, data.table)
-export(frev)
