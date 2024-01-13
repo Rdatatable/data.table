@@ -10,8 +10,8 @@
 frev(x, copy=TRUE)
 }
 \arguments{
-  \item{x}{ atomic \code{vector} or \code{list} }
-  \item{copy}{ logical (default is \code{TRUE}). If \code{FALSE} vector is reversed in-place. }
+  \item{x}{ A atomic \code{vector} or \code{list}. }
+  \item{copy}{ logical (default is \code{TRUE}). If \code{FALSE} reversing happens in-place. }
 }
 
 \value{
