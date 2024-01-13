@@ -439,7 +439,10 @@ SEXP frev(SEXP x, SEXP copyArg) {
   }
   if (!copy) {
     SEXP names = getAttrib(x, R_NamesSymbol);
-    if (n==0) return x;
+    if (n==0) {
+      UNPROTECT(nprotect);
+      return x;
+    }
     switch (TYPEOF(x)) {
       case LGLSXP: case INTSXP: {
         int *restrict xd = INTEGER(x);
@@ -517,6 +520,6 @@ SEXP frev(SEXP x, SEXP copyArg) {
     UNPROTECT(nprotect);
     return x;
   } else {
-    error(_("Internal error: Please report to issue tracker."));
+    error(_("Internal error: Please report to issue tracker.")); //nocov
   }
 }

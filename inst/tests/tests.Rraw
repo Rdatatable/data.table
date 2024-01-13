@@ -18301,3 +18301,4 @@ test(2244.52, attr(frev(x, copy=FALSE), "att"), 1L)
 # errors
 test(2244.61, frev(data.table()), error= "should not be data.frame or data.table")
 test(2244.62, frev(1:2, copy=NA), error= "must be TRUE or FALSE")
+test(2244.63, frev(expression(1)), error= "is not supported by frev")
