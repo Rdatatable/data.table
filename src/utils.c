@@ -520,6 +520,6 @@ SEXP frev(SEXP x, SEXP copyArg) {
     UNPROTECT(nprotect);
     return x;
   } else {
-    error(_("Internal error: Please report to issue tracker.")); //nocov
+    error(_("Internal error: Please report to issue tracker.")); // # nocov
   }
 }
