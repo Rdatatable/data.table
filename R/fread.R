@@ -31,8 +31,8 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
   if (is.na(nrows) || nrows<0) nrows=Inf   # accept -1 to mean Inf, as read.table does
   if (identical(header,"auto")) header=NA
   stopifnot(
-    "header should be a logical scalar" = is.logical(header) && length(header)==1L,  # TRUE, FALSE or NA
-    "nThread should be a logical scalar" = is.numeric(nThread) && length(nThread)==1L
+    is.logical(header) && length(header)==1L,  # TRUE, FALSE or NA
+    is.numeric(nThread) && length(nThread)==1L
   )
   nThread=as.integer(nThread)
   stopifnot(nThread>=1L)
@@ -185,7 +185,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
 
     yaml_comment_re = '^#'
     yaml_string = character(0L)
-    repeat {
+    while (TRUE) {
       this_line = readLines(f, n=1L)
       n_read = n_read + 1L
       if (!length(this_line)){
