@@ -427,6 +427,8 @@ SEXP startsWithAny(const SEXP x, const SEXP y, SEXP start) {
 SEXP frev(SEXP x, SEXP copyArg) {
   if (INHERITS(x, char_dataframe) || INHERITS(x, char_datatable))
     error(_("'x' should not be data.frame or data.table."));
+  if (!isNull(getAttrib(x, R_DimSymbol)))
+    error(_("'x' should not be matrix or array"));
   if (!IS_TRUE_OR_FALSE(copyArg))
     error(_("%s must be TRUE or FALSE."), "copy");
   int n = LENGTH(x);
