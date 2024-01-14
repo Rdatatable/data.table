@@ -1,12 +1,12 @@
 on:
   push:
     branches:
-      - main
       - master
+      - 1-15-99
   pull_request:
     branches:
-      - main
       - master
+      - 1-15-99
 
 name: test-coverage
 
