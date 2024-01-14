@@ -308,7 +308,7 @@
     #          expr   min    lq  mean median   uq   max neval cld
     #          base 1.376 1.397 1.864 1.544 1.917 4.274    10 a  
     #     frev_copy 0.529 0.591 0.769 0.659 0.727 1.351    10  b 
-    #  frev_inPlace 0.064 0.065 0.066 0.066 0.067 0.070    10   c
+    #  frev_inplace 0.064 0.065 0.066 0.066 0.067 0.070    10   c
     ```
 
 ## BUG FIXES
