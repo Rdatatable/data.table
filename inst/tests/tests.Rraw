@@ -18245,6 +18245,7 @@ test(2243.35, dt[, min(y,  na.rm=as.logical(j)),   g, verbose=TRUE], data.table(
 test(2243.36, dt[, max(y,  na.rm=as.logical(j)),   g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(3L,4L)),        output="GForce FALSE")
 test(2243.37, dt[, var(y,  na.rm=as.logical(j)),   g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2,2)),          output="GForce FALSE")
 test(2243.38, dt[, sd(y,   na.rm=as.logical(j)),   g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(sqrt(c(2,2)))), output="GForce FALSE")
+
 # revdeps
 dt = data.table(x = c(2,2,1,1), y = 1:4, z=letters[1:4])
 i=c(1,2)
@@ -18260,3 +18261,10 @@ test(2243.54, dt[, .I[j], x]$V1, c(1L, 3L), output="GForce TRUE")
 test(2243.55, dt[, .I[i], x]$V1, 1:4, output="GForce FALSE")
 test(2243.56, dt[, .I[1:2], x]$V1, 1:4, output="GForce FALSE")
 options(old)
+
+DT = data.table(1)
+test(2244.1, DT[, `:=`(a=1, )], error="`:=`.*Did you forget a trailing comma\\?")
+test(2244.2, DT[, let(a=1, )], error="let.*Did you forget a trailing comma\\?")
+test(2244.3, DT[, `:=`(a=1, , b=2)], error="`:=`.*\\[2\\]")
+test(2244.4, DT[, let(a=1, , b=2)], error="let.*\\[2\\]")
+test(2244.5, DT[, `:=`(a=1, , b=2, )], error="[2, 4]")
