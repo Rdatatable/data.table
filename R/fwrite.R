@@ -58,7 +58,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
     length(nThread)==1L && !is.na(nThread) && nThread>=1L
     )
 
-  is_gzip = compress == "gzip" || (compress == "auto" && endsWith(file, ".gz"))
+  is_gzip = compress == "gzip" || (compress == "auto" && endsWithAny(file, ".gz"))
 
   file = path.expand(file)  # "~/foo/bar"
   if (append && (file=="" || file.exists(file))) {
