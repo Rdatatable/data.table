@@ -163,6 +163,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
     ialgo = 1;                                                  // exact = 1
   else
     error(_("Internal error: invalid %s argument in %s function should have been caught earlier. Please report to the data.table issue tracker."), "algo", "rolling"); // # nocov
+  if (badaptive && ialgo == 0 && sfun==MAX) error("frollmax adaptive algo fast not yet implemented");
 
   int* iik = NULL;
   if (!badaptive) {
