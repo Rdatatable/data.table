@@ -30,8 +30,10 @@ jobs:
           needs: lint
 
       - name: Lint
-        run: lintr::lint_package()
+        run: |
+          # TODO(r-lib/lintr#2512): use 'env' instead
+          options(lintr.linter_file = ".ci/.lintr")
+          lintr::lint_package()
         shell: Rscript {0}
         env:
           LINTR_ERROR_ON_LINT: true
-          R_LINTR_LINTER_FILE: .ci/.lintr.R
