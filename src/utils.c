@@ -431,97 +431,93 @@ SEXP frev(SEXP x, SEXP copyArg) {
     error(_("'x' should not be matrix or array"));
   if (!IS_TRUE_OR_FALSE(copyArg))
     error(_("%s must be TRUE or FALSE."), "copy");
-  int n = LENGTH(x);
   bool copy = LOGICAL(copyArg)[0];
+  int n = LENGTH(x);
   int nprotect = 0;
   if (copy) {
     x = PROTECT(duplicate(x));
     nprotect++;
     copy = false;
   }
-  if (!copy) {
-    SEXP names = getAttrib(x, R_NamesSymbol);
-    if (n==0) {
-      UNPROTECT(nprotect);
-      return x;
-    }
-    switch (TYPEOF(x)) {
-      case LGLSXP: case INTSXP: {
-        int *restrict xd = INTEGER(x);
-        #pragma omp parallel for num_threads(getDTthreads(n, true))
-        for (uint64_t i=0; i<n/2; ++i) {
-          const int k = n-1-i;
-          const int tmp = xd[i];
-          xd[i] = xd[k];
-          xd[k] = tmp;
-        }
-      } break;
-      case REALSXP: if (INHERITS(x, char_integer64)) {
-        int64_t *xd = (int64_t *)REAL(x);
-        #pragma omp parallel for num_threads(getDTthreads(n, true))
-        for (uint64_t i=0; i<n/2; ++i) {
-          const int k = n-1-i;
-          const int64_t tmp = xd[i];
-          xd[i] = xd[k];
-          xd[k] = tmp;
-        }
-      } else {
-        double *xd = REAL(x);
-        #pragma omp parallel for num_threads(getDTthreads(n, true))
-        for (uint64_t i=0; i<n/2; ++i) {
-          const int k = n-1-i;
-          const double tmp = xd[i];
-          xd[i] = xd[k];
-          xd[k] = tmp;
-        }
-      } break;
-      case STRSXP: {
-        #pragma omp parallel for num_threads(getDTthreads(n, true))
-        for (uint64_t i=0; i<n/2; ++i) {
-          const int k = n-1-i;
-          const SEXP tmp = STRING_ELT(x, i);
-          SET_STRING_ELT(x, i, STRING_ELT(x, k));
-          SET_STRING_ELT(x, k, tmp);
-        }
-      } break;
-      case VECSXP: {
-        #pragma omp parallel for num_threads(getDTthreads(n, true))
-        for (uint64_t i=0; i<n/2; ++i) {
-          const int k = n-1-i;
-          const SEXP tmp = VECTOR_ELT(x, i);
-          SET_VECTOR_ELT(x, i, VECTOR_ELT(x, k));
-          SET_VECTOR_ELT(x, k, tmp);
-        }
-      } break;
-      case CPLXSXP: {
-        Rcomplex *xd = COMPLEX(x);
-        #pragma omp parallel for num_threads(getDTthreads(n, true))
-        for (uint64_t i=0; i<n/2; ++i) {
-          const int k = n-1-i;
-          const Rcomplex tmp = xd[i];
-          xd[i] = xd[k];
-          xd[k] = tmp;
-        }
-      } break;
-      case RAWSXP: {
-        Rbyte *xd = RAW(x);
-        #pragma omp parallel for num_threads(getDTthreads(n, true))
-        for (uint64_t i=0; i<n/2; ++i) {
-          const int k = n-1-i;
-          const Rbyte tmp = xd[i];
-          xd[i] = xd[k];
-          xd[k] = tmp;
-        }
-      } break;
-    default:
-      error(_("Type '%s' is not supported by frev"), type2char(TYPEOF(x)));
-    }
-    if (!isNull(names)) {
-      frev(names, ScalarLogical(FALSE));
-    }
+  if (n==0) {
     UNPROTECT(nprotect);
     return x;
-  } else {
-    error(_("Internal error: Please report to issue tracker.")); // # nocov
   }
+  switch (TYPEOF(x)) {
+    case LGLSXP: case INTSXP: {
+      int *restrict xd = INTEGER(x);
+      #pragma omp parallel for num_threads(getDTthreads(n, true))
+      for (uint64_t i=0; i<n/2; ++i) {
+        const int k = n-1-i;
+        const int tmp = xd[i];
+        xd[i] = xd[k];
+        xd[k] = tmp;
+      }
+    } break;
+    case REALSXP: if (INHERITS(x, char_integer64)) {
+      int64_t *xd = (int64_t *)REAL(x);
+      #pragma omp parallel for num_threads(getDTthreads(n, true))
+      for (uint64_t i=0; i<n/2; ++i) {
+        const int k = n-1-i;
+        const int64_t tmp = xd[i];
+        xd[i] = xd[k];
+        xd[k] = tmp;
+      }
+    } else {
+      double *xd = REAL(x);
+      #pragma omp parallel for num_threads(getDTthreads(n, true))
+      for (uint64_t i=0; i<n/2; ++i) {
+        const int k = n-1-i;
+        const double tmp = xd[i];
+        xd[i] = xd[k];
+        xd[k] = tmp;
+      }
+    } break;
+    case STRSXP: {
+      #pragma omp parallel for num_threads(getDTthreads(n, true))
+      for (uint64_t i=0; i<n/2; ++i) {
+        const int k = n-1-i;
+        const SEXP tmp = STRING_ELT(x, i);
+        SET_STRING_ELT(x, i, STRING_ELT(x, k));
+        SET_STRING_ELT(x, k, tmp);
+      }
+    } break;
+    case VECSXP: {
+      #pragma omp parallel for num_threads(getDTthreads(n, true))
+      for (uint64_t i=0; i<n/2; ++i) {
+        const int k = n-1-i;
+        const SEXP tmp = VECTOR_ELT(x, i);
+        SET_VECTOR_ELT(x, i, VECTOR_ELT(x, k));
+        SET_VECTOR_ELT(x, k, tmp);
+      }
+    } break;
+    case CPLXSXP: {
+      Rcomplex *xd = COMPLEX(x);
+      #pragma omp parallel for num_threads(getDTthreads(n, true))
+      for (uint64_t i=0; i<n/2; ++i) {
+        const int k = n-1-i;
+        const Rcomplex tmp = xd[i];
+        xd[i] = xd[k];
+        xd[k] = tmp;
+      }
+    } break;
+    case RAWSXP: {
+      Rbyte *xd = RAW(x);
+      #pragma omp parallel for num_threads(getDTthreads(n, true))
+      for (uint64_t i=0; i<n/2; ++i) {
+        const int k = n-1-i;
+        const Rbyte tmp = xd[i];
+        xd[i] = xd[k];
+        xd[k] = tmp;
+      }
+    } break;
+  default:
+    error(_("Type '%s' is not supported by frev"), type2char(TYPEOF(x)));
+  }
+  SEXP names = getAttrib(x, R_NamesSymbol);
+  if (!isNull(names)) {
+    frev(names, ScalarLogical(FALSE));
+  }
+  UNPROTECT(nprotect);
+  return x;
 }
