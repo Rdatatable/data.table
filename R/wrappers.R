@@ -17,4 +17,7 @@ isReallyReal = function(x) .Call(CisReallyReal, x)
 
 coerceAs = function(x, as, copy=TRUE) .Call(CcoerceAs, x, as, copy)
 
-frev = function(x, copy=TRUE) .Call(Cfrev, x, copy)
+frev = function(x, copy=TRUE) {
+    x = .Call(Cfrev, x, copy)
+    if (copy) x else invisible(x)
+}

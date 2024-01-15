@@ -300,7 +300,7 @@
     microbenchmark::microbenchmark(
       base = rev(x),
       frev_copy = frev(x, copy=TRUE),
-      frev_inPlace = frev(x, copy=FALSE),
+      frev_inplace = frev(x, copy=FALSE),
       times = 10L,
       unit = "s"
     )
