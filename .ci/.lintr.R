@@ -31,8 +31,6 @@ linters = all_linters(
   # TODO(linter->3.2.0): Activate this.
   consecutive_assertion_linter = NULL,
   cyclocomp_linter = NULL,
-  # TODO(linter->3.2.0): Remove this.
-  extraction_operator_linter = NULL,
   function_argument_linter = NULL,
   indentation_linter = NULL,
   infix_spaces_linter = NULL,
@@ -52,11 +50,10 @@ linters = all_linters(
   strings_as_factors_linter = NULL,
   # TODO(lintr->3.2.0): Fix on a valid TODO style, enforce it, and re-activate.
   todo_comment_linter = NULL,
-  # TODO(lintr#2443): Use this.
-  unnecessary_nested_if_linter = NULL,
   # TODO(michaelchirico): Enforce these and re-activate them one-by-one. Also stop using '<<-'.
   brace_linter = NULL,
   condition_call_linter = NULL,
+  conjunct_test_linter = NULL,
   fixed_regex_linter = NULL,
   function_left_parentheses_linter = NULL,
   if_not_else_linter = NULL,
@@ -70,10 +67,12 @@ linters = all_linters(
   object_overwrite_linter = NULL,
   paren_body_linter = NULL,
   redundant_equals_linter = NULL,
+  rep_len_linter = NULL,
   repeat_linter = NULL,
   return_linter = NULL,
   sample_int_linter = NULL,
   scalar_in_linter = NULL,
+  seq_linter = NULL,
   undesirable_function_linter = NULL,
   unnecessary_concatenation_linter = NULL,
   unnecessary_lambda_linter = NULL,
