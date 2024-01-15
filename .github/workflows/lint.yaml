@@ -31,10 +31,9 @@ jobs:
 
       - name: Lint
         run: |
-          if (file.exists(f <- ".ci/.lintr.R")) message("Found config file, with contents:\n", readChar(f, file.size(f))) else stop("Config file not found! Here's where we are: ", getwd(), "\nHere's what I see:\n", paste(list.files(all = TRUE, recursive = TRUE), collapse = "\n"))
-          # TODO(r-lib/lintr#2512): use 'env' instead
-          options(lintr.linter_file = ".ci/.lintr.R")
-          lintr::lint_package()
+          # TODO(r-lib/lintr#2512): use a standard approach here
+          lintr:::read_settings(".ci/.lintr.R")
+          lintr::lint_package(parse_settings = FALSE)
         shell: Rscript {0}
         env:
           LINTR_ERROR_ON_LINT: true
