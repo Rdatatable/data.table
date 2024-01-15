@@ -474,20 +474,22 @@ SEXP frev(SEXP x, SEXP copyArg) {
       }
     } break;
     case STRSXP: {
+      const SEXP *xd = SEXPPTR_RO(x);
       #pragma omp parallel for num_threads(getDTthreads(n, true))
       for (uint64_t i=0; i<n/2; ++i) {
         const int k = n-1-i;
-        const SEXP tmp = STRING_ELT(x, i);
-        SET_STRING_ELT(x, i, STRING_ELT(x, k));
+        const SEXP tmp = xd[i];
+        SET_STRING_ELT(x, i, xd[k]);
         SET_STRING_ELT(x, k, tmp);
       }
     } break;
     case VECSXP: {
+      const SEXP *xd = SEXPPTR_RO(x);
       #pragma omp parallel for num_threads(getDTthreads(n, true))
       for (uint64_t i=0; i<n/2; ++i) {
         const int k = n-1-i;
-        const SEXP tmp = VECTOR_ELT(x, i);
-        SET_VECTOR_ELT(x, i, VECTOR_ELT(x, k));
+        const SEXP tmp = xd[i];
+        SET_VECTOR_ELT(x, i, xd[k]);
         SET_VECTOR_ELT(x, k, tmp);
       }
     } break;
