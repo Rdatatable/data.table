@@ -56,17 +56,28 @@ linters = all_linters(
   unnecessary_nested_if_linter = NULL,
   # TODO(michaelchirico): Enforce these and re-activate them one-by-one. Also stop using '<<-'.
   brace_linter = NULL,
+  condition_call_linter = NULL,
   fixed_regex_linter = NULL,
   function_left_parentheses_linter = NULL,
   if_not_else_linter = NULL,
   implicit_assignment_linter = NULL,
   implicit_integer_linter = NULL,
   keyword_quote_linter = NULL,
+  length_levels_linter = NULL,
+  matrix_apply_linter = NULL,
+  missing_argument_linter = NULL,
+  nzchar_linter = NULL,
+  object_overwrite_linter = NULL,
   paren_body_linter = NULL,
   redundant_equals_linter = NULL,
+  repeat_linter = NULL,
+  return_linter = NULL,
+  sample_int_linter = NULL,
   scalar_in_linter = NULL,
   undesirable_function_linter = NULL,
   unnecessary_concatenation_linter = NULL,
+  unnecessary_lambda_linter = NULL,
+  unnecessary_nesting_linter = NULL,
   unreachable_code_linter = NULL
 )
 # TODO(lintr#2172): Glob with lintr itself.
