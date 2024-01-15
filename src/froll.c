@@ -469,6 +469,7 @@ void frollmaxFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool n
   uint64_t iw = 0; // index of window max
   bool truehasna = hasna>0;
   if (!truehasna) {
+    bool hadna = false;
     int i;
     for (i=0; i<k-1; i++) { // #loop_counter_not_local_scope_ok
       if (!R_FINITE(x[i])) {
