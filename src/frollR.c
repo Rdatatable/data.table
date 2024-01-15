@@ -182,46 +182,59 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   #pragma omp parallel for if (ialgo==0) schedule(dynamic) collapse(2) num_threads(getDTthreads(nx*nk, false))
   for (R_len_t i=0; i<nx; i++) {                                // loop over multiple columns
     for (R_len_t j=0; j<nk; j++) {                              // loop over multiple windows
-      switch (sfun) {
-      case MEAN :
-        if (!badaptive)
-          frollmean(ialgo, dx[i], inx[i], &dans[i*nk+j], iik[j], ialign, dfill, bnarm, ihasna, verbose);
-        else
+      if (!badaptive) {
+        // early stopping for window bigger than input
+        if (inx[i] < iik[j]) {                      // if window width bigger than input just return vector of fill values
+          if (verbose)
+            snprintf(end(dans[i*nk+j].message[0]), 500, _("%s: window width longer than input vector, returning all NA vector\n"), __func__);
+          // implicit n_message limit discussed here: https://github.com/Rdatatable/data.table/issues/3423#issuecomment-487722586
+          for (uint64_t ii=0; ii<inx[i]; ii++) {
+            dans[i*nk+j].dbl_v[ii] = dfill;
+          }
+          continue;
+        }
+        switch (sfun) {
+        case MEAN :
+          frollmean(ialgo, dx[i], inx[i], &dans[i*nk+j], iik[j], dfill, bnarm, ihasna, verbose);
+          break;
+        case SUM :
+          frollsum(ialgo, dx[i], inx[i], &dans[i*nk+j], iik[j], dfill, bnarm, ihasna, verbose);
+          break;
+        case MAX :
+          frollmax(ialgo, dx[i], inx[i], &dans[i*nk+j], iik[j], dfill, bnarm, ihasna, verbose);
+          break;
+        default:
+          error(_("Internal error: Unknown sfun value in froll: %d"), sfun); // #nocov
+        }
+        // handles 'align' in single place for center or left, adaptive align on R level
+        if (ialign < 1 && dans[i*nk+j].status < 3) {
+          int k_ = ialign==-1 ? iik[j]-1 : floor(iik[j]/2);       // offset to shift
+          if (verbose)
+            snprintf(end(dans[i*nk+j].message[0]), 500, _("%s: align %d, shift answer by %d\n"), __func__, ialign, -k_);
+          memmove((char *)dans[i*nk+j].dbl_v, (char *)dans[i*nk+j].dbl_v + (k_*sizeof(double)), (inx[i]-k_)*sizeof(double)); // apply shift to achieve expected align
+          for (uint64_t ii=inx[i]-k_; ii<inx[i]; ii++) {          // fill from right side
+            dans[i*nk+j].dbl_v[ii] = dfill;
+          }
+        }
+      } else {
+        switch (sfun) {
+        case MEAN :
           fadaptiverollmean(ialgo, dx[i], inx[i], &dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, verbose);
-        break;
-      case SUM :
-        if (!badaptive)
-          frollsum(ialgo, dx[i], inx[i], &dans[i*nk+j], iik[j], ialign, dfill, bnarm, ihasna, verbose);
-        else
+          break;
+        case SUM :
           fadaptiverollsum(ialgo, dx[i], inx[i], &dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, verbose);
-        break;
-      case MAX :
-        if (!badaptive)
-          frollmax(ialgo, dx[i], inx[i], &dans[i*nk+j], iik[j], ialign, dfill, bnarm, ihasna, verbose);
-        else
+          break;
+        case MAX :
           fadaptiverollmax(ialgo, dx[i], inx[i], &dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, verbose);
-        break;
-      default:
-        error(_("Internal error: Unknown sfun value in froll: %d"), sfun); // #nocov
+          break;
+        default:
+          error(_("Internal error: Unknown sfun value in froll: %d"), sfun); // #nocov
+        }
       }
     }
   }
 
   ansMsg(dans, nx*nk, verbose, __func__);                       // raise errors and warnings, as of now messages are not being produced
-
-  if (ialign < 1 && !badaptive) {                               // align center or left, adaptive align on R level
-    for (R_len_t i=0; i<nx; i++) {                              // loop over multiple columns
-      for (R_len_t j=0; j<nk; j++) {                            // loop over multiple windows
-        int k_ = ialign==-1 ? iik[j]-1 : floor(iik[j]/2);       // offset to shift
-        if (verbose)
-          Rprintf(_("%s: align %d, shift answer by %d\n"), __func__, ialign, -k_);
-        memmove((char *)dans[i*nk+j].dbl_v, (char *)dans[i*nk+j].dbl_v + (k_*sizeof(double)), (inx[i]-k_)*sizeof(double)); // apply shift to achieve expected align
-        for (uint64_t ii=inx[i]-k_; ii<inx[i]; ii++) {          // fill from right side
-          dans[i*nk+j].dbl_v[ii] = dfill;
-        }
-      }
-    }
-  }
 
   if (verbose)
     Rprintf(_("%s: processing of %d column(s) and %d window(s) took %.3fs\n"), __func__, nx, nk, omp_get_wtime()-tic);

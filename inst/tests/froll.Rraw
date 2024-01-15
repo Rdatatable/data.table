@@ -383,7 +383,7 @@ test(6000.093, frollmean(list(1:3, 4:6), 4), list(c(NA_real_, NA_real_, NA_real_
 test(6000.0931, frollmean(list(1:3, 4:6), 4, align="center"), list(c(NA_real_, NA_real_, NA_real_), c(NA_real_, NA_real_, NA_real_)))
 test(6000.0932, frollmean(list(1:3, 4:6), 4, align="left"), list(c(NA_real_, NA_real_, NA_real_), c(NA_real_, NA_real_, NA_real_)))
 options(datatable.verbose=TRUE)
-test(6000.0933, frollmean(list(1:3, 4:6), 4), list(c(NA_real_, NA_real_, NA_real_), c(NA_real_, NA_real_, NA_real_)), output="frollmean: window width longer than input vector, returning all NA vector")
+test(6000.0933, frollmean(list(1:3, 4:6), 4), list(c(NA_real_, NA_real_, NA_real_), c(NA_real_, NA_real_, NA_real_)), output="frollfunR: window width longer than input vector, returning all NA vector")
 options(datatable.verbose=FALSE)
 #### n==length(x)
 test(6000.094, frollmean(list(1:3, 4:6), 3), list(c(NA_real_, NA_real_, 2), c(NA_real_, NA_real_, 5)))
