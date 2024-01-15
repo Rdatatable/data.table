@@ -39,11 +39,9 @@ cedta.pkgEvalsUserCode = c("gWidgetsWWW","statET","FastRWeb","slidify","rmarkdow
 cedta = function(n=2L) {
   # Calling Environment Data Table Aware
   env = parent.frame(n)
-  if (isTRUE(env$.datatable.aware)) {  # dtplyr 184
-    return(TRUE)
-  }
-  if (isFALSE(env$.datatable.aware)) {  #5654
-    return(FALSE)
+  if (isTRUEorFALSE(env$.datatable.aware)) {
+    # 5654, dtplyr 184
+    return(env$.datatable.aware)
   }
   ns = topenv(env)
   if (!isNamespace(ns)) {
