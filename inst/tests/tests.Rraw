@@ -18268,3 +18268,12 @@ test(2244.2, DT[, let(a=1, )], error="let.*Did you forget a trailing comma\\?")
 test(2244.3, DT[, `:=`(a=1, , b=2)], error="`:=`.*\\[2\\]")
 test(2244.4, DT[, let(a=1, , b=2)], error="let.*\\[2\\]")
 test(2244.5, DT[, `:=`(a=1, , b=2, )], error="[2, 4]")
+
+# allow specifying datatable-unaware behavior, #5654 / #5655
+dt <- data.table(x = 1:3, y = 4:6)
+.datatable.aware <- TRUE
+test(2245.1, dt[1], data.table(x = 1L, y = 4L)) # Single index should be interpreted as row
+.datatable.aware <- FALSE
+test(2245.2, dt[1], 1:3) # Revert to data.frame syntax: Interpret index as column
+rm(.datatable.aware)
+test(2245.3, dt[1], data.table(x = 1L, y = 4L)) # Default in this environment should be datatable-aware
