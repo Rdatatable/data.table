@@ -18274,6 +18274,7 @@ dt = data.table(foo = 1:3, bar = 4:6)
 .datatable.aware = TRUE
 test(2244.1, dt[1], data.table(foo = 1L, bar = 4L)) # Single index should be interpreted as row
 .datatable.aware = FALSE
-test(2244.2, dt[1], data.table(foo = 1:3)) # Revert to data.frame syntax: Interpret index as column
+# selfrefok() fails on unaware-indexed datatables; the copy() here sidesteps that issue.
+test(2244.2, copy(dt[1]), data.table(foo = 1:3)) # Revert to data.frame syntax: Interpret index as column
 rm(.datatable.aware)
 test(2244.3, dt[1], data.table(foo = 1L, bar = 4L)) # Default in this environment should be datatable-aware
