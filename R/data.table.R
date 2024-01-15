@@ -1791,7 +1791,7 @@ replace_dot_alias = function(e) {
           if (!(q2 <- q[[2L]]) %chin% names(SDenv$.SDall) && q2 != ".I") return(FALSE)  # 875
           if (length(q)==2L || (!is.null(names(q)) && startsWith(names(q)[3L], "na") && is_constantish(q[[3L]]))) return(TRUE)
           #                       ^^ base::startWith errors on NULL unfortunately
-          switch(as.character(q[[1L]]), 
+          switch(as.character(q[[1L]]),
             "shift" = .gshift_ok(q),
             "weighted.mean" = .gweighted.mean_ok(q, x),
             "tail" = , "head" = .ghead_ok(q),
@@ -2355,7 +2355,7 @@ transform.data.table = function (`_data`, ...)
 {
   if (!cedta()) return(NextMethod()) # nocov
   `_data` = copy(`_data`)
-  e = eval(substitute(list(...)), `_data`, parent.frame()) 
+  e = eval(substitute(list(...)), `_data`, parent.frame())
   set(`_data`, ,names(e), e)
   `_data`
 }
