@@ -4,7 +4,7 @@ catf = function(fmt, ..., sep=" ", domain="R-data.table") {
   cat(gettextf(fmt, ..., domain=domain), sep=sep)
 }
 
-raise_condition = function(signal, message, call, classes, immediate=FALSE, appendLF=FALSE) {
+raise_condition = function(signal, message, call, classes, call.=FALSE, immediate=FALSE, appendLF=FALSE) {
   obj = list(message=message, call=call)
   # NB: append _after_ translation
   if (appendLF) obj$message = paste0(obj$message, "\n")
@@ -14,7 +14,11 @@ raise_condition = function(signal, message, call, classes, immediate=FALSE, appe
     old = options(warn=1)
     on.exit(options(old))
   }
-  signal(obj)
+  if (is.null(call.)) {
+    signal(obj) # message() doesn't support call.=FALSE
+  } else {
+    signal(obj, call. = call.)
+  }
 }
 
 stopf = function(fmt, ..., class=NULL, domain="R-data.table") {
@@ -29,7 +33,7 @@ warningf = function(fmt, ..., immediate.=FALSE, class=NULL, domain="R-data.table
 
 messagef = function(fmt, ..., appendLF=TRUE, class=NULL, domain="R-data.table") {
   call = sys.call()
-  raise_condition(message, gettextf(fmt, ..., domain=domain), call, c(class, "simpleMessage", "message", "condition"), appendLF=appendLF)
+  raise_condition(message, gettextf(fmt, ..., domain=domain), call, c(class, "simpleMessage", "message", "condition"), appendLF=appendLF, call.=NULL)
 }
 
 packageStartupMessagef = function(fmt, ..., appendLF=TRUE, class=NULL, domain="R-data.table") {
