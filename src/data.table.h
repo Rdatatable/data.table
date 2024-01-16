@@ -11,7 +11,6 @@
 #  define SET_GROWABLE_BIT(x)  // #3292
 #endif
 #include <Rinternals.h>
-#include <R_ext/Altrep.h>
 #define SEXPPTR_RO(x) ((const SEXP *)DATAPTR_RO(x))  // to avoid overhead of looped STRING_ELT and VECTOR_ELT
 #include <stdint.h>    // for uint64_t rather than unsigned long long
 #include <stdbool.h>
