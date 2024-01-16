@@ -444,17 +444,7 @@ SEXP frev(SEXP x, SEXP copyArg) {
     return x;
   }
   switch (TYPEOF(x)) {
-    case LGLSXP: {
-      int *restrict xd = LOGICAL(x);
-      #pragma omp parallel for num_threads(getDTthreads(n, true))
-      for (uint64_t i=0; i<n/2; ++i) {
-        const int k = n-1-i;
-        const int tmp = xd[i];
-        xd[i] = xd[k];
-        xd[k] = tmp;
-      }
-    } break;
-    case INTSXP: {
+    case LGLSXP: case INTSXP: {
       int *restrict xd = INTEGER(x);
       #pragma omp parallel for num_threads(getDTthreads(n, true))
       for (uint64_t i=0; i<n/2; ++i) {
