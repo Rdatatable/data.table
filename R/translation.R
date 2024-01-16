@@ -4,8 +4,8 @@ catf = function(fmt, ..., sep=" ", domain="R-data.table") {
   cat(gettextf(fmt, ..., domain=domain), sep=sep)
 }
 
-raise_condition = function(signal, message, call, classes, call.=FALSE, immediate=FALSE, appendLF=FALSE) {
-  obj = list(message=message, call=call)
+raise_condition = function(signal, message, classes, immediate=FALSE, appendLF=FALSE) {
+  obj = list(message=message, call=sys.call(2))
   # NB: append _after_ translation
   if (appendLF) obj$message = paste0(obj$message, "\n")
   setattr(obj, "class", classes)
@@ -14,26 +14,19 @@ raise_condition = function(signal, message, call, classes, call.=FALSE, immediat
     old = options(warn=1)
     on.exit(options(old))
   }
-  if (is.null(call.)) {
-    signal(obj) # message() doesn't support call.=FALSE
-  } else {
-    signal(obj, call. = call.)
-  }
+  signal(obj)
 }
 
 stopf = function(fmt, ..., class=NULL, domain="R-data.table") {
-  call = sys.call()
-  raise_condition(stop, gettextf(fmt, ..., domain=domain), call, c(class, "simpleError", "error", "condition"))
+  raise_condition(stop, gettextf(fmt, ..., domain=domain), c(class, "simpleError", "error", "condition"))
 }
 
 warningf = function(fmt, ..., immediate.=FALSE, class=NULL, domain="R-data.table") {
-  call = sys.call()
-  raise_condition(warning, gettextf(fmt, ..., domain=domain), call, c(class, "simpleWarning", "warning", "condition"), immediate=immediate.)
+  raise_condition(warning, gettextf(fmt, ..., domain=domain), c(class, "simpleWarning", "warning", "condition"), immediate=immediate.)
 }
 
 messagef = function(fmt, ..., appendLF=TRUE, class=NULL, domain="R-data.table") {
-  call = sys.call()
-  raise_condition(message, gettextf(fmt, ..., domain=domain), call, c(class, "simpleMessage", "message", "condition"), appendLF=appendLF, call.=NULL)
+  raise_condition(message, gettextf(fmt, ..., domain=domain), c(class, "simpleMessage", "message", "condition"), appendLF=appendLF)
 }
 
 packageStartupMessagef = function(fmt, ..., appendLF=TRUE, class=NULL, domain="R-data.table") {
