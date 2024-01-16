@@ -768,9 +768,9 @@ static SEXP gminmax(SEXP x, SEXP narm, const bool min)
     const SEXP *restrict xd = STRING_PTR(x);
     if (!LOGICAL(narm)[0]) {
       const SEXP init = min ? char_maxString : R_BlankString;  // char_maxString == "\xFF\xFF..." in init.c
+      for (int i=0; i<ngrp; ++i) SET_STRING_ELT(ans, i, init);
       #pragma omp parallel for num_threads(getDTthreads(ngrp, false))
       for (int i=0; i<ngrp; ++i) {
-        SET_STRING_ELT(ans, i, init);
         for (int j=ff[i]-1; j<ff[i]-1+grpsize[i]; ++j){
           if (ansd[i]==NA_STRING) break; // once NA has been obsered group is finished
           const int k = isunsorted ? oo[j]-1 : j;  
@@ -782,9 +782,9 @@ static SEXP gminmax(SEXP x, SEXP narm, const bool min)
         }
       }
     } else {
+      for (int i=0; i<ngrp; ++i) SET_STRING_ELT(ans, i, NA_STRING); // all missing returns NA 
       #pragma omp parallel for num_threads(getDTthreads(ngrp, false))
       for (int i=0; i<ngrp; ++i) {
-        SET_STRING_ELT(ans, i, NA_STRING); // all missing returns NA 
         for (int j=ff[i]-1; j<ff[i]-1+grpsize[i]; ++j){
           const int k = isunsorted ? oo[j]-1 : j;
           const SEXP elem = nosubset ? xd[k] : (irows[k]==NA_INTEGER ? NA_STRING : xd[irows[k]-1]);
