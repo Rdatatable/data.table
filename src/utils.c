@@ -432,7 +432,7 @@ SEXP frev(SEXP x, SEXP copyArg) {
   if (!IS_TRUE_OR_FALSE(copyArg))
     error(_("%s must be TRUE or FALSE."), "copy");
   bool copy = LOGICAL(copyArg)[0];
-  int n = LENGTH(x);
+  R_xlen_t n = xlength(x);
   int nprotect = 0;
   if (copy) {
     x = PROTECT(duplicate(x));
@@ -444,7 +444,17 @@ SEXP frev(SEXP x, SEXP copyArg) {
     return x;
   }
   switch (TYPEOF(x)) {
-    case LGLSXP: case INTSXP: {
+    case LGLSXP: {
+      int *restrict xd = LOGICAL(x);
+      #pragma omp parallel for num_threads(getDTthreads(n, true))
+      for (uint64_t i=0; i<n/2; ++i) {
+        const int k = n-1-i;
+        const int tmp = xd[i];
+        xd[i] = xd[k];
+        xd[k] = tmp;
+      }
+    } break;
+    case INTSXP: {
       int *restrict xd = INTEGER(x);
       #pragma omp parallel for num_threads(getDTthreads(n, true))
       for (uint64_t i=0; i<n/2; ++i) {
@@ -475,7 +485,6 @@ SEXP frev(SEXP x, SEXP copyArg) {
     } break;
     case STRSXP: {
       const SEXP *xd = SEXPPTR_RO(x);
-      #pragma omp parallel for num_threads(getDTthreads(n, true))
       for (uint64_t i=0; i<n/2; ++i) {
         const int k = n-1-i;
         const SEXP tmp = xd[i];
@@ -485,7 +494,6 @@ SEXP frev(SEXP x, SEXP copyArg) {
     } break;
     case VECSXP: {
       const SEXP *xd = SEXPPTR_RO(x);
-      #pragma omp parallel for num_threads(getDTthreads(n, true))
       for (uint64_t i=0; i<n/2; ++i) {
         const int k = n-1-i;
         const SEXP tmp = xd[i];

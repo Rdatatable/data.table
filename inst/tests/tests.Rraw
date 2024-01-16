@@ -18281,6 +18281,7 @@ test(2244.16, frev(NULL,            copy=FALSE), NULL)
 test(2244.17, frev(character(5),    copy=FALSE), character(5))
 test(2244.18, frev(integer(0),      copy=FALSE), integer(0))
 test(2244.19, frev(list(1, "a"),    copy=FALSE), list("a", 1))
+test(2244.20, frev(1:1e6,           copy=TRUE),  rev(1:1e6))
 # copy arguments
 x = 1:3
 test(2244.21, {frev(x, copy=TRUE);  x}, 1:3)
