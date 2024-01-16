@@ -18284,7 +18284,7 @@ test(2245.06, tryCatch(messagef("abc"), message=function(x) conditionMessage(x))
 test(2245.07, tryCatch(messagef("abc", appendLF=FALSE), message=function(x) conditionMessage(x)), "abc")
 test(2245.08, tryCatch(packageStartupMessagef("%s", "abc"), packageStartupMessage=function(x) conditionMessage(x)), "abc\n")
 test(2245.09, tryCatch(packageStartupMessagef("abc"), packageStartupMessage=function(x) conditionMessage(x)), "abc\n")
-test(2245.10, tryCatch(packageStartupMessagef("abc", appendLF=FALSE), packageStartupMessagef=function(x) conditionMessage(x)), "abc")
+test(2245.10, tryCatch(packageStartupMessagef("abc", appendLF=FALSE), packageStartupMessage=function(x) conditionMessage(x)), "abc")
 
 ## custom signal classes
 test(2245.11, inherits(tryCatch(stopf("x", class="test_error"), condition=identity), "test_error"))
