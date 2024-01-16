@@ -9,7 +9,7 @@ raise_condition = function(signal, message, call, classes, immediate=FALSE, appe
   # NB: append _after_ translation
   if (appendLF) obj$message = paste0(obj$message, "\n")
   setattr(obj, "class", classes)
-  # cannot set immediate.=TRUE through warning(), so use the description in ?warning to replicate this behavior ourselves
+  # cannot set immediate.=TRUE through warning(), so use the description in ?warning to replicate this behavior ourselves. tested manually.
   if (immediate) {
     old = options(warn=1)
     on.exit(options(old))

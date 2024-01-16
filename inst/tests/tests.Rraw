@@ -51,7 +51,9 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   isRealReallyInt = data.table:::isRealReallyInt
   is_utc = data.table:::is_utc
   melt.data.table = data.table:::melt.data.table  # for test 1953.4
+  messagef = data.table:::messagef
   null.data.table = data.table:::null.data.table
+  packageStartupMessagef = data.table:::packageStartupMessagef
   print.data.table = data.table:::print.data.table
   replace_dot_alias = data.table:::replace_dot_alias
   rollup.data.table = data.table:::rollup.data.table
@@ -64,9 +66,11 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   .shallow = data.table:::.shallow
   split.data.table = data.table:::split.data.table
   if (!exists('startsWith', 'package:base', inherits=FALSE)) startsWith = data.table:::startsWith
+  stopf = data.table:::stopf
   test = data.table:::test
   uniqlengths = data.table:::uniqlengths
   uniqlist = data.table:::uniqlist
+  warningf = data.table:::warningf
   which_ = data.table:::which_
   which.first = data.table:::which.first
   which.last = data.table:::which.last
@@ -18268,3 +18272,26 @@ test(2244.2, DT[, let(a=1, )], error="let.*Did you forget a trailing comma\\?")
 test(2244.3, DT[, `:=`(a=1, , b=2)], error="`:=`.*\\[2\\]")
 test(2244.4, DT[, let(a=1, , b=2)], error="let.*\\[2\\]")
 test(2244.5, DT[, `:=`(a=1, , b=2, )], error="[2, 4]")
+
+# custom signaling functions
+## basics: default signals with/without formats
+test(2245.01, tryCatch(stopf("%s", "abc"), error=function(x) conditionMessage(x)), "abc")
+test(2245.02, tryCatch(stopf("abc"), error=function(x) conditionMessage(x)), "abc")
+test(2245.03, tryCatch(warningf("%s", "abc"), warning=function(x) conditionMessage(x)), "abc")
+test(2245.04, tryCatch(warningf("abc"), warning=function(x) conditionMessage(x)), "abc")
+test(2245.05, tryCatch(messagef("%s", "abc"), message=function(x) conditionMessage(x)), "abc\n")
+test(2245.06, tryCatch(messagef("abc"), message=function(x) conditionMessage(x)), "abc\n")
+test(2245.07, tryCatch(messagef("abc", appendLF=FALSE), message=function(x) conditionMessage(x)), "abc")
+test(2245.08, tryCatch(packageStartupMessagef("%s", "abc"), packageStartupMessage=function(x) conditionMessage(x)), "abc\n")
+test(2245.09, tryCatch(packageStartupMessagef("abc"), packageStartupMessage=function(x) conditionMessage(x)), "abc\n")
+test(2245.10, tryCatch(packageStartupMessagef("abc", appendLF=FALSE), packageStartupMessagef=function(x) conditionMessage(x)), "abc")
+
+## custom signal classes
+test(2245.11, inherits(tryCatch(stopf("x", class="test_error"), condition=identity), "test_error"))
+test(2245.12, inherits(tryCatch(stopf("x", class="test_error"), condition=identity), "error"))
+test(2245.13, inherits(tryCatch(warningf("x", class="test_warning"), condition=identity), "test_warning"))
+test(2245.14, inherits(tryCatch(warningf("x", class="test_warning"), condition=identity), "warning"))
+test(2245.15, inherits(tryCatch(messagef("x", class="test_message"), condition=identity), "test_message"))
+test(2245.16, inherits(tryCatch(messagef("x", class="test_message"), condition=identity), "message"))
+test(2245.17, inherits(tryCatch(packageStartupMessagef("x", class="test_psm"), condition=identity), "test_psm"))
+test(2245.18, inherits(tryCatch(packageStartupMessagef("x", class="test_psm"), condition=identity), "packageStartupMessage"))
