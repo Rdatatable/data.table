@@ -775,8 +775,10 @@ static SEXP gminmax(SEXP x, SEXP narm, const bool min)
           if (ansd[i]==NA_STRING) break; // once NA has been obsered group is finished
           const int k = isunsorted ? oo[j]-1 : j;  
           const SEXP elem = nosubset ? xd[k] : (irows[k]==NA_INTEGER ? NA_STRING : xd[irows[k]-1]);
-          if (elem==NA_STRING || (strcmp(CHAR(elem), CHAR(ansd[i]))<0)==min)
+          if (elem==NA_STRING || (strcmp(CHAR(elem), CHAR(ansd[i]))<0)==min) {
+            #pragma omp critical
             SET_STRING_ELT(ans, i, elem);
+          }
         }
       }
     } else {
@@ -787,8 +789,10 @@ static SEXP gminmax(SEXP x, SEXP narm, const bool min)
           const int k = isunsorted ? oo[j]-1 : j;
           const SEXP elem = nosubset ? xd[k] : (irows[k]==NA_INTEGER ? NA_STRING : xd[irows[k]-1]);
           if (elem==NA_STRING) continue;
-          if (ansd[i]==NA_STRING || (strcmp(CHAR(elem), CHAR(ansd[i]))<0)==min)
+          if (ansd[i]==NA_STRING || (strcmp(CHAR(elem), CHAR(ansd[i]))<0)==min) {
+            #pragma omp critical
             SET_STRING_ELT(ans, i, elem);
+          }
         }
       }
     }}
