@@ -2,7 +2,7 @@
 \alias{transpose}
 \title{Efficient transpose of list}
 \description{
-  \code{transpose} is an efficient way to transpose \code{lists}, \code{data frames} or \code{data tables}.
+  \code{transpose} is an efficient way to transpose \code{lists}, \code{data.frames} or \code{data.tables}.
 }
 
 \usage{
@@ -26,6 +26,8 @@ transpose(l, fill=NA, ignore.empty=FALSE, keep.names=NULL, make.names=NULL)
 }
 \value{
   A transposed \code{list}, \code{data.frame} or \code{data.table}.
+
+  \code{list} outputs will only be named according to \code{make.names}.
 }
 
 \examples{
@@ -35,6 +37,9 @@ setDT(transpose(ll, fill=0))[]
 
 DT = data.table(x=1:5, y=6:10)
 transpose(DT)
+
+ll = list(nm=c('x', 'y'), 1:2, 3:4)
+transpose(ll, make.names="nm")
 }
 \seealso{
   \code{\link{data.table}}, \code{\link{tstrsplit}}

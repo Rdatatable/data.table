@@ -1,5 +1,31 @@
 **If you are viewing this file on CRAN, please check [latest news on GitHub](https://github.com/Rdatatable/data.table/blob/master/NEWS.md) where the formatting is also better.**
 
+# data.table [v1.15.99]() (in development)
+
+## NEW FEATURES
+
+1. `print.data.table()` shows empty (`NULL`) list column entries as `[NULL]` for emphasis. Previously they would just print nothing (same as for empty string). Part of [#4198](https://github.com/Rdatatable/data.table/issues/4198). Thanks @sritchie73 for the proposal and fix.
+
+    ```R
+    data.table(a=list(NULL, ""))
+    #         a
+    #    <list>
+    # 1: [NULL]
+    # 2:
+    ```
+
+2. New window function `frollmax` computes the rolling maximum. Request came from @gpierard who needs left-aligned, adaptive, rolling max, [#5438](https://github.com/Rdatatable/data.table/issues/5438). Adaptive rolling functions did not have support for `align="left"`, therefore we added this feature as well for all adaptive rolling functions. We measure adaptive `frollmax` to be up to 50 times faster than the next fastest solution using `max` and grouping `by=.EACHI`.
+
+## NOTES
+
+1. `transform` method for data.table sped up substantially when creating new columns on large tables. Thanks to @OfekShilon for the report and PR. The implemented solution was proposed by @ColeMiller1.
+
+2. The documentation for the `fill` argument in `rbind()` and `rbindlist()` now notes the expected behaviour for missing `list` columns when `fill=TRUE`, namely to use `NULL` (not `NA`), [#4198](https://github.com/Rdatatable/data.table/pull/4198). Thanks @sritchie73 for the proposal and fix.
+
+3. data.table now depends on R 3.2.0 (2015) instead of 3.1.0 (2014). 1.17.0 will likely move to R 3.3.0 (2016). Recent versions of R have good features that we would gradually like to incorporate, and we see next to no usage of these very old versions of R.
+
+4. Erroneous assignment calls in `[` with a trailing comma (e.g. ``DT[, `:=`(a = 1, b = 2,)]``) get a friendlier error since this situation is common during refactoring and easy to miss visually. Thanks @MichaelChirico for the fix.
+
 # data.table [v1.14.99](https://github.com/Rdatatable/data.table/milestone/29)  (in development)
 
 ## BREAKING CHANGE
@@ -577,6 +603,8 @@
     ```
 
 55. `fread(URL)` with `https:` and `ftps:` could timeout if proxy settings were not guessed right by `curl::curl_download`, [#1686](https://github.com/Rdatatable/data.table/issues/1686). `fread(URL)` now uses `download.file()` as default for downloading files from urls. Thanks to @cderv for the report and Benjamin Schwendinger for the fix.
+
+56. `split.data.table()` works for downstream methods that don't implement `DT[i]` form (i.e., requiring `DT[i, j]` form, like plain `data.frame`s), for example `sf`'s `[.sf`, [#5365](https://github.com/Rdatatable/data.table/issues/5365). Thanks @barryrowlingson for the report and @michaelchirico for the fix.
 
 ## NOTES
 
