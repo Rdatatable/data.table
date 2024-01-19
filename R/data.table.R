@@ -8,6 +8,7 @@ if (!exists("trimws", "package:base")) {
 
 dim.data.table = function(x)
 {
+  if (!cedta()) return(NextMethod())
   .Call(Cdim, x)
 }
 
