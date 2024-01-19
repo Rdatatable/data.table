@@ -560,7 +560,7 @@
 
 55. `fread(URL)` with `https:` and `ftps:` could timeout if proxy settings were not guessed right by `curl::curl_download`, [#1686](https://github.com/Rdatatable/data.table/issues/1686). `fread(URL)` now uses `download.file()` as default for downloading files from urls. Thanks to @cderv for the report and Benjamin Schwendinger for the fix.
 
-56. `dim.data.table` returns now the same `dim.data.frame` in `data.table`-unaware environments, [#](). Thanks to @akersting for reporting and Benjamin Schwendinger for the fix.
+56. `dim.data.table` returns now the same as `dim.data.frame` in `data.table`-unaware environments, [#2422](https://github.com/Rdatatable/data.table/issues/2422). Thanks to @akersting for reporting and Benjamin Schwendinger for the fix.
 
 ## NOTES
 
