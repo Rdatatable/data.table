@@ -8,7 +8,7 @@ if (!exists("trimws", "package:base")) {
 
 dim.data.table = function(x)
 {
-  if (!cedta()) return(NextMethod())
+  if (!cedta()) return(NextMethod()) # nocov
   .Call(Cdim, x)
 }
 
