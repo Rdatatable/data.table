@@ -385,7 +385,7 @@ void frolladaptivesumExact(double *x, uint64_t nx, ans_t *ans, int *k, double fi
 void frolladaptivemaxExact(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
   if (verbose)
     snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", hasna %d, narm %d\n"), "frolladaptivemaxExact", (uint64_t)nx, hasna, (int) narm);
-  if (hasna==-1) { // fastest we can get for adaptive max as there is no algo='fast', therefore we drop any NA checks when hasNA=FALSE
+  if (narm || hasna==-1) { // fastest we can get for adaptive max as there is no algo='fast', therefore we drop any NA checks when hasNA=FALSE
     #pragma omp parallel for num_threads(getDTthreads(nx, true))
     for (uint64_t i=0; i<nx; i++) {
       if (i+1 < k[i]) {
@@ -400,39 +400,56 @@ void frolladaptivemaxExact(double *x, uint64_t nx, ans_t *ans, int *k, double fi
       }
     }
   } else {
-    if (narm) {
+    bool *isnan = malloc(nx*sizeof(bool)); // isnan lookup - we use it to reduce ISNAN calls in nested loop
+    if (!isnan) {                                                    // # nocov start
+      ans->status = 3;                                               // raise error
+      snprintf(ans->message[3], 500, _("%s: Unable to allocate memory for isnan"), __func__);
+      free(isnan);
+      return;
+    }                                                               // # nocov end
+    bool truehasna = hasna>0;
+    for (uint64_t i=0; i<nx; i++) { // no openmp as this shuld be very fast
+      if (ISNAN(x[i])) {
+        truehasna = true;
+        isnan[i] = true;
+      } else {
+        isnan[i] = false;
+      }
+    }
+    if (!truehasna) { // not found any NAs
       #pragma omp parallel for num_threads(getDTthreads(nx, true))
       for (uint64_t i=0; i<nx; i++) {
         if (i+1 < k[i]) {
           ans->dbl_v[i] = fill;
         } else {
-          int nc = 0;
           double w = R_NegInf;
           for (int j=-k[i]+1; j<=0; j++) {
-            if (ISNAN(x[i+j]))
-              nc++;
-            else if (x[i+j] > w)
+            if (x[i+j] > w)
               w = x[i+j];
           }
-          if (nc < k[i])
-            ans->dbl_v[i] = w;
-          else
-            ans->dbl_v[i] = R_NegInf;
+          ans->dbl_v[i] = w;
         }
       }
-    } else {
+    } else { // there are some NAs
       #pragma omp parallel for num_threads(getDTthreads(nx, true))
       for (uint64_t i=0; i<nx; i++) {
         if (i+1 < k[i]) {
           ans->dbl_v[i] = fill;
         } else {
           double w = R_NegInf;
-          for (int j=-k[i]+1; j<=0; j++) {
-            if (ISNAN(x[i+j])) {
-              w = NA_REAL;
-              break;
-            } else if (x[i+j] > w) {
-              w = x[i+j];
+          if (isnan[i] && ISNA(x[i])) {
+            w = NA_REAL;
+          } else {
+            for (int j=-k[i]+1; j<=0; j++) {
+              if (isnan[i+j]) {
+                if (ISNA(x[i+j])) {
+                  w = NA_REAL;
+                  break;
+                } else {
+                  w = R_NaN;
+                }
+              } else if (x[i+j] > w)
+                w = x[i+j];
             }
           }
           ans->dbl_v[i] = w;
