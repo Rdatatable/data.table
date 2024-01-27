@@ -293,6 +293,22 @@
 
 41. `tables()` is faster by default by excluding the size of character strings in R's global cache (which may be shared) and excluding the size of list column items (which also may be shared). `mb=` now accepts any function which accepts a `data.table` and returns a higher and better estimate of its size in bytes, albeit more slowly; e.g. `mb = utils::object.size`.
 
+27. New function `topn(x,n)` [#3804](https://github.com/Rdatatable/data.table/issues/3804). It returns the indices of the `n` smallest/largest values of a vector `x`. Previously, one had to use `order(x)[1:n]` which produced a full sorting of `x`. Usage of `topn` is advised for large vectors where sorting takes long time. Thanks to Michael Chirico for requesting, and Benjamin Schwendinger for PR.
+
+    ```R
+    set.seed(123)
+    x = rnorm(1e8)
+    system.time(topn(x, 5L,sorted=TRUE))
+    #   user  system elapsed
+    #  0.287   0.000   0.288
+    system.time(topn(x, 5L,sorted=FALSE))
+    #   user  system elapsed
+    #  0.283   0.000   0.282
+    system.time(order(x)[1L:5L])
+    #   user  system elapsed
+    #  6.658   0.620   7.279
+    ```
+
 ## BUG FIXES
 
 1. `by=.EACHI` when `i` is keyed but `on=` different columns than `i`'s key could create an invalidly keyed result, [#4603](https://github.com/Rdatatable/data.table/issues/4603) [#4911](https://github.com/Rdatatable/data.table/issues/4911). Thanks to @myoung3 and @adamaltmejd for reporting, and @ColeMiller1 for the PR. An invalid key is where a `data.table` is marked as sorted by the key columns but the data is not sorted by those columns, leading to incorrect results from subsequent queries.

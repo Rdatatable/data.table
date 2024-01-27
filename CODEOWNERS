@@ -49,3 +49,7 @@
 
 # utils
 /src/utils.c @HughParsonage
+
+# ordering
+/src/topn.c @ben-schwen
+/man/topn.Rd @ben-schwen

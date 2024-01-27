@@ -16,3 +16,5 @@ isRealReallyInt = function(x) .Call(CisRealReallyIntR, x)
 isReallyReal = function(x) .Call(CisReallyReal, x)
 
 coerceAs = function(x, as, copy=TRUE) .Call(CcoerceAs, x, as, copy)
+
+topn = function(x, n, na.last=TRUE, decreasing=FALSE, sorted=FALSE) .Call(Ctopn, x, as.integer(n), na.last, decreasing, sorted)
