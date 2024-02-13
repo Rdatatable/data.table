@@ -1015,7 +1015,7 @@ replace_dot_alias = function(e) {
           } else negate_sdcols = FALSE
           # fix for #1216, make sure the parentheses are peeled from expr of the form (((1:4)))
           while(colsub %iscall% "(") colsub = as.list(colsub)[[-1L]]
-          if (colsub %iscall% ':' && length(colsub)==3L && !is.call(colsub[[2L]]) && !is.call(colsub[[3]])) {
+          if (colsub %iscall% ':' && length(colsub)==3L && !is.call(colsub[[2L]]) && !is.call(colsub[[3L]])) {
             # .SDcols is of the format a:b, ensure none of : arguments is a call data.table(V1=-1L, V2=-2L, V3=-3L)[,.SD,.SDcols=-V2:-V1] #4231
             .SDcols = eval(colsub, setattr(as.list(seq_along(x)), 'names', names_x), parent.frame())
           } else {
@@ -2747,7 +2747,7 @@ setcolorder = function(x, neworder=key(x), before=NULL, after=NULL)  # before/af
     stopf("x has some duplicated column name(s): %s. Please remove or rename the duplicate(s) and try again.", brackify(unique(names(x)[duplicated(names(x))])))
   if (!is.null(before) && !is.null(after))
     stopf("Provide either before= or after= but not both")
-  if (length(before)>1 || length(after)>1)
+  if (length(before)>1L || length(after)>1L)
     stopf("before=/after= accept a single column name or number, not more than one")
   neworder = colnamesInt(x, neworder, check_dups=FALSE)  # dups are now checked inside Csetcolorder below
   if (length(before))
