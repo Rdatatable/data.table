@@ -2,7 +2,7 @@
 
 # data.table [v1.15.99](https://github.com/Rdatatable/data.table/milestone/30)  (in development)
 
-# data.table [v1.15.0](https://github.com/Rdatatable/data.table/milestone/29)  (14 Jan 2024)
+# data.table [v1.15.0](https://github.com/Rdatatable/data.table/milestone/29)  (30 Jan 2024)
 
 ## BREAKING CHANGE
 
