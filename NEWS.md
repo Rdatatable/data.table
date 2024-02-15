@@ -2,6 +2,10 @@
 
 # data.table [v1.15.99](https://github.com/Rdatatable/data.table/milestone/30)  (in development)
 
+## NEW FEATURES
+
+X. User-defined pattern matching functions are supported for .SDcols, `.SDcols=user_patterns_fun("regexp")` where `user_patterns_fun` should have an argument named `cols` that is not provided by the user, but will be filled in with the data table column names. Also `data.table:::patterns(perl=TRUE)` passes `perl` argument onto `grep`, #5387. Thanks to @iago-pssjd for the feature request, and @tdhock for the implementation.
+
 # data.table [v1.15.0](https://github.com/Rdatatable/data.table/milestone/29)  (30 Jan 2024)
 
 ## BREAKING CHANGE
