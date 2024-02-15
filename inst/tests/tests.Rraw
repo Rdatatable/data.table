@@ -17240,6 +17240,7 @@ test(2182.71, melt(DT.wide, measure.vars=list("a2"), variable.factor=TRUE), data
 test(2182.72, melt(DT.wide, measure.vars=c("a2"), variable.factor=TRUE), data.table(b1=1, b2=2, variable=factor("a2"), value=2))
 test(2182.73, melt(DT.wide, measure.vars=list("a2"), variable.factor=FALSE), data.table(b1=1, b2=2, variable="1", value=2))
 test(2182.74, melt(DT.wide, measure.vars=c("a2"), variable.factor=FALSE), data.table(b1=1, b2=2, variable="a2", value=2))
+test(2182.75, melt(data.table(a=10, b=20), measure.vars=list(n="a"), variable.factor=FALSE), data.table(b=20, variable="1", n=10))#thanks @mnazarov
 
 ### First block testing measurev
 # new variable_table attribute for measure.vars, PR#4731 for multiple issues
