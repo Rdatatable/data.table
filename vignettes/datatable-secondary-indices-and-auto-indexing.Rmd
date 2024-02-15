@@ -2,10 +2,10 @@
 title: "Secondary indices and auto indexing"
 date: "`r Sys.Date()`"
 output:
-  rmarkdown::html_vignette
+  markdown::html_format
 vignette: >
   %\VignetteIndexEntry{Secondary indices and auto indexing}
-  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEngine{knitr::knitr}
   \usepackage[utf8]{inputenc}
 ---
 
@@ -17,6 +17,7 @@ knitr::opts_chunk$set(
      tidy = FALSE,
     cache = FALSE,
  collapse = TRUE)
+.old.th = setDTthreads(1)
 ```
 
 This vignette assumes that the reader is familiar with data.table's `[i, j, by]` syntax, and how to perform fast key based subsets. If you're not familiar with these concepts, please read the *"Introduction to data.table"*,  *"Reference semantics"* and *"Keys and fast binary search based subset"* vignettes first.
@@ -105,7 +106,7 @@ setkey(flights, origin)
 flights["JFK"] # or flights[.("JFK")]
 ```
 
-#### `setkey()` requires: {.bs-callout .bs-callout-info}
+#### `setkey()` requires:
 
 a) computing the order vector for the column(s) provided, here, `origin`, and
 
@@ -139,7 +140,7 @@ Since there can be multiple secondary indices, and creating an index is as simpl
 
 As we will see in the next section, the `on` argument provides several advantages:
 
-#### `on` argument {.bs-callout .bs-callout-info}
+#### `on` argument
 
 * enables subsetting by computing secondary indices on the fly. This eliminates having to do `setindex()` every time.
 
@@ -325,3 +326,8 @@ In recent version we extended auto indexing to expressions involving more than o
 We will discuss fast *subsets* using keys and secondary indices to *joins* in the next vignette, *"Joins and rolling joins"*.
 
 ***
+
+```{r, echo=FALSE}
+setDTthreads(.old.th)
+```
+
