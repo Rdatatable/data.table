@@ -97,7 +97,7 @@ name_dots = function(...) {
   if (any(notnamed)) {
     syms = vapply_1b(dot_sub, is.symbol)  # save the deparse() in most cases of plain symbol
     for (i in which(notnamed)) {
-      tmp = if (syms[i]) as.character(dot_sub[[i]]) else deparse(dot_sub[[i]])[1L]
+      tmp = if (syms[i]) as.character(dot_sub[[i]]) else deparse(dot_sub[[i]], nlines=1L)[1L]
       if (tmp == make.names(tmp)) vnames[i]=tmp
     }
   }
@@ -156,3 +156,13 @@ edit.data.table = function(name, ...) {
   setDT(NextMethod('edit', name))[]
 }
 # nocov end
+
+rss = function() {  #5515 #5517
+  # nocov start
+  cmd = paste0("ps -o rss --no-headers ", Sys.getpid()) # ps returns KB
+  ans = tryCatch(as.numeric(system(cmd, intern=TRUE)), warning=function(w) NA_real_, error=function(e) NA_real_)
+  if (length(ans)!=1L || !is.numeric(ans)) ans=NA_real_ # just in case
+  round(ans / 1024, 1L)  # return MB
+  # nocov end
+}
+

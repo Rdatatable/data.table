@@ -28,7 +28,8 @@ memory efficient.
 \usage{
 \method{duplicated}{data.table}(x, incomparables=FALSE, fromLast=FALSE, by=seq_along(x), \dots)
 
-\method{unique}{data.table}(x, incomparables=FALSE, fromLast=FALSE, by=seq_along(x), \dots)
+\method{unique}{data.table}(x, incomparables=FALSE, fromLast=FALSE,
+by=seq_along(x), cols=NULL, \dots)
 
 \method{anyDuplicated}{data.table}(x, incomparables=FALSE, fromLast=FALSE, by=seq_along(x), \dots)
 
@@ -46,6 +47,8 @@ correspond to \code{duplicated = FALSE}.}
 of columns from \code{x} to use for uniqueness checks. By default all columns
 are being used. That was changed recently for consistency to data.frame methods.
 In version \code{< 1.9.8} default was \code{key(x)}.}
+\item{cols}{Columns (in addition to \code{by}) from \code{x} to include in the
+  resulting \code{data.table}.}
 \item{na.rm}{Logical (default is \code{FALSE}). Should missing values (including
 \code{NaN}) be removed?}
 }
@@ -59,7 +62,11 @@ handle cases where limitations in floating point representation is undesirable.
 
 \code{v1.9.4} introduces \code{anyDuplicated} method for data.tables and is
 similar to base in functionality. It also implements the logical argument
-\code{fromLast} for all three functions, with default value \code{FALSE}.
+\code{fromLast} for all three functions, with default value
+\code{FALSE}.
+
+Note: When \code{cols} is specified, the resulting table will have
+columns \code{c(by, cols)}, in that order.
 }
 \value{
 \code{duplicated} returns a logical vector of length \code{nrow(x)}
