@@ -1,1994 +1,2922 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: data.table 1.13.1\n"
-"POT-Creation-Date: 2020-10-17 12:05\n"
+"Project-Id-Version: data.table 1.14.99\n"
+"POT-Creation-Date: 2023-12-28 12:46+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 
-
+#: AllS4.R:2
+#, c-format
 msgid "data.table package loaded. When developing don't load package"
 msgstr ""
 
-msgid "Internal error -- difftime objects may not be added to IDate, but Ops dispatch should have intervened to prevent this"
+#: IDateTime.R:101
+#, c-format
+msgid ""
+"Internal error -- difftime objects may not be added to IDate, but Ops "
+"dispatch should have intervened to prevent this"
 msgstr ""
 
+#: IDateTime.R:107
+#, c-format
 msgid "binary + is not defined for \"IDate\" objects"
 msgstr ""
 
+#: IDateTime.R:114
+#, c-format
 msgid "can only subtract from \"IDate\" objects"
 msgstr ""
 
+#: IDateTime.R:117
+#, c-format
 msgid "Internal error: storage mode of IDate is somehow no longer integer"
 msgstr ""
 
+#: IDateTime.R:119
+#, c-format
 msgid "unary - is not defined for \"IDate\" objects"
 msgstr ""
 
-msgid "Internal error -- difftime objects may not be subtracted from IDate, but Ops dispatch should have intervened to prevent this"
+#: IDateTime.R:121
+#, c-format
+msgid ""
+"Internal error -- difftime objects may not be subtracted from IDate, but Ops "
+"dispatch should have intervened to prevent this"
 msgstr ""
 
-msgid "Valid options for ms are 'truncate',"
+#: IDateTime.R:309
+#, c-format
+msgid "Valid options for ms are 'truncate', 'nearest', and 'ceil'."
 msgstr ""
 
-msgid "'nearest', and 'ceil'."
+#: as.data.table.R:86
+#, c-format
+msgid ""
+"as.data.table.array method should only be called for arrays with 3+ "
+"dimensions; use the matrix method for 2-dimensional arrays"
 msgstr ""
 
-msgid "as.data.table.array method should only be called for arrays with 3+ dimensions; use the matrix method for 2-dimensional arrays"
+#: as.data.table.R:88
+#, c-format
+msgid ""
+"Argument 'value.name' must be scalar character, non-NA and at least one "
+"character"
 msgstr ""
 
-msgid "Argument 'value.name' must be scalar character, non-NA and at least one character"
-msgstr ""
-
+#: as.data.table.R:90
+#, c-format
 msgid "Argument 'sorted' must be scalar logical and non-NA"
 msgstr ""
 
+#: as.data.table.R:92
+#, c-format
 msgid "Argument 'na.rm' must be scalar logical and non-NA"
 msgstr ""
 
+#: as.data.table.R:94
+#, c-format
 msgid "Please provide either 'key' or 'sorted', but not both."
 msgstr ""
 
-msgid "Argument 'value.name' should not overlap with column names in result:"
+#: as.data.table.R:108
+#, c-format
+msgid ""
+"Argument 'value.name' should not overlap with column names in result: %s"
 msgstr ""
 
-msgid "POSIXlt column type detected and converted to POSIXct. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date."
+#: as.data.table.R:140
+#, c-format
+msgid ""
+"POSIXlt column type detected and converted to POSIXct. We do not recommend "
+"use of POSIXlt at all because it uses 40 bytes to store one date."
 msgstr ""
 
-msgid "Item"
+#: as.data.table.R:181
+#, c-format
+msgid "Item %d has %d rows but longest item has %d; recycled with remainder."
 msgstr ""
 
-msgid "has"
-msgstr ""
-
-msgid "rows but longest item has"
-msgstr ""
-
-msgid "; recycled with remainder."
-msgstr ""
-
-msgid "has 0 rows but longest item has"
-msgstr ""
-
-msgid "; filled with NA"
-msgstr ""
-
+#: as.data.table.R:196
+#, c-format
 msgid "A column may not be called .SD. That has special meaning."
 msgstr ""
 
+#: as.data.table.R:210
+#, c-format
 msgid "class must be length 1"
 msgstr ""
 
+#: between.R:3
+#, c-format
 msgid "between has been passed an argument x of type logical"
 msgstr ""
 
-msgid "'between' function the 'x' argument is a POSIX class while 'lower' was not, coercion to POSIX failed with:"
+#: between.R:13 between.R:15
+#, c-format
+msgid ""
+"'between' function the 'x' argument is a POSIX class while '%s' was not, "
+"coercion to POSIX failed with: %s"
 msgstr ""
 
-msgid "'between' function the 'x' argument is a POSIX class while 'upper' was not, coercion to POSIX failed with:"
+#: between.R:27
+#, c-format
+msgid ""
+"'between' lower= and upper= are both POSIXct but have different tzone "
+"attributes: %s. Please align their time zones."
 msgstr ""
 
-msgid "'between' lower= and upper= are both POSIXct but have different tzone attributes:"
+#: between.R:31
+#, c-format
+msgid ""
+"'between' arguments are all POSIXct but have mismatched tzone attributes: "
+"%s. The UTC times will be compared."
 msgstr ""
 
-msgid ". Please align their time zones."
-msgstr ""
-
-msgid "'between' arguments are all POSIXct but have mismatched tzone attributes:"
-msgstr ""
-
-msgid ". The UTC times will be compared."
-msgstr ""
-
+#: between.R:36
+#, c-format
 msgid "trying to use integer64 class when 'bit64' package is not installed"
 msgstr ""
 
-msgid "optimised between not available for this data type, fallback to slow R routine"
+#: between.R:48
+#, c-format
+msgid ""
+"Not yet implemented NAbounds=TRUE for this non-numeric and non-character type"
 msgstr ""
 
-msgid "Not yet implemented NAbounds=TRUE for this non-numeric and non-character type"
-msgstr ""
-
+#: between.R:49
+#, c-format
 msgid "Some lower>upper for this non-numeric and non-character type"
 msgstr ""
 
-msgid "RHS has length()"
-msgstr ""
-
-msgid "; expecting length 2."
-msgstr ""
-
-msgid "c"
-msgstr ""
-
+#: between.R:63
+#, c-format
 msgid "Perhaps you meant %s?"
 msgstr ""
 
-msgid "The first element should be the lower bound(s);"
+#: between.R:64
+#, c-format
+msgid ""
+"RHS has length() %d; expecting length 2. %sThe first element should be the "
+"lower bound(s); the second element should be the upper bound(s)."
 msgstr ""
 
-msgid "the second element should be the upper bound(s)."
-msgstr ""
-
-msgid "forderv(query) took ..."
-msgstr ""
-
-msgid "Generating final logical vector ..."
-msgstr ""
-
-msgid "done in"
-msgstr ""
-
+#: bmerge.R:48 bmerge.R:49
+#, c-format
 msgid "%s is type %s which is not supported by data.table join"
 msgstr ""
 
-msgid "Attempting roll join on factor column when joining %s to %s. Only integer, double or character columns may be roll joined."
+#: bmerge.R:52
+#, c-format
+msgid ""
+"Attempting roll join on factor column when joining %s to %s. Only integer, "
+"double or character columns may be roll joined."
 msgstr ""
 
-msgid "Matching %s factor levels to %s factor levels."
+#: bmerge.R:71
+#, c-format
+msgid ""
+"Incompatible join types: %s (%s) and %s (%s). Factor columns must join to "
+"factor or character columns."
 msgstr ""
 
-msgid "Coercing factor column %s to type character to match type of %s."
-msgstr ""
-
-msgid "Matching character column %s to factor levels in %s."
-msgstr ""
-
-msgid "Incompatible join types: %s (%s) and %s (%s). Factor columns must join to factor or character columns."
-msgstr ""
-
-msgid "%s has same type (%s) as %s. No coercion needed."
-msgstr ""
-
-msgid "Coercing all-NA %s (%s) to type %s to match type of %s."
-msgstr ""
-
+#: bmerge.R:90
+#, c-format
 msgid "Incompatible join types: %s (%s) and %s (%s)"
 msgstr ""
 
-msgid "Coercing %s column %s%s to type integer64 to match type of %s."
+#: bmerge.R:98
+#, c-format
+msgid ""
+"Incompatible join types: %s is type integer64 but %s is type double and "
+"contains fractions"
 msgstr ""
 
-msgid "Incompatible join types: %s is type integer64 but %s is type double and contains fractions"
-msgstr ""
-
-msgid "Coercing double column %s (which contains no fractions) to type integer to match type of %s"
-msgstr ""
-
-msgid "Coercing integer column %s to type double to match type of %s which contains fractions."
-msgstr ""
-
-msgid "Coercing integer column %s to type double for join to match type of %s."
-msgstr ""
-
-msgid "on= matches existing key, using key"
-msgstr ""
-
-msgid "on= matches existing index, using index"
-msgstr ""
-
-msgid "Calculated ad hoc index in %s"
-msgstr ""
-
-msgid "Non-equi join operators detected ..."
-msgstr ""
-
+#: bmerge.R:153
+#, c-format
 msgid "roll is not implemented for non-equi joins yet."
 msgstr ""
 
-msgid "forder took ..."
-msgstr ""
-
-msgid "Generating group lengths ..."
-msgstr ""
-
-msgid "Generating non-equi group ids ..."
-msgstr ""
-
+#: bmerge.R:173
+#, c-format
 msgid "Column name '_nqgrp_' is reserved for non-equi joins."
 msgstr ""
 
-msgid "Recomputing forder with non-equi ids ..."
-msgstr ""
-
-msgid "Found %d non-equi group(s) ..."
-msgstr ""
-
-msgid "Starting bmerge ..."
-msgstr ""
-
-msgid "bmerge done in"
-msgstr ""
-
-msgid "cedta decided '%s' wasn't data.table aware. Here is call stack with [[1L]] applied:"
-msgstr ""
-
+#: data.table.R:63
+#, c-format
 msgid "key argument of data.table() must be character"
 msgstr ""
 
-msgid "Object '"
+#: data.table.R:132
+#, c-format
+msgid "Object '%s' not found. Perhaps you intended %s"
 msgstr ""
 
-msgid "' not found. Perhaps you intended"
+#: data.table.R:134
+#, c-format
+msgid "Object '%s' not found amongst %s"
 msgstr ""
 
-msgid ","
+#: data.table.R:157
+#, c-format
+msgid "verbose must be logical or integer"
 msgstr ""
 
-msgid "or"
+#: data.table.R:158
+#, c-format
+msgid "verbose must be length 1 non-NA"
 msgstr ""
 
-msgid "more"
+#: data.table.R:166
+#, c-format
+msgid "Ignoring by/keyby because 'j' is not supplied"
 msgstr ""
 
-msgid "' not found amongst"
+#: data.table.R:180
+#, c-format
+msgid "When by and keyby are both provided, keyby must be TRUE or FALSE"
 msgstr ""
 
-msgid "and"
+#: data.table.R:192
+#, c-format
+msgid ""
+"When on= is provided but not i=, on= must be a named list or data.table|"
+"frame, and a natural join (i.e. join on common names) is invoked. Ignoring "
+"on= which is '%s'."
 msgstr ""
 
-msgid "Provide either by= or keyby= but not both"
+#: data.table.R:205
+#, c-format
+msgid ""
+"i and j are both missing so ignoring the other arguments. This warning will "
+"be upgraded to error in future."
 msgstr ""
 
-msgid "Ignoring keyby= because j= is not supplied"
-msgstr ""
-
-msgid "Ignoring by= because j= is not supplied"
-msgstr ""
-
-msgid "When on= is provided but not i=, on= must be a named list or data.table|frame, and a natural join (i.e. join on common names) is invoked. Ignoring on= which is '"
-msgstr ""
-
-msgid "'."
-msgstr ""
-
-msgid "i and j are both missing so ignoring the other arguments. This warning will be upgraded to error in future."
-msgstr ""
-
+#: data.table.R:209
+#, c-format
 msgid "mult argument can only be 'first', 'last' or 'all'"
 msgstr ""
 
-msgid "roll must be a single TRUE, FALSE, positive/negative integer/double including +Inf and -Inf or 'nearest'"
+#: data.table.R:211
+#, c-format
+msgid ""
+"roll must be a single TRUE, FALSE, positive/negative integer/double "
+"including +Inf and -Inf or 'nearest'"
 msgstr ""
 
-msgid "roll is '"
+#: data.table.R:213
+#, c-format
+msgid "roll is '%s' (type character). Only valid character value is 'nearest'."
 msgstr ""
 
-msgid "' (type character). Only valid character value is 'nearest'."
-msgstr ""
-
+#: data.table.R:218
+#, c-format
 msgid "rollends must be a logical vector"
 msgstr ""
 
+#: data.table.R:219
+#, c-format
 msgid "rollends must be length 1 or 2"
 msgstr ""
 
-msgid "nomatch= must be either NA or NULL (or 0 for backwards compatibility which is the same as NULL)"
+#: data.table.R:227
+#, c-format
+msgid ""
+"nomatch= must be either NA or NULL (or 0 for backwards compatibility which "
+"is the same as NULL but please use NULL)"
 msgstr ""
 
+#: data.table.R:230
+#, c-format
 msgid "which= must be a logical vector length 1. Either FALSE, TRUE or NA."
 msgstr ""
 
-msgid "which=="
+#: data.table.R:231
+#, c-format
+msgid ""
+"which==%s (meaning return row numbers) but j is also supplied. Either you "
+"need row numbers or the result of j, but only one type of result can be "
+"returned."
 msgstr ""
 
-msgid "(meaning return row numbers) but j is also supplied. Either you need row numbers or the result of j, but only one type of result can be returned."
+#: data.table.R:232
+#, c-format
+msgid ""
+"which=NA with nomatch=0|NULL would always return an empty vector. Please "
+"change or remove either which or nomatch."
 msgstr ""
 
-msgid "which=NA with nomatch=0 would always return an empty vector. Please change or remove either which or nomatch."
-msgstr ""
-
+#: data.table.R:233
+#, c-format
 msgid "j must be provided when with=FALSE"
 msgstr ""
 
-msgid "The symbol .. is invalid. The .. prefix must be followed by at least one character."
+#: data.table.R:273
+#, c-format
+msgid ""
+"The symbol .. is invalid. The .. prefix must be followed by at least one "
+"character."
 msgstr ""
 
-msgid "Variable '"
+#: data.table.R:276
+#, c-format
+msgid ""
+"Variable '..%s' does exist in calling scope though, so please just removed "
+"the .. prefix from that variable name in calling scope."
 msgstr ""
 
-msgid "' is not found in calling scope. Looking in calling scope because you used the .. prefix."
+#: data.table.R:280
+#, c-format
+msgid ""
+"Variable '%s' is not found in calling scope. Looking in calling scope "
+"because you used the .. prefix.%s"
 msgstr ""
 
-msgid "Variable '.."
+#: data.table.R:282
+#, c-format
+msgid ""
+"Both '%1$s' and '..%1$s' exist in calling scope. Please remove the '..%1$s' "
+"variable in calling scope for clarity."
 msgstr ""
 
-msgid "' does exist in calling scope though, so please just removed the .. prefix from that variable name in calling scope."
+#: data.table.R:288
+#, c-format
+msgid ""
+"Internal error:  DT[, ..var] should be dealt with by the branch above now."
 msgstr ""
 
-msgid "Both '"
+#: data.table.R:290
+#, c-format
+msgid ""
+"Variable '%s' is not found in calling scope. Looking in calling scope "
+"because you set with=FALSE. Also, please use .. symbol prefix and remove "
+"with=FALSE."
 msgstr ""
 
-msgid "' and '.."
+#: data.table.R:298
+#, c-format
+msgid ""
+"You have wrapped := with {} which is ok but then := must be the only thing "
+"inside {}. You have something else inside {} as well. Consider placing the "
+"{} on the RHS of := instead; e.g. DT[,someCol:={tmpVar1<-...;tmpVar2<-...;"
+"tmpVar1*tmpVar2}"
 msgstr ""
 
-msgid "' exist in calling scope. Please remove the '.."
+#: data.table.R:318
+#, c-format
+msgid ""
+":= with keyby is only possible when i is not supplied since you can't setkey "
+"on a subset of rows. Either change keyby to by or remove i"
 msgstr ""
 
-msgid "' variable in calling scope for clarity."
-msgstr ""
-
-msgid "Internal error:  DT[, ..var] should be dealt with by the branch above now."
-msgstr ""
-
-msgid "' is not found in calling scope. Looking in calling scope because you set with=FALSE. Also, please use .. symbol prefix and remove with=FALSE."
-msgstr ""
-
-msgid "You have wrapped := with {} which is ok but then := must be the only thing inside {}. You have something else inside {} as well. Consider placing the {} on the RHS of := instead; e.g. DT[,someCol:={tmpVar1<-...;tmpVar2<-...;tmpVar1*tmpVar2}"
-msgstr ""
-
-msgid ":= with keyby is only possible when i is not supplied since you can't setkey on a subset of rows. Either change keyby to by or remove i"
-msgstr ""
-
+#: data.table.R:320
+#, c-format
 msgid "nomatch isn't relevant together with :=, ignoring nomatch"
 msgstr ""
 
-msgid "not-join '!' prefix is present on i but nomatch is provided. Please remove nomatch."
+#: data.table.R:376
+#, c-format
+msgid ""
+"not-join '!' prefix is present on i but nomatch is provided. Please remove "
+"nomatch."
 msgstr ""
 
-msgid "Operator := detected in i, the first argument inside DT[...], but is only valid in the second argument, j. Most often, this happens when forgetting the first comma (e.g. DT[newvar := 5] instead of DT[ , new_var := 5]). Please double-check the syntax. Run traceback(), and debugger() to get a line number."
+#: data.table.R:405
+#, c-format
+msgid ""
+"Operator := detected in i, the first argument inside DT[...], but is only "
+"valid in the second argument, j. Most often, this happens when forgetting "
+"the first comma (e.g. DT[newvar := 5] instead of DT[ , new_var := 5]). "
+"Please double-check the syntax. Run traceback(), and debugger() to get a "
+"line number."
 msgstr ""
 
-msgid "is not found in calling scope"
+#: data.table.R:416
+#, c-format
+msgid "'%s' is not found in calling scope and it is not a column name either"
 msgstr ""
 
-msgid "When the first argument inside DT[...] is a single symbol (e.g. DT[var]), data.table looks for var in calling scope."
+#: data.table.R:419
+#, c-format
+msgid ""
+"'%s' is not found in calling scope, but it is a column of type %s. If you "
+"wish to select rows where that column contains TRUE, or perhaps that column "
+"contains row numbers of itself to select, try DT[(col)], DT[DT$col], or "
+"DT[col==TRUE} is particularly clear and is optimized"
 msgstr ""
 
-msgid "i is invalid type (matrix). Perhaps in future a 2 column matrix could return a list of elements of DT (in the spirit of A[B] in FAQ 2.14). Please report to data.table issue tracker if you'd like this, or add your comments to FR #657."
+#: data.table.R:422
+#, c-format
+msgid ""
+"%s. When the first argument inside DT[...] is a single symbol (e.g. "
+"DT[var]), data.table looks for var in calling scope."
 msgstr ""
 
-msgid "When i is a data.table (or character vector), the columns to join by must be specified using 'on=' argument (see ?data.table), by keying x (i.e. sorted, and, marked as sorted, see ?setkey), or by sharing column names between x and i (i.e., a natural join). Keyed joins might have further speed benefits on very large data due to x being sorted in RAM."
+#: data.table.R:434
+#, c-format
+msgid ""
+"i is invalid type (matrix). Perhaps in future a 2 column matrix could return "
+"a list of elements of DT (in the spirit of A[B] in FAQ 2.14). Please report "
+"to data.table issue tracker if you'd like this, or add your comments to FR "
+"#657."
 msgstr ""
 
+#: data.table.R:457
+#, c-format
+msgid ""
+"When i is a data.table (or character vector), the columns to join by must be "
+"specified using 'on=' argument (see ?data.table), by keying x (i.e. sorted, "
+"and, marked as sorted, see ?setkey), or by sharing column names between x "
+"and i (i.e., a natural join). Keyed joins might have further speed benefits "
+"on very large data due to x being sorted in RAM."
+msgstr ""
+
+#: data.table.R:465
+#, c-format
 msgid "Attempting to do natural join but no common columns in provided tables"
 msgstr ""
 
-msgid "Joining but 'x' has no key, natural join using"
-msgstr ""
-
-msgid "not-join called with 'by=.EACHI'; Replacing !i with i=setdiff_(x,i) ..."
-msgstr ""
-
-msgid "Constructing irows for '!byjoin || nqbyjoin' ..."
-msgstr ""
-
+#: data.table.R:543
+#, c-format
 msgid "Internal error. Cannot by=.EACHI when joining to an index, yet"
 msgstr ""
 
+#: data.table.R:546
+#, c-format
 msgid "Internal error. irows has length in by=.EACHI"
 msgstr ""
 
-msgid "Reorder irows for 'mult==\"all\" && !allGrp1' ..."
-msgstr ""
-
-msgid "Reordering %d rows after bmerge done in ..."
-msgstr ""
-
+#: data.table.R:597
+#, c-format
 msgid "logical error. i is not a data.table, but 'on' argument is provided."
 msgstr ""
 
-msgid "i has evaluated to type"
+#: data.table.R:601
+#, c-format
+msgid "i has evaluated to type %s. Expecting logical, integer or double."
 msgstr ""
 
-msgid ". Expecting logical, integer or double."
+#: data.table.R:605
+#, c-format
+msgid ""
+"internal error: notjoin and which=NA (non-matches), huh? please provide "
+"reproducible example to issue tracker"
 msgstr ""
 
-msgid "i evaluates to a logical vector length"
+#: data.table.R:623
+#, c-format
+msgid ""
+"i evaluates to a logical vector length %d but there are %d rows. Recycling "
+"of logical i is no longer allowed as it hides more bugs than is worth the "
+"rare convenience. Explicitly use rep(...,length=.N) if you really need to "
+"recycle."
 msgstr ""
 
-msgid "but there are"
+#: data.table.R:626
+msgid ""
+"Please use nomatch=NULL instead of nomatch=0; see news item 5 in v1.12.0 "
+"(Jan 2019)"
 msgstr ""
 
-msgid "rows. Recycling of logical i is no longer allowed as it hides more bugs than is worth the rare convenience. Explicitly use rep(...,length=.N) if you really need to recycle."
-msgstr ""
-
+#: data.table.R:639
+#, c-format
 msgid "Internal error: notjoin but byjoin or !integer or nomatch==NA"
 msgstr ""
 
-msgid "Inverting irows for notjoin done in ..."
+#: data.table.R:699
+#, c-format
+msgid ""
+"with=FALSE together with := was deprecated in v1.9.4 released Oct 2014. "
+"Please wrap the LHS of := with parentheses; e.g., DT[,(myVar):=sum(b),by=a] "
+"to assign to column name(s) held in variable myVar. See ?':=' for other "
+"examples. As warned in 2014, this is now a warning."
 msgstr ""
 
-msgid "with=FALSE together with := was deprecated in v1.9.4 released Oct 2014. Please wrap the LHS of := with parentheses; e.g., DT[,(myVar):=sum(b),by=a] to assign to column name(s) held in variable myVar. See ?':=' for other examples. As warned in 2014, this is now a warning."
+#: data.table.R:702
+#, c-format
+msgid ""
+"with=FALSE ignored, it isn't needed when using :=. See ?':=' for examples."
 msgstr ""
 
-msgid "with=FALSE ignored, it isn't needed when using :=. See ?':=' for examples."
+#: data.table.R:726
+#, c-format
+msgid "column(s) not removed because not found: %s"
 msgstr ""
 
-msgid "column(s) not removed because not found:"
+#: data.table.R:740
+#, c-format
+msgid "column(s) not found: %s"
 msgstr ""
 
-msgid "column(s) not found:"
+#: data.table.R:746
+#, c-format
+msgid "Item %d of j is %d which is outside the column number range [1,ncol=%d]"
 msgstr ""
 
-msgid "of j is"
-msgstr ""
-
-msgid "which is outside the column number range [1,ncol="
-msgstr ""
-
-msgid "]"
-msgstr ""
-
+#: data.table.R:749
+#, c-format
 msgid "j mixes positives and negatives"
 msgstr ""
 
-msgid "When with=FALSE, j-argument should be of type logical/character/integer indicating the columns to select."
+#: data.table.R:757
+#, c-format
+msgid ""
+"When with=FALSE, j-argument should be of type logical/character/integer "
+"indicating the columns to select."
 msgstr ""
 
+#: data.table.R:771
+#, c-format
+msgid ""
+"'by' contains .I but only the following are currently supported: by=.I, by=."
+"(.I), by=c(.I), by=list(.I)"
+msgstr ""
+
+#: data.table.R:795
+#, c-format
 msgid "by=c(...), key(...) or names(...) must evaluate to 'character'"
 msgstr ""
 
-msgid "'by' is a character vector length"
+#: data.table.R:805
+#, c-format
+msgid ""
+"'by' is a character vector length %d but one or more items include a comma. "
+"Either pass a vector of column names (which can contain spaces, but no "
+"commas), or pass a vector length 1 containing comma separated column names. "
+"See ?data.table for other possibilities."
 msgstr ""
 
-msgid "but one or more items include a comma. Either pass a vector of column names (which can contain spaces, but no commas), or pass a vector length 1 containing comma separated column names. See ?data.table for other possibilities."
+#: data.table.R:812
+msgid "At least one entry of by is empty"
 msgstr ""
 
-msgid "by index '%s' but that index has 0 length. Ignoring."
-msgstr ""
-
+#: data.table.R:853
+#, c-format
 msgid "Internal error: irows isn't integer"
 msgstr ""
 
-msgid "i clause present and columns used in by detected, only these subset:"
+#: data.table.R:887
+#, c-format
+msgid ""
+"'by' appears to evaluate to column names but isn't c() or key(). Use "
+"by=list(...) if you can. Otherwise, by=eval%s should work. This is for "
+"efficiency so data.table can detect which columns are needed."
 msgstr ""
 
-msgid "i clause present but columns used in by not detected. Having to subset all columns before evaluating 'by': '"
+#: data.table.R:898
+#, c-format
+msgid ""
+"'by' or 'keyby' must evaluate to a vector or a list of vectors (where 'list' "
+"includes data.table and data.frame which are lists, too)"
 msgstr ""
 
-msgid "'by' appears to evaluate to column names but isn't c() or key(). Use by=list(...) if you can. Otherwise, by=eval"
+#: data.table.R:902
+#, c-format
+msgid ""
+"Column or expression %d of 'by' or 'keyby' is type '%s' which is not "
+"currently supported. If you have a compelling use case, please add it to "
+"https://github.com/Rdatatable/data.table/issues/1597. As a workaround, "
+"consider converting the column to a supported type, e.g. by=sapply(list_col, "
+"toString), whilst taking care to maintain distinctness in the process."
 msgstr ""
 
-msgid "should work. This is for efficiency so data.table can detect which columns are needed."
+#: data.table.R:906
+#, c-format
+msgid ""
+"The items in the 'by' or 'keyby' list are length(s) %s. Each must be length "
+"%d; the same length as there are rows in x (after subsetting if i is "
+"provided)."
 msgstr ""
 
-msgid "'by' or 'keyby' must evaluate to a vector or a list of vectors (where 'list' includes data.table and data.frame which are lists, too)"
+#: data.table.R:940
+#, c-format
+msgid "Internal error: drop_dot passed %d items"
 msgstr ""
 
-msgid "column or expression"
-msgstr ""
-
-msgid "of 'by' or 'keyby' is type"
-msgstr ""
-
-msgid ". Do not quote column names. Usage: DT[,sum(colC),by=list(colA,month(colB))]"
-msgstr ""
-
-msgid "The items in the 'by' or 'keyby' list are length(s) (%s). Each must be length %d; the same length as there are rows in x (after subsetting if i is provided)."
-msgstr ""
-
-msgid "by-expression '%s' is not named, and the auto-generated name '%s' clashed with variable(s) in j. Therefore assigning the entire by-expression as name."
-msgstr ""
-
-msgid "Internal error: drop_dot passed"
-msgstr ""
-
-msgid "items"
-msgstr ""
-
+#: data.table.R:959
+#, c-format
 msgid "Item %d of the .() or list() passed to j is missing"
 msgstr ""
 
-msgid "Different branches of j expression produced different auto-named columns:"
+#: data.table.R:965
+#, c-format
+msgid ""
+"j may not evaluate to the same number of columns for each group; if you're "
+"sure this warning is in error, please put the branching logic outside of [ "
+"for efficiency"
 msgstr ""
 
-msgid "%s!=%s"
+#: data.table.R:967
+#, c-format
+msgid ""
+"Different branches of j expression produced different auto-named columns: "
+"%s; using the most \"last\" names. If this was intentional (e.g., you know "
+"only one branch will ever be used in a given query because the branch is "
+"controlled by a function argument), please (1) pull this branch out of the "
+"call; (2) explicitly provide missing defaults for each branch in all cases; "
+"or (3) use the same name for each branch and re-name it in a follow-up call."
 msgstr ""
 
-msgid "; using the most \"last\" names"
+#: data.table.R:1030
+#, c-format
+msgid ""
+"When .SDcols is a function, it is applied to each column; the output of this "
+"function must be a non-missing boolean scalar signalling inclusion/exclusion "
+"of the column. However, these conditions were not met for: %s"
 msgstr ""
 
-msgid "When .SDcols is a function, it is applied to each column; the output of this function must be a non-missing boolean scalar signalling inclusion/exclusion of the column. However, these conditions were not met for:"
+#: data.table.R:1036
+#, c-format
+msgid ".SDcols missing at the following indices: %s"
 msgstr ""
 
-msgid ".SDcols missing at the following indices:"
+#: data.table.R:1038
+#, c-format
+msgid ".SDcols is a logical vector length %d but there are %d columns"
 msgstr ""
 
+#: data.table.R:1044
+#, c-format
 msgid ".SDcols is numeric but has both +ve and -ve indices"
 msgstr ""
 
-msgid ".SDcols is numeric but out of bounds [1,"
+#: data.table.R:1046
+#, c-format
+msgid ".SDcols is numeric but out of bounds [1, %d] at: %s"
 msgstr ""
 
-msgid "] at:"
-msgstr ""
-
+#: data.table.R:1050
+#, c-format
 msgid ".SDcols should be column numbers or names"
 msgstr ""
 
-msgid "Some items of .SDcols are not column names:"
+#: data.table.R:1052
+#, c-format
+msgid "Some items of .SDcols are not column names: %s"
 msgstr ""
 
-msgid "'(m)get' found in j. ansvars being set to all columns. Use .SDcols or a single j=eval(macro) instead. Both will detect the columns used which is important for efficiency.\nOld ansvars: %s"
+#: data.table.R:1094
+#, c-format
+msgid ""
+"This j doesn't use .SD but .SDcols has been supplied. Ignoring .SDcols. See ?"
+"data.table."
 msgstr ""
 
-msgid "New ansvars: %s"
+#: data.table.R:1110
+#, c-format
+msgid ""
+".SD is locked. Using := in .SD's j is reserved for possible future use; a "
+"tortuously flexible way to modify by group. Use := in j directly to modify "
+"by group by reference."
 msgstr ""
 
-msgid "This j doesn't use .SD but .SDcols has been supplied. Ignoring .SDcols. See ?data.table."
+#: data.table.R:1118 data.table.R:1130
+#, c-format
+msgid "In %s(col1=val1, col2=val2, ...) form, all arguments must be named."
 msgstr ""
 
-msgid "Detected that j uses these columns:"
+#: data.table.R:1135
+#, c-format
+msgid ""
+"LHS of := must be a symbol, or an atomic vector (column names or positions)."
 msgstr ""
 
-msgid "'(m)get' found in j. ansvars being set to all columns. Use .SDcols or a single j=eval(macro) instead. Both will detect the columns used which is important for efficiency.\nOld:"
+#: data.table.R:1140
+#, c-format
+msgid ""
+"LHS of := appears to be column positions but are outside [1,ncol] range. New "
+"columns can only be added by name."
 msgstr ""
 
-msgid "New:"
+#: data.table.R:1143
+#, c-format
+msgid ""
+"LHS of := isn't column names ('character') or positions ('integer' or "
+"'numeric')"
 msgstr ""
 
-msgid ".SD is locked. Using := in .SD's j is reserved for possible future use; a tortuously flexible way to modify by group. Use := in j directly to modify by group by reference."
+#: data.table.R:1174
+#, c-format
+msgid ""
+"Invalid .internal.selfref detected and fixed by taking a (shallow) copy of "
+"the data.table so that := can add this new column by reference. At an "
+"earlier point, this data.table has been copied by R (or was created manually "
+"using structure() or similar). Avoid names<- and attr<- which in R currently "
+"(and oddly) may copy the whole data.table. Use set* syntax instead to avoid "
+"copying: ?set, ?setnames and ?setattr. If this message doesn't help, please "
+"report your use case to the data.table issue tracker so the root cause can "
+"be fixed or this message improved."
 msgstr ""
 
-msgid "In `:=`(col1=val1, col2=val2, ...) form, all arguments must be named."
+#: data.table.R:1205
+#, c-format
+msgid ""
+"Cannot assign to an under-allocated recursively indexed list -- L[[i]][,:=] "
+"syntax is only valid when i is length 1, but its length is %d"
 msgstr ""
 
-msgid "LHS of := must be a symbol, or an atomic vector (column names or positions)."
+#: data.table.R:1207
+#, c-format
+msgid "Internal error -- item '%s' not found in names of list"
 msgstr ""
 
-msgid "LHS of := appears to be column positions but are outside [1,ncol] range. New columns can only be added by name."
+#: data.table.R:1236 data.table.R:1249
+#, c-format
+msgid "Internal error -- column(s) not found: %s"
 msgstr ""
 
-msgid "LHS of := isn't column names ('character') or positions ('integer' or 'numeric')"
+#: data.table.R:1261
+#, c-format
+msgid ""
+"strptime() usage detected and wrapped with as.POSIXct(). This is to minimize "
+"the chance of assigning POSIXlt columns, which use 40+ bytes to store one "
+"date (versus 8 for POSIXct). Use as.POSIXct() (which will call strptime() as "
+"needed internally) to avoid this warning."
 msgstr ""
 
-msgid "No rows match i. No new columns to add so not evaluating RHS of :=\nAssigning to 0 row subset of %d rows"
+#: data.table.R:1278
+#, c-format
+msgid ""
+"Variable '%s' is not found in calling scope. Looking in calling scope "
+"because this symbol was prefixed with .. in the j= parameter."
 msgstr ""
 
-msgid "Invalid .internal.selfref detected and fixed by taking a (shallow) copy of the data.table so that := can add this new column by reference. At an earlier point, this data.table has been copied by R (or was created manually using structure() or similar). Avoid names<- and attr<- which in R currently (and oddly) may copy the whole data.table. Use set* syntax instead to avoid copying: ?set, ?setnames and ?setattr. If this message doesn't help, please report your use case to the data.table issue tracker so the root cause can be fixed or this message improved."
+#: data.table.R:1290
+#, c-format
+msgid "Internal error: xcolAns does not pass checks: %d/%d/%d/%s"
 msgstr ""
 
-msgid "Growing vector of column pointers from truelength %d to %d. A shallow copy has been taken, see ?setalloccol. Only a potential issue if two variables point to the same data (we can't yet detect that well) and if not you can safely ignore this. To avoid this message you could setalloccol() first, deep copy first using copy(), wrap with suppressWarnings() or increase the 'datatable.alloccol' option."
+#: data.table.R:1300
+#, c-format
+msgid ""
+"Internal error: irows is NULL when making join result at R level. Should no "
+"longer happen now we use CsubsetDT earlier."
 msgstr ""
 
-msgid "Note that the shallow copy will assign to the environment from which := was called. That means for example that if := was called within a function, the original table may be unaffected."
+#: data.table.R:1364
+#, c-format
+msgid ""
+"j (the 2nd argument inside [...]) is a single symbol but column name '%1$s' "
+"is not found. If you intended to select columns using a variable in calling "
+"scope, please try DT[, ..%1$s]. The .. prefix conveys one-level-up similar "
+"to a file system path."
 msgstr ""
 
-msgid "Cannot assign to an under-allocated recursively indexed list -- L[[i]][,:=] syntax is only valid when i is length 1, but it's length"
+#: data.table.R:1419
+#, c-format
+msgid ""
+"Internal error: j has created a data.table result containing a NULL column"
 msgstr ""
 
-msgid "Internal error -- item '"
+#: data.table.R:1429
+#, c-format
+msgid ""
+"The column '.N' can't be grouped because it conflicts with the special .N "
+"variable. Try setnames(DT,'.N','N') first."
 msgstr ""
 
-msgid "' not found in names of list"
+#: data.table.R:1430
+#, c-format
+msgid ""
+"The column '.I' can't be grouped because it conflicts with the special .I "
+"variable. Try setnames(DT,'.I','I') first."
 msgstr ""
 
-msgid "Internal error -- column(s) not found:"
-msgstr ""
-
-msgid "strptime() usage detected and wrapped with as.POSIXct(). This is to minimize the chance of assigning POSIXlt columns, which use 40+ bytes to store one date (versus 8 for POSIXct). Use as.POSIXct() (which will call strptime() as needed internally) to avoid this warning."
-msgstr ""
-
-msgid "' is not found in calling scope. Looking in calling scope because this symbol was prefixed with .. in the j= parameter."
-msgstr ""
-
-msgid "Internal error: xcolAns does not pass checks:"
-msgstr ""
-
-msgid "Internal error: irows is NULL when making join result at R level. Should no longer happen now we use CsubsetDT earlier."
-msgstr ""
-
-msgid "j (the 2nd argument inside [...]) is a single symbol but column name '"
-msgstr ""
-
-msgid "' is not found. Perhaps you intended DT[, .."
-msgstr ""
-
-msgid "]. This difference to data.frame is deliberate and explained in FAQ 1.1."
-msgstr ""
-
-msgid "Internal error: j has created a data.table result containing a NULL column"
-msgstr ""
-
-msgid "The column '.N' can't be grouped because it conflicts with the special .N variable. Try setnames(DT,'.N','N') first."
-msgstr ""
-
-msgid "The column '.I' can't be grouped because it conflicts with the special .I variable. Try setnames(DT,'.I','I') first."
-msgstr ""
-
-msgid "Note: forcing units=\"secs\" on implicit difftime by group; call difftime explicitly to choose custom units"
-msgstr ""
-
+#: data.table.R:1457
+#, c-format
 msgid "logical error. i is not data.table, but mult='all' and 'by'=.EACHI"
 msgstr ""
 
+#: data.table.R:1480
+#, c-format
 msgid "Internal error: by= is missing"
 msgstr ""
 
-msgid "Finding groups using forderv ..."
-msgstr ""
-
-msgid "Finding group sizes from the positions (can be avoided to save RAM) ..."
-msgstr ""
-
-msgid "Getting back original order ..."
-msgstr ""
-
-msgid "Finding groups using uniqlist on key ..."
-msgstr ""
-
+#: data.table.R:1521
+#, c-format
 msgid "Internal error: byindex not the index name"
 msgstr ""
 
-msgid "Finding groups using uniqlist on index '%s' ..."
-msgstr ""
-
+#: data.table.R:1524
+#, c-format
 msgid "Internal error: byindex not found"
 msgstr ""
 
-msgid "lapply optimization changed j from '%s' to '%s'"
+#: data.table.R:1797
+#, c-format
+msgid ""
+"Unable to optimize call to mean() and could be very slow. You must name 'na."
+"rm' like that otherwise if you do mean(x,TRUE) the TRUE is taken to mean "
+"'trim' which is the 2nd argument of mean. 'trim' is not yet optimized."
 msgstr ""
 
-msgid "lapply optimization is on, j unchanged as '%s'"
-msgstr ""
-
-msgid "GForce optimized j to '"
-msgstr ""
-
-msgid "GForce is on, left j unchanged"
-msgstr ""
-
-msgid "Unable to optimize call to mean() and could be very slow. You must name 'na.rm' like that otherwise if you do mean(x,TRUE) the TRUE is taken to mean 'trim' which is the 2nd argument of mean. 'trim' is not yet optimized."
-msgstr ""
-
-msgid "Old mean optimization changed j from '%s' to '%s'"
-msgstr ""
-
-msgid "Old mean optimization is on, left j unchanged."
-msgstr ""
-
-msgid "All optimizations are turned off"
-msgstr ""
-
-msgid "Optimization is on but left j unchanged (single plain symbol): '%s'"
-msgstr ""
-
+#: data.table.R:1834
+#, c-format
 msgid "Internal error: length(irows)!=length(o__)"
 msgstr ""
 
-msgid "Making each group and running j (GForce %s) ..."
+#: data.table.R:1935
+#, c-format
+msgid ""
+"The setkey() normally performed by keyby= has been skipped (as if by= was "
+"used) because := is being used together with keyby= but the keyby= contains "
+"some expressions. To avoid this warning, use by= instead, or provide "
+"existing column names to keyby=."
 msgstr ""
 
-msgid "setkey() after the := with keyby= ..."
+#: data.table.R:1950
+#, c-format
+msgid "Internal error: jvnames is length %d but ans is %d and bynames is %d"
 msgstr ""
 
-msgid "The setkey() normally performed by keyby= has been skipped (as if by= was used) because := is being used together with keyby= but the keyby= contains some expressions. To avoid this warning, use by= instead, or provide existing column names to keyby=."
-msgstr ""
-
-msgid "Internal error: jvnames is length"
-msgstr ""
-
-msgid "but ans is"
-msgstr ""
-
-msgid "and bynames is"
-msgstr ""
-
-msgid "setkey() afterwards for keyby=.EACHI ..."
-msgstr ""
-
+#: data.table.R:2020
+#, c-format
 msgid "rownames and rownames.value cannot both be used at the same time"
 msgstr ""
 
-msgid "length(rownames)=="
+#: data.table.R:2025
+#, c-format
+msgid ""
+"length(rownames)==%d but nrow(DT)==%d. The rownames argument specifies a "
+"single column name or number. Consider rownames.value= instead."
 msgstr ""
 
-msgid "but nrow(DT)=="
+#: data.table.R:2029
+#, c-format
+msgid ""
+"length(rownames)==0 but should be a single column name or number, or NULL"
 msgstr ""
 
-msgid ". The rownames argument specifies a single column name or number. Consider rownames.value= instead."
+#: data.table.R:2033
+#, c-format
+msgid ""
+"rownames is TRUE but key has multiple columns %s; taking first column x[,1] "
+"as rownames"
 msgstr ""
 
-msgid "length(rownames)==0 but should be a single column name or number, or NULL"
+#: data.table.R:2043
+#, c-format
+msgid "'%s' is not a column of x"
 msgstr ""
 
-msgid "rownames is TRUE but key has multiple columns"
+#: data.table.R:2049
+#, c-format
+msgid ""
+"as.integer(rownames)==%d which is outside the column number range [1,ncol="
+"%d]."
 msgstr ""
 
-msgid "; taking first column x[,1] as rownames"
+#: data.table.R:2054
+#, c-format
+msgid "length(rownames.value)==%d but should be nrow(x)==%d"
 msgstr ""
 
-msgid "'"
+#: data.table.R:2116
+#, c-format
+msgid ""
+"Internal error: as.matrix.data.table length(X)==%d but a dimension is zero"
 msgstr ""
 
-msgid "' is not a column of x"
+#: data.table.R:2152
+#, c-format
+msgid ""
+"When i is a matrix in DT[i]<-value syntax, it doesn't make sense to provide j"
 msgstr ""
 
-msgid "as.integer(rownames)=="
-msgstr ""
-
-msgid "]."
-msgstr ""
-
-msgid "length(rownames.value)=="
-msgstr ""
-
-msgid "but should be nrow(x)=="
-msgstr ""
-
-msgid "When i is a matrix in DT[i]<-value syntax, it doesn't make sense to provide j"
-msgstr ""
-
+#: data.table.R:2162
+#, c-format
 msgid "j must be an atomic vector, see ?is.atomic"
 msgstr ""
 
+#: data.table.R:2163
+#, c-format
 msgid "NA in j"
 msgstr ""
 
+#: data.table.R:2169
+#, c-format
 msgid "j must be vector of column name or positions"
 msgstr ""
 
-msgid "Attempt to assign to column position greater than ncol(x). Create the column by name, instead. This logic intends to catch (most likely) user errors."
+#: data.table.R:2170
+#, c-format
+msgid ""
+"Attempt to assign to column position greater than ncol(x). Create the column "
+"by name, instead. This logic intends to catch (most likely) user errors."
 msgstr ""
 
-msgid "data.table inherits from data.frame (from v1.5), but this data.table does not. Has it been created manually (e.g. by using 'structure' rather than 'data.table') or saved to disk using a prior version of data.table?"
+#: data.table.R:2237
+#, c-format
+msgid ""
+"data.table inherits from data.frame (from v1.5), but this data.table does "
+"not. Has it been created manually (e.g. by using 'structure' rather than "
+"'data.table') or saved to disk using a prior version of data.table?"
 msgstr ""
 
+#: data.table.R:2246
+#, c-format
 msgid "attempting to assign invalid object to dimnames of a data.table"
 msgstr ""
 
+#: data.table.R:2247
+#, c-format
 msgid "data.tables do not have rownames"
 msgstr ""
 
-msgid "Can't assign"
+#: data.table.R:2248 data.table.R:2626
+#, c-format
+msgid "Can't assign %d names to a %d-column data.table"
 msgstr ""
 
-msgid "colnames to a"
-msgstr ""
-
-msgid "-column data.table"
-msgstr ""
-
+#: data.table.R:2327
+#, c-format
 msgid "'subset' must evaluate to logical"
 msgstr ""
 
+#: data.table.R:2370
+#, c-format
 msgid "Argument 'invert' must be logical TRUE/FALSE"
 msgstr ""
 
+#: data.table.R:2411
+#, c-format
 msgid "x argument must be a data.table"
 msgstr ""
 
+#: data.table.R:2416
+#, c-format
 msgid "group length is 0 but data nrow > 0"
 msgstr ""
 
-msgid "passing 'f' argument together with 'by' is not allowed, use 'by' when split by column in data.table and 'f' when split by external factor"
+#: data.table.R:2418
+#, c-format
+msgid ""
+"passing 'f' argument together with 'by' is not allowed, use 'by' when split "
+"by column in data.table and 'f' when split by external factor"
 msgstr ""
 
+#: data.table.R:2422
+#, c-format
 msgid "Either 'by' or 'f' argument must be supplied"
 msgstr ""
 
+#: data.table.R:2424
+#, c-format
 msgid "Column '.ll.tech.split' is reserved for split.data.table processing"
 msgstr ""
 
+#: data.table.R:2425
+#, c-format
 msgid "Column '.nm.tech.split' is reserved for split.data.table processing"
 msgstr ""
 
+#: data.table.R:2426
+#, c-format
 msgid "Argument 'by' must refer to column names in x"
 msgstr ""
 
-msgid "Argument 'by' must refer only to atomic-type columns, but the following columns are non-atomic:"
+#: data.table.R:2427
+#, c-format
+msgid ""
+"Argument 'by' must refer only to atomic-type columns, but the following "
+"columns are non-atomic: %s"
 msgstr ""
 
-msgid "Processing split.data.table with:"
+#: data.table.R:2557
+#, c-format
+msgid ""
+"x is not a data.table|frame. Shallow copy is a copy of the vector of column "
+"pointers (only), so is only meaningful for data.table|frame"
 msgstr ""
 
-msgid "x is not a data.table. Shallow copy is a copy of the vector of column pointers (only), so is only meaningful for data.table"
-msgstr ""
-
+#: data.table.R:2566
+#, c-format
 msgid "setalloccol attempting to modify `*tmp*`"
 msgstr ""
 
-msgid "Input is a length=1 logical that points to the same address as R's global value. Therefore the attribute has not been set by reference, rather on a copy. You will need to assign the result back to a variable. See issue #1281."
+#: data.table.R:2601
+#, c-format
+msgid ""
+"Input is a length=1 logical that points to the same address as R's global "
+"value. Therefore the attribute has not been set by reference, rather on a "
+"copy. You will need to assign the result back to a variable. See issue #1281."
 msgstr ""
 
+#: data.table.R:2616
+#, c-format
 msgid "x is not a data.table or data.frame"
 msgstr ""
 
-msgid "x has"
+#: data.table.R:2618
+#, c-format
+msgid "x has %d columns but its names are length %d"
 msgstr ""
 
-msgid "columns but its names are length"
+#: data.table.R:2625
+#, c-format
+msgid "Passed a vector of type '%s'. Needs to be type 'character'."
 msgstr ""
 
-msgid "Passed a vector of type '"
-msgstr ""
-
-msgid "'. Needs to be type 'character'."
-msgstr ""
-
-msgid "names to a"
-msgstr ""
-
-msgid "column data.table"
-msgstr ""
-
+#: data.table.R:2638
+#, c-format
 msgid "'new' is not a character vector or a function"
 msgstr ""
 
-msgid "NA in 'new' at positions"
+#: data.table.R:2640
+#, c-format
+msgid "NA in 'new' at positions %s"
 msgstr ""
 
-msgid "Some duplicates exist in 'old':"
+#: data.table.R:2641
+#, c-format
+msgid "Some duplicates exist in 'old': %s"
 msgstr ""
 
-msgid "'old' is type"
+#: data.table.R:2643
+#, c-format
+msgid "'old' is type %s but should be integer, double or character"
 msgstr ""
 
-msgid "but should be integer, double or character"
+#: data.table.R:2644
+#, c-format
+msgid "'old' is length %d but 'new' is length %d"
 msgstr ""
 
-msgid "'old' is length"
+#: data.table.R:2645
+#, c-format
+msgid "NA (or out of bounds) in 'old' at positions %s"
 msgstr ""
 
-msgid "but 'new' is length"
+#: data.table.R:2648
+#, c-format
+msgid ""
+"Item %d of 'old' is '%s' which appears several times in column names. Just "
+"the first will be changed. There are %d other items in 'old' that are also "
+"duplicated in column names."
 msgstr ""
 
-msgid "NA (or out of bounds) in 'old' at positions"
+#: data.table.R:2656
+#, c-format
+msgid ""
+"Items of 'old' not found in column names: %s. Consider skip_absent=TRUE."
 msgstr ""
 
-msgid "of 'old' is '"
-msgstr ""
-
-msgid "' which appears several times in column names. Just the first will be changed. There are"
-msgstr ""
-
-msgid "other items in old that are also duplicated in column names."
-msgstr ""
-
-msgid "Items of 'old' not found in column names:"
-msgstr ""
-
-msgid ". Consider skip_absent=TRUE."
-msgstr ""
-
+#: data.table.R:2666
+#, c-format
 msgid "Internal error: length(i)!=length(new)"
 msgstr ""
 
-msgid "x has some duplicated column name(s):"
+#: data.table.R:2695
+#, c-format
+msgid ""
+"x has some duplicated column name(s): %s. Please remove or rename the "
+"duplicate(s) and try again."
 msgstr ""
 
-msgid ". Please remove or rename the duplicate(s) and try again."
+#: data.table.R:2697
+#, c-format
+msgid "Provide either before= or after= but not both"
 msgstr ""
 
-msgid "Input is"
+#: data.table.R:2699
+#, c-format
+msgid "before=/after= accept a single column name or number, not more than one"
 msgstr ""
 
-msgid "but should be a plain list of items to be stacked"
+#: data.table.R:2754
+#, c-format
+msgid "Input is %s but should be a plain list of items to be stacked"
 msgstr ""
 
-msgid "idcol must be a logical or character vector of length 1. If logical TRUE the id column will named '.id'."
+#: data.table.R:2758
+#, c-format
+msgid ""
+"idcol must be a logical or character vector of length 1. If logical TRUE the "
+"id column will named '.id'."
 msgstr ""
 
+#: data.table.R:2763
+#, c-format
 msgid "use.names=NA invalid"
 msgstr ""
 
-msgid "use.names='check' cannot be used explicitly because the value 'check' is new in v1.12.2 and subject to change. It is just meant to convey default behavior. See ?rbindlist."
+#: data.table.R:2765
+#, c-format
+msgid ""
+"use.names='check' cannot be used explicitly because the value 'check' is new "
+"in v1.12.2 and subject to change. It is just meant to convey default "
+"behavior. See ?rbindlist."
 msgstr ""
 
-msgid "Check that is.data.table(DT) == TRUE. Otherwise, := and `:=`(...) are defined for use in j, once only and in particular ways. See help(\":=\")."
+#: data.table.R:2780
+#, c-format
+msgid ""
+"Check that is.data.table(DT) == TRUE. Otherwise, :=, `:=`(...) and let(...) "
+"are defined for use in j, once only and in particular ways. See help(\":=\")."
 msgstr ""
 
-msgid "setDF only accepts data.table, data.frame or list of equal length as input"
+#: data.table.R:2786
+#, c-format
+msgid ""
+"setDF only accepts data.table, data.frame or list of equal length as input"
 msgstr ""
 
+#: data.table.R:2787
+#, c-format
 msgid "rownames contains duplicates"
 msgstr ""
 
-msgid "rownames incorrect length; expected"
+#: data.table.R:2794 data.table.R:2805 data.table.R:2828
+#, c-format
+msgid "rownames incorrect length; expected %d names, got %d"
 msgstr ""
 
-msgid "names, got"
-msgstr ""
-
+#: data.table.R:2813
+#, c-format
 msgid "All elements in argument 'x' to 'setDF' must be of same length"
 msgstr ""
 
-msgid "Cannot find symbol"
+#: data.table.R:2842
+#, c-format
+msgid "Cannot find symbol %s"
 msgstr ""
 
-msgid "Cannot convert '"
+#: data.table.R:2849
+#, c-format
+msgid ""
+"Cannot convert '%1$s' to data.table by reference because binding is locked. "
+"It is very likely that '%1$s' resides within a package (or an environment) "
+"that is locked to prevent modifying its variable bindings. Try copying the "
+"object to your current environment, ex: var <- copy(var) and then using "
+"setDT again."
 msgstr ""
 
-msgid "' to data.table by reference because binding is locked. It is very likely that '"
+#: data.table.R:2856
+#, c-format
+msgid ""
+"Some columns are a multi-column type (such as a matrix column): %s. setDT "
+"will retain these columns as-is but subsequent operations like grouping and "
+"joining may fail. Please consider as.data.table() instead which will create "
+"a new column for each embedded column."
 msgstr ""
 
-msgid "' resides within a package (or an environment) that is locked to prevent modifying its variable bindings. Try copying the object to your current environment, ex: var <- copy(var) and then using setDT again."
+#: data.table.R:2888
+#, c-format
+msgid ""
+"Column %d is of POSIXlt type. Please convert it to POSIXct using as.POSIXct "
+"and run setDT again. We do not recommend use of POSIXlt at all because it "
+"uses 40 bytes to store one date."
 msgstr ""
 
-msgid "Some columns are a multi-column type (such as a matrix column):"
+#: data.table.R:2894
+#, c-format
+msgid ""
+"All elements in argument 'x' to 'setDT' must be of same length, but the "
+"profile of input lengths (length:frequency) is: %s\n"
+"The first entry with fewer than %d entries is %d."
 msgstr ""
 
-msgid ". setDT will retain these columns as-is but subsequent operations like grouping and joining may fail. Please consider as.data.table() instead which will create a new column for each embedded column."
+#: data.table.R:2911
+#, c-format
+msgid ""
+"Argument 'x' to 'setDT' should be a 'list', 'data.frame' or 'data.table'"
 msgstr ""
 
-msgid "Column"
+#: data.table.R:2926
+#, c-format
+msgid "Item '%s' not found in names of input list"
 msgstr ""
 
-msgid "is of POSIXlt type. Please convert it to POSIXct using as.POSIXct and run setDT again. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date."
-msgstr ""
-
-msgid "All elements in argument 'x' to 'setDT' must be of same length, but the profile of input lengths (length:frequency) is:"
-msgstr ""
-
-msgid "%s:%d"
-msgstr ""
-
-msgid "The first entry with fewer than"
-msgstr ""
-
-msgid "entries is"
-msgstr ""
-
-msgid "Argument 'x' to 'setDT' should be a 'list', 'data.frame' or 'data.table'"
-msgstr ""
-
-msgid "Item '"
-msgstr ""
-
-msgid "' not found in names of input list"
-msgstr ""
-
+#: data.table.R:2951 data.table.R:2976
+#, c-format
 msgid "'prefix' must be NULL or a character vector of length 1."
 msgstr ""
 
+#: data.table.R:2954 data.table.R:2979
+#, c-format
 msgid "x is a single vector, non-NULL 'cols' doesn't make sense."
 msgstr ""
 
+#: data.table.R:2958 data.table.R:2983
+#, c-format
 msgid "x is a list, 'cols' cannot be 0-length."
 msgstr ""
 
-msgid "RHS of %s is length %d which is not 1 or nrow (%d). For robustness, no recycling is allowed (other than of length 1 RHS). Consider %%in%% instead."
+#: data.table.R:3092
+#, c-format
+msgid ""
+"RHS of %s is length %d which is not 1 or nrow (%d). For robustness, no "
+"recycling is allowed (other than of length 1 RHS). Consider %%in%% instead."
 msgstr ""
 
-msgid "Internal error in .isFastSubsettable. Please report to data.table developers"
+#: data.table.R:3120
+#, c-format
+msgid ""
+"Internal error in .isFastSubsettable. Please report to data.table developers"
 msgstr ""
 
-msgid "Subsetting optimization disabled because the cross-product of RHS values exceeds 1e4, causing memory problems."
+#: data.table.R:3207
+#, c-format
+msgid ""
+"'on' argument should be a named atomic vector of column names indicating "
+"which columns in 'i' should be joined with which columns in 'x'."
 msgstr ""
 
-msgid "Optimized subsetting with key '"
+#: data.table.R:3248
+#, c-format
+msgid ""
+"Found more than one operator in one 'on' statement: %s. Please specify a "
+"single operator."
 msgstr ""
 
-msgid "Optimized subsetting with index '"
+#: data.table.R:3271
+#, c-format
+msgid ""
+"'on' contains no column name: %s. Each 'on' clause must contain one or two "
+"column names."
 msgstr ""
 
-msgid "Creating new index '"
+#: data.table.R:3273
+#, c-format
+msgid ""
+"'on' contains more than 2 column names: %s. Each 'on' clause must contain "
+"one or two column names."
 msgstr ""
 
-msgid "Creating index %s done in ..."
+#: data.table.R:3278
+#, c-format
+msgid "Invalid join operators %s. Only allowed operators are %s."
 msgstr ""
 
-msgid "'on' argument should be a named atomic vector of column names indicating which columns in 'i' should be joined with which columns in 'x'."
-msgstr ""
-
-msgid "Found more than one operator in one 'on' statement:"
-msgstr ""
-
-msgid ". Please specify a single operator."
-msgstr ""
-
-msgid "'on' contains no column name:"
-msgstr ""
-
-msgid ". Each 'on' clause must contain one or two column names."
-msgstr ""
-
-msgid "'on' contains more than 2 column names:"
-msgstr ""
-
-msgid "Invalid operators"
-msgstr ""
-
-msgid ". Only allowed operators are"
-msgstr ""
-
-msgid "."
-msgstr ""
-
+#: devel.R:16
+#, c-format
 msgid "There is no package %s in provided repository."
 msgstr ""
 
-msgid "Git revision is not available. Most likely data.table was installed from CRAN or local archive.\nGit revision is available when installing from our repositories 'https://Rdatatable.gitlab.io/data.table' and 'https://Rdatatable.github.io/data.table'."
-msgstr ""
-
+#: duplicated.R:7
+#, c-format
 msgid "'fromLast' must be TRUE or FALSE"
 msgstr ""
 
+#: duplicated.R:105
+#, c-format
 msgid "x must be an atomic vector or data.frames/data.tables"
 msgstr ""
 
-msgid "Using '"
+#: fcast.R:7
+#, c-format
+msgid "Using '%s' as value column. Use 'value.var' to override"
 msgstr ""
 
-msgid "' as value column. Use 'value.var' to override"
+#: fcast.R:20 fmelt.R:16
+#, c-format
+msgid ""
+"The %1$s generic in data.table has been passed a %2$s, but data.table::%1$s "
+"currently only has a method for data.tables. Please confirm your input is a "
+"data.table, with setDT(%3$s) or as.data.table(%3$s). If you intend to use a "
+"method from reshape2, try installing that package first, but do note that "
+"reshape2 is superseded and is no longer actively developed."
 msgstr ""
 
-msgid "The dcast generic in data.table has been passed a"
+#: fcast.R:21
+#, c-format
+msgid ""
+"The %1$s generic in data.table has been passed a %2$s and will attempt to "
+"redirect to the relevant reshape2 method; please note that reshape2 is "
+"superseded and is no longer actively developed, and this redirection is now "
+"deprecated. Please do this redirection yourself like reshape2::%1$s(%3$s). "
+"In the next version, this warning will become an error."
 msgstr ""
 
-msgid ", but data.table::dcast currently only has a method for data.tables. Please confirm your input is a data.table, with setDT("
+#: fcast.R:31
+#, c-format
+msgid ""
+"Invalid formula. Cast formula should be of the form LHS ~ RHS, for e.g., a + "
+"b ~ c."
 msgstr ""
 
-msgid ") or as.data.table("
-msgstr ""
-
-msgid "). If you intend to use a reshape2::dcast, try installing that package first, but do note that reshape2 is deprecated and you should be migrating your code away from using it."
-msgstr ""
-
-msgid "and will attempt to redirect to the reshape2::dcast; please note that reshape2 is deprecated, and this redirection is now deprecated as well. Please do this redirection yourself like reshape2::dcast("
-msgstr ""
-
-msgid "). In the next version, this warning will become an error."
-msgstr ""
-
-msgid "Invalid formula. Cast formula should be of the form LHS ~ RHS, for e.g., a + b ~ c."
-msgstr ""
-
+#: fcast.R:36
+#, c-format
 msgid "data.table to cast must have unique column names"
 msgstr ""
 
-msgid "value.var values ["
+#: fcast.R:60
+#, c-format
+msgid "value.var values %s are not found in 'data'."
 msgstr ""
 
-msgid "] are not found in 'data'."
+#: fcast.R:76
+#, c-format
+msgid ""
+"When 'fun.aggregate' and 'value.var' are both lists, 'value.var' must be "
+"either of length =1 or =length(fun.aggregate)."
 msgstr ""
 
-msgid "When 'fun.aggregate' and 'value.var' are both lists, 'value.var' must be either of length =1 or =length(fun.aggregate)."
-msgstr ""
-
+#: fcast.R:109
+#, c-format
 msgid "'data' must be a data.table."
 msgstr ""
 
+#: fcast.R:111
+#, c-format
 msgid "'drop' must be logical TRUE/FALSE"
 msgstr ""
 
-msgid "Column ["
+#: fcast.R:128
+#, c-format
+msgid "Column [%s] not found or of unknown type."
 msgstr ""
 
-msgid "] not found or of unknown type."
-msgstr ""
-
+#: fcast.R:143
+#, c-format
 msgid "Columns specified in formula can not be of type list"
 msgstr ""
 
-msgid "Can not cast an empty data.table"
-msgstr ""
-
+#: fcast.R:159
+#, c-format
 msgid "Aggregate function missing, defaulting to 'length'"
 msgstr ""
 
+#: fcast.R:165
+msgid ""
+"Aggregating function(s) should take vector inputs and return a single value "
+"(length=1). However, function(s) returns length!=1. This value will have to "
+"be used to fill any missing combinations, and therefore must be length=1. "
+"Either override by setting the 'fill' argument explicitly or modify your "
+"function to handle this case appropriately."
+msgstr ""
+
+#: fcast.R:222
+#, c-format
 msgid "Internal error -- empty rhsnames in dcast; please report"
 msgstr ""
 
-msgid "The melt generic in data.table has been passed a"
+#: fmelt.R:17
+#, c-format
+msgid ""
+"The %1$s generic in data.table has been passed a %2$s and will attempt to "
+"redirect to the relevant reshape2 method; please note that reshape2 is "
+"superseded and is no longer actively developed, and this redirection is now "
+"deprecated. To continue using melt methods from reshape2 while both "
+"libraries are attached, e.g. melt.list, you can prepend the namespace, i.e. "
+"reshape2::%1$s(%3$s). In the next version, this warning will become an error."
 msgstr ""
 
-msgid ", but data.table::melt currently only has a method for data.tables. Please confirm your input is a data.table, with setDT("
-msgstr ""
-
-msgid "). If you intend to use a method from reshape2, try installing that package first, but do note that reshape2 is deprecated and you should be migrating your code away from using it."
-msgstr ""
-
-msgid "and will attempt to redirect to the relevant reshape2 method; please note that reshape2 is deprecated, and this redirection is now deprecated as well. To continue using melt methods from reshape2 while both libraries are attached, e.g. melt.list, you can prepend the namespace like reshape2::melt("
-msgstr ""
-
+#: fmelt.R:28
+#, c-format
 msgid "Input patterns must be of type character."
 msgstr ""
 
+#: fmelt.R:32
+#, c-format
+msgid "Pattern(s) not found: [%s]"
+msgstr ""
+
+#: fmelt.R:46
+#, c-format
+msgid ""
+"each ... argument to measure must be either a symbol without argument name, "
+"or a function with argument name, problems: %s"
+msgstr ""
+
+#: fmelt.R:54
+#, c-format
+msgid ""
+"group names specified in ... conflict with measure argument names; please "
+"fix by changing group names: %s"
+msgstr ""
+
+#: fmelt.R:60
+#, c-format
+msgid ""
+"each ... argument to measure must be a function with at least one argument, "
+"problem: %s"
+msgstr ""
+
+#: fmelt.R:74
+#, c-format
+msgid ""
+"both sep and pattern arguments used; must use either sep or pattern (not "
+"both)"
+msgstr ""
+
+#: fmelt.R:77
+#, c-format
+msgid "multiple.keyword must be a character string with nchar>0"
+msgstr ""
+
+#: fmelt.R:80
+#, c-format
+msgid "cols must be a character vector of column names"
+msgstr ""
+
+#: fmelt.R:88
+#, c-format
+msgid "in measurev, %s must be named, problems: %s"
+msgstr ""
+
+#: fmelt.R:94
+#, c-format
+msgid "%s should be uniquely named, problems: %s"
+msgstr ""
+
+#: fmelt.R:99
+#, c-format
+msgid "number of %s =%d must be same as %s =%d"
+msgstr ""
+
+#: fmelt.R:106
+#, c-format
+msgid "pattern must be character string"
+msgstr ""
+
+#: fmelt.R:111
+#, c-format
+msgid ""
+"pattern did not match any cols, so nothing would be melted; fix by changing "
+"pattern"
+msgstr ""
+
+#: fmelt.R:115
+#, c-format
+msgid ""
+"pattern must contain at least one capture group (parenthesized sub-pattern)"
+msgstr ""
+
+#: fmelt.R:123
+#, c-format
+msgid "sep must be character string"
+msgstr ""
+
+#: fmelt.R:129
+#, c-format
+msgid ""
+"each column name results in only one item after splitting using sep, which "
+"means that all columns would be melted; to fix please either specify melt on "
+"all columns directly without using measure, or use a different sep/pattern "
+"specification"
+msgstr ""
+
+#: fmelt.R:138
+#, c-format
+msgid ""
+"number of unique column IDs =%d is less than number of melted columns =%d; "
+"fix by changing pattern/sep"
+msgstr ""
+
+#: fmelt.R:148
+#, c-format
+msgid ""
+"in the measurev fun.list, each non-NULL element must be a function with at "
+"least one argument, problem: %s"
+msgstr ""
+
+#: fmelt.R:152
+#, c-format
+msgid ""
+"each conversion function must return an atomic vector with same length as "
+"its first argument, problem: %s"
+msgstr ""
+
+#: fmelt.R:155
+#, c-format
+msgid "%s conversion function returned vector of all NA"
+msgstr ""
+
+#: fmelt.R:161
+#, c-format
+msgid ""
+"number of unique groups after applying type conversion functions less than "
+"number of groups, change type conversion"
+msgstr ""
+
+#: fmelt.R:166
+#, c-format
+msgid ""
+"%s column class=%s after applying conversion function, but must be character"
+msgstr ""
+
+#: fmelt.R:170
+#, c-format
+msgid "%s is the only group; fix by creating at least one more group"
+msgstr ""
+
+#: fmelt.R:193
+#, c-format
 msgid "'data' must be a data.table"
 msgstr ""
 
-msgid "'value.name' provided in both 'measure.vars'"
+#: fmelt.R:212
+#, c-format
+msgid ""
+"'value.name' provided in both 'measure.vars' and 'value.name argument'; "
+"value provided in 'measure.vars' is given precedence."
 msgstr ""
 
-msgid "and 'value.name argument'; value provided in"
-msgstr ""
-
-msgid "'measure.vars' is given precedence."
-msgstr ""
-
+#: fmelt.R:215
+#, c-format
 msgid "Please provide a name to each element of 'measure.vars'."
 msgstr ""
 
-msgid "Duplicate column names found in molten data.table. Setting unique names using 'make.names'"
+#: foverlaps.R:3
+#, c-format
+msgid ""
+"y and x must both be data.tables. Use `setDT()` to convert list/data.frames "
+"to data.tables by reference or as.data.table() to convert to data.tables by "
+"copying."
 msgstr ""
 
-msgid "y and x must both be data.tables. Use `setDT()` to convert list/data.frames to data.tables by reference or as.data.table() to convert to data.tables by copying."
-msgstr ""
-
+#: foverlaps.R:9
+#, c-format
 msgid "maxgap must be a non-negative integer value of length 1"
 msgstr ""
 
+#: foverlaps.R:11
+#, c-format
 msgid "minoverlap must be a positive integer value of length 1"
 msgstr ""
 
+#: foverlaps.R:13
+#, c-format
 msgid "which must be a logical vector of length 1. Either TRUE/FALSE"
 msgstr ""
 
+#: foverlaps.R:15
+#, c-format
 msgid "nomatch must either be NA or NULL"
 msgstr ""
 
+#: foverlaps.R:20
+#, c-format
 msgid "maxgap and minoverlap arguments are not yet implemented."
 msgstr ""
 
-msgid "'y' must be keyed (i.e., sorted, and, marked as sorted). Call setkey(y, ...) first, see ?setkey. Also check the examples in ?foverlaps."
+#: foverlaps.R:22
+#, c-format
+msgid ""
+"y must be keyed (i.e., sorted, and, marked as sorted). Call setkey(y, ...) "
+"first, see ?setkey. Also check the examples in ?foverlaps."
 msgstr ""
 
-msgid "'by.x' and 'by.y' should contain at least two column names (or numbers) each - corresponding to 'start' and 'end' points of intervals. Please see ?foverlaps and examples for more info."
+#: foverlaps.R:24
+#, c-format
+msgid ""
+"'by.x' and 'by.y' should contain at least two column names (or numbers) "
+"each - corresponding to 'start' and 'end' points of intervals. Please see ?"
+"foverlaps and examples for more info."
 msgstr ""
 
-msgid "Invalid numeric value for 'by.x'; it should be a vector with values 1 <= by.x <= length(x)"
+#: foverlaps.R:27
+#, c-format
+msgid ""
+"Invalid numeric value for 'by.x'; it should be a vector with values 1 <= by."
+"x <= length(x)"
 msgstr ""
 
-msgid "Invalid numeric value for 'by.y'; it should be a vector with values 1 <= by.y <= length(y)"
+#: foverlaps.R:32
+#, c-format
+msgid ""
+"Invalid numeric value for 'by.y'; it should be a vector with values 1 <= by."
+"y <= length(y)"
 msgstr ""
 
+#: foverlaps.R:36
+#, c-format
 msgid "A non-empty vector of column names or numbers is required for by.x"
 msgstr ""
 
+#: foverlaps.R:38
+#, c-format
 msgid "A non-empty vector of column names or numbers is required for by.y"
 msgstr ""
 
-msgid "The first"
+#: foverlaps.R:40
+#, c-format
+msgid ""
+"The first %d columns of y's key must be identical to the columns specified "
+"in by.y."
 msgstr ""
 
-msgid "columns of y's key must be identical to the columns specified in by.y."
+#: foverlaps.R:42
+#, c-format
+msgid "Elements listed in 'by.x' must be valid names in data.table x"
 msgstr ""
 
-msgid "Elements listed in 'by.x' must be valid names in data.table 'x'"
+#: foverlaps.R:44
+#, c-format
+msgid ""
+"Duplicate columns are not allowed in overlap joins. This may change in the "
+"future."
 msgstr ""
 
-msgid "Duplicate columns are not allowed in overlap joins. This may change in the future."
+#: foverlaps.R:46
+#, c-format
+msgid ""
+"length(by.x) != length(by.y). Columns specified in by.x should correspond to "
+"columns specified in by.y and should be of same lengths."
 msgstr ""
 
-msgid "length(by.x) != length(by.y). Columns specified in by.x should correspond to columns specified in by.y and should be of same lengths."
+#: foverlaps.R:48 foverlaps.R:50 merge.R:26 merge.R:27
+#, c-format
+msgid ""
+"%s has some duplicated column name(s): %s. Please remove or rename the "
+"duplicate(s) and try again."
 msgstr ""
 
-msgid "y has some duplicated column name(s):"
+#: foverlaps.R:56
+#, c-format
+msgid ""
+"The last two columns in by.x should correspond to the 'start' and 'end' "
+"intervals in data.table x and must be integer/numeric type."
 msgstr ""
 
-msgid "The last two columns in by.x should correspond to the 'start' and 'end' intervals in data.table 'x' and must be integer/numeric type."
+#: foverlaps.R:60 foverlaps.R:62 foverlaps.R:69 foverlaps.R:71
+#, c-format
+msgid ""
+"NA values in data.table %s '%s' column: '%s'. All rows with NA values in the "
+"range columns must be removed for foverlaps() to work."
 msgstr ""
 
-msgid "NA values in data.table 'x' start column: '"
+#: foverlaps.R:63
+#, c-format
+msgid ""
+"All entries in column '%s' should be <= corresponding entries in column '%s' "
+"in data.table x."
 msgstr ""
 
-msgid "'. All rows with NA values in the range columns must be removed for foverlaps() to work."
+#: foverlaps.R:66
+#, c-format
+msgid ""
+"The last two columns in by.y should correspond to the 'start' and 'end' "
+"intervals in data.table y and must be integer/numeric type."
 msgstr ""
 
-msgid "NA values in data.table 'x' end column: '"
+#: foverlaps.R:72
+#, c-format
+msgid ""
+"All entries in column '%s' should be <= corresponding entries in column '%s' "
+"in data.table y."
 msgstr ""
 
-msgid "All entries in column"
+#: foverlaps.R:77
+#, c-format
+msgid ""
+"Some interval cols are of type POSIXct while others are not. Please ensure "
+"all interval cols are (or are not) of POSIXct type"
 msgstr ""
 
-msgid "should be <= corresponding entries in column"
+#: foverlaps.R:83
+#, c-format
+msgid ""
+"POSIXct interval cols have mixed timezones. Overlaps are performed on the "
+"internal numerical representation of POSIXct objects (always in UTC epoch "
+"time), therefore printed values may give the impression that values don't "
+"overlap but their internal representations do Please ensure that POSIXct "
+"type interval cols have identical 'tzone' attributes to avoid confusion."
 msgstr ""
 
-msgid "in data.table 'x'."
-msgstr ""
-
-msgid "The last two columns in by.y should correspond to the 'start' and 'end' intervals in data.table 'y' and must be integer/numeric type."
-msgstr ""
-
-msgid "NA values in data.table 'y' start column: '"
-msgstr ""
-
-msgid "NA values in data.table 'y' end column: '"
-msgstr ""
-
-msgid "in data.table 'y'."
-msgstr ""
-
-msgid "Some interval cols are of type POSIXct while others are not. Please ensure all interval cols are (or are not) of POSIXct type"
-msgstr ""
-
-msgid "POSIXct interval cols have mixed timezones. Overlaps are performed on the internal numerical representation of POSIXct objects (always in UTC epoch time), therefore printed values may give the impression that values don't overlap but their internal representations do Please ensure that POSIXct type interval cols have identical 'tzone' attributes to avoid confusion."
-msgstr ""
-
-msgid "unique() + setkey() operations done in ..."
-msgstr ""
-
-msgid "binary search(es) done in ..."
-msgstr ""
-
+#: foverlaps.R:164 foverlaps.R:166 foverlaps.R:170
+#, c-format
 msgid "Not yet implemented"
 msgstr ""
 
+#: foverlaps.R:169
+#, c-format
 msgid "maxgap > minoverlap. maxgap will have no effect here."
 msgstr ""
 
+#: frank.R:3
+#, c-format
 msgid "length(na.last) = 0"
 msgstr ""
 
+#: frank.R:5
+#, c-format
 msgid "length(na.last) > 1, only the first element will be used"
 msgstr ""
 
+#: frank.R:17
+#, c-format
 msgid "x is a single vector, non-NULL 'cols' doesn't make sense"
 msgstr ""
 
+#: frank.R:23
+#, c-format
 msgid "x is a list, 'cols' can not be 0-length"
 msgstr ""
 
+#: frank.R:31
+#, c-format
+msgid ""
+"Input column '..na_prefix..' conflicts with data.table internal usage; "
+"please rename"
+msgstr ""
+
+#: frank.R:46
+#, c-format
+msgid ""
+"Input column '..stats_runif..' conflicts with data.table internal usage; "
+"please rename"
+msgstr ""
+
+#: fread.R:10
+#, c-format
 msgid "Used more than one of the arguments input=, file=, text= and cmd=."
 msgstr ""
 
+#: fread.R:22
+#, c-format
 msgid "Argument 'encoding' must be 'unknown', 'UTF-8' or 'Latin-1'."
 msgstr ""
 
-msgid "'text=' is type"
+#: fread.R:40
+#, c-format
+msgid "'text=' is type %s but must be character."
 msgstr ""
 
-msgid "but must be character."
+#: fread.R:53
+#, c-format
+msgid ""
+"input= must be a single character string containing a file name, a system "
+"command containing at least one space, a URL starting 'http[s]://', "
+"'ftp[s]://' or 'file://', or, the input data itself containing at least one "
+"\\n or \\r"
 msgstr ""
 
-msgid "input= must be a single character string containing a file name, a system command containing at least one space, a URL starting 'http[s]://', 'ftp[s]://' or 'file://', or, the input data itself containing at least one \\n or \\r"
+#: fread.R:58
+#, c-format
+msgid ""
+"input= contains no \\n or \\r, but starts with a space. Please remove the "
+"leading space, or use text=, file= or cmd="
 msgstr ""
 
-msgid "input= contains no \\n or \\r, but starts with a space. Please remove the leading space, or use text=, file= or cmd="
+#: fread.R:62
+#, c-format
+msgid ""
+"Taking input= as a system command because it contains a space ('%s'). If "
+"it's a filename please remove the space, or use file= explicitly. A variable "
+"is being passed to input= and when this is taken as a system command there "
+"is a security concern if you are creating an app, the app could have a "
+"malicious user, and the app is not running in a secure environment; e.g. the "
+"app is running as root. Please read item 5 in the NEWS file for v1.11.6 for "
+"more information and for the option to suppress this message."
 msgstr ""
 
-msgid "Input URL requires https:// connection for which fread() requires 'curl' package which cannot be found. Please install 'curl' using 'install.packages('curl')'."
+#: fread.R:75
+#, c-format
+msgid ""
+"file= must be a single character string containing a filename, or URL "
+"starting 'http[s]://', 'ftp[s]://' or 'file://'"
 msgstr ""
 
-msgid "Taking input= as a system command ('"
+#: fread.R:80
+#, c-format
+msgid ""
+"URL requires download.file functionalities from R >=3.2.2. You can still "
+"manually download the file and fread the downloaded file."
 msgstr ""
 
-msgid "') and a variable has been used in the expression passed to `input=`. Please use fread(cmd=...). There is a security concern if you are creating an app, and the app could have a malicious user, and the app is not running in a secure environment; e.g. the app is running as root. Please read item 5 in the NEWS file for v1.11.6 for more information and for the option to suppress this message."
+#: fread.R:91
+#, c-format
+msgid "File '%s' does not exist or is non-readable. getwd()=='%s'"
 msgstr ""
 
-msgid "File '"
+#: fread.R:92
+#, c-format
+msgid "File '%s' is a directory. Not yet implemented."
 msgstr ""
 
-msgid "' does not exist or is non-readable. getwd()=='"
+#: fread.R:94
+#, c-format
+msgid "File '%s' has size 0. Returning a NULL %s."
 msgstr ""
 
-msgid "' is a directory. Not yet implemented."
+#: fread.R:107
+#, c-format
+msgid ""
+"Compressed files containing more than 1 file are currently not supported."
 msgstr ""
 
-msgid "' has size 0. Returning a NULL"
+#: fread.R:119
+#, c-format
+msgid ""
+"To read gz and bz2 files directly, fread() requires 'R.utils' package which "
+"cannot be found. Please install 'R.utils' using 'install.packages('R."
+"utils')'."
 msgstr ""
 
-msgid "data.table"
+#: fread.R:129
+#, c-format
+msgid ""
+"'autostart' is now deprecated and ignored. Consider skip='string' or skip=n"
 msgstr ""
 
-msgid "data.frame"
+#: fread.R:131
+#, c-format
+msgid ""
+"colClasses is type 'logical' which is ok if all NA but it has some TRUE or "
+"FALSE values in it which is not allowed. Please consider the drop= or "
+"select= argument instead. See ?fread."
 msgstr ""
 
-msgid "To read gz and bz2 files directly, fread() requires 'R.utils' package which cannot be found. Please install 'R.utils' using 'install.packages('R.utils')'."
-msgstr ""
-
-msgid "'autostart' is now deprecated and ignored. Consider skip='string' or skip=n"
-msgstr ""
-
-msgid "colClasses is type 'logical' which is ok if all NA but it has some TRUE or FALSE values in it which is not allowed. Please consider the drop= or select= argument instead. See ?fread."
-msgstr ""
-
+#: fread.R:135
+#, c-format
 msgid "colClasses is not type list or character vector"
 msgstr ""
 
-msgid "colClasses=\"NULL\" (quoted) is interpreted as colClasses=NULL (the default) as opposed to dropping every column."
+#: fread.R:140
+#, c-format
+msgid ""
+"colClasses=\"NULL\" (quoted) is interpreted as colClasses=NULL (the default) "
+"as opposed to dropping every column."
 msgstr ""
 
-msgid "strip.white==TRUE (default) and \"\" is present in na.strings, so any number of spaces in string columns will already be read as <NA>."
+#: fread.R:152
+#, c-format
+msgid "na.strings[%d]==\"%s\" consists only of whitespace, ignoring"
 msgstr ""
 
-msgid "Since strip.white=TRUE (default), use na.strings=\"\" to specify that any number of spaces in a string column should be read as <NA>."
+#: fread.R:155
+#, c-format
+msgid ""
+"%s. strip.white==TRUE (default) and \"\" is present in na.strings, so any "
+"number of spaces in string columns will already be read as <NA>."
 msgstr ""
 
-msgid "But strip.white=FALSE. Use strip.white=TRUE (default) together with na.strings=\"\" to turn any number of spaces in string columns into <NA>"
+#: fread.R:157
+#, c-format
+msgid ""
+"%s. Since strip.white=TRUE (default), use na.strings=\"\" to specify that "
+"any number of spaces in a string column should be read as <NA>."
 msgstr ""
 
-msgid "'data.table' relies on the package 'yaml' to parse the file header; please add this to your library with install.packages('yaml') and try again."
+#: fread.R:161
+#, c-format
+msgid ""
+"%s. But strip.white=FALSE. Use strip.white=TRUE (default) together with na."
+"strings=\"\" to turn any number of spaces in string columns into <NA>"
 msgstr ""
 
-msgid "Combining a search string as 'skip' and reading a YAML header may not work as expected -- currently,"
+#: fread.R:167
+#, c-format
+msgid ""
+"'data.table' relies on the package 'yaml' to parse the file header; please "
+"add this to your library with install.packages('yaml') and try again."
 msgstr ""
 
-msgid "reading will proceed to search for 'skip' from the beginning of the file, NOT from the end of"
+#: fread.R:171
+#, c-format
+msgid ""
+"Combining a search string as 'skip' and reading a YAML header may not work "
+"as expected -- currently, reading will proceed to search for 'skip' from the "
+"beginning of the file, NOT from the end of the metadata; please file an "
+"issue on GitHub if you'd like to see more intuitive behavior supported."
 msgstr ""
 
-msgid "the metadata; please file an issue on GitHub if you'd like to see more intuitive behavior supported."
+#: fread.R:181
+#, c-format
+msgid ""
+"Encountered <%s%s> at the first unskipped line (%d), which does not "
+"constitute the start to a valid YAML header (expecting something matching "
+"regex \"%s\"); please check your input and try again."
 msgstr ""
 
-msgid "Encountered <"
+#: fread.R:193
+#, c-format
+msgid ""
+"Reached the end of the file before finding a completion to the YAML header. "
+"A valid YAML header is bookended by lines matching the regex \"%s\". Please "
+"double check the input file is a valid csvy."
 msgstr ""
 
-msgid "..."
-msgstr ""
-
-msgid "> at the first"
-msgstr ""
-
-msgid "unskipped line ("
-msgstr ""
-
-msgid "), which does not constitute the start to a valid YAML header"
-msgstr ""
-
-msgid "(expecting something matching regex \""
-msgstr ""
-
-msgid "\"); please check your input and try again."
-msgstr ""
-
-msgid "Reached the end of the file before finding a completion to the YAML header. A valid YAML header is bookended by lines matching"
-msgstr ""
-
-msgid "the regex \""
-msgstr ""
-
-msgid "\". Please double check the input file is a valid csvy."
-msgstr ""
-
-msgid "Processed %d lines of YAML metadata with the following top-level fields: %s"
-msgstr ""
-
+#: fread.R:207
+#, c-format
 msgid "User-supplied 'header' will override that found in metadata."
 msgstr ""
 
-msgid "User-supplied column names in 'col.names' will override those found in YAML metadata."
+#: fread.R:225
+#, c-format
+msgid ""
+"User-supplied column names in 'col.names' will override those found in YAML "
+"metadata."
 msgstr ""
 
-msgid "colClasses dictated by user input and those read from YAML header are in conflict (specifically, for column"
+#: fread.R:234
+#, c-format
+msgid ""
+"colClasses dictated by user input and those read from YAML header are in "
+"conflict (specifically, for column(s) [%s]); the proceeding assumes the user "
+"input was an intentional override and will ignore the type(s) implied by the "
+"YAML header; please exclude the column(s) from colClasses if this was "
+"unintentional."
 msgstr ""
 
-msgid "s"
-msgstr ""
-
-msgid "["
-msgstr ""
-
-msgid "]); the proceeding assumes the user input was"
-msgstr ""
-
-msgid "an intentional override and will ignore the types implied by the YAML header; please exclude"
-msgstr ""
-
-msgid "these columns"
-msgstr ""
-
-msgid "this column from colClasses if this was unintentional."
-msgstr ""
-
+#: fread.R:255
+#, c-format
 msgid "User-supplied 'sep' will override that found in metadata."
 msgstr ""
 
+#: fread.R:260
+#, c-format
 msgid "User-supplied 'quote' will override that found in metadata."
 msgstr ""
 
+#: fread.R:265
+#, c-format
 msgid "User-supplied 'dec' will override that found in metadata."
 msgstr ""
 
+#: fread.R:269
+#, c-format
 msgid "User-supplied 'na.strings' will override that found in metadata."
 msgstr ""
 
-msgid "Column '"
+#: fread.R:317
+#, c-format
+msgid ""
+"Column '%s' was requested to be '%s' but fread encountered the following %s:\n"
+"\t%s\n"
+"so the column has been left as type '%s'"
 msgstr ""
 
-msgid "' was requested to be '"
+#: fread.R:340
+#, c-format
+msgid ""
+"key argument of data.table() must be a character vector naming columns (NB: "
+"col.names are applied before this)"
 msgstr ""
 
-msgid "' but fread encountered the following"
+#: fread.R:349
+#, c-format
+msgid ""
+"index argument of data.table() must be a character vector naming columns "
+"(NB: col.names are applied before this)"
 msgstr ""
 
-msgid "error"
+#: fwrite.R:19
+#, c-format
+msgid "Argument 'encoding' must be '', 'UTF-8' or 'native'."
 msgstr ""
 
-msgid "warning"
-msgstr ""
-
-msgid ":"
-msgstr ""
-
-msgid "so the column has been left as type '"
-msgstr ""
-
-msgid "stringsAsFactors=%s converted %d column(s): %s"
-msgstr ""
-
-msgid "key argument of data.table() must be a character vector naming columns (NB: col.names are applied before this)"
-msgstr ""
-
-msgid "index argument of data.table() must be a character vector naming columns (NB: col.names are applied before this)"
-msgstr ""
-
+#: fwrite.R:24
+#, c-format
 msgid "dateTimeAs must be a single string"
 msgstr ""
 
+#: fwrite.R:26
+#, c-format
 msgid "dateTimeAs must be 'ISO','squash','epoch' or 'write.csv'"
 msgstr ""
 
+#: fwrite.R:28
+#, c-format
 msgid "logicalAsInt has been renamed logical01. Use logical01 only, not both."
 msgstr ""
 
+#: fwrite.R:30
+#, c-format
+msgid ""
+"logicalAsInt has been renamed logical01 for consistency with fread. It works "
+"fine for now but please change to logical01 at your convenience so we can "
+"remove logicalAsInt in future."
+msgstr ""
+
+#: fwrite.R:40
+#, c-format
 msgid "x being coerced from class: matrix to data.table"
 msgstr ""
 
-msgid "Appending to existing file so setting bom=FALSE and yaml=FALSE"
+#: fwrite.R:79
+#, c-format
+msgid ""
+"If you intended to overwrite the file at %s with an empty one, please use "
+"file.remove first."
 msgstr ""
 
-msgid "Input has no columns; doing nothing."
+#: fwrite.R:80
+#, c-format
+msgid "Input has no columns; doing nothing.%s"
 msgstr ""
 
-msgid "If you intended to overwrite the file at"
+#: fwrite.R:83
+#, c-format
+msgid "Input has no columns; creating an empty file at '%s' and exiting."
 msgstr ""
 
-msgid "with an empty one, please use file.remove first."
+#: fwrite.R:90
+#, c-format
+msgid ""
+"'data.table' relies on the package 'yaml' to write the file header; please "
+"add this to your library with install.packages('yaml') and try again."
 msgstr ""
 
-msgid "Input has no columns; creating an empty file at '"
-msgstr ""
-
-msgid "' and exiting."
-msgstr ""
-
-msgid "'data.table' relies on the package 'yaml' to write the file header; please add this to your library with install.packages('yaml') and try again."
-msgstr ""
-
+#: groupingsets.R:7 groupingsets.R:25 groupingsets.R:47
+#, c-format
 msgid "Argument 'x' must be a data.table object"
 msgstr ""
 
-msgid "Argument 'by' must be a character vector of column names used in grouping."
+#: groupingsets.R:9 groupingsets.R:27 groupingsets.R:53
+#, c-format
+msgid ""
+"Argument 'by' must be a character vector of column names used in grouping."
 msgstr ""
 
+#: groupingsets.R:11 groupingsets.R:29 groupingsets.R:59
+#, c-format
 msgid "Argument 'id' must be a logical scalar."
 msgstr ""
 
-msgid "Argument 'x' is a 0-column data.table; no measure to apply grouping over."
+#: groupingsets.R:31
+#, c-format
+msgid "Argument 'j' is required"
 msgstr ""
 
+#: groupingsets.R:49
+#, c-format
+msgid ""
+"Argument 'x' is a 0-column data.table; no measure to apply grouping over."
+msgstr ""
+
+#: groupingsets.R:51
+#, c-format
 msgid "Input data.table must not contain duplicate column names."
 msgstr ""
 
+#: groupingsets.R:55
+#, c-format
 msgid "Argument 'by' must have unique column names for grouping."
 msgstr ""
 
+#: groupingsets.R:57
+#, c-format
 msgid "Argument 'sets' must be a list of character vectors."
 msgstr ""
 
-msgid "All columns used in 'sets' argument must be in 'by' too. Columns used in 'sets' but not present in 'by':"
+#: groupingsets.R:62
+#, c-format
+msgid ""
+"All columns used in 'sets' argument must be in 'by' too. Columns used in "
+"'sets' but not present in 'by': %s"
 msgstr ""
 
-msgid "When using `id=TRUE` the 'x' data.table must not have a column named 'grouping'."
+#: groupingsets.R:64
+#, c-format
+msgid ""
+"When using `id=TRUE` the 'x' data.table must not have a column named "
+"'grouping'."
 msgstr ""
 
-msgid "Character vectors in 'sets' list must not have duplicated column names within a single grouping set."
+#: groupingsets.R:66
+#, c-format
+msgid ""
+"Character vectors in 'sets' list must not have duplicated column names "
+"within a single grouping set."
 msgstr ""
 
-msgid "'sets' contains a duplicate (i.e., equivalent up to sorting) element at index"
+#: groupingsets.R:68
+#, c-format
+msgid ""
+"'sets' contains a duplicate (i.e., equivalent up to sorting) element at "
+"index %d; as such, there will be duplicate rows in the output -- note that "
+"grouping by A,B and B,A will produce the same aggregations. Use "
+"`sets=unique(lapply(sets, sort))` to eliminate duplicates."
 msgstr ""
 
-msgid "; as such, there will be duplicate rows in the output -- note that grouping by A,B and B,A will produce the same aggregations. Use `sets=unique(lapply(sets, sort))` to eliminate duplicates."
+#: groupingsets.R:73
+#, c-format
+msgid ""
+"Expression passed to grouping sets function must not update by reference. "
+"Use ':=' on results of your grouping function."
 msgstr ""
 
-msgid "Expression passed to grouping sets function must not update by reference. Use ':=' on results of your grouping function."
+#: groupingsets.R:80
+#, c-format
+msgid ""
+"When using `id=TRUE` the 'j' expression must not evaluate to a column named "
+"'grouping'."
 msgstr ""
 
-msgid "When using `id=TRUE` the 'j' expression must not evaluate to a column named 'grouping'."
+#: groupingsets.R:82
+#, c-format
+msgid ""
+"There exists duplicated column names in the results, ensure the column "
+"passed/evaluated in `j` and those in `by` are not overlapping."
 msgstr ""
 
-msgid "There exists duplicated column names in the results, ensure the column passed/evaluated in `j` and those in `by` are not overlapping."
+#: groupingsets.R:92
+#, c-format
+msgid ""
+"Using integer64 class columns require to have 'bit64' package installed."
 msgstr ""
 
-msgid "Using integer64 class columns require to have 'bit64' package installed."
+#: last.R:38 last.R:79
+#, c-format
+msgid ""
+"'xts' class passed to %s function but 'xts' is not available, you should "
+"have 'xts' installed already"
 msgstr ""
 
-msgid "%s: using %s: %s"
-msgstr ""
-
-msgid "'xts' class passed to %s function but 'xts' is not available, you should have 'xts' installed already"
-msgstr ""
-
+#: merge.R:4
+#, c-format
 msgid "Argument 'sort' should be logical TRUE/FALSE"
 msgstr ""
 
+#: merge.R:6
+#, c-format
 msgid "Argument 'no.dups' should be logical TRUE/FALSE"
 msgstr ""
 
-msgid "You are trying to join data.tables where"
+#: merge.R:18
+#, c-format
+msgid "Neither of the input data.tables to join have columns."
 msgstr ""
 
-msgid "'x' and 'y' arguments are"
+#: merge.R:20 merge.R:22
+#, c-format
+msgid "Input data.table '%s' has no columns."
 msgstr ""
 
-msgid "'x' argument is"
-msgstr ""
-
-msgid "'y' argument is"
-msgstr ""
-
-msgid "0 columns data.table."
-msgstr ""
-
+#: merge.R:31
+#, c-format
 msgid "`by.x` and `by.y` must be of same length."
 msgstr ""
 
+#: merge.R:33
+#, c-format
 msgid "Supplied both `by` and `by.x/by.y`. `by` argument will be ignored."
 msgstr ""
 
+#: merge.R:36
+#, c-format
 msgid "A non-empty vector of column names is required for `by.x` and `by.y`."
 msgstr ""
 
+#: merge.R:38
+#, c-format
 msgid "Elements listed in `by.x` must be valid column names in x."
 msgstr ""
 
+#: merge.R:40
+#, c-format
 msgid "Elements listed in `by.y` must be valid column names in y."
 msgstr ""
 
+#: merge.R:51
+#, c-format
 msgid "A non-empty vector of column names for `by` is required."
 msgstr ""
 
+#: merge.R:53
+#, c-format
 msgid "Elements listed in `by` must be valid column names in x and y"
 msgstr ""
 
-msgid "column names"
+#: merge.R:61
+#, c-format
+msgid "Unknown argument '%s' has been passed."
 msgstr ""
 
-msgid "are duplicated in the result"
+#: merge.R:64
+#, c-format
+msgid "Passed %d unknown and unnamed arguments."
 msgstr ""
 
-msgid "IN DEVELOPMENT built"
+#: merge.R:128
+#, c-format
+msgid "column names %s are duplicated in the result"
 msgstr ""
 
-msgid "using"
+#: onAttach.R:23
+#, c-format
+msgid ""
+"data.table %s IN DEVELOPMENT built %s%s using %d threads (see ?getDTthreads)."
 msgstr ""
 
-msgid "threads (see ?getDTthreads).  Latest news: r-datatable.com"
+#: onAttach.R:25
+#, c-format
+msgid "data.table %s using %d threads (see ?getDTthreads)."
 msgstr ""
 
+#: onAttach.R:26
+#, c-format
+msgid "Latest news: r-datatable.com"
+msgstr ""
+
+#: onAttach.R:27
 msgid "TRANSLATION CHECK"
 msgstr ""
 
-msgid "**********\nRunning data.table in English; package support is available in English only. When searching for online help, be sure to also check for the English error message. This can be obtained by looking at the po/R-<locale>.po and po/<locale>.po files in the package source, where the native language and English error messages can be found side-by-side\n**********"
+#: onAttach.R:28
+#, c-format
+msgid ""
+"**********\n"
+"Running data.table in English; package support is available in English only. "
+"When searching for online help, be sure to also check for the English error "
+"message. This can be obtained by looking at the po/R-<locale>.po and po/"
+"<locale>.po files in the package source, where the native language and "
+"English error messages can be found side-by-side\n"
+"**********"
 msgstr ""
 
-msgid "**********\nThis development version of data.table was built more than 4 weeks ago. Please update: data.table::update_dev_pkg()\n**********"
+#: onAttach.R:30
+#, c-format
+msgid ""
+"**********\n"
+"This development version of data.table was built more than 4 weeks ago. "
+"Please update: data.table::update_dev_pkg()\n"
+"**********"
 msgstr ""
 
-msgid "**********"
+#: onAttach.R:32
+#, c-format
+msgid ""
+"**********\n"
+"This installation of data.table has not detected OpenMP support. It should "
+"still work but in single-threaded mode."
 msgstr ""
 
-msgid "This installation of data.table has not detected OpenMP support. It should still work but in single-threaded mode."
+#: onAttach.R:34
+#, c-format
+msgid ""
+"This is a Mac. Please read https://mac.r-project.org/openmp/. Please engage "
+"with Apple and ask them for support. Check r-datatable.com for updates, and "
+"our Mac instructions here: https://github.com/Rdatatable/data.table/wiki/"
+"Installation. After several years of many reports of installation problems "
+"on Mac, it's time to gingerly point out that there have been no similar "
+"problems on Windows or Linux.\n"
+"**********"
 msgstr ""
 
-msgid "sysname"
+#: onAttach.R:36
+#, c-format
+msgid ""
+"This is %s. This warning should not normally occur on Windows or Linux where "
+"OpenMP is turned on by data.table's configure script by passing -fopenmp to "
+"the compiler. If you see this warning on Windows or Linux, please file a "
+"GitHub issue.\n"
+"**********"
 msgstr ""
 
-msgid "Darwin"
+#: onAttach.R:40
+#, c-format
+msgid ""
+"**********\n"
+"This data.table installation was compiled for R < 3.4.0 (Apr 2017) and is "
+"known to leak memory. Please upgrade R and reinstall data.table to fix the "
+"leak. Maintaining and testing code branches to support very old versions "
+"increases development time so please do upgrade R. We intend to bump data."
+"table's dependency from 8 year old R 3.1.0 (Apr 2014) to 5 year old R 3.4.0 "
+"(Apr 2017).\n"
+"**********"
 msgstr ""
 
-msgid "This is a Mac. Please read https://mac.r-project.org/openmp/. Please engage with Apple and ask them for support. Check r-datatable.com for updates, and our Mac instructions here: https://github.com/Rdatatable/data.table/wiki/Installation. After several years of many reports of installation problems on Mac, it's time to gingerly point out that there have been no similar problems on Windows or Linux."
+#: onLoad.R:9
+#, c-format
+msgid ""
+"Option 'datatable.nomatch' is defined but is now ignored. Please see note 11 "
+"in v1.12.4 NEWS (Oct 2019), and note 14 in v1.14.2."
 msgstr ""
 
-msgid "This is"
+#: onLoad.R:26
+#, c-format
+msgid ""
+"The data_table.%s version (%s) does not match the package (%s). Please close "
+"all R sessions to release the old %s and reinstall data.table in a fresh R "
+"session. The root cause is that R's package installer can in some "
+"unconfirmed circumstances leave a package in a state that is apparently "
+"functional but where new R code is calling old C code silently: https://bugs."
+"r-project.org/bugzilla/show_bug.cgi?id=17478. Once a package is in this "
+"mismatch state it may produce wrong results silently until you next upgrade "
+"the package. Please help by adding precise circumstances to 17478 to move "
+"the status to confirmed. This mismatch between R and C code can happen with "
+"any package not just data.table. It is just that data.table has added this "
+"check."
 msgstr ""
 
-msgid ". This warning should not normally occur on Windows or Linux where OpenMP is turned on by data.table's configure script by passing -fopenmp to the compiler. If you see this warning on Windows or Linux, please file a GitHub issue."
+#: onLoad.R:30
+#, c-format
+msgid ""
+"This is R %s but data.table has been installed using R %s. The major version "
+"must match. Please reinstall data.table."
 msgstr ""
 
-msgid "The option 'datatable.nomatch' is being used and is not set to the default NA. This option is still honored for now but will be deprecated in future. Please see NEWS for 1.12.4 for detailed information and motivation. To specify inner join, please specify `nomatch=NULL` explicitly in your calls rather than changing the default using this option."
+#: onLoad.R:95
+#, c-format
+msgid ""
+"Option 'datatable.CJ.names' no longer has any effect, as promised for 4 "
+"years. It is now ignored. Manually name `...` entries as needed if you still "
+"prefer the old behavior."
 msgstr ""
 
-msgid "The datatable.%s version (%s) does not match the package (%s). Please close all R sessions to release the old %s and reinstall data.table in a fresh R session. The root cause is that R's package installer can in some unconfirmed circumstances leave a package in a state that is apparently functional but where new R code is calling old C code silently: https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478. Once a package is in this mismatch state it may produce wrong results silently until you next upgrade the package. Please help by adding precise circumstances to 17478 to move the status to confirmed. This mismatch between R and C code can happen with any package not just data.table. It is just that data.table has added this check."
-msgstr ""
-
-msgid "This is R"
-msgstr ""
-
-msgid "but data.table has been installed using R"
-msgstr ""
-
-msgid ". The major version must match. Please reinstall data.table."
-msgstr ""
-
-msgid "Option 'datatable.old.bywithoutby' has been removed as warned for 2 years. It is now ignored. Please use by=.EACHI instead and stop using this option."
-msgstr ""
-
-msgid "Option 'datatable.old.unique.by.key' has been removed as warned for 4 years. It is now ignored. Please use by=key(DT) instead and stop using this option."
-msgstr ""
-
+#: onLoad.R:100
+#, c-format
 msgid "Unexpected base R behaviour: list(x) has copied x"
 msgstr ""
 
+#: onLoad.R:108
+#, c-format
 msgid "Unexpected base R behaviour: names<- has copied column contents"
 msgstr ""
 
-msgid "Unexpected base R behaviour: DF[2,2]<- did not copy column 2 which was assigned to"
+#: onLoad.R:118
+#, c-format
+msgid ""
+"Unexpected base R behaviour: DF[2,2]<- did not copy column 2 which was "
+"assigned to"
 msgstr ""
 
-msgid "Unexpected base R behaviour: DF[2,2]<- copied the first column which was not assigned to, too"
+#: onLoad.R:119
+#, c-format
+msgid ""
+"Unexpected base R behaviour: DF[2,2]<- copied the first column which was not "
+"assigned to, too"
 msgstr ""
 
+#: onLoad.R:121
+#, c-format
 msgid "Unexpected base R behaviour: DF[2,2]<- has not copied address(DF)"
 msgstr ""
 
-msgid "Reminder to data.table developers: don't use getRversion() internally. Add a behaviour test to .onLoad instead."
-msgstr ""
-
+#: openmp-utils.R:3
+#, c-format
 msgid "Provide either threads= or percent= but not both"
 msgstr ""
 
-msgid "percent= is provided but is length"
+#: openmp-utils.R:4
+#, c-format
+msgid "percent= is provided but is length %d"
 msgstr ""
 
-msgid "percent=="
+#: openmp-utils.R:6
+#, c-format
+msgid "percent==%d but should be a number between 2 and 100"
 msgstr ""
 
-msgid "but should be a number between 2 and 100"
-msgstr ""
-
+#: print.data.table.R:17
+#, c-format
 msgid "Valid options for col.names are 'auto', 'top', and 'none'"
 msgstr ""
 
+#: print.data.table.R:19
+#, c-format
+msgid "Valid options for trunc.cols are TRUE and FALSE"
+msgstr ""
+
+#: print.data.table.R:21
+#, c-format
 msgid "Column classes will be suppressed when col.names is 'none'"
 msgstr ""
 
-msgid "Key: <%s>"
+#: print.data.table.R:146
+#, c-format
+msgid ""
+"Internal structure doesn't seem to be a list. Possibly corrupt data.table."
 msgstr ""
 
-msgid "Null data.%s (0 rows and 0 cols)"
+#: programming.R:14 programming.R:40
+#, c-format
+msgid "'x' must be a list"
 msgstr ""
 
-msgid "Empty data.%s (%d rows and %d cols)"
+#: programming.R:22
+#, c-format
+msgid ""
+"Character objects provided in the input are not scalar objects, if you need "
+"them as character vector rather than a name, then wrap each into 'I' call: %s"
 msgstr ""
 
-msgid "Internal structure doesn't seem to be a list. Possibly corrupt data.table."
+#: programming.R:50
+#, c-format
+msgid "'env' must not be missing"
 msgstr ""
 
-msgid "x may no longer be the character name of the data.table. The possibility was undocumented and has been removed."
+#: programming.R:56
+#, c-format
+msgid "'env' must be a list or an environment"
 msgstr ""
 
-msgid "key(x)<-value is deprecated and not supported. Please change to use setkey() with perhaps copy(). Has been warning since 2012 and will be an error in future."
+#: programming.R:63
+#, c-format
+msgid "'env' argument does not have names"
 msgstr ""
 
+#: programming.R:65
+#, c-format
+msgid "'env' argument has zero char names"
+msgstr ""
+
+#: programming.R:67
+#, c-format
+msgid "'env' argument has NA names"
+msgstr ""
+
+#: programming.R:69
+#, c-format
+msgid "'env' argument has duplicated names"
+msgstr ""
+
+#: setkey.R:3
+#, c-format
+msgid ""
+"x may no longer be the character name of the data.table. The possibility was "
+"undocumented and has been removed."
+msgstr ""
+
+#: setkey.R:23
+#, c-format
+msgid ""
+"key(x)<-value is deprecated and not supported. Please change to use setkey() "
+"with perhaps copy(). Has been warning since 2012."
+msgstr ""
+
+#: setkey.R:39
+#, c-format
 msgid "x is not a data.table"
 msgstr ""
 
-msgid "cols is not a character vector. Please see further information in ?setkey."
+#: setkey.R:40
+#, c-format
+msgid ""
+"cols is not a character vector. Please see further information in ?setkey."
 msgstr ""
 
-msgid "Setting a physical key on .SD is reserved for possible future use; to modify the original data's order by group. Try setindex() instead. Or, set*(copy(.SD)) as a (slow) last resort."
+#: setkey.R:41
+#, c-format
+msgid ""
+"Setting a physical key on .SD is reserved for possible future use; to modify "
+"the original data's order by group. Try setindex() instead. Or, set*(copy(."
+"SD)) as a (slow) last resort."
 msgstr ""
 
-msgid "cols is a character vector of zero length. Removed the key, but use NULL instead, or wrap with suppressWarnings() to avoid this warning."
+#: setkey.R:43
+#, c-format
+msgid ""
+"cols is a character vector of zero length. Removed the key, but use NULL "
+"instead, or wrap with suppressWarnings() to avoid this warning."
 msgstr ""
 
+#: setkey.R:47
+#, c-format
 msgid "cols is the empty string. Use NULL to remove the key."
 msgstr ""
 
+#: setkey.R:48 setkey.R:277
+#, c-format
 msgid "cols contains some blanks."
 msgstr ""
 
-msgid "some columns are not in the data.table:"
+#: setkey.R:51 setkey.R:281
+#, c-format
+msgid "some columns are not in the data.table: %s"
 msgstr ""
 
-msgid "x contains a column called '.xi'. Conflicts with internal use by data.table."
+#: setkey.R:73 setkey.R:282
+#, c-format
+msgid ""
+"x contains a column called '.xi'. Conflicts with internal use by data.table."
 msgstr ""
 
-msgid "' is type '"
+#: setkey.R:76
+#, c-format
+msgid ""
+"Column '%s' is type '%s' which is not supported as a key column type, "
+"currently."
 msgstr ""
 
-msgid "' which is not supported as a key column type, currently."
+#: setkey.R:78 setkey.R:287
+#, c-format
+msgid ""
+"Internal error. 'cols' should be character at this point in setkey; please "
+"report."
 msgstr ""
 
-msgid "Internal error. 'cols' should be character at this point in setkey; please report."
+#: setkey.R:125
+#, c-format
+msgid "Internal error: index '%s' exists but is invalid"
 msgstr ""
 
-msgid "forder took"
-msgstr ""
-
-msgid "setkey on columns %s using existing index '%s'"
-msgstr ""
-
-msgid "reorder took"
-msgstr ""
-
-msgid "x is already ordered by these columns, no need to call reorder"
-msgstr ""
-
-msgid "Internal error: index '"
-msgstr ""
-
-msgid "' exists but is invalid"
-msgstr ""
-
+#: setkey.R:157
+#, c-format
 msgid "x is vector but 'by' is supplied"
 msgstr ""
 
+#: setkey.R:167
+#, c-format
 msgid "x is a single vector, non-NULL 'by' doesn't make sense"
 msgstr ""
 
+#: setkey.R:199
+#, c-format
 msgid "Attempting to order a 0-column data.table or data.frame."
 msgstr ""
 
-msgid "The first item passed to [f]order is a plain list but there are more items. It should be a data.table or data.frame."
+#: setkey.R:204
+#, c-format
+msgid ""
+"The first item passed to [f]order is a plain list but there are more items. "
+"It should be a data.table or data.frame."
 msgstr ""
 
+#: setkey.R:221
+#, c-format
 msgid "Internal code should not be being called on type double"
 msgstr ""
 
-msgid "Input is not a vector of type double. New parallel sort has only been done for double vectors so far. Using one thread."
+#: setkey.R:229
+#, c-format
+msgid ""
+"Input is not a vector of type double. New parallel sort has only been done "
+"for double vectors so far. Using one thread."
 msgstr ""
 
-msgid "New parallel sort has not been implemented for decreasing=TRUE so far. Using one thread."
+#: setkey.R:230
+#, c-format
+msgid ""
+"New parallel sort has not been implemented for decreasing=TRUE so far. Using "
+"one thread."
 msgstr ""
 
-msgid "New parallel sort has not been implemented for vectors containing NA values so far. Using one thread."
+#: setkey.R:231
+#, c-format
+msgid ""
+"New parallel sort has not been implemented for vectors containing NA values "
+"so far. Using one thread."
 msgstr ""
 
+#: setkey.R:243 setkey.R:269
+#, c-format
 msgid "x must be a data.frame or data.table"
 msgstr ""
 
+#: setkey.R:271
+#, c-format
 msgid "na.last must be logical TRUE/FALSE"
 msgstr ""
 
-msgid "cols is not a character vector. Please see further information in ?setorder."
+#: setkey.R:272
+#, c-format
+msgid ""
+"cols is not a character vector. Please see further information in ?setorder."
 msgstr ""
 
-msgid "cols is a character vector of zero length. Use NULL instead, or wrap with suppressWarnings() to avoid this warning."
+#: setkey.R:274
+#, c-format
+msgid ""
+"cols is a character vector of zero length. Use NULL instead, or wrap with "
+"suppressWarnings() to avoid this warning."
 msgstr ""
 
-msgid "' which is not supported for ordering currently."
+#: setkey.R:285
+#, c-format
+msgid "Column '%s' is type '%s' which is not supported for ordering currently."
 msgstr ""
 
-msgid "'sorted' is TRUE but element"
+#: setkey.R:329
+#, c-format
+msgid ""
+"'sorted' is TRUE but element %d is non-atomic, which can't be sorted; try "
+"setting sorted = FALSE"
 msgstr ""
 
-msgid "is non-atomic, which can't be sorted; try setting sorted = FALSE"
+#: setkey.R:344
+#, c-format
+msgid ""
+"Cross product of elements provided to CJ() would result in %.0f rows which "
+"exceeds .Machine$integer.max == %d"
 msgstr ""
 
-msgid "Cross product of elements provided to CJ() would result in %.0f rows which exceeds .Machine$integer.max == %d"
-msgstr ""
-
+#: setops.R:3 setops.R:40
+#, c-format
 msgid "x and y must both be data.tables"
 msgstr ""
 
+#: setops.R:9
+#, c-format
 msgid "length(by.x) != length(by.y)"
 msgstr ""
 
-msgid "When x's column ('%s') is character, the corresponding column in y ('%s') should be factor or character, but found incompatible type '%s'."
+#: setops.R:17
+#, c-format
+msgid ""
+"When x's column ('%s') is character, the corresponding column in y ('%s') "
+"should be factor or character, but found incompatible type '%s'."
 msgstr ""
 
-msgid "When x's column ('%s') is factor, the corresponding column in y ('%s') should be character or factor, but found incompatible type '%s'."
+#: setops.R:19
+#, c-format
+msgid ""
+"When x's column ('%s') is factor, the corresponding column in y ('%s') "
+"should be character or factor, but found incompatible type '%s'."
 msgstr ""
 
-msgid "When x's column ('%s') is integer or numeric, the corresponding column in y ('%s') can not be character or logical types, but found incompatible type '%s'."
+#: setops.R:21
+#, c-format
+msgid ""
+"When x's column ('%s') is integer or numeric, the corresponding column in y ("
+"'%s') can not be character or logical types, but found incompatible type "
+"'%s'."
 msgstr ""
 
+#: setops.R:39
+#, c-format
 msgid "argument 'all' should be logical of length one"
 msgstr ""
 
+#: setops.R:41
+#, c-format
 msgid "x and y must have the same column names"
 msgstr ""
 
+#: setops.R:42
+#, c-format
 msgid "x and y must have the same column order"
 msgstr ""
 
-msgid "unsupported column type"
+#: setops.R:45
+#, c-format
+msgid "unsupported column type(s) found in x or y: %s"
 msgstr ""
 
-msgid "found in x or y:"
+#: setops.R:53
+#, c-format
+msgid "Item %d of x is '%s' but the corresponding item of y is '%s'."
 msgstr ""
 
-msgid "of x is '"
-msgstr ""
-
-msgid "' but the corresponding item of y is '"
-msgstr ""
-
+#: setops.R:55
+#, c-format
 msgid "None of the datasets should contain a column named '.seqn'"
 msgstr ""
 
+#: setops.R:146
+#, c-format
 msgid "Internal error: ncol(current)==ncol(target) was checked above"
 msgstr ""
 
+#: setops.R:159 setops.R:170
+#, c-format
+msgid "Datasets have different %s. 'target': %s. 'current': %s."
+msgstr ""
+
+#: setops.R:161 setops.R:162
+#, c-format
+msgid "has no key"
+msgstr ""
+
+#: setops.R:172 setops.R:173
+#, c-format
+msgid "has no index"
+msgstr ""
+
+#: setops.R:190
+#, c-format
 msgid "None of the datasets to compare should contain a column named '.seqn'"
 msgstr ""
 
-msgid "Datasets to compare with 'ignore.row.order' must not have unsupported column types:"
+#: setops.R:193
+#, c-format
+msgid ""
+"Datasets to compare with 'ignore.row.order' must not have unsupported column "
+"types: %s"
 msgstr ""
 
-msgid "Argument 'tolerance' was forced to lowest accepted value `sqrt(.Machine$double.eps)` from provided"
+#: setops.R:195
+#, c-format
+msgid ""
+"Argument 'tolerance' was forced to lowest accepted value `sqrt(."
+"Machine$double.eps)` from provided %s"
 msgstr ""
 
-msgid "Duplicate rows in datasets, numeric columns and ignore.row.order cannot be used with non 0 tolerance argument"
+#: setops.R:208
+#, c-format
+msgid ""
+"Duplicate rows in datasets, numeric columns and ignore.row.order cannot be "
+"used with non 0 tolerance argument"
 msgstr ""
 
-msgid "Factor columns and ignore.row.order cannot be used with non 0 tolerance argument"
+#: setops.R:222
+#, c-format
+msgid ""
+"Factor columns and ignore.row.order cannot be used with non 0 tolerance "
+"argument"
 msgstr ""
 
+#: setops.R:266
+#, c-format
 msgid "Internal error: factor type mismatch should have been caught earlier"
 msgstr ""
 
-msgid "argument 'fill' ignored, only make sense for type='const'"
+#: shift.R:3
+msgid "Provided argument fill="
 msgstr ""
 
-msgid "No objects of class data.table exist in %s"
+#: shift.R:3
+msgid "will be ignored since type='shift'."
 msgstr ""
 
-msgid "order.col='"
+#: tables.R:46
+#, c-format
+msgid "order.col='%s' not a column name of info"
 msgstr ""
 
-msgid "' not a column name of info"
-msgstr ""
-
-msgid "Total:"
-msgstr ""
-
+#: test.data.table.R:17
+#, c-format
 msgid "data.table package is loaded. Unload or start a fresh R session."
 msgstr ""
 
-msgid "script must end with '.Rraw'. If a file ending '.Rraw.bz2' exists, that will be found and used."
+#: test.data.table.R:33
+#, c-format
+msgid ""
+"script must end with '.Rraw'. If a file ending '.Rraw.bz2' exists, that will "
+"be found and used."
 msgstr ""
 
+#: test.data.table.R:63
+#, c-format
 msgid "Neither %s nor %s exist in %s"
 msgstr ""
 
-msgid "test.data.table() running:"
+#: test.data.table.R:114
+msgid "object '%s' not found"
 msgstr ""
 
-msgid "**** This R session's language is not English. Each test will still check that the correct number of errors and/or\n**** warnings are produced. However, to test the text of each error/warning too, please restart R with LANGUAGE=en"
+#: test.data.table.R:138
+#, c-format
+msgid ""
+"memtest intended for Linux. Step through data.table:::rss() to see what went "
+"wrong."
 msgstr ""
 
-msgid "Failed after test"
+#: test.data.table.R:176
+#, c-format
+msgid "Failed in %s after test %s before the next test() call in %s"
 msgstr ""
 
-msgid "before the next test() call in"
+#: test.data.table.R:186
+#, c-format
+msgid "%d error(s) out of %d. Search %s for test number(s) %s. Duration: %s."
 msgstr ""
 
-msgid "Timings count mismatch:"
+#: test.data.table.R:199
+#, c-format
+msgid "Timings count mismatch: %d vs %d"
 msgstr ""
 
-msgid "vs"
+#: test.data.table.R:312
+#, c-format
+msgid ""
+"Test %s is invalid: when error= is provided it does not make sense to pass y "
+"as well"
 msgstr ""
 
-msgid "10 longest running tests took"
-msgstr ""
-
-msgid "All %d tests in %s completed ok in %s"
-msgstr ""
-
-msgid "Running test id %s"
-msgstr ""
-
-msgid "Test"
-msgstr ""
-
-msgid "is invalid: when error= is provided it does not make sense to pass y as well"
-msgstr ""
-
-msgid "Test id %s is not in increasing order"
-msgstr ""
-
-msgid "Test %s produced %d %ss but expected %d"
-msgstr ""
-
-msgid "Test %s didn't produce the correct %s:\nExpected: %s\nObserved: %s"
-msgstr ""
-
-msgid "Output captured before unexpected warning/error/message:"
-msgstr ""
-
-msgid "Test %s did not produce the correct output:\nExpected: <<%s>>\nObserved <<%s>>"
-msgstr ""
-
-msgid "Test %s produced output but should not have:\nExpected absent (case insensitive): <<%s>>\nObserved: <<%s>>"
-msgstr ""
-
-msgid "Test %s ran without errors but selfrefok(%s) is FALSE"
-msgstr ""
-
-msgid "Test %s ran without errors but failed check that x equals y:"
-msgstr ""
-
-msgid "First %d of %d (type '%s'):"
-msgstr ""
-
+#: timetaken.R:3
+#, c-format
 msgid "Use started.at=proc.time() not Sys.time() (POSIXt and slow)"
 msgstr ""
 
-msgid "make.names='"
+#: transpose.R:7
+#, c-format
+msgid "make.names='%s' not found in names of input"
 msgstr ""
 
-msgid "' not found in names of input"
+#: transpose.R:12
+#, c-format
+msgid "make.names=%d is out of range [1,ncol=%d]"
 msgstr ""
 
-msgid "make.names="
-msgstr ""
-
-msgid "is out of range [1,ncol="
-msgstr ""
-
+#: transpose.R:28
+#, c-format
 msgid "'names' must be TRUE/FALSE or a character vector."
 msgstr ""
 
-msgid "'keep' should contain integer values between"
+#: transpose.R:34
+#, c-format
+msgid "'keep' should contain integer values between %d and %d."
 msgstr ""
 
-msgid "length(names) (="
+#: transpose.R:51
+#, c-format
+msgid "The argument 'type.convert' does not support empty list."
 msgstr ""
 
-msgid ") is not equal to length("
+#: transpose.R:57
+#, c-format
+msgid ""
+"When the argument 'type.convert' contains an unnamed element, it is expected "
+"to be the last element and should be a function. More than one unnamed "
+"element is not allowed unless all elements are functions with length equal "
+"to %d (the length of the transpose list or 'keep' argument if it is "
+"specified)."
 msgstr ""
 
-msgid ") (="
+#: transpose.R:66
+#, c-format
+msgid ""
+"When the argument 'type.convert' contains transpose list indices, it should "
+"be a named list of non-missing integer values (with no duplicate) except the "
+"last element that should be unnamed if it is a function."
 msgstr ""
 
-msgid ")."
+#: transpose.R:68
+#, c-format
+msgid ""
+"When the argument 'type.convert' contains transpose list indices, they "
+"should be integer values contained in the argument 'keep' (if it is "
+"specified) or be between %d and %d (if it is not). But '%s' is/are not "
+"contained in '%s'."
 msgstr ""
 
+#: transpose.R:74
+#, c-format
+msgid ""
+"In the argument 'type.convert', '%s' was ignored because all elements in the "
+"transpose list or elements corrisponding to indices specified in the 'keep' "
+"argument have already been converted."
+msgstr ""
+
+#: transpose.R:83
+#, c-format
+msgid ""
+"The argument 'type.convert' should be TRUE/FALSE, a function, a list of "
+"functions, or a named list of pairs 'fun=indices' with optionally one "
+"unnamed element (a function) but an object of type '%s' was provided."
+msgstr ""
+
+#: transpose.R:88
+#, c-format
+msgid "length(names) (= %d) is not equal to length(%s) (= %d)."
+msgstr ""
+
+#: uniqlist.R:12
+#, c-format
 msgid "l not type list"
 msgstr ""
 
+#: utils.R:18
+#, c-format
 msgid "Argument 'nan' must be length 1"
 msgstr ""
 
+#: utils.R:21
+#, c-format
 msgid "Argument 'nan' must be NA or NaN"
 msgstr ""
 
+#: utils.R:32
+msgid "Internal error: use endsWithAny instead of base::endsWith"
+msgstr ""
+
+#: utils.R:43 utils.R:52
+#, c-format
 msgid "x not boolean"
 msgstr ""
 
-msgid "Some columns are type 'integer64' but package bit64 is not installed. Those columns will print as strange looking floating point data. There is no need to reload the data. Simply install.packages('bit64') to obtain the integer64 print method and print the data again."
+#: utils.R:63
+#, c-format
+msgid ""
+"Some columns are type 'integer64' but package bit64 is not installed. Those "
+"columns will print as strange looking floating point data. There is no need "
+"to reload the data. Simply install.packages('bit64') to obtain the integer64 "
+"print method and print the data again."
 msgstr ""
 
-msgid "Pattern"
-msgstr ""
-
-msgid "not found: ["
-msgstr ""
-
+#: xts.R:3
+#, c-format
 msgid "keep.rownames must be length 1"
 msgstr ""
 
+#: xts.R:4
+#, c-format
 msgid "keep.rownames must not be NA"
 msgstr ""
 
-msgid "Input xts object should not have '%s' column because it would result in duplicate column names. Rename '%s' column in xts or use `keep.rownames` to change the index column name."
+#: xts.R:10
+#, c-format
+msgid ""
+"Input xts object should not have '%s' column because it would result in "
+"duplicate column names. Rename '%s' column in xts or use `keep.rownames` to "
+"change the index column name."
 msgstr ""
 
-msgid "data.table must have a time based column in first position, use `setcolorder` function to change the order, or see ?timeBased for supported types"
+#: xts.R:20
+#, c-format
+msgid ""
+"data.table must have a time based column in first position, use "
+"`setcolorder` function to change the order, or see ?timeBased for supported "
+"types"
 msgstr ""
 
-msgid "Following columns are not numeric and will be omitted:"
+#: xts.R:24
+#, c-format
+msgid "Following columns are not numeric and will be omitted: %s"
 msgstr ""
 
-msgid        "Index: "
-msgid_plural "Indices: "
-msgstr[0]    ""
-msgstr[1]    ""
-
-msgid        "%d variable not shown: %s\n"
-msgid_plural "%d variables not shown: %s\n"
-msgstr[0]    ""
-msgstr[1]    ""
-
-msgid        "%d error out of %d. Search %s for test number %s"
-msgid_plural "%d errors out of %d. Search %s for test numbers %s"
-msgstr[0]    ""
-msgstr[1]    ""
+#: print.data.table.R:51
+msgid "Index: %s\n"
+msgid_plural "Indices: %s\n"
+msgstr[0] ""
+msgstr[1] ""
