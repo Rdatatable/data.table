@@ -141,7 +141,8 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
 }
 
 format.data.table = function (x, ..., justify="none") {
-  if (is.atomic(x) && !is.null(x)) {
+  if (is.atomic(x) && !is.null(x)) { ## future R can use  if (is.atomic(x))
+
     stopf("Internal structure doesn't seem to be a list. Possibly corrupt data.table.")
   }
   do.call("cbind", lapply(x, format_col, ..., justify=justify))
@@ -214,7 +215,7 @@ format_col.expression = function(x, ...) format(char.trunc(as.character(x)), ...
 
 format_list_item.default = function(x, ...) {
   if (is.null(x))  # NULL item in a list column
-    ""
+    "[NULL]" # not '' or 'NULL' to distinguish from those "common" string values in data
   else if (is.atomic(x) || inherits(x, "formula")) # FR #2591 - format.data.table issue with columns of class "formula"
     paste(c(format(head(x, 6L), ...), if (length(x) > 6L) "..."), collapse=",") # fix for #5435 and #37 - format has to be added here...
   else if (has_format_method(x) && length(formatted<-format(x, ...))==1L) {

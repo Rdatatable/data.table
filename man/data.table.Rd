@@ -5,7 +5,6 @@
 \alias{Ops.data.table}
 \alias{is.na.data.table}
 \alias{[.data.table}
-\alias{DT}
 \alias{.}
 \alias{.(}
 \alias{.()}
@@ -62,13 +61,13 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
         If \code{i} is a \code{data.table}, the columns in \code{i} to be matched against \code{x} can be specified using one of these ways:
 
         \itemize{
-            \item{\code{on} argument (see below). It allows for both \code{equi-} and the newly implemented \code{non-equi} joins.}
+            \item \code{on} argument (see below). It allows for both \code{equi-} and the newly implemented \code{non-equi} joins.
 
-            \item{If not, \code{x} \emph{must be keyed}. Key can be set using \code{\link{setkey}}. If \code{i} is also keyed, then first \emph{key} column of \code{i} is matched against first \emph{key} column of \code{x}, second against second, etc..
+            \item If not, \code{x} \emph{must be keyed}. Key can be set using \code{\link{setkey}}. If \code{i} is also keyed, then first \emph{key} column of \code{i} is matched against first \emph{key} column of \code{x}, second against second, etc..
 
             If \code{i} is not keyed, then first column of \code{i} is matched against first \emph{key} column of \code{x}, second column of \code{i} against second \emph{key} column of \code{x}, etc\ldots
 
-            This is summarised in code as \code{min(length(key(x)), if (haskey(i)) length(key(i)) else ncol(i))}.}
+            This is summarised in code as \code{min(length(key(x)), if (haskey(i)) length(key(i)) else ncol(i))}.
         }
         Using \code{on=} is recommended (even during keyed joins) as it helps understand the code better and also allows for \emph{non-equi} joins.
 
@@ -100,15 +99,15 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
     \item{by}{ Column names are seen as if they are variables (as in \code{j} when \code{with=TRUE}). The \code{data.table} is then grouped by the \code{by} and \code{j} is evaluated within each group. The order of the rows within each group is preserved, as is the order of the groups. \code{by} accepts:
 
     \itemize{
-        \item{A single unquoted column name: e.g., \code{DT[, .(sa=sum(a)), by=x]}}
+        \item A single unquoted column name: e.g., \code{DT[, .(sa=sum(a)), by=x]}
 
-        \item{a \code{list()} of expressions of column names: e.g., \code{DT[, .(sa=sum(a)), by=.(x=x>0, y)]}}
+        \item a \code{list()} of expressions of column names: e.g., \code{DT[, .(sa=sum(a)), by=.(x=x>0, y)]}
 
-        \item{a single character string containing comma separated column names (where spaces are significant since column names may contain spaces even at the start or end): e.g., \code{DT[, sum(a), by="x,y,z"]}}
+        \item a single character string containing comma separated column names (where spaces are significant since column names may contain spaces even at the start or end): e.g., \code{DT[, sum(a), by="x,y,z"]}
 
-        \item{a character vector of column names: e.g., \code{DT[, sum(a), by=c("x", "y")]}}
+        \item a character vector of column names: e.g., \code{DT[, sum(a), by=c("x", "y")]}
 
-        \item{or of the form \code{startcol:endcol}: e.g., \code{DT[, sum(a), by=x:z]}}
+        \item or of the form \code{startcol:endcol}: e.g., \code{DT[, sum(a), by=x:z]}
     }
 
     \emph{Advanced:} When \code{i} is a \code{list} (or \code{data.frame} or \code{data.table}), \code{DT[i, j, by=.EACHI]} evaluates \code{j} for the groups in `DT` that each row in \code{i} joins to. That is, you can join (in \code{i}) and aggregate (in \code{j}) simultaneously. We call this \emph{grouping by each i}. See \href{https://stackoverflow.com/a/27004566/559784}{this StackOverflow answer} for a more detailed explanation until we \href{https://github.com/Rdatatable/data.table/issues/944}{roll out vignettes}.
@@ -128,10 +127,10 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
     \item{roll}{ When \code{i} is a \code{data.table} and its row matches to all but the last \code{x} join column, and its value in the last \code{i} join column falls in a gap (including after the last observation in \code{x} for that group), then:
 
         \itemize{
-            \item{\code{+Inf} (or \code{TRUE}) rolls the \emph{prevailing} value in \code{x} forward. It is also known as last observation carried forward (LOCF).}
-            \item{\code{-Inf} rolls backwards instead; i.e., next observation carried backward (NOCB).}
-            \item{finite positive or negative number limits how far values are carried forward or backward.}
-            \item{"nearest" rolls the nearest value instead.}
+            \item \code{+Inf} (or \code{TRUE}) rolls the \emph{prevailing} value in \code{x} forward. It is also known as last observation carried forward (LOCF).
+            \item \code{-Inf} rolls backwards instead; i.e., next observation carried backward (NOCB).
+            \item finite positive or negative number limits how far values are carried forward or backward.
+            \item "nearest" rolls the nearest value instead.
         }
         Rolling joins apply to the last join column, generally a date but can be any variable. It is particularly fast using a modified binary search.
 
@@ -139,8 +138,8 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
 
     \item{rollends}{ A logical vector length 2 (a single logical is recycled) indicating whether values falling before the first value or after the last value for a group should be rolled as well.
         \itemize{
-            \item{If \code{rollends[2]=TRUE}, it will roll the last value forward. \code{TRUE} by default for LOCF and \code{FALSE} for NOCB rolls.}
-            \item{If \code{rollends[1]=TRUE}, it will roll the first value backward. \code{TRUE} by default for NOCB and \code{FALSE} for LOCF rolls.}
+            \item If \code{rollends[2]=TRUE}, it will roll the last value forward. \code{TRUE} by default for LOCF and \code{FALSE} for NOCB rolls.
+            \item If \code{rollends[1]=TRUE}, it will roll the first value backward. \code{TRUE} by default for NOCB and \code{FALSE} for LOCF rolls.
         }
         When \code{roll} is a finite number, that limit is also applied when rolling the ends.}
 
@@ -163,27 +162,28 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
 
   \item{on}{ Indicate which columns in \code{x} should be joined with which columns in \code{i} along with the type of binary operator to join with (see non-equi joins below on this). When specified, this overrides the keys set on \code{x} and \code{i}. When \code{.NATURAL} keyword provided then \emph{natural join} is made (join on common columns). There are multiple ways of specifying the \code{on} argument:
         \itemize{
-            \item{As an unnamed character vector, e.g., \code{X[Y, on=c("a", "b")]}, used when columns \code{a} and \code{b} are common to both \code{X} and \code{Y}.}
-            \item{\emph{Foreign key joins}: As a \emph{named} character vector when the join columns have different names in \code{X} and \code{Y}.
+            \item As an unnamed character vector, e.g., \code{X[Y, on=c("a", "b")]}, used when columns \code{a} and \code{b} are common to both \code{X} and \code{Y}.
+            \item \emph{Foreign key joins}: As a \emph{named} character vector when the join columns have different names in \code{X} and \code{Y}.
             For example, \code{X[Y, on=c(x1="y1", x2="y2")]} joins \code{X} and \code{Y} by matching columns \code{x1} and \code{x2} in \code{X} with columns \code{y1} and \code{y2} in \code{Y}, respectively.
 
             From v1.9.8, you can also express foreign key joins using the binary operator \code{==}, e.g. \code{X[Y, on=c("x1==y1", "x2==y2")]}.
 
-            NB: shorthand like \code{X[Y, on=c("a", V2="b")]} is also possible if, e.g., column \code{"a"} is common between the two tables.}
-            \item{For convenience during interactive scenarios, it is also possible to use \code{.()} syntax as \code{X[Y, on=.(a, b)]}.}
-            \item{From v1.9.8, (non-equi) joins using binary operators \code{>=, >, <=, <} are also possible, e.g., \code{X[Y, on=c("x>=a", "y<=b")]}, or for interactive use as \code{X[Y, on=.(x>=a, y<=b)]}.}
+            NB: shorthand like \code{X[Y, on=c("a", V2="b")]} is also possible if, e.g., column \code{"a"} is common between the two tables.
+
+            \item For convenience during interactive scenarios, it is also possible to use \code{.()} syntax as \code{X[Y, on=.(a, b)]}.
+            \item From v1.9.8, (non-equi) joins using binary operators \code{>=, >, <=, <} are also possible, e.g., \code{X[Y, on=c("x>=a", "y<=b")]}, or for interactive use as \code{X[Y, on=.(x>=a, y<=b)]}.
         }
         See examples as well as \href{../doc/datatable-secondary-indices-and-auto-indexing.html}{\code{vignette("datatable-secondary-indices-and-auto-indexing")}}.
     }
 
-  \item{env}{ List or an environment, passed to \code{\link{substitute2}} for substitution of parameters in \code{i}, \code{j} and \code{by} (or \code{keyby}). Use \code{verbose} to preview constructed expressions. }
+  \item{env}{ List or an environment, passed to \code{\link{substitute2}} for substitution of parameters in \code{i}, \code{j} and \code{by} (or \code{keyby}). Use \code{verbose} to preview constructed expressions. For more details see \href{../doc/datatable-programming.html}{\code{vignette("datatable-programming")}}. }
 }
 \details{
 \code{data.table} builds on base \R functionality to reduce 2 types of time:\cr
 
 \enumerate{
-    \item{programming time (easier to write, read, debug and maintain), and}
-    \item{compute time (fast and memory efficient).}
+    \item programming time (easier to write, read, debug and maintain), and
+    \item compute time (fast and memory efficient).
 }
 
 The general form of data.table syntax is:\cr
@@ -212,7 +212,7 @@ The way to read this out loud is: "Take \code{DT}, subset rows by \code{i}, \emp
     X[c>1, sum(a), by=c]        # get rows where c>1 is TRUE, and on those rows, get sum(a) grouped by 'c'
     X[Y, .(a, b), on="c"]       # get rows where Y$c == X$c, and select columns 'X$a' and 'X$b' for those rows
     X[Y, .(a, i.a), on="c"]     # get rows where Y$c == X$c, and then select 'X$a' and 'Y$a' (=i.a)
-    X[Y, sum(a*i.a), on="c" by=.EACHI] # for *each* 'Y$c', get sum(a*i.a) on matching rows in 'X$c'
+    X[Y, sum(a*i.a), on="c", by=.EACHI] # for *each* 'Y$c', get sum(a*i.a) on matching rows in 'X$c'
 
     X[, plot(a, b), by=c]       # j accepts any expression, generates plot for each group and returns no data
     # see ?assign to add/update/delete columns by reference using the same consistent interface
@@ -344,7 +344,6 @@ setkey(kDT,x)                         # set a 1-column key. No quotes, for conve
 setkeyv(kDT,"x")                      # same (v in setkeyv stands for vector)
 v="x"
 setkeyv(kDT,v)                        # same
-# key(kDT)<-"x"                       # copies whole table, please use set* functions instead
 haskey(kDT)                           # TRUE
 key(kDT)                              # "x"
 
@@ -434,13 +433,6 @@ dev.off()
 # using rleid, get max(y) and min of all cols in .SDcols for each consecutive run of 'v'
 DT[, c(.(y=max(y)), lapply(.SD, min)), by=rleid(v), .SDcols=v:b]
 
-# functional query DT(...)
-\dontshow{ #dontrun to pass R CMD check prior to R 4.1.0 when |> was added
-           # an if getRVersion()>"4.1.0" still has its code parsed }
-\dontrun{
-mtcars |> DT(mpg>20, .(mean_hp=mean(hp)), by=cyl)
-}
-
 # Support guide and links:
 # https://github.com/Rdatatable/data.table/wiki/Support
 
@@ -453,8 +445,8 @@ if (interactive()) {
   # keep up to date with latest stable version on CRAN
   update.packages()
 
-  # get the latest devel version
-  update.dev.pkg()
+  # get the latest devel version that has passed all tests
+  update_dev_pkg()
   # read more at:
   # https://github.com/Rdatatable/data.table/wiki/Installation
 }
