@@ -14,6 +14,8 @@
     # 2:
     ```
 
+2. `cedta()` now returns `FALSE` if `.datatable.aware = FALSE` is set in the calling environment, [#5654](https://github.com/Rdatatable/data.table/issues/5654).
+
 ## NOTES
 
 1. `transform` method for data.table sped up substantially when creating new columns on large tables. Thanks to @OfekShilon for the report and PR. The implemented solution was proposed by @ColeMiller1.
