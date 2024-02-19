@@ -2,11 +2,9 @@ on:
   push:
     branches:
      - master
-     - 1-15-99
   pull_request:
     branches:
      - master
-     - 1-15-99
 
 name: lint
 
