@@ -16,6 +16,8 @@
 
 2. `cedta()` now returns `FALSE` if `.datatable.aware = FALSE` is set in the calling environment, [#5654](https://github.com/Rdatatable/data.table/issues/5654).
 
+3. (add example here?) New functions `cbindlist` and `mergelist` have been implemented and exported. Works like `cbind`/`merge` but takes `list` of data.tables on input. `merge` happens in `Reduce` fashion. Supports `how` (_left_, _inner_, _full_, _right_, _semi_, _anti_, _cross_) joins and `mult` argument, closes [#599](https://github.com/Rdatatable/data.table/issues/599) and [#2576](https://github.com/Rdatatable/data.table/issues/2576).
+
 ## NOTES
 
 1. `transform` method for data.table sped up substantially when creating new columns on large tables. Thanks to @OfekShilon for the report and PR. The implemented solution was proposed by @ColeMiller1.
@@ -33,8 +35,6 @@
 1. `shift` and `nafill` will now raise error `input must not be matrix or array` when `matrix` or `array` is provided on input, rather than giving useless result, [#5287](https://github.com/Rdatatable/data.table/issues/5287). Thanks to @ethanbsmith for reporting.
 
 ## NEW FEATURES
-
-0. (move to 1.15.99, add example here?) New functions `cbindlist` and `mergelist` have been implemented and exported. Works like `cbind`/`merge` but takes `list` of data.tables on input. `merge` happens in `Reduce` fashion. Supports `how` (_left, inner, full, right, semi, anti, cross_) joins and `mult` argument, closes [#599](https://github.com/Rdatatable/data.table/issues/599) and closes [#2576](https://github.com/Rdatatable/data.table/issues/2576).
 
 1. `nafill()` now applies `fill=` to the front/back of the vector when `type="locf|nocb"`, [#3594](https://github.com/Rdatatable/data.table/issues/3594). Thanks to @ben519 for the feature request. It also now returns a named object based on the input names. Note that if you are considering joining and then using `nafill(...,type='locf|nocb')` afterwards, please review `roll=`/`rollends=` which should achieve the same result in one step more efficiently. `nafill()` is for when filling-while-joining (i.e. `roll=`/`rollends=`/`nomatch=`) cannot be applied.
 
