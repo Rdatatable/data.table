@@ -598,13 +598,18 @@ Rdevel -q -e "packageVersion('xml2')"   # ensure installed
 Rdevel CMD check data.table_1.16.0.tar.gz --as-cran  # use latest Rdevel as it may have extra checks
 bunzip2 inst/tests/*.Rraw.bz2  # decompress *.Rraw again so as not to commit compressed *.Rraw to git
 
+#
+# Final Release steps
+#
 # Resubmit to winbuilder (R-release, R-devel and R-oldrelease)
+# Submit to R-Hub
+# If RESUBMISSION, update date in NEWS file
 # Submit to CRAN. Message template :
 # ------------------------------------------------------------
 # Hello,
-# 1,016 CRAN revdeps checked. None are impacted.
+# XXXX CRAN revdeps checked. None are impacted.
 # Many thanks!
-# Best, Matt
+# Best, Tyson
 # ------------------------------------------------------------
 # DO NOT commit or push to GitHub. Leave 4 files (.dev/CRAN_Release.cmd, DESCRIPTION, NEWS and init.c) edited and not committed. Include these in a single and final bump commit below.
 # DO NOT even use a PR. Because PRs build binaries and we don't want any binary versions of even release numbers available from anywhere other than CRAN.
@@ -629,15 +634,15 @@ bunzip2 inst/tests/*.Rraw.bz2  # decompress *.Rraw again so as not to commit com
 ######
 
 ###### Bump dev for PATCH RELEASE
-## WARNING: review this process during the next first patch release (x.y.2) from a regular release (x,y,0), possibly during 1.15.2 release.
+## WARNING: review this process during the next first patch release (x.y.2) from a regular release (x.y.0), possibly during 1.15.2 release.
 # 0. Close milestone to prevent new issues being tagged with it. The final 'release checks' issue can be left open in a closed milestone.
 # 1. Check that 'git status' shows 4 files in modified and uncommitted state: DESCRIPTION, NEWS.md, init.c and this .dev/CRAN_Release.cmd
 # 2. Bump patch version in DESCRIPTION to next odd number. Note that DESCRIPTION was in edited and uncommitted state so even number never appears in git.
 # 3. Add new heading in NEWS for the next dev PATCH version. Add "(submitted to CRAN on <today>)" on the released heading.
 # 4. Bump patch version in dllVersion() in init.c
 # 5. Bump 3 patch version numbers in Makefile
-# 6. Search and replace this .dev/CRAN_Release.cmd to update 1.14.9 to 1.14.11 inc below, 1.14.10 to 1.14.12 above, 1.14.8 to 1.14.10 below
+# 6. Search and replace this .dev/CRAN_Release.cmd to update 1.14.99 to 1.15.99
 # 7. Another final gd to view all diffs using meld. (I have `alias gd='git difftool &> /dev/null'` and difftool meld: http://meldmerge.org/)
-# 8. Push to master with this consistent commit message: "1.14.8 on CRAN. Bump to 1.14.10"
+# 8. Push to master with this consistent commit message: "1.15.0 on CRAN. Bump to 1.15.99"
 # 9. Take sha from step 8 and run `git tag 1.14.8 96c..sha..d77` then `git push origin 1.14.8` (not `git push --tags` according to https://stackoverflow.com/a/5195913/403310)
 ######
