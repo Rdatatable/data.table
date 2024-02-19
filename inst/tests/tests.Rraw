@@ -7,7 +7,8 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   }
   if ((tt<-compiler::enableJIT(-1))>0)
     cat("This is dev mode and JIT is enabled (level ", tt, ") so there will be a brief pause around the first test.\n", sep="")
-  DTfun = DT  # just in dev-mode, DT() gets overwritten in .GlobalEnv by DT objects here in tests.Rraw; we restore DT() in test 2212
+  rm_all = function() {}
+  DTfun = DT ## otherwise DT would be re-defined by many tests
 } else {
   require(data.table)
   # Make symbols to the installed version's ::: so that we can i) test internal-only not-exposed R functions
@@ -32,6 +33,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   compactprint = data.table:::compactprint
   cube.data.table = data.table:::cube.data.table
   dcast.data.table = data.table:::dcast.data.table
+  DTfun = data.table:::DT
   endsWith = data.table:::endsWith
   endsWithAny = data.table:::endsWithAny
   forder = data.table:::forder
@@ -53,6 +55,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   print.data.table = data.table:::print.data.table
   replace_dot_alias = data.table:::replace_dot_alias
   rollup.data.table = data.table:::rollup.data.table
+  rss = data.table:::rss
   selfrefok = data.table:::selfrefok
   setcoalesce = data.table:::setcoalesce
   setdiff_ = data.table:::setdiff_
@@ -68,6 +71,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   which.first = data.table:::which.first
   which.last = data.table:::which.last
   `-.IDate` = data.table:::`-.IDate`
+  haszlib = data.table:::haszlib
 
   # Also, for functions that are masked by other packages, we need to map the data.table one. Or else,
   # the other package's function would be picked up. As above, we only need to do this because we desire
@@ -99,17 +103,21 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   year = data.table::year               # lubridate
   yearmon = data.table::yearmon         # zoo
   yearqtr = data.table::yearqtr         # zoo
+
+  rm_all = function(env=parent.frame()) {
+    tt = setdiff(ls(envir=env), .do_not_rm)
+    rm(list=tt, envir=env)
+    gc()
+    invisible()
+  }
 }
 
-# Load optional Suggests packages, which are tested by Travis for code coverage, and on CRAN
-# The reason for inclusion here is stated next to each package
+# Optional suggests are now tested in other.Rraw, #5516. No calls to require() or library() should occur
+# in this file other than for methods and data.table above, and these here.
+# These are included in code coverage, and on CRAN. The reason for inclusion is stated next to each package.
 sugg = c(
   "bit64",          # if big integers are detected in file, fread reads them as bit64::integer64 if installed (warning if not)
-  "xts",            # we have xts methods in R/xts.R
-  "nanotime",       # fwrite looks for the 'nanotime' class name at C level (but we have our own writer in C, though)
-  "R.utils",        # for fread to accept .gz and .bz2 files directly
-  "yaml"            # for fread's yaml argument (csvy capability)
-  # zoo             # In DESCRIPTION:Suggests otherwise R CMD check warning: '::' or ':::' import not declared from: 'zoo'; it is tested in other.Rraw though
+  "R.utils"         # many fread test input files are compressed to save space; fundamental to test environment
 )
 for (s in sugg) {
   assign(paste0("test_",s), loaded<-suppressWarnings(suppressMessages(
@@ -127,12 +135,17 @@ if (!test_longdouble) {
 # generate simple error messages from base that are checked against in our tests. this helps
 #   protect us against these messages evolving in base in the future, and against these messages
 #   potentially not being produced in English.
+# If the target condition only appears on certain platforms/R versions, this will return NULL
+#   whenever the code succeeds, or the message matcher wherever it fails. Thus we can flexibly
+#   pass e.g. 'warning = NULL | warning = <warning>' concisely as 'test(., warning = get_msg())'.
 # Three use cases:
 #   (1) match message exactly [missing delim]
 #   (2) match message pattern after dropping anything between delimeters [delim, fmt=FALSE]
 #   (3) function factory for matching messages exactly by substituting anything between delimeters [delim, fmt=TRUE]
 get_msg = function(e, delim, fmt=FALSE) {
-  msg = tryCatch(e, error=identity, warning=identity)$message
+  condition = tryCatch({e; NULL}, error=identity, warning=identity)
+  if (is.null(condition)) return(condition)
+  msg = condition$message
   if (missing(delim)) return(msg)
   if (length(delim) == 1L) delim[2L] = delim[1L]
   msg = gsub(
@@ -157,13 +170,17 @@ base_messages = list(
   missing_file = get_msg({tmp <- tempfile(tmpdir=tempfile("xxx")); file(tmp, "w")}, "'"),
   # gives both error & warning but tryCatch returns the warning first, so suppress
   cant_open_file = get_msg(suppressWarnings({con<-file(tempfile()); open(con, 'r')})),
-  mixed_subscripts = get_msg(letters[-1:1])
+  mixed_subscripts = get_msg(letters[-1:1]),
+  maybe_invalid_old_posixct = get_msg(as.POSIXct("1893-12-28 05:15:36", tz = ""))
 )
 
 ##########################
+.do_not_rm = ls()  # objects that exist at this point should not be removed by rm_all(); e.g. test_*, base_messages, Ctest_dt_win_snprintf, prevtest, etc
+##########################
 
 test(1.1, tables(env=new.env()), null.data.table(), output = "No objects of class")
-test(1.2, tables(silent=TRUE), data.table(NAME="timings", NROW=9999L, NCOL=3L, MB=0, COLS=list(c("ID","time","nTest")), KEY=list(NULL)))
+test(1.2, tables(silent=TRUE)[,.(NAME,NROW,MB)], # memtest=TRUE adds some columns so exclude NCOL and COLS here
+          data.table(NAME="timings", NROW=9999L, MB=0))
 
 TESTDT = data.table(a=as.integer(c(1,3,4,4,4,4,7)), b=as.integer(c(5,5,6,6,9,9,2)), v=1:7)
 setkey(TESTDT,a,b)
@@ -303,7 +320,7 @@ test(69.4, names(tables(silent=TRUE, mb=FALSE, index=TRUE)),
 
 xenv = new.env()   # to control testing tables()
 xenv$DT = data.table(a = 1)
-test(69.5, nrow(tables(env=xenv)), 1L, output="NAME NROW NCOL MB COLS KEY\n1:   DT    1    1  0    a.*Total: 0MB")
+test(69.5, nrow(tables(env=xenv)), 1L, output="NAME NROW NCOL MB COLS    KEY\n1:   DT    1    1  0    a [NULL]\nTotal: 0MB")
 xenv$DT = data.table(A=1:2, B=3:4, C=5:6, D=7:8, E=9:10, F=11:12, G=13:14, H=15:16, key="A,D,F,G")
 test(69.6, nrow(tables(env=xenv)), 1L, output="NAME NROW NCOL MB            COLS     KEY\n1:   DT    2    8  0 A,B,C,D,E,F,... A,D,F,G.*Total: 0MB")
 rm(xenv)
@@ -340,7 +357,7 @@ test(83, TESTDT[,list("a","b")], data.table(V1="a",V2="b"))
 test(83.1, TESTDT[,list("sum(a),sum(b)")], data.table("sum(a),sum(b)"))
 test(83.2, TESTDT[,list("sum(a),sum(b)"),by=a], {tt=data.table(a=c("a","c","d","g"),V1="sum(a),sum(b)",key="a");tt$V1=as.character(tt$V1);tt})
 test(84, TESTDT[1:2,list(a,b)], data.table(a=c("a","c"), b=c("e","e"), key = 'a,b'))
-# test(85, TESTDT[1:2,DT(a,b)], data.table(a=c("a","c"), b=c("e","e")))  #DT() now deprecated
+# test(85, TESTDT[1:2,DT(a,b)], data.table(a=c("a","c"), b=c("e","e")))  #DT() now deprecated ## this is very old DT() functionality, completely different than DT() discussed in 2023
 
 test(86, TESTDT[,sum(v),by="b"], data.table(b=c("e","f","i","b"),V1=INT(3,7,11,7)))  # TESTDT is key'd by a,b, so correct that grouping by b should not be key'd in the result by default
 test(87, TESTDT[,list(MySum=sum(v)),by="b"], data.table(b=c("e","f","i","b"),MySum=INT(3,7,11,7)))
@@ -523,11 +540,7 @@ test(164, foo(f), DT[,mean(b),by=d])
 test(165, subset(DT,a>2), DT[a>2])
 test(166, suppressWarnings(split(DT,DT$grp)[[2]]), DT[grp==2])
 
-# and that plotting works
-test(167.1, DT[,plot(b,f)], NULL)
-test(167.2, as.integer(DT[,hist(b)]$breaks), seq.int(10L,50L,by=5L)) # as.integer needed for R 3.1.0
-test(167.3, DT[,plot(b,f),by=.(grp)], data.table(grp=integer()))
-try(graphics.off(),silent=TRUE)
+# 167 tested graphics::plot, moved to other.Rraw 28 to save ram, #5517
 
 # IDateTime conversion methods that ggplot2 uses (it calls as.data.frame method)
 # Since %b is e.g. "nov." in LC_TIME=fr_FR.UTF-8 locale, we need to
@@ -964,13 +977,7 @@ DT = data.table(a=1:3,b=1:9,v=1:9,key="a,b")
 test(300, DT[J(1),sum(v),by=b], data.table(b=c(1L,4L,7L),V1=c(1L,4L,7L)))   # should not retain key because by= is not on head(key(DT))
 test(300.1, DT[J(1:2),sum(v),by=b], data.table(b=c(1L,4L,7L,2L,5L,8L),V1=c(1L,4L,7L,2L,5L,8L)))
 
-# Test ad hoc by of more than 100,000 levels, see 2nd part of bug #1387 (100,000 from the limit of base::sort.list radix)
-# This does need to be this large, like this in CRAN checks, because sort.list(method="radix") has this limit, which
-# this tests. But it's well under 10 seconds.
-DT = data.table(A=1:10,B=rnorm(10),C=factor(paste("a",1:100010,sep="")))
-test(301, nrow(DT[,sum(B),by=C])==100010)
-DT = data.table(A=1:10,B=rnorm(10),C=paste("a",1:100010,sep=""))
-test(301.1, nrow(DT[,sum(B),by=C])==100010)
+# 301 moved to benchmark.Rraw, #5517
 
 # Test fast assign
 DT = data.table(a=c(1L,2L,2L,3L),b=4:7,key="a")
@@ -1089,6 +1096,7 @@ test(351.2, DT[, c("a","b"):=13:15, verbose=TRUE],       ans,
             notOutput="revised")
 test(352.1, DT[,letters[1:4]:=list(1L,NULL)], error="Supplied 4 columns to be assigned 2 items. Please see NEWS for v1.12.2")
 test(352.2, DT[,letters[1:4]:=list(1L,NULL,2L,NULL)], data.table(a=c(1L,1L,1L),c=c(2L,2L,2L)))
+test(352.3, DT[,letters[1:2]:=list(1L,NULL,2L,NULL)], error="Supplied 2 columns to be assigned 4 items. Please see NEWS for v1.12.2")
 
 # Test assigning new levels into factor columns
 DT = data.table(f=factor(c("a","b")),x=1:4)
@@ -1590,11 +1598,9 @@ test(505, DT[J(a=1,b=6),sum(i.b*b),by=.EACHI]$V1, 24)  # 24 now 'double' because
 
 # Test := after a key<-
 DT = data.table(a=3:1,b=4:6)
-test(506, key(DT)<-"a", "a", warning="deprecated")
-test(508, DT, data.table(a=1:3,b=6:4,key="a"))
-test(509, DT[,b:=10L], data.table(a=1:3,b=10L,key="a"))
-test(510, DT[,c:=11L], data.table(a=1:3,b=10L,c=11L,key="a"),     # no warning between 1.8.3 and 1.12.2 due to (now removed) setmutable and SET_NAMED in setalloccol, #3729
-          warning="Invalid .internal.selfref detected and fixed") # but the warning makes sense after the (deprecated) key(DT)<- above, so this warns again from 1.12.4
+test(506, key(DT)<-"a", error="deprecated")
+
+# tests 508, 509, 510 related to follow-up operations after key<-, which are now irrelevant
 
 # Test new functons chmatch and %chin%
 y=letters
@@ -1920,6 +1926,11 @@ test(631.5, DT3, data.table(a=c(2), total=c(5), key="a"))
 # .. nrow(y)=1, i subset y with 1 and match with x
 test(631.6, merge(DT1,DT4,all.y=TRUE), data.table(a=c(3),total.x=c(1),total.y=c(1),key="a"))
 test(631.7, DT4, data.table(a=c(3), total=c(1), key="a"))
+# merge columns with different attributes #5309
+x = data.table(a=1L, b=as.IDate(16801))
+y = data.table(a=2L, b=NA)
+test(631.8, merge(x,y,by="a",all=TRUE), data.table(a=c(1L,2L), b.x=as.IDate(c(16801,NA)), b.y=NA, key="a"))
+test(631.9, merge(y,x,by="a",all=TRUE), data.table(a=c(1L,2L), b.x=NA, b.y=as.IDate(c(16801,NA)), key="a"))
 
 test(632, merge(DT1,DT2,all=TRUE), data.table(a=c(1,2,3,4,5),total.x=c(2,NA,1,3,1),total.y=c(NA,5,1,NA,2),key="a"))
 test(632.1, merge(DT1,DT2,all=TRUE), setkey(adt(merge(adf(DT1),adf(DT2),by="a",all=TRUE)),a))
@@ -1933,21 +1944,7 @@ DT = data.table(x=1:3,y=1:3)
 test(635, names(DT[,list(x,y,a=y)]), c("x","y","a"))
 test(636, names(DT[,list(x,a=y)]), c("x","a"))
 
-# Test := by key, and that := to the key by key unsets the key. Make it non-trivial in size too.
-options(datatable.optimize=0L)
-set.seed(1)
-DT = data.table(a=sample(1:100,1e6,replace=TRUE),b=sample(1:1000,1e6,replace=TRUE),key="a")
-test(637.1, DT[,m:=sum(b),by=a][1:3], data.table(a=1L,b=c(156L,808L,848L),m=DT[J(1),sum(b)],key="a"))
-test(637.2, key(DT[J(43L),a:=99L]), NULL)
-setkey(DT,a)
-test(637.3, key(DT[,a:=99L,by=a]), NULL)
-options(datatable.optimize=2L)
-set.seed(1)
-DT = data.table(a=sample(1:100,1e6,replace=TRUE),b=sample(1:1000,1e6,replace=TRUE),key="a")
-test(638.1, DT[,m:=sum(b),by=a][1:3], data.table(a=1L,b=c(156L,808L,848L),m=DT[J(1),sum(b)],key="a"))
-test(638.2, key(DT[J(43L),a:=99L]), NULL)
-setkey(DT,a)
-test(638.3, key(DT[,a:=99L,by=a]), NULL)
+# 637-638 moved to benchmark.Rraw, #5517
 
 # Test printing is right aligned without quotes etc, and rownames are repeated ok for more than 20 rows
 DT=data.table(a=8:10,b=c("xy","x","xyz"),c=c(1.1,22.1,0))
@@ -1967,9 +1964,9 @@ test(645, setkey(DT,b), error="Column 2 is length 2 which differs from length of
 # Test faster mean with a lot of very small groups. Example from (now not needed as much) data.table wiki point 3.
 # benchmarks.Rraw contains the same, to be scaled up.
 set.seed(9)
-n=1e4  # very small n so as not to overload daily CRAN checks.
-DT=data.table(grp1=sample(1:150, n, replace=TRUE),
-              grp2=sample(1:150, n, replace=TRUE),
+n=1e3  # very small n (1e4) so as not to overload daily CRAN checks. Then reduced even further to just 1e3, #5517
+DT=data.table(grp1=sample.int(150L, n, replace=TRUE),
+              grp2=sample.int(150L, n, replace=TRUE),
               x=rnorm(n),
               y=rnorm(n))
 DT[c(2,5),x:=NA]  # seed chosen to get a group of size 2 and 3 in the first 5 to easily inspect.
@@ -2426,16 +2423,7 @@ mycols = 2
 test(814.12, DT[,!..mycols], ans)
 test(814.13, DT[,-..mycols], ans)
 
-
-# Test X[Y] slowdown, #2216
-# Many minutes in 1.8.2!  Now well under 1s, but 10s for very wide tolerance for CRAN. We'd like CRAN to tell us if any changes
-# in R or elsewhere cause the 2 minute (!) bug to return. Hence not moving out to benmark.Rraw.
-X = CJ(a=seq_len(1e3),b=seq_len(1e3))
-Y = copy(X)
-X[4,b:=3L]     # create a dup group, to force allLen1=FALSE
-setkey(X)
-test(819, system.time(X[Y,allow.cartesian=TRUE])["user.self"] < 10)   # this system.time usage ok in this case
-test(820, system.time(X[Y,mult="first"])["user.self"] < 10)           # this system.time usage ok in this case
+# 819-820 moved to benchmark.Rraw, #5517
 
 # Optimization of lapply(,"+"), #2212
 DT = data.table(a=rep(1:3,each=2L),b=1:6,c=7:12)
@@ -2537,24 +2525,7 @@ i = data.frame(foo=1)
 test(859, DT[i], DT[J(i)])
 test(860, DT[i], DT[data.table(i)])
 
-# test no memory leak, #2191 and #2284
-# These take a few seconds each, and it's important to run these on CRAN to check no leak
-gc(); before = gc()["Vcells","(Mb)"]
-for (i in 1:2000) { DT = data.table(1:3); rm(DT) }  # in 1.8.2 would leak 3MB
-gc(); after = gc()["Vcells","(Mb)"]
-test(861, after < before+0.5)   # close to 0.0 difference, but 0.5 for safe margin
-
-gc(); before = gc()["Vcells","(Mb)"]
-DF = data.frame(x=1:20, y=runif(20))
-for (i in 1:2000) { DT = as.data.table(DF); rm(DT) }
-gc(); after = gc()["Vcells","(Mb)"]
-test(862, after < before+0.5)
-
-gc(); before = gc()["Vcells","(Mb)"]
-DT = data.table(x=1:20, y=runif(20))
-for (i in 1:2000) { x <- DT[1:5,]; rm(x) }
-gc(); after = gc()["Vcells","(Mb)"]
-test(863, after < before+0.5)
+# 861-863 moved to benchmark.Rraw, #5517
 
 # rbindlist should look for the first non-empty data.table - New changes (from Arun). Explanation below:
 # Even if data.table is empty, as long as there are column names, they should be considered.
@@ -2989,12 +2960,8 @@ test(995, DT[CJ(c(5,3), c(5,1), sorted=FALSE)], OUT)
 xx <- factor(letters[1:2], ordered=TRUE)
 yy <- sample(2L)
 yy_sort = base::sort.int(yy)
-old = options(datatable.CJ.names=FALSE)
-test(996.01, CJ(xx, yy), setkey(data.table(rep(xx, each=2L), rep(yy_sort, 2L))))
-test(996.02, CJ(a = xx, yy), setkey(data.table(a = rep(xx, each=2L), V2 = rep(yy_sort, 2L))))
-options(datatable.CJ.names=TRUE)
+# 996.01, 996.02 tested the now-ineffectual datatable.CJ.names option
 test(996.03, CJ(xx, yy), setkey(data.table(xx = rep(xx, each=2L), yy = rep(yy_sort, 2L))))
-options(old)
 
 # #3597 -- CJ properly informs sorted can't apply to list input
 test(996.04, CJ(list(1:2, 3L)), error = "non-atomic, which can't be sorted")
@@ -3254,13 +3221,7 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
   test(1035.20, melt(DT, id.vars=1:2), data.table(A=1:2, B=3:4,
       variable=factor(rep(1L, 4L), labels="D"), value=5:8))
 
-  # segfault of unprotected var caught with the help of address sanitizer; was test 1509
-  set.seed(1)
-  val = sample(c(1:5, NA), 1e4L, TRUE)
-  dt <- setDT(replicate(100L, val, simplify=FALSE))
-  ## to ensure there's no segfault...
-  ans <- melt(dt, measure.vars=names(dt), na.rm=TRUE)
-  test(1035.21, ans, ans)
+  # 1035.21 moved to benchmark.Rraw, #5517
 
   # improper levels fix, #1359; was test 1563
   dt = data.table(id=1:3, x=NA_character_, y=c('a', NA_character_, 'c'))
@@ -3363,18 +3324,8 @@ Sep,33.5,19.4,15.7,11.9,0,100.8,100.8,0,12.7,12.7,0,174.1")
   test(1037.414, melt(x, id.vars='x1', measure.vars='r'),
        error="Unknown column type 'raw' for column 'r'")
 
-  # test dispatch for non-data.table objects, #4864.
-  if (inherits(try(getNamespace("reshape2"), silent=TRUE),"try-error")) {
-    test(1038.001, melt(as.data.frame(DT), id.vars=1:2, measure.vars=5:6),
-                   error="The melt generic in data.table has been passed a data.frame")
-  } else {
-    #  1) GLCI rel-cran has reshape2 installed because caret in other.Rraw depends on reshape2
-    #  2) a user running test.data.table() with reshape2 installed (doesn't have to be loaded)
-    #  3) in dev locally I have reshape2 installed to run caret in other.Rraw
-    test(1038.002, melt(as.data.frame(DT), id.vars=1:2, measure.vars=5:6),
-                   as.data.frame(melt(DT, id.vars=1:2, measure.vars=5:6)),
-                   warning="The melt generic in data.table has been passed a data.frame")
-  }
+  # 1038 moved to other.Rraw, #5517
+
 }
 
 # sorting and grouping of Inf, -Inf, NA and NaN,  #117, #112 & #105
@@ -3941,7 +3892,7 @@ test(1133.75, DT[, new := .N, by=x], data.table(x=INT(1,1,1,1,1,2,2), new=INT(5,
 # on a new column with warning on 2nd assign
 DT[,new:=NULL]
 test(1133.8, DT[, new := if (.GRP==1L) 7L else 3.4, by=x], data.table(x=INT(1,1,1,1,1,2,2), new=INT(7,7,7,7,7,3,3)),
-             warning="Group 2 column 'new': 3.4.*double.*at RHS position 1 truncated.*precision lost.*integer")
+             warning="Group 2 column 'new': 3.4.*double.*at RHS position 1.*truncated.*precision lost.*integer")
 
 # Fix for FR #2496 - catch `{` in `:=` expression in `j`:
 DT <- data.table(x=c("A", "A", "B", "B"), val =1:4)
@@ -4073,7 +4024,8 @@ if (test_longdouble) {
   old = getNumericRounding()
 
   set.seed(6)
-  x = rnorm(1e6)*1e4
+  x = rnorm(1e4)*1e4  # first 1e4 reduced from 1e6 to save ram, #5517
+  x = c(x, 11969.235757385, 11969.235757322) # add back 2 numbers from the 1e6 sample whose order is changed in test 1147.3
   ans = base::sort.list(x, method="shell")
   setNumericRounding(0)
   test(1147.1, ans, forderv(x))
@@ -4107,16 +4059,7 @@ if (test_longdouble) {
 test(1149.1, forderv(integer(0)), integer(0))
 test(1149.2, forderv(numeric(0)), integer(0))
 
-# test uniqlengths
-set.seed(45)
-x <- sample(c(NA_integer_, 1:1e4), 1e6, TRUE)
-ox <- forderv(x)
-o1 <- uniqlist(list(x), ox)
-test(1151.1, c(diff(o1), length(x)-tail(o1, 1L)+1L), uniqlengths(o1, length(x)))
-o1 <- uniqlist(list(x))
-test(1151.2, c(diff(o1), length(x)-tail(o1, 1L)+1L), uniqlengths(o1, length(x)))
-rm(list=c("x","ox","o1"))
-gc()
+# 1151 moved to benchmark.Rraw, #5517
 
 # #67 fix - grouping with .SDcols gave "symbol not subsettable error" - consequence of FR #355 implementation
 dt = data.table(grp = sample(letters[1:3],20, replace = TRUE), v1 = rnorm(20), v2 = rnorm(20))
@@ -4156,21 +4099,7 @@ setkey(dt, x)
 test(1155.4, dt[J(NaN)], dt[is.nan(x)])
 test(1155.5, dt[J(NA_real_)], dt[is.na(x) & !is.nan(x)])
 
-# Fix for (usually small) memory leak when grouping, #2648.
-# Deliberate worst case: largest group (100000 rows) followed last by a small group (1 row).
-DT = data.table(A=rep(1:2,c(100000,1)), B=runif(100001))
-before = gc()["Vcells",2]
-for (i in 1:50) DT[, sum(B), by=A]
-after = gc()["Vcells",2]
-test(1157, after < before+3)  # +3 = 3MB
-# Before the patch, Vcells grew dramatically from 6MB to 60MB. Now stable at 6MB. Increase 50 to 1000 and it grew to over 1GB for this case.
-
-# Similar for when dogroups writes less rows than allocated, #2648.
-DT = data.table(k = 1:50, g = 1:20, val = rnorm(1e4))
-before = gc()["Vcells",2]
-for (i in 1:50) DT[ , unlist(.SD), by = 'k']
-after = gc()["Vcells",2]
-test(1158, after < before+3)  # 177.6MB => 179.2MB. Needs to be +3 now from v1.9.8 with alloccol up from 100 to 1024
+# 1157-1158 moved to benchmark.Rraw, #5517
 
 # tests for 'setDT' - convert list, DF to DT without copy
 x <- data.frame(a=1:4, b=5:8)
@@ -4482,48 +4411,46 @@ seed = as.integer(Sys.time()) # sample(9999L, 1L) temporary fix, because all the
 seedInfo = paste("forder decreasing argument test: seed = ", seed,"  ", sep="")
 # no NaN (because it's hard to match with base::order); tested below in 1988.4-8
 set.seed(seed)
-foo <- function(n) apply(matrix(sample(letters, n*8L, TRUE), ncol=8L), 1, paste, sep="")
+foo <- function(n) apply(matrix(sample(letters, n*8L, TRUE), ncol=8L), 1, paste, collapse="")
 i1 = as.integer(sample(c(-100:100), 1e3, TRUE))
 i2 = as.integer(sample(c(-100:100, -1e6, 1e6), 1e3, TRUE))
 d1 = as.numeric(sample(c(-100:100,Inf,-Inf), 1e3, TRUE))
 d2 = as.numeric(rnorm(1e3))
-c1 = sample(c(letters), 1e3, TRUE)
-c2 = sample(foo(200), 1e3, TRUE)
+c1 = sample(letters, 1e3, TRUE)
+c2 = sample(foo(50), 1e3, TRUE)
 
 DT = data.table(i1, i2, d1, d2, c1, c2)
 # randomise col order as well
 colorder=sample(ncol(DT))
 setcolorder(DT, names(DT)[colorder])
 seedInfo = paste(seedInfo, "colorder = ", paste(colorder, collapse=","), sep="")
-ans = vector("list", length(names(DT)))
 
 test_no = 1223.0
 oldnfail = nfail
-for (i in seq_along(names(DT))) {
-  cj = as.matrix(do.call(CJ, split(rep(c(1L,-1L), each=i), 1:i)))
-  ans[[i]] = combn(names(DT), i, function(x) {
-    tmp = apply(cj, 1, function(y) {
+for (nvars in seq_along(names(DT))) {
+  signs = expand.grid(replicate(nvars, c(-1L,1L), simplify=FALSE))
+  combn(names(DT), nvars, simplify=FALSE, function(x) {  # simplify=FALSE needed for R 3.1.0
+    for (i in seq_len(nrow(signs))) {
       test_no <<- signif(test_no+.001, 7)
       ll = as.call(c(as.name("order"),
         lapply(seq_along(x), function(j) {
-          if (y[j] == 1L)
+          if (signs[i,j] == 1L)
             as.name(x[j])
           else {
-            if (class(DT[[x[j]]]) =="character")
+            if (is.character(DT[[x[j]]]))
               as.call(c(as.name("-"), as.call(list(as.name("xtfrm"), as.name(x[j])))))
             else
               as.call(list(as.name("-"), as.name(x[j])))
           }
         })
       ))
-      test(test_no, forderv(DT, by=x, order=y), with(DT, eval(ll)))
-    })
-    dim(tmp)=NULL
-    list(tmp)
+      test(test_no, forderv(DT, by=x, order=signs[i,]), with(DT, eval(ll)))
+    }
+    integer()
   })
 }
-ans = NULL
 if (nfail > oldnfail) cat(seedInfo, "\n")  # to reproduce
+rm_all()
 
 # fix for bug #44 - unique on null data.table should return null data.table
 test(1224, unique(data.table(NULL)), data.table(NULL))
@@ -4619,7 +4546,7 @@ if (base::getRversion() < "3.3.0") {
 
 # Test for optimisation of 'order' to 'forder'. Copied to benchmarks.Rraw too.
 set.seed(45L)
-DT = data.table(x=sample(1e2, 1e5, TRUE), y=sample(1e2, 1e5, TRUE))
+DT = data.table(x=sample.int(1e2, 1e3, TRUE), y=sample.int(1e2, 1e3, TRUE))  # 1e5 reduced again to 1e3, #5517
 test(1241, DT[order(x,-y)],       # optimized to forder()
            DT[base_order(x,-y)])  # not optimized
 
@@ -4893,7 +4820,7 @@ test(1268.22, dt[, c(as.list(c), lapply(.SD, mean)), by=a],
 
 # Wide range numeric and integer64, to test all bits
 old_rounding = getNumericRounding()
-x = sample( c(seq(-1e100, 1e100, length.out=1e5), c(seq(-1e-100,1e-100,length.out=1e5))) )
+x = sample( c(seq(-1e100, 1e100, length.out=1e3), c(seq(-1e-100,1e-100,length.out=1e3))) )  # 1e5 reduced to 1e3, #5517
 setNumericRounding(0)
 test(1269, forderv(x), base::order(x))
 setNumericRounding(2)   # not affected by rounding
@@ -5150,7 +5077,7 @@ dt <- data.table(a=1:3, b=c(7,8,9), c=c(TRUE, NA, FALSE), d=as.list(4:6), e=c("a
 
 test(1294.01, dt[, a := 1]$a, rep(1L, 3L))
 test(1294.02, dt[, a := 1.5]$a, rep(1L, 3L),
-              warning="1.5.*double.*position 1 truncated.*integer.*column 1 named 'a'")
+              warning="1.5.*double.*position 1.*truncated.*integer.*column 1 named 'a'")
 test(1294.03, dt[, a := NA]$a, rep(NA_integer_, 3L))
 test(1294.04, dt[, a := "a"]$a, rep(NA_integer_, 3L),
               warning=c("Coercing 'character' RHS to 'integer'.*column 1 named 'a'",
@@ -5215,8 +5142,8 @@ DT = DT[1L]
 set(DT,1L,"b",FALSE)  # passing 1L as i here is needed to avoid column plonk, so changes the logical singleton in place
 test(1297, as.integer(TRUE[1]), 1L)   # In R 3.1, TRUE[1] returns the global TRUE but TRUE doesn't yet (parses as new vector)
 test(1298, as.integer(TRUE), 1L)
-# orignal example, verbatim from James Sams :
-upc_table = data.table(upc=1:100000, upc_ver_uc=rep(c(1,2), times=50000), is_PL=rep(c(TRUE, FALSE, FALSE, TRUE), each=25000), product_module_code=rep(1:4, times=25000), ignore.column=2:100001)
+# orignal example, verbatim from James Sams; sizes reduced to save ram in #5517
+upc_table = data.table(upc=1:1000, upc_ver_uc=rep(c(1,2), times=500), is_PL=rep(c(TRUE, FALSE, FALSE, TRUE), each=250), product_module_code=rep(1:4, times=250), ignore.column=2:1001)
 test(1299, upc_table[, .N, by=list(upc, upc_ver_uc)][,max(N)], 1L)  # all size 1 groups
 test(1300, upc_table[, list(is_PL, product_module_code), keyby=list(upc, upc_ver_uc)][,upc[1:3]], 1:3L)   # was warning "internal TRUE value has been modified"
 rm(list="upc_table")
@@ -6798,13 +6725,7 @@ ans = list(as.integer(c(NA, 1:9)), as.integer(c(NA, NA, 1:8)))
 setattr(ans, 'names', nm)
 test(1463.61, shift(x, 1:2, give.names=TRUE), ans)
 
-if (test_nanotime) {
-  x=nanotime(1:4)
-  test(1463.62, shift(x         ),           c(nanotime::nanotime(NA), x[1:3]));
-  test(1463.63, shift(x, fill=0L),           c(nanotime::nanotime(0L), x[1:3]));
-  test(1463.64, shift(x, 1,  type="cyclic"), c(x[4L], x[-4L]));
-  test(1463.65, shift(x, -1, type="cyclic"), c(x[-1L], x[1L]));
-}
+# 1463.62-65 tested nanotime moved to other.Rraw 21, #5516
 
 # shift circular
 x = 1:5
@@ -6815,6 +6736,18 @@ test(1463.69, shift(x, -6, type="cyclic"), shift(x, -1, type="cyclic"))
 # test warning
 test(1463.70, shift(x, 1, fill=1, type="cyclic"), c(5L, 1L:4L), warning="Provided argument fill=1 will be ignored since type='shift'.")
 
+# test raw #5547
+x=as.raw(1:5)
+test(1463.71, shift(x,1L),                   as.raw(c(0L, 1:4)))
+test(1463.72, shift(x,1:2),                  list(as.raw(c(0L, 1:4)), as.raw(c(0L, 0L, 1:3))))
+test(1463.73, shift(x,1L, fill=0L),               as.raw(c(0L, 1:4)))
+test(1463.74, shift(x,1L,    type="lead"),   as.raw(c(2:5, 0L)))
+test(1463.75, shift(x,1:2,   type="lead"),   list(as.raw(c(2:5, 0L)), as.raw(c(3:5, 0L, 0L))))
+test(1463.76, shift(x,1L, fill=0L,type="lead"),   as.raw(c(2:5, 0L)))
+test(1463.77, shift(x,1L,    type="cyclic"), as.raw(c(5, 1:4)))
+test(1463.78, shift(x,1:2,   type="cyclic"), list(as.raw(c(5, 1:4)), as.raw(c(4:5, 1:3))))
+test(1463.79, shift(x,-1L,   type="cyclic"), as.raw(c(2:5, 1)))
+test(1463.80, shift(x,-(1:2),type="cyclic"), list(as.raw(c(2:5, 1)), as.raw(c(3:5,1:2))))
 
 # FR #686
 DT = data.table(a=rep(c("A", "B", "C", "A", "B"), c(2,2,3,1,2)), foo=1:10)
@@ -6837,106 +6770,7 @@ test(1464.12, rleidv(DT, 1:2), ans<-INT(1,2,3,4,5,6,6,6,7,8,8,9,10,11,12,13,14,1
 test(1464.13, rleidv(DT, 2:1), ans)
 test(1464.14, rleidv(DT, c(3,1)), INT(1,1,2,2,3,4,5,5,6,7,8,9,10,11,12,13,14,15,16,17))
 
-if (test_xts) {
-
-  Sys.unsetenv("_R_CHECK_LENGTH_1_LOGIC2_")
-  # package xts has an issue with an && clause (https://github.com/joshuaulrich/xts/pull/269). When that is fixed in xts and released to CRAN, we can remove this Sys.unsetenv
-  # Sys.setenv is called again at the end of this xts branch. The original env variable value was stored at the top of this file and restored at the end.
-
-  # data.table-xts conversion #882
-  # Date index
-  dt = data.table(index = as.Date((as.Date("2014-12-12")-49):as.Date("2014-12-12"),origin="1970-01-01"),quantity = as.numeric(rep(c(1:5),10)),value = rep(c(1:10)*100,5))
-  xt = as.xts(matrix(data = c(dt$quantity, dt$value),ncol = 2,dimnames = list(NULL,c("quantity","value"))),order.by = dt$index)
-  dt_xt = as.data.table(xt)
-  xt_dt = as.xts.data.table(dt)
-  test(1465.01, all.equal(dt, dt_xt, check.attributes = FALSE))
-  test(1465.02, xt, xt_dt)
-  # POSIXct index
-  dt <- data.table(index = as.POSIXct(as.Date((as.Date("2014-12-12")-49):as.Date("2014-12-12"),origin="1970-01-01"),origin="1970-01-01"),quantity = as.numeric(rep(c(1:5),10)),value = rep(c(1:10)*100,5))
-  xt = as.xts(matrix(data = c(dt$quantity, dt$value),ncol = 2,dimnames = list(NULL,c("quantity","value"))),order.by = dt$index)
-  dt_xt = as.data.table(xt)
-  xt_dt = as.xts.data.table(dt)
-  test(1465.03, all.equal(dt, dt_xt, check.attributes = FALSE))
-  test(1465.04, xt, xt_dt)
-  # index types returned from to.period
-  dt = data.table(index = as.Date((as.Date("2014-12-12") - 729):as.Date("2014-12-12"), origin = "1970-01-01"), quantity = as.numeric(rep(c(1:5), 73)), value = rep(c(1:73) * 100, 5))
-  xt = as.xts(matrix(data = c(dt$quantity, dt$value), ncol = 2, dimnames = list(NULL, c("quantity", "value"))), order.by = dt$index)
-  xt_w = xts::to.weekly(xt)
-  xt_dt_xt_w = as.xts.data.table(as.data.table(xt_w))
-  xt_m = xts::to.monthly(xt)
-  xt_dt_xt_m = as.xts.data.table(as.data.table(xt_m))
-  xt_q = xts::to.quarterly(xt)
-  xt_dt_xt_q = as.xts.data.table(as.data.table(xt_q))
-  xt_y = xts::to.yearly(xt)
-  xt_dt_xt_y = as.xts.data.table(as.data.table(xt_y))
-  test(1465.05, all.equal(xt_w, xt_dt_xt_w, check.attributes = FALSE))
-  test(1465.06, all.equal(xt_m, xt_dt_xt_m, check.attributes = FALSE))
-  test(1465.07, all.equal(xt_q, xt_dt_xt_q, check.attributes = FALSE))
-  test(1465.08, all.equal(xt_y, xt_dt_xt_y, check.attributes = FALSE))
-
-  test(1465.09, xts::last(1:5), 5L)      # was test 1531
-
-  # xts issue from Joshua, #1347
-  x = as.Date(1:5, origin="2015-01-01")
-  test(1465.10, last(x), tail(x, 1L))    # was test 1559
-
-  x = xts(1:100, Sys.Date()+1:100)
-  test(1465.11, last(x,10), x[91:100,])  # was test 841
-  # The important thing this tests is that data.table's last() dispatches to xts's method when data.table is loaded above xts.
-  # But that isn't tested by R CMD check because xts is loaded above data.table, there.
-  # So to make this test is relevant, run it in fresh R session directly, after: "require(xts);require(data.table)"
-  #                                                                 rather than: "require(data.table);require(xts)"
-  # Which was the main thrust of bug#2312 fixed in v1.8.3
-
-  # fix for #1484;  was test 1589
-  x = xts::as.xts(8, order.by = as.Date("2016-01-03"))
-  test(1465.12, all.equal(as.data.table(x), data.table(index = as.Date("2016-01-03"), V1 = 8), check.attributes=FALSE))
-
-  # IDate support in as.xts.data.table #1499; was test 1663
-  dt <- data.table(date = c(as.IDate("2014-12-31"),
-                            as.IDate("2015-12-31"),
-                            as.IDate("2016-12-31")),
-                   nav = c(100,101,99),
-                   key = "date")
-  dt.xts <- as.xts.data.table(dt)
-  test(1465.13, dt.xts[1L], xts::xts(data.table(nav=100), order.by=as.Date("2014-12-31")))
-
-  # additional coverage missing uncovered in #3117
-  dt = data.table(index = as.Date((as.Date("2014-12-12")-49):as.Date("2014-12-12"),origin="1970-01-01"),quantity = as.numeric(rep(c(1:5),10)),value = rep(c(1:10)*100,5))
-  xt = as.xts(matrix(data = c(dt$quantity, dt$value),ncol = 2,dimnames = list(NULL,c("quantity","value"))),order.by = dt$index)
-  test(1465.14, as.data.table(xt, keep.rownames = FALSE), dt[ , !'index'])
-  names(xt)[1L] = 'index'
-  test(1465.15, as.data.table(xt), error = 'Input xts object should not')
-  names(xt)[1L] = 'quantity'
-  setcolorder(dt, c(3, 1, 2))
-  if (base::getRversion() < "3.6.0") as.xts = as.xts.data.table # fix for when we cannot register s3method for suggested dependency #3286
-  test(1465.16, as.xts(dt), error = 'data.table must have a time based')
-  setcolorder(dt, c(2, 3, 1))
-  dt[ , char_col := 'a']
-  test(1465.17, as.xts(dt), xt, warning = 'columns are not numeric')
-  if (base::getRversion() < "3.6.0") rm(as.xts)
-
-  # 890 -- key argument for as.data.table.xts
-  x = xts(1:10, as.Date(1:10, origin = "1970-01-01"))
-  old = options(datatable.verbose=FALSE)
-  test(1465.18, capture.output(as.data.table(x, key="index")),
-       c("         index V1", " 1: 1970-01-02  1", " 2: 1970-01-03  2",
-         " 3: 1970-01-04  3", " 4: 1970-01-05  4", " 5: 1970-01-06  5",
-         " 6: 1970-01-07  6", " 7: 1970-01-08  7", " 8: 1970-01-09  8",
-         " 9: 1970-01-10  9", "10: 1970-01-11 10"))
-  options(old)
-
-  # as.data.table.xts(foo) had incorrect integer index with a column name called 'x', #4897
-  M = xts::as.xts(matrix(1, dimnames=list("2021-05-23", "x")))  # xts:: just to be extra robust; shouldn't be needed with rm(as.xts) above
-  test(1465.19, inherits(as.data.table(M)$index,"POSIXct"))
-
-  # non-numeric xts coredata, #5268
-  x = xts::xts(x=c(TRUE,FALSE), order.by=Sys.Date()+(1:2))
-  colnames(x) = "value"  # perhaps relates to #4897
-  test(1465.20, identical(x, as.xts(as.data.table(x), numeric.only=FALSE)))
-
-  Sys.setenv("_R_CHECK_LENGTH_1_LOGIC2_" = TRUE)
-}
+# 1465 tested xts moved to other.Rraw 18, #5516
 
 # as.data.table.default #969
 ar <- array(NA, dim=c(10,4),dimnames = list(NULL,paste("col",1:4,sep="")))
@@ -7489,12 +7323,10 @@ test(1524, ans1, ans2)
 x = c(1, 2, 1)
 y = c(5, 8, 8, 4)
 w = c(10, 12, 12, 13)  # already sorted but has dups; more efficient case to cover
-options(datatable.CJ.names=FALSE)
-test(1525.1, CJ(x, y, unique=TRUE), CJ(V1=c(1,2), V2=c(4,5,8)))
-test(1525.2, CJ(x, z=y, unique=TRUE), ans<-data.table(V1=rep(c(1,2), each=3), z=c(4,5,8), key="V1,z")) # naming of one but not both, too
-options(datatable.CJ.names=TRUE)
+# tests 1525.1, 1525.2 tested the now-ineffectual datatable.CJ.names option.
+ans<-data.table(V1=rep(c(1,2), each=3), z=c(4,5,8), key="V1,z")
 test(1525.3, CJ(x, y, unique=TRUE), CJ( x=c(1,2),  y=c(4,5,8)))
-test(1525.4, CJ(x, z=y, unique=TRUE), setnames(ans,c("x","z")))
+test(1525.4, CJ(x, z=y, unique=TRUE), setnames(copy(ans),c("x","z")))
 test(1525.5, CJ(x, w, unique=TRUE), data.table(x=(rep(c(1,2), each=3)), w=c(10,12,13), key="x,w"))
 
 # `key` argument fix for `setDT` when input is already a `data.table`,  #1169
@@ -7737,18 +7569,8 @@ dtab <- data.table(pid = factor(c("i", "nouana")),
                    c("pid", "year"))
 test(1541, key(dtp[dtab]), c("pid", "year"))
 
-#  fix DT[TRUE, :=] using too much working memory for i, #1249
-if (!inherits(try(Rprofmem(NULL), silent=TRUE), "try-error")) {  # in case R not compiled with memory profiling enabled
-  f = tempfile()
-  N = 1000000           # or any large number of rows
-  DT = data.table(A=1:N, B=rnorm(N))
-  DT[TRUE, B := B * 2] # stabilize with initial dummy update
-  Rprofmem(f)
-  DT[TRUE, B := B * 2] # or some in-place update
-  Rprofmem(NULL)
-  test(1542, length(grep("000",readLines(f, warn=FALSE))), 1L)  # one allocation for the RHS only
-  unlink(f)
-}
+# 1542.0 moved to benchmark.Rraw, #5517
+
 # DT[TRUE] should shallow copy as v1.11.8 and earlier did (#3214); in future more will shallow copy too
 DT = data.table(id = 1:5, key="id")
 DT1 = DT[TRUE]
@@ -7897,10 +7719,7 @@ ans2 <- fread(f, sep=",", header=TRUE, encoding="UTF-8")
 test(1548.1, unique(unlist(lapply(ans1, Encoding))), "unknown")
 test(1548.2, unique(unlist(lapply(ans2, Encoding))), "UTF-8")
 
-# #1167 print.data.table row id in non-scientific notation
-DT <- data.table(a = rep(1:5,3*1e5), b = rep(letters[1:3],5*1e5))
-test(1549, capture.output(print(DT)), c("         a b", "      1: 1 a", "      2: 2 b", "      3: 3 c", "      4: 4 a", "      5: 5 b", "     ---    ", "1499996: 1 b", "1499997: 2 c", "1499998: 3 a", "1499999: 4 b", "1500000: 5 c"))
-rm(DT)
+# 1549 moved to benchmark.Rraw, #5517
 
 # PR by @dselivanov
 # fixes #504 - handle nastring while reading (without coercion to character)
@@ -8887,7 +8706,7 @@ test(1613.601, all.equal(data.table(a=1), data.frame(a=1)), "target is data.tabl
 test(1613.602, all.equal(data.table(a=1), data.frame(a=1), check.attributes = FALSE))
 test(1613.603, all.equal(data.table(a=1), list(a=1), check.attributes = FALSE))
 test(1613.604, all.equal(data.table(a=1), 1, check.attributes = FALSE))
-test(1613.605, all.equal(data.table(a=1), try(stop('this wont work'), silent = TRUE), check.attributes = FALSE), "target is data.table but current is not and failed to be coerced to it")
+test(1613.605, !isTRUE(all.equal(data.table(a=1), try(stop('this wont work'), silent = TRUE), check.attributes = FALSE)))
 L1 = list(a = data.table(1), b = setattr("foo1613", "tbl", data.table(1)))
 L2 = list(a = 1, b = setattr("foo1613", "tbl", 1))
 test(1613.606, all(grepl("target is data.table, current is numeric", all.equal(L1, L2))))
@@ -9301,6 +9120,8 @@ dt = data.table(x=1:5, y=6:10, z=c(1,1,1,2,2))
 test(1638, dt[, .SD, by=z, verbose=TRUE], output="All optimizations are turned off")
 options(datatable.optimize=Inf)
 
+rm_all()
+
 #1389 - split.data.table - big chunk of unit tests
 set.seed(123)
 dt = data.table(x1 = rep(letters[1:2], 6), x2 = rep(letters[3:5], 4), x3 = rep(letters[5:8], 3), y = rnorm(12))
@@ -9392,14 +9213,14 @@ test(1639.056, TRUE, all(
   sapply(l, sapply, ncol) == rep(4L, 4)
 ))
 l = split(fdt, by = c("x1","x2","x3"), flatten=FALSE) # empty levels in x3 after subset are expanded
-test(1639.057, TRUE, all(
-  is.list(l), identical(names(l), c("b","a")),
-  sapply(l, function(x) !is.data.table(x) && is.list(x)),
-  sapply(l, sapply, function(x) !is.data.table(x) && is.list(x)),
-  identical(lapply(l, lapply, names), list(b=list(d=c("h","f","e","g"), e=c("h","f","e","g"), c=c("f","h","e","g")), a=list(e=c("g","e","f","h"), d=c("e","g","f","h"), c=c("e","g","f","h")))),
-  sapply(l, sapply, sapply, nrow) == rep(c(1L,1L,0L,0L), 6),
-  sapply(l, sapply, sapply, ncol) == rep(4L, 24)
-))
+# memtest tracing in #5520 showed this split() and the one before 1639.188 (both by 3 columns) account for the RAM usage in 1639. But they should be gc()'d eventually after rm_all().
+test(1639.0571, is.list(l))
+test(1639.0572, names(l), c("b","a"))
+test(1639.0573, all(sapply(l, function(x) !is.data.table(x) && is.list(x))))
+test(1639.0574, all(sapply(l, sapply, function(x) !is.data.table(x) && is.list(x))))
+test(1639.0575, lapply(l, lapply, names), list(b=list(d=c("h","f","e","g"), e=c("h","f","e","g"), c=c("f","h","e","g")), a=list(e=c("g","e","f","h"), d=c("e","g","f","h"), c=c("e","g","f","h"))))
+test(1639.0576, all(sapply(l, sapply, sapply, nrow) == rep(c(1L,1L,0L,0L), 6)))
+test(1639.0577, all(sapply(l, sapply, sapply, ncol) == rep(4L, 24)))
 l = split(fdt, by = c("x3","x1"), drop=TRUE, flatten=FALSE) # multi col rev
 test(1639.058, TRUE, all(
   is.list(l), identical(names(l), c("h","f","g","e")),
@@ -9764,6 +9585,7 @@ test(1639.141, all(sapply(dtL, truelength) > 1000))
 dt <- data.table(x = factor("a"), y = 1)
 test(1639.142, x = split(dt, by = "x"), y = list(a = dt))
 test(1639.143, x = split(dt, by = "y"), y = list(`1` = dt))
+rm_all()
 
 # allow x's cols (specifically x's join cols) to be referred to using 'x.' syntax
 # patch for #1615. Note that I specifically have not implemented x[y, aa, on=c(aa="bb")]
@@ -9776,10 +9598,10 @@ test(1640.2, x[y, c(.SD, .(x.aa=x.aa)), on=c(aa="bb")], data.table(aa=3:5, cc=c(
 # tests for non-equi joins
 # function to create a random data.table with all necessary columns
 nq_fun = function(n=100L) {
-  i1 = sample(sample(n, 10L), n, TRUE)
-  i2 = sample(-n/2:n/2, n, TRUE)
-  i3 = sample(-1e6:1e6, n, TRUE)
-  i4 = sample(c(NA_integer_, sample(-n:n, 10L, FALSE)), n, TRUE)
+  i1 = sample(sample.int(n, 10L), n, TRUE)
+  i2 = sample.int(n, n, TRUE) - as.integer(n/2)    # this used to be type numeric before #5517 which didn't seem intentional
+  i3 = sample.int(2e6, n, TRUE) - as.integer(1e6)  # used to sample from -1e6:1e6 which if allocated would be 8MB, #5517
+  i4 = sample(c(NA_integer_, sample.int(n*2L, 10L, FALSE)-n), n, TRUE)
 
   d1 = sample(rnorm(10L), n, TRUE)
   d2 = sample(rnorm(50), n, TRUE)
@@ -9791,14 +9613,54 @@ nq_fun = function(n=100L) {
 
   dt = data.table(i1,i2,i3,i4, d1,d2,d3,d4, c1,c2)
   if (test_bit64) {
-    I1 = as.integer64(sample(sample(n, 10L), n, TRUE))
-    I2 = as.integer64(sample(-n/2:n/2, n, TRUE))
-    I3 = as.integer64(sample(-1e6:1e6, n, TRUE))
-    I4 = as.integer64(sample(c(NA_integer_, sample(-n:n, 10L, FALSE)), n, TRUE))
+    I1 = as.integer64(sample(sample.int(n, 10L), n, TRUE))
+    I2 = as.integer64(sample.int(n, n, TRUE) - as.integer(n/2))
+    I3 = as.integer64(sample.int(2e6, n, TRUE) - as.integer(1e6))  # there used to be another -1e6:1e6 here whose altrep likely allocated when sample accessed it, #5517
+    I4 = as.integer64(sample(c(NA_integer_, sample.int(n*2L, 10L, FALSE)-n), n, TRUE))
     dt = cbind(dt, data.table(I1,I2,I3,I4))
   }
   dt
 }
+
+construct <- function(cols, vals, ops, x, y) {
+  expr = lapply(seq_along(cols), function(i) {
+    GT_or_LT = ops[i]==">" || ops[i]=="<"
+    if (inherits(vals[[i]], "integer64")) {
+      if (is.na.integer64(vals[[i]])) if (GT_or_LT) quote(logical()) else as.call(list(quote(is.na.integer64), as.name(cols[[i]])))
+      else as.call(list(as.name(ops[[i]]), as.name(cols[[i]]), as.integer(vals[[i]])))
+      # don't know how to construct a call with int64 -- vals[[i]] gets converted to NAN
+    } else {
+      if (is.nan(vals[[i]])) if (GT_or_LT) quote(logical(0)) else as.call(list(quote(is.nan), as.name(cols[[i]])))
+      else if (is_only_na(vals[[i]])) if (GT_or_LT) quote(logical()) else as.call(list(quote(is_only_na), as.name(cols[[i]])))
+      else as.call(list(as.name(ops[[i]]), as.name(cols[[i]]), vals[[i]]))
+    }
+  })
+  Reduce(function(x,y)call("&",x,y), expr)
+}
+
+check <- function(x, y, cols, ops, mult="all") {
+  # gather just row numbers here and then select all rows once afterwards, rather than rbindlist
+  rowNums = unlist(lapply(1:nrow(y), function(i) {
+    e = construct(cols, y[i, ..cols], ops, x, y)
+    rowNums = which(with(x, eval(e)))  # raw expression, isolated from both [.data.table overhead and subset optimization
+    if (!length(rowNums) || mult=="all")
+      rowNums
+    else if (mult=="first")
+      rowNums[1L]
+    else # mult=="last"
+      rowNums[length(rowNums)]
+  }))
+  x[rowNums]
+}
+
+nq <- function(x, y, cols, ops, nomatch=0L, mult="all") {
+  sd_cols = c(paste0("x.", cols), setdiff(names(x), cols))
+  ans = x[y, mget(sd_cols, as.environment(-1)), on = paste0(cols, ops, cols), allow.cartesian=TRUE, nomatch=nomatch, mult=mult]
+  setnames(ans, gsub("^x[.]", "", names(ans)))
+  setcolorder(ans, names(x))[]
+}
+
+is_only_na <- function(x) is.na(x) & !is.nan(x)
 
 nqjoin_test <- function(x, y, k=1L, test_no, mult="all") {
   ops = c("==", ">=", "<=", ">", "<")
@@ -9810,42 +9672,6 @@ nqjoin_test <- function(x, y, k=1L, test_no, mult="all") {
     thisops[startsWith(cols, "c")] = "=="
     thisops
   })
-  is_only_na <- function(x) is.na(x) & !is.nan(x)
-  construct <- function(cols, vals, ops) {
-    expr = lapply(seq_along(cols), function(i) {
-      GT_or_LT = ops[i]==">" || ops[i]=="<"
-      if (inherits(vals[[i]], "integer64")) {
-        if (is.na.integer64(vals[[i]])) if (GT_or_LT) quote(logical()) else as.call(list(quote(is.na.integer64), as.name(cols[[i]])))
-        else as.call(list(as.name(ops[[i]]), as.name(cols[[i]]), as.integer(vals[[i]])))
-        # don't know how to construct a call with int64 -- vals[[i]] gets converted to NAN
-      } else {
-        if (is.nan(vals[[i]])) if (GT_or_LT) quote(logical(0)) else as.call(list(quote(is.nan), as.name(cols[[i]])))
-        else if (is_only_na(vals[[i]])) if (GT_or_LT) quote(logical()) else as.call(list(quote(is_only_na), as.name(cols[[i]])))
-        else as.call(list(as.name(ops[[i]]), as.name(cols[[i]]), vals[[i]]))
-      }
-    })
-    Reduce(function(x,y)call("&",x,y), expr)
-  }
-  check <- function(x, y, cols, ops, mult="all") {
-    # gather just row numbers here and then select all rows once afterwards, rather than rbindlist
-    rowNums = unlist(lapply(1:nrow(y), function(i) {
-      e = construct(cols, y[i, ..cols], ops)
-      rowNums = which(with(x, eval(e)))  # raw expression, isolated from both [.data.table overhead and subset optimization
-      if (!length(rowNums) || mult=="all")
-        rowNums
-      else if (mult=="first")
-        rowNums[1L]
-      else # mult=="last"
-        rowNums[length(rowNums)]
-    }))
-    x[rowNums]
-  }
-  nq <- function(x, y, cols, ops, nomatch=0L, mult="all") {
-    sd_cols = c(paste0("x.", cols), setdiff(names(x), cols))
-    ans = x[y, mget(sd_cols, as.environment(-1)), on = paste0(cols, ops, cols), allow.cartesian=TRUE, nomatch=nomatch, mult=mult]
-    setnames(ans, gsub("^x[.]", "", names(ans)))
-    setcolorder(ans, names(x))[]
-  }
   for (i in seq_along(runcmb)) {
     thiscols = runcmb[[i]]
     thisops = runops[[i]]
@@ -9858,7 +9684,7 @@ nqjoin_test <- function(x, y, k=1L, test_no, mult="all") {
   gc()  # no longer needed but left in place just in case, no harm
 }
 
-dt1 = nq_fun(400L)
+dt1 = nq_fun(100L)  # 400 reduced to 100, #5517
 dt2 = nq_fun(50L)
 x = na.omit(dt1)
 y = na.omit(dt2)
@@ -10073,16 +9899,20 @@ test(1658.39, fwrite(matrix(1:3, nrow=3, ncol=1), quote = TRUE), output = '"V1"\
 test(1658.40, fwrite(matrix(1:4, nrow=2, ncol=2, dimnames = list(c("ra","rb"),c("ca","cb"))), quote = TRUE), output = '"ca","cb"\n.*1,3\n2,4', message = "x being coerced from class: matrix to data.table")
 
 # fwrite compress
-test(1658.41, fwrite(data.table(a=c(1:3), b=c(1:3)), compress="gzip"), output='a,b\n1,1\n2,2\n3,3')  # compress ignored on console
-DT = data.table(a=rep(1:2,each=100), b=rep(1:4,each=25))
-test(1658.421, fwrite(DT, file=f1<-tempfile(fileext=".gz"), verbose=TRUE), NULL,
-               output="args.nrow=200 args.ncol=2.*maxLineLen=5[12].*Writing 200 rows in 1 batches of 200 rows.*nth=1")  # [12] for Windows where eolLen==2
-test(1658.422, fwrite(DT, file=f2<-tempfile()), NULL)
-test(1658.423, file.info(f1)$size < file.info(f2)$size)  # 74 < 804  (file.size() isn't available in R 3.1.0)
-if (test_R.utils) test(1658.43, fread(f1), DT)  # use fread to decompress gz (works cross-platform)
-fwrite(DT, file=f3<-tempfile(), compress="gzip")   # compress to filename not ending .gz
-test(1658.44, file.info(f3)$size, file.info(f1)$size)
-unlink(c(f1,f2,f3))
+if (!haszlib()) {
+  test(1658.409, fwrite(data.table(a=1), file=tempfile(), compress="gzip"), error="header files were not found at the time data.table was compiled")
+} else {
+  test(1658.41, fwrite(data.table(a=c(1:3), b=c(1:3)), compress="gzip"), output='a,b\n1,1\n2,2\n3,3')  # compress ignored on console
+  DT = data.table(a=rep(1:2,each=100), b=rep(1:4,each=25))
+  test(1658.421, fwrite(DT, file=f1<-tempfile(fileext=".gz"), verbose=TRUE), NULL,
+                 output="args.nrow=200 args.ncol=2.*maxLineLen=5[12].*Writing 200 rows in 1 batches of 200 rows.*nth=1")  # [12] for Windows where eolLen==2
+  test(1658.422, fwrite(DT, file=f2<-tempfile()), NULL)
+  test(1658.423, file.info(f1)$size < file.info(f2)$size)  # 74 < 804  (file.size() isn't available in R 3.1.0)
+  if (test_R.utils) test(1658.43, fread(f1), DT)  # use fread to decompress gz (works cross-platform)
+  fwrite(DT, file=f3<-tempfile(), compress="gzip")   # compress to filename not ending .gz
+  test(1658.441, file.info(f3)$size, file.info(f1)$size)
+  unlink(c(f1,f2,f3))
+}
 DT = data.table(a=1:3, b=list(1:4, c(3.14, 100e10), c("foo", "bar", "baz")))
 test(1658.45, fwrite(DT), output=c("a,b","1,1|2|3|4","2,3.14|1e+12","3,foo|bar|baz"))
 DT[3,b:=as.raw(0:2)]
@@ -10109,10 +9939,12 @@ test(1658.52, file.info(f1)$size, file.info(f2)$size)
 unlink(c(f1, f2))
 
 # compression error -5 due to only 3 bytes (bom) in first block; #3599
-DT = data.table(l=letters, n=1:26)
-test(1658.53, fwrite(DT, file=f<-tempfile(fileext=".gz"), bom=TRUE, col.names=FALSE), NULL)
-if (test_R.utils) test(1658.54, fread(f), setnames(DT,c("V1","V2")))
-unlink(f)
+if (haszlib()) {
+  DT = data.table(l=letters, n=1:26)
+  test(1658.53, fwrite(DT, file=f<-tempfile(fileext=".gz"), bom=TRUE, col.names=FALSE), NULL)
+  if (test_R.utils) test(1658.54, fread(f), setnames(DT,c("V1","V2")))
+  unlink(f)
+}
 
 # complex column support for fwrite, part of #3690
 DT = data.table(a=1:3, z=0:2 - (2:0)*1i)
@@ -10121,7 +9953,7 @@ test(1658.56, fwrite(data.table(exp(1) - pi*1i)), output='2.718[0-9]*-3.141[0-9]
 ## formerly 1658.46
 DT = data.table(a=1:3, b=list(1:4, c(3.14, 100e10), c(3i,4i,5i)))
 test(1658.57, fwrite(DT), output='0+3i|0+4i|0+5i')
-DT[ , b := c(1i, -1-1i, NA)]
+DT[ , b := c(1i, -1-1i, NA_complex_)]
 test(1658.58, fwrite(DT), output='a,b\n1,0\\+1i\n2,-1-1i\n3,$')
 
 # more coverage
@@ -10590,7 +10422,7 @@ test(1702.2, isoweek(as.Date(test_cases)), test_values)
 test(1702.3, isoweek(as.POSIXct(test_cases)), test_values)
 
 # 1% sample of a 400-year cycle of dates for extra robustness
-if (test_R.utils) test(1702.4, isoweek((DT<-fread(testDir('isoweek_test.csv.bz2')))$input_date), DT$expected_output)
+if (test_R.utils) test(1702.4, isoweek((DT<-fread(testDir('isoweek_test.csv.bz2')))$input_date), DT$expected_output, ignore.warning="datetimes before") ## ignore.warning due to #5785
 
 # fread, ensure no shell commands #1702
 if (.Platform$OS.type=="unix") {
@@ -10963,7 +10795,8 @@ test(1736.05, capture.output(fwrite(DT, sep='|', sep2=c("c(",",",")"), logical01
  "2|c(15,16,17,18)|c(1.2,2.3,3.4,3.14159265358979,-9)", "3|c(7)|c(foo,bar)", "4|c(9,10)|c(TRUE,TRUE,FALSE)"))
 test(1736.06, capture.output(fwrite(DT, sep='|', sep2=c("{",",","}"), logicalAsInt=TRUE)),
  c("A|B|C", "1|{1,2,3,4,5,6,7,8,9,10}|{s,t,u,v,w}",
- "2|{15,16,17,18}|{1.2,2.3,3.4,3.14159265358979,-9}", "3|{7}|{foo,bar}", "4|{9,10}|{1,1,0}"))
+ "2|{15,16,17,18}|{1.2,2.3,3.4,3.14159265358979,-9}", "3|{7}|{foo,bar}", "4|{9,10}|{1,1,0}"),
+ warning="logicalAsInt has been renamed logical01")
 DT = data.table(A=c("foo","ba|r","baz"))
 test(1736.07, capture.output(fwrite(DT,na="")), c("A","foo","ba|r","baz"))    # no list column so no need to quote
 test(1736.08, capture.output(fwrite(DT)), c("A","foo","ba|r","baz"))
@@ -10989,31 +10822,7 @@ test(1738.3, sapply(DT,typeof), c(A="double",B="integer"))
 test(1738.4, capture.output(fwrite(DT)), capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
 test(1738.5, as.integer(as.Date(c("0000-03-01","9999-12-31"))), c(-719468L,2932896L))
 
-if (FALSE) {
-  # Full range takes too long for CRAN.
-  dts = seq(as.Date("0000-03-01"), as.Date("9999-12-31"), by="day")
-  dtsCh = as.character(dts)   # 36s
-  dtsCh = gsub(" ","0",sprintf("%10s",dtsCh))  # R does not 0 pad years < 1000
-  test(1739.1, length(dtsCh)==3652365 && identical(dtsCh[c(1,3652365)],c("0000-03-01","9999-12-31")))
-} else {
-  # test on CRAN a reduced but important range
-  dts = seq(as.Date("1899-12-31"), as.Date("2100-01-01"), by="day")
-  dtsCh = as.character(dts)
-  test(1739.2, length(dtsCh)==73051 && identical(dtsCh[c(1,73051)],c("1899-12-31","2100-01-01")))
-}
-DT = data.table(A=dts, B=as.IDate(dts))
-test(1739.3, sapply(DT,typeof), c(A="double",B="integer"))
-test(1739.4, typeof(dts), "double")
-f = tempfile()
-g = tempfile()                               # Full range
-fwrite(DT,f)                                 #     0.092s
-write.csv(DT,g,row.names=FALSE,quote=FALSE)  #    65.250s
-test(1739.5, readLines(f), c("A,B",paste(dtsCh,dtsCh,sep=",")))
-test(1739.6, readLines(f), readLines(g))
-unlink(f)
-unlink(g)
-rm(list=c("dtsCh","dts"))
-gc()
+# 1739 moved to benchmark.Rraw, #5517
 
 # dateTimeAs
 DT = data.table(
@@ -11073,15 +10882,34 @@ setattr(DT[[4]], "tzone", NULL)
 setattr(DT[[5]], "tzone", NULL)
 
 # format() now supports digits = 0, to display nsmall decimal places.
+# Oct 2022: R-devel changed write.csv behavior to no longer respect digits.secs, #5478.
+# For now we'll get out of the way while R-devel discussion is ongoing so that 1.14.4 can
+# be submitted to CRAN.
+# These tests test fwrite(, dateTimeAs="write.csv") whose
+# very point is to match write.csv. Rather than turn off these tests, we'll for now
+# continue to test that at least fwrite continues to work as intended. Otherwise
+# coverage will drop and we could miss a plain old crash or error bug.
+# Note that tzone has been removed above so these tests output the POSIXct in the
+# R session's timezone because here dateTimeAs="write.csv" and that's what write.csv does.
+# This is the reason `y` can't be fixed strings because depending on the timezone of the
+# session which is running test.data.table, the results will be different.
+# data.table's fwrite achieves local timezone writing (when dateTimeAs="write.csv") via
+# an R call to format.POSIXct in fwriteR.c. By default fwrite writes datetime in UTC for
+# consistent and reproducible research, which is different to write.csv.
+# TODO: revisit when R-devel has settled w.r.t. write.csv behavior.
+format_rows_as_csv = function(DT, digits) apply(sapply(DT, format, digits=digits), 1L, paste0, collapse=",")
 old=options(digits.secs=0)
 test(1741.3, x1<-capture.output(fwrite(DT,dateTimeAs="write.csv")),
-             capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
+             c("A,B,C,D,E", format_rows_as_csv(DT, digits=0L)))
+           # capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
 options(digits.secs=3)
 test(1741.4, x2<-capture.output(fwrite(DT,dateTimeAs="write.csv")),
-             capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
+             c("A,B,C,D,E", format_rows_as_csv(DT, digits=3L)))
+           # capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
 options(digits.secs=6)
 test(1741.5, x3<-capture.output(fwrite(DT,dateTimeAs="write.csv")),
-             capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
+             c("A,B,C,D,E", format_rows_as_csv(DT, digits=6L)))
+           # capture.output(write.csv(DT,row.names=FALSE,quote=FALSE)))
 # check that extra digits made it into output
 test(1741.6, sum(nchar(x1)) < sum(nchar(x2)) && sum(nchar(x2)) < sum(nchar(x3)))
 options(old)
@@ -11155,7 +10983,7 @@ test(1743.217, sapply(fread("a,b,c,d,e,f\na,b,c,d,e,f", colClasses = list(factor
 test(1743.218, sapply(fread("a,b,c,d,e,f\na,b,c,d,e,f", colClasses = list(factor = c(1, 2, 4), factor = 3), select = c(5, 4, 2, 3)), class), y = c(e = "character", d = "factor", b = "factor", c = "factor"))
 
 test(1743.22, fread("a,b,c\n1999/01/01,2,f", colClasses=list(Date=1L), drop="a"), data.table(b=2L, c="f"))
-test(1743.231, fread("a,b,c\n2,1,4i", colClasses=list(complex="c", integer=2L), drop="a"), data.table(b=1L, c="4i"),
+test(1743.231, fread("a,b,c\n2,1,4j", colClasses=list(complex="c", integer=2L), drop="a"), data.table(b=1L, c="4j"),
      warning=paste0(base_messages$coerce_na, ".*left as type 'character'"))
 test(1743.232, fread("a,b,c\n2,1,3+4i", colClasses=list(complex="c", integer=2L), drop="a"), data.table(b=1L, c=3+4i))
 test(1743.241, fread("a,b,c\n2,2,f", colClasses = list(character="c", integer="b"), drop="a"), data.table(b=2L, c="f"))
@@ -11312,12 +11140,13 @@ test(1750.07, # 0 length `by`, must also use `sets=list()`, so 0L rows result
   nrow(groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = character(), .SDcols=c("amount","value"), sets=list(), id=TRUE)),
   0L
 )
-test(1750.08, all( # for any single value from dataset there should be always same aggregate result on any level of grouping
-  sapply(seq_len(nrow(dt)), function(i) uniqueN(
+# for any single value from dataset there should be always be the same aggregate result on any level of grouping
+# changed from all(sapply()) to for() to save ram, #5517
+for (i in seq_len(nrow(dt))) {
+  test(1750.08+i/10000, uniqueN(
     groupingsets(dt[i], j = lapply(.SD, sum), by = c("color","year","status"), sets=list(c("color","year","status"), c("year"), c("status"), character())),
-    by=c("amount","value")
-  )) == 1L
-), TRUE)
+    by=c("amount","value")) == 1L)
+}
 # all grouping id matches in all totals
 r = groupingsets(dt, j = c(list(cnt=.N), lapply(.SD, sum)), by = c("color","year","status"), sets=list(c("color","year","status"), c("year"), c("status"), character()), id=TRUE)
 test(1750.09, uniqueN(
@@ -11484,23 +11313,7 @@ test(1751.3, capture.output(fwrite(DT,na="NA",verbose=FALSE)), c("\"x\"","NA"))
 test(1751.4, fread({fwrite(DT, f<-tempfile());f}), DT)  # the important thing
 unlink(f)
 
-if (test_nanotime) {
-  old = options(warnPartialMatchArgs=FALSE)  # option off temporarily pending https://github.com/eddelbuettel/nanotime/pull/49
-  DT = data.table(A=nanotime(tt<-c("2016-09-28T15:30:00.000000070Z",
-                                   "2016-09-29T23:59:00.000000001Z",
-                                   "2016-09-29T23:59:00.000000999Z",
-                                   "1970-01-01T00:01:01.000001000Z",
-                                   "1970-01-01T00:00:00.000000000Z",
-                                   "1969-12-31T23:59:59.999999999Z",
-                                   "1969-12-31T23:59:59.000000089Z",
-                                   "1969-12-31T12:13:14.000000000Z",
-                                   "1969-12-31T12:13:14.999999999Z",
-                                   "1969-12-31T12:13:14.000000001Z",
-                                   "1967-03-15T00:00:00.300000002Z",
-                                   "1967-03-15T23:59:59.300000002Z")))
-  options(old)
-  test(1752, capture.output(fwrite(DT, verbose=FALSE))[-1], tt)
-}
+# 1752 tested nanotime moved to other.Rraw 22, #5516
 
 # check too many fields error from ,\n line ending highlighted in #2044
 test(1753.1, fread("X,Y\n1,2\n3,4\n5,6"), data.table(X=INT(1,3,5),Y=INT(2,4,6)))
@@ -11562,18 +11375,7 @@ if (test_R.utils) test(1759, fread(testDir("alluniquechar.csv.gz"))[c(1,2,499,50
                       H=c("tokakysooopwtmlkeimzbgpein","hguwmynjhecsxpxldyzlemavmw",
                           "lyclruzkazfqhyxnppaafwcveo","myfqhltlwzwwxyvshwrzrdmfyq")))
 
-# fread should use multiple threads on single column input.
-# tests 2 threads; the very reasonable limit on CRAN
-# file needs to be reasonably large for threads to kick in (minimum chunkSize is 1MB currently)
-if (getDTthreads() == 1L) {
-  cat("Test 1760 not run because this session either has no OpenMP or has been limited to one thread (e.g. under UBSAN and ASAN)\n")
-} else {
-  N = if (TRUE) 2e6 else 1e9   # offline speed check
-  fwrite(data.table(A=sample(10,N,replace=TRUE)), f<-tempfile())
-  test(1760.1, file.info(f)$size > 4*1024*1024)
-  test(1760.2, fread(f, verbose=TRUE, nThread=2), output="using 2 threads")
-  unlink(f)
-}
+# 1760 moved to benchmark.Rraw, #5517
 
 # fread single column with superfluous fill=TRUE, #2118
 test(1761.1, fread("1\n2\n3", fill=TRUE), data.table(V1=1:3))
@@ -11918,10 +11720,10 @@ ld = sapply(same, as.IDate)
 test(1779.01, uniqueN(ld)==1L)
 lt = sapply(same[1:2], as.ITime) # exclude date
 test(1779.02, uniqueN(lt)==1L)
-# some random 1e6 timestamps old defaults vs new methods UTC
+# some random timestamps old defaults vs new methods UTC
 intpx = function(x) as.integer(as.POSIXct(x, origin = "1970-01-01", tz = "UTC"))
 set.seed(1)
-i = sample(intpx("2015-10-12")-intpx("2014-10-12"), 1e5, TRUE) + intpx("2014-10-12")
+i = sample(intpx("2015-10-12")-intpx("2014-10-12"), 1e3, TRUE) + intpx("2014-10-12")  # 1e5 reduced to 1e3, #5517
 p = as.POSIXct(i, origin = "1970-01-01", tz = "UTC")
 test(1779.03, identical(as.ITime.default(p), as.ITime(p)))
 test(1779.04, identical(as.IDate.default(p), as.IDate(p)))
@@ -11993,9 +11795,7 @@ test(1812, fread("A,B\n1,2\n3,4\n", skip="4", verbose=TRUE), data.table(V1=3L, V
 test(1813, fread("A,B\n1,2\n3,4", skip=10L), error="skip=10 but the input only has 3 lines")
 test(1814, fread("A,B\n1,2\n3,4\n   \n\t", skip=3L), error="skip has been set after the last non-whitespace")
 
-DT = data.table(A=seq(1, 1000000), B="x", C=TRUE)
-fwrite(DT, f<-tempfile())
-test(1815, fread(f, nrows=5), DT[1:5])  #2243
+# 1815 moved to benchmark.Rraw, #5517
 
 test(1816.1, fread("A,E\n1,2\n5,7\n4,6\n\x1A\x1A", verbose=TRUE),
              data.table(A=c(1L, 5L, 4L), E=c(2L, 7L, 6L)),
@@ -12112,14 +11912,7 @@ fwrite(DT, f)
 test(1825.22, fread(f, colClasses = c(a = "numeric", b = "integer")), DT, warning="Attempt to override column 2.*ignored")
 unlink(f)
 
-# issue 2351
-set.seed(1)
-DT = data.table(id=paste0("id",1:1e5), v=sample(100,1e5,replace=TRUE))
-fwrite(DT, file=f<-tempfile(), eol="\r")
-test(1826.1, fread(f)[c(1,2,.N-1,.N)], data.table(id=c("id1","id2","id99999","id100000"), v=c(27L,38L,10L,13L)))
-cat("id888,42", file=f, append=TRUE)  # without final \r after last line
-test(1826.2, fread(f)[c(1,2,.N-1,.N)], data.table(id=c("id1","id2","id100000","id888"), v=c(27L,38L,13L,42L)))
-unlink(f)
+# 1826 moved to benchmark.Rraw, #5517
 
 # Issue 2222
 test(1827.1, fread("A,B\n1987,1\n1987,3\n", na.strings=c("1987", "NA")), data.table(A=c(NA,NA),B=c(1L,3L)))
@@ -12207,21 +12000,7 @@ if (test_R.utils) {
                           V12=c("AAAAAAAAAAAAA","","AAAAAAA","AAA")))
 }
 
-# Create a file to test a sample jump being skipped due to format error. It will fail later in the read step because
-# this is a real error. Currently have not constructed an error for which nextGoodLine looks good, but in fact is not.
-# Would need a very complicated construction of embedded new lines in quoted fields, to test that.
-# This test size with default buffMB results in 2 threads being used. 2 is important to pass on CRAN.
-DT = as.data.table(CO2)
-f = tempfile()
-for (i in 0:1000) {
-  start = nrow(CO2)*i
-  fwrite(DT[,Plant:=start:(start+nrow(CO2)-1)], f, append=TRUE, col.names=FALSE)
-  if (i==502) write("-999,Bad,Line,0.0,0.0,extra\n", f, append=TRUE)
-}
-test(1835, fread(f, verbose=TRUE),
-  output = "A line with too-many.*jump 50.*jump landed awkwardly.*skipped",
-  warning = "Stopped.*line 42253. Expected 5 fields but found 6.*discarded.*<<-999,Bad,Line,0.0,0.0,extra>>")
-unlink(f)
+# 1835 moved to benchmark.Rraw, #5517
 
 test(1836, fread('1,2,"3,a"\n4,5,"6,b"'), data.table(V1=c(1L,4L), V2=c(2L,5L), V3=c("3,a","6,b")))   # 2196
 
@@ -12326,7 +12105,7 @@ rand_strings = function(n) {
   apply(M, 1, function(x) paste0(letters[x], collapse=""))
 }
 set.seed(123)  # the random data here doesn't match the data in issue 2275 because they used stringi::stri_rand_strings which has a different RNG
-n = 100000
+n = 1000   # reduced from 100000 to 1000 for #5517
 DT1 = data.table(RANDOM_STRING = rand_strings(n),
                  DATE = sample(seq(as.Date('2016-01-01'), as.Date('2016-12-31'), by="day"), n, replace=TRUE))
 DT2 = data.table(RANDOM_STRING = rand_strings(n),
@@ -12371,13 +12150,7 @@ test(1849.9, fread(f, select=c("Date", "Description", "Balance")),
              data.table(Date=20150725L,Description="abcd",Balance="$5,006"))
 unlink(f)
 
-# segfault when rbindlist is asked to create a DT with more than 2bn rows
-DT = data.table(1:1e6)
-L = vector("list", 2148)
-for (i in seq_along(L)) L[[i]] = DT   # many references to the same DT to avoid actually using large RAM for this test
-test(1850, rbindlist(L), error="Total rows in the list is 2148000000 which is larger than the maximum number of rows, currently 2147483647")
-rm(list=c("L","DT"))
-gc()
+# 1850 moved to benchmark.Rraw, #5517
 
 # by=.EACHI missings to list columns, #2300
 dt = data.table(a=factor(1:5, levels=1:10), b=as.list(letters[1:5]))
@@ -12682,60 +12455,7 @@ fwrite(DT,f<-tempfile())
 test(1873, fread(f), DT)
 unlink(f)
 
-# Better jump sync and run-on in PR#2627
-#
-# Reproduces error 'did not finish exactly where jump 1 found ...' in #2561 in master before PR #2627
-# the jump point is just before an empty line and the nextGoodLine() wasn't sync'd properly
-x = sprintf("ABCDEFGHIJKLMNOPQRST%06d", 1:102184)
-x[51094]=""
-cat(x, file=f<-tempfile(), sep="\n")
-test(1874.1, fread(f,header=FALSE,verbose=TRUE)[c(1,51094,.N),],
-           data.table(V1=c("ABCDEFGHIJKLMNOPQRST000001","","ABCDEFGHIJKLMNOPQRST102184")),
-           output="jumps=[0..2)")  # ensure jump 1 happened
-#
-# out-of-sample short lines in the first jump, not near the jump point
-x = sprintf("ABCD,FGHI,KLMN,PQRS,%06d", 1:102184)
-x[5021:5041] = "small,batch,short,lines"   # 4 fields not 5
-cat(x, file=f, sep="\n")
-test(1874.2, fread(f), data.table(V1="ABCD", V2="FGHI", V3="KLMN", V4="PQRS", V5=1:5020),
-             warning="Stopped early on line 5021.*<<small,batch,short,lines>>")
-test(1874.3, fread(f,fill=TRUE,verbose=TRUE)[c(1,5020,5021,5041,5042,.N),],
-             data.table(V1=c("ABCD","ABCD","small","small","ABCD","ABCD"),
-                        V2=c("FGHI","FGHI","batch","batch","FGHI","FGHI"),
-                        V3=c("KLMN","KLMN","short","short","KLMN","KLMN"),
-                        V4=c("PQRS","PQRS","lines","lines","PQRS","PQRS"),
-                        V5=c(1L,5020L,NA,NA,5042L,102184L)),
-             output="jumps=[0..2)")
-#
-# jump just before a set of 30 or more too-few lines, to reproduce "No good line could be found" error in #2267
-# confirmed fails in master with that error before PR#2627
-x = sprintf("ABCD,FGHI,KLMN,PQRS,%06d", 1:102184)
-x[51094:51150] = "small,batch,short,lines"   # 4 fields not 5
-cat(x, file=f, sep="\n")
-test(1874.4, fread(f,verbose=TRUE), data.table(V1="ABCD", V2="FGHI", V3="KLMN", V4="PQRS", V5=1:51093),
-             warning="Stopped early on line 51094.*<<small,batch,short,lines>>",
-             output="jumps=[0..2)")
-test(1874.5, fread(f,fill=TRUE,verbose=TRUE)[c(1,51093,51094,51150,51151,.N),],
-             data.table(V1=c("ABCD","ABCD","small","small","ABCD","ABCD"),
-                        V2=c("FGHI","FGHI","batch","batch","FGHI","FGHI"),
-                        V3=c("KLMN","KLMN","short","short","KLMN","KLMN"),
-                        V4=c("PQRS","PQRS","lines","lines","PQRS","PQRS"),
-                        V5=c(1L,51093L,NA,NA,51151L,102184L)),
-             output="jumps=[0..2)")
-#
-# jump inside a quoted field containing many new lines, to simulate a dirty jump
-# we'll make this jump landing even harder for nextGoodLine() by making the lines resemble the number and types of the true lines, too.
-# Rather than needing to make nextGoodLine() better and better (at some point it's impossible), in these rare cases we'll just sweep dirty jumps.
-x = sprintf("ABCD,FGHI,KLMN,PQRS,%06d", 1:102184)
-x[51093] = "\"A,B,C,D,1\nA,B,C,D,2\nA,B,C,D,3\nA,B,C,D,4\nA,B,C,D,5\nA,B,C,D,6\nA,B,C,D,7\nA,B,C,D,8\n\",FGHI,KLMN,PQRS,51093"
-cat(x, file=f, sep="\n")
-test(1875.6, fread(f,verbose=TRUE)[c(1,51092:51094,.N),][3,V1:=gsub("\r","",V1)],  # gsub since R on Windows replaces \n with \r\n
-             data.table(V1=c("ABCD","ABCD", "A,B,C,D,1\nA,B,C,D,2\nA,B,C,D,3\nA,B,C,D,4\nA,B,C,D,5\nA,B,C,D,6\nA,B,C,D,7\nA,B,C,D,8\n", "ABCD","ABCD"),
-                        V2="FGHI", V3="KLMN", V4="PQRS", V5=c(1L,51092:51094,102184L)),
-             output = "too-few.*sample jump 50.*jump landed awkwardly.*skipped.*Read the data.*jumps=\\[0..2\\).*jumps=\\[1..2\\).*Reading 2 chunks \\(1 swept\\)")
-# Aside: although the file (with over 100,000 lines) is big enough for 100 sampling jumps (of which just 1, the middle sample jump, skipped), it's
-#   still too small for more than 2 reading chunks to be worth it which is correct (based on buffMB not nth)
-unlink(f)
+# 1874-1875 moved to benchmark.Rraw, #5517
 
 test(1876, fread("http://hkhfsk\nhttp://fhdkf\nhttp://kjfhskd\nhttp://hfkjf", header=FALSE),    # data not a download, #2531
            data.table(V1=c("http://hkhfsk","http://fhdkf","http://kjfhskd","http://hfkjf")))
@@ -12829,7 +12549,7 @@ DT = fread(",2,3\n1,,3\n1,2,\n")  # all rows contain an NA, #2784
 test(1887.3, na.omit(DT), DT[0L])
 test(1887.4, na.omit(DT, invert=TRUE), DT)
 
-x = runif(1e4)
+x = runif(1e3)  # 1e4 reduced to 1e3 in #5517 but really it was the 1e6 just after 1888.5 below which is now 1e3 too
 test(1888, fsort(x), base::sort(x))
 test(1888.1, fsort(x, decreasing = TRUE), base::sort(x, decreasing = TRUE),
              warning = "New parallel sort has not been implemented for decreasing=TRUE.*one thread")
@@ -12843,7 +12563,7 @@ test(1888.4, fsort(x, decreasing = TRUE, na.last = TRUE), base::sort(x, decreasi
 x <- as.integer(x)
 test(1888.5, fsort(x), base::sort(x, na.last = FALSE),
              warning = "Input is not a vector of type double. New parallel sort has only been done for double vectors so far.*Using one thread")
-x = runif(1e6)
+x = runif(1e3)
 test(1888.6, y<-fsort(x,verbose=TRUE), output="nth=.*Top 20 MSB counts")
 test(1888.7, !base::is.unsorted(y))
 test(1888.8, fsort(x,verbose=1), error="verbose must be TRUE or FALSE")
@@ -12856,11 +12576,7 @@ test(1889, chmatch(x,x), 1:1000)
 rm(list=x)
 gc()
 
-# test DT$.<- in a data.table-unaware package
-DT = data.table(A=1:5)
-test(1890.1, stats::ts.plot(gpars=DT), error="object must have one or more observations")
-# Inside ts.plot is a gpars$ylab<- which happens before its error. That dispatches to our $<- which does the alloc.col()
-test(1890.2, DT, data.table(A=1:5))
+# 1890 used stats::ts.plot, moved to other.Rraw 29 to save ram, #5517
 
 # na="" default, #2524
 test(1891.1, fread('A,B,C\n1,foo,4\n2,,5\n3,bar,6\n', na.strings=""), data.table(A=1:3, B=c("foo",NA,"bar"), C=4:6))
@@ -13076,43 +12792,7 @@ test(1911.2,
      DT[, COL_INT := integer(0)],
      error = "RHS of assignment to existing column 'COL_INT' is zero length but not NULL.*")
 
-# gc race with altrep in R-devel May 2018, #2866 & #2767, PR#2882
-# This runs with 2 threads in the test suite on CRAN and AppVeyor etc.
-# 2 threads are sufficient to fail before the fix.
-N = 20
-DF = data.frame(a=rnorm(N),
-                b=factor(rbinom(N,5,prob=0.5),1:5,letters[1:5]),
-                c=factor(rbinom(N,5,prob=0.5),1:5,letters[1:5]))
-DT = setDT(DF)  # setDT required since data.table() already expanded altrep's
-before = sum(gc()[, 2])
-fff = function(aref) {
-  ff = lapply(1:5, function(i) {
-    DT[,list(sumA=sum(get(aref))),by=b][,c:=letters[i]]
-  })
-  return(rbindlist(ff))
-}
-for(i in 1:100) {
-  f = fff("a")
-  rm("f")
-}
-gc()  # extra gc() (i.e. two including the one on next line) seems to reduce `after`
-      # from 29.7 to 27.2 (exactly `before`). Keeping the extra gc() as no harm.
-after = sum(gc()[, 2])
-test(1912.1, after < before + 10)  # 10MB very wide margin. With the gc race, heap usage grew much more which is all we're testing here (no blow up).
-#
-before = sum(gc()[, 2])
-fff = function(aref) {
-  DT = setDT(data.frame(a=1:N, b=1:N, c=1:N, d=1:N, e=1:N, f=1:N, g=1:N, h=1:N)) # 1:N creates altrep. A few of them too to tickle (the fixed) race.
-  lapply(1:5, function(i) {
-    DT[,list(sumA=sum(get(aref))),by=b][,c:=letters[i]]
-  })
-}
-for(i in 1:100) {
-  fff("a")
-}
-gc()
-after = sum(gc()[, 2])
-test(1912.2, after < before + 10)
+# 1912 moved to benchmark.Rraw, #5517
 
 # BEGIN port of old testthat tests, #2740.  Issue numbers may be from R-forge.
 #
@@ -13248,8 +12928,8 @@ test(1914.04, dt.s4.list, as.list(dt))  # Underlying data not identical
 # simple S4 conversion-isms work
 df = data.frame(a=sample(letters, 10), b=1:10)
 dt = as.data.table(df)
-test(1914.05, identical(as(df, 'data.table'), dt))
-test(1914.06, identical(as(dt, 'data.frame'), df))
+test(1914.05, identical(methods::as(df, 'data.table'), dt))
+test(1914.06, identical(methods::as(dt, 'data.frame'), df))
 # data.table can be used in an S4 slot
 dt <- data.table(a=sample(letters[1:3], 10, replace=TRUE), score=rnorm(10))
 dt.comp <- new("S4Composition", data=dt)
@@ -13623,6 +13303,12 @@ test(1958.19, fread(text=txt, nrows=0L, verbose=TRUE), data.table(A=integer(), B
 txt = paste(c("A,B\n1,2\n", rep("3,4\n",5100), "3,4.1\n", rep("5,6\n",4900)), collapse="")
 test(1958.20, fread(text=txt, nrows=0L, verbose=TRUE), data.table(A=integer(), B=integer()),
               output="Sampled 1049 rows.*at 11 jump points")
+# invalid head position for nrows=0 #5868
+# following example has to be big enough to trigger a jump and enough blanks so we get an invalid header position after a jump (at least n=599101 for following two cols)
+test(1958.21, fread(sprintf('%s%s\n', 'a,b', paste0('\n', sample(c('', '3'), 6e5L, TRUE), sample(c(',a',',b',',c'), 6e5L, TRUE), collapse="")), nrows=0L),
+  data.table(a=integer(), b=character()))
+test(1958.22, fread(sprintf('%s%s\n', 'a,b', paste0('\n', sample(c('', '3'), 6e5L, TRUE), sample(c(',a',',b',',c'), 6e5L, TRUE), collapse="")), nrows=0L, nThread=1L),
+  data.table(a=integer(), b=character()))
 
 # Skip should work with all types of newlines #3006
 eols = c("\n", "\r\n", "\r", "\n\r")
@@ -13916,10 +13602,7 @@ y = as.ITime('543210', format = '%S%M%H')
 test(1962.095, y, structure(37974L, class = "ITime"))
 test(1962.096, capture.output(print(y)), '[1] "10:32:54"')
 test(1962.097, rep(y, 2L), structure(c(37974L, 37974L), class = "ITime"))
-test(1962.098, as.POSIXlt(y, date = '2018-12-01', tz = 'UTC'),
-     structure(list(sec = 54, min = 32L, hour = 10L, mday = 1L, mon = 11L,
-                    year = 118L, wday = 6L, yday = 334L, isdst = 0L),
-               class = c("POSIXlt", "POSIXt"), tzone = "UTC"))
+test(1962.098, format(as.POSIXlt(y, date='2018-12-01', tz='UTC'), usetz=TRUE), "2018-12-01 10:32:54 UTC")
 
 test(1962.099, as.POSIXct(x, y),
      structure(1533119574, tzone = "UTC", class = c("POSIXct", "POSIXt")))
@@ -13957,7 +13640,8 @@ test(1963.07, shift(DT, -1:1),
           c(NA, 10L, 9L, 8L, 7L, 6L, 5L, 4L, 3L, 2L)))
 ## some coverage tests for good measure
 test(1963.08, shift(DT$x, type = 'some_other_type'), error='should be one of.*lag.*lead')
-test(1963.09, shift(as.raw(0:1)), error = "Type 'raw' is not supported")
+test(1963.09, shift(as.raw(0:1)), as.raw(c(0,0)))
+test(1963.095, shift(list(expression(1))), error = "Type 'expression' is not supported")
 test(1963.10, shift(DT, -1:1, type="shift", give.names = TRUE), # new type="shift" #3223
      ans <- list(`x_shift_-1` = c(2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, NA),
           x_shift_0 = 1:10,
@@ -14320,11 +14004,7 @@ test(1977.4, DT["D", -"GRP"], data.table(ID="D", X=NA_real_, key="ID"))
 test(1977.5, DT["D", c("ID","GRP")], data.table(ID="D", GRP=NA_integer_, key="ID"))
 test(1977.6, DT[c("A","D"), c("ID","GRP")], data.table(ID=c("A","A","D"), GRP=INT(1,1,NA)))
 
-# catch malformed factor in rbindlist, #3315
-set.seed(32940)
-NN=7e5; KK=4e4; TT=25
-DT = data.table( id = sample(KK, NN, TRUE), tt = sample(TT, NN, TRUE), ff = factor(sample(3, NN, TRUE)) )
-test(1978, print(DT[ , diff(ff), by = id]), error="Column 2 of item 1 has type 'factor' but has no levels; i.e. malformed.") # the print invokes rbindlist which bites
+# 1978 moved to benchmark.Rraw, #5517
 
 # Drop Null Values from `j` list elements #1406
 DT = data.table(a = 1:3,b = letters[1:3],c = LETTERS[1:3])
@@ -14344,14 +14024,7 @@ DT = data.table( id = 1:5 , val = letters[1:5] )
 test(1981.3, DT[, new_col := shift(val, "lead")],      error="is.numeric(n) is not TRUE")
 test(1981.4, DT[, new_col := shift(val, NA_integer_)], error="Item 1 of n is NA")
 
-# print of DT with many columns reordered them, #3306.
-DT = as.data.table(lapply(1:255, function(i)rep.int(i, 105L)))  # 105 to be enough for 'top 5 ... bottom 5' to print
-out = capture.output(print(DT))
-tt = out[grep("V",out)]
-tt = unlist(strsplit(gsub(" ","",tt), "V"))
-test(1982.1, tt[1L], "")
-tt = as.integer(tt[tt!=""])
-test(1982.2, tt, seq_along(tt))
+# 1982 moved to benchmark.Rraw, #5517
 
 # parse(text = 'list(`\\phantom{.}`)') fails, #3319
 DT <- data.table(x=1, y=1:5)
@@ -14600,11 +14273,11 @@ oldenv1 = Sys.getenv("R_DATATABLE_NUM_PROCS_PERCENT")
 oldenv2 = Sys.getenv("R_DATATABLE_NUM_THREADS")
 Sys.setenv(R_DATATABLE_NUM_THREADS="")  # in case user has this set, so we can test PROCS_PERCENT
 Sys.setenv(R_DATATABLE_NUM_PROCS_PERCENT="3.0")
-test(1997.09, setDTthreads(), old, warning="Ignoring invalid.*Please remove any.*not a digit")
+test(1997.09, setDTthreads(), old, ignore.warning="Ignoring invalid.*Please remove any.*not a digit")
 new = getDTthreads()  # old above at (1) may not have been default. new now is.
 test(1997.10, getDTthreads(), new)
 Sys.setenv(R_DATATABLE_NUM_PROCS_PERCENT="1")
-test(1997.11, setDTthreads(), new, warning="Ignoring invalid.*integer between 2 and 100")
+test(1997.11, setDTthreads(), new, ignore.warning="Ignoring invalid.*integer between 2 and 100")
 test(1997.12, getDTthreads(), new)
 Sys.setenv(R_DATATABLE_NUM_PROCS_PERCENT="75")
 test(1997.13, setDTthreads(), new)
@@ -14640,12 +14313,7 @@ dx = data.table(id = 1L, key = "id")
 di = list(z=c(2L, 1L))
 test(1999.2, key(dx[di]), NULL)
 
-# chmatchdup test from benchmark at the bottom of chmatch.c
-set.seed(45L)
-x = sample(letters, 1e5, TRUE)
-y = sample(letters, 1e6, TRUE)
-test(2000, c(head(ans<-chmatchdup(x,y,0L)),tail(ans)), INT(7,49,11,20,69,25,99365,100750,97596,99671,103320,99406))
-rm(list=c("x","y"))
+# 2000 moved to benchmark.Rraw, #5517
 
 # rbindlist use.names=TRUE returned random column order when ncol>255; #3373
 DT = setDT(replicate(300, rnorm(3L), simplify = FALSE))
@@ -14694,7 +14362,18 @@ test(2003.3, rbindlist(list(data.table(a=1:2), data.table(b=3:4)), fill=TRUE, us
 test(2003.4, rbindlist(list(data.table(a=1:2,c=5:6), data.table(b=3:4)), fill=TRUE, use.names=FALSE),
              data.table(a=c(1:4), c=INT(5,6,NA,NA)))
 test(2003.5, rbindlist(list(data.table(a=1:2), data.table(b=3:4, c=5:6)), fill=TRUE, use.names=FALSE),
-             data.table(a=c(1:4), V1=INT(NA,NA,5,6)))
+             data.table(a=c(1:4), c=INT(NA,NA,5,6)))
+# rbindlist segfault with fill=TRUE and usenames=FALSE #5444
+test(2003.6, rbindlist(list(list(1), list(2,3)), fill=TRUE, use.names=FALSE), data.table(c(1,2), c(NA, 3)))
+test(2003.7, rbindlist(list(list(1), list(2,factor(3))), fill=TRUE, use.names=FALSE), data.table(c(1,2), factor(c(NA, 3))))
+# rbind with different attributes #5309
+x=data.table(a=as.Date(NA))
+y=data.table(a=as.Date('2021-10-05'), b=as.POSIXct("2021-10-06 13:58:00 UTC"))
+ans=data.table(a=as.Date(c(NA_character_, '2021-10-05')), b=as.POSIXct(c(NA_character_, "2021-10-06 13:58:00 UTC")))
+test(2003.81, rbind(x, y, fill=TRUE, use.names=TRUE), ans)
+test(2003.82, rbind(y, x, fill=TRUE, use.names=TRUE), ans[2:1,])
+test(2003.83, rbind(x, y, fill=TRUE, use.names=FALSE), ans)
+test(2003.84, rbind(y, x, fill=TRUE, use.names=FALSE), ans[2:1,])
 
 # chmatch coverage for two different non-ascii encodings matching; issues mentioned in comments in chmatch.c #69 #2538 #111
 x1 = "fa\xE7ile"
@@ -14718,7 +14397,7 @@ DT[,foo:=factor(c("a","b","c"))]
 test(2005.05, DT[2, foo:=8i], error="Can't assign to column 'foo' (type 'factor') a value of type 'complex' (not character, factor, integer or numeric)")
 test(2005.06, DT[2, a:=9, verbose=TRUE], notOutput="Coerced")
 test(2005.07, DT[2, a:=NA, verbose=TRUE], notOutput="Coerced")
-test(2005.08, DT[2, a:=9.9]$a, INT(1,9,3), warning="9.9.*double.*position 1 truncated.*integer.*column 1 named 'a'")
+test(2005.08, DT[2, a:=9.9]$a, INT(1,9,3), warning="9.9.*double.*position 1.*truncated.*integer.*column 1 named 'a'")
 test(2005.09, set(DT, 1L, "c", expression(x+2)), error="type 'expression' cannot be coerced to 'raw'")
 test(2005.10, set(DT, 1L, "d", expression(x+2)), error="type 'expression' cannot be coerced to 'logical'")
 test(2005.11, set(DT, 1L, "e", expression(x+2)), error="type 'expression' cannot be coerced to 'double'")
@@ -14770,7 +14449,7 @@ test(2006.2, rbindlist(list(data.table(x = as.raw(1:2), y=as.raw(5:6)), data.tab
 if (test_bit64) {
   test(2007.1, rbindlist(list( list(a=as.integer64(1), b=3L),  list(a=2L, b=4L) )), data.table(a=as.integer64(1:2), b=3:4))
   test(2007.2, rbindlist(list( list(a=3.4, b=5L),  list(a=as.integer64(4), b=6L) )), data.table(a=as.integer64(3:4), b=5:6),
-               warning="Column 1 of item 1: 3.4.*double.*position 1 truncated.*precision lost.*when assigning.*integer64.*column 1 named 'a'")
+               warning="Column 1 of item 1: 3.4.*double.*position 1.*truncated.*precision lost.*when assigning.*integer64.*column 1 named 'a'")
   test(2007.3, rbindlist(list( list(a=3.0, b=5L),  list(a=as.integer64(4), b=6L) )), data.table(a=as.integer64(3:4), b=5:6))
   test(2007.4, rbindlist(list( list(b=5:6),  list(a=as.integer64(4), b=7L)), fill=TRUE), data.table(b=5:7, a=as.integer64(c(NA,NA,4))))  # tests writeNA of integer64
   test(2007.5, rbindlist(list( list(a=INT(1,NA,-2)),  list(a=as.integer64(c(3,NA))) )), data.table(a=as.integer64(c(1,NA,-2,3,NA))))   # int NAs combined with int64 NA
@@ -14838,8 +14517,8 @@ options(datatable.rbindlist.check=NULL)  # this option is set to NULL at the top
 if (.Platform$OS.type == 'windows') local({
   lc_collate <- Sys.getlocale(c('LC_COLLATE'))
   lc_ctype <- Sys.getlocale(c('LC_CTYPE'))
-  Sys.setlocale('LC_COLLATE', "Chinese (Simplified)_China.936")
-  Sys.setlocale('LC_CTYPE', "Chinese (Simplified)_China.936")
+  suppressWarnings(Sys.setlocale('LC_COLLATE', "Chinese (Simplified)_China.936")) ## fix CRAN warning #5696
+  suppressWarnings(Sys.setlocale('LC_CTYPE', "Chinese (Simplified)_China.936"))
   on.exit({
     Sys.setlocale('LC_COLLATE', lc_collate)
     Sys.setlocale('LC_CTYPE', lc_ctype)
@@ -15090,210 +14769,7 @@ test(2030.18, .Last.updated, 0L) # zero match
 test(2031.01, rbind(data.table(A=1:3, B=7:9), data.table(A=4:6, B=as.list(10:12))), ans<-data.table(A=1:6, B=as.list(7:12)))
 test(2031.02, rbind(data.table(A=1:3, B=as.list(7:9)), data.table(A=4:6, B=10:12)), ans)
 
-if (test_yaml) {  # csvy; #1701
-  f = testDir("csvy/test.csvy")
-  DT = data.table(var1 = c("A", "B"),
-                  var2 = c(1L, 3L),
-                  var3 = c(2.5, 4.3))
-  DT_yaml = copy(DT)
-  setattr(DT_yaml, 'yaml_metadata',
-    list(name = "my-dataset",
-         source = "https://github.com/leeper/csvy/tree/master/inst/examples",
-         schema = list(fields = list(
-           list(name = "var1", title = "variable 1", type = "string",
-                description = "explaining var1",
-                constraints = list(list(required = TRUE))),
-           list(name = "var2", title = "variable 2", type = "integer"),
-           list(name = "var3", title = "variable 3", type = "number")
-         ))))
-  ## with skip = '__auto__', fread can figure out
-  ##   how to start after the metadata (just ignoring it)
-  test(2032.01, fread(f), DT)
-  ## should be the same, but with yaml_metadata attribute
-  test(2032.02, fread(f, yaml = TRUE), DT_yaml)
-  ## testing verbose messaging
-  test(2032.03, fread(f, yaml = TRUE, verbose = TRUE),
-       DT_yaml, output = 'Processed.*YAML metadata.*')
-  ## this file is identical, except the body of the
-  ##   YAML header is commented out with # (should read identically)
-  test(2032.04,
-       fread(testDir('csvy/test_comment.csvy'), yaml = TRUE),
-       DT_yaml)
-  ## user input is taken as most intentional & overrides YAML
-  DT_yaml[ , var2 := as.numeric(var2)]
-  test(2032.05, fread(f, yaml = TRUE, colClasses = list(numeric = 'var2')),
-       DT_yaml, message = 'colClasses.*YAML header are in conflict.*var2')
-  ## extraneous/unused fields shouldn't throw off reading
-  DT = fread(testDir('csvy/test_extraneous.csvy'), yaml = TRUE)
-  test(2032.06, names(DT), c('Date', 'WTI'))
-  test(2032.07, attr(DT, 'yaml_metadata'),
-       list(names = c("Date", "WTI"), class = "data.frame",
-            title = "Cushing, OK WTI Spot Price FOB", filename = "data.csv",
-            fileurl = "https://raw.githubusercontent.com/jrovegno/csvy/master/data.csv",
-            sourceurl = "http://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?n=PET&s=RWTC&f=D",
-            source_csvy = "https://github.com/leeper/csvy/tree/master/inst/examples",
-            item = "PET", sourcekey = "RWTC", freq = "Daily",
-            rate = "MID", type = "price", units = "Dollars per Barrel",
-            latestdate = "2015-08-31", releasedate = "2015-09-02",
-            nextreleasedate = "2015-09-10", source = "Thomson Reuters",
-            contactemail = "infoctr@eia.doe.gov", contactphone = "(202) 586-8800"))
-  ## yaml can also handle sep, dec, quote, and na.strings
-  DT_out = data.table(var1 = c("A", "B"),
-                      var2 = c(1L, NA),
-                      var3 = c(2.5, 4.3))
-  meta =
-    list(name = NULL,
-         schema = list(fields = list(
-           list(name = "var1", title = "variable 1", type = "string",
-                description = "a single-quoted character variable"),
-           list(name = "var2", title = "variable 2", type = "integer"),
-           list(name = "var3", title = "variable 3", type = "number",
-                description = "European-style numeric")
-         )),
-         header = TRUE, sep = "|", dec = ",",
-         quote = "'", na.strings = "@")
-  attr(DT_out, 'yaml_metadata') = meta
-  test(2032.08, fread(testDir( 'csvy/test_attributes.csvy'), yaml = TRUE), DT_out)
-  ## user-specified attributes can override data from YAML
-  meta$sep = "-"
-  setattr(DT_out, 'yaml_metadata', meta)
-  test(2032.09, fread(testDir('csvy/test_override_sep.csvy'), yaml = TRUE, sep = '|'), DT_out,
-       message = 'User-supplied.*sep.*override')
-
-  meta$sep = "|"
-  setattr(DT_out, 'yaml_metadata', meta)
-  test(2032.10, fread(testDir('csvy/test_override_header.csvy'), yaml = TRUE, header = FALSE),
-       DT_out, message = 'User-supplied.*header.*override')
-  col.names = c('x', 'y', 'z')
-  setnames(DT_out, col.names)
-  test(2032.11, fread(testDir('csvy/test_override_header.csvy'), yaml = TRUE, header = FALSE, col.names = col.names), DT_out,
-       message = c('User-supplied.*header.*override', 'User-supplied.*col.names.*override'))
-
-  test(2032.12, fread(testDir('csvy/test_attributes.csvy'), yaml = TRUE, col.names = col.names),
-       DT_out, message = 'User-supplied.*col.names')
-
-  setnames(DT_out, c('var1', 'var2', 'var3'))
-  meta$quote = "^"
-  setattr(DT_out, 'yaml_metadata', meta)
-  test(2032.13, fread(testDir('csvy/test_override_quote.csvy'), yaml = TRUE, quote = "'"),
-       DT_out, message = 'User-supplied.*quote')
-
-  meta$quote = "'"
-  meta$dec = "."
-  setattr(DT_out, 'yaml_metadata', meta)
-  test(2032.14, fread(testDir('csvy/test_override_dec.csvy'), yaml = TRUE, dec = ','),
-       DT_out, message = 'User-supplied.*dec')
-
-  meta$dec = ','
-  meta$na.strings = 'NA'
-  setattr(DT_out, 'yaml_metadata', meta)
-  test(2032.15, fread(testDir('csvy/test_override_na.csvy'), yaml = TRUE, na.strings = '@'),
-       DT_out, message = 'User-supplied.*na.strings')
-
-  ## error if YAML malformed
-  test(2032.16, fread(testDir('csvy/test_incomplete_header.csvy'), yaml = TRUE),
-       error = 'Reached the end.*YAML.*valid csvy')
-  ## use any other CSV in test directory which doesn't have YAML
-  if (test_R.utils) test(2032.17, fread(testDir('issue_2051.csv.gz'), yaml = TRUE),
-       error = 'Encountered.*unskipped.*constitute.*valid YAML')
-  ## no problem if some fields are missing a type (just
-  ##   resort to standard auto-inferral, i.e., identical to
-  ##   the case of partially-specified colClasses)
-  DT = data.table(var1 = c("A", "B"), var2 = c(1L, 3L),
-                  var3 = c(2.5, 4.3))
-  setattr(DT, 'yaml_metadata',
-    list(name = "my-dataset", source = "https://github.com/leeper/csvy/tree/master/inst/examples",
-         schema = list(fields = list(
-           list(name = "var1"), list(name = "var2", type = "integer"),
-           list(name = "var3", type = "number")
-         ))))
-  test(2032.18, fread(testDir('csvy/test_missing_type.csvy'), yaml = TRUE), DT)
-  ## skip applies starting after the YAML header
-  setattr(DT, 'yaml_metadata',
-    list(schema = list(fields = list(
-      list(name = "var1", type = "string"),
-      list(name = "var2", type = "integer"),
-      list(name = "var3", type = "number")
-    ))))
-  test(2032.19, fread(testDir('csvy/test_skip.csvy'), yaml = TRUE, skip = 2L), DT)
-  ## user-supplied col.names override metadata (as for colClasses)
-  cn = paste0('V', 1:3)
-  setnames(DT, cn)
-  test(2032.20, fread(testDir('csvy/test_skip.csvy'),
-                      yaml = TRUE, skip = 2L, col.names = cn),
-       DT, message = 'User-supplied column names.*override.*YAML')
-  ## invalid value fails
-  test(2032.21, fread(f, yaml = 'gobble'),
-       error = 'isTRUEorFALSE\\(yaml\\) is not TRUE')
-
-  ## warning that skip-as-search doesn't work with yaml
-  DT_yaml[ , var2 := as.integer(var2)]
-  test(2032.22, fread(f, skip = 'var1,', yaml = TRUE),
-       DT_yaml, warning = 'Combining a search.*YAML.*')
-
-  # fwrite csvy: #3534
-  tmp = tempfile()
-  DT = data.table(a = 1:5, b = c(pi, 1:4), c = letters[1:5])
-  # force eol for platform independence
-  fwrite(DT, tmp, yaml = TRUE, eol = '\n')
-  as_read = readLines(tmp)
-  test(2033.01, as_read[c(1L, 24L)], c('---', '---'))
-  test(2033.02, grepl('source: R.*data.table.*fwrite', as_read[2L]))
-  test(2033.03, grepl('creation_time_utc', as_read[3L]))
-  test(2033.04, as_read[4:23],
-       c("schema:", "  fields:", "  - name: a", "    type: integer",
-         "  - name: b", "    type: numeric", "  - name: c", "    type: character",
-         "header: yes", "sep: ','", "sep2:", "- ''", "- '|'", "- ''",
-         # NB: apparently \n is encoded like this in YAML
-         "eol: |2+", "", "na.strings: ''", "dec: '.'", "qmethod: double",
-         "logical01: no"))
-  tbl_body = c("a,b,c", "1,3.14159265358979,a", "2,1,b", "3,2,c", "4,3,d", "5,4,e")
-  test(2033.05, as_read[25:30], tbl_body)
-
-  # windows eol
-  fwrite(DT, tmp, yaml = TRUE, eol = '\r\n')
-  test(2033.06, readLines(tmp)[18L], 'eol: "\\r\\n"')
-
-  # multi-class columns
-  DT[ , t := .POSIXct(1:5, tz = 'UTC')]
-  fwrite(DT, tmp, yaml = TRUE)
-  as_read = readLines(tmp)
-  test(2033.07, as_read[13L], "    type: POSIXct")
-
-  # ~invertibility~
-  # fread side needs to be improved for Hugh's colClasses update
-  DT[ , t := NULL]
-  fwrite(DT, tmp, yaml = TRUE)
-  DT2 = fread(tmp, yaml = TRUE)
-  # remove metadata to compare
-  attr(DT2, 'yaml_metadata') = NULL
-  test(2033.08, all.equal(DT, DT2))
-
-  test(2033.09, fwrite(DT, append=TRUE, yaml=TRUE, verbose=TRUE),
-       output = paste0(c('Appending to existing file so setting bom=FALSE and yaml=FALSE', tbl_body[-1L]), collapse=".*"))
-
-  # TODO: test gzip'd yaml which is now supported
-
-  # yaml + bom arguments
-  DT = data.table(l=letters, n=1:26)
-  fwrite(DT, f<-tempfile(), bom=TRUE, yaml=TRUE)
-  fcon = file(f, encoding="UTF-8")  # Windows readLines needs to be told; see also test 1658.50
-  lines = readLines(fcon)
-  lines = lines[lines!=""]  # an extra "" after "eol: |2+" (line 16) on Linux but not Windows
-                            # remove the blank here so we don't need to change this test if/when that changes in yaml package
-  test(2033.11, length(lines), 48L)
-  close(fcon)
-  test(2033.12, readBin(f, raw(), 6L), as.raw(c(0xef, 0xbb, 0xbf, 0x2d, 0x2d, 0x2d)))
-  # re-write should have same output (not appended)
-  fwrite(DT, f<-tempfile(), bom=TRUE, yaml=TRUE)
-  fcon = file(f, encoding="UTF-8")
-  lines = readLines(fcon)
-  lines = lines[lines!=""]
-  test(2033.13, length(lines), 48L)
-  close(fcon)
-  test(2033.14, fread(f), DT)
-  unlink(f)
-}
+# 2032-2033 tested yaml moved to other.Rraw 16-17, #5516
 
 # fcast coverage
 DT = data.table(a = rep(1:2, each = 2), b = rep(1:2, 2), c = 4:1, d = 5:8)
@@ -15309,10 +14785,10 @@ test(2035.3, fread('A,B\n"foo","ba"r"', quote=""), ans)
 # source() printing edge case; #2369
 setup = c('DT = data.table(a = 1)')
 writeLines(c(setup, 'DT[ , a := 1]'), tmp<-tempfile())
-test(2036.1, !any(grepl("1:     1", capture.output(source(tmp, echo = TRUE)), fixed = TRUE)))
+test(2036.1, !any(grepl("1:     1", capture.output(source(tmp, echo=TRUE, local=TRUE)), fixed=TRUE)))  # local= #5514
 ## test force-printing still works
 writeLines(c(setup, 'DT[ , a := 1][]'), tmp)
-test(2036.2, source(tmp, echo = TRUE), output = "1:\\s+1")
+test(2036.2, source(tmp, echo=TRUE, local=TRUE), output="1:\\s+1")
 
 # more helpful guidance when assigning before setDT() after readRDS(); #1729
 DT = data.table(a = 1:3)
@@ -15442,7 +14918,7 @@ test(2041.2, DT[, median(time), by=g], DT[c(2,5),.(g=g, V1=time)])
 # They could run in level 1 with level 2 off, but output= would need to be changed and there's no need.
 test(2042.1, DT[ , as.character(mean(date)), by=g, verbose=TRUE ],
              data.table(g=c("a","b"), V1=c("2018-01-04","2018-01-21")),
-     output=msg<-"GForce is on, left j unchanged.*Old mean optimization is on, left j unchanged")
+     output=msg<-"GForce is on, but not activated.*Old mean optimization is on, left j unchanged")
 # Since %b is e.g. "janv." in LC_TIME=fr_FR.UTF-8 locale, we need to
 # have the target/y value in these tests depend on the locale as well, #3450.
 Jan.2018 = format(strptime("2018-01-01", "%Y-%m-%d"), "%b-%Y")
@@ -15950,16 +15426,7 @@ if (test_bit64) {
   test(2060.304, fcoalesce(int64, 1), error='Item 2 has a different class than item 1')
   test(2060.305, fcoalesce(int64, 1L), error = 'Item 2 is type integer but the first item is type double')
 }
-# nanotime tests
-if (test_nanotime) {
-  nt = nanotime(int)
-  nt_val = nanotime(1:4)
-  test(2060.401, as.character(fcoalesce(nt, nanotime(3L))), as.character(nt_val)) # as.character due to eddelbuettel/nanotime#46
-  test(2060.402, as.character(fcoalesce(nt, nanotime(NA), nanotime(3L))), as.character(nt_val))
-  test(2060.403, as.character(fcoalesce(nt, nanotime(rep(3, 4L)))), as.character(nt_val))
-  test(2060.404, fcoalesce(nt, 1), error='Item 2 has a different class than item 1')
-  test(2060.405, fcoalesce(nt, 1L), error = 'Item 2 is type integer but the first item is type double')
-}
+# 2060.401-405 tested nanotime moved to other.Rraw 23, #5516
 # setcoalesce
 x = c(11L, NA, 13L, NA, 15L, NA)
 y = c(NA, 12L, 5L, NA, NA, NA)
@@ -15976,9 +15443,9 @@ test(2060.503, xx_addr, address(xx))
 test(2060.504, xx, x)
 test(2060.505, address(setcoalesce(xx)), xx_addr)
 # complex support for fcoalesce
-z1 = c(1i, NA, 1-1i, NA, 0+3i, NA)
-z2 = c(NA, 4-2i, 0+0i, NA, NA, NA)
-z3 = c(2, NA, 3+6i, 5-1i, NA, NA)
+z1 = c(1i, NA_complex_, 1-1i, NA_complex_, 0+3i, NA_complex_)
+z2 = c(NA_complex_, 4-2i, 0+0i, NA_complex_, NA_complex_, NA_complex_)
+z3 = c(2, NA_complex_, 3+6i, 5-1i, NA_complex_, NA_complex_)
 na_idx = c(2L, 4L, 6L)
 test(2060.600, fcoalesce(z1, 0+0i), `[<-`(z1, na_idx, 0+0i))
 test(2060.601, fcoalesce(z1, z2), `[<-`(z1, na_idx, c(4-2i, NA, NA)))
@@ -16079,7 +15546,7 @@ z = c(1:3) + c(3:1)*1i
 test(2067.1, shift(z), c(NA, z[1:2]))
 test(2067.2, shift(z, type = 'lead'), c(z[2:3], NA))
 test(2067.3, shift(z, fill = 1i), c(1i, z[1:2]))
-test(2067.4, shift(list(z, 1:3)), list(c(NA, z[1:2]), c(NA, 1:2)))
+test(2067.4, shift(list(z, 1:3)), list(c(NA_complex_, z[1:2]), c(NA, 1:2)))
 test(2067.5, shift(z, n=1,  type = 'cyclic'), c(z[3], z[1:2]))
 test(2067.6, shift(z, n=-1, type = 'cyclic'), c(z[2:3], z[1]))
 test(2067.7, shift(list(z, 1L:3L), n=1, type = 'cyclic'), list(c(z[3], z[1:2]), c(3L, 1:2)))
@@ -16450,18 +15917,7 @@ test(2078.32, between(c("a","c","e"), NA, c("b",NA,"e"), incbounds=FALSE, NAboun
 test(2079.01, between(1:5, 3L, NA, incbounds=TRUE, NAbounds=NA), c(FALSE, FALSE, NA, NA, NA))
 test(2079.02, between(1:5, 3L, NA, incbounds=FALSE, NAbounds=TRUE), c(FALSE, FALSE, FALSE, TRUE, TRUE))
 test(2079.03, between(1:5, 3L, NA, incbounds=FALSE, NAbounds=FALSE), error="NAbounds must be TRUE or NA")
-# nanotime support
-if (test_nanotime) {
-  n=nanotime(1:4)
-  n[2L]=NA
-  op = options(datatable.verbose=TRUE)
-  test(2080.01, between(n, nanotime(2), nanotime(10)), c(FALSE, NA, TRUE, TRUE), output="between parallel processing of integer64")
-  test(2080.02, between(n, nanotime(3), nanotime(10), incbounds=FALSE), c(FALSE, NA, FALSE, TRUE), output="between parallel processing of integer64")
-  test(2080.03, between(n, nanotime(3), nanotime(NA), incbounds=FALSE, NAbounds=NA), c(FALSE, NA, FALSE, NA), output="between parallel processing of integer64")
-  options(op)
-  test(2080.04, between(1:10, nanotime(3), nanotime(6)), error="x is not integer64 but.*Please align classes")
-  test(2080.05, between(1:10, 3, nanotime(6)),           error="x is not integer64 but.*Please align classes")
-}
+# 2080.01-05 tested nanotime moved to other.Rraw 24, #5516
 # use raw type to cover fallback to R in between.R
 old = options(datatable.verbose=TRUE)
 test(2081.01, between(as.raw(1:5), as.raw(2), as.raw(4)),                  c(FALSE, TRUE, TRUE, TRUE, FALSE),   output="fallback to slow R")
@@ -16505,10 +15961,7 @@ if (test_bit64) {
   i = as.integer64(1:4)+3e9
   test(2085.01, fifelse(c(TRUE,FALSE,NA,TRUE), i, i+100), c(i[1L], i[2L]+100, as.integer64(NA), i[4]))
 }
-if (test_nanotime) {
-  n = nanotime(1:4)
-  test(2085.11, fifelse(c(TRUE,FALSE,NA,TRUE), n, n+100), c(n[1L], n[2L]+100, nanotime(NA), n[4]))
-}
+# 2085.11 tested nanotime moved to other.Rraw 25, #5516
 test(2085.21, fifelse(c(TRUE,FALSE,NA), 1:3, c(1,2,3)), c(1,2,NA))
 test(2085.22, fifelse(c(TRUE,FALSE,NA), c(1,2,3), 1:3), c(1,2,NA))
 test(2085.31, fifelse(c(a=TRUE,b=FALSE), list(m=1,n=2), list(x=11,y=12)), list(a=1, b=12))
@@ -16740,109 +16193,7 @@ test(2107.3, names(DT), c('A','b','c'))
 setnames(DT, -(1:2), toupper)
 test(2107.4, names(DT), c('A','b','C'))
 
-# first and last should no longer load xts namespace, #3857, below commented test for interactive validation when xts present but not loaded or attached
-#stopifnot("xts"%in%installed.packages(), !"xts"%in%loadedNamespaces()); library(data.table); x=as.POSIXct("2019-01-01"); last(x); stopifnot(!"xts" %in% loadedNamespaces())
-x = as.POSIXct("2019-09-09")+0:1
-old = options(datatable.verbose=TRUE)
-test(2108.01, last(x), x[length(x)], output="!is.xts(x)")
-test(2108.02, first(x), x[1L], output="!is.xts(x)")
-if (test_xts) {
-  xt = xts(1:2, x)
-  test(2108.03, last(xt, 2L), xt, output="using xts::last: is.xts(x)")
-  test(2108.04, first(xt, 2L), xt, output="using xts::first: is.xts(x)")
-  xt = xts(matrix(1:4, 2L, 2L), x)
-  test(2108.05, last(xt, 2L), xt, output="using xts::last: is.xts(x)")
-  test(2108.06, first(xt, 2L), xt, output="using xts::first: is.xts(x)")
-}
-# first on empty df now match head(df, n=1L), #3858
-df = data.frame(a=integer(), b=integer())
-test(2108.11, first(df), df, output="!is.xts(x)")
-test(2108.12, last(df), df, output="!is.xts(x)")
-options(old)
-# xts last-first dispatch fix #4053
-x = 1:3
-y = as.POSIXct(x, origin="1970-01-01")
-df = data.frame(a=1:2, b=3:2)
-dt = as.data.table(df)
-mx = matrix(1:9, 3, 3)
-ar = array(1:27, c(3,3,3))
-xt = structure(
-  c(142.25, 141.229996, 141.330002, 142.860001, 142.050003, 141.399994,
-    140.570007, 140.610001, 140.380005, 141.369995, 141.669998, 140.539993,
-    94807600, 69620600, 76645300, 108.999954, 109.231255, 108.360008),
-  class = c("xts", "zoo"), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC",
-  index = structure(c(1167782400, 1167868800, 1167955200), tzone = "UTC", tclass = "Date"),
-  .Dim = c(3L, 6L), .Dimnames = list(NULL, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "SPY.Adjusted"))
-)
-old = options(datatable.verbose=TRUE)
-if (test_xts) {
-  test(2108.21, last(x, n=2L), 2:3, output="using xts::last: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
-  test(2108.22, last(y, n=2L), y[2:3], output="using xts::last: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
-  test(2108.23, last(x, n=1L), 3L, output="using xts::last: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
-  test(2108.24, last(y, n=1L), y[3L], output="using xts::last: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
-  xt_last = structure(
-    c(141.330002, 141.399994, 140.380005, 140.539993, 76645300, 108.360008),
-    class = c("xts", "zoo"), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC",
-    index = structure(1167955200, tzone = "UTC", tclass = "Date"),
-    .Dim = c(1L, 6L), .Dimnames = list(NULL, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "SPY.Adjusted"))
-  )
-  xt_last2 = structure(
-    c(141.229996, 141.330002, 142.050003, 141.399994, 140.610001, 140.380005,
-      141.669998, 140.539993, 69620600, 76645300, 109.231255, 108.360008),
-    class = c("xts", "zoo"), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC",
-    index = structure(c(1167868800, 1167955200), tzone = "UTC", tclass = "Date"),
-    .Dim = c(2L, 6L), .Dimnames = list(NULL, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "SPY.Adjusted"))
-  )
-  test(2108.25, last(xt), xt_last, output="using xts::last: is.xts(x)")
-  test(2108.26, last(xt, n=2L), xt_last2, output="using xts::last: is.xts(x)")
-  test(2108.31, first(x, n=2L), 1:2, output="using xts::first: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
-  test(2108.32, first(y, n=2L), y[1:2], output="using xts::first: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
-  test(2108.33, first(x, n=1L), 1L, output="using xts::first: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
-  test(2108.34, first(y, n=1L), y[1L], output="using xts::first: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
-  xt_first = structure(
-    c(142.25, 142.860001, 140.570007, 141.369995, 94807600, 108.999954),
-    class = c("xts", "zoo"), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC",
-    index = structure(1167782400, tzone = "UTC", tclass = "Date"),
-    .Dim = c(1L, 6L), .Dimnames = list(NULL, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "SPY.Adjusted"))
-  )
-  xt_first2 = structure(
-    c(142.25, 141.229996, 142.860001, 142.050003, 140.570007, 140.610001, 141.369995, 141.669998, 94807600, 69620600, 108.999954, 109.231255),
-    class = c("xts", "zoo"), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC",
-    index = structure(c(1167782400, 1167868800), tzone = "UTC", tclass = "Date"),
-    .Dim = c(2L, 6L), .Dimnames = list(NULL, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "SPY.Adjusted"))
-  )
-  test(2108.35, first(xt), xt_first, output="using xts::first: is.xts(x)")
-  test(2108.36, first(xt, n=2L), xt_first2, output="using xts::first: is.xts(x)")
-} else {
-  test(2108.21, last(x, n=2L), 2:3, output="using utils::tail: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
-  test(2108.22, last(y, n=2L), y[2:3], output="using utils::tail: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
-  test(2108.23, last(x, n=1L), 3L, output="using utils::tail: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
-  test(2108.24, last(y, n=1L), y[3L], output="using utils::tail: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
-  test(2108.25, last(xt), error="you should have 'xts' installed already")
-  test(2108.26, last(xt, n=2L), error="you should have 'xts' installed already")
-  test(2108.31, first(x, n=2L), 1:2, output="using utils::head: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
-  test(2108.32, first(y, n=2L), y[1:2], output="using utils::head: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
-  test(2108.33, first(x, n=1L), 1L, output="using utils::head: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
-  test(2108.34, first(y, n=1L), y[1L], output="using utils::head: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
-  test(2108.35, first(xt), error="you should have 'xts' installed already")
-  test(2108.36, first(xt, n=2L), error="you should have 'xts' installed already")
-}
-test(2108.41, last(x), 3L, output="using 'x[[length(x)]]': !is.xts(x) & !nargs>1 & is.null(dim(x))")
-test(2108.42, last(y), y[3L], output="using 'x[[length(x)]]': !is.xts(x) & !nargs>1 & is.null(dim(x))")
-test(2108.51, first(x), 1L, output="using 'x[[1L]]': !is.xts(x) & !nargs>1 & is.null(dim(x))")
-test(2108.52, first(y), y[1L], output="using 'x[[1L]]': !is.xts(x) & !nargs>1 & is.null(dim(x))")
-test(2108.61, last(df), structure(list(a=2L, b=2L), row.names=2L, class="data.frame"), output="using 'x[nrow(x),]': !is.xts(x) & !nargs>1 & is.data.frame(x)")
-test(2108.62, last(dt), data.table(a=2L, b=2L), output="using 'x[nrow(x),]': !is.xts(x) & !nargs>1 & is.data.frame(x)")
-test(2108.71, first(df), structure(list(a=1L, b=3L), row.names=1L, class="data.frame"), output="using 'x[1L,]': !is.xts(x) & !nargs>1 & is.data.frame(x)")
-test(2108.72, first(dt), data.table(a=1L, b=3L), output="using 'x[1L,]': !is.xts(x) & !nargs>1 & is.data.frame(x)")
-# matrix/array utils::tail behavior is likely to change in future R, Michael is more in the topic
-test(2108.81, last(mx), structure(c(3L, 6L, 9L), .Dim = c(1L, 3L), .Dimnames = list("[3,]", NULL)), output="using utils::tail: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
-expected = if (base::getRversion() < "3.7.0") 27L else structure(c(3L, 6L, 9L, 12L, 15L, 18L, 21L, 24L, 27L), .Dim = c(1L, 3L, 3L), .Dimnames = list("[3,]", NULL, NULL)) #4127
-test(2108.82, last(ar), expected, output="using utils::tail: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
-test(2108.91, first(mx), structure(c(1L, 4L, 7L), .Dim = c(1L, 3L)), output="using utils::head: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
-expected = if (base::getRversion() < "3.7.0") 1L else structure(c(1L, 4L, 7L, 10L, 13L, 16L, 19L, 22L, 25L), .Dim = c(1L, 3L, 3L)) #4127
-test(2108.92, first(ar), expected, output="using utils::head: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
-options(old)
+# 2108 tested xts moved to other.Rraw 19, #5516
 
 # error in autonaming by={...}, #3156
 DT = data.table(State=c("ERROR", "COMPLETED", "ERROR"), ExitCode=c(1, 0, 2))
@@ -16919,8 +16270,8 @@ g = function(x) { if (x==1L) factor(c("a","b")) else factor(c("a","b","c")) }
 test(2114.2, DT[,g(.GRP),by=A], data.table(A=INT(1,1,2,2,2), V1=as.factor(c("a","b","a","b","c"))))
 # original test verbatim from the same issue #2199
 set.seed(2)
-ids   = sample(letters, 20)
-dates = 1:40
+ids   = sample(letters, 10)   # reduced from 20 to 10
+dates = 1:10                  #   and 40 to 10 to save ram, #5517
 dt = data.table(CJ(dates, ids, ids))
 setnames(dt, c("date", "id1", "id2"))
 dt[, value := rnorm(length(date))]
@@ -16931,8 +16282,8 @@ f1 = function(sdt) {
   melt.data.table(dt1, id.vars = "id1")
 }
 res = dt[, f1(.SD), by=date]
-test(2114.3, setnames(res[c(1,.N)],"variable","id2")[,id2:=as.character(id2)][], dt[c(1,.N)])
-test(2114.4, print(res), output="date.*0.433")
+test(2114.3, setnames(res[c(1,.N)],"variable","id2")[,id2:=as.character(id2)], dt[c(1,.N)])
+test(2114.4, print(res), output="date.*-0.830")
 # and from #2522
 DT = data.table(id=1:9, grp=rep(1:3,each=3), val=c("a","b","c", "a","b","c", "a","b","c"))
 test(2114.5, as.character(DT[, valfactor1 := factor(val), by = grp]$valfactor1), ans<-rep(c("a","b","c"),3))
@@ -17192,10 +16543,7 @@ if(test_bit64) {
   i=as.integer64(1:12)+3e9
   test(2127.26, fcase(test_vec_na1, i, test_vec_na2, i+100), c(i[1L:5L], as.integer64(NA),i[7L:11L]+100, as.integer64(NA)))
 }
-if(test_nanotime) {
-  n=nanotime(1:12)
-  test(2127.27, fcase(test_vec_na1, n, test_vec_na2, n+100), c(n[1L:5L], nanotime(NA),n[7L:11L]+100, as.integer64(NA)))
-}
+# 2127.27 tested nanotime moved to other.Rraw 26, #5516
 test(2127.28, fcase(test_vec1, rep(1L,11L), test_vec2, rep(0L,11L)), as.integer(out_vec))
 test(2127.29, fcase(test_vec1, rep(1,11L), test_vec2, rep(0,11L)), out_vec)
 test(2127.30, fcase(test_vec1, rep("1",11L), test_vec2, rep("0",11L)), as.character(out_vec))
@@ -17360,20 +16708,8 @@ test(2132.2, fifelse(TRUE, 1, s2),       error = "S4 class objects (except nanot
 test(2132.3, fcase(TRUE, s1, FALSE, s2), error = "S4 class objects (except nanotime) are not supported. Please see")
 test(2132.4, fcase(FALSE, 1, TRUE, s1),  error = "S4 class objects (except nanotime) are not supported. Please see")
 rm(s1, s2, class2132)
-if (test_xts) {
-  # keep.rownames in as.data.table.xts() supports a string, #4232
-  xts = xts::xts(1:10, structure(1:10, class = "Date"))
-  colnames(xts) = "VALUE"
-  DT = as.data.table(xts, keep.rownames = "DATE", key = "DATE")
-  test(2133.1, colnames(DT), c("DATE", "VALUE"))
-  test(2133.2, key(DT), "DATE")
-  test(2133.3, as.data.table(xts, keep.rownames = "VALUE"),
-       error = "Input xts object should not have 'VALUE' column because it would result in duplicate column names. Rename 'VALUE' column in xts or use `keep.rownames` to change the index column name.")
-  test(2133.4, as.data.table(xts, keep.rownames = character()),
-       error = "keep.rownames must be length 1")
-  test(2133.5, as.data.table(xts, keep.rownames = NA_character_),
-       error = "keep.rownames must not be NA")
-}
+
+# 2133 tested xts moved to other.Rraw 20, #5516
 
 # friendlier error for common mistake of using := in i instead of j, #4227
 DT = data.table(a = 1)
@@ -17537,8 +16873,17 @@ if (.Platform$OS.type!="windows") {
   # blank TZ env variable on non-Windows is recognized as UTC consistent with C and R; but R's tz= argument is the opposite and uses "" for local
 }
 Sys.unsetenv("TZ")
-tt = fread(tmp, colClasses=list(POSIXct="times"), tz="")   # from v1.14.0 tz="" needed
-test(2150.025, attr(tt$times, "tzone"), "") # as.POSIXct puts "" on the result (testing the write.csv version here with missing tzone)
+# Notes:
+#  - from v1.14.0 tz="" needed
+#  - as.POSIXct puts "" on the result (testing the write.csv version here with missing tzone)
+#  - Per #5866, this test is complicated by some interaction with very specific builds of R where
+#    as.POSIXct() might fail for very old timestamps when 'tz=""' is used. On such systems,
+#    as.POSIXct() failure means 'times' is returned as a character, hence no 'tzone' attribute.
+#    fread() will also throw a warning, one substring of which will be the reproduced base R error.
+test(2150.025,
+     attr(fread(tmp, colClasses=list(POSIXct="times"), tz="")$times, "tzone"),
+     if (is.null(base_messages$maybe_invalid_old_posixct)) "" else NULL,
+     warning=base_messages$maybe_invalid_old_posixct)
 # the times will be different though here because as.POSIXct read them as local time.
 if (is.na(oldtz)) Sys.unsetenv("TZ") else Sys.setenv(TZ=oldtz)
 fwrite(copy(DT)[ , times := format(times, '%FT%T+00:00')], tmp)
@@ -18146,18 +17491,7 @@ d[1:50, "a"] = d[51:100, "a"]
 setDT(d)
 test(2200, nrow(d[a==99]), 2L)
 
-# segfault in forder when nrow/throttle<nth && ngrp>=255 && nrow>=65536; #5077
-# Matt ran these on clang's ASAN+OpenMP which correctly faulted v1.14.0; these tests segfault consistently without ASAN too
-set.seed(1)
-DT = data.table(grp=sample(255L, 65536L ,replace=TRUE))  # >=255 && >=65536 necessary
-setDTthreads(throttle=nrow(DT))      # increase throttle to reduce threads to 1 for this nrow
-test(2201.1, nrow(DT[, .N, by=grp]), 255L)
-test(2201.2, nrow(setkey(DT, grp)), 65536L)
-set.seed(1)
-DT = data.table(grp=sample(65536L))  # extra case with all size 1 groups too just for fun
-test(2201.3, nrow(DT[, .N, by=grp]), 65536L)
-test(2201.4, nrow(setkey(DT, grp)), 65536L)
-setDTthreads()    # restore default throttle
+# 2201 moved to benchmark.Rraw, #5517
 
 # fwrite now allows sep="", #4817
 test(2202.1, fwrite(data.frame(a="id", b=letters[1:5], c=1:5), sep=""),
@@ -18197,11 +17531,7 @@ test(2203.20, tstrsplit(w, "/", type.convert=list()), error="not support empty l
 test(2204, as.data.table(mtcars, keep.rownames='model', key='model'),
            setnames(setkey(as.data.table(mtcars, keep.rownames = TRUE), rn), 'rn', 'model'))
 
-# na.omit works for nanotime, #4744
-if (test_nanotime) {
-  DT = data.table(time=nanotime(c(1,NA,3)))
-  test(2205, na.omit(DT), DT[c(1,3)])
-}
+# 2205 tested nanotime moved to other.Rraw 27, #5516
 
 # isRealReallyInt, #3966
 test(2206.01, isRealReallyInt(c(-2147483647.0, NA, 0.0, 2147483647.0)), TRUE)
@@ -18300,8 +17630,8 @@ for (col in c("a","b","c")) {
 
 # DT() functional form, #4872 #5106 #5107 #5129
 if (base::getRversion() >= "4.1.0") {
+  DT = DTfun
   # we have to EVAL "|>" here too otherwise this tests.Rraw file won't parse in R<4.1.0
-  if (exists("DTfun")) DT=DTfun  # just in dev-mode restore DT() in .GlobalEnv as DT object overwrote it in tests above
   droprn = function(df) { rownames(df)=NULL; df }  # TODO: could retain rownames where droprn is currently used below
   test(2212.011, EVAL("mtcars |> DT(mpg>20, .(mean_hp=round(mean(hp),2)), by=cyl)"),
                  data.frame(cyl=c(6,4), mean_hp=c(110.0, 82.64)))
@@ -18352,6 +17682,7 @@ if (base::getRversion() >= "4.1.0") {
   test(2212.52, EVAL("D  |> DT(D[, .I[which.max(mpg)], by=cyl]$V1)"),                  ans)
   test(2212.53, EVAL("filter |> DT(filter[, .I[which.max(mpg)], by=cyl]$V1)"),         error="unused.*argument.*by.*cyl")  # R's [.data.frame error on filter[...]
   test(2212.54, EVAL("filter |> DT((filter |> DT(, .I[which.max(mpg)], by=cyl))$V1)"), as.data.frame(ans))
+  rm(DT)
 }
 
 # precision powers of 10^(-n), #4461
@@ -18477,26 +17808,30 @@ DT = data.table(x = sample(letters[1:5], 20, TRUE),
                 c = sample(c(0+3i,1,-1-1i,NA), 20, TRUE),
                 l = sample(c(TRUE, FALSE, NA), 20, TRUE),
                 r = as.raw(sample(1:5, 20, TRUE)))
-load(testDir("test2224.Rdata")) # ans array
+load(testDir("test2224.Rdata")) # 47KB array 24x8 where each cell contains a length-20 result
 if (test_bit64) {
   DT[, i64:=as.integer64(sample(c(-2L,0L,2L,NA), 20, TRUE))]
 } else {
   ans = ans[, -match("i64",colnames(ans))]
 }
-test(2224.01, sapply(names(DT)[-1], function(col) {
-  sapply(list(1, 5, -1, -5, c(1,2), c(-1,1)), function(n) list(
-    # fill is tested by group in tests 2218.*; see comments in #5205
-    EVAL(sprintf("DT[, shift(%s, %d, type='lag'),    by=x]$V1", col, n)),
-    EVAL(sprintf("DT[, shift(%s, %d, type='lead'),   by=x]$V1", col, n)),
-    EVAL(sprintf("DT[, shift(%s, %d, type='shift'),  by=x]$V1", col, n)),
-    EVAL(sprintf("DT[, shift(%s, %d, type='cyclic'), by=x]$V1", col, n))
-  ))
-}), ans)
+i = 1L
+for (col in names(DT)[-1]) {
+  for (n in list(1, 5, -1, -5, c(1,2), c(-1,1))) {
+    for (type in c('lag','lead','shift','cyclic')) {
+      # fill is tested by group in tests 2218.*; see comments in #5205
+      # sapply(sapply()) changed to for(for(for())) to save 29MB, #5517
+      test(2224.1+i/10000,  # 192 tests here when test_bit64=TRUE; 168 when FALSE
+           EVAL(sprintf("DT[, shift(%s, %d, type='%s'), by=x]$V1", col, n, type)),
+           ans[[i]])
+      i = i+1L
+    }
+  }
+}
 a = 1:2  # fill argument with length > 1 which is not a call
-test(2224.02, DT[, shift(i, fill=a), by=x], error="fill must be a vector of length 1")
+test(2224.2, DT[, shift(i, fill=a), by=x], error="fill must be a vector of length 1")
 DT = data.table(x=pairlist(1), g=1)
 # unsupported type as argument
-test(2224.03, DT[, shift(x), g], error="Type 'list' is not supported by GForce gshift.")
+test(2224.3, DT[, shift(x), g], error="Type 'list' is not supported by GForce gshift.")
 
 # groupingsets by named by argument
 test(2225.1, groupingsets(data.table(iris), j=sum(Sepal.Length), by=c('Sp'='Species'), sets=list('Species')),
@@ -18624,6 +17959,12 @@ test(2231.50, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table
 DT = data.table(x=c(1L,NA,NaN,3L,4L,5L,5L,6L), w=c(1L,NaN,NA,1L,2L,2L,2L,2L), g=rep(1L:2L, each=4L))
 test(2231.51, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA, 5)), output="GForce optimized j to")
 test(2231.52, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output="GForce optimized j to")
+# let wrongly named arguments get lost in ellipsis #5543
+DT = data.table(x=c(3.7,3.3,3.5,2.8), w=c(5,5,4,1), g=1L)
+test(2231.61, DT[, weighted.mean(x, w),        g, verbose=TRUE], data.table(g=1L, V1=3.45+1/300), output="GForce optimized j to")
+test(2231.62, DT[, weighted.mean(x, weight=w), g, verbose=TRUE], data.table(g=1L, V1=3.325),      output="GForce optimized j to")
+test(2231.63, DT[, weighted.mean(x, w, na.rm=FALSE), g],    DT[, stats::weighted.mean(x, w, na.rm=FALSE), g])
+test(2231.64, DT[, weighted.mean(x, weight=w, na.rm=TRUE)], DT[, stats::weighted.mean(x, weight=w, na.rm=TRUE)])
 options(old)
 
 # cols argument for unique.data.table, #5243
@@ -18710,7 +18051,7 @@ test(2233.34, copy(DT)[, same_value:=value[1],    by=.(by1, by2), verbose=TRUE],
 test(2233.35, copy(DT)[, same_value:=value[1],    by=.(by2, by1), verbose=TRUE], ans,                                output=out)
 test(2233.36, copy(DT)[, same_value:=value[1], keyby=.(by2, by1), verbose=TRUE], setkey(ans,by2,by1),                output=out)
 # similar to #5307 using integer
-DT = data.table(A=INT(2,1,2,1), B=6:3, v=11:14)                                                
+DT = data.table(A=INT(2,1,2,1), B=6:3, v=11:14)
 test(2233.37, copy(DT)[, val:=v[1L],    by=.(A,B), verbose=TRUE], copy(DT)[, val:=11:14], output=out)
 test(2233.38, copy(DT)[, val:=v[1L], keyby=.(A,B), verbose=TRUE], data.table(A=INT(1,1,2,2), B=INT(3,5,4,6), v=INT(14,12,13,11), val=INT(14,12,13,11), key=c("A","B")), output=out)
 # test from #5326 but with n=100 rather than n=100000; confirmed that n=100 fails tests 2233.403-405 before fix
@@ -18765,6 +18106,14 @@ for (opt in c(0,Inf)) {
   testnum = 2233.44
 }
 options(old)
+# optimized := with gforce functions that can return lists #5403
+old = options(datatable.verbose=TRUE)
+DT = data.table(grp=1:2, x=1:4)
+out = "Making each group and running j (GForce TRUE)"
+test(2233.45, copy(DT)[, c("y", "z") := .(shift(x, type="lag", n=1), shift(x, type="lead", n=1)), by=grp], data.table(grp=1:2, x=1:4, y=c(NA, NA, 1:2), z=c(3:4, NA, NA)), output=out)
+test(2233.46, copy(DT)[, l := shift(x, n=c(0, 0)), by=grp], data.table(grp=1:2, x=1:4, l=list(INT(1, 1), INT(2, 2), INT(3, 3), INT(4, 4))), output=out)
+test(2233.47, copy(DT)[, c("l1", "l2") := shift(x, n=c(-1, 1)), by=grp], data.table(grp=1:2, x=1:4, l1=c(3:4,NA,NA), l2=c(NA,NA,1:2)), output=out)
+options(old)
 
 # support by=.I; #1732
 DT = data.table(V1=1:5, V2=3:7, V3=5:1)
@@ -18786,16 +18135,16 @@ test(2235.1, copy(DT)[, c("z", "x") := {x = NULL; list(2, NULL)}], data.table(z 
 test(2235.2, copy(DT)[, c("z", "x") := {list(2, NULL)}], data.table(z = 2))
 
 # move IDate from POSIXlt to C, add yearquarter; #649
-x = c("1111-11-11", "2019-01-01", "2019-02-28", "2019-03-01", "2019-12-31", "2020-02-29", "2020-03-01", "2020-12-31", "2040-01-01", "2040-12-31", "2100-03-01")
-test(2236.1, yday(x), c(315L, 1L, 59L, 60L, 365L, 60L, 61L, 366L, 1L, 366L, 60L))
-test(2236.2, mday(x), c(11L, 1L, 28L, 1L, 31L, 29L, 1L, 31L, 1L, 31L, 1L))
-test(2236.3, wday(x), c(7L, 3L, 5L, 6L, 3L, 7L, 1L, 5L, 1L, 2L, 2L))
-test(2236.4, week(x), c(46L, 1L, 9L, 9L, 53L, 9L, 9L, 53L, 1L, 53L, 9L))
-test(2236.5, month(x), c(11L, 1L, 2L, 3L, 12L, 2L, 3L, 12L, 1L, 12L, 3L))
-test(2236.6, quarter(x), c(4L, 1L, 1L, 1L, 4L, 1L, 1L, 4L, 1L, 4L, 1L))
-test(2236.7, year(x), c(1111L, 2019L, 2019L, 2019L, 2019L, 2020L, 2020L, 2020L, 2040L, 2040L, 2100L))
-test(2236.8, yearmon(x), c(1111+10/12, 2019, 2019+1/12, 2019+2/12, 2019+11/12, 2020+1/12, 2020+2/12, 2020+11/12, 2040, 2040+11/12, 2100+2/12))
-test(2236.9, yearqtr(x), c(1111.75, 2019, 2019, 2019, 2019.75, 2020, 2020, 2020.75, 2040, 2040.75, 2100))
+x = c("1111-11-11", "2019-01-01", "2019-02-28", "2019-03-01", "2019-12-31", "2020-02-29", "2020-03-01", "2020-12-31", "2040-01-01", "2040-12-31", "2100-03-01", NA)
+test(2236.1, yday(x), c(315L, 1L, 59L, 60L, 365L, 60L, 61L, 366L, 1L, 366L, 60L, NA))
+test(2236.2, mday(x), c(11L, 1L, 28L, 1L, 31L, 29L, 1L, 31L, 1L, 31L, 1L, NA))
+test(2236.3, wday(x), c(7L, 3L, 5L, 6L, 3L, 7L, 1L, 5L, 1L, 2L, 2L, NA))
+test(2236.4, week(x), c(46L, 1L, 9L, 9L, 53L, 9L, 9L, 53L, 1L, 53L, 9L, NA))
+test(2236.5, month(x), c(11L, 1L, 2L, 3L, 12L, 2L, 3L, 12L, 1L, 12L, 3L, NA))
+test(2236.6, quarter(x), c(4L, 1L, 1L, 1L, 4L, 1L, 1L, 4L, 1L, 4L, 1L, NA))
+test(2236.7, year(x), c(1111L, 2019L, 2019L, 2019L, 2019L, 2020L, 2020L, 2020L, 2040L, 2040L, 2100L, NA))
+test(2236.8, yearmon(x), c(1111+10/12, 2019, 2019+1/12, 2019+2/12, 2019+11/12, 2020+1/12, 2020+2/12, 2020+11/12, 2040, 2040+11/12, 2100+2/12, NA))
+test(2236.9, yearqtr(x), c(1111.75, 2019, 2019, 2019, 2019.75, 2020, 2020, 2020.75, 2040, 2040.75, 2100, NA))
 
 # as.data.table() no longer ignores row.names=, #5319
 dt = data.table(a=1:2, b=3:4)
@@ -18804,12 +18153,138 @@ test(2237.1, as.data.frame(dt, row.names=c("x", "y")), df)
 df = data.frame(a=1:2, b=3:4)
 test(2237.2, as.data.frame(dt, row.names=NULL), df)
 
+# Test new feature %notin%, #4152
+test(2238.1, 11 %notin% 1:10, TRUE)
+test(2238.2, "a" %notin% c(), TRUE)
+test(2238.3, "a" %notin% c("a", "b", "c"), FALSE)
+test(2238.4, c(1, 2) %notin% c(1,2,3), c(FALSE, FALSE))
+test(2238.5, "a" %notin% character(), TRUE)
+test(2238.6, "a" %notin% integer(), TRUE)
+test(2238.7, "a" %notin% NULL, TRUE)
+test(2238.8, NA %notin% 1:5, TRUE)
+test(2238.9, NA %notin% c(1:5, NA), FALSE)
+
+# shift actionable error on matrix input #5287
+test(2239.1, shift(matrix(1:10, ncol = 1)), error="consider wrapping")
+
+# names<- retains index and key, #5125, #5126, #5126, #5128
+DT <- data.table(a = 1, b = 2)
+setkey(DT, a)
+setindex(DT, b)
+names(DT) <- c("c", "d")
+test(2240.1, key(DT), "c")
+test(2240.2, indices(DT), "d")
+
+# Test warnings for names<- and colnames<-, but only warnings when caller is data.table aware.
+DT = data.table(a=1:3, b=4:6, key="a")
+test(2241.01, names(DT)[1]<-"A", "A")
+test(2241.02, DT, data.table(A=1:3, b=4:6, key="A"))  # key wasn't retained in dev after #5084
+test(2241.03, DT[, C:=1], data.table(A=1:3, b=4:6, C=1, key="A"))  # ensure over-allocated ok and no warning
+test(2241.04, set(DT, j="D", value=2), data.table(A=1:3, b=4:6, C=1, D=2, key="A"))  # using set() too
+test(2241.05, colnames(DT)[2]<-"B", "B")
+test(2241.06, DT, data.table(A=1:3, B=4:6, C=1, D=2, key="A"))
+test(2241.07, set(DT, j="E", value=3), data.table(A=1:3, B=4:6, C=1, D=2, E=3, key="A"))
+test(2241.08, names(DT)<-letters[1:5], letters[1:5])  # R doesn't copy *tmp* when assigning to all names 
+test(2241.09, DT, data.table(a=1:3, b=4:6, c=1, d=2, e=3, key="a"))
+test(2241.10, set(DT, j="f", value=4), data.table(a=1:3, b=4:6, c=1, d=2, e=3, f=4, key="a"))
+
+# spotted by @ColeMiller1 in https://github.com/Rdatatable/data.table/pull/5133/files#r1320780851
+DT = data.table(id=1:2, x=1:2)
+r = copy(DT)[, x := 5L]
+test(2241.11, DT, data.table(id=1:2, x=1:2))
+test(2241.12, r, data.table(id=1:2, x=c(5L,5L)))
+
+DT = data.table(id=1:2, x=1:2)
+r = copy(DT)[1L, x:= 5L]
+test(2241.13, DT, data.table(id=1:2, x=1:2))
+test(2241.14, r, data.table(id=1:2, x=c(5L,2L)))
+
+# .SDcols using binary '-' is evaluated correctly (#5826 exposed this)
+DT = data.table(a=1, b=2, c=3)
+test(2242.1, DT[, .SD, .SDcols=2-1], DT[, .(a)])
+test(2242.2, DT[, .SD, .SDcols=length(DT)-1], DT[, .SD, .SDcols=2])
+
+# turn off GForce where arguments are calls but still allow variables, #5547
+options(datatable.optimize=2L)
+dt = data.table(x=c("a","b","c","d"), y=c(1L,1L,2L,2L))
+i = c(0,1)
+j = 1L
+t = "lead"
+f = shift
+test(2243.01, dt[, shift(x, i, type=t), by=y, verbose=TRUE],               dt[, f(x, c(0,1), type="lead"), by=y],         output="GForce optimized j to")
+test(2243.02, dt[, shift(x, abs(c(0,1)), type=t), by=y, verbose=TRUE],     dt[, f(x, c(0,1), type="lead"), by=y],         output="GForce optimized j to")
+test(2243.03, dt[, shift(x, abs(i), type=t), by=y, verbose=TRUE],          dt[, f(x, c(0,1), type="lead"), by=y],         output="GForce FALSE")
+test(2243.04, dt[, shift(x, i, type=as.character(t)), by=y, verbose=TRUE], dt[, f(x, c(0,1), type="lead"), by=y],         output="GForce FALSE")
+test(2243.05, dt[, shift(x, i, type=t, fill=1), by=y, verbose=TRUE],       dt[, f(x, c(0,1), type="lead", fill=1), by=y], output="GForce optimized j to")
+test(2243.06, dt[, shift(x, i, type=t, fill=abs(1)), by=y, verbose=TRUE],  dt[, f(x, c(0,1), type="lead", fill=1), by=y], output="GForce optimized j to")
+test(2243.07, dt[, shift(x, i, type=t, fill=abs(j)), by=y, verbose=TRUE],  dt[, f(x, c(0,1), type="lead", fill=1), by=y], output="GForce FALSE")
+test(2243.08, dt[, .(shift(x, i, type=t)), by=y, verbose=TRUE],            dt[, .(f(x, c(0,1), type="lead")), by=y],      output="GForce optimized j to")
+# GForce only var or call without vars as n of head/tail/"["(x, n)
+dt = data.table(id=c(1L,1L,2L), v=1:3)
+j = 1L
+test(2243.11, dt[, head(v, j), id, verbose=TRUE], data.table(id=c(1L,2L), V1=c(1L,3L)), output="GForce optimized j to")
+test(2243.12, dt[, tail(v, j), id, verbose=TRUE], data.table(id=c(1L,2L), V1=c(2L,3L)), output="GForce optimized j to")
+test(2243.13, dt[, v[j], id,       verbose=TRUE], data.table(id=c(1L,2L), V1=c(1L,3L)), output="GForce optimized j to")
+# GForce only var or call without vars as na.rm of sum, mean, median, prod, min, max, var
+j = FALSE
+test(2243.21, dt[, sum(v,  na.rm=j),   id, verbose=TRUE], data.table(id=c(1L,2L), V1=c(3L,3L)),        output="GForce optimized j to")
+test(2243.22, dt[, mean(v, na.rm=j),   id, verbose=TRUE], data.table(id=c(1L,2L), V1=c(1.5,3)),        output="GForce optimized j to")
+test(2243.23, dt[, median(v, na.rm=j), id, verbose=TRUE], data.table(id=c(1L,2L), V1=c(1.5,3)),        output="GForce optimized j to")
+test(2243.24, dt[, prod(v, na.rm=j),   id, verbose=TRUE], data.table(id=c(1L,2L), V1=c(2,3)),          output="GForce optimized j to")
+test(2243.25, dt[, min(v,  na.rm=j),   id, verbose=TRUE], data.table(id=c(1L,2L), V1=c(1L,3L)),        output="GForce optimized j to")
+test(2243.26, dt[, max(v,  na.rm=j),   id, verbose=TRUE], data.table(id=c(1L,2L), V1=c(2L,3L)),        output="GForce optimized j to")
+test(2243.27, dt[, var(v,  na.rm=j),   id, verbose=TRUE], data.table(id=c(1L,2L), V1=c(0.5,NA)),       output="GForce optimized j to")
+test(2243.28, dt[, sd(v,   na.rm=j),   id, verbose=TRUE], data.table(id=c(1L,2L), V1=c(sqrt(0.5),NA)), output="GForce optimized j to")
+dt = data.table(g=1:2, y=1:4)
+j = TRUE
+test(2243.31, dt[, sum(y,  na.rm=as.logical(j)),   g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(4L,6L)),        output="GForce FALSE")
+test(2243.32, dt[, mean(y, na.rm=as.logical(j)),   g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2,3)),          output="GForce FALSE")
+test(2243.33, dt[, median(y, na.rm=as.logical(j)), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2,3)),          output="GForce FALSE")
+test(2243.34, dt[, prod(y, na.rm=as.logical(j)),   g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(3,8)),          output="GForce FALSE")
+test(2243.35, dt[, min(y,  na.rm=as.logical(j)),   g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(1L,2L)),        output="GForce FALSE")
+test(2243.36, dt[, max(y,  na.rm=as.logical(j)),   g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(3L,4L)),        output="GForce FALSE")
+test(2243.37, dt[, var(y,  na.rm=as.logical(j)),   g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2,2)),          output="GForce FALSE")
+test(2243.38, dt[, sd(y,   na.rm=as.logical(j)),   g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(sqrt(c(2,2)))), output="GForce FALSE")
+
+# revdeps
+dt = data.table(x = c(2,2,1,1), y = 1:4, z=letters[1:4])
+i=c(1,2)
+j=1L
+old = options(datatable.optimize=1L)
+test(2243.41, dt[, .I[TRUE], x]$V1, 1:4)
+test(2243.42, dt[, z[y], x], data.table(x=c(2,2,1,1), V1=c("a","b",NA,NA)))
+options(datatable.optimize=2L, datatable.verbose=TRUE)
+test(2243.51, dt[, .I[TRUE], x]$V1, 1:4, output="GForce FALSE")
+test(2243.52, dt[, z[y], x], data.table(x=c(2,2,1,1), V1=c("a","b",NA,NA)), output="GForce FALSE")
+test(2243.53, dt[, .I[1], x]$V1, c(1L, 3L), output="GForce TRUE")
+test(2243.54, dt[, .I[j], x]$V1, c(1L, 3L), output="GForce TRUE")
+test(2243.55, dt[, .I[i], x]$V1, 1:4, output="GForce FALSE")
+test(2243.56, dt[, .I[1:2], x]$V1, 1:4, output="GForce FALSE")
+options(old)
+
+DT = data.table(1)
+test(2244.1, DT[, `:=`(a=1, )], error="`:=`.*Did you forget a trailing comma\\?")
+test(2244.2, DT[, let(a=1, )], error="let.*Did you forget a trailing comma\\?")
+test(2244.3, DT[, `:=`(a=1, , b=2)], error="`:=`.*\\[2\\]")
+test(2244.4, DT[, let(a=1, , b=2)], error="let.*\\[2\\]")
+test(2244.5, DT[, `:=`(a=1, , b=2, )], error="[2, 4]")
+
+# allow specifying datatable-unaware behavior, #5654 / #5655
+dt = data.table(foo = 1:3, bar = 4:6)
+.datatable.aware = TRUE
+test(2245.1, dt[1], data.table(foo = 1L, bar = 4L)) # Single index should be interpreted as row
+.datatable.aware = FALSE
+# selfrefok() fails on unaware-indexed datatables; the copy() here sidesteps that issue.
+test(2245.2, copy(dt[1]), data.table(foo = 1:3)) # Revert to data.frame syntax: Interpret index as column
+rm(.datatable.aware)
+test(2245.3, dt[1], data.table(foo = 1L, bar = 4L)) # Default in this environment should be datatable-aware
+
 # 5392 split(x,f) does not work with formula f
 dt = data.table(x=1:4, y=factor(letters[1:2]))
-test(2238.1, split(dt, ~y), list(a=data.table(x=c(1L,3L), y=factor("a", levels=c("a", "b"))), b=data.table(x=c(2L, 4L), y=factor("b", levels=c("a", "b")))))
+test(2246.1, split(dt, ~y), list(a=data.table(x=c(1L,3L), y=factor("a", levels=c("a", "b"))), b=data.table(x=c(2L, 4L), y=factor("b", levels=c("a", "b")))))
 dt = data.table(x=1:4, y=1:2)
-test(2238.2, split(dt, ~y), list(`1`=data.table(x=c(1L,3L), y=1L), `2`=data.table(x=c(2L, 4L), y=2L)))
-test(2238.3, setDT(do.call("rbind.data.frame", split(dt, ~y))), data.table(x=c(1L,3L,2L,4L), y=c(1L,1L,2L,2L)))
-test(2238.4, rbindlist(split(dt, ~y)), data.table(x=c(1L,3L,2L,4L), y=c(1L,1L,2L,2L)))
+test(2246.2, split(dt, ~y), list(`1`=data.table(x=c(1L,3L), y=1L), `2`=data.table(x=c(2L, 4L), y=2L)))
+test(2246.3, setDT(do.call("rbind.data.frame", split(dt, ~y))), data.table(x=c(1L,3L,2L,4L), y=c(1L,1L,2L,2L)))
+test(2246.4, rbindlist(split(dt, ~y)), data.table(x=c(1L,3L,2L,4L), y=c(1L,1L,2L,2L)))
 dt = data.table(x=1:4, y=factor(letters[1:2]), z=factor(c(1,1,2,2), labels=c("c", "d")))
-test(2238.5, split(dt, ~y+z), list("a.c"=dt[1], "b.c"=dt[2], "a.d"=dt[3], "b.d"=dt[4]))
+test(2246.5, split(dt, ~y+z), list("a.c"=dt[1], "b.c"=dt[2], "a.d"=dt[3], "b.d"=dt[4]))
