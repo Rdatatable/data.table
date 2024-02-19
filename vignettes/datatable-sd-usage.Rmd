@@ -197,7 +197,7 @@ Pitching[rank_in_team == 1, team_performance :=
            Teams[.SD, Rank, on = c('teamID', 'yearID')]]
 ```
 
-Note that the `x[y]` syntax returns `nrow(y)` values (i.e., it's a right join), which is why `.SD` is on the right in `Teams[.SD]` (since the RHS of `:=` in this case requires `nrow(Pitching[rank_in_team == 1])` values.
+Note that the `x[y]` syntax returns `nrow(y)` values (i.e., it's a right join), which is why `.SD` is on the right in `Teams[.SD]` (since the RHS of `:=` in this case requires `nrow(Pitching[rank_in_team == 1])` values).
 
 # Grouped `.SD` operations
 

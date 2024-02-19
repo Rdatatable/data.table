@@ -23,7 +23,7 @@ knitr::opts_chunk$set(
 
 ## Introduction
 
-`data.table`, from its very first releases, enabled the usage of `subset` and `with` (or `within`) functions by defining the`[.data.table` method. `subset` and `with` are base R functions that are useful for reducing repetition in code, enhancing readability, and reducing number the total characters the user has to type. This functionality is possible in R because of a quite unique feature called *lazy evaluation*. This feature allows a function to catch its arguments, before they are evaluated, and to evaluate them in a different scope than the one in which they were called. Let's recap usage of the `subset` function.
+`data.table`, from its very first releases, enabled the usage of `subset` and `with` (or `within`) functions by defining the `[.data.table` method. `subset` and `with` are base R functions that are useful for reducing repetition in code, enhancing readability, and reducing number the total characters the user has to type. This functionality is possible in R because of a quite unique feature called *lazy evaluation*. This feature allows a function to catch its arguments, before they are evaluated, and to evaluate them in a different scope than the one in which they were called. Let's recap usage of the `subset` function.
 
 ```{r df_print, echo=FALSE}
 registerS3method("print", "data.frame", function(x, ...) {
@@ -71,7 +71,7 @@ my_subset = function(data, col, val) {
 my_subset(iris, col = "Species", val = "setosa")
 ```
 
-Here, we compute a logical vector of length `nrow(iris)`, then this vector is supplied to the `i` argument of `[.data.frame` to perform ordinary logical vector subsetting. It works well for this simple example, but it lacks flexibility, introduces variable repetition, and requires user to change the function interface to pass the column name as a character rather than unquoted symbol. The more complex the expression we need to parameterize, the less practical this approach becomes.
+Here, we compute a logical vector of length `nrow(iris)`, then this vector is supplied to the `i` argument of `[.data.frame` to perform ordinary "logical vector"-based subsetting. It works well for this simple example, but it lacks flexibility, introduces variable repetition, and requires user to change the function interface to pass the column name as a character rather than unquoted symbol. The more complex the expression we need to parameterize, the less practical this approach becomes.
 
 #### Use of `parse` / `eval`
 
@@ -88,7 +88,7 @@ my_subset = function(data, col, val) {
 my_subset(iris, Species, "setosa")
 ```
 
-We have to use `deparse(substitute(...))` to catch the actual names of objects passed to function so we can construct the `subset` function call using those original names. Although ths provides unlimited flexibility with relatively low complexity, **use of `eval(parse(...))` should be avoided**. The main reasons are:
+We have to use `deparse(substitute(...))` to catch the actual names of objects passed to function, so we can construct the `subset` function call using those original names. Although this provides unlimited flexibility with relatively low complexity, **use of `eval(parse(...))` should be avoided**. The main reasons are:
 
 - lack of syntax validation
 - [vulnerability to code injection](https://github.com/Rdatatable/data.table/issues/2655#issuecomment-376781159)
@@ -110,7 +110,7 @@ my_subset = function(data, col, val) {
 my_subset(iris, Species, "setosa")
 ```
 
-Here, we used the base R `substitute` function to transform the call `subset(data, col == val)` into `subset(iris, Species == "setosa")` by substituting `data`, `col`, and `val` with their original names (or values) from their parent environment. The benefits of this approach to the previous ones should be clear. Note that because we operate at the level of language objects, and don't have to resort to string manipulation, we refer to this as *computing on the language*. There is a dedicated chapter on *Computing on the language* in [R language manual](https://cran.r-project.org/doc/manuals/r-release/R-lang.html). Although it is not necessary for *programming on data.table*, we encourage readers to read this chapter for the sake of better understanding this powerful and unique feature.
+Here, we used the base R `substitute` function to transform the call `subset(data, col == val)` into `subset(iris, Species == "setosa")` by substituting `data`, `col`, and `val` with their original names (or values) from their parent environment. The benefits of this approach to the previous ones should be clear. Note that because we operate at the level of language objects, and don't have to resort to string manipulation, we refer to this as *computing on the language*. There is a dedicated chapter on *Computing on the language* in [R language manual](https://cran.r-project.org/doc/manuals/r-release/R-lang.html). Although it is not necessary for *programming on data.table*, we encourage readers to read this chapter for the sake of better understanding this powerful and unique feature of R language.
 
 #### Use third party packages
 
@@ -151,7 +151,7 @@ substitute2(
 )
 ```
 
-We can see in the output that both the functions names, as well as the names of the variables passed to those functions, have been replaced.. We used `substitute2` for convenience. In this simple case, base R's `substitute` could have been used as well, though it would've required usage of `lapply(env, as.name)`.
+We can see in the output that both the functions names, as well as the names of the variables passed to those functions, have been replaced. We used `substitute2` for convenience. In this simple case, base R's `substitute` could have been used as well, though it would've required usage of `lapply(env, as.name)`.
 
 Now, to use substitution inside `[.data.table`, we don't need to call the `substitute2` function. As it is now being used internally, all we have to do is to provide `env` argument, the same way as we've provided it to the `substitute2` function in the example above. Substitution can be applied to the `i`, `j` and `by` (or `keyby`) arguments of the `[.data.table` method. Note that setting the `verbose` argument to `TRUE` can be used to print expressions after substitution is applied. This is very useful for debugging.
 

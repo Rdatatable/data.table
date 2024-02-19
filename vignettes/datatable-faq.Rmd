@@ -597,7 +597,7 @@ Please file suggestions, bug reports and enhancement requests on our [issues tra
 
 Please do star the package on [GitHub](https://github.com/Rdatatable/data.table/wiki). This helps encourage the developers and helps other R users find the package.
 
-You can submit pull requests to change the code and/or documentation yourself; see our [Contribution Guidelines](https://github.com/Rdatatable/data.table/wiki/Contributing).
+You can submit pull requests to change the code and/or documentation yourself; see our [Contribution Guidelines](https://github.com/Rdatatable/data.table/blob/master/.github/CONTRIBUTING.md).
 
 ## I think it's not great. How do I warn others about my experience?
 

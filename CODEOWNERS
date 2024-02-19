@@ -43,3 +43,9 @@
 
 # .SD vignette
 /vignettes/datatable-sd-usage.Rmd @michaelchirico
+
+# assign
+/src/assign.c @HughParsonage
+
+# utils
+/src/utils.c @HughParsonage
