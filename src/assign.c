@@ -713,7 +713,6 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
   // for 5647 this used to limit slen to len, but no longer
   if (colname==NULL)
     error(_("Internal error: memrecycle has received NULL colname")); // # nocov
-  bool nocol = colnum==0;
   *memrecycle_message = '\0';
   int protecti=0;
   const bool sourceIsFactor=isFactor(source), targetIsFactor=isFactor(target);
