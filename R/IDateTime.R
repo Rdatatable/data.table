@@ -7,6 +7,10 @@ as.IDate = function(x, ...) UseMethod("as.IDate")
 
 as.IDate.default = function(x, ..., tz = attr(x, "tzone", exact=TRUE)) {
   if (is.null(tz)) tz = "UTC"
+  if (is.character(x)) {
+    # backport of similar patch to base::as.Date.character in R 4.0.3, #4676
+    is.na(x) = !nzchar(x)
+  }
   as.IDate(as.Date(x, tz = tz, ...))
 }
 
@@ -67,6 +71,11 @@ unique.IDate =
   x
 }
 
+# define min and max to avoid base R's Inf with warning on empty, #2256
+min.IDate = max.IDate = function(x, ...) {
+  as.IDate(if (!length(x)) NA else NextMethod())
+}
+
 # fix for #1315
 as.list.IDate = function(x, ...) NextMethod()
 
@@ -89,27 +98,27 @@ round.IDate = function (x, digits=c("weeks", "months", "quarters", "years"), ...
     return(e1)
   # TODO: investigate Ops.IDate method a la Ops.difftime
   if (inherits(e1, "difftime") || inherits(e2, "difftime"))
-    stop("Internal error -- difftime objects may not be added to IDate, but Ops dispatch should have intervened to prevent this") # nocov
+    stopf("Internal error -- difftime objects may not be added to IDate, but Ops dispatch should have intervened to prevent this") # nocov
   if (isReallyReal(e1) || isReallyReal(e2)) {
     return(`+.Date`(e1, e2))
     # IDate doesn't support fractional days; revert to base Date
   }
   if (inherits(e1, "Date") && inherits(e2, "Date"))
-    stop("binary + is not defined for \"IDate\" objects")
+    stopf("binary + is not defined for \"IDate\" objects")
   (setattr(as.integer(unclass(e1) + unclass(e2)), "class", c("IDate", "Date")))  # () wrap to return visibly
 }
 
 `-.IDate` = function (e1, e2) {
   if (!inherits(e1, "IDate")) {
     if (inherits(e1, 'Date')) return(base::`-.Date`(e1, e2))
-    stop("can only subtract from \"IDate\" objects")
+    stopf("can only subtract from \"IDate\" objects")
   }
   if (storage.mode(e1) != "integer")
-    stop("Internal error: storage mode of IDate is somehow no longer integer") # nocov
+    stopf("Internal error: storage mode of IDate is somehow no longer integer") # nocov
   if (nargs() == 1L)
-    stop("unary - is not defined for \"IDate\" objects")
+    stopf("unary - is not defined for \"IDate\" objects")
   if (inherits(e2, "difftime"))
-    stop("Internal error -- difftime objects may not be subtracted from IDate, but Ops dispatch should have intervened to prevent this") # nocov
+    stopf("Internal error -- difftime objects may not be subtracted from IDate, but Ops dispatch should have intervened to prevent this") # nocov
 
   if ( isReallyReal(e2) ) {
     # IDate deliberately doesn't support fractional days so revert to base Date
@@ -142,13 +151,8 @@ as.ITime.POSIXct = function(x, tz = attr(x, "tzone", exact=TRUE), ...) {
 }
 
 as.ITime.numeric = function(x, ms = 'truncate', ...) {
-  secs = switch(ms,
-                'truncate' = as.integer(x),
-                'nearest' = as.integer(round(x)),
-                'ceil' = as.integer(ceiling(x)),
-                stop("Valid options for ms are 'truncate', ",
-                     "'nearest', and 'ceil'.")) %% 86400L
-  (setattr(secs, "class", "ITime")) # the %% here ^^ ensures a local copy is obtained; the truncate as.integer() may not copy
+  secs = clip_msec(x, ms) %% 86400L # the %% here ensures a local copy is obtained; the truncate as.integer() may not copy
+  (setattr(secs, "class", "ITime"))
 }
 
 as.ITime.character = function(x, format, ...) {
@@ -177,23 +181,13 @@ as.ITime.character = function(x, format, ...) {
 }
 
 as.ITime.POSIXlt = function(x, ms = 'truncate', ...) {
-  secs = switch(ms,
-                'truncate' = as.integer(x$sec),
-                'nearest' = as.integer(round(x$sec)),
-                'ceil' = as.integer(ceiling(x$sec)),
-                stop("Valid options for ms are 'truncate', ",
-                     "'nearest', and 'ceil'."))
+  secs = clip_msec(x$sec, ms)
   (setattr(with(x, secs + min * 60L + hour * 3600L), "class", "ITime"))  # () wrap to return visibly
 }
 
 as.ITime.times = function(x, ms = 'truncate', ...) {
   secs = 86400 * (unclass(x) %% 1)
-  secs = switch(ms,
-                'truncate' = as.integer(secs),
-                'nearest' = as.integer(round(secs)),
-                'ceil' = as.integer(ceiling(secs)),
-                stop("Valid options for ms are 'truncate', ",
-                     "'nearest', and 'ceil'."))
+  secs = clip_msec(secs, ms)
   (setattr(secs, "class", "ITime"))  # the first line that creates sec will create a local copy so we can use setattr() to avoid potential copy of class()<-
 }
 
@@ -240,20 +234,20 @@ rep.ITime = function (x, ...)
   class(y) = "ITime"   # unlass and rep could feasibly not copy, hence use class<- not setattr()
   y
 }
-                           
-round.ITime <- function(x, digits = c("hours", "minutes"), ...) 
+
+round.ITime <- function(x, digits = c("hours", "minutes"), ...)
 {
   (setattr(switch(match.arg(digits),
                   hours = as.integer(round(unclass(x)/3600)*3600),
-                  minutes = as.integer(round(unclass(x)/60)*60)), 
+                  minutes = as.integer(round(unclass(x)/60)*60)),
            "class", "ITime"))
-} 
+}
 
-trunc.ITime <- function(x, units = c("hours", "minutes"), ...) 
+trunc.ITime <- function(x, units = c("hours", "minutes"), ...)
 {
   (setattr(switch(match.arg(units),
                   hours = as.integer(unclass(x)%/%3600*3600),
-                  minutes = as.integer(unclass(x)%/%60*60)), 
+                  minutes = as.integer(unclass(x)%/%60*60)),
            "class", "ITime"))
 }
 
@@ -281,7 +275,7 @@ mean.ITime = seq.ITime = c.ITime = function(x, ...) as.ITime(NextMethod())
 
 IDateTime = function(x, ...) UseMethod("IDateTime")
 IDateTime.default = function(x, ...) {
-  data.table(idate = as.IDate(x), itime = as.ITime(x))
+  data.table(idate = as.IDate(x, ...), itime = as.ITime(x, ...))
 }
 
 # POSIXt support
@@ -307,13 +301,22 @@ as.POSIXlt.ITime = function(x, ...) {
   as.POSIXlt(as.POSIXct(x, ...))
 }
 
+clip_msec = function(secs, action) {
+  switch(action,
+     truncate = as.integer(secs),
+     nearest = as.integer(round(secs)),
+     ceil = as.integer(ceiling(secs)),
+     stopf("Valid options for ms are 'truncate', 'nearest', and 'ceil'.")
+  )
+}
+
 ###################################################################
 # Date - time extraction functions
 #   Adapted from Hadley Wickham's routines cited below to ensure
 #   integer results.
 #     http://gist.github.com/10238
-#   See also Hadley's more advanced and complex lubridate package:
-#     http://github.com/hadley/lubridate
+#   See also Hadley et al's more advanced and complex lubridate package:
+#     https://github.com/tidyverse/lubridate
 #   lubridate routines do not return integer values.
 ###################################################################
 
@@ -335,10 +338,10 @@ hour = function(x) {
   if (inherits(x, 'ITime')) return(as.integer(x) %/% 3600L %% 24L)
   as.POSIXlt(x)$hour
 }
-yday    = function(x) as.POSIXlt(x)$yday + 1L
-wday    = function(x) (unclass(as.IDate(x)) + 4L) %% 7L + 1L
-mday    = function(x) as.POSIXlt(x)$mday
-week    = function(x) yday(x) %/% 7L + 1L
+yday    = function(x) convertDate(as.IDate(x), "yday")
+wday    = function(x) convertDate(as.IDate(x), "wday")
+mday    = function(x) convertDate(as.IDate(x), "mday")
+week    = function(x) convertDate(as.IDate(x), "week")
 isoweek = function(x) {
   # ISO 8601-conformant week, as described at
   #   https://en.wikipedia.org/wiki/ISO_week_date
@@ -353,7 +356,13 @@ isoweek = function(x) {
   1L + (nearest_thurs - year_start) %/% 7L
 }
 
-month   = function(x) as.POSIXlt(x)$mon + 1L
-quarter = function(x) as.POSIXlt(x)$mon %/% 3L + 1L
-year    = function(x) as.POSIXlt(x)$year + 1900L
+month   = function(x) convertDate(as.IDate(x), "month")
+quarter = function(x) convertDate(as.IDate(x), "quarter")
+year    = function(x) convertDate(as.IDate(x), "year")
+yearmon = function(x) convertDate(as.IDate(x), "yearmon")
+yearqtr = function(x) convertDate(as.IDate(x), "yearqtr")
 
+convertDate = function(x, type) {
+  type = match.arg(type, c("yday", "wday", "mday", "week", "month", "quarter", "year", "yearmon", "yearqtr"))
+  .Call(CconvertDate, x, type)
+}

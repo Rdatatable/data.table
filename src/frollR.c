@@ -1,5 +1,5 @@
+#include "data.table.h"  // first (before Rdefines.h) for clang-13-omp, #5122
 #include <Rdefines.h>
-#include "data.table.h"
 
 SEXP coerceToRealListR(SEXP obj) {
   // accept atomic/list of integer/logical/real returns list of real
@@ -36,8 +36,8 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   if (xlength(k) == 0)                                          // check that window is non zero length
     error(_("n must be non 0 length"));
 
-  if (!isLogical(adaptive) || length(adaptive) != 1 || LOGICAL(adaptive)[0] == NA_LOGICAL)
-    error(_("adaptive must be TRUE or FALSE"));
+  if (!IS_TRUE_OR_FALSE(adaptive))
+    error(_("%s must be TRUE or FALSE"), "adaptive");
   bool badaptive = LOGICAL(adaptive)[0];
 
   R_len_t nk = 0;                                               // number of rolling windows, for adaptive might be atomic to be wrapped into list, 0 for clang -Wall
@@ -85,13 +85,13 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
       }
     }
   }
-  int* ikl[nk];                                                 // pointers to adaptive window width
+  int **ikl = (int**)R_alloc(nk, sizeof(int*));                 // to not recalculate `length(x[[i]])` we store it in extra array
   if (badaptive) {
     for (int j=0; j<nk; j++) ikl[j] = INTEGER(VECTOR_ELT(kl, j));
   }
 
   if (!IS_TRUE_OR_FALSE(narm))
-    error(_("na.rm must be TRUE or FALSE"));
+    error(_("%s must be TRUE or FALSE"), "na.rm");
 
   if (!isLogical(hasna) || length(hasna)!=1)
     error(_("hasNA must be TRUE, FALSE or NA"));
@@ -106,7 +106,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   else if (!strcmp(CHAR(STRING_ELT(align, 0)), "left"))
     ialign = -1;
   else
-    error(_("Internal error: invalid align argument in rolling function, should have been caught before. please report to data.table issue tracker.")); // # nocov
+    error(_("Internal error: invalid %s argument in %s function should have been caught earlier. Please report to the data.table issue tracker."), "align", "rolling"); // # nocov
 
   if (badaptive && ialign!=1)
     error(_("using adaptive TRUE and align argument different than 'right' is not implemented"));
@@ -115,8 +115,8 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   if (verbose)
     Rprintf(_("%s: allocating memory for results %dx%d\n"), __func__, nx, nk);
   ans_t *dans = (ans_t *)R_alloc(nx*nk, sizeof(ans_t));         // answer columns as array of ans_t struct
-  double* dx[nx];                                               // pointers to source columns
-  uint64_t inx[nx];                                             // to not recalculate `length(x[[i]])` we store it in extra array
+  double** dx = (double**)R_alloc(nx, sizeof(double*));         // pointers to source columns
+  uint64_t* inx = (uint64_t*)R_alloc(nx, sizeof(uint64_t));     // to not recalculate `length(x[[i]])` we store it in extra array
   for (R_len_t i=0; i<nx; i++) {
     inx[i] = xlength(VECTOR_ELT(x, i));                         // for list input each vector can have different length
     for (R_len_t j=0; j<nk; j++) {
@@ -138,7 +138,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   } else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "sum")) {
     sfun = SUM;
   } else {
-    error(_("Internal error: invalid fun argument in rolling function, should have been caught before. please report to data.table issue tracker.")); // # nocov
+    error(_("Internal error: invalid %s argument in %s function should have been caught earlier. Please report to the data.table issue tracker."), "fun", "rolling"); // # nocov
   }
 
   if (length(fill) != 1)
@@ -160,7 +160,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   else if (!strcmp(CHAR(STRING_ELT(algo, 0)), "exact"))
     ialgo = 1;                                                  // exact = 1
   else
-    error(_("Internal error: invalid algo argument in rolling function, should have been caught before. please report to data.table issue tracker.")); // # nocov
+    error(_("Internal error: invalid %s argument in %s function should have been caught earlier. Please report to the data.table issue tracker."), "algo", "rolling"); // # nocov
 
   int* iik = NULL;
   if (!badaptive) {
@@ -177,7 +177,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
     else if (ialgo==1)
       Rprintf(_("%s: %d column(s) and %d window(s), not entering parallel execution here because algo='exact' will compute results in parallel\n"), __func__, nx, nk);
   }
-  #pragma omp parallel for if (ialgo==0 && nx*nk>1) schedule(auto) collapse(2) num_threads(getDTthreads())
+  #pragma omp parallel for if (ialgo==0) schedule(dynamic) collapse(2) num_threads(getDTthreads(nx*nk, false))
   for (R_len_t i=0; i<nx; i++) {                                // loop over multiple columns
     for (R_len_t j=0; j<nk; j++) {                              // loop over multiple windows
       switch (sfun) {
@@ -250,7 +250,7 @@ SEXP frollapplyR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP rho) {
   } else if (!strcmp(CHAR(STRING_ELT(align, 0)), "left")) {
     ialign = -1;
   } else {
-    error(_("Internal error: invalid align argument in rolling function, should have been caught before. please report to data.table issue tracker.")); // # nocov
+    error(_("Internal error: invalid %s argument in %s function should have been caught earlier. Please report to the data.table issue tracker."), "align", "rolling"); // # nocov
   }
 
   if (length(fill) != 1)

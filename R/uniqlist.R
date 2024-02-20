@@ -9,7 +9,7 @@ uniqlist = function (l, order = -1L)
   #    TRUE has the last in a sequence of dups FALSE (so you can keep the last if that's required)
   # l = list(...)
   if (!is.list(l))
-    stop("l not type list")
+    stopf("l not type list")
   if (!length(l))  return(list(0L))
   ans = .Call(Cuniqlist, l, as.integer(order))
   ans
