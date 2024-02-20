@@ -20,16 +20,13 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
     const SEXP thiscol = VECTOR_ELT(val, i);
     const SEXPTYPE thistype = TYPEOF(thiscol);
     SEXP thisfill = fill;
-    SEXPTYPE thistype = TYPEOF(thiscol);
     int nprotect = 0;
     if (isNull(fill)) {
       if (LOGICAL(is_agg)[0]) {
         thisfill = PROTECT(allocNAVector(thistype, 1)); nprotect++;
       } else thisfill = VECTOR_ELT(fill_d, i);
     }
-    if (TYPEOF(thisfill) != thistype) {
-      thisfill = PROTECT(coerceVector(thisfill, thistype)); nprotect++;
-    }
+    thisfill = PROTECT(coerceAs(thisfill, thiscol, /*copyArg=*/ScalarLogical(false))); nprotect++;
     switch (thistype) {
     case INTSXP:
     case LGLSXP: {
@@ -71,7 +68,8 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
         }
       }
     } break;
-    case STRSXP:
+    case STRSXP: {
+      const SEXP sfill = STRING_ELT(thisfill, 0);
       for (int j=0; j<ncols; ++j) {
         SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(thistype, nrows) );
         copyMostAttrib(thiscol, target);
