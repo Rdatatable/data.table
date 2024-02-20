@@ -25,7 +25,9 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
         thisfill = PROTECT(allocNAVector(thistype, 1)); nprotect++;
       } else thisfill = VECTOR_ELT(fill_d, i);
     }
-    thisfill = PROTECT(coerceAs(thisfill, thiscol, /*copyArg=*/ScalarLogical(false))); nprotect++;
+    if (isVectorAtomic(thiscol)) {
+      thisfill = PROTECT(coerceAs(thisfill, thiscol, /*copyArg=*/ScalarLogical(false))); nprotect++;
+    }
     switch (thistype) {
     case INTSXP:
     case LGLSXP: {

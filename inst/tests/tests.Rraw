@@ -15653,7 +15653,7 @@ test(2071.09, any_na(data.table(expression(1))), error="Unsupported column type 
 test(2071.10, dcast(data.table(a=1, b=1, l=list(list(1))), a ~ b, value.var='l'),
               data.table(a=1, `1`=list(list(1)), key='a'))
 test(2071.11, dcast(data.table(a = 1, b = 2, c = 3), a ~ b, value.var = 'c', fill = '2'),
-              data.table(a=1, `2`=3, key='a'))
+              data.table(a=1, `2`=3, key='a'), warning="Coercing 'character' RHS to 'double'")
 
 # fifelse, #3657
 test_vec = -5L:5L < 0L
