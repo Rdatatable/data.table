@@ -123,6 +123,9 @@ data.table Version line in DESCRIPTION typically has the following meanings
 
 # Governance history
 
+Feb 2023: change team name/link maintainers to committers, to be consistent with role defined in governance.
+
 Nov-Dec 2023: initial version drafted by Toby Dylan Hocking and
 reviewed by Tyson Barrett, Jan Gorecki, Michael Chirico, Benjamin
 Schwendinger.
+
