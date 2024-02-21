@@ -1131,7 +1131,16 @@ replace_dot_alias = function(e) {
         } else {
           # `:=`(c2=1L,c3=2L,...)
           lhs = names(jsub)[-1L]
-          if (any(lhs=="")) stopf("In %s(col1=val1, col2=val2, ...) form, all arguments must be named.", if (root == "let") "let" else "`:=`")
+          if (!all(named_idx <- nzchar(lhs))) {
+            # friendly error for common case: trailing terminal comma
+            n_lhs = length(lhs)
+            root_name <- if (root == "let") "let" else "`:=`"
+            if (!named_idx[n_lhs] && all(named_idx[-n_lhs])) {
+              stopf("In %s(col1=val1, col2=val2, ...) form, all arguments must be named, but the last argument has no name. Did you forget a trailing comma?", root_name)
+            } else {
+              stopf("In %s(col1=val1, col2=val2, ...) form, all arguments must be named, but these arguments lack names: %s.", root_name, brackify(which(!named_idx)))
+            }
+          }
           names(jsub)=""
           jsub[[1L]]=as.name("list")
         }
@@ -2348,25 +2357,10 @@ transform.data.table = function (`_data`, ...)
 # basically transform.data.frame with data.table instead of data.frame, and retains key
 {
   if (!cedta()) return(NextMethod()) # nocov
-  e = eval(substitute(list(...)), `_data`, parent.frame())
-  tags = names(e)
-  inx = chmatch(tags, names(`_data`))
-  matched = !is.na(inx)
-  if (any(matched)) {
-    .Call(C_unlock, `_data`) # fix for #1641, now covered by test 104.2
-    `_data`[,inx[matched]] = e[matched]
-    `_data` = as.data.table(`_data`)
-  }
-  if (!all(matched)) {
-    ans = do.call("data.table", c(list(`_data`), e[!matched]))
-  } else {
-    ans = `_data`
-  }
-  key.cols = key(`_data`)
-  if (!any(tags %chin% key.cols)) {
-    setattr(ans, "sorted", key.cols)
-  }
-  ans
+  `_data` = copy(`_data`)
+  e = eval(substitute(list(...)), `_data`, parent.frame()) 
+  set(`_data`, ,names(e), e)
+  `_data`
 }
 
 subset.data.table = function (x, subset, select, ...)
@@ -2472,7 +2466,8 @@ split.data.table = function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = TR
     if (!missing(by))
       stopf("passing 'f' argument together with 'by' is not allowed, use 'by' when split by column in data.table and 'f' when split by external factor")
     # same as split.data.frame - handling all exceptions, factor orders etc, in a single stream of processing was a nightmare in factor and drop consistency
-    return(lapply(split(x = seq_len(nrow(x)), f = f, drop = drop, ...), function(ind) x[ind]))
+    # be sure to use x[ind, , drop = FALSE], not x[ind], in case downstream methods don't follow the same subsetting semantics (#5365)
+    return(lapply(split(x = seq_len(nrow(x)), f = f, drop = drop, ...), function(ind) x[ind, , drop = FALSE]))
   }
   if (missing(by)) stopf("Either 'by' or 'f' argument must be supplied")
   # check reserved column names during processing

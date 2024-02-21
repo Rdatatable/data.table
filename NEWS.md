@@ -4,7 +4,29 @@
 
 ## NEW FEATURES
 
-X. User-defined pattern matching functions are supported for .SDcols, `.SDcols=user_patterns_fun("regexp")` where `user_patterns_fun` should have an argument named `cols` that is not provided by the user, but will be filled in with the data table column names. Also `data.table:::patterns(perl=TRUE)` passes `perl` argument onto `grep`, #5387. Thanks to @iago-pssjd for the feature request, and @tdhock for the implementation.
+1. `print.data.table()` shows empty (`NULL`) list column entries as `[NULL]` for emphasis. Previously they would just print nothing (same as for empty string). Part of [#4198](https://github.com/Rdatatable/data.table/issues/4198). Thanks @sritchie73 for the proposal and fix.
+
+    ```R
+    data.table(a=list(NULL, ""))
+    #         a
+    #    <list>
+    # 1: [NULL]
+    # 2:
+    ```
+
+2. `cedta()` now returns `FALSE` if `.datatable.aware = FALSE` is set in the calling environment, [#5654](https://github.com/Rdatatable/data.table/issues/5654).
+
+3. User-defined pattern matching functions are supported for .SDcols, `.SDcols=user_patterns_fun("regexp")` where `user_patterns_fun` should have an argument named `cols` that is not provided by the user, but will be filled in with the data table column names. Also `data.table:::patterns(perl=TRUE)` passes `perl` argument onto `grep`, #5387. Thanks to @iago-pssjd for the feature request, and @tdhock for the implementation.
+
+## NOTES
+
+1. `transform` method for data.table sped up substantially when creating new columns on large tables. Thanks to @OfekShilon for the report and PR. The implemented solution was proposed by @ColeMiller1.
+
+2. The documentation for the `fill` argument in `rbind()` and `rbindlist()` now notes the expected behaviour for missing `list` columns when `fill=TRUE`, namely to use `NULL` (not `NA`), [#4198](https://github.com/Rdatatable/data.table/pull/4198). Thanks @sritchie73 for the proposal and fix.
+
+3. data.table now depends on R 3.2.0 (2015) instead of 3.1.0 (2014). 1.17.0 will likely move to R 3.3.0 (2016). Recent versions of R have good features that we would gradually like to incorporate, and we see next to no usage of these very old versions of R.
+
+4. Erroneous assignment calls in `[` with a trailing comma (e.g. ``DT[, `:=`(a = 1, b = 2,)]``) get a friendlier error since this situation is common during refactoring and easy to miss visually. Thanks @MichaelChirico for the fix.
 
 # data.table [v1.15.0](https://github.com/Rdatatable/data.table/milestone/29)  (30 Jan 2024)
 
@@ -567,6 +589,8 @@ X. User-defined pattern matching functions are supported for .SDcols, `.SDcols=u
     ```
 
 55. `fread(URL)` with `https:` and `ftps:` could timeout if proxy settings were not guessed right by `curl::curl_download`, [#1686](https://github.com/Rdatatable/data.table/issues/1686). `fread(URL)` now uses `download.file()` as default for downloading files from urls. Thanks to @cderv for the report and Benjamin Schwendinger for the fix.
+
+56. `split.data.table()` works for downstream methods that don't implement `DT[i]` form (i.e., requiring `DT[i, j]` form, like plain `data.frame`s), for example `sf`'s `[.sf`, [#5365](https://github.com/Rdatatable/data.table/issues/5365). Thanks @barryrowlingson for the report and @michaelchirico for the fix.
 
 ## NOTES
 
