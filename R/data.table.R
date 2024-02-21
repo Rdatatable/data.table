@@ -1783,15 +1783,26 @@ replace_dot_alias = function(e) {
           is_constantish(q[["na.rm"]]) &&
             (is.null(q[["w"]]) || eval(call('is.numeric', q[["w"]]), envir=x))
         }
+        # run GForce for simple f(x) calls and f(x, na.rm = TRUE)-like calls where x is a column of .SD
+        .get_gcall = function(q) {
+          if (!is.call(q)) return(NULL)
+          # is.symbol() is for #1369, #1974 and #2949
+          if (!is.symbol(q[[2L]])) return(NULL)
+          q1 <- q[[1L]]
+          if (is.symbol(q1) && q1 %chin% gfuns) return(q1)
+          if (!q1 %iscall% "::") return(NULL)
+          if (q1[[2L]] != "data.table") return(NULL)
+          if (q1[[3L]] %chin% gdtfuns) return(q1[[3L]])
+          return(NULL)
+        }
         .gforce_ok = function(q) {
           if (dotN(q)) return(TRUE) # For #334
-          # run GForce for simple f(x) calls and f(x, na.rm = TRUE)-like calls where x is a column of .SD
-          # is.symbol() is for #1369, #1974 and #2949
-          if (!(is.call(q) && is.symbol(q[[1L]]) && is.symbol(q[[2L]]) && (q[[1L]]) %chin% gfuns)) return(FALSE)
+          q1 <- .get_gcall(q)
+          if (is.null(q1)) return(FALSE)
           if (!(q2 <- q[[2L]]) %chin% names(SDenv$.SDall) && q2 != ".I") return(FALSE)  # 875
           if (length(q)==2L || (!is.null(names(q)) && startsWith(names(q)[3L], "na") && is_constantish(q[[3L]]))) return(TRUE)
           #                       ^^ base::startWith errors on NULL unfortunately
-          switch(as.character(q[[1L]]), 
+          switch(as.character(q1),
             "shift" = .gshift_ok(q),
             "weighted.mean" = .gweighted.mean_ok(q, x),
             "tail" = , "head" = .ghead_ok(q),
@@ -1806,7 +1817,8 @@ replace_dot_alias = function(e) {
           }
         } else GForce = .gforce_ok(jsub)
         gforce_jsub = function(x, names_x) {
-          x[[1L]] = as.name(paste0("g", x[[1L]]))
+          call_name <- if (is.symbol(x[[1L]])) x[[1L]] else x[[1L]][[3L]] # latter is like data.table::shift, #5942. .gshift_ok checked this will work.
+          x[[1L]] = as.name(paste0("g", call_name))
           # gforce needs to evaluate arguments before calling C part TODO: move the evaluation into gforce_ok
           # do not evaluate vars present as columns in x
           if (length(x) >= 3L) {
@@ -3040,8 +3052,9 @@ rleidv = function(x, cols=seq_along(x), prefix=NULL) {
 #     (1) add it to gfuns
 #     (2) edit .gforce_ok (defined within `[`) to catch which j will apply the new function
 #     (3) define the gfun = function() R wrapper
-gfuns = c("[", "[[", "head", "tail", "first", "last", "sum", "mean", "prod",
-          "median", "min", "max", "var", "sd", ".N", "shift", "weighted.mean") # added .N for #334
+gdtfuns = c("first", "last", "shift") # exported by data.table
+gfuns = c(gdtfuns,
+  "[", "[[", "head", "tail", "sum", "mean", "prod", "median", "min", "max", "var", "sd", ".N", "weighted.mean") # added .N for #334
 `g[` = `g[[` = function(x, n) .Call(Cgnthvalue, x, as.integer(n)) # n is of length=1 here.
 ghead = function(x, n) .Call(Cghead, x, as.integer(n))
 gtail = function(x, n) .Call(Cgtail, x, as.integer(n))
