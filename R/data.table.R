@@ -1789,11 +1789,10 @@ replace_dot_alias = function(e) {
           # is.symbol() is for #1369, #1974 and #2949
           if (!is.symbol(q[[2L]])) return(NULL)
           q1 <- q[[1L]]
-          if (is.symbol(q1) && q1 %chin% gfuns) return(q1)
+          if (is.symbol(q1)) return(if (q1 %chin% gfuns) q1)
           if (!q1 %iscall% "::") return(NULL)
           if (q1[[2L]] != "data.table") return(NULL)
-          if (q1[[3L]] %chin% gdtfuns) return(q1[[3L]])
-          return(NULL)
+          return(if (q1[[3L]] %chin% gdtfuns) q1[[3L]])
         }
         .gforce_ok = function(q) {
           if (dotN(q)) return(TRUE) # For #334
