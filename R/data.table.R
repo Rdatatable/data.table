@@ -3051,7 +3051,7 @@ rleidv = function(x, cols=seq_along(x), prefix=NULL) {
 #     (1) add it to gfuns
 #     (2) edit .gforce_ok (defined within `[`) to catch which j will apply the new function
 #     (3) define the gfun = function() R wrapper
-gdtfuns = c("first", "last", "shift") # exported by data.table
+gdtfuns = c("first", "last", "shift") # exported by data.table, not generic, thus also accept data.table:: form under GForce, #5942.
 gfuns = c(gdtfuns,
   "[", "[[", "head", "tail", "sum", "mean", "prod", "median", "min", "max", "var", "sd", ".N", "weighted.mean") # added .N for #334
 `g[` = `g[[` = function(x, n) .Call(Cgnthvalue, x, as.integer(n)) # n is of length=1 here.
