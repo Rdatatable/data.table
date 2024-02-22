@@ -1697,7 +1697,7 @@ setkey(DT, COURSE)
 test(550, DT[,sum(ID),by=key(DT)]$V1, INT(6,1,29,2,17))
 
 # Another test of DT[i] syntax from datatable-unaware packages, #1794 from ilprincipe.
-DF = structure(list(sample = structure(c(1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L), .Label = c("panel.1yr", "panel.2yr", "panel.3yr", "panel.inc", "pre.inc", "pre.prev", "post.inc", "post.prev"), class = "factor"), base = c(2003, 2003, 2003, 2003, 2003, 2003, 2003, 2003, 2002, 2002, 2002, 2002, 2002, 2002, 2002, 2002), ref = structure(c(1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L), .Label = c("2004", "2002-2004", "2001", "2000", "2009", "2008"), class = "factor"), var = structure(c(1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L), .Label = c("distance", "time"), class = "factor"), treated = c(0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1), distance = c(10000, 30000, 50000, 1e+05, 10000, 30000, 50000, 1e+05, 10000, 30000, 50000, 1e+05, 10000, 30000, 50000, 1e+05), all = c(602L, 6357L, 8528L, 9272L, 435L, 2438L, 3456L, 6360L, 245L, 2693L, 3699L, 4084L, 187L, 983L, 1400L, 2660L), di.recip = c(5L, 39L, 57L, 62L, 4L, 16L, 22L, 45L, 2L, 25L, 36L, 37L, 1L, 11L, 16L, 35L), irr = c(0.00830564784053156, 0.00613496932515337, 0.00668386491557223, 0.00668679896462468, 0.00919540229885057, 0.00656275635767022, 0.00636574074074074, 0.00707547169811321, 0.00816326530612245, 0.00928332714444857, 0.0097323600973236, 0.00905974534769833, 0.0053475935828877, 0.0111902339776195, 0.0114285714285714, 0.0131578947368421)), .Names = c("sample", "base", "ref", "var", "treated", "distance", "all", "di.recip", "irr"), row.names = c(NA, 16L), class = "data.frame")
+DF = structure(list(sample = structure(c(1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L), .Label = c("panel.1yr", "panel.2yr", "panel.3yr", "panel.inc", "pre.inc", "pre.prev", "post.inc", "post.prev"), class = "factor"), base = c(2003, 2003, 2003, 2003, 2003, 2003, 2003, 2003, 2002, 2002, 2002, 2002, 2002, 2002, 2002, 2002), ref = structure(c(1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L), .Label = c("2004", "2002-2004", "2001", "2000", "2009", "2008"), class = "factor"), var = structure(c(1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L), .Label = c("distance", "time"), class = "factor"), treated = c(0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1), distance = c(10000, 30000, 50000, 1e+05, 10000, 30000, 50000, 1e+05, 10000, 30000, 50000, 1e+05, 10000, 30000, 50000, 1e+05), all = c(602L, 6357L, 8528L, 9272L, 435L, 2438L, 3456L, 6360L, 245L, 2693L, 3699L, 4084L, 187L, 983L, 1400L, 2660L), di.recip = c(5L, 39L, 57L, 62L, 4L, 16L, 22L, 45L, 2L, 25L, 36L, 37L, 1L, 11L, 16L, 35L), irr = c(0.00830564784053156, 0.00613496932515337, 0.00668386491557223, 0.00668679896462468, 0.00919540229885057, 0.00656275635767022, 0.00636574074074074, 0.00707547169811321, 0.00816326530612246, 0.00928332714444857, 0.0097323600973236, 0.00905974534769833, 0.0053475935828877, 0.0111902339776195, 0.0114285714285714, 0.0131578947368421)), .Names = c("sample", "base", "ref", "var", "treated", "distance", "all", "di.recip", "irr"), row.names = c(NA, 16L), class = "data.frame")
 DT = as.data.table(DF)
 test(551, nrow(stats::reshape(DT, v.names = c("all", "di.recip", "irr"),
               timevar = "treated", idvar = c("sample", "var", "distance"),
@@ -18269,50 +18269,60 @@ test(2244.3, DT[, `:=`(a=1, , b=2)], error="`:=`.*\\[2\\]")
 test(2244.4, DT[, let(a=1, , b=2)], error="let.*\\[2\\]")
 test(2244.5, DT[, `:=`(a=1, , b=2, )], error="[2, 4]")
 
+# allow specifying datatable-unaware behavior, #5654 / #5655
+dt = data.table(foo = 1:3, bar = 4:6)
+.datatable.aware = TRUE
+test(2245.1, dt[1], data.table(foo = 1L, bar = 4L)) # Single index should be interpreted as row
+.datatable.aware = FALSE
+# selfrefok() fails on unaware-indexed datatables; the copy() here sidesteps that issue.
+test(2245.2, copy(dt[1]), data.table(foo = 1:3)) # Revert to data.frame syntax: Interpret index as column
+rm(.datatable.aware)
+test(2245.3, dt[1], data.table(foo = 1L, bar = 4L)) # Default in this environment should be datatable-aware
+
 # 5885 implement frev
 d = c(NA, NaN, Inf, -Inf)
-test(2245.00, frev(c(FALSE, NA),    copy=TRUE), c(NA, FALSE))
-test(2245.01, frev(c(0L, NA),       copy=TRUE), c(NA, 0L))
-test(2245.02, frev(d,               copy=TRUE), c(-Inf, Inf, NaN, NA))
-test(2245.03, frev(c(NA, 1, 0+2i),  copy=TRUE), c(0+2i, 1, NA))
-test(2245.04, frev(as.raw(0:1),     copy=TRUE), as.raw(1:0))
-test(2245.05, frev(NULL,            copy=TRUE), NULL)
-test(2245.06, frev(character(5),    copy=TRUE), character(5))
-test(2245.07, frev(integer(0),      copy=TRUE), integer(0))
-test(2245.08, frev(list(1, "a"),    copy=TRUE), list("a", 1))
-test(2245.09, frev(c(0L, NA),       copy=FALSE), c(NA, 0L))
-test(2245.10, frev(d,               copy=FALSE), c(-Inf, Inf, NaN, NA))
-test(2245.11, frev(c(NA, 1, 0+2i),  copy=FALSE), c(0+2i, 1, NA))
-test(2245.12, frev(as.raw(0:1),     copy=FALSE), as.raw(1:0))
-test(2245.13, frev(NULL,            copy=FALSE), NULL)
-test(2245.14, frev(character(5),    copy=FALSE), character(5))
-test(2245.15, frev(integer(0),      copy=FALSE), integer(0))
-test(2245.16, frev(list(1, "a"),    copy=FALSE), list("a", 1))
-test(2245.17, frev(1:1e2,           copy=TRUE),  rev(1:1e2))
+test(2246.00, frev(c(FALSE, NA),    copy=TRUE), c(NA, FALSE))
+test(2246.01, frev(c(0L, NA),       copy=TRUE), c(NA, 0L))
+test(2246.02, frev(d,               copy=TRUE), c(-Inf, Inf, NaN, NA))
+test(2246.03, frev(c(NA, 1, 0+2i),  copy=TRUE), c(0+2i, 1, NA))
+test(2246.04, frev(as.raw(0:1),     copy=TRUE), as.raw(1:0))
+test(2246.05, frev(NULL,            copy=TRUE), NULL)
+test(2246.06, frev(character(5),    copy=TRUE), character(5))
+test(2246.07, frev(integer(0),      copy=TRUE), integer(0))
+test(2246.08, frev(list(1, "a"),    copy=TRUE), list("a", 1))
+test(2246.09, frev(c(0L, NA),       copy=FALSE), c(NA, 0L))
+test(2246.10, frev(d,               copy=FALSE), c(-Inf, Inf, NaN, NA))
+test(2246.11, frev(c(NA, 1, 0+2i),  copy=FALSE), c(0+2i, 1, NA))
+test(2246.12, frev(as.raw(0:1),     copy=FALSE), as.raw(1:0))
+test(2246.13, frev(NULL,            copy=FALSE), NULL)
+test(2246.14, frev(character(5),    copy=FALSE), character(5))
+test(2246.15, frev(integer(0),      copy=FALSE), integer(0))
+test(2246.16, frev(list(1, "a"),    copy=FALSE), list("a", 1))
+test(2246.17, frev(1:1e2,           copy=TRUE),  rev(1:1e2))
 # copy arguments
 x = 1:3
-test(2245.21, {frev(x, copy=TRUE);  x}, 1:3)
-test(2245.22, {frev(x, copy=FALSE); x}, 3:1)
+test(2246.21, {frev(x, copy=TRUE);  x}, 1:3)
+test(2246.22, {frev(x, copy=FALSE); x}, 3:1)
 # levels
 f = as.factor(letters)
-test(2245.31, frev(f, copy=TRUE), rev(f))
-test(2245.32, frev(as.IDate(1:10), copy=TRUE), as.IDate(10:1))
-test(2245.33, frev(as.IDate(1:10), copy=TRUE), as.IDate(10:1))
+test(2246.31, frev(f, copy=TRUE), rev(f))
+test(2246.32, frev(as.IDate(1:10), copy=TRUE), as.IDate(10:1))
+test(2246.33, frev(as.IDate(1:10), copy=TRUE), as.IDate(10:1))
 # names
 x = c(a=1L, b=2L, c=3L)
-test(2245.41, frev(x, copy=TRUE), rev(x))
-test(2245.42, frev(x, copy=FALSE), x)
+test(2246.41, frev(x, copy=TRUE), rev(x))
+test(2246.42, frev(x, copy=FALSE), x)
 # attributes
 x = structure(1:10, class = c("IDate", "Date"), att = 1L)
-test(2245.51, attr(frev(x, copy=TRUE), "att"), 1L)
-test(2245.52, attr(frev(x, copy=FALSE), "att"), 1L)
+test(2246.51, attr(frev(x, copy=TRUE), "att"), 1L)
+test(2246.52, attr(frev(x, copy=FALSE), "att"), 1L)
 # errors
-test(2245.61, frev(data.table()), error="should not be data.frame or data.table")
-test(2245.62, frev(1:2, copy=NA), error="must be TRUE or FALSE")
-test(2245.63, frev(expression(1)), error="is not supported by frev")
-test(2245.64, frev(matrix(1)), error="should not be matrix or array")
+test(2246.61, frev(data.table()), error="should not be data.frame or data.table")
+test(2246.62, frev(1:2, copy=NA), error="must be TRUE or FALSE")
+test(2246.63, frev(expression(1)), error="is not supported by frev")
+test(2246.64, frev(matrix(1)), error="should not be matrix or array")
 if (test_bit64) {
   x = as.integer64(c(1, NA, 3))
-  test(2245.71, frev(x, copy=TRUE), rev(x))
-  test(2245.72, frev(x, copy=FALSE), x)
+  test(2246.71, frev(x, copy=TRUE), rev(x))
+  test(2246.72, frev(x, copy=FALSE), x)
 }

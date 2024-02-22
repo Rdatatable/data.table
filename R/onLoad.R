@@ -19,7 +19,7 @@
   if (!exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
     # check when installed package is loaded but skip when developing the package with cc()
     dllV = if (is.loaded("CdllVersion",PACKAGE="data_table")) .Call(CdllVersion) else "before 1.12.0"
-    RV = packageVersion("data.table")
+    RV = as.character(packageVersion("data.table"))
     if (dllV != RV) {
       dll = if (.Platform$OS.type=="windows") "dll" else "so"
       # https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478

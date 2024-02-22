@@ -1,6 +1,6 @@
 **If you are viewing this file on CRAN, please check [latest news on GitHub](https://github.com/Rdatatable/data.table/blob/master/NEWS.md) where the formatting is also better.**
 
-# data.table [v1.15.99]() (in development)
+# data.table [v1.15.99](https://github.com/Rdatatable/data.table/milestone/30)  (in development)
 
 ## NEW FEATURES
 
@@ -14,7 +14,7 @@
     # 2:
     ```
 
-2. New window function `frollmax` computes the rolling maximum. Request came from @gpierard who needs left-aligned, adaptive, rolling max, [#5438](https://github.com/Rdatatable/data.table/issues/5438). Adaptive rolling functions did not have support for `align="left"`, therefore we added this feature as well for all adaptive rolling functions. We measure adaptive `frollmax` to be up to 50 times faster than the next fastest solution using `max` and grouping `by=.EACHI`.
+2. `cedta()` now returns `FALSE` if `.datatable.aware = FALSE` is set in the calling environment, [#5654](https://github.com/Rdatatable/data.table/issues/5654).
 
 ## NOTES
 
@@ -26,7 +26,7 @@
 
 4. Erroneous assignment calls in `[` with a trailing comma (e.g. ``DT[, `:=`(a = 1, b = 2,)]``) get a friendlier error since this situation is common during refactoring and easy to miss visually. Thanks @MichaelChirico for the fix.
 
-# data.table [v1.14.99](https://github.com/Rdatatable/data.table/milestone/29)  (in development)
+# data.table [v1.15.0](https://github.com/Rdatatable/data.table/milestone/29)  (30 Jan 2024)
 
 ## BREAKING CHANGE
 
