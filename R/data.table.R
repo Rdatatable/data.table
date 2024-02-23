@@ -1629,7 +1629,7 @@ replace_dot_alias = function(e) {
       subopt = length(jsub) == 3L &&
         (jsub[[1L]] == "[" ||
            (jsub[[1L]] == "[[" && is.name(jsub[[2L]]) && eval(call('is.atomic', jsub[[2L]]), x, parent.frame()))) &&
-        (is.numeric(jsub[[3L]]) || dotN(jsub[[3L]]))
+        (is.numeric(jsub[[3L]]) || jsub[[3L]] == ".N")
       headopt = jsub[[1L]] == "head" || jsub[[1L]] == "tail"
       firstopt = jsub[[1L]] == "first" || jsub[[1L]] == "last" # fix for #2030
       if ((length(jsub) >= 2L && jsub[[2L]] == ".SD") &&
@@ -1666,7 +1666,7 @@ replace_dot_alias = function(e) {
               any_SD = TRUE
               jsubl[[i_]] = lapply(sdvars, as.name)
               jvnames = c(jvnames, sdvars)
-            } else if (dotN(this)) {
+            } else if (this == ".N") {
               # don't optimise .I in c(.SD, .I), it's length can be > 1
               # only c(.SD, list(.I)) should be optimised!! .N is always length 1.
               jvnames = c(jvnames, gsub("^[.]([N])$", "\\1", this))
@@ -1696,7 +1696,7 @@ replace_dot_alias = function(e) {
             } else if (this %iscall% optfuns && length(this)>1L) {
               jvnames = c(jvnames, if (is.null(names(jsubl))) "" else names(jsubl)[i_])
             } else if ( length(this) == 3L && (this[[1L]] == "[" || this[[1L]] == "head") &&
-                    this[[2L]] == ".SD" && (is.numeric(this[[3L]]) || dotN(this[[3L]])) ) {
+                    this[[2L]] == ".SD" && (is.numeric(this[[3L]]) || this[[3L]] == ".N") ) {
               # optimise .SD[1] or .SD[2L]. Not sure how to test .SD[a] as to whether a is numeric/integer or a data.table, yet.
               any_SD = TRUE
               jsubl[[i_]] = lapply(sdvars, function(x) { this[[2L]] = as.name(x); this })
