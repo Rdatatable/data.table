@@ -1629,7 +1629,7 @@ replace_dot_alias = function(e) {
       subopt = length(jsub) == 3L &&
         (jsub[[1L]] == "[" ||
            (jsub[[1L]] == "[[" && is.name(jsub[[2L]]) && eval(call('is.atomic', jsub[[2L]]), x, parent.frame()))) &&
-        (is.numeric(jsub[[3L]]) || jsub[[3L]] == ".N")
+        (is.numeric(jsub[[3L]]) || is.N(jsub[[3L]]))
       headopt = jsub[[1L]] == "head" || jsub[[1L]] == "tail"
       firstopt = jsub[[1L]] == "first" || jsub[[1L]] == "last" # fix for #2030
       if ((length(jsub) >= 2L && jsub[[2L]] == ".SD") &&
@@ -1666,7 +1666,7 @@ replace_dot_alias = function(e) {
               any_SD = TRUE
               jsubl[[i_]] = lapply(sdvars, as.name)
               jvnames = c(jvnames, sdvars)
-            } else if (this == ".N") {
+            } else if (is.N(this)) {
               # don't optimise .I in c(.SD, .I), it's length can be > 1
               # only c(.SD, list(.I)) should be optimised!! .N is always length 1.
               jvnames = c(jvnames, gsub("^[.]([N])$", "\\1", this))
@@ -1696,7 +1696,7 @@ replace_dot_alias = function(e) {
             } else if (this %iscall% optfuns && length(this)>1L) {
               jvnames = c(jvnames, if (is.null(names(jsubl))) "" else names(jsubl)[i_])
             } else if ( length(this) == 3L && (this[[1L]] == "[" || this[[1L]] == "head") &&
-                    this[[2L]] == ".SD" && (is.numeric(this[[3L]]) || this[[3L]] == ".N") ) {
+                    this[[2L]] == ".SD" && (is.numeric(this[[3L]]) || is.N(this[[3L]])) ) {
               # optimise .SD[1] or .SD[2L]. Not sure how to test .SD[a] as to whether a is numeric/integer or a data.table, yet.
               any_SD = TRUE
               jsubl[[i_]] = lapply(sdvars, function(x) { this[[2L]] = as.name(x); this })
@@ -1734,90 +1734,38 @@ replace_dot_alias = function(e) {
       else
         catf("lapply optimization is on, j unchanged as '%s'\n", deparse(jsub,width.cutoff=200L, nlines=1L))
     }
-    dotN = function(x) is.name(x) && x==".N" # For #334. TODO: Rprof() showed dotN() may be the culprit if iterated (#1470)?; avoid the == which converts each x to character?
     # FR #971, GForce kicks in on all subsets, no joins yet. Although joins could work with
     # nomatch=NULL even now.. but not switching it on yet, will deal it separately.
     if (getOption("datatable.optimize")>=2L && !is.data.table(i) && !byjoin && length(f__)) {
       if (!length(ansvars) && !use.I) {
         GForce = FALSE
-        if ( ((is.name(jsub) && jsub==".N") || (jsub %iscall% 'list' && length(jsub)==2L && jsub[[2L]]==".N")) && !length(lhs) ) {
+        if (length(lhs)) {
+        } else if (is.N(jsub)) {
           GForce = TRUE
-          if (verbose) catf("GForce optimized j to '%s' (see ?GForce)\n",deparse(jsub, width.cutoff=200L, nlines=1L))
+          if (!is.name(jsub)) jsub = quote(.N)
+        } else if (jsub %iscall% 'list' && length(jsub)==2L && is.N(jsub[[2L]])) {
+          GForce = TRUE
+          if (!is.name(jsub[[2L]])) jsub[[2L]] = quote(.N)
         }
+        if (GForce && verbose) catf("GForce optimized j to '%s' (see ?GForce)\n",deparse(jsub, width.cutoff=200L, nlines=1L))
       } else if (length(lhs) && is.symbol(jsub)) { # turn off GForce for the combination of := and .N
         GForce = FALSE
       } else {
         # Apply GForce
-        # GForce needs to evaluate all arguments not present in the data.table before calling C part #5547
-        # Safe cases: variables [i], calls without variables [c(0,1), list(1)] # TODO extend this list
-        # Unsafe cases: functions containing variables [c(i), abs(i)], .N
-        is_constantish = function(expr, check_singleton=FALSE) {
-          if (!is.call(expr)) {
-            return(!dotN(expr))
-          }
-          if (check_singleton) {
-            return(FALSE)
-          }
-          # calls are allowed <=> there's no SYMBOLs in the sub-AST
-          return(length(all.vars(expr, max.names=1L, unique=FALSE)) == 0L)
-        }
-        .gshift_ok = function(q) {
-          q = match.call(shift, q)
-          is_constantish(q[["n"]]) &&
-            is_constantish(q[["fill"]]) &&
-            is_constantish(q[["type"]]) &&
-            !"give.names" %chin% names(q)
-        }
-        .ghead_ok = function(q) {
-          length(q) == 3L &&
-            is_constantish(q[[3L]], check_singleton = TRUE)
-        }
-        `.g[_ok` = function(q, x) {
-          length(q) == 3L &&
-            is_constantish(q[[3L]], check_singleton = TRUE) &&
-            (q[[1L]] != "[[" || eval(call('is.atomic', q[[2L]]), envir=x)) &&
-            !(as.character(q[[3L]]) %chin% names_x) && is.numeric(q3<-eval(q[[3L]], parent.frame(3L))) && length(q3)==1L && q3>0L
-        }
-        .gweighted.mean_ok = function(q, x) { #3977
-          q = match.call(gweighted.mean, q)
-          is_constantish(q[["na.rm"]]) &&
-            (is.null(q[["w"]]) || eval(call('is.numeric', q[["w"]]), envir=x))
-        }
-        # run GForce for simple f(x) calls and f(x, na.rm = TRUE)-like calls where x is a column of .SD
-        .get_gcall = function(q) {
-          if (!is.call(q)) return(NULL)
-          # is.symbol() is for #1369, #1974 and #2949
-          if (!is.symbol(q[[2L]])) return(NULL)
-          q1 <- q[[1L]]
-          if (is.symbol(q1)) return(if (q1 %chin% gfuns) q1)
-          if (!q1 %iscall% "::") return(NULL)
-          if (q1[[2L]] != "data.table") return(NULL)
-          return(if (q1[[3L]] %chin% gdtfuns) q1[[3L]])
-        }
-        .gforce_ok = function(q) {
-          if (dotN(q)) return(TRUE) # For #334
-          q1 <- .get_gcall(q)
-          if (is.null(q1)) return(FALSE)
-          if (!(q2 <- q[[2L]]) %chin% names(SDenv$.SDall) && q2 != ".I") return(FALSE)  # 875
-          if (length(q)==2L || (!is.null(names(q)) && startsWith(names(q)[3L], "na") && is_constantish(q[[3L]]))) return(TRUE)
-          #                       ^^ base::startWith errors on NULL unfortunately
-          switch(as.character(q1),
-            "shift" = .gshift_ok(q),
-            "weighted.mean" = .gweighted.mean_ok(q, x),
-            "tail" = , "head" = .ghead_ok(q),
-            "[[" = , "[" = `.g[_ok`(q, x),
-            FALSE
-          )
-        }
+        sd_names = names(SDenv$.SDall)
         if (jsub[[1L]]=="list") {
           GForce = TRUE
           for (ii in seq.int(from=2L, length.out=length(jsub)-1L)) {
-            if (!.gforce_ok(jsub[[ii]])) {GForce = FALSE; break}
+            if (!.gforce_ok(jsub[[ii]], x, sd_names)) {GForce = FALSE; break}
           }
-        } else GForce = .gforce_ok(jsub)
+        } else GForce = .gforce_ok(jsub, x, sd_names)
         gforce_jsub = function(x, names_x) {
-          call_name <- if (is.symbol(x[[1L]])) x[[1L]] else x[[1L]][[3L]] # latter is like data.table::shift, #5942. .gshift_ok checked this will work.
-          x[[1L]] = as.name(paste0("g", call_name))
+          if (is.name(x)) {
+            x = quote(.N) # force data.table::.N to be just .N
+          } else {
+            call_name = if (is.symbol(x[[1L]])) x[[1L]] else x[[1L]][[3L]] # latter is like data.table::shift, #5942. .gshift_ok checked this will work.
+            x[[1L]] = as.name(paste0("g", call_name))
+          }
           # gforce needs to evaluate arguments before calling C part TODO: move the evaluation into gforce_ok
           # do not evaluate vars present as columns in x
           if (length(x) >= 3L) {
@@ -1830,7 +1778,6 @@ replace_dot_alias = function(e) {
         if (GForce) {
           if (jsub[[1L]]=="list")
             for (ii in seq_along(jsub)[-1L]) {
-              if (dotN(jsub[[ii]])) next; # For #334
               jsub[[ii]] = gforce_jsub(jsub[[ii]], names_x)
             }
           else {
@@ -1847,7 +1794,7 @@ replace_dot_alias = function(e) {
       nomeanopt=FALSE  # to be set by .optmean() using <<- inside it
       oldjsub = jsub
       if (jsub[[1L]]=="list") {
-        # Addressing #1369, #2949 and #1974. This used to be 30s (vs 0.5s) with 30K elements items in j, #1470. Could have been dotN() and/or the for-looped if()
+        # Addressing #1369, #2949 and #1974. This used to be 30s (vs 0.5s) with 30K elements items in j, #1470. Could have been is.N() and/or the for-looped if()
         # jsub[[1]]=="list" so the first item of todo will always be FALSE
         todo = sapply(jsub, `%iscall%`, 'mean')
         if (any(todo)) {
@@ -3084,6 +3031,69 @@ gshift = function(x, n=1L, fill=NA, type=c("lag", "lead", "shift", "cyclic")) {
   .Call(Cgshift, x, as.integer(n), fill, type)
 }
 gforce = function(env, jsub, o, f, l, rows) .Call(Cgforce, env, jsub, o, f, l, rows)
+
+# GForce needs to evaluate all arguments not present in the data.table before calling C part #5547
+# Safe cases: variables [i], calls without variables [c(0,1), list(1)] # TODO extend this list
+# Unsafe cases: functions containing variables [c(i), abs(i)], .N
+is.N = function(x) (is.name(x) && x==".N") || (x %iscall% "::" && x[[3L]] == ".N") # For #334. TODO: Rprof() showed is.N() may be the culprit if iterated (#1470)?; avoid the == which converts each x to character?
+is_constantish = function(q, check_singleton=FALSE) {
+  if (!is.call(q)) {
+    return(!is.N(q))
+  }
+  if (check_singleton) {
+    return(FALSE)
+  }
+  # calls are allowed <=> there's no SYMBOLs in the sub-AST
+  return(length(all.vars(q, max.names=1L, unique=FALSE)) == 0L)
+}
+.gshift_ok = function(q) {
+  q = match.call(shift, q)
+  is_constantish(q[["n"]]) &&
+    is_constantish(q[["fill"]]) &&
+    is_constantish(q[["type"]]) &&
+    !"give.names" %chin% names(q)
+}
+.ghead_ok = function(q) {
+  length(q) == 3L &&
+    is_constantish(q[[3L]], check_singleton = TRUE)
+}
+`.g[_ok` = function(q, x) {
+  length(q) == 3L &&
+    is_constantish(q[[3L]], check_singleton = TRUE) &&
+    (q[[1L]] != "[[" || eval(call('is.atomic', q[[2L]]), envir=x)) &&
+    !(as.character(q[[3L]]) %chin% names(x)) && is.numeric(q3 <- eval(q[[3L]], parent.frame(3L))) && length(q3)==1L && q3>0L
+}
+.gweighted.mean_ok = function(q, x) { #3977
+  q = match.call(gweighted.mean, q)
+  is_constantish(q[["na.rm"]]) &&
+    (is.null(q[["w"]]) || eval(call('is.numeric', q[["w"]]), envir=x))
+}
+# run GForce for simple f(x) calls and f(x, na.rm = TRUE)-like calls where x is a column of .SD
+.get_gcall = function(q) {
+  if (!is.call(q)) return(NULL)
+  # is.symbol() is for #1369, #1974 and #2949
+  if (!is.symbol(q[[2L]])) return(NULL)
+  q1 = q[[1L]]
+  if (is.symbol(q1)) return(if (q1 %chin% gfuns) q1)
+  if (!q1 %iscall% "::") return(NULL)
+  if (q1[[2L]] != "data.table") return(NULL)
+  return(if (q1[[3L]] %chin% gdtfuns) q1[[3L]])
+}
+.gforce_ok = function(q, x, sd_names) {
+  if (is.N(q)) return(TRUE) # For #334
+  q1 = .get_gcall(q)
+  if (is.null(q1)) return(FALSE)
+  if (!(q2 <- q[[2L]]) %chin% sd_names && q2 != ".I") return(FALSE)  # 875
+  if (length(q)==2L || (!is.null(names(q)) && startsWith(names(q)[3L], "na") && is_constantish(q[[3L]]))) return(TRUE)
+  #                       ^^ base::startWith errors on NULL unfortunately
+  switch(as.character(q1),
+    "shift" = .gshift_ok(q),
+    "weighted.mean" = .gweighted.mean_ok(q, x),
+    "tail" = , "head" = .ghead_ok(q),
+    "[[" = , "[" = `.g[_ok`(q, x),
+    FALSE
+  )
+}
 
 .prepareFastSubset = function(isub, x, enclos, notjoin, verbose = FALSE){
   ## helper that decides, whether a fast binary search can be performed, if i is a call
