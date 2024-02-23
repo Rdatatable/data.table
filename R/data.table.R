@@ -1769,6 +1769,7 @@ replace_dot_alias = function(e) {
         if (GForce) {
           if (jsub[[1L]]=="list")
             for (ii in seq_along(jsub)[-1L]) {
+              if (dotN(jsub[[ii]])) next; # For #334
               jsub[[ii]] = gforce_jsub(jsub[[ii]], names_x)
             }
           else {
