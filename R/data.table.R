@@ -1755,12 +1755,8 @@ replace_dot_alias = function(e) {
           }
         } else GForce = .gforce_ok(jsub, x, sd_names)
         gforce_jsub = function(x, names_x) {
-          if (is.name(x)) {
-            x = quote(.N) # force data.table::.N to be just .N
-          } else {
-            call_name = if (is.symbol(x[[1L]])) x[[1L]] else x[[1L]][[3L]] # latter is like data.table::shift, #5942. .gshift_ok checked this will work.
-            x[[1L]] = as.name(paste0("g", call_name))
-          }
+          call_name <- if (is.symbol(x[[1L]])) x[[1L]] else x[[1L]][[3L]] # latter is like data.table::shift, #5942. .gshift_ok checked this
+          x[[1L]] = as.name(paste0("g", call_name))
           # gforce needs to evaluate arguments before calling C part TODO: move the evaluation into gforce_ok
           # do not evaluate vars present as columns in x
           if (length(x) >= 3L) {
