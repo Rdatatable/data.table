@@ -1752,29 +1752,18 @@ replace_dot_alias = function(e) {
           for (ii in seq.int(from=2L, length.out=length(jsub)-1L)) {
             if (!.gforce_ok(jsub[[ii]], SDenv$.SDall)) {GForce = FALSE; break}
           }
-        } else GForce = .gforce_ok(jsub, SDenv$.SDall)
-        gforce_jsub = function(x, names_x) {
-          call_name <- if (is.symbol(x[[1L]])) x[[1L]] else x[[1L]][[3L]] # latter is like data.table::shift, #5942. .gshift_ok checked this will work.
-          x[[1L]] = as.name(paste0("g", call_name))
-          # gforce needs to evaluate arguments before calling C part TODO: move the evaluation into gforce_ok
-          # do not evaluate vars present as columns in x
-          if (length(x) >= 3L) {
-            for (i in 3:length(x)) {
-              if (is.symbol(x[[i]]) && !(x[[i]] %chin% names_x)) x[[i]] = eval(x[[i]], parent.frame(2L)) # tests 1187.2 & 1187.4
-            }
-          }
-          x
-        }
+        } else
+          GForce = .gforce_ok(jsub, SDenv$.SDall)
         if (GForce) {
           if (jsub[[1L]]=="list")
             for (ii in seq_along(jsub)[-1L]) {
-              if (dotN(jsub[[ii]])) next; # For #334
-              jsub[[ii]] = gforce_jsub(jsub[[ii]], names_x)
+              if (is.N(jsub[[ii]])) next; # For #334
+              jsub[[ii]] = .gforce_jsub(jsub[[ii]], names_x)
             }
           else {
             # adding argument to ghead/gtail if none is supplied to g-optimized head/tail
             if (length(jsub) == 2L && jsub[[1L]] %chin% c("head", "tail")) jsub[["n"]] = 6L
-            jsub = gforce_jsub(jsub, names_x)
+            jsub = .gforce_jsub(jsub, names_x)
           }
           if (verbose) catf("GForce optimized j to '%s' (see ?GForce)\n", deparse(jsub, width.cutoff=200L, nlines=1L))
         } else if (verbose) catf("GForce is on, but not activated for this query; left j unchanged (see ?GForce)\n");
@@ -1785,7 +1774,7 @@ replace_dot_alias = function(e) {
       nomeanopt=FALSE  # to be set by .optmean() using <<- inside it
       oldjsub = jsub
       if (jsub[[1L]]=="list") {
-        # Addressing #1369, #2949 and #1974. This used to be 30s (vs 0.5s) with 30K elements items in j, #1470. Could have been dotN() and/or the for-looped if()
+        # Addressing #1369, #2949 and #1974. This used to be 30s (vs 0.5s) with 30K elements items in j, #1470. Could have been is.N() and/or the for-looped if()
         # jsub[[1]]=="list" so the first item of todo will always be FALSE
         todo = sapply(jsub, `%iscall%`, 'mean')
         if (any(todo)) {
@@ -3026,10 +3015,10 @@ gforce = function(env, jsub, o, f, l, rows) .Call(Cgforce, env, jsub, o, f, l, r
 # GForce needs to evaluate all arguments not present in the data.table before calling C part #5547
 # Safe cases: variables [i], calls without variables [c(0,1), list(1)] # TODO extend this list
 # Unsafe cases: functions containing variables [c(i), abs(i)], .N
-dotN = function(x) is.name(x) && x==".N" # For #334. TODO: Rprof() showed dotN() may be the culprit if iterated (#1470)?; avoid the == which converts each x to character?
+is.N = function(q) is.name(q) && q==".N" # For #334. TODO: Rprof() showed is.N() may be the culprit if iterated (#1470)?; avoid the == which converts each x to character?
 is_constantish = function(q, check_singleton=FALSE) {
   if (!is.call(q)) {
-    return(!dotN(q))
+    return(!is.N(q))
   }
   if (check_singleton) {
     return(FALSE)
@@ -3071,7 +3060,7 @@ is_constantish = function(q, check_singleton=FALSE) {
   return(if (q1[[3L]] %chin% gdtfuns) q1[[3L]])
 }
 .gforce_ok = function(q, x) {
-  if (dotN(q)) return(TRUE) # For #334
+  if (is.N(q)) return(TRUE) # For #334
   q1 = .get_gcall(q)
   if (is.null(q1)) return(FALSE)
   if (!(q2 <- q[[2L]]) %chin% names(x) && q2 != ".I") return(FALSE)  # 875
@@ -3084,6 +3073,19 @@ is_constantish = function(q, check_singleton=FALSE) {
     "[[" = , "[" = `.g[_ok`(q, x),
     FALSE
   )
+}
+
+.gforce_jsub = function(q, names_x) {
+  call_name = if (is.symbol(q[[1L]])) q[[1L]] else q[[1L]][[3L]] # latter is like data.table::shift, #5942. .gshift_ok checked this will work.
+  q[[1L]] = as.name(paste0("g", call_name))
+  # gforce needs to evaluate arguments before calling C part TODO: move the evaluation into gforce_ok
+  # do not evaluate vars present as columns in x
+  if (length(q) >= 3L) {
+    for (i in 3:length(q)) {
+      if (is.symbol(q[[i]]) && !(q[[i]] %chin% names_x)) q[[i]] = eval(q[[i]], parent.frame(2L)) # tests 1187.2 & 1187.4
+    }
+  }
+  q
 }
 
 .prepareFastSubset = function(isub, x, enclos, notjoin, verbose = FALSE){
