@@ -1739,15 +1739,10 @@ replace_dot_alias = function(e) {
     if (getOption("datatable.optimize")>=2L && !is.data.table(i) && !byjoin && length(f__)) {
       if (!length(ansvars) && !use.I) {
         GForce = FALSE
-        if (length(lhs)) {
-        } else if (dotN(jsub)) {
+        if ( ((is.name(jsub) && jsub==".N") || (jsub %iscall% 'list' && length(jsub)==2L && jsub[[2L]]==".N")) && !length(lhs) ) {
           GForce = TRUE
-          if (!is.name(jsub)) jsub = quote(.N)
-        } else if (jsub %iscall% 'list' && length(jsub)==2L && dotN(jsub[[2L]])) {
-          GForce = TRUE
-          if (!is.name(jsub[[2L]])) jsub[[2L]] = quote(.N)
+          if (verbose) catf("GForce optimized j to '%s' (see ?GForce)\n",deparse(jsub, width.cutoff=200L, nlines=1L))
         }
-        if (GForce && verbose) catf("GForce optimized j to '%s' (see ?GForce)\n",deparse(jsub, width.cutoff=200L, nlines=1L))
       } else if (length(lhs) && is.symbol(jsub)) { # turn off GForce for the combination of := and .N
         GForce = FALSE
       } else {
