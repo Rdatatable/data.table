@@ -16,7 +16,7 @@
 
 2. `cedta()` now returns `FALSE` if `.datatable.aware = FALSE` is set in the calling environment, [#5654](https://github.com/Rdatatable/data.table/issues/5654).
 
-3. Namespace-qualifying `data.table::shift()`, `data.table::first()`, or `data.table::last()` will not deactivate GForce, [#5942](https://github.com/Rdatatable/data.table/issues/5942). Thanks @MichaelChirico for the proposal and fix. Namespace-qualifying other calls like `stats::sum()`, `base::prod()`, etc., continue to work as an escape valve to avoid GForce, e.g. to ensure S3 method dispatch.
+3. Namespace-qualifying `data.table::shift()`, `data.table::first()`, `data.table::last()`, or `data.table::.N` will not deactivate GForce, [#5942](https://github.com/Rdatatable/data.table/issues/5942) and [#5951](https://github.com/Rdatatable/data.table/issues/5951). Thanks @MichaelChirico for the proposal and fix. Namespace-qualifying other calls like `stats::sum()`, `base::prod()`, etc., continue to work as an escape valve to avoid GForce, e.g. to ensure S3 method dispatch.
 
 ## NOTES
 
