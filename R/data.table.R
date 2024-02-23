@@ -3027,7 +3027,7 @@ gforce = function(env, jsub, o, f, l, rows) .Call(Cgforce, env, jsub, o, f, l, r
 # GForce needs to evaluate all arguments not present in the data.table before calling C part #5547
 # Safe cases: variables [i], calls without variables [c(0,1), list(1)] # TODO extend this list
 # Unsafe cases: functions containing variables [c(i), abs(i)], .N
-dotN = function(x) (is.name(x) && x==".N") || (x %iscall% "::" && x[[3L]] == ".N") # For #334. TODO: Rprof() showed dotN() may be the culprit if iterated (#1470)?; avoid the == which converts each x to character?
+dotN = function(x) is.name(x) && x==".N" # For #334. TODO: Rprof() showed dotN() may be the culprit if iterated (#1470)?; avoid the == which converts each x to character?
 is_constantish = function(q, check_singleton=FALSE) {
   if (!is.call(q)) {
     return(!dotN(q))
