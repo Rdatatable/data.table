@@ -1747,13 +1747,12 @@ replace_dot_alias = function(e) {
         GForce = FALSE
       } else {
         # Apply GForce
-        sd_names = names(SDenv$.SDall)
         if (jsub[[1L]]=="list") {
           GForce = TRUE
           for (ii in seq.int(from=2L, length.out=length(jsub)-1L)) {
-            if (!.gforce_ok(jsub[[ii]], x, sd_names)) {GForce = FALSE; break}
+            if (!.gforce_ok(jsub[[ii]], SDenv$.SDall)) {GForce = FALSE; break}
           }
-        } else GForce = .gforce_ok(jsub, x, sd_names)
+        } else GForce = .gforce_ok(jsub, SDenv$.SDall)
         gforce_jsub = function(x, names_x) {
           call_name <- if (is.symbol(x[[1L]])) x[[1L]] else x[[1L]][[3L]] # latter is like data.table::shift, #5942. .gshift_ok checked this will work.
           x[[1L]] = as.name(paste0("g", call_name))
@@ -3071,11 +3070,11 @@ is_constantish = function(q, check_singleton=FALSE) {
   if (q1[[2L]] != "data.table") return(NULL)
   return(if (q1[[3L]] %chin% gdtfuns) q1[[3L]])
 }
-.gforce_ok = function(q, x, sd_names) {
+.gforce_ok = function(q, x) {
   if (dotN(q)) return(TRUE) # For #334
   q1 = .get_gcall(q)
   if (is.null(q1)) return(FALSE)
-  if (!(q2 <- q[[2L]]) %chin% sd_names && q2 != ".I") return(FALSE)  # 875
+  if (!(q2 <- q[[2L]]) %chin% names(x) && q2 != ".I") return(FALSE)  # 875
   if (length(q)==2L || (!is.null(names(q)) && startsWith(names(q)[3L], "na") && is_constantish(q[[3L]]))) return(TRUE)
   #                       ^^ base::startWith errors on NULL unfortunately
   switch(as.character(q1),
