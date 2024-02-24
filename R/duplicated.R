@@ -28,7 +28,7 @@ unique.data.table = function(x, incomparables=FALSE, fromLast=FALSE, by=seq_alon
   if (!isFALSE(incomparables)) {
     .NotYetUsed("incomparables != FALSE")
   }
-  if (nrow(x) <= 1L) return(x)
+  if (nrow(x) <= 1L) return(copy(x))
   if (!length(by)) by = NULL  #4594
   o = forderv(x, by=by, sort=FALSE, retGrp=TRUE)
   if (!is.null(cols)) {
