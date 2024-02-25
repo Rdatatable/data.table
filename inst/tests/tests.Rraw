@@ -18281,3 +18281,11 @@ test(2245.1, dt[1], data.table(foo = 1L, bar = 4L)) # Single index should be int
 test(2245.2, copy(dt[1]), data.table(foo = 1:3)) # Revert to data.frame syntax: Interpret index as column
 rm(.datatable.aware)
 test(2245.3, dt[1], data.table(foo = 1L, bar = 4L)) # Default in this environment should be datatable-aware
+
+# data.table:: doesn't turn off GForce, #5942
+DT = data.table(a = rep(1:5, 2L), b = 1:10)
+old = options(datatable.optimize=Inf, datatable.verbose=TRUE)
+test(2246.1, DT[, data.table::shift(b), by=a], DT[, shift(b), by=a], output="GForce TRUE")
+test(2246.2, DT[, data.table::first(b), by=a], DT[, first(b), by=a], output="GForce TRUE")
+test(2246.3, DT[, data.table::last(b), by=a], DT[, last(b), by=a], output="GForce TRUE")
+options(old)
