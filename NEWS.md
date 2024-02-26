@@ -590,7 +590,7 @@
 
 56. `split.data.table()` works for downstream methods that don't implement `DT[i]` form (i.e., requiring `DT[i, j]` form, like plain `data.frame`s), for example `sf`'s `[.sf`, [#5365](https://github.com/Rdatatable/data.table/issues/5365). Thanks @barryrowlingson for the report and @michaelchirico for the fix.
 
-57. `unique()` no longer returns a mutable alias in the case when `nrows(x) <= 1`, [#5960](https://github.com/Rdatatable/data.table/pull/5960). Thanks to @brookslogan for the report and @dshemetov for the fix.
+57. `unique()` no longer returns a mutable alias in the case when `nrows(x) <= 1`, [#5932](https://github.com/Rdatatable/data.table/pull/5932). Thanks to @brookslogan for the report and @dshemetov for the fix.
 
 ## NOTES
 
