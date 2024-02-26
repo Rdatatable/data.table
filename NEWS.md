@@ -6,6 +6,8 @@
 
 1. An error in `fwrite()` is more robust across platforms -- CRAN found the use of `PRId64` does not always match the output of `xlength()`, e.g. on some Mac M1 builds [#5935](https://github.com/Rdatatable/data.table/issues/5935). Thanks CRAN for identifying the issue and @ben-schwen for the fix.
 
+2. `shift()` of a vector in grouped queries (under GForce) returns a vector, consistent with `shift()` in other contexts, [#5939](https://github.com/Rdatatable/data.table/issues/5939). Thanks @shrektan for the report and @MichaelChirico for the fix.
+
 # data.table [v1.15.0](https://github.com/Rdatatable/data.table/milestone/29)  (14 Jan 2024)
 
 ## BREAKING CHANGE
