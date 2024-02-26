@@ -1,11 +1,22 @@
 Package: data.table
-Version: 1.12.9
+Version: 1.15.99
 Title: Extension of `data.frame`
+Depends: R (>= 3.2.0)
+Imports: methods
+Suggests: bit64 (>= 4.0.0), bit (>= 4.0.4), R.utils, xts, zoo (>= 1.8-1), yaml, knitr, markdown
+Description: Fast aggregation of large data (e.g. 100GB in RAM), fast ordered joins, fast add/modify/delete of columns by group using no copies at all, list columns, friendly and fast character-separated-value read/write. Offers a natural and flexible syntax, for faster development.
+License: MPL-2.0 | file LICENSE
+URL: https://r-datatable.com, https://Rdatatable.gitlab.io/data.table, https://github.com/Rdatatable/data.table
+BugReports: https://github.com/Rdatatable/data.table/issues
+VignetteBuilder: knitr
+ByteCompile: TRUE
 Authors@R: c(
-  person("Matt","Dowle",           role=c("aut","cre"), email="mattjdowle@gmail.com"),
-  person("Arun","Srinivasan",      role="aut",          email="arunkumar.sriniv@gmail.com"),
-  person("Jan","Gorecki",          role="ctb"),
-  person("Michael","Chirico",      role="ctb"),
+  person("Tyson","Barrett",        role=c("aut","cre"), email="t.barrett88@gmail.com"),
+  person("Matt","Dowle",           role="aut",          email="mattjdowle@gmail.com"),
+  person("Arun","Srinivasan",      role="aut",          email="asrini@pm.me"),
+  person("Jan","Gorecki",          role="aut"),
+  person("Michael","Chirico",      role="aut"),
+  person("Toby","Hocking",         role="aut", comment = c(ORCID="0000-0002-3146-0865")),
   person("Pasha","Stetsenko",      role="ctb"),
   person("Tom","Short",            role="ctb"),
   person("Steve","Lianoglou",      role="ctb"),
@@ -48,23 +59,27 @@ Authors@R: c(
   person("Morgan","Jacob",         role="ctb"),
   person("Michael","Schubmehl",    role="ctb"),
   person("Davis","Vaughan",        role="ctb"),
-  person("Toby","Hocking",         role="ctb"),
   person("Leonardo","Silvestri",   role="ctb"),
-  person("Tyson","Barrett",        role="ctb"),
   person("Jim","Hester",           role="ctb"),
   person("Anthony","Damico",       role="ctb"),
   person("Sebastian","Freundt",    role="ctb"),
   person("David","Simons",         role="ctb"),
   person("Elliott","Sales de Andrade", role="ctb"),
   person("Cole","Miller",          role="ctb"),
-  person("@JenspederM","",         role="ctb"))
-Depends: R (>= 3.1.0)
-Imports: methods
-Suggests: bit64, curl, R.utils, knitr, xts, nanotime, zoo, yaml
-SystemRequirements: zlib
-Description: Fast aggregation of large data (e.g. 100GB in RAM), fast ordered joins, fast add/modify/delete of columns by group using no copies at all, list columns, friendly and fast character-separated-value read/write. Offers a natural and flexible syntax, for faster development.
-License: MPL-2.0 | file LICENSE
-URL: http://r-datatable.com, https://Rdatatable.gitlab.io/data.table, https://github.com/Rdatatable/data.table
-BugReports: https://github.com/Rdatatable/data.table/issues
-VignetteBuilder: knitr
-ByteCompile: TRUE
+  person("Jens Peder","Meldgaard", role="ctb"),
+  person("Vaclav","Tlapak",        role="ctb"),
+  person("Kevin","Ushey",          role="ctb"),
+  person("Dirk","Eddelbuettel",    role="ctb"),
+  person("Benjamin","Schwendinger", role="ctb"),
+  person("Tony","Fischetti",       role="ctb"),
+  person("Ofek","Shilon",          role="ctb"),
+  person("Vadim","Khotilovich",    role="ctb"),
+  person("Hadley","Wickham",       role="ctb"),
+  person("Bennet","Becker",        role="ctb"),
+  person("Kyle","Haynes",          role="ctb"),
+  person("Boniface Christian","Kamgang", role="ctb"),
+  person("Olivier","Delmarcell",   role="ctb"),
+  person("Josh","O'Brien",         role="ctb"),
+  person("Dereck","de Mezquita",   role="ctb"),
+  person("Michael","Czekanski",    role="ctb")
+  )
