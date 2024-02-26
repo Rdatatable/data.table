@@ -21,14 +21,15 @@ patterns(\dots, cols=character(0))
     \code{melt(measure.vars=patterns())} or
     \code{DT[, .SDcols=patterns()]}, the
     user should not provide the \code{cols} argument, which is
-    automatically set to all of the column names of the input data table.
+    automatically set to all of the column names of the input data
+    table, using non-standard evaluation.
   }
 }
 \seealso{
   \code{\link{melt}}, \code{\link{.SD}},
   \url{https://github.com/Rdatatable/data.table/wiki/Getting-started},
-  \url{https://cloud.r-project.org/web/packages/data.table/vignettes/datatable-reshape.html},
-  \url{https://cloud.r-project.org/web/packages/data.table/vignettes/datatable-sd-usage.html}
+  [`vignette("datatable-reshape")`](https://cloud.r-project.org/web/packages/data.table/vignettes/datatable-reshape.html),
+  [`vignette("datatable-sd-usage")`](https://cloud.r-project.org/web/packages/data.table/vignettes/datatable-sd-usage.html)
 }
 \examples{
 DT = data.table(x1 = 1:5, x2 = 6:10, y1 = letters[1:5], y2 = letters[6:10])

@@ -4,7 +4,9 @@
 
 ## BUG FIXES
 
-X. `measure()` and `patterns()` documentation and error messages now more clearly explain that cols argument of should not be provided by the user, [#5063](https://github.com/Rdatatable/data.table/issues/5063). Thanks to @tdhock for fixing.
+## BREAKING CHANGE
+
+X. `measure()` and `patterns()` no longer allow `cols` argument to be provided by the user, in the context of `.SDcols` or `melt`. Documentation and error messages now more clearly explain that cols argument of should not be provided by the user, [#5063](https://github.com/Rdatatable/data.table/issues/5063). Thanks to @tdhock for fixing.
 
 # data.table [v1.15.0](https://github.com/Rdatatable/data.table/milestone/29)  (30 Jan 2024)
 
