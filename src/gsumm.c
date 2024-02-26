@@ -1268,6 +1268,7 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
     copyMostAttrib(x, tmp); // needed for integer64 because without not the correct class of int64 is assigned
   }
   UNPROTECT(nprotect);
-  return(ans);
+  // consistency with plain shift(): "strip" the list in the 1-input case, for convenience
+  return isVectorAtomic(x) && length(ans) == 1 ? VECTOR_ELT(ans, 0) : ans;
 }
 

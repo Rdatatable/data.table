@@ -17829,12 +17829,15 @@ for (col in names(DT)[-1]) {
 }
 a = 1:2  # fill argument with length > 1 which is not a call
 test(2224.2, DT[, shift(i, fill=a), by=x], error="fill must be a vector of length 1")
-DT = data.table(x=pairlist(1), g=1)
 # unsupported type as argument
+DT = data.table(x=pairlist(1), g=1)
 test(2224.3, DT[, shift(x), g], error="Type 'list' is not supported by GForce gshift.")
+# single vector is un-list()'d, consistently with plain shift(), #5939
+DT = data.table(x=1, g=1)
+test(2224.4, DT[, .(shift(x)), g], DT[, shift(x), g])
 # gshift with subset #5962
 DT = data.table(x = 1:3, g = rep(1:2, each=3L))
-test(2224.4, DT[g==1L, shift(x), by=g, verbose=TRUE], data.table(g=1L, V1=c(NA,1L,2L)), output="Making each group and running j (GForce TRUE)")
+test(2224.5, DT[g==1L, shift(x), by=g, verbose=TRUE], data.table(g=1L, V1=c(NA,1L,2L)), output="Making each group and running j (GForce TRUE)")
 
 # groupingsets by named by argument
 test(2225.1, groupingsets(data.table(iris), j=sum(Sepal.Length), by=c('Sp'='Species'), sets=list('Species')),
