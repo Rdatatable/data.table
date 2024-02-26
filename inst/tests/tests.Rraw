@@ -18184,7 +18184,7 @@ test(2241.04, set(DT, j="D", value=2), data.table(A=1:3, b=4:6, C=1, D=2, key="A
 test(2241.05, colnames(DT)[2]<-"B", "B")
 test(2241.06, DT, data.table(A=1:3, B=4:6, C=1, D=2, key="A"))
 test(2241.07, set(DT, j="E", value=3), data.table(A=1:3, B=4:6, C=1, D=2, E=3, key="A"))
-test(2241.08, names(DT)<-letters[1:5], letters[1:5])  # R doesn't copy *tmp* when assigning to all names
+test(2241.08, names(DT)<-letters[1:5], letters[1:5])  # R doesn't copy *tmp* when assigning to all names 
 test(2241.09, DT, data.table(a=1:3, b=4:6, c=1, d=2, e=3, key="a"))
 test(2241.10, set(DT, j="f", value=4), data.table(a=1:3, b=4:6, c=1, d=2, e=3, f=4, key="a"))
 
@@ -18287,16 +18287,16 @@ test(2246.2, DT[, data.table::first(b), by=a], DT[, first(b), by=a], output="GFo
 test(2246.3, DT[, data.table::last(b), by=a], DT[, last(b), by=a], output="GForce TRUE")
 options(old)
 
-# unique.data.table doesn't return a mutable alias, #5960
+# unique.data.table doesn't return a mutable alias, #5932
 # unique nrows > 1 should return different address object (even before this fix)
 DT1 = data.table(a = 1:2, b = 3:4)
 DT2 = unique(DT1)
-test(2247.1, address(DT1) != address(DT2), TRUE)
+test(2247.1, address(DT1) != address(DT2))
 # unique nrows == 1 should return different address object (after this fix)
 DT1 = data.table(a = 1, b = 3)
 DT2 = unique(DT1)
-test(2247.2, address(DT1) != address(DT2), TRUE)
+test(2247.2, address(DT1) != address(DT2))
 # unique nrows == 0 should return different address object (after this fix)
 DT1 = data.table()
 DT2 = unique(DT1)
-test(2247.3, address(DT1) != address(DT2), TRUE)
+test(2247.3, address(DT1) != address(DT2))
