@@ -250,7 +250,7 @@ head(flights)
 * The `LHS := RHS` form allows us to operate on multiple columns. In the RHS, to compute the `max` on columns specified in `.SDcols`, we make use of the base function `lapply()` along with `.SD` in the same way as we have seen before in the *"Introduction to data.table"* vignette. It returns a list of two elements, containing the maximum value corresponding to `dep_delay` and `arr_delay` for each group.
 
 #
-Let's clean up the newly created columns `speed`, `max_speed`, `max_dep_delay` and `max_arr_delay`.
+Before moving on to the next section, let's clean up the newly created columns `speed`, `max_speed`, `max_dep_delay` and `max_arr_delay`.
 
 ```{r}
 # RHS gets automatically recycled to length of LHS
