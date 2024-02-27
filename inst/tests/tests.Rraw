@@ -12239,9 +12239,9 @@ DT = data.table()
 test(1861.3, address(unique(DT)) != address(DT))
 
 # New warning for deprecated old behaviour option
-setkey(DT,A)
+DT = data.table(A=c(1L,1L,2L), B=c(3L,4L,4L), key="A")
 test(1862.1, unique(DT), DT)
-test(1862.2, unique(DT,by=key(DT)), data.table(A=1:2, B=3:4, key="A"))
+test(1862.2, unique(DT, by=key(DT)), data.table(A=1:2, B=3:4, key="A"))
 
 # fix for -ve indices issue in gmedian (2046) and gvar (2111)
 DT = data.table(x=c(1,1,1),y=c(3,0,0), key="x")
