@@ -96,7 +96,7 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
 
     See \href{../doc/datatable-intro.html}{\code{vignette("datatable-intro")}} and \code{example(data.table)}.}
 
-    \item{by}{ Column names are seen as if they are variables (as in \code{j} when \code{with=TRUE}). The \code{data.table} is then grouped by the \code{by} and \code{j} is evaluated within each group. The order of the rows within each group is preserved, as is the order of the groups. \code{by} accepts:
+    \item{by}{ Column names are seen as if they are variables (as in \code{j} when \code{with=TRUE}). The \code{data.table} is then grouped by the \code{by} and \code{j} is evaluated within each group. The order of the rows is preserved, regardless of any existing grouping. \code{by} accepts:
 
     \itemize{
         \item A single unquoted column name: e.g., \code{DT[, .(sa=sum(a)), by=x]}
