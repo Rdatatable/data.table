@@ -61,6 +61,8 @@ measurev(fun.list, sep, pattern, cols, multiple.keyword="value.name",
 (two.iris = data.table(datasets::iris)[c(1,150)])
 # melt into a single value column.
 melt(two.iris, measure.vars = measure(part, dim, sep="."))
+# do the same, with a regex pattern.
+melt(two.iris, measure.vars = measure(part, dim, pattern="(.*)[.](.*)"))
 # do the same, programmatically with measurev
 my.list = list(part=NULL, dim=NULL)
 melt(two.iris, measure.vars=measurev(my.list, sep="."))

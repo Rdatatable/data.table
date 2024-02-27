@@ -13950,7 +13950,18 @@ DT = data.table(
   V9 = c(0.2, -0.1, 1.2, -0.5, 1.4, 1, 0.2, 0.7, 0.4, 1.6),
   V10 = c(0.8, 0.7, -1.2, -0.9, -0.6, 0.4, -2.3, 2.2, 0.5, -1.4)
 )
-test(1971.01, DT[ , lapply(.SD, sum), .SDcols = patterns('^V', cols="V7")], error="user should not provide cols argument to patterns")
+test(1971.01, DT[ , lapply(.SD, sum), .SDcols = patterns('^V', cols="V7")], error="user should not provide cols argument to patterns, when specifying the columns for melt or .SDcols; in this context, non-standard evaluation is used internally to set cols to all data table column names, so please fix by removing cols argument")
+not_patterns <- function()c("V4","V8")
+test(1971.02, DT[ , lapply(.SD, sum), .SDcols = not_patterns()], data.table(V4=3.4, V8=-0.4))
+not_patterns <- function(cols)cols
+test(1971.03, DT[ , lapply(.SD, sum), .SDcols = not_patterns()], error='argument "cols" is missing, with no default')
+test(1971.04, DT[ , lapply(.SD, sum), .SDcols = not_patterns(c("V4","V8"))], data.table(V4=3.4, V8=-0.4))
+patterns <- function(cols)list(cols[c(6,10)])#with cols arg
+test(1971.05, DT[ , lapply(.SD, sum), .SDcols = patterns()], data.table(V4=3.4, V8=-0.4))
+test(1971.06, DT[ , lapply(.SD, sum), .SDcols = patterns(cols="foo")], error="user should not provide cols argument to patterns, when specifying the columns for melt or .SDcols; in this context, non-standard evaluation is used internally to set cols to all data table column names, so please fix by removing cols argument")
+patterns <- function()list(c("V4","V8"))#without cols arg
+test(1971.07, DT[ , lapply(.SD, sum), .SDcols = patterns()], data.table(V4=3.4, V8=-0.4))
+rm(patterns)
 test(1971.1, DT[ , lapply(.SD, sum), .SDcols = patterns('^V')],
      data.table(V1=-6.3, V2=-6.5, V3=1.3, V4=3.4, V5=-0.9, V6=-1.6, V7=-2, V8=-0.4, V9=6.1, V10=-1.8))
 # multiple pattens --> intersection of patterns
@@ -17241,7 +17252,7 @@ test(2182.6, melt(DT.wide, measure.vars=list(b=c("b1","b2"))), data.table(a2=2, 
 # new variable_table attribute for measure.vars, PR#4731 for multiple issues
 measurev = function(cols)cols # user-defined function for computing measure.vars, same name as data.table::measure but user-defined version should be used.
 test(2183.00001, melt(DT.wide, measure.vars=measurev()), data.table(variable=factor(c("a2","b1","b2")), value=c(2,1,2)))
-test(2183.000015, melt(DT.wide, measure.vars=measurev("a2")), error="user should not provide cols argument to measurev")
+test(2183.000015, melt(DT.wide, measure.vars=measurev("a2")), error="user should not provide cols argument to measurev, when specifying the columns for melt or .SDcols; in this context, non-standard evaluation is used internally to set cols to all data table column names, so please fix by removing cols argument")
 measurev = list("foo", "bar")#measurev below should not use this since it is not a function.
 test(2183.00002, melt(DTid, measure.vars=measurev(list(value.name=NULL, num=as.complex), pattern="([ab])([12])")), error="Type 'complex' is not supported for joining/merging")
 test(2183.00004, melt(DTid, measure.vars=measurev(list(value.name=NULL, istr=NULL), pattern="([ab])([12])"))[order(b)], data.table(id=1, istr=paste(c(1,2)), a=c(NA, 2), b=c(1,2)))
@@ -17265,7 +17276,7 @@ test(2183.00060, melt(DTid, measure.vars=measurev(list(letter=myfac, value.name=
 # new variable_table attribute for measure.vars, PR#4731 for multiple issues
 measure = function(cols)cols # user-defined function for computing measure.vars, same name as data.table::measure but user-defined version should be used.
 test(2183.01, melt(DT.wide, measure.vars=measure()), data.table(variable=factor(c("a2","b1","b2")), value=c(2,1,2)))
-test(2183.015, melt(DT.wide, measure.vars=measure(cols="b2")), error="user should not provide cols argument to measure")
+test(2183.015, melt(DT.wide, measure.vars=measure(cols="b2")), error="user should not provide cols argument to measure, when specifying the columns for melt or .SDcols; in this context, non-standard evaluation is used internally to set cols to all data table column names, so please fix by removing cols argument")
 measure = list("foo", "bar")#measure below should not use this since it is not a function.
 test(2183.02, melt(DTid, measure.vars=measure(value.name, num=as.complex, pattern="([ab])([12])")), error="Type 'complex' is not supported for joining/merging")
 test(2183.03, melt(DTid, measure.vars=structure(list(a=c(NA,"a2"),b=c("b1","b2")), variable_table=data.table(number=as.complex(1:2)))), error="variable_table does not support column type 'complex' for column 'number'")
@@ -17337,7 +17348,7 @@ test(2183.74, melt(DTid, measure.vars=measure(letter, number, multiple.keyword=a
 test(2183.75, melt(DTid, measure.vars=measure(letter, number, multiple.keyword=NA_character_, pattern="([ab])([12])")), error="multiple.keyword must be a character string")
 test(2183.76, melt(DTid, measure.vars=measure(letter, number, multiple.keyword="", pattern="([ab])([12])")), error="multiple.keyword must be a character string with nchar>0")
 test(2183.77, melt(DTid, measure.vars=measure(letter, cols, pattern="([ab])([12])")), error="group names specified in ... conflict with measure argument names; please fix by changing group names: [cols]")
-test(2183.78, melt(DTid, measure.vars=measure(letter, cols=as.integer, pattern="([ab])([12])")), error="user should not provide cols argument to measure")
+test(2183.78, melt(DTid, measure.vars=measure(letter, cols=as.integer, pattern="([ab])([12])")), error="user should not provide cols argument to measure, when specifying the columns for melt or .SDcols; in this context, non-standard evaluation is used internally to set cols to all data table column names, so please fix by removing cols argument")
 test(2183.79, melt(DTid, measure.vars=measure(letter, number, pattern=as.integer)), error="pattern must be character string")
 test(2183.80, melt(DTid, measure.vars=measure(letter, number, sep=as.integer)), error="sep must be character string")
 test(2183.81, data.table:::measure(cols=as.integer), error="cols must be a character vector of column names")
