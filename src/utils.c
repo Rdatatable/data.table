@@ -1,11 +1,22 @@
 #include "data.table.h"
 
+bool within_int32_repres(double x) {
+  // N.B. (int)2147483647.99 is not undefined behaviour since s 6.3.1.4 of the C
+  // standard states that behaviour is undefined only if the integral part of a
+  // finite value of standard floating type cannot be represented.
+  return R_FINITE(x) && x < 2147483648 && x > -2147483648;
+}
+
+bool within_int64_repres(double x) {
+  return R_FINITE(x) && x <= (double)INT64_MAX && x >= (double)INT64_MIN;
+}
+
 static R_xlen_t firstNonInt(SEXP x) {
   R_xlen_t n=xlength(x), i=0;
   const double *dx = REAL(x);
   while (i<n &&
          ( ISNA(dx[i]) ||
-         ( R_FINITE(dx[i]) && dx[i]==(int)(dx[i]) && (int)(dx[i])!=NA_INTEGER))) {  // NA_INTEGER == INT_MIN == -2147483648
+         (within_int32_repres(dx[i]) && dx[i]==(int)(dx[i])))) {
     i++;
   }
   return i==n ? 0 : i+1;
@@ -348,7 +359,7 @@ SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg) {
   if (!isNull(getAttrib(x, R_DimSymbol)))
     error(_("'x' must not be matrix or array"));
   if (!isNull(getAttrib(as, R_DimSymbol)))
-    error(_("'as' must not be matrix or array"));
+    error(_("input must not be matrix or array"));
   bool verbose = GetVerbose()>=2; // verbose level 2 required
   if (!LOGICAL(copyArg)[0] && TYPEOF(x)==TYPEOF(as) && class1(x)==class1(as)) {
     if (verbose)
@@ -370,7 +381,7 @@ SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg) {
 #ifndef NOZLIB
 #include <zlib.h>
 #endif
-SEXP dt_zlib_version() {
+SEXP dt_zlib_version(void) {
   char out[71];
 #ifndef NOZLIB
   snprintf(out, 70, "zlibVersion()==%s ZLIB_VERSION==%s", zlibVersion(), ZLIB_VERSION);
@@ -378,6 +389,13 @@ SEXP dt_zlib_version() {
   snprintf(out, 70, _("zlib header files were not found when data.table was compiled"));
 #endif
   return ScalarString(mkChar(out));
+}
+SEXP dt_has_zlib(void) {
+#ifndef NOZLIB
+  return ScalarLogical(1);
+#else
+  return ScalarLogical(0);
+#endif
 }
 
 SEXP startsWithAny(const SEXP x, const SEXP y, SEXP start) {
