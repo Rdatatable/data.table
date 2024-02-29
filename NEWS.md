@@ -20,7 +20,7 @@
 
 ## BREAKING CHANGE
 
-X. `measure()` and `patterns()` no longer allow `cols` argument to be provided by the user, in the context of `.SDcols` or `melt`. Documentation and error messages now more clearly explain that cols argument of should not be provided by the user, [#5063](https://github.com/Rdatatable/data.table/issues/5063). Thanks to @tdhock for fixing.
+X. `measure()` and `patterns()` no longer allow `cols` argument to be provided by the user, in the context of `.SDcols` or `melt`. Documentation and error messages now more clearly explain that cols argument should not be provided by the user, [#5063](https://github.com/Rdatatable/data.table/issues/5063). Thanks to @tdhock for fixing.
 
 3. Namespace-qualifying `data.table::shift()`, `data.table::first()`, or `data.table::last()` will not deactivate GForce, [#5942](https://github.com/Rdatatable/data.table/issues/5942). Thanks @MichaelChirico for the proposal and fix. Namespace-qualifying other calls like `stats::sum()`, `base::prod()`, etc., continue to work as an escape valve to avoid GForce, e.g. to ensure S3 method dispatch.
 
