@@ -50,6 +50,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   isReallyReal = data.table:::isReallyReal
   isRealReallyInt = data.table:::isRealReallyInt
   is_utc = data.table:::is_utc
+  measure = data.table:::measure # for test 2183.001
   melt.data.table = data.table:::melt.data.table  # for test 1953.4
   null.data.table = data.table:::null.data.table
   print.data.table = data.table:::print.data.table
@@ -17279,6 +17280,7 @@ test(2183.00060, melt(DTid, measure.vars=measurev(list(letter=myfac, value.name=
 
 ### Second block testing measure
 # new variable_table attribute for measure.vars, PR#4731 for multiple issues
+test(2183.001, measure(cols=as.integer), error="cols must be a character vector of column names")
 measure = function(cols)cols # user-defined function for computing measure.vars, same name as data.table::measure but user-defined version should be used.
 test(2183.01, melt(DT.wide, measure.vars=measure()), data.table(variable=factor(c("a2","b1","b2")), value=c(2,1,2)))
 test(2183.015, melt(DT.wide, measure.vars=measure(cols="b2")), error="user should not provide cols argument to measure, when specifying the columns for melt or .SDcols; in this context, non-standard evaluation is used internally to set cols to all data table column names, so please fix by removing cols argument")
@@ -17356,7 +17358,6 @@ test(2183.77, melt(DTid, measure.vars=measure(letter, cols, pattern="([ab])([12]
 test(2183.78, melt(DTid, measure.vars=measure(letter, cols=as.integer, pattern="([ab])([12])")), error="user should not provide cols argument to measure, when specifying the columns for melt or .SDcols; in this context, non-standard evaluation is used internally to set cols to all data table column names, so please fix by removing cols argument")
 test(2183.79, melt(DTid, measure.vars=measure(letter, number, pattern=as.integer)), error="pattern must be character string")
 test(2183.80, melt(DTid, measure.vars=measure(letter, number, sep=as.integer)), error="sep must be character string")
-test(2183.81, data.table:::measure(cols=as.integer), error="cols must be a character vector of column names")
 
 # `keyby` allows mixing eval/get with direct columns, #4981
 dt <- data.table(a=c(1,2), b=c(3,4), c=c(1,0))
