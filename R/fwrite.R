@@ -39,7 +39,12 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   if (is.matrix(x)) { # coerce to data.table if input object is matrix
     messagef("x being coerced from class: matrix to data.table")
     # keep row.names for matrix input #5315
-    x = if (row.names && !is.null(rownames(x))) { row.names = FALSE; as.data.table(x, keep.rownames="") } else as.data.table(x)
+    if (row.names && !is.null(rownames(x))) {
+      row.names = FALSE
+      x = as.data.table(x, keep.rownames="")
+    } else {
+      x = as.data.table(x)
+    }
   }
   stopifnot(is.list(x),
     identical(quote,"auto") || isTRUEorFALSE(quote),
