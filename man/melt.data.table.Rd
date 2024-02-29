@@ -21,13 +21,13 @@ multiple columns simultaneously.
 \item{id.vars}{vector of id variables. Can be integer (corresponding id
 column numbers) or character (id column names) vector. If missing, all
 non-measure columns will be assigned to it. If integer, must be positive; see Details. }
-\item{measure.vars}{Measure variables for \code{melt}ing. Can be missing, vector, list, or function.
+\item{measure.vars}{Measure variables for \code{melt}ing. Can be missing, vector, list, or a function can be called.
 
   \itemize{
     \item{ When missing, \code{measure.vars} will become all columns outside \code{id.vars}. }
     \item{ Vector can be \code{integer} (implying column numbers) or \code{character} (column names). }
     \item{ \code{list} is a generalization of the vector version -- each element of the list (which should be \code{integer} or \code{character} as above) will become a \code{melt}ed column. }
-    \item{ Pattern-based column matching can be achieved by using the result of \code{\link{patterns}} or \code{\link{measure}} functions. More generally, it is possible to use any function that returns a character vector or list of measure variables, and if this function has an argument named \code{cols}, then that argument will be set to \code{names(data)} by non-standard evaluation. }
+    \item{ Pattern-based column matching can be achieved by using the result of \code{\link{patterns}} or \code{\link{measure}} functions. More generally, it is possible to call any function that returns a character vector or list of measure variables, and if this function has an argument named \code{cols}, then that argument will be set to \code{names(data)} by non-standard evaluation. }
   }
 
     For convenience/clarity in the case of multiple \code{melt}ed columns, resulting column names can be supplied as names to the elements \code{measure.vars} (in the \code{list} and \code{patterns} usages). See also Examples below. }
