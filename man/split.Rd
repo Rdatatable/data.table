@@ -47,9 +47,6 @@ all.equal(
 split(DT, by=c("x1", "x2"))
 split(DT, by=c("x1", "x2"), flatten=FALSE)
 
-# use formula instead of by
-split(DT, ~x1+x2)
-
 # dealing with factors
 fdt = DT[, c(lapply(.SD, as.factor), list(y=y)), .SDcols=x1:x3]
 fdf = as.data.frame(fdt)
