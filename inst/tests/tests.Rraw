@@ -12231,12 +12231,17 @@ test(1860, fread("A,B\n "), data.table(A=logical(), B=logical()))  # 2543
 # That unique(DT) returns DT when there are no dups, #2013
 # #3383 fix for unique.data.table returning copy(x)
 DT = data.table(A=c(1L,1L,2L), B=c(3L,4L,4L))
-test(1861, address(unique(DT)) != address(DT), TRUE)
+test(1861.1, address(unique(DT)) != address(DT))
+# Ditto when nrow(x) is 0 or 1, where there can never be duplicates
+DT = data.table(a = 1, b = 3)
+test(1861.2, address(unique(DT)) != address(DT))
+DT = data.table()
+test(1861.3, address(unique(DT)) != address(DT))
 
 # New warning for deprecated old behaviour option
-setkey(DT,A)
+DT = data.table(A=c(1L,1L,2L), B=c(3L,4L,4L), key="A")
 test(1862.1, unique(DT), DT)
-test(1862.2, unique(DT,by=key(DT)), data.table(A=1:2, B=3:4, key="A"))
+test(1862.2, unique(DT, by=key(DT)), data.table(A=1:2, B=3:4, key="A"))
 
 # fix for -ve indices issue in gmedian (2046) and gvar (2111)
 DT = data.table(x=c(1,1,1),y=c(3,0,0), key="x")
@@ -17829,9 +17834,12 @@ for (col in names(DT)[-1]) {
 }
 a = 1:2  # fill argument with length > 1 which is not a call
 test(2224.2, DT[, shift(i, fill=a), by=x], error="fill must be a vector of length 1")
-DT = data.table(x=pairlist(1), g=1)
 # unsupported type as argument
+DT = data.table(x=pairlist(1), g=1)
 test(2224.3, DT[, shift(x), g], error="Type 'list' is not supported by GForce gshift.")
+# single vector is un-list()'d, consistently with plain shift(), #5939
+DT = data.table(x=1, g=1)
+test(2224.4, DT[, .(shift(x)), g], DT[, shift(x), g])
 
 # groupingsets by named by argument
 test(2225.1, groupingsets(data.table(iris), j=sum(Sepal.Length), by=c('Sp'='Species'), sets=list('Species')),
@@ -18279,13 +18287,27 @@ test(2245.2, copy(dt[1]), data.table(foo = 1:3)) # Revert to data.frame syntax: 
 rm(.datatable.aware)
 test(2245.3, dt[1], data.table(foo = 1L, bar = 4L)) # Default in this environment should be datatable-aware
 
+# data.table:: doesn't turn off GForce, #5942
+DT = data.table(a = rep(1:5, 2L), b = 1:10)
+old = options(datatable.optimize=Inf, datatable.verbose=TRUE)
+test(2246.1, DT[, data.table::shift(b), by=a], DT[, shift(b), by=a], output="GForce TRUE")
+test(2246.2, DT[, data.table::first(b), by=a], DT[, first(b), by=a], output="GForce TRUE")
+test(2246.3, DT[, data.table::last(b), by=a], DT[, last(b), by=a], output="GForce TRUE")
+options(old)
+
+# 5392 split(x,f) works with formula f
+dt = data.table(x=1:4, y=factor(letters[1:2]))
+test(2247.1, split(dt, ~y), split(dt, dt$y))
+dt = data.table(x=1:4, y=1:2)
+test(2247.2, split(dt, ~y), list(`1`=data.table(x=c(1L,3L), y=1L), `2`=data.table(x=c(2L, 4L), y=2L)))
+# Closely match the original MRE from the issue
+test(2247.3, do.call(rbind, split(dt, ~y)), setDT(do.call(rbind, split(as.data.frame(dt), ~y))))
+dt = data.table(x=1:4, y=factor(letters[1:2]), z=factor(c(1,1,2,2), labels=c("c", "d")))
+test(2247.4, split(dt, ~y+z), list("a.c"=dt[1], "b.c"=dt[2], "a.d"=dt[3], "b.d"=dt[4]))
+
 # fill converts to int64 in dcast, #4561
 if (test_bit64) {
   i64v = as.integer64(c(12345678901234, 70, 20, NA))
-  apple = data.table(
-    id = c("a", "b", "b"),
-    time = c(1L, 1L, 2L),
-    y = i64v[1:3]
-  )
-  test(2246, dcast(apple, id ~ time, value.var = "y"), data.table(id = c('a', 'b'), `1` = i64v[1:2], `2` = i64v[4:3], key='id'))
+  apple = data.table(id = c("a", "b", "b"), time = c(1L, 1L, 2L), y = i64v[1:3])
+  test(2248, dcast(apple, id ~ time, value.var = "y"), data.table(id = c('a', 'b'), `1` = i64v[1:2], `2` = i64v[4:3], key='id'))
 }
