@@ -5,16 +5,15 @@
 \description{
   These functions compute an integer vector or list for use as
   the \code{measure.vars} argument to \code{melt}.
-  Each measured variable name is converted into several groups that occupy
+  Either \code{sep} or \code{pattern} argument can be used to specify
+  a subset of input column/variable names to be measured.
+  Each measured variable name is converted into one or more groups that occupy
   different columns in the output melted data.
   \code{measure} allows specifying group names/conversions in R code
   (each group and conversion specified as an argument)
   whereas \code{measurev} allows specifying group names/conversions using
   data values
   (each group and conversion specified as a list element).
-  See
-  \href{../doc/datatable-reshape.html}{\code{vignette("datatable-reshape")}}
-  for more info.
 }
 \usage{
 measure(\dots, sep, pattern, cols, multiple.keyword="value.name")
@@ -38,7 +37,15 @@ measurev(fun.list, sep, pattern, cols, multiple.keyword="value.name",
     are considered measure variables.}
   \item{pattern}{Perl-compatible regex with capture groups to match to
     \code{cols}. Columns that match the regex are considered measure variables.}
-  \item{cols}{A character vector of column names.}
+  \item{cols}{
+    A character vector of column names.
+    When used in the context of
+    \code{melt(measure.vars=measure())}, the
+    user should not provide the \code{cols} argument, which is
+    automatically set to all of the column names of the input data
+    table, using non-standard evaluation.
+    To specify the columns to be measured,
+    use either \code{sep} or \code{pattern} argument.}
   \item{multiple.keyword}{A string, if used as a group name, then
     measure returns a list and melt returns multiple
     value columns (with names defined by the unique values in that
@@ -54,6 +61,8 @@ measurev(fun.list, sep, pattern, cols, multiple.keyword="value.name",
 (two.iris = data.table(datasets::iris)[c(1,150)])
 # melt into a single value column.
 melt(two.iris, measure.vars = measure(part, dim, sep="."))
+# do the same, with a regex pattern.
+melt(two.iris, measure.vars = measure(part, dim, pattern="(.*)[.](.*)"))
 # do the same, programmatically with measurev
 my.list = list(part=NULL, dim=NULL)
 melt(two.iris, measure.vars=measurev(my.list, sep="."))

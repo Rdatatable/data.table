@@ -21,16 +21,16 @@ multiple columns simultaneously.
 \item{id.vars}{vector of id variables. Can be integer (corresponding id
 column numbers) or character (id column names) vector. If missing, all
 non-measure columns will be assigned to it. If integer, must be positive; see Details. }
-\item{measure.vars}{Measure variables for \code{melt}ing. Can be missing, vector, list, or pattern-based.
+\item{measure.vars}{Measure variables for \code{melt}ing. Can be missing, vector, list, or a function can be called.
 
   \itemize{
     \item{ When missing, \code{measure.vars} will become all columns outside \code{id.vars}. }
     \item{ Vector can be \code{integer} (implying column numbers) or \code{character} (column names). }
     \item{ \code{list} is a generalization of the vector version -- each element of the list (which should be \code{integer} or \code{character} as above) will become a \code{melt}ed column. }
-    \item{ Pattern-based column matching can be achieved with the regular expression-based \code{\link{patterns}} syntax; multiple patterns will produce multiple columns. }
+    \item{ Pattern-based column matching can be achieved by using the result of \code{\link{patterns}} or \code{\link{measure}} functions. More generally, it is possible to call any function that returns a character vector or list of measure variables, and if this function has an argument named \code{cols}, then that argument will be set to \code{names(data)} by non-standard evaluation. }
   }
 
-    For convenience/clarity in the case of multiple \code{melt}ed columns, resulting column names can be supplied as names to the elements \code{measure.vars} (in the \code{list} and \code{patterns} usages). See also \code{Examples}. }
+    For convenience/clarity in the case of multiple \code{melt}ed columns, resulting column names can be supplied as names to the elements \code{measure.vars} (in the \code{list} and \code{patterns} usages). See also Examples below. }
 \item{variable.name}{name (default \code{'variable'}) of output column containing information about which input column(s) were melted. If \code{measure.vars} is an integer/character vector, then each entry of this column contains the name of a melted column from \code{data}. If \code{measure.vars} is a list of integer/character vectors, then each entry of this column contains an integer indicating an index/position in each of those vectors. If \code{measure.vars} has attribute \code{variable_table} then it must be a data table with nrow = length of \code{measure.vars} vector(s), each row describing the corresponding measured variables(s), (typically created via \code{measure}) and its columns will be output instead of the \code{variable.name} column.}
 \item{value.name}{name for the molten data values column(s). The default name is \code{'value'}. Multiple names can be provided here for the case when \code{measure.vars} is a \code{list}, though note well that the names provided in \code{measure.vars} take precedence. }
 \item{na.rm}{If \code{TRUE}, \code{NA} values will be removed from the molten
@@ -66,10 +66,8 @@ into multiple columns in a single function call efficiently.
 If a vector in the list contains missing values, or is shorter than the
 max length of the list elements, then the output will include runs of
 missing values at the specified position, or at the end.
-The function
-\code{\link{patterns}} can be used to provide regular expression patterns. When
-used along with \code{melt}, if \code{cols} argument is not provided, the
-patterns will be matched against \code{names(data)}, for convenience.
+The functions \code{\link{patterns}} and \code{\link{measure}}
+can be used in \code{measure.vars} to melt all columns matching a regular expression.
 
 Attributes are preserved if all \code{value} columns are of the same type. By
 default, if any of the columns to be melted are of type \code{factor}, it'll

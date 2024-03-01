@@ -120,6 +120,7 @@ brackify = function(x, quote=FALSE) {
 eval_with_cols = function(orig_call, all_cols) {
   parent = parent.frame(2L)
   fun_uneval = orig_call[[1L]]
+  stopifnot(length(fun_uneval) == 1)
   # take fun from either calling env (parent) or from data.table
   fun = tryCatch({
     maybe_fun = eval(fun_uneval, parent)
@@ -132,8 +133,12 @@ eval_with_cols = function(orig_call, all_cols) {
   })
   if (!is.primitive(fun)) {
     named_call = match.call(fun, orig_call)
-    if ("cols" %in% names(formals(fun)) && !"cols" %in% names(named_call)) {
-      named_call[["cols"]] = all_cols
+    if ("cols" %in% names(formals(fun))) {
+      if ("cols" %in% names(named_call)) {
+        stopf("user should not provide cols argument to %s, when specifying the columns for melt or .SDcols; in this context, non-standard evaluation is used internally to set cols to all data table column names, so please fix by removing cols argument", as.character(fun_uneval))
+      } else {
+        named_call[["cols"]] = all_cols
+      }
     }
     named_call[[1L]] = fun
     eval(named_call, parent)
