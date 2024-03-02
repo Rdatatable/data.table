@@ -18,7 +18,7 @@
 
 3. `split.data.table` also accepts a formula for `f`, [#5392](https://github.com/Rdatatable/data.table/issues/5392), mirroring the same in `base::split.data.frame` since R 4.1.0 (May 2021). Thanks to @XiangyunHuang for the request, and @ben-schwen for the PR.
 
-3. Namespace-qualifying `data.table::shift()`, `data.table::first()`, or `data.table::last()` will not deactivate GForce, [#5942](https://github.com/Rdatatable/data.table/issues/5942). Thanks @MichaelChirico for the proposal and fix. Namespace-qualifying other calls like `stats::sum()`, `base::prod()`, etc., continue to work as an escape valve to avoid GForce, e.g. to ensure S3 method dispatch.
+3. Namespace-qualifying `data.table::shift()`, `data.table::first()`, `data.table::last()`, or `data.table::.N` will not deactivate GForce, [#5942](https://github.com/Rdatatable/data.table/issues/5942) and [#5951](https://github.com/Rdatatable/data.table/issues/5951). Thanks @MichaelChirico for the proposal and fix. Namespace-qualifying other calls like `stats::sum()`, `base::prod()`, etc., continue to work as an escape valve to avoid GForce, e.g. to ensure S3 method dispatch.
 
 ## BUG FIXES
 

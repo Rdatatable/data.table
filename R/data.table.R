@@ -1629,7 +1629,7 @@ replace_dot_alias = function(e) {
       subopt = length(jsub) == 3L &&
         (jsub[[1L]] == "[" ||
            (jsub[[1L]] == "[[" && is.name(jsub[[2L]]) && eval(call('is.atomic', jsub[[2L]]), x, parent.frame()))) &&
-        (is.numeric(jsub[[3L]]) || jsub[[3L]] == ".N")
+        (is.numeric(jsub[[3L]]) || is.N(jsub[[3L]]))
       headopt = jsub[[1L]] == "head" || jsub[[1L]] == "tail"
       firstopt = jsub[[1L]] == "first" || jsub[[1L]] == "last" # fix for #2030
       if ((length(jsub) >= 2L && jsub[[2L]] == ".SD") &&
@@ -1666,7 +1666,7 @@ replace_dot_alias = function(e) {
               any_SD = TRUE
               jsubl[[i_]] = lapply(sdvars, as.name)
               jvnames = c(jvnames, sdvars)
-            } else if (this == ".N") {
+            } else if (is.N(this)) {
               # don't optimise .I in c(.SD, .I), it's length can be > 1
               # only c(.SD, list(.I)) should be optimised!! .N is always length 1.
               jvnames = c(jvnames, gsub("^[.]([N])$", "\\1", this))
@@ -1696,7 +1696,7 @@ replace_dot_alias = function(e) {
             } else if (this %iscall% optfuns && length(this)>1L) {
               jvnames = c(jvnames, if (is.null(names(jsubl))) "" else names(jsubl)[i_])
             } else if ( length(this) == 3L && (this[[1L]] == "[" || this[[1L]] == "head") &&
-                    this[[2L]] == ".SD" && (is.numeric(this[[3L]]) || this[[3L]] == ".N") ) {
+                    this[[2L]] == ".SD" && (is.numeric(this[[3L]]) || is.N(this[[3L]])) ) {
               # optimise .SD[1] or .SD[2L]. Not sure how to test .SD[a] as to whether a is numeric/integer or a data.table, yet.
               any_SD = TRUE
               jsubl[[i_]] = lapply(sdvars, function(x) { this[[2L]] = as.name(x); this })
@@ -1739,10 +1739,15 @@ replace_dot_alias = function(e) {
     if (getOption("datatable.optimize")>=2L && !is.data.table(i) && !byjoin && length(f__)) {
       if (!length(ansvars) && !use.I) {
         GForce = FALSE
-        if ( ((is.name(jsub) && jsub==".N") || (jsub %iscall% 'list' && length(jsub)==2L && jsub[[2L]]==".N")) && !length(lhs) ) {
+        if (length(lhs)) {
+        } else if (is.N(jsub)) {
           GForce = TRUE
-          if (verbose) catf("GForce optimized j to '%s' (see ?GForce)\n",deparse(jsub, width.cutoff=200L, nlines=1L))
+          if (!is.name(jsub)) jsub = quote(.N)
+        } else if (jsub %iscall% 'list' && length(jsub)==2L && is.N(jsub[[2L]])) {
+          GForce = TRUE
+          if (!is.name(jsub[[2L]])) jsub[[2L]] = quote(.N)
         }
+        if (GForce && verbose) catf("GForce optimized j to '%s' (see ?GForce)\n",deparse(jsub, width.cutoff=200L, nlines=1L))
       } else if (length(lhs) && is.symbol(jsub)) { # turn off GForce for the combination of := and .N
         GForce = FALSE
       } else {
@@ -1757,7 +1762,6 @@ replace_dot_alias = function(e) {
         if (GForce) {
           if (jsub[[1L]]=="list")
             for (ii in seq_along(jsub)[-1L]) {
-              if (is.N(jsub[[ii]])) next; # For #334
               jsub[[ii]] = .gforce_jsub(jsub[[ii]], names_x)
             }
           else {
@@ -3018,7 +3022,7 @@ gforce = function(env, jsub, o, f, l, rows) .Call(Cgforce, env, jsub, o, f, l, r
 # GForce needs to evaluate all arguments not present in the data.table before calling C part #5547
 # Safe cases: variables [i], calls without variables [c(0,1), list(1)] # TODO extend this list
 # Unsafe cases: functions containing variables [c(i), abs(i)], .N
-is.N = function(q) is.name(q) && q==".N" # For #334. TODO: Rprof() showed is.N() may be the culprit if iterated (#1470)?; avoid the == which converts each x to character?
+is.N = function(q) (is.name(q) && q == ".N") || (q %iscall% "::" && q[[3L]] == ".N") # For #334. TODO: Rprof() showed is.N() may be the culprit if iterated (#1470)?; avoid the == which converts each x to character?
 is_constantish = function(q, check_singleton=FALSE) {
   if (!is.call(q)) {
     return(!is.N(q))
@@ -3079,8 +3083,12 @@ is_constantish = function(q, check_singleton=FALSE) {
 }
 
 .gforce_jsub = function(q, names_x) {
-  call_name = if (is.symbol(q[[1L]])) q[[1L]] else q[[1L]][[3L]] # latter is like data.table::shift, #5942. .gshift_ok checked this will work.
-  q[[1L]] = as.name(paste0("g", call_name))
+  if (is.name(q)) {
+    q = quote(.N) # force data.table::.N to be just .N
+  } else {
+    call_name = if (is.symbol(q[[1L]])) q[[1L]] else q[[1L]][[3L]] # latter is like data.table::shift, #5942. .gshift_ok checked this will work.
+    q[[1L]] = as.name(paste0("g", call_name))
+  }
   # gforce needs to evaluate arguments before calling C part TODO: move the evaluation into gforce_ok
   # do not evaluate vars present as columns in x
   if (length(q) >= 3L) {

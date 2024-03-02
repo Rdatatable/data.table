@@ -18293,6 +18293,9 @@ old = options(datatable.optimize=Inf, datatable.verbose=TRUE)
 test(2246.1, DT[, data.table::shift(b), by=a], DT[, shift(b), by=a], output="GForce TRUE")
 test(2246.2, DT[, data.table::first(b), by=a], DT[, first(b), by=a], output="GForce TRUE")
 test(2246.3, DT[, data.table::last(b), by=a], DT[, last(b), by=a], output="GForce TRUE")
+# V1: GForce works, but auto-naming doesn't
+test(2246.4, DT[, data.table::.N, by=a], DT[, .(V1 = .N), by=a], output="GForce TRUE")
+test(2246.5, DT[, .(N = data.table::.N), by=a], DT[, .N, by=a], output="GForce TRUE")
 options(old)
 
 # 5392 split(x,f) works with formula f
