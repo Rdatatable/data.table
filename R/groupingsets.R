@@ -1,7 +1,7 @@
 rollup = function(x, ...) {
   UseMethod("rollup")
 }
-rollup.data.table = function(x, j, by, .SDcols, id = FALSE, ...) {
+rollup.data.table = function(x, j, by, .SDcols, id = FALSE, total.label = NULL, ...) {
   # input data type basic validation
   if (!is.data.table(x))
     stopf("Argument 'x' must be a data.table object")
@@ -13,13 +13,13 @@ rollup.data.table = function(x, j, by, .SDcols, id = FALSE, ...) {
   sets = lapply(length(by):0L, function(i) by[0L:i])
   # redirect to workhorse function
   jj = substitute(j)
-  groupingsets.data.table(x, by=by, sets=sets, .SDcols=.SDcols, id=id, jj=jj)
+  groupingsets.data.table(x, by=by, sets=sets, .SDcols=.SDcols, id=id, jj=jj, total.label=total.label)
 }
 
 cube = function(x, ...) {
   UseMethod("cube")
 }
-cube.data.table = function(x, j, by, .SDcols, id = FALSE, ...) {
+cube.data.table = function(x, j, by, .SDcols, id = FALSE, total.label = NULL, ...) {
   # input data type basic validation
   if (!is.data.table(x))
     stopf("Argument 'x' must be a data.table object")
@@ -35,13 +35,13 @@ cube.data.table = function(x, j, by, .SDcols, id = FALSE, ...) {
   sets = lapply((2L^n):1L, function(jj) by[keepBool[jj, ]])
   # redirect to workhorse function
   jj = substitute(j)
-  groupingsets.data.table(x, by=by, sets=sets, .SDcols=.SDcols, id=id, jj=jj)
+  groupingsets.data.table(x, by=by, sets=sets, .SDcols=.SDcols, id=id, jj=jj, total.label=total.label)
 }
 
 groupingsets = function(x, ...) {
   UseMethod("groupingsets")
 }
-groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, ...) {
+groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, total.label = NULL, ...) {
   # input data type basic validation
   if (!is.data.table(x))
     stopf("Argument 'x' must be a data.table object")
@@ -57,6 +57,16 @@ groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, ...)
     stopf("Argument 'sets' must be a list of character vectors.")
   if (!is.logical(id))
     stopf("Argument 'id' must be a logical scalar.")
+  if (!(is.null(total.label) ||
+        (is.character(total.label) && length(total.label) == 1L) ||
+        (is.list(total.label) && all(vapply_1b(total.label, is.character)) &&
+         all(vapply_1i(total.label, length) == 1L) && !is.null(names(total.label)))))
+    stopf("Argument 'total.label', if not NULL, must be a character string (character vector of length 1) or a named list of character strings.")
+  if (is.list(total.label) && !is.null(names(total.label)) &&
+      ("" %chin% names(total.label) || any(is.na(names(total.label)))))
+    stopf("When argument 'total.label' is a list, all of the list elements must be named.")
+  if (is.list(total.label) && anyDuplicated(names(total.label)))
+    stopf("When argument 'total.label' is a list, the element names must not contain duplicates.")
   # logic constraints validation
   if (!all((sets.all.by <- unique(unlist(sets))) %chin% by))
     stopf("All columns used in 'sets' argument must be in 'by' too. Columns used in 'sets' but not present in 'by': %s", brackify(setdiff(sets.all.by, by)))
@@ -66,6 +76,9 @@ groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, ...)
     stopf("Character vectors in 'sets' list must not have duplicated column names within a single grouping set.")
   if (length(sets) > 1L && (idx<-anyDuplicated(lapply(sets, sort))))
     warningf("'sets' contains a duplicate (i.e., equivalent up to sorting) element at index %d; as such, there will be duplicate rows in the output -- note that grouping by A,B and B,A will produce the same aggregations. Use `sets=unique(lapply(sets, sort))` to eliminate duplicates.", idx)
+  if (is.list(total.label) && !all(names(total.label) %chin% by))
+    stopf("When argument 'total.label' is a list, all element names must be in 'by' too. Element names in 'total.label' but not present in 'by': %s",
+          brackify(setdiff(names(total.label), by)))
   # input arguments handling
   jj = if (!missing(jj)) jj else substitute(j)
   av = all.vars(jj, TRUE)
@@ -84,6 +97,30 @@ groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, ...)
   if (id) {
     set(empty, j = "grouping", value = integer())
     setcolorder(empty, c("grouping", by, setdiff(names(empty), c("grouping", by))))
+  }
+  # Define variables related to total.label
+  if (!is.null(total.label)) {
+    total.vars = intersect(by, unique(unlist(lapply(sets, function(u) setdiff(by, u)))))
+    total.vars.char.fac = total.vars[vapply_1b(x[, total.vars, with=FALSE],
+                                               function(u) is.character(u) || is.factor(u))]
+    if (is.list(total.label) &&
+        !all(vapply_1b(x[, names(total.label), with=FALSE], function(u) is.character(u) || is.factor(u))))
+      warningf("'total.label' can only be applied to variables of type character or factor but was specified explicitly (in a named list) for the following variables which are neither character nor factor: %s",
+               brackify(names(total.label)[!vapply_1b(x[, names(total.label), with=FALSE],
+                                                      function(u) is.character(u) || is.factor(u))]))
+    if (is.character(total.label) && (length(total.vars) > length(total.vars.char.fac)))
+      warningf("'total.label' can only be applied to variables of type character or factor, so it was not used for the following variables, even though they have 'total' rows in the output: %s",
+               brackify(setdiff(total.vars, total.vars.char.fac)))
+    if (is.character(total.label)) {
+      total.label.use = as.list(rep(total.label, length(total.vars.char.fac)))
+      names(total.label.use) = total.vars.char.fac
+    }
+    if (is.list(total.label))
+      total.label.use = total.label[intersect(names(total.label), total.vars.char.fac)]
+    total.label.use.in.x = vapply_1b(names(total.label.use), function(u) total.label.use[[u]] %in% x[[u]])
+    if (any(total.label.use.in.x))
+      warningf("The 'total.label' value was already in the data for these variables: %s",
+               brackify(names(total.label.use)[total.label.use.in.x]))
   }
   # workaround for rbindlist fill=TRUE on integer64 #1459
   int64.cols = vapply_1b(empty, inherits, "integer64")
@@ -105,6 +142,10 @@ groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, ...)
       missing.int64.by.cols = setdiff(int64.by.cols, by.set)
       if (length(missing.int64.by.cols)) r[, (missing.int64.by.cols) := bit64::as.integer64(NA)]
     }
+    if (!is.null(total.label))
+      for (total.var in intersect(setdiff(by, by.set), names(total.label.use))) {
+        r[, (total.var) := total.label.use[[total.var]]]
+      }
     r
   }
   # actually processing everything here
