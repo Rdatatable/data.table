@@ -11,11 +11,11 @@
 }
 \usage{
 rollup(x, \dots)
-\method{rollup}{data.table}(x, j, by, .SDcols, id = FALSE, \dots)
+\method{rollup}{data.table}(x, j, by, .SDcols, id = FALSE, total.label = NULL, \dots)
 cube(x, \dots)
-\method{cube}{data.table}(x, j, by, .SDcols, id = FALSE, \dots)
+\method{cube}{data.table}(x, j, by, .SDcols, id = FALSE, total.label = NULL, \dots)
 groupingsets(x, \dots)
-\method{groupingsets}{data.table}(x, j, by, sets, .SDcols, id = FALSE, jj, \dots)
+\method{groupingsets}{data.table}(x, j, by, sets, .SDcols, id = FALSE, jj, total.label = NULL, \dots)
 }
 \arguments{
 	\item{x}{\code{data.table}.}
@@ -26,9 +26,12 @@ groupingsets(x, \dots)
 	\item{.SDcols}{columns to be used in \code{j} expression in \code{.SD} object.}
 	\item{id}{logical default \code{FALSE}. If \code{TRUE} it will add leading column with bit mask of grouping sets.}
 	\item{jj}{quoted version of \code{j} argument, for convenience. When provided function will ignore \code{j} argument.}
+	\item{total.label}{label(s) to be used in the 'total' rows in the grouping variable columns of the output, that is, in rows where the grouping variable has been aggregated. Can be a character string or a named list of character strings. Defaults to \code{NULL}, which results in the grouping variables having \code{NA} in their 'total' rows. See Details.}
 }
 \details{
     All three functions \code{rollup, cube, groupingsets} are generic methods, \code{data.table} methods are provided.
+
+    The \code{total.label} argument only applies to grouping variables of type character or factor. If \code{total.label} is a character string, it will be used for all grouping variables of type character or factor. Different 'total' labels can be specified for different grouping variables by providing \code{total.label} as a named list of character strings. When \code{total.label} is a named list, all the list element names must also be in \code{by}.
 }
 \value{
     A data.table with various aggregates.
@@ -55,6 +58,8 @@ rollup(DT, j = sum(value), by = c("color","year","status")) # default id=FALSE
 rollup(DT, j = sum(value), by = c("color","year","status"), id=TRUE)
 rollup(DT, j = lapply(.SD, sum), by = c("color","year","status"), id=TRUE, .SDcols="value")
 rollup(DT, j = c(list(count=.N), lapply(.SD, sum)), by = c("color","year","status"), id=TRUE)
+rollup(DT, j = sum(value), by = c("color","year","status"), total.label = "Total") # gives a warning that total.label isn't used for year
+rollup(DT, j = sum(value), by = c("color","year","status"), total.label = list(color = "All colors", status = "All statuses"))
 
 # cube
 cube(DT, j = sum(value), by = c("color","year","status"), id=TRUE)
