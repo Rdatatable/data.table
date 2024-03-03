@@ -18304,3 +18304,386 @@ test(2247.2, split(dt, ~y), list(`1`=data.table(x=c(1L,3L), y=1L), `2`=data.tabl
 test(2247.3, do.call(rbind, split(dt, ~y)), setDT(do.call(rbind, split(as.data.frame(dt), ~y))))
 dt = data.table(x=1:4, y=factor(letters[1:2]), z=factor(c(1,1,2,2), labels=c("c", "d")))
 test(2247.4, split(dt, ~y+z), list("a.c"=dt[1], "b.c"=dt[2], "a.d"=dt[3], "b.d"=dt[4]))
+
+# groupingsets/cube/rollup 'total.label' argument, #5351
+# DT1: Two character grouping variables with no NAs.
+Regions = paste0("Region", 1:3)
+Products = paste0("Product", 1:2)
+DT1 = data.table(Region = rep(Regions, c(4, 3, 3)),
+                 Product = c(rep(Products, c(2, 2)), rep(Products, c(2, 1)), rep(Products, c(3, 0))),
+                 y = 1:10)
+DT1_Out = rbind(DT1[, .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product")],
+                DT1[, .(Product = "Total", Count = .N, y_Sum = sum(y)), by = "Region"],
+                DT1[, .(Region = "National", Count = .N, y_Sum = sum(y)), by = "Product"],
+                DT1[, .(Region = "National", Product = "Total", Count = .N, y_Sum = sum(y))])
+# 01. total.label is integer.
+test(2248.01,
+     groupingsets(x = DT1, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+                  sets = list(c("Region", "Product"), "Region", "Product", character()), total.label = 1L),
+     error = "Argument 'total.label', if not NULL, must be a character string (character vector of length 1) or a named list of character strings.")
+# 02. total.label is character vector with length > 1.
+test(2248.02,
+     groupingsets(x = DT1, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+                  sets = list(c("Region", "Product"), "Region", "Product", character()),
+                  total.label = c("National", "Total")),
+     error = "Argument 'total.label', if not NULL, must be a character string (character vector of length 1) or a named list of character strings.")
+# 03. total.label is list with some elements not character.
+test(2248.03,
+     groupingsets(x = DT1, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+                  sets = list(c("Region", "Product"), "Region", "Product", character()),
+                  total.label = list(Region = 1, Group = "Total")),
+     error = "Argument 'total.label', if not NULL, must be a character string (character vector of length 1) or a named list of character strings.")
+# 04. total.label is list with elements being character vectors but not all of length 1.
+test(2248.04,
+     groupingsets(x = DT1, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+                  sets = list(c("Region", "Product"), "Region", "Product", character()),
+                  total.label = list(Region = "National", Group = c("Total", "Total"))),
+     error = "Argument 'total.label', if not NULL, must be a character string (character vector of length 1) or a named list of character strings.")
+# 05. total.label is list with no elements named.
+test(2248.05,
+     groupingsets(x = DT1, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+                  sets = list(c("Region", "Product"), "Region", "Product", character()),
+                  total.label = list("National", "Total")),
+     error = "Argument 'total.label', if not NULL, must be a character string (character vector of length 1) or a named list of character strings.")
+# 06. total.label is list with some but not all elements named.
+test(2248.06,
+     groupingsets(x = DT1, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+                  sets = list(c("Region", "Product"), "Region", "Product", character()),
+                  total.label = list("National", Product = "Total")),
+     error = "When argument 'total.label' is a list, all of the list elements must be named.")
+# 07. total.label is list with an NA name.
+test(2248.07,
+     groupingsets(x = DT1, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+                  sets = list(c("Region", "Product"), "Region", "Product", character()),
+                  total.label = {v = list("National", "Total"); names(v) = c("Region", NA); v}),
+     error = "When argument 'total.label' is a list, all of the list elements must be named.")
+# 08. total.label is list with duplicate names.
+test(2248.08,
+     groupingsets(x = DT1, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+                  sets = list(c("Region", "Product"), "Region", "Product", character()),
+                  total.label = list(Region = "National", Region = "Total")),
+     error = "When argument 'total.label' is a list, the element names must not contain duplicates.")
+# 09. total.label is list with an element name not in 'by'.
+test(2248.09,
+     groupingsets(x = DT1, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+                  sets = list(c("Region", "Product"), "Region", "Product", character()),
+                  total.label = list(Region = "National", Produc = "Total")),
+     error = "When argument 'total.label' is a list, all element names must be in 'by' too. Element names in 'total.label' but not present in 'by': [Produc]")
+# 10. All grouping sets, total.label is list with value for each grouping variable.
+test(2248.10,
+     groupingsets(x = DT1, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+                  sets = list(c("Region", "Product"), "Region", "Product", character()),
+                  total.label = list(Region = "National", Product = "Total")),
+     DT1_Out)
+# 11. All grouping sets, total.label is char string.
+test(2248.11,
+     groupingsets(x = DT1, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+                  sets = list(c("Region", "Product"), "Region", "Product", character()),
+                  total.label = "Total"),
+     DT1_Out[, .(Region = fifelse(Region == "National", "Total", Region),
+                 Product, Count, y_Sum)])
+# 12. All grouping sets, total.label is list with value for some but not all grouping variables.
+test(2248.12,
+     groupingsets(x = DT1, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+                  sets = list(c("Region", "Product"), "Region", "Product", character()),
+                  total.label = list(Product = "Total")),
+     DT1_Out[, .(Region = fifelse(Region == "National", NA_character_, Region),
+                 Product, Count, y_Sum)])
+# 13. Not all grouping sets, one variable with no 'total' rows, total.label is list for grouping variable with no 'total' rows.
+test(2248.13,
+     groupingsets(x = DT1, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+                  sets = list(c("Region", "Product"), "Region"), total.label = list(Region = "National")),
+     DT1_Out[Region != "National",
+             .(Region, Product = fifelse(Product == "Total", NA_character_, Product),
+               Count, y_Sum)])
+# 14. Not all grouping sets, one variable with no 'total' rows, total.label is char string.
+test(2248.14,
+     groupingsets(x = DT1, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+                  sets = list(c("Region", "Product"), "Region"), total.label = "Total"),
+     DT1_Out[Region != "National"])
+# 15. Not all grouping sets, no 'total' rows, total.label is char string.
+test(2248.15,
+     groupingsets(x = DT1, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+                  sets = list(c("Region", "Product")), total.label = "Total"),
+     DT1_Out[Region != "National" & Product != "Total"])
+# 16. Not all grouping sets, no 'total' rows, total.label is list for only one variable.
+test(2248.16,
+     groupingsets(x = DT1, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+                  sets = list(c("Region", "Product")), total.label = list(Region = "National")),
+     DT1_Out[Region != "National" & Product != "Total"])
+# 17. All grouping sets, total.label is list with value already in the data for one grouping variable.
+test(2248.17,
+     groupingsets(x = DT1, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+                  sets = list(c("Region", "Product"), "Region", "Product", character()),
+                  total.label = list(Region = "Region1", Product = "Total")),
+     DT1_Out[, .(Region = fifelse(Region == "National", "Region1", Region),
+                 Product, Count, y_Sum)],
+     warning = "The 'total.label' value was already in the data for these variables: [Region]")
+# 18. All grouping sets, total.label is list with value already in the data for both grouping variables.
+test(2248.18,
+     groupingsets(x = DT1, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+                  sets = list(c("Region", "Product"), "Region", "Product", character()),
+                  total.label = list(Region = "Region1", Product = "Product2")),
+     DT1_Out[, .(Region = fifelse(Region == "National", "Region1", Region),
+                 Product = fifelse(Product == "Total", "Product2", Product),
+                 Count, y_Sum)],
+     warning = "The 'total.label' value was already in the data for these variables: [Region, Product]")
+# 19. All grouping sets, total.label is char string with value already in the data for one grouping variable.
+test(2248.19,
+     groupingsets(x = DT1, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+                  sets = list(c("Region", "Product"), "Region", "Product", character()),
+                  total.label = "Region1"),
+     DT1_Out[, .(Region = fifelse(Region == "National", "Region1", Region),
+                 Product = fifelse(Product == "Total", "Region1", Product),
+                 Count, y_Sum)],
+     warning = "The 'total.label' value was already in the data for these variables: [Region]")
+# DT2: Two character grouping variables with no NAs and a common value.
+DT2 = DT1[, .(Region, Product = fifelse(Product == "Product2", "Region1", Product), y)]
+# 20. Grouping variables have common value, all grouping sets, total.label is char string with value already in data for both grouping variables.
+test(2248.20,
+     groupingsets(x = DT2, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+                  sets = list(c("Region", "Product"), "Region", "Product", character()),
+                  total.label = "Region1"),
+     DT1_Out[, .(Region = fifelse(Region == "National", "Region1", Region),
+                 Product = fifelse(Product %chin% c("Product2", "Total"), "Region1", Product),
+                 Count, y_Sum)],
+     warning = "The 'total.label' value was already in the data for these variables: [Region, Product]")
+# DT3: Two character grouping variables, one having an NA.
+DT3 = DT1[, .(Region = fifelse(.I == 2L, NA_character_, Region), Product, y)]
+# 21. Grouping variable has NA, all grouping sets, total.label is list.
+test(2248.21,
+     groupingsets(x = DT3, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+                  sets = list(c("Region", "Product"), "Region", "Product", character()),
+                  total.label = list(Region = "National", Product = "Total")),
+     rbind(DT3[, .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product")],
+           DT3[, .(Product = "Total", Count = .N, y_Sum = sum(y)), by = "Region"],
+           DT3[, .(Region = "National", Count = .N, y_Sum = sum(y)), by = "Product"],
+           DT3[, .(Region = "National", Product = "Total", Count = .N, y_Sum = sum(y))]))
+# DT4: One character grouping variable, one factor grouping variable.
+DT4 = DT1[, .(Region = factor(Region), Product, y)]
+# 22. Factor grouping variable, all grouping sets, total.label is list.
+test(2248.22,
+     groupingsets(x = DT4, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+                  sets = list(c("Region", "Product"), "Region", "Product", character()),
+                  total.label = list(Region = "National", Product = "Total")),
+     DT1_Out[, .(Region = factor(Region, levels = c(levels(DT4$Region), "National")),
+                 Product, Count, y_Sum)])
+# 23. Factor grouping variable, all grouping sets, total.label is char string.
+test(2248.23,
+     groupingsets(x = DT4, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+                  sets = list(c("Region", "Product"), "Region", "Product", character()),
+                  total.label = "Total"),
+     DT1_Out[, .(Region = factor(fifelse(Region == "National", "Total", Region),
+                                 levels = c(levels(DT4$Region), "Total")),
+                 Product, Count, y_Sum)])
+# 24. Factor grouping variable, not all grouping sets, factor grouping variable has no 'total' rows.
+test(2248.24,
+     groupingsets(x = DT4, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+                  sets = list(c("Region", "Product"), "Region"), total.label = "Total"),
+     DT1_Out[Region != "National",
+             .(Region = factor(Region, levels = levels(DT4$Region)),
+               Product, Count, y_Sum)])
+# 25. Factor grouping variable, not all grouping sets, factor grouping variable has no non-'total' rows.
+test(2248.25,
+     groupingsets(x = DT4, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+                  sets = list("Product", character()), total.label = "Total"),
+     DT1_Out[Region == "National",
+             .(Region = factor(fifelse(Region == "National", "Total", Region)),
+               Product, Count, y_Sum)])
+# DT5: One character grouping variable, one integer grouping variable.
+DT5 = DT1[, .(Region = as.integer(sub("Region", "", Region)), Product ,y)]
+# 26. Integer grouping variable, all grouping sets, total.label is list including the integer variable.
+test(2248.26,
+     groupingsets(x = DT5, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+                  sets = list(c("Region", "Product"), "Region", "Product", character()),
+                  total.label = list(Region = "National", Product = "Total")),
+     DT1_Out[, .(Region = as.integer(sub("Region", "", fifelse(Region == "National", NA_character_, Region))),
+                 Product, Count, y_Sum)],
+     warning = "'total.label' can only be applied to variables of type character or factor but was specified explicitly (in a named list) for the following variables which are neither character nor factor: [Region]")
+# 27. Integer grouping variable, all grouping sets, total.label is char string.
+test(2248.27,
+     groupingsets(x = DT5, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+                  sets = list(c("Region", "Product"), "Region", "Product", character()),
+                  total.label = "Total"),
+     DT1_Out[, .(Region = as.integer(sub("Region", "", fifelse(Region == "National", NA_character_, Region))),
+                 Product, Count, y_Sum)],
+     warning = "'total.label' can only be applied to variables of type character or factor, so it was not used for the following variables, even though they have 'total' rows in the output: [Region]")
+# 28. Integer grouping variable, all grouping sets, total.label is list including the integer variable and the label for the character variable is in the data.
+test(2248.28,
+     groupingsets(x = DT5, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+                  sets = list(c("Region", "Product"), "Region", "Product", character()),
+                  total.label = list(Region = "National", Product = "Product2")),
+     DT1_Out[, .(Region = as.integer(sub("Region", "", fifelse(Region == "National", NA_character_, Region))),
+                 Product = fifelse(Product == "Total", "Product2", Product),
+                 Count, y_Sum)],
+     warning = c("'total.label' can only be applied to variables of type character or factor but was specified explicitly (in a named list) for the following variables which are neither character nor factor: [Region]",
+                 "The 'total.label' value was already in the data for these variables: [Product]"))
+# 29. Integer grouping variable, not all grouping sets, total.label is char string and the integer grouping variable has no 'total' rows.
+test(2248.29,
+     groupingsets(x = DT5, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+                  sets = list(c("Region", "Product"), "Region"), total.label = "Total"),
+     DT1_Out[Region != "National",
+             .(Region = as.integer(sub("Region", "", Region)), Product, Count, y_Sum)])
+# 30. Integer grouping variable, not all grouping sets, total.label is list including the integer variable and the integer grouping variable has no 'total' rows.
+test(2248.30,
+     groupingsets(x = DT5, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+                  sets = list(c("Region", "Product"), "Region"),
+                  total.label = list(Region = "National", Product = "Total")),
+     DT1_Out[Region != "National",
+             .(Region = as.integer(sub("Region", "", Region)), Product, Count, y_Sum)],
+     warning = "'total.label' can only be applied to variables of type character or factor but was specified explicitly (in a named list) for the following variables which are neither character nor factor: [Region]")
+# DT6: Two integer grouping variables.
+DT6 = DT1[, .(Region = as.integer(sub("Region", "", Region)),
+              Product = as.integer(sub("Product", "", Product)), y)]
+# 31. Both grouping vars are integer, all grouping sets, total.label is list with both grouping variables.
+test(2248.31,
+     groupingsets(x = DT6, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+                  sets = list(c("Region", "Product"), "Region", "Product", character()),
+                  total.label = list(Region = "National", Product = "Total")),
+     DT1_Out[, .(Region = as.integer(sub("Region", "", fifelse(Region == "National", NA_character_, Region))),
+                 Product = as.integer(sub("Product", "", fifelse(Product == "Total", NA_character_, Product))),
+                 Count, y_Sum)],
+     warning = "'total.label' can only be applied to variables of type character or factor but was specified explicitly (in a named list) for the following variables which are neither character nor factor: [Region, Product]")
+# 32. Both grouping vars are integer, all grouping sets, total.label is list with one grouping variable.
+test(2248.32,
+     groupingsets(x = DT6, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+                  sets = list(c("Region", "Product"), "Region", "Product", character()),
+                  total.label = list(Product = "Total")),
+     DT1_Out[, .(Region = as.integer(sub("Region", "", fifelse(Region == "National", NA_character_, Region))),
+                 Product = as.integer(sub("Product", "", fifelse(Product == "Total", NA_character_, Product))),
+                 Count, y_Sum)],
+     warning = "'total.label' can only be applied to variables of type character or factor but was specified explicitly (in a named list) for the following variables which are neither character nor factor: [Product]")
+# 33. Both grouping vars are integer, all grouping sets, total.label is char string.
+test(2248.33,
+     groupingsets(x = DT6, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+                  sets = list(c("Region", "Product"), "Region", "Product", character()),
+                  total.label = "Total"),
+     DT1_Out[, .(Region = as.integer(sub("Region", "", fifelse(Region == "National", NA_character_, Region))),
+                 Product = as.integer(sub("Product", "", fifelse(Product == "Total", NA_character_, Product))),
+                 Count, y_Sum)],
+     warning = "'total.label' can only be applied to variables of type character or factor, so it was not used for the following variables, even though they have 'total' rows in the output: [Region, Product]")
+# cube
+# 34. cube, total.label is list with value for each grouping variable.
+test(2248.34,
+     cube(x = DT1, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+          total.label = list(Region = "National", Product = "Total")),
+     DT1_Out)
+# 35. cube, total.label is char string.
+test(2248.35,
+     cube(x = DT1, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"), total.label = "Total"),
+     DT1_Out[, .(Region = fifelse(Region == "National", "Total", Region), Product, Count, y_Sum)])
+# 36. cube, total.label is list with value for some but not all grouping variables.
+test(2248.36,
+     cube(x = DT1, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+          total.label = list(Product = "Total")),
+     DT1_Out[, .(Region = fifelse(Region == "National", NA_character_, Region), Product, Count, y_Sum)])
+# 37. cube, total.label is list with value already in the data for one grouping variable.
+test(2248.37,
+     cube(x = DT1, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+          total.label = list(Region = "Region1", Product = "Total")),
+     DT1_Out[, .(Region = fifelse(Region == "National", "Region1", Region), Product, Count, y_Sum)],
+     warning = "The 'total.label' value was already in the data for these variables: [Region]")
+# 38. cube, total.label is list with value already in the data for both grouping variables.
+test(2248.38,
+     cube(x = DT1, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+          total.label = list(Region = "Region1", Product = "Product2")),
+     DT1_Out[, .(Region = fifelse(Region == "National", "Region1", Region),
+                 Product = fifelse(Product == "Total", "Product2", Product),
+                 Count, y_Sum)],
+     warning = "The 'total.label' value was already in the data for these variables: [Region, Product]")
+# 39. cube, total.label is char string with value already in the data for one grouping variable.
+test(2248.39,
+     cube(x = DT1, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"), total.label = "Region1"),
+     DT1_Out[, .(Region = fifelse(Region == "National", "Region1", Region),
+                 Product = fifelse(Product == "Total", "Region1", Product),
+                 Count, y_Sum)],
+     warning = "The 'total.label' value was already in the data for these variables: [Region]")
+# 40. cube, integer grouping variable, total.label is list including the integer variable.
+test(2248.40,
+     cube(x = DT5, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+          total.label = list(Region = "National", Product = "Total")),
+     DT1_Out[, .(Region = as.integer(sub("Region", "", fifelse(Region == "National", NA_character_, Region))),
+                 Product, Count, y_Sum)],
+     warning = "'total.label' can only be applied to variables of type character or factor but was specified explicitly (in a named list) for the following variables which are neither character nor factor: [Region]")
+# 41. cube, integer grouping variable, total.label is char string.
+test(2248.41,
+     cube(x = DT5, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"), total.label = "Total"),
+     DT1_Out[, .(Region = as.integer(sub("Region", "", fifelse(Region == "National", NA_character_, Region))),
+                 Product, Count, y_Sum)],
+     warning = "'total.label' can only be applied to variables of type character or factor, so it was not used for the following variables, even though they have 'total' rows in the output: [Region]")
+# 42. cube, integer grouping variable, total.label is list including the integer variable and the label for the character variable is in the data.
+test(2248.42,
+     cube(x = DT5, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+          total.label = list(Region = "National", Product = "Product2")),
+     DT1_Out[, .(Region = as.integer(sub("Region", "", fifelse(Region == "National", NA_character_, Region))),
+                 Product = fifelse(Product == "Total", "Product2", Product),
+                 Count, y_Sum)],
+     warning = c("'total.label' can only be applied to variables of type character or factor but was specified explicitly (in a named list) for the following variables which are neither character nor factor: [Region]",
+                 "The 'total.label' value was already in the data for these variables: [Product]"))
+# rollup
+# 43. rollup, total.label is list with value for each grouping variable.
+test(2248.43,
+     rollup(x = DT1, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+            total.label = list(Region = "National", Product = "Total")),
+     DT1_Out[!(Region == "National" & Product != "Total")])
+# 44. rollup, total.label is char string.
+test(2248.44,
+     rollup(x = DT1, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+            total.label = "Total"),
+     DT1_Out[!(Region == "National" & Product != "Total"),
+             .(Region = fifelse(Region == "National", "Total", Region), Product, Count, y_Sum)])
+# 45. rollup, total.label is list with value for some but not all grouping variables.
+test(2248.45,
+     rollup(x = DT1, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+            total.label = list(Product = "Total")),
+     DT1_Out[!(Region == "National" & Product != "Total"),
+             .(Region = fifelse(Region == "National", NA_character_, Region), Product, Count, y_Sum)])
+# 46. rollup, total.label is list with value already in the data for one grouping variable.
+test(2248.46,
+     rollup(x = DT1, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+            total.label = list(Region = "Region1", Product = "Total")),
+     DT1_Out[!(Region == "National" & Product != "Total"),
+             .(Region = fifelse(Region == "National", "Region1", Region), Product, Count, y_Sum)],
+     warning = "The 'total.label' value was already in the data for these variables: [Region]")
+# 47. rollup, total.label is list with value already in the data for both grouping variables.
+test(2248.47,
+     rollup(x = DT1, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+            total.label = list(Region = "Region1", Product = "Product2")),
+     DT1_Out[!(Region == "National" & Product != "Total"),
+             .(Region = fifelse(Region == "National", "Region1", Region),
+               Product = fifelse(Product == "Total", "Product2", Product),
+               Count, y_Sum)],
+     warning = "The 'total.label' value was already in the data for these variables: [Region, Product]")
+# 48. rollup, total.label is char string with value already in the data for one grouping variable.
+test(2248.48,
+     rollup(x = DT1, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"), total.label = "Region1"),
+     DT1_Out[!(Region == "National" & Product != "Total"),
+             .(Region = fifelse(Region == "National", "Region1", Region),
+               Product = fifelse(Product == "Total", "Region1", Product),
+               Count, y_Sum)],
+     warning = "The 'total.label' value was already in the data for these variables: [Region]")
+# 49. rollup, integer grouping variable, total.label is list including the integer variable.
+test(2248.49,
+     rollup(x = DT5, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+            total.label = list(Region = "National", Product = "Total")),
+     DT1_Out[!(Region == "National" & Product != "Total"),
+             .(Region = as.integer(sub("Region", "", fifelse(Region == "National", NA_character_, Region))),
+               Product, Count, y_Sum)],
+     warning = "'total.label' can only be applied to variables of type character or factor but was specified explicitly (in a named list) for the following variables which are neither character nor factor: [Region]")
+# 50. rollup, integer grouping variable, total.label is char string.
+test(2248.50,
+     rollup(x = DT5, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"), total.label = "Total"),
+     DT1_Out[!(Region == "National" & Product != "Total"),
+             .(Region = as.integer(sub("Region", "", fifelse(Region == "National", NA_character_, Region))),
+               Product, Count, y_Sum)],
+     warning = "'total.label' can only be applied to variables of type character or factor, so it was not used for the following variables, even though they have 'total' rows in the output: [Region]")
+# 51. rollup, integer grouping variable, total.label is list including the integer variable and the label for the character variable is in the data.
+test(2248.51,
+     rollup(x = DT5, j = .(Count = .N, y_Sum = sum(y)), by = c("Region", "Product"),
+            total.label = list(Region = "National", Product = "Product2")),
+     DT1_Out[!(Region == "National" & Product != "Total"),
+             .(Region = as.integer(sub("Region", "", fifelse(Region == "National", NA_character_, Region))),
+               Product = fifelse(Product == "Total", "Product2", Product),
+               Count, y_Sum)],
+     warning = c("'total.label' can only be applied to variables of type character or factor but was specified explicitly (in a named list) for the following variables which are neither character nor factor: [Region]",
+                 "The 'total.label' value was already in the data for these variables: [Product]"))
