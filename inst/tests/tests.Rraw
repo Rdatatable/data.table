@@ -3725,6 +3725,7 @@ test(1100, dt1[dt2,roll=-Inf,rollends=c(FALSE,TRUE)]$ind, INT(NA,NA,1,2,2,2,2,2,
   DT = data.table(chr=c("a","b","b"), int=1:3)
   test(1102.39, dcast(DT, int ~ chr, min, value.var="int"), data.table(int=1:3, a=c(1L,NA,NA), b=c(NA,2L,3L), key="int"), warning="NAs introduced by coercion to integer range")
   test(1102.40, dcast(DT, . ~ chr, min, value.var="int"), data.table(.=".",a=1L,b=2L,key="."))
+  test(1102.41, dcast(data.table(a = 1, b = 2, c = 3), a ~ b, value.var = 'c', fill = '2'), data.table(a=1, `2`=3, key='a'))
   
 }
 
