@@ -156,7 +156,7 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
   if (is.null(fun.call)) {
     oo = forderv(dat, by=varnames, retGrp=TRUE)
     if (attr(oo, 'maxgrpn', exact=TRUE) > 1L) {
-      messagef("Aggregate function missing, defaulting to 'length'")
+      messagef("Warning: Duplicated Combinations Detected. This occurs when combinations of rows and columns are not unique, meaning certain combinations representing rows and columns in the new data table repeat in the original data table, pointing to more than one value in original data table. However, we only require a single representative value for each combination in new data table. This can be achieved using an aggregation function, which consolidates multiple values into one as needed. Functions like mean or sum are suitable for this purpose. but If no aggregation function is explicitly specified by user, then the length of values (i.e., the number of different values associated with each combination) is used as the unique value. To customize this behavior, user can input their desired aggregation function to manipulate the values accordingly. For further details, type `?dcast` in the terminal.")
       fun.call = quote(length)
     }
   }
