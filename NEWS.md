@@ -36,6 +36,8 @@
 
 4. Erroneous assignment calls in `[` with a trailing comma (e.g. ``DT[, `:=`(a = 1, b = 2,)]``) get a friendlier error since this situation is common during refactoring and easy to miss visually. Thanks @MichaelChirico for the fix.
 
+5. Improved the console message within the `dcast.data.table` function in the `fcast.R` file. This enhancement clarifies situations where duplicate row/column combinations exist in the data table without a specified aggregate function, offering clearer guidance, especially for beginners. Solution implemented by @Nj221102.
+
 # data.table [v1.15.0](https://github.com/Rdatatable/data.table/milestone/29)  (30 Jan 2024)
 
 ## BREAKING CHANGE
