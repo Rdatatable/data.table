@@ -154,12 +154,13 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
   fun.call = m[["fun.aggregate"]]
   fill.default = NULL
   if (is.null(fun.call)) {
-    oo = forderv(dat, by=varnames, retGrp=TRUE)
-    if (attr(oo, 'maxgrpn', exact=TRUE) > 1L) {
-      messagef("Warning: Duplicated Combinations Detected. This occurs when combinations of rows and columns are not unique, meaning certain combinations representing rows and columns in the new data table repeat in the original data table, pointing to more than one value in original data table. However, we only require a single representative value for each combination in new data table. This can be achieved using an aggregation function, which consolidates multiple values into one as needed. Functions like mean or sum are suitable for this purpose. but If no aggregation function is explicitly specified by user, then the length of values (i.e., the number of different values associated with each combination) is used as the unique value. To customize this behavior, user can input their desired aggregation function to manipulate the values accordingly. For further details, type `?dcast` in the terminal.")
-      fun.call = quote(length)
+  oo = forderv(dat, by=varnames, retGrp=TRUE)
+  if (attr(oo, 'maxgrpn', exact=TRUE) > 1L) {
+    message(sprintf("fun.aggregate is NULL, but found duplicate row/column combinations, so defaulting to length(). That is, the variables [%s] used in 'formula' do not uniquely identify rows in the input 'data'. In such cases, 'fun.aggregate' is used to derive a single representative value for each combination in the output data.table, for example by summing or averaging (fun.aggregate=sum or fun.aggregate=mean, respectively). See ?dcast.data.table for more details.", paste(brackify(varnames), collapse = ", ")))
+    fun.call = quote(length)
     }
   }
+
   if (!is.null(fun.call)) {
     fun.call = aggregate_funs(fun.call, lvals, sep, ...)
     errmsg = gettext("Aggregating function(s) should take vector inputs and return a single value (length=1). However, function(s) returns length!=1. This value will have to be used to fill any missing combinations, and therefore must be length=1. Either override by setting the 'fill' argument explicitly or modify your function to handle this case appropriately.")
