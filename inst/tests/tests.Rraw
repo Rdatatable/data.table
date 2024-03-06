@@ -13593,7 +13593,7 @@ test(1962.087, dcast(DT, a ~ b, value.var = 'b'),
 test(1962.088, dcast(DT[0L, ], a ~ c, value.var = 'b'), data.table(a=numeric(), key="a")) #1215
 test(1962.089, dcast(DT, a ~ c, value.var = 'b'),
      data.table(a = c(1, 2), `2` = c(0L, 2L), `4` = c(2L, 0L), key = 'a'),
-     message = "fun.aggregate is NULL, but found duplicate row/column combinations, so defaulting to length(). That is, the variables [a, c] used in 'formula' do not uniquely identify rows in the input 'data'. In such cases, 'fun.aggregate' is used to derive a single representative value for each combination in the output data.table, for example by summing or averaging (fun.aggregate=sum or fun.aggregate=mean, respectively). Check the resulting table for values larger than 1 to see which combinations were not unique. See ?dcast.data.table for more details.")
+     message = "'fun.aggregate' is NULL, but found duplicate row/column combinations, so defaulting to length(). That is, the variables [a, c] used in 'formula' do not uniquely identify rows in the input 'data'. In such cases, 'fun.aggregate' is used to derive a single representative value for each combination in the output data.table, for example by summing or averaging (fun.aggregate=sum or fun.aggregate=mean, respectively). Check the resulting table for values larger than 1 to see which combinations were not unique. See ?dcast.data.table for more details.")
 
 ## IDateTime.R
 x = as.IDate('2018-08-01')
