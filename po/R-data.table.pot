@@ -1339,7 +1339,7 @@ msgstr ""
 
 #: fcast.R:159
 #, c-format
-msgid "fun.aggregate is NULL, but found duplicate row/column combinations, so defaulting to length(). That is, the variables [a, c] used in 'formula' do not uniquely identify rows in the input 'data'. In such cases, 'fun.aggregate' is used to derive a single representative value for each combination in the output data.table, for example by summing or averaging (fun.aggregate=sum or fun.aggregate=mean, respectively). See ?dcast.data.table for more details."
+msgid "Aggregate function missing, defaulting to 'length'"
 msgstr ""
 
 #: fcast.R:165
