@@ -13593,7 +13593,7 @@ test(1962.087, dcast(DT, a ~ b, value.var = 'b'),
 test(1962.088, dcast(DT[0L, ], a ~ c, value.var = 'b'), data.table(a=numeric(), key="a")) #1215
 test(1962.089, dcast(DT, a ~ c, value.var = 'b'),
      data.table(a = c(1, 2), `2` = c(0L, 2L), `4` = c(2L, 0L), key = 'a'),
-     message = 'Aggregate function missing')
+     message = ".*'fun\\.aggregate' is NULL.*defaulting to length\\(\\).*\\[a, c\\].*")
 
 ## IDateTime.R
 x = as.IDate('2018-08-01')
@@ -18193,7 +18193,7 @@ test(2241.04, set(DT, j="D", value=2), data.table(A=1:3, b=4:6, C=1, D=2, key="A
 test(2241.05, colnames(DT)[2]<-"B", "B")
 test(2241.06, DT, data.table(A=1:3, B=4:6, C=1, D=2, key="A"))
 test(2241.07, set(DT, j="E", value=3), data.table(A=1:3, B=4:6, C=1, D=2, E=3, key="A"))
-test(2241.08, names(DT)<-letters[1:5], letters[1:5])  # R doesn't copy *tmp* when assigning to all names 
+test(2241.08, names(DT)<-letters[1:5], letters[1:5])  # R doesn't copy *tmp* when assigning to all names
 test(2241.09, DT, data.table(a=1:3, b=4:6, c=1, d=2, e=3, key="a"))
 test(2241.10, set(DT, j="f", value=4), data.table(a=1:3, b=4:6, c=1, d=2, e=3, f=4, key="a"))
 
