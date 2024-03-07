@@ -13593,7 +13593,7 @@ test(1962.087, dcast(DT, a ~ b, value.var = 'b'),
 test(1962.088, dcast(DT[0L, ], a ~ c, value.var = 'b'), data.table(a=numeric(), key="a")) #1215
 test(1962.089, dcast(DT, a ~ c, value.var = 'b'),
      data.table(a = c(1, 2), `2` = c(0L, 2L), `4` = c(2L, 0L), key = 'a'),
-     message = 'Aggregate function missing')
+     message = ".*'fun\\.aggregate' is NULL.*defaulting to length\\(\\).*\\[a, c\\].*")
 
 ## IDateTime.R
 x = as.IDate('2018-08-01')
@@ -15657,8 +15657,9 @@ test(2071.08, any_na(data.table(c(1+1i, NA))))
 test(2071.09, any_na(data.table(expression(1))), error="Unsupported column type 'expression'")
 test(2071.10, dcast(data.table(a=1, b=1, l=list(list(1))), a ~ b, value.var='l'),
               data.table(a=1, `1`=list(list(1)), key='a'))
-test(2071.11, dcast(data.table(a = 1, b = 2, c = 3), a ~ b, value.var = 'c', fill = '2'),
-              data.table(a=1, `2`=3, key='a'))
+test(2071.11, dcast(data.table(a = c(1, 1, 2), b = c(1, 2, 1), c = 3), a ~ b, value.var='c', fill='4'),
+              data.table(a=c(1, 2), `1`=c(3, 3), `2`=c(3, 4), key='a'),
+              warning="Coercing 'character' RHS to 'double'")
 
 # fifelse, #3657
 test_vec = -5L:5L < 0L
@@ -18195,7 +18196,7 @@ test(2241.04, set(DT, j="D", value=2), data.table(A=1:3, b=4:6, C=1, D=2, key="A
 test(2241.05, colnames(DT)[2]<-"B", "B")
 test(2241.06, DT, data.table(A=1:3, B=4:6, C=1, D=2, key="A"))
 test(2241.07, set(DT, j="E", value=3), data.table(A=1:3, B=4:6, C=1, D=2, E=3, key="A"))
-test(2241.08, names(DT)<-letters[1:5], letters[1:5])  # R doesn't copy *tmp* when assigning to all names 
+test(2241.08, names(DT)<-letters[1:5], letters[1:5])  # R doesn't copy *tmp* when assigning to all names
 test(2241.09, DT, data.table(a=1:3, b=4:6, c=1, d=2, e=3, key="a"))
 test(2241.10, set(DT, j="f", value=4), data.table(a=1:3, b=4:6, c=1, d=2, e=3, f=4, key="a"))
 
@@ -18297,3 +18298,20 @@ test(2246.1, DT[, data.table::shift(b), by=a], DT[, shift(b), by=a], output="GFo
 test(2246.2, DT[, data.table::first(b), by=a], DT[, first(b), by=a], output="GForce TRUE")
 test(2246.3, DT[, data.table::last(b), by=a], DT[, last(b), by=a], output="GForce TRUE")
 options(old)
+
+# 5392 split(x,f) works with formula f
+dt = data.table(x=1:4, y=factor(letters[1:2]))
+test(2247.1, split(dt, ~y), split(dt, dt$y))
+dt = data.table(x=1:4, y=1:2)
+test(2247.2, split(dt, ~y), list(`1`=data.table(x=c(1L,3L), y=1L), `2`=data.table(x=c(2L, 4L), y=2L)))
+# Closely match the original MRE from the issue
+test(2247.3, do.call(rbind, split(dt, ~y)), setDT(do.call(rbind, split(as.data.frame(dt), ~y))))
+dt = data.table(x=1:4, y=factor(letters[1:2]), z=factor(c(1,1,2,2), labels=c("c", "d")))
+test(2247.4, split(dt, ~y+z), list("a.c"=dt[1], "b.c"=dt[2], "a.d"=dt[3], "b.d"=dt[4]))
+
+# fill converts to int64 in dcast, #4561
+if (test_bit64) {
+  i64v = as.integer64(c(12345678901234, 70, 20, NA))
+  apple = data.table(id = c("a", "b", "b"), time = c(1L, 1L, 2L), y = i64v[1:3])
+  test(2248, dcast(apple, id ~ time, value.var = "y"), data.table(id = c('a', 'b'), `1` = i64v[1:2], `2` = i64v[4:3], key='id'))
+}
