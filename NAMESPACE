@@ -130,11 +130,11 @@ S3method(melt, default)
 # and many packges on CRAN call dcast.data.table() and/or melt.data.table() directly. See #3082.
 export(melt.data.table, dcast.data.table)
 
-importFrom(utils, tail, head, packageVersion, capture.output, contrib.url, download.file, flush.console, getS3method, untar, unzip)
+importFrom(utils, capture.output, contrib.url, download.file, flush.console, getS3method, head, packageVersion, tail, untar, unzip)
 export(update_dev_pkg)
 S3method(tail, data.table)
 S3method(head, data.table)
-importFrom(stats, na.omit, as.formula, setNames, terms, time)
+importFrom(stats, as.formula, na.omit, setNames, terms, time)
 S3method(na.omit, data.table)
 
 S3method(as.data.table, xts)
