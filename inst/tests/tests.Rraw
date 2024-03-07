@@ -1764,7 +1764,7 @@ test(578, X[Y,verbose=TRUE], data.table(a=c("D","B"), v=c(4L,2L)),  # no key bec
 
 # Test that logical i in set() returns helpful error
 DT = data.table(a=1:3,b=4:6)
-test(580, set(DT,a<3,"b",0L), error="simply wrap with which(), and take the which() outside the loop if possible for efficiency")
+test(580, set(DT,DT$a<3,"b",0L), error="simply wrap with which(), and take the which() outside the loop if possible for efficiency")
 
 # Test by on empty tables (and when i returns no rows), #1945
 DT = data.table(a=1:3,v=1:6)
