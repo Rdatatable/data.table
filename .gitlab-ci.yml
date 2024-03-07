@@ -211,8 +211,10 @@ test-lin-310-cran:
   tags:
     - shared-windows
   before_script:
-    - curl.exe -s -o ../R-win.exe $R_BIN; Start-Process -FilePath ..\R-win.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
-    - curl.exe -s -o ../rtools.exe $RTOOLS_BIN; Start-Process -FilePath ..\rtools.exe -ArgumentList "/VERYSILENT /DIR=C:\rtools" -NoNewWindow -Wait
+    - curl.exe -s -o ../R-win.exe $R_BIN --fail; if (!(Test-Path -Path ..\R-win.exe)) {Write-Error "R-win.exe not found, download failed?"}
+    - Start-Process -FilePath ..\R-win.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
+    - curl.exe -s -o ../rtools.exe $RTOOLS_BIN --fail; if (!(Test-Path -Path ..\rtools.exe)) {Write-Error "rtools.exe not found, download failed?"}
+    - Start-Process -FilePath ..\rtools.exe -ArgumentList "/VERYSILENT /DIR=C:\rtools" -NoNewWindow -Wait
     - $env:PATH = "C:\R\bin;C:\rtools\usr\bin;$env:PATH"
     - Rscript.exe -e "source('.ci/ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='all'), repos=file.path('file://',getwd(),'bus/mirror-packages/cran'), quiet=TRUE)"
     - cp.exe $(ls.exe -1t bus/build/data.table_*.tar.gz | head.exe -n 1) .
