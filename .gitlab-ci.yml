@@ -14,11 +14,11 @@ variables:
              ## a non-UTC timezone, although, that's what we do routinely in dev.
   R_REL_VERSION:  "4.3"
   R_REL_WIN_BIN:  "https://cloud.r-project.org/bin/windows/base/old/4.3.2/R-4.3.2-win.exe"
-  RTOOLS_REL_BIN: "https://cloud.r-project.org/bin/windows/Rtools/rtools43/files/rtools43-5863-5818.exe"
+  RTOOLS_REL_BIN: "https://cloud.r-project.org/bin/windows/Rtools/rtools43/files/rtools43-5958-5975.exe"
   RTOOLS43_HOME:  "/c/rtools"
   R_DEV_VERSION:  "4.4"
   R_DEV_WIN_BIN:  "https://cloud.r-project.org/bin/windows/base/R-devel-win.exe"
-  RTOOLS_DEV_BIN: "https://cloud.r-project.org/bin/windows/Rtools/rtools43/files/rtools43-5863-5818.exe"
+  RTOOLS_DEV_BIN: "https://cloud.r-project.org/bin/windows/Rtools/rtools43/files/rtools43-5958-5975.exe"
   RTOOLS44_HOME:  "" ## in case R-devel will use new Rtools toolchain, now it uses 4.3 env var
   R_OLD_VERSION:  "4.2"
   R_OLD_WIN_BIN:  "https://cloud.r-project.org/bin/windows/base/old/4.2.3/R-4.2.3-win.exe"
@@ -211,8 +211,10 @@ test-lin-310-cran:
   tags:
     - shared-windows
   before_script:
-    - curl.exe -s -o ../R-win.exe $R_BIN; Start-Process -FilePath ..\R-win.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
-    - curl.exe -s -o ../rtools.exe $RTOOLS_BIN; Start-Process -FilePath ..\rtools.exe -ArgumentList "/VERYSILENT /DIR=C:\rtools" -NoNewWindow -Wait
+    - curl.exe -s -o ../R-win.exe $R_BIN --fail; if (!(Test-Path -Path ..\R-win.exe)) {Write-Error "R-win.exe not found, download failed?"}
+    - Start-Process -FilePath ..\R-win.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
+    - curl.exe -s -o ../rtools.exe $RTOOLS_BIN --fail; if (!(Test-Path -Path ..\rtools.exe)) {Write-Error "rtools.exe not found, download failed?"}
+    - Start-Process -FilePath ..\rtools.exe -ArgumentList "/VERYSILENT /DIR=C:\rtools" -NoNewWindow -Wait
     - $env:PATH = "C:\R\bin;C:\rtools\usr\bin;$env:PATH"
     - Rscript.exe -e "source('.ci/ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='all'), repos=file.path('file://',getwd(),'bus/mirror-packages/cran'), quiet=TRUE)"
     - cp.exe $(ls.exe -1t bus/build/data.table_*.tar.gz | head.exe -n 1) .

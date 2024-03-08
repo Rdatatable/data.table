@@ -26,6 +26,8 @@
 
 2. `dcast` handles coercion of `fill` to `integer64` correctly, [#4561](https://github.com/Rdatatable/data.table/issues/4561). Thanks to @emallickhossain for the bug report and @MichaelChirico for the fix.
 
+3. Optimized `shift` per group produced wrong results when simultaneously subsetting, for example, `DT[i==1L, shift(x), by=group]`, [#5962](https://github.com/Rdatatable/data.table/issues/5962). Thanks to @renkun-ken for the report and Benjamin Schwendinger for the fix.
+
 ## NOTES
 
 1. `transform` method for data.table sped up substantially when creating new columns on large tables. Thanks to @OfekShilon for the report and PR. The implemented solution was proposed by @ColeMiller1.
@@ -36,7 +38,11 @@
 
 4. Erroneous assignment calls in `[` with a trailing comma (e.g. ``DT[, `:=`(a = 1, b = 2,)]``) get a friendlier error since this situation is common during refactoring and easy to miss visually. Thanks @MichaelChirico for the fix.
 
-5. Updated a test relying on `>` working for comparing language objects to a string, which will be deprecated by R, [#5977](https://github.com/Rdatatable/data.table/issues/5977); no user-facing effect. Thanks to R-core for continuously improving the language.
+5. Input files are now kept open during `mmap()` when running under Emscripten, [emscripten-core/emscripten#20459](https://github.com/emscripten-core/emscripten/issues/20459). This avoids an error in `fread()` when running in WebAssembly, [#5969](https://github.com/Rdatatable/data.table/issues/5969). Thanks to @maek-ies for the report and @georgestagg for the PR.
+
+6. `dcast()` message about `fun.aggregate` defaulting to `length()` when aggregation is necessary, which could be confusing if duplicates were unexpected, does better explaining the behavior and suggesting alternatives, [#5217](https://github.com/Rdatatable/data.table/issues/5217). Thanks @MichaelChirico for the suggestion and @Nj221102 for the fix.
+
+7. Updated a test relying on `>` working for comparing language objects to a string, which will be deprecated by R, [#5977](https://github.com/Rdatatable/data.table/issues/5977); no user-facing effect. Thanks to R-core for continuously improving the language.
 
 # data.table [v1.15.0](https://github.com/Rdatatable/data.table/milestone/29)  (30 Jan 2024)
 
