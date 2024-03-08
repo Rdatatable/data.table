@@ -24,18 +24,18 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
   // get val cols
   bool some_fill = any_NA_int(nrows*ncols, idx);
   for (int i=0; i<nval; ++i) {
-    SEXP thiscol = VECTOR_ELT(val, i);
+    const SEXP thiscol = VECTOR_ELT(val, i);
     SEXP thisfill = fill;
-    SEXPTYPE thistype = TYPEOF(thiscol);
+    const SEXPTYPE thistype = TYPEOF(thiscol);
     int nprotect = 0;
-    if (some_fill) {
+    if(some_fill){
       if (isNull(fill)) {
 	if (LOGICAL(is_agg)[0]) {
 	  thisfill = PROTECT(allocNAVector(thistype, 1)); nprotect++;
 	} else thisfill = VECTOR_ELT(fill_d, i);
       }
-      if (TYPEOF(thisfill) != thistype) {
-	thisfill = PROTECT(coerceVector(thisfill, thistype)); nprotect++;
+      if (isVectorAtomic(thiscol)) { // defer error handling to below, but also skip on list
+	thisfill = PROTECT(coerceAs(thisfill, thiscol, /*copyArg=*/ScalarLogical(false))); nprotect++;
       }
     }
     switch (thistype) {
@@ -102,7 +102,7 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
         }
       }
       break;
-    default: error(_("Unsupported column type in fcast val: '%s'"), type2char(TYPEOF(thiscol))); // #nocov
+    default: error(_("Unsupported column type in fcast val: '%s'"), type2char(thistype)); // #nocov
     }
     UNPROTECT(nprotect);
   }

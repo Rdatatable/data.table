@@ -1203,7 +1203,7 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
   bool lag;
   const bool cycle = stype == CYCLIC;
 
-  R_xlen_t nx = xlength(x), nk = length(nArg);
+  R_xlen_t nk = length(nArg);
   if (!isInteger(nArg)) error(_("Internal error: n must be integer")); // # nocov
   const int *kd = INTEGER(nArg);
   for (int i=0; i<nk; i++) if (kd[i]==NA_INTEGER) error(_("Item %d of n is NA"), i+1);
@@ -1220,7 +1220,7 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
     }
     R_xlen_t ansi = 0;
     SEXP tmp;
-    SET_VECTOR_ELT(ans, g, tmp=allocVector(TYPEOF(x), nx));
+    SET_VECTOR_ELT(ans, g, tmp=allocVector(TYPEOF(x), n));
     #define SHIFT(CTYPE, RTYPE, ASSIGN) {                                                                         \
       const CTYPE *xd = (const CTYPE *)RTYPE(x);                                                                  \
       const CTYPE fill = RTYPE(thisfill)[0];                                                                      \
