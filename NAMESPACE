@@ -134,7 +134,7 @@ importFrom(utils, capture.output, contrib.url, download.file, flush.console, get
 export(update_dev_pkg)
 S3method(tail, data.table)
 S3method(head, data.table)
-importFrom(stats, as.formula, na.omit, setNames, terms, time)
+importFrom(stats, as.formula, na.omit, setNames, terms)
 S3method(na.omit, data.table)
 
 S3method(as.data.table, xts)
