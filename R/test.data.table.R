@@ -191,7 +191,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   }
 
   # There aren't any errors, so we can use up 11 lines for the timings table
-  nTest = RSS = NULL  # to avoid 'no visible binding' note
+  time = nTest = RSS = NULL  # to avoid 'no visible binding' note
   timings = env$timings[nTest>0]
   if (!memtest) {
     ans = head(timings[if (dev) -1L else TRUE][order(-time)], 10L)[,RSS:=NULL]   # exclude id 1 in dev as that includes JIT
