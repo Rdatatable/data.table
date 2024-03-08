@@ -14,6 +14,8 @@
 
 2. `shift()` of a vector in grouped queries (under GForce) returns a vector, consistent with `shift()` in other contexts, [#5939](https://github.com/Rdatatable/data.table/issues/5939). Thanks @shrektan for the report and @MichaelChirico for the fix.
 
+# data.table [v1.15.0](https://github.com/Rdatatable/data.table/milestone/29)  (14 Jan 2024)
+
 ## BREAKING CHANGE
 
 1. `shift` and `nafill` will now raise error `input must not be matrix or array` when `matrix` or `array` is provided on input, rather than giving useless result, [#5287](https://github.com/Rdatatable/data.table/issues/5287). Thanks to @ethanbsmith for reporting.
