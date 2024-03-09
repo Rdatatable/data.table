@@ -58,7 +58,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
     length(nThread)==1L && !is.na(nThread) && nThread>=1L
     )
 
-  is_gzip = compress == "gzip" || (compress == "auto" && grepl("\\.gz$", file))
+  is_gzip = compress == "gzip" || (compress == "auto" && endsWith(file, ".gz"))
 
   file = path.expand(file)  # "~/foo/bar"
   if (append && (file=="" || file.exists(file))) {
@@ -116,4 +116,3 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
 }
 
 haszlib = function() .Call(Cdt_has_zlib)
-

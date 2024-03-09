@@ -21,7 +21,7 @@
     nth = getDTthreads(verbose=FALSE)
     if (dev)
       packageStartupMessagef("data.table %s IN DEVELOPMENT built %s%s using %d threads (see ?getDTthreads).  ", v, d, g, nth, appendLF=FALSE)
-    else 
+    else
       packageStartupMessagef("data.table %s using %d threads (see ?getDTthreads).  ", v, nth, appendLF=FALSE)
     packageStartupMessagef("Latest news: r-datatable.com")
     if (gettext("TRANSLATION CHECK") != "TRANSLATION CHECK")

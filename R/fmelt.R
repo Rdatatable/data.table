@@ -28,7 +28,7 @@ patterns = function(..., cols=character(0L)) {
     stopf("Input patterns must be of type character.")
   matched = lapply(p, grep, cols)
   # replace with lengths when R 3.2.0 dependency arrives
-  if (length(idx <- which(sapply(matched, length) == 0L)))
+  if (length(idx <- which(vapply_1i(matched, length) == 0L)))
     stopf('Pattern(s) not found: [%s]', brackify(p[idx]))
   matched
 }
@@ -123,7 +123,7 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
       stopf("sep must be character string")
     }
     list.of.vectors = strsplit(cols, sep, fixed=TRUE)
-    vector.lengths = sapply(list.of.vectors, length)
+    vector.lengths = vapply_1i(list.of.vectors, length)
     n.groups = max(vector.lengths)
     if (n.groups == 1) {
       stopf("each column name results in only one item after splitting using sep, which means that all columns would be melted; to fix please either specify melt on all columns directly without using measure, or use a different sep/pattern specification")

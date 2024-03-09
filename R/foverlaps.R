@@ -247,4 +247,3 @@ foverlaps = function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=k
 # Tests are added to ensure we cover these aspects (to my knowledge) to ensure that any undesirable changes in the future breaks those tests.
 
 # Conclusion: floating point manipulations are hell!
-
