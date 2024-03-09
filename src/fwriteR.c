@@ -19,7 +19,7 @@ static const char *sep2start, *sep2end;
 // if there are no list columns, set sep2=='\0'
 // Non-agnostic helpers ...
 
-const char *getString(SEXP *col, int64_t row) {   // TODO: inline for use in fwrite.c
+const char *getString(const SEXP *col, int64_t row) {   // TODO: inline for use in fwrite.c
   SEXP x = col[row];
   return x==NA_STRING ? NULL : ENCODED_CHAR(x);
 }
@@ -53,7 +53,7 @@ const char *getCategString(SEXP col, int64_t row) {
   return x==NA_INTEGER ? NULL : ENCODED_CHAR(STRING_ELT(getAttrib(col, R_LevelsSymbol), x-1));
 }
 
-writer_fun_t funs[] = {
+writer_fun_t *funs[] = {
   &writeBool8,
   &writeBool32,
   &writeBool32AsString,
@@ -73,8 +73,8 @@ writer_fun_t funs[] = {
 
 static int32_t whichWriter(SEXP);
 
-void writeList(SEXP *col, int64_t row, char **pch) {
-  SEXP v = col[row];
+void writeList(const void *col, int64_t row, char **pch) {
+  SEXP v = ((const SEXP *)col)[row];
   int32_t wf = whichWriter(v);
   if (TYPEOF(v)==VECSXP || wf==INT32_MIN || isFactor(v)) {
     error(_("Internal error: getMaxListItemLen should have caught this up front."));  // # nocov
@@ -82,7 +82,7 @@ void writeList(SEXP *col, int64_t row, char **pch) {
   char *ch = *pch;
   write_chars(sep2start, &ch);
   const void *data = DATAPTR_RO(v);
-  writer_fun_t fun = funs[wf];
+  writer_fun_t *fun = funs[wf];
   for (int j=0; j<LENGTH(v); j++) {
     (*fun)(data, j, &ch);
     *ch++ = sep2;
@@ -264,7 +264,8 @@ SEXP fwriteR(
       if (xlength(rn)!=2 || INTEGER(rn)[0]==NA_INTEGER) {
         // not R's default rownames c(NA,-nrow)
         if (xlength(rn) != args.nrow)
-          error(_("input has specific integer rownames but their length (%"PRId64") != nrow (%"PRId64")"), xlength(rn), args.nrow);  // # nocov
+           // Use (long long) to cast R_xlen_t to a fixed type to robustly avoid -Wformat compiler warnings, see #5768, PRId64 didnt work on M1
+          error(_("input has specific integer rownames but their length (%lld) != nrow (%"PRId64")"), (long long)xlength(rn), args.nrow);  // # nocov
         args.rowNames = INTEGER(rn);
         args.rowNameFun = WF_Int32;
       }

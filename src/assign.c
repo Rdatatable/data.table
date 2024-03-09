@@ -275,7 +275,7 @@ int checkOverAlloc(SEXP x)
     error(_("getOption('datatable.alloccol') should be a number, by default 1024. But its type is '%s'."), type2char(TYPEOF(x)));
   if (LENGTH(x) != 1)
     error(_("getOption('datatable.alloc') is a numeric vector ok but its length is %d. Its length should be 1."), LENGTH(x));
-  int ans = isInteger(x) ? INTEGER(x)[0] : (int)REAL(x)[0];
+  int ans = asInteger(x);
   if (ans<0)
     error(_("getOption('datatable.alloc')==%d.  It must be >=0 and not NA."), ans);
   return ans;
@@ -506,7 +506,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       // Can growVector at this point easily enough, but it shouldn't happen in first place so leave it as
       // strong error message for now.
     else if (TRUELENGTH(names) != oldtncol)
-      error(_("Internal error: selfrefnames is ok but tl names [%d] != tl [%d]"), TRUELENGTH(names), oldtncol);  // # nocov
+      // Use (long long) to cast R_xlen_t to a fixed type to robustly avoid -Wformat compiler warnings, see #5768, PRId64 didnt work
+      error(_("Internal error: selfrefnames is ok but tl names [%lld] != tl [%d]"), (long long)TRUELENGTH(names), oldtncol);  // # nocov
     SETLENGTH(dt, oldncol+LENGTH(newcolnames));
     SETLENGTH(names, oldncol+LENGTH(newcolnames));
     for (int i=0; i<LENGTH(newcolnames); ++i)
@@ -562,7 +563,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       targetcol = VECTOR_ELT(dt,coln);
     }
     const char *ret = memrecycle(targetcol, rows, 0, targetlen, thisvalue, 0, -1, coln+1, CHAR(STRING_ELT(names, coln)));
-    if (ret) warning(ret);
+    if (ret) warning("%s", ret);
   }
 
   *_Last_updated = numToDo;  // the updates have taken place with no error, so update .Last.updated now
@@ -694,7 +695,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     R_isort(tt, ndelete);  // sort the column-numbers-to-delete into ascending order
     for (int i=0; i<ndelete-1; ++i) {
       if (tt[i]>=tt[i+1])
-        error(_("Internal error: %d column numbers to delete not now in strictly increasing order. No-dups were checked earlier.")); // # nocov
+        error(_("Internal error: %d column numbers to delete not now in strictly increasing order. No-dups were checked earlier."), i); // # nocov
     }
     for (int i=tt[0], j=1, k=tt[0]+1;  i<ndt-ndelete;  ++i, ++k) {  // i moves up from the first non-deleted column and is the target of write
       while (j<ndelete && k==tt[j]) { j++; k++; }                   // move k up to the next non-deleted column; j is the next position in tt
@@ -720,6 +721,12 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
 #define MSGSIZE 1000
 static char memrecycle_message[MSGSIZE+1]; // returned to rbindlist so it can prefix with which one of the list of data.table-like objects
 
+const char *targetDesc(const int colnum, const char *colname) {
+  static char str[501]; // #5463
+  snprintf(str, 500, colnum==0 ? _("target vector") : _("column %d named '%s'"), colnum, colname);
+  return str;
+}
+
 const char *memrecycle(const SEXP target, const SEXP where, const int start, const int len, SEXP source, const int sourceStart, const int sourceLen, const int colnum, const char *colname)
 // like memcpy but recycles single-item source
 // 'where' a 1-based INTEGER vector subset of target to assign to, or NULL or integer()
@@ -743,8 +750,6 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
   if (colname==NULL)
     error(_("Internal error: memrecycle has received NULL colname")); // # nocov
   *memrecycle_message = '\0';
-  static char targetDesc[501];  // from 1.14.1 coerceAs reuses memrecycle for a target vector, PR#4491
-  snprintf(targetDesc, 500, colnum==0 ? _("target vector") : _("column %d named '%s'"), colnum, colname);
   int protecti=0;
   const bool sourceIsFactor=isFactor(source), targetIsFactor=isFactor(target);
   const bool sourceIsI64=isReal(source) && INHERITS(source, char_integer64);
@@ -766,15 +771,16 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
           for (int i=0; i<slen; ++i) {
             const int val = sd[i+soff];
             if ((val<1 && val!=NA_INTEGER) || val>nlevel) {
-              error(_("Assigning factor numbers to %s. But %d is outside the level range [1,%d]"), targetDesc, val, nlevel);
+              error(_("Assigning factor numbers to %s. But %d is outside the level range [1,%d]"), targetDesc(colnum, colname), val, nlevel);
             }
           }
         } else {
           const double *sd = REAL(source);
           for (int i=0; i<slen; ++i) {
             const double val = sd[i+soff];
-            if (!ISNAN(val) && (!R_FINITE(val) || val!=(int)val || (int)val<1 || (int)val>nlevel)) {
-              error(_("Assigning factor numbers to %s. But %f is outside the level range [1,%d], or is not a whole number."), targetDesc, val, nlevel);
+            // Since nlevel is an int, val < 1 || val > nlevel will deflect UB guarded against in PR #5832
+            if (!ISNAN(val) && (val < 1 || val > nlevel || val != (int)val)) {
+              error(_("Assigning factor numbers to %s. But %f is outside the level range [1,%d], or is not a whole number."), targetDesc(colnum, colname), val, nlevel);
             }
           }
         }
@@ -840,7 +846,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
             // # nocov start
             for (int k=0; k<nSourceLevels; ++k) SET_TRUELENGTH(sourceLevelsD[k], 0);
             savetl_end();
-            error(_("Unable to allocate working memory of %d bytes to combine factor levels"), nAdd*sizeof(SEXP *));
+            error(_("Unable to allocate working memory of %zu bytes to combine factor levels"), nAdd*sizeof(SEXP *));
             // # nocov end
           }
           for (int k=0, thisAdd=0; thisAdd<nAdd; ++k) {   // thisAdd<nAdd to stop early when the added ones are all reached
@@ -866,19 +872,19 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
       }
     }
   } else if (isString(source) && !isString(target) && !isNewList(target)) {
-    warning(_("Coercing 'character' RHS to '%s' to match the type of %s."), targetIsI64?"integer64":type2char(TYPEOF(target)), targetDesc);
+    warning(_("Coercing 'character' RHS to '%s' to match the type of %s."), targetIsI64?"integer64":type2char(TYPEOF(target)), targetDesc(colnum, colname));
     // this "Coercing ..." warning first to give context in case coerceVector warns 'NAs introduced by coercion'
     // and also because 'character' to integer/double coercion is often a user mistake (e.g. wrong target column, or wrong
     // variable on RHS) which they are more likely to appreciate than find inconvenient
     source = PROTECT(coerceVector(source, TYPEOF(target))); protecti++;
   } else if (isNewList(source) && !isNewList(target)) {
     if (targetIsI64) {
-      error(_("Cannot coerce 'list' RHS to 'integer64' to match the type of %s."), targetDesc);
+      error(_("Cannot coerce 'list' RHS to 'integer64' to match the type of %s."), targetDesc(colnum, colname));
       // because R's coerceVector doesn't know about integer64
     }
     // as in base R; e.g. let as.double(list(1,2,3)) work but not as.double(list(1,c(2,4),3))
     // relied on by NNS, simstudy and table.express; tests 1294.*
-    warning(_("Coercing 'list' RHS to '%s' to match the type of %s."), type2char(TYPEOF(target)), targetDesc);
+    warning(_("Coercing 'list' RHS to '%s' to match the type of %s."), type2char(TYPEOF(target)), targetDesc(colnum, colname));
     source = PROTECT(coerceVector(source, TYPEOF(target))); protecti++;
   } else if ((TYPEOF(target)!=TYPEOF(source) || targetIsI64!=sourceIsI64) && !isNewList(target)) {
     if (GetVerbose()>=3) {
@@ -886,27 +892,27 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
       Rprintf(_("Zero-copy coerce when assigning '%s' to '%s' %s.\n"),
               sourceIsI64 ? "integer64" : type2char(TYPEOF(source)),
               targetIsI64 ? "integer64" : type2char(TYPEOF(target)),
-              targetDesc);
+              targetDesc(colnum, colname));
     }
     // The following checks are up front here, otherwise we'd need them twice in the two branches
     //   inside BODY that cater for 'where' or not. Maybe there's a way to merge the two macros in future.
     // The idea is to do these range checks without calling coerceVector() (which allocates)
 
-#define CHECK_RANGE(STYPE, RFUN, COND, FMT, TO, FMTVAL) {{                                                              \
-  const STYPE *sd = (const STYPE *)RFUN(source);                                                                        \
-  for (int i=0; i<slen; ++i) {                                                                                          \
-    const STYPE val = sd[i+soff];                                                                                       \
-    if (COND) {                                                                                                         \
-      const char *sType = sourceIsI64 ? "integer64" : type2char(TYPEOF(source));                                        \
-      const char *tType = targetIsI64 ? "integer64" : type2char(TYPEOF(target));                                        \
-      snprintf(memrecycle_message, MSGSIZE,                                                                             \
-        "%"FMT" (type '%s') at RHS position %d "TO" when assigning to type '%s' (%s)",                                  \
-        FMTVAL, sType, i+1, tType, targetDesc);                                                                         \
-      /* string returned so that rbindlist/dogroups can prefix it with which item of its list this refers to  */        \
-      break;                                                                                                            \
-    }                                                                                                                   \
-  }                                                                                                                     \
-} break; }
+    #define CHECK_RANGE(STYPE, RFUN, COND, FMT, TO, FMTVAL) {{                                                              \
+      const STYPE *sd = (const STYPE *)RFUN(source);                                                                        \
+      for (int i=0; i<slen; ++i) {                                                                                          \
+        const STYPE val = sd[i+soff];                                                                                       \
+        if (COND) {                                                                                                         \
+          const char *sType = sourceIsI64 ? "integer64" : type2char(TYPEOF(source));                                        \
+          const char *tType = targetIsI64 ? "integer64" : type2char(TYPEOF(target));                                        \
+          snprintf(memrecycle_message, MSGSIZE,                                                                             \
+            "%"FMT" (type '%s') at RHS position %d "TO" when assigning to type '%s' (%s)",                                  \
+            FMTVAL, sType, i+1, tType, targetDesc(colnum, colname));                                                        \
+          /* string returned so that rbindlist/dogroups can prefix it with which item of its list this refers to  */        \
+          break;                                                                                                            \
+        }                                                                                                                   \
+      }                                                                                                                     \
+    } break; }
 
     switch(TYPEOF(target)) {
     case LGLSXP:
@@ -928,14 +934,14 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
       switch (TYPEOF(source)) {
       case REALSXP: if (sourceIsI64)
                     CHECK_RANGE(int64_t, REAL, val!=NA_INTEGER64 && (val<=NA_INTEGER || val>INT_MAX),   PRId64,  "out-of-range (NA)", val)
-              else  CHECK_RANGE(double, REAL,  !ISNAN(val) && (!R_FINITE(val) || (int)val!=val),        "f",     "truncated (precision lost)", val)
+              else  CHECK_RANGE(double, REAL,  !ISNAN(val) && (!within_int32_repres(val) || (int)val!=val),        "f",     "out-of-range(NA) or truncated (precision lost)", val)
       case CPLXSXP: CHECK_RANGE(Rcomplex, COMPLEX, !((ISNAN(val.i) || (R_FINITE(val.i) && val.i==0.0)) &&
-                                                     (ISNAN(val.r) || (R_FINITE(val.r) && (int)val.r==val.r))), "f", "either imaginary part discarded or real part truncated (precision lost)", val.r)
+                                                     (ISNAN(val.r) || (within_int32_repres(val.r) && (int)val.r==val.r))), "f", "either imaginary part discarded or real part truncated (precision lost)", val.r)
       } break;
     case REALSXP:
       switch (TYPEOF(source)) {
       case REALSXP: if (targetIsI64 && !sourceIsI64)
-                    CHECK_RANGE(double, REAL,  !ISNAN(val) && (!R_FINITE(val) || (int)val!=val),        "f",     "truncated (precision lost)", val)
+                    CHECK_RANGE(double, REAL,  !ISNAN(val) && (!within_int64_repres(val) || (int64_t)val!=val),    "f",     "out-of-range(NA) or truncated (precision lost)", val)
                     break;
       case CPLXSXP: if (targetIsI64)
                     CHECK_RANGE(Rcomplex, COMPLEX, !((ISNAN(val.i) || (R_FINITE(val.i) && val.i==0.0)) &&
@@ -945,47 +951,47 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
     }
   }
 
-#undef BODY
-#define BODY(STYPE, RFUN, CTYPE, CAST, ASSIGN) {{    \
-  const STYPE *sd = (const STYPE *)RFUN(source);     \
-  if (length(where)) {                               \
-    if (slen==1) {                                   \
-      const STYPE val = sd[soff];                    \
-      const CTYPE cval = CAST;                       \
-      for (int wi=0; wi<len; ++wi) {                 \
-        const int w = wd[wi];                        \
-        if (w<1) continue; /*0 or NA*/               \
-        const int i = w-1;                           \
-        ASSIGN;                                      \
-      }                                              \
-    } else {                                         \
-      for (int wi=0; wi<len; ++wi) {                 \
-        const int w = wd[wi];                        \
-        if (w<1) continue;                           \
-        const STYPE val = sd[wi+soff];               \
-        const CTYPE cval = CAST;                     \
-        const int i = w-1;                           \
-        ASSIGN;                                      \
-      }                                              \
-    }                                                \
-  } else {                                           \
-    if (slen==1) {                                   \
-      const STYPE val = sd[soff];                    \
-      const CTYPE cval = CAST;                       \
-      for (int i=0; i<len; ++i) {                    \
-        ASSIGN;                                      \
-      }                                              \
-    } else {                                         \
-      for (int i=0; i<len; i++) {                    \
-        const STYPE val = sd[i+soff];                \
-        const CTYPE cval = CAST;                     \
-        ASSIGN;                                      \
-      }                                              \
-    }                                                \
-  }                                                  \
-} break; }
+  #undef BODY
+  #define BODY(STYPE, RFUN, CTYPE, CAST, ASSIGN) {{    \
+    const STYPE *sd = (const STYPE *)RFUN(source);     \
+    if (length(where)) {                               \
+      if (slen==1) {                                   \
+        const STYPE val = sd[soff];                    \
+        const CTYPE cval = CAST;                       \
+        for (int wi=0; wi<len; ++wi) {                 \
+          const int w = wd[wi];                        \
+          if (w<1) continue; /*0 or NA*/               \
+          const int i = w-1;                           \
+          ASSIGN;                                      \
+        }                                              \
+      } else {                                         \
+        for (int wi=0; wi<len; ++wi) {                 \
+          const int w = wd[wi];                        \
+          if (w<1) continue;                           \
+          const STYPE val = sd[wi+soff];               \
+          const CTYPE cval = CAST;                     \
+          const int i = w-1;                           \
+          ASSIGN;                                      \
+        }                                              \
+      }                                                \
+    } else {                                           \
+      if (slen==1) {                                   \
+        const STYPE val = sd[soff];                    \
+        const CTYPE cval = CAST;                       \
+        for (int i=0; i<len; ++i) {                    \
+          ASSIGN;                                      \
+        }                                              \
+      } else {                                         \
+        for (int i=0; i<len; i++) {                    \
+          const STYPE val = sd[i+soff];                \
+          const CTYPE cval = CAST;                     \
+          ASSIGN;                                      \
+        }                                              \
+      }                                                \
+    }                                                  \
+  } break; }
 
-#define COERCE_ERROR(targetType) error(_("type '%s' cannot be coerced to '%s'"), type2char(TYPEOF(source)), targetType); // 'targetType' for integer64 vs double
+  #define COERCE_ERROR(targetType) error(_("type '%s' cannot be coerced to '%s'"), type2char(TYPEOF(source)), targetType); // 'targetType' for integer64 vs double
 
   const int off = length(where) ? 0 : start;  // off = target offset; e.g. called from rbindlist with where=R_NilValue and start!=0
   const bool mc = length(where)==0 && slen>0 && slen==len && soff==0;  // mc=memcpy; only if types match and not for single items (a single assign faster than these non-const memcpy calls)
@@ -1035,8 +1041,8 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
     case REALSXP:
       if (sourceIsI64)
                     BODY(int64_t, REAL, int, (val==NA_INTEGER64||val>INT_MAX||val<=NA_INTEGER) ? NA_INTEGER : (int)val,  td[i]=cval)
-      else          BODY(double, REAL,  int, ISNAN(val) ? NA_INTEGER : (int)val,        td[i]=cval)
-    case CPLXSXP:   BODY(Rcomplex, COMPLEX, int, ISNAN(val.r) ? NA_INTEGER : (int)val.r, td[i]=cval)
+      else          BODY(double, REAL,  int, (ISNAN(val) || !within_int32_repres(val)) ? NA_INTEGER : (int)val,        td[i]=cval)
+    case CPLXSXP:   BODY(Rcomplex, COMPLEX, int, (ISNAN(val.r) || !within_int32_repres(val.r)) ? NA_INTEGER : (int)val.r, td[i]=cval)
     default:        COERCE_ERROR("integer"); // test 2005.4
     }
   } break;
@@ -1052,7 +1058,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
           if (mc) {
                     memcpy(td, (int64_t *)REAL(source), slen*sizeof(int64_t)); break;
           } else    BODY(int64_t, REAL, int64_t, val,                                   td[i]=cval)
-        } else      BODY(double, REAL,  int64_t, R_FINITE(val) ? val : NA_INTEGER64,    td[i]=cval)
+        } else      BODY(double, REAL,  int64_t, within_int64_repres(val) ? val : NA_INTEGER64,    td[i]=cval)
       case CPLXSXP: BODY(Rcomplex, COMPLEX, int64_t, ISNAN(val.r) ? NA_INTEGER64 : (int64_t)val.r, td[i]=cval)
       default:      COERCE_ERROR("integer64");
       }
@@ -1226,9 +1232,9 @@ SEXP allocNAVectorLike(SEXP x, R_len_t n) {
 static SEXP *saveds=NULL;
 static R_len_t *savedtl=NULL, nalloc=0, nsaved=0;
 
-void savetl_init() {
+void savetl_init(void) {
   if (nsaved || nalloc || saveds || savedtl) {
-    error(_("Internal error: savetl_init checks failed (%d %d %p %p). please report to data.table issue tracker."), nsaved, nalloc, saveds, savedtl); // # nocov
+    error(_("Internal error: savetl_init checks failed (%d %d %p %p). please report to data.table issue tracker."), nsaved, nalloc, (void *)saveds, (void *)savedtl); // # nocov
   }
   nsaved = 0;
   nalloc = 100;
@@ -1267,7 +1273,7 @@ void savetl(SEXP s)
   nsaved++;
 }
 
-void savetl_end() {
+void savetl_end(void) {
   // Can get called if nothing has been saved yet (nsaved==0), or even if _init() hasn't been called yet (pointers NULL). Such
   // as to clear up before error. Also, it might be that nothing needed to be saved anyway.
   for (int i=0; i<nsaved; i++) SET_TRUELENGTH(saveds[i],savedtl[i]);
