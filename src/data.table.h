@@ -275,7 +275,7 @@ SEXP notchin(SEXP x, SEXP table);
 SEXP setattrib(SEXP, SEXP, SEXP);
 SEXP assign(SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP copy(SEXP);
-SEXP check_setdt_list_input(SEXP);
+SEXP setdt_nrows(SEXP);
 SEXP alloccolwrapper(SEXP, SEXP, SEXP);
 SEXP selfrefokwrapper(SEXP, SEXP);
 SEXP truelength(SEXP);

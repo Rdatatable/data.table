@@ -2870,7 +2870,7 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     x = null.data.table()
   } else if (is.list(x)) {
     # copied from as.data.table.list - except removed the copy
-    nrow = .Call(Ccheck_setdt_list_input, x)
+    nrow = .Call(Csetdt_nrows, x)
 
     xn = names(x)
     if (is.null(xn)) {

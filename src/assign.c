@@ -201,7 +201,7 @@ static SEXP shallow(SEXP dt, SEXP cols, R_len_t n)
 }
 
 // input validation for setDT() list input; assume length(x)>0 already tested & is.list(x)
-SEXP check_setdt_list_input(SEXP x)
+SEXP setdt_nrows(SEXP x)
 {
   int base_length = 0;
   bool test_matrix_cols = true;

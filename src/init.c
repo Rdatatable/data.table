@@ -51,7 +51,7 @@ R_CallMethodDef callMethods[] = {
 {"Cdogroups", (DL_FUNC) &dogroups, -1},
 {"Ccopy", (DL_FUNC) &copy, -1},
 {"Cshallowwrapper", (DL_FUNC) &shallowwrapper, -1},
-{"Ccheck_setdt_list_input", (DL_FUNC) &check_setdt_list_input, -1},
+{"Csetdt_nrows", (DL_FUNC) &setdt_nrows, -1},
 {"Calloccolwrapper", (DL_FUNC) &alloccolwrapper, -1},
 {"Cselfrefokwrapper", (DL_FUNC) &selfrefokwrapper, -1},
 {"Ctruelength", (DL_FUNC) &truelength, -1},
