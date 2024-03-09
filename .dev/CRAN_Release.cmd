@@ -630,7 +630,7 @@ bunzip2 inst/tests/*.Rraw.bz2  # decompress *.Rraw again so as not to commit com
 # 6. Search and replace this .dev/CRAN_Release.cmd to update 1.15.99 to 1.16.99 inc below, 1.16.0 to 1.17.0 above, 1.15.0 to 1.16.0 below
 # 7. Another final gd to view all diffs using meld. (I have `alias gd='git difftool &> /dev/null'` and difftool meld: http://meldmerge.org/)
 # 8. Push to master with this consistent commit message: "1.16.0 on CRAN. Bump to 1.16.99"
-# 9. Take sha from step 8 and run `git tag 1.16.0 96c..sha..d77` then `git push origin 1.16.0` (not `git push --tags` according to https://stackoverflow.com/a/5195913/403310)
+# 9. Take sha from the previous step and run `git tag 1.16.0 96c..sha..d77` then `git push origin 1.16.0` (not `git push --tags` according to https://stackoverflow.com/a/5195913/403310)
 ######
 
 ###### Branching policy for PATCH RELEASE
@@ -651,5 +651,5 @@ bunzip2 inst/tests/*.Rraw.bz2  # decompress *.Rraw again so as not to commit com
 # 5. Bump 3 patch version numbers in Makefile
 # 6. Another final gd to view all diffs using meld. (I have `alias gd='git difftool &> /dev/null'` and difftool meld: http://meldmerge.org/)
 # 7. Push to master with this consistent commit message: "1.15.{2,4,6,...} on CRAN. Bump to 1.15.99"
-# 8. Take sha from step 8 and run `git tag 1.15.{2,4,6,...} 96c..sha..d77` then `git push origin 1.15.{2,4,6,...}` (not `git push --tags` according to https://stackoverflow.com/a/5195913/403310)
+# 8. Take sha from the previous step and run `git tag 1.15.{2,4,6,...} 96c..sha..d77` then `git push origin 1.15.{2,4,6,...}` (not `git push --tags` according to https://stackoverflow.com/a/5195913/403310)
 ######
