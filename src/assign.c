@@ -218,10 +218,14 @@ SEXP setdt_nrows(SEXP x)
      *   e.g. in package eplusr which calls setDT on a list when parsing JSON. Operations which
      *   fail for NULL columns will give helpful error at that point, #3480 and #3471 */
     if (Rf_isNull(xi)) continue;
+    if (Rf_inherits(xi, "POSIXlt")) {
+      error(_("Column %d has class 'POSIXlt'. Please convert it to POSIXct (using as.POSIXct) and run setDT() again. We do not recommend the use of POSIXlt at all because it uses 40 bytes to store one date."), i+1);
+    }
     SEXP dim_xi = getAttrib(xi, R_DimSymbol);
     R_len_t len_xi;
-    if (LENGTH(dim_xi)) {
-      if (test_matrix_cols && LENGTH(dim_xi) > 1) {
+    R_len_t n_dim = LENGTH(dim_xi);
+    if (n_dim) {
+      if (test_matrix_cols && n_dim > 1) {
         warn_matrix_column(i+1);
         test_matrix_cols = false;
       }
@@ -233,9 +237,6 @@ SEXP setdt_nrows(SEXP x)
       base_length = len_xi;
     } else if (len_xi != base_length) {
       error(_("All elements in argument 'x' to 'setDT' must be of equal length, but input %d has length %d whereas the first non-empty input had length %d"), i+1, len_xi, base_length);
-    }
-    if (Rf_inherits(xi, "POSIXlt")) {
-      error(_("Column %d has class 'POSIXlt'. Please convert it to POSIXct (using as.POSIXct) and run setDT() again. We do not recommend the use of POSIXlt at all because it uses 40 bytes to store one date."), i+1);
     }
   }
   return ScalarInteger(base_length);
