@@ -13685,9 +13685,10 @@ DT = as.data.table(M)
 test(1964.3, rownames(DT), character(0))
 test(1964.4, colnames(DT), c("v1","v2"))
 
-test(1965.1, setDT(list(1, 1:2)), error = 'input 2 has length 2.*length 1')   #3121
+test(1965.1, setDT(list(1, 1:2)), error='input 2 has length 2.*length 1')   #3121
 # setDT() skips NULL elements, so get the length from the first non-NULL
-test(1965.2, setDT(list(NULL, 1, 1:2)), error = 'input 3 has length 2.*length 1')
+test(1965.2, setDT(list(NULL, 1, 1:2)), error='input 3 has length 2.*length 1')
+test(1965.3, setDT(list(1:2, matrix(nrow=2L, ncol=2L))), error='Some columns are a multi-column type.*for example column 2')
 
 # fread/fwrite file name in native and utf-8 encoding, #3078
 if (.Platform$OS.type=="windows") {
