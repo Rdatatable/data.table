@@ -2848,7 +2848,7 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     # for performance, only warn on the first such column, #5426
     for (jj in seq_along(x)) {
       if (length(dim(x[[jj]])) > 1L) {
-        warningf("Some columns are a multi-column type (such as a matrix column), for example column %d. setDT will retain these columns as-is but subsequent operations like grouping and joining may fail. Please consider as.data.table() instead which will create a new column for each embedded column.", jj)
+        .Call(Cwarn_matrix_column_r, jj)
         break
       }
     }

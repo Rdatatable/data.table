@@ -200,6 +200,11 @@ static SEXP shallow(SEXP dt, SEXP cols, R_len_t n)
   return(newdt);
 }
 
+// Wrapped in a function so the same message is issued for the data.frame case at the R level
+void warn_matrix_column(/* 1-indexed */ int i) {
+  warning(_("Some columns are a multi-column type (such as a matrix column), for example column %d. setDT will retain these columns as-is but subsequent operations like grouping and joining may fail. Please consider as.data.table() instead which will create a new column for each embedded column."), i);
+}
+
 // input validation for setDT() list input; assume length(x)>0 already tested & is.list(x)
 SEXP setdt_nrows(SEXP x)
 {
@@ -217,7 +222,7 @@ SEXP setdt_nrows(SEXP x)
     R_len_t len_xi;
     if (LENGTH(dim_xi)) {
       if (test_matrix_cols && LENGTH(dim_xi) > 1) {
-        warning(_("Some columns are a multi-column type (such as a matrix column), for example column %d. setDT will retain these columns as-is but subsequent operations like grouping and joining may fail. Please consider as.data.table() instead which will create a new column for each embedded column."), i+1);
+        warn_matrix_column(i+1);
         test_matrix_cols = false;
       }
       len_xi = INTEGER(dim_xi)[0];

@@ -318,6 +318,7 @@ SEXP glast(SEXP);
 SEXP gfirst(SEXP);
 SEXP gnthvalue(SEXP, SEXP);
 SEXP dim(SEXP);
+SEXP warn_matrix_column_r(SEXP);
 SEXP gvar(SEXP, SEXP);
 SEXP gsd(SEXP, SEXP);
 SEXP gprod(SEXP, SEXP);
