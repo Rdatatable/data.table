@@ -3732,7 +3732,7 @@ test(1100, dt1[dt2,roll=-Inf,rollends=c(FALSE,TRUE)]$ind, INT(NA,NA,1,2,2,2,2,2,
 
   # test for #5512, only compute default fill if needed.
   DT = data.table(chr=c("a","b","b"), int=1:3, dbl=as.double(4:6))
-  test(1102.39, dcast(DT, . ~ chr, min, value.var="int"), data.table(.=".",a=1L,b=2L,key="."))#fill not used in output, so default fill not computed, and no warning emitted during computation of that default fill.
+  test(1102.39, dcast(DT, . ~ chr, min, value.var="int"), data.table(.=".",a=1L,b=2L,key="."))#fill not used in output, so default fill not computed, and no warning emitted.
   ans <- data.table(int=1:3, a=c(1L,NA,NA), b=c(NA,2L,3L), key="int")
   test(1102.40, dcast(DT, int ~ chr, min, value.var="int"), ans, warning="inf (type 'double') at RHS position 1 out-of-range(NA) or truncated (precision lost) when assigning to type 'integer' (target vector)")#warning emitted during computation of default fill since as.integer(min(integer()) is Inf) is NA.
   test(1102.41, dcast(DT, int ~ chr, min, value.var="int", fill=NA), ans)
