@@ -122,5 +122,5 @@ SEXP dim(SEXP x)
 
 SEXP warn_matrix_column_r(SEXP i) {
   warn_matrix_column(INTEGER(i)[0]);
-  return NULL;
+  return R_NilValue;
 }
