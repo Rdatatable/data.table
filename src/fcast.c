@@ -3,7 +3,7 @@
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 // raise(SIGINT);
 
-inline bool any_NA_int(const int n, const int *idx) {
+bool any_NA_int(const int n, const int *idx) {
   for (int i=0; i<n; ++i) {
     if (idx[i] == NA_INTEGER) return true;
   }
