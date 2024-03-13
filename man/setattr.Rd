@@ -69,7 +69,7 @@ DT <- data.table(x = 1:3, y = 4:6, z = 7:9)
 setnames(DT, -2, c("a", "b"))      # NEW FR #1443, allows -ve indices in 'old' argument
 
 DT <- data.table(a = 1:4, b = 5:8)
-setcolnames(DT, "a", "c")          # replaces name of column "a" with "c" and this can do all things setnames do.
+setcolnames(DT, "a", "c")          # setcolnames() is just a alias for setnames() so it has all features present in setnames().
 
 DT = data.table(a=1:3, b=4:6)
 f = function(\dots) {
