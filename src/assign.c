@@ -205,7 +205,7 @@ void warn_matrix_column(/* 1-indexed */ int i) {
   warning(_("Some columns are a multi-column type (such as a matrix column), for example column %d. setDT will retain these columns as-is but subsequent operations like grouping and joining may fail. Please consider as.data.table() instead which will create a new column for each embedded column."), i);
 }
 
-// input validation for setDT() list input; assume length(x)>0 already tested & is.list(x)
+// input validation for setDT() list input; assume is.list(x) was tested in R
 SEXP setdt_nrows(SEXP x)
 {
   int base_length = 0;
