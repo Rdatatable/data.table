@@ -164,7 +164,7 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
   if (run_agg_funs) {
     fun.call = aggregate_funs(fun.call, lvals, sep, ...)
     maybe_err = function(list.of.columns) {
-      if (any(sapply(list.of.columns, length) != 1L)) stopf("Aggregating function(s) should take vector inputs and return a single value (length=1). However, function(s) returns length!=1. This value will have to be used to fill any missing combinations, and therefore must be length=1. Either override by setting the 'fill' argument explicitly or modify your function to handle this case appropriately.")
+      if (any(lengths(list.of.columns) != 1L)) stopf("Aggregating function(s) should take vector inputs and return a single value (length=1). However, function(s) returns length!=1. This value will have to be used to fill any missing combinations, and therefore must be length=1. Either override by setting the 'fill' argument explicitly or modify your function to handle this case appropriately.")
       list.of.columns
     }
     dat = dat[, maybe_err(eval(fun.call)), by=c(varnames)]
