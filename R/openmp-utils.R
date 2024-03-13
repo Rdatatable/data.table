@@ -13,4 +13,3 @@ setDTthreads = function(threads=NULL, restore_after_fork=NULL, percent=NULL, thr
 getDTthreads = function(verbose=getOption("datatable.verbose")) {
   .Call(CgetDTthreads, verbose)
 }
-

@@ -6,4 +6,3 @@ if (suppressPackageStartupMessages(requireNamespace("knitr", quietly = TRUE))) {
 } else {
     cat(readLines("knitr.Rout.mock", warn = FALSE), sep="\n")
 }
-

@@ -9,7 +9,6 @@ if (as.logical(Sys.getenv("TEST_DATA_TABLE_WITH_OTHER_PACKAGES","FALSE"))) {
   # just results in NULL in other.Rout. Hence options(warn=1) because that
   # worked to display the warnings, not because we want them displayed at the
   # time per se.
-    
+
   test.data.table(script="other.Rraw")
 }
-

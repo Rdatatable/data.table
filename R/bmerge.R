@@ -187,4 +187,3 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
   ans$xo = xo  # for further use by [.data.table
   return(ans)
 }
-

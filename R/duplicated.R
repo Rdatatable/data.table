@@ -118,4 +118,3 @@ uniqueN = function(x, by = if (is.list(x)) seq_along(x) else NULL, na.rm=FALSE) 
     length(starts)
   }
 }
-
