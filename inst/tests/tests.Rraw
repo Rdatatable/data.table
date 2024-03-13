@@ -3736,11 +3736,11 @@ test(1100, dt1[dt2,roll=-Inf,rollends=c(FALSE,TRUE)]$ind, INT(NA,NA,1,2,2,2,2,2,
     if(length(x)==0)stop("calling mymin on vector of length 0")
     min(x)
   }
-  test(1102.39, dcast(DT, . ~ chr, mymin, value.var="int"), data.table(.=".",a=1L,b=2L,key="."))#fill not used in output, so default fill not computed.
+  test(1102.39, dcast(DT, . ~ chr, mymin, value.var="int"), data.table(.=".",a=1L,b=2L,key=".")) # fill not used in output, so default fill not computed.
   ans <- data.table(int=1:3, a=c(1L,NA,NA), b=c(NA,2L,3L), key="int")
-  test(1102.40, dcast(DT, int ~ chr, min, value.var="int"), ans, warning="inf (type 'double') at RHS position 1 out-of-range(NA) or truncated (precision lost) when assigning to type 'integer' (target vector)")#warning emitted when coercing default fill since as.integer(min(integer()) is Inf) is NA.
+  test(1102.40, dcast(DT, int ~ chr, min, value.var="int"), ans, warning=c("no non-missing arguments to min; returning Inf", "inf (type 'double') at RHS position 1 out-of-range(NA) or truncated (precision lost) when assigning to type 'integer' (target vector)")) # warning emitted when coercing default fill since as.integer(min(integer()) is Inf) is NA.
   test(1102.41, dcast(DT, int ~ chr, mymin, value.var="int", fill=NA), ans) # because fill=NA is provided by user, no need to call mymin(integer()).
-  test(1102.42, dcast(DT, int ~ chr, min, value.var="dbl"), data.table(int=1:3, a=c(4,Inf,Inf), b=c(Inf,5,6), key="int")) # no warning, because no coercion.
+  test(1102.42, dcast(DT, int ~ chr, min, value.var="dbl"), data.table(int=1:3, a=c(4,Inf,Inf), b=c(Inf,5,6), key="int"), warning="no non-missing arguments to min; returning Inf") # only one warning, because no coercion.
   
 }
 

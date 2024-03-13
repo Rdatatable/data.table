@@ -3,15 +3,8 @@
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 // raise(SIGINT);
 
-bool any_NA_int(const int n, const int *idx) {
-  for (int i=0; i<n; ++i) {
-    if (idx[i] == NA_INTEGER) return true;
-  }
-  return false;
-}  
-
 // TO DO: margins
-SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fill, SEXP fill_d, SEXP is_agg) {
+SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fill, SEXP fill_d, SEXP is_agg, SEXP some_fillArg) {
   int nrows=INTEGER(nrowArg)[0], ncols=INTEGER(ncolArg)[0];
   int nlhs=length(lhs), nval=length(val), *idx = INTEGER(idxArg);
   SEXP target;
@@ -22,7 +15,7 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
     SET_VECTOR_ELT(ans, i, VECTOR_ELT(lhs, i));
   }
   // get val cols
-  bool some_fill = any_NA_int(nrows*ncols, idx);
+  bool some_fill = LOGICAL(some_fillArg)[0];
   for (int i=0; i<nval; ++i) {
     const SEXP thiscol = VECTOR_ELT(val, i);
     SEXP thisfill = fill;
