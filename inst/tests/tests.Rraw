@@ -18315,3 +18315,26 @@ if (test_bit64) {
   apple = data.table(id = c("a", "b", "b"), time = c(1L, 1L, 2L), y = i64v[1:3])
   test(2248, dcast(apple, id ~ time, value.var = "y"), data.table(id = c('a', 'b'), `1` = i64v[1:2], `2` = i64v[4:3], key='id'))
 }
+
+# trunc.char misbehaves for multibyte characters, #5096
+# Tests for combining characters
+options(datatable.prettyprint.char=4L)
+DT = data.table("áááá")
+test(2248.1, capture.output(print(DT)), c("     V1", "1: áááá"))
+options(datatable.prettyprint.char=3L)
+test(2248.2, capture.output(print(DT)), c("       V1", "1: ááá..."))
+options(datatable.prettyprint.char=1L)
+test(2248.3, capture.output(print(DT)), c("     V1", "1: á..."))
+# Tests for full-width multibyte characters
+options(datatable.prettyprint.char=4L)
+DT = data.table("一二こん")
+test(2248.4, capture.output(print(DT)), c("         V1", "1: 一二こん"))
+options(datatable.prettyprint.char=3L)
+test(2248.5, capture.output(print(DT)), c("          V1", "1: 一二こ..."))
+options(datatable.prettyprint.char=1L)
+test(2248.6, capture.output(print(DT)), c("      V1", "1: 一..."))
+# General test
+DT <- data.table("áááá", "一一一一", "aaaa", "｣｣｣｣")
+options(datatable.prettyprint.char=2L)
+test(2248.7, capture.output(print(DT)), c("      V1      V2    V3    V4", "1: áá... 一一... aa... ｣｣..."))
+options(datatable.prettyprint.char=NULL)

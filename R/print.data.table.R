@@ -232,8 +232,11 @@ format_list_item.default = function(x, ...) {
 char.trunc = function(x, trunc.char = getOption("datatable.prettyprint.char")) {
   trunc.char = max(0L, suppressWarnings(as.integer(trunc.char[1L])), na.rm=TRUE)
   if (!is.character(x) || trunc.char <= 0L) return(x)
-  idx = which(nchar(x) > trunc.char)
-  x[idx] = paste0(substr(x[idx], 1L, as.integer(trunc.char)), "...")
+  widthSize = nchar(x, 'width')
+  charSize = nchar(x)
+  isFull = widthSize > charSize
+  idx = which(pmin(widthSize, charSize) > trunc.char)
+  x[idx] = paste0(strtrim(x[idx], as.integer(ifelse(isFull, trunc.char * 2, trunc.char))), "...")
   x
 }
 
