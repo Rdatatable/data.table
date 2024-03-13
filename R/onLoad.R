@@ -15,6 +15,7 @@
 .Last.updated = vector("integer", 1L) # exported variable; number of rows updated by the last := or set(), #1885
 
 .onLoad = function(libname, pkgname) {
+  session_r_version = base::getRversion()
   # Runs when loaded but not attached to search() path; e.g., when a package just Imports (not Depends on) data.table
   if (!exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
     # check when installed package is loaded but skip when developing the package with cc()
@@ -25,9 +26,9 @@
       # https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478
       stopf("The data_table.%s version (%s) does not match the package (%s). Please close all R sessions to release the old %s and reinstall data.table in a fresh R session. The root cause is that R's package installer can in some unconfirmed circumstances leave a package in a state that is apparently functional but where new R code is calling old C code silently: https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478. Once a package is in this mismatch state it may produce wrong results silently until you next upgrade the package. Please help by adding precise circumstances to 17478 to move the status to confirmed. This mismatch between R and C code can happen with any package not just data.table. It is just that data.table has added this check.", dll, dllV, RV, toupper(dll))
     }
-    builtUsing = readRDS(system.file("Meta/package.rds",package="data.table"))$Built$R
-    if (!identical(base::getRversion()>="4.0.0", builtUsing>="4.0.0")) {
-      stopf("This is R %s but data.table has been installed using R %s. The major version must match. Please reinstall data.table.", base::getRversion(), builtUsing)
+    builtPath = system.file("Meta", "package.rds", package="data.table")
+    if (builtPath != "" && !identical(session_r_version>="4.0.0", (build_r_version <- readRDS(builtPath)$Built$R)>="4.0.0")) {
+      stopf("This is R %s but data.table has been installed using R %s. The major version must match. Please reinstall data.table.", session_r_version, build_r_version)
       # the if(R>=4.0.0) in NAMESPACE when registering S3 methods rbind.data.table and cbind.data.table happens on install; #3968
     }
   }
@@ -37,7 +38,7 @@
   # be conditional too: registering the S3 methods in R before 4.0.0 causes this workaround to no longer work. However, the R
   # syntax available to use in NAMESPACE is very limited (can't call data.table() in it in a capability test, for example).
   # This version number ("4.0.0") must be precisely the same as used in NAMESPACE; see PR for #3948.
-  if (base::getRversion() < "4.0.0") {
+  if (session_r_version < "4.0.0") {
     # continue to support R<4.0.0
     # If R 3.6.2 (not yet released) includes the c|rbind S3 dispatch fix, then this workaround still works.
     tt = base::cbind.data.frame
