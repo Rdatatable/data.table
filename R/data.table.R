@@ -2596,7 +2596,7 @@ setattr = function(x,name,value) {
   invisible(x)
 }
 
-setnames = function(x,old,new,skip_absent=FALSE) {
+setcolnames = setnames = function(x,old,new,skip_absent=FALSE) {
   # Sets by reference, maintains truelength, no copy of table at all.
   # But also more convenient than names(DT)[i]="newname"  because we can also do setnames(DT,"oldname","newname")
   # without an onerous match() ourselves. old can be positions, too, but we encourage by name for robustness.
