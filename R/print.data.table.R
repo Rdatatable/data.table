@@ -229,6 +229,8 @@ format_list_item.default = function(x, ...) {
 
 # FR #1091 for pretty printing of character
 # TODO: maybe instead of doing "this is...", we could do "this ... test"?
+# Note: This function may misbehave when dealing with strings of a mixture of types of chars, if this becomes
+# a big issue we can try iterating over the string while decrementing trunc.char instead. See #5096
 char.trunc = function(x, trunc.char = getOption("datatable.prettyprint.char")) {
   trunc.char = max(0L, suppressWarnings(as.integer(trunc.char[1L])), na.rm=TRUE)
   if (!is.character(x) || trunc.char <= 0L) return(x)
