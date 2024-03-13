@@ -43,8 +43,7 @@
 6. `dcast()` message about `fun.aggregate` defaulting to `length()` when aggregation is necessary, which could be confusing if duplicates were unexpected, does better explaining the behavior and suggesting alternatives, [#5217](https://github.com/Rdatatable/data.table/issues/5217). Thanks @MichaelChirico for the suggestion and @Nj221102 for the fix.
 
 7. Updated a test relying on `>` working for comparing language objects to a string, which will be deprecated by R, [#5977](https://github.com/Rdatatable/data.table/issues/5977); no user-facing effect. Thanks to R-core for continuously improving the language.
-
-8. New alias `setcolnames` for `setnames`, [#5640](https://github.com/Rdatatable/data.table/issues/5640), `setcolnames()` parallels `setcolorder()` increasing the consistency of function names and following the convention used in base R package.
+8. New alias `setcolnames` for `setnames`, [#5640](https://github.com/Rdatatable/data.table/issues/5640), `setcolnames()` parallels `setcolorder()` increasing the consistency of function names and following the convention used in base R package, Thanks @Nj221102 for the fix.
 
 
 # data.table [v1.15.0](https://github.com/Rdatatable/data.table/milestone/29)  (30 Jan 2024)

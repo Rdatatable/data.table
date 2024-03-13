@@ -1,6 +1,7 @@
 \name{setattr}
 \alias{setattr}
 \alias{setnames}
+\alias{setcolnames}
 \title{ Set attributes of objects by reference }
 \description{
   In \code{data.table}, all \code{set*} functions change their input \emph{by reference}. That is, no copy is made at all, other than temporary working memory which is as large as one column. The only other \code{data.table} operator that modifies input by reference is \code{\link{:=}}. Check out the \code{See Also} section below for other \code{set*} function that \code{data.table} provides.
@@ -8,9 +9,10 @@
 \usage{
 setattr(x,name,value)
 setnames(x,old,new,skip_absent=FALSE)
+setcolnames(x,old,new,skip_absent=FALSE)
 }
 \arguments{
-  \item{x}{ \code{setnames} accepts \code{data.frame} and \code{data.table}. \code{setattr} accepts any input; e.g, list, columns of a \code{data.frame} or \code{data.table}. }
+  \item{x}{ \code{setnames} and its alias \code{setcolnames} accepts \code{data.frame} and \code{data.table}. \code{setattr} accepts any input; e.g, list, columns of a \code{data.frame} or \code{data.table}. }
   \item{name}{ The character attribute name. }
   \item{value}{ The value to assign to the attribute or \code{NULL} removes the attribute, if present. }
   \item{old}{ When \code{new} is provided, character names or numeric positions of column names to change. When \code{new} is not provided, a function or the new column names (i.e., it's implicitly treated as \code{new}; excluding \code{old} and explicitly naming \code{new} is equivalent). If a function, it will be called with the current column names and is supposed to return the new column names. The new column names must be the same length as the number of columns. See examples. }
@@ -20,7 +22,7 @@ setnames(x,old,new,skip_absent=FALSE)
 
 \details{
 
-  \code{setnames} operates on \code{data.table} and \code{data.frame} not other types like \code{list} and \code{vector}. It can be used to change names \emph{by name} with built-in checks and warnings (e.g., if any old names are missing or appear more than once).
+  \code{setnames/setcolnames} operates on \code{data.table} and \code{data.frame} not other types like \code{list} and \code{vector}. It can be used to change names \emph{by name} with built-in checks and warnings (e.g., if any old names are missing or appear more than once).
 
   \code{setattr} is a more general function that allows setting of any attribute to an object \emph{by reference}.
 
@@ -28,7 +30,7 @@ setnames(x,old,new,skip_absent=FALSE)
 
   }
 \value{
-    The input is modified by reference, and returned (invisibly) so it can be used in compound statements; e.g., \code{setnames(DT,"V1", "Y")[, .N, by=Y]}. If you require a copy, take a copy first (using \code{DT2=copy(DT)}). See \code{?copy}.
+    The input is modified by reference, and returned (invisibly) so it can be used in compound statements; e.g., \code{setnames(DT,"V1", "Y")[, .N, by=Y]}, \code{setcolnames(DT,"V1", "Y")[, .N, by=Y]}. If you require a copy, take a copy first (using \code{DT2=copy(DT)}). See \code{?copy}.
 
     Note that \code{setattr} is also in package \code{bit}. Both packages merely expose R's internal \code{setAttrib} function at C level but differ in return value. \code{bit::setattr} returns \code{NULL} (invisibly) to remind you the function is used for its side effect. \code{data.table::setattr} returns the changed object (invisibly) for use in compound statements.
 }
@@ -42,6 +44,7 @@ old <- c("a", "b", "c", "d")
 new <- c("A", "B", "C", "D")
 
 setnames(DT, old, new, skip_absent = TRUE) # skips old[3] because "c" is not a column name of DT
+setcolnames(DT, old, new, skip_absent = TRUE) # skips old[3] because "c" is not a column name of DT
 
 DF = data.frame(a=1:2,b=3:4)       # base data.frame to demo copies and syntax
 if (capabilities()["profmem"])     # usually memory profiling is available but just in case
@@ -64,6 +67,9 @@ setnames(DT,2:3,toupper)           # replace the 2nd and 3rd names with their up
 
 DT <- data.table(x = 1:3, y = 4:6, z = 7:9)
 setnames(DT, -2, c("a", "b"))      # NEW FR #1443, allows -ve indices in 'old' argument
+
+DT <- data.table(a = 1:4, b = 5:8)
+setcolnames(DT, "a", "c")          # replaces name of column "a" with "c" and this can do all things setnames do.
 
 DT = data.table(a=1:3, b=4:6)
 f = function(\dots) {
