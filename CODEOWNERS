@@ -1,5 +1,5 @@
 # https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
-* @mattdowle
+* @jangorecki @michaelchirico
 
 # melt
 /R/fmelt.R @tdhock
@@ -43,3 +43,9 @@
 
 # .SD vignette
 /vignettes/datatable-sd-usage.Rmd @michaelchirico
+
+# assign
+/src/assign.c @HughParsonage
+
+# utils
+/src/utils.c @HughParsonage
