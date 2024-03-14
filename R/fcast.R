@@ -159,7 +159,7 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
       fun.call = quote(length)
     }
   }
-  dat_for_default_fill = dat[0]
+  dat_for_default_fill = dat
   run_agg_funs = !is.null(fun.call)
   if (run_agg_funs) {
     fun.call = aggregate_funs(fun.call, lvals, sep, ...)
@@ -212,6 +212,9 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
     idx = do.call("CJ", mapunique)[map, 'I' := .I][["I"]] # TO DO: move this to C and avoid materialising the Cross Join.
     some_fill = anyNA(idx)
     fill.default = if (run_agg_funs && is.null(fill) && some_fill) dat_for_default_fill[, maybe_err(eval(fun.call))]
+    if (run_agg_funs && is.null(fill) && some_fill) {
+      fill.default = dat_for_default_fill[0L][, maybe_err(eval(fun.call))]
+    }
     ans = .Call(Cfcast, lhs, val, maplen[[1L]], maplen[[2L]], idx, fill, fill.default, is.null(fun.call), some_fill)
     allcols = do.call("paste", c(rhs, sep=sep))
     if (length(valnames) > 1L)
