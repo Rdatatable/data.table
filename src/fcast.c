@@ -4,7 +4,7 @@
 // raise(SIGINT);
 
 // TO DO: margins
-SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fill, SEXP fill_d, SEXP is_agg) {
+SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fill, SEXP fill_d, SEXP is_agg, SEXP some_fillArg) {
   int nrows=INTEGER(nrowArg)[0], ncols=INTEGER(ncolArg)[0];
   int nlhs=length(lhs), nval=length(val), *idx = INTEGER(idxArg);
   SEXP target;
@@ -15,24 +15,28 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
     SET_VECTOR_ELT(ans, i, VECTOR_ELT(lhs, i));
   }
   // get val cols
+  bool some_fill = LOGICAL(some_fillArg)[0];
   for (int i=0; i<nval; ++i) {
     const SEXP thiscol = VECTOR_ELT(val, i);
     SEXP thisfill = fill;
     const SEXPTYPE thistype = TYPEOF(thiscol);
     int nprotect = 0;
-    if (isNull(fill)) {
-      if (LOGICAL(is_agg)[0]) {
-        thisfill = PROTECT(allocNAVector(thistype, 1)); nprotect++;
-      } else thisfill = VECTOR_ELT(fill_d, i);
-    }
-    if (isVectorAtomic(thiscol)) { // defer error handling to below, but also skip on list
-      thisfill = PROTECT(coerceAs(thisfill, thiscol, /*copyArg=*/ScalarLogical(false))); nprotect++;
+    if(some_fill){
+      if (isNull(fill)) {
+	if (LOGICAL(is_agg)[0]) {
+	  thisfill = PROTECT(allocNAVector(thistype, 1)); nprotect++;
+	} else thisfill = VECTOR_ELT(fill_d, i);
+      }
+      if (isVectorAtomic(thiscol)) { // defer error handling to below, but also skip on list
+	thisfill = PROTECT(coerceAs(thisfill, thiscol, /*copyArg=*/ScalarLogical(false))); nprotect++;
+      }
     }
     switch (thistype) {
     case INTSXP:
     case LGLSXP: {
       const int *ithiscol = INTEGER(thiscol);
-      const int *ithisfill = INTEGER(thisfill);
+      const int *ithisfill = 0;
+      if (some_fill) ithisfill = INTEGER(thisfill);
       for (int j=0; j<ncols; ++j) {
         SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(thistype, nrows) );
         int *itarget = INTEGER(target);
@@ -45,7 +49,8 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
     } break;
     case REALSXP: {
       const double *dthiscol = REAL(thiscol);
-      const double *dthisfill = REAL(thisfill);
+      const double *dthisfill = 0;
+      if (some_fill) dthisfill = REAL(thisfill);
       for (int j=0; j<ncols; ++j) {
         SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(thistype, nrows) );
         double *dtarget = REAL(target);
@@ -58,7 +63,8 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
     } break;
     case CPLXSXP: {
       const Rcomplex *zthiscol = COMPLEX(thiscol);
-      const Rcomplex *zthisfill = COMPLEX(thisfill);
+      const Rcomplex *zthisfill = 0;
+      if (some_fill) zthisfill = COMPLEX(thisfill);
       for (int j=0; j<ncols; ++j) {
         SET_VECTOR_ELT(ans, nlhs+j+i*ncols, target=allocVector(thistype, nrows) );
         Rcomplex *ztarget = COMPLEX(target);

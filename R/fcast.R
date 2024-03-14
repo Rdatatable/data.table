@@ -152,7 +152,6 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
     dat = .Call(CsubsetDT, dat, idx, seq_along(dat))
   }
   fun.call = m[["fun.aggregate"]]
-  fill.default = NULL
   if (is.null(fun.call)) {
     oo = forderv(dat, by=varnames, retGrp=TRUE)
     if (attr(oo, 'maxgrpn', exact=TRUE) > 1L) {
@@ -160,15 +159,15 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
       fun.call = quote(length)
     }
   }
-  if (!is.null(fun.call)) {
+  dat_for_default_fill = dat
+  run_agg_funs = !is.null(fun.call)
+  if (run_agg_funs) {
     fun.call = aggregate_funs(fun.call, lvals, sep, ...)
-    errmsg = gettext("Aggregating function(s) should take vector inputs and return a single value (length=1). However, function(s) returns length!=1. This value will have to be used to fill any missing combinations, and therefore must be length=1. Either override by setting the 'fill' argument explicitly or modify your function to handle this case appropriately.")
-    if (is.null(fill)) {
-      fill.default = suppressWarnings(dat[0L][, eval(fun.call)])
-      # tryCatch(fill.default <- dat[0L][, eval(fun.call)], error = function(x) stopf(errmsg))
-      if (nrow(fill.default) != 1L) stopf(errmsg)
+    maybe_err = function(list.of.columns) {
+      if (any(lengths(list.of.columns) != 1L)) stopf("Aggregating function(s) should take vector inputs and return a single value (length=1). However, function(s) returns length!=1. This value will have to be used to fill any missing combinations, and therefore must be length=1. Either override by setting the 'fill' argument explicitly or modify your function to handle this case appropriately.")
+      list.of.columns
     }
-    dat = dat[, eval(fun.call), by=c(varnames)]
+    dat = dat[, maybe_err(eval(fun.call)), by=c(varnames)]
   }
   order_ = function(x) {
     o = forderv(x, retGrp=TRUE, sort=TRUE)
@@ -211,7 +210,12 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
     }
     maplen = vapply_1i(mapunique, length)
     idx = do.call("CJ", mapunique)[map, 'I' := .I][["I"]] # TO DO: move this to C and avoid materialising the Cross Join.
-    ans = .Call(Cfcast, lhs, val, maplen[[1L]], maplen[[2L]], idx, fill, fill.default, is.null(fun.call))
+    some_fill = anyNA(idx)
+    fill.default = if (run_agg_funs && is.null(fill) && some_fill) dat_for_default_fill[, maybe_err(eval(fun.call))]
+    if (run_agg_funs && is.null(fill) && some_fill) {
+      fill.default = dat_for_default_fill[0L][, maybe_err(eval(fun.call))]
+    }
+    ans = .Call(Cfcast, lhs, val, maplen[[1L]], maplen[[2L]], idx, fill, fill.default, is.null(fun.call), some_fill)
     allcols = do.call("paste", c(rhs, sep=sep))
     if (length(valnames) > 1L)
       allcols = do.call("paste", if (identical(".", allcols)) list(valnames, sep=sep)

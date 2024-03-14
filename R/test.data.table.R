@@ -249,7 +249,11 @@ gc_mem = function() {
   # nocov end
 }
 
-test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,notOutput=NULL,ignore.warning=NULL) {
+test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,notOutput=NULL,ignore.warning=NULL,options=NULL) {
+  if (!is.null(options)) {
+    old_options <- do.call('options', as.list(options)) # as.list(): allow passing named character vector for convenience
+    on.exit(options(old_options), add=TRUE)
+  }
   # Usage:
   # i) tests that x equals y when both x and y are supplied, the most common usage
   # ii) tests that x is TRUE when y isn't supplied
@@ -280,7 +284,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     foreign = get("foreign", parent.frame())
     showProgress = get("showProgress", parent.frame())
     time = nTest = RSS = NULL  # to avoid 'no visible binding' note
-    if (num>0) on.exit( {
+    if (num>0) on.exit( add=TRUE, {
        took = proc.time()[3L]-lasttime  # so that prep time between tests is attributed to the following test
        timings[as.integer(num), `:=`(time=time+took, nTest=nTest+1L), verbose=FALSE]
        if (memtest) {

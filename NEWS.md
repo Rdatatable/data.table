@@ -28,7 +28,9 @@
 
 3. Optimized `shift` per group produced wrong results when simultaneously subsetting, for example, `DT[i==1L, shift(x), by=group]`, [#5962](https://github.com/Rdatatable/data.table/issues/5962). Thanks to @renkun-ken for the report and Benjamin Schwendinger for the fix.
 
-4. `print.data.table` now handles combination multibyte characters correctly when truncating wide string entries, [#5096](https://github.com/Rdatatable/data.table/issues/5096). Thanks to @MichaelChirico for the report and @joshhwuu for the fix.
+4. `dcast(fill=NULL)` only computes default fill value if necessary, which eliminates some previous warnings (for example, when fun.aggregate=min or max, warning was NAs introduced by coercion to integer range) which were potentially confusing, [#5512](https://github.com/Rdatatable/data.table/issues/5512), [#5390](https://github.com/Rdatatable/data.table/issues/5390). Thanks to Toby Dylan Hocking for the fix.
+
+5. `print.data.table` now handles combination multibyte characters correctly when truncating wide string entries, [#5096](https://github.com/Rdatatable/data.table/issues/5096). Thanks to @MichaelChirico for the report and @joshhwuu for the fix.
 
 ## NOTES
 
