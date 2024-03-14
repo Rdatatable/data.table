@@ -18319,36 +18319,41 @@ if (test_bit64) {
 # trunc.char misbehaves for multibyte characters, #5096
 # Tests for combining characters
 options(datatable.prettyprint.char=4L)
-# \u0061\u301 is accented lowercase 'a'
-DT = data.table("\u0061\u0301\u0061\u0301\u0061\u0301\u0061\u0301")
-test(2248.01, DT, output="1: \u0061\u0301\u0061\u0301\u0061\u0301\u0061\u0301")
+accented_a = "\u0061\u0301"
+ja_ichi = "\u4E00"
+ja_ni = "\u4E8C"
+ja_ko = "\u3053"
+ja_n = "\u3093"
+halfwidth_bracket = "\uFF63"
+dots_regex = "[.][.][.]"
+DT = data.table(strrep(accented_a, 4L))
+test(2248.01, DT, output=paste("1:", strrep(accented_a, 4L)))
 options(datatable.prettyprint.char=3L)
-test(2248.02, DT, output="1: \u0061\u0301\u0061\u0301\u0061\u0301[.][.][.]")
+test(2248.02, DT, output=paste0("1: ", accented_a, accented_a, accented_a, dots_regex))
 options(datatable.prettyprint.char=1L)
-test(2248.03, DT, output="1: \u0061\u0301[.][.][.]")
+test(2248.03, DT, output=paste0("1: ", accented_a, dots_regex))
 # Tests for full-width multibyte characters
 options(datatable.prettyprint.char=4L)
 # four Japanese characters: 'one' 'two' 'ko' 'n'
-DT = data.table("\u4E00\u4E8C\u3053\u3093")
-test(2248.04, DT, output="1: \u4E00\u4E8C\u3053\u3093")
+DT = data.table(paste0(ja_ichi, ja_ni, ja_ko, ja_n))
+test(2248.04, DT, output=paste0("1: ", ja_ichi, ja_ni, ja_ko, ja_n))
 options(datatable.prettyprint.char=3L)
-test(2248.05, DT, output="1: \u4E00\u4E8C\u3053[.][.][.]")
+test(2248.05, DT, output=paste0("1: ", ja_ichi, ja_ni, ja_ko, dots_regex))
 options(datatable.prettyprint.char=1L)
-test(2248.06, DT, output="1: \u4E00[.][.][.]")
+test(2248.06, DT, output=paste0("1: ", ja_ichi, dots_regex))
 # Multiple tests, all truncated
-# \uFF63 is half-width right corner bracket
-DT = data.table("\u0061\u0301\u0061\u0301\u0061\u0301\u0061\u0301", "\u4E00\u4E00\u4E00\u4E00", "aaaa", "\uFF63\uFF63\uFF63\uFF63")
+DT = data.table(strrep(accented_a, 4L), strrep(ja_ichi, 4L), strrep("a", 4L), strrep(halfwidth_bracket, 4L))
 options(datatable.prettyprint.char=2L)
-test(2248.07, DT, output="1: \u0061\u0301\u0061\u0301[.][.][.] \u4E00\u4E00[.][.][.] aa[.][.][.] \uFF63\uFF63[.][.][.]")
+test(2248.07, DT, output=paste0("1: ", accented_a, accented_a, dots_regex, " ", ja_ichi, ja_ichi, dots_regex, " aa", dots_regex, " ", halfwidth_bracket, halfwidth_bracket, dots_regex))
 options(datatable.prettyprint.char=3L)
-test(2248.08, DT, output="1: \u0061\u0301\u0061\u0301\u0061\u0301[.][.][.] \u4E00\u4E00\u4E00[.][.][.] aaa[.][.][.] \uFF63\uFF63[.][.][.]")
-DT = data.table("\u0061\u0301\u0061\u0301", "\u4E00\u4E00", "aaaa", "\uFF63\uFF63\uFF63\uFF63\uFF63")
+test(2248.08, DT, output=paste0("1: ", accented_a, accented_a, accented_a, dots_regex, " ", ja_ichi, ja_ichi, ja_ichi, dots_regex, " aaa", dots_regex, " ", halfwidth_bracket, halfwidth_bracket, dots_regex))
+DT = data.table(strrep(accented_a, 2L), strrep(ja_ichi, 2L), strrep("a", 4L), strrep(halfwidth_bracket, 5L))
 options(datatable.prettyprint.char=2L)
 # Multiple test, some truncated
-test(2248.09, DT, output="1: \u0061\u0301\u0061\u0301 \u4E00\u4E00 aa[.][.][.] \uFF63\uFF63[.][.][.]")
+test(2248.09, DT, output=paste0("1: ", accented_a, accented_a, " ", ja_ichi, ja_ichi, " aa", dots_regex, " ", halfwidth_bracket, halfwidth_bracket, dots_regex))
 # Multiple test, multiple full-width, some truncated
-DT = data.table("\u4E00", "\u4E00\u4E00", "\u4E00\u4E00\u4E00", "\u4E00\u4E00\u4E00\u4E00")
-test(2248.10, DT, output="1: \u4E00 \u4E00\u4E00 \u4E00\u4E00[.][.][.] \u4E00\u4E00[.][.][.]")
+DT = data.table(as.list(strrep(ja_ichi, 1:4)))
+test(2248.10, DT, output=paste0("1: ", ja_ichi, " ", ja_ichi, ja_ichi, " ", ja_ichi, ja_ichi, dots_regex, " ", ja_ichi, ja_ichi, dots_regex))
 # Multiple test, multiple combined, some truncated
-DT = data.table("\u0061\u0301", "\u0061\u0301\u0061\u0301", "\u0061\u0301\u0061\u0301\u0061\u0301")
-test(2248.11, DT, output="1:  \u0061\u0301 \u0061\u0301\u0061\u0301 \u0061\u0301\u0061\u0301[.][.][.]")
+DT = data.table(as.list(strrep(accented_a, 1:3)))
+test(2248.11, DT, output=paste0("1:  ", accented_a, " ", accented_a, accented_a, " ", accented_a, accented_a, dots_regex))
