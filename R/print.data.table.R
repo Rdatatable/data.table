@@ -237,8 +237,8 @@ char.trunc = function(x, trunc.char = getOption("datatable.prettyprint.char")) {
   widthSize = nchar(x, 'width')
   charSize = nchar(x)
   isFull = widthSize > charSize
-  idx = which(pmin(widthSize, charSize) > trunc.char)
-  x[idx] = paste0(strtrim(x[idx], as.integer(ifelse(isFull, trunc.char * 2, trunc.char))), "...")
+  idx = pmin(widthSize, charSize) > trunc.char
+  x[idx] = paste0(strtrim(x[idx], fifelse(isFull[idx], 2L * trunc.char, trunc.char)), "...")
   x
 }
 
