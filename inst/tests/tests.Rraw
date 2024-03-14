@@ -18319,22 +18319,33 @@ if (test_bit64) {
 # trunc.char misbehaves for multibyte characters, #5096
 # Tests for combining characters
 options(datatable.prettyprint.char=4L)
-DT = data.table("áááá")
-test(2248.1, capture.output(print(DT)), c("     V1", "1: áááá"))
+DT = data.table("\u0061\u0301\u0061\u0301\u0061\u0301\u0061\u0301")
+test(2248.01, print(DT), output="1: \u0061\u0301\u0061\u0301\u0061\u0301\u0061\u0301")
 options(datatable.prettyprint.char=3L)
-test(2248.2, capture.output(print(DT)), c("       V1", "1: ááá..."))
+test(2248.02, print(DT), output="1: \u0061\u0301\u0061\u0301\u0061\u0301...")
 options(datatable.prettyprint.char=1L)
-test(2248.3, capture.output(print(DT)), c("     V1", "1: á..."))
+test(2248.03, print(DT), output="1: \u0061\u0301...")
 # Tests for full-width multibyte characters
 options(datatable.prettyprint.char=4L)
-DT = data.table("一二こん")
-test(2248.4, capture.output(print(DT)), c("         V1", "1: 一二こん"))
+DT = data.table("\u4E00\u4E8C\u3053\u3093")
+test(2248.04, print(DT), output="1: \u4E00\u4E8C\u3053\u3093")
 options(datatable.prettyprint.char=3L)
-test(2248.5, capture.output(print(DT)), c("          V1", "1: 一二こ..."))
+test(2248.05, print(DT), output="1: \u4E00\u4E8C\u3053...")
 options(datatable.prettyprint.char=1L)
-test(2248.6, capture.output(print(DT)), c("      V1", "1: 一..."))
-# General test
-DT <- data.table("áááá", "一一一一", "aaaa", "｣｣｣｣")
+test(2248.06, print(DT), output="1: \u4E00...")
+# Multiple tests, all truncated
+DT = data.table("\u0061\u0301\u0061\u0301\u0061\u0301\u0061\u0301", "\u4E00\u4E00\u4E00\u4E00", "aaaa", "\uFF63\uFF63\uFF63\uFF63")
 options(datatable.prettyprint.char=2L)
-test(2248.7, capture.output(print(DT)), c("      V1      V2    V3    V4", "1: áá... 一一... aa... ｣｣..."))
-options(datatable.prettyprint.char=NULL)
+test(2248.07, print(DT), output="1: \u0061\u0301\u0061\u0301... \u4E00\u4E00... aa... \uFF63\uFF63...")
+options(datatable.prettyprint.char=3L)
+test(2248.08, print(DT), output="1: \u0061\u0301\u0061\u0301\u0061\u0301... \u4E00\u4E00\u4E00... aaa... \uFF63\uFF63...")
+DT = data.table("\u0061\u0301\u0061\u0301", "\u4E00\u4E00", "aaaa", "\uFF63\uFF63\uFF63\uFF63\uFF63")
+options(datatable.prettyprint.char=2L)
+# Multiple test, some truncated
+test(2248.09, print(DT), output="1: \u0061\u0301\u0061\u0301 \u4E00\u4E00 aa... \uFF63\uFF63...")
+# Multiple test, multiple full-width, some truncated
+DT = data.table("\u4E00", "\u4E00\u4E00", "\u4E00\u4E00\u4E00", "\u4E00\u4E00\u4E00\u4E00")
+test(2248.10, print(DT), output="1: \u4E00 \u4E00\u4E00 \u4E00\u4E00... \u4E00\u4E00...")
+# Multiple test, multiple combined, some truncated
+DT = data.table("\u0061\u0301", "\u0061\u0301\u0061\u0301", "\u0061\u0301\u0061\u0301\u0061\u0301")
+test(2248.11, print(DT), output="1:  \u0061\u0301 \u0061\u0301\u0061\u0301 \u0061\u0301\u0061\u0301...")
