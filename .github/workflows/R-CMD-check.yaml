@@ -25,7 +25,7 @@ jobs:
           # Rdatatable has full-strength GLCI which runs after merge. So we just need a few
           # jobs (mainly test-coverage) to run on every commit in PRs so as to not slow down dev.
           # GHA does run these jobs concurrently but even so reducing the load seems like a good idea.
-          # - {os: windows-latest, r: 'release'}  # currently using AppVeyor which runs 32bit in 5 min and works
+          - {os: windows-latest, r: 'release'}  # currently using AppVeyor which runs 32bit in 5 min and works
           # - {os: macOS-latest, r: 'release'}    # test-coverage.yaml uses macOS
           - {os: macOs-14, r: 'release'} # to cover CRAN check M1mac https://www.stats.ox.ac.uk/pub/bdr/M1mac/README.txt
           - {os: ubuntu-20.04, r: 'release', rspm: "https://packagemanager.rstudio.com/cran/__linux__/focal/latest"}
