@@ -237,10 +237,10 @@ char.trunc = function(x, trunc.char = getOption("datatable.prettyprint.char")) {
   nchar_width = nchar(x, 'width')
   nchar_chars = nchar(x, 'chars')
   is_full_width = nchar_width > nchar_chars
-  if (any(is_full_width)) {
+  idx = pmin(nchar_width, nchar_chars) > trunc.char
+  if (any(idx)) {
     cat(sprintf("Found some full-width characters to print\n  nchar_width: %s\n  nchar_chars: %s\n", paste(nchar_width, collapse = " "), paste(nchar_chars, collapse = " ")))
   }
-  idx = pmin(nchar_width, nchar_chars) > trunc.char
   x[idx] = paste0(strtrim(x[idx], trunc.char * fifelse(is_full_width[idx], 2L, 1L)), "...")
   x
 }
