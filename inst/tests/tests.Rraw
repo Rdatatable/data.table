@@ -18319,6 +18319,7 @@ if (test_bit64) {
 # trunc.char misbehaves for multibyte characters, #5096
 # Tests for combining characters
 options(datatable.prettyprint.char=4L)
+# \u0061\u301 is accented lowercase 'a'
 DT = data.table("\u0061\u0301\u0061\u0301\u0061\u0301\u0061\u0301")
 test(2248.01, print(DT), output="1: \u0061\u0301\u0061\u0301\u0061\u0301\u0061\u0301")
 options(datatable.prettyprint.char=3L)
@@ -18327,6 +18328,7 @@ options(datatable.prettyprint.char=1L)
 test(2248.03, print(DT), output="1: \u0061\u0301...")
 # Tests for full-width multibyte characters
 options(datatable.prettyprint.char=4L)
+# four Japanese characters: 'one' 'two' 'ko' 'n'
 DT = data.table("\u4E00\u4E8C\u3053\u3093")
 test(2248.04, print(DT), output="1: \u4E00\u4E8C\u3053\u3093")
 options(datatable.prettyprint.char=3L)
@@ -18334,6 +18336,7 @@ test(2248.05, print(DT), output="1: \u4E00\u4E8C\u3053...")
 options(datatable.prettyprint.char=1L)
 test(2248.06, print(DT), output="1: \u4E00...")
 # Multiple tests, all truncated
+# \uFF63 is half-width right corner bracket
 DT = data.table("\u0061\u0301\u0061\u0301\u0061\u0301\u0061\u0301", "\u4E00\u4E00\u4E00\u4E00", "aaaa", "\uFF63\uFF63\uFF63\uFF63")
 options(datatable.prettyprint.char=2L)
 test(2248.07, print(DT), output="1: \u0061\u0301\u0061\u0301... \u4E00\u4E00... aa... \uFF63\uFF63...")
