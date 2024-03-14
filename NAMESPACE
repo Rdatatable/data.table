@@ -60,7 +60,6 @@ export(substitute2)
 #export(DT)  # mtcars |> DT(i,j,by)  #4872 #5472
 
 S3method("[", data.table)
-export("[.data.table")  # so that functional DT() finds it; PR#5176
 S3method("[<-", data.table)
 # S3method("[[", data.table)
 # S3method("[[<-", data.table)
