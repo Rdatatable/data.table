@@ -24,7 +24,7 @@
     col.names=getOption("datatable.print.colnames"),    # default: "auto"
     print.keys=getOption("datatable.print.keys"),       # default: TRUE
     trunc.cols=getOption("datatable.print.trunc.cols"), # default: FALSE
-    trunc.char = getOption("datatable.prettyprint.char")# default: NULL
+    trunc.char = getOption("datatable.prettyprint.char"),# default: NULL
     quote=FALSE,
     timezone=FALSE, \dots)
 
