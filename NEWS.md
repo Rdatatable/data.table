@@ -2,7 +2,53 @@
 
 **If you are viewing this file on CRAN, please check [latest news on GitHub](https://github.com/Rdatatable/data.table/blob/master/NEWS.md) where the formatting is also better.**
 
-# data.table [v1.14.99](https://github.com/Rdatatable/data.table/milestone/29)  (in development)
+# data.table [v1.15.99](https://github.com/Rdatatable/data.table/milestone/30)  (in development)
+
+## NEW FEATURES
+
+1. `print.data.table()` shows empty (`NULL`) list column entries as `[NULL]` for emphasis. Previously they would just print nothing (same as for empty string). Part of [#4198](https://github.com/Rdatatable/data.table/issues/4198). Thanks @sritchie73 for the proposal and fix.
+
+    ```R
+    data.table(a=list(NULL, ""))
+    #         a
+    #    <list>
+    # 1: [NULL]
+    # 2:
+    ```
+
+2. `cedta()` now returns `FALSE` if `.datatable.aware = FALSE` is set in the calling environment, [#5654](https://github.com/Rdatatable/data.table/issues/5654). Thanks @dvg-p4 for the request and PR.
+
+3. `split.data.table` also accepts a formula for `f`, [#5392](https://github.com/Rdatatable/data.table/issues/5392), mirroring the same in `base::split.data.frame` since R 4.1.0 (May 2021). Thanks to @XiangyunHuang for the request, and @ben-schwen for the PR.
+
+4. Namespace-qualifying `data.table::shift()`, `data.table::first()`, or `data.table::last()` will not deactivate GForce, [#5942](https://github.com/Rdatatable/data.table/issues/5942). Thanks @MichaelChirico for the proposal and fix. Namespace-qualifying other calls like `stats::sum()`, `base::prod()`, etc., continue to work as an escape valve to avoid GForce, e.g. to ensure S3 method dispatch.
+
+## BUG FIXES
+
+1. `unique()` returns a copy the case when `nrows(x) <= 1` instead of a mutable alias, [#5932](https://github.com/Rdatatable/data.table/pull/5932). This is consistent with existing `unique()` behavior when the input has no duplicates but more than one row. Thanks to @brookslogan for the report and @dshemetov for the fix.
+
+2. `dcast` handles coercion of `fill` to `integer64` correctly, [#4561](https://github.com/Rdatatable/data.table/issues/4561). Thanks to @emallickhossain for the bug report and @MichaelChirico for the fix.
+
+3. Optimized `shift` per group produced wrong results when simultaneously subsetting, for example, `DT[i==1L, shift(x), by=group]`, [#5962](https://github.com/Rdatatable/data.table/issues/5962). Thanks to @renkun-ken for the report and Benjamin Schwendinger for the fix.
+
+4. `dcast(fill=NULL)` only computes default fill value if necessary, which eliminates some previous warnings (for example, when fun.aggregate=min or max, warning was NAs introduced by coercion to integer range) which were potentially confusing, [#5512](https://github.com/Rdatatable/data.table/issues/5512), [#5390](https://github.com/Rdatatable/data.table/issues/5390). Thanks to Toby Dylan Hocking for the fix.
+
+## NOTES
+
+1. `transform` method for data.table sped up substantially when creating new columns on large tables. Thanks to @OfekShilon for the report and PR. The implemented solution was proposed by @ColeMiller1.
+
+2. The documentation for the `fill` argument in `rbind()` and `rbindlist()` now notes the expected behaviour for missing `list` columns when `fill=TRUE`, namely to use `NULL` (not `NA`), [#4198](https://github.com/Rdatatable/data.table/pull/4198). Thanks @sritchie73 for the proposal and fix.
+
+3. data.table now depends on R 3.2.0 (2015) instead of 3.1.0 (2014). 1.17.0 will likely move to R 3.3.0 (2016). Recent versions of R have good features that we would gradually like to incorporate, and we see next to no usage of these very old versions of R.
+
+4. Erroneous assignment calls in `[` with a trailing comma (e.g. ``DT[, `:=`(a = 1, b = 2,)]``) get a friendlier error since this situation is common during refactoring and easy to miss visually. Thanks @MichaelChirico for the fix.
+
+5. Input files are now kept open during `mmap()` when running under Emscripten, [emscripten-core/emscripten#20459](https://github.com/emscripten-core/emscripten/issues/20459). This avoids an error in `fread()` when running in WebAssembly, [#5969](https://github.com/Rdatatable/data.table/issues/5969). Thanks to @maek-ies for the report and @georgestagg for the PR.
+
+6. `dcast()` message about `fun.aggregate` defaulting to `length()` when aggregation is necessary, which could be confusing if duplicates were unexpected, does better explaining the behavior and suggesting alternatives, [#5217](https://github.com/Rdatatable/data.table/issues/5217). Thanks @MichaelChirico for the suggestion and @Nj221102 for the fix.
+
+7. Updated a test relying on `>` working for comparing language objects to a string, which will be deprecated by R, [#5977](https://github.com/Rdatatable/data.table/issues/5977); no user-facing effect. Thanks to R-core for continuously improving the language.
+
+# data.table [v1.15.0](https://github.com/Rdatatable/data.table/milestone/29)  (30 Jan 2024)
 
 ## BREAKING CHANGE
 
@@ -562,6 +608,8 @@
 
 55. `fread(URL)` with `https:` and `ftps:` could timeout if proxy settings were not guessed right by `curl::curl_download`, [#1686](https://github.com/Rdatatable/data.table/issues/1686). `fread(URL)` now uses `download.file()` as default for downloading files from urls. Thanks to @cderv for the report and Benjamin Schwendinger for the fix.
 
+56. `split.data.table()` works for downstream methods that don't implement `DT[i]` form (i.e., requiring `DT[i, j]` form, like plain `data.frame`s), for example `sf`'s `[.sf`, [#5365](https://github.com/Rdatatable/data.table/issues/5365). Thanks @barryrowlingson for the report and @michaelchirico for the fix.
+
 ## NOTES
 
 1. New feature 29 in v1.12.4 (Oct 2019) introduced zero-copy coercion. Our thinking is that requiring you to get the type right in the case of `0` (type double) vs `0L` (type integer) is too inconvenient for you the user. So such coercions happen in `data.table` automatically without warning. Thanks to zero-copy coercion there is no speed penalty, even when calling `set()` many times in a loop, so there's no speed penalty to warn you about either. However, we believe that assigning a character value such as `"2"` into an integer column is more likely to be a user mistake that you would like to be warned about. The type difference (character vs integer) may be the only clue that you have selected the wrong column, or typed the wrong variable to be assigned to that column. For this reason we view character to numeric-like coercion differently and will warn about it. If it is correct, then the warning is intended to nudge you to wrap the RHS with `as.<type>()` so that it is clear to readers of your code that a coercion from character to that type is intended. For example :
@@ -616,5 +664,9 @@
 17. Argument `logicalAsInt` to `fwrite()` now warns. Use `logical01` instead. We stated the intention to begin removing this option in 2018 (v1.11.0). It will be upgraded to an error in the next release before being removed in the subsequent release.
 
 18. Option `datatable.CJ.names` no longer has any effect, after becoming `TRUE` by default in v1.12.2 (2019). Setting it now gives a warning, which will be dropped in the next release.
+
+19. In the NEWS for v1.11.0 (May 2018), section "NOTICE OF INTENDED FUTURE POTENTIAL BREAKING CHANGES" item 2, we stated the intention to eventually change `logical01` to be `TRUE` by default. After some consideration, reflection, and community input, we have decided not to move forward with this plan, i.e., `logical01` will remain `FALSE` by default in both `fread()` and `fwrite()`. See discussion in #5856; most importantly, we think changing the default would be a major disruption to reading "sharded" CSVs where data with the same schema is split into many files, some of which could be converted to `logical` while others remain `integer`. We will retain the option `datatable.logical01` for users who wish to use a different default -- for example, if you are doing input/output on tables with a large number of logical columns, where writing '0'/'1' to the CSV many millions of times is preferable to writing 'TRUE'/'FALSE'.
+
+20. Some clarity is added to `?GForce` for the case when subtle changes to `j` produce different results because of differences in locale. Because `data.table` _always_ uses the "C" locale, small changes to queries which activate/deactivate GForce might cause confusingly different results when sorting is involved, [#5331](https://github.com/Rdatatable/data.table/issues/5331). The inspirational example compared `DT[, .(max(a), max(b)), by=grp]` and `DT[, .(max(a), max(tolower(b))), by=grp]` -- in the latter case, GForce is deactivated owing to the _ad-hoc_ column, so the result for `max(a)` might differ for the two queries. An example is added to `?GForce`. As always, there are several options to guarantee consistency, for example (1) use namespace qualification to deactivate GForce: `DT[, .(base::max(a), base::max(b)), by=grp]`; (2) turn off all optimizations with `options(datatable.optimize = 0)`; or (3) set your R session to always sort in C locale with `Sys.setlocale("LC_COLLATE", "C")` (or temporarily with e.g. `withr::with_locale()`). Thanks @markseeto for the example and @michaelchirico for the improved documentation.
 
 # data.table v1.14.10 (Dec 2023) back to v1.10.0 (Dec 2016) has been moved to [NEWS.1.md](https://github.com/Rdatatable/data.table/blob/master/NEWS.1.md)

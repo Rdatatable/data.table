@@ -2,7 +2,7 @@
 \alias{fread}
 \title{ Fast and friendly file finagler }
 \description{
-   Similar to \code{read.table} but faster and more convenient. All controls such as \code{sep}, \code{colClasses} and \code{nrows} are automatically detected.
+   Similar to \code{\link[utils:read.csv]{read.csv()}} and \code{\link[utils:read.delim]{read.delim()}} but faster and more convenient. All controls such as \code{sep}, \code{colClasses} and \code{nrows} are automatically detected.
 
    \code{bit64::integer64}, \code{\link{IDate}}, and \code{\link{POSIXct}} types are also detected and read directly without needing to read as character before converting.
 

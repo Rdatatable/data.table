@@ -191,7 +191,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   }
 
   # There aren't any errors, so we can use up 11 lines for the timings table
-  nTest = RSS = NULL  # to avoid 'no visible binding' note
+  time = nTest = RSS = NULL  # to avoid 'no visible binding' note
   timings = env$timings[nTest>0]
   if (!memtest) {
     ans = head(timings[if (dev) -1L else TRUE][order(-time)], 10L)[,RSS:=NULL]   # exclude id 1 in dev as that includes JIT
@@ -249,7 +249,11 @@ gc_mem = function() {
   # nocov end
 }
 
-test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,notOutput=NULL,ignore.warning=NULL) {
+test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,notOutput=NULL,ignore.warning=NULL,options=NULL) {
+  if (!is.null(options)) {
+    old_options <- do.call('options', as.list(options)) # as.list(): allow passing named character vector for convenience
+    on.exit(options(old_options), add=TRUE)
+  }
   # Usage:
   # i) tests that x equals y when both x and y are supplied, the most common usage
   # ii) tests that x is TRUE when y isn't supplied
@@ -280,7 +284,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     foreign = get("foreign", parent.frame())
     showProgress = get("showProgress", parent.frame())
     time = nTest = RSS = NULL  # to avoid 'no visible binding' note
-    if (num>0) on.exit( {
+    if (num>0) on.exit( add=TRUE, {
        took = proc.time()[3L]-lasttime  # so that prep time between tests is attributed to the following test
        timings[as.integer(num), `:=`(time=time+took, nTest=nTest+1L), verbose=FALSE]
        if (memtest) {
