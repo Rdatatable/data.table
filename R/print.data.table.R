@@ -7,6 +7,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
                col.names=getOption("datatable.print.colnames"),
                print.keys=getOption("datatable.print.keys"),
                trunc.cols=getOption("datatable.print.trunc.cols"),
+               trunc.char=getOption("datatable.prettyprint.char"),
                quote=FALSE,
                timezone=FALSE, ...) {
   # topn  - print the top topn and bottom topn rows with '---' inbetween (5)
