@@ -16,7 +16,7 @@
 
 2. `cedta()` now returns `FALSE` if `.datatable.aware = FALSE` is set in the calling environment, [#5654](https://github.com/Rdatatable/data.table/issues/5654).
 
-3. `base::rev` gains a fast method `frev(x, copy)` for atomic vectors/list, [#5885](https://github.com/Rdatatable/data.table/issues/5885). Thanks to Benjamin Schwendinger for suggesting and implementing.
+3. New `frev(x, copy=TRUE)` as a faster analogue to `base::rev()` for atomic vectors/lists, [#5885](https://github.com/Rdatatable/data.table/issues/5885). Thanks to Benjamin Schwendinger for suggesting and implementing.
 
     ```R
     x = sample(2e8)
