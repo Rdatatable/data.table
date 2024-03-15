@@ -9,6 +9,7 @@ Rplots.pdf
 data.table_*.tar.gz
 data.table.Rcheck
 src/Makevars
+.Rprofile
 
 # Package install
 inst/cc
@@ -48,3 +49,6 @@ dev.R
 *.RDS
 *.diff
 *.patch
+
+# pkgdown
+docs

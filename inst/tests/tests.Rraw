@@ -103,7 +103,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   year = data.table::year               # lubridate
   yearmon = data.table::yearmon         # zoo
   yearqtr = data.table::yearqtr         # zoo
-  
+
   rm_all = function(env=parent.frame()) {
     tt = setdiff(ls(envir=env), .do_not_rm)
     rm(list=tt, envir=env)
@@ -135,12 +135,17 @@ if (!test_longdouble) {
 # generate simple error messages from base that are checked against in our tests. this helps
 #   protect us against these messages evolving in base in the future, and against these messages
 #   potentially not being produced in English.
+# If the target condition only appears on certain platforms/R versions, this will return NULL
+#   whenever the code succeeds, or the message matcher wherever it fails. Thus we can flexibly
+#   pass e.g. 'warning = NULL | warning = <warning>' concisely as 'test(., warning = get_msg())'.
 # Three use cases:
 #   (1) match message exactly [missing delim]
 #   (2) match message pattern after dropping anything between delimeters [delim, fmt=FALSE]
 #   (3) function factory for matching messages exactly by substituting anything between delimeters [delim, fmt=TRUE]
 get_msg = function(e, delim, fmt=FALSE) {
-  msg = tryCatch(e, error=identity, warning=identity)$message
+  condition = tryCatch({e; NULL}, error=identity, warning=identity)
+  if (is.null(condition)) return(condition)
+  msg = condition$message
   if (missing(delim)) return(msg)
   if (length(delim) == 1L) delim[2L] = delim[1L]
   msg = gsub(
@@ -165,7 +170,8 @@ base_messages = list(
   missing_file = get_msg({tmp <- tempfile(tmpdir=tempfile("xxx")); file(tmp, "w")}, "'"),
   # gives both error & warning but tryCatch returns the warning first, so suppress
   cant_open_file = get_msg(suppressWarnings({con<-file(tempfile()); open(con, 'r')})),
-  mixed_subscripts = get_msg(letters[-1:1])
+  mixed_subscripts = get_msg(letters[-1:1]),
+  maybe_invalid_old_posixct = get_msg(as.POSIXct("1893-12-28 05:15:36", tz = ""))
 )
 
 ##########################
@@ -314,7 +320,7 @@ test(69.4, names(tables(silent=TRUE, mb=FALSE, index=TRUE)),
 
 xenv = new.env()   # to control testing tables()
 xenv$DT = data.table(a = 1)
-test(69.5, nrow(tables(env=xenv)), 1L, output="NAME NROW NCOL MB COLS KEY\n1:   DT    1    1  0    a.*Total: 0MB")
+test(69.5, nrow(tables(env=xenv)), 1L, output="NAME NROW NCOL MB COLS    KEY\n1:   DT    1    1  0    a [NULL]\nTotal: 0MB")
 xenv$DT = data.table(A=1:2, B=3:4, C=5:6, D=7:8, E=9:10, F=11:12, G=13:14, H=15:16, key="A,D,F,G")
 test(69.6, nrow(tables(env=xenv)), 1L, output="NAME NROW NCOL MB            COLS     KEY\n1:   DT    2    8  0 A,B,C,D,E,F,... A,D,F,G.*Total: 0MB")
 rm(xenv)
@@ -1090,6 +1096,7 @@ test(351.2, DT[, c("a","b"):=13:15, verbose=TRUE],       ans,
             notOutput="revised")
 test(352.1, DT[,letters[1:4]:=list(1L,NULL)], error="Supplied 4 columns to be assigned 2 items. Please see NEWS for v1.12.2")
 test(352.2, DT[,letters[1:4]:=list(1L,NULL,2L,NULL)], data.table(a=c(1L,1L,1L),c=c(2L,2L,2L)))
+test(352.3, DT[,letters[1:2]:=list(1L,NULL,2L,NULL)], error="Supplied 2 columns to be assigned 4 items. Please see NEWS for v1.12.2")
 
 # Test assigning new levels into factor columns
 DT = data.table(f=factor(c("a","b")),x=1:4)
@@ -1591,11 +1598,9 @@ test(505, DT[J(a=1,b=6),sum(i.b*b),by=.EACHI]$V1, 24)  # 24 now 'double' because
 
 # Test := after a key<-
 DT = data.table(a=3:1,b=4:6)
-test(506, key(DT)<-"a", "a", warning="deprecated")
-test(508, DT, data.table(a=1:3,b=6:4,key="a"))
-test(509, DT[,b:=10L], data.table(a=1:3,b=10L,key="a"))
-test(510, DT[,c:=11L], data.table(a=1:3,b=10L,c=11L,key="a"),     # no warning between 1.8.3 and 1.12.2 due to (now removed) setmutable and SET_NAMED in setalloccol, #3729
-          warning="Invalid .internal.selfref detected and fixed") # but the warning makes sense after the (deprecated) key(DT)<- above, so this warns again from 1.12.4
+test(506, key(DT)<-"a", error="deprecated")
+
+# tests 508, 509, 510 related to follow-up operations after key<-, which are now irrelevant
 
 # Test new functons chmatch and %chin%
 y=letters
@@ -1759,7 +1764,7 @@ test(578, X[Y,verbose=TRUE], data.table(a=c("D","B"), v=c(4L,2L)),  # no key bec
 
 # Test that logical i in set() returns helpful error
 DT = data.table(a=1:3,b=4:6)
-test(580, set(DT,a<3,"b",0L), error="simply wrap with which(), and take the which() outside the loop if possible for efficiency")
+test(580, set(DT,DT$a<3,"b",0L), error="simply wrap with which(), and take the which() outside the loop if possible for efficiency")
 
 # Test by on empty tables (and when i returns no rows), #1945
 DT = data.table(a=1:3,v=1:6)
@@ -1921,6 +1926,11 @@ test(631.5, DT3, data.table(a=c(2), total=c(5), key="a"))
 # .. nrow(y)=1, i subset y with 1 and match with x
 test(631.6, merge(DT1,DT4,all.y=TRUE), data.table(a=c(3),total.x=c(1),total.y=c(1),key="a"))
 test(631.7, DT4, data.table(a=c(3), total=c(1), key="a"))
+# merge columns with different attributes #5309
+x = data.table(a=1L, b=as.IDate(16801))
+y = data.table(a=2L, b=NA)
+test(631.8, merge(x,y,by="a",all=TRUE), data.table(a=c(1L,2L), b.x=as.IDate(c(16801,NA)), b.y=NA, key="a"))
+test(631.9, merge(y,x,by="a",all=TRUE), data.table(a=c(1L,2L), b.x=NA, b.y=as.IDate(c(16801,NA)), key="a"))
 
 test(632, merge(DT1,DT2,all=TRUE), data.table(a=c(1,2,3,4,5),total.x=c(2,NA,1,3,1),total.y=c(NA,5,1,NA,2),key="a"))
 test(632.1, merge(DT1,DT2,all=TRUE), setkey(adt(merge(adf(DT1),adf(DT2),by="a",all=TRUE)),a))
@@ -2950,12 +2960,8 @@ test(995, DT[CJ(c(5,3), c(5,1), sorted=FALSE)], OUT)
 xx <- factor(letters[1:2], ordered=TRUE)
 yy <- sample(2L)
 yy_sort = base::sort.int(yy)
-old = options(datatable.CJ.names=FALSE)
-test(996.01, CJ(xx, yy), setkey(data.table(rep(xx, each=2L), rep(yy_sort, 2L))))
-test(996.02, CJ(a = xx, yy), setkey(data.table(a = rep(xx, each=2L), V2 = rep(yy_sort, 2L))))
-options(datatable.CJ.names=TRUE)
+# 996.01, 996.02 tested the now-ineffectual datatable.CJ.names option
 test(996.03, CJ(xx, yy), setkey(data.table(xx = rep(xx, each=2L), yy = rep(yy_sort, 2L))))
-options(old)
 
 # #3597 -- CJ properly informs sorted can't apply to list input
 test(996.04, CJ(list(1:2, 3L)), error = "non-atomic, which can't be sorted")
@@ -3723,6 +3729,21 @@ test(1100, dt1[dt2,roll=-Inf,rollends=c(FALSE,TRUE)]$ind, INT(NA,NA,1,2,2,2,2,2,
   DT = data.table(x=sample(5,20,TRUE), y=sample(2,20,TRUE), z=sample(letters[1:2],20,TRUE), d1=runif(20), d2=1L)
   test(1102.38, names(dcast(DT, x ~ y + z, fun.aggregate=length, value.var = "d2", sep=".")),
                 c("x", "1.a", "1.b", "2.a", "2.b"))
+
+  # test for #5512, only compute default fill if needed.
+  DT = data.table(chr=c("a","b","b"), int=1:3, dbl=as.double(4:6))
+  mymin <- function(x){
+    if (!length(x)) stop("calling mymin on vector of length 0")
+    min(x)
+  }
+  test(1102.39, dcast(DT, . ~ chr, mymin, value.var="int"), data.table(.=".",a=1L,b=2L,key=".")) # fill not used in output, so default fill not computed.
+  ans <- data.table(int=1:3, a=c(1L,NA,NA), b=c(NA,2L,3L), key="int")
+  test(1102.40, dcast(DT, int ~ chr, min, value.var="int"), ans, warning=c("no non-missing arguments to min; returning Inf", "inf (type 'double') at RHS position 1 out-of-range(NA) or truncated (precision lost) when assigning to type 'integer' (target vector)")) # warning emitted when coercing default fill since as.integer(min(integer()) is Inf) is NA.
+  test(1102.41, dcast(DT, int ~ chr, mymin, value.var="int", fill=NA), ans) # because fill=NA is provided by user, no need to call mymin(integer()).
+  test(1102.42, dcast(DT, int ~ chr, min, value.var="dbl"), data.table(int=1:3, a=c(4,Inf,Inf), b=c(Inf,5,6), key="int"), warning="no non-missing arguments to min; returning Inf") # only one warning, because no coercion.
+  test(1102.43, dcast(DT, int ~ chr, min, value.var="dbl", fill="coerced to NA"), data.table(int=1:3, a=c(4,NA,NA), b=c(NA,5,6), key="int"), warning=c("Coercing 'character' RHS to 'double' to match the type of target vector.", "NAs introduced by coercion"))
+  test(1102.44, dcast(DT, int ~ ., value.var="dbl", fill="ignored"), data.table(int=1:3, .=c(4,5,6), key="int"))
+  
 }
 
 # test for freading commands
@@ -3886,7 +3907,7 @@ test(1133.75, DT[, new := .N, by=x], data.table(x=INT(1,1,1,1,1,2,2), new=INT(5,
 # on a new column with warning on 2nd assign
 DT[,new:=NULL]
 test(1133.8, DT[, new := if (.GRP==1L) 7L else 3.4, by=x], data.table(x=INT(1,1,1,1,1,2,2), new=INT(7,7,7,7,7,3,3)),
-             warning="Group 2 column 'new': 3.4.*double.*at RHS position 1 truncated.*precision lost.*integer")
+             warning="Group 2 column 'new': 3.4.*double.*at RHS position 1.*truncated.*precision lost.*integer")
 
 # Fix for FR #2496 - catch `{` in `:=` expression in `j`:
 DT <- data.table(x=c("A", "A", "B", "B"), val =1:4)
@@ -5071,7 +5092,7 @@ dt <- data.table(a=1:3, b=c(7,8,9), c=c(TRUE, NA, FALSE), d=as.list(4:6), e=c("a
 
 test(1294.01, dt[, a := 1]$a, rep(1L, 3L))
 test(1294.02, dt[, a := 1.5]$a, rep(1L, 3L),
-              warning="1.5.*double.*position 1 truncated.*integer.*column 1 named 'a'")
+              warning="1.5.*double.*position 1.*truncated.*integer.*column 1 named 'a'")
 test(1294.03, dt[, a := NA]$a, rep(NA_integer_, 3L))
 test(1294.04, dt[, a := "a"]$a, rep(NA_integer_, 3L),
               warning=c("Coercing 'character' RHS to 'integer'.*column 1 named 'a'",
@@ -6730,6 +6751,18 @@ test(1463.69, shift(x, -6, type="cyclic"), shift(x, -1, type="cyclic"))
 # test warning
 test(1463.70, shift(x, 1, fill=1, type="cyclic"), c(5L, 1L:4L), warning="Provided argument fill=1 will be ignored since type='shift'.")
 
+# test raw #5547
+x=as.raw(1:5)
+test(1463.71, shift(x,1L),                   as.raw(c(0L, 1:4)))
+test(1463.72, shift(x,1:2),                  list(as.raw(c(0L, 1:4)), as.raw(c(0L, 0L, 1:3))))
+test(1463.73, shift(x,1L, fill=0L),               as.raw(c(0L, 1:4)))
+test(1463.74, shift(x,1L,    type="lead"),   as.raw(c(2:5, 0L)))
+test(1463.75, shift(x,1:2,   type="lead"),   list(as.raw(c(2:5, 0L)), as.raw(c(3:5, 0L, 0L))))
+test(1463.76, shift(x,1L, fill=0L,type="lead"),   as.raw(c(2:5, 0L)))
+test(1463.77, shift(x,1L,    type="cyclic"), as.raw(c(5, 1:4)))
+test(1463.78, shift(x,1:2,   type="cyclic"), list(as.raw(c(5, 1:4)), as.raw(c(4:5, 1:3))))
+test(1463.79, shift(x,-1L,   type="cyclic"), as.raw(c(2:5, 1)))
+test(1463.80, shift(x,-(1:2),type="cyclic"), list(as.raw(c(2:5, 1)), as.raw(c(3:5,1:2))))
 
 # FR #686
 DT = data.table(a=rep(c("A", "B", "C", "A", "B"), c(2,2,3,1,2)), foo=1:10)
@@ -7305,12 +7338,10 @@ test(1524, ans1, ans2)
 x = c(1, 2, 1)
 y = c(5, 8, 8, 4)
 w = c(10, 12, 12, 13)  # already sorted but has dups; more efficient case to cover
-options(datatable.CJ.names=FALSE)
-test(1525.1, CJ(x, y, unique=TRUE), CJ(V1=c(1,2), V2=c(4,5,8)))
-test(1525.2, CJ(x, z=y, unique=TRUE), ans<-data.table(V1=rep(c(1,2), each=3), z=c(4,5,8), key="V1,z")) # naming of one but not both, too
-options(datatable.CJ.names=TRUE)
+# tests 1525.1, 1525.2 tested the now-ineffectual datatable.CJ.names option.
+ans<-data.table(V1=rep(c(1,2), each=3), z=c(4,5,8), key="V1,z")
 test(1525.3, CJ(x, y, unique=TRUE), CJ( x=c(1,2),  y=c(4,5,8)))
-test(1525.4, CJ(x, z=y, unique=TRUE), setnames(ans,c("x","z")))
+test(1525.4, CJ(x, z=y, unique=TRUE), setnames(copy(ans),c("x","z")))
 test(1525.5, CJ(x, w, unique=TRUE), data.table(x=(rep(c(1,2), each=3)), w=c(10,12,13), key="x,w"))
 
 # `key` argument fix for `setDT` when input is already a `data.table`,  #1169
@@ -9668,7 +9699,7 @@ nqjoin_test <- function(x, y, k=1L, test_no, mult="all") {
   gc()  # no longer needed but left in place just in case, no harm
 }
 
-dt1 = nq_fun(100L)  # 400 reduced to 100, #5517 
+dt1 = nq_fun(100L)  # 400 reduced to 100, #5517
 dt2 = nq_fun(50L)
 x = na.omit(dt1)
 y = na.omit(dt2)
@@ -10779,7 +10810,8 @@ test(1736.05, capture.output(fwrite(DT, sep='|', sep2=c("c(",",",")"), logical01
  "2|c(15,16,17,18)|c(1.2,2.3,3.4,3.14159265358979,-9)", "3|c(7)|c(foo,bar)", "4|c(9,10)|c(TRUE,TRUE,FALSE)"))
 test(1736.06, capture.output(fwrite(DT, sep='|', sep2=c("{",",","}"), logicalAsInt=TRUE)),
  c("A|B|C", "1|{1,2,3,4,5,6,7,8,9,10}|{s,t,u,v,w}",
- "2|{15,16,17,18}|{1.2,2.3,3.4,3.14159265358979,-9}", "3|{7}|{foo,bar}", "4|{9,10}|{1,1,0}"))
+ "2|{15,16,17,18}|{1.2,2.3,3.4,3.14159265358979,-9}", "3|{7}|{foo,bar}", "4|{9,10}|{1,1,0}"),
+ warning="logicalAsInt has been renamed logical01")
 DT = data.table(A=c("foo","ba|r","baz"))
 test(1736.07, capture.output(fwrite(DT,na="")), c("A","foo","ba|r","baz"))    # no list column so no need to quote
 test(1736.08, capture.output(fwrite(DT)), c("A","foo","ba|r","baz"))
@@ -12214,12 +12246,17 @@ test(1860, fread("A,B\n "), data.table(A=logical(), B=logical()))  # 2543
 # That unique(DT) returns DT when there are no dups, #2013
 # #3383 fix for unique.data.table returning copy(x)
 DT = data.table(A=c(1L,1L,2L), B=c(3L,4L,4L))
-test(1861, address(unique(DT)) != address(DT), TRUE)
+test(1861.1, address(unique(DT)) != address(DT))
+# Ditto when nrow(x) is 0 or 1, where there can never be duplicates
+DT = data.table(a = 1, b = 3)
+test(1861.2, address(unique(DT)) != address(DT))
+DT = data.table()
+test(1861.3, address(unique(DT)) != address(DT))
 
 # New warning for deprecated old behaviour option
-setkey(DT,A)
+DT = data.table(A=c(1L,1L,2L), B=c(3L,4L,4L), key="A")
 test(1862.1, unique(DT), DT)
-test(1862.2, unique(DT,by=key(DT)), data.table(A=1:2, B=3:4, key="A"))
+test(1862.2, unique(DT, by=key(DT)), data.table(A=1:2, B=3:4, key="A"))
 
 # fix for -ve indices issue in gmedian (2046) and gvar (2111)
 DT = data.table(x=c(1,1,1),y=c(3,0,0), key="x")
@@ -12911,8 +12948,8 @@ test(1914.04, dt.s4.list, as.list(dt))  # Underlying data not identical
 # simple S4 conversion-isms work
 df = data.frame(a=sample(letters, 10), b=1:10)
 dt = as.data.table(df)
-test(1914.05, identical(as(df, 'data.table'), dt))
-test(1914.06, identical(as(dt, 'data.frame'), df))
+test(1914.05, identical(methods::as(df, 'data.table'), dt))
+test(1914.06, identical(methods::as(dt, 'data.frame'), df))
 # data.table can be used in an S4 slot
 dt <- data.table(a=sample(letters[1:3], 10, replace=TRUE), score=rnorm(10))
 dt.comp <- new("S4Composition", data=dt)
@@ -13286,6 +13323,12 @@ test(1958.19, fread(text=txt, nrows=0L, verbose=TRUE), data.table(A=integer(), B
 txt = paste(c("A,B\n1,2\n", rep("3,4\n",5100), "3,4.1\n", rep("5,6\n",4900)), collapse="")
 test(1958.20, fread(text=txt, nrows=0L, verbose=TRUE), data.table(A=integer(), B=integer()),
               output="Sampled 1049 rows.*at 11 jump points")
+# invalid head position for nrows=0 #5868
+# following example has to be big enough to trigger a jump and enough blanks so we get an invalid header position after a jump (at least n=599101 for following two cols)
+test(1958.21, fread(sprintf('%s%s\n', 'a,b', paste0('\n', sample(c('', '3'), 6e5L, TRUE), sample(c(',a',',b',',c'), 6e5L, TRUE), collapse="")), nrows=0L),
+  data.table(a=integer(), b=character()))
+test(1958.22, fread(sprintf('%s%s\n', 'a,b', paste0('\n', sample(c('', '3'), 6e5L, TRUE), sample(c(',a',',b',',c'), 6e5L, TRUE), collapse="")), nrows=0L, nThread=1L),
+  data.table(a=integer(), b=character()))
 
 # Skip should work with all types of newlines #3006
 eols = c("\n", "\r\n", "\r", "\n\r")
@@ -13565,7 +13608,7 @@ test(1962.087, dcast(DT, a ~ b, value.var = 'b'),
 test(1962.088, dcast(DT[0L, ], a ~ c, value.var = 'b'), data.table(a=numeric(), key="a")) #1215
 test(1962.089, dcast(DT, a ~ c, value.var = 'b'),
      data.table(a = c(1, 2), `2` = c(0L, 2L), `4` = c(2L, 0L), key = 'a'),
-     message = 'Aggregate function missing')
+     message = ".*'fun\\.aggregate' is NULL.*defaulting to length\\(\\).*\\[a, c\\].*")
 
 ## IDateTime.R
 x = as.IDate('2018-08-01')
@@ -13617,7 +13660,8 @@ test(1963.07, shift(DT, -1:1),
           c(NA, 10L, 9L, 8L, 7L, 6L, 5L, 4L, 3L, 2L)))
 ## some coverage tests for good measure
 test(1963.08, shift(DT$x, type = 'some_other_type'), error='should be one of.*lag.*lead')
-test(1963.09, shift(as.raw(0:1)), error = "Type 'raw' is not supported")
+test(1963.09, shift(as.raw(0:1)), as.raw(c(0,0)))
+test(1963.095, shift(list(expression(1))), error = "Type 'expression' is not supported")
 test(1963.10, shift(DT, -1:1, type="shift", give.names = TRUE), # new type="shift" #3223
      ans <- list(`x_shift_-1` = c(2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, NA),
           x_shift_0 = 1:10,
@@ -14342,6 +14386,14 @@ test(2003.5, rbindlist(list(data.table(a=1:2), data.table(b=3:4, c=5:6)), fill=T
 # rbindlist segfault with fill=TRUE and usenames=FALSE #5444
 test(2003.6, rbindlist(list(list(1), list(2,3)), fill=TRUE, use.names=FALSE), data.table(c(1,2), c(NA, 3)))
 test(2003.7, rbindlist(list(list(1), list(2,factor(3))), fill=TRUE, use.names=FALSE), data.table(c(1,2), factor(c(NA, 3))))
+# rbind with different attributes #5309
+x=data.table(a=as.Date(NA))
+y=data.table(a=as.Date('2021-10-05'), b=as.POSIXct("2021-10-06 13:58:00 UTC"))
+ans=data.table(a=as.Date(c(NA_character_, '2021-10-05')), b=as.POSIXct(c(NA_character_, "2021-10-06 13:58:00 UTC")))
+test(2003.81, rbind(x, y, fill=TRUE, use.names=TRUE), ans)
+test(2003.82, rbind(y, x, fill=TRUE, use.names=TRUE), ans[2:1,])
+test(2003.83, rbind(x, y, fill=TRUE, use.names=FALSE), ans)
+test(2003.84, rbind(y, x, fill=TRUE, use.names=FALSE), ans[2:1,])
 
 # chmatch coverage for two different non-ascii encodings matching; issues mentioned in comments in chmatch.c #69 #2538 #111
 x1 = "fa\xE7ile"
@@ -14365,7 +14417,7 @@ DT[,foo:=factor(c("a","b","c"))]
 test(2005.05, DT[2, foo:=8i], error="Can't assign to column 'foo' (type 'factor') a value of type 'complex' (not character, factor, integer or numeric)")
 test(2005.06, DT[2, a:=9, verbose=TRUE], notOutput="Coerced")
 test(2005.07, DT[2, a:=NA, verbose=TRUE], notOutput="Coerced")
-test(2005.08, DT[2, a:=9.9]$a, INT(1,9,3), warning="9.9.*double.*position 1 truncated.*integer.*column 1 named 'a'")
+test(2005.08, DT[2, a:=9.9]$a, INT(1,9,3), warning="9.9.*double.*position 1.*truncated.*integer.*column 1 named 'a'")
 test(2005.09, set(DT, 1L, "c", expression(x+2)), error="type 'expression' cannot be coerced to 'raw'")
 test(2005.10, set(DT, 1L, "d", expression(x+2)), error="type 'expression' cannot be coerced to 'logical'")
 test(2005.11, set(DT, 1L, "e", expression(x+2)), error="type 'expression' cannot be coerced to 'double'")
@@ -14417,7 +14469,7 @@ test(2006.2, rbindlist(list(data.table(x = as.raw(1:2), y=as.raw(5:6)), data.tab
 if (test_bit64) {
   test(2007.1, rbindlist(list( list(a=as.integer64(1), b=3L),  list(a=2L, b=4L) )), data.table(a=as.integer64(1:2), b=3:4))
   test(2007.2, rbindlist(list( list(a=3.4, b=5L),  list(a=as.integer64(4), b=6L) )), data.table(a=as.integer64(3:4), b=5:6),
-               warning="Column 1 of item 1: 3.4.*double.*position 1 truncated.*precision lost.*when assigning.*integer64.*column 1 named 'a'")
+               warning="Column 1 of item 1: 3.4.*double.*position 1.*truncated.*precision lost.*when assigning.*integer64.*column 1 named 'a'")
   test(2007.3, rbindlist(list( list(a=3.0, b=5L),  list(a=as.integer64(4), b=6L) )), data.table(a=as.integer64(3:4), b=5:6))
   test(2007.4, rbindlist(list( list(b=5:6),  list(a=as.integer64(4), b=7L)), fill=TRUE), data.table(b=5:7, a=as.integer64(c(NA,NA,4))))  # tests writeNA of integer64
   test(2007.5, rbindlist(list( list(a=INT(1,NA,-2)),  list(a=as.integer64(c(3,NA))) )), data.table(a=as.integer64(c(1,NA,-2,3,NA))))   # int NAs combined with int64 NA
@@ -14886,7 +14938,7 @@ test(2041.2, DT[, median(time), by=g], DT[c(2,5),.(g=g, V1=time)])
 # They could run in level 1 with level 2 off, but output= would need to be changed and there's no need.
 test(2042.1, DT[ , as.character(mean(date)), by=g, verbose=TRUE ],
              data.table(g=c("a","b"), V1=c("2018-01-04","2018-01-21")),
-     output=msg<-"GForce is on, left j unchanged.*Old mean optimization is on, left j unchanged")
+     output=msg<-"GForce is on, but not activated.*Old mean optimization is on, left j unchanged")
 # Since %b is e.g. "janv." in LC_TIME=fr_FR.UTF-8 locale, we need to
 # have the target/y value in these tests depend on the locale as well, #3450.
 Jan.2018 = format(strptime("2018-01-01", "%Y-%m-%d"), "%b-%Y")
@@ -15620,8 +15672,9 @@ test(2071.08, any_na(data.table(c(1+1i, NA))))
 test(2071.09, any_na(data.table(expression(1))), error="Unsupported column type 'expression'")
 test(2071.10, dcast(data.table(a=1, b=1, l=list(list(1))), a ~ b, value.var='l'),
               data.table(a=1, `1`=list(list(1)), key='a'))
-test(2071.11, dcast(data.table(a = 1, b = 2, c = 3), a ~ b, value.var = 'c', fill = '2'),
-              data.table(a=1, `2`=3, key='a'))
+test(2071.11, dcast(data.table(a = c(1, 1, 2), b = c(1, 2, 1), c = 3), a ~ b, value.var='c', fill='4'),
+              data.table(a=c(1, 2), `1`=c(3, 3), `2`=c(3, 4), key='a'),
+              warning="Coercing 'character' RHS to 'double'")
 
 # fifelse, #3657
 test_vec = -5L:5L < 0L
@@ -16841,8 +16894,17 @@ if (.Platform$OS.type!="windows") {
   # blank TZ env variable on non-Windows is recognized as UTC consistent with C and R; but R's tz= argument is the opposite and uses "" for local
 }
 Sys.unsetenv("TZ")
-tt = fread(tmp, colClasses=list(POSIXct="times"), tz="")   # from v1.14.0 tz="" needed
-test(2150.025, attr(tt$times, "tzone"), "") # as.POSIXct puts "" on the result (testing the write.csv version here with missing tzone)
+# Notes:
+#  - from v1.14.0 tz="" needed
+#  - as.POSIXct puts "" on the result (testing the write.csv version here with missing tzone)
+#  - Per #5866, this test is complicated by some interaction with very specific builds of R where
+#    as.POSIXct() might fail for very old timestamps when 'tz=""' is used. On such systems,
+#    as.POSIXct() failure means 'times' is returned as a character, hence no 'tzone' attribute.
+#    fread() will also throw a warning, one substring of which will be the reproduced base R error.
+test(2150.025,
+     attr(fread(tmp, colClasses=list(POSIXct="times"), tz="")$times, "tzone"),
+     if (is.null(base_messages$maybe_invalid_old_posixct)) "" else NULL,
+     warning=base_messages$maybe_invalid_old_posixct)
 # the times will be different though here because as.POSIXct read them as local time.
 if (is.na(oldtz)) Sys.unsetenv("TZ") else Sys.setenv(TZ=oldtz)
 fwrite(copy(DT)[ , times := format(times, '%FT%T+00:00')], tmp)
@@ -17788,9 +17850,15 @@ for (col in names(DT)[-1]) {
 }
 a = 1:2  # fill argument with length > 1 which is not a call
 test(2224.2, DT[, shift(i, fill=a), by=x], error="fill must be a vector of length 1")
-DT = data.table(x=pairlist(1), g=1)
 # unsupported type as argument
+DT = data.table(x=pairlist(1), g=1)
 test(2224.3, DT[, shift(x), g], error="Type 'list' is not supported by GForce gshift.")
+# single vector is un-list()'d, consistently with plain shift(), #5939
+DT = data.table(x=1, g=1)
+test(2224.4, DT[, .(shift(x)), g], DT[, shift(x), g])
+# gshift with subset #5962
+DT = data.table(x = 1:3, g = rep(1:2, each=3L))
+test(2224.5, DT[g==1L, shift(x), by=g, verbose=TRUE], data.table(g=1L, V1=c(NA,1L,2L)), output="Making each group and running j (GForce TRUE)")
 
 # groupingsets by named by argument
 test(2225.1, groupingsets(data.table(iris), j=sum(Sepal.Length), by=c('Sp'='Species'), sets=list('Species')),
@@ -17918,6 +17986,12 @@ test(2231.50, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table
 DT = data.table(x=c(1L,NA,NaN,3L,4L,5L,5L,6L), w=c(1L,NaN,NA,1L,2L,2L,2L,2L), g=rep(1L:2L, each=4L))
 test(2231.51, DT[, weighted.mean(x, w, na.rm=FALSE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(NA, 5)), output="GForce optimized j to")
 test(2231.52, DT[, weighted.mean(x, w, na.rm=TRUE), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2, 5)), output="GForce optimized j to")
+# let wrongly named arguments get lost in ellipsis #5543
+DT = data.table(x=c(3.7,3.3,3.5,2.8), w=c(5,5,4,1), g=1L)
+test(2231.61, DT[, weighted.mean(x, w),        g, verbose=TRUE], data.table(g=1L, V1=3.45+1/300), output="GForce optimized j to")
+test(2231.62, DT[, weighted.mean(x, weight=w), g, verbose=TRUE], data.table(g=1L, V1=3.325),      output="GForce optimized j to")
+test(2231.63, DT[, weighted.mean(x, w, na.rm=FALSE), g],    DT[, stats::weighted.mean(x, w, na.rm=FALSE), g])
+test(2231.64, DT[, weighted.mean(x, weight=w, na.rm=TRUE)], DT[, stats::weighted.mean(x, weight=w, na.rm=TRUE)])
 options(old)
 
 # cols argument for unique.data.table, #5243
@@ -18004,7 +18078,7 @@ test(2233.34, copy(DT)[, same_value:=value[1],    by=.(by1, by2), verbose=TRUE],
 test(2233.35, copy(DT)[, same_value:=value[1],    by=.(by2, by1), verbose=TRUE], ans,                                output=out)
 test(2233.36, copy(DT)[, same_value:=value[1], keyby=.(by2, by1), verbose=TRUE], setkey(ans,by2,by1),                output=out)
 # similar to #5307 using integer
-DT = data.table(A=INT(2,1,2,1), B=6:3, v=11:14)                                                
+DT = data.table(A=INT(2,1,2,1), B=6:3, v=11:14)
 test(2233.37, copy(DT)[, val:=v[1L],    by=.(A,B), verbose=TRUE], copy(DT)[, val:=11:14], output=out)
 test(2233.38, copy(DT)[, val:=v[1L], keyby=.(A,B), verbose=TRUE], data.table(A=INT(1,1,2,2), B=INT(3,5,4,6), v=INT(14,12,13,11), val=INT(14,12,13,11), key=c("A","B")), output=out)
 # test from #5326 but with n=100 rather than n=100000; confirmed that n=100 fails tests 2233.403-405 before fix
@@ -18059,6 +18133,14 @@ for (opt in c(0,Inf)) {
   testnum = 2233.44
 }
 options(old)
+# optimized := with gforce functions that can return lists #5403
+old = options(datatable.verbose=TRUE)
+DT = data.table(grp=1:2, x=1:4)
+out = "Making each group and running j (GForce TRUE)"
+test(2233.45, copy(DT)[, c("y", "z") := .(shift(x, type="lag", n=1), shift(x, type="lead", n=1)), by=grp], data.table(grp=1:2, x=1:4, y=c(NA, NA, 1:2), z=c(3:4, NA, NA)), output=out)
+test(2233.46, copy(DT)[, l := shift(x, n=c(0, 0)), by=grp], data.table(grp=1:2, x=1:4, l=list(INT(1, 1), INT(2, 2), INT(3, 3), INT(4, 4))), output=out)
+test(2233.47, copy(DT)[, c("l1", "l2") := shift(x, n=c(-1, 1)), by=grp], data.table(grp=1:2, x=1:4, l1=c(3:4,NA,NA), l2=c(NA,NA,1:2)), output=out)
+options(old)
 
 # support by=.I; #1732
 DT = data.table(V1=1:5, V2=3:7, V3=5:1)
@@ -18111,6 +18193,143 @@ test(2238.9, NA %notin% c(1:5, NA), FALSE)
 
 # shift actionable error on matrix input #5287
 test(2239.1, shift(matrix(1:10, ncol = 1)), error="consider wrapping")
+
+# names<- retains index and key, #5125, #5126, #5126, #5128
+DT <- data.table(a = 1, b = 2)
+setkey(DT, a)
+setindex(DT, b)
+names(DT) <- c("c", "d")
+test(2240.1, key(DT), "c")
+test(2240.2, indices(DT), "d")
+
+# Test warnings for names<- and colnames<-, but only warnings when caller is data.table aware.
+DT = data.table(a=1:3, b=4:6, key="a")
+test(2241.01, names(DT)[1]<-"A", "A")
+test(2241.02, DT, data.table(A=1:3, b=4:6, key="A"))  # key wasn't retained in dev after #5084
+test(2241.03, DT[, C:=1], data.table(A=1:3, b=4:6, C=1, key="A"))  # ensure over-allocated ok and no warning
+test(2241.04, set(DT, j="D", value=2), data.table(A=1:3, b=4:6, C=1, D=2, key="A"))  # using set() too
+test(2241.05, colnames(DT)[2]<-"B", "B")
+test(2241.06, DT, data.table(A=1:3, B=4:6, C=1, D=2, key="A"))
+test(2241.07, set(DT, j="E", value=3), data.table(A=1:3, B=4:6, C=1, D=2, E=3, key="A"))
+test(2241.08, names(DT)<-letters[1:5], letters[1:5])  # R doesn't copy *tmp* when assigning to all names
+test(2241.09, DT, data.table(a=1:3, b=4:6, c=1, d=2, e=3, key="a"))
+test(2241.10, set(DT, j="f", value=4), data.table(a=1:3, b=4:6, c=1, d=2, e=3, f=4, key="a"))
+
+# spotted by @ColeMiller1 in https://github.com/Rdatatable/data.table/pull/5133/files#r1320780851
+DT = data.table(id=1:2, x=1:2)
+r = copy(DT)[, x := 5L]
+test(2241.11, DT, data.table(id=1:2, x=1:2))
+test(2241.12, r, data.table(id=1:2, x=c(5L,5L)))
+
+DT = data.table(id=1:2, x=1:2)
+r = copy(DT)[1L, x:= 5L]
+test(2241.13, DT, data.table(id=1:2, x=1:2))
+test(2241.14, r, data.table(id=1:2, x=c(5L,2L)))
+
+# .SDcols using binary '-' is evaluated correctly (#5826 exposed this)
+DT = data.table(a=1, b=2, c=3)
+test(2242.1, DT[, .SD, .SDcols=2-1], DT[, .(a)])
+test(2242.2, DT[, .SD, .SDcols=length(DT)-1], DT[, .SD, .SDcols=2])
+
+# turn off GForce where arguments are calls but still allow variables, #5547
+options(datatable.optimize=2L)
+dt = data.table(x=c("a","b","c","d"), y=c(1L,1L,2L,2L))
+i = c(0,1)
+j = 1L
+t = "lead"
+f = shift
+test(2243.01, dt[, shift(x, i, type=t), by=y, verbose=TRUE],               dt[, f(x, c(0,1), type="lead"), by=y],         output="GForce optimized j to")
+test(2243.02, dt[, shift(x, abs(c(0,1)), type=t), by=y, verbose=TRUE],     dt[, f(x, c(0,1), type="lead"), by=y],         output="GForce optimized j to")
+test(2243.03, dt[, shift(x, abs(i), type=t), by=y, verbose=TRUE],          dt[, f(x, c(0,1), type="lead"), by=y],         output="GForce FALSE")
+test(2243.04, dt[, shift(x, i, type=as.character(t)), by=y, verbose=TRUE], dt[, f(x, c(0,1), type="lead"), by=y],         output="GForce FALSE")
+test(2243.05, dt[, shift(x, i, type=t, fill=1), by=y, verbose=TRUE],       dt[, f(x, c(0,1), type="lead", fill=1), by=y], output="GForce optimized j to")
+test(2243.06, dt[, shift(x, i, type=t, fill=abs(1)), by=y, verbose=TRUE],  dt[, f(x, c(0,1), type="lead", fill=1), by=y], output="GForce optimized j to")
+test(2243.07, dt[, shift(x, i, type=t, fill=abs(j)), by=y, verbose=TRUE],  dt[, f(x, c(0,1), type="lead", fill=1), by=y], output="GForce FALSE")
+test(2243.08, dt[, .(shift(x, i, type=t)), by=y, verbose=TRUE],            dt[, .(f(x, c(0,1), type="lead")), by=y],      output="GForce optimized j to")
+# GForce only var or call without vars as n of head/tail/"["(x, n)
+dt = data.table(id=c(1L,1L,2L), v=1:3)
+j = 1L
+test(2243.11, dt[, head(v, j), id, verbose=TRUE], data.table(id=c(1L,2L), V1=c(1L,3L)), output="GForce optimized j to")
+test(2243.12, dt[, tail(v, j), id, verbose=TRUE], data.table(id=c(1L,2L), V1=c(2L,3L)), output="GForce optimized j to")
+test(2243.13, dt[, v[j], id,       verbose=TRUE], data.table(id=c(1L,2L), V1=c(1L,3L)), output="GForce optimized j to")
+# GForce only var or call without vars as na.rm of sum, mean, median, prod, min, max, var
+j = FALSE
+test(2243.21, dt[, sum(v,  na.rm=j),   id, verbose=TRUE], data.table(id=c(1L,2L), V1=c(3L,3L)),        output="GForce optimized j to")
+test(2243.22, dt[, mean(v, na.rm=j),   id, verbose=TRUE], data.table(id=c(1L,2L), V1=c(1.5,3)),        output="GForce optimized j to")
+test(2243.23, dt[, median(v, na.rm=j), id, verbose=TRUE], data.table(id=c(1L,2L), V1=c(1.5,3)),        output="GForce optimized j to")
+test(2243.24, dt[, prod(v, na.rm=j),   id, verbose=TRUE], data.table(id=c(1L,2L), V1=c(2,3)),          output="GForce optimized j to")
+test(2243.25, dt[, min(v,  na.rm=j),   id, verbose=TRUE], data.table(id=c(1L,2L), V1=c(1L,3L)),        output="GForce optimized j to")
+test(2243.26, dt[, max(v,  na.rm=j),   id, verbose=TRUE], data.table(id=c(1L,2L), V1=c(2L,3L)),        output="GForce optimized j to")
+test(2243.27, dt[, var(v,  na.rm=j),   id, verbose=TRUE], data.table(id=c(1L,2L), V1=c(0.5,NA)),       output="GForce optimized j to")
+test(2243.28, dt[, sd(v,   na.rm=j),   id, verbose=TRUE], data.table(id=c(1L,2L), V1=c(sqrt(0.5),NA)), output="GForce optimized j to")
+dt = data.table(g=1:2, y=1:4)
+j = TRUE
+test(2243.31, dt[, sum(y,  na.rm=as.logical(j)),   g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(4L,6L)),        output="GForce FALSE")
+test(2243.32, dt[, mean(y, na.rm=as.logical(j)),   g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2,3)),          output="GForce FALSE")
+test(2243.33, dt[, median(y, na.rm=as.logical(j)), g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2,3)),          output="GForce FALSE")
+test(2243.34, dt[, prod(y, na.rm=as.logical(j)),   g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(3,8)),          output="GForce FALSE")
+test(2243.35, dt[, min(y,  na.rm=as.logical(j)),   g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(1L,2L)),        output="GForce FALSE")
+test(2243.36, dt[, max(y,  na.rm=as.logical(j)),   g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(3L,4L)),        output="GForce FALSE")
+test(2243.37, dt[, var(y,  na.rm=as.logical(j)),   g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2,2)),          output="GForce FALSE")
+test(2243.38, dt[, sd(y,   na.rm=as.logical(j)),   g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(sqrt(c(2,2)))), output="GForce FALSE")
+
+# revdeps
+dt = data.table(x = c(2,2,1,1), y = 1:4, z=letters[1:4])
+i=c(1,2)
+j=1L
+old = options(datatable.optimize=1L)
+test(2243.41, dt[, .I[TRUE], x]$V1, 1:4)
+test(2243.42, dt[, z[y], x], data.table(x=c(2,2,1,1), V1=c("a","b",NA,NA)))
+options(datatable.optimize=2L, datatable.verbose=TRUE)
+test(2243.51, dt[, .I[TRUE], x]$V1, 1:4, output="GForce FALSE")
+test(2243.52, dt[, z[y], x], data.table(x=c(2,2,1,1), V1=c("a","b",NA,NA)), output="GForce FALSE")
+test(2243.53, dt[, .I[1], x]$V1, c(1L, 3L), output="GForce TRUE")
+test(2243.54, dt[, .I[j], x]$V1, c(1L, 3L), output="GForce TRUE")
+test(2243.55, dt[, .I[i], x]$V1, 1:4, output="GForce FALSE")
+test(2243.56, dt[, .I[1:2], x]$V1, 1:4, output="GForce FALSE")
+options(old)
+
+DT = data.table(1)
+test(2244.1, DT[, `:=`(a=1, )], error="`:=`.*Did you forget a trailing comma\\?")
+test(2244.2, DT[, let(a=1, )], error="let.*Did you forget a trailing comma\\?")
+test(2244.3, DT[, `:=`(a=1, , b=2)], error="`:=`.*\\[2\\]")
+test(2244.4, DT[, let(a=1, , b=2)], error="let.*\\[2\\]")
+test(2244.5, DT[, `:=`(a=1, , b=2, )], error="[2, 4]")
+
+# allow specifying datatable-unaware behavior, #5654 / #5655
+dt = data.table(foo = 1:3, bar = 4:6)
+.datatable.aware = TRUE
+test(2245.1, dt[1], data.table(foo = 1L, bar = 4L)) # Single index should be interpreted as row
+.datatable.aware = FALSE
+# selfrefok() fails on unaware-indexed datatables; the copy() here sidesteps that issue.
+test(2245.2, copy(dt[1]), data.table(foo = 1:3)) # Revert to data.frame syntax: Interpret index as column
+rm(.datatable.aware)
+test(2245.3, dt[1], data.table(foo = 1L, bar = 4L)) # Default in this environment should be datatable-aware
+
+# data.table:: doesn't turn off GForce, #5942
+DT = data.table(a = rep(1:5, 2L), b = 1:10)
+old = options(datatable.optimize=Inf, datatable.verbose=TRUE)
+test(2246.1, DT[, data.table::shift(b), by=a], DT[, shift(b), by=a], output="GForce TRUE")
+test(2246.2, DT[, data.table::first(b), by=a], DT[, first(b), by=a], output="GForce TRUE")
+test(2246.3, DT[, data.table::last(b), by=a], DT[, last(b), by=a], output="GForce TRUE")
+options(old)
+
+# 5392 split(x,f) works with formula f
+dt = data.table(x=1:4, y=factor(letters[1:2]))
+test(2247.1, split(dt, ~y), split(dt, dt$y))
+dt = data.table(x=1:4, y=1:2)
+test(2247.2, split(dt, ~y), list(`1`=data.table(x=c(1L,3L), y=1L), `2`=data.table(x=c(2L, 4L), y=2L)))
+# Closely match the original MRE from the issue
+test(2247.3, do.call(rbind, split(dt, ~y)), setDT(do.call(rbind, split(as.data.frame(dt), ~y))))
+dt = data.table(x=1:4, y=factor(letters[1:2]), z=factor(c(1,1,2,2), labels=c("c", "d")))
+test(2247.4, split(dt, ~y+z), list("a.c"=dt[1], "b.c"=dt[2], "a.d"=dt[3], "b.d"=dt[4]))
+
+# fill converts to int64 in dcast, #4561
+if (test_bit64) {
+  i64v = as.integer64(c(12345678901234, 70, 20, NA))
+  apple = data.table(id = c("a", "b", "b"), time = c(1L, 1L, 2L), y = i64v[1:3])
+  test(2248, dcast(apple, id ~ time, value.var = "y"), data.table(id = c('a', 'b'), `1` = i64v[1:2], `2` = i64v[4:3], key='id'))
+}
 
 # lazy forder, #4386
 dd = data.table(a=1:2, b=2:1)
