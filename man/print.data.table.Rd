@@ -6,6 +6,7 @@
 \alias{format_col.expression}
 \alias{format_list_item}
 \alias{format_list_item.default}
+\alias{char.trunc}
 \title{ data.table Printing Options }
 \description{
   \code{print.data.table} extends the functionalities of \code{print.data.frame}.
@@ -23,6 +24,7 @@
     col.names=getOption("datatable.print.colnames"),    # default: "auto"
     print.keys=getOption("datatable.print.keys"),       # default: TRUE
     trunc.cols=getOption("datatable.print.trunc.cols"), # default: FALSE
+    trunc.char = getOption("datatable.prettyprint.char")# default: NULL
     quote=FALSE,
     timezone=FALSE, \dots)
 
@@ -43,6 +45,7 @@
   \item{col.names}{ One of three flavours for controlling the display of column names in output. \code{"auto"} includes column names above the data, as well as below the table if \code{nrow(x) > 20}. \code{"top"} excludes this lower register when applicable, and \code{"none"} suppresses column names altogether (as well as column classes if \code{class = TRUE}. }
   \item{print.keys}{ If \code{TRUE}, any \code{\link{key}} and/or \code{\link[=indices]{index}} currently assigned to \code{x} will be printed prior to the preview of the data. }
   \item{trunc.cols}{ If \code{TRUE}, only the columns that can be printed in the console without wrapping the columns to new lines will be printed (similar to \code{tibbles}). }
+  \item{trunc.char}{If has a number as value then it will restrict all the string passing through \code{char.trunc} to being that number of characters in length if any exceeds the limit then all the character after the  limit are removed and  "..." is added at the end to signify omitted content.}
   \item{quote}{ If \code{TRUE}, all output will appear in quotes, as in \code{print.default}. }
   \item{timezone}{ If \code{TRUE}, time columns of class POSIXct or POSIXlt will be printed with their timezones (if attribute is available). }
   \item{\dots}{ Other arguments ultimately passed to \code{format}. }
@@ -53,6 +56,8 @@
   \code{format_col} returns a \code{length(x)}-size \code{character} vector.
 
   \code{format_list_item} returns a length-1 \code{character} scalar.
+
+  \code{char.trunc} returns \code{x} if its length is within the limit else it returns the shrunk down version of \code{x} with "..." at end.
 }
 \details{
   By default, with an eye to the typically large number of observations in a \code{data.table}, only the beginning and end of the object are displayed (specifically, \code{head(x, topn)} and \code{tail(x, topn)} are displayed unless \code{nrow(x) < nrows}, in which case all rows will print).
@@ -97,6 +102,16 @@
                    thing_61 = vector("complex", 3))
   print(DT, trunc.cols=TRUE)
   options(old_width)
+
+  # `char.trunc` will shorten the string if its length exceed the give limit in `datatable.prettyprint.char`
+  # For example:
+
+  options(datatable.prettyprint.char = 5L)
+  DT = data.table(x=1:2, y=c("abcdefghij", "klmnopqrstuv"))
+  DT
+  #     x        y
+  # 1:  1     abcde...
+  # 2:  2     klmno...
 
   # Formatting customization
   format_col.complex = function(x, ...) sprintf('(\%.1f, \%.1fi)', Re(x), Im(x))
