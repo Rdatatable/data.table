@@ -103,7 +103,7 @@
   print(DT, trunc.cols=TRUE)
   options(old_width)
 
-  # `char.trunc` will shorten the string if its length exceed the give limit in `datatable.prettyprint.char`
+  # `char.trunc` will truncate the strings if their lengths exceed the given limit: `datatable.prettyprint.char`
   # For example:
 
   options(datatable.prettyprint.char = 5L)
