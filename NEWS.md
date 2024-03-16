@@ -20,6 +20,8 @@
 
 4. Namespace-qualifying `data.table::shift()`, `data.table::first()`, or `data.table::last()` will not deactivate GForce, [#5942](https://github.com/Rdatatable/data.table/issues/5942). Thanks @MichaelChirico for the proposal and fix. Namespace-qualifying other calls like `stats::sum()`, `base::prod()`, etc., continue to work as an escape valve to avoid GForce, e.g. to ensure S3 method dispatch.
 
+5. `transpose` gains `list.cols=` argument, [#5639](https://github.com/Rdatatable/data.table/issues/5639). Use this to return output with list columns and avoids type promotion (an exception is `factor` columns which are promoted to `character` for consistency between `list.cols=TRUE` and `list.cols=FALSE`). This is convenient for creating a row-major representation of a table. Thanks to @MLopez-Ibanez for the request, and Benjamin Schwendinger for the PR.
+
 ## BUG FIXES
 
 1. `unique()` returns a copy the case when `nrows(x) <= 1` instead of a mutable alias, [#5932](https://github.com/Rdatatable/data.table/pull/5932). This is consistent with existing `unique()` behavior when the input has no duplicates but more than one row. Thanks to @brookslogan for the report and @dshemetov for the fix.
@@ -340,8 +342,6 @@
 40. New function `%notin%` provides a convenient alternative to `!(x %in% y)`, [#4152](https://github.com/Rdatatable/data.table/issues/4152). Thanks to Jan Gorecki for suggesting and Michael Czekanski for the PR. `%notin%` uses half the memory because it computes the result directly as opposed to `!` which allocates a new vector to hold the negated result. If `x` is long enough to occupy more than half the remaining free memory, this can make the difference between the operation working, or failing with an out-of-memory error.
 
 41. `tables()` is faster by default by excluding the size of character strings in R's global cache (which may be shared) and excluding the size of list column items (which also may be shared). `mb=` now accepts any function which accepts a `data.table` and returns a higher and better estimate of its size in bytes, albeit more slowly; e.g. `mb = utils::object.size`.
-
-42. `transpose` gains `list.cols=` argument, [#5639](https://github.com/Rdatatable/data.table/issues/5639). Use this to return output with list columns and avoids type promotion (an exception is `factor` columns which are promoted to `character` for consistency between `list.cols=TRUE` and `list.cols=FALSE`). This is convenient for creating a row-major representation of a table. Thanks to @MLopez-Ibanez for the request, and Benjamin Schwendinger for the PR.
 
 ## BUG FIXES
 
