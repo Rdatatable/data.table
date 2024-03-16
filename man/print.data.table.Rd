@@ -14,7 +14,7 @@
 
   \code{format_col} and \code{format_list_item} generics provide flexibility for end-users to define custom printing methods for generic classes.
 
-  Truncate all strings exceeding the \code{datatable.prettyprint.char} limit, every string which exceeds the limit are trucated to limit of characters by removing excess characters.
+  Note also the option \code{datatable.prettyprint.char}; character columns entries exceeding this limit will be truncated, with \code{...} indicating the truncation.
 }
 \usage{
   \method{print}{data.table}(x,
@@ -103,12 +103,10 @@
   # `char.trunc` will truncate the strings if their lengths exceed the given limit: `datatable.prettyprint.char`
   # For example:
 
-  options(datatable.prettyprint.char = 5L)
+  old = options(datatable.prettyprint.char=5L)
   DT = data.table(x=1:2, y=c("abcdefghij", "klmnopqrstuv"))
   DT
-  #     x        y
-  # 1:  1     abcde...
-  # 2:  2     klmno...
+  options(old)
 
   # Formatting customization
   format_col.complex = function(x, ...) sprintf('(\%.1f, \%.1fi)', Re(x), Im(x))
