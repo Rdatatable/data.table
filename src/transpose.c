@@ -38,7 +38,6 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg, SEXP listCo
   }
   if (listCol) maxtype=VECSXP; // need to keep preprocessing for zerolen
   fill = PROTECT(coerceVector(fill, maxtype)); nprotect++;
-
   SEXP ans = PROTECT(allocVector(VECSXP, maxlen+rn)); nprotect++;
   int anslen = (ignore) ? (ln - zerolen) : ln;
   if (rn) {
