@@ -238,14 +238,6 @@ char.trunc = function(x, trunc.char = getOption("datatable.prettyprint.char")) {
   nchar_chars = nchar(x, 'chars')
   is_full_width = nchar_width > nchar_chars
   idx = pmin(nchar_width, nchar_chars) > trunc.char
-  if (any(idx)) {
-    cat("Truncation required")
-    cat("\n  nchar_width:\n")
-    dput(nchar_width)
-    cat("\n  nchar_chars:\n")
-    dput(nchar_chars)
-    cat("\n")
-  }
   x[idx] = paste0(strtrim(x[idx], trunc.char * fifelse(is_full_width[idx], 2L, 1L)), "...")
   x
 }
