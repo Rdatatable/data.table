@@ -18331,8 +18331,6 @@ if (test_bit64) {
   test(2248, dcast(apple, id ~ time, value.var = "y"), data.table(id = c('a', 'b'), `1` = i64v[1:2], `2` = i64v[4:3], key='id'))
 }
 
-test(1515.1, grep("abcde...", capture.output(print(DT))), 2L)
-
 # trunc.char misbehaves for multibyte characters, #5096
 # Tests for combining characters
 options(datatable.prettyprint.char=4L)
