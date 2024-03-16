@@ -57,7 +57,7 @@
 
   \code{format_list_item} returns a length-1 \code{character} scalar.
 
-  \code{char.trunc} returns \code{x} if its length is within the limit else it returns the shrunk down version of \code{x} with "..." at end.
+  \code{char.trunc} returns \code{x} if its length is within or equal to \code{"datatable.prettyprint.char"} else it returns the truncated version of \code{x} with "..." concatenated to the end.
 }
 \details{
   By default, with an eye to the typically large number of observations in a \code{data.table}, only the beginning and end of the object are displayed (specifically, \code{head(x, topn)} and \code{tail(x, topn)} are displayed unless \code{nrow(x) < nrows}, in which case all rows will print).
