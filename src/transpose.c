@@ -67,7 +67,7 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg, SEXP listCo
         LOGICAL(ansp[j+rn])[k] = j<len ? ili[j] : ifill;
       }
     } break;
-    case INTSXP : case LGLSXP : {
+    case INTSXP : {
       const int *ili = INTEGER(li);
       const int ifill = INTEGER(fill)[0];
       for (int j=0; j<maxlen; ++j) {
