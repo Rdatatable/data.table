@@ -66,6 +66,11 @@ static size_t fileSize;
 static int8_t *type = NULL, *tmpType = NULL, *size = NULL;
 static lenOff *colNames = NULL;
 static freadMainArgs args = {0};  // global for use by DTPRINT; static implies ={0} but include the ={0} anyway just in case for valgrind #4639
+#ifdef __EMSCRIPTEN__
+  // Under Wasm we must keep the fd open until we're done with the mmap, due to an Emscripten bug (#5969).
+  // TODO(emscripten-core/emscripten#20459): revert this
+  static int mmp_fd = -1;
+#endif
 
 const char typeName[NUMTYPE][10] = {"drop", "bool8", "bool8", "bool8", "bool8", "bool8", "int32", "int64", "float64", "float64", "float64", "int32", "float64", "string"};
 int8_t     typeSize[NUMTYPE]     = { 0,      1,       1,       1,       1,       1,       4,       8,       8,         8,         8,         4,       8       ,  8      };
@@ -151,6 +156,9 @@ bool freadCleanup(void)
     #else
       if (munmap(mmp, fileSize))
         DTPRINT(_("System errno %d unmapping file: %s\n"), errno, strerror(errno));  // # nocov
+      #ifdef __EMSCRIPTEN__
+        close(mmp_fd); mmp_fd = -1;
+      #endif
     #endif
     mmp = NULL;
   }
@@ -1382,7 +1390,11 @@ int freadMain(freadMainArgs _args) {
       // TO DO?: MAP_HUGETLB for Linux but seems to need admin to setup first. My Hugepagesize is 2MB (>>2KB, so promising)
       //         https://www.kernel.org/doc/Documentation/vm/hugetlbpage.txt
       mmp = mmap(NULL, fileSize, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);  // COW for last page lastEOLreplaced
-      close(fd);  // we don't need to keep file handle open
+      #ifdef __EMSCRIPTEN__
+        mmp_fd = fd;
+      #else
+        close(fd);  // we don't need to keep file handle open
+      #endif
       if (mmp == MAP_FAILED) {
     #else
       // Following: http://msdn.microsoft.com/en-gb/library/windows/desktop/aa366548(v=vs.85).aspx
@@ -2431,7 +2443,7 @@ int freadMain(freadMainArgs _args) {
         if (stopTeam) {             // A previous thread stopped while I was waiting my turn to enter ordered
           myNrow = 0;               // # nocov; discard my buffer
         }
-        else if (headPos!=thisJumpStart) {
+        else if (headPos!=thisJumpStart && nrowLimit>0) { // do not care for dirty jumps since we do not read data and only want to know types
            // # nocov start
           snprintf(internalErr, internalErrSize, _("Internal error: invalid head position. jump=%d, headPos=%p, thisJumpStart=%p, sof=%p"), jump, (void*)headPos, (void*)thisJumpStart, (void*)sof);
           stopTeam = true;
@@ -2503,7 +2515,7 @@ int freadMain(freadMainArgs _args) {
     }
     stopTeam = false;
 
-    if (extraAllocRows) {
+    if (extraAllocRows && nrowLimit>0) { // no allocating needed for nrows=0
       allocnrow += extraAllocRows;
       if (allocnrow > nrowLimit) allocnrow = nrowLimit;
       if (verbose) DTPRINT(_("  Too few rows allocated. Allocating additional %"PRIu64" rows (now nrows=%"PRIu64") and continue reading from jump %d\n"),
@@ -2512,7 +2524,7 @@ int freadMain(freadMainArgs _args) {
       extraAllocRows = 0;
       goto read;
     }
-    if (restartTeam) {
+    if (restartTeam && nrowLimit>0) { // no restarting needed for nrows=0 since we discard read data anyway
       if (verbose) DTPRINT(_("  Restarting team from jump %d. nSwept==%d quoteRule==%d\n"), jump0, nSwept, quoteRule);
       ASSERT(nSwept>0 || quoteRuleBumpedCh!=NULL, "Internal error: team restart but nSwept==%d and quoteRuleBumpedCh==%p", nSwept, quoteRuleBumpedCh); // # nocov
       goto read;

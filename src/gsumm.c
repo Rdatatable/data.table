@@ -1164,7 +1164,7 @@ SEXP gprod(SEXP x, SEXP narmArg) {
   if (INHERITS(x, char_integer64)) {
     int64_t *ansd = (int64_t *)REAL(ans);
     for (int i=0; i<ngrp; ++i) {
-      ansd[i] = (s[i]>INT64_MAX || s[i]<=INT64_MIN) ? NA_INTEGER64 : (int64_t)s[i];
+      ansd[i] = (ISNAN(s[i]) || s[i]>INT64_MAX || s[i]<=INT64_MIN) ? NA_INTEGER64 : (int64_t)s[i];
     }
   } else {
     double *ansd = REAL(ans);
@@ -1203,7 +1203,7 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
   bool lag;
   const bool cycle = stype == CYCLIC;
 
-  R_xlen_t nx = xlength(x), nk = length(nArg);
+  R_xlen_t nk = length(nArg);
   if (!isInteger(nArg)) error(_("Internal error: n must be integer")); // # nocov
   const int *kd = INTEGER(nArg);
   for (int i=0; i<nk; i++) if (kd[i]==NA_INTEGER) error(_("Item %d of n is NA"), i+1);
@@ -1220,7 +1220,7 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
     }
     R_xlen_t ansi = 0;
     SEXP tmp;
-    SET_VECTOR_ELT(ans, g, tmp=allocVector(TYPEOF(x), nx));
+    SET_VECTOR_ELT(ans, g, tmp=allocVector(TYPEOF(x), n));
     #define SHIFT(CTYPE, RTYPE, ASSIGN) {                                                                         \
       const CTYPE *xd = (const CTYPE *)RTYPE(x);                                                                  \
       const CTYPE fill = RTYPE(thisfill)[0];                                                                      \
@@ -1268,6 +1268,7 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
     copyMostAttrib(x, tmp); // needed for integer64 because without not the correct class of int64 is assigned
   }
   UNPROTECT(nprotect);
-  return(ans);
+  // consistency with plain shift(): "strip" the list in the 1-input case, for convenience
+  return isVectorAtomic(x) && length(ans) == 1 ? VECTOR_ELT(ans, 0) : ans;
 }
 
