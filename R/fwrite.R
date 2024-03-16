@@ -38,7 +38,13 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   # validate arguments
   if (is.matrix(x)) { # coerce to data.table if input object is matrix
     messagef("x being coerced from class: matrix to data.table")
-    x = as.data.table(x)
+    # keep row.names for matrix input #5315
+    if (row.names && !is.null(rownames(x))) {
+      row.names = FALSE
+      x = as.data.table(x, keep.rownames="")
+    } else {
+      x = as.data.table(x)
+    }
   }
   stopifnot(is.list(x),
     identical(quote,"auto") || isTRUEorFALSE(quote),
