@@ -55,7 +55,6 @@
   \code{format_col} returns a \code{length(x)}-size \code{character} vector.
 
   \code{format_list_item} returns a length-1 \code{character} scalar.
-
 }
 \details{
   By default, with an eye to the typically large number of observations in a \code{data.table}, only the beginning and end of the object are displayed (specifically, \code{head(x, topn)} and \code{tail(x, topn)} are displayed unless \code{nrow(x) < nrows}, in which case all rows will print).
