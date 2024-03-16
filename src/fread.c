@@ -66,6 +66,11 @@ static size_t fileSize;
 static int8_t *type = NULL, *tmpType = NULL, *size = NULL;
 static lenOff *colNames = NULL;
 static freadMainArgs args = {0};  // global for use by DTPRINT; static implies ={0} but include the ={0} anyway just in case for valgrind #4639
+#ifdef __EMSCRIPTEN__
+  // Under Wasm we must keep the fd open until we're done with the mmap, due to an Emscripten bug (#5969).
+  // TODO(emscripten-core/emscripten#20459): revert this
+  static int mmp_fd = -1;
+#endif
 
 const char typeName[NUMTYPE][10] = {"drop", "bool8", "bool8", "bool8", "bool8", "bool8", "int32", "int64", "float64", "float64", "float64", "int32", "float64", "string"};
 int8_t     typeSize[NUMTYPE]     = { 0,      1,       1,       1,       1,       1,       4,       8,       8,         8,         8,         4,       8       ,  8      };
@@ -146,10 +151,14 @@ bool freadCleanup(void)
     // may call freadCleanup(), thus resulting in an infinite loop.
     #ifdef WIN32
       if (!UnmapViewOfFile(mmp))
-        DTPRINT(_("System error %d unmapping view of file\n"), GetLastError());      // # nocov
+        // GetLastError is a 'DWORD', not 'int', hence '%lu'
+        DTPRINT(_("System error %lu unmapping view of file\n"), GetLastError());      // # nocov
     #else
       if (munmap(mmp, fileSize))
         DTPRINT(_("System errno %d unmapping file: %s\n"), errno, strerror(errno));  // # nocov
+      #ifdef __EMSCRIPTEN__
+        close(mmp_fd); mmp_fd = -1;
+      #endif
     #endif
     mmp = NULL;
   }
@@ -1381,7 +1390,11 @@ int freadMain(freadMainArgs _args) {
       // TO DO?: MAP_HUGETLB for Linux but seems to need admin to setup first. My Hugepagesize is 2MB (>>2KB, so promising)
       //         https://www.kernel.org/doc/Documentation/vm/hugetlbpage.txt
       mmp = mmap(NULL, fileSize, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);  // COW for last page lastEOLreplaced
-      close(fd);  // we don't need to keep file handle open
+      #ifdef __EMSCRIPTEN__
+        mmp_fd = fd;
+      #else
+        close(fd);  // we don't need to keep file handle open
+      #endif
       if (mmp == MAP_FAILED) {
     #else
       // Following: http://msdn.microsoft.com/en-gb/library/windows/desktop/aa366548(v=vs.85).aspx
@@ -1397,14 +1410,14 @@ int freadMain(freadMainArgs _args) {
         attempts++;
         // Looped retry to avoid ephemeral locks by system utilities as recommended here : http://support.microsoft.com/kb/316609
       }
-      if (hFile==INVALID_HANDLE_VALUE) STOP(_("Unable to open file after %d attempts (error %d): %s"), attempts, GetLastError(), fnam);
+      if (hFile==INVALID_HANDLE_VALUE) STOP(_("Unable to open file after %d attempts (error %lu): %s"), attempts, GetLastError(), fnam);
       LARGE_INTEGER liFileSize;
       if (GetFileSizeEx(hFile,&liFileSize)==0) { CloseHandle(hFile); STOP(_("GetFileSizeEx failed (returned 0) on file: %s"), fnam); }
       fileSize = (size_t)liFileSize.QuadPart;
       if (fileSize<=0) { CloseHandle(hFile); STOP(_("File is empty: %s"), fnam); }
       if (verbose) DTPRINT(_("  File opened, size = %s.\n"), filesize_to_str(fileSize));
       HANDLE hMap=CreateFileMapping(hFile, NULL, PAGE_WRITECOPY, 0, 0, NULL);
-      if (hMap==NULL) { CloseHandle(hFile); STOP(_("This is Windows, CreateFileMapping returned error %d for file %s"), GetLastError(), fnam); }
+      if (hMap==NULL) { CloseHandle(hFile); STOP(_("This is Windows, CreateFileMapping returned error %lu for file %s"), GetLastError(), fnam); }
       mmp = MapViewOfFile(hMap,FILE_MAP_COPY,0,0,fileSize);  // fileSize must be <= hilo passed to CreateFileMapping above.
       CloseHandle(hMap);  // we don't need to keep the file open; the MapView keeps an internal reference;
       CloseHandle(hFile); //   see https://msdn.microsoft.com/en-us/library/windows/desktop/aa366537(v=vs.85).aspx
@@ -1894,7 +1907,7 @@ int freadMain(freadMainArgs _args) {
     if (sampleLines>0) for (int j=0; j<ncol; j++) {
       if (tmpType[j]==CT_STRING && type[j]<CT_STRING && type[j]>CT_EMPTY) {
         args.header=true;
-        if (verbose) DTPRINT(_("  'header' determined to be true due to column %d containing a string on row 1 and a lower type (%s) in the rest of the %d sample rows\n"),
+        if (verbose) DTPRINT(_("  'header' determined to be true due to column %d containing a string on row 1 and a lower type (%s) in the rest of the %"PRId64" sample rows\n"),
                              j+1, typeName[type[j]], sampleLines);
         break;
       }
@@ -2430,7 +2443,7 @@ int freadMain(freadMainArgs _args) {
         if (stopTeam) {             // A previous thread stopped while I was waiting my turn to enter ordered
           myNrow = 0;               // # nocov; discard my buffer
         }
-        else if (headPos!=thisJumpStart) {
+        else if (headPos!=thisJumpStart && nrowLimit>0) { // do not care for dirty jumps since we do not read data and only want to know types
            // # nocov start
           snprintf(internalErr, internalErrSize, _("Internal error: invalid head position. jump=%d, headPos=%p, thisJumpStart=%p, sof=%p"), jump, (void*)headPos, (void*)thisJumpStart, (void*)sof);
           stopTeam = true;
@@ -2502,7 +2515,7 @@ int freadMain(freadMainArgs _args) {
     }
     stopTeam = false;
 
-    if (extraAllocRows) {
+    if (extraAllocRows && nrowLimit>0) { // no allocating needed for nrows=0
       allocnrow += extraAllocRows;
       if (allocnrow > nrowLimit) allocnrow = nrowLimit;
       if (verbose) DTPRINT(_("  Too few rows allocated. Allocating additional %"PRIu64" rows (now nrows=%"PRIu64") and continue reading from jump %d\n"),
@@ -2511,7 +2524,7 @@ int freadMain(freadMainArgs _args) {
       extraAllocRows = 0;
       goto read;
     }
-    if (restartTeam) {
+    if (restartTeam && nrowLimit>0) { // no restarting needed for nrows=0 since we discard read data anyway
       if (verbose) DTPRINT(_("  Restarting team from jump %d. nSwept==%d quoteRule==%d\n"), jump0, nSwept, quoteRule);
       ASSERT(nSwept>0 || quoteRuleBumpedCh!=NULL, "Internal error: team restart but nSwept==%d and quoteRuleBumpedCh==%p", nSwept, quoteRuleBumpedCh); // # nocov
       goto read;
