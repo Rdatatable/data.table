@@ -14,7 +14,7 @@
 
   \code{format_col} and \code{format_list_item} generics provide flexibility for end-users to define custom printing methods for generic classes.
 
-  \code{trunc.char} This feature compresses strings exceeding the \code{datatable.prettyprint.char} limit. Strings longer than this limit have excess characters removed, with "..." added to indicate truncation. Shorter strings remain unchanged.
+  Truncate all strings exceeding the \code{datatable.prettyprint.char} limit, every string which exceeds the limit are trucated to limit of characters by removing excess characters.
 }
 \usage{
   \method{print}{data.table}(x,
@@ -56,7 +56,6 @@
 
   \code{format_list_item} returns a length-1 \code{character} scalar.
 
-  \code{char.trunc} returns \code{x} if its length is within or equal to \code{"datatable.prettyprint.char"} else it returns the truncated version of \code{x} with "..." concatenated to the end.
 }
 \details{
   By default, with an eye to the typically large number of observations in a \code{data.table}, only the beginning and end of the object are displayed (specifically, \code{head(x, topn)} and \code{tail(x, topn)} are displayed unless \code{nrow(x) < nrows}, in which case all rows will print).
