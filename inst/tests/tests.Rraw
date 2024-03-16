@@ -18342,7 +18342,7 @@ ja_n = "\u3093"
 halfwidth_bracket = "\uFF63"
 dots_regex = "[.][.][.]"
 DT = data.table(strrep(accented_a, 4L))
-test(2248.01, DT, output=paste("1:", strrep(accented_a, 4L)))
+test(2248.01, capture.output(print(DT))[2], paste("1:", strrep(accented_a, 4L)))
 options(datatable.prettyprint.char=3L)
 test(2248.02, DT, output=paste0("1: ", accented_a, accented_a, accented_a, dots_regex))
 options(datatable.prettyprint.char=1L)
