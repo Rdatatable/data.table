@@ -18,7 +18,7 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg, SEXP listCo
   if (length(fill) != 1)
     error(_("fill must be a length 1 vector, such as the default NA"));
   R_len_t ln = LENGTH(l);
-  if (!isLogical(listColsArg) || LOGICAL(listColsArg)[0]==NA_LOGICAL)
+  if (!IS_TRUE_OR_FALSE(listColsArg))
     error(_("list.cols should be logical TRUE/FALSE."));
   bool listCol = LOGICAL(listColsArg)[0];
 
