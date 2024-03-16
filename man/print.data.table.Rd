@@ -6,7 +6,6 @@
 \alias{format_col.expression}
 \alias{format_list_item}
 \alias{format_list_item.default}
-\alias{char.trunc}
 \title{ data.table Printing Options }
 \description{
   \code{print.data.table} extends the functionalities of \code{print.data.frame}.
@@ -14,6 +13,8 @@
   Key enhancements include automatic output compression of many observations and concise column-wise \code{class} summary.
 
   \code{format_col} and \code{format_list_item} generics provide flexibility for end-users to define custom printing methods for generic classes.
+
+  \code{trunc.char} provides compression of any Strings to be printed if size of string exceeds the limit of the length allowed ,which is the value of  \code{"datatable.prettyprint.char"} in integers. Strings longer than \code{"datatable.prettyprint.char"} limit have their excess characters removed, and "..." is appended to the end of the string to indicate omitted content. Strings shorter than \code{"datatable.prettyprint.char"} limit are left unchanged. 
 }
 \usage{
   \method{print}{data.table}(x,
@@ -24,7 +25,6 @@
     col.names=getOption("datatable.print.colnames"),    # default: "auto"
     print.keys=getOption("datatable.print.keys"),       # default: TRUE
     trunc.cols=getOption("datatable.print.trunc.cols"), # default: FALSE
-    trunc.char = getOption("datatable.prettyprint.char"),# default: NULL
     quote=FALSE,
     timezone=FALSE, \dots)
 
@@ -45,7 +45,6 @@
   \item{col.names}{ One of three flavours for controlling the display of column names in output. \code{"auto"} includes column names above the data, as well as below the table if \code{nrow(x) > 20}. \code{"top"} excludes this lower register when applicable, and \code{"none"} suppresses column names altogether (as well as column classes if \code{class = TRUE}. }
   \item{print.keys}{ If \code{TRUE}, any \code{\link{key}} and/or \code{\link[=indices]{index}} currently assigned to \code{x} will be printed prior to the preview of the data. }
   \item{trunc.cols}{ If \code{TRUE}, only the columns that can be printed in the console without wrapping the columns to new lines will be printed (similar to \code{tibbles}). }
-  \item{trunc.char}{ If \code{"datatable.prettyprint.char"} is a number greater than 0, \code{data.table.print} limits the lengths of printed strings to be equal to or less than \code{"datatable.prettyprint.char"}. Strings longer than this limit have their excess characters removed, and "..." is appended to the end of the string to indicate omitted content. Strings shorter than this limit are left unchanged. }
   \item{quote}{ If \code{TRUE}, all output will appear in quotes, as in \code{print.default}. }
   \item{timezone}{ If \code{TRUE}, time columns of class POSIXct or POSIXlt will be printed with their timezones (if attribute is available). }
   \item{\dots}{ Other arguments ultimately passed to \code{format}. }
