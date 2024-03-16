@@ -14,7 +14,7 @@
 
   \code{format_col} and \code{format_list_item} generics provide flexibility for end-users to define custom printing methods for generic classes.
 
-  \code{trunc.char} provides compression of any Strings to be printed if size of string exceeds the limit of the length allowed ,which is the value of  \code{"datatable.prettyprint.char"} in integers. Strings longer than \code{"datatable.prettyprint.char"} limit have their excess characters removed, and "..." is appended to the end of the string to indicate omitted content. Strings shorter than \code{"datatable.prettyprint.char"} limit are left unchanged. 
+  \code{trunc.char} This feature compresses strings exceeding the \code{datatable.prettyprint.char} limit. Strings longer than this limit have excess characters removed, with "..." added to indicate truncation. Shorter strings remain unchanged.
 }
 \usage{
   \method{print}{data.table}(x,
