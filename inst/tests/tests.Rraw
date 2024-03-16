@@ -6938,7 +6938,6 @@ test(1477.20, transpose(list(factor(letters[1:3])), list.cols=TRUE), list(list("
 test(1477.21, transpose(list(factor(letters[1:3])), list.cols=FALSE), list("a", "b", "c"))
 test(1477.22, transpose(la, list.cols=NA), error="list.cols should be logical TRUE/FALSE.")
 
-
 # #480 `setDT` and 'lapply'
 ll = list(data.frame(a=1), data.frame(x=1, y=2), NULL, list())
 ll <- lapply(ll, setDT)
