@@ -481,8 +481,8 @@ replace_dot_alias = function(e) {
           allow.cartesian = TRUE
         }
         # TODO: collect all '==' ops first to speeden up Cnestedid
-        rightcols = colnamesInt(x, names(on), check_dups=FALSE)
-        leftcols  = colnamesInt(i, unname(on), check_dups=FALSE)
+        rightcols = colnamesInt(x, names(on), check_dups=FALSE, source = "data.table.R(ln:484)" )
+        leftcols  = colnamesInt(i, unname(on), check_dups=FALSE, source = "data.table.R(ln:484)")
       } else {
         ## missing on
         rightcols = chmatch(key(x), names_x)   # NAs here (i.e. invalid data.table) checked in bmerge()
@@ -2352,7 +2352,7 @@ na.omit.data.table = function (object, cols = seq_along(object), invert = FALSE,
   if (!cedta()) return(NextMethod()) # nocov
   if ( !missing(invert) && is.na(as.logical(invert)) )
     stopf("Argument 'invert' must be logical TRUE/FALSE")
-  cols = colnamesInt(object, cols, check_dups=FALSE)
+  cols = colnamesInt(object, cols, check_dups=FALSE, "data.table.R(ln:2355)")
   ix = .Call(Cdt_na, object, cols)
   # forgot about invert with no NA case, #2660
   if (invert) {
@@ -2498,7 +2498,7 @@ copy = function(x) {
 
 .shallow = function(x, cols = NULL, retain.key = FALSE, unlock = FALSE) {
   wasnull = is.null(cols)
-  cols = colnamesInt(x, cols, check_dups=FALSE)
+  cols = colnamesInt(x, cols, check_dups=FALSE, "data.table.R(ln:2501)")
   ans = .Call(Cshallowwrapper, x, cols)  # copies VECSXP only
 
   if(retain.key){
@@ -2685,11 +2685,11 @@ setcolorder = function(x, neworder=key(x), before=NULL, after=NULL)  # before/af
     stopf("Provide either before= or after= but not both")
   if (length(before)>1L || length(after)>1L)
     stopf("before=/after= accept a single column name or number, not more than one")
-  neworder = colnamesInt(x, neworder, check_dups=FALSE)  # dups are now checked inside Csetcolorder below
+  neworder = colnamesInt(x, neworder, check_dups=FALSE, "data.table.R(ln:2688)")  # dups are now checked inside Csetcolorder below
   if (length(before))
-    neworder = c(setdiff(seq_len(colnamesInt(x, before) - 1L), neworder), neworder)
+    neworder = c(setdiff(seq_len(colnamesInt(x, before, source = "data.table.R(ln:2690)") - 1L), neworder), neworder)
   if (length(after))
-    neworder = c(setdiff(seq_len(colnamesInt(x, after)), neworder), neworder)
+    neworder = c(setdiff(seq_len(colnamesInt(x, after, source = "data.table.R(ln:2692)")), neworder), neworder)
   if (length(neworder) != length(x)) {
     # pad by the missing elements (checks inside Csetcolorder catch other mistakes)
     neworder = c(neworder, setdiff(seq_along(x), neworder))
@@ -2970,7 +2970,7 @@ rleidv = function(x, cols=seq_along(x), prefix=NULL) {
   } else if (!length(cols)) {
     stopf("x is a list, 'cols' cannot be 0-length.")
   }
-  cols = colnamesInt(x, cols, check_dups=FALSE)
+  cols = colnamesInt(x, cols, check_dups=FALSE, "data.table.R(ln:2973)")
   ids = .Call(Crleid, x, cols)
   if (!is.null(prefix)) ids = paste0(prefix, ids)
   ids
