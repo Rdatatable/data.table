@@ -478,4 +478,4 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
   invisible(!fail)
 }
 
-anyNonAscii = function(x) anyNA(iconv(x, to="ASCII"))
+anyNonAscii = function(x) anyNA(iconv(x, to="ASCII")) # nocov
