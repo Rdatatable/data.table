@@ -18350,7 +18350,7 @@ ja_n = "\u3093"
 halfwidth_bracket = "\uFF63"
 dots = "..."
 DT = data.table(strrep(accented_a, 4L))
-test(2248.01, capture.output(print(DT))[2], paste0("1: ", strrep(accented_a, 4L)))
+test(2248.01, charToRaw(capture.output(print(DT))[2]), charToRaw(paste0("1: ", strrep(accented_a, 4L))))
 options(datatable.prettyprint.char=3L)
 test(2248.02, DT, output=paste0("1: ", accented_a, accented_a, accented_a, dots))
 options(datatable.prettyprint.char=1L)
@@ -18359,7 +18359,7 @@ test(2248.03, DT, output=paste0("1: ", accented_a, dots))
 options(datatable.prettyprint.char=4L)
 # four Japanese characters: 'one' 'two' 'ko' 'n'
 DT = data.table(paste0(ja_ichi, ja_ni, ja_ko, ja_n))
-test(2248.04, capture.output(print(DT))[2], paste0("1: ", ja_ichi, ja_ni, ja_ko, ja_n))
+test(2248.04, charToRaw(capture.output(print(DT))[2]), charToRaw(paste0("1: ", ja_ichi, ja_ni, ja_ko, ja_n)))
 options(datatable.prettyprint.char=3L)
 test(2248.05, capture.output(print(DT))[2], paste0("1: ", ja_ichi, ja_ni, ja_ko, dots))
 options(datatable.prettyprint.char=1L)
