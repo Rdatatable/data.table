@@ -6921,10 +6921,22 @@ ll = sapply(ll, paste, collapse=",")
 test(1477.07, transpose(strsplit(ll, ",", fixed=TRUE)), tstrsplit(ll, ",", fixed=TRUE))
 test(1477.08, transpose(1:5), error="l must be a list")
 test(1477.09, transpose(list(as.complex(c(1, 1+5i)))), error="Unsupported column type")
-test(1477.10, transpose(list(list(1:5))), error="Item 1 of list input is")
+test(1477.10, transpose(list(x~y)), error="Item 1 of list input is")
 test(1477.11, transpose(as.list(1:5), fill=1:2), error="fill must be a length 1 vector")
 test(1477.12, transpose(as.list(1:5), ignore.empty=NA), error="ignore.empty should be logical TRUE/FALSE")
 test(1477.13, transpose(list()), list())
+# return list columns #5639
+la = list(as.list(1:3), list("a","b","c"))
+lb = list(list(1L,"a"), list(2L,"b"), list(3L,"c"))
+test(1477.14, transpose(list(1:3, c("a","b","c")), list.cols=TRUE), lb)
+test(1477.15, transpose(list(1:3, c("a","b","c")), list.cols=FALSE), lapply(lb, unlist))
+test(1477.16, transpose(la, list.cols=TRUE), lb)
+test(1477.17, transpose(lb, list.cols=TRUE), la)
+test(1477.18, transpose(list(list(1L,"a"), list(2L), list(3L,"c")), list.cols=TRUE, fill="b"), la)
+test(1477.19, transpose(list(1:2, c("a","b","c")), list.cols=TRUE, fill=3L), lb)
+test(1477.20, transpose(list(factor(letters[1:3])), list.cols=TRUE), list(list("a"), list("b"), list("c")))
+test(1477.21, transpose(list(factor(letters[1:3])), list.cols=FALSE), list("a", "b", "c"))
+test(1477.22, transpose(la, list.cols=NA), error="list.cols should be logical TRUE/FALSE.")
 
 # #480 `setDT` and 'lapply'
 ll = list(data.frame(a=1), data.frame(x=1, y=2), NULL, list())
@@ -9912,6 +9924,14 @@ test(1658.37, fwrite(matrix("foo"), quote=TRUE), output='"V1"\n.*"foo"', message
 test(1658.38, fwrite(matrix(1:4, nrow=2, ncol=2), quote = TRUE), output = '"V1","V2"\n.*1,3\n2,4', message = "x being coerced from class: matrix to data.table")
 test(1658.39, fwrite(matrix(1:3, nrow=3, ncol=1), quote = TRUE), output = '"V1"\n.*1\n2\n3', message = "x being coerced from class: matrix to data.table")
 test(1658.40, fwrite(matrix(1:4, nrow=2, ncol=2, dimnames = list(c("ra","rb"),c("ca","cb"))), quote = TRUE), output = '"ca","cb"\n.*1,3\n2,4', message = "x being coerced from class: matrix to data.table")
+# keep row.names for matrix input #5315
+M = matrix(1:4, nrow=2)
+coercion_msg = "x being coerced from class: matrix to data.table"
+test(1658.401, fwrite(M, row.names=TRUE),  output='"",V1,V2\n1,1,3\n2,2,4', message=coercion_msg)
+test(1658.402, fwrite(M, row.names=FALSE), output='V1,V2\n1,3\n2,4', message=coercion_msg)
+rownames(M) = c("a","b")
+test(1658.403, fwrite(M, row.names=TRUE),  output='"",V1,V2\na,1,3\nb,2,4', message=coercion_msg)
+test(1658.404, fwrite(M, row.names=FALSE), output='V1,V2\n1,3\n2,4', message=coercion_msg)
 
 # fwrite compress
 if (!haszlib()) {
