@@ -481,8 +481,8 @@ replace_dot_alias = function(e) {
           allow.cartesian = TRUE
         }
         # TODO: collect all '==' ops first to speeden up Cnestedid
-        rightcols = colnamesInt(x, names(on), check_dups=FALSE, source = "data.table.R(ln:484)" )
-        leftcols  = colnamesInt(i, unname(on), check_dups=FALSE, source = "data.table.R(ln:484)")
+        rightcols = colnamesInt(x, names(on), check_dups=FALSE, source = "matching columns from 'on' names to columns in 'x'")
+        leftcols  = colnamesInt(i, unname(on), check_dups=FALSE, source = "matching column names from 'on' values to columns in 'i'")
       } else {
         ## missing on
         rightcols = chmatch(key(x), names_x)   # NAs here (i.e. invalid data.table) checked in bmerge()
