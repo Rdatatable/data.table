@@ -1,4 +1,4 @@
-transpose = function(l, fill=NA, ignore.empty=FALSE, keep.names=NULL, make.names=NULL) {
+transpose = function(l, fill=NA, ignore.empty=FALSE, keep.names=NULL, make.names=NULL, list.cols=FALSE) {
   if (!is.null(make.names)) {
     stopifnot(length(make.names)==1L)
     if (is.character(make.names)) {
@@ -14,7 +14,7 @@ transpose = function(l, fill=NA, ignore.empty=FALSE, keep.names=NULL, make.names
     colnames = as.character(l[[make.names]])
     l = if (is.data.table(l)) l[,-make.names,with=FALSE] else l[-make.names]
   }
-  ans = .Call(Ctranspose, l, fill, ignore.empty, keep.names)
+  ans = .Call(Ctranspose, l, fill, ignore.empty, keep.names, list.cols)
   if (!is.null(make.names)) setattr(ans, "names", c(keep.names, colnames))
   else if (is.data.frame(l))  # including data.table but not plain list
     setattr(ans, "names", c(keep.names, paste0("V", seq_len(length(ans)-length(keep.names)))))
