@@ -3,7 +3,7 @@
 \alias{rev}
 \title{Fast reverse}
 \description{
-  Similar to \code{base::rev} but \emph{much faster}.
+  Similar to \code{\link[base]{rev}} but \emph{much faster}.
 }
 
 \usage{
