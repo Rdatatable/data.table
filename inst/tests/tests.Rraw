@@ -18355,6 +18355,10 @@ test(2249.17, frev(1:1e2,           copy=TRUE),  rev(1:1e2))
 x = 1:3
 test(2249.21, {frev(x, copy=TRUE);  x}, 1:3)
 test(2249.22, {frev(x, copy=FALSE); x}, 3:1)
+test(2249.23, address(x) == address(frev(x, copy=FALSE)))
+test(2249.24, address(x) != address(frev(x, copy=TRUE)))
+# do not alter on subsets
+test(2249.25, {frev(x[1:2], copy=FALSE);  x}, 1:3)
 # levels
 f = as.factor(letters)
 test(2249.31, frev(f, copy=TRUE), rev(f))
