@@ -437,7 +437,6 @@ SEXP frev(SEXP x, SEXP copyArg) {
   if (copy) {
     x = PROTECT(duplicate(x));
     nprotect++;
-    copy = false;
   }
   if (n==0) {
     UNPROTECT(nprotect);
