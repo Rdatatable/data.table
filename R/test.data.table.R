@@ -395,6 +395,10 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
       catf("Test %s did not produce correct output:\n", numStr)
       catf("Expected: <<%s>>\n", encodeString(output))  # \n printed as '\\n' so the two lines of output can be compared vertically
       catf("Observed: <<%s>>\n", encodeString(out))
+      if (anyNonAscii(output) || anyNonAscii((out))) {
+        catf("Expected (raw): <<%s>>\n", paste(charToRaw(output), collapse = " "))
+        catf("Observed (raw): <<%s>>\n", paste(charToRaw(out), collapse = " "))
+      }
       fail = TRUE
       # nocov end
     }
@@ -403,6 +407,10 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
       catf("Test %s produced output but should not have:\n", numStr)
       catf("Expected absent (case insensitive): <<%s>>\n", encodeString(notOutput))
       catf("Observed: <<%s>>\n", encodeString(out))
+      if (anyNonAscii(notOutput) || anyNonAscii((out))) {
+        catf("Expected absent (raw): <<%s>>\n", paste(charToRaw(notOutput), collapse = " "))
+        catf("Observed (raw): <<%s>>\n", paste(charToRaw(out), collapse = " "))
+      }
       fail = TRUE
       # nocov end
     }
@@ -448,6 +456,10 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
           # head.matrix doesn't restrict columns
           if (length(d <- dim(x))) do.call(`[`, c(list(x, drop = FALSE), lapply(pmin(d, 6L), seq_len)))
           else print(head(x))
+          if (typeof(x) == 'character' && anyNonAscii(x)) {
+            cat("Non-ASCII string detected, raw representation:\n")
+            print(lapply(head(x), charToRaw))
+          }
         }
       }
       failPrint(x, deparse(xsub))
@@ -466,3 +478,4 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
   invisible(!fail)
 }
 
+anyNonAscii = function(x) anyNA(iconv(x, to="ASCII")) # nocov
