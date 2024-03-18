@@ -34,6 +34,7 @@
 
     ```R
     x = sample(2e8)
+    setDTthreads(1) # single threaded for fair comparison, will get faster with more threads
     microbenchmark::microbenchmark(
       base = rev(x),
       frev_copy = frev(x, copy=TRUE),
@@ -41,11 +42,10 @@
       times = 10L,
       unit = "s"
     )
-    # Unit: seconds
-    #          expr   min    lq  mean median   uq   max neval cld
-    #          base 1.376 1.397 1.864 1.544 1.917 4.274    10 a  
-    #     frev_copy 0.529 0.591 0.769 0.659 0.727 1.351    10  b 
-    #  frev_inplace 0.064 0.065 0.066 0.066 0.067 0.070    10   c
+    #       expr      min    lq  mean median   uq   max neval cld
+    #       base    1.240 1.263 1.301 1.291 1.329 1.437    10 a  
+    #  frev_copy    0.533 0.538 0.590 0.576 0.639 0.667    10  b 
+    #  frev_inplace 0.099 0.101 0.130 0.102 0.107 0.260    10   c
     ```
 
 ## NOTES
