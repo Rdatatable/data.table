@@ -50,6 +50,8 @@
 
 7. Updated a test relying on `>` working for comparing language objects to a string, which will be deprecated by R, [#5977](https://github.com/Rdatatable/data.table/issues/5977); no user-facing effect. Thanks to R-core for continuously improving the language.
 
+8. Added a unit test ensuring that `DT[, .SD]` retains and prints secondary indices, [#1709](https://github.com/Rdatatable/data.table/issues/1709). Thanks to @arunsrinivasan for the issue and @joshhwuu for the fix.
+
 # data.table [v1.15.0](https://github.com/Rdatatable/data.table/milestone/29)  (30 Jan 2024)
 
 ## BREAKING CHANGE
