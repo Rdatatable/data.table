@@ -18,7 +18,7 @@
 
 3. Namespace-qualifying `data.table::shift()`, `data.table::first()`, or `data.table::last()` will not deactivate GForce, [#5942](https://github.com/Rdatatable/data.table/issues/5942). Thanks @MichaelChirico for the proposal and fix. Namespace-qualifying other calls like `stats::sum()`, `base::prod()`, etc., continue to work as an escape valve to avoid GForce, e.g. to ensure S3 method dispatch.
 
-4. Using `dt[, names(.SD) := lapply(.SD, fx)]` now works, [#795](https://github.com/Rdatatable/data.table/issues/795) -- one of our [most-requested issues (see #3189)](https://github.com/Rdatatable/data.table/issues/3189). Thanks to @brodieG for the report and @ColeMiller1 for PR.
+4. Using `dt[, names(.SD) := lapply(.SD, fx)]` now works, [#795](https://github.com/Rdatatable/data.table/issues/795) -- one of our [most-requested issues (see #3189)](https://github.com/Rdatatable/data.table/issues/3189). Thanks to @brodieG for the report, 20 or so others for chiming in, and @ColeMiller1 for PR.
 
 ## BUG FIXES
 
