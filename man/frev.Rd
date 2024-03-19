@@ -7,11 +7,10 @@
 }
 
 \usage{
-frev(x, copy=TRUE)
+frev(x)
 }
 \arguments{
   \item{x}{ An atomic \code{vector} or \code{list}. }
-  \item{copy}{ logical (default is \code{TRUE}). If \code{FALSE} reversing happens in-place. }
 }
 
 \value{
@@ -22,9 +21,6 @@ frev(x, copy=TRUE)
 # on vectors
 x = setNames(1:26, letters)
 frev(x[1:10])
-# reverse in-place
-frev(x, copy=FALSE)
-x
 
 # list
 frev(list(1, "a"))
