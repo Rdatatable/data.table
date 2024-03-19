@@ -50,6 +50,8 @@
 
 7. Updated a test relying on `>` working for comparing language objects to a string, which will be deprecated by R, [#5977](https://github.com/Rdatatable/data.table/issues/5977); no user-facing effect. Thanks to R-core for continuously improving the language.
 
+8. Added an optional source argument to the colnamesInt function, providing hints about the source of errors. It improves the clarity of error messages by including the source wherever the colnamesInt function is called. Additionally, tests have been added to ensure the accuracy of the updated error messages. [#5039](https://github.com/Rdatatable/data.table/issues/5039), Thanks @MichaelChirico for the suggestion and @Nj221102 for the fix.
+
 # data.table [v1.15.0](https://github.com/Rdatatable/data.table/milestone/29)  (30 Jan 2024)
 
 ## BREAKING CHANGE
