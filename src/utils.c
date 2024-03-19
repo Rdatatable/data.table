@@ -430,7 +430,7 @@ SEXP frev(SEXP x, SEXP copyArg) {
   if (!isNull(getAttrib(x, R_DimSymbol)))
     error(_("'x' should not be matrix or array"));
   if (!IS_TRUE_OR_FALSE(copyArg))
-    error(_("%s must be TRUE or FALSE."), "copy");
+    error(_("%s must be TRUE or FALSE."), "copy"); // # nocov
   bool copy = LOGICAL(copyArg)[0];
   R_xlen_t n = xlength(x);
   int nprotect = 0;
