@@ -332,3 +332,23 @@ options(datatable.verbose=1)
 test(99.4, coerceAs(1, 2L), error="verbose option must be length 1 non-NA logical or integer")
 options(datatable.verbose=FALSE)
 
+# Tests for the updated error message containing source of the problem in colnamesInt()
+test(2249.1, colnamesInt(1, NULL, NULL, "tests"),
+    error = "In tests 'x' argument must be data.table compatible" )
+test(2249.2, colnamesInt(list(), NULL, 2, "tests"),
+    error = "check_dups must be TRUE or FALSE" )
+test(2249.3, colnamesInt(list(), c(1.5, 2.5), TRUE, "tests"),
+    error = "In tests argument specifying columns is type 'double' and one or more items in it are not whole integers" )
+test(2249.4, colnamesInt(list(), c(0, 1), FALSE, "tests"),
+    error = "In tests argument specifying columns received non-existing column(s): cols[1]=0" )
+
+x <- data.table(a = 1:3, b = 4:6)
+names(x) <- NULL  
+test(2249.5, colnamesInt(x, c("a", "b"), TRUE, "tests"), 
+    error = "In tests 'x' argument data.table has no names" )
+test(2249.6, colnamesInt(data.table(a = 1:3, b = 4:6), c("a", "c"), TRUE, "tests"), 
+    error = "In tests argument specifying columns received non-existing column(s): cols[2]='c'" )
+test(2249.7, colnamesInt(list(), TRUE, TRUE, "tests"), 
+    error = "In tests argument specifying columns must be character or numeric" )
+test(2249.8, colnamesInt(data.table(a = 1:3, b = 4:6), c("a", "a"), TRUE, "tests" ), 
+    error = "In tests argument specifying columns received duplicate column(s)" )
