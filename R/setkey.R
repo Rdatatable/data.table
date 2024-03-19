@@ -168,7 +168,7 @@ forderv = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L, na.las
     by = NULL
   } else {
     if (!length(x)) return(integer(0L)) # e.g. forderv(data.table(NULL)) and forderv(list()) return integer(0L))
-    by = colnamesInt(x, by, check_dups=FALSE, source = "matching column names from 'by' to columns in 'x'")
+    by = colnamesInt(x, by, check_dups=FALSE, source = "While matching column names from 'by' to columns in 'x'")
     if (length(order) == 1L) order = rep(order, length(by))
   }
   order = as.integer(order) # length and contents of order being +1/-1 is checked at C level
