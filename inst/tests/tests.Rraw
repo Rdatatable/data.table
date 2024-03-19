@@ -18318,3 +18318,7 @@ test(2247.09, dt[, paste(names(.SD), 'max', sep = '_') := lapply(.SD, max), by =
 dt = data.table(a = 1:3, b = 5:7, grp = c('a', 'a', 'b'))
 test(2247.10, dt[1:2, paste(names(.SD), 'max', sep = '_') := lapply(.SD, max), by = grp], data.table(a = 1:3, b = 5:7, grp = c('a', 'a', 'b'), a_max = c(2L, 2L, NA_integer_), b_max = c(6L, 6L, NA_integer_)))
 test(2247.11, dt[, names(.SD(2)) := lapply(.SD, .I)], error = 'could not find function ".SD"')
+
+dt = data.table(a = 1:3, b = 5:7, grp = c('a', 'a', 'b'))
+test(2247.12, dt[, names(.SD) := lapply(.SD, \(x) x + b), .SDcols = "a"], data.table(a = 1:3 + 5:7, b = 5:7, grp = c('a', 'a', 'b')))
+
