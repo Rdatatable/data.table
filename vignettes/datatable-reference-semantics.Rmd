@@ -261,19 +261,20 @@ head(flights)
 #### -- How can we update multiple existing columns in place using `.SD`?
 
 ```{r}
-char_cols <- sapply(flights, is.character)
-flights[, names(.SD) := lapply(.SD, as.factor), .SDcols = char_cols]
-str(flights[, ..char_cols])
+flights[, names(.SD) := lapply(.SD, as.factor), .SDcols = is.character]
+```
+Let's clean up again and make our newly made factor columns back to character columns. This time we will make use of `.SDcols` accepting a function to return columns. In this case, `is.factor` will return the columns which are factors. For more on the **S**ubset of the **D**ata, there is also an [SD Usage vignette](https://cran.r-project.org/web/packages/data.table/vignettes/datatable-sd-usage.html).
+
+Sometimes, it is also nice to keep track of columns that we transform. That way, even after we convert our columns we would be able to call the specific columns we were updating.
+```{r}
+factor_cols <- sapply(flights, is.factor)
+flights[, names(.SD) := lapply(.SD, as.character), .SDcols = factor_cols]
+str(flights[, ..factor_cols])
 ```
 #### {.bs-callout .bs-callout-info}
 
-* We also could have used `(char_cols)` on the `LHS`.
+* We also could have used `(factor_cols)` on the `LHS` instead of `names(.SD)`.
 
-Let's clean up again and make our newly made factor columns back to character columns. This time we will make use of `.SDcols` accepting a function to return columns. In this case, `is.factor` will return the columns which are factors. For more on the **S**ubset of the **D**ata, there is also an [SD Usage vignette](https://cran.r-project.org/web/packages/data.table/vignettes/datatable-sd-usage.html).
-```{r}
-flights[, names(.SD) := lapply(.SD, as.character), .SDcols = is.factor]
-str(flights[, .SD, .SDcols = is.character])
-```
 ## 3. `:=` and `copy()`
 
 `:=` modifies the input object by reference. Apart from the features we have discussed already, sometimes we might want to use the update by reference feature for its side effect. And at other times it may not be desirable to modify the original object, in which case we can use `copy()` function, as we will see in a moment.

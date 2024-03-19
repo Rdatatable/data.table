@@ -1122,11 +1122,11 @@ replace_dot_alias = function(e) {
           if (is.name(lhs)) {
             lhs = as.character(lhs)
           } else {
-            #i.e lhs is names(.SD) || setdiff(names(.SD), cols) || (cols)
+            # i.e lhs is names(.SD) || setdiff(names(.SD), cols) || (cols)
             replace_names_sd = function(e, cols){
               if (length(e) == 1L) return(e)
-              if (e[[1L]] == quote(names) && is.name(e[[2L]]) && e[[2L]] == quote(.SD)) return(cols)
-              for (i in seq_along(e)[-1L]) if (!is.null(e[[i]])) e[[i]] = replace_names_sd(e[[i]], cols)
+              if (e %iscall% "names" && is.name(e2 <- e[[2L]]) && e2 == ".SD") return(cols)
+              for (i in 2:length(e)) if (!is.null(e[[i]])) e[[i]] = replace_names_sd(e[[i]], cols)
               e
             }
             lhs = eval(replace_names_sd(lhs, sdvars), parent.frame(), parent.frame())
