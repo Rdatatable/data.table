@@ -34,23 +34,7 @@
 
 5. `fwrite(x, row.names=TRUE)` with `x` a `matrix` writes `row.names` when present, not row numbers, [#5315](https://github.com/Rdatatable/data.table/issues/5315). Thanks to @Liripo for the report, and @ben-schwen for the fix.
 
-6. New `frev(x, copy=TRUE)` as a faster analogue to `base::rev()` for atomic vectors/lists, [#5885](https://github.com/Rdatatable/data.table/issues/5885). Thanks to Benjamin Schwendinger for suggesting and implementing.
-
-    ```R
-    x = sample(2e8)
-    setDTthreads(1) # single threaded for fair comparison, will get faster with more threads
-    microbenchmark::microbenchmark(
-      base = rev(x),
-      frev_copy = frev(x, copy=TRUE),
-      frev_inplace = frev(x, copy=FALSE),
-      times = 10L,
-      unit = "s"
-    )
-    #       expr      min    lq  mean median   uq   max neval cld
-    #       base    1.240 1.263 1.301 1.291 1.329 1.437    10 a  
-    #  frev_copy    0.533 0.538 0.590 0.576 0.639 0.667    10  b 
-    #  frev_inplace 0.099 0.101 0.130 0.102 0.107 0.260    10   c
-    ```
+6. New `frev(x, copy=TRUE)` as a faster analogue to `base::rev()` for atomic vectors/lists, [#5885](https://github.com/Rdatatable/data.table/issues/5885). Twice as fast as `base::rev()` on large inputs, and faster with more threads. Thanks to Benjamin Schwendinger for suggesting and implementing.
 
 ## NOTES
 
