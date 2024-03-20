@@ -13,6 +13,10 @@ frev(x)
   \item{x}{ An atomic \code{vector} or \code{list}. }
 }
 
+\details{
+  \code{frev} retains attributes, but does not reorder them.
+}
+
 \value{
   \code{frev} returns the input reversed.
 }
