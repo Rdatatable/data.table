@@ -1122,7 +1122,7 @@ replace_dot_alias = function(e) {
           if (is.name(lhs)) {
             lhs = as.character(lhs)
           } else {
-            # i.e lhs is names(.SD) || setdiff(names(.SD), cols) || (cols)
+            # lhs is e.g. (MyVar) or get("MyVar") or names(.SD) || setdiff(names(.SD), cols)
             lhs = eval(lhs, list(.SD = setNames(logical(length(sdvars)), sdvars)), parent.frame())
           }
         } else {
