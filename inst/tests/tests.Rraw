@@ -18333,17 +18333,28 @@ if (test_bit64) {
 
 # fread(...,fill) can also be used to specify a guess on the maximum number of columns #2691 #1812 #4130 #3436 #2727
 dt_str = paste(rep(c("1,2\n", "1,2,3\n"), each=100), collapse="")
-test(2249.01, fread(text = dt_str, fill=FALSE), data.table(1L, rep(2L, 100)), warning=".*Consider fill=TRUE.*")
-test(2249.02, fread(text = dt_str, fill=TRUE), data.table(1L, rep(2L, 100)), warning=".*Consider fill=3.*")
-test(2249.03, fread(text = dt_str, fill=2L), data.table(1L, rep(2L, 100)), warning=".*Consider fill=3.*")
-test(2249.04, fread(text = dt_str, fill=3L), data.table(1L, 2L, rep(c(NA,3L), each=100)))
-test(2249.05, fread(text = dt_str, fill=5L, verbose=TRUE), data.table(1L, 2L, rep(c(NA,3L), each=100)), output="Provided number of fill columns: 5 but only found 3\n  Dropping 2 overallocated columns") # user guess slightly too big
-test(2249.06, fread(text = dt_str, fill=1000L), data.table(1L, 2L, rep(c(NA,3L), each=100))) # user guess much too big
-# example from 2691
-text = "12223, University\n12227, bridge, Sky\n12828, Sunset\n13801, Ground\n14853, Tranceamerica\n14854, San Francisco\n15595, shibuya, Shrine\n16126, fog, San Francisco\n16520, California, ocean, summer, golden gate, beach, San Francisco\n"
+ans = data.table(1L, 2L, rep(c(NA, 3L), each=100L))
+test(2249.01, fread(text = dt_str, fill=FALSE), ans[1:100, -3L], warning=".*Consider fill=TRUE.*")
+test(2249.02, fread(text = dt_str, fill=TRUE), ans[1:100, -3L], warning=".*Consider fill=3.*")
+test(2249.03, fread(text = dt_str, fill=2L), ans[1:100, -3L], warning=".*Consider fill=3.*")
+test(2249.04, fread(text = dt_str, fill=3L), ans)
+test(2249.05, fread(text = dt_str, fill=5L, verbose=TRUE), ans, output="Provided number of fill columns: 5 but only found 3\n  Dropping 2 overallocated columns") # user guess slightly too big
+test(2249.06, fread(text = dt_str, fill=1000L), ans) # user guess much too big
+lines = c(
+  "12223, University",
+  "12227, bridge, Sky",
+  "12828, Sunset",
+  "13801, Ground",
+  "14853, Tranceamerica",
+  "14854, San Francisco",
+  "15595, shibuya, Shrine",
+  "16126, fog, San Francisco",
+  "16520, California, ocean, summer, golden gate, beach, San Francisco",
+  "")
+text = paste(lines, collapse="\n")
 test(2249.07, dim(fread(text)), c(6L, 3L), warning=c("fill=TRUE", "Discarded"))
 test(2249.08, dim(fread(text, fill=TRUE)), c(9L, 9L))
-text = "12223, University\n12227, bridge, Sky\n12828, Sunset\n13801, Ground\n14853, Tranceamerica\n16520, California, ocean, summer, golden gate, beach, San Francisco\n14854, San Francisco\n15595, shibuya, Shrine\n16126, fog, San Francisco\n"
+text = paste(lines[c(1:5, 9L, 6:8, 10L)], collapse="\n")
 test(2249.09, dim(fread(text)), c(3L, 3L), warning=c("fill=TRUE", "fill=7"))
 test(2249.10, dim(fread(text, fill=TRUE)), c(9L, 9L))
 test(2249.11, dim(fread(text, fill=7)), c(9L, 9L))
