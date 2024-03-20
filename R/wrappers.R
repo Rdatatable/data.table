@@ -16,3 +16,6 @@ isRealReallyInt = function(x) .Call(CisRealReallyIntR, x)
 isReallyReal = function(x) .Call(CisReallyReal, x)
 
 coerceAs = function(x, as, copy=TRUE) .Call(CcoerceAs, x, as, copy)
+
+frev   = function(x) .Call(Cfrev, x, TRUE)
+setrev = function(x) invisible(.Call(Cfrev, x, FALSE))
