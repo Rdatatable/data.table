@@ -20,7 +20,11 @@
 
 4. Namespace-qualifying `data.table::shift()`, `data.table::first()`, or `data.table::last()` will not deactivate GForce, [#5942](https://github.com/Rdatatable/data.table/issues/5942). Thanks @MichaelChirico for the proposal and fix. Namespace-qualifying other calls like `stats::sum()`, `base::prod()`, etc., continue to work as an escape valve to avoid GForce, e.g. to ensure S3 method dispatch.
 
-5. `fread`'s `fill` argument now also accepts an `integer` in addition to boolean values. `fread` always guesses the number of columns based on reading a sample of rows in the file. When `fill=TRUE`, `fread` stops reading when this estimate winds up too low, e.g. when the sampled rows happen to exclude some rows that are even wider, [#2727](https://github.com/Rdatatable/data.table/issues/2727) [#2691](https://github.com/Rdatatable/data.table/issues/2691) [#4130](https://github.com/Rdatatable/data.table/issues/4130) [#3436](https://github.com/Rdatatable/data.table/issues/3436). Providing an `integer` as argument for `fill` allows for a manual estimate of the number of columns instead, [#1812](https://github.com/Rdatatable/data.table/issues/1812) [#5378](https://github.com/Rdatatable/data.table/issues/5378). Thanks to @jangorecki, @christellacaze, @Yiguan, @alexdthomas, @ibombonato, @Befrancesco, @TobiasGold for reporting/requesting, and Benjamin Schwendinger for the PR.
+5. `transpose` gains `list.cols=` argument, [#5639](https://github.com/Rdatatable/data.table/issues/5639). Use this to return output with list columns and avoids type promotion (an exception is `factor` columns which are promoted to `character` for consistency between `list.cols=TRUE` and `list.cols=FALSE`). This is convenient for creating a row-major representation of a table. Thanks to @MLopez-Ibanez for the request, and Benjamin Schwendinger for the PR.
+
+6. Using `dt[, names(.SD) := lapply(.SD, fx)]` now works, [#795](https://github.com/Rdatatable/data.table/issues/795) -- one of our [most-requested issues (see #3189)](https://github.com/Rdatatable/data.table/issues/3189). Thanks to @brodieG for the report, 20 or so others for chiming in, and @ColeMiller1 for PR.
+
+7. `fread`'s `fill` argument now also accepts an `integer` in addition to boolean values. `fread` always guesses the number of columns based on reading a sample of rows in the file. When `fill=TRUE`, `fread` stops reading when this estimate winds up too low, e.g. when the sampled rows happen to exclude some rows that are even wider, [#2727](https://github.com/Rdatatable/data.table/issues/2727) [#2691](https://github.com/Rdatatable/data.table/issues/2691) [#4130](https://github.com/Rdatatable/data.table/issues/4130) [#3436](https://github.com/Rdatatable/data.table/issues/3436). Providing an `integer` as argument for `fill` allows for a manual estimate of the number of columns instead, [#1812](https://github.com/Rdatatable/data.table/issues/1812) [#5378](https://github.com/Rdatatable/data.table/issues/5378). Thanks to @jangorecki, @christellacaze, @Yiguan, @alexdthomas, @ibombonato, @Befrancesco, @TobiasGold for reporting/requesting, and Benjamin Schwendinger for the PR.
 
 ## BUG FIXES
 
@@ -31,6 +35,8 @@
 3. Optimized `shift` per group produced wrong results when simultaneously subsetting, for example, `DT[i==1L, shift(x), by=group]`, [#5962](https://github.com/Rdatatable/data.table/issues/5962). Thanks to @renkun-ken for the report and Benjamin Schwendinger for the fix.
 
 4. `dcast(fill=NULL)` only computes default fill value if necessary, which eliminates some previous warnings (for example, when fun.aggregate=min or max, warning was NAs introduced by coercion to integer range) which were potentially confusing, [#5512](https://github.com/Rdatatable/data.table/issues/5512), [#5390](https://github.com/Rdatatable/data.table/issues/5390). Thanks to Toby Dylan Hocking for the fix.
+
+5. `fwrite(x, row.names=TRUE)` with `x` a `matrix` writes `row.names` when present, not row numbers, [#5315](https://github.com/Rdatatable/data.table/issues/5315). Thanks to @Liripo for the report, and @ben-schwen for the fix.
 
 ## NOTES
 
