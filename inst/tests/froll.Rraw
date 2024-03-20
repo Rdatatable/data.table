@@ -303,8 +303,7 @@ expected = list(c(NA, 0.5, 1.5, 1.75, 2, 3), c(NA, NA, 1, 1.75, 1.75, 2.5), c(NA
 test(6000.066, ans1, expected)
 test(6000.067, ans2, expected)
 #### early stopping NAs in leading k obs
-options(datatable.verbose=TRUE)
-test(6000.0671, frollmean(c(1:2,NA,4:10), 4), c(rep(NA_real_, 6), 5.5, 6.5, 7.5, 8.5), output=c(
+test(6000.0671, options = c(datatable.verbose=TRUE), frollmean(c(1:2,NA,4:10), 4), c(rep(NA_real_, 6), 5.5, 6.5, 7.5, 8.5), output=c(
   "frollfunR: allocating memory for results 1x1",
   "frollfunR: 1 column.*1 window.*",
   "frollfunR: 1:",
@@ -313,7 +312,7 @@ test(6000.0671, frollmean(c(1:2,NA,4:10), 4), c(rep(NA_real_, 6), 5.5, 6.5, 7.5,
   "frollmean: processing algo 0 took.*",
   "frollfunR: processing.*took.*"
 ))
-test(6000.0672, frollmean(c(1:2,NA,4:10), 4, hasNA=FALSE), c(rep(NA_real_, 6), 5.5, 6.5, 7.5, 8.5), output=c(
+test(6000.0672, options = c(datatable.verbose=TRUE), frollmean(c(1:2,NA,4:10), 4, hasNA=FALSE), c(rep(NA_real_, 6), 5.5, 6.5, 7.5, 8.5), output=c(
   "frollfunR: allocating memory for results 1x1",
   "frollfunR: 1 column.*1 window.*",
   "frollfunR: 1:",
@@ -322,7 +321,7 @@ test(6000.0672, frollmean(c(1:2,NA,4:10), 4, hasNA=FALSE), c(rep(NA_real_, 6), 5
   "frollmean: processing algo 0 took.*",
   "frollfunR: processing.*took.*"
 ), warning="hasNA=FALSE used but NA.*are present in input, use default hasNA=NA to avoid this warning")
-test(6000.0673, frollmean(c(1:2,NA,4:10), 2, hasNA=FALSE), c(NA, 1.5, NA, NA, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5), output=c(
+test(6000.0673, options = c(datatable.verbose=TRUE), frollmean(c(1:2,NA,4:10), 2, hasNA=FALSE), c(NA, 1.5, NA, NA, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5), output=c(
   "frollfunR: allocating memory for results 1x1",
   "frollfunR: 1 column.*1 window.*",
   "frollfunR: 1:",
@@ -331,7 +330,7 @@ test(6000.0673, frollmean(c(1:2,NA,4:10), 2, hasNA=FALSE), c(NA, 1.5, NA, NA, 4.
   "frollmean: processing algo 0 took.*",
   "frollfunR: processing.*took.*"
 ), warning="hasNA=FALSE used but NA.*are present in input, use default hasNA=NA to avoid this warning")
-test(6000.0674, frollmean(c(1:2,NA,4:10), 4, align="center"), c(rep(NA_real_, 4), 5.5, 6.5, 7.5, 8.5, NA, NA), output=c(
+test(6000.0674, options = c(datatable.verbose=TRUE), frollmean(c(1:2,NA,4:10), 4, align="center"), c(rep(NA_real_, 4), 5.5, 6.5, 7.5, 8.5, NA, NA), output=c(
   "frollfunR: allocating memory for results 1x1",
   "frollfunR: 1 column.*1 window.*",
   "frollmeanFast: running for input length 10, window 4, hasna 0, narm 0",
@@ -340,7 +339,6 @@ test(6000.0674, frollmean(c(1:2,NA,4:10), 4, align="center"), c(rep(NA_real_, 4)
   "frollmean: processing algo 0 took.*",
   "frollfunR: processing.*took.*"
 ))
-options(datatable.verbose=FALSE)
 
 #### fill constant
 test(6000.068, frollmean(1:5, 4, fill=0), c(0, 0, 0, 2.5, 3.5))
@@ -382,9 +380,7 @@ test(6000.092, frollmean(list(1:3, 4:6), c(2, 2)), list(c(NA_real_, 1.5, 2.5), c
 test(6000.093, frollmean(list(1:3, 4:6), 4), list(c(NA_real_, NA_real_, NA_real_), c(NA_real_, NA_real_, NA_real_)))
 test(6000.0931, frollmean(list(1:3, 4:6), 4, align="center"), list(c(NA_real_, NA_real_, NA_real_), c(NA_real_, NA_real_, NA_real_)))
 test(6000.0932, frollmean(list(1:3, 4:6), 4, align="left"), list(c(NA_real_, NA_real_, NA_real_), c(NA_real_, NA_real_, NA_real_)))
-options(datatable.verbose=TRUE)
-test(6000.0933, frollmean(list(1:3, 4:6), 4), list(c(NA_real_, NA_real_, NA_real_), c(NA_real_, NA_real_, NA_real_)), output="frollmean: window width longer than input vector, returning all NA vector")
-options(datatable.verbose=FALSE)
+test(6000.0933, options = c(datatable.verbose=TRUE), frollmean(list(1:3, 4:6), 4), list(c(NA_real_, NA_real_, NA_real_), c(NA_real_, NA_real_, NA_real_)), output="frollmean: window width longer than input vector, returning all NA vector")
 #### n==length(x)
 test(6000.094, frollmean(list(1:3, 4:6), 3), list(c(NA_real_, NA_real_, 2), c(NA_real_, NA_real_, 5)))
 #### n<length(x[[1L]]) && n>length(x[[2L]])
@@ -431,8 +427,7 @@ test(6000.1194, frollmean(1:5, 2, hasNA=1), error="hasNA must be TRUE, FALSE or 
 #### hasNA=FALSE na.rm=TRUE
 test(6000.1195, frollmean(1:5, 2, na.rm=TRUE, hasNA=FALSE), error="using hasNA FALSE and na.rm TRUE does not make sense, if you know there are NA values use hasNA TRUE, otherwise leave it as default NA")
 #### exact na.rm=TRUE adaptive=TRUE verbose=TRUE
-options(datatable.verbose=TRUE)
-test(6000.1196, frollmean(c(1:5,NA), 1:6, algo="exact", na.rm=TRUE, adaptive=TRUE), output=c(
+test(6000.1196, options = c(datatable.verbose=TRUE), frollmean(c(1:5,NA), 1:6, algo="exact", na.rm=TRUE, adaptive=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
   "frollfunR: 1 column.*1 window.*, not entering parallel execution here because algo='exact' will compute results in parallel",
   "frollfunR: 1:",
@@ -442,7 +437,7 @@ test(6000.1196, frollmean(c(1:5,NA), 1:6, algo="exact", na.rm=TRUE, adaptive=TRU
   "frollfunR: processing.*took.*"
 ))
 #### exact na.rm=TRUE verbose=TRUE
-test(6000.1197, frollmean(c(1:5,NA), 2, algo="exact", na.rm=TRUE), output=c(
+test(6000.1197, options = c(datatable.verbose=TRUE), frollmean(c(1:5,NA), 2, algo="exact", na.rm=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
   "frollfunR: 1 column.*1 window.*, not entering parallel execution here because algo='exact' will compute results in parallel",
   "frollfunR: 1:",
@@ -451,7 +446,6 @@ test(6000.1197, frollmean(c(1:5,NA), 2, algo="exact", na.rm=TRUE), output=c(
   "frollmean: processing algo 1 took.*",
   "frollfunR: processing.*took.*"
 ))
-options(datatable.verbose=FALSE)
 #### adaptive=TRUE n=character
 test(6000.1198, frollmean(1:5, n=letters[1:5], adaptive=TRUE), error="n must be integer vector or list of integer vectors")
 
@@ -658,15 +652,14 @@ test(6000.170, frollmean(x, n, algo="exact", adaptive=TRUE), ama(x, n))
 ## test verbose messages
 x = 1:10
 n = 3
-options(datatable.verbose=TRUE)
-test(6000.171, frollmean(x, n), output=c(
+test(6000.171, options = c(datatable.verbose=TRUE), frollmean(x, n), output=c(
   "frollfunR: allocating memory for results 1x1",
   "frollfunR: 1 column.*1 window.*",
   "frollfunR: 1:",
   "frollmeanFast: running for input length 10, window 3, hasna 0, narm 0",
   "frollmean: processing algo 0 took.*",
   "frollfunR: processing.*took.*"))
-test(6000.172, frollmean(list(x, x+1), n), output=c(
+test(6000.172, options = c(datatable.verbose=TRUE), frollmean(list(x, x+1), n), output=c(
   "frollfunR: allocating memory for results 2x1",
   "frollfunR: 2 column.*1 window.*",
   "frollfunR: 1:",
@@ -676,7 +669,7 @@ test(6000.172, frollmean(list(x, x+1), n), output=c(
   "frollmeanFast: running for input length 10, window 3, hasna 0, narm 0",
   "frollmean: processing algo 0 took.*",
   "frollfunR: processing.*took.*"))
-test(6000.173, frollmean(x, c(n, n+1)), output=c(
+test(6000.173, options = c(datatable.verbose=TRUE), frollmean(x, c(n, n+1)), output=c(
   "frollfunR: allocating memory for results 1x2",
   "frollfunR: 1 column.*2 window.*",
   "frollfunR: 1:",
@@ -686,7 +679,7 @@ test(6000.173, frollmean(x, c(n, n+1)), output=c(
   "frollmeanFast: running for input length 10, window 4, hasna 0, narm 0",
   "frollmean: processing algo 0 took.*",
   "frollfunR: processing.*took.*"))
-test(6000.174, frollmean(list(x, x+1), c(n, n+1)), output=c(
+test(6000.174, options = c(datatable.verbose=TRUE), frollmean(list(x, x+1), c(n, n+1)), output=c(
   "frollfunR: allocating memory for results 2x2",
   "frollfunR: 2 column.*2 window.*",
   "frollfunR: 1:",
@@ -702,14 +695,14 @@ test(6000.174, frollmean(list(x, x+1), c(n, n+1)), output=c(
   "frollmeanFast: running for input length 10, window 4, hasna 0, narm 0",
   "frollmean: processing algo 0 took.*",
   "frollfunR: processing.*took.*"))
-test(6000.175, frollmean(x, n, algo="exact"), output=c(
+test(6000.175, options = c(datatable.verbose=TRUE), frollmean(x, n, algo="exact"), output=c(
   "frollfunR: allocating memory for results 1x1",
   "frollfunR: 1 column.*1 window.*",
   "frollfunR: 1:",
   "frollmeanExact: running in parallel for input length 10, window 3, hasna 0, narm 0",
   "frollmean: processing algo 1 took.*",
   "frollfunR: processing.*took.*"))
-test(6000.176, frollmean(x, n, align="center"), output=c(
+test(6000.176, options = c(datatable.verbose=TRUE), frollmean(x, n, align="center"), output=c(
   "frollfunR: allocating memory for results 1x1",
   "frollfunR: 1 column.*1 window.*",
   "frollfunR: 1:",
@@ -717,7 +710,7 @@ test(6000.176, frollmean(x, n, align="center"), output=c(
   "frollmean: align 0, shift answer by -1",
   "frollmean: processing algo 0 took.*",
   "frollfunR: processing.*took.*"))
-test(6000.177, frollmean(x, n, align="left"), output=c(
+test(6000.177, options = c(datatable.verbose=TRUE), frollmean(x, n, align="left"), output=c(
   "frollfunR: allocating memory for results 1x1",
   "frollfunR: 1 column.*1 window.*",
   "frollfunR: 1:",
@@ -726,14 +719,14 @@ test(6000.177, frollmean(x, n, align="left"), output=c(
   "frollmean: processing algo 0 took.*",
   "frollfunR: processing.*took.*"))
 nn = c(1:4,2:3,1:4)
-test(6000.178, frollmean(x, nn, adaptive=TRUE), output=c(
+test(6000.178, options = c(datatable.verbose=TRUE), frollmean(x, nn, adaptive=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
   "frollfunR: 1 column.*1 window.*",
   "frollfunR: 1:",
   "fadaptiverollmeanFast: running for input length 10, hasna 0, narm 0",
   "fadaptiverollmean: processing algo 0 took.*",
   "frollfunR: processing.*took.*"))
-test(6000.179, frollmean(x, nn, algo="exact", adaptive=TRUE), output=c(
+test(6000.179, options = c(datatable.verbose=TRUE), frollmean(x, nn, algo="exact", adaptive=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
   "frollfunR: 1 column.*1 window.*",
   "frollfunR: 1:",
@@ -742,7 +735,7 @@ test(6000.179, frollmean(x, nn, algo="exact", adaptive=TRUE), output=c(
   "frollfunR: processing.*took.*"))
 
 x[8] = NA
-test(6000.180, frollmean(x, n), output=c(
+test(6000.180, options = c(datatable.verbose=TRUE), frollmean(x, n), output=c(
   "frollfunR: allocating memory for results 1x1",
   "frollfunR: 1 column.*1 window.*",
   "frollfunR: 1:",
@@ -750,7 +743,7 @@ test(6000.180, frollmean(x, n), output=c(
   "frollmeanFast: NA.*are present in input, re-running with extra care for NAs",
   "frollmean: processing algo 0 took.*",
   "frollfunR: processing.*took.*"))
-test(6000.181, frollmean(x, n, algo="exact"), output=c(
+test(6000.181, options = c(datatable.verbose=TRUE), frollmean(x, n, algo="exact"), output=c(
   "frollfunR: allocating memory for results 1x1",
   "frollfunR: 1 column.*1 window.*",
   "frollfunR: 1:",
@@ -758,7 +751,7 @@ test(6000.181, frollmean(x, n, algo="exact"), output=c(
   "frollmeanExact: NA.*are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run",
   "frollmean: processing algo 1 took.*",
   "frollfunR: processing.*took.*"))
-test(6000.182, frollmean(x, nn, adaptive=TRUE), output=c(
+test(6000.182, options = c(datatable.verbose=TRUE), frollmean(x, nn, adaptive=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
   "frollfunR: 1 column.*1 window.*",
   "frollfunR: 1:",
@@ -766,7 +759,7 @@ test(6000.182, frollmean(x, nn, adaptive=TRUE), output=c(
   "fadaptiverollmeanFast: NA.*are present in input, re-running with extra care for NAs",
   "fadaptiverollmean: processing algo 0 took.*",
   "frollfunR: processing.*took.*"))
-test(6000.183, frollmean(x, nn, algo="exact", adaptive=TRUE), output=c(
+test(6000.183, options = c(datatable.verbose=TRUE), frollmean(x, nn, algo="exact", adaptive=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
   "frollfunR: 1 column.*1 window.*",
   "frollfunR: 1:",
@@ -776,7 +769,7 @@ test(6000.183, frollmean(x, nn, algo="exact", adaptive=TRUE), output=c(
   "frollfunR: processing.*took.*"))
 
 d = as.data.table(list(1:10/2, 10:1/4))
-test(6000.184, frollmean(d[,1], 3, algo="exact"), output=c(
+test(6000.184, options = c(datatable.verbose=TRUE), frollmean(d[,1], 3, algo="exact"), output=c(
   "frollfunR: allocating memory for results 1x1",
   "frollfunR: 1 column.*1 window.*",
   "frollfunR: 1:",
@@ -784,7 +777,7 @@ test(6000.184, frollmean(d[,1], 3, algo="exact"), output=c(
   "frollmean: processing algo 1 took.*",
   "frollfunR: processing.*took.*"
 ))
-test(6000.185, frollmean(d, 3:4, algo="exact"), output=c(
+test(6000.185, options = c(datatable.verbose=TRUE), frollmean(d, 3:4, algo="exact"), output=c(
   "frollfunR: allocating memory for results 2x2",
   "frollfunR: 2 column.*2 window.*",
   "frollfunR: 1:",
@@ -801,7 +794,6 @@ test(6000.185, frollmean(d, 3:4, algo="exact"), output=c(
   "frollmean: processing algo 1 took.*",
   "frollfunR: processing.*took.*"
 ))
-options(datatable.verbose=FALSE)
 
 ## test warnings
 test(6000.186, frollmean(c(1:2,NA,4:10), 4, hasNA=FALSE), c(rep(NA_real_, 6), 5.5, 6.5, 7.5, 8.5), warning="hasNA=FALSE used but NA.*are present in input, use default hasNA=NA to avoid this warning")
@@ -823,28 +815,22 @@ ans1 = frollsum(x, n, adaptive=TRUE)
 expected = c(NA_real_, 1.5, 3, 5, 4.5, 7.5)
 test(6000.202, ans1, expected)
 ## frollsum coverage
-options(datatable.verbose=TRUE)
-test(6000.211, frollsum(1:5, 6), rep(NA_real_, 5L), output="window width longer than input vector")
-options(datatable.verbose=FALSE)
+test(6000.211, options = c(datatable.verbose=TRUE), frollsum(1:5, 6), rep(NA_real_, 5L), output="window width longer than input vector")
 test(6000.212, frollsum(c(1:2,NA,4:10), 4, hasNA=FALSE), c(rep(NA_real_, 6), 22, 26, 30, 34), warning="hasNA=FALSE used but NA.*are present in input, use default hasNA=NA to avoid this warning")
 test(6000.213, frollsum(c(1:2,NA,4:10), 2, hasNA=FALSE), c(NA, 3, NA, NA, 9, 11, 13, 15, 17, 19), warning="hasNA=FALSE used but NA.*are present in input, use default hasNA=NA to avoid this warning")
 test(6000.214, frollsum(c(1:2,NA,4:10), 4, hasNA=FALSE, algo="exact"), c(rep(NA_real_, 6), 22, 26, 30, 34), warning="hasNA=FALSE used but NA.*are present in input, use default hasNA=NA to avoid this warning")
-options(datatable.verbose=TRUE)
-test(6000.215, frollsum(c(1:2,NA,4:10), 4, algo="exact", na.rm=TRUE), c(rep(NA_real_, 3L), 7, 11, 15, 22, 26, 30, 34), output="re-running with extra care for NAs")
-test(6000.216, frollsum(c(1:2,NA,4:10), 4, algo="exact"), c(rep(NA_real_, 6), 22, 26, 30, 34), output="NAs were handled already, no need to re-run")
-options(datatable.verbose=FALSE)
+test(6000.215, options = c(datatable.verbose=TRUE), frollsum(c(1:2,NA,4:10), 4, algo="exact", na.rm=TRUE), c(rep(NA_real_, 3L), 7, 11, 15, 22, 26, 30, 34), output="re-running with extra care for NAs")
+test(6000.216, options = c(datatable.verbose=TRUE), frollsum(c(1:2,NA,4:10), 4, algo="exact"), c(rep(NA_real_, 6), 22, 26, 30, 34), output="NAs were handled already, no need to re-run")
 test(6000.217, frollsum(c(1:2,NA,4:10), rep(4L,10), adaptive=TRUE, hasNA=FALSE), c(rep(NA_real_, 6), 22, 26, 30, 34), warning="*hasNA=FALSE used but NA.*are present in input, use default hasNA=NA to avoid this warning")
 test(6000.218, frollsum(c(1:2,NA,4:10), rep(4L,10), adaptive=TRUE, hasNA=FALSE, algo="exact"), c(rep(NA_real_, 6), 22, 26, 30, 34), warning="hasNA=FALSE used but NA.*are present in input, use default hasNA=NA to avoid this warning")
-options(datatable.verbose=TRUE)
-test(6000.219, frollsum(c(1:2,NA,4:10), rep(4L,10), adaptive=TRUE, algo="exact", na.rm=TRUE), c(rep(NA_real_, 3L), 7, 11, 15, 22, 26, 30, 34), output="re-running with extra care for NAs")
-test(6000.220, frollsum(c(1:2,NA,4:10), rep(4L,10), adaptive=TRUE, algo="exact"), c(rep(NA_real_, 6), 22, 26, 30, 34), output="NAs were handled already, no need to re-run")
-test(6000.221, frollsum(1:3, 2), c(NA, 3, 5), output="frollsumFast: running for input length")
-test(6000.222, frollsum(1:3, 2, align="left"), c(3, 5, NA), output="frollsum: align")
-test(6000.223, frollsum(c(1,2,NA), 2), c(NA, 3, NA), output="re-running with extra care for NAs")
-test(6000.224, frollsum(c(NA,2,3), 2), c(NA, NA, 5), output="skip non-NA attempt and run with extra care for NAs")
-test(6000.225, frollsum(1:3, c(2,2,2), adaptive=TRUE), c(NA, 3, 5), output="fadaptiverollsumFast: running for input length")
-test(6000.226, frollsum(c(NA,2,3), c(2,2,2), adaptive=TRUE), c(NA, NA, 5), output="re-running with extra care for NAs")
-options(datatable.verbose=FALSE)
+test(6000.219, options = c(datatable.verbose=TRUE), frollsum(c(1:2,NA,4:10), rep(4L,10), adaptive=TRUE, algo="exact", na.rm=TRUE), c(rep(NA_real_, 3L), 7, 11, 15, 22, 26, 30, 34), output="re-running with extra care for NAs")
+test(6000.220, options = c(datatable.verbose=TRUE), frollsum(c(1:2,NA,4:10), rep(4L,10), adaptive=TRUE, algo="exact"), c(rep(NA_real_, 6), 22, 26, 30, 34), output="NAs were handled already, no need to re-run")
+test(6000.221, options = c(datatable.verbose=TRUE), frollsum(1:3, 2), c(NA, 3, 5), output="frollsumFast: running for input length")
+test(6000.222, options = c(datatable.verbose=TRUE), frollsum(1:3, 2, align="left"), c(3, 5, NA), output="frollsum: align")
+test(6000.223, options = c(datatable.verbose=TRUE), frollsum(c(1,2,NA), 2), c(NA, 3, NA), output="re-running with extra care for NAs")
+test(6000.224, options = c(datatable.verbose=TRUE), frollsum(c(NA,2,3), 2), c(NA, NA, 5), output="skip non-NA attempt and run with extra care for NAs")
+test(6000.225, options = c(datatable.verbose=TRUE), frollsum(1:3, c(2,2,2), adaptive=TRUE), c(NA, 3, 5), output="fadaptiverollsumFast: running for input length")
+test(6000.226, options = c(datatable.verbose=TRUE), frollsum(c(NA,2,3), c(2,2,2), adaptive=TRUE), c(NA, NA, 5), output="re-running with extra care for NAs")
 
 ## validation
 
@@ -1048,20 +1034,18 @@ f = function(x) {
   if (n==x[n]) x[1L] else range(x) # range(x)[2L] is silently ignored
 }
 test(6010.102, frollapply(1:5, 3, f), c(NA,NA,1,2,3))
-options(datatable.verbose=TRUE)
 x = c(1,2,1,1,1,2,3,2)
 ans = c(NA,NA,2,2,1,2,3,2)
 numUniqueN = function(x) as.numeric(uniqueN(x))
-test(6010.103, frollapply(x, 3, uniqueN), ans, output=c("frollapplyR: allocating memory.*","frollapply: results from provided FUN are not of type double, coercion from integer or logical will be applied on each iteration.*","frollapply: took.*","frollapplyR: processing.*took.*"))
-test(6010.104, frollapply(x, 3, numUniqueN), ans, output=c("frollapplyR: allocating memory.*","frollapply: took.*","frollapplyR: processing.*took.*"))
-test(6010.105, as.logical(frollapply(c(1,2,1,1,NA,2,NA,2), 3, anyNA)), c(NA,NA,FALSE,FALSE,TRUE,TRUE,TRUE,TRUE), output=c("frollapplyR: allocating memory.*","frollapply: results from provided FUN are not of type double, coercion from integer or logical will be applied on each iteration","frollapply: took.*","frollapplyR: processing.*took.*"))
+test(6010.103, options = c(datatable.verbose=TRUE), frollapply(x, 3, uniqueN), ans, output=c("frollapplyR: allocating memory.*","frollapply: results from provided FUN are not of type double, coercion from integer or logical will be applied on each iteration.*","frollapply: took.*","frollapplyR: processing.*took.*"))
+test(6010.104, options = c(datatable.verbose=TRUE), frollapply(x, 3, numUniqueN), ans, output=c("frollapplyR: allocating memory.*","frollapply: took.*","frollapplyR: processing.*took.*"))
+test(6010.105, options = c(datatable.verbose=TRUE), as.logical(frollapply(c(1,2,1,1,NA,2,NA,2), 3, anyNA)), c(NA,NA,FALSE,FALSE,TRUE,TRUE,TRUE,TRUE), output=c("frollapplyR: allocating memory.*","frollapply: results from provided FUN are not of type double, coercion from integer or logical will be applied on each iteration","frollapply: took.*","frollapplyR: processing.*took.*"))
 f = function(x) {
   n = length(x)
   # double type will be returned only for first iteration where we check type
   if (n==x[n]) 1 else NA # NA logical turns into garbage without coercion to double
 }
 #test(6010.106, head(frollapply(1:5, 3, f), 3L), c(NA_real_,NA_real_,1), output=c("frollapplyR: allocating memory.*","frollapply: took.*","frollapplyR: processing.*took.*")) # only head 3 is valid, rest is undefined as REAL is applied on logical type, can return garbage or fail with REAL error
-options(datatable.verbose=FALSE)
 #### test coverage
 test(6010.501, frollapply(1:3, "b", sum), error="n must be integer")
 test(6010.502, frollapply(1:3, 2.5, sum), error="n must be integer")
@@ -1090,11 +1074,9 @@ test(6010.524, frollapply(c(1,2,3,NA,NA,NA,NA), 3L, mean), c(NA,NA,2,NA,NA,NA,NA
 test(6010.525, frollapply(c(1,2,3,NA,NA,NA,NA), 3L, mean, na.rm=TRUE), c(NA,NA,2,2.5,3,NaN,NaN))
 test(6010.526, frollapply(numeric(), 3L, sum), numeric())
 test(6010.527, frollapply(1:5, 3L, toString), error="frollapply: results from provided FUN are not of type double")
-options(datatable.verbose=TRUE)
-test(6010.551, frollapply(1:3, 4L, sum), c(NA_real_,NA_real_,NA_real_), output=c("frollapplyR: allocating memory.*","frollapply: window width longer than input vector.*","frollapplyR: processing.*took.*"))
-test(6010.552, frollapply(1:5, 3L, sum), c(NA,NA,6,9,12), output=c("frollapplyR: allocating memory.*","frollapply: took.*","frollapplyR: processing.*took.*"))
-test(6010.553, frollapply(1:5, 3L, sum, align="center"), c(NA,6,9,12,NA), output=c("frollapplyR: allocating memory.*","frollapply: align 0, shift.*","frollapply: took.*","frollapplyR: processing.*took.*"))
-options(datatable.verbose=FALSE)
+test(6010.551, options = c(datatable.verbose=TRUE), frollapply(1:3, 4L, sum), c(NA_real_,NA_real_,NA_real_), output=c("frollapplyR: allocating memory.*","frollapply: window width longer than input vector.*","frollapplyR: processing.*took.*"))
+test(6010.552, options = c(datatable.verbose=TRUE), frollapply(1:5, 3L, sum), c(NA,NA,6,9,12), output=c("frollapplyR: allocating memory.*","frollapply: took.*","frollapplyR: processing.*took.*"))
+test(6010.553, options = c(datatable.verbose=TRUE), frollapply(1:5, 3L, sum, align="center"), c(NA,6,9,12,NA), output=c("frollapplyR: allocating memory.*","frollapply: align 0, shift.*","frollapply: took.*","frollapplyR: processing.*took.*"))
 ma = function(x, n, na.rm=FALSE) {
   ans = rep(NA_real_, nx<-length(x))
   for (i in n:nx) ans[i]=mean(x[(i-n+1):i], na.rm=na.rm)
