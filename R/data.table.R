@@ -2737,7 +2737,7 @@ rbind.data.table = function(..., use.names=TRUE, fill=FALSE, idcol=NULL) {
 cbind.data.table = data.table
 .rbind.data.table = rbind.data.table  # the workaround using this in FAQ 2.24 is still applied to support R < 4.0.0
 
-rbindlist = function(l, use.names="check", fill=FALSE, idcol=NULL) {
+rbindlist = function(l, use.names="check", fill=FALSE, idcol=NULL, ignore_attr = FALSE) {
   if (is.null(l)) return(null.data.table())
   if (!is.list(l) || is.data.frame(l)) stopf("Input is %s but should be a plain list of items to be stacked", class(l)[1L])
   if (isFALSE(idcol)) { idcol = NULL }
@@ -2753,7 +2753,7 @@ rbindlist = function(l, use.names="check", fill=FALSE, idcol=NULL) {
     if (!miss) stopf("use.names='check' cannot be used explicitly because the value 'check' is new in v1.12.2 and subject to change. It is just meant to convey default behavior. See ?rbindlist.")
     use.names = NA
   }
-  ans = .Call(Crbindlist, l, use.names, fill, idcol)
+  ans = .Call(Crbindlist, l, use.names, fill, idcol, ignore_attr)
   if (!length(ans)) return(null.data.table())
   setDT(ans)[]
 }

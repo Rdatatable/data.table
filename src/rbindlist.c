@@ -2,8 +2,10 @@
 #include <Rdefines.h>
 #include <ctype.h>   // for isdigit
 
-SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
-{
+SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignore_attr )
+{ 
+  if (!isLogical(ignore_attr) || LENGTH(ignore_attr) != 1 || LOGICAL(ignore_attr)[0] == NA_LOGICAL)
+    error(_("ignore_attr= should be TRUE or FALSE"));
   if (!isLogical(fillArg) || LENGTH(fillArg) != 1 || LOGICAL(fillArg)[0] == NA_LOGICAL)
     error(_("fill= should be TRUE or FALSE"));
   if (!isLogical(usenamesArg) || LENGTH(usenamesArg)!=1)
@@ -12,6 +14,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
   if (TYPEOF(l) != VECSXP) error(_("Input to rbindlist must be a list. This list can contain data.tables, data.frames or plain lists."));
   Rboolean usenames = LOGICAL(usenamesArg)[0];
   const bool fill = LOGICAL(fillArg)[0];
+  const bool ignoreAttribute = LOGICAL(ignore_attr)[0];
   if (fill && usenames==NA_LOGICAL) {
     usenames=TRUE;
   }
@@ -308,7 +311,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
       }
       if (firsti==-1) { firsti=i; firstw=w; firstCol=thisCol; }
       else {
-        if (!factor && !int64) {
+        if (!factor && !int64 && !ignoreAttribute) {
           if (!R_compute_identical(PROTECT(getAttrib(thisCol, R_ClassSymbol)),
                                    PROTECT(getAttrib(firstCol, R_ClassSymbol)),
                                    0)) {

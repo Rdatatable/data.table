@@ -18389,3 +18389,14 @@ test(2250.12, dt[, names(.SD) := lapply(.SD, \(x) x + b), .SDcols = "a"], data.t
 
 dt = data.table(a = 1L, b = 2L, c = 3L, d = 4L, e = 5L, f = 6L)
 test(2250.13, dt[, names(.SD)[1:5] := sum(.SD)], data.table(a = 21L, b = 21L, c = 21L, d = 21L, e = 21L, f = 6L))
+
+# tests for "ignore_attr" of rbindlist.C
+l = list(data.table(a=1, b=Sys.time()), data.table(a=numeric(0), b=numeric(0)))
+test(2251.1, rbindlist(l, ignore_attr = TRUE), data.table(a=c(1), b=c(Sys.time())))
+test(2251.2, rbindlist(l, ignore_attr = FALSE),
+ error= "Class attribute on column 2 of item 2 does not match with column 2 of item 1.")
+test(2251.3, rbindlist(l),
+ error= "Class attribute on column 2 of item 2 does not match with column 2 of item 1.")
+
+ll = list(data.table(a=c(1,2), b=c('a','b')), data.table(a=c(3,4), b=c(TRUE,FALSE)))
+test(2251.4, rbindlist(ll, ignore_attr = TRUE), data.table(a=c(1,2,3,4), b=c('a','b',TRUE,FALSE)))
