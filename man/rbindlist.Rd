@@ -13,7 +13,7 @@ rbindlist(l, use.names="check", fill=FALSE, idcol=NULL)
 \arguments{
   \item{l}{ A list containing \code{data.table}, \code{data.frame} or \code{list} objects. \code{\dots} is the same but you pass the objects by name separately. }
   \item{use.names}{\code{TRUE} binds by matching column name, \code{FALSE} by position. `check` (default) warns if all items don't have the same names in the same order and then currently proceeds as if `use.names=FALSE` for backwards compatibility (\code{TRUE} in future); see news for v1.12.2.}
-  \item{fill}{\code{TRUE} fills missing columns with NAs. By default \code{FALSE}.}
+  \item{fill}{\code{TRUE} fills missing columns with NAs, or NULL for missing list columns. By default \code{FALSE}.}
   \item{idcol}{Creates a column in the result showing which list item those rows came from. \code{TRUE} names this column \code{".id"}. \code{idcol="file"} names this column \code{"file"}. If the input list has names, those names are the values placed in this id column, otherwise the values are an integer vector \code{1:length(l)}. See \code{examples}.}
 }
 \details{

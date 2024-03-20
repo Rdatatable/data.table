@@ -320,7 +320,7 @@ test(69.4, names(tables(silent=TRUE, mb=FALSE, index=TRUE)),
 
 xenv = new.env()   # to control testing tables()
 xenv$DT = data.table(a = 1)
-test(69.5, nrow(tables(env=xenv)), 1L, output="NAME NROW NCOL MB COLS KEY\n1:   DT    1    1  0    a.*Total: 0MB")
+test(69.5, nrow(tables(env=xenv)), 1L, output="NAME NROW NCOL MB COLS    KEY\n1:   DT    1    1  0    a [NULL]\nTotal: 0MB")
 xenv$DT = data.table(A=1:2, B=3:4, C=5:6, D=7:8, E=9:10, F=11:12, G=13:14, H=15:16, key="A,D,F,G")
 test(69.6, nrow(tables(env=xenv)), 1L, output="NAME NROW NCOL MB            COLS     KEY\n1:   DT    2    8  0 A,B,C,D,E,F,... A,D,F,G.*Total: 0MB")
 rm(xenv)
@@ -1012,7 +1012,7 @@ test(313, DT[,a:=1:3], data.table(a=1:3))    # test changed in 1.12.2; can now a
 DT = data.table(a=20:22)
 test(314, {DT[,b:=23:25];DT[,c:=26:28]}, data.table(a=20:22,b=23:25,c=26:28))   # add in series
 test(315, DT[,c:=NULL], data.table(a=20:22,b=23:25))   # delete last
-test(316, DT[,c:=NULL], data.table(a=20:22,b=23:25), warning="Column 'c' does not exist to remove")
+test(316, DT[,c:=NULL], data.table(a=20:22,b=23:25), warning="Tried to assign NULL to column 'c', but this column does not exist to remove")
 
 # Test adding, removing and updating columns via [<- in one step
 DT = data.table(a=1:6,b=1:6,c=1:6)
@@ -1764,7 +1764,7 @@ test(578, X[Y,verbose=TRUE], data.table(a=c("D","B"), v=c(4L,2L)),  # no key bec
 
 # Test that logical i in set() returns helpful error
 DT = data.table(a=1:3,b=4:6)
-test(580, set(DT,a<3,"b",0L), error="simply wrap with which(), and take the which() outside the loop if possible for efficiency")
+test(580, set(DT,DT$a<3,"b",0L), error="simply wrap with which(), and take the which() outside the loop if possible for efficiency")
 
 # Test by on empty tables (and when i returns no rows), #1945
 DT = data.table(a=1:3,v=1:6)
@@ -2809,9 +2809,9 @@ test(943, merge(X,Y,all.y=TRUE,by="a"), data.table(a=2:4,b=INT(5:6,NA),"d 1"=5:7
 
 # Test error message about NULL type
 DT = data.table(NULL)
-test(944.1, DT[, foo:=NULL], DT, warning="Column 'foo' does not exist to remove")
+test(944.1, DT[, foo:=NULL], DT, warning="Tried to assign NULL to column 'foo', but this column does not exist to remove")
 test(944.2, DT[,a:=1L], data.table(a=1L))  # can now add columns to an empty data.table from v1.12.2
-test(944.3, DT[,aa:=NULL], data.table(a=1L), warning="Column 'aa' does not exist to remove")
+test(944.3, DT[,aa:=NULL], data.table(a=1L), warning="Tried to assign NULL to column 'aa', but this column does not exist to remove")
 test(944.4, DT[,a:=NULL], data.table(NULL))
 if (base::getRversion() >= "3.4.0") {
   test(944.5, typeof(structure(NULL, class=c("data.table","data.frame"))), 'list', warning="deprecated, as NULL cannot have attributes")  # R warns which is good and we like
@@ -3729,6 +3729,21 @@ test(1100, dt1[dt2,roll=-Inf,rollends=c(FALSE,TRUE)]$ind, INT(NA,NA,1,2,2,2,2,2,
   DT = data.table(x=sample(5,20,TRUE), y=sample(2,20,TRUE), z=sample(letters[1:2],20,TRUE), d1=runif(20), d2=1L)
   test(1102.38, names(dcast(DT, x ~ y + z, fun.aggregate=length, value.var = "d2", sep=".")),
                 c("x", "1.a", "1.b", "2.a", "2.b"))
+
+  # test for #5512, only compute default fill if needed.
+  DT = data.table(chr=c("a","b","b"), int=1:3, dbl=as.double(4:6))
+  mymin <- function(x){
+    if (!length(x)) stop("calling mymin on vector of length 0")
+    min(x)
+  }
+  test(1102.39, dcast(DT, . ~ chr, mymin, value.var="int"), data.table(.=".",a=1L,b=2L,key=".")) # fill not used in output, so default fill not computed.
+  ans <- data.table(int=1:3, a=c(1L,NA,NA), b=c(NA,2L,3L), key="int")
+  test(1102.40, dcast(DT, int ~ chr, min, value.var="int"), ans, warning=c("no non-missing arguments to min; returning Inf", "inf (type 'double') at RHS position 1 out-of-range(NA) or truncated (precision lost) when assigning to type 'integer' (target vector)")) # warning emitted when coercing default fill since as.integer(min(integer()) is Inf) is NA.
+  test(1102.41, dcast(DT, int ~ chr, mymin, value.var="int", fill=NA), ans) # because fill=NA is provided by user, no need to call mymin(integer()).
+  test(1102.42, dcast(DT, int ~ chr, min, value.var="dbl"), data.table(int=1:3, a=c(4,Inf,Inf), b=c(Inf,5,6), key="int"), warning="no non-missing arguments to min; returning Inf") # only one warning, because no coercion.
+  test(1102.43, dcast(DT, int ~ chr, min, value.var="dbl", fill="coerced to NA"), data.table(int=1:3, a=c(4,NA,NA), b=c(NA,5,6), key="int"), warning=c("Coercing 'character' RHS to 'double' to match the type of target vector.", "NAs introduced by coercion"))
+  test(1102.44, dcast(DT, int ~ ., value.var="dbl", fill="ignored"), data.table(int=1:3, .=c(4,5,6), key="int"))
+  
 }
 
 # test for freading commands
@@ -6906,10 +6921,22 @@ ll = sapply(ll, paste, collapse=",")
 test(1477.07, transpose(strsplit(ll, ",", fixed=TRUE)), tstrsplit(ll, ",", fixed=TRUE))
 test(1477.08, transpose(1:5), error="l must be a list")
 test(1477.09, transpose(list(as.complex(c(1, 1+5i)))), error="Unsupported column type")
-test(1477.10, transpose(list(list(1:5))), error="Item 1 of list input is")
+test(1477.10, transpose(list(x~y)), error="Item 1 of list input is")
 test(1477.11, transpose(as.list(1:5), fill=1:2), error="fill must be a length 1 vector")
 test(1477.12, transpose(as.list(1:5), ignore.empty=NA), error="ignore.empty should be logical TRUE/FALSE")
 test(1477.13, transpose(list()), list())
+# return list columns #5639
+la = list(as.list(1:3), list("a","b","c"))
+lb = list(list(1L,"a"), list(2L,"b"), list(3L,"c"))
+test(1477.14, transpose(list(1:3, c("a","b","c")), list.cols=TRUE), lb)
+test(1477.15, transpose(list(1:3, c("a","b","c")), list.cols=FALSE), lapply(lb, unlist))
+test(1477.16, transpose(la, list.cols=TRUE), lb)
+test(1477.17, transpose(lb, list.cols=TRUE), la)
+test(1477.18, transpose(list(list(1L,"a"), list(2L), list(3L,"c")), list.cols=TRUE, fill="b"), la)
+test(1477.19, transpose(list(1:2, c("a","b","c")), list.cols=TRUE, fill=3L), lb)
+test(1477.20, transpose(list(factor(letters[1:3])), list.cols=TRUE), list(list("a"), list("b"), list("c")))
+test(1477.21, transpose(list(factor(letters[1:3])), list.cols=FALSE), list("a", "b", "c"))
+test(1477.22, transpose(la, list.cols=NA), error="list.cols should be logical TRUE/FALSE.")
 
 # #480 `setDT` and 'lapply'
 ll = list(data.frame(a=1), data.frame(x=1, y=2), NULL, list())
@@ -9897,6 +9924,14 @@ test(1658.37, fwrite(matrix("foo"), quote=TRUE), output='"V1"\n.*"foo"', message
 test(1658.38, fwrite(matrix(1:4, nrow=2, ncol=2), quote = TRUE), output = '"V1","V2"\n.*1,3\n2,4', message = "x being coerced from class: matrix to data.table")
 test(1658.39, fwrite(matrix(1:3, nrow=3, ncol=1), quote = TRUE), output = '"V1"\n.*1\n2\n3', message = "x being coerced from class: matrix to data.table")
 test(1658.40, fwrite(matrix(1:4, nrow=2, ncol=2, dimnames = list(c("ra","rb"),c("ca","cb"))), quote = TRUE), output = '"ca","cb"\n.*1,3\n2,4', message = "x being coerced from class: matrix to data.table")
+# keep row.names for matrix input #5315
+M = matrix(1:4, nrow=2)
+coercion_msg = "x being coerced from class: matrix to data.table"
+test(1658.401, fwrite(M, row.names=TRUE),  output='"",V1,V2\n1,1,3\n2,2,4', message=coercion_msg)
+test(1658.402, fwrite(M, row.names=FALSE), output='V1,V2\n1,3\n2,4', message=coercion_msg)
+rownames(M) = c("a","b")
+test(1658.403, fwrite(M, row.names=TRUE),  output='"",V1,V2\na,1,3\nb,2,4', message=coercion_msg)
+test(1658.404, fwrite(M, row.names=FALSE), output='V1,V2\n1,3\n2,4', message=coercion_msg)
 
 # fwrite compress
 if (!haszlib()) {
@@ -12231,12 +12266,17 @@ test(1860, fread("A,B\n "), data.table(A=logical(), B=logical()))  # 2543
 # That unique(DT) returns DT when there are no dups, #2013
 # #3383 fix for unique.data.table returning copy(x)
 DT = data.table(A=c(1L,1L,2L), B=c(3L,4L,4L))
-test(1861, address(unique(DT)) != address(DT), TRUE)
+test(1861.1, address(unique(DT)) != address(DT))
+# Ditto when nrow(x) is 0 or 1, where there can never be duplicates
+DT = data.table(a = 1, b = 3)
+test(1861.2, address(unique(DT)) != address(DT))
+DT = data.table()
+test(1861.3, address(unique(DT)) != address(DT))
 
 # New warning for deprecated old behaviour option
-setkey(DT,A)
+DT = data.table(A=c(1L,1L,2L), B=c(3L,4L,4L), key="A")
 test(1862.1, unique(DT), DT)
-test(1862.2, unique(DT,by=key(DT)), data.table(A=1:2, B=3:4, key="A"))
+test(1862.2, unique(DT, by=key(DT)), data.table(A=1:2, B=3:4, key="A"))
 
 # fix for -ve indices issue in gmedian (2046) and gvar (2111)
 DT = data.table(x=c(1,1,1),y=c(3,0,0), key="x")
@@ -13588,7 +13628,7 @@ test(1962.087, dcast(DT, a ~ b, value.var = 'b'),
 test(1962.088, dcast(DT[0L, ], a ~ c, value.var = 'b'), data.table(a=numeric(), key="a")) #1215
 test(1962.089, dcast(DT, a ~ c, value.var = 'b'),
      data.table(a = c(1, 2), `2` = c(0L, 2L), `4` = c(2L, 0L), key = 'a'),
-     message = 'Aggregate function missing')
+     message = ".*'fun\\.aggregate' is NULL.*defaulting to length\\(\\).*\\[a, c\\].*")
 
 ## IDateTime.R
 x = as.IDate('2018-08-01')
@@ -15652,8 +15692,9 @@ test(2071.08, any_na(data.table(c(1+1i, NA))))
 test(2071.09, any_na(data.table(expression(1))), error="Unsupported column type 'expression'")
 test(2071.10, dcast(data.table(a=1, b=1, l=list(list(1))), a ~ b, value.var='l'),
               data.table(a=1, `1`=list(list(1)), key='a'))
-test(2071.11, dcast(data.table(a = 1, b = 2, c = 3), a ~ b, value.var = 'c', fill = '2'),
-              data.table(a=1, `2`=3, key='a'))
+test(2071.11, dcast(data.table(a = c(1, 1, 2), b = c(1, 2, 1), c = 3), a ~ b, value.var='c', fill='4'),
+              data.table(a=c(1, 2), `1`=c(3, 3), `2`=c(3, 4), key='a'),
+              warning="Coercing 'character' RHS to 'double'")
 
 # fifelse, #3657
 test_vec = -5L:5L < 0L
@@ -17835,9 +17876,15 @@ for (col in names(DT)[-1]) {
 }
 a = 1:2  # fill argument with length > 1 which is not a call
 test(2224.2, DT[, shift(i, fill=a), by=x], error="fill must be a vector of length 1")
-DT = data.table(x=pairlist(1), g=1)
 # unsupported type as argument
+DT = data.table(x=pairlist(1), g=1)
 test(2224.3, DT[, shift(x), g], error="Type 'list' is not supported by GForce gshift.")
+# single vector is un-list()'d, consistently with plain shift(), #5939
+DT = data.table(x=1, g=1)
+test(2224.4, DT[, .(shift(x)), g], DT[, shift(x), g])
+# gshift with subset #5962
+DT = data.table(x = 1:3, g = rep(1:2, each=3L))
+test(2224.5, DT[g==1L, shift(x), by=g, verbose=TRUE], data.table(g=1L, V1=c(NA,1L,2L)), output="Making each group and running j (GForce TRUE)")
 
 # groupingsets by named by argument
 test(2225.1, groupingsets(data.table(iris), j=sum(Sepal.Length), by=c('Sp'='Species'), sets=list('Species')),
@@ -18190,7 +18237,7 @@ test(2241.04, set(DT, j="D", value=2), data.table(A=1:3, b=4:6, C=1, D=2, key="A
 test(2241.05, colnames(DT)[2]<-"B", "B")
 test(2241.06, DT, data.table(A=1:3, B=4:6, C=1, D=2, key="A"))
 test(2241.07, set(DT, j="E", value=3), data.table(A=1:3, B=4:6, C=1, D=2, E=3, key="A"))
-test(2241.08, names(DT)<-letters[1:5], letters[1:5])  # R doesn't copy *tmp* when assigning to all names 
+test(2241.08, names(DT)<-letters[1:5], letters[1:5])  # R doesn't copy *tmp* when assigning to all names
 test(2241.09, DT, data.table(a=1:3, b=4:6, c=1, d=2, e=3, key="a"))
 test(2241.10, set(DT, j="f", value=4), data.table(a=1:3, b=4:6, c=1, d=2, e=3, f=4, key="a"))
 
@@ -18251,6 +18298,7 @@ test(2243.35, dt[, min(y,  na.rm=as.logical(j)),   g, verbose=TRUE], data.table(
 test(2243.36, dt[, max(y,  na.rm=as.logical(j)),   g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(3L,4L)),        output="GForce FALSE")
 test(2243.37, dt[, var(y,  na.rm=as.logical(j)),   g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(2,2)),          output="GForce FALSE")
 test(2243.38, dt[, sd(y,   na.rm=as.logical(j)),   g, verbose=TRUE], data.table(g=c(1L,2L), V1=c(sqrt(c(2,2)))), output="GForce FALSE")
+
 # revdeps
 dt = data.table(x = c(2,2,1,1), y = 1:4, z=letters[1:4])
 i=c(1,2)
@@ -18266,3 +18314,84 @@ test(2243.54, dt[, .I[j], x]$V1, c(1L, 3L), output="GForce TRUE")
 test(2243.55, dt[, .I[i], x]$V1, 1:4, output="GForce FALSE")
 test(2243.56, dt[, .I[1:2], x]$V1, 1:4, output="GForce FALSE")
 options(old)
+
+DT = data.table(1)
+test(2244.1, DT[, `:=`(a=1, )], error="`:=`.*Did you forget a trailing comma\\?")
+test(2244.2, DT[, let(a=1, )], error="let.*Did you forget a trailing comma\\?")
+test(2244.3, DT[, `:=`(a=1, , b=2)], error="`:=`.*\\[2\\]")
+test(2244.4, DT[, let(a=1, , b=2)], error="let.*\\[2\\]")
+test(2244.5, DT[, `:=`(a=1, , b=2, )], error="[2, 4]")
+
+# allow specifying datatable-unaware behavior, #5654 / #5655
+dt = data.table(foo = 1:3, bar = 4:6)
+.datatable.aware = TRUE
+test(2245.1, dt[1], data.table(foo = 1L, bar = 4L)) # Single index should be interpreted as row
+.datatable.aware = FALSE
+# selfrefok() fails on unaware-indexed datatables; the copy() here sidesteps that issue.
+test(2245.2, copy(dt[1]), data.table(foo = 1:3)) # Revert to data.frame syntax: Interpret index as column
+rm(.datatable.aware)
+test(2245.3, dt[1], data.table(foo = 1L, bar = 4L)) # Default in this environment should be datatable-aware
+
+# data.table:: doesn't turn off GForce, #5942
+DT = data.table(a = rep(1:5, 2L), b = 1:10)
+old = options(datatable.optimize=Inf, datatable.verbose=TRUE)
+test(2246.1, DT[, data.table::shift(b), by=a], DT[, shift(b), by=a], output="GForce TRUE")
+test(2246.2, DT[, data.table::first(b), by=a], DT[, first(b), by=a], output="GForce TRUE")
+test(2246.3, DT[, data.table::last(b), by=a], DT[, last(b), by=a], output="GForce TRUE")
+options(old)
+
+# 5392 split(x,f) works with formula f
+dt = data.table(x=1:4, y=factor(letters[1:2]))
+test(2247.1, split(dt, ~y), split(dt, dt$y))
+dt = data.table(x=1:4, y=1:2)
+test(2247.2, split(dt, ~y), list(`1`=data.table(x=c(1L,3L), y=1L), `2`=data.table(x=c(2L, 4L), y=2L)))
+# Closely match the original MRE from the issue
+test(2247.3, do.call(rbind, split(dt, ~y)), setDT(do.call(rbind, split(as.data.frame(dt), ~y))))
+dt = data.table(x=1:4, y=factor(letters[1:2]), z=factor(c(1,1,2,2), labels=c("c", "d")))
+test(2247.4, split(dt, ~y+z), list("a.c"=dt[1], "b.c"=dt[2], "a.d"=dt[3], "b.d"=dt[4]))
+
+# fill converts to int64 in dcast, #4561
+if (test_bit64) {
+  i64v = as.integer64(c(12345678901234, 70, 20, NA))
+  apple = data.table(id = c("a", "b", "b"), time = c(1L, 1L, 2L), y = i64v[1:3])
+  test(2248, dcast(apple, id ~ time, value.var = "y"), data.table(id = c('a', 'b'), `1` = i64v[1:2], `2` = i64v[4:3], key='id'))
+}
+
+# Unit tests for DT[, .SD] retaining secondary indices, #1709
+DT = data.table(x=1:5, y=6:10)
+setindex(DT, x)
+test(2249.1, indices(DT), 'x')
+test(2249.2, indices(DT[, .SD]), 'x')
+setindex(DT, y)
+test(2249.3, indices(DT), c('x', 'y'))
+test(2249.4, indices(DT[, .SD]), c('x', 'y'))
+
+# make names(.SD) work - issue #795
+dt = data.table(a = 1:4, b = 5:8)
+test(2250.01, dt[, names(.SD) := lapply(.SD, '*', 2), .SDcols = 1L], data.table(a = 1:4 * 2, b = 5:8))
+test(2250.02, dt[, names(.SD) := lapply(.SD, '*', 2), .SDcols = 2L], data.table(a = 1:4 * 2, b = 5:8 * 2))
+test(2250.03, dt[, names(.SD) := lapply(.SD, as.integer)], data.table(a = as.integer(1:4 * 2), b = as.integer(5:8 * 2)))
+test(2250.04, dt[1L, names(.SD) := lapply(.SD, '+', 2L)], data.table(a = as.integer(c(4, 2:4 * 2)), b = as.integer(c(12, 6:8 * 2))))
+test(2250.05, dt[, setdiff(names(.SD), 'a') := NULL], data.table(a = as.integer(c(4, 2:4 * 2))))
+test(2250.06, dt[, c(names(.SD)) := NULL], null.data.table())
+
+dt = data.table(a = 1:4, b = 5:8, grp = c('a', 'a', 'b', 'c'))
+test(2250.07, dt[, names(.SD) := lapply(.SD, max), by = grp], data.table(a = c(2L, 2L, 3L, 4L), b = c(6L, 6L, 7L, 8L), grp = c('a', 'a', 'b', 'c')))
+
+dt = data.table(a = 1:4, b = 5:8, grp = c('a', 'a', 'b', 'c'))
+keep = c('a', 'b')
+test(2250.08, dt[, names(.SD) := NULL, .SDcols = !keep], data.table(a = 1:4, b = 5:8))
+
+dt = data.table(a = 1:4, b = 5:8, grp = c('a', 'a', 'b', 'c'))
+test(2250.09, dt[, paste(names(.SD), 'max', sep = '_') := lapply(.SD, max), by = grp] , data.table(a = 1:4, b = 5:8, grp = c('a', 'a', 'b', 'c'), a_max = c(2L, 2L, 3L, 4L), b_max = c(6L, 6L, 7L, 8L)))
+
+dt = data.table(a = 1:3, b = 5:7, grp = c('a', 'a', 'b'))
+test(2250.10, dt[1:2, paste(names(.SD), 'max', sep = '_') := lapply(.SD, max), by = grp], data.table(a = 1:3, b = 5:7, grp = c('a', 'a', 'b'), a_max = c(2L, 2L, NA_integer_), b_max = c(6L, 6L, NA_integer_)))
+test(2250.11, dt[, names(.SD(2)) := lapply(.SD, .I)], error = 'could not find function ".SD"')
+
+dt = data.table(a = 1:3, b = 5:7, grp = c('a', 'a', 'b'))
+test(2250.12, dt[, names(.SD) := lapply(.SD, \(x) x + b), .SDcols = "a"], data.table(a = 1:3 + 5:7, b = 5:7, grp = c('a', 'a', 'b')))
+
+
+dt = data.table(a = 1L, b = 2L, c = 3L, d = 4L, e = 5L, f = 6L)
+test(2250.13, dt[, names(.SD)[1:5] := sum(.SD)], data.table(a = 21L, b = 21L, c = 21L, d = 21L, e = 21L, f = 6L))

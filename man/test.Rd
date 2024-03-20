@@ -7,7 +7,8 @@
 \usage{
 test(num, x, y = TRUE,
      error = NULL, warning = NULL, message = NULL,
-     output = NULL, notOutput = NULL, ignore.warning = NULL)
+     output = NULL, notOutput = NULL, ignore.warning = NULL,
+     options = NULL)
 }
 \arguments{
 \item{num}{ A unique identifier for a test, helpful in identifying the source of failure when testing is not working. Currently, we use a manually-incremented system with tests formatted as \code{n.m}, where essentially \code{n} indexes an issue and \code{m} indexes aspects of that issue. For the most part, your new PR should only have one value of \code{n} (scroll to the end of \code{inst/tests/tests.Rraw} to see the next available ID) and then index the tests within your PR by increasing \code{m}. Note -- \code{n.m} is interpreted as a number, so \code{123.4} and \code{123.40} are actually the same -- please \code{0}-pad as appropriate. Test identifiers are checked to be in increasing order at runtime to prevent duplicates being possible. }
@@ -19,6 +20,7 @@ test(num, x, y = TRUE,
 \item{output}{ If you are testing the printing/console output behaviour; e.g. with \code{verbose=TRUE} or \code{options(datatable.verbose=TRUE)}. Again, regex-compatible and case sensitive. }
 \item{notOutput}{ Or if you are testing that a feature does \emph{not} print particular console output. Case insensitive (unlike output) so that the test does not incorrectly pass just because the string is not found due to case. }
 \item{ignore.warning}{ A single character string. Any warnings emitted by \code{x} that contain this string are dropped. Remaining warnings are compared to the expected \code{warning} as normal. }
+\item{options}{ A named list of options to set for the duration of the test. Any code evaluated during this call to `test()` (usually, `x`, or maybe `y`) will run with the named options set, and the original options will be restored on return. This is a named list since different options can have different types in general, but in typical usage, only one option is set at a time, in which case a named vector is also accepted. }
 }
 \note{
    \code{NA_real_} and \code{NaN} are treated as equal, use \code{identical} if distinction is needed. See examples below.
