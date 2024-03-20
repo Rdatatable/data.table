@@ -18322,3 +18322,7 @@ test(2247.11, dt[, names(.SD(2)) := lapply(.SD, .I)], error = 'could not find fu
 dt = data.table(a = 1:3, b = 5:7, grp = c('a', 'a', 'b'))
 test(2247.12, dt[, names(.SD) := lapply(.SD, \(x) x + b), .SDcols = "a"], data.table(a = 1:3 + 5:7, b = 5:7, grp = c('a', 'a', 'b')))
 
+
+dt = data.table(a = 1L, b = 2L, c = 3L, d = 4L, e = 5L, f = 6L)
+test(2247.13, dt[, names(.SD)[1:5] := sum(.SD)], data.table(a = 21L, b = 21L, c = 21L, d = 21L, e = 21L, f = 6L))
+
