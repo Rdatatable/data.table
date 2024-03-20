@@ -18400,3 +18400,6 @@ test(2251.3, rbindlist(l),
 
 ll = list(data.table(a=c(1,2), b=c('a','b')), data.table(a=c(3,4), b=c(TRUE,FALSE)))
 test(2251.4, rbindlist(ll, ignore_attr = TRUE), data.table(a=c(1,2,3,4), b=c('a','b',TRUE,FALSE)))
+test(2251.5, rbindlist(ll, ignore_attr = "test"), error= "ignore_attr= should be TRUE or FALSE")
+test(2251.6, rbindlist(ll, ignore_attr = c(TRUE, FALSE)), error= "ignore_attr= should be TRUE or FALSE")
+test(2251.7, rbindlist(ll, ignore_attr = c("test", TRUE)), error= "ignore_attr= should be TRUE or FALSE")
