@@ -38,8 +38,31 @@
 
   \itemize{
     \item\file{between.c} - \code{\link{between}()}
+    
+    Parallelism is used here to speed up range checks that are performed over the elements of the supplied vector. OpenMP is used here to parallelize:
+    \itemize{
+      \item The loops that check if each element of the vector provided is between the specified \code{lower} and \code{upper} bounds, for integer (\code{INTSXP}) and real (\code{REALSXP}) types
+      \item Checking and handling of undefined values (such as NaNs)
+    }
+    
     \item\file{cj.c} - \code{\link{CJ}()}
+    
+    Parallelism is used here to speed up the creation of all combinations of the input vectors over the cross-product space. Better speedup can be expected when dealing with large vectors or a multitude of combinations. OpenMP is used here to parallelize:
+
+    \itemize{
+      \item Element assignment in vectors
+      \item Memory copying operations (blockwise replication of data using \code{memcpy})
+    }
+    
     \item\file{coalesce.c} - \code{\link{fcoalesce}()}
+    
+    Parallelism is used here to reduce the time taken to replace NA values with the first non-NA value from other vectors. Operates over the columns provided. OpenMP is used here to parallelize:
+    \itemize{
+      \item The operation that iterates over the rows to coalesce the data (which can be of type integer, real, or complex)
+      \item The replacement of NAs with non-NA values from subsequent vectors
+      \item The conditional checks within parallelized loops
+      }
+    
     \item\file{fifelse.c} - \code{\link{fifelse}()}
     \item\file{fread.c} - \code{\link{fread}()}
     \item\file{forder.c}, \file{fsort.c}, and \file{reorder.c} - \code{\link{forder}()} and related
