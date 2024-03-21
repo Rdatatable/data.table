@@ -141,7 +141,7 @@ Background :\cr
 
 finagler = "to get or achieve by guile or manipulation" \url{https://dictionary.reference.com/browse/finagler}
 
-On YAML, see \url{https://yaml.org/}; on csvy, see \url{https://csvy.org/}.
+On YAML, see \url{https://yaml.org/}; on csvy, see https://csvy.org/ (note that the link is currently dead).
 }
 \seealso{
   \code{\link[utils:read.table]{read.csv}}, \code{\link[base:connections]{url}}, \code{\link[base:locales]{Sys.setlocale}}, \code{\link{setDTthreads}}, \code{\link{fwrite}}, \href{https://CRAN.R-project.org/package=bit64}{\code{bit64::integer64}}
