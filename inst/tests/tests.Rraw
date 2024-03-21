@@ -18389,3 +18389,33 @@ test(2250.12, dt[, names(.SD) := lapply(.SD, \(x) x + b), .SDcols = "a"], data.t
 
 dt = data.table(a = 1L, b = 2L, c = 3L, d = 4L, e = 5L, f = 6L)
 test(2250.13, dt[, names(.SD)[1:5] := sum(.SD)], data.table(a = 21L, b = 21L, c = 21L, d = 21L, e = 21L, f = 6L))
+
+# fread(...,fill) can also be used to specify a guess on the maximum number of columns #2691 #1812 #4130 #3436 #2727
+dt_str = paste(rep(c("1,2\n", "1,2,3\n"), each=100), collapse="")
+ans = data.table(1L, 2L, rep(c(NA, 3L), each=100L))
+test(2251.01, fread(text = dt_str, fill=FALSE), ans[1:100, -3L], warning=".*Consider fill=TRUE.*")
+test(2251.02, fread(text = dt_str, fill=TRUE), ans[1:100, -3L], warning=".*Consider fill=3.*")
+test(2251.03, fread(text = dt_str, fill=2L), ans[1:100, -3L], warning=".*Consider fill=3.*")
+test(2251.04, fread(text = dt_str, fill=3L), ans)
+test(2251.05, fread(text = dt_str, fill=5L, verbose=TRUE), ans, output="Provided number of fill columns: 5 but only found 3\n  Dropping 2 overallocated columns") # user guess slightly too big
+test(2251.06, fread(text = dt_str, fill=1000L), ans) # user guess much too big
+lines = c(
+  "12223, University",
+  "12227, bridge, Sky",
+  "12828, Sunset",
+  "13801, Ground",
+  "14853, Tranceamerica",
+  "14854, San Francisco",
+  "15595, shibuya, Shrine",
+  "16126, fog, San Francisco",
+  "16520, California, ocean, summer, golden gate, beach, San Francisco",
+  "")
+text = paste(lines, collapse="\n")
+test(2251.07, dim(fread(text)), c(6L, 3L), warning=c("fill=TRUE", "Discarded"))
+test(2251.08, dim(fread(text, fill=TRUE)), c(9L, 9L))
+text = paste(lines[c(1:5, 9L, 6:8, 10L)], collapse="\n")
+test(2251.09, dim(fread(text)), c(3L, 3L), warning=c("fill=TRUE", "fill=7"))
+test(2251.10, dim(fread(text, fill=TRUE)), c(9L, 9L))
+test(2251.11, dim(fread(text, fill=7)), c(9L, 9L))
+test(2251.12, dim(fread(text, fill=9)), c(9L, 9L))
+test(2251.13, dim(fread(text, fill=20)), c(9L, 20L)) # clean up currently only kicks in if sep!=' '
