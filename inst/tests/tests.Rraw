@@ -18389,3 +18389,46 @@ test(2250.12, dt[, names(.SD) := lapply(.SD, \(x) x + b), .SDcols = "a"], data.t
 
 dt = data.table(a = 1L, b = 2L, c = 3L, d = 4L, e = 5L, f = 6L)
 test(2250.13, dt[, names(.SD)[1:5] := sum(.SD)], data.table(a = 21L, b = 21L, c = 21L, d = 21L, e = 21L, f = 6L))
+
+# trunc.char misbehaves for multibyte characters, #5096
+# Tests for combining characters
+options(datatable.prettyprint.char=4L)
+enc= "UTF-8"
+accented_a = "\u0061\u0301"; Encoding(accented_a) = enc
+ja_ichi = "\u4E00"; Encoding(ja_ichi) = enc
+ja_ni = "\u4E8C"; Encoding(ja_ni) = enc
+ja_ko = "\u3053"; Encoding(ja_ko) = enc
+ja_n = "\u3093"; Encoding(ja_n) = enc
+halfwidth_bracket = "\uFF63"; Encoding(halfwidth_bracket) = enc
+dots = "[.][.][.]"; Encoding(dots) = enc
+DT = data.table(strrep(accented_a, 4L))
+test(2248.01, DT, output=paste0("1: ", strrep(accented_a, 4L)))
+options(datatable.prettyprint.char=3L)
+test(2248.02, DT, output=paste0("1: ", accented_a, accented_a, accented_a, dots))
+options(datatable.prettyprint.char=1L)
+test(2248.03, DT, output=paste0("1: ", accented_a, dots))
+# Tests for full-width multibyte characters
+options(datatable.prettyprint.char=4L)
+# four Japanese characters: 'one' 'two' 'ko' 'n'
+DT = data.table(paste0(ja_ichi, ja_ni, ja_ko, ja_n))
+test(2248.04, DT, output=paste0("1: ", ja_ichi, ja_ni, ja_ko, ja_n))
+options(datatable.prettyprint.char=3L)
+test(2248.05, DT, output=paste0("1: ", ja_ichi, ja_ni, ja_ko, dots))
+options(datatable.prettyprint.char=1L)
+test(2248.06, DT, output=paste0("1: ", ja_ichi, dots))
+# Multiple tests, all truncated
+DT = data.table(strrep(accented_a, 4L), strrep(ja_ichi, 4L), strrep("a", 4L), strrep(halfwidth_bracket, 4L))
+options(datatable.prettyprint.char=2L)
+test(2248.07, DT, output=paste0("1: ", accented_a, accented_a, dots, " ", ja_ichi, ja_ichi, dots, " aa", dots, " ", halfwidth_bracket, halfwidth_bracket, dots))
+options(datatable.prettyprint.char=3L)
+test(2248.08, DT, output=paste0("1: ", accented_a, accented_a, accented_a, dots, " ", ja_ichi, ja_ichi, ja_ichi, dots, " aaa", dots, " ", halfwidth_bracket, halfwidth_bracket, halfwidth_bracket, dots))
+DT = data.table(strrep(accented_a, 2L), strrep(ja_ichi, 2L), strrep("a", 4L), strrep(halfwidth_bracket, 5L))
+options(datatable.prettyprint.char=2L)
+# Multiple test, some truncated
+test(2248.09, DT, output=paste0("1: ", accented_a, accented_a, " ", ja_ichi, ja_ichi, " aa", dots, " ", halfwidth_bracket, halfwidth_bracket, dots))
+# Multiple test, multiple full-width, some truncated
+DT = as.data.table(as.list(strrep(ja_ichi, 1:4)))
+test(2248.10, DT, output=paste0("1: ", ja_ichi, " ", ja_ichi, ja_ichi, " ", ja_ichi, ja_ichi, dots, " ", ja_ichi, ja_ichi, dots))
+# Multiple test, multiple combined, some truncated
+DT = as.data.table(as.list(strrep(accented_a, 1:3)))
+test(2248.11, DT, output=paste0("1:  ", accented_a, " ", accented_a, accented_a, " ", accented_a, accented_a, dots))
