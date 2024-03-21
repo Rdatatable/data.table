@@ -430,7 +430,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       if (newcolnum<0 || newcolnum>=length(newcolnames))
         error(_("Internal error in assign.c: length(newcolnames)=%d, length(names)=%d, coln=%d"), length(newcolnames), length(names), coln); // # nocov
       if (isNull(thisvalue)) {
-        warning(_("Column '%s' does not exist to remove"),CHAR(STRING_ELT(newcolnames,newcolnum)));
+        warning(_("Tried to assign NULL to column '%s', but this column does not exist to remove"), CHAR(STRING_ELT(newcolnames,newcolnum)));
         continue;
       }
       // RHS of assignment to new column is zero length but we'll use its type to create all-NA column of that type

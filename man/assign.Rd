@@ -26,6 +26,9 @@
 #            LHS2 = RHS2,
 #            ...), by = ...]
 
+# 3. Multiple columns in place
+# DT[i, names(.SD) := lapply(.SD, fx), by = ..., .SDcols = ...]
+
 set(x, i = NULL, j, value)
 }
 \arguments{
