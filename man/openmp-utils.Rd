@@ -47,7 +47,7 @@
     
     \item\file{cj.c} - \code{\link{CJ}()}
     
-    Parallelism is used here to speed up the creation of all combinations of the input vectors over the cross-product space. Better speedup can be expected when dealing with large vectors or a multitude of combinations. OpenMP is used here to parallelize:
+    Parallelism is used here to expedite the creation of all combinations of the input vectors over the cross-product space. Better speedup can be expected when dealing with large vectors or a multitude of combinations. OpenMP is used here to parallelize:
 
     \itemize{
       \item Element assignment in vectors
@@ -56,7 +56,7 @@
     
     \item\file{coalesce.c} - \code{\link{fcoalesce}()}
     
-    Parallelism is used here to reduce the time taken to replace NA values with the first non-NA value from other vectors. Operates over the columns provided. OpenMP is used here to parallelize:
+    Parallelism is used here to reduce the time taken to fill NA values with the first non-NA value from other vectors. Operates over columns to replace NAs. OpenMP is used here to parallelize:
     \itemize{
       \item The operation that iterates over the rows to coalesce the data (which can be of type integer, real, or complex)
       \item The replacement of NAs with non-NA values from subsequent vectors
@@ -64,12 +64,18 @@
       }
     
     \item\file{fifelse.c} - \code{\link{fifelse}()}
+    
+    For logical, integer, and real types, OpenMP is being used here to parallelize loops that perform conditional checks along with assignment operations over the elements of the supplied logical vector based on the condition (\code{test}) and values provided for the remaining arguments (\code{yes}, \code{no}, and \code{na}).
+    
     \item\file{fread.c} - \code{\link{fread}()}
     \item\file{forder.c}, \file{fsort.c}, and \file{reorder.c} - \code{\link{forder}()} and related
     \item\file{froll.c}, \file{frolladaptive.c}, and \file{frollR.c} - \code{\link{froll}()} and family
     \item\file{fwrite.c} - \code{\link{fwrite}()}
     \item\file{gsumm.c} - GForce in various places, see \link{GForce}
     \item\file{nafill.c} - \code{\link{nafill}()}
+    
+    Parallelism is used here for faster filling of missing values. OpenMP is being used here to parallelize the loop that achieves the same, over columns of the input data. This includes handling different data types (double, integer, and integer64) and applying the designated filling method (constant, last observation carried forward, or next observation carried backward) to each column in parallel.
+    
     \item\file{subset.c} - Used in \code{\link[=data.table]{[.data.table}} subsetting
     \item\file{types.c} - Internal testing usage
   }
