@@ -74,10 +74,12 @@
     \item\file{gsumm.c} - GForce in various places, see \link{GForce}
     \item\file{nafill.c} - \code{\link{nafill}()}
     
-    Parallelism is used here for faster filling of missing values. OpenMP is being used here to parallelize the loop that achieves the same, over columns of the input data. This includes handling different data types (double, integer, and integer64) and applying the designated filling method (constant, last observation carried forward, or next observation carried backward) to each column in parallel.
+    Parallelism is used here for faster filling of missing values. OpenMP is being used here to parallelize the loop that achieves the same, over columns of the input data. This includes handling different data types (double, integer, and integer64) and applying the designated filling method (constant, last observation carried forward, or next observation carried backward) to each column in parallel.()
     
     \item\file{subset.c} - Used in \code{\link[=data.table]{[.data.table}} subsetting
     \item\file{types.c} - Internal testing usage
+    
+    Parallelism is being used here for enhancing the performance of internal tests (not impacting any user-facing operations or functions). OpenMP is being used here to test a message printing function inside a nested loop which has been collapsed into a single loop of the combined iteration space using \code{collapse(2)}, along with specification of dynamic scheduling for distributing the iterations in a way that can balance the workload among the threads.
   }
 }
 \examples{
