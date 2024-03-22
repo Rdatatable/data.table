@@ -68,6 +68,15 @@
     For logical, integer, and real types, OpenMP is being used here to parallelize loops that perform conditional checks along with assignment operations over the elements of the supplied logical vector based on the condition (\code{test}) and values provided for the remaining arguments (\code{yes}, \code{no}, and \code{na}).
     
     \item\file{fread.c} - \code{\link{fread}()}
+    
+    Parallelism is used here to read and process data in chunks (blocks of lines/rows). Expect significant speedup for large files, as I/O operations benefit greatly from parallel processing. OpenMP is used here to:
+
+    \itemize{
+      \item Avoid race conditions or concurrent writes to the output \code{data.table} by having atomic operations on the string data 
+      \item Managing synchronized updates to the progress bar and serializing the output to the console
+      }
+    There are no explicit pragmas for parallelizing loops, and instead the use of OpenMP here is in controlling access to shared resources (with the use of critical sections, for instance) in a multi-threaded environment.
+    
     \item\file{forder.c}, \file{fsort.c}, and \file{reorder.c} - \code{\link{forder}()} and related
     \item\file{froll.c}, \file{frolladaptive.c}, and \file{frollR.c} - \code{\link{froll}()} and family
     \item\file{fwrite.c} - \code{\link{fwrite}()}
@@ -76,7 +85,7 @@
     
     \item\file{gsumm.c} - GForce in various places, see \link{GForce}
     
-    Functions with GForce optimization are internally parallelized to speed up grouped summaries over a large \code{data.table}. OpenMP is used here to parallelize operations involved in calculating group-wise statistics like sum, mean, and median. The input data is split into batches (groups), and each thread processes a subset of the data based on them.
+    Functions with GForce optimization are internally parallelized to speed up grouped summaries over a large \code{data.table}. OpenMP is used here to parallelize operations involved in calculating group-wise statistics like sum, mean, and median (implying faster computation of \code{sd}, \code{var}, and \code{prod} as well). The input data is split into batches (groups), and each thread processes a subset of the data based on them.
     
     \item\file{nafill.c} - \code{\link{nafill}()}
     
