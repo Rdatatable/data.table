@@ -71,12 +71,21 @@
     \item\file{forder.c}, \file{fsort.c}, and \file{reorder.c} - \code{\link{forder}()} and related
     \item\file{froll.c}, \file{frolladaptive.c}, and \file{frollR.c} - \code{\link{froll}()} and family
     \item\file{fwrite.c} - \code{\link{fwrite}()}
+
+    OpenMP is primarily used here to parallelize the process of writing rows to the output file. Error handling and compression (if enabled) are also managed within this parallel region, with special attention to thread safety and synchronization, especially in the ordered sections where output to the file and handling of errors is serialized to maintain the correct sequence of rows.
+    
     \item\file{gsumm.c} - GForce in various places, see \link{GForce}
+    
+    Functions with GForce optimization are internally parallelized to speed up grouped summaries over a large \code{data.table}. OpenMP is used here to parallelize operations involved in calculating group-wise statistics like sum, mean, and median. The input data is split into batches (groups), and each thread processes a subset of the data based on them.
+    
     \item\file{nafill.c} - \code{\link{nafill}()}
     
-    Parallelism is used here for faster filling of missing values. OpenMP is being used here to parallelize the loop that achieves the same, over columns of the input data. This includes handling different data types (double, integer, and integer64) and applying the designated filling method (constant, last observation carried forward, or next observation carried backward) to each column in parallel.()
+    Parallelism is used here for faster filling of missing values. OpenMP is being used here to parallelize the loop that achieves the same, over columns of the input data. This includes handling different data types (double, integer, and integer64) and applying the designated filling method (constant, last observation carried forward, or next observation carried backward) to each column in parallel.
     
     \item\file{subset.c} - Used in \code{\link[=data.table]{[.data.table}} subsetting
+    
+    Parallelism is used her to expedite the filtering of data. OpenMP is utilized here to parallelize the process of subsetting vectors that have sufficient elements to warrant multi-threaded processing.
+    
     \item\file{types.c} - Internal testing usage
     
     Parallelism is being used here for enhancing the performance of internal tests (not impacting any user-facing operations or functions). OpenMP is being used here to test a message printing function inside a nested loop which has been collapsed into a single loop of the combined iteration space using \code{collapse(2)}, along with specification of dynamic scheduling for distributing the iterations in a way that can balance the workload among the threads.
