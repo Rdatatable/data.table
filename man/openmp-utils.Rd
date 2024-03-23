@@ -56,7 +56,7 @@
     
     \item\file{coalesce.c} - \code{\link{fcoalesce}()}
     
-    Parallelism is used here to reduce the time taken to fill NA values with the first non-NA value from other vectors. Operates over columns to replace NAs. OpenMP is used here to parallelize:
+    Parallelism is used here to reduce the time taken to replace NA values with the first non-NA value from other vectors. OpenMP is used here to parallelize:
     \itemize{
       \item The operation that iterates over the rows to coalesce the data (which can be of type integer, real, or complex)
       \item The replacement of NAs with non-NA values from subsequent vectors
@@ -78,6 +78,16 @@
     There are no explicit pragmas for parallelizing loops, and instead the use of OpenMP here is in controlling access to shared resources (with the use of critical sections, for instance) in a multi-threaded environment.
     
     \item\file{forder.c}, \file{fsort.c}, and \file{reorder.c} - \code{\link{forder}()} and related
+    
+    Parallelism is used here in multiple operations that come together to sort a \code{data.table} using the Radix algorithm. OpenMP is used here to parallelize:
+    
+    \itemize{
+      \item The counting of unique values and recursively sorting subsets of data across different threads (specific to \file{forder.c})
+      \item The process of finding the range and distribution of data for efficient grouping and sorting (applies for both \file{forder.c} and \file{fsort.c})
+      \item Creation of histograms which are used to sort data based on significant bits (each thread processes a separate batch of the data, computes the MSB of each element, and then increments the corresponding bins), with the distribution and merging of buckets (specific to \file{fsort.c})
+      \item The process of reordering a vector or each column in a list of vectors (such as in a \code{data.table}) based on a given vector that dictates the new ordering of elements (specific to \file{reorder.c})
+      }
+      
     \item\file{froll.c}, \file{frolladaptive.c}, and \file{frollR.c} - \code{\link{froll}()} and family
     \item\file{fwrite.c} - \code{\link{fwrite}()}
 
