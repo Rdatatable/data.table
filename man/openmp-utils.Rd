@@ -47,7 +47,7 @@
     
     \item\file{cj.c} - \code{\link{CJ}()}
     
-    Parallelism is used here to expedite the creation of all combinations of the input vectors over the cross-product space. Better speedup can be expected when dealing with large vectors or a multitude of combinations. OpenMP is used here to parallelize:
+    Parallelism is used here to expedite the creation of all combinations of the input vectors over the cross-product space. OpenMP is used here to parallelize:
 
     \itemize{
       \item Element assignment in vectors
@@ -69,29 +69,32 @@
     
     \item\file{fread.c} - \code{\link{fread}()}
     
-    Parallelism is used here to read and process data in chunks (blocks of lines/rows). Expect significant speedup for large files, as I/O operations benefit greatly from parallel processing. OpenMP is used here to:
+    Parallelism is used here to speed up the reading and processing of data in chunks (blocks of lines/rows). OpenMP is used here to:
 
     \itemize{
       \item Avoid race conditions or concurrent writes to the output \code{data.table} by having atomic operations on the string data 
-      \item Managing synchronized updates to the progress bar and serializing the output to the console
+      \item Manage synchronized updates to the progress bar and serialize the output to the console
       }
-    There are no explicit pragmas for parallelizing loops, and instead the use of OpenMP here is in controlling access to shared resources (with the use of critical sections, for instance) in a multi-threaded environment.
+    There are no explicit pragmas for parallelizing loops, and instead the use of OpenMP here is mainly in controlling access to shared resources (with the use of critical sections, for instance) in a multi-threaded environment.
     
     \item\file{forder.c}, \file{fsort.c}, and \file{reorder.c} - \code{\link{forder}()} and related
     
-    Parallelism is used here in multiple operations that come together to sort a \code{data.table} using the Radix algorithm. OpenMP is used here to parallelize:
+    Parallelism is used here to reduce the time taken in multiple operations that come together to sort a \code{data.table} using the Radix algorithm. OpenMP is used here to parallelize:
     
     \itemize{
       \item The counting of unique values and recursively sorting subsets of data across different threads (specific to \file{forder.c})
-      \item The process of finding the range and distribution of data for efficient grouping and sorting (applies for both \file{forder.c} and \file{fsort.c})
+      \item The process of finding the range and distribution of data for efficient grouping and sorting (applies to both \file{forder.c} and \file{fsort.c})
       \item Creation of histograms which are used to sort data based on significant bits (each thread processes a separate batch of the data, computes the MSB of each element, and then increments the corresponding bins), with the distribution and merging of buckets (specific to \file{fsort.c})
       \item The process of reordering a vector or each column in a list of vectors (such as in a \code{data.table}) based on a given vector that dictates the new ordering of elements (specific to \file{reorder.c})
       }
       
     \item\file{froll.c}, \file{frolladaptive.c}, and \file{frollR.c} - \code{\link{froll}()} and family
+    
+    Parallelism is used here to speed up the computation of rolling statistics. OpenMP is used here to parallelize the loops that compute the rolling means (\code{frollmean}) and sums (\code{frollsum}) over a sliding window for each position in the input vector.
+
     \item\file{fwrite.c} - \code{\link{fwrite}()}
 
-    OpenMP is primarily used here to parallelize the process of writing rows to the output file. Error handling and compression (if enabled) are also managed within this parallel region, with special attention to thread safety and synchronization, especially in the ordered sections where output to the file and handling of errors is serialized to maintain the correct sequence of rows.
+    Parallelism is used here to expedite the process of writing rows to the output file. OpenMP is used primarily to achieve the same here, but error handling and compression (if enabled) are also managed within the parallel region. Special attention is paid to thread safety and synchronization, especially in the ordered sections where output to the file and handling of errors is serialized to maintain the correct sequence of rows.
     
     \item\file{gsumm.c} - GForce in various places, see \link{GForce}
     
@@ -103,12 +106,26 @@
     
     \item\file{subset.c} - Used in \code{\link[=data.table]{[.data.table}} subsetting
     
-    Parallelism is used her to expedite the filtering of data. OpenMP is utilized here to parallelize the process of subsetting vectors that have sufficient elements to warrant multi-threaded processing.
+    Parallelism is used here to expedite the process of subsetting vectors. OpenMP is used here to parallelize the loops that achieve the same, with conditional checks and filtering of data.
     
     \item\file{types.c} - Internal testing usage
     
     Parallelism is being used here for enhancing the performance of internal tests (not impacting any user-facing operations or functions). OpenMP is being used here to test a message printing function inside a nested loop which has been collapsed into a single loop of the combined iteration space using \code{collapse(2)}, along with specification of dynamic scheduling for distributing the iterations in a way that can balance the workload among the threads.
   }
+  
+In general, or as applicable to all the aforementioned use cases, better speedup can be expected when dealing with large datasets.
+
+Having such data when using \code{\link{fread}()} or \code{\link{fwrite}()} (ones with significant speedups for larger file sizes) also means that while one part of the data is being read from or written to disk (I/O operations), another part can be simultaneously processed using multiple cores (parallel computations). This overlap reduces the total time taken for the read or write operation (as the system can perform computations during otherwise idle I/O time).
+
+Apart from increasing the size of the input data, function-specific parameters when considered can benefit more from parallelization or lead to an increase in speedup. For instance, these can be:
+
+    \itemize{
+      \item Having a large number of groups when using \code{\link{forder}()} or a multitude of combinations when using \code{\link{CJ}()}
+      \item Having several missing values in your data when using \code{\link{fcoalesce}()} or \code{\link{nafill}()}
+      \item Using larger window sizes and/or time series data when using \code{\link{froll}()}
+      \item Having more and/or complex conditional logic when using \code{\link{fifelse}()} or \code{\link{subset}()}
+      }
+
 }
 \examples{
   getDTthreads(verbose=TRUE)
