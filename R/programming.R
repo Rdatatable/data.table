@@ -18,7 +18,7 @@ list2lang = function(x) {
   char = vapply(x, is.character, FALSE)
   to.name = !asis & char
   if (any(to.name)) { ## turns "my_name" character scalar into `my_name` symbol, for convenience
-    if (any(non.scalar.char <- vapply(x[to.name], length, 0L)!=1L)) {
+    if (any(non.scalar.char <- lengths(x[to.name])!=1L)) {
       stopf("Character objects provided in the input are not scalar objects, if you need them as character vector rather than a name, then wrap each into 'I' call: %s", brackify(names(non.scalar.char)[non.scalar.char]))
     }
     x[to.name] = lapply(x[to.name], as.name)
