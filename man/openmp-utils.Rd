@@ -39,24 +39,25 @@
   \itemize{
     \item\file{between.c} - \code{\link{between}()}
     
-    Parallelism is used here to speed up range checks that are performed over the elements of the supplied vector. OpenMP is used here to parallelize:
+    OpenMP is used here to parallelize:
     \itemize{
       \item The loops that check if each element of the vector provided is between the specified \code{lower} and \code{upper} bounds, for integer (\code{INTSXP}) and real (\code{REALSXP}) types
-      \item Checking and handling of undefined values (such as NaNs)
+      \item The checking and handling of undefined values (such as NaNs)
     }
     
     \item\file{cj.c} - \code{\link{CJ}()}
     
-    Parallelism is used here to expedite the creation of all combinations of the input vectors over the cross-product space. OpenMP is used here to parallelize:
+    OpenMP is used here to parallelize:
 
     \itemize{
-      \item Element assignment in vectors
-      \item Memory copying operations (blockwise replication of data using \code{memcpy})
+      \item The element assignment in vectors
+      \item The memory copying operations (blockwise replication of data using \code{memcpy})
+      \item The creation of all combinations of the input vectors over the cross-product space
     }
     
     \item\file{coalesce.c} - \code{\link{fcoalesce}()}
     
-    Parallelism is used here to reduce the time taken to replace NA values with the first non-NA value from other vectors. OpenMP is used here to parallelize:
+    OpenMP is used here to parallelize:
     \itemize{
       \item The operation that iterates over the rows to coalesce the data (which can be of type integer, real, or complex)
       \item The replacement of NAs with non-NA values from subsequent vectors
@@ -69,7 +70,7 @@
     
     \item\file{fread.c} - \code{\link{fread}()}
     
-    Parallelism is used here to speed up the reading and processing of data in chunks (blocks of lines/rows). OpenMP is used here to:
+    OpenMP is used here to:
 
     \itemize{
       \item Avoid race conditions or concurrent writes to the output \code{data.table} by having atomic operations on the string data 
@@ -79,7 +80,7 @@
     
     \item\file{forder.c}, \file{fsort.c}, and \file{reorder.c} - \code{\link{forder}()} and related
     
-    Parallelism is used here to reduce the time taken in multiple operations that come together to sort a \code{data.table} using the Radix algorithm. OpenMP is used here to parallelize:
+    OpenMP is used here to parallelize multiple operations that come together to sort a \code{data.table} using the Radix algorithm. These include:
     
     \itemize{
       \item The counting of unique values and recursively sorting subsets of data across different threads (specific to \file{forder.c})
@@ -90,11 +91,11 @@
       
     \item\file{froll.c}, \file{frolladaptive.c}, and \file{frollR.c} - \code{\link{froll}()} and family
     
-    Parallelism is used here to speed up the computation of rolling statistics. OpenMP is used here to parallelize the loops that compute the rolling means (\code{frollmean}) and sums (\code{frollsum}) over a sliding window for each position in the input vector.
+    OpenMP is used here to parallelize the loops that compute the rolling means (\code{frollmean}) and sums (\code{frollsum}) over a sliding window for each position in the input vector.
 
     \item\file{fwrite.c} - \code{\link{fwrite}()}
 
-    Parallelism is used here to expedite the process of writing rows to the output file. OpenMP is used primarily to achieve the same here, but error handling and compression (if enabled) are also managed within the parallel region. Special attention is paid to thread safety and synchronization, especially in the ordered sections where output to the file and handling of errors is serialized to maintain the correct sequence of rows.
+    OpenMP is used here primarily to parallelize the process of writing rows to the output file, but error handling and compression (if enabled) are also managed within the parallel region. Special attention is paid to thread safety and synchronization, especially in the ordered sections where output to the file and handling of errors is serialized to maintain the correct sequence of rows.
     
     \item\file{gsumm.c} - GForce in various places, see \link{GForce}
     
@@ -102,15 +103,15 @@
     
     \item\file{nafill.c} - \code{\link{nafill}()}
     
-    Parallelism is used here for faster filling of missing values. OpenMP is being used here to parallelize the loop that achieves the same, over columns of the input data. This includes handling different data types (double, integer, and integer64) and applying the designated filling method (constant, last observation carried forward, or next observation carried backward) to each column in parallel.
+    OpenMP is being used here to parallelize the loop that fills missing values over columns of the input data. This includes handling different data types (double, integer, and integer64) and applying the designated filling method (constant, last observation carried forward, or next observation carried backward) to each column in parallel.
     
     \item\file{subset.c} - Used in \code{\link[=data.table]{[.data.table}} subsetting
     
-    Parallelism is used here to expedite the process of subsetting vectors. OpenMP is used here to parallelize the loops that achieve the same, with conditional checks and filtering of data.
+    OpenMP is used here to parallelize the loops that perform the subsetting of vectors, with conditional checks and filtering of data.
     
     \item\file{types.c} - Internal testing usage
     
-    Parallelism is being used here for enhancing the performance of internal tests (not impacting any user-facing operations or functions). OpenMP is being used here to test a message printing function inside a nested loop which has been collapsed into a single loop of the combined iteration space using \code{collapse(2)}, along with specification of dynamic scheduling for distributing the iterations in a way that can balance the workload among the threads.
+    This caters to internal tests (not impacting any user-facing operations or functions), and OpenMP is being used here to test a message printing function inside a nested loop which has been collapsed into a single loop of the combined iteration space using \code{collapse(2)}, along with specification of dynamic scheduling for distributing the iterations in a way that can balance the workload among the threads.
   }
   
 In general, or as applicable to all the aforementioned use cases, better speedup can be expected when dealing with large datasets.
