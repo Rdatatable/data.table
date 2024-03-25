@@ -348,7 +348,7 @@ ans <- melt(dt, measure.vars=names(dt), na.rm=TRUE)
 test(1035.21, ans, ans)
 
 # gc race with altrep in R-devel May 2018, #2866 & #2767, PR#2882
-# This runs with 2 threads in the test suite on CRAN and AppVeyor etc.
+# This runs with 2 threads in the test suite on CRAN and GHA etc.
 # 2 threads are sufficient to fail before the fix.
 N = 20
 DF = data.frame(a=rnorm(N),

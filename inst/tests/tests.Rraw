@@ -3051,9 +3051,8 @@ x = sample(1:1000,2100,replace=TRUE)  # 2100 > 100 JUMPLINES * 10 NJUMP * 2 spac
 DT = data.table( A=as.character(x), B=1:100)
 DT[115, A:="123456789123456"]  # row 115 is outside the 100 rows at 10 points.
 fwrite(DT,f<-tempfile())
-test(1016.1, sapply(suppressWarnings(fread(f,verbose=TRUE)),"class"), c(A="integer64", B="integer"),
+test(1016.1, sapply(fread(f,verbose=TRUE),"class"), c(A="integer64", B="integer"),
              output="Rereading 1 columns.*Column 1.*A.*bumped.*int32.*int64.*<<123456789123456>>")
-# suppressWarnings for 'bit64 is not installed' warning on AppVeyor where we (correctly) don't install Suggests
 test(1016.2, fread(f, colClasses = c(A="numeric"), verbose=TRUE), copy(DT)[,A:=as.numeric(A)], output="Rereading 0 columns")
 DT[90, A:="321456789123456"]   # inside the sample
 write.table(DT,f,sep=",",row.names=FALSE,quote=FALSE)
@@ -8354,7 +8353,7 @@ test(1590.07, identical(baseR, INT(1,4,2,3)) || identical(baseR, INT(2,3,1,4)) |
 Sys.setlocale("LC_CTYPE", ctype)
 Sys.setlocale("LC_COLLATE", collate)
 test(1590.08, Sys.getlocale(), oldlocale)  # checked restored locale fully back to how it was before this test
-# Now test default locale on all platforms: Windows-1252 on AppVeyor and win-builder, UTF-8 on Linux, and users running test.data.table() in their locale
+# Now test default locale on all platforms: Windows-1252 on GHA and win-builder, UTF-8 on Linux, and users running test.data.table() in their locale
 x1 = "fa\xE7ile"
 Encoding(x1) = "latin1"
 x2 = iconv(x1, "latin1", "UTF-8")

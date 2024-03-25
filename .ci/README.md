@@ -35,10 +35,6 @@ Artifacts:
 
 TODO document
 
-### [Appveyor](./../.appveyor.yml)
-
-TODO document
-
 ## CI tools
 
 ### [`ci.R`](./ci.R)
