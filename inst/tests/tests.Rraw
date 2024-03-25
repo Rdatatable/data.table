@@ -18423,4 +18423,4 @@ test(2251.13, dim(fread(text, fill=20)), c(9L, 20L)) # clean up currently only k
 .datatable.aware = FALSE
 dt = data.table(a = 1L)
 test(2252.1, dt[, b:=2L], error = "^\\[ was called on a data.table in an environment that is not data.table-aware.*")
-test(2252.2, dt[, b:=2L], error = "^\\[ was called on a data.table in an environment that is not data.table-aware.*")
+test(2252.2, dt[, let(b=2L)], error = "^\\[ was called on a data.table in an environment that is not data.table-aware.*")
