@@ -126,8 +126,10 @@ Apart from increasing the size of the input data, function-specific parameters w
       \item Having more and/or complex conditional logic when using \code{\link{fifelse}()} or \code{\link{subset}()}
       }
 
+Note: The information above is based on implementation-specific details as of March 2024.
+
 }
+
 \examples{
   getDTthreads(verbose=TRUE)
 }
-\keyword{ data }
