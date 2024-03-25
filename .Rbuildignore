@@ -16,7 +16,6 @@
 ^\.graphics$
 ^\.github$
 
-^\.appveyor\.yml$
 ^\.gitlab-ci\.yml$
 
 ^Makefile$
