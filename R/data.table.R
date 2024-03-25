@@ -145,7 +145,7 @@ replace_dot_alias = function(e) {
   # the drop=NULL is to sink drop argument when dispatching to [.data.frame; using '...' stops test 147
   if (!cedta()) {
     # Fix for #500 (to do)
-    if (substitute(j) %iscall% c(":=", "let")){
+    if (substitute(j) %iscall% c(":=", "let")) {
         # Throw a specific error message
         stopf("[ was called on a data.table in an environment that is not data.table-aware (i.e. cedta()), but ':=' or 'let' was used, implying the owner of this call really intended for data.table methods to be called. See vignette('datatable-importing') for details on properly importing data.table.")
     }
