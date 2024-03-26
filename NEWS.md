@@ -38,6 +38,8 @@
 
 5. `fwrite(x, row.names=TRUE)` with `x` a `matrix` writes `row.names` when present, not row numbers, [#5315](https://github.com/Rdatatable/data.table/issues/5315). Thanks to @Liripo for the report, and @ben-schwen for the fix.
 
+3. User-defined pattern matching functions are supported for .SDcols, `.SDcols=user_patterns_fun("regexp")` where `user_patterns_fun` should have an argument named `cols` that is not provided by the user, but will be filled in with the data table column names. Also `data.table:::patterns(perl=TRUE)` passes `perl` argument onto `grep`, #5387. Thanks to @iago-pssjd for the feature request, and @tdhock for the implementation.
+
 ## NOTES
 
 1. `transform` method for data.table sped up substantially when creating new columns on large tables. Thanks to @OfekShilon for the report and PR. The implemented solution was proposed by @ColeMiller1.
@@ -346,6 +348,8 @@
 40. New function `%notin%` provides a convenient alternative to `!(x %in% y)`, [#4152](https://github.com/Rdatatable/data.table/issues/4152). Thanks to Jan Gorecki for suggesting and Michael Czekanski for the PR. `%notin%` uses half the memory because it computes the result directly as opposed to `!` which allocates a new vector to hold the negated result. If `x` is long enough to occupy more than half the remaining free memory, this can make the difference between the operation working, or failing with an out-of-memory error.
 
 41. `tables()` is faster by default by excluding the size of character strings in R's global cache (which may be shared) and excluding the size of list column items (which also may be shared). `mb=` now accepts any function which accepts a `data.table` and returns a higher and better estimate of its size in bytes, albeit more slowly; e.g. `mb = utils::object.size`.
+
+43. User-defined pattern matching functions are supported for .SDcols, `.SDcols=user_patterns_fun("regexp")` where `user_patterns_fun` should have an argument named `cols` that is not provided by the user, but will be filled in with the data table column names. Also `data.table:::patterns(perl=TRUE)` passes `perl` argument onto `grep`, #5387. Thanks to @iago-pssjd for the feature request, and @tdhock for the implementation.
 
 ## BUG FIXES
 
