@@ -293,7 +293,7 @@ struct processData {
     totlen,       // of output/long DT result of melt operation.
     nrow;         // of input/wide DT to be melted.
   SEXPTYPE *maxtype;
-  Rboolean measure_is_list,
+  bool measure_is_list,
     narm;  // remove missing values?
 };
 
@@ -303,7 +303,7 @@ static void preprocess(SEXP DT, SEXP id, SEXP measure, SEXP varnames, SEXP valna
   SEXPTYPE type;
   data->lmax = 0; data->totlen = 0; data->nrow = length(VECTOR_ELT(DT, 0));
   SET_VECTOR_ELT(data->RCHK, 0, vars = checkVars(DT, id, measure, verbose));
-  data->measure_is_list = !isNull(measure) && isNewList(measure) ? TRUE : FALSE;
+  data->measure_is_list = !isNull(measure) && isNewList(measure);
   data->idcols = VECTOR_ELT(vars, 0);
   data->valuecols = VECTOR_ELT(vars, 1);
   data->lids = length(data->idcols);
