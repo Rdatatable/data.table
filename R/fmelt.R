@@ -30,7 +30,7 @@ patterns = function(..., cols=character(0L)) {
   # replace with lengths when R 3.2.0 dependency arrives
   if (length(idx <- which(sapply(matched, length) == 0L)))
     stopf('Pattern(s) not found: [%s]', brackify(p[idx]))
-  if(length(matched)==1)return(matched[[1]])
+  if (length(matched) == 1L) return(matched[[1L]])
   matched
 }
 
