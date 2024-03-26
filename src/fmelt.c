@@ -303,11 +303,7 @@ static void preprocess(SEXP DT, SEXP id, SEXP measure, SEXP varnames, SEXP valna
   SEXPTYPE type;
   data->lmax = 0; data->totlen = 0; data->nrow = length(VECTOR_ELT(DT, 0));
   SET_VECTOR_ELT(data->RCHK, 0, vars = checkVars(DT, id, measure, verbose));
-  if(!isNull(measure) && isNewList(measure)){
-    data->measure_is_list = TRUE;
-  }else{
-    data->measure_is_list = FALSE;
-  }
+  data->measure_is_list = !isNull(measure) && isNewList(measure) ? TRUE : FALSE;
   data->idcols = VECTOR_ELT(vars, 0);
   data->valuecols = VECTOR_ELT(vars, 1);
   data->lids = length(data->idcols);
