@@ -36,7 +36,7 @@
 
 5. `fwrite(x, row.names=TRUE)` with `x` a `matrix` writes `row.names` when present, not row numbers, [#5315](https://github.com/Rdatatable/data.table/issues/5315). Thanks to @Liripo for the report, and @ben-schwen for the fix.
 
-6. `melt` with a list for `measure.vars` was inconsistent between length=1 list and length>1 list, [#5209](https://github.com/Rdatatable/data.table/issues/5209). Thanks to @tdhock for reporting and fixing.
+6. `melt` returns an integer column for `variable` whenever `measure.vars` is a list, consistent with the documented behavior, [#5209](https://github.com/Rdatatable/data.table/issues/5209). Thanks to @tdhock for reporting and fixing.
 
 ## NOTES
 
