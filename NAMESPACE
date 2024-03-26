@@ -2,7 +2,6 @@ useDynLib("data_table", .registration=TRUE)
 
 ## For S4-ization
 importFrom(methods, "S3Part<-", slotNames)
-importMethodsFrom(methods, "[")
 exportClasses(data.table, IDate, ITime)
 ##
 
