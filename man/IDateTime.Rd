@@ -69,7 +69,7 @@ as.IDate(x, \dots)
 \method{as.IDate}{Date}(x, \dots)
 \method{as.Date}{IDate}(x, \dots)
 \method{as.POSIXct}{IDate}(x, tz = "UTC", time = 0, \dots)
-\method{round}{IDate}(x, digits = c("weeks", "months", "quarters","years"), \ldots)
+\method{round}{IDate}(x, digits = c("weeks", "months", "quarters","years"), week_start = "Jan 1", \ldots)
 
 as.ITime(x, \dots)
 \method{as.ITime}{default}(x, \dots)
@@ -111,6 +111,7 @@ yearqtr(x)
   \item{digits}{really \code{units}; one of the units listed for
   rounding. May be abbreviated. Named \code{digits} for consistency with
   the S3 generic.}
+  \item{week_start}{ When does the week start? Like \code{wday()}, 1 means Sunday and 7 means Saturday; character strings naming the weekday (in English) are also converted. The default, \code{"Jan 1"}, means weeks should be aligned to the beginning of the year. Note that this default implies dates coming at the end of the year will wind up with fewer than 7 days mapping to the same rounded week start. }
   \item{units}{one of the units listed for truncating. May be abbreviated.}
   \item{ms}{ For \code{as.ITime} methods, what should be done with sub-second fractions of input? Valid values are \code{'truncate'} (floor), \code{'nearest'} (round), and \code{'ceil'} (ceiling). See Details. }
 }

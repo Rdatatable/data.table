@@ -81,7 +81,18 @@ as.list.IDate = function(x, ...) NextMethod()
 
 round_weeks = function(x, week_start) {
   if (week_start == "Jan 1") return(round(x, "year") + 7L * ((yday(x) - 1L) %/% 7L))
-  if (is.numeric(week_start)) return()
+  if (is.numeric(week_start)) return(x + (3L - ((as.integer(x) - (as.integer(week_start) - 1L)) %% 7L)))
+  week_start = switch(week_start,
+    Sun = , Sunday = 1L,
+    Mon = , Monday = 2L,
+    Tue = , Tuesday = 3L,
+    Wed = , Wednesday = 4L,
+    Thu = , Thursday = 5L,
+    Fri = , Friday = 6L,
+    Sat = , Saturday = 7L,
+    stopf("Unrecognized value of 'week_start' %s; expected 'Jan 1', a numeric day of the week, or a weekday name (in English).", week_start)
+  )
+  round_weeks(x, week_start)
 }
 
 # rounding -- good for graphing / subsetting
@@ -91,7 +102,7 @@ round_weeks = function(x, week_start) {
 round.IDate = function (x, digits=c("weeks", "months", "quarters", "years"), week_start="Jan 1", ...) {
   units = match.arg(digits)
   as.IDate(switch(units,
-          weeks  = round(x, "year") + 7L * ((yday(x) - 1L) %/% 7L),
+          weeks = round_weeks(x, week_start),
           months = ISOdate(year(x), month(x), 1L),
           quarters = ISOdate(year(x), 3L * (quarter(x)-1L) + 1L, 1L),
           years = ISOdate(year(x), 1L, 1L)))
