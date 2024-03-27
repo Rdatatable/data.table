@@ -40,7 +40,7 @@
 
 5. `fwrite(x, row.names=TRUE)` with `x` a `matrix` writes `row.names` when present, not row numbers, [#5315](https://github.com/Rdatatable/data.table/issues/5315). Thanks to @Liripo for the report, and @ben-schwen for the fix.
 
-6. `round()` method for `IDate` has more natural behavior for `"weeks"` -- in particular, the first week of the year will always have 7 days instead of 6, [#4334](https://github.com/Rdatatable/data.table/pull/4334). Thanks @artemklevtsov for the report and fix.
+6. `round()` method for `IDate` has more natural behavior for `"weeks"` -- in particular, the first week of the year will always have 7 days instead of 6, [#4335](https://github.com/Rdatatable/data.table/issues/4335). Thanks @artemklevtsov for the report and fix.
 
 ## NOTES
 
