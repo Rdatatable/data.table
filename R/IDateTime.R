@@ -80,7 +80,7 @@ min.IDate = max.IDate = function(x, ...) {
 as.list.IDate = function(x, ...) NextMethod()
 
 round_weeks = function(x, week_start) {
-  if (week_start == "Jan 1") return(round(x, "year") + 7L * ((yday(x) - 1L) %/% 7L))
+  if (missing(week_start) || week_start == "Jan 1") return(round(x, "year") + 7L * ((yday(x) - 1L) %/% 7L))
   if (is.numeric(week_start)) return(x + (3L - ((as.integer(x) - (as.integer(week_start) - 1L)) %% 7L)))
   week_start = switch(week_start,
     Sun = , Sunday = 1L,
@@ -99,10 +99,10 @@ round_weeks = function(x, week_start) {
 ## round.IDate = function (x, digits, units=digits, ...) {
 ##     if (missing(digits)) digits = units # workaround to provide a units argument to match the round generic and round.POSIXt
 ##     units = match.arg(digits, c("weeks", "months", "quarters", "years"))
-round.IDate = function (x, digits=c("weeks", "months", "quarters", "years"), week_start="Jan 1", ...) {
+round.IDate = function (x, digits=c("weeks", "months", "quarters", "years"), ...) {
   units = match.arg(digits)
   as.IDate(switch(units,
-          weeks = round_weeks(x, week_start),
+          weeks = round_weeks(x, ...),
           months = ISOdate(year(x), month(x), 1L),
           quarters = ISOdate(year(x), 3L * (quarter(x)-1L) + 1L, 1L),
           years = ISOdate(year(x), 1L, 1L)))
