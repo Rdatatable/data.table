@@ -18428,9 +18428,9 @@ rm(.datatable.aware)
 
 # week_start parameter for round.IDate
 x = as.IDate("2024-03-26") + 0:6
-test(2253.1, round(x, "weeks", week_start=1L), ans<-rep(as.IDate(c("2024-03-24", "2024-03-31")), 3:4))
-test(2253.2, round(x, "weeks", week_start="Mon"), ans)
-test(2253.3, round(x, "weeks", week_start="Monday"), ans)
-test(2253.4, round(x, "weeks", week_start=3L), ans<-rep(as.IDate(c("2024-03-26", "2024-04-02")), c(5L, 2L)))
-test(2253.5, round(x, "weeks", week_start=7L), ans<-rep(as.IDate(c("2024-03-23", "2024-03-30")), c(1L, 6L)))
+test(2253.1, round(x, "weeks", week_start=1L), ans<-rep(as.IDate(c("2024-03-24", "2024-03-31")), c(2L, 5L)))
+test(2253.2, round(x, "weeks", week_start="Sun"), ans)
+test(2253.3, round(x, "weeks", week_start="Sunday"), ans)
+test(2253.4, round(x, "weeks", week_start=3L), rep(as.IDate(c("2024-03-26", "2024-04-02")), c(4L, 3L)))
+test(2253.5, round(x, "weeks", week_start=7L), rep(as.IDate(c("2024-03-23", "2024-03-30")), c(1L, 6L)))
 test(2253.6, round(x, "weeks", week_start="Sonntag"), error="Unrecognized value of 'week_start' Sonntag")
