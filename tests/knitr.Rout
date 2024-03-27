@@ -19,10 +19,8 @@ Type 'q()' to quit R.
 +   cat(readLines("knitr.Rout.mock", warn=FALSE), sep="\n")
 +   q('no')
 + }
-> 
-> library(knitr)
-> invisible(knit("knitr.Rmd", quiet=TRUE))
-> cat(readLines("knitr.md"), sep="\n")
+Loading required package: knitr
+Loading required package: data.table
 
 ```r
 require(data.table)              # print?
@@ -65,8 +63,6 @@ DT                               # yes
 ```
 Some text.
 
-> invisible(file.remove("knitr.md"))
-> 
 > proc.time()
    user  system elapsed 
-  0.247   0.044   0.283 
+  0.114   0.015   0.122 
