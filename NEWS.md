@@ -26,6 +26,8 @@
 
 7. `fread`'s `fill` argument now also accepts an `integer` in addition to boolean values. `fread` always guesses the number of columns based on reading a sample of rows in the file. When `fill=TRUE`, `fread` stops reading and ignores subsequent rows when this estimate winds up too low, e.g. when the sampled rows happen to exclude some rows that are even wider, [#2727](https://github.com/Rdatatable/data.table/issues/2727) [#2691](https://github.com/Rdatatable/data.table/issues/2691) [#4130](https://github.com/Rdatatable/data.table/issues/4130) [#3436](https://github.com/Rdatatable/data.table/issues/3436). Providing an `integer` as argument for `fill` allows for a manual estimate of the number of columns instead, [#1812](https://github.com/Rdatatable/data.table/issues/1812) [#5378](https://github.com/Rdatatable/data.table/issues/5378). Thanks to @jangorecki, @christellacaze, @Yiguan, @alexdthomas, @ibombonato, @Befrancesco, @TobiasGold for reporting/requesting, and Benjamin Schwendinger for the PR.
 
+8. `round()` method for `IDate` gains an argument `week_start` to specify to which weekday to round each input date, e.g. `week_start=2L` means "round to the nearest Monday". Note that due to peculiarities of the `round()` generic, this feature is not available for R<4.4.0. Further, to avoid such a recent R version dependency, this argument is not listed in the signature of `round.IDate`, instead being picked up from `...`.
+
 ## BUG FIXES
 
 1. `unique()` returns a copy the case when `nrows(x) <= 1` instead of a mutable alias, [#5932](https://github.com/Rdatatable/data.table/pull/5932). This is consistent with existing `unique()` behavior when the input has no duplicates but more than one row. Thanks to @brookslogan for the report and @dshemetov for the fix.
@@ -38,7 +40,7 @@
 
 5. `fwrite(x, row.names=TRUE)` with `x` a `matrix` writes `row.names` when present, not row numbers, [#5315](https://github.com/Rdatatable/data.table/issues/5315). Thanks to @Liripo for the report, and @ben-schwen for the fix.
 
-6. `round()` method for `IDate` has more natural behavior for `"weeks"` -- in particular, the first week of the year will always have 7 days instead of 6, [#4334](https://github.com/Rdatatable/data.table/pull/4334). Thanks @artemklevtsov for the report and fix.
+6. `round()` method for `IDate` has more natural behavior for `"weeks"` -- in particular, the first week of the year will always have 7 days instead of 6, [#4335](https://github.com/Rdatatable/data.table/issues/4335). Thanks @artemklevtsov for the report and fix.
 
 ## NOTES
 

@@ -79,14 +79,35 @@ min.IDate = max.IDate = function(x, ...) {
 # fix for #1315
 as.list.IDate = function(x, ...) NextMethod()
 
+# nocov start: not tested on current R release (4.3.3); TODO(R>=4.4.0): revisit.
+round_weeks = function(x, week_start) {
+  if (missing(week_start) || week_start == "Jan 1") return(round(x, "year") + 7L * ((yday(x) - 1L) %/% 7L))
+  # derivation: week_start=k === k+2 mod 7 since Jan 1, 1970 is a Thursday (wday=5).
+  #   find the mapping of {0,1,2,3,4,5,6} to {-3,-2,-1,0,1,2,3}, which is always a right+down shift of x |-> x mod 7.
+  if (is.numeric(week_start)) return(x + (3L - ((as.integer(x) - (as.integer(week_start) - 1L)) %% 7L)))
+  week_start = switch(week_start,
+    Sun = , Sunday = 1L,
+    Mon = , Monday = 2L,
+    Tue = , Tuesday = 3L,
+    Wed = , Wednesday = 4L,
+    Thu = , Thursday = 5L,
+    Fri = , Friday = 6L,
+    Sat = , Saturday = 7L,
+    stopf("Unrecognized value of 'week_start' %s; expected 'Jan 1', a numeric day of the week, or a weekday name (in English).", week_start)
+  )
+  round_weeks(x, week_start)
+}
+# nocov end
+
 # rounding -- good for graphing / subsetting
 ## round.IDate = function (x, digits, units=digits, ...) {
 ##     if (missing(digits)) digits = units # workaround to provide a units argument to match the round generic and round.POSIXt
 ##     units = match.arg(digits, c("weeks", "months", "quarters", "years"))
+# TODO(R>=4.4.0): Put week_start directly into the method signature.
 round.IDate = function (x, digits=c("weeks", "months", "quarters", "years"), ...) {
   units = match.arg(digits)
   as.IDate(switch(units,
-          weeks  = round(x, "year") + 7L * ((yday(x) - 1L) %/% 7L),
+          weeks = round_weeks(x, ...),
           months = ISOdate(year(x), month(x), 1L),
           quarters = ISOdate(year(x), 3L * (quarter(x)-1L) + 1L, 1L),
           years = ISOdate(year(x), 1L, 1L)))

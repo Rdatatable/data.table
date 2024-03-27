@@ -18425,3 +18425,15 @@ dt = data.table(a = 1L)
 test(2252.1, dt[, b:=2L], error = "\\[ was called on a data.table.*not data.table-aware.*':='")
 test(2252.2, dt[, let(b=2L)], error = "\\[ was called on a data.table.*not data.table-aware.*'let'")
 rm(.datatable.aware)
+
+# week_start parameter for round.IDate
+# NB: this is only possible once the round generic accepts >1 argument, in devel but not any release as of this writing (4.3.3)
+if ("..." %in% names(formals(.GenericArgsEnv$round))) {
+  x = as.IDate("2024-03-26") + 0:6
+  test(2253.1, round(x, "weeks", week_start=1L), ans<-rep(as.IDate(c("2024-03-24", "2024-03-31")), c(2L, 5L)))
+  test(2253.2, round(x, "weeks", week_start="Sun"), ans)
+  test(2253.3, round(x, "weeks", week_start="Sunday"), ans)
+  test(2253.4, round(x, "weeks", week_start=3L), rep(as.IDate(c("2024-03-26", "2024-04-02")), c(4L, 3L)))
+  test(2253.5, round(x, "weeks", week_start=7L), rep(as.IDate(c("2024-03-23", "2024-03-30")), c(1L, 6L)))
+  test(2253.6, round(x, "weeks", week_start="Sonntag"), error="Unrecognized value of 'week_start' Sonntag")
+}

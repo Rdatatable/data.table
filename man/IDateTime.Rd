@@ -69,7 +69,7 @@ as.IDate(x, \dots)
 \method{as.IDate}{Date}(x, \dots)
 \method{as.Date}{IDate}(x, \dots)
 \method{as.POSIXct}{IDate}(x, tz = "UTC", time = 0, \dots)
-\method{round}{IDate}(x, digits = c("weeks", "months", "quarters","years"), \ldots)
+\method{round}{IDate}(x, digits = c("weeks", "months", "quarters", "years"), \ldots)
 
 as.ITime(x, \dots)
 \method{as.ITime}{default}(x, \dots)
@@ -102,9 +102,10 @@ yearqtr(x)
 
 \arguments{
   \item{x}{an object}
-  \item{\dots}{arguments to be passed to or from other methods. For
-    \code{as.IDate.default}, arguments are passed to \code{as.Date}. For
-    \code{as.ITime.default}, arguments are passed to \code{as.POSIXlt}.}
+  \item{\dots}{arguments to be passed to or from other methods.
+    For \code{as.IDate.default}, arguments are passed to \code{as.Date}.
+    For \code{as.ITime.default}, arguments are passed to \code{as.POSIXlt}.
+    See Details for the special case of \code{round.IDate}.}
   \item{tz}{time zone (see \code{strptime}).}
   \item{date}{date object convertible with \code{as.IDate}.}
   \item{time}{time-of-day object convertible with \code{as.ITime}.}
@@ -169,8 +170,17 @@ be used, but these return character values, so they must be converted to
 factors for use with data.table. \code{isoweek} is ISO 8601-consistent.
 
 The \code{round} method for IDate's is useful for grouping and plotting.
-It can round to weeks, months, quarters, and years. Similarly, the \code{round}
-and \code{trunc} methods for ITime's are useful for grouping and plotting.
+It can round to weeks, months, quarters, and years. In the case of weeks,
+a "special" argument \code{week_start} is available \emph{on certain R versions\
+where the \code{round} generic allows this extension}. Unfortunately earlier
+R versions (e.g. up through R 4.3.3) do not allow more than one argument to \code{round}.
+Where available, this argument controls when the week starts. Like \code{wday()},
+1 means Sunday and 7 means Saturday; character strings naming the weekday (in English)
+are also converted. The default, \code{"Jan 1"}, means weeks should be aligned to the
+beginning of the year. Note that this default implies dates coming at the end of the year
+will wind up with fewer than 7 days mapping to the same rounded week start.
+
+Similarly, the \code{round} and \code{trunc} methods for ITime's are useful for grouping and plotting.
 They can round or truncate to hours and minutes.
 Note for ITime's with 30 seconds, rounding is inconsistent due to rounding off a 5.
 See 'Details' in \code{\link{round}} for more information.
