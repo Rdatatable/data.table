@@ -103,6 +103,7 @@ round_weeks = function(x, week_start) {
 ## round.IDate = function (x, digits, units=digits, ...) {
 ##     if (missing(digits)) digits = units # workaround to provide a units argument to match the round generic and round.POSIXt
 ##     units = match.arg(digits, c("weeks", "months", "quarters", "years"))
+# TODO(R>=4.4.0): Put week_start directly into the method signature.
 round.IDate = function (x, digits=c("weeks", "months", "quarters", "years"), ...) {
   units = match.arg(digits)
   as.IDate(switch(units,
