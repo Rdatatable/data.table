@@ -18425,3 +18425,8 @@ dt = data.table(a = 1L)
 test(2252.1, dt[, b:=2L], error = "\\[ was called on a data.table.*not data.table-aware.*':='")
 test(2252.2, dt[, let(b=2L)], error = "\\[ was called on a data.table.*not data.table-aware.*'let'")
 rm(.datatable.aware)
+
+# passing a function in env= doesn't trip up processing 'j', #6026
+DT=data.table(a=1:2, b=3:4)
+test(2253.1, DT[, builtin(b), env=list(builtin=sum)], 7L)
+test(2253.2, DT[, closure(b), env=list(closure=function(x) sum(x))], 7L)

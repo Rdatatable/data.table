@@ -1400,7 +1400,7 @@ replace_dot_alias = function(e) {
       .Call(Cassign,x,irows,cols,newnames,jval)
       return(suppPrint(x))
     }
-    if ((is.call(jsub) && jsub[[1L]] != "get" && is.list(jval) && !is.object(jval)) || !missingby) {
+    if ((is.call(jsub) && format(jsub[[1L]]) != "get" && is.list(jval) && !is.object(jval)) || !missingby) {
       # is.call: selecting from a list column should return list
       # is.object: for test 168 and 168.1 (S4 object result from ggplot2::qplot). Just plain list results should result in data.table
 
@@ -1626,25 +1626,25 @@ replace_dot_alias = function(e) {
         jsub = as.call(c(quote(list), lapply(sdvars, as.name)))
         jvnames = sdvars
       }
-    } else if (length(as.character(jsub[[1L]])) == 1L) {  # Else expect problems with <jsub[[1L]] == >
+    } else if (is.name(jsub[[1L]])) {  # Else expect problems with <jsub[[1L]] == >
       # g[[ only applies to atomic input, for now, was causing #4159. be sure to eval with enclos=parent.frame() for #4612
       subopt = length(jsub) == 3L &&
-        (jsub[[1L]] == "[" ||
-           (jsub[[1L]] == "[[" && is.name(jsub[[2L]]) && eval(call('is.atomic', jsub[[2L]]), x, parent.frame()))) &&
+        (jsub %iscall% "[" ||
+           (jsub %iscall% "[[" && is.name(jsub[[2L]]) && eval(call('is.atomic', jsub[[2L]]), x, parent.frame()))) &&
         (is.numeric(jsub[[3L]]) || jsub[[3L]] == ".N")
-      headopt = jsub[[1L]] == "head" || jsub[[1L]] == "tail"
-      firstopt = jsub[[1L]] == "first" || jsub[[1L]] == "last" # fix for #2030
+      headopt = jsub %iscall% c("head", "tail")
+      firstopt = jsub %iscall% c("first", "last") # fix for #2030
       if ((length(jsub) >= 2L && jsub[[2L]] == ".SD") &&
           (subopt || headopt || firstopt)) {
         if (headopt && length(jsub)==2L) jsub[["n"]] = 6L # head-tail n=6 when missing #3462
         # optimise .SD[1] or .SD[2L]. Not sure how to test .SD[a] as to whether a is numeric/integer or a data.table, yet.
         jsub = as.call(c(quote(list), lapply(sdvars, function(x) { jsub[[2L]] = as.name(x); jsub })))
         jvnames = sdvars
-      } else if (jsub[[1L]]=="lapply" && jsub[[2L]]==".SD" && length(xcols)) {
+      } else if (jsub %iscall% "lapply" && jsub[[2L]]==".SD" && length(xcols)) {
         deparse_ans = .massageSD(jsub)
         jsub = deparse_ans[[1L]]
         jvnames = deparse_ans[[2L]]
-      } else if (jsub[[1L]] == "c" && length(jsub) > 1L) {
+      } else if (jsub %iscall% "c" && length(jsub) > 1L) {
         # TODO, TO DO: raise the checks for 'jvnames' earlier (where jvnames is set by checking 'jsub') and set 'jvnames' already.
         # FR #2722 is just about optimisation of j=c(.N, lapply(.SD, .)) that is taken care of here.
         # FR #735 tries to optimise j-expressions of the form c(...) as long as ... contains
@@ -1749,7 +1749,7 @@ replace_dot_alias = function(e) {
         GForce = FALSE
       } else {
         # Apply GForce
-        if (jsub[[1L]]=="list") {
+        if (jsub %iscall% "list") {
           GForce = TRUE
           for (ii in seq.int(from=2L, length.out=length(jsub)-1L)) {
             if (!.gforce_ok(jsub[[ii]], SDenv$.SDall)) {GForce = FALSE; break}
@@ -1757,7 +1757,7 @@ replace_dot_alias = function(e) {
         } else
           GForce = .gforce_ok(jsub, SDenv$.SDall)
         if (GForce) {
-          if (jsub[[1L]]=="list")
+          if (jsub %iscall% "list")
             for (ii in seq_along(jsub)[-1L]) {
               if (is.N(jsub[[ii]])) next; # For #334
               jsub[[ii]] = .gforce_jsub(jsub[[ii]], names_x)
@@ -1775,7 +1775,7 @@ replace_dot_alias = function(e) {
       # Still do the old speedup for mean, for now
       nomeanopt=FALSE  # to be set by .optmean() using <<- inside it
       oldjsub = jsub
-      if (jsub[[1L]]=="list") {
+      if (jsub %iscall% "list") {
         # Addressing #1369, #2949 and #1974. This used to be 30s (vs 0.5s) with 30K elements items in j, #1470. Could have been is.N() and/or the for-looped if()
         # jsub[[1]]=="list" so the first item of todo will always be FALSE
         todo = sapply(jsub, `%iscall%`, 'mean')
@@ -1783,7 +1783,7 @@ replace_dot_alias = function(e) {
           w = which(todo)
           jsub[w] = lapply(jsub[w], .optmean)
         }
-      } else if (jsub[[1L]]=="mean") {
+      } else if (jsub %iscall% "mean") {
         jsub = .optmean(jsub)
       }
       if (nomeanopt) {
@@ -1863,7 +1863,7 @@ replace_dot_alias = function(e) {
          (q[[1L]]) %chin% c("ghead", "gtail") && q3!=1) q3
         else 0
       }
-      if (jsub[[1L]] == "list"){
+      if (jsub %iscall% "list"){
         q3 = max(sapply(jsub, headTail_arg))
       } else if (length(jsub)==3L) {
         q3 = headTail_arg(jsub)
@@ -1965,13 +1965,9 @@ replace_dot_alias = function(e) {
   setalloccol(ans)   # TODO: overallocate in dogroups in the first place and remove this line
 }
 
-# What's the name of the top-level call in 'j'? is.name() check is required for cases like #6026 with complex calls that can't be cast to character
-root_name = function(jsub) {
-  if (!is.call(jsub)) return("")
-  if (is.name(j1 <- jsub[[1L]])) return(as.character(j1))
-  if (j1 %iscall% "(") return("(") # needed to prevent with=FALSE from triggering for test 1128
-  ""
-}
+# What's the name of the top-level call in 'j'?
+# NB: earlier, we used 'as.character()' but that fails for closures/builtins (#6026).
+root_name = function(jsub) if (is.call(jsub)) format(jsub[[1L]]) else ""
 
 DT = function(x, ...) {  #4872
   old = getOption("datatable.optimize")
