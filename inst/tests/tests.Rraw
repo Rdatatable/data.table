@@ -1666,8 +1666,8 @@ test(536, DT[,sum(v),by=a], data.table(a=c(1L,3L,2L),V1=c(4L,7L,10L)))  # retain
 ans = data.table(a=1:3,V1=c(4L,10L,7L),key="a")
 test(537, DT[,sum(v),keyby=a], ans)
 test(538, DT[,sum(v),keyby="a"], ans)
-var="a"
-test(539, DT[,sum(v),keyby=eval(var)], ans)
+byvar="a"
+test(539, DT[,sum(v),keyby=eval(byvar)], ans)
 a=quote(a%%2L)
 test(540, DT[,sum(v),by=eval(a)], data.table(a=1:0,V1=c(11L,10L)))
 test(541, DT[,sum(v),keyby=eval(a)], data.table(a=0:1,V1=c(10L,11L),key="a"))
@@ -3394,8 +3394,8 @@ test(1064, DT[integer(0), list(x2=x), by=x], output="Empty data.table (0 rows an
 
 # bug #2445 fix - := fails when subsetting yields NAs and with=FALSE
 X = data.table(A=1:3, B=1:6, key="A")
-var <- "B"
-test(1065, X[J(2:5), (var):=22L], data.table(A=rep(1:3, each=2), B=c(1L,4L,rep(22L,4)), key="A"))
+jvar <- "B"
+test(1065, X[J(2:5), (jvar):=22L], data.table(A=rep(1:3, each=2), B=c(1L,4L,rep(22L,4)), key="A"))
 
 # fread single unnamed colClasses
 f = "A,B,C,D\n1,3,5,7\n2,4,6,8\n"
@@ -14014,6 +14014,7 @@ var = "b"
 test(1973.3, DT[K, c(var, "FOO")], c("b","FOO"))
 test(1973.4, DT[K, c(..var, "FOO")], ans<-data.table(b=5:6, FOO=9L))
 test(1973.5, DT[K, c(var, "FOO"), with=FALSE], ans)
+rm("var") # avoid masking stats::var
 
 # no error when j is supplied but inherits missingness from caller
 DT = data.table(a=1:3, b=4:6)
@@ -18430,4 +18431,5 @@ rm(.datatable.aware)
 DT=data.table(a=1:2, b=3:4)
 test(2253.1, DT[, builtin(b), env=list(builtin=sum)], 7L)
 test(2253.2, DT[, closure(b), env=list(closure=var)], 0.5)
-test(2253.3, DT[, lambda(b), env=list(lambda=function(x) sum(x))], 7L)
+test(2253.3, DT[, closure(b), env=list(closure=stats::var)], 0.5)
+test(2253.4, DT[, lambda(b), env=list(lambda=function(x) sum(x))], 7L)
