@@ -32,7 +32,7 @@
 
   \code{setDTthreads()} affects \code{data.table} only and does not change R itself or other packages using OpenMP. We have followed the advice of section 1.2.1.1 in the R-exts manual: "\ldots or, better, for the regions in your code as part of their specification\ldots num_threads(nthreads)\ldots That way you only control your own code and not that of other OpenMP users." Every parallel region in data.table contain a \code{num_threads(getDTthreads())} directive. This is mandated by a \code{grep} in data.table's quality control script.
 
-  \code{setDTthreads(0)} is the same as \code{setDTthreads(percent=100)}; i.e. use all logical CPUs, subject to \code{Sys.getenv("OMP_THREAD_LIMIT")}. Please note again that CRAN's daily test system sets \code{OMP_THREAD_LIMIT} to 2, so developers of CRAN packages should never change \code{OMP_THREAD_LIMIT} inside their package to a value greater than 2.
+  \code{setDTthreads(0)} is the same as \code{setDTthreads(percent=100)}; i.e. use all logical CPUs, subject to \code{Sys.getenv("OMP_THREAD_LIMIT")}. Please note again that developers of CRAN packages should never change \code{OMP_THREAD_LIMIT} inside their package to a value greater than 2 as CRAN very strictly enforces limits on automated parallelism in packages.
 
   Internally parallelized code is used in the following places:
 
