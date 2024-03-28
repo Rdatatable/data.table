@@ -1967,7 +1967,7 @@ replace_dot_alias = function(e) {
 
 # What's the name of the top-level call in 'j'?
 # NB: earlier, we used 'as.character()' but that fails for closures/builtins (#6026).
-root_name = function(jsub) if (is.call(jsub)) paste(format(jsub[[1L]]), collapse = " ") else ""
+root_name = function(jsub) if (is.call(jsub)) paste(deparse(jsub[[1L]]), collapse = " ") else ""
 
 DT = function(x, ...) {  #4872
   old = getOption("datatable.optimize")

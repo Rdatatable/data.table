@@ -152,7 +152,7 @@ is_utc = function(tz) {
 "%iscall%" = function(e, f) {
   if (!is.call(e)) return(FALSE)
   if (is.name(e1 <- e[[1L]])) return(e1 %chin% f)
-  paste(format(e1), collapse = " ") %chin% f # complicated cases e.g. a closure/builtin on LHS of call; note that format() is much (e.g. 40x) slower than as.character()
+  paste(deparse(e1), collapse = " ") %chin% f # complicated cases e.g. a closure/builtin on LHS of call; note that format() is much (e.g. 40x) slower than as.character()
 }
 
 # nocov start #593 always return a data.table
