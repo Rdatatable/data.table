@@ -3443,7 +3443,7 @@ test(1078.3, a$x, rep(1:5,each=10))   # a$x would segfault before the fix to rbi
 # data.table() shouldn't retain column names, root cause of #103
 x = 1:5
 names(x) = letters[1:5]
-DF = data.frame(x=x, y=1:10)
+DF = suppressWarnings(data.frame(x=x, y=1:10))
 DT = data.table(x=x, y=1:10)
 # NB simplified from earlier test -- we just want to be sure the contents of DF & DT are the same, esp. w.r.t. named vectors as columns.
 test(1079, list(DT$x, DT$y), list(DF$x, DF$y))
