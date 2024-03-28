@@ -2124,8 +2124,7 @@ test(695, DT[a>2,sum(c),by=b%%2L], data.table(b=1:0,V1=c(34L,42L)))
 test(696, DT[a>2,sum(c),by=(b+1)%%2], data.table(b=c(0,1),V1=c(34L,42L)))
 
 # Test subset and %chin% crash with non-character input, #2131
-test(697, 4 %chin% letters, error="type")
-test(698, 4L %chin% letters, error="type")
+# tests 697, 698 tested that non-character on LHS of %chin% is an error, but #4711 does explicit as.character() to LHS
 test(699, "a" %chin% 4, error="type")
 DT = data.table(aa=1:6,bb=7:12)
 test(700, subset(DT,select="aa"), DT[,list(aa)])
