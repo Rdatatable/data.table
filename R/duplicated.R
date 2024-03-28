@@ -74,7 +74,7 @@ unique.data.table = function(x, incomparables=FALSE, fromLast=FALSE, by=seq_alon
 ## unique.data.table has been refactored to simply call duplicated.data.table
 ## making the refactor unnecessary, but let's leave it here just in case
 .duplicated.helper = function(x, by) {
-  cols = colnamesInt(x, by, check_dups=FALSE, source = "While matching column names from 'by' to columns in 'x'")
+  cols = colnamesInt(x, by, check_dups=FALSE)
   use.keyprefix = if (is.null(by)) FALSE else {
     haskey(x) &&
       length(by) <= length(key(x)) &&
