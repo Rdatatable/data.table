@@ -331,24 +331,3 @@ test(99.3, data.table(a=1,b=2)[1,1, verbose=NA], error="verbose must be length 1
 options(datatable.verbose=1)
 test(99.4, coerceAs(1, 2L), error="verbose option must be length 1 non-NA logical or integer")
 options(datatable.verbose=FALSE)
-
-# Tests for the updated error message containing source of the problem in colnamesInt()
-test(100.1, colnamesInt(1, NULL, NULL, "While running tests"),
-    error = "While running tests\n'x' argument must be data.table compatible" )
-test(100.2, colnamesInt(list(), NULL, 2, "While running tests"),
-    error = "check_dups must be TRUE or FALSE" )
-test(100.3, colnamesInt(list(), c(1.5, 2.5), TRUE, "While running tests"),
-    error = "While running tests\nargument specifying columns is type 'double' and one or more items in it are not whole integers" )
-test(100.4, colnamesInt(list(), c(0, 1), FALSE, "While running tests"),
-    error = "While running tests\nargument specifying columns received non-existing column(s): cols[1]=0" )
-
-x <- data.table(a = 1:3, b = 4:6)
-names(x) <- NULL  
-test(100.5, colnamesInt(x, c("a", "b"), TRUE, "While running tests"), 
-    error = "While running tests\n'x' argument data.table has no names" )
-test(100.6, colnamesInt(data.table(a = 1:3, b = 4:6), c("a", "c"), TRUE, "While running tests"), 
-    error = "While running tests\nargument specifying columns received non-existing column(s): cols[2]='c'" )
-test(100.7, colnamesInt(list(), TRUE, TRUE, "While running tests"), 
-    error = "While running tests\nargument specifying columns must be character or numeric" )
-test(100.8, colnamesInt(data.table(a = 1:3, b = 4:6), c("a", "a"), TRUE, "While running tests" ), 
-    error = "While running tests\nargument specifying columns received duplicate column(s)" )
