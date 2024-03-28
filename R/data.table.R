@@ -1400,7 +1400,7 @@ replace_dot_alias = function(e) {
       .Call(Cassign,x,irows,cols,newnames,jval)
       return(suppPrint(x))
     }
-    if ((is.call(jsub) && format(jsub[[1L]]) != "get" && is.list(jval) && !is.object(jval)) || !missingby) {
+    if ((is.call(jsub) && !jsub %iscall% "get" && is.list(jval) && !is.object(jval)) || !missingby) {
       # is.call: selecting from a list column should return list
       # is.object: for test 168 and 168.1 (S4 object result from ggplot2::qplot). Just plain list results should result in data.table
 
@@ -1967,7 +1967,7 @@ replace_dot_alias = function(e) {
 
 # What's the name of the top-level call in 'j'?
 # NB: earlier, we used 'as.character()' but that fails for closures/builtins (#6026).
-root_name = function(jsub) if (is.call(jsub)) format(jsub[[1L]]) else ""
+root_name = function(jsub) if (is.call(jsub)) paste(format(jsub[[1L]]), collapse = " ") else ""
 
 DT = function(x, ...) {  #4872
   old = getOption("datatable.optimize")
