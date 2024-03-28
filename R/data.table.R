@@ -1969,7 +1969,7 @@ replace_dot_alias = function(e) {
 root_name = function(jsub) {
   if (!is.call(jsub)) return("")
   if (is.name(j1 <- jsub[[1L]])) return(as.character(j1))
-  if (j1 %iscall% "(") return("(")
+  if (j1 %iscall% "(") return("(") # needed to prevent with=FALSE from triggering for test 1128
   ""
 }
 
