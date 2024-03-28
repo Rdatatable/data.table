@@ -2,7 +2,7 @@
 \alias{fread}
 \title{ Fast and friendly file finagler }
 \description{
-   Similar to \code{read.table} but faster and more convenient. All controls such as \code{sep}, \code{colClasses} and \code{nrows} are automatically detected.
+   Similar to \code{\link[utils:read.csv]{read.csv()}} and \code{\link[utils:read.delim]{read.delim()}} but faster and more convenient. All controls such as \code{sep}, \code{colClasses} and \code{nrows} are automatically detected.
 
    \code{bit64::integer64}, \code{\link{IDate}}, and \code{\link{POSIXct}} types are also detected and read directly without needing to read as character before converting.
 
@@ -53,7 +53,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC"
   \item{encoding}{ default is \code{"unknown"}. Other possible options are \code{"UTF-8"} and \code{"Latin-1"}.  Note: it is not used to re-encode the input, rather enables handling of encoded strings in their native encoding. }
   \item{quote}{ By default (\code{"\""}), if a field starts with a double quote, \code{fread} handles embedded quotes robustly as explained under \code{Details}. If it fails, then another attempt is made to read the field \emph{as is}, i.e., as if quotes are disabled. By setting \code{quote=""}, the field is always read as if quotes are disabled. It is not expected to ever need to pass anything other than \"\" to quote; i.e., to turn it off. }
   \item{strip.white}{ default is \code{TRUE}. Strips leading and trailing whitespaces of unquoted fields. If \code{FALSE}, only header trailing spaces are removed. }
-  \item{fill}{logical (default is \code{FALSE}). If \code{TRUE} then in case the rows have unequal length, blank fields are implicitly filled.}
+  \item{fill}{logical or integer (default is \code{FALSE}). If \code{TRUE} then in case the rows have unequal length, number of columns is estimated and blank fields are implicitly filled. If an integer is provided it is used as an upper bound for the number of columns. }
   \item{blank.lines.skip}{\code{logical}, default is \code{FALSE}. If \code{TRUE} blank lines in the input are ignored.}
   \item{key}{Character vector of one or more column names which is passed to \code{\link{setkey}}. It may be a single comma separated string such as \code{key="x,y,z"}, or a vector of names such as \code{key=c("x","y","z")}. Only valid when argument \code{data.table=TRUE}. Where applicable, this should refer to column names given in \code{col.names}. }
   \item{index}{ Character vector or list of character vectors of one or more column names which is passed to \code{\link{setindexv}}. As with \code{key}, comma-separated notation like \code{index="x,y,z"} is accepted for convenience. Only valid when argument \code{data.table=TRUE}. Where applicable, this should refer to column names given in \code{col.names}. }
@@ -88,15 +88,15 @@ On Windows, "French_France.1252" is tried which should be available as standard 
 When \code{quote} is a single character,
 
   \itemize{
-      \item{Spaces and other whitespace (other than \code{sep} and \code{\\n}) may appear in unquoted character fields, e.g., \code{\dots,2,Joe Bloggs,3.14,\dots}.}
+      \item Spaces and other whitespace (other than \code{sep} and \code{\\n}) may appear in unquoted character fields, e.g., \code{\dots,2,Joe Bloggs,3.14,\dots}.
 
-      \item{When \code{character} columns are \emph{quoted}, they must start and end with that quoting character immediately followed by \code{sep} or \code{\\n}, e.g., \code{\dots,2,"Joe Bloggs",3.14,\dots}.
+      \item When \code{character} columns are \emph{quoted}, they must start and end with that quoting character immediately followed by \code{sep} or \code{\\n}, e.g., \code{\dots,2,"Joe Bloggs",3.14,\dots}.
 
       In essence quoting character fields are \emph{required} only if \code{sep} or \code{\\n} appears in the string value. Quoting may be used to signify that numeric data should be read as text. Unescaped quotes may be present in a quoted field, e.g., \code{\dots,2,"Joe, "Bloggs"",3.14,\dots}, as well as escaped quotes, e.g., \code{\dots,2,"Joe \",Bloggs\"",3.14,\dots}.
 
       If an embedded quote is followed by the separator inside a quoted field, the embedded quotes up to that point in that field must be balanced; e.g. \code{\dots,2,"www.blah?x="one",y="two"",3.14,\dots}.
 
-      On those fields that do not satisfy these conditions, e.g., fields with unbalanced quotes, \code{fread} re-attempts that field as if it isn't quoted. This is quite useful in reading files that contains fields with unbalanced quotes as well, automatically.}
+      On those fields that do not satisfy these conditions, e.g., fields with unbalanced quotes, \code{fread} re-attempts that field as if it isn't quoted. This is quite useful in reading files that contains fields with unbalanced quotes as well, automatically.
   }
 
 To read fields \emph{as is} instead, use \code{quote = ""}.
@@ -106,16 +106,16 @@ To read fields \emph{as is} instead, use \code{quote = ""}.
 Currently, the \code{yaml} setting is somewhat inflexible with respect to incorporating metadata to facilitate file reading. Information on column classes should be stored at the top level under the heading \code{schema} and subheading \code{fields}; those with both a \code{type} and a \code{name} sub-heading will be merged into \code{colClasses}. Other supported elements are as follows:
 
   \itemize{
-    \item{ \code{sep} (or alias \code{delimiter}) }
-    \item{ \code{header} }
-    \item{ \code{quote} (or aliases \code{quoteChar}, \code{quote_char}) }
-    \item{ \code{dec} (or alias \code{decimal}) }
-    \item{ \code{na.strings} }
+    \item \code{sep} (or alias \code{delimiter}) 
+    \item \code{header} 
+    \item \code{quote} (or aliases \code{quoteChar}, \code{quote_char}) 
+    \item \code{dec} (or alias \code{decimal}) 
+    \item \code{na.strings} 
   }
 
 \bold{File Download:}
 
-When \code{input} begins with http://, https://, ftp://, ftps://, or file://, \code{fread} detects this and \emph{downloads} the target to a temporary file (at \code{tempfile()}) before proceeding to read the file as usual. Secure URLS (ftps:// and https://) are downloaded with \code{curl::curl_download}; ftp:// and http:// paths are downloaded with \code{download.file} and \code{method} set to \code{getOption("download.file.method")}, defaulting to \code{"auto"}; and file:// is downloaded with \code{download.file} with \code{method="internal"}. NB: this implies that for file://, even files found on the current machine will be "downloaded" (i.e., hard-copied) to a temporary file. See \code{\link{download.file}} for more details.
+When \code{input} begins with http://, https://, ftp://, ftps://, or file://, \code{fread} detects this and \emph{downloads} the target to a temporary file (at \code{tempfile()}) before proceeding to read the file as usual. URLS (ftps:// and https:// as well as ftp:// and http://) paths are downloaded with \code{download.file} and \code{method} set to \code{getOption("download.file.method")}, defaulting to \code{"auto"}; and file:// is downloaded with \code{download.file} with \code{method="internal"}. NB: this implies that for file://, even files found on the current machine will be "downloaded" (i.e., hard-copied) to a temporary file. See \code{\link{download.file}} for more details.
 
 \bold{Shell commands:}
 
@@ -271,42 +271,13 @@ system.time(DT <- fread("testbig.csv"))
 
 all(mapply(all.equal, DF, DT))
 
-
-# Real data example (Airline data)
-# https://stat-computing.org/dataexpo/2009/the-data.html
-
-download.file("https://stat-computing.org/dataexpo/2009/2008.csv.bz2",
-              destfile="2008.csv.bz2")
-# 109MB (compressed)
-
-system("bunzip2 2008.csv.bz2")
-# 658MB (7,009,728 rows x 29 columns)
-
-colClasses = sapply(read.csv("2008.csv",nrows=100,stringsAsFactors=FALSE),class)
-# 4 character, 24 integer, 1 logical. Incorrect.
-
-colClasses = sapply(read.csv("2008.csv",nrows=200,stringsAsFactors=FALSE),class)
-# 5 character, 24 integer. Correct. Might have missed data only using 100 rows
-# since read.table assumes colClasses is correct.
-
-system.time(DF <- read.table("2008.csv", header=TRUE, sep=",",
-    quote="",stringsAsFactors=FALSE,comment.char="",nrows=7009730,
-    colClasses=colClasses))
-# 24.4 secs
-
-system.time(DT <- fread("2008.csv"))
-#  1.9 secs
-
-table(sapply(DT,class))
-# 5 character and 24 integer columns. Correct without needing to worry about colClasses
-# issue above.
-
-
 # Reads URLs directly :
 fread("https://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat")
 
 # Decompresses .gz and .bz2 automatically :
-fread("https://stat-computing.org/dataexpo/2009/1987.csv.bz2")
+fread("https://github.com/Rdatatable/data.table/raw/1.14.0/inst/tests/ch11b.dat.bz2")
+
+fread("https://github.com/Rdatatable/data.table/raw/1.14.0/inst/tests/issue_785_fread.txt.gz")
 
 }
 }

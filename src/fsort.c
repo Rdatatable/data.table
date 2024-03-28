@@ -101,10 +101,10 @@ int qsort_cmp(const void *a, const void *b) {
 SEXP fsort(SEXP x, SEXP verboseArg) {
   double t[10];
   t[0] = wallclock();
-  if (!isLogical(verboseArg) || LENGTH(verboseArg)!=1 || LOGICAL(verboseArg)[0]==NA_LOGICAL)
-    error(_("verbose must be TRUE or FALSE"));
+  if (!IS_TRUE_OR_FALSE(verboseArg))
+    error(_("%s must be TRUE or FALSE"), "verbose");
   Rboolean verbose = LOGICAL(verboseArg)[0];
-  if (!isNumeric(x)) error(_("x must be a vector of type 'double' currently"));
+  if (!isNumeric(x)) error(_("x must be a vector of type double currently"));
   // TODO: not only detect if already sorted, but if it is, just return x to save the duplicate
 
   SEXP ansVec = PROTECT(allocVector(REALSXP, xlength(x)));
@@ -165,7 +165,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   int MSBNbits = maxBit > 15 ? 16 : maxBit+1;       // how many bits make up the MSB
   int shift = maxBit + 1 - MSBNbits;                // the right shift to leave the MSB bits remaining
   size_t MSBsize = 1LL<<MSBNbits;                   // the number of possible MSB values (16 bits => 65,536)
-  if (verbose) Rprintf(_("maxBit=%d; MSBNbits=%d; shift=%d; MSBsize=%d\n"), maxBit, MSBNbits, shift, MSBsize);
+  if (verbose) Rprintf(_("maxBit=%d; MSBNbits=%d; shift=%d; MSBsize=%zu\n"), maxBit, MSBNbits, shift, MSBsize);
 
   uint64_t *counts = (uint64_t *)R_alloc(nBatch*MSBsize, sizeof(uint64_t));
   memset(counts, 0, nBatch*MSBsize*sizeof(uint64_t));
@@ -242,11 +242,11 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
 
     if (verbose) {
       Rprintf(_("Top 20 MSB counts: ")); for(int i=0; i<MIN(MSBsize,20); i++) Rprintf(_("%"PRId64" "), (int64_t)msbCounts[order[i]]); Rprintf(_("\n"));
-      Rprintf(_("Reduced MSBsize from %d to "), MSBsize);
+      Rprintf(_("Reduced MSBsize from %zu to "), MSBsize);
     }
     while (MSBsize>0 && msbCounts[order[MSBsize-1]] < 2) MSBsize--;
     if (verbose) {
-      Rprintf(_("%d by excluding 0 and 1 counts\n"), MSBsize);
+      Rprintf(_("%zu by excluding 0 and 1 counts\n"), MSBsize);
     }
 
     bool failed=false, alloc_fail=false, non_monotonic=false; // shared bools only ever assigned true; no need for atomic or critical assign
