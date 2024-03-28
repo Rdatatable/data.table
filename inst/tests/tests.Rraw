@@ -18425,3 +18425,8 @@ dt = data.table(a = 1L)
 test(2252.1, dt[, b:=2L], error = "\\[ was called on a data.table.*not data.table-aware.*':='")
 test(2252.2, dt[, let(b=2L)], error = "\\[ was called on a data.table.*not data.table-aware.*'let'")
 rm(.datatable.aware)
+
+# split(by = ., sep = ..) works like split(f= ., sep = ..), #5417
+x = data.table(rep(1:2, each=5L), 1:5, 1:10)
+test(2253.1, names(split(x, by = c("V1", "V2"), sep = "|")), sort(names(split(x, list(x$V1, x$V2), sep = "|"))))
+test(2253.2, names(split(x, by = c("V1", "V2"), sep = "||")), sort(names(split(x, list(x$V1, x$V2), sep = "||"))))
