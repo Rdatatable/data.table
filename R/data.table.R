@@ -253,7 +253,7 @@ replace_dot_alias = function(e) {
   }
   if (!missing(j)) {
     jsub = replace_dot_alias(jsub)
-    root = if (is.call(jsub)) as.character(jsub[[1L]])[1L] else ""
+    root = root_name(jsub)
     if (root == ":" ||
         (root %chin% c("-","!") && jsub[[2L]] %iscall% '(' && jsub[[2L]][[2L]] %iscall% ':') ||
         ( (!length(av<-all.vars(jsub)) || all(startsWith(av, ".."))) &&
@@ -296,7 +296,7 @@ replace_dot_alias = function(e) {
     if (root=="{") {
       if (length(jsub) == 2L) {
         jsub = jsub[[2L]]  # to allow {} wrapping of := e.g. [,{`:=`(...)},] [#376]
-        root = if (is.call(jsub)) as.character(jsub[[1L]])[1L] else ""
+        root = root_name(jsub)
       } else if (length(jsub) > 2L && jsub[[2L]] %iscall% ":=") {
         #2142 -- j can be {} and have length 1
         stopf("You have wrapped := with {} which is ok but then := must be the only thing inside {}. You have something else inside {} as well. Consider placing the {} on the RHS of := instead; e.g. DT[,someCol:={tmpVar1<-...;tmpVar2<-...;tmpVar1*tmpVar2}")
@@ -309,10 +309,8 @@ replace_dot_alias = function(e) {
       jsub = eval(jsub[[2L]], parent.frame(), parent.frame())  # this evals the symbol to return the dynamic expression
       if (is.expression(jsub)) jsub = jsub[[1L]]    # if expression, convert it to call
       # Note that the dynamic expression could now be := (new in v1.9.7)
-      root = if (is.call(jsub)) {
-        jsub = replace_dot_alias(jsub)
-        as.character(jsub[[1L]])[1L]
-      } else ""
+      jsub = replace_dot_alias(jsub)
+      root = root_name(jsub)
     }
     if (root == ":=" || root == "let") { # let(...) as alias for :=(...) (#3795)
       if (root == "let")
@@ -1966,6 +1964,9 @@ replace_dot_alias = function(e) {
   }
   setalloccol(ans)   # TODO: overallocate in dogroups in the first place and remove this line
 }
+
+# What's the name of the top-level call in 'j'? is.name() check is required for cases like #6026 with complex calls that can't be cast to character
+root_name = function(jsub) if (is.call(jsub) && is.name(j1 <- jsub[[1L]])) as.character(j1) else ""
 
 DT = function(x, ...) {  #4872
   old = getOption("datatable.optimize")
