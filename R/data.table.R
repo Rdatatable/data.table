@@ -1966,7 +1966,12 @@ replace_dot_alias = function(e) {
 }
 
 # What's the name of the top-level call in 'j'? is.name() check is required for cases like #6026 with complex calls that can't be cast to character
-root_name = function(jsub) if (is.call(jsub) && is.name(j1 <- jsub[[1L]])) as.character(j1) else ""
+root_name = function(jsub) {
+  if (!is.call(jsub)) return("")
+  if (is.name(j1 <- jsub[[1L]])) return(as.character(j1))
+  if (j1 %iscall% "(") return("(")
+  ""
+}
 
 DT = function(x, ...) {  #4872
   old = getOption("datatable.optimize")
