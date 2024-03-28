@@ -138,14 +138,16 @@ if (!test_longdouble) {
 # If the target condition only appears on certain platforms/R versions, this will return NULL
 #   whenever the code succeeds, or the message matcher wherever it fails. Thus we can flexibly
 #   pass e.g. 'warning = NULL | warning = <warning>' concisely as 'test(., warning = get_msg())'.
-# Three use cases:
+# Use cases:
 #   (1) match message exactly [missing delim]
 #   (2) match message pattern after dropping anything between delimeters [delim, fmt=FALSE]
 #   (3) function factory for matching messages exactly by substituting anything between delimeters [delim, fmt=TRUE]
+#   (4) function factory for matching messages exactly by substituting a generic string [fmt=string]
 get_msg = function(e, delim, fmt=FALSE) {
   condition = tryCatch({e; NULL}, error=identity, warning=identity)
   if (is.null(condition)) return(condition)
   msg = condition$message
+  if (is.character(fmt)) return(function(str) gsub(fmt, str, msg))
   if (missing(delim)) return(msg)
   if (length(delim) == 1L) delim[2L] = delim[1L]
   msg = gsub(
@@ -173,6 +175,9 @@ base_messages = list(
   cant_open_file = get_msg(suppressWarnings({con<-file(tempfile()); open(con, 'r')})),
   mixed_subscripts = get_msg(letters[-1:1]),
   maybe_invalid_old_posixct = get_msg(as.POSIXct("1893-12-28 05:15:36", tz = "")),
+  stopifnot = get_msg(stopifnot(FALSE), fmt="FALSE"),
+  not_yet_used = get_msg(.NotYetUsed("abc"), "'"),
+  date_fmt = get_msg(as.Date('xxx')),
   NULL
 )
 
@@ -6517,7 +6522,7 @@ for(t in seq_len(nrow(all))){
 options(datatable.optimize = Inf)
 
 # fread dec=',' e.g. France
-test(1439, fread("A;B\n1;2,34\n", dec="12"), error="nchar(dec) == 1L is not TRUE")
+test(1439, fread("A;B\n1;2,34\n", dec="12"), error=base_messages$stopifnot("nchar(dec) == 1L"))
 test(1440, fread("A;B\n8;2,34\n", dec="1"), data.table(A=8L, B="2,34"))
 test(1441, fread("A;B\n8;2,34\n", dec=","), data.table(A=8L, B=2.34))
 test(1442, fread("A;B\n1;2,34\n", sep=".", dec="."), error="sep == dec ('.') is not allowed")
@@ -7454,7 +7459,7 @@ test(1533.2, setkeyv(dt1, "x", verbose=TRUE), setkey(dt2, x), output = "forder t
 
 # remaining test for covering duplicated.data.table
 dt = data.table(x=1:5, y=6:10)
-test(1536, duplicated(dt, incomparables=TRUE), error = "argument 'incomparables != FALSE'")
+test(1536, duplicated(dt, incomparables=TRUE), error = base_messages$not_yet_used)
 
 # test for covering melt 100%
 test(1537 , names(melt(dt, id.vars=1L, variable.name = "x", value.name="x")), c("x", "x.1", "x.2"), output = "Duplicate column names")
@@ -8731,7 +8736,7 @@ test(1613.581, all(all.equal(x, y, ignore.row.order = FALSE, tolerance = 1), all
 test(1613.582, all(all.equal(x, y, ignore.row.order = FALSE, tolerance = sqrt(.Machine$double.eps)/2), all.equal(x, y, ignore.row.order = TRUE, tolerance = sqrt(.Machine$double.eps)/2)), warning = "Argument 'tolerance' was forced")
 
 # fix for #4042
-test(1613.59, all.equal.data.table(1L, 2L), error = "is.data.table(target) is not TRUE")
+test(1613.59, all.equal.data.table(1L, 2L), error = base_messages$stopifnot("is.data.table(target)"))
 test(1613.601, all.equal(data.table(a=1), data.frame(a=1)), "target is data.table, current is data.frame")
 test(1613.602, all.equal(data.table(a=1), data.frame(a=1), check.attributes = FALSE))
 test(1613.603, all.equal(data.table(a=1), list(a=1), check.attributes = FALSE))
@@ -9903,7 +9908,7 @@ test(1658.26, fwrite(DT), output='A,B\n2,\n,4\n3,5')
 test(1658.27, fwrite(DT, na="NA", verbose=TRUE), output='Writing bom .false., yaml .0 characters. and column names .true.*"A","B".*2,NA\nNA,4\n3,5')
 
 # wrong argument types
-test(1658.28, fwrite(ok_dt, 1), error="is.character\\(file\\).*not TRUE")
+test(1658.28, fwrite(ok_dt, 1), error=base_messages$stopifnot("is.character(file) && length(file) == 1L && !is.na(file)"))
 test(1658.29, fwrite(ok_dt, quote=123), error="identical\\(quote.*auto.*FALSE.*TRUE")
 test(1658.30, fwrite(ok_dt, sep="..."), error="nchar(sep)")
 test(1658.31, fwrite(ok_dt, qmethod=c("double", "double")), error="length(qmethod)")
@@ -10182,7 +10187,7 @@ test(1675.2, as.integer(B[A, bar := i.bar, on="foo"]$bar), c(1:2,NA,1:2,NA))
 # fwrite na arg segfault fix, #1725
 dt = data.table(x=1:2, y=c(NA,"a"))
 f = tempfile()
-test(1676.1, fwrite(dt, f, na=NULL), error="is not TRUE")
+test(1676.1, fwrite(dt, f, na=NULL), error=base_messages$stopifnot("length(na) == 1L"))
 fwrite(dt, f, na=NA)
 test(1676.2, fread(f), data.table(x=1:2, y=c(NA, "a")))
 unlink(f)
@@ -10788,7 +10793,7 @@ test(1732.7, fwrite(DT, quote='auto'), output='A,B\n,5\nNA,7\n"",0\nmonty,')
 test(1732.8, fwrite(DT, quote='auto', na="NA"), output='"A","B"\nNA,5\n"NA",7\n"",0\n"monty",NA')
 
 # dec=","
-test(1733.1, fwrite(data.table(pi),dec=","), error="dec != sep is not TRUE")
+test(1733.1, fwrite(data.table(pi),dec=","), error=base_messages$stopifnot("dec != sep"))
 test(1733.2, fwrite(data.table(c(1.2,-8.0,pi,67.99),1:4),dec=",",sep=";"),
            output="V1;V2\n1,2;1\n-8;2\n3,14159265358979;3\n67,99;4")
 
@@ -10980,7 +10985,7 @@ test(1743.123, fread("a,b\n1+3i,2015-01-01", colClasses=c(NA,"IDate")), data.tab
 
 ## Attempts to impose incompatible colClasses is a warning (not an error)
 ## and does not change the value of the columns
-test(1743.13, sapply(fread("a,b\n09/05/98,2015-01-01", colClasses = "Date"), class), y=c(a="character", b="Date"), warning="standard unambiguous format")
+test(1743.13, sapply(fread("a,b\n09/05/98,2015-01-01", colClasses = "Date"), class), y=c(a="character", b="Date"), warning=base_messages$date_fmt)
 
 ## Just invalid
 test(1743.14, sapply(fread("a,b\n2017-01-01,1", colClasses=c("foo", "integer")), class), c(a="character", b="integer"), warning="[nN]o method .*for .*foo")
