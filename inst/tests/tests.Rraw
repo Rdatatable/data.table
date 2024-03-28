@@ -18429,4 +18429,5 @@ rm(.datatable.aware)
 # passing a function in env= doesn't trip up processing 'j', #6026
 DT=data.table(a=1:2, b=3:4)
 test(2253.1, DT[, builtin(b), env=list(builtin=sum)], 7L)
-test(2253.2, DT[, closure(b), env=list(closure=function(x) sum(x))], 7L)
+test(2253.2, DT[, closure(b), env=list(closure=var)], 0.5)
+test(2253.3, DT[, lambda(b), env=list(lambda=function(x) sum(x))], 7L)

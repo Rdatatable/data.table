@@ -151,7 +151,7 @@ is_utc = function(tz) {
 # very nice idea from Michael to avoid expression repetition (risk) in internal code, #4226
 "%iscall%" = function(e, f) {
   if (!is.call(e)) return(FALSE)
-  if (is.name(e1 <- e[[1L]])) return(e %chin% f)
+  if (is.name(e1 <- e[[1L]])) return(e1 %chin% f)
   format(e1) %chin% f # complicated cases e.g. a closure/builtin on LHS of call; note that format() is much (e.g. 40x) slower than as.character()
 }
 
