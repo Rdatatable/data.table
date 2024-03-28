@@ -54,8 +54,6 @@
 
 7. Updated a test relying on `>` working for comparing language objects to a string, which will be deprecated by R, [#5977](https://github.com/Rdatatable/data.table/issues/5977); no user-facing effect. Thanks to R-core for continuously improving the language.
 
-8. Added a source argument to `colnamesInt`, to provide additional debug information about calling code, [#5039](https://github.com/Rdatatable/data.table/issues/5039).
-`colnamesInt` is the internal workhorse for converting column names to the corresponding column number in several places. Thanks to @MichaelChirico for the suggestion and @Nj221102 for the fix.
 
 # data.table [v1.15.0](https://github.com/Rdatatable/data.table/milestone/29)  (30 Jan 2024)
 
