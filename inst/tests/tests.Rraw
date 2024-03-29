@@ -161,6 +161,12 @@ get_msg = function(e, delim, fmt=FALSE) {
 base_messages = list(
   missing_object = get_msg(`__dt_test_missing_` + 1, "'", fmt=TRUE),
   missing_function = get_msg(`__dt_test_missing_`(), '"', fmt=TRUE),
+  missing_coerce_method = get_msg(delim = '"', {
+    old = options(useFancyQuotes = FALSE) # otherwise we get angled quotes, hard to match robustly
+    on.exit(options(old))
+    as(TRUE, 'foo')
+  }),
+  missing_dispatch_method = get_msg(conditionMessage(structure(1, class="foo")), '"'),
   invalid_arg_unary_operator = get_msg(-'a'),
   invalid_arg_binary_operator = get_msg(1 + 'a'),
   invalid_arg_sum = get_msg(sum('a'), c("\\(", "\\)"), fmt=TRUE),
@@ -177,7 +183,7 @@ base_messages = list(
   maybe_invalid_old_posixct = get_msg(as.POSIXct("1893-12-28 05:15:36", tz = "")),
   stopifnot = get_msg(stopifnot(FALSE), fmt="FALSE"),
   not_yet_used = get_msg(.NotYetUsed("abc"), "'"),
-  date_fmt = get_msg(as.Date('xxx')),
+  ambiguous_date_fmt = get_msg(as.Date('xxx')),
   NULL
 )
 
@@ -10985,10 +10991,12 @@ test(1743.123, fread("a,b\n1+3i,2015-01-01", colClasses=c(NA,"IDate")), data.tab
 
 ## Attempts to impose incompatible colClasses is a warning (not an error)
 ## and does not change the value of the columns
-test(1743.13, sapply(fread("a,b\n09/05/98,2015-01-01", colClasses = "Date"), class), y=c(a="character", b="Date"), warning=base_messages$date_fmt)
+test(1743.13, sapply(fread("a,b\n09/05/98,2015-01-01", colClasses = "Date"), class), y=c(a="character", b="Date"), warning=base_messages$ambiguous_date_fmt)
 
 ## Just invalid
-test(1743.14, sapply(fread("a,b\n2017-01-01,1", colClasses=c("foo", "integer")), class), c(a="character", b="integer"), warning="[nN]o method .*for .*foo")
+test(1743.14, options = c(useFancyQuotes = FALSE),
+     sapply(fread("a,b\n2017-01-01,1", colClasses=c("foo", "integer")), class), c(a="character", b="integer"),
+     warning=base_messages$missing_coerce_method)
 test(1743.15, sapply(fread("a,b\n2017-01-01,1", colClasses=c("foo", "integer")), class), c(a="character", b="integer"), warning="the column has been left as type .*character")
 test(1743.16, sapply(fread("a,b\n2017-01-01,2", colClasses=list(foo=1)), class), c(a="character", b="integer"), warning="the column has been left as type .*character")
 
@@ -12080,8 +12088,8 @@ txt = 'a,b\n ab,cd,ce\n abcdef\n hjkli \n'  # now auto detected as ncol 1 anyway
 test(1840.1, fread(txt), data.table("a,b" = c("ab,cd,ce","abcdef","hjkli")))
 write('a,b\n ab,cd,ce\nabc,def \n hj,kli  ', f<-tempfile())  # write to file to generate \r\n line ending on Windows, test 1840.6 below
 test(1840.2, fread(f), data.table("ab"=c("abc","hj"), "cd"=c("def","kli"), "ce"=NA), warning="Detected 3 column names but the data has 2.*Filling.*automatically")
-test(1840.3, fread(f, sep=NA), error="!is.na(sep) is not TRUE")
-test(1840.4, fread(f, sep=NA_character_), error="!is.na(sep) is not TRUE")
+test(1840.3, fread(f, sep=NA), error=base_messages$stopifnot("!is.na(sep)"))
+test(1840.4, fread(f, sep=NA_character_), error=base_messages$stopifnot("!is.na(sep)"))
 test(1840.5, fread(f, sep=""), ans<-data.table("a,b"=c("ab,cd,ce","abc,def","hj,kli")))
 test(1840.6, fread(f, sep="\n"), ans)
 test(1840.7, fread(f, sep=NULL), ans)
@@ -13296,7 +13304,7 @@ DT <- data.table(a=1, b=2, d=3)
 old <- c("a", "b", "c", "d")
 new <- c("A", "B", "C", "D")
 test(1955.1, setnames(DT, old, new, skip_absent=TRUE), data.table(A=1, B=2, D=3))
-test(1955.2, setnames(DT, old, new, skip_absent=0), error="is not")  # must be TRUE or FALSE
+test(1955.2, setnames(DT, old, new, skip_absent=0), error=base_messages$stopifnot("isTRUEorFALSE(skip_absent)"))
 test(1955.3, setnames(DT, "missing", "dummy", skip_absent=TRUE), DT)  # all missing
 test(1955.4, setnames(DT, c("D","missing","A"), c("dd","ignored","aa"), skip_absent=TRUE), data.table(aa=1, B=2, dd=3))  # different order with a missing
 test(1955.5, setnames(DT, "B", "bb", skip_absent=TRUE), data.table(aa=1, bb=2, dd=3)) # none missing so skip_absent not needed
@@ -13425,8 +13433,7 @@ test(1962.005, duplicated(DT, by = 'y'),
 test(1962.0061, duplicated(data.table(NULL)), logical(0L))
 test(1962.0062, duplicated(data.table(a = 1L), by = character()), FALSE)
 
-test(1962.007, unique(DT, incomparables = TRUE),
-     error = 'not used (yet)')
+test(1962.007, unique(DT, incomparables=TRUE), error=base_messages$not_yet_used)
 test(1962.008, unique(DT, fromLast = TRUE),
      data.table(x = c(1, 2, 3), key = 'x'))
 
@@ -13541,8 +13548,8 @@ test(1962.0482, forder(L), 3:1)
 test(1962.0483, forder(), NULL)
 setDT(DT)
 test(1962.049, forder(DT[ , 0L]), error = 'Attempting to order a 0-column')
-test(1962.050, forder(DT, decreasing = NA), error = 'isTRUEorFALSE(decreasing) is not TRUE')
-test(1962.051, forder(DT, decreasing = 1.4), error = 'isTRUEorFALSE(decreasing) is not TRUE')
+test(1962.050, forder(DT, decreasing = NA), error = base_messages$stopifnot('isTRUEorFALSE(decreasing)'))
+test(1962.051, forder(DT, decreasing = 1.4), error = base_messages$stopifnot('isTRUEorFALSE(decreasing)'))
 test(1962.052, forder(DT, NULL), 3:1)
 test(1962.053, forder(DT), 3:1)
 test(1962.054, forder(DT, ), 3:1)
@@ -13592,11 +13599,11 @@ DT = data.table(
             2.5, 3, 3, 3, 3, 3, 3, 2, 2.5, 3, 3)
 )
 setDF(DT)
-test(1962.068, rollup(DT), error = 'no applicable method')
+test(1962.068, rollup(DT), error=base_messages$missing_dispatch_method)
 test(1962.069, rollup.data.table(DT), error = 'must be a data.table object')
-test(1962.070, cube(DT), error = 'no applicable method')
+test(1962.070, cube(DT), error=base_messages$missing_dispatch_method)
 test(1962.071, cube.data.table(DT), error = 'must be a data.table object')
-test(1962.072, groupingsets(DT), error = 'no applicable method')
+test(1962.072, groupingsets(DT), error=base_messages$missing_dispatch_method)
 test(1962.073, groupingsets.data.table(DT), error = 'must be a data.table object')
 setDT(DT)
 test(1962.074, rollup(DT, by = 3L), error = "'by' must be a character vector")
@@ -14065,11 +14072,11 @@ test(1980, names(data.table(x)), "x")
 # crash when n="lead", #3354
 options(datatable.optimize=0L)
 DT = data.table( id = 1:5 , val = letters[1:5] )
-test(1981.1, DT[, new_col := shift(val, "lead")],      error="is.numeric(n) is not TRUE")
+test(1981.1, DT[, new_col := shift(val, "lead")],      error=base_messages$stopifnot("is.numeric(n)"))
 test(1981.2, DT[, new_col := shift(val, NA_integer_)], error="Item 1 of n is NA")
 options(datatable.optimize=Inf)
 DT = data.table( id = 1:5 , val = letters[1:5] )
-test(1981.3, DT[, new_col := shift(val, "lead")],      error="is.numeric(n) is not TRUE")
+test(1981.3, DT[, new_col := shift(val, "lead")],      error=base_messages$stopifnot("is.numeric(n)"))
 test(1981.4, DT[, new_col := shift(val, NA_integer_)], error="Item 1 of n is NA")
 
 # 1982 moved to benchmark.Rraw, #5517
@@ -17065,7 +17072,7 @@ if (inherits(x,"try-error")) {
   # this version of R doesn't have the fix linked to from #4762. That fix was made to R-devel in Oct 2020 when R-release was 4.0.3
   test(2159.09, min(DT[0L]), error="only.*numeric")
 } else {
-  test(2159.10, min(DT[0L]), Inf, warning="missing")
+  test(2159.10, min(DT[0L]), Inf, warning=base_messages$empty_min)
 }
 DT = data.table(x = c("a","b"))
 test(2159.11, typeof(as.matrix(DT)), "character")
@@ -17530,7 +17537,7 @@ test(2198.2, d1[d2, paste0("z", 1:2) := Y, on = "id", env = list(Y = as.list(pas
 test(2199.1, as.data.table(as.list(1:2))[, .SD,.SDcols=(-1L)],   data.table(V2=2L))
 test(2199.2, as.data.table(as.list(1:2))[, .SD,.SDcols=(-(1L))], data.table(V2=2L))
 test(2199.3, as.data.table(as.list(1:3))[, .SD,.SDcols=(-1L)],   data.table(V2=2L, V3=3L))
-test(2199.4, data.table(V1=-1L, V2=-2L, V3=-3L)[,.SD,.SDcols=-V2:-V1], error="not found")
+test(2199.4, data.table(V1=-1L, V2=-2L, V3=-3L)[,.SD,.SDcols=-V2:-V1], error=base_messages$missing_object('V2'))
 
 # setDF now drops index attributes, #4889
 d = data.table(a=1:100, b=1:100)
@@ -17573,7 +17580,7 @@ test(2203.15, tstrsplit(z, "/", type.convert=list(as.factor, as.numeric)), error
 test(2203.16, tstrsplit(z, "/", type.convert=list(as.integer=2L), keep=5L), error="keep.+contain integer.+between")
 test(2203.17, tstrsplit(w, "/", type.convert="4"), error="TRUE/FALSE.+function.+named list")
 test(2203.18, tstrsplit(w, "/", type.convert=c(TRUE, FALSE)), error="TRUE/FALSE.+function.+named list")
-test(2203.19, tstrsplit(w, "/", keep=integer()), error="keep.+contain integer.+between", ignore.warning="no non-missing")
+test(2203.19, tstrsplit(w, "/", keep=integer()), error="keep.+contain integer.+between", ignore.warning=c(base_messages$empty_min, base_messages$empty_max))
 test(2203.20, tstrsplit(w, "/", type.convert=list()), error="not support empty list")
 
 # set rownames as key directly in as.data.table, #4468
@@ -17729,7 +17736,7 @@ if (base::getRversion() >= "4.1.0") {
   test(2212.50, EVAL("df |> DT(df[, .I[which.max(mpg)], by=cyl]$V1)"),                 ans<-dt[c(4,20,25)])
   test(2212.51, EVAL("dt |> DT(dt[, .I[which.max(mpg)], by=cyl]$V1)"),                 ans)
   test(2212.52, EVAL("D  |> DT(D[, .I[which.max(mpg)], by=cyl]$V1)"),                  ans)
-  test(2212.53, EVAL("filter |> DT(filter[, .I[which.max(mpg)], by=cyl]$V1)"),         error="unused.*argument.*by.*cyl")  # R's [.data.frame error on filter[...]
+  test(2212.53, EVAL("filter |> DT(filter[, .I[which.max(mpg)], by=cyl]$V1)"),         error=base_messages$unused_arg("by = cyl"))  # R's [.data.frame error on filter[...]
   test(2212.54, EVAL("filter |> DT((filter |> DT(, .I[which.max(mpg)], by=cyl))$V1)"), as.data.frame(ans))
   rm(DT)
 }
@@ -18389,7 +18396,7 @@ test(2250.09, dt[, paste(names(.SD), 'max', sep = '_') := lapply(.SD, max), by =
 
 dt = data.table(a = 1:3, b = 5:7, grp = c('a', 'a', 'b'))
 test(2250.10, dt[1:2, paste(names(.SD), 'max', sep = '_') := lapply(.SD, max), by = grp], data.table(a = 1:3, b = 5:7, grp = c('a', 'a', 'b'), a_max = c(2L, 2L, NA_integer_), b_max = c(6L, 6L, NA_integer_)))
-test(2250.11, dt[, names(.SD(2)) := lapply(.SD, .I)], error = 'could not find function ".SD"')
+test(2250.11, dt[, names(.SD(2)) := lapply(.SD, .I)], error=base_messages$missing_function('.SD'))
 
 dt = data.table(a = 1:3, b = 5:7, grp = c('a', 'a', 'b'))
 test(2250.12, dt[, names(.SD) := lapply(.SD, \(x) x + b), .SDcols = "a"], data.table(a = 1:3 + 5:7, b = 5:7, grp = c('a', 'a', 'b')))
