@@ -151,7 +151,7 @@ get_msg = function(e, delim, fmt=FALSE) {
   if (missing(delim)) return(msg)
   if (length(delim) == 1L) delim[2L] = delim[1L]
   msg = gsub(
-    sprintf("%1$s[^%2$s]+%2$s", delim[1L], delim[2L]),
+    sprintf("%s[^%s]+%s", delim[1L], gsub("^\\[|\\]$", "", delim[2L]), delim[2L]), # NB; also allow dim to be a char class like ['"]
     sprintf("%s%s%s", delim[1L], if (fmt) "%s" else ".+", delim[2L]),
     msg
   )
@@ -166,7 +166,7 @@ base_messages = list(
     on.exit(options(old))
     as(TRUE, 'foo')
   }),
-  missing_dispatch_method = get_msg(conditionMessage(structure(1, class="foo")), '"'),
+  missing_dispatch_method = get_msg(conditionMessage(structure(1, class="foo")), '[\'"]'),
   invalid_arg_unary_operator = get_msg(-'a'),
   invalid_arg_binary_operator = get_msg(1 + 'a'),
   invalid_arg_sum = get_msg(sum('a'), c("\\(", "\\)"), fmt=TRUE),
@@ -182,7 +182,7 @@ base_messages = list(
   mixed_subscripts = get_msg(letters[-1:1]),
   maybe_invalid_old_posixct = get_msg(as.POSIXct("1893-12-28 05:15:36", tz = "")),
   stopifnot = get_msg(stopifnot(FALSE), fmt="FALSE"),
-  not_yet_used = get_msg(.NotYetUsed("abc"), "'"),
+  not_yet_used = get_msg(.NotYetUsed("abc"), "'", fmt=TRUE), # NB: need fmt= because the English message has '(yet)' --> parens in regex
   ambiguous_date_fmt = get_msg(as.Date('xxx')),
   NULL
 )
@@ -7465,7 +7465,7 @@ test(1533.2, setkeyv(dt1, "x", verbose=TRUE), setkey(dt2, x), output = "forder t
 
 # remaining test for covering duplicated.data.table
 dt = data.table(x=1:5, y=6:10)
-test(1536, duplicated(dt, incomparables=TRUE), error = base_messages$not_yet_used)
+test(1536, duplicated(dt, incomparables=TRUE), error = base_messages$not_yet_used('incomparables != FALSE'))
 
 # test for covering melt 100%
 test(1537 , names(melt(dt, id.vars=1L, variable.name = "x", value.name="x")), c("x", "x.1", "x.2"), output = "Duplicate column names")
@@ -13433,7 +13433,7 @@ test(1962.005, duplicated(DT, by = 'y'),
 test(1962.0061, duplicated(data.table(NULL)), logical(0L))
 test(1962.0062, duplicated(data.table(a = 1L), by = character()), FALSE)
 
-test(1962.007, unique(DT, incomparables=TRUE), error=base_messages$not_yet_used)
+test(1962.007, unique(DT, incomparables=TRUE), error=base_messages$not_yet_used('incomparables != FALSE'))
 test(1962.008, unique(DT, fromLast = TRUE),
      data.table(x = c(1, 2, 3), key = 'x'))
 
