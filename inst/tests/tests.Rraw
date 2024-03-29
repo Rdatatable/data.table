@@ -9,8 +9,6 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
     cat("This is dev mode and JIT is enabled (level ", tt, ") so there will be a brief pause around the first test.\n", sep="")
   rm_all = function() {}
   DTfun = DT ## otherwise DT would be re-defined by many tests
-  rm_all = function() {}
-  DTfun = DT ## otherwise DT would be re-defined by many tests
 } else {
   require(data.table)
   # Make symbols to the installed version's ::: so that we can i) test internal-only not-exposed R functions
