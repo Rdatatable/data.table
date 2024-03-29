@@ -84,21 +84,22 @@ EOF
 detect_openmp () {
 
   # First, try R CMD SHLIB to see if R can already compile
-  printf "%s" "* checking if R installation supports OpenMP without any extra hints... "
-  if "${R_HOME}/bin/R" CMD SHLIB test-omp.c > /dev/null 2>&1; then
-    echo "yes"
-    export R_OPENMP_ENABLED=1
-    return
-  else
-    echo "no"
-  fi
-
   # For Linux, try using '-fopenmp' as-is.
   if [ "$(uname)" = "Linux" ]; then
+
+    printf "%s" "* checking if R installation supports OpenMP without any extra hints... "
+    if "${R_HOME}/bin/R" CMD SHLIB test-omp.c > /dev/null 2>&1; then
+      echo "yes"
+      export R_OPENMP_ENABLED=1
+      return
+    else
+      echo "no"
+    fi
+
     printf "%s" "* checking if R installation supports openmp with \"-fopenmp\" flag... "
     if ${CC} ${CFLAGS} -fopenmp test-omp.c > /dev/null 2>&1; then
       echo "yes"
-      export SHLIB_OPENMP_CFLAGS="-fopenmp"
+      export PKG_CFLAGS="${PKG_CFLAGS} -fopenmp"
       export R_OPENMP_ENABLED=1
       return
     else
@@ -115,7 +116,7 @@ detect_openmp () {
     printf "%s" "* checking if R installation supports OpenMP with \"-Xclang -fopenmp\" ... "
     if CPPFLAGS="${CPPFLAGS} -Xclang -fopenmp" LDFLAGS="${LDFLAGS} -lomp" "${R_HOME}/bin/R" CMD SHLIB test-omp.c > /dev/null 2>&1; then
       echo "yes"
-      export SHLIB_OPENMP_CFLAGS="-Xclang -fopenmp"
+      export PKG_CFLAGS="${PKG_CFLAGS} -Xclang -fopenmp"
       export PKG_LIBS="${PKG_LIBS} -lomp"
       export R_OPENMP_ENABLED=1
     else
@@ -135,7 +136,7 @@ detect_openmp () {
       LIBOMP_LINK="-L${HOMEBREW_PREFIX}/opt/libomp/lib -lomp"
       if ${CC} ${CFLAGS} ${LIBOMP_INCLUDE} ${LIBOMP_LINK} test-omp.c > /dev/null 2>&1; then
         echo "yes"
-        export SHLIB_OPENMP_CFLAGS="${LIBOMP_INCLUDE}"
+        export PKG_CFLAGS="${PKG_CFLAGS} ${LIBOMP_INCLUDE}"
         export PKG_LIBS="${PKG_LIBS} ${LIBOMP_LINK}"
         export R_OPENMP_ENABLED=1
         return
