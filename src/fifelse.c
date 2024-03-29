@@ -77,7 +77,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
     const int *restrict pa   = LOGICAL(a);
     const int *restrict pb   = LOGICAL(b);
     const int pna = nonna ? LOGICAL(na)[0] : NA_LOGICAL;
-    #pragma omp parallel for num_threads(getDTthreads())
+    #pragma omp parallel for num_threads(getDTthreads(len0, true))
     for (int64_t i=0; i<len0; ++i) {
       pans[i] = pl[i]==0 ? pb[i & bmask] : (pl[i]==1 ? pa[i & amask] : pna);
     }
@@ -87,7 +87,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
     const int *restrict pa   = INTEGER(a);
     const int *restrict pb   = INTEGER(b);
     const int pna = nonna ? INTEGER(na)[0] : NA_INTEGER;
-    #pragma omp parallel for num_threads(getDTthreads())
+    #pragma omp parallel for num_threads(getDTthreads(len0, true))
     for (int64_t i=0; i<len0; ++i) {
       pans[i] = pl[i]==0 ? pb[i & bmask] : (pl[i]==1 ? pa[i & amask] : pna);
     }
@@ -98,7 +98,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
     const double *restrict pb   = REAL(b);
     const double na_double = INHERITS(a, char_integer64) ? NA_INT64_D : NA_REAL; // INHERITS() is true for nanotime
     const double pna = nonna ? REAL(na)[0] : na_double;
-    #pragma omp parallel for num_threads(getDTthreads())
+    #pragma omp parallel for num_threads(getDTthreads(len0, true))
     for (int64_t i=0; i<len0; ++i) {
       pans[i] = pl[i]==0 ? pb[i & bmask] : (pl[i]==1 ? pa[i & amask] : pna);
     }
@@ -116,7 +116,7 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
     const Rcomplex *restrict pa   = COMPLEX(a);
     const Rcomplex *restrict pb   = COMPLEX(b);
     const Rcomplex pna = nonna ? COMPLEX(na)[0] : NA_CPLX;
-    #pragma omp parallel for num_threads(getDTthreads())
+    #pragma omp parallel for num_threads(getDTthreads(len0, true))
     for (int64_t i=0; i<len0; ++i) {
       pans[i] = pl[i]==0 ? pb[i & bmask] : (pl[i]==1 ? pa[i & amask] : pna);
     }
