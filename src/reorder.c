@@ -13,8 +13,8 @@ SEXP reorder(SEXP x, SEXP order)
     ncol = length(x);
     for (int i=0; i<ncol; i++) {
       SEXP v = VECTOR_ELT(x,i);
-      if (SIZEOF(v)!=4 && SIZEOF(v)!=8 && SIZEOF(v)!=16)
-        error(_("Item %d of list is type '%s' which isn't yet supported (SIZEOF=%d)"), i+1, type2char(TYPEOF(v)), SIZEOF(v));
+      if (SIZEOF(v)!=4 && SIZEOF(v)!=8 && SIZEOF(v)!=16 && SIZEOF(v)!=1)
+        error(_("Item %d of list is type '%s' which isn't yet supported (SIZEOF=%zu)"), i+1, type2char(TYPEOF(v)), SIZEOF(v));
       if (length(v)!=nrow)
         error(_("Column %d is length %d which differs from length of column 1 (%d). Invalid data.table."), i+1, length(v), nrow);
       if (SIZEOF(v) > maxSize)
@@ -23,8 +23,8 @@ SEXP reorder(SEXP x, SEXP order)
     }
     copySharedColumns(x); // otherwise two columns which point to the same vector would be reordered and then re-reordered, issues linked in PR#3768
   } else {
-    if (SIZEOF(x)!=4 && SIZEOF(x)!=8 && SIZEOF(x)!=16)
-      error(_("reorder accepts vectors but this non-VECSXP is type '%s' which isn't yet supported (SIZEOF=%d)"), type2char(TYPEOF(x)), SIZEOF(x));
+    if (SIZEOF(x)!=4 && SIZEOF(x)!=8 && SIZEOF(x)!=16 && SIZEOF(x)!=1)
+      error(_("reorder accepts vectors but this non-VECSXP is type '%s' which isn't yet supported (SIZEOF=%zu)"), type2char(TYPEOF(x)), SIZEOF(x));
     if (ALTREP(x)) error(_("Internal error in reorder.c: cannot reorder an ALTREP vector. Please see NEWS item 2 in v1.11.4 and report this as a bug.")); // # nocov
     maxSize = SIZEOF(x);
     nrow = length(x);
@@ -64,7 +64,7 @@ SEXP reorder(SEXP x, SEXP order)
     if (size==4) {
       const int *restrict vd = DATAPTR_RO(v);
       int *restrict tmp = (int *)TMP;
-      #pragma omp parallel for num_threads(getDTthreads())
+      #pragma omp parallel for num_threads(getDTthreads(end, true))
       for (int i=start; i<=end; ++i) {
         tmp[i-start] = vd[idx[i]-1];  // copies 4 bytes; e.g. INTSXP and also SEXP pointers on 32bit (STRSXP and VECSXP)
       }
@@ -75,19 +75,25 @@ SEXP reorder(SEXP x, SEXP order)
     } else if (size==8) {
       const double *restrict vd = DATAPTR_RO(v);
       double *restrict tmp = (double *)TMP;
-      #pragma omp parallel for num_threads(getDTthreads())
+      #pragma omp parallel for num_threads(getDTthreads(end, true))
       for (int i=start; i<=end; ++i) {
         tmp[i-start] = vd[idx[i]-1];  // copies 8 bytes; e.g. REALSXP and also SEXP pointers on 64bit (STRSXP and VECSXP)
       }
-    } else { // size 16; checked up front
+    } else if (size==16) {
       const Rcomplex *restrict vd = DATAPTR_RO(v);
       Rcomplex *restrict tmp = (Rcomplex *)TMP;
-      #pragma omp parallel for num_threads(getDTthreads())
+      #pragma omp parallel for num_threads(getDTthreads(end, true))
       for (int i=start; i<=end; ++i) {
         tmp[i-start] = vd[idx[i]-1];
       }
+    } else { // size 1; checked up front // support raw as column #5100
+      const Rbyte *restrict vd = DATAPTR_RO(v);
+      Rbyte *restrict tmp = (Rbyte *)TMP;
+      #pragma omp parallel for num_threads(getDTthreads(end, true))
+      for (int i=start; i<=end; ++i) {
+        tmp[i-start] = vd[idx[i]-1];  // copies 1 bytes; e.g. RAWSXP
+      }
     }
-
     // Unique and somber line. Not done lightly. Please read all comments in this file.
     memcpy(((char *)DATAPTR_RO(v)) + size*start, TMP, size*nmid);
     // The one and only place in data.table where we write behind the write-barrier. Fundamental to setkey and data.table.
