@@ -102,9 +102,10 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
   switch(tans) {
   case LGLSXP: {
     int *restrict pans = LOGICAL(ans);
-    const int *restrict pa   = LOGICAL(a);
-    const int *restrict pb   = LOGICAL(b);
-    const int pna = nonna ? LOGICAL(na)[0] : NA_LOGICAL;
+    const int *restrict pa = na_a ? NULL : LOGICAL(a);
+    const int *restrict pb = na_b ? NULL : LOGICAL(b);
+    const int *restrict pna = na_n ? NULL : LOGICAL(na);
+    const int na = NA_LOGICAL;
     #pragma omp parallel for num_threads(getDTthreads(len0, true))
     for (int64_t i=0; i<len0; ++i) {
       pans[i] = pl[i]==0 ?
@@ -116,9 +117,10 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
   } break;
   case INTSXP: {
     int *restrict pans = INTEGER(ans);
-    const int *restrict pa   = INTEGER(a);
-    const int *restrict pb   = INTEGER(b);
-    const int pna = nonna ? INTEGER(na)[0] : NA_INTEGER;
+    const int *restrict pa = na_a ? NULL : INTEGER(a);
+    const int *restrict pb = na_b ? NULL : INTEGER(b);
+    const int *restrict pna = na_n ? NULL : INTEGER(na);
+    const int na = NA_INTEGER;
     #pragma omp parallel for num_threads(getDTthreads(len0, true))
     for (int64_t i=0; i<len0; ++i) {
       pans[i] = pl[i]==0 ?
@@ -130,10 +132,10 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
   } break;
   case REALSXP: {
     double *restrict pans = REAL(ans);
-    const double *restrict pa   = REAL(a);
-    const double *restrict pb   = REAL(b);
-    const double na_double = INHERITS(a, char_integer64) ? NA_INT64_D : NA_REAL; // INHERITS() is true for nanotime
-    const double pna = nonna ? REAL(na)[0] : na_double;
+    const double *restrict pa = na_a ? NULL : REAL(a);
+    const double *restrict pb = na_b ? NULL : REAL(b);
+    const double *restrict pna = na_n ? NULL : REAL(na);
+    const double na = INHERITS(a, char_integer64) ? NA_INT64_D : NA_REAL;
     #pragma omp parallel for num_threads(getDTthreads(len0, true))
     for (int64_t i=0; i<len0; ++i) {
       pans[i] = pl[i]==0 ?
@@ -160,9 +162,10 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
   } break;
   case CPLXSXP : {
     Rcomplex *restrict pans = COMPLEX(ans);
-    const Rcomplex *restrict pa   = COMPLEX(a);
-    const Rcomplex *restrict pb   = COMPLEX(b);
-    const Rcomplex pna = nonna ? COMPLEX(na)[0] : NA_CPLX;
+    const Rcomplex *restrict pa = na_a ? NULL : COMPLEX(a);
+    const Rcomplex *restrict pb = na_b ? NULL : COMPLEX(b);
+    const Rcomplex *restrict pna = na_n ? NULL : COMPLEX(na);
+    const Rcomplex na = NA_CPLX;
     #pragma omp parallel for num_threads(getDTthreads(len0, true))
     for (int64_t i=0; i<len0; ++i) {
       pans[i] = pl[i]==0 ?
@@ -199,11 +202,11 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
 }
 
 SEXP fcaseR(SEXP rho, SEXP args) {
-  int n=length(args); // `default` will take the last two positions
-  if (n % 2) {
+  const int narg=length(args); // `default` will take the last two positions
+  if (narg % 2) {
     error(_("Received %d inputs; please supply an even number of arguments in ..., "
               "consisting of logical condition, resulting value pairs (in that order). "
-              "Note that the default argument must be named explicitly, e.g., default=0"), n - 2);
+              "Note that the default argument must be named explicitly, e.g., default=0"), narg - 2);
   }
   int nprotect = 0, l = 0;
   int64_t len0=0, len1=0, len2=0, idx=0;
@@ -215,7 +218,7 @@ SEXP fcaseR(SEXP rho, SEXP args) {
   // naout means if the output is scalar logic na
   bool imask = true, naout = false, idefault = false;
   int *restrict p = NULL;
-  n = n/2;
+  const int n = narg/2;
   for (int i=0; i<n; ++i) {
     idefault = i == (n - 1); // mark if the current eval is the `default` on R side
     REPROTECT(cons = eval(SEXPPTR_RO(args)[2*i], rho), Icons);
@@ -293,7 +296,7 @@ SEXP fcaseR(SEXP rho, SEXP args) {
       int *restrict pans = LOGICAL(ans);
       const int pna = NA_LOGICAL;
       for (int64_t j=0; j<len2; ++j) {
-        idx = imask ? j : p[j];
+        const int64_t idx = imask ? j : p[j];
         if (pcons[idx & conmask]==1) {
           pans[idx] = naout ? pna : pouts[idx & amask];
         } else {
@@ -310,7 +313,7 @@ SEXP fcaseR(SEXP rho, SEXP args) {
       int *restrict pans = INTEGER(ans);
       const int pna = NA_INTEGER;
       for (int64_t j=0; j<len2; ++j) {
-        idx = imask ? j : p[j];
+        const int64_t idx = imask ? j : p[j];
         if (pcons[idx & conmask]==1) {
           pans[idx] = naout ? pna : pouts[idx & amask];
         } else {
@@ -328,7 +331,7 @@ SEXP fcaseR(SEXP rho, SEXP args) {
       const double na_double = INHERITS(ans, char_integer64) ? NA_INT64_D : NA_REAL;
       const double pna = na_double;
       for (int64_t j=0; j<len2; ++j) {
-        idx = imask ? j : p[j];
+        const int64_t idx = imask ? j : p[j];
         if (pcons[idx & conmask]==1) {
           pans[idx] = naout ? pna : pouts[idx & amask];
         } else {
@@ -345,7 +348,7 @@ SEXP fcaseR(SEXP rho, SEXP args) {
       Rcomplex *restrict pans = COMPLEX(ans);
       const Rcomplex pna = NA_CPLX;
       for (int64_t j=0; j<len2; ++j) {
-        idx = imask ? j : p[j];
+        const int64_t idx = imask ? j : p[j];
         if (pcons[idx & conmask]==1) {
           pans[idx] = naout ? pna : pouts[idx & amask];
         } else {
@@ -361,7 +364,7 @@ SEXP fcaseR(SEXP rho, SEXP args) {
       if (!naout) pouts = STRING_PTR(outs); // the content is not useful if out is NA_LOGICAL scalar
       const SEXP pna = NA_STRING;
       for (int64_t j=0; j<len2; ++j) {
-        idx = imask ? j : p[j];
+        const int64_t idx = imask ? j : p[j];
         if (pcons[idx & conmask]==1) {
           SET_STRING_ELT(ans, idx, naout ? pna : pouts[idx & amask]);
         } else {
@@ -378,7 +381,7 @@ SEXP fcaseR(SEXP rho, SEXP args) {
       const SEXP *restrict pouts;
       if (!naout) pouts = SEXPPTR_RO(outs); // the content is not useful if out is NA_LOGICAL scalar
       for (int64_t j=0; j<len2; ++j) {
-        idx = imask ? j : p[j];
+        const int64_t idx = imask ? j : p[j];
         if (pcons[idx & conmask]==1) {
           if (!naout) SET_VECTOR_ELT(ans, idx, pouts[idx & amask]);
         } else {
@@ -387,7 +390,7 @@ SEXP fcaseR(SEXP rho, SEXP args) {
       }
     } break;
     default:
-      error(_("Type %s is not supported."), type2char(TYPEOF(ans)));
+      error(_("Type '%s' is not supported."), type2char(TYPEOF(ans)));
     }
     UNPROTECT(2); // this cons and outs
     if (l==0) {
