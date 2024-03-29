@@ -81,24 +81,78 @@ int main() {
 }
 EOF
 
-# First, try R CMD SHLIB to see if R can already compile
-# things using OpenMP without any extra help from data.table
-"${R_HOME}/bin/R" CMD SHLIB test-omp.c >/dev/null 2>&1 || R_NO_OPENMP=1
+detect_openmp () {
 
-if [ "$R_NO_OPENMP" = "1" ]; then
-  # Compilation failed -- try forcing -fopenmp instead.
-  R_NO_OPENMP=0
-  "${CC}" "${CFLAGS}" -fopenmp test-omp.c || R_NO_OPENMP=1
-  # TODO: and then nothing seems to be done with this outcome
-else
-  echo "R CMD SHLIB supports OpenMP without any extra hint"
-fi
+  # First, try R CMD SHLIB to see if R can already compile
+  printf "%s" "* checking if R installation supports OpenMP without any extra hints... "
+  if "${R_HOME}/bin/R" CMD SHLIB test-omp.c > /dev/null 2>&1; then
+    echo "yes"
+    export R_OPENMP_ENABLED=1
+    return
+  else
+    echo "no"
+  fi
 
-# Clean up.
-rm -f test-omp.* a.out
+  # For Linux, try using '-fopenmp' as-is.
+  if [ "$(uname)" = "Linux" ]; then
+    printf "%s" "* checking if R installation supports openmp with \"-fopenmp\" flag... "
+    if ${CC} ${CFLAGS} -fopenmp test-omp.c > /dev/null 2>&1; then
+      echo "yes"
+      export SHLIB_OPENMP_CFLAGS="-fopenmp"
+      export R_OPENMP_ENABLED=1
+      return
+    else
+      echo "no"
+    fi
+  fi
 
-# Write to Makevars
-if [ "$R_NO_OPENMP" = "1" ]; then
+  # For macOS, try using '-Xclang -fopenmp'
+  if [ "$(uname)" = "Darwin" ]; then
+
+    # Check whether we can use OpenMP with documented flags.
+    # https://mac.r-project.org/openmp
+
+    printf "%s" "* checking if R installation supports OpenMP with \"-Xclang -fopenmp\" ... "
+    if CPPFLAGS="${CPPFLAGS} -Xclang -fopenmp" LDFLAGS="${LDFLAGS} -lomp" "${R_HOME}/bin/R" CMD SHLIB test-omp.c > /dev/null 2>&1; then
+      echo "yes"
+      export SHLIB_OPENMP_CFLAGS="-Xclang -fopenmp"
+      export PKG_LIBS="${PKG_LIBS} -lomp"
+      export R_OPENMP_ENABLED=1
+    else
+      echo "no"
+    fi
+
+    # Try to find a libomp installation. Prefer Homebrew
+    if [ "$(uname -m)" = "arm64" ]; then
+      HOMEBREW_PREFIX=/opt/homebrew
+    else
+      HOMEBREW_PREFIX=/usr/local
+    fi
+
+    if [ -e "${HOMEBREW_PREFIX}/opt/libomp" ]; then
+      printf "%s" "* checking if libomp installation at ${HOMEBREW_PREFIX}/opt/libomp can be used... "
+      LIBOMP_INCLUDE="-I${HOMEBREW_PREFIX}/opt/libomp/include -Xclang -fopenmp"
+      LIBOMP_LINK="-L${HOMEBREW_PREFIX}/opt/libomp/lib -lomp"
+      if ${CC} ${CFLAGS} ${LIBOMP_INCLUDE} ${LIBOMP_LINK} test-omp.c > /dev/null 2>&1; then
+        echo "yes"
+        export SHLIB_OPENMP_CFLAGS="${LIBOMP_INCLUDE}"
+        export PKG_LIBS="${PKG_LIBS} ${LIBOMP_LINK}"
+        export R_OPENMP_ENABLED=1
+        return
+      fi
+    else
+      echo "no"
+    fi
+  fi
+
+  # No support for OpenMP available
+  export R_OPENMP_ENABLED=0
+}
+
+detect_openmp
+rm -f a.out test-omp.c
+
+if [ "${R_OPENMP_ENABLED}" = "0" ]; then
   echo "*** OpenMP not supported! data.table uses OpenMP to automatically"
   echo "***   parallelize operations like sorting, grouping, file reading, etc."
   echo "*** For details on how to install the necessary toolchains on your OS see:"
@@ -108,9 +162,11 @@ if [ "$R_NO_OPENMP" = "1" ]; then
 else
   sed -e "s|@openmp_cflags@|\$(SHLIB_OPENMP_CFLAGS)|" src/Makevars.in > src/Makevars
 fi
+
 # retain user supplied PKG_ env variables, #4664. See comments in Makevars.in too.
 sed -e "s|@PKG_CFLAGS@|$PKG_CFLAGS|" src/Makevars > src/Makevars.tmp && mv src/Makevars.tmp src/Makevars
 sed -e "s|@PKG_LIBS@|$PKG_LIBS|" src/Makevars > src/Makevars.tmp && mv src/Makevars.tmp src/Makevars
+
 # optional dependency on zlib
 if [ "$NOZLIB" = "1" ]; then
   echo "*** Compilation without compression support in fwrite"
