@@ -151,11 +151,13 @@ detect_openmp
 rm -f a.out test-omp.c
 
 if [ "${R_OPENMP_ENABLED}" = "0" ]; then
+  echo "***"
   echo "*** OpenMP not supported! data.table uses OpenMP to automatically"
   echo "***   parallelize operations like sorting, grouping, file reading, etc."
   echo "*** For details on how to install the necessary toolchains on your OS see:"
   echo "***   https://github.com/Rdatatable/data.table/wiki/Installation"
   echo "*** Continuing installation without OpenMP support..."
+  echo "***"
   sed -e "s|@openmp_cflags@||" src/Makevars.in > src/Makevars
 else
   sed -e "s|@openmp_cflags@|\$(SHLIB_OPENMP_CFLAGS)|" src/Makevars.in > src/Makevars
