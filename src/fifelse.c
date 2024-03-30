@@ -205,8 +205,8 @@ SEXP fcaseR(SEXP rho, SEXP args) {
   const int narg=length(args); // `default` will take the last two positions
   if (narg % 2) {
     error(_("Received %d inputs; please supply an even number of arguments in ..., "
-              "consisting of logical condition, resulting value pairs (in that order). "
-              "Note that the default argument must be named explicitly, e.g., default=0"), narg - 2);
+            "consisting of logical condition, resulting value pairs (in that order). "
+            "Note that the default argument must be named explicitly, e.g., default=0"), narg - 2);
   }
   int nprotect = 0, l = 0;
   int64_t len0=0, len1=0, len2=0, idx=0;
@@ -246,26 +246,26 @@ SEXP fcaseR(SEXP rho, SEXP args) {
       if (xlength(cons) != len0 && xlength(cons) != 1) {
         // no need to check `idefault` here because the con for default is always `TRUE`
         error(_("Argument #%d has a different length than argument #1. "
-                  "Please make sure all logical conditions have the same length or length 1."),
-                  i*2+1);
+                "Please make sure all logical conditions have the same length or length 1."),
+                i*2+1);
       }
       if (!naout && TYPEOF(outs) != type0) {
         if (idefault) {
           error(_("Resulting value is of type %s but 'default' is of type %s. "
-                    "Please make sure that both arguments have the same type."), type2char(type0), type2char(TYPEOF(outs)));
+                  "Please make sure that both arguments have the same type."), type2char(type0), type2char(TYPEOF(outs)));
         } else {
           error(_("Argument #%d is of type %s, however argument #2 is of type %s. "
-                    "Please make sure all output values have the same type."),
-                    i*2+2, type2char(TYPEOF(outs)), type2char(type0));
+                  "Please make sure all output values have the same type."),
+                  i*2+2, type2char(TYPEOF(outs)), type2char(type0));
         }
       }
       if (!naout && !R_compute_identical(PROTECT(getAttrib(value0,R_ClassSymbol)),  PROTECT(getAttrib(outs,R_ClassSymbol)), 0)) {
         if (idefault) {
           error(_("Resulting value has different class than 'default'. "
-                    "Please make sure that both arguments have the same class."));
+                  "Please make sure that both arguments have the same class."));
         } else {
           error(_("Argument #%d has different class than argument #2, "
-                    "Please make sure all output values have the same class."), i*2+2);
+                  "Please make sure all output values have the same class."), i*2+2);
         }
       }
       UNPROTECT(2);
