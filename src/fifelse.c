@@ -268,7 +268,7 @@ SEXP fcaseR(SEXP rho, SEXP args) {
                   "Please make sure all output values have the same class."), i*2+2);
         }
       }
-      UNPROTECT(2);
+      UNPROTECT(2); // class(value0), class(thens)
       if (!naout && isFactor(value0)) {
         if (!R_compute_identical(PROTECT(getAttrib(value0,R_LevelsSymbol)),  PROTECT(getAttrib(thens,R_LevelsSymbol)), 0)) {
           if (idefault) {
@@ -277,7 +277,7 @@ SEXP fcaseR(SEXP rho, SEXP args) {
             error(_("Argument #2 and argument #%d are both factor but their levels are different."), i*2+2);
           }
         }
-        UNPROTECT(2);
+        UNPROTECT(2); // levels(value0), levels(thens)
       }
     }
     len1 = xlength(thens);
@@ -392,12 +392,11 @@ SEXP fcaseR(SEXP rho, SEXP args) {
     default:
       error(_("Type '%s' is not supported."), type2char(TYPEOF(ans)));
     }
-    UNPROTECT(2); // this whens and thens
     if (l==0) {
       break;  // stop early as nothing left to do
     }
     len2 = l;
   }
-  UNPROTECT(4); // cons0, value0, ans, tracker
+  UNPROTECT(nprotect); // whens, thens, ans, tracker
   return ans;
 }
