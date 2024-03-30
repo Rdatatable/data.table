@@ -136,10 +136,11 @@ detect_openmp () {
         export PKG_LIBS="${PKG_LIBS} ${LIBOMP_LINK}"
         export R_OPENMP_ENABLED=1
         return
+      else
+        echo "no"
       fi
-    else
-      echo "no"
     fi
+
   fi
 
   # No support for OpenMP available
