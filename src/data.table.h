@@ -233,6 +233,8 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAbounds, SEXP
 SEXP coalesce(SEXP x, SEXP inplace);
 
 // utils.c
+bool within_int32_repres(double x);
+bool within_int64_repres(double x);
 bool isRealReallyInt(SEXP x);
 SEXP isRealReallyIntR(SEXP x);
 SEXP isReallyReal(SEXP x);
@@ -288,7 +290,7 @@ SEXP setlistelt(SEXP, SEXP, SEXP);
 SEXP address(SEXP);
 SEXP expandAltRep(SEXP);
 SEXP fmelt(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
-SEXP fcast(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+SEXP fcast(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP issorted(SEXP, SEXP);
 SEXP gforce(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP gsum(SEXP, SEXP);
@@ -305,7 +307,7 @@ SEXP lookup(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP overlaps(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP whichwrapper(SEXP, SEXP);
 SEXP shift(SEXP, SEXP, SEXP, SEXP);
-SEXP transpose(SEXP, SEXP, SEXP, SEXP);
+SEXP transpose(SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP anyNA(SEXP, SEXP);
 SEXP setlevels(SEXP, SEXP, SEXP);
 SEXP rleid(SEXP, SEXP);

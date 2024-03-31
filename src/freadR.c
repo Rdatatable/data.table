@@ -45,7 +45,7 @@ static int64_t dtnrows = 0;
 static bool verbose = false;
 static bool warningsAreErrors = false;
 static bool oldNoDateTime = false;
-
+static int *dropFill;
 
 SEXP freadR(
   // params passed to freadMain
@@ -82,7 +82,7 @@ SEXP freadR(
   freadMainArgs args;
   ncol = 0;
   dtnrows = 0;
-  
+
   if (!isString(inputArg) || LENGTH(inputArg)!=1)
     error(_("Internal error: freadR input not a single character string: a filename or the data itself. Should have been caught at R level."));  // # nocov
   const char *ch = (const char *)CHAR(STRING_ELT(inputArg,0));
@@ -152,7 +152,7 @@ SEXP freadR(
   // here we use bool and rely on fread at R level to check these do not contain NA_LOGICAL
   args.stripWhite = LOGICAL(stripWhiteArg)[0];
   args.skipEmptyLines = LOGICAL(skipEmptyLinesArg)[0];
-  args.fill = LOGICAL(fillArg)[0];
+  args.fill = INTEGER(fillArg)[0];
   args.showProgress = LOGICAL(showProgressArg)[0];
   if (INTEGER(nThreadArg)[0]<1) error(_("nThread(%d)<1"), INTEGER(nThreadArg)[0]);
   args.nth = (uint32_t)INTEGER(nThreadArg)[0];
@@ -533,6 +533,16 @@ void setFinalNrow(size_t nrow) {
   R_FlushConsole(); // # 2481. Just a convenient place; nothing per se to do with setFinalNrow()
 }
 
+void dropFilledCols(int* dropArg, int ndelete) {
+  dropFill = dropArg;
+  int ndt=length(DT);
+  for (int i=0; i<ndelete; ++i) {
+    SET_VECTOR_ELT(DT, dropFill[i], R_NilValue);
+    SET_STRING_ELT(colNamesSxp, dropFill[i], NA_STRING);
+  }
+  SETLENGTH(DT, ndt-ndelete);
+  SETLENGTH(colNamesSxp, ndt-ndelete);
+}
 
 void pushBuffer(ThreadLocalFreadParsingContext *ctx)
 {
