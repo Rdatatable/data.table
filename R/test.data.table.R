@@ -129,7 +129,6 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   assign("memtest.id", memtest.id, envir=env)
   assign("filename", fn, envir=env)
   assign("showProgress", showProgress, envir=env)
-  assign("testPattern", testPattern, envir=env)
 
   owd = setwd(tempdir()) # ensure writeable directory; e.g. tests that plot may write .pdf here depending on device option and/or batch mode; #5190
   on.exit(setwd(owd))
@@ -137,6 +136,51 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   if (memtest) {
     catf("\n***\n*** memtest=%d. This should be the first call in a fresh R_GC_MEM_GROW=0 R session for best results. Ctrl-C now if not.\n***\n\n", memtest)
     if (is.na(rss())) stopf("memtest intended for Linux. Step through data.table:::rss() to see what went wrong.")
+  }
+
+  if (!is.null(testPattern)) {
+    # due to how non-hermetic our tests are, the simple approach (pass this to test(), return early if 'numStr' matches testPattern)
+    #   does not work, or at least getting it to work is not much more efficient (see initial commit of #6040). so instead,
+    #   here we parse the file, extract the tests that match the pattern to a new file, and include other setup lines likely required
+    #   to run the tests successfully. two major drawbacks (1) we can only take a guess which lines are required, so this approach
+    #   can't work (or at least, may need a lot of adjustment) for _every_ test, though not working is also a good sign that test
+    #   should be refactored to be more hermetic (2) not all tests have literal test numbers, meaning we can't always match the
+    #   runtime test number (i.e. 'numStr') since we're just doing a static check here, though we _are_ careful to match the
+    #   full test expression string, i.e., not just limited to numeric literal test numbers.
+    pd = setDT(utils::getParseData(parse(fn)))
+    file_lines = readLines(fn)
+    # NB: a call looks like (with id/parent tracking)
+    # <expr>
+    #   <expr "lhs"><SYMBOL_FUNCTION_CALL>name</SYMBOL_FUNCTION_CALL></expr>
+    #   <LEFT_PAREN>(</LEFT_PAREN>
+    #   <expr "arg1"> ... </expr>
+    #   ...
+    #   <RIGHT_PAREN>)</RIGHT_PAREN>
+    # </expr>
+    ## navigate up two steps from 'test' SYMBOL_FUNCTION_CALL to the overall 'expr' for the call
+    test_calls = pd[pd[pd[token == 'SYMBOL_FUNCTION_CALL' & text == 'test'], .(call_lhs_id = id, call_id = x.parent), on=c(id='parent')], .(line1, id), on=c(id='call_id')]
+    ## all the arguments for each call to test()
+    test_call_args = test_calls[pd[token == 'expr'], .(call_id = parent, arg_line = i.line1, col1, col2), on=c(id='parent'), nomatch=NULL]
+    ## 2nd argument is the num= argument
+    test_num_expr = test_call_args[ , .SD[2L], by="call_id"]
+    # NB: subtle assumption that 2nd arg to test() is all on one line, true as of 2024-Apr and likely to remain so
+    keep_test_ids = test_num_expr[grepl(testPattern, substring(file_lines[arg_line], col1, col2)), call_id]
+    # Now find all tests just previous to the keep tests; we want to keep non-test setup lines between them, e.g.
+    # test(drop, ...)
+    # setup_line1     # retain
+    # setup_line2     # retain
+    # test(keep, ...) # retain
+    intertest_ranges = test_calls[!id %in% keep_test_ids][test_calls[id %in% keep_test_ids], .(preceding_line = x.line1, test_start_line = i.line1), on='line1', roll=TRUE]
+    # TODO(michaelchirico): this doesn't do well with tests inside control statements.
+    #   those could be included by looking for tests with parent!=0, i.e., not-top-level tests,
+    #   and including the full parent for such tests. omitting for now until needed.
+    keep_lines = intertest_ranges[, sort(unique(unlist(Map(function(l, u) l:u, preceding_line+1L, test_start_line))))]
+    header_lines = seq_len(test_calls$line1[1L]-1L)
+
+    fn = tempfile()
+    on.exit(unlink(fn), add=TRUE)
+    catf("Running %d of %d tests matching '%s'\n", length(keep_test_ids), nrow(test_calls), testPattern)
+    writeLines(file_lines[c(header_lines, keep_lines)], fn)
   }
 
   err = try(sys.source(fn, envir=env), silent=silent)
@@ -273,8 +317,6 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
   .test.data.table = exists("nfail", parent.frame()) # test() can be used inside functions defined in tests.Rraw, so inherits=TRUE (default) here
   numStr = sprintf("%.8g", num)
   if (.test.data.table) {
-    testPattern = get("testPattern", parent.frame())
-    if (!is.null(testPattern) && !grepl(testPattern, numStr)) { capture.output(try(supressMessages(suppressWarnings({x; y})), silent=TRUE)); return(TRUE) }
     prevtest = get("prevtest", parent.frame())
     nfail = get("nfail", parent.frame())   # to cater for both test.data.table() and stepping through tests in dev
     whichfail = get("whichfail", parent.frame())
