@@ -31,11 +31,12 @@ sourceDir = function(path=getwd(), trace = TRUE, ...) {
   if(trace) cat("\n")
 }
 
-cc = function(test=FALSE, clean=FALSE, debug=FALSE, omp=!debug, cc_dir, path=Sys.getenv("PROJ_PATH"), CC="gcc", quiet=FALSE) {
+cc = function(test=FALSE, clean=FALSE, debug=FALSE, omp=!debug, cc_dir, path=Sys.getenv("PROJ_PATH", unset="."), CC="gcc", quiet=FALSE) {
   if (!missing(cc_dir)) {
     warning("'cc_dir' arg is deprecated, use 'path' argument or 'PROJ_PATH' env var instead")
     path = cc_dir
   }
+  old = getwd()
   stopifnot(is.character(CC), length(CC)==1L, !is.na(CC), nzchar(CC))
   gc()
 
