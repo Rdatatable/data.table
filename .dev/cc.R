@@ -23,6 +23,7 @@
 # test and step between R and C
 
 sourceDir = function(path=getwd(), trace = TRUE, ...) {
+  if (trace) cat("Loading R files: ")
   # copied verbatim from example(source) in base R
   for (nm in list.files(path, pattern = "\\.[RrSsQq]$")) {
     if(trace) cat(nm," ")
