@@ -1,4 +1,4 @@
-test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=FALSE, showProgress=interactive()&&!silent,
+test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=FALSE, showProgress=interactive()&&!silent, testPattern=NULL,
                            memtest=Sys.getenv("TEST_DATA_TABLE_MEMTEST", 0), memtest.id=NULL) {
   stopifnot(isTRUEorFALSE(verbose), isTRUEorFALSE(silent), isTRUEorFALSE(showProgress))
   memtest = as.integer(memtest)
@@ -38,7 +38,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     scripts = scripts[!grepl("bench|other", scripts)]
     scripts = gsub("[.]bz2$","",scripts)
     return(sapply(scripts, function(fn) {
-      err = try(test.data.table(script=fn, verbose=verbose, pkg=pkg, silent=silent, showProgress=showProgress))
+      err = try(test.data.table(script=fn, verbose=verbose, pkg=pkg, silent=silent, showProgress=showProgress, testPattern=testPattern))
       cat("\n");
       isTRUE(err)
     }))
@@ -129,6 +129,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   assign("memtest.id", memtest.id, envir=env)
   assign("filename", fn, envir=env)
   assign("showProgress", showProgress, envir=env)
+  assign("testPattern", testPattern, envir=env)
 
   owd = setwd(tempdir()) # ensure writeable directory; e.g. tests that plot may write .pdf here depending on device option and/or batch mode; #5190
   on.exit(setwd(owd))
@@ -272,6 +273,8 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
   .test.data.table = exists("nfail", parent.frame()) # test() can be used inside functions defined in tests.Rraw, so inherits=TRUE (default) here
   numStr = sprintf("%.8g", num)
   if (.test.data.table) {
+    testPattern = get("testPattern", parent.frame())
+    if (!is.null(testPattern) && !grepl(testPattern, numStr)) { capture.output(try(supressMessages(suppressWarnings({x; y})), silent=TRUE)); return(TRUE) }
     prevtest = get("prevtest", parent.frame())
     nfail = get("nfail", parent.frame())   # to cater for both test.data.table() and stepping through tests in dev
     whichfail = get("whichfail", parent.frame())
