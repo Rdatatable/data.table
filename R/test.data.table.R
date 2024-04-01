@@ -147,6 +147,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     #   should be refactored to be more hermetic (2) not all tests have literal test numbers, meaning we can't always match the
     #   runtime test number (i.e. 'numStr') since we're just doing a static check here, though we _are_ careful to match the
     #   full test expression string, i.e., not just limited to numeric literal test numbers.
+    arg_line = call_id = col1 = col2 = i.line1 = id = line1 = parent = preceding_line = test_start_line = text = token = x.line1 = x.parent = NULL # R CMD check
     pd = setDT(utils::getParseData(parse(fn)))
     file_lines = readLines(fn)
     # NB: a call looks like (with id/parent tracking)
@@ -158,7 +159,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     #   <RIGHT_PAREN>)</RIGHT_PAREN>
     # </expr>
     ## navigate up two steps from 'test' SYMBOL_FUNCTION_CALL to the overall 'expr' for the call
-    test_calls = pd[pd[pd[token == 'SYMBOL_FUNCTION_CALL' & text == 'test'], .(call_lhs_id = id, call_id = x.parent), on=c(id='parent')], .(line1, id), on=c(id='call_id')]
+    test_calls = pd[pd[pd[token == 'SYMBOL_FUNCTION_CALL' & text == 'test'], list(call_lhs_id = id, call_id = x.parent), on=c(id='parent')], .(line1, id), on=c(id='call_id')]
     ## all the arguments for each call to test()
     test_call_args = test_calls[pd[token == 'expr'], .(call_id = parent, arg_line = i.line1, col1, col2), on=c(id='parent'), nomatch=NULL]
     ## 2nd argument is the num= argument
