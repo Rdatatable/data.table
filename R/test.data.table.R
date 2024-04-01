@@ -138,6 +138,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     if (is.na(rss())) stopf("memtest intended for Linux. Step through data.table:::rss() to see what went wrong.")
   }
 
+  # nocov start: only used interactively -- "production" suites should always run in full
   if (!is.null(testPattern)) {
     # due to how non-hermetic our tests are, the simple approach (pass this to test(), return early if 'numStr' matches testPattern)
     #   does not work, or at least getting it to work is not much more efficient (see initial commit of #6040). so instead,
@@ -183,6 +184,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     catf("Running %d of %d tests matching '%s'\n", length(keep_test_ids), nrow(test_calls), testPattern)
     writeLines(file_lines[c(header_lines, keep_lines)], fn)
   }
+  # nocov end
 
   err = try(sys.source(fn, envir=env), silent=silent)
 
