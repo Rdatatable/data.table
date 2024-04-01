@@ -18149,7 +18149,7 @@ test(2233.43,
           ][, sum_v1_idT:=sum(v1),       by=c("id", "t")
           ][, sum_v1_id :=sum(v1),       by=c("id")],
   ans,
-  output="GForce.*gsum")
+  output="GForce FALSE")
 test(2233.44,
   options = list(datatable.verbose=TRUE, datatable.optimize=Inf),
   copy(DT)[, sum_v2_idT:=sum(v2),       by=c("id", "t")
@@ -18158,7 +18158,7 @@ test(2233.44,
           ][, sum_v1_idT:=sum(v1),       by=c("id", "t")
           ][, sum_v1_id :=sum(v1),       by=c("id")],
   ans,
-  output="GForce FALSE")
+  output="GForce.*gsum")
 # optimized := with gforce functions that can return lists #5403
 old = options(datatable.verbose=TRUE)
 DT = data.table(grp=1:2, x=1:4)
