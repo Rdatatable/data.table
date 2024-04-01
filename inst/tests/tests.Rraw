@@ -4439,13 +4439,13 @@ colorder=sample(ncol(DT))
 setcolorder(DT, names(DT)[colorder])
 seedInfo = paste(seedInfo, "colorder = ", paste(colorder, collapse=","), sep="")
 
-test_no = 1223.0
+test_no = 0L
 oldnfail = nfail
 for (nvars in seq_along(names(DT))) {
   signs = expand.grid(replicate(nvars, c(-1L,1L), simplify=FALSE))
   combn(names(DT), nvars, simplify=FALSE, function(x) {  # simplify=FALSE needed for R 3.1.0
     for (i in seq_len(nrow(signs))) {
-      test_no <<- signif(test_no+.001, 7)
+      test_no <<- test_no + 1L
       ll = as.call(c(as.name("order"),
         lapply(seq_along(x), function(j) {
           if (signs[i,j] == 1L)
@@ -4458,7 +4458,7 @@ for (nvars in seq_along(names(DT))) {
           }
         })
       ))
-      test(test_no, forderv(DT, by=x, order=signs[i,]), with(DT, eval(ll)))
+      test(1223.0 + test_no*0.001, forderv(DT, by=x, order=signs[i,]), with(DT, eval(ll)))
     }
     integer()
   })
@@ -4590,16 +4590,16 @@ colorder=sample(ncol(DT))
 setcolorder(DT, names(DT)[colorder])
 seedInfo = paste(seedInfo, "colorder = ", paste(colorder, collapse=","), sep="")
 
-test_no = 1246.0
+test_no = 0L
 oldnfail = nfail
 for (i in seq_along(names(DT))) {
   cc = combn(names(DT), i)
   apply(cc, 2L, function(jj) {
-    test_no <<- signif(test_no+.01, 7) # first without key
-    test(test_no, duplicated(DT, by=jj, fromLast=TRUE), duplicated.data.frame(DT[, jj, with=FALSE], fromLast=TRUE))
-    test_no <<- signif(test_no+.01, 7)
+    test_no <<- test_no + 1L # first without key
+    test(1246.0 + test_no*0.01, duplicated(DT, by=jj, fromLast=TRUE), duplicated.data.frame(DT[, jj, with=FALSE], fromLast=TRUE))
+    test_no <<- test_no + 1L
     setkeyv(DT, jj) # with key
-    test(test_no, duplicated(DT, by=jj, fromLast=TRUE), duplicated.data.frame(DT[, jj, with=FALSE], fromLast=TRUE))
+    test(1246.0 + test_no*0.01, duplicated(DT, by=jj, fromLast=TRUE), duplicated.data.frame(DT[, jj, with=FALSE], fromLast=TRUE))
   })
 }
 if (nfail > oldnfail) cat(seedInfo, "\n")  # to reproduce
@@ -4618,11 +4618,11 @@ oldnfail = nfail
 for (i in seq_along(names(DT))) {
   cc = combn(names(DT), i)
   apply(cc, 2L, function(jj) {
-    test_no <<- signif(test_no+.01, 7) # first without key
-    test(test_no, duplicated(DT, by=jj, fromLast=TRUE), duplicated.data.frame(DT[, jj, with=FALSE], fromLast=TRUE))
-    test_no <<- signif(test_no+.01, 7)
+    test_no <<- test_no + 1L # first without key
+    test(1246.0 + test_no*0.01, duplicated(DT, by=jj, fromLast=TRUE), duplicated.data.frame(DT[, jj, with=FALSE], fromLast=TRUE))
+    test_no <<- test_no + 1L
     setkeyv(DT, jj) # with key
-    test(test_no, duplicated(DT, by=jj, fromLast=TRUE), duplicated.data.frame(DT[, jj, with=FALSE], fromLast=TRUE))
+    test(1246.0 + test_no*0.01, duplicated(DT, by=jj, fromLast=TRUE), duplicated.data.frame(DT[, jj, with=FALSE], fromLast=TRUE))
   })
 }
 if (nfail > oldnfail) cat(seedInfo, "\n")  # to reproduce
@@ -4707,13 +4707,13 @@ setcolorder(DT, names(DT)[colorder])
 seedInfo = paste(seedInfo, "colorder = ", paste(colorder, collapse=","), sep="")
 ans = vector("list", length(names(DT)))
 
-test_no = 1252
+test_no = 0L
 oldnfail = nfail
 for (i in seq_along(names(DT))) {
   cj = as.matrix(do.call(CJ, split(rep(c(1L,-1L), each=i), 1:i)))
   ans[[i]] = combn(names(DT), i, function(x) {
     tmp = apply(cj, 1, function(y) {
-      test_no <<- signif(test_no+.001, 7)
+      test_no <<- test_no + 1L
       ll = as.call(c(as.name("base_order"),
         lapply(seq_along(x), function(j) {
           if (y[j] == 1L)
@@ -4727,11 +4727,11 @@ for (i in seq_along(names(DT))) {
         })
       ))
       ans1 = forderv(DT, by=x, order=y, na.last=TRUE)         # adding tests for both nalast=TRUE and nalast=NA
-      test(test_no, ans1, with(DT, eval(ll)))
-      test_no <<- signif(test_no+.001, 7)
+      test(1252.0 + test_no*0.001, ans1, with(DT, eval(ll)))
+      test_no <<- test_no + 1L
       ll <- as.call(c(as.list(ll), na.last=NA))
       ans1 = forderv(DT, by=x, order=y, na.last=NA)           # nalast=NA here.
-      test(test_no, ans1[ans1 != 0], with(DT, eval(ll)))
+      test(1252.0 + test_no*0.001, ans1[ans1 != 0], with(DT, eval(ll)))
     })
     dim(tmp)=NULL
     list(tmp)
@@ -4858,13 +4858,13 @@ setNumericRounding(old_rounding)
 # distinguishing small numbers from 0.0 as from v1.9.2,  test from Rick
 # http://stackoverflow.com/questions/22290544/grouping-very-small-numbers-e-g-1e-28-and-0-0-in-data-table-v1-8-10-vs-v1-9-2
 old_rounding = getNumericRounding()
-test_no = 1278.001
+test_no = 0L
 for (dround in c(0,2)) {
   setNumericRounding(dround)  # rounding should not affect the result here because although small, it's very accurace (1 s.f.)
   for (i in c(-30:-1,1:30)) {
     DT = data.table(c(1 * (10^i),2,9999,-1,0,1))
-    test(test_no, nrow(DT[, .N, by=V1]), 6L)
-    test_no = test_no + 0.001
+    test_no = test_no + 1L
+    test(1278.0 + test_no*0.001, nrow(DT[, .N, by=V1]), 6L)
   }
 }
 setNumericRounding(old_rounding)
@@ -5674,7 +5674,7 @@ dt = data.table(AA=sample(c(-2:2), 50, TRUE),
                 DD=sample(c(-2:2), 50, TRUE),
                 EE=sample(as.logical(c(-2:2)), 50, TRUE))
 if (test_bit64) dt[, DD := as.integer64(DD)]
-test_no = 1368.0
+test_no = 0L
 for (i in seq_along(dt)) {
   col = dt[[i]]
   for (j in list(TRUE, FALSE, "keep")) {
@@ -5693,10 +5693,10 @@ for (i in seq_along(dt)) {
       r3 = frankv(col, ties.method=k, na.last=j)
       r4 = frankv(col, order=-1L, ties.method=k, na.last=j)
 
-      test_no = test_no+.0001
-      test(test_no, r1, r3)
-      test_no = test_no+.0001
-      test(test_no, r2, r4)
+      test_no = test_no + 1L
+      test(1368.0 + test_no*0.0001, r1, r3)
+      test_no = test_no + 1L
+      test(1368.0 + test_no*0.0001, r2, r4)
     }
   }
 }
@@ -5707,7 +5707,7 @@ dt = data.table(AA=sample(c(-2:2, NA), 50, TRUE),
                 DD=sample(c(-2:2, NA), 50, TRUE),
                 EE=sample(as.logical(c(-2:2, NA)), 50, TRUE))
 if (test_bit64) dt[, DD := as.integer64(DD)]
-test_no = 1369.0
+test_no = 0L
 for (i in seq_along(dt)) {
   col = dt[[i]]
   # ensure consistency with base::rank ties.methods as advertised
@@ -5725,10 +5725,10 @@ for (i in seq_along(dt)) {
     r3 = frankv(col, ties.method=k, na.last=NA)
     r4 = frankv(col, order=-1L, ties.method=k, na.last=NA)
 
-    test_no = test_no+.0001
-    test(test_no, r1, r3)
-    test_no = test_no+.0001
-    test(test_no, r2, r4)
+    test_no = test_no + 1L
+    test(1369.0 + test_no*0.0001, r1, r3)
+    test_no = test_no + 1L
+    test(1369.0 + test_no*0.0001, r2, r4)
   }
 }
 
@@ -5744,20 +5744,20 @@ dt = list(AA=sample(c(NA,-2:2), 50, TRUE),
                 DD=sample(c(NA,-2:2), 50, TRUE),
                 EE=sample(as.logical(c(NA,-2:2)), 50, TRUE))
 if (test_bit64) dt[["DD"]] = as.integer64(dt[["DD"]])
-test_no = 1370.0
+test_no = 0L
 ans = as.list(na.omit(as.data.table(dt)))
 for (i in seq_along(dt)) {
   combn(names(dt), i, function(cols) {
     ans1 = is_na(dt[cols])
     ans2 = rowSums(is.na(as.data.table(dt[cols]))) > 0L
-    test_no <<- test_no+.0001
-    test(test_no, ans1, ans2)
+    test_no <<- test_no + 1L
+    test(1370.0 + test_no*0.0001, ans1, ans2)
 
     # update: tests for any_na
-    test_no <<- test_no+.0001
-    test(test_no, any_na(dt[cols]), TRUE)
-    test_no <<- test_no+.0001
-    test(test_no, any_na(ans[cols]), FALSE)
+    test_no <<- test_no + 1L
+    test(1370.0 + test_no*0.0001, any_na(dt[cols]), TRUE)
+    test_no <<- test_no + 1L
+    test(1370.0 + test_no*0.0001, any_na(ans[cols]), FALSE)
     TRUE
   })
 }
@@ -5851,7 +5851,7 @@ types=c("any", "within", "start", "end", "equal") # add 'equal' as well
 mults=c("all", "first", "last")
 maxgap=-1L; minoverlap=0L # default has changed in IRanges/GenomicRanges :: findOverlaps
 verbose=FALSE; which=TRUE
-test_no = 1372.0
+test_no = 0L
 load(testDir("test1372.Rdata")) # Regenerated on 17/02/2019 to include type = 'equal'. Var 'ans' has all the results saved by running GenomicRanges separately using code above, is a list with names of the format type_mult_run
 set.seed(123)
 this = 1L
@@ -5880,11 +5880,11 @@ for (run in seq_len(times)) {
       # data.table overlap join
       nomatch = if(mult == "all") NULL else NA_integer_
       thisans = foverlaps(i, x, mult=mult, type=type, nomatch=nomatch, which=which, verbose=verbose)
-      test_no = test_no+.01
+      test_no = test_no + 1L
       # cat("test =", test_no, ", run = ", run, ", type = ", type, ", mult = ", mult, "\n", sep="")
       idx = paste(type, mult, run, sep="_")
       # ans[[idx]] contains fo(gr(i), gr(x), type=type, select=mult)
-      test(test_no, thisans, ans[[idx]])
+      test(1372.0 + test_no*0.01, thisans, ans[[idx]])
       this = this+1L
     }
   }
