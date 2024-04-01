@@ -18139,8 +18139,6 @@ DT = data.table(
 )
 load(testDir("test2233-43.Rdata"))  # ans
 setDT(ans)  # to silence verbose messages about internal.selfref being NULL when loaded from disk
-old = options(datatable.verbose=TRUE)
-
 test(2233.43,
   options = list(datatable.verbose=TRUE, datatable.optimize=0),
   copy(DT)[, sum_v2_idT:=sum(v2),       by=c("id", "t")
