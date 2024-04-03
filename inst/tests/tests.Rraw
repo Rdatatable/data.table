@@ -18439,3 +18439,21 @@ dt = data.table(a = 1L)
 test(2252.1, dt[, b:=2L], error = "\\[ was called on a data.table.*not data.table-aware.*':='")
 test(2252.2, dt[, let(b=2L)], error = "\\[ was called on a data.table.*not data.table-aware.*'let'")
 rm(.datatable.aware)
+
+# fcase supports vector default values, #4258
+# for default
+test(2253.01, fcase(c(TRUE, FALSE, NA, NA), 1:4, default = 11:13), error = "Length of 'default' must be 1 or 4.")
+test(2253.02, fcase(c(TRUE, FALSE, NA, NA), 1:4, default = 11:14), c(1L, 12:14)) # int
+test(2253.03, fcase(c(TRUE, FALSE, NA, NA), 1:4 + 0.1, default = 11:14 + 0.1), c(1L, 12:14) + 0.1) # double
+test(2253.04, fcase(c(TRUE, FALSE, NA, NA), as.character(1:4), default = as.character(11:14)), as.character(c(1L, 12:14))) # string
+test(2253.05, fcase(c(TRUE, FALSE, NA, NA), as.list(1:4), default = as.list(11:14)), as.list(c(1L, 12:14))) # list
+test(2253.06, fcase(c(TRUE, FALSE, NA, NA), (1:4)+1i, default = (11:14)+1i), c(1L, 12:14)+1i) # complex
+# for scalar condition
+test(2253.07, fcase(c(TRUE, FALSE, NA, NA), 1:4, TRUE, 11:13), error = "Length of output value #4 must either be 1 or length of logical condition")
+test(2253.08, fcase(c(TRUE, FALSE, NA, NA), 1:4, TRUE, 11:14), c(1L, 12:14)) # int
+test(2253.09, fcase(c(TRUE, FALSE, NA, NA), 1:4 + 0.1, TRUE, 11:14 + 0.1), c(1L, 12:14) + 0.1) # double
+test(2253.10, fcase(c(TRUE, FALSE, NA, NA), as.character(1:4), TRUE, as.character(11:14)), as.character(c(1L, 12:14))) # string
+test(2253.11, fcase(c(TRUE, FALSE, NA, NA), as.list(1:4), TRUE, as.list(11:14)), as.list(c(1L, 12:14))) # list
+test(2253.12, fcase(c(TRUE, FALSE, NA, NA), (1:4)+1i, TRUE, (11:14)+1i), c(1L, 12:14)+1i) # complex
+test(2253.13, fcase(TRUE, 1L, default = stop("lazy eval")), 1L) # default is lazy evaled
+test(2253.14, fcase(c(TRUE, FALSE), 1L, c(TRUE, TRUE), NA), c(1L, NA_integer_)) # scalar NA will be convered
