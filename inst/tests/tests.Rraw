@@ -2649,13 +2649,13 @@ for (ne in seq_along(eols)) {
   lines = capture.output(fwrite(headDT, verbose=FALSE))
   cat(paste(lines,collapse=eol), file=f, sep="")  # so last line abruptly ends (missing last eol) to test that, otherwise could just pass eol to fwrite
   # on unix we simulate Windows too. On Windows \n will write \r\n (and \r\n will write \r\r\n)
-  num = 894 + nr/100 + nc/1000 + ne/10000
+  num_major = nr/100 + nc/1000 + ne/10000
   # if (isTRUE(all.equal(testIDtail, 0.4103))) browser()
-  test(num+0.00001, fread(f,na.strings=""), headDT)
+  test(894+num_major+0.00001, fread(f,na.strings=""), headDT)
   cat(eol,file=f,append=TRUE)                     # now a normal file properly ending with final \n
-  test(num+0.00002, fread(f,na.strings=""), headDT)
+  test(894+num_major+0.00002, fread(f,na.strings=""), headDT)
   cat(eol,file=f,append=TRUE)                     # extra \n should be ignored other than for single columns where it is significant
-  test(num+0.00003, fread(f,na.strings=""), if (nc==1) rbind(headDT, list(NA)) else headDT)
+  test(894+num_major+0.00003, fread(f,na.strings=""), if (nc==1) rbind(headDT, list(NA)) else headDT)
   unlink(f)
 }}}
 if (test_bit64) {
@@ -14713,18 +14713,18 @@ test(2025.01, fread(testDir("issue_3400_fread.txt"), skip=1, header=TRUE), data.
 f = tempfile()
 for (nNUL in 0:3) {
   writeBin(c(charToRaw("a=b\nA  B  C\n1  3  5\n"), rep(as.raw(0), nNUL), charToRaw("2  4  6\n")), con=f)
-  test_no = 2025 + (1+nNUL)/10
-  test(test_no + .01, fread(f, skip=1, header=TRUE), ans<-data.table(A=1:2, B=3:4, C=5:6))
-  test(test_no + .02, fread(f), ans)  # auto detect skip and header works too
+  num_major = (1+nNUL)/10
+  test(2025 + num_major + .01, fread(f, skip=1, header=TRUE), ans<-data.table(A=1:2, B=3:4, C=5:6))
+  test(2025 + num_major + .02, fread(f), ans)  # auto detect skip and header works too
   writeBin(c(charToRaw("a=b\nA,B,C\n1,3,5\n"), rep(as.raw(0), nNUL), charToRaw("2,4,6\n")), con=f)
-  test(test_no + .03, fread(f, skip=1, header=TRUE), ans)
-  test(test_no + .04, fread(f), ans)
+  test(2025 + num_major + .03, fread(f, skip=1, header=TRUE), ans)
+  test(2025 + num_major + .04, fread(f), ans)
   writeBin(c(charToRaw("a=b\n"), rep(as.raw(0), nNUL), charToRaw("A  B  C\n1  3  5\n2  4  6\n")), con=f)
-  test(test_no + .05, fread(f, skip=1, header=TRUE), ans)
-  test(test_no + .06, fread(f), ans)
+  test(2025 + num_major + .05, fread(f, skip=1, header=TRUE), ans)
+  test(2025 + num_major + .06, fread(f), ans)
   writeBin(c(charToRaw("a=b\n"), rep(as.raw(0), nNUL), charToRaw("A,B,C\n1,3,5\n2,4,6\n")), con=f)
-  test(test_no + .07, fread(f, skip=1, header=TRUE), ans)
-  test(test_no + .08, fread(f), ans)
+  test(2025 + num_major + .07, fread(f, skip=1, header=TRUE), ans)
+  test(2025 + num_major + .08, fread(f), ans)
 }
 makeNul = function(str){ tt=charToRaw(str); tt[tt==42L]=as.raw(0); writeBin(tt, con=f)}  # "*" (42) represents NUL
 makeNul("A,B,C\n1,foo,5\n2,*bar**,6\n")
@@ -18107,19 +18107,18 @@ test(2233.38, copy(DT)[, val:=v[1L], keyby=.(A,B), verbose=TRUE], data.table(A=I
 set.seed(10)
 n = 100
 a = data.table(id1=1:n, id2=sample(1:900,n,replace=TRUE), flag=sample(c(0,0,0,1),n,replace=TRUE))
-testnum = 2233.39
 for (opt in c(0,Inf)) {
   options(datatable.optimize=opt)
   out = if (opt) "GForce.*gsum" else "GForce FALSE"
   B = copy(a)
   A = a[sample(seq_len(nrow(a)), nrow(a))] # shuffle
-  test(testnum+0.001, A[, t1 := sum(flag, na.rm=TRUE), by=id2, verbose=TRUE], A, output=out)  # y=A dummy just to test output=
+  num_bump = (opt>0)/100
+  test(2233.39+num_bump+0.001, A[, t1 := sum(flag, na.rm=TRUE), by=id2, verbose=TRUE], A, output=out)  # y=A dummy just to test output=
   setorder(A, id1)
-  test(testnum+0.002, A[, t2 := sum(flag, na.rm=TRUE), by=id2, verbose=TRUE], A, output=out)
-  test(testnum+0.003, any(A[,t1!=t2]), FALSE)
-  test(testnum+0.004, any(A[, length(unique(t1))>1, by=id2]$V1), FALSE)
-  test(testnum+0.005, any(A[, length(unique(t2))>1, by=id2]$V1), FALSE)
-  testnum = 2233.40
+  test(2233.39+num_bump+0.002, A[, t2 := sum(flag, na.rm=TRUE), by=id2, verbose=TRUE], A, output=out)
+  test(2233.39+num_bump+0.003, any(A[,t1!=t2]), FALSE)
+  test(2233.39+num_bump+0.004, any(A[, length(unique(t1))>1, by=id2]$V1), FALSE)
+  test(2233.39+num_bump+0.005, any(A[, length(unique(t2))>1, by=id2]$V1), FALSE)
 }
 # test from #5337
 n=4; k=2
