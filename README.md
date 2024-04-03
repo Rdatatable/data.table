@@ -85,6 +85,17 @@ DT[Petal.Width > 1.0, mean(Petal.Length), by = Species]
 
 `data.table` is widely used by the R community. It is being directly used by hundreds of CRAN and Bioconductor packages, and indirectly by thousands. It is one of the [top most starred](https://medium.datadriveninvestor.com/most-starred-and-forked-github-repos-for-r-in-data-science-fb87a54d2a6a) R packages on GitHub, and was highly rated by the [Depsy project](http://depsy.org/package/r/data.table). If you need help, the `data.table` community is active on [StackOverflow](https://stackoverflow.com/questions/tagged/data.table).
 
+### Seal of Approval
+
+Below is a curated list of packages that use `data.table` internally,
+and/or provide complementary features that are outside of `data.table`
+scope.
+
+* [nc](https://github.com/tdhock/nc) is for parsing text data using
+  named capture regular expressions, returning the results as a
+  `data.table` with one row per match, and one column per capture
+  group.
+
 ### Stay up-to-date
 
 - click the **Watch** button at the top and right of GitHub project page
