@@ -28,10 +28,8 @@ jobs:
           needs: lint
 
       - name: Lint
-        run: |
-          # TODO(r-lib/lintr#2512): use a standard approach here
-          lintr:::read_settings(".ci/.lintr.R")
-          lintr::lint_package(parse_settings = FALSE)
+        run: lintr::lint_package()
         shell: Rscript {0}
         env:
           LINTR_ERROR_ON_LINT: true
+          R_LINTR_LINTER_FILE: .ci/.lintr
