@@ -148,7 +148,7 @@ detect_openmp () {
 }
 
 detect_openmp
-rm -f a.out test-omp.c
+rm -f a.out test-omp.*
 
 if [ "${R_OPENMP_ENABLED}" = "0" ]; then
   echo "***"
