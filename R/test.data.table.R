@@ -179,10 +179,14 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     keep_lines = intertest_ranges[, sort(unique(unlist(Map(function(l, u) l:u, preceding_line+1L, test_start_line))))]
     header_lines = seq_len(test_calls$line1[1L]-1L)
 
-    fn = tempfile()
-    on.exit(unlink(fn), add=TRUE)
-    catf("Running %d of %d tests matching '%s'\n", length(keep_test_ids), nrow(test_calls), testPattern)
-    writeLines(file_lines[c(header_lines, keep_lines)], fn)
+    tryCatch(error = function(c) warningf("Attempt to subset to %d tests matching '%s' failed, running full suite.", length(keep_test_ids), testPattern), {
+      new_script = file_lines[c(header_lines, keep_lines)]
+      parse(text = new_script) # as noted above the static approach is not fool-proof (yet?), so force the script to at least parse before continuing.
+      fn = tempfile()
+      on.exit(unlink(fn), add=TRUE)
+      catf("Running %d of %d tests matching '%s'\n", length(keep_test_ids), nrow(test_calls), testPattern)
+      writeLines(new_script, fn)
+    })
   }
   # nocov end
 
