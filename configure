@@ -104,7 +104,7 @@ detect_openmp () {
     else
       echo "no"
     fi
-  fi
+  fi # uname=Linux
 
   if [ "$(uname)" = "Darwin" ]; then
 
@@ -141,7 +141,7 @@ detect_openmp () {
       fi
     fi
 
-  fi
+  fi # uname=Darwin
 
   # No support for OpenMP available
   export R_OPENMP_ENABLED=0
