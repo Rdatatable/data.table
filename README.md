@@ -87,7 +87,7 @@ DT[Petal.Width > 1.0, mean(Petal.Length), by = Species]
 
 ### Seal of Approval
 
-The Seal of Approval is a curated list of packages that use `data.table` internally, and/or provide complementary features that are outside of `data.table` scope. There is a brief description of each package below, with more info on [The-Raft blog, in the Seal of Approval category](https://rdatatable-community.github.io/The-Raft/#category=seal of approval).
+The Seal of Approval is a curated list of packages that use `data.table` internally, and/or provide complementary features that are outside of `data.table` scope. There is a brief description of each package below, with more info on [The-Raft blog, in the Seal of Approval category](https://rdatatable-community.github.io/The-Raft/#category=seal%20of%20approval).
 
 * [nc](https://github.com/tdhock/nc) is for parsing text data using named capture regular expressions, returning the results as a `data.table` with one row per match, and one column per capture group.
 
