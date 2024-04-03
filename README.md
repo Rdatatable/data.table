@@ -91,7 +91,7 @@ The Seal of Approval is a curated list of packages that use `data.table` interna
 
 * [nc](https://github.com/tdhock/nc) is for parsing text data using named capture regular expressions, returning the results as a `data.table` with one row per match, and one column per capture group.
 
-To obtain the Seal of Approval, please (1) open a PR that adds your package to the list above, and (2) open a PR that adds a blog post about your package to [The-Raft](https://github.com/rdatatable-community/The-Raft/).
+To obtain the Seal of Approval, please (1) [open a PR in this repo](https://github.com/Rdatatable/data.table/edit/master/README.md) that adds your package to the list above, and (2) open a PR in [The-Raft](https://github.com/rdatatable-community/The-Raft/) repo that adds a blog post about your package.
 
 ### Stay up-to-date
 
