@@ -86,7 +86,7 @@ as.list.IDate = function(x, ...) NextMethod()
 round.IDate = function (x, digits=c("weeks", "months", "quarters", "years"), ...) {
   units = match.arg(digits)
   as.IDate(switch(units,
-          weeks  = round(x, "year") + 7L * (yday(x) %/% 7L),
+          weeks  = round(x, "year") + 7L * ((yday(x) - 1L) %/% 7L),
           months = ISOdate(year(x), month(x), 1L),
           quarters = ISOdate(year(x), 3L * (quarter(x)-1L) + 1L, 1L),
           years = ISOdate(year(x), 1L, 1L)))
