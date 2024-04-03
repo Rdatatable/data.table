@@ -87,14 +87,9 @@ DT[Petal.Width > 1.0, mean(Petal.Length), by = Species]
 
 ### Seal of Approval
 
-Below is a curated list of packages that use `data.table` internally,
-and/or provide complementary features that are outside of `data.table`
-scope.
+Below is a curated list of packages that use `data.table` internally, and/or provide complementary features that are outside of `data.table` scope. To obtain the Seal of Approval, please open a PR that adds your package to the list.
 
-* [nc](https://github.com/tdhock/nc) is for parsing text data using
-  named capture regular expressions, returning the results as a
-  `data.table` with one row per match, and one column per capture
-  group.
+* [nc](https://github.com/tdhock/nc) is for parsing text data using named capture regular expressions, returning the results as a `data.table` with one row per match, and one column per capture group.
 
 ### Stay up-to-date
 
