@@ -148,6 +148,7 @@ detect_openmp () {
 }
 
 detect_openmp
+# Clean up.
 rm -f a.out test-omp.*
 
 if [ "${R_OPENMP_ENABLED}" = "0" ]; then
