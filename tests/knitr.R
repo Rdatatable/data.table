@@ -3,7 +3,7 @@ if (!suppressPackageStartupMessages(requireNamespace("knitr", quietly=TRUE))) {
   q('no')
 }
 
-require(knitr)
-knit("knitr.Rmd", quiet=TRUE)
+library(knitr)
+invisible(knit("knitr.Rmd", quiet=TRUE))
 cat(readLines("knitr.md"), sep="\n")
 invisible(file.remove("knitr.md"))
