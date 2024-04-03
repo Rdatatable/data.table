@@ -21,7 +21,7 @@ esac
 
 msg=0
 NOZLIB=1 # if pkg-config is not available then zlib will be disabled for higher chance of compilation success
-pkg-config --version >> config.log 2>&1
+pkg-config --version > config.log 2>&1
 if [ $? -ne 0 ]; then
   echo "*** pkg-config is not installed."
   msg=1
