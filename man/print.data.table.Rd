@@ -83,7 +83,7 @@
   print(DT, row.names = FALSE)
 
   #`print.keys` can alert which columns are currently keys
-  DT <- data.table(a=1:3, b=4:6, c=7:9, key=c("b", "a"))
+  DT <- data.table(a=1:3, b=4:6, c=7:9, key="b,a")
   setindexv(DT, c("a", "b"))
   setindexv(DT, "a")
   print(DT, print.keys=TRUE)
