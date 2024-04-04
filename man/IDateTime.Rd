@@ -241,7 +241,7 @@ identical(as.ITime("10:45"), methods::as("10:45", "ITime"))
 as.POSIXct("2001-01-01") + as.ITime("10:45")
 
 datetime <- seq(as.POSIXct("2001-01-01"), as.POSIXct("2001-01-03"), by = "5 hour")
-(af <- data.table(IDateTime(datetime), a = rep(1:2, 5), key = "a,idate,itime"))
+(af <- data.table(IDateTime(datetime), a = rep(1:2, 5), key = c("a", "idate", "itime")))
 
 af[, mean(a), by = "itime"]
 af[, mean(a), by = list(hour = hour(itime))]

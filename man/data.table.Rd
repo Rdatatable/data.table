@@ -44,7 +44,7 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
 
     \item{check.names}{ Just as \code{check.names} in \code{\link{data.frame}}.}
 
-    \item{key}{ Character vector of one or more column names which is passed to \code{\link{setkey}}. It may be a single comma separated string such as \code{key="x,y,z"}, or a vector of names such as \code{key=c("x","y","z")}.}
+    \item{key}{ Character vector of one or more column names which is passed to \code{\link{setkey}}.}
 
     \item{stringsAsFactors}{Logical (default is \code{FALSE}). Convert all \code{character} columns to \code{factor}s?}
 
