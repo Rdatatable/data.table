@@ -6,8 +6,8 @@
 SEXP dt_na(SEXP x, SEXP cols) {
   int n=0, elem;
 
-  if (!isNewList(x)) error(_("Internal error. Argument 'x' to Cdt_na is type '%s' not 'list'"), type2char(TYPEOF(x))); // # nocov
-  if (!isInteger(cols)) error(_("Internal error. Argument 'cols' to Cdt_na is type '%s' not 'integer'"), type2char(TYPEOF(cols))); // # nocov
+  if (!isNewList(x)) error(_("Internal error. Argument '%s' to %s is type '%s' not '%s'"), "x", "Cdt_na", type2char(TYPEOF(x)), "list"); // # nocov
+  if (!isInteger(cols)) error(_("Internal error. Argument '%s' to %s is type '%s' not '%s'"), "cols", "Cdt_na", type2char(TYPEOF(cols)), "integer"); // # nocov
   for (int i=0; i<LENGTH(cols); ++i) {
     elem = INTEGER(cols)[i];
     if (elem<1 || elem>LENGTH(x))
@@ -62,38 +62,38 @@ SEXP dt_na(SEXP x, SEXP cols) {
       // is.na(some_list) returns TRUE only for elements which are
       // scalar NA.
       for (int j=0; j<n; ++j) {
-	SEXP list_element = VECTOR_ELT(v, j);
-	switch (TYPEOF(list_element)) {
-	case LGLSXP: {
-	  ians[j] |= (length(list_element)==1 && LOGICAL(list_element)[0] == NA_LOGICAL);
-	}
-	  break;
-	case INTSXP: {
-	  ians[j] |= (length(list_element)==1 && INTEGER(list_element)[0] == NA_INTEGER);
-	}
-	  break;
-	case STRSXP: {
-	  ians[j] |= (length(list_element)==1 && STRING_ELT(list_element,0) == NA_STRING);
-	}
-	  break;
-	case CPLXSXP: {
-	  if (length(list_element)==1) {
-	    Rcomplex first_complex = COMPLEX(list_element)[0];
-	    ians[j] |= (ISNAN(first_complex.r) || ISNAN(first_complex.i));
-	  }
-	}
-	  break;					  
-	case REALSXP: {
-	  if (length(list_element)==1) {
-	    if (INHERITS(list_element, char_integer64)) {
-	      ians[j] |= ((const int64_t *)REAL(list_element))[0] == NA_INTEGER64;
-	    } else {
-	      ians[j] |= ISNAN(REAL(list_element)[0]);
-	    }
-	  }
-	}
-	  break;
-	}
+        SEXP list_element = VECTOR_ELT(v, j);
+        switch (TYPEOF(list_element)) {
+        case LGLSXP: {
+          ians[j] |= (length(list_element)==1 && LOGICAL(list_element)[0] == NA_LOGICAL);
+        }
+          break;
+        case INTSXP: {
+          ians[j] |= (length(list_element)==1 && INTEGER(list_element)[0] == NA_INTEGER);
+        }
+          break;
+        case STRSXP: {
+          ians[j] |= (length(list_element)==1 && STRING_ELT(list_element,0) == NA_STRING);
+        }
+          break;
+        case CPLXSXP: {
+          if (length(list_element)==1) {
+            Rcomplex first_complex = COMPLEX(list_element)[0];
+            ians[j] |= (ISNAN(first_complex.r) || ISNAN(first_complex.i));
+          }
+        }
+          break;
+        case REALSXP: {
+          if (length(list_element)==1) {
+            if (INHERITS(list_element, char_integer64)) {
+              ians[j] |= ((const int64_t *)REAL(list_element))[0] == NA_INTEGER64;
+            } else {
+              ians[j] |= ISNAN(REAL(list_element)[0]);
+            }
+          }
+        }
+          break;
+        }
       }
     }
       break;
@@ -184,8 +184,8 @@ SEXP frank(SEXP xorderArg, SEXP xstartArg, SEXP xlenArg, SEXP ties_method) {
 // internal version of anyNA for data.tables
 SEXP anyNA(SEXP x, SEXP cols) {
   int n=0;
-  if (!isNewList(x)) error(_("Internal error. Argument 'x' to CanyNA is type '%s' not 'list'"), type2char(TYPEOF(x))); // #nocov
-  if (!isInteger(cols)) error(_("Internal error. Argument 'cols' to CanyNA is type '%s' not 'integer'"), type2char(TYPEOF(cols))); // # nocov
+  if (!isNewList(x)) error(_("Internal error. Argument '%s' to %s is type '%s' not '%s'"), "x", "CanyNA", type2char(TYPEOF(x)), "list"); // #nocov
+  if (!isInteger(cols)) error(_("Internal error. Argument '%s' to %s is type '%s' not '%s'"), "cols", "CanyNA", type2char(TYPEOF(cols)), "integer"); // # nocov
   for (int i=0; i<LENGTH(cols); ++i) {
     const int elem = INTEGER(cols)[i];
     if (elem<1 || elem>LENGTH(x))

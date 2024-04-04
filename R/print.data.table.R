@@ -140,44 +140,12 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   invisible(x)
 }
 
-format.data.table = function (x, ..., justify="none", timezone = FALSE) {
-  if (is.atomic(x) && !is.null(x)) {
+format.data.table = function (x, ..., justify="none") {
+  if (is.atomic(x) && !is.null(x)) { ## future R can use  if (is.atomic(x))
+
     stopf("Internal structure doesn't seem to be a list. Possibly corrupt data.table.")
   }
-  format.item = function(x) {
-    if (is.null(x))  # NULL item in a list column
-      ""
-    else if (is.atomic(x) || inherits(x,"formula")) # FR #2591 - format.data.table issue with columns of class "formula"
-      paste(c(format(head(x, 6L), justify=justify, ...), if (length(x) > 6L) "..."), collapse=",")  # fix for #37 - format has to be added here...
-    else
-      paste0("<", class(x)[1L], paste_dims(x), ">")
-  }
-  # FR #2842 add timezone for posix timestamps
-  format.timezone = function(col) { # paste timezone to a time object
-    tz = attr(col,'tzone', exact=TRUE)
-    if (!is.null(tz)) { # date object with tz
-      nas = is.na(col)
-      col = paste0(as.character(col)," ",tz) # parse to character
-      col[nas] = NA_character_
-    }
-    return(col)
-  }
-  # FR #1091 for pretty printing of character
-  # TODO: maybe instead of doing "this is...", we could do "this ... test"?
-  char.trunc = function(x, trunc.char = getOption("datatable.prettyprint.char")) {
-    trunc.char = max(0L, suppressWarnings(as.integer(trunc.char[1L])), na.rm=TRUE)
-    if (!is.character(x) || trunc.char <= 0L) return(x)
-    idx = which(nchar(x) > trunc.char)
-    x[idx] = paste0(substr(x[idx], 1L, as.integer(trunc.char)), "...")
-    x
-  }
-  do.call("cbind",lapply(x,function(col,...) {
-    if (!is.null(dim(col))) return("<multi-column>")
-    if(timezone) col = format.timezone(col)
-    if (is.list(col)) col = vapply_1c(col, format.item)
-    else col = format(char.trunc(col), justify=justify, ...) # added an else here to fix #37
-    col
-  },...))
+  do.call("cbind", lapply(x, format_col, ..., justify=justify))
 }
 
 mimicsAutoPrint = c("knit_print.default")
@@ -203,6 +171,70 @@ paste_dims = function(x) {
     if (is.null(dim(x))) length(x) else dim(x)
   }
   paste0("[", paste(dims,collapse="x"), "]")
+}
+
+format_col = function(x, ...) {
+  UseMethod("format_col")
+}
+
+format_list_item = function(x, ...) {
+  UseMethod("format_list_item")
+}
+
+has_format_method = function(x) {
+  f = function(y) !is.null(getS3method("format", class=y, optional=TRUE))
+  any(sapply(class(x), f))
+}
+
+format_col.default = function(x, ...) {
+  if (!is.null(dim(x)))
+    "<multi-column>"
+  else if (has_format_method(x) && length(formatted<-format(x, ...))==length(x))
+    formatted  #PR5224 motivated by package sf where column class is c("sfc_MULTIPOLYGON","sfc") and sf:::format.sfc exists
+  else if (is.list(x))
+    vapply_1c(x, format_list_item, ...)
+  else
+    format(char.trunc(x), ...) # relevant to #37
+}
+
+# #2842 -- different columns can have different tzone, so force usage in output
+format_col.POSIXct = function(x, ..., timezone=FALSE) {
+  if (timezone) {
+    tz = attr(x,'tzone',exact=TRUE)
+    nas = is.na(x)
+    x = paste0(as.character(x)," ",tz)
+    is.na(x) = nas
+  } else {
+    x = format(x, usetz=FALSE)
+  }
+  x
+}
+
+# #3011 -- expression columns can wrap to newlines which breaks printing
+format_col.expression = function(x, ...) format(char.trunc(as.character(x)), ...)
+
+format_list_item.default = function(x, ...) {
+  if (is.null(x))  # NULL item in a list column
+    "[NULL]" # not '' or 'NULL' to distinguish from those "common" string values in data
+  else if (is.atomic(x) || inherits(x, "formula")) # FR #2591 - format.data.table issue with columns of class "formula"
+    paste(c(format(head(x, 6L), ...), if (length(x) > 6L) "..."), collapse=",") # fix for #5435 and #37 - format has to be added here...
+  else if (has_format_method(x) && length(formatted<-format(x, ...))==1L) {
+    # the column's class does not have a format method (otherwise it would have been used by format_col and this
+    # format_list_item would not be reached) but this particular list item does have a format method so use it
+    formatted
+  } else {
+    paste0("<", class(x)[1L], paste_dims(x), ">")
+  }
+}
+
+# FR #1091 for pretty printing of character
+# TODO: maybe instead of doing "this is...", we could do "this ... test"?
+char.trunc = function(x, trunc.char = getOption("datatable.prettyprint.char")) {
+  trunc.char = max(0L, suppressWarnings(as.integer(trunc.char[1L])), na.rm=TRUE)
+  if (!is.character(x) || trunc.char <= 0L) return(x)
+  idx = which(nchar(x) > trunc.char)
+  x[idx] = paste0(substr(x[idx], 1L, as.integer(trunc.char)), "...")
+  x
 }
 
 # to calculate widths of data.table for PR #4074

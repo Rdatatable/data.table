@@ -41,13 +41,27 @@
 \alias{month}
 \alias{quarter}
 \alias{year}
+\alias{yearmon}
+\alias{yearqtr}
 \alias{IDate-class}
 \alias{ITime-class}
 
 \title{ Integer based date class }
 \description{
-   Date and time classes with integer storage for fast sorting and
-   grouping. Still experimental!
+   Classes (\code{IDate} and \code{ITime}) with \emph{integer} storage
+   for fast sorting and grouping.
+
+   \code{IDate} inherits from the base class \code{Date}; the main
+   difference is that the latter uses double storage, allowing e.g. for
+   fractional dates at the cost of storage & sorting inefficiency.
+
+   Using \code{IDate}, if sub-day granularity is needed, use a second
+   \code{ITime} column. \code{IDateTime()} facilitates building such
+   paired columns.
+
+   Lastly, there are date-time helpers for extracting parts of dates as
+   integers, for example the year (\code{year()}), month
+   (\code{month()}), or day in the month (\code{mday()}); see Usage and Exampels.
 }
 \usage{
 as.IDate(x, \dots)
@@ -81,6 +95,8 @@ isoweek(x)
 month(x)
 quarter(x)
 year(x)
+yearmon(x)
+yearqtr(x)
 
 }
 
@@ -92,7 +108,9 @@ year(x)
   \item{tz}{time zone (see \code{strptime}).}
   \item{date}{date object convertible with \code{as.IDate}.}
   \item{time}{time-of-day object convertible with \code{as.ITime}.}
-  \item{digits}{really \code{units}; one of the units listed for rounding. May be abbreviated.}
+  \item{digits}{really \code{units}; one of the units listed for
+  rounding. May be abbreviated. Named \code{digits} for consistency with
+  the S3 generic.}
   \item{units}{one of the units listed for truncating. May be abbreviated.}
   \item{ms}{ For \code{as.ITime} methods, what should be done with sub-second fractions of input? Valid values are \code{'truncate'} (floor), \code{'nearest'} (round), and \code{'ceil'} (ceiling). See Details. }
 }
@@ -100,7 +118,13 @@ year(x)
 \code{IDate} is a date class derived from \code{Date}. It has the same
 internal representation as the \code{Date} class, except the storage
 mode is integer. \code{IDate} is a relatively simple wrapper, and it
-should work in almost all situations as a replacement for \code{Date}.
+should work in almost all situations as a replacement for
+\code{Date}. The main limitations of integer storage are (1) fractional
+  dates are not supported (use \code{IDateTime()} instead) and (2) the
+  range of supported dates is bounded by \code{.Machine$integer.max}
+  dates away from January 1, 1970 (a rather impractical limitation as
+  these dates are roughly 6 million years in the future/past, but
+  consider this your caveat).
 
 Functions that use \code{Date} objects generally work for
 \code{IDate} objects. This package provides specific methods for
@@ -113,11 +137,10 @@ hours. Because \code{ITime} is stored in seconds, you can add it to a
 \code{POSIXct} object, but you should not add it to a \code{Date}
 object.
 
-Conversions to and from \code{Date} and \code{POSIXct} formats are provided.
+We also provide S3 methods to convert to and from \code{Date} and \code{POSIXct}.
 
-\code{ITime} does not account for time zones. When converting
-\code{ITime} and \code{IDate} to POSIXct with \code{as.POSIXct}, a time
-zone may be specified.
+\code{ITime} is time zone-agnostic. When converting \code{ITime} and
+\code{IDate} to POSIXct with \code{as.POSIXct}, a time zone may be specified.
 
 Inputs like \code{'2018-05-15 12:34:56.789'} are ambiguous from the perspective of an \code{ITime} object -- the method of coercion of the 789 milliseconds is controlled by the \code{ms} argument to relevant methods. The default behavior (\code{ms = 'truncate'}) is to use \code{as.integer}, which has the effect of truncating anything after the decimal. Alternatives are to round to the nearest integer (\code{ms = 'nearest'}) or to round up (\code{ms = 'ceil'}).
 
@@ -145,11 +168,11 @@ functions \code{weekdays}, \code{months}, and \code{quarters} can also
 be used, but these return character values, so they must be converted to
 factors for use with data.table. \code{isoweek} is ISO 8601-consistent.
 
-The \code{round} method for IDate's is useful for grouping and plotting. 
+The \code{round} method for IDate's is useful for grouping and plotting.
 It can round to weeks, months, quarters, and years. Similarly, the \code{round}
 and \code{trunc} methods for ITime's are useful for grouping and plotting.
-They can round or truncate to hours and minutes. 
-Note for ITime's with 30 seconds, rounding is inconsistent due to rounding off a 5. 
+They can round or truncate to hours and minutes.
+Note for ITime's with 30 seconds, rounding is inconsistent due to rounding off a 5.
 See 'Details' in \code{\link{round}} for more information.
 
 }
@@ -169,9 +192,14 @@ See 'Details' in \code{\link{round}} for more information.
    and \code{year} return integer values
    for second, minute, hour, day of year, day of week,
    day of month, week, month, quarter, and year, respectively.
+   \code{yearmon} and \code{yearqtr} return double values representing
+   respectively `year + (month-1) / 12` and `year + (quarter-1) / 4`.
 
-   These values are all taken directly from the \code{POSIXlt} representation 
-   of \code{x}, with the notable difference that while \code{yday}, \code{wday}, 
+   \code{second}, \code{minute}, \code{hour} are taken directly from
+   the \code{POSIXlt} representation.
+   All other values are computed from the underlying integer representation
+   and comparable with the values of their \code{POSIXlt} representation
+   of \code{x}, with the notable difference that while \code{yday}, \code{wday},
    and \code{mon} are all 0-based, here they are 1-based.
 
 }
@@ -198,13 +226,13 @@ See 'Details' in \code{\link{round}} for more information.
 (d <- as.IDate("2001-01-01"))
 
 # S4 coercion also works
-identical(as.IDate("2001-01-01"), as("2001-01-01", "IDate"))
+identical(as.IDate("2001-01-01"), methods::as("2001-01-01", "IDate"))
 
 # create ITime:
 (t <- as.ITime("10:45"))
 
 # S4 coercion also works
-identical(as.ITime("10:45"), as("10:45", "ITime"))
+identical(as.ITime("10:45"), methods::as("10:45", "ITime"))
 
 (t <- as.ITime("10:45:04"))
 
@@ -234,7 +262,7 @@ round(seqdates, "months")
 (seqtimes <- seq(as.ITime("07:00"), as.ITime("08:00"), by = 20))
 round(seqtimes, "hours")
 trunc(seqtimes, "hours")
-   
+
 }
 \keyword{utilities}
 

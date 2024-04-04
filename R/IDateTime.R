@@ -71,6 +71,11 @@ unique.IDate =
   x
 }
 
+# define min and max to avoid base R's Inf with warning on empty, #2256
+min.IDate = max.IDate = function(x, ...) {
+  as.IDate(if (!length(x)) NA else NextMethod())
+}
+
 # fix for #1315
 as.list.IDate = function(x, ...) NextMethod()
 
@@ -270,7 +275,7 @@ mean.ITime = seq.ITime = c.ITime = function(x, ...) as.ITime(NextMethod())
 
 IDateTime = function(x, ...) UseMethod("IDateTime")
 IDateTime.default = function(x, ...) {
-  data.table(idate = as.IDate(x), itime = as.ITime(x))
+  data.table(idate = as.IDate(x, ...), itime = as.ITime(x, ...))
 }
 
 # POSIXt support
@@ -304,14 +309,14 @@ clip_msec = function(secs, action) {
      stopf("Valid options for ms are 'truncate', 'nearest', and 'ceil'.")
   )
 }
-                           
+
 ###################################################################
 # Date - time extraction functions
 #   Adapted from Hadley Wickham's routines cited below to ensure
 #   integer results.
 #     http://gist.github.com/10238
-#   See also Hadley's more advanced and complex lubridate package:
-#     http://github.com/hadley/lubridate
+#   See also Hadley et al's more advanced and complex lubridate package:
+#     https://github.com/tidyverse/lubridate
 #   lubridate routines do not return integer values.
 ###################################################################
 
@@ -333,10 +338,10 @@ hour = function(x) {
   if (inherits(x, 'ITime')) return(as.integer(x) %/% 3600L %% 24L)
   as.POSIXlt(x)$hour
 }
-yday    = function(x) as.POSIXlt(x)$yday + 1L
-wday    = function(x) (unclass(as.IDate(x)) + 4L) %% 7L + 1L
-mday    = function(x) as.POSIXlt(x)$mday
-week    = function(x) yday(x) %/% 7L + 1L
+yday    = function(x) convertDate(as.IDate(x), "yday")
+wday    = function(x) convertDate(as.IDate(x), "wday")
+mday    = function(x) convertDate(as.IDate(x), "mday")
+week    = function(x) convertDate(as.IDate(x), "week")
 isoweek = function(x) {
   # ISO 8601-conformant week, as described at
   #   https://en.wikipedia.org/wiki/ISO_week_date
@@ -351,7 +356,13 @@ isoweek = function(x) {
   1L + (nearest_thurs - year_start) %/% 7L
 }
 
-month   = function(x) as.POSIXlt(x)$mon + 1L
-quarter = function(x) as.POSIXlt(x)$mon %/% 3L + 1L
-year    = function(x) as.POSIXlt(x)$year + 1900L
+month   = function(x) convertDate(as.IDate(x), "month")
+quarter = function(x) convertDate(as.IDate(x), "quarter")
+year    = function(x) convertDate(as.IDate(x), "year")
+yearmon = function(x) convertDate(as.IDate(x), "yearmon")
+yearqtr = function(x) convertDate(as.IDate(x), "yearqtr")
 
+convertDate = function(x, type) {
+  type = match.arg(type, c("yday", "wday", "mday", "week", "month", "quarter", "year", "yearmon", "yearqtr"))
+  .Call(CconvertDate, x, type)
+}

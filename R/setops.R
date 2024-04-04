@@ -59,8 +59,9 @@ fintersect = function(x, y, all=FALSE) {
   .set_ops_arg_check(x, y, all, .seqn = TRUE)
   if (!nrow(x) || !nrow(y)) return(x[0L])
   if (all) {
-    x = shallow(x)[, ".seqn" := rowidv(x)]
-    y = shallow(y)[, ".seqn" := rowidv(y)]
+    .seqn_id = NULL  # to avoid 'no visible binding for global variable' note from R CMD check
+    x = shallow(x)[, ".seqn" := rowidv(.seqn_id), env=list(.seqn_id=x)]
+    y = shallow(y)[, ".seqn" := rowidv(.seqn_id), env=list(.seqn_id=y)]
     jn.on = c(".seqn",setdiff(names(y),".seqn"))
     # fixes #4716 by preserving order of 1st (uses y[x] join) argument instead of 2nd (uses x[y] join)
     y[x, .SD, .SDcols=setdiff(names(y),".seqn"), nomatch=NULL, on=jn.on]
@@ -75,8 +76,9 @@ fsetdiff = function(x, y, all=FALSE) {
   if (!nrow(x)) return(x)
   if (!nrow(y)) return(if (!all) funique(x) else x)
   if (all) {
-    x = shallow(x)[, ".seqn" := rowidv(x)]
-    y = shallow(y)[, ".seqn" := rowidv(y)]
+    .seqn_id = NULL  # to avoid 'no visible binding for global variable' note from R CMD check
+    x = shallow(x)[, ".seqn" := rowidv(.seqn_id), env=list(.seqn_id=x)]
+    y = shallow(y)[, ".seqn" := rowidv(.seqn_id), env=list(.seqn_id=y)]
     jn.on = c(".seqn",setdiff(names(x),".seqn"))
     x[!y, .SD, .SDcols=setdiff(names(x),".seqn"), on=jn.on]
   } else {

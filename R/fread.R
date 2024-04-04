@@ -22,11 +22,12 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     stopf("Argument 'encoding' must be 'unknown', 'UTF-8' or 'Latin-1'.")
   }
   stopifnot(
-    isTRUEorFALSE(strip.white), isTRUEorFALSE(blank.lines.skip), isTRUEorFALSE(fill), isTRUEorFALSE(showProgress),
+    isTRUEorFALSE(strip.white), isTRUEorFALSE(blank.lines.skip), isTRUEorFALSE(fill) || is.numeric(fill) && length(fill)==1L && fill >= 0L, isTRUEorFALSE(showProgress),
     isTRUEorFALSE(verbose), isTRUEorFALSE(check.names), isTRUEorFALSE(logical01), isTRUEorFALSE(keepLeadingZeros), isTRUEorFALSE(yaml),
     isTRUEorFALSE(stringsAsFactors) || (is.double(stringsAsFactors) && length(stringsAsFactors)==1L && 0.0<=stringsAsFactors && stringsAsFactors<=1.0),
     is.numeric(nrows), length(nrows)==1L
   )
+  fill=as.integer(fill)
   nrows=as.double(nrows) #4686
   if (is.na(nrows) || nrows<0) nrows=Inf   # accept -1 to mean Inf, as read.table does
   if (identical(header,"auto")) header=NA
@@ -54,41 +55,15 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     }
     if (input=="" || length(grep('\\n|\\r', input))) {
       # input is data itself containing at least one \n or \r
+    } else if (startsWith(input, " ")) {
+      stopf("input= contains no \\n or \\r, but starts with a space. Please remove the leading space, or use text=, file= or cmd=")
+    } else if (length(grep(' ', input, fixed=TRUE)) && !file.exists(input)) {  # file name or path containing spaces is not a command
+      cmd = input
+      if (input_has_vars && getOption("datatable.fread.input.cmd.message", TRUE)) {
+        messagef("Taking input= as a system command because it contains a space ('%s'). If it's a filename please remove the space, or use file= explicitly. A variable is being passed to input= and when this is taken as a system command there is a security concern if you are creating an app, the app could have a malicious user, and the app is not running in a secure environment; e.g. the app is running as root. Please read item 5 in the NEWS file for v1.11.6 for more information and for the option to suppress this message.", cmd)
+      }
     } else {
-      if (startsWith(input, " ")) {
-        stopf("input= contains no \\n or \\r, but starts with a space. Please remove the leading space, or use text=, file= or cmd=")
-      }
-      str7 = substr(input, 1L, 7L) # avoid grepl() for #2531
-      if (str7=="ftps://" || startsWith(input, "https://")) {
-        # nocov start
-        if (!requireNamespace("curl", quietly = TRUE))
-          stopf("Input URL requires https:// connection for which fread() requires 'curl' package which cannot be found. Please install 'curl' using 'install.packages('curl')'.") # nocov
-        tmpFile = tempfile(fileext = paste0(".",tools::file_ext(input)), tmpdir=tmpdir)  # retain .gz extension in temp filename so it knows to be decompressed further below
-        curl::curl_download(input, tmpFile, mode="wb", quiet = !showProgress)
-        file = tmpFile
-        on.exit(unlink(tmpFile), add=TRUE)
-        # nocov end
-      }
-      else if (startsWith(input, "ftp://") || str7== "http://" || str7=="file://") {
-        # nocov start
-        method = if (str7=="file://") "internal" else getOption("download.file.method", default="auto")
-        # force "auto" when file:// to ensure we don't use an invalid option (e.g. wget), #1668
-        tmpFile = tempfile(fileext = paste0(".",tools::file_ext(input)), tmpdir=tmpdir)
-        download.file(input, tmpFile, method=method, mode="wb", quiet=!showProgress)
-        # In text mode on Windows-only, R doubles up \r to make \r\r\n line endings. mode="wb" avoids that. See ?connections:"CRLF"
-        file = tmpFile
-        on.exit(unlink(tmpFile), add=TRUE)
-        # nocov end
-      }
-      else if (length(grep(' ', input, fixed = TRUE)) && !file.exists(input)) {  # file name or path containing spaces is not a command
-        cmd = input
-        if (input_has_vars && getOption("datatable.fread.input.cmd.message", TRUE)) {
-          messagef("Taking input= as a system command because it contains a space ('%s'). If it's a filename please remove the space, or use file= explicitly. A variable is being passed to input= and when this is taken as a system command there is a security concern if you are creating an app, the app could have a malicious user, and the app is not running in a secure environment; e.g. the app is running as root. Please read item 5 in the NEWS file for v1.11.6 for more information and for the option to suppress this message.", cmd)
-        }
-      }
-      else {
-        file = input   # filename
-      }
+      file = input   # filename, including URLS
     }
   }
   if (!is.null(cmd)) {
@@ -97,6 +72,22 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     on.exit(unlink(tmpFile), add=TRUE)
   }
   if (!is.null(file)) {
+    if (!is.character(file) || length(file)!=1L)
+      stopf("file= must be a single character string containing a filename, or URL starting 'http[s]://', 'ftp[s]://' or 'file://'")
+    if (w <- startsWithAny(file, c("https://", "ftps://", "http://", "ftp://", "file://"))) {  # avoid grepl() for #2531
+      # nocov start
+      tmpFile = tempfile(fileext = paste0(".",tools::file_ext(file)), tmpdir=tmpdir)  # retain .gz extension in temp filename so it knows to be decompressed further below
+      if (w<=2L && base::getRversion()<"3.2.2") { # https: or ftps: can be read by default by download.file() since 3.2.2
+        stopf("URL requires download.file functionalities from R >=3.2.2. You can still manually download the file and fread the downloaded file.")
+      }
+      method = if (w==5L) "internal"  # force 'auto' when file: to ensure we don't use an invalid option (e.g. wget), #1668
+               else getOption("download.file.method", default="auto")  # http: or ftp:
+      # In text mode on Windows-only, R doubles up \r to make \r\r\n line endings. mode="wb" avoids that. See ?connections:"CRLF"
+      download.file(file, tmpFile, method=method, mode="wb", quiet=!showProgress)
+      file = tmpFile
+      on.exit(unlink(tmpFile), add=TRUE)
+      # nocov end
+    }
     file_info = file.info(file)
     if (is.na(file_info$size)) stopf("File '%s' does not exist or is non-readable. getwd()=='%s'", file, getwd())
     if (isTRUE(file_info$isdir)) stopf("File '%s' is a directory. Not yet implemented.", file) # dir.exists() requires R v3.2+, #989
@@ -104,10 +95,30 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
       warningf("File '%s' has size 0. Returning a NULL %s.", file, if (data.table) 'data.table' else 'data.frame')
       return(if (data.table) data.table(NULL) else data.frame(NULL))
     }
-    if ((is_gz <- endsWith(file, ".gz")) || endsWith(file, ".bz2")) {
+
+    # support zip and tar files #3834
+    zip_signature = charToRaw("PK\x03\x04")
+    file_signature = readBin(file, raw(), 8L)
+
+    if ((w <- endsWithAny(file, c(".zip", ".tar"))) || identical(head(file_signature, 4L), zip_signature)) {
+      FUN = if (w==2L) untar else unzip
+      fnames = FUN(file, list=TRUE)
+      if (is.data.frame(fnames)) fnames = fnames[,1L]
+      if (length(fnames) > 1L)
+        stopf("Compressed files containing more than 1 file are currently not supported.")
+      FUN(file, exdir=tmpdir)
+      decompFile = file.path(tmpdir, fnames)
+      file = decompFile
+      on.exit(unlink(decompFile), add=TRUE)
+    }
+
+    gz_signature = as.raw(c(0x1F, 0x8B))
+    bz2_signature = as.raw(c(0x42, 0x5A, 0x68))
+    gzsig = FALSE
+    if ((w <- endsWithAny(file, c(".gz",".bz2"))) || (gzsig <- identical(head(file_signature, 2L), gz_signature)) || identical(head(file_signature, 3L), bz2_signature)) {
       if (!requireNamespace("R.utils", quietly = TRUE))
         stopf("To read gz and bz2 files directly, fread() requires 'R.utils' package which cannot be found. Please install 'R.utils' using 'install.packages('R.utils')'.") # nocov
-      FUN = if (is_gz) gzfile else bzfile
+      FUN = if (w==1L || gzsig) gzfile else bzfile
       R.utils::decompressFile(file, decompFile<-tempfile(tmpdir=tmpdir), ext=NULL, FUN=FUN, remove=FALSE)   # ext is not used by decompressFile when destname is supplied, but isn't optional
       file = decompFile   # don't use 'tmpFile' symbol again, as tmpFile might be the http://domain.org/file.csv.gz download
       on.exit(unlink(decompFile), add=TRUE)
@@ -121,7 +132,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     if (!allNA(colClasses)) stopf("colClasses is type 'logical' which is ok if all NA but it has some TRUE or FALSE values in it which is not allowed. Please consider the drop= or select= argument instead. See ?fread.")
     colClasses = NULL
   }
-  if (!is.null(colClasses) && is.atomic(colClasses)) {
+  if (!is.null(colClasses) && is.atomic(colClasses)) { ## future R can use  if (is.atomic(.))
     if (!is.character(colClasses)) stopf("colClasses is not type list or character vector")
     if (!length(colClasses)) {
       colClasses=NULL;
@@ -268,7 +279,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     if (identical(tt,"") || is_utc(tt)) # empty TZ env variable ("") means UTC in C library, unlike R; _unset_ TZ means local
       tz="UTC"
   }
-  ans = .Call(CfreadR,input,sep,dec,quote,header,nrows,skip,na.strings,strip.white,blank.lines.skip,
+  ans = .Call(CfreadR,input,identical(input,file),sep,dec,quote,header,nrows,skip,na.strings,strip.white,blank.lines.skip,
               fill,showProgress,nThread,verbose,warnings2errors,logical01,select,drop,colClasses,integer64,encoding,keepLeadingZeros,tz=="UTC")
   if (!length(ans)) return(null.data.table())  # test 1743.308 drops all columns
   nr = length(ans[[1L]])

@@ -10,9 +10,9 @@
   http://stereopsis.com/radix.html
 
   Previous version of this file was promoted into base R, see ?base::sort.
-  Denmark useR! presentation <link>
-  Stanford DSC presentation <link>
-  JSM presentation <link>
+  Denmark useR! presentation https://github.com/Rdatatable/data.table/wiki/talks/useR2015_Matt.pdf
+  Stanford DSC presentation https://github.com/Rdatatable/data.table/wiki/talks/DSC2016_ParallelSort.pdf
+  JSM presentation https://github.com/Rdatatable/data.table/wiki/talks/JSM2018_Matt.pdf
   Techniques used :
     skewed groups are split in parallel
     finds unique bytes to save 256 sweeping
@@ -56,7 +56,7 @@ static int *anso = NULL;
 static bool notFirst=false;
 
 static char msg[1001];
-#define STOP(...) do {snprintf(msg, 1000, __VA_ARGS__); cleanup(); error(msg);} while(0)      // http://gcc.gnu.org/onlinedocs/cpp/Swallowing-the-Semicolon.html#Swallowing-the-Semicolon
+#define STOP(...) do {snprintf(msg, 1000, __VA_ARGS__); cleanup(); error("%s", msg);} while(0)      // http://gcc.gnu.org/onlinedocs/cpp/Swallowing-the-Semicolon.html#Swallowing-the-Semicolon
 // use STOP in this file (not error()) to ensure cleanup() is called first
 // snprintf to msg first in case nrow (just as an example) is provided in the message because cleanup() sets nrow to 0
 #undef warning
@@ -68,14 +68,14 @@ static char msg[1001];
  * Therefore, using <<if (!malloc()) STOP(_("helpful context msg"))>> approach to cleanup() on error.
  */
 
-static void free_ustr() {
+static void free_ustr(void) {
   for(int i=0; i<ustr_n; i++)
     SET_TRUELENGTH(ustr[i],0);
   free(ustr); ustr=NULL;
   ustr_alloc=0; ustr_n=0; ustr_maxlen=0;
 }
 
-static void cleanup() {
+static void cleanup(void) {
   free(gs); gs=NULL;
   gs_alloc = 0;
   gs_n = 0;
@@ -110,7 +110,7 @@ static void push(const int *x, const int n) {
   gs_thread_n[me] += n;
 }
 
-static void flush() {
+static void flush(void) {
   if (!retgrp) return;
   int me = omp_get_thread_num();
   int n = gs_thread_n[me];
@@ -373,12 +373,12 @@ SEXP setNumericRounding(SEXP droundArg)
   return R_NilValue;
 }
 
-SEXP getNumericRounding()
+SEXP getNumericRounding(void)
 {
   return ScalarInteger(dround);
 }
 
-int getNumericRounding_C()
+int getNumericRounding_C(void)
 // for use in uniqlist.c
 {
   return dround;
@@ -455,11 +455,11 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
       STOP(_("Column %d is length %d which differs from length of column 1 (%d), are you attempting to order by a list column?\n"), INTEGER(by)[i], length(VECTOR_ELT(DT, INTEGER(by)[i]-1)), nrow);
     if (TYPEOF(VECTOR_ELT(DT, by_i-1)) == CPLXSXP) n_cplx++;
   }
-  if (!isLogical(retGrpArg) || LENGTH(retGrpArg)!=1 || INTEGER(retGrpArg)[0]==NA_LOGICAL)
-    STOP(_("retGrp must be TRUE or FALSE"));
+  if (!IS_TRUE_OR_FALSE(retGrpArg))
+    STOP(_("%s must be TRUE or FALSE"), "retGrp");
   retgrp = LOGICAL(retGrpArg)[0]==TRUE;
-  if (!isLogical(sortGroupsArg) || LENGTH(sortGroupsArg)!=1 || INTEGER(sortGroupsArg)[0]==NA_LOGICAL )
-    STOP(_("sort must be TRUE or FALSE"));
+  if (!IS_TRUE_OR_FALSE(sortGroupsArg))
+    STOP(_("%s must be TRUE or FALSE"), "sort");
   sortType = LOGICAL(sortGroupsArg)[0]==TRUE;   // if sortType is 1, it is later flipped between +1/-1 according to ascArg. Otherwise ascArg is ignored when sortType==0
   if (!retgrp && !sortType)
     STOP(_("At least one of retGrp= or sort= must be TRUE"));
@@ -714,10 +714,12 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
   Rprintf(_("nradix=%d\n"), nradix);
   #endif
 
-  nth = getDTthreads(nrow, true);  // this nth is relied on in cleanup()
+  // global nth, TMP & UGRP
+  nth = getDTthreads(nrow, true);  // this nth is relied on in cleanup(); throttle=true/false debated for #5077
   TMP =  (int *)malloc(nth*UINT16_MAX*sizeof(int)); // used by counting sort (my_n<=65536) in radix_r()
   UGRP = (uint8_t *)malloc(nth*256);                // TODO: align TMP and UGRP to cache lines (and do the same for stack allocations too)
   if (!TMP || !UGRP /*|| TMP%64 || UGRP%64*/) STOP(_("Failed to allocate TMP or UGRP or they weren't cache line aligned: nth=%d"), nth);
+  
   if (retgrp) {
     gs_thread = calloc(nth, sizeof(int *));     // thread private group size buffers
     gs_thread_alloc = calloc(nth, sizeof(int));
@@ -1222,8 +1224,9 @@ void radix_r(const int from, const int to, const int radix) {
     } else {
       // all groups are <=65535 and radix_r() will handle each one single-threaded. Therefore, this time
       // it does make sense to start a parallel team and there will be no nestedness here either.
+
       if (retgrp) {
-        #pragma omp parallel for ordered schedule(dynamic) num_threads(getDTthreads(ngrp, false))
+        #pragma omp parallel for ordered schedule(dynamic) num_threads(MIN(nth, ngrp))  // #5077
         for (int i=0; i<ngrp; i++) {
           int start = from + starts[ugrp[i]];
           radix_r(start, start+my_gs[i]-1, radix+1);
@@ -1232,7 +1235,7 @@ void radix_r(const int from, const int to, const int radix) {
         }
       } else {
         // flush() is only relevant when retgrp==true so save the redundant ordered clause
-        #pragma omp parallel for schedule(dynamic) num_threads(getDTthreads(ngrp, false))
+        #pragma omp parallel for schedule(dynamic) num_threads(MIN(nth, ngrp))  // #5077
         for (int i=0; i<ngrp; i++) {
           int start = from + starts[ugrp[i]];
           radix_r(start, start+my_gs[i]-1, radix+1);
@@ -1287,6 +1290,7 @@ SEXP issorted(SEXP x, SEXP by)
       SEXP *xd = STRING_PTR(x);
       i = 0;
       while (i<n && xd[i]==NA_STRING) i++;
+      if (i==n) break; // xd consists only of NA_STRING #5070
       bool need = NEED2UTF8(xd[i]);
       i++; // pass over first non-NA_STRING
       while (i<n) {

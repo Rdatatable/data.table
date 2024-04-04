@@ -13,9 +13,10 @@ options(error=quote(utils::dump.frames()))
 options(width=200)      # for cran() output not to wrap
 
 # Check that env variables have been set correctly:
-#   export R_LIBS_SITE=none
+#   export R_LIBS_SITE=NULL   # R 4.2.0 changed to NULL but it doesn't appear to work
 #   export R_LIBS=~/build/revdeplib/
 #   export _R_CHECK_FORCE_SUGGESTS_=true
+if (length(.libPaths())==3L) .libPaths(.libPaths()[-2L], include.site=FALSE)  # workaround as I couldn't get R_LIBS_SITE=NULL to be effective
 stopifnot(identical(length(.libPaths()), 2L))  # revdeplib writeable by me, and the pre-installed recommended R library (sudo writeable)
 stopifnot(identical(.libPaths()[1L], getwd()))
 tt = file.info(.libPaths())[,"uname"]
@@ -96,9 +97,33 @@ update.packages(ask=FALSE, checkBuilt=TRUE)
 
 avail = available.packages()  # includes CRAN and Bioc, from getOption("repos") set above
 
-avail = avail[-match("cplexAPI",rownames(avail)),]
+avail = avail[!rownames(avail) %in% c("cplexAPI","Rcplex"), ]
 # cplexAPI is suggested by revdeps ivmte and prioritizr. I haven't succeeded to install IBM ILOG CPLEX which requires a license,
 # so consider cplexAPI not available when resolving missing suggests at the end of status().
+# Update: cplexAPI was removed from CRAN on 5 Nov 2021 so this is now redundant, but leave it in place for future use.
+# Update: Rcplex is on CRAN as of 20 Nov 2022 but with install errors, therefore treat it as not available.
+
+# The presence of packages here in revdeplib which no longer exist on CRAN could explain differences to CRAN. A revdep
+# could be running tests using that package when available and failing which may be the very reason that package was removed from CRAN.
+# When it is removed from revdeplib to match CRAN, then the revdep might then pass as it will skip its tests using that package.
+x = installed.packages()
+tt = match(rownames(x), rownames(avail))
+removed = rownames(x)[is.na(tt) & is.na(x[,"Priority"])]
+cat("Removing",length(removed),"packages which are no longer available on CRAN/Bioc:", paste(removed, collapse=","), "\n")
+stopifnot(all(x[removed,"LibPath"] == .libPaths()[1]))
+oldn = nrow(x)
+remove.packages(removed, .libPaths()[1])
+x = installed.packages()
+stopifnot(nrow(x) == oldn-length(removed))
+
+# Ensure all installed packages were built with this x.y release of R; i.e. that checkBuilt=TRUE worked above
+cat("This is R ",R.version$major,".",R.version$minor,"; ",R.version.string,"\n",sep="")
+cat("Previously installed packages were built using:\n")
+print(tt <- table(x[,"Built"], dnn=NULL))
+minorR = paste(strsplit(as.character(getRversion()), split="[.]")[[1]][c(1,2)], collapse=".")
+if (any(w<-names(tt)<minorR)) {
+  stop(sum(tt[w])," packages built with R<",minorR," failed to update: ", paste(paste0("'",rownames(x)[x[,"Built"]<minorR],"'"), collapse=","), "\n",sep="")
+}
 
 deps = tools::package_dependencies("data.table",
   db = available.packages(repos=getOption("repos")["CRAN"]),  # just CRAN revdeps though (not Bioc) from October 2020
@@ -130,20 +155,6 @@ for (p in deps) {
   }
 }
 cat("New downloaded:",new," Already had latest:", old, " TOTAL:", length(deps), "\n")
-update.packages(checkBuilt=TRUE)
-cat("This is R ",R.version$major,".",R.version$minor,"; ",R.version.string,"\n",sep="")
-cat("Previously installed packages were built using:\n")
-x = installed.packages()
-table(x[,"Built"], dnn=NULL)  # manually inspect to ensure all built with this x.y release of R
-if (FALSE) {  # if not, run this manually replacing "4.0.0" appropriately 
-  for (p in rownames(x)[x[,"Built"]=="4.0.0"]) {
-    install.packages(p)
-  }
-  # warnings may suggest many of them were removed from CRAN, so remove the remaining from revdeplib to be clean
-  x = installed.packages()
-  remove.packages(rownames(x)[x[,"Built"]=="4.0.0"])
-  table(installed.packages()[,"Built"], dnn=NULL)  # check again to make sure all built in current R-devel x.y version
-}
 
 # Remove the tar.gz no longer needed :
 for (p in deps) {
@@ -154,12 +165,12 @@ for (p in deps) {
     cat("Removing",i,"because",f,"is newer\n")
     system(paste0("rm ",i))
   }
-  all = system("ls *.tar.gz", intern=TRUE)
-  all = sapply(strsplit(all, split="_"),'[',1)
-  for (i in all[!all %in% deps]) {
-    cat("Removing",i,"because it", if (!i %in% rownames(avail)) "has been removed from CRAN\n" else "no longer uses data.table\n")
-    system(paste0("rm ",i,"_*.tar.gz"))
-  }
+}
+all = system("ls *.tar.gz", intern=TRUE)
+all = sapply(strsplit(all, split="_"),'[',1)
+for (i in all[!all %in% deps]) {
+  cat("Removing",i,"because it", if (!i %in% rownames(avail)) "has been removed from CRAN\n" else "no longer uses data.table\n")
+  system(paste0("rm ",i,"_*.tar.gz"))
 }
 num_tar.gz = as.integer(system("ls *.tar.gz | wc -l", intern=TRUE))
 if (length(deps) != num_tar.gz) stop("num_tar.gz==",num_tar.gz," but length(deps)==",length(deps))
@@ -191,7 +202,9 @@ status0 = function(bioc=FALSE) {
       if (length(ns)) paste0("NOT STARTED   : ",paste(sort(names(x)[head(ns,20)]),collapse=" "), if(length(ns)>20)paste(" +",length(ns)-20,"more"), "\n"),
       "\n"
       )
-  assign(if (bioc) ".fail.bioc" else ".fail.cran", c(sort(names(x)[e]), sort(names(x)[w])), envir=.GlobalEnv)
+  assign(if (bioc) ".fail.bioc" else ".fail.cran", c(sort(names(x)[e]), sort(names(x)[w])), envir=.GlobalEnv) 
+  assign(if (bioc) ".running.bioc" else ".running.cran", sort(names(x)[r]), envir=.GlobalEnv)
+  # if parallel finished then 'running' means killed; we want to see if status on CRAN (using cran()) shows FAIL with a log showing kill signal (or similar) due to taking too long
   invisible()
 }
 
@@ -244,32 +257,44 @@ status = function(bioc=FALSE) {
       }
     }
     if (length(all_sugg_unavail)) {
-      cat('\nPackages for which all their missing suggests are not available, try:\n',
-          '  run("',paste(all_sugg_unavail,collapse=" "),'", R_CHECK_FORCE_SUGGESTS=FALSE)\n', sep="")
+      cat('\nPackages for which all their missing suggests are not available (',length(all_sugg_unavail),'): ', paste(all_sugg_unavail, collapse=" "), "\n", sep="")
+      cat('Rerunning them with R_CHECK_FORCE_SUGGESTS=FALSE ...\n')
+      run(all_sugg_unavail, R_CHECK_FORCE_SUGGESTS=FALSE, ask=FALSE)
+      # the main run() ran with TRUE in an attempt to check suggests where possible in case data.table usage is there. It does that as OS level using
+      # parallel linux command of `R CMD check`. Therefore it would be awkward to rerun with TRUE in that step. Instead we trigger the rerun from
+      # here in status() afterwards once we know all such packages and can count and log them (the cat() just above). Since run() is
+      # asynchronous we do have to wait again and run status() again when perfbar shows finished. However, currently there are only
+      # 37/1315 like this so it only takes a few minutes with my default of 6 at a time.
+      return(TRUE) # to indicate status() started a run() so that the run() afterwards can be avoided which would otherwise see these as not started and run them simultaneously but with _SUGGESTS=TRUE
     }
     # Otherwise, inspect manually each result in fail.log written by log()
   }
-  invisible()
+  invisible(FALSE)
 }
 
-cran = function()  # reports CRAN status of the .cran.fail packages
+cran = function()  # reports CRAN status of the .fail.cran packages
 {
-  if (!length(.fail.cran)) {
-    cat("No CRAN revdeps in error or warning status\n")
+  x = c(.fail.cran, .running.cran)
+  if (!length(x)) {
+    cat("No CRAN revdeps in error, warning or running status\n")
     return(invisible())
   }
   require(data.table)
   p = proc.time()
-  db = setDT(tools::CRAN_check_results())
+  db <<- setDT(tools::CRAN_check_results())
   cat("tools::CRAN_check_results() returned",prettyNum(nrow(db), big.mark=","),"rows in",timetaken(p),"\n")
-  rel = unique(db$Flavor)
-  rel = sort(rel[grep("release",rel)])
-  cat("R-release is used for revdep checking so comparing to CRAN results for R-release\n")
-  ans = db[Package %chin% .fail.cran & Flavor %chin% rel, Status, keyby=.(Package, Flavor)]
-  dcast(ans, Package~Flavor, value.var="Status", fill="")[.fail.cran,]
+  ans = db[Package %chin% x,
+    .(ERROR=sum(Status=="ERROR", na.rm=TRUE),
+      WARN =sum(Status=="WARN", na.rm=TRUE),
+      cran =paste(unique(Version),collapse=";"),
+      local=as.character(tryCatch(packageVersion(.BY[[1]]), error=function(e)"error"))),
+    keyby=Package]
+  ans[local==cran, c("cran","local"):=""]
+  ans[, "right_click_in_bash":=paste0("https://cran.r-project.org/web/checks/check_results_",Package,".html")]
+  setkey(ans, Package)[x,]
 }
 
-run = function(pkgs=NULL, R_CHECK_FORCE_SUGGESTS=TRUE, choose=NULL) {
+run = function(pkgs=NULL, R_CHECK_FORCE_SUGGESTS=TRUE, choose=NULL, ask=TRUE) {
   if (length(pkgs)==1) pkgs = strsplit(pkgs, split="[, ]")[[1]]
   if (anyDuplicated(pkgs)) stop("pkgs contains dups")
   if (!length(pkgs)) {
@@ -308,13 +333,13 @@ run = function(pkgs=NULL, R_CHECK_FORCE_SUGGESTS=TRUE, choose=NULL) {
     cat("Running",length(pkgs),"packages:", paste(pkgs), "\n")
     filter = paste0("| grep -E '", paste0(paste0(pkgs,"_"),collapse="|"), "' ")
   }
-  if (is.null(choose)) {
+  if (ask && is.null(choose)) {
     cat("Proceed? (ctrl-c or enter)\n")
     scan(quiet=TRUE)
   }
   if (!identical(pkgs,"_ALL_")) for (i in pkgs) system(paste0("rm -rf ./",i,".Rcheck"))
   SUGG = paste0("_R_CHECK_FORCE_SUGGESTS_=",tolower(R_CHECK_FORCE_SUGGESTS))
-  cmd = paste0("ls -1 *.tar.gz ", filter, "| TZ='UTC' OMP_THREAD_LIMIT=2 ",SUGG," parallel --max-procs 50% ",R," CMD check")
+  cmd = paste0("ls -1 *.tar.gz ", filter, "| TZ='UTC' OMP_THREAD_LIMIT=2 ",SUGG," parallel --max-procs 50% --timeout 1200 ",R," CMD check")
   # TZ='UTC' because some packages have failed locally for me but not on CRAN or for their maintainer, due to sensitivity of tests to timezone
   if (as.integer(system("ps -e | grep perfbar | wc -l", intern=TRUE)) < 1) system("perfbar",wait=FALSE)
   system("touch /tmp/started.flag ; rm -f /tmp/finished.flag")
@@ -327,7 +352,7 @@ inst = function() {
   system(paste0(R," CMD INSTALL ",last))
 }
 
-log = function(bioc=FALSE, fnam="~/fail.log") {
+log = function(bioc=FALSE, fnam="~/fail.log", app="gedit") {
   x = c(.fail.cran, if (bioc) .fail.bioc)
   cat("Writing 00check.log for",length(x),"packages to",fnam,":\n")
   cat(paste(x,collapse=" "), "\n")
@@ -351,11 +376,12 @@ log = function(bioc=FALSE, fnam="~/fail.log") {
     system(paste0("grep -H . ./",i,".Rcheck/00check.log >> ",fnam))  # the fail messages
     cat("\n\n", file=fnam, append=TRUE)
   }
+  system(paste(app, fnam), wait=FALSE)
+  invisible()
 }
 
 inst()
-status()
-run(choose=1)  # run not-started (i.e. updates to and new revdeps) automatically on revdep startup
+if (!status()) run(choose=1)  # run pkgs in not-started status; i.e. updates to and new revdeps. Unless status() found any all-suggests-unavail which it then started run() for with _SUGGESTS=FALSE
 
 # Now R prompt is ready to fix any problems with CRAN or Bioconductor updates.
 # Then run run(), status() and log() as per section in CRAN_Release.cmd

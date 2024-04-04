@@ -1,11 +1,14 @@
 \name{:=}
 \alias{:=}
 \alias{set}
+\alias{let}
 \title{ Assignment by reference }
 \description{
     Fast add, remove and update subsets of columns, by reference. \code{:=} operator can be used in two ways: \code{LHS := RHS} form, and \code{Functional form}. See \code{Usage}.
 
     \code{set} is a low-overhead loop-able version of \code{:=}. It is particularly useful for repetitively updating rows of certain columns by reference (using a for-loop). See \code{Examples}. It can not perform grouping operations.
+
+    \code{let} is an alias for the functional form and behaves exactly like \code{`:=`}.
 
 }
 \usage{
@@ -13,10 +16,18 @@
 # DT[i, LHS := RHS, by = ...]
 # DT[i, c("LHS1", "LHS2") := list(RHS1, RHS2), by = ...]
 
-# 2. Functional form
+# 2a. Functional form with `:=`
 # DT[i, `:=`(LHS1 = RHS1,
 #            LHS2 = RHS2,
 #            ...), by = ...]
+
+# 2b. Functional form with let
+# DT[i, let(LHS1 = RHS1,
+#            LHS2 = RHS2,
+#            ...), by = ...]
+
+# 3. Multiple columns in place
+# DT[i, names(.SD) := lapply(.SD, fx), by = ..., .SDcols = ...]
 
 set(x, i = NULL, j, value)
 }
@@ -42,6 +53,7 @@ set(x, i = NULL, j, value)
     DT[i, (colvector) := val]                     # same (NOW PREFERRED) shorthand syntax. The parens are enough to stop the LHS being a symbol; same as c(colvector).
     DT[i, colC := mean(colB), by = colA]          # update (or add) column called "colC" by reference by group. A major feature of `:=`.
     DT[,`:=`(new1 = sum(colB), new2 = sum(colC))] # Functional form
+    DT[, let(new1 = sum(colB), new2 = sum(colC))] # New alias for functional form.
 }
 
 The \code{\link{.Last.updated}} variable contains the number of rows updated by the most recent \code{:=} or \code{set} calls, which may be useful, for example, in production settings for testing assumptions about the number of rows affected by a statement; see \code{\link{.Last.updated}} for details.
@@ -57,7 +69,7 @@ All of the following result in a friendly error (by design) :
     DT[, {col1 := 1L; col2 := 2L}]                # Use the functional form, `:=`(), instead (see above).
 }
 
-For additional resources, please read \href{../doc/datatable-faq.html}{\code{vignette("datatable-faq")}}. Also have a look at StackOverflow's \href{https://stackoverflow.com/search?q=\%5Bdata.table\%5D+reference}{data.table tag}.
+For additional resources, please read \href{../doc/datatable-faq.html}{\code{vignette("datatable-faq")}}. Also have a look at StackOverflow's \href{https://stackoverflow.com/questions/tagged/data.table/}{data.table tag}.
 
 \code{:=} in \code{j} can be combined with all types of \code{i} (such as binary search), and all types of \code{by}. This a one reason why \code{:=} has been implemented in \code{j}. Please see \href{../doc/datatable-reference-semantics}{\code{vignette("datatable-reference-semantics")}} and also \code{FAQ 2.16} for analogies to SQL.
 

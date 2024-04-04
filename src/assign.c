@@ -121,9 +121,9 @@ static int _selfrefok(SEXP x, Rboolean checkNames, Rboolean verbose) {
     if (verbose) Rprintf(_(".internal.selfref ptr is NULL. This is expected and normal for a data.table loaded from disk. Please remember to always setDT() immediately after loading to prevent unexpected behavior. If this table was not loaded from disk or you've already run setDT(), please report to data.table issue tracker.\n"));
     return -1;
   }
-  if (!isNull(p)) error(_("Internal error: .internal.selfref ptr is not NULL or R_NilValue")); // # nocov
+  if (!isNull(p)) error(_("Internal error: .internal.selfref ptr is neither NULL nor R_NilValue")); // # nocov
   tag = R_ExternalPtrTag(v);
-  if (!(isNull(tag) || isString(tag))) error(_("Internal error: .internal.selfref tag isn't NULL or a character vector")); // # nocov
+  if (!(isNull(tag) || isString(tag))) error(_("Internal error: .internal.selfref tag is neither NULL nor a character vector")); // # nocov
   names = getAttrib(x, R_NamesSymbol);
   if (names!=tag && isString(names) && !ALTREP(names))  // !ALTREP for #4734
     SET_TRUELENGTH(names, LENGTH(names));
@@ -239,14 +239,15 @@ int checkOverAlloc(SEXP x)
     error(_("getOption('datatable.alloccol') should be a number, by default 1024. But its type is '%s'."), type2char(TYPEOF(x)));
   if (LENGTH(x) != 1)
     error(_("getOption('datatable.alloc') is a numeric vector ok but its length is %d. Its length should be 1."), LENGTH(x));
-  int ans = isInteger(x) ? INTEGER(x)[0] : (int)REAL(x)[0];
+  int ans = asInteger(x);
   if (ans<0)
     error(_("getOption('datatable.alloc')==%d.  It must be >=0 and not NA."), ans);
   return ans;
 }
 
 SEXP alloccolwrapper(SEXP dt, SEXP overAllocArg, SEXP verbose) {
-  if (!isLogical(verbose) || length(verbose)!=1) error(_("verbose must be TRUE or FALSE"));
+  if (!IS_TRUE_OR_FALSE(verbose))
+    error(_("%s must be TRUE or FALSE"), "verbose");
   int overAlloc = checkOverAlloc(overAllocArg);
   SEXP ans = PROTECT(alloccol(dt, length(dt)+overAlloc, LOGICAL(verbose)[0]));
 
@@ -311,7 +312,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   SEXP names = PROTECT(getAttrib(dt, R_NamesSymbol)); protecti++;
   if (isNull(names)) error(_("dt passed to assign has no names"));
   if (length(names)!=oldncol)
-    error(_("Internal error in assign: length of names (%d) is not length of dt (%d)"),length(names),oldncol); // # nocov
+    error(_("Internal error: length of names (%d) is not length of dt (%d)"), length(names), oldncol); // # nocov
   if (isNull(dt)) {
     error(_("data.table is NULL; malformed. A null data.table should be an empty list. typeof() should always return 'list' for data.table.")); // # nocov
     // Not possible to test because R won't permit attributes be attached to NULL (which is good and we like); warning from R 3.4.0+ tested by 944.5
@@ -336,7 +337,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     const int *rowsd = INTEGER(rows);
     for (int i=0; i<targetlen; ++i) {
       if ((rowsd[i]<0 && rowsd[i]!=NA_INTEGER) || rowsd[i]>nrow)
-        error(_("i[%d] is %d which is out of range [1,nrow=%d]."),i+1,rowsd[i],nrow);  // set() reaches here (test 2005.2); := reaches the same error in subset.c first
+        error(_("i[%d] is %d which is out of range [1,nrow=%d]"), i+1, rowsd[i], nrow);  // set() reaches here (test 2005.2); := reaches the same error in subset.c first
       if (rowsd[i]>=1) numToDo++;
     }
     if (verbose) Rprintf(_("Assigning to %d row subset of %d rows\n"), numToDo, nrow);
@@ -429,7 +430,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       if (newcolnum<0 || newcolnum>=length(newcolnames))
         error(_("Internal error in assign.c: length(newcolnames)=%d, length(names)=%d, coln=%d"), length(newcolnames), length(names), coln); // # nocov
       if (isNull(thisvalue)) {
-        warning(_("Column '%s' does not exist to remove"),CHAR(STRING_ELT(newcolnames,newcolnum)));
+        warning(_("Tried to assign NULL to column '%s', but this column does not exist to remove"), CHAR(STRING_ELT(newcolnames,newcolnum)));
         continue;
       }
       // RHS of assignment to new column is zero length but we'll use its type to create all-NA column of that type
@@ -469,7 +470,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       // Can growVector at this point easily enough, but it shouldn't happen in first place so leave it as
       // strong error message for now.
     else if (TRUELENGTH(names) != oldtncol)
-      error(_("Internal error: selfrefnames is ok but tl names [%d] != tl [%d]"), TRUELENGTH(names), oldtncol);  // # nocov
+      // Use (long long) to cast R_xlen_t to a fixed type to robustly avoid -Wformat compiler warnings, see #5768, PRId64 didnt work
+      error(_("Internal error: selfrefnames is ok but tl names [%lld] != tl [%d]"), (long long)TRUELENGTH(names), oldtncol);  // # nocov
     SETLENGTH(dt, oldncol+LENGTH(newcolnames));
     SETLENGTH(names, oldncol+LENGTH(newcolnames));
     for (int i=0; i<LENGTH(newcolnames); ++i)
@@ -525,7 +527,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       targetcol = VECTOR_ELT(dt,coln);
     }
     const char *ret = memrecycle(targetcol, rows, 0, targetlen, thisvalue, 0, -1, coln+1, CHAR(STRING_ELT(names, coln)));
-    if (ret) warning(ret);
+    if (ret) warning("%s", ret);
   }
 
   *_Last_updated = numToDo;  // the updates have taken place with no error, so update .Last.updated now
@@ -657,7 +659,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     R_isort(tt, ndelete);  // sort the column-numbers-to-delete into ascending order
     for (int i=0; i<ndelete-1; ++i) {
       if (tt[i]>=tt[i+1])
-        error(_("Internal error: %d column numbers to delete not now in strictly increasing order. No-dups were checked earlier.")); // # nocov
+        error(_("Internal error: %d column numbers to delete not now in strictly increasing order. No-dups were checked earlier."), i); // # nocov
     }
     for (int i=tt[0], j=1, k=tt[0]+1;  i<ndt-ndelete;  ++i, ++k) {  // i moves up from the first non-deleted column and is the target of write
       while (j<ndelete && k==tt[j]) { j++; k++; }                   // move k up to the next non-deleted column; j is the next position in tt
@@ -683,6 +685,12 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
 #define MSGSIZE 1000
 static char memrecycle_message[MSGSIZE+1]; // returned to rbindlist so it can prefix with which one of the list of data.table-like objects
 
+const char *targetDesc(const int colnum, const char *colname) {
+  static char str[501]; // #5463
+  snprintf(str, 500, colnum==0 ? _("target vector") : _("column %d named '%s'"), colnum, colname);
+  return str;
+}
+
 const char *memrecycle(const SEXP target, const SEXP where, const int start, const int len, SEXP source, const int sourceStart, const int sourceLen, const int colnum, const char *colname)
 // like memcpy but recycles single-item source
 // 'where' a 1-based INTEGER vector subset of target to assign to, or NULL or integer()
@@ -706,12 +714,10 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
   if (colname==NULL)
     error(_("Internal error: memrecycle has received NULL colname")); // # nocov
   *memrecycle_message = '\0';
-  static char targetDesc[501];  // from 1.14.1 coerceAs reuses memrecycle for a target vector, PR#4491
-  snprintf(targetDesc, 500, colnum==0 ? _("target vector") : _("column %d named '%s'"), colnum, colname);
   int protecti=0;
   const bool sourceIsFactor=isFactor(source), targetIsFactor=isFactor(target);
-  const bool sourceIsI64=isReal(source) && Rinherits(source, char_integer64);
-  const bool targetIsI64=isReal(target) && Rinherits(target, char_integer64);
+  const bool sourceIsI64=isReal(source) && INHERITS(source, char_integer64);
+  const bool targetIsI64=isReal(target) && INHERITS(target, char_integer64);
   if (sourceIsFactor || targetIsFactor) {
     if (!targetIsFactor) {
       if (!isString(target) && !isNewList(target))
@@ -729,15 +735,16 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
           for (int i=0; i<slen; ++i) {
             const int val = sd[i+soff];
             if ((val<1 && val!=NA_INTEGER) || val>nlevel) {
-              error(_("Assigning factor numbers to %s. But %d is outside the level range [1,%d]"), targetDesc, val, nlevel);
+              error(_("Assigning factor numbers to %s. But %d is outside the level range [1,%d]"), targetDesc(colnum, colname), val, nlevel);
             }
           }
         } else {
           const double *sd = REAL(source);
           for (int i=0; i<slen; ++i) {
             const double val = sd[i+soff];
-            if (!ISNAN(val) && (!R_FINITE(val) || val!=(int)val || (int)val<1 || (int)val>nlevel)) {
-              error(_("Assigning factor numbers to %s. But %f is outside the level range [1,%d], or is not a whole number."), targetDesc, val, nlevel);
+            // Since nlevel is an int, val < 1 || val > nlevel will deflect UB guarded against in PR #5832
+            if (!ISNAN(val) && (val < 1 || val > nlevel || val != (int)val)) {
+              error(_("Assigning factor numbers to %s. But %f is outside the level range [1,%d], or is not a whole number."), targetDesc(colnum, colname), val, nlevel);
             }
           }
         }
@@ -803,7 +810,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
             // # nocov start
             for (int k=0; k<nSourceLevels; ++k) SET_TRUELENGTH(sourceLevelsD[k], 0);
             savetl_end();
-            error(_("Unable to allocate working memory of %d bytes to combine factor levels"), nAdd*sizeof(SEXP *));
+            error(_("Unable to allocate working memory of %zu bytes to combine factor levels"), nAdd*sizeof(SEXP *));
             // # nocov end
           }
           for (int k=0, thisAdd=0; thisAdd<nAdd; ++k) {   // thisAdd<nAdd to stop early when the added ones are all reached
@@ -829,19 +836,19 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
       }
     }
   } else if (isString(source) && !isString(target) && !isNewList(target)) {
-    warning(_("Coercing 'character' RHS to '%s' to match the type of %s."), type2char(TYPEOF(target)), targetDesc);
+    warning(_("Coercing 'character' RHS to '%s' to match the type of %s."), targetIsI64?"integer64":type2char(TYPEOF(target)), targetDesc(colnum, colname));
     // this "Coercing ..." warning first to give context in case coerceVector warns 'NAs introduced by coercion'
     // and also because 'character' to integer/double coercion is often a user mistake (e.g. wrong target column, or wrong
     // variable on RHS) which they are more likely to appreciate than find inconvenient
     source = PROTECT(coerceVector(source, TYPEOF(target))); protecti++;
   } else if (isNewList(source) && !isNewList(target)) {
     if (targetIsI64) {
-      error(_("Cannot coerce 'list' RHS to 'integer64' to match the type of %s."), targetDesc);
+      error(_("Cannot coerce 'list' RHS to 'integer64' to match the type of %s."), targetDesc(colnum, colname));
       // because R's coerceVector doesn't know about integer64
     }
     // as in base R; e.g. let as.double(list(1,2,3)) work but not as.double(list(1,c(2,4),3))
     // relied on by NNS, simstudy and table.express; tests 1294.*
-    warning(_("Coercing 'list' RHS to '%s' to match the type of %s."), type2char(TYPEOF(target)), targetDesc);
+    warning(_("Coercing 'list' RHS to '%s' to match the type of %s."), type2char(TYPEOF(target)), targetDesc(colnum, colname));
     source = PROTECT(coerceVector(source, TYPEOF(target))); protecti++;
   } else if ((TYPEOF(target)!=TYPEOF(source) || targetIsI64!=sourceIsI64) && !isNewList(target)) {
     if (GetVerbose()>=3) {
@@ -849,98 +856,106 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
       Rprintf(_("Zero-copy coerce when assigning '%s' to '%s' %s.\n"),
               sourceIsI64 ? "integer64" : type2char(TYPEOF(source)),
               targetIsI64 ? "integer64" : type2char(TYPEOF(target)),
-              targetDesc);
+              targetDesc(colnum, colname));
     }
     // The following checks are up front here, otherwise we'd need them twice in the two branches
     //   inside BODY that cater for 'where' or not. Maybe there's a way to merge the two macros in future.
     // The idea is to do these range checks without calling coerceVector() (which allocates)
 
-#define CHECK_RANGE(STYPE, RFUN, COND, FMT, TO) {{                                                                      \
-  const STYPE *sd = (const STYPE *)RFUN(source);                                                                        \
-  for (int i=0; i<slen; ++i) {                                                                                          \
-    const STYPE val = sd[i+soff];                                                                                       \
-    if (COND) {                                                                                                         \
-      const char *sType = sourceIsI64 ? "integer64" : type2char(TYPEOF(source));                                        \
-      const char *tType = targetIsI64 ? "integer64" : type2char(TYPEOF(target));                                        \
-      snprintf(memrecycle_message, MSGSIZE,                                                                             \
-        "%"FMT" (type '%s') at RHS position %d "TO" when assigning to type '%s' (%s)",                                  \
-        val, sType, i+1, tType, targetDesc);                                                                            \
-      /* string returned so that rbindlist/dogroups can prefix it with which item of its list this refers to  */        \
-      break;                                                                                                            \
-    }                                                                                                                   \
-  }                                                                                                                     \
-} break; }
+    #define CHECK_RANGE(STYPE, RFUN, COND, FMT, TO, FMTVAL) {{                                                              \
+      const STYPE *sd = (const STYPE *)RFUN(source);                                                                        \
+      for (int i=0; i<slen; ++i) {                                                                                          \
+        const STYPE val = sd[i+soff];                                                                                       \
+        if (COND) {                                                                                                         \
+          const char *sType = sourceIsI64 ? "integer64" : type2char(TYPEOF(source));                                        \
+          const char *tType = targetIsI64 ? "integer64" : type2char(TYPEOF(target));                                        \
+          snprintf(memrecycle_message, MSGSIZE,                                                                             \
+            "%"FMT" (type '%s') at RHS position %d "TO" when assigning to type '%s' (%s)",                                  \
+            FMTVAL, sType, i+1, tType, targetDesc(colnum, colname));                                                        \
+          /* string returned so that rbindlist/dogroups can prefix it with which item of its list this refers to  */        \
+          break;                                                                                                            \
+        }                                                                                                                   \
+      }                                                                                                                     \
+    } break; }
 
     switch(TYPEOF(target)) {
     case LGLSXP:
       switch (TYPEOF(source)) {
-      case RAWSXP:  CHECK_RANGE(Rbyte, RAW,    val!=0 && val!=1,                                        "d",    "taken as TRUE")
-      case INTSXP:  CHECK_RANGE(int, INTEGER,  val!=0 && val!=1 && val!=NA_INTEGER,                     "d",    "taken as TRUE")
+      case RAWSXP:  CHECK_RANGE(Rbyte, RAW,    val!=0 && val!=1,                                        "d",    "taken as TRUE", val)
+      case INTSXP:  CHECK_RANGE(int, INTEGER,  val!=0 && val!=1 && val!=NA_INTEGER,                     "d",    "taken as TRUE", val)
       case REALSXP: if (sourceIsI64)
-                    CHECK_RANGE(int64_t, REAL, val!=0 && val!=1 && val!=NA_INTEGER64,                   PRId64, "taken as TRUE")
-              else  CHECK_RANGE(double, REAL,  !ISNAN(val) && val!=0.0 && val!=1.0,                     "f",    "taken as TRUE")
+                    CHECK_RANGE(int64_t, REAL, val!=0 && val!=1 && val!=NA_INTEGER64,                   PRId64, "taken as TRUE", val)
+              else  CHECK_RANGE(double, REAL,  !ISNAN(val) && val!=0.0 && val!=1.0,                     "f",    "taken as TRUE", val)
       } break;
     case RAWSXP:
       switch (TYPEOF(source)) {
-      case INTSXP:  CHECK_RANGE(int, INTEGER,  val<0 || val>255,                                        "d",    "taken as 0")
+      case INTSXP:  CHECK_RANGE(int, INTEGER,  val<0 || val>255,                                        "d",    "taken as 0",    val)
       case REALSXP: if (sourceIsI64)
-                    CHECK_RANGE(int64_t, REAL, val<0 || val>255,                                        PRId64, "taken as 0")
-              else  CHECK_RANGE(double, REAL,  !R_FINITE(val) || val<0.0 || val>256.0 || (int)val!=val, "f",    "either truncated (precision lost) or taken as 0")
+                    CHECK_RANGE(int64_t, REAL, val<0 || val>255,                                        PRId64, "taken as 0",    val)
+              else  CHECK_RANGE(double, REAL,  !R_FINITE(val) || val<0.0 || val>256.0 || (int)val!=val, "f",    "either truncated (precision lost) or taken as 0", val)
       } break;
     case INTSXP:
-      if (TYPEOF(source)==REALSXP) {
-        if (sourceIsI64)
-                    CHECK_RANGE(int64_t, REAL, val!=NA_INTEGER64 && (val<=NA_INTEGER || val>INT_MAX),   PRId64,  "out-of-range (NA)")
-        else        CHECK_RANGE(double, REAL,  !ISNAN(val) && (!R_FINITE(val) || (int)val!=val),        "f",     "truncated (precision lost)")
+      switch (TYPEOF(source)) {
+      case REALSXP: if (sourceIsI64)
+                    CHECK_RANGE(int64_t, REAL, val!=NA_INTEGER64 && (val<=NA_INTEGER || val>INT_MAX),   PRId64,  "out-of-range (NA)", val)
+              else  CHECK_RANGE(double, REAL,  !ISNAN(val) && (!within_int32_repres(val) || (int)val!=val),        "f",     "out-of-range(NA) or truncated (precision lost)", val)
+      case CPLXSXP: CHECK_RANGE(Rcomplex, COMPLEX, !((ISNAN(val.i) || (R_FINITE(val.i) && val.i==0.0)) &&
+                                                     (ISNAN(val.r) || (within_int32_repres(val.r) && (int)val.r==val.r))), "f", "either imaginary part discarded or real part truncated (precision lost)", val.r)
       } break;
     case REALSXP:
-      if (targetIsI64 && isReal(source) && !sourceIsI64) {
-                    CHECK_RANGE(double, REAL,  !ISNAN(val) && (!R_FINITE(val) || (int)val!=val),        "f",     "truncated (precision lost)")
+      switch (TYPEOF(source)) {
+      case REALSXP: if (targetIsI64 && !sourceIsI64)
+                    CHECK_RANGE(double, REAL,  !ISNAN(val) && (!within_int64_repres(val) || (int64_t)val!=val),    "f",     "out-of-range(NA) or truncated (precision lost)", val)
+                    break;
+      case CPLXSXP: if (targetIsI64)
+                    CHECK_RANGE(Rcomplex, COMPLEX, !((ISNAN(val.i) || (R_FINITE(val.i) && val.i==0.0)) &&
+                                                     (ISNAN(val.r) || (R_FINITE(val.r) && (int64_t)val.r==val.r))), "f", "either imaginary part discarded or real part truncated (precision lost)", val.r)
+              else  CHECK_RANGE(Rcomplex, COMPLEX, !(ISNAN(val.i) || (R_FINITE(val.i) && val.i==0.0)),  "f",     "imaginary part discarded", val.i)
       }
     }
   }
 
-#undef BODY
-#define BODY(STYPE, RFUN, CTYPE, CAST, ASSIGN) {{    \
-  const STYPE *sd = (const STYPE *)RFUN(source);     \
-  if (length(where)) {                               \
-    if (slen==1) {                                   \
-      const STYPE val = sd[soff];                    \
-      const CTYPE cval = CAST;                       \
-      for (int wi=0; wi<len; ++wi) {                 \
-        const int w = wd[wi];                        \
-        if (w<1) continue; /*0 or NA*/               \
-        const int i = w-1;                           \
-        ASSIGN;                                      \
-      }                                              \
-    } else {                                         \
-      for (int wi=0; wi<len; ++wi) {                 \
-        const int w = wd[wi];                        \
-        if (w<1) continue;                           \
-        const STYPE val = sd[wi+soff];               \
-        const CTYPE cval = CAST;                     \
-        const int i = w-1;                           \
-        ASSIGN;                                      \
-      }                                              \
-    }                                                \
-  } else {                                           \
-    if (slen==1) {                                   \
-      const STYPE val = sd[soff];                    \
-      const CTYPE cval = CAST;                       \
-      for (int i=0; i<len; ++i) {                    \
-        ASSIGN;                                      \
-      }                                              \
-    } else {                                         \
-      for (int i=0; i<len; i++) {                    \
-        const STYPE val = sd[i+soff];                \
-        const CTYPE cval = CAST;                     \
-        ASSIGN;                                      \
-      }                                              \
-    }                                                \
-  }                                                  \
-} break; }
+  #undef BODY
+  #define BODY(STYPE, RFUN, CTYPE, CAST, ASSIGN) {{    \
+    const STYPE *sd = (const STYPE *)RFUN(source);     \
+    if (length(where)) {                               \
+      if (slen==1) {                                   \
+        const STYPE val = sd[soff];                    \
+        const CTYPE cval = CAST;                       \
+        for (int wi=0; wi<len; ++wi) {                 \
+          const int w = wd[wi];                        \
+          if (w<1) continue; /*0 or NA*/               \
+          const int i = w-1;                           \
+          ASSIGN;                                      \
+        }                                              \
+      } else {                                         \
+        for (int wi=0; wi<len; ++wi) {                 \
+          const int w = wd[wi];                        \
+          if (w<1) continue;                           \
+          const STYPE val = sd[wi+soff];               \
+          const CTYPE cval = CAST;                     \
+          const int i = w-1;                           \
+          ASSIGN;                                      \
+        }                                              \
+      }                                                \
+    } else {                                           \
+      if (slen==1) {                                   \
+        const STYPE val = sd[soff];                    \
+        const CTYPE cval = CAST;                       \
+        for (int i=0; i<len; ++i) {                    \
+          ASSIGN;                                      \
+        }                                              \
+      } else {                                         \
+        for (int i=0; i<len; i++) {                    \
+          const STYPE val = sd[i+soff];                \
+          const CTYPE cval = CAST;                     \
+          ASSIGN;                                      \
+        }                                              \
+      }                                                \
+    }                                                  \
+  } break; }
 
-#define COERCE_ERROR(targetType) error(_("type '%s' cannot be coerced to '%s'"), type2char(TYPEOF(source)), targetType); // 'targetType' for integer64 vs double
+  #define COERCE_ERROR(targetType) error(_("type '%s' cannot be coerced to '%s'"), type2char(TYPEOF(source)), targetType); // 'targetType' for integer64 vs double
 
   const int off = length(where) ? 0 : start;  // off = target offset; e.g. called from rbindlist with where=R_NilValue and start!=0
   const bool mc = length(where)==0 && slen>0 && slen==len && soff==0;  // mc=memcpy; only if types match and not for single items (a single assign faster than these non-const memcpy calls)
@@ -990,7 +1005,8 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
     case REALSXP:
       if (sourceIsI64)
                     BODY(int64_t, REAL, int, (val==NA_INTEGER64||val>INT_MAX||val<=NA_INTEGER) ? NA_INTEGER : (int)val,  td[i]=cval)
-      else          BODY(double, REAL,  int, ISNAN(val) ? NA_INTEGER : (int)val,        td[i]=cval)
+      else          BODY(double, REAL,  int, (ISNAN(val) || !within_int32_repres(val)) ? NA_INTEGER : (int)val,        td[i]=cval)
+    case CPLXSXP:   BODY(Rcomplex, COMPLEX, int, (ISNAN(val.r) || !within_int32_repres(val.r)) ? NA_INTEGER : (int)val.r, td[i]=cval)
     default:        COERCE_ERROR("integer"); // test 2005.4
     }
   } break;
@@ -1006,7 +1022,8 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
           if (mc) {
                     memcpy(td, (int64_t *)REAL(source), slen*sizeof(int64_t)); break;
           } else    BODY(int64_t, REAL, int64_t, val,                                   td[i]=cval)
-        } else      BODY(double, REAL,  int64_t, R_FINITE(val) ? val : NA_INTEGER64,    td[i]=cval)
+        } else      BODY(double, REAL,  int64_t, within_int64_repres(val) ? val : NA_INTEGER64,    td[i]=cval)
+      case CPLXSXP: BODY(Rcomplex, COMPLEX, int64_t, ISNAN(val.r) ? NA_INTEGER64 : (int64_t)val.r, td[i]=cval)
       default:      COERCE_ERROR("integer64");
       }
     } else {
@@ -1021,6 +1038,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
                     memcpy(td, (double *)REAL(source), slen*sizeof(double)); break;
           } else    BODY(double, REAL,  double, val,                                    td[i]=cval)
         } else      BODY(int64_t, REAL, double, val==NA_INTEGER64 ? NA_REAL : val,      td[i]=cval)
+      case CPLXSXP: BODY(Rcomplex, COMPLEX, double, val.r,                              td[i]=cval)
       default:      COERCE_ERROR("double");
       }
     }
@@ -1059,9 +1077,13 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
           }
           break;
         }
-        if (sourceIsI64)
-          error(_("To assign integer64 to a target of type character, please use as.character() for clarity.")); // TODO: handle that here as well
-        source = PROTECT(coerceVector(source, STRSXP)); protecti++;
+        if (OBJECT(source) && getAttrib(source, R_ClassSymbol)!=R_NilValue) {
+          // otherwise coerceVector doesn't call the as.character method for Date, IDate, integer64, nanotime, etc; PR#5189
+          // this if() is to save the overhead of the R call eval() when we know there can be no method
+          source = PROTECT(eval(PROTECT(lang2(sym_as_character, source)), R_GlobalEnv)); protecti+=2;
+        } else {
+          source = PROTECT(coerceVector(source, STRSXP)); protecti++;
+        }
       }
       BODY(SEXP, STRING_PTR, SEXP, val,  SET_STRING_ELT(target, off+i, cval))
     }
@@ -1097,8 +1119,9 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
   return memrecycle_message[0] ? memrecycle_message : NULL;
 }
 
-void writeNA(SEXP v, const int from, const int n)
+void writeNA(SEXP v, const int from, const int n, const bool listNA)
 // e.g. for use after allocVector() which does not initialize its result.
+// listNA for #5503
 {
   const int to = from-1+n;  // writing to position 2147483647 in mind, 'i<=to' in loop conditions
   switch(TYPEOF(v)) {
@@ -1115,7 +1138,7 @@ void writeNA(SEXP v, const int from, const int n)
     for (int i=from; i<=to; ++i) vd[i] = NA_INTEGER;
   } break;
   case REALSXP: {
-    if (Rinherits(v, char_integer64)) {  // Rinherits covers nanotime too which inherits from integer64 via S4 extends
+    if (INHERITS(v, char_integer64)) {
       int64_t *vd = (int64_t *)REAL(v);
       for (int i=from; i<=to; ++i) vd[i] = NA_INTEGER64;
     } else {
@@ -1133,8 +1156,14 @@ void writeNA(SEXP v, const int from, const int n)
     // If there's ever a way added to R API to pass NA_STRING to allocVector() to tell it to initialize with NA not "", would be great
     for (int i=from; i<=to; ++i) SET_STRING_ELT(v, i, NA_STRING);
     break;
-  case VECSXP: case EXPRSXP :
-    // although allocVector already initializes to R_NilValue, we use writeNA() in other places too, so we shouldn't skip this assign
+  case VECSXP: {
+    // See #5053 for comments and dicussion re listNA
+    // although allocVector initializes to R_NilValue, we use writeNA() in other places too, so we shouldn't skip the R_NilValue assign
+    // ScalarLogical(NA_LOGICAL) returns R's internal constant R_LogicalNAValue (no alloc and no protect needed)
+    const SEXP na = listNA ? ScalarLogical(NA_LOGICAL) : R_NilValue;
+    for (int i=from; i<=to; ++i) SET_VECTOR_ELT(v, i, na);
+  } break;
+  case EXPRSXP :
     for (int i=from; i<=to; ++i) SET_VECTOR_ELT(v, i, R_NilValue);
     break;
   default :
@@ -1149,7 +1178,7 @@ SEXP allocNAVector(SEXPTYPE type, R_len_t n)
   // We guess that author of allocVector would have liked to initialize with NA but was prevented since memset
   // is restricted to one byte.
   SEXP v = PROTECT(allocVector(type, n));
-  writeNA(v, 0, n);
+  writeNA(v, 0, n, false);
   UNPROTECT(1);
   return(v);
 }
@@ -1159,7 +1188,7 @@ SEXP allocNAVectorLike(SEXP x, R_len_t n) {
   // TODO: remove allocNAVector above when usage in fastmean.c, fcast.c and fmelt.c can be adjusted; see comments in PR3724
   SEXP v = PROTECT(allocVector(TYPEOF(x), n));
   copyMostAttrib(x, v);
-  writeNA(v, 0, n);
+  writeNA(v, 0, n, false);
   UNPROTECT(1);
   return(v);
 }
@@ -1167,9 +1196,9 @@ SEXP allocNAVectorLike(SEXP x, R_len_t n) {
 static SEXP *saveds=NULL;
 static R_len_t *savedtl=NULL, nalloc=0, nsaved=0;
 
-void savetl_init() {
+void savetl_init(void) {
   if (nsaved || nalloc || saveds || savedtl) {
-    error(_("Internal error: savetl_init checks failed (%d %d %p %p). please report to data.table issue tracker."), nsaved, nalloc, saveds, savedtl); // # nocov
+    error(_("Internal error: savetl_init checks failed (%d %d %p %p). please report to data.table issue tracker."), nsaved, nalloc, (void *)saveds, (void *)savedtl); // # nocov
   }
   nsaved = 0;
   nalloc = 100;
@@ -1208,7 +1237,7 @@ void savetl(SEXP s)
   nsaved++;
 }
 
-void savetl_end() {
+void savetl_end(void) {
   // Can get called if nothing has been saved yet (nsaved==0), or even if _init() hasn't been called yet (pointers NULL). Such
   // as to clear up before error. Also, it might be that nothing needed to be saved anyway.
   for (int i=0; i<nsaved; i++) SET_TRUELENGTH(saveds[i],savedtl[i]);
