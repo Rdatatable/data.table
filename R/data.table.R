@@ -62,7 +62,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
   if (!is.null(key)) {
     if (!is.character(key)) stopf("key argument of data.table() must be character")
     if (length(key)==1L) {
-      if (key != strsplit(key,split=",")[[1L]]) stopf("Usage of string-separated literals in %s is deprecated, please split such entries yourself before passing to data.table", "key=")
+      if (key != strsplit(key,split=",")[[1L]]) stopf("Usage of comma-separated literals in %s is deprecated, please split such entries yourself before passing to data.table", "key=")
     }
     setkeyv(ans,key)
   } else {
@@ -805,7 +805,7 @@ replace_dot_alias = function(e) {
 
         if (mode(bysub) == "character") {
           if (any(grepl(",", bysub, fixed = TRUE))) {
-            stopf("Usage of string-separated literals in %s is deprecated, please split such entries yourself before passing to data.table", "by=")
+            stopf("Usage of comma-separated literals in %s is deprecated, please split such entries yourself before passing to data.table", "by=")
           }
           bysub = gsub("^`(.*)`$", "\\1", bysub) # see test 138
           nzidx = nzchar(bysub)
