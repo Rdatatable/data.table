@@ -26,6 +26,40 @@
 
 7. `fread`'s `fill` argument now also accepts an `integer` in addition to boolean values. `fread` always guesses the number of columns based on reading a sample of rows in the file. When `fill=TRUE`, `fread` stops reading and ignores subsequent rows when this estimate winds up too low, e.g. when the sampled rows happen to exclude some rows that are even wider, [#2727](https://github.com/Rdatatable/data.table/issues/2727) [#2691](https://github.com/Rdatatable/data.table/issues/2691) [#4130](https://github.com/Rdatatable/data.table/issues/4130) [#3436](https://github.com/Rdatatable/data.table/issues/3436). Providing an `integer` as argument for `fill` allows for a manual estimate of the number of columns instead, [#1812](https://github.com/Rdatatable/data.table/issues/1812) [#5378](https://github.com/Rdatatable/data.table/issues/5378). Thanks to @jangorecki, @christellacaze, @Yiguan, @alexdthomas, @ibombonato, @Befrancesco, @TobiasGold for reporting/requesting, and Benjamin Schwendinger for the PR.
 
+8. `groupingsets.data.table()`, `cube.data.table()`, and `rollup.data.table()` gain a `label` argument, which allows the user to specify a label for each grouping variable, to be included in the grouping variable column in the output in rows where the variable has been aggregated, [#5351](https://github.com/Rdatatable/data.table/issues/5351). Thanks to @markseeto for the request, @jangorecki and @markseeto for specifying the desired behaviour, and @markseeto for implementing.
+
+    ```R
+    DT = data.table(V1 = rep(c("a1", "a2"), each = 5),
+                    V2 = rep(rep(c("b1", "b2"), c(3, 2)), 2),
+                    V3 = rep(c("c1", "c2"), c(3, 7)),
+                    V4 = rep(1:2, c(6, 4)))
+
+    # Call groupingsets() and specify a label for V1, a different label for character grouping variables
+    # other than V1, and a label for integer grouping variables.
+    
+    groupingsets(DT, .N, by = c("V1", "V2", "V3", "V4"),
+                 sets = list(c("V1", "V2", "V3"), c("V1", "V2", "V4"), c("V1", "V4"), "V2", "V3"),
+                 label = list(V1 = "All values", character = "Total", integer = 999L))
+    #             V1     V2     V3    V4     N
+    #         <char> <char> <char> <int> <int>
+    #  1:         a1     b1     c1   999     3
+    #  2:         a1     b2     c2   999     2
+    #  3:         a2     b1     c2   999     3
+    #  4:         a2     b2     c2   999     2
+    #  5:         a1     b1  Total     1     3
+    #  6:         a1     b2  Total     1     2
+    #  7:         a2     b1  Total     1     1
+    #  8:         a2     b1  Total     2     2
+    #  9:         a2     b2  Total     2     2
+    # 10:         a1  Total  Total     1     5
+    # 11:         a2  Total  Total     1     1
+    # 12:         a2  Total  Total     2     4
+    # 13: All values     b1  Total   999     6
+    # 14: All values     b2  Total   999     4
+    # 15: All values  Total     c1   999     3
+    # 16: All values  Total     c2   999     7
+    ```
+
 ## BUG FIXES
 
 1. `unique()` returns a copy the case when `nrows(x) <= 1` instead of a mutable alias, [#5932](https://github.com/Rdatatable/data.table/pull/5932). This is consistent with existing `unique()` behavior when the input has no duplicates but more than one row. Thanks to @brookslogan for the report and @dshemetov for the fix.
