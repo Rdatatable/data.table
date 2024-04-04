@@ -13,6 +13,8 @@
   Key enhancements include automatic output compression of many observations and concise column-wise \code{class} summary.
 
   \code{format_col} and \code{format_list_item} generics provide flexibility for end-users to define custom printing methods for generic classes.
+
+  Note also the option \code{datatable.prettyprint.char}; character columns entries exceeding this limit will be truncated, with \code{...} indicating the truncation.
 }
 \usage{
   \method{print}{data.table}(x,
@@ -97,6 +99,15 @@
                    thing_61 = vector("complex", 3))
   print(DT, trunc.cols=TRUE)
   options(old_width)
+
+  # `char.trunc` will truncate the strings,
+  # if their lengths exceed the given limit: `datatable.prettyprint.char`
+  # For example:
+
+  old = options(datatable.prettyprint.char=5L)
+  DT = data.table(x=1:2, y=c("abcdefghij", "klmnopqrstuv"))
+  DT
+  options(old)
 
   # Formatting customization
   format_col.complex = function(x, ...) sprintf('(\%.1f, \%.1fi)', Re(x), Im(x))
