@@ -20,9 +20,10 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
     }
   }
   // allocations up front before savetl starts in case allocs fail
-  SEXP ans = PROTECT(allocVector(chin?LGLSXP:INTSXP, xlen));
+  int nprotect=0;
+  SEXP ans = PROTECT(allocVector(chin?LGLSXP:INTSXP, xlen)); nprotect++;
   if (xlen==0) { // no need to look at table when x is empty (including null)
-    UNPROTECT(1);
+    UNPROTECT(nprotect);
     return ans;
   }
   int *ansd = INTEGER(ans);
@@ -30,14 +31,18 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
   if (tablelen==0) {
     const int val=(chin?0:nomatch), n=xlen;
     for (int i=0; i<n; ++i) ansd[i]=val;
-    UNPROTECT(1);
+    UNPROTECT(nprotect);
     return ans;
   }
   // Since non-ASCII strings may be marked with different encodings, it only make sense to compare
   // the bytes under a same encoding (UTF-8) #3844 #3850
-  const SEXP *xd = isSymbol(x) ? &sym : STRING_PTR(PROTECT(coerceUtf8IfNeeded(x)));
-  const SEXP *td = STRING_PTR(PROTECT(coerceUtf8IfNeeded(table)));
-  const int nprotect = 2 + !isSymbol(x); // ans, xd, td
+  SEXP *xd;
+  if (isSymbol(x)) {
+    xd = &sym;
+  } else {
+    xd = STRING_PTR(PROTECT(coerceUtf8IfNeeded(x))); nprotect++;
+  }
+  const SEXP *td = STRING_PTR(PROTECT(coerceUtf8IfNeeded(table))); nprotect++;
   if (xlen==1) {
     ansd[0] = nomatch;
     for (int i=0; i<tablelen; ++i) {
@@ -69,11 +74,14 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
   }
   int nuniq=0;
   for (int i=0; i<tablelen; ++i) {
-    SEXP s = td[i];
+    const SEXP s = td[i];
     int tl = TRUELENGTH(s);
     if (tl>0) { savetl(s); tl=0; }
     if (tl==0) SET_TRUELENGTH(s, chmatchdup ? -(++nuniq) : -i-1); // first time seen this string in table
   }
+  // in future if we need NAs in x not to be matched to NAs in table ...
+  // if (!matchNAtoNA && TRUELENGTH(NA_STRING)<0)
+  //   SET_TRUELENGTH(NA_STRING, 0);
   if (chmatchdup) {
     // chmatchdup() is basically base::pmatch() but without the partial matching part. For example :
     //   chmatchdup(c("a", "a"), c("a", "a"))   # 1,2  - the second 'a' in 'x' has a 2nd match in 'table'
@@ -87,7 +95,8 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
     // For example: A,B,C,B,D,E,A,A   =>   A(TL=1),B(2),C(3),D(4),E(5)   =>   dupMap    1  2  3  5  6 | 8  7  4
     //                                                                        dupLink   7  8          |    6     (blank=0)
     int *counts = (int *)calloc(nuniq, sizeof(int));
-    int *map =    (int *)calloc(tablelen+nuniq, sizeof(int));  // +nuniq to store a 0 at the end of each group
+    unsigned int mapsize = tablelen+nuniq; // lto compilation warning #5760 // +nuniq to store a 0 at the end of each group
+    int *map =    (int *)calloc(mapsize, sizeof(int));
     if (!counts || !map) {
       // # nocov start
       for (int i=0; i<tablelen; i++) SET_TRUELENGTH(td[i], 0);
@@ -102,7 +111,7 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
     for (int i=0; i<xlen; ++i) {
       int u = TRUELENGTH(xd[i]);
       if (u<0) {
-        int w = counts[-u-1]++;
+        const int w = counts[-u-1]++;
         if (map[w]) { ansd[i]=map[w]; continue; }
         SET_TRUELENGTH(xd[i],0); // w falls on ending 0 marker: dups used up; any more dups should return nomatch
         // we still need the 0-setting loop at the end of this function because often there will be some values in table that are not matched to at all.
@@ -117,7 +126,7 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
     }
   } else {
     for (int i=0; i<xlen; i++) {
-      int m = TRUELENGTH(xd[i]);
+      const int m = TRUELENGTH(xd[i]);
       ansd[i] = (m<0) ? -m : nomatch;
     }
   }
