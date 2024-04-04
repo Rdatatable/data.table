@@ -81,6 +81,9 @@ vapply_1i = function (x, fun, ..., use.names = TRUE) {
   vapply(X = x, FUN = fun, ..., FUN.VALUE = NA_integer_, USE.NAMES = use.names)
 }
 
+# base::xor(), but with scalar operators
+XOR = function(x, y) (x || y) && !(x && y)
+
 more = function(f) system(paste("more",f))    # nocov  (just a dev helper)
 
 # helper used to auto-name columns in data.table(x,y) as c("x","y"), CJ(x,y) and similar

@@ -18439,3 +18439,8 @@ dt = data.table(a = 1L)
 test(2252.1, dt[, b:=2L], error = "\\[ was called on a data.table.*not data.table-aware.*':='")
 test(2252.2, dt[, let(b=2L)], error = "\\[ was called on a data.table.*not data.table-aware.*'let'")
 rm(.datatable.aware)
+
+# all.equal failed to dispatch to methods of columns, #4543
+DT1 = data.table(t = .POSIXct(1590973200, tz='UTC'))
+DT2 = data.table(t = .POSIXct(1590974413, tz='UTC'))
+test(2253, all.equal(DT1, DT2), "Column 't': Mean absolute difference: 1213")
