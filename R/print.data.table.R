@@ -232,8 +232,11 @@ format_list_item.default = function(x, ...) {
 char.trunc = function(x, trunc.char = getOption("datatable.prettyprint.char")) {
   trunc.char = max(0L, suppressWarnings(as.integer(trunc.char[1L])), na.rm=TRUE)
   if (!is.character(x) || trunc.char <= 0L) return(x)
-  idx = which(nchar(x) > trunc.char)
-  x[idx] = paste0(substr(x[idx], 1L, as.integer(trunc.char)), "...")
+  nchar_width = nchar(x, 'width') # Test whether string is full-width or half-width, #5096 
+  nchar_chars = nchar(x, 'char')
+  is_full_width = nchar_width > nchar_chars
+  idx = pmin(nchar_width, nchar_chars) > trunc.char
+  x[idx] = paste0(strtrim(x[idx], trunc.char * fifelse(is_full_width[idx], 2L, 1L)), "...")
   x
 }
 
