@@ -229,6 +229,8 @@ format_list_item.default = function(x, ...) {
 
 # FR #1091 for pretty printing of character
 # TODO: maybe instead of doing "this is...", we could do "this ... test"?
+# Current implementation may have issues when dealing with strings that have combinations of full-width and half-width characters,
+# if this becomes a problem in the future, we could consider string traversal instead.
 char.trunc = function(x, trunc.char = getOption("datatable.prettyprint.char")) {
   trunc.char = max(0L, suppressWarnings(as.integer(trunc.char[1L])), na.rm=TRUE)
   if (!is.character(x) || trunc.char <= 0L) return(x)
