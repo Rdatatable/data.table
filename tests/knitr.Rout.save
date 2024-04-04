@@ -1,6 +1,6 @@
 
-R version 4.1.1 (2021-08-10) -- "Kick Things"
-Copyright (C) 2021 The R Foundation for Statistical Computing
+R version 4.3.2 (2023-10-31) -- "Eye Holes"
+Copyright (C) 2023 The R Foundation for Statistical Computing
 Platform: x86_64-pc-linux-gnu (64-bit)
 
 R is free software and comes with ABSOLUTELY NO WARRANTY.
@@ -15,16 +15,14 @@ Type 'demo()' for some demos, 'help()' for on-line help, or
 'help.start()' for an HTML browser interface to help.
 Type 'q()' to quit R.
 
-> if (suppressPackageStartupMessages(requireNamespace("knitr", quietly = TRUE))) {
-+     require(knitr)
-+     knit("knitr.Rmd", quiet=TRUE)
-+     cat(readLines("knitr.md"), sep="\n")
-+     invisible(file.remove("knitr.md"))
-+ } else {
-+     cat(readLines("knitr.Rout.mock", warn = FALSE), sep="\n")
+> if (!suppressPackageStartupMessages(requireNamespace("knitr", quietly=TRUE))) {
++   cat(readLines("knitr.Rout.mock", warn=FALSE), sep="\n")
++   q('no')
 + }
-Loading required package: knitr
-Loading required package: data.table
+> 
+> library(knitr)
+> invisible(knit("knitr.Rmd", quiet=TRUE))
+> cat(readLines("knitr.md"), sep="\n")
 
 ```r
 require(data.table)              # print?
@@ -67,8 +65,8 @@ DT                               # yes
 ```
 Some text.
 
-> 
+> invisible(file.remove("knitr.md"))
 > 
 > proc.time()
    user  system elapsed 
-  0.742   0.666   0.261 
+  0.247   0.044   0.283 

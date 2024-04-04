@@ -22,7 +22,7 @@
   \item{\dots}{Any other arguments that may be passed to the aggregating function.}
   \item{margins}{Not implemented yet. Should take variable names to compute margins on. A value of \code{TRUE} would compute all margins.}
   \item{subset}{Specified if casting should be done on a subset of the data. Ex: \code{subset = .(col1 <= 5)} or \code{subset = .(variable != "January")}.}
-  \item{fill}{Value with which to fill missing cells. If \code{fun.aggregate} is present, takes the value by applying the function on a 0-length vector.}
+  \item{fill}{Value with which to fill missing cells. If \code{fill=NULL} and missing cells are present, then \code{fun.aggregate} is used on a 0-length vector to obtain a fill value.}
   \item{drop}{\code{FALSE} will cast by including all missing combinations.
 
   \code{c(FALSE, TRUE)} will only include all missing combinations of formula \code{LHS}; \code{c(TRUE, FALSE)} will only include all missing combinations of formula RHS. See Examples.}
