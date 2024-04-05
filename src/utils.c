@@ -322,7 +322,7 @@ SEXP coerceUtf8IfNeeded(SEXP x) {
   return(ans);
 }
 
-// class1 is used by coerseAs only, which is used by frollR.c and nafill.c only
+// class1 is used by coerceAs only, which is used by frollR.c and nafill.c only
 const char *class1(SEXP x) {
   SEXP cl = getAttrib(x, R_ClassSymbol);
   if (length(cl))
