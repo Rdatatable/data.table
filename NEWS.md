@@ -16,7 +16,7 @@
 
 2. `cedta()` now returns `FALSE` if `.datatable.aware = FALSE` is set in the calling environment, [#5654](https://github.com/Rdatatable/data.table/issues/5654).
 
-3. `data.table:::patterns` now accepts arguments `ignore.case`, `perl`, `fixed`, and `useBytes`, which are passed to `grep`, #5387. Thanks to @iago-pssjd for the feature request, and @tdhock for the implementation.
+3. `patterns()` helper for `.SDcols` now accepts arguments `ignore.case`, `perl`, `fixed`, and `useBytes`, which are passed to `grep`, #5387. Thanks to @iago-pssjd for the feature request, and @tdhock for the implementation.
 
 ## NOTES
 
