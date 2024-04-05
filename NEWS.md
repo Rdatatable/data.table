@@ -16,7 +16,7 @@
 
 2. `cedta()` now returns `FALSE` if `.datatable.aware = FALSE` is set in the calling environment, [#5654](https://github.com/Rdatatable/data.table/issues/5654).
 
-3. User-defined pattern matching functions are supported for .SDcols, `.SDcols=user_patterns_fun("regexp")` where `user_patterns_fun` should have an argument named `cols` that is not provided by the user, but will be filled in with the data table column names. Also `data.table:::patterns(perl=TRUE)` passes `perl` argument onto `grep`, #5387. Thanks to @iago-pssjd for the feature request, and @tdhock for the implementation.
+3. `data.table:::patterns` now accepts arguments `ignore.case`, `perl`, `fixed`, and `useBytes`, which are passed to `grep`, #5387. Thanks to @iago-pssjd for the feature request, and @tdhock for the implementation.
 
 ## NOTES
 
