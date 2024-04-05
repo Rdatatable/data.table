@@ -20,10 +20,7 @@ patterns(
 \arguments{
   \item{\dots}{A set of regular expression patterns.}
   \item{cols}{A character vector of names to which each pattern is matched.}
-  \item{ignore.case}{Passed to \code{\link{grep}}.}
-  \item{perl}{Passed to \code{\link{grep}}.}
-  \item{fixed}{Passed to \code{\link{grep}}.}
-  \item{useBytes}{Passed to \code{\link{grep}}.}
+  \item{ignore.case, perl, fixed, useBytes}{Passed to \code{\link{grep}}.}
 }
 \seealso{
   \code{\link{melt}},
