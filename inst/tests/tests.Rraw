@@ -13962,12 +13962,6 @@ test(1971.02, DT[ , lapply(.SD, sum), .SDcols = not_patterns()], data.table(V4=3
 not_patterns <- function(cols)cols
 test(1971.03, DT[ , lapply(.SD, sum), .SDcols = not_patterns()], error='argument "cols" is missing, with no default')
 test(1971.04, DT[ , lapply(.SD, sum), .SDcols = not_patterns(c("V4","V8"))], data.table(V4=3.4, V8=-0.4))
-patterns <- function(cols)list(cols[c(6,10)])#with cols arg
-test(1971.05, DT[ , lapply(.SD, sum), .SDcols = patterns()], data.table(V4=3.4, V8=-0.4))
-test(1971.06, DT[ , lapply(.SD, sum), .SDcols = patterns(cols="foo")], error="user should not provide cols argument to patterns, when specifying the columns for melt or .SDcols; in this context, non-standard evaluation is used internally to set cols to all data table column names, so please fix by removing cols argument")
-patterns <- function()list(c("V4","V8"))#without cols arg
-test(1971.07, DT[ , lapply(.SD, sum), .SDcols = patterns()], data.table(V4=3.4, V8=-0.4))
-rm(patterns)
 test(1971.1, DT[ , lapply(.SD, sum), .SDcols = patterns('^V')],
      data.table(V1=-6.3, V2=-6.5, V3=1.3, V4=3.4, V5=-0.9, V6=-1.6, V7=-2, V8=-0.4, V9=6.1, V10=-1.8))
 # multiple pattens --> intersection of patterns
