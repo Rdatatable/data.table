@@ -26,7 +26,7 @@ patterns(
   \item{useBytes}{Passed to \code{\link{grep}}.}
 }
 \seealso{
-  \code{\link{melt}}}
+  \code{\link{melt}},
   \url{https://github.com/Rdatatable/data.table/wiki/Getting-started}
 }
 \examples{
