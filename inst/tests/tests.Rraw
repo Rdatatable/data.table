@@ -16611,14 +16611,8 @@ test(2128.2, names(DT[, .SD, .SDcols=!is.numeric]), 'c')
 test(2128.3, DT[, .SD, .SDcols=function(x) x==1], error='conditions were not met for: [a, b, c]')
 test(2128.4, DT[, .SD, .SDcols=function(x) 2L],   error='conditions were not met for: [a, b, c]')
 test(2128.5, DT[, .SD, .SDcols=function(x) NA],   error='conditions were not met for: [a, b, c]')
-# user-defined pattern matching functions, PR#5663
-patterns = function(cols)grep('^(?!W)a', cols, perl=TRUE)
-test(2128.6, names(DT[, .SD, .SDcols=patterns()]), 'a')
-rm(patterns)
-not = function(regex, cols)grep(regex, cols, invert=TRUE)
-test(2128.7, names(DT[, .SD, .SDcols=not("[bc]")]), 'a')
-# patterns with PCRE.
-test(2128.8, names(DT[, .SD, .SDcols=patterns('^(?!W)a',perl=TRUE)]), 'a')
+# patterns with PCRE, #5387
+test(2128.6, names(DT[, .SD, .SDcols=patterns('^(?![bc])',perl=TRUE)]), 'a')#lookahead is only supported with perl=TRUE.
 
 # expression columns in rbindlist, #546
 A = data.table(c1 = 1, c2 = 'asd', c3 = expression(as.character(Sys.time())))
