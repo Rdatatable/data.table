@@ -136,9 +136,8 @@ eval_with_cols = function(orig_call, all_cols) {
     if ("cols" %in% names(formals(fun))) {
       if ("cols" %in% names(named_call)) {
         stopf("user should not provide cols argument to %s, when specifying the columns for melt or .SDcols; in this context, non-standard evaluation is used internally to set cols to all data table column names, so please fix by removing cols argument", as.character(fun_uneval))
-      } else {
-        named_call[["cols"]] = all_cols
       }
+      named_call[["cols"]] = all_cols
     }
     named_call[[1L]] = fun
     eval(named_call, parent)
