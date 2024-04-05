@@ -17,7 +17,7 @@ patterns(\dots, cols=character(0), perl=FALSE)
 \arguments{
   \item{\dots}{A set of regular expression patterns.}
   \item{cols}{A character vector of names to which each pattern is matched.}
-  \item{perl}{Passed to \code{grep}: \code{TRUE} to use PCRE, \code{FALSE} to use TRE.}
+  \item{perl}{Passed to \code{\link{grep}}.}
 }
 \seealso{
   \code{\link{melt}}, \code{\link{grep}}
