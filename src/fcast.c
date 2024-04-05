@@ -30,7 +30,8 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
       }
       if (isVectorAtomic(thiscol)) { // defer error handling to below, but also skip on list
         // #5980: some callers used fill=list(...) and relied on R's coercion mechanics for lists, which are nontrivial, so just dispatch and double-coerce.
-        thisfill = PROTECT(coerceAs(isNewList(thisfill) ? coerceVector(thisfill, TYPEOF(thiscol)) : thisfill, thiscol, /*copyArg=*/ScalarLogical(false))); nprotect++;
+        if (isNewList(thisfill)) { thisfill = PROTECT(coerceVector(thisfill, TYPEOF(thiscol))); nprotect++; }
+        thisfill = PROTECT(coerceAs(thisfill, thiscol, /*copyArg=*/ScalarLogical(false))); nprotect++;
       }
     }
     switch (thistype) {
