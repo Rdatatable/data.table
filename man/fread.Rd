@@ -11,7 +11,7 @@
 \usage{
 fread(input, file, text, cmd, sep="auto", sep2="auto", dec=".", quote="\"",
 nrows=Inf, header="auto",
-na.strings=getOption("datatable.na.strings","NA"),  # due to change to ""; see NEWS
+na.strings=getOption("datatable.na.strings",""),
 stringsAsFactors=FALSE, verbose=getOption("datatable.verbose", FALSE),
 skip="__auto__", select=NULL, drop=NULL, colClasses=NULL,
 integer64=getOption("datatable.integer64", "integer64"),
