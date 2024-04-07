@@ -18442,3 +18442,16 @@ DT = data.table(strrep(ja_ko, 1:3L), strrep(ja_n, 2:4L), strrep(accented_a, 3))
 test(2253.17, options=list(datatable.prettyprint.char = 4L), gsub(clean_regex, "", capture.output(print(DT))[-1L]), c("こ     んん ááá", "ここ   んんん ááá", "こここ んんんん ááá"))
 test(2253.18, options=list(datatable.prettyprint.char = 3L), gsub(clean_regex, "", capture.output(print(DT))[-1L]), c("こ      んん ááá", "ここ    んんん ááá", "こここ んんん... ááá"))
 test(2253.19, options=list(datatable.prettyprint.char = 1L), gsub(clean_regex, "", capture.output(print(DT))[-1L]), c("こ ん... á...", "こ... ん... á...", "こ... ん... á..."))
+
+# allow 1-D matrix in j for consistency, #783
+DT=data.table(a = rep(1:2, 3), b = 1:6)
+test(2254.1, DT[, .(cbind(b, b)), by=a], error="Entry 1 for group 1.*2 dimensions > 1")
+test(2254.2, DT[, .(replicate(.GRP, b)), by=a], error="Entry 1 for group 2.*2 dimensions > 1")
+test(2254.3, DT[, .(b, cbind(b, b)), by=a], error="Entry 2 for group 1.*2 dimensions > 1")
+test(2254.4, DT[, .(b, replicate(.GRP, b)), by=a], error="Entry 2 for group 2.*2 dimensions > 1")
+test(2254.5, DT[, .(array(dim=2:4)), by=a], error="3 dimensions > 1")
+test(2254.6, DT[, .(array(dim=rep(1:2, c(10L, 2L)))), by=a], error="2 dimensions > 1")
+# but 1-D matrix is fine
+test(2254.7, DT[, .(b = cbind(b)), by=a], DT[order(a)])
+test(2254.8, DT[, .(b = rbind(b)), by=a], DT[order(a)])
+test(2254.9, DT[, .(b = array(b, dim=rep(c(1L, .N), c(10L, 1L)))), by=a], DT[order(a)])
