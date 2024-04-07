@@ -12,7 +12,10 @@ and melt them into separate columns. See the \code{Efficient reshaping using
 data.tables} vignette linked below to learn more.
 }
 \usage{
-patterns(\dots, cols=character(0))
+patterns(
+  \dots, cols=character(0),
+  ignore.case=FALSE, perl=FALSE,
+  fixed=FALSE, useBytes=FALSE)
 }
 \arguments{
   \item{\dots}{A set of regular expression patterns.}
@@ -24,6 +27,7 @@ patterns(\dots, cols=character(0))
     automatically set to all of the column names of the input data
     table, using non-standard evaluation.
   }
+  \item{ignore.case, perl, fixed, useBytes}{Passed to \code{\link{grep}}.}
 }
 \seealso{
   \code{\link{melt}}, \code{\link{.SD}},

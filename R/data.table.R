@@ -62,8 +62,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
   if (!is.null(key)) {
     if (!is.character(key)) stopf("key argument of data.table() must be character")
     if (length(key)==1L) {
-      key = strsplit(key,split=",")[[1L]]
-      # eg key="A,B"; a syntax only useful in key argument to data.table(), really.
+      if (key != strsplit(key,split=",")[[1L]]) stopf("Usage of comma-separated literals in %s is deprecated, please split such entries yourself before passing to data.table", "key=")
     }
     setkeyv(ans,key)
   } else {
@@ -145,6 +144,10 @@ replace_dot_alias = function(e) {
   # the drop=NULL is to sink drop argument when dispatching to [.data.frame; using '...' stops test 147
   if (!cedta()) {
     # Fix for #500 (to do)
+    if (substitute(j) %iscall% c(":=", "let")) {
+        # Throw a specific error message
+        stopf("[ was called on a data.table in an environment that is not data.table-aware (i.e. cedta()), but '%s' was used, implying the owner of this call really intended for data.table methods to be called. See vignette('datatable-importing') for details on properly importing data.table.", as.character(substitute(j)[[1L]]))
+    }
     Nargs = nargs() - (!missing(drop))
     ans = if (Nargs<3L) { `[.data.frame`(x,i) }  # drop ignored anyway by DF[i]
         else if (missing(drop)) `[.data.frame`(x,i,j)
@@ -802,8 +805,7 @@ replace_dot_alias = function(e) {
 
         if (mode(bysub) == "character") {
           if (any(grepl(",", bysub, fixed = TRUE))) {
-            if (length(bysub)>1L) stopf("'by' is a character vector length %d but one or more items include a comma. Either pass a vector of column names (which can contain spaces, but no commas), or pass a vector length 1 containing comma separated column names. See ?data.table for other possibilities.", length(bysub))
-            bysub = strsplit(bysub, split=",", fixed=TRUE)[[1L]]
+            stopf("Usage of comma-separated literals in %s is deprecated, please split such entries yourself before passing to data.table", "by=")
           }
           bysub = gsub("^`(.*)`$", "\\1", bysub) # see test 138
           nzidx = nzchar(bysub)
@@ -1122,8 +1124,8 @@ replace_dot_alias = function(e) {
           if (is.name(lhs)) {
             lhs = as.character(lhs)
           } else {
-            # e.g. (MyVar):= or get("MyVar"):=
-            lhs = eval(lhs, parent.frame(), parent.frame())
+            # lhs is e.g. (MyVar) or get("MyVar") or names(.SD) || setdiff(names(.SD), cols)
+            lhs = eval(lhs, list(.SD = setNames(logical(length(sdvars)), sdvars)), parent.frame())
           }
         } else {
           # `:=`(c2=1L,c3=2L,...)
@@ -2401,6 +2403,9 @@ split.data.table = function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = TR
     if (!missing(by))
       stopf("passing 'f' argument together with 'by' is not allowed, use 'by' when split by column in data.table and 'f' when split by external factor")
     # same as split.data.frame - handling all exceptions, factor orders etc, in a single stream of processing was a nightmare in factor and drop consistency
+    # evaluate formula mirroring split.data.frame #5392. Mimics base::.formula2varlist.
+    if (inherits(f, "formula"))
+        f <- eval(attr(terms(f), "variables"), x, environment(f))
     # be sure to use x[ind, , drop = FALSE], not x[ind], in case downstream methods don't follow the same subsetting semantics (#5365)
     return(lapply(split(x = seq_len(nrow(x)), f = f, drop = drop, ...), function(ind) x[ind, , drop = FALSE]))
   }
