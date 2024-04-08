@@ -120,7 +120,6 @@ brackify = function(x, quote=FALSE) {
 eval_with_cols = function(orig_call, all_cols) {
   parent = parent.frame(2L)
   fun_uneval = orig_call[[1L]]
-  stopifnot(length(fun_uneval) == 1)
   # take fun from either calling env (parent) or from data.table
   fun = tryCatch({
     maybe_fun = eval(fun_uneval, parent)
