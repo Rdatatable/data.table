@@ -1,10 +1,6 @@
 require(methods)
 
 if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
-  if (!identical(suppressWarnings(packageDescription("data.table")), NA)) {
-    remove.packages("data.table")
-    stop("This is dev mode but data.table was installed. Uninstalled it. Please q() this R session and try cc() again. The installed namespace causes problems in dev mode for the S4 tests.\n")
-  }
   if ((tt<-compiler::enableJIT(-1))>0)
     cat("This is dev mode and JIT is enabled (level ", tt, ") so there will be a brief pause around the first test.\n", sep="")
   rm_all = function() {}
