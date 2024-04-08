@@ -18495,3 +18495,15 @@ test(2254.6, DT[, .(array(dim=rep(1:2, c(10L, 2L)))), by=a], error="2 dimensions
 test(2254.7, DT[, .(b = cbind(b)), by=a], DT[order(a)])
 test(2254.8, DT[, .(b = rbind(b)), by=a], DT[order(a)])
 test(2254.9, DT[, .(b = array(b, dim=rep(c(1L, .N), c(10L, 1L)))), by=a], DT[order(a)])
+
+# regression test on issue reported with printing nested table, #1646
+DF <- structure(
+  list(
+    DF1=structure(list(V1=list(1:2, 3:4), V2=5:6), .Names=c("V1", "V2"), class="data.frame", row.names=c(NA, 2L)),
+    DF2=structure(list(V3=7:8, V4=9:10), .Names=c("V3", "V4"), class="data.frame", row.names=c(NA, 2L)),
+    V5=11:12
+  ),
+  .Names=c("DF1", "DF2", "V5"), class="data.frame", row.names=c(NA, 2L)
+)
+
+test(2255, as.data.table(DF), output="DF1.V1.*DF1.V2.*DF2.V3.*DF2.V4.*V5")
