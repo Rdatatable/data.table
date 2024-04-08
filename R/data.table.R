@@ -12,7 +12,7 @@ dim.data.table = function(x)
 }
 
 .global = new.env()  # thanks to: http://stackoverflow.com/a/12605694/403310
-setPackageName("data.table",.global)
+methods::setPackageName("data.table",.global)
 .global$print = ""
 
 # NB: if adding to/editing this list, be sure to do the following:
