@@ -112,7 +112,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   }
   if (printdots) {
     if (isFALSE(row.names)) {
-      toprint = rbind(head(toprint, topn + isTRUE(class)), c("---", rep("", ncol(toprint)-1L)), tail(toprint, topn))
+      toprint = rbind(head(toprint, topn + isTRUE(class)), c("---", rep("", ncol(toprint)-1L)), tail(toprint, topn)) # 4083
     } else {
       toprint = rbind(head(toprint, topn + isTRUE(class)), "---"="", tail(toprint, topn))
     }
