@@ -293,7 +293,8 @@ struct processData {
     totlen,       // of output/long DT result of melt operation.
     nrow;         // of input/wide DT to be melted.
   SEXPTYPE *maxtype;
-  Rboolean narm;  // remove missing values?
+  bool measure_is_list,
+    narm;  // remove missing values?
 };
 
 static void preprocess(SEXP DT, SEXP id, SEXP measure, SEXP varnames, SEXP valnames, Rboolean narm, Rboolean verbose, struct processData *data) {
@@ -302,6 +303,7 @@ static void preprocess(SEXP DT, SEXP id, SEXP measure, SEXP varnames, SEXP valna
   SEXPTYPE type;
   data->lmax = 0; data->totlen = 0; data->nrow = length(VECTOR_ELT(DT, 0));
   SET_VECTOR_ELT(data->RCHK, 0, vars = checkVars(DT, id, measure, verbose));
+  data->measure_is_list = !isNull(measure) && isNewList(measure); // NB: NULL passes isNewList() hence !isNull() too
   data->idcols = VECTOR_ELT(vars, 0);
   data->valuecols = VECTOR_ELT(vars, 1);
   data->lids = length(data->idcols);
@@ -594,7 +596,7 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
   if (isNull(data->variable_table)) {
     if (!varfactor) {
       SET_VECTOR_ELT(ansvars, 0, target=allocVector(STRSXP, data->totlen));
-      if (data->lvalues == 1) {//one value column to output.
+      if (!data->measure_is_list) {//one value column to output.
         const int *thisvaluecols = INTEGER(VECTOR_ELT(data->valuecols, 0));
         for (int j=0, ansloc=0; j<data->lmax; ++j) {
           const int thislen = data->narm ? length(VECTOR_ELT(data->not_NA_indices, j)) : data->nrow;
@@ -613,7 +615,7 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
       SET_VECTOR_ELT(ansvars, 0, target=allocVector(INTSXP, data->totlen));
       SEXP levels;
       int *td = INTEGER(target);
-      if (data->lvalues == 1) {//one value column to output.
+      if (!data->measure_is_list) {//one value column to output.
         SEXP thisvaluecols = VECTOR_ELT(data->valuecols, 0);
         int len = length(thisvaluecols);
         levels = PROTECT(allocVector(STRSXP, len)); protecti++;

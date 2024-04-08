@@ -17227,7 +17227,13 @@ exid = data.table(id=1, expected)
 test(2182.3, melt(DTid, measure.vars=list(a=c(NA,1), b=2:3), id.vars="id"), exid)
 test(2182.4, melt(DTid, measure.vars=list(a=c(NA,"a2"), b=c("b1","b2")), id.vars="id"), exid)
 test(2182.5, melt(DT.wide, measure.vars=list(a=c(NA,1), b=2:3), na.rm=TRUE), data.table(variable=factor(2), a=2, b=2))
-test(2182.6, melt(DT.wide, measure.vars=list(b=c("b1","b2"))), data.table(a2=2, variable=factor(c("b1","b2")), b=c(1,2))) # measure.vars named list length=1, #5065
+test(2182.6, melt(DT.wide, measure.vars=list(b=c("b1","b2"))), data.table(a2=2, variable=factor(c("1","2")), b=c(1,2))) # measure.vars named list length=1, #5065
+# consistency between measure.vars=list with length=1 and length>1, #5209
+test(2182.71, melt(DT.wide, measure.vars=list("a2"), variable.factor=TRUE), data.table(b1=1, b2=2, variable=factor(1), value=2))
+test(2182.72, melt(DT.wide, measure.vars=c("a2"), variable.factor=TRUE), data.table(b1=1, b2=2, variable=factor("a2"), value=2))
+test(2182.73, melt(DT.wide, measure.vars=list("a2"), variable.factor=FALSE), data.table(b1=1, b2=2, variable="1", value=2))
+test(2182.74, melt(DT.wide, measure.vars=c("a2"), variable.factor=FALSE), data.table(b1=1, b2=2, variable="a2", value=2))
+test(2182.75, melt(data.table(a=10, b=20), measure.vars=list(n="a"), variable.factor=FALSE), data.table(b=20, variable="1", n=10))#thanks @mnazarov
 
 ### First block testing measurev
 # new variable_table attribute for measure.vars, PR#4731 for multiple issues
@@ -18430,3 +18436,15 @@ test(2254.6, DT[, .(array(dim=rep(1:2, c(10L, 2L)))), by=a], error="2 dimensions
 test(2254.7, DT[, .(b = cbind(b)), by=a], DT[order(a)])
 test(2254.8, DT[, .(b = rbind(b)), by=a], DT[order(a)])
 test(2254.9, DT[, .(b = array(b, dim=rep(c(1L, .N), c(10L, 1L)))), by=a], DT[order(a)])
+
+# regression test on issue reported with printing nested table, #1646
+DF <- structure(
+  list(
+    DF1=structure(list(V1=list(1:2, 3:4), V2=5:6), .Names=c("V1", "V2"), class="data.frame", row.names=c(NA, 2L)),
+    DF2=structure(list(V3=7:8, V4=9:10), .Names=c("V3", "V4"), class="data.frame", row.names=c(NA, 2L)),
+    V5=11:12
+  ),
+  .Names=c("DF1", "DF2", "V5"), class="data.frame", row.names=c(NA, 2L)
+)
+
+test(2255, as.data.table(DF), output="DF1.V1.*DF1.V2.*DF2.V3.*DF2.V4.*V5")
