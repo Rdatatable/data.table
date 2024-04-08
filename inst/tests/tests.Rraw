@@ -1,31 +1,6 @@
-library(datasets) # for airquality, BOD, cars, ChickWeight, CO2, iris, mtcars
-
-lm=stats::lm
-median=stats::median
-na.omit=stats::na.omit
-rnorm=stats::rnorm
-runif=stats::runif
-sd=stats::sd
-setNames=stats::setNames
-var=stats::var
-weighted.mean=stats::weighted.mean
-
-capture.output=utils::capture.output
-combn=utils::combn
-head=utils::head
-read.csv=utils::read.csv
-read.delim=utils::read.delim
-read.table=utils::read.table
-tail=utils::tail
-type.convert=utils::type.convert
-write.csv=utils::write.csv
-write.table=utils::write.table
-
-as.integer64=bit64::as.integer64
-integer64=bit64::integer64
-is.na.integer64=bit64::is.na.integer64
-lim.integer64=bit64::lim.integer64
-NA_integer64_=bit64::NA_integer64_
+library(datasets, include.only=c("airquality", "BOD", "cars", "ChickWeight", "CO2", "iris", "mtcars"))
+library(stats, include.only=c("lm", "median", "na.omit", "rnorm", "runif", "sd", "setNames", "var", "weighted.mean"))
+library(utils, include.only=c("capture.output", "combn", "head", "read.csv", "read.delim", "read.table", "tail", "type.convert", "write.csv", "write.table"))
 
 if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   if ((tt<-compiler::enableJIT(-1))>0)
