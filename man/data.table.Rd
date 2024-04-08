@@ -44,7 +44,7 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
 
     \item{check.names}{ Just as \code{check.names} in \code{\link{data.frame}}.}
 
-    \item{key}{ Character vector of one or more column names which is passed to \code{\link{setkey}}. It may be a single comma separated string such as \code{key="x,y,z"}, or a vector of names such as \code{key=c("x","y","z")}.}
+    \item{key}{ Character vector of one or more column names which is passed to \code{\link{setkey}}.}
 
     \item{stringsAsFactors}{Logical (default is \code{FALSE}). Convert all \code{character} columns to \code{factor}s?}
 
@@ -84,7 +84,7 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
 
     As long as \code{j} returns a \code{list}, each element of the list becomes a column in the resulting \code{data.table}. When the output of \code{j} is not a \code{list}, the output is returned as-is (e.g. \code{x[ , a]} returns the column vector \code{a}), unless \code{by} is used, in which case it is implicitly wrapped in \code{list} for convenience (e.g. \code{x[ , sum(a), by=b]} will create a column named \code{V1} with value \code{sum(a)} for each group).
 
-    The expression `.()` is a \emph{shorthand} alias to \code{list()}; they both mean the same. (An exception is made for the use of \code{.()} within a call to \code{\link{bquote}}, where \code{.()} is left unchanged.)
+    The expression \code{.()} is a \emph{shorthand} alias to \code{list()}; they both mean the same. (An exception is made for the use of \code{.()} within a call to \code{\link{bquote}}, where \code{.()} is left unchanged.)
 
     When \code{j} is a vector of column names or positions to select (as in \code{data.frame}). There is no need to use \code{with=FALSE} anymore. Note that \code{with=FALSE} is still necessary when using a logical vector with length \code{ncol(x)} to include/exclude columns. Note: if a logical vector with length \code{k < ncol(x)} is passed, it will be filled to length \code{ncol(x)} with \code{FALSE}, which is different from \code{data.frame}, where the vector is recycled.
 
@@ -110,13 +110,13 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
         \item or of the form \code{startcol:endcol}: e.g., \code{DT[, sum(a), by=x:z]}
     }
 
-    \emph{Advanced:} When \code{i} is a \code{list} (or \code{data.frame} or \code{data.table}), \code{DT[i, j, by=.EACHI]} evaluates \code{j} for the groups in `DT` that each row in \code{i} joins to. That is, you can join (in \code{i}) and aggregate (in \code{j}) simultaneously. We call this \emph{grouping by each i}. See \href{https://stackoverflow.com/a/27004566/559784}{this StackOverflow answer} for a more detailed explanation until we \href{https://github.com/Rdatatable/data.table/issues/944}{roll out vignettes}.
+    \emph{Advanced:} When \code{i} is a \code{list} (or \code{data.frame} or \code{data.table}), \code{DT[i, j, by=.EACHI]} evaluates \code{j} for the groups in \code{DT} that each row in \code{i} joins to. That is, you can join (in \code{i}) and aggregate (in \code{j}) simultaneously. We call this \emph{grouping by each i}. See \href{https://stackoverflow.com/a/27004566/559784}{this StackOverflow answer} for a more detailed explanation until we \href{https://github.com/Rdatatable/data.table/issues/944}{roll out vignettes}.
 
     \emph{Advanced:} In the \code{X[Y, j]} form of grouping, the \code{j} expression sees variables in \code{X} first, then \code{Y}. We call this \emph{join inherited scope}. If the variable is not in \code{X} or \code{Y} then the calling frame is searched, its calling frame, and so on in the usual way up to and including the global environment.}
 
-    \item{keyby}{ Same as \code{by}, but with an additional \code{setkey()} run on the \code{by} columns of the result, for convenience. It is common practice to use `keyby=` routinely when you wish the result to be sorted. May also be \code{TRUE} or \code{FALSE} when \code{by} is provided as an alternative way to accomplish the same operation.}
+    \item{keyby}{ Same as \code{by}, but with an additional \code{setkey()} run on the \code{by} columns of the result, for convenience. It is common practice to use \code{keyby=} routinely when you wish the result to be sorted. May also be \code{TRUE} or \code{FALSE} when \code{by} is provided as an alternative way to accomplish the same operation.}
 
-    \item{with}{ By default \code{with=TRUE} and \code{j} is evaluated within the frame of \code{x}; column names can be used as variables. In case of overlapping variables names inside dataset and in parent scope you can use double dot prefix \code{..cols} to explicitly refer to `\code{cols} variable parent scope and not from your dataset.
+    \item{with}{ By default \code{with=TRUE} and \code{j} is evaluated within the frame of \code{x}; column names can be used as variables. In case of overlapping variables names inside dataset and in parent scope you can use double dot prefix \code{..cols} to explicitly refer to \code{cols} variable parent scope and not from your dataset.
 
         When \code{j} is a character vector of column names, a numeric vector of column positions to select or of the form \code{startcol:endcol}, and the value returned is always a \code{data.table}. \code{with=FALSE} is not necessary anymore to select columns dynamically. Note that \code{x[, cols]} is equivalent to \code{x[, ..cols]} and to \code{x[, cols, with=FALSE]} and to \code{x[, .SD, .SDcols=cols]}.}
 
@@ -145,18 +145,18 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
 
     \item{which}{\code{TRUE} returns the row numbers of \code{x} that \code{i} matches to. If \code{NA}, returns the row numbers of \code{i} that have no match in \code{x}. By default \code{FALSE} and the rows in \code{x} that match are returned.}
 
-    \item{.SDcols}{ Specifies the columns of \code{x} to be included in the special symbol \code{\link{.SD}} which stands for \code{Subset of data.table}. May be character column names, numeric positions, logical, a function name such as `is.numeric`, or a function call such as `patterns()`. `.SDcols` is particularly useful for speed when applying a function through a subset of (possible very many) columns by group; e.g., \code{DT[, lapply(.SD, sum), by="x,y", .SDcols=301:350]}.
+    \item{.SDcols}{ Specifies the columns of \code{x} to be included in the special symbol \code{\link{.SD}} which stands for \code{Subset of data.table}. May be character column names, numeric positions, logical, a function name such as \code{is.numeric}, or a function call such as \code{patterns()}. \code{.SDcols} is particularly useful for speed when applying a function through a subset of (possible very many) columns by group; e.g., \code{DT[, lapply(.SD, sum), by="x,y", .SDcols=301:350]}.
 
     For convenient interactive use, the form \code{startcol:endcol} is also allowed (as in \code{by}), e.g., \code{DT[, lapply(.SD, sum), by=x:y, .SDcols=a:f]}.
 
     Inversion (column dropping instead of keeping) can be accomplished be prepending the argument with \code{!} or \code{-} (there's no difference between these), e.g. \code{.SDcols = !c('x', 'y')}.
 
-    Finally, you can filter columns to include in \code{.SD} based on their \emph{names} according to regular expressions via \code{.SDcols=patterns(regex1, regex2, ...)}. The included columns will be the \emph{intersection} of the columns identified by each pattern; pattern unions can easily be specified with \code{|} in a regex. You can filter columns on \code{values}  by passing a function, e.g. \code{.SDcols=\link{is.numeric}}. You can also invert a pattern as usual with \code{.SDcols=!patterns(...)} or \code{.SDcols=!is.numeric}.
+    Finally, you can filter columns to include in \code{.SD} based on their \emph{names} according to regular expressions via \code{.SDcols=patterns(regex1, regex2, ...)}. The included columns will be the \emph{intersection} of the columns identified by each pattern; pattern unions can easily be specified with \code{|} in a regex. You can filter columns on \code{values} by passing a function, e.g. \code{.SDcols=\link{is.numeric}}. You can also invert a pattern as usual with \code{.SDcols=!patterns(...)} or \code{.SDcols=!is.numeric}.
 }
   \item{verbose}{ \code{TRUE} turns on status and information messages to the console. Turn this on by default using \code{options(datatable.verbose=TRUE)}. The quantity and types of verbosity may be expanded in future.
 
 }
-  \item{allow.cartesian}{ \code{FALSE} prevents joins that would result in more than \code{nrow(x)+nrow(i)} rows. This is usually caused by duplicate values in \code{i}'s join columns, each of which join to the same group in `x` over and over again: a \emph{misspecified} join. Usually this was not intended and the join needs to be changed. The word 'cartesian' is used loosely in this context. The traditional cartesian join is (deliberately) difficult to achieve in \code{data.table}: where every row in \code{i} joins to every row in \code{x} (a \code{nrow(x)*nrow(i)} row result). 'cartesian' is just meant in a 'large multiplicative' sense, so FALSE does not always prevent a traditional cartesian join. }
+  \item{allow.cartesian}{ \code{FALSE} prevents joins that would result in more than \code{nrow(x)+nrow(i)} rows. This is usually caused by duplicate values in \code{i}'s join columns, each of which join to the same group in \code{x} over and over again: a \emph{misspecified} join. Usually this was not intended and the join needs to be changed. The word 'cartesian' is used loosely in this context. The traditional cartesian join is (deliberately) difficult to achieve in \code{data.table}: where every row in \code{i} joins to every row in \code{x} (a \code{nrow(x)*nrow(i)} row result). 'cartesian' is just meant in a 'large multiplicative' sense, so FALSE does not always prevent a traditional cartesian join. }
 
   \item{drop}{ Never used by \code{data.table}. Do not use. It needs to be here because \code{data.table} inherits from \code{data.frame}. See \href{../doc/datatable-faq.html}{\code{vignette("datatable-faq")}}.}
 
