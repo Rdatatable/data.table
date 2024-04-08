@@ -31,6 +31,7 @@ sourceDir = function(path=getwd(), trace = TRUE, ...) {
   if(trace) cat("\n")
 }
 
+# NB: since we only import from default packages, this is rarely needed, but useful for truly minimal dev environments (#6056)
 sourceImports = function(path=getwd(), quiet=FALSE) {
   nsFile = file.path(path, "NAMESPACE")
   if (!file.exists(nsFile)) {
