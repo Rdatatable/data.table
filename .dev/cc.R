@@ -39,9 +39,10 @@ sourceImports = function(path=getwd(), quiet=FALSE) {
     return(invisible())
   }
   nsParsedImports = parseNamespaceFile(basename(path), "..")$imports # weird signature to this function
-  if (!quiet && length(nsParsedImports)) cat(sprintf("Resolving objects from %d import entries in NAMESPACE\n", length(nsParsedImports)))
+  if (!quiet && length(nsParsedImports)) cat(sprintf("Ensuring objects from %d import entries in NAMESPACE resolve correctly\n", length(nsParsedImports)))
   for (ii in seq_along(nsParsedImports)) {
     entry = nsParsedImports[[ii]]
+    if (paste0("package:", entry[[1L]]) %in% search()) next # not strictly needed since a redundant 'require()' is just skipped, but helpful for reducing noise in !quiet case
     if (length(entry) == 1L) {
       if (!quiet) cat(sprintf("  Attaching full package %s\n", entry))
       require(entry, character.only=TRUE, quietly=TRUE)
