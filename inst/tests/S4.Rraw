@@ -88,7 +88,7 @@ rm(s1, s2, class4)
 test(5.1, options=c(datatable.old.fread.datetime.character=TRUE),
      fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date","IDate","POSIXct")),
      ans<-data.table(a=as.Date("2015-01-01"), b=as.IDate("2015-01-02"), c=as.POSIXct("2015-01-03 01:02:03")))
-ans_print = capture.output(print(ans))
+ans_print = utils::capture.output(print(ans))
 if (TZnotUTC) {
   test(5.2, options=list(datatable.old.fread.datetime.character=NULL),
        fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date","IDate","POSIXct"), tz=""),
