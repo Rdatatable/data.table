@@ -77,7 +77,8 @@ linters = all_linters(
   unnecessary_concatenation_linter = NULL,
   unnecessary_lambda_linter = NULL,
   unnecessary_nesting_linter = NULL,
-  unreachable_code_linter = NULL
+  unreachable_code_linter = NULL,
+  unused_import_linter = NULL
 )
 # TODO(lintr#2172): Glob with lintr itself.
 exclusions = local({
@@ -91,8 +92,7 @@ exclusions = local({
       # TODO(michaelchirico): Enforce these and re-activate them one-by-one.
       implicit_integer_linter = Inf,
       infix_spaces_linter = Inf,
-      undesirable_function_linter = Inf,
-      unused_import_linter = Inf
+      undesirable_function_linter = Inf
     )),
     exclusion_for_dir("vignettes", list(
       quotes_linter = Inf
