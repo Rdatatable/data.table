@@ -42,14 +42,11 @@ sourceImports = function(path=getwd(), quiet=FALSE) {
   if (!quiet && length(nsParsedImports)) cat(sprintf("Ensuring objects from %d import entries in NAMESPACE resolve correctly\n", length(nsParsedImports)))
   for (ii in seq_along(nsParsedImports)) {
     entry = nsParsedImports[[ii]]
-    if (paste0("package:", entry[[1L]]) %in% search()) next # not strictly needed since a redundant 'require()' is just skipped, but helpful for reducing noise in !quiet case
-    if (length(entry) == 1L) {
-      if (!quiet) cat(sprintf("  Attaching full package %s\n", entry))
-      require(entry, character.only=TRUE, quietly=TRUE)
-    } else {
-      if (!quiet) cat(sprintf("  Attaching %d objects from package %s: %s\n", length(entry[[2L]]), entry[[1L]], toString(entry[[2L]])))
-      require(entry[[1L]], character.only=TRUE, include.only=entry[[2L]], quietly=TRUE)
-    }
+    # getNamespaceExports includes weird objects but that's intentional, consider evalq(.__C__VIRTUAL, asNamespace("Rcpp")) due to import(methods) in that NAMESPACE
+    imported = if (length(entry) == 1L) getNamespaceExports(entry) else entry[[2L]]
+    # Assign directly to better imitate actual namespace imports. Earlier tried to require(include.only=) these objects, but R doesn't allow multiple such require, meaning we can't add more objects later in tests, see:
+    #   https://stat.ethz.ch/pipermail/r-devel/2024-April/083319.html
+    for (import in imported) assign(import, getExportedValue(entry[[1L]], import), .GlobalEnv)
   }
   return(invisible())
 }
