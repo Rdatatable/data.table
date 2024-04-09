@@ -418,7 +418,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     }
   }
   if (!fail && !length(error) && (!length(output) || !missing(y))) {   # TODO test y when output=, too
-    y = try(y,TRUE)
+    capture.output(y <- try(y, silent=TRUE)) # y might produce verbose output, just toss it
     if (identical(x,y)) return(invisible(TRUE))
     all.equal.result = TRUE
     if (is.data.frame(x) && is.data.frame(y)) {
