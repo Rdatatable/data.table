@@ -3971,7 +3971,19 @@ test(1137.12, DT[, lapply(.SD, sum), by=x, .SDcols=-"y"], DT[, lapply(.SD, sum),
 DT <- data.table(x=1:5, y=6:10)
 test(1138.1, capture.output(print(DT, row.names=FALSE)), c(" x  y", " 1  6", " 2  7", " 3  8", " 4  9", " 5 10"))
 DT <- data.table(x=1:101, y=6:106) # bug described in #1307
-test(1138.2, capture.output(print(DT, row.names=FALSE)), c("      x   y", "      1   6", "      2   7", "      3   8", "      4   9", "      5  10", "---        ", "     97 102", "     98 103", "     99 104", "    100 105", "    101 106"))
+test(1138.2, capture.output(print(DT, row.names=FALSE)), 
+c("   x   y", 
+ "   1   6", 
+ "   2   7", 
+ "   3   8", 
+ "   4   9", 
+ "   5  10", 
+ " --- ---", 
+ "  97 102", 
+ "  98 103", 
+ "  99 104", 
+ " 100 105", 
+ " 101 106"))
 
 # test for FR #2591 (format.data.table issue with column of class "formula")
 DT <- data.table(x=c(a~b, c~d+e), y=1:2)
@@ -16492,18 +16504,18 @@ test(2125.02, capture.output(print(DT, trunc.cols=TRUE)),
        "102: 0 bbbbbbbbbbbbb ccccccccccccc",
        "1 variable(s) not shown: [d]"))
 test(2125.03, capture.output(print(DT, trunc.cols=TRUE, row.names=FALSE)),
-     c("    a             b             c",
-       "    0 bbbbbbbbbbbbb ccccccccccccc",
-       "    0 bbbbbbbbbbbbb ccccccccccccc",
-       "    0 bbbbbbbbbbbbb ccccccccccccc",
-       "    0 bbbbbbbbbbbbb ccccccccccccc",
-       "    0 bbbbbbbbbbbbb ccccccccccccc",
-       "---                              ",
-       "    0 bbbbbbbbbbbbb ccccccccccccc",
-       "    0 bbbbbbbbbbbbb ccccccccccccc",
-       "    0 bbbbbbbbbbbbb ccccccccccccc",
-       "    0 bbbbbbbbbbbbb ccccccccccccc",
-       "    0 bbbbbbbbbbbbb ccccccccccccc",
+     c("   a             b             c",
+       "   0 bbbbbbbbbbbbb ccccccccccccc",
+       "   0 bbbbbbbbbbbbb ccccccccccccc",
+       "   0 bbbbbbbbbbbbb ccccccccccccc",
+       "   0 bbbbbbbbbbbbb ccccccccccccc",
+       "   0 bbbbbbbbbbbbb ccccccccccccc",
+       " ---           ---           ---",
+       "   0 bbbbbbbbbbbbb ccccccccccccc",
+       "   0 bbbbbbbbbbbbb ccccccccccccc",
+       "   0 bbbbbbbbbbbbb ccccccccccccc",
+       "   0 bbbbbbbbbbbbb ccccccccccccc",
+       "   0 bbbbbbbbbbbbb ccccccccccccc",
        "1 variable(s) not shown: [d]" ))
 # also testing #4266 -- getting width of row #s register right
 #   TODO: understand why 2 variables truncated here. a,b,c combined have width
@@ -16512,7 +16524,7 @@ test(2125.03, capture.output(print(DT, trunc.cols=TRUE, row.names=FALSE)),
 test(2125.04, capture.output(print(DT, trunc.cols=TRUE, class=TRUE))[14L],
      "2 variable(s) not shown: [c <char>, d <char>]")
 test(2125.05, capture.output(print(DT, trunc.cols=TRUE, class=TRUE, row.names=FALSE))[c(1,14)],
-     c("        a             b             c",
+     c("     a             b             c",
        "1 variable(s) not shown: [d <char>]" ))
 test(2125.06, capture.output(print(DT, trunc.cols=TRUE, col.names="none"))[c(1,12)],
      c("  1: 0 bbbbbbbbbbbbb ccccccccccccc",
