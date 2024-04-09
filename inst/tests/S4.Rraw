@@ -1,8 +1,11 @@
+search_order <- match(c("package:data.table", "package:methods"), search(), 0L)
+if (diff(search_order) < 0L) {
+  cat("'methods' must be attached before 'data.table' for dispatch to register correctly; quitting\n")
+  q("no")
+}
+library(methods)
+
 if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
-  if (length(find.package("data.table", quiet=TRUE))) {
-    remove.packages("data.table")
-    stop("This is dev mode but data.table was installed. Uninstalled it. Please q() this R session and try cc() again. The installed namespace causes problems in dev mode for the S4 tests.\n")
-  }
   if ((tt<-compiler::enableJIT(-1))>0)
     cat("This is dev mode and JIT is enabled (level ", tt, ") so there will be a brief pause around the first test.\n", sep="")
   rm_all = function() {}
