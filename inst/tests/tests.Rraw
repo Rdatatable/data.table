@@ -16912,9 +16912,9 @@ test(2150.13, fread("a,b\n2015-01-01,1.1\n2015-01-02 01:02:03,1.2", tz=""), # no
 # some rows are date-only, some rows UTC-timestamp --> read the date-only in UTC too
 test(2150.14, fread("a,b\n2015-01-01,1.1\n2015-01-02T01:02:03Z,1.2"),
      data.table(a = .POSIXct(1420070400 + c(0, 90123), tz="UTC"), b = c(1.1, 1.2)))
-old = options(datatable.old.fread.datetime.character=TRUE)
-test(2150.15, fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03T01:02:03Z"),
-              data.table(a="2015-01-01", b="2015-01-02", c="2015-01-03T01:02:03Z"))
+test(2150.15, options=c(datatable.old.fread.datetime.character=TRUE),
+     fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03T01:02:03Z"),
+     data.table(a="2015-01-01", b="2015-01-02", c="2015-01-03T01:02:03Z"))
 # tests 2150.{16,17,18,19,20} moved to S4.Rraw because they rely on S4 to dispatch as(., "IDate") correctly
 # fread single row single column datetime field, #2609
 test(2150.21, options=list(datatable.old.fread.datetime.character=NULL),

@@ -10,6 +10,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
 } else {
   library(data.table)
 
+  is_utc = data.table:::is_utc
   shallow = data.table:::shallow
   test = data.table:::test
 }
@@ -81,21 +82,22 @@ rm(s1, s2, class4)
 
 # native reading of timestamp strings in fread
 # NB: S4 required for methods::as()
-test(5.1, fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date","IDate","POSIXct")),
-          ans<-data.table(a=as.Date("2015-01-01"), b=as.IDate("2015-01-02"), c=as.POSIXct("2015-01-03 01:02:03")))
+test(5.1, options=c(datatable.old.fread.datetime.character=TRUE),
+     fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date","IDate","POSIXct")),
+     ans<-data.table(a=as.Date("2015-01-01"), b=as.IDate("2015-01-02"), c=as.POSIXct("2015-01-03 01:02:03")))
 ans_print = capture.output(print(ans))
 if (TZnotUTC) {
-  test(5.2, options = list(datatable.old.fread.datetime.character=NULL),
+  test(5.2, options=list(datatable.old.fread.datetime.character=NULL),
        fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date","IDate","POSIXct"), tz=""),
        ans, output=ans_print)
-  test(5.3, options = list(datatable.old.fread.datetime.character=NULL),
+  test(5.3, options=list(datatable.old.fread.datetime.character=NULL),
        fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date",NA,NA), tz=""),
        data.table(a=as.Date("2015-01-01"), b=as.IDate("2015-01-02"), c="2015-01-03 01:02:03"), output=ans_print)
 } else {
-  test(5.4, options = list(datatable.old.fread.datetime.character=NULL),
+  test(5.4, options=list(datatable.old.fread.datetime.character=NULL),
        fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date","IDate","POSIXct")),
        ans<-data.table(a=as.Date("2015-01-01"), b=as.IDate("2015-01-02"), c=as.POSIXct("2015-01-03 01:02:03", tz="UTC")), output=ans_print)
-  test(5.5, options = list(datatable.old.fread.datetime.character=NULL),
+  test(5.5, options=list(datatable.old.fread.datetime.character=NULL),
        fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date",NA,NA)),
        ans, output=ans_print)
 }
