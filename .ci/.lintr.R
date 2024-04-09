@@ -91,7 +91,8 @@ exclusions = local({
       # TODO(michaelchirico): Enforce these and re-activate them one-by-one.
       implicit_integer_linter = Inf,
       infix_spaces_linter = Inf,
-      undesirable_function_linter = Inf
+      undesirable_function_linter = Inf,
+      unused_import_linter = Inf
     )),
     exclusion_for_dir("vignettes", list(
       quotes_linter = Inf
