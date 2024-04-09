@@ -14,7 +14,8 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   test = data.table:::test
 }
 
-library(methods)
+tt = Sys.getenv("TZ", unset=NA)
+TZnotUTC = !identical(tt,"") && !is_utc(tt)
 
 suppressWarnings({
   setClass("Data.Table", contains="data.table")  # suppress "Created a package name, '2018-05-26 06:14:43.444', when none found"
@@ -68,7 +69,7 @@ DT = data.table(
            s4class(x=2L, y="yes", z=1)))
 test(3, print(DT), output=c("   x             y", "1: 1 <ex_class[3]>",     "2: 2 <ex_class[3]>"))
 
-# S4 object not suported in fifelse and fcase, #4135
+# S4 object not supported in fifelse and fcase, #4135
 class4 = setClass("class4", slots=list(x="numeric"))
 s1 = class4(x=20191231)
 s2 = class4(x=20191230)
@@ -77,3 +78,24 @@ test(4.2, fifelse(TRUE, 1, s2),       error = "S4 class objects (except nanotime
 test(4.3, fcase(TRUE, s1, FALSE, s2), error = "S4 class objects (except nanotime) are not supported. Please see")
 test(4.4, fcase(FALSE, 1, TRUE, s1),  error = "S4 class objects (except nanotime) are not supported. Please see")
 rm(s1, s2, class4)
+
+# native reading of timestamp strings in fread
+# NB: S4 required for methods::as()
+test(5.1, fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date","IDate","POSIXct")),
+          ans<-data.table(a=as.Date("2015-01-01"), b=as.IDate("2015-01-02"), c=as.POSIXct("2015-01-03 01:02:03")))
+ans_print = capture.output(print(ans))
+if (TZnotUTC) {
+  test(5.2, options = list(datatable.old.fread.datetime.character=NULL),
+       fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date","IDate","POSIXct"), tz=""),
+       ans, output=ans_print)
+  test(5.3, options = list(datatable.old.fread.datetime.character=NULL),
+       fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date",NA,NA), tz=""),
+       data.table(a=as.Date("2015-01-01"), b=as.IDate("2015-01-02"), c="2015-01-03 01:02:03"), output=ans_print)
+} else {
+  test(5.4, options = list(datatable.old.fread.datetime.character=NULL),
+       fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date","IDate","POSIXct")),
+       ans<-data.table(a=as.Date("2015-01-01"), b=as.IDate("2015-01-02"), c=as.POSIXct("2015-01-03 01:02:03", tz="UTC")), output=ans_print)
+  test(5.5, options = list(datatable.old.fread.datetime.character=NULL),
+       fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date",NA,NA)),
+       ans, output=ans_print)
+}
