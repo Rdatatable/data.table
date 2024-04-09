@@ -98,6 +98,8 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     datatable.print.trunc.cols = FALSE, #4552
     datatable.rbindlist.check = NULL,
     datatable.integer64 = "integer64",
+    digits = 7L, # ensure printing rounds to the expected number of digits in all sessions, #5285
+    warn = 0L,   # ensure signals are emitted as they are in the code, #5285
     warnPartialMatchArgs = base::getRversion()>="3.6.0", # ensure we don't rely on partial argument matching in internal code, #3664; >=3.6.0 for #3865
     warnPartialMatchAttr = TRUE,
     warnPartialMatchDollar = TRUE,
@@ -360,8 +362,8 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     if (type=="warning" && length(observed) && !is.null(ignore.warning)) {
       # if a warning containing this string occurs, ignore it. First need for #4182 where warning about 'timedatectl' only
       # occurs in R 3.4, and maybe only on docker too not for users running test.data.table().
-      stopifnot(length(ignore.warning)==1L, is.character(ignore.warning), !is.na(ignore.warning), nchar(ignore.warning)>=1L)
-      observed = grep(ignore.warning, observed, value=TRUE, invert=TRUE)
+      stopifnot(is.character(ignore.warning), !anyNA(ignore.warning), nchar(ignore.warning)>=1L)
+      for (msg in ignore.warning) observed = grep(msg, observed, value=TRUE, invert=TRUE) # allow multiple for translated messages rather than relying on '|' to always work
     }
     if (length(expected) != length(observed)) {
       # nocov start
@@ -395,6 +397,10 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
       catf("Test %s did not produce correct output:\n", numStr)
       catf("Expected: <<%s>>\n", encodeString(output))  # \n printed as '\\n' so the two lines of output can be compared vertically
       catf("Observed: <<%s>>\n", encodeString(out))
+      if (anyNonAscii(output) || anyNonAscii((out))) {
+        catf("Expected (raw): <<%s>>\n", paste(charToRaw(output), collapse = " "))
+        catf("Observed (raw): <<%s>>\n", paste(charToRaw(out), collapse = " "))
+      }
       fail = TRUE
       # nocov end
     }
@@ -403,6 +409,10 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
       catf("Test %s produced output but should not have:\n", numStr)
       catf("Expected absent (case insensitive): <<%s>>\n", encodeString(notOutput))
       catf("Observed: <<%s>>\n", encodeString(out))
+      if (anyNonAscii(notOutput) || anyNonAscii((out))) {
+        catf("Expected absent (raw): <<%s>>\n", paste(charToRaw(notOutput), collapse = " "))
+        catf("Observed (raw): <<%s>>\n", paste(charToRaw(out), collapse = " "))
+      }
       fail = TRUE
       # nocov end
     }
@@ -448,6 +458,10 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
           # head.matrix doesn't restrict columns
           if (length(d <- dim(x))) do.call(`[`, c(list(x, drop = FALSE), lapply(pmin(d, 6L), seq_len)))
           else print(head(x))
+          if (typeof(x) == 'character' && anyNonAscii(x)) {
+            cat("Non-ASCII string detected, raw representation:\n")
+            print(lapply(head(x), charToRaw))
+          }
         }
       }
       failPrint(x, deparse(xsub))
@@ -466,3 +480,4 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
   invisible(!fail)
 }
 
+anyNonAscii = function(x) anyNA(iconv(x, to="ASCII")) # nocov

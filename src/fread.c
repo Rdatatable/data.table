@@ -55,7 +55,9 @@ static const char* const* NAstrings;
 static bool any_number_like_NAstrings=false;
 static bool blank_is_a_NAstring=false;
 static bool stripWhite=true;  // only applies to character columns; numeric fields always stripped
-static bool skipEmptyLines=false, fill=false;
+static bool skipEmptyLines=false;
+static int fill=0;
+static int *dropFill = NULL;
 
 static double NA_FLOAT64;  // takes fread.h:NA_FLOAT64_VALUE
 
@@ -141,6 +143,7 @@ bool freadCleanup(void)
   free(tmpType); tmpType = NULL;
   free(size); size = NULL;
   free(colNames); colNames = NULL;
+  free(dropFill); dropFill = NULL;
   if (mmp != NULL) {
     // Important to unmap as OS keeps internal reference open on file. Process is not exiting as
     // we're a .so/.dll here. If this was a process exiting we wouldn't need to unmap.
@@ -171,7 +174,7 @@ bool freadCleanup(void)
   stripWhite = true;
   skipEmptyLines = false;
   eol_one_r = false;
-  fill = false;
+  fill = 0;
   // following are borrowed references: do not free
   sof = eof = NULL;
   NAstrings = NULL;
@@ -1618,7 +1621,7 @@ int freadMain(freadMainArgs _args) {
       if (eol(&ch)) ch++;
     }
     firstJumpEnd = ch;  // size of first 100 lines in bytes is used later for nrow estimate
-    fill = true;        // so that blank lines are read as empty
+    fill = 1;        // so that blank lines are read as empty
     ch = pos;
   } else {
     int nseps;
@@ -1750,7 +1753,7 @@ int freadMain(freadMainArgs _args) {
     }
     sep = topSep;
     whiteChar = (sep==' ' ? '\t' : (sep=='\t' ? ' ' : 0));
-    ncol = topNumFields;
+    ncol = fill > topNumFields ? fill : topNumFields; // overwrite user guess if estimated number is higher
     if (fill || sep==127) {
       // leave pos on the first populated line; that is start of data
       ch = pos;
@@ -2125,6 +2128,7 @@ int freadMain(freadMainArgs _args) {
   int nTypeBump=0, nTypeBumpCols=0;
   double tRead=0, tReread=0;
   double thRead=0, thPush=0;  // reductions of timings within the parallel region
+  int max_col=0;
   char *typeBumpMsg=NULL;  size_t typeBumpMsgSize=0;
   int typeCounts[NUMTYPE];  // used for verbose output; needs populating after first read and before reread (if any) -- see later comment
   #define internalErrSize 1000
@@ -2218,7 +2222,7 @@ int freadMain(freadMainArgs _args) {
     }
     prepareThreadContext(&ctx);
 
-    #pragma omp for ordered schedule(dynamic) reduction(+:thRead,thPush)
+    #pragma omp for ordered schedule(dynamic) reduction(+:thRead,thPush) reduction(max:max_col)
     for (int jump = jump0; jump < nJumps; jump++) {
       if (stopTeam) continue;  // must continue and not break. We desire not to depend on (relatively new) omp cancel directive, yet
       double tLast = 0.0;      // thread local wallclock time at last measuring point for verbose mode only.
@@ -2299,6 +2303,7 @@ int freadMain(freadMainArgs _args) {
             tch++;
             j++;
           }
+          if (j > max_col) max_col = j;
           //*** END HOT. START TEPID ***//
           if (tch==tLineStart) {
             skip_white(&tch);       // skips \0 before eof
@@ -2310,6 +2315,7 @@ int freadMain(freadMainArgs _args) {
             int8_t thisSize = size[j];
             if (thisSize) ((char **) targets)[thisSize] += thisSize;
             j++;
+            if (j > max_col) max_col = j;
             if (j==ncol) { tch++; myNrow++; continue; }  // next line. Back up to while (tch<nextJumpStart). Usually happens, fastest path
           }
           else {
@@ -2509,6 +2515,25 @@ int freadMain(freadMainArgs _args) {
   }
   //-- end parallel ------------------
 
+  // cleanup since fill argument for number of columns was too high
+  if (fill>1 && max_col<ncol && max_col>0) {
+    int ndropFill = ncol - max_col;
+    if (verbose) {
+      DTPRINT(_("  Provided number of fill columns: %d but only found %d\n"), ncol, max_col);
+      DTPRINT(_("  Dropping %d overallocated columns\n"), ndropFill);
+    }
+    dropFill = (int *)malloc((size_t)ndropFill * sizeof(int));
+    int i=0;
+    for (int j=max_col; j<ncol; ++j) {
+      type[j] = CT_DROP;
+      size[j] = 0;
+      ndrop++;
+      nNonStringCols--;
+      dropFill[i++] = j;
+    }
+    dropFilledCols(dropFill, ndropFill);
+  }
+
   if (stopTeam) {
     if (internalErr[0]!='\0') {
       STOP("%s", internalErr);  // # nocov
@@ -2611,8 +2636,13 @@ int freadMain(freadMainArgs _args) {
       else {
         ch = headPos;
         int tt = countfields(&ch);
-        DTWARN(_("Stopped early on line %"PRIu64". Expected %d fields but found %d. Consider fill=TRUE and comment.char=. First discarded non-empty line: <<%s>>"),
+        if (fill>0) {
+          DTWARN(_("Stopped early on line %"PRIu64". Expected %d fields but found %d. Consider fill=%d or even more based on your knowledge of the input file. First discarded non-empty line: <<%s>>"),
+          (uint64_t)DTi+row1line, ncol, tt, tt, strlim(skippedFooter,500));
+        } else {
+          DTWARN(_("Stopped early on line %"PRIu64". Expected %d fields but found %d. Consider fill=TRUE and comment.char=. First discarded non-empty line: <<%s>>"),
           (uint64_t)DTi+row1line, ncol, tt, strlim(skippedFooter,500));
+        }
       }
     }
   }
