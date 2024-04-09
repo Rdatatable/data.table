@@ -8,8 +8,6 @@ library(methods)
 if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   if ((tt<-compiler::enableJIT(-1))>0)
     cat("This is dev mode and JIT is enabled (level ", tt, ") so there will be a brief pause around the first test.\n", sep="")
-  rm_all = function() {}
-  DTfun = DT ## otherwise DT would be re-defined by many tests
 } else {
   library(data.table)
 
