@@ -1,7 +1,7 @@
 // For translations (#4402) we need positional specifiers (%n$), a non-C99 POSIX extension.
 // On Linux and Mac, standard snprintf supports positional specifiers.
 // On Windows, we tried many things but just couldn't achieve linking to _sprintf_p. Even
-// if we managed that on AppVeyor we may have fragility in the future on Windows given
+// if we managed that on AppVeyor (now GHA) we may have fragility in the future on Windows given
 // varying Windows versions, compile environments/flags, and dll libraries. This may be
 // why R uses a third party library, trio, on Windows. But R does not expose trio for use
 // by packages.
