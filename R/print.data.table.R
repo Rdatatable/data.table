@@ -111,7 +111,11 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     toprint = toprint_subset(toprint, cols_to_print)
   }
   if (printdots) {
-    toprint = rbind(head(toprint, topn + isTRUE(class)), "---"="", tail(toprint, topn))
+    if (isFALSE(row.names)) {
+      toprint = rbind(head(toprint, topn + isTRUE(class)), "---", tail(toprint, topn)) # 4083
+    } else {
+      toprint = rbind(head(toprint, topn + isTRUE(class)), "---"="", tail(toprint, topn))
+    }
     rownames(toprint) = format(rownames(toprint), justify="right")
     if (col.names == "none") {
       cut_colnames(print(toprint, right=TRUE, quote=quote))
