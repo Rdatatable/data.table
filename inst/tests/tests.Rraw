@@ -1,4 +1,10 @@
-require(methods)
+# in order as they're attached in a normal R session, to match that if these actually have an effect, e.g. under R_DEFAULT_PACKAGES=NULL
+#   NB: pos= is required for these symbols to resolve searching 'upward' from data.table -- if these packages are not already attached,
+#   and we don't use pos=, they'll wind up 'below' data.table on the search() path --> their symbols won't resolve since, when running
+#   from the installed package, this is evaluated from data.table's namespace.
+library(stats, include.only=c("lm", "median", "na.omit", "rnorm", "runif", "sd", "setNames", "var", "weighted.mean"), pos="package:base")
+library(utils, include.only=c("capture.output", "combn", "head", "read.csv", "read.delim", "read.table", "tail", "type.convert", "write.csv", "write.table"), pos="package:base")
+library(datasets, include.only=c("airquality", "BOD", "cars", "ChickWeight", "CO2", "iris", "mtcars"), pos="package:base")
 
 if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   if ((tt<-compiler::enableJIT(-1))>0)
@@ -128,6 +134,9 @@ if (!test_longdouble) {
   # e.g. under valgrind, longdouble.digits==53; causing these to fail: 1262, 1729.04, 1729.08, 1729.09, 1729.11, 1729.13, 1830.7; #4639
 }
 
+tt = Sys.getenv("TZ", unset=NA)
+TZnotUTC = !identical(tt,"") && !is_utc(tt)
+
 # generate simple error messages from base that are checked against in our tests. this helps
 #   protect us against these messages evolving in base in the future, and against these messages
 #   potentially not being produced in English.
@@ -160,7 +169,7 @@ base_messages = list(
   missing_coerce_method = get_msg(delim = '"', {
     old = options(useFancyQuotes = FALSE) # otherwise we get angled quotes, hard to match robustly
     on.exit(options(old))
-    as(TRUE, 'foo')
+    methods::as(TRUE, 'foo')
   }),
   missing_dispatch_method = get_msg(conditionMessage(structure(1, class="foo")), '[\'"]'),
   invalid_arg_unary_operator = get_msg(-'a'),
@@ -1675,8 +1684,8 @@ test(536, DT[,sum(v),by=a], data.table(a=c(1L,3L,2L),V1=c(4L,7L,10L)))  # retain
 ans = data.table(a=1:3,V1=c(4L,10L,7L),key="a")
 test(537, DT[,sum(v),keyby=a], ans)
 test(538, DT[,sum(v),keyby="a"], ans)
-var="a"
-test(539, DT[,sum(v),keyby=eval(var)], ans)
+byvar="a"
+test(539, DT[,sum(v),keyby=eval(byvar)], ans)
 a=quote(a%%2L)
 test(540, DT[,sum(v),by=eval(a)], data.table(a=1:0,V1=c(11L,10L)))
 test(541, DT[,sum(v),keyby=eval(a)], data.table(a=0:1,V1=c(10L,11L),key="a"))
@@ -1779,7 +1788,7 @@ test(584, DT[a<1], output="Empty data.table (0 rows and 2 cols): a,v")
 test(585, DT[a<1,list(v)], output="Empty data.table (0 rows and 1 cols): v")
 test(586.1, data.table(a=integer(),V1=integer()), output="Empty data.table (0 rows and 2 cols): a,V1")
 env = environment()
-data(iris, package='datasets', envir = env) # in case user has edited iris in their session
+utils::data(iris, package='datasets', envir = env) # in case user has edited iris in their session
 test(586.2, print.data.table(iris[,FALSE]), output="Empty data.frame (150 rows and 0 cols)")   #3363
 
 # Test that .N is available in by on empty table, also in #1945
@@ -1889,7 +1898,7 @@ DT$time1 <- Sys.time()         # recycle via *tmp*
 DT$time2 <- rep(Sys.time(), 5) # plonk via *tmp*
 DT[,time3:=Sys.time()]         # recycle
 DT[,time4:=rep(Sys.time(),5)]  # plonk
-test(625, all(sapply(DT,is,"POSIXct")[-1]))
+test(625, all(sapply(DT, inherits, "POSIXct")[-1]))
 
 # unique on ITime doesn't lose attributes, #1719
 t = as.ITime(strptime(c("09:10:00","09:11:00","09:11:00","09:12:00"),"%H:%M:%S"))
@@ -3397,8 +3406,8 @@ test(1064, DT[integer(0), list(x2=x), by=x], output="Empty data.table (0 rows an
 
 # bug #2445 fix - := fails when subsetting yields NAs and with=FALSE
 X = data.table(A=1:3, B=1:6, key="A")
-var <- "B"
-test(1065, X[J(2:5), (var):=22L], data.table(A=rep(1:3, each=2), B=c(1L,4L,rep(22L,4)), key="A"))
+col <- "B"
+test(1065, X[J(2:5), (col):=22L], data.table(A=rep(1:3, each=2), B=c(1L,4L,rep(22L,4)), key="A"))
 
 # fread single unnamed colClasses
 f = "A,B,C,D\n1,3,5,7\n2,4,6,8\n"
@@ -3468,7 +3477,7 @@ setkey(DT2, p,q)
 ans <- DT1[DT2, nomatch=0, allow.cartesian=TRUE]  # NB: DT2 contains duplicate key values so columns c ends up not being sorted
 test(1082.1, key(ans), c("a","b"))
 test(1082.2, setkeyv(ans, key(ans)), ans) # i.e. key is valid, otherwise re-built warning will be caught
-check <- setkey(as.data.table(aggregate(r ~a+b+c, ans, length)), a, b)
+check <- setkey(as.data.table(stats::aggregate(r ~a+b+c, ans, length)), a, b)
 test(1083, setkeyv(ans[, list(r = .N), by=key(DT1)], key(ans)), check) # if the key is set properly, then and only then will the aggregation results match with "check"
 
 # Tests for #2531. `:=` loses POSIXct or ITime attribute:
@@ -3561,8 +3570,9 @@ test(1100, dt1[dt2,roll=-Inf,rollends=c(FALSE,TRUE)]$ind, INT(NA,NA,1,2,2,2,2,2,
     "5" = as.Date(c(NA, "2014-06-15", "2014-05-18", NA)),
     "6" = as.Date(c(NA, NA, "2014-06-15", NA)), key="ID"))
 
-  names(ChickWeight) <- tolower(names(ChickWeight))
-  DT = melt(as.data.table(ChickWeight), id.vars=2:4) # calls melt.data.table
+  DT = ChickWeight
+  names(DT) <- tolower(names(DT))
+  DT = melt(as.data.table(DT), id.vars=2:4) # calls melt.data.table
 
   # changed 'mean' to 'sum' to avoid valgrind floating point precision based error.
   test(1102.01, dcast(DT, time ~ variable, fun.aggregate=sum)[c(1,2,11,.N)], data.table(time=c(0,2,20,21),weight=c(2053,2461,9647,9841), key="time"))
@@ -5532,12 +5542,8 @@ setkey(X, val1)
 test(1354, X[Y, val2 := i.val2, allow.cartesian=TRUE][, val1 := NULL][order(id)], data.table(id=1:10, val2=as.integer(c(8,7,7,6,8,6,6,7,7,8))))
 
 # Fix for #475, setDT(CO2) should error, as it's trying to modify the object whose binding is locked.
-# CO2 is not locked in R 2.14.1 but is in R >= 3.1.0.  R NEWS isn't clear when that change happened, so just test there is an error when it is locked.
-if (bindingIsLocked("CO2",as.environment("package:datasets"))) {
-  test(1355.1, setDT(CO2), error="Cannot convert 'CO2' to data.table by reference because binding is locked.")
-} else {
-  test(1355.2, setDT(CO2), CO2)
-}
+# NB: requires datasets be attached -- no error thrown on datasets::CO2 or CO2=datasets::CO2 or get("CO2", asNamespace("CO2"))
+test(1355, setDT(CO2), error="Cannot convert 'CO2' to data.table by reference because binding is locked.")
 
 # Fix for #698. not join doesn't need to check for allow.cartesian=TRUE.
 DT1 <- data.table(x=rep(1:3, each=3L), y=1:9, key="x")
@@ -6125,7 +6131,7 @@ test_no = 1394
 for (i in seq_along(DT)) {
   combn(names(DT), i, function(cols) {
     ans1 = na.omit(DT, cols=cols)
-    ans2 = DT[complete.cases(DT[, cols, with=FALSE])]
+    ans2 = DT[stats::complete.cases(DT[, cols, with=FALSE])]
     test_no <<- test_no+.001
     test(test_no, ans1, ans2)
     0L
@@ -6906,7 +6912,7 @@ test(1475.16, uniqueN(logical(), na.rm=TRUE),            0L)
 
 # preserve class attribute in GForce mean (and sum)
 DT <- data.table(x = rep(1:3, each = 3), y = as.Date(seq(Sys.Date(), (Sys.Date() + 8), by = "day")))
-test(1476.1, DT[, .(y=mean(y)), x], setDT(aggregate(y ~ x, DT, mean)))
+test(1476.1, DT[, .(y=mean(y)), x], setDT(stats::aggregate(y ~ x, DT, mean)))
 
 # test for 'transpose' of a list
 ll = lapply(1:12, function(x) {
@@ -9620,7 +9626,7 @@ test(1639.137, sort.by.names(ans), sort.by.names(unlist(split(setDT(df), by=c("p
 test(1639.138, ans, split(as.data.table(df), by=c("product","year")))
 test(1639.139, sort.by.names(ans), sort.by.names(unlist(split(as.data.table(df), by=c("product","year"), flatten=FALSE), recursive = FALSE)))
 # test if split preallocate columns in results #1908
-dt = data.table(x=rexp(100),y=rep(LETTERS[1:10], 10))
+dt = data.table(x=stats::rexp(100),y=rep(LETTERS[1:10], 10))
 dtL = split(dt, by = "y")
 test(1639.140, dim(dtL[[1]][, x2 := -x]), c(10L,3L))
 test(1639.141, all(sapply(dtL, truelength) > 1000))
@@ -11043,8 +11049,6 @@ test(1743.241, fread("a,b,c\n2,2,f", colClasses = list(character="c", integer="b
 test(1743.242, fread("a,b,c\n2,2,f", colClasses = c("integer", "integer", "factor"), drop="a"), data.table(b=2L, c=factor("f")))
 
 ## POSIXct
-tt = Sys.getenv("TZ", unset=NA)
-TZnotUTC = !identical(tt,"") && !is_utc(tt)
 if (TZnotUTC) {
   # from v1.13.0 these tests work when running under non-UTC because they compare to as.POSIXct which reads these unmarked datetime in local
   # the new tests 2150.* cover more cases
@@ -12448,11 +12452,8 @@ for (i in 100:1) {
   test(1871.2 + (100-i)/1000, fread(lines, nrows=i), data.table(V1=rep.int(2L,i), V2=3L, V3=4L))
 }
 
-# miscellaneous missing tests uncovered by CodeCov difference
-#   in the process of PR #2573
-## data.table cannot recycle complicated types
-short_s4_col = getClass("MethodDefinition")
-test(1872.01, data.table(a = 1:4, short_s4_col), error="attempt to replicate an object of type 'S4'")
+# miscellaneous missing tests uncovered by CodeCov difference in the process of PR #2573
+# 1872.01 moved to S4.Rraw since it uses S4
 ## i must be a data.table when on is specified
 DT = data.table(a = 1:3)
 test(1872.02, DT[c(TRUE, FALSE), on = 'coefficients'], error = "not a data.table, but 'on'")
@@ -12965,45 +12966,8 @@ for (col in c('b', 'c')) {
   test_no = test_no + 0.0001
   test(test_no, t2[[col]], dt[[col]])  # mutating-key-transform maintains other columns
 }
-#
-# tests-S4.R (S4 Compatability)
-#
-suppressWarnings(setClass("Data.Table", contains="data.table"))  # suppress "Created a package name, '2018-05-26 06:14:43.444', when none found"
-suppressWarnings(setClass("S4Composition", representation(data="data.table")))
-# data.table can be a parent class
-ids <- sample(letters[1:3], 10, replace=TRUE)
-scores <- rnorm(10)
-dt <- data.table(id=ids, score=scores)
-dt.s4 <- new("Data.Table", data.table(id=ids, score=scores))
-test(1914.01, isS4(dt.s4))
-test(1914.02, inherits(dt.s4, 'data.table'))
-# Test possible regression. shallow() needs to preserve the S4 bit to support S4 classes that contain data.table
-test(1914.03, isS4(shallow(dt.s4)))
-## pull out data from S4 as.list, and compare to list from dt
-dt.s4.list <- dt.s4@.Data
-names(dt.s4.list) <- names(dt.s4)
-test(1914.04, dt.s4.list, as.list(dt))  # Underlying data not identical
-# simple S4 conversion-isms work
-df = data.frame(a=sample(letters, 10), b=1:10)
-dt = as.data.table(df)
-test(1914.05, identical(methods::as(df, 'data.table'), dt))
-test(1914.06, identical(methods::as(dt, 'data.frame'), df))
-# data.table can be used in an S4 slot
-dt <- data.table(a=sample(letters[1:3], 10, replace=TRUE), score=rnorm(10))
-dt.comp <- new("S4Composition", data=dt)
-test(1914.07, dt.comp@data, dt)
-# S4 methods dispatch properly on data.table slots"
-dt <- data.table(a=sample(letters[1:3], 10, replace=TRUE), score=rnorm(10))
-dt.comp <- new("S4Composition", data=dt)
-setGeneric("dtGet", function(x, what) standardGeneric("dtGet"))
-setMethod("dtGet", c(x="S4Composition", what="missing"), function(x, what){x@data})
-setMethod("dtGet", c(x="S4Composition", what="ANY"), function(x, what) {x@data[[what]]})
-test(1914.08, dtGet(dt.comp), dt)  # actually
-test(1914.09, identical(dtGet(dt.comp, 1), dt[[1]]))
-test(1914.10, identical(dtGet(dt.comp, 'b'), dt$b))
-removeClass("Data.Table")   # so that test 1914.2 passes on the second run of cc() in dev
-removeClass("S4Composition")
-# END port of old testthat tests
+
+# Test 1914 of S4 compatibility was moved to S4.Rraw for #3808
 
 str = "Sepal.Length,Sepal.Width,Petal.Length,Petal.Width,Species
 5.1,3.5,1.4,0.2,setosa
@@ -13047,13 +13011,13 @@ test(1918.6, DT[, max(V1), by=V2], data.table(V2=c("f", "g", "h"), V1=structure(
 test(1919, as.ITime(c('xxx', '10:43')), structure(c(NA, 38580L), class = "ITime"))
 
 # wrong bmerge result if character gets coerced to factor, i is keyed, and level order in i is different from x, #2881
-iris = data.table(iris)
-iris$grp = rep(c('A','B'), 75L)
-iris[, Species1 := factor(Species, levels=c('setosa','versicolor','virginica'), labels=c('setosa','versicolor','Virginica'))]
+iris.dt = data.table(iris)
+iris.dt$grp = rep(c('A','B'), 75L)
+iris.dt[, Species1 := factor(Species, levels=c('setosa','versicolor','virginica'), labels=c('setosa','versicolor','Virginica'))]
 iSorted = data.table(Species1 = c('setosa','Virginica'), grp='B', key=c("grp","Species1"))
 i = setkey(copy(iSorted),NULL)
-test(1920, iris[iSorted, on = c("grp==grp", 'Species1==Species1')],
-           iris[i, on = c("grp==grp", 'Species1==Species1')])
+test(1920, iris.dt[iSorted, on = c("grp==grp", 'Species1==Species1')],
+           iris.dt[i, on = c("grp==grp", 'Species1==Species1')])
 
 # origin= ignored by as.IDate.numeric(), #2880
 test(1921.1, as.IDate(1000, origin = "1930-01-01"), as.IDate("1932-09-27"))
@@ -13207,7 +13171,7 @@ test(1944.3, DT[flag == 1, sum(x), keyby = group],       # should not use index 
              data.table(group=c("A","B"), V1=INT(1,8), key="group"))
 set.seed(123)
 N = 10
-DT = data.table(group = rbinom(N, 5, 0.5), x = 1:N, flag = rbinom(N, 1, 0.9))
+DT = data.table(group = stats::rbinom(N, 5, 0.5), x = 1:N, flag = stats::rbinom(N, 1, 0.9))
 test(1944.4, DT[flag == 1 & group == 1, x], 6L)
 test(1944.5, indices(DT), "group__flag")
 test(1944.6, DT[flag == 1, sum(x), keyby = group], data.table(group=1:4, V1=INT(6,3,18,17), key="group"))
@@ -14027,10 +13991,10 @@ DT = data.table(a=1:3, b=4:6, key="a")
 K = data.table(a=2:3, FOO=9L, BAR=12L)
 test(1973.1, DT[K, "FOO"], data.table(FOO=c(9L,9L)))
 test(1973.2, DT[K, "FOO", with=FALSE], data.table(FOO=c(9L,9L)))
-var = "b"
-test(1973.3, DT[K, c(var, "FOO")], c("b","FOO"))
-test(1973.4, DT[K, c(..var, "FOO")], ans<-data.table(b=5:6, FOO=9L))
-test(1973.5, DT[K, c(var, "FOO"), with=FALSE], ans)
+col = "b"
+test(1973.3, DT[K, c(col, "FOO")], c("b","FOO"))
+test(1973.4, DT[K, c(..col, "FOO")], ans<-data.table(b=5:6, FOO=9L))
+test(1973.5, DT[K, c(col, "FOO"), with=FALSE], ans)
 
 # no error when j is supplied but inherits missingness from caller
 DT = data.table(a=1:3, b=4:6)
@@ -16422,7 +16386,7 @@ test(2119.17, data.table(a=1:2)[, newcol := list(2L, 3L)],       ans)
 # i symbol fetch from calling scope; #3669
 iDT = data.table(key = "i_id",
     i_id = c("A", "B", "C", "D"),
-    g = state.name[c(1,1,2,3)],
+    g = c("Alabama", "Alabama", "Alaska", "Arizona"),
     e_date = as.IDate(c("2019-01-20", "2019-01-20", "2019-01-01", "2019-01-01")),
     e_time = as.ITime(c("14:00", "20:00", "20:00", "20:00"))
 )
@@ -16688,12 +16652,7 @@ DT = data.table(
   y = list(list(x=1, y=c("yes", "no")),
            list(x=2, y=2)))
 test(2130.02, print(DT), output=c("   x         y", "1: 1 <list[2]>",         "2: 2 <list[2]>"))
-s4class = setClass("ex_class", slots = list(x="integer", y="character", z="numeric"))
-DT = data.table(
-  x = 1:2,
-  y = list(s4class(x=1L, y=c("yes", "no"), z=2.5),
-           s4class(x=2L, y="yes", z=1)))
-test(2130.03, print(DT), output=c("   x             y", "1: 1 <ex_class[3]>",     "2: 2 <ex_class[3]>"))
+# test 2130.03 moved to S4.Rraw
 
 # format_col and format_list_item printing helpers/generics
 ## Use case: solve #2842 by defining format_col.POSIXct to have usetz = TRUE
@@ -16734,7 +16693,7 @@ registerS3method("format", "myclass2130", format.default)
 registerS3method("format", "foo2130", format.default)
 
 DT = data.table(num = 1:2,
-                formula = list(as.formula("mpg~cyl")),
+                formula = list(mpg~cyl),
                 model = list(lm(mpg~cyl, mtcars)),
                 shallow = list(1:3, 4:6),
                 nested = list(list(1:3), list(4:6)))
@@ -16759,16 +16718,7 @@ dt = data.table(x = rep(1:3, each = 3), y = runif(9))
 out = dt[, list(evaluated = list(f(copy(.SD)))), by = x]
 test(2131.2, class(out$evaluated[[1L]]), 'environment')
 
-# S4 object not suported in fifelse and fcase, #4135
-class2132 = setClass("class2132", slots=list(x="numeric"))
-s1 = class2132(x=20191231)
-s2 = class2132(x=20191230)
-test(2132.1, fifelse(TRUE, s1, s2),      error = "S4 class objects (except nanotime) are not supported.")
-test(2132.2, fifelse(TRUE, 1, s2),       error = "S4 class objects (except nanotime) are not supported.")
-test(2132.3, fcase(TRUE, s1, FALSE, s2), error = "S4 class objects (except nanotime) are not supported. Please see")
-test(2132.4, fcase(FALSE, 1, TRUE, s1),  error = "S4 class objects (except nanotime) are not supported. Please see")
-rm(s1, s2, class2132)
-
+# 2132 tested S4 in fcase()/fifelse() moved to S4.Rraw
 # 2133 tested xts moved to other.Rraw 20, #5516
 
 # friendlier error for common mistake of using := in i instead of j, #4227
@@ -16974,36 +16924,23 @@ test(2150.13, fread("a,b\n2015-01-01,1.1\n2015-01-02 01:02:03,1.2", tz=""), # no
 # some rows are date-only, some rows UTC-timestamp --> read the date-only in UTC too
 test(2150.14, fread("a,b\n2015-01-01,1.1\n2015-01-02T01:02:03Z,1.2"),
      data.table(a = .POSIXct(1420070400 + c(0, 90123), tz="UTC"), b = c(1.1, 1.2)))
-old = options(datatable.old.fread.datetime.character=TRUE)
-test(2150.15, fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03T01:02:03Z"),
-              data.table(a="2015-01-01", b="2015-01-02", c="2015-01-03T01:02:03Z"))
-test(2150.16, fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date","IDate","POSIXct")),
-              ans<-data.table(a=as.Date("2015-01-01"), b=as.IDate("2015-01-02"), c=as.POSIXct("2015-01-03 01:02:03")))
-ans_print = capture.output(print(ans))
-options(datatable.old.fread.datetime.character=NULL)
-if (TZnotUTC) {
-  test(2150.17, fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date","IDate","POSIXct"), tz=""),
-              ans, output=ans_print)
-  test(2150.18, fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date",NA,NA), tz=""),
-              data.table(a=as.Date("2015-01-01"), b=as.IDate("2015-01-02"), c="2015-01-03 01:02:03"), output=ans_print)
-} else {
-  test(2150.19, fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date","IDate","POSIXct")),
-              ans<-data.table(a=as.Date("2015-01-01"), b=as.IDate("2015-01-02"), c=as.POSIXct("2015-01-03 01:02:03", tz="UTC")), output=ans_print)
-  test(2150.20, fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date",NA,NA)),
-              ans, output=ans_print)
-}
+test(2150.15, options=c(datatable.old.fread.datetime.character=TRUE),
+     fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03T01:02:03Z"),
+     data.table(a="2015-01-01", b="2015-01-02", c="2015-01-03T01:02:03Z"))
+# tests 2150.{16,17,18,19,20} moved to S4.Rraw because they rely on S4 to dispatch as(., "IDate") correctly
 # fread single row single column datetime field, #2609
-test(2150.21, fread("c1\n2018-01-31 03:16:57"), data.table(V1=as.IDate("2018-01-31"), c1="03:16:57"),
-              warning="Detected 1 column names but the data has 2 columns")
-test(2150.22, fread("c1\n2018-01-31 03:16:57", sep=""), data.table(c1=as.POSIXct("2018-01-31 03:16:57", tz="UTC")))
-options(old)
+test(2150.21, options=list(datatable.old.fread.datetime.character=NULL),
+     fread("c1\n2018-01-31 03:16:57"), data.table(V1=as.IDate("2018-01-31"), c1="03:16:57"),
+     warning="Detected 1 column names but the data has 2 columns")
+test(2150.22, options=list(datatable.old.fread.datetime.character=NULL),
+     fread("c1\n2018-01-31 03:16:57", sep=""), data.table(c1=as.POSIXct("2018-01-31 03:16:57", tz="UTC")))
 
 # 1 is treated as . in dcast formula, #4615
 DT = data.table(a = c("s", "x"), survmean = 1:2)
 test(2151, dcast(DT, 1 ~ a, value.var='survmean'), data.table('.'='.', s=1L, x=2L, key='.'))
 
 # list object with [[ method that returns itself (e.g. person) lead to infinite loop in copy(), #4620
-y = person(given='Joel', family='Mossong')
+y = utils::person(given='Joel', family='Mossong')
 test(2152, copy(y), y)
 
 # .N and .GRP special statics copied correctly when placed as a vector in a list column; part of PR#4655
@@ -17310,7 +17247,7 @@ measurev = list("foo", "bar")#measurev below should not use this since it is not
 test(2183.00002, melt(DTid, measure.vars=measurev(list(value.name=NULL, num=as.complex), pattern="([ab])([12])")), error="Type 'complex' is not supported for joining/merging")
 test(2183.00004, melt(DTid, measure.vars=measurev(list(value.name=NULL, istr=NULL), pattern="([ab])([12])"))[order(b)], data.table(id=1, istr=paste(c(1,2)), a=c(NA, 2), b=c(1,2)))
 test(2183.00005, melt(DTid, measure.vars=measurev(list(column=NULL, istr=NULL), pattern="([ab])([12])", multiple.keyword="column"))[order(b)], data.table(id=1, istr=paste(c(1,2)), a=c(NA, 2), b=c(1,2)))#same computation but different multiple.keyword
-iris.dt = data.table(datasets::iris)
+iris.dt = data.table(iris)
 test(2183.00020, melt(iris.dt, measure.vars=measurev(value.name, dim, sep=".", pattern="foo")), error="both sep and pattern arguments used; must use either sep or pattern (not both)")
 test(2183.000201, melt(iris.dt, measure.vars=measurev(list(NULL, dim=NULL), sep=".")), error="in measurev, elements of fun.list must be named, problems: [1]")
 test(2183.000202, melt(iris.dt, measure.vars=measurev(list(NULL, NULL), sep=".")), error="in measurev, elements of fun.list must be named, problems: [1, 2]")
@@ -17341,7 +17278,7 @@ test(2183.09, melt(DTid, measure.vars=structure(1:3, variable_table=data.table(x
 test(2183.10, melt(DTid, measure.vars=structure(list(a=1, b=2:3), variable_table=data.table(x=1))), error="variable_table attribute of measure.vars should be a data table with same number of rows as max length of measure.vars vectors =2")
 test(2183.11, melt(DTid, measure.vars=structure(list(a=1, b=2:3), variable_table=list(x=1:2, y=1))), error="variable_table attribute of measure.vars should be a data table with same number of rows as max length of measure.vars vectors =2")#make sure to check each list element, not just the first.
 # general measure errors.
-iris.dt = data.table(datasets::iris)
+iris.dt = data.table(iris)
 test(2183.20, melt(iris.dt, measure.vars=measure(value.name, dim, sep=".", pattern="foo")), error="both sep and pattern arguments used; must use either sep or pattern (not both)")
 # school example.
 schools.wide <- data.table(
@@ -17380,7 +17317,7 @@ myfac = function(x)factor(x)#user-defined conversion function.
 test(2183.60, melt(DTid, measure.vars=measure(letter=myfac, value.name, pattern="([ab])([12])")), data.table(id=1, letter=factor(c("a","b")), "2"=c(2,2), "1"=c(NA,1)))
 # measure errors.
 iris.i <- 1
-iris.num <- datasets::iris[iris.i, 1:4]
+iris.num <- iris[iris.i, 1:4]
 iris.days <- data.table(
   day1=iris.num, day2=iris.num, Species=iris$Species[iris.i])
 test(2183.61, melt(iris.days, measure.vars=measure(before=as.integer, value.name, dim, sep=".")), error="before conversion function returned vector of all NA", warning=base_messages$coerce_na)
