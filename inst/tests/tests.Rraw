@@ -429,8 +429,8 @@ test(109, all(!is.na(dt)))
 dt2 <- dt
 dt2$A[1] <- NA   # removes key
 test(110, sum(is.na(dt2)), 1L)
-test(111, {setkey(dt,NULL);dt}, stats::na.omit(dt))
-test(112, dt2[2:nrow(dt2),A], stats::na.omit(dt2)$A)
+test(111, {setkey(dt,NULL);dt}, na.omit(dt))
+test(112, dt2[2:nrow(dt2),A], na.omit(dt2)$A)
 
 # test [<- assignment:
 dt2[is.na(dt2)] <- 1L
@@ -2480,7 +2480,7 @@ test(834, comment(DT1[2:3]$A), "first comment")
 # Test that matrix RHS of := is caught, #2333
 DT = data.table(a=1:3)
 DT[,a:=scale(a)]    # 1 column matrix auto treated as vector
-test(835, stats::na.omit(DT), DT)
+test(835, na.omit(DT), DT)
 test(836, DT[,a:=as.integer(a)], data.table(a=INT(-1,0,1)))
 test(837, DT[,a:=cbind(1,2)],
   warning = "2 column matrix RHS of := will be treated as one vector",
@@ -3182,7 +3182,7 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
   test(1035.051, ans1, melt(DT, id.vars="id", measure.vars=list(c(5, 6), c(7, 8))))
   test(1035.052, melt(DT, id.vars="id", measure.vars=list(as.raw(0))),
        error="Unknown 'measure.vars' type raw")
-  test(1035.06, stats::na.omit(ans1), melt(DT, id.vars="id", measure.vars=list(5:6, 7:8), na.rm=TRUE))
+  test(1035.06, na.omit(ans1), melt(DT, id.vars="id", measure.vars=list(5:6, 7:8), na.rm=TRUE))
   test(1035.07, ans1, melt(DT, id.vars="id", measure.vars=patterns("d_", "l_")))
   # melt retains ordered factors!
   test(1035.08, melt(DT, id.vars="id", measure.vars=c("f_1", "f_2"), value.factor=TRUE)$value, factor(c(as.character(DT$f_1), as.character(DT$f_2)), ordered=TRUE))
@@ -5756,7 +5756,7 @@ dt = list(AA=sample(c(NA,-2:2), 50, TRUE),
                 EE=sample(as.logical(c(NA,-2:2)), 50, TRUE))
 if (test_bit64) dt[["DD"]] = as.integer64(dt[["DD"]])
 test_no = 1370.0
-ans = as.list(stats::na.omit(as.data.table(dt)))
+ans = as.list(na.omit(as.data.table(dt)))
 for (i in seq_along(dt)) {
   combn(names(dt), i, function(cols) {
     ans1 = is_na(dt[cols])
@@ -6093,9 +6093,9 @@ test(1391.2, subset(DT, select=c("V2", "V1")), DT[, c("V2", "V1"), with=FALSE])
 
 # Test faster version of na.omit() using is_na.
 DT = data.table(x=sample(c(1:2, NA), 30, TRUE), y=sample(c(1:5, NA, NaN), 30, TRUE))
-test(1392.1, stats::na.omit(DT), DT[!is.na(x) & !is.na(y)])
+test(1392.1, na.omit(DT), DT[!is.na(x) & !is.na(y)])
 # added 'invert = ', a logical argument which when TRUE returns rows that has any NAs instead.
-test(1392.2, stats::na.omit(DT, invert=TRUE), DT[is.na(x) | is.na(y)])
+test(1392.2, na.omit(DT, invert=TRUE), DT[is.na(x) | is.na(y)])
 
 # Fix for #899. Mix of ordered and normal factors where normal factors in more than 1 data.table has identical levels.
 DT1 = data.table(A = factor(INT(7,8,7,8,7)), B = factor(6:10), C = 0)
@@ -6118,7 +6118,7 @@ DT = data.table(a=sample(col, 20, TRUE), b=as.numeric(sample(col,20,TRUE)), c=as
 test_no = 1394
 for (i in seq_along(DT)) {
   combn(names(DT), i, function(cols) {
-    ans1 = stats::na.omit(DT, cols=cols)
+    ans1 = na.omit(DT, cols=cols)
     ans2 = DT[stats::complete.cases(DT[, cols, with=FALSE])]
     test_no <<- test_no+.001
     test(test_no, ans1, ans2)
@@ -6636,11 +6636,11 @@ test(1459.12, .Call("CsubsetDT", DT, 5L, seq_along(DT)), setDT(as.data.frame(DT)
 
 # Test for na.omit with list, raw and complex types
 DT = data.table(x=c(1L,1L,NA), y=c(NA, NA, 1), z=as.raw(1:3), w=list(1,NA,2), v=c(1+5i, NA, NA))
-test(1460.1, stats::na.omit(DT, cols="w"), DT[c(1,3)])
-test(1460.2, stats::na.omit(DT, cols="v"), DT[1])
-test(1460.3, stats::na.omit(DT, cols=c("v", "y")), DT[0])
-test(1460.4, stats::na.omit(DT, cols=c("z", "v")), DT[1])
-test(1460.5, stats::na.omit(DT, cols=c("w", "v")), DT[1])
+test(1460.1, na.omit(DT, cols="w"), DT[c(1,3)])
+test(1460.2, na.omit(DT, cols="v"), DT[1])
+test(1460.3, na.omit(DT, cols=c("v", "y")), DT[0])
+test(1460.4, na.omit(DT, cols=c("z", "v")), DT[1])
+test(1460.5, na.omit(DT, cols=c("w", "v")), DT[1])
 
 # Fix for #985
 DT = data.table(x=c("a", "a", "b", "b"), v1=sample(4), v2=sample(4))
@@ -9032,10 +9032,10 @@ test(1627.5, fread(testDir("utf16be.txt")), error="File is encoded in UTF-16")
 # uniqueN gains na.rm argument, #1455
 set.seed(1L)
 dt = data.table(x=sample(c(1:3,NA),25,TRUE), y=sample(c(NA,"a", "b"), 25,TRUE), z=sample(2,25,TRUE))
-test(1628.1, uniqueN(dt, by=1:2, na.rm=TRUE), nrow(stats::na.omit(dt[, .N, by=.(x,y)])))
-test(1628.2, uniqueN(dt, na.rm=TRUE), nrow(stats::na.omit(dt[, .N, by=.(x,y,z)])))
-test(1628.3, dt[, uniqueN(y, na.rm=TRUE), by=z], dt[, length(unique(stats::na.omit(y))), by=z])
-test(1628.4, dt[, uniqueN(.SD, na.rm=TRUE), by=z], dt[, nrow(stats::na.omit(.SD[, .N, by=.(x,y)])), by=z])
+test(1628.1, uniqueN(dt, by=1:2, na.rm=TRUE), nrow(na.omit(dt[, .N, by=.(x,y)])))
+test(1628.2, uniqueN(dt, na.rm=TRUE), nrow(na.omit(dt[, .N, by=.(x,y,z)])))
+test(1628.3, dt[, uniqueN(y, na.rm=TRUE), by=z], dt[, length(unique(na.omit(y))), by=z])
+test(1628.4, dt[, uniqueN(.SD, na.rm=TRUE), by=z], dt[, nrow(na.omit(.SD[, .N, by=.(x,y)])), by=z])
 
 # fix for long standing FR/bug, #495
 # most likely I'm missing some tests, but we'll fix/add them as we go along.
@@ -9723,8 +9723,8 @@ nqjoin_test <- function(x, y, k=1L, test_no, mult="all") {
 
 dt1 = nq_fun(100L)  # 400 reduced to 100, #5517
 dt2 = nq_fun(50L)
-x = stats::na.omit(dt1)
-y = stats::na.omit(dt2)
+x = na.omit(dt1)
+y = na.omit(dt2)
 
 if (.Machine$sizeof.pointer>4) {
 
@@ -10203,9 +10203,9 @@ test(1677.2, foverlaps(b, a), error="y has some duplicated column")
 # na.omit.data.table removes indices #1734
 dt = data.table(a=4:1, b=c(letters[c(1L,NA,2:3)]))
 setindexv(dt, "a")
-test(1678.1, indices(dt2 <- stats::na.omit(dt, cols="b")), NULL)
+test(1678.1, indices(dt2 <- na.omit(dt, cols="b")), NULL)
 setindexv(dt2, "a")
-test(1678.2, indices(stats::na.omit(dt2, cols="b")), "a")
+test(1678.2, indices(na.omit(dt2, cols="b")), "a")
 
 # rleid gains `prefix` argument, similar to rowid
 x = sample(3,10,TRUE)
@@ -12590,11 +12590,11 @@ test(1886, fread(testDir("quoted_no_header.csv"))[c(1,.N),list(V1,V6)], data.tab
 
 # na.omit with invert & no NAs works, #2660
 DT = data.table(a = 1:5)
-test(1887.1, stats::na.omit(DT), DT)
-test(1887.2, stats::na.omit(DT, invert=TRUE), DT[0L])
+test(1887.1, na.omit(DT), DT)
+test(1887.2, na.omit(DT, invert=TRUE), DT[0L])
 DT = fread(",2,3\n1,,3\n1,2,\n")  # all rows contain an NA, #2784
-test(1887.3, stats::na.omit(DT), DT[0L])
-test(1887.4, stats::na.omit(DT, invert=TRUE), DT)
+test(1887.3, na.omit(DT), DT[0L])
+test(1887.4, na.omit(DT, invert=TRUE), DT)
 
 x = runif(1e3)  # 1e4 reduced to 1e3 in #5517 but really it was the 1e6 just after 1888.5 below which is now 1e3 too
 test(1888, fsort(x), base::sort(x))
@@ -14081,10 +14081,10 @@ test(1984.20, dimnames(DT) <- list(NULL, 5), error = "Can't assign 1 names")
 dimnames(DT) <- list(NULL, 1:5)
 test(1984.21, names(DT), paste0(1:5))
 DT = data.table(a = 1:10)
-test(1984.22, stats::na.omit(DT, invert = 'a'), error="'invert' must be logical")
-test(1984.23, stats::na.omit(DT, cols = 'b'), error="received non-existing column*.*b")
-#test(1984.24, stats::na.omit(DT, cols = c('b', 'c')), error="Columns [b, c] don't") # only first non-existing col is now reported for efficiency
-test(1984.242, stats::na.omit(data.table(A=c(1,NA,2)), cols=character()), data.table(A=c(1,NA,2)))  #2514
+test(1984.22, na.omit(DT, invert = 'a'), error="'invert' must be logical")
+test(1984.23, na.omit(DT, cols = 'b'), error="received non-existing column*.*b")
+#test(1984.24, na.omit(DT, cols = c('b', 'c')), error="Columns [b, c] don't") # only first non-existing col is now reported for efficiency
+test(1984.242, na.omit(data.table(A=c(1,NA,2)), cols=character()), data.table(A=c(1,NA,2)))  #2514
 ### idcol = TRUE behavior of rbindlist
 test(1984.25, rbindlist(list(DT[1L], DT[2L]), idcol = TRUE), data.table(.id=1:2, a=1:2))
 test(1984.26, setalloccol(`*tmp*`), error='setalloccol attempting to modify `*tmp*`')
