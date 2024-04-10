@@ -140,7 +140,7 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent) {
     int *icols = INTEGER(ricols);
     if(!Skip_absent){
       for (int i=0; i<nc; i++) {
-        if ((icols[i]>nx) || (icols[i]<1))
+        if (icols[i]==0)
           error(_("argument specifying columns received non-existing column(s): cols[%d]='%s'"), i+1, CHAR(STRING_ELT(cols, i)));
       }
     }
