@@ -155,9 +155,9 @@ test(4.26, colnamesInt(dt, c(1, 4), skip_absent = TRUE),as.integer( c(1,4)))
 test(4.27, colnamesInt(dt, c("a", NA), skip_absent = TRUE),as.integer(c(1,0)))
 test(4.28, colnamesInt(dt, c(1L, NA), skip_absent = TRUE), as.integer(c(1,NA)))
 test(4.29, colnamesInt(dt, c(1, NA), skip_absent = TRUE), as.integer(c(1,NA)))
+test(4.30, colnamesInt(dt, c(1, NA), skip_absent = NULL), error="skip_absent must be TRUE or FALSE")
 names(dt) <- NULL
-test(4.30, colnamesInt(dt, "a"), error="has no names")
-
+test(4.31, colnamesInt(dt, "a"), error="has no names")
 
 # verbose
 dt = data.table(a=c(1L, 2L, NA_integer_), b=c(1, 2, NA_real_))
