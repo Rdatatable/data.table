@@ -12,7 +12,7 @@ dim.data.table = function(x)
 }
 
 .global = new.env()  # thanks to: http://stackoverflow.com/a/12605694/403310
-setPackageName("data.table",.global)
+methods::setPackageName("data.table",.global)
 .global$print = ""
 
 # NB: if adding to/editing this list, be sure to do the following:
@@ -62,8 +62,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
   if (!is.null(key)) {
     if (!is.character(key)) stopf("key argument of data.table() must be character")
     if (length(key)==1L) {
-      key = strsplit(key,split=",")[[1L]]
-      # eg key="A,B"; a syntax only useful in key argument to data.table(), really.
+      if (key != strsplit(key,split=",")[[1L]]) stopf("Usage of comma-separated literals in %s is deprecated, please split such entries yourself before passing to data.table", "key=")
     }
     setkeyv(ans,key)
   } else {
@@ -806,8 +805,7 @@ replace_dot_alias = function(e) {
 
         if (mode(bysub) == "character") {
           if (any(grepl(",", bysub, fixed = TRUE))) {
-            if (length(bysub)>1L) stopf("'by' is a character vector length %d but one or more items include a comma. Either pass a vector of column names (which can contain spaces, but no commas), or pass a vector length 1 containing comma separated column names. See ?data.table for other possibilities.", length(bysub))
-            bysub = strsplit(bysub, split=",", fixed=TRUE)[[1L]]
+            stopf("Usage of comma-separated literals in %s is deprecated, please split such entries yourself before passing to data.table", "by=")
           }
           bysub = gsub("^`(.*)`$", "\\1", bysub) # see test 138
           nzidx = nzchar(bysub)
@@ -1024,8 +1022,13 @@ replace_dot_alias = function(e) {
             .SDcols = eval(colsub, setattr(as.list(seq_along(x)), 'names', names_x), parent.frame())
           } else {
             if (colsub %iscall% 'patterns') {
-              # each pattern gives a new filter condition, intersect the end result
-              .SDcols = Reduce(intersect, eval_with_cols(colsub, names_x))
+              patterns_list_or_vector = eval_with_cols(colsub, names_x)
+              .SDcols = if (is.list(patterns_list_or_vector)) {
+                # each pattern gives a new filter condition, intersect the end result
+                Reduce(intersect, patterns_list_or_vector)
+              } else {
+                patterns_list_or_vector
+              }
             } else {
               .SDcols = eval(colsub, parent.frame(), parent.frame())
               # allow filtering via function in .SDcols, #3950

@@ -1,6 +1,6 @@
 
-R version 4.1.1 (2021-08-10) -- "Kick Things"
-Copyright (C) 2021 The R Foundation for Statistical Computing
+R version 4.3.2 (2023-10-31) -- "Eye Holes"
+Copyright (C) 2023 The R Foundation for Statistical Computing
 Platform: x86_64-pc-linux-gnu (64-bit)
 
 R is free software and comes with ABSOLUTELY NO WARRANTY.
@@ -136,7 +136,6 @@ NULL
 1:    10
 2:    10
 > 
-> 
 > proc.time()
    user  system elapsed 
-  0.723   0.637   0.217 
+  0.223   0.016   0.231 
