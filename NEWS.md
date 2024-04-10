@@ -32,7 +32,6 @@
 
 8. Computations in `j` can return a matrix or array _if it is one-dimensional_, e.g. a row or column vector, when `j` is a list of columns during grouping, [#783](https://github.com/Rdatatable/data.table/issues/783). Previously a matrix could be provided `DT[, expr, by]` form, but not `DT[, list(expr), by]` form; this resolves that inconsistency. It is still an error to return a "true" array, e.g. a `2x3` matrix.
 
-9. Added the `skip_absent` argument to the `colnamesInt()` function, allowing users to continue execution without interruption when set to `TRUE` [#6067](https://github.com/Rdatatable/data.table/issues/6067), even in cases where some columns are absent. This enhancement provides users with greater control over error handling and streamlines the workflow, particularly in scenarios where missing columns are expected or acceptable. Thanks @Nj221102 for the contribution!
 
 ## BUG FIXES
 
