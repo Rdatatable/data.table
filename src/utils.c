@@ -136,9 +136,11 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent) {
       error(_("'x' argument data.table has no names"));
     ricols = PROTECT(chmatch(cols, xnames, 0)); protecti++;
     int *icols = INTEGER(ricols);
-    for (int i=0; i<nc; i++) {
-      if (icols[i]==0 && !Skip_absent)
-        error(_("argument specifying columns received non-existing column(s): cols[%d]='%s'"), i+1, CHAR(STRING_ELT(cols, i))); // handles NAs also
+    if(!Skip_absent){
+      for (int i=0; i<nc; i++) {
+        if ((icols[i]>nx) || (icols[i]<1))
+          error(_("argument specifying columns received non-existing column(s): cols[%d]=%d"), i+1, icols[i]); // handles NAs also
+      }
     }
   } else {
     error(_("argument specifying columns must be character or numeric"));
