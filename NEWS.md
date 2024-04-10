@@ -30,6 +30,8 @@
 
 7. `fread`'s `fill` argument now also accepts an `integer` in addition to boolean values. `fread` always guesses the number of columns based on reading a sample of rows in the file. When `fill=TRUE`, `fread` stops reading and ignores subsequent rows when this estimate winds up too low, e.g. when the sampled rows happen to exclude some rows that are even wider, [#2727](https://github.com/Rdatatable/data.table/issues/2727) [#2691](https://github.com/Rdatatable/data.table/issues/2691) [#4130](https://github.com/Rdatatable/data.table/issues/4130) [#3436](https://github.com/Rdatatable/data.table/issues/3436). Providing an `integer` as argument for `fill` allows for a manual estimate of the number of columns instead, [#1812](https://github.com/Rdatatable/data.table/issues/1812) [#5378](https://github.com/Rdatatable/data.table/issues/5378). Thanks to @jangorecki, @christellacaze, @Yiguan, @alexdthomas, @ibombonato, @Befrancesco, @TobiasGold for reporting/requesting, and Benjamin Schwendinger for the PR.
 
+8. Computations in `j` can return a matrix or array _if it is one-dimensional_, e.g. a row or column vector, when `j` is a list of columns during grouping, [#783](https://github.com/Rdatatable/data.table/issues/783). Previously a matrix could be provided `DT[, expr, by]` form, but not `DT[, list(expr), by]` form; this resolves that inconsistency. It is still an error to return a "true" array, e.g. a `2x3` matrix.
+
 ## BUG FIXES
 
 1. `unique()` returns a copy the case when `nrows(x) <= 1` instead of a mutable alias, [#5932](https://github.com/Rdatatable/data.table/pull/5932). This is consistent with existing `unique()` behavior when the input has no duplicates but more than one row. Thanks to @brookslogan for the report and @dshemetov for the fix.
@@ -42,7 +44,9 @@
 
 5. `fwrite(x, row.names=TRUE)` with `x` a `matrix` writes `row.names` when present, not row numbers, [#5315](https://github.com/Rdatatable/data.table/issues/5315). Thanks to @Liripo for the report, and @ben-schwen for the fix.
 
-3. `patterns()` helper for `.SDcols` now accepts arguments `ignore.case`, `perl`, `fixed`, and `useBytes`, which are passed to `grep`, #5387. Thanks to @iago-pssjd for the feature request, and @tdhock for the implementation.
+6. `patterns()` helper for `.SDcols` now accepts arguments `ignore.case`, `perl`, `fixed`, and `useBytes`, which are passed to `grep`, #5387. Thanks to @iago-pssjd for the feature request, and @tdhock for the implementation.
+
+7. `melt` returns an integer column for `variable` when `measure.vars` is a list of length=1, consistent with the documented behavior, [#5209](https://github.com/Rdatatable/data.table/issues/5209). Thanks to @tdhock for reporting and fixing. Any users who were relying on this behavior can change `measure.vars=list("col_name")` (output `variable` was column name, now is column index/integer) to `measure.vars="col_name"` (`variable` still is column name).
 
 ## NOTES
 
@@ -63,6 +67,10 @@
 8. OpenMP detection when building from source on Mac is improved, [#4348](https://github.com/Rdatatable/data.table/issues/4348). Thanks @jameshester and @kevinushey for the request and @kevinushey for the PR, @jameslamb for the advice and @s-u of R-core for ensuring CRAN machines are configured to support the uxpected setup.
 
 9. `print.data.table` now handles combination multibyte characters correctly when truncating wide string entries, [#5096](https://github.com/Rdatatable/data.table/issues/5096). Thanks to @MichaelChirico for the report and @joshhwuu for the fix.
+
+10. `test.data.table()` runs correctly in more sessions, in particular those where the `digits` or `warn` settings are not their defaults (`7` and `0`, respectively), [#5285](https://github.com/Rdatatable/data.table/issues/5285). Thanks @OfekShilon for the report and suggested fix and @MichaelChirico for the PR.
+
+11. Using `print.data.table` when truncation is needed with `row.names = FALSE` prints the indicator `---` in every value column instead of adding a blank column where the `rownames` would have been just to include `---`, [#4083](https://github.com/Rdatatable/data.table/issues/4083). Thanks @MichaelChirico for the report and @joshhwuu for the fix.
 
 # data.table [v1.15.0](https://github.com/Rdatatable/data.table/milestone/29)  (30 Jan 2024)
 

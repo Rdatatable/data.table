@@ -12,7 +12,7 @@ dim.data.table = function(x)
 }
 
 .global = new.env()  # thanks to: http://stackoverflow.com/a/12605694/403310
-setPackageName("data.table",.global)
+methods::setPackageName("data.table",.global)
 .global$print = ""
 
 # NB: if adding to/editing this list, be sure to do the following:
@@ -1022,8 +1022,13 @@ replace_dot_alias = function(e) {
             .SDcols = eval(colsub, setattr(as.list(seq_along(x)), 'names', names_x), parent.frame())
           } else {
             if (colsub %iscall% 'patterns') {
-              # each pattern gives a new filter condition, intersect the end result
-              .SDcols = Reduce(intersect, eval_with_cols(colsub, names_x))
+              patterns_list_or_vector = eval_with_cols(colsub, names_x)
+              .SDcols = if (is.list(patterns_list_or_vector)) {
+                # each pattern gives a new filter condition, intersect the end result
+                Reduce(intersect, patterns_list_or_vector)
+              } else {
+                patterns_list_or_vector
+              }
             } else {
               .SDcols = eval(colsub, parent.frame(), parent.frame())
               # allow filtering via function in .SDcols, #3950
