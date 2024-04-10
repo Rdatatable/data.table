@@ -99,14 +99,17 @@ SEXP allNAR(SEXP x) {
  *   existing columns for character
  *   optionally check for no duplicates
  */
-SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups) {
+SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent) {
   if (!isNewList(x))
     error(_("'x' argument must be data.table compatible"));
   if (!IS_TRUE_OR_FALSE(check_dups))
     error(_("%s must be TRUE or FALSE"), "check_dups");
+  if (!IS_TRUE_OR_FALSE(skip_absent))
+    error(_("skip_absent must be TRUE or FALSE"));
   int protecti = 0;
   R_len_t nx = length(x);
   R_len_t nc = length(cols);
+  bool Skip_absent = LOGICAL(skip_absent)[0];
   SEXP ricols = R_NilValue;
   if (isNull(cols)) { // seq_along(x)
     ricols = PROTECT(allocVector(INTSXP, nx)); protecti++;
@@ -124,7 +127,7 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups) {
     }
     int *icols = INTEGER(ricols);
     for (int i=0; i<nc; i++) {
-      if ((icols[i]>nx) || (icols[i]<1))
+      if (((icols[i]>nx) || (icols[i]<1)) && !Skip_absent)
         error(_("argument specifying columns received non-existing column(s): cols[%d]=%d"), i+1, icols[i]); // handles NAs also
     }
   } else if (isString(cols)) {
@@ -134,7 +137,7 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups) {
     ricols = PROTECT(chmatch(cols, xnames, 0)); protecti++;
     int *icols = INTEGER(ricols);
     for (int i=0; i<nc; i++) {
-      if (icols[i]==0)
+      if (icols[i]==0 && !Skip_absent)
         error(_("argument specifying columns received non-existing column(s): cols[%d]='%s'"), i+1, CHAR(STRING_ELT(cols, i))); // handles NAs also
     }
   } else {
