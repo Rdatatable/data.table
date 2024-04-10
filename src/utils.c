@@ -105,7 +105,7 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent) {
   if (!IS_TRUE_OR_FALSE(check_dups))
     error(_("%s must be TRUE or FALSE"), "check_dups");
   if (!IS_TRUE_OR_FALSE(skip_absent))
-    error(_("skip_absent must be TRUE or FALSE"));
+    error(_("%s must be TRUE or FALSE"), "skip_absent");
   int protecti = 0;
   R_len_t nx = length(x);
   R_len_t nc = length(cols);
@@ -141,7 +141,7 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent) {
     if(!Skip_absent){
       for (int i=0; i<nc; i++) {
         if ((icols[i]>nx) || (icols[i]<1))
-         error(_("argument specifying columns received non-existing column(s): cols[%d]='%s'"), i+1, CHAR(STRING_ELT(cols, i)));
+          error(_("argument specifying columns received non-existing column(s): cols[%d]='%s'"), i+1, CHAR(STRING_ELT(cols, i)));
       }
     }
   } else {
