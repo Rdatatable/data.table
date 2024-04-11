@@ -110,7 +110,7 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent) {
   int protecti = 0;
   R_len_t nx = length(x);
   R_len_t nc = length(cols);
-  bool Skip_absent = LOGICAL(skip_absent)[0];
+  bool bskip_absent = LOGICAL(skip_absent)[0];
   SEXP ricols = R_NilValue;
   if (isNull(cols)) { // seq_along(x)
     ricols = PROTECT(allocVector(INTSXP, nx)); protecti++;
@@ -126,12 +126,10 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent) {
         error(_("argument specifying columns is type 'double' and one or more items in it are not whole integers"));
       ricols = PROTECT(coerceVector(cols, INTSXP)); protecti++;
     }
-    int *icols = INTEGER(ricols);
-    if(!Skip_absent){
-      for (int i=0; i<nc; ++i) {
-        if ((icols[i]>nx) || (icols[i]<1))
-          error(_("argument specifying columns received non-existing column(s): cols[%d]=%d"), i+1, icols[i]); // handles NAs also
-      }
+    int *icols = INTEGER(ricols); 
+    for (int i=0; i<nc; ++i) {
+      if ((icols[i]>nx && !bskip_absent) || (icols[i]<1 && icols[i]!=R_NaReal))
+        error(_("argument specifying columns received non-existing column(s): cols[%d]=%d"), i+1, icols[i]); // handles NAs also
     }
   } else if (isString(cols)) {
     SEXP xnames = PROTECT(getAttrib(x, R_NamesSymbol)); protecti++;
@@ -139,7 +137,7 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent) {
       error(_("'x' argument data.table has no names"));
     ricols = PROTECT(chmatch(cols, xnames, 0)); protecti++;
     int *icols = INTEGER(ricols);
-    if(!Skip_absent){
+    if(!bskip_absent){
       for (int i=0; i<nc; ++i) {
         if (icols[i]==0)
           error(_("argument specifying columns received non-existing column(s): cols[%d]='%s'"), i+1, CHAR(STRING_ELT(cols, i)));
