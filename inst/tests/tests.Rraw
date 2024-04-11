@@ -192,6 +192,8 @@ base_messages = list(
   NULL
 )
 
+# Ensure an operation uses C-locale sorting (#3502). For test set-ups/comparisons that use base operations, which are
+#   susceptible to locale-specific sorting issues, but shouldn't be needed for data.table code, which always uses C sorting.
 with_c_collate = function(expr) {
   old = Sys.getlocale("LC_COLLATE")
   on.exit(Sys.setlocale("LC_COLLATE", old))
