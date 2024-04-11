@@ -303,7 +303,19 @@ gc_mem = function() {
   # nocov end
 }
 
-test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,notOutput=NULL,ignore.warning=NULL,options=NULL) {
+test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,notOutput=NULL,ignore.warning=NULL,options=NULL,env=NULL) {
+  if (!is.null(env)) {
+    old = Sys.getenv(names(env), names=TRUE, unset=NA)
+    to_unset = !lengths(env)
+    # NB: Sys.setenv() (no arguments) errors
+    if (!all(to_unset)) do.call(Sys.setenv, as.list(env[!to_unset]))
+    Sys.unsetenv(names(env)[to_unset])
+    on.exit(add=TRUE, {
+      is_preset = !is.na(old)
+      if (any(is_preset)) do.call(Sys.setenv, as.list(old[is_preset]))
+      Sys.unsetenv(names(old)[!is_preset])
+    })
+  }
   if (!is.null(options)) {
     old_options <- do.call('options', as.list(options)) # as.list(): allow passing named character vector for convenience
     on.exit(options(old_options), add=TRUE)
