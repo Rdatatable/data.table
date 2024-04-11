@@ -120,11 +120,14 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent) {
     ricols = PROTECT(allocVector(INTSXP, 0)); protecti++;
   } else if (isInteger(cols) || isReal(cols)) {
     if (isInteger(cols)) {
-      ricols = PROTECT(duplicate(cols));protecti++;
+      if (bskip_absent) { // we might overwrite values, so make a copy
+        ricols = PROTECT(duplicate(cols)); protecti++;
+      } else
+        ricols = cols;
     } else if (isReal(cols)) {
       if (!isRealReallyInt(cols))
         error(_("argument specifying columns is type 'double' and one or more items in it are not whole integers"));
-      ricols = PROTECT(duplicate(coerceVector(cols, INTSXP))); protecti++;
+      ricols = PROTECT(coerceVector(cols, INTSXP)); protecti++;
     }
     int *icols = INTEGER(ricols);
     for (int i=0; i<nc; ++i) {
