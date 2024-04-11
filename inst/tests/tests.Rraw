@@ -2681,15 +2681,13 @@ if (test_bit64) {
   test(897, class(DT$b), "integer64")
   test(898, fread(f), DT)
   unlink(f)
-  DT[,a2:=as.integer64(a)][,a3:=as.double(a)][,a4:=gsub(" ","",format(a))]
-  DT[,b2:=as.double(b)][,b3:=gsub(" ","",format(b))]
-  DT[,r:=a/100][,r2:=gsub(" ","",format(r))]
-  DT[112, a2:=as.integer64(12345678901234)]   # start on row 112 to avoid the first 100
-  DT[113, a3:=3.14]
-  DT[114, a4:="123A"]
-  DT[115, b2:=1234567890123.45]
-  DT[116, b3:="12345678901234567890A"]  # A is needed otherwise read as double with loss of precision (TO DO: should detect and bump to STR)
-  DT[117, r2:="3.14A"]
+  DT[ , a2 := as.integer64(a)][112L, a2 := as.integer64(12345678901234)]   # start on row 112 to avoid the first 100
+  DT[ , a3 := as.double(a)   ][113L, a3 := 3.14]
+  DT[ , a4 := as.character(a)][114L, a4 := "123A"]
+  DT[ , b2 := as.double(b)   ][115L, b2 := 1234567890123.45]
+  DT[ , b3 := as.character(b)][116L, b3 := "12345678901234567890A"]  # A is needed otherwise read as double with loss of precision (TO DO: should detect and bump to STR)
+  DT[ , r := a/100]
+  DT[ , r2 := as.character(r)][117L, r2 := "3.14A"]
   fwrite(DT,f<-tempfile())
   test(899.1, fread(f, verbose=TRUE), DT, output="Rereading 6 columns.*out-of-sample.*Column 4.*a2.*int32.*int64.*<<12345678901234>>.*Column 10.*r2.*float64.*string.*<<3.14A>>")
   test(899.2, fread(f, colClasses=list(character=c("a4","b3","r2"), integer64="a2", double=c("a3","b2")), verbose=TRUE),
@@ -18432,3 +18430,23 @@ DF <- structure(
 )
 
 test(2255, as.data.table(DF), output="DF1.V1.*DF1.V2.*DF2.V3.*DF2.V4.*V5")
+
+# automatic detection of dec=',' for #2431
+DT = data.table(a = letters, b = 1:26/6, c = 1:26)
+## auto-detect dec=','
+fwrite(DT, f <- tempfile(), dec=',', sep=';')
+test(2256.1, fread(f), DT)
+
+fwrite(DT, f, dec=',', sep='|')
+test(2256.2, fread(f), DT)
+
+## auto-detect dec='.'
+fwrite(DT, f)
+test(2256.3, fread(f), DT)
+
+## verbose output
+test(2256.4, fread(f, verbose=TRUE), DT, output="sep=',' so dec set to '.'")
+
+fwrite(DT, f, dec=',', sep=';')
+test(2256.5, fread(f, verbose=TRUE), DT, output="dec=',' detected based on a balance of 18")
+test(2256.6, fread('a;b\n1,14;5', verbose=TRUE), data.table(a=1.14, b=5L), output="dec=',' detected based on a balance of 1 ")
