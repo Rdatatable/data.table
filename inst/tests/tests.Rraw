@@ -3159,6 +3159,9 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
   DT_missing_l_2 = data.table(num_1=1, num_2=2, list_1=list(1), list_3=list(3))
   test(1035.0186, melt(DT_missing_l_2, measure.vars=measure(value.name, char, sep="_"), na.rm=TRUE), data.table(char="1", num=1, list=list(1)))
   test(1035.0187, melt(DT_missing_l_2, measure.vars=measure(value.name, char, sep="_"), na.rm=FALSE), data.table(char=c("1","2","3"), num=c(1,2,NA), list=list(1,NA,3)))
+  # measure supports cols arg, #5063
+  test(1035.0188, melt(DT_missing_l_2, measure.vars=measure(prefix, char, sep="_", cols=c("list_1","list_3"))), data.table(num_1=1,num_2=2,prefix="list",char=c("1","3"),value=list(1,3)))
+  test(1035.0188, melt(DT_missing_l_2, measure.vars=measure(value.name, char, sep="_", cols=c("list_1","list_3"))), data.table(num_1=1,num_2=2,char=c("1","3"),list=list(1,3)))
 
   ans1 = cbind(DT[, c(1,2,8), with=FALSE], variable=factor("l_1"))
   ans1[, value := DT$l_1]

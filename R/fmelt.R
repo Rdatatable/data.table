@@ -130,10 +130,11 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
       stopf("each column name results in only one item after splitting using sep, which means that all columns would be melted; to fix please either specify melt on all columns directly without using measure, or use a different sep/pattern specification")
     }
     err.args.groups("max number of items after splitting column names", n.groups)
-    measure.vec = which(vector.lengths==n.groups)
-    do.call(rbind, list.of.vectors[measure.vec])
+    measure.vec.i = which(vector.lengths==n.groups)
+    measure.vec = cols[measure.vec.i]
+    do.call(rbind, list.of.vectors[measure.vec.i])
   }
-  err.names.unique("measured columns", cols[measure.vec])
+  err.names.unique("measured columns", measure.vec)
   uniq.mat = unique(group.mat)
   if (nrow(uniq.mat) < nrow(group.mat)) {
     stopf("number of unique column IDs =%d is less than number of melted columns =%d; fix by changing pattern/sep", nrow(uniq.mat), nrow(group.mat))
