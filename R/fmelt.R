@@ -107,17 +107,18 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
       stopf("pattern must be character string")
     }
     match.vec = regexpr(pattern, cols, perl=TRUE)
-    measure.vec = which(0 < match.vec)
-    if (length(measure.vec) == 0L) {
+    measure.vec.i = which(0 < match.vec)
+    if (length(measure.vec.i) == 0L) {
       stopf("pattern did not match any cols, so nothing would be melted; fix by changing pattern")
     }
-    start = attr(match.vec, "capture.start")[measure.vec, , drop=FALSE]
+    start = attr(match.vec, "capture.start")[measure.vec.i, , drop=FALSE]
     if (is.null(start)) {
       stopf("pattern must contain at least one capture group (parenthesized sub-pattern)")
     }
     err.args.groups("number of capture groups in pattern", ncol(start))
-    end = attr(match.vec, "capture.length")[measure.vec,]+start-1L
-    names.mat = matrix(cols[measure.vec], nrow(start), ncol(start))
+    end = attr(match.vec, "capture.length")[measure.vec.i,]+start-1L
+    measure.vec <- cols[measure.vec.i]
+    names.mat = matrix(measure.vec, nrow(start), ncol(start))
     substr(names.mat, start, end)
   } else { #pattern not specified, so split using sep.
     if (!is.character(sep)) {
