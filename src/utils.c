@@ -128,7 +128,7 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent) {
     }
     int *icols = INTEGER(ricols);
     if(!Skip_absent){
-      for (int i=0; i<nc; i++) {
+      for (int i=0; i<nc; ++i) {
         if ((icols[i]>nx) || (icols[i]<1))
           error(_("argument specifying columns received non-existing column(s): cols[%d]=%d"), i+1, icols[i]); // handles NAs also
       }
