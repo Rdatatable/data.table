@@ -97,7 +97,8 @@ SEXP allNAR(SEXP x) {
  * adds validation for:
  *   correct range [1,ncol], and if type real checks whole integer
  *   existing columns for character
- *   optionally check for no duplicates
+ *   optionally (check_dups) check for no duplicates
+ *   optionally (skip_absent) skip (return 0) for numbers outside the range or not naming extant columns
  */
 SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent) {
   if (!isNewList(x))
