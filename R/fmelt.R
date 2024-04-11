@@ -19,17 +19,18 @@ melt.default = function(data, ..., na.rm = FALSE, value.name = "value") {
   # nocov end
 }
 
-patterns = function(..., cols=character(0L)) {
+patterns = function(..., cols=character(0L), ignore.case=FALSE, perl=FALSE, fixed=FALSE, useBytes=FALSE) {
   # if ... has no names, names(list(...)) will be "";
   #   this assures they'll be NULL instead
   L = list(...)
   p = unlist(L, use.names = any(nzchar(names(L))))
   if (!is.character(p))
     stopf("Input patterns must be of type character.")
-  matched = lapply(p, grep, cols)
+  matched = lapply(p, grep, cols, ignore.case=ignore.case, perl=perl, fixed=fixed, useBytes=useBytes)
   # replace with lengths when R 3.2.0 dependency arrives
   if (length(idx <- which(sapply(matched, length) == 0L)))
     stopf('Pattern(s) not found: [%s]', brackify(p[idx]))
+  if (length(matched) == 1L) return(matched[[1L]])
   matched
 }
 

@@ -1,9 +1,12 @@
 # https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 * @jangorecki @michaelchirico
 
-# melt
+# reshaping
+/R/fcast.R @tdhock
 /R/fmelt.R @tdhock
+/src/fcast.c @tdhock
 /src/fmelt.c @tdhock
+/man/dcast.data.table.Rd @tdhock
 /man/melt.data.table.Rd @tdhock
 /vignettes/datatable-reshape.Rmd @tdhock
 
