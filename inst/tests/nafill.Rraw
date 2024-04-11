@@ -160,6 +160,9 @@ test(4.31, colnamesInt(dt, c(1L, 1000L), skip_absent=TRUE), c(1L,0L))
 cols=c(1L,100L)
 test(4.32, colnamesInt(dt, cols, skip_absent=TRUE), c(1L, 0L))
 test(4.33, cols, c(1L, 100L)) # ensure input was not overwritten with output 0
+cols=c(1,100)
+test(4.34, colnamesInt(dt, cols, skip_absent=TRUE), c(1L, 0L))
+test(4.35, cols, c(1, 100)) # ensure input was not overwritten with output 0
 names(dt) <- NULL
 test(4.34, colnamesInt(dt, "a"), error="has no names")
 
