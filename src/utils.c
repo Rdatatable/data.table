@@ -128,7 +128,7 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent) {
     }
     int *icols = INTEGER(ricols); 
     for (int i=0; i<nc; ++i) {
-      if ((icols[i]>nx && !bskip_absent) || (icols[i]<1 && icols[i]!=R_NaReal))
+      if ((icols[i]>nx && !bskip_absent) || (icols[i]<1))
         error(_("argument specifying columns received non-existing column(s): cols[%d]=%d"), i+1, icols[i]); // handles NAs also
     }
   } else if (isString(cols)) {
