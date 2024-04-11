@@ -1,0 +1,96 @@
+on:
+  schedule:
+   - cron: '18 13 8 * *' # 8th of month at 13:18 UTC
+
+# A more complete suite of checks to run monthly; each PR/merge need not pass all these, but they should pass before CRAN release
+name: R-CMD-check-occasional
+
+jobs:
+  R-CMD-check-occasional:
+    runs-on: ${{ matrix.os }}
+
+    name: ${{ matrix.os }} (${{ matrix.r }})
+
+    strategy:
+      matrix:
+        os: [macOS-latest, windows-latest, ubuntu-latest]
+        r: ['devel', 'release', '3.2', '3.3', '3.4', '3.5', '3.6', '4.0', '4.1', '4.2', '4.3']
+        locale: ['en_US.utf8', 'zh_CN.utf8', 'lv_LV.utf8'] # Chinese for translations, Latvian for collate order (#3502)
+        exclude:
+          - os: ['macOS-latest', 'windows-latest'] # only run non-English locale CI on Ubuntu
+            locale: ['zh_CN.utf8', 'lv_LV.utf8']
+
+    env:
+      R_REMOTES_NO_ERRORS_FROM_WARNINGS: true
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Set locale
+        if: matrix.locale == 'en_US.utf8'
+        run: |
+          sudo locale-gen en_US
+          echo "LC_ALL=en_US.utf8" >> $GITHUB_ENV
+
+      - name: Set locale
+        if: matrix.locale == 'zh_CN.utf8'
+        run: |
+          sudo locale-gen zh_CN
+          echo "LC_ALL=zh_CN.utf8" >> $GITHUB_ENV
+          echo "LANGUAGE=zh_CN" >> $GITHUB_ENV
+
+      - name: Set locale
+        if: matrix.locale == 'lv_LV.utf8'
+        run: |
+          sudo locale-gen lv_LV
+          echo "LC_ALL=lv_LV.utf8" >> $GITHUB_ENV
+          echo "LANGUAGE=lv_LV" >> $GITHUB_ENV
+
+      - uses: actions/checkout@v2
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: ${{ matrix.r }}
+
+
+      - name: Query dependencies
+        run: |
+          install.packages('remotes')
+          saveRDS(remotes::dev_package_deps(dependencies = TRUE), ".github/depends.Rds", version = 2)
+          writeLines(sprintf("R-%i.%i", getRversion()$major, getRversion()$minor), ".github/R-version")
+        shell: Rscript {0}
+
+      - name: Restore R package cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.R_LIBS_USER }}
+          key: ${{ runner.os }}-${{ hashFiles('.github/R-version') }}-1-${{ hashFiles('.github/depends.Rds') }}
+          restore-keys: ${{ runner.os }}-${{ hashFiles('.github/R-version') }}-1-
+
+      - name: Install system dependencies
+        if: runner.os == 'Linux'
+        run: |
+          while read -r cmd
+          do
+            eval sudo $cmd
+          done < <(Rscript -e 'writeLines(remotes::system_requirements("ubuntu", "20.04"))')
+
+      - name: Install dependencies
+        run: |
+          remotes::install_deps(dependencies = TRUE)
+          remotes::install_cran("rcmdcheck")
+        shell: Rscript {0}
+
+      - name: Check
+        env:
+          _R_CHECK_CRAN_INCOMING_REMOTE_: false
+        run: |
+          options(crayon.enabled = TRUE)
+          rcmdcheck::rcmdcheck(args = c("--no-manual", "--as-cran"), error_on = "warning", check_dir = "check")
+        shell: Rscript {0}
+
+      - name: Upload check results
+        if: failure()
+        uses: actions/upload-artifact@main
+        with:
+          name: ${{ runner.os }}-r${{ matrix.r }}-results
+          path: check
