@@ -142,7 +142,7 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent) {
       error(_("'x' argument data.table has no names"));
     ricols = PROTECT(chmatch(cols, xnames, 0)); protecti++;
     int *icols = INTEGER(ricols);
-    if (!bskip_absent){
+    if (!bskip_absent) {
       for (int i=0; i<nc; ++i) {
         if (icols[i]==0)
           error(_("argument specifying columns received non-existing column(s): cols[%d]='%s'"), i+1, CHAR(STRING_ELT(cols, i))); // handles NAs also
