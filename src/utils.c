@@ -130,6 +130,8 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent) {
     for (int i=0; i<nc; ++i) {
       if ((!bskip_absent && icols[i]>nx) || (icols[i]<1))
         error(_("argument specifying columns received non-existing column(s): cols[%d]=%d"), i+1, icols[i]); // handles NAs also
+      else if(bskip_absent && icols[i]>nx)
+        icols[i] = 0L;
     }
   } else if (isString(cols)) {
     SEXP xnames = PROTECT(getAttrib(x, R_NamesSymbol)); protecti++;
