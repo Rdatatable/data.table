@@ -120,7 +120,7 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent) {
     ricols = PROTECT(allocVector(INTSXP, 0)); protecti++;
   } else if (isInteger(cols) || isReal(cols)) {
     if (isInteger(cols)) {
-      if (bskip_absent) { // we might overwrite values, so make a copy
+      if (bskip_absent) { // we might overwrite values with 0, so make a copy
         ricols = PROTECT(duplicate(cols)); protecti++;
       } else
         ricols = cols;
