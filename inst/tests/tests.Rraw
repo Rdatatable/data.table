@@ -14377,7 +14377,7 @@ test(2002.12, rbind(DT1, DT2, idcol='id'),     data.table(id=integer(), a=logica
 
 #rbindlist coverage
 test(2003.1, rbindlist(list(), use.names=1), error="use.names= should be TRUE, FALSE, or not used [(]\"check\" by default[)]")
-test(2003.2, rbindlist(list(), fill=1), error="fill= should be TRUE or FALSE")
+test(2003.2, rbindlist(list(), fill=1), error="fill should be TRUE or FALSE")
 test(2003.3, rbindlist(list(data.table(a=1:2), data.table(b=3:4)), fill=TRUE, use.names=FALSE),
              data.table(a=c(1:4)))
 test(2003.4, rbindlist(list(data.table(a=1:2,c=5:6), data.table(b=3:4)), fill=TRUE, use.names=FALSE),
