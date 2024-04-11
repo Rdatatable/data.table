@@ -68,7 +68,9 @@
 
 9. `print.data.table` now handles combination multibyte characters correctly when truncating wide string entries, [#5096](https://github.com/Rdatatable/data.table/issues/5096). Thanks to @MichaelChirico for the report and @joshhwuu for the fix.
 
-10. `test.data.table()` runs correctly in more sessions, in particular those where the `digits` or `warn` settings are not their defaults (`7` and `0`, respectively), [#5285](https://github.com/Rdatatable/data.table/issues/5285). Thanks @OfekShilon for the report and suggested fix and @MichaelChirico for the PR.
+10. `test.data.table()` runs robustly:
+  + In sessions where the `digits` or `warn` options are not their defaults (`7` and `0`, respectively), [#5285](https://github.com/Rdatatable/data.table/issues/5285). Thanks @OfekShilon for the report and suggested fix and @MichaelChirico for the PR.
+  + In locales where `letters != sort(letters)`, e.g. Latvian, [#3502](https://github.com/Rdatatable/data.table/issues/3502). Thanks @minemR for the report and @MichaelChirico for the fix.
 
 11. Using `print.data.table` when truncation is needed with `row.names = FALSE` prints the indicator `---` in every value column instead of adding a blank column where the `rownames` would have been just to include `---`, [#4083](https://github.com/Rdatatable/data.table/issues/4083). Thanks @MichaelChirico for the report and @joshhwuu for the fix.
 
