@@ -15,42 +15,26 @@ jobs:
       matrix:
         os: [macOS-latest, windows-latest, ubuntu-latest]
         r: ['devel', 'release', '3.2', '3.3', '3.4', '3.5', '3.6', '4.0', '4.1', '4.2', '4.3']
-        locale: ['en_US.utf8', 'zh_CN.utf8', 'lv_LV.utf8'] # Chinese for translations, Latvian for collate order (#3502)
+        locale: ['en_US', 'zh_CN', 'lv_LV'] # Chinese for translations, Latvian for collate order (#3502)
+        tz: ['UTC', 'Asia/Seoul'] # Any non-UTC & widely available time zone
         exclude:
-          - os: ['macOS-latest', 'windows-latest'] # only run non-English locale CI on Ubuntu
-            locale: ['zh_CN.utf8', 'lv_LV.utf8']
+          - os: [macOS-latest, windows-latest] # only run non-English locale CI on Ubuntu
+            locale: ['zh_CN', 'lv_LV']
 
     env:
       R_REMOTES_NO_ERRORS_FROM_WARNINGS: true
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
-      - name: Set locale
-        if: matrix.locale == 'en_US.utf8'
+      - name: Generate locale
         run: |
-          sudo locale-gen en_US
-          echo "LC_ALL=en_US.utf8" >> $GITHUB_ENV
-
-      - name: Set locale
-        if: matrix.locale == 'zh_CN.utf8'
-        run: |
-          sudo locale-gen zh_CN
-          echo "LC_ALL=zh_CN.utf8" >> $GITHUB_ENV
-          echo "LANGUAGE=zh_CN" >> $GITHUB_ENV
-
-      - name: Set locale
-        if: matrix.locale == 'lv_LV.utf8'
-        run: |
-          sudo locale-gen lv_LV
-          echo "LC_ALL=lv_LV.utf8" >> $GITHUB_ENV
-          echo "LANGUAGE=lv_LV" >> $GITHUB_ENV
+          sudo locale-gen ${{ matrix.locale }}
 
       - uses: actions/checkout@v2
 
       - uses: r-lib/actions/setup-r@v2
         with:
           r-version: ${{ matrix.r }}
-
 
       - name: Query dependencies
         run: |
@@ -83,6 +67,9 @@ jobs:
       - name: Check
         env:
           _R_CHECK_CRAN_INCOMING_REMOTE_: false
+          TZ: ${{ matrix.tz }}
+          LC_ALL: ${{ matrix.locale }}.utf8
+          LANGUAGE: ${{ matrix.locale}}
         run: |
           options(crayon.enabled = TRUE)
           rcmdcheck::rcmdcheck(args = c("--no-manual", "--as-cran"), error_on = "warning", check_dir = "check")
