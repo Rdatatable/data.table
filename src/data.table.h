@@ -238,7 +238,7 @@ bool isRealReallyInt(SEXP x);
 SEXP isRealReallyIntR(SEXP x);
 SEXP isReallyReal(SEXP x);
 bool allNA(SEXP x, bool errorForBadType);
-SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups);
+SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent);
 bool INHERITS(SEXP x, SEXP char_);
 SEXP copyAsPlain(SEXP x);
 void copySharedColumns(SEXP x);
