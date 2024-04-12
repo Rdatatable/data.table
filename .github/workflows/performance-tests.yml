@@ -8,6 +8,9 @@ on:
       - opened
       - reopened
       - synchronize
+    paths:
+      - 'R/**'
+      - 'src/**'      
 
 jobs:
   comment:
