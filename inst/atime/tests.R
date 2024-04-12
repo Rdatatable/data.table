@@ -65,5 +65,5 @@ test.list <- list(
     }),
     Before = "19b7866112614db53eb3e909c097407d91cd6738", # Parent of the regression commit (https://github.com/Rdatatable/data.table/commit/0895fa247afcf6b38044bd5f56c0d209691ddb31), which is the parent of the first commit in the PR that causes the issue (https://github.com/Rdatatable/data.table/pull/5493/commits) 
     Regression = "0895fa247afcf6b38044bd5f56c0d209691ddb31", # The regression commit is the parent of the first commit in the PR that fixed the issue (https://github.com/Rdatatable/data.table/pull/5493/commits)
-    Fixed = "1e03fe7b890e63da9651d997ea52548c90b3ae32") # Last commit in the PR that fixed the regression (https://github.com/Rdatatable/data.table/pull/5493/commits)    
+    Fixed = "58409197426ced4714af842650b0cc3b9e2cb842") # Last commit in the PR that fixed the regression (https://github.com/Rdatatable/data.table/pull/5463/commits)    
 )
