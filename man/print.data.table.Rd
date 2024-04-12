@@ -26,6 +26,7 @@
     print.keys=getOption("datatable.print.keys"),       # default: TRUE
     trunc.cols=getOption("datatable.print.trunc.cols"), # default: FALSE
     quote=FALSE,
+    na.print=NULL,
     timezone=FALSE, \dots)
 
   format_col(x, \dots)
@@ -47,6 +48,7 @@
   \item{trunc.cols}{ If \code{TRUE}, only the columns that can be printed in the console without wrapping the columns to new lines will be printed (similar to \code{tibbles}). }
   \item{quote}{ If \code{TRUE}, all output will appear in quotes, as in \code{print.default}. }
   \item{timezone}{ If \code{TRUE}, time columns of class POSIXct or POSIXlt will be printed with their timezones (if attribute is available). }
+  \item{na.print}{ The string to be printed in place of \code{NA} values. }
   \item{\dots}{ Other arguments ultimately passed to \code{format}. }
 }
 \value{
