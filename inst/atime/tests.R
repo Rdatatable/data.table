@@ -45,7 +45,7 @@ test.list <- list(
     expr = quote(data.table:::shallow(dt)),
     Before = "9d3b9202fddb980345025a4f6ac451ed26a423be", # This needs to be changed later. Currently assigned to the merge commit in the PR that fixed the regression (https://github.com/Rdatatable/data.table/pull/4440) as the source of regression (or the particular commit that led to it) is not clear. In addition, older versions of data.table are having problems when being installed in this manner. (This includes commits from before Mar 20, 2020 or when the issue that discovered or first mentioned the regression was created)
     Regression = "b1b1832b0d2d4032b46477d9fe6efb15006664f4", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/0f0e7127b880df8459b0ed064dc841acd22f5b73) in the PR (https://github.com/Rdatatable/data.table/pull/4440/commits) that fixes the regression
-    Fixed = "769f02c6fbbb031391a79f46c6042de99f1ea712"), # Last commit in the PR that fixed the regression (https://github.com/Rdatatable/data.table/pull/4440/commits)
+    Fixed = "9d3b9202fddb980345025a4f6ac451ed26a423be"), # Merge commit in the PR that fixed the regression (https://github.com/Rdatatable/data.table/pull/4440)
 
   # Test based on: https://github.com/Rdatatable/data.table/issues/5424
   # Performance regression introduced from a commit in: https://github.com/Rdatatable/data.table/pull/4491
