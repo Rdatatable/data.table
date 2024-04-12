@@ -18450,3 +18450,7 @@ test(2256.4, fread(f, verbose=TRUE), DT, output="sep=',' so dec set to '.'")
 fwrite(DT, f, dec=',', sep=';')
 test(2256.5, fread(f, verbose=TRUE), DT, output="dec=',' detected based on a balance of 18")
 test(2256.6, fread('a;b\n1,14;5', verbose=TRUE), data.table(a=1.14, b=5L), output="dec=',' detected based on a balance of 1 ")
+
+# helpful error about deleting during grouping, #1873
+DT = data.table(id = c(1, 1, 2, 2), a = 1:4, b = 5:8)
+test(2257, DT[ , c("c", "a") := .(a + 1, NULL), by=id], error="it's not possible to delete parts of a column")
