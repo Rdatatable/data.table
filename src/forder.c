@@ -367,7 +367,7 @@ SEXP setNumericRounding(SEXP droundArg)
 // init.c has initial call with default of 2
 {
   if (!isInteger(droundArg) || LENGTH(droundArg)!=1) error(_("Must an integer or numeric vector length 1"));
-  if (INTEGER(droundArg)[0] < 0 || INTEGER(droundArg)[0] > 2) error(_("Must be 2, 1 or 0"));
+  if (INTEGER(droundArg)[0] < 0 || INTEGER(droundArg)[0] > 7) error(_("Must be a number of bytes between 0 and 7"));
   dround = INTEGER(droundArg)[0];
   dmask = dround ? 1 << (8*dround-1) : 0;
   return R_NilValue;
