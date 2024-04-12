@@ -43,9 +43,9 @@ test.list <- list(
       setindex(dt, a)
     }),
     expr = quote(data.table:::shallow(dt)),
-    "Before" = "9d3b9202fddb980345025a4f6ac451ed26a423be", # This should be changed later. Currently, the source of regression (or the particular commit that led to it) is not clear. In addition, older versions of data.table are having problems when being installed in this manner. (This includes commits from before Mar 20, 2020 or when the issue that discovered or first mentioned the regression was created)
-    "Regression" = "752012f577f8e268bb6d0084ca39a09fa7fbc1c4", # A commit that is affected by the regression: https://github.com/Rdatatable/data.table/commit/752012f577f8e268bb6d0084ca39a09fa7fbc1c4
-    "Fixed" = "9d3b9202fddb980345025a4f6ac451ed26a423be"), # The merge commit in #4440, the PR that fixed the regression: https://github.com/Rdatatable/data.table/commit/9d3b9202fddb980345025a4f6ac451ed26a423be
+    Before = "9d3b9202fddb980345025a4f6ac451ed26a423be", # This needs to be changed later. Currently assigned to the merge commit in the PR that fixed the regression (https://github.com/Rdatatable/data.table/pull/4440) as the source of regression (or the particular commit that led to it) is not clear. In addition, older versions of data.table are having problems when being installed in this manner. (This includes commits from before Mar 20, 2020 or when the issue that discovered or first mentioned the regression was created)
+    Regression = "b1b1832b0d2d4032b46477d9fe6efb15006664f4", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/0f0e7127b880df8459b0ed064dc841acd22f5b73) in the PR (https://github.com/Rdatatable/data.table/pull/4440/commits) that fixes the regression
+    Fixed = "769f02c6fbbb031391a79f46c6042de99f1ea712"), # Last commit in the PR that fixed the regression (https://github.com/Rdatatable/data.table/pull/4440/commits)
 
   # Test based on: https://github.com/Rdatatable/data.table/issues/5424
   # Performance regression introduced from a commit in: https://github.com/Rdatatable/data.table/pull/4491
@@ -63,7 +63,7 @@ test.list <- list(
         key = "g")
       dt_mod <- copy(dt)
     }),
-    "Before" = "be2f72e6f5c90622fe72e1c315ca05769a9dc854", # The commit in PR #4491 that comes before the regression introducting commit: https://github.com/Rdatatable/data.table/pull/4491/commits/be2f72e6f5c90622fe72e1c315ca05769a9dc854
-    "Regression" = "e793f53466d99f86e70fc2611b708ae8c601a451", # The commit in #4491 that introduced the regression: https://github.com/Rdatatable/data.table/pull/4491/commits/e793f53466d99f86e70fc2611b708ae8c601a451
-    "Fixed" = "58409197426ced4714af842650b0cc3b9e2cb842") # Last commit in #5463, the PR that fixed the regression: https://github.com/Rdatatable/data.table/pull/5463/commits/58409197426ced4714af842650b0cc3b9e2cb842     
+    Before = "19b7866112614db53eb3e909c097407d91cd6738", # Parent of the regression commit (https://github.com/Rdatatable/data.table/commit/0895fa247afcf6b38044bd5f56c0d209691ddb31), which is the parent of the first commit in the PR that causes the issue (https://github.com/Rdatatable/data.table/pull/5493/commits) 
+    Regression = "0895fa247afcf6b38044bd5f56c0d209691ddb31", # The regression commit is the parent of the first commit in the PR that fixed the issue (https://github.com/Rdatatable/data.table/pull/5493/commits)
+    Fixed = "1e03fe7b890e63da9651d997ea52548c90b3ae32") # Last commit in the PR that fixed the regression (https://github.com/Rdatatable/data.table/pull/5493/commits)    
 )
