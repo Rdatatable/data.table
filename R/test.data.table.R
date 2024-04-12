@@ -151,7 +151,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     #   runtime test number (i.e. 'numStr') since we're just doing a static check here, though we _are_ careful to match the
     #   full test expression string, i.e., not just limited to numeric literal test numbers.
     arg_line = call_id = col1 = col2 = i.line1 = id = line1 = parent = preceding_line = test_start_line = text = token = x.line1 = x.parent = NULL # R CMD check
-    pd = setDT(utils::getParseData(parse(fn)))
+    pd = setDT(utils::getParseData(parse(fn, keep.source=TRUE)))
     file_lines = readLines(fn)
     # NB: a call looks like (with id/parent tracking)
     # <expr>
@@ -162,9 +162,15 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     #   <RIGHT_PAREN>)</RIGHT_PAREN>
     # </expr>
     ## navigate up two steps from 'test' SYMBOL_FUNCTION_CALL to the overall 'expr' for the call
-    test_calls = pd[pd[pd[token == 'SYMBOL_FUNCTION_CALL' & text == 'test'], list(call_lhs_id = id, call_id = x.parent), on=c(id='parent')], .(line1, id), on=c(id='call_id')]
+    test_calls = pd[
+      pd[
+        pd[token == 'SYMBOL_FUNCTION_CALL' & text == 'test'],
+        list(call_lhs_id=id, call_id=x.parent),
+        on=c(id='parent')],
+      list(line1, id),
+      on=c(id='call_id')]
     ## all the arguments for each call to test()
-    test_call_args = test_calls[pd[token == 'expr'], .(call_id = parent, arg_line = i.line1, col1, col2), on=c(id='parent'), nomatch=NULL]
+    test_call_args = test_calls[pd[token == 'expr'], list(call_id=parent, arg_line=i.line1, col1, col2), on=c(id='parent'), nomatch=NULL]
     ## 2nd argument is the num= argument
     test_num_expr = test_call_args[ , .SD[2L], by="call_id"]
     # NB: subtle assumption that 2nd arg to test() is all on one line, true as of 2024-Apr and likely to remain so
@@ -174,7 +180,11 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     # setup_line1     # retain
     # setup_line2     # retain
     # test(keep, ...) # retain
-    intertest_ranges = test_calls[!id %in% keep_test_ids][test_calls[id %in% keep_test_ids], .(preceding_line = x.line1, test_start_line = i.line1), on='line1', roll=TRUE]
+    intertest_ranges = test_calls[!id %in% keep_test_ids][
+      test_calls[id %in% keep_test_ids],
+      list(preceding_line=x.line1, test_start_line=i.line1),
+      on='line1',
+      roll=TRUE]
     # TODO(michaelchirico): this doesn't do well with tests inside control statements.
     #   those could be included by looking for tests with parent!=0, i.e., not-top-level tests,
     #   and including the full parent for such tests. omitting for now until needed.
