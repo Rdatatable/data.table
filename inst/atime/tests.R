@@ -1,3 +1,26 @@
+# A function to customize R package metadata and source files to facilitate version-specific installation and testing.
+#
+# This is specifically tailored for handling data.table which requires specific changes in non-standard files (such as the object file name in `Makevars` and version checking code in `onLoad.R`) 
+# to support testing across different versions (base and HEAD for PRs, commits associated with historical regressions, etc.) of the package. 
+# It appends a SHA1 hash to the package name (`PKG.SHA`), ensuring each version can be installed and tested separately.
+#
+# @param old.Package Current name of the package.
+# @param new.Package New name of the package, including a SHA hash.
+# @param sha SHA1 hash used for differentiating versions.
+# @param new.pkg.path Path to the package files.
+#
+# @details
+# The function modifies:
+# - DESCRIPTION, updating the package name.
+# - Makevars, customizing the shared object file name and adjusting the build settings.
+# - R/onLoad.R, adapting custom version checking for package loading operations.
+# - NAMESPACE, changing namespace settings for dynamic linking.
+#
+# @examples
+# pkg.edit.fun("data.table", "data.table.some_40_digit_SHA1_hash", "some_40_digit_SHA1_hash", "/path/to/data.table")
+#
+# @return None (performs in-place file modifications)
+# @note This setup is typically unnecessary for most packages but essential for `data.table` due to its unique configuration.
 pkg.edit.fun = function(old.Package, new.Package, sha, new.pkg.path) {
       pkg_find_replace <- function(glob, FIND, REPLACE) {
         atime::glob_find_replace(file.path(new.pkg.path, glob), FIND, REPLACE)
