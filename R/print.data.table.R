@@ -111,7 +111,12 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     #   function below adds those back when necessary
     toprint = toprint_subset(toprint, cols_to_print)
   }
-  print_args = list(right = TRUE, quote = quote, na.print = na.print)
+  print_default = function(x) {
+    if (col.names != "none") { cut_colnames = identity }
+    cut_colnames(print(x, right=TRUE, quote=quote, na.print=na.print))
+    # prints names of variables not shown in the print
+    if (trunc.cols && length(not_printed) > 0L) trunc_cols_message(not_printed, abbs, class, col.names)
+  }
   if (printdots) {
     if (isFALSE(row.names)) {
       toprint = rbind(head(toprint, topn + isTRUE(class)), "---", tail(toprint, topn)) # 4083
@@ -119,30 +124,14 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
       toprint = rbind(head(toprint, topn + isTRUE(class)), "---"="", tail(toprint, topn))
     }
     rownames(toprint) = format(rownames(toprint), justify="right")
-    if (col.names == "none") {
-      cut_colnames(do.call(print, c(list(toprint), print_args)))
-    } else {
-      do.call(print, c(list(toprint), print_args))
-    }
-    if (trunc.cols && length(not_printed) > 0L)
-      # prints names of variables not shown in the print
-      trunc_cols_message(not_printed, abbs, class, col.names)
-
+    print_default(toprint)
     return(invisible(x))
   }
   if (nrow(toprint)>20L && col.names == "auto")
     # repeat colnames at the bottom if over 20 rows so you don't have to scroll up to see them
     #   option to shut this off per request of Oleg Bondar on SO, #1482
-    toprint=rbind(toprint, matrix(if (quote) old else colnames(toprint), nrow=1L)) # fixes bug #97
-  if (col.names == "none") {
-    cut_colnames(do.call(print, c(list(toprint), print_args)))
-  } else {
-    do.call(print, c(list(toprint), print_args))
-  }
-  if (trunc.cols && length(not_printed) > 0L)
-    # prints names of variables not shown in the print
-    trunc_cols_message(not_printed, abbs, class, col.names)
-
+    toprint = rbind(toprint, matrix(if (quote) old else colnames(toprint), nrow=1L)) # fixes bug #97
+  print_default(toprint)
   invisible(x)
 }
 
