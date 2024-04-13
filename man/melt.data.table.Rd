@@ -154,6 +154,11 @@ melt(DT.missing.cols, measure.vars=measure(value.name, number=as.integer, sep="_
 
 # specifying columns to melt via regex.
 melt(DT.missing.cols, measure.vars=measure(value.name, number=as.integer, pattern="(.)_(.)"))
+melt(DT.missing.cols, measure.vars=measure(value.name, number=as.integer, pattern="([dc])_(.)"))
+
+# cols arg of measure can be used if you do not want to use regex
+melt(DT.missing.cols, measure.vars=measure(
+  value.name, number=as.integer, sep="_", cols=c("d_1","d_2","c_1")))
 }
 \seealso{
   \code{\link{dcast}}, \url{https://cran.r-project.org/package=reshape}

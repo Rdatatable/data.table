@@ -3157,6 +3157,13 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
   DT_missing_l_2 = data.table(num_1=1, num_2=2, list_1=list(1), list_3=list(3))
   test(1035.0186, melt(DT_missing_l_2, measure.vars=measure(value.name, char, sep="_"), na.rm=TRUE), data.table(char="1", num=1, list=list(1)))
   test(1035.0187, melt(DT_missing_l_2, measure.vars=measure(value.name, char, sep="_"), na.rm=FALSE), data.table(char=c("1","2","3"), num=c(1,2,NA), list=list(1,NA,3)))
+  # measure supports cols arg, #5063
+  expected_without_value = data.table(num_1=1,num_2=2,prefix="list",char=c("1","3"),value=list(1,3))
+  test(1035.0188, melt(DT_missing_l_2, measure.vars=measure(prefix, char, sep="_", cols=c("list_1","list_3"))), expected_without_value)
+  test(1035.0189, melt(DT_missing_l_2, measure.vars=measure(prefix, char, pattern="(.*)_(.*)", cols=c("list_1","list_3"))), expected_without_value)
+  expected_with_value = data.table(num_1=1,num_2=2,char=c("1","3"),list=list(1,3))
+  test(1035.0190, melt(DT_missing_l_2, measure.vars=measure(value.name, char, sep="_", cols=c("list_1","list_3"))), expected_with_value)
+  test(1035.0191, melt(DT_missing_l_2, measure.vars=measure(value.name, char, pattern="(.*)_(.*)", cols=c("list_1","list_3"))), expected_with_value)
 
   ans1 = cbind(DT[, c(1,2,8), with=FALSE], variable=factor("l_1"))
   ans1[, value := DT$l_1]
@@ -18232,17 +18239,20 @@ test(2243.38, dt[, sd(y,   na.rm=as.logical(j)),   g, verbose=TRUE], data.table(
 dt = data.table(x = c(2,2,1,1), y = 1:4, z=letters[1:4])
 i=c(1,2)
 j=1L
-old = options(datatable.optimize=1L)
-test(2243.41, dt[, .I[TRUE], x]$V1, 1:4)
-test(2243.42, dt[, z[y], x], data.table(x=c(2,2,1,1), V1=c("a","b",NA,NA)))
-options(datatable.optimize=2L, datatable.verbose=TRUE)
-test(2243.51, dt[, .I[TRUE], x]$V1, 1:4, output="GForce FALSE")
-test(2243.52, dt[, z[y], x], data.table(x=c(2,2,1,1), V1=c("a","b",NA,NA)), output="GForce FALSE")
-test(2243.53, dt[, .I[1], x]$V1, c(1L, 3L), output="GForce TRUE")
-test(2243.54, dt[, .I[j], x]$V1, c(1L, 3L), output="GForce TRUE")
-test(2243.55, dt[, .I[i], x]$V1, 1:4, output="GForce FALSE")
-test(2243.56, dt[, .I[1:2], x]$V1, 1:4, output="GForce FALSE")
-options(old)
+test(2243.41, options=c(datatable.optimize=1L), dt[, .I[TRUE], x]$V1, 1:4)
+test(2243.42, options=c(datatable.optimize=1L), dt[, z[y], x], data.table(x=c(2,2,1,1), V1=c("a","b",NA,NA)))
+test(2243.51, options=list(datatable.optimize=2L, datatable.verbose=TRUE),
+     dt[, .I[TRUE], x]$V1, 1:4, output="GForce FALSE")
+test(2243.52, options=list(datatable.optimize=2L, datatable.verbose=TRUE),
+     dt[, z[y], x], data.table(x=c(2,2,1,1), V1=c("a","b",NA,NA)), output="GForce FALSE")
+test(2243.53, options=list(datatable.optimize=2L, datatable.verbose=TRUE),
+     dt[, .I[1], x]$V1, c(1L, 3L), output="GForce TRUE")
+test(2243.54, options=list(datatable.optimize=2L, datatable.verbose=TRUE),
+     dt[, .I[j], x]$V1, c(1L, 3L), output="GForce TRUE")
+test(2243.55, options=list(datatable.optimize=2L, datatable.verbose=TRUE),
+     dt[, .I[i], x]$V1, 1:4, output="GForce FALSE")
+test(2243.56, options=list(datatable.optimize=2L, datatable.verbose=TRUE),
+     dt[, .I[1:2], x]$V1, 1:4, output="GForce FALSE")
 
 DT = data.table(1)
 test(2244.1, DT[, `:=`(a=1, )], error="`:=`.*Did you forget a trailing comma\\?")
