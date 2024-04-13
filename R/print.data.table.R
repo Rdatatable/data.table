@@ -111,6 +111,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     #   function below adds those back when necessary
     toprint = toprint_subset(toprint, cols_to_print)
   }
+  print_args = list(right = TRUE, quote = quote, na.print = na.print)
   if (printdots) {
     if (isFALSE(row.names)) {
       toprint = rbind(head(toprint, topn + isTRUE(class)), "---", tail(toprint, topn)) # 4083
@@ -119,9 +120,9 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     }
     rownames(toprint) = format(rownames(toprint), justify="right")
     if (col.names == "none") {
-      cut_colnames(print_default(toprint, quote, na.print))
+      cut_colnames(do.call(print, c(list(toprint), print_args)))
     } else {
-      print_default(toprint, quote, na.print)
+      do.call(print, c(list(toprint), print_args))
     }
     if (trunc.cols && length(not_printed) > 0L)
       # prints names of variables not shown in the print
@@ -134,9 +135,9 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     #   option to shut this off per request of Oleg Bondar on SO, #1482
     toprint=rbind(toprint, matrix(if (quote) old else colnames(toprint), nrow=1L)) # fixes bug #97
   if (col.names == "none") {
-    cut_colnames(print_default(toprint, quote, na.print))
+    cut_colnames(do.call(print, c(list(toprint), print_args)))
   } else {
-    print_default(toprint, quote, na.print)
+    do.call(print, c(list(toprint), print_args))
   }
   if (trunc.cols && length(not_printed) > 0L)
     # prints names of variables not shown in the print
@@ -280,10 +281,5 @@ trunc_cols_message = function(not_printed, abbs, class, col.names){
     "%d variable(s) not shown: %s\n",
     n, brackify(paste0(not_printed, classes))
   )
-}
-
-# refactoring calls to print.default, #6089
-print_default = function(x, quote, na.print) {
-  print(x, right=TRUE, quote=quote, na.print=na.print)
 }
 
