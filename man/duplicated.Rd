@@ -88,7 +88,7 @@ If none exists, 0L is returned.
 }
 \examples{
 DT <- data.table(A = rep(1:3, each=4), B = rep(1:4, each=3),
-                  C = rep(1:2, 6), key = "A,B")
+                  C = rep(1:2, 6), key = c("A", "B"))
 duplicated(DT)
 unique(DT)
 
@@ -113,7 +113,7 @@ identical(unique(DT),DT[10]) # FALSE
 
 # fromLast=TRUE
 DT <- data.table(A = rep(1:3, each=4), B = rep(1:4, each=3),
-                 C = rep(1:2, 6), key = "A,B")
+                 C = rep(1:2, 6), key = c("A", "B"))
 duplicated(DT, by="B", fromLast=TRUE)
 unique(DT, by="B", fromLast=TRUE)
 
