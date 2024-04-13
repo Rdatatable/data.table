@@ -78,7 +78,7 @@ test.list <- list(
     N = 10^seq(3,8),
     setup = quote({
       set.seed(1L)
-      dt <- data.table(a = sample(N, N))
+      dt <- data.table(a = sample.int(N))
       setindexv(dt, "a")
     }),
     expr = quote(data.table:::shallow(dt)),
