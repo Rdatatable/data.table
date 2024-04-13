@@ -18464,3 +18464,11 @@ test(2256.6, fread('a;b\n1,14;5', verbose=TRUE), data.table(a=1.14, b=5L), outpu
 # helpful error about deleting during grouping, #1873
 DT = data.table(id = c(1, 1, 2, 2), a = 1:4, b = 5:8)
 test(2257, DT[ , c("c", "a") := .(a + 1, NULL), by=id], error="it's not possible to delete parts of a column")
+
+# new options on the road to deprecating "a,b" splitting in by= and key= in certain places, #4357
+test(2258.1, options=c(datatable.key.split.comma=FALSE), data.table(a=1L, b=2L, key="a,b"), error="some columns are not in the data.table") # tries to find one column named 'a,b'
+test(2258.2, options=c(datatable.by.split.comma=FALSE), data.table(a=1L, b=2L, key="a,b"), ans<-data.table(a=1L, b=2L, key=c("a", "b"))) # no interference from 2nd option
+test(2258.3, options=c(datatable.key.split.comma=FALSE), fread('a,b\n1,2\n', key="a,b"), error="some columns are not in the data.table")
+test(2258.4, options=c(datatable.by.split.comma=FALSE), fread('a,b\n1,2\n', key="a,b"), ans)
+test(2258.5, options=c(datatable.by.split.comma=FALSE), ans[, .N, by="a,b"], error="object 'a,b' not found")
+test(2258.6, options=c(datatable.key.split.comma=FALSE), ans[, .N, by="a,b"], ans[, .N, by=c("a", "b")])
