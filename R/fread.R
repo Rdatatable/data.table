@@ -341,7 +341,8 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     if (!is.character(key))
       stopf("key argument of data.table() must be a character vector naming columns (NB: col.names are applied before this)")
     if (length(key) == 1L) {
-      key = strsplit(key, split = ",", fixed = TRUE)[[1L]]
+      keySplit = strsplit(key, ",", fixed=TRUE)[[1L]]
+      if (isTRUE(getOption("datatable.key.split.comma", default=TRUE))) key = keySplit
     }
     setkeyv(ans, key)
   }

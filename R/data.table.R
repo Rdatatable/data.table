@@ -62,8 +62,9 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
   if (!is.null(key)) {
     if (!is.character(key)) stopf("key argument of data.table() must be character")
     if (length(key)==1L) {
-      key = strsplit(key,split=",")[[1L]]
-      # eg key="A,B"; a syntax only useful in key argument to data.table(), really.
+      keySplit = strsplit(key, ",", fixed=TRUE)[[1L]]
+      # eg key="A,B"; marked for deprecation in 1.16.0, mid-2024
+      if (isTRUE(getOption("datatable.key.split.comma", default=TRUE))) key = keySplit
     }
     setkeyv(ans,key)
   } else {
@@ -807,7 +808,8 @@ replace_dot_alias = function(e) {
         if (mode(bysub) == "character") {
           if (any(grepl(",", bysub, fixed = TRUE))) {
             if (length(bysub)>1L) stopf("'by' is a character vector length %d but one or more items include a comma. Either pass a vector of column names (which can contain spaces, but no commas), or pass a vector length 1 containing comma separated column names. See ?data.table for other possibilities.", length(bysub))
-            bysub = strsplit(bysub, split=",", fixed=TRUE)[[1L]]
+            bySplit = strsplit(bysub, ",", fixed=TRUE)[[1L]]
+            if (isTRUE(getOption("datatable.by.split.comma", default=TRUE))) bysub = bySplit
           }
           bysub = gsub("^`(.*)`$", "\\1", bysub) # see test 138
           nzidx = nzchar(bysub)

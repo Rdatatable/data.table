@@ -2,10 +2,6 @@
 
 # data.table [v1.15.99](https://github.com/Rdatatable/data.table/milestone/30)  (in development)
 
-## BREAKING CHANGES
-
-1. Usage of comma-separated character strings representing multiple columns in `data.table()`'s `key=` argument and `[`'s `by=`/`keyby=` arguments is deprecated, [#4357](https://github.com/Rdatatable/data.table/issues/4357). While sometimes convenient, ultimately it introduces inconsistency in implementation that is not worth the benefit to maintain. NB: this hard deprecation is temporary in the development version. Before release, it will soften into the normal data.table deprecation cycle starting from introducing the new behavior with an option, then changing the default for the option with a warning, then upgrading the warning to an error before finally removing the option and the error.
-
 ## NEW FEATURES
 
 1. `print.data.table()` shows empty (`NULL`) list column entries as `[NULL]` for emphasis. Previously they would just print nothing (same as for empty string). Part of [#4198](https://github.com/Rdatatable/data.table/issues/4198). Thanks @sritchie73 for the proposal and fix.
@@ -75,6 +71,8 @@
 10. `test.data.table()` runs correctly in more sessions, in particular those where the `digits` or `warn` settings are not their defaults (`7` and `0`, respectively), [#5285](https://github.com/Rdatatable/data.table/issues/5285). Thanks @OfekShilon for the report and suggested fix and @MichaelChirico for the PR.
 
 11. Using `print.data.table` when truncation is needed with `row.names = FALSE` prints the indicator `---` in every value column instead of adding a blank column where the `rownames` would have been just to include `---`, [#4083](https://github.com/Rdatatable/data.table/issues/4083). Thanks @MichaelChirico for the report and @joshhwuu for the fix.
+
+12. Usage of comma-separated character strings representing multiple columns in `data.table()`'s `key=` argument and `[` and `fread()`'s `by=`/`keyby=` arguments is slated for deprecation, [#4357](https://github.com/Rdatatable/data.table/issues/4357). While sometimes convenient, ultimately it introduces inconsistency in implementation that is not worth the benefit to maintain. This release comes with two new options, `datatable.key.split.comma` and `datatable.by.split.comma`, both defaulting in this release to `TRUE`, corresponding to the arguments `key=` (in `data.table()` and `fread()`) and `by=` and `keyby=` (in `[.data.table`), respectively. You can start future-proofing your usage by either changing to supply a vector (e.g. `c("a", "b")` instead of `"a,b"`) or by setting these options to `FALSE`; otherwise, the next release will start warning about the pending behavior change, and the release after that will start erroring.
 
 # data.table [v1.15.0](https://github.com/Rdatatable/data.table/milestone/29)  (30 Jan 2024)
 
