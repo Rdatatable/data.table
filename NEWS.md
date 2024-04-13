@@ -76,6 +76,8 @@
 
 11. Using `print.data.table` when truncation is needed with `row.names = FALSE` prints the indicator `---` in every value column instead of adding a blank column where the `rownames` would have been just to include `---`, [#4083](https://github.com/Rdatatable/data.table/issues/4083). Thanks @MichaelChirico for the report and @joshhwuu for the fix.
 
+12. `print.data.table` now honors `na.print`, as seen in `print.default`, allowing for string replacement of `NA` values when printing. Thanks @HughParsonage for the report and @joshhwuu for the fix.
+
 # data.table [v1.15.0](https://github.com/Rdatatable/data.table/milestone/29)  (30 Jan 2024)
 
 ## BREAKING CHANGE

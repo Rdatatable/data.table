@@ -18464,3 +18464,20 @@ test(2256.6, fread('a;b\n1,14;5', verbose=TRUE), data.table(a=1.14, b=5L), outpu
 # helpful error about deleting during grouping, #1873
 DT = data.table(id = c(1, 1, 2, 2), a = 1:4, b = 5:8)
 test(2257, DT[ , c("c", "a") := .(a + 1, NULL), by=id], error="it's not possible to delete parts of a column")
+
+# testing printing data.tables with na.print, #3152
+DT = data.table(x=c(NA, "a", "b"))
+test(2258.1, capture.output(print(DT, na.print=".")), c("   x", "1: .", "2: a", "3: b"))
+test(2258.2, capture.output(print(DT, na.print="_")), c("   x", "1: _", "2: a", "3: b"))
+test(2258.3, capture.output(print(DT, na.print="NA")), c("    x", "1: NA", "2:  a", "3:  b"))
+test(2258.4, capture.output(print(DT, na.print=TRUE)), error="invalid 'na.print' specification")
+test(2258.5, capture.output(print(DT, na.print=".", quote=TRUE)), c('   "x"', "1:   .", '2: "a"', '3: "b"'))
+test(2258.6, capture.output(print(DT, na.print=".", right=TRUE)), c("   x", "1: .", "2: a", "3: b"))
+# tests for other call sites
+# col.names="none"
+test(2258.7, capture.output(print(DT, na.print=".", col.names="none")), c("1: .", "2: a", "3: b"))
+# table requires splitting, col.names="none"
+DT = data.table(x = c(NA, "e", "b", "j", "w", NA))
+test(2258.8, capture.output(print(DT, na.print=".", topn=2, col.names="none")), c(" 1: .", " 2: e", "---  ", " 5: w", " 6: ."))
+# table requires splitting, col.names!="none"
+test(2258.9, capture.output(print(DT, na.print=".", topn=2)), c("    x", " 1: .", " 2: e", "---  ", " 5: w", " 6: ."))

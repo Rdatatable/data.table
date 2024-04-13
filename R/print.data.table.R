@@ -8,6 +8,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
                print.keys=getOption("datatable.print.keys"),
                trunc.cols=getOption("datatable.print.trunc.cols"),
                quote=FALSE,
+               na.print=NULL,
                timezone=FALSE, ...) {
   # topn  - print the top topn and bottom topn rows with '---' inbetween (5)
   # nrows - under this the whole (small) table is printed, unless topn is provided (100)
@@ -118,9 +119,9 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     }
     rownames(toprint) = format(rownames(toprint), justify="right")
     if (col.names == "none") {
-      cut_colnames(print(toprint, right=TRUE, quote=quote))
+      cut_colnames(print(toprint, right=TRUE, quote=quote, na.print=na.print))
     } else {
-      print(toprint, right=TRUE, quote=quote)
+      print(toprint, right=TRUE, quote=quote, na.print=na.print)
     }
     if (trunc.cols && length(not_printed) > 0L)
       # prints names of variables not shown in the print
@@ -133,9 +134,9 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     #   option to shut this off per request of Oleg Bondar on SO, #1482
     toprint=rbind(toprint, matrix(if (quote) old else colnames(toprint), nrow=1L)) # fixes bug #97
   if (col.names == "none") {
-    cut_colnames(print(toprint, right=TRUE, quote=quote))
+    cut_colnames(print(toprint, right=TRUE, quote=quote, na.print=na.print))
   } else {
-    print(toprint, right=TRUE, quote=quote)
+    print(toprint, right=TRUE, quote=quote, na.print=na.print)
   }
   if (trunc.cols && length(not_printed) > 0L)
     # prints names of variables not shown in the print
