@@ -1,8 +1,8 @@
 # A function to customize R package metadata and source files to facilitate version-specific installation and testing.
 #
-# This is specifically tailored for handling data.table which requires specific changes in non-standard files (such as the object file name in `Makevars` and version checking code in `onLoad.R`) 
+# This is specifically tailored for handling data.table which requires specific changes in non-standard files (such as the object file name in Makevars and version checking code in onLoad.R) 
 # to support testing across different versions (base and HEAD for PRs, commits associated with historical regressions, etc.) of the package. 
-# It appends a SHA1 hash to the package name (`PKG.SHA`), ensuring each version can be installed and tested separately.
+# It appends a SHA1 hash to the package name (PKG.SHA), ensuring each version can be installed and tested separately.
 #
 # @param old.Package Current name of the package.
 # @param new.Package New name of the package, including a SHA hash.
@@ -17,10 +17,10 @@
 # - NAMESPACE, changing namespace settings for dynamic linking.
 #
 # @examples
-# pkg.edit.fun("data.table", "data.table.some_40_digit_SHA1_hash", "some_40_digit_SHA1_hash", "/path/to/data.table")
+# pkg.edit.fun("data.table", "data.table.some_SHA1_hash", "some_SHA1_hash", "/path/to/data.table")
 #
 # @return None (performs in-place file modifications)
-# @note This setup is typically unnecessary for most packages but essential for `data.table` due to its unique configuration.
+# @note This setup is typically unnecessary for most packages but essential for data.table due to its unique configuration.
 pkg.edit.fun = function(old.Package, new.Package, sha, new.pkg.path) {
       pkg_find_replace <- function(glob, FIND, REPLACE) {
         atime::glob_find_replace(file.path(new.pkg.path, glob), FIND, REPLACE)
@@ -54,6 +54,22 @@ pkg.edit.fun = function(old.Package, new.Package, sha, new.pkg.path) {
         paste0('useDynLib(', new.Package_))
     }
 
+# A list of performance tests.
+# 
+# Each entry in this list corresponds to a performance test and contains a sublist with three mandatory arguments:
+# - N: A numeric sequence of data sizes to vary.
+# - setup: An expression evaluated for every data size before measuring time/memory.
+# - expr: An expression that will be evaluated for benchmarking performance across different git commit versions. 
+#         This must call a function from data.table using a syntax with double or triple colon prefix.
+#         The package name before the colons will be replaced by a new package name that uses the commit SHA hash. 
+#         (For instance, data.table:::[.data.table will become data.table.some_40_digit_SHA1_hash:::[.data.table)
+#
+# Optional parameters that may be useful to configure tests:
+# - times: Number of times each expression is evaluated (default is 10).
+# - seconds.limit: The maximum median timing (in seconds) of an expression. No timings for larger N are computed past that threshold.
+# - sha.vec: Named character vector or a list of vectors that specify data.table-specific commit SHAs for testing across those different git commit versions.
+#            For historical regressions, use 'Before', 'Regression', and 'Fixed' (otherwise something like 'Slow' or 'Fast' ideally).
+# @note Please check https://github.com/tdhock/atime/blob/main/vignettes/data.table.Rmd for more information.
 test.list <- list(
   # Performance regression discussed in: https://github.com/Rdatatable/data.table/issues/4311 
   # Fixed in: https://github.com/Rdatatable/data.table/pull/4440
