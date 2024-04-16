@@ -110,12 +110,13 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     # When nrow(toprint) = 1, attributes get lost in the subset,
     #   function below adds those back when necessary
     toprint = toprint_subset(toprint, cols_to_print)
+    trunc.cols <- length(not_printed) > 0L
   }
   print_default = function(x) {
     if (col.names != "none") { cut_colnames = identity }
     cut_colnames(print(x, right=TRUE, quote=quote, na.print=na.print))
     # prints names of variables not shown in the print
-    if (trunc.cols && length(not_printed) > 0L) trunc_cols_message(not_printed, abbs, class, col.names)
+    if (trunc.cols) trunc_cols_message(not_printed, abbs, class, col.names)
   }
   if (printdots) {
     if (isFALSE(row.names)) {
