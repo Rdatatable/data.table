@@ -2692,14 +2692,8 @@ setcolorder = function(x, neworder=key(x), before=NULL, after=NULL,skip_absent=F
     stopf("Provide either before= or after= but not both")
   if (length(before)>1L || length(after)>1L)
     stopf("before=/after= accept a single column name or number, not more than one")
-  if (!isTRUEorFALSE(skip_absent))
-    stopf("skip_absent should be TRUE or FALSE")
-  if (skip_absent && is.character(neworder)){
-    neworder = intersect(neworder, colnames(x))
-  } else if (skip_absent && is.numeric(neworder)){
-    neworder = intersect(neworder, seq_along(x))
-  }
-  neworder = colnamesInt(x, neworder, check_dups=FALSE)  # dups are now checked inside Csetcolorder below
+  neworder = colnamesInt(x, neworder, check_dups=FALSE, skip_absent=skip_absent)  # dups are now checked inside Csetcolorder below
+  neworder = setdiff(neworder, 0) # tests 498.11, 498.13 fail w/o this
   if (length(before))
     neworder = c(setdiff(seq_len(colnamesInt(x, before) - 1L), neworder), neworder)
   if (length(after))
