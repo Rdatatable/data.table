@@ -2,12 +2,15 @@
 title: "Using .SD for Data Analysis"
 date: "`r Sys.Date()`"
 output:
-  rmarkdown::html_vignette:
-    toc: true
-    number_sections: true
+  markdown::html_format:
+    options:
+      toc: true
+      number_sections: true
+    meta:
+      css: [default, css/toc.css]
 vignette: >
   %\VignetteIndexEntry{Using .SD for Data Analysis}
-  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEngine{knitr::knitr}
   \usepackage[utf8]{inputenc}
 ---
 
@@ -22,6 +25,7 @@ knitr::opts_chunk$set(
   out.width = '100%',
   dpi = 144
 )
+.old.th = setDTthreads(1)
 ```
 
 This vignette will explain the most common ways to use the `.SD` variable in your `data.table` analyses. It is an adaptation of [this answer](https://stackoverflow.com/a/47406952/3576984) given on StackOverflow.
@@ -34,7 +38,7 @@ The simpler usage of `.SD` is for column subsetting (i.e., when `.SDcols` is spe
 
 ## Loading and Previewing Lahman Data
 
-To give this a more real-world feel, rather than making up data, let's load some data sets about baseball from the [Lahman database](https://www.seanlahman.com/baseball-archive/statistics/). In typical R usage, we'd simply load these data sets from the `Lahman` R package; in this vignette, we've pre-downloaded them directly from the package's GitHub page instead.
+To give this a more real-world feel, rather than making up data, let's load some data sets about baseball from the [Lahman database](https://github.com/cdalzell/Lahman). In typical R usage, we'd simply load these data sets from the `Lahman` R package; in this vignette, we've pre-downloaded them directly from the package's GitHub page instead.
 
 ```{r download_lahman}
 load('Teams.RData')
@@ -46,7 +50,7 @@ setDT(Pitching)
 Pitching
 ```
 
-Readers up on baseball lingo should find the tables' contents familiar; `Teams` records some statistics for a given team in a given year, while `Pitching` records statistics for a given pitcher in a given year. Please do check out the [documentation](https://www.seanlahman.com/files/database/readme2017.txt) and explore the data yourself a bit before proceeding to familiarize yourself with their structure.
+Readers up on baseball lingo should find the tables' contents familiar; `Teams` records some statistics for a given team in a given year, while `Pitching` records statistics for a given pitcher in a given year. Please do check out the [documentation](https://github.com/cdalzell/Lahman) and explore the data yourself a bit before proceeding to familiarize yourself with their structure.
 
 # `.SD` on Ungrouped Data
 
@@ -73,7 +77,15 @@ The first way to impact what `.SD` is is to limit the _columns_ contained in `.S
 Pitching[ , .SD, .SDcols = c('W', 'L', 'G')]
 ```
 
-This is just for illustration and was pretty boring. But even this simply usage lends itself to a wide variety of highly beneficial / ubiquitous data manipulation operations:
+This is just for illustration and was pretty boring. In addition to accepting a character vector, `.SDcols` also accepts:
+
+1. any function such as `is.character` to filter _columns_
+2. the function^{*} `patterns()` to filter _column names_ by regular expression
+3. integer and logical vectors
+
+*see `?patterns` for more details
+
+This simple usage lends itself to a wide variety of highly beneficial / ubiquitous data manipulation operations:
 
 ## Column Type Conversion
 
@@ -87,52 +99,40 @@ We notice that the following columns are stored as `character` in the `Teams` da
 # teamIDretro: Team ID used by Retrosheet
 fkt = c('teamIDBR', 'teamIDlahman45', 'teamIDretro')
 # confirm that they're stored as `character`
-Teams[ , sapply(.SD, is.character), .SDcols = fkt]
+str(Teams[ , ..fkt])
 ```
 
-If you're confused by the use of `sapply` here, note that it's quite similar for base R `data.frames`:
-
-```{r identify_factors_as_df}
-setDF(Teams) # convert to data.frame for illustration
-sapply(Teams[ , fkt], is.character)
-setDT(Teams) # convert back to data.table
-```
-
-The key to understanding this syntax is to recall that a `data.table` (as well as a `data.frame`) can be considered as a `list` where each element is a column -- thus, `sapply`/`lapply` applies the `FUN` argument (in this case, `is.character`) to each _column_ and returns the result as `sapply`/`lapply` usually would.
-
-The syntax to now convert these columns to `factor` is very similar -- simply add the `:=` assignment operator:
+The syntax to now convert these columns to `factor` is simple:
 
 ```{r assign_factors}
-Teams[ , (fkt) := lapply(.SD, factor), .SDcols = fkt]
+Teams[ , names(.SD) := lapply(.SD, factor), .SDcols = patterns('teamID')]
 # print out the first column to demonstrate success
 head(unique(Teams[[fkt[1L]]]))
 ```
 
-Note that we must wrap `fkt` in parentheses `()` to force `data.table` to interpret this as column names, instead of trying to assign a column named `'fkt'`.
+Note: 
 
-Actually, the `.SDcols` argument is quite flexible; above, we supplied a `character` vector of column names. In other situations, it is more convenient to supply an `integer` vector of column _positions_ or a `logical` vector dictating include/exclude for each column. `.SDcols` even accepts regular expression-based pattern matching.
+1. The `:=` is an assignment operator to update the `data.table` in place without making a copy. See [reference semantics](https://cran.r-project.org/web/packages/data.table/vignettes/datatable-reference-semantics.html) for more. 
+2. The LHS, `names(.SD)`, indicates which columns we are updating - in this case we update the entire `.SD`.
+3. The RHS, `lapply()`, loops through each column of the `.SD` and converts the column to a factor.
+4. We use the `.SDcols` to only select columns that have pattern of `teamID`.
+
+Again, the `.SDcols` argument is quite flexible; above, we supplied `patterns` but we could have also supplied `fkt` or any `character` vector of column names. In other situations, it is more convenient to supply an `integer` vector of column _positions_ or a `logical` vector dictating include/exclude for each column. Finally, the use of a function to filter columns is very helpful.
 
 For example, we could do the following to convert all `factor` columns to `character`:
 
 ```{r sd_as_logical}
-# while .SDcols accepts a logical vector,
-#   := does not, so we need to convert to column
-#   positions with which()
-fkt_idx = which(sapply(Teams, is.factor))
-Teams[ , (fkt_idx) := lapply(.SD, as.character), .SDcols = fkt_idx]
-head(unique(Teams[[fkt_idx[1L]]]))
+fct_idx = Teams[, which(sapply(.SD, is.factor))] # column numbers to show the class changing
+str(Teams[[fct_idx[1L]]])
+Teams[ , names(.SD) := lapply(.SD, as.character), .SDcols = is.factor]
+str(Teams[[fct_idx[1L]]])
 ```
 
 Lastly, we can do pattern-based matching of columns in `.SDcols` to select all columns which contain `team` back to `factor`:
 
 ```{r sd_patterns}
 Teams[ , .SD, .SDcols = patterns('team')]
-
-# now convert these columns to factor;
-#   value = TRUE in grep() is for the LHS of := to
-#   get column names instead of positions
-team_idx = grep('team', names(Teams), value = TRUE)
-Teams[ , (team_idx) := lapply(.SD, factor), .SDcols = team_idx]
+Teams[ , names(.SD) := lapply(.SD, factor), .SDcols = patterns('team')]
 ```
 
 ** A proviso to the above: _explicitly_ using column numbers (like `DT[ , (1) := rnorm(.N)]`) is bad practice and can lead to silently corrupted code over time if column positions change. Even implicitly using numbers can be dangerous if we don't keep smart/strict control over the ordering of when we create the numbered index and when we use it.
@@ -193,13 +193,14 @@ Pitching[rank_in_team == 1, team_performance :=
            Teams[.SD, Rank, on = c('teamID', 'yearID')]]
 ```
 
-Note that the `x[y]` syntax returns `nrow(y)` values (i.e., it's a right join), which is why `.SD` is on the right in `Teams[.SD]` (since the RHS of `:=` in this case requires `nrow(Pitching[rank_in_team == 1])` values.
+Note that the `x[y]` syntax returns `nrow(y)` values (i.e., it's a right join), which is why `.SD` is on the right in `Teams[.SD]` (since the RHS of `:=` in this case requires `nrow(Pitching[rank_in_team == 1])` values).
 
 # Grouped `.SD` operations
 
 Often, we'd like to perform some operation on our data _at the group level_. When we specify `by =` (or `keyby = `), the mental model for what happens when `data.table` processes `j` is to think of your `data.table` as being split into many component sub-`data.table`s, each of which corresponds to a single value of your `by` variable(s):
 
-![Grouping, Illustrated](plots/grouping_illustration.png 'A visual depiction of how grouping works. On the left is a grid. The first column is titled "ID COLUMN" with values the capital letters A through G, and the rest of the data is unlabelled, but is in a darker color and simply has "Data" written to indicate that's arbitrary. A right arrow shows how this data is split into groups. Each capital letter A through G has a grid on the right-hand side; the grid on the left has been subdivided to create that on the right.')
+![Grouping, Illustrated](plots/grouping_illustration.png)
+<!-- 'A visual depiction of how grouping works. On the left is a grid. The first column is titled "ID COLUMN" with values the capital letters A through G, and the rest of the data is unlabelled, but is in a darker color and simply has "Data" written to indicate that's arbitrary. A right arrow shows how this data is split into groups. Each capital letter A through G has a grid on the right-hand side; the grid on the left has been subdivided to create that on the right.' -->
 
 In the case of grouping, `.SD` is multiple in nature -- it refers to _each_ of these sub-`data.table`s, _one-at-a-time_ (slightly more accurately, the scope of `.SD` is a single sub-`data.table`). This allows us to concisely express an operation that we'd like to perform on _each sub-`data.table`_ before the re-assembled result is returned to us.
 
@@ -250,3 +251,7 @@ abline(v = overall_coef, lty = 2L, col = 'red')
 While there is indeed a fair amount of heterogeneity, there's a distinct concentration around the observed overall value.
 
 The above is just a short introduction of the power of `.SD` in facilitating beautiful, efficient code in `data.table`!
+
+```{r, echo=FALSE}
+setDTthreads(.old.th)
+```

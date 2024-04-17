@@ -1,11 +1,22 @@
 #include "data.table.h"
 
+bool within_int32_repres(double x) {
+  // N.B. (int)2147483647.99 is not undefined behaviour since s 6.3.1.4 of the C
+  // standard states that behaviour is undefined only if the integral part of a
+  // finite value of standard floating type cannot be represented.
+  return R_FINITE(x) && x < 2147483648 && x > -2147483648;
+}
+
+bool within_int64_repres(double x) {
+  return R_FINITE(x) && x <= (double)INT64_MAX && x >= (double)INT64_MIN;
+}
+
 static R_xlen_t firstNonInt(SEXP x) {
   R_xlen_t n=xlength(x), i=0;
   const double *dx = REAL(x);
   while (i<n &&
          ( ISNA(dx[i]) ||
-         ( R_FINITE(dx[i]) && dx[i]==(int)(dx[i]) && (int)(dx[i])!=NA_INTEGER))) {  // NA_INTEGER == INT_MIN == -2147483648
+         (within_int32_repres(dx[i]) && dx[i]==(int)(dx[i])))) {
     i++;
   }
   return i==n ? 0 : i+1;
@@ -86,16 +97,20 @@ SEXP allNAR(SEXP x) {
  * adds validation for:
  *   correct range [1,ncol], and if type real checks whole integer
  *   existing columns for character
- *   optionally check for no duplicates
+ *   optionally (check_dups) check for no duplicates
+ *   optionally (skip_absent) skip (return 0) for numbers outside the range or not naming extant columns
  */
-SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups) {
+SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent) {
   if (!isNewList(x))
     error(_("'x' argument must be data.table compatible"));
   if (!IS_TRUE_OR_FALSE(check_dups))
     error(_("%s must be TRUE or FALSE"), "check_dups");
+  if (!IS_TRUE_OR_FALSE(skip_absent))
+    error(_("%s must be TRUE or FALSE"), "skip_absent");
   int protecti = 0;
   R_len_t nx = length(x);
   R_len_t nc = length(cols);
+  bool bskip_absent = LOGICAL(skip_absent)[0];
   SEXP ricols = R_NilValue;
   if (isNull(cols)) { // seq_along(x)
     ricols = PROTECT(allocVector(INTSXP, nx)); protecti++;
@@ -105,16 +120,21 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups) {
     ricols = PROTECT(allocVector(INTSXP, 0)); protecti++;
   } else if (isInteger(cols) || isReal(cols)) {
     if (isInteger(cols)) {
-      ricols = cols;
+      if (bskip_absent) { // we might overwrite values with 0, so make a copy
+        ricols = PROTECT(duplicate(cols)); protecti++;
+      } else
+        ricols = cols;
     } else if (isReal(cols)) {
       if (!isRealReallyInt(cols))
         error(_("argument specifying columns is type 'double' and one or more items in it are not whole integers"));
       ricols = PROTECT(coerceVector(cols, INTSXP)); protecti++;
     }
     int *icols = INTEGER(ricols);
-    for (int i=0; i<nc; i++) {
-      if ((icols[i]>nx) || (icols[i]<1))
+    for (int i=0; i<nc; ++i) {
+      if ((!bskip_absent && icols[i]>nx) || (icols[i]<1))
         error(_("argument specifying columns received non-existing column(s): cols[%d]=%d"), i+1, icols[i]); // handles NAs also
+      else if(bskip_absent && icols[i]>nx)
+        icols[i] = 0L;
     }
   } else if (isString(cols)) {
     SEXP xnames = PROTECT(getAttrib(x, R_NamesSymbol)); protecti++;
@@ -122,9 +142,11 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups) {
       error(_("'x' argument data.table has no names"));
     ricols = PROTECT(chmatch(cols, xnames, 0)); protecti++;
     int *icols = INTEGER(ricols);
-    for (int i=0; i<nc; i++) {
-      if (icols[i]==0)
-        error(_("argument specifying columns received non-existing column(s): cols[%d]='%s'"), i+1, CHAR(STRING_ELT(cols, i))); // handles NAs also
+    if (!bskip_absent) {
+      for (int i=0; i<nc; ++i) {
+        if (icols[i]==0)
+          error(_("argument specifying columns received non-existing column(s): cols[%d]='%s'"), i+1, CHAR(STRING_ELT(cols, i))); // handles NAs also
+      }
     }
   } else {
     error(_("argument specifying columns must be character or numeric"));
@@ -311,7 +333,7 @@ SEXP coerceUtf8IfNeeded(SEXP x) {
   return(ans);
 }
 
-// class1 is used by coerseAs only, which is used by frollR.c and nafill.c only
+// class1 is used by coerceAs only, which is used by frollR.c and nafill.c only
 const char *class1(SEXP x) {
   SEXP cl = getAttrib(x, R_ClassSymbol);
   if (length(cl))
@@ -348,7 +370,7 @@ SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg) {
   if (!isNull(getAttrib(x, R_DimSymbol)))
     error(_("'x' must not be matrix or array"));
   if (!isNull(getAttrib(as, R_DimSymbol)))
-    error(_("'as' must not be matrix or array"));
+    error(_("input must not be matrix or array"));
   bool verbose = GetVerbose()>=2; // verbose level 2 required
   if (!LOGICAL(copyArg)[0] && TYPEOF(x)==TYPEOF(as) && class1(x)==class1(as)) {
     if (verbose)
@@ -378,6 +400,13 @@ SEXP dt_zlib_version(void) {
   snprintf(out, 70, _("zlib header files were not found when data.table was compiled"));
 #endif
   return ScalarString(mkChar(out));
+}
+SEXP dt_has_zlib(void) {
+#ifndef NOZLIB
+  return ScalarLogical(1);
+#else
+  return ScalarLogical(0);
+#endif
 }
 
 SEXP startsWithAny(const SEXP x, const SEXP y, SEXP start) {

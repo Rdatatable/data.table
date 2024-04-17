@@ -1,5 +1,5 @@
 fread = function(
-input="", file=NULL, text=NULL, cmd=NULL, sep="auto", sep2="auto", dec=".", quote="\"", nrows=Inf, header="auto",
+input="", file=NULL, text=NULL, cmd=NULL, sep="auto", sep2="auto", dec="auto", quote="\"", nrows=Inf, header="auto",
 na.strings=getOption("datatable.na.strings","NA"), stringsAsFactors=FALSE, verbose=getOption("datatable.verbose",FALSE),
 skip="__auto__", select=NULL, drop=NULL, colClasses=NULL, integer64=getOption("datatable.integer64","integer64"),
 col.names, check.names=FALSE, encoding="unknown", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, index=NULL,
@@ -16,17 +16,19 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     else if (sep=="auto") sep=""      # sep=="" at C level means auto sep
     else stopifnot( nchar(sep)==1L )  # otherwise an actual character to use as sep
   }
-  stopifnot( is.character(dec), length(dec)==1L, nchar(dec)==1L )
+  stopifnot( is.character(dec), length(dec)==1L)
+  if (dec == "auto") dec = "" else stopifnot(nchar(dec) == 1L)
   # handle encoding, #563
   if (length(encoding) != 1L || !encoding %chin% c("unknown", "UTF-8", "Latin-1")) {
     stopf("Argument 'encoding' must be 'unknown', 'UTF-8' or 'Latin-1'.")
   }
   stopifnot(
-    isTRUEorFALSE(strip.white), isTRUEorFALSE(blank.lines.skip), isTRUEorFALSE(fill), isTRUEorFALSE(showProgress),
+    isTRUEorFALSE(strip.white), isTRUEorFALSE(blank.lines.skip), isTRUEorFALSE(fill) || is.numeric(fill) && length(fill)==1L && fill >= 0L, isTRUEorFALSE(showProgress),
     isTRUEorFALSE(verbose), isTRUEorFALSE(check.names), isTRUEorFALSE(logical01), isTRUEorFALSE(keepLeadingZeros), isTRUEorFALSE(yaml),
     isTRUEorFALSE(stringsAsFactors) || (is.double(stringsAsFactors) && length(stringsAsFactors)==1L && 0.0<=stringsAsFactors && stringsAsFactors<=1.0),
     is.numeric(nrows), length(nrows)==1L
   )
+  fill=as.integer(fill)
   nrows=as.double(nrows) #4686
   if (is.na(nrows) || nrows<0) nrows=Inf   # accept -1 to mean Inf, as read.table does
   if (identical(header,"auto")) header=NA
@@ -76,17 +78,13 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     if (w <- startsWithAny(file, c("https://", "ftps://", "http://", "ftp://", "file://"))) {  # avoid grepl() for #2531
       # nocov start
       tmpFile = tempfile(fileext = paste0(".",tools::file_ext(file)), tmpdir=tmpdir)  # retain .gz extension in temp filename so it knows to be decompressed further below
-      if (w<=2L) { # https: or ftps:
-        if (!requireNamespace("curl", quietly = TRUE))
-          stopf("URL requires https:// connection for which fread() requires 'curl' package which cannot be found. Please install 'curl' using 'install.packages('curl')'.") # nocov
-        
-        curl::curl_download(file, tmpFile, mode="wb", quiet = !showProgress)
-      } else {
-        method = if (w==5L) "internal"  # force 'auto' when file: to ensure we don't use an invalid option (e.g. wget), #1668
-                 else getOption("download.file.method", default="auto")  # http: or ftp:
-        download.file(file, tmpFile, method=method, mode="wb", quiet=!showProgress)
-        # In text mode on Windows-only, R doubles up \r to make \r\r\n line endings. mode="wb" avoids that. See ?connections:"CRLF"
+      if (w<=2L && base::getRversion()<"3.2.2") { # https: or ftps: can be read by default by download.file() since 3.2.2
+        stopf("URL requires download.file functionalities from R >=3.2.2. You can still manually download the file and fread the downloaded file.")
       }
+      method = if (w==5L) "internal"  # force 'auto' when file: to ensure we don't use an invalid option (e.g. wget), #1668
+               else getOption("download.file.method", default="auto")  # http: or ftp:
+      # In text mode on Windows-only, R doubles up \r to make \r\r\n line endings. mode="wb" avoids that. See ?connections:"CRLF"
+      download.file(file, tmpFile, method=method, mode="wb", quiet=!showProgress)
       file = tmpFile
       on.exit(unlink(tmpFile), add=TRUE)
       # nocov end
@@ -135,7 +133,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     if (!allNA(colClasses)) stopf("colClasses is type 'logical' which is ok if all NA but it has some TRUE or FALSE values in it which is not allowed. Please consider the drop= or select= argument instead. See ?fread.")
     colClasses = NULL
   }
-  if (!is.null(colClasses) && is.atomic(colClasses)) {
+  if (!is.null(colClasses) && is.atomic(colClasses)) { ## future R can use  if (is.atomic(.))
     if (!is.character(colClasses)) stopf("colClasses is not type list or character vector")
     if (!length(colClasses)) {
       colClasses=NULL;
@@ -343,7 +341,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     if (!is.character(key))
       stopf("key argument of data.table() must be a character vector naming columns (NB: col.names are applied before this)")
     if (length(key) == 1L) {
-      key = strsplit(key, split = ",", fixed = TRUE)[[1L]]
+      if (key != strsplit(key,split=",")[[1L]]) stopf("Usage of comma-separated literals in %s is deprecated, please split such entries yourself before passing to data.table", "key=")
     }
     setkeyv(ans, key)
   }

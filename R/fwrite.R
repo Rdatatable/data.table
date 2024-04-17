@@ -27,7 +27,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   if (!missing(logical01) && !missing(logicalAsInt))
     stopf("logicalAsInt has been renamed logical01. Use logical01 only, not both.")
   if (!missing(logicalAsInt)) {
-    # TODO: warningf("logicalAsInt has been renamed logical01 for consistency with fread. It will work fine but please change to logical01 at your convenience so we can remove logicalAsInt in future.")
+    warningf("logicalAsInt has been renamed logical01 for consistency with fread. It works fine for now but please change to logical01 at your convenience so we can remove logicalAsInt in future.")
     logical01 = logicalAsInt
     logicalAsInt=NULL
   }
@@ -38,7 +38,13 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   # validate arguments
   if (is.matrix(x)) { # coerce to data.table if input object is matrix
     messagef("x being coerced from class: matrix to data.table")
-    x = as.data.table(x)
+    # keep row.names for matrix input #5315
+    if (row.names && !is.null(rownames(x))) {
+      row.names = FALSE
+      x = as.data.table(x, keep.rownames="")
+    } else {
+      x = as.data.table(x)
+    }
   }
   stopifnot(is.list(x),
     identical(quote,"auto") || isTRUEorFALSE(quote),
@@ -114,4 +120,6 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
         showProgress, is_gzip, bom, yaml, verbose, encoding)
   invisible()
 }
+
+haszlib = function() .Call(Cdt_has_zlib)
 

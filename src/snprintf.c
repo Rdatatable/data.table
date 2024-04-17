@@ -1,7 +1,7 @@
 // For translations (#4402) we need positional specifiers (%n$), a non-C99 POSIX extension.
 // On Linux and Mac, standard snprintf supports positional specifiers.
 // On Windows, we tried many things but just couldn't achieve linking to _sprintf_p. Even
-// if we managed that on AppVeyor we may have fragility in the future on Windows given
+// if we managed that on AppVeyor (now GHA) we may have fragility in the future on Windows given
 // varying Windows versions, compile environments/flags, and dll libraries. This may be
 // why R uses a third party library, trio, on Windows. But R does not expose trio for use
 // by packages.
@@ -214,7 +214,7 @@ SEXP test_dt_win_snprintf(void)
 
   int res = dt_win_snprintf(buff, 10, "%4$d%2$d%3$d%5$d%1$d", 111, 222, 33, 44, 555); // fmt longer than n
   if (strlen(buff)!=9 || strcmp(buff, "442223355"))                                 error(_("dt_win_snprintf test %d failed: %s"), 9, buff);
-  if (res!=13) /* should return what would have been written if not chopped */      error(_("dt_win_snprintf test %d failed: %s"), 10, res);
+  if (res!=13) /* should return what would have been written if not chopped */      error(_("dt_win_snprintf test %d failed: %d"), 10, res);
 
   dt_win_snprintf(buff, 39, "%l", 3);
   if (strlen(buff)!=38 || strcmp(buff, "0 %l    does not end with recognized t"))   error(_("dt_win_snprintf test %d failed: %s"), 11, buff);
