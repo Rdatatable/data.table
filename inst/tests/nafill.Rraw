@@ -149,8 +149,22 @@ test(4.20, colnamesInt(dt, integer()), integer())
 test(4.21, colnamesInt(dt, NULL), seq_along(dt))
 test(4.22, colnamesInt("asd", 1), error="must be data.table compatible")
 test(4.23, colnamesInt(dt, 1, check_dups="a"), error="check_dups")
+test(4.24, colnamesInt(dt, c("a", "e"), skip_absent=TRUE), c(1L,0L))
+test(4.25, colnamesInt(dt, c(1L, 4L), skip_absent=TRUE), c(1L,0L))
+test(4.26, colnamesInt(dt, c(1, 4), skip_absent=TRUE), c(1L,0L))
+test(4.27, colnamesInt(dt, c("a", NA), skip_absent=TRUE), c(1L,0L))
+test(4.28, colnamesInt(dt, c(1L, 0L), skip_absent=TRUE), error="received non-existing column*.*0")
+test(4.29, colnamesInt(dt, c(1, -5), skip_absent=TRUE), error="received non-existing column*.*-5")
+test(4.30, colnamesInt(dt, c(1, 4), skip_absent=NULL), error="skip_absent must be TRUE or FALSE")
+test(4.31, colnamesInt(dt, c(1L, 1000L), skip_absent=TRUE), c(1L,0L))
+cols=c(1L,100L)
+test(4.32, colnamesInt(dt, cols, skip_absent=TRUE), c(1L, 0L))
+test(4.33, cols, c(1L, 100L)) # ensure input was not overwritten with output 0
+cols=c(1,100)
+test(4.34, colnamesInt(dt, cols, skip_absent=TRUE), c(1L, 0L))
+test(4.35, cols, c(1, 100)) # ensure input was not overwritten with output 0
 names(dt) <- NULL
-test(4.24, colnamesInt(dt, "a"), error="has no names")
+test(4.36, colnamesInt(dt, "a"), error="has no names")
 
 # verbose
 dt = data.table(a=c(1L, 2L, NA_integer_), b=c(1, 2, NA_real_))
