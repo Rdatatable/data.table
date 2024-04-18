@@ -10,7 +10,8 @@ on:
       - synchronize
     paths:
       - 'R/**'
-      - 'src/**'       
+      - 'src/**'
+      - '.ci/atime/tests.R'
 
 jobs:
   comment:
