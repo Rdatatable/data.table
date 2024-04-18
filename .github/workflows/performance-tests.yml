@@ -11,7 +11,7 @@ on:
     paths:
       - 'R/**'
       - 'src/**'
-      - '.ci/atime/tests.R'
+      - '.ci/atime/**'
 
 jobs:
   comment:
