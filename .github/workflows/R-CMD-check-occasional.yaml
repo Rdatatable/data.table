@@ -28,6 +28,7 @@ jobs:
 
     env:
       R_REMOTES_NO_ERRORS_FROM_WARNINGS: true
+      TEST_DATA_TABLE_WITH_OTHER_PACKAGES: true
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
