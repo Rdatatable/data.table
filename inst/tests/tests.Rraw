@@ -18481,3 +18481,8 @@ DT = data.table(x = c(NA, "e", "b", "j", "w", NA))
 test(2258.8, capture.output(print(DT, na.print=".", topn=2, col.names="none")), c(" 1: .", " 2: e", "---  ", " 5: w", " 6: ."))
 # table requires splitting, col.names!="none"
 test(2258.9, capture.output(print(DT, na.print=".", topn=2)), c("    x", " 1: .", " 2: e", "---  ", " 5: w", " 6: ."))
+
+# split(by = ., sep = ..) works like split(f= ., sep = ..), #5417
+x = data.table(rep(1:2, each=5L), 1:5, 1:10)
+test(2259.1, names(split(x, by = c("V1", "V2"), sep = "|")), sort(names(split(x, list(x$V1, x$V2), sep = "|"))))
+test(2259.2, names(split(x, by = c("V1", "V2"), sep = "||")), sort(names(split(x, list(x$V1, x$V2), sep = "||"))))
