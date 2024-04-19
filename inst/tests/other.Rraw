@@ -723,7 +723,7 @@ if (FALSE) {  # moved from tests.Rraw in #5517 and not yet back on; wasn't sure 
 }
 
 if (loaded[["dplyr"]]) {
-  # regression test for converting character->list column in a magrittr (dplyr) pipe
-  DT = data.table(a = 1, b = 2, c = '[1, 2, 3, 4]', d = 4)
-  test(30, DT[, c := gsub('[][]', '', c) %>%  strsplit(',', fixed = TRUE) %>% lapply(as.integer) %>% as.list]$c, list(1:4))
+  # regression test for converting character->list column in a magrittr (dplyr) pipe, #2651
+  DT = data.table(a = 1, b = 2, c = '1,2,3,4]', d = 4)
+  test(30, DT[, c := strsplit(c, ',', fixed = TRUE) %>% lapply(as.integer) %>% as.list]$c, list(1:4))
 }
