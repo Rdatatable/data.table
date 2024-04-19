@@ -192,6 +192,16 @@ base_messages = list(
   NULL
 )
 
+# Ensure an operation uses C-locale sorting (#3502). For test set-ups/comparisons that use base operations, which are
+#   susceptible to locale-specific sorting issues, but shouldn't be needed for data.table code, which always uses C sorting.
+# TODO(R>=3.3.0): use order(method="radix") as a way to avoid needing this helper
+with_c_collate = function(expr) {
+  old = Sys.getlocale("LC_COLLATE")
+  on.exit(Sys.setlocale("LC_COLLATE", old))
+  Sys.setlocale("LC_COLLATE", "C")
+  expr
+}
+
 ##########################
 .do_not_rm = ls()  # objects that exist at this point should not be removed by rm_all(); e.g. test_*, base_messages, Ctest_dt_win_snprintf, prevtest, etc
 ##########################
@@ -1834,10 +1844,10 @@ test(609, chorder(character()), base::order(character()))
 test(610, chorder(""), base::order(""))
 # Extra tests of chorder and chgroup
 x = sample(LETTERS)
-test(610.1, chorder(x), base::order(x))
+test(610.1, chorder(x), with_c_collate(base::order(x)))
 test(610.2, chgroup(x), seq_along(x))
 x = sample(LETTERS,1000,replace=TRUE)
-test(610.3, chorder(x), base::order(x))
+test(610.3, chorder(x), with_c_collate(base::order(x)))
 test(610.4, unique(x[chgroup(x)]), unique(x))
 
 # := by group
@@ -3612,34 +3622,37 @@ test(1100, dt1[dt2,roll=-Inf,rollends=c(FALSE,TRUE)]$ind, INT(NA,NA,1,2,2,2,2,2,
   test(1102.12, dcast(DT, "a ~  c ", value.var="b"), error="not found or of unknown type")
   test(1102.13, dcast(DT, a ~  a, value.var="c"), error="are not found in 'data'")
 
+  # NB: for 1102.{14,15,16}, always supply levels for letters in setup data for locale robustness (#3502)
+
   # fix for #47 - issue when factor columns on formula LHS along with `drop=FALSE`
   set.seed(1L)
-  DT = data.table(a=factor(sample(letters[1:3], 10, replace=TRUE), letters[1:5]),
-                  b=factor(sample(tail(letters, 5), 10, replace=TRUE)))
+  DT = data.table(a=factor(sample(letters[1:3], 10L, replace=TRUE), levels=letters[1:5]),
+                  b=factor(sample(letters[22:26], 10L, replace=TRUE), levels=letters[22:26]))
   test(1102.14, dcast(DT, a~b, drop=FALSE, fun.aggregate=length, value.var="b"),
-                data.table(a=factor(letters[1:5]), v=INT(0,1,0,0,0), w=INT(1,1,1,0,0), x=INT(0,0,1,0,0), y=INT(2,1,1,0,0), z=INT(0,1,0,0,0), key="a"))
+                data.table(a=factor(letters[1:5], levels=letters[1:5]), v=INT(0,1,0,0,0), w=INT(1,1,1,0,0), x=INT(0,0,1,0,0), y=INT(2,1,1,0,0), z=INT(0,1,0,0,0), key="a"))
 
   # reverse the levels
   set.seed(1L)
-  DT = data.table(a=factor(sample(letters[1:3], 10, replace=TRUE), letters[5:1]),
-                  b=factor(sample(tail(letters, 5), 10, replace=TRUE)))
+  DT = data.table(a=factor(sample(letters[1:3], 10L, replace=TRUE), levels=letters[5:1]),
+                  b=factor(sample(letters[22:26], 10L, replace=TRUE), levels=letters[22:26]))
   test(1102.15, dcast(DT, a~b, drop=FALSE, value.var="b", fun.aggregate=length),
-                data.table(a=factor(c("e","d","c","b","a"),levels=levels(DT$a)), v=INT(0,0,0,1,0), w=INT(0,0,1,1,1), x=INT(0,0,1,0,0), y=INT(0,0,1,1,2), z=INT(0,0,0,1,0), key="a"))
+                data.table(a=factor(c("e","d","c","b","a"), levels=levels(DT$a)), v=INT(0,0,0,1,0), w=INT(0,0,1,1,1), x=INT(0,0,1,0,0), y=INT(0,0,1,1,2), z=INT(0,0,0,1,0), key="a"))
 
   # more factor cols
   set.seed(1L)
-  DT = data.table(a1=factor(sample(letters[1:3], 10, replace=TRUE), letters[1:5]), # factor col 1
-                 a2=factor(sample(letters[6:10], 10, replace=TRUE), letters[6:10]), # factor col 2
-                 a3=sample(letters[1:3], 10, TRUE), # no factor
-                 b=factor(sample(tail(letters, 5), 10, replace=TRUE)))
+  DT = data.table(a1=factor(sample(letters[1:3], 10L, replace=TRUE), levels=letters[1:5]), # factor col 1
+                 a2=factor(sample(letters[6:10], 10L, replace=TRUE), levels=letters[6:10]), # factor col 2
+                 a3=sample(letters[1:3], 10L, TRUE), # no factor
+                 b=factor(sample(letters[22:26], 10L, replace=TRUE), levels=letters[22:26]))
   test(1102.16, dcast(DT, a1+a2+a3~b, drop=FALSE, value.var="b")[c(1,21,.N)],
-                data.table(a1=factor(c("a","b","e"),levels=letters[1:5]),
+                data.table(a1=factor(c("a","b","e"), levels=letters[1:5]),
                            a2=factor(c("f","g","j"), levels=letters[6:10]),
                            a3=c("a","c","c"),
-                           v=factor(NA, levels=tail(letters,5)),
-                           x=factor(NA, levels=tail(letters,5)),
-                           y=factor(c(NA,"y",NA), levels=tail(letters,5)),
-                           z=factor(NA, levels=tail(letters,5)), key=c("a1", "a2", "a3")))
+                           v=factor(NA, levels=letters[22:26]),
+                           w=factor(NA, levels=letters[22:26]),
+                           x=factor(NA, levels=letters[22:26]),
+                           y=factor(c(NA,"y",NA), levels=letters[22:26]),
+                           z=factor(NA, levels=letters[22:26]), key=c("a1", "a2", "a3")))
 
   # dcast bug fix for 'subset' argument (it doesn't get key set before to run C-fcast):
   DT = data.table(x=c(1,1,1,2,2,2,1,1), y=c(1,2,3,1,2,1,1,2), z=c(1,2,3,NA,4,5,NA,NA))
@@ -4490,7 +4503,7 @@ for (nvars in seq_along(names(DT))) {
           }
         })
       ))
-      test(1223.0 + test_no*0.001, forderv(DT, by=x, order=signs[i,]), with(DT, eval(ll)))
+      test(1223.0 + test_no*0.001, forderv(DT, by=x, order=signs[i,]), with_c_collate(with(DT, eval(ll))))
     }
     integer()
   })
@@ -4759,11 +4772,11 @@ for (i in seq_along(names(DT))) {
         })
       ))
       ans1 = forderv(DT, by=x, order=y, na.last=TRUE)         # adding tests for both nalast=TRUE and nalast=NA
-      test(1252.0 + test_no*0.001, ans1, with(DT, eval(ll)))
+      test(1252.0 + test_no*0.001, ans1, with_c_collate(with(DT, eval(ll))))
       test_no <<- test_no + 1L
       ll <- as.call(c(as.list(ll), na.last=NA))
       ans1 = forderv(DT, by=x, order=y, na.last=NA)           # nalast=NA here.
-      test(1252.0 + test_no*0.001, ans1[ans1 != 0], with(DT, eval(ll)))
+      test(1252.0 + test_no*0.001, ans1[ans1 != 0], with_c_collate(with(DT, eval(ll))))
     })
     dim(tmp)=NULL
     list(tmp)
