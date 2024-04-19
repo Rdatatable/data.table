@@ -192,6 +192,16 @@ base_messages = list(
   NULL
 )
 
+# Ensure an operation uses C-locale sorting (#3502). For test set-ups/comparisons that use base operations, which are
+#   susceptible to locale-specific sorting issues, but shouldn't be needed for data.table code, which always uses C sorting.
+# TODO(R>=3.3.0): use order(method="radix") as a way to avoid needing this helper
+with_c_collate = function(expr) {
+  old = Sys.getlocale("LC_COLLATE")
+  on.exit(Sys.setlocale("LC_COLLATE", old))
+  Sys.setlocale("LC_COLLATE", "C")
+  expr
+}
+
 ##########################
 .do_not_rm = ls()  # objects that exist at this point should not be removed by rm_all(); e.g. test_*, base_messages, Ctest_dt_win_snprintf, prevtest, etc
 ##########################
@@ -1834,10 +1844,10 @@ test(609, chorder(character()), base::order(character()))
 test(610, chorder(""), base::order(""))
 # Extra tests of chorder and chgroup
 x = sample(LETTERS)
-test(610.1, chorder(x), base::order(x))
+test(610.1, chorder(x), with_c_collate(base::order(x)))
 test(610.2, chgroup(x), seq_along(x))
 x = sample(LETTERS,1000,replace=TRUE)
-test(610.3, chorder(x), base::order(x))
+test(610.3, chorder(x), with_c_collate(base::order(x)))
 test(610.4, unique(x[chgroup(x)]), unique(x))
 
 # := by group
@@ -3157,6 +3167,13 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
   DT_missing_l_2 = data.table(num_1=1, num_2=2, list_1=list(1), list_3=list(3))
   test(1035.0186, melt(DT_missing_l_2, measure.vars=measure(value.name, char, sep="_"), na.rm=TRUE), data.table(char="1", num=1, list=list(1)))
   test(1035.0187, melt(DT_missing_l_2, measure.vars=measure(value.name, char, sep="_"), na.rm=FALSE), data.table(char=c("1","2","3"), num=c(1,2,NA), list=list(1,NA,3)))
+  # measure supports cols arg, #5063
+  expected_without_value = data.table(num_1=1,num_2=2,prefix="list",char=c("1","3"),value=list(1,3))
+  test(1035.0188, melt(DT_missing_l_2, measure.vars=measure(prefix, char, sep="_", cols=c("list_1","list_3"))), expected_without_value)
+  test(1035.0189, melt(DT_missing_l_2, measure.vars=measure(prefix, char, pattern="(.*)_(.*)", cols=c("list_1","list_3"))), expected_without_value)
+  expected_with_value = data.table(num_1=1,num_2=2,char=c("1","3"),list=list(1,3))
+  test(1035.0190, melt(DT_missing_l_2, measure.vars=measure(value.name, char, sep="_", cols=c("list_1","list_3"))), expected_with_value)
+  test(1035.0191, melt(DT_missing_l_2, measure.vars=measure(value.name, char, pattern="(.*)_(.*)", cols=c("list_1","list_3"))), expected_with_value)
 
   ans1 = cbind(DT[, c(1,2,8), with=FALSE], variable=factor("l_1"))
   ans1[, value := DT$l_1]
@@ -3605,34 +3622,37 @@ test(1100, dt1[dt2,roll=-Inf,rollends=c(FALSE,TRUE)]$ind, INT(NA,NA,1,2,2,2,2,2,
   test(1102.12, dcast(DT, "a ~  c ", value.var="b"), error="not found or of unknown type")
   test(1102.13, dcast(DT, a ~  a, value.var="c"), error="are not found in 'data'")
 
+  # NB: for 1102.{14,15,16}, always supply levels for letters in setup data for locale robustness (#3502)
+
   # fix for #47 - issue when factor columns on formula LHS along with `drop=FALSE`
   set.seed(1L)
-  DT = data.table(a=factor(sample(letters[1:3], 10, replace=TRUE), letters[1:5]),
-                  b=factor(sample(tail(letters, 5), 10, replace=TRUE)))
+  DT = data.table(a=factor(sample(letters[1:3], 10L, replace=TRUE), levels=letters[1:5]),
+                  b=factor(sample(letters[22:26], 10L, replace=TRUE), levels=letters[22:26]))
   test(1102.14, dcast(DT, a~b, drop=FALSE, fun.aggregate=length, value.var="b"),
-                data.table(a=factor(letters[1:5]), v=INT(0,1,0,0,0), w=INT(1,1,1,0,0), x=INT(0,0,1,0,0), y=INT(2,1,1,0,0), z=INT(0,1,0,0,0), key="a"))
+                data.table(a=factor(letters[1:5], levels=letters[1:5]), v=INT(0,1,0,0,0), w=INT(1,1,1,0,0), x=INT(0,0,1,0,0), y=INT(2,1,1,0,0), z=INT(0,1,0,0,0), key="a"))
 
   # reverse the levels
   set.seed(1L)
-  DT = data.table(a=factor(sample(letters[1:3], 10, replace=TRUE), letters[5:1]),
-                  b=factor(sample(tail(letters, 5), 10, replace=TRUE)))
+  DT = data.table(a=factor(sample(letters[1:3], 10L, replace=TRUE), levels=letters[5:1]),
+                  b=factor(sample(letters[22:26], 10L, replace=TRUE), levels=letters[22:26]))
   test(1102.15, dcast(DT, a~b, drop=FALSE, value.var="b", fun.aggregate=length),
-                data.table(a=factor(c("e","d","c","b","a"),levels=levels(DT$a)), v=INT(0,0,0,1,0), w=INT(0,0,1,1,1), x=INT(0,0,1,0,0), y=INT(0,0,1,1,2), z=INT(0,0,0,1,0), key="a"))
+                data.table(a=factor(c("e","d","c","b","a"), levels=levels(DT$a)), v=INT(0,0,0,1,0), w=INT(0,0,1,1,1), x=INT(0,0,1,0,0), y=INT(0,0,1,1,2), z=INT(0,0,0,1,0), key="a"))
 
   # more factor cols
   set.seed(1L)
-  DT = data.table(a1=factor(sample(letters[1:3], 10, replace=TRUE), letters[1:5]), # factor col 1
-                 a2=factor(sample(letters[6:10], 10, replace=TRUE), letters[6:10]), # factor col 2
-                 a3=sample(letters[1:3], 10, TRUE), # no factor
-                 b=factor(sample(tail(letters, 5), 10, replace=TRUE)))
+  DT = data.table(a1=factor(sample(letters[1:3], 10L, replace=TRUE), levels=letters[1:5]), # factor col 1
+                 a2=factor(sample(letters[6:10], 10L, replace=TRUE), levels=letters[6:10]), # factor col 2
+                 a3=sample(letters[1:3], 10L, TRUE), # no factor
+                 b=factor(sample(letters[22:26], 10L, replace=TRUE), levels=letters[22:26]))
   test(1102.16, dcast(DT, a1+a2+a3~b, drop=FALSE, value.var="b")[c(1,21,.N)],
-                data.table(a1=factor(c("a","b","e"),levels=letters[1:5]),
+                data.table(a1=factor(c("a","b","e"), levels=letters[1:5]),
                            a2=factor(c("f","g","j"), levels=letters[6:10]),
                            a3=c("a","c","c"),
-                           v=factor(NA, levels=tail(letters,5)),
-                           x=factor(NA, levels=tail(letters,5)),
-                           y=factor(c(NA,"y",NA), levels=tail(letters,5)),
-                           z=factor(NA, levels=tail(letters,5)), key=c("a1", "a2", "a3")))
+                           v=factor(NA, levels=letters[22:26]),
+                           w=factor(NA, levels=letters[22:26]),
+                           x=factor(NA, levels=letters[22:26]),
+                           y=factor(c(NA,"y",NA), levels=letters[22:26]),
+                           z=factor(NA, levels=letters[22:26]), key=c("a1", "a2", "a3")))
 
   # dcast bug fix for 'subset' argument (it doesn't get key set before to run C-fcast):
   DT = data.table(x=c(1,1,1,2,2,2,1,1), y=c(1,2,3,1,2,1,1,2), z=c(1,2,3,NA,4,5,NA,NA))
@@ -4483,7 +4503,7 @@ for (nvars in seq_along(names(DT))) {
           }
         })
       ))
-      test(1223.0 + test_no*0.001, forderv(DT, by=x, order=signs[i,]), with(DT, eval(ll)))
+      test(1223.0 + test_no*0.001, forderv(DT, by=x, order=signs[i,]), with_c_collate(with(DT, eval(ll))))
     }
     integer()
   })
@@ -4752,11 +4772,11 @@ for (i in seq_along(names(DT))) {
         })
       ))
       ans1 = forderv(DT, by=x, order=y, na.last=TRUE)         # adding tests for both nalast=TRUE and nalast=NA
-      test(1252.0 + test_no*0.001, ans1, with(DT, eval(ll)))
+      test(1252.0 + test_no*0.001, ans1, with_c_collate(with(DT, eval(ll))))
       test_no <<- test_no + 1L
       ll <- as.call(c(as.list(ll), na.last=NA))
       ans1 = forderv(DT, by=x, order=y, na.last=NA)           # nalast=NA here.
-      test(1252.0 + test_no*0.001, ans1[ans1 != 0], with(DT, eval(ll)))
+      test(1252.0 + test_no*0.001, ans1[ans1 != 0], with_c_collate(with(DT, eval(ll))))
     })
     dim(tmp)=NULL
     list(tmp)
@@ -18232,17 +18252,20 @@ test(2243.38, dt[, sd(y,   na.rm=as.logical(j)),   g, verbose=TRUE], data.table(
 dt = data.table(x = c(2,2,1,1), y = 1:4, z=letters[1:4])
 i=c(1,2)
 j=1L
-old = options(datatable.optimize=1L)
-test(2243.41, dt[, .I[TRUE], x]$V1, 1:4)
-test(2243.42, dt[, z[y], x], data.table(x=c(2,2,1,1), V1=c("a","b",NA,NA)))
-options(datatable.optimize=2L, datatable.verbose=TRUE)
-test(2243.51, dt[, .I[TRUE], x]$V1, 1:4, output="GForce FALSE")
-test(2243.52, dt[, z[y], x], data.table(x=c(2,2,1,1), V1=c("a","b",NA,NA)), output="GForce FALSE")
-test(2243.53, dt[, .I[1], x]$V1, c(1L, 3L), output="GForce TRUE")
-test(2243.54, dt[, .I[j], x]$V1, c(1L, 3L), output="GForce TRUE")
-test(2243.55, dt[, .I[i], x]$V1, 1:4, output="GForce FALSE")
-test(2243.56, dt[, .I[1:2], x]$V1, 1:4, output="GForce FALSE")
-options(old)
+test(2243.41, options=c(datatable.optimize=1L), dt[, .I[TRUE], x]$V1, 1:4)
+test(2243.42, options=c(datatable.optimize=1L), dt[, z[y], x], data.table(x=c(2,2,1,1), V1=c("a","b",NA,NA)))
+test(2243.51, options=list(datatable.optimize=2L, datatable.verbose=TRUE),
+     dt[, .I[TRUE], x]$V1, 1:4, output="GForce FALSE")
+test(2243.52, options=list(datatable.optimize=2L, datatable.verbose=TRUE),
+     dt[, z[y], x], data.table(x=c(2,2,1,1), V1=c("a","b",NA,NA)), output="GForce FALSE")
+test(2243.53, options=list(datatable.optimize=2L, datatable.verbose=TRUE),
+     dt[, .I[1], x]$V1, c(1L, 3L), output="GForce TRUE")
+test(2243.54, options=list(datatable.optimize=2L, datatable.verbose=TRUE),
+     dt[, .I[j], x]$V1, c(1L, 3L), output="GForce TRUE")
+test(2243.55, options=list(datatable.optimize=2L, datatable.verbose=TRUE),
+     dt[, .I[i], x]$V1, 1:4, output="GForce FALSE")
+test(2243.56, options=list(datatable.optimize=2L, datatable.verbose=TRUE),
+     dt[, .I[1:2], x]$V1, 1:4, output="GForce FALSE")
 
 DT = data.table(1)
 test(2244.1, DT[, `:=`(a=1, )], error="`:=`.*Did you forget a trailing comma\\?")
@@ -18454,3 +18477,25 @@ test(2256.6, fread('a;b\n1,14;5', verbose=TRUE), data.table(a=1.14, b=5L), outpu
 # helpful error about deleting during grouping, #1873
 DT = data.table(id = c(1, 1, 2, 2), a = 1:4, b = 5:8)
 test(2257, DT[ , c("c", "a") := .(a + 1, NULL), by=id], error="it's not possible to delete parts of a column")
+
+# testing printing data.tables with na.print, #3152
+DT = data.table(x=c(NA, "a", "b"))
+test(2258.1, capture.output(print(DT, na.print=".")), c("   x", "1: .", "2: a", "3: b"))
+test(2258.2, capture.output(print(DT, na.print="_")), c("   x", "1: _", "2: a", "3: b"))
+test(2258.3, capture.output(print(DT, na.print="NA")), c("    x", "1: NA", "2:  a", "3:  b"))
+test(2258.4, capture.output(print(DT, na.print=TRUE)), error="invalid 'na.print' specification")
+test(2258.5, capture.output(print(DT, na.print=".", quote=TRUE)), c('   "x"', "1:   .", '2: "a"', '3: "b"'))
+test(2258.6, capture.output(print(DT, na.print=".", right=TRUE)), c("   x", "1: .", "2: a", "3: b"))
+# tests for other call sites
+# col.names="none"
+test(2258.7, capture.output(print(DT, na.print=".", col.names="none")), c("1: .", "2: a", "3: b"))
+# table requires splitting, col.names="none"
+DT = data.table(x = c(NA, "e", "b", "j", "w", NA))
+test(2258.8, capture.output(print(DT, na.print=".", topn=2, col.names="none")), c(" 1: .", " 2: e", "---  ", " 5: w", " 6: ."))
+# table requires splitting, col.names!="none"
+test(2258.9, capture.output(print(DT, na.print=".", topn=2)), c("    x", " 1: .", " 2: e", "---  ", " 5: w", " 6: ."))
+
+# split(by = ., sep = ..) works like split(f= ., sep = ..), #5417
+x = data.table(rep(1:2, each=5L), 1:5, 1:10)
+test(2259.1, names(split(x, by = c("V1", "V2"), sep = "|")), sort(names(split(x, list(x$V1, x$V2), sep = "|"))))
+test(2259.2, names(split(x, by = c("V1", "V2"), sep = "||")), sort(names(split(x, list(x$V1, x$V2), sep = "||"))))

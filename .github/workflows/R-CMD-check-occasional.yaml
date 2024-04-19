@@ -17,9 +17,15 @@ jobs:
         r: ['devel', 'release', '3.2', '3.3', '3.4', '3.5', '3.6', '4.0', '4.1', '4.2', '4.3']
         locale: ['en_US', 'zh_CN', 'lv_LV'] # Chinese for translations, Latvian for collate order (#3502)
         tz: ['UTC', 'Asia/Seoul'] # Any non-UTC & widely available time zone
-        exclude:
-          - os: [macOS-latest, windows-latest] # only run non-English locale CI on Ubuntu
-            locale: ['zh_CN', 'lv_LV']
+        exclude: # only run non-English locale CI on Ubuntu
+          - os: macOS-latest
+            locale: 'zh_CN'
+          - os: macOS-latest
+            locale: 'lv_LV'
+          - os: windows-latest
+            locale: 'zh_CN'
+          - os: windows-latest
+            locale: 'lv_LV'
 
     env:
       R_REMOTES_NO_ERRORS_FROM_WARNINGS: true
