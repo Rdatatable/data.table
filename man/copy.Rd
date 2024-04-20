@@ -16,11 +16,15 @@ copy(x)
 \code{data.table} provides functions that operate on objects \emph{by reference} and minimise full object copies as much as possible. Still, it might be necessary in some situations to work on an object's copy which can be done using \code{DT.copy <- copy(DT)}. It may also be sometimes useful before \code{:=} (or \code{set}) is used to subassign to a column by reference.
 
 A \code{copy()} may be required when doing \code{dt_names = names(DT)}. Due to R's \emph{copy-on-modify}, \code{dt_names} still points to the same location in memory as \code{names(DT)}. Therefore modifying \code{DT} \emph{by reference} now, say by adding a new column, \code{dt_names} will also get updated. To avoid this, one has to \emph{explicitly} copy: \code{dt_names <- copy(names(DT))}.
-  }
-\value{
-    Returns a copy of the object.
 }
-\seealso{ \code{\link{data.table}}, \code{\link{setkey}}, \code{\link{setDT}}, \code{\link{setDF}}, \code{\link{set}} \code{\link{:=}}, \code{\link{setorder}}, \code{\link{setattr}}, \code{\link{setnames}}
+\note{
+  To confirm precisely whether an object is a copy of another, compare their exact memory address with \code{\link{address}}.
+}
+\value{
+  Returns a copy of the object.
+}
+\seealso{
+  \code{\link{data.table}}, \code{\link{address}}, \code{\link{setkey}}, \code{\link{setDT}}, \code{\link{setDF}}, \code{\link{set}} \code{\link{:=}}, \code{\link{setorder}}, \code{\link{setattr}}, \code{\link{setnames}}
 }
 \examples{
 # Type 'example(copy)' to run these at prompt and browse output

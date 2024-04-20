@@ -1,5 +1,5 @@
+#include "data.table.h"  // first (before Rdefines.h) for clang-13-omp, #5122
 #include <Rdefines.h>
-#include "data.table.h"
 
 /*
  * find end of a string, used to append verbose messages or warnings
@@ -69,7 +69,7 @@ SEXP testMsgR(SEXP status, SEXP x, SEXP k) {
     }
   }
 
-  #pragma omp parallel for if (nx*nk>1) schedule(auto) collapse(2) num_threads(getDTthreads())
+  #pragma omp parallel for schedule(dynamic) collapse(2) num_threads(getDTthreads(nx*nk, false))
   for (R_len_t i=0; i<nx; i++) {
     for (R_len_t j=0; j<nk; j++) {
       testRaiseMsg(&vans[i*nk+j], istatus, verbose);

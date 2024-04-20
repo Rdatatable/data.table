@@ -6,8 +6,8 @@
 SEXP dt_na(SEXP x, SEXP cols) {
   int n=0, elem;
 
-  if (!isNewList(x)) error(_("Internal error. Argument 'x' to Cdt_na is type '%s' not 'list'"), type2char(TYPEOF(x))); // # nocov
-  if (!isInteger(cols)) error(_("Internal error. Argument 'cols' to Cdt_na is type '%s' not 'integer'"), type2char(TYPEOF(cols))); // # nocov
+  if (!isNewList(x)) error(_("Internal error. Argument '%s' to %s is type '%s' not '%s'"), "x", "Cdt_na", type2char(TYPEOF(x)), "list"); // # nocov
+  if (!isInteger(cols)) error(_("Internal error. Argument '%s' to %s is type '%s' not '%s'"), "cols", "Cdt_na", type2char(TYPEOF(cols)), "integer"); // # nocov
   for (int i=0; i<LENGTH(cols); ++i) {
     elem = INTEGER(cols)[i];
     if (elem<1 || elem>LENGTH(x))
@@ -19,7 +19,7 @@ SEXP dt_na(SEXP x, SEXP cols) {
   for (int i=0; i<n; ++i) ians[i]=0;
   for (int i=0; i<LENGTH(cols); ++i) {
     SEXP v = VECTOR_ELT(x, INTEGER(cols)[i]-1);
-    if (!length(v) || isNewList(v) || isList(v)) continue; // like stats:::na.omit.data.frame, skip list/pairlist columns
+    if (!length(v) || isList(v)) continue; // like stats:::na.omit.data.frame, skip pairlist columns
     if (n != length(v))
       error(_("Column %d of input list x is length %d, inconsistent with first column of that item which is length %d."), i+1,length(v),n);
     switch (TYPEOF(v)) {
@@ -39,12 +39,11 @@ SEXP dt_na(SEXP x, SEXP cols) {
     }
       break;
     case REALSXP: {
-      const double *dv = REAL(v);
       if (INHERITS(v, char_integer64)) {
-        for (int j=0; j<n; ++j) {
-          ians[j] |= (DtoLL(dv[j]) == NA_INT64_LL);   // TODO: can be == NA_INT64_D directly
-        }
+        const int64_t *dv = (int64_t *)REAL(v);
+        for (int j=0; j<n; ++j) ians[j] |= (dv[j] == NA_INTEGER64);
       } else {
+        const double *dv = REAL(v);
         for (int j=0; j<n; ++j) ians[j] |= ISNAN(dv[j]);
       }
     }
@@ -57,6 +56,45 @@ SEXP dt_na(SEXP x, SEXP cols) {
     case CPLXSXP: {
       // taken from https://github.com/wch/r-source/blob/d75f39d532819ccc8251f93b8ab10d5b83aac89a/src/main/coerce.c
       for (int j=0; j<n; ++j) ians[j] |= (ISNAN(COMPLEX(v)[j].r) || ISNAN(COMPLEX(v)[j].i));
+    }
+      break;
+    case VECSXP: {
+      // is.na(some_list) returns TRUE only for elements which are
+      // scalar NA.
+      for (int j=0; j<n; ++j) {
+        SEXP list_element = VECTOR_ELT(v, j);
+        switch (TYPEOF(list_element)) {
+        case LGLSXP: {
+          ians[j] |= (length(list_element)==1 && LOGICAL(list_element)[0] == NA_LOGICAL);
+        }
+          break;
+        case INTSXP: {
+          ians[j] |= (length(list_element)==1 && INTEGER(list_element)[0] == NA_INTEGER);
+        }
+          break;
+        case STRSXP: {
+          ians[j] |= (length(list_element)==1 && STRING_ELT(list_element,0) == NA_STRING);
+        }
+          break;
+        case CPLXSXP: {
+          if (length(list_element)==1) {
+            Rcomplex first_complex = COMPLEX(list_element)[0];
+            ians[j] |= (ISNAN(first_complex.r) || ISNAN(first_complex.i));
+          }
+        }
+          break;
+        case REALSXP: {
+          if (length(list_element)==1) {
+            if (INHERITS(list_element, char_integer64)) {
+              ians[j] |= ((const int64_t *)REAL(list_element))[0] == NA_INTEGER64;
+            } else {
+              ians[j] |= ISNAN(REAL(list_element)[0]);
+            }
+          }
+        }
+          break;
+        }
+      }
     }
       break;
     default:
@@ -130,9 +168,9 @@ SEXP frank(SEXP xorderArg, SEXP xstartArg, SEXP xlenArg, SEXP ties_method) {
       }
       break;
     // case RUNLENGTH :
-    //   for (i = 0; i < length(xstartArg); i++) {
+    //   for (int i=0; i<length(xstartArg); ++i) {
     //     k=1;
-    //     for (j = xstart[i]-1; j < xstart[i]+xlen[i]-1; j++)
+    //     for (int j=xstart[i]-1; j<xstart[i]+xlen[i]-1; ++j)
     //       INTEGER(ans)[xorder[j]-1] = k++;
     //   }
     //   break;
@@ -145,19 +183,17 @@ SEXP frank(SEXP xorderArg, SEXP xstartArg, SEXP xlenArg, SEXP ties_method) {
 
 // internal version of anyNA for data.tables
 SEXP anyNA(SEXP x, SEXP cols) {
-  int i, j, n=0, elem;
-
-  if (!isNewList(x)) error(_("Internal error. Argument 'x' to CanyNA is type '%s' not 'list'"), type2char(TYPEOF(x))); // #nocov
-  if (!isInteger(cols)) error(_("Internal error. Argument 'cols' to CanyNA is type '%s' not 'integer'"), type2char(TYPEOF(cols))); // # nocov
-  for (i=0; i<LENGTH(cols); i++) {
-    elem = INTEGER(cols)[i];
+  int n=0;
+  if (!isNewList(x)) error(_("Internal error. Argument '%s' to %s is type '%s' not '%s'"), "x", "CanyNA", type2char(TYPEOF(x)), "list"); // #nocov
+  if (!isInteger(cols)) error(_("Internal error. Argument '%s' to %s is type '%s' not '%s'"), "cols", "CanyNA", type2char(TYPEOF(cols)), "integer"); // # nocov
+  for (int i=0; i<LENGTH(cols); ++i) {
+    const int elem = INTEGER(cols)[i];
     if (elem<1 || elem>LENGTH(x))
       error(_("Item %d of 'cols' is %d which is outside 1-based range [1,ncol(x)=%d]"), i+1, elem, LENGTH(x));
     if (!n) n = length(VECTOR_ELT(x, elem-1));
   }
-  SEXP ans = PROTECT(allocVector(LGLSXP, 1));
-  LOGICAL(ans)[0]=0;
-  for (i=0; i<LENGTH(cols); i++) {
+  int j=0; // did we get to the end of the column without finding any NA in it?
+  for (int i=0; i<LENGTH(cols); ++i) {
     SEXP v = VECTOR_ELT(x, INTEGER(cols)[i]-1);
     if (!length(v) || isNewList(v) || isList(v)) continue; // like stats:::na.omit.data.frame, skip list/pairlist columns
     if (n != length(v))
@@ -166,52 +202,38 @@ SEXP anyNA(SEXP x, SEXP cols) {
     switch (TYPEOF(v)) {
     case LGLSXP: {
       const int *iv = LOGICAL(v);
-      while(j < n && iv[j] != NA_LOGICAL) j++;
-      if (j < n) LOGICAL(ans)[0] = 1;
-    }
-      break;
+      while(j<n && iv[j]!=NA_LOGICAL) j++;
+    } break;
     case INTSXP: {
       const int *iv = INTEGER(v);
-      while(j < n && iv[j] != NA_INTEGER) j++;
-      if (j < n) LOGICAL(ans)[0] = 1;
-    }
-      break;
+      while(j<n && iv[j]!=NA_INTEGER) j++;
+    } break;
     case STRSXP: {
-      while (j < n && STRING_ELT(v, j) != NA_STRING) j++;
-      if (j < n) LOGICAL(ans)[0] = 1;
-    }
-      break;
-    case REALSXP: {
-      const double *dv = REAL(v);
+      const SEXP *sv = STRING_PTR(v);
+      while (j<n && sv[j]!=NA_STRING) j++;
+    } break;
+    case REALSXP:
       if (INHERITS(v, char_integer64)) {
-        for (j=0; j<n; j++) {
-          if (DtoLL(dv[j]) == NA_INT64_LL) {
-            LOGICAL(ans)[0] = 1;
-            break;
-          }
-        }
+        const int64_t *dv = (int64_t *)REAL(v);
+        while (j<n && dv[j]!=NA_INTEGER64) j++;
       } else {
-        while(j < n && !ISNAN(dv[j])) j++;
-        if (j < n) LOGICAL(ans)[0] = 1;
+        const double *dv = REAL(v);
+        while (j<n && !ISNAN(dv[j])) j++;
       }
-    }
       break;
-    case RAWSXP: {
-      // no such thing as a raw NA
-      // vector already initialised to all 0's
-    }
+    case RAWSXP:
+      // no such thing as a raw NA; vector already initialised to all 0's
+      j = n;
       break;
     case CPLXSXP: {
+      const Rcomplex *cv = COMPLEX(v);
       // taken from https://github.com/wch/r-source/blob/d75f39d532819ccc8251f93b8ab10d5b83aac89a/src/main/coerce.c
-      while (j < n && !ISNAN(COMPLEX(v)[j].r) && !ISNAN(COMPLEX(v)[j].i)) j++;
-      if (j < n) LOGICAL(ans)[0] = 1;
-    }
-      break;
+      while (j<n && !ISNAN(cv[j].r) && !ISNAN(cv[j].i)) j++;
+    } break;
     default:
       error(_("Unsupported column type '%s'"), type2char(TYPEOF(v)));
     }
-    if (LOGICAL(ans)[0]) break;
+    if (j<n) break; // don't look at any more columns; return true early
   }
-  UNPROTECT(1);
-  return(ans);
+  return ScalarLogical(j<n);
 }

@@ -8,6 +8,9 @@
 \usage{
 key(x) <- value   #  warning since 2012; DEPRECATED since Mar 2019
 }
+\examples{
+# dummy example section to pass release check that all .Rd files have examples
+}
 \arguments{
 \item{x}{ Deprecated. }
 }

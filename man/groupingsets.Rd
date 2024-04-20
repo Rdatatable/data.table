@@ -36,8 +36,8 @@ groupingsets(x, \dots)
 \seealso{ \code{\link{data.table}}, \code{\link{rbindlist}}
 }
 \references{
-\url{http://www.postgresql.org/docs/9.5/static/queries-table-expressions.html#QUERIES-GROUPING-SETS}
-\url{http://www.postgresql.org/docs/9.5/static/functions-aggregate.html#FUNCTIONS-GROUPING-TABLE}
+\url{https://www.postgresql.org/docs/9.5/static/queries-table-expressions.html#QUERIES-GROUPING-SETS}
+\url{https://www.postgresql.org/docs/9.5/static/functions-aggregate.html#FUNCTIONS-GROUPING-TABLE}
 }
 \examples{
 n = 24L

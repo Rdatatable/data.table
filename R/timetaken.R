@@ -1,6 +1,6 @@
 timetaken = function(started.at)
 {
-  if (!inherits(started.at,"proc_time")) stop("Use started.at=proc.time() not Sys.time() (POSIXt and slow)")  # nocov
+  if (!inherits(started.at,"proc_time")) stopf("Use started.at=proc.time() not Sys.time() (POSIXt and slow)")  # nocov
   format = function(secs) {
     if (secs > 60.0) {
       secs = as.integer(secs)

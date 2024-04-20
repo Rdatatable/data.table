@@ -2,7 +2,7 @@
 #include <Rdefines.h>
 #include <time.h>
 
-SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg) {
+SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg, SEXP listColsArg) {
 
   int nprotect=0;
   if (!isNewList(l))
@@ -18,14 +18,17 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg) {
   if (length(fill) != 1)
     error(_("fill must be a length 1 vector, such as the default NA"));
   R_len_t ln = LENGTH(l);
+  if (!IS_TRUE_OR_FALSE(listColsArg))
+    error(_("list.cols should be logical TRUE/FALSE."));
+  bool listCol = LOGICAL(listColsArg)[0];
 
   // preprocessing
   int maxlen=0, zerolen=0;
   SEXPTYPE maxtype=0;
   for (int i=0; i<ln; ++i) {
     SEXP li = VECTOR_ELT(l, i);
-    if (!isVectorAtomic(li) && !isNull(li))
-      error(_("Item %d of list input is not an atomic vector"), i+1);
+    if (!isVectorAtomic(li) && !isNull(li) && !isNewList(li))
+      error(_("Item %d of list input is not either an atomic vector, or a list"), i+1);
     const int len = length(li);
     if (len>maxlen) maxlen=len;
     zerolen += (len==0);
@@ -33,8 +36,8 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg) {
     if (isFactor(li)) type=STRSXP;
     if (type>maxtype) maxtype=type;
   }
+  if (listCol) maxtype=VECSXP; // need to keep preprocessing for zerolen
   fill = PROTECT(coerceVector(fill, maxtype)); nprotect++;
-
   SEXP ans = PROTECT(allocVector(VECSXP, maxlen+rn)); nprotect++;
   int anslen = (ignore) ? (ln - zerolen) : ln;
   if (rn) {
@@ -54,7 +57,7 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg) {
     const int len = length(li);
     if (ignore && len==0) continue;
     if (TYPEOF(li) != maxtype) {
-      li = PROTECT(isFactor(li) ? asCharacterFactor(li) : coerceVector(li, maxtype));
+      li = PROTECT(isFactor(li) ? (listCol ? coerceVector(asCharacterFactor(li), VECSXP) : asCharacterFactor(li)) : coerceVector(li, maxtype));
     } else PROTECT(li); // extra PROTECT just to help rchk by avoiding two counter variables
     switch (maxtype) {
     case LGLSXP : {
@@ -82,6 +85,12 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg) {
       const SEXP sfill = STRING_ELT(fill, 0);
       for (int j=0; j<maxlen; ++j) {
         SET_STRING_ELT(ansp[j+rn], k, j<len ? STRING_ELT(li, j) : sfill);
+      }
+    } break;
+    case VECSXP : {
+      const SEXP vfill = VECTOR_ELT(fill, 0);
+      for (int j=0; j<maxlen; ++j) {
+        SET_VECTOR_ELT(ansp[j+rn], k, j<len ? VECTOR_ELT(li, j) : vfill);
       }
     } break;
     default :

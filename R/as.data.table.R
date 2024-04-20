@@ -20,7 +20,7 @@ as.data.table.Date = as.data.table.ITime = function(x, keep.rownames=FALSE, key=
   tt = deparse(substitute(x))[1L]
   nm = names(x)
   # FR #2356 - transfer names of named vector as "rn" column if required
-  if (!identical(keep.rownames, FALSE) & !is.null(nm))
+  if (!identical(keep.rownames, FALSE) && !is.null(nm))
     x = list(nm, unname(x))
   else x = list(x)
   if (tt == make.names(tt)) {
@@ -33,6 +33,8 @@ as.data.table.Date = as.data.table.ITime = function(x, keep.rownames=FALSE, key=
 
 # as.data.table.table - FR #361
 as.data.table.table = function(x, keep.rownames=FALSE, key=NULL, ...) {
+  # prevent #4179 & just cut out here
+  if (any(dim(x) == 0L)) return(null.data.table())
   # Fix for bug #43 - order of columns are different when doing as.data.table(with(DT, table(x, y)))
   val = rev(dimnames(provideDimnames(x)))
   if (is.null(names(val)) || !any(nzchar(names(val))))
@@ -81,29 +83,29 @@ as.data.table.matrix = function(x, keep.rownames=FALSE, key=NULL, ...) {
 as.data.table.array = function(x, keep.rownames=FALSE, key=NULL, sorted=TRUE, value.name="value", na.rm=TRUE, ...) {
   dx = dim(x)
   if (length(dx) <= 2L)
-    stop("as.data.table.array method should only be called for arrays with 3+ dimensions; use the matrix method for 2-dimensional arrays")
+    stopf("as.data.table.array method should only be called for arrays with 3+ dimensions; use the matrix method for 2-dimensional arrays")
   if (!is.character(value.name) || length(value.name)!=1L || is.na(value.name) || !nzchar(value.name))
-    stop("Argument 'value.name' must be scalar character, non-NA and at least one character")
+    stopf("Argument 'value.name' must be scalar character, non-NA and at least one character")
   if (!is.logical(sorted) || length(sorted)!=1L || is.na(sorted))
-    stop("Argument 'sorted' must be scalar logical and non-NA")
+    stopf("Argument 'sorted' must be scalar logical and non-NA")
   if (!is.logical(na.rm) || length(na.rm)!=1L || is.na(na.rm))
-    stop("Argument 'na.rm' must be scalar logical and non-NA")
+    stopf("Argument 'na.rm' must be scalar logical and non-NA")
   if (!missing(sorted) && !is.null(key))
-    stop("Please provide either 'key' or 'sorted', but not both.")
+    stopf("Please provide either 'key' or 'sorted', but not both.")
 
   dnx = dimnames(x)
   # NULL dimnames will create integer keys, not character as in table method
   val = if (is.null(dnx)) {
     lapply(dx, seq.int)
-  } else if (any(nulldnx<-sapply(dnx, is.null))) {
+  } else if (any(nulldnx <- vapply_1b(dnx, is.null))) {
     dnx[nulldnx] = lapply(dx[nulldnx], seq.int) #3636
     dnx
   } else dnx
   val = rev(val)
-  if (is.null(names(val)) || all(!nzchar(names(val))))
+  if (is.null(names(val)) || !any(nzchar(names(val))))
     setattr(val, 'names', paste0("V", rev(seq_along(val))))
   if (value.name %chin% names(val))
-    stop("Argument 'value.name' should not overlap with column names in result: ", brackify(rev(names(val))))
+    stopf("Argument 'value.name' should not overlap with column names in result: %s", brackify(rev(names(val))))
   N = NULL
   ans = data.table(do.call(CJ, c(val, sorted=FALSE)), N=as.vector(x))
   if (isTRUE(na.rm))
@@ -129,12 +131,13 @@ as.data.table.list = function(x,
   eachncol = integer(n)
   missing.check.names = missing(check.names)
   origListNames = if (missing(.named)) names(x) else NULL  # as.data.table called directly, not from inside data.table() which provides .named, #3854
+  empty_atomic = FALSE
   for (i in seq_len(n)) {
     xi = x[[i]]
     if (is.null(xi)) next    # eachncol already initialized to 0 by integer() above
     if (!is.null(dim(xi)) && missing.check.names) check.names=TRUE
     if ("POSIXlt" %chin% class(xi)) {
-      warning("POSIXlt column type detected and converted to POSIXct. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date.")
+      warningf("POSIXlt column type detected and converted to POSIXct. We do not recommend use of POSIXlt at all because it uses 40 bytes to store one date.")
       xi = x[[i]] = as.POSIXct(xi)
     } else if (is.matrix(xi) || is.data.frame(xi)) {
       if (!is.data.table(xi)) {
@@ -148,10 +151,13 @@ as.data.table.list = function(x,
     }
     eachnrow[i] = NROW(xi)    # for a vector (including list() columns) returns the length
     eachncol[i] = NCOL(xi)    # for a vector returns 1
+    if (is.atomic(xi) && length(xi)==0L && !is.null(xi)) {
+      empty_atomic = TRUE  # any empty atomic (not empty list()) should result in nrows=0L, #3727
+    }
   }
   ncol = sum(eachncol)  # hence removes NULL items silently (no error or warning), #842.
   if (ncol==0L) return(null.data.table())
-  nrow = max(eachnrow)
+  nrow = if (empty_atomic) 0L else max(eachnrow)
   ans = vector("list",ncol)  # always return a new VECSXP
   recycle = function(x, nrow) {
     if (length(x)==nrow) {
@@ -172,9 +178,7 @@ as.data.table.list = function(x,
     xi = x[[i]]
     if (is.null(xi)) { n_null = n_null+1L; next }
     if (eachnrow[i]>1L && nrow%%eachnrow[i]!=0L)   # in future: eachnrow[i]!=nrow
-      warning("Item ", i, " has ", eachnrow[i], " rows but longest item has ", nrow, "; recycled with remainder.")
-    if (eachnrow[i]==0L && nrow>0L && is.atomic(xi))   # is.atomic to ignore list() since list() is a common way to initialize; let's not insist on list(NULL)
-      warning("Item ", i, " has 0 rows but longest item has ", nrow, "; filled with NA")  # the rep() in recycle() above creates the NA vector
+      warningf("Item %d has %d rows but longest item has %d; recycled with remainder.", i, eachnrow[i], nrow)
     if (is.data.table(xi)) {   # matrix and data.frame were coerced to data.table above
       prefix = if (!isFALSE(.named[i]) && isTRUE(nchar(names(x)[i])>0L)) paste0(names(x)[i],".") else ""  # test 2058.12
       for (j in seq_along(xi)) {
@@ -189,7 +193,7 @@ as.data.table.list = function(x,
       k = k+1L
     }
   }
-  if (any(vnames==".SD")) stop("A column may not be called .SD. That has special meaning.")
+  if (any(vnames==".SD")) stopf("A column may not be called .SD. That has special meaning.")
   if (check.names) vnames = make.names(vnames, unique=TRUE)
   setattr(ans, "names", vnames)
   setDT(ans, key=key) # copy ensured above; also, setDT handles naming
@@ -203,15 +207,17 @@ as.data.table.list = function(x,
 # for now. This addresses #1078 and #1128
 .resetclass = function(x, class) {
   if (length(class)!=1L)
-    stop("class must be length 1") # nocov
+    stopf("class must be length 1") # nocov
   cx = class(x)
   n  = chmatch(class, cx)   # chmatch accepts length(class)>1 but next line requires length(n)==1
   unique( c("data.table", "data.frame", tail(cx, length(cx)-n)) )
 }
 
 as.data.table.data.frame = function(x, keep.rownames=FALSE, key=NULL, ...) {
-  if (!identical(keep.rownames, FALSE)) {
-    # can specify col name to keep.rownames, #575
+  if (!isFALSE(keep.rownames)) {
+    # can specify col name to keep.rownames, #575; if it's the same as key,
+    #   kludge it to 'rn' since we only apply the new name afterwards, #4468
+    if (is.character(keep.rownames) && identical(keep.rownames, key)) key='rn'
     ans = data.table(rn=rownames(x), x, keep.rownames=FALSE, key=key)
     if (is.character(keep.rownames))
       setnames(ans, 'rn', keep.rownames[1L])
@@ -219,7 +225,8 @@ as.data.table.data.frame = function(x, keep.rownames=FALSE, key=NULL, ...) {
   }
   if (any(vapply_1i(x, function(xi) length(dim(xi))))) { # not is.atomic because is.atomic(matrix) is true
     # a data.frame with a column that is data.frame needs to be expanded; test 2013.4
-    return(as.data.table.list(x, keep.rownames=keep.rownames, ...))
+    # x may be a class with [[ method that behaves differently, so as.list first for default [[, #4526
+    return(as.data.table.list(as.list(x), keep.rownames=keep.rownames, ...))
   }
   ans = copy(x)  # TO DO: change this deep copy to be shallow.
   setattr(ans, "row.names", .set_row_names(nrow(x)))

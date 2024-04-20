@@ -23,16 +23,12 @@ fsetequal(x, y, all = TRUE)
 \arguments{
 	\item{x, y}{\code{data.table}s.}
 	\item{all}{Logical. Default is \code{FALSE} and removes duplicate rows on the result. When \code{TRUE}, if there are \code{xn} copies of a particular row in \code{x} and \code{yn} copies of the same row in \code{y}, then:
-		\itemize{
-
-			\item{\code{fintersect} will return \code{min(xn, yn)} copies of that row.}
-
-			\item{\code{fsetdiff} will return \code{max(0, xn-yn)} copies of that row.}
-
-			\item{\code{funion} will return \code{xn+yn} copies of that row.}
-			
-			\item{\code{fsetequal} will return \code{FALSE} unless \code{xn == yn}.}
-		}
+	  \itemize{
+	    \item\code{fintersect} will return \code{min(xn, yn)} copies of that row.
+	    \item\code{fsetdiff} will return \code{max(0, xn-yn)} copies of that row.
+	    \item\code{funion} will return \code{xn+yn} copies of that row.
+	    \item\code{fsetequal} will return \code{FALSE} unless \code{xn == yn}.
+	  }
 	}
 }
 \details{

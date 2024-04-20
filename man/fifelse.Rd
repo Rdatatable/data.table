@@ -11,10 +11,10 @@
 \arguments{
   \item{test}{ A logical vector. }
   \item{yes, no}{ Values to return depending on \code{TRUE}/\code{FALSE} element of \code{test}. They must be the same type and be either length \code{1} or the same length of \code{test}. }
-  \item{na}{ Value to return if an element of \code{test} is \code{NA}. It must be the same type as \code{yes} and \code{no} and length \code{1}. Default value \code{NA}. \code{NULL} is treated as \code{NA}. }
+  \item{na}{ Value to return if an element of \code{test} is \code{NA}. It must be the same type as \code{yes} and \code{no} and its length must be either \code{1} or the same length of \code{test}. Default value \code{NA}. \code{NULL} is treated as \code{NA}. }
 }
 \details{
-In contrast to \code{\link[base]{ifelse}} attributes are copied from \code{yes} to the output. This is useful when returning \code{Date}, \code{factor} or other classes.
+In contrast to \code{\link[base]{ifelse}} attributes are copied from the first non-\code{NA} argument to the output. This is useful when returning \code{Date}, \code{factor} or other classes.
 }
 \value{
 A vector of the same length as \code{test} and attributes as \code{yes}. Data values are taken from the values of \code{yes} and \code{no}, eventually \code{na}.
