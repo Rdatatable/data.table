@@ -5,7 +5,7 @@
 SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
 {
   if (!isLogical(fillArg) || LENGTH(fillArg) != 1 || LOGICAL(fillArg)[0] == NA_LOGICAL)
-    error(_("fill= should be TRUE or FALSE"));
+    error(_("%s should be TRUE or FALSE"), "fill");
   if (!isLogical(usenamesArg) || LENGTH(usenamesArg)!=1)
     error(_("use.names= should be TRUE, FALSE, or not used (\"check\" by default)"));  // R levels converts "check" to NA
   if (!length(l)) return(l);
