@@ -102,9 +102,10 @@ SEXP freadR(
     error(_("Internal error: freadR sep not a single character. R level catches this."));  // # nocov
   args.sep = CHAR(STRING_ELT(sepArg,0))[0];   // '\0' when default "auto" was replaced by "" at R level
 
-  if (!(isString(decArg) && LENGTH(decArg)==1 && strlen(CHAR(STRING_ELT(decArg,0)))==1))
+  if (!isString(decArg) || LENGTH(decArg)!=1 || strlen(CHAR(STRING_ELT(decArg,0)))>1) {
     error(_("Internal error: freadR dec not a single character. R level catches this."));  // # nocov
-  args.dec = CHAR(STRING_ELT(decArg,0))[0];
+  }
+  args.dec = CHAR(STRING_ELT(decArg,0))[0];   // '\0' when default "auto" was replaced by "" at R level
 
   if (IS_FALSE(quoteArg)) {
     args.quote = '\0';
