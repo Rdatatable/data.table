@@ -38,6 +38,7 @@ sourceImports = function(path=getwd(), quiet=FALSE) {
     if (!quiet) warning("No NAMESPACE file found, required to guarantee imports resolve correctly")
     return(invisible())
   }
+  suppressWarnings(rm("getRversion", envir=.GlobalEnv)) # clean up from previous cc() because parseNamespaceFile() run getRversion() in NAMESPACE in .GlobalEnv
   nsParsedImports = parseNamespaceFile(basename(path), "..")$imports # weird signature to this function
   if (!quiet && length(nsParsedImports)) cat(sprintf("Ensuring objects from %d import entries in NAMESPACE resolve correctly\n", length(nsParsedImports)))
   for (ii in seq_along(nsParsedImports)) {
@@ -51,7 +52,7 @@ sourceImports = function(path=getwd(), quiet=FALSE) {
   return(invisible())
 }
 
-cc = function(test=FALSE, clean=FALSE, debug=FALSE, omp=!debug, cc_dir, path=Sys.getenv("PROJ_PATH"), CC="gcc", quiet=FALSE) {
+cc = function(test=FALSE, clean=FALSE, debug=FALSE, omp=!debug, cc_dir, path=Sys.getenv("PROJ_PATH", unset="."), CC="gcc", quiet=FALSE) {
   if (!missing(cc_dir)) {
     warning("'cc_dir' arg is deprecated, use 'path' argument or 'PROJ_PATH' env var instead")
     path = cc_dir
