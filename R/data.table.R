@@ -253,10 +253,10 @@ replace_dot_alias = function(e) {
   if (!missing(j)) {
     jsub = replace_dot_alias(jsub)
     root = if (is.call(jsub)) as.character(jsub[[1L]])[1L] else ""
-    if (root == ":" ||
-        (root %chin% c("-","!") && jsub[[2L]] %iscall% '(' && jsub[[2L]][[2L]] %iscall% ':') ||
-        ( (!length(av<-all.vars(jsub)) || all(startsWith(av, ".."))) &&
-          root %chin% c("","c","paste","paste0","-","!") &&
+    if ((root == ":" && !is.call(jsub[[2L]]) && !is.call(jsub[[3L]])) ||                        ## x[, V1:V2]; but not x[, (V1):(V2)] #2069
+        (root %chin% c("-","!") && jsub[[2L]] %iscall% '(' && jsub[[2L]][[2L]] %iscall% ':') || ## x[, !(V8:V10)]
+        ( (!length(av<-all.vars(jsub)) || all(startsWith(av, ".."))) &&                         ## x[, "V1"]; x[, ..v]
+          root %chin% c("","c","paste","paste0","-","!") &&                                     ## x[, c("V1","V2")]; x[, paste("V",1:2,sep="")]; x[, paste0("V",1:2)]
           missingby )) {   # test 763. TODO: likely that !missingby iff with==TRUE (so, with can be removed)
       # When no variable names (i.e. symbols) occur in j, scope doesn't matter because there are no symbols to find.
       # If variable names do occur, but they are all prefixed with .., then that means look up in calling scope.
@@ -264,7 +264,7 @@ replace_dot_alias = function(e) {
       # work as expected.  As before, a vector will never be returned, but a single column data.table
       # for type consistency with >1 cases. To return a single vector use DT[["someCol"]] or DT[[3]].
       # The root==":" is to allow DT[,colC:colH] even though that contains two variable names.
-      # root == "-" or "!" is for tests 1504.11 and 1504.13 (a : with a ! or - modifier root)
+      # root == "-" or "!" is for tests 1504.10 and 1504.12 (a : with a ! or - modifier root)
       # We don't want to evaluate j at all in making this decision because i) evaluating could itself
       # increment some variable and not intended to be evaluated a 2nd time later on and ii) we don't
       # want decisions like this to depend on the data or vector lengths since that can introduce

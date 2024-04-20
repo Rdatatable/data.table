@@ -18499,3 +18499,10 @@ test(2258.9, capture.output(print(DT, na.print=".", topn=2)), c("    x", " 1: ."
 x = data.table(rep(1:2, each=5L), 1:5, 1:10)
 test(2259.1, names(split(x, by = c("V1", "V2"), sep = "|")), sort(names(split(x, list(x$V1, x$V2), sep = "|"))))
 test(2259.2, names(split(x, by = c("V1", "V2"), sep = "||")), sort(names(split(x, list(x$V1, x$V2), sep = "||"))))
+
+# Confusing behavior with DT[, min(var):max(var)] #2069
+DT = data.table(
+  id = c(1L, 1L, 1L, 2L, 2L, 2L, 3L, 3L, 3L, 4L, 4L, 4L, 5L, 5L, 5L, 6L, 6L, 6L),
+  t = c(4L, 9L, 14L, 1L, 4L, 9L, 5L, 14L, 18L, 1L, 3L, 12L, 3L, 5L, 7L, 4L, 10L, 13L)
+)
+test(2260, DT[, min(t):max(t)], with(DT, min(t):max(t)))

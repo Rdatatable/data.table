@@ -54,6 +54,8 @@
 
 7. `melt` returns an integer column for `variable` when `measure.vars` is a list of length=1, consistent with the documented behavior, [#5209](https://github.com/Rdatatable/data.table/issues/5209). Thanks to @tdhock for reporting and fixing. Any users who were relying on this behavior can change `measure.vars=list("col_name")` (output `variable` was column name, now is column index/integer) to `measure.vars="col_name"` (`variable` still is column name).
 
+8. When using `:` operator on a _call_ object(s) inside `j` argument, it could have been improperly recognised as an attempt to select columns (`with=FALSE`) rather than evaluate expression within a data.table, [#2069](https://github.com/Rdatatable/data.table/issues/2069). Thanks to @franknarf1 for reporting.
+
 ## NOTES
 
 1. `transform` method for data.table sped up substantially when creating new columns on large tables. Thanks to @OfekShilon for the report and PR. The implemented solution was proposed by @ColeMiller1.
