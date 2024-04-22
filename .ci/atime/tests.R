@@ -70,7 +70,6 @@ pkg.edit.fun = function(old.Package, new.Package, sha, new.pkg.path) {
 # - sha.vec: Named character vector or a list of vectors that specify data.table-specific commit SHAs for testing across those different git commit versions.
 #            For historical regressions, use 'Before', 'Regression', and 'Fixed' (otherwise something like 'Slow' or 'Fast' ideally).
 # @note Please check https://github.com/tdhock/atime/blob/main/vignettes/data.table.Rmd for more information.
-# nolint start: undesirable_operator_linter. ':::' needed+appropriate here.
 test.list <- list(
   # Performance regression discussed in: https://github.com/Rdatatable/data.table/issues/4311 
   # Fixed in: https://github.com/Rdatatable/data.table/pull/4440
