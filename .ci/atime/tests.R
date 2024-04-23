@@ -109,7 +109,7 @@ test.list <- list(
 
   # Issue reported in: https://github.com/Rdatatable/data.table/issues/5426
   # To be fixed in: https://github.com/Rdatatable/data.table/pull/5427
-  "setDT improvement implemented in #5427" = list(
+  "setDT improved in #5427" = list(
   pkg.edit.fun = pkg.edit.fun,
   N = 10^seq(1, 7),
   setup = quote({
