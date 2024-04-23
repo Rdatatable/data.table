@@ -5,6 +5,8 @@ linters = all_linters(
   packages = "lintr", # TODO(lintr->3.2.0): Remove this.
   # eq_assignment_linter(),
   brace_linter(allow_single_line = TRUE),
+  # TODO(michaelchirico): Activate these incrementally. These are the
+  #   parameterizations that match our style guide.
   # implicit_assignment_linter(allow_lazy = TRUE, allow_scoped = TRUE),
   # implicit_integer_linter(allow_colon = TRUE),
   # system_time_linter = undesirable_function_linter(c(
