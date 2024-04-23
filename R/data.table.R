@@ -2300,7 +2300,7 @@ transform.data.table = function (`_data`, ...)
 {
   if (!cedta()) return(NextMethod()) # nocov
   `_data` = copy(`_data`)
-  e = eval(substitute(list(...)), `_data`, parent.frame()) 
+  e = eval(substitute(list(...)), `_data`, parent.frame())
   set(`_data`, ,names(e), e)
   `_data`
 }
@@ -2452,9 +2452,11 @@ split.data.table = function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = TR
     dtq[["i"]] = quote(levs)
     join = TRUE
   }
+  dots = list(...)
+  if (!"sep" %chin% names(dots)) dots$sep = "."
   dtq[["j"]] = substitute(
-    list(.ll.tech.split=list(.expr), .ll.tech.split.names=paste(lapply(.BY, as.character), collapse=".")),
-    list(.expr = if (join) quote(if(.N == 0L) .SD[0L] else .SD) else as.name(".SD"))
+    list(.ll.tech.split=list(.expr), .ll.tech.split.names=paste(lapply(.BY, as.character), collapse=.sep)),
+    list(.expr = if (join) quote(if(.N == 0L) .SD[0L] else .SD) else as.name(".SD"), .sep = dots$sep)
   )
   dtq[["by"]] = substitute( # retain order, for `join` and `sorted` it will use order of `i` data.table instead of `keyby`.
     .expr,

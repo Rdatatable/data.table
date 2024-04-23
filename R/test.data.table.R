@@ -7,7 +7,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   if (length(memtest.id)) {
     if (length(memtest.id)==1L) memtest.id = rep(memtest.id, 2L)  # for convenience of supplying one id rather than always a range
     stopifnot(length(memtest.id)<=2L,  # conditions quoted to user when false so "<=2L" even though following conditions rely on ==2L
-                     !anyNA(memtest.id), memtest.id[1L]<=memtest.id[2L]) 
+                     !anyNA(memtest.id), memtest.id[1L]<=memtest.id[2L])
     if (memtest==0L) memtest=1L  # using memtest.id implies memtest
   }
   if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
@@ -134,7 +134,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
 
   owd = setwd(tempdir()) # ensure writeable directory; e.g. tests that plot may write .pdf here depending on device option and/or batch mode; #5190
   on.exit(setwd(owd))
-  
+
   if (memtest) {
     catf("\n***\n*** memtest=%d. This should be the first call in a fresh R_GC_MEM_GROW=0 R session for best results. Ctrl-C now if not.\n***\n\n", memtest)
     if (is.na(rss())) stopf("memtest intended for Linux. Step through data.table:::rss() to see what went wrong.")

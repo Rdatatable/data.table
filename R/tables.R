@@ -60,4 +60,3 @@ tables = function(mb=type_size, order.col="NAME", width=80,
   }
   invisible(info)
 }
-
