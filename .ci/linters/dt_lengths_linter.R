@@ -1,3 +1,4 @@
+# This is lintr::lengths_linter(), but including 'vapply_1i()' which is more common internally in data.table
 dt_lengths_linter <- lintr::make_linter_from_function_xpath(
   function_names = c("sapply", "vapply", "vapply_1i", "map_int", "map_dbl"),
   xpath = "parent::expr/parent::expr[expr/SYMBOL[text() = 'length']]",
