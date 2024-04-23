@@ -2300,7 +2300,7 @@ transform.data.table = function (`_data`, ...)
 {
   if (!cedta()) return(NextMethod()) # nocov
   `_data` = copy(`_data`)
-  e = eval(substitute(list(...)), `_data`, parent.frame()) 
+  e = eval(substitute(list(...)), `_data`, parent.frame())
   set(`_data`, ,names(e), e)
   `_data`
 }
