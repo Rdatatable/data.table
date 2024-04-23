@@ -1,7 +1,11 @@
-for (f in list.files('ci/linters', full.names=TRUE)) source(f)
+dt_linters = new.env()
+for (f in list.files('.ci/linters', full.names=TRUE)) sys.source(f, dt_linters)
 rm(f)
 
-linters = all_linters(
+# NB: Could do this inside the linter definition, this separation makes those files more standardized
+dt_linters <- eapply(dt_linters, function(linter_factory) linter_factory())
+
+linters = c(dt_linters, all_linters(
   packages = "lintr", # TODO(lintr->3.2.0): Remove this.
   # eq_assignment_linter(),
   brace_linter(allow_single_line = TRUE),
@@ -81,7 +85,9 @@ linters = all_linters(
   unnecessary_nesting_linter = NULL,
   unreachable_code_linter = NULL,
   unused_import_linter = NULL
-)
+))
+rm(dt_linters)
+
 # TODO(lintr#2172): Glob with lintr itself.
 exclusions = local({
   exclusion_for_dir <- function(dir, exclusions) {
