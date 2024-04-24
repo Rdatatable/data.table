@@ -66,9 +66,10 @@ pkg.edit.fun = function(old.Package, new.Package, sha, new.pkg.path) {
 #
 # Optional parameters that may be useful to configure tests:
 # - times: Number of times each expression is evaluated (default is 10).
-# - seconds.limit: The maximum median timing (in seconds) of an expression. No timings for larger N are computed past that threshold.
-# - sha.vec: Named character vector or a list of vectors that specify data.table-specific commit SHAs for testing across those different git commit versions.
-#            For historical regressions, use 'Before', 'Regression', and 'Fixed' (otherwise something like 'Slow' or 'Fast' ideally).
+# - seconds.limit: The maximum median timing (in seconds) of an expression. No timings for larger N are computed past that threshold. Default of 0.01 seconds should be sufficient for most tests.
+# - Historical references (short version name = commit SHA1).
+#   For historical regressions, use version names 'Before', 'Regression', and 'Fixed'
+#   When there was no regression, use 'Slow' and 'Fast' 
 # @note Please check https://github.com/tdhock/atime/blob/main/vignettes/data.table.Rmd for more information.
 # nolint start: undesirable_operator_linter. ':::' needed+appropriate here.
 test.list <- list(
