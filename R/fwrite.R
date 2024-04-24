@@ -38,7 +38,13 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   # validate arguments
   if (is.matrix(x)) { # coerce to data.table if input object is matrix
     messagef("x being coerced from class: matrix to data.table")
-    x = as.data.table(x)
+    # keep row.names for matrix input #5315
+    if (row.names && !is.null(rownames(x))) {
+      row.names = FALSE
+      x = as.data.table(x, keep.rownames="")
+    } else {
+      x = as.data.table(x)
+    }
   }
   stopifnot(is.list(x),
     identical(quote,"auto") || isTRUEorFALSE(quote),
@@ -58,7 +64,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
     length(nThread)==1L && !is.na(nThread) && nThread>=1L
     )
 
-  is_gzip = compress == "gzip" || (compress == "auto" && grepl("\\.gz$", file))
+  is_gzip = compress == "gzip" || (compress == "auto" && endsWithAny(file, ".gz"))
 
   file = path.expand(file)  # "~/foo/bar"
   if (append && (file=="" || file.exists(file))) {
@@ -116,4 +122,3 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
 }
 
 haszlib = function() .Call(Cdt_has_zlib)
-

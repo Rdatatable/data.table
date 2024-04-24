@@ -27,7 +27,7 @@ f = function(pkg) suppressWarnings(suppressMessages(isTRUE(
 )))
 loaded = sapply(pkgs, f)
 if (any(!loaded)) {
-  stop("test.data.table('other.Rraw') is missing required package(s): ", paste(names(loaded)[!loaded], collapse=", "), ". If you can't install them and this is R CMD check, please set environment variable TEST_DATA_TABLE_WITH_OTHER_PACKAGES back to the default, false.")
+  stop("test.data.table('other.Rraw') is missing required package(s): ", toString(names(loaded)[!loaded]), ". If you can't install them and this is R CMD check, please set environment variable TEST_DATA_TABLE_WITH_OTHER_PACKAGES back to the default, false.")
   # Would like to install them now for convenience but gitlab-ci.yml seems to install to bus/mirror-other-packages/cran.
   # If that's a cache, that's nice, but we don't know at this point whether this script is being run by GLCI or by a user or in dev.
   # We don't allow skipping (e.g. if _R_CHECK_FORCE_SUGGESTS_ is FALSE) to keep things simple and to keep things strict; i.e.
@@ -35,7 +35,7 @@ if (any(!loaded)) {
 }
 
 cat("\n")
-print(data.table(pkg=pkgs, loaded)[loaded==TRUE, version:=as.character(sapply(pkg, function(p) format(packageVersion(p))))][])
+print(data.table(pkg=pkgs, loaded)[loaded==TRUE, .(pkg, version=sapply(pkg, function(p) format(packageVersion(p))))])
 cat("\n")
 print(sessionInfo())
 cat("\n")
@@ -50,7 +50,9 @@ if (loaded[["ggplot2"]]) {
   test(1.2, DT[,print(ggplot(.SD,aes(b,f))+geom_point()),by=list(grp%%2L)],data.table(grp=integer()))  # %%2 to reduce time needed for ggplot2 to plot
   if (loaded[["hexbin"]]) {
     # Test reported by C Neff on 11 Oct 2011
-    test(1.3, names(print(ggplot(DT) + geom_hex(aes(b, f)) + facet_wrap(~grp)))[c(1,3)], c("data","scales"))
+    # TODO(r-lib/gtable#94): don't suppressWarnings() here.
+    x <- suppressWarnings(print(ggplot(DT) + geom_hex(aes(b, f)) + facet_wrap(~grp)))
+    test(1.3, names(x)[c(1L, 3L)], c("data", "scales"))
   }
   # Test plotting ITime with ggplot2 which seems to require an as.data.frame method for ITime, #1713
   datetimes = c("2011 NOV18 09:29:16", "2011 NOV18 10:42:40", "2011 NOV18 23:47:12",
@@ -97,7 +99,8 @@ if (loaded[["caret"]]) {
   # So I put the win-builder fail down to resource issues and moved this test into test.data.table("other.Rraw").
   DT = data.table(x = rnorm(10), y = rnorm(10))
   cv.ctrl = trainControl(method = 'repeatedcv', number = 5, repeats = 1)
-  fit = train(y ~ x, data = DT, 'lm', trControl = cv.ctrl)
+  # TODO(topepo/caret#1361): remove suppressWarnings() for partially matched args internal to caret
+  fit = suppressWarnings(train(y ~ x, data = DT, 'lm', trControl = cv.ctrl))
   test(4, names(DT), c("x", "y"))
 }
 
@@ -209,7 +212,7 @@ test(14.1, {example(':=', package='data.table', local=TRUE, echo=FALSE); TRUE})
 test(14.2, {example('CJ', package='data.table', local=TRUE, echo=FALSE); TRUE})
 
 if (loaded[["sf"]]) {  #2273
-  DT = as.data.table(st_read(system.file("shape/nc.shp", package = "sf")))
+  DT = as.data.table(st_read(system.file("shape/nc.shp", package = "sf"), quiet=TRUE))
   test(15, DT[1:3, .(NAME, FIPS, geometry)], output="Ashe.*-81.4.*Surry.*-80.4")
 
   dsf = sf::st_as_sf(data.table(x=1:10, y=1:10, s=sample(1:2, 10, TRUE)), coords=1:2)
@@ -722,3 +725,8 @@ if (FALSE) {  # moved from tests.Rraw in #5517 and not yet back on; wasn't sure 
   }
 }
 
+if (loaded[["dplyr"]]) {
+  # regression test for converting character->list column in a magrittr (dplyr) pipe, #2651
+  DT = data.table(a = 1, b = 2, c = '1,2,3,4', d = 4)
+  test(30, DT[, c := strsplit(c, ',', fixed = TRUE) %>% lapply(as.integer) %>% as.list]$c, list(1:4))
+}

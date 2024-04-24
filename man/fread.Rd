@@ -9,7 +9,7 @@
    \code{fread} is for \emph{regular} delimited files; i.e., where every row has the same number of columns. In future, secondary separator (\code{sep2}) may be specified \emph{within} each column. Such columns will be read as type \code{list} where each cell is itself a vector.
 }
 \usage{
-fread(input, file, text, cmd, sep="auto", sep2="auto", dec=".", quote="\"",
+fread(input, file, text, cmd, sep="auto", sep2="auto", dec="auto", quote="\"",
 nrows=Inf, header="auto",
 na.strings=getOption("datatable.na.strings","NA"),  # due to change to ""; see NEWS
 stringsAsFactors=FALSE, verbose=getOption("datatable.verbose", FALSE),
@@ -47,15 +47,15 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC"
     If type coercion results in an error, introduces \code{NA}s, or would result in loss of accuracy, the coercion attempt is aborted for that column with warning and the column's type is left unchanged. If you really desire data loss (e.g. reading \code{3.14} as \code{integer}) you have to truncate such columns afterwards yourself explicitly so that this is clear to future readers of your code.
   }
   \item{integer64}{ "integer64" (default) reads columns detected as containing integers larger than 2^31 as type \code{bit64::integer64}. Alternatively, \code{"double"|"numeric"} reads as \code{utils::read.csv} does; i.e., possibly with loss of precision and if so silently. Or, "character". }
-  \item{dec}{ The decimal separator as in \code{utils::read.csv}. If not "." (default) then usually ",". See details. }
+  \item{dec}{ The decimal separator as in \code{utils::read.csv}. When \code{"auto"} (the default), an attempt is made to decide whether \code{"."} or \code{","} is more suitable for this input. See details. }
   \item{col.names}{ A vector of optional names for the variables (columns). The default is to use the header column if present or detected, or if not "V" followed by the column number. This is applied after \code{check.names} and before \code{key} and \code{index}. }
   \item{check.names}{default is \code{FALSE}. If \code{TRUE} then the names of the variables in the \code{data.table} are checked to ensure that they are syntactically valid variable names. If necessary they are adjusted (by \code{\link{make.names}}) so that they are, and also to ensure that there are no duplicates.}
   \item{encoding}{ default is \code{"unknown"}. Other possible options are \code{"UTF-8"} and \code{"Latin-1"}.  Note: it is not used to re-encode the input, rather enables handling of encoded strings in their native encoding. }
   \item{quote}{ By default (\code{"\""}), if a field starts with a double quote, \code{fread} handles embedded quotes robustly as explained under \code{Details}. If it fails, then another attempt is made to read the field \emph{as is}, i.e., as if quotes are disabled. By setting \code{quote=""}, the field is always read as if quotes are disabled. It is not expected to ever need to pass anything other than \"\" to quote; i.e., to turn it off. }
   \item{strip.white}{ default is \code{TRUE}. Strips leading and trailing whitespaces of unquoted fields. If \code{FALSE}, only header trailing spaces are removed. }
-  \item{fill}{logical (default is \code{FALSE}). If \code{TRUE} then in case the rows have unequal length, blank fields are implicitly filled.}
+  \item{fill}{logical or integer (default is \code{FALSE}). If \code{TRUE} then in case the rows have unequal length, number of columns is estimated and blank fields are implicitly filled. If an integer is provided it is used as an upper bound for the number of columns. }
   \item{blank.lines.skip}{\code{logical}, default is \code{FALSE}. If \code{TRUE} blank lines in the input are ignored.}
-  \item{key}{Character vector of one or more column names which is passed to \code{\link{setkey}}. It may be a single comma separated string such as \code{key="x,y,z"}, or a vector of names such as \code{key=c("x","y","z")}. Only valid when argument \code{data.table=TRUE}. Where applicable, this should refer to column names given in \code{col.names}. }
+  \item{key}{Character vector of one or more column names which is passed to \code{\link{setkey}}. Only valid when argument \code{data.table=TRUE}. Where applicable, this should refer to column names given in \code{col.names}. }
   \item{index}{ Character vector or list of character vectors of one or more column names which is passed to \code{\link{setindexv}}. As with \code{key}, comma-separated notation like \code{index="x,y,z"} is accepted for convenience. Only valid when argument \code{data.table=TRUE}. Where applicable, this should refer to column names given in \code{col.names}. }
   \item{showProgress}{ \code{TRUE} displays progress on the console if the ETA is greater than 3 seconds. It is produced in fread's C code where the very nice (but R level) txtProgressBar and tkProgressBar are not easily available. }
   \item{data.table}{ TRUE returns a \code{data.table}. FALSE returns a \code{data.frame}. The default for this argument can be changed with \code{options(datatable.fread.datatable=FALSE)}.}
@@ -79,9 +79,9 @@ If an empty line is encountered then reading stops there with warning if any tex
 
 \bold{Line endings:} All known line endings are detected automatically: \code{\\n} (*NIX including Mac), \code{\\r\\n} (Windows CRLF), \code{\\r} (old Mac) and \code{\\n\\r} (just in case). There is no need to convert input files first. \code{fread} running on any architecture will read a file from any architecture. Both \code{\\r} and \code{\\n} may be embedded in character strings (including column names) provided the field is quoted.
 
-\bold{Decimal separator and locale:} \code{fread(\dots,dec=",")} should just work. \code{fread} uses C function \code{strtod} to read numeric data; e.g., \code{1.23} or \code{1,23}. \code{strtod} retrieves the decimal separator (\code{.} or \code{,} usually) from the locale of the R session rather than as an argument passed to the \code{strtod} function. So for \code{fread(\dots,dec=",")} to work, \code{fread} changes this (and only this) R session's locale temporarily to a locale which provides the desired decimal separator.
+\bold{Decimal separator:} \code{dec} is used to parse numeric fields as the separator between integral and fractional parts. When \code{dec='auto'}, during column type detection, when a field is a candidate for being numeric (i.e., parsing as lower types has already failed), \code{dec='.'} is tried, and, if it fails to create a numeric field, \code{dec=','} is tried. At the end of the sample lines, if more were successfully parsed with \code{dec=','}, \code{dec} is set to \code{','}; otherwise, \code{dec} is set to \code{'.'}.
 
-On Windows, "French_France.1252" is tried which should be available as standard (any locale with comma decimal separator would suffice) and on unix "fr_FR.utf8" (you may need to install this locale on unix). \code{fread()} is very careful to set the locale back again afterwards, even if the function fails with an error. The choice of locale is determined by \code{options()$datatable.fread.dec.locale}. This may be a \emph{vector} of locale names and if so they will be tried in turn until the desired \code{dec} is obtained; thus allowing more than two different decimal separators to be selected. This is a new feature in v1.9.6 and is experimental. In case of problems, turn it off with \code{options(datatable.fread.dec.experiment=FALSE)}.
+Automatic detection of \code{sep} occurs \emph{prior} to column type detection -- as such, it is possible that \code{sep} has been inferred to be \code{','}, in which case \code{dec} is set to \code{'.'}.
 
 \bold{Quotes:}
 

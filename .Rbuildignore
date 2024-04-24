@@ -1,6 +1,7 @@
 .dir-locals.el
 ^\.Rprofile$
 ^data\.table_.*\.tar\.gz$
+^config\.log$
 ^vignettes/plots/figures$
 ^\.Renviron$
 ^[^/]+\.R$
@@ -16,7 +17,6 @@
 ^\.graphics$
 ^\.github$
 
-^\.appveyor\.yml$
 ^\.gitlab-ci\.yml$
 
 ^Makefile$

@@ -1,5 +1,5 @@
 fread = function(
-input="", file=NULL, text=NULL, cmd=NULL, sep="auto", sep2="auto", dec=".", quote="\"", nrows=Inf, header="auto",
+input="", file=NULL, text=NULL, cmd=NULL, sep="auto", sep2="auto", dec="auto", quote="\"", nrows=Inf, header="auto",
 na.strings=getOption("datatable.na.strings","NA"), stringsAsFactors=FALSE, verbose=getOption("datatable.verbose",FALSE),
 skip="__auto__", select=NULL, drop=NULL, colClasses=NULL, integer64=getOption("datatable.integer64","integer64"),
 col.names, check.names=FALSE, encoding="unknown", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, index=NULL,
@@ -16,17 +16,19 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     else if (sep=="auto") sep=""      # sep=="" at C level means auto sep
     else stopifnot( nchar(sep)==1L )  # otherwise an actual character to use as sep
   }
-  stopifnot( is.character(dec), length(dec)==1L, nchar(dec)==1L )
+  stopifnot( is.character(dec), length(dec)==1L)
+  if (dec == "auto") dec = "" else stopifnot(nchar(dec) == 1L)
   # handle encoding, #563
   if (length(encoding) != 1L || !encoding %chin% c("unknown", "UTF-8", "Latin-1")) {
     stopf("Argument 'encoding' must be 'unknown', 'UTF-8' or 'Latin-1'.")
   }
   stopifnot(
-    isTRUEorFALSE(strip.white), isTRUEorFALSE(blank.lines.skip), isTRUEorFALSE(fill), isTRUEorFALSE(showProgress),
+    isTRUEorFALSE(strip.white), isTRUEorFALSE(blank.lines.skip), isTRUEorFALSE(fill) || is.numeric(fill) && length(fill)==1L && fill >= 0L, isTRUEorFALSE(showProgress),
     isTRUEorFALSE(verbose), isTRUEorFALSE(check.names), isTRUEorFALSE(logical01), isTRUEorFALSE(keepLeadingZeros), isTRUEorFALSE(yaml),
     isTRUEorFALSE(stringsAsFactors) || (is.double(stringsAsFactors) && length(stringsAsFactors)==1L && 0.0<=stringsAsFactors && stringsAsFactors<=1.0),
     is.numeric(nrows), length(nrows)==1L
   )
+  fill=as.integer(fill)
   nrows=as.double(nrows) #4686
   if (is.na(nrows) || nrows<0) nrows=Inf   # accept -1 to mean Inf, as read.table does
   if (identical(header,"auto")) header=NA
@@ -339,7 +341,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     if (!is.character(key))
       stopf("key argument of data.table() must be a character vector naming columns (NB: col.names are applied before this)")
     if (length(key) == 1L) {
-      key = strsplit(key, split = ",", fixed = TRUE)[[1L]]
+      if (key != strsplit(key,split=",")[[1L]]) stopf("Usage of comma-separated literals in %s is deprecated, please split such entries yourself before passing to data.table", "key=")
     }
     setkeyv(ans, key)
   }

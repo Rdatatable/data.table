@@ -33,6 +33,7 @@ static const char *sof, *eof;
 static char sep;
 static char whiteChar; // what to consider as whitespace to skip: ' ', '\t' or 0 means both (when sep!=' ' && sep!='\t')
 static char quote, dec;
+static int linesForDecDot; // when dec='auto', track the balance of fields in favor of dec='.' vs dec=',', ties go to '.'
 static bool eol_one_r;  // only true very rarely for \r-only files
 
 // Quote rule:
@@ -55,7 +56,9 @@ static const char* const* NAstrings;
 static bool any_number_like_NAstrings=false;
 static bool blank_is_a_NAstring=false;
 static bool stripWhite=true;  // only applies to character columns; numeric fields always stripped
-static bool skipEmptyLines=false, fill=false;
+static bool skipEmptyLines=false;
+static int fill=0;
+static int *dropFill = NULL;
 
 static double NA_FLOAT64;  // takes fread.h:NA_FLOAT64_VALUE
 
@@ -141,6 +144,7 @@ bool freadCleanup(void)
   free(tmpType); tmpType = NULL;
   free(size); size = NULL;
   free(colNames); colNames = NULL;
+  free(dropFill); dropFill = NULL;
   if (mmp != NULL) {
     // Important to unmap as OS keeps internal reference open on file. Process is not exiting as
     // we're a .so/.dll here. If this was a process exiting we wouldn't need to unmap.
@@ -171,7 +175,7 @@ bool freadCleanup(void)
   stripWhite = true;
   skipEmptyLines = false;
   eol_one_r = false;
-  fill = false;
+  fill = 0;
   // following are borrowed references: do not free
   sof = eof = NULL;
   NAstrings = NULL;
@@ -1203,11 +1207,16 @@ static int detect_types( const char **pch, int8_t type[], int ncol, bool *bumped
   skip_white(&ch);
   if (eol(&ch)) return 0;  // empty line
   int field=0;
+  const bool autoDec = dec == '\0';
   while (field<ncol) {
     // DTPRINT(_("<<%s>>(%d)"), strlim(ch,20), quoteRule);
     skip_white(&ch);
     const char *fieldStart = ch;
     while (tmpType[field]<=CT_STRING) {
+      if (autoDec && IS_DEC_TYPE(tmpType[field]) && dec == '\0') { // guess . first
+        dec = '.';
+      }
+
       fun[tmpType[field]](&fctx);
       if (end_of_field(ch)) break;
       skip_white(&ch);
@@ -1231,8 +1240,18 @@ static int detect_types( const char **pch, int8_t type[], int ncol, bool *bumped
         }
       }
       ch = fieldStart;
+      if (autoDec && IS_DEC_TYPE(tmpType[field]) && dec == '.') { // . didn't parse a double; try ,
+        dec = ',';
+        continue;
+      }
       while (++tmpType[field]<CT_STRING && disabled_parsers[tmpType[field]]) {};
       *bumped = true;
+    }
+    if (autoDec && dec != '\0') { // double was attempted
+      if (IS_DEC_TYPE(tmpType[field])) { // double succeeded
+        linesForDecDot += dec == '.' ? 1 : -1;
+      }
+      dec = '\0'; // reset for next parse
     }
     field++;
     if (sep==' ' && *ch==sep) {
@@ -1342,9 +1361,8 @@ int freadMain(freadMainArgs _args) {
   dec = args.dec;
   quote = args.quote;
   if (args.sep == quote && quote!='\0') STOP(_("sep == quote ('%c') is not allowed"), quote);
-  if (dec=='\0') STOP(_("dec='' not allowed. Should be '.' or ','"));
-  if (args.sep == dec) STOP(_("sep == dec ('%c') is not allowed"), dec);
-  if (quote == dec) STOP(_("quote == dec ('%c') is not allowed"), dec);
+  if (args.sep == dec && dec != '\0') STOP(_("sep == dec ('%c') is not allowed"), dec);
+  if (quote == dec && dec != '\0') STOP(_("quote == dec ('%c') is not allowed"), dec);
   // since quote=='\0' when user passed quote="", the logic in this file uses '*ch==quote && quote' otherwise
   //   the ending \0 at eof could be treated as a quote (test xxx)
 
@@ -1618,7 +1636,7 @@ int freadMain(freadMainArgs _args) {
       if (eol(&ch)) ch++;
     }
     firstJumpEnd = ch;  // size of first 100 lines in bytes is used later for nrow estimate
-    fill = true;        // so that blank lines are read as empty
+    fill = 1;        // so that blank lines are read as empty
     ch = pos;
   } else {
     int nseps;
@@ -1750,7 +1768,7 @@ int freadMain(freadMainArgs _args) {
     }
     sep = topSep;
     whiteChar = (sep==' ' ? '\t' : (sep=='\t' ? ' ' : 0));
-    ncol = topNumFields;
+    ncol = fill > topNumFields ? fill : topNumFields; // overwrite user guess if estimated number is higher
     if (fill || sep==127) {
       // leave pos on the first populated line; that is start of data
       ch = pos;
@@ -1791,7 +1809,7 @@ int freadMain(freadMainArgs _args) {
   }
 
   //*********************************************************************************************
-  // [7] Detect column types, good nrow estimate and whether first row is column names
+  // [7] Detect column types, dec, good nrow estimate and whether first row is column names
   //*********************************************************************************************
   int nJumps;             // How many jumps to use when pre-scanning the file
   int64_t sampleLines;     // How many lines were sampled during the initial pre-scan
@@ -1801,12 +1819,19 @@ int freadMain(freadMainArgs _args) {
   double meanLineLen=0.0; // Average length (in bytes) of a single line in the input file
   size_t bytesRead=0;     // Bytes in the data section (i.e. excluding column names, header and footer, if any)
   {
-  if (verbose) DTPRINT(_("[07] Detect column types, good nrow estimate and whether first row is column names\n"));
+  if (verbose) DTPRINT(_("[07] Detect column types, dec, good nrow estimate and whether first row is column names\n"));
   if (verbose && args.header!=NA_BOOL8) DTPRINT(_("  'header' changed by user from 'auto' to %s\n"), args.header?"true":"false");
 
   type =    (int8_t *)malloc((size_t)ncol * sizeof(int8_t));
   tmpType = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));  // used i) in sampling to not stop on errors when bad jump point and ii) when accepting user overrides
   if (!type || !tmpType) STOP(_("Failed to allocate 2 x %d bytes for type and tmpType: %s"), ncol, strerror(errno));
+
+  if (sep == ',' && dec == '\0') { // if sep=',' detected, don't attempt to detect dec [NB: . is not par of seps]
+    if (verbose) {
+      DTPRINT(_("  sep=',' so dec set to '.'\n"));
+    }
+    dec = '.';
+  }
 
   int8_t type0 = 1;
   while (disabled_parsers[type0]) type0++;
@@ -1858,6 +1883,7 @@ int freadMain(freadMainArgs _args) {
     if (ch>=eof) break;                // The 9th jump could reach the end in the same situation and that's ok. As long as the end is sampled is what we want.
     bool bumped = false;  // did this jump find any different types; to reduce verbose output to relevant lines
     int jumpLine = 0;    // line from this jump point start
+    linesForDecDot = 0;
 
     while(ch<eof && jumpLine++<jumpLines) {
       const char *lineStart = ch;
@@ -1889,6 +1915,13 @@ int freadMain(freadMainArgs _args) {
         bumped = false;  // detect_types() only updates &bumped when it's true. So reset to false here.
       }
     }
+    if (dec == '\0') {
+      dec = linesForDecDot < 0 ? ',' : '.'; // in a tie, dec=. is more likely
+      if (verbose) {
+        DTPRINT(_("  dec='%c' detected based on a balance of %d parsed fields\n"), dec, abs(linesForDecDot));
+      }
+    }
+
     if (bumped) {
       // when jump>0, apply the bumps (if any) at the end of the successfully completed jump sample
       ASSERT(jump>0, "jump(%d)>0", jump);
@@ -1903,7 +1936,17 @@ int freadMain(freadMainArgs _args) {
   if (args.header==NA_BOOL8) {
     for (int j=0; j<ncol; j++) tmpType[j]=type0;   // reuse tmpType
     bool bumped=false;
+
+    if (dec == '\0') { // in files without jumps, dec could still be undecided
+      linesForDecDot = 0;
+    }
     detect_types(&ch, tmpType, ncol, &bumped);
+    if (dec == '\0') {
+      dec = linesForDecDot < 0 ? ',' : '.';
+      if (verbose) {
+        DTPRINT(_("  dec='%c' detected based on a balance of %d parsed fields\n"), dec, abs(linesForDecDot));
+      }
+    }
     if (sampleLines>0) for (int j=0; j<ncol; j++) {
       if (tmpType[j]==CT_STRING && type[j]<CT_STRING && type[j]>CT_EMPTY) {
         args.header=true;
@@ -2125,6 +2168,7 @@ int freadMain(freadMainArgs _args) {
   int nTypeBump=0, nTypeBumpCols=0;
   double tRead=0, tReread=0;
   double thRead=0, thPush=0;  // reductions of timings within the parallel region
+  int max_col=0;
   char *typeBumpMsg=NULL;  size_t typeBumpMsgSize=0;
   int typeCounts[NUMTYPE];  // used for verbose output; needs populating after first read and before reread (if any) -- see later comment
   #define internalErrSize 1000
@@ -2218,7 +2262,7 @@ int freadMain(freadMainArgs _args) {
     }
     prepareThreadContext(&ctx);
 
-    #pragma omp for ordered schedule(dynamic) reduction(+:thRead,thPush)
+    #pragma omp for ordered schedule(dynamic) reduction(+:thRead,thPush) reduction(max:max_col)
     for (int jump = jump0; jump < nJumps; jump++) {
       if (stopTeam) continue;  // must continue and not break. We desire not to depend on (relatively new) omp cancel directive, yet
       double tLast = 0.0;      // thread local wallclock time at last measuring point for verbose mode only.
@@ -2299,6 +2343,7 @@ int freadMain(freadMainArgs _args) {
             tch++;
             j++;
           }
+          if (j > max_col) max_col = j;
           //*** END HOT. START TEPID ***//
           if (tch==tLineStart) {
             skip_white(&tch);       // skips \0 before eof
@@ -2310,6 +2355,7 @@ int freadMain(freadMainArgs _args) {
             int8_t thisSize = size[j];
             if (thisSize) ((char **) targets)[thisSize] += thisSize;
             j++;
+            if (j > max_col) max_col = j;
             if (j==ncol) { tch++; myNrow++; continue; }  // next line. Back up to while (tch<nextJumpStart). Usually happens, fastest path
           }
           else {
@@ -2509,6 +2555,25 @@ int freadMain(freadMainArgs _args) {
   }
   //-- end parallel ------------------
 
+  // cleanup since fill argument for number of columns was too high
+  if (fill>1 && max_col<ncol && max_col>0) {
+    int ndropFill = ncol - max_col;
+    if (verbose) {
+      DTPRINT(_("  Provided number of fill columns: %d but only found %d\n"), ncol, max_col);
+      DTPRINT(_("  Dropping %d overallocated columns\n"), ndropFill);
+    }
+    dropFill = (int *)malloc((size_t)ndropFill * sizeof(int));
+    int i=0;
+    for (int j=max_col; j<ncol; ++j) {
+      type[j] = CT_DROP;
+      size[j] = 0;
+      ndrop++;
+      nNonStringCols--;
+      dropFill[i++] = j;
+    }
+    dropFilledCols(dropFill, ndropFill);
+  }
+
   if (stopTeam) {
     if (internalErr[0]!='\0') {
       STOP("%s", internalErr);  // # nocov
@@ -2611,8 +2676,13 @@ int freadMain(freadMainArgs _args) {
       else {
         ch = headPos;
         int tt = countfields(&ch);
-        DTWARN(_("Stopped early on line %"PRIu64". Expected %d fields but found %d. Consider fill=TRUE and comment.char=. First discarded non-empty line: <<%s>>"),
+        if (fill>0) {
+          DTWARN(_("Stopped early on line %"PRIu64". Expected %d fields but found %d. Consider fill=%d or even more based on your knowledge of the input file. First discarded non-empty line: <<%s>>"),
+          (uint64_t)DTi+row1line, ncol, tt, tt, strlim(skippedFooter,500));
+        } else {
+          DTWARN(_("Stopped early on line %"PRIu64". Expected %d fields but found %d. Consider fill=TRUE and comment.char=. First discarded non-empty line: <<%s>>"),
           (uint64_t)DTi+row1line, ncol, tt, strlim(skippedFooter,500));
+        }
       }
     }
   }
