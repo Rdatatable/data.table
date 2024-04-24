@@ -10,7 +10,8 @@ on:
       - synchronize
     paths:
       - 'R/**'
-      - 'src/**'       
+      - 'src/**'
+      - '.ci/atime/**'
 
 jobs:
   comment:
@@ -20,4 +21,4 @@ jobs:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       repo_token: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - uses: Anirban166/Autocomment-atime-results@v1.1.6
+      - uses: Anirban166/Autocomment-atime-results@v1.2.0
