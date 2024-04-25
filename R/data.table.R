@@ -2693,7 +2693,7 @@ setcolorder = function(x, neworder=key(x), before=NULL, after=NULL,skip_absent=F
   if (length(before)>1L || length(after)>1L)
     stopf("before=/after= accept a single column name or number, not more than one")
   neworder = colnamesInt(x, neworder, check_dups=FALSE, skip_absent=skip_absent)  # dups are now checked inside Csetcolorder below
-  neworder = setdiff(neworder, 0) # tests 498.11, 498.13 fail w/o this
+  neworder = neworder[!neworder %in% 0] # tests 498.11, 498.13 fail w/o this
   if (length(before))
     neworder = c(setdiff(seq_len(colnamesInt(x, before) - 1L), neworder), neworder)
   if (length(after))
