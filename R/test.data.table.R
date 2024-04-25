@@ -79,6 +79,9 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   # sample method changed in R 3.6 to remove bias; see #3431 for links and notes
   # This can be removed (and over 120 tests updated) if and when the oldest R version we test and support is moved to R 3.6
 
+  userNumericRounding = getNumericRounding()
+  setNumericRounding(0)  # Initialise to 0 in case the user has set it to a different value. Restore to user's value when finished.
+  
   # TO DO: reinstate solution for C locale of CRAN's Mac (R-Forge's Mac is ok)
   # oldlocale = Sys.getlocale("LC_CTYPE")
   # Sys.setlocale("LC_CTYPE", "")   # just for CRAN's Mac to get it off C locale (post to r-devel on 16 Jul 2012)
@@ -215,6 +218,8 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   suppressWarnings(do.call("RNGkind",as.list(oldRNG)))
   # suppressWarnings for the unlikely event that user selected sample='Rounding' themselves before calling test.data.table()
 
+  setNumericRounding(userNumericRounding)  # Restore the user's numeric rounding value
+  
   # Now output platform trace before error (if any) to be sure to always show it; e.g. to confirm endianness in #4099.
   # As one long dense line for cases when 00check.log only shows the last 13 lines of log; to only use up one
   # of those 13 line and give a better chance of seeing more of the output before it. Having said that, CRAN
