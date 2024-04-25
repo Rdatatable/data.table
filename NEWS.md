@@ -36,7 +36,7 @@
 
 10. `measure` now supports user-specified `cols` argument, which can be useful to specify a subset of columns to `melt`, without having to use a regex, [#5063](https://github.com/Rdatatable/data.table/issues/5063). Thanks to @UweBlock and @Henrik-P for reporting, and @tdhock for the PR.
 
-11. `setcolorder()` gains `skip_absent` to drop columns that aren't present, [#6044](https://github.com/Rdatatable/data.table/pull/6044). Default behavior (`skip_absent=FALSE`) remains unchanged, i.e. unrecognized columns result in an error. Thanks to @sluga for the suggestion and the PR.
+11. `setcolorder()` gains `skip_absent` to drop columns that aren't present, [#6044,  #6068](https://github.com/Rdatatable/data.table/pull/6044). Default behavior (`skip_absent=FALSE`) remains unchanged, i.e. unrecognized columns result in an error. Thanks to @sluga for the suggestion and @sluga & @Nj221102 for the PRs.
 
 ## BUG FIXES
 
