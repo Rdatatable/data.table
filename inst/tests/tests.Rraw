@@ -18532,3 +18532,10 @@ test(2260.15, inherits(tryCatch(messagef("x", class="test_message"), condition=i
 test(2260.16, inherits(tryCatch(messagef("x", class="test_message"), condition=identity), "message"))
 test(2260.17, inherits(tryCatch(packageStartupMessagef("x", class="test_psm"), condition=identity), "test_psm"))
 test(2260.18, inherits(tryCatch(packageStartupMessagef("x", class="test_psm"), condition=identity), "packageStartupMessage"))
+
+# Test setting of default numeric rounding to 0 in test.data.table(), #6082
+# The file issue_6082_tests.Rraw contains tests 1196.1 and 1196.2. Check that these pass when numeric rounding value has been set to 2 before running test.data.table().
+old_rounding = getNumericRounding()
+setNumericRounding(2)
+test(2261.1, as.logical(test.data.table(script = "issue_6082_tests.Rraw")))
+setNumericRounding(old_rounding)
