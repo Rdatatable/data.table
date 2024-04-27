@@ -500,13 +500,11 @@ if (loaded[["xts"]]) {  # was 1465 in tests.Rraw, #5516
 
   # 890 -- key argument for as.data.table.xts
   x = xts(1:10, as.Date(1:10, origin = "1970-01-01"))
-  old = options(datatable.verbose=FALSE)
-  test(18.18, capture.output(as.data.table(x, key="index")),
+  test(18.18, options = c(datatable.verbose=FALSE), capture.output(as.data.table(x, key="index")),
        c("         index V1", " 1: 1970-01-02  1", " 2: 1970-01-03  2",
          " 3: 1970-01-04  3", " 4: 1970-01-05  4", " 5: 1970-01-06  5",
          " 6: 1970-01-07  6", " 7: 1970-01-08  7", " 8: 1970-01-09  8",
          " 9: 1970-01-10  9", "10: 1970-01-11 10"))
-  options(old)
 
   # as.data.table.xts(foo) had incorrect integer index with a column name called 'x', #4897
   M = xts::as.xts(matrix(1, dimnames=list("2021-05-23", "x")))  # xts:: just to be extra robust; shouldn't be needed with rm(as.xts) above
@@ -522,22 +520,20 @@ if (loaded[["xts"]]) {  # was 1465 in tests.Rraw, #5516
 # first and last should no longer load xts namespace, #3857, below commented test for interactive validation when xts present but not loaded or attached
 # stopifnot("xts"%in%installed.packages(), !"xts"%in%loadedNamespaces()); library(data.table); x=as.POSIXct("2019-01-01"); last(x); stopifnot(!"xts" %in% loadedNamespaces())
 x = as.POSIXct("2019-09-09")+0:1
-old = options(datatable.verbose=TRUE)
-test(19.01, last(x), x[length(x)], output="!is.xts(x)")
-test(19.02, first(x), x[1L], output="!is.xts(x)")
+test(19.01, options = c(datatable.verbose=TRUE), last(x), x[length(x)], output="!is.xts(x)")
+test(19.02, options = c(datatable.verbose=TRUE), first(x), x[1L], output="!is.xts(x)")
 if (loaded[["xts"]]) {
   xt = xts(1:2, x)
-  test(19.03, last(xt, 2L), xt, output="using xts::last: is.xts(x)")
-  test(19.04, first(xt, 2L), xt, output="using xts::first: is.xts(x)")
+  test(19.03, options = c(datatable.verbose=TRUE), last(xt, 2L), xt, output="using xts::last: is.xts(x)")
+  test(19.04, options = c(datatable.verbose=TRUE), first(xt, 2L), xt, output="using xts::first: is.xts(x)")
   xt = xts(matrix(1:4, 2L, 2L), x)
-  test(19.05, last(xt, 2L), xt, output="using xts::last: is.xts(x)")
-  test(19.06, first(xt, 2L), xt, output="using xts::first: is.xts(x)")
+  test(19.05, options = c(datatable.verbose=TRUE), last(xt, 2L), xt, output="using xts::last: is.xts(x)")
+  test(19.06, options = c(datatable.verbose=TRUE), first(xt, 2L), xt, output="using xts::first: is.xts(x)")
 }
 # first on empty df now match head(df, n=1L), #3858
 df = data.frame(a=integer(), b=integer())
-test(19.11, first(df), df, output="!is.xts(x)")
-test(19.12, last(df), df, output="!is.xts(x)")
-options(datatable.verbose=FALSE)  # so the as.data.table() doesn't pollute output
+test(19.11, options = c(datatable.verbose=TRUE), first(df), df, output="!is.xts(x)")
+test(19.12, options = c(datatable.verbose=TRUE), last(df), df, output="!is.xts(x)")
 # xts last-first dispatch fix #4053
 x = 1:3
 y = as.POSIXct(x, origin="1970-01-01")
@@ -553,12 +549,11 @@ xt = structure(
   index = structure(c(1167782400, 1167868800, 1167955200), tzone = "UTC", tclass = "Date"),
   .Dim = c(3L, 6L), .Dimnames = list(NULL, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "SPY.Adjusted"))
 )
-options(datatable.verbose=TRUE)
 if (loaded[["xts"]]) {
-  test(19.21, last(x, n=2L), 2:3, output="using xts::last: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
-  test(19.22, last(y, n=2L), y[2:3], output="using xts::last: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
-  test(19.23, last(x, n=1L), 3L, output="using xts::last: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
-  test(19.24, last(y, n=1L), y[3L], output="using xts::last: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
+  test(19.21, options = c(datatable.verbose=TRUE), last(x, n=2L), 2:3, output="using xts::last: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
+  test(19.22, options = c(datatable.verbose=TRUE), last(y, n=2L), y[2:3], output="using xts::last: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
+  test(19.23, options = c(datatable.verbose=TRUE), last(x, n=1L), 3L, output="using xts::last: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
+  test(19.24, options = c(datatable.verbose=TRUE), last(y, n=1L), y[3L], output="using xts::last: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
   xt_last = structure(
     c(141.330002, 141.399994, 140.380005, 140.539993, 76645300, 108.360008),
     class = c("xts", "zoo"), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC",
@@ -572,12 +567,12 @@ if (loaded[["xts"]]) {
     index = structure(c(1167868800, 1167955200), tzone = "UTC", tclass = "Date"),
     .Dim = c(2L, 6L), .Dimnames = list(NULL, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "SPY.Adjusted"))
   )
-  test(19.25, last(xt), xt_last, output="using xts::last: is.xts(x)")
-  test(19.26, last(xt, n=2L), xt_last2, output="using xts::last: is.xts(x)")
-  test(19.31, first(x, n=2L), 1:2, output="using xts::first: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
-  test(19.32, first(y, n=2L), y[1:2], output="using xts::first: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
-  test(19.33, first(x, n=1L), 1L, output="using xts::first: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
-  test(19.34, first(y, n=1L), y[1L], output="using xts::first: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
+  test(19.25, options = c(datatable.verbose=TRUE), last(xt), xt_last, output="using xts::last: is.xts(x)")
+  test(19.26, options = c(datatable.verbose=TRUE), last(xt, n=2L), xt_last2, output="using xts::last: is.xts(x)")
+  test(19.31, options = c(datatable.verbose=TRUE), first(x, n=2L), 1:2, output="using xts::first: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
+  test(19.32, options = c(datatable.verbose=TRUE), first(y, n=2L), y[1:2], output="using xts::first: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
+  test(19.33, options = c(datatable.verbose=TRUE), first(x, n=1L), 1L, output="using xts::first: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
+  test(19.34, options = c(datatable.verbose=TRUE), first(y, n=1L), y[1L], output="using xts::first: !is.xts(x) & nargs>1 & 'package:xts'%in%search()")
   xt_first = structure(
     c(142.25, 142.860001, 140.570007, 141.369995, 94807600, 108.999954),
     class = c("xts", "zoo"), .indexCLASS = "Date", tclass = "Date", .indexTZ = "UTC", tzone = "UTC",
@@ -590,38 +585,37 @@ if (loaded[["xts"]]) {
     index = structure(c(1167782400, 1167868800), tzone = "UTC", tclass = "Date"),
     .Dim = c(2L, 6L), .Dimnames = list(NULL, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "SPY.Adjusted"))
   )
-  test(19.35, first(xt), xt_first, output="using xts::first: is.xts(x)")
-  test(19.36, first(xt, n=2L), xt_first2, output="using xts::first: is.xts(x)")
+  test(19.35, options = c(datatable.verbose=TRUE), first(xt), xt_first, output="using xts::first: is.xts(x)")
+  test(19.36, options = c(datatable.verbose=TRUE), first(xt, n=2L), xt_first2, output="using xts::first: is.xts(x)")
 } else {
-  test(19.21, last(x, n=2L), 2:3, output="using utils::tail: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
-  test(19.22, last(y, n=2L), y[2:3], output="using utils::tail: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
-  test(19.23, last(x, n=1L), 3L, output="using utils::tail: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
-  test(19.24, last(y, n=1L), y[3L], output="using utils::tail: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
-  test(19.25, last(xt), error="you should have 'xts' installed already")
-  test(19.26, last(xt, n=2L), error="you should have 'xts' installed already")
-  test(19.31, first(x, n=2L), 1:2, output="using utils::head: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
-  test(19.32, first(y, n=2L), y[1:2], output="using utils::head: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
-  test(19.33, first(x, n=1L), 1L, output="using utils::head: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
-  test(19.34, first(y, n=1L), y[1L], output="using utils::head: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
-  test(19.35, first(xt), error="you should have 'xts' installed already")
-  test(19.36, first(xt, n=2L), error="you should have 'xts' installed already")
+  test(19.21, options = c(datatable.verbose=TRUE), last(x, n=2L), 2:3, output="using utils::tail: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
+  test(19.22, options = c(datatable.verbose=TRUE), last(y, n=2L), y[2:3], output="using utils::tail: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
+  test(19.23, options = c(datatable.verbose=TRUE), last(x, n=1L), 3L, output="using utils::tail: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
+  test(19.24, options = c(datatable.verbose=TRUE), last(y, n=1L), y[3L], output="using utils::tail: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
+  test(19.25, options = c(datatable.verbose=TRUE), last(xt), error="you should have 'xts' installed already")
+  test(19.26, options = c(datatable.verbose=TRUE), last(xt, n=2L), error="you should have 'xts' installed already")
+  test(19.31, options = c(datatable.verbose=TRUE), first(x, n=2L), 1:2, output="using utils::head: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
+  test(19.32, options = c(datatable.verbose=TRUE), first(y, n=2L), y[1:2], output="using utils::head: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
+  test(19.33, options = c(datatable.verbose=TRUE), first(x, n=1L), 1L, output="using utils::head: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
+  test(19.34, options = c(datatable.verbose=TRUE), first(y, n=1L), y[1L], output="using utils::head: !is.xts(x) & nargs>1 & !'package:xts'%in%search()")
+  test(19.35, options = c(datatable.verbose=TRUE), first(xt), error="you should have 'xts' installed already")
+  test(19.36, options = c(datatable.verbose=TRUE), first(xt, n=2L), error="you should have 'xts' installed already")
 }
-test(19.41, last(x), 3L, output="using 'x[[length(x)]]': !is.xts(x) & !nargs>1 & is.null(dim(x))")
-test(19.42, last(y), y[3L], output="using 'x[[length(x)]]': !is.xts(x) & !nargs>1 & is.null(dim(x))")
-test(19.51, first(x), 1L, output="using 'x[[1L]]': !is.xts(x) & !nargs>1 & is.null(dim(x))")
-test(19.52, first(y), y[1L], output="using 'x[[1L]]': !is.xts(x) & !nargs>1 & is.null(dim(x))")
-test(19.61, last(df), structure(list(a=2L, b=2L), row.names=2L, class="data.frame"), output="using 'x[nrow(x),]': !is.xts(x) & !nargs>1 & is.data.frame(x)")
-test(19.62, last(dt), data.table(a=2L, b=2L), output="using 'x[nrow(x),]': !is.xts(x) & !nargs>1 & is.data.frame(x)")
-test(19.71, first(df), structure(list(a=1L, b=3L), row.names=1L, class="data.frame"), output="using 'x[1L,]': !is.xts(x) & !nargs>1 & is.data.frame(x)")
-test(19.72, first(dt), data.table(a=1L, b=3L), output="using 'x[1L,]': !is.xts(x) & !nargs>1 & is.data.frame(x)")
+test(19.41, options = c(datatable.verbose=TRUE), last(x), 3L, output="using 'x[[length(x)]]': !is.xts(x) & !nargs>1 & is.null(dim(x))")
+test(19.42, options = c(datatable.verbose=TRUE), last(y), y[3L], output="using 'x[[length(x)]]': !is.xts(x) & !nargs>1 & is.null(dim(x))")
+test(19.51, options = c(datatable.verbose=TRUE), first(x), 1L, output="using 'x[[1L]]': !is.xts(x) & !nargs>1 & is.null(dim(x))")
+test(19.52, options = c(datatable.verbose=TRUE), first(y), y[1L], output="using 'x[[1L]]': !is.xts(x) & !nargs>1 & is.null(dim(x))")
+test(19.61, options = c(datatable.verbose=TRUE), last(df), structure(list(a=2L, b=2L), row.names=2L, class="data.frame"), output="using 'x[nrow(x),]': !is.xts(x) & !nargs>1 & is.data.frame(x)")
+test(19.62, options = c(datatable.verbose=TRUE), last(dt), data.table(a=2L, b=2L), output="using 'x[nrow(x),]': !is.xts(x) & !nargs>1 & is.data.frame(x)")
+test(19.71, options = c(datatable.verbose=TRUE), first(df), structure(list(a=1L, b=3L), row.names=1L, class="data.frame"), output="using 'x[1L,]': !is.xts(x) & !nargs>1 & is.data.frame(x)")
+test(19.72, options = c(datatable.verbose=TRUE), first(dt), data.table(a=1L, b=3L), output="using 'x[1L,]': !is.xts(x) & !nargs>1 & is.data.frame(x)")
 # matrix/array utils::tail behavior is likely to change in future R, Michael is more in the topic
-test(19.81, last(mx), structure(c(3L, 6L, 9L), .Dim = c(1L, 3L), .Dimnames = list("[3,]", NULL)), output="using utils::tail: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
+test(19.81, options = c(datatable.verbose=TRUE), last(mx), structure(c(3L, 6L, 9L), .Dim = c(1L, 3L), .Dimnames = list("[3,]", NULL)), output="using utils::tail: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
 expected = if (base::getRversion() < "3.7.0") 27L else structure(c(3L, 6L, 9L, 12L, 15L, 18L, 21L, 24L, 27L), .Dim = c(1L, 3L, 3L), .Dimnames = list("[3,]", NULL, NULL)) #4127
-test(19.82, last(ar), expected, output="using utils::tail: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
-test(19.91, first(mx), structure(c(1L, 4L, 7L), .Dim = c(1L, 3L)), output="using utils::head: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
+test(19.82, options = c(datatable.verbose=TRUE), last(ar), expected, output="using utils::tail: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
+test(19.91, options = c(datatable.verbose=TRUE), first(mx), structure(c(1L, 4L, 7L), .Dim = c(1L, 3L)), output="using utils::head: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
 expected = if (base::getRversion() < "3.7.0") 1L else structure(c(1L, 4L, 7L, 10L, 13L, 16L, 19L, 22L, 25L), .Dim = c(1L, 3L, 3L)) #4127
-test(19.92, first(ar), expected, output="using utils::head: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
-options(old)
+test(19.92, options = c(datatable.verbose=TRUE), first(ar), expected, output="using utils::head: !is.xts(x) & !nargs>1 & !is.null(dim(x)) & !is.data.frame(x)")
 
 if (loaded[["xts"]]) {  # was 2133 in tests.Rraw, #5516
   # keep.rownames in as.data.table.xts() supports a string, #4232
@@ -674,11 +668,9 @@ if (loaded[["nanotime"]]) {
   # was 2080.01-05 in tests.Rraw, #5516
   n = nanotime(1:4)
   n[2L] = NA
-  opt = options(datatable.verbose=TRUE)
-  test(24.1, between(n, nanotime(2), nanotime(10)), c(FALSE, NA, TRUE, TRUE), output="between parallel processing of integer64")
-  test(24.2, between(n, nanotime(3), nanotime(10), incbounds=FALSE), c(FALSE, NA, FALSE, TRUE), output="between parallel processing of integer64")
-  test(24.3, between(n, nanotime(3), nanotime(NA), incbounds=FALSE, NAbounds=NA), c(FALSE, NA, FALSE, NA), output="between parallel processing of integer64")
-  options(opt)
+  test(24.1, options = c(datatable.verbose=TRUE), between(n, nanotime(2), nanotime(10)), c(FALSE, NA, TRUE, TRUE), output="between parallel processing of integer64")
+  test(24.2, options = c(datatable.verbose=TRUE), between(n, nanotime(3), nanotime(10), incbounds=FALSE), c(FALSE, NA, FALSE, TRUE), output="between parallel processing of integer64")
+  test(24.3, options = c(datatable.verbose=TRUE), between(n, nanotime(3), nanotime(NA), incbounds=FALSE, NAbounds=NA), c(FALSE, NA, FALSE, NA), output="between parallel processing of integer64")
   test(24.4, between(1:10, nanotime(3), nanotime(6)), error="x is not integer64 but.*Please align classes")
   test(24.5, between(1:10, 3, nanotime(6)),           error="x is not integer64 but.*Please align classes")
   
