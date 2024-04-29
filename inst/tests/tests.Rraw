@@ -11027,20 +11027,20 @@ test(1743.044, fread("a\n1", colClasses=""), data.table(a=1L))
 # Issue #1634: 'fread doesn't check colClasses to be valid type'
 # Currently using BioGenerics, which doesn't support USE.NAMES
 ## Date supported character/list colClasses
-test(1743.05, sapply(fread("a,b\n2017-01-01,1", colClasses=c("Date", "integer")), class), c(a="Date", b="integer"))
-test(1743.06, sapply(fread("a,b\n2017-01-01,1", colClasses=list(Date = 1L, integer = 2L)), class), c(a="Date", b="integer"))
-test(1743.07, sapply(fread("a,b\n2017-01-01,2017-01-02", colClasses=list(Date = 1:2)), class), c(a="Date", b="Date"))
-test(1743.08, sapply(fread("a,b,c\n2017-01-01,1,1+3i", colClasses=c("Date", "integer", "complex")), class), c(a="Date", b="integer", c="complex"))
-test(1743.09, sapply(fread("a,b,c\n2017-01-01,1,1+3i", colClasses=c("Date", "integer", "complex")), class), c(a="Date", b="integer", c="complex"))
-test(1743.10, sapply(fread("a,b,c,d\n2017-01-01,1,1+3i,05", colClasses=c("Date", "integer", "complex", NA)), class), c(a="Date",b="integer",c="complex",d="integer"))
-test(1743.11, sapply(fread("a,b,c,d\n2017-01-01,1,1+3i,05", colClasses=c("Date", "integer", "complex", "raw")), class), c(a="Date",b="integer",c="complex",d="raw"))
+test(1743.05, lapply(fread("a,b\n2017-01-01,1", colClasses=c("Date", "integer")), class), list(a=c("IDate", "Date"), b="integer"))
+test(1743.06, lapply(fread("a,b\n2017-01-01,1", colClasses=list(Date = 1L, integer = 2L)), class), list(a=c("IDate", "Date"), b="integer"))
+test(1743.07, lapply(fread("a,b\n2017-01-01,2017-01-02", colClasses=list(Date = 1:2)), class), list(a=c("IDate", "Date"), b=c("IDate", "Date")))
+test(1743.08, lapply(fread("a,b,c\n2017-01-01,1,1+3i", colClasses=c("Date", "integer", "complex")), class), list(a=c("IDate", "Date"), b="integer", c="complex"))
+test(1743.09, lapply(fread("a,b,c\n2017-01-01,1,1+3i", colClasses=c("Date", "integer", "complex")), class), list(a=c("IDate", "Date"), b="integer", c="complex"))
+test(1743.10, lapply(fread("a,b,c,d\n2017-01-01,1,1+3i,05", colClasses=c("Date", "integer", "complex", NA)), class), list(a=c("IDate", "Date"), b="integer", c="complex", d="integer"))
+test(1743.11, lapply(fread("a,b,c,d\n2017-01-01,1,1+3i,05", colClasses=c("Date", "integer", "complex", "raw")), class), list(a=c("IDate", "Date"), b="integer", c="complex", d="raw"))
 test(1743.121, sapply(fread("a,b\n2015-01-01,2015-01-01", colClasses=c(NA,"IDate")), inherits, what="IDate"), c(a=TRUE, b=TRUE))
-test(1743.122, fread("a,b\n2015-01-01,2015-01-01", colClasses=c("POSIXct","Date")), data.table(a=as.POSIXct("2015-01-01"), b=as.Date("2015-01-01")))
+test(1743.122, fread("a,b\n2015-01-01,2015-01-01", colClasses=c("POSIXct","Date")), data.table(a=as.POSIXct("2015-01-01"), b=as.IDate("2015-01-01")))
 test(1743.123, fread("a,b\n1+3i,2015-01-01", colClasses=c(NA,"IDate")), data.table(a="1+3i", b=as.IDate("2015-01-01")))
 
 ## Attempts to impose incompatible colClasses is a warning (not an error)
 ## and does not change the value of the columns
-test(1743.13, sapply(fread("a,b\n09/05/98,2015-01-01", colClasses = "Date"), class), y=c(a="character", b="Date"), warning=base_messages$ambiguous_date_fmt)
+test(1743.13, lapply(fread("a,b\n09/05/98,2015-01-01", colClasses = "Date"), class), y=list(a="character", b=c("IDate", "Date")), warning=base_messages$ambiguous_date_fmt)
 
 ## Just invalid
 test(1743.14, options = c(useFancyQuotes = FALSE),
@@ -11070,6 +11070,9 @@ test(1743.201, fread("A,B,C,D\nA,B,X,4", select=list(factor="A"), colClasses="ch
 test(1743.202, fread("A,B,C,D\nA,B,X,4", select=c(A="factor"), colClasses="character"), error="select= is a named vector.*but colClasses= has been provided as well. Please remove colClasses=.")
 test(1743.203, fread("A,B,C,D\nA,B,X,4", select=list(character="D", factor="B")), data.table(D="4", B=factor("B")))
 test(1743.204, fread("A,B,C,D\nA,B,X,4", select=list(character=4, character=2)), data.table(D="4", B="B"))
+## Date+select
+test(1743.205, fread("a,b\n2017-01-01,1", colClasses="Date", select="a"), data.table(a=as.IDate("2017-01-01")))
+test(1743.206, fread("a,b\n2017-01-01,1", select=list(Date="a")), data.table(a=as.IDate("2017-01-01")))
 
 ## factors
 test(1743.211, sapply(fread("a,b,c\n2,2,f", colClasses = list(factor = 1L), select = 2:3), class), y = c(b="integer", c="character"))
@@ -16937,7 +16940,7 @@ test(2150.10, fread(tmp), copy(DT)[ , times := format(times, '%FT%T+00:XX')])
 test(2150.11,fread("a,b\n2015-01-01,2015-01-01", colClasses="POSIXct"),  # local time for backwards compatibility
      data.table(a=as.POSIXct("2015-01-01"), b=as.POSIXct("2015-01-01")))
 test(2150.12,fread("a,b\n2015-01-01,2015-01-01", select=c(a="Date",b="POSIXct")),  # select colClasses form, for coverage
-     data.table(a=as.Date("2015-01-01"), b=as.POSIXct("2015-01-01")))
+     data.table(a=as.IDate("2015-01-01"), b=as.POSIXct("2015-01-01")))
 test(2150.13, fread("a,b\n2015-01-01,1.1\n2015-01-02 01:02:03,1.2", tz=""), # no Z, tz="" needed for this test from v1.14.0
      if (TZnotUTC) data.table(a=c("2015-01-01","2015-01-02 01:02:03"), b=c(1.1, 1.2))
      else          data.table(a=setattr(as.POSIXct(c("2015-01-01 00:00:00", "2015-01-02 01:02:03"), tz="UTC"), "tzone", "UTC"), b=c(1.1, 1.2)))

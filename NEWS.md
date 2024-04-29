@@ -90,6 +90,8 @@
 
 14. `setNumericRounding()` now invisibly returns the old rounding value instead of `NULL`, which is now consistent with similar behavior by `setwd()`, `options()`, etc. Thanks @MichaelChirico for the report and @joshhwuu for the fix.
 
+15. `fread()` performance improves when specifying `Date` among `colClasses`, [#6105](https://github.com/Rdatatable/data.table/issues/6105). One implication of the change is that the column will be an `IDate` (which also inherits from `Date`), which may affect code strongly relying on the column class to be `Date` exactly; computations with `IDate` and `Date` columns should otherwise be the same. If you strongly prefer the `Date` class, run `as.Date()` explicitly following `fread()`. Thanks @scipima for the report and @MichaelChirico for the fix.
+
 # data.table [v1.15.0](https://github.com/Rdatatable/data.table/milestone/29)  (30 Jan 2024)
 
 ## BREAKING CHANGE
