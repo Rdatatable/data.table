@@ -376,6 +376,7 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
 
       for (int i=0; i<LENGTH(colClassesSxp); i++) {
         const int w = INTEGER(typeEnum_idx)[i];
+        Rprintf("listNames[%i]=%s\n", i, CHAR(STRING_ELT(listNames, i)));
         signed char thisType = typeEnum[w-1];
         if (thisType==CT_DROP) continue;  // was dealt with earlier above
         SEXP items = VECTOR_ELT(colClassesSxp,i);
@@ -390,24 +391,28 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
               DTWARN(_("Column name '%s' (colClasses[[%d]][%d]) not found"), CHAR(STRING_ELT(items, j)), i+1, j+1);
             else
               DTWARN(_("colClasses[[%d]][%d] is NA"), i+1, j+1);
-          } else {
-            if (k>=1 && k<=ncol) {
-              if (type[k-1]<0)
-                DTWARN(_("Column %d ('%s') appears more than once in colClasses. The second time is colClasses[[%d]][%d]."), k, CHAR(STRING_ELT(colNamesSxp,k-1)), i+1, j+1);
-              else if (type[k-1]!=CT_DROP) {
-                if (thisType==CT_ISO8601_TIME && type[k-1]!=CT_ISO8601_TIME) {
-                  type[k-1] = -CT_STRING; // don't use in-built UTC parser, defer to character and as.POSIXct afterwards which reads in local time
-                  SET_STRING_ELT(colClassesAs, k-1, STRING_ELT(listNames,i));
-                } else {
-                  type[k-1] = -thisType;     // freadMain checks bump up only not down.  Deliberately don't catch here to test freadMain; e.g. test 959
-                  if (w==NUT) SET_STRING_ELT(colClassesAs, k-1, STRING_ELT(listNames,i));
-                }
-                if (selectRankD) selectRankD[k-1] = rank++;
-              }
-            } else {
-              DTWARN(_("Column number %d (colClasses[[%d]][%d]) is out of range [1,ncol=%d]"), k, i+1, j+1, ncol);
-            }
+            continue;
           }
+          if (k<1 || k>ncol) {
+            DTWARN(_("Column number %d (colClasses[[%d]][%d]) is out of range [1,ncol=%d]"), k, i+1, j+1, ncol);
+            continue;
+          }
+          if (type[k-1]<0) {
+            DTWARN(_("Column %d ('%s') appears more than once in colClasses. The second time is colClasses[[%d]][%d]."), k, CHAR(STRING_ELT(colNamesSxp,k-1)), i+1, j+1);
+            continue;
+          }
+          if (type[k-1] == CT_DROP) {
+            continue;
+          }
+          if (thisType==CT_ISO8601_TIME && type[k-1]!=CT_ISO8601_TIME) {
+            type[k-1] = -CT_STRING; // don't use in-built UTC parser, defer to character and as.POSIXct afterwards which reads in local time
+            SET_STRING_ELT(colClassesAs, k-1, STRING_ELT(listNames,i));
+          } else {
+            Rprintf("type[k-1]=%d; thisType=%d\n", type[k-1], thisType);
+            type[k-1] = -thisType;     // freadMain checks bump up only not down.  Deliberately don't catch here to test freadMain; e.g. test 959
+            if (w==NUT) SET_STRING_ELT(colClassesAs, k-1, STRING_ELT(listNames,i));
+          }
+          if (selectRankD) selectRankD[k-1] = rank++;
         }
         UNPROTECT(1); // UNPROTECTing itemsInt inside loop to save protection stack
       }
