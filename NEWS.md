@@ -84,6 +84,8 @@
 
 12. `print.data.table` now honors `na.print`, as seen in `print.default`, allowing for string replacement of `NA` values when printing. Thanks @HughParsonage for the report and @joshhwuu for the fix.
 
+13. `test.data.table()` now initialises the numeric rounding value to 0 using `setNumericRounding(0)` to avoid failed tests if the user has set a different value, [#6082](https://github.com/Rdatatable/data.table/issues/6082). The user's value is restored on exit. Thanks to @MichaelChirico for the report and for describing the solution, and @markseeto for implementing.
+
 # data.table [v1.15.0](https://github.com/Rdatatable/data.table/milestone/29)  (30 Jan 2024)
 
 ## BREAKING CHANGE
