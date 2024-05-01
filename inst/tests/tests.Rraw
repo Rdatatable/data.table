@@ -18533,14 +18533,13 @@ test(2260.16, inherits(tryCatch(messagef("x", class="test_message"), condition=i
 test(2260.17, inherits(tryCatch(packageStartupMessagef("x", class="test_psm"), condition=identity), "test_psm"))
 test(2260.18, inherits(tryCatch(packageStartupMessagef("x", class="test_psm"), condition=identity), "packageStartupMessage"))
 
-test(2261.01, setNumericRounding(0L), 0L)
-test(2261.02, getNumericRounding(), 0L)
-test(2261.03, setNumericRounding(1L), 0L)
-test(2261.04, getNumericRounding(), 1L)
-test(2261.05, setNumericRounding(2L), 1L)
-test(2261.06, getNumericRounding(), 2L)
-test(2261.07, setNumericRounding(1L), 2L)
-test(2261.08, getNumericRounding(), 1L)
-test(2261.09, setNumericRounding(0L), 1L)
-test(2261.10, getNumericRounding(), 0L)
-test(2261.11, capture.output(setNumericRounding(2L)), character(0))
+# tests for setNumericRounding() returning original value before changing, #6112
+old = setNumericRounding(0L)
+test(2261.01, getNumericRounding(), 0L)
+test(2261.02, setNumericRounding(1L), 0L)
+test(2261.03, getNumericRounding(), 1L)
+test(2261.04, setNumericRounding(2L), 1L)
+# This test ensures that the function returns invisibly. Note we can't use notOutput here as it calls print, which ignores whether
+# or not an object is an invisible copy or not, and prints it anyways.
+test(2261.05, capture.output(setNumericRounding(2L)), character(0))
+setNumericRounding(old)
