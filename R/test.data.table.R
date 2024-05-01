@@ -79,8 +79,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   # sample method changed in R 3.6 to remove bias; see #3431 for links and notes
   # This can be removed (and over 120 tests updated) if and when the oldest R version we test and support is moved to R 3.6
 
-  userNumericRounding = getNumericRounding()
-  setNumericRounding(0)  # Initialise to 0 in case the user has set it to a different value. Restore to user's value when finished.
+  userNumericRounding = setNumericRounding(0) # Initialise to 0 in case the user has set it to a different value. Restore to user's value when finished.
 
   # TO DO: reinstate solution for C locale of CRAN's Mac (R-Forge's Mac is ok)
   # oldlocale = Sys.getlocale("LC_CTYPE")
