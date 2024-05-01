@@ -3669,23 +3669,27 @@ test(1100, dt1[dt2,roll=-Inf,rollends=c(FALSE,TRUE)]$ind, INT(NA,NA,1,2,2,2,2,2,
 
   # issue 5824 - tests for "value.var.in.dots", "value.var.in.LHSdots", "value.var.in.RHSdots" arguments of dcast
   DT = data.table(index = c("a","b"), x = 1:2)
-  set.seed(1)
-  DT2 = data.table(index = c("a","b"), x = 1:2, y = rnorm(2))
-  DT3 = data.table(year = c(rep(1986,4), rep(1987,3), rep(1988,2), 1989:1991), continent = rep(c("Europe","Asia"), each = 6), country = rep(c("Sweden","Germany","France","India","Japan","China"), each = 2))
-  DT3_dcasted = dcast(DT3, ... ~ ..., fun.aggregate = length, value.var.in.RHSdots = TRUE, value.var = "country")
-  DT3_dcasted2 = dcast(DT3, . ~ ..., fun.aggregate = length, value.var.in.RHSdots = TRUE, value.var = "country")
-  DT3_dcasted3 = dcast(DT3, 1 ~ ..., fun.aggregate = length, value.var.in.RHSdots = TRUE, value.var = "country")
   test(1102.181, dcast(DT, ... ~ index, fun.aggregate = length, value.var.in.dots = NA), error = "Argument 'value.var.in.dots' should be logical TRUE/FALSE")
   test(1102.182, dcast(DT, ... ~ index, fun.aggregate = length, value.var.in.LHSdots = NA), error = "Arguments 'value.var.in.LHSdots', 'value.var.in.RHSdots' should be logical TRUE/FALSE")
   test(1102.183, dcast(DT, ... ~ index, fun.aggregate = length, value.var.in.dots = TRUE), data.table(x = 1:2, a = 1:0, b = 0:1, key = "x"))
   test(1102.184, dcast(DT, ... ~ index, fun.aggregate = length, value.var = "index", value.var.in.dots = TRUE), data.table(index = c("a","b"), x = 1:2, a = 1:0, b = 0:1, key = c("index", "x")))
   test(1102.185, dcast(DT, ... + index ~ index, fun.aggregate = length, value.var = "index", value.var.in.dots = TRUE), data.table(index = c("a","b"), x = 1:2, a = 1:0, b = 0:1, key = c("index", "x")))
-  test(1102.186, names(dcast(DT2, ... ~ ..., value.var = "y", value.var.in.LHSdots = TRUE)), c("index", "x", "y", "a_1", "b_2"))
-  test(1102.187, dim(DT3_dcasted), c(7L,11L))
-  test(1102.188, names(DT3_dcasted), c("year", "continent", "1986_Europe_Germany", "1986_Europe_Sweden", "1987_Asia_India", "1987_Europe_France", "1988_Asia_India", "1988_Asia_Japan", "1989_Asia_Japan", "1990_Asia_China", "1991_Asia_China"))
-  test(1102.189, DT3_dcasted2, DT3_dcasted3)
-  test(1102.1891, dim(DT3_dcasted2), c(1L,10L))
-  test(1102.1892, names(DT3_dcasted2), c(".", "1986_Europe_Germany", "1986_Europe_Sweden", "1987_Asia_India", "1987_Europe_France", "1988_Asia_India", "1988_Asia_Japan", "1989_Asia_Japan", "1990_Asia_China", "1991_Asia_China"))
+
+  set.seed(1)
+  DT = data.table(index = c("a","b"), x = 1:2, y = rnorm(2))
+  test(1102.186, names(dcast(DT, ... ~ ..., value.var = "y", value.var.in.LHSdots = TRUE)), c("index", "x", "y", "a_1", "b_2"))
+  
+  DT = data.table(year = c(rep(1986,4), rep(1987,3), rep(1988,2), 1989:1991), continent = rep(c("Europe","Asia"), each = 6), country = rep(c("Sweden","Germany","France","India","Japan","China"), each = 2))
+  DT_dcasted_LHSddd = dcast(DT, ... ~ ..., fun.aggregate = length, value.var.in.RHSdots = TRUE, value.var = "country")
+  test(1102.187, dim(DT_dcasted_LHSddd), c(7L,11L))
+  test(1102.188, names(DT_dcasted_LHSddd), c("year", "continent", "1986_Europe_Germany", "1986_Europe_Sweden", "1987_Asia_India", "1987_Europe_France", "1988_Asia_India", "1988_Asia_Japan", "1989_Asia_Japan", "1990_Asia_China", "1991_Asia_China"))
+  
+  DT_dcasted_LHSd = dcast(DT, . ~ ..., fun.aggregate = length, value.var.in.RHSdots = TRUE, value.var = "country")
+  DT_dcasted_LHSi = dcast(DT, 1 ~ ..., fun.aggregate = length, value.var.in.RHSdots = TRUE, value.var = "country")
+
+  test(1102.189, DT_dcasted_LHSd, DT_dcasted_LHSi)
+  test(1102.1891, dim(DT_dcasted_LHSd), c(1L,10L))
+  test(1102.1892, names(DT_dcasted_LHSd), c(".", "1986_Europe_Germany", "1986_Europe_Sweden", "1987_Asia_India", "1987_Europe_France", "1988_Asia_India", "1988_Asia_Japan", "1989_Asia_Japan", "1990_Asia_China", "1991_Asia_China"))
 
 
   # bug git #693 - dcast error message improvement:
