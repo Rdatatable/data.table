@@ -132,9 +132,9 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
   if (!is.data.table(data)) stopf("'data' must be a data.table.")
   drop = as.logical(rep(drop, length.out=2L))
   if (anyNA(drop)) stopf("'drop' must be logical TRUE/FALSE")
-  if (!value.var.in.dots %in% c(TRUE, FALSE))
+  if (!isTRUE(value.var.in.dots) && !isFALSE(value.var.in.dots))
     stopf("Argument 'value.var.in.dots' should be logical TRUE/FALSE")
-  if (!value.var.in.LHSdots %in% c(TRUE, FALSE) || ! value.var.in.RHSdots %in% c(TRUE, FALSE))
+  if ((!isTRUE(value.var.in.LHSdots) && !isFALSE(value.var.in.LHSdots)) || (!isTRUE(value.var.in.RHSdots) && !isFALSE(value.var.in.RHSdots)))
     stopf("Arguments 'value.var.in.LHSdots', 'value.var.in.RHSdots' should be logical TRUE/FALSE")
   # #2980 if explicitly providing fun.aggregate=length but not a value.var,
   #   just use the last column (as guess(data) would do) because length will be
