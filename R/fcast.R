@@ -32,22 +32,15 @@ check_formula = function(formula, varnames, valnames, value.var.in.LHSdots, valu
   vars = all.vars(formula)
   vars = vars[!vars %chin% c(".", "...")]
   allvars = c(vars, valnames)
+  vars = setdiff(vars, valnames)
+  allvarsBL <- list(vars, allvars)
   if (any(allvars %chin% varnames[duplicated(varnames)]))
     stopf('data.table to cast must have unique column names')
   if (value.var.in.LHSdots == value.var.in.RHSdots && isFALSE(value.var.in.LHSdots)) {
     deparse_formula(as.list(formula)[-1L], varnames, allvars)
   }
-  else if (value.var.in.LHSdots == value.var.in.RHSdots && isTRUE(value.var.in.LHSdots)) {
-    vars = setdiff(vars, valnames)
-    split_deparsing(as.list(formula)[-1L], varnames, vars, vars)
-  }
-  else if (isTRUE(value.var.in.LHSdots) && isFALSE(value.var.in.RHSdots)) {
-    vars = setdiff(vars, valnames)
-    split_deparsing(as.list(formula)[-1L], varnames, vars, allvars)
-  }
   else {
-    vars = setdiff(vars, valnames)
-    split_deparsing(as.list(formula)[-1L], varnames, allvars, vars)
+      split_deparsing(as.list(formula)[-1L], varnames, allvarsBL[[2 - value.var.in.LHSdots]], allvarsBL[[2 - value.var.in.RHSdots]])
   }
 }
 
