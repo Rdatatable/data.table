@@ -445,7 +445,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     }
     if (length(expected) != length(observed)) {
       # nocov start
-      catf("Test %s produced %d %ss but expected %d\n%s\n%s\n", numStr, length(observed), type, length(expected), paste("Expected:", expected), paste("Observed:", observed))
+      catf("Test %s produced %d %ss but expected %d\n%s\n%s\n", numStr, length(observed), type, length(expected), paste("Expected:", expected), paste("Observed:", observed, collapse = "\n"))
       fail = TRUE
       # nocov end
     } else {
