@@ -13131,7 +13131,7 @@ test(1942.02, DT[,sum(v),keyby=id1,verbose=TRUE], data.table(id1=c("D","A","C"),
 setindex(DT,id2)
 test(1942.03, DT[,sum(v),keyby=id2,verbose=TRUE], data.table(id2=INT(3,9,2), V1=INT(6,6,3), key="id2"), output="Finding groups using uniqlist on index 'id2")
 setindex(DT,id3)
-oldnr = setNumericRounding(0)  # TODO: return old
+oldnr = setNumericRounding(0)
 test(1942.04, DT[,sum(v),keyby=id3,verbose=TRUE], data.table(id3=c(3.4, 9.1, 3.3), V1=INT(4,7,4), key="id3"), output="Finding groups using uniqlist on index 'id3'")
 setNumericRounding(1)
 test(1942.05, DT[,sum(v),keyby=id3,verbose=TRUE], data.table(id3=c(3.4, 9.1, 3.3), V1=INT(4,7,4), key="id3"), output="Finding groups using uniqlist on index 'id3'")
