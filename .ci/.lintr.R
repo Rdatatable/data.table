@@ -31,6 +31,7 @@ linters = c(dt_linters, all_linters(
   )),
   # TODO(lintr#2441): Use upstream implementation.
   assignment_linter = NULL,
+  absolute_path_linter = NULL, # too many false positives
   # TODO(lintr#2442): Use this once x[ , j, by] is supported.
   commas_linter = NULL,
   commented_code_linter = NULL,
@@ -91,7 +92,7 @@ rm(dt_linters)
 # TODO(lintr#2172): Glob with lintr itself.
 exclusions = local({
   exclusion_for_dir <- function(dir, exclusions) {
-    files = list.files(dir, pattern = "\\.(R|Rmd)$")
+    files = list.files(dir, pattern = "\\.(R|Rmd|Rraw)$")
     stats::setNames(rep(list(exclusions), length(files)), files)
   }
   c(
@@ -106,6 +107,11 @@ exclusions = local({
       quotes_linter = Inf
       # strings_as_factors_linter = Inf
       # system_time_linter = Inf
+    )),
+    exclusion_for_dir("inst/tests", list(
+      library_call_linter = Inf,
+      # TODO(michaelchirico): Enforce these and re-activate them one-by-one.
+      paste_linter = Inf
     ))
   )
 })

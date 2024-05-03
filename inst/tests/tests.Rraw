@@ -2004,7 +2004,7 @@ ans3 = DT[,list(basemean(x),basemean(y)),by=list(grp1,grp2)]
 test(646, ans1, ans2)
 test(647, ans1, ans3)
 if (test_longdouble) {
-  test(648, any(is.na(ans1$V1)) && !any(is.nan(ans1$V1)))
+  test(648, anyNA(ans1$V1) && !any(is.nan(ans1$V1)))
   # used to error with `valgrind` because of the 'long double' usage in gsumm.c (although I wonder if we need long double precision).
   # it doesn't seem to error under valgrind anymore so the test_longdouble may be removable
   # http://valgrind.org/docs/manual/manual-core.html#manual-core.limits
