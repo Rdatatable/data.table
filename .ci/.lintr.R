@@ -90,7 +90,7 @@ linters = c(dt_linters, all_linters(
 rm(dt_linters)
 
 # TODO(lintr#2172): Glob with lintr itself.
-exclusions = local({
+exclusions = c(local({
   exclusion_for_dir <- function(dir, exclusions) {
     files = list.files(dir, pattern = "\\.(R|Rmd|Rraw)$")
     stats::setNames(rep(list(exclusions), length(files)), files)
@@ -114,4 +114,6 @@ exclusions = local({
       paste_linter = Inf
     ))
   )
-})
+}),
+  `inst/tests/froll.Rraw` = list(dt_test_literal_linter = Inf) # TODO(michaelchirico): Fix these once #5898, #5692, #5682, #5576, #5575, #5441 are merged.
+)
