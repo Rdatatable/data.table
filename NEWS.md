@@ -40,6 +40,8 @@
 
 12. `setDT` is faster for data with many columns, thanks @MichaelChirico for reporting and fixing the issue, [#5426](https://github.com/Rdatatable/data.table/issues/5426).
 
+13. `dcast`gains `value.var.in.dots`, `value.var.in.LHSdots` and `value.var.in.RHSdots` arguments, [#5824](https://github.com/Rdatatable/data.table/issues/5824). This allows the `value.var` variable(s) in `dcast` to be represented by `...` in the formula (if not otherwise mentioned). Thanks to @iago-pssjd for the report and PR.
+
 ## BUG FIXES
 
 1. `unique()` returns a copy the case when `nrows(x) <= 1` instead of a mutable alias, [#5932](https://github.com/Rdatatable/data.table/pull/5932). This is consistent with existing `unique()` behavior when the input has no duplicates but more than one row. Thanks to @brookslogan for the report and @dshemetov for the fix.
