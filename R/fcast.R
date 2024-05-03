@@ -33,22 +33,22 @@ check_formula = function(formula, varnames, valnames, value.var.in.LHSdots, valu
   vars = vars[!vars %chin% c(".", "...")]
   allvars = c(vars, valnames)
   vars = setdiff(vars, valnames)
-  allvarsBL <- list(vars, allvars)
+  allvarsBL = list(vars, allvars)
   if (any(allvars %chin% varnames[duplicated(varnames)]))
     stopf('data.table to cast must have unique column names')
   if (value.var.in.LHSdots == value.var.in.RHSdots && isFALSE(value.var.in.LHSdots)) {
     deparse_formula(as.list(formula)[-1L], varnames, allvars)
   }
   else {
-      split_deparsing(as.list(formula)[-1L], varnames, allvarsBL[[2 - value.var.in.LHSdots]], allvarsBL[[2 - value.var.in.RHSdots]])
+    split_deparsing(as.list(formula)[-1L], varnames, allvarsBL[[2L - value.var.in.LHSdots]], allvarsBL[[2L - value.var.in.RHSdots]])
   }
 }
 
 split_deparsing = function(expr, varnames, LHSallvars, RHSallvars) {
-  expr = list(list(expr[[1]], LHSallvars), list(expr[[2]], c(RHSallvars))) # assume expr[[1]] is LHS and expr[[2]] is RHS
+  expr = list(list(expr[[1L]], LHSallvars), list(expr[[2L]], c(RHSallvars))) # assume expr[[1L]] is LHS and expr[[2L]] is RHS
   lvars = lapply(expr, function(thisList) {
-    this = thisList[[1]]
-    allvars = thisList[[2]]
+    this = thisList[[1L]]
+    allvars = thisList[[2L]]
     if (!is.language(this)) return(NULL)
     if (this %iscall% '+') return(unlist(deparse_formula(this[-1L], varnames, allvars)))
     if (is.name(this) && this == quote(`...`)) {
