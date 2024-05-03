@@ -92,7 +92,7 @@ rm(dt_linters)
 # TODO(lintr#2172): Glob with lintr itself.
 exclusions = c(local({
   exclusion_for_dir <- function(dir, exclusions) {
-    files = list.files(dir, pattern = "\\.(R|Rmd|Rraw)$")
+    files = file.path("..", list.files(dir, pattern = "\\.(R|Rmd|Rraw)$", full.names=TRUE))
     stats::setNames(rep(list(exclusions), length(files)), files)
   }
   c(
@@ -110,10 +110,15 @@ exclusions = c(local({
     )),
     exclusion_for_dir("inst/tests", list(
       library_call_linter = Inf,
+      numeric_leading_zero_linter = Inf,
+      undesirable_operator_linter = Inf, # For ':::', possibly we could be more careful to only exclude ':::'.
       # TODO(michaelchirico): Enforce these and re-activate them one-by-one.
+      comparison_negation_linter = Inf,
+      duplicate_argument_linter = Inf,
+      equals_na_linter = Inf,
       paste_linter = Inf
     ))
   )
 }),
-  `inst/tests/froll.Rraw` = list(dt_test_literal_linter = Inf) # TODO(michaelchirico): Fix these once #5898, #5692, #5682, #5576, #5575, #5441 are merged.
+  list(`../inst/tests/froll.Rraw` = list(dt_test_literal_linter = Inf)) # TODO(michaelchirico): Fix these once #5898, #5692, #5682, #5576, #5575, #5441 are merged.
 )

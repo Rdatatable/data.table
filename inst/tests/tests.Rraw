@@ -30,6 +30,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   binary = data.table:::binary
   bmerge = data.table:::bmerge
   brackify = data.table:::brackify
+  CsubsetDT = data.table:::CsubsetDT
   Ctest_dt_win_snprintf = data.table:::Ctest_dt_win_snprintf
   chmatchdup = data.table:::chmatchdup
   compactprint = data.table:::compactprint
@@ -183,7 +184,7 @@ base_messages = list(
   arg_length_mismatch = get_msg(base::order(1, 1:2)),
   empty_max = get_msg(max(numeric())),
   empty_min = get_msg(min(numeric())),
-  coerce_na = get_msg(as.integer('a')),
+  coerce_na = get_msg(as.integer('a')), # nolint: literal_coercion_linter.
   locked_binding = get_msg({e = new.env(); e$x = 1; lockBinding('x', e); e$x = 2}, "'", fmt=TRUE),
   missing_file = get_msg({tmp <- tempfile(tmpdir=tempfile("xxx")); file(tmp, "w")}, "'"),
   # gives both error & warning but tryCatch returns the warning first, so suppress
@@ -439,7 +440,7 @@ test(107, dt + dt, dt * 2L)
 
 # test a few other generics:
 test(108, dt, data.table(t(t(dt)),key=c('A', 'B')))
-test(109, all(!is.na(dt)))
+test(109, all(!is.na(dt))) # nolint: outer_negation_linter. Explicitly testing is.na() generic.
 dt2 <- dt
 dt2$A[1] <- NA   # removes key
 test(110, sum(is.na(dt2)), 1L)
@@ -469,7 +470,7 @@ test(116, TESTDT[,a[1],by="b"], data.table(b=c("b","e","f","i"), V1=c("g","a","d
 test(117, TESTDT[,list(a[1],v[1]),by="b"], data.table(b=c("b","e","f","i"), V1=c("g","a","d","d"), V2=INT(7,1,3,5), key="b"))
 
 # We no longer check i for out of bounds, for consistency with data.frame and e.g. cbind(DT[w],DT[w+1]). NA rows should be returned for i>nrow
-test(118, TESTDT[8], data.table(a=as.character(NA), b=as.character(NA), v=as.integer(NA), key="b"))
+test(118, TESTDT[8], data.table(a=NA_character_, b=NA_character_, v=NA_integer_, key="b"))
 test(119, TESTDT[6:9], data.table(a=c("d","d",NA,NA), b=c("i","i",NA,NA), v=c(5L,6L,NA,NA)))
 
 # Tests of 0 and 1 row tables
@@ -909,7 +910,7 @@ DT = data.table(pool = c(1L, 1L, 2L), bal = c(10, 20, 30))
 test(280, DT[, list(bal[0], bal[1]), by=pool], data.table(pool=1:2, V1=NA_real_, V2=c(10,30)))
 test(281, DT[, list(bal[1], bal[0]), by=pool], data.table(pool=1:2, V1=c(10,30), V2=NA_real_))
 # Test 2nd group too (the 1st is special) ...
-test(282, DT[, list(bal[ifelse(pool==1,1,0)], bal[1]), by=pool], data.table(pool=1:2, V1=c(10,NA), V2=c(10,30)))
+test(282, DT[, list(bal[as.numeric(pool==1)], bal[1]), by=pool], data.table(pool=1:2, V1=c(10,NA), V2=c(10,30)))
 
 # More tests based on Andreas Borg's post of 11 May 2011.
 DT = data.table(x=INT(0,0,1,0,1,1), y=INT(1,1,0,1,1,1), z=1:6)
@@ -3069,7 +3070,7 @@ test(1012, fread('A,B\n"aa",1\n"bb"",2\n"cc",3\n'), data.table(A=c("aa", "bb\"",
 # integer64 control to fread
 test(1013, fread("A,B\n123,123\n", integer64="integer"), error="integer64='%s' which isn't 'integer64'|'double'|'numeric'|'character'")
 test(1014, fread("A,B\n123456789123456,21\n", integer64="character"), data.table(A="123456789123456",B=21L))
-test(1015, fread("A,B\n123456789123456,21\n", integer64="double"), data.table(A=as.double("123456789123456"),B=21L))
+test(1015, fread("A,B\n123456789123456,21\n", integer64="double"), data.table(A=123456789123456,B=21L))
 # and that mid read bumps respect integer64 control too ..
 x = sample(1:1000,2100,replace=TRUE)  # 2100 > 100 JUMPLINES * 10 NJUMP * 2 spacing
 DT = data.table( A=as.character(x), B=1:100)
@@ -3803,7 +3804,6 @@ test(1100, dt1[dt2,roll=-Inf,rollends=c(FALSE,TRUE)]$ind, INT(NA,NA,1,2,2,2,2,2,
   test(1102.42, dcast(DT, int ~ chr, min, value.var="dbl"), data.table(int=1:3, a=c(4,Inf,Inf), b=c(Inf,5,6), key="int"), warning=base_messages$empty_min) # only one warning, because no coercion.
   test(1102.43, dcast(DT, int ~ chr, min, value.var="dbl", fill="coerced to NA"), data.table(int=1:3, a=c(4,NA,NA), b=c(NA,5,6), key="int"), warning=c("Coercing 'character' RHS to 'double' to match the type of target vector.", base_messages$coerce_na))
   test(1102.44, dcast(DT, int ~ ., value.var="dbl", fill="ignored"), data.table(int=1:3, .=c(4,5,6), key="int"))
-  
 }
 
 # test for freading commands
@@ -4027,18 +4027,18 @@ test(1137.12, DT[, lapply(.SD, sum), by=x, .SDcols=-"y"], DT[, lapply(.SD, sum),
 DT <- data.table(x=1:5, y=6:10)
 test(1138.1, capture.output(print(DT, row.names=FALSE)), c(" x  y", " 1  6", " 2  7", " 3  8", " 4  9", " 5 10"))
 DT <- data.table(x=1:101, y=6:106) # bug described in #1307
-test(1138.2, capture.output(print(DT, row.names=FALSE)), 
-c("   x   y", 
- "   1   6", 
- "   2   7", 
- "   3   8", 
- "   4   9", 
- "   5  10", 
- " --- ---", 
- "  97 102", 
- "  98 103", 
- "  99 104", 
- " 100 105", 
+test(1138.2, capture.output(print(DT, row.names=FALSE)),
+c("   x   y",
+ "   1   6",
+ "   2   7",
+ "   3   8",
+ "   4   9",
+ "   5  10",
+ " --- ---",
+ "  97 102",
+ "  98 103",
+ "  99 104",
+ " 100 105",
  " 101 106"))
 
 # test for FR #2591 (format.data.table issue with column of class "formula")
@@ -4790,7 +4790,7 @@ for (i in seq_along(names(DT))) {
           if (y[j] == 1L)
             as.name(x[j])
           else {
-            if (class(DT[[x[j]]]) =="character")
+            if (is.character(DT[[x[j]]]))
               as.call(c(as.name("-"), as.call(list(as.name("xtfrm"), as.name(x[j])))))
             else
               as.call(list(as.name("-"), as.name(x[j])))
@@ -5745,7 +5745,7 @@ for (i in seq_along(dt)) {
     # ensure consistency with base::rank ties.methods as advertised
     for (k in eval(formals(base::rank)$ties.method)) {
       if (k == "random") set.seed(45L)
-      if (class(col) == "integer64") {
+      if (is.integer64(col)) {
         r1 = rank(as.integer(col), ties.method=k, na.last=j)
         r2 = rank(-xtfrm(as.integer(col)), ties.method=k, na.last=j)
       }
@@ -5777,7 +5777,7 @@ for (i in seq_along(dt)) {
   # ensure consistency with base::rank ties.methods as advertised
   for (k in eval(formals(base::rank)$ties.method)) {  # 'random' on now with tweak to match base in #4243
     if (k == "random") set.seed(45L)
-    if (class(col) == "integer64") {
+    if (is.integer64(col)) {
       r1 = rank(as.integer(col), ties.method=k, na.last=NA)
       r2 = rank(-xtfrm(as.integer(col)), ties.method=k, na.last=NA)
     }
@@ -6121,17 +6121,17 @@ DT1 = data.table(start=c(0.3,0.5), end=c(0.3,0.5))
 DT2 = data.table(start=c(0.4), end=c(0.4))
 setkey(DT2)
 test(1390.2, foverlaps(DT1, DT2, which=TRUE), data.table(xid=1:2, yid=as.integer(c(NA, NA))))
-tt = c( as.POSIXct('2011-10-11 07:49:36'), as.POSIXct('2011-10-11 07:49:37'))
+tt = as.POSIXct(c('2011-10-11 07:49:36', '2011-10-11 07:49:37'))
 DT1 = data.table(start=tt, end=tt)
 DT2 = data.table(start=tt[1], end=tt[1])
 setkey(DT2)
 test(1390.3, foverlaps(DT1, DT2, which=TRUE), data.table(xid=1:2, yid=as.integer(c(1L, NA))))
-tt = c( as.POSIXct('2011-10-11 07:49:36.3'), as.POSIXct('2011-10-11 07:49:37.4'), as.POSIXct('2011-10-11 07:49:37.5'))
+tt = as.POSIXct(c('2011-10-11 07:49:36.3', '2011-10-11 07:49:37.4', '2011-10-11 07:49:37.5'))
 DT1 = data.table(start=tt, end=tt)
 DT2 = data.table(start=tt[2], end=tt[2])
 setkey(DT2)
 test(1390.4, foverlaps(DT1, DT2, which=TRUE), data.table(xid=1:3, yid=as.integer(c(NA, 1L, NA))))
-tt = c( as.POSIXct('2011-10-11 07:49:36.0003'), as.POSIXct('2011-10-11 07:49:36.0199'), as.POSIXct('2011-10-11 07:49:36.0399'))
+tt = as.POSIXct(c('2011-10-11 07:49:36.0003', '2011-10-11 07:49:36.0199', '2011-10-11 07:49:36.0399'))
 DT1 = data.table(start=tt, end=tt)
 DT2 = data.table(start=tt[2], end=tt[2])
 setkey(DT2)
@@ -6271,7 +6271,7 @@ allIndicesValid <- function(DT){
       ## index is not properly ordered
       return(FALSE)
     }
-    if(any(duplicated(names(attributes(attr(DT, "index")))))){
+    if (anyDuplicated(names(attributes(attr(DT, "index"))))) {
       ## index names are not unique
       return(FALSE)
     }
@@ -6674,18 +6674,18 @@ test(1458.3, which(!x > 0), which_(x > 0, FALSE))
 # Fix for #982. Testing subsetDT on complex/raw vectors, and added tests for other types.
 DT = data.table(a=c(1:3,NA_integer_), b=c(1,2,3,NA), c=as.complex(c(1:3,NA)), d=as.raw(1:4),
           e=as.list(1:4), f=c(FALSE,FALSE,TRUE,NA), g=c("a", "b", "c", NA_character_))
-test(1459.01, .Call("CsubsetDT", DT, which(DT$a > 2), seq_along(DT)), setDT(as.data.frame(DT)[3, , drop=FALSE]))
-test(1459.02, .Call("CsubsetDT", DT, which(DT$b > 2), seq_along(DT)), setDT(as.data.frame(DT)[3, , drop=FALSE]))
-test(1459.03, .Call("CsubsetDT", DT, which(Re(DT$c) > 2), seq_along(DT)), setDT(as.data.frame(DT)[3, , drop=FALSE]))
-test(1459.04, .Call("CsubsetDT", DT, which(DT$d > 2), seq_along(DT)), setDT(as.data.frame(DT)[3:4, , drop=FALSE]))
-test(1459.05, .Call("CsubsetDT", DT, which(DT$f), seq_along(DT)), setDT(as.data.frame(DT)[3, , drop=FALSE]))
-test(1459.06, .Call("CsubsetDT", DT, which(DT$g == "c"), seq_along(DT)), setDT(as.data.frame(DT)[3, , drop=FALSE]))
-test(1459.07, .Call("CsubsetDT", DT, which(DT$a > 2 | is.na(DT$a)), seq_along(DT)), setDT(as.data.frame(DT)[3:4,]))
-test(1459.08, .Call("CsubsetDT", DT, which(DT$b > 2 | is.na(DT$b)), seq_along(DT)), setDT(as.data.frame(DT)[3:4,]))
-test(1459.09, .Call("CsubsetDT", DT, which(Re(DT$c) > 2 | is.na(DT$c)), seq_along(DT)), setDT(as.data.frame(DT)[3:4,]))
-test(1459.10, .Call("CsubsetDT", DT, which(DT$f | is.na(DT$f)), seq_along(DT)), setDT(as.data.frame(DT)[3:4,]))
-test(1459.11, .Call("CsubsetDT", DT, which(DT$g == "c" | is.na(DT$g)), seq_along(DT)), setDT(as.data.frame(DT)[3:4,]))
-test(1459.12, .Call("CsubsetDT", DT, 5L, seq_along(DT)), setDT(as.data.frame(DT)[5,]))
+test(1459.01, .Call(CsubsetDT, DT, which(DT$a > 2), seq_along(DT)), setDT(as.data.frame(DT)[3, , drop=FALSE]))
+test(1459.02, .Call(CsubsetDT, DT, which(DT$b > 2), seq_along(DT)), setDT(as.data.frame(DT)[3, , drop=FALSE]))
+test(1459.03, .Call(CsubsetDT, DT, which(Re(DT$c) > 2), seq_along(DT)), setDT(as.data.frame(DT)[3, , drop=FALSE]))
+test(1459.04, .Call(CsubsetDT, DT, which(DT$d > 2), seq_along(DT)), setDT(as.data.frame(DT)[3:4, , drop=FALSE]))
+test(1459.05, .Call(CsubsetDT, DT, which(DT$f), seq_along(DT)), setDT(as.data.frame(DT)[3, , drop=FALSE]))
+test(1459.06, .Call(CsubsetDT, DT, which(DT$g == "c"), seq_along(DT)), setDT(as.data.frame(DT)[3, , drop=FALSE]))
+test(1459.07, .Call(CsubsetDT, DT, which(DT$a > 2 | is.na(DT$a)), seq_along(DT)), setDT(as.data.frame(DT)[3:4,]))
+test(1459.08, .Call(CsubsetDT, DT, which(DT$b > 2 | is.na(DT$b)), seq_along(DT)), setDT(as.data.frame(DT)[3:4,]))
+test(1459.09, .Call(CsubsetDT, DT, which(Re(DT$c) > 2 | is.na(DT$c)), seq_along(DT)), setDT(as.data.frame(DT)[3:4,]))
+test(1459.10, .Call(CsubsetDT, DT, which(DT$f | is.na(DT$f)), seq_along(DT)), setDT(as.data.frame(DT)[3:4,]))
+test(1459.11, .Call(CsubsetDT, DT, which(DT$g == "c" | is.na(DT$g)), seq_along(DT)), setDT(as.data.frame(DT)[3:4,]))
+test(1459.12, .Call(CsubsetDT, DT, 5L, seq_along(DT)), setDT(as.data.frame(DT)[5,]))
 
 # Test for na.omit with list, raw and complex types
 DT = data.table(x=c(1L,1L,NA), y=c(NA, NA, 1), z=as.raw(1:3), w=list(1,NA,2), v=c(1+5i, NA, NA))
@@ -10772,8 +10772,8 @@ if (test_longdouble) {  #3258
 if (test_bit64) {
   test(1730.1, typeof(-2147483647L), "integer")
   test(1730.2, as.integer(-2147483648), NA_integer_, warning="coercion")
-  test(1730.3, as.integer("-2147483647"), -2147483647L)
-  test(1730.4, as.integer("-2147483648"), NA_integer_, warning="coercion")
+  test(1730.3, as.integer("-2147483647"), -2147483647L)                    # nolint: literal_coercion_linter.
+  test(1730.4, as.integer("-2147483648"), NA_integer_, warning="coercion") # nolint: literal_coercion_linter.
   test(1730.5, as.integer64("-2147483648"), as.integer64(-2147483648))
   # Currently bit64 truncs to extremes in character coercion. Don't test that in case bit64 changes in future.
   # as.integer64("-9223372036854775808") == NA
@@ -12603,7 +12603,7 @@ test(1880.1, length(names(joined)), length(unique(names(joined))))
 test(1880.2, nrow(merge(parents, children, by.x="name", by.y="parent", suffixes=c("",""))), 3L,
              warning = "column names.*are duplicated in the result")
 joined = suppressWarnings(merge(parents, children, by.x="name", by.y="parent", no.dups=FALSE))
-test(1880.3, any(duplicated(names(joined))), TRUE)
+test(1880.3, anyDuplicated(names(joined)) > 0L, TRUE)
 
 # out-of-sample quote rule bump, #2265
 DT = data.table(A=rep("abc", 10000), B="def")
@@ -14754,7 +14754,7 @@ test(2025.52, fread(f), data.table(A=1:2, B=c("foobar","baz"), C=3:4))
 DT = data.table(t1 = as.POSIXct("1982-04-26 13:34:56", tz = "Europe/Madrid"),t2 = as.POSIXct("2019-01-01 19:00:01",tz = "UTC"))
 test(2026.1, capture.output(print(DT))[2], "1: 1982-04-26 13:34:56 2019-01-01 19:00:01")
 test(2026.2, capture.output(print(DT,timezone = TRUE))[2], "1: 1982-04-26 13:34:56 Europe/Madrid 2019-01-01 19:00:01 UTC")
-DT = data.table(v1 = c(1,as.numeric(NA)))
+DT = data.table(v1 = c(1,NA))
 DT[2,t:= as.POSIXct("2019-01-01 19:00:01",tz = "UTC")]
 test(2026.3, capture.output(print(DT)), c("   v1                   t","1:  1                <NA>", "2: NA 2019-01-01 19:00:01"))
 test(2026.4, capture.output(print(DT, timezone = TRUE)), c("   v1                       t","1:  1                    <NA>","2: NA 2019-01-01 19:00:01 UTC"))
@@ -15714,6 +15714,7 @@ test(2071.11, dcast(data.table(a = c(1, 1, 2), b = c(1, 2, 1), c = 3), a ~ b, va
               warning="Coercing 'character' RHS to 'double'")
 
 # fifelse, #3657
+# nolint start: redundant_ifelse_linter. Testing of fifelse() itself.
 test_vec = -5L:5L < 0L
 test_vec_na = c(test_vec, NA)
 out_vec = rep(1:0, 5:6)
@@ -15765,7 +15766,7 @@ test(2072.040, fifelse(test_vec, as.raw(0), as.raw(1)), error="Type 'raw' is not
 test(2072.041, fifelse(TRUE,1,as.Date("2019-07-07")),   error="'yes' has different class than 'no'. Please")
 test(2072.042, fifelse(TRUE,1L,factor(letters[1])),     error="'yes' has different class than 'no'. Please")
 test(2072.043, fifelse(TRUE, list(1:5), list(5:1)), list(1:5))
-test(2072.044, fifelse(as.logical(NA), list(1:5), list(5:1)), list(NULL))
+test(2072.044, fifelse(NA, list(1:5), list(5:1)), list(NULL))
 test(2072.045, fifelse(FALSE, list(1:5), list(5:1)), list(5:1))
 test(2072.046, fifelse(TRUE, list(data.table(1:5)), list(data.table(5:1))), list(data.table(1:5)))
 test(2072.047, fifelse(FALSE, list(data.table(1:5)), list(data.table(5:1))), list(data.table(5:1)))
@@ -15793,6 +15794,7 @@ test(2072.066, fifelse(c(TRUE, TRUE, TRUE, FALSE, NA, FALSE), factor(letters[1:6
                factor(c("a","b","c",NA,NA,NA), levels=letters[1:6]))
 test(2072.067, fifelse(c(TRUE, NA, TRUE, FALSE, FALSE, FALSE), factor(NA), factor(NA)),
                factor(c(NA,NA,NA,NA,NA,NA)))
+# nolint end: redundant_ifelse_linter.
 
 DT = data.table(x=1:5, y=6:10)
 test(2073.01, transpose(DT, keep.names="rn"),
@@ -16188,7 +16190,7 @@ test(2100.10, fifelse(date_vec_na, as.Date("2019-08-31"), as.Date("2019-08-30"),
 test(2100.11, fifelse(c(TRUE,FALSE,TRUE,TRUE,FALSE,NA), factor(letters[1:6]), factor("a", levels=letters[1:6]), factor("f", levels=letters[1:6])), factor(c("a","a","c","d","a","f"), levels=letters[1:6]))
 test(2100.12, fifelse(c(TRUE,FALSE,TRUE,TRUE,FALSE,NA), factor(letters[1:6]), factor("a", levels=letters[1:6]), factor("f", levels=letters[1:7])), error = "'yes' and 'na' are both type factor but their levels are different.")
 test(2100.13, lapply(list(list(yes = 1, no = 2, na = 3), list(yes = 2, no = 4)), function(el) fifelse(c(TRUE, FALSE, NA), el$yes, el$no, el$na)), list(c(1,2,3),c(2,4,NA)))
-test(2100.14, fifelse(c(T,F,NA),c(1,1,1),c(2,2,2),NA), c(1,2,NA))
+test(2100.14, fifelse(c(TRUE,FALSE,NA),c(1,1,1),c(2,2,2),NA), c(1,2,NA))
 
 # join 0-row i type mismatch ok to coerce, tcpl #3581
 DT = data.table(id=1:3, v=4:6, key="id")
@@ -16938,7 +16940,7 @@ test(2150.12,fread("a,b\n2015-01-01,2015-01-01", select=c(a="Date",b="POSIXct"))
      data.table(a=as.Date("2015-01-01"), b=as.POSIXct("2015-01-01")))
 test(2150.13, fread("a,b\n2015-01-01,1.1\n2015-01-02 01:02:03,1.2", tz=""), # no Z, tz="" needed for this test from v1.14.0
      if (TZnotUTC) data.table(a=c("2015-01-01","2015-01-02 01:02:03"), b=c(1.1, 1.2))
-     else          data.table(a=setattr(c(as.POSIXct("2015-01-01",tz="UTC"), as.POSIXct("2015-01-02 01:02:03",tz="UTC")),"tzone","UTC"), b=c(1.1, 1.2)))
+     else          data.table(a=setattr(as.POSIXct(c("2015-01-01", "2015-01-02 01:02:03"), tz="UTC"),"tzone","UTC"), b=c(1.1, 1.2)))
 # some rows are date-only, some rows UTC-timestamp --> read the date-only in UTC too
 test(2150.14, fread("a,b\n2015-01-01,1.1\n2015-01-02T01:02:03Z,1.2"),
      data.table(a = .POSIXct(1420070400 + c(0, 90123), tz="UTC"), b = c(1.1, 1.2)))
@@ -17301,12 +17303,12 @@ test(2183.20, melt(iris.dt, measure.vars=measure(value.name, dim, sep=".", patte
 # school example.
 schools.wide <- data.table(
   school = c("A","B"),
-  read_1 = c(1.1,2.1), read_1_sp = c(T,T),
+  read_1 = c(1.1,2.1), read_1_sp = c(TRUE,TRUE),
   read_2 = c(1.2,2.2),
-  math_1 = c(10.1,20.1), math_1_sp = c(T,T),
-  math_2 = c(NA,20.2), math_2_sp = c(NA,F))
+  math_1 = c(10.1,20.1), math_1_sp = c(TRUE,TRUE),
+  math_2 = c(NA,20.2), math_2_sp = c(NA,FALSE))
 schools.tall <- melt(schools.wide, na.rm=TRUE, measure.vars=measure(subject, number=as.integer, value.name=function(x)ifelse(x=="", "score", "sp"), pattern="([^_]+)_([12])(.*)"))
-schools.expected = data.table(school=c("A","B","A","B","B"), subject=c("read","read","math","math","math"), number=as.integer(c(1,1,1,1,2)), score=c(1.1,2.1,10.1,20.1,20.2), sp=c(T,T,T,T,F))
+schools.expected = data.table(school=c("A","B","A","B","B"), subject=c("read","read","math","math","math"), number=as.integer(c(1,1,1,1,2)), score=c(1.1,2.1,10.1,20.1,20.2), sp=c(TRUE,TRUE,TRUE,TRUE,FALSE))
 test(2183.21, schools.tall, schools.expected)
 who <- data.table(id=1, new_sp_m5564=2, newrel_f65=3)
 test(2183.22, melt(who, measure.vars=measure(diagnosis, gender, ages, ymin=as.numeric, ymax=function(y)ifelse(y=="", Inf, as.numeric(y)), pattern="new_?(?<diagnosis>.*)_(?<gender>.)(?<ages>(?<ymin>0|[0-9]{2})(?<ymax>[0-9]{0,2}))")), data.table(id=1, diagnosis=c("sp","rel"), gender=c("m","f"), ages=c("5564","65"), ymin=c(55,65), ymax=c(64,Inf), value=c(2,3)))
