@@ -84,5 +84,6 @@ Authors@R: c(
   person("Michael","Czekanski",    role="ctb"),
   person("Dmitry", "Shemetov",     role="ctb"),
   person("Nitish", "Jha",          role="ctb"),
-  person("Joshua", "Wu",           role="ctb")
+  person("Joshua", "Wu",           role="ctb"),
+  person("Iago", "Giné-Vázquez",   role="ctb")
   )
