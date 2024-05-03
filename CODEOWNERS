@@ -52,3 +52,7 @@
 
 # utils
 /src/utils.c @HughParsonage
+
+# performance testing
+/.ci/atime/tests.R @tdhock @Anirban166
+/.github/workflows/performance-tests.yaml @Anirban166
