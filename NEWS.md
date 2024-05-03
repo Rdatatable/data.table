@@ -90,8 +90,6 @@
 
 14. `setNumericRounding()` now invisibly returns the old rounding value instead of `NULL`, which is now consistent with similar behavior by `setwd()`, `options()`, etc. Thanks @MichaelChirico for the report and @joshhwuu for the fix.
 
-15. data.table now depends on R 3.2.0 (2015) instead of 3.1.0 (2014). 1.17.0 will likely move to R 3.3.0 (2016). Recent versions of R have good features that we would gradually like to incorporate, and we see next to no usage of these very old versions of R.
-
 # data.table [v1.15.0](https://github.com/Rdatatable/data.table/milestone/29)  (30 Jan 2024)
 
 ## BREAKING CHANGE
