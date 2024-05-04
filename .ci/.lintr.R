@@ -31,6 +31,7 @@ linters = c(dt_linters, all_linters(
   )),
   # TODO(lintr#2441): Use upstream implementation.
   assignment_linter = NULL,
+  absolute_path_linter = NULL, # too many false positives
   # TODO(lintr#2442): Use this once x[ , j, by] is supported.
   commas_linter = NULL,
   commented_code_linter = NULL,
@@ -89,9 +90,9 @@ linters = c(dt_linters, all_linters(
 rm(dt_linters)
 
 # TODO(lintr#2172): Glob with lintr itself.
-exclusions = local({
+exclusions = c(local({
   exclusion_for_dir <- function(dir, exclusions) {
-    files = list.files(dir, pattern = "\\.(R|Rmd)$")
+    files = file.path("..", list.files(dir, pattern = "\\.(R|Rmd|Rraw)$", full.names=TRUE))
     stats::setNames(rep(list(exclusions), length(files)), files)
   }
   c(
@@ -106,6 +107,18 @@ exclusions = local({
       quotes_linter = Inf
       # strings_as_factors_linter = Inf
       # system_time_linter = Inf
+    )),
+    exclusion_for_dir("inst/tests", list(
+      library_call_linter = Inf,
+      numeric_leading_zero_linter = Inf,
+      undesirable_operator_linter = Inf, # For ':::', possibly we could be more careful to only exclude ':::'.
+      # TODO(michaelchirico): Enforce these and re-activate them one-by-one.
+      comparison_negation_linter = Inf,
+      duplicate_argument_linter = Inf,
+      equals_na_linter = Inf,
+      paste_linter = Inf
     ))
   )
-})
+}),
+  list(`../inst/tests/froll.Rraw` = list(dt_test_literal_linter = Inf)) # TODO(michaelchirico): Fix these once #5898, #5692, #5682, #5576, #5575, #5441 are merged.
+)

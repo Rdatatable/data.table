@@ -28,7 +28,7 @@ jobs:
           needs: lint
 
       - name: Lint
-        run: lintr::lint_package()
+        run: lintr::lint_package(pattern = "(?i)[.](r|rmd|rraw)$") # TODO(#5830): use the default pattern
         shell: Rscript {0}
         env:
           LINTR_ERROR_ON_LINT: true
