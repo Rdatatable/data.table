@@ -91,7 +91,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     }
     file_info = file.info(file)
     if (is.na(file_info$size)) stopf("File '%s' does not exist or is non-readable. getwd()=='%s'", file, getwd())
-    if (isTRUE(file_info$isdir)) stopf("File '%s' is a directory. Not yet implemented.", file) # dir.exists() requires R v3.2+, #989
+    if (isTRUE(file_info$isdir)) stopf("File '%s' is a directory. Not yet implemented.", file) # Could use dir.exists(), but we already ran file.info().
     if (!file_info$size) {
       warningf("File '%s' has size 0. Returning a NULL %s.", file, if (data.table) 'data.table' else 'data.frame')
       return(if (data.table) data.table(NULL) else data.frame(NULL))
@@ -350,7 +350,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     if (!all(vapply_1b(index, is.character)))
       stopf("index argument of data.table() must be a character vector naming columns (NB: col.names are applied before this)")
     if (is.list(index)) {
-      to_split = vapply_1i(index, length) == 1L
+      to_split = lengths(index) == 1L
       if (any(to_split))
         index[to_split] = sapply(index[to_split], strsplit, split = ",", fixed = TRUE)
     } else {

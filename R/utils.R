@@ -21,10 +21,6 @@ nan_is_na = function(x) {
   stopf("Argument 'nan' must be NA or NaN")
 }
 
-if (base::getRversion() < "3.2.0") {  # Apr 2015
-  isNamespaceLoaded = function(x) x %chin% loadedNamespaces()
-}
-
 if (!exists('startsWith', 'package:base', inherits=FALSE)) {  # R 3.3.0; Apr 2016
   startsWith = function(x, stub) substr(x, 1L, nchar(stub))==stub
 }
@@ -67,19 +63,22 @@ require_bit64_if_needed = function(DT) {
 }
 
 # vapply for return value character(1)
-vapply_1c = function (x, fun, ..., use.names = TRUE) {
+vapply_1c = function(x, fun, ..., use.names = TRUE) {
   vapply(X = x, FUN = fun, ..., FUN.VALUE = NA_character_, USE.NAMES = use.names)
 }
 
 # vapply for return value logical(1)
-vapply_1b = function (x, fun, ..., use.names = TRUE) {
+vapply_1b = function(x, fun, ..., use.names = TRUE) {
   vapply(X = x, FUN = fun, ..., FUN.VALUE = NA, USE.NAMES = use.names)
 }
 
 # vapply for return value integer(1)
-vapply_1i = function (x, fun, ..., use.names = TRUE) {
+vapply_1i = function(x, fun, ..., use.names = TRUE) {
   vapply(X = x, FUN = fun, ..., FUN.VALUE = NA_integer_, USE.NAMES = use.names)
 }
+
+# not is.atomic because is.atomic(matrix) is true
+cols_with_dims = function(x) vapply_1i(x, function(j) length(dim(j))) > 0L
 
 more = function(f) system(paste("more",f))    # nocov  (just a dev helper)
 
@@ -165,4 +164,3 @@ rss = function() {  #5515 #5517
   round(ans / 1024, 1L)  # return MB
   # nocov end
 }
-

@@ -368,9 +368,10 @@ SEXP setNumericRounding(SEXP droundArg)
 {
   if (!isInteger(droundArg) || LENGTH(droundArg)!=1) error(_("Must an integer or numeric vector length 1"));
   if (INTEGER(droundArg)[0] < 0 || INTEGER(droundArg)[0] > 7) error(_("Must be a number of bytes between 0 and 7"));
+  int oldRound = dround;
   dround = INTEGER(droundArg)[0];
   dmask = dround ? 1 << (8*dround-1) : 0;
-  return R_NilValue;
+  return ScalarInteger(oldRound);
 }
 
 SEXP getNumericRounding(void)

@@ -27,8 +27,7 @@ patterns = function(..., cols=character(0L), ignore.case=FALSE, perl=FALSE, fixe
   if (!is.character(p))
     stopf("Input patterns must be of type character.")
   matched = lapply(p, grep, cols, ignore.case=ignore.case, perl=perl, fixed=fixed, useBytes=useBytes)
-  # replace with lengths when R 3.2.0 dependency arrives
-  if (length(idx <- which(sapply(matched, length) == 0L)))
+  if (length(idx <- which(lengths(matched) == 0L)))
     stopf('Pattern(s) not found: [%s]', brackify(p[idx]))
   if (length(matched) == 1L) return(matched[[1L]])
   matched
@@ -107,33 +106,35 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
       stopf("pattern must be character string")
     }
     match.vec = regexpr(pattern, cols, perl=TRUE)
-    measure.vec = which(0 < match.vec)
-    if (length(measure.vec) == 0L) {
+    measure.vec.i = which(0 < match.vec)
+    if (length(measure.vec.i) == 0L) {
       stopf("pattern did not match any cols, so nothing would be melted; fix by changing pattern")
     }
-    start = attr(match.vec, "capture.start")[measure.vec, , drop=FALSE]
+    start = attr(match.vec, "capture.start")[measure.vec.i, , drop=FALSE]
     if (is.null(start)) {
       stopf("pattern must contain at least one capture group (parenthesized sub-pattern)")
     }
     err.args.groups("number of capture groups in pattern", ncol(start))
-    end = attr(match.vec, "capture.length")[measure.vec,]+start-1L
-    names.mat = matrix(cols[measure.vec], nrow(start), ncol(start))
+    end = attr(match.vec, "capture.length")[measure.vec.i,]+start-1L
+    measure.vec <- cols[measure.vec.i]
+    names.mat = matrix(measure.vec, nrow(start), ncol(start))
     substr(names.mat, start, end)
   } else { #pattern not specified, so split using sep.
     if (!is.character(sep)) {
       stopf("sep must be character string")
     }
     list.of.vectors = strsplit(cols, sep, fixed=TRUE)
-    vector.lengths = sapply(list.of.vectors, length)
+    vector.lengths = lengths(list.of.vectors)
     n.groups = max(vector.lengths)
     if (n.groups == 1) {
       stopf("each column name results in only one item after splitting using sep, which means that all columns would be melted; to fix please either specify melt on all columns directly without using measure, or use a different sep/pattern specification")
     }
     err.args.groups("max number of items after splitting column names", n.groups)
-    measure.vec = which(vector.lengths==n.groups)
-    do.call(rbind, list.of.vectors[measure.vec])
+    measure.vec.i = which(vector.lengths==n.groups)
+    measure.vec = cols[measure.vec.i]
+    do.call(rbind, list.of.vectors[measure.vec.i])
   }
-  err.names.unique("measured columns", cols[measure.vec])
+  err.names.unique("measured columns", measure.vec)
   uniq.mat = unique(group.mat)
   if (nrow(uniq.mat) < nrow(group.mat)) {
     stopf("number of unique column IDs =%d is less than number of melted columns =%d; fix by changing pattern/sep", nrow(uniq.mat), nrow(group.mat))

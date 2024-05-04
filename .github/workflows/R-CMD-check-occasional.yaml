@@ -16,12 +16,19 @@ jobs:
         os: [macOS-latest, windows-latest, ubuntu-latest]
         r: ['devel', 'release', '3.2', '3.3', '3.4', '3.5', '3.6', '4.0', '4.1', '4.2', '4.3']
         locale: ['en_US.utf8', 'zh_CN.utf8', 'lv_LV.utf8'] # Chinese for translations, Latvian for collate order (#3502)
-        exclude:
-          - os: ['macOS-latest', 'windows-latest'] # only run non-English locale CI on Ubuntu
-            locale: ['zh_CN.utf8', 'lv_LV.utf8']
+        exclude: # only run non-English locale CI on Ubuntu
+          - os: macOS-latest
+            locale: 'zh_CN.utf8'
+          - os: macOS-latest
+            locale: 'lv_LV.utf8'
+          - os: windows-latest
+            locale: 'zh_CN.utf8'
+          - os: windows-latest
+            locale: 'lv_LV.utf8'
 
     env:
       R_REMOTES_NO_ERRORS_FROM_WARNINGS: true
+      TEST_DATA_TABLE_WITH_OTHER_PACKAGES: true
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
 
     steps:

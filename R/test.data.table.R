@@ -7,7 +7,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   if (length(memtest.id)) {
     if (length(memtest.id)==1L) memtest.id = rep(memtest.id, 2L)  # for convenience of supplying one id rather than always a range
     stopifnot(length(memtest.id)<=2L,  # conditions quoted to user when false so "<=2L" even though following conditions rely on ==2L
-                     !anyNA(memtest.id), memtest.id[1L]<=memtest.id[2L]) 
+                     !anyNA(memtest.id), memtest.id[1L]<=memtest.id[2L])
     if (memtest==0L) memtest=1L  # using memtest.id implies memtest
   }
   if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
@@ -79,6 +79,8 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   # sample method changed in R 3.6 to remove bias; see #3431 for links and notes
   # This can be removed (and over 120 tests updated) if and when the oldest R version we test and support is moved to R 3.6
 
+  userNumericRounding = setNumericRounding(0) # Initialise to 0 in case the user has set it to a different value. Restore to user's value when finished.
+
   # TO DO: reinstate solution for C locale of CRAN's Mac (R-Forge's Mac is ok)
   # oldlocale = Sys.getlocale("LC_CTYPE")
   # Sys.setlocale("LC_CTYPE", "")   # just for CRAN's Mac to get it off C locale (post to r-devel on 16 Jul 2012)
@@ -134,7 +136,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
 
   owd = setwd(tempdir()) # ensure writeable directory; e.g. tests that plot may write .pdf here depending on device option and/or batch mode; #5190
   on.exit(setwd(owd))
-  
+
   if (memtest) {
     catf("\n***\n*** memtest=%d. This should be the first call in a fresh R_GC_MEM_GROW=0 R session for best results. Ctrl-C now if not.\n***\n\n", memtest)
     if (is.na(rss())) stopf("memtest intended for Linux. Step through data.table:::rss() to see what went wrong.")
@@ -151,7 +153,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     #   runtime test number (i.e. 'numStr') since we're just doing a static check here, though we _are_ careful to match the
     #   full test expression string, i.e., not just limited to numeric literal test numbers.
     arg_line = call_id = col1 = col2 = i.line1 = id = line1 = parent = preceding_line = test_start_line = text = token = x.line1 = x.parent = NULL # R CMD check
-    pd = setDT(utils::getParseData(parse(fn)))
+    pd = setDT(utils::getParseData(parse(fn, keep.source=TRUE)))
     file_lines = readLines(fn)
     # NB: a call looks like (with id/parent tracking)
     # <expr>
@@ -162,9 +164,15 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     #   <RIGHT_PAREN>)</RIGHT_PAREN>
     # </expr>
     ## navigate up two steps from 'test' SYMBOL_FUNCTION_CALL to the overall 'expr' for the call
-    test_calls = pd[pd[pd[token == 'SYMBOL_FUNCTION_CALL' & text == 'test'], list(call_lhs_id = id, call_id = x.parent), on=c(id='parent')], .(line1, id), on=c(id='call_id')]
+    test_calls = pd[
+      pd[
+        pd[token == 'SYMBOL_FUNCTION_CALL' & text == 'test'],
+        list(call_lhs_id=id, call_id=x.parent),
+        on=c(id='parent')],
+      list(line1, id),
+      on=c(id='call_id')]
     ## all the arguments for each call to test()
-    test_call_args = test_calls[pd[token == 'expr'], .(call_id = parent, arg_line = i.line1, col1, col2), on=c(id='parent'), nomatch=NULL]
+    test_call_args = test_calls[pd[token == 'expr'], list(call_id=parent, arg_line=i.line1, col1, col2), on=c(id='parent'), nomatch=NULL]
     ## 2nd argument is the num= argument
     test_num_expr = test_call_args[ , .SD[2L], by="call_id"]
     # NB: subtle assumption that 2nd arg to test() is all on one line, true as of 2024-Apr and likely to remain so
@@ -174,7 +182,11 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     # setup_line1     # retain
     # setup_line2     # retain
     # test(keep, ...) # retain
-    intertest_ranges = test_calls[!id %in% keep_test_ids][test_calls[id %in% keep_test_ids], .(preceding_line = x.line1, test_start_line = i.line1), on='line1', roll=TRUE]
+    intertest_ranges = test_calls[!id %in% keep_test_ids][
+      test_calls[id %in% keep_test_ids],
+      list(preceding_line=x.line1, test_start_line=i.line1),
+      on='line1',
+      roll=TRUE]
     # TODO(michaelchirico): this doesn't do well with tests inside control statements.
     #   those could be included by looking for tests with parent!=0, i.e., not-top-level tests,
     #   and including the full parent for such tests. omitting for now until needed.
@@ -204,6 +216,8 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   # Sys.setlocale("LC_CTYPE", oldlocale)
   suppressWarnings(do.call("RNGkind",as.list(oldRNG)))
   # suppressWarnings for the unlikely event that user selected sample='Rounding' themselves before calling test.data.table()
+
+  setNumericRounding(userNumericRounding)  # Restore the user's numeric rounding value
 
   # Now output platform trace before error (if any) to be sure to always show it; e.g. to confirm endianness in #4099.
   # As one long dense line for cases when 00check.log only shows the last 13 lines of log; to only use up one
@@ -335,11 +349,11 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
   #    from all.equal and different to identical related to row.names and unused factor levels
   # 3) each test has a unique id which we refer to in commit messages, emails etc.
   # 4) test that a query generates exactly 2 warnings, that they are both the correct warning messages, and that the result is the one expected
-  .test.data.table = exists("nfail", parent.frame()) # test() can be used inside functions defined in tests.Rraw, so inherits=TRUE (default) here
+  nfail = get0("nfail", parent.frame()) # test() can be used inside functions defined in tests.Rraw, so inherits=TRUE (default) here
+  .test.data.table = !is.null(nfail)
   numStr = sprintf("%.8g", num)
   if (.test.data.table) {
     prevtest = get("prevtest", parent.frame())
-    nfail = get("nfail", parent.frame())   # to cater for both test.data.table() and stepping through tests in dev
     whichfail = get("whichfail", parent.frame())
     assign("ntest", get("ntest", parent.frame()) + if (num>0) 1L else 0L, parent.frame(), inherits=TRUE)   # bump number of tests run
     lasttime = get("lasttime", parent.frame())
@@ -431,7 +445,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     }
     if (length(expected) != length(observed)) {
       # nocov start
-      catf("Test %s produced %d %ss but expected %d\n%s\n%s\n", numStr, length(observed), type, length(expected), paste("Expected:", expected), paste("Observed:", observed))
+      catf("Test %s produced %d %ss but expected %d\n%s\n%s\n", numStr, length(observed), type, length(expected), paste("Expected:", expected), paste("Observed:", observed, collapse = "\n"))
       fail = TRUE
       # nocov end
     } else {

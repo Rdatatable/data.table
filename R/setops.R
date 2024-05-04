@@ -290,4 +290,3 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
   }
   TRUE
 }
-

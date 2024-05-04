@@ -34,6 +34,14 @@
 
 9. `fread` now supports automatic detection of `dec` (as either `.` or `,`, the latter being [common in many places in Europe, Africa, and South America](https://en.wikipedia.org/wiki/Decimal_separator)); this behavior is now the default, i.e. `dec='auto'`, [#2431](https://github.com/Rdatatable/data.table/issues/2431). This was our #2 most-requested issue. See [#3189](https://github.com/Rdatatable/data.table/issues/3189) and please do peruse this list and show support to the issues that would help you the most as we continue to use this metric to help prioritize development.
 
+10. `measure` now supports user-specified `cols` argument, which can be useful to specify a subset of columns to `melt`, without having to use a regex, [#5063](https://github.com/Rdatatable/data.table/issues/5063). Thanks to @UweBlock and @Henrik-P for reporting, and @tdhock for the PR.
+
+11. `split.data.table` recognizes `sep=` when splitting with `by=`, just like the default and data.frame methods [#5417](https://github.com/Rdatatable/data.table/issues/5417).
+
+12. `setDT` is faster for data with many columns, thanks @MichaelChirico for reporting and fixing the issue, [#5426](https://github.com/Rdatatable/data.table/issues/5426).
+
+13. `dcast`gains `value.var.in.dots`, `value.var.in.LHSdots` and `value.var.in.RHSdots` arguments, [#5824](https://github.com/Rdatatable/data.table/issues/5824). This allows the `value.var` variable(s) in `dcast` to be represented by `...` in the formula (if not otherwise mentioned). Thanks to @iago-pssjd for the report and PR.
+
 ## BUG FIXES
 
 1. `unique()` returns a copy the case when `nrows(x) <= 1` instead of a mutable alias, [#5932](https://github.com/Rdatatable/data.table/pull/5932). This is consistent with existing `unique()` behavior when the input has no duplicates but more than one row. Thanks to @brookslogan for the report and @dshemetov for the fix.
@@ -70,9 +78,17 @@
 
 9. `print.data.table` now handles combination multibyte characters correctly when truncating wide string entries, [#5096](https://github.com/Rdatatable/data.table/issues/5096). Thanks to @MichaelChirico for the report and @joshhwuu for the fix.
 
-10. `test.data.table()` runs correctly in more sessions, in particular those where the `digits` or `warn` settings are not their defaults (`7` and `0`, respectively), [#5285](https://github.com/Rdatatable/data.table/issues/5285). Thanks @OfekShilon for the report and suggested fix and @MichaelChirico for the PR.
+10. `test.data.table()` runs robustly:
+  + In sessions where the `digits` or `warn` options are not their defaults (`7` and `0`, respectively), [#5285](https://github.com/Rdatatable/data.table/issues/5285). Thanks @OfekShilon for the report and suggested fix and @MichaelChirico for the PR.
+  + In locales where `letters != sort(letters)`, e.g. Latvian, [#3502](https://github.com/Rdatatable/data.table/issues/3502). Thanks @minemR for the report and @MichaelChirico for the fix.
 
 11. Using `print.data.table` when truncation is needed with `row.names = FALSE` prints the indicator `---` in every value column instead of adding a blank column where the `rownames` would have been just to include `---`, [#4083](https://github.com/Rdatatable/data.table/issues/4083). Thanks @MichaelChirico for the report and @joshhwuu for the fix.
+
+12. `print.data.table` now honors `na.print`, as seen in `print.default`, allowing for string replacement of `NA` values when printing. Thanks @HughParsonage for the report and @joshhwuu for the fix.
+
+13. `test.data.table()` now initialises the numeric rounding value to 0 using `setNumericRounding(0)` to avoid failed tests if the user has set a different value, [#6082](https://github.com/Rdatatable/data.table/issues/6082). The user's value is restored on exit. Thanks to @MichaelChirico for the report and for describing the solution, and @markseeto for implementing.
+
+14. `setNumericRounding()` now invisibly returns the old rounding value instead of `NULL`, which is now consistent with similar behavior by `setwd()`, `options()`, etc. Thanks @MichaelChirico for the report and @joshhwuu for the fix.
 
 # data.table [v1.15.0](https://github.com/Rdatatable/data.table/milestone/29)  (30 Jan 2024)
 

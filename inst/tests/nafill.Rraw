@@ -345,4 +345,3 @@ test(99.3, data.table(a=1,b=2)[1,1, verbose=NA], error="verbose must be length 1
 options(datatable.verbose=1)
 test(99.4, coerceAs(1, 2L), error="verbose option must be length 1 non-NA logical or integer")
 options(datatable.verbose=FALSE)
-
