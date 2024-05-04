@@ -1,11 +1,3 @@
-if (!exists("trimws", "package:base")) {
-  # trimws was new in R 3.2.0. Backport it for internal data.table use in R 3.1.0
-  trimws = function(x) {
-    mysub = function(re, x) sub(re, "", x, perl = TRUE)
-    mysub("[ \t\r\n]+$", mysub("^[ \t\r\n]+", x))
-  }
-}
-
 dim.data.table = function(x)
 {
   .Call(Cdim, x)
@@ -356,8 +348,8 @@ replace_dot_alias = function(e) {
     # Fixes 4994: a case where quoted expression with a "!", ex: expr = quote(!dt1); dt[eval(expr)] requires
     # the "eval" to be checked before `as.name("!")`. Therefore interchanged.
     restore.N = remove.N = FALSE
-    if (exists(".N", envir=parent.frame(), inherits=FALSE)) {
-      old.N = get(".N", envir=parent.frame(), inherits=FALSE)
+    old.N = get0(".N", envir=parent.frame(), inherits=FALSE)
+    if (!is.null(old.N)) {
       locked.N = bindingIsLocked(".N", parent.frame())
       if (locked.N) eval(call("unlockBinding", ".N", parent.frame()))  # eval call to pass R CMD check NOTE until we find cleaner way
       assign(".N", nrow(x), envir=parent.frame(), inherits=FALSE)
@@ -899,12 +891,12 @@ replace_dot_alias = function(e) {
         }
         if (!is.list(byval)) stopf("'by' or 'keyby' must evaluate to a vector or a list of vectors (where 'list' includes data.table and data.frame which are lists, too)")
         if (length(byval)==1L && is.null(byval[[1L]])) bynull=TRUE #3530 when by=(function()NULL)()
-        if (!bynull) for (jj in seq_len(length(byval))) {
+        if (!bynull) for (jj in seq_along(byval)) {
           if (!(this_type <- typeof(byval[[jj]])) %chin% ORDERING_TYPES) {
             stopf("Column or expression %d of 'by' or 'keyby' is type '%s' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process.", jj, this_type)
           }
         }
-        tt = vapply_1i(byval,length)
+        tt = lengths(byval)
         if (any(tt!=xnrow)) stopf("The items in the 'by' or 'keyby' list are length(s) %s. Each must be length %d; the same length as there are rows in x (after subsetting if i is provided).", brackify(tt), xnrow)
         if (is.null(bynames)) bynames = rep.int("",length(byval))
         if (length(idx <- which(!nzchar(bynames))) && !bynull) {
@@ -1034,7 +1026,7 @@ replace_dot_alias = function(e) {
               # allow filtering via function in .SDcols, #3950
               if (is.function(.SDcols)) {
                 .SDcols = lapply(x, .SDcols)
-                if (any(idx <- vapply_1i(.SDcols, length) > 1L | vapply_1c(.SDcols, typeof) != 'logical' | vapply_1b(.SDcols, anyNA)))
+                if (any(idx <- lengths(.SDcols) > 1L | vapply_1c(.SDcols, typeof) != 'logical' | vapply_1b(.SDcols, anyNA)))
                   stopf("When .SDcols is a function, it is applied to each column; the output of this function must be a non-missing boolean scalar signalling inclusion/exclusion of the column. However, these conditions were not met for: %s", brackify(names(x)[idx]))
                 .SDcols = unlist(.SDcols, use.names = FALSE)
               }
@@ -1290,11 +1282,12 @@ replace_dot_alias = function(e) {
       # warningf(sym," in j is looking for ",getName," in calling scope, but a column '", sym, "' exists. Column names should not start with ..")
     }
     getName = substr(sym, 3L, nchar(sym))
-    if (!exists(getName, parent.frame())) {
+    getNameVal <- get0(getName, parent.frame())
+    if (is.null(getNameVal)) {
       if (exists(sym, parent.frame())) next  # user did 'manual' prefix; i.e. variable in calling scope has .. prefix
       stopf("Variable '%s' is not found in calling scope. Looking in calling scope because this symbol was prefixed with .. in the j= parameter.", getName)
     }
-    assign(sym, get(getName, parent.frame()), SDenv)
+    assign(sym, getNameVal, SDenv)
   }
   # hash=TRUE (the default) does seem better as expected using e.g. test 645.  TO DO experiment with 'size' argument
   if (missingby || bynull || (!byjoin && !length(byval))) {
@@ -1460,7 +1453,7 @@ replace_dot_alias = function(e) {
   #   is a more general issue but the former can be fixed by forcing units='secs'
   SDenv$`-.POSIXt` = function(e1, e2) {
     if (inherits(e2, 'POSIXt')) {
-      if (verbose && !exists('done_units_report', parent.frame())) {
+      if (verbose && !get0('done_units_report', parent.frame(), ifnotfound = FALSE)) {
         catf('\nNote: forcing units="secs" on implicit difftime by group; call difftime explicitly to choose custom units\n')
         assign('done_units_report', TRUE, parent.frame())
       }
@@ -2804,7 +2797,7 @@ setDF = function(x, rownames=NULL) {
     }
     x
   } else {
-    n = vapply_1i(x, length)
+    n = lengths(x)
     mn = max(n)
     if (any(n<mn))
       stopf("All elements in argument 'x' to 'setDF' must be of same length")
@@ -3184,7 +3177,7 @@ is_constantish = function(q, check_singleton=FALSE) {
   }
   if (length(i) == 0L) stopf("Internal error in .isFastSubsettable. Please report to data.table developers") # nocov
   ## convert i to data.table with all combinations in rows.
-  if(length(i) > 1L && prod(vapply_1i(i, length)) > 1e4){
+  if(length(i) > 1L && prod(lengths(i)) > 1e4){
     ## CJ would result in more than 1e4 rows. This would be inefficient, especially memory-wise #2635
     if (verbose) {catf("Subsetting optimization disabled because the cross-product of RHS values exceeds 1e4, causing memory problems.\n");flush.console()}
     return(NULL)
