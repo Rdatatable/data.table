@@ -187,7 +187,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
 
     yaml_comment_re = '^#'
     yaml_string = character(0L)
-    while (TRUE) {
+    repeat {
       this_line = readLines(f, n=1L)
       n_read = n_read + 1L
       if (!length(this_line)){

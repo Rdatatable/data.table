@@ -74,12 +74,9 @@ linters = c(dt_linters, all_linters(
   object_overwrite_linter = NULL,
   paren_body_linter = NULL,
   redundant_equals_linter = NULL,
-  rep_len_linter = NULL,
-  repeat_linter = NULL,
   return_linter = NULL,
   sample_int_linter = NULL,
   scalar_in_linter = NULL,
-  seq_linter = NULL,
   undesirable_function_linter = NULL,
   unnecessary_concatenation_linter = NULL,
   unnecessary_lambda_linter = NULL,
@@ -116,7 +113,9 @@ exclusions = c(local({
       comparison_negation_linter = Inf,
       duplicate_argument_linter = Inf,
       equals_na_linter = Inf,
-      paste_linter = Inf
+      paste_linter = Inf,
+      rep_len_linter = Inf,
+      seq_linter = Inf
     ))
   )
 }),
