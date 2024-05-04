@@ -9769,7 +9769,7 @@ nqjoin_test <- function(x, y, k=1L, test_no, mult="all") {
     ans1 = nq(x, y, thiscols, thisops, 0L, mult=mult)
     ans2 = check(x, y, thiscols, thisops, mult=mult)
     test_no = test_no + .001
-    test(test_no, ans1, ans2)
+    test(test_no, ans1, ans2) # nolint: dt_test_literal_linter.
   }
   gc()  # no longer needed but left in place just in case, no harm
 }
