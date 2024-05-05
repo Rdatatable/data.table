@@ -403,18 +403,18 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
   xsub = substitute(x)
   ysub = substitute(y)
 
-  actual = list("warning"=NULL, "error"=NULL, "message"=NULL)
+  actual = list2env(list(warning=NULL, error=NULL, message=NULL))
   wHandler = function(w) {
     # Thanks to: https://stackoverflow.com/a/4947528/403310
-    actual$warning <<- c(actual$warning, conditionMessage(w))
+    actual$warning <- c(actual$warning, conditionMessage(w))
     invokeRestart("muffleWarning")
   }
   eHandler = function(e) {
-    actual$error <<- conditionMessage(e)
+    actual$error <- conditionMessage(e)
     e
   }
   mHandler = function(m) {
-    actual$message <<- c(actual$message, conditionMessage(m))
+    actual$message <- c(actual$message, conditionMessage(m))
     m
   }
   if (is.null(output) && is.null(notOutput)) {
