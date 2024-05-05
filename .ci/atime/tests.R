@@ -129,7 +129,7 @@ test.list <- atime::atime_test_list(
     },
     expr = data.table::fread(tmp_csv, colClasses=list(Date='date')),
     Slow = "d19bfef7026f25bb2d36c17879187d09bcb2b2c3",
-    Fast = "e58781fdee1b73c0147705425b0946e4a547556b"),
+    Fast = "5ea25d1f624e0528d14f4ff6978e9a7e1d4833d4"),
   "fread(colClasses=Date) improved in #6107" = atime::atime_test(
     N = 10^seq(1, 7),
     setup = {
@@ -139,7 +139,7 @@ test.list <- atime::atime_test_list(
     },
     expr = data.table::fread(tmp_csv, colClasses="Date"),
     Slow = "d19bfef7026f25bb2d36c17879187d09bcb2b2c3",
-    Fast = "e58781fdee1b73c0147705425b0946e4a547556b"),
+    Fast = "5ea25d1f624e0528d14f4ff6978e9a7e1d4833d4"),
   "fread(select=list(Date)) improved in #6107" = atime::atime_test(
     N = 10^seq(1, 7),
     setup = {
@@ -149,6 +149,6 @@ test.list <- atime::atime_test_list(
     },
     expr = data.table::fread(tmp_csv, select=list(Date='date')),
     Slow = "d19bfef7026f25bb2d36c17879187d09bcb2b2c3",
-    Fast = "e58781fdee1b73c0147705425b0946e4a547556b")
+    Fast = "5ea25d1f624e0528d14f4ff6978e9a7e1d4833d4")
 )
 # nolint end: undesirable_operator_linter.
