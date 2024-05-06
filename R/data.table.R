@@ -12,6 +12,10 @@ methods::setPackageName("data.table",.global)
 #   (2) export() in NAMESPACE
 #   (3) add to vignettes/datatable-importing.Rmd#globals section
 .SD = .N = .I = .GRP = .NGRP = .BY = .EACHI = NULL
+. = function(...) NULL
+J = function(...) NULL
+patterns = function(...) NULL
+measure = function(...) NULL
 # These are exported to prevent NOTEs from R CMD check, and checkUsage via compiler.
 # But also exporting them makes it clear (to users and other packages) that data.table uses these as symbols.
 # And NULL makes it clear (to the R's mask check on loading) that they're variables not functions.
