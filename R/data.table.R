@@ -825,7 +825,7 @@ replace_dot_alias = function(e) {
           if (!bysameorder && keyby && !length(irows) && isTRUE(getOption("datatable.use.index"))) {
             # TODO: could be allowed if length(irows)>1 but then the index would need to be squashed for use by uniqlist, #3062
             # find if allbyvars is leading subset of any of the indices; add a trailing "__" to fix #3498 where a longer column name starts with a shorter column name
-            tt = paste0(c(allbyvars,""), collapse="__")
+            tt = paste(c(allbyvars,""), collapse="__")
             w = which.first(startsWith(paste0(indices(x), "__"), tt))
             if (!is.na(w)) {
               byindex = indices(x)[w]
@@ -960,6 +960,7 @@ replace_dot_alias = function(e) {
               else if (any(idx <- nm != jvnames))
                 warningf('Different branches of j expression produced different auto-named columns: %s; using the most "last" names. If this was intentional (e.g., you know only one branch will ever be used in a given query because the branch is controlled by a function argument), please (1) pull this branch out of the call; (2) explicitly provide missing defaults for each branch in all cases; or (3) use the same name for each branch and re-name it in a follow-up call.',  brackify(sprintf('%s!=%s', nm[idx], jvnames[idx])))
             }
+            # nolint next: undesirable_operator_linter. Workaround is clunkier, though a bigger refactor could be considered.
             jvnames <<- nm # TODO: handle if() list(a, b) else list(b, a) better
             setattr(q, "names", NULL)  # drops the names from the list so it's faster to eval the j for each group; reinstated at the end on the result.
           }
@@ -3216,18 +3217,18 @@ is_constantish = function(q, check_singleton=FALSE) {
       }
     }
     if (!is.null(idx)){
-      if (verbose) {catf("Optimized subsetting with index '%s'\n", paste0( idxCols, collapse = "__"));flush.console()}
+      if (verbose) {catf("Optimized subsetting with index '%s'\n", paste(idxCols, collapse = "__"));flush.console()}
     }
   }
   if (is.null(idx)){
     ## if nothing else helped, auto create a new index that can be used
     if (!getOption("datatable.auto.index")) return(NULL)
-    if (verbose) {catf("Creating new index '%s'\n", paste0(names(i), collapse = "__"));flush.console()}
-    if (verbose) {last.started.at=proc.time();catf("Creating index %s done in ...", paste0(names(i), collapse = "__"));flush.console()}
+    if (verbose) {catf("Creating new index '%s'\n", paste(names(i), collapse = "__"));flush.console()}
+    if (verbose) {last.started.at=proc.time();catf("Creating index %s done in ...", paste(names(i), collapse = "__"));flush.console()}
     setindexv(x, names(i))
     if (verbose) {cat(timetaken(last.started.at),"\n");flush.console()}
-    if (verbose) {catf("Optimized subsetting with index '%s'\n", paste0(names(i), collapse = "__"));flush.console()}
-    idx = attr(attr(x, "index", exact=TRUE), paste0("__", names(i), collapse = ""), exact=TRUE)
+    if (verbose) {catf("Optimized subsetting with index '%s'\n", paste(names(i), collapse = "__"));flush.console()}
+    idx = attr(attr(x, "index", exact=TRUE), paste("__", names(i), collapse = ""), exact=TRUE)
     idxCols = names(i)
   }
   if(!is.null(idxCols)){

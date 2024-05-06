@@ -25,10 +25,7 @@ linters = c(dt_linters, all_linters(
   #   par = NULL,
   #   setwd = NULL
   # )),
-  undesirable_operator_linter(modify_defaults(
-    default_undesirable_operators,
-    `<<-` = NULL
-  )),
+  undesirable_operator_linter(),
   # TODO(lintr#2441): Use upstream implementation.
   assignment_linter = NULL,
   absolute_path_linter = NULL, # too many false positives
@@ -57,7 +54,7 @@ linters = c(dt_linters, all_linters(
   strings_as_factors_linter = NULL,
   # TODO(lintr->3.2.0): Fix on a valid TODO style, enforce it, and re-activate.
   todo_comment_linter = NULL,
-  # TODO(michaelchirico): Enforce these and re-activate them one-by-one. Also stop using '<<-'.
+  # TODO(michaelchirico): Enforce these and re-activate them one-by-one.
   brace_linter = NULL,
   condition_call_linter = NULL,
   conjunct_test_linter = NULL,
@@ -74,12 +71,9 @@ linters = c(dt_linters, all_linters(
   object_overwrite_linter = NULL,
   paren_body_linter = NULL,
   redundant_equals_linter = NULL,
-  rep_len_linter = NULL,
-  repeat_linter = NULL,
   return_linter = NULL,
   sample_int_linter = NULL,
   scalar_in_linter = NULL,
-  seq_linter = NULL,
   undesirable_function_linter = NULL,
   unnecessary_concatenation_linter = NULL,
   unnecessary_lambda_linter = NULL,
@@ -116,7 +110,9 @@ exclusions = c(local({
       comparison_negation_linter = Inf,
       duplicate_argument_linter = Inf,
       equals_na_linter = Inf,
-      paste_linter = Inf
+      paste_linter = Inf,
+      rep_len_linter = Inf,
+      seq_linter = Inf
     ))
   )
 }),
