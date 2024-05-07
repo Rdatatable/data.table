@@ -1398,7 +1398,7 @@ SEXP isOrderedSubset(SEXP x, SEXP nrowArg)
 }
 
 SEXP binary(SEXP x)
-// base::intToBits is close, but why does that print the result as "00 00 00 00" (raw) rather than ("0000") bits? Seems odd.
+// base::numToBits is close, but why does that print the result as "00 00 00 00" (raw) rather than ("0000") bits? Seems odd.
 {
   char buffer[69];
   int j;
