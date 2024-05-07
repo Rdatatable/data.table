@@ -3,7 +3,7 @@
 \alias{getNumericRounding}
 \title{ Change or turn off numeric rounding }
 \description{
-Change rounding to 0, 1 or 2 bytes when joining, grouping or ordering numeric
+Change rounding to 0, 1, ..., or 7 bytes when joining, grouping or ordering numeric
 (i.e. double, POSIXct) columns.
 }
 \usage{
@@ -11,7 +11,7 @@ setNumericRounding(x)
 getNumericRounding()
 }
 \arguments{
-  \item{x}{ integer or numeric vector: 0 (default), 1 or 2 byte rounding }
+  \item{x}{ integer or numeric vector: 0 (default), up to  7 bytes rounding }
 }
 \details{
 Computers cannot represent some floating point numbers (such as 0.6)
@@ -19,7 +19,7 @@ precisely, using base 2. This leads to unexpected behaviour when joining or
 grouping columns of type 'numeric'; i.e. 'double', see example below. In
 cases where this is undesirable, data.table allows rounding such data up to
 approximately 11 significant figures which is plenty of digits for many cases.
-This is achieved by rounding the last 2 bytes off the significand. Other possible
+This is achieved by rounding the last 2 bytes off the significand. Other common
 values are 1 byte rounding, or no rounding (full precision, default).
 
 It is bytes rather than bits because it is tied in with the radix sort
@@ -33,7 +33,7 @@ precision).
  }
 \value{
 \code{setNumericRounding} returns no value; the new value is applied.
-\code{getNumericRounding} returns the current value: 0, 1 or 2.
+\code{getNumericRounding} returns the current value: an integer from 0 to 7.
 }
 \seealso{
 \code{\link{datatable-optimize}}\cr
