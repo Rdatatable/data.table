@@ -3282,7 +3282,7 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
     test(1036.01, dim(DT), INT(1,327))
     test(1036.02, dim(ans<-melt(DT, 1:2)), INT(325,4),
       warning="'measure.vars' [[]Geography, Estimate; SEX AND AGE - Total population, Margin of Error; SEX AND AGE - Total population, Percent; SEX AND AGE - Total population, [.][.][.][]] are not all of the same type.*the molten data value column will be of type 'character'.*not of type 'character' will be coerced too")
-    test(1036.03, nlevels(ans$variable), 317L)
+    test(1036.03, length(levels(ans$variable)), 317L)
     test(1036.04, levels(ans$variable)[c(1,2,316,317)],
       tt <- c("Geography",
         "Estimate; SEX AND AGE - Total population",
@@ -3702,7 +3702,7 @@ test(1100, dt1[dt2,roll=-Inf,rollends=c(FALSE,TRUE)]$ind, INT(NA,NA,1,2,2,2,2,2,
 
   # issues/713 - dcast and fun.aggregate
   DT = data.table(id=rep(1:2, c(3,4)), k=c(rep(letters[1:3], 2), 'c'), v=1:7)
-  foo = function(tbl, fun.aggregate) {
+  foo = function (tbl, fun.aggregate) {
       dcast(tbl, id ~ k, value.var='v', fun.aggregate=fun.aggregate, fill=NA_integer_)
   }
   test(1102.22, foo(DT, last), dcast(DT, id ~ k, value.var='v', fun.aggregate=last, fill=NA_integer_))
@@ -8314,7 +8314,7 @@ test(1581.18, DT[, v:=l[[f1]][f2], by=c("f1","f2")],
 #   need eval to have enclos=parent.frame(), #4612
 DT = data.table(id = c(1, 1, 2), value = c("a", "b", "c"))
 DT0 = copy(DT)
-fun = function(DT, tag = c("A", "B")) DT[, var := tag[[.GRP]], by = "id"]
+fun = function (DT, tag = c("A", "B")) DT[, var := tag[[.GRP]], by = "id"]
 fun(DT)
 test(1581.19, DT, DT0[ , var := c('A', 'A', 'B')])
 
@@ -8708,9 +8708,7 @@ test(1613.35, all.equal(dt1, dt2))
 test(1613.36, !isTRUE(all.equal(dt1, dt2, trim.levels = FALSE)))
 test(1613.37, !isTRUE(all.equal(dt1, dt2, trim.levels = FALSE, check.attributes = FALSE)))
 test(1613.38, all.equal(dt1, dt2, trim.levels = FALSE, ignore.row.order = TRUE))
-# dt1 and dt2 not updated by reference
-test(1613.391, nlevels(dt1$A), 10L)
-test(1613.392, nlevels(dt2$A), 5L)
+test(1613.39, length(levels(dt1$A)) == 10L && length(levels(dt2$A)) == 5L, TRUE) # dt1 and dt2 not updated by reference
 # unsupported column types: list
 dt = data.table(V1 = 1:4, V2 = letters[1:4], V3 = lapply(1:4, function(x) new.env()))
 test(1613.40, all.equal(dt, dt), TRUE)

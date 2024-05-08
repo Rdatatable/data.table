@@ -129,7 +129,7 @@ replace_dot_alias = function(e) {
   }
 }
 
-"[.data.table" = function(x, i, j, by, keyby, with=TRUE, nomatch=NA, mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, on=NULL, env=NULL)
+"[.data.table" = function (x, i, j, by, keyby, with=TRUE, nomatch=NA, mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, on=NULL, env=NULL)
 {
   # ..selfcount <<- ..selfcount+1  # in dev, we check no self calls, each of which doubles overhead, or could
   # test explicitly if the caller is [.data.table (even stronger test. TO DO.)
@@ -1920,7 +1920,7 @@ replace_dot_alias = function(e) {
     attrs = attr(x, 'index', exact=TRUE)
     skeys = names(attributes(attrs))
     if (!is.null(skeys)) {
-      hits  = unlist(lapply(paste0("__", names_x[cols]), grep, skeys, fixed=TRUE))
+      hits  = unlist(lapply(paste0("__", names_x[cols]), function(x) grep(x, skeys, fixed = TRUE)))
       hits  = skeys[unique(hits)]
       for (i in seq_along(hits)) setattr(attrs, hits[i], NULL) # does by reference
     }
@@ -2074,17 +2074,19 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     if (is.ff(X[[j]])) X[[j]] = X[[j]][]   # nocov to bring the ff into memory, since we need to create a matrix in memory
     xj = X[[j]]
     if (length(dj <- dim(xj)) == 2L && dj[2L] > 1L) {
-      if (is.data.table(xj))
+      if (inherits(xj, "data.table"))
         xj = X[[j]] = as.matrix(X[[j]])
       dnj = dimnames(xj)[[2L]]
-      collabs[[j]] = paste(
-        collabs[[j]],
-        if (length(dnj) > 0L) dnj else seq_len(dj[2L]), sep = ".")
+      collabs[[j]] = paste(collabs[[j]], if (length(dnj) >
+        0L)
+        dnj
+      else seq_len(dj[2L]), sep = ".")
     }
     if (!is.logical(xj))
       all.logical = FALSE
-    if (nlevels(xj) > 0L || !(is.numeric(xj) || is.complex(xj) || is.logical(xj)) ||
-        (!is.null(cl <- attr(xj, "class", exact=TRUE)) && any(cl %chin% c("Date", "POSIXct", "POSIXlt"))))
+    if (length(levels(xj)) > 0L || !(is.numeric(xj) || is.complex(xj) || is.logical(xj)) ||
+        (!is.null(cl <- attr(xj, "class", exact=TRUE)) && any(cl %chin%
+        c("Date", "POSIXct", "POSIXlt"))))
       non.numeric = TRUE
     if (!is.atomic(xj))
       non.atomic = TRUE
@@ -2102,7 +2104,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
       if (is.character(X[[j]])) next
       xj = X[[j]]
       miss = is.na(xj)
-      xj = if (nlevels(xj)) as.vector(xj) else format(xj)
+      xj = if (length(levels(xj))) as.vector(xj) else format(xj)
       is.na(xj) = miss
       X[[j]] = xj
     }
@@ -2134,7 +2136,7 @@ tail.data.table = function(x, n=6L, ...) {
   x[i]
 }
 
-"[<-.data.table" = function(x, i, j, value) {
+"[<-.data.table" = function (x, i, j, value) {
   # [<- is provided for consistency, but := is preferred as it allows by group and by reference to subsets of columns
   # with no copy of the (very large, say 10GB) columns at all. := is like an UPDATE in SQL and we like and want two symbols to change.
   if (!cedta()) {
@@ -2238,7 +2240,7 @@ dimnames.data.table = function(x) {
   list(NULL, names(x))
 }
 
-"dimnames<-.data.table" = function(x, value)   # so that can do  colnames(dt)=<..>  as well as names(dt)=<..>
+"dimnames<-.data.table" = function (x, value)   # so that can do  colnames(dt)=<..>  as well as names(dt)=<..>
 {
   if (!cedta()) return(`dimnames<-.data.frame`(x,value))  # nocov ; will drop key but names<-.data.table (below) is more common usage and does retain the key
   if (!is.list(value) || length(value) != 2L) stopf("attempting to assign invalid object to dimnames of a data.table")
@@ -2262,7 +2264,7 @@ dimnames.data.table = function(x) {
   x   # this returned value is now shallow copied by R 3.1.0 via *tmp*. A very welcome change.
 }
 
-within.data.table = function(data, expr, ...)
+within.data.table = function (data, expr, ...)
 # basically within.list but retains key (if any)
 # will be slower than using := or a regular query (see ?within for further info).
 {
@@ -2287,7 +2289,7 @@ within.data.table = function(data, expr, ...)
   ans
 }
 
-transform.data.table = function(`_data`, ...)
+transform.data.table = function (`_data`, ...)
 # basically transform.data.frame with data.table instead of data.frame, and retains key
 {
   if (!cedta()) return(NextMethod()) # nocov
@@ -2297,7 +2299,7 @@ transform.data.table = function(`_data`, ...)
   `_data`
 }
 
-subset.data.table = function(x, subset, select, ...)
+subset.data.table = function (x, subset, select, ...)
 {
   key.cols = key(x)
 
@@ -2346,7 +2348,7 @@ subset.data.table = function(x, subset, select, ...)
 is_na = function(x, by=seq_along(x)) .Call(Cdt_na, x, by)
 any_na = function(x, by=seq_along(x)) .Call(CanyNA, x, by)
 
-na.omit.data.table = function(object, cols = seq_along(object), invert = FALSE, ...) {
+na.omit.data.table = function (object, cols = seq_along(object), invert = FALSE, ...) {
   # compare to stats:::na.omit.data.frame
   if (!cedta()) return(NextMethod()) # nocov
   if ( !missing(invert) && is.na(as.logical(invert)) )
@@ -2372,7 +2374,7 @@ which_ = function(x, bool = TRUE) {
   .Call(Cwhichwrapper, x, bool)
 }
 
-is.na.data.table = function(x) {
+is.na.data.table = function (x) {
   if (!cedta()) return(`is.na.data.frame`(x))
   do.call("cbind", lapply(x, "is.na"))
 }
