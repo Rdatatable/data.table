@@ -6276,7 +6276,7 @@ allIndicesValid <- function(DT){
       return(FALSE)
     }
   }
-  return(TRUE)
+  TRUE
 }
 
 ## on data.table where indices are not integer(0)

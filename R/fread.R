@@ -317,7 +317,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
       },
       warning = fun <- function(e) {
         warningf("Column '%s' was requested to be '%s' but fread encountered the following %s:\n\t%s\nso the column has been left as type '%s'", names(ans)[j], new_class, if (inherits(e, "error")) "error" else "warning", e$message, typeof(v))
-        return(v)
+        v
       },
       error = fun)
     set(ans, j = j, value = new_v)  # aside: new_v == v if the coercion was aborted

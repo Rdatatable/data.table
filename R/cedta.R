@@ -35,7 +35,7 @@ cedta.pkgEvalsUserCode = c("gWidgetsWWW","statET","FastRWeb","slidify","rmarkdow
     the_call <- calls[[ii]][[1L]]
     if (is.name(the_call) && (the_call %chin% c("eval", "evalq"))) return(TRUE)
   }
-  return(FALSE)
+  FALSE
 }
 # nocov end
 

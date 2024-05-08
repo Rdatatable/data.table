@@ -5,7 +5,7 @@ guess = function(x) {
     return("(all)")
   var = names(x)[ncol(x)]
   messagef("Using '%s' as value column. Use 'value.var' to override", var)
-  return(var)
+  var
 }
 
 dcast <- function(

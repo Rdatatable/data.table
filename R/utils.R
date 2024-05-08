@@ -144,7 +144,7 @@ is_utc = function(tz) {
   # via grep('UTC|GMT', OlsonNames(), value = TRUE); ordered by "prior" frequency
   utc_tz = c("UTC", "GMT", "Etc/UTC", "Etc/GMT", "GMT-0", "GMT+0", "GMT0")
   if (is.null(tz)) tz = Sys.timezone()
-  return(tz %chin% utc_tz)
+  tz %chin% utc_tz
 }
 
 # very nice idea from Michael to avoid expression repetition (risk) in internal code, #4226

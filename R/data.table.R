@@ -976,7 +976,7 @@ replace_dot_alias = function(e) {
           if (length(q) == 4L && !is.null(q[[4L]])) q[[4L]] = do_j_names(q[[4L]])
           return(q)
         }
-        return(q)
+        q
       }
       if (is.name(jsub)) {
         # j is a single unquoted column name
@@ -1453,13 +1453,14 @@ replace_dot_alias = function(e) {
   #   independently by group & attr mismatch among groups is ignored. The latter
   #   is a more general issue but the former can be fixed by forcing units='secs'
   SDenv$`-.POSIXt` = function(e1, e2) {
-    if (inherits(e2, 'POSIXt')) {
-      if (verbose && !get0('done_units_report', parent.frame(), ifnotfound = FALSE)) {
-        catf('\nNote: forcing units="secs" on implicit difftime by group; call difftime explicitly to choose custom units\n')
-        assign('done_units_report', TRUE, parent.frame())
-      }
-      return(difftime(e1, e2, units='secs'))
-    } else return(base::`-.POSIXt`(e1, e2))
+    if (!inherits(e2, 'POSIXt')) {
+      return(base::`-.POSIXt`(e1, e2))
+    }
+    if (verbose && !get0('done_units_report', parent.frame(), ifnotfound = FALSE)) {
+      catf('\nNote: forcing units="secs" on implicit difftime by group; call difftime explicitly to choose custom units\n')
+      assign('done_units_report', TRUE, parent.frame())
+    }
+    difftime(e1, e2, units='secs')
   }
 
   if (byjoin) {
@@ -2293,7 +2294,7 @@ transform.data.table = function(`_data`, ...)
   if (!cedta()) return(NextMethod()) # nocov
   `_data` = copy(`_data`)
   e = eval(substitute(list(...)), `_data`, parent.frame())
-  set(`_data`, ,names(e), e)
+  set(`_data`, NULL, names(e), e)
   `_data`
 }
 
@@ -3052,7 +3053,8 @@ is_constantish = function(q, check_singleton=FALSE) {
   if (is.symbol(q1)) return(if (q1 %chin% gfuns) q1)
   if (!q1 %iscall% "::") return(NULL)
   if (q1[[2L]] != "data.table") return(NULL)
-  return(if (q1[[3L]] %chin% gdtfuns) q1[[3L]])
+  if (q1[[3L]] %chin% gdtfuns) return(q1[[3L]])
+  NULL
 }
 .gforce_ok = function(q, x) {
   if (is.N(q)) return(TRUE) # For #334
@@ -3336,5 +3338,5 @@ is_constantish = function(q, check_singleton=FALSE) {
   ## the final on will contain the xCol as name, the iCol as value
   on = iCols
   names(on) = xCols
-  return(list(on = on, ops = idx_op))
+  list(on = on, ops = idx_op)
 }
