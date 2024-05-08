@@ -33,8 +33,8 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
   if (is.na(nrows) || nrows<0) nrows=Inf   # accept -1 to mean Inf, as read.table does
   if (identical(header,"auto")) header=NA
   stopifnot(
-    is.logical(header) && length(header)==1L,  # TRUE, FALSE or NA
-    is.numeric(nThread) && length(nThread)==1L
+    is.logical(header), length(header)==1L,  # TRUE, FALSE or NA
+    is.numeric(nThread), length(nThread)==1L
   )
   nThread=as.integer(nThread)
   stopifnot(nThread>=1L)
