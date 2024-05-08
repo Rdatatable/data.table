@@ -179,10 +179,10 @@ foverlaps = function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=k
   # CsubsetDT bug has been fixed by Matt. So back to using it! Should improve subset substantially.
   if (which) {
     if (mult %chin% c("first", "last"))
-      return (olaps$yid)
+      return(olaps$yid)
     else if (!is.na(nomatch))
-      return (.Call(CsubsetDT, olaps, which(olaps$yid > 0L), seq_along(olaps)))
-    else return (olaps)
+      return(.Call(CsubsetDT, olaps, which(olaps$yid > 0L), seq_along(olaps)))
+    else return(olaps)
   } else {
     if (!is.na(nomatch))
       olaps = .Call(CsubsetDT, olaps, which(olaps$yid > 0L), seq_along(olaps))
@@ -195,7 +195,7 @@ foverlaps = function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=k
     xcols2 = setdiff(names(ans), xcols1)
     ans[, (ycols) := .Call(CsubsetDT, origy, olaps$yid, chmatch(ycols, names(origy)))]
     setcolorder(ans, c(xcols1, ycols, xcols2))
-    return (ans[])
+    return(ans[])
   }
 }
 

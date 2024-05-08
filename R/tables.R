@@ -12,7 +12,7 @@ type_size = function(DT) {
     tt = lookup[storage.mode(col)]
     if (is.na(tt)) tt = .Machine$sizeof.pointer
     tt = tt*nrow(DT)
-    if (is.factor(col)) tt = tt + length(levels(col))*.Machine$sizeof.pointer
+    if (is.factor(col)) tt = tt + nlevels(col)*.Machine$sizeof.pointer
     ans = ans + tt
   }
   ans + ncol(DT)*.Machine$sizeof.pointer  # column name pointers

@@ -251,5 +251,5 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
     setattr(ans, 'names', c(lhsnames, allcols))
     setDT(ans); setattr(ans, 'sorted', lhsnames)
   } else stopf("Internal error -- empty rhsnames in dcast; please report") # nocov
-  return (ans)
+  return(ans)
 }

@@ -311,7 +311,7 @@ INT = function(...) { as.integer(c(...)) }   # utility used in tests.Rraw
 gc_mem = function() {
   # nocov start
   # gc reports memory in MB
-  m = apply(gc()[, c(2L, 4L, 6L)], 2L, sum)
+  m = colSums(gc()[, c(2L, 4L, 6L)])
   names(m) = c("GC_used", "GC_gc_trigger", "GC_max_used")
   m
   # nocov end
