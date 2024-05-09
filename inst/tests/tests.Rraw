@@ -10409,7 +10409,7 @@ test(1693.11, yearqtr(t), 2016.5)
 # fix for #1740 - sub-assigning NAs for factors
 dt = data.table(x = 1:5, y = factor(c("","a","b","a", "")), z = 5:9)
 ans = data.table(x = 1:5, y = factor(c(NA,"a","b","a", NA)), z = 5:9)
-test(1694.0, dt[!nzchar(y, keepNA=TRUE), y := NA], ans)
+test(1694.0, dt[y=="", y := NA], ans) # nolint: nzchar_linter. Using factor auto-coercion convenience.
 
 # more tests for between()
 x = c(NaN, NA, 1, 5, -Inf, Inf)
