@@ -1,6 +1,6 @@
 on:
   schedule:
-   - cron: '18 13 8 * *' # 8th of month at 13:18 UTC
+   - cron: '18 13 10 * *' # 8th of month at 13:18 UTC
 
 # A more complete suite of checks to run monthly; each PR/merge need not pass all these, but they should pass before CRAN release
 name: R-CMD-check-occasional
@@ -12,6 +12,7 @@ jobs:
     name: ${{ matrix.os }} (${{ matrix.r }})
 
     strategy:
+      fail-fast: false
       matrix:
         os: [macOS-latest, windows-latest, ubuntu-latest]
         r: ['devel', 'release', '3.2', '3.3', '3.4', '3.5', '3.6', '4.0', '4.1', '4.2', '4.3']
