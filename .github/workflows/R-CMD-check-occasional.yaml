@@ -34,7 +34,7 @@ jobs:
 
     steps:
       - name: Set locale
-        if: matrix.locale == 'en_US.utf8'
+        if: matrix.os == 'ubuntu-latest' && matrix.locale == 'en_US.utf8'
         run: |
           sudo locale-gen en_US
           echo "LC_ALL=en_US.utf8" >> $GITHUB_ENV
