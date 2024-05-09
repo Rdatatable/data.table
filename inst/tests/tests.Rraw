@@ -6812,7 +6812,7 @@ test(1463.67, shift(x, -5, type="cyclic"), x)
 test(1463.68, shift(x, 6, type="cyclic"), shift(x, 1, type="cyclic"))
 test(1463.69, shift(x, -6, type="cyclic"), shift(x, -1, type="cyclic"))
 # test warning
-test(1463.70, shift(x, 1, fill=1, type="cyclic"), c(5L, 1L:4L), warning="Provided argument fill=1 will be ignored since type='shift'.")
+test(1463.70, shift(x, 1, fill=1, type="cyclic"), c(5L, 1L:4L), warning="Provided argument fill=1 will be ignored since type='cyclic'.")
 
 # test raw #5547
 x=as.raw(1:5)
