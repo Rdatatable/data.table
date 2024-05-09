@@ -153,10 +153,10 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
   if (length(tt)) {
     msg = gettextf('na.strings[%d]=="%s" consists only of whitespace, ignoring', tt[1L], na.strings[tt[1L]])
     if (strip.white) {
-      if (any(na.strings=="")) {
-        warningf('%s. strip.white==TRUE (default) and "" is present in na.strings, so any number of spaces in string columns will already be read as <NA>.', msg)
-      } else {
+      if (all(nzchar(na.strings))) {
         warningf('%s. Since strip.white=TRUE (default), use na.strings="" to specify that any number of spaces in a string column should be read as <NA>.', msg)
+      } else {
+        warningf('%s. strip.white==TRUE (default) and "" is present in na.strings, so any number of spaces in string columns will already be read as <NA>.', msg)
       }
       na.strings = na.strings[-tt]
     } else {
@@ -299,7 +299,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
   }
 
   colClassesAs = attr(ans, "colClassesAs", exact=TRUE)   # should only be present if one or more are != ""
-  for (j in which(colClassesAs!="")) {       # # 1634
+  for (j in which(nzchar(colClassesAs))) {       # # 1634
     v = .subset2(ans, j)
     new_class = colClassesAs[j]
     new_v = tryCatch({    # different to read.csv; i.e. won't error if a column won't coerce (fallback with warning instead)

@@ -618,7 +618,7 @@ replace_dot_alias = function(e) {
         else stopf("i evaluates to a logical vector length %d but there are %d rows. Recycling of logical i is no longer allowed as it hides more bugs than is worth the rare convenience. Explicitly use rep(...,length=.N) if you really need to recycle.", length(i), nrow(x))
       } else {
         irows = as.integer(i)  # e.g. DT[c(1,3)] and DT[c(-1,-3)] ok but not DT[c(1,-3)] (caught as error)
-        if (nomatch0) warning("Please use nomatch=NULL instead of nomatch=0; see news item 5 in v1.12.0 (Jan 2019)")
+        if (nomatch0) warningf("Please use nomatch=NULL instead of nomatch=0; see news item 5 in v1.12.0 (Jan 2019)")
                       # warning only for this case where nomatch was ignored before v1.14.2; #3109
         irows = .Call(CconvertNegAndZeroIdx, irows, nrow(x),
                       is.null(jsub) || root!=":=",   # allowOverMax (NA when selecting, error when assigning)
@@ -803,7 +803,7 @@ replace_dot_alias = function(e) {
           nzidx = nzchar(bysub)
           # by='' means by=NULL, tests 592&596
           if (!all(nzidx)) {
-            if (length(bysub) > 1L) stop("At least one entry of by is empty")
+            if (length(bysub) > 1L) stopf("At least one entry of by is empty")
             bysub = NULL
           } else {
             bysub = as.call(c(list(quote(list)), lapply(bysub, as.name)))
@@ -948,7 +948,7 @@ replace_dot_alias = function(e) {
             nm = names(q[-1L])   # check list(a=sum(v),v)
             if (is.null(nm)) nm = rep.int("", qlen-1L)
             # attempt to auto-name unnamed columns
-            for (jj in which(nm=="")) {
+            for (jj in which(!nzchar(nm))) {
               thisq = q[[jj + 1L]]
               if (missing(thisq)) stopf("Item %d of the .() or list() passed to j is missing", jj) #3507
               if (is.name(thisq)) nm[jj] = drop_dot(thisq)
@@ -1949,7 +1949,7 @@ replace_dot_alias = function(e) {
     if (is.null(jvnames)) jvnames = character(length(ans)-length(bynames))
     if (length(bynames)+length(jvnames)!=length(ans))
       stopf("Internal error: jvnames is length %d but ans is %d and bynames is %d", length(jvnames), length(ans), length(bynames)) # nocov
-    ww = which(jvnames=="")
+    ww = which(!nzchar(jvnames))
     if (any(ww)) jvnames[ww] = paste0("V",ww)
     setattr(ans, "names", c(bynames, jvnames))
   } else {
@@ -3293,7 +3293,7 @@ is_constantish = function(q, check_singleton=FALSE) {
         ## search for column names
         thisCols = c(thisCols, trimws(strsplit(pieces[[i]][j], pat)[[1L]]))
         ## there can be empty string column names because of trimws, remove them
-        thisCols = thisCols[thisCols != ""]
+        thisCols = thisCols[nzchar(thisCols)]
         j = j+1L
       }
     }

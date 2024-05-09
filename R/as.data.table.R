@@ -180,7 +180,7 @@ as.data.table.list = function(x,
     if (eachnrow[i]>1L && nrow%%eachnrow[i]!=0L)   # in future: eachnrow[i]!=nrow
       warningf("Item %d has %d rows but longest item has %d; recycled with remainder.", i, eachnrow[i], nrow)
     if (is.data.table(xi)) {   # matrix and data.frame were coerced to data.table above
-      prefix = if (!isFALSE(.named[i]) && isTRUE(nchar(names(x)[i])>0L)) paste0(names(x)[i],".") else ""  # test 2058.12
+      prefix = if (!isFALSE(.named[i]) && isTRUE(nzchar(names(x)[i], keepNA=TRUE))) paste0(names(x)[i],".") else ""  # test 2058.12
       for (j in seq_along(xi)) {
         ans[[k]] = recycle(xi[[j]], nrow)
         vnames[k] = paste0(prefix, names(xi)[j])

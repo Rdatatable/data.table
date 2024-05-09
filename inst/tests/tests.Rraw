@@ -10409,7 +10409,7 @@ test(1693.11, yearqtr(t), 2016.5)
 # fix for #1740 - sub-assigning NAs for factors
 dt = data.table(x = 1:5, y = factor(c("","a","b","a", "")), z = 5:9)
 ans = data.table(x = 1:5, y = factor(c(NA,"a","b","a", NA)), z = 5:9)
-test(1694.0, dt[y=="", y := NA], ans)
+test(1694.0, dt[!nzchar(y, keepNA=TRUE), y := NA], ans)
 
 # more tests for between()
 x = c(NaN, NA, 1, 5, -Inf, Inf)
@@ -17309,11 +17309,11 @@ schools.wide <- data.table(
   read_2 = c(1.2,2.2),
   math_1 = c(10.1,20.1), math_1_sp = c(TRUE,TRUE),
   math_2 = c(NA,20.2), math_2_sp = c(NA,FALSE))
-schools.tall <- melt(schools.wide, na.rm=TRUE, measure.vars=measure(subject, number=as.integer, value.name=function(x)ifelse(x=="", "score", "sp"), pattern="([^_]+)_([12])(.*)"))
+schools.tall <- melt(schools.wide, na.rm=TRUE, measure.vars=measure(subject, number=as.integer, value.name=function(x)ifelse(nzchar(x, keepNA=TRUE), "sp", "score"), pattern="([^_]+)_([12])(.*)"))
 schools.expected = data.table(school=c("A","B","A","B","B"), subject=c("read","read","math","math","math"), number=as.integer(c(1,1,1,1,2)), score=c(1.1,2.1,10.1,20.1,20.2), sp=c(TRUE,TRUE,TRUE,TRUE,FALSE))
 test(2183.21, schools.tall, schools.expected)
 who <- data.table(id=1, new_sp_m5564=2, newrel_f65=3)
-test(2183.22, melt(who, measure.vars=measure(diagnosis, gender, ages, ymin=as.numeric, ymax=function(y)ifelse(y=="", Inf, as.numeric(y)), pattern="new_?(?<diagnosis>.*)_(?<gender>.)(?<ages>(?<ymin>0|[0-9]{2})(?<ymax>[0-9]{0,2}))")), data.table(id=1, diagnosis=c("sp","rel"), gender=c("m","f"), ages=c("5564","65"), ymin=c(55,65), ymax=c(64,Inf), value=c(2,3)))
+test(2183.22, melt(who, measure.vars=measure(diagnosis, gender, ages, ymin=as.numeric, ymax=function(y)ifelse(nzchar(y, keepNA=TRUE), as.numeric(y), Inf), pattern="new_?(?<diagnosis>.*)_(?<gender>.)(?<ages>(?<ymin>0|[0-9]{2})(?<ymax>[0-9]{0,2}))")), data.table(id=1, diagnosis=c("sp","rel"), gender=c("m","f"), ages=c("5564","65"), ymin=c(55,65), ymax=c(64,Inf), value=c(2,3)))
 wide.again = dcast(schools.tall, school ~ subject + number, value.var = c("score","sp"))
 # measure with sep=
 test(2183.23, melt(wide.again, na.rm=TRUE, measure.vars=measure(value.name, subject, number=as.integer))[order(score)], schools.expected)#should work without sep due to same default _ as dcast.
