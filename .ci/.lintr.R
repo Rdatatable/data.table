@@ -64,7 +64,6 @@ linters = c(dt_linters, all_linters(
   object_overwrite_linter = NULL,
   paren_body_linter = NULL,
   redundant_equals_linter = NULL,
-  scalar_in_linter = NULL,
   undesirable_function_linter = NULL,
   unnecessary_concatenation_linter = NULL,
   unnecessary_nesting_linter = NULL,

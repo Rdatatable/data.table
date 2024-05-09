@@ -1,4 +1,4 @@
-# in order as they're attached in a normal R session, to match that if these actually have an effect, e.g. under R_DEFAULT_PACKAGES=NULL
+￿# in order as they're attached in a normal R session, to match that if these actually have an effect, e.g. under R_DEFAULT_PACKAGES=NULL
 #   NB: pos= is required for these symbols to resolve searching 'upward' from data.table -- if these packages are not already attached,
 #   and we don't use pos=, they'll wind up 'below' data.table on the search() path --> their symbols won't resolve since, when running
 #   from the installed package, this is evaluated from data.table's namespace.
@@ -2153,7 +2153,7 @@ test(696, DT[a>2,sum(c),by=(b+1)%%2], data.table(b=c(0,1),V1=c(34L,42L)))
 # Test subset and %chin% crash with non-character input, #2131
 test(697, 4 %chin% letters, error="type")
 test(698, 4L %chin% letters, error="type")
-test(699, "a" %chin% 4, error="type")
+test(699, "a" %chin% 4, error="type") # nolint: scalar_in_linter. Testing %chin% behavior.
 DT = data.table(aa=1:6,bb=7:12)
 test(700, subset(DT,select="aa"), DT[,list(aa)])
 test(701, subset(DT,select=aa), DT[,list(aa)])

@@ -2805,7 +2805,7 @@ setDF = function(x, rownames=NULL) {
     if (is.null(xn)) {
       setattr(x, "names", paste0("V",seq_len(length(x))))
     } else {
-      idx = xn %chin% ""
+      idx = !nzchar(xn) # NB: keepNA=FALSE intentional
       if (any(idx)) {
         xn[idx] = paste0("V", seq_along(which(idx)))
         setattr(x, "names", xn)
@@ -2878,7 +2878,7 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     if (is.null(xn)) {
       setattr(x, "names", paste0("V", seq_along(x)))
     } else {
-      idx = xn %chin% "" # names can be NA - test 1006 caught that!
+      idx = !nzchar(xn) # NB: keepNA=FALSE intentionally, see test 1006
       if (any(idx)) {
         xn[idx] = paste0("V", seq_along(which(idx)))
         setattr(x, "names", xn)
