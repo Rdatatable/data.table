@@ -1,4 +1,4 @@
-￿# in order as they're attached in a normal R session, to match that if these actually have an effect, e.g. under R_DEFAULT_PACKAGES=NULL
+# in order as they're attached in a normal R session, to match that if these actually have an effect, e.g. under R_DEFAULT_PACKAGES=NULL
 #   NB: pos= is required for these symbols to resolve searching 'upward' from data.table -- if these packages are not already attached,
 #   and we don't use pos=, they'll wind up 'below' data.table on the search() path --> their symbols won't resolve since, when running
 #   from the installed package, this is evaluated from data.table's namespace.
