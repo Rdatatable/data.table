@@ -1,6 +1,6 @@
 on:
   schedule:
-   - cron: '18 13 8 * *' # 8th of month at 13:18 UTC
+   - cron: '18 13 11 * *' # 11th of month at 13:18 UTC
 
 # A more complete suite of checks to run monthly; each PR/merge need not pass all these, but they should pass before CRAN release
 name: R-CMD-check-occasional
@@ -12,11 +12,13 @@ jobs:
     name: ${{ matrix.os }} (${{ matrix.r }})
 
     strategy:
+      fail-fast: false
       matrix:
         os: [macOS-latest, windows-latest, ubuntu-latest]
         r: ['devel', 'release', '3.2', '3.3', '3.4', '3.5', '3.6', '4.0', '4.1', '4.2', '4.3']
         locale: ['en_US.utf8', 'zh_CN.utf8', 'lv_LV.utf8'] # Chinese for translations, Latvian for collate order (#3502)
-        exclude: # only run non-English locale CI on Ubuntu
+        exclude:
+          # only run non-English locale CI on Ubuntu
           - os: macOS-latest
             locale: 'zh_CN.utf8'
           - os: macOS-latest
@@ -25,6 +27,21 @@ jobs:
             locale: 'zh_CN.utf8'
           - os: windows-latest
             locale: 'lv_LV.utf8'
+          # macOS/arm64 only available for R>=4.1.0
+          - os: macOS-latest
+            r: '3.2'
+          - os: macOS-latest
+            r: '3.3'
+          - os: macOS-latest
+            r: '3.4'
+          - os: macOS-latest
+            r: '3.5'
+          - os: macOS-latest
+            r: '3.6'
+          - os: macOS-latest
+            r: '4.0'
+          - os: macOS-latest
+            r: '4.1'
 
     env:
       R_REMOTES_NO_ERRORS_FROM_WARNINGS: true
@@ -33,7 +50,7 @@ jobs:
 
     steps:
       - name: Set locale
-        if: matrix.locale == 'en_US.utf8'
+        if: matrix.os == 'ubuntu-latest' && matrix.locale == 'en_US.utf8'
         run: |
           sudo locale-gen en_US
           echo "LC_ALL=en_US.utf8" >> $GITHUB_ENV
@@ -41,14 +58,14 @@ jobs:
       - name: Set locale
         if: matrix.locale == 'zh_CN.utf8'
         run: |
-          sudo locale-gen zh_CN
+          sudo locale-gen 'zh_CN.utf8'
           echo "LC_ALL=zh_CN.utf8" >> $GITHUB_ENV
           echo "LANGUAGE=zh_CN" >> $GITHUB_ENV
 
       - name: Set locale
         if: matrix.locale == 'lv_LV.utf8'
         run: |
-          sudo locale-gen lv_LV
+          sudo locale-gen 'lv_LV.utf8'
           echo "LC_ALL=lv_LV.utf8" >> $GITHUB_ENV
           echo "LANGUAGE=lv_LV" >> $GITHUB_ENV
 
@@ -58,6 +75,11 @@ jobs:
         with:
           r-version: ${{ matrix.r }}
 
+      - name: Install check dependencies
+        if: matrix.os != 'windows-latest' && matrix.os != 'macOS-latest'
+        run: |
+            sudo apt-get update
+            sudo apt-get install -y libcurl4-openssl-dev
 
       - name: Query dependencies
         run: |
@@ -84,7 +106,11 @@ jobs:
       - name: Install dependencies
         run: |
           remotes::install_deps(dependencies = TRUE)
-          remotes::install_cran("rcmdcheck")
+          other_deps_expr = parse('inst/tests/other.Rraw', n=1L)
+          eval(other_deps_expr)
+          pkgs <- get(as.character(other_deps_expr[[1L]][[2L]]))
+          # May not install on oldest R versions
+          try(remotes::install_cran(c(pkgs, "rcmdcheck")))
         shell: Rscript {0}
 
       - name: Check
@@ -92,7 +118,28 @@ jobs:
           _R_CHECK_CRAN_INCOMING_REMOTE_: false
         run: |
           options(crayon.enabled = TRUE)
-          rcmdcheck::rcmdcheck(args = c("--no-manual", "--as-cran"), error_on = "warning", check_dir = "check")
+
+          other_deps_expr = parse('inst/tests/other.Rraw', n=1L)
+          eval(other_deps_expr)
+          pkgs <- get(as.character(other_deps_expr[[1L]][[2L]]))
+          has_pkg <- sapply(pkgs, requireNamespace, quietly=TRUE)
+          if (!all(has_pkg)) {
+            cat(sprintf("Skipping other.Rraw since some required packages are not available: %s\n", toString(pkgs[!has_pkg])))
+            Sys.unsetenv("TEST_DATA_TABLE_WITH_OTHER_PACKAGES")
+          }
+
+          args <- c("--no-manual", "--as-cran")
+          if (requireNamespace("rcmdcheck", quietly=TRUE)) {
+            rcmdcheck::rcmdcheck(args = args, error_on = "warning", check_dir = "check")
+          } else {
+            Rbin = if (.Platform$OS.type == "windows") "R.exe" else "R"
+            system2(Rbin, c("CMD", "build", "."))
+            res = system2(Rbin, c("CMD", "check", "data.table_*.tar.gz", args), stdout=TRUE)
+            if (!is.null(attr(res, "status")) || grep("^Status:.*(ERROR|WARNING)", res)) {
+              writeLines(res)
+              stop("R CMD check failed")
+            }
+          }
         shell: Rscript {0}
 
       - name: Upload check results
