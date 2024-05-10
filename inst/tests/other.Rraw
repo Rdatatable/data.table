@@ -408,7 +408,7 @@ if (loaded[["yaml"]]) {  # csvy; #1701. Was 2032-2033 in tests.Rraw, #5516
   fwrite(DT, f<-tempfile(), bom=TRUE, yaml=TRUE)
   fcon = file(f, encoding="UTF-8")  # Windows readLines needs to be told; see also test 1658.50 in tests.Rraw
   lines = readLines(fcon)
-  lines = lines[lines!=""]  # an extra "" after "eol: |2+" (line 16) on Linux but not Windows
+  lines = lines[nzchar(lines)]  # an extra "" after "eol: |2+" (line 16) on Linux but not Windows
                             # remove the blank here so we don't need to change this test if/when that changes in yaml package
   test(17.11, length(lines), 48L)
   close(fcon)
@@ -417,7 +417,7 @@ if (loaded[["yaml"]]) {  # csvy; #1701. Was 2032-2033 in tests.Rraw, #5516
   fwrite(DT, f<-tempfile(), bom=TRUE, yaml=TRUE)
   fcon = file(f, encoding="UTF-8")
   lines = readLines(fcon)
-  lines = lines[lines!=""]
+  lines = lines[nzchar(lines)]
   test(17.13, length(lines), 48L)
   close(fcon)
   test(17.14, fread(f), DT)

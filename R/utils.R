@@ -25,7 +25,7 @@ if (!exists('startsWith', 'package:base', inherits=FALSE)) {  # R 3.3.0; Apr 201
   startsWith = function(x, stub) substr(x, 1L, nchar(stub))==stub
 }
 # endsWith no longer used from #5097 so no need to backport; prevent usage to avoid dev delay until GLCI's R 3.1.0 test
-endsWith = function(...) stop("Internal error: use endsWithAny instead of base::endsWith")
+endsWith = function(...) stop("Internal error: use endsWithAny instead of base::endsWith", call.=FALSE)
 
 startsWithAny = function(x,y) .Call(CstartsWithAny, x, y, TRUE)
 endsWithAny = function(x,y) .Call(CstartsWithAny, x, y, FALSE)
@@ -92,7 +92,7 @@ name_dots = function(...) {
   } else {
     vnames[is.na(vnames)] = ""
   }
-  notnamed = vnames==""
+  notnamed = !nzchar(vnames)
   if (any(notnamed)) {
     syms = vapply_1b(dot_sub, is.symbol)  # save the deparse() in most cases of plain symbol
     for (i in which(notnamed)) {
@@ -144,7 +144,7 @@ is_utc = function(tz) {
   # via grep('UTC|GMT', OlsonNames(), value = TRUE); ordered by "prior" frequency
   utc_tz = c("UTC", "GMT", "Etc/UTC", "Etc/GMT", "GMT-0", "GMT+0", "GMT0")
   if (is.null(tz)) tz = Sys.timezone()
-  return(tz %chin% utc_tz)
+  tz %chin% utc_tz
 }
 
 # very nice idea from Michael to avoid expression repetition (risk) in internal code, #4226

@@ -129,7 +129,7 @@ round.IDate = function(x, digits=c("weeks", "months", "quarters", "years"), ...)
   }
   ans = as.integer(unclass(e1) - unclass(e2))
   if (!inherits(e2, "Date")) setattr(ans, "class", c("IDate", "Date"))
-  return(ans)
+  ans
 }
 
 
@@ -177,7 +177,7 @@ as.ITime.character = function(x, format, ...) {
       w = w[!nna]
     }
   }
-  return(as.ITime(y, ...))
+  as.ITime(y, ...)
 }
 
 as.ITime.POSIXlt = function(x, ms = 'truncate', ...) {
