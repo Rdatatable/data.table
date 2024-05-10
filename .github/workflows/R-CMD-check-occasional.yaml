@@ -85,15 +85,27 @@ jobs:
       - name: Install dependencies
         run: |
           remotes::install_deps(dependencies = TRUE)
-          remotes::install_cran("rcmdcheck")
+          # May not install on oldest R versions
+          try(remotes::install_cran("rcmdcheck"))
         shell: Rscript {0}
 
-      - name: Check
+      - name: Check (with rcmdcheck)
         env:
           _R_CHECK_CRAN_INCOMING_REMOTE_: false
         run: |
           options(crayon.enabled = TRUE)
-          rcmdcheck::rcmdcheck(args = c("--no-manual", "--as-cran"), error_on = "warning", check_dir = "check")
+          args <- c("--no-manual", "--as-cran")
+          if (requireNamespace("rcmdcheck", quietly=TRUE)) {
+            rcmdcheck::rcmdcheck(args = args, error_on = "warning", check_dir = "check")
+          } else {
+            Rbin <- ifelse(.Platform$OS.type == "windows", "R.exe", "R")
+            system2(Rbin, c("CMD", "build", "."))
+            res <- system2(Rbin, c("CMD", "check", "data.table_*.tar.gz", args), stdout=TRUE)
+            if (!is.null(attr(res, "status")) || grep("^Status:.*(ERROR|WARNING)", res)) {
+              writeLines(res)
+              stop("R CMD check failed")
+            }
+          }
         shell: Rscript {0}
 
       - name: Upload check results
