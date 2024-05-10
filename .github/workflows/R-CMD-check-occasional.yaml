@@ -42,14 +42,14 @@ jobs:
       - name: Set locale
         if: matrix.locale == 'zh_CN.utf8'
         run: |
-          sudo locale-gen zh_CN
+          sudo locale-gen 'zh_CN.utf8'
           echo "LC_ALL=zh_CN.utf8" >> $GITHUB_ENV
           echo "LANGUAGE=zh_CN" >> $GITHUB_ENV
 
       - name: Set locale
         if: matrix.locale == 'lv_LV.utf8'
         run: |
-          sudo locale-gen lv_LV
+          sudo locale-gen 'lv_LV.utf8'
           echo "LC_ALL=lv_LV.utf8" >> $GITHUB_ENV
           echo "LANGUAGE=lv_LV" >> $GITHUB_ENV
 
