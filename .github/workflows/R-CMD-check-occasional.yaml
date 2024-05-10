@@ -101,8 +101,11 @@ jobs:
       - name: Install dependencies
         run: |
           remotes::install_deps(dependencies = TRUE)
+          other_deps_expr = parse('inst/tests/other.Rraw', n=1L)
+          eval(other_deps_expr)
+          pkgs <- get(as.character(other_deps_expr[[1L]][[2L]]))
           # May not install on oldest R versions
-          try(remotes::install_cran("rcmdcheck"))
+          try(remotes::install_cran(c(pkgs, "rcmdcheck")))
         shell: Rscript {0}
 
       - name: Check
@@ -110,13 +113,23 @@ jobs:
           _R_CHECK_CRAN_INCOMING_REMOTE_: false
         run: |
           options(crayon.enabled = TRUE)
+
+          other_deps_expr = parse('inst/tests/other.Rraw', n=1L)
+          eval(other_deps_expr)
+          pkgs <- get(as.character(other_deps_expr[[1L]][[2L]]))
+          has_pkg <- sapply(pkgs, requireNamespace, quietly=TRUE)
+          if (!all(has_pkg)) {
+            cat(sprintf("Skipping other.Rraw since some required packages are not available: %s\n", toString(pkgs[!has_pkg])))
+            Sys.unsetenv("TEST_DATA_TABLE_WITH_OTHER_PACKAGES")
+          }
+
           args <- c("--no-manual", "--as-cran")
           if (requireNamespace("rcmdcheck", quietly=TRUE)) {
             rcmdcheck::rcmdcheck(args = args, error_on = "warning", check_dir = "check")
           } else {
-            Rbin <- if (.Platform$OS.type == "windows") "R.exe" else "R"
+            Rbin = if (.Platform$OS.type == "windows") "R.exe" else "R"
             system2(Rbin, c("CMD", "build", "."))
-            res <- system2(Rbin, c("CMD", "check", "data.table_*.tar.gz", args), stdout=TRUE)
+            res = system2(Rbin, c("CMD", "check", "data.table_*.tar.gz", args), stdout=TRUE)
             if (!is.null(attr(res, "status")) || grep("^Status:.*(ERROR|WARNING)", res)) {
               writeLines(res)
               stop("R CMD check failed")
