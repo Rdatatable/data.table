@@ -98,7 +98,7 @@ jobs:
           if (requireNamespace("rcmdcheck", quietly=TRUE)) {
             rcmdcheck::rcmdcheck(args = args, error_on = "warning", check_dir = "check")
           } else {
-            Rbin <- ifelse(.Platform$OS.type == "windows", "R.exe", "R")
+            Rbin <- if (.Platform$OS.type == "windows") "R.exe" else "R"
             system2(Rbin, c("CMD", "build", "."))
             res <- system2(Rbin, c("CMD", "check", "data.table_*.tar.gz", args), stdout=TRUE)
             if (!is.null(attr(res, "status")) || grep("^Status:.*(ERROR|WARNING)", res)) {
