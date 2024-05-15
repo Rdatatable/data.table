@@ -104,8 +104,8 @@ fsetequal = function(x, y, all=TRUE) {
 
 # all.equal ----
 
-all.equal.data.table = function(target, current, trim.levels=TRUE, check.attributes=TRUE, ignore.col.order=FALSE, ignore.row.order=FALSE, tolerance=sqrt(.Machine$double.eps), ...) {
-  stopifnot(is.logical(trim.levels), is.logical(check.attributes), is.logical(ignore.col.order), is.logical(ignore.row.order), is.numeric(tolerance), is.data.table(target))
+all.equal.data.table = function(target, current, trim.levels=TRUE, check.attributes=TRUE, ignore.indices=FALSE, ignore.col.order=FALSE, ignore.row.order=FALSE, tolerance=sqrt(.Machine$double.eps), ...) {
+  stopifnot(is.logical(trim.levels), is.logical(check.attributes), is.logical(ignore.indices), is.logical(ignore.col.order), is.logical(ignore.row.order), is.numeric(tolerance), is.data.table(target))
 
   if (!is.data.table(current)) {
     if (check.attributes) return(paste0('target is data.table, current is ', data.class(current)))
@@ -163,20 +163,23 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
       ))
     }
     # check index
-    i1 = indices(target)
-    i2 = indices(current)
-    if (!identical(i1, i2)) {
-      return(gettextf(
-        "Datasets have different %s. 'target': %s. 'current': %s.",
-        "indices",
-        if(length(i1)) brackify(i1) else gettextf("has no index"),
-        if(length(i2)) brackify(i2) else gettextf("has no index")
-      ))
+    if (!ignore.indices) {
+      i1 = indices(target)
+      i2 = indices(current)
+      if (!identical(i1, i2)) {
+        return(gettextf(
+          "Datasets have different %s. 'target': %s. 'current': %s.",
+          "indices",
+          if(length(i1)) brackify(i1) else gettextf("has no index"),
+          if(length(i2)) brackify(i2) else gettextf("has no index")
+        ))
+      }
     }
 
     # Trim any extra row.names attributes that came from some inheritance
     # Trim ".internal.selfref" as long as there is no `all.equal.externalptr` method
-    exclude.attrs = function(x, attrs = c("row.names",".internal.selfref")) x[!names(x) %chin% attrs]
+    # Trim "index" attribute, in case `ignore.indices` is set (if it is not, we already checked it).
+    exclude.attrs = function(x, attrs = c("row.names",".internal.selfref", "index")) x[!names(x) %chin% attrs]
     a1 = exclude.attrs(attributes(target))
     a2 = exclude.attrs(attributes(current))
     if (length(a1) != length(a2)) return(sprintf("Datasets has different number of (non-excluded) attributes: target %s, current %s", length(a1), length(a2)))
