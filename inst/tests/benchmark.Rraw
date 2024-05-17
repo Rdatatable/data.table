@@ -60,7 +60,7 @@ test(647, ans1, ans3)
 # this'll error with `valgrind` because of the 'long double' usage in gsumm.c (although I wonder if we need long double precision).
 # http://valgrind.org/docs/manual/manual-core.html#manual-core.limits
 # http://comments.gmane.org/gmane.comp.debugging.valgrind/10340
-test(648, any(is.na(ans1$V1)) && !any(is.nan(ans1$V1)))
+test(648, anyNA(ans1$V1) && !any(is.nan(ans1$V1)))
 # test 649 removed as compared 1.1s to 1.1s
 if (.devtesting) test(650, tt1["user.self"] < tt3["user.self"])
 
@@ -81,15 +81,17 @@ test(655, abs(tt1["user.self"] - tt2["user.self"])<2.0)  # unoptimized tt2 takes
 # Test for optimisation of 'order' to 'forder'.
 set.seed(45L)
 DT <- data.table(x=sample(1e2, 1e6,TRUE), y=sample(1e2, 1e6,TRUE))
-old = options(datatable.optimize=Inf)
-t1 = system.time(ans1 <- DT[order(x,-y)])[['elapsed']]   # optimized to forder()
-t2 = system.time(ans2 <- DT[base_order(x,-y)])[['elapsed']]  # not optimized
-test(1241.1, ans1, ans2)
-if (.devtesting) test(1241.2, t1 < t2+0.1)
-# 0.2 < 3.8 on Matt's laptop seems safe enough to test.
-# Even so, 1241.2 has been known to fail, perhaps if system swaps and this R sessions pauses or something?
-# We shouldn't have timing tests here that run on CRAN for this reason.  Hence wrapping with .devtesting
-options(old)
+local({
+  old = options(datatable.optimize=Inf)
+  on.exit(options(old))
+  t1 = system.time(ans1 <- DT[order(x,-y)])[['elapsed']]   # optimized to forder()
+  t2 = system.time(ans2 <- DT[base_order(x,-y)])[['elapsed']]  # not optimized
+  test(1241.1, ans1, ans2)
+  if (.devtesting) test(1241.2, t1 < t2+0.1)
+  # 0.2 < 3.8 on Matt's laptop seems safe enough to test.
+  # Even so, 1241.2 has been known to fail, perhaps if system swaps and this R sessions pauses or something?
+  # We shouldn't have timing tests here that run on CRAN for this reason.  Hence wrapping with .devtesting
+})
 
 
 # fwrite showProgress test 1735. Turned off as too long/big for CRAN.
@@ -346,7 +348,7 @@ ans <- melt(dt, measure.vars=names(dt), na.rm=TRUE)
 test(1035.21, ans, ans)
 
 # gc race with altrep in R-devel May 2018, #2866 & #2767, PR#2882
-# This runs with 2 threads in the test suite on CRAN and AppVeyor etc.
+# This runs with 2 threads in the test suite on CRAN and GHA etc.
 # 2 threads are sufficient to fail before the fix.
 N = 20
 DF = data.frame(a=rnorm(N),
@@ -358,7 +360,7 @@ fff = function(aref) {
   ff = lapply(1:5, function(i) {
     DT[,list(sumA=sum(get(aref))),by=b][,c:=letters[i]]
   })
-  return(rbindlist(ff))
+  rbindlist(ff)
 }
 for(i in 1:100) {
   f = fff("a")
@@ -488,7 +490,7 @@ out = capture.output(print(DT))
 tt = out[grep("V",out)]
 tt = unlist(strsplit(gsub(" ","",tt), "V"))
 test(1982.1, tt[1L], "")
-tt = as.integer(tt[tt!=""])
+tt = as.integer(tt[nzchar(tt)])
 test(1982.2, tt, seq_along(tt))
 
 # fread leak, #3292
@@ -498,5 +500,3 @@ start = gc()["Vcells",2]
 for (i in 1:10) data.table::fread("out.tsv")
 end = gc()["Vcells",2]
 test(, end/start < 1.05)
-
-

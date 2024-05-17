@@ -1,4 +1,4 @@
-transpose = function(l, fill=NA, ignore.empty=FALSE, keep.names=NULL, make.names=NULL) {
+transpose = function(l, fill=NA, ignore.empty=FALSE, keep.names=NULL, make.names=NULL, list.cols=FALSE) {
   if (!is.null(make.names)) {
     stopifnot(length(make.names)==1L)
     if (is.character(make.names)) {
@@ -14,7 +14,7 @@ transpose = function(l, fill=NA, ignore.empty=FALSE, keep.names=NULL, make.names
     colnames = as.character(l[[make.names]])
     l = if (is.data.table(l)) l[,-make.names,with=FALSE] else l[-make.names]
   }
-  ans = .Call(Ctranspose, l, fill, ignore.empty, keep.names)
+  ans = .Call(Ctranspose, l, fill, ignore.empty, keep.names, list.cols)
   if (!is.null(make.names)) setattr(ans, "names", c(keep.names, colnames))
   else if (is.data.frame(l))  # including data.table but not plain list
     setattr(ans, "names", c(keep.names, paste0("V", seq_len(length(ans)-length(keep.names)))))
@@ -56,7 +56,7 @@ tstrsplit = function(x, ..., fill=NA, type.convert=FALSE, keep, names=FALSE) {
         if (!(sum(!is_named) == 1L && !is_named[n] && is.function(type.convert[[n]])))
           stopf("When the argument 'type.convert' contains an unnamed element, it is expected to be the last element and should be a function. More than one unnamed element is not allowed unless all elements are functions with length equal to %d (the length of the transpose list or 'keep' argument if it is specified).", length(keep))
         else {
-          fothers = type.convert[[n]]         
+          fothers = type.convert[[n]]
           type.convert = type.convert[-n]
         }
       }
@@ -90,4 +90,3 @@ tstrsplit = function(x, ..., fill=NA, type.convert=FALSE, keep, names=FALSE) {
   setattr(ans, 'names', names)
   ans
 }
-
