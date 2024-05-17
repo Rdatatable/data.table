@@ -2,10 +2,10 @@
 title: "Secondary indices and auto indexing"
 date: "`r Sys.Date()`"
 output:
-  rmarkdown::html_vignette
+  markdown::html_format
 vignette: >
   %\VignetteIndexEntry{Secondary indices and auto indexing}
-  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEngine{knitr::knitr}
   \usepackage[utf8]{inputenc}
 ---
 
@@ -17,6 +17,7 @@ knitr::opts_chunk$set(
      tidy = FALSE,
     cache = FALSE,
  collapse = TRUE)
+.old.th = setDTthreads(1)
 ```
 
 This vignette assumes that the reader is familiar with data.table's `[i, j, by]` syntax, and how to perform fast key based subsets. If you're not familiar with these concepts, please read the *"Introduction to data.table"*,  *"Reference semantics"* and *"Keys and fast binary search based subset"* vignettes first.
@@ -105,7 +106,7 @@ setkey(flights, origin)
 flights["JFK"] # or flights[.("JFK")]
 ```
 
-#### `setkey()` requires: {.bs-callout .bs-callout-info}
+#### `setkey()` requires:
 
 a) computing the order vector for the column(s) provided, here, `origin`, and
 
@@ -113,7 +114,7 @@ b) reordering the entire data.table, by reference, based on the order vector com
 
 #
 
-Computing the order isn't the time consuming part, since data.table uses true radix sorting on integer, character and numeric vectors. However reordering the data.table could be time consuming (depending on the number of rows and columns).
+Computing the order isn't the time consuming part, since data.table uses true radix sorting on integer, character and numeric vectors. However, reordering the data.table could be time consuming (depending on the number of rows and columns).
 
 Unless our task involves repeated subsetting on the same column, fast key based subsetting could effectively be nullified by the time to reorder, depending on our data.table dimensions.
 
@@ -139,7 +140,7 @@ Since there can be multiple secondary indices, and creating an index is as simpl
 
 As we will see in the next section, the `on` argument provides several advantages:
 
-#### `on` argument {.bs-callout .bs-callout-info}
+#### `on` argument
 
 * enables subsetting by computing secondary indices on the fly. This eliminates having to do `setindex()` every time.
 
@@ -147,7 +148,7 @@ As we will see in the next section, the `on` argument provides several advantage
 
 * allows for a cleaner syntax by having the columns on which the subset is performed as part of the syntax. This makes the code easier to follow when looking at it at a later point.
 
-    Note that `on` argument can also be used on keyed subsets as well. In fact, we encourage to provide the `on` argument even when subsetting using keys for better readability.
+    Note that `on` argument can also be used on keyed subsets as well. In fact, we encourage providing the `on` argument even when subsetting using keys for better readability.
 
 #
 
@@ -276,7 +277,7 @@ flights[.(c("LGA", "JFK", "EWR"), "XNA"), mult = "last", on = c("origin", "dest"
 
 ## 3. Auto indexing
 
-First we looked at how to fast subset using binary search using *keys*. Then we figured out that we could improve performance even further and have more cleaner syntax by using secondary indices.
+First we looked at how to fast subset using binary search using *keys*. Then we figured out that we could improve performance even further and have cleaner syntax by using secondary indices.
 
 That is what *auto indexing* does. At the moment, it is only implemented for binary operators `==` and `%in%`. An index is automatically created *and* saved as an attribute. That is, unlike the `on` argument which computes the index on the fly each time (unless one already exists), a secondary index is created here.
 
@@ -325,3 +326,8 @@ In recent version we extended auto indexing to expressions involving more than o
 We will discuss fast *subsets* using keys and secondary indices to *joins* in the next vignette, *"Joins and rolling joins"*.
 
 ***
+
+```{r, echo=FALSE}
+setDTthreads(.old.th)
+```
+

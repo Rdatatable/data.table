@@ -31,6 +31,7 @@ setorder(x, \dots, na.last=FALSE)
 setorderv(x, cols = colnames(x), order=1L, na.last=FALSE)
 # optimised to use data.table's internal fast order
 # x[order(., na.last=TRUE)]
+# x[order(., decreasing=TRUE)]
 }
 \arguments{
 \item{x}{ A \code{data.table}. }
