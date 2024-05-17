@@ -58,6 +58,8 @@
 
 7. `melt` returns an integer column for `variable` when `measure.vars` is a list of length=1, consistent with the documented behavior, [#5209](https://github.com/Rdatatable/data.table/issues/5209). Thanks to @tdhock for reporting and fixing. Any users who were relying on this behavior can change `measure.vars=list("col_name")` (output `variable` was column name, now is column index/integer) to `measure.vars="col_name"` (`variable` still is column name).
 
+8. `DT[,j,by]` could loose `class` attributes of `by` when `j` was GForce optimized, [#5567](https://github.com/Rdatatable/data.table/issues/5567). Thanks to @danwwilson for the report, and @ben-schwen for the PR.
+
 ## NOTES
 
 1. `transform` method for data.table sped up substantially when creating new columns on large tables. Thanks to @OfekShilon for the report and PR. The implemented solution was proposed by @ColeMiller1.
@@ -648,13 +650,9 @@
     identical(DT1, DT2)                  # TRUE
     ```
 
-<<<<<<< HEAD
-55. `DT[,j,by]` could loose `class` attributes of `by` when `j` was GForce optimized, [#5567](https://github.com/Rdatatable/data.table/issues/5567). Thanks to @danwwilson for the report, and @ben-schwen for the PR.
-=======
 55. `fread(URL)` with `https:` and `ftps:` could timeout if proxy settings were not guessed right by `curl::curl_download`, [#1686](https://github.com/Rdatatable/data.table/issues/1686). `fread(URL)` now uses `download.file()` as default for downloading files from urls. Thanks to @cderv for the report and Benjamin Schwendinger for the fix.
 
 56. `split.data.table()` works for downstream methods that don't implement `DT[i]` form (i.e., requiring `DT[i, j]` form, like plain `data.frame`s), for example `sf`'s `[.sf`, [#5365](https://github.com/Rdatatable/data.table/issues/5365). Thanks @barryrowlingson for the report and @michaelchirico for the fix.
->>>>>>> master
 
 ## NOTES
 
