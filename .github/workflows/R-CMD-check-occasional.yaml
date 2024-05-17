@@ -1,6 +1,6 @@
 on:
   schedule:
-   - cron: '18 13 11 * *' # 11th of month at 13:18 UTC
+   - cron: '17 13 18 * *' # 18th of month at 13:17 UTC
 
 # A more complete suite of checks to run monthly; each PR/merge need not pass all these, but they should pass before CRAN release
 name: R-CMD-check-occasional
@@ -79,7 +79,7 @@ jobs:
         if: matrix.os != 'windows-latest' && matrix.os != 'macOS-latest'
         run: |
             sudo apt-get update
-            sudo apt-get install -y libcurl4-openssl-dev
+            sudo apt-get install -y libcurl4-openssl-dev libudunits2-dev
 
       - name: Query dependencies
         run: |
