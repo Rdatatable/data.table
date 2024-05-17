@@ -134,7 +134,9 @@ jobs:
           } else {
             Rbin = if (.Platform$OS.type == "windows") "R.exe" else "R"
             system2(Rbin, c("CMD", "build", "."))
-            res = system2(Rbin, c("CMD", "check", "data.table_*.tar.gz", args), stdout=TRUE)
+            dt_tar <- list.files(pattern = "^data[.]table_.*[.]tar[.]gz$")
+            if (!length(dt_tar)) stop("Built tar.gz not found among: ", toString(list.files()))
+            res = system2(Rbin, c("CMD", "check", dt_tar[1L], args), stdout=TRUE)
             if (!is.null(attr(res, "status")) || grep("^Status:.*(ERROR|WARNING)", res)) {
               writeLines(res)
               stop("R CMD check failed")
