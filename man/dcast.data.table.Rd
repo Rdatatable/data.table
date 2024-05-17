@@ -10,7 +10,9 @@
 \method{dcast}{data.table}(data, formula, fun.aggregate = NULL, sep = "_",
     \dots, margins = NULL, subset = NULL, fill = NULL,
     drop = TRUE, value.var = guess(data),
-    verbose = getOption("datatable.verbose"))
+    verbose = getOption("datatable.verbose"),
+    value.var.in.dots = FALSE, value.var.in.LHSdots = value.var.in.dots, 
+    value.var.in.RHSdots = value.var.in.dots)
 }
 \arguments{
   \item{data}{ A \code{data.table}.}
@@ -22,7 +24,7 @@
   \item{\dots}{Any other arguments that may be passed to the aggregating function.}
   \item{margins}{Not implemented yet. Should take variable names to compute margins on. A value of \code{TRUE} would compute all margins.}
   \item{subset}{Specified if casting should be done on a subset of the data. Ex: \code{subset = .(col1 <= 5)} or \code{subset = .(variable != "January")}.}
-  \item{fill}{Value with which to fill missing cells. If \code{fun.aggregate} is present, takes the value by applying the function on a 0-length vector.}
+  \item{fill}{Value with which to fill missing cells. If \code{fill=NULL} and missing cells are present, then \code{fun.aggregate} is used on a 0-length vector to obtain a fill value.}
   \item{drop}{\code{FALSE} will cast by including all missing combinations.
 
   \code{c(FALSE, TRUE)} will only include all missing combinations of formula \code{LHS}; \code{c(TRUE, FALSE)} will only include all missing combinations of formula RHS. See Examples.}
@@ -31,9 +33,12 @@
 
   Cast multiple \code{value.var} columns simultaneously by passing their names as a \code{character} vector. See Examples. }
   \item{verbose}{Not used yet. May be dropped in the future or used to provide informative messages through the console.}
+  \item{value.var.in.dots}{logical; \code{value.var.in.dots = TRUE} is shorthand to save setting both \code{value.var.in.LHSdots = TRUE} and \code{value.var.in.RHSdots = TRUE}.}
+  \item{value.var.in.LHSdots}{logical; if TRUE, \code{\dots} in LHS of the \code{formula} includes \code{value.var} variables. The default is \code{FALSE}, so that \code{...} represents all variables not otherwise mentioned in \code{formula} or \code{value.var} (including default/guessed \code{value.var}).}
+  \item{value.var.in.RHSdots}{logical; analogous to \code{value.var.in.LHSdots} above, but with respect to RHS of the \code{formula}.}
 }
 \details{
-The cast formula takes the form \code{LHS ~ RHS}, ex: \code{var1 + var2 ~ var3}. The order of entries in the formula is essential. There are two special variables: \code{.} represents no variable, while \code{\dots} represents all variables not otherwise mentioned in \code{formula}; see Examples.
+The cast formula takes the form \code{LHS ~ RHS}, ex: \code{var1 + var2 ~ var3}. The order of entries in the formula is essential. There are two special variables: \code{.} represents no variable, while \code{\dots} represents all variables not otherwise mentioned in \code{formula}, and \code{value.var} depending on \code{value.var.in.LHSdots} and \code{value.var.in.RHSdots} arguments; see Examples.
 
 When not all combinations of LHS & RHS values are present in the data, some or all (in accordance with \code{drop}) missing combinations will replaced with the value specified by \code{fill}. Note that \code{fill} will be converted to the class of \code{value.var}; see Examples.
 
@@ -89,6 +94,7 @@ DT <- data.table(v1 = rep(1:2, each = 6),
                  v3 = rep(1:2, 6),
                  v4 = rnorm(6))
 dcast(DT, \dots ~ v3, value.var="v4") # same as v1+v2 ~ v3, value.var="v4"
+dcast(DT, \dots ~ v3, value.var="v4", value.var.in.dots=TRUE) # same as v1+v2+v4~v3, value.var="v4"
 dcast(DT, v1+v2+v3 ~ ., value.var="v4")
 
 ## for each combination of (v1, v2), add up all values of v4

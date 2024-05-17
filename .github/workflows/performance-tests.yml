@@ -1,0 +1,24 @@
+name: Autocomment atime-based performance regression analysis on PRs
+
+on:
+  pull_request:
+    branches:
+      - '*'
+    types:
+      - opened
+      - reopened
+      - synchronize
+    paths:
+      - 'R/**'
+      - 'src/**'
+      - '.ci/atime/**'
+
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    container: ghcr.io/iterative/cml:0-dvc2-base1
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      repo_token: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: Anirban166/Autocomment-atime-results@v1.2.0

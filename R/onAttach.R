@@ -21,7 +21,7 @@
     nth = getDTthreads(verbose=FALSE)
     if (dev)
       packageStartupMessagef("data.table %s IN DEVELOPMENT built %s%s using %d threads (see ?getDTthreads).  ", v, d, g, nth, appendLF=FALSE)
-    else 
+    else
       packageStartupMessagef("data.table %s using %d threads (see ?getDTthreads).  ", v, nth, appendLF=FALSE)
     packageStartupMessagef("Latest news: r-datatable.com")
     if (gettext("TRANSLATION CHECK") != "TRANSLATION CHECK")
@@ -34,6 +34,10 @@
         packageStartupMessagef("This is a Mac. Please read https://mac.r-project.org/openmp/. Please engage with Apple and ask them for support. Check r-datatable.com for updates, and our Mac instructions here: https://github.com/Rdatatable/data.table/wiki/Installation. After several years of many reports of installation problems on Mac, it's time to gingerly point out that there have been no similar problems on Windows or Linux.\n**********")
       else
         packageStartupMessagef("This is %s. This warning should not normally occur on Windows or Linux where OpenMP is turned on by data.table's configure script by passing -fopenmp to the compiler. If you see this warning on Windows or Linux, please file a GitHub issue.\n**********", Sys.info()["sysname"])
+    }
+    if (.Call(CbeforeR340)) {
+      # not base::getRversion()<"3.4.0" in case the user upgrades R but does not reinstall data.table; a reasonable mistake since data.table would seem to be the latest version
+      packageStartupMessagef("**********\nThis data.table installation was compiled for R < 3.4.0 (Apr 2017) and is known to leak memory. Please upgrade R and reinstall data.table to fix the leak. Maintaining and testing code branches to support very old versions increases development time so please do upgrade R. We intend to bump data.table's dependency from 8 year old R 3.1.0 (Apr 2014) to 5 year old R 3.4.0 (Apr 2017).\n**********")
     }
   }
 }

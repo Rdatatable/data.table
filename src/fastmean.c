@@ -36,7 +36,7 @@ SEXP fastmean(SEXP args)
   if (length(args)>2) {
     tmp = CADDR(args);
     if (!isLogical(tmp) || LENGTH(tmp)!=1 || LOGICAL(tmp)[0]==NA_LOGICAL)
-      error(_("narm should be TRUE or FALSE"));  // # nocov ; [.data.table should construct the .External call correctly
+      error(_("%s should be TRUE or FALSE"), "narm");  // # nocov ; [.data.table should construct the .External call correctly
     narm=LOGICAL(tmp)[0];
   }
   PROTECT(ans = allocNAVector(REALSXP, 1));
