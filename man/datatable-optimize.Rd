@@ -21,6 +21,10 @@ of these optimisations. They happen automatically.
 Run the code under the \emph{example} section to get a feel for the performance
 benefits from these optimisations.
 
+Note that for all optimizations involving efficient sorts, the caveat mentioned
+in \code{\link{setorder}} applies -- whenever data.table does the sorting,
+it does so in "C-locale". This has some subtle implications; see Examples.
+
 }
 \details{
 \code{data.table} reads the global option \code{datatable.optimize} to figure
@@ -101,6 +105,8 @@ indices set global option \code{options(datatable.use.index = FALSE)}.
 \seealso{ \code{\link{setNumericRounding}}, \code{\link{getNumericRounding}} }
 \examples{
 \dontrun{
+old = options(datatable.optimize = Inf)
+
 # Generate a big data.table with a relatively many columns
 set.seed(1L)
 DT = lapply(1:20, function(x) sample(c(-100:100), 5e6L, TRUE))
@@ -151,6 +157,24 @@ system.time(ans1 <- DT[id == 100L]) # index + binary search subset
 system.time(ans2 <- DT[id == 100L]) # only binary search subset
 system.time(DT[id \%in\% 100:500])    # only binary search subset again
 
+# sensitivity to collate order
+old_lc_collate = Sys.getlocale("LC_COLLATE")
+
+if (old_lc_collate == "C") {
+  Sys.setlocale("LC_COLLATE", "")
+}
+DT = data.table(
+  grp = rep(1:2, each = 4L),
+  var = c("A", "a", "0", "1", "B", "b", "0", "1")
+)
+options(datatable.optimize = Inf)
+DT[, .(max(var), min(var)), by=grp]
+# GForce is deactivated because of the ad-hoc column 'tolower(var)',
+#   through which the result for 'max(var)' may also change
+DT[, .(max(var), min(tolower(var))), by=grp]
+
+Sys.setlocale("LC_COLLATE", old_lc_collate)
+options(old)
 }}
 \keyword{ data }
 

@@ -9,9 +9,11 @@ Rplots.pdf
 data.table_*.tar.gz
 data.table.Rcheck
 src/Makevars
+.Rprofile
 
 # Package install
 inst/cc
+config.log
 
 # Emacs IDE files
 .emacs.desktop
@@ -41,8 +43,13 @@ vignettes/plots/figures
 .Renviron
 lib
 library
+devwd
+dev.R
 *.csv
 *.csvy
 *.RDS
 *.diff
 *.patch
+
+# pkgdown
+docs

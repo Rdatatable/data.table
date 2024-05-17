@@ -8,6 +8,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
                print.keys=getOption("datatable.print.keys"),
                trunc.cols=getOption("datatable.print.trunc.cols"),
                quote=FALSE,
+               na.print=NULL,
                timezone=FALSE, ...) {
   # topn  - print the top topn and bottom topn rows with '---' inbetween (5)
   # nrows - under this the whole (small) table is printed, unless topn is provided (100)
@@ -78,7 +79,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
 
   # FR #353 - add row.names = logical argument to print.data.table
   if (isTRUE(row.names)) rownames(toprint)=paste0(format(rn,right=TRUE,scientific=FALSE),":") else rownames(toprint)=rep.int("", nrow(toprint))
-  if (is.null(names(x)) || all(names(x) == ""))
+  if (is.null(names(x)) || !any(nzchar(names(x), keepNA=TRUE)))
     # fixes bug #97 and #545
     colnames(toprint)=rep("", ncol(toprint))
   if (isTRUE(class) && col.names != "none") {
@@ -109,38 +110,33 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     # When nrow(toprint) = 1, attributes get lost in the subset,
     #   function below adds those back when necessary
     toprint = toprint_subset(toprint, cols_to_print)
+    trunc.cols <- length(not_printed) > 0L
+  }
+  print_default = function(x) {
+    if (col.names != "none") cut_colnames = identity
+    cut_colnames(print(x, right=TRUE, quote=quote, na.print=na.print))
+    # prints names of variables not shown in the print
+    if (trunc.cols) trunc_cols_message(not_printed, abbs, class, col.names)
   }
   if (printdots) {
-    toprint = rbind(head(toprint, topn + isTRUE(class)), "---"="", tail(toprint, topn))
-    rownames(toprint) = format(rownames(toprint), justify="right")
-    if (col.names == "none") {
-      cut_colnames(print(toprint, right=TRUE, quote=quote))
+    if (isFALSE(row.names)) {
+      toprint = rbind(head(toprint, topn + isTRUE(class)), "---", tail(toprint, topn)) # 4083
     } else {
-      print(toprint, right=TRUE, quote=quote)
+      toprint = rbind(head(toprint, topn + isTRUE(class)), "---"="", tail(toprint, topn))
     }
-    if (trunc.cols && length(not_printed) > 0L)
-      # prints names of variables not shown in the print
-      trunc_cols_message(not_printed, abbs, class, col.names)
-
+    rownames(toprint) = format(rownames(toprint), justify="right")
+    print_default(toprint)
     return(invisible(x))
   }
   if (nrow(toprint)>20L && col.names == "auto")
     # repeat colnames at the bottom if over 20 rows so you don't have to scroll up to see them
     #   option to shut this off per request of Oleg Bondar on SO, #1482
-    toprint=rbind(toprint, matrix(if (quote) old else colnames(toprint), nrow=1L)) # fixes bug #97
-  if (col.names == "none") {
-    cut_colnames(print(toprint, right=TRUE, quote=quote))
-  } else {
-    print(toprint, right=TRUE, quote=quote)
-  }
-  if (trunc.cols && length(not_printed) > 0L)
-    # prints names of variables not shown in the print
-    trunc_cols_message(not_printed, abbs, class, col.names)
-
+    toprint = rbind(toprint, matrix(if (quote) old else colnames(toprint), nrow=1L)) # fixes bug #97
+  print_default(toprint)
   invisible(x)
 }
 
-format.data.table = function (x, ..., justify="none") {
+format.data.table = function(x, ..., justify="none") {
   if (is.atomic(x) && !is.null(x)) { ## future R can use  if (is.atomic(x))
 
     stopf("Internal structure doesn't seem to be a list. Possibly corrupt data.table.")
@@ -152,7 +148,7 @@ mimicsAutoPrint = c("knit_print.default")
 # add maybe repr_text.default.  See https://github.com/Rdatatable/data.table/issues/933#issuecomment-220237965
 
 shouldPrint = function(x) {
-  ret = (.global$print=="" ||   # to save address() calls and adding lots of address strings to R's global cache
+  ret = (identical(.global$print, "") ||   # to save address() calls and adding lots of address strings to R's global cache
      address(x)!=.global$print)
   .global$print = ""
   ret
@@ -215,7 +211,7 @@ format_col.expression = function(x, ...) format(char.trunc(as.character(x)), ...
 
 format_list_item.default = function(x, ...) {
   if (is.null(x))  # NULL item in a list column
-    ""
+    "[NULL]" # not '' or 'NULL' to distinguish from those "common" string values in data
   else if (is.atomic(x) || inherits(x, "formula")) # FR #2591 - format.data.table issue with columns of class "formula"
     paste(c(format(head(x, 6L), ...), if (length(x) > 6L) "..."), collapse=",") # fix for #5435 and #37 - format has to be added here...
   else if (has_format_method(x) && length(formatted<-format(x, ...))==1L) {
@@ -229,11 +225,16 @@ format_list_item.default = function(x, ...) {
 
 # FR #1091 for pretty printing of character
 # TODO: maybe instead of doing "this is...", we could do "this ... test"?
+# Current implementation may have issues when dealing with strings that have combinations of full-width and half-width characters,
+# if this becomes a problem in the future, we could consider string traversal instead.
 char.trunc = function(x, trunc.char = getOption("datatable.prettyprint.char")) {
   trunc.char = max(0L, suppressWarnings(as.integer(trunc.char[1L])), na.rm=TRUE)
   if (!is.character(x) || trunc.char <= 0L) return(x)
-  idx = which(nchar(x) > trunc.char)
-  x[idx] = paste0(substr(x[idx], 1L, as.integer(trunc.char)), "...")
+  nchar_width = nchar(x, 'width') # Check whether string is full-width or half-width, #5096
+  nchar_chars = nchar(x, 'char')
+  is_full_width = nchar_width > nchar_chars
+  idx = pmin(nchar_width, nchar_chars) > trunc.char
+  x[idx] = paste0(strtrim(x[idx], trunc.char * fifelse(is_full_width[idx], 2L, 1L)), "...")
   x
 }
 
@@ -271,4 +272,3 @@ trunc_cols_message = function(not_printed, abbs, class, col.names){
     n, brackify(paste0(not_printed, classes))
   )
 }
-
