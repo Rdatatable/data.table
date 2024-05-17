@@ -195,37 +195,38 @@ test(5.10, list2lang(list("a", 1L, c(1L, 2L))), list(as.name("a"), 1L, c(1L,2L))
 test(5.11, list2lang(list("a", 1L, call("c", 1L, 2L))), list(as.name("a"), 1L, quote(c(1L, 2L))))
 
 # datatable.enlist
-op = options(datatable.enlist=NULL)
 test(6.01,
+     options = c(datatable.enlist=NULL),
      substitute2(list(v1 = v2, v3 = v4), list(v1 = "int", v2 = 1L, v3 = "lst", v4 = list("a", "b", list("c", "d")))),
      quote(list(int = 1L, lst = list(a, b, list(c, d)))))
-options(datatable.enlist=FALSE)
 test(6.02,
+     options = c(datatable.enlist=FALSE),
      substitute2(list(v1 = v2, v3 = v4), list(v1 = "int", v2 = 1L, v3 = "lst", v4 = list("a", "b", list("c", "d")))),
      substitute(list(int = 1L, lst = lst), list(lst = list("a", "b", list("c", "d")))))
-options(datatable.enlist=NULL)
 test(6.03,
+     options = c(datatable.enlist=NULL),
      enlist(list(v1 = 1L, v2 = list(v3 = "b", v4 = list(v5 = "c")))),
      quote(list(v1 = 1L, v2 = list(v3 = b, v4 = list(v5 = c)))))
-options(datatable.enlist=FALSE)
 test(6.04,
+     options = c(datatable.enlist=FALSE),
      enlist(list(v1 = 1L, v2 = list(v3 = "b", v4 = list(v5 = "c")))),
      substitute(list(v1 = 1L, v2 = lst), list(lst=list(v3 = "b", v4 = list(v5 = "c")))))
-options(datatable.enlist=NULL)
 test(6.05,
+     options = c(datatable.enlist=NULL),
      substitute2(list(v1, v2, v3), list(v1="V1", v2="V2", v3=enlist(list("V4","V5")))),
      quote(list(V1, V2, list(V4, V5))))
-options(datatable.enlist=FALSE)
 test(6.06,
+     options = c(datatable.enlist=FALSE),
      substitute2(list(v1, v2, v3), list(v1="V1", v2="V2", v3=enlist(list("V4","V5")))),
      quote(list(V1, V2, list(V4, V5))))
 test(6.07,
+     options = c(datatable.enlist=FALSE),
      substitute2(list(v1, v2, v3), list(v1="V1", v2="V2", v3=enlist(list("V4","V5", list("V6"))))),
      substitute(list(V1, V2, list(V4, V5, lst)), list(lst=list("V6"))))
 test(6.08,
+     options = c(datatable.enlist=FALSE),
      substitute2(list(v1, v2, v3), list(v1="V1", v2="V2", v3=enlist(list("V4","V5", enlist(list("V6")))))),
      quote(list(V1, V2, list(V4, V5, list(V6)))))
-options(op)
 
 # documentation examples
 test(7.01, substitute2(list(var1 = var2), list(var1 = "c1", var2 = 5L)), quote(list(c1 = 5L))) ## works also on names
