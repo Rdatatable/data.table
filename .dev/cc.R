@@ -31,7 +31,28 @@ sourceDir = function(path=getwd(), trace = TRUE, ...) {
   if(trace) cat("\n")
 }
 
-cc = function(test=FALSE, clean=FALSE, debug=FALSE, omp=!debug, cc_dir, path=Sys.getenv("PROJ_PATH"), CC="gcc", quiet=FALSE) {
+# NB: since we only import from default packages, this is rarely needed, but useful for truly minimal dev environments (#6056)
+sourceImports = function(path=getwd(), quiet=FALSE) {
+  nsFile = file.path(path, "NAMESPACE")
+  if (!file.exists(nsFile)) {
+    if (!quiet) warning("No NAMESPACE file found, required to guarantee imports resolve correctly")
+    return(invisible())
+  }
+  suppressWarnings(rm("getRversion", envir=.GlobalEnv)) # clean up from previous cc() because parseNamespaceFile() run getRversion() in NAMESPACE in .GlobalEnv
+  nsParsedImports = parseNamespaceFile(basename(path), "..")$imports # weird signature to this function
+  if (!quiet && length(nsParsedImports)) cat(sprintf("Ensuring objects from %d import entries in NAMESPACE resolve correctly\n", length(nsParsedImports)))
+  for (ii in seq_along(nsParsedImports)) {
+    entry = nsParsedImports[[ii]]
+    # getNamespaceExports includes weird objects but that's intentional, consider evalq(.__C__VIRTUAL, asNamespace("Rcpp")) due to import(methods) in that NAMESPACE
+    imported = if (length(entry) == 1L) getNamespaceExports(entry) else entry[[2L]]
+    # Assign directly to better imitate actual namespace imports. Earlier tried to require(include.only=) these objects, but R doesn't allow multiple such require, meaning we can't add more objects later in tests, see:
+    #   https://stat.ethz.ch/pipermail/r-devel/2024-April/083319.html
+    for (import in imported) assign(import, getExportedValue(entry[[1L]], import), .GlobalEnv)
+  }
+  return(invisible())
+}
+
+cc = function(test=FALSE, clean=FALSE, debug=FALSE, omp=!debug, cc_dir, path=Sys.getenv("PROJ_PATH", unset="."), CC="gcc", quiet=FALSE) {
   if (!missing(cc_dir)) {
     warning("'cc_dir' arg is deprecated, use 'path' argument or 'PROJ_PATH' env var instead")
     path = cc_dir
@@ -81,6 +102,7 @@ cc = function(test=FALSE, clean=FALSE, debug=FALSE, omp=!debug, cc_dir, path=Sys
     .GlobalEnv[[Call$name]] = Call$address
   for (Extern in xx$.External)
     .GlobalEnv[[Extern$name]] = Extern$address
+  sourceImports(path, quiet=quiet)
   sourceDir(file.path(path, "R"), trace=!quiet)
   if (base::getRversion()<"4.0.0") rm(list=c("rbind.data.table", "cbind.data.table"), envir=.GlobalEnv) # 3968 follow up
   .GlobalEnv$testDir = function(x) file.path(path,"inst/tests",x)

@@ -51,6 +51,7 @@ R_CallMethodDef callMethods[] = {
 {"Cdogroups", (DL_FUNC) &dogroups, -1},
 {"Ccopy", (DL_FUNC) &copy, -1},
 {"Cshallowwrapper", (DL_FUNC) &shallowwrapper, -1},
+{"Csetdt_nrows", (DL_FUNC) &setdt_nrows, -1},
 {"Calloccolwrapper", (DL_FUNC) &alloccolwrapper, -1},
 {"Cselfrefokwrapper", (DL_FUNC) &selfrefokwrapper, -1},
 {"Ctruelength", (DL_FUNC) &truelength, -1},
@@ -141,6 +142,7 @@ R_CallMethodDef callMethods[] = {
 {"CstartsWithAny", (DL_FUNC)&startsWithAny, -1},
 {"CconvertDate", (DL_FUNC)&convertDate, -1},
 {"Cnotchin", (DL_FUNC)&notchin, -1},
+{"Cwarn_matrix_column_r", (DL_FUNC)&warn_matrix_column_r, -1},
 {"Cfrev", (DL_FUNC) &frev, -1},
 {NULL, NULL, 0}
 };
@@ -322,15 +324,18 @@ int GetVerbose(void) {
 
 // # nocov start
 SEXP hasOpenMP(void) {
-  // Just for use by onAttach (hence nocov) to avoid an RPRINTF from C level which isn't suppressable by CRAN
-  // There is now a 'grep' in CRAN_Release.cmd to detect any use of RPRINTF in init.c, which is
-  // why RPRINTF is capitalized in this comment to avoid that grep.
-  // .Platform or .Machine in R itself does not contain whether OpenMP is available because compiler and flags are per-package.
-  #ifdef _OPENMP
+
+#if defined(_OPENMP)
+  // gcc build of libomp
   return ScalarInteger(_OPENMP); // return the version; e.g. 201511 (i.e. 4.5)
-  #else
-  return ScalarInteger(0);       // 0 rather than NA so that if() can be used on the result
-  #endif
+#elif defined(KMP_VERSION_BUILD)
+  // LLVM builds of libomp
+  return ScalarInteger(KMP_VERSION_BUILD);
+#else
+  // no OpenMP support detected
+  return ScalarInteger(0);
+#endif
+
 }
 // # nocov end
 

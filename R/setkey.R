@@ -77,7 +77,7 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
   }
   if (!is.character(cols) || length(cols)<1L) stopf("Internal error. 'cols' should be character at this point in setkey; please report.") # nocov
 
-  newkey = paste0(cols, collapse="__")
+  newkey = paste(cols, collapse="__")
   if (!any(indices(x) == newkey)) {
     if (verbose) {
       tt = suppressMessages(system.time(o <- forderv(x, cols, sort=TRUE, retGrp=FALSE)))  # system.time does a gc, so we don't want this always on, until refcnt is on by default in R
@@ -302,7 +302,7 @@ setorderv = function(x, cols = colnames(x), order=1L, na.last=FALSE)
 
 binary = function(x) .Call(Cbinary, x)
 
-setNumericRounding = function(x) {.Call(CsetNumericRounding, as.integer(x)); invisible()}
+setNumericRounding = function(x) invisible(.Call(CsetNumericRounding, as.integer(x)))
 getNumericRounding = function() .Call(CgetNumericRounding)
 
 SJ = function(...) {
@@ -340,7 +340,7 @@ CJ = function(..., sorted = TRUE, unique = FALSE)
       if (unique) l[[i]] = unique(y)
     }
   }
-  nrow = prod( vapply_1i(l, length) )  # lengths(l) will work from R 3.2.0
+  nrow = prod(lengths(l))
   if (nrow > .Machine$integer.max) stopf("Cross product of elements provided to CJ() would result in %.0f rows which exceeds .Machine$integer.max == %d", nrow, .Machine$integer.max)
   l = .Call(Ccj, l)
   setDT(l)
@@ -353,4 +353,3 @@ CJ = function(..., sorted = TRUE, unique = FALSE)
   }
   l
 }
-

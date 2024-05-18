@@ -8,7 +8,7 @@ setcoalesce = function(...) .Call(Ccoalesce, list(...), TRUE)
 fifelse = function(test, yes, no, na=NA) .Call(CfifelseR, test, yes, no, na)
 fcase   = function(..., default=NA) .Call(CfcaseR, default, parent.frame(), as.list(substitute(list(...)))[-1L])
 
-colnamesInt = function(x, cols, check_dups=FALSE) .Call(CcolnamesInt, x, cols, check_dups)
+colnamesInt = function(x, cols, check_dups=FALSE, skip_absent=FALSE) .Call(CcolnamesInt, x, cols, check_dups, skip_absent)
 
 testMsg = function(status=0L, nx=2L, nk=2L) .Call(CtestMsgR, as.integer(status)[1L], as.integer(nx)[1L], as.integer(nk)[1L])
 
