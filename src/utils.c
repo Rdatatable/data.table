@@ -425,6 +425,7 @@ SEXP startsWithAny(const SEXP x, const SEXP y, SEXP start) {
 }
 
 SEXP frev(SEXP x, SEXP copyArg) {
+  SEXP names, klass, levels;
   if (INHERITS(x, char_dataframe))
     error(_("'x' should not be data.frame or data.table."));
   if (!isNull(getAttrib(x, R_DimSymbol)))
@@ -513,7 +514,16 @@ SEXP frev(SEXP x, SEXP copyArg) {
   default:
     error(_("Type '%s' is not supported by frev"), type2char(TYPEOF(x)));
   }
-  SEXP names = getAttrib(x, R_NamesSymbol);
+  names = PROTECT(getAttrib(x, R_NamesSymbol));
+  klass = PROTECT(getAttrib(x, R_ClassSymbol));
+  levels = PROTECT(getAttrib(x, R_LevelsSymbol));
+  nprotect += 3;
+  if (copy) {
+    SET_ATTRIB(x, R_NilValue);
+    setAttrib(x, R_NamesSymbol, names);
+    setAttrib(x, R_ClassSymbol, klass);
+    setAttrib(x, R_LevelsSymbol, levels);
+  }
   if (!isNull(names)) {
     frev(names, ScalarLogical(FALSE));
   }
