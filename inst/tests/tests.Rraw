@@ -18381,7 +18381,7 @@ test(2250.10, dt[1:2, paste(names(.SD), 'max', sep = '_') := lapply(.SD, max), b
 test(2250.11, dt[, names(.SD(2)) := lapply(.SD, .I)], error=base_messages$missing_function('.SD'))
 
 dt = data.table(a = 1:3, b = 5:7, grp = c('a', 'a', 'b'))
-test(2250.12, dt[, names(.SD) := lapply(.SD, \(x) x + b), .SDcols = "a"], data.table(a = 1:3 + 5:7, b = 5:7, grp = c('a', 'a', 'b')))
+test(2250.12, dt[, names(.SD) := lapply(.SD, function(x) x + b), .SDcols = "a"], data.table(a = 1:3 + 5:7, b = 5:7, grp = c('a', 'a', 'b')))
 
 
 dt = data.table(a = 1L, b = 2L, c = 3L, d = 4L, e = 5L, f = 6L)
