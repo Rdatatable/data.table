@@ -14,7 +14,7 @@ frev(x)
 }
 
 \details{
-  \code{frev} retains attributes, but does not reorder them.
+  \code{frev} does not retain attributes (similar to \code{\link[base]{rev}}).
 }
 
 \value{
