@@ -1,6 +1,6 @@
 on:
   schedule:
-   - cron: '18 13 11 * *' # 11th of month at 13:18 UTC
+   - cron: '17 13 19 * *' # 18th of month at 13:17 UTC
 
 # A more complete suite of checks to run monthly; each PR/merge need not pass all these, but they should pass before CRAN release
 name: R-CMD-check-occasional
@@ -75,11 +75,15 @@ jobs:
         with:
           r-version: ${{ matrix.r }}
 
-      - name: Install check dependencies
-        if: matrix.os != 'windows-latest' && matrix.os != 'macOS-latest'
+      - name: Install check dependencies (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
         run: |
             sudo apt-get update
-            sudo apt-get install -y libcurl4-openssl-dev
+            sudo apt-get install -y libcurl4-openssl-dev libudunits2-dev libgdal-dev libgeos-dev libproj-dev
+
+      - name: Install check dependencies (macOS)
+        if: matrix.os == 'macOS-latest'
+        run: brew install gdal proj
 
       - name: Query dependencies
         run: |
@@ -115,7 +119,10 @@ jobs:
 
       - name: Check
         env:
+          # several Suggests dependencies have R dependencies more recent than ours
+          _R_CHECK_FORCE_SUGGESTS_: false
           _R_CHECK_CRAN_INCOMING_REMOTE_: false
+          _R_CHECK_TESTS_NLINES_: 0
         run: |
           options(crayon.enabled = TRUE)
 
@@ -134,7 +141,9 @@ jobs:
           } else {
             Rbin = if (.Platform$OS.type == "windows") "R.exe" else "R"
             system2(Rbin, c("CMD", "build", "."))
-            res = system2(Rbin, c("CMD", "check", "data.table_*.tar.gz", args), stdout=TRUE)
+            dt_tar <- list.files(pattern = "^data[.]table_.*[.]tar[.]gz$")
+            if (!length(dt_tar)) stop("Built tar.gz not found among: ", toString(list.files()))
+            res = system2(Rbin, c("CMD", "check", dt_tar[1L], args), stdout=TRUE)
             if (!is.null(attr(res, "status")) || grep("^Status:.*(ERROR|WARNING)", res)) {
               writeLines(res)
               stop("R CMD check failed")

@@ -9,6 +9,7 @@ License: MPL-2.0 | file LICENSE
 URL: https://r-datatable.com, https://Rdatatable.gitlab.io/data.table, https://github.com/Rdatatable/data.table
 BugReports: https://github.com/Rdatatable/data.table/issues
 VignetteBuilder: knitr
+Encoding: UTF-8
 ByteCompile: TRUE
 Authors@R: c(
   person("Tyson","Barrett",        role=c("aut","cre"), email="t.barrett88@gmail.com"),
