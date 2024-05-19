@@ -133,7 +133,7 @@ Check `?dcast` for other useful arguments and additional examples.
 
 ## 2. Limitations in current `melt/dcast` approaches
 
-So far we've seen features of `melt` and `dcast` that are implemented efficiently for `data.table`s, using internal `data.table` machinery (*fast radix ordering*, *binary search* etc..).
+So far we've seen features of `melt` and `dcast` that are implemented efficiently for `data.table`s, using internal `data.table` machinery (*fast radix ordering*, *binary search* etc.).
 
 However, there are situations we might run into where the desired operation is not expressed in a straightforward manner. For example, consider the `data.table` shown below:
 
@@ -162,7 +162,7 @@ str(DT.c1) ## gender column is character type now!
 
 #### Issues
 
-1. What we wanted to do was to combine all the `dob` and `gender` type columns together respectively. Instead we are combining *everything* together, and then splitting them again. I think it's easy to see that it's quite roundabout (and inefficient).
+1. What we wanted to do was to combine all the `dob` and `gender` type columns together respectively. Instead, we are combining *everything* together, and then splitting them again. I think it's easy to see that it's quite roundabout (and inefficient).
 
     As an analogy, imagine you've a closet with four shelves of clothes and you'd like to put together the clothes from shelves 1 and 2 together (in 1), and 3 and 4 together (in 3). What we are doing is more or less to combine all the clothes together, and then split them back on to shelves 1 and 3!
 
@@ -284,7 +284,7 @@ function,
 melt(who, measure.vars = measure(
   diagnosis, gender, ages,
   ymin=as.numeric,
-  ymax=function(y)ifelse(y=="", Inf, as.numeric(y)),
+  ymax=function(y) ifelse(nzchar(y), as.numeric(y), Inf),
   pattern="new_?(.*)_(.)(([0-9]{2})([0-9]{0,2}))"
 ))
 ```

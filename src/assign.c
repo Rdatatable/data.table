@@ -200,6 +200,48 @@ static SEXP shallow(SEXP dt, SEXP cols, R_len_t n)
   return(newdt);
 }
 
+// Wrapped in a function so the same message is issued for the data.frame case at the R level
+void warn_matrix_column(/* 1-indexed */ int i) {
+  warning(_("Some columns are a multi-column type (such as a matrix column), for example column %d. setDT will retain these columns as-is but subsequent operations like grouping and joining may fail. Please consider as.data.table() instead which will create a new column for each embedded column."), i);
+}
+
+// input validation for setDT() list input; assume is.list(x) was tested in R
+SEXP setdt_nrows(SEXP x)
+{
+  int base_length = 0;
+  bool test_matrix_cols = true;
+
+  for (R_len_t i = 0; i < LENGTH(x); ++i) {
+    SEXP xi = VECTOR_ELT(x, i);
+    /* allow NULL columns to be created by setDT(list) even though they are not really allowed
+     *   many operations still work in the presence of NULL columns and it might be convenient
+     *   e.g. in package eplusr which calls setDT on a list when parsing JSON. Operations which
+     *   fail for NULL columns will give helpful error at that point, #3480 and #3471 */
+    if (Rf_isNull(xi)) continue;
+    if (Rf_inherits(xi, "POSIXlt")) {
+      error(_("Column %d has class 'POSIXlt'. Please convert it to POSIXct (using as.POSIXct) and run setDT() again. We do not recommend the use of POSIXlt at all because it uses 40 bytes to store one date."), i+1);
+    }
+    SEXP dim_xi = getAttrib(xi, R_DimSymbol);
+    R_len_t len_xi;
+    R_len_t n_dim = LENGTH(dim_xi);
+    if (n_dim) {
+      if (test_matrix_cols && n_dim > 1) {
+        warn_matrix_column(i+1);
+        test_matrix_cols = false;
+      }
+      len_xi = INTEGER(dim_xi)[0];
+    } else {
+      len_xi = LENGTH(xi);
+    }
+    if (!base_length) {
+      base_length = len_xi;
+    } else if (len_xi != base_length) {
+      error(_("All elements in argument 'x' to 'setDT' must be of equal length, but input %d has length %d whereas the first non-empty input had length %d"), i+1, len_xi, base_length);
+    }
+  }
+  return ScalarInteger(base_length);
+}
+
 SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
 {
   SEXP names, klass;   // klass not class at request of pydatatable because class is reserved word in C++, PR #3129
@@ -239,7 +281,7 @@ int checkOverAlloc(SEXP x)
     error(_("getOption('datatable.alloccol') should be a number, by default 1024. But its type is '%s'."), type2char(TYPEOF(x)));
   if (LENGTH(x) != 1)
     error(_("getOption('datatable.alloc') is a numeric vector ok but its length is %d. Its length should be 1."), LENGTH(x));
-  int ans = isInteger(x) ? INTEGER(x)[0] : (int)REAL(x)[0];
+  int ans = asInteger(x);
   if (ans<0)
     error(_("getOption('datatable.alloc')==%d.  It must be >=0 and not NA."), ans);
   return ans;
@@ -318,8 +360,9 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     // Not possible to test because R won't permit attributes be attached to NULL (which is good and we like); warning from R 3.4.0+ tested by 944.5
   }
   const int nrow = LENGTH(dt) ? length(VECTOR_ELT(dt,0)) :
-                                (isNewList(values) && length(values) ? length(VECTOR_ELT(values,0)) : length(values));
+                                (isNewList(values) && length(values) && (length(values)==length(cols)) ? length(VECTOR_ELT(values,0)) : length(values));
   //                            ^ when null data.table the new nrow becomes the fist column added
+  //                                                                    ^ distinguish between adding list column or multiple columns at once, #5738
   if (isNull(rows)) {
     numToDo = nrow;
     targetlen = nrow;
@@ -430,7 +473,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       if (newcolnum<0 || newcolnum>=length(newcolnames))
         error(_("Internal error in assign.c: length(newcolnames)=%d, length(names)=%d, coln=%d"), length(newcolnames), length(names), coln); // # nocov
       if (isNull(thisvalue)) {
-        warning(_("Column '%s' does not exist to remove"),CHAR(STRING_ELT(newcolnames,newcolnum)));
+        warning(_("Tried to assign NULL to column '%s', but this column does not exist to remove"), CHAR(STRING_ELT(newcolnames,newcolnum)));
         continue;
       }
       // RHS of assignment to new column is zero length but we'll use its type to create all-NA column of that type
@@ -742,7 +785,8 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
           const double *sd = REAL(source);
           for (int i=0; i<slen; ++i) {
             const double val = sd[i+soff];
-            if (!ISNAN(val) && (!R_FINITE(val) || val!=(int)val || (int)val<1 || (int)val>nlevel)) {
+            // Since nlevel is an int, val < 1 || val > nlevel will deflect UB guarded against in PR #5832
+            if (!ISNAN(val) && (val < 1 || val > nlevel || val != (int)val)) {
               error(_("Assigning factor numbers to %s. But %f is outside the level range [1,%d], or is not a whole number."), targetDesc(colnum, colname), val, nlevel);
             }
           }
@@ -897,14 +941,14 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
       switch (TYPEOF(source)) {
       case REALSXP: if (sourceIsI64)
                     CHECK_RANGE(int64_t, REAL, val!=NA_INTEGER64 && (val<=NA_INTEGER || val>INT_MAX),   PRId64,  "out-of-range (NA)", val)
-              else  CHECK_RANGE(double, REAL,  !ISNAN(val) && (!R_FINITE(val) || (int)val!=val),        "f",     "truncated (precision lost)", val)
+              else  CHECK_RANGE(double, REAL,  !ISNAN(val) && (!within_int32_repres(val) || (int)val!=val),        "f",     "out-of-range(NA) or truncated (precision lost)", val)
       case CPLXSXP: CHECK_RANGE(Rcomplex, COMPLEX, !((ISNAN(val.i) || (R_FINITE(val.i) && val.i==0.0)) &&
-                                                     (ISNAN(val.r) || (R_FINITE(val.r) && (int)val.r==val.r))), "f", "either imaginary part discarded or real part truncated (precision lost)", val.r)
+                                                     (ISNAN(val.r) || (within_int32_repres(val.r) && (int)val.r==val.r))), "f", "either imaginary part discarded or real part truncated (precision lost)", val.r)
       } break;
     case REALSXP:
       switch (TYPEOF(source)) {
       case REALSXP: if (targetIsI64 && !sourceIsI64)
-                    CHECK_RANGE(double, REAL,  !ISNAN(val) && (!R_FINITE(val) || (int)val!=val),        "f",     "truncated (precision lost)", val)
+                    CHECK_RANGE(double, REAL,  !ISNAN(val) && (!within_int64_repres(val) || (int64_t)val!=val),    "f",     "out-of-range(NA) or truncated (precision lost)", val)
                     break;
       case CPLXSXP: if (targetIsI64)
                     CHECK_RANGE(Rcomplex, COMPLEX, !((ISNAN(val.i) || (R_FINITE(val.i) && val.i==0.0)) &&
@@ -1004,8 +1048,8 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
     case REALSXP:
       if (sourceIsI64)
                     BODY(int64_t, REAL, int, (val==NA_INTEGER64||val>INT_MAX||val<=NA_INTEGER) ? NA_INTEGER : (int)val,  td[i]=cval)
-      else          BODY(double, REAL,  int, ISNAN(val) ? NA_INTEGER : (int)val,        td[i]=cval)
-    case CPLXSXP:   BODY(Rcomplex, COMPLEX, int, ISNAN(val.r) ? NA_INTEGER : (int)val.r, td[i]=cval)
+      else          BODY(double, REAL,  int, (ISNAN(val) || !within_int32_repres(val)) ? NA_INTEGER : (int)val,        td[i]=cval)
+    case CPLXSXP:   BODY(Rcomplex, COMPLEX, int, (ISNAN(val.r) || !within_int32_repres(val.r)) ? NA_INTEGER : (int)val.r, td[i]=cval)
     default:        COERCE_ERROR("integer"); // test 2005.4
     }
   } break;
@@ -1021,7 +1065,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
           if (mc) {
                     memcpy(td, (int64_t *)REAL(source), slen*sizeof(int64_t)); break;
           } else    BODY(int64_t, REAL, int64_t, val,                                   td[i]=cval)
-        } else      BODY(double, REAL,  int64_t, R_FINITE(val) ? val : NA_INTEGER64,    td[i]=cval)
+        } else      BODY(double, REAL,  int64_t, within_int64_repres(val) ? val : NA_INTEGER64,    td[i]=cval)
       case CPLXSXP: BODY(Rcomplex, COMPLEX, int64_t, ISNAN(val.r) ? NA_INTEGER64 : (int64_t)val.r, td[i]=cval)
       default:      COERCE_ERROR("integer64");
       }

@@ -1,0 +1,159 @@
+on:
+  schedule:
+   - cron: '17 13 19 * *' # 18th of month at 13:17 UTC
+
+# A more complete suite of checks to run monthly; each PR/merge need not pass all these, but they should pass before CRAN release
+name: R-CMD-check-occasional
+
+jobs:
+  R-CMD-check-occasional:
+    runs-on: ${{ matrix.os }}
+
+    name: ${{ matrix.os }} (${{ matrix.r }})
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macOS-latest, windows-latest, ubuntu-latest]
+        r: ['devel', 'release', '3.2', '3.3', '3.4', '3.5', '3.6', '4.0', '4.1', '4.2', '4.3']
+        locale: ['en_US.utf8', 'zh_CN.utf8', 'lv_LV.utf8'] # Chinese for translations, Latvian for collate order (#3502)
+        exclude:
+          # only run non-English locale CI on Ubuntu
+          - os: macOS-latest
+            locale: 'zh_CN.utf8'
+          - os: macOS-latest
+            locale: 'lv_LV.utf8'
+          - os: windows-latest
+            locale: 'zh_CN.utf8'
+          - os: windows-latest
+            locale: 'lv_LV.utf8'
+          # macOS/arm64 only available for R>=4.1.0
+          - os: macOS-latest
+            r: '3.2'
+          - os: macOS-latest
+            r: '3.3'
+          - os: macOS-latest
+            r: '3.4'
+          - os: macOS-latest
+            r: '3.5'
+          - os: macOS-latest
+            r: '3.6'
+          - os: macOS-latest
+            r: '4.0'
+          - os: macOS-latest
+            r: '4.1'
+
+    env:
+      R_REMOTES_NO_ERRORS_FROM_WARNINGS: true
+      TEST_DATA_TABLE_WITH_OTHER_PACKAGES: true
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Set locale
+        if: matrix.os == 'ubuntu-latest' && matrix.locale == 'en_US.utf8'
+        run: |
+          sudo locale-gen en_US
+          echo "LC_ALL=en_US.utf8" >> $GITHUB_ENV
+
+      - name: Set locale
+        if: matrix.locale == 'zh_CN.utf8'
+        run: |
+          sudo locale-gen 'zh_CN.utf8'
+          echo "LC_ALL=zh_CN.utf8" >> $GITHUB_ENV
+          echo "LANGUAGE=zh_CN" >> $GITHUB_ENV
+
+      - name: Set locale
+        if: matrix.locale == 'lv_LV.utf8'
+        run: |
+          sudo locale-gen 'lv_LV.utf8'
+          echo "LC_ALL=lv_LV.utf8" >> $GITHUB_ENV
+          echo "LANGUAGE=lv_LV" >> $GITHUB_ENV
+
+      - uses: actions/checkout@v2
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: ${{ matrix.r }}
+
+      - name: Install check dependencies (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+            sudo apt-get update
+            sudo apt-get install -y libcurl4-openssl-dev libudunits2-dev libgdal-dev libgeos-dev libproj-dev
+
+      - name: Install check dependencies (macOS)
+        if: matrix.os == 'macOS-latest'
+        run: brew install gdal proj
+
+      - name: Query dependencies
+        run: |
+          install.packages('remotes')
+          saveRDS(remotes::dev_package_deps(dependencies = TRUE), ".github/depends.Rds", version = 2)
+          writeLines(sprintf("R-%i.%i", getRversion()$major, getRversion()$minor), ".github/R-version")
+        shell: Rscript {0}
+
+      - name: Restore R package cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.R_LIBS_USER }}
+          key: ${{ runner.os }}-${{ hashFiles('.github/R-version') }}-1-${{ hashFiles('.github/depends.Rds') }}
+          restore-keys: ${{ runner.os }}-${{ hashFiles('.github/R-version') }}-1-
+
+      - name: Install system dependencies
+        if: runner.os == 'Linux'
+        run: |
+          while read -r cmd
+          do
+            eval sudo $cmd
+          done < <(Rscript -e 'writeLines(remotes::system_requirements("ubuntu", "20.04"))')
+
+      - name: Install dependencies
+        run: |
+          remotes::install_deps(dependencies = TRUE)
+          other_deps_expr = parse('inst/tests/other.Rraw', n=1L)
+          eval(other_deps_expr)
+          pkgs <- get(as.character(other_deps_expr[[1L]][[2L]]))
+          # May not install on oldest R versions
+          try(remotes::install_cran(c(pkgs, "rcmdcheck")))
+        shell: Rscript {0}
+
+      - name: Check
+        env:
+          # several Suggests dependencies have R dependencies more recent than ours
+          _R_CHECK_FORCE_SUGGESTS_: false
+          _R_CHECK_CRAN_INCOMING_REMOTE_: false
+          _R_CHECK_TESTS_NLINES_: 0
+        run: |
+          options(crayon.enabled = TRUE)
+
+          other_deps_expr = parse('inst/tests/other.Rraw', n=1L)
+          eval(other_deps_expr)
+          pkgs <- get(as.character(other_deps_expr[[1L]][[2L]]))
+          has_pkg <- sapply(pkgs, requireNamespace, quietly=TRUE)
+          if (!all(has_pkg)) {
+            cat(sprintf("Skipping other.Rraw since some required packages are not available: %s\n", toString(pkgs[!has_pkg])))
+            Sys.unsetenv("TEST_DATA_TABLE_WITH_OTHER_PACKAGES")
+          }
+
+          args <- c("--no-manual", "--as-cran")
+          if (requireNamespace("rcmdcheck", quietly=TRUE)) {
+            rcmdcheck::rcmdcheck(args = args, error_on = "warning", check_dir = "check")
+          } else {
+            Rbin = if (.Platform$OS.type == "windows") "R.exe" else "R"
+            system2(Rbin, c("CMD", "build", "."))
+            dt_tar <- list.files(pattern = "^data[.]table_.*[.]tar[.]gz$")
+            if (!length(dt_tar)) stop("Built tar.gz not found among: ", toString(list.files()))
+            res = system2(Rbin, c("CMD", "check", dt_tar[1L], args), stdout=TRUE)
+            if (!is.null(attr(res, "status")) || grep("^Status:.*(ERROR|WARNING)", res)) {
+              writeLines(res)
+              stop("R CMD check failed")
+            }
+          }
+        shell: Rscript {0}
+
+      - name: Upload check results
+        if: failure()
+        uses: actions/upload-artifact@main
+        with:
+          name: ${{ runner.os }}-r${{ matrix.r }}-results
+          path: check
