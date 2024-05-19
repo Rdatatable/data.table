@@ -8456,9 +8456,9 @@ test(1592.2, names(setnames(copy(DT1), -1, "a")), c("x", "a", "a"))
 test(1592.3, names(setnames(copy(DT1), 2:length(DT1), "b")), c("x", "b", "b"))
 test(1592.4, names(setnames(copy(DT2), -1, "abc")), c("V1", rep_len("abc", 25)))
 test(1592.5, names(setnames(copy(DT2), -1, c("a", "b"))), c("V1", rep_len(c("a", "b"), 25)),
-     warning="Number of items to replace, 25, is not a multiple of replacement length, 2.")
+     warning="Number of items to replace (25) is not a multiple of replacement length (2).")
 test(1592.6, names(setnames(copy(DT2), 2:length(DT2), c("a", "b"))), c("V1", rep_len(c("a", "b"), 25)),
-     warning="Number of items to replace, 25, is not a multiple of replacement length, 2.")
+     warning="Number of items to replace (25) is not a multiple of replacement length (2).")
 
 # fix for #1513
 test(1593, CJ(c(1,2,2), c(1,2,3)), data.table(V1=rep(c(1,2), c(3,6)), V2=c(1,2,3,1,1,2,2,3,3), key=c("V1", "V2")))
@@ -13917,7 +13917,7 @@ test(1967.59, setnames(x, 1:2, c(8L, 9L)), error = "'new' is not a character")
 test(1967.60, setnames(x, -1:1, c('hey', 'you')), error = base_messages$mixed_subscripts)
 test(1967.61, setnames(x, 1+3i, 'cplx'), error = "'old' is type complex")
 test(1967.62, names(setnames(x, 1, c('d', 'e'))), c('d', 'c'),
-     warning='Number of items to replace, 1, is not a multiple of replacement length, 2.')
+     warning='Number of items to replace (1) is not a multiple of replacement length (2).')
 test(1967.621, setnames(x, 1:2, c("a","a")), data.table(a=1:5, a=6:10))
 test(1967.622, setnames(x, 1:2, c("a",NA)), error = "NA in 'new' at positions [2]")
 test(1967.63, setcolorder(x, c(1, 1)), error = 'Item 2 of order (1) is either NA, out of range [1,2], or is duplicated. The new order must be a strict permutation of 1:n')

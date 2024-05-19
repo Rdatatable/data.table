@@ -2634,7 +2634,7 @@ setnames = function(x,old,new,skip_absent=FALSE) {
       i = old = seq_along(x)[old]
       # For numeric old, rep_len new to be the same size as old and warn if modulo isn't 0 to match names(x)[old]<-new, #5853
       if (length(old) %% length(new) != 0L)
-        warningf("Number of items to replace, %d, is not a multiple of replacement length, %d.", length(old), length(new))
+        warningf("Number of items to replace (%d) is not a multiple of replacement length (%d).", length(old), length(new))
       new = rep_len(new, length(old))
     }
     else if (!is.character(old)) stopf("'old' is type %s but should be integer, double or character", typeof(old))

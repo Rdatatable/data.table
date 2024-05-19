@@ -44,6 +44,8 @@
 
 14. `fread` loads `.bgz` files directly, [#5461](https://github.com/Rdatatable/data.table/issues/5461). Thanks to @TMRHarrison for the request with proposed fix, and Benjamin Schwendinger for the PR.
 
+15. `setnames` with numeric `old` will now repeat `new` to the same length as `old` to match the behavior of `names(x)[old]<-new` including for negative indices, [#5853](https://github.com/Rdatatable/data.table/issues/5853). Thanks to @michaelchirico for reporting and @TimothyWillard for implementing.
+
 ## BUG FIXES
 
 1. `unique()` returns a copy the case when `nrows(x) <= 1` instead of a mutable alias, [#5932](https://github.com/Rdatatable/data.table/pull/5932). This is consistent with existing `unique()` behavior when the input has no duplicates but more than one row. Thanks to @brookslogan for the report and @dshemetov for the fix.
@@ -386,22 +388,6 @@
 40. New function `%notin%` provides a convenient alternative to `!(x %in% y)`, [#4152](https://github.com/Rdatatable/data.table/issues/4152). Thanks to Jan Gorecki for suggesting and Michael Czekanski for the PR. `%notin%` uses half the memory because it computes the result directly as opposed to `!` which allocates a new vector to hold the negated result. If `x` is long enough to occupy more than half the remaining free memory, this can make the difference between the operation working, or failing with an out-of-memory error.
 
 41. `tables()` is faster by default by excluding the size of character strings in R's global cache (which may be shared) and excluding the size of list column items (which also may be shared). `mb=` now accepts any function which accepts a `data.table` and returns a higher and better estimate of its size in bytes, albeit more slowly; e.g. `mb = utils::object.size`.
-
-42. `setnames` with numeric `old` will now repeat `new` to the same length as `old` to match the behavior of `names(x)[old]<-new` including for negative indices, [#5853](https://github.com/Rdatatable/data.table/issues/5853). Thanks to @michaelchirico for reporting and @TimothyWillard for implementing.
-
-    ```R
-    DT1 = as.data.table(lapply(letters, identity))
-    DT2 = copy(DT1)
-    names(DT1)[-1] <- "a"
-    setnames(DT2, -1, "a")
-    identical(DT1, DT2) # TRUE
-    names(DT1)[3:length(DT1)] <- "b"
-    setnames(DT2, 3:length(DT1), "b")
-    identical(DT1, DT2) # TRUE
-    names(DT1)[-1] <- c("a", "b", "c")  # Warning: number of items to replace is not a multiple of replacement length
-    setnames(DT2, -1, c("a", "b", "c")) # Warning: Number of items to replace, 25, is not a multiple of replacement length, 3.
-    identical(DT1, DT2) # TRUE
-    ```
 
 ## BUG FIXES
 
