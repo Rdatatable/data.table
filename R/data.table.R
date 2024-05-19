@@ -2637,7 +2637,14 @@ setnames = function(x,old,new,skip_absent=FALSE) {
     #  if (anyDuplicated(new)) warningf("Some duplicates exist in 'new': ", brackify(new[duplicated(new)]))  # dups allowed without warning; warn if and when the dup causes an ambiguity
     if (anyNA(new)) stopf("NA in 'new' at positions %s", brackify(which(is.na(new))))
     if (anyDuplicated(old)) stopf("Some duplicates exist in 'old': %s", brackify(old[duplicated(old)]))
-    if (is.numeric(old)) i = old = seq_along(x)[old]  # leave it to standard R to manipulate bounds and negative numbers
+    if (is.numeric(old)) {
+      # leave it to standard R to manipulate bounds and negative numbers
+      i = old = seq_along(x)[old]
+      # For numeric old, rep_len new to be the same size as old and warn if modulo isn't 0 to match names(x)[old]<-new, #5853
+      if (length(old) %% length(new) != 0L)
+        warningf("Number of items to replace, %d, is not a multiple of replacement length, %d.", length(old), length(new))
+      new = rep_len(new, length(old))
+    }
     else if (!is.character(old)) stopf("'old' is type %s but should be integer, double or character", typeof(old))
     if (length(new)!=length(old)) stopf("'old' is length %d but 'new' is length %d", length(old), length(new))
     if (anyNA(old)) stopf("NA (or out of bounds) in 'old' at positions %s", brackify(which(is.na(old))))

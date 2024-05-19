@@ -8342,10 +8342,17 @@ ans = data.table(id=rep(c("ID_1","ID_2","ID_3"), c(2,1,4)),
                dens=c(2331,1644,1890,8000,1452,1596,7521))
 test(1591, rbindlist(mylist, idcol="id"), ans)
 
-# FR #1443
-DT <- data.table(x = 1:3, y = 4:6, z = 7:9)
-test(1592.1, setnames(DT, -5, "bla"), error="'old' is length 3 but 'new' is length 1")
-test(1592.2, names(setnames(DT, -1, c("m", "n"))), c("x", "m", "n"))
+# FR #1443, #5853
+DT1 = data.table(x = 1:3, y = 4:6, z = 7:9)
+DT2 = as.data.table(lapply(letters, identity))
+test(1592.1, names(setnames(copy(DT1), -1, c("m", "n"))), c("x", "m", "n"))
+test(1592.2, names(setnames(copy(DT1), -1, "a")), c("x", "a", "a"))
+test(1592.3, names(setnames(copy(DT1), 2:length(DT1), "b")), c("x", "b", "b"))
+test(1592.4, names(setnames(copy(DT2), -1, "abc")), c("V1", rep_len("abc", 25)))
+test(1592.5, names(setnames(copy(DT2), -1, c("a", "b"))), c("V1", rep_len(c("a", "b"), 25)),
+     warning="Number of items to replace, 25, is not a multiple of replacement length, 2.")
+test(1592.6, names(setnames(copy(DT2), 2:length(DT2), c("a", "b"))), c("V1", rep_len(c("a", "b"), 25)),
+     warning="Number of items to replace, 25, is not a multiple of replacement length, 2.")
 
 # fix for #1513
 test(1593, CJ(c(1,2,2), c(1,2,3)), data.table(V1=rep(c(1,2), c(3,6)), V2=c(1,2,3,1,1,2,2,3,3), key=c("V1", "V2")))
