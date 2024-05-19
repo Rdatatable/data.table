@@ -21,6 +21,16 @@ for (s in sugg) {
   if (!loaded) cat("\n**** Suggested package",s,"is not installed or has dependencies missing. Tests using it will be skipped.\n\n")
 }
 
+# Ensure an operation uses C-locale sorting (#3502). For test set-ups/comparisons that use base operations, which are
+#   susceptible to locale-specific sorting issues, but shouldn't be needed for data.table code, which always uses C sorting.
+# TODO(R>=3.3.0): use order(method="radix") as a way to avoid needing this helper
+with_c_collate = function(expr) {
+  old = Sys.getlocale("LC_COLLATE")
+  on.exit(Sys.setlocale("LC_COLLATE", old))
+  Sys.setlocale("LC_COLLATE", "C")
+  expr
+}
+
 x = 1:10
 x[c(1:2, 5:6, 9:10)] = NA
 test(1.01, nafill(x, "locf"), INT(NA,NA,3,4,4,4,7,8,8,8))
