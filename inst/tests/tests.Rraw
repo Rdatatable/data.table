@@ -18566,3 +18566,14 @@ test(2261.04, setNumericRounding(2L), 1L)
 # or not an object is an invisible copy or not, and prints it anyways.
 test(2261.05, capture.output(setNumericRounding(2L)), character(0))
 setNumericRounding(old)
+
+# rbindlist(l, use.names=TRUE) should handle different colnames encodings #5452
+x = data.table(a = 1, b = 2, c = 3)
+y = data.table(x = 4, y = 5, z = 6)
+setnames(x , c("\u00e4", "\u00f6", "\u00fc"))
+setnames(y , iconv(c("\u00f6", "\u00fc", "\u00e4"), from = "UTF-8", to = "latin1"))
+test(2262.1, rbindlist(list(x,y), use.names=TRUE), data.table("\u00e4"=c(1,6), "\u00f6"=c(2,4), "\u00fc"=c(3,5)))
+test(2262.2, rbindlist(list(y,x), use.names=TRUE), data.table("\u00f6"=c(4,2), "\u00fc"=c(5,3), "\u00e4"=c(6,1)))
+set(y, j="\u00e4", value=NULL)
+test(2262.3, rbindlist(list(x,y), use.names=TRUE, fill=TRUE), data.table("\u00e4"=c(1,NA), "\u00f6"=c(2,4), "\u00fc"=c(3,5)))
+test(2262.4, rbindlist(list(y,x), use.names=TRUE, fill=TRUE), data.table("\u00f6"=c(4,2),  "\u00fc"=c(5,3), "\u00e4"=c(NA,1)))
