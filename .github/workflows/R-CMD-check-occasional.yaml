@@ -115,6 +115,8 @@ jobs:
 
       - name: Check
         env:
+          # several Suggests dependencies have R dependencies more recent than ours
+          _R_CHECK_FORCE_SUGGESTS_: false
           _R_CHECK_CRAN_INCOMING_REMOTE_: false
         run: |
           options(crayon.enabled = TRUE)
