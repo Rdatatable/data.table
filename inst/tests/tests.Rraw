@@ -18569,3 +18569,17 @@ test(2261.04, setNumericRounding(2L), 1L)
 # or not an object is an invisible copy or not, and prints it anyways.
 test(2261.05, capture.output(setNumericRounding(2L)), character(0))
 setNumericRounding(old)
+
+# Add list column to null data.table #5738
+x = list("a", 1)
+dt1 = data.table(a = x)
+dt2 = data.table(a = "a", b=1)
+dt3 = data.table(a=1:2, b=3:4)
+test(2262.1, null.data.table()[, a := x], dt1)
+test(2262.2, set(null.data.table(), j="a", value=x), dt1)
+test(2262.3, null.data.table()[, c("a","b") := x], dt2)
+test(2262.4, set(null.data.table(), j=c("a","b"), value=x), dt2)
+test(2262.5, null.data.table()[, c("a","b") := list(1:2, 3:4)], dt3)
+test(2262.6, set(null.data.table(), j=c("a","b"), value=list(1:2, 3:4)), dt3)
+test(2262.7, data.table(a=1, b=2)[, c("a", "b") := list(NULL, NULL)], null.data.table())
+test(2262.8, data.table(a=1, b=2)[, c("a", "b") := list(NULL)], null.data.table())
