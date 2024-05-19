@@ -122,6 +122,7 @@ jobs:
           # several Suggests dependencies have R dependencies more recent than ours
           _R_CHECK_FORCE_SUGGESTS_: false
           _R_CHECK_CRAN_INCOMING_REMOTE_: false
+          _R_CHECK_TESTS_NLINES_: 0
         run: |
           options(crayon.enabled = TRUE)
 
