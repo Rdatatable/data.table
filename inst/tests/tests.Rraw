@@ -65,6 +65,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   setcoalesce = data.table:::setcoalesce
   setdiff_ = data.table:::setdiff_
   setreordervec = data.table:::setreordervec
+  setrev = data.table:::setrev
   shallow = data.table:::shallow # until exported
   .shallow = data.table:::.shallow
   split.data.table = data.table:::split.data.table
@@ -18566,3 +18567,58 @@ test(2261.04, setNumericRounding(2L), 1L)
 # or not an object is an invisible copy or not, and prints it anyways.
 test(2261.05, capture.output(setNumericRounding(2L)), character(0))
 setNumericRounding(old)
+
+# 5885 implement frev
+d = c(NA, NaN, Inf, -Inf)
+test(2262.00, frev(c(FALSE, NA)),     c(NA, FALSE))
+test(2262.01, frev(c(0L, NA)),        c(NA, 0L))
+test(2262.02, frev(d),                c(-Inf, Inf, NaN, NA))
+test(2262.03, frev(c(NA, 1, 0+2i)),   c(0+2i, 1, NA))
+test(2262.04, frev(as.raw(0:1)),      as.raw(1:0))
+test(2262.05, frev(NULL),             NULL)
+test(2262.06, frev(character(5)),     character(5))
+test(2262.07, frev(integer(0)),       integer(0))
+test(2262.08, frev(list(1, "a")),     list("a", 1))
+test(2262.09, setrev(c(0L, NA)),      c(NA, 0L))
+test(2262.10, setrev(d),              c(-Inf, Inf, NaN, NA))
+test(2262.11, setrev(c(NA, 1, 0+2i)), c(0+2i, 1, NA))
+test(2262.12, setrev(as.raw(0:1)),    as.raw(1:0))
+test(2262.13, setrev(NULL),           NULL)
+test(2262.14, setrev(character(5)),   character(5))
+test(2262.15, setrev(integer(0)),     integer(0))
+test(2262.16, setrev(list(1, "a")),   list("a", 1))
+test(2262.17, frev(1:1e2),            rev(1:1e2))
+# copy arguments
+x = 1:3
+test(2262.21, {frev(x);  x}, 1:3)
+test(2262.22, {setrev(x); x}, 3:1)
+test(2262.23, address(x) == address(setrev(x)))
+test(2262.24, address(x) != address(frev(x)))
+# do not alter on subsets
+test(2262.25, {setrev(x[1:2]);  x}, 1:3)
+# levels
+f = as.factor(letters)
+test(2262.31, frev(f), rev(f))
+test(2262.32, frev(as.IDate(1:10)), as.IDate(10:1))
+test(2262.33, frev(as.IDate(1:10)), as.IDate(10:1))
+# names
+x = c(a=1L, b=2L, c=3L)
+test(2262.41, frev(x), rev(x))
+test(2262.42, setrev(x), x)
+# attributes
+x = structure(1:10, class = c("IDate", "Date"), att = 1L)
+test(2262.51, attr(frev(x), "att"), attr(rev(x), "att"))
+test(2262.52, class(frev(x)), class(rev(x)))
+test(2262.53, attr(setrev(x), "att"), 1L)
+test(2262.54, class(setrev(x)), c("IDate", "Date"))
+x = structure(integer(0), att = 1L)
+test(2262.55, attr(frev(x), "att"), attr(rev(x), "att"))
+# errors
+test(2262.61, frev(data.table()), error="should not be data.frame or data.table")
+test(2262.62, frev(expression(1)), error="is not supported by frev")
+test(2262.63, frev(matrix(1)), error="should not be matrix or array")
+if (test_bit64) {
+  x = as.integer64(c(1, NA, 3))
+  test(2262.71, frev(x), rev(x))
+  test(2262.72, setrev(x), x)
+}

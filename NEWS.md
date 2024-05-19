@@ -58,6 +58,8 @@
 
 7. `melt` returns an integer column for `variable` when `measure.vars` is a list of length=1, consistent with the documented behavior, [#5209](https://github.com/Rdatatable/data.table/issues/5209). Thanks to @tdhock for reporting and fixing. Any users who were relying on this behavior can change `measure.vars=list("col_name")` (output `variable` was column name, now is column index/integer) to `measure.vars="col_name"` (`variable` still is column name).
 
+8. New `frev(x, copy=TRUE)` as a faster analogue to `base::rev()` for atomic vectors/lists, [#5885](https://github.com/Rdatatable/data.table/issues/5885). Twice as fast as `base::rev()` on large inputs, and faster with more threads. Thanks to Benjamin Schwendinger for suggesting and implementing.
+
 ## NOTES
 
 1. `transform` method for data.table sped up substantially when creating new columns on large tables. Thanks to @OfekShilon for the report and PR. The implemented solution was proposed by @ColeMiller1.
