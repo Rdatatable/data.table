@@ -1139,10 +1139,8 @@ SEXP gprod(SEXP x, SEXP narmArg) {
         const int64_t elem = nosubset ? xd[i] : (irows[i]==NA_INTEGER ? NA_INTEGER64 : xd[irows[i]-1]);
         if (elem==NA_INTEGER64) {
           if (!narm) s[thisgrp] = NA_REAL;
-          Rprintf("CONT: %d %Lf\n", i, s[thisgrp]);
           continue;
         }
-        Rprintf("      %d %Lf\n", i, s[thisgrp]);
         s[thisgrp] *= elem;
       }
     } else {
