@@ -362,7 +362,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   const int nrow = LENGTH(dt) ? length(VECTOR_ELT(dt,0)) :
                                 (isNewList(values) && length(values) && (length(values)==length(cols)) ? length(VECTOR_ELT(values,0)) : length(values));
   //                            ^ when null data.table the new nrow becomes the fist column added
-  //                                                              #5738 ^ distinguish between adding list column or multiple columns at once
+  //                                                                    ^ distinguish between adding list column or multiple columns at once, #5738
   if (isNull(rows)) {
     numToDo = nrow;
     targetlen = nrow;
