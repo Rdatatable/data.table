@@ -293,6 +293,22 @@
 
 41. `tables()` is faster by default by excluding the size of character strings in R's global cache (which may be shared) and excluding the size of list column items (which also may be shared). `mb=` now accepts any function which accepts a `data.table` and returns a higher and better estimate of its size in bytes, albeit more slowly; e.g. `mb = utils::object.size`.
 
+42. `setnames` with numeric `old` will now repeat `new` to the same length as `old` to match the behavior of `names(x)[old]<-new` including for negative indices, [#5853](https://github.com/Rdatatable/data.table/issues/5853). Thanks to @michaelchirico for reporting and @TimothyWillard for implementing.
+
+    ```R
+    DT1 = as.data.table(lapply(letters, identity))
+    DT2 = copy(DT1)
+    names(DT1)[-1] <- "a"
+    setnames(DT2, -1, "a")
+    identical(DT1, DT2) # TRUE
+    names(DT1)[3:length(DT1)] <- "b"
+    setnames(DT2, 3:length(DT1), "b")
+    identical(DT1, DT2) # TRUE
+    names(DT1)[-1] <- c("a", "b", "c")  # Warning: number of items to replace is not a multiple of replacement length
+    setnames(DT2, -1, c("a", "b", "c")) # Warning: Number of items to replace, 25, is not a multiple of replacement length, 3.
+    identical(DT1, DT2) # TRUE
+    ```
+
 ## BUG FIXES
 
 1. `by=.EACHI` when `i` is keyed but `on=` different columns than `i`'s key could create an invalidly keyed result, [#4603](https://github.com/Rdatatable/data.table/issues/4603) [#4911](https://github.com/Rdatatable/data.table/issues/4911). Thanks to @myoung3 and @adamaltmejd for reporting, and @ColeMiller1 for the PR. An invalid key is where a `data.table` is marked as sorted by the key columns but the data is not sorted by those columns, leading to incorrect results from subsequent queries.
