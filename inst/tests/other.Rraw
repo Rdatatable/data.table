@@ -23,7 +23,7 @@ INT = data.table:::INT
 if (anyDuplicated(pkgs)) stop("Packages defined to be loaded for integration tests in 'inst/tests/other.Rraw' contains duplicates.")
 
 f = function(pkg) suppressWarnings(suppressMessages(isTRUE(
-  library(pkg, character.only=TRUE, logical.return=TRUE, quietly=TRUE, warn.conflicts=FALSE, pos="package:base")  # attach at the end for #5101
+  library(pkg, character.only=TRUE, logical.return=TRUE, warn.conflicts=FALSE, pos="package:base")  # attach at the end for #5101
 )))
 loaded = sapply(pkgs, f)
 if (!all(loaded)) {
