@@ -18574,4 +18574,4 @@ test(2262.2, options=list(datatable.verbose=TRUE, datatable.optimize=0L), dt[, .
 test(2262.3, options=list(datatable.verbose=TRUE, datatable.optimize=0L), names(attributes(dt[, .N, b][,b])), c("class", "att"), output="GForce FALSE")
 test(2262.4, options=list(datatable.verbose=TRUE, datatable.optimize=Inf), dt[, .N, b], data.table(b=dt$b, N=1L), output="GForce optimized j to")
 test(2262.5, options=list(datatable.verbose=TRUE, datatable.optimize=Inf), dt[, .N, .(b,c)], data.table(b=dt$b, c=dt$c, N=1L), output="GForce optimized j to")
-test(2262.6, options=list(datatable.verbose=TRUE, datatable.optimize=Inf), names(attributes(dt[, .N, b][,b])), c("class", "att"), output="GForce optimized j to")
+test(2262.6, options=list(datatable.verbose=TRUE, datatable.optimize=Inf), names(attributes(dt[, .N, b]$b)), c("class", "att"), output="GForce optimized j to")
