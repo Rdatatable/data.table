@@ -290,7 +290,7 @@ test(10.16, coerceAs(1:2, xy_factor), xy_factor, output="integer[integer] into i
 test(10.17, coerceAs(1:3, xy_factor), output="integer[integer] into integer[factor]", error="factor numbers.*3 is outside the level range")
 test(10.18, coerceAs(c(1,2,3), xy_factor), output="double[numeric] into integer[factor]", error="factor numbers.*3.000000 is outside the level range")
 test(10.19, coerceAs(factor("x"), xy_factor), factor("x", levels=c("x","y")), output="integer[factor] into integer[factor]")
-test(10.20, coerceAs(factor("x"), xy_factor), copy=FALSE), factor("x", levels=c("x","y")), output="input already of expected type and class") ## copy=F has copyMostAttrib
+test(10.20, coerceAs(factor("x"), xy_factor, copy=FALSE), factor("x", levels=c("x","y")), output="input already of expected type and class") ## copy=F has copyMostAttrib
 a = structure("a", class="a")
 b = structure("b", class="b")
 test(10.21, coerceAs(a, b), structure("a", class="b"), output="character[a] into character[b]")
