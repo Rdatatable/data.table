@@ -18585,3 +18585,12 @@ test(2262.5, null.data.table()[, c("a","b") := list(1:2, 3:4)], dt3)
 test(2262.6, set(null.data.table(), j=c("a","b"), value=list(1:2, 3:4)), dt3)
 test(2262.7, data.table(a=1, b=2)[, c("a", "b") := list(NULL, NULL)], null.data.table())
 test(2262.8, data.table(a=1, b=2)[, c("a", "b") := list(NULL)], null.data.table())
+
+# GForce retains attributes in by arguments #5567
+dt = data.table(a=letters[1:4], b=structure(1:4, class = c("class_b", "integer"), att=1), c=structure(c(1L,2L,1L,2L), class = c("class_c", "integer")))
+test(2263.1, options=list(datatable.verbose=TRUE, datatable.optimize=0L), dt[, .N, b], data.table(b=dt$b, N=1L), output="GForce FALSE")
+test(2263.2, options=list(datatable.verbose=TRUE, datatable.optimize=0L), dt[, .N, .(b,c)], data.table(b=dt$b, c=dt$c, N=1L), output="GForce FALSE")
+test(2263.3, options=list(datatable.verbose=TRUE, datatable.optimize=0L), names(attributes(dt[, .N, b]$b)), c("class", "att"), output="GForce FALSE")
+test(2263.4, options=list(datatable.verbose=TRUE, datatable.optimize=Inf), dt[, .N, b], data.table(b=dt$b, N=1L), output="GForce optimized j to")
+test(2263.5, options=list(datatable.verbose=TRUE, datatable.optimize=Inf), dt[, .N, .(b,c)], data.table(b=dt$b, c=dt$c, N=1L), output="GForce optimized j to")
+test(2263.6, options=list(datatable.verbose=TRUE, datatable.optimize=Inf), names(attributes(dt[, .N, b]$b)), c("class", "att"), output="GForce optimized j to")
