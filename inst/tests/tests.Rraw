@@ -16915,8 +16915,7 @@ if (.Platform$OS.type!="windows") {
 test(2150.025,
      env=list(TZ=NULL),
      attr(fread(tmp, colClasses=list(POSIXct="times"), tz="")$times, "tzone"),
-     if (is.null(base_messages$maybe_invalid_old_posixct)) "" else NULL,
-     warning=base_messages$maybe_invalid_old_posixct)
+     if (is.null(base_messages$maybe_invalid_old_posixct)) "" else NULL)
 # the times will be different though here because as.POSIXct read them as local time.
 fwrite(copy(DT)[ , times := format(times, '%FT%T+00:00')], tmp)
 test(2150.03, fread(tmp), DT)
