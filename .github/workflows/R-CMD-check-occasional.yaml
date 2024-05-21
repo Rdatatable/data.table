@@ -126,6 +126,15 @@ jobs:
         run: |
           options(crayon.enabled = TRUE)
 
+          # we define this in data.table namespace, but it appears to be exec
+          if (!exists("isFALSE", "package:base")) {
+            if (!exists("isFALSE", asNamespace("data.table"))) {
+              cat("isFALSE not found in base, but data.table did not define it either!\n")
+            }
+            # attempt defining it here as a workaround...
+            isFALSE = function(x) is.logical(x) && length(x) == 1L && !is.na(x) && !x
+          }
+
           other_deps_expr = parse('inst/tests/other.Rraw', n=1L)
           eval(other_deps_expr)
           pkgs <- get(as.character(other_deps_expr[[1L]][[2L]]))
