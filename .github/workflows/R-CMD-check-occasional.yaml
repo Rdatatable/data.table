@@ -45,7 +45,6 @@ jobs:
 
     env:
       R_REMOTES_NO_ERRORS_FROM_WARNINGS: true
-      TEST_DATA_TABLE_WITH_OTHER_PACKAGES: true
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
@@ -137,12 +136,13 @@ jobs:
 
           other_deps_expr = parse('inst/tests/other.Rraw', n=1L)
           eval(other_deps_expr)
-          pkgs <- get(as.character(other_deps_expr[[1L]][[2L]]))
-          has_pkg <- sapply(pkgs, requireNamespace, quietly=TRUE)
-          if (!all(has_pkg)) {
+          pkgs = get(as.character(other_deps_expr[[1L]][[2L]]))
+          has_pkg = sapply(pkgs, requireNamespace, quietly=TRUE)
+          run_other = all(has_pkg)
+          if (!run_other) {
             cat(sprintf("Skipping other.Rraw since some required packages are not available: %s\n", toString(pkgs[!has_pkg])))
-            Sys.unsetenv("TEST_DATA_TABLE_WITH_OTHER_PACKAGES")
           }
+          Sys.setenv(TEST_DATA_TABLE_WITH_OTHER_PACKAGES=as.character(run_other))
 
           do_vignettes <- requireNamespace("knitr", quietly=TRUE)
 
