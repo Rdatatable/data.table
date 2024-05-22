@@ -84,20 +84,6 @@ jobs:
         if: matrix.os == 'macOS-latest'
         run: brew install gdal proj
 
-      - name: Query dependencies
-        run: |
-          install.packages('remotes')
-          saveRDS(remotes::dev_package_deps(dependencies = TRUE), ".github/depends.Rds", version = 2)
-          writeLines(sprintf("R-%i.%i", getRversion()$major, getRversion()$minor), ".github/R-version")
-        shell: Rscript {0}
-
-      - name: Restore R package cache
-        uses: actions/cache@v2
-        with:
-          path: ${{ env.R_LIBS_USER }}
-          key: ${{ runner.os }}-${{ hashFiles('.github/R-version') }}-1-${{ hashFiles('.github/depends.Rds') }}
-          restore-keys: ${{ runner.os }}-${{ hashFiles('.github/R-version') }}-1-
-
       - name: Install system dependencies
         if: runner.os == 'Linux'
         run: |
@@ -108,12 +94,12 @@ jobs:
 
       - name: Install dependencies
         run: |
-          remotes::install_deps(dependencies = TRUE)
+          remotes::install_deps(dependencies=TRUE, force=TRUE)
           other_deps_expr = parse('inst/tests/other.Rraw', n=1L)
           eval(other_deps_expr)
           pkgs <- get(as.character(other_deps_expr[[1L]][[2L]]))
           # May not install on oldest R versions
-          try(remotes::install_cran(c(pkgs, "rcmdcheck")))
+          try(remotes::install_cran(c(pkgs, "rcmdcheck"), force=TRUE))
         shell: Rscript {0}
 
       - name: Check
