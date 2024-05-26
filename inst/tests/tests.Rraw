@@ -18429,7 +18429,7 @@ rm(.datatable.aware)
 
 lc_ctype = Sys.getlocale('LC_CTYPE')
 lc_collate = Sys.getlocale('LC_COLLATE')
-suppressWarnings(Sys.setlocale('LC_COLLATE', "en_US.UTF-8")) # Setting locale to use utf-8 characters in tests
+suppressWarnings(Sys.setlocale('LC_COLLATE', "en_US.UTF-8"))
 suppressWarnings(Sys.setlocale('LC_CTYPE', "en_US.UTF-8"))
 # tests for trunc.char handling wide characters # 5096
 accented_a = "\u0061\u0301"
