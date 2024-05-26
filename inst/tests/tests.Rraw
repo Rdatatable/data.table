@@ -18468,15 +18468,15 @@ test(2253.16, options=list(datatable.prettyprint.char = 1L), capture.output(prin
 # Tests for multiple columns, multiple rows
 DT = data.table(strrep(ja_ko, 1:3L), strrep(ja_n, 2:4L), strrep(accented_a, 3))
 test(2253.17, options=list(datatable.prettyprint.char = 4L), gsub(clean_regex, "", capture.output(print(DT))[-1L]),
-  c(paste0(ja_ko, "     ", strrep(ja_n, 2L), " ", strrep(accented_a, 3L)), 
+  c(paste0(ja_ko, "     ", strrep(ja_n, 2L), " ", strrep(accented_a, 3L)),
   paste0(strrep(ja_ko, 2L), "   ", strrep(ja_n, 3L), " ", strrep(accented_a, 3L)),
   paste(strrep(ja_ko, 3L), strrep(ja_n, 4L), strrep(accented_a, 3L))))
 test(2253.18, options=list(datatable.prettyprint.char = 3L), gsub(clean_regex, "", capture.output(print(DT))[-1L]),
-  c(paste0(ja_ko, "      ", strrep(ja_n, 2L), " ", strrep(accented_a, 3L)), 
+  c(paste0(ja_ko, "      ", strrep(ja_n, 2L), " ", strrep(accented_a, 3L)),
   paste0(strrep(ja_ko, 2L), "    ", strrep(ja_n, 3L), " ", strrep(accented_a, 3L)),
   paste(strrep(ja_ko, 3L), paste0(strrep(ja_n, 3L), dots), strrep(accented_a, 3L))))
-test(2253.19, options=list(datatable.prettyprint.char = 1L), gsub(clean_regex, "", capture.output(print(DT))[-1L]), 
-  c(paste0(ja_ko, " ", paste0(ja_n, dots), " ", paste0(accented_a, dots)), 
+test(2253.19, options=list(datatable.prettyprint.char = 1L), gsub(clean_regex, "", capture.output(print(DT))[-1L]),
+  c(paste0(ja_ko, " ", paste0(ja_n, dots), " ", paste0(accented_a, dots)),
   paste0(c(ja_ko, ja_n, accented_a), dots, collapse=" "),
   paste0(c(ja_ko, ja_n, accented_a), dots, collapse=" ")))
 Sys.setlocale('LC_COLLATE', lc_collate) # restore user locale
