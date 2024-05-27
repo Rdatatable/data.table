@@ -234,7 +234,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     ", Sys.timezone()=='", suppressWarnings(Sys.timezone()), "'",
     ", Sys.getlocale()=='", Sys.getlocale(), "'",
     ", l10n_info()=='", paste0(names(l10n_info()), "=", l10n_info(), collapse="; "), "'",
-    ", getDTthreads()=='", paste0(gsub("[ ][ ]+","==",gsub("^[ ]+","",capture.output(invisible(getDTthreads(verbose=TRUE))))), collapse="; "), "'",
+    ", getDTthreads()=='", paste(gsub("[ ][ ]+","==",gsub("^[ ]+","",capture.output(invisible(getDTthreads(verbose=TRUE))))), collapse="; "), "'",
     ", ", .Call(Cdt_zlib_version),
     "\n", sep="")
 
@@ -311,7 +311,7 @@ INT = function(...) { as.integer(c(...)) }   # utility used in tests.Rraw
 gc_mem = function() {
   # nocov start
   # gc reports memory in MB
-  m = apply(gc()[, c(2L, 4L, 6L)], 2L, sum)
+  m = colSums(gc()[, c(2L, 4L, 6L)])
   names(m) = c("GC_used", "GC_gc_trigger", "GC_max_used")
   m
   # nocov end
@@ -403,18 +403,18 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
   xsub = substitute(x)
   ysub = substitute(y)
 
-  actual = list("warning"=NULL, "error"=NULL, "message"=NULL)
+  actual = list2env(list(warning=NULL, error=NULL, message=NULL))
   wHandler = function(w) {
     # Thanks to: https://stackoverflow.com/a/4947528/403310
-    actual$warning <<- c(actual$warning, conditionMessage(w))
+    actual$warning <- c(actual$warning, conditionMessage(w))
     invokeRestart("muffleWarning")
   }
   eHandler = function(e) {
-    actual$error <<- conditionMessage(e)
+    actual$error <- conditionMessage(e)
     e
   }
   mHandler = function(m) {
-    actual$message <<- c(actual$message, conditionMessage(m))
+    actual$message <- c(actual$message, conditionMessage(m))
     m
   }
   if (is.null(output) && is.null(notOutput)) {

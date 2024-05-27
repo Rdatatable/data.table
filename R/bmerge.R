@@ -185,5 +185,5 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
   # TO DO: xo could be moved inside Cbmerge
 
   ans$xo = xo  # for further use by [.data.table
-  return(ans)
+  ans
 }

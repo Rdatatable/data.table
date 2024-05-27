@@ -79,7 +79,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
 
   # FR #353 - add row.names = logical argument to print.data.table
   if (isTRUE(row.names)) rownames(toprint)=paste0(format(rn,right=TRUE,scientific=FALSE),":") else rownames(toprint)=rep.int("", nrow(toprint))
-  if (is.null(names(x)) || all(names(x) == ""))
+  if (is.null(names(x)) || !any(nzchar(names(x), keepNA=TRUE)))
     # fixes bug #97 and #545
     colnames(toprint)=rep("", ncol(toprint))
   if (isTRUE(class) && col.names != "none") {
@@ -136,7 +136,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   invisible(x)
 }
 
-format.data.table = function (x, ..., justify="none") {
+format.data.table = function(x, ..., justify="none") {
   if (is.atomic(x) && !is.null(x)) { ## future R can use  if (is.atomic(x))
 
     stopf("Internal structure doesn't seem to be a list. Possibly corrupt data.table.")
@@ -148,7 +148,7 @@ mimicsAutoPrint = c("knit_print.default")
 # add maybe repr_text.default.  See https://github.com/Rdatatable/data.table/issues/933#issuecomment-220237965
 
 shouldPrint = function(x) {
-  ret = (.global$print=="" ||   # to save address() calls and adding lots of address strings to R's global cache
+  ret = (identical(.global$print, "") ||   # to save address() calls and adding lots of address strings to R's global cache
      address(x)!=.global$print)
   .global$print = ""
   ret

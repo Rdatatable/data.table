@@ -5,7 +5,7 @@ guess = function(x) {
     return("(all)")
   var = names(x)[ncol(x)]
   messagef("Using '%s' as value column. Use 'value.var' to override", var)
-  return(var)
+  var
 }
 
 dcast <- function(
@@ -130,7 +130,7 @@ aggregate_funs = function(funs, vals, sep="_", ...) {
 
 dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ..., margins = NULL, subset = NULL, fill = NULL, drop = TRUE, value.var = guess(data), verbose = getOption("datatable.verbose"), value.var.in.dots = FALSE, value.var.in.LHSdots = value.var.in.dots, value.var.in.RHSdots = value.var.in.dots) {
   if (!is.data.table(data)) stopf("'data' must be a data.table.")
-  drop = as.logical(rep(drop, length.out=2L))
+  drop = as.logical(rep_len(drop, 2L))
   if (anyNA(drop)) stopf("'drop' must be logical TRUE/FALSE")
   if (!isTRUEorFALSE(value.var.in.dots))
     stopf("Argument 'value.var.in.dots' should be logical TRUE/FALSE")
@@ -251,5 +251,5 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
     setattr(ans, 'names', c(lhsnames, allcols))
     setDT(ans); setattr(ans, 'sorted', lhsnames)
   } else stopf("Internal error -- empty rhsnames in dcast; please report") # nocov
-  return (ans)
+  return(ans)
 }

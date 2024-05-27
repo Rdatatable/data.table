@@ -169,7 +169,7 @@ as.data.table.list = function(x,
       #       not worse than before, and gets us in a better centralized place to port as.data.table.list to C and use MAYBE_REFERENCED
       #       again in future, for #617.
     }
-    if (identical(x,list())) vector("list", nrow) else rep(x, length.out=nrow)   # new objects don't need copy
+    if (identical(x, list())) vector("list", nrow) else rep_len(x, nrow)   # new objects don't need copy
   }
   vnames = character(ncol)
   k = 1L
@@ -180,7 +180,7 @@ as.data.table.list = function(x,
     if (eachnrow[i]>1L && nrow%%eachnrow[i]!=0L)   # in future: eachnrow[i]!=nrow
       warningf("Item %d has %d rows but longest item has %d; recycled with remainder.", i, eachnrow[i], nrow)
     if (is.data.table(xi)) {   # matrix and data.frame were coerced to data.table above
-      prefix = if (!isFALSE(.named[i]) && isTRUE(nchar(names(x)[i])>0L)) paste0(names(x)[i],".") else ""  # test 2058.12
+      prefix = if (!isFALSE(.named[i]) && isTRUE(nzchar(names(x)[i], keepNA=TRUE))) paste0(names(x)[i],".") else ""  # test 2058.12
       for (j in seq_along(xi)) {
         ans[[k]] = recycle(xi[[j]], nrow)
         vnames[k] = paste0(prefix, names(xi)[j])
@@ -251,5 +251,5 @@ as.data.table.data.table = function(x, ...) {
   x = copy(x) # #1681
   # fix for #1078 and #1128, see .resetclass() for explanation.
   setattr(x, 'class', .resetclass(x, "data.table"))
-  return(x)
+  x
 }

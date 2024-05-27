@@ -33,8 +33,8 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
   if (is.na(nrows) || nrows<0) nrows=Inf   # accept -1 to mean Inf, as read.table does
   if (identical(header,"auto")) header=NA
   stopifnot(
-    is.logical(header) && length(header)==1L,  # TRUE, FALSE or NA
-    is.numeric(nThread) && length(nThread)==1L
+    is.logical(header), length(header)==1L,  # TRUE, FALSE or NA
+    is.numeric(nThread), length(nThread)==1L
   )
   nThread=as.integer(nThread)
   stopifnot(nThread>=1L)
@@ -116,10 +116,10 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     gz_signature = as.raw(c(0x1F, 0x8B))
     bz2_signature = as.raw(c(0x42, 0x5A, 0x68))
     gzsig = FALSE
-    if ((w <- endsWithAny(file, c(".gz",".bz2"))) || (gzsig <- identical(head(file_signature, 2L), gz_signature)) || identical(head(file_signature, 3L), bz2_signature)) {
+    if ((w <- endsWithAny(file, c(".gz", ".bgz",".bz2"))) || (gzsig <- identical(head(file_signature, 2L), gz_signature)) || identical(head(file_signature, 3L), bz2_signature)) {
       if (!requireNamespace("R.utils", quietly = TRUE))
         stopf("To read gz and bz2 files directly, fread() requires 'R.utils' package which cannot be found. Please install 'R.utils' using 'install.packages('R.utils')'.") # nocov
-      FUN = if (w==1L || gzsig) gzfile else bzfile
+      FUN = if (w<=2L || gzsig) gzfile else bzfile
       R.utils::decompressFile(file, decompFile<-tempfile(tmpdir=tmpdir), ext=NULL, FUN=FUN, remove=FALSE)   # ext is not used by decompressFile when destname is supplied, but isn't optional
       file = decompFile   # don't use 'tmpFile' symbol again, as tmpFile might be the http://domain.org/file.csv.gz download
       on.exit(unlink(decompFile), add=TRUE)
@@ -153,10 +153,10 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
   if (length(tt)) {
     msg = gettextf('na.strings[%d]=="%s" consists only of whitespace, ignoring', tt[1L], na.strings[tt[1L]])
     if (strip.white) {
-      if (any(na.strings=="")) {
-        warningf('%s. strip.white==TRUE (default) and "" is present in na.strings, so any number of spaces in string columns will already be read as <NA>.', msg)
-      } else {
+      if (all(nzchar(na.strings))) {
         warningf('%s. Since strip.white=TRUE (default), use na.strings="" to specify that any number of spaces in a string column should be read as <NA>.', msg)
+      } else {
+        warningf('%s. strip.white==TRUE (default) and "" is present in na.strings, so any number of spaces in string columns will already be read as <NA>.', msg)
       }
       na.strings = na.strings[-tt]
     } else {
@@ -187,7 +187,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
 
     yaml_comment_re = '^#'
     yaml_string = character(0L)
-    while (TRUE) {
+    repeat {
       this_line = readLines(f, n=1L)
       n_read = n_read + 1L
       if (!length(this_line)){
@@ -299,7 +299,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
   }
 
   colClassesAs = attr(ans, "colClassesAs", exact=TRUE)   # should only be present if one or more are != ""
-  for (j in which(colClassesAs!="")) {       # # 1634
+  for (j in which(nzchar(colClassesAs))) {       # # 1634
     v = .subset2(ans, j)
     new_class = colClassesAs[j]
     new_v = tryCatch({    # different to read.csv; i.e. won't error if a column won't coerce (fallback with warning instead)
@@ -317,7 +317,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
       },
       warning = fun <- function(e) {
         warningf("Column '%s' was requested to be '%s' but fread encountered the following %s:\n\t%s\nso the column has been left as type '%s'", names(ans)[j], new_class, if (inherits(e, "error")) "error" else "warning", e$message, typeof(v))
-        return(v)
+        v
       },
       error = fun)
     set(ans, j = j, value = new_v)  # aside: new_v == v if the coercion was aborted
