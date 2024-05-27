@@ -5,7 +5,7 @@ guess = function(x) {
     return("(all)")
   var = names(x)[ncol(x)]
   messagef("Using '%s' as value column. Use 'value.var' to override", var)
-  return(var)
+  var
 }
 
 dcast <- function(
@@ -251,5 +251,5 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
     setattr(ans, 'names', c(lhsnames, allcols))
     setDT(ans); setattr(ans, 'sorted', lhsnames)
   } else stopf("Internal error -- empty rhsnames in dcast; please report") # nocov
-  return (ans)
+  return(ans)
 }

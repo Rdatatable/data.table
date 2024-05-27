@@ -83,7 +83,7 @@ as.list.IDate = function(x, ...) NextMethod()
 ## round.IDate = function (x, digits, units=digits, ...) {
 ##     if (missing(digits)) digits = units # workaround to provide a units argument to match the round generic and round.POSIXt
 ##     units = match.arg(digits, c("weeks", "months", "quarters", "years"))
-round.IDate = function (x, digits=c("weeks", "months", "quarters", "years"), ...) {
+round.IDate = function(x, digits=c("weeks", "months", "quarters", "years"), ...) {
   units = match.arg(digits)
   as.IDate(switch(units,
           weeks  = round(x, "year") + 7L * (yday(x) %/% 7L),
@@ -93,7 +93,7 @@ round.IDate = function (x, digits=c("weeks", "months", "quarters", "years"), ...
 }
 
 #Adapted from `+.Date`
-`+.IDate` = function (e1, e2) {
+`+.IDate` = function(e1, e2) {
   if (nargs() == 1L)
     return(e1)
   # TODO: investigate Ops.IDate method a la Ops.difftime
@@ -108,7 +108,7 @@ round.IDate = function (x, digits=c("weeks", "months", "quarters", "years"), ...
   (setattr(as.integer(unclass(e1) + unclass(e2)), "class", c("IDate", "Date")))  # () wrap to return visibly
 }
 
-`-.IDate` = function (e1, e2) {
+`-.IDate` = function(e1, e2) {
   if (!inherits(e1, "IDate")) {
     if (inherits(e1, 'Date')) return(base::`-.Date`(e1, e2))
     stopf("can only subtract from \"IDate\" objects")
@@ -129,7 +129,7 @@ round.IDate = function (x, digits=c("weeks", "months", "quarters", "years"), ...
   }
   ans = as.integer(unclass(e1) - unclass(e2))
   if (!inherits(e2, "Date")) setattr(ans, "class", c("IDate", "Date"))
-  return(ans)
+  ans
 }
 
 
@@ -177,7 +177,7 @@ as.ITime.character = function(x, format, ...) {
       w = w[!nna]
     }
   }
-  return(as.ITime(y, ...))
+  as.ITime(y, ...)
 }
 
 as.ITime.POSIXlt = function(x, ms = 'truncate', ...) {
@@ -228,7 +228,7 @@ print.ITime = function(x, ...) {
   print(format(x))
 }
 
-rep.ITime = function (x, ...)
+rep.ITime = function(x, ...)
 {
   y = rep(unclass(x), ...)
   class(y) = "ITime"   # unlass and rep could feasibly not copy, hence use class<- not setattr()

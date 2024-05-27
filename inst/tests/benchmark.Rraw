@@ -360,7 +360,7 @@ fff = function(aref) {
   ff = lapply(1:5, function(i) {
     DT[,list(sumA=sum(get(aref))),by=b][,c:=letters[i]]
   })
-  return(rbindlist(ff))
+  rbindlist(ff)
 }
 for(i in 1:100) {
   f = fff("a")
@@ -490,7 +490,7 @@ out = capture.output(print(DT))
 tt = out[grep("V",out)]
 tt = unlist(strsplit(gsub(" ","",tt), "V"))
 test(1982.1, tt[1L], "")
-tt = as.integer(tt[tt!=""])
+tt = as.integer(tt[nzchar(tt)])
 test(1982.2, tt, seq_along(tt))
 
 # fread leak, #3292
