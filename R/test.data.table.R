@@ -225,12 +225,10 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   # does show the full file output these days, so the 13 line limit no longer bites so much. It still bit recently
   # when receiving output of R CMD check sent over email, though.
   tz = Sys.getenv("TZ", unset=NA)
-
-  maybe_unknown = function(x) if (length(x)) x else "<unknown>"
   cat("\n", date(),   # so we can tell exactly when these tests ran on CRAN to double-check the result is up to date
     "  endian==", .Platform$endian,
-    ", sizeof(long double)==", maybe_unknown(.Machine$sizeof.longdouble),
-    ", longdouble.digits==", maybe_unknown(.Machine$longdouble.digits), # 64 normally, 53 for example under valgrind where some high accuracy tests need turning off, #4639
+    ", sizeof(long double)==", format(.Machine$sizeof.longdouble),
+    ", longdouble.digits==", format(.Machine$longdouble.digits), # 64 normally, 53 for example under valgrind where some high accuracy tests need turning off, #4639
     ", sizeof(pointer)==", .Machine$sizeof.pointer,
     ", TZ==", if (is.na(tz)) "unset" else paste0("'",tz,"'"),
     ", Sys.timezone()=='", suppressWarnings(Sys.timezone()), "'",
