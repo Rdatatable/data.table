@@ -207,6 +207,11 @@ with_c_collate = function(expr) {
   expr
 }
 
+# strrep is used many times in tests, but is from R 3.3.0, so use this equivalent if it is missing.
+if (!exists("strrep", "package:base")) {
+  strrep = function(x, times) mapply(function(x, times) paste(rep(x, times), collapse=""), rep_len(x, length(times)), times, USE.NAMES=FALSE)
+}
+
 ##########################
 .do_not_rm = ls()  # objects that exist at this point should not be removed by rm_all(); e.g. test_*, base_messages, Ctest_dt_win_snprintf, prevtest, etc
 ##########################
@@ -18427,9 +18432,6 @@ test(2252.1, dt[, b:=2L], error = "\\[ was called on a data.table.*not data.tabl
 test(2252.2, dt[, let(b=2L)], error = "\\[ was called on a data.table.*not data.table-aware.*'let'")
 rm(.datatable.aware)
 
-if (!exists("strrep", "package:base")) {
-  strrep = function(x, times) mapply(function(x, times) paste(rep(x, times), collapse=""), rep_len(x, length(times)), times, USE.NAMES=FALSE)
-}
 # tests for trunc.char handling wide characters # 5096
 local({
   lc_ctype = Sys.getlocale('LC_CTYPE')
