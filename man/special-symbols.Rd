@@ -12,7 +12,7 @@
 \title{ Special symbols }
 \description{
     \code{.SD}, \code{.BY}, \code{.N}, \code{.I}, \code{.GRP}, and \code{.NGRP} are \emph{read-only} symbols for use in \code{j}. \code{.N} can be used in \code{i} as well. \code{.I} can be used in \code{by} as well. See the vignettes, Details and Examples here and in \code{\link{data.table}}.
-    \code{.EACHI} is a symbol passed to \code{by}; i.e. \code{by=.EACHI}.
+    \code{.EACHI} is a symbol passed to \code{by}; i.e. \code{by=.EACHI}, \code{.NATURAL} is a symbol passed to \code{on}; i.e. \code{on=.NATURAL}
 }
 \details{
     The bindings of these variables are locked and attempting to assign to them will generate an error. If you wish to manipulate \code{.SD} before returning it, take a \code{copy(.SD)} first (see FAQ 4.5). Using \code{:=} in the \code{j} of \code{.SD} is reserved for future use as a (tortuously) flexible way to update \code{DT} by reference by group (even when groups are not contiguous in an ad hoc by).
