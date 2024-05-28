@@ -1,6 +1,6 @@
 on:
   schedule:
-   - cron: '17 13 21 * *' # 18th of month at 13:17 UTC
+   - cron: '17 13 28 * *' # 28th of month at 13:17 UTC
 
 # A more complete suite of checks to run monthly; each PR/merge need not pass all these, but they should pass before CRAN release
 name: R-CMD-check-occasional
@@ -45,7 +45,6 @@ jobs:
 
     env:
       R_REMOTES_NO_ERRORS_FROM_WARNINGS: true
-      TEST_DATA_TABLE_WITH_OTHER_PACKAGES: true
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
@@ -85,20 +84,6 @@ jobs:
         if: matrix.os == 'macOS-latest'
         run: brew install gdal proj
 
-      - name: Query dependencies
-        run: |
-          install.packages('remotes')
-          saveRDS(remotes::dev_package_deps(dependencies = TRUE), ".github/depends.Rds", version = 2)
-          writeLines(sprintf("R-%i.%i", getRversion()$major, getRversion()$minor), ".github/R-version")
-        shell: Rscript {0}
-
-      - name: Restore R package cache
-        uses: actions/cache@v2
-        with:
-          path: ${{ env.R_LIBS_USER }}
-          key: ${{ runner.os }}-${{ hashFiles('.github/R-version') }}-1-${{ hashFiles('.github/depends.Rds') }}
-          restore-keys: ${{ runner.os }}-${{ hashFiles('.github/R-version') }}-1-
-
       - name: Install system dependencies
         if: runner.os == 'Linux'
         run: |
@@ -109,12 +94,12 @@ jobs:
 
       - name: Install dependencies
         run: |
-          remotes::install_deps(dependencies = TRUE)
+          remotes::install_deps(dependencies=TRUE, force=TRUE)
           other_deps_expr = parse('inst/tests/other.Rraw', n=1L)
           eval(other_deps_expr)
           pkgs <- get(as.character(other_deps_expr[[1L]][[2L]]))
           # May not install on oldest R versions
-          try(remotes::install_cran(c(pkgs, "rcmdcheck")))
+          try(remotes::install_cran(c(pkgs, "rcmdcheck"), force=TRUE))
         shell: Rscript {0}
 
       - name: Check
@@ -126,14 +111,24 @@ jobs:
         run: |
           options(crayon.enabled = TRUE)
 
+          # we define this in data.table namespace, but it appears to be exec
+          if (!exists("isFALSE", "package:base")) {
+            if (!exists("isFALSE", asNamespace("data.table"))) {
+              cat("isFALSE not found in base, but data.table did not define it either!\n")
+            }
+            # attempt defining it here as a workaround...
+            isFALSE = function(x) is.logical(x) && length(x) == 1L && !is.na(x) && !x
+          }
+
           other_deps_expr = parse('inst/tests/other.Rraw', n=1L)
           eval(other_deps_expr)
-          pkgs <- get(as.character(other_deps_expr[[1L]][[2L]]))
-          has_pkg <- sapply(pkgs, requireNamespace, quietly=TRUE)
-          if (!all(has_pkg)) {
+          pkgs = get(as.character(other_deps_expr[[1L]][[2L]]))
+          has_pkg = sapply(pkgs, requireNamespace, quietly=TRUE)
+          run_other = all(has_pkg)
+          if (!run_other) {
             cat(sprintf("Skipping other.Rraw since some required packages are not available: %s\n", toString(pkgs[!has_pkg])))
-            Sys.unsetenv("TEST_DATA_TABLE_WITH_OTHER_PACKAGES")
           }
+          Sys.setenv(TEST_DATA_TABLE_WITH_OTHER_PACKAGES=as.character(run_other))
 
           do_vignettes <- requireNamespace("knitr", quietly=TRUE)
 
@@ -146,6 +141,8 @@ jobs:
             system2(Rbin, c("CMD", "build", ".", vignette_args))
             dt_tar <- list.files(pattern = "^data[.]table_.*[.]tar[.]gz$")
             if (!length(dt_tar)) stop("Built tar.gz not found among: ", toString(list.files()))
+            # --no-build-vignettes is not enough for R CMD check
+            if (!do_vignettes) args <- c(args, "--ignore-vignettes")
             res = system2(Rbin, c("CMD", "check", dt_tar[1L], args), stdout=TRUE)
             if (!is.null(attr(res, "status")) || grep("^Status:.*(ERROR|WARNING)", res)) {
               writeLines(res)

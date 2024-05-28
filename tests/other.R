@@ -1,5 +1,5 @@
 library(data.table)
-if (!as.logical(Sys.getenv("TEST_DATA_TABLE_WITH_OTHER_PACKAGES", "FALSE"))) {
+if (!isTRUE(as.logical(Sys.getenv("TEST_DATA_TABLE_WITH_OTHER_PACKAGES")))) {
   cat("Skipping tests in 'other' and quitting, set TEST_DATA_TABLE_WITH_OTHER_PACKAGES to proceed.\n")
   q('no')
 }

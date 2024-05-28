@@ -27,7 +27,12 @@ f = function(pkg) suppressWarnings(suppressMessages(isTRUE(
 )))
 loaded = sapply(pkgs, f)
 if (!all(loaded)) {
-  stop("test.data.table('other.Rraw') is missing required package(s): ", toString(names(loaded)[!loaded]), ". If you can't install them and this is R CMD check, please set environment variable TEST_DATA_TABLE_WITH_OTHER_PACKAGES back to the default, false.")
+  options(warning.length=8000)
+  stop(
+    "test.data.table('other.Rraw') failed to attach required package(s): ", toString(names(loaded)[!loaded]), ".",
+    "\nHere's all installed packages:\n  ", paste(rownames(installed.packages()), collapse=","),
+    "\nHere's the search() path:\n  ", paste(search(), collapse="->"),
+    "\nIf you can't install them and this is R CMD check, please set environment variable TEST_DATA_TABLE_WITH_OTHER_PACKAGES back to the default, false; it's currently ", Sys.getenv("TEST_DATA_TABLE_WITH_OTHER_PACKAGES", "<unset>"), ".")
   # Would like to install them now for convenience but gitlab-ci.yml seems to install to bus/mirror-other-packages/cran.
   # If that's a cache, that's nice, but we don't know at this point whether this script is being run by GLCI or by a user or in dev.
   # We don't allow skipping (e.g. if _R_CHECK_FORCE_SUGGESTS_ is FALSE) to keep things simple and to keep things strict; i.e.
