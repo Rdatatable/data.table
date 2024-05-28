@@ -57,7 +57,7 @@ DT[, c(.(y=max(y)), lapply(.SD, min)),
 DT[, grp := .GRP, by=x]                # add a group counter
 DT[, grp_pct := .GRP/.NGRP, by=x]      # add a group "progress" counter
 X[, DT[.BY, y, on="x"], by=x]          # join within each group
-DT[X, on=.Natural]                     # join X and DT naturally on common column similar to X[on=Y]
+DT[X, on=.NATURAL]                     # join X and DT naturally on common column similar to X[on=Y]
 
 # .N can be different in i and j
 DT[{cat(sprintf('in i, .N is \%d\n', .N)); a < .N/2},
