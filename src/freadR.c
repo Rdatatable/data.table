@@ -74,7 +74,8 @@ SEXP freadR(
   SEXP integer64Arg,
   SEXP encodingArg,
   SEXP keepLeadingZerosArgs,
-  SEXP noTZasUTC
+  SEXP noTZasUTC, 
+  SEXP keepLeadingWhiteSpace
 ) {
   verbose = LOGICAL(verboseArg)[0];
   warningsAreErrors = LOGICAL(warnings2errorsArg)[0];
@@ -152,7 +153,11 @@ SEXP freadR(
 
   // here we use bool and rely on fread at R level to check these do not contain NA_LOGICAL
   args.stripWhite = LOGICAL(stripWhiteArg)[0];
-  args.skipEmptyLines = LOGICAL(skipEmptyLinesArg)[0];
+  if (!isString(skipEmptyLinesArg)) args.skipEmptyLines = LOGICAL(skipEmptyLinesArg)[0];
+  else if (strcmp(CHAR(STRING_ELT(skipEmptyLinesArg,0)), "none")==0) {
+    args.skipEmptyLines = false;
+    args.keepLeadingWhite = true;
+  } else STOP(_("skipEmptyLines must be a logical or 'none'"));
   args.fill = INTEGER(fillArg)[0];
   args.showProgress = LOGICAL(showProgressArg)[0];
   if (INTEGER(nThreadArg)[0]<1) error(_("nThread(%d)<1"), INTEGER(nThreadArg)[0]);

@@ -18613,3 +18613,11 @@ test(2263.3, options=list(datatable.verbose=TRUE, datatable.optimize=0L), names(
 test(2263.4, options=list(datatable.verbose=TRUE, datatable.optimize=Inf), dt[, .N, b], data.table(b=dt$b, N=1L), output="GForce optimized j to")
 test(2263.5, options=list(datatable.verbose=TRUE, datatable.optimize=Inf), dt[, .N, .(b,c)], data.table(b=dt$b, c=dt$c, N=1L), output="GForce optimized j to")
 test(2263.6, options=list(datatable.verbose=TRUE, datatable.optimize=Inf), names(attributes(dt[, .N, b]$b)), c("class", "att"), output="GForce optimized j to")
+
+file = tempfile()
+writeLines(c("", "", "A"), file)
+test(2264.1, fread(file, blank.lines.skip="none"), data.table(V1 = c("", "", "A")))
+writeLines(c("", "", "A", "", "B"), file)
+test(2264.2, fread(file, blank.lines.skip="none"), data.table(V1 = c("", "", "A", "", "B")))
+writeLines(c("", "", NA), file)
+test(2264.3, fread(file, blank.lines.skip="none"), data.table(V1 = c(NA, NA, NA)))

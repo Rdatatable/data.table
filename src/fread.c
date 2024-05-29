@@ -57,6 +57,7 @@ static bool any_number_like_NAstrings=false;
 static bool blank_is_a_NAstring=false;
 static bool stripWhite=true;  // only applies to character columns; numeric fields always stripped
 static bool skipEmptyLines=false;
+static bool keepLeadingWhite=false;
 static int fill=0;
 static int *dropFill = NULL;
 
@@ -1357,6 +1358,7 @@ int freadMain(freadMainArgs _args) {
 
   stripWhite = args.stripWhite;
   skipEmptyLines = args.skipEmptyLines;
+  keepLeadingWhite = args.keepLeadingWhite;
   fill = args.fill;
   dec = args.dec;
   quote = args.quote;
@@ -1597,14 +1599,16 @@ int freadMain(freadMainArgs _args) {
 
   // skip blank input at the start
   const char *lineStart = ch;
-  while (ch<eof && (isspace(*ch) || *ch=='\0')) {   // isspace matches ' ', \t, \n and \r;  \0 before eof should be skipped too
-    if (*ch=='\n') { ch++; lineStart=ch; row1line++; } else ch++;
-  }
-  if (ch>=eof) STOP(_("Input is either empty, fully whitespace, or skip has been set after the last non-whitespace."));
-  if (verbose) {
-    if (lineStart>ch) DTPRINT(_("  Moved forward to first non-blank line (%d)\n"), row1line);
-    DTPRINT(_("  Positioned on line %d starting: <<%s>>\n"), row1line, strlim(lineStart, 30));
-  }
+  if (!keepLeadingWhite) {
+    while (ch<eof && (isspace(*ch) || *ch=='\0')) {   // isspace matches ' ', \t, \n and \r;  \0 before eof should be skipped too
+      if (*ch=='\n') { ch++; lineStart=ch; row1line++; } else ch++;
+    }
+    if (ch>=eof) STOP(_("Input is either empty, fully whitespace, or skip has been set after the last non-whitespace."));
+    if (verbose) {
+      if (lineStart>ch) DTPRINT(_("  Moved forward to first non-blank line (%d)\n"), row1line);
+      DTPRINT(_("  Positioned on line %d starting: <<%s>>\n"), row1line, strlim(lineStart, 30));
+    }
+  } else if (verbose) DTPRINT(_("Kept leading white space"));
   ch = pos = lineStart;
   }
 
@@ -1693,7 +1697,7 @@ int freadMain(freadMainArgs _args) {
           const char *prevLineStart=ch, *lineStart=ch;
           int lastncol = countfields(&ch);
           if (lastncol<0) continue;  //   invalid file with this sep and quote rule, skip
-          ASSERT(lastncol>0, "first non-empty row should always be at least one field; %c %d", sep, quoteRule); // # nocov
+          if (!keepLeadingWhite) ASSERT(lastncol>0, "first non-empty row should always be at least one field; %c %d", sep, quoteRule); // # nocov
           const char *thisBlockStart=lineStart;
           const char *thisBlockPrevStart = NULL;
           int thisBlockLines=1, thisRow=0;
@@ -1782,7 +1786,7 @@ int freadMain(freadMainArgs _args) {
   if (ncol<1 || row1line<1) STOP(_("Internal error: ncol==%d line==%d after detecting sep, ncol and first line"), ncol, row1line); // # nocov
   int tt = countfields(&ch);
   ch = pos; // move back to start of line since countfields() moved to next
-  if (!fill && tt!=ncol) STOP(_("Internal error: first line has field count %d but expecting %d"), tt, ncol); // # nocov
+  if (!fill && tt!=ncol) if (!keepLeadingWhite) STOP(_("Internal error: first line has field count %d but expecting %d"), tt, ncol); // # nocov
   if (verbose) {
     DTPRINT(_("  Detected %d columns on line %d. This line is either column names or first data row. Line starts as: <<%s>>\n"),
             tt, row1line, strlim(pos, 30));
