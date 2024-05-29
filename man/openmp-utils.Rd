@@ -41,7 +41,7 @@
     \item\file{cj.c} - \code{\link{CJ}()}
     \item\file{coalesce.c} - \code{\link{fcoalesce}()}
     \item\file{fifelse.c} - \code{\link{fifelse}()}
-    \item\file{fread.c} - \code{\link{fread}()}
+    \item\file{fread.c}, \file{freadR.c} - \code{\link{fread}()}
     \item\file{forder.c}, \file{fsort.c}, and \file{reorder.c} - \code{\link{forder}()} and related
     \item\file{froll.c}, \file{frolladaptive.c}, and \file{frollR.c} - \code{\link{froll}()} and family
     \item\file{fwrite.c} - \code{\link{fwrite}()}
