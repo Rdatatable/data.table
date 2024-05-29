@@ -123,7 +123,7 @@ test.list <- atime::atime_test_list(
 
   #issue reported in: https://github.com/Rdatatable/data.table/issues/5424
   #Fixed in: https://github.com/Rdatatable/data.table/pull/5463
-   "Performance Regression with .N and := #PR5463" = atime::atime_test(
+   ".N and := regression fixed in #5463" = atime::atime_test(
      N = 10^seq(1, 4),
      setup = {
        set.seed(123L)
