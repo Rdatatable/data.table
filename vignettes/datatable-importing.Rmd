@@ -240,7 +240,6 @@ import(data.table)
 
 By including these import statements in your `NAMESPACE` file, you ensure that the necessary functions are available for your package to use.
 
-
 ### 3. Update Your R Scripts
 When you move a package from `Depends` to `Imports`, it will no longer be automatically attached when your package is loaded. This means you need to refer to `data.table` functions explicitly using the `data.table::` prefix, or import the functions in your scripts.
 
