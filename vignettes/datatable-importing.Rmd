@@ -198,3 +198,84 @@ Some of internally used C routines are now exported on C level thus can be used 
 ## Importing from non-R Applications {non-r-API}
 
 Some tiny parts of `data.table` C code were isolated from the R C API and can now be used from non-R applications by linking to .so / .dll files. More concrete details about this will be provided later; for now you can study the C code that was isolated from the R C API in [src/fread.c](https://github.com/Rdatatable/data.table/blob/master/src/fread.c) and [src/fwrite.c](https://github.com/Rdatatable/data.table/blob/master/src/fwrite.c).
+
+## How to convert your Depends dependency on data.table to Imports
+
+To convert a `Depends` dependency on `data.table` to an `Imports` dependency in an R package, follow these steps:
+
+### 1. Update the DESCRIPTION File
+In your package's `DESCRIPTION` file, change the entry from `Depends` to `Imports`. This involves moving `data.table` from the `Depends` field to the `Imports` field.
+
+**Before:**
+```r
+Depends:
+    R (>= 3.5.0),
+    data.table
+Imports:
+```
+
+**After:**
+```r
+Depends:
+    R (>= 3.5.0)
+Imports:
+    data.table
+```
+
+### 2. Modify the NAMESPACE File
+Ensure that any functions from `data.table` that you use in your package are imported. This can be done either by explicitly importing specific functions or by importing the entire package.
+
+#### Importing Specific Functions
+If you use specific functions like `data.table()`, `setDT()`, or `merge()`, you can import them individually in the `NAMESPACE` file:
+
+```r
+importFrom(data.table, data.table, setDT, merge)
+```
+
+#### Bulk Import
+Alternatively, you can import all functions from data.table at once, though this is generally not recommended for best practices:
+```r
+import(data.table)
+```
+
+By including these import statements in your `NAMESPACE` file, you ensure that the necessary functions are available for your package to use.
+
+
+### 3. Update Your R Scripts
+When you move a package from `Depends` to `Imports`, it will no longer be automatically attached when your package is loaded. This means you need to refer to `data.table` functions explicitly using the `data.table::` prefix, or import the functions in your scripts.
+
+**Before (with `Depends`):**
+```r
+# data.table functions are directly available
+dt <- data.table(x = 1:10, y = letters[1:10])
+setDT(dt)
+result <- merge(dt, other_dt, by = "x")
+```
+
+**After (with `Imports`):**
+```r
+# Use the data.table:: prefix or import functions explicitly
+dt <- data.table::data.table(x = 1:10, y = letters[1:10])
+data.table::setDT(dt)
+result <- data.table::merge(dt, other_dt, by = "x")
+```
+
+Alternatively, you can import specific functions at the top of your R scripts:
+
+```r
+# Import specific functions at the beginning of the script
+data.table::data.table
+data.table::setDT
+data.table::merge
+
+# Now you can use them without the data.table:: prefix
+dt <- data.table(x = 1:10, y = letters[1:10])
+setDT(dt)
+result <- merge(dt, other_dt, by = "x")
+```
+
+### Benefits of Using `Imports`
+- **Namespace Management**: Only the functions your package explicitly imports are available, reducing the risk of function name clashes.
+- **Cleaner Package Loading**: Your package's dependencies are not attached to the search path, making the loading process cleaner and potentially faster.
+
+By following these steps, you can convert your package's dependency on `data.table` from `Depends` to `Imports`, leading to better practice in R package development.
