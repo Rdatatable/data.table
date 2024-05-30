@@ -13030,7 +13030,7 @@ test(1915, fread(str, select = c(5, 1, 3)),
 
 # unit tests for #2169 which was already fixed in ec05f8b/src/fwrite.c#L59
 test(1916.1, fwrite(data.table(foo=c(NA, TRUE, FALSE)), logical01=TRUE, na='EMPTY', verbose=FALSE),
-             output=c("foo","EMPTY","1","0")) # changed as of resolving #2964
+             output=c("foo","EMPTY","1","0"))
 test(1916.2, fwrite(data.table(foo=c(NA, TRUE, FALSE)), logical01=TRUE, verbose=FALSE),
              output=c("foo","","1","0"))
 
