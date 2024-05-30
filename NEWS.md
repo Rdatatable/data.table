@@ -96,6 +96,8 @@
 
 14. `setNumericRounding()` now invisibly returns the old rounding value instead of `NULL`, which is now consistent with similar behavior by `setwd()`, `options()`, etc. Thanks @MichaelChirico for the report and @joshhwuu for the fix.
 
+6. `dcast()` now issues a warning instead of a message when `fun.aggregate` is missing, defaulting to `length()`. This change makes potential issues more noticeable and easier to debug, [#5386](https://github.com/Rdatatable/data.table/issues/5386). The warning is classed as `dt_missing_agg_function_warning`, allowing for more targeted handling in user code. Thanks @MichaelChirico for the suggestion and @Nj221102 for the fix.
+
 # data.table [v1.15.0](https://github.com/Rdatatable/data.table/milestone/29)  (30 Jan 2024)
 
 ## BREAKING CHANGE
