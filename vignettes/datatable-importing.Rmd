@@ -233,7 +233,7 @@ importFrom(data.table, data.table, setDT, merge)
 ```
 
 #### Bulk Import
-Alternatively, you can import all functions from `data.table` at once, though this is generally not recommended as best practices:
+Alternatively, you can import all functions from `data.table` at once, though this is generally not recommended as best practice:
 ```r
 import(data.table)
 ```
