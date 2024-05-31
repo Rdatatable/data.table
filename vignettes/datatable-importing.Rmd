@@ -223,7 +223,7 @@ Imports:
 ```
 
 ### 2. Modify the NAMESPACE File
-Ensure that any functions from `data.table` that you use in your package are imported. This can be done either by explicitly importing specific functions or by importing the entire package.
+Ensure that any functions from `data.table` that you use in your package are imported. This can be done either by explicitly importing specific functions or by importing the entire package but specific imports are considered best practice.
 
 #### Importing Specific Functions
 If you use specific functions like `data.table()`, `setDT()`, or `merge()`, you can import them individually in the `NAMESPACE` file:
@@ -240,8 +240,8 @@ import(data.table)
 
 By including these import statements in your `NAMESPACE` file, you ensure that the necessary functions are available for your package to use.
 
-### 3. Update Your R Scripts
-When you move a package from `Depends` to `Imports`, it will no longer be automatically attached when your package is loaded. This means you need to refer to `data.table` functions explicitly using the `data.table::` prefix, or import the functions in your scripts.
+### 3. Update Your R code files
+When you move a package from `Depends` to `Imports`, it will no longer be automatically attached when your package is loaded. This means you need to refer to `data.table` functions explicitly using the `data.table::` prefix, or import the functions in your scripts. However, if you import `data.table` in your Namespace, you won't need to make any changes in your R scripts.
 
 **Before (with `Depends`):**
 ```r
@@ -272,6 +272,8 @@ dt <- data.table(x = 1:10, y = letters[1:10])
 setDT(dt)
 result <- merge(dt, other_dt, by = "x")
 ```
+
+**Important**: To avoid the need for changes in your R scripts, ensure you import `data.table` in your Namespace. This allows the functions to be available as they were with `Depends`.
 
 ### Benefits of Using `Imports`
 - **Namespace Management**: Only the functions your package explicitly imports are available, reducing the risk of function name clashes.
