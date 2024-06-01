@@ -207,6 +207,11 @@ with_c_collate = function(expr) {
   expr
 }
 
+# strrep is used many times in tests, but is from R 3.3.0, so use this equivalent if it is missing.
+if (!exists("strrep", "package:base")) {
+  strrep = function(x, times) mapply(function(x, times) paste(rep(x, times), collapse=""), rep_len(x, length(times)), times, USE.NAMES=FALSE)
+}
+
 ##########################
 .do_not_rm = ls()  # objects that exist at this point should not be removed by rm_all(); e.g. test_*, base_messages, Ctest_dt_win_snprintf, prevtest, etc
 ##########################
@@ -18428,44 +18433,58 @@ test(2252.2, dt[, let(b=2L)], error = "\\[ was called on a data.table.*not data.
 rm(.datatable.aware)
 
 # tests for trunc.char handling wide characters # 5096
-accented_a = "\u0061\u0301"
-ja_ichi = "\u4E00"
-ja_ni = "\u4E8C"
-ja_ko = "\u3053"
-ja_n = "\u3093"
-dots = "..."
-clean_regex = "^\\d+:\\s+" # removes row numbering from beginning of output
-# Tests for combining character latin a and acute accent, single row
-DT = data.table(strrep(accented_a, 4L))
-test(2253.01, options=list(datatable.prettyprint.char = 4L), DT, output=strrep(accented_a, 4L))
-test(2253.02, options=list(datatable.prettyprint.char = 3L), DT, output=paste0(strrep(accented_a, 3L), dots))
-test(2253.03, options=list(datatable.prettyprint.char = 1L), DT, output=paste0(strrep(accented_a, 1L), dots))
-# Tests for full-width japanese character ichi, single row
-DT = data.table(strrep(ja_ichi, 4L))
-test(2253.04, options=list(datatable.prettyprint.char = 4L), DT, output=strrep(ja_ichi, 4L))
-test(2253.05, options=list(datatable.prettyprint.char = 3L), DT, output=paste0(strrep(ja_ichi, 3L), dots))
-test(2253.06, options=list(datatable.prettyprint.char = 1L), DT, output=paste0(strrep(ja_ichi, 1L), dots))
-# Tests for multiple, different length combining character rows
-DT = data.table(strrep(accented_a, 1L:4L))
-test(2253.07, options=list(datatable.prettyprint.char = 4L), gsub(clean_regex, "", capture.output(print(DT))[-1L]), c("á", "áá", "ááá", "áááá"))
-test(2253.08, options=list(datatable.prettyprint.char = 3L), gsub(clean_regex, "", capture.output(print(DT))[-1L]), c("á", "áá", "ááá", "ááá..."))
-test(2253.09, options=list(datatable.prettyprint.char = 1L), gsub(clean_regex, "", capture.output(print(DT))[-1L]), c("á", "á...", "á...", "á..."))
-# Tests for multiple, different length full-width characters
-DT = data.table(strrep(ja_ichi, 1L:4L))
-test(2253.10, options=list(datatable.prettyprint.char = 4L), gsub(clean_regex, "", capture.output(print(DT))[-1L]), c("一", "一一", "一一一", "一一一一"))
-test(2253.11, options=list(datatable.prettyprint.char = 3L), gsub(clean_regex, "", capture.output(print(DT))[-1L]), c("一", "一一", "一一一", "一一一..."))
-test(2253.12, options=list(datatable.prettyprint.char = 1L), gsub(clean_regex, "", capture.output(print(DT))[-1L]), c("一", "一...", "一...", "一..."))
-# Tests for combined characters, multiple columns
-DT = data.table(paste0(ja_ichi), strrep(ja_ni, 2L), strrep(ja_ko, 3L), strrep(accented_a, 2L), "aaa")
-test(2253.13, options=list(datatable.prettyprint.char = 4L), capture.output(print(DT))[-1L], "1: 一 二二 こここ áá aaa")
-test(2253.14, options=list(datatable.prettyprint.char = 3L), capture.output(print(DT))[-1L], "1: 一 二二 こここ áá aaa")
-test(2253.15, options=list(datatable.prettyprint.char = 2L), capture.output(print(DT))[-1L], "1: 一 二二 ここ... áá aa...")
-test(2253.16, options=list(datatable.prettyprint.char = 1L), capture.output(print(DT))[-1L], "1: 一 二... こ... á... a...")
-# Tests for multiple columns, multiple rows
-DT = data.table(strrep(ja_ko, 1:3L), strrep(ja_n, 2:4L), strrep(accented_a, 3))
-test(2253.17, options=list(datatable.prettyprint.char = 4L), gsub(clean_regex, "", capture.output(print(DT))[-1L]), c("こ     んん ááá", "ここ   んんん ááá", "こここ んんんん ááá"))
-test(2253.18, options=list(datatable.prettyprint.char = 3L), gsub(clean_regex, "", capture.output(print(DT))[-1L]), c("こ      んん ááá", "ここ    んんん ááá", "こここ んんん... ááá"))
-test(2253.19, options=list(datatable.prettyprint.char = 1L), gsub(clean_regex, "", capture.output(print(DT))[-1L]), c("こ ん... á...", "こ... ん... á...", "こ... ん... á..."))
+local({
+  lc_ctype = Sys.getlocale('LC_CTYPE')
+  Sys.setlocale('LC_CTYPE', "en_US.UTF-8") # Japanese multibyte characters require utf8
+  on.exit({Sys.setlocale('LC_CTYPE', lc_ctype)})
+  accented_a = "\u0061\u0301"
+  ja_ichi = "\u4E00"
+  ja_ni = "\u4E8C"
+  ja_ko = "\u3053"
+  ja_n = "\u3093"
+  dots = "..."
+  clean_regex = "^\\d+:\\s+" # removes row numbering from beginning of output
+  # Tests for combining character latin a and acute accent, single row
+  DT = data.table(strrep(accented_a, 4L))
+  test(2253.01, options=list(datatable.prettyprint.char = 4L), DT, output=strrep(accented_a, 4L))
+  test(2253.02, options=list(datatable.prettyprint.char = 3L), DT, output=paste0(strrep(accented_a, 3L), dots))
+  test(2253.03, options=list(datatable.prettyprint.char = 1L), DT, output=paste0(strrep(accented_a, 1L), dots))
+  # Tests for full-width japanese character ichi, single row
+  DT = data.table(strrep(ja_ichi, 4L))
+  test(2253.04, options=list(datatable.prettyprint.char = 4L), DT, output=strrep(ja_ichi, 4L))
+  test(2253.05, options=list(datatable.prettyprint.char = 3L), DT, output=paste0(strrep(ja_ichi, 3L), dots))
+  test(2253.06, options=list(datatable.prettyprint.char = 1L), DT, output=paste0(strrep(ja_ichi, 1L), dots))
+  # Tests for multiple, different length combining character rows
+  DT = data.table(strrep(accented_a, 1L:4L))
+  test(2253.07, options=list(datatable.prettyprint.char = 4L), gsub(clean_regex, "", capture.output(print(DT))[-1L]), strrep(accented_a, 1:4L))
+  test(2253.08, options=list(datatable.prettyprint.char = 3L), gsub(clean_regex, "", capture.output(print(DT))[-1L]), c(strrep(accented_a, 1:3), paste0(strrep(accented_a, 3L), dots)))
+  test(2253.09, options=list(datatable.prettyprint.char = 1L), gsub(clean_regex, "", capture.output(print(DT))[-1L]), c(accented_a, rep(paste0(accented_a, dots), 3L)))
+  # Tests for multiple, different length full-width characters
+  DT = data.table(strrep(ja_ichi, 1L:4L))
+  test(2253.10, options=list(datatable.prettyprint.char = 4L), gsub(clean_regex, "", capture.output(print(DT))[-1L]), strrep(ja_ichi, 1:4L))
+  test(2253.11, options=list(datatable.prettyprint.char = 3L), gsub(clean_regex, "", capture.output(print(DT))[-1L]), c(strrep(ja_ichi, 1:3), paste0(strrep(ja_ichi, 3L), dots)))
+  test(2253.12, options=list(datatable.prettyprint.char = 1L), gsub(clean_regex, "", capture.output(print(DT))[-1L]), c(ja_ichi, rep(paste0(ja_ichi, dots), 3L)))
+  # Tests for combined characters, multiple columns
+  DT = data.table(paste0(ja_ichi), strrep(ja_ni, 2L), strrep(ja_ko, 3L), strrep(accented_a, 2L), "aaa")
+  test(2253.13, options=list(datatable.prettyprint.char = 4L), capture.output(print(DT))[-1L], paste("1:", ja_ichi, strrep(ja_ni, 2L), strrep(ja_ko, 3L), strrep(accented_a, 2L), "aaa"))
+  test(2253.14, options=list(datatable.prettyprint.char = 3L), capture.output(print(DT))[-1L], paste("1:", ja_ichi, strrep(ja_ni, 2L), strrep(ja_ko, 3L), strrep(accented_a, 2L), "aaa"))
+  test(2253.15, options=list(datatable.prettyprint.char = 2L), capture.output(print(DT))[-1L], paste("1:", ja_ichi, strrep(ja_ni, 2), paste0(strrep(ja_ko, 2), dots) , strrep(accented_a, 2), "aa..."))
+  test(2253.16, options=list(datatable.prettyprint.char = 1L), capture.output(print(DT))[-1L], paste("1:", ja_ichi, paste0(ja_ni, dots), paste0(ja_ko, dots), paste0(accented_a, dots), "a..."))
+  # Tests for multiple columns, multiple rows
+  DT = data.table(strrep(ja_ko, 1:3L), strrep(ja_n, 2:4L), strrep(accented_a, 3))
+  test(2253.17, options=list(datatable.prettyprint.char = 4L), gsub(clean_regex, "", capture.output(print(DT))[-1L]),
+    c(paste0(ja_ko, "     ", strrep(ja_n, 2L), " ", strrep(accented_a, 3L)),
+    paste0(strrep(ja_ko, 2L), "   ", strrep(ja_n, 3L), " ", strrep(accented_a, 3L)),
+    paste(strrep(ja_ko, 3L), strrep(ja_n, 4L), strrep(accented_a, 3L))))
+  test(2253.18, options=list(datatable.prettyprint.char = 3L), gsub(clean_regex, "", capture.output(print(DT))[-1L]),
+    c(paste0(ja_ko, "      ", strrep(ja_n, 2L), " ", strrep(accented_a, 3L)),
+    paste0(strrep(ja_ko, 2L), "    ", strrep(ja_n, 3L), " ", strrep(accented_a, 3L)),
+    paste(strrep(ja_ko, 3L), paste0(strrep(ja_n, 3L), dots), strrep(accented_a, 3L))))
+  test(2253.19, options=list(datatable.prettyprint.char = 1L), gsub(clean_regex, "", capture.output(print(DT))[-1L]),
+    c(paste0(ja_ko, " ", paste0(ja_n, dots), " ", paste0(accented_a, dots)),
+    paste0(c(ja_ko, ja_n, accented_a), dots, collapse=" "),
+    paste0(c(ja_ko, ja_n, accented_a), dots, collapse=" ")))
+})
 
 # allow 1-D matrix in j for consistency, #783
 DT=data.table(a = rep(1:2, 3), b = 1:6)
