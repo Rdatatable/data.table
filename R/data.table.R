@@ -14,8 +14,6 @@ methods::setPackageName("data.table",.global)
 .SD = .N = .I = .GRP = .NGRP = .BY = .EACHI = NULL
 . = function(...) NULL
 J = function(...) NULL
-patterns = function(...) NULL
-measure = function(...) NULL
 # These are exported to prevent NOTEs from R CMD check, and checkUsage via compiler.
 # But also exporting them makes it clear (to users and other packages) that data.table uses these as symbols.
 # The use of NULL during loading signals to R's mask check that these entities aren't defined with specific behaviors.
