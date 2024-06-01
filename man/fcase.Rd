@@ -61,10 +61,11 @@ fcase(
 )
 
 # fcase can be used for recursion, unlike fifelse
-gcd_dt <- function(x,y) {
-  r <- x%%y;
-  return(fcase(!r, y, r, gcd_dt(x, y))) # Recursive call must be in the last when-value pair
+gcd_dt = function(x,y) {
+  r = x\%\%y
+  # Recursive call must be in the last when-value pair
+  return(fcase(!r, y, r, gcd_dt(x, y)))
 }
-gcd_dt(10, 1)
+gcd_dt(10L, 1L)
 }
 \keyword{ data }
