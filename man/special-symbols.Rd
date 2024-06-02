@@ -8,10 +8,11 @@
 \alias{.N}
 \alias{.EACHI}
 \alias{.NGRP}
+\alias{.NATURAL}
 \title{ Special symbols }
 \description{
     \code{.SD}, \code{.BY}, \code{.N}, \code{.I}, \code{.GRP}, and \code{.NGRP} are \emph{read-only} symbols for use in \code{j}. \code{.N} can be used in \code{i} as well. \code{.I} can be used in \code{by} as well. See the vignettes, Details and Examples here and in \code{\link{data.table}}.
-    \code{.EACHI} is a symbol passed to \code{by}; i.e. \code{by=.EACHI}.
+    \code{.EACHI} is a symbol passed to \code{by}; i.e. \code{by=.EACHI}, \code{.NATURAL} is a symbol passed to \code{on}; i.e. \code{on=.NATURAL}
 }
 \details{
     The bindings of these variables are locked and attempting to assign to them will generate an error. If you wish to manipulate \code{.SD} before returning it, take a \code{copy(.SD)} first (see FAQ 4.5). Using \code{:=} in the \code{j} of \code{.SD} is reserved for future use as a (tortuously) flexible way to update \code{DT} by reference by group (even when groups are not contiguous in an ad hoc by).
@@ -28,6 +29,8 @@
     }
 
     \code{.EACHI} is defined as \code{NULL} but its value is not used. Its usage is \code{by=.EACHI} (or \code{keyby=.EACHI}) which invokes grouping-by-each-row-of-i; see \code{\link{data.table}}'s \code{by} argument for more details.
+
+    \code{.NATURAL} is defined as \code{NULL} but its value is not used. Its usage is \code{on=.NATURAL} (alternative of \code{X[on=Y]}) which joins two tables on their common column names, performing a natural join; see \code{\link{data.table}}'s \code{on} argument for more details.
 
     Note that \code{.N} in \code{i} is computed up-front, while that in \code{j} applies \emph{after filtering in \code{i}}. That means that even absent grouping, \code{.N} in \code{i} can be different from \code{.N} in \code{j}. See Examples.
 }
@@ -54,6 +57,7 @@ DT[, c(.(y=max(y)), lapply(.SD, min)),
 DT[, grp := .GRP, by=x]                # add a group counter
 DT[, grp_pct := .GRP/.NGRP, by=x]      # add a group "progress" counter
 X[, DT[.BY, y, on="x"], by=x]          # join within each group
+DT[X, on=.NATURAL]                     # join X and DT on common column similar to X[on=Y]
 
 # .N can be different in i and j
 DT[{cat(sprintf('in i, .N is \%d\n', .N)); a < .N/2},
