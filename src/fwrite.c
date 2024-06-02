@@ -39,7 +39,6 @@ static int sepLen;                     // 0 when sep="" for #4817, otherwise 1
 static char sep2;                      // '|' within list columns. Used here to know if field should be quoted and in freadR.c to write sep2 in list columns
 static char dec;                       // the '.' in the number 3.1416. In Europe often: 3,1416
 static int8_t doQuote=INT8_MIN;        // whether to surround fields with double quote ". NA means 'auto' (default)
-static int8_t quoteHeaders;            // whether to quote column names in the header row
 static bool qmethodEscape=false;       // when quoting fields, how to escape double quotes in the field contents (default false means to add another double quote)
 static int scipen;
 static bool squashDateTime=false;      // 0=ISO(yyyy-mm-dd) 1=squash(yyyymmdd)
@@ -600,7 +599,7 @@ void fwriteMain(fwriteMainArgs args)
   dec = args.dec;
   scipen = args.scipen;
   doQuote = args.doQuote;
-  quoteHeaders = doQuote;
+  int8_t quoteHeaders = args.doQuote;
   verbose = args.verbose;
 
   // When NA is a non-empty string, then we must quote all string fields in case they contain the na string
@@ -728,14 +727,14 @@ void fwriteMain(fwriteMainArgs args)
         *ch = sep;
         ch += sepLen;
       }
+      int8_t temp = doQuote;
+      doQuote = quoteHeaders;
       for (int j=0; j<args.ncol; j++) {
-        int8_t temp = doQuote;
-        doQuote = quoteHeaders;
         writeString(args.colNames, j, &ch);
-        doQuote = temp;
         *ch = sep;
         ch += sepLen;
       }
+      doQuote = temp;
       ch -= sepLen; // backup over the last sep
       write_chars(args.eol, &ch);
     }
