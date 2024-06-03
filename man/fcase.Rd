@@ -61,6 +61,7 @@ fcase(
 )
 
 # fcase can be used for recursion, unlike fifelse
+# Recursive function to calculate the Greatest Common Divisor
 gcd_dt = function(x,y) {
   r = x\%\%y
   fcase(!r, y, r, gcd_dt(x, y)) # Recursive call must be in the last when-value pair
