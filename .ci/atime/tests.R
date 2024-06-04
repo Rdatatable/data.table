@@ -121,8 +121,8 @@ test.list <- atime::atime_test_list(
     Slow = "c4a2085e35689a108d67dacb2f8261e4964d7e12", # Parent of the first commit in the PR that fixes the issue (https://github.com/Rdatatable/data.table/commit/7cc4da4c1c8e568f655ab5167922dcdb75953801)
     Fast = "1872f473b20fdcddc5c1b35d79fe9229cd9a1d15"),# Last commit in the PR that fixes the issue (https://github.com/Rdatatable/data.table/pull/5427/commits)
 
-  #issue reported in: https://github.com/Rdatatable/data.table/issues/5424
-  #Fixed in: https://github.com/Rdatatable/data.table/pull/5463
+   # Issue reported in: https://github.com/Rdatatable/data.table/issues/5424
+   # Fixed in: https://github.com/Rdatatable/data.table/pull/5463
    ".N and := regression fixed in #5463" = atime::atime_test(
      N = 10^seq(1, 4),
      setup = {
@@ -133,8 +133,8 @@ test.list <- atime::atime_test_list(
        dt
      },
      expr = data.table:::`[.data.table`(dt, , .(vs = (sum(val))), by = .(id)),
-     Before = "be2f72e6f5c90622fe72e1c315ca05769a9dc854",
-     Regression = "e793f53466d99f86e70fc2611b708ae8c601a451",
-     Fixed = "58409197426ced4714af842650b0cc3b9e2cb842")
+     Before = "be2f72e6f5c90622fe72e1c315ca05769a9dc854", # Parent of the regression causing commit (https://github.com/Rdatatable/data.table/commit/e793f53466d99f86e70fc2611b708ae8c601a451) in the PR that introduced the issue (https://github.com/Rdatatable/data.table/pull/4491/commits)
+     Regression = "e793f53466d99f86e70fc2611b708ae8c601a451", # Commit responsible for regression in the PR that introduced the issue (https://github.com/Rdatatable/data.table/pull/4491/commits)
+     Fixed = "58409197426ced4714af842650b0cc3b9e2cb842") # Last commit in the PR that fixed the regression (https://github.com/Rdatatable/data.table/pull/5463/commits)
 )
 # nolint end: undesirable_operator_linter.
