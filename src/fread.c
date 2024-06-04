@@ -1786,7 +1786,7 @@ int freadMain(freadMainArgs _args) {
   if (ncol<1 || row1line<1) STOP(_("Internal error: ncol==%d line==%d after detecting sep, ncol and first line"), ncol, row1line); // # nocov
   int tt = countfields(&ch);
   ch = pos; // move back to start of line since countfields() moved to next
-  if (!fill && tt!=ncol) STOP(_("Internal error: first line has field count %d but expecting %d"), tt, ncol); // # nocov
+  if (!fill && tt!=ncol && !keepLeadingWhite) STOP(_("Internal error: first line has field count %d but expecting %d"), tt, ncol); // # nocov
   if (verbose) {
     DTPRINT(_("  Detected %d columns on line %d. This line is either column names or first data row. Line starts as: <<%s>>\n"),
             tt, row1line, strlim(pos, 30));
