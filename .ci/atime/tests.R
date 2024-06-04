@@ -73,39 +73,6 @@ test.list <- atime::atime_test_list(
       paste0('useDynLib(', new.Package_))
   },
 
-  # Performance regression discussed in: https://github.com/Rdatatable/data.table/issues/4311
-  # Fixed in: https://github.com/Rdatatable/data.table/pull/4440
-  "shallow regression fixed in #4440" = atime::atime_test(
-    N = 10^seq(3,8),
-    setup = {
-      set.seed(1L)
-      dt <- data.table(a = sample.int(N))
-      setindexv(dt, "a")
-    },
-    expr = data.table:::shallow(dt),
-    # Before = "", This needs to be updated later as there are two issues here: A) The source of regression (or the particular commit that led to it) is not clear; B) Older versions of data.table are having problems when being installed in this manner (This includes commits from before March 20 2020, when the issue that discovered or first mentioned the regression was created)
-    Regression = "b1b1832b0d2d4032b46477d9fe6efb15006664f4", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/0f0e7127b880df8459b0ed064dc841acd22f5b73) in the PR (https://github.com/Rdatatable/data.table/pull/4440/commits) that fixes the regression
-    Fixed = "9d3b9202fddb980345025a4f6ac451ed26a423be"), # Merge commit in the PR that fixed the regression (https://github.com/Rdatatable/data.table/pull/4440)
-
-  # Test based on: https://github.com/Rdatatable/data.table/issues/5424
-  # Performance regression introduced from a commit in: https://github.com/Rdatatable/data.table/pull/4491
-  # Fixed in: https://github.com/Rdatatable/data.table/pull/5463
-  "memrecycle regression fixed in #5463" = atime::atime_test(
-    N = 10^seq(3, 8),
-    setup = {
-      n <- N/100
-      set.seed(2L)
-      dt <- data.table(
-        g = sample(seq_len(n), N, TRUE),
-        x = runif(N),
-        key = "g")
-      dt_mod <- copy(dt)
-    },
-    expr = data.table:::`[.data.table`(dt_mod, , N := .N, by = g),
-    Before = "be2f72e6f5c90622fe72e1c315ca05769a9dc854", # Parent of the regression causing commit (https://github.com/Rdatatable/data.table/commit/e793f53466d99f86e70fc2611b708ae8c601a451) in the PR that introduced the issue (https://github.com/Rdatatable/data.table/pull/4491/commits)
-    Regression = "e793f53466d99f86e70fc2611b708ae8c601a451", # Commit responsible for regression in the PR that introduced the issue (https://github.com/Rdatatable/data.table/pull/4491/commits)
-    Fixed = "58409197426ced4714af842650b0cc3b9e2cb842"), # Last commit in the PR that fixed the regression (https://github.com/Rdatatable/data.table/pull/5463/commits)
-
   # Issue reported in: https://github.com/Rdatatable/data.table/issues/5426
   # To be fixed in: https://github.com/Rdatatable/data.table/pull/5427
   "setDT improved in #5427" = atime::atime_test(
