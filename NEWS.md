@@ -96,6 +96,8 @@
 
 14. `setNumericRounding()` now invisibly returns the old rounding value instead of `NULL`, which is now consistent with similar behavior by `setwd()`, `options()`, etc. Thanks @MichaelChirico for the report and @joshhwuu for the fix.
 
+15. Assigning `list(NULL)` to a list column now replaces the column with `list(NULL)`, instead of deleting the column [#5558](https://github.com/Rdatatable/data.table/issues/5558). This behavior is now consistent with base `data.frame`. Thanks @tdhock for the report and @joshhwuu for the fix.
+
 # data.table [v1.15.0](https://github.com/Rdatatable/data.table/milestone/29)  (30 Jan 2024)
 
 ## BREAKING CHANGE
