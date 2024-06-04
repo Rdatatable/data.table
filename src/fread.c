@@ -1359,7 +1359,8 @@ int freadMain(freadMainArgs _args) {
   stripWhite = args.stripWhite;
   skipEmptyLines = args.skipEmptyLines;
   keepLeadingWhite = args.keepLeadingWhite;
-  fill = args.fill;
+  if (keepLeadingWhite) fill = true;
+  else fill = args.fill;
   dec = args.dec;
   quote = args.quote;
   if (args.sep == quote && quote!='\0') STOP(_("sep == quote ('%c') is not allowed"), quote);
