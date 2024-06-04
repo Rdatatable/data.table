@@ -534,8 +534,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     SEXP thisvalue = RHS_list_of_columns ? VECTOR_ELT(values, i) : values;
     // if values is list(NULL), then replace with a list of NULLs instead of deleting, #5558
     if (RHS_list_of_columns && length(values)==1 && TYPEOF(VECTOR_ELT(values, 0))==NILSXP) {
-        SEXP newcol = allocVector(VECSXP, length(VECTOR_ELT(dt, coln)));
-        SET_VECTOR_ELT(dt, coln, newcol);
+        SET_VECTOR_ELT(dt, coln, targetcol=allocNAVector(VECSXP, length(VECTOR_ELT(dt, coln))));
         continue;
     }
     if (TYPEOF(thisvalue)==NILSXP) {
