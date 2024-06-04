@@ -175,6 +175,7 @@ bool freadCleanup(void)
   blank_is_a_NAstring = false;
   stripWhite = true;
   skipEmptyLines = false;
+  keepLeadingWhite = false;
   eol_one_r = false;
   fill = 0;
   // following are borrowed references: do not free
