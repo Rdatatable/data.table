@@ -15369,7 +15369,7 @@ L = list(1:3, NULL, 4:6)
 test(2058.18, length(L), 3L)
 test(2058.19, as.data.table(L), data.table(V1=1:3, V2=4:6))  # V2 not V3        # no
 DT = data.table(a=1:3, b=c(4,5,6))
-test(2058.20, DT[,b:=list(NULL)], data.table(a=1:3))                            # no
+test(2058.20, DT[,b:=list(NULL)], data.table(a=1:3, b=list(NULL)))              # no
 
 # rbindlist improved error message, #3638
 DT = data.table(a=1)
@@ -18612,3 +18612,21 @@ test(2263.3, options=list(datatable.verbose=TRUE, datatable.optimize=0L), names(
 test(2263.4, options=list(datatable.verbose=TRUE, datatable.optimize=Inf), dt[, .N, b], data.table(b=dt$b, N=1L), output="GForce optimized j to")
 test(2263.5, options=list(datatable.verbose=TRUE, datatable.optimize=Inf), dt[, .N, .(b,c)], data.table(b=dt$b, c=dt$c, N=1L), output="GForce optimized j to")
 test(2263.6, options=list(datatable.verbose=TRUE, datatable.optimize=Inf), names(attributes(dt[, .N, b]$b)), c("class", "att"), output="GForce optimized j to")
+
+# tests for replacing an element of a list column with NULL instead of deleting the column, #5558
+DT = data.table(L = list("A"), i = 1L)
+DT$L = list(NULL)
+test(2264.1, DT, data.table(L = list(NULL), i = 1L))
+DT = data.table(L = list("A"), i = 1L)
+test(2264.2, DT[, L := list(NULL)], data.table(L = list(NULL), i = 1L))
+DT = data.table(L = list("A"), i = 1L)
+DT1 = data.table(L = list("A"), i = 1L)
+test(2264.3, DT[, L := list(NULL)], DT1[, `:=`(L = list(NULL))])
+DT = data.table(L = list("B", "C"), i = 1L)
+DT$L = list(NULL)
+test(2264.4, DT, data.table(L = list(NULL, NULL), i = 1L))
+DT = data.table(L = list("B", "C"), i = 1L)
+test(2264.5, DT[, L := list(NULL)], data.table(L = list(NULL, NULL), i = 1L))
+DT = data.table(L = list("B", "C"), i = 1L)
+DT1 = data.table(L = list("B", "C"), i = 1L)
+test(2264.6, DT[, L := list(NULL)], DT1[, `:=`(L = list(NULL))])

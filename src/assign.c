@@ -532,6 +532,12 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   for (int i=0; i<length(cols); ++i) {
     coln = INTEGER(cols)[i]-1;
     SEXP thisvalue = RHS_list_of_columns ? VECTOR_ELT(values, i) : values;
+    // if values is list(NULL), then replace with a list of NULLs instead of deleting, #5558
+    if (RHS_list_of_columns && length(values)==1 && TYPEOF(VECTOR_ELT(values, 0))==NILSXP) {
+        SEXP newcol = allocVector(VECSXP, length(VECTOR_ELT(dt, coln)));
+        SET_VECTOR_ELT(dt, coln, newcol);
+        continue;
+    }
     if (TYPEOF(thisvalue)==NILSXP) {
       if (!isNull(rows)) error(_("Internal error: earlier error 'When deleting columns, i should not be provided' did not happen.")); // # nocov
       ndelete++;
