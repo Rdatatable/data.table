@@ -75,7 +75,7 @@ SEXP freadR(
   SEXP encodingArg,
   SEXP keepLeadingZerosArgs,
   SEXP noTZasUTC, 
-  SEXP keepLeadingWhiteSpace
+  SEXP keepLeadingWhite
 ) {
   verbose = LOGICAL(verboseArg)[0];
   warningsAreErrors = LOGICAL(warnings2errorsArg)[0];
