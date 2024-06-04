@@ -18616,12 +18616,16 @@ test(2263.6, options=list(datatable.verbose=TRUE, datatable.optimize=Inf), names
 # tests for replacing an element of a list column with NULL instead of deleting the column, #5558
 DT = data.table(L = list("A"), i = 1L)
 DT$L = list(NULL)
+# Test replacement of a list column with list(NULL) using $ to access the column
 test(2264.1, DT, data.table(L = list(NULL), i = 1L))
 DT = data.table(L = list("A"), i = 1L)
+# Test same replacement but with LHS := RHS operator
 test(2264.2, DT[, L := list(NULL)], data.table(L = list(NULL), i = 1L))
 DT = data.table(L = list("A"), i = 1L)
 DT1 = data.table(L = list("A"), i = 1L)
+# Test that := operator and functional form `:=` have the same result
 test(2264.3, DT[, L := list(NULL)], DT1[, `:=`(L = list(NULL))])
+# Similar tests below but DT list column has more than one entry
 DT = data.table(L = list("B", "C"), i = 1L)
 DT$L = list(NULL)
 test(2264.4, DT, data.table(L = list(NULL, NULL), i = 1L))
