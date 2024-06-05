@@ -130,7 +130,6 @@ test.list <- atime::atime_test_list(
        dt <- data.table(
          id = seq_len(N),
          val = rnorm(N))
-       dt
      },
      expr = data.table:::`[.data.table`(dt, , .(vs = (sum(val))), by = .(id)),
      Before = "be2f72e6f5c90622fe72e1c315ca05769a9dc854", # Parent of the regression causing commit (https://github.com/Rdatatable/data.table/commit/e793f53466d99f86e70fc2611b708ae8c601a451) in the PR that introduced the issue (https://github.com/Rdatatable/data.table/pull/4491/commits)
