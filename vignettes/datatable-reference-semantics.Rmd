@@ -112,6 +112,8 @@ Note that the code above explains how `:=` can be used. They are not working exa
 
 * On the other hand, (b) is handy if you would like to jot some comments down for later.
 
+* In general, (a) and (b) should produce the same result, however there are minor differences in certain cases due to the implementation details of `:=`. Specifically, when using (a), simple assignments like `LHS := RHS` wrap `RHS` into a list automatically, making it easier for users to assign a single column.
+
 * The result is returned *invisibly*.
 
 * Since `:=` is available in `j`, we can combine it with `i` and `by` operations just like the aggregation operations we saw in the previous vignette.
