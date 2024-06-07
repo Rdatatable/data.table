@@ -112,7 +112,7 @@ Note that the code above explains how `:=` can be used. They are not working exa
 
 * On the other hand, (b) is handy if you would like to jot some comments down for later.
 
-* In general, (a) and (b) should produce the same result, however there are minor differences in certain cases due to the implementation details of `:=`. Specifically, when using (a), simple assignments like `col := val` wrap `val` into a list automatically. However, when we use the functional form, val is not wrapped into a list.
+* In general, (a) and (b) should produce the same result, however there are minor differences in certain cases due to the implementation details of `:=`. Specifically, when using (a), simple assignments like `col := val` wrap `val` into a list automatically. However, when we use the functional form, `val` is not wrapped into a list.
 
 * The result is returned *invisibly*.
 
