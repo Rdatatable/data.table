@@ -230,7 +230,7 @@ The `j` argument has great alternatives to manage joins with tables **sharing th
 Going back to the little supermarket, after updating the `ProductReceived` table with the `Products` table, it seems convenient apply the following changes:
 
 - Changing the columns names from `id` to `product_id` and from `i.id` to `received_id`.
-- Adding the `total_value_received`.
+- Adding the `total_value`.
 
 ```{r}
 Products[ProductReceived,
@@ -238,12 +238,10 @@ Products[ProductReceived,
          j = .(product_id = x.id,
                name = x.name,
                price,
-               unit,
-               type,
                received_id = i.id,
                date = i.date,
                count,
-               total_value_received  = price * count)]
+               total_value = price * count)]
 ```
 
 
@@ -440,15 +438,16 @@ DT[ ...
        ]
 ```
 
-So far, if after applying all that operations we want to join new columns without removing any row, we would need to stop the chaining process, save a temporal table and later apply the join operation.
+So far, if after applying all that operations **we want to join new columns without removing any row**, we would need to stop the chaining process, save a temporal table and later apply the join operation.
 
-To avoid that situation, we can use special symbols `.SD`, to apply a right join based on the changed table.
+To avoid that situation, we can use special symbols `.SD`, to apply a **right join based on the changed table**.
 
 ```{r}
 NewTax[Products, 
        on = c("unit", "type")
-     ][, ProductReceived[.SD,
-                         on = list(product_id = id)] ]
+][, ProductReceived[.SD,
+                    on = list(product_id = id)],
+  .SDcols = !c("unit", "type")]
 ```
 
 ### 3.7. Many to many join
@@ -553,27 +552,50 @@ merge(x = Products,
 
 ## 4. Non-equi join
 
+Use this method if you need to **remove some rows after applying a join** only if you won't need 
+and **don't need to keep the column to filter** from the `x` *(secundary data.table)*
+
   - Non-equi join (== ,>=, >, <=, <)
   
 ```{r}
-ProductSales[product_id == 2L]
+ProductSalesProd2 = ProductSales[product_id == 2L]
+setnames(ProductSalesProd2, "date", "sale_date")
+
+ProductSalesProd2
 ```
 
 ```{r}
-ProductReceived[product_id == 2L]
+ProductReceivedProd2 = ProductReceived[product_id == 2L]
+setnames(ProductReceivedProd2, "date", "received_date")
+
+ProductReceivedProd2
+```
+
+Primer ejemplo
+
+```{r}
+ProductReceivedProd2[ProductSalesProd2,
+                     on = "product_id",
+                     allow.cartesian = TRUE
+][received_date < sale_date]
 ```
 
 ```{r}
-ProductReceived[ProductSales[product_id == 2L],
-                on = "product_id"
-  ][date < i.date]
+ProductReceivedProd2[ProductSalesProd2,
+                     on = list(product_id, received_date < sale_date),
+                     nomatch = NULL]
 ```
 
+Expect error
+
 ```{r}
-ProductReceived[ProductSales[product_id == 2L],
-                on = list(product_id, date < date),
-                nomatch = NULL]
+try({
+  ProductReceivedProd2[ProductSalesProd2,
+                     on = list(product_id, sale_date < received_date),
+                     nomatch = NULL]
+})
 ```
+
 
 ## 5. Rolling join
 
