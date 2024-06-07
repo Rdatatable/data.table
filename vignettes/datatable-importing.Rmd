@@ -201,10 +201,11 @@ Some tiny parts of `data.table` C code were isolated from the R C API and can no
 
 ## How to convert your Depends dependency on data.table to Imports
 
-To convert a `Depends` dependency on `data.table` to an `Imports` dependency in an R package, follow these steps:
+To convert a `Depends` dependency on `data.table` to an `Imports` dependency in your package, follow these steps:
 
-### 1. Update the DESCRIPTION File
-In your package's `DESCRIPTION` file, change the entry from `Depends` to `Imports`. This involves moving `data.table` from the `Depends` field to the `Imports` field.
+### Step 0.  Ensure your package is passing R CMD check initially
+
+### Step 1. Update the DESCRIPTION file to put data.table in Imports, not Depends
 
 **Before:**
 ```r
@@ -222,7 +223,7 @@ Imports:
     data.table
 ```
 
-### 2. Modify the NAMESPACE File
+### Step 2. Modify the NAMESPACE File
 Ensure that any functions from `data.table` that you use in your package are imported. This can be done either by explicitly importing specific functions or by importing the entire package but specific imports are considered best practice.
 
 #### Importing Specific Functions
@@ -240,7 +241,7 @@ import(data.table)
 
 By including these import statements in your `NAMESPACE` file, you ensure that the necessary functions are available for your package to use.
 
-### 3. Update Your R code files
+### Step 3. Update Your R code files
 When you move a package from `Depends` to `Imports`, it will no longer be automatically attached when your package is loaded. This means you need to refer to `data.table` functions explicitly using the `data.table::` prefix, or import the functions in your scripts. However, if you import `data.table` in your Namespace, you won't need to make any changes in your R scripts.
 
 **Before (with `Depends`):**
