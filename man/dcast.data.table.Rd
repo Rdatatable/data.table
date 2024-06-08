@@ -17,7 +17,7 @@
 \arguments{
   \item{data}{ A \code{data.table}.}
   \item{formula}{A formula of the form LHS ~ RHS to cast, see Details.}
-  \item{fun.aggregate}{Should the data be aggregated before casting? If the formula doesn't identify a single observation for each cell, then aggregation defaults to \code{length} with a message.
+  \item{fun.aggregate}{Should the data be aggregated before casting? If the formula doesn't identify a single observation for each cell, then aggregation defaults to \code{length} with a warning of class 'dt_missing_fun_aggregate_warning'.
 
   To use multiple aggregation functions, pass a \code{list}; see Examples. }
   \item{sep}{Character vector of length 1, indicating the separating character in variable names generated during casting. Default is \code{_} for backwards compatibility. }
