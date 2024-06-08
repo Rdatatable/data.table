@@ -96,7 +96,7 @@
 
 14. `setNumericRounding()` now invisibly returns the old rounding value instead of `NULL`, which is now consistent with similar behavior by `setwd()`, `options()`, etc. Thanks @MichaelChirico for the report and @joshhwuu for the fix.
 
-15. `.`, `J`, `measure`, and `patterns` are now exported for use within `[` and `melt()` functions. Previously, only `.N`, `.I`, `.GRP`, `.GRPI`, `.SD`, and `:=` were exported. This change helps package developers avoid defining these constructs inside functions, thereby preventing CRAN NOTES and ensuring consistency in data.table usage. See [#5604](https://github.com/Rdatatable/data.table/issues/5604) and [#5277](https://github.com/Rdatatable/data.table/issues/5277). Thanks to @tdhock for the suggestions and @Nj221102 for implementing this improvement.
+15. `.`, `J`, `measure`, and `patterns` are now exported for use within `[` and `melt()` functions, for consistency with`.N`, `.I`, `.GRP`, `.GRPI`, `.SD`, and `:=` which were the only previous NSE exports. This change helps package developers avoid defining these constructs inside functions, thereby preventing CRAN NOTES and ensuring consistency in data.table usage. See [#5604](https://github.com/Rdatatable/data.table/issues/5604) and [#5277](https://github.com/Rdatatable/data.table/issues/5277). Thanks to @tdhock for the suggestions and @Nj221102 for implementing this improvement.
 
 # data.table [v1.15.0](https://github.com/Rdatatable/data.table/milestone/29)  (30 Jan 2024)
 
