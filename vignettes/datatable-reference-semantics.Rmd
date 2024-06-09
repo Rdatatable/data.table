@@ -125,18 +125,18 @@ Although in most cases they are the same, there is a minor difference between th
 DT = data.table(a = list('A', 'B', 'C'))
 l = list(1L:3L)
 
-DT[, new := l] # Standard form, new column is a list of integers
+DT[, new_int := l] # Standard form, new column is integer
 
-DT[, `:=`(new = l)] # Functional form, new column is a list of lists of integers
+DT[, `:=`(new_list = l)] # Functional form, new column is a list of integer vectors
 
-DT[, new := list(new = l)] # Same as above, we can see that `:=` is an alias to list in functional form
+DT[, new_list := list(l)] # Same as above, we can see that `:=` is an alias to list in functional form
 
 # This can be avoided by using a vector instead of a list:
 v = 1L:3L
 
-DT[, new := v] # Standard form, new column is a list of integers
+DT[, new_int := v] # Standard form, new column is integer
 
-DT[, `:=`(new = v)] # Functional form, new column is a list of integers
+DT[, `:=`(new_int = v)] # Functional form, new column is integer
 ```
 
 In the two forms of `:=` shown above, note that we don't assign the result back to a variable. Because we don't need to. The input *data.table* is modified by reference. Let's go through examples to understand what we mean by this.
