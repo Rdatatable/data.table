@@ -127,7 +127,7 @@ l = list(1L:3L)
 
 DT[, new_int := l] # Standard form, new column is integer
 
-DT[, `:=`(new_list = l)] # Functional form, new column is a list of integer vectors 
+DT[, `:=`(new_list = l)] # Functional form, new column is a list of integer vectors
 
 DT[, new_list := list(l)] # Same as above, we can see that `:=` is an alias to list in functional form
 
