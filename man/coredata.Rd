@@ -20,7 +20,7 @@
 }
 \examples{
 # Create a data.table
-dt <- data.table(x = 1:5, y = letters[1:5], key = "x")
+dt = data.table(x = 1:5, y = letters[1:5], key = "x")
 
 # Extract the key columns as a data.table
 keys = keydata(dt)
