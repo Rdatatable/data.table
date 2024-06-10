@@ -25,7 +25,7 @@ dt = data.table(x = 1:5, y = letters[1:5], key = "x")
 # Extract the key columns as a data.table
 keys = keydata(dt)
 
-# Exctract the value columns as a data.table
+# Extract the value columns as a data.table
 values = valuedata(dt)
 
 is.data.table(keys) # TRUE
