@@ -3340,3 +3340,12 @@ is_constantish = function(q, check_singleton=FALSE) {
   names(on) = xCols
   list(on = on, ops = idx_op)
 }
+
+# FR 981
+getDT(x, kv) = function(x, kv) {
+  if (!is.data.frame(x)) stopf("x is not a data.frame or a data.table")  
+  if (is.null(kv) && (!is.character(kv) || length(kv) != 1L)) stopf("Argument 'kv' must be a character vector of length 1")
+  if (kv == 'key') return x[, .SD, .SDcol = -key(x)]
+  else if (kv == 'value') return x[, .SD, .SDcol = key(x)]
+  else stopf("Argument 'kv' must be either 'key' or 'value'")
+}

@@ -34,6 +34,7 @@ export(rowid)
 export(rowidv)
 export(uniqueN)
 export(setDTthreads, getDTthreads)
+export(getDT)
 # set operators
 export(fintersect)
 export(fsetdiff)
