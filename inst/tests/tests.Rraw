@@ -18613,5 +18613,12 @@ test(2263.4, options=list(datatable.verbose=TRUE, datatable.optimize=Inf), dt[, 
 test(2263.5, options=list(datatable.verbose=TRUE, datatable.optimize=Inf), dt[, .N, .(b,c)], data.table(b=dt$b, c=dt$c, N=1L), output="GForce optimized j to")
 test(2263.6, options=list(datatable.verbose=TRUE, datatable.optimize=Inf), names(attributes(dt[, .N, b]$b)), c("class", "att"), output="GForce optimized j to")
 
-DT = data.table(a = )
-test(2264.1, )
+# FR 981, returning a data.table without keys or just keys
+dt = data.table(k = letters, c1 = 1:26, c2 = 5:30, key = "k")
+test(2264.1, valuedata(dt), data.table(c1=1:26,c2=5:30))
+test(2264.2, keydata(dt), data.table(k=letters, key="k"))
+test(2264.3, valuedata(1:3), error="x is not a data.table")
+test(2264.4, keydata(1:3), error="x is not a data.table")
+dt = data.table(k = letters, c1 = 1:26, c2 = 5:30)
+test(2264.5, keydata(dt), error="x has no keys defined")
+test(2264.6, valuedata(dt), dt)

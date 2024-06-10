@@ -3341,11 +3341,16 @@ is_constantish = function(q, check_singleton=FALSE) {
   list(on = on, ops = idx_op)
 }
 
-# FR 981
-getDT(x, kv) = function(x, kv) {
-  if (!is.data.frame(x)) stopf("x is not a data.frame or a data.table")  
-  if (is.null(kv) && (!is.character(kv) || length(kv) != 1L)) stopf("Argument 'kv' must be a character vector of length 1")
-  if (kv == 'key') return x[, .SD, .SDcol = -key(x)]
-  else if (kv == 'value') return x[, .SD, .SDcol = key(x)]
-  else stopf("Argument 'kv' must be either 'key' or 'value'")
+# FR 981, return a data.table of just key columns
+keydata = function(x) {
+  if (!is.data.table(x)) stopf("x is not a data.table")
+  if (!haskey(x)) stopf("x has no keys defined")
+  x[, .SD, .SDcols = key(x)]
+}
+
+# FR 981, return a data.table without key columns
+valuedata = function(x) {
+  if (!is.data.table(x)) stopf("x is not a data.table")
+  if (!haskey(x)) return(x)
+  x[, .SD, .SDcols = -key(x)]
 }
