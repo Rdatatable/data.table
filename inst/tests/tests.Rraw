@@ -18617,27 +18617,54 @@ test(2263.6, options=list(datatable.verbose=TRUE, datatable.optimize=Inf), names
 DT = data.table(L = list("A"), i = 1L)
 DT$L = list(NULL)
 # Test replacement of a list column with list(NULL) using $ to access the column
-test(2264.1, DT, data.table(L = list(NULL), i = 1L))
+test(2264.01, DT, data.table(L = list(NULL), i = 1L))
 DT = data.table(L = list("A"), i = 1L)
 # Test same replacement but with LHS := RHS operator
-test(2264.2, DT[, L := list(NULL)], data.table(L = list(NULL), i = 1L))
+test(2264.02, DT[, L := list(NULL)], data.table(L = list(NULL), i = 1L))
 DT = data.table(L = list("A"), i = 1L)
 DT1 = data.table(L = list("A"), i = 1L)
 # Test that := operator and functional form `:=` have the same result
-test(2264.3, DT[, L := list(NULL)], DT1[, `:=`(L = list(NULL))])
+test(2264.03, DT[, L := list(NULL)], DT1[, `:=`(L = list(NULL))])
 DT = data.table(L = list("A"), i = 1L)
 DT1 = data.table(L = list("A"), i = 1L)
 # Test that functional operator and let have the same result
-test(2264.4, DT[, `:=`(L = list(NULL))], DT1[, let(L = list(NULL))])
+test(2264.04, DT[, `:=`(L = list(NULL))], DT1[, let(L = list(NULL))])
 # Similar tests below but DT list column has more than one entry
 DT = data.table(L = list("B", "C"), i = 1L)
 DT$L = list(NULL)
-test(2264.5, DT, data.table(L = list(NULL, NULL), i = 1L))
+test(2264.05, DT, data.table(L = list(NULL, NULL), i = 1L))
 DT = data.table(L = list("B", "C"), i = 1L)
-test(2264.6, DT[, L := list(NULL)], data.table(L = list(NULL, NULL), i = 1L))
-DT = data.table(L = list("B", "C"), i = 1L)
-DT1 = data.table(L = list("B", "C"), i = 1L)
-test(2264.7, DT[, L := list(NULL)], DT1[, `:=`(L = list(NULL))])
+test(2264.06, DT[, L := list(NULL)], data.table(L = list(NULL, NULL), i = 1L))
 DT = data.table(L = list("B", "C"), i = 1L)
 DT1 = data.table(L = list("B", "C"), i = 1L)
-test(2264.8, DT[, `:=`(L = list(NULL))], DT1[, let(L = list(NULL))])
+test(2264.07, DT[, L := list(NULL)], DT1[, `:=`(L = list(NULL))])
+DT = data.table(L = list("B", "C"), i = 1L)
+DT1 = data.table(L = list("B", "C"), i = 1L)
+test(2264.08, DT[, `:=`(L = list(NULL))], DT1[, let(L = list(NULL))])
+# Tests for add/remove columns
+DT = data.table(L = list("B"), i = 1L)
+# warns, does not add
+DT$new = list(NULL)
+test(2264.09, DT, data.table(L = list("B"), i = 1L))
+test(2264.10, copy(DT)[, D := list(NULL)], data.table(L = list("B"), i = 1L), warning="Tried to assign NULL to column 'D', but this column does not exist to remove")
+# works, adds in functional form
+test(2264.11, copy(DT)[, `:=`(D = list(NULL))], data.table(L = list("B"), i = 1L, D = list(NULL)))
+# remove list column, must use NULL instead of list(NULL)
+test(2264.12, copy(DT)[, L := NULL], data.table(i = 1L))
+# remove non-list column, same as old
+test(2264.13, copy(DT)[, i := NULL], data.table(L = list("B")))
+# Same tests, with multiple rows
+DT = data.table(L = list("B", "C"), i = 1L)
+test(2264.14, copy(DT)[, D := list(NULL)], data.table(L = list("B", "C"), i = 1L), warning="Tried to assign NULL to column 'D', but this column does not exist to remove")
+test(2264.15, copy(DT)[, `:=`(D = list(NULL))], data.table(L = list("B", "C"), i = 1L, D = list(NULL)))
+test(2264.16, copy(DT)[, L := NULL], data.table(i = c(1L, 1L)))
+test(2264.17, copy(DT)[, i := NULL], data.table(L = list("B", "C")))
+# test for deleting a list column and adding a new empty list column in the same query, same as before
+test(2264.18, copy(DT)[, c("L", "D") := list(NULL, list(NULL))], data.table(i = c(1L, 1L), D = list(NULL)))
+# test for deleting everything
+test(2264.19, copy(DT)[, c("L", "i") := NULL], data.table())
+# test for replacement of multiple empty list columns
+DT = data.table(L1 = list("B", "C"), L2 = list("C", "D"), i = 1L)
+test(2264.20, copy(DT)[, c("L1", "L2") := list(list(NULL), list(NULL))], data.table(L1 = list(NULL), L2 = list(NULL), i = c(1L, 1L)))
+# test for removal of multiple empty list columns
+test(2264.21, copy(DT)[, c("L1", "L2") := NULL], data.table(i = c(1L, 1L)))
