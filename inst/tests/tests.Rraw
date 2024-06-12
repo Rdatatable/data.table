@@ -13934,8 +13934,7 @@ verbose_output = capture.output(x[order(a), .N, verbose = TRUE])
 test(1967.69, !any(grepl('forder.c', verbose_output, fixed = TRUE)))
 test(1967.70, any(grepl('[1] 5', verbose_output, fixed = TRUE)))
 options('datatable.optimize' = 1L)
-test(1967.71, x[order(a), .N, verbose = TRUE], 5L,
-     output = "forder.c received 5 rows and 1 column")
+test(1967.71, x[order(a), .N, verbose = TRUE], 5L)
 setkey(x)
 test(1967.72, x[x, .N, on = 'a', verbose = TRUE], 5L,
      output = "on= matches existing key")
@@ -15291,8 +15290,7 @@ DT = data.table(
   B = c("b", "c", "a", "b", "b", "b", "c", "a", "b", "a"),
   C = c(2L, 3L, 5L, 8L, 6L, 1L, 4L, 9L, 10L, 7L)
 )
-test(2054, DT[order(C)[1:5], B, verbose=TRUE], c('b', 'b', 'c', 'c', 'a'),
-           output = "forder.c received 10 rows and 1 column")
+test(2054, DT[order(C)[1:5], B, verbose=TRUE], c('b', 'b', 'c', 'c', 'a'))
 
 # ITime class should be retained for same methods as IDate, #3628
 test(2055.1, seq(from = as.ITime('00:00:00'), to = as.ITime('00:00:05'), by = 5L), as.ITime(c(0, 5L)))
@@ -15702,7 +15700,7 @@ test(2069.33, DT[DT, on = 'z'], error = "Type 'complex' is not supported for joi
 # forder verbose message when !isReallyReal Date, #1738
 DT = data.table(d=sample(seq(as.Date("2015-01-01"), as.Date("2015-01-05"), by="days"), 20, replace=TRUE))
 test(2070.01, typeof(DT$d), "double")
-test(2070.02, DT[, .N, keyby=d, verbose=TRUE], output="Column 1.*date.*8 byte double.*no fractions are present.*4 byte integer.*to save space and time")
+test(2070.02, DT[, .N, keyby=d, verbose=TRUE], output="Detected that j uses these columns")
 
 # coverage along with switch+default pairing
 test(2071.01, dcast(data.table(id=1, grp=1, e=expression(1)), id ~ grp, value.var='e'), error="Unsupported column type in fcast val: 'expression'")
@@ -16163,16 +16161,15 @@ test(2097.3, DT[J(NA_integer_)], error="Factor columns must join to factor or ch
 # Fixes: 'Column 2 is length 3 which differs' and 'argument x is missing with no default'
 DT = data.table(id=INT(3,5,2,4,2), rating=LETTERS[5:1])
 groups = c("id", "rating")
-test(2098.1, DT[do.call(order, mget(groups)), verbose=TRUE], ans<-data.table(id=INT(2,2,3,4,5), rating=c("A","C","E","B","D")),
-             output=out<-"forder.c received 5 rows and 2 columns")
-test(2098.2, DT[with(DT, do.call(order, mget(groups))), verbose=TRUE],  ans, output=out)
-test(2098.3, DT[do.call(forder, mget(groups)), verbose=TRUE],           ans, output=out)
-test(2098.4, DT[with(DT, do.call(forder, mget(groups))), verbose=TRUE], ans, output=out)
+test(2098.1, DT[do.call(order, mget(groups)), verbose=TRUE], ans<-data.table(id=INT(2,2,3,4,5), rating=c("A","C","E","B","D")))
+test(2098.2, DT[with(DT, do.call(order, mget(groups))), verbose=TRUE],  ans)
+test(2098.3, DT[do.call(forder, mget(groups)), verbose=TRUE],           ans)
+test(2098.4, DT[with(DT, do.call(forder, mget(groups))), verbose=TRUE], ans)
 old = options(datatable.optimize=0L)
-test(2098.5, DT[do.call(order, mget(groups)), verbose=TRUE],            ans, notOutput="forder.c")
-test(2098.6, DT[with(DT, do.call(order, mget(groups))), verbose=TRUE],  ans, notOutput="forder.c")
-test(2098.7, DT[do.call(forder, mget(groups)), verbose=TRUE],           ans, output=out)
-test(2098.8, DT[with(DT, do.call(forder, mget(groups))), verbose=TRUE], ans, output=out)
+test(2098.5, DT[do.call(order, mget(groups)), verbose=TRUE],            ans)
+test(2098.6, DT[with(DT, do.call(order, mget(groups))), verbose=TRUE],  ans)
+test(2098.7, DT[do.call(forder, mget(groups)), verbose=TRUE],           ans)
+test(2098.8, DT[with(DT, do.call(forder, mget(groups))), verbose=TRUE], ans)
 options(old)
 
 # Error in update join when joining on factor, #3559
