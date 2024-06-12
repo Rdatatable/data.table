@@ -407,7 +407,7 @@ uint64_t dtwiddle(double x) //const void *p, int i)
 
 void radix_r(const int from, const int to, const int radix);
 
-SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg)
+SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg, SEXP verbose)
 // sortGroups TRUE from setkey and regular forder, FALSE from by= for efficiency so strings don't have to be sorted and can be left in appearance order
 // when sortGroups is TRUE, ascArg contains +1/-1 for ascending/descending of each by column; when FALSE ascArg is ignored
 {
@@ -418,9 +418,12 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
   memset(stat,   0, 257*sizeof(uint64_t));
   TBEG()
 #endif
+  
+  if ((!isLogical(verbose) && !isInteger(verbose)) || LENGTH(verbose)!=1 || INTEGER(verbose)[0]==NA_INTEGER)
+    error(_("verbose option must be length 1 non-NA logical or integer"));
 
   int n_protect = 0;
-  const bool verbose = GetVerbose();
+  const int Verbose = INTEGER(verbose)[0];
 
   if (!isNewList(DT)) {
     if (!isVectorAtomic(DT))
@@ -429,7 +432,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
       STOP(_("Internal error: input is an atomic vector (not a list of columns) but by= is not NULL"));  // # nocov; caught at R level, test 1962.043
     if (!isInteger(ascArg) || LENGTH(ascArg)!=1)
       STOP(_("Input is an atomic vector (not a list of columns) but order= is not a length 1 integer"));
-    if (verbose)
+    if (Verbose)
       Rprintf(_("forder.c received a vector type '%s' length %d\n"), type2char(TYPEOF(DT)), length(DT));
     SEXP tt = PROTECT(allocVector(VECSXP, 1)); n_protect++;
     SET_VECTOR_ELT(tt, 0, DT);
@@ -437,7 +440,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
     by = PROTECT(allocVector(INTSXP, 1)); n_protect++;
     INTEGER(by)[0] = 1;
   } else {
-    if (verbose)
+    if (Verbose)
       Rprintf(_("forder.c received %d rows and %d columns\n"), length(VECTOR_ELT(DT,0)), length(DT));
   }
   if (!length(DT))
@@ -534,7 +537,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
       if (INHERITS(x, char_integer64)) {
         range_i64((int64_t *)REAL(x), nrow, &min, &max, &na_count);
       } else {
-        if (verbose && INHERITS(x, char_Date) && INTEGER(isReallyReal(x))[0]==0) {
+        if (Verbose && INHERITS(x, char_Date) && INTEGER(isReallyReal(x))[0]==0) {
           Rprintf(_("\n*** Column %d passed to forder is a date stored as an 8 byte double but no fractions are present. Please consider a 4 byte integer date such as IDate to save space and time.\n"), col+1);
           // Note the (slightly expensive) isReallyReal will only run when verbose is true. Prefix '***' just to make it stand out in verbose output
           // In future this could be upgraded to option warning. But I figured that's what we use verbose to do (to trace problems and look for efficiencies).

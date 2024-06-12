@@ -161,7 +161,7 @@ is.sorted = function(x, by=NULL) {
 }
 
 ORDERING_TYPES = c('logical', 'integer', 'double', 'complex', 'character')
-forderv = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L, na.last=FALSE)
+forderv = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L, na.last=FALSE, verbose=0L)
 {
   if (is.atomic(x) || is.null(x)) {  # including forderv(NULL) which returns error consistent with base::order(NULL),
     if (!missing(by) && !is.null(by)) stopf("x is a single vector, non-NULL 'by' doesn't make sense")
@@ -172,10 +172,10 @@ forderv = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L, na.las
     if (length(order) == 1L) order = rep(order, length(by))
   }
   order = as.integer(order) # length and contents of order being +1/-1 is checked at C level
-  .Call(Cforder, x, by, retGrp, sort, order, na.last)  # returns integer() if already sorted, regardless of sort=TRUE|FALSE
+  .Call(Cforder, x, by, retGrp, sort, order, na.last, verbose)  # returns integer() if already sorted, regardless of sort=TRUE|FALSE
 }
 
-forder = function(..., na.last=TRUE, decreasing=FALSE)
+forder = function(..., na.last=TRUE, decreasing=FALSE, verbose=0L)
 {
   sub = substitute(list(...))
   tt = vapply_1b(sub, function(x) is.null(x) || (is.symbol(x) && !nzchar(x)))
@@ -209,7 +209,7 @@ forder = function(..., na.last=TRUE, decreasing=FALSE)
     data = eval(sub, parent.frame(), parent.frame())
   }
   stopifnot(isTRUEorFALSE(decreasing))
-  o = forderv(data, seq_along(data), sort=TRUE, retGrp=FALSE, order= if (decreasing) -asc else asc, na.last)
+  o = forderv(data, seq_along(data), sort=TRUE, retGrp=FALSE, order= if (decreasing) -asc else asc, na.last, verbose)
   if (!length(o) && length(data)>=1L) o = seq_along(data[[1L]]) else o
   o
 }
