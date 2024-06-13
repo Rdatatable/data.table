@@ -100,6 +100,10 @@
 
 16. `.`, `J`, `measure`, and `patterns` are now exported for use within `[` and `melt()` functions, for consistency with`.N`, `.I`, `.GRP`, `.GRPI`, `.SD`, and `:=` which were the only previous NSE exports. This change helps package developers avoid defining these constructs inside functions, thereby preventing CRAN NOTES and ensuring consistency in data.table usage. See [#5604](https://github.com/Rdatatable/data.table/issues/5604) and [#5277](https://github.com/Rdatatable/data.table/issues/5277). Thanks to @tdhock for the suggestions and @Nj221102 for implementing this improvement.
 
+## TRANSLATIONS
+
+1. Fix a typo in a Mandarin translation of an error message that was hiding the actual error message, [#6172](https://github.com/Rdatatable/data.table/issues/6172). Thanks @trafficfan for the report and @MichaelChirico for the fix.
+
 # data.table [v1.15.0](https://github.com/Rdatatable/data.table/milestone/29)  (30 Jan 2024)
 
 ## BREAKING CHANGE
