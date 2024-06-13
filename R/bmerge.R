@@ -137,7 +137,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
       }
       if (is.null(xo)) {
         if (verbose) {last.started.at=proc.time(); flush.console()}
-        xo = forderv(x, by = xcols)
+        xo = forderv(x, by = xcols, verbose=verbose-1L)
         if (verbose) {catf("Calculated ad hoc index in %s\n", timetaken(last.started.at)); flush.console()}
         # TODO: use setindex() instead, so it's cached for future reuse
       }
@@ -153,7 +153,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     if (roll != FALSE) stopf("roll is not implemented for non-equi joins yet.")
     if (verbose) {last.started.at=proc.time();catf("  forder took ... ");flush.console()}
     # TODO: could check/reuse secondary indices, but we need 'starts' attribute as well!
-    xo = forderv(x, xcols, retGrp=TRUE)
+    xo = forderv(x, xcols, retGrp=TRUE, verbose=verbose-1L)
     if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
     xg = attr(xo, 'starts', exact=TRUE)
     resetcols = head(xcols, non_equi-1L)
@@ -161,7 +161,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
       # TODO: can we get around having to reorder twice here?
       # or at least reuse previous order?
       if (verbose) {last.started.at=proc.time();catf("  Generating group lengths ... ");flush.console()}
-      resetlen = attr(forderv(x, resetcols, retGrp=TRUE), 'starts', exact=TRUE)
+      resetlen = attr(forderv(x, resetcols, retGrp=TRUE, verbose=verbose-1L), 'starts', exact=TRUE)
       resetlen = .Call(Cuniqlengths, resetlen, nrow(x))
       if (verbose) {catf("done in %s\n",timetaken(last.started.at)); flush.console()}
     } else resetlen = integer(0L)
@@ -173,7 +173,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
       if ("_nqgrp_" %in% names(x)) stopf("Column name '_nqgrp_' is reserved for non-equi joins.")
       if (verbose) {last.started.at=proc.time();catf("  Recomputing forder with non-equi ids ... ");flush.console()}
       set(nqx<-shallow(x), j="_nqgrp_", value=nqgrp)
-      xo = forderv(nqx, c(ncol(nqx), xcols))
+      xo = forderv(nqx, c(ncol(nqx), xcols), verbose=verbose-1L)
       if (verbose) {catf("done in %s\n",timetaken(last.started.at)); flush.console()}
     } else nqgrp = integer(0L)
     if (verbose) catf("  Found %d non-equi group(s) ...\n", nqmaxgrp)

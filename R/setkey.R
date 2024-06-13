@@ -231,7 +231,7 @@ fsort = function(x, decreasing=FALSE, na.last=FALSE, internal=FALSE, verbose=FAL
       if (containsNAs) warningf("New parallel sort has not been implemented for vectors containing NA values so far. Using one thread.")
     }
     orderArg = if (decreasing) -1 else 1
-    o = forderv(x, order=orderArg, na.last=na.last)
+    o = forderv(x, order=orderArg, na.last=na.last, verbose-1L)
     return( if (length(o)) x[o] else x )
   }
 }
