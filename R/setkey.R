@@ -161,7 +161,7 @@ is.sorted = function(x, by=NULL) {
 }
 
 ORDERING_TYPES = c('logical', 'integer', 'double', 'complex', 'character')
-forderv = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L, na.last=FALSE, verbose=0L)
+forderv = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L, na.last=FALSE, verbose=FALSE)
 {
   if (is.atomic(x) || is.null(x)) {  # including forderv(NULL) which returns error consistent with base::order(NULL),
     if (!missing(by) && !is.null(by)) stopf("x is a single vector, non-NULL 'by' doesn't make sense")
@@ -175,7 +175,7 @@ forderv = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L, na.las
   .Call(Cforder, x, by, retGrp, sort, order, na.last, verbose)  # returns integer() if already sorted, regardless of sort=TRUE|FALSE
 }
 
-forder = function(..., na.last=TRUE, decreasing=FALSE, verbose=0L)
+forder = function(..., na.last=TRUE, decreasing=FALSE, verbose=FALSE)
 {
   sub = substitute(list(...))
   tt = vapply_1b(sub, function(x) is.null(x) || (is.symbol(x) && !nzchar(x)))

@@ -423,7 +423,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
     error(_("verbose option must be length 1 non-NA logical or integer"));
 
   int n_protect = 0;
-  const int Verbose = INTEGER(verbose)[0];
+  const int Verbose = GetVerbose()>=2 ? GetVerbose()-1L : INTEGER(verbose)[0] ;
 
   if (!isNewList(DT)) {
     if (!isVectorAtomic(DT))

@@ -288,10 +288,11 @@ int checkOverAlloc(SEXP x)
 }
 
 SEXP alloccolwrapper(SEXP dt, SEXP overAllocArg, SEXP verbose) {
-  if (!IS_TRUE_OR_FALSE(verbose))
-    error(_("%s must be TRUE or FALSE"), "verbose");
+  if ((!isLogical(verbose) && !isInteger(verbose)) || LENGTH(verbose)!=1 || INTEGER(verbose)[0]==NA_INTEGER)
+    error(_("verbose option must be length 1 non-NA logical or integer"));
+  bool bverbose = INTEGER(verbose)[0];
   int overAlloc = checkOverAlloc(overAllocArg);
-  SEXP ans = PROTECT(alloccol(dt, length(dt)+overAlloc, LOGICAL(verbose)[0]));
+  SEXP ans = PROTECT(alloccol(dt, length(dt)+overAlloc, bverbose));
 
   for(R_len_t i = 0; i < LENGTH(ans); i++) {
     // clear names; also excluded by copyMostAttrib(). Primarily for data.table and as.data.table, but added here centrally (see #103).
