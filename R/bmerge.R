@@ -173,7 +173,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
       if ("_nqgrp_" %in% names(x)) stopf("Column name '_nqgrp_' is reserved for non-equi joins.")
       if (verbose) {last.started.at=proc.time();catf("  Recomputing forder with non-equi ids ... ");flush.console()}
       set(nqx<-shallow(x), j="_nqgrp_", value=nqgrp)
-      xo = forderv(nqx, c(ncol(nqx), xcols), verbose=verbose-1L)
+      xo = forderv(nqx, c(ncol(nqx), xcols))
       if (verbose) {catf("done in %s\n",timetaken(last.started.at)); flush.console()}
     } else nqgrp = integer(0L)
     if (verbose) catf("  Found %d non-equi group(s) ...\n", nqmaxgrp)
