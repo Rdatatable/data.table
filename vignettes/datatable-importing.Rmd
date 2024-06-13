@@ -223,30 +223,63 @@ Imports:
     data.table
 ```
 
-### Step 2. Modify the NAMESPACE File
-Ensure that any functions from `data.table` that you use in your package are imported. This can be done either by explicitly importing specific functions or by importing the entire package but specific imports are considered best practice.
+### Step 2.1: Run `R CMD check`
 
-#### Importing Specific Functions
-If you use specific functions like `data.table()`, `setDT()`, or `merge()`, you can import them individually in the `NAMESPACE` file:
+Run `R CMD check` to identify any missing imports or symbols. This step helps:
 
+- Automatically detect any functions or symbols from `data.table` that are not explicitly imported.
+- Flag missing special symbols like `.N`, `.SD`, and `:=`.
+- Provide immediate feedback on what needs to be added to the NAMESPACE file.
+
+### Step 2.2: Modify the NAMESPACE File
+
+Based on the `R CMD check` results, ensure all used functions, special symbols, S3 generics, and S4 classes from `data.table` are imported.
+
+#### Importing Specific Functions and Symbols
+
+If you use specific functions like `data.table()`, `setDT()`, `merge()`, or special symbols like `.N`, `.SD`, `:=`, import them individually:
 ```r
-importFrom(data.table, data.table, setDT, merge)
+importFrom(data.table, data.table, setDT, merge, .N, .SD, :=)
 ```
 
-#### Bulk Import
-Alternatively, you can import all functions from `data.table` at once, though this is generally not recommended as best practice:
+#### Importing S3 Generics
+
+If your package adds methods to any S3 generics owned by `data.table`, you need to import these generics. Check the `data.table` NAMESPACE file for the latest set of S3 generics:
+```r
+importFrom(data.table, as.data.table, groupingsets, as.IDate)
+```
+
+#### Importing S4 Classes
+
+If your package uses S4 classes from `data.table`, you need to import these classes. This is less common but necessary for advanced use cases:
+```r
+importClassesFrom(data.table, data.table, IDate, ITime)
+```
+
+#### Blanket Import
+
+Alternatively, you can import all functions from `data.table` at once, though this is generally not recommended:
+
 ```r
 import(data.table)
 ```
 
-By including these import statements in your `NAMESPACE` file, you ensure that the necessary functions are available for your package to use.
+**Justification for Avoiding Blanket Imports:**
+1. **Documentation**: The NAMESPACE file can serve as good documentation of how you depend on certain packages.
+2. **Avoiding Conflicts**: Blanket imports leave you open to subtle breakage. For example, if you import(pkgA) and import(pkgB), but later pkgB exports a function also exported by pkgA, this will break your package due to conflicts in your namespace, which is disallowed by `R CMD check` and CRAN.
 
-### Step 3. Update Your R code files
-When you move a package from `Depends` to `Imports`, it will no longer be automatically attached when your package is loaded. This means you need to refer to `data.table` functions explicitly using the `data.table::` prefix, or import the functions in your scripts. However, if you import `data.table` in your Namespace, you won't need to make any changes in your R scripts.
+### Step 3: Update Your R code Files outside package's R/ directory
+
+When you move a package from `Depends` to `Imports`, it will no longer be automatically attached when your package is loaded. However, if you correctly import `data.table` in your NAMESPACE, you should not need to make changes to your package's R code files. This is different from user scripts or vignettes, which may need adjustments.
+
+#### For User Scripts and Vignettes
+
+If you are working with user scripts, vignettes, or other R files outside the package's R/ directory (e.g., tests and demos), you might need to explicitly load `data.table`.
 
 **Before (with `Depends`):**
 ```r
 # data.table functions are directly available
+library(MyPkgDependsDataTable)
 dt <- data.table(x = 1:10, y = letters[1:10])
 setDT(dt)
 result <- merge(dt, other_dt, by = "x")
@@ -254,30 +287,23 @@ result <- merge(dt, other_dt, by = "x")
 
 **After (with `Imports`):**
 ```r
-# Use the data.table:: prefix or import functions explicitly
-dt <- data.table::data.table(x = 1:10, y = letters[1:10])
-data.table::setDT(dt)
-result <- data.table::merge(dt, other_dt, by = "x")
-```
-
-Alternatively, you can import specific functions at the top of your R scripts:
-
-```r
-# Import specific functions at the beginning of the script
-data.table::data.table
-data.table::setDT
-data.table::merge
-
-# Now you can use them without the data.table:: prefix
+# Explicitly load data.table in user scripts or vignettes
+library(data.table)
+library(MyPkgDependsDataTable)
 dt <- data.table(x = 1:10, y = letters[1:10])
 setDT(dt)
 result <- merge(dt, other_dt, by = "x")
 ```
 
-**Important**: To avoid the need for changes in your R scripts, ensure you import `data.table` in your Namespace. This allows the functions to be available as they were with `Depends`.
+### Additional Considerations
+
+- **Special Symbols**: Ensure `data.table` symbols like `.N`, `.SD`, and `:=` are imported.
+- **Function Usage**: Use tools like `codetools` or `devtools` to analyze function usage and ensure all necessary imports are covered.
+- **S3 and S4 Methods**: Ensure all necessary generics and classes are imported if your package extends `data.table` functionality with custom methods.
 
 ### Benefits of Using `Imports`
 - **Namespace Management**: Only the functions your package explicitly imports are available, reducing the risk of function name clashes.
 - **Cleaner Package Loading**: Your package's dependencies are not attached to the search path, making the loading process cleaner and potentially faster.
+- **Easier Maintenance**: It simplifies maintenance tasks as upstream dependencies' APIs evolve. Depending too much on `Depends` can lead to conflicts and compatibility issues over time.
 
 By following these steps, you can convert your package's dependency on `data.table` from `Depends` to `Imports`, leading to better practice in R package development.
