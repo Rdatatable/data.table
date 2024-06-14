@@ -13775,9 +13775,9 @@ if (.Platform$OS.type=="windows") {
   test(1966.4, list.files(path = pth, pattern = "\\.csv$"), f)
   unlink(c(fp, file.path(pth, "\u00c3\u00b6.csv")))
   p = file.path(pth, "\u00fc"); dir.create(p); f = tempfile(tmpdir = p)
-  test(1966.5, fwrite(DT, enc2native(f)), NULL)
+  test(1966.5, filepath <- fwrite(DT, enc2native(f)), filepath)
   unlink(f)
-  test(1966.6, fwrite(DT, enc2utf8(f)), NULL)
+  test(1966.6, filepath <- fwrite(DT, enc2utf8(f)), filepath)
   unlink(p, recursive = TRUE)
 }
 
