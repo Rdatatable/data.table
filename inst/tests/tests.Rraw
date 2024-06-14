@@ -9977,7 +9977,7 @@ test(1658.31, fwrite(ok_dt, qmethod=c("double", "double")), error="length(qmetho
 test(1658.32, fwrite(ok_dt, col.names="foobar"), error="isTRUEorFALSE(col.names)")
 
 # null data table (no columns)
-test(1658.33, fwrite(data.table(NULL)), NULL, warning="Nothing to write")
+test(1658.33, fwrite(data.table(NULL)), "", warning="Nothing to write")
 
 test(1658.34, fwrite(data.table(id=c("A","B","C"), v=c(1.1,0.0,9.9))), output="id,v\nA,1.1\nB,0\nC,9.9")
 
@@ -10059,7 +10059,7 @@ test(1658.56, fwrite(data.table(exp(1) - pi*1i)), output='2.718[0-9]*-3.141[0-9]
 DT = data.table(a=1:3, b=list(1:4, c(3.14, 100e10), c(3i,4i,5i)))
 test(1658.57, fwrite(DT), output='0+3i|0+4i|0+5i')
 DT[ , b := c(1i, -1-1i, NA_complex_)]
-test(1658.58, fwrite(DT), output='a,b\n1,0\\+1i\n2,-1-1i\n3,$')
+test(1658.58, fwrite(DT), output='a,b\n1,0+1i\n2,-1-1i\n3,\n[1] ""')
 
 # more coverage
 test(1658.59, fwrite(data.table(a=list('a')), verbose=TRUE),
@@ -10809,7 +10809,7 @@ if (test_bit64) {
   test(1731.1, class(DT[[1L]]), "integer64")
   test(1731.2, fwrite(DT,na="__NA__"), output=ans)
   f = tempfile()
-  test(1731.3, fwrite(DT, f, na="__NA__"), NULL)
+  test(1731.3, filepath <- fwrite(DT, f, na="__NA__"), filepath)
   test(1731.4, readLines(f), ans)
   unlink(f)
   ans[1] = "V1"  # the field is unquoted under `quote=FALSE`
@@ -10910,7 +10910,7 @@ test(1736.09, capture.output(fwrite(DT)), c("A,B", "foo,1|2|3", "\"ba|r\",1|2|3|
 test(1736.10, capture.output(fwrite(DT,quote=TRUE)), c("\"A\",\"B\"", "\"foo\",1|2|3", "\"ba|r\",1|2|3|4", "\"baz\",\"fo|o\"|\"ba,r\"|\"baz\""))
 
 # any list of same length vector input
-test(1737.1, fwrite(list()), NULL, warning="fwrite was passed an empty list of no columns")
+test(1737.1, fwrite(list()), "", warning="fwrite was passed an empty list of no columns")
 test(1737.2, fwrite(list(1.2)), output="1.2")
 test(1737.3, fwrite(list(1.2,B="foo")), output=",B\n1.2,foo")
 test(1737.4, fwrite(list("A,Name"=1.2,B="fo,o")), output="\"A,Name\",B\n1.2,\"fo,o\"")
@@ -13089,11 +13089,11 @@ unlink(f)
 #fwrite creates a file or does nothing, as appropriate, also #2898
 DT = data.table(NULL)
 f = tempfile()
-test(1922.7, fwrite(DT, f), NULL, warning = 'no columns; creating an empty file')
+test(1922.7, filepath <- fwrite(DT, f), filepath, warning = 'no columns; creating an empty file')
 ## above test created a file; now test behavior when file exists
-test(1922.8, fwrite(DT, f), NULL, warning = 'no columns; doing nothing.*file.remove')
+test(1922.8, filepath <- fwrite(DT, f), filepath, warning = 'no columns; doing nothing.*file.remove')
 ## slightly different behavior if append = TRUE
-test(1922.9, fwrite(DT, f, append = TRUE), NULL, warning = 'doing nothing.$')
+test(1922.9, filepath <- fwrite(DT, f, append = TRUE), filepath, warning = 'doing nothing.$')
 
 # create index even if key present by setting attribute, #2883
 DT = data.table(1:5, 1:5)
@@ -13141,8 +13141,8 @@ test(1937.1, DT[A %between% c(B,B+1)], error='RHS has length().*Perhaps you mean
 test(1937.2, DT[A %between% B],        error='length 2. The first')
 
 # that fwrite'ing a list to a file works (it broke in dev 1.11.5 and was caught before release), PR#3017
-test(1938.1, fwrite(list(1:3)), NULL, output="1\n2\n3")    # never broke
-test(1938.2, fwrite(list(1:3), file=f<-tempfile()), NULL)  # just adding file= was what broke in dev just when x is list and not data.table|frame
+test(1938.1, fwrite(list(1:3)), "", output="1\n2\n3")    # never broke
+test(1938.2, filepath <- fwrite(list(1:3), file=f<-tempfile()), filepath)  # just adding file= was what broke in dev just when x is list and not data.table|frame
 test(1939.3, readLines(f), as.character(1:3))
 unlink(f)
 

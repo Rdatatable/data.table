@@ -44,6 +44,8 @@
 
 14. `fread` loads `.bgz` files directly, [#5461](https://github.com/Rdatatable/data.table/issues/5461). Thanks to @TMRHarrison for the request with proposed fix, and Benjamin Schwendinger for the PR.
 
+15. `fwrite` now returns the file path after writing data, [#5706](https://github.com/Rdatatable/data.table/issues/5706). This enhancement allows users to easily capture and utilize the file path for subsequent operations.Thanks to @Nj221102 for the PR.
+
 ## BUG FIXES
 
 1. `unique()` returns a copy the case when `nrows(x) <= 1` instead of a mutable alias, [#5932](https://github.com/Rdatatable/data.table/pull/5932). This is consistent with existing `unique()` behavior when the input has no duplicates but more than one row. Thanks to @brookslogan for the report and @dshemetov for the fix.
