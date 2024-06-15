@@ -6,7 +6,7 @@
 
 1. Usage of comma-separated character strings representing multiple columns in `data.table()`'s `key=` argument and `[`'s `by=`/`keyby=` arguments is deprecated, [#4357](https://github.com/Rdatatable/data.table/issues/4357). While sometimes convenient, ultimately it introduces inconsistency in implementation that is not worth the benefit to maintain. NB: this hard deprecation is temporary in the development version. Before release, it will soften into the normal data.table deprecation cycle starting from introducing the new behavior with an option, then changing the default for the option with a warning, then upgrading the warning to an error before finally removing the option and the error.
 
-2. Dropped some support for S4 objects during grouping and assignment. This relied on non-API calls to R macros that is now discouraged (#6180)[https://github.com/Rdatatable/data.table/issues/6180]. Thanks various R users & R core for pushing to have a clearer definition of "API" for R, and thanks @MichaelChirico for implementing here.
+2. Dropped some support for S4 objects during grouping. This relied on non-API calls to R macros that is now discouraged (#6180)[https://github.com/Rdatatable/data.table/issues/6180]. Thanks various R users & R core for pushing to have a clearer definition of "API" for R, and thanks @MichaelChirico for implementing here.
 
 ## NEW FEATURES
 
