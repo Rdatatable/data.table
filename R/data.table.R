@@ -2538,7 +2538,6 @@ copy = function(x) {
     setattr(ans, "index", NULL)
   }
   if (unlock) .Call(C_unlock, ans)
-  if (isS4(x)) ans = asS4(ans)
   ans
 }
 
