@@ -10009,9 +10009,9 @@ if (!haszlib()) {
 } else {
   test(1658.41, fwrite(data.table(a=c(1:3), b=c(1:3)), compress="gzip"), output='a,b\n1,1\n2,2\n3,3')  # compress ignored on console
   DT = data.table(a=rep(1:2,each=100), b=rep(1:4,each=25))
-  test(1658.421, filepath <- fwrite(DT, file=f1<-tempfile(fileext=".gz"), verbose=TRUE), filepath,
+  test(1658.421, fwrite(DT, file=f1<-tempfile(fileext=".gz"), verbose=TRUE), f1,
                  output="args.nrow=200 args.ncol=2.*maxLineLen=5[12].*Writing 200 rows in 1 batches of 200 rows.*nth=1")  # [12] for Windows where eolLen==2
-  test(1658.422, filepath <- fwrite(DT, file=f2<-tempfile()), filepath)
+  test(1658.422, fwrite(DT, file=f2<-tempfile()), f2)
   test(1658.423, file.info(f1)$size < file.info(f2)$size)  # 74 < 804  (file.size() isn't available in R 3.1.0)
   if (test_R.utils) test(1658.43, fread(f1), DT)  # use fread to decompress gz (works cross-platform)
   fwrite(DT, file=f3<-tempfile(), compress="gzip")   # compress to filename not ending .gz
@@ -10046,7 +10046,7 @@ unlink(c(f1, f2))
 # compression error -5 due to only 3 bytes (bom) in first block; #3599
 if (haszlib()) {
   DT = data.table(l=letters, n=1:26)
-  test(1658.53, filepath <- fwrite(DT, file=f<-tempfile(fileext=".gz"), bom=TRUE, col.names=FALSE), filepath)
+  test(1658.53, fwrite(DT, file=f<-tempfile(fileext=".gz"), bom=TRUE, col.names=FALSE), f)
   if (test_R.utils) test(1658.54, fread(f), setnames(DT,c("V1","V2")))
   unlink(f)
 }
@@ -10059,7 +10059,7 @@ test(1658.56, fwrite(data.table(exp(1) - pi*1i)), output='2.718[0-9]*-3.141[0-9]
 DT = data.table(a=1:3, b=list(1:4, c(3.14, 100e10), c(3i,4i,5i)))
 test(1658.57, fwrite(DT), output='0+3i|0+4i|0+5i')
 DT[ , b := c(1i, -1-1i, NA_complex_)]
-test(1658.58, fwrite(DT), output='a,b\n1,0+1i\n2,-1-1i\n3,\n[1] ""')
+test(1658.58, invisible(fwrite(DT)), output='a,b\n1,0\\+1i\n2,-1-1i\n3,$')
 
 # more coverage
 test(1658.59, fwrite(data.table(a=list('a')), verbose=TRUE),
@@ -10809,7 +10809,7 @@ if (test_bit64) {
   test(1731.1, class(DT[[1L]]), "integer64")
   test(1731.2, fwrite(DT,na="__NA__"), output=ans)
   f = tempfile()
-  test(1731.3, filepath <- fwrite(DT, f, na="__NA__"), filepath)
+  test(1731.3, fwrite(DT, f, na="__NA__"), f)
   test(1731.4, readLines(f), ans)
   unlink(f)
   ans[1] = "V1"  # the field is unquoted under `quote=FALSE`
@@ -13089,11 +13089,11 @@ unlink(f)
 #fwrite creates a file or does nothing, as appropriate, also #2898
 DT = data.table(NULL)
 f = tempfile()
-test(1922.7, filepath <- fwrite(DT, f), filepath, warning = 'no columns; creating an empty file')
+test(1922.7, fwrite(DT, f), f, warning = 'no columns; creating an empty file')
 ## above test created a file; now test behavior when file exists
-test(1922.8, filepath <- fwrite(DT, f), filepath, warning = 'no columns; doing nothing.*file.remove')
+test(1922.8, fwrite(DT, f), f, warning = 'no columns; doing nothing.*file.remove')
 ## slightly different behavior if append = TRUE
-test(1922.9, filepath <- fwrite(DT, f, append = TRUE), filepath, warning = 'doing nothing.$')
+test(1922.9, fwrite(DT, f, append = TRUE), f, warning = 'doing nothing.$')
 
 # create index even if key present by setting attribute, #2883
 DT = data.table(1:5, 1:5)
@@ -13142,7 +13142,7 @@ test(1937.2, DT[A %between% B],        error='length 2. The first')
 
 # that fwrite'ing a list to a file works (it broke in dev 1.11.5 and was caught before release), PR#3017
 test(1938.1, fwrite(list(1:3)), "", output="1\n2\n3")    # never broke
-test(1938.2, filepath <- fwrite(list(1:3), file=f<-tempfile()), filepath)  # just adding file= was what broke in dev just when x is list and not data.table|frame
+test(1938.2, fwrite(list(1:3), file=f<-tempfile()), f)  # just adding file= was what broke in dev just when x is list and not data.table|frame
 test(1939.3, readLines(f), as.character(1:3))
 unlink(f)
 
@@ -13775,9 +13775,9 @@ if (.Platform$OS.type=="windows") {
   test(1966.4, list.files(path = pth, pattern = "\\.csv$"), f)
   unlink(c(fp, file.path(pth, "\u00c3\u00b6.csv")))
   p = file.path(pth, "\u00fc"); dir.create(p); f = tempfile(tmpdir = p)
-  test(1966.5, filepath <- fwrite(DT, enc2native(f)), filepath)
+  test(1966.5, fwrite(DT,filepath<-enc2native(f)), filepath)
   unlink(f)
-  test(1966.6, filepath <- fwrite(DT, enc2utf8(f)), filepath)
+  test(1966.6, fwrite(DT, filepath<-enc2native(f)), filepath)
   unlink(p, recursive = TRUE)
 }
 
