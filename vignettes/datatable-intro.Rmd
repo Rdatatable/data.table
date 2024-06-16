@@ -257,40 +257,39 @@ This type of operation occurs quite frequently, especially while grouping (as we
 When querying a `data.table` for elements that do not exist, the behavior differs based on the method used.
 
 ```r
-dt <- data.table(x = letters[1:3], y = LETTERS[1:3])
-setkeyv(dt, "x")
+setkeyv(flights, "origin")
 ```
 
 * **Key-based subsetting: `dt["d"]`**
   
   This performs a right join on the key column `x`, resulting in a row with `d` and `NA` for columns not found.
 
-  ```r
-  dt["d"]
-  # Returns:
-  #    x    y
-  # 1: d <NA>
-  ```
+```r
+  flights["XYZ"]
+# Returns:
+#    origin year month day dep_time sched_dep_time dep_delay arr_time sched_arr_time arr_delay carrier flight tailnum ...
+# 1:    XYZ   NA    NA  NA       NA             NA        NA       NA             NA        NA      NA     NA      NA ...
+```
 
 * **Logical subsetting: `dt[x == "d"]`**
   
   This performs a standard subset operation that does not find any matching rows and thus returns an empty `data.table`.
 
-  ```r
-  dt[x == "d"]
-  # Returns:
-  # Empty data.table (0 rows and 2 cols): x,y
-  ```
+```r
+  flights[origin == "XYZ"]
+# Returns:
+# Empty data.table (0 rows and 19 cols): year,month,day,dep_time,sched_dep_time,dep_delay,arr_time,sched_arr_time,arr_delay,...
+```
 
 * **Exact match using `nomatch=NULL`**
   
   For exact matches without `NA` for non-existing elements, use `nomatch=NULL`:
 
-  ```r
-  dt["d", nomatch=NULL]
-  # Returns:
-  # Empty data.table (0 rows and 2 cols): x,y
-  ```
+```r
+flights_dt["XYZ", nomatch=NULL]
+# Returns:
+# Empty data.table (0 rows and 19 cols): year,month,day,dep_time,sched_dep_time,dep_delay,arr_time,sched_arr_time,arr_delay,...
+```
 
 Understanding these behaviors can help prevent confusion when dealing with non-existing elements in your data.
 
