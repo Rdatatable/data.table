@@ -250,6 +250,50 @@ The function `length()` requires an input argument. We just need to compute the 
 
 This type of operation occurs quite frequently, especially while grouping (as we will see in the next section), to the point where `data.table` provides a *special symbol* `.N` for it.
 
+### g) Handle non-existing elements in `i`
+
+#### -- What happens when querying for non-existing elements?
+
+When querying a `data.table` for elements that do not exist, the behavior differs based on the method used.
+
+```r
+dt <- data.table(x = letters[1:3], y = LETTERS[1:3])
+setkeyv(dt, "x")
+```
+
+* **Key-based subsetting: `dt["d"]`**
+  
+  This performs a right join on the key column `x`, resulting in a row with `d` and `NA` for columns not found.
+
+  ```r
+  dt["d"]
+  # Returns:
+  #    x    y
+  # 1: d <NA>
+  ```
+
+* **Logical subsetting: `dt[x == "d"]`**
+  
+  This performs a plain subset operation that does not find any matching rows and thus returns an empty data.table.
+
+  ```r
+  dt[x == "d"]
+  # Returns:
+  # Empty data.table (0 rows and 2 cols): x,y
+  ```
+
+* **Exact match using `nomatch=NULL`**
+  
+  For exact matches without `NA` for non-existing elements, use `nomatch=NULL`:
+
+  ```r
+  dt["d", nomatch=NULL]
+  # Returns:
+  # Empty data.table (0 rows and 2 cols): x,y
+  ```
+
+Understanding these behaviors can help prevent confusion when dealing with non-existing elements in your data.
+
 #### Special symbol `.N`: {#special-N}
 
 `.N` is a special built-in variable that holds the number of observations _in the current group_. It is particularly useful when combined with `by` as we'll see in the next section. In the absence of group by operations, it simply returns the number of rows in the subset.
