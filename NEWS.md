@@ -6,8 +6,6 @@
 
 1. Usage of comma-separated character strings representing multiple columns in `data.table()`'s `key=` argument and `[`'s `by=`/`keyby=` arguments is deprecated, [#4357](https://github.com/Rdatatable/data.table/issues/4357). While sometimes convenient, ultimately it introduces inconsistency in implementation that is not worth the benefit to maintain. NB: this hard deprecation is temporary in the development version. Before release, it will soften into the normal data.table deprecation cycle starting from introducing the new behavior with an option, then changing the default for the option with a warning, then upgrading the warning to an error before finally removing the option and the error.
 
-2. Dropped some support for S4 objects during grouping. This relied on non-API calls to R macros that is now discouraged (#6180)[https://github.com/Rdatatable/data.table/issues/6180]. Thanks various R users & R core for pushing to have a clearer definition of "API" for R, and thanks @MichaelChirico for implementing here.
-
 ## NEW FEATURES
 
 1. `print.data.table()` shows empty (`NULL`) list column entries as `[NULL]` for emphasis. Previously they would just print nothing (same as for empty string). Part of [#4198](https://github.com/Rdatatable/data.table/issues/4198). Thanks @sritchie73 for the proposal and fix.
@@ -99,6 +97,8 @@
 14. `setNumericRounding()` now invisibly returns the old rounding value instead of `NULL`, which is now consistent with similar behavior by `setwd()`, `options()`, etc. Thanks @MichaelChirico for the report and @joshhwuu for the fix.
 
 15. `dcast()` now issues a warning when `fun.aggregate` is used but not provided by the user. `fun.aggregate` defaults to `length` in this case. Previously, only a message was issued. However, relying on this default often signals unexpected duplicates in the data. Therefore, a stricter class of signal was deemed more appropriate, [#5386](https://github.com/Rdatatable/data.table/issues/5386). The warning is classed as `dt_missing_fun_aggregate_warning`, allowing for more targeted handling in user code. Thanks @MichaelChirico for the suggestion and @Nj221102 for the fix.
+
+16. Refactored some non-API calls to R macros for S4 objects (#6180)[https://github.com/Rdatatable/data.table/issues/6180]. There should be no user-visible change. Thanks to various R users & R core for pushing to have a clearer definition of "API" for R, and thanks @MichaelChirico for implementing here.
 
 ## TRANSLATIONS
 
