@@ -274,7 +274,7 @@ setkeyv(dt, "x")
 
 * **Logical subsetting: `dt[x == "d"]`**
   
-  This performs a plain subset operation that does not find any matching rows and thus returns an empty data.table.
+  This performs a standard subset operation that does not find any matching rows and thus returns an empty `data.table`.
 
   ```r
   dt[x == "d"]
@@ -313,7 +313,7 @@ ans
 
 We could have accomplished the same operation by doing `nrow(flights[origin == "JFK" & month == 6L])`. However, it would have to subset the entire `data.table` first corresponding to the *row indices* in `i` *and then* return the rows using `nrow()`, which is unnecessary and inefficient. We will cover this and other optimisation aspects in detail under the *`data.table` design* vignette.
 
-### g) Great! But how can I refer to columns by names in `j` (like in a `data.frame`)? {#refer_j}
+### h) Great! But how can I refer to columns by names in `j` (like in a `data.frame`)? {#refer_j}
 
 If you're writing out the column names explicitly, there's no difference compared to a `data.frame` (since v1.9.8).
 
