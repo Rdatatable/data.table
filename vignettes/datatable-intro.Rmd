@@ -286,7 +286,7 @@ setkeyv(flights, "origin")
   For exact matches without `NA` for non-existing elements, use `nomatch=NULL`:
 
 ```r
-flights_dt["XYZ", nomatch=NULL]
+flights["XYZ", nomatch=NULL]
 # Returns:
 # Empty data.table (0 rows and 19 cols): year,month,day,dep_time,sched_dep_time,dep_delay,arr_time,sched_arr_time,arr_delay,...
 ```
