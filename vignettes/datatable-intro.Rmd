@@ -261,35 +261,35 @@ setkeyv(flights, "origin")
 ```
 
 * **Key-based subsetting: `dt["d"]`**
-  
-  This performs a right join on the key column `x`, resulting in a row with `d` and `NA` for columns not found.
 
-```r
+  This performs a right join on the key column `x`, resulting in a row with `d` and `NA` for columns not found. When using `setkeyv`, the table is sorted by the specified keys and an internal index is created, enabling binary search for efficient subsetting.
+
+  ```r
   flights["XYZ"]
-# Returns:
-#    origin year month day dep_time sched_dep_time dep_delay arr_time sched_arr_time arr_delay carrier flight tailnum ...
-# 1:    XYZ   NA    NA  NA       NA             NA        NA       NA             NA        NA      NA     NA      NA ...
-```
+  # Returns:
+  #    origin year month day dep_time sched_dep_time dep_delay arr_time sched_arr_time arr_delay carrier flight tailnum ...
+  # 1:    XYZ   NA    NA  NA       NA             NA        NA       NA             NA        NA      NA     NA      NA ...
+  ```
 
 * **Logical subsetting: `dt[x == "d"]`**
   
   This performs a standard subset operation that does not find any matching rows and thus returns an empty `data.table`.
 
-```r
-  flights[origin == "XYZ"]
-# Returns:
-# Empty data.table (0 rows and 19 cols): year,month,day,dep_time,sched_dep_time,dep_delay,arr_time,sched_arr_time,arr_delay,...
-```
+  ```r
+    flights[origin == "XYZ"]
+  # Returns:
+  # Empty data.table (0 rows and 19 cols): year,month,day,dep_time,sched_dep_time,dep_delay,arr_time,sched_arr_time,arr_delay,...
+  ```
 
 * **Exact match using `nomatch=NULL`**
   
   For exact matches without `NA` for non-existing elements, use `nomatch=NULL`:
 
-```r
-flights["XYZ", nomatch=NULL]
-# Returns:
-# Empty data.table (0 rows and 19 cols): year,month,day,dep_time,sched_dep_time,dep_delay,arr_time,sched_arr_time,arr_delay,...
-```
+  ```r
+  flights["XYZ", nomatch=NULL]
+  # Returns:
+  # Empty data.table (0 rows and 19 cols): year,month,day,dep_time,sched_dep_time,dep_delay,arr_time,sched_arr_time,arr_delay,...
+  ```
 
 Understanding these behaviors can help prevent confusion when dealing with non-existing elements in your data.
 
