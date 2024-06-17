@@ -9,7 +9,8 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
                trunc.cols=getOption("datatable.print.trunc.cols"),
                quote=FALSE,
                na.print=NULL,
-               timezone=FALSE, ...) {
+               timezone=FALSE,
+               indices=FALSE, ...) {
   # topn  - print the top topn and bottom topn rows with '---' inbetween (5)
   # nrows - under this the whole (small) table is printed, unless topn is provided (100)
   # class - should column class be printed underneath column name? (FALSE)
@@ -64,15 +65,25 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     }
     return(invisible(x))
   }
+  if (indices) {
+    if (is.null(indices(x))) {
+      indices = FALSE
+    } else {
+      index_col_name = paste0("index__", indices(x))
+      index_col = attr(attr(x, 'index'), paste0('__', indices(x)))
+    }
+  }
   n_x = nrow(x)
   if ((topn*2L+1L)<n_x && (n_x>nrows || !topnmiss)) {
     toprint = rbindlist(list(head(x, topn), tail(x, topn)), use.names=FALSE)  # no need to match names because head and tail of same x, and #3306
     rn = c(seq_len(topn), seq.int(to=n_x, length.out=topn))
     printdots = TRUE
+    if (indices) set(toprint, j=index_col_name, value=c(head(index_col, topn), tail(index_col, topn)))
   } else {
     toprint = x
     rn = seq_len(n_x)
     printdots = FALSE
+    if (indices) set(toprint, j=index_col_name, value=index_col)
   }
   toprint=format.data.table(toprint, na.encode=FALSE, timezone = timezone, ...)  # na.encode=FALSE so that NA in character cols print as <NA>
   require_bit64_if_needed(x)

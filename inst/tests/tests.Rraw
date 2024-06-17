@@ -18612,3 +18612,49 @@ test(2263.3, options=list(datatable.verbose=TRUE, datatable.optimize=0L), names(
 test(2263.4, options=list(datatable.verbose=TRUE, datatable.optimize=Inf), dt[, .N, b], data.table(b=dt$b, N=1L), output="GForce optimized j to")
 test(2263.5, options=list(datatable.verbose=TRUE, datatable.optimize=Inf), dt[, .N, .(b,c)], data.table(b=dt$b, c=dt$c, N=1L), output="GForce optimized j to")
 test(2263.6, options=list(datatable.verbose=TRUE, datatable.optimize=Inf), names(attributes(dt[, .N, b]$b)), c("class", "att"), output="GForce optimized j to")
+
+# tests for printing indices alongside data.tables
+NN = 200
+set.seed(2024)
+DT = data.table(
+ grp1 = sample(100, NN, TRUE),
+ grp2 = sample(90, NN, TRUE),
+ grp3 = sample(80, NN, TRUE)
+)
+setkey(DT, grp1, grp2)
+setindex(DT, grp1, grp3)
+dt2 = copy(DT)
+ans = c(
+ "     grp1 grp2 grp3 index__grp1__grp3",
+ "  1:    1    5   15                 1",
+ "  2:    1   24   60                 2",
+ "  3:    2   26   32                 5",
+ "  4:    2   36   57                 3",
+ "  5:    2   51   30                 4",
+ " ---                                 ",
+ "196:   98   77   45               195",
+ "197:   98   87   70               197",
+ "198:  100   18   21               198",
+ "199:  100   36   51               199",
+ "200:  100   38   56               200"
+ )
+test(2264.1, print(DT, indices=TRUE), output=ans)
+setindex(DT, NULL) # clear indices
+# if no indices are set, simply ignore
+test(2264.2, capture.output(print(DT, indices=TRUE)), capture.output(print(DT, indices=FALSE)))
+setindex(DT, grp3)
+ans = c(
+ "     grp1 grp2 grp3 index__grp3",
+ "  1:    1    5   15          10",
+ "  2:    1   24   60         119",
+ "  3:    2   26   32         164",
+ "  4:    2   36   57         192",
+ "  5:    2   51   30          63",
+ " ---                           ",
+ "196:   98   77   45          11",
+ "197:   98   87   70          66",
+ "198:  100   18   21          31",
+ "199:  100   36   51         139",
+ "200:  100   38   56         159"
+ )
+test(2264.3, print(DT, indices=TRUE), output=ans)

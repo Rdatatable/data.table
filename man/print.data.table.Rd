@@ -27,7 +27,8 @@
     trunc.cols=getOption("datatable.print.trunc.cols"), # default: FALSE
     quote=FALSE,
     na.print=NULL,
-    timezone=FALSE, \dots)
+    timezone=FALSE,
+    indices=FALSE, \dots)
 
   format_col(x, \dots)
   \method{format_col}{default}(x, \dots)
@@ -49,6 +50,7 @@
   \item{quote}{ If \code{TRUE}, all output will appear in quotes, as in \code{print.default}. }
   \item{timezone}{ If \code{TRUE}, time columns of class POSIXct or POSIXlt will be printed with their timezones (if attribute is available). }
   \item{na.print}{ The string to be printed in place of \code{NA} values, as in \code{print.default}. }
+  \item{indices}{ If \code{TRUE}, the row indices will be printed alongside \code{x}. }
   \item{\dots}{ Other arguments ultimately passed to \code{format}. }
 }
 \value{
@@ -115,6 +117,17 @@
   format_col.complex = function(x, ...) sprintf('(\%.1f, \%.1fi)', Re(x), Im(x))
   x = data.table(z = c(1 + 3i, 2 - 1i, pi + 2.718i))
   print(x)
+
+  NN = 200
+  set.seed(2024)
+  DT = data.table(
+    grp1 = sample(100, NN, TRUE),
+    grp2 = sample(90, NN, TRUE),
+    grp3 = sample(80, NN, TRUE)
+  )
+  setkey(DT, grp1, grp2)
+  setindex(DT, grp1, grp3)
+  print(DT, indices = TRUE)
 
   iris = as.data.table(iris)
   iris_agg = iris[ , .(reg = list(lm(Sepal.Length ~ Petal.Length))), by = Species]
