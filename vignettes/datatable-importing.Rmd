@@ -208,7 +208,7 @@ To convert a `Depends` dependency on `data.table` to an `Imports` dependency in 
 ### Step 1. Update the DESCRIPTION file to put data.table in Imports, not Depends
 
 **Before:**
-```r
+```dcf
 Depends:
     R (>= 3.5.0),
     data.table
@@ -216,7 +216,7 @@ Imports:
 ```
 
 **After:**
-```r
+```dcf
 Depends:
     R (>= 3.5.0)
 Imports:
@@ -231,32 +231,13 @@ Run `R CMD check` to identify any missing imports or symbols. This step helps:
 - Flag missing special symbols like `.N`, `.SD`, and `:=`.
 - Provide immediate feedback on what needs to be added to the NAMESPACE file.
 
+Note: Not all such usages are caught by `R CMD check`. In particular, `R CMD check` skips some symbols/functions in formulas and will completely miss parsed expressions like parse(text = "data.table(a = 1)"). Packages will need good test coverage to detect these edge cases.
+
 ### Step 2.2: Modify the NAMESPACE File
 
 Based on the `R CMD check` results, ensure all used functions, special symbols, S3 generics, and S4 classes from `data.table` are imported.
 
 That means adding `importFrom(data.table, ...)` directives for symbols, functions, and S3 generics, and/or `importClassesFrom(data.table, ...)` directives for S4 classes as appropriate. See 'Writing R Extensions' for full details on how to do so properly.
-
-#### Importing Specific Functions and Symbols
-
-If you use specific functions like `data.table()`, `setDT()`, `merge()`, or special symbols like `.N`, `.SD`, `:=`, import them individually:
-```r
-importFrom(data.table, data.table, setDT, merge, .N, .SD, :=)
-```
-
-#### Importing S3 Generics
-
-If your package adds methods to any S3 generics owned by `data.table`, you need to import these generics. Check the `data.table` NAMESPACE file for the latest set of S3 generics:
-```r
-importFrom(data.table, as.data.table, groupingsets, as.IDate)
-```
-
-#### Importing S4 Classes
-
-If your package uses S4 classes from `data.table`, you need to import these classes. This is less common but necessary for advanced use cases:
-```r
-importClassesFrom(data.table, data.table, IDate, ITime)
-```
 
 #### Blanket Import
 
@@ -272,11 +253,7 @@ import(data.table)
 
 ### Step 3: Update Your R code Files outside package's R/ directory
 
-When you move a package from `Depends` to `Imports`, it will no longer be automatically attached when your package is loaded. However, if you correctly import `data.table` in your NAMESPACE, you should not need to make changes to your package's R code files. This is different from user scripts or vignettes, which may need adjustments.
-
-#### For User Scripts and Vignettes
-
-If you are working with user scripts, vignettes, or other R files outside the package's R/ directory (e.g., tests and demos), you might need to explicitly load `data.table`.
+When you move a package from `Depends` to `Imports`, it will no longer be automatically attached when your package is loaded. This can be important for examples, tests, vignettes, and demos, where `Imports` packages need to be attached explicitly.
 
 **Before (with `Depends`):**
 ```r
@@ -296,12 +273,6 @@ dt <- data.table(x = 1:10, y = letters[1:10])
 setDT(dt)
 result <- merge(dt, other_dt, by = "x")
 ```
-
-### Additional Considerations
-
-- **Special Symbols**: Ensure `data.table` symbols like `.N`, `.SD`, and `:=` are imported.
-- **Function Usage**: Use tools like `codetools` or `devtools` to analyze function usage and ensure all necessary imports are covered.
-- **S3 and S4 Methods**: Ensure all necessary generics and classes are imported if your package extends `data.table` functionality with custom methods.
 
 ### Benefits of Using `Imports`
 - **Namespace Management**: Only the functions your package explicitly imports are available, reducing the risk of function name clashes.
