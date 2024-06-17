@@ -235,6 +235,8 @@ Run `R CMD check` to identify any missing imports or symbols. This step helps:
 
 Based on the `R CMD check` results, ensure all used functions, special symbols, S3 generics, and S4 classes from `data.table` are imported.
 
+That means adding `importFrom(data.table, ...)` directives for symbols, functions, and S3 generics, and/or `importClassesFrom(data.table, ...)` directives for S4 classes as appropriate. See 'Writing R Extensions' for full details on how to do so properly.
+
 #### Importing Specific Functions and Symbols
 
 If you use specific functions like `data.table()`, `setDT()`, `merge()`, or special symbols like `.N`, `.SD`, `:=`, import them individually:
