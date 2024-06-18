@@ -38,17 +38,17 @@
 
   \itemize{
     \item\file{between.c} - \code{\link{between}()}
-    
+
     OpenMP is used here to parallelize:
     \itemize{
       \item The loops that check if each element of the vector provided is between the specified \code{lower} and \code{upper} bounds, for integer (\code{INTSXP}) and real (\code{REALSXP}) types
       \item The checking and handling of undefined values (such as NaNs)
     }
-    
+
     Since this function is used to find rows where a column's value falls within a specific range, it benefits more from parallelization when the input data consists of a large number of rows.
-    
+
     \item\file{cj.c} - \code{\link{CJ}()}
-    
+
     OpenMP is used here to parallelize:
 
     \itemize{
@@ -56,42 +56,42 @@
       \item The memory copying operations (blockwise replication of data using \code{memcpy})
       \item The creation of all combinations of the input vectors over the cross-product space
     }
-    
+
     Given that the number of combinations increases exponentially as more columns are added, better speedup can be expected when dealing with a large number of columns.
-    
+
     \item\file{coalesce.c} - \code{\link{fcoalesce}()}
-    
+
     OpenMP is used here to parallelize:
     \itemize{
       \item The operation that iterates over the rows to coalesce the data (which can be of type integer, real, or complex)
       \item The replacement of NAs with non-NA values from subsequent vectors
       \item The conditional checks within parallelized loops
       }
-    
+
     Significant speedup can be expected for more number of columns here, given that this function operates efficiently across multiple columns to find non-NA values.
-    
+
     \item\file{fifelse.c} - \code{\link{fifelse}()}
-    
+
     For logical, integer, and real types, OpenMP is being used here to parallelize loops that perform conditional checks along with assignment operations over the elements of the supplied logical vector based on the condition (\code{test}) and values provided for the remaining arguments (\code{yes}, \code{no}, and \code{na}).
-    
+
     Better speedup can be expected for more number of columns here as well, given that this function operates column-wise with independent vector operations.
-    
+
     \item\file{fread.c} - \code{\link{fread}()}
-    
+
     OpenMP is used here to:
 
     \itemize{
+      \item Parallelize the reading of data in chunks
       \item Avoid race conditions or concurrent writes to the output \code{data.table} by having atomic operations on the string data 
       \item Manage synchronized updates to the progress bar and serialize the output to the console
       }
-    There are no explicit pragmas for parallelizing loops, and instead the use of OpenMP here is mainly in controlling access to shared resources (with the use of critical sections, for instance) in a multi-threaded environment.
-    
+
     This function is highly optimized in reading and processing data with both large numbers of rows and columns, but the efficiency is more pronounced across rows.
-    
+
     \item\file{forder.c}, \file{fsort.c}, and \file{reorder.c} - \code{\link{forder}()} and related
-    
+
     OpenMP is used here to parallelize multiple operations that come together to sort a \code{data.table} using the Radix algorithm. These include:
-    
+
     \itemize{
       \item The counting of unique values and recursively sorting subsets of data across different threads (specific to \file{forder.c})
       \item The process of finding the range and distribution of data for efficient grouping and sorting (applies to both \file{forder.c} and \file{fsort.c})
@@ -100,11 +100,11 @@
       }
 
     Better speedups can be expected when the input data contains a large number of rows as the sorting complexity increases with more rows.
-      
+
     \item\file{froll.c}, \file{frolladaptive.c}, and \file{frollR.c} - \code{\link{froll}()} and family
-    
+
     OpenMP is used here to parallelize the loops that compute the rolling means (\code{frollmean}) and sums (\code{frollsum}) over a sliding window for each position in the input vector.
-    
+
     These functions benefit more in terms of speedup when the data has a large number of columns, primarily due to the efficient memory access patterns (cache-friendly) used when processing the data for each column sequentially in memory to compute the rolling statistic.
 
     \item\file{fwrite.c} - \code{\link{fwrite}()}
@@ -112,30 +112,30 @@
     OpenMP is used here primarily to parallelize the process of writing rows to the output file, but error handling and compression (if enabled) are also managed within the parallel region. Special attention is paid to thread safety and synchronization, especially in the ordered sections where output to the file and handling of errors is serialized to maintain the correct sequence of rows.
     
     Similar to \code{\link{fread}()}, this function is highly efficient in parallely processing data with large numbers of both rows and columns, but it has more notable speedups with an increased number of rows.
-    
+
     \item\file{gsumm.c} - GForce in various places, see \link{GForce}
-    
+
     Functions with GForce optimization are internally parallelized to speed up grouped summaries over a large \code{data.table}. OpenMP is used here to parallelize operations involved in calculating group-wise statistics like sum, mean, and median (implying faster computation of \code{sd}, \code{var}, and \code{prod} as well). 
-    
+
     These optimized grouping operations benefit more in terms of speedup if the input data contains a large number of rows (since they are often used to aggregate data across groups).
-    
+
     \item\file{nafill.c} - \code{\link{nafill}()}
-    
+
     OpenMP is being used here to parallelize the loop that fills missing values over columns of the input data. This includes handling different data types (double, integer, and integer64) and applying the designated filling method (constant, last observation carried forward, or next observation carried backward) to each column in parallel. 
-    
+
     Given its optimization for column-wise operations, better speedups can be expected when the input data consists of a large number of columns.
-    
+
     \item\file{subset.c} - Used in \code{\link[=data.table]{[.data.table}} subsetting
-    
+
     OpenMP is used here to parallelize the loops that perform the subsetting of vectors, with conditional checks and filtering of data. 
-    
+
     Since subset operations tend to be usually row-dependent, better speedups can be expected when dealing with a large number of rows. However, it also depends on whether the computations are focused on rows or columns (as dictated by the subsetting criteria).
-    
+
     \item\file{types.c} - Internal testing usage
-    
+
     This caters to internal tests (not impacting any user-facing operations or functions), and OpenMP is being used here to test a message printing function inside a nested loop which has been collapsed into a single loop of the combined iteration space using \code{collapse(2)}, along with specification of dynamic scheduling for distributing the iterations in a way that can balance the workload among the threads.
   }
-  
+
 In general, or as applicable to all the aforementioned use cases, better speedup can be expected when dealing with large datasets.
 
 Having such data when using \code{\link{fread}()} or \code{\link{fwrite}()} (ones with significant speedups for larger file sizes) also means that while one part of the data is being read from or written to disk (I/O operations), another part can be simultaneously processed using multiple cores (parallel computations). This overlap reduces the total time taken for the read or write operation (as the system can perform computations during otherwise idle I/O time).
