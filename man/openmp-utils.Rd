@@ -117,7 +117,7 @@
 
     Functions with GForce optimization are internally parallelized to speed up grouped summaries over a large \code{data.table}. OpenMP is used here to parallelize operations involved in calculating group-wise statistics like sum, mean, and median (implying faster computation of \code{sd}, \code{var}, and \code{prod} as well). 
 
-    These optimized grouping operations benefit more in terms of speedup if the input data contains a large number of rows (since they are often used to aggregate data across groups).
+    These optimized grouping operations benefit more in terms of speedup if the input data contains a large number of groups since they leverage parallelization more efficiently by eliminating the overhead of individual group evaluations.
 
     \item\file{nafill.c} - \code{\link{nafill}()}
 
