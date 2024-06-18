@@ -87,6 +87,8 @@ required.)
 If you really wish to use column numbers, it is possible but
 deliberately a little harder; e.g., \code{setkeyv(DT,names(DT)[1:2])}.
 
+If you use integer columns as keys, it's crucial to ensure correct behavior in subsetting and joining operations. Integer keys should be used with the dot (\code{.}) syntax to explicitly match values against the key rather than interpreting them as indices.
+
 If you wanted to use \code{\link[base]{grep}} to select key columns according to
 a pattern, note that you can just set \code{value = TRUE} to return a character vector instead of the default integer indices.
 }
@@ -139,5 +141,18 @@ setindex(DT, A)
 setindex(DT, B)
 indices(DT)           # get indices single vector
 indices(DT, vectors = TRUE) # get indices list
+
+# Example illustrating the importance of using the dot (`.`) syntax with integer keys:
+DT <- data.table(id = 1:5, B = letters[5:1])
+
+# Incorrect Usage:
+setkey(DT, id)
+subset_value <- 3
+DT[subset_value]  # Incorrect: treats `subset_value` as an index
+
+# Correct Usage:
+# To correctly subset based on the key column `id`, use the dot (`.`) syntax:
+DT[.(subset_value)]  # Correct: explicitly matches `subset_value` against `id`
+
 }
 \keyword{ data }
