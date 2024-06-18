@@ -23,7 +23,7 @@ There are three reasons \code{setkey} is desirable:
 
 \code{NA}s are always first because:
 \itemize{
-  \item \code{NA} is internally \code{INT_MIN} (a large negative number) in R. Keys and indexes are always in increasing order so if \code{NA}s are first, no special treatment or branch is needed in many \code{data.table} internals involving binary search. It is not optional to place \code{NA}s last for speed, simplicity and rubustness of internals at C level.
+  \item \code{NA} is internally \code{INT_MIN} (a large negative number) in R. Keys and indexes are always in increasing order so if \code{NA}s are first, no special treatment or branch is needed in many \code{data.table} internals involving binary search. It is not optional to place \code{NA}s last for speed, simplicity and robustness of internals at C level.
   \item if any \code{NA}s are present then we believe it is better to display them up front (rather than hiding them at the end) to reduce the risk of not realizing \code{NA}s are present.
 }
 
@@ -87,7 +87,9 @@ required.)
 If you really wish to use column numbers, it is possible but
 deliberately a little harder; e.g., \code{setkeyv(DT,names(DT)[1:2])}.
 
-If you use integer columns as keys, it's crucial to ensure correct behavior in subsetting and joining operations. Integer keys should be used with the dot (\code{.}) syntax to explicitly match values against the key rather than interpreting them as indices.
+If you use integer columns as keys, it's crucial to ensure correct behavior in subsetting and joining operations.
+Integer keys should be used with the dot (\code{.}) syntax to explicitly match values against the key 
+rather than interpreting them as indices. see examples for better understanding.
 
 If you wanted to use \code{\link[base]{grep}} to select key columns according to
 a pattern, note that you can just set \code{value = TRUE} to return a character vector instead of the default integer indices.
