@@ -147,6 +147,10 @@ set(DT, 1L, "b", 10L)
 set(DT, 2L, c("b", "d"), list(20L, 30L))
 ## Set values by column indices
 set(DT, 3L, c(2L, 4L), list(40L, 50L))
+## Set value for an entire column without specifying rows
+set(DT, j = "b", value = 100L)
+## Set values for multiple columns without specifying rows
+set(DT, j = c("b", "d"), value = list(200L, 300L))
 
 \dontrun{
 # Speed example:
