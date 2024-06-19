@@ -149,8 +149,6 @@ Apart from increasing the size of the input data, function-specific parameters w
       \item Having more and/or complex conditional logic when using \code{\link{fifelse}()} or \code{\link{subset}()}
       }
 
-\code{data.table} also incorporates throttling mechanisms to prevent the excessive creation of threads (can lead to significant overhead) for small data tasks.
-
 Note: The information above is based on implementation-specific details as of March 2024.
 
 }
