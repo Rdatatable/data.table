@@ -3340,3 +3340,17 @@ is_constantish = function(q, check_singleton=FALSE) {
   names(on) = xCols
   list(on = on, ops = idx_op)
 }
+
+# FR 981, return a data.table of just key columns
+keydata = function(x) {
+  if (!is.data.table(x)) stopf("x is not a data.table")
+  if (!haskey(x)) stopf("x has no keys defined")
+  x[, .SD, .SDcols = key(x)]
+}
+
+# FR 981, return a data.table without key columns
+valuedata = function(x) {
+  if (!is.data.table(x)) stopf("x is not a data.table")
+  if (!haskey(x)) return(x)
+  x[, .SD, .SDcols = -key(x)]
+}
