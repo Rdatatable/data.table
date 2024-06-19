@@ -80,7 +80,9 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     toprint = rbindlist(list(head(x, topn), tail(x, topn)), use.names=FALSE)  # no need to match names because head and tail of same x, and #3306
     rn = c(seq_len(topn), seq.int(to=n_x, length.out=topn))
     printdots = TRUE
-    if (show.indices) toprint = cbind(toprint, rbindlist(list(head(index_dt, topn), tail(index_dt, topn)), use.names=FALSE))
+    idx = c(seq_len(topn), seq(to=nrow(x), length.out=topn))
+    toprint = x[idx, ]
+    if (show.indices) toprint = cbind(toprint, index_dt[idx, ])
   } else {
     toprint = x
     rn = seq_len(n_x)
