@@ -69,7 +69,7 @@
 // TODO: compare 1.9.6 performance with 1.9.7 with huge number of ASCII strings, and again after Jan 2018 when made macro.
 // Matt moved this to be macro in Jan 2018 so that branch can benefit from branch prediction too wherever used inside loops.
 // This IS_ASCII will dereference s and that cache fetch is the part that may bite more than the branch, though. Without a call to
-// to ENC2UTF as all, the pointer value can just be compared by the calling code without deferencing it. It may still be worth
+// to ENC2UTF as all, the pointer value can just be compared by the calling code without dereferencing it. It may still be worth
 // timing the impact and manually avoiding (is there an IS_ASCII on the character vector rather than testing each item every time?)
 #define NEED2UTF8(s) !(IS_ASCII(s) || (s)==NA_STRING || IS_UTF8(s))
 #define ENC2UTF8(s) (!NEED2UTF8(s) ? (s) : mkCharCE(translateCharUTF8(s), CE_UTF8))

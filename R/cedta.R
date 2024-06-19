@@ -12,7 +12,7 @@ cedta.pkgEvalsUserCode = c("gWidgetsWWW","statET","FastRWeb","slidify","rmarkdow
 # If a new package needs to be added to this vector, a user may add to it using :
 #   assignInNamespace("cedta.pkgEvalsUserCode", c(data.table:::cedta.pkgEvalsUserCode,"<nsname>"), "data.table")
 # But please let us know so we can add the package to this vector in the package upstream, so other
-# users don't have to tread the same path. Then you can remove your assignInNamepace() call.
+# users don't have to treat the same path. Then you can remove your assignInNamepace() call.
 
 # Packages may also set a variable in their namespace :
 #   .datatable.aware = TRUE
