@@ -251,7 +251,7 @@ import(data.table)
 1. **Documentation**: The NAMESPACE file can serve as good documentation of how you depend on certain packages.
 2. **Avoiding Conflicts**: Blanket imports leave you open to subtle breakage. For example, if you `import(pkgA)` and `import(pkgB)`, but later pkgB exports a function also exported by pkgA, this will break your package due to conflicts in your namespace, which is disallowed by `R CMD check` and CRAN.
 
-### Step 3: Update Your R code Files outside package's R/ directory
+### Step 3: Update Your R code files outside the package's R/ directory
 
 When you move a package from `Depends` to `Imports`, it will no longer be automatically attached when your package is loaded. This can be important for examples, tests, vignettes, and demos, where `Imports` packages need to be attached explicitly.
 
