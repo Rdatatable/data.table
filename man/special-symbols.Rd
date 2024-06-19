@@ -70,13 +70,13 @@ DT[, .(.I, min(.SD[,-1]))]
 DT[, .(min(.SD[,-1])), by=.I]
 
 #These examples illustrate the importance of using copy(.BY) when capturing .BY values in a list outside the data.table context to avoid unexpected behavior.
-dt <- data.table(l = sample(letters[1:5], 100, replace = TRUE), b = rnorm(100))
+dt <- data.table(l = letters[1:5], b = rnorm(5))
 setkey(dt, l)
 
 ## Incorrect usage
 byg <- list()
 dt[, m := {
-  byg <- append(byg, .BY)  # Incorrect: Missing copy(.BY)
+  byg <<- append(byg, .BY)  # Incorrect: Missing copy(.BY)
   mean(b)
 }, by = l]
 str(byg)  # All elements of 'byg' will contain the .BY value of the last group
@@ -84,7 +84,7 @@ str(byg)  # All elements of 'byg' will contain the .BY value of the last group
 ## Correct usage
 byg <- list()
 dt[, m := {
-  byg <- append(byg, copy(.BY))  # Correct: Using copy(.BY)
+  byg <<- append(byg, copy(.BY))  # Correct: Using copy(.BY)
   mean(b)
 }, by = l]
 str(byg)  # 'byg' now correctly captures .BY values for each group
