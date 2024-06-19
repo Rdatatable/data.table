@@ -33,6 +33,8 @@
     \code{.NATURAL} is defined as \code{NULL} but its value is not used. Its usage is \code{on=.NATURAL} (alternative of \code{X[on=Y]}) which joins two tables on their common column names, performing a natural join; see \code{\link{data.table}}'s \code{on} argument for more details.
 
     Note that \code{.N} in \code{i} is computed up-front, while that in \code{j} applies \emph{after filtering in \code{i}}. That means that even absent grouping, \code{.N} in \code{i} can be different from \code{.N} in \code{j}. See Examples.
+
+    Note: When appending \code{.BY} to a list or using it outside the current \code{data.table}, use \code{copy(.BY)} to ensure each group's \code{.BY} value is correctly captured. Without \code{copy()}, \code{.BY} will be overwritten with each iteration, leading to all list elements containing the last group's value.
 }
 \seealso{
     \code{\link{data.table}}, \code{\link{:=}}, \code{\link{set}}, \code{\link{datatable-optimize}}
