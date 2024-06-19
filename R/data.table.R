@@ -13,11 +13,11 @@ methods::setPackageName("data.table",.global)
 #   (3) add to vignettes/datatable-importing.Rmd#globals section
 .SD = .N = .I = .GRP = .NGRP = .BY = .EACHI = NULL
 J = function(...) {
-  stopf("The function 'J' should not be called here. 'J' is intended for use within the 'i' arguement of data.table operations")
+  stopf("The function 'J' should not be called here. 'J' is intended for use within the 'i' argument of data.table operations")
 }
 
 . = function(...) {
-  stopf("The symbol '.' should not be used here. '.' can be used as an alias for 'list' within the square brackets of a data.table, DT[.]")
+  stopf("The function '.' should not be called here. '.' can be used as an alias for 'list' within the square brackets of a data.table, DT[.]")
 }
 
 # These are exported to prevent NOTEs from R CMD check, and checkUsage via compiler.
