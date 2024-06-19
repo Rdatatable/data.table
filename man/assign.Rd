@@ -153,7 +153,7 @@ set(DT, NULL, "b", 100L) # equivalent
 ## Set values for multiple columns without specifying rows
 set(DT, j = c("b", "d"), value = list(200L, 300L))
 ## Set values for multiple columns with multiple specified rows.
-set(DT, c(1L, 2L), c("b", "d"), value = list(500L, 800L))
+set(DT, c(1L, 3L), c("b", "d"), value = list(500L, 800L))
 
 \dontrun{
 # Speed example:
