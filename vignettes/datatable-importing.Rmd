@@ -274,7 +274,7 @@ setDT(dt)
 result <- merge(dt, other_dt, by = "x")
 ```
 
-### Benefits of Using `Imports`
+### Benefits of using `Imports`
 - **Namespace Management**: Only the functions your package explicitly imports are available, reducing the risk of function name clashes.
 - **Cleaner Package Loading**: Your package's dependencies are not attached to the search path, making the loading process cleaner and potentially faster.
 - **Easier Maintenance**: It simplifies maintenance tasks as upstream dependencies' APIs evolve. Depending too much on `Depends` can lead to conflicts and compatibility issues over time.
