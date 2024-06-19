@@ -25,10 +25,10 @@
     col.names=getOption("datatable.print.colnames"),    # default: "auto"
     print.keys=getOption("datatable.print.keys"),       # default: TRUE
     trunc.cols=getOption("datatable.print.trunc.cols"), # default: FALSE
+    print.indices=getOption("datatable.print.indices"), # default: FALSE
     quote=FALSE,
     na.print=NULL,
-    timezone=FALSE,
-    indices=FALSE, \dots)
+    timezone=FALSE, \dots)
 
   format_col(x, \dots)
   \method{format_col}{default}(x, \dots)
@@ -47,10 +47,10 @@
   \item{col.names}{ One of three flavours for controlling the display of column names in output. \code{"auto"} includes column names above the data, as well as below the table if \code{nrow(x) > 20}. \code{"top"} excludes this lower register when applicable, and \code{"none"} suppresses column names altogether (as well as column classes if \code{class = TRUE}. }
   \item{print.keys}{ If \code{TRUE}, any \code{\link{key}} and/or \code{\link[=indices]{index}} currently assigned to \code{x} will be printed prior to the preview of the data. }
   \item{trunc.cols}{ If \code{TRUE}, only the columns that can be printed in the console without wrapping the columns to new lines will be printed (similar to \code{tibbles}). }
+  \item{print.indices}{ If \code{TRUE}, indices will be printed alongside \code{x}. }
   \item{quote}{ If \code{TRUE}, all output will appear in quotes, as in \code{print.default}. }
   \item{timezone}{ If \code{TRUE}, time columns of class POSIXct or POSIXlt will be printed with their timezones (if attribute is available). }
   \item{na.print}{ The string to be printed in place of \code{NA} values, as in \code{print.default}. }
-  \item{indices}{ If \code{TRUE}, the row indices will be printed alongside \code{x}. }
   \item{\dots}{ Other arguments ultimately passed to \code{format}. }
 }
 \value{
@@ -118,6 +118,7 @@
   x = data.table(z = c(1 + 3i, 2 - 1i, pi + 2.718i))
   print(x)
 
+  old = options(datatable.print.indices=TRUE)
   NN = 200
   set.seed(2024)
   DT = data.table(
@@ -127,7 +128,8 @@
   )
   setkey(DT, grp1, grp2)
   setindex(DT, grp1, grp3)
-  print(DT, indices = TRUE)
+  print(DT)
+  options(old)
 
   iris = as.data.table(iris)
   iris_agg = iris[ , .(reg = list(lm(Sepal.Length ~ Petal.Length))), by = Species]

@@ -18623,7 +18623,6 @@ DT = data.table(
 )
 setkey(DT, grp1, grp2)
 setindex(DT, grp1, grp3)
-dt2 = copy(DT)
 ans = c(
  "     grp1 grp2 grp3 index__grp1__grp3",
  "  1:    1    5   15                 1",
@@ -18636,12 +18635,32 @@ ans = c(
  "197:   98   87   70               197",
  "198:  100   18   21               198",
  "199:  100   36   51               199",
- "200:  100   38   56               200"
- )
-test(2264.1, print(DT, indices=TRUE), output=ans)
+ "200:  100   38   56               200")
+# test printing with 1 index column, no markers for order
+test(2264.1, print(DT, print.indices=TRUE), output=ans)
+# test that options work as well
+test(2264.2, options=list(datatable.print.indices=TRUE), print(DT), output=ans)
+setindex(DT, grp3, grp1)
+ans = c(
+ "     grp1 grp2 grp3 index1__grp1__grp3 index2__grp3__grp1",
+ "  1:    1    5   15                  1                 10",
+ "  2:    1   24   60                  2                119",
+ "  3:    2   26   32                  5                164",
+ "  4:    2   36   57                  3                192",
+ "  5:    2   51   30                  4                 63",
+ " ---                                                     ",
+ "196:   98   77   45                195                 11",
+ "197:   98   87   70                197                 66",
+ "198:  100   18   21                198                 31",
+ "199:  100   36   51                199                139",
+ "200:  100   38   56                200                159")
+# test for two indices, with markers to show order
+test(2264.3, print(DT, print.indices=TRUE), output=ans)
+test(2264.4, options=list(datatable.print.indices=TRUE), print(DT), output=ans)
 setindex(DT, NULL) # clear indices
 # if no indices are set, simply ignore
-test(2264.2, capture.output(print(DT, indices=TRUE)), capture.output(print(DT, indices=FALSE)))
+test(2264.5, capture.output(print(DT, print.indices=TRUE)), capture.output(print(DT, print.indices=FALSE)))
+test(2264.6, options=list(datatable.print.indices=TRUE), capture.output(print(DT, print.indices=TRUE)), capture.output(print(DT, print.indices=FALSE)))
 setindex(DT, grp3)
 ans = c(
  "     grp1 grp2 grp3 index__grp3",
@@ -18655,6 +18674,5 @@ ans = c(
  "197:   98   87   70          66",
  "198:  100   18   21          31",
  "199:  100   36   51         139",
- "200:  100   38   56         159"
- )
-test(2264.3, print(DT, indices=TRUE), output=ans)
+ "200:  100   38   56         159")
+test(2264.7, print(DT, print.indices=TRUE), output=ans)
