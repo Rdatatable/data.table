@@ -239,7 +239,7 @@ Based on the `R CMD check` results, ensure all used functions, special symbols, 
 
 That means adding `importFrom(data.table, ...)` directives for symbols, functions, and S3 generics, and/or `importClassesFrom(data.table, ...)` directives for S4 classes as appropriate. See 'Writing R Extensions' for full details on how to do so properly.
 
-#### Blanket Import
+#### Blanket import
 
 Alternatively, you can import all functions from `data.table` at once, though this is generally not recommended:
 
