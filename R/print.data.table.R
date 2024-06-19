@@ -7,7 +7,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
                col.names=getOption("datatable.print.colnames"),
                print.keys=getOption("datatable.print.keys"),
                trunc.cols=getOption("datatable.print.trunc.cols"),
-               print.indices=getOption("datatable.print.indices"),
+               show.indices=getOption("datatable.show.indices"),
                quote=FALSE,
                na.print=NULL,
                timezone=FALSE, ...) {
@@ -66,22 +66,15 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     return(invisible(x))
   }
   index_dt = NULL
-  if (print.indices) {
+  if (show.indices) {
     if (is.null(indices(x))) {
-      print.indices = FALSE
+      show.indices = FALSE
     } else {
       index_dt = data.table()
       index_names = indices(x)
-      if (length(index_names) > 1L) {
-        count = 1L
-        for (index_name in index_names) {
-          index_col = attr(attr(x, 'index'), paste0('__', index_name))
-          index_dt[, paste0("index", count, "__", index_name) := index_col]
-          count = count + 1L
-        }
-      } else {
-        index_dt[, paste0("index__", index_names) := attr(attr(x, 'index'), paste0('__', index_names))]
-      }
+      index_dt <- as.data.table(attributes(attr(x, 'index')))
+      print_names <- paste0("index", if (ncol(index_dt) > 1L) seq_along(index_names) else "", ":", sub("__", "", names(index_dt)))
+      setnames(index_dt, print_names)
     }
   }
   n_x = nrow(x)
@@ -89,12 +82,12 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     toprint = rbindlist(list(head(x, topn), tail(x, topn)), use.names=FALSE)  # no need to match names because head and tail of same x, and #3306
     rn = c(seq_len(topn), seq.int(to=n_x, length.out=topn))
     printdots = TRUE
-    if (print.indices) toprint = cbind(toprint, rbindlist(list(head(index_dt, topn), tail(index_dt, topn)), use.names=FALSE))
+    if (show.indices) toprint = cbind(toprint, rbindlist(list(head(index_dt, topn), tail(index_dt, topn)), use.names=FALSE))
   } else {
     toprint = x
     rn = seq_len(n_x)
     printdots = FALSE
-    if (print.indices) toprint = cbind(toprint, index_dt)
+    if (show.indices) toprint = cbind(toprint, index_dt)
   }
   toprint=format.data.table(toprint, na.encode=FALSE, timezone = timezone, ...)  # na.encode=FALSE so that NA in character cols print as <NA>
   require_bit64_if_needed(x)

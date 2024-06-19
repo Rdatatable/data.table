@@ -18619,60 +18619,80 @@ set.seed(2024)
 DT = data.table(
  grp1 = sample(100, NN, TRUE),
  grp2 = sample(90, NN, TRUE),
- grp3 = sample(80, NN, TRUE)
-)
+ grp3 = sample(80, NN, TRUE))
 setkey(DT, grp1, grp2)
 setindex(DT, grp1, grp3)
 ans = c(
- "     grp1 grp2 grp3 index__grp1__grp3",
- "  1:    1    5   15                 1",
- "  2:    1   24   60                 2",
- "  3:    2   26   32                 5",
- "  4:    2   36   57                 3",
- "  5:    2   51   30                 4",
- " ---                                 ",
- "196:   98   77   45               195",
- "197:   98   87   70               197",
- "198:  100   18   21               198",
- "199:  100   36   51               199",
- "200:  100   38   56               200")
+ "     grp1 grp2 grp3 index:grp1__grp3",
+ "  1:    1    5   15                1",
+ "  2:    1   24   60                2",
+ "  3:    2   26   32                5",
+ "  4:    2   36   57                3",
+ "  5:    2   51   30                4",
+ " ---                                ",
+ "196:   98   77   45              195",
+ "197:   98   87   70              197",
+ "198:  100   18   21              198",
+ "199:  100   36   51              199",
+ "200:  100   38   56              200")
 # test printing with 1 index column, no markers for order
-test(2264.1, print(DT, print.indices=TRUE), output=ans)
+test(2264.1, print(DT, show.indices=TRUE), output=ans)
 # test that options work as well
-test(2264.2, options=list(datatable.print.indices=TRUE), print(DT), output=ans)
+test(2264.2, options=list(datatable.show.indices=TRUE), print(DT), output=ans)
 setindex(DT, grp3, grp1)
 ans = c(
- "     grp1 grp2 grp3 index1__grp1__grp3 index2__grp3__grp1",
- "  1:    1    5   15                  1                 10",
- "  2:    1   24   60                  2                119",
- "  3:    2   26   32                  5                164",
- "  4:    2   36   57                  3                192",
- "  5:    2   51   30                  4                 63",
- " ---                                                     ",
- "196:   98   77   45                195                 11",
- "197:   98   87   70                197                 66",
- "198:  100   18   21                198                 31",
- "199:  100   36   51                199                139",
- "200:  100   38   56                200                159")
+ "     grp1 grp2 grp3 index1:grp1__grp3 index2:grp3__grp1",
+ "  1:    1    5   15                 1                10",
+ "  2:    1   24   60                 2               119",
+ "  3:    2   26   32                 5               164",
+ "  4:    2   36   57                 3               192",
+ "  5:    2   51   30                 4                63",
+ " ---                                                   ",
+ "196:   98   77   45               195                11",
+ "197:   98   87   70               197                66",
+ "198:  100   18   21               198                31",
+ "199:  100   36   51               199               139",
+ "200:  100   38   56               200               159")
 # test for two indices, with markers to show order
-test(2264.3, print(DT, print.indices=TRUE), output=ans)
-test(2264.4, options=list(datatable.print.indices=TRUE), print(DT), output=ans)
+test(2264.3, print(DT, show.indices=TRUE), output=ans)
+test(2264.4, options=list(datatable.show.indices=TRUE), print(DT), output=ans)
 setindex(DT, NULL) # clear indices
 # if no indices are set, simply ignore
-test(2264.5, capture.output(print(DT, print.indices=TRUE)), capture.output(print(DT, print.indices=FALSE)))
-test(2264.6, options=list(datatable.print.indices=TRUE), capture.output(print(DT, print.indices=TRUE)), capture.output(print(DT, print.indices=FALSE)))
+test(2264.5, print(DT, show.indices=TRUE), notOutput="index:grp1__grp3")
+test(2264.6, options=list(datatable.show.indices=TRUE), print(DT, show.indices=TRUE), notOutput="index:grp1__grp3")
 setindex(DT, grp3)
 ans = c(
- "     grp1 grp2 grp3 index__grp3",
- "  1:    1    5   15          10",
- "  2:    1   24   60         119",
- "  3:    2   26   32         164",
- "  4:    2   36   57         192",
- "  5:    2   51   30          63",
- " ---                           ",
- "196:   98   77   45          11",
- "197:   98   87   70          66",
- "198:  100   18   21          31",
- "199:  100   36   51         139",
- "200:  100   38   56         159")
-test(2264.7, print(DT, print.indices=TRUE), output=ans)
+ "     grp1 grp2 grp3 index:grp3",
+ "  1:    1    5   15         10",
+ "  2:    1   24   60        119",
+ "  3:    2   26   32        164",
+ "  4:    2   36   57        192",
+ "  5:    2   51   30         63",
+ " ---                          ",
+ "196:   98   77   45         11",
+ "197:   98   87   70         66",
+ "198:  100   18   21         31",
+ "199:  100   36   51        139",
+ "200:  100   38   56        159")
+test(2264.7, print(DT, show.indices=TRUE), output=ans)
+NN = 10
+DT = data.table(
+ grp1 = sample(100, NN, TRUE),
+ grp2 = sample(90, NN, TRUE),
+ grp3 = sample(80, NN, TRUE))
+setindex(DT, grp1, grp3)
+setindex(DT, grp3, grp1)
+ans = c(
+ "    grp1 grp2 grp3 index1:grp1__grp3 index2:grp3__grp1",
+ " 1:   77   61   53                 3                 5",
+ " 2:   80   66   37                 8                 4",
+ " 3:   27   42    8                 5                 3",
+ " 4:   66   37    7                 4                 7",
+ " 5:   38   69    5                 6                 2",
+ " 6:   72   89   69                 1                10",
+ " 7:   86   52   16                 2                 1",
+ " 8:   28   35   62                10                 8",
+ " 9:   95   82   80                 7                 6",
+ "10:   83   64   41                 9                 9")
+# test where topn isn't necessary
+test(2264.8, print(DT, show.indices=TRUE), output=ans)
