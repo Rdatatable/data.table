@@ -23,7 +23,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     stopf("Argument 'encoding' must be 'unknown', 'UTF-8' or 'Latin-1'.")
   }
   stopifnot(
-    isTRUEorFALSE(strip.white), isTRUEorFALSE(blank.lines.skip), isTRUEorFALSE(fill) || is.numeric(fill) && length(fill)==1L && fill >= 0L, isTRUEorFALSE(showProgress),
+    isTRUEorFALSE(strip.white), isTRUEorFALSE(blank.lines.skip) || (blank.lines.skip == "none"), isTRUEorFALSE(fill) || is.numeric(fill) && length(fill)==1L && fill >= 0L, isTRUEorFALSE(showProgress),
     isTRUEorFALSE(verbose), isTRUEorFALSE(check.names), isTRUEorFALSE(logical01), isTRUEorFALSE(keepLeadingZeros), isTRUEorFALSE(yaml),
     isTRUEorFALSE(stringsAsFactors) || (is.double(stringsAsFactors) && length(stringsAsFactors)==1L && 0.0<=stringsAsFactors && stringsAsFactors<=1.0),
     is.numeric(nrows), length(nrows)==1L

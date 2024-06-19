@@ -154,6 +154,9 @@ typedef struct freadMainArgs
   // should datetime with no Z or UTZ-offset be read as UTC?
   bool noTZasUTC;
 
+  // If true, then leading blank lines will be kept.
+  bool keepLeadingWhite;
+
   char _padding[1];
 
   // Any additional implementation-specific parameters.
