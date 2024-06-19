@@ -203,7 +203,7 @@ Some tiny parts of `data.table` C code were isolated from the R C API and can no
 
 To convert a `Depends` dependency on `data.table` to an `Imports` dependency in your package, follow these steps:
 
-### Step 0.  Ensure your package is passing R CMD check initially
+### Step 0. Ensure your package is passing R CMD check initially
 
 ### Step 1. Update the DESCRIPTION file to put data.table in Imports, not Depends
 
