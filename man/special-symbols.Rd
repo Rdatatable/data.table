@@ -34,7 +34,7 @@
 
     Note that \code{.N} in \code{i} is computed up-front, while that in \code{j} applies \emph{after filtering in \code{i}}. That means that even absent grouping, \code{.N} in \code{i} can be different from \code{.N} in \code{j}. See Examples.
 
-    Note: When appending \code{.BY} to a list or using it outside the current \code{data.table}, use \code{copy(.BY)} to ensure each group's \code{.BY} value is correctly captured. Without \code{copy()}, \code{.BY} will be overwritten with each iteration, leading to all list elements containing the last group's value.
+    Note: When appending \code{.BY} to a list or using it outside the current \code{data.table}, use \code{copy(.BY)} to ensure each group's \code{.BY} value is correctly captured. Without \code{copy()}, \code{.BY} will be overwritten with each iteration, leading to all list elements containing the last group's value. Checkout examples for better understanding.
 }
 \seealso{
     \code{\link{data.table}}, \code{\link{:=}}, \code{\link{set}}, \code{\link{datatable-optimize}}
@@ -68,5 +68,18 @@ DT[{cat(sprintf('in i, .N is \%d\n', .N)); a < .N/2},
 # .I can be different in j and by, enabling rowwise operations in by
 DT[, .(.I, min(.SD[,-1]))]
 DT[, .(min(.SD[,-1])), by=.I]
+
+# Correct usage of copy(.BY) to avoid unexpected behavior
+dt = data.table(l = sample(letters[1:5], 100, replace = TRUE), b = rnorm(100))
+setkey(dt, l)
+
+by_list = list()
+dt[
+  , m := {
+    by_list <<- append(by_list, copy(.BY))
+    mean(b)
+  }
+  , by = l
+]
 }
 \keyword{ data }
