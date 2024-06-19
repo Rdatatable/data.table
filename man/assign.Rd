@@ -140,6 +140,21 @@ sq_col_idx = grep('d$', names(DT))
 DT[ , (sq_col_idx) := lapply(.SD, dnorm),
    .SDcols = sq_col_idx]
 
+# Examples using `set` function
+## Set value for single cell
+set(DT, 1L, "b", 10L)
+## Set values for multiple columns in a specific row
+set(DT, 2L, c("b", "d"), list(20L, 30L))
+## Set values by column indices
+set(DT, 3L, c(2L, 4L), list(40L, 50L))
+## Set value for an entire column without specifying rows
+set(DT, j = "b", value = 100L)
+set(DT, NULL, "b", 100L) # equivalent
+## Set values for multiple columns without specifying rows
+set(DT, j = c("b", "d"), value = list(200L, 300L))
+## Set values for multiple columns with multiple specified rows.
+set(DT, c(1L, 3L), c("b", "d"), value = list(500L, 800L))
+
 \dontrun{
 # Speed example:
 
