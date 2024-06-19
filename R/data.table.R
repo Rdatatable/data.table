@@ -12,10 +12,14 @@ methods::setPackageName("data.table",.global)
 #   (2) export() in NAMESPACE
 #   (3) add to vignettes/datatable-importing.Rmd#globals section
 .SD = .N = .I = .GRP = .NGRP = .BY = .EACHI = NULL
-. = function(...) NULL
 J = function(...) {
-  stopf("Hey you shouldn't call that here/there's probably a mistake")
+  stopf("The function 'J' should not be called here. 'J' is intended for use within the 'j' expression of data.table operations")
 }
+
+. = function(...) {
+  stopf("The symbol '.' should not be used here. '.' is intended for use within data.table operations.")
+}
+
 # These are exported to prevent NOTEs from R CMD check, and checkUsage via compiler.
 # But also exporting them makes it clear (to users and other packages) that data.table uses these as symbols.
 # utils::globalVariables(c(".SD",".N")) was tried as well, but exporting seems better.
