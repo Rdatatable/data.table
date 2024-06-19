@@ -231,7 +231,7 @@ Run `R CMD check` to identify any missing imports or symbols. This step helps:
 - Flag missing special symbols like `.N`, `.SD`, and `:=`.
 - Provide immediate feedback on what needs to be added to the NAMESPACE file.
 
-Note: Not all such usages are caught by `R CMD check`. In particular, `R CMD check` skips some symbols/functions in formulas and will completely miss parsed expressions like parse(text = "data.table(a = 1)"). Packages will need good test coverage to detect these edge cases.
+Note: Not all such usages are caught by `R CMD check`. In particular, `R CMD check` skips some symbols/functions in formulas and will completely miss parsed expressions like `parse(text = "data.table(a = 1)")`. Packages will need good test coverage to detect these edge cases.
 
 ### Step 2.2: Modify the NAMESPACE File
 
