@@ -70,7 +70,6 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     if (is.null(indices(x))) {
       show.indices = FALSE
     } else {
-      index_dt = data.table()
       index_names = indices(x)
       index_dt <- as.data.table(attributes(attr(x, 'index')))
       print_names <- paste0("index", if (ncol(index_dt) > 1L) seq_along(index_names) else "", ":", sub("__", "", names(index_dt)))
