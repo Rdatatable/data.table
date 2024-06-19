@@ -233,7 +233,7 @@ Run `R CMD check` to identify any missing imports or symbols. This step helps:
 
 Note: Not all such usages are caught by `R CMD check`. In particular, `R CMD check` skips some symbols/functions in formulas and will completely miss parsed expressions like `parse(text = "data.table(a = 1)")`. Packages will need good test coverage to detect these edge cases.
 
-### Step 2.2: Modify the NAMESPACE File
+### Step 2.2: Modify the NAMESPACE file
 
 Based on the `R CMD check` results, ensure all used functions, special symbols, S3 generics, and S4 classes from `data.table` are imported.
 
