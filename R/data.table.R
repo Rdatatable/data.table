@@ -12,16 +12,9 @@ methods::setPackageName("data.table",.global)
 #   (2) export() in NAMESPACE
 #   (3) add to vignettes/datatable-importing.Rmd#globals section
 .SD = .N = .I = .GRP = .NGRP = .BY = .EACHI = NULL
-J = function(...) {
-  stopf("The function 'J' should not be called here. 'J' is intended for use within the 'i' argument of data.table operations")
-}
-
-. = function(...) {
-  stopf("The function '.' should not be called here. '.' can be used as an alias for 'list' within the square brackets of a data.table, DT[.]")
-}
-
 # These are exported to prevent NOTEs from R CMD check, and checkUsage via compiler.
 # But also exporting them makes it clear (to users and other packages) that data.table uses these as symbols.
+# And NULL makes it clear (to the R's mask check on loading) that they're variables not functions.
 # utils::globalVariables(c(".SD",".N")) was tried as well, but exporting seems better.
 # So even though .BY doesn't appear in this file, it should still be NULL here and exported because it's
 # defined in SDenv and can be used by users.
@@ -2775,6 +2768,14 @@ address = function(x) .Call(Caddress, eval(substitute(x), parent.frame()))
 ":=" = function(...) {
   # this error is detected when eval'ing isub and replaced with a more helpful one when using := in i due to forgetting a comma, #4227
   stopf('Check that is.data.table(DT) == TRUE. Otherwise, :=, `:=`(...) and let(...) are defined for use in j, once only and in particular ways. See help(":=").')
+}
+
+J = function(...) {
+  stopf("The function 'J' should not be called here. 'J' is intended for use within the 'i' argument of data.table operations")
+}
+
+. = function(...) {
+  stopf("The function '.' should not be called here. '.' can be used as an alias for 'list' within the square brackets of a data.table, DT[.]")
 }
 
 let = function(...) `:=`(...)
