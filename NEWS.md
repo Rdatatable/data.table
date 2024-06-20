@@ -100,6 +100,8 @@
 
 16. `print.data.table` gains new argument `show.indices` and option `datatable.show.indices` that allows the user to print a `data.table`'s indices as columns without having to modify the `data.table` itself. Thanks @MichaelChirico for the report and @joshhwuu for the PR.
 
+17. Assigning `list(NULL)` to a list column now replaces the column with `list(NULL)`, instead of deleting the column [#5558](https://github.com/Rdatatable/data.table/issues/5558). This behavior is now consistent with base `data.frame`. Thanks @tdhock for the report and @joshhwuu for the fix.
+
 ## TRANSLATIONS
 
 1. Fix a typo in a Mandarin translation of an error message that was hiding the actual error message, [#6172](https://github.com/Rdatatable/data.table/issues/6172). Thanks @trafficfan for the report and @MichaelChirico for the fix.
