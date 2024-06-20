@@ -464,7 +464,7 @@ However, features like basic S3 dispatch (pasting the function name together wit
 
 ```r
 
-DT <- data.table(x = c("a", "b", "c"), y = c(1, 3, 6), v = 1:3  )
+DT = data.table(x = c("a", "b", "c"), y = c(1, 3, 6), v = 1:3  )
 
 # Using TRUE/FALSE works as expected
 # This selects the first two columns and excludes the third one
@@ -497,7 +497,7 @@ DT[, .SD, .SDcols = c(T, T, F), with = FALSE]
 # We'd have to evaluate T to see it's TRUE, which data.table does not do by default.
 
 # Moreover, data.table scoping complicates things further. Consider:
-DT <- data.table(T = 1, F = 2)
+DT = data.table(T = 1, F = 2)
 DT[, c(T, F)]
 # What should this return? 
 # In this case, it returns the values of columns T and F, which are 1 and 2.
