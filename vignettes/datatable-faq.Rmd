@@ -460,6 +460,10 @@ Happily, an internet search for "How does R method dispatch work" (at the time o
 
 However, features like basic S3 dispatch (pasting the function name together with the class name) is why some R folk love R. It's so simple. No complicated registration or signature is required. There isn't much needed to learn. To create the `merge` method for data.table all that was required, literally, was to merely create a function called `merge.data.table`.
 
+## Why do `T` and `F` behave differently from `TRUE` and `FALSE` in `data.table`?
+
+In R, `T` and `F` are global variables that default to `TRUE` and `FALSE`, respectively. However, they can be redefined in the user environment, leading to unexpected behavior. The `data.table` package might treat `T` and `F` as variable names rather than logical constants. To avoid this issue, always use `TRUE` and `FALSE` for logical indexing and column selection in `data.table`.
+
 # Questions relating to compute time
 
 ## I have 20 columns and a large number of rows. Why is an expression of one column so quick?
