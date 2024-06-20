@@ -65,7 +65,6 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     }
     return(invisible(x))
   }
-  index_dt = NULL
   if (show.indices) {
     if (is.null(indices(x))) {
       show.indices = FALSE
