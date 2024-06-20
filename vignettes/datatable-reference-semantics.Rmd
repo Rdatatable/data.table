@@ -78,6 +78,8 @@ A *shallow* copy is just a copy of the vector of column pointers (corresponding 
 
 A *deep* copy on the other hand copies the entire data to another location in memory.
 
+When subsetting a *data.table* using `i` (e.g., `DT[1:10]`), a *deep* copy is made. However, when `i` is not provided or equals `TRUE`, a *shallow* copy is made.
+
 #
 With *data.table's* `:=` operator, absolutely no copies are made in *both* (1) and (2), irrespective of R version you are using. This is because `:=` operator updates *data.table* columns *in-place* (by reference).
 

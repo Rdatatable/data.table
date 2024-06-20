@@ -18613,138 +18613,222 @@ test(2263.4, options=list(datatable.verbose=TRUE, datatable.optimize=Inf), dt[, 
 test(2263.5, options=list(datatable.verbose=TRUE, datatable.optimize=Inf), dt[, .N, .(b,c)], data.table(b=dt$b, c=dt$c, N=1L), output="GForce optimized j to")
 test(2263.6, options=list(datatable.verbose=TRUE, datatable.optimize=Inf), names(attributes(dt[, .N, b]$b)), c("class", "att"), output="GForce optimized j to")
 
+# tests for printing indices alongside data.tables
+NN = 200
+set.seed(2024)
+DT = data.table(
+ grp1 = sample(100, NN, TRUE),
+ grp2 = sample(90, NN, TRUE),
+ grp3 = sample(80, NN, TRUE))
+setkey(DT, grp1, grp2)
+setindex(DT, grp1, grp3)
+ans = c(
+ "     grp1 grp2 grp3 index:grp1__grp3",
+ "  1:    1    5   15                1",
+ "  2:    1   24   60                2",
+ "  3:    2   26   32                5",
+ "  4:    2   36   57                3",
+ "  5:    2   51   30                4",
+ " ---                                ",
+ "196:   98   77   45              195",
+ "197:   98   87   70              197",
+ "198:  100   18   21              198",
+ "199:  100   36   51              199",
+ "200:  100   38   56              200")
+# test printing with 1 index column, no markers for order
+test(2264.1, print(DT, show.indices=TRUE), output=ans)
+# test that options work as well
+test(2264.2, options=list(datatable.show.indices=TRUE), print(DT), output=ans)
+setindex(DT, grp3, grp1)
+ans = c(
+ "     grp1 grp2 grp3 index1:grp1__grp3 index2:grp3__grp1",
+ "  1:    1    5   15                 1                10",
+ "  2:    1   24   60                 2               119",
+ "  3:    2   26   32                 5               164",
+ "  4:    2   36   57                 3               192",
+ "  5:    2   51   30                 4                63",
+ " ---                                                   ",
+ "196:   98   77   45               195                11",
+ "197:   98   87   70               197                66",
+ "198:  100   18   21               198                31",
+ "199:  100   36   51               199               139",
+ "200:  100   38   56               200               159")
+# test for two indices, with markers to show order
+test(2264.3, print(DT, show.indices=TRUE), output=ans)
+test(2264.4, options=list(datatable.show.indices=TRUE), print(DT), output=ans)
+setindex(DT, NULL) # clear indices
+# if no indices are set, simply ignore
+test(2264.5, print(DT, show.indices=TRUE), notOutput="index:grp1__grp3")
+test(2264.6, options=list(datatable.show.indices=TRUE), print(DT, show.indices=TRUE), notOutput="index:grp1__grp3")
+setindex(DT, grp3)
+ans = c(
+ "     grp1 grp2 grp3 index:grp3",
+ "  1:    1    5   15         10",
+ "  2:    1   24   60        119",
+ "  3:    2   26   32        164",
+ "  4:    2   36   57        192",
+ "  5:    2   51   30         63",
+ " ---                          ",
+ "196:   98   77   45         11",
+ "197:   98   87   70         66",
+ "198:  100   18   21         31",
+ "199:  100   36   51        139",
+ "200:  100   38   56        159")
+test(2264.7, print(DT, show.indices=TRUE), output=ans)
+NN = 10
+DT = data.table(
+ grp1 = sample(100, NN, TRUE),
+ grp2 = sample(90, NN, TRUE),
+ grp3 = sample(80, NN, TRUE))
+setindex(DT, grp1, grp3)
+setindex(DT, grp3, grp1)
+ans = c(
+ "    grp1 grp2 grp3 index1:grp1__grp3 index2:grp3__grp1",
+ " 1:   77   61   53                 3                 5",
+ " 2:   80   66   37                 8                 4",
+ " 3:   27   42    8                 5                 3",
+ " 4:   66   37    7                 4                 7",
+ " 5:   38   69    5                 6                 2",
+ " 6:   72   89   69                 1                10",
+ " 7:   86   52   16                 2                 1",
+ " 8:   28   35   62                10                 8",
+ " 9:   95   82   80                 7                 6",
+ "10:   83   64   41                 9                 9")
+# test where topn isn't necessary
+test(2264.8, print(DT, show.indices=TRUE), output=ans)
+
 # tests for new consistent replacement of list columns with list(NULL), #5558
 # replacement of a list column with list(NULL) in a single-row data.table, using different assignment methods
 DT = data.table(L = list("A"), i = 1L)
 ans = data.table(L = list(NULL), i = 1L)
 # test using replacement with $ operator
 DT$L = list(NULL)
-test(2264.01, DT, ans)
+test(2265.01, DT, ans)
 DT = data.table(L = list("A"), i = 1L)
 # standard form with := operator
-test(2264.02, copy(DT)[, L := list(NULL)], ans)
+test(2265.02, copy(DT)[, L := list(NULL)], ans)
 # functional form with := operator
-test(2264.03, copy(DT)[, `:=`(L = list(NULL))], ans)
+test(2265.03, copy(DT)[, `:=`(L = list(NULL))], ans)
 # functional form with 'let' alias
-test(2264.04, copy(DT)[, let(L = list(NULL))], ans)
+test(2265.04, copy(DT)[, let(L = list(NULL))], ans)
 # using set()
-test(2264.05, set(copy(DT), j = "L", value = list(NULL)), ans)
+test(2265.05, set(copy(DT), j = "L", value = list(NULL)), ans)
 # tests doing the same as above, but with multiple columns
 DT = data.table(L1 = list("A"), L2 = list("B"), i = 1L)
 ans = data.table(L1 = list(NULL), L2 = list(NULL), i = 1L)
 DT$L1 = list(NULL)
 DT$L2 = list(NULL)
-test(2264.06, DT, ans)
+test(2265.06, DT, ans)
 DT = data.table(L1 = list("A"), L2 = list("B"), i = 1L)
 # standard form with := operator
-test(2264.07, copy(DT)[, c("L1", "L2") := list(list(NULL), list(NULL))], ans)
+test(2265.07, copy(DT)[, c("L1", "L2") := list(list(NULL), list(NULL))], ans)
 # functional form with := operator
-test(2264.08, copy(DT)[, `:=`(L1 = list(NULL), L2 = list(NULL))], ans)
+test(2265.08, copy(DT)[, `:=`(L1 = list(NULL), L2 = list(NULL))], ans)
 # functional form with 'let' alias
-test(2264.09, copy(DT)[, let(L1 = list(NULL), L2 = list(NULL))], ans)
+test(2265.09, copy(DT)[, let(L1 = list(NULL), L2 = list(NULL))], ans)
 # using set()
-test(2264.10, set(copy(DT), j = c("L1", "L2"), value = list(list(NULL), list(NULL))), ans)
+test(2265.10, set(copy(DT), j = c("L1", "L2"), value = list(list(NULL), list(NULL))), ans)
 
 # replacement of a list column with list(NULL) in a multi-row data.table, using different assignment methods
 DT = data.table(L = list("A", "B"), i = 1L)
 ans = data.table(L = list(NULL, NULL), i = 1L)
 # test using replacement with $ operator
 DT$L = list(NULL)
-test(2264.11, DT, ans)
+test(2265.11, DT, ans)
 DT = data.table(L = list("A", "B"), i = 1L)
 # standard form with := operator
-test(2264.12, copy(DT)[, L := list(NULL)], ans)
+test(2265.12, copy(DT)[, L := list(NULL)], ans)
 # functional form with := operator
-test(2264.13, copy(DT)[, `:=`(L = list(NULL))], ans)
+test(2265.13, copy(DT)[, `:=`(L = list(NULL))], ans)
 # functional form with 'let' alias
-test(2264.14, copy(DT)[, let(L = list(NULL))], ans)
+test(2265.14, copy(DT)[, let(L = list(NULL))], ans)
 # using set()
-test(2264.15, set(copy(DT), j = "L", value = list(NULL)), ans)
+test(2265.15, set(copy(DT), j = "L", value = list(NULL)), ans)
 # tests doing the same as above, but with multiple columns
 DT = data.table(L1 = list("A", "B"), L2 = list("B", "C"), i = 1L)
 ans = data.table(L1 = list(NULL, NULL), L2 = list(NULL, NULL), i = 1L)
 DT$L1 = list(NULL)
 DT$L2 = list(NULL)
-test(2264.16, DT, ans)
+test(2265.16, DT, ans)
 DT = data.table(L1 = list("A", "B"), L2 = list("B", "C"), i = 1L)
 # standard form with := operator
-test(2264.17, copy(DT)[, c("L1", "L2"):= list(list(NULL), list(NULL))], ans)
+test(2265.17, copy(DT)[, c("L1", "L2"):= list(list(NULL), list(NULL))], ans)
 # functional form with := operator
-test(2264.18, copy(DT)[, `:=`(L1 = list(NULL), L2 = list(NULL))], ans)
+test(2265.18, copy(DT)[, `:=`(L1 = list(NULL), L2 = list(NULL))], ans)
 # functional form with 'let' alias
-test(2264.19, copy(DT)[, let(L1 = list(NULL), L2 = list(NULL))], ans)
+test(2265.19, copy(DT)[, let(L1 = list(NULL), L2 = list(NULL))], ans)
 # using set()
-test(2264.20, set(copy(DT), j = c("L1", "L2"), value = list(list(NULL), list(NULL))), ans)
+test(2265.20, set(copy(DT), j = c("L1", "L2"), value = list(list(NULL), list(NULL))), ans)
 
 # Adding an empty list column to a single-row data.table, using different assignment methods
 DT = data.table(L = list("A"), i = 1L)
 ans = data.table(L = list("A"), i = 1L, D = list(NULL))
 warn = "Tried to assign NULL to column 'D', but this column does not exist to remove"
 # try to add a new empty list by list(NULL) with := in standard form, warns and does not change
-test(2264.21, copy(DT)[, D := list(NULL)], DT, warning=warn)
-test(2264.22, set(copy(DT), j = "D", value = list(NULL)), DT, warning=warn)
+test(2265.21, copy(DT)[, D := list(NULL)], DT, warning=warn)
+test(2265.22, set(copy(DT), j = "D", value = list(NULL)), DT, warning=warn)
 # add a new column by wrapping list(NULL), consistent with old behavior
 DT$D = list(list(NULL))
-test(2264.23, DT, ans)
+test(2265.23, DT, ans)
 DT = data.table(L = list("A"), i = 1L)
 # test adding empty list column in standard form with := operator
-test(2264.24, copy(DT)[, D := .(list(NULL))], ans)
+test(2265.24, copy(DT)[, D := .(list(NULL))], ans)
 # functional form with := operator
-test(2264.25, copy(DT)[, `:=`(D = list(NULL))], ans)
+test(2265.25, copy(DT)[, `:=`(D = list(NULL))], ans)
 # functional form with 'let' alias
-test(2264.26, copy(DT)[, let(D = list(NULL))], ans)
+test(2265.26, copy(DT)[, let(D = list(NULL))], ans)
 # using set()
-test(2264.27, set(copy(DT), j = "D", value = list(list(NULL))), ans)
+test(2265.27, set(copy(DT), j = "D", value = list(list(NULL))), ans)
 # tests doing the same as above, but with multiple columns
 DT = data.table(L = list("A"), i = 1L)
 ans = data.table(L = list("A"), i = 1L, D = list(NULL), R = list(NULL))
 DT$D = list(list(NULL))
 DT$R = list(list(NULL))
-test(2264.28, DT, ans)
+test(2265.28, DT, ans)
 DT = data.table(L = list("A"), i = 1L)
 # standard form with := operator
-test(2264.29, copy(DT)[, c("D", "R"):= .(list(NULL))], ans)
+test(2265.29, copy(DT)[, c("D", "R"):= .(list(NULL))], ans)
 # functional form with := operator
-test(2264.30, copy(DT)[, `:=`(D = list(NULL), R = list(NULL))], ans)
+test(2265.30, copy(DT)[, `:=`(D = list(NULL), R = list(NULL))], ans)
 # functional form with 'let' alias
-test(2264.31, copy(DT)[, let(D = list(NULL), R = list(NULL))], ans)
+test(2265.31, copy(DT)[, let(D = list(NULL), R = list(NULL))], ans)
 # using set()
-test(2264.32, set(copy(DT), j = c("D", "R"), value = list(list(NULL))), ans)
+test(2265.32, set(copy(DT), j = c("D", "R"), value = list(list(NULL))), ans)
 
 # Adding an empty list column to a multi-row data.table, using different assignment methods
 DT = data.table(L = list("A", "B"), i = 1L)
 ans = data.table(L = list("A", "B"), i = 1L, D = list(NULL, NULL))
 warn = "Tried to assign NULL to column 'D', but this column does not exist to remove"
 # try to add a new empty list by list(NULL) with := in standard form, warns and does not change
-test(2264.33, copy(DT)[, D := list(NULL)], DT, warning=warn)
-test(2264.34, set(copy(DT), j = "D", value = list(NULL)), DT, warning=warn)
+test(2265.33, copy(DT)[, D := list(NULL)], DT, warning=warn)
+test(2265.34, set(copy(DT), j = "D", value = list(NULL)), DT, warning=warn)
 # add a new column by wrapping list(NULL), consistent with old behavior
 DT$D = list(list(NULL))
-test(2264.35, DT, ans)
+test(2265.35, DT, ans)
 DT = data.table(L = list("A", "B"), i = 1L)
 # test adding empty list column in standard form with := operator
-test(2264.36, copy(DT)[, D := .(list(NULL))], ans)
+test(2265.36, copy(DT)[, D := .(list(NULL))], ans)
 # functional form with := operator
-test(2264.37, copy(DT)[, `:=`(D = list(NULL))], ans)
+test(2265.37, copy(DT)[, `:=`(D = list(NULL))], ans)
 # functional form with 'let' alias
-test(2264.38, copy(DT)[, let(D = list(NULL))], ans)
+test(2265.38, copy(DT)[, let(D = list(NULL))], ans)
 # using set()
-test(2264.39, set(copy(DT), j = "D", value = list(list(NULL))), ans)
+test(2265.39, set(copy(DT), j = "D", value = list(list(NULL))), ans)
 # tests doing the same as above, but with multiple columns
 DT = data.table(L = list("A", "B"), i = 1L)
 ans = data.table(L = list("A", "B"), i = 1L, D = list(NULL, NULL), R = list(NULL, NULL))
 DT$D = list(list(NULL))
 DT$R = list(list(NULL))
-test(2264.40, DT, ans)
+test(2265.40, DT, ans)
 DT = data.table(L = list("A", "B"), i = 1L)
 # standard form with := operator
-test(2264.41, copy(DT)[, c("D", "R"):= .(list(NULL))], ans)
+test(2265.41, copy(DT)[, c("D", "R"):= .(list(NULL))], ans)
 # functional form with := operator
-test(2264.42, copy(DT)[, `:=`(D = list(NULL), R = list(NULL))], ans)
+test(2265.42, copy(DT)[, `:=`(D = list(NULL), R = list(NULL))], ans)
 # functional form with 'let' alias
-test(2264.43, copy(DT)[, let(D = list(NULL), R = list(NULL))], ans)
+test(2265.43, copy(DT)[, let(D = list(NULL), R = list(NULL))], ans)
 # using set()
-test(2264.44, set(copy(DT), j = c("D", "R"), value = list(list(NULL))), ans)
+test(2265.44, set(copy(DT), j = c("D", "R"), value = list(list(NULL))), ans)
 
 # Removal of a list column in a single-row data.table, using different assignment methods
 # NOTE: There is only one way to remove columns now, by assigning to NULL
@@ -18752,89 +18836,89 @@ DT = data.table(L = list("A"), i = 1L)
 ans = data.table(i = 1L)
 # test removing a list column by assigning to NULL
 DT$L = NULL
-test(2264.45, DT, ans)
+test(2265.45, DT, ans)
 DT = data.table(L = list("A"), i = 1L)
 # standard form with := operator
-test(2264.46, copy(DT)[, L := NULL], ans)
+test(2265.46, copy(DT)[, L := NULL], ans)
 # functional form with := operator
-test(2264.47, copy(DT)[, `:=`(L = NULL)], ans)
+test(2265.47, copy(DT)[, `:=`(L = NULL)], ans)
 # functional form with 'let' alias
-test(2264.48, copy(DT)[, let(L = NULL)], ans)
+test(2265.48, copy(DT)[, let(L = NULL)], ans)
 # using set()
-test(2264.49, set(copy(DT), j = "L", value = NULL), ans)
+test(2265.49, set(copy(DT), j = "L", value = NULL), ans)
 # test doing the same as above, but with multiple columns
 DT = data.table(L1 = list("A"), L2 = list("B"), i = 1L)
 # test removing two list columns by assigning to NULL
 DT$L1 = NULL
 DT$L2 = NULL
-test(2264.50, DT, ans)
+test(2265.50, DT, ans)
 DT = data.table(L1 = list("A"), L2 = list("B"), i = 1L)
 # standard form with := operator
-test(2264.51, copy(DT)[, c("L1", "L2") := NULL], ans)
+test(2265.51, copy(DT)[, c("L1", "L2") := NULL], ans)
 # functional form with := operator
-test(2264.52, copy(DT)[, `:=`(L1 = NULL, L2 = NULL)], ans)
+test(2265.52, copy(DT)[, `:=`(L1 = NULL, L2 = NULL)], ans)
 # functional form with 'let' alias
-test(2264.53, copy(DT)[, let(L1 = NULL, L2 = NULL)], ans)
+test(2265.53, copy(DT)[, let(L1 = NULL, L2 = NULL)], ans)
 # using set()
-test(2264.54, set(copy(DT), j = c("L1", "L2"), value = NULL), ans)
+test(2265.54, set(copy(DT), j = c("L1", "L2"), value = NULL), ans)
 
 # Removal of a list column in a multi-row data.table, using different assignment methods
 DT = data.table(L = list("A", "B"), i = 1L)
 ans = data.table(i = c(1L, 1L))
 # test removing a list column by assigning to NULL
 DT$L = NULL
-test(2264.55, DT, ans)
+test(2265.55, DT, ans)
 DT = data.table(L = list("A", "B"), i = 1L)
 # standard form with := operator
-test(2264.56, copy(DT)[, L := NULL], ans)
+test(2265.56, copy(DT)[, L := NULL], ans)
 # functional form with := operator
-test(2264.57, copy(DT)[, `:=`(L = NULL)], ans)
+test(2265.57, copy(DT)[, `:=`(L = NULL)], ans)
 # functional form with 'let' alias
-test(2264.58, copy(DT)[, let(L = NULL)], ans)
+test(2265.58, copy(DT)[, let(L = NULL)], ans)
 # using set()
-test(2264.59, set(copy(DT), j = "L", value = NULL), ans)
+test(2265.59, set(copy(DT), j = "L", value = NULL), ans)
 # test doing the same as above, but with multiple columns
 DT = data.table(L1 = list("A", "B"), L2 = list("B", "C"), i = 1L)
 # test removing two list columns by assigning to NULL
 DT$L1 = NULL
 DT$L2 = NULL
-test(2264.60, DT, ans)
+test(2265.60, DT, ans)
 DT = data.table(L1 = list("A", "B"), L2 = list("B", "C"), i = 1L)
 # standard form with := operator
-test(2264.61, copy(DT)[, c("L1", "L2") := NULL], ans)
+test(2265.61, copy(DT)[, c("L1", "L2") := NULL], ans)
 # functional form with := operator
-test(2264.62, copy(DT)[, `:=`(L1 = NULL, L2 = NULL)], ans)
+test(2265.62, copy(DT)[, `:=`(L1 = NULL, L2 = NULL)], ans)
 # functional form with 'let' alias
-test(2264.63, copy(DT)[, let(L1 = NULL, L2 = NULL)], ans)
+test(2265.63, copy(DT)[, let(L1 = NULL, L2 = NULL)], ans)
 # using set()
-test(2264.64, set(copy(DT), j = c("L1", "L2"), value = NULL), ans)
+test(2265.64, set(copy(DT), j = c("L1", "L2"), value = NULL), ans)
 
 # Combining queries (add/remove/replace columns in the same query) for a single-row data.table
 DT = data.table(L = list("A"), i = 1L)
 # test for adding a new empty list column D and removing column L in the same query
 ans = data.table(i = 1L, D = list(NULL))
-test(2264.65, copy(DT)[, c("L", "D") := list(NULL, list(NULL))], ans)
-test(2264.66, copy(DT)[, `:=`(L = NULL, D = list(NULL))], ans)
-test(2264.67, copy(DT)[, let(L = NULL, D = list(NULL))], ans)
-test(2264.68, set(copy(DT), j = c("L", "D"), value = list(NULL, list(NULL))), ans)
+test(2265.65, copy(DT)[, c("L", "D") := list(NULL, list(NULL))], ans)
+test(2265.66, copy(DT)[, `:=`(L = NULL, D = list(NULL))], ans)
+test(2265.67, copy(DT)[, let(L = NULL, D = list(NULL))], ans)
+test(2265.68, set(copy(DT), j = c("L", "D"), value = list(NULL, list(NULL))), ans)
 DT = data.table(L = list("A"), i = 1L)
 # test for adding a new empty list column D and replacing column L with empty list in the same query
 ans = data.table(L = list(NULL), i = 1L, D = list(NULL))
-test(2264.69, copy(DT)[, c("L", "D") := list(list(NULL), list(NULL))], ans)
-test(2264.70, copy(DT)[, `:=`(L = list(NULL), D = list(NULL))], ans)
-test(2264.71, copy(DT)[, let(L = list(NULL), D = list(NULL))], ans)
-test(2264.72, set(copy(DT), j = c("L", "D"), value = list(list(NULL), list(NULL))), ans)
+test(2265.69, copy(DT)[, c("L", "D") := list(list(NULL), list(NULL))], ans)
+test(2265.70, copy(DT)[, `:=`(L = list(NULL), D = list(NULL))], ans)
+test(2265.71, copy(DT)[, let(L = list(NULL), D = list(NULL))], ans)
+test(2265.72, set(copy(DT), j = c("L", "D"), value = list(list(NULL), list(NULL))), ans)
 DT = data.table(L = list("A"), D = list("B"), i = 1L)
 # test for replacing column L with an empty list and removing list column D in the same query
 ans = data.table(L = list(NULL), i = 1L)
-test(2264.73, copy(DT)[, c("L", "D") := list(list(NULL), NULL)], ans)
-test(2264.74, copy(DT)[, `:=`(L = list(NULL), D = NULL)], ans)
-test(2264.75, copy(DT)[, let(L = list(NULL), D = NULL)], ans)
-test(2264.76, set(copy(DT), j = c("L", "D"), value = list(list(NULL), NULL)), ans)
+test(2265.73, copy(DT)[, c("L", "D") := list(list(NULL), NULL)], ans)
+test(2265.74, copy(DT)[, `:=`(L = list(NULL), D = NULL)], ans)
+test(2265.75, copy(DT)[, let(L = list(NULL), D = NULL)], ans)
+test(2265.76, set(copy(DT), j = c("L", "D"), value = list(list(NULL), NULL)), ans)
 DT = data.table(L = list("A"), D = list("B"), i = 1L)
 # test for combining add, replace, remove in the same query
 ans = data.table(L = list(NULL), i = 1L, E = list(NULL))
-test(2264.77, copy(DT)[, c("L", "D", "E") := list(list(NULL), NULL, list(NULL))], ans)
-test(2264.78, copy(DT)[, `:=`(L = list(NULL), D = NULL, E = list(NULL))], ans)
-test(2264.79, copy(DT)[, let(L = list(NULL), D = NULL, E = list(NULL))], ans)
-test(2264.80, set(copy(DT), j = c("L", "D", "E"), value = list(list(NULL), NULL, list(NULL))), ans)
+test(2265.77, copy(DT)[, c("L", "D", "E") := list(list(NULL), NULL, list(NULL))], ans)
+test(2265.78, copy(DT)[, `:=`(L = list(NULL), D = NULL, E = list(NULL))], ans)
+test(2265.79, copy(DT)[, let(L = list(NULL), D = NULL, E = list(NULL))], ans)
+test(2265.80, set(copy(DT), j = c("L", "D", "E"), value = list(list(NULL), NULL, list(NULL))), ans)
