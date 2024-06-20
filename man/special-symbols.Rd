@@ -69,7 +69,7 @@ DT[{cat(sprintf('in i, .N is \%d\n', .N)); a < .N/2},
 DT[, .(.I, min(.SD[,-1]))]
 DT[, .(min(.SD[,-1])), by=.I]
 
-#These examples illustrate the importance of using copy(.BY) when capturing .BY values in a list outside the data.table context to avoid unexpected behavior.
+# These examples illustrate the importance of using copy(.BY) when capturing .BY values in a list outside the data.table context to avoid unexpected behavior.
 dt <- data.table(l = letters[1:5], b = rnorm(5))
 setkey(dt, l)
 
