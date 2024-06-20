@@ -154,7 +154,7 @@ DT[subset_value]  # Incorrect: treats `subset_value` as an row number
 
 # Correct Usage:
 # To correctly subset based on the key column `id`, use the dot (`.`) syntax:
-DT[.(subset_value)]  # Correct: explicitly matches `subset_value` against `id`
+DT[.(subset_value)]  # Correct: matches `subset_value` against `id`
 
 }
 \keyword{ data }
