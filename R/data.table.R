@@ -1139,7 +1139,8 @@ replace_dot_alias = function(e) {
             }
           }
           names(jsub)=""
-          jsub[[1L]]=as.name("list")
+          # dont wrap the RHS in list if it is a singular NULL and if not creating a new column
+          if (length(jsub[-1L]) == 1L && as.character(jsub[-1L]) == 'NULL' && all(lhs %chin% names_x)) jsub[[1L]]=as.name("identity") else jsub[[1L]]=as.name("list")
         }
         av = all.vars(jsub,TRUE)
         if (!is.atomic(lhs)) stopf("LHS of := must be a symbol, or an atomic vector (column names or positions).")
