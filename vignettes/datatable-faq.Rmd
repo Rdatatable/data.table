@@ -462,7 +462,7 @@ However, features like basic S3 dispatch (pasting the function name together wit
 
 ## Why do `T` and `F` behave differently from `TRUE` and `FALSE` in `data.table`?
 
-In R, `T` and `F` are global variables that default to `TRUE` and `FALSE`, respectively. However, they can be redefined in the user environment, leading to unexpected behavior. The `data.table` package might treat `T` and `F` as variable names rather than logical constants. To avoid this issue, always use `TRUE` and `FALSE` for logical indexing and column selection in `data.table`.
+In R, `T` and `F` are global variables that default to `TRUE` and `FALSE`, respectively. However, they can be redefined in the user environment, leading to unexpected behavior. The `data.table` package might treat `T` and `F` as variable names rather than logical constants. To avoid this issue, always use `TRUE` and `FALSE` for logical subsetting and column selection in `data.table`.
 
 # Questions relating to compute time
 
