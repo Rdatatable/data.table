@@ -100,7 +100,7 @@
 
 16. `print.data.table` gains new argument `show.indices` and option `datatable.show.indices` that allows the user to print a `data.table`'s indices as columns without having to modify the `data.table` itself. Thanks @MichaelChirico for the report and @joshhwuu for the PR.
 
-17. `.`, `J`, `measure`, and `patterns` are now exported for use within `[` and `melt()` functions, for consistency with`.N`, `.I`, `.GRP`, `.GRPI`, `.SD`, and `:=` which were the only previous NSE exports. This change means that package developers will no longer see CRAN NOTEs about these being undefined variables, and no longer need to provide dummy/NULL definitions of these in order to avoid such NOTEs. See [#5604](https://github.com/Rdatatable/data.table/issues/5604) and [#5277](https://github.com/Rdatatable/data.table/issues/5277). Thanks to @tdhock for the suggestions and @Nj221102 for implementing this improvement.
+17. `.`, `J`, `measure`, and `patterns` are now exported for use within `[` and `melt()` functions, for consistency with`.N`, `.I`, `.GRP`, `.GRPI`, `.SD`, and `:=` which were the only previous NSE exports. This change means that package developers can simply import these names to avoid `R CMD check` `NOTE`s about these being undefined variables. See [#5604](https://github.com/Rdatatable/data.table/issues/5604) and [#5277](https://github.com/Rdatatable/data.table/issues/5277). Thanks to @tdhock for the suggestions and @Nj221102 for implementing.
 
 ## TRANSLATIONS
 
