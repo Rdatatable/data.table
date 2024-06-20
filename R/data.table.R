@@ -2771,11 +2771,11 @@ address = function(x) .Call(Caddress, eval(substitute(x), parent.frame()))
 }
 
 J = function(...) {
-  stopf("The function 'J' should not be called here. 'J' is intended for use within the 'i' argument of data.table operations")
+  stopf("J() called outside of [.data.table. J() is only intended for use in i.")
 }
 
 . = function(...) {
-  stopf("The function '.' should not be called here. '.' can be used as an alias for 'list' within the square brackets of a data.table, DT[.]")
+  stopf(".() called outside of [.data.table. .() is only intended as an alias for list() inside DT[...].")
 }
 
 let = function(...) `:=`(...)
