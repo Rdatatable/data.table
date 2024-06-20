@@ -7,6 +7,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
                col.names=getOption("datatable.print.colnames"),
                print.keys=getOption("datatable.print.keys"),
                trunc.cols=getOption("datatable.print.trunc.cols"),
+               show.indices=getOption("datatable.show.indices"),
                quote=FALSE,
                na.print=NULL,
                timezone=FALSE, ...) {
@@ -64,15 +65,28 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     }
     return(invisible(x))
   }
+  if (show.indices) {
+    if (is.null(indices(x))) {
+      show.indices = FALSE
+    } else {
+      index_dt <- as.data.table(attributes(attr(x, 'index')))
+      print_names <- paste0("index", if (ncol(index_dt) > 1L) seq_len(ncol(index_dt)) else "", ":", sub("^__", "", names(index_dt)))
+      setnames(index_dt, print_names)
+    }
+  }
   n_x = nrow(x)
   if ((topn*2L+1L)<n_x && (n_x>nrows || !topnmiss)) {
     toprint = rbindlist(list(head(x, topn), tail(x, topn)), use.names=FALSE)  # no need to match names because head and tail of same x, and #3306
     rn = c(seq_len(topn), seq.int(to=n_x, length.out=topn))
     printdots = TRUE
+    idx = c(seq_len(topn), seq(to=nrow(x), length.out=topn))
+    toprint = x[idx, ]
+    if (show.indices) toprint = cbind(toprint, index_dt[idx, ])
   } else {
     toprint = x
     rn = seq_len(n_x)
     printdots = FALSE
+    if (show.indices) toprint = cbind(toprint, index_dt)
   }
   toprint=format.data.table(toprint, na.encode=FALSE, timezone = timezone, ...)  # na.encode=FALSE so that NA in character cols print as <NA>
   require_bit64_if_needed(x)
