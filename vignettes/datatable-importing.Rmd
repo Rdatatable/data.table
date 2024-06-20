@@ -195,6 +195,87 @@ For more canonical documentation of defining packages dependency check the offic
 
 Some of internally used C routines are now exported on C level thus can be used in R packages directly from their C code. See [`?cdt`](https://rdatatable.gitlab.io/data.table/reference/cdt.html) for details and [Writing R Extensions](https://cran.r-project.org/doc/manuals/r-release/R-exts.html) _Linking to native routines in other packages_ section for usage.
 
-## Importing from non-R Applications {non-r-API}
+## Importing from non-r Applications {non-r-api}
 
 Some tiny parts of `data.table` C code were isolated from the R C API and can now be used from non-R applications by linking to .so / .dll files. More concrete details about this will be provided later; for now you can study the C code that was isolated from the R C API in [src/fread.c](https://github.com/Rdatatable/data.table/blob/master/src/fread.c) and [src/fwrite.c](https://github.com/Rdatatable/data.table/blob/master/src/fwrite.c).
+
+## How to convert your Depends dependency on data.table to Imports
+
+To convert a `Depends` dependency on `data.table` to an `Imports` dependency in your package, follow these steps:
+
+### Step 0. Ensure your package is passing R CMD check initially
+
+### Step 1. Update the DESCRIPTION file to put data.table in Imports, not Depends
+
+**Before:**
+```dcf
+Depends:
+    R (>= 3.5.0),
+    data.table
+Imports:
+```
+
+**After:**
+```dcf
+Depends:
+    R (>= 3.5.0)
+Imports:
+    data.table
+```
+
+### Step 2.1: Run `R CMD check`
+
+Run `R CMD check` to identify any missing imports or symbols. This step helps:
+
+- Automatically detect any functions or symbols from `data.table` that are not explicitly imported.
+- Flag missing special symbols like `.N`, `.SD`, and `:=`.
+- Provide immediate feedback on what needs to be added to the NAMESPACE file.
+
+Note: Not all such usages are caught by `R CMD check`. In particular, `R CMD check` skips some symbols/functions in formulas and will completely miss parsed expressions like `parse(text = "data.table(a = 1)")`. Packages will need good test coverage to detect these edge cases.
+
+### Step 2.2: Modify the NAMESPACE file
+
+Based on the `R CMD check` results, ensure all used functions, special symbols, S3 generics, and S4 classes from `data.table` are imported.
+
+That means adding `importFrom(data.table, ...)` directives for symbols, functions, and S3 generics, and/or `importClassesFrom(data.table, ...)` directives for S4 classes as appropriate. See 'Writing R Extensions' for full details on how to do so properly.
+
+#### Blanket import
+
+Alternatively, you can import all functions from `data.table` at once, though this is generally not recommended:
+
+```r
+import(data.table)
+```
+
+**Justification for Avoiding Blanket Imports:**
+1. **Documentation**: The NAMESPACE file can serve as good documentation of how you depend on certain packages.
+2. **Avoiding Conflicts**: Blanket imports leave you open to subtle breakage. For example, if you `import(pkgA)` and `import(pkgB)`, but later pkgB exports a function also exported by pkgA, this will break your package due to conflicts in your namespace, which is disallowed by `R CMD check` and CRAN.
+
+### Step 3: Update Your R code files outside the package's R/ directory
+
+When you move a package from `Depends` to `Imports`, it will no longer be automatically attached when your package is loaded. This can be important for examples, tests, vignettes, and demos, where `Imports` packages need to be attached explicitly.
+
+**Before (with `Depends`):**
+```r
+# data.table functions are directly available
+library(MyPkgDependsDataTable)
+dt <- data.table(x = 1:10, y = letters[1:10])
+setDT(dt)
+result <- merge(dt, other_dt, by = "x")
+```
+
+**After (with `Imports`):**
+```r
+# Explicitly load data.table in user scripts or vignettes
+library(data.table)
+library(MyPkgDependsDataTable)
+dt <- data.table(x = 1:10, y = letters[1:10])
+setDT(dt)
+result <- merge(dt, other_dt, by = "x")
+```
+
+### Benefits of using `Imports`
+- **User-Friendliness*: `Depends` alters your users' `search()` path, possibly without their wanting to do so.
+- **Namespace Management**: Only the functions your package explicitly imports are available, reducing the risk of function name clashes.
+- **Cleaner Package Loading**: Your package's dependencies are not attached to the search path, making the loading process cleaner and potentially faster.
+- **Easier Maintenance**: It simplifies maintenance tasks as upstream dependencies' APIs evolve. Depending too much on `Depends` can lead to conflicts and compatibility issues over time.
