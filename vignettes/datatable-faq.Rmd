@@ -462,48 +462,67 @@ However, features like basic S3 dispatch (pasting the function name together wit
 
 ## Why do `T` and `F` behave differently from `TRUE` and `FALSE` in some `data.table` queries?
 
-```r
+Using `T` and `F` as abbreviations for `TRUE` and `FALSE` in `data.table` can lead to unexpected behavior. This is because `T` and `F` are global variables that can be redefined, which causes them to be treated as variable names rather than logical constants. This issue does not occur with `TRUE` and `FALSE`.
 
-DT = data.table(x = c("a", "b", "c"), y = c(1, 3, 6), v = 1:3  )
+To reproduce this issue:
+
+```r
+library(data.table)
+
+# Create a sample data.table
+DT <- data.table(x = rep(c("a", "b", "c"), each = 3), y = c(1, 3, 6), v = 1:9)
 
 # Using TRUE/FALSE works as expected
-# This selects the first two columns and excludes the third one
+# This selects the first two columns (x and y) and excludes the third one (v)
 DT[, .SD, .SDcols = c(TRUE, TRUE, FALSE)]
-#    x y
-# 1: a 1
-# 2: b 3
-# 3: c 6
+#>    x y
+#> 1: a 1
+#> 2: a 3
+#> 3: a 6
+#> 4: b 1
+#> 5: b 3
+#> 6: b 6
+#> 7: c 1
+#> 8: c 3
+#> 9: c 6
 
 # Using T/F may lead to unexpected behavior
-# This should also select the first two columns and exclude the third one
-# However, data.table does not interpret T and F as logical constants
-# Instead, it treats them as variable names, leading to an unexpected result
+# `data.table` treats T and F as variable names, not logical constants
 DT[, .SD, .SDcols = c(T, T, F)]
 #> Detected that j uses these columns: <none>
 #> [1]  TRUE  TRUE FALSE
 
-# `with = FALSE` still works as expected
-# This tells data.table to treat T/F as logical constants, not variable names
-# It correctly selects the first two columns and excludes the third one
+# Using with = FALSE works as expected
+# This forces `data.table` to treat T/F as logical constants
 DT[, .SD, .SDcols = c(T, T, F), with = FALSE]
-#    x y
-# 1: a 1
-# 2: b 3
-# 3: c 6
-
-# Explanation:
-# The issue arises because data.table query analysis does not determine that `c(T, F, T)` is a logical query.
-# `typeof(substitute(T))` and `typeof(substitute(TRUE))` are different.
-# We'd have to evaluate T to see it's TRUE, which data.table does not do by default.
-
-# Moreover, data.table scoping complicates things further. Consider:
-DT = data.table(T = 1, F = 2)
-DT[, c(T, F)]
-# What should this return? 
-# In this case, it returns the values of columns T and F, which are 1 and 2.
-
-# To avoid these issues, always use TRUE and FALSE for logical subsetting and column selection in data.table.
+#>    x y
+#> 1: a 1
+#> 2: a 3
+#> 3: a 6
+#> 4: b 1
+#> 5: b 3
+#> 6: b 6
+#> 7: c 1
+#> 8: c 3
+#> 9: c 6
 ```
+
+ **Explanation:**
+1. **Using `TRUE`/`FALSE` works as expected:**
+   When you use `TRUE` and `FALSE` in `DT[, .SD, .SDcols = c(TRUE, TRUE, FALSE)]`, `data.table` correctly identifies them as logical constants. This selects the first two columns (`x` and `y`) and excludes the third column (`v`).
+
+2. **Using `T`/`F` leads to unexpected behavior:**
+   When you use `T` and `F` in `DT[, .SD, .SDcols = c(T, T, F)]`, `data.table` treats `T` and `F` as variable names rather than logical constants. Since these variables are not defined within the `data.table` scope, it results in incorrect behavior.
+
+3. **Using `with = FALSE` works as expected:**
+   By adding `with = FALSE` in `DT[, .SD, .SDcols = c(T, T, F), with = FALSE]`, you force `data.table` to evaluate `T` and `F` as logical constants, leading to the correct selection of columns.
+
+**Best Practices:**
+- **Always use `TRUE` and `FALSE`:** To avoid these issues, always use `TRUE` and `FALSE` for logical subsetting and column selection in `data.table`.
+- **Avoid using `T` and `F`:** This prevents unexpected behavior due to their potential redefinition in the user environment.
+
+**Additional Tip:**
+To help catch these potential pitfalls, consider using linters like `T_and_F_symbol_linter()` from the `lintr` package. This linter detects the usage of `T` and `F` and suggests replacing them with `TRUE` and `FALSE` to avoid such issues.
 
 # Questions relating to compute time
 
