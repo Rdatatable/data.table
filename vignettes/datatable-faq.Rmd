@@ -487,13 +487,13 @@ DT[, .SD, .SDcols = c(TRUE, TRUE, FALSE)]
 #> 9: c 6
 
 # Using T/F may lead to unexpected behavior
-# `data.table` treats T and F as variable names, not logical constants
+# data.table treats T and F as variable names, not logical constants
 DT[, .SD, .SDcols = c(T, T, F)]
 #> Detected that j uses these columns: <none>
 #> [1]  TRUE  TRUE FALSE
 
 # Using with = FALSE works as expected
-# This forces `data.table` to treat T/F as logical constants
+# This forces data.table to treat T/F as logical constants
 DT[, .SD, .SDcols = c(T, T, F), with = FALSE]
 #>    x y
 #> 1: a 1
