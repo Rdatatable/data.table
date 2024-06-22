@@ -2770,6 +2770,15 @@ address = function(x) .Call(Caddress, eval(substitute(x), parent.frame()))
   stopf('Check that is.data.table(DT) == TRUE. Otherwise, :=, `:=`(...) and let(...) are defined for use in j, once only and in particular ways. See help(":=").')
 }
 
+# TODO: re-export the `.` and `j` functions once revdep issues are resolved.
+J = function(...) {
+  stopf("J() called outside of [.data.table. J() is only intended for use in i.")
+}
+
+. = function(...) {
+  stopf(".() called outside of [.data.table. .() is only intended as an alias for list() inside DT[...].")
+}
+
 let = function(...) `:=`(...)
 
 setDF = function(x, rownames=NULL) {
