@@ -112,6 +112,10 @@
 
 1. `shift` and `nafill` will now raise error `input must not be matrix or array` when `matrix` or `array` is provided on input, rather than giving useless result, [#5287](https://github.com/Rdatatable/data.table/issues/5287). Thanks to @ethanbsmith for reporting.
 
+## POTENTIALLY BREAKING CHANGES
+
+1. Rolling functions `frollmean` and `frollsum` used to treat `Inf` and `-Inf` as `NA` when using default `algo="fast"`; this is no longer the case, and the behavior now matches that of `base::mean()` and `base::sum()`, respectively. If you use these functions with `Inf` or `-Inf` inputs then you will be affected by this change. [#5441](https://github.com/Rdatatable/data.table/pull/5441).
+
 ## NEW FEATURES
 
 1. `nafill()` now applies `fill=` to the front/back of the vector when `type="locf|nocb"`, [#3594](https://github.com/Rdatatable/data.table/issues/3594). Thanks to @ben519 for the feature request. It also now returns a named object based on the input names. Note that if you are considering joining and then using `nafill(...,type='locf|nocb')` afterwards, please review `roll=`/`rollends=` which should achieve the same result in one step more efficiently. `nafill()` is for when filling-while-joining (i.e. `roll=`/`rollends=`/`nomatch=`) cannot be applied.
@@ -398,6 +402,44 @@
 40. New function `%notin%` provides a convenient alternative to `!(x %in% y)`, [#4152](https://github.com/Rdatatable/data.table/issues/4152). Thanks to Jan Gorecki for suggesting and Michael Czekanski for the PR. `%notin%` uses half the memory because it computes the result directly as opposed to `!` which allocates a new vector to hold the negated result. If `x` is long enough to occupy more than half the remaining free memory, this can make the difference between the operation working, or failing with an out-of-memory error.
 
 41. `tables()` is faster by default by excluding the size of character strings in R's global cache (which may be shared) and excluding the size of list column items (which also may be shared). `mb=` now accepts any function which accepts a `data.table` and returns a higher and better estimate of its size in bytes, albeit more slowly; e.g. `mb = utils::object.size`.
+
+42. Multiple improvements has been added to rolling functions. Request came from @gpierard who needed left aligned, adaptive, rolling max, [#5438](https://github.com/Rdatatable/data.table/issues/5438). There was no `frollmax` function yet. Adaptive rolling functions did not have support for `align="left"`. `frollapply` did not support `adaptive=TRUE`. Available alternatives were base R `mapply` or self-join using `max` and grouping `by=.EACHI`. As a follow up of his request, following features has been added:
+- new function `frollmax`, applies `max` over a rolling window.
+- support for `align="left"` for adaptive rolling function.
+- support for `adaptive=TRUE` in `frollapply`.
+- `partial` argument to trim window width to available observations rather than returning `NA` whenever window is not complete.
+- `give.names` argument that can be used to automatically give the names based on the names of `x` and `n`.
+- `frollmean` and `frollsum` no longer treat `Inf` and `-Inf` as `NA`s as it used to be for `algo="fast"` (breaking change).
+- `hasNA` argument has been renamed to `has.nf` to convey that it is not only related to `NA/NaN` but other non-finite values (`Inf/-Inf`) as well.
+
+For a comprehensive description about all available features see `?froll` manual.
+
+Adaptive `frollmax` has observed to be up to 50 times faster than second fastest solution (data.table self-join using `max` and grouping `by=.EACHI`). Note that important factor in performance is width of the rolling window. Code for the benchmark below has been taken from [this SO answer](https://stackoverflow.com/a/73408459/2490497).
+```r
+set.seed(108)
+setDTthreads(8)
+x = data.table(
+  value = cumsum(rnorm(1e6, 0.1)),
+  end_window = 1:1e6 + sample(50:500, 1e6, TRUE),
+  row = 1:1e6
+)[, "end_window" := pmin(end_window, .N)
+  ][, "len_window" := end_window-row+1L]
+
+baser = function(x) x[, mapply(function(from, to) max(value[from:to]), row, end_window)]
+sj = function(x) x[x, max(value), on=.(row >= row, row <= end_window), by=.EACHI]$V1
+frmax = function(x) x[, frollmax(value, len_window, adaptive=TRUE, align="left", has.nf=FALSE)]
+frapply = function(x) x[, frollapply(value, len_window, max, adaptive=TRUE, align="left")]
+microbenchmark::microbenchmark(
+  baser(x), sj(x), frmax(x), frapply(x),
+  times=10, check="identical"
+)
+#Unit: milliseconds
+#       expr        min         lq      mean     median        uq       max neval
+#   baser(x) 5181.36076 5417.57505 5537.2929 5494.73652 5706.2721 5818.6627    10
+#      sj(x) 4608.28940 4627.57186 4792.4031 4785.35306 4856.4475 5054.3301    10
+#   frmax(x)   70.41253   75.28659   91.3774   91.40227  102.0248  116.8622    10
+# frapply(x)  713.23108  742.34657  865.2524  848.31641  965.3599 1114.0531    10
+```
 
 ## BUG FIXES
 
