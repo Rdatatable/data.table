@@ -1620,6 +1620,10 @@ int freadMain(freadMainArgs _args) {
   const char *firstJumpEnd=NULL; // remember where the winning jumpline from jump 0 ends, to know its size excluding header
   const char *prevStart = NULL;  // the start of the non-empty line before the first not-ignored row (for warning message later, or taking as column names)
   int jumpLines = nrowLimit==0 ? 100 : (int)umin(100, nrowLimit);   // how many lines from each jump point to use. If nrows>0 is supplied, nJumps is later set to 1. #4029
+  if (fill==INT_MAX) { // if user provides fill=INT_MAX then full file should be sampled #2727
+    jumpLines = INT_MAX;
+    fill = 1; // set fill to true value to not overallocate
+  }
   {
   if (verbose) DTPRINT(_("[06] Detect separator, quoting rule, and ncolumns\n"));
 
