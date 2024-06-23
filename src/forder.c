@@ -1121,7 +1121,7 @@ void radix_r(const int from, const int to, const int radix) {
       if (!seen[my_ugrp[i]]) {
         seen[my_ugrp[i]] = true;
         ugrp[ngrp++] = last_seen = my_ugrp[i];
-      } else if (skip && my_ugrp[i]!=last_seen) {   // ==last_seen would occur accross batch boundaries, like 2=>17 and 5=>15 in illustration above
+      } else if (skip && my_ugrp[i]!=last_seen) {   // ==last_seen would occur across batch boundaries, like 2=>17 and 5=>15 in illustration above
         skip=false;
       }
     }

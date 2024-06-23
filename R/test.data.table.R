@@ -127,7 +127,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   assign("prevtest", -1L, envir=env)
   assign("whichfail", NULL, envir=env)
   assign("started.at", proc.time(), envir=env)
-  assign("lasttime", proc.time()[3L], envir=env)  # used by test() to attribute time inbetween tests to the next test
+  assign("lasttime", proc.time()[3L], envir=env)  # used by test() to attribute time in between tests to the next test
   assign("timings", data.table( ID = seq_len(9999L), time=0.0, nTest=0L, RSS=0.0 ), envir=env)   # test timings aggregated to integer id
   assign("memtest", memtest, envir=env)
   assign("memtest.id", memtest.id, envir=env)

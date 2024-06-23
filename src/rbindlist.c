@@ -190,7 +190,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
   if (fill && usenames==NA_LOGICAL) error(_("Internal error: usenames==NA but fill=TRUE. usenames should have been set to TRUE earlier with warning."));
   if (!fill && (usenames==TRUE || usenames==NA_LOGICAL)) {
     // Ensure no missings in both cases, and (when usenames==NA) all columns in same order too
-    // We proceeded earlier as if fill was true, so varying ncol items will have missings here
+    // We proceeded earlier as if fill was true, so varying ncol items will have missing here
     char buff[1001] = "";
     const char *extra = usenames==TRUE?"":_(" use.names='check' (default from v1.12.2) emits this message and proceeds as if use.names=FALSE for "\
                                             " backwards compatibility. See news item 5 in v1.12.2 for options to control this message.");
@@ -449,7 +449,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
               //                                                                                    ^^ #3915 and tests 2015.2-5
               for (int r=0; r<thisnrow; ++r) targetd[ansloc+r] = val;
             } else {
-              // length(thisCol)==thisnrow alreay checked before this truelength-clobber region
+              // length(thisCol)==thisnrow already checked before this truelength-clobber region
               // If all i==truelength(i) then just do a memcpy since hop is identity. Otherwise hop via the integer map.
               bool hop = false;
               if (orderedFactor) {
