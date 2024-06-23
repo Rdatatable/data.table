@@ -43,7 +43,7 @@ as well.}
 \item{fromLast}{Logical indicating if duplication should be considered from
 the reverse side. For \code{duplicated}, this means the last (or rightmost) of identical elements 
 will correspond to \code{duplicated = FALSE}. For \code{unique}, this means the last 
-(or rightmost) of identical elements will be kept. See examples.}
+(or rightmost) of identical elements will be kept. Checkout examples for better understanding.}
 \item{by}{\code{character} or \code{integer} vector indicating which combinations
 of columns from \code{x} to use for uniqueness checks. By default all columns
 are being used. That was changed recently for consistency to data.frame methods.
@@ -116,13 +116,13 @@ identical(unique(DT),DT[10]) # FALSE
 DT <- data.table(A = c(1, 1, 2, 2, 3), B = c(1, 2, 3, 1, 2), C = c("a", "b", "a", "b", "a"))
 
 ## Using duplicated with fromLast=FALSE
-duplicated(DT, by="B", fromLast=FALSE) # Explanation: Returns TRUE for rows 4 and 5 as these are duplicates of the first occurrences of 'B' values
+duplicated(DT, by="B", fromLast=FALSE) # TRUE for rows 4, 5 as duplicates of first 'B' values
 ## Using duplicated with fromLast=TRUE
-duplicated(DT, by="B", fromLast=TRUE) # Explanation: Returns TRUE for rows 1 and 2 as these are duplicates of the last occurrences of 'B' values
+duplicated(DT, by="B", fromLast=TRUE) # TRUE for rows 1, 2 as duplicates of last 'B' values
 ## Using unique with fromLast=FALSE
-unique(DT, by="B", fromLast=FALSE) # Explanation: Keeps rows 1, 2, and 3, which are the first occurrences of each unique 'B' value
+unique(DT, by="B", fromLast=FALSE) # Keeps rows 1-3, the first occurrences of each unique 'B' value
 ## Using unique with fromLast=TRUE
-unique(DT, by="B", fromLast=TRUE) # Explanation: Keeps rows  3, 4 and 5, which are the last occurrences of each unique 'B' value
+unique(DT, by="B", fromLast=TRUE) # Keeps rows 3-5, the last occurrences of each unique 'B' value
 
 # anyDuplicated
 anyDuplicated(DT, by=c("A", "B"))    # 3L
