@@ -43,7 +43,7 @@ as well.}
 \item{fromLast}{Logical indicating if duplication should be considered from
 the reverse side. For \code{duplicated}, this means the last (or rightmost) of identical elements 
 will correspond to \code{duplicated = FALSE}. For \code{unique}, this means the last 
-(or rightmost) of identical elements will be kept. Checkout examples for better understanding.}
+(or rightmost) of identical elements will be kept. See examples.}
 \item{by}{\code{character} or \code{integer} vector indicating which combinations
 of columns from \code{x} to use for uniqueness checks. By default all columns
 are being used. That was changed recently for consistency to data.frame methods.
