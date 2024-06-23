@@ -184,7 +184,7 @@ void writeFloat64(const void *col, int64_t row, char **pch)
   // technique similar to base R (format.c:formatReal and printutils.c:EncodeReal0)
   // differences/tricks :
   //   i) no buffers. writes straight to the final file buffer passed to write()
-  //  ii) no C libary calls such as sprintf() where the fmt string has to be interpretted over and over
+  //  ii) no C library calls such as sprintf() where the fmt string has to be interpreted over and over
   // iii) no need to return variables or flags.  Just writes.
   //  iv) shorter, easier to read and reason with in one self contained place.
   double x = ((const double *)col)[row];
@@ -371,7 +371,7 @@ static inline void write_date(int32_t x, char **pch)
     write_chars(na, &ch);
   } else {
     x += 719468;  // convert days from 1970-01-01 to days from 0000-03-01 (the day after 29 Feb 0000)
-    int y = (x - x/1461 + x/36525 - x/146097) / 365;  // year of the preceeding March 1st
+    int y = (x - x/1461 + x/36525 - x/146097) / 365;  // year of the preceding March 1st
     int z =  x - y*365 - y/4 + y/100 - y/400 + 1;     // days from March 1st in year y
     int md = monthday[z];  // See fwriteLookups.h for how the 366 item lookup 'monthday' is arranged
     y += z && (md/100)<3;  // The +1 above turned z=-1 to 0 (meaning Feb29 of year y not Jan or Feb of y+1)
@@ -767,7 +767,7 @@ void fwriteMain(fwriteMainArgs args)
       free(buff);
       if (ret1 || ret2==-1) {
         // # nocov start
-        int errwrite = errno; // capture write errno now incase close fails with a different errno
+        int errwrite = errno; // capture write errno now in case close fails with a different errno
         CLOSE(f);
         if (ret1) STOP(_("Compress gzip error: %d"), ret1);
         else      STOP(_("%s: '%s'"), strerror(errwrite), args.filename);

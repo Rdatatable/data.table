@@ -1125,7 +1125,7 @@ SEXP gprod(SEXP x, SEXP narmArg) {
       const int thisgrp = grp[i];
       const int elem = nosubset ? xd[i] : (irows[i]==NA_INTEGER ? NA_INTEGER : xd[irows[i]-1]);
       if (elem==NA_INTEGER) {
-        if (!narm) s[thisgrp] = NA_REAL;  // Let NA_REAL propogate from here. R_NaReal is IEEE.
+        if (!narm) s[thisgrp] = NA_REAL;  // Let NA_REAL propagate from here. R_NaReal is IEEE.
         continue;
       }
       s[thisgrp] *= elem; // no under/overflow here, s is long double (like base)

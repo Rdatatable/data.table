@@ -182,7 +182,7 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
   if (is.null(fun.call)) {
     oo = forderv(dat, by=varnames, retGrp=TRUE)
     if (attr(oo, 'maxgrpn', exact=TRUE) > 1L) {
-      messagef("'fun.aggregate' is NULL, but found duplicate row/column combinations, so defaulting to length(). That is, the variables %s used in 'formula' do not uniquely identify rows in the input 'data'. In such cases, 'fun.aggregate' is used to derive a single representative value for each combination in the output data.table, for example by summing or averaging (fun.aggregate=sum or fun.aggregate=mean, respectively). Check the resulting table for values larger than 1 to see which combinations were not unique. See ?dcast.data.table for more details.", brackify(varnames))
+      warningf("'fun.aggregate' is NULL, but found duplicate row/column combinations, so defaulting to length(). That is, the variables %s used in 'formula' do not uniquely identify rows in the input 'data'. In such cases, 'fun.aggregate' is used to derive a single representative value for each combination in the output data.table, for example by summing or averaging (fun.aggregate=sum or fun.aggregate=mean, respectively). Check the resulting table for values larger than 1 to see which combinations were not unique. See ?dcast.data.table for more details.", brackify(varnames), class= "dt_missing_fun_aggregate_warning")
       fun.call = quote(length)
     }
   }

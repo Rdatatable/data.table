@@ -1523,7 +1523,7 @@ replace_dot_alias = function(e) {
           }
           if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
         }
-        if (!orderedirows && !length(o__)) o__ = seq_len(xnrow)  # temp fix.  TODO: revist orderedirows
+        if (!orderedirows && !length(o__)) o__ = seq_len(xnrow)  # temp fix.  TODO: revisit orderedirows
       } else {
         if (verbose) last.started.at=proc.time();
         if (bysameorder) {
@@ -1842,7 +1842,7 @@ replace_dot_alias = function(e) {
     if (use.I) assign(".I", seq_len(nrow(x)), thisEnv)
     ans = gforce(thisEnv, jsub, o__, f__, len__, irows) # irows needed for #971.
     gi = if (length(o__)) o__[f__] else f__
-    g = lapply(grpcols, function(i) groups[[i]][gi])
+    g = lapply(grpcols, function(i) .Call(CsubsetVector, groups[[i]], gi)) # use CsubsetVector instead of [ to preserve attributes #5567
 
     # returns all rows instead of one per group
     nrow_funs = c("gshift")
@@ -2726,7 +2726,7 @@ chorder = function(x) {
 }
 
 chgroup = function(x) {
-  # TO DO: deprecate and remove this. It's exported but doubt anyone uses it. Think the plan was to use it internally, but forderv superceded.
+  # TO DO: deprecate and remove this. It's exported but doubt anyone uses it. Think the plan was to use it internally, but forderv superseded.
   o = forderv(x, sort=FALSE, retGrp=TRUE)
   if (length(o)) as.vector(o) else seq_along(x)  # as.vector removes the attributes
 }
@@ -2768,6 +2768,15 @@ address = function(x) .Call(Caddress, eval(substitute(x), parent.frame()))
 ":=" = function(...) {
   # this error is detected when eval'ing isub and replaced with a more helpful one when using := in i due to forgetting a comma, #4227
   stopf('Check that is.data.table(DT) == TRUE. Otherwise, :=, `:=`(...) and let(...) are defined for use in j, once only and in particular ways. See help(":=").')
+}
+
+# TODO(#6197): Export these.
+J = function(...) {
+  stopf("J() called outside of [.data.table. J() is only intended for use in i.")
+}
+
+. = function(...) {
+  stopf(".() called outside of [.data.table. .() is only intended as an alias for list() inside DT[...].")
 }
 
 let = function(...) `:=`(...)
