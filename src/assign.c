@@ -111,7 +111,7 @@ static int _selfrefok(SEXP x, Rboolean checkNames, Rboolean verbose) {
   if (v==R_NilValue || TYPEOF(v)!=EXTPTRSXP) {
     // .internal.selfref missing is expected and normal for i) a pre v1.7.8 data.table loaded
     //  from disk, and ii) every time a new data.table is over-allocated for the first time.
-    //  Not being an extptr is for when users contruct a data.table via structure() using dput, post
+    //  Not being an extptr is for when users construct a data.table via structure() using dput, post
     //  a question, and find the extptr doesn't parse so put quotes around it (for example).
     //  In both cases the selfref is not ok.
     return 0;
@@ -153,13 +153,13 @@ static SEXP shallow(SEXP dt, SEXP cols, R_len_t n)
   SEXP newdt = PROTECT(allocVector(VECSXP, n)); protecti++;   // to do, use growVector here?
   SET_ATTRIB(newdt, shallow_duplicate(ATTRIB(dt)));
   SET_OBJECT(newdt, OBJECT(dt));
-  IS_S4_OBJECT(dt) ? SET_S4_OBJECT(newdt) : UNSET_S4_OBJECT(newdt);  // To support S4 objects that incude data.table
+  IS_S4_OBJECT(dt) ? SET_S4_OBJECT(newdt) : UNSET_S4_OBJECT(newdt);  // To support S4 objects that include data.table
   //SHALLOW_DUPLICATE_ATTRIB(newdt, dt);  // SHALLOW_DUPLICATE_ATTRIB would be a bit neater but is only available from R 3.3.0
 
   // TO DO: keepattr() would be faster, but can't because shallow isn't merely a shallow copy. It
   //        also increases truelength. Perhaps make that distinction, then, and split out, but marked
   //        so that the next change knows to duplicate.
-  //        keepattr() also merely points to the entire attrbutes list and thus doesn't allow replacing
+  //        keepattr() also merely points to the entire attributes list and thus doesn't allow replacing
   //        some of its elements.
 
   // We copy all attributes that refer to column names so that calling setnames on either
@@ -513,7 +513,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       // Can growVector at this point easily enough, but it shouldn't happen in first place so leave it as
       // strong error message for now.
     else if (TRUELENGTH(names) != oldtncol)
-      // Use (long long) to cast R_xlen_t to a fixed type to robustly avoid -Wformat compiler warnings, see #5768, PRId64 didnt work
+      // Use (long long) to cast R_xlen_t to a fixed type to robustly avoid -Wformat compiler warnings, see #5768, PRId64 didn't work
       error(_("Internal error: selfrefnames is ok but tl names [%lld] != tl [%d]"), (long long)TRUELENGTH(names), oldtncol);  // # nocov
     SETLENGTH(dt, oldncol+LENGTH(newcolnames));
     SETLENGTH(names, oldncol+LENGTH(newcolnames));
@@ -675,7 +675,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
             Rprintf(_("Shortening index '%s' to '%s' due to an update on a key column\n"), c1+2, s4 + 2);
         } else { // indexLength > 0 || shortened name present already
           // indexLength > 0 indicates reordering. Drop it to avoid spurious reordering in non-indexed columns (#2372)
-          // shortened anme already present indicates that index needs to be dropped to avoid duplicate indices.
+          // shortened name already present indicates that index needs to be dropped to avoid duplicate indices.
           setAttrib(index, a, R_NilValue);
           SET_STRING_ELT(indexNames, indexNo, NA_STRING);
           if (verbose)
@@ -1140,7 +1140,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
       //   ScalarInteger may now or in future R also return R internal global small integer constants, the same for that. Then
       //   because we do that here for logical and integer, use allocVeector too for the other types to follow the same pattern and possibly
       //   in future R will also have some global constants for those types too.
-      // the UNPROTECT can be at the end of the CAST before the SET_VECTOR_ELT, because SET_VECTOR_ELT will protect it and there's no other code inbetween
+      // the UNPROTECT can be at the end of the CAST before the SET_VECTOR_ELT, because SET_VECTOR_ELT will protect it and there's no other code in between
       // the PROTECT is now needed because of the call to LOGICAL() which could feasibly gc inside it.
       // copyMostAttrib is inside CAST so as to be outside loop.  See the history in #4350 and its follow up
       case RAWSXP:  BODY(Rbyte,    RAW,        SEXP, PROTECT(allocVector(RAWSXP, 1));RAW(cval)[0]=val;copyMostAttrib(source,cval);UNPROTECT(1),             SET_VECTOR_ELT(target,off+i,cval))
@@ -1200,7 +1200,7 @@ void writeNA(SEXP v, const int from, const int n, const bool listNA)
     for (int i=from; i<=to; ++i) SET_STRING_ELT(v, i, NA_STRING);
     break;
   case VECSXP: {
-    // See #5053 for comments and dicussion re listNA
+    // See #5053 for comments and discussion re listNA
     // although allocVector initializes to R_NilValue, we use writeNA() in other places too, so we shouldn't skip the R_NilValue assign
     // ScalarLogical(NA_LOGICAL) returns R's internal constant R_LogicalNAValue (no alloc and no protect needed)
     const SEXP na = listNA ? ScalarLogical(NA_LOGICAL) : R_NilValue;

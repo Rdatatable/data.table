@@ -61,7 +61,7 @@
 
    Lastly, there are date-time helpers for extracting parts of dates as
    integers, for example the year (\code{year()}), month
-   (\code{month()}), or day in the month (\code{mday()}); see Usage and Exampels.
+   (\code{month()}), or day in the month (\code{mday()}); see Usage and Examples.
 }
 \usage{
 as.IDate(x, \dots)

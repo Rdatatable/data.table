@@ -11,7 +11,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
                quote=FALSE,
                na.print=NULL,
                timezone=FALSE, ...) {
-  # topn  - print the top topn and bottom topn rows with '---' inbetween (5)
+  # topn  - print the top topn and bottom topn rows with '---' in between (5)
   # nrows - under this the whole (small) table is printed, unless topn is provided (100)
   # class - should column class be printed underneath column name? (FALSE)
   # trunc.cols - should only the columns be printed that can fit in the console? (FALSE)
