@@ -25,6 +25,8 @@ shift(x, n=1L, fill, type=c("lag", "lead", "shift", "cyclic"), give.names=FALSE)
   Argument \code{n} allows multiple values. For example, \code{DT[, (cols) := shift(.SD, 1:2), by=id]} would lag every column of \code{.SD} by \code{1} and \code{2} for each group. If \code{.SD} contained four columns, the first two elements of the list would correspond to \code{lag=1} and \code{lag=2} for the first column of \code{.SD}, the next two for second column of \code{.SD} and so on. Please see examples for more.
 
   \code{shift} is designed mainly for use in data.tables along with \code{:=} or \code{set}. Therefore, it returns an unnamed list by default as assigning names for each group over and over can be quite time consuming with many groups. It may be useful to set names automatically in other cases, which can be done by setting \code{give.names} to \code{TRUE}.
+
+  Note that when using \code{shift} with a list, it should be a list of columns rather than a single list column. The function was not designed to handle list column types directly. For example, \code{DT = data.table(x=as.list(1:4))} would create a data.table with a list of columns, and \code{DT[, shift(x)]} would produce the expected lagged result. However, if \code{DT = data.table(x=list(1:4))}, which creates a single list column, \code{DT[, shift(x)]} would not produce the expected result. To achieve the expected result, wrap the \code{shift} function in \code{list} or \code{dot}, e.g., \code{DT[, .(shift(x))]}.
 }
 \value{
   A list containing the lead/lag of input \code{x}.
