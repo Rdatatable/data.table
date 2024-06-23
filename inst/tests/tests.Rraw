@@ -79,7 +79,6 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   which.last = data.table:::which.last
   `-.IDate` = data.table:::`-.IDate`
   haszlib = data.table:::haszlib
-  J = data.table:::J
 
   # Also, for functions that are masked by other packages, we need to map the data.table one. Or else,
   # the other package's function would be picked up. As above, we only need to do this because we desire
@@ -2187,7 +2186,9 @@ if (ncol(DT)==2L) setnames(DT,c("A","B")) # else don't stop under torture with s
 test(714, DT[,z:=6:10], data.table(A=1:5,B=5,z=6:10))
 
 # Test J alias is now removed outside DT[...] from v1.8.7 (to resolve rJava::J conflict)
-test(715, J(a=1:3,b=4), error="J() called outside of [.data.table. J() is only intended for use in i.")
+test(715, J(a=1:3,b=4), error=base_messages$missing_function("J"))
+# future:
+# test(715, J(a=1:3,b=4), error="J() called outside of [.data.table. J() is only intended for use in i.")
 
 # Test get in j
 DT = data.table(a=1:3,b=4:6)
