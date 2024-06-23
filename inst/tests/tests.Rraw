@@ -8803,7 +8803,7 @@ test(1613.601, all.equal(data.table(a=1), data.frame(a=1)), "target is data.tabl
 test(1613.602, all.equal(data.table(a=1), data.frame(a=1), check.attributes = FALSE))
 test(1613.603, all.equal(data.table(a=1), list(a=1), check.attributes = FALSE))
 test(1613.604, all.equal(data.table(a=1), 1, check.attributes = FALSE))
-test(1613.605, !isTRUE(all.equal(data.table(a=1), try(stop('this won\'t work'), silent = TRUE), check.attributes = FALSE)))
+test(1613.605, !isTRUE(all.equal(data.table(a=1), try(stop("this won't work"), silent = TRUE), check.attributes = FALSE)))
 L1 = list(a = data.table(1), b = setattr("foo1613", "tbl", data.table(1)))
 L2 = list(a = 1, b = setattr("foo1613", "tbl", 1))
 test(1613.606, all(grepl("target is data.table, current is numeric", all.equal(L1, L2))))

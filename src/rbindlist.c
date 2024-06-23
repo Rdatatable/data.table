@@ -63,7 +63,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
 
   int *colMap=NULL; // maps each column in final result to the column of each list item
   if (usenames==TRUE || usenames==NA_LOGICAL) {
-    // here we proceed as if fill=true for brevity (accounting for dups is tricky) and then catch any missing after this branch
+    // here we proceed as if fill=true for brevity (accounting for dups is tricky) and then catch any missings after this branch
     // when use.names==NA we also proceed here as if use.names was TRUE to save new code and then check afterwards the map is 1:ncol for every item
     // first find number of unique column names present; i.e. length(unique(unlist(lapply(l,names))))
     SEXP *uniq = (SEXP *)malloc(upperBoundUniqueNames * sizeof(SEXP));  // upperBoundUniqueNames was initialized with 1 to ensure this is defined (otherwise 0 when no item has names)
@@ -189,7 +189,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
 
   if (fill && usenames==NA_LOGICAL) error(_("Internal error: usenames==NA but fill=TRUE. usenames should have been set to TRUE earlier with warning."));
   if (!fill && (usenames==TRUE || usenames==NA_LOGICAL)) {
-    // Ensure no missing in both cases, and (when usenames==NA) all columns in same order too
+    // Ensure no missings in both cases, and (when usenames==NA) all columns in same order too
     // We proceeded earlier as if fill was true, so varying ncol items will have missing here
     char buff[1001] = "";
     const char *extra = usenames==TRUE?"":_(" use.names='check' (default from v1.12.2) emits this message and proceeds as if use.names=FALSE for "\
