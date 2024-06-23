@@ -480,7 +480,7 @@ void copyFile(size_t fileSize, const char *msg, bool verbose)  // only called in
 //      into the `ctx.targets[sizeof(value)]` buffer. The parsing location
 //      `ctx.ch` should be left unmodified.
 //
-// Note that it is not the parser's job ot advance the `ctx.targets` pointer --
+// Note that it is not the parser's job to advance the `ctx.targets` pointer --
 // this is left to the caller. The reason for this is because we have different
 // parsing scenarios:
 //   - in the "normal" case the value will be written and the target pointer
@@ -1510,7 +1510,7 @@ int freadMain(freadMainArgs _args) {
       while (ch>=sof && *ch!='\r') ch--;
     } else {
       while (ch>=sof && *ch!='\n') ch--;
-      while (ch>sof && ch[-1]=='\r') ch--;  // the first of any preceeding \r to avoid a dangling \r
+      while (ch>sof && ch[-1]=='\r') ch--;  // the first of any preceding \r to avoid a dangling \r
     }
     if (ch>=sof) {
       const char *lastNewLine = ch;  // the start of the final newline sequence.
@@ -1910,7 +1910,7 @@ int freadMain(freadMainArgs _args) {
       if (thisLineLen>maxLen) maxLen=thisLineLen;
       if (jump==0 && bumped) {
         // apply bumps after each line in the first jump from the start in case invalid line stopped early on is in the first 100 lines.
-        // otherwise later jumps must complete fully before their bumps are appplied. Invalid lines in those are more likely to be due to bad jump start.
+        // otherwise later jumps must complete fully before their bumps are applied. Invalid lines in those are more likely to be due to bad jump start.
         memcpy(type, tmpType, (size_t)ncol);
         bumped = false;  // detect_types() only updates &bumped when it's true. So reset to false here.
       }
@@ -2286,7 +2286,7 @@ int freadMain(freadMainArgs _args) {
           thPush += now-tLast;
           tLast = now;
           if (myShowProgress && /*wait for all threads to process 2 jumps*/jump>=nth*2) {
-            // Important for thread safety inside progess() that this is called not just from critical but that
+            // Important for thread safety inside progress() that this is called not just from critical but that
             // it's the master thread too, hence me==0. OpenMP doesn't allow '#pragma omp master' here, but we
             // did check above that master's me==0.
             int ETA = (int)(((now-tAlloc)/jump) * (nJumps-jump));
@@ -2398,7 +2398,7 @@ int freadMain(freadMainArgs _args) {
               skip_white(&tch);
               if (!end_of_field(tch)) tch = afterSpace; // else it is the field_end, we're on closing sep|eol and we'll let processor write appropriate NA as if field was empty
               if (*tch==quote && quote) { quoted=true; tch++; }
-            } // else Field() handles NA inside it unlike other processors e.g. ,, is interpretted as "" or NA depending on option read inside Field()
+            } // else Field() handles NA inside it unlike other processors e.g. ,, is interpreted as "" or NA depending on option read inside Field()
             fun[abs(thisType)](&fctx);
             if (quoted) {   // quoted was only set to true with '&& quote' above (=> quote!='\0' now)
               if (*tch==quote) tch++;

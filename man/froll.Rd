@@ -27,7 +27,7 @@ frollapply(x, n, FUN, \dots, fill=NA, align=c("right", "left", "center"))
   \item{fill}{ Numeric; value to pad by. Defaults to \code{NA}. }
   \item{algo}{ Character, default \code{"fast"}. When set to \code{"exact"}, a slower (but more accurate) algorithm is used. It
     suffers less from floating point rounding errors by performing an extra pass, and carefully handles all non-finite values.
-    It will use mutiple cores where available. See Details for more information. }
+    It will use multiple cores where available. See Details for more information. }
   \item{align}{ Character, specifying the "alignment" of the rolling window, defaulting to \code{"right"}. \code{"right"} covers preceding rows (the window \emph{ends} on the current value); \code{"left"} covers following rows (the window \emph{starts} on the current value); \code{"center"} is halfway in between (the window is \emph{centered} on the current value, biased towards \code{"left"} when \code{n} is even). }
   \item{na.rm}{ Logical, default \code{FALSE}. Should missing values be removed when
     calculating window? For details on handling other non-finite values, see Details. }

@@ -362,7 +362,7 @@ const char *class1(SEXP x) {
   }
 }
 
-// main motivation for this function is to have coercion helper that is aware of int64 NAs, unline base R coerce #3913
+// main motivation for this function is to have coercion helper that is aware of int64 NAs, unlike base R coerce #3913
 SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg) {
   // copyArg does not update in place, but only IF an object is of the same type-class as class to be coerced, it will return with no copy
   if (!isVectorAtomic(x))

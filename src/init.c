@@ -238,7 +238,7 @@ void attribute_visible R_init_data_table(DllInfo *info)
   setNumericRounding(PROTECT(ScalarInteger(0))); // #1642, #1728, #1463, #485
   UNPROTECT(1);
 
-  // create needed strings in advance for speed, same techique as R_*Symbol
+  // create needed strings in advance for speed, same technique as R_*Symbol
   // Following R-exts 5.9.4; paragraph and example starting "Using install ..."
   // either use PRINTNAME(install()) or R_PreserveObject(mkChar()) here.
   char_integer64 = PRINTNAME(install("integer64"));
