@@ -18568,12 +18568,13 @@ test(2261.05, capture.output(setNumericRounding(2L)), character(0))
 setNumericRounding(old)
 
 # rbindlist with many nested lists leads to protection stack overflow #4536
+# test case needs to bind list columns with atomic columns to trigger
 x = list(
-  data.table(V1="a", V4=1L, V5="", V14=TRUE),
-  data.table(V1="",  V4=0L, V5=""),
-  data.table(V2=list(FALSE), V6="", V7=FALSE, V8=FALSE, V9="", V10="", V11=TRUE),
-  data.table(V2=list(list(V2A=FALSE, V2B="", V2C="" )), V6="", V7=TRUE, V8=FALSE, V12="", V9="", V15="", V10="", V16=FALSE, V11=FALSE, V17=FALSE),
-  data.table(V18="", V19="", V1=list(list(V1A="", V1B="", V1C="", V1D="", V1E="")), V20="", V21="", V3 = list(list(V3A=TRUE, V3B="", V3C=1L, V3D=0L, V3F=1L)), V13="", V14=TRUE)
+  data.table(V1="a"),
+  data.table(V1=""),
+  data.table(V2=list(FALSE)),
+  data.table(V2=list(list(V2A=FALSE, V2B="", V2C="" ))),
+  data.table(V1=list(list(V1A="", V1B="", V1C="", V1D="", V1E="")), V3 = list(list(V3A=TRUE, V3B="", V3C=1L, V3D=0L, V3F=1L)))
 )
 N = 5e4
 y = x[rep(1:5, N)]
