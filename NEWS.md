@@ -100,7 +100,10 @@
 
 16. `print.data.table` gains new argument `show.indices` and option `datatable.show.indices` that allows the user to print a `data.table`'s indices as columns without having to modify the `data.table` itself. Thanks @MichaelChirico for the report and @joshhwuu for the PR.
 
-17. `.`, `J`, `measure`, and `patterns` are now exported for use within `[` and `melt()`, for consistency with other NSE exports like `.N` and `:=`, [#5604](https://github.com/Rdatatable/data.table/issues/5604). Package developers can now import these names to avoid `R CMD check` `NOTE`s about them being undefined variables. Thanks to @MichaelChirico and @ylelkes for the suggestions and @Nj221102 for implementing.
+17. The `measure` and `patterns` functions are now exported for use within `[` and `melt()` to ensure consistency with other non-standard evaluation (NSE) exports like `.N` and `:=`. This change addresses [#5604](https://github.com/Rdatatable/data.table/issues/5604), allowing package developers to import these names and avoid `R CMD check` `NOTE`s about undefined variables. Thanks to @MichaelChirico and @ylelkes for their suggestions, and to @Nj221102 for the implementation.
+
+    We plan to export similar placeholders for `.` and `J` in roughly one year (e.g. data.table 1.18.0), but excluded them from this release to avoid back-compatibility issues. Specifically, some packages doing `import(plyr)` _and_ `import(data.table)`, and/or with those packages in `Depends`, will error when data.table starts exporting `.` (and similarly for a potential conflict with `rJava::J()`). We discourage using data.table (or any package, really) in Depends; blanket `import()` of package is also generally best avoided. See `vignette("datatable-importing")`.
+
 
 ## TRANSLATIONS
 
