@@ -112,17 +112,14 @@ DT[,which.min(a)]            # row 10, the strictly smallest floating point valu
 identical(unique(DT),DT[1])  # TRUE, stable within tolerance
 identical(unique(DT),DT[10]) # FALSE
 
-# Explaining all usecases of fromLast in both 'duplicated' and 'unique' function.
-DT <- data.table(A = c(1, 1, 2, 2, 3), B = c(1, 2, 3, 1, 2), C = c("a", "b", "a", "b", "a"))
+# fromLast = TRUE vs. FALSE
+DT <- data.table(A = c(1, 1, 2, 2, 3), B = c(1, 2, 1, 1, 2), C = c("a", "b", "a", "b", "a"))
 
-## Using duplicated with fromLast=FALSE
-duplicated(DT, by="B", fromLast=FALSE) # Explanation: Returns TRUE for rows 4 and 5 as these are duplicates of the first occurrences of 'B' values
-## Using duplicated with fromLast=TRUE
-duplicated(DT, by="B", fromLast=TRUE) # Explanation: Returns TRUE for rows 1 and 2 as these are duplicates of the last occurrences of 'B' values
-## Using unique with fromLast=FALSE
-unique(DT, by="B", fromLast=FALSE) # Explanation: Keeps rows 1, 2, and 3, which are the first occurrences of each unique 'B' value
-## Using unique with fromLast=TRUE
-unique(DT, by="B", fromLast=TRUE) # Explanation: Keeps rows  3, 4 and 5, which are the last occurrences of each unique 'B' value
+duplicated(DT, by="B", fromLast=FALSE) # rows 3,4,5 are duplicates
+unique(DT, by="B", fromLast=FALSE) # equivalent: DT[!duplicated(DT, by="B", fromLast=FALSE)]
+
+duplicated(DT, by="B", fromLast=TRUE) # rows 1,2,3 are duplicates
+unique(DT, by="B", fromLast=TRUE) # equivalent: DT[!duplicated(DT, by="B", fromLast=TRUE)]
 
 # anyDuplicated
 anyDuplicated(DT, by=c("A", "B"))    # 3L
