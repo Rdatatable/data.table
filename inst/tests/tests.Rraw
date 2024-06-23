@@ -79,7 +79,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   which.last = data.table:::which.last
   `-.IDate` = data.table:::`-.IDate`
   haszlib = data.table:::haszlib
-  J = data.table:::J 
+  J = data.table:::J
 
   # Also, for functions that are masked by other packages, we need to map the data.table one. Or else,
   # the other package's function would be picked up. As above, we only need to do this because we desire
