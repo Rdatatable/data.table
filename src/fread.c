@@ -2681,7 +2681,7 @@ int freadMain(freadMainArgs _args) {
         ch = headPos;
         int tt = countfields(&ch);
         if (fill>0) {
-          DTWARN(_("Stopped early on line %"PRIu64". Expected %d fields but found %d. Consider fill=%d or even more based on your knowledge of the input file. First discarded non-empty line: <<%s>>"),
+          DTWARN(_("Stopped early on line %"PRIu64". Expected %d fields but found %d. Consider fill=%d or even more based on your knowledge of the input file. Use fill=Inf for reading the whole file for detecting the number of fields. First discarded non-empty line: <<%s>>"),
           (uint64_t)DTi+row1line, ncol, tt, tt, strlim(skippedFooter,500));
         } else {
           DTWARN(_("Stopped early on line %"PRIu64". Expected %d fields but found %d. Consider fill=TRUE and comment.char=. First discarded non-empty line: <<%s>>"),
