@@ -18698,3 +18698,10 @@ ans = c(
  "10:   83   64   41                 9                 9")
 # test where topn isn't necessary
 test(2264.8, print(DT, show.indices=TRUE), output=ans)
+
+# test that set() correctly adds new columns even if 'i' isn't valid
+dt = data.table(a=1L)
+test(2265.1, set(copy(dt), 0L,          "b", logical(0)), data.table(a=1L, b=NA))
+test(2265.2, set(copy(dt), NA_integer_, "b", NA),         data.table(a=1L, b=NA))
+test(2265.3, set(copy(dt), NA_integer_, "b", logical(0)), copy(dt)[0L, b := logical(0)])
+test(2265.4, set(copy(dt), 0L,          "b", NA),         copy(dt)[NA, b := NA])
