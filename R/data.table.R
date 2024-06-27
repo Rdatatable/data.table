@@ -2771,13 +2771,13 @@ address = function(x) .Call(Caddress, eval(substitute(x), parent.frame()))
 }
 
 # TODO(#6197): Export these.
-J = function(...) {
-  stopf("J() called outside of [.data.table. J() is only intended for use in i.")
-}
+# J = function(...) {
+#   stopf("J() called outside of [.data.table. J() is only intended for use in i.")
+# }
 
-. = function(...) {
-  stopf(".() called outside of [.data.table. .() is only intended as an alias for list() inside DT[...].")
-}
+# . = function(...) {
+#   stopf(".() called outside of [.data.table. .() is only intended as an alias for list() inside DT[...].")
+# }
 
 let = function(...) `:=`(...)
 
