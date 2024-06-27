@@ -2778,6 +2778,8 @@ address = function(x) .Call(Caddress, eval(substitute(x), parent.frame()))
 # . = function(...) {
 #   stopf(".() called outside of [.data.table. .() is only intended as an alias for list() inside DT[...].")
 # }
+# Commented out to prevent test failures caused by non-exported functions being attached during the clear and compile (cc()) process,
+# which alters the expected output(i.e error message in this case).
 
 let = function(...) `:=`(...)
 
