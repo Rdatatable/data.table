@@ -18426,7 +18426,7 @@ test(2251.10, dim(fread(text, fill=TRUE)), c(9L, 9L))
 test(2251.11, dim(fread(text, fill=7)), c(9L, 9L))
 test(2251.12, dim(fread(text, fill=9)), c(9L, 9L))
 test(2251.13, dim(fread(text, fill=20)), c(9L, 20L)) # clean up currently only kicks in if sep!=' '
-# 2727 use fill=Inf to sample full file for fill guess
+# 2727 use fill=Inf to estimate the number of columns
 test(2251.14, fread(text = dt_str, fill=Inf), ans)
 test(2251.15, dim(fread(text, fill=Inf)), c(9L, 9L))
 
