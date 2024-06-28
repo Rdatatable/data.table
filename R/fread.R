@@ -302,14 +302,14 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
   for (j in which(nzchar(colClassesAs))) {       # # 1634
     v = .subset2(ans, j)
     new_class = colClassesAs[j]
+    if (new_class %chin% c("POSIXct")) v[v==""] = NA_character_ # as.POSIXct/as.POSIXlt cannot handle as.POSIXct("") correctly #6208
     new_v = tryCatch({    # different to read.csv; i.e. won't error if a column won't coerce (fallback with warning instead)
       switch(new_class,
              "factor" = as_factor(v),
              "complex" = as.complex(v),
              "raw" = as_raw(v),  # Internal implementation
              "Date" = as.Date(v),
-             # 6208 as.POSIXct cannot handle as.POSIXct("") correctly, hence, we construct the NA POSIXct ourself
-             "POSIXct" = if (is.character(v) && all(v %chin% c("", NA))) structure(rep(NA_real_, length(v)), class = c("POSIXct", "POSIXt"), tzone = "") else as.POSIXct(v),  # test 2150.14 covers this by setting the option to restore old behaviour. Otherwise types that
+             "POSIXct" = as.POSIXct(v),  # test 2150.14 covers this by setting the option to restore old behaviour. Otherwise types that
              # are recognized by freadR.c (e.g. POSIXct; #4464) result in user-override-bump at C level before reading so do not reach this switch
              # see https://github.com/Rdatatable/data.table/pull/4464#discussion_r447275278.
              # Aside: as(v,"POSIXct") fails with error in R so has to be caught explicitly above
