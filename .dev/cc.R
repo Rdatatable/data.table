@@ -23,9 +23,11 @@
 # test and step between R and C
 
 sourceDir = function(path=getwd(), trace = TRUE, ...) {
+  r_files = list.files(path, pattern = "\\.[RrSsQq]$")
+  if (trace) cat("Loading", length(r_files), "R files:")
   # copied verbatim from example(source) in base R
-  for (nm in list.files(path, pattern = "\\.[RrSsQq]$")) {
-    if(trace) cat(nm," ")
+  for (nm in r_files) {
+    if(trace) cat(" ", nm, sep="")
       source(file.path(path, nm), ...)
   }
   if(trace) cat("\n")
