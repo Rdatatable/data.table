@@ -166,7 +166,7 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SEXP
     SEXP order = PROTECT(allocVector(INTSXP, length(icolsArg)));
     protecti++;
     for (int j=0; j<LENGTH(order); j++) INTEGER(order)[j]=1;   // rep(1L, length(icolsArg))
-    SEXP oSxp = PROTECT(forder(idt, icolsArg, ScalarLogical(FALSE), ScalarLogical(TRUE), order, ScalarLogical(FALSE)));
+    SEXP oSxp = PROTECT(forder(idt, icolsArg, ScalarLogical(FALSE), ScalarLogical(TRUE), order, ScalarLogical(FALSE), ScalarInteger(0L)));
     protecti++;
     // TODO - split head of forder into C-level callable
     if (!LENGTH(oSxp)) o = NULL; else o = INTEGER(oSxp);
