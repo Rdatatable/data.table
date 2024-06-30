@@ -64,6 +64,8 @@
 
 9. In `DT[,j,by]`, `by` retains its attributes (e.g. class) when `j` is GForce optimized, [#5567](https://github.com/Rdatatable/data.table/issues/5567). Thanks to @danwwilson for the report, and @ben-schwen for the PR.
 
+10. `rbindlist` could lead to a protection stack overflow when applied to a list containing many nested lists exceeding the pointer protection stack size, [#4536](https://github.com/Rdatatable/data.table/issues/4536). Thanks to @ProfFancyPants for reporting, and Benjamin Schwendinger for the fix.
+
 ## NOTES
 
 1. `transform` method for data.table sped up substantially when creating new columns on large tables. Thanks to @OfekShilon for the report and PR. The implemented solution was proposed by @ColeMiller1.
