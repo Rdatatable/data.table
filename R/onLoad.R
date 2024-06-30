@@ -92,10 +92,6 @@
     eval(parse(text=paste0("options(",i,"=",opts[i],")")))
   }
 
-  # default TRUE from v1.12.0, FALSE before. Now ineffectual. Remove this warning after 1.15.0.
-  if (!is.null(getOption("datatable.CJ.names")))
-    warningf("Option 'datatable.CJ.names' no longer has any effect, as promised for 4 years. It is now ignored. Manually name `...` entries as needed if you still prefer the old behavior.")
-
   # Test R behaviour that changed in v3.1 and is now depended on
   x = 1L:3L
   y = list(x)
