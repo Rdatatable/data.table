@@ -599,6 +599,7 @@ void fwriteMain(fwriteMainArgs args)
   dec = args.dec;
   scipen = args.scipen;
   doQuote = args.doQuote;
+  int8_t quoteHeaders = args.doQuote;
   verbose = args.verbose;
 
   // When NA is a non-empty string, then we must quote all string fields in case they contain the na string
@@ -726,11 +727,14 @@ void fwriteMain(fwriteMainArgs args)
         *ch = sep;
         ch += sepLen;
       }
+      int8_t temp = doQuote;
+      doQuote = quoteHeaders;
       for (int j=0; j<args.ncol; j++) {
         writeString(args.colNames, j, &ch);
         *ch = sep;
         ch += sepLen;
       }
+      doQuote = temp;
       ch -= sepLen; // backup over the last sep
       write_chars(args.eol, &ch);
     }
