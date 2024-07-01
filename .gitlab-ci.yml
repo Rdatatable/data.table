@@ -209,7 +209,7 @@ test-lin-310-cran:
 .test-win-template: &test-win
   <<: *test
   tags:
-    - shared-windows
+    - saas-windows-medium-amd64
   before_script:
     - curl.exe -s -o ../R-win.exe $R_BIN --fail; if (!(Test-Path -Path ..\R-win.exe)) {Write-Error "R-win.exe not found, download failed?"}
     - Start-Process -FilePath ..\R-win.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
