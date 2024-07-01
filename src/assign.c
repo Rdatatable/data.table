@@ -195,7 +195,9 @@ static SEXP shallow(SEXP dt, SEXP cols, R_len_t n)
   SET_TRUELENGTH(newnames,n);
   SETLENGTH(newdt,l);
   SET_TRUELENGTH(newdt,n);
-  setselfref(newdt);
+  if( INHERITS(dt, char_datatable) )  { // #5286
+      setselfref(newdt);
+  }
   UNPROTECT(protecti);
   return(newdt);
 }
