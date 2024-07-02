@@ -46,7 +46,7 @@ stages:
 mirror-packages:
   stage: dependencies
   tags:
-    - linux
+    - saas-linux-medium-amd64
   image: registry.gitlab.com/jangorecki/dockerfiles/r-base-minimal
   cache:
     paths:
@@ -68,7 +68,7 @@ mirror-packages:
 build:
   stage: build
   tags:
-    - linux
+    - saas-linux-medium-amd64
   image: registry.gitlab.com/jangorecki/dockerfiles/r-base-gcc
   needs: ["mirror-packages"]
   before_script:
@@ -91,7 +91,7 @@ build:
 .test-lin-template: &test-lin
   <<: *test
   tags:
-    - linux
+    - saas-linux-medium-amd64
   before_script:
     - cp $(ls -1t bus/build/data.table_*.tar.gz | head -n 1) .
     - mkdir -p ~/.R
@@ -209,7 +209,7 @@ test-lin-310-cran:
 .test-win-template: &test-win
   <<: *test
   tags:
-    - shared-windows
+    - saas-windows-medium-amd64
   before_script:
     - curl.exe -s -o ../R-win.exe $R_BIN --fail; if (!(Test-Path -Path ..\R-win.exe)) {Write-Error "R-win.exe not found, download failed?"}
     - Start-Process -FilePath ..\R-win.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
@@ -292,7 +292,7 @@ integration:
   stage: integration
   image: registry.gitlab.com/jangorecki/dockerfiles/r-pkgdown
   tags:
-    - linux
+    - saas-linux-medium-amd64
   only:
     - master
   needs: ["mirror-packages","build","test-lin-rel","test-lin-rel-cran","test-lin-dev-gcc-strict-cran","test-lin-dev-clang-cran","test-lin-rel-vanilla","test-lin-310-cran","test-win-rel","test-win-dev" ,"test-win-old"]
@@ -381,7 +381,7 @@ pages:
   stage: deploy
   environment: production
   tags:
-    - linux
+    - saas-linux-medium-amd64
   only:
     - master
   image: ubuntu
