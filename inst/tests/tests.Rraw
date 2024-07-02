@@ -18701,3 +18701,8 @@ ans = c(
  "10:   83   64   41                 9                 9")
 # test where topn isn't necessary
 test(2264.8, print(DT, show.indices=TRUE), output=ans)
+
+# fread cannot read all NA column as POSIXct #6208
+dt = data.table(x=as.POSIXct(c(NA, NA)))
+test(2265.1, fread("x\n \n \n", colClasses="POSIXct"), dt)
+test(2265.2, fread("x\n?\n \n", colClasses="POSIXct", na.strings="?"), dt)
