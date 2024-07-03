@@ -2374,8 +2374,8 @@ which_ = function(x, bool = TRUE) {
 }
 
 is.na.data.table = function(x) {
-  if (!cedta()) return(`is.na.data.frame`(x))
-  do.call("cbind", lapply(x, "is.na"))
+  if (!cedta()) return(is.na.data.frame(x))
+  do.call(cbind, lapply(x, is.na))
 }
 
 # not longer needed as inherits ...
