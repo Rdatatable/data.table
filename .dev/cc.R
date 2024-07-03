@@ -68,7 +68,7 @@ cc = function(test=FALSE, clean=FALSE, debug=FALSE, omp=!debug, cc_dir, path=Sys
   }
 
   # Make sure library .so is not loaded (neither installed package nor from dev)
-  dll = unlist(do.call("rbind",getLoadedDLLs())[,"path"])
+  dll = unlist(do.call(rbind,getLoadedDLLs())[,"path"])
   dll = grep("data_table.so", dll, fixed=TRUE, value=TRUE)
   sapply(dll, dyn.unload)
   gc()

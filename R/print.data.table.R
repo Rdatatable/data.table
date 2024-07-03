@@ -155,7 +155,7 @@ format.data.table = function(x, ..., justify="none") {
 
     stopf("Internal structure doesn't seem to be a list. Possibly corrupt data.table.")
   }
-  do.call("cbind", lapply(x, format_col, ..., justify=justify))
+  do.call(cbind, lapply(x, format_col, ..., justify=justify))
 }
 
 mimicsAutoPrint = c("knit_print.default")

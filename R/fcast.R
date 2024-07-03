@@ -203,7 +203,7 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
     o[idx] # subsetVector retains attributes, using R's subset for now
   }
   cj_uniq = function(DT) {
-    do.call("CJ", lapply(DT, function(x)
+    do.call(CJ, lapply(DT, function(x)
       if (is.factor(x)) {
         xint = seq_along(levels(x))
         setattr(xint, 'levels', levels(x))
@@ -236,16 +236,16 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
       lhs = lhs_; rhs = rhs_
     }
     maplen = lengths(mapunique)
-    idx = do.call("CJ", mapunique)[map, 'I' := .I][["I"]] # TO DO: move this to C and avoid materialising the Cross Join.
+    idx = do.call(CJ, mapunique)[map, 'I' := .I][["I"]] # TO DO: move this to C and avoid materialising the Cross Join.
     some_fill = anyNA(idx)
     fill.default = if (run_agg_funs && is.null(fill) && some_fill) dat_for_default_fill[, maybe_err(eval(fun.call))]
     if (run_agg_funs && is.null(fill) && some_fill) {
       fill.default = dat_for_default_fill[0L][, maybe_err(eval(fun.call))]
     }
     ans = .Call(Cfcast, lhs, val, maplen[[1L]], maplen[[2L]], idx, fill, fill.default, is.null(fun.call), some_fill)
-    allcols = do.call("paste", c(rhs, sep=sep))
+    allcols = do.call(paste, c(rhs, sep=sep))
     if (length(valnames) > 1L)
-      allcols = do.call("paste", if (identical(".", allcols)) list(valnames, sep=sep)
+      allcols = do.call(paste, if (identical(".", allcols)) list(valnames, sep=sep)
             else c(CJ(valnames, allcols, sorted=FALSE), sep=sep))
       # removed 'setcolorder()' here, #1153
     setattr(ans, 'names', c(lhsnames, allcols))

@@ -2423,7 +2423,7 @@ split.data.table = function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = TR
       factor(.x_lev, levels = .x_lev)
       }
     })
-    r = do.call("CJ", c(ul, sorted=sorted, unique=TRUE))
+    r = do.call(CJ, c(ul, sorted=sorted, unique=TRUE))
     if (!sorted && nrow(by.order)) {
       ii = r[by.order, on=cols, which=TRUE]
       r = rbindlist(list(
