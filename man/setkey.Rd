@@ -145,14 +145,10 @@ indices(DT)           # get indices single vector
 indices(DT, vectors = TRUE) # get indices list
 
 # Example illustrating the importance of using the dot (`.`) syntax with integer keys:
-DT <- data.table(id = 2:1)
-
-# Incorrect Usage:
+DT = data.table(id = 2:1)
 setkey(DT, id)
 subset_value <- 1
 DT[subset_value]  # Incorrect: treats `subset_value` as an row number
-
-# Correct Usage:
 # To correctly subset based on the key column `id`, use the dot (`.`) syntax:
 DT[.(subset_value)]  # Correct: matches `subset_value` against `id`
 
