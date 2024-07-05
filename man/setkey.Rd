@@ -148,9 +148,9 @@ indices(DT, vectors = TRUE) # get indices list
 DT = data.table(id = 2:1)
 setkey(DT, id)
 subset_value <- 1
-DT[subset_value]  # Incorrect: treats `subset_value` as an row number
+DT[subset_value]  # treats `subset_value` as an row number
 # To correctly subset based on the key column `id`, use the dot (`.`) syntax:
-DT[.(subset_value)]  # Correct: matches `subset_value` against `id`
+DT[.(subset_value)]  # matches `subset_value` against `id`
 
 }
 \keyword{ data }
