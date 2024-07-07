@@ -208,7 +208,7 @@ See 'Details' in \code{\link{round}} for more information.
   G. Grothendieck and T. Petzoldt, ``Date and Time Classes in R,''
   R News, vol. 4, no. 1, June 2004.
 
-  H. Wickham, https://gist.github.com/10238.
+  H. Wickham, https://gist.github.com/hadley/10238.
 
   ISO 8601, https://www.iso.org/iso/home/standards/iso8601.htm
 }
