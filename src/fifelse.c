@@ -227,7 +227,7 @@ SEXP fcaseR(SEXP rho, SEXP args) {
       error(_("S4 class objects (except nanotime) are not supported. Please see https://github.com/Rdatatable/data.table/issues/4131."));
     }
     if (!isLogical(whens)) {
-      error(_("Argument #%d must be logical."), 2*i+1);
+      error(_("Argument #%d must be logical but was of type %s"), 2*i+1, type2char(TYPEOF(whens)));
     }
     const int *restrict pwhens = LOGICAL(whens);
     if (i == 0) {
