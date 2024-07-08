@@ -3,6 +3,8 @@
 #include <fcntl.h>
 #include <time.h>
 
+extern void progress(int, int);
+
 static bool anySpecialStatic(SEXP x) {
   // Special refers to special symbols .BY, .I, .N, and .GRP; see special-symbols.Rd
   // Static because these are like C static arrays which are the same memory for each group; e.g., dogroups
@@ -169,7 +171,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   // because it is a rare edge case for it to be true. See #4892.
   bool anyNA=false, orderedSubset=false;
   check_idx(order, length(VECTOR_ELT(dt, 0)), &anyNA, &orderedSubset);
-
+  double start_time;
+  double total_time = 0;
   for(int i=0; i<ngrp; ++i) {   // even for an empty i table, ngroup is length 1 (starts is value 0), for consistency of empty cases
 
     if (istarts[i]==0 && (i<ngrp-1 || estn>-1)) continue;
@@ -177,6 +180,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     // The above is now to fix #1993, see test 1746.
     // In cases were no i rows match, '|| estn>-1' ensures that the last empty group creates an empty result.
     // TODO: revisit and tidy
+
+    start_time = wallclock();
 
     if (!isNull(lhs) &&
         (istarts[i] == NA_INTEGER ||
@@ -435,6 +440,11 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         if (copied) UNPROTECT(1);
       }
     }
+    double now = wallclock();
+    double time_of_group  = (double)(now-start_time);
+    total_time += time_of_group;
+    double average_time = (double)total_time/(i+1);
+    progress((int)(100.0*(i+1)/ngrp), (int)(average_time*(ngrp-i-1)));
     ansloc += maxn;
     if (firstalloc) {
       nprotect++;          //  remember the first jval. If we UNPROTECTed now, we'd unprotect
@@ -443,6 +453,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     }
     else UNPROTECT(1);  // the jval. Don't want them to build up. The first jval can stay protected till the end ok.
   }
+  progress(100, 0);
   if (isNull(lhs) && ans!=NULL) {
     if (ansloc < LENGTH(VECTOR_ELT(ans,0))) {
       if (verbose) Rprintf(_("Wrote less rows (%d) than allocated (%d).\n"),ansloc,LENGTH(VECTOR_ELT(ans,0)));
