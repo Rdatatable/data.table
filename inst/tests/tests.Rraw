@@ -18701,3 +18701,11 @@ ans = c(
  "10:   83   64   41                 9                 9")
 # test where topn isn't necessary
 test(2264.8, print(DT, show.indices=TRUE), output=ans)
+
+# integer64 columns print even when bit64 isn't loaded
+if (test_bit64) local({
+  DT = data.table(a = 'abc', b = as.integer64(1))
+  unloadNamespace("bit64")
+  on.exit(library(bit64))
+  test(2265, DT, output="abc\\s*1$")
+})
