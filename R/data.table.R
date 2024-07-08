@@ -1938,7 +1938,7 @@ replace_dot_alias = function(e) {
     return(suppPrint(x))
   }
   if (is.null(ans)) {
-    ans = as.data.table.list(lapply(groups,"[",0L))  # side-effects only such as test 168
+    ans = as.data.table.list(lapply(groups, `[`, 0L))  # side-effects only such as test 168
     setnames(ans,seq_along(bynames),bynames)   # TO DO: why doesn't groups have bynames in the first place?
     return(ans)
   }
@@ -2374,8 +2374,8 @@ which_ = function(x, bool = TRUE) {
 }
 
 is.na.data.table = function(x) {
-  if (!cedta()) return(`is.na.data.frame`(x))
-  do.call("cbind", lapply(x, "is.na"))
+  if (!cedta()) return(is.na.data.frame(x))
+  do.call(cbind, lapply(x, is.na))
 }
 
 # not longer needed as inherits ...
@@ -2423,7 +2423,7 @@ split.data.table = function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = TR
       factor(.x_lev, levels = .x_lev)
       }
     })
-    r = do.call("CJ", c(ul, sorted=sorted, unique=TRUE))
+    r = do.call(CJ, c(ul, sorted=sorted, unique=TRUE))
     if (!sorted && nrow(by.order)) {
       ii = r[by.order, on=cols, which=TRUE]
       r = rbindlist(list(
