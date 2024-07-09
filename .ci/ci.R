@@ -43,12 +43,27 @@ function (repos, type = getOption("pkgType"), ver)
   res
 }
 
+local.extract_dependency_package_names = function (x) {
+  ## do not filter out R like tools:::.extract_dependency_package_names, used for web/$pkg/index.html
+  if (is.na(x))
+    return(character())
+  x <- unlist(strsplit(x, ",[[:space:]]*"))
+  x <- sub("[[:space:]]*([[:alnum:].]+).*", "\\1", x)
+  x[nzchar(x)]
+}
+
+rev.dependencies = function(pkg, available_pkgs, which=c("Imports", "Depends")) {
+  dependencies = available_pkgs[pkg, which]
+  x = dependencies[!is.na(dependencies)]
+  unlist(lapply(x, local.extract_dependency_package_names), use.names=FALSE)
+}
+
 ## returns dependencies for a package based on its DESCRIPTION file
 dcf.dependencies <-
 function(file = "DESCRIPTION",
          which = NA,
          except.priority = "base",
-         exclude = NULL) {
+         exclude = NULL, revdeps=FALSE) {
   if (!is.character(file) || !length(file) || !all(file.exists(file)))
     stop("file argument must be character of filepath(s) to existing DESCRIPTION file(s)")
   if (!is.character(except.priority))
@@ -70,17 +85,14 @@ function(file = "DESCRIPTION",
           warning(gettextf("error reading file '%s'", f), domain = NA, call. = FALSE)
       else dcf[!is.na(dcf)]
   }, which = which), use.names = FALSE)
-  local.extract_dependency_package_names = function (x) {
-    ## do not filter out R like tools:::.extract_dependency_package_names, used for web/$pkg/index.html
-    if (is.na(x))
-      return(character())
-    x <- unlist(strsplit(x, ",[[:space:]]*"))
-    x <- sub("[[:space:]]*([[:alnum:].]+).*", "\\1", x)
-    x[nzchar(x)]
-  }
   x <- unlist(lapply(x, local.extract_dependency_package_names))
   except <- if (length(except.priority)) c("R", unlist(tools:::.get_standard_package_names()[except.priority], use.names = FALSE))
   x = setdiff(x, except)
+  if (revdeps) {
+    revdep_pkgs = unique(unlist(lapply(x, rev.dependencies, available_pkgs=available.packages(), which=c("Depends", "Imports"))))
+    revdep_pkgs = setdiff(revdep_pkgs, except)
+    x = unique(c(x, revdep_pkgs))
+  }
   if (length(exclude)) {  # to exclude knitr/rmarkdown, 5294
     if (!is.character(exclude) || anyDuplicated(exclude))
       stop("exclude may be NULL or a character vector containing no duplicates")

@@ -54,7 +54,7 @@ mirror-packages:
   script:
     - echo 'source(".ci/ci.R")' >> .Rprofile
     - mkdir -p bus/$CI_JOB_NAME/cran/src/contrib
-    - Rscript -e 'mirror.packages(dcf.dependencies("DESCRIPTION", "all"), repos=Sys.getenv("CRAN_MIRROR"), repodir="bus/mirror-packages/cran")'
+    - Rscript -e 'mirror.packages(dcf.dependencies("DESCRIPTION", "all", revdeps=TRUE), repos=Sys.getenv("CRAN_MIRROR"), repodir="bus/mirror-packages/cran")'
     - Rscript -e 'sapply(simplify=FALSE, setNames(nm=Sys.getenv(c("R_REL_VERSION","R_DEV_VERSION","R_OLD_VERSION"))), function(binary.ver) mirror.packages(type="win.binary", dcf.dependencies("DESCRIPTION", "all"), repos=Sys.getenv("CRAN_MIRROR"), repodir="bus/mirror-packages/cran", binary.ver=binary.ver))'
   <<: *artifacts
 
