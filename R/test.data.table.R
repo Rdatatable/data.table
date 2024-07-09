@@ -127,7 +127,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   assign("prevtest", -1L, envir=env)
   assign("whichfail", NULL, envir=env)
   assign("started.at", proc.time(), envir=env)
-  assign("lasttime", proc.time()[3L], envir=env)  # used by test() to attribute time inbetween tests to the next test
+  assign("lasttime", proc.time()[3L], envir=env)  # used by test() to attribute time in between tests to the next test
   assign("timings", data.table( ID = seq_len(9999L), time=0.0, nTest=0L, RSS=0.0 ), envir=env)   # test timings aggregated to integer id
   assign("memtest", memtest, envir=env)
   assign("memtest.id", memtest.id, envir=env)
@@ -211,10 +211,10 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     if (is.na(oldEnv[i]))
       Sys.unsetenv(names(oldEnv)[i])
     else
-      do.call("Sys.setenv", as.list(oldEnv[i])) # nocov
+      do.call(Sys.setenv, as.list(oldEnv[i])) # nocov
   }
   # Sys.setlocale("LC_CTYPE", oldlocale)
-  suppressWarnings(do.call("RNGkind",as.list(oldRNG)))
+  suppressWarnings(do.call(RNGkind,as.list(oldRNG)))
   # suppressWarnings for the unlikely event that user selected sample='Rounding' themselves before calling test.data.table()
 
   setNumericRounding(userNumericRounding)  # Restore the user's numeric rounding value
@@ -331,8 +331,8 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     })
   }
   if (!is.null(options)) {
-    old_options <- do.call('options', as.list(options)) # as.list(): allow passing named character vector for convenience
-    on.exit(options(old_options), add=TRUE)
+    old_options <- do.call(base::options, as.list(options)) # as.list(): allow passing named character vector for convenience
+    on.exit(base::options(old_options), add=TRUE)
   }
   # Usage:
   # i) tests that x equals y when both x and y are supplied, the most common usage
