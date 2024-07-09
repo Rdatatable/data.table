@@ -68,7 +68,6 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   shallow = data.table:::shallow # until exported
   .shallow = data.table:::.shallow
   split.data.table = data.table:::split.data.table
-  if (!exists('startsWith', 'package:base', inherits=FALSE)) startsWith = data.table:::startsWith # R 3.3.0
   stopf = data.table:::stopf
   test = data.table:::test
   uniqlengths = data.table:::uniqlengths
@@ -196,21 +195,6 @@ base_messages = list(
   ambiguous_date_fmt = get_msg(as.Date('xxx')),
   NULL
 )
-
-# Ensure an operation uses C-locale sorting (#3502). For test set-ups/comparisons that use base operations, which are
-#   susceptible to locale-specific sorting issues, but shouldn't be needed for data.table code, which always uses C sorting.
-# TODO(R>=3.3.0): use order(method="radix") as a way to avoid needing this helper
-with_c_collate = function(expr) {
-  old = Sys.getlocale("LC_COLLATE")
-  on.exit(Sys.setlocale("LC_COLLATE", old))
-  Sys.setlocale("LC_COLLATE", "C")
-  expr
-}
-
-# strrep is used many times in tests, but is from R 3.3.0, so use this equivalent if it is missing.
-if (!exists("strrep", "package:base")) {
-  strrep = function(x, times) mapply(function(x, times) paste(rep(x, times), collapse=""), rep_len(x, length(times)), times, USE.NAMES=FALSE)
-}
 
 ##########################
 .do_not_rm = ls()  # objects that exist at this point should not be removed by rm_all(); e.g. test_*, base_messages, Ctest_dt_win_snprintf, prevtest, etc
@@ -1853,10 +1837,10 @@ test(609, chorder(character()), base::order(character()))
 test(610, chorder(""), base::order(""))
 # Extra tests of chorder and chgroup
 x = sample(LETTERS)
-test(610.1, chorder(x), with_c_collate(base::order(x)))
+test(610.1, chorder(x), base::order(x, method="radix"))
 test(610.2, chgroup(x), seq_along(x))
 x = sample(LETTERS,1000,replace=TRUE)
-test(610.3, chorder(x), with_c_collate(base::order(x)))
+test(610.3, chorder(x), base::order(x, method="radix"))
 test(610.4, unique(x[chgroup(x)]), unique(x))
 
 # := by group
@@ -4524,7 +4508,8 @@ for (nvars in seq_along(names(DT))) {
   combn(names(DT), nvars, simplify=FALSE, function(x) {  # simplify=FALSE needed for R 3.1.0
     for (i in seq_len(nrow(signs))) {
       test_no <<- test_no + 1L
-      ll = as.call(c(as.name("order"),
+      ll = as.call(c(
+        as.name("order"),
         lapply(seq_along(x), function(j) {
           if (signs[i,j] == 1L)
             as.name(x[j])
@@ -4534,9 +4519,10 @@ for (nvars in seq_along(names(DT))) {
             else
               as.call(list(as.name("-"), as.name(x[j])))
           }
-        })
+        }),
+        method = "radix"
       ))
-      test(1223.0 + test_no*0.001, forderv(DT, by=x, order=signs[i,]), with_c_collate(with(DT, eval(ll))))
+      test(1223.0 + test_no*0.001, forderv(DT, by=x, order=signs[i,]), with(DT, eval(ll)))
     }
     integer()
   })
@@ -4615,25 +4601,21 @@ test(1240.2, ans2, ans1)
 # Therefore we check against the non-data.table method ('shell') for correctness (otherwise we'd be
 # checking data.table code against itself) as well as checking data.table's ported code in R;
 # i.e. a three-way match.
-if (base::getRversion() < "3.3.0") {
-  base_order <- base::order
-} else {
-  base_order <- function(..., na.last=TRUE, method=c("shell","radix")) {
-    ans1 = base::order(..., na.last=na.last, method="shell")
-    if (!is.na(na.last) || base::getRversion()>"3.3.3") {
-      ans2 = base::order(..., na.last=na.last, method="radix")
-      if (!identical(ans1,ans2)) stop("Base R's order(,method='shell') != order(,method='radix')")
-    } else {
-      # Only when na.last=NA in just R 3.3.0-3.3.3 we don't check shell==radix
-      # because there was a problem in base R's port of data.table code then when :
-      #     1) 2 or more vectors were passed to base::order(,method="radix")
-      # AND 2) na.last=NA
-      # AND 3) there is a subgroup of size exactly 2
-      # AND 4) one of those 2 items in the subgroup is NA and the other is not NA
-      # See tests 1728.3 and 1728.13.
-    }
-    ans1
+base_order <- function(..., na.last=TRUE, method=c("shell","radix")) {
+  ans1 = base::order(..., na.last=na.last, method="shell")
+  if (!is.na(na.last) || base::getRversion()>"3.3.3") {
+    ans2 = base::order(..., na.last=na.last, method="radix")
+    if (!identical(ans1,ans2)) stop("Base R's order(,method='shell') != order(,method='radix')")
+  } else {
+    # Only when na.last=NA in just R 3.3.0-3.3.3 we don't check shell==radix
+    # because there was a problem in base R's port of data.table code then when :
+    #     1) 2 or more vectors were passed to base::order(,method="radix")
+    # AND 2) na.last=NA
+    # AND 3) there is a subgroup of size exactly 2
+    # AND 4) one of those 2 items in the subgroup is NA and the other is not NA
+    # See tests 1728.3 and 1728.13.
   }
+  ans1
 }
 
 # Test for optimisation of 'order' to 'forder'. Copied to benchmarks.Rraw too.
@@ -4792,7 +4774,8 @@ for (i in seq_along(names(DT))) {
   ans[[i]] = combn(names(DT), i, function(x) {
     tmp = apply(cj, 1, function(y) {
       test_no <<- test_no + 1L
-      ll = as.call(c(as.name("base_order"),
+      ll = as.call(c(
+        as.name("base_order"),
         lapply(seq_along(x), function(j) {
           if (y[j] == 1L)
             as.name(x[j])
@@ -4802,14 +4785,15 @@ for (i in seq_along(names(DT))) {
             else
               as.call(list(as.name("-"), as.name(x[j])))
           }
-        })
+        }),
+        method = "radix"
       ))
       ans1 = forderv(DT, by=x, order=y, na.last=TRUE)         # adding tests for both nalast=TRUE and nalast=NA
-      test(1252.0 + test_no*0.001, ans1, with_c_collate(with(DT, eval(ll))))
+      test(1252.0 + test_no*0.001, ans1, with(DT, eval(ll)))
       test_no <<- test_no + 1L
       ll <- as.call(c(as.list(ll), na.last=NA))
       ans1 = forderv(DT, by=x, order=y, na.last=NA)           # nalast=NA here.
-      test(1252.0 + test_no*0.001, ans1[ans1 != 0], with_c_collate(with(DT, eval(ll))))
+      test(1252.0 + test_no*0.001, ans1[ans1 != 0], with(DT, eval(ll)))
     })
     dim(tmp)=NULL
     list(tmp)
@@ -8903,11 +8887,7 @@ test(1622.1, ans1, ans2)
 test(1622.2, ans1, fread(testDir("issue_1573_fill.txt"), fill=TRUE, sep=" ", na.strings=""))
 
 # fix for #989
-# error_msg = if (base::getRversion() < "3.4") "can not be a directory name" else "does not exist"
-# Until R v3.3, file.info("~") returned TRUE for isdir. This seems to return NA in current devel. However, it
-# correctly identifies that "~" is not a file. So leads to another error message. So removing the error message
-# so that it errors properly on both versions. This seems fine to me since we just need it to error. Tested.
-test(1623, fread("~"), error="")
+test(1623, fread("~"), error="File '~' is a directory")
 
 # testing print.rownames option, #1097 (part of #1523)
 options(datatable.print.rownames = FALSE)

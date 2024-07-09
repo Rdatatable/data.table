@@ -21,9 +21,6 @@ nan_is_na = function(x) {
   stopf("Argument 'nan' must be NA or NaN")
 }
 
-if (!exists('startsWith', 'package:base', inherits=FALSE)) {  # R 3.3.0; Apr 2016
-  startsWith = function(x, stub) substr(x, 1L, nchar(stub))==stub
-}
 # endsWith no longer used from #5097 so no need to backport; prevent usage to avoid dev delay until GLCI's R 3.1.0 test
 endsWith = function(...) stop("Internal error: use endsWithAny instead of base::endsWith", call.=FALSE)
 
