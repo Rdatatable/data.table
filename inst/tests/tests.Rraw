@@ -5623,7 +5623,7 @@ test(1360.2, copy(dt)[sample, N := c(.N), by = .EACHI], copy(dt)[sample, N := .N
 
 # Fix for #500 - `lapply` call shouldn't redirect to `[.data.frame`.
 L <- list(data.table(BOD), data.table(BOD))
-test(1361, lapply(L, "[", Time==3L), list(L[[1L]][Time == 3L], L[[2L]][Time == 3L]))
+test(1361, lapply(L, `[`, Time==3L), list(L[[1L]][Time == 3L], L[[2L]][Time == 3L]))
 
 # Feature #735, first two cases: 1) .SD, and 2) DT[, c(.SD, lapply(.SD, ...)), by=...] optimisation:
 # Don't set options(datatable.verbose=TRUE) here because the "running test 1362.1 ..." messages cause output to scroll away errors on CRAN checks last 13 lines
@@ -5752,7 +5752,7 @@ for (i in seq_along(dt)) {
     # ensure consistency with base::rank ties.methods as advertised
     for (k in eval(formals(base::rank)$ties.method)) {
       if (k == "random") set.seed(45L)
-      if (is.integer64(col)) {
+      if (test_bit64 && is.integer64(col)) {
         r1 = rank(as.integer(col), ties.method=k, na.last=j)
         r2 = rank(-xtfrm(as.integer(col)), ties.method=k, na.last=j)
       }
@@ -5784,7 +5784,7 @@ for (i in seq_along(dt)) {
   # ensure consistency with base::rank ties.methods as advertised
   for (k in eval(formals(base::rank)$ties.method)) {  # 'random' on now with tweak to match base in #4243
     if (k == "random") set.seed(45L)
-    if (is.integer64(col)) {
+    if (test_bit64 && is.integer64(col)) {
       r1 = rank(as.integer(col), ties.method=k, na.last=NA)
       r2 = rank(-xtfrm(as.integer(col)), ties.method=k, na.last=NA)
     }
@@ -18369,10 +18369,10 @@ test(2249.4, indices(DT[, .SD]), c('x', 'y'))
 
 # make names(.SD) work - issue #795
 dt = data.table(a = 1:4, b = 5:8)
-test(2250.01, dt[, names(.SD) := lapply(.SD, '*', 2), .SDcols = 1L], data.table(a = 1:4 * 2, b = 5:8))
-test(2250.02, dt[, names(.SD) := lapply(.SD, '*', 2), .SDcols = 2L], data.table(a = 1:4 * 2, b = 5:8 * 2))
+test(2250.01, dt[, names(.SD) := lapply(.SD, `*`, 2), .SDcols = 1L], data.table(a = 1:4 * 2, b = 5:8))
+test(2250.02, dt[, names(.SD) := lapply(.SD, `*`, 2), .SDcols = 2L], data.table(a = 1:4 * 2, b = 5:8 * 2))
 test(2250.03, dt[, names(.SD) := lapply(.SD, as.integer)], data.table(a = as.integer(1:4 * 2), b = as.integer(5:8 * 2)))
-test(2250.04, dt[1L, names(.SD) := lapply(.SD, '+', 2L)], data.table(a = as.integer(c(4, 2:4 * 2)), b = as.integer(c(12, 6:8 * 2))))
+test(2250.04, dt[1L, names(.SD) := lapply(.SD, `+`, 2L)], data.table(a = as.integer(c(4, 2:4 * 2)), b = as.integer(c(12, 6:8 * 2))))
 test(2250.05, dt[, setdiff(names(.SD), 'a') := NULL], data.table(a = as.integer(c(4, 2:4 * 2))))
 test(2250.06, dt[, c(names(.SD)) := NULL], null.data.table())
 
@@ -18426,6 +18426,9 @@ test(2251.10, dim(fread(text, fill=TRUE)), c(9L, 9L))
 test(2251.11, dim(fread(text, fill=7)), c(9L, 9L))
 test(2251.12, dim(fread(text, fill=9)), c(9L, 9L))
 test(2251.13, dim(fread(text, fill=20)), c(9L, 20L)) # clean up currently only kicks in if sep!=' '
+# 2727 use fill=Inf to estimate the number of columns
+test(2251.14, fread(text = dt_str, fill=Inf), ans)
+test(2251.15, dim(fread(text, fill=Inf)), c(9L, 9L))
 
 .datatable.aware = FALSE
 dt = data.table(a = 1L)
@@ -18698,3 +18701,11 @@ ans = c(
  "10:   83   64   41                 9                 9")
 # test where topn isn't necessary
 test(2264.8, print(DT, show.indices=TRUE), output=ans)
+
+# integer64 columns print even when bit64 isn't loaded
+if (test_bit64) local({
+  DT = data.table(a = 'abc', b = as.integer64(1))
+  unloadNamespace("bit64")
+  on.exit(library(bit64))
+  test(2265, DT, output="abc\\s*1$")
+})

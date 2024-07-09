@@ -88,8 +88,8 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     printdots = FALSE
     if (show.indices) toprint = cbind(toprint, index_dt)
   }
-  toprint=format.data.table(toprint, na.encode=FALSE, timezone = timezone, ...)  # na.encode=FALSE so that NA in character cols print as <NA>
   require_bit64_if_needed(x)
+  toprint=format.data.table(toprint, na.encode=FALSE, timezone = timezone, ...)  # na.encode=FALSE so that NA in character cols print as <NA>
 
   # FR #353 - add row.names = logical argument to print.data.table
   if (isTRUE(row.names)) rownames(toprint)=paste0(format(rn,right=TRUE,scientific=FALSE),":") else rownames(toprint)=rep.int("", nrow(toprint))
@@ -155,7 +155,7 @@ format.data.table = function(x, ..., justify="none") {
 
     stopf("Internal structure doesn't seem to be a list. Possibly corrupt data.table.")
   }
-  do.call("cbind", lapply(x, format_col, ..., justify=justify))
+  do.call(cbind, lapply(x, format_col, ..., justify=justify))
 }
 
 mimicsAutoPrint = c("knit_print.default")
@@ -193,7 +193,7 @@ format_list_item = function(x, ...) {
 
 has_format_method = function(x) {
   f = function(y) !is.null(getS3method("format", class=y, optional=TRUE))
-  any(sapply(class(x), f))
+  any(vapply_1b(class(x), f))
 }
 
 format_col.default = function(x, ...) {

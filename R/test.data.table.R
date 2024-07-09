@@ -211,10 +211,10 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     if (is.na(oldEnv[i]))
       Sys.unsetenv(names(oldEnv)[i])
     else
-      do.call("Sys.setenv", as.list(oldEnv[i])) # nocov
+      do.call(Sys.setenv, as.list(oldEnv[i])) # nocov
   }
   # Sys.setlocale("LC_CTYPE", oldlocale)
-  suppressWarnings(do.call("RNGkind",as.list(oldRNG)))
+  suppressWarnings(do.call(RNGkind,as.list(oldRNG)))
   # suppressWarnings for the unlikely event that user selected sample='Rounding' themselves before calling test.data.table()
 
   setNumericRounding(userNumericRounding)  # Restore the user's numeric rounding value
@@ -331,8 +331,8 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     })
   }
   if (!is.null(options)) {
-    old_options <- do.call('options', as.list(options)) # as.list(): allow passing named character vector for convenience
-    on.exit(options(old_options), add=TRUE)
+    old_options <- do.call(base::options, as.list(options)) # as.list(): allow passing named character vector for convenience
+    on.exit(base::options(old_options), add=TRUE)
   }
   # Usage:
   # i) tests that x equals y when both x and y are supplied, the most common usage
