@@ -51,6 +51,7 @@ R_CallMethodDef callMethods[] = {
 {"Cdogroups", (DL_FUNC) &dogroups, -1},
 {"Ccopy", (DL_FUNC) &copy, -1},
 {"Cshallowwrapper", (DL_FUNC) &shallowwrapper, -1},
+{"Csetdt_nrows", (DL_FUNC) &setdt_nrows, -1},
 {"Calloccolwrapper", (DL_FUNC) &alloccolwrapper, -1},
 {"Cselfrefokwrapper", (DL_FUNC) &selfrefokwrapper, -1},
 {"Ctruelength", (DL_FUNC) &truelength, -1},
@@ -141,6 +142,7 @@ R_CallMethodDef callMethods[] = {
 {"CstartsWithAny", (DL_FUNC)&startsWithAny, -1},
 {"CconvertDate", (DL_FUNC)&convertDate, -1},
 {"Cnotchin", (DL_FUNC)&notchin, -1},
+{"Cwarn_matrix_column_r", (DL_FUNC)&warn_matrix_column_r, -1},
 {NULL, NULL, 0}
 };
 
@@ -236,7 +238,7 @@ void attribute_visible R_init_data_table(DllInfo *info)
   setNumericRounding(PROTECT(ScalarInteger(0))); // #1642, #1728, #1463, #485
   UNPROTECT(1);
 
-  // create needed strings in advance for speed, same techique as R_*Symbol
+  // create needed strings in advance for speed, same technique as R_*Symbol
   // Following R-exts 5.9.4; paragraph and example starting "Using install ..."
   // either use PRINTNAME(install()) or R_PreserveObject(mkChar()) here.
   char_integer64 = PRINTNAME(install("integer64"));

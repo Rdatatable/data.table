@@ -60,7 +60,7 @@ test(647, ans1, ans3)
 # this'll error with `valgrind` because of the 'long double' usage in gsumm.c (although I wonder if we need long double precision).
 # http://valgrind.org/docs/manual/manual-core.html#manual-core.limits
 # http://comments.gmane.org/gmane.comp.debugging.valgrind/10340
-test(648, any(is.na(ans1$V1)) && !any(is.nan(ans1$V1)))
+test(648, anyNA(ans1$V1) && !any(is.nan(ans1$V1)))
 # test 649 removed as compared 1.1s to 1.1s
 if (.devtesting) test(650, tt1["user.self"] < tt3["user.self"])
 
@@ -360,7 +360,7 @@ fff = function(aref) {
   ff = lapply(1:5, function(i) {
     DT[,list(sumA=sum(get(aref))),by=b][,c:=letters[i]]
   })
-  return(rbindlist(ff))
+  rbindlist(ff)
 }
 for(i in 1:100) {
   f = fff("a")
@@ -490,7 +490,7 @@ out = capture.output(print(DT))
 tt = out[grep("V",out)]
 tt = unlist(strsplit(gsub(" ","",tt), "V"))
 test(1982.1, tt[1L], "")
-tt = as.integer(tt[tt!=""])
+tt = as.integer(tt[nzchar(tt)])
 test(1982.2, tt, seq_along(tt))
 
 # fread leak, #3292
@@ -500,5 +500,3 @@ start = gc()["Vcells",2]
 for (i in 1:10) data.table::fread("out.tsv")
 end = gc()["Vcells",2]
 test(, end/start < 1.05)
-
-
