@@ -727,14 +727,14 @@ void fwriteMain(fwriteMainArgs args)
         *ch = sep;
         ch += sepLen;
       }
-      int8_t temp = doQuote;
-      doQuote = quoteHeaders;
+      int8_t tempDoQuote = doQuote;
+      doQuote = quoteHeaders; // temporary overwrite since headers might get different quoting behavior, #2964
       for (int j=0; j<args.ncol; j++) {
         writeString(args.colNames, j, &ch);
         *ch = sep;
         ch += sepLen;
       }
-      doQuote = temp;
+      doQuote = tempDoQuote;
       ch -= sepLen; // backup over the last sep
       write_chars(args.eol, &ch);
     }
