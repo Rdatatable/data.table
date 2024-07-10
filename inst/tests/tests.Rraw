@@ -196,6 +196,16 @@ base_messages = list(
   NULL
 )
 
+# Ensure an operation uses C-locale sorting (#3502). For test set-ups/comparisons that use base operations, which are
+#   susceptible to locale-specific sorting issues, but shouldn't be needed for data.table code, which always uses C sorting.
+# TODO(R>=3.3.0): use order(method="radix") as a way to avoid needing this helper
+with_c_collate = function(expr) {
+  old = Sys.getlocale("LC_COLLATE")
+  on.exit(Sys.setlocale("LC_COLLATE", old))
+  Sys.setlocale("LC_COLLATE", "C")
+  expr
+}
+
 ##########################
 .do_not_rm = ls()  # objects that exist at this point should not be removed by rm_all(); e.g. test_*, base_messages, Ctest_dt_win_snprintf, prevtest, etc
 ##########################
@@ -1837,10 +1847,10 @@ test(609, chorder(character()), base::order(character()))
 test(610, chorder(""), base::order(""))
 # Extra tests of chorder and chgroup
 x = sample(LETTERS)
-test(610.1, chorder(x), base::order(x, method="radix"))
+test(610.1, chorder(x), with_c_collate(base::order(x)))
 test(610.2, chgroup(x), seq_along(x))
 x = sample(LETTERS,1000,replace=TRUE)
-test(610.3, chorder(x), base::order(x, method="radix"))
+test(610.3, chorder(x), with_c_collate(base::order(x)))
 test(610.4, unique(x[chgroup(x)]), unique(x))
 
 # := by group
@@ -4774,8 +4784,7 @@ for (i in seq_along(names(DT))) {
   ans[[i]] = combn(names(DT), i, function(x) {
     tmp = apply(cj, 1, function(y) {
       test_no <<- test_no + 1L
-      ll = as.call(c(
-        as.name("base_order"),
+      ll = as.call(c(as.name("base_order"),
         lapply(seq_along(x), function(j) {
           if (y[j] == 1L)
             as.name(x[j])
@@ -4785,15 +4794,14 @@ for (i in seq_along(names(DT))) {
             else
               as.call(list(as.name("-"), as.name(x[j])))
           }
-        }),
-        method = "radix"
+        })
       ))
       ans1 = forderv(DT, by=x, order=y, na.last=TRUE)         # adding tests for both nalast=TRUE and nalast=NA
-      test(1252.0 + test_no*0.001, ans1, with(DT, eval(ll)))
+      test(1252.0 + test_no*0.001, ans1, with_c_collate(with(DT, eval(ll))))
       test_no <<- test_no + 1L
       ll <- as.call(c(as.list(ll), na.last=NA))
       ans1 = forderv(DT, by=x, order=y, na.last=NA)           # nalast=NA here.
-      test(1252.0 + test_no*0.001, ans1[ans1 != 0], with(DT, eval(ll)))
+      test(1252.0 + test_no*0.001, ans1[ans1 != 0], with_c_collate(with(DT, eval(ll))))
     })
     dim(tmp)=NULL
     list(tmp)
