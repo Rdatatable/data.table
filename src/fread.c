@@ -480,7 +480,7 @@ void copyFile(size_t fileSize, const char *msg, bool verbose)  // only called in
 //      into the `ctx.targets[sizeof(value)]` buffer. The parsing location
 //      `ctx.ch` should be left unmodified.
 //
-// Note that it is not the parser's job ot advance the `ctx.targets` pointer --
+// Note that it is not the parser's job to advance the `ctx.targets` pointer --
 // this is left to the caller. The reason for this is because we have different
 // parsing scenarios:
 //   - in the "normal" case the value will be written and the target pointer
@@ -1510,7 +1510,7 @@ int freadMain(freadMainArgs _args) {
       while (ch>=sof && *ch!='\r') ch--;
     } else {
       while (ch>=sof && *ch!='\n') ch--;
-      while (ch>sof && ch[-1]=='\r') ch--;  // the first of any preceeding \r to avoid a dangling \r
+      while (ch>sof && ch[-1]=='\r') ch--;  // the first of any preceding \r to avoid a dangling \r
     }
     if (ch>=sof) {
       const char *lastNewLine = ch;  // the start of the final newline sequence.
@@ -1620,6 +1620,10 @@ int freadMain(freadMainArgs _args) {
   const char *firstJumpEnd=NULL; // remember where the winning jumpline from jump 0 ends, to know its size excluding header
   const char *prevStart = NULL;  // the start of the non-empty line before the first not-ignored row (for warning message later, or taking as column names)
   int jumpLines = nrowLimit==0 ? 100 : (int)umin(100, nrowLimit);   // how many lines from each jump point to use. If nrows>0 is supplied, nJumps is later set to 1. #4029
+  if (fill==INT_MAX) { // if user provides fill=INT_MAX then full file should be sampled #2727
+    jumpLines = INT_MAX;
+    fill = 1; // set fill to true value to not overallocate
+  }
   {
   if (verbose) DTPRINT(_("[06] Detect separator, quoting rule, and ncolumns\n"));
 
@@ -1910,7 +1914,7 @@ int freadMain(freadMainArgs _args) {
       if (thisLineLen>maxLen) maxLen=thisLineLen;
       if (jump==0 && bumped) {
         // apply bumps after each line in the first jump from the start in case invalid line stopped early on is in the first 100 lines.
-        // otherwise later jumps must complete fully before their bumps are appplied. Invalid lines in those are more likely to be due to bad jump start.
+        // otherwise later jumps must complete fully before their bumps are applied. Invalid lines in those are more likely to be due to bad jump start.
         memcpy(type, tmpType, (size_t)ncol);
         bumped = false;  // detect_types() only updates &bumped when it's true. So reset to false here.
       }
@@ -2286,7 +2290,7 @@ int freadMain(freadMainArgs _args) {
           thPush += now-tLast;
           tLast = now;
           if (myShowProgress && /*wait for all threads to process 2 jumps*/jump>=nth*2) {
-            // Important for thread safety inside progess() that this is called not just from critical but that
+            // Important for thread safety inside progress() that this is called not just from critical but that
             // it's the master thread too, hence me==0. OpenMP doesn't allow '#pragma omp master' here, but we
             // did check above that master's me==0.
             int ETA = (int)(((now-tAlloc)/jump) * (nJumps-jump));
@@ -2398,7 +2402,7 @@ int freadMain(freadMainArgs _args) {
               skip_white(&tch);
               if (!end_of_field(tch)) tch = afterSpace; // else it is the field_end, we're on closing sep|eol and we'll let processor write appropriate NA as if field was empty
               if (*tch==quote && quote) { quoted=true; tch++; }
-            } // else Field() handles NA inside it unlike other processors e.g. ,, is interpretted as "" or NA depending on option read inside Field()
+            } // else Field() handles NA inside it unlike other processors e.g. ,, is interpreted as "" or NA depending on option read inside Field()
             fun[abs(thisType)](&fctx);
             if (quoted) {   // quoted was only set to true with '&& quote' above (=> quote!='\0' now)
               if (*tch==quote) tch++;
@@ -2677,7 +2681,7 @@ int freadMain(freadMainArgs _args) {
         ch = headPos;
         int tt = countfields(&ch);
         if (fill>0) {
-          DTWARN(_("Stopped early on line %"PRIu64". Expected %d fields but found %d. Consider fill=%d or even more based on your knowledge of the input file. First discarded non-empty line: <<%s>>"),
+          DTWARN(_("Stopped early on line %"PRIu64". Expected %d fields but found %d. Consider fill=%d or even more based on your knowledge of the input file. Use fill=Inf for reading the whole file for detecting the number of fields. First discarded non-empty line: <<%s>>"),
           (uint64_t)DTi+row1line, ncol, tt, tt, strlim(skippedFooter,500));
         } else {
           DTWARN(_("Stopped early on line %"PRIu64". Expected %d fields but found %d. Consider fill=TRUE and comment.char=. First discarded non-empty line: <<%s>>"),
