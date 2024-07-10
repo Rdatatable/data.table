@@ -53,11 +53,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
   ans = as.data.table.list(x, keep.rownames=keep.rownames, check.names=check.names, .named=nd$.named)  # see comments inside as.data.table.list re copies
   if (!is.null(key)) {
     if (!is.character(key)) stopf("key argument of data.table() must be character")
-    if (length(key)==1L) {
-      keySplit = strsplit(key, ",", fixed=TRUE)[[1L]]
-      # eg key="A,B"; marked for deprecation in 1.16.0, mid-2024
-      if (isTRUE(getOption("datatable.key.split.comma", default=TRUE))) key = keySplit
-    }
+    if (length(key)==1L) key = cols_from_csv(key)
     setkeyv(ans,key)
   } else {
     # retain key of cbind(DT1, DT2, DT3) where DT2 is keyed but not DT1. cbind calls data.table().
@@ -799,9 +795,8 @@ replace_dot_alias = function(e) {
 
         if (mode(bysub) == "character") {
           if (any(grepl(",", bysub, fixed = TRUE))) {
-            if (length(bysub)>1L) stopf("'by' is a character vector length %d but one or more items include a comma. Either pass a vector of column names (which can contain spaces, but no commas), or pass a vector length 1 containing comma separated column names. See ?data.table for other possibilities.", length(bysub))
-            bySplit = strsplit(bysub, ",", fixed=TRUE)[[1L]]
-            if (isTRUE(getOption("datatable.by.split.comma", default=TRUE))) bysub = bySplit
+            if (length(bysub) > 1L) stopf("'by' is a character vector length %d but one or more items include a comma. Either pass a vector of column names (which can contain spaces, but no commas), or pass a vector length 1 containing comma separated column names. See ?data.table for other possibilities.", length(bysub))
+            bysub = cols_from_csv(bysub)
           }
           bysub = gsub("^`(.*)`$", "\\1", bysub) # see test 138
           nzidx = nzchar(bysub)
