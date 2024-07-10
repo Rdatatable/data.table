@@ -71,7 +71,7 @@ tstrsplit = function(x, ..., fill=NA, type.convert=FALSE, keep, names=FALSE) {
         if (length(others))
           ans[others] = lapply(ans[others], fothers)
         else
-          warningf("In the argument 'type.convert', '%s' was ignored because all elements in the transpose list or elements corrisponding to indices specified in the 'keep' argument have already been converted.", last_item)
+          warningf("In the argument 'type.convert', '%s' was ignored because all elements in the transpose list or elements corresponding to indices specified in the 'keep' argument have already been converted.", last_item)
       }
       for (fn in names(type.convert)) {
         idx = type.convert[[fn]]

@@ -27,7 +27,9 @@ export(tstrsplit)
 export(frank)
 export(frankv)
 export(address)
-export(.SD,.N,.I,.GRP,.NGRP,.BY,.EACHI)
+export(.SD,.N,.I,.GRP,.NGRP,.BY,.EACHI, measure, patterns)
+# TODO(#6197): Export these.
+# export(., J)
 export(rleid)
 export(rleidv)
 export(rowid)
@@ -127,7 +129,7 @@ S3method(melt, default)
 
 # exported for historical reasons -- if reshape2 is higher on search path,
 # dcast(DT) will not dispatch since reshape2::dcast is not generic. So users
-# and many packges on CRAN call dcast.data.table() and/or melt.data.table() directly. See #3082.
+# and many packages on CRAN call dcast.data.table() and/or melt.data.table() directly. See #3082.
 export(melt.data.table, dcast.data.table)
 
 importFrom(utils, capture.output, contrib.url, download.file, flush.console, getS3method, head, packageVersion, tail, untar, unzip)
