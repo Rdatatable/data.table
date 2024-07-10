@@ -106,6 +106,8 @@
 
 18. `integer64` columns print well even if {bit64} has not yet been loaded, [#6224](https://github.com/Rdatatable/data.table/issues/6224). Thanks @renkun-ken for the report and @MichaelChirico for the fix.
 
+19. `fwrite()` header names are no longer quoted automatically when `na` argument is given, [#2964](https://github.com/Rdatatable/data.table/issues/2964). Thanks @jangorecki for the report and @joshhwuu for the fix.
+
 ## TRANSLATIONS
 
 1. Fix a typo in a Mandarin translation of an error message that was hiding the actual error message, [#6172](https://github.com/Rdatatable/data.table/issues/6172). Thanks @trafficfan for the report and @MichaelChirico for the fix.
