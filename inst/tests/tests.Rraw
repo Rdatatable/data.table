@@ -18561,3 +18561,156 @@ test(2258.8, capture.output(print(DT, na.print=".", topn=2, col.names="none")), 
 # table requires splitting, col.names!="none"
 test(2258.9, capture.output(print(DT, na.print=".", topn=2)), c("    x", " 1: .", " 2: e", "---  ", " 5: w", " 6: ."))
 
+# split(by = ., sep = ..) works like split(f= ., sep = ..), #5417
+x = data.table(rep(1:2, each=5L), 1:5, 1:10)
+test(2259.1, names(split(x, by = c("V1", "V2"), sep = "|")), sort(names(split(x, list(x$V1, x$V2), sep = "|"))))
+test(2259.2, names(split(x, by = c("V1", "V2"), sep = "||")), sort(names(split(x, list(x$V1, x$V2), sep = "||"))))
+
+# custom signaling functions
+## basics: default signals with/without formats
+test(2260.01, tryCatch(stopf("%s", "abc"), error=function(x) conditionMessage(x)), "abc")
+test(2260.02, tryCatch(stopf("abc"), error=function(x) conditionMessage(x)), "abc")
+test(2260.03, tryCatch(warningf("%s", "abc"), warning=function(x) conditionMessage(x)), "abc")
+test(2260.04, tryCatch(warningf("abc"), warning=function(x) conditionMessage(x)), "abc")
+test(2260.05, tryCatch(messagef("%s", "abc"), message=function(x) conditionMessage(x)), "abc\n")
+test(2260.06, tryCatch(messagef("abc"), message=function(x) conditionMessage(x)), "abc\n")
+test(2260.07, tryCatch(messagef("abc", appendLF=FALSE), message=function(x) conditionMessage(x)), "abc")
+test(2260.08, tryCatch(packageStartupMessagef("%s", "abc"), packageStartupMessage=function(x) conditionMessage(x)), "abc\n")
+test(2260.09, tryCatch(packageStartupMessagef("abc"), packageStartupMessage=function(x) conditionMessage(x)), "abc\n")
+test(2260.10, tryCatch(packageStartupMessagef("abc", appendLF=FALSE), packageStartupMessage=function(x) conditionMessage(x)), "abc")
+
+## custom signal classes
+test(2260.11, inherits(tryCatch(stopf("x", class="test_error"), condition=identity), "test_error"))
+test(2260.12, inherits(tryCatch(stopf("x", class="test_error"), condition=identity), "error"))
+test(2260.13, inherits(tryCatch(warningf("x", class="test_warning"), condition=identity), "test_warning"))
+test(2260.14, inherits(tryCatch(warningf("x", class="test_warning"), condition=identity), "warning"))
+test(2260.15, inherits(tryCatch(messagef("x", class="test_message"), condition=identity), "test_message"))
+test(2260.16, inherits(tryCatch(messagef("x", class="test_message"), condition=identity), "message"))
+test(2260.17, inherits(tryCatch(packageStartupMessagef("x", class="test_psm"), condition=identity), "test_psm"))
+test(2260.18, inherits(tryCatch(packageStartupMessagef("x", class="test_psm"), condition=identity), "packageStartupMessage"))
+
+# tests for setNumericRounding() returning original value before changing, #6112
+old = setNumericRounding(0L)
+test(2261.01, getNumericRounding(), 0L)
+test(2261.02, setNumericRounding(1L), 0L)
+test(2261.03, getNumericRounding(), 1L)
+test(2261.04, setNumericRounding(2L), 1L)
+# This test ensures that the function returns invisibly. Note we can't use notOutput here as it calls print, which ignores whether
+# or not an object is an invisible copy or not, and prints it anyways.
+test(2261.05, capture.output(setNumericRounding(2L)), character(0))
+setNumericRounding(old)
+
+# Add list column to null data.table #5738
+x = list("a", 1)
+dt1 = data.table(a = x)
+dt2 = data.table(a = "a", b=1)
+dt3 = data.table(a=1:2, b=3:4)
+test(2262.1, null.data.table()[, a := x], dt1)
+test(2262.2, set(null.data.table(), j="a", value=x), dt1)
+test(2262.3, null.data.table()[, c("a","b") := x], dt2)
+test(2262.4, set(null.data.table(), j=c("a","b"), value=x), dt2)
+test(2262.5, null.data.table()[, c("a","b") := list(1:2, 3:4)], dt3)
+test(2262.6, set(null.data.table(), j=c("a","b"), value=list(1:2, 3:4)), dt3)
+test(2262.7, data.table(a=1, b=2)[, c("a", "b") := list(NULL, NULL)], null.data.table())
+test(2262.8, data.table(a=1, b=2)[, c("a", "b") := list(NULL)], null.data.table())
+
+# GForce retains attributes in by arguments #5567
+dt = data.table(a=letters[1:4], b=structure(1:4, class = c("class_b", "integer"), att=1), c=structure(c(1L,2L,1L,2L), class = c("class_c", "integer")))
+test(2263.1, options=list(datatable.verbose=TRUE, datatable.optimize=0L), dt[, .N, b], data.table(b=dt$b, N=1L), output="GForce FALSE")
+test(2263.2, options=list(datatable.verbose=TRUE, datatable.optimize=0L), dt[, .N, .(b,c)], data.table(b=dt$b, c=dt$c, N=1L), output="GForce FALSE")
+test(2263.3, options=list(datatable.verbose=TRUE, datatable.optimize=0L), names(attributes(dt[, .N, b]$b)), c("class", "att"), output="GForce FALSE")
+test(2263.4, options=list(datatable.verbose=TRUE, datatable.optimize=Inf), dt[, .N, b], data.table(b=dt$b, N=1L), output="GForce optimized j to")
+test(2263.5, options=list(datatable.verbose=TRUE, datatable.optimize=Inf), dt[, .N, .(b,c)], data.table(b=dt$b, c=dt$c, N=1L), output="GForce optimized j to")
+test(2263.6, options=list(datatable.verbose=TRUE, datatable.optimize=Inf), names(attributes(dt[, .N, b]$b)), c("class", "att"), output="GForce optimized j to")
+
+# tests for printing indices alongside data.tables
+NN = 200
+set.seed(2024)
+DT = data.table(
+ grp1 = sample(100, NN, TRUE),
+ grp2 = sample(90, NN, TRUE),
+ grp3 = sample(80, NN, TRUE))
+setkey(DT, grp1, grp2)
+setindex(DT, grp1, grp3)
+ans = c(
+ "     grp1 grp2 grp3 index:grp1__grp3",
+ "  1:    1    5   15                1",
+ "  2:    1   24   60                2",
+ "  3:    2   26   32                5",
+ "  4:    2   36   57                3",
+ "  5:    2   51   30                4",
+ " ---                                ",
+ "196:   98   77   45              195",
+ "197:   98   87   70              197",
+ "198:  100   18   21              198",
+ "199:  100   36   51              199",
+ "200:  100   38   56              200")
+# test printing with 1 index column, no markers for order
+test(2264.1, print(DT, show.indices=TRUE), output=ans)
+# test that options work as well
+test(2264.2, options=list(datatable.show.indices=TRUE), print(DT), output=ans)
+setindex(DT, grp3, grp1)
+ans = c(
+ "     grp1 grp2 grp3 index1:grp1__grp3 index2:grp3__grp1",
+ "  1:    1    5   15                 1                10",
+ "  2:    1   24   60                 2               119",
+ "  3:    2   26   32                 5               164",
+ "  4:    2   36   57                 3               192",
+ "  5:    2   51   30                 4                63",
+ " ---                                                   ",
+ "196:   98   77   45               195                11",
+ "197:   98   87   70               197                66",
+ "198:  100   18   21               198                31",
+ "199:  100   36   51               199               139",
+ "200:  100   38   56               200               159")
+# test for two indices, with markers to show order
+test(2264.3, print(DT, show.indices=TRUE), output=ans)
+test(2264.4, options=list(datatable.show.indices=TRUE), print(DT), output=ans)
+setindex(DT, NULL) # clear indices
+# if no indices are set, simply ignore
+test(2264.5, print(DT, show.indices=TRUE), notOutput="index:grp1__grp3")
+test(2264.6, options=list(datatable.show.indices=TRUE), print(DT, show.indices=TRUE), notOutput="index:grp1__grp3")
+setindex(DT, grp3)
+ans = c(
+ "     grp1 grp2 grp3 index:grp3",
+ "  1:    1    5   15         10",
+ "  2:    1   24   60        119",
+ "  3:    2   26   32        164",
+ "  4:    2   36   57        192",
+ "  5:    2   51   30         63",
+ " ---                          ",
+ "196:   98   77   45         11",
+ "197:   98   87   70         66",
+ "198:  100   18   21         31",
+ "199:  100   36   51        139",
+ "200:  100   38   56        159")
+test(2264.7, print(DT, show.indices=TRUE), output=ans)
+NN = 10
+DT = data.table(
+ grp1 = sample(100, NN, TRUE),
+ grp2 = sample(90, NN, TRUE),
+ grp3 = sample(80, NN, TRUE))
+setindex(DT, grp1, grp3)
+setindex(DT, grp3, grp1)
+ans = c(
+ "    grp1 grp2 grp3 index1:grp1__grp3 index2:grp3__grp1",
+ " 1:   77   61   53                 3                 5",
+ " 2:   80   66   37                 8                 4",
+ " 3:   27   42    8                 5                 3",
+ " 4:   66   37    7                 4                 7",
+ " 5:   38   69    5                 6                 2",
+ " 6:   72   89   69                 1                10",
+ " 7:   86   52   16                 2                 1",
+ " 8:   28   35   62                10                 8",
+ " 9:   95   82   80                 7                 6",
+ "10:   83   64   41                 9                 9")
+# test where topn isn't necessary
+test(2264.8, print(DT, show.indices=TRUE), output=ans)
+
+# integer64 columns print even when bit64 isn't loaded
+if (test_bit64) local({
+  DT = data.table(a = 'abc', b = as.integer64(1))
+  unloadNamespace("bit64")
+  on.exit(library(bit64))
+  test(2265, DT, output="abc\\s*1$")
+})
