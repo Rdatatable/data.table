@@ -4518,8 +4518,7 @@ for (nvars in seq_along(names(DT))) {
   combn(names(DT), nvars, simplify=FALSE, function(x) {  # simplify=FALSE needed for R 3.1.0
     for (i in seq_len(nrow(signs))) {
       test_no <<- test_no + 1L
-      ll = as.call(c(
-        as.name("order"),
+      ll = as.call(c(as.name("order"),
         lapply(seq_along(x), function(j) {
           if (signs[i,j] == 1L)
             as.name(x[j])
@@ -4529,10 +4528,9 @@ for (nvars in seq_along(names(DT))) {
             else
               as.call(list(as.name("-"), as.name(x[j])))
           }
-        }),
-        method = "radix"
+        })
       ))
-      test(1223.0 + test_no*0.001, forderv(DT, by=x, order=signs[i,]), with(DT, eval(ll)))
+      test(1223.0 + test_no*0.001, forderv(DT, by=x, order=signs[i,]), with_c_collate(with(DT, eval(ll))))
     }
     integer()
   })
