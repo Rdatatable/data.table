@@ -23,9 +23,11 @@
 # test and step between R and C
 
 sourceDir = function(path=getwd(), trace = TRUE, ...) {
+  r_files = list.files(path, pattern = "\\.[RrSsQq]$")
+  if (trace) cat("Loading", length(r_files), "R files:")
   # copied verbatim from example(source) in base R
-  for (nm in list.files(path, pattern = "\\.[RrSsQq]$")) {
-    if(trace) cat(nm," ")
+  for (nm in r_files) {
+    if(trace) cat(" ", nm, sep="")
       source(file.path(path, nm), ...)
   }
   if(trace) cat("\n")
@@ -62,13 +64,13 @@ cc = function(test=FALSE, clean=FALSE, debug=FALSE, omp=!debug, cc_dir, path=Sys
 
   xx = try(getDLLRegisteredRoutines("data_table",TRUE), silent=TRUE)
   if (!inherits(xx, "try-error")) {
-    remove(list=sapply(xx$.Call,'[[',"name"), pos=.GlobalEnv)
-    remove(list=sapply(xx$.External,'[[',"name"), pos=.GlobalEnv)
+    remove(list=sapply(xx$.Call, `[[`, "name"), pos=.GlobalEnv)
+    remove(list=sapply(xx$.External, `[[`, "name"), pos=.GlobalEnv)
     # if these objects aren't there to remove it's correctly an error (should always be there)
   }
 
   # Make sure library .so is not loaded (neither installed package nor from dev)
-  dll = unlist(do.call("rbind",getLoadedDLLs())[,"path"])
+  dll = unlist(do.call(rbind,getLoadedDLLs())[,"path"])
   dll = grep("data_table.so", dll, fixed=TRUE, value=TRUE)
   sapply(dll, dyn.unload)
   gc()

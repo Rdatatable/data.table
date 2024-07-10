@@ -27,8 +27,7 @@ patterns = function(..., cols=character(0L), ignore.case=FALSE, perl=FALSE, fixe
   if (!is.character(p))
     stopf("Input patterns must be of type character.")
   matched = lapply(p, grep, cols, ignore.case=ignore.case, perl=perl, fixed=fixed, useBytes=useBytes)
-  # replace with lengths when R 3.2.0 dependency arrives
-  if (length(idx <- which(sapply(matched, length) == 0L)))
+  if (length(idx <- which(lengths(matched) == 0L)))
     stopf('Pattern(s) not found: [%s]', brackify(p[idx]))
   if (length(matched) == 1L) return(matched[[1L]])
   matched
@@ -40,7 +39,7 @@ measure = function(..., sep="_", pattern, cols, multiple.keyword="value.name") {
   formal.names = names(formals())
   formal.i.vec = which(names(L) %in% formal.names)
   fun.list = L[-formal.i.vec]
-  user.named = names(fun.list) != ""
+  user.named = nzchar(names(fun.list))
   is.symb = sapply(fun.list, is.symbol)
   bad.i = which((!user.named) & (!is.symb))
   if (length(bad.i)) {
@@ -74,7 +73,7 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
   if (!missing(sep) && !missing(pattern)) {
     stopf("both sep and pattern arguments used; must use either sep or pattern (not both)")
   }
-  if (!(is.character(multiple.keyword) && length(multiple.keyword)==1 && !is.na(multiple.keyword) && nchar(multiple.keyword)>0)) {
+  if (!(is.character(multiple.keyword) && length(multiple.keyword)==1 && !is.na(multiple.keyword) && nzchar(multiple.keyword))) {
     stopf("multiple.keyword must be a character string with nchar>0")
   }
   if (!is.character(cols)) {
@@ -83,7 +82,7 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
   prob.i <- if (is.null(names(fun.list))) {
     seq_along(fun.list)
   } else {
-    which(names(fun.list) == "")
+    which(!nzchar(names(fun.list)))
   }
   if (length(prob.i)) {
     stopf("in measurev, %s must be named, problems: %s", group.desc, brackify(prob.i))
@@ -125,7 +124,7 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
       stopf("sep must be character string")
     }
     list.of.vectors = strsplit(cols, sep, fixed=TRUE)
-    vector.lengths = sapply(list.of.vectors, length)
+    vector.lengths = lengths(list.of.vectors)
     n.groups = max(vector.lengths)
     if (n.groups == 1) {
       stopf("each column name results in only one item after splitting using sep, which means that all columns would be melted; to fix please either specify melt on all columns directly without using measure, or use a different sep/pattern specification")

@@ -7,7 +7,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   if (length(memtest.id)) {
     if (length(memtest.id)==1L) memtest.id = rep(memtest.id, 2L)  # for convenience of supplying one id rather than always a range
     stopifnot(length(memtest.id)<=2L,  # conditions quoted to user when false so "<=2L" even though following conditions rely on ==2L
-                     !anyNA(memtest.id), memtest.id[1L]<=memtest.id[2L]) 
+                     !anyNA(memtest.id), memtest.id[1L]<=memtest.id[2L])
     if (memtest==0L) memtest=1L  # using memtest.id implies memtest
   }
   if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
@@ -79,6 +79,8 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   # sample method changed in R 3.6 to remove bias; see #3431 for links and notes
   # This can be removed (and over 120 tests updated) if and when the oldest R version we test and support is moved to R 3.6
 
+  userNumericRounding = setNumericRounding(0) # Initialise to 0 in case the user has set it to a different value. Restore to user's value when finished.
+
   # TO DO: reinstate solution for C locale of CRAN's Mac (R-Forge's Mac is ok)
   # oldlocale = Sys.getlocale("LC_CTYPE")
   # Sys.setlocale("LC_CTYPE", "")   # just for CRAN's Mac to get it off C locale (post to r-devel on 16 Jul 2012)
@@ -125,7 +127,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   assign("prevtest", -1L, envir=env)
   assign("whichfail", NULL, envir=env)
   assign("started.at", proc.time(), envir=env)
-  assign("lasttime", proc.time()[3L], envir=env)  # used by test() to attribute time inbetween tests to the next test
+  assign("lasttime", proc.time()[3L], envir=env)  # used by test() to attribute time in between tests to the next test
   assign("timings", data.table( ID = seq_len(9999L), time=0.0, nTest=0L, RSS=0.0 ), envir=env)   # test timings aggregated to integer id
   assign("memtest", memtest, envir=env)
   assign("memtest.id", memtest.id, envir=env)
@@ -134,7 +136,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
 
   owd = setwd(tempdir()) # ensure writeable directory; e.g. tests that plot may write .pdf here depending on device option and/or batch mode; #5190
   on.exit(setwd(owd))
-  
+
   if (memtest) {
     catf("\n***\n*** memtest=%d. This should be the first call in a fresh R_GC_MEM_GROW=0 R session for best results. Ctrl-C now if not.\n***\n\n", memtest)
     if (is.na(rss())) stopf("memtest intended for Linux. Step through data.table:::rss() to see what went wrong.")
@@ -209,11 +211,13 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     if (is.na(oldEnv[i]))
       Sys.unsetenv(names(oldEnv)[i])
     else
-      do.call("Sys.setenv", as.list(oldEnv[i])) # nocov
+      do.call(Sys.setenv, as.list(oldEnv[i])) # nocov
   }
   # Sys.setlocale("LC_CTYPE", oldlocale)
-  suppressWarnings(do.call("RNGkind",as.list(oldRNG)))
+  suppressWarnings(do.call(RNGkind,as.list(oldRNG)))
   # suppressWarnings for the unlikely event that user selected sample='Rounding' themselves before calling test.data.table()
+
+  setNumericRounding(userNumericRounding)  # Restore the user's numeric rounding value
 
   # Now output platform trace before error (if any) to be sure to always show it; e.g. to confirm endianness in #4099.
   # As one long dense line for cases when 00check.log only shows the last 13 lines of log; to only use up one
@@ -230,7 +234,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     ", Sys.timezone()=='", suppressWarnings(Sys.timezone()), "'",
     ", Sys.getlocale()=='", Sys.getlocale(), "'",
     ", l10n_info()=='", paste0(names(l10n_info()), "=", l10n_info(), collapse="; "), "'",
-    ", getDTthreads()=='", paste0(gsub("[ ][ ]+","==",gsub("^[ ]+","",capture.output(invisible(getDTthreads(verbose=TRUE))))), collapse="; "), "'",
+    ", getDTthreads()=='", paste(gsub("[ ][ ]+","==",gsub("^[ ]+","",capture.output(invisible(getDTthreads(verbose=TRUE))))), collapse="; "), "'",
     ", ", .Call(Cdt_zlib_version),
     "\n", sep="")
 
@@ -307,7 +311,7 @@ INT = function(...) { as.integer(c(...)) }   # utility used in tests.Rraw
 gc_mem = function() {
   # nocov start
   # gc reports memory in MB
-  m = apply(gc()[, c(2L, 4L, 6L)], 2L, sum)
+  m = colSums(gc()[, c(2L, 4L, 6L)])
   names(m) = c("GC_used", "GC_gc_trigger", "GC_max_used")
   m
   # nocov end
@@ -327,8 +331,8 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     })
   }
   if (!is.null(options)) {
-    old_options <- do.call('options', as.list(options)) # as.list(): allow passing named character vector for convenience
-    on.exit(options(old_options), add=TRUE)
+    old_options <- do.call(base::options, as.list(options)) # as.list(): allow passing named character vector for convenience
+    on.exit(base::options(old_options), add=TRUE)
   }
   # Usage:
   # i) tests that x equals y when both x and y are supplied, the most common usage
@@ -345,11 +349,11 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
   #    from all.equal and different to identical related to row.names and unused factor levels
   # 3) each test has a unique id which we refer to in commit messages, emails etc.
   # 4) test that a query generates exactly 2 warnings, that they are both the correct warning messages, and that the result is the one expected
-  .test.data.table = exists("nfail", parent.frame()) # test() can be used inside functions defined in tests.Rraw, so inherits=TRUE (default) here
+  nfail = get0("nfail", parent.frame()) # test() can be used inside functions defined in tests.Rraw, so inherits=TRUE (default) here
+  .test.data.table = !is.null(nfail)
   numStr = sprintf("%.8g", num)
   if (.test.data.table) {
     prevtest = get("prevtest", parent.frame())
-    nfail = get("nfail", parent.frame())   # to cater for both test.data.table() and stepping through tests in dev
     whichfail = get("whichfail", parent.frame())
     assign("ntest", get("ntest", parent.frame()) + if (num>0) 1L else 0L, parent.frame(), inherits=TRUE)   # bump number of tests run
     lasttime = get("lasttime", parent.frame())
@@ -399,18 +403,18 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
   xsub = substitute(x)
   ysub = substitute(y)
 
-  actual = list("warning"=NULL, "error"=NULL, "message"=NULL)
+  actual = list2env(list(warning=NULL, error=NULL, message=NULL))
   wHandler = function(w) {
     # Thanks to: https://stackoverflow.com/a/4947528/403310
-    actual$warning <<- c(actual$warning, conditionMessage(w))
+    actual$warning <- c(actual$warning, conditionMessage(w))
     invokeRestart("muffleWarning")
   }
   eHandler = function(e) {
-    actual$error <<- conditionMessage(e)
+    actual$error <- conditionMessage(e)
     e
   }
   mHandler = function(m) {
-    actual$message <<- c(actual$message, conditionMessage(m))
+    actual$message <- c(actual$message, conditionMessage(m))
     m
   }
   if (is.null(output) && is.null(notOutput)) {
@@ -441,7 +445,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     }
     if (length(expected) != length(observed)) {
       # nocov start
-      catf("Test %s produced %d %ss but expected %d\n%s\n%s\n", numStr, length(observed), type, length(expected), paste("Expected:", expected), paste("Observed:", observed))
+      catf("Test %s produced %d %ss but expected %d\n%s\n%s\n", numStr, length(observed), type, length(expected), paste("Expected:", expected), paste("Observed:", observed, collapse = "\n"))
       fail = TRUE
       # nocov end
     } else {
