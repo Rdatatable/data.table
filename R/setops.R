@@ -286,7 +286,8 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
         #   any existing all.equal methods for x while also (2) treating class(x)/class(y)
         #   as attributes as regards check.attributes argument
         cols.r = all.equal(x, y, tolerance=tolerance, ..., check.attributes=check.attributes)
-        if (!isTRUE(cols.r) && !check.attributes && isTRUE(all.equal(unclass(x), unclass(y), tolerance=tolerance, ..., check.attributes=check.attributes)))
+        if (!isTRUE(cols.r) && !check.attributes && isTRUE(all.equal(unclass(x), unclass(y), tolerance=tolerance, ..., check.attributes=FALSE)))
+``` would be clearer IMO
           cols.r = TRUE
       }
       if (!isTRUE(cols.r)) return(paste0("Column '", names(target)[i], "': ", paste(cols.r,collapse=" ")))
