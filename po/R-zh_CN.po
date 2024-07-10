@@ -371,7 +371,7 @@ msgstr "变量 '%s' 并没有存在于调用环境中。之所以在调用环境
 msgid ""
 "Both '%1$s' and '..%1$s' exist in calling scope. Please remove the '..%1$s' "
 "variable in calling scope for clarity."
-msgstr "'%1%s'和'..%1$s'均在当前调用环境中。为清晰起见，请移除在调用环境中名为"
+msgstr "'%1$s'和'..%1$s'均在当前调用环境中。为清晰起见，请移除在调用环境中名为"
 "..%1$s' 的变量。"
 
 #: data.table.R:288

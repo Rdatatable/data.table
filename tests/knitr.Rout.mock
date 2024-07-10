@@ -1,5 +1,7 @@
-Loading required package: knitr
-Loading required package: data.table
+> 
+> library(knitr)
+> invisible(knit("knitr.Rmd", quiet=TRUE))
+> cat(readLines("knitr.md"), sep="\n")
 
 ```r
 require(data.table)              # print?
@@ -42,3 +44,5 @@ DT                               # yes
 ```
 Some text.
 
+> invisible(file.remove("knitr.md"))
+> 

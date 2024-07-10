@@ -1,5 +1,5 @@
 fread = function(
-input="", file=NULL, text=NULL, cmd=NULL, sep="auto", sep2="auto", dec=".", quote="\"", nrows=Inf, header="auto",
+input="", file=NULL, text=NULL, cmd=NULL, sep="auto", sep2="auto", dec="auto", quote="\"", nrows=Inf, header="auto",
 na.strings=getOption("datatable.na.strings","NA"), stringsAsFactors=FALSE, verbose=getOption("datatable.verbose",FALSE),
 skip="__auto__", select=NULL, drop=NULL, colClasses=NULL, integer64=getOption("datatable.integer64","integer64"),
 col.names, check.names=FALSE, encoding="unknown", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, index=NULL,
@@ -16,23 +16,25 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     else if (sep=="auto") sep=""      # sep=="" at C level means auto sep
     else stopifnot( nchar(sep)==1L )  # otherwise an actual character to use as sep
   }
-  stopifnot( is.character(dec), length(dec)==1L, nchar(dec)==1L )
+  stopifnot( is.character(dec), length(dec)==1L)
+  if (dec == "auto") dec = "" else stopifnot(nchar(dec) == 1L)
   # handle encoding, #563
   if (length(encoding) != 1L || !encoding %chin% c("unknown", "UTF-8", "Latin-1")) {
     stopf("Argument 'encoding' must be 'unknown', 'UTF-8' or 'Latin-1'.")
   }
   stopifnot(
-    isTRUEorFALSE(strip.white), isTRUEorFALSE(blank.lines.skip), isTRUEorFALSE(fill), isTRUEorFALSE(showProgress),
+    isTRUEorFALSE(strip.white), isTRUEorFALSE(blank.lines.skip), isTRUEorFALSE(fill) || is.numeric(fill) && length(fill)==1L && fill >= 0L, isTRUEorFALSE(showProgress),
     isTRUEorFALSE(verbose), isTRUEorFALSE(check.names), isTRUEorFALSE(logical01), isTRUEorFALSE(keepLeadingZeros), isTRUEorFALSE(yaml),
     isTRUEorFALSE(stringsAsFactors) || (is.double(stringsAsFactors) && length(stringsAsFactors)==1L && 0.0<=stringsAsFactors && stringsAsFactors<=1.0),
     is.numeric(nrows), length(nrows)==1L
   )
+  fill = if(identical(fill, Inf)) .Machine$integer.max else as.integer(fill)
   nrows=as.double(nrows) #4686
   if (is.na(nrows) || nrows<0) nrows=Inf   # accept -1 to mean Inf, as read.table does
   if (identical(header,"auto")) header=NA
   stopifnot(
-    is.logical(header) && length(header)==1L,  # TRUE, FALSE or NA
-    is.numeric(nThread) && length(nThread)==1L
+    is.logical(header), length(header)==1L,  # TRUE, FALSE or NA
+    is.numeric(nThread), length(nThread)==1L
   )
   nThread=as.integer(nThread)
   stopifnot(nThread>=1L)
@@ -89,7 +91,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     }
     file_info = file.info(file)
     if (is.na(file_info$size)) stopf("File '%s' does not exist or is non-readable. getwd()=='%s'", file, getwd())
-    if (isTRUE(file_info$isdir)) stopf("File '%s' is a directory. Not yet implemented.", file) # dir.exists() requires R v3.2+, #989
+    if (isTRUE(file_info$isdir)) stopf("File '%s' is a directory. Not yet implemented.", file) # Could use dir.exists(), but we already ran file.info().
     if (!file_info$size) {
       warningf("File '%s' has size 0. Returning a NULL %s.", file, if (data.table) 'data.table' else 'data.frame')
       return(if (data.table) data.table(NULL) else data.frame(NULL))
@@ -114,10 +116,10 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     gz_signature = as.raw(c(0x1F, 0x8B))
     bz2_signature = as.raw(c(0x42, 0x5A, 0x68))
     gzsig = FALSE
-    if ((w <- endsWithAny(file, c(".gz",".bz2"))) || (gzsig <- identical(head(file_signature, 2L), gz_signature)) || identical(head(file_signature, 3L), bz2_signature)) {
+    if ((w <- endsWithAny(file, c(".gz", ".bgz",".bz2"))) || (gzsig <- identical(head(file_signature, 2L), gz_signature)) || identical(head(file_signature, 3L), bz2_signature)) {
       if (!requireNamespace("R.utils", quietly = TRUE))
         stopf("To read gz and bz2 files directly, fread() requires 'R.utils' package which cannot be found. Please install 'R.utils' using 'install.packages('R.utils')'.") # nocov
-      FUN = if (w==1L || gzsig) gzfile else bzfile
+      FUN = if (w<=2L || gzsig) gzfile else bzfile
       R.utils::decompressFile(file, decompFile<-tempfile(tmpdir=tmpdir), ext=NULL, FUN=FUN, remove=FALSE)   # ext is not used by decompressFile when destname is supplied, but isn't optional
       file = decompFile   # don't use 'tmpFile' symbol again, as tmpFile might be the http://domain.org/file.csv.gz download
       on.exit(unlink(decompFile), add=TRUE)
@@ -151,10 +153,10 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
   if (length(tt)) {
     msg = gettextf('na.strings[%d]=="%s" consists only of whitespace, ignoring', tt[1L], na.strings[tt[1L]])
     if (strip.white) {
-      if (any(na.strings=="")) {
-        warningf('%s. strip.white==TRUE (default) and "" is present in na.strings, so any number of spaces in string columns will already be read as <NA>.', msg)
-      } else {
+      if (all(nzchar(na.strings))) {
         warningf('%s. Since strip.white=TRUE (default), use na.strings="" to specify that any number of spaces in a string column should be read as <NA>.', msg)
+      } else {
+        warningf('%s. strip.white==TRUE (default) and "" is present in na.strings, so any number of spaces in string columns will already be read as <NA>.', msg)
       }
       na.strings = na.strings[-tt]
     } else {
@@ -185,7 +187,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
 
     yaml_comment_re = '^#'
     yaml_string = character(0L)
-    while (TRUE) {
+    repeat {
       this_line = readLines(f, n=1L)
       n_read = n_read + 1L
       if (!length(this_line)){
@@ -297,7 +299,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
   }
 
   colClassesAs = attr(ans, "colClassesAs", exact=TRUE)   # should only be present if one or more are != ""
-  for (j in which(colClassesAs!="")) {       # # 1634
+  for (j in which(nzchar(colClassesAs))) {       # # 1634
     v = .subset2(ans, j)
     new_class = colClassesAs[j]
     new_v = tryCatch({    # different to read.csv; i.e. won't error if a column won't coerce (fallback with warning instead)
@@ -315,7 +317,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
       },
       warning = fun <- function(e) {
         warningf("Column '%s' was requested to be '%s' but fread encountered the following %s:\n\t%s\nso the column has been left as type '%s'", names(ans)[j], new_class, if (inherits(e, "error")) "error" else "warning", e$message, typeof(v))
-        return(v)
+        v
       },
       error = fun)
     set(ans, j = j, value = new_v)  # aside: new_v == v if the coercion was aborted
@@ -339,7 +341,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     if (!is.character(key))
       stopf("key argument of data.table() must be a character vector naming columns (NB: col.names are applied before this)")
     if (length(key) == 1L) {
-      key = strsplit(key, split = ",", fixed = TRUE)[[1L]]
+      if (key != strsplit(key,split=",")[[1L]]) stopf("Usage of comma-separated literals in %s is deprecated, please split such entries yourself before passing to data.table", "key=")
     }
     setkeyv(ans, key)
   }
@@ -348,7 +350,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     if (!all(vapply_1b(index, is.character)))
       stopf("index argument of data.table() must be a character vector naming columns (NB: col.names are applied before this)")
     if (is.list(index)) {
-      to_split = vapply_1i(index, length) == 1L
+      to_split = lengths(index) == 1L
       if (any(to_split))
         index[to_split] = sapply(index[to_split], strsplit, split = ",", fixed = TRUE)
     } else {

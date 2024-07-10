@@ -8,6 +8,7 @@
 test.data.table(script = "tests.Rraw", verbose = FALSE, pkg = ".",
                 silent = FALSE,
                 showProgress = interactive() && !silent,
+                testPattern = NULL,
                 memtest = Sys.getenv("TEST_DATA_TABLE_MEMTEST", 0),
                 memtest.id = NULL)
 }
@@ -17,6 +18,7 @@ test.data.table(script = "tests.Rraw", verbose = FALSE, pkg = ".",
 \item{pkg}{ Root directory name under which all package content (ex: DESCRIPTION, src/, R/, inst/ etc..) resides. Used only in \emph{dev-mode}. }
 \item{silent}{ Controls what happens if a test fails. Like \code{silent} in \code{\link{try}}, \code{TRUE} causes the error message to be suppressed and \code{FALSE} to be returned, otherwise the error is returned. }
 \item{showProgress}{ Output 'Running test <n> ...\\r' at the start of each test? }
+\item{testPattern}{ When present, a regular expression tested against the number of each test for inclusion. Useful for running only a small portion of a large test script. }
 \item{memtest}{ Measure and report memory usage of tests (1:gc before ps, 2:gc after ps) rather than time taken (0) by default. Intended for and tested on Linux. See PR #5515 for more details. }
 \item{memtest.id}{ An id for which to print memory usage for every sub id. May be a range of ids. }
 }
