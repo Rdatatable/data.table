@@ -12,11 +12,11 @@ VignetteBuilder: knitr
 Encoding: UTF-8
 ByteCompile: TRUE
 Authors@R: c(
-  person("Tyson","Barrett",        role=c("aut","cre"), email="t.barrett88@gmail.com"),
+  person("Tyson","Barrett",        role=c("aut","cre"), email="t.barrett88@gmail.com", comment = c(ORCID="0000-0002-2137-1391")),
   person("Matt","Dowle",           role="aut",          email="mattjdowle@gmail.com"),
   person("Arun","Srinivasan",      role="aut",          email="asrini@pm.me"),
   person("Jan","Gorecki",          role="aut"),
-  person("Michael","Chirico",      role="aut"),
+  person("Michael","Chirico",      role="aut", comment = c(ORCID="0000-0003-0787-087X")),
   person("Toby","Hocking",         role="aut", comment = c(ORCID="0000-0002-3146-0865")),
   person("Benjamin","Schwendinger",role="aut"),
   person("Pasha","Stetsenko",      role="ctb"),
