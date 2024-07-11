@@ -199,7 +199,7 @@ test-lin-dev-clang-cran:
 
 # stated dependency on R
 test-lin-ancient-cran:
-  image: registry.gitlab.com/jangorecki/dockerfiles/r-3.2.0
+  image: registry.gitlab.com/jangorecki/dockerfiles/r-3.3.0
   <<: *test-lin
   script:
     - *install-deps
