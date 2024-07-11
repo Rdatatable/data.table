@@ -4,7 +4,7 @@
 \alias{rbind}
 \title{ Makes one data.table from a list of many }
 \description{
-  Same as \code{do.call("rbind", l)} on \code{data.frame}s, but much faster.
+  Same as \code{do.call(rbind, l)} on \code{data.frame}s, but much faster.
 }
 \usage{
 rbindlist(l, use.names="check", fill=FALSE, idcol=NULL)
