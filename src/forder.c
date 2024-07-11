@@ -528,7 +528,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
   bool complexRerun = false;   // see comments below in CPLXSXP case
   SEXP CplxPart = R_NilValue;
   if (n_cplx) { CplxPart=PROTECT(allocVector(REALSXP, nrow)); n_protect++; } // one alloc is reused for each part
-  int any_na=0, any_infnan=0, any_notascii=0, any_notutf8=0;; // collect more statistics about the data #2879, allow optimize of order(na.last=TRUE) as well #3023
+  int any_na=0, any_infnan=0, any_notascii=0, any_notutf8=0; // collect more statistics about the data #2879, allow optimize of order(na.last=TRUE) as well #3023
   TEND(2);
   for (int col=0; col<ncol; col++) {
     // Rprintf(_("Finding range of column %d ...\n"), col);
@@ -1469,10 +1469,7 @@ static bool all1(SEXP x) {
   if (!isInteger(x))
     error("internal error: all1 got non-integer"); // # nocov
   int *xp = INTEGER(x);
-  for (int i=0; i<LENGTH(x); ++i) {
-    if (xp[i] != 1)
-      return false;
-  }
+  for (int i=0; i<LENGTH(x); ++i) if (xp[i] != 1) return false;
   return true;
 }
 
