@@ -43,21 +43,6 @@ function (repos, type = getOption("pkgType"), ver)
   res
 }
 
-local.extract_dependency_package_names = function (x) {
-  ## do not filter out R like tools:::.extract_dependency_package_names, used for web/$pkg/index.html
-  if (is.na(x))
-    return(character())
-  x <- unlist(strsplit(x, ",[[:space:]]*"))
-  x <- sub("[[:space:]]*([[:alnum:].]+).*", "\\1", x)
-  x[nzchar(x)]
-}
-
-rev.dependencies = function(pkg, available_pkgs, which=c("Imports", "Depends")) {
-  dependencies = available_pkgs[pkg, which]
-  x = dependencies[!is.na(dependencies)]
-  unlist(lapply(x, local.extract_dependency_package_names), use.names=FALSE)
-}
-
 ## returns dependencies for a package based on its DESCRIPTION file
 dcf.dependencies <-
 function(file = "DESCRIPTION",
@@ -79,6 +64,14 @@ function(file = "DESCRIPTION",
     which <- c("Depends", "Imports", "LinkingTo", "Suggests")
   if (!is.character(which) || !length(which) || !all(which %in% which_all))
     stop("which argument accept only valid dependency relation: ", paste(which_all, collapse=", "))
+  local.extract_dependency_package_names = function (x) {
+    ## do not filter out R like tools:::.extract_dependency_package_names, used for web/$pkg/index.html
+    if (is.na(x))
+      return(character())
+    x <- unlist(strsplit(x, ",[[:space:]]*"))
+    x <- sub("[[:space:]]*([[:alnum:].]+).*", "\\1", x)
+    x[nzchar(x)]
+  }
   x <- unlist(lapply(file, function(f, which) {
       dcf <- tryCatch(read.dcf(f, fields = which), error = identity)
       if (inherits(dcf, "error") || !length(dcf))
@@ -89,7 +82,7 @@ function(file = "DESCRIPTION",
   except <- if (length(except.priority)) c("R", unlist(tools:::.get_standard_package_names()[except.priority], use.names = FALSE))
   x = setdiff(x, except)
   if (revdeps) {
-    revdep_pkgs = unique(unlist(lapply(x, rev.dependencies, available_pkgs=available.packages(), which=c("Depends", "Imports"))))
+    revdep_pkgs = unlist(tools::package_dependencies(x), use.names=FALSE)
     revdep_pkgs = setdiff(revdep_pkgs, except)
     x = unique(c(x, revdep_pkgs))
   }
