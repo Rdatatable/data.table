@@ -68,7 +68,6 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   shallow = data.table:::shallow # until exported
   .shallow = data.table:::.shallow
   split.data.table = data.table:::split.data.table
-  if (!exists('startsWith', 'package:base', inherits=FALSE)) startsWith = data.table:::startsWith # R 3.3.0
   stopf = data.table:::stopf
   test = data.table:::test
   uniqlengths = data.table:::uniqlengths
@@ -205,11 +204,6 @@ with_c_collate = function(expr) {
   on.exit(Sys.setlocale("LC_COLLATE", old))
   Sys.setlocale("LC_COLLATE", "C")
   expr
-}
-
-# strrep is used many times in tests, but is from R 3.3.0, so use this equivalent if it is missing.
-if (!exists("strrep", "package:base")) {
-  strrep = function(x, times) mapply(function(x, times) paste(rep(x, times), collapse=""), rep_len(x, length(times)), times, USE.NAMES=FALSE)
 }
 
 ##########################
@@ -4620,25 +4614,21 @@ test(1240.2, ans2, ans1)
 # Therefore we check against the non-data.table method ('shell') for correctness (otherwise we'd be
 # checking data.table code against itself) as well as checking data.table's ported code in R;
 # i.e. a three-way match.
-if (base::getRversion() < "3.3.0") {
-  base_order <- base::order
-} else {
-  base_order <- function(..., na.last=TRUE, method=c("shell","radix")) {
-    ans1 = base::order(..., na.last=na.last, method="shell")
-    if (!is.na(na.last) || base::getRversion()>"3.3.3") {
-      ans2 = base::order(..., na.last=na.last, method="radix")
-      if (!identical(ans1,ans2)) stop("Base R's order(,method='shell') != order(,method='radix')")
-    } else {
-      # Only when na.last=NA in just R 3.3.0-3.3.3 we don't check shell==radix
-      # because there was a problem in base R's port of data.table code then when :
-      #     1) 2 or more vectors were passed to base::order(,method="radix")
-      # AND 2) na.last=NA
-      # AND 3) there is a subgroup of size exactly 2
-      # AND 4) one of those 2 items in the subgroup is NA and the other is not NA
-      # See tests 1728.3 and 1728.13.
-    }
-    ans1
+base_order <- function(..., na.last=TRUE, method=c("shell","radix")) {
+  ans1 = base::order(..., na.last=na.last, method="shell")
+  if (!is.na(na.last) || base::getRversion()>"3.3.3") {
+    ans2 = base::order(..., na.last=na.last, method="radix")
+    if (!identical(ans1,ans2)) stop("Base R's order(,method='shell') != order(,method='radix')")
+  } else {
+    # Only when na.last=NA in just R 3.3.0-3.3.3 we don't check shell==radix
+    # because there was a problem in base R's port of data.table code then when :
+    #     1) 2 or more vectors were passed to base::order(,method="radix")
+    # AND 2) na.last=NA
+    # AND 3) there is a subgroup of size exactly 2
+    # AND 4) one of those 2 items in the subgroup is NA and the other is not NA
+    # See tests 1728.3 and 1728.13.
   }
+  ans1
 }
 
 # Test for optimisation of 'order' to 'forder'. Copied to benchmarks.Rraw too.
@@ -8908,11 +8898,7 @@ test(1622.1, ans1, ans2)
 test(1622.2, ans1, fread(testDir("issue_1573_fill.txt"), fill=TRUE, sep=" ", na.strings=""))
 
 # fix for #989
-# error_msg = if (base::getRversion() < "3.4") "can not be a directory name" else "does not exist"
-# Until R v3.3, file.info("~") returned TRUE for isdir. This seems to return NA in current devel. However, it
-# correctly identifies that "~" is not a file. So leads to another error message. So removing the error message
-# so that it errors properly on both versions. This seems fine to me since we just need it to error. Tested.
-test(1623, fread("~"), error="")
+test(1623, fread("~"), error="File '~' is a directory")
 
 # testing print.rownames option, #1097 (part of #1523)
 options(datatable.print.rownames = FALSE)

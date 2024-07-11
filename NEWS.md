@@ -66,7 +66,7 @@
 
 2. The documentation for the `fill` argument in `rbind()` and `rbindlist()` now notes the expected behaviour for missing `list` columns when `fill=TRUE`, namely to use `NULL` (not `NA`), [#4198](https://github.com/Rdatatable/data.table/pull/4198). Thanks @sritchie73 for the proposal and fix.
 
-3. data.table now depends on R 3.2.0 (2015) instead of 3.1.0 (2014). 1.17.0 will likely move to R 3.3.0 (2016). Recent versions of R have good features that we would gradually like to incorporate, and we see next to no usage of these very old versions of R.
+3. data.table now depends on R 3.3.0 (2016) instead of 3.1.0 (2014). Recent versions of R have good features that we would gradually like to incorporate, and we see next to no usage of these very old versions of R. We originally attempted to bump only to R 3.2.0 in this release, but {knitr} requiring 3.3.0 and `R CMD check` lacking an `--ignore-vignettes` option until 3.3.0 essentially forced our hands.
 
 4. Erroneous assignment calls in `[` with a trailing comma (e.g. ``DT[, `:=`(a = 1, b = 2,)]``) get a friendlier error since this situation is common during refactoring and easy to miss visually. Thanks @MichaelChirico for the fix.
 
