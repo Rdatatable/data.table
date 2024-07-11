@@ -11752,7 +11752,7 @@ test(1775.3, capture.output(print(DT2, print.keys = TRUE)),
 setkey(DT2, a)
 setindexv(DT2, c("b","a"))
 test(1775.4, capture.output(print(DT2, print.keys = TRUE)),
-     c("Key: <a>", "Indices: <b__a>, <b>", "   a b", "1: 1 4", "2: 2 5", "3: 3 6")) ## index 'b' is still good, so we now keep it
+     c("Key: <a>", "Indices: <b__a>, <b>", "   a b", "1: 1 4", "2: 2 5", "3: 3 6")) ## index 'b' is still good, so we keep it
 
 # dev regression #2285
 cat("A  B  C\n1  2  3\n4  5  6", file=f<-tempfile())
@@ -12791,7 +12791,7 @@ test(1899.18, as.matrix(DT, rownames=TRUE, rownames.value=1:nrow(DT)), error="ro
 
 # index argument for fread, #2633
 DT_str = c('a,b\n3,1\n2,2\n1,1\n2,1\n3,2')
-test(1900.1, lapply(attributes(attr(fread(DT_str, index = 'a'), 'index')), c),
+test(1900.1, lapply(attributes(attr(fread(DT_str, index = 'a'), 'index')), c), # lapply(, c) to ensure no starts, maxgrpn attributes
      list(`__a` = c(3L, 2L, 4L, 1L, 5L)))
 test(1900.2, lapply(attributes(attr(fread(DT_str, index = list('a,b', c('b', 'a'), 'a')), 'index')), c),
      list(`__a__b` = c(3L, 4L, 2L, 1L, 5L),
@@ -18753,7 +18753,7 @@ test(2267.32, forderv(d, c("a","b"), lazy=FALSE), integer(), output="forder.*opt
 test(2267.33, forderv(d, c("b","a")), 2:1, output="forder.*opt=-1.*took")
 test(2267.34, forderv(d, c("b","a"), lazy=FALSE), 2:1, output="forder.*opt=0.*took")
 options(datatable.verbose=FALSE)
-setindexv(d, NULL)
+d = copy(dd)
 setindexv(d, c("b","a"))
 options(datatable.verbose=TRUE)
 test(2267.35, forderv(d, c("a","b")), integer(), output="forder.*opt=-1.*took")
@@ -18761,7 +18761,7 @@ test(2267.36, forderv(d, c("a","b"), lazy=FALSE), integer(), output="forder.*opt
 test(2267.37, forderv(d, c("b","a")), 2:1, output="forder.*opt=2.*took")
 test(2267.38, forderv(d, c("b","a"), lazy=FALSE), 2:1, output="forder.*opt=0.*took")
 options(datatable.verbose=FALSE)
-setindexv(d, NULL)
+d = copy(dd)
 setindexv(d, list(c("a","b"), c("b","a")))
 options(datatable.verbose=TRUE)
 test(2267.41, forderv(d, c("a","b")), integer(), output="forder.*opt=2.*took")
@@ -18778,7 +18778,7 @@ test(2267.52, forderv(d, c("a","b"), lazy=FALSE), integer(), output="forder.*opt
 test(2267.53, forderv(d, c("b","a")), 2:1, output="forder.*opt=2.*took")
 test(2267.54, forderv(d, c("b","a"), lazy=FALSE), 2:1, output="forder.*opt=0.*took")
 options(datatable.verbose=FALSE)
-setkeyv(d, NULL)
+d = copy(dd)
 setindexv(d, list(c("a","b"), c("b","a")))
 options(datatable.verbose=TRUE)
 test(2267.55, forderv(d, c("a","b")), integer(), output="forder.*opt=2.*took", notOutput="forder.*opt=1.*took")
