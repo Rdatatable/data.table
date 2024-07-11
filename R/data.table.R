@@ -1122,9 +1122,9 @@ replace_dot_alias = function(e) {
           if (is.name(lhs)) {
             lhs = as.character(lhs)
           } else {
-            #6033 revdev. Slowly deprecate in 1.17.0. Caller has given us `dt[, substitute(names(.SD))]` which means 
+            #6033 revdev. Slowly deprecate in 1.17.0. Caller has given us `dt[, substitute(names(.SD))]` which means
             # jsub is actually substitute(names(.SD)) instead of just names(.SD)
-            if (lhs %iscall% 'substitute') 
+            if (lhs %iscall% 'substitute')
               lhs = eval(lhs, parent.frame(), parent.frame())
 
             # lhs is e.g. (MyVar) or get("MyVar") or names(.SD) || setdiff(names(.SD), cols)
