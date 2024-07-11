@@ -275,7 +275,7 @@ test-win-old:
 
 ## R-release on MacOS
 # no macosx runner set yet
-.test-mac-rel:
+test-mac-rel:
   <<: *test-mac
   variables:
     R_VERSION: "$R_REL_VERSION"
