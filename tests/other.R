@@ -1,4 +1,7 @@
-require(data.table)
-# integration tests for packages excluded from Suggests in 1.10.5
-# for list of used packages see inst/tests/tests-DESCRIPTION
-if (as.logical(Sys.getenv("TEST_DATA_TABLE_WITH_OTHER_PACKAGES","FALSE"))) test.data.table(script="other.Rraw")
+library(data.table)
+if (!isTRUE(as.logical(Sys.getenv("TEST_DATA_TABLE_WITH_OTHER_PACKAGES")))) {
+  cat("Skipping tests in 'other' and quitting, set TEST_DATA_TABLE_WITH_OTHER_PACKAGES to proceed.\n")
+  q('no')
+}
+
+test.data.table(script="other.Rraw")

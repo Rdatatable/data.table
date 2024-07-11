@@ -10,14 +10,14 @@
 }
 
 \usage{
-shift(x, n=1L, fill=NA, type=c("lag", "lead", "shift"), give.names=FALSE)
+shift(x, n=1L, fill, type=c("lag", "lead", "shift", "cyclic"), give.names=FALSE)
 }
 \arguments{
   \item{x}{ A vector, list, data.frame or data.table. }
   \item{n}{ integer vector denoting the offset by which to lead or lag the input. To create multiple lead/lag vectors, provide multiple values to \code{n}; negative values of \code{n} will "flip" the value of \code{type}, i.e., \code{n=-1} and \code{type='lead'} is the same as \code{n=1} and \code{type='lag'}. }
-  \item{fill}{ Value to use for padding when the window goes beyond the input length. }
-  \item{type}{ default is \code{"lag"} (look "backwards"). The other possible values \code{"lead"} (look "forwards") and \code{"shift"} (behave same as \code{"lag"} except given names). }
-  \item{give.names}{default is \code{FALSE} which returns an unnamed list. When \code{TRUE}, names are automatically generated corresponding to \code{type} and \code{n}. If answer is an atomic vector, then the argument is ignored. }
+  \item{fill}{ default is \code{NA}. Value to use for padding when the window goes beyond the input length. }
+  \item{type}{ default is \code{"lag"} (look "backwards"). The other possible values \code{"lead"} (look "forwards"), \code{"shift"} (behave same as \code{"lag"} except given names) and \code{"cyclic"} where pushed out values are re-introduced at the front/back. }
+  \item{give.names}{ default is \code{FALSE} which returns an unnamed list. When \code{TRUE}, names are automatically generated corresponding to \code{type} and \code{n}. If answer is an atomic vector, then the argument is ignored. }
 }
 \details{
   \code{shift} accepts vectors, lists, data.frames or data.tables. It always returns a list except when the input is a \code{vector} and \code{length(n) == 1} in which case a \code{vector} is returned, for convenience. This is so that it can be used conveniently within data.table's syntax. For example, \code{DT[, (cols) := shift(.SD, 1L), by=id]} would lag every column of \code{.SD} by 1 for each group and \code{DT[, newcol := colA + shift(colB)]} would assign the sum of two \emph{vectors} to \code{newcol}.
@@ -25,6 +25,8 @@ shift(x, n=1L, fill=NA, type=c("lag", "lead", "shift"), give.names=FALSE)
   Argument \code{n} allows multiple values. For example, \code{DT[, (cols) := shift(.SD, 1:2), by=id]} would lag every column of \code{.SD} by \code{1} and \code{2} for each group. If \code{.SD} contained four columns, the first two elements of the list would correspond to \code{lag=1} and \code{lag=2} for the first column of \code{.SD}, the next two for second column of \code{.SD} and so on. Please see examples for more.
 
   \code{shift} is designed mainly for use in data.tables along with \code{:=} or \code{set}. Therefore, it returns an unnamed list by default as assigning names for each group over and over can be quite time consuming with many groups. It may be useful to set names automatically in other cases, which can be done by setting \code{give.names} to \code{TRUE}.
+
+  Note that when using \code{shift} with a list, it should be a list of lists rather than a flattened list. The function was not designed to handle flattened lists directly. This also applies to the use of list columns in a data.table. For example, \code{DT = data.table(x=as.list(1:4))} is a data.table with four rows. Applying \code{DT[, shift(x)]} now lags every entry individually, rather than shifting the full columns like \code{DT[, shift(as.integer(x))]} does. Using \code{DT = data.table(x=list(1:4))} creates a data.table with one row. Now \code{DT[, shift(x)]} returns a data.table with four rows where x is lagged. To get a shifted data.table with the same number of rows, wrap the \code{shift} function in \code{list} or \code{dot}, e.g., \code{DT[, .(shift(x))]}.
 }
 \value{
   A list containing the lead/lag of input \code{x}.
@@ -40,6 +42,8 @@ shift(x, n=1:2, fill=0, type="lag")
 # getting a window by using positive and negative n:
 shift(x, n = -1:1)
 shift(x, n = -1:1, type = "shift", give.names = TRUE)
+# cyclic shift where pad uses pushed out values
+shift(x, n = -1:1, type = "cyclic")
 
 # on data.tables
 DT = data.table(year=2010:2014, v1=runif(5), v2=1:5, v3=letters[1:5])

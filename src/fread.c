@@ -1,3 +1,5 @@
+#include "fread.h"
+// include fread.h should happen before include time.h to avoid compilation warning on windows about re-defining __USE_MINGW_ANSI_STDIO, PR#5395.
 #if defined(CLOCK_REALTIME) && !defined(DISABLE_CLOCK_REALTIME)
 #define HAS_CLOCK_REALTIME
 #endif
@@ -24,7 +26,6 @@
   #include <math.h>      // ceil, sqrt, isfinite
 #endif
 #include <stdbool.h>
-#include "fread.h"
 #include "freadLookups.h"
 
 // Private globals to save passing all of them through to highly iterated field processors
@@ -32,6 +33,7 @@ static const char *sof, *eof;
 static char sep;
 static char whiteChar; // what to consider as whitespace to skip: ' ', '\t' or 0 means both (when sep!=' ' && sep!='\t')
 static char quote, dec;
+static int linesForDecDot; // when dec='auto', track the balance of fields in favor of dec='.' vs dec=',', ties go to '.'
 static bool eol_one_r;  // only true very rarely for \r-only files
 
 // Quote rule:
@@ -54,7 +56,9 @@ static const char* const* NAstrings;
 static bool any_number_like_NAstrings=false;
 static bool blank_is_a_NAstring=false;
 static bool stripWhite=true;  // only applies to character columns; numeric fields always stripped
-static bool skipEmptyLines=false, fill=false;
+static bool skipEmptyLines=false;
+static int fill=0;
+static int *dropFill = NULL;
 
 static double NA_FLOAT64;  // takes fread.h:NA_FLOAT64_VALUE
 
@@ -64,10 +68,15 @@ static void *mmp_copy = NULL;
 static size_t fileSize;
 static int8_t *type = NULL, *tmpType = NULL, *size = NULL;
 static lenOff *colNames = NULL;
-static freadMainArgs args;  // global for use by DTPRINT
+static freadMainArgs args = {0};  // global for use by DTPRINT; static implies ={0} but include the ={0} anyway just in case for valgrind #4639
+#ifdef __EMSCRIPTEN__
+  // Under Wasm we must keep the fd open until we're done with the mmap, due to an Emscripten bug (#5969).
+  // TODO(emscripten-core/emscripten#20459): revert this
+  static int mmp_fd = -1;
+#endif
 
-const char typeName[NUMTYPE][10] = {"drop", "bool8", "bool8", "bool8", "bool8", "int32", "int64", "float64", "float64", "float64", "string"};
-int8_t     typeSize[NUMTYPE]     = { 0,      1,       1,       1,       1,       4,       8,       8,         8,         8,         8      };
+const char typeName[NUMTYPE][10] = {"drop", "bool8", "bool8", "bool8", "bool8", "bool8", "int32", "int64", "float64", "float64", "float64", "int32", "float64", "string"};
+int8_t     typeSize[NUMTYPE]     = { 0,      1,       1,       1,       1,       1,       4,       8,       8,         8,         8,         4,       8       ,  8      };
 
 // In AIX, NAN and INFINITY don't qualify as constant literals. Refer: PR #3043
 // So we assign them through below init function.
@@ -75,7 +84,7 @@ static double NAND;
 static double INFD;
 
 // NAN and INFINITY constants are float, so cast to double once up front.
-void init() {
+void init(void) {
   NAND = (double)NAN;
   INFD = (double)INFINITY;
 }
@@ -103,7 +112,8 @@ static void Field(FieldParseContext *ctx);
 #define ASSERT(cond, msg, ...) \
   if (!(cond)) STOP(_("Internal error in line %d of fread.c, please report on data.table GitHub:  " msg), __LINE__, __VA_ARGS__) // # nocov
 
-
+#define AS_DIGIT(x) (uint_fast8_t)(x - '0')
+#define IS_DIGIT(x) AS_DIGIT(x) < 10
 
 //=================================================================================================
 //
@@ -134,6 +144,7 @@ bool freadCleanup(void)
   free(tmpType); tmpType = NULL;
   free(size); size = NULL;
   free(colNames); colNames = NULL;
+  free(dropFill); dropFill = NULL;
   if (mmp != NULL) {
     // Important to unmap as OS keeps internal reference open on file. Process is not exiting as
     // we're a .so/.dll here. If this was a process exiting we wouldn't need to unmap.
@@ -144,10 +155,14 @@ bool freadCleanup(void)
     // may call freadCleanup(), thus resulting in an infinite loop.
     #ifdef WIN32
       if (!UnmapViewOfFile(mmp))
-        DTPRINT(_("System error %d unmapping view of file\n"), GetLastError());      // # nocov
+        // GetLastError is a 'DWORD', not 'int', hence '%lu'
+        DTPRINT(_("System error %lu unmapping view of file\n"), GetLastError());      // # nocov
     #else
       if (munmap(mmp, fileSize))
         DTPRINT(_("System errno %d unmapping file: %s\n"), errno, strerror(errno));  // # nocov
+      #ifdef __EMSCRIPTEN__
+        close(mmp_fd); mmp_fd = -1;
+      #endif
     #endif
     mmp = NULL;
   }
@@ -160,7 +175,7 @@ bool freadCleanup(void)
   stripWhite = true;
   skipEmptyLines = false;
   eol_one_r = false;
-  fill = false;
+  fill = 0;
   // following are borrowed references: do not free
   sof = eof = NULL;
   NAstrings = NULL;
@@ -465,7 +480,7 @@ void copyFile(size_t fileSize, const char *msg, bool verbose)  // only called in
 //      into the `ctx.targets[sizeof(value)]` buffer. The parsing location
 //      `ctx.ch` should be left unmodified.
 //
-// Note that it is not the parser's job ot advance the `ctx.targets` pointer --
+// Note that it is not the parser's job to advance the `ctx.targets` pointer --
 // this is left to the caller. The reason for this is because we have different
 // parsing scenarios:
 //   - in the "normal" case the value will be written and the target pointer
@@ -571,13 +586,11 @@ static void Field(FieldParseContext *ctx)
   }
 }
 
-
-static void StrtoI32(FieldParseContext *ctx)
+static void str_to_i32_core(const char **pch, int32_t *target)
 {
-  const char *ch = *(ctx->ch);
-  int32_t *target = (int32_t*) ctx->targets[sizeof(int32_t)];
+  const char *ch = *pch;
 
-  if (*ch=='0' && args.keepLeadingZeros && (uint_fast8_t)(ch[1]-'0')<10) return;
+  if (*ch=='0' && args.keepLeadingZeros && IS_DIGIT(ch[1])) return;
   bool neg = *ch=='-';
   ch += (neg || *ch=='+');
   const char *start = ch;  // to know if at least one digit is present
@@ -592,7 +605,7 @@ static void StrtoI32(FieldParseContext *ctx)
   // number significant figures = digits from the first non-zero onwards including trailing zeros
   while (*ch=='0') ch++;
   uint_fast32_t sf = 0;
-  while ( (digit=(uint_fast8_t)(ch[sf]-'0'))<10 ) {
+  while ( (digit=AS_DIGIT(ch[sf]))<10 ) {
     acc = 10*acc + digit;
     sf++;
   }
@@ -605,10 +618,15 @@ static void StrtoI32(FieldParseContext *ctx)
   //     (acc==0 && ch-start==1) ) {
   if ((sf || ch>start) && sf<=10 && acc<=INT32_MAX) {
     *target = neg ? -(int32_t)acc : (int32_t)acc;
-    *(ctx->ch) = ch;
+    *pch = ch;
   } else {
     *target = NA_INT32;  // empty field ideally, contains NA and fall through to check if NA (in which case this write is important), or just plain invalid
   }
+}
+
+static void StrtoI32(FieldParseContext *ctx)
+{
+  str_to_i32_core(ctx->ch, (int32_t*) ctx->targets[sizeof(int32_t)]);
 }
 
 
@@ -616,7 +634,7 @@ static void StrtoI64(FieldParseContext *ctx)
 {
   const char *ch = *(ctx->ch);
   int64_t *target = (int64_t*) ctx->targets[sizeof(int64_t)];
-  if (*ch=='0' && args.keepLeadingZeros && (uint_fast8_t)(ch[1]-'0')<10) return;
+  if (*ch=='0' && args.keepLeadingZeros && IS_DIGIT(ch[1])) return;
   bool neg = *ch=='-';
   ch += (neg || *ch=='+');
   const char *start = ch;
@@ -624,7 +642,7 @@ static void StrtoI64(FieldParseContext *ctx)
   uint_fast64_t acc = 0;  // important unsigned not signed here; we now need the full unsigned range
   uint_fast8_t digit;
   uint_fast32_t sf = 0;
-  while ( (digit=(uint_fast8_t)(ch[sf]-'0'))<10 ) {
+  while ( (digit=AS_DIGIT(ch[sf]))<10 ) {
     acc = 10*acc + digit;
     sf++;
   }
@@ -648,8 +666,8 @@ static void StrtoI64(FieldParseContext *ctx)
 // TODO: review ERANGE checks and tests; that range outside [1.7e-308,1.7e+308] coerces to [0.0,Inf]
 /*
 f = "~/data.table/src/freadLookups.h"
-cat("const long double pow10lookup[601] = {\n", file=f, append=FALSE)
-for (i in (-300):(299)) cat("1.0E",i,"L,\n", sep="", file=f, append=TRUE)
+cat("const long double pow10lookup[301] = {\n", file=f, append=FALSE)
+for (i in 0:299) cat("1.0E",i,"L,\n", sep="", file=f, append=TRUE)
 cat("1.0E300L\n};\n", file=f, append=TRUE)
 */
 
@@ -669,13 +687,12 @@ cat("1.0E300L\n};\n", file=f, append=TRUE)
  * of precision, for example `1.2439827340958723094785103` will not be parsed
  * as a double.
  */
-static void parse_double_regular(FieldParseContext *ctx)
+static void parse_double_regular_core(const char **pch, double *target)
 {
   #define FLOAT_MAX_DIGITS 18
-  const char *ch = *(ctx->ch);
-  double *target = (double*) ctx->targets[sizeof(double)];
+  const char *ch = *pch;
 
-  if (*ch=='0' && args.keepLeadingZeros && (uint_fast8_t)(ch[1]-'0')<10) return;
+  if (*ch=='0' && args.keepLeadingZeros && IS_DIGIT(ch[1])) return;
   bool neg, Eneg;
   ch += (neg = *ch=='-') + (*ch=='+');
 
@@ -689,7 +706,7 @@ static void parse_double_regular(FieldParseContext *ctx)
   // Read the first, integer part of the floating number (but no more than
   // FLOAT_MAX_DIGITS digits).
   int_fast32_t sflimit = FLOAT_MAX_DIGITS;
-  while ((digit=(uint_fast8_t)(*ch-'0'))<10 && sflimit) {
+  while ((digit=AS_DIGIT(*ch))<10 && sflimit) {
     acc = 10*acc + digit;
     sflimit--;
     ch++;
@@ -699,8 +716,8 @@ static void parse_double_regular(FieldParseContext *ctx)
   // we will read and discard those extra digits, but only if they are followed
   // by a decimal point (otherwise it's a just big integer, which should be
   // treated as a string instead of losing precision).
-  if (sflimit==0 && (uint_fast8_t)(*ch-'0')<10) {
-    while ((uint_fast8_t)(*ch-'0')<10) {
+  if (sflimit==0 && IS_DIGIT(*ch)) {
+    while (IS_DIGIT(*ch)) {
       ch++;
       e++;
     }
@@ -723,7 +740,7 @@ static void parse_double_regular(FieldParseContext *ctx)
 
     // Now read the significant digits in the fractional part of the number
     int_fast32_t k = 0;
-    while ((digit=(uint_fast8_t)(ch[k]-'0'))<10 && sflimit) {
+    while ((digit=AS_DIGIT(ch[k]))<10 && sflimit) {
       acc = 10*acc + digit;
       k++;
       sflimit--;
@@ -733,7 +750,7 @@ static void parse_double_regular(FieldParseContext *ctx)
 
     // If more digits are present, skip them
     if (sflimit==0) {
-      while ((uint_fast8_t)(*ch-'0')<10) ch++;
+      while (IS_DIGIT(*ch)) ch++;
     }
     // Check that at least 1 digit was present in either the integer or
     // fractional part ("+1" here accounts for the decimal point char).
@@ -750,13 +767,13 @@ static void parse_double_regular(FieldParseContext *ctx)
     if (ch==start) goto fail;  // something valid must be between [+|-] and E, character E alone is invalid.
     ch += 1/*E*/ + (Eneg = ch[1]=='-') + (ch[1]=='+');
     int_fast32_t E = 0;
-    if ((digit=(uint_fast8_t)(*ch-'0'))<10) {
+    if ((digit=AS_DIGIT(*ch))<10) {
       E = digit;
       ch++;
-      if ((digit=(uint_fast8_t)(*ch-'0'))<10) {
+      if ((digit=AS_DIGIT(*ch))<10) {
         E = E*10 + digit;
         ch++;
-        if ((digit=(uint_fast8_t)(*ch-'0'))<10) {
+        if ((digit=AS_DIGIT(*ch))<10) {
           E = E*10 + digit;
           ch++;
         }
@@ -777,20 +794,24 @@ static void parse_double_regular(FieldParseContext *ctx)
     // fail to be encoded by the compiler, even though the values can actually
     // be stored correctly.
     int_fast8_t extra = e < 0 ? e + 300 : e - 300;
-    r *= pow10lookup[extra + 300];
+    r = extra<0 ? r/pow10lookup[-extra] : r*pow10lookup[extra];
     e -= extra;
   }
-  e += 300; // lookup table is arranged from -300 (0) to +300 (600)
 
-  r *= pow10lookup[e];
+  // pow10lookup[301] contains 10^(0:300). Storing negative powers there too
+  // avoids this ternary but is slightly less accurate in some cases, #4461
+  r = e < 0 ? r/pow10lookup[-e] : r*pow10lookup[e];
   *target = (double)(neg? -r : r);
-  *(ctx->ch) = ch;
+  *pch = ch;
   return;
 
   fail:
     *target = NA_FLOAT64;
 }
 
+static void parse_double_regular(FieldParseContext *ctx) {
+  parse_double_regular_core(ctx->ch, (double*) ctx->targets[sizeof(double)]);
+}
 
 
 /**
@@ -820,11 +841,11 @@ static void parse_double_extended(FieldParseContext *ctx)
   }
   if (ch[0]=='N' && (ch[1]=='A' || ch[1]=='a') && ch[2]=='N' && (ch += 3)) {
     if (ch[-2]=='a' && (*ch=='%' || *ch=='Q' || *ch=='S')) ch++;
-    while ((uint_fast8_t)(*ch-'0') < 10) ch++;
+    while (IS_DIGIT(*ch)) ch++;
     goto return_nan;
   }
   if ((ch[0]=='q' || ch[0]=='s') && ch[1]=='N' && ch[2]=='a' && ch[3]=='N' && (ch += 4)) {
-    while ((uint_fast8_t)(*ch-'0') < 10) ch++;
+    while (IS_DIGIT(*ch)) ch++;
     goto return_nan;
   }
   if (ch[0]=='1' && ch[1]=='.' && ch[2]=='#') {
@@ -910,7 +931,7 @@ static void parse_double_hexadecimal(FieldParseContext *ctx)
     acc <<= (13 - ndigits) * 4;
     ch += 1 + (Eneg = ch[1]=='-') + (ch[1]=='+');
     uint64_t E = 0;
-    while ((digit = (uint8_t)(*ch-'0')) < 10) {
+    while ((digit = AS_DIGIT(*ch)) < 10) {
       E = 10*E + digit;
       ch++;
     }
@@ -937,13 +958,150 @@ static void parse_double_hexadecimal(FieldParseContext *ctx)
     *target = NA_FLOAT64;
 }
 
+/*
+f = 'src/freadLookups.h'
+cat('const uint8_t cumDaysCycleYears[401] = {\n', file=f, append=TRUE)
+t = format(as.double(difftime(as.Date(sprintf('%04d-01-01', 1600:1999)), .Date(0), units='days')))
+rows = paste0(apply(matrix(t, ncol = 4L, byrow = TRUE), 1L, paste, collapse = ', '), ',\n')
+cat(rows, sep='', file=f, append=TRUE)
+cat(146097, '// total days in 400 years\n};\n', sep = '', file=f, append=TRUE)
+*/
+static void parse_iso8601_date_core(const char **pch, int32_t *target)
+{
+  const char *ch = *pch;
+
+  int32_t year=0, month=0, day=0;
+
+  str_to_i32_core(&ch, &year);
+
+  // .Date(.Machine$integer.max*c(-1, 1)):
+  //  -5877641-06-24 -- 5881580-07-11
+  //  rather than fiddle with dates within those terminal years (unlikely
+  //  to be showing up in data sets any time soon), just truncate towards 0
+  if (year == NA_INT32 || year < -5877640 || year > 5881579 || *ch != '-')
+    goto fail;
+
+  // Multiples of 4, excluding 3/4 of centuries
+  bool isLeapYear = year % 4 == 0 && (year % 100 != 0 || year/100 % 4 == 0);
+  ch++;
+
+  str_to_i32_core(&ch, &month);
+  if (month == NA_INT32 || month < 1 || month > 12 || *ch != '-')
+    goto fail;
+  ch++;
+
+  str_to_i32_core(&ch, &day);
+  if (day == NA_INT32 || day < 1 ||
+      (day > (isLeapYear ? leapYearDays[month-1] : normYearDays[month-1])))
+    goto fail;
+
+  *target =
+    (year/400 - 4)*cumDaysCycleYears[400] + // days to beginning of 400-year cycle
+    cumDaysCycleYears[year % 400] + // days to beginning of year within 400-year cycle
+    (isLeapYear ? cumDaysCycleMonthsLeap[month-1] : cumDaysCycleMonthsNorm[month-1]) + // days to beginning of month within year
+    day-1; // day within month (subtract 1: 1970-01-01 -> 0)
+
+  *pch = ch;
+  return;
+
+  fail:
+    *target = NA_INT32;
+}
+
+static void parse_iso8601_date(FieldParseContext *ctx) {
+  parse_iso8601_date_core(ctx->ch, (int32_t*) ctx->targets[sizeof(int32_t)]);
+}
+
+static void parse_iso8601_timestamp(FieldParseContext *ctx)
+{
+  const char *ch = *(ctx->ch);
+  double *target = (double*) ctx->targets[sizeof(double)];
+
+  int32_t date, hour=0, minute=0, tz_hour=0, tz_minute=0;
+  double second=0;
+
+  parse_iso8601_date_core(&ch, &date);
+  if (date == NA_INT32)
+    goto fail;
+  if (*ch != ' ' && *ch != 'T')
+    goto date_only;
+    // allows date-only field in a column with UTC-marked datetimes to be parsed as UTC too; test 2150.13
+  ch++;
+
+  str_to_i32_core(&ch, &hour);
+  if (hour == NA_INT32 || hour < 0 || hour > 23 || *ch != ':')
+    goto fail;
+  ch++;
+
+  str_to_i32_core(&ch, &minute);
+  if (minute == NA_INT32 || minute < 0 || minute > 59 || *ch != ':')
+    goto fail;
+  ch++;
+
+  parse_double_regular_core(&ch, &second);
+  if (second == NA_FLOAT64 || second < 0 || second >= 60)
+    goto fail;
+
+  if (*ch == 'Z') {
+    ch++; // "Zulu time"=UTC
+  } else {
+    if (*ch == ' ')
+      ch++;
+    if (*ch == '+' || *ch == '-') {
+      const char *start = ch; // facilitates distinguishing +04, +0004, +0000, +00:00
+      // three recognized formats: [+-]AA:BB, [+-]AABB, and [+-]AA
+      str_to_i32_core(&ch, &tz_hour);
+      if (tz_hour == NA_INT32)
+        goto fail;
+      if (ch - start == 5 && tz_hour != 0) { // +AABB
+        if (abs(tz_hour) > 2400)
+          goto fail;
+        tz_minute = tz_hour % 100;
+        tz_hour /= 100;
+      } else if (ch - start == 3) {
+        if (abs(tz_hour) > 24)
+          goto fail;
+        if (*ch == ':') {
+          ch++;
+          str_to_i32_core(&ch, &tz_minute);
+          if (tz_minute == NA_INT32)
+            goto fail;
+        }
+      }
+    } else {
+      if (!args.noTZasUTC)
+        goto fail;
+      // if neither Z nor UTC offset is present, then it's local time and that's not directly supported yet; see news for v1.13.0
+      // but user can specify that the unmarked datetimes are UTC by passing tz="UTC"
+      // if local time is UTC (env variable TZ is "" or "UTC", not unset) then local time is UTC, and that's caught by fread at R level too
+    }
+  }
+
+  date_only:
+
+  //Rprintf("date=%d\thour=%d\tz_hour=%d\tminute=%d\ttz_minute=%d\tsecond=%.1f\n", date, hour, tz_hour, minute, tz_minute, second);
+  // cast upfront needed to prevent silent overflow
+  *target = 86400*(double)date + 3600*(hour - tz_hour) + 60*(minute - tz_minute) + second;
+
+  *(ctx->ch) = ch;
+  return;
+
+  fail:
+    *target = NA_FLOAT64;
+}
+
+static void parse_empty(FieldParseContext *ctx)
+{
+  int8_t *target = (int8_t*) ctx->targets[sizeof(int8_t)];
+  *target = NA_BOOL8;
+}
 
 /* Parse numbers 0 | 1 as boolean and ,, as NA (fwrite's default) */
 static void parse_bool_numeric(FieldParseContext *ctx)
 {
   const char *ch = *(ctx->ch);
   int8_t *target = (int8_t*) ctx->targets[sizeof(int8_t)];
-  uint8_t d = (uint8_t)(*ch - '0');  // '0'=>0, '1'=>1, everything else > 1
+  uint_fast8_t d = AS_DIGIT(*ch);  // '0'=>0, '1'=>1, everything else > 1
   if (d <= 1) {
     *target = (int8_t) d;
     *(ctx->ch) = ch + 1;
@@ -1005,10 +1163,17 @@ static void parse_bool_lowercase(FieldParseContext *ctx)
 }
 
 
-
+/* How to register a new parser
+ *  (1) Write the parser
+ *  (2) Add it to fun array here
+ *  (3) Extend disabled_parsers, typeName, and typeSize here as appropriate
+ *  (4) Extend colType typdef in fread.h as appropriate
+ *  (5) Extend typeSxp, typeRName, typeEnum in freadR.c as appropriate
+ */
 typedef void (*reader_fun_t)(FieldParseContext *ctx);
 static reader_fun_t fun[NUMTYPE] = {
-  (reader_fun_t) &Field,
+  (reader_fun_t) &Field,        // CT_DROP
+  (reader_fun_t) &parse_empty,  // CT_EMPTY
   (reader_fun_t) &parse_bool_numeric,
   (reader_fun_t) &parse_bool_uppercase,
   (reader_fun_t) &parse_bool_titlecase,
@@ -1018,10 +1183,12 @@ static reader_fun_t fun[NUMTYPE] = {
   (reader_fun_t) &parse_double_regular,
   (reader_fun_t) &parse_double_extended,
   (reader_fun_t) &parse_double_hexadecimal,
+  (reader_fun_t) &parse_iso8601_date,
+  (reader_fun_t) &parse_iso8601_timestamp,
   (reader_fun_t) &Field
 };
 
-static int disabled_parsers[NUMTYPE] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+static int disabled_parsers[NUMTYPE] = {0};
 
 static int detect_types( const char **pch, int8_t type[], int ncol, bool *bumped) {
   // used in sampling column types and whether column names are present
@@ -1040,11 +1207,16 @@ static int detect_types( const char **pch, int8_t type[], int ncol, bool *bumped
   skip_white(&ch);
   if (eol(&ch)) return 0;  // empty line
   int field=0;
+  const bool autoDec = dec == '\0';
   while (field<ncol) {
     // DTPRINT(_("<<%s>>(%d)"), strlim(ch,20), quoteRule);
     skip_white(&ch);
     const char *fieldStart = ch;
     while (tmpType[field]<=CT_STRING) {
+      if (autoDec && IS_DEC_TYPE(tmpType[field]) && dec == '\0') { // guess . first
+        dec = '.';
+      }
+
       fun[tmpType[field]](&fctx);
       if (end_of_field(ch)) break;
       skip_white(&ch);
@@ -1068,8 +1240,18 @@ static int detect_types( const char **pch, int8_t type[], int ncol, bool *bumped
         }
       }
       ch = fieldStart;
+      if (autoDec && IS_DEC_TYPE(tmpType[field]) && dec == '.') { // . didn't parse a double; try ,
+        dec = ',';
+        continue;
+      }
       while (++tmpType[field]<CT_STRING && disabled_parsers[tmpType[field]]) {};
       *bumped = true;
+    }
+    if (autoDec && dec != '\0') { // double was attempted
+      if (IS_DEC_TYPE(tmpType[field])) { // double succeeded
+        linesForDecDot += dec == '.' ? 1 : -1;
+      }
+      dec = '\0'; // reset for next parse
     }
     field++;
     if (sep==' ' && *ch==sep) {
@@ -1130,27 +1312,26 @@ int freadMain(freadMainArgs _args) {
   while (*nastr) {
     if (**nastr == '\0') {
       blank_is_a_NAstring = true;
-      // if blank is the only one, as is the default, clear NAstrings so that doesn't have to be checked
-      if (nastr==NAstrings && nastr+1==NULL) NAstrings=NULL;
-      nastr++;
-      continue;
+    } else {
+      const char *ch = *nastr;
+      size_t nchar = strlen(ch);
+      if (isspace(ch[0]) || isspace(ch[nchar-1]))
+        STOP(_("freadMain: NAstring <<%s>> has whitespace at the beginning or end"), ch);
+      if (strcmp(ch,"T")==0    || strcmp(ch,"F")==0 ||
+          strcmp(ch,"TRUE")==0 || strcmp(ch,"FALSE")==0 ||
+          strcmp(ch,"True")==0 || strcmp(ch,"False")==0)
+        STOP(_("freadMain: NAstring <<%s>> is recognized as type boolean, this is not permitted."), ch);
+      if ((strcmp(ch,"1")==0 || strcmp(ch,"0")==0) && args.logical01)
+        STOP(_("freadMain: NAstring <<%s>> and logical01=TRUE, this is not permitted."), ch);
+      char *end;
+      errno = 0;
+      (void)strtod(ch, &end);  // careful not to let "" get to here as strtod considers "" numeric
+      if (errno==0 && (size_t)(end - ch) == nchar) any_number_like_NAstrings = true;
     }
-    const char *ch = *nastr;
-    size_t nchar = strlen(ch);
-    if (isspace(ch[0]) || isspace(ch[nchar-1]))
-      STOP(_("freadMain: NAstring <<%s>> has whitespace at the beginning or end"), ch);
-    if (strcmp(ch,"T")==0    || strcmp(ch,"F")==0 ||
-        strcmp(ch,"TRUE")==0 || strcmp(ch,"FALSE")==0 ||
-        strcmp(ch,"True")==0 || strcmp(ch,"False")==0 ||
-        strcmp(ch,"1")==0    || strcmp(ch,"0")==0)
-      STOP(_("freadMain: NAstring <<%s>> is recognized as type boolean, this is not permitted."), ch);
-    char *end;
-    errno = 0;
-    (void)strtod(ch, &end);  // careful not to let "" get to here (see continue above) as strtod considers "" numeric
-    if (errno==0 && (size_t)(end - ch) == nchar) any_number_like_NAstrings = true;
     nastr++;
   }
   disabled_parsers[CT_BOOL8_N] = !args.logical01;
+  disabled_parsers[CT_ISO8601_DATE] = disabled_parsers[CT_ISO8601_TIME] = args.oldNoDateTime; // temporary new option in v1.13.0; see NEWS
   if (verbose) {
     if (*NAstrings == NULL) {
       DTPRINT(_("  No NAstrings provided.\n"));
@@ -1169,6 +1350,10 @@ int freadMain(freadMainArgs _args) {
     DTPRINT(_("  show progress = %d\n"), args.showProgress);
     DTPRINT(_("  0/1 column will be read as %s\n"), args.logical01? "boolean" : "integer");
   }
+  if (*NAstrings==NULL ||                             // user sets na.strings=NULL
+      (**NAstrings=='\0' && *(NAstrings+1)==NULL)) {  // user sets na.strings=""
+    NAstrings=NULL;  // clear NAstrings to save end_NA_string() dealing with these cases (blank_is_a_NAstring was set to true above)
+  }
 
   stripWhite = args.stripWhite;
   skipEmptyLines = args.skipEmptyLines;
@@ -1176,9 +1361,8 @@ int freadMain(freadMainArgs _args) {
   dec = args.dec;
   quote = args.quote;
   if (args.sep == quote && quote!='\0') STOP(_("sep == quote ('%c') is not allowed"), quote);
-  if (dec=='\0') STOP(_("dec='' not allowed. Should be '.' or ','"));
-  if (args.sep == dec) STOP(_("sep == dec ('%c') is not allowed"), dec);
-  if (quote == dec) STOP(_("quote == dec ('%c') is not allowed"), dec);
+  if (args.sep == dec && dec != '\0') STOP(_("sep == dec ('%c') is not allowed"), dec);
+  if (quote == dec && dec != '\0') STOP(_("quote == dec ('%c') is not allowed"), dec);
   // since quote=='\0' when user passed quote="", the logic in this file uses '*ch==quote && quote' otherwise
   //   the ending \0 at eof could be treated as a quote (test xxx)
 
@@ -1209,7 +1393,7 @@ int freadMain(freadMainArgs _args) {
     const char* fnam = args.filename;
     #ifndef WIN32
       int fd = open(fnam, O_RDONLY);
-      if (fd==-1) STOP(_("file not found: %s"),fnam);
+      if (fd==-1) STOP(_("File not found: %s"),fnam);
       struct stat stat_buf;
       if (fstat(fd, &stat_buf) == -1) {
         close(fd);                                                     // # nocov
@@ -1224,7 +1408,11 @@ int freadMain(freadMainArgs _args) {
       // TO DO?: MAP_HUGETLB for Linux but seems to need admin to setup first. My Hugepagesize is 2MB (>>2KB, so promising)
       //         https://www.kernel.org/doc/Documentation/vm/hugetlbpage.txt
       mmp = mmap(NULL, fileSize, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);  // COW for last page lastEOLreplaced
-      close(fd);  // we don't need to keep file handle open
+      #ifdef __EMSCRIPTEN__
+        mmp_fd = fd;
+      #else
+        close(fd);  // we don't need to keep file handle open
+      #endif
       if (mmp == MAP_FAILED) {
     #else
       // Following: http://msdn.microsoft.com/en-gb/library/windows/desktop/aa366548(v=vs.85).aspx
@@ -1240,14 +1428,14 @@ int freadMain(freadMainArgs _args) {
         attempts++;
         // Looped retry to avoid ephemeral locks by system utilities as recommended here : http://support.microsoft.com/kb/316609
       }
-      if (hFile==INVALID_HANDLE_VALUE) STOP(_("Unable to open file after %d attempts (error %d): %s"), attempts, GetLastError(), fnam);
+      if (hFile==INVALID_HANDLE_VALUE) STOP(_("Unable to open file after %d attempts (error %lu): %s"), attempts, GetLastError(), fnam);
       LARGE_INTEGER liFileSize;
       if (GetFileSizeEx(hFile,&liFileSize)==0) { CloseHandle(hFile); STOP(_("GetFileSizeEx failed (returned 0) on file: %s"), fnam); }
       fileSize = (size_t)liFileSize.QuadPart;
       if (fileSize<=0) { CloseHandle(hFile); STOP(_("File is empty: %s"), fnam); }
       if (verbose) DTPRINT(_("  File opened, size = %s.\n"), filesize_to_str(fileSize));
       HANDLE hMap=CreateFileMapping(hFile, NULL, PAGE_WRITECOPY, 0, 0, NULL);
-      if (hMap==NULL) { CloseHandle(hFile); STOP(_("This is Windows, CreateFileMapping returned error %d for file %s"), GetLastError(), fnam); }
+      if (hMap==NULL) { CloseHandle(hFile); STOP(_("This is Windows, CreateFileMapping returned error %lu for file %s"), GetLastError(), fnam); }
       mmp = MapViewOfFile(hMap,FILE_MAP_COPY,0,0,fileSize);  // fileSize must be <= hilo passed to CreateFileMapping above.
       CloseHandle(hMap);  // we don't need to keep the file open; the MapView keeps an internal reference;
       CloseHandle(hFile); //   see https://msdn.microsoft.com/en-us/library/windows/desktop/aa366537(v=vs.85).aspx
@@ -1322,7 +1510,7 @@ int freadMain(freadMainArgs _args) {
       while (ch>=sof && *ch!='\r') ch--;
     } else {
       while (ch>=sof && *ch!='\n') ch--;
-      while (ch>sof && ch[-1]=='\r') ch--;  // the first of any preceeding \r to avoid a dangling \r
+      while (ch>sof && ch[-1]=='\r') ch--;  // the first of any preceding \r to avoid a dangling \r
     }
     if (ch>=sof) {
       const char *lastNewLine = ch;  // the start of the final newline sequence.
@@ -1431,7 +1619,11 @@ int freadMain(freadMainArgs _args) {
   int ncol;  // Detected number of columns in the file
   const char *firstJumpEnd=NULL; // remember where the winning jumpline from jump 0 ends, to know its size excluding header
   const char *prevStart = NULL;  // the start of the non-empty line before the first not-ignored row (for warning message later, or taking as column names)
-  int jumpLines = (int)umin(100,nrowLimit);   // how many lines from each jump point to use. If nrowLimit is supplied, nJumps is later set to 1 as well.
+  int jumpLines = nrowLimit==0 ? 100 : (int)umin(100, nrowLimit);   // how many lines from each jump point to use. If nrows>0 is supplied, nJumps is later set to 1. #4029
+  if (fill==INT_MAX) { // if user provides fill=INT_MAX then full file should be sampled #2727
+    jumpLines = INT_MAX;
+    fill = 1; // set fill to true value to not overallocate
+  }
   {
   if (verbose) DTPRINT(_("[06] Detect separator, quoting rule, and ncolumns\n"));
 
@@ -1448,12 +1640,12 @@ int freadMain(freadMainArgs _args) {
       if (eol(&ch)) ch++;
     }
     firstJumpEnd = ch;  // size of first 100 lines in bytes is used later for nrow estimate
-    fill = true;        // so that blank lines are read as empty
+    fill = 1;        // so that blank lines are read as empty
     ch = pos;
   } else {
     int nseps;
-    char seps[]=",|;\t ";  // default seps in order of preference. See ?fread.
-                           // seps[] not *seps for writeability (http://stackoverflow.com/a/164258/403310)
+    char seps__[] = ",|;\t ";  // default seps in order of preference; writeable http://stackoverflow.com/a/164258/403310
+    char *seps = dec!=',' ? seps__ : seps__+1;  // prevent guessing sep=',' when dec=',' #4483
     char topSep=127;       // which sep 'wins' top place (see top* below). By default 127 (ascii del) means no sep i.e. single-column input (1 field)
     if (args.sep == '\0') {
       if (verbose) DTPRINT(_("  Detecting sep automatically ...\n"));
@@ -1471,7 +1663,7 @@ int freadMain(freadMainArgs _args) {
     int topSkip=0;            // how many rows to auto-skip
     const char *topStart=NULL;
 
-    for (quoteRule=quote?0:3; quoteRule<4; quoteRule++) {
+    for (quoteRule=quote?0:3; quoteRule<4; quoteRule++) { // #loop_counter_not_local_scope_ok
       // quote rule in order of preference.
       // when top is tied the first wins, so do all seps for the first quoteRule, then all seps for the second quoteRule, etc
       for (int s=0; s<nseps; s++) {
@@ -1560,7 +1752,7 @@ int freadMain(freadMainArgs _args) {
       sep = topSep;
       // no self healing quote rules, as we don't have >1 field to disambiguate
       // choose quote rule 0 or 1 based on for which 100 rows gets furthest into file
-      for (quoteRule=0; quoteRule<=1; quoteRule++) {
+      for (quoteRule=0; quoteRule<=1; quoteRule++) { // #loop_counter_not_local_scope_ok
         int thisRow=0, thisncol=0;
         ch = pos;
         while (ch<eof && ++thisRow<jumpLines && (thisncol=countfields(&ch))>=0) {};
@@ -1580,7 +1772,7 @@ int freadMain(freadMainArgs _args) {
     }
     sep = topSep;
     whiteChar = (sep==' ' ? '\t' : (sep=='\t' ? ' ' : 0));
-    ncol = topNumFields;
+    ncol = fill > topNumFields ? fill : topNumFields; // overwrite user guess if estimated number is higher
     if (fill || sep==127) {
       // leave pos on the first populated line; that is start of data
       ch = pos;
@@ -1621,7 +1813,7 @@ int freadMain(freadMainArgs _args) {
   }
 
   //*********************************************************************************************
-  // [7] Detect column types, good nrow estimate and whether first row is column names
+  // [7] Detect column types, dec, good nrow estimate and whether first row is column names
   //*********************************************************************************************
   int nJumps;             // How many jumps to use when pre-scanning the file
   int64_t sampleLines;     // How many lines were sampled during the initial pre-scan
@@ -1631,12 +1823,19 @@ int freadMain(freadMainArgs _args) {
   double meanLineLen=0.0; // Average length (in bytes) of a single line in the input file
   size_t bytesRead=0;     // Bytes in the data section (i.e. excluding column names, header and footer, if any)
   {
-  if (verbose) DTPRINT(_("[07] Detect column types, good nrow estimate and whether first row is column names\n"));
+  if (verbose) DTPRINT(_("[07] Detect column types, dec, good nrow estimate and whether first row is column names\n"));
   if (verbose && args.header!=NA_BOOL8) DTPRINT(_("  'header' changed by user from 'auto' to %s\n"), args.header?"true":"false");
 
   type =    (int8_t *)malloc((size_t)ncol * sizeof(int8_t));
   tmpType = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));  // used i) in sampling to not stop on errors when bad jump point and ii) when accepting user overrides
   if (!type || !tmpType) STOP(_("Failed to allocate 2 x %d bytes for type and tmpType: %s"), ncol, strerror(errno));
+
+  if (sep == ',' && dec == '\0') { // if sep=',' detected, don't attempt to detect dec [NB: . is not par of seps]
+    if (verbose) {
+      DTPRINT(_("  sep=',' so dec set to '.'\n"));
+    }
+    dec = '.';
+  }
 
   int8_t type0 = 1;
   while (disabled_parsers[type0]) type0++;
@@ -1664,7 +1863,7 @@ int freadMain(freadMainArgs _args) {
                  (uint64_t)sz, (uint64_t)jump0size, (uint64_t)(sz/(2*jump0size)));
   }
   nJumps++; // the extra sample at the very end (up to eof) is sampled and format checked but not jumped to when reading
-  if (nrowLimit<INT64_MAX) nJumps=1; // when nrowLimit supplied by user, no jumps (not even at the end) and single threaded
+  if (nrowLimit<INT64_MAX && nrowLimit>0) nJumps=1; // when nrows>0 supplied by user, no jumps (not even at the end) and single threaded
 
   sampleLines = 0;
   double sumLen=0.0, sumLenSq=0.0;
@@ -1688,6 +1887,7 @@ int freadMain(freadMainArgs _args) {
     if (ch>=eof) break;                // The 9th jump could reach the end in the same situation and that's ok. As long as the end is sampled is what we want.
     bool bumped = false;  // did this jump find any different types; to reduce verbose output to relevant lines
     int jumpLine = 0;    // line from this jump point start
+    linesForDecDot = 0;
 
     while(ch<eof && jumpLine++<jumpLines) {
       const char *lineStart = ch;
@@ -1714,11 +1914,18 @@ int freadMain(freadMainArgs _args) {
       if (thisLineLen>maxLen) maxLen=thisLineLen;
       if (jump==0 && bumped) {
         // apply bumps after each line in the first jump from the start in case invalid line stopped early on is in the first 100 lines.
-        // otherwise later jumps must complete fully before their bumps are appplied. Invalid lines in those are more likely to be due to bad jump start.
+        // otherwise later jumps must complete fully before their bumps are applied. Invalid lines in those are more likely to be due to bad jump start.
         memcpy(type, tmpType, (size_t)ncol);
         bumped = false;  // detect_types() only updates &bumped when it's true. So reset to false here.
       }
     }
+    if (dec == '\0') {
+      dec = linesForDecDot < 0 ? ',' : '.'; // in a tie, dec=. is more likely
+      if (verbose) {
+        DTPRINT(_("  dec='%c' detected based on a balance of %d parsed fields\n"), dec, abs(linesForDecDot));
+      }
+    }
+
     if (bumped) {
       // when jump>0, apply the bumps (if any) at the end of the successfully completed jump sample
       ASSERT(jump>0, "jump(%d)>0", jump);
@@ -1733,12 +1940,21 @@ int freadMain(freadMainArgs _args) {
   if (args.header==NA_BOOL8) {
     for (int j=0; j<ncol; j++) tmpType[j]=type0;   // reuse tmpType
     bool bumped=false;
+
+    if (dec == '\0') { // in files without jumps, dec could still be undecided
+      linesForDecDot = 0;
+    }
     detect_types(&ch, tmpType, ncol, &bumped);
+    if (dec == '\0') {
+      dec = linesForDecDot < 0 ? ',' : '.';
+      if (verbose) {
+        DTPRINT(_("  dec='%c' detected based on a balance of %d parsed fields\n"), dec, abs(linesForDecDot));
+      }
+    }
     if (sampleLines>0) for (int j=0; j<ncol; j++) {
-      if (tmpType[j]==CT_STRING && type[j]<CT_STRING) {
-        // includes an all-blank column with a string at the top; e.g. test 1870.1 and 1870.2
+      if (tmpType[j]==CT_STRING && type[j]<CT_STRING && type[j]>CT_EMPTY) {
         args.header=true;
-        if (verbose) DTPRINT(_("  'header' determined to be true due to column %d containing a string on row 1 and a lower type (%s) in the rest of the %d sample rows\n"),
+        if (verbose) DTPRINT(_("  'header' determined to be true due to column %d containing a string on row 1 and a lower type (%s) in the rest of the %"PRId64" sample rows\n"),
                              j+1, typeName[type[j]], sampleLines);
         break;
       }
@@ -1919,8 +2135,9 @@ int freadMain(freadMainArgs _args) {
     if (type[j]==CT_DROP) { size[j]=0; ndrop++; continue; }
     if (type[j]<tmpType[j]) {
       if (strcmp(typeName[tmpType[j]], typeName[type[j]]) != 0) {
-        DTWARN(_("Attempt to override column %d <<%.*s>> of inherent type '%s' down to '%s' ignored. Only overrides to a higher type are currently supported. If this was intended, please coerce to the lower type afterwards."),
-               j+1, colNames[j].len, colNamesAnchor+colNames[j].off, typeName[tmpType[j]], typeName[type[j]]);
+        DTWARN(_("Attempt to override column %d%s%.*s%s of inherent type '%s' down to '%s' ignored. Only overrides to a higher type are currently supported. If this was intended, please coerce to the lower type afterwards."),
+               j+1, colNames?" <<":"", colNames?(colNames[j].len):0, colNames?(colNamesAnchor+colNames[j].off):"", colNames?">>":"", // #4644
+               typeName[tmpType[j]], typeName[type[j]]);
       }
       type[j] = tmpType[j];
       // TODO: apply overrides to lower type afterwards and warn about the loss of accuracy then (if any); e.g. "4.0" would be fine to coerce to integer with no warning since
@@ -1955,6 +2172,7 @@ int freadMain(freadMainArgs _args) {
   int nTypeBump=0, nTypeBumpCols=0;
   double tRead=0, tReread=0;
   double thRead=0, thPush=0;  // reductions of timings within the parallel region
+  int max_col=0;
   char *typeBumpMsg=NULL;  size_t typeBumpMsgSize=0;
   int typeCounts[NUMTYPE];  // used for verbose output; needs populating after first read and before reread (if any) -- see later comment
   #define internalErrSize 1000
@@ -2048,7 +2266,7 @@ int freadMain(freadMainArgs _args) {
     }
     prepareThreadContext(&ctx);
 
-    #pragma omp for ordered schedule(dynamic) reduction(+:thRead,thPush)
+    #pragma omp for ordered schedule(dynamic) reduction(+:thRead,thPush) reduction(max:max_col)
     for (int jump = jump0; jump < nJumps; jump++) {
       if (stopTeam) continue;  // must continue and not break. We desire not to depend on (relatively new) omp cancel directive, yet
       double tLast = 0.0;      // thread local wallclock time at last measuring point for verbose mode only.
@@ -2072,7 +2290,7 @@ int freadMain(freadMainArgs _args) {
           thPush += now-tLast;
           tLast = now;
           if (myShowProgress && /*wait for all threads to process 2 jumps*/jump>=nth*2) {
-            // Important for thread safety inside progess() that this is called not just from critical but that
+            // Important for thread safety inside progress() that this is called not just from critical but that
             // it's the master thread too, hence me==0. OpenMP doesn't allow '#pragma omp master' here, but we
             // did check above that master's me==0.
             int ETA = (int)(((now-tAlloc)/jump) * (nJumps-jump));
@@ -2122,13 +2340,14 @@ int freadMain(freadMainArgs _args) {
             // DTPRINT(_("Field %d: '%.10s' as type %d  (tch=%p)\n"), j+1, tch, type[j], tch);
             fieldStart = tch;
             int8_t thisType = type[j];  // fetch shared type once. Cannot read half-written byte is one reason type's type is single byte to avoid atomic read here.
-            int8_t thisSize = size[j];
             fun[abs(thisType)](&fctx);
             if (*tch!=sep) break;
-            ((char **) targets)[thisSize] += thisSize;
+            int8_t thisSize = size[j];
+            if (thisSize) ((char **) targets)[thisSize] += thisSize;  // 'if' for when rereading to avoid undefined NULL+0
             tch++;
             j++;
           }
+          if (j > max_col) max_col = j;
           //*** END HOT. START TEPID ***//
           if (tch==tLineStart) {
             skip_white(&tch);       // skips \0 before eof
@@ -2138,8 +2357,9 @@ int freadMain(freadMainArgs _args) {
           }
           else if (eol(&tch) && j<ncol) {   // j<ncol needed for #2523 (erroneous extra comma after last field)
             int8_t thisSize = size[j];
-            ((char **) targets)[thisSize] += thisSize;
+            if (thisSize) ((char **) targets)[thisSize] += thisSize;
             j++;
+            if (j > max_col) max_col = j;
             if (j==ncol) { tch++; myNrow++; continue; }  // next line. Back up to while (tch<nextJumpStart). Usually happens, fastest path
           }
           else {
@@ -2182,7 +2402,7 @@ int freadMain(freadMainArgs _args) {
               skip_white(&tch);
               if (!end_of_field(tch)) tch = afterSpace; // else it is the field_end, we're on closing sep|eol and we'll let processor write appropriate NA as if field was empty
               if (*tch==quote && quote) { quoted=true; tch++; }
-            } // else Field() handles NA inside it unlike other processors e.g. ,, is interpretted as "" or NA depending on option read inside Field()
+            } // else Field() handles NA inside it unlike other processors e.g. ,, is interpreted as "" or NA depending on option read inside Field()
             fun[abs(thisType)](&fctx);
             if (quoted) {   // quoted was only set to true with '&& quote' above (=> quote!='\0' now)
               if (*tch==quote) tch++;
@@ -2214,6 +2434,9 @@ int freadMain(freadMainArgs _args) {
               if (j+fieldsRemaining != ncol) break;
               checkedNumberOfFields = true;
             }
+            if (thisType <= -NUMTYPE) {
+              break;  // Improperly quoted char field needs to be healed below, other columns will be filled #5041 and #4774
+            }
             #pragma omp critical
             {
               joldType = type[j];  // fetch shared value again in case another thread bumped it while I was waiting.
@@ -2222,8 +2445,8 @@ int freadMain(freadMainArgs _args) {
                 if (verbose) {
                   char temp[1001];
                   int len = snprintf(temp, 1000,
-                    _("Column %d (\"%.*s\") bumped from '%s' to '%s' due to <<%.*s>> on row %"PRIu64"\n"),
-                    j+1, colNames[j].len, colNamesAnchor + colNames[j].off,
+                    _("Column %d%s%.*s%s bumped from '%s' to '%s' due to <<%.*s>> on row %"PRIu64"\n"),
+                    j+1, colNames?" <<":"", colNames?(colNames[j].len):0, colNames?(colNamesAnchor+colNames[j].off):"", colNames?">>":"",
                     typeName[abs(joldType)], typeName[abs(thisType)],
                     (int)(tch-fieldStart), fieldStart, (uint64_t)(ctx.DTi+myNrow));
                   if (len > 1000) len = 1000;
@@ -2239,7 +2462,8 @@ int freadMain(freadMainArgs _args) {
               } // else another thread just bumped to a (negative) higher or equal type while I was waiting, so do nothing
             }
           }
-          ((char**) targets)[size[j]] += size[j];
+          int8_t thisSize = size[j];
+          if (thisSize) ((char**) targets)[size[j]] += size[j];  // 'if' to avoid undefined NULL+=0 when rereading
           j++;
           if (*tch==sep) { tch++; continue; }
           if (fill && (*tch=='\n' || *tch=='\r' || tch==eof) && j<ncol) continue;  // reuse processors to write appropriate NA to target; saves maintenance of a type switch down here
@@ -2269,7 +2493,7 @@ int freadMain(freadMainArgs _args) {
         if (stopTeam) {             // A previous thread stopped while I was waiting my turn to enter ordered
           myNrow = 0;               // # nocov; discard my buffer
         }
-        else if (headPos!=thisJumpStart) {
+        else if (headPos!=thisJumpStart && nrowLimit>0) { // do not care for dirty jumps since we do not read data and only want to know types
            // # nocov start
           snprintf(internalErr, internalErrSize, _("Internal error: invalid head position. jump=%d, headPos=%p, thisJumpStart=%p, sof=%p"), jump, (void*)headPos, (void*)thisJumpStart, (void*)sof);
           stopTeam = true;
@@ -2335,13 +2559,32 @@ int freadMain(freadMainArgs _args) {
   }
   //-- end parallel ------------------
 
+  // cleanup since fill argument for number of columns was too high
+  if (fill>1 && max_col<ncol && max_col>0) {
+    int ndropFill = ncol - max_col;
+    if (verbose) {
+      DTPRINT(_("  Provided number of fill columns: %d but only found %d\n"), ncol, max_col);
+      DTPRINT(_("  Dropping %d overallocated columns\n"), ndropFill);
+    }
+    dropFill = (int *)malloc((size_t)ndropFill * sizeof(int));
+    int i=0;
+    for (int j=max_col; j<ncol; ++j) {
+      type[j] = CT_DROP;
+      size[j] = 0;
+      ndrop++;
+      nNonStringCols--;
+      dropFill[i++] = j;
+    }
+    dropFilledCols(dropFill, ndropFill);
+  }
+
   if (stopTeam) {
     if (internalErr[0]!='\0') {
       STOP("%s", internalErr);  // # nocov
     }
     stopTeam = false;
 
-    if (extraAllocRows) {
+    if (extraAllocRows && nrowLimit>0) { // no allocating needed for nrows=0
       allocnrow += extraAllocRows;
       if (allocnrow > nrowLimit) allocnrow = nrowLimit;
       if (verbose) DTPRINT(_("  Too few rows allocated. Allocating additional %"PRIu64" rows (now nrows=%"PRIu64") and continue reading from jump %d\n"),
@@ -2350,7 +2593,7 @@ int freadMain(freadMainArgs _args) {
       extraAllocRows = 0;
       goto read;
     }
-    if (restartTeam) {
+    if (restartTeam && nrowLimit>0) { // no restarting needed for nrows=0 since we discard read data anyway
       if (verbose) DTPRINT(_("  Restarting team from jump %d. nSwept==%d quoteRule==%d\n"), jump0, nSwept, quoteRule);
       ASSERT(nSwept>0 || quoteRuleBumpedCh!=NULL, "Internal error: team restart but nSwept==%d and quoteRuleBumpedCh==%p", nSwept, quoteRuleBumpedCh); // # nocov
       goto read;
@@ -2375,9 +2618,8 @@ int freadMain(freadMainArgs _args) {
       rowSize1 = rowSize4 = rowSize8 = 0;
       nStringCols = 0;
       nNonStringCols = 0;
-      for (int j=0, resj=-1; j<ncol; j++) {
+      for (int j=0; j<ncol; ++j) {
         if (type[j] == CT_DROP) continue;
-        resj++;
         if (type[j]<0) {
           // column was bumped due to out-of-sample type exception
           type[j] = -type[j];
@@ -2428,7 +2670,7 @@ int freadMain(freadMainArgs _args) {
     if (ch==eof) {
       // whitespace at the end of the file is always skipped ok
     } else {
-      const char *skippedFooter = ch;
+      const char *skippedFooter = ENC2NATIVE(ch);
       // detect if it's a single line footer. Commonly the row count from SQL queries.
       while (ch<eof && *ch!='\n' && *ch!='\r') ch++;
       while (ch<eof && isspace(*ch)) ch++;
@@ -2438,8 +2680,13 @@ int freadMain(freadMainArgs _args) {
       else {
         ch = headPos;
         int tt = countfields(&ch);
-        DTWARN(_("Stopped early on line %"PRIu64". Expected %d fields but found %d. Consider fill=TRUE and comment.char=. First discarded non-empty line: <<%s>>"),
+        if (fill>0) {
+          DTWARN(_("Stopped early on line %"PRIu64". Expected %d fields but found %d. Consider fill=%d or even more based on your knowledge of the input file. Use fill=Inf for reading the whole file for detecting the number of fields. First discarded non-empty line: <<%s>>"),
+          (uint64_t)DTi+row1line, ncol, tt, tt, strlim(skippedFooter,500));
+        } else {
+          DTWARN(_("Stopped early on line %"PRIu64". Expected %d fields but found %d. Consider fill=TRUE and comment.char=. First discarded non-empty line: <<%s>>"),
           (uint64_t)DTi+row1line, ncol, tt, strlim(skippedFooter,500));
+        }
       }
     }
   }

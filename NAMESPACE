@@ -1,16 +1,16 @@
-useDynLib(datatable, .registration=TRUE)
+useDynLib("data_table", .registration=TRUE)
 
 ## For S4-ization
-import(methods)
+importFrom(methods, "S3Part<-", slotNames)
 exportClasses(data.table, IDate, ITime)
 ##
 
 export(data.table, tables, setkey, setkeyv, key, "key<-", haskey, CJ, SJ, copy)
 export(setindex, setindexv, indices)
 export(as.data.table,is.data.table,test.data.table)
-export(last,first,like,"%like%","%ilike%","%flike%",between,"%between%",inrange,"%inrange%")
+export(last,first,like,"%like%","%ilike%","%flike%","%plike%",between,"%between%",inrange,"%inrange%", "%notin%")
 export(timetaken)
-export(truelength, setalloccol, alloc.col, ":=")
+export(truelength, setalloccol, alloc.col, ":=", let)
 export(setattr, setnames, setcolorder, set, setDT, setDF)
 export(setorder, setorderv)
 export(setNumericRounding, getNumericRounding)
@@ -27,7 +27,9 @@ export(tstrsplit)
 export(frank)
 export(frankv)
 export(address)
-export(.SD,.N,.I,.GRP,.NGRP,.BY,.EACHI)
+export(.SD,.N,.I,.GRP,.NGRP,.BY,.EACHI, measure, patterns)
+# TODO(#6197): Export these.
+# export(., J)
 export(rleid)
 export(rleidv)
 export(rowid)
@@ -56,8 +58,11 @@ export(nafill)
 export(setnafill)
 export(.Last.updated)
 export(fcoalesce)
+export(substitute2)
+#export(DT)  # mtcars |> DT(i,j,by)  #4872 #5472
 
 S3method("[", data.table)
+export("[.data.table")  # so that functional DT() finds it; PR#5176
 S3method("[<-", data.table)
 # S3method("[[", data.table)
 # S3method("[[<-", data.table)
@@ -87,23 +92,23 @@ if (getRversion() >= "4.0.0") {
   # if we register these (new in v1.12.6) methods always though, the previous workaround no longer works in R<4.0.0. Hence only register in R>=4.0.0.
   S3method(cbind, data.table)
   S3method(rbind, data.table)
+} else {
+  # and if we export but don't register in R < 4.0.0 we get this note:
+  # > Found the following apparent S3 methods exported but not registered:
+  # > cbind.data.table rbind.data.table
+  # in addition to errors in tests 324, 326, 414.1, 414.2, 442, 445, 451
+  # export(cbind.data.table)
+  # export(rbind.data.table)
+  # A revdep using rbind.data.frame() directly before (which data.table changed in base) should change to rbind() generic and that should work
+  # in all combinations of R before/after 4.0.0 and data.table before/after 1.12.6, so long as data.table is installed using the same major
+  # version of R (and that is checked in .onLoad with error if not).
+  export(.rbind.data.table) # only export in R<4.0.0 where it is still used; R-devel now detects it is missing doc, #5600
 }
-# else {
-#  # and if we export but don't register in R < 4.0.0 we get this note:
-#  # > Found the following apparent S3 methods exported but not registered:
-#  # > cbind.data.table rbind.data.table
-#  # in addition to errors in tests 324, 326, 414.1, 414.2, 442, 445, 451
-#  export(cbind.data.table)
-#  export(rbind.data.table)
-#  # A revdep using rbind.data.frame() directly before (which data.table changed in base) should change to rbind() generic and that should work
-#  # in all combinations of R before/after 4.0.0 and data.table before/after 1.12.6, so long as data.table is installed using the same major
-#  # version of R (and that is checked in .onLoad with error if not).
-# }
-export(.rbind.data.table) # continue to export for now because it has been exported in the past so it may be depended on
 S3method(dim, data.table)
 S3method(dimnames, data.table)
 S3method("dimnames<-", data.table)
 S3method("names<-", data.table)
+S3method("colnames<-", data.table)
 S3method(duplicated, data.table)
 S3method(unique, data.table)
 S3method(merge, data.table)
@@ -120,18 +125,18 @@ S3method(split, data.table)
 export(dcast, melt)
 S3method(dcast, data.table)
 S3method(melt, data.table)
+S3method(melt, default)
 
 # exported for historical reasons -- if reshape2 is higher on search path,
 # dcast(DT) will not dispatch since reshape2::dcast is not generic. So users
-# and many packges on CRAN call dcast.data.table() and/or melt.data.table() directly. See #3082.
+# and many packages on CRAN call dcast.data.table() and/or melt.data.table() directly. See #3082.
 export(melt.data.table, dcast.data.table)
 
-import(utils)
-S3method(update, dev.pkg)
-export(update.dev.pkg)
+importFrom(utils, capture.output, contrib.url, download.file, flush.console, getS3method, head, packageVersion, tail, untar, unzip)
+export(update_dev_pkg)
 S3method(tail, data.table)
 S3method(head, data.table)
-import(stats)
+importFrom(stats, as.formula, na.omit, setNames, terms)
 S3method(na.omit, data.table)
 
 S3method(as.data.table, xts)
@@ -144,19 +149,19 @@ if (getRversion() >= "3.6.0") {
 
 # IDateTime support:
 export(as.IDate,as.ITime,IDateTime)
-export(second,minute,hour,yday,wday,mday,week,isoweek,month,quarter,year)
+export(second,minute,hour,yday,wday,mday,week,isoweek,month,quarter,year,yearmon,yearqtr)
 
 S3method("[", ITime)
 S3method("+", IDate)
 S3method("-", IDate)
 S3method(as.character, ITime)
 S3method(as.data.frame, ITime)
-S3method(as.Date, IDate)   # note that zoo::as.Date masks base::as.Date. Both generic.
-export(as.Date.IDate)      # workaround for zoo bug, see #1500. Removing this export causes CI pipeline to fail on others.Rraw test 6, but I can't reproduce locally.
+S3method(as.Date, IDate)   # note that base::as.Date is masked by zoo::as.Date, #1500 #4777
 S3method(as.IDate, Date)
 S3method(as.IDate, POSIXct)
 S3method(as.IDate, default)
 S3method(as.IDate, numeric)
+S3method(as.IDate, IDate)
 S3method(as.ITime, character)
 S3method(as.ITime, default)
 S3method(as.ITime, POSIXct)
@@ -185,12 +190,17 @@ S3method(seq, ITime)
 S3method(unique, IDate)
 S3method(unique, ITime)
 S3method('[<-', IDate)
+S3method('min', IDate)
+S3method('max', IDate)
 S3method(edit, data.table)
 
-# duplist
-# getdots
-# NCOL
-# NROW
-# which.first
-# which.last
+# generics to support custom column formatters
+export(format_col)
+S3method(format_col, default)
+S3method(format_col, POSIXct)
+S3method(format_col, expression)
+export(format_list_item)
+S3method(format_list_item, default)
 
+export(fdroplevels)
+S3method(droplevels, data.table)

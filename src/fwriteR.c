@@ -5,18 +5,23 @@
 #define DATETIMEAS_EPOCH     2
 #define DATETIMEAS_WRITECSV  3
 
+static bool utf8=false;
+static bool native=false;
+#define TO_UTF8(s) (utf8 && NEED2UTF8(s))
+#define TO_NATIVE(s) (native && (s)!=NA_STRING && !IS_ASCII(s))
+#define ENCODED_CHAR(s) (TO_UTF8(s) ? translateCharUTF8(s) : (TO_NATIVE(s) ? translateChar(s) : CHAR(s)))
+
 static char sep2;                // '\0' if there are no list columns. Otherwise, the within-column separator.
 static bool logical01=true;      // should logicals be written as 0|1 or true|false. Needed by list column writer too in case a cell is a logical vector.
 static int dateTimeAs=0;         // 0=ISO(yyyy-mm-dd), 1=squash(yyyymmdd), 2=epoch, 3=write.csv
 static const char *sep2start, *sep2end;
 // sep2 is in main fwrite.c so that writeString can quote other fields if sep2 is present in them
 // if there are no list columns, set sep2=='\0'
-
 // Non-agnostic helpers ...
 
-const char *getString(SEXP *col, int64_t row) {   // TODO: inline for use in fwrite.c
+const char *getString(const SEXP *col, int64_t row) {   // TODO: inline for use in fwrite.c
   SEXP x = col[row];
-  return x==NA_STRING ? NULL : CHAR(x);
+  return x==NA_STRING ? NULL : ENCODED_CHAR(x);
 }
 
 int getStringLen(SEXP *col, int64_t row) {
@@ -45,10 +50,10 @@ int getMaxCategLen(SEXP col) {
 const char *getCategString(SEXP col, int64_t row) {
   // the only writer that needs to have the header of the SEXP column, to get to the levels
   int x = INTEGER(col)[row];
-  return x==NA_INTEGER ? NULL : CHAR(STRING_ELT(getAttrib(col, R_LevelsSymbol), x-1));
+  return x==NA_INTEGER ? NULL : ENCODED_CHAR(STRING_ELT(getAttrib(col, R_LevelsSymbol), x-1));
 }
 
-writer_fun_t funs[] = {
+writer_fun_t *funs[] = {
   &writeBool8,
   &writeBool32,
   &writeBool32AsString,
@@ -68,8 +73,8 @@ writer_fun_t funs[] = {
 
 static int32_t whichWriter(SEXP);
 
-void writeList(SEXP *col, int64_t row, char **pch) {
-  SEXP v = col[row];
+void writeList(const void *col, int64_t row, char **pch) {
+  SEXP v = ((const SEXP *)col)[row];
   int32_t wf = whichWriter(v);
   if (TYPEOF(v)==VECSXP || wf==INT32_MIN || isFactor(v)) {
     error(_("Internal error: getMaxListItemLen should have caught this up front."));  // # nocov
@@ -77,7 +82,7 @@ void writeList(SEXP *col, int64_t row, char **pch) {
   char *ch = *pch;
   write_chars(sep2start, &ch);
   const void *data = DATAPTR_RO(v);
-  writer_fun_t fun = funs[wf];
+  writer_fun_t *fun = funs[wf];
   for (int j=0; j<LENGTH(v); j++) {
     (*fun)(data, j, &ch);
     *ch++ = sep2;
@@ -164,11 +169,13 @@ SEXP fwriteR(
   SEXP is_gzip_Arg,
   SEXP bom_Arg,
   SEXP yaml_Arg,
-  SEXP verbose_Arg
+  SEXP verbose_Arg,
+  SEXP encoding_Arg
   )
 {
   if (!isNewList(DF)) error(_("fwrite must be passed an object of type list; e.g. data.frame, data.table"));
-  fwriteMainArgs args;
+
+  fwriteMainArgs args = {0};  // {0} to quieten valgrind's uninitialized, #4639
   args.is_gzip = LOGICAL(is_gzip_Arg)[0];
   args.bom = LOGICAL(bom_Arg)[0];
   args.yaml = CHAR(STRING_ELT(yaml_Arg, 0));
@@ -224,6 +231,8 @@ SEXP fwriteR(
   dateTimeAs = INTEGER(dateTimeAs_Arg)[0];
   logical01 = LOGICAL(logical01_Arg)[0];
   args.scipen = INTEGER(scipen_Arg)[0];
+  utf8 = !strcmp(CHAR(STRING_ELT(encoding_Arg, 0)), "UTF-8");
+  native = !strcmp(CHAR(STRING_ELT(encoding_Arg, 0)), "native");
 
   int firstListColumn = 0;
   for (int j=0; j<args.ncol; j++) {
@@ -247,10 +256,23 @@ SEXP fwriteR(
   // so we need a separate boolean flag as well as the row names should they exist (rare)
   args.doRowNames = LOGICAL(rowNames_Arg)[0];
   args.rowNames = NULL;
+  args.rowNameFun = 0;
   if (args.doRowNames) {
     SEXP rn = PROTECT(getAttrib(DF, R_RowNamesSymbol));
     protecti++;
-    args.rowNames = isString(rn) ? DATAPTR_RO(rn) : NULL;
+    if (isInteger(rn)) {
+      if (xlength(rn)!=2 || INTEGER(rn)[0]==NA_INTEGER) {
+        // not R's default rownames c(NA,-nrow)
+        if (xlength(rn) != args.nrow)
+           // Use (long long) to cast R_xlen_t to a fixed type to robustly avoid -Wformat compiler warnings, see #5768, PRId64 didn't work on M1
+          error(_("input has specific integer rownames but their length (%lld) != nrow (%"PRId64")"), (long long)xlength(rn), args.nrow);  // # nocov
+        args.rowNames = INTEGER(rn);
+        args.rowNameFun = WF_Int32;
+      }
+    } else if (isString(rn)) {
+      args.rowNames = DATAPTR_RO(rn);
+      args.rowNameFun = WF_String;
+    }
   }
 
   args.sep = *CHAR(STRING_ELT(sep_Arg, 0));  // DO NOT DO: allow multichar separator (bad idea)
