@@ -18705,7 +18705,7 @@ test(2264.8, print(DT, show.indices=TRUE), output=ans)
 # integer64 columns print even when bit64 isn't loaded
 if (test_bit64) local({
   DT = data.table(a = 'abc', b = as.integer64(1))
-  unloadNamespace("bit64")
-  on.exit(library(bit64))
+  invisible(unloadNamespace("bit64"))
+  on.exit(suppressPackageStartupMessages(library(bit64)))
   test(2265, DT, output="abc\\s*1$")
 })
