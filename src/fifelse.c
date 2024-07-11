@@ -260,7 +260,7 @@ SEXP fcaseR(SEXP rho, SEXP args) {
         }
       }
       if (!naout) {
-        if (!R_compute_identical(PROTECT(getAttrib(value0,R_ClassSymbol)),  PROTECT(getAttrib(thens,R_ClassSymbol)), 0)) {
+        if (!R_compute_identical(PROTECT(getAttrib(value0, R_ClassSymbol)),  PROTECT(getAttrib(thens, R_ClassSymbol)), 0)) {
           if (idefault) {
             error(_("Resulting value has different class than 'default'. "
                     "Please make sure that both arguments have the same class."));
@@ -272,7 +272,7 @@ SEXP fcaseR(SEXP rho, SEXP args) {
         UNPROTECT(2); // class(value0), class(thens)
       }
       if (!naout && isFactor(value0)) {
-        if (!R_compute_identical(PROTECT(getAttrib(value0,R_LevelsSymbol)),  PROTECT(getAttrib(thens,R_LevelsSymbol)), 0)) {
+        if (!R_compute_identical(PROTECT(getAttrib(value0, R_LevelsSymbol)),  PROTECT(getAttrib(thens, R_LevelsSymbol)), 0)) {
           if (idefault) {
             error(_("Resulting value and 'default' are both type factor but their levels are different."));
           } else {
