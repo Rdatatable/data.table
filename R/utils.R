@@ -21,9 +21,6 @@ nan_is_na = function(x) {
   stopf("Argument 'nan' must be NA or NaN")
 }
 
-if (!exists('startsWith', 'package:base', inherits=FALSE)) {  # R 3.3.0; Apr 2016
-  startsWith = function(x, stub) substr(x, 1L, nchar(stub))==stub
-}
 # endsWith no longer used from #5097 so no need to backport; prevent usage to avoid dev delay until GLCI's R 3.1.0 test
 endsWith = function(...) stop("Internal error: use endsWithAny instead of base::endsWith", call.=FALSE)
 
@@ -114,6 +111,10 @@ brackify = function(x, quote=FALSE) {
   sprintf('[%s]', toString(x))
 }
 
+# convenience for specifying columns in some cases, e.g. by= and key=
+# caller should ensure length(x) == 1 & handle accordingly.
+cols_from_csv = function(x) strsplit(x, ',', fixed=TRUE)[[1L]]
+
 # patterns done via NSE in melt.data.table and .SDcols in `[.data.table`
 # was called do_patterns() before PR#4731
 eval_with_cols = function(orig_call, all_cols) {
@@ -148,7 +149,11 @@ is_utc = function(tz) {
 }
 
 # very nice idea from Michael to avoid expression repetition (risk) in internal code, #4226
-"%iscall%" = function(e, f) { is.call(e) && e[[1L]] %chin% f }
+`%iscall%` = function(e, f) {
+  if (!is.call(e)) return(FALSE)
+  if (is.name(e1 <- e[[1L]])) return(e1 %chin% f)
+  e1 %iscall% '::' && e1[[3L]] %chin% f
+}
 
 # nocov start #593 always return a data.table
 edit.data.table = function(name, ...) {

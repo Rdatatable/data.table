@@ -482,7 +482,7 @@ SEXP keepattr(SEXP to, SEXP from)
   // Same as R_copyDFattr in src/main/attrib.c, but that seems not exposed in R's api
   // Only difference is that we reverse from and to in the prototype, for easier calling above
   SET_ATTRIB(to, ATTRIB(from));
-  IS_S4_OBJECT(from) ?  SET_S4_OBJECT(to) : UNSET_S4_OBJECT(to);
+  if (isS4(from)) to = asS4(to, TRUE, 1);
   SET_OBJECT(to, OBJECT(from));
   return to;
 }
