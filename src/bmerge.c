@@ -125,7 +125,7 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP r
 
   // nqmaxgrpArg
   if (!isInteger(nqmaxgrpArg) || length(nqmaxgrpArg) != 1 || INTEGER(nqmaxgrpArg)[0] <= 0)
-    error(_("Intrnal error: nqmaxgrpArg is not a positive length-1 integer vector")); // # nocov
+    error(_("Internal error: nqmaxgrpArg is not a positive length-1 integer vector")); // # nocov
   nqmaxgrp = INTEGER(nqmaxgrpArg)[0];
   if (nqmaxgrp>1 && mult == ALL) {
     // non-equi case with mult=ALL, may need reallocation
@@ -181,7 +181,7 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP r
   if (iN) {
     if (verbose)
       tic0 = omp_get_wtime();
-    // embarassingly parallel if we've storage space for nqmaxgrp*iN
+    // embarrassingly parallel if we've storage space for nqmaxgrp*iN
     for (int kk=0; kk<nqmaxgrp; kk++) {
       bmerge_r(-1,xN,-1,iN,scols,kk+1,1,1);
     }

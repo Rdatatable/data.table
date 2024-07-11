@@ -275,8 +275,17 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
       }
       for (int j=0; j<LENGTH(jval); ++j) {
         thiscol = VECTOR_ELT(jval,j);
-        if (!isNull(thiscol) && (!isVector(thiscol) || isFrame(thiscol) || isArray(thiscol) ))
-          error(_("All items in j=list(...) should be atomic vectors or lists. If you are trying something like j=list(.SD,newcol=mean(colA)) then use := by group instead (much quicker), or cbind or merge afterwards."));
+        if (isNull(thiscol)) continue;
+        if (!isVector(thiscol) || isDataFrame(thiscol))
+          error(_("Entry %d for group %d in j=list(...) should be atomic vector or list. If you are trying something like j=list(.SD,newcol=mean(colA)) then use := by group instead (much quicker), or cbind or merge afterwards."), j+1, i+1);
+        if (isArray(thiscol)) {
+          SEXP dims = PROTECT(getAttrib(thiscol, R_DimSymbol));
+          int nDimensions=0;
+          for (int d=0; d<LENGTH(dims); ++d) if (INTEGER(dims)[d] > 1) ++nDimensions;
+          UNPROTECT(1);
+          if (nDimensions > 1)
+            error(_("Entry %d for group %d in j=list(...) is an array with %d dimensions > 1, which is disallowed. \"Break\" the array yourself with c() or as.vector() if that is intentional."), j+1, i+1, nDimensions);
+        }
       }
     }
     if (!isNull(lhs)) {
@@ -473,7 +482,7 @@ SEXP keepattr(SEXP to, SEXP from)
   // Same as R_copyDFattr in src/main/attrib.c, but that seems not exposed in R's api
   // Only difference is that we reverse from and to in the prototype, for easier calling above
   SET_ATTRIB(to, ATTRIB(from));
-  IS_S4_OBJECT(from) ?  SET_S4_OBJECT(to) : UNSET_S4_OBJECT(to);
+  if (isS4(from)) to = asS4(to, TRUE, 1);
   SET_OBJECT(to, OBJECT(from));
   return to;
 }

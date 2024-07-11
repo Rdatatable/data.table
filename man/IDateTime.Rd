@@ -61,7 +61,7 @@
 
    Lastly, there are date-time helpers for extracting parts of dates as
    integers, for example the year (\code{year()}), month
-   (\code{month()}), or day in the month (\code{mday()}); see Usage and Exampels.
+   (\code{month()}), or day in the month (\code{mday()}); see Usage and Examples.
 }
 \usage{
 as.IDate(x, \dots)
@@ -175,6 +175,13 @@ They can round or truncate to hours and minutes.
 Note for ITime's with 30 seconds, rounding is inconsistent due to rounding off a 5.
 See 'Details' in \code{\link{round}} for more information.
 
+Functions like \code{week()} and \code{isoweek()} provide week numbering functionality.
+\code{week()} computes completed or fractional weeks within the year,
+while \code{isoweek()} calculates week numbers according to ISO 8601 standards,
+which specify that the first week of the year is the one containing the first Thursday.
+This convention ensures that week boundaries align consistently with year boundaries,
+accounting for both year transitions and varying day counts per week.
+
 }
 
 \value{
@@ -208,7 +215,7 @@ See 'Details' in \code{\link{round}} for more information.
   G. Grothendieck and T. Petzoldt, ``Date and Time Classes in R,''
   R News, vol. 4, no. 1, June 2004.
 
-  H. Wickham, https://gist.github.com/10238.
+  H. Wickham, https://gist.github.com/hadley/10238.
 
   ISO 8601, https://www.iso.org/iso/home/standards/iso8601.htm
 }
@@ -241,7 +248,7 @@ identical(as.ITime("10:45"), methods::as("10:45", "ITime"))
 as.POSIXct("2001-01-01") + as.ITime("10:45")
 
 datetime <- seq(as.POSIXct("2001-01-01"), as.POSIXct("2001-01-03"), by = "5 hour")
-(af <- data.table(IDateTime(datetime), a = rep(1:2, 5), key = "a,idate,itime"))
+(af <- data.table(IDateTime(datetime), a = rep(1:2, 5), key = c("a", "idate", "itime")))
 
 af[, mean(a), by = "itime"]
 af[, mean(a), by = list(hour = hour(itime))]
