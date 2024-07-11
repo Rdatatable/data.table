@@ -208,9 +208,9 @@ SEXP fcaseR(SEXP rho, SEXP args) {
             "consisting of logical condition, resulting value pairs (in that order). "
             "Note that the default argument must be named explicitly, e.g., default=0"), narg - 2);
   }
-  int nprotect = 0, l = 0;
+  int nprotect=0, l=0;
   int64_t len0=0, len1=0, len2=0, idx=0;
-  SEXP ans = R_NilValue, value0 = R_NilValue, tracker = R_NilValue, whens = R_NilValue, thens = R_NilValue;
+  SEXP ans=R_NilValue, value0=R_NilValue, tracker=R_NilValue, whens=R_NilValue, thens=R_NilValue;
   PROTECT_INDEX Iwhens, Ithens;
   PROTECT_WITH_INDEX(whens, &Iwhens); nprotect++;
   PROTECT_WITH_INDEX(thens, &Ithens); nprotect++;
