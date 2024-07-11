@@ -18767,7 +18767,7 @@ setkeyv(d, c("a","b"))
 setindexv(d, list(c("a","b"), c("b","a")))
 ab = structure(integer(), starts=1:2, maxgrpn=1L, anyna=0L, anyinfnan=0L, anynotascii=0L, anynotutf8=0L)
 ba = structure(2:1, starts=1:2, maxgrpn=1L, anyna=0L, anyinfnan=0L, anynotascii=0L, anynotutf8=0L)
-test(2267.60, options = c(datatable.verbose=TRUE), forderv(d, c("a","b")), c(ab), output="forder.*opt=1.*took")
+test(2267.60, options = c(datatable.verbose=TRUE), forderv(d, c("a","b")), c(ab), output="forder.*opt=1.*took") # c(): strip attributes
 test(2267.61, options = c(datatable.verbose=TRUE), forderv(d, c("a","b"), retGrp=TRUE), ab, output="forder.*opt=2.*took")
 test(2267.62, options = c(datatable.verbose=TRUE), forderv(d, c("a","b"), retGrp=TRUE, lazy=FALSE), ab, output="forder.*opt=0.*took")
 test(2267.63, options = c(datatable.verbose=TRUE), forderv(d, c("b","a"), retGrp=TRUE), ba, output="forder.*opt=2.*took")
