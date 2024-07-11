@@ -1710,7 +1710,8 @@ test(540, DT[,sum(v),by=eval(a)], data.table(a=1:0,V1=c(11L,10L)))
 test(541, DT[,sum(v),keyby=eval(a)], data.table(a=0:1,V1=c(10L,11L),key="a"))
 
 test(542, DT[,sum(v),keyby=c("a","b","c")]$V1, INT(1,3,4,6,5,2))
-# tests 543,544 were of deprecated behavior to allow comma-separated entries to keyby
+test(543, DT[,sum(v),keyby="a,b,c"]$V1, INT(1,3,4,6,5,2))
+test(544, DT[,sum(v),keyby=c("a","b,c")], error="but one or more items include a comma")
 
 # Test single expressions passed to by, FR#1743 in v1.8.0
 DT = data.table(a=1:4,date=as.IDate("2012-02-28")+0:3,v=5:8)
@@ -1777,7 +1778,11 @@ test(569, DT[,list(.N=.N),list(a,b)][,.N,a], error="The column '.N' can't be gro
 test(570, DT[,list(.N=.N),list(a,b)][,unique(.N),a], error="The column '.N' can't be grouped because")
 test(570.1, DT[,list(.I=.I),list(a,b)][,.I,a], error="The column '.I' can't be grouped because")
 
-# tests 571-573 were of deprecated behavior to allow comma-separated entries in by=
+# Test spaces in by="..." format, datatable-help on 31 March
+DT = data.table("a "=1:2, "b"=3:4," b"=5:6, v=1:6)
+test(571, DT[,sum(v),by="b, b"], data.table("b"=3:4, " b"=5:6, V1=c(9L,12L)))
+test(572, DT[,sum(v),by="a , b"], data.table("a "=1:2, " b"=5:6, V1=c(9L,12L)))
+test(573, DT[,sum(v),by="b, a"], error=base_messages$missing_object(" a"))
 
 # Test base::unname, used by melt, and only supported by data.table for DF compatibility for non-dtaware packages
 DT = data.table(a=1:3, b=4:6)
