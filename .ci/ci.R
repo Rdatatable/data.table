@@ -64,6 +64,12 @@ function(file = "DESCRIPTION",
     which <- c("Depends", "Imports", "LinkingTo", "Suggests")
   if (!is.character(which) || !length(which) || !all(which %in% which_all))
     stop("which argument accept only valid dependency relation: ", paste(which_all, collapse=", "))
+  x <- unlist(lapply(file, function(f, which) {
+      dcf <- tryCatch(read.dcf(f, fields = which), error = identity)
+      if (inherits(dcf, "error") || !length(dcf))
+          warning(gettextf("error reading file '%s'", f), domain = NA, call. = FALSE)
+      else dcf[!is.na(dcf)]
+  }, which = which), use.names = FALSE)
   local.extract_dependency_package_names = function (x) {
     ## do not filter out R like tools:::.extract_dependency_package_names, used for web/$pkg/index.html
     if (is.na(x))
@@ -72,12 +78,6 @@ function(file = "DESCRIPTION",
     x <- sub("[[:space:]]*([[:alnum:].]+).*", "\\1", x)
     x[nzchar(x)]
   }
-  x <- unlist(lapply(file, function(f, which) {
-      dcf <- tryCatch(read.dcf(f, fields = which), error = identity)
-      if (inherits(dcf, "error") || !length(dcf))
-          warning(gettextf("error reading file '%s'", f), domain = NA, call. = FALSE)
-      else dcf[!is.na(dcf)]
-  }, which = which), use.names = FALSE)
   x <- unlist(lapply(x, local.extract_dependency_package_names))
   except <- if (length(except.priority)) c("R", unlist(tools:::.get_standard_package_names()[except.priority], use.names = FALSE))
   x = setdiff(x, except)
