@@ -62,6 +62,8 @@
 
 10. `dt[,,by=año]` (i.e., using a column name containing a non-ASCII character in `by` as a plain symbol) no longer errors with "object 'año' not found", #4708. Thanks @pfv07 for the report, and Michael Chirico for the fix.
 
+11. `setnames` now errors if provided `NA_character_` as a name in both partial and full assignments, maintaining consistency, [#6236](https://github.com/Rdatatable/data.table/issues/6236). Previously, an error would occur in partial assignments but was silently ignored in full assignments, leading to unexpected behavior. This update ensures consistent error handling. Thanks to @MichaelChirico for identifying the issue and @Nj221102 for the fix.
+
 ## NOTES
 
 1. `transform` method for data.table sped up substantially when creating new columns on large tables. Thanks to @OfekShilon for the report and PR. The implemented solution was proposed by @ColeMiller1.

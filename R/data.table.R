@@ -2619,6 +2619,7 @@ setnames = function(x,old,new,skip_absent=FALSE) {
     } else {
       w = which(names(x) != old | (Encoding(names(x)) != Encoding(old)))
     }
+    if (anyNA(old)) stopf("NA in 'new' at positions %s", brackify(which(is.na(old))))
     if (!length(w)) return(invisible(x))  # no changes
     new = old[w]
     i = w
