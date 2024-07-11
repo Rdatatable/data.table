@@ -9974,7 +9974,7 @@ test(1658.25, fwrite(ok_dt, quote=TRUE), output='"foo"\n"bar"')
 # integer NA
 DT = data.table(A=c(2L,NA,3L), B=c(NA,4:5))
 test(1658.26, fwrite(DT), output='A,B\n2,\n,4\n3,5')
-test(1658.27, fwrite(DT, na="NA", verbose=TRUE), output='Writing bom .false., yaml .0 characters. and column names .true.*"A","B".*2,NA\nNA,4\n3,5')
+test(1658.27, fwrite(DT, na="NA", verbose=TRUE), output='Writing bom .false., yaml .0 characters. and column names .true.*A,B.*2,NA\nNA,4\n3,5')
 
 # wrong argument types
 test(1658.28, fwrite(ok_dt, 1), error=base_messages$stopifnot("is.character(file) && length(file) == 1L && !is.na(file)"))
@@ -9989,7 +9989,7 @@ test(1658.33, fwrite(data.table(NULL)), NULL, warning="Nothing to write")
 test(1658.34, fwrite(data.table(id=c("A","B","C"), v=c(1.1,0.0,9.9))), output="id,v\nA,1.1\nB,0\nC,9.9")
 
 # logical NA as "NA" when logical01=TRUE, instead of the default na="" which writes all types including <NA> in character column as ,, consistently.
-test(1658.35, fwrite(data.table(id=1:3,bool=c(TRUE,NA,FALSE)),na="NA",logical01=TRUE), output="\"id\",\"bool\"\n1,1\n2,NA\n3,0")
+test(1658.35, fwrite(data.table(id=1:3,bool=c(TRUE,NA,FALSE)),na="NA",logical01=TRUE), output="id,bool\n1,1\n2,NA\n3,0")
 
 # POSIXct
 test(1658.36, fwrite(data.table(D = as.POSIXct(seq(as.Date("2038-01-19"), as.Date("2038-01-20"), by = "day")))),
@@ -10814,12 +10814,12 @@ if (test_bit64) {
           "-2147483646","-2147483647","-2147483648","-2147483649",
           "2147483646","2147483647","2147483648","2147483649")
   test(1731.1, class(DT[[1L]]), "integer64")
+  ans[1] = "V1"  # the field is unquoted under `quote=FALSE` and if na is a non-empty string
   test(1731.2, fwrite(DT,na="__NA__"), output=ans)
   f = tempfile()
   test(1731.3, fwrite(DT, f, na="__NA__"), NULL)
   test(1731.4, readLines(f), ans)
   unlink(f)
-  ans[1] = "V1"  # the field is unquoted under `quote=FALSE`
   test(1731.5, write.csv(DT,na="__NA__",row.names=FALSE,quote=FALSE), output=ans)
   # write.csv works on integer64 because it calls bit64's as.character method
 }
@@ -10859,7 +10859,7 @@ unlink(f)
 
 DT = data.table(A=c(NA, "NA", "", "monty"), B=c(5, 7, 0, NA))
 test(1732.7, fwrite(DT, quote='auto'), output='A,B\n,5\nNA,7\n"",0\nmonty,')
-test(1732.8, fwrite(DT, quote='auto', na="NA"), output='"A","B"\nNA,5\n"NA",7\n"",0\n"monty",NA')
+test(1732.8, fwrite(DT, quote='auto', na="NA"), output='A,B\nNA,5\n"NA",7\n"",0\n"monty",NA')
 
 # dec=","
 test(1733.1, fwrite(data.table(pi),dec=","), error=base_messages$stopifnot("dec != sep"))
@@ -11421,7 +11421,7 @@ if (test_bit64) {
 DT = data.table(x=NA)
 test(1751.1, capture.output(fwrite(DT, verbose=FALSE)), c("x",""))
 test(1751.2, capture.output(fwrite(DT,na="",verbose=FALSE)), c("x",""))
-test(1751.3, capture.output(fwrite(DT,na="NA",verbose=FALSE)), c("\"x\"","NA"))
+test(1751.3, capture.output(fwrite(DT,na="NA",verbose=FALSE)), c("x","NA"))
 test(1751.4, fread({fwrite(DT, f<-tempfile());f}), DT)  # the important thing
 unlink(f)
 
@@ -13037,7 +13037,7 @@ test(1915, fread(str, select = c(5, 1, 3)),
 
 # unit tests for #2169 which was already fixed in ec05f8b/src/fwrite.c#L59
 test(1916.1, fwrite(data.table(foo=c(NA, TRUE, FALSE)), logical01=TRUE, na='EMPTY', verbose=FALSE),
-             output=c("\"foo\"","EMPTY","1","0")) # this might need to be changed after #2964 will be solved
+             output=c("foo","EMPTY","1","0"))
 test(1916.2, fwrite(data.table(foo=c(NA, TRUE, FALSE)), logical01=TRUE, verbose=FALSE),
              output=c("foo","","1","0"))
 
@@ -18710,7 +18710,7 @@ test(2264.8, print(DT, show.indices=TRUE), output=ans)
 # integer64 columns print even when bit64 isn't loaded
 if (test_bit64) local({
   DT = data.table(a = 'abc', b = as.integer64(1))
-  unloadNamespace("bit64")
-  on.exit(library(bit64))
+  invisible(unloadNamespace("bit64"))
+  on.exit(suppressPackageStartupMessages(library(bit64)))
   test(2265, DT, output="abc\\s*1$")
 })
