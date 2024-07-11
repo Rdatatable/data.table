@@ -245,9 +245,9 @@ SEXP fcaseR(SEXP rho, SEXP args) {
       naout = xlength(thens) == 1 && TYPEOF(thens) == LGLSXP && LOGICAL(thens)[0]==NA_LOGICAL;
       if (xlength(whens) != len0 && xlength(whens) != 1) {
         // no need to check `idefault` here because the con for default is always `TRUE`
-        error(_("Argument #%d has a different length than argument #1. "
+        error(_("Argument #%d has length %d which differs from that of argument #1 (%d). "
                 "Please make sure all logical conditions have the same length or length 1."),
-                i*2+1);
+                i*2+1, xlength(whens), len0);
       }
       if (!naout && TYPEOF(thens) != type0) {
         if (idefault) {
@@ -259,16 +259,18 @@ SEXP fcaseR(SEXP rho, SEXP args) {
                   i*2+2, type2char(TYPEOF(thens)), type2char(type0));
         }
       }
-      if (!naout && !R_compute_identical(PROTECT(getAttrib(value0,R_ClassSymbol)),  PROTECT(getAttrib(thens,R_ClassSymbol)), 0)) {
-        if (idefault) {
-          error(_("Resulting value has different class than 'default'. "
-                  "Please make sure that both arguments have the same class."));
-        } else {
-          error(_("Argument #%d has different class than argument #2, "
-                  "Please make sure all output values have the same class."), i*2+2);
+      if (!naout) {
+        if (!R_compute_identical(PROTECT(getAttrib(value0,R_ClassSymbol)),  PROTECT(getAttrib(thens,R_ClassSymbol)), 0)) {
+          if (idefault) {
+            error(_("Resulting value has different class than 'default'. "
+                    "Please make sure that both arguments have the same class."));
+          } else {
+            error(_("Argument #%d has different class than argument #2, "
+                    "Please make sure all output values have the same class."), i*2+2);
+          }
         }
+        UNPROTECT(2); // class(value0), class(thens)
       }
-      UNPROTECT(2); // class(value0), class(thens)
       if (!naout && isFactor(value0)) {
         if (!R_compute_identical(PROTECT(getAttrib(value0,R_LevelsSymbol)),  PROTECT(getAttrib(thens,R_LevelsSymbol)), 0)) {
           if (idefault) {
