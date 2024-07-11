@@ -287,7 +287,7 @@ SEXP fcaseR(SEXP rho, SEXP args) {
       if (idefault) {
         error(_("Length of 'default' must be 1 or %"PRId64"."), len0);
       } else {
-        error(_("Length of output value #%d must either be 1 or length of logical condition."), i*2+2);        
+        error(_("Length of output value #%d (%d) must either be 1 or match the length of the logical condition (%d)."), i*2+2, len1, len0);
       }
     }
     int64_t amask = len1>1 ? INT64_MAX : 0, conmask = xlength(whens)>1 ? INT64_MAX : 0;
