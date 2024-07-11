@@ -337,9 +337,8 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
   if (!is.null(key) && data.table) {
     if (!is.character(key))
       stopf("key argument of data.table() must be a character vector naming columns (NB: col.names are applied before this)")
-    if (length(key) == 1L) {
-      if (key != strsplit(key,split=",")[[1L]]) stopf("Usage of comma-separated literals in %s is deprecated, please split such entries yourself before passing to data.table", "key=")
-    }
+    if (length(key) == 1L)
+      key = cols_from_csv(key)
     setkeyv(ans, key)
   }
   if (yaml) setattr(ans, 'yaml_metadata', yaml_header)

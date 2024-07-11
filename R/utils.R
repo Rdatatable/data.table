@@ -111,6 +111,10 @@ brackify = function(x, quote=FALSE) {
   sprintf('[%s]', toString(x))
 }
 
+# convenience for specifying columns in some cases, e.g. by= and key=
+# caller should ensure length(x) == 1 & handle accordingly.
+cols_from_csv = function(x) strsplit(x, ',', fixed=TRUE)[[1L]]
+
 # patterns done via NSE in melt.data.table and .SDcols in `[.data.table`
 # was called do_patterns() before PR#4731
 eval_with_cols = function(orig_call, all_cols) {

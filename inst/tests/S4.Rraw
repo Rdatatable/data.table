@@ -102,3 +102,10 @@ if (TZnotUTC) {
        fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date",NA,NA)),
        ans, output=ans_print)
 }
+
+# S4 object in grouping output requiring growVector
+#   coverage test towards refactoring for #6180
+DT = data.table(a = rep(1:2, c(1, 100)))
+# Set the S4 bit on a simple object
+DT[, b := asS4(seq_len(.N))]
+test(6, DT[, b, by=a, verbose=TRUE][, isS4(b)], output="dogroups: growing")
