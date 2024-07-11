@@ -29,7 +29,7 @@ static int getIntEnv(const char *name, int def)
 static inline int imin(int a, int b) { return a < b ? a : b; }
 static inline int imax(int a, int b) { return a > b ? a : b; }
 
-void initDTthreads() {
+void initDTthreads(void) {
   // called at package startup from init.c
   // also called by setDTthreads(threads=NULL) (default) to reread environment variables; see setDTthreads below
   // No verbosity here in this setter. Verbosity is in getDTthreads(verbose=TRUE)
@@ -151,7 +151,7 @@ SEXP setDTthreads(SEXP threads, SEXP restore_after_fork, SEXP percent, SEXP thro
   Automatically drop down to 1 thread when called from parallel package (e.g. mclapply) to avoid
   deadlock when data.table is used from within parallel::mclapply; #1745 and #1727.
   GNU OpenMP seems ok with just setting DTthreads to 1 which limits the next parallel region
-  if data.table is used within the fork'd proceess. This is tested by test 1705.
+  if data.table is used within the fork'd process. This is tested by test 1705.
 
   From v1.12.0 we're trying again to RestoreAferFork (#2285) with optional-off due to success
   reported by Ken Run and Mark Klik in fst#110 and fst#112. We had tried that before but had
@@ -169,16 +169,16 @@ SEXP setDTthreads(SEXP threads, SEXP restore_after_fork, SEXP percent, SEXP thro
 
 static int pre_fork_DTthreads = 0;
 
-void when_fork() {
+void when_fork(void) {
   pre_fork_DTthreads = DTthreads;
   DTthreads = 1;
 }
 
-void after_fork() {
+void after_fork(void) {
   if (RestoreAfterFork) DTthreads = pre_fork_DTthreads;
 }
 
-void avoid_openmp_hang_within_fork() {
+void avoid_openmp_hang_within_fork(void) {
   // Called once on loading data.table from init.c
 #ifdef _OPENMP
   pthread_atfork(&when_fork, &after_fork, NULL);

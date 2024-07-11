@@ -7,6 +7,12 @@
 #  define USE_RINTERNALS  // #3301
 #  define DATAPTR_RO(x) ((const void *)DATAPTR(x))
 #endif
+#if !defined(R_VERSION) || R_VERSION < R_Version(3, 4, 0)
+#  define SET_GROWABLE_BIT(x)  // #3292
+#endif
+#if !defined(R_VERSION) || R_VERSION < R_Version(4, 5, 0)
+# define isDataFrame(x) isFrame(x)
+#endif
 #include <Rinternals.h>
 #define SEXPPTR_RO(x) ((const SEXP *)DATAPTR_RO(x))  // to avoid overhead of looped STRING_ELT and VECTOR_ELT
 #include <stdint.h>    // for uint64_t rather than unsigned long long
@@ -66,7 +72,7 @@
 // TODO: compare 1.9.6 performance with 1.9.7 with huge number of ASCII strings, and again after Jan 2018 when made macro.
 // Matt moved this to be macro in Jan 2018 so that branch can benefit from branch prediction too wherever used inside loops.
 // This IS_ASCII will dereference s and that cache fetch is the part that may bite more than the branch, though. Without a call to
-// to ENC2UTF as all, the pointer value can just be compared by the calling code without deferencing it. It may still be worth
+// to ENC2UTF as all, the pointer value can just be compared by the calling code without dereferencing it. It may still be worth
 // timing the impact and manually avoiding (is there an IS_ASCII on the character vector rather than testing each item every time?)
 #define NEED2UTF8(s) !(IS_ASCII(s) || (s)==NA_STRING || IS_UTF8(s))
 #define ENC2UTF8(s) (!NEED2UTF8(s) ? (s) : mkCharCE(translateCharUTF8(s), CE_UTF8))
@@ -112,7 +118,7 @@ extern size_t __typeorder[100]; // __ prefix otherwise if we use these names dir
 
 long long DtoLL(double x);
 double LLtoD(long long x);
-int GetVerbose();
+int GetVerbose(void);
 
 // cj.c
 SEXP cj(SEXP base_list);
@@ -125,14 +131,14 @@ SEXP growVector(SEXP x, R_len_t newlen);
 SEXP allocNAVector(SEXPTYPE type, R_len_t n);
 SEXP allocNAVectorLike(SEXP x, R_len_t n);
 void writeNA(SEXP v, const int from, const int n, const bool listNA);
-void savetl_init(), savetl(SEXP s), savetl_end();
+void savetl_init(void), savetl(SEXP s), savetl_end(void);
 int checkOverAlloc(SEXP x);
 
 // forder.c
 int StrCmp(SEXP x, SEXP y);
 uint64_t dtwiddle(double x);
 SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg);
-int getNumericRounding_C();
+int getNumericRounding_C(void);
 
 // reorder.c
 SEXP reorder(SEXP x, SEXP order);
@@ -172,6 +178,7 @@ SEXP dt_na(SEXP x, SEXP cols);
 SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose);
 const char *memrecycle(const SEXP target, const SEXP where, const int start, const int len, SEXP source, const int sourceStart, const int sourceLen, const int colnum, const char *colname);
 SEXP shallowwrapper(SEXP dt, SEXP cols);
+void warn_matrix_column(int i);
 
 SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols,
                 SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts,
@@ -189,12 +196,12 @@ double iquickselect(int *x, int n);
 double i64quickselect(int64_t *x, int n);
 
 // fread.c
-double wallclock();
+double wallclock(void);
 
 // openmp-utils.c
-void initDTthreads();
+void initDTthreads(void);
 int getDTthreads(const int64_t n, const bool throttle);
-void avoid_openmp_hang_within_fork();
+void avoid_openmp_hang_within_fork(void);
 
 // froll.c
 void frollmean(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int k, int align, double fill, bool narm, int hasna, bool verbose);
@@ -229,11 +236,13 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAbounds, SEXP
 SEXP coalesce(SEXP x, SEXP inplace);
 
 // utils.c
+bool within_int32_repres(double x);
+bool within_int64_repres(double x);
 bool isRealReallyInt(SEXP x);
 SEXP isRealReallyIntR(SEXP x);
 SEXP isReallyReal(SEXP x);
 bool allNA(SEXP x, bool errorForBadType);
-SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups);
+SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent);
 bool INHERITS(SEXP x, SEXP char_);
 SEXP copyAsPlain(SEXP x);
 void copySharedColumns(SEXP x);
@@ -259,3 +268,81 @@ int dt_win_snprintf(char *dest, size_t n, const char *fmt, ...);
 
 // programming.c
 SEXP substitute_call_arg_namesR(SEXP expr, SEXP env);
+
+//negate.c
+SEXP notchin(SEXP x, SEXP table);
+
+// functions called from R level .Call/.External and registered in init.c
+// these now live here to pass -Wstrict-prototypes, #5477
+// all arguments must be SEXP since they are called from R level
+// where there are no arguments, it must be (void) not () to be a strict prototype
+SEXP setattrib(SEXP, SEXP, SEXP);
+SEXP assign(SEXP, SEXP, SEXP, SEXP, SEXP);
+SEXP copy(SEXP);
+SEXP setdt_nrows(SEXP);
+SEXP alloccolwrapper(SEXP, SEXP, SEXP);
+SEXP selfrefokwrapper(SEXP, SEXP);
+SEXP truelength(SEXP);
+SEXP setcharvec(SEXP, SEXP, SEXP);
+SEXP chmatch_R(SEXP, SEXP, SEXP);
+SEXP chmatchdup_R(SEXP, SEXP, SEXP);
+SEXP chin_R(SEXP, SEXP);
+SEXP freadR(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+SEXP fwriteR(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+SEXP rbindlist(SEXP, SEXP, SEXP, SEXP);
+SEXP setlistelt(SEXP, SEXP, SEXP);
+SEXP address(SEXP);
+SEXP expandAltRep(SEXP);
+SEXP fmelt(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+SEXP fcast(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+SEXP issorted(SEXP, SEXP);
+SEXP gforce(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+SEXP gsum(SEXP, SEXP);
+SEXP gmean(SEXP, SEXP);
+SEXP gmin(SEXP, SEXP);
+SEXP gmax(SEXP, SEXP);
+SEXP setNumericRounding(SEXP);
+SEXP getNumericRounding(void);
+SEXP binary(SEXP);
+SEXP subsetDT(SEXP, SEXP, SEXP);
+SEXP convertNegAndZeroIdx(SEXP, SEXP, SEXP, SEXP);
+SEXP frank(SEXP, SEXP, SEXP, SEXP);
+SEXP lookup(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+SEXP overlaps(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+SEXP whichwrapper(SEXP, SEXP);
+SEXP shift(SEXP, SEXP, SEXP, SEXP);
+SEXP transpose(SEXP, SEXP, SEXP, SEXP, SEXP);
+SEXP anyNA(SEXP, SEXP);
+SEXP setlevels(SEXP, SEXP, SEXP);
+SEXP rleid(SEXP, SEXP);
+SEXP gmedian(SEXP, SEXP);
+SEXP gtail(SEXP, SEXP);
+SEXP ghead(SEXP, SEXP);
+SEXP glast(SEXP);
+SEXP gfirst(SEXP);
+SEXP gnthvalue(SEXP, SEXP);
+SEXP dim(SEXP);
+SEXP warn_matrix_column_r(SEXP);
+SEXP gvar(SEXP, SEXP);
+SEXP gsd(SEXP, SEXP);
+SEXP gprod(SEXP, SEXP);
+SEXP gshift(SEXP, SEXP, SEXP, SEXP);
+SEXP nestedid(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+SEXP setDTthreads(SEXP, SEXP, SEXP, SEXP);
+SEXP getDTthreads_R(SEXP);
+SEXP nqRecreateIndices(SEXP, SEXP, SEXP, SEXP, SEXP);
+SEXP fsort(SEXP, SEXP);
+SEXP inrange(SEXP, SEXP, SEXP, SEXP);
+SEXP hasOpenMP(void);
+SEXP beforeR340(void);
+SEXP uniqueNlogical(SEXP, SEXP);
+SEXP dllVersion(void);
+SEXP initLastUpdated(SEXP);
+SEXP allNAR(SEXP);
+SEXP test_dt_win_snprintf(void);
+SEXP dt_zlib_version(void);
+SEXP dt_has_zlib(void);
+SEXP startsWithAny(SEXP, SEXP, SEXP);
+SEXP convertDate(SEXP, SEXP);
+SEXP fastmean(SEXP);
+

@@ -43,98 +43,6 @@ Rcomplex NA_CPLX;
 size_t __sizes[100];
 size_t __typeorder[100];
 
-// .Calls
-SEXP setattrib();
-SEXP bmerge();
-SEXP assign();
-SEXP dogroups();
-SEXP copy();
-SEXP shallowwrapper();
-SEXP alloccolwrapper();
-SEXP selfrefokwrapper();
-SEXP truelength();
-SEXP setcharvec();
-SEXP setcolorder();
-SEXP chmatch_R();
-SEXP chmatchdup_R();
-SEXP chin_R();
-SEXP fifelseR();
-SEXP fcaseR();
-SEXP freadR();
-SEXP fwriteR();
-SEXP reorder();
-SEXP rbindlist();
-SEXP vecseq();
-SEXP setlistelt();
-SEXP address();
-SEXP expandAltRep();
-SEXP fmelt();
-SEXP fcast();
-SEXP uniqlist();
-SEXP uniqlengths();
-SEXP forder();
-SEXP issorted();
-SEXP gforce();
-SEXP gsum();
-SEXP gmean();
-SEXP gmin();
-SEXP gmax();
-SEXP isOrderedSubset();
-SEXP setNumericRounding();
-SEXP getNumericRounding();
-SEXP binary();
-SEXP subsetDT();
-SEXP subsetVector();
-SEXP convertNegAndZeroIdx();
-SEXP frank();
-SEXP dt_na();
-SEXP lookup();
-SEXP overlaps();
-SEXP whichwrapper();
-SEXP shift();
-SEXP transpose();
-SEXP anyNA();
-SEXP isReallyReal();
-SEXP setlevels();
-SEXP rleid();
-SEXP gmedian();
-SEXP gtail();
-SEXP ghead();
-SEXP glast();
-SEXP gfirst();
-SEXP gnthvalue();
-SEXP dim();
-SEXP gvar();
-SEXP gsd();
-SEXP gprod();
-SEXP gshift();
-SEXP nestedid();
-SEXP setDTthreads();
-SEXP getDTthreads_R();
-SEXP nqRecreateIndices();
-SEXP fsort();
-SEXP inrange();
-SEXP between();
-SEXP hasOpenMP();
-SEXP uniqueNlogical();
-SEXP frollfunR();
-SEXP dllVersion();
-SEXP nafillR();
-SEXP colnamesInt();
-SEXP initLastUpdated();
-SEXP cj();
-SEXP lock();
-SEXP unlock();
-SEXP islockedR();
-SEXP allNAR();
-SEXP test_dt_win_snprintf();
-SEXP dt_zlib_version();
-SEXP startsWithAny();
-SEXP convertDate();
-
-// .Externals
-SEXP fastmean();
-
 static const
 R_CallMethodDef callMethods[] = {
 {"Csetattrib", (DL_FUNC) &setattrib, -1},
@@ -143,6 +51,7 @@ R_CallMethodDef callMethods[] = {
 {"Cdogroups", (DL_FUNC) &dogroups, -1},
 {"Ccopy", (DL_FUNC) &copy, -1},
 {"Cshallowwrapper", (DL_FUNC) &shallowwrapper, -1},
+{"Csetdt_nrows", (DL_FUNC) &setdt_nrows, -1},
 {"Calloccolwrapper", (DL_FUNC) &alloccolwrapper, -1},
 {"Cselfrefokwrapper", (DL_FUNC) &selfrefokwrapper, -1},
 {"Ctruelength", (DL_FUNC) &truelength, -1},
@@ -208,6 +117,7 @@ R_CallMethodDef callMethods[] = {
 {"Cinrange", (DL_FUNC) &inrange, -1},
 {"Cbetween", (DL_FUNC) &between, -1},
 {"ChasOpenMP", (DL_FUNC) &hasOpenMP, -1},
+{"CbeforeR340", (DL_FUNC) &beforeR340, -1},
 {"CuniqueNlogical", (DL_FUNC) &uniqueNlogical, -1},
 {"CfrollfunR", (DL_FUNC) &frollfunR, -1},
 {"CdllVersion", (DL_FUNC) &dllVersion, -1},
@@ -227,9 +137,12 @@ R_CallMethodDef callMethods[] = {
 {"CcoerceAs", (DL_FUNC) &coerceAs, -1},
 {"Ctest_dt_win_snprintf", (DL_FUNC)&test_dt_win_snprintf, -1},
 {"Cdt_zlib_version", (DL_FUNC)&dt_zlib_version, -1},
+{"Cdt_has_zlib", (DL_FUNC)&dt_has_zlib, -1},
 {"Csubstitute_call_arg_namesR", (DL_FUNC) &substitute_call_arg_namesR, -1},
 {"CstartsWithAny", (DL_FUNC)&startsWithAny, -1},
 {"CconvertDate", (DL_FUNC)&convertDate, -1},
+{"Cnotchin", (DL_FUNC)&notchin, -1},
+{"Cwarn_matrix_column_r", (DL_FUNC)&warn_matrix_column_r, -1},
 {NULL, NULL, 0}
 };
 
@@ -239,7 +152,7 @@ R_ExternalMethodDef externalMethods[] = {
 {NULL, NULL, 0}
 };
 
-static void setSizes() {
+static void setSizes(void) {
   for (int i=0; i<100; ++i) { __sizes[i]=0; __typeorder[i]=0; }
   // only these types are currently allowed as column types :
   __sizes[LGLSXP] =  sizeof(int);       __typeorder[LGLSXP] =  0;
@@ -249,7 +162,7 @@ static void setSizes() {
   __sizes[CPLXSXP] = sizeof(Rcomplex);  __typeorder[CPLXSXP] = 4;
   __sizes[STRSXP] =  sizeof(SEXP *);    __typeorder[STRSXP] =  5;
   __sizes[VECSXP] =  sizeof(SEXP *);    __typeorder[VECSXP] =  6;   // list column
-  if (sizeof(char *)>8) error(_("Pointers are %d bytes, greater than 8. We have not tested on any architecture greater than 64bit yet."), sizeof(char *));
+  if (sizeof(char *)>8) error(_("Pointers are %zu bytes, greater than 8. We have not tested on any architecture greater than 64bit yet."), sizeof(char *));
   // One place we need the largest sizeof is the working memory malloc in reorder.c
 }
 
@@ -266,23 +179,24 @@ void attribute_visible R_init_data_table(DllInfo *info)
   const char *msg = _("... failed. Please forward this message to maintainer('data.table').");
   if ((int)NA_INTEGER != (int)INT_MIN) error(_("Checking NA_INTEGER [%d] == INT_MIN [%d] %s"), NA_INTEGER, INT_MIN, msg);
   if ((int)NA_INTEGER != (int)NA_LOGICAL) error(_("Checking NA_INTEGER [%d] == NA_LOGICAL [%d] %s"), NA_INTEGER, NA_LOGICAL, msg);
-  if (sizeof(int) != 4)       error(_("Checking sizeof(%s) [%d] is %d %s"), "int", sizeof(int), 4, msg);
-  if (sizeof(double) != 8)    error(_("Checking sizeof(%s) [%d] is %d %s"), "double", sizeof(double), 8, msg);     // 8 on both 32bit and 64bit
-  // alignof not available in C99: if (alignof(double) != 8) error(_("Checking alignof(double) [%d] is 8 %s"), alignof(double), msg);  // 8 on both 32bit and 64bit
-  if (sizeof(long long) != 8) error(_("Checking sizeof(%s) [%d] is %d %s"), "long long", sizeof(long long), 8, msg);
-  if (sizeof(char *) != 4 && sizeof(char *) != 8) error(_("Checking sizeof(pointer) [%d] is 4 or 8 %s"), sizeof(char *), msg);
-  if (sizeof(SEXP) != sizeof(char *)) error(_("Checking sizeof(SEXP) [%d] == sizeof(pointer) [%d] %s"), sizeof(SEXP), sizeof(char *), msg);
-  if (sizeof(uint64_t) != 8) error(_("Checking sizeof(%s) [%d] is %d %s"), "uint64_t", sizeof(uint64_t), 8, msg);
-  if (sizeof(int64_t) != 8)  error(_("Checking sizeof(%s) [%d] is %d %s"), "int64_t", sizeof(int64_t), 8, msg);
-  if (sizeof(signed char) != 1) error(_("Checking sizeof(%s) [%d] is %d %s"), "signed char", sizeof(signed char), 1, msg);
-  if (sizeof(int8_t) != 1)   error(_("Checking sizeof(%s) [%d] is %d %s"), "int8_t", sizeof(int8_t), 1, msg);
-  if (sizeof(uint8_t) != 1)  error(_("Checking sizeof(%s) [%d] is %d %s"), "uint8_t", sizeof(uint8_t), 1, msg);
-  if (sizeof(int16_t) != 2)  error(_("Checking sizeof(%s) [%d] is %d %s"), "int16_t", sizeof(int16_t), 2, msg);
-  if (sizeof(uint16_t) != 2) error(_("Checking sizeof(%s) [%d] is %d %s"), "uint16_t", sizeof(uint16_t), 2 ,msg);
+  if (sizeof(int) != 4)       error(_("Checking sizeof(%s) [%zu] is %d %s"), "int", sizeof(int), 4, msg);
+  if (sizeof(double) != 8)    error(_("Checking sizeof(%s) [%zu] is %d %s"), "double", sizeof(double), 8, msg);     // 8 on both 32bit and 64bit
+  // alignof not available in C99: if (alignof(double) != 8) error(_("Checking alignof(double) [%lu] is 8 %s"), alignof(double), msg);  // 8 on both 32bit and 64bit
+  if (sizeof(long long) != 8) error(_("Checking sizeof(%s) [%zu] is %d %s"), "long long", sizeof(long long), 8, msg);
+  if (sizeof(char *) != 4 && sizeof(char *) != 8) error(_("Checking sizeof(pointer) [%zu] is 4 or 8 %s"), sizeof(char *), msg);
+  if (sizeof(SEXP) != sizeof(char *)) error(_("Checking sizeof(SEXP) [%zu] == sizeof(pointer) [%zu] %s"), sizeof(SEXP), sizeof(char *), msg);
+  if (sizeof(uint64_t) != 8) error(_("Checking sizeof(%s) [%zu] is %d %s"), "uint64_t", sizeof(uint64_t), 8, msg);
+  if (sizeof(int64_t) != 8)  error(_("Checking sizeof(%s) [%zu] is %d %s"), "int64_t", sizeof(int64_t), 8, msg);
+  if (sizeof(signed char) != 1) error(_("Checking sizeof(%s) [%zu] is %d %s"), "signed char", sizeof(signed char), 1, msg);
+  if (sizeof(int8_t) != 1)   error(_("Checking sizeof(%s) [%zu] is %d %s"), "int8_t", sizeof(int8_t), 1, msg);
+  if (sizeof(uint8_t) != 1)  error(_("Checking sizeof(%s) [%zu] is %d %s"), "uint8_t", sizeof(uint8_t), 1, msg);
+  if (sizeof(int16_t) != 2)  error(_("Checking sizeof(%s) [%zu] is %d %s"), "int16_t", sizeof(int16_t), 2, msg);
+  if (sizeof(uint16_t) != 2) error(_("Checking sizeof(%s) [%zu] is %d %s"), "uint16_t", sizeof(uint16_t), 2 ,msg);
 
   SEXP tmp = PROTECT(allocVector(INTSXP,2));
   if (LENGTH(tmp)!=2) error(_("Checking LENGTH(allocVector(INTSXP,2)) [%d] is 2 %s"), LENGTH(tmp), msg);
-  if (TRUELENGTH(tmp)!=0) error(_("Checking TRUELENGTH(allocVector(INTSXP,2)) [%d] is 0 %s"), TRUELENGTH(tmp), msg);
+  // Use (long long) to cast R_xlen_t to a fixed type to robustly avoid -Wformat compiler warnings, see #5768
+  if (TRUELENGTH(tmp)!=0) error(_("Checking TRUELENGTH(allocVector(INTSXP,2)) [%lld] is 0 %s"), (long long)TRUELENGTH(tmp), msg);
   UNPROTECT(1);
 
   // According to IEEE (http://en.wikipedia.org/wiki/IEEE_754-1985#Zero) we can rely on 0.0 being all 0 bits.
@@ -324,7 +238,7 @@ void attribute_visible R_init_data_table(DllInfo *info)
   setNumericRounding(PROTECT(ScalarInteger(0))); // #1642, #1728, #1463, #485
   UNPROTECT(1);
 
-  // create needed strings in advance for speed, same techique as R_*Symbol
+  // create needed strings in advance for speed, same technique as R_*Symbol
   // Following R-exts 5.9.4; paragraph and example starting "Using install ..."
   // either use PRINTNAME(install()) or R_PreserveObject(mkChar()) here.
   char_integer64 = PRINTNAME(install("integer64"));
@@ -399,7 +313,7 @@ inline double LLtoD(long long x) {
   return u.d;
 }
 
-int GetVerbose() {
+int GetVerbose(void) {
   // don't call repetitively; save first in that case
   SEXP opt = GetOption(sym_verbose, R_NilValue);
   if ((!isLogical(opt) && !isInteger(opt)) || LENGTH(opt)!=1 || INTEGER(opt)[0]==NA_INTEGER)
@@ -408,18 +322,31 @@ int GetVerbose() {
 }
 
 // # nocov start
-SEXP hasOpenMP() {
-  // Just for use by onAttach (hence nocov) to avoid an RPRINTF from C level which isn't suppressable by CRAN
-  // There is now a 'grep' in CRAN_Release.cmd to detect any use of RPRINTF in init.c, which is
-  // why RPRINTF is capitalized in this comment to avoid that grep.
-  // .Platform or .Machine in R itself does not contain whether OpenMP is available because compiler and flags are per-package.
-  #ifdef _OPENMP
+SEXP hasOpenMP(void) {
+
+#if defined(_OPENMP)
+  // gcc build of libomp
   return ScalarInteger(_OPENMP); // return the version; e.g. 201511 (i.e. 4.5)
-  #else
-  return ScalarInteger(0);       // 0 rather than NA so that if() can be used on the result
-  #endif
+#elif defined(KMP_VERSION_BUILD)
+  // LLVM builds of libomp
+  return ScalarInteger(KMP_VERSION_BUILD);
+#else
+  // no OpenMP support detected
+  return ScalarInteger(0);
+#endif
+
 }
 // # nocov end
+
+SEXP beforeR340(void) {
+  // used in onAttach.R for message about fread memory leak fix needing R 3.4.0
+  // at C level to catch if user upgrades R but does not reinstall data.table
+  #if defined(R_VERSION) && R_VERSION<R_Version(3,4,0)
+  return ScalarLogical(true);
+  #else
+  return ScalarLogical(false);
+  #endif
+}
 
 extern int *_Last_updated;  // assign.c
 
@@ -429,8 +356,8 @@ SEXP initLastUpdated(SEXP var) {
   return R_NilValue;
 }
 
-SEXP dllVersion() {
+SEXP dllVersion(void) {
   // .onLoad calls this and checks the same as packageVersion() to ensure no R/C version mismatch, #3056
-  return(ScalarString(mkChar("1.14.3")));
+  return(ScalarString(mkChar("1.15.99")));
 }
 

@@ -112,7 +112,7 @@ test(2.54, substitute2(c(list(v1=v2, v1=v3)), env=list(v1="nm",v2=2L,v3=3L)), qu
 # substitute2 env as environment class
 e = as.environment(list(v=1L, .v=2L))
 test(2.81, substitute2(.(v, .v), e), quote(.(1L, 2L)))
-# unline in base R substitute, the env arg is always evaluated
+# unlike in base R substitute, the env arg is always evaluated
 e = new.env()
 delayedAssign("a_promise", stop("I am the error"), assign.env=e)
 e$x = 5L
@@ -135,7 +135,7 @@ test(2.94, substitute2(.(v), structure(list(1L,2L), names=c("","v"))), error="'e
 test(2.95, substitute2(.(v), structure(list(1,2), names=c(NA,"v"))), error="'env' argument has NA names")
 test(2.96, substitute2(.(v), list(v=1,v=2)), error="'env' argument has duplicated names")
 
-# substitute2 re-use inside another function
+# substitute2 reuse inside another function
 f = function(expr, env) {
   eval(substitute(
     substitute2(.expr, env),
@@ -153,7 +153,7 @@ cl = f(
   )
 )
 test(3.01, cl, quote(.(sum_x = sum(x, na.rm = TRUE))))
-# substitute2 nested re-use inside another function
+# substitute2 nested reuse inside another function
 cl = substitute2(list(nm = fun(.(out_col_name = fun(in_col_name, fun_arg1=fun_arg1val)),
   env = list(
     in_col_name = "x",
@@ -195,37 +195,38 @@ test(5.10, list2lang(list("a", 1L, c(1L, 2L))), list(as.name("a"), 1L, c(1L,2L))
 test(5.11, list2lang(list("a", 1L, call("c", 1L, 2L))), list(as.name("a"), 1L, quote(c(1L, 2L))))
 
 # datatable.enlist
-op = options(datatable.enlist=NULL)
 test(6.01,
+     options = c(datatable.enlist=NULL),
      substitute2(list(v1 = v2, v3 = v4), list(v1 = "int", v2 = 1L, v3 = "lst", v4 = list("a", "b", list("c", "d")))),
      quote(list(int = 1L, lst = list(a, b, list(c, d)))))
-options(datatable.enlist=FALSE)
 test(6.02,
+     options = c(datatable.enlist=FALSE),
      substitute2(list(v1 = v2, v3 = v4), list(v1 = "int", v2 = 1L, v3 = "lst", v4 = list("a", "b", list("c", "d")))),
      substitute(list(int = 1L, lst = lst), list(lst = list("a", "b", list("c", "d")))))
-options(datatable.enlist=NULL)
 test(6.03,
+     options = c(datatable.enlist=NULL),
      enlist(list(v1 = 1L, v2 = list(v3 = "b", v4 = list(v5 = "c")))),
      quote(list(v1 = 1L, v2 = list(v3 = b, v4 = list(v5 = c)))))
-options(datatable.enlist=FALSE)
 test(6.04,
+     options = c(datatable.enlist=FALSE),
      enlist(list(v1 = 1L, v2 = list(v3 = "b", v4 = list(v5 = "c")))),
      substitute(list(v1 = 1L, v2 = lst), list(lst=list(v3 = "b", v4 = list(v5 = "c")))))
-options(datatable.enlist=NULL)
 test(6.05,
+     options = c(datatable.enlist=NULL),
      substitute2(list(v1, v2, v3), list(v1="V1", v2="V2", v3=enlist(list("V4","V5")))),
      quote(list(V1, V2, list(V4, V5))))
-options(datatable.enlist=FALSE)
 test(6.06,
+     options = c(datatable.enlist=FALSE),
      substitute2(list(v1, v2, v3), list(v1="V1", v2="V2", v3=enlist(list("V4","V5")))),
      quote(list(V1, V2, list(V4, V5))))
 test(6.07,
+     options = c(datatable.enlist=FALSE),
      substitute2(list(v1, v2, v3), list(v1="V1", v2="V2", v3=enlist(list("V4","V5", list("V6"))))),
      substitute(list(V1, V2, list(V4, V5, lst)), list(lst=list("V6"))))
 test(6.08,
+     options = c(datatable.enlist=FALSE),
      substitute2(list(v1, v2, v3), list(v1="V1", v2="V2", v3=enlist(list("V4","V5", enlist(list("V6")))))),
      quote(list(V1, V2, list(V4, V5, list(V6)))))
-options(op)
 
 # documentation examples
 test(7.01, substitute2(list(var1 = var2), list(var1 = "c1", var2 = 5L)), quote(list(c1 = 5L))) ## works also on names
