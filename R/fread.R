@@ -78,9 +78,6 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     if (w <- startsWithAny(file, c("https://", "ftps://", "http://", "ftp://", "file://"))) {  # avoid grepl() for #2531
       # nocov start
       tmpFile = tempfile(fileext = paste0(".",tools::file_ext(file)), tmpdir=tmpdir)  # retain .gz extension in temp filename so it knows to be decompressed further below
-      if (w<=2L && base::getRversion()<"3.2.2") { # https: or ftps: can be read by default by download.file() since 3.2.2
-        stopf("URL requires download.file functionalities from R >=3.2.2. You can still manually download the file and fread the downloaded file.")
-      }
       method = if (w==5L) "internal"  # force 'auto' when file: to ensure we don't use an invalid option (e.g. wget), #1668
                else getOption("download.file.method", default="auto")  # http: or ftp:
       # In text mode on Windows-only, R doubles up \r to make \r\r\n line endings. mode="wb" avoids that. See ?connections:"CRLF"
@@ -340,9 +337,8 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
   if (!is.null(key) && data.table) {
     if (!is.character(key))
       stopf("key argument of data.table() must be a character vector naming columns (NB: col.names are applied before this)")
-    if (length(key) == 1L) {
-      if (key != strsplit(key,split=",")[[1L]]) stopf("Usage of comma-separated literals in %s is deprecated, please split such entries yourself before passing to data.table", "key=")
-    }
+    if (length(key) == 1L)
+      key = cols_from_csv(key)
     setkeyv(ans, key)
   }
   if (yaml) setattr(ans, 'yaml_metadata', yaml_header)
