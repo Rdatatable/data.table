@@ -146,7 +146,8 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
     error(_("fill must be a vector of length 1"));
   if (!isInteger(fill) && !isReal(fill) && !isLogical(fill))
     error(_("fill must be numeric or logical"));
-  double dfill = REAL(PROTECT(coerceAs(fill, ScalarReal(NA_REAL), ScalarLogical(true))))[0]; protecti++;
+  double dfill = REAL(PROTECT(coerceAs(fill, PROTECT(ScalarReal(NA_REAL)), PROTECT(ScalarLogical(true)))))[0]; protecti++;
+  UNPROTECT(2); // Scalar* inputs to coerceAs()
 
   bool bnarm = LOGICAL(narm)[0];
 
@@ -258,7 +259,8 @@ SEXP frollapplyR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP rho) {
     error(_("fill must be a vector of length 1"));
   if (!isInteger(fill) && !isReal(fill) && !isLogical(fill))
     error(_("fill must be numeric or logical"));
-  double dfill = REAL(PROTECT(coerceAs(fill, ScalarReal(NA_REAL), ScalarLogical(true))))[0]; protecti++;
+  double dfill = REAL(PROTECT(coerceAs(fill, PROTECT(ScalarReal(NA_REAL)), PROTECT(ScalarLogical(true)))))[0]; protecti++;
+  UNPROTECT(2); // Scalar* inputs to coerceAs()
 
   SEXP ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++;
   if (verbose)
