@@ -386,7 +386,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     if (verbose) Rprintf(_("Assigning to %d row subset of %d rows\n"), numToDo, nrow);
     // TODO: include in message if any rows are assigned several times (e.g. by=.EACHI with dups in i)
     if (numToDo==0) {
-      // isString(cols) is exclusive to calls from set(), not :=, this part should only bind for set()
+      // isString(cols) is exclusive to calls from set()
       if (!length(newcolnames) && !isString(cols)) {
         *_Last_updated = 0;
         UNPROTECT(protecti);
