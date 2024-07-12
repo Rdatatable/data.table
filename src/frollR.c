@@ -15,8 +15,8 @@ SEXP coerceToRealListR(SEXP obj) {
     SEXP this_obj = VECTOR_ELT(obj, i);
     if (!(isReal(this_obj) || isInteger(this_obj) || isLogical(this_obj)))
       error(_("x must be of type numeric or logical, or a list, data.frame or data.table of such"));
-    SET_VECTOR_ELT(x, i, coerceAs(this_obj, PROTECT(ScalarReal(NA_REAL)), /*copyArg=*/PROTECT(ScalarLogical(false)))); // copyArg=false will make type-class match to return as-is, no copy
-    UNPROTECT(2); // scalar arguments to coerceAs()
+    SET_VECTOR_ELT(x, i, coerceAs(this_obj, PROTECT(ScalarReal(NA_REAL)), /*copyArg=*/ScalarLogical(false))); // copyArg=false will make type-class match to return as-is, no copy
+    UNPROTECT(1); // as= input to coerceAs()
   }
   UNPROTECT(protecti);
   return x;
@@ -146,8 +146,8 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
     error(_("fill must be a vector of length 1"));
   if (!isInteger(fill) && !isReal(fill) && !isLogical(fill))
     error(_("fill must be numeric or logical"));
-  double dfill = REAL(PROTECT(coerceAs(fill, PROTECT(ScalarReal(NA_REAL)), PROTECT(ScalarLogical(true)))))[0]; protecti++;
-  UNPROTECT(2); // Scalar* inputs to coerceAs()
+  double dfill = REAL(PROTECT(coerceAs(fill, PROTECT(ScalarReal(NA_REAL)), ScalarLogical(true))))[0]; protecti++;
+  UNPROTECT(1); // as= input to coerceAs()
 
   bool bnarm = LOGICAL(narm)[0];
 
@@ -259,8 +259,8 @@ SEXP frollapplyR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP rho) {
     error(_("fill must be a vector of length 1"));
   if (!isInteger(fill) && !isReal(fill) && !isLogical(fill))
     error(_("fill must be numeric or logical"));
-  double dfill = REAL(PROTECT(coerceAs(fill, PROTECT(ScalarReal(NA_REAL)), PROTECT(ScalarLogical(true)))))[0]; protecti++;
-  UNPROTECT(2); // Scalar* inputs to coerceAs()
+  double dfill = REAL(PROTECT(coerceAs(fill, PROTECT(ScalarReal(NA_REAL)), ScalarLogical(true))))[0]; protecti++;
+  UNPROTECT(1); // as= input to coerceAs()
 
   SEXP ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++;
   if (verbose)

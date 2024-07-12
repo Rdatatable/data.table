@@ -591,8 +591,8 @@ SEXP gmean(SEXP x, SEXP narmArg)
     x = PROTECT(coerceVector(x, REALSXP)); protecti++;
   case REALSXP: {
     if (INHERITS(x, char_integer64)) {
-      x = PROTECT(coerceAs(x, /*as=*/PROTECT(ScalarReal(1)), /*copyArg=*/PROTECT(ScalarLogical(TRUE)))); protecti++;
-      UNPROTECT(2); // Scalar* inputs to coerceAs()
+      x = PROTECT(coerceAs(x, /*as=*/PROTECT(ScalarReal(1)), /*copyArg=*/ScalarLogical(TRUE))); protecti++;
+      UNPROTECT(1); // as= input to coerceAs()
     }
     const double *restrict gx = gather(x, &anyNA);
     ans = PROTECT(allocVector(REALSXP, ngrp)); protecti++;
