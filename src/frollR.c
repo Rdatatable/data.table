@@ -15,7 +15,8 @@ SEXP coerceToRealListR(SEXP obj) {
     SEXP this_obj = VECTOR_ELT(obj, i);
     if (!(isReal(this_obj) || isInteger(this_obj) || isLogical(this_obj)))
       error(_("x must be of type numeric or logical, or a list, data.frame or data.table of such"));
-    SET_VECTOR_ELT(x, i, coerceAs(this_obj, ScalarReal(NA_REAL), /*copyArg=*/ScalarLogical(false))); // copyArg=false will make type-class match to return as-is, no copy
+    SET_VECTOR_ELT(x, i, coerceAs(this_obj, PROTECT(ScalarReal(NA_REAL)), /*copyArg=*/PROTECT(ScalarLogical(false)))); // copyArg=false will make type-class match to return as-is, no copy
+    UNPROTECT(2); // scalar arguments to coerceAs()
   }
   UNPROTECT(protecti);
   return x;
