@@ -247,7 +247,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
       if (length(value_col)) Rprintf(_("Assigned 'measure.vars' are [%s].\n"), concat(dtnames, value_col));
     }
   } else if (isNull(id) && !isNull(measure)) {
-    SEXP measure_int_or_list = PROTECT(cols_to_int_or_list(measure, dtnames, true)); protecti++;
+    SEXP measure_int_or_list = cols_to_int_or_list(measure, dtnames, true);
     idcols = PROTECT(uniq_diff(measure_int_or_list, ncol, true)); protecti++;
     if (isNewList(measure)) valuecols = measure_int_or_list;
     else {
