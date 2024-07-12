@@ -197,7 +197,7 @@ SEXP uniq_diff(SEXP int_or_list, int ncol, bool is_measure) {
       INTEGER(unique_col_numbers)[unique_i++] = INTEGER(int_vec)[i];
     }
   }
-  SEXP out = set_diff(unique_col_numbers, ncol)
+  SEXP out = set_diff(unique_col_numbers, ncol);
   UNPROTECT(3);
   return out;
 }
