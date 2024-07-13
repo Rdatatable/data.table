@@ -15114,7 +15114,7 @@ if (test_bit64) {
   # int64 in x
   test(2044.69, dt1[dt2, ..cols, on="int64==int", nomatch=0L, verbose=TRUE],
                 ans<-data.table(x.int=1:5, x.doubleInt=as.double(1:5), x.realDouble=c(0.5,1.0,1.5,2.0,2.5), x.int64=as.integer64(1:5),
-                                i.int=1:5, i.doubleInt=as.double(1:5), i.realDouble=c(0.5,1.0,1.5,2.0,2.5), i.int64=as.integer64(1:5)),
+                                i.int=1:5, i.doubleInt=as.double(1:5), i.realDouble=c(0.5,1.0,1.5,2.0,2.5), i.int64=as.integer64(c(1:4, 3000000000))),
                 output = "Coercing integer column i.int to type integer64 to match type of x.int64")
   test(2044.70, dt1[dt2, ..cols, on="int64==doubleInt", nomatch=0L, verbose=TRUE],
                 ans,
@@ -16895,16 +16895,17 @@ times = .POSIXct(tz = 'UTC', c(
   1201364458.72486, 939956943.690777
 ))
 DT = data.table(dates, times)
+DT_trunc = copy(DT)[, times := as.POSIXct(trunc(times))]
 tmp = tempfile()
 ## ISO8601 format (%FT%TZ) by default
 fwrite(DT, tmp)
 test(2150.01, fread(tmp), DT)   # defaults for fwrite/fread simple and preserving
-fwrite(DT, tmp, dateTimeAs='write.csv')  # as write.csv, writes the UTC times as-is not local because the time column has tzone=="UTC", but without the Z marker
+fwrite(DT, tmp, dateTimeAs='write.csv')  # as write.csv, writes the UTC times as-is not local because the time column has tzone=="UTC", but without the Z marker. Also truncates milliseconds, hence DT_trunc below.
 test(2150.021, env=list(TZ=NULL), sapply(fread(tmp,tz=""), typeof), c(dates="integer", times="character"))  # from v1.14.0 tz="" needed to read datetime as character
-test(2150.022, env=list(TZ=NULL), fread(tmp,tz="UTC"), DT)  # user can tell fread to interpret the unmarked datetimes as UTC
-test(2150.023, env=c(TZ='UTC'), fread(tmp), DT)  # TZ environment variable is also recognized
+test(2150.022, env=list(TZ=NULL), fread(tmp,tz="UTC"), DT_trunc)  # user can tell fread to interpret the unmarked datetimes as UTC
+test(2150.023, env=c(TZ='UTC'), fread(tmp), DT_trunc)  # TZ environment variable is also recognized
 if (.Platform$OS.type!="windows") {
-  test(2150.024, env=c(TZ=''), fread(tmp), DT) # on Windows this unsets TZ, see ?Sys.setenv
+  test(2150.024, env=c(TZ=''), fread(tmp), DT_trunc) # on Windows this unsets TZ, see ?Sys.setenv
   # blank TZ env variable on non-Windows is recognized as UTC consistent with C and R; but R's tz= argument is the opposite and uses "" for local
 }
 # Notes:
@@ -16919,14 +16920,14 @@ test(2150.025,
      attr(fread(tmp, colClasses=list(POSIXct="times"), tz="")$times, "tzone"),
      "")
 # the times will be different though here because as.POSIXct read them as local time.
-fwrite(copy(DT)[ , times := format(times, '%FT%T+00:00')], tmp)
-test(2150.03, fread(tmp), DT)
+fwrite(copy(DT)[ , times := format(times, '%FT%T+00:00')], tmp) #NB: %T-->truncate milliseconds.
+test(2150.03, fread(tmp), DT_trunc)
 fwrite(copy(DT)[ , times := format(times, '%FT%T+0000')], tmp)
-test(2150.04, fread(tmp), DT)
+test(2150.04, fread(tmp), DT_trunc)
 fwrite(copy(DT)[ , times := format(times, '%FT%T+0115')], tmp)
-test(2150.05, fread(tmp), copy(DT)[ , times := times - 4500])
+test(2150.05, fread(tmp), copy(DT_trunc)[ , times := times - 4500])
 fwrite(copy(DT)[ , times := format(times, '%FT%T+01')], tmp)
-test(2150.06, fread(tmp), copy(DT)[ , times := times - 3600])
+test(2150.06, fread(tmp), copy(DT_trunc)[ , times := times - 3600])
 ## invalid tz specifiers
 fwrite(copy(DT)[ , times := format(times, '%FT%T+3600')], tmp)
 test(2150.07, fread(tmp), copy(DT)[ , times := format(times, '%FT%T+3600')])
@@ -17458,8 +17459,8 @@ if (test_bit64) {
   # X[Y,,by=.EACHI] when Y contains integer64 also fixed in 1.12.4, #3779
   X = data.table(x=1:3)
   Y = data.table(x=1:2, y=as.integer64(c(10,20)))
-  test(2193.2, copy(X)[Y, `:=`(y=i.y), on="x", by=.EACHI], data.table(x=1:3, y=as.integer64(10L,20L,NA)))
-  test(2193.3, copy(X)[Y, let(y=i.y), on="x", by=.EACHI], data.table(x=1:3, y=as.integer64(10L,20L,NA)))
+  test(2193.2, copy(X)[Y, `:=`(y=i.y), on="x", by=.EACHI], data.table(x=1:3, y=as.integer64(c(10L,20L,NA))))
+  test(2193.3, copy(X)[Y, let(y=i.y), on="x", by=.EACHI], data.table(x=1:3, y=as.integer64(c(10L,20L,NA))))
 }
 
 # endsWithAny added in #5097 for internal use replacing one use of base::endsWith (in fread.R)
@@ -18713,3 +18714,8 @@ DT = data.table(a = rep(1:3, 2))
 # NB: recall we can't use non-ASCII symbols here. the text is a-<n-tilde>-o (year in Spanish)
 setnames(DT, "a", "a\U00F1o")
 test(2266, eval(parse(text="DT[ , .N, a\U00F1o]$N[1L]")), 2L)
+
+# all.equal failed to dispatch to methods of columns, #4543
+DT1 = data.table(t = .POSIXct(1590973200, tz='UTC'))
+DT2 = data.table(t = .POSIXct(1590974413, tz='UTC'))
+test(2267, all.equal(DT1, DT2), "Column 't': Mean absolute difference: 1213")

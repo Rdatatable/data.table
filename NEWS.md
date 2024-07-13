@@ -64,6 +64,8 @@
 
 11. Fix some memory management issues in the C routines backing `melt()`, `froll()`, and GForce `mean()`, as identified by `rchk`. Thanks Tomas Kalibera and the CRAN team for setting up the `rchk` system, and @MichaelChirico for the fix.
 
+12. data.table's `all.equal()` method now dispatches to each column's own `all.equal()` method as appropriate, [#4543](https://github.com/Rdatatable/data.table/issues/4543). Thanks @MichaelChirico for the report and fix. Note that this had two noteworthy changes to data.table's own test suite that might affect you: (1) comparisons of POSIXct columns compare absolute, not relative differences, meaning that millisecond-scale differences might trigger a "not equal" report that was hidden before; and (2) comparisons of integer64 columns could be totally wrong since they were being compared on the basis of their representation as doubles, not long integers. The former might be a matter of preference requiring you to specify a different `tolerance=`, while the latter was clearly a bug.
+
 ## NOTES
 
 1. `transform` method for data.table sped up substantially when creating new columns on large tables. Thanks to @OfekShilon for the report and PR. The implemented solution was proposed by @ColeMiller1.
