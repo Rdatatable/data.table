@@ -18719,3 +18719,16 @@ test(2266, eval(parse(text="DT[ , .N, a\U00F1o]$N[1L]")), 2L)
 DT1 = data.table(t = .POSIXct(1590973200, tz='UTC'))
 DT2 = data.table(t = .POSIXct(1590974413, tz='UTC'))
 test(2267, all.equal(DT1, DT2), "Column 't': Mean absolute difference: 1213")
+
+# rbindlist with many nested lists leads to protection stack overflow #4536
+# test case needs to bind list columns with atomic columns to trigger
+x = list(
+  data.table(V1="a"),
+  data.table(V1=""),
+  data.table(V2=list(FALSE)),
+  data.table(V2=list(list(V2A=FALSE, V2B="", V2C="" ))),
+  data.table(V1=list(list(V1A="", V1B="", V1C="", V1D="", V1E="")), V3 = list(list(V3A=TRUE, V3B="", V3C=1L, V3D=0L, V3F=1L)))
+)
+N = 5e4
+y = x[rep(1:5, N)]
+test(2267, rbindlist(y, fill=TRUE), rbindlist(x, fill=TRUE)[rep(1:5, N)])
