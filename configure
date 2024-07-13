@@ -33,6 +33,7 @@ else
   else
     NOZLIB=0
     lib=`pkg-config --libs zlib`
+    cflag=`pkg-config --cflags zlib`
     expr -- "$lib" : ".*-lz$" >> config.log  # -- for FreeBSD, #4652
     if [ $? -ne 0 ]; then
       expr -- "$lib" : ".*-lz " >> config.log
@@ -174,8 +175,8 @@ if [ "$NOZLIB" = "1" ]; then
   sed -e "s|@zlib_cflags@|-DNOZLIB|" src/Makevars > src/Makevars.tmp && mv src/Makevars.tmp src/Makevars
   sed -e "s|@zlib_libs@||" src/Makevars > src/Makevars.tmp && mv src/Makevars.tmp src/Makevars
 else
-  sed -e "s|@zlib_cflags@||" src/Makevars > src/Makevars.tmp && mv src/Makevars.tmp src/Makevars
-  sed -e "s|@zlib_libs@|-lz|" src/Makevars > src/Makevars.tmp && mv src/Makevars.tmp src/Makevars
+  sed -e "s|@zlib_cflags@|${cflag}|" src/Makevars > src/Makevars.tmp && mv src/Makevars.tmp src/Makevars
+  sed -e "s|@zlib_libs@|${lib}|" src/Makevars > src/Makevars.tmp && mv src/Makevars.tmp src/Makevars
 fi
 
 exit 0
