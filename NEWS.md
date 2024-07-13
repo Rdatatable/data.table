@@ -62,7 +62,7 @@
 
 10. `dt[,,by=año]` (i.e., using a column name containing a non-ASCII character in `by` as a plain symbol) no longer errors with "object 'año' not found", #4708. Thanks @pfv07 for the report, and Michael Chirico for the fix.
 
-11. Fix some memory management issues in the C routine backing `melt()`, as identified by `rchk`. Thanks Tomas Kalibera and the CRAN team for setting up the `rchk` system, and @MichaelChirico for the fix.
+11. Fix some memory management issues in the C routines backing `melt()`, `froll()`, and GForce `mean()`, as identified by `rchk`. Thanks Tomas Kalibera and the CRAN team for setting up the `rchk` system, and @MichaelChirico for the fix.
 
 ## NOTES
 
