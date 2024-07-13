@@ -2,9 +2,14 @@
 #   NB: pos= is required for these symbols to resolve searching 'upward' from data.table -- if these packages are not already attached,
 #   and we don't use pos=, they'll wind up 'below' data.table on the search() path --> their symbols won't resolve since, when running
 #   from the installed package, this is evaluated from data.table's namespace.
-library(stats, include.only=c("lm", "median", "na.omit", "rnorm", "runif", "sd", "setNames", "var", "weighted.mean"), pos="package:base")
-library(utils, include.only=c("capture.output", "combn", "head", "read.csv", "read.delim", "read.table", "tail", "type.convert", "write.csv", "write.table"), pos="package:base")
-library(datasets, include.only=c("airquality", "BOD", "cars", "ChickWeight", "CO2", "iris", "mtcars"), pos="package:base")
+if ("include.only" %in% names(formals(library))) { # TODO(R>=3.6.0): Remove this.
+  libraryRobust = library
+} else {
+  libraryRobust = function(..., include.only) library(...)
+}
+libraryRobust(stats, include.only=c("lm", "median", "na.omit", "rnorm", "runif", "sd", "setNames", "var", "weighted.mean"), pos="package:base")
+libraryRobust(utils, include.only=c("capture.output", "combn", "head", "read.csv", "read.delim", "read.table", "tail", "type.convert", "write.csv", "write.table"), pos="package:base")
+libraryRobust(datasets, include.only=c("airquality", "BOD", "cars", "ChickWeight", "CO2", "iris", "mtcars"), pos="package:base")
 
 if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   if ((tt<-compiler::enableJIT(-1))>0)
