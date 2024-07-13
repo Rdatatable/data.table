@@ -634,7 +634,7 @@ bunzip2 inst/tests/*.Rraw.bz2  # decompress *.Rraw again so as not to commit com
 ######
 
 ###### Bump dev for PATCH RELEASE
-## WARNING: review this process during the next first patch release (x.y.2) from a regular release (x.y.0), possibly during 1.15.2 release.
+## WARNING: review this process during the next first patch release (x.y.2) from a regular release (x.y.0).
 # 0. Close milestone to prevent new issues being tagged with it. The final 'release checks' issue can be left open in a closed milestone.
 # 1. Check that 'git status' shows 4 files in modified and uncommitted state: DESCRIPTION, NEWS.md, init.c and this .dev/CRAN_Release.cmd
 # 2. Bump patch version in DESCRIPTION to next odd number. Note that DESCRIPTION was in edited and uncommitted state so even number never appears in git.
@@ -645,4 +645,7 @@ bunzip2 inst/tests/*.Rraw.bz2  # decompress *.Rraw again so as not to commit com
 # 7. Another final gd to view all diffs using meld. (I have `alias gd='git difftool &> /dev/null'` and difftool meld: http://meldmerge.org/)
 # 8. Push to master with this consistent commit message: "1.15.0 on CRAN. Bump to 1.15.99"
 # 9. Take sha from step 8 and run `git tag 1.14.8 96c..sha..d77` then `git push origin 1.14.8` (not `git push --tags` according to https://stackoverflow.com/a/5195913/403310)
+#
+# After live on CRAN: Add Patch NEWS submitted to CRAN to dev NEWS.
+#
 ######
