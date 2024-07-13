@@ -45,7 +45,7 @@ static int64_t dtnrows = 0;
 static bool verbose = false;
 static bool warningsAreErrors = false;
 static bool oldNoDateTime = false;
-
+static int *dropFill;
 
 SEXP freadR(
   // params passed to freadMain
@@ -82,7 +82,7 @@ SEXP freadR(
   freadMainArgs args;
   ncol = 0;
   dtnrows = 0;
-  
+
   if (!isString(inputArg) || LENGTH(inputArg)!=1)
     error(_("Internal error: freadR input not a single character string: a filename or the data itself. Should have been caught at R level."));  // # nocov
   const char *ch = (const char *)CHAR(STRING_ELT(inputArg,0));
@@ -102,9 +102,10 @@ SEXP freadR(
     error(_("Internal error: freadR sep not a single character. R level catches this."));  // # nocov
   args.sep = CHAR(STRING_ELT(sepArg,0))[0];   // '\0' when default "auto" was replaced by "" at R level
 
-  if (!(isString(decArg) && LENGTH(decArg)==1 && strlen(CHAR(STRING_ELT(decArg,0)))==1))
+  if (!isString(decArg) || LENGTH(decArg)!=1 || strlen(CHAR(STRING_ELT(decArg,0)))>1) {
     error(_("Internal error: freadR dec not a single character. R level catches this."));  // # nocov
-  args.dec = CHAR(STRING_ELT(decArg,0))[0];
+  }
+  args.dec = CHAR(STRING_ELT(decArg,0))[0];   // '\0' when default "auto" was replaced by "" at R level
 
   if (IS_FALSE(quoteArg)) {
     args.quote = '\0';
@@ -152,7 +153,7 @@ SEXP freadR(
   // here we use bool and rely on fread at R level to check these do not contain NA_LOGICAL
   args.stripWhite = LOGICAL(stripWhiteArg)[0];
   args.skipEmptyLines = LOGICAL(skipEmptyLinesArg)[0];
-  args.fill = LOGICAL(fillArg)[0];
+  args.fill = INTEGER(fillArg)[0];
   args.showProgress = LOGICAL(showProgressArg)[0];
   if (INTEGER(nThreadArg)[0]<1) error(_("nThread(%d)<1"), INTEGER(nThreadArg)[0]);
   args.nth = (uint32_t)INTEGER(nThreadArg)[0];
@@ -306,7 +307,7 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
       else type[i]=CT_DROP;
     }
   }
-  colClassesAs = NULL;
+  colClassesAs = NULL; // any coercions we can't handle here in C are deferred to R (to handle with methods::as) via this attribute
   if (length(colClassesSxp)) {
     SEXP typeRName_sxp = PROTECT(allocVector(STRSXP, NUT));
     for (int i=0; i<NUT; i++) SET_STRING_ELT(typeRName_sxp, i, mkChar(typeRName[i]));
@@ -315,7 +316,7 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
       SET_STRING_ELT(typeRName_sxp, CT_ISO8601_DATE, R_BlankString);
       SET_STRING_ELT(typeRName_sxp, CT_ISO8601_TIME, R_BlankString);
     }
-    SET_VECTOR_ELT(RCHK, 2, colClassesAs=allocVector(STRSXP, ncol));  // if any, this attached to the DT for R level to call as_ methods on
+    SET_VECTOR_ELT(RCHK, 2, colClassesAs=allocVector(STRSXP, ncol));
     if (isString(colClassesSxp)) {
       SEXP typeEnum_idx = PROTECT(chmatch(colClassesSxp, typeRName_sxp, NUT));
       if (selectColClasses==false) {
@@ -374,45 +375,49 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
       }
 
       for (int i=0; i<LENGTH(colClassesSxp); i++) {
-        const int w = INTEGER(typeEnum_idx)[i];
-        signed char thisType = typeEnum[w-1];
-        if (thisType==CT_DROP) continue;  // was dealt with earlier above
+        const int colClassTypeIdx = INTEGER(typeEnum_idx)[i];
+        signed char colClassType = typeEnum[colClassTypeIdx-1];
+        if (colClassType == CT_DROP) continue;  // was dealt with earlier above
         SEXP items = VECTOR_ELT(colClassesSxp,i);
         SEXP itemsInt;
         if (isString(items)) itemsInt = PROTECT(chmatch(items, colNamesSxp, NA_INTEGER));
         else                 itemsInt = PROTECT(coerceVector(items, INTSXP));
         // UNPROTECTed directly just after this for loop. No nprotect++ here is correct.
         for (int j=0; j<LENGTH(items); j++) {
-          int k = INTEGER(itemsInt)[j];
-          if (k==NA_INTEGER) {
+          int colIdx = INTEGER(itemsInt)[j]; // NB: 1-based
+          if (colIdx == NA_INTEGER) {
             if (isString(items))
               DTWARN(_("Column name '%s' (colClasses[[%d]][%d]) not found"), CHAR(STRING_ELT(items, j)), i+1, j+1);
             else
               DTWARN(_("colClasses[[%d]][%d] is NA"), i+1, j+1);
+            continue;
+          }
+          if (colIdx<1 || colIdx>ncol) {
+            DTWARN(_("Column number %d (colClasses[[%d]][%d]) is out of range [1,ncol=%d]"), colIdx, i+1, j+1, ncol);
+            continue;
+          }
+          if (type[colIdx-1]<0) {
+            DTWARN(_("Column %d ('%s') appears more than once in colClasses. The second time is colClasses[[%d]][%d]."), colIdx, CHAR(STRING_ELT(colNamesSxp,colIdx-1)), i+1, j+1);
+            continue;
+          }
+          if (type[colIdx-1] == CT_DROP) {
+            continue;
+          }
+          if (selectRankD) selectRankD[colIdx-1] = rank++;
+          // NB: mark as negative to indicate 'seen'
+          if (colClassType == CT_ISO8601_TIME && type[colIdx-1]!=CT_ISO8601_TIME) {
+            type[colIdx-1] = -CT_STRING; // don't use in-built UTC parser, defer to character and as.POSIXct afterwards which reads in local time
+            SET_STRING_ELT(colClassesAs, colIdx-1, STRING_ELT(listNames, i));
           } else {
-            if (k>=1 && k<=ncol) {
-              if (type[k-1]<0)
-                DTWARN(_("Column %d ('%s') appears more than once in colClasses. The second time is colClasses[[%d]][%d]."), k, CHAR(STRING_ELT(colNamesSxp,k-1)), i+1, j+1);
-              else if (type[k-1]!=CT_DROP) {
-                if (thisType==CT_ISO8601_TIME && type[k-1]!=CT_ISO8601_TIME) {
-                  type[k-1] = -CT_STRING; // don't use in-built UTC parser, defer to character and as.POSIXct afterwards which reads in local time
-                  SET_STRING_ELT(colClassesAs, k-1, STRING_ELT(listNames,i));
-                } else {
-                  type[k-1] = -thisType;     // freadMain checks bump up only not down.  Deliberately don't catch here to test freadMain; e.g. test 959
-                  if (w==NUT) SET_STRING_ELT(colClassesAs, k-1, STRING_ELT(listNames,i));
-                }
-                if (selectRankD) selectRankD[k-1] = rank++;
-              }
-            } else {
-              DTWARN(_("Column number %d (colClasses[[%d]][%d]) is out of range [1,ncol=%d]"), k, i+1, j+1, ncol);
-            }
+            type[colIdx-1] = -colClassType;     // freadMain checks bump up only not down.  Deliberately don't catch here to test freadMain; e.g. test 959
+            if (colClassTypeIdx == NUT) SET_STRING_ELT(colClassesAs, colIdx-1, STRING_ELT(listNames, i)); // unknown type --> defer to R
           }
         }
         UNPROTECT(1); // UNPROTECTing itemsInt inside loop to save protection stack
       }
       for (int i=0; i<ncol; i++) {
         if (type[i]<0) type[i] *= -1;                  // undo sign; was used to detect duplicates
-        else if (selectColClasses) type[i] = CT_DROP;  // reading will proceed in order of columns in file; reorder happens afterwards at R level
+        else if (selectColClasses) type[i] = CT_DROP;  // not seen --> drop; reading will proceed in order of columns in file; reorder happens afterwards at R level
       }
       UNPROTECT(2);  // listNames and typeEnum_idx
     }
@@ -533,6 +538,16 @@ void setFinalNrow(size_t nrow) {
   R_FlushConsole(); // # 2481. Just a convenient place; nothing per se to do with setFinalNrow()
 }
 
+void dropFilledCols(int* dropArg, int ndelete) {
+  dropFill = dropArg;
+  int ndt=length(DT);
+  for (int i=0; i<ndelete; ++i) {
+    SET_VECTOR_ELT(DT, dropFill[i], R_NilValue);
+    SET_STRING_ELT(colNamesSxp, dropFill[i], NA_STRING);
+  }
+  SETLENGTH(DT, ndt-ndelete);
+  SETLENGTH(colNamesSxp, ndt-ndelete);
+}
 
 void pushBuffer(ThreadLocalFreadParsingContext *ctx)
 {

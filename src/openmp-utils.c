@@ -151,7 +151,7 @@ SEXP setDTthreads(SEXP threads, SEXP restore_after_fork, SEXP percent, SEXP thro
   Automatically drop down to 1 thread when called from parallel package (e.g. mclapply) to avoid
   deadlock when data.table is used from within parallel::mclapply; #1745 and #1727.
   GNU OpenMP seems ok with just setting DTthreads to 1 which limits the next parallel region
-  if data.table is used within the fork'd proceess. This is tested by test 1705.
+  if data.table is used within the fork'd process. This is tested by test 1705.
 
   From v1.12.0 we're trying again to RestoreAferFork (#2285) with optional-off due to success
   reported by Ken Run and Mark Klik in fst#110 and fst#112. We had tried that before but had

@@ -1125,7 +1125,7 @@ SEXP gprod(SEXP x, SEXP narmArg) {
       const int thisgrp = grp[i];
       const int elem = nosubset ? xd[i] : (irows[i]==NA_INTEGER ? NA_INTEGER : xd[irows[i]-1]);
       if (elem==NA_INTEGER) {
-        if (!narm) s[thisgrp] = NA_REAL;  // Let NA_REAL propogate from here. R_NaReal is IEEE.
+        if (!narm) s[thisgrp] = NA_REAL;  // Let NA_REAL propagate from here. R_NaReal is IEEE.
         continue;
       }
       s[thisgrp] *= elem; // no under/overflow here, s is long double (like base)
@@ -1203,7 +1203,7 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
   bool lag;
   const bool cycle = stype == CYCLIC;
 
-  R_xlen_t nx = xlength(x), nk = length(nArg);
+  R_xlen_t nk = length(nArg);
   if (!isInteger(nArg)) error(_("Internal error: n must be integer")); // # nocov
   const int *kd = INTEGER(nArg);
   for (int i=0; i<nk; i++) if (kd[i]==NA_INTEGER) error(_("Item %d of n is NA"), i+1);
@@ -1220,7 +1220,7 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
     }
     R_xlen_t ansi = 0;
     SEXP tmp;
-    SET_VECTOR_ELT(ans, g, tmp=allocVector(TYPEOF(x), nx));
+    SET_VECTOR_ELT(ans, g, tmp=allocVector(TYPEOF(x), n));
     #define SHIFT(CTYPE, RTYPE, ASSIGN) {                                                                         \
       const CTYPE *xd = (const CTYPE *)RTYPE(x);                                                                  \
       const CTYPE fill = RTYPE(thisfill)[0];                                                                      \
