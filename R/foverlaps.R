@@ -86,7 +86,7 @@ foverlaps = function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=k
   yclass = c(class(yval1), class(yval2))
   isdouble = FALSE; isposix = FALSE
   if ( any(c("numeric", "POSIXct") %chin% yclass) ) {
-    # next representive double > x under the given precision (48,56 or 64-bit in data.table) = x*incr
+    # next representative double > x under the given precision (48,56 or 64-bit in data.table) = x*incr
     dt_eps = function() {
       bits = floor(log2(.Machine$double.eps))
       2 ^ (bits + (getNumericRounding() * 8L))
@@ -179,10 +179,10 @@ foverlaps = function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=k
   # CsubsetDT bug has been fixed by Matt. So back to using it! Should improve subset substantially.
   if (which) {
     if (mult %chin% c("first", "last"))
-      return (olaps$yid)
+      return(olaps$yid)
     else if (!is.na(nomatch))
-      return (.Call(CsubsetDT, olaps, which(olaps$yid > 0L), seq_along(olaps)))
-    else return (olaps)
+      return(.Call(CsubsetDT, olaps, which(olaps$yid > 0L), seq_along(olaps)))
+    else return(olaps)
   } else {
     if (!is.na(nomatch))
       olaps = .Call(CsubsetDT, olaps, which(olaps$yid > 0L), seq_along(olaps))
@@ -195,7 +195,7 @@ foverlaps = function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=k
     xcols2 = setdiff(names(ans), xcols1)
     ans[, (ycols) := .Call(CsubsetDT, origy, olaps$yid, chmatch(ycols, names(origy)))]
     setcolorder(ans, c(xcols1, ycols, xcols2))
-    return (ans[])
+    return(ans[])
   }
 }
 
@@ -247,4 +247,3 @@ foverlaps = function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=k
 # Tests are added to ensure we cover these aspects (to my knowledge) to ensure that any undesirable changes in the future breaks those tests.
 
 # Conclusion: floating point manipulations are hell!
-

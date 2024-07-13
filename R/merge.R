@@ -59,7 +59,7 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   if (length(list(...))) {
     ell = as.list(substitute(list(...)))[-1L]
     for (n in setdiff(names(ell), "")) warningf("Unknown argument '%s' has been passed.", n)
-    unnamed_n = length(ell) - sum(names(ell) != "")
+    unnamed_n = length(ell) - sum(nzchar(names(ell)))
     if (unnamed_n)
       warningf("Passed %d unknown and unnamed arguments.", unnamed_n)
   }

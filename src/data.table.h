@@ -69,7 +69,7 @@
 // TODO: compare 1.9.6 performance with 1.9.7 with huge number of ASCII strings, and again after Jan 2018 when made macro.
 // Matt moved this to be macro in Jan 2018 so that branch can benefit from branch prediction too wherever used inside loops.
 // This IS_ASCII will dereference s and that cache fetch is the part that may bite more than the branch, though. Without a call to
-// to ENC2UTF as all, the pointer value can just be compared by the calling code without deferencing it. It may still be worth
+// to ENC2UTF as all, the pointer value can just be compared by the calling code without dereferencing it. It may still be worth
 // timing the impact and manually avoiding (is there an IS_ASCII on the character vector rather than testing each item every time?)
 #define NEED2UTF8(s) !(IS_ASCII(s) || (s)==NA_STRING || IS_UTF8(s))
 #define ENC2UTF8(s) (!NEED2UTF8(s) ? (s) : mkCharCE(translateCharUTF8(s), CE_UTF8))
@@ -176,6 +176,7 @@ SEXP dt_na(SEXP x, SEXP cols);
 SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose);
 const char *memrecycle(const SEXP target, const SEXP where, const int start, const int len, SEXP source, const int sourceStart, const int sourceLen, const int colnum, const char *colname);
 SEXP shallowwrapper(SEXP dt, SEXP cols);
+void warn_matrix_column(int i);
 
 SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols,
                 SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts,
@@ -239,7 +240,7 @@ bool isRealReallyInt(SEXP x);
 SEXP isRealReallyIntR(SEXP x);
 SEXP isReallyReal(SEXP x);
 bool allNA(SEXP x, bool errorForBadType);
-SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups);
+SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent);
 bool INHERITS(SEXP x, SEXP char_);
 SEXP copyAsPlain(SEXP x);
 void copySharedColumns(SEXP x);
@@ -276,6 +277,7 @@ SEXP notchin(SEXP x, SEXP table);
 SEXP setattrib(SEXP, SEXP, SEXP);
 SEXP assign(SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP copy(SEXP);
+SEXP setdt_nrows(SEXP);
 SEXP alloccolwrapper(SEXP, SEXP, SEXP);
 SEXP selfrefokwrapper(SEXP, SEXP);
 SEXP truelength(SEXP);
@@ -318,6 +320,7 @@ SEXP glast(SEXP);
 SEXP gfirst(SEXP);
 SEXP gnthvalue(SEXP, SEXP);
 SEXP dim(SEXP);
+SEXP warn_matrix_column_r(SEXP);
 SEXP gvar(SEXP, SEXP);
 SEXP gsd(SEXP, SEXP);
 SEXP gprod(SEXP, SEXP);

@@ -591,7 +591,8 @@ SEXP gmean(SEXP x, SEXP narmArg)
     x = PROTECT(coerceVector(x, REALSXP)); protecti++;
   case REALSXP: {
     if (INHERITS(x, char_integer64)) {
-      x = PROTECT(coerceAs(x, /*as=*/ScalarReal(1), /*copyArg=*/ScalarLogical(TRUE))); protecti++;
+      x = PROTECT(coerceAs(x, /*as=*/PROTECT(ScalarReal(1)), /*copyArg=*/ScalarLogical(TRUE))); protecti++;
+      UNPROTECT(1); // as= input to coerceAs()
     }
     const double *restrict gx = gather(x, &anyNA);
     ans = PROTECT(allocVector(REALSXP, ngrp)); protecti++;
@@ -1125,7 +1126,7 @@ SEXP gprod(SEXP x, SEXP narmArg) {
       const int thisgrp = grp[i];
       const int elem = nosubset ? xd[i] : (irows[i]==NA_INTEGER ? NA_INTEGER : xd[irows[i]-1]);
       if (elem==NA_INTEGER) {
-        if (!narm) s[thisgrp] = NA_REAL;  // Let NA_REAL propogate from here. R_NaReal is IEEE.
+        if (!narm) s[thisgrp] = NA_REAL;  // Let NA_REAL propagate from here. R_NaReal is IEEE.
         continue;
       }
       s[thisgrp] *= elem; // no under/overflow here, s is long double (like base)
