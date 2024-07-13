@@ -18725,4 +18725,4 @@ x = list(
 )
 N = 5e4
 y = x[rep(1:5, N)]
-test(2266, rbindlist(y, fill=TRUE), rbindlist(x, fill=TRUE)[rep(1:5, N)])
+test(2267, rbindlist(y, fill=TRUE), rbindlist(x, fill=TRUE)[rep(1:5, N)])
