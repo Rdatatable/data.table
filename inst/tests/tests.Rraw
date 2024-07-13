@@ -18388,9 +18388,12 @@ test(2250.11, dt[, names(.SD(2)) := lapply(.SD, .I)], error=base_messages$missin
 dt = data.table(a = 1:3, b = 5:7, grp = c('a', 'a', 'b'))
 test(2250.12, dt[, names(.SD) := lapply(.SD, function(x) x + b), .SDcols = "a"], data.table(a = 1:3 + 5:7, b = 5:7, grp = c('a', 'a', 'b')))
 
-
 dt = data.table(a = 1L, b = 2L, c = 3L, d = 4L, e = 5L, f = 6L)
 test(2250.13, dt[, names(.SD)[1:5] := sum(.SD)], data.table(a = 21L, b = 21L, c = 21L, d = 21L, e = 21L, f = 6L))
+
+dt = data.table(a = 1) #6033 revdep follow-up
+my_col = "a"
+test(2250.14, dt[, substitute(my_col) := .(3)], data.table(a = 3))
 
 # fread(...,fill) can also be used to specify a guess on the maximum number of columns #2691 #1812 #4130 #3436 #2727
 dt_str = paste(rep(c("1,2\n", "1,2,3\n"), each=100), collapse="")
