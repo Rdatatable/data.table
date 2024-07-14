@@ -55,6 +55,15 @@ static uint8_t **key = NULL;
 static int *anso = NULL;
 static bool notFirst=false;
 
+typedef struct {
+    int from;
+    int to;
+    int radix;
+} State;
+
+static State *queue= NULL;
+static int front, rear, queuesize;
+
 static char msg[1001];
 #define STOP(...) do {snprintf(msg, 1000, __VA_ARGS__); cleanup(); error("%s", msg);} while(0)      // http://gcc.gnu.org/onlinedocs/cpp/Swallowing-the-Semicolon.html#Swallowing-the-Semicolon
 // use STOP in this file (not error()) to ensure cleanup() is called first
@@ -405,7 +414,7 @@ uint64_t dtwiddle(double x) //const void *p, int i)
   STOP(_("Unknown non-finite value; not NA, NaN, -Inf or +Inf"));  // # nocov
 }
 
-void radix_r(const int from, const int to, const int radix);
+void radix_i(int from, int to, int radix);
 
 SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg)
 // sortGroups TRUE from setkey and regular forder, FALSE from by= for efficiency so strings don't have to be sorted and can be left in appearance order
@@ -511,7 +520,6 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
       if (sortType!=1 && sortType!=-1)
         STOP(_("Item %d of order (ascending/descending) is %d. Must be +1 or -1."), col+1, sortType);
     }
-    //Rprintf(_("sortType = %d\n"), sortType);
     switch(TYPEOF(x)) {
     case INTSXP : case LGLSXP :  // TODO skip LGL and assume range [0,1]
       range_i32(INTEGER(x), nrow, &min, &max, &na_count);
@@ -720,7 +728,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
   TMP =  (int *)malloc(nth*UINT16_MAX*sizeof(int)); // used by counting sort (my_n<=65536) in radix_r()
   UGRP = (uint8_t *)malloc(nth*256);                // TODO: align TMP and UGRP to cache lines (and do the same for stack allocations too)
   if (!TMP || !UGRP /*|| TMP%64 || UGRP%64*/) STOP(_("Failed to allocate TMP or UGRP or they weren't cache line aligned: nth=%d"), nth);
-  
+
   if (retgrp) {
     gs_thread = calloc(nth, sizeof(int *));     // thread private group size buffers
     gs_thread_alloc = calloc(nth, sizeof(int));
@@ -728,7 +736,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
     if (!gs_thread || !gs_thread_alloc || !gs_thread_n) STOP(_("Could not allocate (very tiny) group size thread buffers"));
   }
   if (nradix) {
-    radix_r(0, nrow-1, 0);  // top level recursive call: (from, to, radix)
+    radix_i(0, nrow-1, 0);
   } else {
     push(&nrow, 1);
   }
@@ -815,17 +823,46 @@ static bool sort_ugrp(uint8_t *x, const int n)
   return skip;
 }
 
-void radix_r(const int from, const int to, const int radix) {
+void pushState(State s) {
+  if (rear == queuesize) {
+    queuesize *= 2;
+    queue = (State*)realloc(queue, queuesize * sizeof(State));
+    if (!queue) STOP(_("Unable to reallocate queue of size=%d for iterative radix sort. Please report to data.table issue tracker."), queuesize);
+  }
+  int pos;
+  for (pos = rear-1; pos>=0; pos--) {
+    if (s.from < queue[pos].from) queue[pos+1] = queue[pos];
+    else break;
+  }
+  queue[pos+1] = s;
+  rear++;
+}
+
+State popState() {
+  return queue[front++];
+}
+
+void radix_i(int from, int to, int radix) {
   TBEG();
+  front = rear = 0;
+  queuesize = nradix > nrow ? nradix : nrow;
+  queue = (State*)malloc(queuesize * sizeof(State));
+  if (!queue) STOP(_("Unable to allocate queue of size=%d for iterative radix sort. Please report to data.table issue tracker."), queuesize);
+
+  pushState((State){from, to, 0}); // recursive call in forder
+  while (rear > front) {
+  State current = popState();
+  from = current.from;
+  to = current.to;
+  radix = current.radix;
   const int my_n = to-from+1;
   if (my_n==1) {  // minor TODO: batch up the 1's instead in caller (and that's only needed when retgrp anyway)
     push(&my_n, 1);
     TEND(5);
-    return;
+    continue;
   }
   else if (my_n<=256) {
     // if nth==1
-    // Rprintf(_("insert clause: radix=%d, my_n=%d, from=%d, to=%d\n"), radix, my_n, from, to);
     // insert sort with some twists:
     // i) detects if grouped; if sortType==0 can then skip
     // ii) keeps group appearance order at byte level to minimize movement
@@ -916,7 +953,7 @@ void radix_r(const int from, const int to, const int radix) {
     // my_key is now grouped (and sorted by group too if sort!=0)
     // all we have left to do is find the group sizes and either recurse or push
     if (radix+1==nradix && !retgrp) {
-      return;
+      continue;
     }
     int ngrp=0, my_gs[my_n];  //minor TODO: could know number of groups with certainty up above
     my_gs[ngrp]=1;
@@ -930,14 +967,13 @@ void radix_r(const int from, const int to, const int radix) {
       push(my_gs, ngrp);
     } else {
       for (int i=0, f=from; i<ngrp; i++) {
-        radix_r(f, f+my_gs[i]-1, radix+1);
+        pushState((State){f, f+my_gs[i]-1, radix+1});
         f+=my_gs[i];
       }
     }
-    return;
+    continue;
   }
   else if (my_n<=UINT16_MAX) {    // UINT16_MAX==65535 (important not 65536)
-    // if (nth==1) Rprintf(_("counting clause: radix=%d, my_n=%d\n"), radix, my_n);
     uint16_t my_counts[256] = {0};  // Needs to be all-0 on entry. This ={0} initialization should be fast as it's on stack. Otherwise, we have to manage
                                     // a stack of counts anyway since this is called recursively and these counts are needed to make the recursive calls.
                                     // This thread-private stack alloc has no chance of false sharing and gives omp and compiler best chance.
@@ -1015,7 +1051,7 @@ void radix_r(const int from, const int to, const int radix) {
     }
 
     if (!retgrp && radix+1==nradix) {
-      return;  // we're done. avoid allocating and populating very last group sizes for last key
+      continue;  // we're done. avoid allocating and populating very last group sizes for last key
     }
     int my_gs[ngrp==0 ? 256 : ngrp];  // ngrp==0 when sort and skip==true; we didn't count the non-zeros in my_counts yet in that case
     if (sortType!=0) {
@@ -1031,11 +1067,11 @@ void radix_r(const int from, const int to, const int radix) {
     } else {
       // this single thread will now descend and resolve all groups, now that the groups are close in cache
       for (int i=0, my_from=from; i<ngrp; i++) {
-        radix_r(my_from, my_from+my_gs[i]-1, radix+1);
+        pushState((State){my_from, my_from+my_gs[i]-1, radix+1});
         my_from+=my_gs[i];
       }
     }
-    return;
+    continue;
   }
   // else parallel batches. This is called recursively but only once or maybe twice before resolving to UINT16_MAX branch above
 
@@ -1218,7 +1254,7 @@ void radix_r(const int from, const int to, const int radix) {
       // each in parallel here and they're all dealt with in parallel. There is no nestedness here.
       for (int i=0; i<ngrp; i++) {
         int start = from + starts[ugrp[i]];
-        radix_r(start, start+my_gs[i]-1, radix+1);
+        pushState((State){start, start+my_gs[i]-1, radix+1});
         flush();
       }
       TEND(24)
@@ -1230,7 +1266,7 @@ void radix_r(const int from, const int to, const int radix) {
         #pragma omp parallel for ordered schedule(dynamic) num_threads(MIN(nth, ngrp))  // #5077
         for (int i=0; i<ngrp; i++) {
           int start = from + starts[ugrp[i]];
-          radix_r(start, start+my_gs[i]-1, radix+1);
+          pushState((State){start, start+my_gs[i]-1, radix+1});
           #pragma omp ordered
           flush();
         }
@@ -1239,7 +1275,7 @@ void radix_r(const int from, const int to, const int radix) {
         #pragma omp parallel for schedule(dynamic) num_threads(MIN(nth, ngrp))  // #5077
         for (int i=0; i<ngrp; i++) {
           int start = from + starts[ugrp[i]];
-          radix_r(start, start+my_gs[i]-1, radix+1);
+          pushState((State){start, start+my_gs[i]-1, radix+1});
         }
       }
       TEND(25)
@@ -1249,9 +1285,10 @@ void radix_r(const int from, const int to, const int radix) {
   free(starts);
   free(ugrps);
   free(ngrps);
+  }
+  free(queue);
   TEND(26)
 }
-
 
 SEXP issorted(SEXP x, SEXP by)
 {
