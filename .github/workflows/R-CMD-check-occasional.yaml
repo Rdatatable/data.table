@@ -42,7 +42,6 @@ jobs:
             r: '4.1'
 
     env:
-      R_LIBS_USER: /home/runner/work/r-lib
       R_REMOTES_NO_ERRORS_FROM_WARNINGS: true
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
 
@@ -95,16 +94,6 @@ jobs:
             eval sudo $cmd
           done < <(Rscript -e 'writeLines(remotes::system_requirements("ubuntu", "20.04"))')
 
-      - name: Install dependencies
-        run: |
-          remotes::install_deps(dependencies=TRUE, force=TRUE)
-          other_deps_expr = parse('inst/tests/other.Rraw', n=1L)
-          eval(other_deps_expr)
-          pkgs <- get(as.character(other_deps_expr[[1L]][[2L]]))
-          # May not install on oldest R versions
-          try(remotes::install_cran(c(pkgs, "rcmdcheck"), force=TRUE))
-        shell: Rscript {0}
-
       - name: Check
         env:
           # several Suggests dependencies have R dependencies more recent than ours
@@ -114,22 +103,26 @@ jobs:
         run: |
           options(crayon.enabled = TRUE)
 
+          remotes::install_deps(dependencies=TRUE, force=TRUE)
+          other_deps_expr = parse('inst/tests/other.Rraw', n=1L)
+          eval(other_deps_expr)
+          pkgs <- get(as.character(other_deps_expr[[1L]][[2L]]))
+          # Many will not install on oldest R versions
+          try(remotes::install_cran(c(pkgs, "rcmdcheck"), force=TRUE))
+
           # we define this in data.table namespace, but it appears to be exec
           if (!exists("isFALSE", "package:base")) {
             if (!exists("isFALSE", asNamespace("data.table"))) {
-              cat("isFALSE not found in base, but data.table did not define it either!\n")
+              message("isFALSE not found in base, but data.table did not define it either!\n")
             }
             # attempt defining it here as a workaround...
             isFALSE = function(x) is.logical(x) && length(x) == 1L && !is.na(x) && !x
           }
 
-          other_deps_expr = parse('inst/tests/other.Rraw', n=1L)
-          eval(other_deps_expr)
-          pkgs = get(as.character(other_deps_expr[[1L]][[2L]]))
           has_pkg = sapply(pkgs, requireNamespace, quietly=TRUE)
           run_other = all(has_pkg)
           if (!run_other) {
-            cat(sprintf("Skipping other.Rraw since some required packages are not available: %s\n", toString(pkgs[!has_pkg])))
+            message(sprintf("Skipping other.Rraw since some required packages are not available: %s\n", toString(pkgs[!has_pkg])))
           }
           Sys.setenv(TEST_DATA_TABLE_WITH_OTHER_PACKAGES=as.character(run_other))
 
