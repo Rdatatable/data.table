@@ -5,7 +5,7 @@
 SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
 {
   if (!isLogical(fillArg) || LENGTH(fillArg) != 1 || LOGICAL(fillArg)[0] == NA_LOGICAL)
-    error(_("fill= should be TRUE or FALSE"));
+    error(_("%s should be TRUE or FALSE"), "fill");
   if (!isLogical(usenamesArg) || LENGTH(usenamesArg)!=1)
     error(_("use.names= should be TRUE, FALSE, or not used (\"check\" by default)"));  // R levels converts "check" to NA
   if (!length(l)) return(l);
@@ -190,7 +190,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
   if (fill && usenames==NA_LOGICAL) error(_("Internal error: usenames==NA but fill=TRUE. usenames should have been set to TRUE earlier with warning."));
   if (!fill && (usenames==TRUE || usenames==NA_LOGICAL)) {
     // Ensure no missings in both cases, and (when usenames==NA) all columns in same order too
-    // We proceeded earlier as if fill was true, so varying ncol items will have missings here
+    // We proceeded earlier as if fill was true, so varying ncol items will have missing here
     char buff[1001] = "";
     const char *extra = usenames==TRUE?"":_(" use.names='check' (default from v1.12.2) emits this message and proceeds as if use.names=FALSE for "\
                                             " backwards compatibility. See news item 5 in v1.12.2 for options to control this message.");
@@ -449,7 +449,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
               //                                                                                    ^^ #3915 and tests 2015.2-5
               for (int r=0; r<thisnrow; ++r) targetd[ansloc+r] = val;
             } else {
-              // length(thisCol)==thisnrow alreay checked before this truelength-clobber region
+              // length(thisCol)==thisnrow already checked before this truelength-clobber region
               // If all i==truelength(i) then just do a memcpy since hop is identity. Otherwise hop via the integer map.
               bool hop = false;
               if (orderedFactor) {
@@ -515,12 +515,14 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
         if (w==-1 || !length(thisCol=VECTOR_ELT(li, w))) {  // !length for zeroCol warning above; #1871
           writeNA(target, ansloc, thisnrow, false);  // writeNA is integer64 aware and writes INT64_MIN
         } else {
+          bool listprotect = false;
           if ((TYPEOF(target)==VECSXP || TYPEOF(target)==EXPRSXP) && TYPEOF(thisCol)!=TYPEOF(target)) {
             // do an as.list() on the atomic column; #3528
-            thisCol = PROTECT(coerceVector(thisCol, TYPEOF(target))); nprotect++;
+            thisCol = PROTECT(coerceVector(thisCol, TYPEOF(target))); listprotect = true;
           }
           // else coerces if needed within memrecycle; with a no-alloc direct coerce from 1.12.4 (PR #3909)
           const char *ret = memrecycle(target, R_NilValue, ansloc, thisnrow, thisCol, 0, -1, idcol+j+1, foundName);
+          if (listprotect) UNPROTECT(1); // earlier unprotect rbindlist calls with lots of lists #4536
           if (ret) warning(_("Column %d of item %d: %s"), w+1, i+1, ret);
           // e.g. when precision is lost like assigning 3.4 to integer64; test 2007.2
           // TODO: but maxType should handle that and this should never warn

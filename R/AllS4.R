@@ -3,21 +3,21 @@ if ("package:data.table" %in% search()) stopf("data.table package loaded. When d
 
 ## Allows data.table to be defined as an object of an S4 class,
 ## or even have data.table be a super class of an S4 class.
-setOldClass(c('data.frame'))
-setOldClass(c('data.table', 'data.frame'))
+methods::setOldClass(c('data.frame'))
+methods::setOldClass(c('data.table', 'data.frame'))
 
 ## as(some.data.frame, "data.table")
-setAs("data.frame", "data.table", function(from) {
+methods::setAs("data.frame", "data.table", function(from) {
   as.data.table(from)
 })
 
 ## as(some.data.table, "data.frame")
-setAs("data.table", "data.frame", function(from) {
+methods::setAs("data.table", "data.frame", function(from) {
   as.data.frame(from)
 })
 
-setOldClass("IDate")
-setOldClass("ITime")
+methods::setOldClass("IDate")
+methods::setOldClass("ITime")
 
-setAs("character", "IDate", function(from) as.IDate(from))
-setAs("character", "ITime", function(from) as.ITime(from))
+methods::setAs("character", "IDate", function(from) as.IDate(from))
+methods::setAs("character", "ITime", function(from) as.ITime(from))

@@ -21,15 +21,8 @@ nan_is_na = function(x) {
   stopf("Argument 'nan' must be NA or NaN")
 }
 
-if (base::getRversion() < "3.2.0") {  # Apr 2015
-  isNamespaceLoaded = function(x) x %chin% loadedNamespaces()
-}
-
-if (!exists('startsWith', 'package:base', inherits=FALSE)) {  # R 3.3.0; Apr 2016
-  startsWith = function(x, stub) substr(x, 1L, nchar(stub))==stub
-}
 # endsWith no longer used from #5097 so no need to backport; prevent usage to avoid dev delay until GLCI's R 3.1.0 test
-endsWith = function(...) stop("Internal error: use endsWithAny instead of base::endsWith")
+endsWith = function(...) stop("Internal error: use endsWithAny instead of base::endsWith", call.=FALSE)
 
 startsWithAny = function(x,y) .Call(CstartsWithAny, x, y, TRUE)
 endsWithAny = function(x,y) .Call(CstartsWithAny, x, y, FALSE)
@@ -67,19 +60,25 @@ require_bit64_if_needed = function(DT) {
 }
 
 # vapply for return value character(1)
-vapply_1c = function (x, fun, ..., use.names = TRUE) {
+vapply_1c = function(x, fun, ..., use.names = TRUE) {
   vapply(X = x, FUN = fun, ..., FUN.VALUE = NA_character_, USE.NAMES = use.names)
 }
 
 # vapply for return value logical(1)
-vapply_1b = function (x, fun, ..., use.names = TRUE) {
+vapply_1b = function(x, fun, ..., use.names = TRUE) {
   vapply(X = x, FUN = fun, ..., FUN.VALUE = NA, USE.NAMES = use.names)
 }
 
 # vapply for return value integer(1)
-vapply_1i = function (x, fun, ..., use.names = TRUE) {
+vapply_1i = function(x, fun, ..., use.names = TRUE) {
   vapply(X = x, FUN = fun, ..., FUN.VALUE = NA_integer_, USE.NAMES = use.names)
 }
+
+# base::xor(), but with scalar operators
+XOR = function(x, y) (x || y) && !(x && y)
+
+# not is.atomic because is.atomic(matrix) is true
+cols_with_dims = function(x) vapply_1i(x, function(j) length(dim(j))) > 0L
 
 more = function(f) system(paste("more",f))    # nocov  (just a dev helper)
 
@@ -93,7 +92,7 @@ name_dots = function(...) {
   } else {
     vnames[is.na(vnames)] = ""
   }
-  notnamed = vnames==""
+  notnamed = !nzchar(vnames)
   if (any(notnamed)) {
     syms = vapply_1b(dot_sub, is.symbol)  # save the deparse() in most cases of plain symbol
     for (i in which(notnamed)) {
@@ -114,6 +113,10 @@ brackify = function(x, quote=FALSE) {
   if (length(x) > CUTOFF) x = c(x[1:CUTOFF], '...')
   sprintf('[%s]', toString(x))
 }
+
+# convenience for specifying columns in some cases, e.g. by= and key=
+# caller should ensure length(x) == 1 & handle accordingly.
+cols_from_csv = function(x) strsplit(x, ',', fixed=TRUE)[[1L]]
 
 # patterns done via NSE in melt.data.table and .SDcols in `[.data.table`
 # was called do_patterns() before PR#4731
@@ -145,14 +148,15 @@ is_utc = function(tz) {
   # via grep('UTC|GMT', OlsonNames(), value = TRUE); ordered by "prior" frequency
   utc_tz = c("UTC", "GMT", "Etc/UTC", "Etc/GMT", "GMT-0", "GMT+0", "GMT0")
   if (is.null(tz)) tz = Sys.timezone()
-  return(tz %chin% utc_tz)
+  tz %chin% utc_tz
 }
 
 # very nice idea from Michael to avoid expression repetition (risk) in internal code, #4226
-"%iscall%" = function(e, f) {
+`%iscall%` = function(e, f) {
   if (!is.call(e)) return(FALSE)
   if (is.name(e1 <- e[[1L]])) return(e1 %chin% f)
-  paste(deparse(e1), collapse = " ") %chin% f # complicated cases e.g. a closure/builtin on LHS of call; note that format() is much (e.g. 40x) slower than as.character()
+  if (e1 %iscall% '::') return(e1[[3L]] %chin% f)
+  paste(deparse(e1), collapse = " ") %chin% f # complicated cases e.g. a closure/builtin on LHS of call; note that format() is much (e.g. 40x) slower than deparse()
 }
 
 # nocov start #593 always return a data.table
@@ -169,4 +173,3 @@ rss = function() {  #5515 #5517
   round(ans / 1024, 1L)  # return MB
   # nocov end
 }
-
