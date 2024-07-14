@@ -18732,3 +18732,7 @@ x = list(
 N = 5e4
 y = x[rep(1:5, N)]
 test(2268, rbindlist(y, fill=TRUE), rbindlist(x, fill=TRUE)[rep(1:5, N)])
+
+# shift of many elements accumulated PROTECT() for the fill values instead of releasing as soon as possible
+l = as.list(seq_len(2e4))
+test(2269, shift(l), as.list(rep(NA_integer_, 2e4)))
