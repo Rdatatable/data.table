@@ -176,4 +176,3 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type)
   UNPROTECT(nprotect); // ans, x?
   return ans;
 }
-
