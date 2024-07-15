@@ -458,10 +458,11 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
   if (LENGTH(ascArg) != LENGTH(by)) {
     if (LENGTH(ascArg)!=1)
       STOP(_("'order' length (%d) is different to by='s length (%d)"), LENGTH(ascArg), LENGTH(by));
-    SEXP recycleAscArg = PROTECT(allocVector(INTSXP, LENGTH(by))); n_protect++;
+    SEXP recycleAscArg = PROTECT(allocVector(INTSXP, LENGTH(by)));
     for (int j=0; j<LENGTH(recycleAscArg); j++)
       INTEGER(recycleAscArg)[j] = INTEGER(ascArg)[0];
     ascArg = recycleAscArg;
+    UNPROTECT(1); // recycleAscArg
   }
   nrow = length(VECTOR_ELT(DT,0));
   int n_cplx = 0;
@@ -1575,7 +1576,7 @@ bool idxAnyNF(SEXP idx) {
 }
 
 // lazy forder, re-use existing key or index if possible, otherwise call forder
-SEXP forderLazy(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg, SEXP lazyArg) {
+SEXP forderMaybePresorted(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg, SEXP lazyArg) {
   const bool verbose = GetVerbose();
   int protecti = 0;
   double tic=0.0;
@@ -1612,7 +1613,7 @@ SEXP forderLazy(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGro
       opt = -1;
     } else {
       if (verbose)
-        Rprintf("forderLazy: opt not possible: is.data.table(DT)=%d, sortGroups=%d, all1(ascArg)=%d\n", INHERITS(DT,char_datatable), sortGroups, all1(ascArg));
+        Rprintf("forderMaybePresorted: opt not possible: is.data.table(DT)=%d, sortGroups=%d, all1(ascArg)=%d\n", INHERITS(DT,char_datatable), sortGroups, all1(ascArg));
       opt = 0;
     }
   } else if (lazy) {
@@ -1631,7 +1632,7 @@ SEXP forderLazy(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGro
     opt = 1; // keyOpt
     ans = PROTECT(allocVector(INTSXP, 0)); protecti++;
     if (verbose)
-      Rprintf("forderLazy: using key: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
+      Rprintf("forderMaybePresorted: using key: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
   }
   if (opt == -1 && GetUseIndex()) {
     SEXP idx = getIndex(DT, by);
@@ -1666,23 +1667,23 @@ SEXP forderLazy(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGro
           opt = 2; // idxOpt but need to drop groups or stats
         } else if (!hasGrp && retGrp && !hasStats && retStats) {
           if (verbose)
-            Rprintf("forderLazy: index found but not for retGrp and retStats: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
+            Rprintf("forderMaybePresorted: index found but not for retGrp and retStats: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
         } else if (!hasGrp && retGrp) {
           if (verbose)
-            Rprintf("forderLazy: index found but not for retGrp: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
+            Rprintf("forderMaybePresorted: index found but not for retGrp: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
         } else if (!hasStats && retStats) {
           if (verbose)
-            Rprintf("forderLazy: index found but not for retStats: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
+            Rprintf("forderMaybePresorted: index found but not for retStats: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
         } else {
           error("internal error: lazy forder index optimization unhandled branch of retGrp-retStats, please report to issue tracker"); // # nocov
         }
       } else {
         if (!hasStats) {
           if (verbose)
-            Rprintf("forderLazy: index found but na.last=TRUE and no stats available: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
+            Rprintf("forderMaybePresorted: index found but na.last=TRUE and no stats available: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
         } else if (idxAnyNF(idx)) {
           if (verbose)
-            Rprintf("forderLazy: index found but na.last=TRUE and NAs present: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
+            Rprintf("forderMaybePresorted: index found but na.last=TRUE and NAs present: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
         } else {
           error("internal error: lazy forder index optimization unhandled branch of last.na=T, please report to issue tracker"); // # nocov
         }
@@ -1690,7 +1691,7 @@ SEXP forderLazy(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGro
       if (opt == 2) {
         ans = idx;
         if (verbose)
-          Rprintf("forderLazy: using existing index: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
+          Rprintf("forderMaybePresorted: using existing index: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
       }
     }
   }
@@ -1702,11 +1703,11 @@ SEXP forderLazy(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGro
         GetAutoIndex()) { // disabled by default, use datatable.forder.auto.index=T to enable, do not export/document, use for debugging only
       putIndex(DT, by, ans);
       if (verbose)
-        Rprintf("forderLazy: setting index (retGrp=%d, retStats=%d) on DT: %s\n", retGrp, retStats, CHAR(STRING_ELT(idxName(DT, by), 0)));
+        Rprintf("forderMaybePresorted: setting index (retGrp=%d, retStats=%d) on DT: %s\n", retGrp, retStats, CHAR(STRING_ELT(idxName(DT, by), 0)));
     }
   }
   if (verbose)
-    Rprintf("forderLazy: opt=%d, took %.3fs\n", opt, omp_get_wtime()-tic);
+    Rprintf("forderMaybePresorted: opt=%d, took %.3fs\n", opt, omp_get_wtime()-tic);
   UNPROTECT(protecti);
   return ans;
 }

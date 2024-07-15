@@ -139,7 +139,7 @@ int checkOverAlloc(SEXP x);
 int StrCmp(SEXP x, SEXP y);
 uint64_t dtwiddle(double x);
 SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg);
-SEXP forderLazy(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg, SEXP lazyArg); // lazy wrapper to forder
+SEXP forderMaybePresorted(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg, SEXP lazyArg); // lazy wrapper to forder
 int getNumericRounding_C(void);
 
 // reorder.c

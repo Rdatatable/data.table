@@ -71,11 +71,8 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
   } else {
     o = forderv(x, cols, sort=TRUE, retGrp=!physical, lazy=TRUE)
   }
-  if (!physical) { # index COULD BE saved from C forderLazy already, but disabled for now
-    if (!isTRUE(getOption("datatable.forder.auto.index"))) {
-      if (is.null(attr(x, "index", exact=TRUE))) setattr(x, "index", integer())
-      setattr(attr(x, "index", exact=TRUE), paste0("__", cols, collapse=""), o)
-    }
+  if (!physical) { # index COULD BE saved from C forderMaybePresorted already, but disabled for now
+    maybe_reset_index(x, cols, o)
     return(invisible(x))
   }
   if (length(o)) {
@@ -143,6 +140,13 @@ is.sorted = function(x, by=NULL) {
   # Return value of TRUE/FALSE is relied on in [.data.table quite a bit on vectors. Simple. Stick with that (rather than -1/0/+1)
 }
 
+maybe_reset_index = function(x, idx, cols) {
+  if (isTRUE(getOption("datatable.forder.auto.index"))) return(invisible())
+  if (is.null(attr(x, "index", exact=TRUE))) setattr(x, "index", integer())
+  setattr(attr(x, "index", exact=TRUE), paste0("__", cols, collapse=""), idx)
+  invisible(x)
+}
+
 ORDERING_TYPES = c('logical', 'integer', 'double', 'complex', 'character')
 forderv = function(x, by=seq_along(x), retGrp=FALSE, retStats=retGrp, sort=TRUE, order=1L, na.last=FALSE, lazy=getOption("datatable.forder.lazy",NA)) {
   if (is.atomic(x) || is.null(x)) {  # including forderv(NULL) which returns error consistent with base::order(NULL),
@@ -153,7 +157,7 @@ forderv = function(x, by=seq_along(x), retGrp=FALSE, retStats=retGrp, sort=TRUE,
     by = colnamesInt(x, by, check_dups=FALSE)
   }
   order = as.integer(order) # length and contents of order being +1/-1 is checked at C level
-  .Call(CforderLazy, x, by, retGrp, retStats, sort, order, na.last, lazy)  # returns integer() if already sorted, regardless of sort=TRUE|FALSE
+  .Call(CforderMaybePresorted, x, by, retGrp, retStats, sort, order, na.last, lazy)  # returns integer() if already sorted, regardless of sort=TRUE|FALSE
 }
 
 forder = function(..., na.last=TRUE, decreasing=FALSE)
