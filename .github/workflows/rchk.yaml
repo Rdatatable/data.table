@@ -22,34 +22,34 @@ on:
   pull_request:
 
 jobs:
-  name: "rchk"
-  runs-on: ubuntu-latest
-  steps:
-    - uses: r-lib/actions/setup-r@v2
+  rchk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: r-lib/actions/setup-r@v2
         with:
-          r-version: devel
-    - name: Build
-      run: |
-        R CMD build --no-build-vignettes .
-        mkdir packages
-        mv data.table_*.tar.gz packages
-    - name: rchk
-      run: |
-        docker run -v `pwd`/packages:/rchk/packages kalibera/rchk:latest /rchk/packages/data.table_*.tar.gz |& tee rchk.out
-    - name: Confirm that rchk has no errors
-      # Suspicious call, [UP], and [PB] are all of the error types currently at
-      # https://github.com/kalibera/cran-checks/tree/HEAD/rchk/results
-      # though this might not be exhaustive, there does not appear to be a way to have rchk return an error code
-      # CRAN also will remove some of the outputs (especially those related to Rcpp and strptime, e.g.
-      # ERROR: too many states (abstraction error?))
-      # https://github.com/kalibera/rchk
-      run: |
-        if [ $(grep -c "Suspicious call" rchk.out) -gt 0 ] || [ $(grep -c "\[UP\]" rchk.out) -gt 0 ] || [ $(grep -c "\[PB\]" rchk.out) -gt 0 ]; then
-          echo "Found rchk errors"
-          cat rchk.out
-          exit 1
-        fi
-      if: always()
-    - name: Dump rchk output logs
-      run: cat rchk.out
-      if: always()
+            r-version: 'devel'
+      - name: Build
+        run: |
+          R CMD build --no-build-vignettes .
+          mkdir packages
+          mv data.table_*.tar.gz packages
+      - name: rchk
+        run: |
+          docker run -v `pwd`/packages:/rchk/packages kalibera/rchk:latest /rchk/packages/data.table_*.tar.gz |& tee rchk.out
+      - name: Confirm that rchk has no errors
+        # Suspicious call, [UP], and [PB] are all of the error types currently at
+        # https://github.com/kalibera/cran-checks/tree/HEAD/rchk/results
+        # though this might not be exhaustive, there does not appear to be a way to have rchk return an error code
+        # CRAN also will remove some of the outputs (especially those related to Rcpp and strptime, e.g.
+        # ERROR: too many states (abstraction error?))
+        # https://github.com/kalibera/rchk
+        run: |
+          if [ $(grep -c "Suspicious call" rchk.out) -gt 0 ] || [ $(grep -c "\[UP\]" rchk.out) -gt 0 ] || [ $(grep -c "\[PB\]" rchk.out) -gt 0 ]; then
+            echo "Found rchk errors"
+            cat rchk.out
+            exit 1
+          fi
+        if: always()
+      - name: Dump rchk output logs
+        run: cat rchk.out
+        if: always()
