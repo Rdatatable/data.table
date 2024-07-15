@@ -32,7 +32,7 @@ jobs:
             r-version: 'devel'
       - name: Build
         run: |
-          ls
+          ls -l | cat
           R CMD build --no-build-vignettes .
           mkdir packages
           mv data.table_*.tar.gz packages
