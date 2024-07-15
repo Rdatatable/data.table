@@ -124,7 +124,8 @@ jobs:
           if (!run_other) {
             message(sprintf("Skipping other.Rraw since some required packages are not available: %s\n", toString(pkgs[!has_pkg])))
           }
-          Sys.setenv(TEST_DATA_TABLE_WITH_OTHER_PACKAGES=as.character(run_other))
+          # IINM rcmdcheck isolates its env from the calling process', besides what's passed to env=
+          env = c(TEST_DATA_TABLE_WITH_OTHER_PACKAGES=as.character(run_other))
 
           do_vignettes = requireNamespace("knitr", quietly=TRUE)
 
@@ -132,13 +133,13 @@ jobs:
           check_args = c("--no-manual", "--as-cran")
           if (!do_vignettes) check_args = c(check_args, "--no-build-vignettes", "--ignore-vignettes")
           if (requireNamespace("rcmdcheck", quietly=TRUE)) {
-            rcmdcheck::rcmdcheck(args = check_args, build_args = build_args, error_on = "warning", check_dir = "check")
+            rcmdcheck::rcmdcheck(args = check_args, build_args = build_args, error_on = "warning", check_dir = "check", env=env)
           } else {
             Rbin = if (.Platform$OS.type == "windows") "R.exe" else "R"
             system2(Rbin, c("CMD", "build", ".", build_args))
             dt_tar = list.files(pattern = "^data[.]table_.*[.]tar[.]gz$")
             if (!length(dt_tar)) stop("Built tar.gz not found among: ", toString(list.files()))
-            res = system2(Rbin, c("CMD", "check", dt_tar[1L], check_args), stdout=TRUE)
+            res = system2(Rbin, c("CMD", "check", dt_tar[1L], check_args), stdout=TRUE, env=sprintf("%s=%s", names(env), env))
             if (!is.null(attr(res, "status")) || grep("^Status:.*(ERROR|WARNING)", res)) {
               writeLines(res)
               stop("R CMD check failed")
