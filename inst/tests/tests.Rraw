@@ -18824,7 +18824,11 @@ test(2269.851, forderv(2:1, retStats=NA), error="retStats must be TRUE or FALSE"
 test(2269.852, forderv(2:1, retGrp=TRUE, retStats=FALSE), error="retStats must be TRUE whenever retGrp is TRUE")
 ddd = data.table(v1=1:3, v2=c(1L,NA,3L), v3=c(3:2,NaN), v4=c(1:2,Inf), v5=c(-Inf,NA,3)) ## tests for NAs and na.last arg
 d = copy(ddd)
-invisible(d[v1==1L])
+invisible(local({
+  o = options(datatable.optimize=Inf)
+  on.exit(options(o))
+  d[v1 == 1] # _not_ setindex(d, v1), which will compute retGrp/retStats
+}))
 test(2269.853, options = c(datatable.verbose=TRUE), forderv(d, "v1", retGrp=TRUE, retStats=TRUE), output="index found but not for retGrp and retStats")
 test(2269.854, options = c(datatable.verbose=TRUE), o<-forderv(d, "v1", retStats=TRUE), output="index found but not for retStats")
 setattr(d, "index", setattr(integer(), "__v1", o))
@@ -18832,7 +18836,11 @@ test(2269.855, options = c(datatable.verbose=TRUE), forderv(d, "v1", retGrp=TRUE
 test(2269.856, options = c(datatable.verbose=TRUE), forderv(d, "v1", na.last=TRUE), integer(), output="forder.*opt=2.*took")
 test(2269.857, options = c(datatable.verbose=TRUE), forderv(d, "v1", retStats=TRUE, na.last=TRUE), structure(integer(), anyna=0L, anyinfnan=0L, anynotascii=0L, anynotutf8=0L), output="forder.*opt=2.*took")
 d = copy(ddd)
-invisible(d[v1==1L])
+invisible(local({
+  o = options(datatable.optimize=Inf)
+  on.exit(options(o))
+  d[v1 == 1] # _not_ setindex(d, v1), which will compute retGrp/retStats
+}))
 test(2269.858, options = c(datatable.verbose=TRUE), forderv(d, "v1", retGrp=TRUE, retStats=TRUE, na.last=TRUE), output="index found but na.last=TRUE and no stats available")
 setindexv(d, "v2")
 test(2269.859, options = c(datatable.verbose=TRUE), forderv(d, "v2", retGrp=TRUE, retStats=TRUE, na.last=TRUE), output="index found but na.last=TRUE and NAs present")
