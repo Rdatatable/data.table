@@ -5319,8 +5319,7 @@ test(1313.02, DT[, max(y), by=x], DT[, base::max(y), by=x])
 test(1313.03, DT[, min(y, na.rm=TRUE), by=x], DT[, base::min(y, na.rm=TRUE), by=x])
 test(1313.04, DT[, max(y, na.rm=TRUE), by=x], DT[, base::max(y, na.rm=TRUE), by=x])
 # testing all NA - GForce automatically converts to numeric.. optimize=1L errors due to change from integer/numeric (like median)
-DT[x==6,
- y := INT(NA)]
+DT[x==6, y := INT(NA)]
 test(1313.05, DT[, min(y), by=x], DT[, base::min(y), by=x])
 test(1313.06, DT[, max(y), by=x], DT[, base::max(y), by=x])
 test(1313.07, DT[, min(y, na.rm=TRUE), by=x], data.table(x=1:6, V1=INT(-1,4,4,4,-2147483647,NA)))
