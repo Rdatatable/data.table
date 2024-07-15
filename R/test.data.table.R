@@ -235,6 +235,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     ", Sys.getlocale()=='", Sys.getlocale(), "'",
     ", l10n_info()=='", paste0(names(l10n_info()), "=", l10n_info(), collapse="; "), "'",
     ", getDTthreads()=='", paste(gsub("[ ][ ]+","==",gsub("^[ ]+","",capture.output(invisible(getDTthreads(verbose=TRUE))))), collapse="; "), "'",
+    ", .libPaths()==", paste0("'", .libPaths(), "'", collapse = ","),
     ", ", .Call(Cdt_zlib_version),
     "\n", sep="")
 

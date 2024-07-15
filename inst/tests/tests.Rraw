@@ -2,9 +2,14 @@
 #   NB: pos= is required for these symbols to resolve searching 'upward' from data.table -- if these packages are not already attached,
 #   and we don't use pos=, they'll wind up 'below' data.table on the search() path --> their symbols won't resolve since, when running
 #   from the installed package, this is evaluated from data.table's namespace.
-library(stats, include.only=c("lm", "median", "na.omit", "rnorm", "runif", "sd", "setNames", "var", "weighted.mean"), pos="package:base")
-library(utils, include.only=c("capture.output", "combn", "head", "read.csv", "read.delim", "read.table", "tail", "type.convert", "write.csv", "write.table"), pos="package:base")
-library(datasets, include.only=c("airquality", "BOD", "cars", "ChickWeight", "CO2", "iris", "mtcars"), pos="package:base")
+if ("include.only" %in% names(formals(library))) { # TODO(R>=3.6.0): Remove this.
+  libraryRobust = library
+} else {
+  libraryRobust = function(..., include.only) library(...)
+}
+libraryRobust(stats, include.only=c("lm", "median", "na.omit", "rnorm", "runif", "sd", "setNames", "var", "weighted.mean"), pos="package:base")
+libraryRobust(utils, include.only=c("capture.output", "combn", "head", "read.csv", "read.delim", "read.table", "tail", "type.convert", "write.csv", "write.table"), pos="package:base")
+libraryRobust(datasets, include.only=c("airquality", "BOD", "cars", "ChickWeight", "CO2", "iris", "mtcars"), pos="package:base")
 
 if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   if ((tt<-compiler::enableJIT(-1))>0)
@@ -15109,7 +15114,7 @@ if (test_bit64) {
   # int64 in x
   test(2044.69, dt1[dt2, ..cols, on="int64==int", nomatch=0L, verbose=TRUE],
                 ans<-data.table(x.int=1:5, x.doubleInt=as.double(1:5), x.realDouble=c(0.5,1.0,1.5,2.0,2.5), x.int64=as.integer64(1:5),
-                                i.int=1:5, i.doubleInt=as.double(1:5), i.realDouble=c(0.5,1.0,1.5,2.0,2.5), i.int64=as.integer64(1:5)),
+                                i.int=1:5, i.doubleInt=as.double(1:5), i.realDouble=c(0.5,1.0,1.5,2.0,2.5), i.int64=as.integer64(c(1:4, 3000000000))),
                 output = "Coercing integer column i.int to type integer64 to match type of x.int64")
   test(2044.70, dt1[dt2, ..cols, on="int64==doubleInt", nomatch=0L, verbose=TRUE],
                 ans,
@@ -16890,16 +16895,17 @@ times = .POSIXct(tz = 'UTC', c(
   1201364458.72486, 939956943.690777
 ))
 DT = data.table(dates, times)
+DT_trunc = copy(DT)[, times := as.POSIXct(trunc(times))]
 tmp = tempfile()
 ## ISO8601 format (%FT%TZ) by default
 fwrite(DT, tmp)
 test(2150.01, fread(tmp), DT)   # defaults for fwrite/fread simple and preserving
-fwrite(DT, tmp, dateTimeAs='write.csv')  # as write.csv, writes the UTC times as-is not local because the time column has tzone=="UTC", but without the Z marker
+fwrite(DT, tmp, dateTimeAs='write.csv')  # as write.csv, writes the UTC times as-is not local because the time column has tzone=="UTC", but without the Z marker. Also truncates milliseconds, hence DT_trunc below.
 test(2150.021, env=list(TZ=NULL), sapply(fread(tmp,tz=""), typeof), c(dates="integer", times="character"))  # from v1.14.0 tz="" needed to read datetime as character
-test(2150.022, env=list(TZ=NULL), fread(tmp,tz="UTC"), DT)  # user can tell fread to interpret the unmarked datetimes as UTC
-test(2150.023, env=c(TZ='UTC'), fread(tmp), DT)  # TZ environment variable is also recognized
+test(2150.022, env=list(TZ=NULL), fread(tmp,tz="UTC"), DT_trunc)  # user can tell fread to interpret the unmarked datetimes as UTC
+test(2150.023, env=c(TZ='UTC'), fread(tmp), DT_trunc)  # TZ environment variable is also recognized
 if (.Platform$OS.type!="windows") {
-  test(2150.024, env=c(TZ=''), fread(tmp), DT) # on Windows this unsets TZ, see ?Sys.setenv
+  test(2150.024, env=c(TZ=''), fread(tmp), DT_trunc) # on Windows this unsets TZ, see ?Sys.setenv
   # blank TZ env variable on non-Windows is recognized as UTC consistent with C and R; but R's tz= argument is the opposite and uses "" for local
 }
 # Notes:
@@ -16914,14 +16920,14 @@ test(2150.025,
      attr(fread(tmp, colClasses=list(POSIXct="times"), tz="")$times, "tzone"),
      "")
 # the times will be different though here because as.POSIXct read them as local time.
-fwrite(copy(DT)[ , times := format(times, '%FT%T+00:00')], tmp)
-test(2150.03, fread(tmp), DT)
+fwrite(copy(DT)[ , times := format(times, '%FT%T+00:00')], tmp) #NB: %T-->truncate milliseconds.
+test(2150.03, fread(tmp), DT_trunc)
 fwrite(copy(DT)[ , times := format(times, '%FT%T+0000')], tmp)
-test(2150.04, fread(tmp), DT)
+test(2150.04, fread(tmp), DT_trunc)
 fwrite(copy(DT)[ , times := format(times, '%FT%T+0115')], tmp)
-test(2150.05, fread(tmp), copy(DT)[ , times := times - 4500])
+test(2150.05, fread(tmp), copy(DT_trunc)[ , times := times - 4500])
 fwrite(copy(DT)[ , times := format(times, '%FT%T+01')], tmp)
-test(2150.06, fread(tmp), copy(DT)[ , times := times - 3600])
+test(2150.06, fread(tmp), copy(DT_trunc)[ , times := times - 3600])
 ## invalid tz specifiers
 fwrite(copy(DT)[ , times := format(times, '%FT%T+3600')], tmp)
 test(2150.07, fread(tmp), copy(DT)[ , times := format(times, '%FT%T+3600')])
@@ -17453,8 +17459,8 @@ if (test_bit64) {
   # X[Y,,by=.EACHI] when Y contains integer64 also fixed in 1.12.4, #3779
   X = data.table(x=1:3)
   Y = data.table(x=1:2, y=as.integer64(c(10,20)))
-  test(2193.2, copy(X)[Y, `:=`(y=i.y), on="x", by=.EACHI], data.table(x=1:3, y=as.integer64(10L,20L,NA)))
-  test(2193.3, copy(X)[Y, let(y=i.y), on="x", by=.EACHI], data.table(x=1:3, y=as.integer64(10L,20L,NA)))
+  test(2193.2, copy(X)[Y, `:=`(y=i.y), on="x", by=.EACHI], data.table(x=1:3, y=as.integer64(c(10L,20L,NA))))
+  test(2193.3, copy(X)[Y, let(y=i.y), on="x", by=.EACHI], data.table(x=1:3, y=as.integer64(c(10L,20L,NA))))
 }
 
 # endsWithAny added in #5097 for internal use replacing one use of base::endsWith (in fread.R)
@@ -18383,9 +18389,12 @@ test(2250.11, dt[, names(.SD(2)) := lapply(.SD, .I)], error=base_messages$missin
 dt = data.table(a = 1:3, b = 5:7, grp = c('a', 'a', 'b'))
 test(2250.12, dt[, names(.SD) := lapply(.SD, function(x) x + b), .SDcols = "a"], data.table(a = 1:3 + 5:7, b = 5:7, grp = c('a', 'a', 'b')))
 
-
 dt = data.table(a = 1L, b = 2L, c = 3L, d = 4L, e = 5L, f = 6L)
 test(2250.13, dt[, names(.SD)[1:5] := sum(.SD)], data.table(a = 21L, b = 21L, c = 21L, d = 21L, e = 21L, f = 6L))
+
+dt = data.table(a = 1) #6033 revdep follow-up
+my_col = "a"
+test(2250.14, dt[, substitute(my_col) := .(3)], data.table(a = 3))
 
 # fread(...,fill) can also be used to specify a guess on the maximum number of columns #2691 #1812 #4130 #3436 #2727
 dt_str = paste(rep(c("1,2\n", "1,2,3\n"), each=100), collapse="")
@@ -18706,156 +18715,174 @@ DT = data.table(a = rep(1:3, 2))
 setnames(DT, "a", "a\U00F1o")
 test(2266, eval(parse(text="DT[ , .N, a\U00F1o]$N[1L]")), 2L)
 
+# all.equal failed to dispatch to methods of columns, #4543
+DT1 = data.table(t = .POSIXct(1590973200, tz='UTC'))
+DT2 = data.table(t = .POSIXct(1590974413, tz='UTC'))
+test(2267, all.equal(DT1, DT2), "Column 't': Mean absolute difference: 1213")
+
+# rbindlist with many nested lists leads to protection stack overflow #4536
+# test case needs to bind list columns with atomic columns to trigger
+x = list(
+  data.table(V1="a"),
+  data.table(V1=""),
+  data.table(V2=list(FALSE)),
+  data.table(V2=list(list(V2A=FALSE, V2B="", V2C="" ))),
+  data.table(V1=list(list(V1A="", V1B="", V1C="", V1D="", V1E="")), V3 = list(list(V3A=TRUE, V3B="", V3C=1L, V3D=0L, V3F=1L)))
+)
+N = 5e4
+y = x[rep(1:5, N)]
+test(2268, rbindlist(y, fill=TRUE), rbindlist(x, fill=TRUE)[rep(1:5, N)])
+
 # lazy forder, #4386
 dd = data.table(a=1:2, b=2:1)
 d = copy(dd)
-test(2267.01, options = c(datatable.verbose=TRUE), forderv(d, "b"), 2:1, output="forder.*opt=-1.*took")
-test(2267.02, options = c(datatable.verbose=TRUE), forderv(d, "b", lazy=FALSE), 2:1, output="forder.*opt=0.*took")
+test(2269.01, options = c(datatable.verbose=TRUE), forderv(d, "b"), 2:1, output="forder.*opt=-1.*took")
+test(2269.02, options = c(datatable.verbose=TRUE), forderv(d, "b", lazy=FALSE), 2:1, output="forder.*opt=0.*took")
 setkeyv(d, "b")
-test(2267.03, options = c(datatable.verbose=TRUE), forderv(d, "b"), integer(), output="forder.*opt=1.*took")
-test(2267.04, options = c(datatable.verbose=TRUE), forderv(d, "b", lazy=FALSE), integer(), output="forder.*opt=0.*took")
+test(2269.03, options = c(datatable.verbose=TRUE), forderv(d, "b"), integer(), output="forder.*opt=1.*took")
+test(2269.04, options = c(datatable.verbose=TRUE), forderv(d, "b", lazy=FALSE), integer(), output="forder.*opt=0.*took")
 d = copy(dd)
 setindexv(d, "b")
-test(2267.05, options = c(datatable.verbose=TRUE), forderv(d, "b"), 2:1, output="forder.*opt=2.*took")
-test(2267.06, options = c(datatable.verbose=TRUE), forderv(d, "b", lazy=FALSE), 2:1, output="forder.*opt=0.*took")
+test(2269.05, options = c(datatable.verbose=TRUE), forderv(d, "b"), 2:1, output="forder.*opt=2.*took")
+test(2269.06, options = c(datatable.verbose=TRUE), forderv(d, "b", lazy=FALSE), 2:1, output="forder.*opt=0.*took")
 d = copy(dd)
-test(2267.11, options = c(datatable.verbose=TRUE), forderv(d, c("a","b")), integer(), output="forder.*opt=-1.*took")
-test(2267.12, options = c(datatable.verbose=TRUE), forderv(d, c("a","b"), lazy=FALSE), integer(), output="forder.*opt=0.*took")
-test(2267.13, options = c(datatable.verbose=TRUE), forderv(d, c("b","a")), 2:1, output="forder.*opt=-1.*took")
-test(2267.14, options = c(datatable.verbose=TRUE), forderv(d, c("b","a"), lazy=FALSE), 2:1, output="forder.*opt=0.*took")
+test(2269.11, options = c(datatable.verbose=TRUE), forderv(d, c("a","b")), integer(), output="forder.*opt=-1.*took")
+test(2269.12, options = c(datatable.verbose=TRUE), forderv(d, c("a","b"), lazy=FALSE), integer(), output="forder.*opt=0.*took")
+test(2269.13, options = c(datatable.verbose=TRUE), forderv(d, c("b","a")), 2:1, output="forder.*opt=-1.*took")
+test(2269.14, options = c(datatable.verbose=TRUE), forderv(d, c("b","a"), lazy=FALSE), 2:1, output="forder.*opt=0.*took")
 setkeyv(d, c("a","b"))
-test(2267.21, options = c(datatable.verbose=TRUE), forderv(d, c("a","b")), integer(), output="forder.*opt=1.*took")
-test(2267.22, options = c(datatable.verbose=TRUE), forderv(d, c("a","b"), lazy=FALSE), integer(), output="forder.*opt=0.*took")
-test(2267.23, options = c(datatable.verbose=TRUE), forderv(d, c("b","a")), 2:1, output="forder.*opt=-1.*took")
-test(2267.24, options = c(datatable.verbose=TRUE), forderv(d, c("b","a"), lazy=FALSE), 2:1, output="forder.*opt=0.*took")
+test(2269.21, options = c(datatable.verbose=TRUE), forderv(d, c("a","b")), integer(), output="forder.*opt=1.*took")
+test(2269.22, options = c(datatable.verbose=TRUE), forderv(d, c("a","b"), lazy=FALSE), integer(), output="forder.*opt=0.*took")
+test(2269.23, options = c(datatable.verbose=TRUE), forderv(d, c("b","a")), 2:1, output="forder.*opt=-1.*took")
+test(2269.24, options = c(datatable.verbose=TRUE), forderv(d, c("b","a"), lazy=FALSE), 2:1, output="forder.*opt=0.*took")
 setkeyv(d, c("b","a"))
-test(2267.25, options = c(datatable.verbose=TRUE), forderv(d, c("a","b")), 2:1, output="forder.*opt=-1.*took")
-test(2267.26, options = c(datatable.verbose=TRUE), forderv(d, c("a","b"), lazy=FALSE), 2:1, output="forder.*opt=0.*took")
-test(2267.27, options = c(datatable.verbose=TRUE), forderv(d, c("b","a")), integer(), output="forder.*opt=1.*took")
-test(2267.28, options = c(datatable.verbose=TRUE), forderv(d, c("b","a"), lazy=FALSE), integer(), output="forder.*opt=0.*took")
+test(2269.25, options = c(datatable.verbose=TRUE), forderv(d, c("a","b")), 2:1, output="forder.*opt=-1.*took")
+test(2269.26, options = c(datatable.verbose=TRUE), forderv(d, c("a","b"), lazy=FALSE), 2:1, output="forder.*opt=0.*took")
+test(2269.27, options = c(datatable.verbose=TRUE), forderv(d, c("b","a")), integer(), output="forder.*opt=1.*took")
+test(2269.28, options = c(datatable.verbose=TRUE), forderv(d, c("b","a"), lazy=FALSE), integer(), output="forder.*opt=0.*took")
 d = copy(dd)
 setindexv(d, c("a","b"))
-test(2267.31, options = c(datatable.verbose=TRUE), forderv(d, c("a","b")), integer(), output="forder.*opt=2.*took")
-test(2267.32, options = c(datatable.verbose=TRUE), forderv(d, c("a","b"), lazy=FALSE), integer(), output="forder.*opt=0.*took")
-test(2267.33, options = c(datatable.verbose=TRUE), forderv(d, c("b","a")), 2:1, output="forder.*opt=-1.*took")
-test(2267.34, options = c(datatable.verbose=TRUE), forderv(d, c("b","a"), lazy=FALSE), 2:1, output="forder.*opt=0.*took")
+test(2269.31, options = c(datatable.verbose=TRUE), forderv(d, c("a","b")), integer(), output="forder.*opt=2.*took")
+test(2269.32, options = c(datatable.verbose=TRUE), forderv(d, c("a","b"), lazy=FALSE), integer(), output="forder.*opt=0.*took")
+test(2269.33, options = c(datatable.verbose=TRUE), forderv(d, c("b","a")), 2:1, output="forder.*opt=-1.*took")
+test(2269.34, options = c(datatable.verbose=TRUE), forderv(d, c("b","a"), lazy=FALSE), 2:1, output="forder.*opt=0.*took")
 d = copy(dd)
 setindexv(d, c("b","a"))
-test(2267.35, options = c(datatable.verbose=TRUE), forderv(d, c("a","b")), integer(), output="forder.*opt=-1.*took")
-test(2267.36, options = c(datatable.verbose=TRUE), forderv(d, c("a","b"), lazy=FALSE), integer(), output="forder.*opt=0.*took")
-test(2267.37, options = c(datatable.verbose=TRUE), forderv(d, c("b","a")), 2:1, output="forder.*opt=2.*took")
-test(2267.38, options = c(datatable.verbose=TRUE), forderv(d, c("b","a"), lazy=FALSE), 2:1, output="forder.*opt=0.*took")
+test(2269.35, options = c(datatable.verbose=TRUE), forderv(d, c("a","b")), integer(), output="forder.*opt=-1.*took")
+test(2269.36, options = c(datatable.verbose=TRUE), forderv(d, c("a","b"), lazy=FALSE), integer(), output="forder.*opt=0.*took")
+test(2269.37, options = c(datatable.verbose=TRUE), forderv(d, c("b","a")), 2:1, output="forder.*opt=2.*took")
+test(2269.38, options = c(datatable.verbose=TRUE), forderv(d, c("b","a"), lazy=FALSE), 2:1, output="forder.*opt=0.*took")
 d = copy(dd)
 setindexv(d, list(c("a","b"), c("b","a")))
-test(2267.41, options = c(datatable.verbose=TRUE), forderv(d, c("a","b")), integer(), output="forder.*opt=2.*took")
-test(2267.42, options = c(datatable.verbose=TRUE), forderv(d, c("a","b"), lazy=FALSE), integer(), output="forder.*opt=0.*took")
-test(2267.43, options = c(datatable.verbose=TRUE), forderv(d, c("b","a")), 2:1, output="forder.*opt=2.*took")
-test(2267.44, options = c(datatable.verbose=TRUE), forderv(d, c("b","a"), lazy=FALSE), 2:1, output="forder.*opt=0.*took")
+test(2269.41, options = c(datatable.verbose=TRUE), forderv(d, c("a","b")), integer(), output="forder.*opt=2.*took")
+test(2269.42, options = c(datatable.verbose=TRUE), forderv(d, c("a","b"), lazy=FALSE), integer(), output="forder.*opt=0.*took")
+test(2269.43, options = c(datatable.verbose=TRUE), forderv(d, c("b","a")), 2:1, output="forder.*opt=2.*took")
+test(2269.44, options = c(datatable.verbose=TRUE), forderv(d, c("b","a"), lazy=FALSE), 2:1, output="forder.*opt=0.*took")
 d = copy(dd)
 setkeyv(d, c("a","b"))
 setindexv(d, list(c("a","b"), c("b","a")))
-test(2267.51, options = c(datatable.verbose=TRUE), forderv(d, c("a","b")), integer(), output="forder.*opt=1.*took", notOutput="forder.*opt=2.*took") # idxOpt is not reached
-test(2267.52, options = c(datatable.verbose=TRUE), forderv(d, c("a","b"), lazy=FALSE), integer(), output="forder.*opt=0.*took")
-test(2267.53, options = c(datatable.verbose=TRUE), forderv(d, c("b","a")), 2:1, output="forder.*opt=2.*took")
-test(2267.54, options = c(datatable.verbose=TRUE), forderv(d, c("b","a"), lazy=FALSE), 2:1, output="forder.*opt=0.*took")
+test(2269.51, options = c(datatable.verbose=TRUE), forderv(d, c("a","b")), integer(), output="forder.*opt=1.*took", notOutput="forder.*opt=2.*took") # idxOpt is not reached
+test(2269.52, options = c(datatable.verbose=TRUE), forderv(d, c("a","b"), lazy=FALSE), integer(), output="forder.*opt=0.*took")
+test(2269.53, options = c(datatable.verbose=TRUE), forderv(d, c("b","a")), 2:1, output="forder.*opt=2.*took")
+test(2269.54, options = c(datatable.verbose=TRUE), forderv(d, c("b","a"), lazy=FALSE), 2:1, output="forder.*opt=0.*took")
 d = copy(dd)
 setindexv(d, list(c("a","b"), c("b","a")))
-test(2267.55, options = c(datatable.verbose=TRUE), forderv(d, c("a","b")), integer(), output="forder.*opt=2.*took", notOutput="forder.*opt=1.*took")
-test(2267.56, options = c(datatable.verbose=TRUE), forderv(d, c("a","b"), lazy=FALSE), integer(), output="forder.*opt=0.*took")
+test(2269.55, options = c(datatable.verbose=TRUE), forderv(d, c("a","b")), integer(), output="forder.*opt=2.*took", notOutput="forder.*opt=1.*took")
+test(2269.56, options = c(datatable.verbose=TRUE), forderv(d, c("a","b"), lazy=FALSE), integer(), output="forder.*opt=0.*took")
 d = copy(dd)
 setkeyv(d, c("a","b"))
 setindexv(d, list(c("a","b"), c("b","a")))
 ab = structure(integer(), starts=1:2, maxgrpn=1L, anyna=0L, anyinfnan=0L, anynotascii=0L, anynotutf8=0L)
 ba = structure(2:1, starts=1:2, maxgrpn=1L, anyna=0L, anyinfnan=0L, anynotascii=0L, anynotutf8=0L)
-test(2267.60, options = c(datatable.verbose=TRUE), forderv(d, c("a","b")), c(ab), output="forder.*opt=1.*took") # c(): strip attributes
-test(2267.61, options = c(datatable.verbose=TRUE), forderv(d, c("a","b"), retGrp=TRUE), ab, output="forder.*opt=2.*took")
-test(2267.62, options = c(datatable.verbose=TRUE), forderv(d, c("a","b"), retGrp=TRUE, lazy=FALSE), ab, output="forder.*opt=0.*took")
-test(2267.63, options = c(datatable.verbose=TRUE), forderv(d, c("b","a"), retGrp=TRUE), ba, output="forder.*opt=2.*took")
-test(2267.64, options = c(datatable.verbose=TRUE), forderv(d, c("b","a"), retGrp=TRUE, lazy=FALSE), ba, output="forder.*opt=0.*took")
-test(2267.65, options = c(datatable.verbose=TRUE), forderv(d, c("a","b"), na.last=TRUE), integer(), output="forder.*opt=2.*took") # via anyna index attribute
-test(2267.66, options = c(datatable.verbose=TRUE), forderv(d, c("a","b"), na.last=TRUE, lazy=FALSE), integer(), output="forder.*opt=0.*took")
-test(2267.67, options = c(datatable.verbose=TRUE), forderv(d, c("b","a"), na.last=TRUE), 2:1, output="forder.*opt=2.*took") # via anyna index attribute
-test(2267.68, options = c(datatable.verbose=TRUE), forderv(d, c("b","a"), na.last=TRUE, lazy=FALSE), 2:1, output="forder.*opt=0.*took")
-test(2267.69, options = c(datatable.verbose=TRUE), forderv(d, c("a","b"), sort=FALSE, retGrp=TRUE), ab, output="forder.*opt=0.*took")
-test(2267.70, options = c(datatable.verbose=TRUE), forderv(d, c("a","b"), sort=FALSE, retGrp=TRUE, lazy=FALSE), ab, output="forder.*opt=0.*took")
-test(2267.71, options = c(datatable.verbose=TRUE), forderv(d, c("b","a"), sort=FALSE, retGrp=TRUE), ab, output="forder.*opt=0.*took")
-test(2267.72, options = c(datatable.verbose=TRUE), forderv(d, c("b","a"), sort=FALSE, retGrp=TRUE, lazy=FALSE), ab, output="forder.*opt=0.*took")
-test(2267.73, options = c(datatable.verbose=TRUE), forderv(d, c("a","b"), order=-1L), 2:1, output="forder.*opt=0.*took")
-test(2267.74, options = c(datatable.verbose=TRUE), forderv(d, c("a","b"), order=-1L, lazy=FALSE), 2:1, output="forder.*opt=0.*took")
-test(2267.75, options = c(datatable.verbose=TRUE), forderv(d, c("b","a"), order=-1L), integer(), output="forder.*opt=0.*took")
-test(2267.76, options = c(datatable.verbose=TRUE), forderv(d, c("b","a"), order=-1L, lazy=FALSE), integer(), output="forder.*opt=0.*took")
-test(2267.77, options = c(datatable.verbose=TRUE), forderv(d, c("a","b"), order=c(1L,-1L)), integer(), output="forder.*opt=0.*took")
-test(2267.78, options = c(datatable.verbose=TRUE), forderv(d, c("a","b"), order=c(1L,-1L), lazy=FALSE), integer(), output="forder.*opt=0.*took")
-test(2267.79, options = c(datatable.verbose=TRUE), forderv(d, c("b","a"), order=c(1L,-1L)), 2:1, output="forder.*opt=0.*took")
-test(2267.80, options = c(datatable.verbose=TRUE), forderv(d, c("b","a"), order=c(1L,-1L), lazy=FALSE), 2:1, output="forder.*opt=0.*took")
-test(2267.81, options = c(datatable.verbose=TRUE), forderv(1:2), integer(), output="forder.*opt=0.*took")
-test(2267.82, options = c(datatable.verbose=TRUE), forderv(1:2, lazy=FALSE), integer(), output="forder.*opt=0.*took")
-test(2267.83, options = c(datatable.verbose=TRUE), forderv(2:1), 2:1, output="forder.*opt=0.*took")
-test(2267.84, options = c(datatable.verbose=TRUE), forderv(2:1, lazy=FALSE), 2:1, output="forder.*opt=0.*took")
-test(2267.851, forderv(2:1, retStats=NA), error="retStats must be TRUE or FALSE")
-test(2267.852, forderv(2:1, retGrp=TRUE, retStats=FALSE), error="retStats must be TRUE whenever retGrp is TRUE")
+test(2269.60, options = c(datatable.verbose=TRUE), forderv(d, c("a","b")), c(ab), output="forder.*opt=1.*took") # c(): strip attributes
+test(2269.61, options = c(datatable.verbose=TRUE), forderv(d, c("a","b"), retGrp=TRUE), ab, output="forder.*opt=2.*took")
+test(2269.62, options = c(datatable.verbose=TRUE), forderv(d, c("a","b"), retGrp=TRUE, lazy=FALSE), ab, output="forder.*opt=0.*took")
+test(2269.63, options = c(datatable.verbose=TRUE), forderv(d, c("b","a"), retGrp=TRUE), ba, output="forder.*opt=2.*took")
+test(2269.64, options = c(datatable.verbose=TRUE), forderv(d, c("b","a"), retGrp=TRUE, lazy=FALSE), ba, output="forder.*opt=0.*took")
+test(2269.65, options = c(datatable.verbose=TRUE), forderv(d, c("a","b"), na.last=TRUE), integer(), output="forder.*opt=2.*took") # via anyna index attribute
+test(2269.66, options = c(datatable.verbose=TRUE), forderv(d, c("a","b"), na.last=TRUE, lazy=FALSE), integer(), output="forder.*opt=0.*took")
+test(2269.67, options = c(datatable.verbose=TRUE), forderv(d, c("b","a"), na.last=TRUE), 2:1, output="forder.*opt=2.*took") # via anyna index attribute
+test(2269.68, options = c(datatable.verbose=TRUE), forderv(d, c("b","a"), na.last=TRUE, lazy=FALSE), 2:1, output="forder.*opt=0.*took")
+test(2269.69, options = c(datatable.verbose=TRUE), forderv(d, c("a","b"), sort=FALSE, retGrp=TRUE), ab, output="forder.*opt=0.*took")
+test(2269.70, options = c(datatable.verbose=TRUE), forderv(d, c("a","b"), sort=FALSE, retGrp=TRUE, lazy=FALSE), ab, output="forder.*opt=0.*took")
+test(2269.71, options = c(datatable.verbose=TRUE), forderv(d, c("b","a"), sort=FALSE, retGrp=TRUE), ab, output="forder.*opt=0.*took")
+test(2269.72, options = c(datatable.verbose=TRUE), forderv(d, c("b","a"), sort=FALSE, retGrp=TRUE, lazy=FALSE), ab, output="forder.*opt=0.*took")
+test(2269.73, options = c(datatable.verbose=TRUE), forderv(d, c("a","b"), order=-1L), 2:1, output="forder.*opt=0.*took")
+test(2269.74, options = c(datatable.verbose=TRUE), forderv(d, c("a","b"), order=-1L, lazy=FALSE), 2:1, output="forder.*opt=0.*took")
+test(2269.75, options = c(datatable.verbose=TRUE), forderv(d, c("b","a"), order=-1L), integer(), output="forder.*opt=0.*took")
+test(2269.76, options = c(datatable.verbose=TRUE), forderv(d, c("b","a"), order=-1L, lazy=FALSE), integer(), output="forder.*opt=0.*took")
+test(2269.77, options = c(datatable.verbose=TRUE), forderv(d, c("a","b"), order=c(1L,-1L)), integer(), output="forder.*opt=0.*took")
+test(2269.78, options = c(datatable.verbose=TRUE), forderv(d, c("a","b"), order=c(1L,-1L), lazy=FALSE), integer(), output="forder.*opt=0.*took")
+test(2269.79, options = c(datatable.verbose=TRUE), forderv(d, c("b","a"), order=c(1L,-1L)), 2:1, output="forder.*opt=0.*took")
+test(2269.80, options = c(datatable.verbose=TRUE), forderv(d, c("b","a"), order=c(1L,-1L), lazy=FALSE), 2:1, output="forder.*opt=0.*took")
+test(2269.81, options = c(datatable.verbose=TRUE), forderv(1:2), integer(), output="forder.*opt=0.*took")
+test(2269.82, options = c(datatable.verbose=TRUE), forderv(1:2, lazy=FALSE), integer(), output="forder.*opt=0.*took")
+test(2269.83, options = c(datatable.verbose=TRUE), forderv(2:1), 2:1, output="forder.*opt=0.*took")
+test(2269.84, options = c(datatable.verbose=TRUE), forderv(2:1, lazy=FALSE), 2:1, output="forder.*opt=0.*took")
+test(2269.851, forderv(2:1, retStats=NA), error="retStats must be TRUE or FALSE")
+test(2269.852, forderv(2:1, retGrp=TRUE, retStats=FALSE), error="retStats must be TRUE whenever retGrp is TRUE")
 ddd = data.table(v1=1:3, v2=c(1L,NA,3L), v3=c(3:2,NaN), v4=c(1:2,Inf), v5=c(-Inf,NA,3)) ## tests for NAs and na.last arg
 d = copy(ddd)
 invisible(d[v1==1L])
-test(2267.853, options = c(datatable.verbose=TRUE), forderv(d, "v1", retGrp=TRUE, retStats=TRUE), output="index found but not for retGrp and retStats")
-test(2267.854, options = c(datatable.verbose=TRUE), o<-forderv(d, "v1", retStats=TRUE), output="index found but not for retStats")
+test(2269.853, options = c(datatable.verbose=TRUE), forderv(d, "v1", retGrp=TRUE, retStats=TRUE), output="index found but not for retGrp and retStats")
+test(2269.854, options = c(datatable.verbose=TRUE), o<-forderv(d, "v1", retStats=TRUE), output="index found but not for retStats")
 setattr(d, "index", setattr(integer(), "__v1", o))
-test(2267.855, options = c(datatable.verbose=TRUE), forderv(d, "v1", retGrp=TRUE), output="index found but not for retGrp")
-test(2267.856, options = c(datatable.verbose=TRUE), forderv(d, "v1", na.last=TRUE), integer(), output="forder.*opt=2.*took")
-test(2267.857, options = c(datatable.verbose=TRUE), forderv(d, "v1", retStats=TRUE, na.last=TRUE), structure(integer(), anyna=0L, anyinfnan=0L, anynotascii=0L, anynotutf8=0L), output="forder.*opt=2.*took")
+test(2269.855, options = c(datatable.verbose=TRUE), forderv(d, "v1", retGrp=TRUE), output="index found but not for retGrp")
+test(2269.856, options = c(datatable.verbose=TRUE), forderv(d, "v1", na.last=TRUE), integer(), output="forder.*opt=2.*took")
+test(2269.857, options = c(datatable.verbose=TRUE), forderv(d, "v1", retStats=TRUE, na.last=TRUE), structure(integer(), anyna=0L, anyinfnan=0L, anynotascii=0L, anynotutf8=0L), output="forder.*opt=2.*took")
 d = copy(ddd)
 invisible(d[v1==1L])
-test(2267.858, options = c(datatable.verbose=TRUE), forderv(d, "v1", retGrp=TRUE, retStats=TRUE, na.last=TRUE), output="index found but na.last=TRUE and no stats available")
+test(2269.858, options = c(datatable.verbose=TRUE), forderv(d, "v1", retGrp=TRUE, retStats=TRUE, na.last=TRUE), output="index found but na.last=TRUE and no stats available")
 setindexv(d, "v2")
-test(2267.859, options = c(datatable.verbose=TRUE), forderv(d, "v2", retGrp=TRUE, retStats=TRUE, na.last=TRUE), output="index found but na.last=TRUE and NAs present")
+test(2269.859, options = c(datatable.verbose=TRUE), forderv(d, "v2", retGrp=TRUE, retStats=TRUE, na.last=TRUE), output="index found but na.last=TRUE and NAs present")
 d = copy(ddd)
 setkeyv(d, "v1")
 setindexv(d, list("v2","v3","v4","v5",c("v1","v2"),c("v1","v3"),c("v2","v3"),c("v1","v4"),c("v1","v5"),c("v1","v4","v5")))
-test(2267.861, options = c(datatable.verbose=TRUE), forderv(d, "v1"), integer(), output="forder.*opt=1.*took")
-test(2267.862, options = c(datatable.verbose=TRUE), forderv(d, "v1", na.last=TRUE), integer(), output="forder.*opt=-1.*took") ## cannot use key for na.last
+test(2269.861, options = c(datatable.verbose=TRUE), forderv(d, "v1"), integer(), output="forder.*opt=1.*took")
+test(2269.862, options = c(datatable.verbose=TRUE), forderv(d, "v1", na.last=TRUE), integer(), output="forder.*opt=-1.*took") ## cannot use key for na.last
 setindexv(d, "v1")
-test(2267.863, options = c(datatable.verbose=TRUE), forderv(d, "v1", na.last=TRUE), integer(), output="forder.*opt=2.*took")
-test(2267.864, options = c(datatable.verbose=TRUE), forderv(d, c("v1","v2"), na.last=TRUE), integer(), output="index found but na.last=TRUE and NAs present")
-test(2267.865, options = c(datatable.verbose=TRUE), forderv(d, c("v1","v2"), na.last=TRUE), integer(), output="forder.*opt=-1.*took") # same but testing another msg
-test(2267.866, options = c(datatable.verbose=TRUE), forderv(d, c("v1","v3"), na.last=TRUE), integer(), output="index found but na.last=TRUE and NAs present")
-test(2267.867, options = c(datatable.verbose=TRUE), forderv(d, c("v1","v3"), na.last=TRUE), integer(), output="forder.*opt=-1.*took")
-test(2267.868, options = c(datatable.verbose=TRUE), forderv(d, c("v1","v4"), na.last=TRUE), integer(), output="index found but na.last=TRUE and NAs present")
-test(2267.869, options = c(datatable.verbose=TRUE), forderv(d, c("v1","v4"), na.last=TRUE), integer(), output="forder.*opt=-1.*took")
-test(2267.870, options = c(datatable.verbose=TRUE), forderv(d, c("v1","v5"), na.last=TRUE), integer(), output="index found but na.last=TRUE and NAs present")
-test(2267.871, options = c(datatable.verbose=TRUE), forderv(d, c("v1","v5"), na.last=TRUE), integer(), output="forder.*opt=-1.*took") # same but testing another msg
-test(2267.872, options = c(datatable.verbose=TRUE), forderv(d, c("v1","v4","v5"), na.last=TRUE), integer(), output="index found but na.last=TRUE and NAs present")
-test(2267.873, options = c(datatable.verbose=TRUE), forderv(d, c("v1","v4","v5"), na.last=TRUE), integer(), output="forder.*opt=-1.*took") # same but testing another msg
+test(2269.863, options = c(datatable.verbose=TRUE), forderv(d, "v1", na.last=TRUE), integer(), output="forder.*opt=2.*took")
+test(2269.864, options = c(datatable.verbose=TRUE), forderv(d, c("v1","v2"), na.last=TRUE), integer(), output="index found but na.last=TRUE and NAs present")
+test(2269.865, options = c(datatable.verbose=TRUE), forderv(d, c("v1","v2"), na.last=TRUE), integer(), output="forder.*opt=-1.*took") # same but testing another msg
+test(2269.866, options = c(datatable.verbose=TRUE), forderv(d, c("v1","v3"), na.last=TRUE), integer(), output="index found but na.last=TRUE and NAs present")
+test(2269.867, options = c(datatable.verbose=TRUE), forderv(d, c("v1","v3"), na.last=TRUE), integer(), output="forder.*opt=-1.*took")
+test(2269.868, options = c(datatable.verbose=TRUE), forderv(d, c("v1","v4"), na.last=TRUE), integer(), output="index found but na.last=TRUE and NAs present")
+test(2269.869, options = c(datatable.verbose=TRUE), forderv(d, c("v1","v4"), na.last=TRUE), integer(), output="forder.*opt=-1.*took")
+test(2269.870, options = c(datatable.verbose=TRUE), forderv(d, c("v1","v5"), na.last=TRUE), integer(), output="index found but na.last=TRUE and NAs present")
+test(2269.871, options = c(datatable.verbose=TRUE), forderv(d, c("v1","v5"), na.last=TRUE), integer(), output="forder.*opt=-1.*took") # same but testing another msg
+test(2269.872, options = c(datatable.verbose=TRUE), forderv(d, c("v1","v4","v5"), na.last=TRUE), integer(), output="index found but na.last=TRUE and NAs present")
+test(2269.873, options = c(datatable.verbose=TRUE), forderv(d, c("v1","v4","v5"), na.last=TRUE), integer(), output="forder.*opt=-1.*took") # same but testing another msg
 d = fread(testDir("1680-fread-header-encoding.csv"), encoding="Latin-1") ## re-use some existing non utf8 data
 anyEnc = function(x) unlist(attributes(forderv(x, retStats=TRUE))[c("anynotascii","anynotutf8")])
-test(2267.881, anyEnc(d), c(anynotascii=1L,anynotutf8=1L))
-test(2267.882, anyEnc(d[,-2L]), c(anynotascii=0L,anynotutf8=0L))
-test(2267.883, anyEnc(c("a","b","\u221A")), c(anynotascii=1L,anynotutf8=0L))
+test(2269.881, anyEnc(d), c(anynotascii=1L,anynotutf8=1L))
+test(2269.882, anyEnc(d[,-2L]), c(anynotascii=0L,anynotutf8=0L))
+test(2269.883, anyEnc(c("a","b","\u221A")), c(anynotascii=1L,anynotutf8=0L))
 d = copy(dd)
 setindexv(d, "b")
-test(2267.91, options = c(datatable.verbose=TRUE, datatable.use.index=FALSE),
+test(2269.91, options = c(datatable.verbose=TRUE, datatable.use.index=FALSE),
      forderv(d, "b"), 2:1, output="forder.*opt=-1.*took")
-test(2267.92, options = c(datatable.verbose=TRUE, datatable.use.index=FALSE),
+test(2269.92, options = c(datatable.verbose=TRUE, datatable.use.index=FALSE),
      forderv(d, "b", lazy=FALSE), 2:1, output="forder.*opt=0.*took")
 d = data.table(x = 2:1)
 make_retGrp0_idx = d[x==1L]
-test(2267.93, attr(attr(d, "index"), "__x"), 2:1)
-test(2267.94, options = c(datatable.verbose=TRUE), forderv(d, "x", retGrp=TRUE), structure(2:1, starts=1:2, maxgrpn=1L, anyna=0L, anyinfnan=0L, anynotascii=0L, anynotutf8=0L), output="forder.*index found but not for retGrp and retStats.*forder.*opt=-1.*took")
+test(2269.93, attr(attr(d, "index"), "__x"), 2:1)
+test(2269.94, options = c(datatable.verbose=TRUE), forderv(d, "x", retGrp=TRUE), structure(2:1, starts=1:2, maxgrpn=1L, anyna=0L, anyinfnan=0L, anynotascii=0L, anynotutf8=0L), output="forder.*index found but not for retGrp and retStats.*forder.*opt=-1.*took")
 d = data.table(x = 2:1)
-test(2267.95, options = c(datatable.verbose=TRUE, datatable.forder.auto.index=TRUE),
+test(2269.95, options = c(datatable.verbose=TRUE, datatable.forder.auto.index=TRUE),
      d[x==1L], data.table(x=1L), output="forder.*setting index.*retGrp=0, retStats=0")
-test(2267.96, options = c(datatable.verbose=TRUE, datatable.forder.auto.index=TRUE),
+test(2269.96, options = c(datatable.verbose=TRUE, datatable.forder.auto.index=TRUE),
      forderv(d, "x", retGrp=TRUE), output="forder.*setting index.*retGrp=1, retStats=1")
 setindexv(d, NULL)
-test(2267.971, options = c(datatable.verbose=TRUE, datatable.forder.auto.index=TRUE),
+test(2269.971, options = c(datatable.verbose=TRUE, datatable.forder.auto.index=TRUE),
      forderv(d, "x", retStats=TRUE), output="forder.*setting index.*retGrp=0, retStats=1")
 setindexv(d, NULL)
-test(2267.972, options = c(datatable.verbose=TRUE, datatable.forder.auto.index=TRUE),
+test(2269.972, options = c(datatable.verbose=TRUE, datatable.forder.auto.index=TRUE),
      forderv(d, "x", retStats=TRUE, na.last=TRUE), output="forder.*setting index.*retGrp=0, retStats=1")
 setindexv(d, NULL)
-test(2267.973, options = c(datatable.verbose=TRUE, datatable.forder.auto.index=TRUE),
+test(2269.973, options = c(datatable.verbose=TRUE, datatable.forder.auto.index=TRUE),
      forderv(data.table(x=c(2:1,NA)), "x", retStats=TRUE, na.last=TRUE), notOutput="forder.*setting index.*retGrp=0, retStats=1")
-test(2267.974, options = c(datatable.verbose=TRUE, datatable.forder.auto.index=TRUE),
+test(2269.974, options = c(datatable.verbose=TRUE, datatable.forder.auto.index=TRUE),
      forderv(data.table(x=c(2:1,NaN)), "x", retStats=TRUE, na.last=TRUE), notOutput="forder.*setting index.*retGrp=0, retStats=1")
-test(2267.975, options = c(datatable.verbose=TRUE, datatable.forder.auto.index=TRUE),
+test(2269.975, options = c(datatable.verbose=TRUE, datatable.forder.auto.index=TRUE),
      forderv(d, "x", na.last=TRUE), notOutput="forder.*setting index.*retGrp=0, retStats=1")
-test(2267.99, forderv(data.table(a=1), lazy=c(TRUE, TRUE)), error="lazy must be")
+test(2269.99, forderv(data.table(a=1), lazy=c(TRUE, TRUE)), error="lazy must be")
