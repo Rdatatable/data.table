@@ -3243,7 +3243,7 @@ is_constantish = function(q, check_singleton=FALSE) {
     if (verbose) {catf("Creating new index '%s'\n", paste(idxCols, collapse = "__"));flush.console()}
     if (verbose) {last.started.at=proc.time();catf("Creating index %s done in ...", paste(idxCols, collapse = "__"));flush.console()}
     idx = forderv(x, idxCols, sort=TRUE, retGrp=FALSE, lazy=TRUE)
-    maybe_reset_index(x, idxCols, idx) ## forder can write index, but disabled for now, see #4386
+    maybe_reset_index(x, idx, idxCols) ## forder can write index, but disabled for now, see #4386
     if (verbose) {cat(timetaken(last.started.at),"\n");flush.console()}
     if (verbose) {catf("Optimized subsetting with index '%s'\n", paste(idxCols, collapse = "__"));flush.console()}
   }

@@ -72,7 +72,7 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
     o = forderv(x, cols, sort=TRUE, retGrp=!physical, lazy=TRUE)
   }
   if (!physical) { # index COULD BE saved from C forderMaybePresorted already, but disabled for now
-    maybe_reset_index(x, cols, o)
+    maybe_reset_index(x, o, cols)
     return(invisible(x))
   }
   if (length(o)) {
