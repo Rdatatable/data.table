@@ -74,6 +74,9 @@ vapply_1i = function(x, fun, ..., use.names = TRUE) {
   vapply(X = x, FUN = fun, ..., FUN.VALUE = NA_integer_, USE.NAMES = use.names)
 }
 
+# base::xor(), but with scalar operators
+XOR = function(x, y) (x || y) && !(x && y)
+
 # not is.atomic because is.atomic(matrix) is true
 cols_with_dims = function(x) vapply_1i(x, function(j) length(dim(j))) > 0L
 
