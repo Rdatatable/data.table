@@ -21,6 +21,8 @@ on:
       - master
   pull_request:
 
+name: 'rchk'
+
 jobs:
   rchk:
     runs-on: ubuntu-latest
@@ -30,10 +32,11 @@ jobs:
             r-version: 'devel'
       - name: Build
         run: |
+          ls
           R CMD build --no-build-vignettes .
           mkdir packages
           mv data.table_*.tar.gz packages
-      - name: rchk
+      - name: Run rchk
         run: |
           docker run -v `pwd`/packages:/rchk/packages kalibera/rchk:latest /rchk/packages/data.table_*.tar.gz |& tee rchk.out
       - name: Confirm that rchk has no errors
