@@ -242,8 +242,8 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
 
   int nprotect = 0;
   SEXP ans = PROTECT(allocVector(VECSXP, idcol + ncol)); nprotect++;
-  SEXP ansNames;
-  setAttrib(ans, R_NamesSymbol, ansNames=allocVector(STRSXP, idcol + ncol));
+  SEXP ansNames = PROTECT(allocVector(STRSXP, idcol + ncol)); nprotect++;
+  setAttrib(ans, R_NamesSymbol, ansNames);
   if (idcol) {
     SET_STRING_ELT(ansNames, 0, STRING_ELT(idcolArg, 0));
     SEXP idval, listNames=getAttrib(l, R_NamesSymbol);
