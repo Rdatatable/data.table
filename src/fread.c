@@ -2254,6 +2254,7 @@ int freadMain(freadMainArgs _args) {
       .buff8 = malloc(rowSize8 * myBuffRows + 8),
       .buff4 = malloc(rowSize4 * myBuffRows + 4),
       .buff1 = malloc(rowSize1 * myBuffRows + 1),
+      // NOCHECK
       .rowSize8 = rowSize8,
       .rowSize4 = rowSize4,
       .rowSize1 = rowSize1,
