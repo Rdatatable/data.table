@@ -256,7 +256,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
       // each thread has its own small stack of counts
       // don't use VLAs here: perhaps too big for stack yes but more that VLAs apparently fail with schedule(dynamic)
       uint64_t *restrict mycounts = calloc((toBit/8 + 1)*256, sizeof(uint64_t));
-      if (mycounts==NULL) {
+      if (!mycounts) {
         failed=true; alloc_fail=true;  // # nocov
       }
       double *restrict myworking = NULL;
@@ -283,7 +283,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
 
         if (myworking==NULL) {
           myworking = malloc(thisN * sizeof(double));
-          if (myworking==NULL) {
+          if (!myworking) {
             failed=true; alloc_fail=true; continue;  // # nocov
           }
           myfirstmsb = msb;
