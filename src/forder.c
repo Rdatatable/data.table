@@ -269,8 +269,7 @@ static void cradix(SEXP *x, int n)
   cradix_counts = (int *)calloc(ustr_maxlen*256, sizeof(int));  // counts for the letters of left-aligned strings
   cradix_xtmp = (SEXP *)malloc(ustr_n*sizeof(SEXP));
   if (!cradix_counts || !cradix_xtmp) {
-    if (cradix_counts) free(cradix_counts);
-    if (cradix_xtmp) free(cradix_xtmp);
+    free(cradix_counts); free(cradix_xtmp);
     STOP(_("Failed to alloc cradix_counts and/or cradix_tmp"));
   }
   cradix_r(x, n, 0);
@@ -725,8 +724,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
   TMP =  (int *)malloc(nth*UINT16_MAX*sizeof(int)); // used by counting sort (my_n<=65536) in radix_r()
   UGRP = (uint8_t *)malloc(nth*256);                // TODO: align TMP and UGRP to cache lines (and do the same for stack allocations too)
   if (!TMP || !UGRP /*|| TMP%64 || UGRP%64*/) {
-    if (TMP) free(TMP);
-    if (UGRP) free(UGRP); // very unlikely, but knife's-edge chance some memory was freed up between the malloc() calls
+    free(TMP); free(UGRP);
     STOP(_("Failed to allocate TMP or UGRP or they weren't cache line aligned: nth=%d"), nth);
   }
   
@@ -735,9 +733,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
     gs_thread_alloc = calloc(nth, sizeof(int));
     gs_thread_n = calloc(nth, sizeof(int));
     if (!gs_thread || !gs_thread_alloc || !gs_thread_n) {
-      if (gs_thread) free(gs_thread);
-      if (gs_thread_alloc) free(gs_thread_alloc);
-      if (gs_thread_n) free(gs_thread_n);
+      free(gs_thread); free(gs_thread_alloc); free(gs_thread_n);
       STOP(_("Could not allocate (very tiny) group size thread buffers"));
     }
   }
@@ -1060,9 +1056,7 @@ void radix_r(const int from, const int to, const int radix) {
   uint8_t  *ugrps =  malloc(nBatch*256*sizeof(uint8_t));
   int      *ngrps =  calloc(nBatch    ,sizeof(int));
   if (!counts || !ugrps || !ngrps) {
-    if (counts) free(counts);
-    if (ugrps) free(ugrps);
-    if (ngrps) free(ngrps);
+    free(counts); free(ugrps); free(ngrps);
     STOP(_("Failed to allocate parallel counts. my_n=%d, nBatch=%d"), my_n, nBatch);
   }
 
@@ -1074,8 +1068,7 @@ void radix_r(const int from, const int to, const int radix) {
     int     *my_otmp = malloc(batchSize * sizeof(int)); // thread-private write
     uint8_t *my_ktmp = malloc(batchSize * sizeof(uint8_t) * n_rem);
     if (!my_otmp || !my_ktmp) {
-      if (my_otmp) free(my_otmp);
-      if (my_ktmp) free(my_ktmp);
+      free(my_otmp); free(my_ktmp);
       STOP(_("Failed to allocate 'my_otmp' and/or 'my_ktmp' arrays (%d bytes)."), (int)(batchSize*(sizeof(int) + sizeof(uint8_t))));
     }
     // TODO: move these up above and point restrict[me] to them. Easier to Error that way if failed to alloc.

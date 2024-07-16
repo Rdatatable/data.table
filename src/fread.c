@@ -1830,8 +1830,7 @@ int freadMain(freadMainArgs _args) {
   type =    (int8_t *)malloc((size_t)ncol * sizeof(int8_t));
   tmpType = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));  // used i) in sampling to not stop on errors when bad jump point and ii) when accepting user overrides
   if (!type || !tmpType) {
-    if (type) free(type);
-    if (tmpType) free(tmpType);
+    free(type); free(tmpType);
     STOP(_("Failed to allocate 2 x %d bytes for type and tmpType: %s"), ncol, strerror(errno));
   }
 

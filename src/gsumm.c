@@ -114,8 +114,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     int *counts = calloc(nBatch*highSize, sizeof(int));  // TODO: cache-line align and make highSize a multiple of 64
     int *TMP   = malloc(nrow*2l*sizeof(int)); // must multiple the long int otherwise overflow may happen, #4295
     if (!counts || !TMP ) {
-      if (counts) free(counts);
-      if (TMP) free(TMP);
+      free(counts); free(TMP);
       error(_("Internal error: Failed to allocate counts or TMP when assigning g in gforce"));
     }
     #pragma omp parallel for num_threads(getDTthreads(nBatch, false))   // schedule(dynamic,1)
@@ -677,8 +676,7 @@ SEXP gmean(SEXP x, SEXP narmArg)
       int *restrict nna_counts_i = calloc(ngrp, sizeof(int));
       if (!nna_counts_r || !nna_counts_i) {
         // # nocov start
-        if (nna_counts_r) free(nna_counts_r);
-        if (nna_counts_i) free(nna_counts_i);
+        free(nna_counts_r); free(nna_counts_i);
         error(_("Unable to allocate %d * %zu bytes for non-NA counts in gmean na.rm=TRUE"), ngrp, sizeof(int));
         // # nocov end
       }

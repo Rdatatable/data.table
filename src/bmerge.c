@@ -130,9 +130,7 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SEXP
     retLength = Calloc(anslen, int);
     retIndex = Calloc(anslen, int);
     if (retFirst==NULL || retLength==NULL || retIndex==NULL) {
-      if (retFirst) Free(retFirst);
-      if (retLength) Free(retLength);
-      if (retIndex) Free(retIndex);
+      Free(retFirst); Free(retLength); Free(retIndex);
       error(_("Internal error in allocating memory for non-equi join")); // # nocov
     }
     // initialise retIndex here directly, as next loop is meant for both equi and non-equi joins

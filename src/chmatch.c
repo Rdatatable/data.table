@@ -98,8 +98,7 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
     int *counts = (int *)calloc(nuniq, sizeof(int));
     int *map =    (int *)calloc(mapsize, sizeof(int));
     if (!counts || !map) {
-      if (counts) free(counts);
-      if (map) free(map);
+      free(counts); free(map);
       // # nocov start
       for (int i=0; i<tablelen; i++) SET_TRUELENGTH(td[i], 0);
       savetl_end();

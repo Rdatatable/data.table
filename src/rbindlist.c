@@ -97,9 +97,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
     if (!counts || !maxdup) {
       // # nocov start
       for (int i=0; i<nuniq; ++i) SET_TRUELENGTH(uniq[i], 0);
-      free(uniq);
-      if (counts) free(counts);
-      if (maxdup) free(maxdup);
+      free(uniq); free(counts); free(maxdup);
       savetl_end();
       error(_("Failed to allocate nuniq=%d items working memory in rbindlist.c"), nuniq);
       // # nocov end
@@ -133,10 +131,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
     if (!colMapRaw || !uniqMap || !dupLink) {
       // # nocov start
       for (int i=0; i<nuniq; ++i) SET_TRUELENGTH(uniq[i], 0);
-      free(uniq); free(counts);
-      if (colMapRaw) free(colMapRaw);
-      if (uniqMap) free(uniqMap);
-      if (dupLink) free(dupLink);
+      free(uniq); free(counts); free(colMapRaw); free(uniqMap); free(dupLink);
       savetl_end();
       error(_("Failed to allocate ncol=%d items working memory in rbindlist.c"), ncol);
       // # nocov end
