@@ -4815,12 +4815,3 @@ msgid ""
 msgstr ""
 "dim.data.table的参数必须为一个data.table（实质为一个列表），但输入参数为%s类"
 "型"
-
-#~ msgid "dec='' not allowed. Should be '.' or ','"
-#~ msgstr "dec='' 不允许，应该为 '.' 或者 ','"
-
-#~ msgid "nan_is_na must be TRUE or FALSE"
-#~ msgstr "nan_is_na 必须是 TRUE 或者 FALSE"
-
-#~ msgid "fill= should be TRUE or FALSE"
-#~ msgstr "fill= 应该是 TRUE 或 FALSE"
