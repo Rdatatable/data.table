@@ -128,8 +128,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   double *mins = (double *)malloc(nBatch * sizeof(double));
   double *maxs = (double *)malloc(nBatch * sizeof(double));
   if (!mins || !maxs) {
-    if (mins) free(mins);
-    if (maxs) free(maxs); // very unlikely, but knife's-edge chance some memory was freed up between the malloc() calls
+    free(mins); free(maxs);
     error(_("Failed to allocate %d bytes in fsort()."), (int)(2 * nBatch * sizeof(double)));
   }
   const double *restrict xp = REAL(x);
