@@ -3194,7 +3194,7 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
   test(1035.02, melt(DT, id.vars=c("i_1", "i_2", "l_2"), measure.vars=c("l_1")), ans1)
 
   # melt retains attributes if all are of same type (new)
-  ans2 = data.table(c_1=DT$c_1, variable=rep(c("d_1", "d_2"), each=N), value=as.Date(c(DT$d_1, DT$d_2)))[!is.na(value)]
+  ans2 = data.table(c_1=DT$c_1, variable=rep(c("d_1", "d_2"), each=N), value=as.Date(c(DT$d_1, DT$d_2), origin="1970-01-01"))[!is.na(value)] # NB: origin= required for some old R versions
   test(1035.03, melt(DT, id.vars=4, measure.vars=5:6, na.rm=TRUE, variable.factor=FALSE), ans2)
 
   DT2 <- data.table(x=1:5, y=1+5i) # unimplemented class
