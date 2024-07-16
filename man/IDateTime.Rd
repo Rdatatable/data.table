@@ -175,6 +175,13 @@ They can round or truncate to hours and minutes.
 Note for ITime's with 30 seconds, rounding is inconsistent due to rounding off a 5.
 See 'Details' in \code{\link{round}} for more information.
 
+Functions like \code{week()} and \code{isoweek()} provide week numbering functionality.
+\code{week()} computes completed or fractional weeks within the year,
+while \code{isoweek()} calculates week numbers according to ISO 8601 standards,
+which specify that the first week of the year is the one containing the first Thursday.
+This convention ensures that week boundaries align consistently with year boundaries,
+accounting for both year transitions and varying day counts per week.
+
 }
 
 \value{
@@ -208,7 +215,7 @@ See 'Details' in \code{\link{round}} for more information.
   G. Grothendieck and T. Petzoldt, ``Date and Time Classes in R,''
   R News, vol. 4, no. 1, June 2004.
 
-  H. Wickham, https://gist.github.com/10238.
+  H. Wickham, https://gist.github.com/hadley/10238.
 
   ISO 8601, https://www.iso.org/iso/home/standards/iso8601.htm
 }

@@ -447,7 +447,8 @@ void copyFile(size_t fileSize, const char *msg, bool verbose)  // only called in
 {
   double tt = wallclock();
   mmp_copy = (char *)malloc((size_t)fileSize + 1/* extra \0 */);
-  if (!mmp_copy) STOP(_("Unable to allocate %s of contiguous virtual RAM. %s allocation."), filesize_to_str(fileSize), msg);
+  if (!mmp_copy)
+    STOP(_("Unable to allocate %s of contiguous virtual RAM. %s allocation."), filesize_to_str(fileSize), msg);
   memcpy(mmp_copy, mmp, fileSize);
   sof = mmp_copy;
   eof = (char *)mmp_copy + fileSize;
@@ -1620,6 +1621,10 @@ int freadMain(freadMainArgs _args) {
   const char *firstJumpEnd=NULL; // remember where the winning jumpline from jump 0 ends, to know its size excluding header
   const char *prevStart = NULL;  // the start of the non-empty line before the first not-ignored row (for warning message later, or taking as column names)
   int jumpLines = nrowLimit==0 ? 100 : (int)umin(100, nrowLimit);   // how many lines from each jump point to use. If nrows>0 is supplied, nJumps is later set to 1. #4029
+  if (fill==INT_MAX) { // if user provides fill=INT_MAX then full file should be sampled #2727
+    jumpLines = INT_MAX;
+    fill = 1; // set fill to true value to not overallocate
+  }
   {
   if (verbose) DTPRINT(_("[06] Detect separator, quoting rule, and ncolumns\n"));
 
@@ -1824,7 +1829,10 @@ int freadMain(freadMainArgs _args) {
 
   type =    (int8_t *)malloc((size_t)ncol * sizeof(int8_t));
   tmpType = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));  // used i) in sampling to not stop on errors when bad jump point and ii) when accepting user overrides
-  if (!type || !tmpType) STOP(_("Failed to allocate 2 x %d bytes for type and tmpType: %s"), ncol, strerror(errno));
+  if (!type || !tmpType) {
+    free(type); free(tmpType);
+    STOP(_("Failed to allocate 2 x %d bytes for type and tmpType: %s"), ncol, strerror(errno));
+  }
 
   if (sep == ',' && dec == '\0') { // if sep=',' detected, don't attempt to detect dec [NB: . is not par of seps]
     if (verbose) {
@@ -2070,7 +2078,8 @@ int freadMain(freadMainArgs _args) {
     colNames = NULL;  // userOverride will assign V1, V2, etc
   } else {
     colNames = (lenOff*) calloc((size_t)ncol, sizeof(lenOff));
-    if (!colNames) STOP(_("Unable to allocate %d*%d bytes for column name pointers: %s"), ncol, sizeof(lenOff), strerror(errno));
+    if (!colNames)
+      STOP(_("Unable to allocate %d*%d bytes for column name pointers: %s"), ncol, sizeof(lenOff), strerror(errno));
     if (sep==' ') while (*ch==' ') ch++;
     void *targets[9] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, colNames + autoFirstColName};
     FieldParseContext fctx = {
@@ -2124,7 +2133,8 @@ int freadMain(freadMainArgs _args) {
   rowSize4 = 0;
   rowSize8 = 0;
   size = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));  // TODO: remove size[] when we implement Pasha's idea to += size inside processor
-  if (!size) STOP(_("Failed to allocate %d bytes for size array: %s"), ncol, strerror(errno));
+  if (!size)
+    STOP(_("Failed to allocate %d bytes for '%s': %s"), (int)(ncol * sizeof(int8_t)), "size", strerror(errno));
   nStringCols = 0;
   nNonStringCols = 0;
   for (int j=0; j<ncol; j++) {
@@ -2244,6 +2254,7 @@ int freadMain(freadMainArgs _args) {
       .buff8 = malloc(rowSize8 * myBuffRows + 8),
       .buff4 = malloc(rowSize4 * myBuffRows + 4),
       .buff1 = malloc(rowSize1 * myBuffRows + 1),
+      // NOCHECK
       .rowSize8 = rowSize8,
       .rowSize4 = rowSize4,
       .rowSize1 = rowSize1,
@@ -2563,6 +2574,8 @@ int freadMain(freadMainArgs _args) {
       DTPRINT(_("  Dropping %d overallocated columns\n"), ndropFill);
     }
     dropFill = (int *)malloc((size_t)ndropFill * sizeof(int));
+    if (!dropFill)
+      STOP(_("Failed to allocate %d bytes for '%s'."), (int)(ndropFill * sizeof(int)), "dropFill");
     int i=0;
     for (int j=max_col; j<ncol; ++j) {
       type[j] = CT_DROP;
@@ -2677,7 +2690,7 @@ int freadMain(freadMainArgs _args) {
         ch = headPos;
         int tt = countfields(&ch);
         if (fill>0) {
-          DTWARN(_("Stopped early on line %"PRIu64". Expected %d fields but found %d. Consider fill=%d or even more based on your knowledge of the input file. First discarded non-empty line: <<%s>>"),
+          DTWARN(_("Stopped early on line %"PRIu64". Expected %d fields but found %d. Consider fill=%d or even more based on your knowledge of the input file. Use fill=Inf for reading the whole file for detecting the number of fields. First discarded non-empty line: <<%s>>"),
           (uint64_t)DTi+row1line, ncol, tt, tt, strlim(skippedFooter,500));
         } else {
           DTWARN(_("Stopped early on line %"PRIu64". Expected %d fields but found %d. Consider fill=TRUE and comment.char=. First discarded non-empty line: <<%s>>"),

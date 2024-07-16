@@ -53,9 +53,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
   ans = as.data.table.list(x, keep.rownames=keep.rownames, check.names=check.names, .named=nd$.named)  # see comments inside as.data.table.list re copies
   if (!is.null(key)) {
     if (!is.character(key)) stopf("key argument of data.table() must be character")
-    if (length(key)==1L) {
-      if (key != strsplit(key,split=",")[[1L]]) stopf("Usage of comma-separated literals in %s is deprecated, please split such entries yourself before passing to data.table", "key=")
-    }
+    if (length(key)==1L) key = cols_from_csv(key)
     setkeyv(ans,key)
   } else {
     # retain key of cbind(DT1, DT2, DT3) where DT2 is keyed but not DT1. cbind calls data.table().
@@ -797,7 +795,8 @@ replace_dot_alias = function(e) {
 
         if (mode(bysub) == "character") {
           if (any(grepl(",", bysub, fixed = TRUE))) {
-            stopf("Usage of comma-separated literals in %s is deprecated, please split such entries yourself before passing to data.table", "by=")
+            if (length(bysub) > 1L) stopf("'by' is a character vector length %d but one or more items include a comma. Either pass a vector of column names (which can contain spaces, but no commas), or pass a vector length 1 containing comma separated column names. See ?data.table for other possibilities.", length(bysub))
+            bysub = cols_from_csv(bysub)
           }
           bysub = gsub("^`(.*)`$", "\\1", bysub) # see test 138
           nzidx = nzchar(bysub)
@@ -1122,6 +1121,11 @@ replace_dot_alias = function(e) {
           if (is.name(lhs)) {
             lhs = as.character(lhs)
           } else {
+            #6033 revdep. Slowly deprecate in 1.17.0. Caller has given us `dt[, substitute(names(.SD))]` which means
+            # jsub is actually substitute(names(.SD)) instead of just names(.SD)
+            if (lhs %iscall% 'substitute')
+              lhs = eval(lhs, parent.frame(), parent.frame())
+
             # lhs is e.g. (MyVar) or get("MyVar") or names(.SD) || setdiff(names(.SD), cols)
             lhs = eval(lhs, list(.SD = setNames(logical(length(sdvars)), sdvars)), parent.frame())
           }
@@ -1764,7 +1768,7 @@ replace_dot_alias = function(e) {
             }
           else {
             # adding argument to ghead/gtail if none is supplied to g-optimized head/tail
-            if (length(jsub) == 2L && jsub[[1L]] %chin% c("head", "tail")) jsub[["n"]] = 6L
+            if (length(jsub) == 2L && jsub %iscall% c("head", "tail")) jsub[["n"]] = 6L
             jsub = .gforce_jsub(jsub, names_x)
           }
           if (verbose) catf("GForce optimized j to '%s' (see ?GForce)\n", deparse(jsub, width.cutoff=200L, nlines=1L))
@@ -1938,7 +1942,7 @@ replace_dot_alias = function(e) {
     return(suppPrint(x))
   }
   if (is.null(ans)) {
-    ans = as.data.table.list(lapply(groups,"[",0L))  # side-effects only such as test 168
+    ans = as.data.table.list(lapply(groups, `[`, 0L))  # side-effects only such as test 168
     setnames(ans,seq_along(bynames),bynames)   # TO DO: why doesn't groups have bynames in the first place?
     return(ans)
   }
@@ -2374,8 +2378,8 @@ which_ = function(x, bool = TRUE) {
 }
 
 is.na.data.table = function(x) {
-  if (!cedta()) return(`is.na.data.frame`(x))
-  do.call("cbind", lapply(x, "is.na"))
+  if (!cedta()) return(is.na.data.frame(x))
+  do.call(cbind, lapply(x, is.na))
 }
 
 # not longer needed as inherits ...
@@ -2423,7 +2427,7 @@ split.data.table = function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = TR
       factor(.x_lev, levels = .x_lev)
       }
     })
-    r = do.call("CJ", c(ul, sorted=sorted, unique=TRUE))
+    r = do.call(CJ, c(ul, sorted=sorted, unique=TRUE))
     if (!sorted && nrow(by.order)) {
       ii = r[by.order, on=cols, which=TRUE]
       r = rbindlist(list(
@@ -2717,8 +2721,9 @@ chmatch = function(x, table, nomatch=NA_integer_)
 chmatchdup = function(x, table, nomatch=NA_integer_)
   .Call(Cchmatchdup, x, table, as.integer(nomatch[1L]))
 
+# Force as.character as part of #4708
 "%chin%" = function(x, table)
-  .Call(Cchin, x, table)  # TO DO  if table has 'ul' then match to that
+  .Call(Cchin, as.character(x), table)  # TO DO  if table has 'ul' then match to that
 
 chorder = function(x) {
   o = forderv(x, sort=TRUE, retGrp=FALSE)
@@ -2771,13 +2776,15 @@ address = function(x) .Call(Caddress, eval(substitute(x), parent.frame()))
 }
 
 # TODO(#6197): Export these.
-J = function(...) {
-  stopf("J() called outside of [.data.table. J() is only intended for use in i.")
-}
+# J = function(...) {
+#   stopf("J() called outside of [.data.table. J() is only intended for use in i.")
+# }
 
-. = function(...) {
-  stopf(".() called outside of [.data.table. .() is only intended as an alias for list() inside DT[...].")
-}
+# . = function(...) {
+#   stopf(".() called outside of [.data.table. .() is only intended as an alias for list() inside DT[...].")
+# }
+# Commented out to prevent test failures caused by non-exported functions being attached during the clear and compile (cc()) process,
+# which alters the expected output(i.e error message in this case).
 
 let = function(...) `:=`(...)
 
