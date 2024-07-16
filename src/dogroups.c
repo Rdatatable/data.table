@@ -3,8 +3,6 @@
 #include <fcntl.h>
 #include <time.h>
 
-extern void progress(int, int);
-
 static bool anySpecialStatic(SEXP x) {
   // Special refers to special symbols .BY, .I, .N, and .GRP; see special-symbols.Rd
   // Static because these are like C static arrays which are the same memory for each group; e.g., dogroups
@@ -65,7 +63,7 @@ static bool anySpecialStatic(SEXP x) {
   return false;
 }
 
-SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames, SEXP on, SEXP verboseArg)
+SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames, SEXP on, SEXP verboseArg, SEXP showProgressArg)
 {
   R_len_t ngrp, nrowgroups, njval=0, ngrpcols, ansloc=0, maxn, estn=-1, thisansloc, grpn, thislen, igrp;
   int nprotect=0;
@@ -73,9 +71,10 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   Rboolean wasvector, firstalloc=FALSE, NullWarnDone=FALSE;
   clock_t tstart=0, tblock[10]={0}; int nblock[10]={0};
   const bool verbose = LOGICAL(verboseArg)[0]==1;
-  bool showProgress = true, hasPrinted = false;
-  double startTime = wallclock();
-  double nextTime = startTime+1;
+  const bool showProgress = LOGICAL(showProgressArg)[0]==1;
+  bool hasPrinted = false;
+  double startTime = (showProgress) ? wallclock() : 0;
+  double nextTime = (showProgress) ? startTime+1 : 0;
 
   if (!isInteger(order)) error(_("Internal error: order not integer vector")); // # nocov
   if (TYPEOF(starts) != INTSXP) error(_("Internal error: starts not integer")); // # nocov
@@ -445,8 +444,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
       int ETA = (int)(avgTimePerGroup*(ngrp-i-1));
       if (hasPrinted || ETA >= 0) {
         if (verbose && !hasPrinted) Rprintf(_("\n"));
-        Rprintf(_("\rProcessed %d groups out of %d. %.0f%% done. Time elapsed: %ds. ETA: %ds."), 
-        i+1, ngrp, 100.0*(i+1)/ngrp, (int)(now-startTime), ETA);
+        Rprintf(_("\rProcessed %d groups out of %d. %.0f%% done. Time elapsed: %ds. ETA: %ds."), i+1, ngrp, 100.0*(i+1)/ngrp, (int)(now-startTime), ETA);
       }
       nextTime = now+1;
       hasPrinted = true;
@@ -459,7 +457,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     }
     else UNPROTECT(1);  // the jval. Don't want them to build up. The first jval can stay protected till the end ok.
   }
-  if (showProgress) Rprintf(_("\rProcessed %d groups out of %d. %.0f%% done. Time elapsed: %ds. ETA: %ds.\n"), ngrp, ngrp, 100.0, (int)(wallclock()-startTime), 0);
+  if (showProgress && hasPrinted) Rprintf(_("\rProcessed %d groups out of %d. %.0f%% done. Time elapsed: %ds. ETA: %ds.\n"), ngrp, ngrp, 100.0, (int)(wallclock()-startTime), 0);
   if (isNull(lhs) && ans!=NULL) {
     if (ansloc < LENGTH(VECTOR_ELT(ans,0))) {
       if (verbose) Rprintf(_("Wrote less rows (%d) than allocated (%d).\n"),ansloc,LENGTH(VECTOR_ELT(ans,0)));

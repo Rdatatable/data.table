@@ -180,7 +180,7 @@ void warn_matrix_column(int i);
 SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols,
                 SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts,
                 SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames,
-                SEXP on, SEXP verbose);
+                SEXP on, SEXP verbose, SEXP showProgressArg);
 
 // bmerge.c
 SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted,
