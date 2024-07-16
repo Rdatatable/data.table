@@ -125,7 +125,12 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   // and ii) for small vectors with just one batch
 
   t[1] = wallclock();
-  double mins[nBatch], maxs[nBatch];
+  double *mins = (double *)malloc(nBatch * sizeof(double));
+  double *maxs = (double *)malloc(nBatch * sizeof(double));
+  if (!mins || !maxs) {
+    free(mins); free(maxs);
+    error(_("Failed to allocate %d bytes in fsort()."), (int)(2 * nBatch * sizeof(double)));
+  }
   const double *restrict xp = REAL(x);
   #pragma omp parallel for schedule(dynamic) num_threads(getDTthreads(nBatch, false))
   for (int batch=0; batch<nBatch; ++batch) {
@@ -149,6 +154,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
     if (mins[i]<min) min=mins[i];
     if (maxs[i]>max) max=maxs[i];
   }
+  free(mins); free(maxs);
   if (verbose) Rprintf(_("Range = [%g,%g]\n"), min, max);
   if (min < 0.0) error(_("Cannot yet handle negatives."));
   // TODO: -0ULL should allow negatives
