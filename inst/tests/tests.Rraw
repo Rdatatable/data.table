@@ -2,9 +2,14 @@
 #   NB: pos= is required for these symbols to resolve searching 'upward' from data.table -- if these packages are not already attached,
 #   and we don't use pos=, they'll wind up 'below' data.table on the search() path --> their symbols won't resolve since, when running
 #   from the installed package, this is evaluated from data.table's namespace.
-library(stats, include.only=c("lm", "median", "na.omit", "rnorm", "runif", "sd", "setNames", "var", "weighted.mean"), pos="package:base")
-library(utils, include.only=c("capture.output", "combn", "head", "read.csv", "read.delim", "read.table", "tail", "type.convert", "write.csv", "write.table"), pos="package:base")
-library(datasets, include.only=c("airquality", "BOD", "cars", "ChickWeight", "CO2", "iris", "mtcars"), pos="package:base")
+if ("include.only" %in% names(formals(library))) { # TODO(R>=3.6.0): Remove this.
+  libraryRobust = library
+} else {
+  libraryRobust = function(..., include.only) library(...)
+}
+libraryRobust(stats, include.only=c("lm", "median", "na.omit", "rnorm", "runif", "sd", "setNames", "var", "weighted.mean"), pos="package:base")
+libraryRobust(utils, include.only=c("capture.output", "combn", "head", "read.csv", "read.delim", "read.table", "tail", "type.convert", "write.csv", "write.table"), pos="package:base")
+libraryRobust(datasets, include.only=c("airquality", "BOD", "cars", "ChickWeight", "CO2", "iris", "mtcars"), pos="package:base")
 
 if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   if ((tt<-compiler::enableJIT(-1))>0)
@@ -68,7 +73,6 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   shallow = data.table:::shallow # until exported
   .shallow = data.table:::.shallow
   split.data.table = data.table:::split.data.table
-  if (!exists('startsWith', 'package:base', inherits=FALSE)) startsWith = data.table:::startsWith # R 3.3.0
   stopf = data.table:::stopf
   test = data.table:::test
   uniqlengths = data.table:::uniqlengths
@@ -205,11 +209,6 @@ with_c_collate = function(expr) {
   on.exit(Sys.setlocale("LC_COLLATE", old))
   Sys.setlocale("LC_COLLATE", "C")
   expr
-}
-
-# strrep is used many times in tests, but is from R 3.3.0, so use this equivalent if it is missing.
-if (!exists("strrep", "package:base")) {
-  strrep = function(x, times) mapply(function(x, times) paste(rep(x, times), collapse=""), rep_len(x, length(times)), times, USE.NAMES=FALSE)
 }
 
 ##########################
@@ -1710,7 +1709,8 @@ test(540, DT[,sum(v),by=eval(a)], data.table(a=1:0,V1=c(11L,10L)))
 test(541, DT[,sum(v),keyby=eval(a)], data.table(a=0:1,V1=c(10L,11L),key="a"))
 
 test(542, DT[,sum(v),keyby=c("a","b","c")]$V1, INT(1,3,4,6,5,2))
-# tests 543,544 were of deprecated behavior to allow comma-separated entries to keyby
+test(543, DT[,sum(v),keyby="a,b,c"]$V1, INT(1,3,4,6,5,2))
+test(544, DT[,sum(v),keyby=c("a","b,c")], error="but one or more items include a comma")
 
 # Test single expressions passed to by, FR#1743 in v1.8.0
 DT = data.table(a=1:4,date=as.IDate("2012-02-28")+0:3,v=5:8)
@@ -1777,7 +1777,11 @@ test(569, DT[,list(.N=.N),list(a,b)][,.N,a], error="The column '.N' can't be gro
 test(570, DT[,list(.N=.N),list(a,b)][,unique(.N),a], error="The column '.N' can't be grouped because")
 test(570.1, DT[,list(.I=.I),list(a,b)][,.I,a], error="The column '.I' can't be grouped because")
 
-# tests 571-573 were of deprecated behavior to allow comma-separated entries in by=
+# Test spaces in by="..." format, datatable-help on 31 March
+DT = data.table("a "=1:2, "b"=3:4," b"=5:6, v=1:6)
+test(571, DT[,sum(v),by="b, b"], data.table("b"=3:4, " b"=5:6, V1=c(9L,12L)))
+test(572, DT[,sum(v),by="a , b"], data.table("a "=1:2, " b"=5:6, V1=c(9L,12L)))
+test(573, DT[,sum(v),by="b, a"], error=base_messages$missing_object(" a"))
 
 # Test base::unname, used by melt, and only supported by data.table for DF compatibility for non-dtaware packages
 DT = data.table(a=1:3, b=4:6)
@@ -2156,9 +2160,8 @@ test(695, DT[a>2,sum(c),by=b%%2L], data.table(b=1:0,V1=c(34L,42L)))
 test(696, DT[a>2,sum(c),by=(b+1)%%2], data.table(b=c(0,1),V1=c(34L,42L)))
 
 # Test subset and %chin% crash with non-character input, #2131
-test(697, 4 %chin% letters, error="type")
-test(698, 4L %chin% letters, error="type")
-test(699, "a" %chin% 4, error="type") # nolint: scalar_in_linter. Testing %chin% behavior.
+# tests 697, 698 tested that non-character on LHS of %chin% is an error, but #4711 does explicit as.character() to LHS
+test(699, "a" %chin% 4, error="type")
 DT = data.table(aa=1:6,bb=7:12)
 test(700, subset(DT,select="aa"), DT[,list(aa)])
 test(701, subset(DT,select=aa), DT[,list(aa)])
@@ -3191,7 +3194,7 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
   test(1035.02, melt(DT, id.vars=c("i_1", "i_2", "l_2"), measure.vars=c("l_1")), ans1)
 
   # melt retains attributes if all are of same type (new)
-  ans2 = data.table(c_1=DT$c_1, variable=rep(c("d_1", "d_2"), each=N), value=as.Date(c(DT$d_1, DT$d_2)))[!is.na(value)]
+  ans2 = data.table(c_1=DT$c_1, variable=rep(c("d_1", "d_2"), each=N), value=as.Date(c(DT$d_1, DT$d_2), origin="1970-01-01"))[!is.na(value)] # NB: origin= required for some old R versions
   test(1035.03, melt(DT, id.vars=4, measure.vars=5:6, na.rm=TRUE, variable.factor=FALSE), ans2)
 
   DT2 <- data.table(x=1:5, y=1+5i) # unimplemented class
@@ -4615,25 +4618,21 @@ test(1240.2, ans2, ans1)
 # Therefore we check against the non-data.table method ('shell') for correctness (otherwise we'd be
 # checking data.table code against itself) as well as checking data.table's ported code in R;
 # i.e. a three-way match.
-if (base::getRversion() < "3.3.0") {
-  base_order <- base::order
-} else {
-  base_order <- function(..., na.last=TRUE, method=c("shell","radix")) {
-    ans1 = base::order(..., na.last=na.last, method="shell")
-    if (!is.na(na.last) || base::getRversion()>"3.3.3") {
-      ans2 = base::order(..., na.last=na.last, method="radix")
-      if (!identical(ans1,ans2)) stop("Base R's order(,method='shell') != order(,method='radix')")
-    } else {
-      # Only when na.last=NA in just R 3.3.0-3.3.3 we don't check shell==radix
-      # because there was a problem in base R's port of data.table code then when :
-      #     1) 2 or more vectors were passed to base::order(,method="radix")
-      # AND 2) na.last=NA
-      # AND 3) there is a subgroup of size exactly 2
-      # AND 4) one of those 2 items in the subgroup is NA and the other is not NA
-      # See tests 1728.3 and 1728.13.
-    }
-    ans1
+base_order <- function(..., na.last=TRUE, method=c("shell","radix")) {
+  ans1 = base::order(..., na.last=na.last, method="shell")
+  if (!is.na(na.last) || base::getRversion()>"3.3.3") {
+    ans2 = base::order(..., na.last=na.last, method="radix")
+    if (!identical(ans1,ans2)) stop("Base R's order(,method='shell') != order(,method='radix')")
+  } else {
+    # Only when na.last=NA in just R 3.3.0-3.3.3 we don't check shell==radix
+    # because there was a problem in base R's port of data.table code then when :
+    #     1) 2 or more vectors were passed to base::order(,method="radix")
+    # AND 2) na.last=NA
+    # AND 3) there is a subgroup of size exactly 2
+    # AND 4) one of those 2 items in the subgroup is NA and the other is not NA
+    # See tests 1728.3 and 1728.13.
   }
+  ans1
 }
 
 # Test for optimisation of 'order' to 'forder'. Copied to benchmarks.Rraw too.
@@ -8903,11 +8902,7 @@ test(1622.1, ans1, ans2)
 test(1622.2, ans1, fread(testDir("issue_1573_fill.txt"), fill=TRUE, sep=" ", na.strings=""))
 
 # fix for #989
-# error_msg = if (base::getRversion() < "3.4") "can not be a directory name" else "does not exist"
-# Until R v3.3, file.info("~") returned TRUE for isdir. This seems to return NA in current devel. However, it
-# correctly identifies that "~" is not a file. So leads to another error message. So removing the error message
-# so that it errors properly on both versions. This seems fine to me since we just need it to error. Tested.
-test(1623, fread("~"), error="")
+test(1623, fread("~"), error="File '~' is a directory")
 
 # testing print.rownames option, #1097 (part of #1523)
 options(datatable.print.rownames = FALSE)
@@ -9969,7 +9964,7 @@ test(1658.25, fwrite(ok_dt, quote=TRUE), output='"foo"\n"bar"')
 # integer NA
 DT = data.table(A=c(2L,NA,3L), B=c(NA,4:5))
 test(1658.26, fwrite(DT), output='A,B\n2,\n,4\n3,5')
-test(1658.27, fwrite(DT, na="NA", verbose=TRUE), output='Writing bom .false., yaml .0 characters. and column names .true.*"A","B".*2,NA\nNA,4\n3,5')
+test(1658.27, fwrite(DT, na="NA", verbose=TRUE), output='Writing bom .false., yaml .0 characters. and column names .true.*A,B.*2,NA\nNA,4\n3,5')
 
 # wrong argument types
 test(1658.28, fwrite(ok_dt, 1), error=base_messages$stopifnot("is.character(file) && length(file) == 1L && !is.na(file)"))
@@ -9984,7 +9979,7 @@ test(1658.33, fwrite(data.table(NULL)), NULL, warning="Nothing to write")
 test(1658.34, fwrite(data.table(id=c("A","B","C"), v=c(1.1,0.0,9.9))), output="id,v\nA,1.1\nB,0\nC,9.9")
 
 # logical NA as "NA" when logical01=TRUE, instead of the default na="" which writes all types including <NA> in character column as ,, consistently.
-test(1658.35, fwrite(data.table(id=1:3,bool=c(TRUE,NA,FALSE)),na="NA",logical01=TRUE), output="\"id\",\"bool\"\n1,1\n2,NA\n3,0")
+test(1658.35, fwrite(data.table(id=1:3,bool=c(TRUE,NA,FALSE)),na="NA",logical01=TRUE), output="id,bool\n1,1\n2,NA\n3,0")
 
 # POSIXct
 test(1658.36, fwrite(data.table(D = as.POSIXct(seq(as.Date("2038-01-19"), as.Date("2038-01-20"), by = "day")))),
@@ -10809,12 +10804,12 @@ if (test_bit64) {
           "-2147483646","-2147483647","-2147483648","-2147483649",
           "2147483646","2147483647","2147483648","2147483649")
   test(1731.1, class(DT[[1L]]), "integer64")
+  ans[1] = "V1"  # the field is unquoted under `quote=FALSE` and if na is a non-empty string
   test(1731.2, fwrite(DT,na="__NA__"), output=ans)
   f = tempfile()
   test(1731.3, fwrite(DT, f, na="__NA__"), NULL)
   test(1731.4, readLines(f), ans)
   unlink(f)
-  ans[1] = "V1"  # the field is unquoted under `quote=FALSE`
   test(1731.5, write.csv(DT,na="__NA__",row.names=FALSE,quote=FALSE), output=ans)
   # write.csv works on integer64 because it calls bit64's as.character method
 }
@@ -10854,7 +10849,7 @@ unlink(f)
 
 DT = data.table(A=c(NA, "NA", "", "monty"), B=c(5, 7, 0, NA))
 test(1732.7, fwrite(DT, quote='auto'), output='A,B\n,5\nNA,7\n"",0\nmonty,')
-test(1732.8, fwrite(DT, quote='auto', na="NA"), output='"A","B"\nNA,5\n"NA",7\n"",0\n"monty",NA')
+test(1732.8, fwrite(DT, quote='auto', na="NA"), output='A,B\nNA,5\n"NA",7\n"",0\n"monty",NA')
 
 # dec=","
 test(1733.1, fwrite(data.table(pi),dec=","), error=base_messages$stopifnot("dec != sep"))
@@ -11416,7 +11411,7 @@ if (test_bit64) {
 DT = data.table(x=NA)
 test(1751.1, capture.output(fwrite(DT, verbose=FALSE)), c("x",""))
 test(1751.2, capture.output(fwrite(DT,na="",verbose=FALSE)), c("x",""))
-test(1751.3, capture.output(fwrite(DT,na="NA",verbose=FALSE)), c("\"x\"","NA"))
+test(1751.3, capture.output(fwrite(DT,na="NA",verbose=FALSE)), c("x","NA"))
 test(1751.4, fread({fwrite(DT, f<-tempfile());f}), DT)  # the important thing
 unlink(f)
 
@@ -13032,7 +13027,7 @@ test(1915, fread(str, select = c(5, 1, 3)),
 
 # unit tests for #2169 which was already fixed in ec05f8b/src/fwrite.c#L59
 test(1916.1, fwrite(data.table(foo=c(NA, TRUE, FALSE)), logical01=TRUE, na='EMPTY', verbose=FALSE),
-             output=c("\"foo\"","EMPTY","1","0")) # this might need to be changed after #2964 will be solved
+             output=c("foo","EMPTY","1","0"))
 test(1916.2, fwrite(data.table(foo=c(NA, TRUE, FALSE)), logical01=TRUE, verbose=FALSE),
              output=c("foo","","1","0"))
 
@@ -15119,7 +15114,7 @@ if (test_bit64) {
   # int64 in x
   test(2044.69, dt1[dt2, ..cols, on="int64==int", nomatch=0L, verbose=TRUE],
                 ans<-data.table(x.int=1:5, x.doubleInt=as.double(1:5), x.realDouble=c(0.5,1.0,1.5,2.0,2.5), x.int64=as.integer64(1:5),
-                                i.int=1:5, i.doubleInt=as.double(1:5), i.realDouble=c(0.5,1.0,1.5,2.0,2.5), i.int64=as.integer64(1:5)),
+                                i.int=1:5, i.doubleInt=as.double(1:5), i.realDouble=c(0.5,1.0,1.5,2.0,2.5), i.int64=as.integer64(c(1:4, 3000000000))),
                 output = "Coercing integer column i.int to type integer64 to match type of x.int64")
   test(2044.70, dt1[dt2, ..cols, on="int64==doubleInt", nomatch=0L, verbose=TRUE],
                 ans,
@@ -16900,16 +16895,17 @@ times = .POSIXct(tz = 'UTC', c(
   1201364458.72486, 939956943.690777
 ))
 DT = data.table(dates, times)
+DT_trunc = copy(DT)[, times := as.POSIXct(trunc(times))]
 tmp = tempfile()
 ## ISO8601 format (%FT%TZ) by default
 fwrite(DT, tmp)
 test(2150.01, fread(tmp), DT)   # defaults for fwrite/fread simple and preserving
-fwrite(DT, tmp, dateTimeAs='write.csv')  # as write.csv, writes the UTC times as-is not local because the time column has tzone=="UTC", but without the Z marker
+fwrite(DT, tmp, dateTimeAs='write.csv')  # as write.csv, writes the UTC times as-is not local because the time column has tzone=="UTC", but without the Z marker. Also truncates milliseconds, hence DT_trunc below.
 test(2150.021, env=list(TZ=NULL), sapply(fread(tmp,tz=""), typeof), c(dates="integer", times="character"))  # from v1.14.0 tz="" needed to read datetime as character
-test(2150.022, env=list(TZ=NULL), fread(tmp,tz="UTC"), DT)  # user can tell fread to interpret the unmarked datetimes as UTC
-test(2150.023, env=c(TZ='UTC'), fread(tmp), DT)  # TZ environment variable is also recognized
+test(2150.022, env=list(TZ=NULL), fread(tmp,tz="UTC"), DT_trunc)  # user can tell fread to interpret the unmarked datetimes as UTC
+test(2150.023, env=c(TZ='UTC'), fread(tmp), DT_trunc)  # TZ environment variable is also recognized
 if (.Platform$OS.type!="windows") {
-  test(2150.024, env=c(TZ=''), fread(tmp), DT) # on Windows this unsets TZ, see ?Sys.setenv
+  test(2150.024, env=c(TZ=''), fread(tmp), DT_trunc) # on Windows this unsets TZ, see ?Sys.setenv
   # blank TZ env variable on non-Windows is recognized as UTC consistent with C and R; but R's tz= argument is the opposite and uses "" for local
 }
 # Notes:
@@ -16924,14 +16920,14 @@ test(2150.025,
      attr(fread(tmp, colClasses=list(POSIXct="times"), tz="")$times, "tzone"),
      "")
 # the times will be different though here because as.POSIXct read them as local time.
-fwrite(copy(DT)[ , times := format(times, '%FT%T+00:00')], tmp)
-test(2150.03, fread(tmp), DT)
+fwrite(copy(DT)[ , times := format(times, '%FT%T+00:00')], tmp) #NB: %T-->truncate milliseconds.
+test(2150.03, fread(tmp), DT_trunc)
 fwrite(copy(DT)[ , times := format(times, '%FT%T+0000')], tmp)
-test(2150.04, fread(tmp), DT)
+test(2150.04, fread(tmp), DT_trunc)
 fwrite(copy(DT)[ , times := format(times, '%FT%T+0115')], tmp)
-test(2150.05, fread(tmp), copy(DT)[ , times := times - 4500])
+test(2150.05, fread(tmp), copy(DT_trunc)[ , times := times - 4500])
 fwrite(copy(DT)[ , times := format(times, '%FT%T+01')], tmp)
-test(2150.06, fread(tmp), copy(DT)[ , times := times - 3600])
+test(2150.06, fread(tmp), copy(DT_trunc)[ , times := times - 3600])
 ## invalid tz specifiers
 fwrite(copy(DT)[ , times := format(times, '%FT%T+3600')], tmp)
 test(2150.07, fread(tmp), copy(DT)[ , times := format(times, '%FT%T+3600')])
@@ -17463,8 +17459,8 @@ if (test_bit64) {
   # X[Y,,by=.EACHI] when Y contains integer64 also fixed in 1.12.4, #3779
   X = data.table(x=1:3)
   Y = data.table(x=1:2, y=as.integer64(c(10,20)))
-  test(2193.2, copy(X)[Y, `:=`(y=i.y), on="x", by=.EACHI], data.table(x=1:3, y=as.integer64(10L,20L,NA)))
-  test(2193.3, copy(X)[Y, let(y=i.y), on="x", by=.EACHI], data.table(x=1:3, y=as.integer64(10L,20L,NA)))
+  test(2193.2, copy(X)[Y, `:=`(y=i.y), on="x", by=.EACHI], data.table(x=1:3, y=as.integer64(c(10L,20L,NA))))
+  test(2193.3, copy(X)[Y, let(y=i.y), on="x", by=.EACHI], data.table(x=1:3, y=as.integer64(c(10L,20L,NA))))
 }
 
 # endsWithAny added in #5097 for internal use replacing one use of base::endsWith (in fread.R)
@@ -18341,8 +18337,10 @@ dt = data.table(x=1:4, y=factor(letters[1:2]))
 test(2247.1, split(dt, ~y), split(dt, dt$y))
 dt = data.table(x=1:4, y=1:2)
 test(2247.2, split(dt, ~y), list(`1`=data.table(x=c(1L,3L), y=1L), `2`=data.table(x=c(2L, 4L), y=2L)))
-# Closely match the original MRE from the issue
-test(2247.3, do.call(rbind, split(dt, ~y)), setDT(do.call(rbind, split(as.data.frame(dt), ~y))))
+if (!inherits(tryCatch(split(mtcars, ~cyl), error=identity), "error")) { # R>=4.1.0
+  # Closely match the original MRE from the issue
+  test(2247.3, do.call(rbind, split(dt, ~y)), setDT(do.call(rbind, split(as.data.frame(dt), ~y))))
+}
 dt = data.table(x=1:4, y=factor(letters[1:2]), z=factor(c(1,1,2,2), labels=c("c", "d")))
 test(2247.4, split(dt, ~y+z), list("a.c"=dt[1], "b.c"=dt[2], "a.d"=dt[3], "b.d"=dt[4]))
 
@@ -18393,9 +18391,12 @@ test(2250.11, dt[, names(.SD(2)) := lapply(.SD, .I)], error=base_messages$missin
 dt = data.table(a = 1:3, b = 5:7, grp = c('a', 'a', 'b'))
 test(2250.12, dt[, names(.SD) := lapply(.SD, function(x) x + b), .SDcols = "a"], data.table(a = 1:3 + 5:7, b = 5:7, grp = c('a', 'a', 'b')))
 
-
 dt = data.table(a = 1L, b = 2L, c = 3L, d = 4L, e = 5L, f = 6L)
 test(2250.13, dt[, names(.SD)[1:5] := sum(.SD)], data.table(a = 21L, b = 21L, c = 21L, d = 21L, e = 21L, f = 6L))
+
+dt = data.table(a = 1) #6033 revdep follow-up
+my_col = "a"
+test(2250.14, dt[, substitute(my_col) := .(3)], data.table(a = 3))
 
 # fread(...,fill) can also be used to specify a guess on the maximum number of columns #2691 #1812 #4130 #3436 #2727
 dt_str = paste(rep(c("1,2\n", "1,2,3\n"), each=100), collapse="")
@@ -18705,7 +18706,31 @@ test(2264.8, print(DT, show.indices=TRUE), output=ans)
 # integer64 columns print even when bit64 isn't loaded
 if (test_bit64) local({
   DT = data.table(a = 'abc', b = as.integer64(1))
-  unloadNamespace("bit64")
-  on.exit(library(bit64))
+  invisible(unloadNamespace("bit64"))
+  on.exit(suppressPackageStartupMessages(library(bit64)))
   test(2265, DT, output="abc\\s*1$")
 })
+
+# non-ASCII plain symbol in by, #4708
+DT = data.table(a = rep(1:3, 2))
+# NB: recall we can't use non-ASCII symbols here. the text is a-<n-tilde>-o (year in Spanish)
+setnames(DT, "a", "a\U00F1o")
+test(2266, eval(parse(text="DT[ , .N, a\U00F1o]$N[1L]")), 2L)
+
+# all.equal failed to dispatch to methods of columns, #4543
+DT1 = data.table(t = .POSIXct(1590973200, tz='UTC'))
+DT2 = data.table(t = .POSIXct(1590974413, tz='UTC'))
+test(2267, all.equal(DT1, DT2), "Column 't': Mean absolute difference: 1213")
+
+# rbindlist with many nested lists leads to protection stack overflow #4536
+# test case needs to bind list columns with atomic columns to trigger
+x = list(
+  data.table(V1="a"),
+  data.table(V1=""),
+  data.table(V2=list(FALSE)),
+  data.table(V2=list(list(V2A=FALSE, V2B="", V2C="" ))),
+  data.table(V1=list(list(V1A="", V1B="", V1C="", V1D="", V1E="")), V3 = list(list(V3A=TRUE, V3B="", V3C=1L, V3D=0L, V3F=1L)))
+)
+N = 5e4
+y = x[rep(1:5, N)]
+test(2268, rbindlist(y, fill=TRUE), rbindlist(x, fill=TRUE)[rep(1:5, N)])
