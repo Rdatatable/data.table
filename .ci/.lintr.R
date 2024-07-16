@@ -1,5 +1,5 @@
 dt_linters = new.env()
-for (f in list.files('.ci/linters', full.names=TRUE)) sys.source(f, dt_linters)
+for (f in list.files('.ci/linters/r', full.names=TRUE)) sys.source(f, dt_linters)
 rm(f)
 
 # NB: Could do this inside the linter definition, this separation makes those files more standardized
