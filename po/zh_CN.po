@@ -50,13 +50,16 @@ msgid "Internal error: length(names)>0 but <length(dt)"
 msgstr "内部错误： 列名列表(names)长度应大于零，但小于dt的长度"
 
 #: assign.c:205
-#, c-format
+#, fuzzy, c-format
 msgid ""
 "Some columns are a multi-column type (such as a matrix column), for example "
 "column %d. setDT will retain these columns as-is but subsequent operations "
 "like grouping and joining may fail. Please consider as.data.table() instead "
 "which will create a new column for each embedded column."
 msgstr ""
+"某些列为包含多列的类型（如矩阵列）：%s。setDT 会保留这些列，但后续的操作如"
+"分组（grouping）和联接（joining）等操作可能会失败。请考虑使用 as.data."
+"table() 因为它会为每个内嵌列建立一个新列。"
 
 #: assign.c:222
 #, c-format
@@ -65,13 +68,20 @@ msgid ""
 "POSIXct) and run setDT() again. We do not recommend the use of POSIXlt at "
 "all because it uses 40 bytes to store one date."
 msgstr ""
+"第 %d 列属于 POSIXlt 类型。请使用 as.POSIXct 将其转换为 POSIXct 类型并再次"
+"运行setDT。我们非常不推荐使用 POSIXlt 类型，因为它需使用 40 个字节来存储一"
+"个日期。"
 
 #: assign.c:239
-#, c-format
+#, fuzzy, c-format
 msgid ""
 "All elements in argument 'x' to 'setDT' must be of equal length, but input "
 "%d has length %d whereas the first non-empty input had length %d"
 msgstr ""
+"'setDT' 参数 'x' 中所有的元素均须为同一长度，但输入元素的长度频数表（长度:"
+"频数）为：%s\n"
+"x中第一个长度比 %d 少的元素为第 %d 项。"
+
 
 #: assign.c:249
 msgid "alloccol has been passed a NULL dt"

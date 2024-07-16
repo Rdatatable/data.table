@@ -864,7 +864,7 @@ msgid ""
 "needed internally) to avoid this warning."
 msgstr ""
 "侦测到使用 strptime() ，已用 as.POSIXct() 包裹这么做是为了尽量避免列被指定为 "
-"POSIXltPOSIXlt用40个以上的位元组储存日期(相较于 POSIXct 只用8位元组)请使用 "
+"POSIXlt用40个以上的位元组储存日期(相较于 POSIXct 只用8位元组)请使用 "
 "as.POSIXct() 以避免本警告 (此函数会根据需求在内部调用 strptime())"
 
 #: data.table.R:1289
@@ -3304,52 +3304,3 @@ msgstr "以下的列并非数值类型，将被忽略：%s"
 msgid "Index: %s\n"
 msgid_plural "Indices: %s\n"
 msgstr[0] "索引(index): %s\n"
-
-#, c-format
-#~ msgid ""
-#~ "'by' is a character vector length %d but one or more items include a "
-#~ "comma. Either pass a vector of column names (which can contain spaces, "
-#~ "but no commas), or pass a vector length 1 containing comma separated "
-#~ "column names. See ?data.table for other possibilities."
-#~ msgstr ""
-#~ "'by' 为长度为 %d 的字符串向量，但是其中一个或多个元素包含逗号。请传入一个"
-#~ "由列名组成的向量（可以包含空格，但是不能包含逗号），或传入一个长度为 1 的"
-#~ "由逗号分隔列名字符串入。可通过 ?data.table 查看其他可能选项。"
-
-#, c-format
-#~ msgid ""
-#~ "Some columns are a multi-column type (such as a matrix column): %s. setDT "
-#~ "will retain these columns as-is but subsequent operations like grouping "
-#~ "and joining may fail. Please consider as.data.table() instead which will "
-#~ "create a new column for each embedded column."
-#~ msgstr ""
-#~ "某些列为包含多列的类型（如矩阵列）：%s。setDT 会保留这些列，但后续的操作如"
-#~ "分组（grouping）和联接（joining）等操作可能会失败。请考虑使用 as.data."
-#~ "table() 因为它会为每个内嵌列建立一个新列。"
-
-#, c-format
-#~ msgid ""
-#~ "Column %d is of POSIXlt type. Please convert it to POSIXct using as."
-#~ "POSIXct and run setDT again. We do not recommend use of POSIXlt at all "
-#~ "because it uses 40 bytes to store one date."
-#~ msgstr ""
-#~ "第 %d 列属于 POSIXlt 类型。请使用 as.POSIXct 将其转换为 POSIXct 类型并再次"
-#~ "运行setDT。我们非常不推荐使用 POSIXlt 类型，因为它需使用 40 个字节来存储一"
-#~ "个日期。"
-
-#, c-format
-#~ msgid ""
-#~ "All elements in argument 'x' to 'setDT' must be of same length, but the "
-#~ "profile of input lengths (length:frequency) is: %s\n"
-#~ "The first entry with fewer than %d entries is %d."
-#~ msgstr ""
-#~ "'setDT' 参数 'x' 中所有的元素均须为同一长度，但输入元素的长度频数表（长度:"
-#~ "频数）为：%s\n"
-#~ "x中第一个长度比 %d 少的元素为第 %d 项。"
-
-#, c-format
-#~ msgid "Aggregate function missing, defaulting to 'length'"
-#~ msgstr "聚合函数缺失，将默认采用'length'"
-
-#~ msgid "Provided argument fill="
-#~ msgstr "提供的 fill= 参数"
