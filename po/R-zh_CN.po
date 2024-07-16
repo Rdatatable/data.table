@@ -1505,14 +1505,14 @@ msgstr "'drop' 必须为逻辑 TRUE/FALSE"
 #: fcast.R:136
 #, fuzzy, c-format
 msgid "Argument 'value.var.in.dots' should be logical TRUE/FALSE"
-msgstr "参数 'no.dups' 应为逻辑值 TRUE 或 FALSE"
+msgstr "参数 'value.var.in.dots' 应为逻辑值 TRUE 或 FALSE"
 
 #: fcast.R:138
 #, fuzzy, c-format
 msgid ""
 "Arguments 'value.var.in.LHSdots', 'value.var.in.RHSdots' should be logical "
 "TRUE/FALSE"
-msgstr "参数 'no.dups' 应为逻辑值 TRUE 或 FALSE"
+msgstr "参数 'value.var.in.LHSdots' 和 'value.var.in.RHSdots' 应为逻辑值 TRUE 或 FALSE"
 
 #: fcast.R:155
 #, c-format
@@ -3073,7 +3073,7 @@ msgstr "内部错误：此时不匹配的因子类型应已被发现"
 #: shift.R:3
 #, fuzzy, c-format
 msgid "Provided argument fill=%s will be ignored since type='cyclic'."
-msgstr "将被忽略，因为 type='shift'。"
+msgstr "将被忽略，因为 type='cyclic'。"
 
 #: tables.R:46
 #, c-format
