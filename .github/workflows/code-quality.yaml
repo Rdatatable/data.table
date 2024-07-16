@@ -43,4 +43,5 @@ jobs:
           for (f in list.files('.ci/linters', full.names=TRUE)) source(f)
           for (f in list.files('src', pattern='[.]c$', full.names=TRUE)) {
             alloc_linter(f)
+            # TODO(#6272): Incorporate more checks from CRAN_Release
           }
