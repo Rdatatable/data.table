@@ -127,8 +127,11 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   t[1] = wallclock();
   double *mins = (double *)malloc(nBatch * sizeof(double));
   double *maxs = (double *)malloc(nBatch * sizeof(double));
-  if (!mins || !maxs)
+  if (!mins || !maxs) {
+    if (mins) free(mins);
+    if (maxs) free(maxs); // very unlikely, but knife's-edge chance some memory was freed up between the malloc() calls
     error(_("Failed to allocate %d bytes in fsort()."), (int)(2 * nBatch * sizeof(double)));
+  }
   const double *restrict xp = REAL(x);
   #pragma omp parallel for schedule(dynamic) num_threads(getDTthreads(nBatch, false))
   for (int batch=0; batch<nBatch; ++batch) {
