@@ -45,3 +45,4 @@ jobs:
             alloc_linter(f)
             # TODO(#6272): Incorporate more checks from CRAN_Release
           }
+        shell: Rscript {0}
