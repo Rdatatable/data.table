@@ -24,7 +24,7 @@ SEXP uniqlist(SEXP l, SEXP order)
   R_len_t len, thisi, previ, isize=1000;
   int *iidx = Calloc(isize, int); // for 'idx'
   if (!iidx)
-    error(_("Failed to allocate %d bytes for 'iidx'."), (int)(isize * sizeof(int)));
+    error(_("Failed to allocate %d bytes for '%s'."), (int)(isize * sizeof(int)), "iidx");
   len = 1;
   iidx[0] = 1; // first row is always the first of the first group
 

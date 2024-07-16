@@ -143,7 +143,7 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
   start = clock();
   idx = Calloc(uxrows, R_len_t); // resets bits, =0
   if (!idx)
-    error(_("Failed to allocate %d bytes for idx."), (int)(uxrows * sizeof(R_len_t)));
+    error(_("Failed to allocate %d bytes for '%s'."), (int)(uxrows * sizeof(R_len_t)), "idx");
   switch (type) {
   case ANY: case START: case END: case WITHIN:
     for (int i=0; i<xrows; ++i) {

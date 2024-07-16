@@ -2134,7 +2134,7 @@ int freadMain(freadMainArgs _args) {
   rowSize8 = 0;
   size = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));  // TODO: remove size[] when we implement Pasha's idea to += size inside processor
   if (!size)
-    STOP(_("Failed to allocate %d bytes for size array: %s"), ncol, strerror(errno));
+    STOP(_("Failed to allocate %d bytes for '%s': %s"), (int)(ncol * sizeof(int8_t)), "size", strerror(errno));
   nStringCols = 0;
   nNonStringCols = 0;
   for (int j=0; j<ncol; j++) {
@@ -2574,7 +2574,7 @@ int freadMain(freadMainArgs _args) {
     }
     dropFill = (int *)malloc((size_t)ndropFill * sizeof(int));
     if (!dropFill)
-      STOP(_("Failed to allocate %d bytes for dropFill."), (int)(ndropFill * sizeof(int)));
+      STOP(_("Failed to allocate %d bytes for '%s'."), (int)(ndropFill * sizeof(int)), "dropFill");
     int i=0;
     for (int j=max_col; j<ncol; ++j) {
       type[j] = CT_DROP;

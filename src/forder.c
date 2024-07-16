@@ -1157,7 +1157,7 @@ void radix_r(const int from, const int to, const int radix) {
 
   int *starts = calloc(nBatch*256, sizeof(int));  // keep starts the same shape and ugrp order as counts
   if (!starts)
-    STOP(_("Unable to allocate 'starts' array, %d bytes."), (int)(nBatch*256*sizeof(int)));
+    STOP(_("Failed to allocate %d bytes for '%s'."), (int)(nBatch*256*sizeof(int)), "starts");
   for (int j=0, sum=0; j<ngrp; j++) {  // iterate through columns (ngrp bytes)
     uint16_t *tmp1 = counts+ugrp[j];
     int      *tmp2 = starts+ugrp[j];
