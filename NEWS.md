@@ -122,6 +122,8 @@
 
 1. Fix a typo in a Mandarin translation of an error message that was hiding the actual error message, [#6172](https://github.com/Rdatatable/data.table/issues/6172). Thanks @trafficfan for the report and @MichaelChirico for the fix.
 
+2. data.table is now translated into Brazilian Portugese (`pt_BR`) as well as Mandarin (`zh_CN`). Thanks to the [new translation team](https://github.com/orgs/Rdatatable/teams/brazil) consisting initially of @rffontenelle, @leofontenelle, and @italo-07. The team is open if you'd also like to join and support maintenance of these translations.
+
 # data.table [v1.15.4](https://github.com/Rdatatable/data.table/milestone/33) (27 March 2024)
 
 ## BUG FIXES
