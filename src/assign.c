@@ -1248,6 +1248,8 @@ void savetl_init(void) {
   saveds = (SEXP *)malloc(nalloc * sizeof(SEXP));
   savedtl = (R_len_t *)malloc(nalloc * sizeof(R_len_t));
   if (saveds==NULL || savedtl==NULL) {
+    if (saveds) free(saveds);
+    if (savedtl) free(savedtl);
     savetl_end();                                                        // # nocov
     error(_("Failed to allocate initial %d items in savetl_init"), nalloc); // # nocov
   }

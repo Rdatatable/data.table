@@ -23,6 +23,8 @@ SEXP uniqlist(SEXP l, SEXP order)
   SEXP v, ans;
   R_len_t len, thisi, previ, isize=1000;
   int *iidx = Calloc(isize, int); // for 'idx'
+  if (!iidx)
+    error(_("Failed to allocate %d bytes for 'iidx'."), (int)(isize * sizeof(int)));
   len = 1;
   iidx[0] = 1; // first row is always the first of the first group
 
@@ -259,7 +261,10 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
   R_len_t nrows = length(VECTOR_ELT(l,0)), ncols = length(cols);
   if (nrows==0) return(allocVector(INTSXP, 0));
   R_len_t thisi, previ, ansgrpsize=1000, nansgrp=0;
-  R_len_t *ansgrp = Calloc(ansgrpsize, R_len_t), starts, grplen; // #3401 fix. Needs to be Calloc due to Realloc below .. else segfaults.
+  R_len_t *ansgrp = Calloc(ansgrpsize, R_len_t);
+  if (!ansgrp)
+    error(_("Failed to allocate %d bytes for '%s'."), (int)(ansgrpsize * sizeof(R_len_t)), "ansgrpsize");
+  R_len_t starts, grplen; // #3401 fix. Needs to be Calloc due to Realloc below .. else segfaults.
   R_len_t ngrps = length(grps);
   bool *i64 = (bool *)R_alloc(ncols, sizeof(bool));
   if (ngrps==0) error(_("Internal error: nrows[%d]>0 but ngrps==0"), nrows); // # nocov

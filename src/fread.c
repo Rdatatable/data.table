@@ -447,7 +447,8 @@ void copyFile(size_t fileSize, const char *msg, bool verbose)  // only called in
 {
   double tt = wallclock();
   mmp_copy = (char *)malloc((size_t)fileSize + 1/* extra \0 */);
-  if (!mmp_copy) STOP(_("Unable to allocate %s of contiguous virtual RAM. %s allocation."), filesize_to_str(fileSize), msg);
+  if (!mmp_copy)
+    STOP(_("Unable to allocate %s of contiguous virtual RAM. %s allocation."), filesize_to_str(fileSize), msg);
   memcpy(mmp_copy, mmp, fileSize);
   sof = mmp_copy;
   eof = (char *)mmp_copy + fileSize;
@@ -1828,7 +1829,11 @@ int freadMain(freadMainArgs _args) {
 
   type =    (int8_t *)malloc((size_t)ncol * sizeof(int8_t));
   tmpType = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));  // used i) in sampling to not stop on errors when bad jump point and ii) when accepting user overrides
-  if (!type || !tmpType) STOP(_("Failed to allocate 2 x %d bytes for type and tmpType: %s"), ncol, strerror(errno));
+  if (!type || !tmpType) {
+    if (type) free(type);
+    if (tmpType) free(tmpType);
+    STOP(_("Failed to allocate 2 x %d bytes for type and tmpType: %s"), ncol, strerror(errno));
+  }
 
   if (sep == ',' && dec == '\0') { // if sep=',' detected, don't attempt to detect dec [NB: . is not par of seps]
     if (verbose) {
@@ -2074,7 +2079,8 @@ int freadMain(freadMainArgs _args) {
     colNames = NULL;  // userOverride will assign V1, V2, etc
   } else {
     colNames = (lenOff*) calloc((size_t)ncol, sizeof(lenOff));
-    if (!colNames) STOP(_("Unable to allocate %d*%d bytes for column name pointers: %s"), ncol, sizeof(lenOff), strerror(errno));
+    if (!colNames)
+      STOP(_("Unable to allocate %d*%d bytes for column name pointers: %s"), ncol, sizeof(lenOff), strerror(errno));
     if (sep==' ') while (*ch==' ') ch++;
     void *targets[9] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, colNames + autoFirstColName};
     FieldParseContext fctx = {
@@ -2128,7 +2134,8 @@ int freadMain(freadMainArgs _args) {
   rowSize4 = 0;
   rowSize8 = 0;
   size = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));  // TODO: remove size[] when we implement Pasha's idea to += size inside processor
-  if (!size) STOP(_("Failed to allocate %d bytes for size array: %s"), ncol, strerror(errno));
+  if (!size)
+    STOP(_("Failed to allocate %d bytes for size array: %s"), ncol, strerror(errno));
   nStringCols = 0;
   nNonStringCols = 0;
   for (int j=0; j<ncol; j++) {
@@ -2567,6 +2574,8 @@ int freadMain(freadMainArgs _args) {
       DTPRINT(_("  Dropping %d overallocated columns\n"), ndropFill);
     }
     dropFill = (int *)malloc((size_t)ndropFill * sizeof(int));
+    if (!dropFill)
+      STOP(_("Failed to allocate %d bytes for dropFill."), (int)(ndropFill * sizeof(int)));
     int i=0;
     for (int j=max_col; j<ncol; ++j) {
       type[j] = CT_DROP;
