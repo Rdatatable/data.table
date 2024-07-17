@@ -119,6 +119,19 @@ test.list <- atime::atime_test_list(
       data.table:::setDT(L)
     },
     Slow = "c4a2085e35689a108d67dacb2f8261e4964d7e12", # Parent of the first commit in the PR that fixes the issue (https://github.com/Rdatatable/data.table/commit/7cc4da4c1c8e568f655ab5167922dcdb75953801)
-    Fast = "1872f473b20fdcddc5c1b35d79fe9229cd9a1d15") # Last commit in the PR that fixes the issue (https://github.com/Rdatatable/data.table/pull/5427/commits)
+    Fast = "1872f473b20fdcddc5c1b35d79fe9229cd9a1d15"), # Last commit in the PR that fixes the issue (https://github.com/Rdatatable/data.table/pull/5427/commits)
+
+  # Issue reported in: https://github.com/Rdatatable/data.table/issues/1534
+  # To be fixed in: https://github.com/Rdatatable/data.table/pull/5205
+  "DT shift improved in #5205" = atime::atime_test(
+    N = 10^seq(1, 7),
+    setup = {
+      DT = data.table(x = sample(N), y = sample(1e2,N,TRUE))
+    },
+    expr = {
+      data.table:::`[.data.table`(DT,, shift(x, 1, type="lag"), y)
+    },
+    Regression = "7f0ce147eef1dd5cd5ff05dffc3c72f472bcde51", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/58135017a985f3cc2c6f0d091c4effaec4442f56) in the PR (https://github.com/Rdatatable/data.table/pull/5205/commits) that fixes the issue
+    Fixed = "a6abac319446ae7dde8bc4501fae40eeb5cc228c") # Commit before the last commit in the PR (https://github.com/Rdatatable/data.table/pull/5205/commits) that fixes the regression
 )
 # nolint end: undesirable_operator_linter.
