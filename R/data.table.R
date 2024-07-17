@@ -1987,11 +1987,11 @@ DT = function(x, ...) {  #4872
 
 .optmean = function(expr) {   # called by optimization of j inside [.data.table only. Outside for a small speed advantage.
   if (length(expr)==2L)  # no parameters passed to mean, so defaults of trim=0 and na.rm=FALSE
-    return(call(".External",quote(Cfastmean),expr[[2L]], FALSE))
+    return(call(".External", quote(Cfastmean), expr[[2L]], FALSE))
     # return(call(".Internal",expr))  # slightly faster than .External, but R now blocks .Internal in coerce.c from apx Sep 2012
-  if (length(expr)==3L && startsWith(names(expr)[3L], "na"))   # one parameter passed to mean()
-    return(call(".External",quote(Cfastmean),expr[[2L]], expr[[3L]]))  # faster than .Call
-  assign("nomeanopt",TRUE,parent.frame())
+  if (length(expr)==3L && .arg_is_narm(expr))
+    return(call(".External", quote(Cfastmean), expr[[2L]], expr[[3L]]))  # faster than .Call
+  assign("nomeanopt", TRUE, parent.frame())
   expr  # e.g. trim is not optimized, just na.rm
 }
 
@@ -3072,13 +3072,17 @@ is_constantish = function(q, check_singleton=FALSE) {
   if (q1[[3L]] %chin% gdtfuns) return(q1[[3L]])
   NULL
 }
+
+# Check for na.rm= in expr in the expected slot; allows partial matching and
+#   is robust to unnamed expr. Note that NA names are not possible here.
+.arg_is_narm <- function(expr, which=3L) !is.null(nm <- names(expr)[which]) && startsWith(nm, "na")
+
 .gforce_ok = function(q, x) {
   if (is.N(q)) return(TRUE) # For #334
   q1 = .get_gcall(q)
   if (is.null(q1)) return(FALSE)
   if (!(q2 <- q[[2L]]) %chin% names(x) && q2 != ".I") return(FALSE)  # 875
-  if (length(q)==2L || (!is.null(names(q)) && startsWith(names(q)[3L], "na") && is_constantish(q[[3L]]))) return(TRUE)
-  #                       ^^ base::startWith errors on NULL unfortunately
+  if (length(q)==2L || (.arg_is_narm(q) && is_constantish(q[[3L]]))) return(TRUE)
   switch(as.character(q1),
     "shift" = .gshift_ok(q),
     "weighted.mean" = .gweighted.mean_ok(q, x),
