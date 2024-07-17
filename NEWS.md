@@ -104,6 +104,8 @@
 
     We plan to export similar placeholders for `.` and `J` in roughly one year (e.g. data.table 1.18.0), but excluded them from this release to avoid back-compatibility issues. Specifically, some packages doing `import(plyr)` _and_ `import(data.table)`, and/or with those packages in `Depends`, will error when data.table starts exporting `.` (and similarly for a potential conflict with `rJava::J()`). We discourage using data.table (or any package, really) in Depends; blanket `import()` of package is also generally best avoided. See `vignette("datatable-importing")`.
 
+18. `set()` now adds new rows even if no rows are updated, [#5409](https://github.com/Rdatatable/data.table/issues/5409). This behavior is now consistent with `:=`, thanks to @mb706 for the report and @joshhwuu for the fix.
+
 
 ## TRANSLATIONS
 
