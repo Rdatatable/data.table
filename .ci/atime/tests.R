@@ -132,8 +132,9 @@ test.list <- atime::atime_test_list(
          val = rnorm(N))
      },
      expr = data.table:::`[.data.table`(dt, , .(vs = (sum(val))), by = .(id)),
-     Before = "be2f72e6f5c90622fe72e1c315ca05769a9dc854", # Parent of the regression causing commit (https://github.com/Rdatatable/data.table/commit/e793f53466d99f86e70fc2611b708ae8c601a451) in the PR that introduced the issue (https://github.com/Rdatatable/data.table/pull/4491/commits)
-     Regression = "e793f53466d99f86e70fc2611b708ae8c601a451", # Commit responsible for regression in the PR that introduced the issue (https://github.com/Rdatatable/data.table/pull/4491/commits)
-     Fixed = "58409197426ced4714af842650b0cc3b9e2cb842") # Last commit in the PR that fixed the regression (https://github.com/Rdatatable/data.table/pull/5463/commits)
+     Before = "fda7fd9dbcac939df33769193eebd44731ee59b9", # Parent of the regression commit (https://github.com/Rdatatable/data.table/commit/c4a2085e35689a108d67dacb2f8261e4964d7e12)  
+     Regression = "c4a2085e35689a108d67dacb2f8261e4964d7e12", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/ade6e57984f9e7f898a638d2049039cd886f2369) in the PR (https://github.com/Rdatatable/data.table/pull/5463/commits) that fixed the issue
+     Fixed = "58409197426ced4714af842650b0cc3b9e2cb842") # Last commit in the PR (https://github.com/Rdatatable/data.table/pull/5463) that fixed the regression 
 )
+
 # nolint end: undesirable_operator_linter.
