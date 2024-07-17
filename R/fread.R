@@ -299,6 +299,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
   for (j in which(nzchar(colClassesAs))) {       # # 1634
     v = .subset2(ans, j)
     new_class = colClassesAs[j]
+    if (new_class %chin% c("POSIXct")) v[!nzchar(v)] = NA_character_ # as.POSIXct/as.POSIXlt cannot handle as.POSIXct("") correctly #6208
     new_v = tryCatch({    # different to read.csv; i.e. won't error if a column won't coerce (fallback with warning instead)
       switch(new_class,
              "factor" = as_factor(v),

@@ -74,6 +74,9 @@ vapply_1i = function(x, fun, ..., use.names = TRUE) {
   vapply(X = x, FUN = fun, ..., FUN.VALUE = NA_integer_, USE.NAMES = use.names)
 }
 
+# base::xor(), but with scalar operators
+XOR = function(x, y) (x || y) && !(x && y)
+
 # not is.atomic because is.atomic(matrix) is true
 cols_with_dims = function(x) vapply_1i(x, function(j) length(dim(j))) > 0L
 
@@ -149,7 +152,11 @@ is_utc = function(tz) {
 }
 
 # very nice idea from Michael to avoid expression repetition (risk) in internal code, #4226
-"%iscall%" = function(e, f) { is.call(e) && e[[1L]] %chin% f }
+`%iscall%` = function(e, f) {
+  if (!is.call(e)) return(FALSE)
+  if (is.name(e1 <- e[[1L]])) return(e1 %chin% f)
+  e1 %iscall% '::' && e1[[3L]] %chin% f
+}
 
 # nocov start #593 always return a data.table
 edit.data.table = function(name, ...) {
