@@ -134,8 +134,8 @@ test.list <- atime::atime_test_list(
       data.table:::`[.data.table`(L, , .SD)
     },
     Fast = "353dc7a6b66563b61e44b2fa0d7b73a0f97ca461", # Nearly last merge commit in the PR (https://github.com/Rdatatable/data.table/pull/4501/commits) that fixes the issue 
-    "Slow (2024 master)" = "3ca83738d70d5597d9e168077f3768e32569c790", # master parent of nearly last merge commit (https://github.com/Rdatatable/data.table/commit/353dc7a6b66563b61e44b2fa0d7b73a0f97ca461) in the PR (https://github.com/Rdatatable/data.table/pull/4501/commits) that fixes the issue 
-    "Slower (2020 master)" = "cacdc92df71b777369a217b6c902c687cf35a70d" # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/74636333d7da965a11dad04c322c752a409db098) in the PR (https://github.com/Rdatatable/data.table/pull/4501/commits) that fixes the issue 
+    Slow = "3ca83738d70d5597d9e168077f3768e32569c790", # Circa 2024 master parent of nearly last merge commit (https://github.com/Rdatatable/data.table/commit/353dc7a6b66563b61e44b2fa0d7b73a0f97ca461) in the PR (https://github.com/Rdatatable/data.table/pull/4501/commits) that fixes the issue 
+    Slower = "cacdc92df71b777369a217b6c902c687cf35a70d" # Circa 2020 parent of the first commit (https://github.com/Rdatatable/data.table/commit/74636333d7da965a11dad04c322c752a409db098) in the PR (https://github.com/Rdatatable/data.table/pull/4501/commits) that fixes the issue 
   ),
 
   NULL)
