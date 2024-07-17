@@ -3194,7 +3194,7 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
   test(1035.02, melt(DT, id.vars=c("i_1", "i_2", "l_2"), measure.vars=c("l_1")), ans1)
 
   # melt retains attributes if all are of same type (new)
-  ans2 = data.table(c_1=DT$c_1, variable=rep(c("d_1", "d_2"), each=N), value=as.Date(c(DT$d_1, DT$d_2)))[!is.na(value)]
+  ans2 = data.table(c_1=DT$c_1, variable=rep(c("d_1", "d_2"), each=N), value=as.Date(c(DT$d_1, DT$d_2), origin="1970-01-01"))[!is.na(value)] # NB: origin= required for some old R versions
   test(1035.03, melt(DT, id.vars=4, measure.vars=5:6, na.rm=TRUE, variable.factor=FALSE), ans2)
 
   DT2 <- data.table(x=1:5, y=1+5i) # unimplemented class
@@ -18337,8 +18337,10 @@ dt = data.table(x=1:4, y=factor(letters[1:2]))
 test(2247.1, split(dt, ~y), split(dt, dt$y))
 dt = data.table(x=1:4, y=1:2)
 test(2247.2, split(dt, ~y), list(`1`=data.table(x=c(1L,3L), y=1L), `2`=data.table(x=c(2L, 4L), y=2L)))
-# Closely match the original MRE from the issue
-test(2247.3, do.call(rbind, split(dt, ~y)), setDT(do.call(rbind, split(as.data.frame(dt), ~y))))
+if (!inherits(tryCatch(split(mtcars, ~cyl), error=identity), "error")) { # R>=4.1.0
+  # Closely match the original MRE from the issue
+  test(2247.3, do.call(rbind, split(dt, ~y)), setDT(do.call(rbind, split(as.data.frame(dt), ~y))))
+}
 dt = data.table(x=1:4, y=factor(letters[1:2]), z=factor(c(1,1,2,2), labels=c("c", "d")))
 test(2247.4, split(dt, ~y+z), list("a.c"=dt[1], "b.c"=dt[2], "a.d"=dt[3], "b.d"=dt[4]))
 
@@ -18732,3 +18734,8 @@ x = list(
 N = 5e4
 y = x[rep(1:5, N)]
 test(2268, rbindlist(y, fill=TRUE), rbindlist(x, fill=TRUE)[rep(1:5, N)])
+
+# fread cannot read all NA column as POSIXct #6208
+dt = data.table(x=as.POSIXct(c(NA, NA)))
+test(2269.1, fread("x\n \n \n", colClasses="POSIXct"), dt)
+test(2269.2, fread("x\n?\n \n", colClasses="POSIXct", na.strings="?"), dt)

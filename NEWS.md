@@ -66,7 +66,9 @@
 
 12. data.table's `all.equal()` method now dispatches to each column's own `all.equal()` method as appropriate, [#4543](https://github.com/Rdatatable/data.table/issues/4543). Thanks @MichaelChirico for the report and fix. Note that this had two noteworthy changes to data.table's own test suite that might affect you: (1) comparisons of POSIXct columns compare absolute, not relative differences, meaning that millisecond-scale differences might trigger a "not equal" report that was hidden before; and (2) comparisons of integer64 columns could be totally wrong since they were being compared on the basis of their representation as doubles, not long integers. The former might be a matter of preference requiring you to specify a different `tolerance=`, while the latter was clearly a bug.
 
-12. `rbindlist` could lead to a protection stack overflow when applied to a list containing many nested lists exceeding the pointer protection stack size, [#4536](https://github.com/Rdatatable/data.table/issues/4536). Thanks to @ProfFancyPants for reporting, and Benjamin Schwendinger for the fix.
+13. `rbindlist` could lead to a protection stack overflow when applied to a list containing many nested lists exceeding the pointer protection stack size, [#4536](https://github.com/Rdatatable/data.table/issues/4536). Thanks to @ProfFancyPants for reporting, and Benjamin Schwendinger for the fix.
+
+14. `fread(x, colClasses="POSIXct")` now also works for columns containing only NA values, [#6208](https://github.com/Rdatatable/data.table/issues/6208). Thanks to @markus-schaffer for the report, and Benjamin Schwendinger for the fix.
 
 ## NOTES
 
@@ -121,6 +123,8 @@
 ## TRANSLATIONS
 
 1. Fix a typo in a Mandarin translation of an error message that was hiding the actual error message, [#6172](https://github.com/Rdatatable/data.table/issues/6172). Thanks @trafficfan for the report and @MichaelChirico for the fix.
+
+2. data.table is now translated into Brazilian Portuguese (`pt_BR`) as well as Mandarin (`zh_CN`). Thanks to the [new translation team](https://github.com/orgs/Rdatatable/teams/brazil) consisting initially of @rffontenelle, @leofontenelle, and @italo-07. The team is open if you'd also like to join and support maintenance of these translations.
 
 # data.table [v1.15.4](https://github.com/Rdatatable/data.table/milestone/33) (27 March 2024)
 
