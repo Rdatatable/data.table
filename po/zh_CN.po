@@ -57,7 +57,7 @@ msgid ""
 "like grouping and joining may fail. Please consider as.data.table() instead "
 "which will create a new column for each embedded column."
 msgstr ""
-"某些列为包含多列的类型（如矩阵列）：%s。setDT 会保留这些列，但后续的操作如"
+"某些列为包含多列的类型（如矩阵列）：%d。setDT 会保留这些列，但后续的操作如"
 "分组（grouping）和联接（joining）等操作可能会失败。请考虑使用 as.data."
 "table() 因为它会为每个内嵌列建立一个新列。"
 
@@ -78,9 +78,8 @@ msgid ""
 "All elements in argument 'x' to 'setDT' must be of equal length, but input "
 "%d has length %d whereas the first non-empty input had length %d"
 msgstr ""
-"'setDT' 参数 'x' 中所有的元素均须为同一长度，但输入元素的长度频数表（长度:"
-"频数）为：%s\n"
-"x中第一个长度比 %d 少的元素为第 %d 项。"
+"'setDT' 参数 'x' 中所有的元素均须为同一长度，但输入 %d 的长度为 %d 而第一个非空输"
+"入的长度为 %d"
 
 
 #: assign.c:249
@@ -1069,7 +1068,7 @@ msgid ""
 "are trying something like j=list(.SD,newcol=mean(colA)) then use := by group "
 "instead (much quicker), or cbind or merge afterwards."
 msgstr ""
-"j=list(...) 中的所有项目必须是原子向量或列表如果您试图进行 j=list(.SD,"
+"j=list(...) 里的 %d 组的第 %d 项目本该是原子向量或列表。如果您在试图进行 j=list(.SD,"
 "newcol=mean(colA)) 之类的操作请使用 := by group 代替(更快速)，或事后使用 "
 "cbind()、merge()"
 
@@ -1240,7 +1239,7 @@ msgstr "内部错误：growVector 不支持 '%s' 类型"
 #: fastmean.c:39 rbindlist.c:8
 #, fuzzy, c-format
 msgid "%s should be TRUE or FALSE"
-msgstr "narm必须是TRUE或FALSE"
+msgstr "%s 必须是TRUE或FALSE"
 
 #: fastmean.c:45
 #, c-format
@@ -2313,7 +2312,7 @@ msgstr ""
 msgid ""
 "[07] Detect column types, dec, good nrow estimate and whether first row is "
 "column names\n"
-msgstr "[07] 检测列类型，估计行数以及首行是否为列名\n"
+msgstr "[07] 检测列类型，小数点分隔符估，良好的行数估计以及首行是否为列名\n"
 
 #: fread.c:1823
 #, c-format
@@ -2621,7 +2620,7 @@ msgstr "内部错误：head 位置无效。jump=%d, headPos=%p, thisJumpStart=%p
 #: fread.c:2562
 #, fuzzy, c-format
 msgid "  Provided number of fill columns: %d but only found %d\n"
-msgstr "fill=%s 且找到的最大列数为 %d\n"
+msgstr "提供的填充列数: %d 但只找到 %d\n"
 
 #: fread.c:2563
 #, c-format
@@ -2680,7 +2679,7 @@ msgid ""
 "discarded non-empty line: <<%s>>"
 msgstr ""
 "在第 %<PRIu64> 行提前终止。预期有 %d 个字段但只找到 %d 个。可以考虑设置 "
-"fill=TRUE 和 comment.char=。 首个丢弃的非空行：<<%s>>"
+"fill=%d 甚至更多，基于您对输入文件的了解。 首个丢弃的非空行：<<%s>>"
 
 #: fread.c:2683
 #, c-format
@@ -3521,7 +3520,7 @@ msgstr "列%d的类型是'%s' - 尚未在fwrite中实施"
 msgid ""
 "input has specific integer rownames but their length (%lld) != nrow "
 "(%<PRId64>)"
-msgstr "输入具有特定的整数行名但是他们的长度(%<PRId64>) != nrow (%<PRId64>)"
+msgstr "输入具有特定的整数行名但是他们的长度(%lld) != nrow (%<PRId64>)"
 
 #: fwriteR.c:283
 msgid ""
@@ -4581,12 +4580,12 @@ msgstr "fill 必须是长度为 1 的向量，例如默认值 NA"
 #: transpose.c:22
 #, fuzzy
 msgid "list.cols should be logical TRUE/FALSE."
-msgstr "ignore.empty 应该是逻辑类型 TRUE 或 FALSE。"
+msgstr "list.cols 应该是逻辑类型 TRUE 或 FALSE。"
 
 #: transpose.c:31
 #, fuzzy, c-format
 msgid "Item %d of list input is not either an atomic vector, or a list"
-msgstr "列表输入的第 %d 项不是原子(atomic)向量"
+msgstr "列表输入的第 %d 项既不是原子(atomic)向量也不是列表"
 
 #: types.c:55
 msgid "internal error: status, nx, nk must be integer"
