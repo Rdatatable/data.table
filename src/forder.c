@@ -917,7 +917,7 @@ void radix_r(const int from, const int to, const int radix) {
       int *TMP = malloc(my_n * sizeof(int));
       if (!TMP) {
         free(o);
-        STOP(_("Failed to allocate %d bytes for '%s'."), my_n * sizeof(int), "TMP");
+        STOP(_("Failed to allocate %d bytes for '%s'."), (int)(my_n * sizeof(int)), "TMP");
       }
       const int *restrict osub = anso+from;
       for (int i=0; i<my_n; i++) TMP[i] = osub[o[i]];
@@ -939,7 +939,7 @@ void radix_r(const int from, const int to, const int radix) {
     int ngrp=0; //minor TODO: could know number of groups with certainty up above
     int *my_gs = malloc(my_n * sizeof(int));
     if (!my_gs)
-      STOP(_("Failed to allocate %d bytes for '%s'."), my_n * sizeof(int), "my_gs");
+      STOP(_("Failed to allocate %d bytes for '%s'."), (int)(my_n * sizeof(int)), "my_gs");
     my_gs[ngrp]=1;
     for (int i=1; i<my_n; i++) {
       if (my_key[i]!=my_key[i-1]) my_gs[++ngrp] = 1;
@@ -1041,7 +1041,7 @@ void radix_r(const int from, const int to, const int radix) {
     }
     int *my_gs = malloc((ngrp==0 ? 256 : ngrp) * sizeof(int)); // ngrp==0 when sort and skip==true; we didn't count the non-zeros in my_counts yet in that case
     if (!my_gs)
-      STOP(_("Failed to allocate %d bytes for '%s'."), (ngrp==0 ? 256 : ngrp) * sizeof(int), "my_gs");
+      STOP(_("Failed to allocate %d bytes for '%s'."), (int)((ngrp==0 ? 256 : ngrp) * sizeof(int)), "my_gs");
     if (sortType!=0) {
       ngrp=0;
       for (int i=0; i<256; i++) if (my_counts[i]) my_gs[ngrp++]=my_counts[i];  // this casts from uint16_t to int32, too
@@ -1228,7 +1228,7 @@ void radix_r(const int from, const int to, const int radix) {
 
   int *my_gs = malloc(ngrp * sizeof(int));
   if (!my_gs)
-    STOP(_("Failed to allocate %d bytes for '%s'."), ngrp * sizeof(int), "my_gs");
+    STOP(_("Failed to allocate %d bytes for '%s'."), (int)(ngrp * sizeof(int)), "my_gs");
   for (int i=1; i<ngrp; i++) my_gs[i-1] = starts[ugrp[i]] - starts[ugrp[i-1]];   // use the first row of starts to get totals
   my_gs[ngrp-1] = my_n - starts[ugrp[ngrp-1]];
 
