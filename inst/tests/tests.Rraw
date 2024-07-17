@@ -18739,3 +18739,7 @@ test(2268, rbindlist(y, fill=TRUE), rbindlist(x, fill=TRUE)[rep(1:5, N)])
 dt = data.table(x=as.POSIXct(c(NA, NA)))
 test(2269.1, fread("x\n \n \n", colClasses="POSIXct"), dt)
 test(2269.2, fread("x\n?\n \n", colClasses="POSIXct", na.strings="?"), dt)
+
+# Error found by revdep in #6284: mean(a,b) is valid, expr names() can be NULL
+DT = data.table(a = 1, b = 2)
+test(2270, options=c(datatable.optimize=1L), DT[, mean(b, 1), by=a], data.table(a=1, V1=2), warning="Unable to optimize call to mean()")

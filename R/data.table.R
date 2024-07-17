@@ -1987,11 +1987,11 @@ DT = function(x, ...) {  #4872
 
 .optmean = function(expr) {   # called by optimization of j inside [.data.table only. Outside for a small speed advantage.
   if (length(expr)==2L)  # no parameters passed to mean, so defaults of trim=0 and na.rm=FALSE
-    return(call(".External",quote(Cfastmean),expr[[2L]], FALSE))
+    return(call(".External", quote(Cfastmean), expr[[2L]], FALSE))
     # return(call(".Internal",expr))  # slightly faster than .External, but R now blocks .Internal in coerce.c from apx Sep 2012
-  if (length(expr)==3L && startsWith(names(expr)[3L], "na"))   # one parameter passed to mean()
-    return(call(".External",quote(Cfastmean),expr[[2L]], expr[[3L]]))  # faster than .Call
-  assign("nomeanopt",TRUE,parent.frame())
+  if (length(expr)==3L && isTRUE(startsWith(as.character(names(expr)[3L]), "na"))) # one named parameter passed to mean(); as.character() for NULL names, isTRUE() for NA/0-length
+    return(call(".External", quote(Cfastmean), expr[[2L]], expr[[3L]]))  # faster than .Call
+  assign("nomeanopt", TRUE, parent.frame())
   expr  # e.g. trim is not optimized, just na.rm
 }
 
