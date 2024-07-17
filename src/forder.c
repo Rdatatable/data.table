@@ -845,9 +845,7 @@ void radix_r(const int from, const int to, const int radix) {
     #endif
 
     uint8_t *restrict my_key = key[radix]+from;  // safe to write as we don't use this radix again
-    uint8_t *o = (uint8_t *)malloc(my_n * sizeof(uint8_t));
-    if (!o)
-      STOP(_("Failed to allocate %d bytes for '%s'."), (int)(my_n * sizeof(uint8_t)), "o");
+    uint8_t o[my_n];
     // if last key (i.e. radix+1==nradix) there are no more keys to reorder so we could reorder osub by reference directly and save allocating and populating o just
     // to use it once. However, o's type is uint8_t so many moves within this max-256 vector should be faster than many moves in osub (4 byte or 8 byte ints) [1 byte
     // type is always aligned]
@@ -914,11 +912,7 @@ void radix_r(const int from, const int to, const int radix) {
     }
     if (!skip) {
       // reorder osub and each remaining ksub
-      int *TMP = malloc(my_n * sizeof(int));
-      if (!TMP) {
-        free(o);
-        STOP(_("Failed to allocate %d bytes for '%s'."), (int)(my_n * sizeof(int)), "TMP");
-      }
+      int TMP[my_n];  // on stack fine since my_n is very small (<=256)
       const int *restrict osub = anso+from;
       for (int i=0; i<my_n; i++) TMP[i] = osub[o[i]];
       memcpy((int *restrict)(anso+from), TMP, my_n*sizeof(int));
@@ -927,19 +921,14 @@ void radix_r(const int from, const int to, const int radix) {
         for (int i=0; i<my_n; i++) ((uint8_t *)TMP)[i] = ksub[o[i]];
         memcpy((uint8_t *restrict)(key[r]+from), (uint8_t *)TMP, my_n);
       }
-      free(TMP);
       TEND(8)
     }
-    free(o);
     // my_key is now grouped (and sorted by group too if sort!=0)
     // all we have left to do is find the group sizes and either recurse or push
     if (radix+1==nradix && !retgrp) {
       return;
     }
-    int ngrp=0; //minor TODO: could know number of groups with certainty up above
-    int *my_gs = malloc(my_n * sizeof(int));
-    if (!my_gs)
-      STOP(_("Failed to allocate %d bytes for '%s'."), (int)(my_n * sizeof(int)), "my_gs");
+    int ngrp=0, my_gs[my_n];  //minor TODO: could know number of groups with certainty up above
     my_gs[ngrp]=1;
     for (int i=1; i<my_n; i++) {
       if (my_key[i]!=my_key[i-1]) my_gs[++ngrp] = 1;
@@ -955,7 +944,6 @@ void radix_r(const int from, const int to, const int radix) {
         f+=my_gs[i];
       }
     }
-    free(my_gs);
     return;
   }
   else if (my_n<=UINT16_MAX) {    // UINT16_MAX==65535 (important not 65536)
@@ -1039,9 +1027,7 @@ void radix_r(const int from, const int to, const int radix) {
     if (!retgrp && radix+1==nradix) {
       return;  // we're done. avoid allocating and populating very last group sizes for last key
     }
-    int *my_gs = malloc((ngrp==0 ? 256 : ngrp) * sizeof(int)); // ngrp==0 when sort and skip==true; we didn't count the non-zeros in my_counts yet in that case
-    if (!my_gs)
-      STOP(_("Failed to allocate %d bytes for '%s'."), (int)((ngrp==0 ? 256 : ngrp) * sizeof(int)), "my_gs");
+    int my_gs[ngrp==0 ? 256 : ngrp];  // ngrp==0 when sort and skip==true; we didn't count the non-zeros in my_counts yet in that case
     if (sortType!=0) {
       ngrp=0;
       for (int i=0; i<256; i++) if (my_counts[i]) my_gs[ngrp++]=my_counts[i];  // this casts from uint16_t to int32, too
@@ -1059,7 +1045,6 @@ void radix_r(const int from, const int to, const int radix) {
         my_from+=my_gs[i];
       }
     }
-    free(my_gs);
     return;
   }
   // else parallel batches. This is called recursively but only once or maybe twice before resolving to UINT16_MAX branch above
@@ -1226,9 +1211,7 @@ void radix_r(const int from, const int to, const int radix) {
   TEND(19 + notFirst*3)
   notFirst = true;
 
-  int *my_gs = malloc(ngrp * sizeof(int));
-  if (!my_gs)
-    STOP(_("Failed to allocate %d bytes for '%s'."), (int)(ngrp * sizeof(int)), "my_gs");
+  int my_gs[ngrp];
   for (int i=1; i<ngrp; i++) my_gs[i-1] = starts[ugrp[i]] - starts[ugrp[i-1]];   // use the first row of starts to get totals
   my_gs[ngrp-1] = my_n - starts[ugrp[ngrp-1]];
 
@@ -1282,7 +1265,6 @@ void radix_r(const int from, const int to, const int radix) {
       TEND(25)
     }
   }
-  free(my_gs);
   free(counts);
   free(starts);
   free(ugrps);
