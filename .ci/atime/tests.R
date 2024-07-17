@@ -108,7 +108,7 @@ test.list <- atime::atime_test_list(
 
   # Issue reported in: https://github.com/Rdatatable/data.table/issues/5426
   # To be fixed in: https://github.com/Rdatatable/data.table/pull/5427
-  "setDT improved in #5427" = atime::atime_test(
+  "setDT improved fixed in #5427" = atime::atime_test(
     N = 10^seq(1, 7),
     setup = {
       L <- replicate(N, 1, simplify = FALSE)
@@ -123,21 +123,21 @@ test.list <- atime::atime_test_list(
 
   # Issue reported in: https://github.com/Rdatatable/data.table/issues/4200
   # To be fixed in: https://github.com/Rdatatable/data.table/pull/4558
-  "groupby with dogroups #4558" = atime::atime_test(
-    N = 10^seq(1, 7),
+  "DT[by] fixed in #4558" = atime::atime_test(
+    N = 10^seq(1, 20),
     setup = {
       d <- data.table(
-      id3 = sample(c(seq.int(N*0.9), sample(N*0.9, N*0.1, TRUE))),
-      v1 = sample(5L, N, TRUE),
-      v2 = sample(5L, N, TRUE)
+        id3 = sample( c(seq.int(N*0.9), sample( N*0.9, N*0.1, TRUE))),
+        v1 = sample(5L, N, TRUE),
+        v2 = sample(5L, N, TRUE)
       )
     },
     expr = {
       expr=data.table:::`[.data.table`(d, , (max(v1)-min(v2)), by = id3)
     },
-    Before="793f8545c363d222de18ac892bc7abb80154e724",#parent of the PR that introduced the regression(https://github.com/Rdatatable/data.table/commit/4aadde8f5a51cd7c8f3889964e7280432ec65bbc) as stated here (https://github.com/Rdatatable/data.table/issues/4200#issuecomment-646111420) https://github.com/Rdatatable/data.table/commit/793f8545c363d222de18ac892bc7abb80154e724
-    Regression="c152ced0e5799acee1589910c69c1a2c6586b95d", #praent of the first commit in the PR (https://github.com/Rdatatable/data.table/commit/15f0598b9828d3af2eb8ddc9b38e0356f42afe4f)
-    Fixed="f750448a2efcd258b3aba57136ee6a95ce56b302")#second commit in the PR that fixes the regression(https://github.com/Rdatatable/data.table/pull/4558/commits)
+    Before="793f8545c363d222de18ac892bc7abb80154e724", # Parent of the PR that introduced the regression(https://github.com/Rdatatable/data.table/commit/4aadde8f5a51cd7c8f3889964e7280432ec65bbc) as stated here (https://github.com/Rdatatable/data.table/issues/4200#issuecomment-646111420) https://github.com/Rdatatable/data.table/commit/793f8545c363d222de18ac892bc7abb80154e724
+    Regression="c152ced0e5799acee1589910c69c1a2c6586b95d", # Parent of the first commit(https://github.com/Rdatatable/data.table/pull/4558/commits/15f0598b9828d3af2eb8ddc9b38e0356f42afe4f) in the PR (https://github.com/Rdatatable/data.table/pull/4558/commits)
+    Fixed="f750448a2efcd258b3aba57136ee6a95ce56b302") # Second commit (https://github.com/Rdatatable/data.table/tree/f750448a2efcd258b3aba57136ee6a95ce56b302) in the PR  that fixes the regression(https://github.com/Rdatatable/data.table/pull/4558/commits)
 )
 
 # nolint end: undesirable_operator_linter.
