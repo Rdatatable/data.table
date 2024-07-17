@@ -83,11 +83,15 @@ jobs:
         run: brew install gdal proj
 
       - name: Install remotes
+        env:
+          R_LIBS_USER: /home/runner/work/r-lib
         run: install.packages("remotes")
         shell: Rscript {0}
 
       - name: Install system dependencies
         if: runner.os == 'Linux'
+        env:
+          R_LIBS_USER: /home/runner/work/r-lib
         run: |
           while read -r cmd
           do
