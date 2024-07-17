@@ -124,8 +124,9 @@ test.list <- atime::atime_test_list(
   # Issue with sorting again when already sorted: https://github.com/Rdatatable/data.table/issues/4498
   # Fixed in: https://github.com/Rdatatable/data.table/pull/4501
   "DT[,.SD] improved in #4501" = atime::atime_test(
-    N = 2^seq(1,20),
+    N = 10^seq(1, 10, by=0.5),
     setup = {
+      set.seed(1)
       L = as.data.table(as.character(rnorm(N, 1, 0.5)))
       setkey(L, V1)
     },
