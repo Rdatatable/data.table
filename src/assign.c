@@ -220,7 +220,7 @@ SEXP setdt_nrows(SEXP x)
     if (Rf_isNull(xi)) continue;
     if (Rf_inherits(xi, "POSIXlt")) {
       error(_("Column %d has class 'POSIXlt'. Please convert it to POSIXct (using as.POSIXct) and run setDT() again. We do not recommend the use of POSIXlt at all because it uses 40 bytes to store one date."), i+1);
-          }
+    }
     SEXP dim_xi = getAttrib(xi, R_DimSymbol);
     R_len_t len_xi;
     R_len_t n_dim = LENGTH(dim_xi);
