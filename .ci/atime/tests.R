@@ -123,7 +123,7 @@ test.list <- atime::atime_test_list(
   
   # Issue reported in: https://github.com/Rdatatable/data.table/issues/3735
   # To be fixed in: https://github.com/Rdatatable/data.table/pull/4488
-  "Selecting from data.table by row is very slow #4488" = atime::atime_test(
+  "Selecting from data.table by row improved in #4488" = atime::atime_test(
     N = 10^seq(1, 20),
     setup = {
       allIterations <- data.frame(v1 = runif(N), v2 = runif(N))
@@ -138,7 +138,7 @@ test.list <- atime::atime_test_list(
         DoSomething(data.table:::`[.data.table`(allIterations, r, ))
       }
     },
-    slow="d47a83fb2e25582e508f191f87a31ca81b736b57",#Parent of the first commit in the PR that fixes the issue
-    fast="958e3dd3cba7c259220aa653bef4beb8ad74b239") # last commit in the PR that fixes the issue (https://github.com/Rdatatable/data.table/pull/4488/commits)
+    slow = "d47a83fb2e25582e508f191f87a31ca81b736b57",# Parent of the first commit (https://github.com/Rdatatable/data.table/commit/c33e98bb0a2f919bc1b428a5b7985f45f9d88a77) in the PR (https://github.com/Rdatatable/data.table/pull/4488/commits) that fixes the issue
+    fast = "958e3dd3cba7c259220aa653bef4beb8ad74b239") # last commit in the PR (https://github.com/Rdatatable/data.table/pull/4488/commits) that fixes the issue 
 )
 # nolint end: undesirable_operator_linter.
