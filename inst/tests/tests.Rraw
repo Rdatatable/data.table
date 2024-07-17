@@ -18734,3 +18734,8 @@ x = list(
 N = 5e4
 y = x[rep(1:5, N)]
 test(2268, rbindlist(y, fill=TRUE), rbindlist(x, fill=TRUE)[rep(1:5, N)])
+
+# fread cannot read all NA column as POSIXct #6208
+dt = data.table(x=as.POSIXct(c(NA, NA)))
+test(2269.1, fread("x\n \n \n", colClasses="POSIXct"), dt)
+test(2269.2, fread("x\n?\n \n", colClasses="POSIXct", na.strings="?"), dt)
