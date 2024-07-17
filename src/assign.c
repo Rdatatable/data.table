@@ -220,7 +220,7 @@ SEXP setdt_nrows(SEXP x)
     if (Rf_isNull(xi)) continue;
     if (Rf_inherits(xi, "POSIXlt")) {
       error(_("Column %d has class 'POSIXlt'. Please convert it to POSIXct (using as.POSIXct) and run setDT() again. We do not recommend the use of POSIXlt at all because it uses 40 bytes to store one date."), i+1);
-    }
+          }
     SEXP dim_xi = getAttrib(xi, R_DimSymbol);
     R_len_t len_xi;
     R_len_t n_dim = LENGTH(dim_xi);
@@ -428,6 +428,10 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   }
   if (any_duplicated(cols,FALSE)) error(_("Can't assign to the same column twice in the same query (duplicates detected)."));
   if (!isNull(newcolnames) && !isString(newcolnames)) error(_("newcolnames is supplied but isn't a character vector"));
+  if (Rf_inherits(values, "POSIXlt")) {
+    warning(_("Values have class 'POSIXlt'. Automatically converted it to POSIXct. We do not recommend the use of POSIXlt at all because it uses 40 bytes to store one date."));
+    values = PROTECT(eval(PROTECT(lang2(sym_as_posixct, values)), R_GlobalEnv)); protecti+=2;
+  }
   bool RHS_list_of_columns = TYPEOF(values)==VECSXP && length(cols)>1;  // initial value; may be revised below
   if (verbose) Rprintf(_("RHS_list_of_columns == %s\n"), RHS_list_of_columns ? "true" : "false");
   if (TYPEOF(values)==VECSXP && length(cols)==1 && length(values)==1) {
