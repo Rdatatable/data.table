@@ -119,6 +119,26 @@ test.list <- atime::atime_test_list(
       data.table:::setDT(L)
     },
     Slow = "c4a2085e35689a108d67dacb2f8261e4964d7e12", # Parent of the first commit in the PR that fixes the issue (https://github.com/Rdatatable/data.table/commit/7cc4da4c1c8e568f655ab5167922dcdb75953801)
-    Fast = "1872f473b20fdcddc5c1b35d79fe9229cd9a1d15") # Last commit in the PR that fixes the issue (https://github.com/Rdatatable/data.table/pull/5427/commits)
+    Fast = "1872f473b20fdcddc5c1b35d79fe9229cd9a1d15"), # Last commit in the PR that fixes the issue (https://github.com/Rdatatable/data.table/pull/5427/commits)
+  
+  # Issue reported in: https://github.com/Rdatatable/data.table/issues/3735
+  # To be fixed in: https://github.com/Rdatatable/data.table/pull/4488
+  "Selecting from data.table by row is very slow #4488" = atime::atime_test(
+    N = 10^seq(1, 20),
+    setup = {
+      allIterations <- data.frame(v1 = runif(N), v2 = runif(N))
+      DoSomething <- function(row) {
+      someCalculation <- row[["v1"]] + 1
+      }
+      allIteration_dt <- as.data.table(allIterations)
+      setDTthreads(1)
+    },
+    expr = {
+      for (r in 1:nrow(allIterations)) {
+        DoSomething(data.table:::`[.data.table`(allIterations, r, ))
+      }
+    },
+    slow="d47a83fb2e25582e508f191f87a31ca81b736b57",#Parent of the first commit in the PR that fixes the issue
+    fast="958e3dd3cba7c259220aa653bef4beb8ad74b239") # last commit in the PR that fixes the issue (https://github.com/Rdatatable/data.table/pull/4488/commits)
 )
 # nolint end: undesirable_operator_linter.
