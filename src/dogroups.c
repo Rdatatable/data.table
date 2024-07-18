@@ -74,7 +74,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   const bool showProgress = LOGICAL(showProgressArg)[0]==1;
   bool hasPrinted = false;
   double startTime = (showProgress) ? wallclock() : 0;
-  double nextTime = (showProgress) ? startTime+1 : 0;
+  double nextTime = (showProgress) ? startTime+3 : 0; // wait 3 seconds before printing progress
 
   if (!isInteger(order)) error(_("Internal error: order not integer vector")); // # nocov
   if (TYPEOF(starts) != INTSXP) error(_("Internal error: starts not integer")); // # nocov
@@ -440,7 +440,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     }
     double now;
     if (showProgress && (now=wallclock())>=nextTime) {
-      double avgTimePerGroup = (now-startTime) / (i+1);
+      double avgTimePerGroup = (now-startTime)/(i+1);
       int ETA = (int)(avgTimePerGroup*(ngrp-i-1));
       if (hasPrinted || ETA >= 0) {
         if (verbose && !hasPrinted) Rprintf(_("\n"));
