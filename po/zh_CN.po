@@ -50,7 +50,7 @@ msgid "Internal error: length(names)>0 but <length(dt)"
 msgstr "内部错误： 列名列表(names)长度应大于零，但小于dt的长度"
 
 #: assign.c:205
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "Some columns are a multi-column type (such as a matrix column), for example "
 "column %d. setDT will retain these columns as-is but subsequent operations "
@@ -73,7 +73,7 @@ msgstr ""
 "个日期。"
 
 #: assign.c:239
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "All elements in argument 'x' to 'setDT' must be of equal length, but input "
 "%d has length %d whereas the first non-empty input had length %d"
@@ -366,7 +366,7 @@ msgid ""
 msgstr "assign.c 内部错误：length(newcolnames)=%d, length(names)=%d, coln=%d"
 
 #: assign.c:476
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "Tried to assign NULL to column '%s', but this column does not exist to remove"
 msgstr "要删除的列 '%s' 不存在"
@@ -847,7 +847,6 @@ msgid "Internal error: nqgrpArg must be an integer vector"
 msgstr "内部错误：nqgrpArg 必须为一个整数向量"
 
 #: bmerge.c:124
-#, fuzzy
 msgid "Internal error: nqmaxgrpArg is not a positive length-1 integer vector"
 msgstr "内部错误：nqmaxgrpArg不是长度为1的正整型向量"
 
@@ -1062,7 +1061,7 @@ msgid "j evaluates to type '%s'. Must evaluate to atomic vector or list."
 msgstr "j的运算结果为'%s'类型。其运算结果必须为原子向量或列表。"
 
 #: dogroups.c:280
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "Entry %d for group %d in j=list(...) should be atomic vector or list. If you "
 "are trying something like j=list(.SD,newcol=mean(colA)) then use := by group "
@@ -1237,7 +1236,7 @@ msgid "Internal error: growVector doesn't support type '%s'"
 msgstr "内部错误：growVector 不支持 '%s' 类型"
 
 #: fastmean.c:39 rbindlist.c:8
-#, fuzzy, c-format
+#, c-format
 msgid "%s should be TRUE or FALSE"
 msgstr "%s 必须是TRUE或FALSE"
 
@@ -2308,7 +2307,6 @@ msgstr ""
 "(cow, copy-on-write)额外的字节恢复最后一个标记.\n"
 
 #: fread.c:1822
-#, fuzzy
 msgid ""
 "[07] Detect column types, dec, good nrow estimate and whether first row is "
 "column names\n"
@@ -2618,7 +2616,7 @@ msgid ""
 msgstr "内部错误：head 位置无效。jump=%d, headPos=%p, thisJumpStart=%p, sof=%p"
 
 #: fread.c:2562
-#, fuzzy, c-format
+#, c-format
 msgid "  Provided number of fill columns: %d but only found %d\n"
 msgstr "提供的填充列数: %d 但只找到 %d\n"
 
@@ -2672,7 +2670,7 @@ msgid "Discarded single-line footer: <<%s>>"
 msgstr "丢弃末尾行：<<%s>>"
 
 #: fread.c:2680
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "Stopped early on line %<PRIu64>. Expected %d fields but found %d. Consider "
 "fill=%d or even more based on your knowledge of the input file. First "
@@ -3516,7 +3514,7 @@ msgid "Column %d's type is '%s' - not yet implemented in fwrite."
 msgstr "列%d的类型是'%s' - 尚未在fwrite中实施"
 
 #: fwriteR.c:268
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "input has specific integer rownames but their length (%lld) != nrow "
 "(%<PRId64>)"
@@ -4578,12 +4576,11 @@ msgid "fill must be a length 1 vector, such as the default NA"
 msgstr "fill 必须是长度为 1 的向量，例如默认值 NA"
 
 #: transpose.c:22
-#, fuzzy
 msgid "list.cols should be logical TRUE/FALSE."
 msgstr "list.cols 应该是逻辑类型 TRUE 或 FALSE。"
 
 #: transpose.c:31
-#, fuzzy, c-format
+#, c-format
 msgid "Item %d of list input is not either an atomic vector, or a list"
 msgstr "列表输入的第 %d 项既不是原子(atomic)向量也不是列表"
 
