@@ -70,7 +70,7 @@
 
 14. `fread(x, colClasses="POSIXct")` now also works for columns containing only NA values, [#6208](https://github.com/Rdatatable/data.table/issues/6208). Thanks to @markus-schaffer for the report, and Benjamin Schwendinger for the fix.
 
-15. `DT[, j := value]` now automatically wraps `j` with `as.POSIXct(value)`, [#1724](https://github.com/Rdatatable/data.table/issues/1724). Thanks to @linzhp for the report, and Benjamin Schwendinger for the fix.
+15. For `POSIXlt` vectors, `DT[, j := value]` now automatically wraps `j` with `as.POSIXct(values)`, [#1724](https://github.com/Rdatatable/data.table/issues/1724). Thanks to @linzhp for the report, and Benjamin Schwendinger for the fix.
 
 ## NOTES
 
