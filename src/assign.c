@@ -429,7 +429,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   if (any_duplicated(cols,FALSE)) error(_("Can't assign to the same column twice in the same query (duplicates detected)."));
   if (!isNull(newcolnames) && !isString(newcolnames)) error(_("newcolnames is supplied but isn't a character vector"));
   if (Rf_inherits(values, "POSIXlt")) {
-    warning(_("Values have class 'POSIXlt'. Automatically converted it to POSIXct. We do not recommend the use of POSIXlt at all because it uses 40 bytes to store one date."));
+    warning(_("Values of type POSIXlt detected and converted to POSIXct. We do not recommend the use of POSIXlt at all because it uses 40+ bytes to store one date. Use as.POSIXct() to avoid this warning."));
     values = PROTECT(eval(PROTECT(lang2(sym_as_posixct, values)), R_GlobalEnv)); protecti+=2;
   }
   bool RHS_list_of_columns = TYPEOF(values)==VECSXP && length(cols)>1;  // initial value; may be revised below
