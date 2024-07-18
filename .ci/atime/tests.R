@@ -135,9 +135,8 @@ test.list <- atime::atime_test_list(
     expr = {
       expr=data.table:::`[.data.table`(d, , (max(v1)-min(v2)), by = id3)
     },
-    Before="905e4d302be0dc326684d7228ece88064321cc00", # Parent of the regression commit (https://github.com/Rdatatable/data.table/commit/c152ced0e5799acee1589910c69c1a2c6586b95d)
-    Regression="c152ced0e5799acee1589910c69c1a2c6586b95d", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/15f0598b9828d3af2eb8ddc9b38e0356f42afe4f) in the PR (https://github.com/Rdatatable/data.table/pull/4558/commits) that fixes the regression
+    Before="7a9eaf62ede487625200981018d8692be8c6f134", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/515de90a6068911a148e54343a3503043b8bb87c) in the PR (https://github.com/Rdatatable/data.table/pull/4164/commits) that introduced the regression
+    Regression="c152ced0e5799acee1589910c69c1a2c6586b95d", # Parent of the first (https://github.com/Rdatatable/data.table/commit/15f0598b9828d3af2eb8ddc9b38e0356f42afe4f) in the PR (https://github.com/Rdatatable/data.table/pull/4558/commits) that fixes the regression
     Fixed="f750448a2efcd258b3aba57136ee6a95ce56b302") # Second commit (https://github.com/Rdatatable/data.table/commit/f750448a2efcd258b3aba57136ee6a95ce56b302) in the PR  that fixes the regression(https://github.com/Rdatatable/data.table/pull/4558/commits)
 )
-
 # nolint end: undesirable_operator_linter.
