@@ -2,6 +2,10 @@
 
 # data.table [v1.15.99](https://github.com/Rdatatable/data.table/milestone/30)  (in development)
 
+## POTENTIALLY BREAKING CHANGES
+
+1. In `DT[, j := value]`, when value is class `POSIXlt`, we automatically coerce it to class `POSIXct` instead, [#1724](https://github.com/Rdatatable/data.table/issues/1724). Thanks to @linzhp for the report, and Benjamin Schwendinger for the fix.
+
 ## NEW FEATURES
 
 1. `print.data.table()` shows empty (`NULL`) list column entries as `[NULL]` for emphasis. Previously they would just print nothing (same as for empty string). Part of [#4198](https://github.com/Rdatatable/data.table/issues/4198). Thanks @sritchie73 for the proposal and fix.
@@ -69,8 +73,6 @@
 13. `rbindlist` could lead to a protection stack overflow when applied to a list containing many nested lists exceeding the pointer protection stack size, [#4536](https://github.com/Rdatatable/data.table/issues/4536). Thanks to @ProfFancyPants for reporting, and Benjamin Schwendinger for the fix.
 
 14. `fread(x, colClasses="POSIXct")` now also works for columns containing only NA values, [#6208](https://github.com/Rdatatable/data.table/issues/6208). Thanks to @markus-schaffer for the report, and Benjamin Schwendinger for the fix.
-
-15. For `POSIXlt` vectors, `DT[, j := value]` now automatically wraps `j` with `as.POSIXct(values)`, [#1724](https://github.com/Rdatatable/data.table/issues/1724). Thanks to @linzhp for the report, and Benjamin Schwendinger for the fix.
 
 ## NOTES
 

@@ -1268,11 +1268,6 @@ replace_dot_alias = function(e) {
   }  # end of  if !missing(j)
 
   SDenv = new.env(parent=parent.frame())
-  # taking care of warnings for posixlt type, #646
-  SDenv$strptime = function(x, ...) {
-    warningf("strptime() usage detected and wrapped with as.POSIXct(). This is to minimize the chance of assigning POSIXlt columns, which use 40+ bytes to store one date (versus 8 for POSIXct). Use as.POSIXct() (which will call strptime() as needed internally) to avoid this warning.")
-    as.POSIXct(base::strptime(x, ...))
-  }
 
   syms = all.vars(jsub)
   syms = syms[ startsWith(syms, "..") ]
