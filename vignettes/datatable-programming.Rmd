@@ -49,7 +49,7 @@ The problem with this kind of interface is that we cannot easily parameterize th
 
 ### Example
 
-```{r subset_error, error=TRUE}
+```{r subset_error, error=TRUE, purl=FALSE}
 my_subset = function(data, col, val) {
   subset(data, col == val)
 }
@@ -288,7 +288,7 @@ DT[, j,  # the same as above but accepts character vector
 
 Now let's try to pass a list of symbols, rather than list call to those symbols. We'll use `I()` to escape automatic _enlist_-ing but, as this will also turn off character to symbol conversion, we also have to use `as.name`.
 
-```{r splice_not, error=TRUE}
+```{r splice_not, error=TRUE, purl=FALSE}
 DT[, j,  # list of symbols
    env = I(list(j = lapply(cols, as.name))),
    verbose = TRUE]

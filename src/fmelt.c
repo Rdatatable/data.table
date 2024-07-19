@@ -197,8 +197,9 @@ SEXP uniq_diff(SEXP int_or_list, int ncol, bool is_measure) {
       INTEGER(unique_col_numbers)[unique_i++] = INTEGER(int_vec)[i];
     }
   }
+  SEXP out = set_diff(unique_col_numbers, ncol);
   UNPROTECT(3);
-  return set_diff(unique_col_numbers, ncol);
+  return out;
 }
 
 SEXP cols_to_int_or_list(SEXP cols, SEXP dtnames, bool is_measure) {
@@ -247,7 +248,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
       if (length(value_col)) Rprintf(_("Assigned 'measure.vars' are [%s].\n"), concat(dtnames, value_col));
     }
   } else if (isNull(id) && !isNull(measure)) {
-    SEXP measure_int_or_list = cols_to_int_or_list(measure, dtnames, true);
+    SEXP measure_int_or_list = PROTECT(cols_to_int_or_list(measure, dtnames, true)); protecti++;
     idcols = PROTECT(uniq_diff(measure_int_or_list, ncol, true)); protecti++;
     if (isNewList(measure)) valuecols = measure_int_or_list;
     else {

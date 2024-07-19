@@ -67,7 +67,8 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
     // when use.names==NA we also proceed here as if use.names was TRUE to save new code and then check afterwards the map is 1:ncol for every item
     // first find number of unique column names present; i.e. length(unique(unlist(lapply(l,names))))
     SEXP *uniq = (SEXP *)malloc(upperBoundUniqueNames * sizeof(SEXP));  // upperBoundUniqueNames was initialized with 1 to ensure this is defined (otherwise 0 when no item has names)
-    if (!uniq) error(_("Failed to allocate upper bound of %"PRId64" unique column names [sum(lapply(l,ncol))]"), (int64_t)upperBoundUniqueNames);
+    if (!uniq)
+      error(_("Failed to allocate upper bound of %"PRId64" unique column names [sum(lapply(l,ncol))]"), (int64_t)upperBoundUniqueNames);
     savetl_init();
     int nuniq=0;
     for (int i=0; i<LENGTH(l); i++) {
@@ -359,7 +360,10 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
         const SEXP *sd = STRING_PTR(longestLevels);
         nLevel = allocLevel = longestLen;
         levelsRaw = (SEXP *)malloc(nLevel * sizeof(SEXP));
-        if (!levelsRaw) { savetl_end(); error(_("Failed to allocate working memory for %d ordered factor levels of result column %d"), nLevel, idcol+j+1); }
+        if (!levelsRaw) {
+          savetl_end();
+          error(_("Failed to allocate working memory for %d ordered factor levels of result column %d"), nLevel, idcol+j+1);
+        }
         for (int k=0; k<longestLen; ++k) {
           SEXP s = sd[k];
           if (TRUELENGTH(s)>0) savetl(s);
@@ -515,12 +519,14 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
         if (w==-1 || !length(thisCol=VECTOR_ELT(li, w))) {  // !length for zeroCol warning above; #1871
           writeNA(target, ansloc, thisnrow, false);  // writeNA is integer64 aware and writes INT64_MIN
         } else {
+          bool listprotect = false;
           if ((TYPEOF(target)==VECSXP || TYPEOF(target)==EXPRSXP) && TYPEOF(thisCol)!=TYPEOF(target)) {
             // do an as.list() on the atomic column; #3528
-            thisCol = PROTECT(coerceVector(thisCol, TYPEOF(target))); nprotect++;
+            thisCol = PROTECT(coerceVector(thisCol, TYPEOF(target))); listprotect = true;
           }
           // else coerces if needed within memrecycle; with a no-alloc direct coerce from 1.12.4 (PR #3909)
           const char *ret = memrecycle(target, R_NilValue, ansloc, thisnrow, thisCol, 0, -1, idcol+j+1, foundName);
+          if (listprotect) UNPROTECT(1); // earlier unprotect rbindlist calls with lots of lists #4536
           if (ret) warning(_("Column %d of item %d: %s"), w+1, i+1, ret);
           // e.g. when precision is lost like assigning 3.4 to integer64; test 2007.2
           // TODO: but maxType should handle that and this should never warn

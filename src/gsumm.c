@@ -113,7 +113,10 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     //Rprintf(_("When assigning grp[o] = g, highSize=%d  nb=%d  bitshift=%d  nBatch=%d\n"), highSize, nb, bitshift, nBatch);
     int *counts = calloc(nBatch*highSize, sizeof(int));  // TODO: cache-line align and make highSize a multiple of 64
     int *TMP   = malloc(nrow*2l*sizeof(int)); // must multiple the long int otherwise overflow may happen, #4295
-    if (!counts || !TMP ) error(_("Internal error: Failed to allocate counts or TMP when assigning g in gforce"));
+    if (!counts || !TMP ) {
+      free(counts); free(TMP);
+      error(_("Internal error: Failed to allocate counts or TMP when assigning g in gforce"));
+    }
     #pragma omp parallel for num_threads(getDTthreads(nBatch, false))   // schedule(dynamic,1)
     for (int b=0; b<nBatch; b++) {
       const int howMany = b==nBatch-1 ? lastBatchSize : batchSize;
@@ -591,7 +594,8 @@ SEXP gmean(SEXP x, SEXP narmArg)
     x = PROTECT(coerceVector(x, REALSXP)); protecti++;
   case REALSXP: {
     if (INHERITS(x, char_integer64)) {
-      x = PROTECT(coerceAs(x, /*as=*/ScalarReal(1), /*copyArg=*/ScalarLogical(TRUE))); protecti++;
+      x = PROTECT(coerceAs(x, /*as=*/PROTECT(ScalarReal(1)), /*copyArg=*/ScalarLogical(TRUE))); protecti++;
+      UNPROTECT(1); // as= input to coerceAs()
     }
     const double *restrict gx = gather(x, &anyNA);
     ans = PROTECT(allocVector(REALSXP, ngrp)); protecti++;
@@ -616,7 +620,8 @@ SEXP gmean(SEXP x, SEXP narmArg)
     } else {
       // narm==true and anyNA==true
       int *restrict nna_counts = calloc(ngrp, sizeof(int));
-      if (!nna_counts) error(_("Unable to allocate %d * %zu bytes for non-NA counts in gmean na.rm=TRUE"), ngrp, sizeof(int));
+      if (!nna_counts)
+        error(_("Unable to allocate %d * %zu bytes for non-NA counts in gmean na.rm=TRUE"), ngrp, sizeof(int));
       #pragma omp parallel for num_threads(getDTthreads(highSize, false))
       for (int h=0; h<highSize; h++) {
           double *restrict _ans = ansp + (h<<bitshift);
@@ -671,8 +676,7 @@ SEXP gmean(SEXP x, SEXP narmArg)
       int *restrict nna_counts_i = calloc(ngrp, sizeof(int));
       if (!nna_counts_r || !nna_counts_i) {
         // # nocov start
-        free(nna_counts_r);  // free(NULL) is allowed and does nothing. Avoids repeating the error() call here.
-        free(nna_counts_i);
+        free(nna_counts_r); free(nna_counts_i);
         error(_("Unable to allocate %d * %zu bytes for non-NA counts in gmean na.rm=TRUE"), ngrp, sizeof(int));
         // # nocov end
       }
@@ -1116,7 +1120,8 @@ SEXP gprod(SEXP x, SEXP narmArg) {
   //clock_t start = clock();
   if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gprod");
   long double *s = malloc(ngrp * sizeof(long double));
-  if (!s) error(_("Unable to allocate %d * %zu bytes for gprod"), ngrp, sizeof(long double));
+  if (!s)
+    error(_("Unable to allocate %d * %zu bytes for gprod"), ngrp, sizeof(long double));
   for (int i=0; i<ngrp; ++i) s[i] = 1.0;
   switch(TYPEOF(x)) {
   case LGLSXP: case INTSXP: {
