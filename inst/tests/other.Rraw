@@ -699,7 +699,7 @@ if (loaded[["nanotime"]]) {
   DT = data.table(time=nanotime(c(1,NA,3)))
   test(27, na.omit(DT), DT[c(1,3)])
 
-  # was 2239 in tests.Rraw, rbind with vectors with class attributes #5309
+  # rbind with vectors with class attributes #5309
   x = data.table(a=1L, b=as.nanotime(0))
   y = data.table(a=2L, b=NA)
   test(27.01, rbind(x,y), data.table(a = c(1L, 2L), b=as.nanotime(c(0, NA))))
