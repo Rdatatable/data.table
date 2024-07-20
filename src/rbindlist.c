@@ -14,7 +14,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
   if (TYPEOF(l) != VECSXP) error(_("Input to rbindlist must be a list. This list can contain data.tables, data.frames or plain lists."));
   Rboolean usenames = LOGICAL(usenamesArg)[0];
   const bool fill = LOGICAL(fillArg)[0];
-  const bool ignoreatt = LOGICAL(ignoreattrArg)[0];
+  const bool ignoreattr = LOGICAL(ignoreattrArg)[0];
   if (fill && usenames==NA_LOGICAL) {
     usenames=TRUE;
   }
@@ -325,7 +325,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
         if (!factor && !int64 && ((!date && !posixct) || (date && posixct)) && !itime &!asis) { // prohibit binding of date and posixct
           if (!R_compute_identical(PROTECT(getAttrib(thisCol, R_ClassSymbol)),
                                    PROTECT(getAttrib(firstCol, R_ClassSymbol)),
-                                   0) && !ignoreatt) {
+                                   0) && !ignoreattr) {
             error(_("Class attribute on column %d of item %d does not match with column %d of item %d. You can deactivate this safety-check by using ignore.attr=TRUE"), w+1, i+1, firstw+1, firsti+1);
           }
           UNPROTECT(2);
