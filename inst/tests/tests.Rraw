@@ -18763,6 +18763,7 @@ test(2269.16, rbind(y,x), data.table(a = c(2L, 1L), b=as.ITime(c(NA, 0))))
 y[, b := NULL]
 test(2269.17, rbind(x,y, fill = TRUE), data.table(a = c(1L, 2L), b=as.ITime(c(0, NA))))
 test(2269.18, rbind(y,x, fill = TRUE), data.table(a = c(2L, 1L), b=as.ITime(c(NA, 0))))
+# follow up to #5263 to simplify merge logic
 x = data.table(a = 1L, b = as.Date("2020-01-01"))
 y = data.table(a = 2L, b = NA)
 test(2269.19, merge(x, y, by="a", all=TRUE), data.table(a=1:2, b.x=as.Date(c("2020-01-01", NA)), b.y=NA, key="a"))
