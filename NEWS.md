@@ -66,7 +66,9 @@
 
 12. data.table's `all.equal()` method now dispatches to each column's own `all.equal()` method as appropriate, [#4543](https://github.com/Rdatatable/data.table/issues/4543). Thanks @MichaelChirico for the report and fix. Note that this had two noteworthy changes to data.table's own test suite that might affect you: (1) comparisons of POSIXct columns compare absolute, not relative differences, meaning that millisecond-scale differences might trigger a "not equal" report that was hidden before; and (2) comparisons of integer64 columns could be totally wrong since they were being compared on the basis of their representation as doubles, not long integers. The former might be a matter of preference requiring you to specify a different `tolerance=`, while the latter was clearly a bug.
 
-12. `rbindlist` and `shift` could lead to a protection stack overflow when applied to a list containing many nested lists exceeding the pointer protection stack size, [#4536](https://github.com/Rdatatable/data.table/issues/4536). Thanks to @ProfFancyPants for reporting, and Benjamin Schwendinger (`rbindlist`) and @MichaelChirico (`shift`) for the fix.
+13. `rbindlist` and `shift` could lead to a protection stack overflow when applied to a list containing many nested lists exceeding the pointer protection stack size, [#4536](https://github.com/Rdatatable/data.table/issues/4536). Thanks to @ProfFancyPants for reporting, and Benjamin Schwendinger (`rbindlist`) and @MichaelChirico (`shift`) for the fix.
+
+14. `fread(x, colClasses="POSIXct")` now also works for columns containing only NA values, [#6208](https://github.com/Rdatatable/data.table/issues/6208). Thanks to @markus-schaffer for the report, and Benjamin Schwendinger for the fix.
 
 ## NOTES
 
@@ -116,9 +118,15 @@
 
 21. Refactored some non-API calls to R macros for S4 objects (#6180)[https://github.com/Rdatatable/data.table/issues/6180]. There should be no user-visible change. Thanks to various R users & R core for pushing to have a clearer definition of "API" for R, and thanks @MichaelChirico for implementing here.
 
+22. C code was unified more in how failures to allocate memory (`malloc()`/`calloc()`) are handled, (#1115)[https://github.com/Rdatatable/data.table/issues/1115]. No OOM issues were reported, as these regions of code typically request relatively small blocks of memory, but it is good to handle memory pressure consistently. Thanks @elfring for the report and @MichaelChirico for the clean-up effort and future-proofing linter.
+
 ## TRANSLATIONS
 
 1. Fix a typo in a Mandarin translation of an error message that was hiding the actual error message, [#6172](https://github.com/Rdatatable/data.table/issues/6172). Thanks @trafficfan for the report and @MichaelChirico for the fix.
+
+2. data.table is now translated into Brazilian Portuguese (`pt_BR`) as well as Mandarin (`zh_CN`). Thanks to the [new translation team](https://github.com/orgs/Rdatatable/teams/brazil) consisting initially of @rffontenelle, @leofontenelle, and @italo-07. The team is open if you'd also like to join and support maintenance of these translations.
+
+3. A more helpful error message for using `:=` inside the first argument (`i`) of `[.data.table` is now available in translation, [#6293](https://github.com/Rdatatable/data.table/issues/6293). Previously, the code to display this assumed an earlier message was printed in English. The solution is for calling `:=` directly (i.e., outside the second argument `j` of `[.data.table`) to throw an error of class `dt_invalid_let_error`. Thanks to Spanish translator @rikivillalba for spotting the issue and @MichaelChirico for the fix.
 
 # data.table [v1.15.4](https://github.com/Rdatatable/data.table/milestone/33) (27 March 2024)
 

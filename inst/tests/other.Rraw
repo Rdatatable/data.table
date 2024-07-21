@@ -29,8 +29,8 @@ loaded = sapply(pkgs, f)
 if (!all(loaded)) {
   options(warning.length=8000)
   stop(
-    "test.data.table('other.Rraw') failed to attach required package(s): ", toString(names(loaded)[!loaded]), ".",
-    "\nHere's all installed packages:\n  ", paste(rownames(installed.packages()), collapse=","),
+    "test.data.table('other.Rraw') failed to attach required package(s): ", toString(sort(names(loaded)[!loaded])), ".",
+    "\nHere's all installed packages:\n  ", paste(sort(rownames(installed.packages())), collapse=","),
     "\nHere's the search() path:\n  ", paste(search(), collapse="->"),
     "\nIf you can't install them and this is R CMD check, please set environment variable TEST_DATA_TABLE_WITH_OTHER_PACKAGES back to the default, false; it's currently ", Sys.getenv("TEST_DATA_TABLE_WITH_OTHER_PACKAGES", "<unset>"), ".")
   # Would like to install them now for convenience but gitlab-ci.yml seems to install to bus/mirror-other-packages/cran.
