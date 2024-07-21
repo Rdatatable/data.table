@@ -1480,11 +1480,13 @@ bool colsKeyHead(SEXP x, SEXP cols) {
     error("internal error: 'x' must be a list"); // # nocov
   if (!isInteger(cols))
     error("internal error: 'cols' must be an integer"); // # nocov
-  SEXP key = getAttrib(x, sym_sorted);
-  if (isNull(key) || (length(key) < length(cols)))
+  SEXP key = PROTECT(getAttrib(x, sym_sorted));
+  if (isNull(key) || (length(key) < length(cols))) {
+    UNPROTECT(1); // key
     return false;
-  SEXP names =  getAttrib(x, R_NamesSymbol);
-  SEXP keynames = PROTECT(chmatch(key, names, 0));
+  }
+  SEXP keynames = PROTECT(chmatch(key, getAttrib(x, R_NamesSymbol), 0));
+  UNPROTECT(1); // key
   int *keynamesp = INTEGER(keynames), *colsp = INTEGER(cols);
   for (int i=0; i<LENGTH(cols); ++i) {
     if (colsp[i]!=keynamesp[i]) {
