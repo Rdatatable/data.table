@@ -66,7 +66,7 @@
 
 12. data.table's `all.equal()` method now dispatches to each column's own `all.equal()` method as appropriate, [#4543](https://github.com/Rdatatable/data.table/issues/4543). Thanks @MichaelChirico for the report and fix. Note that this had two noteworthy changes to data.table's own test suite that might affect you: (1) comparisons of POSIXct columns compare absolute, not relative differences, meaning that millisecond-scale differences might trigger a "not equal" report that was hidden before; and (2) comparisons of integer64 columns could be totally wrong since they were being compared on the basis of their representation as doubles, not long integers. The former might be a matter of preference requiring you to specify a different `tolerance=`, while the latter was clearly a bug.
 
-13. `rbindlist` could lead to a protection stack overflow when applied to a list containing many nested lists exceeding the pointer protection stack size, [#4536](https://github.com/Rdatatable/data.table/issues/4536). Thanks to @ProfFancyPants for reporting, and Benjamin Schwendinger for the fix.
+13. `rbindlist` and `shift` could lead to a protection stack overflow when applied to a list containing many nested lists exceeding the pointer protection stack size, [#4536](https://github.com/Rdatatable/data.table/issues/4536). Thanks to @ProfFancyPants for reporting, and Benjamin Schwendinger (`rbindlist`) and @MichaelChirico (`shift`) for the fix.
 
 14. `fread(x, colClasses="POSIXct")` now also works for columns containing only NA values, [#6208](https://github.com/Rdatatable/data.table/issues/6208). Thanks to @markus-schaffer for the report, and Benjamin Schwendinger for the fix.
 
