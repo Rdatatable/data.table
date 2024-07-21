@@ -3071,7 +3071,7 @@ msgid "Internal error: factor type mismatch should have been caught earlier"
 msgstr "内部错误：此时不匹配的因子类型应已被发现"
 
 #: shift.R:3
-#, fuzzy, c-format
+#, c-format
 msgid "Provided argument fill=%s will be ignored since type='cyclic'."
 msgstr "提供的 fill= 参数将被忽略，因为 type='cyclic'。"
 
