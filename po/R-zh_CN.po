@@ -3073,7 +3073,7 @@ msgstr "内部错误：此时不匹配的因子类型应已被发现"
 #: shift.R:3
 #, fuzzy, c-format
 msgid "Provided argument fill=%s will be ignored since type='cyclic'."
-msgstr "将被忽略，因为 type='cyclic'。"
+msgstr "提供的 fill= 参数将被忽略，因为 type='cyclic'。"
 
 #: tables.R:46
 #, c-format
