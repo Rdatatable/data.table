@@ -3204,7 +3204,7 @@ msgstr ""
 "'%s' 并不包含在 '%s' 中。"
 
 #: transpose.R:74
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "In the argument 'type.convert', '%s' was ignored because all elements in the "
 "transpose list or elements corresponding to indices specified in the 'keep' "
