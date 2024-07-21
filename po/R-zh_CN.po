@@ -235,13 +235,6 @@ msgstr "列名 '_nqgrp_' 是为不等长联结保留的"
 msgid "key argument of data.table() must be character"
 msgstr "data.table() 的key参数必须是字符"
 
-#: data.table.R:57 data.table.R:800 fread.R:344
-#, c-format
-msgid ""
-"Usage of comma-separated literals in %s is deprecated, please split such "
-"entries yourself before passing to data.table"
-msgstr ""
-
 #: data.table.R:123
 #, c-format
 msgid "Object '%s' not found. Perhaps you intended %s"
