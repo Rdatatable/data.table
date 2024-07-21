@@ -737,100 +737,128 @@ static SEXP gminmax(SEXP x, SEXP narm, const bool min)
   switch(TYPEOF(x)) {
   case LGLSXP: case INTSXP: {
     ans = PROTECT(allocVector(INTSXP, ngrp));
-    int *ansd = INTEGER(ans);
-    const int *xd = INTEGER(x);
+    int *restrict ansd = INTEGER(ans);
+    const int *restrict xd = INTEGER(x);
     if (!LOGICAL(narm)[0]) {
       const int init = min ? INT_MAX : INT_MIN+1;  // NA_INTEGER==INT_MIN checked in init.c
-      for (int i=0; i<ngrp; ++i) ansd[i] = init;
-      for (int i=0; i<n; ++i) {
-        const int thisgrp = grp[i];
-        if (ansd[thisgrp]==NA_INTEGER) continue;  // once an NA has been observed in this group, it doesn't matter what the remaining values in this group are
-        const int elem = nosubset ? xd[i] : (irows[i]==NA_INTEGER ? NA_INTEGER : xd[irows[i]-1]);
-        if (elem==NA_INTEGER || (elem<ansd[thisgrp])==min)
-          ansd[thisgrp] = elem;  // always true on the first value in the group (other than if the first value is INT_MAX or INT_MIN-1 which is fine too)
+      #pragma omp parallel for num_threads(getDTthreads(ngrp, false))
+      for (int i=0; i<ngrp; ++i) {
+        ansd[i] = init;
+        for (int j=ff[i]-1; j<ff[i]-1+grpsize[i]; ++j){
+          if (ansd[i]==NA_INTEGER) break; // once NA has been obsered group is finished
+          const int k = isunsorted ? oo[j]-1 : j;  
+          const int elem = nosubset ? xd[k] : (irows[k]==NA_INTEGER ? NA_INTEGER : xd[irows[k]-1]);
+          if (elem==NA_INTEGER || (elem<ansd[i])==min)
+            ansd[i] = elem;
+        }
       }
     } else {
-      for (int i=0; i<ngrp; ++i) ansd[i] = NA_INTEGER;  // in the all-NA case we now return NA for type consistency
-      for (int i=0; i<n; ++i) {
-        const int elem = nosubset ? xd[i] : (irows[i]==NA_INTEGER ? NA_INTEGER : xd[irows[i]-1]);
-        if (elem==NA_INTEGER) continue;
-        const int thisgrp = grp[i];
-        if (ansd[thisgrp]==NA_INTEGER || (elem<ansd[thisgrp])==min)
-          ansd[thisgrp] = elem;
+      #pragma omp parallel for num_threads(getDTthreads(ngrp, false))
+      for (int i=0; i<ngrp; ++i) {
+        ansd[i] = NA_INTEGER; // in the all-NA case we now return NA for type consistency
+        for (int j=ff[i]-1; j<ff[i]-1+grpsize[i]; ++j){
+          const int k = isunsorted ? oo[j]-1 : j;
+          const int elem = nosubset ? xd[k] : (irows[k]==NA_INTEGER ? NA_INTEGER : xd[irows[k]-1]);
+          if (elem==NA_INTEGER) continue;
+          if (ansd[i]==NA_INTEGER || (elem<ansd[i])==min)
+            ansd[i] = elem;
+        }
       }
     }}
     break;
   case STRSXP: {
     ans = PROTECT(allocVector(STRSXP, ngrp));
-    const SEXP *ansd = STRING_PTR(ans);
-    const SEXP *xd = STRING_PTR(x);
+    const SEXP *restrict ansd = STRING_PTR(ans);
+    const SEXP *restrict xd = STRING_PTR(x);
     if (!LOGICAL(narm)[0]) {
       const SEXP init = min ? char_maxString : R_BlankString;  // char_maxString == "\xFF\xFF..." in init.c
       for (int i=0; i<ngrp; ++i) SET_STRING_ELT(ans, i, init);
-      for (int i=0; i<n; ++i) {
-        const int thisgrp = grp[i];
-        if (ansd[thisgrp]==NA_STRING) continue;
-        const SEXP elem = nosubset ? xd[i] : (irows[i]==NA_INTEGER ? NA_STRING : xd[irows[i]-1]);
-        if (elem==NA_STRING || (strcmp(CHAR(elem), CHAR(ansd[thisgrp]))<0)==min)
-          SET_STRING_ELT(ans, thisgrp, elem);
+      #pragma omp parallel for num_threads(getDTthreads(ngrp, false))
+      for (int i=0; i<ngrp; ++i) {
+        for (int j=ff[i]-1; j<ff[i]-1+grpsize[i]; ++j){
+          if (ansd[i]==NA_STRING) break; // once NA has been obsered group is finished
+          const int k = isunsorted ? oo[j]-1 : j;  
+          const SEXP elem = nosubset ? xd[k] : (irows[k]==NA_INTEGER ? NA_STRING : xd[irows[k]-1]);
+          if (elem==NA_STRING || (strcmp(CHAR(elem), CHAR(ansd[i]))<0)==min) {
+            #pragma omp critical
+            SET_STRING_ELT(ans, i, elem);
+          }
+        }
       }
     } else {
-      for (int i=0; i<ngrp; ++i) SET_STRING_ELT(ans, i, NA_STRING); // all missing returns NA consistent with base
-      for (int i=0; i<n; ++i) {
-        const SEXP elem = nosubset ? xd[i] : (irows[i]==NA_INTEGER ? NA_STRING : xd[irows[i]-1]);
-        if (elem==NA_STRING) continue;
-        const int thisgrp = grp[i];
-        if (ansd[thisgrp]==NA_STRING || (strcmp(CHAR(elem), CHAR(ansd[thisgrp]))<0)==min)
-          SET_STRING_ELT(ans, thisgrp, elem);
+      for (int i=0; i<ngrp; ++i) SET_STRING_ELT(ans, i, NA_STRING); // all missing returns NA 
+      #pragma omp parallel for num_threads(getDTthreads(ngrp, false))
+      for (int i=0; i<ngrp; ++i) {
+        for (int j=ff[i]-1; j<ff[i]-1+grpsize[i]; ++j){
+          const int k = isunsorted ? oo[j]-1 : j;
+          const SEXP elem = nosubset ? xd[k] : (irows[k]==NA_INTEGER ? NA_STRING : xd[irows[k]-1]);
+          if (elem==NA_STRING) continue;
+          if (ansd[i]==NA_STRING || (strcmp(CHAR(elem), CHAR(ansd[i]))<0)==min) {
+            #pragma omp critical
+            SET_STRING_ELT(ans, i, elem);
+          }
+        }
       }
     }}
     break;
   case REALSXP: {
     ans = PROTECT(allocVector(REALSXP, ngrp));
     if (INHERITS(x, char_integer64)) {
-      int64_t *ansd = (int64_t *)REAL(ans);
-      const int64_t *xd = (const int64_t *)REAL(x);
+      int64_t *restrict ansd = (int64_t *)REAL(ans);
+      const int64_t *restrict xd = (const int64_t *)REAL(x);
       if (!LOGICAL(narm)[0]) {
         const int64_t init = min ? INT64_MAX : INT64_MIN+1;
-        for (int i=0; i<ngrp; ++i) ansd[i] = init;
-        for (int i=0; i<n; ++i) {
-          const int thisgrp = grp[i];
-          if (ansd[thisgrp]==NA_INTEGER64) continue;
-          const int64_t elem = nosubset ? xd[i] : (irows[i]==NA_INTEGER ? NA_INTEGER64 : xd[irows[i]-1]);
-          if (elem==NA_INTEGER64 || (elem<ansd[thisgrp])==min)
-            ansd[thisgrp] = elem;
+        #pragma omp parallel for num_threads(getDTthreads(ngrp, false))
+        for (int i=0; i<ngrp; ++i) {
+          ansd[i] = init;
+          for (int j=ff[i]-1; j<ff[i]-1+grpsize[i]; ++j){
+            if (ansd[i]==NA_INTEGER) break; // once NA has been obsered group is finished
+            const int k = isunsorted ? oo[j]-1 : j;  
+            const int64_t elem = nosubset ? xd[k] : (irows[k]==NA_INTEGER ? NA_INTEGER64 : xd[irows[k]-1]);
+            if (elem==NA_INTEGER64 || (elem<ansd[i])==min)
+              ansd[i] = elem;
+          }
         }
       } else {
-        for (int i=0; i<ngrp; ++i) ansd[i] = NA_INTEGER64;
-        for (int i=0; i<n; ++i) {
-          const int64_t elem = nosubset ? xd[i] : (irows[i]==NA_INTEGER ? NA_INTEGER64 : xd[irows[i]-1]);
-          if (elem==NA_INTEGER64) continue;
-          const int thisgrp = grp[i];
-          if (ansd[thisgrp]==NA_INTEGER64 || (elem<ansd[thisgrp])==min)
-            ansd[thisgrp] = elem;
+        #pragma omp parallel for num_threads(getDTthreads(ngrp, false))
+        for (int i=0; i<ngrp; ++i) {
+          ansd[i] = NA_INTEGER64; // in the all-NA case we now return NA for type consistency
+          for (int j=ff[i]-1; j<ff[i]-1+grpsize[i]; ++j){
+            const int k = isunsorted ? oo[j]-1 : j;
+            const int64_t elem = nosubset ? xd[k] : (irows[k]==NA_INTEGER ? NA_INTEGER64 : xd[irows[k]-1]);
+            if (elem==NA_INTEGER64) continue;
+            if (ansd[i]==NA_INTEGER64 || (elem<ansd[i])==min)
+              ansd[i] = elem;
+          }
         }
       }
     } else {
-      double *ansd = REAL(ans);
-      const double *xd = REAL(x);
+      double *restrict ansd = REAL(ans);
+      const double *restrict xd = REAL(x);
       if (!LOGICAL(narm)[0]) {
         const double init = min ? R_PosInf : R_NegInf;
-        for (int i=0; i<ngrp; ++i) ansd[i] = init;
-        for (int i=0; i<n; ++i) {
-          const int thisgrp = grp[i];
-          if (ISNAN(ansd[thisgrp])) continue;
-          const double elem = nosubset ? xd[i] : (irows[i]==NA_INTEGER ? NA_REAL : xd[irows[i]-1]);
-          if (ISNAN(elem) || (elem<ansd[thisgrp])==min)
-            ansd[thisgrp] = elem;
+        #pragma omp parallel for num_threads(getDTthreads(ngrp, false))
+        for (int i=0; i<ngrp; ++i) {
+          ansd[i] = init;
+          for (int j=ff[i]-1; j<ff[i]-1+grpsize[i]; ++j){
+            if (ISNAN(ansd[i])) break; // once NA has been obsered group is finished
+            const int k = isunsorted ? oo[j]-1 : j;   
+            const double elem = nosubset ? xd[k] : (irows[k]==NA_INTEGER ? NA_REAL : xd[irows[k]-1]);
+            if (ISNAN(elem) || (elem<ansd[i])==min)
+              ansd[i] = elem;
+          }
         }
       } else {
-        for (int i=0; i<ngrp; ++i) ansd[i] = NA_REAL;
-        for (int i=0; i<n; ++i) {
-          const double elem = nosubset ? xd[i] : (irows[i]==NA_INTEGER ? NA_REAL : xd[irows[i]-1]);
-          if (ISNAN(elem)) continue;
-          const int thisgrp = grp[i];
-          if (ISNAN(ansd[thisgrp]) || (elem<ansd[thisgrp])==min)
-            ansd[thisgrp] = elem;
+        #pragma omp parallel for num_threads(getDTthreads(ngrp, false))
+        for (int i=0; i<ngrp; ++i) {
+          ansd[i] = NA_REAL;
+          for (int j=ff[i]-1; j<ff[i]-1+grpsize[i]; ++j){
+            const int k = isunsorted ? oo[j]-1 : j;  
+            const double elem = nosubset ? xd[k] : (irows[k]==NA_INTEGER ? NA_REAL : xd[irows[k]-1]);
+            if (ISNAN(elem)) continue;
+            if (ISNAN(ansd[i]) || (elem<ansd[i])==min)
+              ansd[i] = elem;
+          }
         }
       }
     }}
