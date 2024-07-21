@@ -116,9 +116,12 @@
 
 21. Refactored some non-API calls to R macros for S4 objects (#6180)[https://github.com/Rdatatable/data.table/issues/6180]. There should be no user-visible change. Thanks to various R users & R core for pushing to have a clearer definition of "API" for R, and thanks @MichaelChirico for implementing here.
 
-22. Internal routine for finding order will now re-using existing index. Similar optimization was already present in R code, but now have been pushed to C. It now covers wider range of use cases and collects more statistics about its input opening possibility for more optimizations in other functions.
+22. Internal routine for finding sort order will now re-use any existing index. A similar optimization was already present in R code, but this has now been pushed to C and covers a wider range of use cases and collects more statistics about its input (e.g. whether any infinite entries were found), opening the possibility for more optimizations in other functions.
 
-Functions `setindex` (and `setindexv`) will now compute groups positions as well. Moreover extra statistics are being collected now. Finding order in other routines (for example subset `d2[id==1L]`) does not include those extra statistics to not impose a slow down.
+Functions `setindex` (and `setindexv`) will now compute groups' positions as well. `setindex()` also collects the extra statistics alluded to above.
+
+Finding sort order in other routines (for example subset `d2[id==1L]`) does not include those extra statistics so as not to impose a slowdown.
+
 ```r
 d2 = data.table(id=2:1, v2=1:2)
 setindexv(d2, "id")
@@ -136,9 +139,9 @@ invisible(d2[id==1L])
 str(attr(attr(d2, "index"), "__id"))
 # int [1:2] 2 1
 ```
-Closes [#4387](https://github.com/Rdatatable/data.table/issues/4387) and [#2947](https://github.com/Rdatatable/data.table/issues/2947).
 
-Allows to re-use index during join, where one of the finding order calls is made from C code.
+This feature also enables re-use of sort index during joins, in cases where one of the calls to find sort order is made from C code.
+
 ```r
 d1 = data.table(id=1:2, v1=1:2)
 d2 = data.table(id=2:1, v2=1:2)
@@ -150,8 +153,8 @@ d1[d2, on="id", verbose=TRUE]
 #forderMaybePresorted: opt=2, took 0.000s
 #...
 ```
-Closes [#4380](https://github.com/Rdatatable/data.table/issues/4380).
-Thanks to @jangorecki for implementing.
+
+This feature resolves [#4387](https://github.com/Rdatatable/data.table/issues/4387), [#2947](https://github.com/Rdatatable/data.table/issues/2947), [#4380](https://github.com/Rdatatable/data.table/issues/4380), and [#1321](https://github.com/Rdatatable/data.table/issues/1321). Thanks to @jangorecki, @jan-glx, and @MichaelChirico for the reports and @jangorecki for implementing.
 
 ## TRANSLATIONS
 
