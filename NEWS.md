@@ -116,6 +116,43 @@
 
 21. Refactored some non-API calls to R macros for S4 objects (#6180)[https://github.com/Rdatatable/data.table/issues/6180]. There should be no user-visible change. Thanks to various R users & R core for pushing to have a clearer definition of "API" for R, and thanks @MichaelChirico for implementing here.
 
+22. Internal routine for finding order will now re-using existing index. Similar optimization was already present in R code, but now have been pushed to C. It now covers wider range of use cases and collects more statistics about its input opening possibility for more optimizations in other functions.
+
+Functions `setindex` (and `setindexv`) will now compute groups positions as well. Moreover extra statistics are being collected now. Finding order in other routines (for example subset `d2[id==1L]`) does not include those extra statistics to not impose a slow down.
+```r
+d2 = data.table(id=2:1, v2=1:2)
+setindexv(d2, "id")
+str(attr(attr(d2, "index"), "__id"))
+# int [1:2] 2 1
+# - attr(*, "starts")= int [1:2] 1 2
+# - attr(*, "maxgrpn")= int 1
+# - attr(*, "anyna")= int 0
+# - attr(*, "anyinfnan")= int 0
+# - attr(*, "anynotascii")= int 0
+# - attr(*, "anynotutf8")= int 0
+
+d2 = data.table(id=2:1, v2=1:2)
+invisible(d2[id==1L])
+str(attr(attr(d2, "index"), "__id"))
+# int [1:2] 2 1
+```
+Closes [#4387](https://github.com/Rdatatable/data.table/issues/4387) and [#2947](https://github.com/Rdatatable/data.table/issues/2947).
+
+Allows to re-use index during join, where one of the finding order calls is made from C code.
+```r
+d1 = data.table(id=1:2, v1=1:2)
+d2 = data.table(id=2:1, v2=1:2)
+setindexv(d2, "id")
+d1[d2, on="id", verbose=TRUE]
+#...
+#Starting bmerge ...
+#forderMaybePresorted: using existing index: __id
+#forderMaybePresorted: opt=2, took 0.000s
+#...
+```
+Closes [#4380](https://github.com/Rdatatable/data.table/issues/4380).
+Thanks to @jangorecki for implementing.
+
 ## TRANSLATIONS
 
 1. Fix a typo in a Mandarin translation of an error message that was hiding the actual error message, [#6172](https://github.com/Rdatatable/data.table/issues/6172). Thanks @trafficfan for the report and @MichaelChirico for the fix.
