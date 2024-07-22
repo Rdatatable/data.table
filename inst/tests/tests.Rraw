@@ -18748,3 +18748,7 @@ test(2270, options=c(datatable.optimize=1L), DT[, mean(b, 1), by=a], data.table(
 DT1 = data.table(a=1:2)
 DT2 = data.table(a=c(1, 1, 2, 2), b=1:4)
 test(2271, options=c(datatable.verbose=TRUE), copy(DT1)[DT2, on='a', v := 4], copy(DT1)[, v := 4], output="x.a.\nAssigning")
+
+# shift of many elements accumulated PROTECT() for the fill values instead of releasing as soon as possible. Spotted by rchk in #6257.
+l = as.list(seq_len(2e4))
+test(2272, shift(l), as.list(rep(NA_integer_, 2e4)))
