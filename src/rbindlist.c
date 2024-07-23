@@ -268,13 +268,13 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
     }
   }
 
-  SEXP coercedForFactor = NULL;
-  int nprotect = 0;
   for(int j=0; j<ncol; ++j) {
     int maxType=LGLSXP;  // initialize with LGLSXP for test 2002.3 which has col x NULL in both lists to be filled with NA for #1871
     bool factor=false, orderedFactor=false;     // ordered factor is class c("ordered","factor"). isFactor() is true when isOrdered() is true.
     int longestLen=-1, longestW=-1, longestI=-1; // just for ordered factor; longestLen must be initialized as -1 so that rbind zero-length ordered factor could work #4795
     SEXP longestLevels=R_NilValue;              // just for ordered factor
+    SEXP coercedForFactor=NULL;
+    int protectForFactor=0;
     bool int64=false;
     const char *foundName=NULL;
     bool anyNotStringOrFactor=false;
@@ -332,7 +332,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
       // in future warn, or use list column instead ... warning(_("Column %d contains a factor but not all items for the column are character or factor"), idcol+j+1);
       // some coercing from (likely) integer/numeric to character will be needed. But this coerce can feasibly fail with out-of-memory, so we have to do it up-front
       // before the savetl_init() because we have no hook to clean up tl if coerceVector fails.
-      if (coercedForFactor==NULL) { coercedForFactor=PROTECT(allocVector(VECSXP, LENGTH(l))); nprotect++; }
+      coercedForFactor=PROTECT(allocVector(VECSXP, LENGTH(l))); protectForFactor++;
       for (int i=0; i<LENGTH(l); ++i) {
         SEXP li = VECTOR_ELT(l, i);
         int w = usenames ? colMap[i*ncol + j] : (j<length(li) ? j : -1); // check if j exceeds length for fill=TRUE and usenames=FALSE #5444
@@ -494,6 +494,10 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
         }
         ansloc += thisnrow;
       }
+
+      if (protectForFactor) {
+        UNPROTECT(1);
+      }
       for (int k=0; k<nLevel; ++k) SET_TRUELENGTH(levelsRaw[k], 0);
       savetl_end();
       if (warnStr[0]) warning("%s", warnStr);  // now savetl_end() has happened it's safe to call warning (could error if options(warn=2))
@@ -538,7 +542,6 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg)
       }
     }
   }
-  UNPROTECT(nprotect); // coercedForFactor?
   UNPROTECT(2); // ans, ansNames
   return(ans);
 }
