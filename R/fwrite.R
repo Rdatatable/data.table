@@ -84,11 +84,11 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
     if (file.exists(file)) {
       suggested <- if (append) "" else gettextf("\nIf you intended to overwrite the file at %s with an empty one, please use file.remove first.", file)
       warningf("Input has no columns; doing nothing.%s", suggested)
-      return(invisible())
+      return(invisible(file))
     } else {
       warningf("Input has no columns; creating an empty file at '%s' and exiting.", file)
       file.create(file)
-      return(invisible())
+      return(invisible(file))
     }
   }
   yaml = if (!yaml) "" else {
@@ -118,7 +118,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   .Call(CfwriteR, x, file, sep, sep2, eol, na, dec, quote, qmethod=="escape", append,
         row.names, col.names, logical01, scipen, dateTimeAs, buffMB, nThread,
         showProgress, is_gzip, bom, yaml, verbose, encoding)
-  invisible()
+  invisible(file)
 }
 
 haszlib = function() .Call(Cdt_has_zlib)
