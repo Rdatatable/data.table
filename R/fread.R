@@ -108,7 +108,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
       file = decompFile
       on.exit(unlink(decompFile), add=TRUE)
     }
-    
+
     gzsig = FALSE
     if ((w <- endsWithAny(file, c(".gz", ".bgz",".bz2"))) || (gzsig <- is_gzip(file_signature)) || is_bzip(file_signature)) {
       if (!requireNamespace("R.utils", quietly = TRUE))
