@@ -18752,3 +18752,18 @@ test(2271, options=c(datatable.verbose=TRUE), copy(DT1)[DT2, on='a', v := 4], co
 # shift of many elements accumulated PROTECT() for the fill values instead of releasing as soon as possible. Spotted by rchk in #6257.
 l = as.list(seq_len(2e4))
 test(2272, shift(l), as.list(rep(NA_integer_, 2e4)))
+
+# false positive detecting the bz2 header in some rare cases, #6304
+tmp = tempfile()
+fwrite(data.table(c1 = "BZh"), tmp, col.names=FALSE)
+test(2273.1, fread(tmp), data.table(BZh = logical()))
+test(2273.2, fread(tmp, header=FALSE), data.table(V1="BZh"))
+fwrite(ans<-data.table(BZh=1L, CZi=2L), tmp)
+test(2273.3, fread(tmp), ans)
+if (test_R.utils) {
+  DT = data.table(a=1L, b=2L)
+  fwrite(DT, tmp)
+  R.utils::bzip2(tmp, tmp2 <- tempfile(), remove=FALSE) # _not_ with .bz2 extension
+  test(2273.4, fread(tmp2), DT)
+}
+file.remove(tmp, tmp2)
