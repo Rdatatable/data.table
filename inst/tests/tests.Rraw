@@ -14435,6 +14435,8 @@ test(2003.81, rbind(x, y, fill=TRUE, use.names=TRUE), ans)
 test(2003.82, rbind(y, x, fill=TRUE, use.names=TRUE), ans[2:1,])
 test(2003.83, rbind(x, y, fill=TRUE, use.names=FALSE), ans)
 test(2003.84, rbind(y, x, fill=TRUE, use.names=FALSE), ans[2:1,])
+# rbindlist ignore attributes #3911
+test(2003.85, rbindlist(list(), ignore.attr=1), error="ignore.attr should be TRUE or FALSE")
 
 # chmatch coverage for two different non-ascii encodings matching; issues mentioned in comments in chmatch.c #69 #2538 #111
 x1 = "fa\xE7ile"
@@ -18752,3 +18754,63 @@ test(2271, options=c(datatable.verbose=TRUE), copy(DT1)[DT2, on='a', v := 4], co
 # shift of many elements accumulated PROTECT() for the fill values instead of releasing as soon as possible. Spotted by rchk in #6257.
 l = as.list(seq_len(2e4))
 test(2272, shift(l), as.list(rep(NA_integer_, 2e4)))
+
+# false positive detecting the bz2 header in some rare cases, #6304
+tmp = tempfile()
+fwrite(data.table(c1 = "BZh"), tmp, col.names=FALSE)
+test(2273.1, fread(tmp), data.table(BZh = logical()))
+test(2273.2, fread(tmp, header=FALSE), data.table(V1="BZh"))
+fwrite(ans<-data.table(BZh=1L, CZi=2L), tmp)
+test(2273.3, fread(tmp), ans)
+if (test_R.utils) {
+  DT = data.table(a=1L, b=2L)
+  fwrite(DT, tmp)
+  R.utils::bzip2(tmp, tmp2 <- tempfile(), remove=FALSE) # _not_ with .bz2 extension
+  test(2273.4, fread(tmp2), DT)
+}
+file.remove(tmp, tmp2)
+
+# rbind with vectors with class attributes #5309
+x = data.table(a = 1L, b = as.Date("2020-01-01"))
+y = data.table(a = 2L, b = as.IDate("2021-01-01"))
+z = data.table(a = 3L, b = NA)
+test(2274.01, rbind(x, y), data.table(a=c(1L, 2L), b= as.Date(c("2020-01-01", "2021-01-01"))))
+test(2274.02, rbind(y, x), data.table(a=c(2L, 1L), b=as.IDate(c("2021-01-01", "2020-01-01"))))
+test(2274.03, rbind(x, z), data.table(a=c(1L, 3L), b= as.Date(c("2020-01-01", NA))))
+test(2274.04, rbind(z, x), data.table(a=c(3L, 1L), b= as.Date(c(NA,           "2020-01-01"))))
+test(2274.05, rbind(y, z), data.table(a=c(2L, 3L), b=as.IDate(c("2021-01-01", NA))))
+test(2274.06, rbind(z, y), data.table(a=c(3L, 2L), b=as.IDate(c(NA,           "2021-01-01"))))
+z[, b := NULL]
+test(2274.07, rbind(x, z, fill=TRUE), data.table(a=c(1L, 3L), b= as.Date(c("2020-01-01", NA))))
+test(2274.08, rbind(z, x, fill=TRUE), data.table(a=c(3L, 1L), b= as.Date(c(NA, "2020-01-01"))))
+test(2274.09, rbind(y, z, fill=TRUE), data.table(a=c(2L, 3L), b=as.IDate(c("2021-01-01", NA))))
+test(2274.10, rbind(z, y, fill=TRUE), data.table(a=c(3L, 2L), b=as.IDate(c(NA, "2021-01-01"))))
+x = data.table(a=1L, b=as.POSIXct("2021-10-06 13:58:00 UTC"))
+test(2274.11, rbind(x, z, fill=TRUE), data.table(a=c(1L, 3L), b=as.POSIXct(c("2021-10-06 13:58:00 UTC", NA))))
+test(2274.12, rbind(z, x, fill=TRUE), data.table(a=c(3L, 1L), b=as.POSIXct(c(NA, "2021-10-06 13:58:00 UTC"))))
+x = data.table(c=1L, d=as.POSIXct("2021-10-06 13:58:00 UTC"))
+test(2274.13, rbind(x, z, fill=TRUE, use.names=FALSE), data.table(c = c(1L, 3L), d=as.POSIXct(c("2021-10-06 13:58:00 UTC", NA))))
+test(2274.14, rbind(z, x, fill=TRUE, use.names=FALSE), data.table(a=c(3L, 1L), d=as.POSIXct(c(NA, "2021-10-06 13:58:00 UTC"))))
+x = data.table(a=1L, b=as.ITime(0))
+y = data.table(a=2L, b=NA)
+test(2274.15, rbind(x,y), data.table(a = c(1L, 2L), b=as.ITime(c(0, NA))))
+test(2274.16, rbind(y,x), data.table(a = c(2L, 1L), b=as.ITime(c(NA, 0))))
+y[, b := NULL]
+test(2274.17, rbind(x,y, fill = TRUE), data.table(a = c(1L, 2L), b=as.ITime(c(0, NA))))
+test(2274.18, rbind(y,x, fill = TRUE), data.table(a = c(2L, 1L), b=as.ITime(c(NA, 0))))
+# follow up to #5263 to simplify merge logic
+x = data.table(a = 1L, b = as.Date("2020-01-01"))
+y = data.table(a = 2L, b = NA)
+test(2274.19, merge(x, y, by="a", all=TRUE), data.table(a=1:2, b.x=as.Date(c("2020-01-01", NA)), b.y=NA, key="a"))
+test(2274.20, merge(y, x, by="a", all=TRUE), data.table(a=1:2, b.x=NA, key="a", b.y=as.Date(c("2020-01-01", NA))))
+# rbindlist with AsIs
+x = data.table(a = 1L, b=I(3L))
+y = data.table(a = 2L, b=4)
+test(2274.21, rbindlist(list(x,y)), data.table(a = c(1L, 2L), b=I(c(3L, 4))))
+test(2274.22, rbindlist(list(y,x)), data.table(a = c(2L, 1L), b=c(4, 3)))
+# rbind ignore attributes #3911
+x = data.table(a = structure(1:2, class=c("a", "integer")), key="a")
+y = data.table(a = 2:3, key="a")
+test(2274.31, merge(x,y, all.y=TRUE), data.table(a=structure(2:3, class=c("a", "integer")), key="a"))
+test(2274.32, rbind(x,y), error="Class attribute .* does not match with .*")
+test(2274.33, rbind(x,y, ignore.attr=TRUE), data.table(a=structure(c(1L, 2L, 2L, 3L), class=c("a", "integer"))))
