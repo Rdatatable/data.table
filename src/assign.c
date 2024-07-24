@@ -151,10 +151,7 @@ static SEXP shallow(SEXP dt, SEXP cols, R_len_t n)
   // where n is set to truelength (i.e. a shallow copy only with no size change)
   int protecti=0;
   SEXP newdt = PROTECT(allocVector(VECSXP, n)); protecti++;   // to do, use growVector here?
-  SET_ATTRIB(newdt, shallow_duplicate(ATTRIB(dt)));
-  SET_OBJECT(newdt, OBJECT(dt));
-  if (isS4(dt)) newdt = asS4(newdt, TRUE, 1);  // To support S4 objects that include data.table
-  //SHALLOW_DUPLICATE_ATTRIB(newdt, dt);  // SHALLOW_DUPLICATE_ATTRIB would be a bit neater but is only available from R 3.3.0
+  SHALLOW_DUPLICATE_ATTRIB(newdt, dt);
 
   // TO DO: keepattr() would be faster, but can't because shallow isn't merely a shallow copy. It
   //        also increases truelength. Perhaps make that distinction, then, and split out, but marked
@@ -1247,7 +1244,8 @@ void savetl_init(void) {
   nalloc = 100;
   saveds = (SEXP *)malloc(nalloc * sizeof(SEXP));
   savedtl = (R_len_t *)malloc(nalloc * sizeof(R_len_t));
-  if (saveds==NULL || savedtl==NULL) {
+  if (!saveds || !savedtl) {
+    free(saveds); free(savedtl);
     savetl_end();                                                        // # nocov
     error(_("Failed to allocate initial %d items in savetl_init"), nalloc); // # nocov
   }
