@@ -339,7 +339,14 @@ hour = function(x) {
   as.POSIXlt(x)$hour
 }
 yday    = function(x) convertDate(as.IDate(x), "yday")
-wday    = function(x) convertDate(as.IDate(x), "wday")
+wday <- function(x, label = FALSE) {
+    dates <- as.IDate(x)
+    if (isTRUE(label)) {
+        return(format(dates, "%A"))
+    }
+    convertDate(dates, "wday")
+}
+
 mday    = function(x) convertDate(as.IDate(x), "mday")
 week    = function(x) convertDate(as.IDate(x), "week")
 isoweek = function(x) {
@@ -356,7 +363,14 @@ isoweek = function(x) {
   1L + (nearest_thurs - year_start) %/% 7L
 }
 
-month   = function(x) convertDate(as.IDate(x), "month")
+month <- function(x, label = FALSE) {
+    dates <- as.IDate(x)
+    if (isTRUE(label)) {
+        return(format(dates, "%B"))
+    }
+    convertDate(dates, "month")
+}
+
 quarter = function(x) convertDate(as.IDate(x), "quarter")
 year    = function(x) convertDate(as.IDate(x), "year")
 yearmon = function(x) convertDate(as.IDate(x), "yearmon")
