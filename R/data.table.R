@@ -2735,14 +2735,14 @@ chgroup = function(x) {
 }
 
 # plain rbind and cbind methods are registered using S3method() in NAMESPACE only from R>=4.0.0; #3948
-rbind.data.table = function(..., use.names=TRUE, fill=FALSE, idcol=NULL) {
+rbind.data.table = function(..., use.names=TRUE, fill=FALSE, idcol=NULL, ignore.attr=FALSE) {
   l = lapply(list(...), function(x) if (is.list(x)) x else as.data.table(x))  #1626; e.g. psych binds a data.frame|table with a matrix
-  rbindlist(l, use.names, fill, idcol)
+  rbindlist(l, use.names, fill, idcol, ignore.attr)
 }
 cbind.data.table = data.table
 .rbind.data.table = rbind.data.table  # the workaround using this in FAQ 2.24 is still applied to support R < 4.0.0
 
-rbindlist = function(l, use.names="check", fill=FALSE, idcol=NULL) {
+rbindlist = function(l, use.names="check", fill=FALSE, idcol=NULL, ignore.attr=FALSE) {
   if (is.null(l)) return(null.data.table())
   if (!is.list(l) || is.data.frame(l)) stopf("Input is %s but should be a plain list of items to be stacked", class(l)[1L])
   if (isFALSE(idcol)) { idcol = NULL }
@@ -2758,7 +2758,7 @@ rbindlist = function(l, use.names="check", fill=FALSE, idcol=NULL) {
     if (!miss) stopf("use.names='check' cannot be used explicitly because the value 'check' is new in v1.12.2 and subject to change. It is just meant to convey default behavior. See ?rbindlist.")
     use.names = NA
   }
-  ans = .Call(Crbindlist, l, use.names, fill, idcol)
+  ans = .Call(Crbindlist, l, use.names, fill, idcol, ignore.attr)
   if (!length(ans)) return(null.data.table())
   setDT(ans)[]
 }
