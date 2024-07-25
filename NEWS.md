@@ -44,7 +44,7 @@
 
 `rbindlist(l, ignore.attr=TRUE)` and `rbind` also gains argument `ignore.attr` to manually deactivate the safety-net of binding columns with different column classes, [#3911](https://github.com/Rdatatable/data.table/issues/3911), [#5542](https://github.com/Rdatatable/data.table/issues/5542). Thanks to @dcaseykc, @fox34, @adrian-quintario, @berg-michael, @arunsrinivasan, @statquant, @pkress, @jrausch12, @therosko, @OfekShilon, @iMissile, @tdhock for the request and @ben-schwen for the PR.
 
-16. `month()` and `wday()` functions now support locale-specific labels. By setting the `label` argument to `TRUE`, you can obtain month and weekday names which will be in regional language according to your locale settings, [#1286](https://github.com/Rdatatable/data.table/issues/1286). Thanks @jaapwalhout for the request and @Nj221102  for the PR.
+16. `month()` and `wday()` functions now support locale-specific labels. By setting the `label` argument to `TRUE`, you can obtain month and weekday names which will be in regional language according to your locale settings, [#1286](https://github.com/Rdatatable/data.table/issues/1286). Thanks @jaapwalhout for the request and @Nj221102 for the PR.
 
     ```R
     x <- c("2024-07-01", "2024-07-02", "2024-07-03")
