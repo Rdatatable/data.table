@@ -2373,7 +2373,7 @@ msgstr "很有可能这一跳点的位置并不合适，因此此处的类型转
 #: fread.c:1921 fread.c:1947
 #, c-format
 msgid "  dec='%c' detected based on a balance of %d parsed fields\n"
-msgstr "  根据 %d 个解析字段的平衡检测到 dec='%c'\n"
+msgstr "  dec='%c' 因为 %d 个解析字段的余额被检测到\n"
 
 #: fread.c:1931
 #, c-format
