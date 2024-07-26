@@ -34,7 +34,7 @@ SEXP dt_na(SEXP x, SEXP cols) {
     }
       break;
     case STRSXP: {
-      const SEXP *sv = STRING_PTR(v);
+      const SEXP *sv = STRING_PTR_RO(v);
       for (int j=0; j<n; ++j) ians[j] |= (sv[j] == NA_STRING);
     }
       break;
@@ -209,7 +209,7 @@ SEXP anyNA(SEXP x, SEXP cols) {
       while(j<n && iv[j]!=NA_INTEGER) j++;
     } break;
     case STRSXP: {
-      const SEXP *sv = STRING_PTR(v);
+      const SEXP *sv = STRING_PTR_RO(v);
       while (j<n && sv[j]!=NA_STRING) j++;
     } break;
     case REALSXP:

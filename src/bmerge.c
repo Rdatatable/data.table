@@ -340,8 +340,8 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
   case STRSXP : {
     // op[col]==EQ checked up front to avoid an if() here and non-thread-safe error()
     // not sure why non-EQ is not supported for STRSXP though as it seems straightforward (StrCmp returns sign to indicate GT or LT)
-    const SEXP *icv = STRING_PTR(ic);
-    const SEXP *xcv = STRING_PTR(xc);
+    const SEXP *icv = STRING_PTR_RO(ic);
+    const SEXP *xcv = STRING_PTR_RO(xc);
     const SEXP ival = ENC2UTF8(icv[ir]);
     #undef ISNAT
     #undef WRAP

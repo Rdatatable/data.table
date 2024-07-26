@@ -75,7 +75,7 @@ bool allNA(SEXP x, bool errorForBadType) {
     return true;
   }
   case STRSXP: {
-    const SEXP *xd = STRING_PTR(x);
+    const SEXP *xd = STRING_PTR_RO(x);
     for (int i=0; i<n; ++i)    if (xd[i]!=NA_STRING) {
       return false;
     }
@@ -229,7 +229,7 @@ SEXP copyAsPlain(SEXP x) {
     memcpy(COMPLEX(ans), COMPLEX(x), n*sizeof(Rcomplex));
     break;
   case STRSXP: {
-    const SEXP *xp=STRING_PTR(x);                                // covered by as.character(as.hexmode(1:500)) after test 642
+    const SEXP *xp=STRING_PTR_RO(x);                              // covered by as.character(as.hexmode(1:500)) after test 642
     for (int64_t i=0; i<n; ++i) SET_STRING_ELT(ans, i, xp[i]);
   } break;
   case VECSXP: {
@@ -312,7 +312,7 @@ SEXP islockedR(SEXP DT) {
 
 bool need2utf8(SEXP x) {
   const int xlen = length(x);
-  SEXP *xd = STRING_PTR(x);
+  const SEXP *xd = STRING_PTR_RO(x);
   for (int i=0; i<xlen; i++) {
     if (NEED2UTF8(xd[i]))
       return(true);
@@ -325,7 +325,7 @@ SEXP coerceUtf8IfNeeded(SEXP x) {
     return(x);
   const int xlen = length(x);
   SEXP ans = PROTECT(allocVector(STRSXP, xlen));
-  SEXP *xd = STRING_PTR(x);
+  const SEXP *xd = STRING_PTR_RO(x);
   for (int i=0; i<xlen; i++) {
     SET_STRING_ELT(ans, i, ENC2UTF8(xd[i]));
   }
