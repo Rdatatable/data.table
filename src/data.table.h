@@ -12,6 +12,9 @@
 #endif
 #include <Rinternals.h>
 #define SEXPPTR_RO(x) ((const SEXP *)DATAPTR_RO(x))  // to avoid overhead of looped STRING_ELT and VECTOR_ELT
+#ifndef STRING_PTR_RO
+#define STRING_PTR_RO STRING_PTR
+#endif
 #include <stdint.h>    // for uint64_t rather than unsigned long long
 #include <stdbool.h>
 #include "types.h"
