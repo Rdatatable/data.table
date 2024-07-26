@@ -66,7 +66,7 @@ SEXP uniqlist(SEXP l, SEXP order)
       }
     } break;
     case STRSXP : {
-      const SEXP *vd=STRING_PTR(v);
+      const SEXP *vd=STRING_PTR_RO(v);
       SEXP prev, elem;
       if (via_order) {
         COMPARE1_VIA_ORDER && ENC2UTF8(elem)!=ENC2UTF8(prev) COMPARE2   // but most of the time they are equal, so ENC2UTF8 doesn't need to be called
@@ -224,7 +224,7 @@ SEXP rleid(SEXP l, SEXP cols) {
       }
     } break;
     case STRSXP : {
-      const SEXP *jd = STRING_PTR(jcol);
+      const SEXP *jd = STRING_PTR_RO(jcol);
       for (R_xlen_t i=1; i<nrow; i++) {
         bool same = jd[i]==jd[i-1];
         ians[i] = (grp+=!same);

@@ -62,7 +62,7 @@ SEXP cj(SEXP base_list) {
       }
     } break;
     case STRSXP: {
-      const SEXP *sourceP = STRING_PTR(source);
+      const SEXP *sourceP = STRING_PTR_RO(source);
       int start = 0;
       for (int i=0; i<ncopy; ++i) {
         for (int j=0; j<thislen; ++j) {

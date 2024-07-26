@@ -141,7 +141,7 @@ SEXP coalesce(SEXP x, SEXP inplaceArg) {
     }
   } break;
   case STRSXP: {
-    const SEXP *xP = STRING_PTR(first);
+    const SEXP *xP = STRING_PTR_RO(first);
     SEXP finalVal=NA_STRING;
     int k=0;
     for (int j=0; j<nval; ++j) {
@@ -152,7 +152,7 @@ SEXP coalesce(SEXP x, SEXP inplaceArg) {
         finalVal = tt;
         break;
       }
-      valP[k++] = STRING_PTR(item);
+      valP[k++] = STRING_PTR_RO(item);
     }
     const bool final = (finalVal!=NA_STRING);
     for (int i=0; i<nrow; ++i) {

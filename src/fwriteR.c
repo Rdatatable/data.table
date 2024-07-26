@@ -44,7 +44,7 @@ int getMaxStringLen(const SEXP *col, const int64_t n) {
 int getMaxCategLen(SEXP col) {
   col = getAttrib(col, R_LevelsSymbol);
   if (!isString(col)) error(_("Internal error: col passed to getMaxCategLen is missing levels"));
-  return getMaxStringLen( STRING_PTR(col), LENGTH(col) );
+  return getMaxStringLen( STRING_PTR_RO(col), LENGTH(col) );
 }
 
 const char *getCategString(SEXP col, int64_t row) {

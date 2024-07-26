@@ -799,7 +799,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
       if (sourceIsFactor) { sourceLevels=PROTECT(getAttrib(source, R_LevelsSymbol)); protecti++; }
       if (!sourceIsFactor || !R_compute_identical(sourceLevels, targetLevels, 0)) {  // !sourceIsFactor for test 2115.6
         const int nTargetLevels=length(targetLevels), nSourceLevels=length(sourceLevels);
-        const SEXP *targetLevelsD=STRING_PTR(targetLevels), *sourceLevelsD=STRING_PTR(sourceLevels);
+        const SEXP *targetLevelsD=STRING_PTR_RO(targetLevels), *sourceLevelsD=STRING_PTR_RO(sourceLevels);
         SEXP newSource = PROTECT(allocVector(INTSXP, length(source))); protecti++;
         savetl_init();
         for (int k=0; k<nTargetLevels; ++k) {
@@ -835,7 +835,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
             newSourceD[i] = val==NA_INTEGER ? NA_INTEGER : -TRUELENGTH(sourceLevelsD[val-1]); // retains NA factor levels here via TL(NA_STRING); e.g. ordered factor
           }
         } else {
-          const SEXP *sourceD = STRING_PTR(source);
+          const SEXP *sourceD = STRING_PTR_RO(source);
           for (int i=0; i<nSource; ++i) {  // convert source integers to refer to target levels
             const SEXP val = sourceD[i];
             newSourceD[i] = val==NA_STRING ? NA_INTEGER : -TRUELENGTH(val);
@@ -1103,7 +1103,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
   } break;
   case STRSXP :
     if (sourceIsFactor) {
-      const SEXP *ld = STRING_PTR(PROTECT(getAttrib(source, R_LevelsSymbol))); protecti++;
+      const SEXP *ld = STRING_PTR_RO(PROTECT(getAttrib(source, R_LevelsSymbol))); protecti++;
       BODY(int, INTEGER, SEXP, val==NA_INTEGER ? NA_STRING : ld[val-1],  SET_STRING_ELT(target, off+i, cval))
     } else {
       if (!isString(source)) {
@@ -1125,7 +1125,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
           source = PROTECT(coerceVector(source, STRSXP)); protecti++;
         }
       }
-      BODY(SEXP, STRING_PTR, SEXP, val,  SET_STRING_ELT(target, off+i, cval))
+      BODY(SEXP, STRING_PTR_RO, SEXP, val,  SET_STRING_ELT(target, off+i, cval))
     }
   case VECSXP :
   case EXPRSXP : {  // #546 #4350
@@ -1140,12 +1140,12 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
       // the UNPROTECT can be at the end of the CAST before the SET_VECTOR_ELT, because SET_VECTOR_ELT will protect it and there's no other code in between
       // the PROTECT is now needed because of the call to LOGICAL() which could feasibly gc inside it.
       // copyMostAttrib is inside CAST so as to be outside loop.  See the history in #4350 and its follow up
-      case RAWSXP:  BODY(Rbyte,    RAW,        SEXP, PROTECT(allocVector(RAWSXP, 1));RAW(cval)[0]=val;copyMostAttrib(source,cval);UNPROTECT(1),             SET_VECTOR_ELT(target,off+i,cval))
-      case LGLSXP:  BODY(int,      LOGICAL,    SEXP, PROTECT(allocVector(LGLSXP, 1));LOGICAL(cval)[0]=val;copyMostAttrib(source,cval);UNPROTECT(1),         SET_VECTOR_ELT(target,off+i,cval))
-      case INTSXP:  BODY(int,      INTEGER,    SEXP, PROTECT(allocVector(INTSXP, 1));INTEGER(cval)[0]=val;copyMostAttrib(source,cval);UNPROTECT(1),         SET_VECTOR_ELT(target,off+i,cval))
-      case REALSXP: BODY(double,   REAL,       SEXP, PROTECT(allocVector(REALSXP, 1));REAL(cval)[0]=val;copyMostAttrib(source,cval);UNPROTECT(1),           SET_VECTOR_ELT(target,off+i,cval))
-      case CPLXSXP: BODY(Rcomplex, COMPLEX,    SEXP, PROTECT(allocVector(CPLXSXP, 1));COMPLEX(cval)[0]=val;copyMostAttrib(source,cval);UNPROTECT(1),        SET_VECTOR_ELT(target,off+i,cval))
-      case STRSXP:  BODY(SEXP,     STRING_PTR, SEXP, PROTECT(allocVector(STRSXP, 1));SET_STRING_ELT(cval, 0, val);copyMostAttrib(source,cval);UNPROTECT(1), SET_VECTOR_ELT(target,off+i,cval))
+      case RAWSXP:  BODY(Rbyte,    RAW,           SEXP, PROTECT(allocVector(RAWSXP, 1));RAW(cval)[0]=val;copyMostAttrib(source,cval);UNPROTECT(1),             SET_VECTOR_ELT(target,off+i,cval))
+      case LGLSXP:  BODY(int,      LOGICAL,       SEXP, PROTECT(allocVector(LGLSXP, 1));LOGICAL(cval)[0]=val;copyMostAttrib(source,cval);UNPROTECT(1),         SET_VECTOR_ELT(target,off+i,cval))
+      case INTSXP:  BODY(int,      INTEGER,       SEXP, PROTECT(allocVector(INTSXP, 1));INTEGER(cval)[0]=val;copyMostAttrib(source,cval);UNPROTECT(1),         SET_VECTOR_ELT(target,off+i,cval))
+      case REALSXP: BODY(double,   REAL,          SEXP, PROTECT(allocVector(REALSXP, 1));REAL(cval)[0]=val;copyMostAttrib(source,cval);UNPROTECT(1),           SET_VECTOR_ELT(target,off+i,cval))
+      case CPLXSXP: BODY(Rcomplex, COMPLEX,       SEXP, PROTECT(allocVector(CPLXSXP, 1));COMPLEX(cval)[0]=val;copyMostAttrib(source,cval);UNPROTECT(1),        SET_VECTOR_ELT(target,off+i,cval))
+      case STRSXP:  BODY(SEXP,     STRING_PTR_RO, SEXP, PROTECT(allocVector(STRSXP, 1));SET_STRING_ELT(cval, 0, val);copyMostAttrib(source,cval);UNPROTECT(1), SET_VECTOR_ELT(target,off+i,cval))
       case VECSXP:
       case EXPRSXP: BODY(SEXP,     SEXPPTR_RO, SEXP, val,                                                                                                   SET_VECTOR_ELT(target,off+i,cval))
       default: COERCE_ERROR("list");

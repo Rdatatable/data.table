@@ -277,7 +277,7 @@ static void cradix(SEXP *x, int n)
   free(cradix_xtmp);   cradix_xtmp=NULL;
 }
 
-static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int *out_na_count)
+static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int *out_na_count)
 // group numbers are left in truelength to be fetched by WRITE_KEY
 {
   int na_count=0;
@@ -323,7 +323,7 @@ static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int 
     SEXP *ustr3 = (SEXP *)malloc(ustr_n * sizeof(SEXP));
     if (!ustr3)
       STOP(_("Failed to alloc ustr3 when converting strings to UTF8"));  // # nocov
-    memcpy(ustr3, STRING_PTR(ustr2), ustr_n*sizeof(SEXP));
+    memcpy(ustr3, STRING_PTR_RO(ustr2), ustr_n*sizeof(SEXP));
     // need to reset ustr_maxlen because we need ustr_maxlen for utf8 strings
     ustr_maxlen = 0;
     for (int i=0; i<ustr_n; i++) {
@@ -342,7 +342,7 @@ static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int 
     int *tl = (int *)malloc(ustr_n * sizeof(int));
     if (!tl)
       STOP(_("Failed to alloc tl when converting strings to UTF8"));  // # nocov
-    SEXP *tt = STRING_PTR(ustr2);
+    const SEXP *tt = STRING_PTR_RO(ustr2);
     for (int i=0; i<ustr_n; i++) tl[i] = TRUELENGTH(tt[i]);   // fetches the o in ustr3 into tl which is ordered by ustr
     for (int i=0; i<ustr_n; i++) SET_TRUELENGTH(ustr3[i], 0);    // reset to 0 tl of the UTF8 (and possibly non-UTF in ustr too)
     for (int i=0; i<ustr_n; i++) SET_TRUELENGTH(ustr[i], tl[i]); // put back the o into ustr's tl
@@ -552,7 +552,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
       break;
     case STRSXP :
       // need2utf8 now happens inside range_str on the uniques
-      range_str(STRING_PTR(x), nrow, &min, &max, &na_count);
+      range_str(STRING_PTR_RO(x), nrow, &min, &max, &na_count);
       break;
     default:
       STOP(_("Column %d passed to [f]order is type '%s', not yet supported."), col+1, type2char(TYPEOF(x)));
@@ -693,7 +693,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
       }
       break;
     case STRSXP : {
-      SEXP *xd = STRING_PTR(x);
+      const SEXP *xd = STRING_PTR_RO(x);
       #pragma omp parallel for num_threads(getDTthreads(nrow, true))
       for (int i=0; i<nrow; i++) {
         uint64_t elem=0;
@@ -1326,7 +1326,7 @@ SEXP issorted(SEXP x, SEXP by)
       }
       break;
     case STRSXP : {
-      SEXP *xd = STRING_PTR(x);
+      const SEXP *xd = STRING_PTR_RO(x);
       i = 0;
       while (i<n && xd[i]==NA_STRING) i++;
       if (i==n) break; // xd consists only of NA_STRING #5070
@@ -1369,7 +1369,7 @@ SEXP issorted(SEXP x, SEXP by)
       break;
     case STRSXP:
       types[j] = 3;
-      ptrs[j] = (const char *)STRING_PTR(col);
+      ptrs[j] = (const char *)STRING_PTR_RO(col);
       break;
     default:
       STOP(_("type '%s' is not yet supported"), type2char(TYPEOF(col)));  // # nocov
