@@ -42,7 +42,7 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
   } else {
     xd = STRING_PTR(PROTECT(coerceUtf8IfNeeded(x))); nprotect++;
   }
-  const SEXP *td = STRING_PTR(PROTECT(coerceUtf8IfNeeded(table))); nprotect++;
+  const SEXP *td = STRING_PTR_RO(PROTECT(coerceUtf8IfNeeded(table))); nprotect++;
   if (xlen==1) {
     ansd[0] = nomatch;
     for (int i=0; i<tablelen; ++i) {
