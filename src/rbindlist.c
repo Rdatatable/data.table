@@ -244,9 +244,8 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
     ncol = length(VECTOR_ELT(l, first));  // ncol was increased as if fill=true, so reduce it back given fill=false (fill==false checked above)
   }
 
-  int nprotect = 0;
-  SEXP ans = PROTECT(allocVector(VECSXP, idcol + ncol)); nprotect++;
-  SEXP ansNames = PROTECT(allocVector(STRSXP, idcol + ncol)); nprotect++;
+  SEXP ans = PROTECT(allocVector(VECSXP, idcol + ncol));
+  SEXP ansNames = PROTECT(allocVector(STRSXP, idcol + ncol));
   setAttrib(ans, R_NamesSymbol, ansNames);
   if (idcol) {
     SET_STRING_ELT(ansNames, 0, STRING_ELT(idcolArg, 0));
@@ -273,6 +272,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
   }
 
   SEXP coercedForFactor = NULL;
+  int nprotect = 0;
   for(int j=0; j<ncol; ++j) {
     int maxType=LGLSXP;  // initialize with LGLSXP for test 2002.3 which has col x NULL in both lists to be filled with NA for #1871
     bool factor=false, orderedFactor=false;     // ordered factor is class c("ordered","factor"). isFactor() is true when isOrdered() is true.
@@ -534,15 +534,18 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
         if (w==-1 || !length(thisCol=VECTOR_ELT(li, w))) {  // !length for zeroCol warning above; #1871
           writeNA(target, ansloc, thisnrow, false);  // writeNA is integer64 aware and writes INT64_MIN
         } else {
-          bool listprotect = false;
-          if ((TYPEOF(target)==VECSXP || TYPEOF(target)==EXPRSXP) && TYPEOF(thisCol)!=TYPEOF(target)) {
-            // do an as.list() on the atomic column; #3528
-            thisCol = PROTECT(coerceVector(thisCol, TYPEOF(target))); listprotect = true;
+          bool listprotect = (TYPEOF(target)==VECSXP || TYPEOF(target)==EXPRSXP) && TYPEOF(thisCol)!=TYPEOF(target);
+          // do an as.list() on the atomic column; #3528
+          if (listprotect) {
+            thisCol = PROTECT(coerceVector(thisCol, TYPEOF(target)));
+            // else coerces if needed within memrecycle; with a no-alloc direct coerce from 1.12.4 (PR #3909)
+            const char *ret = memrecycle(target, R_NilValue, ansloc, thisnrow, thisCol, 0, -1, idcol+j+1, foundName);
+            UNPROTECT(1); // earlier unprotect rbindlist calls with lots of lists #4536
+            if (ret) warning(_("Column %d of item %d: %s"), w+1, i+1, ret);
+          } else {
+            const char *ret = memrecycle(target, R_NilValue, ansloc, thisnrow, thisCol, 0, -1, idcol+j+1, foundName);
+            if (ret) warning(_("Column %d of item %d: %s"), w+1, i+1, ret);
           }
-          // else coerces if needed within memrecycle; with a no-alloc direct coerce from 1.12.4 (PR #3909)
-          const char *ret = memrecycle(target, R_NilValue, ansloc, thisnrow, thisCol, 0, -1, idcol+j+1, foundName);
-          if (listprotect) UNPROTECT(1); // earlier unprotect rbindlist calls with lots of lists #4536
-          if (ret) warning(_("Column %d of item %d: %s"), w+1, i+1, ret);
           // e.g. when precision is lost like assigning 3.4 to integer64; test 2007.2
           // TODO: but maxType should handle that and this should never warn
         }
@@ -550,6 +553,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
       }
     }
   }
-  UNPROTECT(nprotect);  // ans, coercedForFactor, thisCol
+  UNPROTECT(nprotect); // coercedForFactor?
+  UNPROTECT(2); // ans, ansNames
   return(ans);
 }
