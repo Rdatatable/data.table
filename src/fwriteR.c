@@ -199,9 +199,8 @@ SEXP fwriteR(
       DFcoerced = PROTECT(allocVector(VECSXP, args.ncol));
       protecti++;
       // potentially large if ncol=1e6 as reported in #1903 where using large VLA caused stack overflow
-      SEXP s = PROTECT(allocList(2));
+      SEXP s = PROTECT(LCONS(R_NilValue, allocList(1)));
       // no protecti++ needed here as one-off UNPROTECT(1) a few lines below
-      SET_TYPEOF(s, LANGSXP);
       SETCAR(s, install("format.POSIXct"));
       for (int j=0; j<args.ncol; j++) {
         SEXP column = VECTOR_ELT(DF, j);
