@@ -411,7 +411,7 @@ uint64_t dtwiddle(double x) //const void *p, int i)
 
 void radix_r(const int from, const int to, const int radix);
 
-SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg)
+SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg, SEXP verboseArg)
 // sortGroups TRUE from setkey and regular forder, FALSE from by= for efficiency so strings don't have to be sorted and can be left in appearance order
 // when sortGroups is TRUE, ascArg contains +1/-1 for ascending/descending of each by column; when FALSE ascArg is ignored
 {
@@ -422,9 +422,12 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
   memset(stat,   0, 257*sizeof(uint64_t));
   TBEG()
 #endif
+  
+  if ((!isLogical(verboseArg) && !isInteger(verboseArg)) || LENGTH(verboseArg)!=1 || INTEGER(verboseArg)[0]==NA_INTEGER)
+    error(_("verbose option must be length 1 non-NA logical or integer"));
 
   int n_protect = 0;
-  const bool verbose = GetVerbose();
+  const int verbose = GetVerbose()>=2 ? GetVerbose()-1L : INTEGER(verboseArg)[0] ;
 
   if (!isNewList(DT)) {
     if (!isVectorAtomic(DT))
