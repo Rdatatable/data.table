@@ -65,11 +65,11 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
 
   if (verbose) {
     # we now also retGrp=TRUE #4387 for !physical
-    tt = suppressMessages(system.time(o <- forderv(x, cols, sort=TRUE, retGrp=!physical, lazy=TRUE)))  # system.time does a gc, so we don't want this always on, until refcnt is on by default in R
+    tt = suppressMessages(system.time(o <- forderv(x, cols, sort=TRUE, retGrp=!physical, reuseSorting=TRUE)))  # system.time does a gc, so we don't want this always on, until refcnt is on by default in R
     # suppress needed for tests 644 and 645 in verbose mode
     catf("forder took %.03f sec\n", tt["user.self"]+tt["sys.self"])
   } else {
-    o = forderv(x, cols, sort=TRUE, retGrp=!physical, lazy=TRUE)
+    o = forderv(x, cols, sort=TRUE, retGrp=!physical, reuseSorting=TRUE)
   }
   if (!physical) { # index COULD BE saved from C forderReuseSorting already, but disabled for now
     maybe_reset_index(x, o, cols)
