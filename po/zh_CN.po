@@ -1078,6 +1078,8 @@ msgid ""
 "which is disallowed. \"Break\" the array yourself with c() or as.vector() if "
 "that is intentional."
 msgstr ""
+"j=list(...) 里的 %d 组的第 %d 项目本是一个 %d 维度 > 1 的排列，这"
+"是不允许的。如果这是故意的话请使用 c() 或 as.vector() 来分裂该数组"
 
 #: dogroups.c:297
 msgid ""
@@ -2310,7 +2312,7 @@ msgstr ""
 msgid ""
 "[07] Detect column types, dec, good nrow estimate and whether first row is "
 "column names\n"
-msgstr "[07] 检测列类型，小数点分隔符估，良好的行数估计以及首行是否为列名\n"
+msgstr "[07] 检测列类型，小数点分隔，良好的行数估计以及首行是否为列名\n"
 
 #: fread.c:1823
 #, c-format
@@ -2324,7 +2326,7 @@ msgstr "为 %2$s 类型分配 2 x %1$d bytes失败"
 
 #: fread.c:1831
 msgid "  sep=',' so dec set to '.'\n"
-msgstr ""
+msgstr "  sep=',' 所以 dec 被设成 '.'\n"
 
 #: fread.c:1855
 #, c-format
@@ -2371,7 +2373,7 @@ msgstr "很有可能这一跳点的位置并不合适，因此此处的类型转
 #: fread.c:1921 fread.c:1947
 #, c-format
 msgid "  dec='%c' detected based on a balance of %d parsed fields\n"
-msgstr ""
+msgstr "  dec='%c' 因为 %d 个解析字段的余额被检测到\n"
 
 #: fread.c:1931
 #, c-format
@@ -2623,7 +2625,7 @@ msgstr "提供的填充列数: %d 但只找到 %d\n"
 #: fread.c:2563
 #, c-format
 msgid "  Dropping %d overallocated columns\n"
-msgstr ""
+msgstr "  删除 %d 个过度分配的列\n"
 
 #: fread.c:2586
 #, c-format
