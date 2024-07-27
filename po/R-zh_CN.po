@@ -253,6 +253,9 @@ msgid ""
 "intended for data.table methods to be called. See vignette('datatable-"
 "importing') for details on properly importing data.table."
 msgstr ""
+"[ 在不支持 data.table 的环境中对 data.table 进行调用 (例如 cedta())，但"
+"使用了 '%s'，这意味着该调用者确实打算调用 data.table 方法。有关正确导入"
+" data.table 的详细信息，请参阅 vignette('datatable-importing')。"
 
 #: data.table.R:152
 #, c-format
@@ -777,18 +780,19 @@ msgid "In %s(col1=val1, col2=val2, ...) form, all arguments must be named."
 msgstr "在 %s(col1=val1, col2=val2, ...) 中，所有参数必须被指名"
 
 #: data.table.R:1136
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "In %s(col1=val1, col2=val2, ...) form, all arguments must be named, but the "
 "last argument has no name. Did you forget a trailing comma?"
-msgstr "在 %s(col1=val1, col2=val2, ...) 中，所有参数必须被指名"
+msgstr "在 %s(col1=val1, col2=val2, ...) 中，所有参数必须被指名，但最后参数没名。"
+"您是否忘记一个尾随逗号？"
 
 #: data.table.R:1138
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "In %s(col1=val1, col2=val2, ...) form, all arguments must be named, but "
 "these arguments lack names: %s."
-msgstr "在 %s(col1=val1, col2=val2, ...) 中，所有参数必须被指名"
+msgstr "在 %s(col1=val1, col2=val2, ...) 中，所有参数必须被指名，但这些参数没有名: %s。"
 
 #: data.table.R:1145
 #, c-format
@@ -1282,14 +1286,14 @@ msgstr ""
 #: data.table.R:2775
 #, c-format
 msgid "J() called outside of [.data.table. J() is only intended for use in i."
-msgstr ""
+msgstr "J() 在 [.data.table. 外被使用。J() 仅适用于 i 中。"
 
 #: data.table.R:2779
 #, c-format
 msgid ""
 ".() called outside of [.data.table. .() is only intended as an alias for "
 "list() inside DT[...]."
-msgstr ""
+msgstr ".() 在 [.data.table 外被使用。.() 仅适用于 DT[...] 内 list() 的别名。"
 
 #: data.table.R:2785
 #, c-format
@@ -1496,12 +1500,12 @@ msgid "'drop' must be logical TRUE/FALSE"
 msgstr "'drop' 必须为逻辑 TRUE/FALSE"
 
 #: fcast.R:136
-#, fuzzy, c-format
+#, c-format
 msgid "Argument 'value.var.in.dots' should be logical TRUE/FALSE"
 msgstr "参数 'value.var.in.dots' 应为逻辑值 TRUE 或 FALSE"
 
 #: fcast.R:138
-#, fuzzy, c-format
+#, c-format
 msgid ""
 "Arguments 'value.var.in.LHSdots', 'value.var.in.RHSdots' should be logical "
 "TRUE/FALSE"
@@ -1529,6 +1533,11 @@ msgid ""
 "larger than 1 to see which combinations were not unique. See ?dcast.data."
 "table for more details."
 msgstr ""
+"'fun.aggregate' 为 NULL，但发现重复的行/列组合，因此默认为 length()。也就是说，"
+"'formula' 中使用的变量 %s 并不单独标识输入'data'中的行。在这种情况下，'fun.aggregate' "
+"用于为输出 data.table 中的每个组合导出单个代表值，例如通过求和或平均（分别为 "
+"fun.aggregate=sum 或 fun.aggregate=mean）。请检查结果表中是否有大于 1 的值，"
+"来查看哪些组合不唯一。有关更多详细信息，请参阅 ?dcast.data.table。"
 
 #: fcast.R:194
 #, c-format
@@ -3106,7 +3115,7 @@ msgstr "memtest 仅适用于 Linux。请逐步执行 data.table:::rss() 以查�
 #: test.data.table.R:196
 #, c-format
 msgid "Attempt to subset to %d tests matching '%s' failed, running full suite."
-msgstr ""
+msgstr "尝试进行子集化 %d 个测试匹配 '%s' 失败，正在运行所有测试。"
 
 #: test.data.table.R:244
 #, c-format
