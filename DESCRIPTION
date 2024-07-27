@@ -18,7 +18,7 @@ Authors@R: c(
   person("Jan","Gorecki",          role="aut"),
   person("Michael","Chirico",      role="aut", comment = c(ORCID="0000-0003-0787-087X")),
   person("Toby","Hocking",         role="aut", comment = c(ORCID="0000-0002-3146-0865")),
-  person("Benjamin","Schwendinger",role="aut"),
+  person("Benjamin","Schwendinger",role="aut", comment = c(ORCID="0000-0003-3315-8114")),
   person("Pasha","Stetsenko",      role="ctb"),
   person("Tom","Short",            role="ctb"),
   person("Steve","Lianoglou",      role="ctb"),
