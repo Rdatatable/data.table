@@ -197,8 +197,9 @@ SEXP uniq_diff(SEXP int_or_list, int ncol, bool is_measure) {
       INTEGER(unique_col_numbers)[unique_i++] = INTEGER(int_vec)[i];
     }
   }
+  SEXP out = set_diff(unique_col_numbers, ncol);
   UNPROTECT(3);
-  return set_diff(unique_col_numbers, ncol);
+  return out;
 }
 
 SEXP cols_to_int_or_list(SEXP cols, SEXP dtnames, bool is_measure) {
@@ -247,7 +248,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
       if (length(value_col)) Rprintf(_("Assigned 'measure.vars' are [%s].\n"), concat(dtnames, value_col));
     }
   } else if (isNull(id) && !isNull(measure)) {
-    SEXP measure_int_or_list = cols_to_int_or_list(measure, dtnames, true);
+    SEXP measure_int_or_list = PROTECT(cols_to_int_or_list(measure, dtnames, true)); protecti++;
     idcols = PROTECT(uniq_diff(measure_int_or_list, ncol, true)); protecti++;
     if (isNewList(measure)) valuecols = measure_int_or_list;
     else {
@@ -401,13 +402,13 @@ static SEXP combineFactorLevels(SEXP factorLevels, SEXP target, int * factorType
   SEXP ans = PROTECT(allocVector(INTSXP, nrow));
   SEXP *levelsRaw = (SEXP *)R_alloc(maxlevels, sizeof(SEXP));  // allocate for worst-case all-unique levels
   int *ansd = INTEGER(ans);
-  const SEXP *targetd = STRING_PTR(target);
+  const SEXP *targetd = STRING_PTR_RO(target);
   savetl_init();
   // no alloc or any fail point until savetl_end()
   int nlevel=0;
   for (int i=0; i<nitem; ++i) {
     const SEXP this = VECTOR_ELT(factorLevels, i);
-    const SEXP *thisd = STRING_PTR(this);
+    const SEXP *thisd = STRING_PTR_RO(this);
     const int thisn = length(this);
     for (int k=0; k<thisn; ++k) {
       SEXP s = thisd[k];
@@ -744,7 +745,7 @@ SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data
           counter += thislen;
         }
       } else {
-        const SEXP *s = STRING_PTR(thiscol);  // to reduce overhead of STRING_ELT() inside loop below. Read-only hence const.
+        const SEXP *s = STRING_PTR_RO(thiscol);  // to reduce overhead of STRING_ELT() inside loop below. Read-only hence const.
         for (int j=0; j<data->lmax; ++j) {
           for (int k=0; k<data->nrow; ++k) {
             SET_STRING_ELT(target, j*data->nrow + k, s[k]);

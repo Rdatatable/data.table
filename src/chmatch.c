@@ -10,7 +10,7 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
   if (TYPEOF(x) == SYMSXP) {
     if (xlen!=1)
       error(_("Internal error: length of SYMSXP is %d not 1"), xlen); // # nocov
-    sym = PRINTNAME(x);  // so we can do &sym to get a length 1 (const SEXP *)STRING_PTR(x) and save an alloc for coerce to STRSXP
+    sym = PRINTNAME(x);  // so we can do &sym to get a length 1 (const SEXP *)STRING_PTR_RO(x) and save an alloc for coerce to STRSXP
   } else if (!isString(x) && !isSymbol(x) && !isNull(x)) {
     if (chin && !isVectorAtomic(x)) {
       return ScalarLogical(FALSE);
@@ -40,9 +40,9 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
   if (isSymbol(x)) {
     xd = &sym;
   } else {
-    xd = STRING_PTR(PROTECT(coerceUtf8IfNeeded(x))); nprotect++;
+    xd = STRING_PTR_RO(PROTECT(coerceUtf8IfNeeded(x))); nprotect++;
   }
-  const SEXP *td = STRING_PTR(PROTECT(coerceUtf8IfNeeded(table))); nprotect++;
+  const SEXP *td = STRING_PTR_RO(PROTECT(coerceUtf8IfNeeded(table))); nprotect++;
   if (xlen==1) {
     ansd[0] = nomatch;
     for (int i=0; i<tablelen; ++i) {
@@ -94,10 +94,11 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
     //                                                                                        uniq         dups
     // For example: A,B,C,B,D,E,A,A   =>   A(TL=1),B(2),C(3),D(4),E(5)   =>   dupMap    1  2  3  5  6 | 8  7  4
     //                                                                        dupLink   7  8          |    6     (blank=0)
-    int *counts = (int *)calloc(nuniq, sizeof(int));
     unsigned int mapsize = tablelen+nuniq; // lto compilation warning #5760 // +nuniq to store a 0 at the end of each group
+    int *counts = (int *)calloc(nuniq, sizeof(int));
     int *map =    (int *)calloc(mapsize, sizeof(int));
     if (!counts || !map) {
+      free(counts); free(map);
       // # nocov start
       for (int i=0; i<tablelen; i++) SET_TRUELENGTH(td[i], 0);
       savetl_end();

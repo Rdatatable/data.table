@@ -53,9 +53,7 @@ data.table = function(..., keep.rownames=FALSE, check.names=FALSE, key=NULL, str
   ans = as.data.table.list(x, keep.rownames=keep.rownames, check.names=check.names, .named=nd$.named)  # see comments inside as.data.table.list re copies
   if (!is.null(key)) {
     if (!is.character(key)) stopf("key argument of data.table() must be character")
-    if (length(key)==1L) {
-      if (key != strsplit(key,split=",")[[1L]]) stopf("Usage of comma-separated literals in %s is deprecated, please split such entries yourself before passing to data.table", "key=")
-    }
+    if (length(key)==1L) key = cols_from_csv(key)
     setkeyv(ans,key)
   } else {
     # retain key of cbind(DT1, DT2, DT3) where DT2 is keyed but not DT1. cbind calls data.table().
@@ -394,13 +392,11 @@ replace_dot_alias = function(e) {
     }
     else if (!is.name(isub)) {
       ienv = new.env(parent=parent.frame())
-      if (getOption("datatable.optimize")>=1L) assign("order", forder, ienv)
-      i = tryCatch(eval(.massagei(isub), x, ienv), error=function(e) {
-        if (grepl(":=.*defined for use in j.*only", e$message))
-          stopf("Operator := detected in i, the first argument inside DT[...], but is only valid in the second argument, j. Most often, this happens when forgetting the first comma (e.g. DT[newvar := 5] instead of DT[ , new_var := 5]). Please double-check the syntax. Run traceback(), and debugger() to get a line number.")
-        else
-          .checkTypos(e, names_x)
-      })
+      if (getOption("datatable.optimize") >= 1L) assign("order", forder, ienv)
+      i = tryCatch(eval(.massagei(isub), x, ienv),
+        dt_invalid_let_error = function(e) stopf("Operator := detected in i, the first argument inside DT[...], but is only valid in the second argument, j. Most often, this happens when forgetting the first comma (e.g. DT[newvar := 5] instead of DT[ , new_var := 5]). Please double-check the syntax. Run traceback(), and debugger() to get a line number."),
+        error = function(e) .checkTypos(e, names_x)
+      )
     } else {
       # isub is a single symbol name such as B in DT[B]
       i = try(eval(isub, parent.frame(), parent.frame()), silent=TRUE)
@@ -797,7 +793,8 @@ replace_dot_alias = function(e) {
 
         if (mode(bysub) == "character") {
           if (any(grepl(",", bysub, fixed = TRUE))) {
-            stopf("Usage of comma-separated literals in %s is deprecated, please split such entries yourself before passing to data.table", "by=")
+            if (length(bysub) > 1L) stopf("'by' is a character vector length %d but one or more items include a comma. Either pass a vector of column names (which can contain spaces, but no commas), or pass a vector length 1 containing comma separated column names. See ?data.table for other possibilities.", length(bysub))
+            bysub = cols_from_csv(bysub)
           }
           bysub = gsub("^`(.*)`$", "\\1", bysub) # see test 138
           nzidx = nzchar(bysub)
@@ -1122,6 +1119,11 @@ replace_dot_alias = function(e) {
           if (is.name(lhs)) {
             lhs = as.character(lhs)
           } else {
+            #6033 revdep. Slowly deprecate in 1.17.0. Caller has given us `dt[, substitute(names(.SD))]` which means
+            # jsub is actually substitute(names(.SD)) instead of just names(.SD)
+            if (lhs %iscall% 'substitute')
+              lhs = eval(lhs, parent.frame(), parent.frame())
+
             # lhs is e.g. (MyVar) or get("MyVar") or names(.SD) || setdiff(names(.SD), cols)
             lhs = eval(lhs, list(.SD = setNames(logical(length(sdvars)), sdvars)), parent.frame())
           }
@@ -1764,7 +1766,7 @@ replace_dot_alias = function(e) {
             }
           else {
             # adding argument to ghead/gtail if none is supplied to g-optimized head/tail
-            if (length(jsub) == 2L && jsub[[1L]] %chin% c("head", "tail")) jsub[["n"]] = 6L
+            if (length(jsub) == 2L && jsub %iscall% c("head", "tail")) jsub[["n"]] = 6L
             jsub = .gforce_jsub(jsub, names_x)
           }
           if (verbose) catf("GForce optimized j to '%s' (see ?GForce)\n", deparse(jsub, width.cutoff=200L, nlines=1L))
@@ -1983,11 +1985,11 @@ DT = function(x, ...) {  #4872
 
 .optmean = function(expr) {   # called by optimization of j inside [.data.table only. Outside for a small speed advantage.
   if (length(expr)==2L)  # no parameters passed to mean, so defaults of trim=0 and na.rm=FALSE
-    return(call(".External",quote(Cfastmean),expr[[2L]], FALSE))
+    return(call(".External", quote(Cfastmean), expr[[2L]], FALSE))
     # return(call(".Internal",expr))  # slightly faster than .External, but R now blocks .Internal in coerce.c from apx Sep 2012
-  if (length(expr)==3L && startsWith(names(expr)[3L], "na"))   # one parameter passed to mean()
-    return(call(".External",quote(Cfastmean),expr[[2L]], expr[[3L]]))  # faster than .Call
-  assign("nomeanopt",TRUE,parent.frame())
+  if (length(expr)==3L && .arg_is_narm(expr))
+    return(call(".External", quote(Cfastmean), expr[[2L]], expr[[3L]]))  # faster than .Call
+  assign("nomeanopt", TRUE, parent.frame())
   expr  # e.g. trim is not optimized, just na.rm
 }
 
@@ -2717,8 +2719,9 @@ chmatch = function(x, table, nomatch=NA_integer_)
 chmatchdup = function(x, table, nomatch=NA_integer_)
   .Call(Cchmatchdup, x, table, as.integer(nomatch[1L]))
 
+# Force as.character as part of #4708
 "%chin%" = function(x, table)
-  .Call(Cchin, x, table)  # TO DO  if table has 'ul' then match to that
+  .Call(Cchin, as.character(x), table)  # TO DO  if table has 'ul' then match to that
 
 chorder = function(x) {
   o = forderv(x, sort=TRUE, retGrp=FALSE)
@@ -2732,14 +2735,14 @@ chgroup = function(x) {
 }
 
 # plain rbind and cbind methods are registered using S3method() in NAMESPACE only from R>=4.0.0; #3948
-rbind.data.table = function(..., use.names=TRUE, fill=FALSE, idcol=NULL) {
+rbind.data.table = function(..., use.names=TRUE, fill=FALSE, idcol=NULL, ignore.attr=FALSE) {
   l = lapply(list(...), function(x) if (is.list(x)) x else as.data.table(x))  #1626; e.g. psych binds a data.frame|table with a matrix
-  rbindlist(l, use.names, fill, idcol)
+  rbindlist(l, use.names, fill, idcol, ignore.attr)
 }
 cbind.data.table = data.table
 .rbind.data.table = rbind.data.table  # the workaround using this in FAQ 2.24 is still applied to support R < 4.0.0
 
-rbindlist = function(l, use.names="check", fill=FALSE, idcol=NULL) {
+rbindlist = function(l, use.names="check", fill=FALSE, idcol=NULL, ignore.attr=FALSE) {
   if (is.null(l)) return(null.data.table())
   if (!is.list(l) || is.data.frame(l)) stopf("Input is %s but should be a plain list of items to be stacked", class(l)[1L])
   if (isFALSE(idcol)) { idcol = NULL }
@@ -2755,7 +2758,7 @@ rbindlist = function(l, use.names="check", fill=FALSE, idcol=NULL) {
     if (!miss) stopf("use.names='check' cannot be used explicitly because the value 'check' is new in v1.12.2 and subject to change. It is just meant to convey default behavior. See ?rbindlist.")
     use.names = NA
   }
-  ans = .Call(Crbindlist, l, use.names, fill, idcol)
+  ans = .Call(Crbindlist, l, use.names, fill, idcol, ignore.attr)
   if (!length(ans)) return(null.data.table())
   setDT(ans)[]
 }
@@ -2767,7 +2770,7 @@ address = function(x) .Call(Caddress, eval(substitute(x), parent.frame()))
 
 ":=" = function(...) {
   # this error is detected when eval'ing isub and replaced with a more helpful one when using := in i due to forgetting a comma, #4227
-  stopf('Check that is.data.table(DT) == TRUE. Otherwise, :=, `:=`(...) and let(...) are defined for use in j, once only and in particular ways. See help(":=").')
+  stopf('Check that is.data.table(DT) == TRUE. Otherwise, :=, `:=`(...) and let(...) are defined for use in j, once only and in particular ways. Note that namespace-qualification like data.table::`:=`(...) is not supported. See help(":=").', class="dt_invalid_let_error")
 }
 
 # TODO(#6197): Export these.
@@ -3067,13 +3070,17 @@ is_constantish = function(q, check_singleton=FALSE) {
   if (q1[[3L]] %chin% gdtfuns) return(q1[[3L]])
   NULL
 }
+
+# Check for na.rm= in expr in the expected slot; allows partial matching and
+#   is robust to unnamed expr. Note that NA names are not possible here.
+.arg_is_narm <- function(expr, which=3L) !is.null(nm <- names(expr)[which]) && startsWith(nm, "na")
+
 .gforce_ok = function(q, x) {
   if (is.N(q)) return(TRUE) # For #334
   q1 = .get_gcall(q)
   if (is.null(q1)) return(FALSE)
   if (!(q2 <- q[[2L]]) %chin% names(x) && q2 != ".I") return(FALSE)  # 875
-  if (length(q)==2L || (!is.null(names(q)) && startsWith(names(q)[3L], "na") && is_constantish(q[[3L]]))) return(TRUE)
-  #                       ^^ base::startWith errors on NULL unfortunately
+  if (length(q)==2L || (.arg_is_narm(q) && is_constantish(q[[3L]]))) return(TRUE)
   switch(as.character(q1),
     "shift" = .gshift_ok(q),
     "weighted.mean" = .gweighted.mean_ok(q, x),

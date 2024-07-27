@@ -15,7 +15,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     # nocov start
     dev = TRUE
     if ("package:data.table" %chin% search()) stopf("data.table package is loaded. Unload or start a fresh R session.")
-    rootdir = if (pkg!="." && pkg %chin% dir()) file.path(getwd(), pkg) else Sys.getenv("PROJ_PATH")
+    rootdir = if (pkg!="." && pkg %chin% dir()) file.path(getwd(), pkg) else Sys.getenv("PROJ_PATH", normalizePath("."))
     subdir = file.path("inst","tests")
     env = new.env(parent=.GlobalEnv)  # in dev cc() sources all functions in .GlobalEnv
     # nocov end
@@ -235,6 +235,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     ", Sys.getlocale()=='", Sys.getlocale(), "'",
     ", l10n_info()=='", paste0(names(l10n_info()), "=", l10n_info(), collapse="; "), "'",
     ", getDTthreads()=='", paste(gsub("[ ][ ]+","==",gsub("^[ ]+","",capture.output(invisible(getDTthreads(verbose=TRUE))))), collapse="; "), "'",
+    ", .libPaths()==", paste0("'", .libPaths(), "'", collapse = ","),
     ", ", .Call(Cdt_zlib_version),
     "\n", sep="")
 
