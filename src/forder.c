@@ -268,15 +268,17 @@ static void cradix_r(SEXP *xsub, int n, int radix)
 static void cradix(SEXP *x, int n)
 {
   cradix_counts = (int *)calloc(ustr_maxlen*256, sizeof(int));  // counts for the letters of left-aligned strings
-  if (!cradix_counts) STOP(_("Failed to alloc cradix_counts"));
   cradix_xtmp = (SEXP *)malloc(ustr_n*sizeof(SEXP));
-  if (!cradix_xtmp) STOP(_("Failed to alloc cradix_tmp"));
+  if (!cradix_counts || !cradix_xtmp) {
+    free(cradix_counts); free(cradix_xtmp);
+    STOP(_("Failed to alloc cradix_counts and/or cradix_tmp"));
+  }
   cradix_r(x, n, 0);
   free(cradix_counts); cradix_counts=NULL;
   free(cradix_xtmp);   cradix_xtmp=NULL;
 }
 
-static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int *out_na_count, bool *out_anynotascii, bool *out_anynotutf8)
+static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int *out_na_count, bool *out_anynotascii, bool *out_anynotutf8)
 // group numbers are left in truelength to be fetched by WRITE_KEY
 {
   int na_count=0;
@@ -328,8 +330,9 @@ static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int 
     SEXP ustr2 = PROTECT(allocVector(STRSXP, ustr_n));
     for (int i=0; i<ustr_n; i++) SET_STRING_ELT(ustr2, i, ENC2UTF8(ustr[i]));
     SEXP *ustr3 = (SEXP *)malloc(ustr_n * sizeof(SEXP));
-    if (!ustr3) STOP(_("Failed to alloc ustr3 when converting strings to UTF8"));  // # nocov
-    memcpy(ustr3, STRING_PTR(ustr2), ustr_n*sizeof(SEXP));
+    if (!ustr3)
+      STOP(_("Failed to alloc ustr3 when converting strings to UTF8"));  // # nocov
+    memcpy(ustr3, STRING_PTR_RO(ustr2), ustr_n*sizeof(SEXP));
     // need to reset ustr_maxlen because we need ustr_maxlen for utf8 strings
     ustr_maxlen = 0;
     for (int i=0; i<ustr_n; i++) {
@@ -346,8 +349,9 @@ static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int 
     }
     // now use the 1-1 mapping from ustr to ustr2 to get the ordering back into original ustr, being careful to reset tl to 0
     int *tl = (int *)malloc(ustr_n * sizeof(int));
-    if (!tl) STOP(_("Failed to alloc tl when converting strings to UTF8"));  // # nocov
-    SEXP *tt = STRING_PTR(ustr2);
+    if (!tl)
+      STOP(_("Failed to alloc tl when converting strings to UTF8"));  // # nocov
+    const SEXP *tt = STRING_PTR_RO(ustr2);
     for (int i=0; i<ustr_n; i++) tl[i] = TRUELENGTH(tt[i]);   // fetches the o in ustr3 into tl which is ordered by ustr
     for (int i=0; i<ustr_n; i++) SET_TRUELENGTH(ustr3[i], 0);    // reset to 0 tl of the UTF8 (and possibly non-UTF in ustr too)
     for (int i=0; i<ustr_n; i++) SET_TRUELENGTH(ustr[i], tl[i]); // put back the o into ustr's tl
@@ -579,7 +583,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
       break;
     case STRSXP :
       // need2utf8 now happens inside range_str on the uniques
-      range_str(STRING_PTR(x), nrow, &min, &max, &na_count, &anynotascii, &anynotutf8);
+      range_str(STRING_PTR_RO(x), nrow, &min, &max, &na_count, &anynotascii, &anynotutf8);
       break;
     default:
       STOP(_("Column %d passed to [f]order is type '%s', not yet supported."), col+1, type2char(TYPEOF(x)));
@@ -728,7 +732,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
       }
       break;
     case STRSXP : {
-      SEXP *xd = STRING_PTR(x);
+      const SEXP *xd = STRING_PTR_RO(x);
       #pragma omp parallel for num_threads(getDTthreads(nrow, true))
       for (int i=0; i<nrow; i++) {
         uint64_t elem=0;
@@ -758,13 +762,19 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
   nth = getDTthreads(nrow, true);  // this nth is relied on in cleanup(); throttle=true/false debated for #5077
   TMP =  (int *)malloc(nth*UINT16_MAX*sizeof(int)); // used by counting sort (my_n<=65536) in radix_r()
   UGRP = (uint8_t *)malloc(nth*256);                // TODO: align TMP and UGRP to cache lines (and do the same for stack allocations too)
-  if (!TMP || !UGRP /*|| TMP%64 || UGRP%64*/) STOP(_("Failed to allocate TMP or UGRP or they weren't cache line aligned: nth=%d"), nth);
+  if (!TMP || !UGRP /*|| TMP%64 || UGRP%64*/) {
+    free(TMP); free(UGRP);
+    STOP(_("Failed to allocate TMP or UGRP or they weren't cache line aligned: nth=%d"), nth);
+  }
   
   if (retgrp) {
     gs_thread = calloc(nth, sizeof(int *));     // thread private group size buffers
     gs_thread_alloc = calloc(nth, sizeof(int));
     gs_thread_n = calloc(nth, sizeof(int));
-    if (!gs_thread || !gs_thread_alloc || !gs_thread_n) STOP(_("Could not allocate (very tiny) group size thread buffers"));
+    if (!gs_thread || !gs_thread_alloc || !gs_thread_n) {
+      free(gs_thread); free(gs_thread_alloc); free(gs_thread_n);
+      STOP(_("Could not allocate (very tiny) group size thread buffers"));
+    }
   }
   if (nradix) {
     radix_r(0, nrow-1, 0);  // top level recursive call: (from, to, radix)
@@ -880,7 +890,9 @@ void radix_r(const int from, const int to, const int radix) {
     #endif
 
     uint8_t *restrict my_key = key[radix]+from;  // safe to write as we don't use this radix again
-    uint8_t o[my_n];
+    uint8_t *o = (uint8_t *)malloc(my_n * sizeof(uint8_t));
+    if (!o)
+      STOP(_("Failed to allocate %d bytes for '%s'."), (int)(my_n * sizeof(uint8_t)), "o");
     // if last key (i.e. radix+1==nradix) there are no more keys to reorder so we could reorder osub by reference directly and save allocating and populating o just
     // to use it once. However, o's type is uint8_t so many moves within this max-256 vector should be faster than many moves in osub (4 byte or 8 byte ints) [1 byte
     // type is always aligned]
@@ -947,7 +959,11 @@ void radix_r(const int from, const int to, const int radix) {
     }
     if (!skip) {
       // reorder osub and each remaining ksub
-      int TMP[my_n];  // on stack fine since my_n is very small (<=256)
+      int *TMP = malloc(my_n * sizeof(int));
+      if (!TMP) {
+        free(o);
+        STOP(_("Failed to allocate %d bytes for '%s'."), (int)(my_n * sizeof(int)), "TMP");
+      }
       const int *restrict osub = anso+from;
       for (int i=0; i<my_n; i++) TMP[i] = osub[o[i]];
       memcpy((int *restrict)(anso+from), TMP, my_n*sizeof(int));
@@ -956,14 +972,19 @@ void radix_r(const int from, const int to, const int radix) {
         for (int i=0; i<my_n; i++) ((uint8_t *)TMP)[i] = ksub[o[i]];
         memcpy((uint8_t *restrict)(key[r]+from), (uint8_t *)TMP, my_n);
       }
+      free(TMP);
       TEND(8)
     }
+    free(o);
     // my_key is now grouped (and sorted by group too if sort!=0)
     // all we have left to do is find the group sizes and either recurse or push
     if (radix+1==nradix && !retgrp) {
       return;
     }
-    int ngrp=0, my_gs[my_n];  //minor TODO: could know number of groups with certainty up above
+    int ngrp=0; //minor TODO: could know number of groups with certainty up above
+    int *my_gs = malloc(my_n * sizeof(int));
+    if (!my_gs)
+      STOP(_("Failed to allocate %d bytes for '%s'."), (int)(my_n * sizeof(int)), "my_gs");
     my_gs[ngrp]=1;
     for (int i=1; i<my_n; i++) {
       if (my_key[i]!=my_key[i-1]) my_gs[++ngrp] = 1;
@@ -979,6 +1000,7 @@ void radix_r(const int from, const int to, const int radix) {
         f+=my_gs[i];
       }
     }
+    free(my_gs);
     return;
   }
   else if (my_n<=UINT16_MAX) {    // UINT16_MAX==65535 (important not 65536)
@@ -1062,7 +1084,9 @@ void radix_r(const int from, const int to, const int radix) {
     if (!retgrp && radix+1==nradix) {
       return;  // we're done. avoid allocating and populating very last group sizes for last key
     }
-    int my_gs[ngrp==0 ? 256 : ngrp];  // ngrp==0 when sort and skip==true; we didn't count the non-zeros in my_counts yet in that case
+    int *my_gs = malloc((ngrp==0 ? 256 : ngrp) * sizeof(int)); // ngrp==0 when sort and skip==true; we didn't count the non-zeros in my_counts yet in that case
+    if (!my_gs)
+      STOP(_("Failed to allocate %d bytes for '%s'."), (int)((ngrp==0 ? 256 : ngrp) * sizeof(int)), "my_gs");
     if (sortType!=0) {
       ngrp=0;
       for (int i=0; i<256; i++) if (my_counts[i]) my_gs[ngrp++]=my_counts[i];  // this casts from uint16_t to int32, too
@@ -1080,6 +1104,7 @@ void radix_r(const int from, const int to, const int radix) {
         my_from+=my_gs[i];
       }
     }
+    free(my_gs);
     return;
   }
   // else parallel batches. This is called recursively but only once or maybe twice before resolving to UINT16_MAX branch above
@@ -1090,7 +1115,10 @@ void radix_r(const int from, const int to, const int radix) {
   uint16_t *counts = calloc(nBatch*256,sizeof(uint16_t));
   uint8_t  *ugrps =  malloc(nBatch*256*sizeof(uint8_t));
   int      *ngrps =  calloc(nBatch    ,sizeof(int));
-  if (!counts || !ugrps || !ngrps) STOP(_("Failed to allocate parallel counts. my_n=%d, nBatch=%d"), my_n, nBatch);
+  if (!counts || !ugrps || !ngrps) {
+    free(counts); free(ugrps); free(ngrps);
+    STOP(_("Failed to allocate parallel counts. my_n=%d, nBatch=%d"), my_n, nBatch);
+  }
 
   bool skip=true;
   const int n_rem = nradix-radix-1;   // how many radix are remaining after this one
@@ -1099,6 +1127,10 @@ void radix_r(const int from, const int to, const int radix) {
   {
     int     *my_otmp = malloc(batchSize * sizeof(int)); // thread-private write
     uint8_t *my_ktmp = malloc(batchSize * sizeof(uint8_t) * n_rem);
+    if (!my_otmp || !my_ktmp) {
+      free(my_otmp); free(my_ktmp);
+      STOP(_("Failed to allocate 'my_otmp' and/or 'my_ktmp' arrays (%d bytes)."), (int)(batchSize*(sizeof(int) + sizeof(uint8_t))));
+    }
     // TODO: move these up above and point restrict[me] to them. Easier to Error that way if failed to alloc.
     #pragma omp for
     for (int batch=0; batch<nBatch; batch++) {
@@ -1184,6 +1216,8 @@ void radix_r(const int from, const int to, const int radix) {
   // If skip==true and we're already done, we still need the first row of this cummulate (diff to get total group sizes) to push() or recurse below
 
   int *starts = calloc(nBatch*256, sizeof(int));  // keep starts the same shape and ugrp order as counts
+  if (!starts)
+    STOP(_("Failed to allocate %d bytes for '%s'."), (int)(nBatch*256*sizeof(int)), "starts");
   for (int j=0, sum=0; j<ngrp; j++) {  // iterate through columns (ngrp bytes)
     uint16_t *tmp1 = counts+ugrp[j];
     int      *tmp2 = starts+ugrp[j];
@@ -1199,7 +1233,8 @@ void radix_r(const int from, const int to, const int radix) {
   TEND(18 + notFirst*3)
   if (!skip) {
     int *TMP = malloc(my_n * sizeof(int));
-    if (!TMP) STOP(_("Unable to allocate TMP for my_n=%d items in parallel batch counting"), my_n);
+    if (!TMP)
+      STOP(_("Unable to allocate TMP for my_n=%d items in parallel batch counting"), my_n);
     #pragma omp parallel for num_threads(getDTthreads(nBatch, false))
     for (int batch=0; batch<nBatch; batch++) {
       const int *restrict      my_starts = starts + batch*256;
@@ -1236,7 +1271,9 @@ void radix_r(const int from, const int to, const int radix) {
   TEND(19 + notFirst*3)
   notFirst = true;
 
-  int my_gs[ngrp];
+  int *my_gs = malloc(ngrp * sizeof(int));
+  if (!my_gs)
+    STOP(_("Failed to allocate %d bytes for '%s'."), (int)(ngrp * sizeof(int)), "my_gs");
   for (int i=1; i<ngrp; i++) my_gs[i-1] = starts[ugrp[i]] - starts[ugrp[i-1]];   // use the first row of starts to get totals
   my_gs[ngrp-1] = my_n - starts[ugrp[ngrp-1]];
 
@@ -1290,6 +1327,7 @@ void radix_r(const int from, const int to, const int radix) {
       TEND(25)
     }
   }
+  free(my_gs);
   free(counts);
   free(starts);
   free(ugrps);
@@ -1333,7 +1371,7 @@ SEXP issorted(SEXP x, SEXP by)
       }
       break;
     case STRSXP : {
-      SEXP *xd = STRING_PTR(x);
+      const SEXP *xd = STRING_PTR_RO(x);
       i = 0;
       while (i<n && xd[i]==NA_STRING) i++;
       if (i==n) break; // xd consists only of NA_STRING #5070
@@ -1376,7 +1414,7 @@ SEXP issorted(SEXP x, SEXP by)
       break;
     case STRSXP:
       types[j] = 3;
-      ptrs[j] = (const char *)STRING_PTR(col);
+      ptrs[j] = (const char *)STRING_PTR_RO(col);
       break;
     default:
       STOP(_("type '%s' is not yet supported"), type2char(TYPEOF(col)));  // # nocov

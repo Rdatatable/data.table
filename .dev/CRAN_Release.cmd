@@ -17,11 +17,12 @@ Rscript -e "tools::update_pkg_po('.')"
 
 # 2) Open a PR with the new templates & contact the translators
 #   * zh_CN: @hongyuanjia
+#   * pt_BR: @rffontenelle
 ## Translators to submit commits with translations to this PR
 ##   [or perhaps, if we get several languages, each to open
 ##    its own PR and merge to main translation PR]
 
-## 3) Check validity with tools::checkPoFiles("zh_CN")
+## 3) Check validity with tools::checkPoFiles(".*")
 
 ## 4) Compile the new .mo binary files with potools::po_compile()
 

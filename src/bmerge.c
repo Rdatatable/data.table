@@ -133,8 +133,6 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP r
     retFirst = Calloc(anslen, int); // anslen is set above
     retLength = Calloc(anslen, int);
     retIndex = Calloc(anslen, int);
-    if (retFirst==NULL || retLength==NULL || retIndex==NULL)
-      error(_("Internal error in allocating memory for non-equi join")); // # nocov
     // initialise retIndex here directly, as next loop is meant for both equi and non-equi joins
     for (int j=0; j<anslen; j++) retIndex[j] = j+1;
   } else { // equi joins (or) non-equi join but no multiple matches
@@ -346,8 +344,8 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
   case STRSXP : {
     // op[col]==EQ checked up front to avoid an if() here and non-thread-safe error()
     // not sure why non-EQ is not supported for STRSXP though as it seems straightforward (StrCmp returns sign to indicate GT or LT)
-    const SEXP *icv = STRING_PTR(ic);
-    const SEXP *xcv = STRING_PTR(xc);
+    const SEXP *icv = STRING_PTR_RO(ic);
+    const SEXP *xcv = STRING_PTR_RO(xc);
     const SEXP ival = ENC2UTF8(icv[ir]);
     #undef ISNAT
     #undef WRAP

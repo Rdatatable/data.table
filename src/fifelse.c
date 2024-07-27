@@ -146,9 +146,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
     }
   } break;
   case STRSXP : {
-    const SEXP *restrict pa = na_a ? NULL : STRING_PTR(a);
-    const SEXP *restrict pb = na_b ? NULL : STRING_PTR(b);
-    const SEXP *restrict pna = na_n ? NULL : STRING_PTR(na);
+    const SEXP *restrict pa = na_a ? NULL : STRING_PTR_RO(a);
+    const SEXP *restrict pb = na_b ? NULL : STRING_PTR_RO(b);
+    const SEXP *restrict pna = na_n ? NULL : STRING_PTR_RO(na);
     const SEXP na = NA_STRING;
     for (int64_t i=0; i<len0; ++i) {
       SET_STRING_ELT(
@@ -358,8 +358,8 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
       }
     } break;
     case STRSXP: {
-      const SEXP *restrict pouts = STRING_PTR(outs);
-      const SEXP pna = nonna ? STRING_PTR(na)[0] : NA_STRING;
+      const SEXP *restrict pouts = STRING_PTR_RO(outs);
+      const SEXP pna = nonna ? STRING_PTR_RO(na)[0] : NA_STRING;
       for (int64_t j=0; j<len2; ++j) {
         const int64_t idx = imask ? j : p[j];
         if (pcons[idx]==1) {
