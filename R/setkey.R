@@ -71,7 +71,7 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
   } else {
     o = forderv(x, cols, sort=TRUE, retGrp=!physical, lazy=TRUE)
   }
-  if (!physical) { # index COULD BE saved from C forderMaybePresorted already, but disabled for now
+  if (!physical) { # index COULD BE saved from C forderReuseSorting already, but disabled for now
     maybe_reset_index(x, o, cols)
     return(invisible(x))
   }
@@ -157,7 +157,7 @@ forderv = function(x, by=seq_along(x), retGrp=FALSE, retStats=retGrp, sort=TRUE,
     by = colnamesInt(x, by, check_dups=FALSE)
   }
   order = as.integer(order) # length and contents of order being +1/-1 is checked at C level
-  .Call(CforderMaybePresorted, x, by, retGrp, retStats, sort, order, na.last, reuseSorting)  # returns integer() if already sorted, regardless of sort=TRUE|FALSE
+  .Call(CforderReuseSorting, x, by, retGrp, retStats, sort, order, na.last, reuseSorting)  # returns integer() if already sorted, regardless of sort=TRUE|FALSE
 }
 
 forder = function(..., na.last=TRUE, decreasing=FALSE)

@@ -159,8 +159,8 @@ setindexv(d2, "id")
 d1[d2, on="id", verbose=TRUE]
 #...
 #Starting bmerge ...
-#forderMaybePresorted: using existing index: __id
-#forderMaybePresorted: opt=2, took 0.000s
+#forderReuseSorting: using existing index: __id
+#forderReuseSorting: opt=2, took 0.000s
 #...
 ```
 

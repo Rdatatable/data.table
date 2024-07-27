@@ -77,7 +77,7 @@ R_CallMethodDef callMethods[] = {
 {"Cfcast", (DL_FUNC) &fcast, -1},
 {"Cuniqlist", (DL_FUNC) &uniqlist, -1},
 {"Cuniqlengths", (DL_FUNC) &uniqlengths, -1},
-{"CforderMaybePresorted", (DL_FUNC) &forderMaybePresorted, -1},
+{"CforderReuseSorting", (DL_FUNC) &forderReuseSorting, -1},
 {"Cforder", (DL_FUNC) &forder, -1},
 {"Cissorted", (DL_FUNC) &issorted, -1},
 {"Cgforce", (DL_FUNC) &gforce, -1},
