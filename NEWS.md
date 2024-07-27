@@ -2,6 +2,10 @@
 
 # data.table [v1.15.99](https://github.com/Rdatatable/data.table/milestone/30)  (in development)
 
+## BREAKING CHANGES
+
+1. `droplevels(in.place=TRUE)` is deprecated in favor of calling `setdroplevels()`, [#6014](https://github.com/Rdatatable/data.table/issues/6014). Given the associated risks/pain points, we strongly prefer all in-place/by-reference behavior within data.table come from functions `set*` (and `:=`) to make it as clear as possible that inputs are mutable. See below and `?setdroplevels` for more.
+
 ## NEW FEATURES
 
 1. `print.data.table()` shows empty (`NULL`) list column entries as `[NULL]` for emphasis. Previously they would just print nothing (same as for empty string). Part of [#4198](https://github.com/Rdatatable/data.table/issues/4198). Thanks @sritchie73 for the proposal and fix.
@@ -43,6 +47,8 @@
 15. `rbindlist(l, use.names=TRUE)` and `rbind` now works correctly on columns with different class attributes for certain classes such as `Date`, `IDate`, `ITime`, `POSIXct` and `AsIs` with other columns of similar classes, e.g., `IDate` and `Date`. The conversion is done automatically and the class attribute of the final column is determined by the first encountered class attribute in the binding list, [#5309](https://github.com/Rdatatable/data.table/issues/5309), [#4934](https://github.com/Rdatatable/data.table/issues/4934), [#5391](https://github.com/Rdatatable/data.table/issues/5391).
 
 `rbindlist(l, ignore.attr=TRUE)` and `rbind` also gains argument `ignore.attr` to manually deactivate the safety-net of binding columns with different column classes, [#3911](https://github.com/Rdatatable/data.table/issues/3911), [#5542](https://github.com/Rdatatable/data.table/issues/5542). Thanks to @dcaseykc, @fox34, @adrian-quintario, @berg-michael, @arunsrinivasan, @statquant, @pkress, @jrausch12, @therosko, @OfekShilon, @iMissile, @tdhock for the request and @ben-schwen for the PR.
+
+16. New `setdroplevels()` as a by-reference version of the `droplevels()` method, which returns a copy of its input, [#6014](https://github.com/Rdatatable/data.table/issues/6014). Thanks @MichaelChirico for the suggestion and implementation.
 
 ## BUG FIXES
 
