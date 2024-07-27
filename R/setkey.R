@@ -148,7 +148,7 @@ maybe_reset_index = function(x, idx, cols) {
 }
 
 ORDERING_TYPES = c('logical', 'integer', 'double', 'complex', 'character')
-forderv = function(x, by=seq_along(x), retGrp=FALSE, retStats=retGrp, sort=TRUE, order=1L, na.last=FALSE, lazy=getOption("datatable.forder.lazy",NA)) {
+forderv = function(x, by=seq_along(x), retGrp=FALSE, retStats=retGrp, sort=TRUE, order=1L, na.last=FALSE, reuseSorting=getOption("datatable.reuse.sorting", NA)) {
   if (is.atomic(x) || is.null(x)) {  # including forderv(NULL) which returns error consistent with base::order(NULL),
     if (!missing(by) && !is.null(by)) stopf("x is a single vector, non-NULL 'by' doesn't make sense")
     by = NULL
@@ -157,7 +157,7 @@ forderv = function(x, by=seq_along(x), retGrp=FALSE, retStats=retGrp, sort=TRUE,
     by = colnamesInt(x, by, check_dups=FALSE)
   }
   order = as.integer(order) # length and contents of order being +1/-1 is checked at C level
-  .Call(CforderMaybePresorted, x, by, retGrp, retStats, sort, order, na.last, lazy)  # returns integer() if already sorted, regardless of sort=TRUE|FALSE
+  .Call(CforderMaybePresorted, x, by, retGrp, retStats, sort, order, na.last, reuseSorting)  # returns integer() if already sorted, regardless of sort=TRUE|FALSE
 }
 
 forder = function(..., na.last=TRUE, decreasing=FALSE)

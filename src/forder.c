@@ -454,7 +454,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
       Rprintf(_("forder.c received %d rows and %d columns\n"), length(VECTOR_ELT(DT,0)), length(DT));
   }
   if (!length(DT))
-    STOP(_("Internal error: DT is an empty list() of 0 columns"));  // # nocov # caught in lazy forder
+    STOP(_("Internal error: DT is an empty list() of 0 columns"));  // # nocov # caught in reuseSorting forder
   if (!isInteger(by) || !LENGTH(by))
     STOP(_("Internal error: DT has %d columns but 'by' is either not integer or is length 0"), length(DT));  // # nocov  colnamesInt catches, 2099.2
   if (!isInteger(ascArg))
@@ -479,20 +479,20 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
     if (TYPEOF(VECTOR_ELT(DT, by_i-1)) == CPLXSXP) n_cplx++;
   }
   if (!IS_TRUE_OR_FALSE(retGrpArg))
-    STOP(_("retGrp must be TRUE or FALSE")); // # nocov # covered in lazy forder
+    STOP(_("retGrp must be TRUE or FALSE")); // # nocov # covered in reuseSorting forder
   retgrp = LOGICAL(retGrpArg)[0]==TRUE;
   if (!IS_TRUE_OR_FALSE(retStatsArg))
-    STOP(_("retStats must be TRUE or FALSE")); // # nocov # covered in lazy forder
+    STOP(_("retStats must be TRUE or FALSE")); // # nocov # covered in reuseSorting forder
   retstats = LOGICAL(retStatsArg)[0]==TRUE;
   if (!retstats && retgrp)
-    error("retStats must be TRUE whenever retGrp is TRUE"); // # nocov # covered in lazy forder
+    error("retStats must be TRUE whenever retGrp is TRUE"); // # nocov # covered in reuseSorting forder
   if (!IS_TRUE_OR_FALSE(sortGroupsArg))
-    STOP(_("sort must be TRUE or FALSE")); // # nocov # covered in lazy forder
+    STOP(_("sort must be TRUE or FALSE")); // # nocov # covered in reuseSorting forder
   sortType = LOGICAL(sortGroupsArg)[0]==TRUE;   // if sortType is 1, it is later flipped between +1/-1 according to ascArg. Otherwise ascArg is ignored when sortType==0
   if (!retgrp && !sortType)
     STOP(_("At least one of retGrp= or sort= must be TRUE"));
   if (!isLogical(naArg) || LENGTH(naArg) != 1)
-    STOP(_("na.last must be logical TRUE, FALSE or NA of length 1")); // # nocov # covered in lazy forder
+    STOP(_("na.last must be logical TRUE, FALSE or NA of length 1")); // # nocov # covered in reuseSorting forder
   nalast = (LOGICAL(naArg)[0] == NA_LOGICAL) ? -1 : LOGICAL(naArg)[0]; // 1=na last, 0=na first (default), -1=remove na
 
   if (nrow==0) {
@@ -1615,8 +1615,8 @@ bool idxAnyNF(SEXP idx) {
   return INTEGER(getAttrib(idx, sym_anyna))[0]>0 || INTEGER(getAttrib(idx, sym_anyinfnan))[0]>0;
 }
 
-// lazy forder, re-use existing key or index if possible, otherwise call forder
-SEXP forderMaybePresorted(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg, SEXP lazyArg) {
+// forder, re-use existing key or index if possible, otherwise call forder
+SEXP forderMaybePresorted(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg, SEXP reuseSortingArg) {
   const bool verbose = GetVerbose();
   int protecti = 0;
   double tic=0.0;
@@ -1640,13 +1640,13 @@ SEXP forderMaybePresorted(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SE
   bool na = (bool)LOGICAL(naArg)[0];
   if (!isInteger(ascArg))
     error("order must be integer"); // # nocov # coerced to int in R
-  if (!isLogical(lazyArg) || LENGTH(lazyArg) != 1)
-    error("lazy must be logical TRUE, FALSE or NA of length 1");
-  int lazy = LOGICAL(lazyArg)[0];
+  if (!isLogical(reuseSortingArg) || LENGTH(reuseSortingArg) != 1)
+    error("reuseSorting must be logical TRUE, FALSE or NA of length 1");
+  int reuseSorting = LOGICAL(reuseSortingArg)[0];
   if (!length(DT))
     return allocVector(INTSXP, 0);
   int opt = -1; // -1=unknown, 0=none, 1=keyOpt, 2=idxOpt
-  if (lazy==NA_LOGICAL) {
+  if (reuseSorting==NA_LOGICAL) {
     if (INHERITS(DT, char_datatable) && // unnamed list should not be optimized
         sortGroups &&
         all1(ascArg)) { // could ascArg=-1 be handled by a rev()?
@@ -1656,15 +1656,15 @@ SEXP forderMaybePresorted(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SE
         Rprintf("forderMaybePresorted: opt not possible: is.data.table(DT)=%d, sortGroups=%d, all1(ascArg)=%d\n", INHERITS(DT,char_datatable), sortGroups, all1(ascArg));
       opt = 0;
     }
-  } else if (lazy) {
+  } else if (reuseSorting) {
     if (!INHERITS(DT,char_datatable))
-      error("internal error: lazy set to TRUE but DT is not a data.table"); // # nocov
+      error("internal error: reuseSorting set to TRUE but DT is not a data.table"); // # nocov
     if (!sortGroups)
-      error("internal error: lazy set to TRUE but sort is FALSE"); // # nocov
+      error("internal error: reuseSorting set to TRUE but sort is FALSE"); // # nocov
     if (!all1(ascArg))
-      error("internal error: lazy set to TRUE but order is not all 1"); // # nocov
+      error("internal error: reuseSorting set to TRUE but order is not all 1"); // # nocov
     opt = -1;
-  } else if (!lazy) {
+  } else if (!reuseSorting) {
     opt = 0;
   }
   SEXP ans = R_NilValue;
@@ -1715,7 +1715,7 @@ SEXP forderMaybePresorted(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SE
           if (verbose)
             Rprintf("forderMaybePresorted: index found but not for retStats: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
         } else {
-          error("internal error: lazy forder index optimization unhandled branch of retGrp-retStats, please report to issue tracker"); // # nocov
+          error("internal error: reuseSorting forder index optimization unhandled branch of retGrp-retStats, please report to issue tracker"); // # nocov
         }
       } else {
         if (!hasStats) {
@@ -1725,7 +1725,7 @@ SEXP forderMaybePresorted(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SE
           if (verbose)
             Rprintf("forderMaybePresorted: index found but na.last=TRUE and NAs present: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
         } else {
-          error("internal error: lazy forder index optimization unhandled branch of last.na=T, please report to issue tracker"); // # nocov
+          error("internal error: reuseSorting forder index optimization unhandled branch of last.na=T, please report to issue tracker"); // # nocov
         }
       }
       if (opt == 2) {
@@ -1737,7 +1737,7 @@ SEXP forderMaybePresorted(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SE
   }
   if (opt < 1) {
     ans = PROTECT(forder(DT, by, retGrpArg, retStatsArg, sortGroupsArg, ascArg, naArg)); protecti++;
-    if (opt == -1 && // opt==0 means that arguments (sort, asc) were not of type index, or lazy=FALSE
+    if (opt == -1 && // opt==0 means that arguments (sort, asc) were not of type index, or reuseSorting=FALSE
         (!na || (retStats && !idxAnyNF(ans))) && // lets create index even if na.last=T used but no NAs detected!
         GetUseIndex() &&
         GetAutoIndex()) { // disabled by default, use datatable.forder.auto.index=T to enable, do not export/document, use for debugging only
