@@ -126,6 +126,46 @@
 
 22. C code was unified more in how failures to allocate memory (`malloc()`/`calloc()`) are handled, (#1115)[https://github.com/Rdatatable/data.table/issues/1115]. No OOM issues were reported, as these regions of code typically request relatively small blocks of memory, but it is good to handle memory pressure consistently. Thanks @elfring for the report and @MichaelChirico for the clean-up effort and future-proofing linter.
 
+22. Internal routine for finding sort order will now re-use any existing index. A similar optimization was already present in R code, but this has now been pushed to C and covers a wider range of use cases and collects more statistics about its input (e.g. whether any infinite entries were found), opening the possibility for more optimizations in other functions.
+
+Functions `setindex` (and `setindexv`) will now compute groups' positions as well. `setindex()` also collects the extra statistics alluded to above.
+
+Finding sort order in other routines (for example subset `d2[id==1L]`) does not include those extra statistics so as not to impose a slowdown.
+
+```r
+d2 = data.table(id=2:1, v2=1:2)
+setindexv(d2, "id")
+str(attr(attr(d2, "index"), "__id"))
+# int [1:2] 2 1
+# - attr(*, "starts")= int [1:2] 1 2
+# - attr(*, "maxgrpn")= int 1
+# - attr(*, "anyna")= int 0
+# - attr(*, "anyinfnan")= int 0
+# - attr(*, "anynotascii")= int 0
+# - attr(*, "anynotutf8")= int 0
+
+d2 = data.table(id=2:1, v2=1:2)
+invisible(d2[id==1L])
+str(attr(attr(d2, "index"), "__id"))
+# int [1:2] 2 1
+```
+
+This feature also enables re-use of sort index during joins, in cases where one of the calls to find sort order is made from C code.
+
+```r
+d1 = data.table(id=1:2, v1=1:2)
+d2 = data.table(id=2:1, v2=1:2)
+setindexv(d2, "id")
+d1[d2, on="id", verbose=TRUE]
+#...
+#Starting bmerge ...
+#forderReuseSorting: using existing index: __id
+#forderReuseSorting: opt=2, took 0.000s
+#...
+```
+
+This feature resolves [#4387](https://github.com/Rdatatable/data.table/issues/4387), [#2947](https://github.com/Rdatatable/data.table/issues/2947), [#4380](https://github.com/Rdatatable/data.table/issues/4380), and [#1321](https://github.com/Rdatatable/data.table/issues/1321). Thanks to @jangorecki, @jan-glx, and @MichaelChirico for the reports and @jangorecki for implementing.
+
 ## TRANSLATIONS
 
 1. Fix a typo in a Mandarin translation of an error message that was hiding the actual error message, [#6172](https://github.com/Rdatatable/data.table/issues/6172). Thanks @trafficfan for the report and @MichaelChirico for the fix.

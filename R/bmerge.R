@@ -118,9 +118,6 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     }
   }
 
-  ## after all modifications of i, check if i has a proper key on all icols
-  io = identical(icols, head(chmatch(key(i), names(i)), length(icols)))
-
   ## after all modifications of x, check if x has a proper key on all xcols.
   ## If not, calculate the order. Also for non-equi joins, the order must be calculated.
   non_equi = which.first(ops != 1L) # 1 is "==" operator
@@ -180,7 +177,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
   }
 
   if (verbose) {last.started.at=proc.time();catf("Starting bmerge ...\n");flush.console()}
-  ans = .Call(Cbmerge, i, x, as.integer(icols), as.integer(xcols), io, xo, roll, rollends, nomatch, mult, ops, nqgrp, nqmaxgrp)
+  ans = .Call(Cbmerge, i, x, as.integer(icols), as.integer(xcols), xo, roll, rollends, nomatch, mult, ops, nqgrp, nqmaxgrp)
   if (verbose) {catf("bmerge done in %s\n",timetaken(last.started.at)); flush.console()}
   # TO DO: xo could be moved inside Cbmerge
 
