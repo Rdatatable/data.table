@@ -438,6 +438,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         if (copied) UNPROTECT(1);
       }
     }
+    // progress printing, #3060
+    // could potentially refactor to use fread's progress() function, however we would lose some information in favor of simplicity.
     double now;
     if (showProgress && (now=wallclock())>=nextTime) {
       double avgTimePerGroup = (now-startTime)/(i+1);
