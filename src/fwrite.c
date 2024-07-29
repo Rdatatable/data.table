@@ -599,6 +599,7 @@ void fwriteMain(fwriteMainArgs args)
   dec = args.dec;
   scipen = args.scipen;
   doQuote = args.doQuote;
+  int8_t quoteHeaders = args.doQuote;
   verbose = args.verbose;
 
   // When NA is a non-empty string, then we must quote all string fields in case they contain the na string
@@ -714,7 +715,8 @@ void fwriteMain(fwriteMainArgs args)
   }
   if (headerLen) {
     char *buff = malloc(headerLen);
-    if (!buff) STOP(_("Unable to allocate %zu MiB for header: %s"), headerLen / 1024 / 1024, strerror(errno));
+    if (!buff)
+      STOP(_("Unable to allocate %zu MiB for header: %s"), headerLen / 1024 / 1024, strerror(errno));
     char *ch = buff;
     if (args.bom) {*ch++=(char)0xEF; *ch++=(char)0xBB; *ch++=(char)0xBF; }  // 3 appears above (search for "bom")
     memcpy(ch, args.yaml, yamlLen);
@@ -726,11 +728,14 @@ void fwriteMain(fwriteMainArgs args)
         *ch = sep;
         ch += sepLen;
       }
+      int8_t tempDoQuote = doQuote;
+      doQuote = quoteHeaders; // temporary overwrite since headers might get different quoting behavior, #2964
       for (int j=0; j<args.ncol; j++) {
         writeString(args.colNames, j, &ch);
         *ch = sep;
         ch += sepLen;
       }
+      doQuote = tempDoQuote;
       ch -= sepLen; // backup over the last sep
       write_chars(args.eol, &ch);
     }
@@ -826,8 +831,8 @@ void fwriteMain(fwriteMainArgs args)
   }
   char *zbuffPool = NULL;
   if (args.is_gzip) {
-    zbuffPool = malloc(nth*(size_t)zbuffSize);
 #ifndef NOZLIB
+    zbuffPool = malloc(nth*(size_t)zbuffSize);
     if (!zbuffPool) {
       // # nocov start
       free(buffPool);
@@ -843,7 +848,9 @@ void fwriteMain(fwriteMainArgs args)
   int failed_write = 0;    // same. could use +ve and -ve in the same code but separate it out to trace Solaris problem, #3931
 
 #ifndef NOZLIB
-  z_stream thread_streams[nth];
+  z_stream *thread_streams = (z_stream *)malloc(nth * sizeof(z_stream));
+  if (!thread_streams)
+    STOP(_("Failed to allocated %d bytes for '%s'."), (int)(nth * sizeof(z_stream)), "thread_streams");
   // VLA on stack should be fine for nth structs; in zlib v1.2.11 sizeof(struct)==112 on 64bit
   // not declared inside the parallel region because solaris appears to move the struct in
   // memory when the #pragma omp for is entered, which causes zlib's internal self reference
@@ -982,7 +989,10 @@ void fwriteMain(fwriteMainArgs args)
     }
   }
   free(buffPool);
+#ifndef NOZLIB
+  free(thread_streams);
   free(zbuffPool);
+#endif
 
   // Finished parallel region and can call R API safely now.
   if (hasPrinted) {
