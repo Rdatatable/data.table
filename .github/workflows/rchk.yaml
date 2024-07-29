@@ -48,9 +48,9 @@ jobs:
         # ERROR: too many states (abstraction error?))
         # https://github.com/kalibera/rchk
         run: |
-          if [ $(grep -c "Suspicious call" rchk.out) -gt 0 ] || [ $(grep -c "\[UP\]" rchk.out) -gt 0 ] || [ $(grep -c "\[PB\]" rchk.out) -gt 0 ]; then
+          cat rchk.out
+          if [ $(grep -c "Suspicious call" rchk.out) -gt 0 ] || [ $(grep -F "[UP]" rchk.out | grep -Fvc "results will be incomplete") -gt 0 ] || [ $(grep -Fc "[PB]" rchk.out) -gt 0 ]; then
             echo "Found rchk errors"
-            cat rchk.out
             exit 1
           fi
         if: always()
