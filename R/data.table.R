@@ -3241,13 +3241,13 @@ is_constantish = function(q, check_singleton=FALSE) {
   if (is.null(idx)){
     ## if nothing else helped, auto create a new index that can be used
     if (!getOption("datatable.auto.index")) return(NULL)
-    if (verbose) {catf("Creating new index '%s'\n", paste(names(i), collapse = "__"));flush.console()}
-    if (verbose) {last.started.at=proc.time();catf("Creating index %s done in ...", paste(names(i), collapse = "__"));flush.console()}
-    setindexv(x, names(i))
-    if (verbose) {cat(timetaken(last.started.at),"\n");flush.console()}
-    if (verbose) {catf("Optimized subsetting with index '%s'\n", paste(names(i), collapse = "__"));flush.console()}
-    idx = attr(attr(x, "index", exact=TRUE), paste("__", names(i), collapse = ""), exact=TRUE)
     idxCols = names(i)
+    if (verbose) {catf("Creating new index '%s'\n", paste(idxCols, collapse = "__"));flush.console()}
+    if (verbose) {last.started.at=proc.time();catf("Creating index %s done in ...", paste(idxCols, collapse = "__"));flush.console()}
+    idx = forderv(x, idxCols, sort=TRUE, retGrp=FALSE, reuseSorting=TRUE)
+    maybe_reset_index(x, idx, idxCols) ## forder can write index, but disabled for now, see #4386
+    if (verbose) {cat(timetaken(last.started.at),"\n");flush.console()}
+    if (verbose) {catf("Optimized subsetting with index '%s'\n", paste(idxCols, collapse = "__"));flush.console()}
   }
   if(!is.null(idxCols)){
     setkeyv(i, idxCols)
