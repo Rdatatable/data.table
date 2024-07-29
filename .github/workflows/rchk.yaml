@@ -49,7 +49,7 @@ jobs:
         # https://github.com/kalibera/rchk
         run: |
           cat rchk.out
-          if [ $(grep -c "Suspicious call" rchk.out) -gt 0 ] || [ $(grep -F "[UP]" rchk.out | grep -Fvc "results will be incomplete") -gt 0 ] || [ $(grep -Fc "[PB]" rchk.out) -gt 0 ]; then
+          if [ $(grep -Fc "Suspicious call" rchk.out) -gt 0 ] || [ $(grep -F "[UP]" rchk.out | grep -Fvc "results will be incomplete") -gt 0 ] || [ $(grep -Fc "[PB]" rchk.out) -gt 0 ]; then
             echo "Found rchk errors"
             exit 1
           fi
