@@ -44,7 +44,7 @@ int getMaxStringLen(const SEXP *col, const int64_t n) {
 int getMaxCategLen(SEXP col) {
   col = getAttrib(col, R_LevelsSymbol);
   if (!isString(col)) error(_("Internal error: col passed to getMaxCategLen is missing levels"));
-  return getMaxStringLen( STRING_PTR(col), LENGTH(col) );
+  return getMaxStringLen( STRING_PTR_RO(col), LENGTH(col) );
 }
 
 const char *getCategString(SEXP col, int64_t row) {
@@ -199,9 +199,8 @@ SEXP fwriteR(
       DFcoerced = PROTECT(allocVector(VECSXP, args.ncol));
       protecti++;
       // potentially large if ncol=1e6 as reported in #1903 where using large VLA caused stack overflow
-      SEXP s = PROTECT(allocList(2));
+      SEXP s = PROTECT(LCONS(R_NilValue, allocList(1)));
       // no protecti++ needed here as one-off UNPROTECT(1) a few lines below
-      SET_TYPEOF(s, LANGSXP);
       SETCAR(s, install("format.POSIXct"));
       for (int j=0; j<args.ncol; j++) {
         SEXP column = VECTOR_ELT(DF, j);

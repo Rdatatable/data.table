@@ -15,7 +15,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     # nocov start
     dev = TRUE
     if ("package:data.table" %chin% search()) stopf("data.table package is loaded. Unload or start a fresh R session.")
-    rootdir = if (pkg!="." && pkg %chin% dir()) file.path(getwd(), pkg) else Sys.getenv("PROJ_PATH")
+    rootdir = if (pkg!="." && pkg %chin% dir()) file.path(getwd(), pkg) else Sys.getenv("PROJ_PATH", normalizePath("."))
     subdir = file.path("inst","tests")
     env = new.env(parent=.GlobalEnv)  # in dev cc() sources all functions in .GlobalEnv
     # nocov end

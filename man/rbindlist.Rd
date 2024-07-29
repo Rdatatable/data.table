@@ -7,7 +7,7 @@
   Same as \code{do.call(rbind, l)} on \code{data.frame}s, but much faster.
 }
 \usage{
-rbindlist(l, use.names="check", fill=FALSE, idcol=NULL)
+rbindlist(l, use.names="check", fill=FALSE, idcol=NULL, ignore.attr=FALSE)
 # rbind(..., use.names=TRUE, fill=FALSE, idcol=NULL)
 }
 \arguments{
@@ -15,6 +15,7 @@ rbindlist(l, use.names="check", fill=FALSE, idcol=NULL)
   \item{use.names}{\code{TRUE} binds by matching column name, \code{FALSE} by position. `check` (default) warns if all items don't have the same names in the same order and then currently proceeds as if `use.names=FALSE` for backwards compatibility (\code{TRUE} in future); see news for v1.12.2.}
   \item{fill}{\code{TRUE} fills missing columns with NAs, or NULL for missing list columns. By default \code{FALSE}.}
   \item{idcol}{Creates a column in the result showing which list item those rows came from. \code{TRUE} names this column \code{".id"}. \code{idcol="file"} names this column \code{"file"}. If the input list has names, those names are the values placed in this id column, otherwise the values are an integer vector \code{1:length(l)}. See \code{examples}.}
+  \item{ignore.attr}{Logical, default \code{FALSE}. When \code{TRUE}, allows binding columns with different attributes (e.g. class).}
 }
 \details{
 Each item of \code{l} can be a \code{data.table}, \code{data.frame} or \code{list}, including \code{NULL} (skipped) or an empty object (0 rows). \code{rbindlist} is most useful when there are an unknown number of (potentially many) objects to stack, such as returned by \code{lapply(fileNames, fread)}. \code{rbind} is most useful to stack two or three objects which you know in advance. \code{\dots} should contain at least one \code{data.table} for \code{rbind(\dots)} to call the fast method and return a \code{data.table}, whereas \code{rbindlist(l)} always returns a \code{data.table} even when stacking a plain \code{list} with a \code{data.frame}, for example.
@@ -54,6 +55,11 @@ rbindlist(l, use.names=TRUE, fill=TRUE, idcol=TRUE)
 setattr(l, 'names', c("a", "b"))
 rbindlist(l, use.names=TRUE, fill=TRUE, idcol="ID")
 
+# bind different classes
+DT1 = data.table(A=1:3,B=letters[1:3])
+DT2 = data.table(A=4:5,B=letters[4:5])
+setattr(DT1[["A"]], "class", c("a", "integer"))
+rbind(DT1, DT2, ignore.attr=TRUE)
 }
 \keyword{ data }
 
