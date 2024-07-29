@@ -267,7 +267,7 @@ SEXP testMsgR(SEXP status, SEXP x, SEXP k);
 
 //fifelse.c
 SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na);
-SEXP fcaseR(SEXP na, SEXP rho, SEXP args);
+SEXP fcaseR(SEXP rho, SEXP args);
 
 //snprintf.c
 int dt_win_snprintf(char *dest, size_t n, const char *fmt, ...);
