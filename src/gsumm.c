@@ -594,8 +594,9 @@ SEXP gmean(SEXP x, SEXP narmArg)
     x = PROTECT(coerceVector(x, REALSXP)); protecti++;
   case REALSXP: {
     if (INHERITS(x, char_integer64)) {
-      x = PROTECT(coerceAs(x, /*as=*/PROTECT(ScalarReal(1)), /*copyArg=*/ScalarLogical(TRUE))); protecti++;
-      UNPROTECT(1); // as= input to coerceAs()
+      SEXP as = PROTECT(ScalarReal(1));
+      x = PROTECT(coerceAs(x, as, /*copyArg=*/ScalarLogical(TRUE))); protecti++;
+      UNPROTECT(2); PROTECT(x); // PROTECT() is stack-based, UNPROTECT() back to 'as' then PROTECT() 'x' again
     }
     const double *restrict gx = gather(x, &anyNA);
     ans = PROTECT(allocVector(REALSXP, ngrp)); protecti++;
@@ -762,8 +763,8 @@ static SEXP gminmax(SEXP x, SEXP narm, const bool min)
     break;
   case STRSXP: {
     ans = PROTECT(allocVector(STRSXP, ngrp));
-    const SEXP *ansd = STRING_PTR(ans);
-    const SEXP *xd = STRING_PTR(x);
+    const SEXP *ansd = STRING_PTR_RO(ans);
+    const SEXP *xd = STRING_PTR_RO(x);
     if (!LOGICAL(narm)[0]) {
       const SEXP init = min ? char_maxString : R_BlankString;  // char_maxString == "\xFF\xFF..." in init.c
       for (int i=0; i<ngrp; ++i) SET_STRING_ELT(ans, i, init);
@@ -977,7 +978,7 @@ static SEXP gfirstlast(SEXP x, const bool first, const int w, const bool headw) 
            int64_t *ansd=(int64_t *)REAL(ans); DO(int64_t,  REAL,    NA_INTEGER64, ansd[ansi++]=val) }
            else { double      *ansd=REAL(ans); DO(double,   REAL,    NA_REAL,      ansd[ansi++]=val) } break;
   case CPLXSXP: { Rcomplex *ansd=COMPLEX(ans); DO(Rcomplex, COMPLEX, NA_CPLX,      ansd[ansi++]=val) } break;
-  case STRSXP:  DO(SEXP, STRING_PTR, NA_STRING,                 SET_STRING_ELT(ans,ansi++,val))        break;
+  case STRSXP:  DO(SEXP, STRING_PTR_RO, NA_STRING,              SET_STRING_ELT(ans,ansi++,val))        break;
   case VECSXP:  DO(SEXP, SEXPPTR_RO, ScalarLogical(NA_LOGICAL), SET_VECTOR_ELT(ans,ansi++,val))        break;
   default:
     error(_("Type '%s' is not supported by GForce head/tail/first/last/`[`. Either add the namespace prefix (e.g. utils::head(.)) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
@@ -1265,7 +1266,7 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
       case REALSXP: { double *ansd=REAL(tmp);             SHIFT(double,  REAL,      ansd[ansi++]=val); } break;
                     // integer64 is shifted as if it's REAL; and assigning fill=NA_INTEGER64 is ok as REAL
       case CPLXSXP: { Rcomplex *ansd=COMPLEX(tmp);        SHIFT(Rcomplex, COMPLEX,  ansd[ansi++]=val); } break;
-      case STRSXP: { SHIFT(SEXP, STRING_PTR,                          SET_STRING_ELT(tmp,ansi++,val)); } break;
+      case STRSXP: { SHIFT(SEXP, STRING_PTR_RO,                       SET_STRING_ELT(tmp,ansi++,val)); } break;
       //case VECSXP: { SHIFT(SEXP, SEXPPTR_RO,                          SET_VECTOR_ELT(tmp,ansi++,val)); } break;
       default:
         error(_("Type '%s' is not supported by GForce gshift. Either add the namespace prefix (e.g. data.table::shift(.)) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));

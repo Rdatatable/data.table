@@ -160,9 +160,9 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg, S
     break;
 
   case STRSXP: {
-    const SEXP *lp = STRING_PTR(lower);
-    const SEXP *up = STRING_PTR(upper);
-    const SEXP *xp = STRING_PTR(x);
+    const SEXP *lp = STRING_PTR_RO(lower);
+    const SEXP *up = STRING_PTR_RO(upper);
+    const SEXP *xp = STRING_PTR_RO(x);
     #define LCMP (strcmp(CHAR(ENC2UTF8(l)),CHAR(ENC2UTF8(elem)))<=-open)
     #define UCMP (strcmp(CHAR(ENC2UTF8(elem)),CHAR(ENC2UTF8(u)))<=-open)
     // TODO if all ascii can be parallel, otherwise ENC2UTF8 could allocate

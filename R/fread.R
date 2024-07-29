@@ -95,10 +95,9 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     }
 
     # support zip and tar files #3834
-    zip_signature = charToRaw("PK\x03\x04")
     file_signature = readBin(file, raw(), 8L)
 
-    if ((w <- endsWithAny(file, c(".zip", ".tar"))) || identical(head(file_signature, 4L), zip_signature)) {
+    if ((w <- endsWithAny(file, c(".zip", ".tar"))) || is_zip(file_signature)) {
       FUN = if (w==2L) untar else unzip
       fnames = FUN(file, list=TRUE)
       if (is.data.frame(fnames)) fnames = fnames[,1L]
@@ -110,12 +109,10 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
       on.exit(unlink(decompFile), add=TRUE)
     }
 
-    gz_signature = as.raw(c(0x1F, 0x8B))
-    bz2_signature = as.raw(c(0x42, 0x5A, 0x68))
     gzsig = FALSE
-    if ((w <- endsWithAny(file, c(".gz", ".bgz",".bz2"))) || (gzsig <- identical(head(file_signature, 2L), gz_signature)) || identical(head(file_signature, 3L), bz2_signature)) {
+    if ((w <- endsWithAny(file, c(".gz", ".bgz",".bz2"))) || (gzsig <- is_gzip(file_signature)) || is_bzip(file_signature)) {
       if (!requireNamespace("R.utils", quietly = TRUE))
-        stopf("To read gz and bz2 files directly, fread() requires 'R.utils' package which cannot be found. Please install 'R.utils' using 'install.packages('R.utils')'.") # nocov
+        stopf("To read %s files directly, fread() requires 'R.utils' package which cannot be found. Please install 'R.utils' using 'install.packages('R.utils')'.", if (w<=2L || gzsig) "gz" else "bz2") # nocov
       FUN = if (w<=2L || gzsig) gzfile else bzfile
       R.utils::decompressFile(file, decompFile<-tempfile(tmpdir=tmpdir), ext=NULL, FUN=FUN, remove=FALSE)   # ext is not used by decompressFile when destname is supplied, but isn't optional
       file = decompFile   # don't use 'tmpFile' symbol again, as tmpFile might be the http://domain.org/file.csv.gz download
@@ -359,6 +356,30 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     setindexv(ans, index)
   }
   ans
+}
+
+known_signatures = list(
+  zip = as.raw(c(0x50, 0x4b, 0x03, 0x04)), # charToRaw("PK\x03\x04")
+  gzip = as.raw(c(0x1F, 0x8B)),
+  bzip = as.raw(c(0x42, 0x5A, 0x68))
+)
+
+# https://en.wikipedia.org/wiki/ZIP_(file_format)#File_headers
+# not checked: what's a valid 'version' entry to check the 5th+6th bytes
+is_zip = function(file_signature) {
+  identical(file_signature[1:4], known_signatures$zip)
+}
+
+# https://en.wikipedia.org/wiki/Gzip#File_format
+# not checked: remaining 8 bytes of header
+is_gzip = function(file_signature) {
+  identical(file_signature[1:2], known_signatures$gzip)
+}
+
+# https://en.wikipedia.org/wiki/Bzip2#File_format
+is_bzip = function(file_signature) {
+  identical(file_signature[1:3], known_signatures$bzip) &&
+    isTRUE(file_signature[4L] %in% charToRaw('123456789')) # for #6304
 }
 
 # simplified but faster version of `factor()` for internal use.
