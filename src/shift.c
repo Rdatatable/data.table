@@ -40,7 +40,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type)
     SEXP elem  = VECTOR_ELT(x, i);
     size_t size  = SIZEOF(elem);
     R_xlen_t xrows = xlength(elem);
-    SEXP thisfill = PROTECT(coerceAs(fill, elem, ScalarLogical(0))); nprotect++;  // #4865 use coerceAs for type coercion
+    SEXP thisfill = PROTECT(coerceAs(fill, elem, ScalarLogical(0)));  // #4865 use coerceAs for type coercion
     switch (TYPEOF(elem)) {
     case INTSXP: case LGLSXP: {
       const int ifill = INTEGER(thisfill)[0];
@@ -170,8 +170,9 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type)
     default :
       error(_("Type '%s' is not supported"), type2char(TYPEOF(elem)));
     }
+    UNPROTECT(1); // thisfill
   }
-  UNPROTECT(nprotect);
-  return isVectorAtomic(obj) && length(ans) == 1 ? VECTOR_ELT(ans, 0) : ans;
+  if (isVectorAtomic(obj) && length(ans) == 1) ans = VECTOR_ELT(ans, 0);
+  UNPROTECT(nprotect); // ans, x?
+  return ans;
 }
-

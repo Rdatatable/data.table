@@ -848,7 +848,9 @@ void fwriteMain(fwriteMainArgs args)
   int failed_write = 0;    // same. could use +ve and -ve in the same code but separate it out to trace Solaris problem, #3931
 
 #ifndef NOZLIB
-  z_stream thread_streams[nth];
+  z_stream *thread_streams = (z_stream *)malloc(nth * sizeof(z_stream));
+  if (!thread_streams)
+    STOP(_("Failed to allocated %d bytes for '%s'."), (int)(nth * sizeof(z_stream)), "thread_streams");
   // VLA on stack should be fine for nth structs; in zlib v1.2.11 sizeof(struct)==112 on 64bit
   // not declared inside the parallel region because solaris appears to move the struct in
   // memory when the #pragma omp for is entered, which causes zlib's internal self reference
@@ -988,6 +990,7 @@ void fwriteMain(fwriteMainArgs args)
   }
   free(buffPool);
 #ifndef NOZLIB
+  free(thread_streams);
   free(zbuffPool);
 #endif
 
