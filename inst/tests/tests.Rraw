@@ -19003,7 +19003,7 @@ test(2277.3, DT[, closure(b), env=list(closure=stats::var)], 0.5)
 test(2277.4, DT[, closure(b), env=list(closure=stats:::var)], 0.5)
 test(2277.5, DT[, lambda(b), env=list(lambda=function(x) sum(x))], 7L)
 
-# test that set() correctly adds new columns even if 'i' isn't valid
+# test that set() correctly adds new columns even if no rows are updated
 dt = data.table(a=1L)
 test(2278.1, set(copy(dt), 0L,          "b", logical(0)), data.table(a=1L, b=NA))
 test(2278.2, set(copy(dt), NA_integer_, "b", NA),         data.table(a=1L, b=NA))
