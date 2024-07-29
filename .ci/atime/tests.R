@@ -138,7 +138,7 @@ test.list <- atime::atime_test_list(
         DoSomething(data.table:::`[.data.table`(allIterations, r, ))
       }
     },
-    Slow = "d47a83fb2e25582e508f191f87a31ca81b736b57",# Parent of the first commit (https://github.com/Rdatatable/data.table/commit/c33e98bb0a2f919bc1b428a5b7985f45f9d88a77) in the PR (https://github.com/Rdatatable/data.table/pull/4488/commits) that fixes the issue
-    Fast = "958e3dd3cba7c259220aa653bef4beb8ad74b239") # last commit in the PR (https://github.com/Rdatatable/data.table/pull/4488/commits) that fixes the issue 
+    Slow = "d47a83fb2e25582e508f191f87a31ca81b736b57", # Parent of the first commit ( https://github.com/Rdatatable/data.table/commit/c33e98bb0a2f919bc1b428a5b7985f45f9d88a77 ) in the PR ( https://github.com/Rdatatable/data.table/pull/4488/commits ) that fixes the issue
+    Fast = "958e3dd3cba7c259220aa653bef4beb8ad74b239") # last commit in the PR ( https://github.com/Rdatatable/data.table/pull/4488/commits ) that fixes the issue 
 )
 # nolint end: undesirable_operator_linter.
