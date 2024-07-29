@@ -162,7 +162,11 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP r
   allGrp1[0] = TRUE;
   protecti += 2;
 
-  SEXP oSxp = PROTECT(forderReuseSorting(idt, icolsArg, /* retGrpArg= */ScalarLogical(FALSE), /* retStatsArg= */ScalarLogical(FALSE), /* sortGroupsArg= */ScalarLogical(TRUE), /* ascArg= */ScalarInteger(1), /* naArg= */ScalarLogical(FALSE), /* lazyArg= */ScalarLogical(TRUE))); protecti++;
+  SEXP ascArg = PROTECT(ScalarInteger(1));
+  SEXP oSxp = PROTECT(forderReuseSorting(idt, icolsArg, /* retGrpArg= */ScalarLogical(FALSE), /* retStatsArg= */ScalarLogical(FALSE), /* sortGroupsArg= */ScalarLogical(TRUE), ascArg, /* naArg= */ScalarLogical(FALSE), /* lazyArg= */ScalarLogical(TRUE))); protecti++;
+  UNPROTECT(2); // down stack to 'ascArg'
+  PROTECT(oSxp);
+
   if (!LENGTH(oSxp))
     o = NULL;
   else
