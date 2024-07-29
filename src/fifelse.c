@@ -214,7 +214,7 @@ SEXP fcaseR(SEXP rho, SEXP args) {
   PROTECT_INDEX Iwhens, Ithens;
   PROTECT_WITH_INDEX(whens, &Iwhens); nprotect++;
   PROTECT_WITH_INDEX(thens, &Ithens); nprotect++;
-  SEXPTYPE type0;
+  SEXPTYPE type0=NILSXP;
   // naout means if the output is scalar logic na
   bool imask = true, naout = false, idefault = false;
   int *restrict p = NULL;
@@ -371,7 +371,7 @@ SEXP fcaseR(SEXP rho, SEXP args) {
           SET_STRING_ELT(ans, idx, naout ? pna : pthens[idx & thenMask]);
         } else {
           if (imask) {
-            SET_STRING_ELT(ans, idx, pna);
+            SET_STRING_ELT(ans, j, pna);
           }
           p[l++] = idx;
         }
