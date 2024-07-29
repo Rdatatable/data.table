@@ -62,16 +62,16 @@ There are multiple ways to work around this problem.
 
 #### Avoid *lazy evaluation*
 
-The easiest workaround is to avoid *lazy evaluation* in the first place, and fall back to less intuitive, more error-prone approaches like `df[["variable"]]`, etc.
+The easiest workaround is to avoid *lazy evaluation* in the first place, and fall back to less intuitive, more error-prone approaches like `df[["variable"]]`, etc. 
 
 ```{r subset_nolazy}
 my_subset = function(data, col, val) {
-  data[data[[col]] == val, ]
+  data[data[[col]] == val & !is.na(data[[col]]), ]
 }
 my_subset(iris, col = "Species", val = "setosa")
 ```
 
-Here, we compute a logical vector of length `nrow(iris)`, then this vector is supplied to the `i` argument of `[.data.frame` to perform ordinary "logical vector"-based subsetting. It works well for this simple example, but it lacks flexibility, introduces variable repetition, and requires user to change the function interface to pass the column name as a character rather than unquoted symbol. The more complex the expression we need to parameterize, the less practical this approach becomes.
+Here, we compute a logical vector of length `nrow(iris)`, then this vector is supplied to the `i` argument of `[.data.frame` to perform ordinary "logical vector"-based subsetting. To align with `subset()`, which also drops NAs, we need to include an additional use of `data[[col]]` to catch that. It works well enough for this simple example, but it lacks flexibility, introduces variable repetition, and requires user to change the function interface to pass the column name as a character rather than unquoted symbol. The more complex the expression we need to parameterize, the less practical this approach becomes.
 
 #### Use of `parse` / `eval`
 
