@@ -2,6 +2,10 @@
 
 # data.table [v1.15.99](https://github.com/Rdatatable/data.table/milestone/30)  (in development)
 
+## BREAKING CHANGE
+
+1. `` `[.data.table` `` is un-exported again. This was exported to support an experimental feature (`DT()` functional form of `[`) that never made it to release, but we forgot to claw back this export in the NAMESPACE; sorry about that. We didn't find anyone calling the method directly (which is inadvisable to begin with).
+
 ## NEW FEATURES
 
 1. `print.data.table()` shows empty (`NULL`) list column entries as `[NULL]` for emphasis. Previously they would just print nothing (same as for empty string). Part of [#4198](https://github.com/Rdatatable/data.table/issues/4198). Thanks @sritchie73 for the proposal and fix.
