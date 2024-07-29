@@ -208,7 +208,7 @@ SEXP fcaseR(SEXP rho, SEXP args) {
             "consisting of logical condition, resulting value pairs (in that order). "
             "Note that the default argument must be named explicitly, e.g., default=0"), narg - 2);
   }
-  int nprotect=0, l=0;
+  int nprotect=0, l;
   int64_t len0=0, len1=0, len2=0;
   SEXP ans=R_NilValue, value0=R_NilValue, tracker=R_NilValue, whens=R_NilValue, thens=R_NilValue;
   PROTECT_INDEX Iwhens, Ithens;
@@ -230,6 +230,7 @@ SEXP fcaseR(SEXP rho, SEXP args) {
       error(_("Argument #%d must be logical but was of type %s."), 2*i+1, type2char(TYPEOF(whens)));
     }
     const int *restrict pwhens = LOGICAL(whens);
+    l = 0;
     if (i == 0) {
       len0 = xlength(whens);
       len2 = len0;
@@ -241,7 +242,6 @@ SEXP fcaseR(SEXP rho, SEXP args) {
       p = INTEGER(tracker);     
     } else {
       imask = false;
-      l = 0;
       naout = xlength(thens) == 1 && TYPEOF(thens) == LGLSXP && LOGICAL(thens)[0]==NA_LOGICAL;
       if (xlength(whens) != len0 && xlength(whens) != 1) {
         // no need to check `idefault` here because the con for default is always `TRUE`
