@@ -126,10 +126,10 @@ test.list <- atime::atime_test_list(
   "DT shift improved in #5205" = atime::atime_test(
     N = 10^seq(1, 7),
     setup = {
-      DT = data.table(x = sample(N), y = sample(1e2,N,TRUE))
+      DT = data.table(x = sample(N), y = sample(1e2, N, TRUE))
     },
     expr = {
-      data.table:::`[.data.table`(DT,, shift(x, 1, type="lag"), y)
+      data.table:::`[.data.table`(DT,, shif(x, 1, type="lag"), y)
     },
     Regression = "7f0ce147eef1dd5cd5ff05dffc3c72f472bcde51", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/58135017a985f3cc2c6f0d091c4effaec4442f56) in the PR (https://github.com/Rdatatable/data.table/pull/5205/commits) that fixes the issue
     Fixed = "a6abac319446ae7dde8bc4501fae40eeb5cc228c") # Commit before the last commit in the PR (https://github.com/Rdatatable/data.table/pull/5205/commits) that fixes the regression
