@@ -1427,8 +1427,27 @@ replace_dot_alias = function(e) {
       # should set the parent class only when jval is a plain data.table #4324
       if (identical(class(jval), c('data.table', 'data.frame')))
         setattr(jval, 'class', class(x)) # fix for #64
-      if (haskey(x) && all(key(x) %chin% names(jval)) && is.sorted(jval, by=key(x)))
+      # can jval be sorted by the same key as x? improved for #4498
+      get_shared_keys = function(jsub, jvnames, sdvars, key) {
+        if (is.null(key)) return(NULL)
+        if (!((SD_only <- jsub == quote(.SD)) || jsub %iscall% "list")) return(NULL)
+        if (SD_only)
+          jvnames = jnames = sdvars
+        else
+          jnames = as.character(Filter(is.name, jsub)[-1L])
+        key_idx = chmatch(key, jnames)
+        missing_keys = which(is.na(key_idx))
+        if (length(missing_keys) && missing_keys[1L] == 1L) return(NULL)
+        if (!length(missing_keys)) return(jvnames[key_idx])
+        jvnames[head(key_idx, missing_keys[1L] - 1L)]
+      }
+      shared_keys = get_shared_keys(jsub, jvnames, sdvars = sdvars, key(x))
+      if (is.null(irows) && !is.null(shared_keys)) {
+        setattr(jval, 'sorted', shared_keys)
+        # potentially inefficient backup -- check if jval is sorted by key(x)
+      } else if (haskey(x) && all(key(x) %chin% names(jval)) && is.sorted(jval, by=key(x))) {
         setattr(jval, 'sorted', key(x))
+      }
       if (any(vapply_1b(jval, is.null))) stopf("Internal error: j has created a data.table result containing a NULL column") # nocov
     }
     return(jval)
