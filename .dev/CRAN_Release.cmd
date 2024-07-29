@@ -17,11 +17,12 @@ Rscript -e "tools::update_pkg_po('.')"
 
 # 2) Open a PR with the new templates & contact the translators
 #   * zh_CN: @hongyuanjia
+#   * pt_BR: @rffontenelle
 ## Translators to submit commits with translations to this PR
 ##   [or perhaps, if we get several languages, each to open
 ##    its own PR and merge to main translation PR]
 
-## 3) Check validity with tools::checkPoFiles("zh_CN")
+## 3) Check validity with tools::checkPoFiles(".*")
 
 ## 4) Compile the new .mo binary files with potools::po_compile()
 
@@ -630,19 +631,26 @@ bunzip2 inst/tests/*.Rraw.bz2  # decompress *.Rraw again so as not to commit com
 # 6. Search and replace this .dev/CRAN_Release.cmd to update 1.15.99 to 1.16.99 inc below, 1.16.0 to 1.17.0 above, 1.15.0 to 1.16.0 below
 # 7. Another final gd to view all diffs using meld. (I have `alias gd='git difftool &> /dev/null'` and difftool meld: http://meldmerge.org/)
 # 8. Push to master with this consistent commit message: "1.16.0 on CRAN. Bump to 1.16.99"
-# 9. Take sha from step 8 and run `git tag 1.16.0 96c..sha..d77` then `git push origin 1.16.0` (not `git push --tags` according to https://stackoverflow.com/a/5195913/403310)
+# 9. Take sha from the previous step and run `git tag 1.16.0 96c..sha..d77` then `git push origin 1.16.0` (not `git push --tags` according to https://stackoverflow.com/a/5195913/403310)
 ######
 
+###### Branching policy for PATCH RELEASE
+# Patch releases handle regressions and CRAN-required off-cycle fixes (e.g. when changes to r-devel break data.table).
+# * Start a branch `patch-x.y.z` corresponding to the target release version. It should be branched from the previous CRAN release,
+#   e.g. branch `patch-1.15.4` from tag `v1.15.2`, `patch-1.15.6` from tag `v1.15.4`, etc.
+# * Add fixes for issues tagged to the corresponding milestone as PRs targeting the `master` branch. These PRs should be reviewed as usual
+#   and include a NEWS item under the ongoing development release.
+# * After merging a patch PR, `cherry-pick` the corresponding commit into the target patch branch. Edit the NEWS item to be under the heading
+#   for the patch release.
+# * Delete the patch branch after the corresponding tag is pushed.
+
 ###### Bump dev for PATCH RELEASE
-## WARNING: review this process during the next first patch release (x.y.2) from a regular release (x.y.0), possibly during 1.15.2 release.
 # 0. Close milestone to prevent new issues being tagged with it. The final 'release checks' issue can be left open in a closed milestone.
 # 1. Check that 'git status' shows 4 files in modified and uncommitted state: DESCRIPTION, NEWS.md, init.c and this .dev/CRAN_Release.cmd
 # 2. Bump patch version in DESCRIPTION to next odd number. Note that DESCRIPTION was in edited and uncommitted state so even number never appears in git.
-# 3. Add new heading in NEWS for the next dev PATCH version. Add "(submitted to CRAN on <today>)" on the released heading.
+# 3. Add "(submitted to CRAN on <today>)" on the released heading for the NEWS.
 # 4. Bump patch version in dllVersion() in init.c
 # 5. Bump 3 patch version numbers in Makefile
-# 6. Search and replace this .dev/CRAN_Release.cmd to update 1.14.99 to 1.15.99
-# 7. Another final gd to view all diffs using meld. (I have `alias gd='git difftool &> /dev/null'` and difftool meld: http://meldmerge.org/)
-# 8. Push to master with this consistent commit message: "1.15.0 on CRAN. Bump to 1.15.99"
-# 9. Take sha from step 8 and run `git tag 1.14.8 96c..sha..d77` then `git push origin 1.14.8` (not `git push --tags` according to https://stackoverflow.com/a/5195913/403310)
+# 6. Another final gd to view all diffs using meld. (I have `alias gd='git difftool &> /dev/null'` and difftool meld: http://meldmerge.org/)
+# 7. Commit the changes, then take the SHA and run `git tag 1.15.{2,4,6,...} ${SHA}` then `git push origin 1.15.{2,4,6,...}` (not `git push --tags` according to https://stackoverflow.com/a/5195913/403310)
 ######
