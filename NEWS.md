@@ -50,6 +50,8 @@
 
 16. `fcase()` supports scalars in conditions (e.g. supplying just `TRUE`), vectors in `default=` (so the default can vary by row), and `default=` is now lazily evaluated, [#5461](https://github.com/Rdatatable/data.table/issues/5461). Thanks @sindribaldur for the feature request, which has been highly requested, @shrektan for doing most of the implementation, and @MichaelChirico for sewing things up.
 
+17. `[.data.table` gains `showProgress`, allowing users to toggle progress printing for large "by" operations, [#3060](https://github.com/Rdatatable/data.table/issues/3060). Reports information such as number of groups processed, total groups, total time elapsed and estimated time until completion. This feature doesn't apply for `GForce` optimized operations. Thanks to @eatonya, @zachmayer for filing FRs, and to everyone else that up-voted/chimed in on the issue. Thanks to @joshhwuu for the PR.
+
 ## BUG FIXES
 
 1. `unique()` returns a copy the case when `nrows(x) <= 1` instead of a mutable alias, [#5932](https://github.com/Rdatatable/data.table/pull/5932). This is consistent with existing `unique()` behavior when the input has no duplicates but more than one row. Thanks to @brookslogan for the report and @dshemetov for the fix.
