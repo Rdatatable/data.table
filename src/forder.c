@@ -1540,10 +1540,12 @@ bool colsKeyHead(SEXP x, SEXP cols) {
 SEXP idxName(SEXP x, SEXP cols) {
   if (!isInteger(cols))
     error("internal error: 'cols' must be an integer"); // # nocov
-  SEXP dt_names = getAttrib(x, R_NamesSymbol);
+  SEXP dt_names = PROTECT(getAttrib(x, R_NamesSymbol));
   if (!isString(dt_names))
     error("internal error: 'DT' has no names"); // # nocov
   SEXP idx_names = PROTECT(subsetVector(dt_names, cols));
+  UNPROTECT(2); // down-stack to 'dt_names'
+  PROTECT(idx_names);
   SEXP char_underscore2 = PROTECT(ScalarString(mkChar("__")));
   SEXP char_empty = PROTECT(ScalarString(mkChar("")));
   SEXP sym_paste0 = install("paste0");
