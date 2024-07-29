@@ -127,7 +127,7 @@ test.list <- atime::atime_test_list(
     N = 10^seq(1, 20),
     setup = {
       d <- data.table(
-        id3 = sample( c(seq.int(N*0.9), sample( N*0.9, N*0.1, TRUE))),
+        id3 = sample(c(seq.int(N*0.9), sample( N*0.9, N*0.1, TRUE))),
         v1 = sample(5L, N, TRUE),
         v2 = sample(5L, N, TRUE)
       )
@@ -137,6 +137,6 @@ test.list <- atime::atime_test_list(
     },
     Before="7a9eaf62ede487625200981018d8692be8c6f134", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/515de90a6068911a148e54343a3503043b8bb87c) in the PR (https://github.com/Rdatatable/data.table/pull/4164/commits) that introduced the regression
     Regression="c152ced0e5799acee1589910c69c1a2c6586b95d", # Parent of the first (https://github.com/Rdatatable/data.table/commit/15f0598b9828d3af2eb8ddc9b38e0356f42afe4f) in the PR (https://github.com/Rdatatable/data.table/pull/4558/commits) that fixes the regression
-    Fixed="f750448a2efcd258b3aba57136ee6a95ce56b302") # Second commit (https://github.com/Rdatatable/data.table/commit/f750448a2efcd258b3aba57136ee6a95ce56b302) in the PR  that fixes the regression(https://github.com/Rdatatable/data.table/pull/4558/commits)
+    Fixed="f750448a2efcd258b3aba57136ee6a95ce56b302") # Second commit (https://github.com/Rdatatable/data.table/commit/f750448a2efcd258b3aba57136ee6a95ce56b302) in the PR that fixes the regression(https://github.com/Rdatatable/data.table/pull/4558/commits)
 )
 # nolint end: undesirable_operator_linter.
