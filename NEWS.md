@@ -2,9 +2,11 @@
 
 # data.table [v1.15.99](https://github.com/Rdatatable/data.table/milestone/30)  (in development)
 
-## BREAKING CHANGE
+## BREAKING CHANGES
 
-1. `` `[.data.table` `` is un-exported again. This was exported to support an experimental feature (`DT()` functional form of `[`) that never made it to release, but we forgot to claw back this export in the NAMESPACE; sorry about that. We didn't find anyone calling the method directly (which is inadvisable to begin with).
+1. `droplevels(in.place=TRUE)` is deprecated in favor of calling `setdroplevels()`, [#6014](https://github.com/Rdatatable/data.table/issues/6014). Given the associated risks/pain points, we strongly prefer all in-place/by-reference behavior within data.table come from functions `set*` (and `:=`) to make it as clear as possible that inputs are mutable. See below and `?setdroplevels` for more.
+
+2. `` `[.data.table` `` is un-exported again. This was exported to support an experimental feature (`DT()` functional form of `[`) that never made it to release, but we forgot to claw back this export in the NAMESPACE; sorry about that. We didn't find anyone calling the method directly (which is inadvisable to begin with).
 
 ## NEW FEATURES
 
@@ -51,6 +53,8 @@
 16. `fcase()` supports scalars in conditions (e.g. supplying just `TRUE`), vectors in `default=` (so the default can vary by row), and `default=` is now lazily evaluated, [#5461](https://github.com/Rdatatable/data.table/issues/5461). Thanks @sindribaldur for the feature request, which has been highly requested, @shrektan for doing most of the implementation, and @MichaelChirico for sewing things up.
 
 17. `[.data.table` gains `showProgress`, allowing users to toggle progress printing for large "by" operations, [#3060](https://github.com/Rdatatable/data.table/issues/3060). Reports information such as number of groups processed, total groups, total time elapsed and estimated time until completion. This feature doesn't apply for `GForce` optimized operations. Thanks to @eatonya, @zachmayer for filing FRs, and to everyone else that up-voted/chimed in on the issue. Thanks to @joshhwuu for the PR.
+
+18. New `setdroplevels()` as a by-reference version of the `droplevels()` method, which returns a copy of its input, [#6014](https://github.com/Rdatatable/data.table/issues/6014). Thanks @MichaelChirico for the suggestion and implementation.
 
 ## BUG FIXES
 
