@@ -110,6 +110,7 @@ test-lin-rel:
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-data.table
   variables:
+    _R_CHECK_COMPILATION_FLAGS_KNOWN_: "-Wvla"
     _R_CHECK_CRAN_INCOMING_: "FALSE"
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
     _R_CHECK_FORCE_SUGGESTS_: "TRUE"
@@ -131,6 +132,8 @@ test-lin-rel:
 test-lin-rel-vanilla:
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-base-gcc
+  variables:
+    _R_CHECK_COMPILATION_FLAGS_KNOWN_: "-Wvla"
   script:
     - echo 'CFLAGS=-g -O0 -fno-openmp -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
     - echo 'CXXFLAGS=-g -O0 -fno-openmp -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
@@ -143,6 +146,7 @@ test-lin-rel-cran:
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-base
   variables:
+    _R_CHECK_COMPILATION_FLAGS_KNOWN_: "-Wvla"
     _R_CHECK_CRAN_INCOMING_: "TRUE"           ## stricter --as-cran checks should run in dev pipelines continuously (not sure what they are though)
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"   ## Other than no URL checking (takes many minutes) or 'Days since last update 0' NOTEs needed, #3284
     _R_CHECK_CRAN_INCOMING_TARBALL_THRESHOLD_: "7500000" ## bytes
@@ -163,6 +167,7 @@ test-lin-dev-gcc-strict-cran:
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-devel-gcc-strict
   variables:
+    _R_CHECK_COMPILATION_FLAGS_KNOWN_: "-Wvla"
     _R_CHECK_CRAN_INCOMING_: "TRUE"
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
     _R_S3_METHOD_LOOKUP_BASEENV_AFTER_GLOBALENV_: "FALSE" ## detects S3 method lookup found on search path #4777
@@ -184,6 +189,7 @@ test-lin-dev-clang-cran:
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-devel-clang
   variables:
+    _R_CHECK_COMPILATION_FLAGS_KNOWN_: "-Wvla"
     _R_CHECK_CRAN_INCOMING_: "TRUE"
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
     _R_S3_METHOD_LOOKUP_BASEENV_AFTER_GLOBALENV_: "FALSE"

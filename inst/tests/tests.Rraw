@@ -19009,3 +19009,12 @@ test(2277.2, DT[, closure(b), env=list(closure=var)], 0.5)
 test(2277.3, DT[, closure(b), env=list(closure=stats::var)], 0.5)
 test(2277.4, DT[, closure(b), env=list(closure=stats:::var)], 0.5)
 test(2277.5, DT[, lambda(b), env=list(lambda=function(x) sum(x))], 7L)
+
+# test that set() correctly adds new columns even if no rows are updated
+dt = data.table(a=1L)
+test(2278.1, set(copy(dt), 0L,          "b", logical(0)), data.table(a=1L, b=NA))
+test(2278.2, set(copy(dt), NA_integer_, "b", NA),         data.table(a=1L, b=NA))
+test(2278.3, set(copy(dt), 0L,          "b", NA),         copy(dt)[0L, b := NA])
+test(2278.4, set(copy(dt), NA_integer_, "b", logical(0)), copy(dt)[NA_integer_, b := logical(0)])
+test(2278.5, set(copy(dt), integer(0),  "b", numeric(0)), copy(dt)[integer(0),  b := numeric(0)])
+test(2278.6, { set(dt, 0L, "b", logical(0)); set(dt, 1L, "a", 2L); dt }, data.table(a=2L, b=NA))
