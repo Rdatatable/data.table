@@ -184,6 +184,8 @@ This feature resolves [#4387](https://github.com/Rdatatable/data.table/issues/43
 
 23. `set()` now adds new columns even if no rows are updated, [#5409](https://github.com/Rdatatable/data.table/issues/5409). This behavior is now consistent with `:=`, thanks to @mb706 for the report and @joshhwuu for the fix.
 
+24. `dcast()` docs have always required aggregation function to return a single value, and previously dcast would error if vector with length!=1 was returned (only when fill=NULL). Now dcast will no longer error, but will warn that this is undefined behavior, even when fill is not NULL, [#6032](https://github.com/Rdatatable/data.table/issues/6032). In particular, this will warn for fun.aggregate=identity, which was observed in several revdeps. We may change this back to an error in a future release, so revdeps should fix their code as soon as possible. Thanks to Toby Dylan Hocking for the PR, and Michael Chirico for analysis of GitHub revdeps.
+
 ## TRANSLATIONS
 
 1. Fix a typo in a Mandarin translation of an error message that was hiding the actual error message, [#6172](https://github.com/Rdatatable/data.table/issues/6172). Thanks @trafficfan for the report and @MichaelChirico for the fix.
