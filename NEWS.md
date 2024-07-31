@@ -146,7 +146,6 @@
 
 23. The internal `init()` function in `fread.c` module has been marked as `static`, [#6328](https://github.com/Rdatatable/data.table/pull/6328). This is to avoid name collisions, and the resulting segfaults, with other libraries that might expose the same symbol name, and be already loaded by the R process. This was observed in Cray HPE environments where the `libsci` library providing LAPACK to R already has an `init` symbol. Thanks to @rtobar for the report and fix.
 
-
 Functions `setindex` (and `setindexv`) will now compute groups' positions as well. `setindex()` also collects the extra statistics alluded to above.
 
 Finding sort order in other routines (for example subset `d2[id==1L]`) does not include those extra statistics so as not to impose a slowdown.
