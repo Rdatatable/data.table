@@ -121,7 +121,6 @@ test.list <- atime::atime_test_list(
     Slow = "c4a2085e35689a108d67dacb2f8261e4964d7e12", # Parent of the first commit in the PR that fixes the issue (https://github.com/Rdatatable/data.table/commit/7cc4da4c1c8e568f655ab5167922dcdb75953801)
     Fast = "1872f473b20fdcddc5c1b35d79fe9229cd9a1d15"), # Last commit in the PR that fixes the issue (https://github.com/Rdatatable/data.table/pull/5427/commits)
 
-<<<<<<< HEAD
   # Issue reported in: https://github.com/Rdatatable/data.table/issues/1534
   # To be fixed in: https://github.com/Rdatatable/data.table/pull/5205
   "DT shift improved in #5205" = atime::atime_test(
@@ -135,7 +134,7 @@ test.list <- atime::atime_test_list(
     Regression = "7f0ce147eef1dd5cd5ff05dffc3c72f472bcde51", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/58135017a985f3cc2c6f0d091c4effaec4442f56) in the PR (https://github.com/Rdatatable/data.table/pull/5205/commits) that fixes the issue
     Fixed = "a6abac319446ae7dde8bc4501fae40eeb5cc228c") # Commit before the last commit in the PR (https://github.com/Rdatatable/data.table/pull/5205/commits) that fixes the regression
 )
-=======
+
   # Issue reported in: https://github.com/Rdatatable/data.table/issues/4200
   # To be fixed in: https://github.com/Rdatatable/data.table/pull/4558
   "DT[by] fixed in #4558" = atime::atime_test(
@@ -171,6 +170,4 @@ test.list <- atime::atime_test_list(
     Slow = "3ca83738d70d5597d9e168077f3768e32569c790", # Circa 2024 master parent of close-to-last merge commit (https://github.com/Rdatatable/data.table/commit/353dc7a6b66563b61e44b2fa0d7b73a0f97ca461) in the PR (https://github.com/Rdatatable/data.table/pull/4501/commits) that fixes the issue 
     Slower = "cacdc92df71b777369a217b6c902c687cf35a70d"), # Circa 2020 parent of the first commit (https://github.com/Rdatatable/data.table/commit/74636333d7da965a11dad04c322c752a409db098) in the PR (https://github.com/Rdatatable/data.table/pull/4501/commits) that fixes the issue 
 
-  NULL)
->>>>>>> master
 # nolint end: undesirable_operator_linter.
