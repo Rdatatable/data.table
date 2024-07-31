@@ -8,19 +8,24 @@ fdroplevels = function(x, exclude = if (anyNA(levels(x))) NULL else NA, ...) {
   return(ans)
 }
 
-droplevels.data.table = function(x, except = NULL, exclude, in.place = FALSE, ...){
-    stopifnot(is.logical(in.place))
-    if (nrow(x)==0L) return(x)
-    ix = vapply(x, is.factor, NA)
-    if(!is.null(except)){
-        stopifnot(is.numeric(except), except <= length(x))
-        ix[except] = FALSE
-    }
-    if(!sum(ix)) return(x)
-    if(!in.place) x = copy(x)
-    for(nx in names(ix)[ix==TRUE]){
-        if (missing(exclude)) set(x, i = NULL, j = nx, value = fdroplevels(x[[nx]]))
-        else set(x, i = NULL, j = nx, value = fdroplevels(x[[nx]], exclude = exclude))
-    }
-    return(x)
+droplevels.data.table = function(x, except=NULL, exclude, in.place=FALSE, ...){
+  stopifnot(is.logical(in.place))
+  if (isTRUE(in.place)) warningf("droplevels() with in.place=TRUE is deprecated. Use setdroplevels() instead.")
+  if (!in.place) x = copy(x)
+  if (missing(exclude)) exclude = NULL
+  setdroplevels(x, except, exclude)[]
+}
+
+setdroplevels = function(x, except=NULL, exclude=NULL) {
+  if (!nrow(x)) return(invisible(x))
+  ix = vapply_1b(x, is.factor)
+  if (!is.null(except)) {
+    stopifnot(is.numeric(except), except >= 1, except <= length(x))
+    ix[except] = FALSE
+  }
+  if (!any(ix)) return(invisible(x))
+  for (nx in names(ix)[ix]) {
+    set(x, i=NULL, j=nx, value=fdroplevels(x[[nx]], exclude=exclude))
+  }
+  invisible(x)
 }

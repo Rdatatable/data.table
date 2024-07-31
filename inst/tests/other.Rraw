@@ -699,6 +699,14 @@ if (loaded[["nanotime"]]) {
   DT = data.table(time=nanotime(c(1,NA,3)))
   test(27, na.omit(DT), DT[c(1,3)])
 
+  # rbind with vectors with class attributes #5309
+  x = data.table(a=1L, b=as.nanotime(0))
+  y = data.table(a=2L, b=NA)
+  test(27.01, rbind(x,y), data.table(a = c(1L, 2L), b=as.nanotime(c(0, NA))))
+  test(27.02, rbind(y,x), data.table(a = c(2L, 1L), b=as.nanotime(c(NA, 0))))
+  y[, b := NULL]
+  test(27.03, rbind(x,y, fill = TRUE), data.table(a = c(1L, 2L), b=as.nanotime(c(0, NA))))
+  test(27.04, rbind(y,x, fill = TRUE), data.table(a = c(2L, 1L), b=as.nanotime(c(NA, 0))))
 }
 
 # that plot works; moved from tests.Rraw 167 to here to save ram of loading graphics package and possible screen device issues on overloaded servers, #5517
