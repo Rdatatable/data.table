@@ -600,7 +600,7 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
     }
     if (!varfactor) {
       SET_VECTOR_ELT(ansvars, 0, target=allocVector(STRSXP, data->totlen));
-      if (data->lvalues == 1) {//one value column to output. TODO change to !data->measure_is_list
+      if (data->lvalues == 1) {//one value column to output. TODO #5247 change to !data->measure_is_list
         const int *thisvaluecols = INTEGER(VECTOR_ELT(data->valuecols, 0));
         for (int j=0, ansloc=0; j<data->lmax; ++j) {
           const int thislen = data->narm ? length(VECTOR_ELT(data->not_NA_indices, j)) : data->nrow;
@@ -619,7 +619,7 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
       SET_VECTOR_ELT(ansvars, 0, target=allocVector(INTSXP, data->totlen));
       SEXP levels;
       int *td = INTEGER(target);
-      if (data->lvalues == 1) {//one value column to output. TODO change to !data->measure_is_list
+      if (data->lvalues == 1) {//one value column to output. TODO #5247 change to !data->measure_is_list
         SEXP thisvaluecols = VECTOR_ELT(data->valuecols, 0);
         int len = length(thisvaluecols);
         levels = PROTECT(allocVector(STRSXP, len)); protecti++;
