@@ -18,7 +18,7 @@
   \item{sorted}{When default \code{FALSE} it will retain the order of groups we are splitting on. When \code{TRUE} then sorted list(s) are returned. Does not have effect for \code{f} argument.}
   \item{keep.by}{logical default \code{TRUE}. Keep column provided to \code{by} argument.}
   \item{flatten}{logical default \code{TRUE} will unlist nested lists of data.tables. When using \code{f} results are always flattened to list of data.tables.}
-  \item{\dots}{passed to data.frame way of processing when using \code{f} argument.}
+  \item{\dots}{When using \code{f}, passed to \code{\link[base:split]{split.data.frame}}. When using \code{by}, \code{sep} is recognized as with the default method.}
   \item{verbose}{logical default \code{FALSE}. When \code{TRUE} it will print to console data.table split query used to split data.}
 }
 \details{

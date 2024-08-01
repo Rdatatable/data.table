@@ -21,14 +21,17 @@ SEXP fcast(SEXP lhs, SEXP val, SEXP nrowArg, SEXP ncolArg, SEXP idxArg, SEXP fil
     SEXP thisfill = fill;
     const SEXPTYPE thistype = TYPEOF(thiscol);
     int nprotect = 0;
-    if(some_fill){
+    if (some_fill) {
       if (isNull(fill)) {
-	if (LOGICAL(is_agg)[0]) {
-	  thisfill = PROTECT(allocNAVector(thistype, 1)); nprotect++;
-	} else thisfill = VECTOR_ELT(fill_d, i);
+        if (LOGICAL(is_agg)[0]) {
+          thisfill = PROTECT(allocNAVector(thistype, 1)); nprotect++;
+        } else
+          thisfill = VECTOR_ELT(fill_d, i);
       }
       if (isVectorAtomic(thiscol)) { // defer error handling to below, but also skip on list
-	thisfill = PROTECT(coerceAs(thisfill, thiscol, /*copyArg=*/ScalarLogical(false))); nprotect++;
+        // #5980: some callers used fill=list(...) and relied on R's coercion mechanics for lists, which are nontrivial, so just dispatch and double-coerce.
+        if (isNewList(thisfill)) { thisfill = PROTECT(coerceVector(thisfill, TYPEOF(thiscol))); nprotect++; }
+        thisfill = PROTECT(coerceAs(thisfill, thiscol, /*copyArg=*/ScalarLogical(false))); nprotect++;
       }
     }
     switch (thistype) {

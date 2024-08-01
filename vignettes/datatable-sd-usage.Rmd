@@ -169,7 +169,7 @@ lm_coef = sapply(models, function(rhs) {
 })
 barplot(lm_coef, names.arg = sapply(models, paste, collapse = '/'),
         main = 'Wins Coefficient\nWith Various Covariates',
-        col = col16, las = 2L, cex.names = .8)
+        col = col16, las = 2L, cex.names = 0.8)
 ```
 
 The coefficient always has the expected sign (better pitchers tend to have more wins and fewer runs allowed), but the magnitude can vary substantially depending on what else we control for.

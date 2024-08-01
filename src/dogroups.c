@@ -63,7 +63,7 @@ static bool anySpecialStatic(SEXP x) {
   return false;
 }
 
-SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames, SEXP on, SEXP verboseArg)
+SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts, SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames, SEXP on, SEXP verboseArg, SEXP showProgressArg)
 {
   R_len_t ngrp, nrowgroups, njval=0, ngrpcols, ansloc=0, maxn, estn=-1, thisansloc, grpn, thislen, igrp;
   int nprotect=0;
@@ -71,6 +71,10 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   Rboolean wasvector, firstalloc=FALSE, NullWarnDone=FALSE;
   clock_t tstart=0, tblock[10]={0}; int nblock[10]={0};
   const bool verbose = LOGICAL(verboseArg)[0]==1;
+  const bool showProgress = LOGICAL(showProgressArg)[0]==1;
+  bool hasPrinted = false;
+  double startTime = (showProgress) ? wallclock() : 0;
+  double nextTime = (showProgress) ? startTime+3 : 0; // wait 3 seconds before printing progress
 
   if (!isInteger(order)) error(_("Internal error: order not integer vector")); // # nocov
   if (TYPEOF(starts) != INTSXP) error(_("Internal error: starts not integer")); // # nocov
@@ -169,7 +173,6 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   // because it is a rare edge case for it to be true. See #4892.
   bool anyNA=false, orderedSubset=false;
   check_idx(order, length(VECTOR_ELT(dt, 0)), &anyNA, &orderedSubset);
-
   for(int i=0; i<ngrp; ++i) {   // even for an empty i table, ngroup is length 1 (starts is value 0), for consistency of empty cases
 
     if (istarts[i]==0 && (i<ngrp-1 || estn>-1)) continue;
@@ -275,8 +278,17 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
       }
       for (int j=0; j<LENGTH(jval); ++j) {
         thiscol = VECTOR_ELT(jval,j);
-        if (!isNull(thiscol) && (!isVector(thiscol) || isFrame(thiscol) || isArray(thiscol) ))
-          error(_("All items in j=list(...) should be atomic vectors or lists. If you are trying something like j=list(.SD,newcol=mean(colA)) then use := by group instead (much quicker), or cbind or merge afterwards."));
+        if (isNull(thiscol)) continue;
+        if (!isVector(thiscol) || isFrame(thiscol))
+          error(_("Entry %d for group %d in j=list(...) should be atomic vector or list. If you are trying something like j=list(.SD,newcol=mean(colA)) then use := by group instead (much quicker), or cbind or merge afterwards."), j+1, i+1);
+        if (isArray(thiscol)) {
+          SEXP dims = PROTECT(getAttrib(thiscol, R_DimSymbol));
+          int nDimensions=0;
+          for (int d=0; d<LENGTH(dims); ++d) if (INTEGER(dims)[d] > 1) ++nDimensions;
+          UNPROTECT(1);
+          if (nDimensions > 1)
+            error(_("Entry %d for group %d in j=list(...) is an array with %d dimensions > 1, which is disallowed. \"Break\" the array yourself with c() or as.vector() if that is intentional."), j+1, i+1, nDimensions);
+        }
       }
     }
     if (!isNull(lhs)) {
@@ -426,6 +438,19 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         if (copied) UNPROTECT(1);
       }
     }
+    // progress printing, #3060
+    // could potentially refactor to use fread's progress() function, however we would lose some information in favor of simplicity.
+    double now;
+    if (showProgress && (now=wallclock())>=nextTime) {
+      double avgTimePerGroup = (now-startTime)/(i+1);
+      int ETA = (int)(avgTimePerGroup*(ngrp-i-1));
+      if (hasPrinted || ETA >= 0) {
+        if (verbose && !hasPrinted) Rprintf(_("\n"));
+        Rprintf(_("\rProcessed %d groups out of %d. %.0f%% done. Time elapsed: %ds. ETA: %ds."), i+1, ngrp, 100.0*(i+1)/ngrp, (int)(now-startTime), ETA);
+      }
+      nextTime = now+1;
+      hasPrinted = true;
+    }
     ansloc += maxn;
     if (firstalloc) {
       nprotect++;          //  remember the first jval. If we UNPROTECTed now, we'd unprotect
@@ -434,6 +459,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     }
     else UNPROTECT(1);  // the jval. Don't want them to build up. The first jval can stay protected till the end ok.
   }
+  if (showProgress && hasPrinted) Rprintf(_("\rProcessed %d groups out of %d. %.0f%% done. Time elapsed: %ds. ETA: %ds.\n"), ngrp, ngrp, 100.0, (int)(wallclock()-startTime), 0);
   if (isNull(lhs) && ans!=NULL) {
     if (ansloc < LENGTH(VECTOR_ELT(ans,0))) {
       if (verbose) Rprintf(_("Wrote less rows (%d) than allocated (%d).\n"),ansloc,LENGTH(VECTOR_ELT(ans,0)));
@@ -473,8 +499,13 @@ SEXP keepattr(SEXP to, SEXP from)
   // Same as R_copyDFattr in src/main/attrib.c, but that seems not exposed in R's api
   // Only difference is that we reverse from and to in the prototype, for easier calling above
   SET_ATTRIB(to, ATTRIB(from));
-  IS_S4_OBJECT(from) ?  SET_S4_OBJECT(to) : UNSET_S4_OBJECT(to);
-  SET_OBJECT(to, OBJECT(from));
+  if (isS4(from)) {
+    to = PROTECT(asS4(to, TRUE, 1));
+    SET_OBJECT(to, OBJECT(from));
+    UNPROTECT(1);
+  } else {
+    SET_OBJECT(to, OBJECT(from));
+  }
   return to;
 }
 

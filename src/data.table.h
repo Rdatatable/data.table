@@ -12,6 +12,9 @@
 #endif
 #include <Rinternals.h>
 #define SEXPPTR_RO(x) ((const SEXP *)DATAPTR_RO(x))  // to avoid overhead of looped STRING_ELT and VECTOR_ELT
+#ifndef STRING_PTR_RO
+#define STRING_PTR_RO STRING_PTR
+#endif
 #include <stdint.h>    // for uint64_t rather than unsigned long long
 #include <stdbool.h>
 #include "types.h"
@@ -69,7 +72,7 @@
 // TODO: compare 1.9.6 performance with 1.9.7 with huge number of ASCII strings, and again after Jan 2018 when made macro.
 // Matt moved this to be macro in Jan 2018 so that branch can benefit from branch prediction too wherever used inside loops.
 // This IS_ASCII will dereference s and that cache fetch is the part that may bite more than the branch, though. Without a call to
-// to ENC2UTF as all, the pointer value can just be compared by the calling code without deferencing it. It may still be worth
+// to ENC2UTF as all, the pointer value can just be compared by the calling code without dereferencing it. It may still be worth
 // timing the impact and manually avoiding (is there an IS_ASCII on the character vector rather than testing each item every time?)
 #define NEED2UTF8(s) !(IS_ASCII(s) || (s)==NA_STRING || IS_UTF8(s))
 #define ENC2UTF8(s) (!NEED2UTF8(s) ? (s) : mkCharCE(translateCharUTF8(s), CE_UTF8))
@@ -93,11 +96,16 @@ extern SEXP char_datatable;
 extern SEXP char_dataframe;
 extern SEXP char_NULL;
 extern SEXP char_maxString;
+extern SEXP char_AsIs;
 extern SEXP sym_sorted;
 extern SEXP sym_index;
 extern SEXP sym_BY;
 extern SEXP sym_starts, char_starts;
 extern SEXP sym_maxgrpn;
+extern SEXP sym_anyna;
+extern SEXP sym_anyinfnan;
+extern SEXP sym_anynotascii;
+extern SEXP sym_anynotutf8;
 extern SEXP sym_colClassesAs;
 extern SEXP sym_verbose;
 extern SEXP SelfRefSymbol;
@@ -134,7 +142,8 @@ int checkOverAlloc(SEXP x);
 // forder.c
 int StrCmp(SEXP x, SEXP y);
 uint64_t dtwiddle(double x);
-SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg);
+SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg);
+SEXP forderReuseSorting(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg, SEXP reuseSortingArg); // reuseSorting wrapper to forder
 int getNumericRounding_C(void);
 
 // reorder.c
@@ -175,14 +184,15 @@ SEXP dt_na(SEXP x, SEXP cols);
 SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose);
 const char *memrecycle(const SEXP target, const SEXP where, const int start, const int len, SEXP source, const int sourceStart, const int sourceLen, const int colnum, const char *colname);
 SEXP shallowwrapper(SEXP dt, SEXP cols);
+void warn_matrix_column(int i);
 
 SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols,
                 SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts,
                 SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames,
-                SEXP on, SEXP verbose);
+                SEXP on, SEXP verbose, SEXP showProgressArg);
 
 // bmerge.c
-SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted,
+SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg,
                 SEXP xoArg, SEXP rollarg, SEXP rollendsArg, SEXP nomatchArg,
                 SEXP multArg, SEXP opArg, SEXP nqgrpArg, SEXP nqmaxgrpArg);
 
@@ -238,7 +248,7 @@ bool isRealReallyInt(SEXP x);
 SEXP isRealReallyIntR(SEXP x);
 SEXP isReallyReal(SEXP x);
 bool allNA(SEXP x, bool errorForBadType);
-SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups);
+SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent);
 bool INHERITS(SEXP x, SEXP char_);
 SEXP copyAsPlain(SEXP x);
 void copySharedColumns(SEXP x);
@@ -257,7 +267,7 @@ SEXP testMsgR(SEXP status, SEXP x, SEXP k);
 
 //fifelse.c
 SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na);
-SEXP fcaseR(SEXP na, SEXP rho, SEXP args);
+SEXP fcaseR(SEXP rho, SEXP args);
 
 //snprintf.c
 int dt_win_snprintf(char *dest, size_t n, const char *fmt, ...);
@@ -275,6 +285,7 @@ SEXP notchin(SEXP x, SEXP table);
 SEXP setattrib(SEXP, SEXP, SEXP);
 SEXP assign(SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP copy(SEXP);
+SEXP setdt_nrows(SEXP);
 SEXP alloccolwrapper(SEXP, SEXP, SEXP);
 SEXP selfrefokwrapper(SEXP, SEXP);
 SEXP truelength(SEXP);
@@ -284,7 +295,7 @@ SEXP chmatchdup_R(SEXP, SEXP, SEXP);
 SEXP chin_R(SEXP, SEXP);
 SEXP freadR(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP fwriteR(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
-SEXP rbindlist(SEXP, SEXP, SEXP, SEXP);
+SEXP rbindlist(SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP setlistelt(SEXP, SEXP, SEXP);
 SEXP address(SEXP);
 SEXP expandAltRep(SEXP);
@@ -317,6 +328,7 @@ SEXP glast(SEXP);
 SEXP gfirst(SEXP);
 SEXP gnthvalue(SEXP, SEXP);
 SEXP dim(SEXP);
+SEXP warn_matrix_column_r(SEXP);
 SEXP gvar(SEXP, SEXP);
 SEXP gsd(SEXP, SEXP);
 SEXP gprod(SEXP, SEXP);

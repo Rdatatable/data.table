@@ -373,7 +373,7 @@ Yes:
 
 The general form is:
 
-```{r, eval = FALSE}
+```r
 DT[where, select|update, group by][order by][...] ... [...]
 ```
 

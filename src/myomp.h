@@ -1,3 +1,11 @@
+
+// Compatibility define for LLVM builds of libomp.
+#ifdef KMP_VERSION_BUILD
+# ifndef _OPENMP
+#  define _OPENMP KMP_VERSION_BUILD
+# endif
+#endif
+
 #ifdef _OPENMP
   #include <omp.h>
   #if _OPENMP >= 201511

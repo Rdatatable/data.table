@@ -250,6 +250,49 @@ The function `length()` requires an input argument. We just need to compute the 
 
 This type of operation occurs quite frequently, especially while grouping (as we will see in the next section), to the point where `data.table` provides a *special symbol* `.N` for it.
 
+### g) Handle non-existing elements in `i`
+
+#### -- What happens when querying for non-existing elements?
+
+When querying a `data.table` for elements that do not exist, the behavior differs based on the method used.
+
+```r
+setkeyv(flights, "origin")
+```
+
+* **Key-based subsetting: `dt["d"]`**
+
+  This performs a right join on the key column `x`, resulting in a row with `d` and `NA` for columns not found. When using `setkeyv`, the table is sorted by the specified keys and an internal index is created, enabling binary search for efficient subsetting.
+
+  ```r
+  flights["XYZ"]
+  # Returns:
+  #    origin year month day dep_time sched_dep_time dep_delay arr_time sched_arr_time arr_delay carrier flight tailnum ...
+  # 1:    XYZ   NA    NA  NA       NA             NA        NA       NA             NA        NA      NA     NA      NA ...
+  ```
+
+* **Logical subsetting: `dt[x == "d"]`**
+  
+  This performs a standard subset operation that does not find any matching rows and thus returns an empty `data.table`.
+
+  ```r
+    flights[origin == "XYZ"]
+  # Returns:
+  # Empty data.table (0 rows and 19 cols): year,month,day,dep_time,sched_dep_time,dep_delay,arr_time,sched_arr_time,arr_delay,...
+  ```
+
+* **Exact match using `nomatch=NULL`**
+  
+  For exact matches without `NA` for non-existing elements, use `nomatch=NULL`:
+
+  ```r
+  flights["XYZ", nomatch=NULL]
+  # Returns:
+  # Empty data.table (0 rows and 19 cols): year,month,day,dep_time,sched_dep_time,dep_delay,arr_time,sched_arr_time,arr_delay,...
+  ```
+
+Understanding these behaviors can help prevent confusion when dealing with non-existing elements in your data.
+
 #### Special symbol `.N`: {#special-N}
 
 `.N` is a special built-in variable that holds the number of observations _in the current group_. It is particularly useful when combined with `by` as we'll see in the next section. In the absence of group by operations, it simply returns the number of rows in the subset.
@@ -269,7 +312,7 @@ ans
 
 We could have accomplished the same operation by doing `nrow(flights[origin == "JFK" & month == 6L])`. However, it would have to subset the entire `data.table` first corresponding to the *row indices* in `i` *and then* return the rows using `nrow()`, which is unnecessary and inefficient. We will cover this and other optimisation aspects in detail under the *`data.table` design* vignette.
 
-### g) Great! But how can I refer to columns by names in `j` (like in a `data.frame`)? {#refer_j}
+### h) Great! But how can I refer to columns by names in `j` (like in a `data.frame`)? {#refer_j}
 
 If you're writing out the column names explicitly, there's no difference compared to a `data.frame` (since v1.9.8).
 

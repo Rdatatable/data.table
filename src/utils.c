@@ -75,7 +75,7 @@ bool allNA(SEXP x, bool errorForBadType) {
     return true;
   }
   case STRSXP: {
-    const SEXP *xd = STRING_PTR(x);
+    const SEXP *xd = STRING_PTR_RO(x);
     for (int i=0; i<n; ++i)    if (xd[i]!=NA_STRING) {
       return false;
     }
@@ -97,16 +97,20 @@ SEXP allNAR(SEXP x) {
  * adds validation for:
  *   correct range [1,ncol], and if type real checks whole integer
  *   existing columns for character
- *   optionally check for no duplicates
+ *   optionally (check_dups) check for no duplicates
+ *   optionally (skip_absent) skip (return 0) for numbers outside the range or not naming extant columns
  */
-SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups) {
+SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent) {
   if (!isNewList(x))
     error(_("'x' argument must be data.table compatible"));
   if (!IS_TRUE_OR_FALSE(check_dups))
     error(_("%s must be TRUE or FALSE"), "check_dups");
+  if (!IS_TRUE_OR_FALSE(skip_absent))
+    error(_("%s must be TRUE or FALSE"), "skip_absent");
   int protecti = 0;
   R_len_t nx = length(x);
   R_len_t nc = length(cols);
+  bool bskip_absent = LOGICAL(skip_absent)[0];
   SEXP ricols = R_NilValue;
   if (isNull(cols)) { // seq_along(x)
     ricols = PROTECT(allocVector(INTSXP, nx)); protecti++;
@@ -116,16 +120,21 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups) {
     ricols = PROTECT(allocVector(INTSXP, 0)); protecti++;
   } else if (isInteger(cols) || isReal(cols)) {
     if (isInteger(cols)) {
-      ricols = cols;
+      if (bskip_absent) { // we might overwrite values with 0, so make a copy
+        ricols = PROTECT(duplicate(cols)); protecti++;
+      } else
+        ricols = cols;
     } else if (isReal(cols)) {
       if (!isRealReallyInt(cols))
         error(_("argument specifying columns is type 'double' and one or more items in it are not whole integers"));
       ricols = PROTECT(coerceVector(cols, INTSXP)); protecti++;
     }
     int *icols = INTEGER(ricols);
-    for (int i=0; i<nc; i++) {
-      if ((icols[i]>nx) || (icols[i]<1))
+    for (int i=0; i<nc; ++i) {
+      if ((!bskip_absent && icols[i]>nx) || (icols[i]<1))
         error(_("argument specifying columns received non-existing column(s): cols[%d]=%d"), i+1, icols[i]); // handles NAs also
+      else if(bskip_absent && icols[i]>nx)
+        icols[i] = 0L;
     }
   } else if (isString(cols)) {
     SEXP xnames = PROTECT(getAttrib(x, R_NamesSymbol)); protecti++;
@@ -133,9 +142,11 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups) {
       error(_("'x' argument data.table has no names"));
     ricols = PROTECT(chmatch(cols, xnames, 0)); protecti++;
     int *icols = INTEGER(ricols);
-    for (int i=0; i<nc; i++) {
-      if (icols[i]==0)
-        error(_("argument specifying columns received non-existing column(s): cols[%d]='%s'"), i+1, CHAR(STRING_ELT(cols, i))); // handles NAs also
+    if (!bskip_absent) {
+      for (int i=0; i<nc; ++i) {
+        if (icols[i]==0)
+          error(_("argument specifying columns received non-existing column(s): cols[%d]='%s'"), i+1, CHAR(STRING_ELT(cols, i))); // handles NAs also
+      }
     }
   } else {
     error(_("argument specifying columns must be character or numeric"));
@@ -218,7 +229,7 @@ SEXP copyAsPlain(SEXP x) {
     memcpy(COMPLEX(ans), COMPLEX(x), n*sizeof(Rcomplex));
     break;
   case STRSXP: {
-    const SEXP *xp=STRING_PTR(x);                                // covered by as.character(as.hexmode(1:500)) after test 642
+    const SEXP *xp=STRING_PTR_RO(x);                              // covered by as.character(as.hexmode(1:500)) after test 642
     for (int64_t i=0; i<n; ++i) SET_STRING_ELT(ans, i, xp[i]);
   } break;
   case VECSXP: {
@@ -301,7 +312,7 @@ SEXP islockedR(SEXP DT) {
 
 bool need2utf8(SEXP x) {
   const int xlen = length(x);
-  SEXP *xd = STRING_PTR(x);
+  const SEXP *xd = STRING_PTR_RO(x);
   for (int i=0; i<xlen; i++) {
     if (NEED2UTF8(xd[i]))
       return(true);
@@ -314,7 +325,7 @@ SEXP coerceUtf8IfNeeded(SEXP x) {
     return(x);
   const int xlen = length(x);
   SEXP ans = PROTECT(allocVector(STRSXP, xlen));
-  SEXP *xd = STRING_PTR(x);
+  const SEXP *xd = STRING_PTR_RO(x);
   for (int i=0; i<xlen; i++) {
     SET_STRING_ELT(ans, i, ENC2UTF8(xd[i]));
   }
@@ -322,7 +333,7 @@ SEXP coerceUtf8IfNeeded(SEXP x) {
   return(ans);
 }
 
-// class1 is used by coerseAs only, which is used by frollR.c and nafill.c only
+// class1 is used by coerceAs only, which is used by frollR.c and nafill.c only
 const char *class1(SEXP x) {
   SEXP cl = getAttrib(x, R_ClassSymbol);
   if (length(cl))
@@ -351,7 +362,7 @@ const char *class1(SEXP x) {
   }
 }
 
-// main motivation for this function is to have coercion helper that is aware of int64 NAs, unline base R coerce #3913
+// main motivation for this function is to have coercion helper that is aware of int64 NAs, unlike base R coerce #3913
 SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg) {
   // copyArg does not update in place, but only IF an object is of the same type-class as class to be coerced, it will return with no copy
   if (!isVectorAtomic(x))
