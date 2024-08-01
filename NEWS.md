@@ -94,7 +94,7 @@
 
 ## NOTES
 
-24. `dcast()` docs have always required aggregation function to return a single value, and when fill=NULL dcast would error if vector with length!=1 was returned, but silently return an undefined result when fill is not NULL. Now dcast will additionally warn that this is undefined behavior, when fill is not NULL, [#6032](https://github.com/Rdatatable/data.table/issues/6032). In particular, this will warn for fun.aggregate=identity, which was observed in several revdeps. We may change this back to an error in a future release, so revdeps should fix their code as soon as possible. Thanks to Toby Dylan Hocking for the PR, and Michael Chirico for analysis of GitHub revdeps.
+24. `dcast()` docs have always required aggregation function to return a single value, and when fill=NULL dcast would error if vector with length!=1 was returned, but silently return an undefined result when fill is not NULL. Now dcast will additionally warn that this is undefined behavior, when fill is not NULL, [#6032](https://github.com/Rdatatable/data.table/issues/6032). In particular, this will warn for fun.aggregate=identity, which was observed in several revdeps. We may change this to an error in a future release, so revdeps should fix their code as soon as possible. Thanks to Toby Dylan Hocking for the PR, and Michael Chirico for analysis of GitHub revdeps.
 
 1. `transform` method for data.table sped up substantially when creating new columns on large tables. Thanks to @OfekShilon for the report and PR. The implemented solution was proposed by @ColeMiller1.
 
