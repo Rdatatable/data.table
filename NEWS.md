@@ -94,6 +94,8 @@
 
 ## NOTES
 
+24. `dcast()` docs have always required aggregation function to return a single value, and previously dcast would error if vector with length!=1 was returned (only when fill=NULL). Now dcast will no longer error, but will warn that this is undefined behavior, even when fill is not NULL, [#6032](https://github.com/Rdatatable/data.table/issues/6032). In particular, this will warn for fun.aggregate=identity, which was observed in several revdeps. We may change this back to an error in a future release, so revdeps should fix their code as soon as possible. Thanks to Toby Dylan Hocking for the PR, and Michael Chirico for analysis of GitHub revdeps.
+
 1. `transform` method for data.table sped up substantially when creating new columns on large tables. Thanks to @OfekShilon for the report and PR. The implemented solution was proposed by @ColeMiller1.
 
 2. The documentation for the `fill` argument in `rbind()` and `rbindlist()` now notes the expected behaviour for missing `list` columns when `fill=TRUE`, namely to use `NULL` (not `NA`), [#4198](https://github.com/Rdatatable/data.table/pull/4198). Thanks @sritchie73 for the proposal and fix.
@@ -184,7 +186,7 @@ This feature resolves [#4387](https://github.com/Rdatatable/data.table/issues/43
 
 23. `set()` now adds new columns even if no rows are updated, [#5409](https://github.com/Rdatatable/data.table/issues/5409). This behavior is now consistent with `:=`, thanks to @mb706 for the report and @joshhwuu for the fix.
 
-24. `dcast()` docs have always required aggregation function to return a single value, and previously dcast would error if vector with length!=1 was returned (only when fill=NULL). Now dcast will no longer error, but will warn that this is undefined behavior, even when fill is not NULL, [#6032](https://github.com/Rdatatable/data.table/issues/6032). In particular, this will warn for fun.aggregate=identity, which was observed in several revdeps. We may change this back to an error in a future release, so revdeps should fix their code as soon as possible. Thanks to Toby Dylan Hocking for the PR, and Michael Chirico for analysis of GitHub revdeps.
+24. The internal `init()` function in `fread.c` module has been marked as `static`, [#6328](https://github.com/Rdatatable/data.table/pull/6328). This is to avoid name collisions, and the resulting segfaults, with other libraries that might expose the same symbol name, and be already loaded by the R process. This was observed in Cray HPE environments where the `libsci` library providing LAPACK to R already has an `init` symbol. Thanks to @rtobar for the report and fix.
 
 ## TRANSLATIONS
 

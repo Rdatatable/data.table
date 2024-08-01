@@ -84,7 +84,7 @@ static double NAND;
 static double INFD;
 
 // NAN and INFINITY constants are float, so cast to double once up front.
-void init(void) {
+static void init(void) {
   NAND = (double)NAN;
   INFD = (double)INFINITY;
 }

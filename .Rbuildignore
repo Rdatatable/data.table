@@ -46,3 +46,6 @@
 ^lib$
 ^library$
 ^devwd$
+
+# only the inst/po compressed files are needed, not raw .pot/.po
+^po$
