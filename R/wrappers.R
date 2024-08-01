@@ -6,7 +6,7 @@ fcoalesce   = function(...) .Call(Ccoalesce, list(...), FALSE)
 setcoalesce = function(...) .Call(Ccoalesce, list(...), TRUE)
 
 fifelse = function(test, yes, no, na=NA) .Call(CfifelseR, test, yes, no, na)
-fcase   = function(..., default=NA) .Call(CfcaseR, default, parent.frame(), as.list(substitute(list(...)))[-1L])
+fcase   = function(..., default=NA) .Call(CfcaseR, parent.frame(), as.list(substitute(list(..., TRUE, default)))[-1L])
 
 colnamesInt = function(x, cols, check_dups=FALSE, skip_absent=FALSE) .Call(CcolnamesInt, x, cols, check_dups, skip_absent)
 

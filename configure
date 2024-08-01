@@ -111,7 +111,7 @@ detect_openmp () {
 
     # https://mac.r-project.org/openmp
     printf "%s" "* checking if R installation supports OpenMP with \"-Xclang -fopenmp\" ... "
-    if CPPFLAGS="${CPPFLAGS} -Xclang -fopenmp" LDFLAGS="${LDFLAGS} -lomp" "${R_HOME}/bin/R" CMD SHLIB test-omp.c >> config.log 2>&1; then
+    if CPPFLAGS="${CPPFLAGS} -Xclang -fopenmp" PKG_LIBS="-lomp" "${R_HOME}/bin/R" CMD SHLIB test-omp.c >> config.log 2>&1; then
       echo "yes"
       export PKG_CFLAGS="${PKG_CFLAGS} -Xclang -fopenmp"
       export PKG_LIBS="${PKG_LIBS} -lomp"

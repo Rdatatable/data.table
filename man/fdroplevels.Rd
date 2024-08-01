@@ -2,6 +2,7 @@
 \alias{fdroplevels}
 \alias{droplevels}
 \alias{droplevels.data.table}
+\alias{setdroplevels}
 \title{Fast droplevels}
 \description{
   Similar to \code{base::droplevels} but \emph{much faster}.
@@ -9,6 +10,7 @@
 
 \usage{
 fdroplevels(x, exclude = if (anyNA(levels(x))) NULL else NA, \dots)
+setdroplevels(x, except = NULL, exclude = NULL)
 
 \method{droplevels}{data.table}(x, except = NULL, exclude, in.place = FALSE, \dots)
 }
