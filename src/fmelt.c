@@ -595,7 +595,7 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
   if (data->lvalues==1 && length(VECTOR_ELT(data->valuecols, 0)) != data->lmax)
     error(_("Internal error: fmelt.c:getvarcols %d %d"), length(VECTOR_ELT(data->valuecols, 0)), data->lmax);  // # nocov
   if (isNull(data->variable_table)) {
-    if (data->lvalues == 1 & data->measure_is_list) {
+    if ((data->lvalues == 1) & data->measure_is_list) {
       warning("measure.vars is a list with length=1, which according to documentation should return integer indices in the variable column, but currently returns character column names. To increase consistency in the next release, we plan to change variable to integer, so users who were relying on this behavior should change measure.vars=list('col_name') (output variable is column name, will be column index/integer) to measure.vars='col_name' (variable is column name before and after the planned change).");
     }
     if (!varfactor) {
