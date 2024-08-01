@@ -458,7 +458,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     coln--;
     SEXP thisvalue = RHS_list_of_columns ? VECTOR_ELT(values, i) : values;
     vlen = length(thisvalue);
-    if (isNull(thisvalue) && !isNull(rows)) error(_("When deleting columns, i should not be provided"));  // #1082, #3089
+    if (isNull(thisvalue) && !isNull(rows)) error(_("Direct assignment of NULL to a list column item is not supported. If you intend to assign NULL to an item in the list column, use list(list(NULL)) in your query."));  // #1082, #3089
     if (coln+1 <= oldncol) colnam = STRING_ELT(names,coln);
     else colnam = STRING_ELT(newcolnames,coln-length(names));
     if (coln+1 <= oldncol && isNull(thisvalue)) continue;  // delete existing column(s) afterwards, near end of this function

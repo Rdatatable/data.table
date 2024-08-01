@@ -186,6 +186,8 @@ This feature resolves [#4387](https://github.com/Rdatatable/data.table/issues/43
 
 24. The internal `init()` function in `fread.c` module has been marked as `static`, [#6328](https://github.com/Rdatatable/data.table/pull/6328). This is to avoid name collisions, and the resulting segfaults, with other libraries that might expose the same symbol name, and be already loaded by the R process. This was observed in Cray HPE environments where the `libsci` library providing LAPACK to R already has an `init` symbol. Thanks to @rtobar for the report and fix.
 
+25. `set()` and `:=` now provide an improved error message when attempting to directly assign `NULL` to a list column item. The new message guides users to use `list(list(NULL))` instead, enhancing clarity and preventing common mistakes. Previously, this operation would throw a generic error, but now the message is more informative and helpful. Thanks to @Nj221102 for the implementation and @MichaelChirico for the suggestion.
+
 ## TRANSLATIONS
 
 1. Fix a typo in a Mandarin translation of an error message that was hiding the actual error message, [#6172](https://github.com/Rdatatable/data.table/issues/6172). Thanks @trafficfan for the report and @MichaelChirico for the fix.
