@@ -92,7 +92,7 @@
 
 ## NOTES
 
-7. `melt` is documented that the returned `variable` column should contain integer column indices when `measure.vars` is a list, but when the list length=1, `variable` is actually a character column name, which is inconsistent with the documentation, [#5209](https://github.com/Rdatatable/data.table/issues/5209). To increase consistency in the next release, we plan to change `variable` to integer, so users who were relying on this behavior should change `measure.vars=list("col_name")` (output `variable` is column name, will be column index/integer) to `measure.vars="col_name"` (`variable` is column name before and after the planned change), and there is a new warning.
+7. `?melt` has long documented that the returned `variable` column should contain integer column indices when `measure.vars` is a list, but when the list length is 1, `variable` is actually a character column name, which is inconsistent with the documentation, [#5209](https://github.com/Rdatatable/data.table/issues/5209). To increase consistency in the next release, we plan to change `variable` to integer, so users who were relying on this behavior should change `measure.vars=list("col_name")` (output `variable` is column name, will be column index/integer) to `measure.vars="col_name"` (`variable` is column name before and after the planned change). For now, relying on this undocumented behavior throws a new warning.
 
 1. `transform` method for data.table sped up substantially when creating new columns on large tables. Thanks to @OfekShilon for the report and PR. The implemented solution was proposed by @ColeMiller1.
 
