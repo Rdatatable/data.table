@@ -25,10 +25,38 @@ check_section_numbering = function(news) {
   return(any_mismatch)
 }
 
+# ensure that GitHub link text & URL actually agree
+check_gh_links = function(news) {
+  gh_links = gregexpr(
+    "\\[#([0-9]+)\\]\\(https://github.com/Rdatatable/data.table/([^/]+)/([0-9]+)\\)",
+    news_lines,
+    perl=TRUE # required for within-group indices
+  )
+  gh_link_metadata = do.call(rbind, lapply(seq_along(matches), function(idx) {
+    x = matches[[idx]]
+    if (x[1L] <= 0L) return(NULL)
+    match_mat = attr(x, "capture.start")
+    match_mat[] = substring(news_lines[idx], match_mat, match_mat + attr(x, "capture.length") - 1L)
+    match_df = data.frame(match_mat)
+    match_df$line_number = idx
+    match_df
+  }))
+  names(gh_link_metadata) <- c("md_number", "link_type", "link_number", "line_number")
+  matched = gh_link_metadata$md_number == gh_link_metadata$link_number
+  if (all(matched)) return(FALSE)
+
+  cat(sep = "", with(gh_link_metadata[!matched, ], sprintf(
+    "In line %d, link pointing to %s %s is written #%s\n",
+    line_number, link_type, link_number, md_number
+  )))
+  return(TRUE)
+}
+
 any_error = FALSE
-for (news in list.files("NEWS")) {
+for (news in list.files(pattern = "NEWS")) {
   cat(sprintf("Checking NEWS file %s...\n", news))
   news_lines = readLines("NEWS.md")
   any_error = any_error || check_section_numbering(news_lines)
+  any_error = any_error || check_gh_links(news_lines)
 }
-if (any_error) stop("Please fix the section numbering issues above.")
+if (any_error) stop("Please fix NEWS issues above.")
