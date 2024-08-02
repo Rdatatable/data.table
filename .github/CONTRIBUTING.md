@@ -114,7 +114,7 @@ and then the `commit` and `push` shown above would push to the branch in the mai
 
 #### Translations
 
-`data.table` offers some translations so that our users can get feedback (errors, warnings, verbose messages) in their native language. Currently we only support Mandarin Chinese.
+`data.table` offers some translations so that our users can get feedback (errors, warnings, verbose messages) in their native language. There is a [translation team](https://github.com/orgs/Rdatatable/teams/translators/teams) for each currently supported translation.
 
 The data for these translations lives in the `po` folder. You do not need to make any changes here for your PR -- translations are updated in a batch before each CRAN release.
 
