@@ -155,7 +155,8 @@ is_utc = function(tz) {
 `%iscall%` = function(e, f) {
   if (!is.call(e)) return(FALSE)
   if (is.name(e1 <- e[[1L]])) return(e1 %chin% f)
-  e1 %iscall% '::' && e1[[3L]] %chin% f
+  if (e1 %iscall% c('::', ':::')) return(e1[[3L]] %chin% f)
+  paste(deparse(e1), collapse = " ") %chin% f # complicated cases e.g. a closure/builtin on LHS of call; note that format() is much (e.g. 40x) slower than deparse()
 }
 
 # nocov start #593 always return a data.table
