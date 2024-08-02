@@ -59,4 +59,4 @@ for (news in list.files(pattern = "NEWS")) {
   any_error = any_error || check_section_numbering(news_lines)
   any_error = any_error || check_gh_links(news_lines)
 }
-if (any_error) stop("Please fix NEWS issues above.")
+if (any_error) stop("Please fix the NEWS issues above.")
