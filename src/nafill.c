@@ -100,7 +100,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
 
   bool binplace = LOGICAL(inplace)[0];
   if (!IS_TRUE_OR_FALSE(nan_is_na_arg))
-    error(_("nan_is_na must be TRUE or FALSE")); // # nocov
+    error(_("%s must be TRUE or FALSE"), "nan_is_na"); // # nocov
   bool nan_is_na = LOGICAL(nan_is_na_arg)[0];
 
   SEXP x = R_NilValue;
@@ -114,7 +114,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
     obj = PROTECT(allocVector(VECSXP, 1)); protecti++; // wrap into list
     SET_VECTOR_ELT(obj, 0, obj1);
   }
-  SEXP ricols = PROTECT(colnamesInt(obj, cols, ScalarLogical(TRUE))); protecti++; // nafill cols=NULL which turns into seq_along(obj)
+  SEXP ricols = PROTECT(colnamesInt(obj, cols, /* check_dups= */ ScalarLogical(TRUE), /* skip_absent= */ ScalarLogical(FALSE))); protecti++; // nafill cols=NULL which turns into seq_along(obj)
   x = PROTECT(allocVector(VECSXP, length(ricols))); protecti++;
   int *icols = INTEGER(ricols);
   for (int i=0; i<length(ricols); i++) {

@@ -16,6 +16,12 @@ void convertSingleDate(int x, datetype type, void *out)
     static const char months[] = {31, 30, 31, 30, 31, 31, 30, 31, 30, 31, 31, 29};
     static const int quarter[] = {31, 91, 92, 92, 60};
 
+    if (x == NA_INTEGER) {
+        if (type == YEARMON || type == YEARQTR) *(double *)out = NA_REAL;
+        else *(int *)out = NA_INTEGER;
+        return;
+    }
+
     if (type == WDAY) {
         int wday = (x + 4) % 7;
         if (wday < 0) wday += 7;

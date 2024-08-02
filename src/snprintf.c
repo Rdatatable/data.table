@@ -1,7 +1,7 @@
 // For translations (#4402) we need positional specifiers (%n$), a non-C99 POSIX extension.
 // On Linux and Mac, standard snprintf supports positional specifiers.
 // On Windows, we tried many things but just couldn't achieve linking to _sprintf_p. Even
-// if we managed that on AppVeyor we may have fragility in the future on Windows given
+// if we managed that on AppVeyor (now GHA) we may have fragility in the future on Windows given
 // varying Windows versions, compile environments/flags, and dll libraries. This may be
 // why R uses a third party library, trio, on Windows. But R does not expose trio for use
 // by packages.
@@ -106,7 +106,7 @@ int dt_win_snprintf(char *dest, const size_t n, const char *fmt, ...)
       return -1;
     }
     *ch2++ = '%';
-    strncpy(ch2, strp[i], strl[i]); // write the reordered specifers without the n$ part
+    strncpy(ch2, strp[i], strl[i]); // write the reordered specifiers without the n$ part
     ch2 += strl[i];
     strcpy(ch2, delim); // includes '\0'
     ch2 += NDELIM;      // now resting on the '\0'
@@ -119,7 +119,7 @@ int dt_win_snprintf(char *dest, const size_t n, const char *fmt, ...)
     return -1;
     // # nocov end
   }
-  // now spec contains the specifiers (minus their $n parts) in the same oder as ap
+  // now spec contains the specifiers (minus their $n parts) in the same order as ap
   int res = vsnprintf(buff, n, spec, ap); // C library does all the (non-positional) hard work here
   va_end(ap);
   if (res>=n) {
@@ -184,7 +184,7 @@ int dt_win_snprintf(char *dest, const size_t n, const char *fmt, ...)
   return nc;
 }
 
-SEXP test_dt_win_snprintf()
+SEXP test_dt_win_snprintf(void)
 {
   char buff[50];
 
@@ -214,7 +214,7 @@ SEXP test_dt_win_snprintf()
 
   int res = dt_win_snprintf(buff, 10, "%4$d%2$d%3$d%5$d%1$d", 111, 222, 33, 44, 555); // fmt longer than n
   if (strlen(buff)!=9 || strcmp(buff, "442223355"))                                 error(_("dt_win_snprintf test %d failed: %s"), 9, buff);
-  if (res!=13) /* should return what would have been written if not chopped */      error(_("dt_win_snprintf test %d failed: %s"), 10, res);
+  if (res!=13) /* should return what would have been written if not chopped */      error(_("dt_win_snprintf test %d failed: %d"), 10, res);
 
   dt_win_snprintf(buff, 39, "%l", 3);
   if (strlen(buff)!=38 || strcmp(buff, "0 %l    does not end with recognized t"))   error(_("dt_win_snprintf test %d failed: %s"), 11, buff);

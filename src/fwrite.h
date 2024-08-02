@@ -3,29 +3,30 @@
 #else
   #define STRICT_R_HEADERS
   #include <R.h>
+  #include <Rinternals.h>  // for SEXP in writeList() prototype
   #include "po.h"
   #define STOP     error
   #define DTPRINT  Rprintf
 #endif
 
-typedef void (*writer_fun_t)(const void *, int64_t, char **);
+typedef void writer_fun_t(const void *, int64_t, char **);
 
 // in the order of writer_fun_t in fwriteR.c
-void writeBool8();
-void writeBool32();
-void writeBool32AsString();
-void writeInt32();
-void writeInt64();
-void writeFloat64();
-void writeComplex();
-void writeITime();
-void writeDateInt32();
-void writeDateFloat64();
-void writePOSIXct();
-void writeNanotime();
-void writeString();
-void writeCategString();
-void writeList();
+writer_fun_t writeBool8;
+writer_fun_t writeBool32;
+writer_fun_t writeBool32AsString;
+writer_fun_t writeInt32;
+writer_fun_t writeInt64;
+writer_fun_t writeFloat64;
+writer_fun_t writeComplex;
+writer_fun_t writeITime;
+writer_fun_t writeDateInt32;
+writer_fun_t writeDateFloat64;
+writer_fun_t writePOSIXct;
+writer_fun_t writeNanotime;
+writer_fun_t writeString;
+writer_fun_t writeCategString;
+writer_fun_t writeList;
 
 void write_chars(const char *source, char **dest);
 
@@ -75,7 +76,7 @@ typedef struct fwriteMainArgs
   int64_t nrow;
   // a vector of pointers to all-same-length column vectors
   const void **columns;
-  writer_fun_t *funs;      // a vector of writer_fun_t function pointers
+  writer_fun_t **funs;    // a vector of writer_fun_t function pointers
 
   // length ncol vector containing which fun[] to use for each column
   // one byte to use 8 times less cache lines than a vector of function pointers would do

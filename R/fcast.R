@@ -5,7 +5,7 @@ guess = function(x) {
     return("(all)")
   var = names(x)[ncol(x)]
   messagef("Using '%s' as value column. Use 'value.var' to override", var)
-  return(var)
+  var
 }
 
 dcast <- function(
@@ -25,16 +25,39 @@ dcast <- function(
   # nocov end
 }
 
-check_formula = function(formula, varnames, valnames) {
+check_formula = function(formula, varnames, valnames, value.var.in.LHSdots, value.var.in.RHSdots) {
   if (is.character(formula)) formula = as.formula(formula)
   if (!inherits(formula, "formula") || length(formula) != 3L)
     stopf("Invalid formula. Cast formula should be of the form LHS ~ RHS, for e.g., a + b ~ c.")  # nocov; couldn't find a way to construct a test formula with length!=3L
   vars = all.vars(formula)
   vars = vars[!vars %chin% c(".", "...")]
   allvars = c(vars, valnames)
+  vars = setdiff(vars, valnames)
+  allvarsBL = list(vars, allvars)
   if (any(allvars %chin% varnames[duplicated(varnames)]))
     stopf('data.table to cast must have unique column names')
-  deparse_formula(as.list(formula)[-1L], varnames, allvars)
+  if (value.var.in.LHSdots == value.var.in.RHSdots && isFALSE(value.var.in.LHSdots)) {
+    deparse_formula(as.list(formula)[-1L], varnames, allvars)
+  }
+  else {
+    split_deparsing(as.list(formula)[-1L], varnames, allvarsBL[[2L - value.var.in.LHSdots]], allvarsBL[[2L - value.var.in.RHSdots]])
+  }
+}
+
+split_deparsing = function(expr, varnames, LHSallvars, RHSallvars) {
+  expr = list(list(expr[[1L]], LHSallvars), list(expr[[2L]], c(RHSallvars))) # assume expr[[1L]] is LHS and expr[[2L]] is RHS
+  lvars = lapply(expr, function(thisList) {
+    this = thisList[[1L]]
+    allvars = thisList[[2L]]
+    if (!is.language(this)) return(NULL)
+    if (this %iscall% '+') return(unlist(deparse_formula(this[-1L], varnames, allvars)))
+    if (is.name(this) && this == quote(`...`)) {
+      subvars = setdiff(varnames, allvars)
+      return(lapply(subvars, as.name))
+    }
+    this
+  })
+  lvars = lapply(lvars, function(x) if (length(x) && !is.list(x)) list(x) else tryCatch(unique(x), error = function(e) x))
 }
 
 deparse_formula = function(expr, varnames, allvars) {
@@ -105,10 +128,14 @@ aggregate_funs = function(funs, vals, sep="_", ...) {
   as.call(c(quote(list), unlist(ans)))
 }
 
-dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ..., margins = NULL, subset = NULL, fill = NULL, drop = TRUE, value.var = guess(data), verbose = getOption("datatable.verbose")) {
+dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ..., margins = NULL, subset = NULL, fill = NULL, drop = TRUE, value.var = guess(data), verbose = getOption("datatable.verbose"), value.var.in.dots = FALSE, value.var.in.LHSdots = value.var.in.dots, value.var.in.RHSdots = value.var.in.dots) {
   if (!is.data.table(data)) stopf("'data' must be a data.table.")
-  drop = as.logical(rep(drop, length.out=2L))
+  drop = as.logical(rep_len(drop, 2L))
   if (anyNA(drop)) stopf("'drop' must be logical TRUE/FALSE")
+  if (!isTRUEorFALSE(value.var.in.dots))
+    stopf("Argument 'value.var.in.dots' should be logical TRUE/FALSE")
+  if (!isTRUEorFALSE(value.var.in.LHSdots) || !isTRUEorFALSE(value.var.in.RHSdots))
+    stopf("Arguments 'value.var.in.LHSdots', 'value.var.in.RHSdots' should be logical TRUE/FALSE")
   # #2980 if explicitly providing fun.aggregate=length but not a value.var,
   #   just use the last column (as guess(data) would do) because length will be
   #   the same on all columns
@@ -116,7 +143,7 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
     value.var = names(data)[ncol(data)]
   lvals = value_vars(value.var, names(data))
   valnames = unique(unlist(lvals))
-  lvars = check_formula(formula, names(data), valnames)
+  lvars = check_formula(formula, names(data), valnames, value.var.in.LHSdots, value.var.in.RHSdots)
   lvars = lapply(lvars, function(x) if (length(x)) x else quote(`.`))
   # tired of lapply and the way it handles environments!
   allcols = c(unlist(lvars), lapply(valnames, as.name))
@@ -152,23 +179,29 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
     dat = .Call(CsubsetDT, dat, idx, seq_along(dat))
   }
   fun.call = m[["fun.aggregate"]]
-  fill.default = NULL
   if (is.null(fun.call)) {
     oo = forderv(dat, by=varnames, retGrp=TRUE)
     if (attr(oo, 'maxgrpn', exact=TRUE) > 1L) {
-      messagef("Aggregate function missing, defaulting to 'length'")
+      warningf("'fun.aggregate' is NULL, but found duplicate row/column combinations, so defaulting to length(). That is, the variables %s used in 'formula' do not uniquely identify rows in the input 'data'. In such cases, 'fun.aggregate' is used to derive a single representative value for each combination in the output data.table, for example by summing or averaging (fun.aggregate=sum or fun.aggregate=mean, respectively). Check the resulting table for values larger than 1 to see which combinations were not unique. See ?dcast.data.table for more details.", brackify(varnames), class= "dt_missing_fun_aggregate_warning")
       fun.call = quote(length)
     }
   }
-  if (!is.null(fun.call)) {
+  dat_for_default_fill = dat
+  run_agg_funs = !is.null(fun.call)
+  if (run_agg_funs) {
     fun.call = aggregate_funs(fun.call, lvals, sep, ...)
-    errmsg = gettext("Aggregating function(s) should take vector inputs and return a single value (length=1). However, function(s) returns length!=1. This value will have to be used to fill any missing combinations, and therefore must be length=1. Either override by setting the 'fill' argument explicitly or modify your function to handle this case appropriately.")
-    if (is.null(fill)) {
-      fill.default = suppressWarnings(dat[0L][, eval(fun.call)])
-      # tryCatch(fill.default <- dat[0L][, eval(fun.call)], error = function(x) stopf(errmsg))
-      if (nrow(fill.default) != 1L) stopf(errmsg)
+    maybe_err = function(list.of.columns) {
+      if (!all(lengths(list.of.columns) == 1L)) {
+        msg <- gettext("Aggregating function(s) should take a vector as input and return a single value (length=1), but they do not, so the result is undefined. Please fix by modifying your function so that a single value is always returned.")
+        if (is.null(fill)) { # TODO change to always stopf #6329
+          stop(msg, domain=NA, call. = FALSE)
+        } else {
+          warning(msg, domain=NA, call. = FALSE)
+        }
+      }
+      list.of.columns
     }
-    dat = dat[, eval(fun.call), by=c(varnames)]
+    dat = dat[, maybe_err(eval(fun.call)), by=c(varnames)]
   }
   order_ = function(x) {
     o = forderv(x, retGrp=TRUE, sort=TRUE)
@@ -177,7 +210,7 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
     o[idx] # subsetVector retains attributes, using R's subset for now
   }
   cj_uniq = function(DT) {
-    do.call("CJ", lapply(DT, function(x)
+    do.call(CJ, lapply(DT, function(x)
       if (is.factor(x)) {
         xint = seq_along(levels(x))
         setattr(xint, 'levels', levels(x))
@@ -209,16 +242,21 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
       .Call(Csetlistelt, mapunique, 2L, seq_len(nrow(rhs_)))
       lhs = lhs_; rhs = rhs_
     }
-    maplen = vapply_1i(mapunique, length)
-    idx = do.call("CJ", mapunique)[map, 'I' := .I][["I"]] # TO DO: move this to C and avoid materialising the Cross Join.
-    ans = .Call(Cfcast, lhs, val, maplen[[1L]], maplen[[2L]], idx, fill, fill.default, is.null(fun.call))
-    allcols = do.call("paste", c(rhs, sep=sep))
+    maplen = lengths(mapunique)
+    idx = do.call(CJ, mapunique)[map, 'I' := .I][["I"]] # TO DO: move this to C and avoid materialising the Cross Join.
+    some_fill = anyNA(idx)
+    fill.default = if (run_agg_funs && is.null(fill) && some_fill) dat_for_default_fill[, maybe_err(eval(fun.call))]
+    if (run_agg_funs && is.null(fill) && some_fill) {
+      fill.default = dat_for_default_fill[0L][, maybe_err(eval(fun.call))]
+    }
+    ans = .Call(Cfcast, lhs, val, maplen[[1L]], maplen[[2L]], idx, fill, fill.default, is.null(fun.call), some_fill)
+    allcols = do.call(paste, c(rhs, sep=sep))
     if (length(valnames) > 1L)
-      allcols = do.call("paste", if (identical(".", allcols)) list(valnames, sep=sep)
+      allcols = do.call(paste, if (identical(".", allcols)) list(valnames, sep=sep)
             else c(CJ(valnames, allcols, sorted=FALSE), sep=sep))
       # removed 'setcolorder()' here, #1153
     setattr(ans, 'names', c(lhsnames, allcols))
     setDT(ans); setattr(ans, 'sorted', lhsnames)
   } else stopf("Internal error -- empty rhsnames in dcast; please report") # nocov
-  return (ans)
+  return(ans)
 }

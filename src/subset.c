@@ -104,7 +104,7 @@ void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
 
 const char *check_idx(SEXP idx, int max, bool *anyNA_out, bool *orderedSubset_out)
 // set anyNA for branchless subsetVectorRaw
-// error if any negatives, zeros or >max since they should have been dealt with by convertNegAndZeroIdx() called ealier at R level.
+// error if any negatives, zeros or >max since they should have been dealt with by convertNegAndZeroIdx() called earlier at R level.
 // single cache efficient sweep with prefetch, so very low priority to go parallel
 {
   if (!isInteger(idx)) error(_("Internal error. Argument '%s' to %s is type '%s' not '%s'"), "idx", "check_idx", type2char(TYPEOF(idx)), "integer"); // # nocov
@@ -281,7 +281,7 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md
     SEXP max = PROTECT(ScalarInteger(nrow)); nprotect++;
     rows = PROTECT(convertNegAndZeroIdx(rows, max, ScalarLogical(TRUE), ScalarLogical(TRUE))); nprotect++;
     const char *err = check_idx(rows, nrow, &anyNA, &orderedSubset);
-    if (err!=NULL) error(err);
+    if (err!=NULL) error("%s", err);
   }
 
   if (!isInteger(cols)) error(_("Internal error. Argument '%s' to %s is type '%s' not '%s'"), "cols", "Csubset", type2char(TYPEOF(cols)), "integer"); // # nocov
