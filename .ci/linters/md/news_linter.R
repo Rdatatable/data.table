@@ -28,7 +28,7 @@ check_section_numbering = function(news) {
 any_error = FALSE
 for (news in list.files("NEWS")) {
   cat(sprintf("Checking NEWS file %s...\n", news))
-  news = readLines("NEWS.md")
-  any_error = any_error || check_section_numbering(news)
+  news_lines = readLines("NEWS.md")
+  any_error = any_error || check_section_numbering(news_lines)
 }
 if (any_error) stop("Please fix the section numbering issues above.")
