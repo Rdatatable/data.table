@@ -435,9 +435,6 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     }
     assign("prevtest", num, parent.frame(), inherits=TRUE)
   }
-<<<<<<< HEAD
-  if (length(output) || length(notOutput)) {
-=======
   if (!fail) for (type in c("warning","error","message")) {
     observed = actual[[type]]
     expected = get(type)
@@ -471,7 +468,6 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     # nocov end
   }
   if (!fail && !length(error) && (length(output) || length(notOutput))) {
->>>>>>> master
     if (out[length(out)] == "NULL") out = out[-length(out)]
     out = paste(out, collapse="\n")
     output = paste(output, collapse="\n")  # so that output= can be either a \n separated string, or a vector of strings.

@@ -102,14 +102,11 @@ extern SEXP sym_index;
 extern SEXP sym_BY;
 extern SEXP sym_starts, char_starts;
 extern SEXP sym_maxgrpn;
-<<<<<<< HEAD
 extern SEXP sym_gforce_dynamic;
-=======
 extern SEXP sym_anyna;
 extern SEXP sym_anyinfnan;
 extern SEXP sym_anynotascii;
 extern SEXP sym_anynotutf8;
->>>>>>> master
 extern SEXP sym_colClassesAs;
 extern SEXP sym_verbose;
 extern SEXP SelfRefSymbol;

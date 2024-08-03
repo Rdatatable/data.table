@@ -1770,43 +1770,7 @@ replace_dot_alias = function(e) {
         GForce = FALSE
       } else {
         # Apply GForce
-<<<<<<< HEAD
-        .gforce_ok = function(q) {  # TODO: move outside and test directly
-          if (dotN(q)) return(TRUE) # #334
-          # run GForce for gfuns(x, ...) where x is a column of .SD 
-          # is.symbol() is for #1369, #1974 and #2949
-          if (!(is.call(q) && is.symbol(q1<-q[[1L]]) && is.symbol(q2<-q[[2L]]) && q1 %chin% gfuns)) return(FALSE)
-          if (!q2 %chin% names(SDenv$.SDall) && q2!=".I") return(FALSE)  # 875
-          if (q1=="weighted.mean") return(TRUE)  #3977; the weight argument can be a symbol
-          if (length(q)==2L) return(TRUE)  # e.g. sum(colA) (i.e. no arguments)
-          # establish named arguments; e.g. if both na.rm and n have been passed to first/last, either one could appear first
-          f = get(q1)  # maybe a lookup table would be faster than get() but speed should be insignificant here up-front one-time
-          if (!is.primitive(f)) q = match.call(f, q)
-          # else the gfuns which are primitive functions (which match.call doesn't support and errors) are
-          # all of the form fun(..., na.rm=FALSE) so the na.rm arg has to be named in full by the user and
-          # so will be named in q already
-          for (argnum in seq.int(3L, length(q))) {
-            arg = if (is.null(names(q))) "" else names(q)[argnum]
-            if (arg=="na.rm") next
-            if (q1=="shift") {
-              if (arg=="fill" && (is.symbol(q$fill) || is.atomic(q$fill))) next
-              if (arg=="type" && (is.symbol(q$type) || is.atomic(q$type))) next # test 2224.01
-              if (arg=="n") next # negative n is supported by optimized shift, and in test 2224.01 n=-1 appears as a call to '-'()
-            }
-            if (arg=="n") {
-              if (!is.atomic(q$n) || !isTRUE(q$n>0L)) return(FALSE)  # n<=0 not optimized for first/last, [, [[
-              next
-            }
-            if (arg!="") return(FALSE)  # e.g. trim= and fill's give.names= are not yet optimized
-            if (length(q[[argnum]])!=1L || !is.atomic(q[[argnum]])) return(FALSE)  # test 173.1: DT[,B[B>3],by=A], and test 823: sum(b,a)
-            if (q1=="[[" && !eval(call('is.atomic', q2), envir=x)) return(FALSE)  # test 1581.16: dt[, .(l=l[[1L]]), by=a]
-          }
-          TRUE
-        }
-        if (jsub[[1L]]=="list") {
-=======
         if (jsub %iscall% "list") {
->>>>>>> master
           GForce = TRUE
           for (ii in seq.int(from=2L, length.out=length(jsub)-1L)) {
             if (!.gforce_ok(jsub[[ii]], SDenv$.SDall)) {GForce = FALSE; break}
@@ -1897,12 +1861,9 @@ replace_dot_alias = function(e) {
     assign(".N", len__, thisEnv) # For #334
     #fix for #1683
     if (use.I) assign(".I", seq_len(nrow(x)), thisEnv)
-<<<<<<< HEAD
     ans = gforce(thisEnv, jsub, o__, f__, len__, irows,  # irows needed for #971
                  .Call(CsubsetVector, groups, grpcols),  # just a list() subset to make C level neater; doesn't copy column contents
                  lhs)  # for now this just prevents := with new feature first/last n>1; in future see TODO below
-=======
-    ans = gforce(thisEnv, jsub, o__, f__, len__, irows) # irows needed for #971.
     gi = if (length(o__)) o__[f__] else f__
     g = lapply(grpcols, function(i) .Call(CsubsetVector, groups[[i]], gi)) # use CsubsetVector instead of [ to preserve attributes #5567
 
@@ -1943,7 +1904,6 @@ replace_dot_alias = function(e) {
       }
     }
     ans = c(g, ans)
->>>>>>> master
   } else {
     ans = .Call(Cdogroups, x, xcols, groups, grpcols, jiscols, xjiscols, grporder, o__, f__, len__, jsub, SDenv, cols, newnames, !missing(on), verbose, showProgress)
   }
@@ -3059,13 +3019,8 @@ gfuns = c(gdtfuns,
 `g[` = `g[[` = function(x, n) .Call(Cgnthvalue, x, as.integer(n)) # n is of length=1 here.
 ghead = function(x, n) .Call(Cghead, x, as.integer(n))
 gtail = function(x, n) .Call(Cgtail, x, as.integer(n))
-<<<<<<< HEAD
 gfirst = function(x, n=1L, na.rm=FALSE) .Call(Cgfirst, x, as.integer(n), na.rm)
 glast = function(x, n=1L, na.rm=FALSE) .Call(Cglast, x, as.integer(n), na.rm)
-=======
-gfirst = function(x) .Call(Cgfirst, x)
-glast = function(x) .Call(Cglast, x)
->>>>>>> master
 gsum = function(x, na.rm=FALSE) .Call(Cgsum, x, na.rm)
 gmean = function(x, na.rm=FALSE) .Call(Cgmean, x, na.rm)
 gweighted.mean = function(x, w, ..., na.rm=FALSE) {

@@ -29,14 +29,11 @@ SEXP sym_index;
 SEXP sym_BY;
 SEXP sym_starts, char_starts;
 SEXP sym_maxgrpn;
-<<<<<<< HEAD
 SEXP sym_gforce_dynamic;
-=======
 SEXP sym_anyna;
 SEXP sym_anyinfnan;
 SEXP sym_anynotascii;
 SEXP sym_anynotutf8;
->>>>>>> master
 SEXP sym_colClassesAs;
 SEXP sym_verbose;
 SEXP SelfRefSymbol;
@@ -52,103 +49,6 @@ Rcomplex NA_CPLX;
 size_t __sizes[100];
 size_t __typeorder[100];
 
-<<<<<<< HEAD
-// .Calls
-SEXP setattrib();
-SEXP bmerge();
-SEXP assign();
-SEXP dogroups();
-SEXP copy();
-SEXP shallowwrapper();
-SEXP alloccolwrapper();
-SEXP selfrefokwrapper();
-SEXP truelength();
-SEXP settruelength();
-SEXP setcharvec();
-SEXP setcolorder();
-SEXP chmatch_R();
-SEXP chmatchdup_R();
-SEXP chin_R();
-SEXP fifelseR();
-SEXP fcaseR();
-SEXP freadR();
-SEXP fwriteR();
-SEXP reorder();
-SEXP rbindlist();
-SEXP vecseq();
-SEXP setlistelt();
-SEXP address();
-SEXP expandAltRep();
-SEXP fmelt();
-SEXP fcast();
-SEXP uniqlist();
-SEXP uniqlengths();
-SEXP forder();
-SEXP issorted();
-SEXP gforce();
-SEXP gsum();
-SEXP gmean();
-SEXP gmin();
-SEXP gmax();
-SEXP isOrderedSubset();
-SEXP setNumericRounding();
-SEXP getNumericRounding();
-SEXP binary();
-SEXP subsetDT();
-SEXP subsetVector();
-SEXP convertNegAndZeroIdx();
-SEXP frank();
-SEXP dt_na();
-SEXP lookup();
-SEXP overlaps();
-SEXP whichwrapper();
-SEXP shift();
-SEXP transpose();
-SEXP anyNA();
-SEXP isReallyReal();
-SEXP setlevels();
-SEXP rleid();
-SEXP gmedian();
-SEXP gtail();
-SEXP ghead();
-SEXP glast();
-SEXP gfirst();
-SEXP gnthvalue();
-SEXP dim();
-SEXP gvar();
-SEXP gsd();
-SEXP gprod();
-SEXP gshift();
-SEXP nestedid();
-SEXP setDTthreads();
-SEXP getDTthreads_R();
-SEXP nqRecreateIndices();
-SEXP fsort();
-SEXP inrange();
-SEXP between();
-SEXP hasOpenMP();
-SEXP uniqueNlogical();
-SEXP frollfunR();
-SEXP dllVersion();
-SEXP nafillR();
-SEXP colnamesInt();
-SEXP initLastUpdated();
-SEXP cj();
-SEXP lock();
-SEXP unlock();
-SEXP islockedR();
-SEXP allNAR();
-SEXP test_dt_win_snprintf();
-SEXP dt_zlib_version();
-SEXP startsWithAny();
-SEXP convertDate();
-SEXP notchin();
-
-// .Externals
-SEXP fastmean();
-
-=======
->>>>>>> master
 static const
 R_CallMethodDef callMethods[] = {
 {"Csetattrib", (DL_FUNC) &setattrib, -1},
@@ -386,14 +286,11 @@ void attribute_visible R_init_data_table(DllInfo *info)
   sym_index   = install("index");
   sym_BY      = install(".BY");
   sym_maxgrpn = install("maxgrpn");
-<<<<<<< HEAD
   sym_gforce_dynamic = install("gforce_dynamic");
-=======
   sym_anyna   = install("anyna");
   sym_anyinfnan = install("anyinfnan");
   sym_anynotascii = install("anynotascii");
   sym_anynotutf8 = install("anynotutf8");
->>>>>>> master
   sym_colClassesAs = install("colClassesAs");
   sym_verbose = install("datatable.verbose");
   SelfRefSymbol = install(".internal.selfref");
