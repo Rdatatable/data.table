@@ -32,11 +32,11 @@ check_gh_links = function(news) {
     news_lines,
     perl=TRUE # required for within-group indices
   )
-  gh_link_metadata = do.call(rbind, lapply(seq_along(matches), function(idx) {
-    x = matches[[idx]]
+  gh_link_metadata = do.call(rbind, lapply(seq_along(gh_links), function(idx) {
+    x = gh_links[[idx]]
     if (x[1L] <= 0L) return(NULL)
     match_mat = attr(x, "capture.start")
-    match_mat[] = substring(news_lines[idx], match_mat, match_mat + attr(x, "capture.length") - 1L)
+    match_mat[] = substring(news[idx], match_mat, match_mat + attr(x, "capture.length") - 1L)
     match_df = data.frame(match_mat)
     match_df$line_number = idx
     match_df
