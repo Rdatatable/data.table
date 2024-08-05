@@ -27,13 +27,13 @@ check_section_numbering = function(news) {
 
 # ensure that GitHub link text & URL actually agree
 check_gh_links = function(news) {
-  gh_links = gregexpr(
-    "\\[#([0-9]+)\\]\\(https://github.com/Rdatatable/data.table/([^/]+)/([0-9]+)\\)",
+  gh_links_info = gregexpr(
+    "\\[#(?<md_number>[0-9]+)\\]\\(https://github.com/Rdatatable/data.table/(?<link_type>[^/]+)/(?<link_number>[0-9]+)\\)",
     news,
     perl=TRUE # required for within-group indices
   )
-  gh_link_metadata = do.call(rbind, lapply(seq_along(gh_links), function(idx) {
-    x = gh_links[[idx]]
+  gh_link_metadata = do.call(rbind, lapply(seq_along(gh_links_info), function(idx) {
+    x = gh_links_info[[idx]]
     if (x[1L] <= 0L) return(NULL)
     match_mat = attr(x, "capture.start") # matrix seeded with the correct dimensions
     match_mat[] = substring(news[idx], match_mat, match_mat + attr(x, "capture.length") - 1L)
@@ -41,7 +41,6 @@ check_gh_links = function(news) {
     match_df$line_number = idx
     match_df
   }))
-  names(gh_link_metadata) <- c("md_number", "link_type", "link_number", "line_number")
   matched = gh_link_metadata$md_number == gh_link_metadata$link_number
   if (all(matched)) return(FALSE)
 
