@@ -141,9 +141,9 @@
 
 13. Removed a warning about the now totally-obsolete option `datatable.CJ.names`, as discussed in previous releases.
 
-14. Refactored some non-API calls in the package C code, (#6180)[https://github.com/Rdatatable/data.table/issues/6180]. There should be no user-visible change. Thanks to various R users, R core, and especially Luke Tierney for pushing to have a clearer definition of "API" for R and for offering clear documentation and suggested workarounds. Thanks @MichaelChirico and @TysonStanley for implementing changes for this release; more will follow.
+14. Refactored some non-API calls in the package C code, [#6180](https://github.com/Rdatatable/data.table/issues/6180). There should be no user-visible change. Thanks to various R users, R core, and especially Luke Tierney for pushing to have a clearer definition of "API" for R and for offering clear documentation and suggested workarounds. Thanks @MichaelChirico and @TysonStanley for implementing changes for this release; more will follow.
 
-15. C code is more unified in how failures to allocate memory (`malloc()`/`calloc()`) are handled, (#1115)[https://github.com/Rdatatable/data.table/issues/1115]. No OOM issues were reported, as these regions of code typically request relatively small blocks of memory, but it is good to handle memory pressure consistently. Thanks @elfring for the report and @MichaelChirico for the clean-up effort and future-proofing linter.
+15. C code is more unified in how failures to allocate memory (`malloc()`/`calloc()`) are handled, [#1115](https://github.com/Rdatatable/data.table/issues/1115). No OOM issues were reported, as these regions of code typically request relatively small blocks of memory, but it is good to handle memory pressure consistently. Thanks @elfring for the report and @MichaelChirico for the clean-up effort and future-proofing linter.
 
 16. The internal routine for finding sort order (`forder`) will now re-use any existing index. A similar optimization was already present in R code, but this has now been pushed to C and covers a wider range of use cases and collects more statistics about its input (e.g. whether any infinite entries were found), opening the possibility for more optimizations in other functions.
 
