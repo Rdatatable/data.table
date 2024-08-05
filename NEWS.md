@@ -60,6 +60,8 @@
 
 13. New `setdroplevels()` as a by-reference version of the `droplevels()` method, which returns a copy of its input, [#6014](https://github.com/Rdatatable/data.table/issues/6014). Thanks @MichaelChirico for the suggestion and implementation.
 
+14. `all.equal.data.table` gains `ignore.indices` argument, [#6134](https://github.com/Rdatatable/data.table/issues/6134).
+
 ## BUG FIXES
 
 1. `unique()` returns a copy the case when `nrows(x) <= 1` instead of a mutable alias, [#5932](https://github.com/Rdatatable/data.table/pull/5932). This is consistent with existing `unique()` behavior when the input has no duplicates but more than one row. Thanks to @brookslogan for the report and @dshemetov for the fix.
