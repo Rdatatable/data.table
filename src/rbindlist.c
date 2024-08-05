@@ -246,6 +246,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
 
   SEXP ans = PROTECT(allocVector(VECSXP, idcol + ncol));
   SEXP ansNames = PROTECT(allocVector(STRSXP, idcol + ncol));
+  int nprotect = 2;
   setAttrib(ans, R_NamesSymbol, ansNames);
   if (idcol) {
     SET_STRING_ELT(ansNames, 0, STRING_ELT(idcolArg, 0));
@@ -272,7 +273,6 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
   }
 
   SEXP coercedForFactor = NULL;
-  int nprotect = 0;
   for(int j=0; j<ncol; ++j) {
     int maxType=LGLSXP;  // initialize with LGLSXP for test 2002.3 which has col x NULL in both lists to be filled with NA for #1871
     bool factor=false, orderedFactor=false;     // ordered factor is class c("ordered","factor"). isFactor() is true when isOrdered() is true.
@@ -553,6 +553,6 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
       }
     }
   }
-  UNPROTECT(2 + nprotect); // ans, ansNames, coercedForFactor?
+  UNPROTECT(nprotect); // ans, ansNames, coercedForFactor?
   return(ans);
 }
