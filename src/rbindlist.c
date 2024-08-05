@@ -244,6 +244,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
     ncol = length(VECTOR_ELT(l, first));  // ncol was increased as if fill=true, so reduce it back given fill=false (fill==false checked above)
   }
 
+  int nprotect = 2;
   SEXP ans = PROTECT(allocVector(VECSXP, idcol + ncol));
   SEXP ansNames = PROTECT(allocVector(STRSXP, idcol + ncol));
   setAttrib(ans, R_NamesSymbol, ansNames);
@@ -553,6 +554,6 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
       }
     }
   }
-  UNPROTECT(2 + nprotect); // ans, ansNames, coercedForFactor?
+  UNPROTECT(nprotect); // ans, ansNames, coercedForFactor?
   return(ans);
 }
