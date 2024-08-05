@@ -3,7 +3,7 @@
 # Only comments referring to it should be in openmp-utils.c
 omp_set_num_threads_linter = function(c_file) {
   # strip comments, we only care if the function appears in actual code.
-  processed_lines = system2("gcc", c("-fpreprocessed", "-E", "-xc", "-", c_file), stdout=TRUE, stderr=FALSE)
+  processed_lines = system2("gcc", c("-fpreprocessed", "-E", c_file), stdout=TRUE, stderr=FALSE)
   idx = grep("omp_set_num_threads", processed_lines, fixed = TRUE)
   if (!length(idx)) return()
   stop(sprintf(
