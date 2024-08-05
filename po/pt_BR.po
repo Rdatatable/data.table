@@ -1,7 +1,7 @@
 #
 # Translators:
 # Italo Santos <ids37@nau.edu>, 2024
-# Leonardo Fontenelle <leonardf@leonardof.med.br>, 2024
+# Leonardo Fontenelle <leonardof@leonardof.med.br>, 2024
 # Rafael Fontenelle <rffontenelle@gmail.com>, 2024
 #
 msgid ""
@@ -9,7 +9,7 @@ msgstr ""
 "Project-Id-Version: data.table 1.15.99\n"
 "POT-Creation-Date: 2024-06-23 12:07-0300\n"
 "PO-Revision-Date: 2024-06-23 16:40-0300\n"
-"Last-Translator: Leonardo Fontenelle <leonardf@leonardof.med.br>\n"
+"Last-Translator: Leonardo Fontenelle <leonardof@leonardof.med.br>\n"
 "Language-Team: Brazilian Portuguese\n"
 "Language: pt_BR\n"
 "MIME-Version: 1.0\n"
