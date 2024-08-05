@@ -3046,8 +3046,8 @@ test(1006, print(as.data.table(M), nrows=10), output="gear NA.*1: 21.0")
 # rbinding factor with non-factor/character
 DT1 <- data.table(x=1:5, y=factor("a"))
 DT2 <- data.table(x=1:5, y=2)
-test(1007, rbindlist(list(DT1, DT2)), data.table(x = c(1:5, 1:5), y = factor(c(rep('a', 5), rep('2', 5)), levels = c('a', '2'))))
-test(1008, rbindlist(list(DT2, DT1)), data.table(x = c(1:5, 1:5), y = factor(c(rep('2', 5), rep('a', 5)))))
+test(1007.1, rbindlist(list(DT1, DT2)), data.table(x = c(1:5, 1:5), y = factor(c(rep('a', 5), rep('2', 5)), levels = c('a', '2'))))
+test(1007.2, rbindlist(list(DT2, DT1)), data.table(x = c(1:5, 1:5), y = factor(c(rep('2', 5), rep('a', 5)))))
 
 # rbindlist different types
 DT1 <- data.table(a = 1L, b = 2L)
