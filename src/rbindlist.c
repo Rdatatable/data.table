@@ -244,9 +244,9 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
     ncol = length(VECTOR_ELT(l, first));  // ncol was increased as if fill=true, so reduce it back given fill=false (fill==false checked above)
   }
 
+  int nprotect = 2;
   SEXP ans = PROTECT(allocVector(VECSXP, idcol + ncol));
   SEXP ansNames = PROTECT(allocVector(STRSXP, idcol + ncol));
-  int nprotect = 2;
   setAttrib(ans, R_NamesSymbol, ansNames);
   if (idcol) {
     SET_STRING_ELT(ansNames, 0, STRING_ELT(idcolArg, 0));
