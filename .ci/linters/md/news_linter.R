@@ -29,7 +29,7 @@ check_section_numbering = function(news) {
 check_gh_links = function(news) {
   gh_links = gregexpr(
     "\\[#([0-9]+)\\]\\(https://github.com/Rdatatable/data.table/([^/]+)/([0-9]+)\\)",
-    news_lines,
+    news,
     perl=TRUE # required for within-group indices
   )
   gh_link_metadata = do.call(rbind, lapply(seq_along(gh_links), function(idx) {
