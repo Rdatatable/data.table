@@ -48,7 +48,7 @@ dcf.dependencies <-
 function(file = "DESCRIPTION",
          which = NA,
          except.priority = "base",
-         exclude = NULL) {
+         exclude = NULL, revdeps=FALSE) {
   if (!is.character(file) || !length(file) || !all(file.exists(file)))
     stop("file argument must be character of filepath(s) to existing DESCRIPTION file(s)")
   if (!is.character(except.priority))
@@ -81,6 +81,11 @@ function(file = "DESCRIPTION",
   x <- unlist(lapply(x, local.extract_dependency_package_names))
   except <- if (length(except.priority)) c("R", unlist(tools:::.get_standard_package_names()[except.priority], use.names = FALSE))
   x = setdiff(x, except)
+  if (revdeps) {
+    revdep_pkgs = unlist(tools::package_dependencies(x), use.names=FALSE)
+    revdep_pkgs = setdiff(revdep_pkgs, except)
+    x = unique(c(x, revdep_pkgs))
+  }
   if (length(exclude)) {  # to exclude knitr/rmarkdown, 5294
     if (!is.character(exclude) || anyDuplicated(exclude))
       stop("exclude may be NULL or a character vector containing no duplicates")
