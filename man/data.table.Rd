@@ -407,10 +407,7 @@ DT[, m:=mean(v), by=x][]              # add new column by reference by group
 # Injecting function into env parameter
 DT <- data.table(a = rep(1:2, each = 5), b = 1:10)
 
-DT[, f(b), by = a, env = list(f = "sum")]  # Use function name as a string
-DT[, f(b), by = a, env = list(f = "sum"), verbose = TRUE]  # Preview function name injection
-DT[, f(b), by = a, env = list(f = sum)]  # Use function object directly
-DT[, f(b), by = a, env = list(f = sum), verbose = TRUE]  # Preview function object injection
+DT[, .(f=f(b), gval=g(b)), by = a, env = list(f = "sum", g=mean), verbose=TRUE]\
 
 # advanced usage
 DT = data.table(x=rep(c("b","a","c"),each=3), v=c(1,1,1,2,2,1,1,2,2), y=c(1,3,6), a=1:9, b=9:1)
