@@ -209,6 +209,9 @@ test-lin-ancient-cran:
   <<: *test-lin
   script:
     - *install-deps
+    - Rscript -e 'install.packages("https://cran.r-project.org/src/contrib/Archive/xts/pkgname_version.tar.gz", repos = NULL, type = "source")'
+    - Rscript -e 'install.packages("https://cran.r-project.org/src/contrib/Archive/evaluate/pkgname_version.tar.gz", repos = NULL, type = "source")'
+    - Rscript -e 'install.packages("knitr")'
     - R CMD check --no-manual $(ls -1t data.table_*.tar.gz | head -n 1)
 
 .test-win-template: &test-win
