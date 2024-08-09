@@ -404,11 +404,6 @@ print(DT["b", v2:=84L, on="x"])       # subassign to new column by reference (NA
 DT[, m:=mean(v), by=x][]              # add new column by reference by group
                                       # NB: postfix [] is shortcut to print()
 
-# Injecting function into env parameter
-DT <- data.table(a = rep(1:2, each = 5), b = 1:10)
-
-DT[, .(f=f(b), gval=g(b)), by = a, env = list(f = "sum", g=mean), verbose=TRUE]
-
 # advanced usage
 DT = data.table(x=rep(c("b","a","c"),each=3), v=c(1,1,1,2,2,1,1,2,2), y=c(1,3,6), a=1:9, b=9:1)
 
@@ -423,6 +418,9 @@ DT[, list(MySum=sum(v),
           MyMin=min(v),
           MyMax=max(v)),
     by=.(x, y\%\%2)]                    # by 2 expressions
+
+DT[, .(f=f(a), m=g(a)), by=b, verbose=TRUE,
+    env=list(f="sum", g=mean, b="x")] # subtitution via env arg
 
 DT[, .(a = .(a), b = .(b)), by=x]     # list columns
 DT[, .(seq = min(a):max(b)), by=x]    # j is not limited to just aggregations
