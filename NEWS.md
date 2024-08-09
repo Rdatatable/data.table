@@ -193,6 +193,8 @@
 
 20. `dcast()` docs have always required `fun.aggregate` to return a single value, and when `fill=NULL`, `dcast` would indeed error if vector with `length!=1` was returned, but silently return an undefined result when fill is not `NULL`. Now `dcast` will additionally warn that this is undefined behavior, when fill is not `NULL`, [#6032](https://github.com/Rdatatable/data.table/issues/6032). In particular, this will warn for `fun.aggregate=identity`, which was observed in several revdeps. We may change this to an error in a future release, so revdeps should fix their code as soon as possible. Thanks to Toby Dylan Hocking for the PR, and Michael Chirico for analysis of GitHub revdeps.
 
+25. `set()` and `:=` now provide an improved error message when attempting to directly assign `NULL` to a list column item. The new message guides users to use `list(list(NULL))` instead, enhancing clarity and preventing common mistakes. Previously, this operation would throw a generic error, but now the message is more informative and helpful. Thanks to @Nj221102 for the implementation and @MichaelChirico for the suggestion.
+
 ## TRANSLATIONS
 
 1. Fix a typo in a Mandarin translation of an error message that was hiding the actual error message, [#6172](https://github.com/Rdatatable/data.table/issues/6172). Thanks @trafficfan for the report and @MichaelChirico for the fix.
