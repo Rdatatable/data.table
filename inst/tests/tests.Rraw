@@ -19003,6 +19003,12 @@ test(2276.14, fcase(c(TRUE, FALSE), 1L, c(TRUE, TRUE), NA), c(1L, NA_integer_)) 
 # output is missing
 test(2276.15, fcase(c(TRUE, FALSE), NA_integer_, c(TRUE, TRUE), 2L), c(NA_integer_, 2L))
 
+# length-1 condition not allowed
+test(2276.16, fcase(c(TRUE, FALSE), 1:2, TRUE, 2L), error="Please make sure all logical conditions have the same length.")
+
+# empty fcase() gives an error not related to length(default)
+test(2276.17, fcase(), error="xxx")
+
 # passing a function in env= doesn't trip up processing 'j', #6026
 DT=data.table(a=1:2, b=3:4)
 test(2277.1, DT[, builtin(b), env=list(builtin=sum)], 7L)
