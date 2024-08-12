@@ -243,10 +243,10 @@ SEXP fcaseR(SEXP rho, SEXP args) {
     } else {
       imask = false;
       naout = xlength(thens) == 1 && TYPEOF(thens) == LGLSXP && LOGICAL(thens)[0]==NA_LOGICAL;
-      if (xlength(whens) != len0 && xlength(whens) != 1) {
+      if (xlength(whens) != len0) {
         // no need to check `idefault` here because the con for default is always `TRUE`
         error(_("Argument #%d has length %lld which differs from that of argument #1 (%lld). "
-                "Please make sure all logical conditions have the same length or length 1."),
+                "Please make sure all logical conditions have the same length."),
                 i*2+1, (long long)xlength(whens), (long long)len0);
       }
       if (!naout && TYPEOF(thens) != type0) {
@@ -290,7 +290,7 @@ SEXP fcaseR(SEXP rho, SEXP args) {
         error(_("Length of output value #%d (%lld) must either be 1 or match the length of the logical condition (%lld)."), i*2+2, (long long)len1, (long long)len0);
       }
     }
-    int64_t thenMask = len1>1 ? INT64_MAX : 0, whenMask = xlength(whens)>1 ? INT64_MAX : 0;
+    int64_t thenMask = len1>1 ? INT64_MAX : 0;
     switch(TYPEOF(ans)) {
     case LGLSXP: {
       const int *restrict pthens;
@@ -299,7 +299,7 @@ SEXP fcaseR(SEXP rho, SEXP args) {
       const int pna = NA_LOGICAL;
       for (int64_t j=0; j<len2; ++j) {
         const int64_t idx = imask ? j : p[j];
-        if (pwhens[idx & whenMask]==1) {
+        if (pwhens[idx]==1) {
           pans[idx] = naout ? pna : pthens[idx & thenMask];
         } else {
           if (imask) {
@@ -316,7 +316,7 @@ SEXP fcaseR(SEXP rho, SEXP args) {
       const int pna = NA_INTEGER;
       for (int64_t j=0; j<len2; ++j) {
         const int64_t idx = imask ? j : p[j];
-        if (pwhens[idx & whenMask]==1) {
+        if (pwhens[idx]==1) {
           pans[idx] = naout ? pna : pthens[idx & thenMask];
         } else {
           if (imask) {
@@ -334,7 +334,7 @@ SEXP fcaseR(SEXP rho, SEXP args) {
       const double pna = na_double;
       for (int64_t j=0; j<len2; ++j) {
         const int64_t idx = imask ? j : p[j];
-        if (pwhens[idx & whenMask]==1) {
+        if (pwhens[idx]==1) {
           pans[idx] = naout ? pna : pthens[idx & thenMask];
         } else {
           if (imask) {
@@ -351,7 +351,7 @@ SEXP fcaseR(SEXP rho, SEXP args) {
       const Rcomplex pna = NA_CPLX;
       for (int64_t j=0; j<len2; ++j) {
         const int64_t idx = imask ? j : p[j];
-        if (pwhens[idx & whenMask]==1) {
+        if (pwhens[idx]==1) {
           pans[idx] = naout ? pna : pthens[idx & thenMask];
         } else {
           if (imask) {
@@ -367,7 +367,7 @@ SEXP fcaseR(SEXP rho, SEXP args) {
       const SEXP pna = NA_STRING;
       for (int64_t j=0; j<len2; ++j) {
         const int64_t idx = imask ? j : p[j];
-        if (pwhens[idx & whenMask]==1) {
+        if (pwhens[idx]==1) {
           SET_STRING_ELT(ans, idx, naout ? pna : pthens[idx & thenMask]);
         } else {
           if (imask) {
@@ -384,7 +384,7 @@ SEXP fcaseR(SEXP rho, SEXP args) {
       if (!naout) pthens = SEXPPTR_RO(thens); // the content is not useful if out is NA_LOGICAL scalar
       for (int64_t j=0; j<len2; ++j) {
         const int64_t idx = imask ? j : p[j];
-        if (pwhens[idx & whenMask]==1) {
+        if (pwhens[idx]==1) {
           if (!naout) SET_VECTOR_ELT(ans, idx, pthens[idx & thenMask]);
         } else {
           p[l++] = idx;
