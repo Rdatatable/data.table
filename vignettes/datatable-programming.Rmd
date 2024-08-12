@@ -373,6 +373,29 @@ print(j)
 DT[, j, env = list(j = j)]
 ```
 
+### Injecting functions using strings in `env`
+
+In `data.table`, you can inject functions into your expressions by passing their names as strings in the `env` parameter. This method allows you to use function names directly as strings, and `data.table` will automatically interpret these strings as the corresponding functions. This approach simplifies the process and makes it easier to work with function names dynamically.
+
+Suppose you want to calculate the total of `Sepal.Length` in the `iris` dataset using the `sum` function. You can inject the `sum` function by passing its name as a string in the `env` parameter.
+
+```{r sum_example}
+result <- DT[, f(Sepal.Length), env = list(f = "sum")]
+print(result)
+```
+
+In this example, the string `"sum"` is mapped to the `f` function. The `env` parameter allows `data.table` to recognize this `f` as the `sum` function, so it computes the total of `Sepal.Length` accordingly.
+
+You can also inject multiple functions at once by specifying their names as strings in the `env` list. This is useful for performing various calculations within a single expression.
+
+```{r multi_example}
+result <- DT[, .(total = f(Sepal.Length), average = d(Sepal.Length)), 
+             env = list(f = "sum", d = "mean")]
+print(result)
+```
+
+In this example, both `"sum"` and `"mean"` are passed as strings. The `env` parameter maps these strings to their respective functions, allowing you to calculate both the total and the average of `Sepal.Length` in one go.
+
 ## Retired interfaces
 
 In `[.data.table`, it is also possible to use other mechanisms for variable substitution or for passing quoted expressions. These include `get` and `mget` for inline injection of variables by providing their names as strings, and `eval` that tells `[.data.table` that the expression we passed into an argument is a quoted expression and that it should be handled differently. Those interfaces should now be considered retired and we recommend using the new `env` argument, instead.
