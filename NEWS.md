@@ -12,7 +12,7 @@
 
 1. We continue to use user feedback to prioritize development. See [#3189](https://github.com/Rdatatable/data.table/issues/3189) for the current list of most-requested issues. In this release we add five highly-requested features:
 
-    a. Using `dt[, names(.SD) := lapply(.SD, fx)]` now works to update all columns, [#795](https://github.com/Rdatatable/data.table/issues/795). Thanks to @brodieG for the report, 20 or so others for chiming in, and @ColeMiller1 for PR.
+    a. Using `dt[, names(.SD) := lapply(.SD, fx)]` now works to update all columns, [#795](https://github.com/Rdatatable/data.table/issues/795). Of course this also works when `.SD` is only a subset of the columns: `dt[, names(.SD) := lapply(.SD, fx), .SDcols = is.numeric]`. Thanks to @brodieG for the report, 20 or so others for chiming in, and @ColeMiller1 for PR.
 
     b. `fread()` now supports automatic detection of `dec` (as either `.` or `,`, the latter being [common in many places in Europe, Africa, and South America](https://en.wikipedia.org/wiki/Decimal_separator)); this behavior is now the default, i.e. `dec='auto'`, [#2431](https://github.com/Rdatatable/data.table/issues/2431). Thanks @mattdowle for the original issue, 50 or more others for expressing support, and @MichaelChirico for the fix.
 
