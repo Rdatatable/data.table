@@ -74,7 +74,7 @@
 
     d. Gains new argument `show.indices` (with corresponding option `datatable.show.indices`) that allows the user to print a `data.table`'s indices as columns without having to modify the `data.table` itself. Thanks @MichaelChirico for the report and @joshhwuu for the PR.
 
-    e. Displays `integer64` columns well even if {bit64} had not yet been loaded, [#6224](https://github.com/Rdatatable/data.table/issues/6224). Thanks @renkun-ken for the report and @MichaelChirico for the fix.
+    e. Displays `integer64` columns correctly by loading {bit64} if needed, [#6224](https://github.com/Rdatatable/data.table/issues/6224). Thanks @renkun-ken for the report and @MichaelChirico for the fix.
 
 ## BUG FIXES
 
