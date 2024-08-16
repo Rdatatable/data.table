@@ -10,7 +10,7 @@
 
 ## NEW FEATURES
 
-1. We continue to use user feedback to prioritize development. See [#3189](https://github.com/Rdatatable/data.table/issues/3189) for the current list of most-requested issues. In this release we add five highly-requested features:
+1. We continue to consider user feedback to prioritize development. See [#3189](https://github.com/Rdatatable/data.table/issues/3189) for the current list of most-requested issues. In this release we add five highly-requested features:
 
     a. Using `dt[, names(.SD) := lapply(.SD, fx)]` now works to update all columns, [#795](https://github.com/Rdatatable/data.table/issues/795). Of course this also works when `.SD` is only a subset of the columns: `dt[, names(.SD) := lapply(.SD, fx), .SDcols = is.numeric]`. Thanks to @brodieG for the report, 20 or so others for chiming in, and @ColeMiller1 for PR.
 
@@ -199,7 +199,7 @@
 
 17. The internal `init()` function in the `fread.c` module has been marked as `static`, [#6328](https://github.com/Rdatatable/data.table/pull/6328). This obviates name collisions, and the resulting segfaults, with other libraries visible to the R process that might expose the same symbol name. This was observed in Cray HPE environments where the `libsci` library providing LAPACK to R already has an `init` symbol. Thanks to @rtobar for the report and fix.
 
-18. `?melt` has long documented that the returned `variable` column should contain integer column indices when `measure.vars` is a list, but when the list length is 1, `variable` is actually a character column name, which is inconsistent with the documentation, [#5209](https://github.com/Rdatatable/data.table/issues/5209). To increase consistency in the next release, we plan to change `variable` to integer, so users who were relying on this behavior should change `measure.vars=list("col_name")` (output `variable` is column name, will be column index/integer) to `measure.vars="col_name"` (`variable` is column name before and after the planned change). For now, relying on this undocumented behavior throws a new warning.
+18. `?melt` has long documented that the returned `variable` column should contain integer column indices when `measure.vars` is a list, but when the list length is 1, `variable` is actually a character column name, which is inconsistent with the documentation, [#5209](https://github.com/Rdatatable/data.table/issues/5209). To increase consistency in the next release, we plan to change `variable` to integer, so users who were relying on this behavior should change `measure.vars=list("col_name")` (`variable` currently is a column name but will be a column index/integer after this planned change) to `measure.vars="col_name"` (`variable` is column name before and after the planned change). For now, relying on this undocumented behavior throws a new warning.
 
 19. `?dcast` has always required `fun.aggregate` to return a single value, and when `fill=NULL`, `dcast` would indeed error if a vector with `length!=1` was returned, but an undefined result was silently returned for non-`NULL` fill. Now `dcast()` will additionally warn that this is undefined behavior when fill is not `NULL`, [#6032](https://github.com/Rdatatable/data.table/issues/6032). In particular, this will warn for `fun.aggregate=identity`, which was observed in several revdeps. We may change this to an error in a future release, so revdeps should fix their code as soon as possible. Thanks to @tdhock for the PR, and @MichaelChirico for analysis of GitHub revdeps.
 
