@@ -18737,7 +18737,7 @@ if (!is.na(native_ano)) { # #6339: symbol must be represented in native encoding
   ## renaming also caught
   test(2266.3, key(DT[ , .(newid = id, newgrp = grp)]), c('newid', 'newgrp'))
 } else {
-  cat("Tests 2266* skipped. n-tilde cannot be represented in the native encoding on this system. Please report\n")
+  cat("Tests 2266* skipped. n-tilde cannot be represented in the native encoding on this system. Please report to the data.table issue tracker.\n")
 }
 
 # all.equal failed to dispatch to methods of columns, #4543
