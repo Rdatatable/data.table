@@ -1,3 +1,11 @@
+Community and Governance
+------------------------
+
+Welcome, and thanks for your interest in contributing to `data.table`!
+We have always encouraged users to contribute back to the project, and even become project members/committers.
+* [GOVERNANCE.md](https://github.com/Rdatatable/data.table/blob/master/GOVERNANCE.md) defines our community governance model, and how you can obtain special roles/permissions in the project.
+* [The GitHub Teams Page](https://github.com/orgs/Rdatatable/teams/project-members/teams) is a list of special tasks that project members can help with -- if you are interested to help, please create an issue and contact the relevant team by mentioning, for example `@Rdatatable/revdep-managers`
+
 Filing issues
 -------------
 

@@ -18,6 +18,7 @@ Rscript -e "tools::update_pkg_po('.')"
 # 2) Open a PR with the new templates & contact the translators
 #   * zh_CN: @hongyuanjia
 #   * pt_BR: @rffontenelle
+#   * es: @rikivillalba
 ## Translators to submit commits with translations to this PR
 ##   [or perhaps, if we get several languages, each to open
 ##    its own PR and merge to main translation PR]
@@ -52,7 +53,6 @@ grep -RI --exclude-dir=".git" --exclude="*.md" --exclude="*~" --color='auto' -P 
 
 # Unicode is now ok. This unicode in tests.Rraw is passing on CRAN.
 grep -RI --exclude-dir=".git" --exclude="*.md" --exclude="*~" --color='auto' -n "[\]u[0-9]" ./
-
 
 # Ensure no calls to omp_get_max_threads() also since access should be via getDTthreads()
 grep --exclude="./src/openmp-utils.c" omp_get_max_threads ./src/*
@@ -245,23 +245,23 @@ system.time(test.data.table(script="*.Rraw"))  # apx 8h = froll 3h + nafill 1m +
 
 
 ###############################################
-#  R 3.1.0 (stated dependency)
+#  R 3.3.0 (stated dependency)
 ###############################################
 
 ### ONE TIME BUILD
 sudo apt-get -y build-dep r-base
 cd ~/build
-wget http://cran.stat.ucla.edu/src/base/R-3/R-3.1.0.tar.gz
-tar xvf R-3.1.0.tar.gz
-cd R-3.1.0
+wget http://cran.stat.ucla.edu/src/base/R-3/R-3.3.0.tar.gz
+tar xvf R-3.3.0.tar.gz
+cd R-3.3.0
 CFLAGS="-fcommon" FFLAGS="-fallow-argument-mismatch" ./configure --without-recommended-packages
 make
-alias R310=~/build/R-3.1.0/bin/R
+alias R330=~/build/R-3.3.0/bin/R
 ### END ONE TIME BUILD
 
 cd ~/GitHub/data.table
-R310 CMD INSTALL ./data.table_1.15.99.tar.gz
-R310
+R330 CMD INSTALL ./data.table_1.15.99.tar.gz
+R330
 require(data.table)
 test.data.table(script="*.Rraw")
 
