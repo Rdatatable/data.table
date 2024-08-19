@@ -130,9 +130,9 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP r
   if (nqmaxgrp>1 && mult == ALL) {
     // non-equi case with mult=ALL, may need reallocation
     anslen = 1.1 * ((iN > 1000) ? iN : 1000);
-    retFirst = Calloc(anslen, int); // anslen is set above
-    retLength = Calloc(anslen, int);
-    retIndex = Calloc(anslen, int);
+    retFirst = R_Calloc(anslen, int); // anslen is set above
+    retLength = R_Calloc(anslen, int);
+    retIndex = R_Calloc(anslen, int);
     // initialise retIndex here directly, as next loop is meant for both equi and non-equi joins
     for (int j=0; j<anslen; j++) retIndex[j] = j+1;
   } else { // equi joins (or) non-equi join but no multiple matches
@@ -215,9 +215,9 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP r
   SET_STRING_ELT(ansnames, 4, char_allGrp1);
   setAttrib(ans, R_NamesSymbol, ansnames);
   if (nqmaxgrp > 1 && mult == ALL) {
-    Free(retFirst);
-    Free(retLength);
-    Free(retIndex);
+    R_Free(retFirst);
+    R_Free(retLength);
+    R_Free(retIndex);
   }
   if (verbose)
     Rprintf("bmerge: took %.3fs\n", omp_get_wtime()-tic);
@@ -416,9 +416,9 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
               ++ctr;
               if (ctr+ilen >= anslen) {
                 anslen = 1.1*anslen;
-                retFirst = Realloc(retFirst, anslen, int);   // if fails, it fails inside Realloc with R error
-                retLength = Realloc(retLength, anslen, int);
-                retIndex = Realloc(retIndex, anslen, int);
+                retFirst = R_Realloc(retFirst, anslen, int);   // if fails, it fails inside R_Realloc with R error
+                retLength = R_Realloc(retLength, anslen, int);
+                retIndex = R_Realloc(retIndex, anslen, int);
               }
             } else if (mult == FIRST) {
               retFirst[k] = (XIND(retFirst[k]-1) > XIND(xlow+1)) ? xlow+2 : retFirst[k];

@@ -6,6 +6,9 @@
 #  define ALTREP(x) 0     // #2866
 #  define USE_RINTERNALS  // #3301
 #  define DATAPTR_RO(x) ((const void *)DATAPTR(x))
+#  define R_Calloc(x, y) Calloc(x, y)         // #6380
+#  define R_Realloc(x, y, z) Realloc(x, y, z)
+#  define R_Free(x) Free(x)
 #endif
 #if !defined(R_VERSION) || R_VERSION < R_Version(3, 4, 0)
 #  define SET_GROWABLE_BIT(x)  // #3292
