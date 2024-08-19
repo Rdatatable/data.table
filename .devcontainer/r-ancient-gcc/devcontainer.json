@@ -1,9 +1,9 @@
 {
-    "build": { "dockerfile": "Dockerfile", "context": "../.." },
-    "customizations": { "vscode": {
-       "extensions": [
-        "REditorSupport.r",
-        "ms-vscode.cpptools-extension-pack"
-       ]
-    }}
-  }
+  "build": { "dockerfile": "Dockerfile", "context": "../.." },
+  "customizations": { "vscode": {
+     "extensions": [
+      "REditorSupport.r",
+      "ms-vscode.cpptools-extension-pack"
+     ]
+  }}
+}
