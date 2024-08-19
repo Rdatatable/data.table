@@ -70,11 +70,27 @@ jobs:
           }
           cat("All translation quality checks completed successfully!\n")
         shell: Rscript {0}
-
   lint-md:
     runs-on: ubuntu-latest
     steps:
       - name: Lint
         run: |
           for (f in list.files('.ci/linters/md', full.names=TRUE)) source(f)
+        shell: Rscript {0}
+  lint-misc:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Lint line endings
+        run: |
+          for (f in list.files(recursive = TRUE)) {
+            # tryCatch() here are to skip binary/plaintext files (e.g. csv)
+            ch <- tryCatch(readChar(f, file.size(f)), condition=identity)
+            if (inherits(ch, "condition")) next
+            nch <- tryCatch(nchar(ch), condition=identity)
+            if (inherits(nch, "condition")) next
+
+            if (grepl("\r", ch, fixed = TRUE)) {
+              stop("Line ending \\r found in ", f, ", please stick with \\n only.")
+            }
+          }
         shell: Rscript {0}
