@@ -5,12 +5,11 @@ RUN apt-get -qq update \
 
 COPY DESCRIPTION .
 
-RUN Rscript -e '                                          \ 
-read.dcf("DESCRIPTION", c("Imports", "Suggests")) |>      \
-  tools:::.split_dependencies() |>                        \
-  names() |>                                              \
-  setdiff(tools:::.get_standard_package_names()$base) |>  \
-  install.packages()                                      \
+RUN Rscript -e '                                        \ 
+dcf = read.dcf("DESCRIPTION", c("Imports", "Suggests")) \
+deps = names(tools:::.split_dependencies(dcf))          \
+standard_pkgs = tools:::.get_standard_package_names()   \
+install.packages(setdiff(deps, standard_pkgs$base))     \
 '
 
 # setup cc()
