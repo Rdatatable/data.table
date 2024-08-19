@@ -72,6 +72,9 @@ jobs:
         shell: Rscript {0}
 
   lint-md:
+    runs-on: ubuntu-latest
+    steps:
       - name: Lint
         run: |
           for (f in list.files('.ci/linters/md', full.names=TRUE)) source(f)
+        shell: Rscript {0}
