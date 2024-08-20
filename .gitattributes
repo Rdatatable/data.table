@@ -1,4 +1,3 @@
-* -text
-* text=auto
-*.Rraw linguist-language=R
-
+* text eol=lf
+inst/tests/** -text
+inst/tests/*.Rraw text eol=lf linguist-language=R
