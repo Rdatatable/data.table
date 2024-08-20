@@ -27,7 +27,7 @@ if (inherits(rep_len(Sys.Date(), 1L), "Date")) {
   #   walker that we've used .Internal ourselves (which is not true, but codetools can't tell).
   safe_rep_len = function(x, n) rep_len(x, n)
 } else {
-  safe_rep_len = function(x, n) rep(x, length.out = n)
+  safe_rep_len = function(x, n) rep(x, length.out = n) # nolint: rep_len_linter.
 }
 
 # endsWith no longer used from #5097 so no need to backport; prevent usage to avoid dev delay until GLCI's R 3.1.0 test
