@@ -88,11 +88,9 @@ jobs:
           _R_CHECK_FORCE_SUGGESTS_: false
           _R_CHECK_CRAN_INCOMING_REMOTE_: false
           _R_CHECK_TESTS_NLINES_: 0
-          R_LIBS_USER: /home/runner/work/r-lib
         run: |
           options(crayon.enabled = TRUE)
-          Sys.chmod(Sys.getenv("R_LIBS_USER"), mode = "777")
-          install.packages("remotes") # different R_LIBS_USER now...
+          install.packages("remotes")
           remotes::install_deps(dependencies=TRUE, force=TRUE)
 
           # we define this in data.table namespace, but it appears to be exec
@@ -118,8 +116,7 @@ jobs:
           message("Will try and set TEST_DATA_TABLE_WITH_OTHER_PACKAGES=", as.character(run_other), " in R CMD check.")
           # IINM rcmdcheck isolates its env from the calling process', besides what's passed to env=
           env = c(
-            TEST_DATA_TABLE_WITH_OTHER_PACKAGES=as.character(run_other),
-            R_LIBS_USER=Sys.getenv("R_LIBS_USER")
+            TEST_DATA_TABLE_WITH_OTHER_PACKAGES=as.character(run_other)
           )
 
           do_vignettes = requireNamespace("knitr", quietly=TRUE)
