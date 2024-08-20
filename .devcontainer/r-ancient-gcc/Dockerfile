@@ -10,7 +10,7 @@ options(repos = "https://cloud.r-project.org");          \
 dcf = read.dcf("DESCRIPTION", c("Imports", "Suggests")); \
 deps = names(tools:::.split_dependencies(dcf));          \
 standard_pkgs = tools:::.get_standard_package_names();   \
-deps = intersect(deps, rownames(available.packages());   \
+deps = intersect(deps, rownames(available.packages()));  \
 install.packages(setdiff(deps, standard_pkgs$base));     \
 '
 
