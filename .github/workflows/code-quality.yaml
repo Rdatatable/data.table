@@ -86,21 +86,13 @@ jobs:
       - uses: actions/checkout@v4
       - name: Lint line endings
         run: |
-          all_files = list.files(recursive = TRUE)
-          cat(sprintf("Checking line endings of %d files\n", length(all_files)))
-          cat(sprintf("  Top-level files: %s\n", toString(list.files())))
           for (f in list.files(recursive = TRUE)) {
+            if (basename(f) %in% c("CODEOWNERS", "R-es.po", "es.po")) cat(sprintf("Checking %s\n", f))
             # tryCatch() here are to skip binary/plaintext files (e.g. csv)
             ch <- tryCatch(readChar(f, file.size(f)), condition=identity)
-            if (inherits(ch, "condition")) {
-              cat(sprintf("Skipping %s: readChar() produced %s\n", f, toString(class(ch))))
-              next
-            }
+            if (inherits(ch, "condition")) next
             nch <- tryCatch(nchar(ch), condition=identity)
-            if (inherits(nch, "condition")) {
-              cat(sprintf("Skipping %s: nchar() produced %s\n", f, toString(class(nch))))
-              next
-            }
+            if (inherits(nch, "condition")) next
 
             if (grepl("\r", ch, fixed = TRUE)) {
               stop("Line ending \\r found in ", f, ", please stick with \\n only.")
