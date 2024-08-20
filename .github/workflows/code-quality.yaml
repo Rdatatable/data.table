@@ -88,6 +88,7 @@ jobs:
         run: |
           all_files = list.files(recursive = TRUE)
           cat(sprintf("Checking line endings of %d files\n", length(all_files)))
+          cat(sprintf("  Top-level files: %s\n", toString(list.files())))
           for (f in list.files(recursive = TRUE)) {
             # tryCatch() here are to skip binary/plaintext files (e.g. csv)
             ch <- tryCatch(readChar(f, file.size(f)), condition=identity)
