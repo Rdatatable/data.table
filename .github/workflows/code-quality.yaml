@@ -83,6 +83,9 @@ jobs:
   lint-misc:
     runs-on: ubuntu-latest
     steps:
+      - name: Don't auto-convert line endings during checkout step
+        run: |
+          git config --global core.autocrlf false
       - uses: actions/checkout@v4
       - name: Lint line endings
         run: |
