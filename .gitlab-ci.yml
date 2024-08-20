@@ -208,7 +208,7 @@ test-lin-ancient-cran:
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-3.3.0
   variables:
-    _R_CHECK_FORCE_SUGGESTS_: "FALSE" # can be removed if all dependencies are available, e.g. knitr, xts
+    _R_CHECK_FORCE_SUGGESTS_: "FALSE" # can be removed if all dependencies are available (knitr, xts, etc.)
   script:
     - *install-deps
     # knitr requires evaluate, which requires R 3.6.0.
