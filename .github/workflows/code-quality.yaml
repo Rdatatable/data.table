@@ -75,6 +75,7 @@ jobs:
   lint-md:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - name: Lint
         run: |
           for (f in list.files('.ci/linters/md', full.names=TRUE)) source(f)
@@ -82,6 +83,7 @@ jobs:
   lint-misc:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - name: Lint line endings
         run: |
           all_files = list.files(recursive = TRUE)
