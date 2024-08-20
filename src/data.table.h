@@ -2,12 +2,15 @@
 #include "dt_stdio.h"  // PRId64 and PRIu64
 #include <R.h>
 #include <Rversion.h>
-#if !defined(R_VERSION) || R_VERSION < R_Version(3, 5, 0)  // R-exts$6.14
+#if R_VERSION < R_Version(3, 5, 0)  // R-exts$6.14
 #  define ALTREP(x) 0     // #2866
 #  define USE_RINTERNALS  // #3301
 #  define DATAPTR_RO(x) ((const void *)DATAPTR(x))
+#  define R_Calloc(x, y) Calloc(x, y)         // #6380
+#  define R_Realloc(x, y, z) Realloc(x, y, z)
+#  define R_Free(x) Free(x)
 #endif
-#if !defined(R_VERSION) || R_VERSION < R_Version(3, 4, 0)
+#if R_VERSION < R_Version(3, 4, 0)
 #  define SET_GROWABLE_BIT(x)  // #3292
 #endif
 #include <Rinternals.h>
