@@ -88,12 +88,12 @@ jobs:
             # tryCatch() here are to skip binary/plaintext files (e.g. csv)
             ch <- tryCatch(readChar(f, file.size(f)), condition=identity)
             if (inherits(ch, "condition")) {
-              cat(sprintf("Skipping %s: readChar() produced %s\n", f, toString(class(ch)))
+              cat(sprintf("Skipping %s: readChar() produced %s\n", f, toString(class(ch))))
               next
             }
             nch <- tryCatch(nchar(ch), condition=identity)
             if (inherits(nch, "condition")) {
-              cat(sprintf("Skipping %s: nchar() produced %s\n", f, toString(class(nch)))
+              cat(sprintf("Skipping %s: nchar() produced %s\n", f, toString(class(nch))))
               next
             }
 
