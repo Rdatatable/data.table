@@ -87,7 +87,11 @@ jobs:
       - name: Lint line endings
         run: |
           for (f in list.files(recursive = TRUE)) {
-            if (basename(f) %in% c("CODEOWNERS", "R-es.po", "es.po")) cat(sprintf("Checking %s\n", f))
+            if (basename(f) %in% c("CODEOWNERS", "R-es.po", "es.po")) {
+              nchar = sum(nchar(readLines(f, n=3L))) + 6 # padding for line endings
+              str = readChar(f, nchar)
+              cat(sprintf("Here's the first %d characters of %s\n\n%s\n", nchar, f, encodeString(str)))
+            }
             # tryCatch() here are to skip binary/plaintext files (e.g. csv)
             ch <- tryCatch(readChar(f, file.size(f)), condition=identity)
             if (inherits(ch, "condition")) next
