@@ -76,27 +76,11 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: |
             sudo apt-get update
-            sudo apt-get install -y libcurl4-openssl-dev libudunits2-dev libgdal-dev libgeos-dev libproj-dev
+            sudo apt-get install -y libcurl4-openssl-dev libudunits2-dev libgdal-dev libgeos-dev libproj-dev pandoc
 
       - name: Install check dependencies (macOS)
         if: matrix.os == 'macOS-latest'
         run: brew install gdal proj
-
-      - name: Install remotes
-        env:
-          R_LIBS_USER: /home/runner/work/r-lib
-        run: install.packages("remotes")
-        shell: Rscript {0}
-
-      - name: Install system dependencies
-        if: runner.os == 'Linux'
-        env:
-          R_LIBS_USER: /home/runner/work/r-lib
-        run: |
-          while read -r cmd
-          do
-            eval sudo $cmd
-          done < <(Rscript -e 'writeLines(remotes::system_requirements("ubuntu", "20.04"))')
 
       - name: Check
         env:
@@ -107,6 +91,7 @@ jobs:
           R_LIBS_USER: /home/runner/work/r-lib
         run: |
           options(crayon.enabled = TRUE)
+          Sys.chmod(Sys.getenv("R_LIBS_USER"), mode = "777")
           install.packages("remotes") # different R_LIBS_USER now...
           remotes::install_deps(dependencies=TRUE, force=TRUE)
 
