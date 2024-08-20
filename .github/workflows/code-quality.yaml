@@ -77,15 +77,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Lint
-        run: |
-          for (f in list.files('.ci/linters/md', full.names=TRUE)) source(f)
+        run: for (f in list.files('.ci/linters/md', full.names=TRUE)) source(f)
         shell: Rscript {0}
   lint-misc:
     runs-on: ubuntu-latest
     steps:
       - name: Don't auto-convert line endings during checkout step
-        run: |
-          git config --global core.autocrlf false
+        run: git config --global core.autocrlf false
       - uses: actions/checkout@v4
       - name: Lint line endings
         run: |
