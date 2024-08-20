@@ -21,7 +21,8 @@ nan_is_na = function(x) {
   stopf("Argument 'nan' must be NA or NaN")
 }
 
-# In R 3.3.0, rep_len() strips attributes --> breaks data.table()'s internal recycle() helper.
+# TODO(R>=4.0.0): Remove this workaround. From R 4.0.0, rep_len() dispatches rep.Date(), which we need.
+#   Before that, rep_len() strips attributes --> breaks data.table()'s internal recycle() helper.
 if (inherits(rep_len(Sys.Date(), 1L), "Date")) {
   # NB: safe_rep_len=rep_len throws an R CMD check error because it _appears_ to the AST
   #   walker that we've used .Internal ourselves (which is not true, but codetools can't tell).
