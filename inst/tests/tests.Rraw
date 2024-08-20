@@ -14787,11 +14787,10 @@ test(2029.2, fread(txt, quote=""), data.table(A=1:2, B=4:5, C=7:8), warning="Dis
 test(2029.3, fread(txt, quote="", fill=TRUE), data.table(A=1:3, B=4:6, C=c(7:8,NA)))
 
 # .Last.updated #1885
-# NB: assign .Last.updated outside test(), which itself might run :=/set() --> update the value again.
-#   Seen on R 3.3.0, unsure why only there.
 d = data.table(a=1:4, b=2:5)
-# On R 3.3.0, .Last.updated gets touched by test() itself and this cascades even to re-assignments
+# NB: On R 3.3.0, .Last.updated gets touched by test() itself and this cascades even to re-assignments
 #   of .Last.updated like n_updated=.Last.updated, so really force a deep copy by round-tripping from string.
+#   Seen on R 3.3.0, unsure when this behavior changes.
 force_copy = function(n) as.integer(sprintf("%d", n))
 d[, z:=5L]; n_updated = force_copy(.Last.updated)
 test(2030.01, n_updated, 4L) # new column
