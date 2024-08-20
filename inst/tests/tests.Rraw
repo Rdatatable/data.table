@@ -13178,7 +13178,7 @@ options(datatable.use.index=FALSE)
 test(1942.10, DT[,sum(v),keyby=id1,verbose=TRUE], data.table(id1=c("D","A","C"), V1=INT(1,6,8), key="id1"), output="Finding groups using forderv")
 options(datatable.use.index=TRUE)
 
-# test coverage in uniqlist.c of Realloc when over initial 1000 uniqs, and use double to cover numeric tolerance (both in one-column case and >1 column branch)
+# test coverage in uniqlist.c of R_Realloc when over initial 1000 uniqs, and use double to cover numeric tolerance (both in one-column case and >1 column branch)
 set.seed(2)
 DT = data.table(real=sample((1:1500)/1000, 10000, replace=TRUE), id=sample(letters, 1000, replace=TRUE), value=1:10000)
 setkey(DT,id,real)
