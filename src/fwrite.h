@@ -2,7 +2,7 @@
   #include "py_fread.h"
 #else
   #ifndef STRICT_R_HEADERS
-  #define STRICT_R_HEADERS
+    #define STRICT_R_HEADERS
   #endif
   #include <R.h>
   #include <Rinternals.h>  // for SEXP in writeList() prototype
