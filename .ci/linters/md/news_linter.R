@@ -55,7 +55,7 @@ any_error = FALSE
 for (news in list.files(pattern = "NEWS")) {
   cat(sprintf("Checking NEWS file %s...\n", news))
   news_lines = readLines(news)
-  any_error = any_error || check_section_numbering(news_lines)
-  any_error = any_error || check_gh_links(news_lines)
+  any_error = check_section_numbering(news_lines) || any_error
+  any_error = check_gh_links(news_lines) || any_error
 }
 if (any_error) stop("Please fix the NEWS issues above.")
