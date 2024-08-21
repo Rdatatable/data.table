@@ -352,7 +352,7 @@ SEXP hasOpenMP(void) {
 SEXP beforeR340(void) {
   // used in onAttach.R for message about fread memory leak fix needing R 3.4.0
   // at C level to catch if user upgrades R but does not reinstall data.table
-  #if defined(R_VERSION) && R_VERSION<R_Version(3,4,0)
+  #if R_VERSION < R_Version(3,4,0)
   return ScalarLogical(true);
   #else
   return ScalarLogical(false);
