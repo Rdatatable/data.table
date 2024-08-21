@@ -220,7 +220,10 @@ SEXP setdt_nrows(SEXP x)
     }
     SEXP dim_xi = getAttrib(xi, R_DimSymbol);
     R_len_t len_xi;
-    R_len_t n_dim = LENGTH(dim_xi);
+    // NB: LENGTH() produces an undefined large number here on R 3.3.0.
+    //   There's also a note in NEWS for R 3.1.0 saying length() should always be used by packages,
+    //   but with some overhead for being a function/not macro...
+    R_len_t n_dim = length(dim_xi);
     if (n_dim) {
       if (test_matrix_cols && n_dim > 1) {
         warn_matrix_column(i+1);

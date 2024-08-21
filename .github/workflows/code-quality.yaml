@@ -43,7 +43,9 @@ jobs:
           linter_env = new.env()
           for (f in list.files('.ci/linters/c', full.names=TRUE)) sys.source(f, linter_env)
           for (f in list.files('src', pattern='[.][ch]$', full.names=TRUE)) {
-            for (linter in ls(linter_env)) linter_env[[linter]](f)
+            c_obj = list(path = f, lines = readLines(f))
+            c_obj$preprocessed = system2("gcc", c("-fpreprocessed", "-E", f), stdout=TRUE, stderr=FALSE)
+            for (linter in ls(linter_env)) linter_env[[linter]](c_obj)
             # TODO(#6272): Incorporate more checks from CRAN_Release
           }
         shell: Rscript {0}
@@ -70,8 +72,10 @@ jobs:
           }
           cat("All translation quality checks completed successfully!\n")
         shell: Rscript {0}
-
   lint-md:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
       - name: Lint
-        run: |
-          for (f in list.files('.ci/linters/md', full.names=TRUE)) source(f)
+        run: for (f in list.files('.ci/linters/md', full.names=TRUE)) source(f)
+        shell: Rscript {0}

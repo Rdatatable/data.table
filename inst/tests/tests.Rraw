@@ -8416,8 +8416,11 @@ baseR = base::order(c(x2,x1,x1,x2))
   # are so relaxed now that they barely testing anything. It appears base R behaviour is undefined in this rare case of identical strings in different encodings.
 test(1590.04, identical(baseR, INT(1,4,2,3)) || identical(baseR, INT(2,3,1,4)) || identical(baseR, 1:4))
 Encoding(x2) = "unknown"
-test(1590.05, x1!=x2)
-test(1590.06, forderv(    c(x2,x1,x1,x2)), INT(1,4,2,3))  # consistent with Windows-1252 result, tested further below
+# TODO(#6350): Decide if this test should be adjusted for Alpine Linux, or just dropped.
+if (!file.exists("/etc/alpine-release")) {
+  test(1590.05, x1!=x2)
+  test(1590.06, forderv(    c(x2,x1,x1,x2)), INT(1,4,2,3))  # consistent with Windows-1252 result, tested further below
+}
 baseR = base::order(c(x2,x1,x1,x2))
 test(1590.07, identical(baseR, INT(1,4,2,3)) || identical(baseR, INT(2,3,1,4)) || identical(baseR, 1:4))
 Sys.setlocale("LC_CTYPE", ctype)
@@ -13175,7 +13178,7 @@ options(datatable.use.index=FALSE)
 test(1942.10, DT[,sum(v),keyby=id1,verbose=TRUE], data.table(id1=c("D","A","C"), V1=INT(1,6,8), key="id1"), output="Finding groups using forderv")
 options(datatable.use.index=TRUE)
 
-# test coverage in uniqlist.c of Realloc when over initial 1000 uniqs, and use double to cover numeric tolerance (both in one-column case and >1 column branch)
+# test coverage in uniqlist.c of R_Realloc when over initial 1000 uniqs, and use double to cover numeric tolerance (both in one-column case and >1 column branch)
 set.seed(2)
 DT = data.table(real=sample((1:1500)/1000, 10000, replace=TRUE), id=sample(letters, 1000, replace=TRUE), value=1:10000)
 setkey(DT,id,real)
@@ -14785,48 +14788,52 @@ test(2029.3, fread(txt, quote="", fill=TRUE), data.table(A=1:3, B=4:6, C=c(7:8,N
 
 # .Last.updated #1885
 d = data.table(a=1:4, b=2:5)
-d[, z:=5L]
-test(2030.01, .Last.updated, 4L) # new column
-d[, z:=6L]
-test(2030.02, .Last.updated, 4L) # update existing column
-d[2:3, z:=7L]
-test(2030.03, .Last.updated, 2L) # sub assign
-d[integer(), z:=8L]
-test(2030.04, .Last.updated, 0L) # empty sub-assign
-d[-1L, z:=9L]
-test(2030.05, .Last.updated, 3L) # inverse sub-assign
-d[-(1:4), z:=10L]
-test(2030.06, .Last.updated, 0L) # inverse empty sub-assign
+# NB: On R 3.3.0, .Last.updated gets touched by test() itself and this cascades even to re-assignments
+#   of .Last.updated like n_updated=.Last.updated, so really force a deep copy by round-tripping from string.
+#   Seen on R 3.3.0, unsure when this behavior changes.
+force_copy = function(n) as.integer(sprintf("%d", n))
+d[, z:=5L]; n_updated = force_copy(.Last.updated)
+test(2030.01, n_updated, 4L) # new column
+d[, z:=6L]; n_updated = force_copy(.Last.updated)
+test(2030.02, n_updated, 4L) # update existing column
+d[2:3, z:=7L]; n_updated = force_copy(.Last.updated)
+test(2030.03, n_updated, 2L) # sub assign
+d[integer(), z:=8L]; n_updated = force_copy(.Last.updated)
+test(2030.04, n_updated, 0L) # empty sub-assign
+d[-1L, z:=9L]; n_updated = force_copy(.Last.updated)
+test(2030.05, n_updated, 3L) # inverse sub-assign
+d[-(1:4), z:=10L]; n_updated = force_copy(.Last.updated)
+test(2030.06, n_updated, 0L) # inverse empty sub-assign
+d[, z:=NULL]; n_updated = force_copy(.Last.updated)
+test(2030.07, n_updated, 4L) # delete column
+d[2:3, z:=11L]; n_updated = force_copy(.Last.updated)
+test(2030.08, n_updated, 2L) # new column during sub-assign
 d[, z:=NULL]
-test(2030.07, .Last.updated, 4L) # delete column
-d[2:3, z:=11L]
-test(2030.08, .Last.updated, 2L) # new column during sub-assign
+d[integer(), z:=12L]; n_updated = force_copy(.Last.updated)
+test(2030.09, n_updated, 0L) # new columns from empty sub-assign
 d[, z:=NULL]
-d[integer(), z:=12L]
-test(2030.09, .Last.updated, 0L) # new columns from empty sub-assign
-d[, z:=NULL]
-d[-(1:4), z:=13L]
-test(2030.10, .Last.updated, 0L) # new columns from empty inverse sub-assign
-d[, z:=NULL][, z:=14L]
-test(2030.11, .Last.updated, 4L) # new column from chaining
-d[, z:=NULL][2:3, z:=14L]
-test(2030.12, .Last.updated, 2L) # sub-assign from chaining
-d[2:3, z:=14L][, z:=NULL]
-test(2030.13, .Last.updated, 4L) # delete column from chaining
-set(d, 1:2, "z", 15L)
-test(2030.14, .Last.updated, 2L) # set() updates .Last.updated too
+d[-(1:4), z:=13L]; n_updated = force_copy(.Last.updated)
+test(2030.10, n_updated, 0L) # new columns from empty inverse sub-assign
+d[, z:=NULL][, z:=14L]; n_updated = force_copy(.Last.updated)
+test(2030.11, n_updated, 4L) # new column from chaining
+d[, z:=NULL][2:3, z:=14L]; n_updated = force_copy(.Last.updated)
+test(2030.12, n_updated, 2L) # sub-assign from chaining
+d[2:3, z:=14L][, z:=NULL]; n_updated = force_copy(.Last.updated)
+test(2030.13, n_updated, 4L) # delete column from chaining
+set(d, 1:2, "z", 15L); n_updated = force_copy(.Last.updated)
+test(2030.14, n_updated, 2L) # set() updates .Last.updated too
 g = data.table(a=1:4, z=15L) # join
-d[g, on="a", z:=i.z]
-test(2030.15, .Last.updated, 4L) # all match of all rows
+d[g, on="a", z:=i.z]; n_updated = force_copy(.Last.updated)
+test(2030.15, n_updated, 4L) # all match of all rows
 g = data.table(a=2:4, z=16L) # join
-d[, z:=NULL][g, on="a", z:=i.z]
-test(2030.16, .Last.updated, 3L) # all match
+d[, z:=NULL][g, on="a", z:=i.z]; n_updated = force_copy(.Last.updated)
+test(2030.16, n_updated, 3L) # all match
 g = data.table(a=c(2L,4L,6L), z=17L)
-d[, z:=NULL][g, on="a", z:=i.z]
-test(2030.17, .Last.updated, 2L) # partial match
+d[, z:=NULL][g, on="a", z:=i.z]; n_updated = force_copy(.Last.updated)
+test(2030.17, n_updated, 2L) # partial match
 g = data.table(a=5:6, z=18L)
-d[, z:=NULL][g, on="a", z:=i.z]
-test(2030.18, .Last.updated, 0L) # zero match
+d[, z:=NULL][g, on="a", z:=i.z]; n_updated = force_copy(.Last.updated)
+test(2030.18, n_updated, 0L) # zero match
 
 # rbind vec with list regression dev 1.12.3; #3528
 test(2031.01, rbind(data.table(A=1:3, B=7:9), data.table(A=4:6, B=as.list(10:12))), ans<-data.table(A=1:6, B=as.list(7:12)))
@@ -18450,7 +18457,7 @@ rm(.datatable.aware)
 local({
   lc_ctype = Sys.getlocale('LC_CTYPE')
   Sys.setlocale('LC_CTYPE', "en_US.UTF-8") # Japanese multibyte characters require utf8
-  on.exit({Sys.setlocale('LC_CTYPE', lc_ctype)})
+  on.exit(Sys.setlocale('LC_CTYPE', lc_ctype))
   accented_a = "\u0061\u0301"
   ja_ichi = "\u4E00"
   ja_ni = "\u4E8C"
@@ -18715,22 +18722,27 @@ test(2264.8, print(DT, show.indices=TRUE), output=ans)
 # integer64 columns print even when bit64 isn't loaded
 if (test_bit64) local({
   DT = data.table(a = 'abc', b = as.integer64(1))
-  invisible(unloadNamespace("bit64"))
+  suppressPackageStartupMessages(unloadNamespace("bit64"))
   on.exit(suppressPackageStartupMessages(library(bit64)))
   test(2265, DT, output="abc\\s*1$")
 })
 
 # non-ASCII plain symbol in by, #4708
-DT = data.table(a = rep(1:3, 2))
-# NB: recall we can't use non-ASCII symbols here. the text is a-<n-tilde>-o (year in Spanish)
-setnames(DT, "a", "a\U00F1o")
-test(2266, eval(parse(text="DT[ , .N, a\U00F1o]$N[1L]")), 2L)
-# sub-key can also be retained in plain query, part of #4498
-DT = data.table(id = rep(1:10, 2L), grp = rep(1:2, each=10L), V = 1:20/13, key=c('id', 'grp'))
-test(2266.1, key(DT[ , .(id)]), 'id')
-test(2266.2, key(DT[ , .(grp)]), NULL)
-## renaming also caught
-test(2266.3, key(DT[ , .(newid = id, newgrp = grp)]), c('newid', 'newgrp'))
+# NB: recall we can't use non-ASCII symbols in the test script. The text is a-<n-tilde>-o (year in Spanish)
+native_ano = iconv("a\U00F1o", "UTF-8", "")
+if (!is.na(native_ano)) { # #6339: symbol must be represented in native encoding
+  DT = data.table(a = rep(1:3, 2))
+  setnames(DT, "a", native_ano)
+  test(2266, eval(parse(text=sprintf("DT[ , .N, %s]$N[1L]", native_ano))), 2L)
+  # sub-key can also be retained in plain query, part of #4498
+  DT = data.table(id = rep(1:10, 2L), grp = rep(1:2, each=10L), V = 1:20/13, key=c('id', 'grp'))
+  test(2266.1, key(DT[ , .(id)]), 'id')
+  test(2266.2, key(DT[ , .(grp)]), NULL)
+  ## renaming also caught
+  test(2266.3, key(DT[ , .(newid = id, newgrp = grp)]), c('newid', 'newgrp'))
+} else {
+  cat("Tests 2266* skipped. n-tilde cannot be represented in the native encoding on this system. Please report to the data.table issue tracker.\n")
+}
 
 # all.equal failed to dispatch to methods of columns, #4543
 DT1 = data.table(t = .POSIXct(1590973200, tz='UTC'))

@@ -65,7 +65,7 @@ static char msg[1001];
 /* Using OS realloc() in this file to benefit from (often) in-place realloc() to save copy
  * We have to trap on exit anyway to call savetl_end().
  * NB: R_alloc() would be more convenient (fails within) and robust (auto free) but there is no R_realloc(). Implementing R_realloc() would be an alloc and copy, iiuc.
- *     Calloc/Realloc needs to be Free'd, even before error() [R-exts$6.1.2]. An oom within Calloc causes a previous Calloc to leak so Calloc would still needs to be trapped anyway.
+ *     R_Calloc/R_Realloc needs to be R_Free'd, even before error() [R-exts$6.1.2]. An oom within R_Calloc causes a previous R_Calloc to leak so R_Calloc would still needs to be trapped anyway.
  * Therefore, using <<if (!malloc()) STOP(_("helpful context msg"))>> approach to cleanup() on error.
  */
 
