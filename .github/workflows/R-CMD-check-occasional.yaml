@@ -91,12 +91,14 @@ jobs:
         run: |
           options(crayon.enabled = TRUE)
           install.packages("remotes")
+          message("*** DONE remotes, now installing requirements ***")
           remotes::install_deps(dependencies=TRUE, force=TRUE)
 
           other_deps_expr = parse('inst/tests/other.Rraw', n=1L)
           eval(other_deps_expr)
           other_pkgs = get(as.character(other_deps_expr[[1L]][[2L]]))
           # Many will not install on oldest R versions
+          message("*** DONE requirements, now installing optional ***")
           try(remotes::install_cran(c(other_pkgs, "rcmdcheck"), force=TRUE))
 
           has_other_pkg = sapply(other_pkgs, requireNamespace, quietly=TRUE)
