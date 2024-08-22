@@ -30,6 +30,7 @@ if (!all(loaded)) {
   options(warning.length=8000)
   stop(
     "test.data.table('other.Rraw') failed to attach required package(s): ", toString(sort(names(loaded)[!loaded])), ".",
+    "\nHere's .libPaths():\n  ", paste(.libPaths(), collapse="|"),
     "\nHere's all installed packages:\n  ", paste(sort(rownames(installed.packages())), collapse=","),
     "\nHere's the search() path:\n  ", paste(search(), collapse="->"),
     "\nIf you can't install them and this is R CMD check, please set environment variable TEST_DATA_TABLE_WITH_OTHER_PACKAGES back to the default, false; it's currently ", Sys.getenv("TEST_DATA_TABLE_WITH_OTHER_PACKAGES", "<unset>"), ".")
