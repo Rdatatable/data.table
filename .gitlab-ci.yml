@@ -274,7 +274,6 @@ test-win-old:
     - echo $CI_JOB_IMAGE > bus/$CI_JOB_NAME/image
 
 ## R-release on MacOS
-# no macosx runner set yet
 test-mac-rel:
   <<: *test-mac
   variables:
