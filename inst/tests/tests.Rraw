@@ -2,9 +2,14 @@
 #   NB: pos= is required for these symbols to resolve searching 'upward' from data.table -- if these packages are not already attached,
 #   and we don't use pos=, they'll wind up 'below' data.table on the search() path --> their symbols won't resolve since, when running
 #   from the installed package, this is evaluated from data.table's namespace.
-library(stats, include.only=c("lm", "median", "na.omit", "rnorm", "runif", "sd", "setNames", "var", "weighted.mean"), pos="package:base")
-library(utils, include.only=c("capture.output", "combn", "head", "read.csv", "read.delim", "read.table", "tail", "type.convert", "write.csv", "write.table"), pos="package:base")
-library(datasets, include.only=c("airquality", "BOD", "cars", "ChickWeight", "CO2", "iris", "mtcars"), pos="package:base")
+if ("include.only" %in% names(formals(library))) { # TODO(R>=3.6.0): Remove this.
+  libraryRobust = library
+} else {
+  libraryRobust = function(..., include.only) library(...)
+}
+libraryRobust(stats, include.only=c("lm", "median", "na.omit", "rnorm", "runif", "sd", "setNames", "var", "weighted.mean"), pos="package:base")
+libraryRobust(utils, include.only=c("capture.output", "combn", "head", "read.csv", "read.delim", "read.table", "tail", "type.convert", "write.csv", "write.table"), pos="package:base")
+libraryRobust(datasets, include.only=c("airquality", "BOD", "cars", "ChickWeight", "CO2", "iris", "mtcars"), pos="package:base")
 
 if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   if ((tt<-compiler::enableJIT(-1))>0)
@@ -1677,7 +1682,7 @@ test(529.4, set(DT1, i=NULL, j=7L, value=5L), error="Item 1 of column numbers in
 
 # Test that data.frame incompability is fixed, came to light in Feb 2012
 DT = data.table(name=c('a','b','c'), value=1:3)
-test(530, base::droplevels(DT[ name != 'a' ]), data.table(name=c('b','c'),value=2:3))   # base:: because we'll implement a fast droplevels, too.
+test(530, droplevels(DT[ name != 'a' ]), data.table(name=c('b','c'),value=2:3))
 
 # Test that .set_row_names() is maintained on .SD for each group
 DT = data.table(a=INT(1,1,2,2,2,3,3,3,3),b=1:9)
@@ -3041,8 +3046,8 @@ test(1006, print(as.data.table(M), nrows=10), output="gear NA.*1: 21.0")
 # rbinding factor with non-factor/character
 DT1 <- data.table(x=1:5, y=factor("a"))
 DT2 <- data.table(x=1:5, y=2)
-test(1007, rbindlist(list(DT1, DT2)), data.table(x = c(1:5, 1:5), y = factor(c(rep('a', 5), rep('2', 5)), levels = c('a', '2'))))
-test(1008, rbindlist(list(DT2, DT1)), data.table(x = c(1:5, 1:5), y = factor(c(rep('2', 5), rep('a', 5)))))
+test(1007.1, rbindlist(list(DT1, DT2)), data.table(x = c(1:5, 1:5), y = factor(c(rep('a', 5), rep('2', 5)), levels = c('a', '2'))))
+test(1007.2, rbindlist(list(DT2, DT1)), data.table(x = c(1:5, 1:5), y = factor(c(rep('2', 5), rep('a', 5)))))
 
 # rbindlist different types
 DT1 <- data.table(a = 1L, b = 2L)
@@ -3189,7 +3194,7 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
   test(1035.02, melt(DT, id.vars=c("i_1", "i_2", "l_2"), measure.vars=c("l_1")), ans1)
 
   # melt retains attributes if all are of same type (new)
-  ans2 = data.table(c_1=DT$c_1, variable=rep(c("d_1", "d_2"), each=N), value=as.Date(c(DT$d_1, DT$d_2)))[!is.na(value)]
+  ans2 = data.table(c_1=DT$c_1, variable=rep(c("d_1", "d_2"), each=N), value=as.Date(c(DT$d_1, DT$d_2), origin="1970-01-01"))[!is.na(value)] # NB: origin= required for some old R versions
   test(1035.03, melt(DT, id.vars=4, measure.vars=5:6, na.rm=TRUE, variable.factor=FALSE), ans2)
 
   DT2 <- data.table(x=1:5, y=1+5i) # unimplemented class
@@ -3699,7 +3704,7 @@ test(1100, dt1[dt2,roll=-Inf,rollends=c(FALSE,TRUE)]$ind, INT(NA,NA,1,2,2,2,2,2,
 
   # bug git #693 - dcast error message improvement:
   DT = data.table(x=c(1,1), y=c(2,2), z = 3:4)
-  test(1102.19, dcast(DT, x ~ y, value.var="z", fun.aggregate=identity), error="should take vector inputs and return a single value")
+  test(1102.19, dcast(DT, x ~ y, value.var="z", fun.aggregate=identity), error="should take a vector as input and return a single value")
 
   # bug #688 - preserving attributes
   DT = data.table(id = c(1,1,2,2), ty = c("a","b","a","b"), da = as.Date("2014-06-20"))
@@ -3722,7 +3727,7 @@ test(1100, dt1[dt2,roll=-Inf,rollends=c(FALSE,TRUE)]$ind, INT(NA,NA,1,2,2,2,2,2,
 
   # issues/715
   DT = data.table(id=rep(1:2, c(3,2)), k=c(letters[1:3], letters[1:2]), v=1:5)
-  test(1102.25, dcast(DT, id ~ k, fun.aggregate=last, value.var="v"), error="should take vector inputs and return a single value")
+  test(1102.25, dcast(DT, id ~ k, fun.aggregate=last, value.var="v"), error="should take a vector as input and return a single value")
   test(1102.26, dcast(DT, id ~ k, fun.aggregate=last, value.var="v", fill=NA_integer_), data.table(id=1:2, a=c(1L, 4L), b=c(2L,5L), c=c(3L,NA_integer_), key="id"))
 
   # Fix for #893
@@ -3887,7 +3892,7 @@ test(1118, dt[, lapply(.SD, function(y) weighted.mean(y, b2, na.rm=TRUE)), by=x]
 
 # a(nother) test of #295
 DT <- data.table(x=5:1, y=1:5, key="y")
-test(1119, is.null(key(DT[, list(z = y, y = 1/y)])))
+test(1119, key(DT[, list(z = y, y = 1/y)]), 'z')
 
 ## various ordered factor rbind tests
 DT1 = data.table(ordered('a', levels = c('a','b','c')))
@@ -6372,7 +6377,7 @@ test(1419.61, DT$a, c(1,1,2,3,4,5,6,7,8,9))
 setkey(DT, NULL)
 setindex(DT, a)
 test(1419.62, setkey(DT, a, verbose=TRUE), data.table(a=c(1,1:9), aaa=c(1,1,2,2,1,2,2,2,1,2), key="a"),
-              output="setkey on columns [a] using existing index 'a'")  # checks also that the prior index a is dropped (because y is keyed with no index)
+              output="using existing index: __a")
 
 # setkey picks correct index of multiple indexes (e.g. exact=TRUE is used in internals)
 DT = data.table(a =   c(3,3,4,4,5,6,1,1,7,2),
@@ -6387,7 +6392,7 @@ setindex(DT, aaa, a)
 setindex(DT, aaa)   # this aaa not previous aaa_a should be used by setkey(DT,aaa); i.e. ensure no partial matching
 test(1419.65, allIndicesValid(DT), TRUE)
 test(1419.66, setkey(DT, aaa, verbose=TRUE), data.table(a=c(1,3,3,6,1,2,4,4,5,7), aaa=c(1,1,1,1,2,2,2,2,2,2), bbb=c(1,1,1,1,0,1,2,0,1,1), key="aaa"),
-              output="setkey on columns [aaa] using existing index 'aaa'")  # checks that all indexes are dropped (aaa_a too)
+              output="using existing index: __aaa")  # checks that all indexes are dropped (aaa_a too)
 
 # setnames updates secondary key
 DT = data.table(a=1:5,b=10:6)
@@ -8411,8 +8416,11 @@ baseR = base::order(c(x2,x1,x1,x2))
   # are so relaxed now that they barely testing anything. It appears base R behaviour is undefined in this rare case of identical strings in different encodings.
 test(1590.04, identical(baseR, INT(1,4,2,3)) || identical(baseR, INT(2,3,1,4)) || identical(baseR, 1:4))
 Encoding(x2) = "unknown"
-test(1590.05, x1!=x2)
-test(1590.06, forderv(    c(x2,x1,x1,x2)), INT(1,4,2,3))  # consistent with Windows-1252 result, tested further below
+# TODO(#6350): Decide if this test should be adjusted for Alpine Linux, or just dropped.
+if (!file.exists("/etc/alpine-release")) {
+  test(1590.05, x1!=x2)
+  test(1590.06, forderv(    c(x2,x1,x1,x2)), INT(1,4,2,3))  # consistent with Windows-1252 result, tested further below
+}
 baseR = base::order(c(x2,x1,x1,x2))
 test(1590.07, identical(baseR, INT(1,4,2,3)) || identical(baseR, INT(2,3,1,4)) || identical(baseR, 1:4))
 Sys.setlocale("LC_CTYPE", ctype)
@@ -11752,7 +11760,7 @@ test(1775.3, capture.output(print(DT2, print.keys = TRUE)),
 setkey(DT2, a)
 setindexv(DT2, c("b","a"))
 test(1775.4, capture.output(print(DT2, print.keys = TRUE)),
-     c("Key: <a>", "Index: <b__a>", "   a b", "1: 1 4", "2: 2 5", "3: 3 6"))
+     c("Key: <a>", "Indices: <b__a>, <b>", "   a b", "1: 1 4", "2: 2 5", "3: 3 6")) ## index 'b' is still good, so we keep it
 
 # dev regression #2285
 cat("A  B  C\n1  2  3\n4  5  6", file=f<-tempfile())
@@ -12751,7 +12759,7 @@ test(1896.6, nrow(DT[, .N, by = .(y, z, x)]), 5L)
 DT = data.table(a = c(3, 2, 1, 2, 3), b = c(1, 2, 1, 1, 2))
 setindexv(DT, list('a', c('a', 'b')))
 test(1897.1, indices(DT), c("a", "a__b"))
-test(1897.2, attributes(attr(DT, 'index')),
+test(1897.2, lapply(attributes(attr(DT, 'index')), c), ## lapply(, c) to ensure no starts, maxgrpn attributes
      list(`__a` = c(3L, 2L, 4L, 1L, 5L),
           `__a__b` = c(3L, 4L, 2L, 1L, 5L)))
 
@@ -12791,9 +12799,9 @@ test(1899.18, as.matrix(DT, rownames=TRUE, rownames.value=1:nrow(DT)), error="ro
 
 # index argument for fread, #2633
 DT_str = c('a,b\n3,1\n2,2\n1,1\n2,1\n3,2')
-test(1900.1, attributes(attr(fread(DT_str, index = 'a'), 'index')),
+test(1900.1, lapply(attributes(attr(fread(DT_str, index = 'a'), 'index')), c), # lapply(, c) to ensure no starts, maxgrpn attributes
      list(`__a` = c(3L, 2L, 4L, 1L, 5L)))
-test(1900.2, attributes(attr(fread(DT_str, index = list('a,b', c('b', 'a'), 'a')), 'index')),
+test(1900.2, lapply(attributes(attr(fread(DT_str, index = list('a,b', c('b', 'a'), 'a')), 'index')), c),
      list(`__a__b` = c(3L, 4L, 2L, 1L, 5L),
           `__b__a` = c(3L, 4L, 1L, 2L, 5L),
           `__a` = c(3L, 2L, 4L, 1L, 5L)))
@@ -12804,7 +12812,7 @@ test(1900.4, fread(DT_str, index = list('a', 1L)),
 # col.names applied before index
 test(1900.5, fread(DT_str, col.names = c('c', 'd'), index = 'a'),
      error = 'some columns are not in the data.table')
-test(1900.6, attributes(attr(fread(DT_str, index = c('a', 'b')), 'index')),
+test(1900.6, lapply(attributes(attr(fread(DT_str, index = c('a', 'b')), 'index')), c),
      list(`__a__b` = c(3L, 4L, 2L, 1L, 5L)))
 
 # . within bquote shouldn't be swapped to list, #1912
@@ -13170,7 +13178,7 @@ options(datatable.use.index=FALSE)
 test(1942.10, DT[,sum(v),keyby=id1,verbose=TRUE], data.table(id1=c("D","A","C"), V1=INT(1,6,8), key="id1"), output="Finding groups using forderv")
 options(datatable.use.index=TRUE)
 
-# test coverage in uniqlist.c of Realloc when over initial 1000 uniqs, and use double to cover numeric tolerance (both in one-column case and >1 column branch)
+# test coverage in uniqlist.c of R_Realloc when over initial 1000 uniqs, and use double to cover numeric tolerance (both in one-column case and >1 column branch)
 set.seed(2)
 DT = data.table(real=sample((1:1500)/1000, 10000, replace=TRUE), id=sample(letters, 1000, replace=TRUE), value=1:10000)
 setkey(DT,id,real)
@@ -13302,7 +13310,7 @@ test(1953.4, melt.data.table(DT, id.vars = 'id', measure.vars = 'a'),
 
 # appearance order of two low-cardinality columns that were squashed in pr#3124
 DT = data.table(A=INT(1,3,2,3,2), B=1:5)  # respect groups in 1st column (3's and 2's)
-test(1954, forderv(DT, sort=FALSE, retGrp=TRUE), structure(INT(1,2,4,3,5), starts=1:5, maxgrpn=1L))
+test(1954, forderv(DT, sort=FALSE, retGrp=TRUE), structure(INT(1,2,4,3,5), starts=1:5, maxgrpn=1L, anyna=0L, anyinfnan=0L, anynotascii=0L, anynotutf8=0L))
 
 # skip values that are not present in old, #3030
 DT <- data.table(a=1, b=2, d=3)
@@ -13541,11 +13549,11 @@ test(1962.042, forderv(DT, na.last = c(TRUE, FALSE)),  error='na.last must be lo
 test(1962.043, forderv(DT$a, by = 'a'),                error='x is a single vector, non-NULL')
 test(1962.044, forderv(DT$a, order = 2L),              error='Item 1 of order (ascending/descending) is 2. Must be +1 or -1')
 test(1962.045, forderv(DT$a, order = c(1L, -1L)),      error='Input is an atomic vector (not a list of columns) but order= is not a length 1 integer')
-test(1962.0461, forderv(DT, order = c(1L, -1L)),       error="Either order= is not integer or its length (2) is different to by='s length (1)")
+test(1962.0461, forderv(DT, order = c(1L, -1L)),       error="length (2) is different to by='s length (1)")
 test(1962.0462, forderv(DT, order = 2L),               error='Item 1 of order (ascending/descending) is 2. Must be +1 or -1')
 test(1962.0471, forderv(mean),                         error="'x' argument must be data.table compatible")
 test(1962.0472, forderv(DT, by=mean),                  error="argument specifying columns must be character or numeric")
-test(1962.0473, forderv(NULL),                         error="DT is an empty list() of 0 columns")
+test(1962.0473, forderv(NULL),                         error="DT is NULL")
 
 setDF(DT)
 test(1962.0481, forder(DT), 3:1)
@@ -14287,12 +14295,12 @@ test(1993.1, foverlaps(xp, yp, nomatch = 0L, which=TRUE), data.table(xid=1L, yid
 test(1993.2, foverlaps(xp, yp, by.x=c("day", "year")), error="Some interval cols are of type POSIXct while others are not")
 
 # forderv NaN,Inf and Inf when at most 1 finite value is present, #3381. These broke in v1.12.0. They pass in v1.11.8.
-test(1994.1, forderv(c(NaN, Inf, -Inf), retGrp=TRUE), structure(INT(1,3,2), starts=1:3, maxgrpn=1L))
-test(1994.2, forderv(c(-Inf, 0, Inf), retGrp=TRUE),   structure(integer(), starts=1:3, maxgrpn=1L))
-test(1994.3, forderv(c(-Inf, Inf), retGrp=TRUE),      structure(integer(), starts=1:2, maxgrpn=1L))
-test(1994.4, forderv(c(Inf, -Inf), retGrp=TRUE),      structure(2:1, starts=1:2, maxgrpn=1L))
-test(1994.5, forderv(c(0, NaN), retGrp=TRUE),         structure(2:1, starts=1:2, maxgrpn=1L))
-test(1994.6, forderv(c(NaN, 0), retGrp=TRUE),         structure(integer(), starts=1:2, maxgrpn=1L))
+test(1994.1, forderv(c(NaN, Inf, -Inf), retGrp=TRUE), structure(INT(1,3,2), starts=1:3, maxgrpn=1L, anyna=0L, anyinfnan=1L, anynotascii=0L, anynotutf8=0L))
+test(1994.2, forderv(c(-Inf, 0, Inf), retGrp=TRUE),   structure(integer(), starts=1:3, maxgrpn=1L, anyna=0L, anyinfnan=1L, anynotascii=0L, anynotutf8=0L))
+test(1994.3, forderv(c(-Inf, Inf), retGrp=TRUE),      structure(integer(), starts=1:2, maxgrpn=1L, anyna=0L, anyinfnan=1L, anynotascii=0L, anynotutf8=0L))
+test(1994.4, forderv(c(Inf, -Inf), retGrp=TRUE),      structure(2:1, starts=1:2, maxgrpn=1L, anyna=0L, anyinfnan=1L, anynotascii=0L, anynotutf8=0L))
+test(1994.5, forderv(c(0, NaN), retGrp=TRUE),         structure(2:1, starts=1:2, maxgrpn=1L, anyna=0L, anyinfnan=1L, anynotascii=0L, anynotutf8=0L))
+test(1994.6, forderv(c(NaN, 0), retGrp=TRUE),         structure(integer(), starts=1:2, maxgrpn=1L, anyna=0L, anyinfnan=1L, anynotascii=0L, anynotutf8=0L))
 test(1994.7, data.table(A=c(-Inf,21,Inf),V=1:3)[,sum(V),by=A]$V1, 1:3)
 
 # 0 length items should not result in no-recycle error, #3386
@@ -14430,6 +14438,8 @@ test(2003.81, rbind(x, y, fill=TRUE, use.names=TRUE), ans)
 test(2003.82, rbind(y, x, fill=TRUE, use.names=TRUE), ans[2:1,])
 test(2003.83, rbind(x, y, fill=TRUE, use.names=FALSE), ans)
 test(2003.84, rbind(y, x, fill=TRUE, use.names=FALSE), ans[2:1,])
+# rbindlist ignore attributes #3911
+test(2003.85, rbindlist(list(), ignore.attr=1), error="ignore.attr should be TRUE or FALSE")
 
 # chmatch coverage for two different non-ascii encodings matching; issues mentioned in comments in chmatch.c #69 #2538 #111
 x1 = "fa\xE7ile"
@@ -14778,48 +14788,52 @@ test(2029.3, fread(txt, quote="", fill=TRUE), data.table(A=1:3, B=4:6, C=c(7:8,N
 
 # .Last.updated #1885
 d = data.table(a=1:4, b=2:5)
-d[, z:=5L]
-test(2030.01, .Last.updated, 4L) # new column
-d[, z:=6L]
-test(2030.02, .Last.updated, 4L) # update existing column
-d[2:3, z:=7L]
-test(2030.03, .Last.updated, 2L) # sub assign
-d[integer(), z:=8L]
-test(2030.04, .Last.updated, 0L) # empty sub-assign
-d[-1L, z:=9L]
-test(2030.05, .Last.updated, 3L) # inverse sub-assign
-d[-(1:4), z:=10L]
-test(2030.06, .Last.updated, 0L) # inverse empty sub-assign
+# NB: On R 3.3.0, .Last.updated gets touched by test() itself and this cascades even to re-assignments
+#   of .Last.updated like n_updated=.Last.updated, so really force a deep copy by round-tripping from string.
+#   Seen on R 3.3.0, unsure when this behavior changes.
+force_copy = function(n) as.integer(sprintf("%d", n))
+d[, z:=5L]; n_updated = force_copy(.Last.updated)
+test(2030.01, n_updated, 4L) # new column
+d[, z:=6L]; n_updated = force_copy(.Last.updated)
+test(2030.02, n_updated, 4L) # update existing column
+d[2:3, z:=7L]; n_updated = force_copy(.Last.updated)
+test(2030.03, n_updated, 2L) # sub assign
+d[integer(), z:=8L]; n_updated = force_copy(.Last.updated)
+test(2030.04, n_updated, 0L) # empty sub-assign
+d[-1L, z:=9L]; n_updated = force_copy(.Last.updated)
+test(2030.05, n_updated, 3L) # inverse sub-assign
+d[-(1:4), z:=10L]; n_updated = force_copy(.Last.updated)
+test(2030.06, n_updated, 0L) # inverse empty sub-assign
+d[, z:=NULL]; n_updated = force_copy(.Last.updated)
+test(2030.07, n_updated, 4L) # delete column
+d[2:3, z:=11L]; n_updated = force_copy(.Last.updated)
+test(2030.08, n_updated, 2L) # new column during sub-assign
 d[, z:=NULL]
-test(2030.07, .Last.updated, 4L) # delete column
-d[2:3, z:=11L]
-test(2030.08, .Last.updated, 2L) # new column during sub-assign
+d[integer(), z:=12L]; n_updated = force_copy(.Last.updated)
+test(2030.09, n_updated, 0L) # new columns from empty sub-assign
 d[, z:=NULL]
-d[integer(), z:=12L]
-test(2030.09, .Last.updated, 0L) # new columns from empty sub-assign
-d[, z:=NULL]
-d[-(1:4), z:=13L]
-test(2030.10, .Last.updated, 0L) # new columns from empty inverse sub-assign
-d[, z:=NULL][, z:=14L]
-test(2030.11, .Last.updated, 4L) # new column from chaining
-d[, z:=NULL][2:3, z:=14L]
-test(2030.12, .Last.updated, 2L) # sub-assign from chaining
-d[2:3, z:=14L][, z:=NULL]
-test(2030.13, .Last.updated, 4L) # delete column from chaining
-set(d, 1:2, "z", 15L)
-test(2030.14, .Last.updated, 2L) # set() updates .Last.updated too
+d[-(1:4), z:=13L]; n_updated = force_copy(.Last.updated)
+test(2030.10, n_updated, 0L) # new columns from empty inverse sub-assign
+d[, z:=NULL][, z:=14L]; n_updated = force_copy(.Last.updated)
+test(2030.11, n_updated, 4L) # new column from chaining
+d[, z:=NULL][2:3, z:=14L]; n_updated = force_copy(.Last.updated)
+test(2030.12, n_updated, 2L) # sub-assign from chaining
+d[2:3, z:=14L][, z:=NULL]; n_updated = force_copy(.Last.updated)
+test(2030.13, n_updated, 4L) # delete column from chaining
+set(d, 1:2, "z", 15L); n_updated = force_copy(.Last.updated)
+test(2030.14, n_updated, 2L) # set() updates .Last.updated too
 g = data.table(a=1:4, z=15L) # join
-d[g, on="a", z:=i.z]
-test(2030.15, .Last.updated, 4L) # all match of all rows
+d[g, on="a", z:=i.z]; n_updated = force_copy(.Last.updated)
+test(2030.15, n_updated, 4L) # all match of all rows
 g = data.table(a=2:4, z=16L) # join
-d[, z:=NULL][g, on="a", z:=i.z]
-test(2030.16, .Last.updated, 3L) # all match
+d[, z:=NULL][g, on="a", z:=i.z]; n_updated = force_copy(.Last.updated)
+test(2030.16, n_updated, 3L) # all match
 g = data.table(a=c(2L,4L,6L), z=17L)
-d[, z:=NULL][g, on="a", z:=i.z]
-test(2030.17, .Last.updated, 2L) # partial match
+d[, z:=NULL][g, on="a", z:=i.z]; n_updated = force_copy(.Last.updated)
+test(2030.17, n_updated, 2L) # partial match
 g = data.table(a=5:6, z=18L)
-d[, z:=NULL][g, on="a", z:=i.z]
-test(2030.18, .Last.updated, 0L) # zero match
+d[, z:=NULL][g, on="a", z:=i.z]; n_updated = force_copy(.Last.updated)
+test(2030.18, n_updated, 0L) # zero match
 
 # rbind vec with list regression dev 1.12.3; #3528
 test(2031.01, rbind(data.table(A=1:3, B=7:9), data.table(A=4:6, B=as.list(10:12))), ans<-data.table(A=1:6, B=as.list(7:12)))
@@ -15109,7 +15123,7 @@ if (test_bit64) {
   # int64 in x
   test(2044.69, dt1[dt2, ..cols, on="int64==int", nomatch=0L, verbose=TRUE],
                 ans<-data.table(x.int=1:5, x.doubleInt=as.double(1:5), x.realDouble=c(0.5,1.0,1.5,2.0,2.5), x.int64=as.integer64(1:5),
-                                i.int=1:5, i.doubleInt=as.double(1:5), i.realDouble=c(0.5,1.0,1.5,2.0,2.5), i.int64=as.integer64(1:5)),
+                                i.int=1:5, i.doubleInt=as.double(1:5), i.realDouble=c(0.5,1.0,1.5,2.0,2.5), i.int64=as.integer64(c(1:4, 3000000000))),
                 output = "Coercing integer column i.int to type integer64 to match type of x.int64")
   test(2044.70, dt1[dt2, ..cols, on="int64==doubleInt", nomatch=0L, verbose=TRUE],
                 ans,
@@ -16639,9 +16653,9 @@ test(2127.65, fcase(test_vec1, list(1)), list(1,1,1,1,1, NULL, NULL, NULL, NULL,
 test(2127.66, fcase(test_vec1, as.Date("2019-10-11")), c(rep(as.Date("2019-10-11"),5),rep(NA,6)))
 test(2127.67, fcase(test_vec1, factor("a", levels=letters[1:3])), factor(c(rep("a",5),rep("NA",6)), levels=letters[1:3]))
 test(2127.68, fcase(test_vec1, 1L, default = 1:2), error = "Length of 'default' must be 1.")
-test(2127.69, fcase(test_vec1, 1L, test_vec_na1, 2L), error = "Argument #3 has a different length than argument #1. Please make sure all logical conditions have the same length.")
+test(2127.69, fcase(test_vec1, 1L, test_vec_na1, 2L), error = "Argument #3 has length 12 which differs from that of argument #1 (11). Please make sure all logical conditions have the same length.")
 test(2127.70, fcase(test_vec1, as.Date("2019-10-11"), test_vec2, 2), error = "Argument #4 has different class than argument #2, Please make sure all output values have the same class.")
-test(2127.71, fcase(test_vec1, 1L, test_vec2, 2:3), error = "Length of output value #4 must either be 1 or length of logical condition.")
+test(2127.71, fcase(test_vec1, 1L, test_vec2, 2:3), error = "Length of output value #4 (2) must either be 1 or match the length of the logical condition (11).")
 test(2127.72, fcase(TRUE, 1L, FALSE, stop("bang!")), 1L)
 test(2127.73, fcase(test_vec1, 1L, test_vec2, 0:10), as.integer(c( 1, 1, 1, 1, 1, NA, 6, 7, 8, 9, 10)))
 test(2127.74, fcase(test_vec1, 0:10, test_vec2, 0L), as.integer(c( 0, 1, 2, 3, 4, NA, 0, 0, 0, 0, 0)))
@@ -16890,16 +16904,17 @@ times = .POSIXct(tz = 'UTC', c(
   1201364458.72486, 939956943.690777
 ))
 DT = data.table(dates, times)
+DT_trunc = copy(DT)[, times := as.POSIXct(trunc(times))]
 tmp = tempfile()
 ## ISO8601 format (%FT%TZ) by default
 fwrite(DT, tmp)
 test(2150.01, fread(tmp), DT)   # defaults for fwrite/fread simple and preserving
-fwrite(DT, tmp, dateTimeAs='write.csv')  # as write.csv, writes the UTC times as-is not local because the time column has tzone=="UTC", but without the Z marker
+fwrite(DT, tmp, dateTimeAs='write.csv')  # as write.csv, writes the UTC times as-is not local because the time column has tzone=="UTC", but without the Z marker. Also truncates milliseconds, hence DT_trunc below.
 test(2150.021, env=list(TZ=NULL), sapply(fread(tmp,tz=""), typeof), c(dates="integer", times="character"))  # from v1.14.0 tz="" needed to read datetime as character
-test(2150.022, env=list(TZ=NULL), fread(tmp,tz="UTC"), DT)  # user can tell fread to interpret the unmarked datetimes as UTC
-test(2150.023, env=c(TZ='UTC'), fread(tmp), DT)  # TZ environment variable is also recognized
+test(2150.022, env=list(TZ=NULL), fread(tmp,tz="UTC"), DT_trunc)  # user can tell fread to interpret the unmarked datetimes as UTC
+test(2150.023, env=c(TZ='UTC'), fread(tmp), DT_trunc)  # TZ environment variable is also recognized
 if (.Platform$OS.type!="windows") {
-  test(2150.024, env=c(TZ=''), fread(tmp), DT) # on Windows this unsets TZ, see ?Sys.setenv
+  test(2150.024, env=c(TZ=''), fread(tmp), DT_trunc) # on Windows this unsets TZ, see ?Sys.setenv
   # blank TZ env variable on non-Windows is recognized as UTC consistent with C and R; but R's tz= argument is the opposite and uses "" for local
 }
 # Notes:
@@ -16914,14 +16929,14 @@ test(2150.025,
      attr(fread(tmp, colClasses=list(POSIXct="times"), tz="")$times, "tzone"),
      "")
 # the times will be different though here because as.POSIXct read them as local time.
-fwrite(copy(DT)[ , times := format(times, '%FT%T+00:00')], tmp)
-test(2150.03, fread(tmp), DT)
+fwrite(copy(DT)[ , times := format(times, '%FT%T+00:00')], tmp) #NB: %T-->truncate milliseconds.
+test(2150.03, fread(tmp), DT_trunc)
 fwrite(copy(DT)[ , times := format(times, '%FT%T+0000')], tmp)
-test(2150.04, fread(tmp), DT)
+test(2150.04, fread(tmp), DT_trunc)
 fwrite(copy(DT)[ , times := format(times, '%FT%T+0115')], tmp)
-test(2150.05, fread(tmp), copy(DT)[ , times := times - 4500])
+test(2150.05, fread(tmp), copy(DT_trunc)[ , times := times - 4500])
 fwrite(copy(DT)[ , times := format(times, '%FT%T+01')], tmp)
-test(2150.06, fread(tmp), copy(DT)[ , times := times - 3600])
+test(2150.06, fread(tmp), copy(DT_trunc)[ , times := times - 3600])
 ## invalid tz specifiers
 fwrite(copy(DT)[ , times := format(times, '%FT%T+3600')], tmp)
 test(2150.07, fread(tmp), copy(DT)[ , times := format(times, '%FT%T+3600')])
@@ -17249,13 +17264,13 @@ exid = data.table(id=1, expected)
 test(2182.3, melt(DTid, measure.vars=list(a=c(NA,1), b=2:3), id.vars="id"), exid)
 test(2182.4, melt(DTid, measure.vars=list(a=c(NA,"a2"), b=c("b1","b2")), id.vars="id"), exid)
 test(2182.5, melt(DT.wide, measure.vars=list(a=c(NA,1), b=2:3), na.rm=TRUE), data.table(variable=factor(2), a=2, b=2))
-test(2182.6, melt(DT.wide, measure.vars=list(b=c("b1","b2"))), data.table(a2=2, variable=factor(c("1","2")), b=c(1,2))) # measure.vars named list length=1, #5065
+test(2182.6, melt(DT.wide, measure.vars=list(b=c("b1","b2"))), data.table(a2=2, variable=factor(c("b1","b2")), b=c(1,2)), warning="measure.vars is a list with length=1") # measure.vars named list length=1, #5065
 # consistency between measure.vars=list with length=1 and length>1, #5209
-test(2182.71, melt(DT.wide, measure.vars=list("a2"), variable.factor=TRUE), data.table(b1=1, b2=2, variable=factor(1), value=2))
+test(2182.71, melt(DT.wide, measure.vars=list("a2"), variable.factor=TRUE), data.table(b1=1, b2=2, variable=factor("a2"), value=2), warning="measure.vars is a list with length=1")
 test(2182.72, melt(DT.wide, measure.vars=c("a2"), variable.factor=TRUE), data.table(b1=1, b2=2, variable=factor("a2"), value=2))
-test(2182.73, melt(DT.wide, measure.vars=list("a2"), variable.factor=FALSE), data.table(b1=1, b2=2, variable="1", value=2))
+test(2182.73, melt(DT.wide, measure.vars=list("a2"), variable.factor=FALSE), data.table(b1=1, b2=2, variable="a2", value=2), warning="measure.vars is a list with length=1")
 test(2182.74, melt(DT.wide, measure.vars=c("a2"), variable.factor=FALSE), data.table(b1=1, b2=2, variable="a2", value=2))
-test(2182.75, melt(data.table(a=10, b=20), measure.vars=list(n="a"), variable.factor=FALSE), data.table(b=20, variable="1", n=10))#thanks @mnazarov
+test(2182.75, melt(data.table(a=10, b=20), measure.vars=list(n="a"), variable.factor=FALSE), data.table(b=20, variable="a", n=10), warning="measure.vars is a list with length=1")#thanks @mnazarov
 
 ### First block testing measurev
 # new variable_table attribute for measure.vars, PR#4731 for multiple issues
@@ -17453,8 +17468,8 @@ if (test_bit64) {
   # X[Y,,by=.EACHI] when Y contains integer64 also fixed in 1.12.4, #3779
   X = data.table(x=1:3)
   Y = data.table(x=1:2, y=as.integer64(c(10,20)))
-  test(2193.2, copy(X)[Y, `:=`(y=i.y), on="x", by=.EACHI], data.table(x=1:3, y=as.integer64(10L,20L,NA)))
-  test(2193.3, copy(X)[Y, let(y=i.y), on="x", by=.EACHI], data.table(x=1:3, y=as.integer64(10L,20L,NA)))
+  test(2193.2, copy(X)[Y, `:=`(y=i.y), on="x", by=.EACHI], data.table(x=1:3, y=as.integer64(c(10L,20L,NA))))
+  test(2193.3, copy(X)[Y, let(y=i.y), on="x", by=.EACHI], data.table(x=1:3, y=as.integer64(c(10L,20L,NA))))
 }
 
 # endsWithAny added in #5097 for internal use replacing one use of base::endsWith (in fread.R)
@@ -17652,7 +17667,7 @@ for (col in c("a","b","c")) {
 }
 
 # DT() functional form, #4872 #5106 #5107 #5129
-if (base::getRversion() >= "4.1.0") {
+if (FALSE) {
   DT = DTfun
   # we have to EVAL "|>" here too otherwise this tests.Rraw file won't parse in R<4.1.0
   droprn = function(df) { rownames(df)=NULL; df }  # TODO: could retain rownames where droprn is currently used below
@@ -17724,7 +17739,7 @@ if (base::getRversion() >= "3.4.0") {
 }
 test(2214.06, droplevels(DT)[["a"]], droplevels(DT[1:5,a]))
 test(2214.07, droplevels(DT, 1)[["a"]], x[1:5])
-test(2214.08, droplevels(DT, in.place=TRUE), DT)
+test(2214.08, droplevels(DT, in.place=TRUE), DT, warning="droplevels() with in.place=TRUE is deprecated.")
 # support ordered factors in fdroplevels
 o = factor(letters[1:10], ordered=TRUE)
 test(2214.09, fdroplevels(o[1:5]), droplevels(o[1:5]))
@@ -17732,6 +17747,13 @@ test(2214.09, fdroplevels(o[1:5]), droplevels(o[1:5]))
 test(2214.10, droplevels(DT[0]), DT[0])
 test(2214.11, droplevels(data.table()), data.table())
 
+# setdroplevels() for in-place operations #6014
+x = factor(letters[1:10])
+DT = data.table(a = x)[1:5]
+test(2214.12, setdroplevels(DT, except=1L), DT) # don't do anything
+test(2214.13, setdroplevels(DT, except=0L), error="except >= 1")
+test(2214.14, setdroplevels(DT, except=2L), error="except <= length(x)")
+test(2214.15, setdroplevels(DT), DT)
 
 # factor i should be just like character i and work, #1632
 DT = data.table(A=letters[1:3], B=4:6, key="A")
@@ -18331,8 +18353,10 @@ dt = data.table(x=1:4, y=factor(letters[1:2]))
 test(2247.1, split(dt, ~y), split(dt, dt$y))
 dt = data.table(x=1:4, y=1:2)
 test(2247.2, split(dt, ~y), list(`1`=data.table(x=c(1L,3L), y=1L), `2`=data.table(x=c(2L, 4L), y=2L)))
-# Closely match the original MRE from the issue
-test(2247.3, do.call(rbind, split(dt, ~y)), setDT(do.call(rbind, split(as.data.frame(dt), ~y))))
+if (!inherits(tryCatch(split(mtcars, ~cyl), error=identity), "error")) { # R>=4.1.0
+  # Closely match the original MRE from the issue
+  test(2247.3, do.call(rbind, split(dt, ~y)), setDT(do.call(rbind, split(as.data.frame(dt), ~y))))
+}
 dt = data.table(x=1:4, y=factor(letters[1:2]), z=factor(c(1,1,2,2), labels=c("c", "d")))
 test(2247.4, split(dt, ~y+z), list("a.c"=dt[1], "b.c"=dt[2], "a.d"=dt[3], "b.d"=dt[4]))
 
@@ -18383,9 +18407,12 @@ test(2250.11, dt[, names(.SD(2)) := lapply(.SD, .I)], error=base_messages$missin
 dt = data.table(a = 1:3, b = 5:7, grp = c('a', 'a', 'b'))
 test(2250.12, dt[, names(.SD) := lapply(.SD, function(x) x + b), .SDcols = "a"], data.table(a = 1:3 + 5:7, b = 5:7, grp = c('a', 'a', 'b')))
 
-
 dt = data.table(a = 1L, b = 2L, c = 3L, d = 4L, e = 5L, f = 6L)
 test(2250.13, dt[, names(.SD)[1:5] := sum(.SD)], data.table(a = 21L, b = 21L, c = 21L, d = 21L, e = 21L, f = 6L))
+
+dt = data.table(a = 1) #6033 revdep follow-up
+my_col = "a"
+test(2250.14, dt[, substitute(my_col) := .(3)], data.table(a = 3))
 
 # fread(...,fill) can also be used to specify a guess on the maximum number of columns #2691 #1812 #4130 #3436 #2727
 dt_str = paste(rep(c("1,2\n", "1,2,3\n"), each=100), collapse="")
@@ -18430,7 +18457,7 @@ rm(.datatable.aware)
 local({
   lc_ctype = Sys.getlocale('LC_CTYPE')
   Sys.setlocale('LC_CTYPE', "en_US.UTF-8") # Japanese multibyte characters require utf8
-  on.exit({Sys.setlocale('LC_CTYPE', lc_ctype)})
+  on.exit(Sys.setlocale('LC_CTYPE', lc_ctype))
   accented_a = "\u0061\u0301"
   ja_ichi = "\u4E00"
   ja_ni = "\u4E8C"
@@ -18695,13 +18722,318 @@ test(2264.8, print(DT, show.indices=TRUE), output=ans)
 # integer64 columns print even when bit64 isn't loaded
 if (test_bit64) local({
   DT = data.table(a = 'abc', b = as.integer64(1))
-  invisible(unloadNamespace("bit64"))
+  suppressPackageStartupMessages(unloadNamespace("bit64"))
   on.exit(suppressPackageStartupMessages(library(bit64)))
   test(2265, DT, output="abc\\s*1$")
 })
 
 # non-ASCII plain symbol in by, #4708
-DT = data.table(a = rep(1:3, 2))
-# NB: recall we can't use non-ASCII symbols here. the text is a-<n-tilde>-o (year in Spanish)
-setnames(DT, "a", "a\U00F1o")
-test(2266, eval(parse(text="DT[ , .N, a\U00F1o]$N[1L]")), 2L)
+# NB: recall we can't use non-ASCII symbols in the test script. The text is a-<n-tilde>-o (year in Spanish)
+native_ano = iconv("a\U00F1o", "UTF-8", "")
+if (!is.na(native_ano)) { # #6339: symbol must be represented in native encoding
+  DT = data.table(a = rep(1:3, 2))
+  setnames(DT, "a", native_ano)
+  test(2266, eval(parse(text=sprintf("DT[ , .N, %s]$N[1L]", native_ano))), 2L)
+  # sub-key can also be retained in plain query, part of #4498
+  DT = data.table(id = rep(1:10, 2L), grp = rep(1:2, each=10L), V = 1:20/13, key=c('id', 'grp'))
+  test(2266.1, key(DT[ , .(id)]), 'id')
+  test(2266.2, key(DT[ , .(grp)]), NULL)
+  ## renaming also caught
+  test(2266.3, key(DT[ , .(newid = id, newgrp = grp)]), c('newid', 'newgrp'))
+} else {
+  cat("Tests 2266* skipped. n-tilde cannot be represented in the native encoding on this system. Please report to the data.table issue tracker.\n")
+}
+
+# all.equal failed to dispatch to methods of columns, #4543
+DT1 = data.table(t = .POSIXct(1590973200, tz='UTC'))
+DT2 = data.table(t = .POSIXct(1590974413, tz='UTC'))
+test(2267, all.equal(DT1, DT2), "Column 't': Mean absolute difference: 1213")
+
+# rbindlist with many nested lists leads to protection stack overflow #4536
+# test case needs to bind list columns with atomic columns to trigger
+x = list(
+  data.table(V1="a"),
+  data.table(V1=""),
+  data.table(V2=list(FALSE)),
+  data.table(V2=list(list(V2A=FALSE, V2B="", V2C="" ))),
+  data.table(V1=list(list(V1A="", V1B="", V1C="", V1D="", V1E="")), V3 = list(list(V3A=TRUE, V3B="", V3C=1L, V3D=0L, V3F=1L)))
+)
+N = 5e4
+y = x[rep(1:5, N)]
+test(2268, rbindlist(y, fill=TRUE), rbindlist(x, fill=TRUE)[rep(1:5, N)])
+
+# fread cannot read all NA column as POSIXct #6208
+dt = data.table(x=as.POSIXct(c(NA, NA)))
+test(2269.1, fread("x\n \n \n", colClasses="POSIXct"), dt)
+test(2269.2, fread("x\n?\n \n", colClasses="POSIXct", na.strings="?"), dt)
+
+# Error found by revdep in #6284: mean(a,b) is valid, expr names() can be NULL
+DT = data.table(a = 1, b = 2)
+test(2270, options=c(datatable.optimize=1L), DT[, mean(b, 1), by=a], data.table(a=1, V1=2), warning="Unable to optimize call to mean()")
+
+# Missing newline in verbose output -> harder to read
+DT1 = data.table(a=1:2)
+DT2 = data.table(a=c(1, 1, 2, 2), b=1:4)
+test(2271, options=c(datatable.verbose=TRUE), copy(DT1)[DT2, on='a', v := 4], copy(DT1)[, v := 4], output="x.a.\nAssigning")
+
+# shift of many elements accumulated PROTECT() for the fill values instead of releasing as soon as possible. Spotted by rchk in #6257.
+l = as.list(seq_len(2e4))
+test(2272, shift(l), as.list(rep(NA_integer_, 2e4)))
+
+# false positive detecting the bz2 header in some rare cases, #6304
+tmp = tempfile()
+fwrite(data.table(c1 = "BZh"), tmp, col.names=FALSE)
+test(2273.1, fread(tmp), data.table(BZh = logical()))
+test(2273.2, fread(tmp, header=FALSE), data.table(V1="BZh"))
+fwrite(ans<-data.table(BZh=1L, CZi=2L), tmp)
+test(2273.3, fread(tmp), ans)
+if (test_R.utils) {
+  DT = data.table(a=1L, b=2L)
+  fwrite(DT, tmp)
+  R.utils::bzip2(tmp, tmp2 <- tempfile(), remove=FALSE) # _not_ with .bz2 extension
+  test(2273.4, fread(tmp2), DT)
+}
+file.remove(tmp, tmp2)
+
+# rbind with vectors with class attributes #5309
+x = data.table(a = 1L, b = as.Date("2020-01-01"))
+y = data.table(a = 2L, b = as.IDate("2021-01-01"))
+z = data.table(a = 3L, b = NA)
+test(2274.01, rbind(x, y), data.table(a=c(1L, 2L), b= as.Date(c("2020-01-01", "2021-01-01"))))
+test(2274.02, rbind(y, x), data.table(a=c(2L, 1L), b=as.IDate(c("2021-01-01", "2020-01-01"))))
+test(2274.03, rbind(x, z), data.table(a=c(1L, 3L), b= as.Date(c("2020-01-01", NA))))
+test(2274.04, rbind(z, x), data.table(a=c(3L, 1L), b= as.Date(c(NA,           "2020-01-01"))))
+test(2274.05, rbind(y, z), data.table(a=c(2L, 3L), b=as.IDate(c("2021-01-01", NA))))
+test(2274.06, rbind(z, y), data.table(a=c(3L, 2L), b=as.IDate(c(NA,           "2021-01-01"))))
+z[, b := NULL]
+test(2274.07, rbind(x, z, fill=TRUE), data.table(a=c(1L, 3L), b= as.Date(c("2020-01-01", NA))))
+test(2274.08, rbind(z, x, fill=TRUE), data.table(a=c(3L, 1L), b= as.Date(c(NA, "2020-01-01"))))
+test(2274.09, rbind(y, z, fill=TRUE), data.table(a=c(2L, 3L), b=as.IDate(c("2021-01-01", NA))))
+test(2274.10, rbind(z, y, fill=TRUE), data.table(a=c(3L, 2L), b=as.IDate(c(NA, "2021-01-01"))))
+x = data.table(a=1L, b=as.POSIXct("2021-10-06 13:58:00 UTC"))
+test(2274.11, rbind(x, z, fill=TRUE), data.table(a=c(1L, 3L), b=as.POSIXct(c("2021-10-06 13:58:00 UTC", NA))))
+test(2274.12, rbind(z, x, fill=TRUE), data.table(a=c(3L, 1L), b=as.POSIXct(c(NA, "2021-10-06 13:58:00 UTC"))))
+x = data.table(c=1L, d=as.POSIXct("2021-10-06 13:58:00 UTC"))
+test(2274.13, rbind(x, z, fill=TRUE, use.names=FALSE), data.table(c = c(1L, 3L), d=as.POSIXct(c("2021-10-06 13:58:00 UTC", NA))))
+test(2274.14, rbind(z, x, fill=TRUE, use.names=FALSE), data.table(a=c(3L, 1L), d=as.POSIXct(c(NA, "2021-10-06 13:58:00 UTC"))))
+x = data.table(a=1L, b=as.ITime(0))
+y = data.table(a=2L, b=NA)
+test(2274.15, rbind(x,y), data.table(a = c(1L, 2L), b=as.ITime(c(0, NA))))
+test(2274.16, rbind(y,x), data.table(a = c(2L, 1L), b=as.ITime(c(NA, 0))))
+y[, b := NULL]
+test(2274.17, rbind(x,y, fill = TRUE), data.table(a = c(1L, 2L), b=as.ITime(c(0, NA))))
+test(2274.18, rbind(y,x, fill = TRUE), data.table(a = c(2L, 1L), b=as.ITime(c(NA, 0))))
+# follow up to #5263 to simplify merge logic
+x = data.table(a = 1L, b = as.Date("2020-01-01"))
+y = data.table(a = 2L, b = NA)
+test(2274.19, merge(x, y, by="a", all=TRUE), data.table(a=1:2, b.x=as.Date(c("2020-01-01", NA)), b.y=NA, key="a"))
+test(2274.20, merge(y, x, by="a", all=TRUE), data.table(a=1:2, b.x=NA, key="a", b.y=as.Date(c("2020-01-01", NA))))
+# rbindlist with AsIs
+x = data.table(a = 1L, b=I(3L))
+y = data.table(a = 2L, b=4)
+test(2274.21, rbindlist(list(x,y)), data.table(a = c(1L, 2L), b=I(c(3L, 4))))
+test(2274.22, rbindlist(list(y,x)), data.table(a = c(2L, 1L), b=c(4, 3)))
+# rbind ignore attributes #3911
+x = data.table(a = structure(1:2, class=c("a", "integer")), key="a")
+y = data.table(a = 2:3, key="a")
+test(2274.31, merge(x,y, all.y=TRUE), data.table(a=structure(2:3, class=c("a", "integer")), key="a"))
+test(2274.32, rbind(x,y), error="Class attribute .* does not match with .*")
+test(2274.33, rbind(x,y, ignore.attr=TRUE), data.table(a=structure(c(1L, 2L, 2L, 3L), class=c("a", "integer"))))
+
+# lazy forder, #4386
+dd = data.table(a=1:2, b=2:1)
+d = copy(dd)
+test(2275.01, options=c(datatable.verbose=TRUE), forderv(d, "b"), 2:1, output="forder.*opt=-1.*took")
+test(2275.02, options=c(datatable.verbose=TRUE), forderv(d, "b", reuseSorting=FALSE), 2:1, output="forder.*opt=0.*took")
+setkeyv(d, "b")
+test(2275.03, options=c(datatable.verbose=TRUE), forderv(d, "b"), integer(), output="forder.*opt=1.*took")
+test(2275.04, options=c(datatable.verbose=TRUE), forderv(d, "b", reuseSorting=FALSE), integer(), output="forder.*opt=0.*took")
+d = copy(dd)
+setindexv(d, "b")
+test(2275.05, options=c(datatable.verbose=TRUE), forderv(d, "b"), 2:1, output="forder.*opt=2.*took")
+test(2275.06, options=c(datatable.verbose=TRUE), forderv(d, "b", reuseSorting=FALSE), 2:1, output="forder.*opt=0.*took")
+d = copy(dd)
+test(2275.11, options=c(datatable.verbose=TRUE), forderv(d, c("a","b")), integer(), output="forder.*opt=-1.*took")
+test(2275.12, options=c(datatable.verbose=TRUE), forderv(d, c("a","b"), reuseSorting=FALSE), integer(), output="forder.*opt=0.*took")
+test(2275.13, options=c(datatable.verbose=TRUE), forderv(d, c("b","a")), 2:1, output="forder.*opt=-1.*took")
+test(2275.14, options=c(datatable.verbose=TRUE), forderv(d, c("b","a"), reuseSorting=FALSE), 2:1, output="forder.*opt=0.*took")
+setkeyv(d, c("a","b"))
+test(2275.21, options=c(datatable.verbose=TRUE), forderv(d, c("a","b")), integer(), output="forder.*opt=1.*took")
+test(2275.22, options=c(datatable.verbose=TRUE), forderv(d, c("a","b"), reuseSorting=FALSE), integer(), output="forder.*opt=0.*took")
+test(2275.23, options=c(datatable.verbose=TRUE), forderv(d, c("b","a")), 2:1, output="forder.*opt=-1.*took")
+test(2275.24, options=c(datatable.verbose=TRUE), forderv(d, c("b","a"), reuseSorting=FALSE), 2:1, output="forder.*opt=0.*took")
+setkeyv(d, c("b","a"))
+test(2275.25, options=c(datatable.verbose=TRUE), forderv(d, c("a","b")), 2:1, output="forder.*opt=-1.*took")
+test(2275.26, options=c(datatable.verbose=TRUE), forderv(d, c("a","b"), reuseSorting=FALSE), 2:1, output="forder.*opt=0.*took")
+test(2275.27, options=c(datatable.verbose=TRUE), forderv(d, c("b","a")), integer(), output="forder.*opt=1.*took")
+test(2275.28, options=c(datatable.verbose=TRUE), forderv(d, c("b","a"), reuseSorting=FALSE), integer(), output="forder.*opt=0.*took")
+d = copy(dd)
+setindexv(d, c("a","b"))
+test(2275.31, options=c(datatable.verbose=TRUE), forderv(d, c("a","b")), integer(), output="forder.*opt=2.*took")
+test(2275.32, options=c(datatable.verbose=TRUE), forderv(d, c("a","b"), reuseSorting=FALSE), integer(), output="forder.*opt=0.*took")
+test(2275.33, options=c(datatable.verbose=TRUE), forderv(d, c("b","a")), 2:1, output="forder.*opt=-1.*took")
+test(2275.34, options=c(datatable.verbose=TRUE), forderv(d, c("b","a"), reuseSorting=FALSE), 2:1, output="forder.*opt=0.*took")
+d = copy(dd)
+setindexv(d, c("b","a"))
+test(2275.35, options=c(datatable.verbose=TRUE), forderv(d, c("a","b")), integer(), output="forder.*opt=-1.*took")
+test(2275.36, options=c(datatable.verbose=TRUE), forderv(d, c("a","b"), reuseSorting=FALSE), integer(), output="forder.*opt=0.*took")
+test(2275.37, options=c(datatable.verbose=TRUE), forderv(d, c("b","a")), 2:1, output="forder.*opt=2.*took")
+test(2275.38, options=c(datatable.verbose=TRUE), forderv(d, c("b","a"), reuseSorting=FALSE), 2:1, output="forder.*opt=0.*took")
+d = copy(dd)
+setindexv(d, list(c("a","b"), c("b","a")))
+test(2275.41, options=c(datatable.verbose=TRUE), forderv(d, c("a","b")), integer(), output="forder.*opt=2.*took")
+test(2275.42, options=c(datatable.verbose=TRUE), forderv(d, c("a","b"), reuseSorting=FALSE), integer(), output="forder.*opt=0.*took")
+test(2275.43, options=c(datatable.verbose=TRUE), forderv(d, c("b","a")), 2:1, output="forder.*opt=2.*took")
+test(2275.44, options=c(datatable.verbose=TRUE), forderv(d, c("b","a"), reuseSorting=FALSE), 2:1, output="forder.*opt=0.*took")
+d = copy(dd)
+setkeyv(d, c("a","b"))
+setindexv(d, list(c("a","b"), c("b","a")))
+test(2275.51, options=c(datatable.verbose=TRUE), forderv(d, c("a","b")), integer(), output="forder.*opt=1.*took", notOutput="forder.*opt=2.*took") # idxOpt is not reached
+test(2275.52, options=c(datatable.verbose=TRUE), forderv(d, c("a","b"), reuseSorting=FALSE), integer(), output="forder.*opt=0.*took")
+test(2275.53, options=c(datatable.verbose=TRUE), forderv(d, c("b","a")), 2:1, output="forder.*opt=2.*took")
+test(2275.54, options=c(datatable.verbose=TRUE), forderv(d, c("b","a"), reuseSorting=FALSE), 2:1, output="forder.*opt=0.*took")
+d = copy(dd)
+setindexv(d, list(c("a","b"), c("b","a")))
+test(2275.55, options=c(datatable.verbose=TRUE), forderv(d, c("a","b")), integer(), output="forder.*opt=2.*took", notOutput="forder.*opt=1.*took")
+test(2275.56, options=c(datatable.verbose=TRUE), forderv(d, c("a","b"), reuseSorting=FALSE), integer(), output="forder.*opt=0.*took")
+d = copy(dd)
+setkeyv(d, c("a","b"))
+setindexv(d, list(c("a","b"), c("b","a")))
+ab = structure(integer(), starts=1:2, maxgrpn=1L, anyna=0L, anyinfnan=0L, anynotascii=0L, anynotutf8=0L)
+ba = structure(2:1, starts=1:2, maxgrpn=1L, anyna=0L, anyinfnan=0L, anynotascii=0L, anynotutf8=0L)
+test(2275.60, options=c(datatable.verbose=TRUE), forderv(d, c("a","b")), c(ab), output="forder.*opt=1.*took") # c(): strip attributes
+test(2275.61, options=c(datatable.verbose=TRUE), forderv(d, c("a","b"), retGrp=TRUE), ab, output="forder.*opt=2.*took")
+test(2275.62, options=c(datatable.verbose=TRUE), forderv(d, c("a","b"), retGrp=TRUE, reuseSorting=FALSE), ab, output="forder.*opt=0.*took")
+test(2275.63, options=c(datatable.verbose=TRUE), forderv(d, c("b","a"), retGrp=TRUE), ba, output="forder.*opt=2.*took")
+test(2275.64, options=c(datatable.verbose=TRUE), forderv(d, c("b","a"), retGrp=TRUE, reuseSorting=FALSE), ba, output="forder.*opt=0.*took")
+test(2275.65, options=c(datatable.verbose=TRUE), forderv(d, c("a","b"), na.last=TRUE), integer(), output="forder.*opt=2.*took") # via anyna index attribute
+test(2275.66, options=c(datatable.verbose=TRUE), forderv(d, c("a","b"), na.last=TRUE, reuseSorting=FALSE), integer(), output="forder.*opt=0.*took")
+test(2275.67, options=c(datatable.verbose=TRUE), forderv(d, c("b","a"), na.last=TRUE), 2:1, output="forder.*opt=2.*took") # via anyna index attribute
+test(2275.68, options=c(datatable.verbose=TRUE), forderv(d, c("b","a"), na.last=TRUE, reuseSorting=FALSE), 2:1, output="forder.*opt=0.*took")
+test(2275.69, options=c(datatable.verbose=TRUE), forderv(d, c("a","b"), sort=FALSE, retGrp=TRUE), ab, output="forder.*opt=0.*took")
+test(2275.70, options=c(datatable.verbose=TRUE), forderv(d, c("a","b"), sort=FALSE, retGrp=TRUE, reuseSorting=FALSE), ab, output="forder.*opt=0.*took")
+test(2275.71, options=c(datatable.verbose=TRUE), forderv(d, c("b","a"), sort=FALSE, retGrp=TRUE), ab, output="forder.*opt=0.*took")
+test(2275.72, options=c(datatable.verbose=TRUE), forderv(d, c("b","a"), sort=FALSE, retGrp=TRUE, reuseSorting=FALSE), ab, output="forder.*opt=0.*took")
+test(2275.73, options=c(datatable.verbose=TRUE), forderv(d, c("a","b"), order=-1L), 2:1, output="forder.*opt=0.*took")
+test(2275.74, options=c(datatable.verbose=TRUE), forderv(d, c("a","b"), order=-1L, reuseSorting=FALSE), 2:1, output="forder.*opt=0.*took")
+test(2275.75, options=c(datatable.verbose=TRUE), forderv(d, c("b","a"), order=-1L), integer(), output="forder.*opt=0.*took")
+test(2275.76, options=c(datatable.verbose=TRUE), forderv(d, c("b","a"), order=-1L, reuseSorting=FALSE), integer(), output="forder.*opt=0.*took")
+test(2275.77, options=c(datatable.verbose=TRUE), forderv(d, c("a","b"), order=c(1L,-1L)), integer(), output="forder.*opt=0.*took")
+test(2275.78, options=c(datatable.verbose=TRUE), forderv(d, c("a","b"), order=c(1L,-1L), reuseSorting=FALSE), integer(), output="forder.*opt=0.*took")
+test(2275.79, options=c(datatable.verbose=TRUE), forderv(d, c("b","a"), order=c(1L,-1L)), 2:1, output="forder.*opt=0.*took")
+test(2275.80, options=c(datatable.verbose=TRUE), forderv(d, c("b","a"), order=c(1L,-1L), reuseSorting=FALSE), 2:1, output="forder.*opt=0.*took")
+test(2275.81, options=c(datatable.verbose=TRUE), forderv(1:2), integer(), output="forder.*opt=0.*took")
+test(2275.82, options=c(datatable.verbose=TRUE), forderv(1:2, reuseSorting=FALSE), integer(), output="forder.*opt=0.*took")
+test(2275.83, options=c(datatable.verbose=TRUE), forderv(2:1), 2:1, output="forder.*opt=0.*took")
+test(2275.84, options=c(datatable.verbose=TRUE), forderv(2:1, reuseSorting=FALSE), 2:1, output="forder.*opt=0.*took")
+test(2275.851, forderv(2:1, retStats=NA), error="retStats must be TRUE or FALSE")
+test(2275.852, forderv(2:1, retGrp=TRUE, retStats=FALSE), error="retStats must be TRUE whenever retGrp is TRUE")
+ddd = data.table(v1=1:3, v2=c(1L,NA,3L), v3=c(3:2,NaN), v4=c(1:2,Inf), v5=c(-Inf,NA,3)) ## tests for NAs and na.last arg
+d = copy(ddd)
+test(2275.8530, options=c(datatable.optimize=Inf), {d[v1 == 1L]; indices(d)}, "v1")
+test(2275.8531, options=c(datatable.verbose=TRUE), forderv(d, "v1", retGrp=TRUE, retStats=TRUE), output="index found but not for retGrp and retStats")
+test(2275.854, options=c(datatable.verbose=TRUE), o<-forderv(d, "v1", retStats=TRUE), output="index found but not for retStats")
+setattr(d, "index", setattr(integer(), "__v1", o))
+test(2275.855, options=c(datatable.verbose=TRUE), forderv(d, "v1", retGrp=TRUE), output="index found but not for retGrp")
+test(2275.856, options=c(datatable.verbose=TRUE), forderv(d, "v1", na.last=TRUE), integer(), output="forder.*opt=2.*took")
+test(2275.857, options=c(datatable.verbose=TRUE), forderv(d, "v1", retStats=TRUE, na.last=TRUE), structure(integer(), anyna=0L, anyinfnan=0L, anynotascii=0L, anynotutf8=0L), output="forder.*opt=2.*took")
+d = copy(ddd)
+test(2275.8580, options=c(datatable.optimize=Inf), {d[v1 == 1L]; indices(d)}, "v1") # _not_ setindex(d, v1), which will compute retGrp/retStats
+test(2275.8581, options=c(datatable.verbose=TRUE), forderv(d, "v1", retGrp=TRUE, retStats=TRUE, na.last=TRUE), output="index found but na.last=TRUE and no stats available")
+setindexv(d, "v2")
+test(2275.859, options=c(datatable.verbose=TRUE), forderv(d, "v2", retGrp=TRUE, retStats=TRUE, na.last=TRUE), output="index found but na.last=TRUE and NAs present")
+d = copy(ddd)
+setkeyv(d, "v1")
+setindexv(d, list("v2","v3","v4","v5",c("v1","v2"),c("v1","v3"),c("v2","v3"),c("v1","v4"),c("v1","v5"),c("v1","v4","v5")))
+test(2275.861, options=c(datatable.verbose=TRUE), forderv(d, "v1"), integer(), output="forder.*opt=1.*took")
+test(2275.862, options=c(datatable.verbose=TRUE), forderv(d, "v1", na.last=TRUE), integer(), output="forder.*opt=-1.*took") ## cannot use key for na.last
+setindexv(d, "v1")
+test(2275.863, options=c(datatable.verbose=TRUE), forderv(d, "v1", na.last=TRUE), integer(), output="forder.*opt=2.*took")
+test(2275.864, options=c(datatable.verbose=TRUE), forderv(d, c("v1","v2"), na.last=TRUE), integer(), output="index found but na.last=TRUE and NAs present")
+test(2275.865, options=c(datatable.verbose=TRUE), forderv(d, c("v1","v2"), na.last=TRUE), integer(), output="forder.*opt=-1.*took") # same but testing another msg
+test(2275.866, options=c(datatable.verbose=TRUE), forderv(d, c("v1","v3"), na.last=TRUE), integer(), output="index found but na.last=TRUE and NAs present")
+test(2275.867, options=c(datatable.verbose=TRUE), forderv(d, c("v1","v3"), na.last=TRUE), integer(), output="forder.*opt=-1.*took")
+test(2275.868, options=c(datatable.verbose=TRUE), forderv(d, c("v1","v4"), na.last=TRUE), integer(), output="index found but na.last=TRUE and NAs present")
+test(2275.869, options=c(datatable.verbose=TRUE), forderv(d, c("v1","v4"), na.last=TRUE), integer(), output="forder.*opt=-1.*took")
+test(2275.870, options=c(datatable.verbose=TRUE), forderv(d, c("v1","v5"), na.last=TRUE), integer(), output="index found but na.last=TRUE and NAs present")
+test(2275.871, options=c(datatable.verbose=TRUE), forderv(d, c("v1","v5"), na.last=TRUE), integer(), output="forder.*opt=-1.*took") # same but testing another msg
+test(2275.872, options=c(datatable.verbose=TRUE), forderv(d, c("v1","v4","v5"), na.last=TRUE), integer(), output="index found but na.last=TRUE and NAs present")
+test(2275.873, options=c(datatable.verbose=TRUE), forderv(d, c("v1","v4","v5"), na.last=TRUE), integer(), output="forder.*opt=-1.*took") # same but testing another msg
+d = fread(testDir("1680-fread-header-encoding.csv"), encoding="Latin-1") ## re-use some existing non utf8 data
+anyEnc = function(x) unlist(attributes(forderv(x, retStats=TRUE))[c("anynotascii","anynotutf8")])
+test(2275.881, anyEnc(d), c(anynotascii=1L,anynotutf8=1L))
+test(2275.882, anyEnc(d[,-2L]), c(anynotascii=0L,anynotutf8=0L))
+test(2275.883, anyEnc(c("a","b","\u221A")), c(anynotascii=1L,anynotutf8=0L))
+d = copy(dd)
+setindexv(d, "b")
+test(2275.91, options=c(datatable.verbose=TRUE, datatable.use.index=FALSE),
+     forderv(d, "b"), 2:1, output="forder.*opt=-1.*took")
+test(2275.92, options=c(datatable.verbose=TRUE, datatable.use.index=FALSE),
+     forderv(d, "b", reuseSorting=FALSE), 2:1, output="forder.*opt=0.*took")
+d = data.table(x = 2:1)
+test(2275.93, options=c(datatable.optimize=Inf), {d[x == 1L]; attr(attr(d, "index"), "__x")}, 2:1)
+test(2275.94, options=c(datatable.verbose=TRUE), forderv(d, "x", retGrp=TRUE), structure(2:1, starts=1:2, maxgrpn=1L, anyna=0L, anyinfnan=0L, anynotascii=0L, anynotutf8=0L), output="forder.*index found but not for retGrp and retStats.*forder.*opt=-1.*took")
+d = data.table(x = 2:1)
+test(2275.95, options=list(datatable.verbose=TRUE, datatable.forder.auto.index=TRUE, datatable.optimize=Inf),
+     d[x==1L], data.table(x=1L), output="forder.*setting index.*retGrp=0, retStats=0")
+test(2275.96, options=c(datatable.verbose=TRUE, datatable.forder.auto.index=TRUE),
+     forderv(d, "x", retGrp=TRUE), output="forder.*setting index.*retGrp=1, retStats=1")
+setindexv(d, NULL)
+test(2275.971, options=c(datatable.verbose=TRUE, datatable.forder.auto.index=TRUE),
+     forderv(d, "x", retStats=TRUE), output="forder.*setting index.*retGrp=0, retStats=1")
+setindexv(d, NULL)
+test(2275.972, options=c(datatable.verbose=TRUE, datatable.forder.auto.index=TRUE),
+     forderv(d, "x", retStats=TRUE, na.last=TRUE), output="forder.*setting index.*retGrp=0, retStats=1")
+setindexv(d, NULL)
+test(2275.973, options=c(datatable.verbose=TRUE, datatable.forder.auto.index=TRUE),
+     forderv(data.table(x=c(2:1,NA)), "x", retStats=TRUE, na.last=TRUE), notOutput="forder.*setting index.*retGrp=0, retStats=1")
+test(2275.974, options=c(datatable.verbose=TRUE, datatable.forder.auto.index=TRUE),
+     forderv(data.table(x=c(2:1,NaN)), "x", retStats=TRUE, na.last=TRUE), notOutput="forder.*setting index.*retGrp=0, retStats=1")
+test(2275.975, options=c(datatable.verbose=TRUE, datatable.forder.auto.index=TRUE),
+     forderv(d, "x", na.last=TRUE), notOutput="forder.*setting index.*retGrp=0, retStats=1")
+test(2275.99, forderv(data.table(a=1), reuseSorting=c(TRUE, TRUE)), error="reuseSorting must be")
+
+# fcase supports vector default values, #4258
+## for default
+test(2276.01, fcase(c(TRUE, FALSE, NA, NA), 1:4, default=11:13), error="Length of 'default' must be 1 or 4.")
+test(2276.02, fcase(c(TRUE, FALSE, NA, NA), 1:4, default=11:14), c(1L, 12:14))
+test(2276.03, fcase(c(TRUE, FALSE, NA, NA), 1:4 + 0.1, default=11:14 + 0.1), c(1L, 12:14) + 0.1)
+test(2276.04, fcase(c(TRUE, FALSE, NA, NA), (1:4)+1i, default=(11:14)+1i), c(1L, 12:14)+1i)
+test(2276.05, fcase(c(TRUE, FALSE, NA, NA), as.character(1:4), default=as.character(11:14)), as.character(c(1L, 12:14)))
+test(2276.06, fcase(c(TRUE, FALSE, NA, NA), as.list(1:4), default=as.list(11:14)), as.list(c(1L, 12:14)))
+## for scalar condition
+true4 = rep(TRUE, 4L)
+test(2276.07, fcase(c(TRUE, FALSE, NA, NA), 1:4, true4, 11:13), error="Length of output value #4 (3) must either be 1 or match the length of the logical condition (4).")
+test(2276.08, fcase(c(TRUE, FALSE, NA, NA), 1:4, true4, 11:14), c(1L, 12:14))
+test(2276.09, fcase(c(TRUE, FALSE, NA, NA), 1:4 + 0.1, true4, 11:14 + 0.1), c(1L, 12:14) + 0.1)
+test(2276.10, fcase(c(TRUE, FALSE, NA, NA), (1:4)+1i, true4, (11:14)+1i), c(1L, 12:14)+1i)
+test(2276.11, fcase(c(TRUE, FALSE, NA, NA), as.character(1:4), true4, as.character(11:14)), as.character(c(1L, 12:14)))
+test(2276.12, fcase(c(TRUE, FALSE, NA, NA), as.list(1:4), true4, as.list(11:14)), as.list(c(1L, 12:14)))
+test(2276.13, fcase(TRUE, 1L, default=stop("lazy eval")), 1L) # default is lazy eval'ed
+test(2276.14, fcase(c(TRUE, FALSE), 1L, c(TRUE, TRUE), NA), c(1L, NA_integer_)) # scalar NA will be converted
+
+# output is missing
+test(2276.15, fcase(c(TRUE, FALSE), NA_integer_, c(TRUE, TRUE), 2L), c(NA_integer_, 2L))
+
+# length-1 condition not allowed
+test(2276.16, fcase(c(TRUE, FALSE), 1:2, TRUE, 2L), error="Please make sure all logical conditions have the same length.")
+
+# empty fcase() works without warning or error
+test(2276.17, fcase(), logical())
+
+# passing a function in env= doesn't trip up processing 'j', #6026
+DT=data.table(a=1:2, b=3:4)
+test(2277.1, DT[, builtin(b), env=list(builtin=sum)], 7L)
+test(2277.2, DT[, closure(b), env=list(closure=var)], 0.5)
+test(2277.3, DT[, closure(b), env=list(closure=stats::var)], 0.5)
+test(2277.4, DT[, closure(b), env=list(closure=stats:::var)], 0.5)
+test(2277.5, DT[, lambda(b), env=list(lambda=function(x) sum(x))], 7L)
+
+# test that set() correctly adds new columns even if no rows are updated
+dt = data.table(a=1L)
+test(2278.1, set(copy(dt), 0L,          "b", logical(0)), data.table(a=1L, b=NA))
+test(2278.2, set(copy(dt), NA_integer_, "b", NA),         data.table(a=1L, b=NA))
+test(2278.3, set(copy(dt), 0L,          "b", NA),         copy(dt)[0L, b := NA])
+test(2278.4, set(copy(dt), NA_integer_, "b", logical(0)), copy(dt)[NA_integer_, b := logical(0)])
+test(2278.5, set(copy(dt), integer(0),  "b", numeric(0)), copy(dt)[integer(0),  b := numeric(0)])
+test(2278.6, { set(dt, 0L, "b", logical(0)); set(dt, 1L, "a", 2L); dt }, data.table(a=2L, b=NA))

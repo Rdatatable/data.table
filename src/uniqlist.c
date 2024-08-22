@@ -22,7 +22,7 @@ SEXP uniqlist(SEXP l, SEXP order)
   unsigned long long *ulv; // for numeric check speed-up
   SEXP v, ans;
   R_len_t len, thisi, previ, isize=1000;
-  int *iidx = Calloc(isize, int); // for 'idx'
+  int *iidx = R_Calloc(isize, int); // for 'idx'
   len = 1;
   iidx[0] = 1; // first row is always the first of the first group
 
@@ -45,7 +45,7 @@ SEXP uniqlist(SEXP l, SEXP order)
           iidx[len++] = i+1;                                                     \
           if (len>=isize) {                                                      \
             isize = MIN(nrow, (size_t)(1.1*(double)isize*((double)nrow/i)));     \
-            iidx = Realloc(iidx, isize, int);                                    \
+            iidx = R_Realloc(iidx, isize, int);                                    \
           }                                                                      \
         }                                                                        \
         prev = elem;                                                             \
@@ -66,7 +66,7 @@ SEXP uniqlist(SEXP l, SEXP order)
       }
     } break;
     case STRSXP : {
-      const SEXP *vd=STRING_PTR(v);
+      const SEXP *vd=STRING_PTR_RO(v);
       SEXP prev, elem;
       if (via_order) {
         COMPARE1_VIA_ORDER && ENC2UTF8(elem)!=ENC2UTF8(prev) COMPARE2   // but most of the time they are equal, so ENC2UTF8 doesn't need to be called
@@ -134,14 +134,14 @@ SEXP uniqlist(SEXP l, SEXP order)
         iidx[len++] = i+1;
         if (len >= isize) {
           isize = MIN(nrow, (size_t)(1.1*(double)isize*((double)nrow/i)));
-          iidx = Realloc(iidx, isize, int);
+          iidx = R_Realloc(iidx, isize, int);
         }
       }
     }
   }
   PROTECT(ans = allocVector(INTSXP, len));
   memcpy(INTEGER(ans), iidx, sizeof(int)*len); // sizeof is of type size_t - no integer overflow issues
-  Free(iidx);
+  R_Free(iidx);
   UNPROTECT(1);
   return(ans);
 }
@@ -224,7 +224,7 @@ SEXP rleid(SEXP l, SEXP cols) {
       }
     } break;
     case STRSXP : {
-      const SEXP *jd = STRING_PTR(jcol);
+      const SEXP *jd = STRING_PTR_RO(jcol);
       for (R_xlen_t i=1; i<nrow; i++) {
         bool same = jd[i]==jd[i-1];
         ians[i] = (grp+=!same);
@@ -259,7 +259,7 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
   R_len_t nrows = length(VECTOR_ELT(l,0)), ncols = length(cols);
   if (nrows==0) return(allocVector(INTSXP, 0));
   R_len_t thisi, previ, ansgrpsize=1000, nansgrp=0;
-  R_len_t *ansgrp = Calloc(ansgrpsize, R_len_t), starts, grplen; // #3401 fix. Needs to be Calloc due to Realloc below .. else segfaults.
+  R_len_t *ansgrp = R_Calloc(ansgrpsize, R_len_t), starts, grplen; // #3401 fix. Needs to be R_Calloc due to R_Realloc below .. else segfaults.
   R_len_t ngrps = length(grps);
   bool *i64 = (bool *)R_alloc(ncols, sizeof(bool));
   if (ngrps==0) error(_("Internal error: nrows[%d]>0 but ngrps==0"), nrows); // # nocov
@@ -335,14 +335,14 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
     }
     if (nansgrp >= ansgrpsize) {
       ansgrpsize = MIN(nrows, (size_t)(1.1*(double)ansgrpsize*((double)nrows/i)));
-      ansgrp = Realloc(ansgrp, ansgrpsize, int);
+      ansgrp = R_Realloc(ansgrp, ansgrpsize, int);
     }
     for (int j=0; j<grplen; j++) {
       ians[byorder ? INTEGER(order)[igrps[i]-1+j]-1 : igrps[i]-1+j] = tmp+1;
     }
     ansgrp[tmp] = thisi;
   }
-  Free(ansgrp);
+  R_Free(ansgrp);
   UNPROTECT(1);
   return(ans);
 }

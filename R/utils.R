@@ -21,6 +21,18 @@ nan_is_na = function(x) {
   stopf("Argument 'nan' must be NA or NaN")
 }
 
+# TODO(R>=4.0.0): Remove this workaround. From R 4.0.0, rep_len() dispatches rep.Date(), which we need.
+#   Before that, rep_len() strips attributes --> breaks data.table()'s internal recycle() helper.
+#   This also impacts test 2 in S4.Rraw, because the error message differs for rep.int() vs. rep_len().
+if (inherits(rep_len(Sys.Date(), 1L), "Date")) {
+  # NB: safe_rep_len=rep_len throws an R CMD check error because it _appears_ to the AST
+  #   walker that we've used .Internal ourselves (which is not true, but codetools can't tell:
+  #   safe_rep_len = rep_len; body(safe_rep_len)[[1]] # .Internal)
+  safe_rep_len = function(x, n) rep_len(x, n)
+} else {
+  safe_rep_len = function(x, n) rep(x, length.out = n) # nolint: rep_len_linter.
+}
+
 # endsWith no longer used from #5097 so no need to backport; prevent usage to avoid dev delay until GLCI's R 3.1.0 test
 endsWith = function(...) stop("Internal error: use endsWithAny instead of base::endsWith", call.=FALSE)
 
@@ -73,6 +85,9 @@ vapply_1b = function(x, fun, ..., use.names = TRUE) {
 vapply_1i = function(x, fun, ..., use.names = TRUE) {
   vapply(X = x, FUN = fun, ..., FUN.VALUE = NA_integer_, USE.NAMES = use.names)
 }
+
+# base::xor(), but with scalar operators
+XOR = function(x, y) (x || y) && !(x && y)
 
 # not is.atomic because is.atomic(matrix) is true
 cols_with_dims = function(x) vapply_1i(x, function(j) length(dim(j))) > 0L
@@ -152,7 +167,8 @@ is_utc = function(tz) {
 `%iscall%` = function(e, f) {
   if (!is.call(e)) return(FALSE)
   if (is.name(e1 <- e[[1L]])) return(e1 %chin% f)
-  e1 %iscall% '::' && e1[[3L]] %chin% f
+  if (e1 %iscall% c('::', ':::')) return(e1[[3L]] %chin% f)
+  paste(deparse(e1), collapse = " ") %chin% f # complicated cases e.g. a closure/builtin on LHS of call; note that format() is much (e.g. 40x) slower than deparse()
 }
 
 # nocov start #593 always return a data.table

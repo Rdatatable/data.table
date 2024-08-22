@@ -23,6 +23,9 @@ config.log
 .Rproj.user
 data.table.Rproj
 
+# zed editor
+.zed
+
 # produced vignettes
 vignettes/*.html
 vignettes/*.pdf

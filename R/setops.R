@@ -262,7 +262,7 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
       # trim.levels moved here
       x = target[[i]]
       y = current[[i]]
-      if (xor(is.factor(x),is.factor(y)))
+      if (XOR(is.factor(x), is.factor(y)))
         stopf("Internal error: factor type mismatch should have been caught earlier") # nocov
       cols.r = TRUE
       if (is.factor(x)) {
@@ -282,8 +282,12 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
           # dealt with according to trim.levels
         }
       } else {
-        cols.r = all.equal(unclass(x), unclass(y), tolerance=tolerance, ..., check.attributes=check.attributes)
-        # classes were explicitly checked earlier above, so ignore classes here.
+        # for test 1710.5 and #4543, we want to (1) make sure we dispatch to
+        #   any existing all.equal methods for x while also (2) treating class(x)/class(y)
+        #   as attributes as regards check.attributes argument
+        cols.r = all.equal(x, y, tolerance=tolerance, ..., check.attributes=check.attributes)
+        if (!isTRUE(cols.r) && !check.attributes && isTRUE(all.equal(unclass(x), unclass(y), tolerance=tolerance, ..., check.attributes=FALSE)))
+          cols.r = TRUE
       }
       if (!isTRUE(cols.r)) return(paste0("Column '", names(target)[i], "': ", paste(cols.r,collapse=" ")))
     }
