@@ -42,7 +42,6 @@ jobs:
             r: '4.1'
 
     env:
-      R_REMOTES_NO_ERRORS_FROM_WARNINGS: true
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
@@ -90,16 +89,18 @@ jobs:
           _R_CHECK_TESTS_NLINES_: 0
         run: |
           options(crayon.enabled = TRUE)
-          install.packages("remotes")
-          message("*** DONE remotes, now installing requirements ***")
-          remotes::install_deps(dependencies=TRUE, force=TRUE)
+          message("*** Using the following repos for installation ***")
+          print(getOption("repos"))
+          message("*** Installing Suggested packages ***")
+          sugg <- names(tools:::.split_dependencies(read.dcf("DESCRIPTION", "Suggests")))
+          install.packages(sugg)
 
           other_deps_expr = parse('inst/tests/other.Rraw', n=1L)
           eval(other_deps_expr)
           other_pkgs = get(as.character(other_deps_expr[[1L]][[2L]]))
           # Many will not install on oldest R versions
-          message("*** DONE requirements, now installing optional ***")
-          try(remotes::install_cran(c(other_pkgs, "rcmdcheck"), force=TRUE))
+          message("*** Installing fully optional packages ***")
+          try(install.packages(c(other_pkgs, "rcmdcheck")))
 
           has_other_pkg = sapply(other_pkgs, requireNamespace, quietly=TRUE)
           run_other = all(has_other_pkg)
