@@ -128,9 +128,9 @@ jobs:
             system2(Rbin, c("CMD", "build", ".", build_args))
             dt_tar = list.files(pattern = "^data[.]table_.*[.]tar[.]gz$")
             if (!length(dt_tar)) stop("Built tar.gz not found among: ", toString(list.files()))
-            res = system2(Rbin, c("CMD", "check", dt_tar[1L], check_args), stdout=TRUE, env=sprintf("%s=%s", names(env), env))
-            if (!is.null(attr(res, "status")) || grep("^Status:.*(ERROR|WARNING)", res)) {
-              writeLines(res)
+            res = system2(Rbin, c("CMD", "check", dt_tar[1L], check_args), stdout=TRUE, stderr=TRUE, env=sprintf("%s=%s", names(env), env))
+            if (!is.null(attr(res, "status")) || is.na(res) || grep("^Status:.*(ERROR|WARNING)", res)) {
+              writeLines(as.character(res))
               stop("R CMD check failed")
             }
           }
