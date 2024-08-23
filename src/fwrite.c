@@ -891,7 +891,7 @@ if (verbose) {
     }
   }
   if (verbose)
-      DTPRINT(_("done in %.3fs\n"), 1.0*(wallclock()-t0));
+      DTPRINT(_("Initialization done in %.3fs\n"), 1.0*(wallclock()-t0));
   if (args.nrow == 0) {
     if (verbose)
         DTPRINT(_("No data rows present (nrow==0)\n"));
@@ -1055,6 +1055,9 @@ if (verbose) {
         if (ret == -1)
             STOP("Error: can't write gzip tailer");
     }
+
+  if (verbose)
+      DTPRINT(_("\nAll done in %.3fs\n"), 1.0*(wallclock()-t0));
 
   free(buffPool);
 #ifndef NOZLIB
