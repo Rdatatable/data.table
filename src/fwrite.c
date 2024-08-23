@@ -750,7 +750,8 @@ if (verbose) {
   if(args.is_gzip){
 #ifndef NOZLIB
     z_stream *stream = thread_streams;
-    init_stream(stream);
+    if (init_stream(stream) != Z_OK)
+        STOP(_("Can't init stream structure for deflateBound"));
     zbuffSize = deflateBound(stream, buffSize);
     if (verbose)
         DTPRINT(_("zbuffSize=%d returned from deflateBound\n"), (int)zbuffSize);
@@ -860,7 +861,8 @@ if (verbose) {
       if (args.is_gzip) {
 #ifndef NOZLIB
         z_stream *stream = thread_streams;
-        init_stream(stream);
+        if (init_stream(stream) != Z_OK)
+            STOP(_("Can't init stream structure for writing header"));
         char* zbuff = zbuffPool;
         // write minimal gzip header
         char* header = "\037\213\10\0\0\0\0\0\0\3";
@@ -925,7 +927,7 @@ if (verbose) {
         size_t myzbuffUsed = 0;
         if (args.is_gzip) {
             myzBuff = zbuffPool + me * zbuffSize;
-            if (init_stream(mystream)) { // this should be thread safe according to zlib documentation
+            if (init_stream(mystream) != Z_OK) { // this should be thread safe according to zlib documentation
                 failed = true;              // # nocov
                 my_failed_compress = -998;  // # nocov
             }
