@@ -874,10 +874,13 @@ void fwriteMain(fwriteMainArgs args)
       }
     }
   }
-  if (verbose) DTPRINT(_("done in %.3fs\n"), 1.0*(wallclock()-t0));
+  if (verbose)
+      DTPRINT(_("done in %.3fs\n"), 1.0*(wallclock()-t0));
   if (args.nrow == 0) {
-    if (verbose) DTPRINT(_("No data rows present (nrow==0)\n"));
-    if (f != -1 && CLOSE(f)) STOP(_("%s: '%s'"), strerror(errno), args.filename);
+    if (verbose)
+        DTPRINT(_("No data rows present (nrow==0)\n"));
+    if (f != -1 && CLOSE(f))
+        STOP(_("%s: '%s'"), strerror(errno), args.filename);
     return;
   }
 
@@ -893,7 +896,7 @@ void fwriteMain(fwriteMainArgs args)
   int failed_write = 0;    // same. could use +ve and -ve in the same code but separate it out to trace Solaris problem, #3931
 
 // main parallel loop ----
-#pragma omp parallel for ordered num_threads(nth)
+#pragma omp parallel for ordered num_threads(nth) schedule(dynamic)
     for(int64_t start=0; start < args.nrow; start += rowsPerBatch) {
         int me = omp_get_thread_num();
         size_t mylen = 0;
@@ -919,7 +922,7 @@ void fwriteMain(fwriteMainArgs args)
       int64_t end = ((args.nrow - start) < rowsPerBatch) ? args.nrow : start + rowsPerBatch;
 
       // chunk rows
-      for (int64_t i=start; i<end; i++) {
+      for (int64_t i = start; i < end; i++) {
         // Tepid starts here (once at beginning of each line)
         if (args.doRowNames) {
           if (args.rowNames==NULL) {
@@ -994,24 +997,26 @@ void fwriteMain(fwriteMainArgs args)
 #endif
         }
 
-        int used = 100*((double)(ch-myBuff))/buffSize;  // percentage of original buffMB
-        if (used > maxBuffUsedPC) maxBuffUsedPC = used;
+        int used = 100 * ((double)(ch - myBuff)) / buffSize;  // percentage of original buffMB
+        if (used > maxBuffUsedPC)
+            maxBuffUsedPC = used;
         double now;
-        if (me==0 && args.showProgress && (now=wallclock())>=nextTime && !failed) {
+        if (me == 0 && !failed && args.showProgress && (now=wallclock()) >= nextTime) {
           // See comments above inside the f==-1 clause.
           // Not only is this ordered section one-at-a-time but we'll also Rprintf() here only from the
           // master thread (me==0) and hopefully this will work on Windows. If not, user should set
           // showProgress=FALSE until this can be fixed or removed.
           // # nocov start
-          int ETA = (int)((args.nrow-end)*((now-startTime)/end));
+          int ETA = (int)((args.nrow - end) * (now-startTime) /end);
           if (hasPrinted || ETA >= 2) {
-            if (verbose && !hasPrinted) DTPRINT("\n");
+            if (verbose && !hasPrinted)
+                DTPRINT("\n");
             DTPRINT("\rWritten %.1f%% of %"PRId64" rows in %d secs using %d thread%s. "
                     "maxBuffUsed=%d%%. ETA %d secs.      ",
-                     (100.0*end)/args.nrow, args.nrow, (int)(now-startTime), nth, nth==1?"":"s",
-                     maxBuffUsedPC, ETA);
-            // TODO: use progress() as in fread
-            nextTime = now+1;
+                    (100.0*end)/args.nrow, args.nrow, (int)(now-startTime), nth, nth ==1 ? "" : "s",
+                    maxBuffUsedPC, ETA);
+                // TODO: use progress() as in fread
+            nextTime = now + 1;
             hasPrinted = true;
           }
           // # nocov end
