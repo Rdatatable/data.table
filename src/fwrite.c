@@ -705,8 +705,8 @@ void fwriteMain(fwriteMainArgs args)
 
   int yamlLen = strlen(args.yaml);
   if (verbose) {
-    DTPRINT(_("Writing bom (%s), yaml (%d characters) and column names (%s) ... "),
-            args.bom?"true":"false", yamlLen, args.colNames?"true":"false");
+    DTPRINT(_("Writing bom (%s), yaml (%d characters) and column names (%s)\n"),
+            args.bom ? "true" : "false", yamlLen, args.colNames ? "true" : "false");
     if (f == -1)
         DTPRINT(_("\n"));
   }
@@ -729,6 +729,9 @@ void fwriteMain(fwriteMainArgs args)
   // alloc zlib streams
 #ifndef NOZLIB
   z_stream *thread_streams = (z_stream*) malloc(nth * sizeof(z_stream));
+if (verbose) {
+    DTPRINT(_("Allocate %ld bytes for thread_streams\n"), nth * sizeof(z_stream));
+}
   if (!thread_streams)
     STOP(_("Failed to allocated %d bytes for threads_streams."), (int)(nth * sizeof(z_stream)));
   // VLA on stack should be fine for nth structs; in zlib v1.2.11 sizeof(struct)==112 on 64bit
@@ -777,10 +780,16 @@ void fwriteMain(fwriteMainArgs args)
 
   // alloc nth write buffers
   errno=0;
+  size_t alloc_size;
   // if headerLen > nth * buffSize (long variable names and 1 thread), alloc headerLen
-  char *buffPool = malloc(nth * buffSize < headerLen ? headerLen : nth * buffSize );
+  alloc_size = nth * buffSize < headerLen ? headerLen : nth * buffSize;
+  if (verbose) {
+    DTPRINT(_("Allocate %ld bytes for buffPool\n"), alloc_size);
+  }
+  char *buffPool = malloc(alloc_size);
   if (!buffPool) {
     // # nocov start
+    free(thread_streams);
     STOP(_("Unable to allocate %zu MB * %d thread buffers; '%d: %s'. Please read ?fwrite for nThread, buffMB and verbose options."),
          (size_t)buffSize/(1 << 20), nth, errno, strerror(errno));
     // # nocov end
@@ -791,10 +800,15 @@ void fwriteMain(fwriteMainArgs args)
   if (args.is_gzip) {
 #ifndef NOZLIB
     // if headerLen > nth * zbuffSize (long variable names and 1 thread), alloc headerLen
-    zbuffPool = malloc(nth * zbuffSize < headerLen ? headerLen : nth * zbuffSize);
+    alloc_size = nth * zbuffSize < headerLen ? headerLen : nth * zbuffSize;
+    if (verbose) {
+        DTPRINT(_("Allocate %ld bytes for zbuffPool\n"), alloc_size);
+    }
+    zbuffPool = malloc(alloc_size);
     if (!zbuffPool) {
       // # nocov start
       free(buffPool);
+      free(thread_streams);
       STOP(_("Unable to allocate %zu MB * %d thread compressed buffers; '%d: %s'. Please read ?fwrite for nThread, buffMB and verbose options."),
          (size_t)zbuffSize/(1024^2), nth, errno, strerror(errno));
       // # nocov end
