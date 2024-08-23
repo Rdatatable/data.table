@@ -871,7 +871,7 @@ if (verbose) {
 
         size_t zbuffUsed = zbuffSize;
         len = (size_t)(ch - buff);
-        crc = crc32(crc, buff, len);
+        crc = crc32(crc, (unsigned char*)buff, len);
         ret1 = compressbuff(stream, zbuff, &zbuffUsed, buff, len);
         if (ret1==Z_OK)
             ret2 = WRITE(f, zbuff, (int)zbuffUsed);
@@ -916,7 +916,7 @@ if (verbose) {
     for(int64_t start=0; start < args.nrow; start += rowsPerBatch) {
         int me = omp_get_thread_num();
         size_t mylen = 0;
-        int mycrc;
+        int mycrc = crc32(0L, Z_NULL, 0);
         int my_failed_compress = 0;
         char* myBuff = buffPool + me * buffSize;
         char* ch = myBuff;
@@ -970,7 +970,7 @@ if (verbose) {
       if (args.is_gzip && !failed) {
         myzbuffUsed = zbuffSize;
         mylen = (size_t)(ch - myBuff);
-        mycrc = crc32(0, myBuff, mylen);
+        mycrc = crc32(0, (unsigned char*)myBuff, mylen);
         int ret = compressbuff(mystream, myzBuff, &myzbuffUsed, myBuff, mylen);
         if (ret) {
             failed=true;
