@@ -601,6 +601,7 @@ void fwriteMain(fwriteMainArgs args)
   size_t len;
   unsigned int crc;
 
+  // exit if compression is needed in param and no zlib
 #ifdef NOZLIB
   if (args.is_gzip)
     STOP(_("Compression in fwrite uses zlib library. Its header files were not found at the time data.table was compiled. To enable fwrite compression, please reinstall data.table and study the output for further guidance.")); // # nocov
@@ -608,19 +609,24 @@ void fwriteMain(fwriteMainArgs args)
 
   // When NA is a non-empty string, then we must quote all string fields in case they contain the na string
   // na is recommended to be empty, though
-  if (na[0]!='\0' && doQuote==INT8_MIN) doQuote = true;
+  if (na[0]!='\0' && doQuote==INT8_MIN)
+      doQuote = true;
+
+
+  // create buffers
+  if (args.buffMB<1 || args.buffMB>1024)
+      STOP(_("buffMB=%d outside [1,1024]"), args.buffMB);
+  size_t buffSize = (size_t)1024*1024*args.buffMB;
 
   qmethodEscape = args.qmethodEscape;
   squashDateTime = args.squashDateTime;
-
-  if (args.buffMB<1 || args.buffMB>1024) STOP(_("buffMB=%d outside [1,1024]"), args.buffMB);
-  size_t buffSize = (size_t)1024*1024*args.buffMB;
 
   int eolLen=strlen(args.eol), naLen=strlen(args.na);
   // Aside: codacy wants strnlen but strnlen is not in C99 (neither is strlen_s). To pass `gcc -std=c99 -Wall -pedantic`
   //        we'd need `#define _POSIX_C_SOURCE 200809L` before #include <string.h> but that seems a step too far
   //        and platform specific. We prefer to be pure C99.
-  if (eolLen<=0) STOP(_("eol must be 1 or more bytes (usually either \\n or \\r\\n) but is length %d"), eolLen);
+  if (eolLen<=0)
+      STOP(_("eol must be 1 or more bytes (usually either \\n or \\r\\n) but is length %d"), eolLen);
 
   if (verbose) {
     DTPRINT(_("Column writers: "));
@@ -635,6 +641,8 @@ void fwriteMain(fwriteMainArgs args)
           args.doRowNames, args.rowNames, args.rowNameFun, doQuote, args.nrow, args.ncol, eolLen);
   }
 
+  // Calc maxLineLen
+  //
   // Calculate upper bound for line length. Numbers use a fixed maximum (e.g. 12 for integer) while strings find the longest
   // string in each column. Upper bound is then the sum of the columns' max widths.
   // This upper bound is required to determine a reasonable rowsPerBatch. It also saves needing to grow the buffers which
@@ -669,17 +677,19 @@ void fwriteMain(fwriteMainArgs args)
         STOP(_("Internal error: type %d has no max length method implemented"), args.whichFun[j]);  // # nocov
       }
     }
-    if (args.whichFun[j]==WF_Float64 && args.scipen>0) width+=MIN(args.scipen,350); // clamp width to IEEE754 max to avoid scipen=99999 allocating buffer larger than can ever be written
-    if (width<naLen) width = naLen;
-    maxLineLen += width*2;  // *2 in case the longest string is all quotes and they all need to be escaped
+    if (args.whichFun[j]==WF_Float64 && args.scipen>0)
+        width+=MIN(args.scipen,350); // clamp width to IEEE754 max to avoid scipen=99999 allocating buffer larger than can ever be written
+    if (width<naLen)
+        width = naLen;
+    maxLineLen += width * 2;  // *2 in case the longest string is all quotes and they all need to be escaped
   }
-  if (verbose) DTPRINT(_("maxLineLen=%"PRIu64". Found in %.3fs\n"), (uint64_t)maxLineLen, 1.0*(wallclock()-t0));
+  if (verbose)
+      DTPRINT(_("maxLineLen=%"PRIu64". Found in %.3fs\n"), (uint64_t)maxLineLen, 1.0*(wallclock()-t0));
 
   int f=0;
   if (*args.filename=='\0') {
     f=-1;  // file="" means write to standard output
     args.is_gzip = false; // gzip is only for file
-    // eol = "\n";  // We'll use DTPRINT which converts \n to \r\n inside it on Windows
   } else {
 #ifdef WIN32
     f = _open(args.filename, _O_WRONLY | _O_BINARY | _O_CREAT | (args.append ? _O_APPEND : _O_TRUNC), _S_IWRITE);
@@ -706,11 +716,16 @@ void fwriteMain(fwriteMainArgs args)
             args.bom?"true":"false", yamlLen, args.colNames?"true":"false");
     if (f==-1) DTPRINT(_("\n"));
   }
+
+    // Calc headerLen
+
   size_t headerLen = 0;
-  if (args.bom) headerLen += 3;
+  if (args.bom)
+      headerLen += 3;
   headerLen += yamlLen;
   if (args.colNames) {
-    for (int j=0; j<args.ncol; j++) headerLen += getStringLen(args.colNames, j)*2;  // *2 in case quotes are escaped or doubled
+    for (int j=0; j<args.ncol; j++)
+        headerLen += getStringLen(args.colNames, j)*2;  // *2 in case quotes are escaped or doubled
     headerLen += args.ncol*(sepLen+(doQuote!=0)*2) + eolLen + 3;  // 3 in case doRowNames and doQuote (the first blank <<"",>> column name)
   }
   if (headerLen) {
@@ -718,19 +733,27 @@ void fwriteMain(fwriteMainArgs args)
     if (!buff)
       STOP(_("Unable to allocate %zu MiB for header: %s"), headerLen / 1024 / 1024, strerror(errno));
     char *ch = buff;
-    if (args.bom) {*ch++=(char)0xEF; *ch++=(char)0xBB; *ch++=(char)0xBF; }  // 3 appears above (search for "bom")
+    if (args.bom) {
+        *ch++=(char)0xEF;
+        *ch++=(char)0xBB;
+        *ch++=(char)0xBF;
+    }  // 3 appears above (search for "bom")
     memcpy(ch, args.yaml, yamlLen);
     ch += yamlLen;
     if (args.colNames) {
       if (args.doRowNames) {
         // Unusual: the extra blank column name when row_names are added as the first column
-        if (doQuote!=0/*'auto'(NA) or true*/) { *ch++='"'; *ch++='"'; } // to match write.csv
+        if (doQuote !=0) {
+            // to match write.csv
+            *ch++='"';
+            *ch++='"';
+        }
         *ch = sep;
         ch += sepLen;
       }
       int8_t tempDoQuote = doQuote;
       doQuote = quoteHeaders; // temporary overwrite since headers might get different quoting behavior, #2964
-      for (int j=0; j<args.ncol; j++) {
+      for (int j=0; j < args.ncol; j++) {
         writeString(args.colNames, j, &ch);
         *ch = sep;
         ch += sepLen;
