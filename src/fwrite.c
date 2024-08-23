@@ -601,6 +601,11 @@ void fwriteMain(fwriteMainArgs args)
   size_t len;
   unsigned int crc;
 
+#ifdef NOZLIB
+  if (args.is_gzip)
+    STOP(_("Compression in fwrite uses zlib library. Its header files were not found at the time data.table was compiled. To enable fwrite compression, please reinstall data.table and study the output for further guidance.")); // # nocov
+#endif
+
   // When NA is a non-empty string, then we must quote all string fields in case they contain the na string
   // na is recommended to be empty, though
   if (na[0]!='\0' && doQuote==INT8_MIN) doQuote = true;
@@ -694,10 +699,6 @@ void fwriteMain(fwriteMainArgs args)
       // # nocov end
     }
   }
-#ifdef NOZLIB
-  if (args.is_gzip)
-    STOP(_("Compression in fwrite uses zlib library. Its header files were not found at the time data.table was compiled. To enable fwrite compression, please reinstall data.table and study the output for further guidance.")); // # nocov
-#endif
 
   int yamlLen = strlen(args.yaml);
   if (verbose) {
