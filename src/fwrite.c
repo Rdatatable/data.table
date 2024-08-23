@@ -29,9 +29,6 @@
 #define NUM_SF   15
 #define SIZE_SF  1000000000000000ULL  // 10^NUM_SF
 
-#define MIN(a,b) (((a)<(b))?(a):(b))
-#define MAX(a,b) (((a)>(b))?(a):(b))
-
 // Globals for this file only. Written once to hold parameters passed from R level.
 static const char *na;                 // by default "" or if set (not recommended) then usually "NA"
 static char sep;                       // comma in .csv files
@@ -56,7 +53,8 @@ inline void write_chars(const char *x, char **pch)
 {
   // similar to C's strcpy but i) doesn't include trailing \0 and ii) moves destination along
   char *ch = *pch;
-  while (*x) *ch++=*x++;
+  while (*x)
+      *ch++ = *x++;
   *pch = ch;
 }
 
@@ -113,7 +111,7 @@ void writeInt32(const void *col, int64_t row, char **pch)
   if (x == INT32_MIN) {
     write_chars(na, &ch);
   } else {
-    if (x<0) { *ch++ = '-'; x=-x; }
+    if (x<0) { *ch++ = '-'; x = -x; }
     // Avoid log() for speed. Write backwards then reverse when we know how long.
     char *low = ch;
     do { *ch++ = '0'+x%10; x/=10; } while (x>0);
@@ -129,7 +127,7 @@ void writeInt64(const void *col, int64_t row, char **pch)
   if (x == INT64_MIN) {
     write_chars(na, &ch);
   } else {
-    if (x<0) { *ch++ = '-'; x=-x; }
+    if (x<0) { *ch++ = '-'; x = -x; }
     char *low = ch;
     do { *ch++ = '0'+x%10; x/=10; } while (x>0);
     reverse(ch, low);
@@ -252,7 +250,7 @@ void writeFloat64(const void *col, int64_t row, char **pch)
       int dr = sf-exp-1; // how many characters to print to the right of the decimal place
       int width=0;       // field width were it written decimal format. Used to decide whether to or not.
       int dl0=0;         // how many 0's to add to the left of the decimal place before starting l
-      if (dr<=0) { dl0=-dr; dr=0; width=sf+dl0; }  // 1, 10, 100, 99000
+      if (dr<=0) { dl0 = -dr; dr=0; width=sf+dl0; }  // 1, 10, 100, 99000
       else {
         if (sf>dr) width=sf+1;                     // 1.234 and 123.4
         else { dl0=1; width=dr+1+dl0; }            // 0.1234, 0.0001234
@@ -285,7 +283,7 @@ void writeFloat64(const void *col, int64_t row, char **pch)
         *ch = '0' + l;
         ch += sf + (sf>1);
         *ch++ = 'e';  // lower case e to match base::write.csv
-        if (exp < 0) { *ch++ = '-'; exp=-exp; }
+        if (exp < 0) { *ch++ = '-'; exp = -exp; }
         else { *ch++ = '+'; }  // to match base::write.csv
         if (exp < 100) {
           *ch++ = '0' + (exp / 10);
@@ -612,12 +610,6 @@ void fwriteMain(fwriteMainArgs args)
   if (na[0]!='\0' && doQuote==INT8_MIN)
       doQuote = true;
 
-
-  // create buffers
-  if (args.buffMB<1 || args.buffMB>1024)
-      STOP(_("buffMB=%d outside [1,1024]"), args.buffMB);
-  size_t buffSize = (size_t)1024*1024*args.buffMB;
-
   qmethodEscape = args.qmethodEscape;
   squashDateTime = args.squashDateTime;
 
@@ -678,7 +670,8 @@ void fwriteMain(fwriteMainArgs args)
       }
     }
     if (args.whichFun[j]==WF_Float64 && args.scipen>0)
-        width+=MIN(args.scipen,350); // clamp width to IEEE754 max to avoid scipen=99999 allocating buffer larger than can ever be written
+        // clamp width to IEEE754 max to avoid scipen=99999 allocating buffer larger than can ever be written
+        width += (args.scipen < 350 ? args.scipen : 350 );
     if (width<naLen)
         width = naLen;
     maxLineLen += width * 2;  // *2 in case the longest string is all quotes and they all need to be escaped
@@ -688,7 +681,7 @@ void fwriteMain(fwriteMainArgs args)
 
   int f=0;
   if (*args.filename=='\0') {
-    f=-1;  // file="" means write to standard output
+    f = -1;  // file="" means write to standard output
     args.is_gzip = false; // gzip is only for file
   } else {
 #ifdef WIN32
@@ -714,7 +707,8 @@ void fwriteMain(fwriteMainArgs args)
   if (verbose) {
     DTPRINT(_("Writing bom (%s), yaml (%d characters) and column names (%s) ... "),
             args.bom?"true":"false", yamlLen, args.colNames?"true":"false");
-    if (f==-1) DTPRINT(_("\n"));
+    if (f == -1)
+        DTPRINT(_("\n"));
   }
 
     // Calc headerLen
@@ -728,10 +722,92 @@ void fwriteMain(fwriteMainArgs args)
         headerLen += getStringLen(args.colNames, j)*2;  // *2 in case quotes are escaped or doubled
     headerLen += args.ncol*(sepLen+(doQuote!=0)*2) + eolLen + 3;  // 3 in case doRowNames and doQuote (the first blank <<"",>> column name)
   }
+
+  // Create heap zones ----
+
+  int nth = args.nth;
+  // alloc zlib streams
+#ifndef NOZLIB
+  z_stream *thread_streams = (z_stream*) malloc(nth * sizeof(z_stream));
+  if (!thread_streams)
+    STOP(_("Failed to allocated %d bytes for threads_streams."), (int)(nth * sizeof(z_stream)));
+  // VLA on stack should be fine for nth structs; in zlib v1.2.11 sizeof(struct)==112 on 64bit
+  // not declared inside the parallel region because solaris appears to move the struct in
+  // memory when the #pragma omp for is entered, which causes zlib's internal self reference
+  // pointer to mismatch, #4099
+#endif
+
+  // Get buffSize
+  if (args.buffMB<1 || args.buffMB>1024)
+      STOP(_("buffMB=%d outside [1,1024]"), args.buffMB);
+  size_t buffSize = (size_t) (1 << 20) * args.buffMB;
+
+  // compute zbuffSize which is the same for each thread
+  size_t zbuffSize = 0;
+  if(args.is_gzip){
+#ifndef NOZLIB
+    z_stream *stream = thread_streams;
+    init_stream(stream);
+    zbuffSize = deflateBound(stream, buffSize);
+    if (verbose)
+        DTPRINT(_("zbuffSize=%d returned from deflateBound\n"), (int)zbuffSize);
+#endif
+  }
+  //
+  // Decide buffer size and rowsPerBatch for each thread
+  // Once rowsPerBatch is decided it can't be changed
+  int rowsPerBatch=0;
+  if (2 * maxLineLen > buffSize) {
+      buffSize = 2 * maxLineLen;
+      rowsPerBatch=2;
+  }
+  else
+      rowsPerBatch = buffSize / maxLineLen;
+  if (rowsPerBatch > args.nrow)
+      rowsPerBatch = args.nrow;
+  if (rowsPerBatch < 1)
+      rowsPerBatch = 1;
+  int numBatches = (args.nrow-1) / rowsPerBatch + 1;
+  if (numBatches < nth)
+      nth = numBatches;
+  if (verbose) {
+    DTPRINT(_("Writing %"PRId64" rows in %d batches of %d rows (each buffer size %dMB, showProgress=%d, nth=%d)\n"),
+            args.nrow, numBatches, rowsPerBatch, args.buffMB, args.showProgress, nth);
+  }
+
+  // alloc nth write buffers
+  errno=0;
+  // if headerLen > nth * buffSize (long variable names and 1 thread), alloc headerLen
+  char *buffPool = malloc(nth * buffSize < headerLen ? headerLen : nth * buffSize );
+  if (!buffPool) {
+    // # nocov start
+    STOP(_("Unable to allocate %zu MB * %d thread buffers; '%d: %s'. Please read ?fwrite for nThread, buffMB and verbose options."),
+         (size_t)buffSize/(1 << 20), nth, errno, strerror(errno));
+    // # nocov end
+  }
+
+  // alloc nth zlib buffers
+  char *zbuffPool = NULL;
+  if (args.is_gzip) {
+#ifndef NOZLIB
+    // if headerLen > nth * zbuffSize (long variable names and 1 thread), alloc headerLen
+    zbuffPool = malloc(nth * zbuffSize < headerLen ? headerLen : nth * zbuffSize);
+    if (!zbuffPool) {
+      // # nocov start
+      free(buffPool);
+      STOP(_("Unable to allocate %zu MB * %d thread compressed buffers; '%d: %s'. Please read ?fwrite for nThread, buffMB and verbose options."),
+         (size_t)zbuffSize/(1024^2), nth, errno, strerror(errno));
+      // # nocov end
+    }
+#endif
+  }
+
+  // write header
+
+  // use buffPool and zbuffPool because we ensure that allocation is minimum headerLen
+
   if (headerLen) {
-    char *buff = malloc(headerLen);
-    if (!buff)
-      STOP(_("Unable to allocate %zu MiB for header: %s"), headerLen / 1024 / 1024, strerror(errno));
+    char *buff = buffPool;
     char *ch = buff;
     if (args.bom) {
         *ch++=(char)0xEF;
@@ -762,27 +838,16 @@ void fwriteMain(fwriteMainArgs args)
       ch -= sepLen; // backup over the last sep
       write_chars(args.eol, &ch);
     }
-    if (f==-1) {
+    if (f == -1) {
       *ch = '\0';
       DTPRINT("%s", buff);
-      free(buff);
     } else {
       int ret0=0, ret1=0, ret2=0;
       if (args.is_gzip) {
 #ifndef NOZLIB
-        z_stream stream;
-        if(init_stream(&stream)) {
-          free(buff);                                    // # nocov
-          STOP(_("Can't allocate gzip stream structure"));  // # nocov
-        }
-        // by default, buffsize is the same used for writing rows (#5048 old openbsd zlib)
-        // takes the max with headerLen size in case of very long header
-        size_t zbuffSize = deflateBound(&stream, headerLen > buffSize ? headerLen : buffSize);
-        char *zbuff = malloc(zbuffSize);
-        if (!zbuff) {
-          free(buff);                                                                                   // # nocov
-          STOP(_("Unable to allocate %zu MiB for zbuffer: %s"), zbuffSize / 1024 / 1024, strerror(errno));  // # nocov
-        }
+        z_stream *stream = thread_streams;
+        init_stream(stream);
+        char* zbuff = zbuffPool;
         // write minimal gzip header
         char* header = "\037\213\10\0\0\0\0\0\0\3";
         ret0 = WRITE(f, header, 10);
@@ -791,16 +856,14 @@ void fwriteMain(fwriteMainArgs args)
         size_t zbuffUsed = zbuffSize;
         len = (size_t)(ch - buff);
         crc = crc32(crc, buff, len);
-        ret1 = compressbuff(&stream, zbuff, &zbuffUsed, buff, len);
+        ret1 = compressbuff(stream, zbuff, &zbuffUsed, buff, len);
         if (ret1==Z_OK)
             ret2 = WRITE(f, zbuff, (int)zbuffUsed);
-        free(zbuff);
 #endif
       } else {
         ret2 = WRITE(f,  buff, (int)(ch-buff));
       }
-      free(buff);
-      if (ret0 == -1 || ret1 || ret2==-1) {
+      if (ret0 == -1 || ret1 || ret2 == -1) {
         // # nocov start
         int errwrite = errno; // capture write errno now in case close fails with a different errno
         CLOSE(f);
@@ -814,88 +877,22 @@ void fwriteMain(fwriteMainArgs args)
   if (verbose) DTPRINT(_("done in %.3fs\n"), 1.0*(wallclock()-t0));
   if (args.nrow == 0) {
     if (verbose) DTPRINT(_("No data rows present (nrow==0)\n"));
-    if (f!=-1 && CLOSE(f)) STOP(_("%s: '%s'"), strerror(errno), args.filename);
+    if (f != -1 && CLOSE(f)) STOP(_("%s: '%s'"), strerror(errno), args.filename);
     return;
   }
 
-  // Writing rows
+  // Write rows ----
 
-  // Decide buffer size and rowsPerBatch for each thread
-  // Once rowsPerBatch is decided it can't be changed
-  int rowsPerBatch=0;
-  if (2 * maxLineLen > buffSize) {
-      buffSize=2*maxLineLen;
-      rowsPerBatch=2;
-  }
-  else
-      rowsPerBatch = buffSize / maxLineLen;
-  if (rowsPerBatch > args.nrow)
-      rowsPerBatch = args.nrow;
-  if (rowsPerBatch < 1)
-      rowsPerBatch = 1;
-  int numBatches = (args.nrow-1) / rowsPerBatch + 1;
-  int nth = args.nth;
-  if (numBatches < nth)
-      nth = numBatches;
-  if (verbose) {
-    DTPRINT(_("Writing %"PRId64" rows in %d batches of %d rows (each buffer size %dMB, showProgress=%d, nth=%d)\n"),
-            args.nrow, numBatches, rowsPerBatch, args.buffMB, args.showProgress, nth);
-  }
   t0 = wallclock();
 
   bool hasPrinted = false;
   int maxBuffUsedPC = 0;
 
-  // compute zbuffSize which is the same for each thread
-  size_t zbuffSize = 0;
-  if(args.is_gzip){
-#ifndef NOZLIB
-    z_stream stream;
-    if(init_stream(&stream))
-        STOP(_("Can't allocate gzip stream structure")); // # nocov
-    zbuffSize = deflateBound(&stream, buffSize);
-    if (verbose)
-        DTPRINT(_("zbuffSize=%d returned from deflateBound\n"), (int)zbuffSize);
-#endif
-  }
+  bool failed = false;   // naked (unprotected by atomic) write to bool ok because only ever write true in this special paradigm
+  int failed_compress = 0; // the first thread to fail writes their reason here when they first get to ordered section
+  int failed_write = 0;    // same. could use +ve and -ve in the same code but separate it out to trace Solaris problem, #3931
 
-  errno=0;
-  char *buffPool = malloc(nth*(size_t)buffSize);
-  if (!buffPool) {
-    // # nocov start
-    STOP(_("Unable to allocate %zu MB * %d thread buffers; '%d: %s'. Please read ?fwrite for nThread, buffMB and verbose options."),
-         (size_t)buffSize/(1024^2), nth, errno, strerror(errno));
-    // # nocov end
-  }
-  char *zbuffPool = NULL;
-  if (args.is_gzip) {
-#ifndef NOZLIB
-    zbuffPool = malloc(nth*(size_t)zbuffSize);
-    if (!zbuffPool) {
-      // # nocov start
-      free(buffPool);
-      STOP(_("Unable to allocate %zu MB * %d thread compressed buffers; '%d: %s'. Please read ?fwrite for nThread, buffMB and verbose options."),
-         (size_t)zbuffSize/(1024^2), nth, errno, strerror(errno));
-      // # nocov end
-    }
-#endif
-  }
-
-#ifndef NOZLIB
-  z_stream *thread_streams = (z_stream*) malloc(nth * sizeof(z_stream));
-  if (!thread_streams)
-    STOP(_("Failed to allocated %d bytes for threads_streams."), (int)(nth * sizeof(z_stream)));
-  // VLA on stack should be fine for nth structs; in zlib v1.2.11 sizeof(struct)==112 on 64bit
-  // not declared inside the parallel region because solaris appears to move the struct in
-  // memory when the #pragma omp for is entered, which causes zlib's internal self reference
-  // pointer to mismatch, #4099
-#endif
-
-bool failed = false;   // naked (unprotected by atomic) write to bool ok because only ever write true in this special paradigm
-int failed_compress = 0; // the first thread to fail writes their reason here when they first get to ordered section
-int failed_write = 0;    // same. could use +ve and -ve in the same code but separate it out to trace Solaris problem, #3931
-
-// loop overs rows in parallel----
+// main parallel loop ----
 #pragma omp parallel for ordered num_threads(nth)
     for(int64_t start=0; start < args.nrow; start += rowsPerBatch) {
         int me = omp_get_thread_num();
@@ -975,7 +972,7 @@ int failed_write = 0;    // same. could use +ve and -ve in the same code but sep
       } else {
         errno=0;
         int ret = 0;
-        if (f==-1) {
+        if (f == -1) {
           *ch='\0';  // standard C string end marker so DTPRINT knows where to stop
           DTPRINT("%s", myBuff);
         } else if (args.is_gzip) {
@@ -1056,7 +1053,7 @@ int failed_write = 0;    // same. could use +ve and -ve in the same code but sep
     // # nocov end
   }
 
-  if (f!=-1 && CLOSE(f) && !failed)
+  if (f != -1 && CLOSE(f) && !failed)
     STOP("%s: '%s'", strerror(errno), args.filename);  // # nocov
   // quoted '%s' in case of trailing spaces in the filename
   // If a write failed, the line above tries close() to clean up, but that might fail as well. So the
