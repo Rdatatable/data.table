@@ -955,7 +955,9 @@ int failed_write = 0;    // same. could use +ve and -ve in the same code but sep
           *ch='\0';  // standard C string end marker so DTPRINT knows where to stop
           DTPRINT("%s", myBuff);
         } else if (args.is_gzip) {
+#ifndef NOZLIB
             ret = WRITE(f, myzBuff, (int)myzbuffUsed);
+#endif
         } else {
             ret = WRITE(f, myBuff,  (int)(ch-myBuff));
         }
@@ -964,8 +966,12 @@ int failed_write = 0;    // same. could use +ve and -ve in the same code but sep
           failed_write=errno;  // # nocov
         }
 
-        crc = crc32_combine(crc, mycrc, mylen);
-        len += mylen;
+        if (args.is_gzip) {
+#ifndef NOZLIB
+            crc = crc32_combine(crc, mycrc, mylen);
+            len += mylen;
+#endif
+        }
 
         int used = 100*((double)(ch-myBuff))/buffSize;  // percentage of original buffMB
         if (used > maxBuffUsedPC) maxBuffUsedPC = used;
