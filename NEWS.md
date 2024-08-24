@@ -76,6 +76,78 @@
 
     e. Displays `integer64` columns correctly by loading {bit64} if needed, [#6224](https://github.com/Rdatatable/data.table/issues/6224). Thanks @renkun-ken for the report and @MichaelChirico for the fix.
 
+19. `first()` and `last()` gain `na.rm` taking values `FALSE` (default), `TRUE` or `"row"`, [#4239](https://github.com/Rdatatable/data.table/issues/4239). For vector input, `TRUE` and `"row"` are the same. For `data.table|frame` input, `TRUE` returns the first/last non-NA observation in each column, while `"row"` returns the first/last row where all columns are non-NA. `TRUE` is optimized by group and `"row"` may be optimized by group in future. `n>1` with `na.rm=TRUE` is also optimized by group. Thanks to Nicolas Bennett and Michael Chirico for the requests, and Benjamin Schwendinger for the PR.
+
+    ```R
+    x
+    # [1] NA  1  2 NA
+
+    first(x)
+    # NA
+
+    first(x, na.rm=TRUE)
+    # 1
+
+    last(x, na.rm=TRUE)
+    # 2
+
+    DT
+    #     grp     A     B
+    #   <int> <int> <int>
+    #1:     1     3     7
+    #2:     1     4    NA
+    #3:     2     5    NA
+    #4:     2     6    NA
+
+    last(DT, na.rm=TRUE)
+    #     grp     A     B
+    #   <int> <int> <int>
+    #1:     2     6     7
+
+    last(DT, na.rm="row")
+    #     grp     A     B
+    #   <int> <int> <int>
+    #1:     1     3     7
+
+    DT[, last(.SD, na.rm=TRUE), by=grp]
+    #     grp     A     B
+    #   <int> <int> <int>
+    #1:     1     4     7
+    #2:     2     6    NA
+
+    DT[, last(.SD, na.rm="row"), by=grp]
+    #     grp     A     B
+    #   <int> <int> <int>
+    #1:     1     3     7
+    #2:     2    NA    NA
+    
+    DT[, last(na.omit(.SD)), by=grp]  # same as na.rm='row' but drops all-NA groups
+    #     grp     A     B
+    #   <int> <int> <int>
+    #1:     1     3     7
+
+    set.seed(1)
+    DT = data.table(id=rep(1:1e6, each=10),
+                     v=sample(c(1:5,NA), 10e6, replace=TRUE))
+    DT
+    #                id     v
+    #             <int> <int>
+    #        1:       1     2
+    #        2:       1     3
+    #        3:       1     4
+    #        4:       1    NA
+    #        5:       1     2
+    #       ---              
+    #  9999996: 1000000     3
+    #  9999997: 1000000    NA
+    #  9999998: 1000000    NA
+    #  9999999: 1000000     1
+    # 10000000: 1000000     4
+    ans1 = DT[, last(na.omit(v)), by=id]       # 18.7 sec
+    ans2 = DT[, last(v, na.rm=TRUE), by=id]    #  0.1 sec
+    identical(ans1, ans2)                      # TRUE
+    ```
+
 ## BUG FIXES
 
 1. `unique()` returns a copy when `nrows(x) <= 1` instead of a mutable alias, [#5932](https://github.com/Rdatatable/data.table/pull/5932). This is consistent with existing `unique()` behavior when the input has no duplicates but more than one row. Thanks to @brookslogan for the report and @dshemetov for the fix.
