@@ -563,8 +563,7 @@ int init_stream(z_stream *stream) {
   stream->zalloc = Z_NULL;
   stream->zfree = Z_NULL;
   stream->opaque = Z_NULL;
-  int err = deflateInit2(stream, gzip_level==0 ? Z_DEFAULT_COMPRESSION : gzip_level, Z_DEFLATED,
-          -15, 8, Z_DEFAULT_STRATEGY);
+  int err = deflateInit2(stream, gzip_level, Z_DEFLATED, -15, 8, Z_DEFAULT_STRATEGY);
   return err;  // # nocov
 }
 
