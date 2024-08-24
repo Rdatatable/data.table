@@ -790,7 +790,6 @@ if (verbose) {
   char *buffPool = malloc(alloc_size);
   if (!buffPool) {
     // # nocov start
-    free(thread_streams);
     STOP(_("Unable to allocate %zu MB * %d thread buffers; '%d: %s'. Please read ?fwrite for nThread, buffMB and verbose options."),
          (size_t)buffSize/(1 << 20), nth, errno, strerror(errno));
     // # nocov end
@@ -809,7 +808,6 @@ if (verbose) {
     if (!zbuffPool) {
       // # nocov start
       free(buffPool);
-      free(thread_streams);
       STOP(_("Unable to allocate %zu MB * %d thread compressed buffers; '%d: %s'. Please read ?fwrite for nThread, buffMB and verbose options."),
          (size_t)zbuffSize/(1024^2), nth, errno, strerror(errno));
       // # nocov end
@@ -915,13 +913,13 @@ if (verbose) {
 #pragma omp parallel for ordered num_threads(nth) schedule(dynamic)
     for(int64_t start=0; start < args.nrow; start += rowsPerBatch) {
         int me = omp_get_thread_num();
-        size_t mylen = 0;
-        int mycrc = crc32(0L, Z_NULL, 0);
         int my_failed_compress = 0;
         char* myBuff = buffPool + me * buffSize;
         char* ch = myBuff;
 
 #ifndef NOZLIB
+        size_t mylen = 0;
+        int mycrc = 0;
         z_stream *mystream = &thread_streams[me];
         void *myzBuff = NULL;
         size_t myzbuffUsed = 0;
@@ -1038,6 +1036,12 @@ if (verbose) {
           // # nocov end
         }
       }
+      if (args.is_gzip) {
+#ifndef NOZLIB
+          deflateEnd(mystream);
+#endif
+      }
+
     } // end of parallel for loop
 
 /* put a 4-byte integer into a byte array in LSB order */
