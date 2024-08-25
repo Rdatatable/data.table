@@ -777,12 +777,13 @@ void fwriteMain(fwriteMainArgs args)
 
   // init compress variables
 #ifndef NOZLIB
-  z_stream *thread_streams = (z_stream*) malloc(nth * sizeof(z_stream));
+  z_stream *thread_streams = NULL;
   char *zbuffPool = NULL;
   size_t zbuffSize = 0;
   size_t compress_len = 0;
   if (args.is_gzip) {
   // alloc zlib streams
+    thread_streams = (z_stream*) malloc(nth * sizeof(z_stream));
     if (verbose) {
         DTPRINT(_("Allocate %ld bytes for thread_streams\n"), nth * sizeof(z_stream));
     }
