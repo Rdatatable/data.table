@@ -727,38 +727,12 @@ void fwriteMain(fwriteMainArgs args)
   // Create heap zones ----
 
   int nth = args.nth;
-  // alloc zlib streams
-#ifndef NOZLIB
-  z_stream *thread_streams = (z_stream*) malloc(nth * sizeof(z_stream));
-if (verbose) {
-    DTPRINT(_("Allocate %ld bytes for thread_streams\n"), nth * sizeof(z_stream));
-}
-  if (!thread_streams)
-    STOP(_("Failed to allocated %d bytes for threads_streams."), (int)(nth * sizeof(z_stream)));
-  // VLA on stack should be fine for nth structs; in zlib v1.2.11 sizeof(struct)==112 on 64bit
-  // not declared inside the parallel region because solaris appears to move the struct in
-  // memory when the #pragma omp for is entered, which causes zlib's internal self reference
-  // pointer to mismatch, #4099
-#endif
 
   // Get buffSize
   if (args.buffMB<1 || args.buffMB>1024)
       STOP(_("buffMB=%d outside [1,1024]"), args.buffMB);
   size_t buffSize = (size_t) (1 << 20) * args.buffMB;
 
-  // compute zbuffSize which is the same for each thread
-  size_t zbuffSize = 0;
-  if(args.is_gzip){
-#ifndef NOZLIB
-    z_stream *stream = thread_streams;
-    if (init_stream(stream) != Z_OK)
-        STOP(_("Can't init stream structure for deflateBound"));
-    zbuffSize = deflateBound(stream, buffSize);
-    if (verbose)
-        DTPRINT(_("zbuffSize=%d returned from deflateBound\n"), (int)zbuffSize);
-#endif
-  }
-  //
   // Decide buffer size and rowsPerBatch for each thread
   // Once rowsPerBatch is decided it can't be changed
   int rowsPerBatch=0;
@@ -796,10 +770,31 @@ if (verbose) {
     // # nocov end
   }
 
-  // alloc nth zlib buffers
-  char *zbuffPool = NULL;
-  if (args.is_gzip) {
 #ifndef NOZLIB
+  z_stream *thread_streams = (z_stream*) malloc(nth * sizeof(z_stream));
+  char *zbuffPool = NULL;
+  size_t zbuffSize = 0;
+  if (args.is_gzip) {
+  // alloc zlib streams
+    if (verbose) {
+        DTPRINT(_("Allocate %ld bytes for thread_streams\n"), nth * sizeof(z_stream));
+    }
+    if (!thread_streams)
+        STOP(_("Failed to allocated %d bytes for threads_streams."), (int)(nth * sizeof(z_stream)));
+    // VLA on stack should be fine for nth structs; in zlib v1.2.11 sizeof(struct)==112 on 64bit
+    // not declared inside the parallel region because solaris appears to move the struct in
+    // memory when the #pragma omp for is entered, which causes zlib's internal self reference
+    // pointer to mismatch, #4099
+
+  // compute zbuffSize which is the same for each thread
+    z_stream *stream = thread_streams;
+    if (init_stream(stream) != Z_OK)
+        STOP(_("Can't init stream structure for deflateBound"));
+    zbuffSize = deflateBound(stream, buffSize);
+    if (verbose)
+        DTPRINT(_("zbuffSize=%d returned from deflateBound\n"), (int)zbuffSize);
+
+    // alloc nth zlib buffers
     // if headerLen > nth * zbuffSize (long variable names and 1 thread), alloc headerLen
     alloc_size = nth * zbuffSize < headerLen ? headerLen : nth * zbuffSize;
     if (verbose) {
@@ -813,8 +808,8 @@ if (verbose) {
          (size_t)zbuffSize/(1024^2), nth, errno, strerror(errno));
       // # nocov end
     }
-#endif
   }
+#endif
 
   // write header
 
