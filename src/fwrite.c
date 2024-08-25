@@ -1050,6 +1050,7 @@ void fwriteMain(fwriteMainArgs args)
 
   // write gzip tailer with crc and len
     if (args.is_gzip) {
+#ifndef NOZLIB
         // DTPRINT(_("crc=%x len=%ld\n", crc, len));
         unsigned char tail[10];
         tail[0] = 3;
@@ -1059,6 +1060,7 @@ void fwriteMain(fwriteMainArgs args)
         int ret = WRITE(f, tail, 10);
         if (ret == -1)
             STOP("Error: can't write gzip tailer");
+#endif
     }
 
   if (verbose)
