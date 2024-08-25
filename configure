@@ -31,7 +31,7 @@ else
     echo "*** pkg-config is installed but 'pkg-config --exists zlib' did not return 0."
     msg=1
   else
-    NOZLIB=1
+    NOZLIB=0
     lib=`pkg-config --libs zlib`
     cflag=`pkg-config --cflags zlib`
     expr -- "$lib" : ".*-lz$" >> config.log  # -- for FreeBSD, #4652

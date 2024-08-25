@@ -26,6 +26,7 @@
 #include "fwriteLookups.h"
 #include "fwrite.h"
 
+#define MEGA (1 << 20)
 #define NUM_SF   15
 #define SIZE_SF  1000000000000000ULL  // 10^NUM_SF
 
@@ -648,8 +649,8 @@ void fwriteMain(fwriteMainArgs args)
   double t0 = wallclock();
   size_t maxLineLen = eolLen + args.ncol*(2*(doQuote!=0) + sepLen);
   if (args.doRowNames) {
-    maxLineLen += args.rowNames==NULL ? 1+(int)log10(args.nrow)   // the width of the row number
-                  : (args.rowNameFun==WF_String ? getMaxStringLen(args.rowNames, args.nrow)*2  // *2 in case longest row name is all quotes (!) and all get escaped
+    maxLineLen += args.rowNames==NULL ? 1 + (int) log10(args.nrow)   // the width of the row number
+                  : (args.rowNameFun==WF_String ? getMaxStringLen(args.rowNames, args.nrow) * 2  // *2 in case longest row name is all quotes (!) and all get escaped
                   : 11); // specific integer names could be MAX_INT 2147483647 (10 chars) even on a 5 row table, and data.frame allows negative integer rownames hence 11 for the sign
     maxLineLen += 2/*possible quotes*/ + sepLen;
   }
@@ -712,7 +713,7 @@ void fwriteMain(fwriteMainArgs args)
         DTPRINT(_("\n"));
   }
 
-    // Calc headerLen
+  // Calc headerLen
 
   size_t headerLen = 0;
   if (args.bom)
@@ -728,45 +729,49 @@ void fwriteMain(fwriteMainArgs args)
 
   int nth = args.nth;
 
-  // Get buffSize
-  if (args.buffMB<1 || args.buffMB>1024)
-      STOP(_("buffMB=%d outside [1,1024]"), args.buffMB);
-  size_t buffSize = (size_t) (1 << 20) * args.buffMB;
+  // Calc buffSize
+  if (args.buffMB < 1 || args.buffMB > 1024)
+      STOP(_("buffMB = %d is outside range 1..1024, exiting"), args.buffMB);
+  size_t buffSize = args.buffMB * MEGA;
 
   // Decide buffer size and rowsPerBatch for each thread
   // Once rowsPerBatch is decided it can't be changed
-  int rowsPerBatch=0;
-  if (2 * maxLineLen > buffSize) {
-      buffSize = 2 * maxLineLen;
-      rowsPerBatch=2;
+
+  // if maxLineLen is greater then buffize, increase it
+  if (buffSize < maxLineLen) {
+      buffSize = maxLineLen;
   }
-  else
-      rowsPerBatch = buffSize / maxLineLen;
-  if (rowsPerBatch > args.nrow)
+  if (nth * buffSize < headerLen) {
+      buffSize = headerLen / nth + 1;
+  }
+
+  int rowsPerBatch = buffSize / maxLineLen;
+  int numBatches = (args.nrow - 1) / rowsPerBatch + 1;
+
+  if (args.nrow < rowsPerBatch) {
       rowsPerBatch = args.nrow;
-  if (rowsPerBatch < 1)
-      rowsPerBatch = 1;
-  int numBatches = (args.nrow-1) / rowsPerBatch + 1;
+      numBatches = 1;
+  }
+
   if (numBatches < nth)
       nth = numBatches;
+
   if (verbose) {
-    DTPRINT(_("Writing %"PRId64" rows in %d batches of %d rows (each buffer size %dMB, showProgress=%d, nth=%d)\n"),
-            args.nrow, numBatches, rowsPerBatch, args.buffMB, args.showProgress, nth);
+    DTPRINT(_("Writing %"PRId64" rows in %d batches of %d rows, each buffer size %ld bytes (%zu MiB), showProgress=%d, nth=%d\n"),
+            args.nrow, numBatches, rowsPerBatch, buffSize, buffSize / MEGA, args.showProgress, nth);
   }
 
   // alloc nth write buffers
   errno=0;
-  size_t alloc_size;
-  // if headerLen > nth * buffSize (long variable names and 1 thread), alloc headerLen
-  alloc_size = nth * buffSize < headerLen ? headerLen : nth * buffSize;
+  size_t alloc_size = nth * buffSize;
   if (verbose) {
-    DTPRINT(_("Allocate %ld bytes for buffPool\n"), alloc_size);
+    DTPRINT(_("Allocate %ld bytes (%zu MiB) for buffPool\n"), alloc_size, alloc_size / MEGA);
   }
   char *buffPool = malloc(alloc_size);
   if (!buffPool) {
     // # nocov start
     STOP(_("Unable to allocate %zu MB * %d thread buffers; '%d: %s'. Please read ?fwrite for nThread, buffMB and verbose options."),
-         (size_t)buffSize/(1 << 20), nth, errno, strerror(errno));
+         buffSize / MEGA, nth, errno, strerror(errno));
     // # nocov end
   }
 
@@ -798,14 +803,14 @@ void fwriteMain(fwriteMainArgs args)
     // if headerLen > nth * zbuffSize (long variable names and 1 thread), alloc headerLen
     alloc_size = nth * zbuffSize < headerLen ? headerLen : nth * zbuffSize;
     if (verbose) {
-        DTPRINT(_("Allocate %ld bytes for zbuffPool\n"), alloc_size);
+        DTPRINT(_("Allocate %ld bytes (%zu MiB) for zbuffPool\n"), alloc_size, alloc_size / MEGA);
     }
     zbuffPool = malloc(alloc_size);
     if (!zbuffPool) {
       // # nocov start
       free(buffPool);
-      STOP(_("Unable to allocate %zu MB * %d thread compressed buffers; '%d: %s'. Please read ?fwrite for nThread, buffMB and verbose options."),
-         (size_t)zbuffSize/(1024^2), nth, errno, strerror(errno));
+      STOP(_("Unable to allocate %zu MiB * %d thread compressed buffers; '%d: %s'. Please read ?fwrite for nThread, buffMB and verbose options."),
+         zbuffSize / MEGA, nth, errno, strerror(errno));
       // # nocov end
     }
   }
