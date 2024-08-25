@@ -775,10 +775,12 @@ void fwriteMain(fwriteMainArgs args)
     // # nocov end
   }
 
+  // init compress variables
 #ifndef NOZLIB
   z_stream *thread_streams = (z_stream*) malloc(nth * sizeof(z_stream));
   char *zbuffPool = NULL;
   size_t zbuffSize = 0;
+  size_t compress_len = 0;
   if (args.is_gzip) {
   // alloc zlib streams
     if (verbose) {
@@ -866,14 +868,17 @@ void fwriteMain(fwriteMainArgs args)
         // write minimal gzip header
         char* header = "\037\213\10\0\0\0\0\0\0\3";
         ret0 = WRITE(f, header, 10);
+        compress_len += 10;
         crc = crc32(0L, Z_NULL, 0);
 
         size_t zbuffUsed = zbuffSize;
         len = (size_t)(ch - buff);
         crc = crc32(crc, (unsigned char*)buff, len);
         ret1 = compressbuff(stream, zbuff, &zbuffUsed, buff, len);
-        if (ret1==Z_OK)
+        if (ret1==Z_OK) {
             ret2 = WRITE(f, zbuff, (int)zbuffUsed);
+            compress_len += zbuffUsed;
+        }
 #endif
       } else {
         ret2 = WRITE(f,  buff, (int)(ch-buff));
@@ -996,6 +1001,7 @@ void fwriteMain(fwriteMainArgs args)
         } else if (args.is_gzip) {
 #ifndef NOZLIB
             ret = WRITE(f, myzBuff, (int)myzbuffUsed);
+            compress_len += myzbuffUsed;
 #endif
         } else {
             ret = WRITE(f, myBuff,  (int)(ch-myBuff));
@@ -1051,20 +1057,17 @@ void fwriteMain(fwriteMainArgs args)
   // write gzip tailer with crc and len
     if (args.is_gzip) {
 #ifndef NOZLIB
-        // DTPRINT(_("crc=%x len=%ld\n", crc, len));
         unsigned char tail[10];
         tail[0] = 3;
         tail[1] = 0;
         PUT4(tail + 2, crc);
         PUT4(tail + 6, len);
         int ret = WRITE(f, tail, 10);
+        compress_len += 10;
         if (ret == -1)
             STOP("Error: can't write gzip tailer");
 #endif
     }
-
-  if (verbose)
-      DTPRINT(_("\nAll done in %.3fs\n"), 1.0*(wallclock()-t0));
 
   free(buffPool);
 #ifndef NOZLIB
@@ -1077,12 +1080,24 @@ void fwriteMain(fwriteMainArgs args)
     // # nocov start
     if (!failed) { // clear the progress meter
       DTPRINT("\r                                                                       "
-              "                                                              \r");
+              "                                                              \r\n");
     } else {       // don't clear any potentially helpful output before error
       DTPRINT("\n");
     }
     // # nocov end
   }
+
+  if (verbose) {
+    if (args.is_gzip) {
+#ifndef NOZLIB
+        DTPRINT("zlib: uncompressed length=%lu (%zu MiB), compressed length=%lu (%zu MiB), ratio=%.1f%%, crc=%x\n",
+                len, len / MEGA, compress_len, compress_len / MEGA, len != 0 ? (100.0 * compress_len) / len : 0, crc);
+#endif
+    DTPRINT("Written %lu rows in %.3f secs using %d thread%s. MaxBuffUsed=%d%%\n",
+            args.nrow, 1.0*(wallclock()-t0), nth, nth ==1 ? "" : "s", maxBuffUsedPC);
+    }
+  }
+
 
   if (f != -1 && CLOSE(f) && !failed)
     STOP("%s: '%s'", strerror(errno), args.filename);  // # nocov
