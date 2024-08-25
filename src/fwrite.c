@@ -737,16 +737,17 @@ void fwriteMain(fwriteMainArgs args)
   // Decide buffer size and rowsPerBatch for each thread
   // Once rowsPerBatch is decided it can't be changed
 
-  // if maxLineLen is greater then buffize, increase it
+  // if maxLineLen is greater than buffize, increase buffSize
   if (buffSize < maxLineLen) {
       buffSize = maxLineLen;
   }
+  // ensure buffer can take header line
   if (nth * buffSize < headerLen) {
       buffSize = headerLen / nth + 1;
   }
 
   int rowsPerBatch = buffSize / maxLineLen;
-  int numBatches = (args.nrow - 1) / rowsPerBatch + 1;
+  int numBatches = args.nrow / rowsPerBatch + 1;
 
   if (args.nrow < rowsPerBatch) {
       rowsPerBatch = args.nrow;
@@ -757,7 +758,7 @@ void fwriteMain(fwriteMainArgs args)
       nth = numBatches;
 
   if (verbose) {
-    DTPRINT(_("Writing %"PRId64" rows in %d batches of %d rows, each buffer size %ld bytes (%zu MiB), showProgress=%d, nth=%d\n"),
+    DTPRINT(_("Writing %"PRId64" rows in %d batches of %d rows, each buffer size %zu bytes (%zu MiB), showProgress=%d, nth=%d\n"),
             args.nrow, numBatches, rowsPerBatch, buffSize, buffSize / MEGA, args.showProgress, nth);
   }
 
