@@ -647,7 +647,7 @@ void fwriteMain(fwriteMainArgs args)
   // could be console output) and writing column names to it.
 
   double t0 = wallclock();
-  size_t maxLineLen = eolLen + args.ncol*(2*(doQuote!=0) + sepLen);
+  size_t maxLineLen = eolLen + args.ncol * (2 * (doQuote!=0) + sepLen);
   if (args.doRowNames) {
     maxLineLen += args.rowNames==NULL ? 1 + (int) log10(args.nrow)   // the width of the row number
                   : (args.rowNameFun==WF_String ? getMaxStringLen(args.rowNames, args.nrow) * 2  // *2 in case longest row name is all quotes (!) and all get escaped
@@ -671,17 +671,17 @@ void fwriteMain(fwriteMainArgs args)
         STOP(_("Internal error: type %d has no max length method implemented"), args.whichFun[j]);  // # nocov
       }
     }
-    if (args.whichFun[j]==WF_Float64 && args.scipen>0)
+    if (args.whichFun[j] == WF_Float64 && args.scipen > 0)
         // clamp width to IEEE754 max to avoid scipen=99999 allocating buffer larger than can ever be written
-        width += (args.scipen < 350 ? args.scipen : 350 );
-    if (width<naLen)
+        width += args.scipen < 350 ? args.scipen : 350;
+    if (width < naLen)
         width = naLen;
     maxLineLen += width * 2;  // *2 in case the longest string is all quotes and they all need to be escaped
   }
   if (verbose)
       DTPRINT(_("maxLineLen=%"PRIu64". Found in %.3fs\n"), (uint64_t)maxLineLen, 1.0*(wallclock()-t0));
 
-  int f=0;
+  int f = 0;
   if (*args.filename=='\0') {
     f = -1;  // file="" means write to standard output
     args.is_gzip = false; // gzip is only for file
@@ -721,8 +721,8 @@ void fwriteMain(fwriteMainArgs args)
   headerLen += yamlLen;
   if (args.colNames) {
     for (int j=0; j<args.ncol; j++)
-        headerLen += getStringLen(args.colNames, j)*2;  // *2 in case quotes are escaped or doubled
-    headerLen += args.ncol*(sepLen+(doQuote!=0)*2) + eolLen + 3;  // 3 in case doRowNames and doQuote (the first blank <<"",>> column name)
+        headerLen += 2 * getStringLen(args.colNames, j);  // * 2 in case quotes are escaped or doubled
+    headerLen += args.ncol * (sepLen + 2 * (doQuote != 0)) + eolLen + 3;  // 3 in case doRowNames and doQuote (the first blank <<"",>> column name)
   }
 
   // Create heap zones ----
@@ -747,13 +747,16 @@ void fwriteMain(fwriteMainArgs args)
   }
 
   int rowsPerBatch = buffSize / maxLineLen;
+  // + 1 because of the last incomplete loop
   int numBatches = args.nrow / rowsPerBatch + 1;
 
+  // force 1 batch, and then 1 thread, if number of lines in table < rowsPerBatch
   if (args.nrow < rowsPerBatch) {
       rowsPerBatch = args.nrow;
       numBatches = 1;
   }
 
+  // avoid useless threads, and then too big memory allocations
   if (numBatches < nth)
       nth = numBatches;
 
@@ -1095,9 +1098,9 @@ void fwriteMain(fwriteMainArgs args)
         DTPRINT("zlib: uncompressed length=%zu (%zu MiB), compressed length=%zu (%zu MiB), ratio=%.1f%%, crc=%x\n",
                 len, len / MEGA, compress_len, compress_len / MEGA, len != 0 ? (100.0 * compress_len) / len : 0, crc);
 #endif
+    }
     DTPRINT("Written %"PRId64" rows in %.3f secs using %d thread%s. MaxBuffUsed=%d%%\n",
             args.nrow, 1.0*(wallclock()-t0), nth, nth ==1 ? "" : "s", maxBuffUsedPC);
-    }
   }
 
 
