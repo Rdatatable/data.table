@@ -289,7 +289,7 @@ test-mac-rel:
   variables:
     R_VERSION: "$R_REL_VERSION"
   script:
-    - R CMD check $(ls -1t data.table_*.tar.gz | head -n 1)
+    - R CMD check --no-manual $(ls -1t data.table_*.tar.gz | head -n 1)
     - R CMD INSTALL --build $(ls -1t data.table_*.tar.gz | head -n 1)
 
 ## integrate artifacts
