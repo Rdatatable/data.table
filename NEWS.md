@@ -2,6 +2,10 @@
 
 # data.table [v1.16.99](https://github.com/Rdatatable/data.table/milestone/31)  (in development)
 
+## NOTES
+
+1. Tests run again when some Suggests packages are missing, [#6411](https://github.com/Rdatatable/data.table/issues/6411). Thanks @aadler for the note and @MichaelChirico for the fix.
+
 # data.table [v1.16.0](https://github.com/Rdatatable/data.table/milestone/30)  (25 August 2024)
 
 ## BREAKING CHANGES
