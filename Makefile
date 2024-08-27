@@ -18,7 +18,7 @@ some:
 
 .PHONY: clean
 clean:
-	$(RM) data.table_1.15.99.tar.gz
+	$(RM) data.table_1.16.99.tar.gz
 	$(RM) src/*.o
 	$(RM) src/*.so
 
@@ -28,7 +28,7 @@ build:
 
 .PHONY: install
 install:
-	$(R) CMD INSTALL data.table_1.15.99.tar.gz
+	$(R) CMD INSTALL data.table_1.16.99.tar.gz
 
 .PHONY: uninstall
 uninstall:
@@ -40,7 +40,7 @@ test:
 
 .PHONY: check
 check:
-	_R_CHECK_CRAN_INCOMING_REMOTE_=false $(R) CMD check data.table_1.15.99.tar.gz --as-cran --ignore-vignettes --no-stop-on-test-error
+	_R_CHECK_CRAN_INCOMING_REMOTE_=false $(R) CMD check data.table_1.16.99.tar.gz --as-cran --ignore-vignettes --no-stop-on-test-error
 
 .PHONY: revision
 revision:
