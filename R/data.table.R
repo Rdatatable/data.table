@@ -224,7 +224,7 @@ replace_dot_alias = function(e) {
   if ((isTRUE(which)||is.na(which)) && !missing(j)) stopf("which==%s (meaning return row numbers) but j is also supplied. Either you need row numbers or the result of j, but only one type of result can be returned.", which)
   if (is.null(nomatch) && is.na(which)) stopf("which=NA with nomatch=0|NULL would always return an empty vector. Please change or remove either which or nomatch.")
   if (!with && missing(j)) stopf("j must be provided when with=FALSE")
-  if (!missing(by) && !isTRUEorFALSE(showProgress)) stopf("%s must be TRUE or FALSE", "showProgress")
+  if (!isTRUEorFALSE(showProgress)) stopf("%s must be TRUE or FALSE", "showProgress")
   irows = NULL  # Meaning all rows. We avoid creating 1:nrow(x) for efficiency.
   notjoin = FALSE
   rightcols = leftcols = integer()
