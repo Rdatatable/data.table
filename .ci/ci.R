@@ -169,7 +169,7 @@ function(pkgs,
     newpkgs <- newpkgs[availpkgs]
   }
 
-  typeshort <- if (substr(type, 1L, 11L) == "mac.binary.") "mac.binary" else type
+  typeshort <- if (startsWith(type, "mac.binary.")) "mac.binary" else type
   pkgsext <- switch(typeshort,
                     "source" = "tar.gz",
                     "mac.binary" = "tgz",
