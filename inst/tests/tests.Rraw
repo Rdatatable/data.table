@@ -3086,8 +3086,10 @@ x = sample(1:1000,2100,replace=TRUE)  # 2100 > 100 JUMPLINES * 10 NJUMP * 2 spac
 DT = data.table( A=as.character(x), B=1:100)
 DT[115, A:="123456789123456"]  # row 115 is outside the 100 rows at 10 points.
 fwrite(DT,f<-tempfile())
-test(1016.1, sapply(fread(f,verbose=TRUE),"class"), c(A="integer64", B="integer"),
-             output="Rereading 1 columns.*Column 1.*A.*bumped.*int32.*int64.*<<123456789123456>>")
+if (test_bit64) {
+  test(1016.1, sapply(fread(f,verbose=TRUE),"class"), c(A="integer64", B="integer"),
+               output="Rereading 1 columns.*Column 1.*A.*bumped.*int32.*int64.*<<123456789123456>>")
+}
 test(1016.2, fread(f, colClasses = c(A="numeric"), verbose=TRUE), copy(DT)[,A:=as.numeric(A)], output="Rereading 0 columns")
 DT[90, A:="321456789123456"]   # inside the sample
 write.table(DT,f,sep=",",row.names=FALSE,quote=FALSE)
@@ -18792,8 +18794,9 @@ if (test_R.utils) {
   fwrite(DT, tmp)
   R.utils::bzip2(tmp, tmp2 <- tempfile(), remove=FALSE) # _not_ with .bz2 extension
   test(2273.4, fread(tmp2), DT)
+  file.remove(tmp2)
 }
-file.remove(tmp, tmp2)
+file.remove(tmp)
 
 # rbind with vectors with class attributes #5309
 x = data.table(a = 1L, b = as.Date("2020-01-01"))
