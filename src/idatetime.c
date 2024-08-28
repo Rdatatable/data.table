@@ -127,7 +127,7 @@ SEXP convertDate(SEXP x, SEXP type)
     const int *ix = INTEGER(x);
     const int n = length(x);
     if (!isString(type) || length(type) != 1)
-        INTERNAL_ERROR("invalid type for, should have been caught before"); // # nocov
+        internal_error(__func__, "invalid type for, should have been caught before"); // # nocov
     datetype ctype;
     bool ansint = true;
     if (!strcmp(CHAR(STRING_ELT(type, 0)), "yday")) ctype = YDAY;
@@ -139,7 +139,7 @@ SEXP convertDate(SEXP x, SEXP type)
     else if (!strcmp(CHAR(STRING_ELT(type, 0)), "year")) ctype = YEAR;
     else if (!strcmp(CHAR(STRING_ELT(type, 0)), "yearmon")) { ctype = YEARMON; ansint = false; }
     else if (!strcmp(CHAR(STRING_ELT(type, 0)), "yearqtr")) { ctype = YEARQTR; ansint = false; }
-    else INTERNAL_ERROR("invalid type for, should have been caught before"); // # nocov
+    else internal_error(__func__, "invalid type for, should have been caught before"); // # nocov
 
     SEXP ans;
     if (ansint) {

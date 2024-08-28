@@ -19,6 +19,7 @@
 #define STRING_PTR_RO STRING_PTR
 #endif
 #include <stdint.h>    // for uint64_t rather than unsigned long long
+#include <stdarg.h>    // for va_list, va_start
 #include <stdbool.h>
 #include "types.h"
 #include "po.h"
@@ -42,9 +43,6 @@
 
 #define SIZEOF(x) __sizes[TYPEOF(x)]
 #define TYPEORDER(x) __typeorder[x]
-
-static char internal_error_buff[256];
-#define INTERNAL_ERROR(...) do {snprintf(internal_error_buff, 255, __VA_ARGS__); error("%s %s: %s. %s", _("Internal error in"), __func__, internal_error_buff, _("Please report to the data.table issues tracker"));} while (0)
 
 #ifdef MIN
 #  undef MIN
@@ -266,6 +264,7 @@ SEXP islockedR(SEXP x);
 bool need2utf8(SEXP x);
 SEXP coerceUtf8IfNeeded(SEXP x);
 SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg);
+void internal_error(const char *call_name, const char *format, ...);
 
 // types.c
 char *end(char *start);
