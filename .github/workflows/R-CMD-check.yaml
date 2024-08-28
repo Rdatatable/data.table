@@ -3,14 +3,14 @@
 on:
   push:
     branches:
-      - main
       - master
   pull_request:
-    branches:
-      - main
-      - master
 
 name: R-CMD-check
+
+concurrency:
+  group: ${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
 
 jobs:
   R-CMD-check:
@@ -25,7 +25,7 @@ jobs:
           # Rdatatable has full-strength GLCI which runs after merge. So we just need a few
           # jobs (mainly test-coverage) to run on every commit in PRs so as to not slow down dev.
           # GHA does run these jobs concurrently but even so reducing the load seems like a good idea.
-          # - {os: windows-latest, r: 'release'}  # currently using AppVeyor which runs 32bit in 5 min and works
+          - {os: windows-latest, r: 'devel'}
           # - {os: macOS-latest, r: 'release'}    # test-coverage.yaml uses macOS
           - {os: ubuntu-20.04, r: 'release', rspm: "https://packagemanager.rstudio.com/cran/__linux__/focal/latest"}
           # - {os: ubuntu-20.04,   r: 'devel', rspm: "https://packagemanager.rstudio.com/cran/__linux__/focal/latest", http-user-agent: "R/4.1.0 (ubuntu-20.04) R (4.1.0 x86_64-pc-linux-gnu x86_64 linux-gnu) on GitHub Actions" }

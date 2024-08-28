@@ -19,14 +19,14 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
   if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "all"))  mult = ALL;
   else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "first")) mult = FIRST;
   else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "last")) mult = LAST;
-  else error(_("Internal error: invalid value for 'mult'; this should have been caught before. please report to data.table issue tracker")); // # nocov
+  else internal_error(__func__, "invalid value for 'mult'; this should have been caught before"); // # nocov
 
   if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "any"))  type = ANY;
   else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "within")) type = WITHIN;
   else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "start")) type = START;
   else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "end")) type = END;
   else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "equal")) type = EQUAL;
-  else error(_("Internal error: invalid value for 'type'; this should have been caught before. please report to data.table issue tracker")); // # nocov
+  else internal_error(__func__, "invalid value for 'type'; this should have been caught before"); // # nocov
 
   // For reference: uxcols-1 = type_count, uxcols-2 = count, uxcols-3 = type_lookup, uxcols-4 = lookup
   // first pass: calculate lengths first
@@ -53,7 +53,7 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
           if (count[i]) type_count[i] = 1;
       }
       break;
-    default: error(_("Internal error: unknown type in mult=%d in lookup: %d"), mult, type); // #nocov
+    default: internal_error(__func__, "unknown type in mult=%d: %d", mult, type); // # nocov
     }
     break;
 
@@ -118,10 +118,10 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
         }
       }
       break;
-    default: error(_("Internal error: unknown type in mult=%d in lookup: %d"), mult, type); // #nocov
+    default: internal_error(__func__, "unknown type in mult=%d: %d", mult, type); // # nocov
     }
     break;
-  default: error(_("Internal error: unknown mult in lookup: %d"), mult); // #nocov
+  default: internal_error(__func__, "unknown mult: %d", mult); // # nocov
   }
   pass1 = clock() - start;
   if (LOGICAL(verbose)[0])
@@ -141,7 +141,7 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
     Rprintf(_("Second pass on allocation in lookup ... done in %8.3f seconds\n"), 1.0*(pass2)/CLOCKS_PER_SEC);
   // generate lookup
   start = clock();
-  idx = Calloc(uxrows, R_len_t); // resets bits, =0
+  idx = R_Calloc(uxrows, R_len_t); // resets bits, =0
   switch (type) {
   case ANY: case START: case END: case WITHIN:
     for (int i=0; i<xrows; ++i) {
@@ -157,9 +157,9 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
       INTEGER(VECTOR_ELT(lookup, to[i]-1))[idx[to[i]-1]++] = i+1;
     }
     break;
-  default: error(_("Internal error: unknown type lookup should have been caught earlier: %d"), type); // #nocov
+  default: internal_error(__func__, "unknown type lookup should have been caught earlier: %d", type); // # nocov
   }
-  Free(idx);
+  R_Free(idx);
   // generate type_lookup
   if (type != WITHIN) {
     switch (mult) {
@@ -208,11 +208,11 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
         //   for (int j=0; j<type_count[i]; ++j)
         //     INTEGER(tt)[j] = INTEGER(vv)[j];
         // }
-        break; // #nocov
-      default: error(_("Internal error: unknown type in mult=%d in lookup should have been caught earlier: %d"), mult, type); // #nocov
+        break; // # nocov
+      default: internal_error(__func__, "unknown type in mult=%d should have been caught earlier: %d", mult, type); // # nocov
       }
      break;
-    default: error(_("Internal error: unknown mult in lookup: %d"), mult); // #nocov
+    default: internal_error(__func__, "unknown mult: %d", mult); // # nocov
     }
   }
   pass3 = clock() - start;
@@ -240,16 +240,16 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
   if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "all"))  mult = ALL;
   else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "first")) mult = FIRST;
   else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "last")) mult = LAST;
-  else error(_("Internal error: invalid value for 'mult'; this should have been caught before. please report to data.table issue tracker")); // # nocov
+  else internal_error(__func__, "invalid value for 'mult'; this should have been caught before"); // # nocov
 
   if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "any"))  type = ANY;
   else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "within")) type = WITHIN;
   else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "start")) type = START;
   else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "end")) type = END;
   else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "equal")) type = EQUAL;
-  else error(_("Internal error: invalid value for 'type'; this should have been caught before. please report to data.table issue tracker")); // # nocov
+  else internal_error(__func__, "invalid value for 'type'; this should have been caught before"); // # nocov
 
-  // As a first pass get the final length, so that we can allocate up-front and not deal with Calloc + Realloc + size calculation hassle
+  // As a first pass get the final length, so that we can allocate up-front and not deal with R_Calloc + R_Realloc + size calculation hassle
   // Checked the time for this loop on realisitc data (81m reads) and took 0.27 seconds! No excuses ;).
   start = clock();
   if (mult == ALL) {
@@ -322,7 +322,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
           ++totlen;
       }
       break;
-    default: error(_("Internal error: unknown type in mult=ALL in overlaps: %d"), type); // #nocov
+    default: internal_error(__func__, "unknown type in mult=ALL in overlaps: %d", type); // #nocov
     }
   } else totlen = rows;
   end1 = clock() - start;
@@ -463,7 +463,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
          }
       }
       break;
-    default: error(_("Internal error: unknown type in mult=%d in overlaps: %d"), mult, type); // #nocov
+    default: internal_error(__func__, "unknown type in mult=%d: %d", mult, type); // # nocov
     }
     break;
 
@@ -570,7 +570,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
         }
       }
       break;
-    default: error(_("Internal error: unknown type in mult=%d in overlaps: %d"), mult, type); // #nocov
+    default: internal_error(__func__, "unknown type in mult=%d: %d", mult, type); // # nocov
     }
     break;
 
@@ -719,10 +719,10 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
          }
       }
       break;
-    default: error(_("Internal error: unknown type in mult=%d in overlaps: %d"), mult, type); // #nocov
+    default: internal_error(__func__, "unknown type in mult=%d: %d", mult, type); // # nocov
     }
     break;
-  default: error(_("Internal error: unknown mult in overlaps: %d"), mult); // #nocov
+  default: internal_error(__func__, "unknown mult: %d", mult); // # nocov
   }
   end2 = clock() - start;
   if (LOGICAL(verbose)[0])

@@ -157,7 +157,7 @@ Once you *key* a *data.table* by certain columns, you can subset by querying tho
 flights[.("JFK")]
 
 ## alternatively
-# flights[J("JFK")] (or) 
+# flights[J("JFK")] (or)
 # flights[list("JFK")]
 ```
 
@@ -464,7 +464,7 @@ Now let us look at binary search approach (method 2). Recall from [Properties of
 
 Here's a very simple illustration. Let's consider the (sorted) numbers shown below:
 
-```{r eval = FALSE}
+```
 1, 5, 10, 19, 22, 23, 30
 ```
 

@@ -23,11 +23,16 @@ SEXP char_datatable;
 SEXP char_dataframe;
 SEXP char_NULL;
 SEXP char_maxString;
+SEXP char_AsIs;
 SEXP sym_sorted;
 SEXP sym_index;
 SEXP sym_BY;
 SEXP sym_starts, char_starts;
 SEXP sym_maxgrpn;
+SEXP sym_anyna;
+SEXP sym_anyinfnan;
+SEXP sym_anynotascii;
+SEXP sym_anynotutf8;
 SEXP sym_colClassesAs;
 SEXP sym_verbose;
 SEXP SelfRefSymbol;
@@ -37,6 +42,7 @@ SEXP sym_tzone;
 SEXP sym_old_fread_datetime_character;
 SEXP sym_variable_table;
 SEXP sym_as_character;
+SEXP sym_as_posixct;
 double NA_INT64_D;
 long long NA_INT64_LL;
 Rcomplex NA_CPLX;
@@ -51,6 +57,7 @@ R_CallMethodDef callMethods[] = {
 {"Cdogroups", (DL_FUNC) &dogroups, -1},
 {"Ccopy", (DL_FUNC) &copy, -1},
 {"Cshallowwrapper", (DL_FUNC) &shallowwrapper, -1},
+{"Csetdt_nrows", (DL_FUNC) &setdt_nrows, -1},
 {"Calloccolwrapper", (DL_FUNC) &alloccolwrapper, -1},
 {"Cselfrefokwrapper", (DL_FUNC) &selfrefokwrapper, -1},
 {"Ctruelength", (DL_FUNC) &truelength, -1},
@@ -72,6 +79,7 @@ R_CallMethodDef callMethods[] = {
 {"Cfcast", (DL_FUNC) &fcast, -1},
 {"Cuniqlist", (DL_FUNC) &uniqlist, -1},
 {"Cuniqlengths", (DL_FUNC) &uniqlengths, -1},
+{"CforderReuseSorting", (DL_FUNC) &forderReuseSorting, -1},
 {"Cforder", (DL_FUNC) &forder, -1},
 {"Cissorted", (DL_FUNC) &issorted, -1},
 {"Cgforce", (DL_FUNC) &gforce, -1},
@@ -145,6 +153,7 @@ R_CallMethodDef callMethods[] = {
 {"Ccbindlist", (DL_FUNC) &cbindlist, -1},
 {"CperhapsDataTableR", (DL_FUNC) &perhapsDataTableR, -1},
 {"CcopyCols", (DL_FUNC) &copyCols, -1},
+{"Cwarn_matrix_column_r", (DL_FUNC)&warn_matrix_column_r, -1},
 {NULL, NULL, 0}
 };
 
@@ -240,7 +249,7 @@ void attribute_visible R_init_data_table(DllInfo *info)
   setNumericRounding(PROTECT(ScalarInteger(0))); // #1642, #1728, #1463, #485
   UNPROTECT(1);
 
-  // create needed strings in advance for speed, same techique as R_*Symbol
+  // create needed strings in advance for speed, same technique as R_*Symbol
   // Following R-exts 5.9.4; paragraph and example starting "Using install ..."
   // either use PRINTNAME(install()) or R_PreserveObject(mkChar()) here.
   char_integer64 = PRINTNAME(install("integer64"));
@@ -262,6 +271,7 @@ void attribute_visible R_init_data_table(DllInfo *info)
   char_dataframe = PRINTNAME(install("data.frame"));
   char_NULL =      PRINTNAME(install("NULL"));
   char_maxString = PRINTNAME(install("\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"));
+  char_AsIs =      PRINTNAME(install("AsIs"));
 
   if (TYPEOF(char_integer64) != CHARSXP) {
     // checking one is enough in case of any R-devel changes
@@ -279,6 +289,10 @@ void attribute_visible R_init_data_table(DllInfo *info)
   sym_index   = install("index");
   sym_BY      = install(".BY");
   sym_maxgrpn = install("maxgrpn");
+  sym_anyna   = install("anyna");
+  sym_anyinfnan = install("anyinfnan");
+  sym_anynotascii = install("anynotascii");
+  sym_anynotutf8 = install("anynotutf8");
   sym_colClassesAs = install("colClassesAs");
   sym_verbose = install("datatable.verbose");
   SelfRefSymbol = install(".internal.selfref");
@@ -288,6 +302,7 @@ void attribute_visible R_init_data_table(DllInfo *info)
   sym_old_fread_datetime_character = install("datatable.old.fread.datetime.character");
   sym_variable_table = install("variable_table");
   sym_as_character = install("as.character");
+  sym_as_posixct = install("as.POSIXct");
 
   initDTthreads();
   avoid_openmp_hang_within_fork();
@@ -325,22 +340,25 @@ int GetVerbose(void) {
 
 // # nocov start
 SEXP hasOpenMP(void) {
-  // Just for use by onAttach (hence nocov) to avoid an RPRINTF from C level which isn't suppressable by CRAN
-  // There is now a 'grep' in CRAN_Release.cmd to detect any use of RPRINTF in init.c, which is
-  // why RPRINTF is capitalized in this comment to avoid that grep.
-  // .Platform or .Machine in R itself does not contain whether OpenMP is available because compiler and flags are per-package.
-  #ifdef _OPENMP
+
+#if defined(_OPENMP)
+  // gcc build of libomp
   return ScalarInteger(_OPENMP); // return the version; e.g. 201511 (i.e. 4.5)
-  #else
-  return ScalarInteger(0);       // 0 rather than NA so that if() can be used on the result
-  #endif
+#elif defined(KMP_VERSION_BUILD)
+  // LLVM builds of libomp
+  return ScalarInteger(KMP_VERSION_BUILD);
+#else
+  // no OpenMP support detected
+  return ScalarInteger(0);
+#endif
+
 }
 // # nocov end
 
 SEXP beforeR340(void) {
   // used in onAttach.R for message about fread memory leak fix needing R 3.4.0
   // at C level to catch if user upgrades R but does not reinstall data.table
-  #if defined(R_VERSION) && R_VERSION<R_Version(3,4,0)
+  #if R_VERSION < R_Version(3,4,0)
   return ScalarLogical(true);
   #else
   return ScalarLogical(false);
@@ -357,6 +375,6 @@ SEXP initLastUpdated(SEXP var) {
 
 SEXP dllVersion(void) {
   // .onLoad calls this and checks the same as packageVersion() to ensure no R/C version mismatch, #3056
-  return(ScalarString(mkChar("1.15.99")));
+  return(ScalarString(mkChar("1.16.99")));
 }
 
