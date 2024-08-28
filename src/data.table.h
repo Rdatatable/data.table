@@ -19,6 +19,7 @@
 #define STRING_PTR_RO STRING_PTR
 #endif
 #include <stdint.h>    // for uint64_t rather than unsigned long long
+#include <stdarg.h>    // for va_list, va_start
 #include <stdbool.h>
 #include "types.h"
 #include "po.h"
@@ -142,6 +143,7 @@ uint64_t dtwiddle(double x);
 SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg);
 SEXP forderReuseSorting(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg, SEXP reuseSortingArg); // reuseSorting wrapper to forder
 int getNumericRounding_C(void);
+void internal_error_with_cleanup(const char *call_name, const char *format, ...);
 
 // reorder.c
 SEXP reorder(SEXP x, SEXP order);
@@ -256,6 +258,7 @@ SEXP islockedR(SEXP x);
 bool need2utf8(SEXP x);
 SEXP coerceUtf8IfNeeded(SEXP x);
 SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg);
+void internal_error(const char *call_name, const char *format, ...);
 
 // types.c
 char *end(char *start);

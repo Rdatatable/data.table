@@ -57,9 +57,10 @@ static int *anso = NULL;
 static bool notFirst=false;
 
 static char msg[1001];
-#define STOP(...) do {snprintf(msg, 1000, __VA_ARGS__); cleanup(); error("%s", msg);} while(0)      // http://gcc.gnu.org/onlinedocs/cpp/Swallowing-the-Semicolon.html#Swallowing-the-Semicolon
 // use STOP in this file (not error()) to ensure cleanup() is called first
 // snprintf to msg first in case nrow (just as an example) is provided in the message because cleanup() sets nrow to 0
+#define STOP(...) do {snprintf(msg, 1000, __VA_ARGS__); cleanup(); error("%s", msg);} while(0)      // http://gcc.gnu.org/onlinedocs/cpp/Swallowing-the-Semicolon.html#Swallowing-the-Semicolon
+
 #undef warning
 #define warning(...) Do not use warning in this file                // since it can be turned to error via warn=2
 /* Using OS realloc() in this file to benefit from (often) in-place realloc() to save copy
@@ -96,6 +97,18 @@ static void cleanup(void) {
   if (key!=NULL) { int i=0; while (key[i]!=NULL) free(key[i++]); }  // ==nradix, other than rare cases e.g. tests 1844.5-6 (#3940), and if a calloc fails
   free(key); key=NULL; nradix=0;
   savetl_end();  // Restore R's own usage of tl. Must run after the for loop in free_ustr() since only CHARSXP which had tl>0 (R's usage) are stored there.
+}
+
+void internal_error_with_cleanup(const char *call_name, const char *format, ...) {
+  char buff[1024];
+  va_list args;
+  va_start(args, format);
+
+  vsnprintf(buff, 1023, format, args);
+  va_end(args);
+
+  cleanup();
+  error("%s %s: %s. %s", _("Internal error in"), call_name, buff, _("Please report to the data.table issues tracker."));
 }
 
 static void push(const int *x, const int n) {
@@ -283,8 +296,8 @@ static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max
 {
   int na_count=0;
   bool anynotascii=false, anynotutf8=false;
-  if (ustr_n!=0) STOP(_("Internal error: ustr isn't empty when starting range_str: ustr_n=%d, ustr_alloc=%d"), ustr_n, ustr_alloc);  // # nocov
-  if (ustr_maxlen!=0) STOP(_("Internal error: ustr_maxlen isn't 0 when starting range_str"));  // # nocov
+  if (ustr_n!=0) internal_error_with_cleanup(__func__, "ustr isn't empty when starting range_str: ustr_n=%d, ustr_alloc=%d", ustr_n, ustr_alloc);  // # nocov
+  if (ustr_maxlen!=0) internal_error_with_cleanup(__func__, "ustr_maxlen isn't 0 when starting range_str");  // # nocov
   // savetl_init() has already been called at the start of forder
   #pragma omp parallel for num_threads(getDTthreads(n, true))
   for(int i=0; i<n; i++) {
@@ -437,9 +450,9 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
 
   if (!isNewList(DT)) {
     if (!isVectorAtomic(DT))
-      STOP(_("Internal error: input is not either a list of columns, or an atomic vector."));  // # nocov; caught by colnamesInt at R level, test 1962.0472
+      internal_error_with_cleanup(__func__, "input is not either a list of columns, or an atomic vector.");  // # nocov; caught by colnamesInt at R level, test 1962.0472
     if (!isNull(by))
-      STOP(_("Internal error: input is an atomic vector (not a list of columns) but by= is not NULL"));  // # nocov; caught at R level, test 1962.043
+      internal_error_with_cleanup(__func__, "input is an atomic vector (not a list of columns) but by= is not NULL");  // # nocov; caught at R level, test 1962.043
     if (!isInteger(ascArg) || LENGTH(ascArg)!=1)
       STOP(_("Input is an atomic vector (not a list of columns) but order= is not a length 1 integer"));
     if (verbose)
@@ -454,11 +467,11 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
       Rprintf(_("forder.c received %d rows and %d columns\n"), length(VECTOR_ELT(DT,0)), length(DT));
   }
   if (!length(DT))
-    STOP(_("Internal error: DT is an empty list() of 0 columns"));  // # nocov # caught in reuseSorting forder
+    internal_error_with_cleanup(__func__, "DT is an empty list() of 0 columns");  // # nocov # caught in reuseSorting forder
   if (!isInteger(by) || !LENGTH(by))
-    STOP(_("Internal error: DT has %d columns but 'by' is either not integer or is length 0"), length(DT));  // # nocov  colnamesInt catches, 2099.2
+    internal_error_with_cleanup(__func__, "DT has %d columns but 'by' is either not integer or is length 0", length(DT));  // # nocov  colnamesInt catches, 2099.2
   if (!isInteger(ascArg))
-    STOP(_("internal error: 'order' must be integer")); // # nocov
+    internal_error_with_cleanup(__func__, "'order' must be integer"); // # nocov
   if (LENGTH(ascArg) != LENGTH(by)) {
     if (LENGTH(ascArg)!=1)
       STOP(_("'order' length (%d) is different to by='s length (%d)"), LENGTH(ascArg), LENGTH(by));
@@ -473,7 +486,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
   for (int i=0; i<LENGTH(by); i++) {
     int by_i = INTEGER(by)[i];
     if (by_i < 1 || by_i > length(DT))
-      STOP(_("internal error: 'by' value %d out of range [1,%d]"), by_i, length(DT)); // # nocov # R forderv already catch that using C colnamesInt
+      internal_error_with_cleanup(__func__, "'by' value %d out of range [1,%d]", by_i, length(DT)); // # nocov # R forderv already catch that using C colnamesInt
     if ( nrow != length(VECTOR_ELT(DT, by_i-1)) )
       STOP(_("Column %d is length %d which differs from length of column 1 (%d), are you attempting to order by a list column?\n"), INTEGER(by)[i], length(VECTOR_ELT(DT, INTEGER(by)[i]-1)), nrow);
     if (TYPEOF(VECTOR_ELT(DT, by_i-1)) == CPLXSXP) n_cplx++;
@@ -747,7 +760,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
       free_ustr();  // ustr could be left allocated and reused, but free now in case large and we're tight on ram
       break;
     default:
-       STOP(_("Internal error: column not supported, not caught earlier"));  // # nocov
+       internal_error_with_cleanup(__func__, "column not supported, not caught earlier");  // # nocov
     }
     nradix += nbyte-1+(spare==0);
     TEND(4)
@@ -1345,7 +1358,7 @@ SEXP issorted(SEXP x, SEXP by)
   // TODO: test in big steps first to return faster if unsortedness is at the end (a common case of rbind'ing data to end)
   // These are all sequential access to x, so quick and cache efficient. Could be parallel by checking continuity at batch boundaries.
 
-  if (!isNull(by) && !isInteger(by)) STOP(_("Internal error: issorted 'by' must be NULL or integer vector"));
+  if (!isNull(by) && !isInteger(by)) internal_error_with_cleanup(__func__, "issorted 'by' must be NULL or integer vector");
   if (isVectorAtomic(x) || length(by)==1) {
     // one-column special case is very common so specialize it by avoiding column-type switches inside the row-loop later
     if (length(by)==1) {
@@ -1506,7 +1519,7 @@ SEXP binary(SEXP x)
 // all(x==1L)
 static bool all1(SEXP x) {
   if (!isInteger(x))
-    error("internal error: all1 got non-integer"); // # nocov
+    internal_error_with_cleanup(__func__, "all1 got non-integer"); // # nocov
   int *xp = INTEGER(x);
   for (int i=0; i<LENGTH(x); ++i) if (xp[i] != 1) return false;
   return true;
@@ -1515,9 +1528,9 @@ static bool all1(SEXP x) {
 // identical(cols, head(chmatch(key(x), names(x)), length(cols)))
 bool colsKeyHead(SEXP x, SEXP cols) {
   if (!isNewList(x))
-    error("internal error: 'x' must be a list"); // # nocov
+    internal_error_with_cleanup(__func__, "'x' must be a list"); // # nocov
   if (!isInteger(cols))
-    error("internal error: 'cols' must be an integer"); // # nocov
+    internal_error_with_cleanup(__func__, "'cols' must be an integer"); // # nocov
   SEXP key = PROTECT(getAttrib(x, sym_sorted));
   if (isNull(key) || (length(key) < length(cols))) {
     UNPROTECT(1); // key
@@ -1539,10 +1552,10 @@ bool colsKeyHead(SEXP x, SEXP cols) {
 // paste0("__", names(x)[cols], collapse="")
 SEXP idxName(SEXP x, SEXP cols) {
   if (!isInteger(cols))
-    error("internal error: 'cols' must be an integer"); // # nocov
+    internal_error_with_cleanup(__func__, "'cols' must be an integer"); // # nocov
   SEXP dt_names = PROTECT(getAttrib(x, R_NamesSymbol));
   if (!isString(dt_names))
-    error("internal error: 'DT' has no names"); // # nocov
+    internal_error_with_cleanup(__func__, "'DT' has no names"); // # nocov
   SEXP idx_names = PROTECT(subsetVector(dt_names, cols));
   UNPROTECT(2); // down-stack to 'dt_names'
   PROTECT(idx_names);
@@ -1559,7 +1572,7 @@ SEXP idxName(SEXP x, SEXP cols) {
 // attr(attr(x, "index"), idxName(x, cols))
 SEXP getIndex(SEXP x, SEXP cols) {
   if (!isInteger(cols))
-    error("internal error: 'cols' must be an integer"); // # nocov
+    internal_error_with_cleanup(__func__, "'cols' must be an integer"); // # nocov
   SEXP index = getAttrib(x, sym_index);
   if (isNull(index))
     return index;
@@ -1573,9 +1586,9 @@ SEXP getIndex(SEXP x, SEXP cols) {
 // attr(attr(x, "index"), idxName(x, cols)) <- o
 void putIndex(SEXP x, SEXP cols, SEXP o) {
   if (!isInteger(cols))
-    error("internal error: 'cols' must be an integer"); // # nocov
+    internal_error_with_cleanup(__func__, "'cols' must be an integer"); // # nocov
   if (!isInteger(o))
-    error("internal error: 'o' must be an integer"); // # nocov
+    internal_error_with_cleanup(__func__, "'o' must be an integer"); // # nocov
   SEXP index = getAttrib(x, sym_index);
   if (isNull(index)) {
     index = PROTECT(allocVector(INTSXP, 0));
@@ -1586,7 +1599,7 @@ void putIndex(SEXP x, SEXP cols, SEXP o) {
   SEXP sym_idx = install(CHAR(STRING_ELT(name_idx, 0)));
   SEXP idx = getAttrib(index, sym_idx);
   if (!isNull(idx) && !isNull(getAttrib(idx, sym_starts))) // we override retGrp=F index with retGrp=T index
-    error("internal error: trying to put index but it was already there, that should have been escaped before"); // # nocov
+    internal_error_with_cleanup(__func__, "trying to put index but it was already there, that should have been escaped before"); // # nocov
   setAttrib(index, sym_idx, o);
   UNPROTECT(1);
 }
@@ -1660,11 +1673,11 @@ SEXP forderReuseSorting(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP
     }
   } else if (reuseSorting) {
     if (!INHERITS(DT,char_datatable))
-      error("internal error: reuseSorting set to TRUE but DT is not a data.table"); // # nocov
+      internal_error_with_cleanup(__func__, "reuseSorting set to TRUE but DT is not a data.table"); // # nocov
     if (!sortGroups)
-      error("internal error: reuseSorting set to TRUE but sort is FALSE"); // # nocov
+      internal_error_with_cleanup(__func__, "reuseSorting set to TRUE but sort is FALSE"); // # nocov
     if (!all1(ascArg))
-      error("internal error: reuseSorting set to TRUE but order is not all 1"); // # nocov
+      internal_error_with_cleanup(__func__, "reuseSorting set to TRUE but order is not all 1"); // # nocov
     opt = -1;
   } else if (!reuseSorting) {
     opt = 0;
@@ -1684,7 +1697,7 @@ SEXP forderReuseSorting(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP
           (hasStats && !idxAnyNF(idx))) {  // na.last=TRUE && !anyNA
         bool hasGrp = !isNull(getAttrib(idx, sym_starts));
         if (hasGrp && !hasStats)
-          error("internal error: index has 'starts' attribute but not 'anyna', please report to issue tracker"); // # nocov
+          internal_error_with_cleanup(__func__, "index has 'starts' attribute but not 'anyna', please report to issue tracker"); // # nocov
         if (hasGrp==retGrp && hasStats==retStats) {
           opt = 2; // idxOpt
         } else if (
@@ -1717,7 +1730,7 @@ SEXP forderReuseSorting(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP
           if (verbose)
             Rprintf("forderReuseSorting: index found but not for retStats: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
         } else {
-          error("internal error: reuseSorting forder index optimization unhandled branch of retGrp-retStats, please report to issue tracker"); // # nocov
+          internal_error_with_cleanup(__func__, "reuseSorting forder index optimization unhandled branch of retGrp-retStats"); // # nocov
         }
       } else {
         if (!hasStats) {
@@ -1727,7 +1740,7 @@ SEXP forderReuseSorting(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP
           if (verbose)
             Rprintf("forderReuseSorting: index found but na.last=TRUE and NAs present: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
         } else {
-          error("internal error: reuseSorting forder index optimization unhandled branch of last.na=T, please report to issue tracker"); // # nocov
+          internal_error_with_cleanup(__func__, "reuseSorting forder index optimization unhandled branch of last.na=T"); // # nocov
         }
       }
       if (opt == 2) {
