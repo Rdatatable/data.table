@@ -40,16 +40,16 @@ hasindex = function(x, by, retGrp=FALSE) {
 # it may not copy when copy=FALSE and x is unique by 'on'
 fdistinct = function(x, on=key(x), mult=c("first","last"), cols=seq_along(x), copy=TRUE) {
   if (!perhaps.data.table(x))
-    stop("'x' must be data.table type object")
+    stopf("'x' must be data.table")
   if (!is.character(on) || !length(on) || anyNA(on) || any(!on%chin%names(x)))
-    stop("'on' must be character column names of 'x' argument")
+    stopf("'on' must be character column names of 'x' argument")
   mult = match.arg(mult)
   if (is.null(cols))
     cols = seq_along(x)
   else if (!(is.character(cols) || is.integer(cols)) || !length(cols) || anyNA(cols))
-    stop("'cols' must be non-zero length, non-NA, integer or character columns of 'x' argument")
+    stopf("'cols' must be non-zero length, non-NA, integer or character columns of 'x' argument")
   if (!isTRUEorFALSE(copy))
-    stop("'copy' must be TRUE or FALSE")
+    stopf("'%s' must be TRUE or FALSE", "copy")
   ## do not compute sort=F for mult="first" if index (sort=T) already available, sort=T is needed only for mult="last"
   ## this short circuit will work after #4386 because it requires retGrp=T
   #### sort = mult!="first" || hasindex(x, by=on, retGrp=TRUE)
@@ -62,7 +62,7 @@ fdistinct = function(x, on=key(x), mult=c("first","last"), cols=seq_along(x), co
   }
   f = attr(o, "starts", exact=TRUE)
   if (mult=="last") {
-    if (!sort) stop("internal error: sort must be TRUE when computing mult='last'") # nocov
+    if (!sort) internal_error("sort must be TRUE when computing mult='last'") # nocov
     f = c(f[-1L]-1L, nrow(x)) ## last of each group
   }
   if (length(o)) f = o[f]
@@ -78,18 +78,18 @@ dtmerge = function(x, i, on, how, mult, join.many, void=FALSE, verbose) {
   if (is.null(mult))
     mult = switch(how, "semi"=, "anti"= "last", "cross"= "all", "inner"=, "left"=, "right"=, "full"= "error")
   if (void && mult!="error")
-    stop("internal error: void must be used with mult='error'") # nocov
+    internal_error("void must be used with mult='error'") # nocov
   if (how=="cross") { ## short-circuit bmerge results only for cross join
     if (length(on) || mult!="all" || !join.many)
-      stop("cross join must be used with zero-length on, mult='all', join.many=TRUE")
+      stopf("cross join must be used with zero-length on, mult='all', join.many=TRUE")
     if (void)
-      stop("internal error: cross join must be used with void=FALSE") # nocov
+      internal_error("cross join must be used with void=FALSE") # nocov
     ans = list(allLen1=FALSE, starts=rep.int(1L, nrow(i)), lens=rep.int(nrow(x), nrow(i)), xo=integer())
   } else {
     if (!length(on))
-      stop("'on' must be non-zero length character vector")
+      stopf("'on' must be non-zero length character vector")
     if (mult=="all" && (how=="semi" || how=="anti"))
-      stop("semi and anti joins must be used with mult!='all'")
+      stopf("semi and anti joins must be used with mult!='all'")
     icols = colnamesInt(i, on, check_dups=TRUE)
     xcols = colnamesInt(x, on, check_dups=TRUE)
     ans = bmerge(i, x, icols, xcols, roll=0, rollends=c(FALSE, TRUE), nomatch=nomatch, mult=mult, ops=rep.int(1L, length(on)), verbose=verbose)
@@ -103,7 +103,7 @@ dtmerge = function(x, i, on, how, mult, join.many, void=FALSE, verbose) {
       !(length(ans$starts)==1L && ans$lens==nrow(x)) && ## special case of scalar i match to const duplicated x, not handled by anyDuplicate: data.table(x=c(1L,1L))[data.table(x=1L), on="x"]
       anyDuplicated(ans$starts, incomparables=c(0L,NA_integer_))
     )
-      stop("Joining resulted in many-to-many join. Perform quality check on your data, use mult!='all', or set 'datatable.join.many' option to TRUE to allow rows explosion.")
+      stopf("Joining resulted in many-to-many join. Perform quality check on your data, use mult!='all', or set 'datatable.join.many' option to TRUE to allow rows explosion.")
   }
 
   ## xrows, join-to
@@ -120,7 +120,7 @@ dtmerge = function(x, i, on, how, mult, join.many, void=FALSE, verbose) {
   len.x = length(xrows)
 
   if (len.i!=len.x)
-    stop("internal error: dtmerge out len.i != len.x") # nocov
+    internal_error("dtmerge out len.i != len.x") # nocov
 
   return(list(ans=ans, irows=irows, xrows=xrows))
 }
@@ -136,12 +136,12 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
         else if (how=="right") on = key(lhs)
         else if (innerfull) on = onkeys(key(lhs), key(rhs))
         if (is.null(on))
-          stop("'on' is missing and necessary key is not present")
+          stopf("'on' is missing and necessary key is not present")
       }
       if (any(bad.on <- !on %chin% names(lhs)))
-        stop(sprintf("'on' argument specify columns to join [%s] that are not present in LHS table [%s]", paste(on[bad.on], collapse=", "), paste(names(lhs), collapse=", ")))
+        stopf("'on' argument specify columns to join [%s] that are not present in LHS table [%s]", brackify(on[bad.on]), brackify(names(lhs)))
       if (any(bad.on <- !on %chin% names(rhs)))
-        stop(sprintf("'on' argument specify columns to join [%s] that are not present in RHS table [%s]", paste(on[bad.on], collapse=", "), paste(names(rhs), collapse=", ")))
+        stopf("'on' argument specify columns to join [%s] that are not present in RHS table [%s]", brackify(on[bad.on]), brackify(names(rhs)))
     } else if (is.null(on)) {
       on = character() ## cross join only
     }
@@ -178,13 +178,13 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
     out.x = list(); cp.x = TRUE
   } else {
     out.x = if (is.null(ans$xrows)) ## as of now xrows cannot be NULL #4409 thus nocov below
-      stop("internal error: dtmerge()$xrows returned NULL, #4409 been resolved but related code has not been updated? please report to issue tracker") #.shallow(jnto, cols=someCols(jnto, to.cols, drop=on), retain.key=TRUE) # nocov ## as of now nocov does not make difference r-lib/covr#279
+      internal_error("dtmerge()$xrows returned NULL, #4409 been resolved but related code has not been updated?") #.shallow(jnto, cols=someCols(jnto, to.cols, drop=on), retain.key=TRUE) # nocov ## as of now nocov does not make difference r-lib/covr#279
     else
       .Call(CsubsetDT, jnto, ans$xrows, someCols(jnto, to.cols, drop=on))
     cp.x = !is.null(ans$xrows)
     ## ensure no duplicated column names in merge results
     if (any(dup.i<-names(out.i) %chin% names(out.x)))
-      stop("merge result has duplicated column names, use 'cols' argument or rename columns in 'l' tables, duplicated column(s): ", paste(names(out.i)[dup.i], collapse=", "))
+      stopf("merge result has duplicated column names, use 'cols' argument or rename columns in 'l' tables, duplicated column(s): %s", brackify(names(out.i)[dup.i]))
   }
 
   ## stack i and x
@@ -241,16 +241,16 @@ mergelist = function(l, on, cols, how=c("left","inner","full","right","semi","an
     p = proc.time()[[3L]]
   {
     if (!is.list(l) || is.data.frame(l))
-      stop("'l' must be a list")
+      stopf("'l' must be a list")
     if (any(!vapply(l, is.data.table, FALSE)))
-      stop("Every element of 'l' list must be data.table objects")
+      stopf("Every element of 'l' list must be data.table objects")
     if (any(!vapply(l, length, 0L)))
-      stop("Tables in 'l' argument must be non-zero columns tables")
+      stopf("Tables in 'l' argument must be non-zero columns tables")
     if (any(vapply(l, function(x) anyDuplicated(names(x)), 0L)))
-      stop("Some of the tables in 'l' have duplicated column names")
+      stopf("Some of the tables in 'l' have duplicated column names")
   } ## l
   if (!isTRUEorFALSE(copy))
-    stop("'copy' must be TRUE or FALSE")
+    stopf("'%s' must be TRUE or FALSE", "copy")
   n = length(l)
   if (n<2L) {
     out = if (!n) as.data.table(l) else l[[1L]]
@@ -263,7 +263,7 @@ mergelist = function(l, on, cols, how=c("left","inner","full","right","semi","an
     if (!is.list(join.many))
       join.many = rep(list(join.many), n-1L)
     if (length(join.many)!=n-1L || any(!vapply(join.many, isTRUEorFALSE, NA)))
-      stop("'join.many' must be TRUE or FALSE, or a list of such which length must be length(l)-1L")
+      stopf("'join.many' must be TRUE or FALSE, or a list of such which length must be length(l)-1L")
   } ## join.many
   {
     if (missing(mult))
@@ -271,7 +271,7 @@ mergelist = function(l, on, cols, how=c("left","inner","full","right","semi","an
     if (!is.list(mult))
       mult = rep(list(mult), n-1L)
     if (length(mult)!=n-1L || any(!vapply(mult, function(x) is.null(x) || (is.character(x) && length(x)==1L && !anyNA(x) && x%chin%c("error","all","first","last")), NA)))
-      stop("'mult' must be one of [error, all, first, last] or NULL, or a list of such which length must be length(l)-1L")
+      stopf("'mult' must be one of [error, all, first, last] or NULL, or a list of such which length must be length(l)-1L")
   } ## mult
   {
     if (missing(how) || is.null(how))
@@ -279,21 +279,21 @@ mergelist = function(l, on, cols, how=c("left","inner","full","right","semi","an
     if (!is.list(how))
       how = rep(list(how), n-1L)
     if (length(how)!=n-1L || any(!vapply(how, function(x) is.character(x) && length(x)==1L && !anyNA(x) && x%chin%c("left","inner","full","right","semi","anti","cross"), NA)))
-      stop("'how' must be one of [left, inner, full, right, semi, anti, cross], or a list of such which length must be length(l)-1L")
+      stopf("'how' must be one of [left, inner, full, right, semi, anti, cross], or a list of such which length must be length(l)-1L")
   } ## how
   {
     if (missing(cols) || is.null(cols)) {
       cols = vector("list", n)
     } else {
       if (!is.list(cols))
-        stop("'cols' must be a list")
+        stopf("'%s' must be a list", "cols")
       if (length(cols) != n)
-        stop("'cols' must be same length as 'l'")
+        stopf("'cols' must be same length as 'l'")
       skip = vapply(cols, is.null, FALSE)
       if (any(!vapply(cols[!skip], function(x) is.character(x) && !anyNA(x) && !anyDuplicated(x), NA)))
-        stop("'cols' must be a list of non-zero length, non-NA, non-duplicated, character vectors, or eventually NULLs (all columns)")
+        stopf("'cols' must be a list of non-zero length, non-NA, non-duplicated, character vectors, or eventually NULLs (all columns)")
       if (any(mapply(function(x, icols) any(!icols %chin% names(x)), l[!skip], cols[!skip])))
-        stop("'cols' specify columns not present in corresponding table")
+        stopf("'cols' specify columns not present in corresponding table")
     }
   } ## cols
   {
@@ -303,7 +303,7 @@ mergelist = function(l, on, cols, how=c("left","inner","full","right","semi","an
       if (!is.list(on))
         on = rep(list(on), n-1L)
       if (length(on)!=n-1L || any(!vapply(on, function(x) is.character(x) && !anyNA(x) && !anyDuplicated(x), NA))) ## length checked in dtmerge
-        stop("'on' must be non-NA, non-duplicated, character vector, or a list of such which length must be length(l)-1L")
+        stopf("'on' must be non-NA, non-duplicated, character vector, or a list of such which length must be length(l)-1L")
     }
   } ## on
 

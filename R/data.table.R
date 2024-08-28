@@ -199,7 +199,7 @@ replace_dot_alias = function(e) {
     }
     return(x)
   }
-  if (!mult %chin% c("first","last","all","error")) stop("mult argument can only be 'first', 'last', 'all' or 'error'")
+  if (!mult %chin% c("first", "last", "all", "error")) stopf("mult argument can only be 'first', 'last', 'all' or 'error'")
   missingroll = missing(roll)
   if (length(roll)!=1L || is.na(roll)) stopf("roll must be a single TRUE, FALSE, positive/negative integer/double including +Inf and -Inf or 'nearest'")
   if (is.character(roll)) {
@@ -527,9 +527,9 @@ replace_dot_alias = function(e) {
               !join.many))
               as.logical(anyDuplicated(f__, incomparables = c(0L, NA_integer_)))
             limit = if (!is.null(anyDups) && anyDups) { # #742. If 'i' has no duplicates, ignore
-              if (!join.many) stop("Joining resulted in many-to-many join. Perform quality check on your data, use mult!='all', or set 'datatable.join.many' option to TRUE to allow rows explosion.")
+              if (!join.many) stopf("Joining resulted in many-to-many join. Perform quality check on your data, use mult!='all', or set 'datatable.join.many' option to TRUE to allow rows explosion.")
               else if (!allow.cartesian && !notjoin) as.double(nrow(x)+nrow(i))
-              else stop("internal error: checking allow.cartesian and join.many, unexpected else branch reached, please report to issue tracker") # nocov
+              else internal_error("checking allow.cartesian and join.many, unexpected else branch reached") # nocov
             }
             vecseq(f__, len__, limit)
           } # rows in i might not match to x so old max(nrow(x),nrow(i)) wasn't enough. But this limit now only applies when there are duplicates present so the reason now for nrow(x)+nrow(i) is just to nail it down and be bigger than max(nrow(x),nrow(i)).

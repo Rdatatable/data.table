@@ -489,11 +489,6 @@ bool isDataTable(SEXP x) {
   return INHERITS(x, char_datatable);
 }
 
-// inherits(x, "data.frame")
-bool isDataFrame(SEXP x) {
-  return INHERITS(x, char_dataframe);
-}
-
 // if (length(x)>1L) length(unique(vapply(x, length, 0L)))==1L else TRUE
 static inline bool equalLens(SEXP x) {
   int n = LENGTH(x);

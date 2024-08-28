@@ -262,7 +262,6 @@ SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg);
 int NROW(SEXP x);
 int NCOL(SEXP x);
 bool isDataTable(SEXP x);
-bool isDataFrame(SEXP x);
 bool isDataList(SEXP x);
 bool perhapsDataTable(SEXP x);
 SEXP perhapsDataTableR(SEXP x);
