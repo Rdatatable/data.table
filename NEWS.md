@@ -10,6 +10,8 @@
 
 1. Tests run again when some Suggests packages are missing, [#6411](https://github.com/Rdatatable/data.table/issues/6411). Thanks @aadler for the note and @MichaelChirico for the fix.
 
+2. All direct use of `NAMED` and some direct use of `LEVELS` has been removed from the package, reducing the use of non-API functions, see [#6420](https://github.com/Rdatatable/data.table/pull/6420) by Ivan Krylov. The work is on the overall issue [#6180](https://github.com/Rdatatable/data.table/issues/6180) reported by Michael Chirico.
+
 # data.table [v1.16.0](https://github.com/Rdatatable/data.table/milestone/30)  (25 August 2024)
 
 ## BREAKING CHANGES
