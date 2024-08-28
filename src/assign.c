@@ -123,7 +123,7 @@ static int _selfrefok(SEXP x, Rboolean checkNames, Rboolean verbose) {
   }
   if (!isNull(p)) INTERNAL_ERROR(".internal.selfref ptr is neither NULL nor R_NilValue"); // # nocov
   tag = R_ExternalPtrTag(v);
-  if (!(isNull(tag) || isString(tag))) INTERNAL_ERROR(_(".internal.selfref tag is neither NULL nor a character vector")); // # nocov
+  if (!(isNull(tag) || isString(tag))) INTERNAL_ERROR(".internal.selfref tag is neither NULL nor a character vector"); // # nocov
   names = getAttrib(x, R_NamesSymbol);
   if (names!=tag && isString(names) && !ALTREP(names))  // !ALTREP for #4734
     SET_TRUELENGTH(names, LENGTH(names));
