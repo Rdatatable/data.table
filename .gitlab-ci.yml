@@ -369,7 +369,7 @@ integration:
     - mkdir -p bus/integration/cran/bin/macosx/big-sur-arm64/contrib/$R_DEV_VERSION/
     - mkdir -p bus/integration/cran/bin/macosx/big-sur-arm64/contrib/$R_OLD_VERSION/
     #### macos move binaries
-    - '[ -f bus/test-mac-rel/data.table_*.tgz ] && cp bus/test-mac-rel/data.table_*.tgu bus/integration/cran/bin/macosx/big-sur-arm64/contrib/$R_REL_VERSION/'
+    - '[ -f bus/test-mac-rel/data.table_*.tgz ] && cp bus/test-mac-rel/data.table_*.tgz bus/integration/cran/bin/macosx/big-sur-arm64/contrib/$R_REL_VERSION/'
     - ls -1 "bus/integration/cran/bin/macosx/big-sur-arm64/contrib/$R_REL_VERSION"/data.table_*.tgz || true
     - '[ -f bus/test-mac-dev/data.table_*.tgz ] && cp bus/test-mac-dev/data.table_*.tgz bus/integration/cran/bin/macosx/big-sur-arm64/contrib/$R_DEV_VERSION/'
     - ls -1 "bus/integration/cran/bin/macosx/big-sur-arm64/contrib/$R_DEV_VERSION"/data.table_*.tgz || true
