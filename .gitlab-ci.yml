@@ -24,6 +24,9 @@ variables:
   R_OLD_WIN_BIN:  "https://cloud.r-project.org/bin/windows/base/old/4.2.3/R-4.2.3-win.exe"
   RTOOLS_OLD_BIN: "https://cloud.r-project.org/bin/windows/Rtools/rtools42/files/rtools42-5355-5357.exe"
   RTOOLS42_HOME:  "/c/rtools"
+  R_REL_MAC_BIN: "https://cloud.r-project.org/bin/macosx/big-sur-arm64/base/R-4.3.3-arm64.pkg"
+  R_DEV_MAC_BIN: "https://cloud.r-project.org/bin/macosx/big-sur-arm64/base/R-4.4.0-arm64.pkg"
+  R_OLD_MAC_BIN: "https://cloud.r-project.org/bin/macosx/big-sur-arm64/base/R-4.2.3-arm64.pkg"
 
 stages:
   - dependencies
@@ -272,7 +275,8 @@ test-win-old:
   tags:
     - saas-macos-medium-m1
   before_script:
-    - if ! command -v R &> /dev/null || ! command -v Rscript &> /dev/null; then brew install r; fi
+    - curl -O $R_BIN
+    - sudo installer -pkg "$(ls -1t R-*-arm64.pkg | head -n 1)" -target /
     - *install-deps
     - cp $(ls -1t bus/build/data.table_*.tar.gz | head -n 1) .
   script:
@@ -291,18 +295,21 @@ test-mac-rel:
   <<: *test-mac
   variables:
     R_VERSION: "$R_REL_VERSION"
+    R_BIN: "$R_REL_MAC_BIN"
 
 ## R-devel on MacOS
 test-mac-dev:
   <<: *test-mac
   variables:
     R_VERSION: "$R_DEV_VERSION"
+    R_BIN: "$R_DEV_MAC_BIN"
 
 ## R-oldrel on MacOS
 test-mac-old:
   <<: *test-mac
   variables:
     R_VERSION: "$R_OLD_VERSION"
+    R_BIN: "$R_OLD_MAC_BIN"
 
 ## integrate artifacts
 # merging package tarballs and binaries into single R repository
