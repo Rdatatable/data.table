@@ -19053,7 +19053,7 @@ test(2279.3, {dt1 = copy(dt); dt1$dates=dates; dt1}, ans, warning="POSIXlt.*conv
 test(2279.4, copy(dt)[, dates := strptime(dates_char, "%Y-%m-%d", tz="UTC")], ans, warning="POSIXlt.*converted to POSIXct")
 
 # coverage for internal_error wrapper
-test(2189.1, internal_error("broken"), error="Internal error.*broken")
-test(2189.2, internal_error("broken %d%s", 1, "2"), error="Internal error.*broken 12")
+test(2280.1, internal_error("broken"), error="Internal error.*broken")
+test(2280.2, internal_error("broken %d%s", 1, "2"), error="Internal error.*broken 12")
 foo = function(...) internal_error("broken")
-test(2189.3, foo(), error="Internal error in foo: broken")
+test(2280.3, foo(), error="Internal error in foo: broken")
