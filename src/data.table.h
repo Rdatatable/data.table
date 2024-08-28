@@ -60,14 +60,6 @@
 // for use with CPLXSXP, no macro provided by R internals
 #define ISNAN_COMPLEX(x) (ISNAN((x).r) || ISNAN((x).i)) // TRUE if either real or imaginary component is NA or NaN
 
-// Backport macros added to R in 2017 so we don't need to update dependency from R 3.0.0
-#ifndef MAYBE_SHARED
-#  define MAYBE_SHARED(x) (NAMED(x) > 1)
-#endif
-#ifndef MAYBE_REFERENCED
-#  define MAYBE_REFERENCED(x) ( NAMED(x) > 0 )
-#endif
-
 // If we find a non-ASCII, non-NA, non-UTF8 encoding, we try to convert it to UTF8. That is, marked non-ascii/non-UTF8 encodings will
 // always be checked in UTF8 locale. This seems to be the best fix Arun could think of to put the encoding issues to rest.
 // Since the if-statement will fail with the first condition check in "normal" ASCII cases, there shouldn't be huge penalty issues in
