@@ -21,6 +21,18 @@ nan_is_na = function(x) {
   stopf("Argument 'nan' must be NA or NaN")
 }
 
+# TODO(R>=4.0.0): Remove this workaround. From R 4.0.0, rep_len() dispatches rep.Date(), which we need.
+#   Before that, rep_len() strips attributes --> breaks data.table()'s internal recycle() helper.
+#   This also impacts test 2 in S4.Rraw, because the error message differs for rep.int() vs. rep_len().
+if (inherits(rep_len(Sys.Date(), 1L), "Date")) {
+  # NB: safe_rep_len=rep_len throws an R CMD check error because it _appears_ to the AST
+  #   walker that we've used .Internal ourselves (which is not true, but codetools can't tell:
+  #   safe_rep_len = rep_len; body(safe_rep_len)[[1]] # .Internal)
+  safe_rep_len = function(x, n) rep_len(x, n)
+} else {
+  safe_rep_len = function(x, n) rep(x, length.out = n) # nolint: rep_len_linter.
+}
+
 # endsWith no longer used from #5097 so no need to backport; prevent usage to avoid dev delay until GLCI's R 3.1.0 test
 endsWith = function(...) stop("Internal error: use endsWithAny instead of base::endsWith", call.=FALSE)
 
