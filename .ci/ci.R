@@ -111,7 +111,7 @@ mirror.packages <-
 function(pkgs,
          which = c("Depends", "Imports", "LinkingTo"),
          repos = getOption("repos"),
-         type = c("source", "mac.binary", "win.binary"),
+         type = c("source", "mac.binary.big-sur-arm64", "win.binary"),
          repodir,
          except.repodir = repodir,
          except.priority = "base",
@@ -169,7 +169,8 @@ function(pkgs,
     newpkgs <- newpkgs[availpkgs]
   }
 
-  pkgsext <- switch(type,
+  exttype <- if (substr(type, 1L, 11L) == "mac.binary.") "mac.binary" else type
+  pkgsext <- switch(exttype,
                     "source" = "tar.gz",
                     "mac.binary" = "tgz",
                     "win.binary" = "zip")
