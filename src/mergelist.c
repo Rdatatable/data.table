@@ -65,17 +65,23 @@ SEXP cbindlist(SEXP x, SEXP copyArg) {
   }
   if (recycle)
     error("Rows recycling for objects of different nrow is not yet implemented"); // dont we have a routines for that already somewhere?
-  SEXP ans = PROTECT(allocVector(VECSXP, nans));
-  SEXP index = PROTECT(allocVector(INTSXP, 0));
+  int protecti=0;
+  SEXP ans = PROTECT(allocVector(VECSXP, nans)); protecti++;
+  SEXP index = PROTECT(allocVector(INTSXP, 0)); protecti++;
   SEXP key = R_NilValue;
   setAttrib(ans, sym_index, index);
-  SEXP names = PROTECT(allocVector(STRSXP, nans));
+  SEXP names = PROTECT(allocVector(STRSXP, nans)); protecti++;
   for (int i=0, ians=0; i<nx; ++i) {
     SEXP thisx = VECTOR_ELT(x, i);
     SEXP thisnames = getAttrib(thisx, R_NamesSymbol);
     for (int j=0; j<nnx[i]; ++j, ++ians) {
-      SEXP thisxcol = VECTOR_ELT(thisx, j);
-      SET_VECTOR_ELT(ans, ians, copy ? duplicate(thisxcol) : thisxcol);
+      SEXP thisxcol;
+      if (copy) {
+        thisxcol = PROTECT(duplicate(VECTOR_ELT(thisx, j))); protecti++;
+      } else {
+        thisxcol = VECTOR_ELT(thisx, j);
+      }
+      SET_VECTOR_ELT(ans, ians, thisxcol);
       SET_STRING_ELT(names, ians, STRING_ELT(thisnames, j));
     }
     mergeIndexAttrib(index, getAttrib(thisx, sym_index));
@@ -86,6 +92,6 @@ SEXP cbindlist(SEXP x, SEXP copyArg) {
   setAttrib(ans, sym_sorted, key);
   if (verbose)
     Rprintf("cbindlist: took %.3fs\n", omp_get_wtime()-tic);
-  UNPROTECT(3);
+  UNPROTECT(protecti);
   return ans;
 }
