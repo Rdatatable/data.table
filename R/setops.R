@@ -263,7 +263,7 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
       x = target[[i]]
       y = current[[i]]
       if (XOR(is.factor(x), is.factor(y)))
-        internal_error("Internal error: factor type mismatch should have been caught earlier") # nocov
+        internal_error("factor type mismatch should have been caught earlier") # nocov
       cols.r = TRUE
       if (is.factor(x)) {
         if (!identical(levels(x),levels(y))) {

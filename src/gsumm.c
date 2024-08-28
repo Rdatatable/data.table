@@ -997,19 +997,19 @@ SEXP gfirst(SEXP x) {
 }
 
 SEXP gtail(SEXP x, SEXP nArg) {
-  if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) INTERNAL_ERROR("gtail is only implemented for n>0. This should have been caught before.")); // # nocov
+  if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) INTERNAL_ERROR("gtail is only implemented for n>0. This should have been caught before"); // # nocov
   const int n=INTEGER(nArg)[0];
   return n==1 ? glast(x) : gfirstlast(x, false, n, true);
 }
 
 SEXP ghead(SEXP x, SEXP nArg) {
-  if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) INTERNAL_ERROR("gtail is only implemented for n>0. This should have been caught before.")); // # nocov
+  if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) INTERNAL_ERROR("gtail is only implemented for n>0. This should have been caught before"); // # nocov
   const int n=INTEGER(nArg)[0];
   return n==1 ? gfirst(x) : gfirstlast(x, true, n, true);
 }
 
 SEXP gnthvalue(SEXP x, SEXP nArg) {
-  if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) INTERNAL_ERROR("`g[` (gnthvalue) is only implemented single value subsets with positive index, e.g., .SD[2]. This should have been caught before.")); // # nocov
+  if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) INTERNAL_ERROR("`g[` (gnthvalue) is only implemented single value subsets with positive index, e.g., .SD[2]. This should have been caught before"); // # nocov
   return gfirstlast(x, true, INTEGER(nArg)[0], false);
 }
 

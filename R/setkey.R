@@ -61,7 +61,7 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
     .xi = x[[i]]  # [[ is copy on write, otherwise checking type would be copying each column
     if (!typeof(.xi) %chin% ORDERING_TYPES) stopf("Column '%s' is type '%s' which is not supported as a key column type, currently.", i, typeof(.xi))
   }
-  if (!is.character(cols) || length(cols)<1L) internal_error("'cols' should be character at this point in setkey") # nocov
+  if (!is.character(cols) || length(cols)<1L) internal_error("'cols' should be character at this point") # nocov
 
   if (verbose) {
     # we now also retGrp=TRUE #4387 for !physical
@@ -269,7 +269,7 @@ setorderv = function(x, cols = colnames(x), order=1L, na.last=FALSE)
     .xi = x[[i]]  # [[ is copy on write, otherwise checking type would be copying each column
     if (!typeof(.xi) %chin% ORDERING_TYPES) stopf("Column '%s' is type '%s' which is not supported for ordering currently.", i, typeof(.xi))
   }
-  if (!is.character(cols) || length(cols)<1L) internal_error("'cols' should be character at this point in setkey") # nocov
+  if (!is.character(cols) || length(cols)<1L) internal_error("'cols' should be character at this point") # nocov
 
   o = forderv(x, cols, sort=TRUE, retGrp=FALSE, order=order, na.last=na.last)
   if (length(o)) {
