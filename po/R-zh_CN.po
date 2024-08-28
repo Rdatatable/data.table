@@ -3141,67 +3141,6 @@ msgstr[0] "索引(index): %s\n"
 
 #, c-format
 #~ msgid ""
-#~ "Internal error -- difftime objects may not be added to IDate, but Ops "
-#~ "dispatch should have intervened to prevent this"
-#~ msgstr ""
-#~ "内部错误 -- 'difftime'对象可能不能被添加到IDate类型但是正确操作应该防止此"
-#~ "行为发生"
-
-#, c-format
-#~ msgid "Internal error: storage mode of IDate is somehow no longer integer"
-#~ msgstr "内部错误： IDate的存储模式不为整型"
-
-#, c-format
-#~ msgid ""
-#~ "Internal error -- difftime objects may not be subtracted from IDate, but "
-#~ "Ops dispatch should have intervened to prevent this"
-#~ msgstr ""
-#~ "内部错误 -- 不能与IDate类型中减去'difftime'对象但是正确操作应该防止此行为"
-#~ "发生"
-
-#, c-format
-#~ msgid ""
-#~ "Internal error:  DT[, ..var] should be dealt with by the branch above now."
-#~ msgstr "内部错误: DT[, ..var]应该被分支处理中。"
-
-#, c-format
-#~ msgid "Internal error. Cannot by=.EACHI when joining to an index, yet"
-#~ msgstr "内部错误：目前尚无法对索引(index)使用by=.EACH命令"
-
-#, c-format
-#~ msgid "Internal error. irows has length in by=.EACHI"
-#~ msgstr "内部错误：by=.EACHI 中 irows 有长度"
-
-#, c-format
-#~ msgid ""
-#~ "internal error: notjoin and which=NA (non-matches), huh? please provide "
-#~ "reproducible example to issue tracker"
-#~ msgstr ""
-#~ "内部错误：notjoin 并且 which=NA (非匹配)？请提供可重现的例子给问题追踪器"
-#~ "（issue tracker）"
-
-#, c-format
-#~ msgid "Internal error: notjoin but byjoin or !integer or nomatch==NA"
-#~ msgstr "内部错误。原因可能为：notjoin 而非 byjoin；非整数；nomatch 为空"
-
-#, c-format
-#~ msgid "Internal error: irows isn't integer"
-#~ msgstr "内部错误：irows 不是整型"
-
-#, c-format
-#~ msgid "Internal error: drop_dot passed %d items"
-#~ msgstr "内部错误：drop_dot 传入的参数有 %d"
-
-#, c-format
-#~ msgid "Internal error -- item '%s' not found in names of list"
-#~ msgstr "内部错误 -- 未能在列表名称中找到名为 '%s' 的项"
-
-#, c-format
-#~ msgid "Internal error -- column(s) not found: %s"
-#~ msgstr "内部错误 -- 找不到此列: %s"
-
-#, c-format
-#~ msgid ""
 #~ "strptime() usage detected and wrapped with as.POSIXct(). This is to "
 #~ "minimize the chance of assigning POSIXlt columns, which use 40+ bytes to "
 #~ "store one date (versus 8 for POSIXct). Use as.POSIXct() (which will call "
@@ -3210,48 +3149,6 @@ msgstr[0] "索引(index): %s\n"
 #~ "侦测到使用 strptime() ，已用 as.POSIXct() 包裹这么做是为了尽量避免列被指定"
 #~ "为 POSIXlt用40个以上的位元组储存日期(相较于 POSIXct 只用8位元组)请使用 as."
 #~ "POSIXct() 以避免本警告 (此函数会根据需求在内部调用 strptime())"
-
-#, c-format
-#~ msgid "Internal error: xcolAns does not pass checks: %d/%d/%d/%s"
-#~ msgstr "内部错误 : xcolAns 无法通过检查: %d/%d/%d/%s"
-
-#, c-format
-#~ msgid ""
-#~ "Internal error: irows is NULL when making join result at R level. Should "
-#~ "no longer happen now we use CsubsetDT earlier."
-#~ msgstr ""
-#~ "内部错误 : 在 R 生成连接结果时，irows为 NULL 我们已使用了 CsubsetDT，现在"
-#~ "不应该再发生了"
-
-#, c-format
-#~ msgid ""
-#~ "Internal error: j has created a data.table result containing a NULL column"
-#~ msgstr "内部错误 : j 创建了一个有列为 NULL 的 data.table"
-
-#, c-format
-#~ msgid "Internal error: byindex not the index name"
-#~ msgstr "内部错误 : byindex 不是索引(index)名称"
-
-#, c-format
-#~ msgid "Internal error: byindex not found"
-#~ msgstr "内部错误 : 找不到 byindex"
-
-#, c-format
-#~ msgid "Internal error: length(irows)!=length(o__)"
-#~ msgstr "内部错误：length(irows)!=length(o__)"
-
-#, c-format
-#~ msgid "Internal error: jvnames is length %d but ans is %d and bynames is %d"
-#~ msgstr "内部错误：jvnames 长度为 %d，但是 ans 长度为 %d 且 bynames 为 %d"
-
-#, c-format
-#~ msgid ""
-#~ "Internal error: as.matrix.data.table length(X)==%d but a dimension is zero"
-#~ msgstr "内部错误: as.matrix.data.table length(X)==%d 但有一个维度为零"
-
-#, c-format
-#~ msgid "Internal error: length(i)!=length(new)"
-#~ msgstr "内部错误:length(i)!=length(new)"
 
 #, c-format
 #~ msgid ""
@@ -3267,12 +3164,6 @@ msgstr[0] "索引(index): %s\n"
 
 #, c-format
 #~ msgid ""
-#~ "Internal error in .isFastSubsettable. Please report to data.table "
-#~ "developers"
-#~ msgstr ".isFastSubsettable 产生了内部错误。请向 data.table 开发者报告"
-
-#, c-format
-#~ msgid ""
 #~ "Aggregating function(s) should take vector inputs and return a single "
 #~ "value (length=1). However, function(s) returns length!=1. This value will "
 #~ "have to be used to fill any missing combinations, and therefore must be "
@@ -3282,45 +3173,3 @@ msgstr[0] "索引(index): %s\n"
 #~ "聚合函数应接收向量输入并返回单个值（长度为1）。然而，当前函数返回的长度不"
 #~ "为1。因为该单个值将用于填充任何缺失的组合，故必须为长度为1。你可以通过显式"
 #~ "设置'fill' 参数来覆盖该值，或修改你的函数以处理该情况。"
-
-#, c-format
-#~ msgid "Internal error -- empty rhsnames in dcast; please report"
-#~ msgstr "内部错误：dcast 中 rhsnames 为空；请报告"
-
-#, c-format
-#~ msgid ""
-#~ "URL requires download.file functionalities from R >=3.2.2. You can still "
-#~ "manually download the file and fread the downloaded file."
-#~ msgstr ""
-#~ "URL 需要 R >=3.2.2 的 download.file 功能。不过你仍可手动下载该文件并使用"
-#~ "fread 来读取它。"
-
-#, c-format
-#~ msgid ""
-#~ "Option 'datatable.CJ.names' no longer has any effect, as promised for 4 "
-#~ "years. It is now ignored. Manually name `...` entries as needed if you "
-#~ "still prefer the old behavior."
-#~ msgstr ""
-#~ "选项 'datatable.CJ.names' 已经没有任何效果。这一变更早在 4 年前就已决定。"
-#~ "现在该选项已被忽略。如果你仍倾向于旧的行为，请按需手动命名 `...` 条目。"
-
-#, c-format
-#~ msgid ""
-#~ "Internal error. 'cols' should be character at this point in setkey; "
-#~ "please report."
-#~ msgstr "内部错误： 目前在setkey中，'cols'应该是字符类型, 请报告"
-
-#, c-format
-#~ msgid "Internal error: index '%s' exists but is invalid"
-#~ msgstr "内部错误 : 索引 '%s' 虽存在，但是无效"
-
-#, c-format
-#~ msgid "Internal error: ncol(current)==ncol(target) was checked above"
-#~ msgstr "内部错误：ncol(current)==ncol(target) 之前已经检查"
-
-#, c-format
-#~ msgid "Internal error: factor type mismatch should have been caught earlier"
-#~ msgstr "内部错误：此时不匹配的因子类型应已被发现"
-
-#~ msgid "Internal error: use endsWithAny instead of base::endsWith"
-#~ msgstr "内部错误：使用 endsWithAny 而非 base::endsWith"

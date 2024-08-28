@@ -3430,80 +3430,6 @@ msgstr[1] "Índices: %s\n"
 
 #, c-format
 #~ msgid ""
-#~ "Internal error -- difftime objects may not be added to IDate, but Ops "
-#~ "dispatch should have intervened to prevent this"
-#~ msgstr ""
-#~ "Erro interno -- objetos difftime não podem ser adicionados a IDate, mas o "
-#~ "despacho de Ops deveria ter intervindo para evitar isso"
-
-#, c-format
-#~ msgid "Internal error: storage mode of IDate is somehow no longer integer"
-#~ msgstr ""
-#~ "Erro interno: o modo de armazenamento do IDate de alguma forma não é mais "
-#~ "inteiro"
-
-#, c-format
-#~ msgid ""
-#~ "Internal error -- difftime objects may not be subtracted from IDate, but "
-#~ "Ops dispatch should have intervened to prevent this"
-#~ msgstr ""
-#~ "Erro interno -- objetos difftime não podem ser subtraídos de IDate, mas "
-#~ "despacho de Ops deveria ter intervindo para evitar isso"
-
-#, c-format
-#~ msgid ""
-#~ "Usage of comma-separated literals in %s is deprecated, please split such "
-#~ "entries yourself before passing to data.table"
-#~ msgstr ""
-#~ "O uso de literais separados por vírgula em %s está obsoleto. Por favor, "
-#~ "parta tais entradas por conta própria antes de passar para data.table"
-
-#, c-format
-#~ msgid ""
-#~ "Internal error:  DT[, ..var] should be dealt with by the branch above now."
-#~ msgstr ""
-#~ "Erro interno: agora o branch acima deveria ter lidado com DT[, ..var]."
-
-#, c-format
-#~ msgid "Internal error. Cannot by=.EACHI when joining to an index, yet"
-#~ msgstr ""
-#~ "Erro interno. Ainda não é possível usar by=.EACHI ao fazer junção em um "
-#~ "índice"
-
-#, c-format
-#~ msgid "Internal error. irows has length in by=.EACHI"
-#~ msgstr "Erro interno. irows tem comprimento em by=.EACHI"
-
-#, c-format
-#~ msgid ""
-#~ "internal error: notjoin and which=NA (non-matches), huh? please provide "
-#~ "reproducible example to issue tracker"
-#~ msgstr ""
-#~ "erro interno: notjoin e which=NA (não correspondências). Mas hein? Por "
-#~ "favor, forneça um exemplo reproduzível no rastreador de problemas"
-
-#, c-format
-#~ msgid "Internal error: notjoin but byjoin or !integer or nomatch==NA"
-#~ msgstr "Erro interno: notjoin, mas byjoin ou !integer ou nomatch==NA"
-
-#, c-format
-#~ msgid "Internal error: irows isn't integer"
-#~ msgstr "Erro interno: irows não é inteiro"
-
-#, c-format
-#~ msgid "Internal error: drop_dot passed %d items"
-#~ msgstr "Erro interno: drop_dot passou %d itens"
-
-#, c-format
-#~ msgid "Internal error -- item '%s' not found in names of list"
-#~ msgstr "Erro interno -- item '%s' não encontrado nos nomes da lista"
-
-#, c-format
-#~ msgid "Internal error -- column(s) not found: %s"
-#~ msgstr "Erro interno – coluna(s) não encontrada(s): %s"
-
-#, c-format
-#~ msgid ""
 #~ "strptime() usage detected and wrapped with as.POSIXct(). This is to "
 #~ "minimize the chance of assigning POSIXlt columns, which use 40+ bytes to "
 #~ "store one date (versus 8 for POSIXct). Use as.POSIXct() (which will call "
@@ -3513,52 +3439,6 @@ msgstr[1] "Índices: %s\n"
 #~ "chance de atribuir colunas POSIXlt, que usam 40 ou mais bytes para "
 #~ "armazenar uma data (contra 8 para POSIXct). Use as.POSIXct() (que chamará "
 #~ "strptime() conforme necessário internamente) para evitar esse aviso."
-
-#, c-format
-#~ msgid "Internal error: xcolAns does not pass checks: %d/%d/%d/%s"
-#~ msgstr "Erro interno: xcolAns não passa nas verificações: %d/%d/%d/%s"
-
-#, c-format
-#~ msgid ""
-#~ "Internal error: irows is NULL when making join result at R level. Should "
-#~ "no longer happen now we use CsubsetDT earlier."
-#~ msgstr ""
-#~ "Erro interno: irows é NULL ao fazer o resultado da junção no nível R. "
-#~ "Isso não deveria mais acontecer agora que usamos CsubsetDT mais cedo."
-
-#, c-format
-#~ msgid ""
-#~ "Internal error: j has created a data.table result containing a NULL column"
-#~ msgstr ""
-#~ "Erro interno: j criou um resultado de data.table contendo uma coluna NULL"
-
-#, c-format
-#~ msgid "Internal error: byindex not the index name"
-#~ msgstr "Erro interno: byindex não é o nome do índice"
-
-#, c-format
-#~ msgid "Internal error: byindex not found"
-#~ msgstr "Erro interno: byindex não encontrado"
-
-#, c-format
-#~ msgid "Internal error: length(irows)!=length(o__)"
-#~ msgstr "Erro interno: length(irows)!=length(o__)"
-
-#, c-format
-#~ msgid "Internal error: jvnames is length %d but ans is %d and bynames is %d"
-#~ msgstr ""
-#~ "Erro interno: jvnames tem comprimento %d, mas ans é %d e bynames é %d"
-
-#, c-format
-#~ msgid ""
-#~ "Internal error: as.matrix.data.table length(X)==%d but a dimension is zero"
-#~ msgstr ""
-#~ "Erro interno: as.matrix.data.table com length(X)==%d, mas uma dimensão é "
-#~ "zero"
-
-#, c-format
-#~ msgid "Internal error: length(i)!=length(new)"
-#~ msgstr "Erro interno: length(i)!=length(new)"
 
 #, c-format
 #~ msgid ""
@@ -3575,14 +3455,6 @@ msgstr[1] "Índices: %s\n"
 
 #, c-format
 #~ msgid ""
-#~ "Internal error in .isFastSubsettable. Please report to data.table "
-#~ "developers"
-#~ msgstr ""
-#~ "Erro interno em .isFastSubsettable. Por favor, relate aos desenvolvedores "
-#~ "do data.table"
-
-#, c-format
-#~ msgid ""
 #~ "Aggregating function(s) should take vector inputs and return a single "
 #~ "value (length=1). However, function(s) returns length!=1. This value will "
 #~ "have to be used to fill any missing combinations, and therefore must be "
@@ -3595,50 +3467,3 @@ msgstr[1] "Índices: %s\n"
 #~ "faltantes, e portanto deve ter comprimento=1. Ou contorne isso definindo "
 #~ "o argumento 'fill' explicitamente, ou modifique sua função para lidar com "
 #~ "esse caso apropriadamente."
-
-#, c-format
-#~ msgid "Internal error -- empty rhsnames in dcast; please report"
-#~ msgstr "Erro interno -- rhsnames vazio em dcast; favor relatar"
-
-#, c-format
-#~ msgid ""
-#~ "URL requires download.file functionalities from R >=3.2.2. You can still "
-#~ "manually download the file and fread the downloaded file."
-#~ msgstr ""
-#~ "URL requer funcionalidades de download.file de R >=3.2.2. Você ainda pode "
-#~ "baixar manualmente o arquivo e ler o arquivo baixado."
-
-#, c-format
-#~ msgid ""
-#~ "Option 'datatable.CJ.names' no longer has any effect, as promised for 4 "
-#~ "years. It is now ignored. Manually name `...` entries as needed if you "
-#~ "still prefer the old behavior."
-#~ msgstr ""
-#~ "Opção 'datatable.CJ.names' não tem mais efeito, conforme prometido por 4 "
-#~ "anos. Agora é ignorada. Nomeie manualmente as entradas `...` conforme "
-#~ "necessário se ainda preferir o comportamento antigo."
-
-#, c-format
-#~ msgid ""
-#~ "Internal error. 'cols' should be character at this point in setkey; "
-#~ "please report."
-#~ msgstr ""
-#~ "Erro interno. 'cols' deve ser do tipo caractere neste ponto em setkey; "
-#~ "por favor, reporte."
-
-#, c-format
-#~ msgid "Internal error: index '%s' exists but is invalid"
-#~ msgstr "Erro interno: o índice '%s' existe, mas é inválido"
-
-#, c-format
-#~ msgid "Internal error: ncol(current)==ncol(target) was checked above"
-#~ msgstr "Erro interno: ncol(current)==ncol(target) foi verificado acima"
-
-#, c-format
-#~ msgid "Internal error: factor type mismatch should have been caught earlier"
-#~ msgstr ""
-#~ "Erro interno: a incompatibilidade de tipo fator deveria ter sido "
-#~ "detectada anteriormente"
-
-#~ msgid "Internal error: use endsWithAny instead of base::endsWith"
-#~ msgstr "Erro interno: use endsWithAny em vez de base::endsWith"
