@@ -123,7 +123,7 @@ SEXP freadR(
 
   args.nrowLimit = INT64_MAX;
   if (!isReal(nrowLimitArg) || length(nrowLimitArg)!=1)
-    error(_("Internal error: freadR nrows not a single real. R level catches this."));  // # nocov
+    INTERNAL_ERROR("nrows not a single real. R level catches this.");  // # nocov
   if (R_FINITE(REAL(nrowLimitArg)[0]) && REAL(nrowLimitArg)[0]>=0.0)
     args.nrowLimit = (int64_t)(REAL(nrowLimitArg)[0]);
 

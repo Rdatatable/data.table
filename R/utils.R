@@ -43,7 +43,7 @@ if (inherits(rep_len(Sys.Date(), 1L), "Date")) {
 }
 
 # endsWith no longer used from #5097 so no need to backport; prevent usage to avoid dev delay until GLCI's R 3.1.0 test
-endsWith = function(...) stop("Internal error: use endsWithAny instead of base::endsWith", call.=FALSE)
+endsWith = function(...) internal_error("use endsWithAny instead of base::endsWith")
 
 startsWithAny = function(x,y) .Call(CstartsWithAny, x, y, TRUE)
 endsWithAny = function(x,y) .Call(CstartsWithAny, x, y, FALSE)

@@ -921,7 +921,7 @@ static SEXP gfirstlast(SEXP x, const bool first, const int w, const bool headw) 
   const bool issorted = !isunsorted; // make a const-bool for use inside loops
   const int n = nosubset ? length(x) : irowslen;
   if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, first?"gfirst":"glast");
-  if (w==1 && headw) error(_("Internal error: gfirstlast headw should only be true when w>1"));
+  if (w==1 && headw) INTERNAL_ERROR("headw should only be true when w>1");
   int anslen = ngrp;
   if (headw) {
     anslen = 0;
@@ -967,8 +967,7 @@ static SEXP gfirstlast(SEXP x, const bool first, const int w, const bool headw) 
     } else {                                                                                       \
       /* w>1 && !first not supported because -i in R means everything-but-i and gnthvalue */       \
       /* currently takes n>0 only. However, we could still support n'th from the end, somehow */   \
-      error(_("Internal error: unanticipated case in gfirstlast first=%d w=%d headw=%d"),          \
-              first, w, headw);                                                                    \
+      INTERNAL_ERROR("unanticipated case first=%d w=%d headw=%d", first, w, headw);                \
     }                                                                                              \
   }
   switch(TYPEOF(x)) {
@@ -1191,7 +1190,7 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
   const bool nosubset = irowslen == -1;
   const bool issorted = !isunsorted;
   const int n = nosubset ? length(x) : irowslen;
-  if (nrow != n) error(_("Internal error: nrow [%d] != length(x) [%d] in %s"), nrow, n, "gshift");
+  if (nrow != n) INTERNAL_ERROR("nrow [%d] != length(x) [%d] in %s", nrow, n, "gshift");
 
   int nprotect=0;
   enum {LAG, LEAD/*, SHIFT*/,CYCLIC} stype = LAG;
@@ -1199,18 +1198,19 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
     error(_("fill must be a vector of length 1"));
 
   if (!isString(typeArg) || length(typeArg) != 1)
-    error(_("Internal error: invalid type for gshift(), should have been caught before. please report to data.table issue tracker")); // # nocov
+    INTERNAL_ERROR("invalid type, should have been caught before"); // # nocov
   if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "lag")) stype = LAG;
   else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "lead")) stype = LEAD;
   else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "shift")) stype = LAG;
   else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "cyclic")) stype = CYCLIC;
-  else error(_("Internal error: invalid type for gshift(), should have been caught before. please report to data.table issue tracker")); // # nocov
+  else INTERNAL_ERROR("invalid type, should have been caught before"); // # nocov
 
   bool lag;
   const bool cycle = stype == CYCLIC;
 
   R_xlen_t nk = length(nArg);
-  if (!isInteger(nArg)) error(_("Internal error: n must be integer")); // # nocov
+  if (!isInteger(nArg))
+    INTERNAL_ERROR("n must be integer"); // # nocov
   const int *kd = INTEGER(nArg);
   for (int i=0; i<nk; i++) if (kd[i]==NA_INTEGER) error(_("Item %d of n is NA"), i+1);
 

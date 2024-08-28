@@ -1347,7 +1347,7 @@ SEXP issorted(SEXP x, SEXP by)
   // TODO: test in big steps first to return faster if unsortedness is at the end (a common case of rbind'ing data to end)
   // These are all sequential access to x, so quick and cache efficient. Could be parallel by checking continuity at batch boundaries.
 
-  if (!isNull(by) && !isInteger(by)) STOP(_("Internal error: issorted 'by' must be NULL or integer vector"));
+  if (!isNull(by) && !isInteger(by)) INTERNAL_STOP("issorted 'by' must be NULL or integer vector");
   if (isVectorAtomic(x) || length(by)==1) {
     // one-column special case is very common so specialize it by avoiding column-type switches inside the row-loop later
     if (length(by)==1) {
@@ -1508,7 +1508,7 @@ SEXP binary(SEXP x)
 // all(x==1L)
 static bool all1(SEXP x) {
   if (!isInteger(x))
-    error("internal error: all1 got non-integer"); // # nocov
+    INTERNAL_STOP("all1 got non-integer"); // # nocov
   int *xp = INTEGER(x);
   for (int i=0; i<LENGTH(x); ++i) if (xp[i] != 1) return false;
   return true;
@@ -1517,9 +1517,9 @@ static bool all1(SEXP x) {
 // identical(cols, head(chmatch(key(x), names(x)), length(cols)))
 bool colsKeyHead(SEXP x, SEXP cols) {
   if (!isNewList(x))
-    error("internal error: 'x' must be a list"); // # nocov
+    INTERNAL_STOP("'x' must be a list"); // # nocov
   if (!isInteger(cols))
-    error("internal error: 'cols' must be an integer"); // # nocov
+    INTERNAL_STOP("'cols' must be an integer"); // # nocov
   SEXP key = PROTECT(getAttrib(x, sym_sorted));
   if (isNull(key) || (length(key) < length(cols))) {
     UNPROTECT(1); // key
@@ -1541,10 +1541,10 @@ bool colsKeyHead(SEXP x, SEXP cols) {
 // paste0("__", names(x)[cols], collapse="")
 SEXP idxName(SEXP x, SEXP cols) {
   if (!isInteger(cols))
-    error("internal error: 'cols' must be an integer"); // # nocov
+    INTERNAL_STOP("'cols' must be an integer"); // # nocov
   SEXP dt_names = PROTECT(getAttrib(x, R_NamesSymbol));
   if (!isString(dt_names))
-    error("internal error: 'DT' has no names"); // # nocov
+    INTERNAL_STOP("'DT' has no names"); // # nocov
   SEXP idx_names = PROTECT(subsetVector(dt_names, cols));
   UNPROTECT(2); // down-stack to 'dt_names'
   PROTECT(idx_names);
@@ -1561,7 +1561,7 @@ SEXP idxName(SEXP x, SEXP cols) {
 // attr(attr(x, "index"), idxName(x, cols))
 SEXP getIndex(SEXP x, SEXP cols) {
   if (!isInteger(cols))
-    error("internal error: 'cols' must be an integer"); // # nocov
+    INTERNAL_STOP("'cols' must be an integer"); // # nocov
   SEXP index = getAttrib(x, sym_index);
   if (isNull(index))
     return index;
@@ -1575,9 +1575,9 @@ SEXP getIndex(SEXP x, SEXP cols) {
 // attr(attr(x, "index"), idxName(x, cols)) <- o
 void putIndex(SEXP x, SEXP cols, SEXP o) {
   if (!isInteger(cols))
-    error("internal error: 'cols' must be an integer"); // # nocov
+    INTERNAL_STOP("'cols' must be an integer"); // # nocov
   if (!isInteger(o))
-    error("internal error: 'o' must be an integer"); // # nocov
+    INTERNAL_STOP("'o' must be an integer"); // # nocov
   SEXP index = getAttrib(x, sym_index);
   if (isNull(index)) {
     index = PROTECT(allocVector(INTSXP, 0));
@@ -1588,7 +1588,7 @@ void putIndex(SEXP x, SEXP cols, SEXP o) {
   SEXP sym_idx = install(CHAR(STRING_ELT(name_idx, 0)));
   SEXP idx = getAttrib(index, sym_idx);
   if (!isNull(idx) && !isNull(getAttrib(idx, sym_starts))) // we override retGrp=F index with retGrp=T index
-    error("internal error: trying to put index but it was already there, that should have been escaped before"); // # nocov
+    INTERNAL_STOP("trying to put index but it was already there, that should have been escaped before"); // # nocov
   setAttrib(index, sym_idx, o);
   UNPROTECT(1);
 }
@@ -1662,11 +1662,11 @@ SEXP forderReuseSorting(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP
     }
   } else if (reuseSorting) {
     if (!INHERITS(DT,char_datatable))
-      error("internal error: reuseSorting set to TRUE but DT is not a data.table"); // # nocov
+      INTERNAL_STOP("reuseSorting set to TRUE but DT is not a data.table"); // # nocov
     if (!sortGroups)
-      error("internal error: reuseSorting set to TRUE but sort is FALSE"); // # nocov
+      INTERNAL_STOP("reuseSorting set to TRUE but sort is FALSE"); // # nocov
     if (!all1(ascArg))
-      error("internal error: reuseSorting set to TRUE but order is not all 1"); // # nocov
+      INTERNAL_STOP("reuseSorting set to TRUE but order is not all 1"); // # nocov
     opt = -1;
   } else if (!reuseSorting) {
     opt = 0;
@@ -1686,7 +1686,7 @@ SEXP forderReuseSorting(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP
           (hasStats && !idxAnyNF(idx))) {  // na.last=TRUE && !anyNA
         bool hasGrp = !isNull(getAttrib(idx, sym_starts));
         if (hasGrp && !hasStats)
-          error("internal error: index has 'starts' attribute but not 'anyna', please report to issue tracker"); // # nocov
+          INTERNAL_STOP("index has 'starts' attribute but not 'anyna', please report to issue tracker"); // # nocov
         if (hasGrp==retGrp && hasStats==retStats) {
           opt = 2; // idxOpt
         } else if (
@@ -1719,7 +1719,7 @@ SEXP forderReuseSorting(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP
           if (verbose)
             Rprintf("forderReuseSorting: index found but not for retStats: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
         } else {
-          error("internal error: reuseSorting forder index optimization unhandled branch of retGrp-retStats, please report to issue tracker"); // # nocov
+          INTERNAL_STOP("reuseSorting forder index optimization unhandled branch of retGrp-retStats"); // # nocov
         }
       } else {
         if (!hasStats) {
@@ -1729,7 +1729,7 @@ SEXP forderReuseSorting(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP
           if (verbose)
             Rprintf("forderReuseSorting: index found but na.last=TRUE and NAs present: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
         } else {
-          error("internal error: reuseSorting forder index optimization unhandled branch of last.na=T, please report to issue tracker"); // # nocov
+          INTERNAL_STOP("reuseSorting forder index optimization unhandled branch of last.na=T"); // # nocov
         }
       }
       if (opt == 2) {

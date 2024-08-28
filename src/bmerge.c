@@ -93,10 +93,10 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP r
     nomatch=0;
   } else {
     if (length(nomatchArg)!=1 || (!isLogical(nomatchArg) && !isInteger(nomatchArg)))
-      error(_("Internal error: nomatchArg must be NULL or length-1 logical/integer")); // # nocov
+      INTERNAL_ERROR("nomatchArg must be NULL or length-1 logical/integer"); // # nocov
     nomatch = INTEGER(nomatchArg)[0];
     if (nomatch!=NA_INTEGER && nomatch!=0)
-      error(_("Internal error: nomatchArg must be NULL, NA, NA_integer_ or 0L")); // # nocov
+      INTERNAL_ERROR("nomatchArg must be NULL, NA, NA_integer_ or 0L"); // # nocov
   }
 
   // mult arg
@@ -112,7 +112,7 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP r
   for (int i=0; i<ncol; ++i) {
     // check up front to avoid default: cases in non-equi switches which may be in parallel regions which could not call error()
     if (op[i]<EQ/*1*/ || op[i]>GT/*5*/)
-      error(_("Internal error in bmerge_r for x.'%s'. Unrecognized value op[col]=%d"), // # nocov
+      INTERNAL_ERROR("'%s'. Unrecognized value op[col]=%d", // # nocov
               CHAR(STRING_ELT(getAttrib(xdt,R_NamesSymbol),xcols[i]-1)), op[i]);       // # nocov
     if (op[i]!=EQ && TYPEOF(xdtVec[xcols[i]-1])==STRSXP)
       error(_("Only '==' operator is supported for columns of type character."));      // # nocov
@@ -125,7 +125,7 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP r
 
   // nqmaxgrpArg
   if (!isInteger(nqmaxgrpArg) || length(nqmaxgrpArg) != 1 || INTEGER(nqmaxgrpArg)[0] <= 0)
-    error(_("Internal error: nqmaxgrpArg is not a positive length-1 integer vector")); // # nocov
+    INTERNAL_ERROR("nqmaxgrpArg is not a positive length-1 integer vector"); // # nocov
   nqmaxgrp = INTEGER(nqmaxgrpArg)[0];
   if (nqmaxgrp>1 && mult == ALL) {
     // non-equi case with mult=ALL, may need reallocation

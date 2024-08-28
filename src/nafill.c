@@ -184,7 +184,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
         SET_VECTOR_ELT(fill, i, fill1);
     }
     if (!isNewList(fill))
-      error(_("internal error: 'fill' should be recycled as list already")); // # nocov
+      INTERNAL_ERROR("'fill' should be recycled as list already"); // # nocov
     for (R_len_t i=0; i<nx; i++) {
       SET_VECTOR_ELT(fill, i, coerceAs(VECTOR_ELT(fill, i), VECTOR_ELT(x, i), ScalarLogical(TRUE)));
       fillp[i] = SEXPPTR_RO(VECTOR_ELT(fill, i)); // do like this so we can use in parallel region
