@@ -195,9 +195,9 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols,
                 SEXP on, SEXP verbose, SEXP showProgressArg);
 
 // bmerge.c
-SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg,
-                SEXP xoArg, SEXP rollarg, SEXP rollendsArg, SEXP nomatchArg,
-                SEXP multArg, SEXP opArg, SEXP nqgrpArg, SEXP nqmaxgrpArg);
+SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg,
+            SEXP xoArg, SEXP rollarg, SEXP rollendsArg, SEXP nomatchArg,
+            SEXP multArg, SEXP opArg, SEXP nqgrpArg, SEXP nqmaxgrpArg);
 
 // quickselect
 double dquickselect(double *x, int n);
