@@ -17,9 +17,6 @@ Differences over standard binary search (e.g. bsearch in stdlib.h) :
   o non equi joins (no != yet) since 1.9.8
 */
 
-#define ENC_KNOWN(x) (LEVELS(x) & 12)
-// 12 = LATIN1_MASK (1<<2) | UTF8_MASK (1<<3)  // Would use these definitions from Defn.h, but that appears to be private to R. Hence 12.
-
 #define EQ 1
 #define LE 2
 #define LT 3
@@ -163,7 +160,7 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP r
   protecti += 2;
 
   SEXP ascArg = PROTECT(ScalarInteger(1));
-  SEXP oSxp = PROTECT(forderReuseSorting(idt, icolsArg, /* retGrpArg= */ScalarLogical(FALSE), /* retStatsArg= */ScalarLogical(FALSE), /* sortGroupsArg= */ScalarLogical(TRUE), ascArg, /* naArg= */ScalarLogical(FALSE), /* lazyArg= */ScalarLogical(TRUE))); protecti++;
+  SEXP oSxp = PROTECT(forderReuseSorting(idt, icolsArg, /* retGrpArg= */ScalarLogical(FALSE), /* retStatsArg= */ScalarLogical(FALSE), /* sortGroupsArg= */ScalarLogical(TRUE), ascArg, /* naArg= */ScalarLogical(FALSE), /* reuseSortingArg= */ScalarLogical(TRUE))); protecti++;
   UNPROTECT(2); // down stack to 'ascArg'
   PROTECT(oSxp);
 
