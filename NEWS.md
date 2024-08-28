@@ -2,6 +2,10 @@
 
 # data.table [v1.16.99](https://github.com/Rdatatable/data.table/milestone/31)  (in development)
 
+## POTENTIALLY BREAKING CHANGES
+
+1. In `DT[, variable := value]`, when value is class `POSIXlt`, we automatically coerce it to class `POSIXct` instead, [#1724](https://github.com/Rdatatable/data.table/issues/1724). Thanks to @linzhp for the report, and Benjamin Schwendinger for the fix.
+
 ## NOTES
 
 1. Tests run again when some Suggests packages are missing, [#6411](https://github.com/Rdatatable/data.table/issues/6411). Thanks @aadler for the note and @MichaelChirico for the fix.
