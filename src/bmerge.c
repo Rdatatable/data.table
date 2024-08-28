@@ -188,7 +188,7 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP r
     SEXP order = PROTECT(allocVector(INTSXP, length(icolsArg))); protecti++;
     for (int j=0; j<LENGTH(order); j++)
       INTEGER(order)[j]=1;   // rep(1L, length(icolsArg))
-    SEXP oSxp = PROTECT(forderReuseSorting(idt, icolsArg, /* retGrpArg= */ScalarLogical(FALSE), /* retStatsArg= */ScalarLogical(FALSE), /* sortGroupsArg= */ScalarLogical(TRUE), ascArg, /* naArg= */ScalarLogical(FALSE), /* reuseSortingArg= */ScalarLogical(TRUE))); protecti++;
+    SEXP oSxp = PROTECT(forderReuseSorting(idt, icolsArg, /* retGrpArg= */ScalarLogical(FALSE), /* retStatsArg= */ScalarLogical(FALSE), /* sortGroupsArg= */ScalarLogical(TRUE), order, /* naArg= */ScalarLogical(FALSE), /* reuseSortingArg= */ScalarLogical(TRUE))); protecti++;
     // TODO - split head of forder into C-level callable
     if (!LENGTH(oSxp))
       o = NULL;
