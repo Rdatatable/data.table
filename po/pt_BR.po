@@ -1453,20 +1453,12 @@ msgid "names(data) is NULL. Please report to data.table-help"
 msgstr "names(data) é NULL. Favor relatar para data.table-help"
 
 #: forder.c:111 fread.c:2587 utils.c:446
-#, fuzzy
-#| msgid "Internal error: lens not integer"
 msgid "Internal error in"
-msgstr "Erro interno: 'lens' não é vetor de inteiros"
+msgstr "Erro interno in"
 
 #: forder.c:111 utils.c:446
-#, fuzzy
-#| msgid ""
-#| "Internal error: invalid value for 'mult'. please report to data.table "
-#| "issue tracker"
 msgid "Please report to the data.table issues tracker."
-msgstr ""
-"Erro interno: valor inválido para 'mult'. Por favor, relate isso no "
-"rastreador de problemas do data.table"
+msgstr "Por favor, relate isso no rastreador de problemas do data.table"
 
 #: forder.c:121
 #, c-format
@@ -1558,22 +1550,16 @@ msgstr ""
 "Você está tentando ordenar por uma coluna de lista?\n"
 
 #: forder.c:495
-#, fuzzy
-#| msgid "%s must be TRUE or FALSE"
 msgid "retGrp must be TRUE or FALSE"
-msgstr "%s deve ser TRUE ou FALSE"
+msgstr "retGrp deve ser TRUE ou FALSE"
 
 #: forder.c:498
-#, fuzzy
-#| msgid "%s must be TRUE or FALSE"
 msgid "retStats must be TRUE or FALSE"
-msgstr "%s deve ser TRUE ou FALSE"
+msgstr "retStats deve ser TRUE ou FALSE"
 
 #: forder.c:503
-#, fuzzy
-#| msgid "%s must be TRUE or FALSE"
 msgid "sort must be TRUE or FALSE"
-msgstr "%s deve ser TRUE ou FALSE"
+msgstr "sort deve ser TRUE ou FALSE"
 
 #: forder.c:506
 msgid "At least one of retGrp= or sort= must be TRUE"
@@ -2456,14 +2442,8 @@ msgid "  Dropping %d overallocated columns\n"
 msgstr "  Descartando %d colunas sobrealocadas\n"
 
 #: fread.c:2587
-#, fuzzy
-#| msgid ""
-#| "Internal error: invalid value for 'mult'. please report to data.table "
-#| "issue tracker"
 msgid "Please report to the data.table issues tracker"
-msgstr ""
-"Erro interno: valor inválido para 'mult'. Por favor, relate isso no "
-"rastreador de problemas do data.table"
+msgstr "Por favor, relate isso no rastreador de problemas do data.table"
 
 #: fread.c:2594
 #, c-format
@@ -3368,12 +3348,8 @@ msgid "gforce initial population of grp took %.3f\n"
 msgstr "população inicial de gforce do grp levou %.3f\n"
 
 #: gsumm.c:118
-#, fuzzy
-#| msgid ""
-#| "Internal error: Failed to allocate counts or TMP when assigning g in "
-#| "gforce"
 msgid "Failed to allocate counts or TMP when assigning g in gforce"
-msgstr "Erro interno: Falha ao alocar counts ou TMP ao atribuir g em gforce"
+msgstr "Falha ao alocar counts ou TMP ao atribuir g em gforce"
 
 #: gsumm.c:197
 #, c-format

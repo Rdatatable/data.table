@@ -365,10 +365,8 @@ msgid "j must be provided when with=FALSE"
 msgstr "j deve ser fornecido quando with=FALSE"
 
 #: data.table.R:227
-#, fuzzy, c-format
-#| msgid "'fromLast' must be TRUE or FALSE"
 msgid "%s must be TRUE or FALSE"
-msgstr "'fromLast' deve ser TRUE ou FALSE"
+msgstr "%s deve ser TRUE ou FALSE"
 
 #: data.table.R:267
 #, c-format
@@ -3357,10 +3355,8 @@ msgid "Argument 'nan' must be NA or NaN"
 msgstr "Argumento 'nan' deve ser NA ou NaN"
 
 #: utils.R:25
-#, fuzzy
-#| msgid "Internal error: by= is missing"
 msgid "Internal error in"
-msgstr "Erro interno: by= está ausente"
+msgstr "Erro interno in"
 
 #: utils.R:28
 msgid "Please report to the data.table issues tracker."

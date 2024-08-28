@@ -1312,18 +1312,12 @@ msgid "names(data) is NULL. Please report to data.table-help"
 msgstr "names(data)为NULL，请向 data.table-help 报告"
 
 #: forder.c:111 fread.c:2587 utils.c:446
-#, fuzzy
-#| msgid "Internal error: lens not integer"
 msgid "Internal error in"
-msgstr "内部错误：lens 不是整型"
+msgstr "内部错误"
 
 #: forder.c:111 utils.c:446
-#, fuzzy
-#| msgid ""
-#| "Internal error: invalid value for 'mult'. please report to data.table "
-#| "issue tracker"
 msgid "Please report to the data.table issues tracker."
-msgstr "内部错误: 'mult' 是无效值。 请将此问题汇报给 data.table 问题追踪器。"
+msgstr "请将此问题汇报给 data.table 问题追踪器。"
 
 #: forder.c:121
 #, c-format
@@ -1408,22 +1402,16 @@ msgstr ""
 "来排序吗？\n"
 
 #: forder.c:495
-#, fuzzy
-#| msgid "%s must be TRUE or FALSE"
 msgid "retGrp must be TRUE or FALSE"
-msgstr "%s 的参数是逻辑值，必须是 TRUE 或 FALSE"
+msgstr "retGrp 的参数是逻辑值，必须是 TRUE 或 FALSE"
 
 #: forder.c:498
-#, fuzzy
-#| msgid "%s must be TRUE or FALSE"
 msgid "retStats must be TRUE or FALSE"
-msgstr "%s 的参数是逻辑值，必须是 TRUE 或 FALSE"
+msgstr "retStats 的参数是逻辑值，必须是 TRUE 或 FALSE"
 
 #: forder.c:503
-#, fuzzy
-#| msgid "%s must be TRUE or FALSE"
 msgid "sort must be TRUE or FALSE"
-msgstr "%s 的参数是逻辑值，必须是 TRUE 或 FALSE"
+msgstr "sort 的参数是逻辑值，必须是 TRUE 或 FALSE"
 
 #: forder.c:506
 msgid "At least one of retGrp= or sort= must be TRUE"
@@ -2226,12 +2214,8 @@ msgid "  Dropping %d overallocated columns\n"
 msgstr "  删除 %d 个过度分配的列\n"
 
 #: fread.c:2587
-#, fuzzy
-#| msgid ""
-#| "Internal error: invalid value for 'mult'. please report to data.table "
-#| "issue tracker"
 msgid "Please report to the data.table issues tracker"
-msgstr "内部错误: 'mult' 是无效值。 请将此问题汇报给 data.table 问题追踪器。"
+msgstr "请将此问题汇报给 data.table 问题追踪器。"
 
 #: fread.c:2594
 #, c-format
@@ -3080,12 +3064,8 @@ msgid "gforce initial population of grp took %.3f\n"
 msgstr "grp 的 gforce 初始群体数占了 %.3f\n"
 
 #: gsumm.c:118
-#, fuzzy
-#| msgid ""
-#| "Internal error: Failed to allocate counts or TMP when assigning g in "
-#| "gforce"
 msgid "Failed to allocate counts or TMP when assigning g in gforce"
-msgstr "内部错误：在 gforce 中为 g 赋值时，未能成功为 counts 或者 TMP 分配空间"
+msgstr "在 gforce 中为 g 赋值时，未能成功为 counts 或者 TMP 分配空间"
 
 #: gsumm.c:197
 #, c-format
