@@ -20,7 +20,7 @@ foverlaps(x, y, by.x = if (!is.null(key(x))) key(x) else key(y),
     by.y = key(y), maxgap = 0L, minoverlap = 1L,
     type = c("any", "within", "start", "end", "equal"),
     mult = c("all", "first", "last"),
-    nomatch = getOption("datatable.nomatch", NA),
+    nomatch = NA,
     which = FALSE, verbose = getOption("datatable.verbose"))
 }
 \arguments{
@@ -66,11 +66,10 @@ of the overlap. This will be updated once \code{maxgap} is implemented.}
 match in \code{y}, \code{nomatch=NA} (default) means \code{NA} is returned for
 \code{y}'s non-\code{by.y} columns for that row of \code{x}. \code{nomatch=NULL}
 (or \code{0} for backward compatibility) means no rows will be returned for that
-row of \code{x}. Use \code{options(datatable.nomatch=NULL)} to change the default
-value (used when \code{nomatch} is not supplied).}
+row of \code{x}. }
 \item{which}{ When \code{TRUE}, if \code{mult="all"} returns a two column
 \code{data.table} with the first column corresponding to \code{x}'s row number
-and the second corresponding to \code{y}'s. when \code{nomatch=NA}, no matches
+and the second corresponding to \code{y}'s. When \code{nomatch=NA}, no matches
 return \code{NA} for \code{y}, and if \code{nomatch=NULL}, those rows where no
 match is found will be skipped; if \code{mult="first" or "last"}, a vector of
 length equal to the number of rows in \code{x} is returned, with no-match entries
@@ -116,7 +115,7 @@ NB: When \code{which=TRUE}: \code{a)} \code{mult="first" or "last"} returns a
 containing row numbers of \code{x} and the second column with corresponding
 row numbers of \code{y}.
 
-\code{nomatch=NA or 0} also influences whether non-matching rows are returned
+\code{nomatch=NA|NULL} also influences whether non-matching rows are returned
 or not, as explained above.
 }
 

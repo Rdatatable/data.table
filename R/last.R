@@ -35,7 +35,7 @@ last = function(x, n=1L, ...) {
     }
   } else {
     if (!requireNamespace("xts", quietly=TRUE))
-      stop(domain=NA, gettextf("'xts' class passed to %s function but 'xts' is not available, you should have 'xts' installed already", "data.table::last")) # nocov
+      stopf("'xts' class passed to %s function but 'xts' is not available, you should have 'xts' installed already", "data.table::last") # nocov
     if (verbose)
       catf("%s: using %s: %s\n", "last", "xts::last", "is.xts(x)")
     xts::last(x, n=n, ...)
@@ -76,7 +76,7 @@ first = function(x, n=1L, ...) {
     }
   } else {
     if (!requireNamespace("xts", quietly=TRUE))
-      stop(domain=NA, gettextf("'xts' class passed to %s function but 'xts' is not available, you should have 'xts' installed already", "data.table::first")) # nocov
+      stopf("'xts' class passed to %s function but 'xts' is not available, you should have 'xts' installed already", "data.table::first") # nocov
     if (verbose)
       catf("%s: using %s: %s\n", "first", "xts::first", "is.xts(x)")
     xts::first(x, n=n, ...)

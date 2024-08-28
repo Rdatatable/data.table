@@ -22,7 +22,7 @@ SEXP uniqlist(SEXP l, SEXP order)
   unsigned long long *ulv; // for numeric check speed-up
   SEXP v, ans;
   R_len_t len, thisi, previ, isize=1000;
-  int *iidx = Calloc(isize, int); // for 'idx'
+  int *iidx = R_Calloc(isize, int); // for 'idx'
   len = 1;
   iidx[0] = 1; // first row is always the first of the first group
 
@@ -45,7 +45,7 @@ SEXP uniqlist(SEXP l, SEXP order)
           iidx[len++] = i+1;                                                     \
           if (len>=isize) {                                                      \
             isize = MIN(nrow, (size_t)(1.1*(double)isize*((double)nrow/i)));     \
-            iidx = Realloc(iidx, isize, int);                                    \
+            iidx = R_Realloc(iidx, isize, int);                                    \
           }                                                                      \
         }                                                                        \
         prev = elem;                                                             \
@@ -66,7 +66,7 @@ SEXP uniqlist(SEXP l, SEXP order)
       }
     } break;
     case STRSXP : {
-      const SEXP *vd=STRING_PTR(v);
+      const SEXP *vd=STRING_PTR_RO(v);
       SEXP prev, elem;
       if (via_order) {
         COMPARE1_VIA_ORDER && ENC2UTF8(elem)!=ENC2UTF8(prev) COMPARE2   // but most of the time they are equal, so ENC2UTF8 doesn't need to be called
@@ -95,7 +95,7 @@ SEXP uniqlist(SEXP l, SEXP order)
       }
     } break;
     default :
-      error(_("Type '%s' not supported"), type2char(TYPEOF(v)));  // # nocov
+      error(_("Type '%s' is not supported"), type2char(TYPEOF(v)));  // # nocov
     }
   } else {
     // ncol>1
@@ -127,21 +127,21 @@ SEXP uniqlist(SEXP l, SEXP order)
           }
           break;
         default :
-          error(_("Type '%s' not supported"), type2char(TYPEOF(v)));  // # nocov
+          error(_("Type '%s' is not supported"), type2char(TYPEOF(v)));  // # nocov
         }
       }
       if (!b) {
         iidx[len++] = i+1;
         if (len >= isize) {
           isize = MIN(nrow, (size_t)(1.1*(double)isize*((double)nrow/i)));
-          iidx = Realloc(iidx, isize, int);
+          iidx = R_Realloc(iidx, isize, int);
         }
       }
     }
   }
   PROTECT(ans = allocVector(INTSXP, len));
   memcpy(INTEGER(ans), iidx, sizeof(int)*len); // sizeof is of type size_t - no integer overflow issues
-  Free(iidx);
+  R_Free(iidx);
   UNPROTECT(1);
   return(ans);
 }
@@ -171,7 +171,7 @@ SEXP rleid(SEXP l, SEXP cols) {
   int *icols = INTEGER(cols);
   for (int i=0; i<lencols; i++) {
     int elem = icols[i];
-    if (elem<1 || elem>ncol) error(_("Item %d of cols is %d which is outside range of l [1,length(l)=%d]"), i+1, elem, ncol);
+    if (elem<1 || elem>ncol) error(_("Item %d of cols is %d which is outside the range [1,length(l)=%d]"), i+1, elem, ncol);
   }
   for (int i=1; i<ncol; i++) {
     if (xlength(VECTOR_ELT(l,i)) != nrow) error(_("All elements to input list must be of same length. Element [%d] has length %"PRIu64" != length of first element = %"PRIu64"."), i+1, (uint64_t)xlength(VECTOR_ELT(l,i)), (uint64_t)nrow);
@@ -208,7 +208,7 @@ SEXP rleid(SEXP l, SEXP cols) {
           same = memcmp(&pz[i], &pz[i-1], sizeof(Rcomplex))==0; // compiler optimization should replace library call with best 16-byte fixed method
         } break;
         default :
-          error(_("Type '%s' not supported"), type2char(TYPEOF(jcol)));  // # nocov
+          error(_("Type '%s' is not supported"), type2char(TYPEOF(jcol)));  // # nocov
         }
       }
       ians[i] = (grp+=!same);
@@ -224,7 +224,7 @@ SEXP rleid(SEXP l, SEXP cols) {
       }
     } break;
     case STRSXP : {
-      const SEXP *jd = STRING_PTR(jcol);
+      const SEXP *jd = STRING_PTR_RO(jcol);
       for (R_xlen_t i=1; i<nrow; i++) {
         bool same = jd[i]==jd[i-1];
         ians[i] = (grp+=!same);
@@ -245,7 +245,7 @@ SEXP rleid(SEXP l, SEXP cols) {
       }
     } break;
     default :
-      error(_("Type '%s' not supported"), type2char(TYPEOF(jcol)));
+      error(_("Type '%s' is not supported"), type2char(TYPEOF(jcol)));
     }
   }
   UNPROTECT(1);
@@ -259,12 +259,12 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
   R_len_t nrows = length(VECTOR_ELT(l,0)), ncols = length(cols);
   if (nrows==0) return(allocVector(INTSXP, 0));
   R_len_t thisi, previ, ansgrpsize=1000, nansgrp=0;
-  R_len_t *ansgrp = Calloc(ansgrpsize, R_len_t), starts, grplen; // #3401 fix. Needs to be Calloc due to Realloc below .. else segfaults.
+  R_len_t *ansgrp = R_Calloc(ansgrpsize, R_len_t), starts, grplen; // #3401 fix. Needs to be R_Calloc due to R_Realloc below .. else segfaults.
   R_len_t ngrps = length(grps);
   bool *i64 = (bool *)R_alloc(ncols, sizeof(bool));
   if (ngrps==0) INTERNAL_ERROR("nrows[%d]>0 but ngrps==0", nrows); // # nocov
   R_len_t resetctr=0, rlen = length(resetvals) ? INTEGER(resetvals)[0] : 0;
-  if (!isInteger(cols) || ncols == 0) error(_("cols must be an integer vector of positive length"));
+  if (!isInteger(cols) || ncols == 0) error(_("cols must be an integer vector with length >= 1"));
   // mult arg
   enum {ALL, FIRST, LAST} mult = ALL;
   if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "all")) mult = ALL;
@@ -318,7 +318,7 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
                        dtwiddle(xd[thisi]) >= dtwiddle(xd[previ]);
         } break;
         default:
-          error(_("Type '%s' not supported"), type2char(TYPEOF(v)));  // # nocov
+          error(_("Type '%s' is not supported"), type2char(TYPEOF(v)));  // # nocov
         }
       }
       if (b) break;
@@ -335,14 +335,14 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
     }
     if (nansgrp >= ansgrpsize) {
       ansgrpsize = MIN(nrows, (size_t)(1.1*(double)ansgrpsize*((double)nrows/i)));
-      ansgrp = Realloc(ansgrp, ansgrpsize, int);
+      ansgrp = R_Realloc(ansgrp, ansgrpsize, int);
     }
     for (int j=0; j<grplen; j++) {
       ians[byorder ? INTEGER(order)[igrps[i]-1+j]-1 : igrps[i]-1+j] = tmp+1;
     }
     ansgrp[tmp] = thisi;
   }
-  Free(ansgrp);
+  R_Free(ansgrp);
   UNPROTECT(1);
   return(ans);
 }
@@ -350,7 +350,8 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
 SEXP uniqueNlogical(SEXP x, SEXP narmArg) {
   // single pass; short-circuit and return as soon as all 3 values are found
   if (!isLogical(x)) error(_("x is not a logical vector"));
-  if (!isLogical(narmArg) || length(narmArg)!=1 || INTEGER(narmArg)[0]==NA_INTEGER) error(_("na.rm must be TRUE or FALSE"));
+  if (!IS_TRUE_OR_FALSE(narmArg))
+    error(_("%s must be TRUE or FALSE"), "na.rm");
   bool narm = LOGICAL(narmArg)[0]==1;
   const R_xlen_t n = xlength(x);
   if (n==0)

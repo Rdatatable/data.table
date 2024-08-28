@@ -39,7 +39,11 @@ static Rboolean rollToNearest=FALSE;
 
 void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisgrp, int lowmax, int uppmax);
 
-SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SEXP xoArg, SEXP rollarg, SEXP rollendsArg, SEXP nomatchArg, SEXP multArg, SEXP opArg, SEXP nqgrpArg, SEXP nqmaxgrpArg) {
+SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP rollarg, SEXP rollendsArg, SEXP nomatchArg, SEXP multArg, SEXP opArg, SEXP nqgrpArg, SEXP nqmaxgrpArg) {
+  const bool verbose = GetVerbose();
+  double tic=0.0, tic0=0.0;
+  if (verbose)
+    tic = omp_get_wtime();
   int xN, iN, protecti=0;
   ctr=0; // needed for non-equi join case
   SEXP retFirstArg, retLengthArg, retIndexArg, allLen1Arg, allGrp1Arg;
@@ -67,7 +71,7 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SEXP
     int xt = TYPEOF(VECTOR_ELT(xdt, xcols[col]-1));
     if (iN && it!=xt) error(_("typeof x.%s (%s) != typeof i.%s (%s)"), CHAR(STRING_ELT(getAttrib(xdt,R_NamesSymbol),xcols[col]-1)), type2char(xt), CHAR(STRING_ELT(getAttrib(idt,R_NamesSymbol),icols[col]-1)), type2char(it));
     if (iN && it!=LGLSXP && it!=INTSXP && it!=REALSXP && it!=STRSXP)
-      error(_("Type '%s' not supported for joining/merging"), type2char(it));
+      error(_("Type '%s' is not supported for joining/merging"), type2char(it));
   }
 
   // rollArg, rollendsArg
@@ -85,8 +89,15 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SEXP
     error(_("rollends must be a length 2 logical vector"));
   rollends = LOGICAL(rollendsArg);
 
-  // nomatch arg
-  nomatch = INTEGER(nomatchArg)[0];
+  if (isNull(nomatchArg)) {
+    nomatch=0;
+  } else {
+    if (length(nomatchArg)!=1 || (!isLogical(nomatchArg) && !isInteger(nomatchArg)))
+      error(_("Internal error: nomatchArg must be NULL or length-1 logical/integer")); // # nocov
+    nomatch = INTEGER(nomatchArg)[0];
+    if (nomatch!=NA_INTEGER && nomatch!=0)
+      error(_("Internal error: nomatchArg must be NULL, NA, NA_integer_ or 0L")); // # nocov
+  }
 
   // mult arg
   if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "all")) mult = ALL;
@@ -114,16 +125,14 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SEXP
 
   // nqmaxgrpArg
   if (!isInteger(nqmaxgrpArg) || length(nqmaxgrpArg) != 1 || INTEGER(nqmaxgrpArg)[0] <= 0)
-    error(_("Intrnal error: nqmaxgrpArg is not a positive length-1 integer vector")); // # nocov
+    error(_("Internal error: nqmaxgrpArg is not a positive length-1 integer vector")); // # nocov
   nqmaxgrp = INTEGER(nqmaxgrpArg)[0];
   if (nqmaxgrp>1 && mult == ALL) {
     // non-equi case with mult=ALL, may need reallocation
     anslen = 1.1 * ((iN > 1000) ? iN : 1000);
-    retFirst = Calloc(anslen, int); // anslen is set above
-    retLength = Calloc(anslen, int);
-    retIndex = Calloc(anslen, int);
-    if (retFirst==NULL || retLength==NULL || retIndex==NULL)
-      INTERNAL_ERROR("failed to allocate memory for non-equi join"); // # nocov
+    retFirst = R_Calloc(anslen, int); // anslen is set above
+    retLength = R_Calloc(anslen, int);
+    retIndex = R_Calloc(anslen, int);
     // initialise retIndex here directly, as next loop is meant for both equi and non-equi joins
     for (int j=0; j<anslen; j++) retIndex[j] = j+1;
   } else { // equi joins (or) non-equi join but no multiple matches
@@ -153,17 +162,15 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SEXP
   allGrp1[0] = TRUE;
   protecti += 2;
 
-  // isorted arg
-  o = NULL;
-  if (!LOGICAL(isorted)[0]) {
-    SEXP order = PROTECT(allocVector(INTSXP, length(icolsArg)));
-    protecti++;
-    for (int j=0; j<LENGTH(order); j++) INTEGER(order)[j]=1;   // rep(1L, length(icolsArg))
-    SEXP oSxp = PROTECT(forder(idt, icolsArg, ScalarLogical(FALSE), ScalarLogical(TRUE), order, ScalarLogical(FALSE)));
-    protecti++;
-    // TODO - split head of forder into C-level callable
-    if (!LENGTH(oSxp)) o = NULL; else o = INTEGER(oSxp);
-  }
+  SEXP ascArg = PROTECT(ScalarInteger(1));
+  SEXP oSxp = PROTECT(forderReuseSorting(idt, icolsArg, /* retGrpArg= */ScalarLogical(FALSE), /* retStatsArg= */ScalarLogical(FALSE), /* sortGroupsArg= */ScalarLogical(TRUE), ascArg, /* naArg= */ScalarLogical(FALSE), /* lazyArg= */ScalarLogical(TRUE))); protecti++;
+  UNPROTECT(2); // down stack to 'ascArg'
+  PROTECT(oSxp);
+
+  if (!LENGTH(oSxp))
+    o = NULL;
+  else
+    o = INTEGER(oSxp);
 
   // xo arg
   xo = NULL;
@@ -174,10 +181,14 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SEXP
 
   // start bmerge
   if (iN) {
-    // embarassingly parallel if we've storage space for nqmaxgrp*iN
+    if (verbose)
+      tic0 = omp_get_wtime();
+    // embarrassingly parallel if we've storage space for nqmaxgrp*iN
     for (int kk=0; kk<nqmaxgrp; kk++) {
       bmerge_r(-1,xN,-1,iN,scols,kk+1,1,1);
     }
+    if (verbose)
+      Rprintf("bmerge: looping bmerge_r took %.3fs\n", omp_get_wtime()-tic0);
   }
   ctr += iN;
   if (nqmaxgrp > 1 && mult == ALL) {
@@ -204,10 +215,12 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP isorted, SEXP
   SET_STRING_ELT(ansnames, 4, char_allGrp1);
   setAttrib(ans, R_NamesSymbol, ansnames);
   if (nqmaxgrp > 1 && mult == ALL) {
-    Free(retFirst);
-    Free(retLength);
-    Free(retIndex);
+    R_Free(retFirst);
+    R_Free(retLength);
+    R_Free(retIndex);
   }
+  if (verbose)
+    Rprintf("bmerge: took %.3fs\n", omp_get_wtime()-tic);
   UNPROTECT(protecti);
   return (ans);
 }
@@ -335,8 +348,8 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
   case STRSXP : {
     // op[col]==EQ checked up front to avoid an if() here and non-thread-safe error()
     // not sure why non-EQ is not supported for STRSXP though as it seems straightforward (StrCmp returns sign to indicate GT or LT)
-    const SEXP *icv = STRING_PTR(ic);
-    const SEXP *xcv = STRING_PTR(xc);
+    const SEXP *icv = STRING_PTR_RO(ic);
+    const SEXP *xcv = STRING_PTR_RO(xc);
     const SEXP ival = ENC2UTF8(icv[ir]);
     #undef ISNAT
     #undef WRAP
@@ -369,6 +382,8 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     }
     break;
   // supported types were checked up front to avoid handling an error here in (future) parallel region
+  default:
+    error(_("Type '%s' is not supported for joining/merging"), type2char(TYPEOF(xc)));
   }
 
   if (xlow<xupp-1 || rollLow || rollUpp) { // if value found, xlow and xupp surround it, unlike standard binary search where low falls on it
@@ -401,9 +416,9 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
               ++ctr;
               if (ctr+ilen >= anslen) {
                 anslen = 1.1*anslen;
-                retFirst = Realloc(retFirst, anslen, int);   // if fails, it fails inside Realloc with R error
-                retLength = Realloc(retLength, anslen, int);
-                retIndex = Realloc(retIndex, anslen, int);
+                retFirst = R_Realloc(retFirst, anslen, int);   // if fails, it fails inside R_Realloc with R error
+                retLength = R_Realloc(retLength, anslen, int);
+                retIndex = R_Realloc(retIndex, anslen, int);
               }
             } else if (mult == FIRST) {
               retFirst[k] = (XIND(retFirst[k]-1) > XIND(xlow+1)) ? xlow+2 : retFirst[k];

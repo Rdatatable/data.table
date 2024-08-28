@@ -1,6 +1,8 @@
 #ifndef dt_FREAD_R_H
 #define dt_FREAD_R_H
-#define STRICT_R_HEADERS   // https://cran.r-project.org/doc/manuals/r-devel/R-exts.html#Error-handling
+#ifndef STRICT_R_HEADERS
+  #define STRICT_R_HEADERS   // https://cran.r-project.org/doc/manuals/r-devel/R-exts.html#Error-handling
+#endif
 #include <R.h>
 #include <Rinternals.h>
 #include "po.h"

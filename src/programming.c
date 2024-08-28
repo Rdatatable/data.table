@@ -13,7 +13,7 @@ static void substitute_call_arg_names(SEXP expr, SEXP env) {
         if (imatches[i]) {
           SEXP sym = env_sub[imatches[i]-1];
           if (!isSymbol(sym))
-            error("Attempting to substitute '%s' element with object of type '%s' but it has to be 'symbol' type when substituting name of the call argument, functions 'as.name' and 'I' can be used to work out proper substitution, see ?substitute2 examples.", CHAR(STRING_ELT(arg_names, i)), type2char(TYPEOF(sym)));
+            error(_("Attempting to substitute '%s' element with object of type '%s' but it has to be 'symbol' type when substituting name of the call argument, functions 'as.name' and 'I' can be used to work out proper substitution, see ?substitute2 examples."), CHAR(STRING_ELT(arg_names, i)), type2char(TYPEOF(sym)));
           SET_TAG(tmp, sym);
         }
       }

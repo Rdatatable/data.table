@@ -49,8 +49,8 @@ void frollmeanFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool 
   long double w = 0.0;                                          // sliding window aggregate
   bool truehasna = hasna>0;                                     // flag to re-run with NA support if NAs detected
   if (!truehasna) {
-    int i;                                                      // iterator declared here because it is being used after foor loop
-    for (i=0; i<k-1; i++) {                                     // loop over leading observation, all partial window only
+    int i;                                                      // iterator declared here because it is being used after for loop
+    for (i=0; i<k-1; i++) {                                     // loop over leading observation, all partial window only; #loop_counter_not_local_scope_ok
       w += x[i];                                                // add current row to sliding window
       ans->dbl_v[i] = fill;                                     // answers are fill for partial window
     }
@@ -85,8 +85,8 @@ void frollmeanFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool 
   }
   if (truehasna) {
     int nc = 0;                                                 // NA counter within sliding window
-    int i;                                                      // iterator declared here because it is being used after foor loop
-    for (i=0; i<k-1; i++) {                                     // loop over leading observation, all partial window only
+    int i;                                                      // iterator declared here because it is being used after for loop
+    for (i=0; i<k-1; i++) {                                     // loop over leading observation, all partial window only; #loop_counter_not_local_scope_ok
       if (R_FINITE(x[i])) {
         w += x[i];                                              // add only finite values to window aggregate
       } else {
@@ -253,7 +253,7 @@ void frollsumFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool n
   bool truehasna = hasna>0;
   if (!truehasna) {
     int i;
-    for (i=0; i<k-1; i++) {
+    for (i=0; i<k-1; i++) { // #loop_counter_not_local_scope_ok
       w += x[i];
       ans->dbl_v[i] = fill;
     }
@@ -289,7 +289,7 @@ void frollsumFast(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool n
   if (truehasna) {
     int nc = 0;
     int i;
-    for (i=0; i<k-1; i++) {
+    for (i=0; i<k-1; i++) { // #loop_counter_not_local_scope_ok
       if (R_FINITE(x[i])) {
         w += x[i];
       } else {

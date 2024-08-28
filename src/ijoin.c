@@ -141,7 +141,7 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
     Rprintf(_("Second pass on allocation in lookup ... done in %8.3f seconds\n"), 1.0*(pass2)/CLOCKS_PER_SEC);
   // generate lookup
   start = clock();
-  idx = Calloc(uxrows, R_len_t); // resets bits, =0
+  idx = R_Calloc(uxrows, R_len_t); // resets bits, =0
   switch (type) {
   case ANY: case START: case END: case WITHIN:
     for (int i=0; i<xrows; ++i) {
@@ -159,7 +159,7 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
     break;
   default: INTERNAL_ERROR("unknown type lookup should have been caught earlier: %d", type); // # nocov
   }
-  Free(idx);
+  R_Free(idx);
   // generate type_lookup
   if (type != WITHIN) {
     switch (mult) {
@@ -249,7 +249,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
   else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "equal")) type = EQUAL;
   else INTERNAL_ERROR("invalid value for 'type'; this should have been caught before"); // # nocov
 
-  // As a first pass get the final length, so that we can allocate up-front and not deal with Calloc + Realloc + size calculation hassle
+  // As a first pass get the final length, so that we can allocate up-front and not deal with R_Calloc + R_Realloc + size calculation hassle
   // Checked the time for this loop on realisitc data (81m reads) and took 0.27 seconds! No excuses ;).
   start = clock();
   if (mult == ALL) {
@@ -322,7 +322,7 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
           ++totlen;
       }
       break;
-    default: INTERNAL_ERROR("unknown type in mult=ALL: %d", type); // # nocov
+    default: INTERNAL_ERROR("unknown type in mult=ALL in overlaps: %d", type); // #nocov
     }
   } else totlen = rows;
   end1 = clock() - start;
