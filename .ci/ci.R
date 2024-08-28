@@ -169,8 +169,8 @@ function(pkgs,
     newpkgs <- newpkgs[availpkgs]
   }
 
-  exttype <- if (substr(type, 1L, 11L) == "mac.binary.") "mac.binary" else type
-  pkgsext <- switch(exttype,
+  typeshort <- if (substr(type, 1L, 11L) == "mac.binary.") "mac.binary" else type
+  pkgsext <- switch(typeshort,
                     "source" = "tar.gz",
                     "mac.binary" = "tgz",
                     "win.binary" = "zip")
@@ -182,7 +182,7 @@ function(pkgs,
   dp <- utils::download.packages(pkgs = newpkgs, destdir = destdir,
                                  available = db, contriburl = repos.url,
                                  type = type, method = method, quiet = quiet)
-  tools::write_PACKAGES(dir = destdir, type = type, ...)
+  tools::write_PACKAGES(dir = destdir, type = typeshort, ...)
   dp
 }
 
