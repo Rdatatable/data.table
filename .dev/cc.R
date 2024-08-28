@@ -74,12 +74,12 @@ cc = function(test=FALSE, clean=FALSE, debug=FALSE, omp=!debug, path=Sys.getenv(
   # hack for windows under mingw-like environment
   # PROJ_PATH must be windows like i.e.: export PROJ_PATH=$(Rscript -e 'getwd()')
   if (.Platform$OS.type == "windows") {
-    system <- function(command, ...) shell(shQuote(command, "sh"), shell = "sh",...)
+    system = function(command, ...) shell(shQuote(command, "sh"), shell = "sh",...)
     # when -std=c99, macro WIN32 is not defined (MinGW) so we define it
     # otherwise will fail as sys/mman.h does not exists in windows (fread.c)
-    W32 <- "-DWIN32"
+    W32 = "-DWIN32"
   } else {
-    W32 <- ""
+    W32 = ""
   }
 
   old = getwd()
@@ -89,9 +89,9 @@ cc = function(test=FALSE, clean=FALSE, debug=FALSE, omp=!debug, path=Sys.getenv(
   if (clean) system("rm *.o *.so")
   OMP = if (omp) "" else "no-"
   if (debug) {
-    cmd <- sprintf("MAKEFLAGS='-j CC=%s PKG_CFLAGS=-f%sopenmp CFLAGS=-std=c99\\ -O0\\ -ggdb\\ %s\\ -pedantic' R CMD SHLIB -d -o data_table.so *.c", CC, OMP, W32)
+    cmd = sprintf("MAKEFLAGS='-j CC=%s PKG_CFLAGS=-f%sopenmp CFLAGS=-std=c99\\ -O0\\ -ggdb\\ %s\\ -pedantic' R CMD SHLIB -d -o data_table.so *.c", CC, OMP, W32)
   } else {
-    cmd <- sprintf("MAKEFLAGS='-j CC=%s CFLAGS=-f%sopenmp\\ -std=c99\\ -O3\\ -pipe\\ -Wall\\ -pedantic\\ -Wstrict-prototypes\\ -isystem\\ /usr/share/R/include\\ %s\\ -fno-common' R CMD SHLIB -o data_table.so *.c", CC, OMP, W32)
+    cmd <-= sprintf("MAKEFLAGS='-j CC=%s CFLAGS=-f%sopenmp\\ -std=c99\\ -O3\\ -pipe\\ -Wall\\ -pedantic\\ -Wstrict-prototypes\\ -isystem\\ /usr/share/R/include\\ %s\\ -fno-common' R CMD SHLIB -o data_table.so *.c", CC, OMP, W32)
     # the -isystem suppresses strict-prototypes warnings from R's headers, #5477. Look at the output to see what -I is and pass the same path to -isystem.
     # TODO add -Wextra too?
   }
