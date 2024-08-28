@@ -121,6 +121,17 @@ detect_openmp () {
       echo "no"
     fi
 
+    # https://github.com/Rdatatable/data.table/issues/6409
+    printf "%s" "* checking if R installation supports OpenMP with \"-fopenmp\" ... "
+    if CPPFLAGS="${CPPFLAGS} -fopenmp" "${R_HOME}/bin/R" CMD SHLIB test-omp.c >> config.log 2>&1; then
+      echo "yes"
+      export PKG_CFLAGS="${PKG_CFLAGS} -fopenmp"
+      export R_OPENMP_ENABLED=1
+      return
+    else
+      echo "no"
+    fi
+
     if [ "$(uname -m)" = "arm64" ]; then
       HOMEBREW_PREFIX=/opt/homebrew
     else
