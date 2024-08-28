@@ -141,7 +141,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   for(int i=0; i<length(SDall); ++i) {
     SEXP this = VECTOR_ELT(SDall, i);
     if (SIZEOF(this)==0)
-      INTERNAL_ERROR("size-0 type %d in .SD column %d should have been caught earlier", TYPEOF(VECTOR_ELT(SDall, i)), i); // # nocov
+      INTERNAL_ERROR("size-0 type %d in .SD column %d should have been caught earlier", TYPEOF(this), i); // # nocov
     if (LENGTH(this) != maxGrpSize)
       INTERNAL_ERROR("SDall %d length = %d != %d", i+1, LENGTH(this), maxGrpSize); // # nocov
     nameSyms[i] = install(CHAR(STRING_ELT(names, i)));

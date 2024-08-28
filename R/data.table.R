@@ -279,7 +279,7 @@ replace_dot_alias = function(e) {
         ..syms = av
       }
     } else if (is.name(jsub)) {
-      if (substring(jsub, 1L, 2L) == "..") internal_error("DT[, ..var] should be dealt with by the branch above now.") # nocov
+      if (startsWith(jsub, "..")) internal_error("DT[, ..var] should be dealt with by the branch above now.") # nocov
       if (!with && !exists(as.character(jsub), where=parent.frame()))
         stopf("Variable '%s' is not found in calling scope. Looking in calling scope because you set with=FALSE. Also, please use .. symbol prefix and remove with=FALSE.", as.character(jsub))
     }
@@ -927,8 +927,8 @@ replace_dot_alias = function(e) {
       jvnames = NULL
       drop_dot = function(x) {
         if (length(x)!=1L) internal_error("drop_dot passed %d items", length(x))  # nocov
-        if (identical(substring(x<-as.character(x), 1L, 1L), ".") && x %chin% c(".N", ".I", ".GRP", ".NGRP", ".BY"))
-          substring(x, 2L)
+        if (startsWith(x<-as.character(x), ".") && x %chin% c(".N", ".I", ".GRP", ".NGRP", ".BY"))
+          substr(x, 2L, nchar(x))
         else
           x
       }
@@ -1293,7 +1293,7 @@ replace_dot_alias = function(e) {
       if (!(length(i) && length(icols))) {
         # new in v1.12.0 to redirect to CsubsetDT in this case
         if (!identical(xcolsAns, seq_along(xcolsAns)) || length(xcols)!=length(xcolsAns) || length(ansvars)!=length(xcolsAns)) {
-          internal_error("xcolAns does not pass checks: ", length(xcolsAns), length(ansvars), length(xcols), paste(xcolsAns,collapse=","))   # nocov
+          internal_error("xcolAns does not pass checks: %d/%d/%d/%s", length(xcolsAns), length(ansvars), length(xcols), brackify(xcolsAns))   # nocov
         }
         # Retained from old R way below (test 1542.01 checks shallow at this point)
         # ' Temp fix for #921 - skip COPY until after evaluating 'jval' (scroll down).
@@ -1441,7 +1441,7 @@ replace_dot_alias = function(e) {
       } else if (haskey(x) && all(key(x) %chin% names(jval)) && is.sorted(jval, by=key(x))) {
         setattr(jval, 'sorted', key(x))
       }
-      if (any(sapply(jval, is.null))) internal_error("j has created a data.table result containing a NULL column") # nocov
+      if (any(vapply_1b(jval, is.null))) internal_error("j has created a data.table result containing a NULL column") # nocov
     }
     return(jval)
   }
@@ -1963,7 +1963,7 @@ replace_dot_alias = function(e) {
     if (is.null(jvnames)) jvnames = character(length(ans)-length(bynames))
     if (length(bynames)+length(jvnames)!=length(ans))
       internal_error("jvnames is length %d but ans is %d and bynames is %d", length(jvnames), length(ans), length(bynames)) # nocov
-    ww = which(jvnames=="")
+    ww = which(!nzchar(jvnames))
     if (any(ww)) jvnames[ww] = paste0("V",ww)
     setattr(ans, "names", c(bynames, jvnames))
   } else {

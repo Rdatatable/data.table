@@ -20,7 +20,8 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type)
   if (length(fill) != 1)
     error(_("fill must be a vector of length 1"));
   // the following two errors should be caught by match.arg() at the R level
-  if (!isString(type) || length(type) != 1) INTERNAL_ERROR("invalid type for shift(), should have been caught before"); // # nocov
+  if (!isString(type) || length(type) != 1)
+    INTERNAL_ERROR("invalid type for shift(), should have been caught before"); // # nocov
   if (!strcmp(CHAR(STRING_ELT(type, 0)), "lag")) stype = LAG;
   else if (!strcmp(CHAR(STRING_ELT(type, 0)), "lead")) stype = LEAD;
   else if (!strcmp(CHAR(STRING_ELT(type, 0)), "shift")) stype = LAG; // when we get rid of nested if branches we can use SHIFT, for now it maps to LAG

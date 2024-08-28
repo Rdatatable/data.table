@@ -456,7 +456,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
       Rprintf(_("forder.c received %d rows and %d columns\n"), length(VECTOR_ELT(DT,0)), length(DT));
   }
   if (!length(DT))
-    INTERNAL_STOP(_("DT is an empty list() of 0 columns"));  // # nocov # caught in reuseSorting forder
+    INTERNAL_STOP("DT is an empty list() of 0 columns");  // # nocov # caught in reuseSorting forder
   if (!isInteger(by) || !LENGTH(by))
     INTERNAL_STOP("DT has %d columns but 'by' is either not integer or is length 0", length(DT));  // # nocov  colnamesInt catches, 2099.2
   if (!isInteger(ascArg))
