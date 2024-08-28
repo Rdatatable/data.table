@@ -279,7 +279,7 @@ replace_dot_alias = function(e) {
         ..syms = av
       }
     } else if (is.name(jsub)) {
-      if (startsWith(jsub, "..")) internal_error("DT[, ..var] should be dealt with by the branch above now.") # nocov
+      if (startsWith(as.character(jsub), "..")) internal_error("DT[, ..var] should be dealt with by the branch above now.") # nocov
       if (!with && !exists(as.character(jsub), where=parent.frame()))
         stopf("Variable '%s' is not found in calling scope. Looking in calling scope because you set with=FALSE. Also, please use .. symbol prefix and remove with=FALSE.", as.character(jsub))
     }
