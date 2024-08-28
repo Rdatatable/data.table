@@ -32,7 +32,7 @@ test(1.02, perhaps.data.table(list(a=1:2)))
 test(1.03, perhaps.data.table(list(a=1:2, b=1:2)))
 test(1.04, perhaps.data.table(list(1:2, 1:2)), FALSE)
 
-test(2.01, fdistinct(list(x=c(1L,1:2), b=1:2), on="x", mult="last"), error="must be data.table type object")
+test(2.01, fdistinct(list(x=c(1L,1:2), b=1:2), on="x", mult="last"), error="must be data.table")
 test(2.02, fdistinct(data.table(x=c(1L,1:2)), on="z", mult="last"), error="must be character column names of")
 test(2.03, fdistinct(data.table(x=c(1L,1:2)), on="x", mult="last", cols=character()), error="must be non-zero length, non-NA, integer or character columns of")
 test(2.04, fdistinct(data.table(x=c(1L,1:2, y=1:3)), on="x", mult="last", copy=NA), error="must be TRUE or FALSE")
