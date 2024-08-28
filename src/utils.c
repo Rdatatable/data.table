@@ -507,9 +507,10 @@ bool isDataList(SEXP x) {
   return isNewList(x) && (!LENGTH(x) || (equalLens(x) && !isNull(getAttrib(x, R_NamesSymbol))));
 }
 
-// isDataTable(x) || isDataFrame(x) || isDataList(x)
+// TODO: use isDataFrame (when included in any R release).
+// isDataTable(x) || isFrame(x) || isDataList(x)
 bool perhapsDataTable(SEXP x) {
-  return isDataTable(x) || isDataFrame(x) || isDataList(x);
+  return isDataTable(x) || isFrame(x) || isDataList(x);
 }
 SEXP perhapsDataTableR(SEXP x) {
   SEXP ans = PROTECT(allocVector(LGLSXP, 1));
