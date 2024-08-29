@@ -108,7 +108,7 @@ cc = function(test=FALSE, clean=FALSE, debug=FALSE, omp=!debug, path=Sys.getenv(
       break
     }
   }
-  dyn.load(if (.Platform$OS.type == "windows") "data_table" else "data_table.so")
+  dyn.load(dt_object)
   setwd(old)
   xx = getDLLRegisteredRoutines("data_table",TRUE)
   for (Call in xx$.Call)
