@@ -286,6 +286,7 @@ SEXP notchin(SEXP x, SEXP table);
 
 // mergelist.c
 SEXP cbindlist(SEXP x, SEXP copyArg);
+SEXP copyCols(SEXP x, SEXP cols);
 
 // functions called from R level .Call/.External and registered in init.c
 // these now live here to pass -Wstrict-prototypes, #5477
