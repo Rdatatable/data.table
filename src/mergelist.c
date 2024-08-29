@@ -71,7 +71,7 @@ SEXP cbindlist(SEXP x, SEXP copyArg) {
   setAttrib(ans, sym_index, index);
   SEXP names = PROTECT(allocVector(STRSXP, nans));
   for (int i=0, ians=0; i<nx; ++i) {
-    int protect i =0;
+    int protecti =0;
     SEXP thisx = VECTOR_ELT(x, i);
     SEXP thisnames = PROTECT(getAttrib(thisx, R_NamesSymbol)); protecti++
     for (int j=0; j<nnx[i]; ++j, ++ians) {
