@@ -66,7 +66,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   if (LENGTH(o) && LENGTH(o)!=nrow) error(_("o has length %d but sum(l)=%d"), LENGTH(o), nrow);
   {
     SEXP tt = getAttrib(o, install("maxgrpn"));
-    if (length(tt)==1 && INTEGER(tt)[0]!=maxgrpn) error(_("Internal error: o's maxgrpn attribute mismatches recalculated maxgrpn")); // # nocov
+    if (length(tt)==1 && INTEGER(tt)[0]!=maxgrpn) internal_error(__func__, "o's maxgrpn attribute mismatches recalculated maxgrpn"); // # nocov
   }
 
   int nb = nbit(ngrp-1);
@@ -86,8 +86,8 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   // TODO: enable stress-test mode in tests only (#3205) which can be turned off by default in release to decrease overhead on small data
   //       if that is established to be biting (it may be fine).
   if (nBatch<1 || batchSize<1 || lastBatchSize<1) {
-    error(_("Internal error: nrow=%d  ngrp=%d  nbit=%d  bitshift=%d  highSize=%zu  nBatch=%zu  batchSize=%zu  lastBatchSize=%zu\n"),  // # nocov
-           nrow, ngrp, nb, bitshift, highSize, nBatch, batchSize, lastBatchSize);                                                     // # nocov
+    internal_error(__func__, "nrow=%d  ngrp=%d  nbit=%d  bitshift=%d  highSize=%zu  nBatch=%zu  batchSize=%zu  lastBatchSize=%zu\n",  // # nocov
+                   nrow, ngrp, nb, bitshift, highSize, nBatch, batchSize, lastBatchSize);                                   // # nocov
   }
   // initial population of g:
   #pragma omp parallel for num_threads(getDTthreads(ngrp, false))
@@ -115,7 +115,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     int *TMP   = malloc(nrow*2l*sizeof(int)); // must multiple the long int otherwise overflow may happen, #4295
     if (!counts || !TMP ) {
       free(counts); free(TMP);
-      error(_("Internal error: Failed to allocate counts or TMP when assigning g in gforce"));
+      error(_("Failed to allocate counts or TMP when assigning g in gforce"));
     }
     #pragma omp parallel for num_threads(getDTthreads(nBatch, false))   // schedule(dynamic,1)
     for (int b=0; b<nBatch; b++) {
@@ -921,7 +921,7 @@ static SEXP gfirstlast(SEXP x, const bool first, const int w, const bool headw) 
   const bool issorted = !isunsorted; // make a const-bool for use inside loops
   const int n = nosubset ? length(x) : irowslen;
   if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, first?"gfirst":"glast");
-  if (w==1 && headw) error(_("Internal error: gfirstlast headw should only be true when w>1"));
+  if (w==1 && headw) internal_error(__func__, "headw should only be true when w>1");
   int anslen = ngrp;
   if (headw) {
     anslen = 0;
@@ -967,8 +967,7 @@ static SEXP gfirstlast(SEXP x, const bool first, const int w, const bool headw) 
     } else {                                                                                       \
       /* w>1 && !first not supported because -i in R means everything-but-i and gnthvalue */       \
       /* currently takes n>0 only. However, we could still support n'th from the end, somehow */   \
-      error(_("Internal error: unanticipated case in gfirstlast first=%d w=%d headw=%d"),          \
-              first, w, headw);                                                                    \
+      internal_error(__func__, "unanticipated case first=%d w=%d headw=%d", first, w, headw);                \
     }                                                                                              \
   }
   switch(TYPEOF(x)) {
@@ -997,19 +996,19 @@ SEXP gfirst(SEXP x) {
 }
 
 SEXP gtail(SEXP x, SEXP nArg) {
-  if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) error(_("Internal error, gtail is only implemented for n>0. This should have been caught before. please report to data.table issue tracker.")); // # nocov
+  if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) internal_error(__func__, "gtail is only implemented for n>0. This should have been caught before"); // # nocov
   const int n=INTEGER(nArg)[0];
   return n==1 ? glast(x) : gfirstlast(x, false, n, true);
 }
 
 SEXP ghead(SEXP x, SEXP nArg) {
-  if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) error(_("Internal error, gtail is only implemented for n>0. This should have been caught before. please report to data.table issue tracker.")); // # nocov
+  if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) internal_error(__func__, "gtail is only implemented for n>0. This should have been caught before"); // # nocov
   const int n=INTEGER(nArg)[0];
   return n==1 ? gfirst(x) : gfirstlast(x, true, n, true);
 }
 
 SEXP gnthvalue(SEXP x, SEXP nArg) {
-  if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) error(_("Internal error, `g[` (gnthvalue) is only implemented single value subsets with positive index, e.g., .SD[2]. This should have been caught before. please report to data.table issue tracker.")); // # nocov
+  if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) internal_error(__func__, "`g[` (gnthvalue) is only implemented single value subsets with positive index, e.g., .SD[2]. This should have been caught before"); // # nocov
   return gfirstlast(x, true, INTEGER(nArg)[0], false);
 }
 
@@ -1191,7 +1190,7 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
   const bool nosubset = irowslen == -1;
   const bool issorted = !isunsorted;
   const int n = nosubset ? length(x) : irowslen;
-  if (nrow != n) error(_("Internal error: nrow [%d] != length(x) [%d] in %s"), nrow, n, "gshift");
+  if (nrow != n) internal_error(__func__, "nrow [%d] != length(x) [%d] in %s", nrow, n, "gshift");
 
   int nprotect=0;
   enum {LAG, LEAD/*, SHIFT*/,CYCLIC} stype = LAG;
@@ -1199,18 +1198,19 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
     error(_("fill must be a vector of length 1"));
 
   if (!isString(typeArg) || length(typeArg) != 1)
-    error(_("Internal error: invalid type for gshift(), should have been caught before. please report to data.table issue tracker")); // # nocov
+    internal_error(__func__, "invalid type, should have been caught before"); // # nocov
   if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "lag")) stype = LAG;
   else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "lead")) stype = LEAD;
   else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "shift")) stype = LAG;
   else if (!strcmp(CHAR(STRING_ELT(typeArg, 0)), "cyclic")) stype = CYCLIC;
-  else error(_("Internal error: invalid type for gshift(), should have been caught before. please report to data.table issue tracker")); // # nocov
+  else internal_error(__func__, "invalid type, should have been caught before"); // # nocov
 
   bool lag;
   const bool cycle = stype == CYCLIC;
 
   R_xlen_t nk = length(nArg);
-  if (!isInteger(nArg)) error(_("Internal error: n must be integer")); // # nocov
+  if (!isInteger(nArg))
+    internal_error(__func__, "n must be integer"); // # nocov
   const int *kd = INTEGER(nArg);
   for (int i=0; i<nk; i++) if (kd[i]==NA_INTEGER) error(_("Item %d of n is NA"), i+1);
 

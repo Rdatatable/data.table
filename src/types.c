@@ -52,7 +52,7 @@ void testRaiseMsg(ans_t *ans, int istatus, bool verbose) {
 }
 SEXP testMsgR(SEXP status, SEXP x, SEXP k) {
   if (!isInteger(status) || !isInteger(x) || !isInteger(k))
-    error(_("internal error: status, nx, nk must be integer")); // # nocov
+    internal_error(__func__, "status, nx, nk must be integer"); // # nocov
   int protecti = 0;
   const bool verbose = GetVerbose();
   int istatus = INTEGER(status)[0], nx = INTEGER(x)[0], nk = INTEGER(k)[0];

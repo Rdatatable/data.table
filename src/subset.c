@@ -4,7 +4,7 @@ void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
 // Used here by subsetDT() and by dogroups.c
 {
   const int n = length(idx);
-  if (length(ans)!=n) error(_("Internal error: subsetVectorRaw length(ans)==%d n=%d"), length(ans), n);
+  if (length(ans)!=n) internal_error(__func__, "length(ans)==%d n=%d", length(ans), n); // # nocov
 
   const int *restrict idxp = INTEGER(idx);
   // anyNA refers to NA _in idx_; if there's NA in the data (source) that's just regular data to be copied
@@ -98,7 +98,7 @@ void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
     PARLOOP(0)
   } break;
   default :
-    error(_("Internal error: column type '%s' not supported by data.table subset. All known types are supported so please report as bug."), type2char(TYPEOF(source)));  // # nocov
+    internal_error(__func__, "column type '%s' not supported by data.table subset, but all known types are supported", type2char(TYPEOF(source)));  // # nocov
   }
 }
 
@@ -107,7 +107,7 @@ const char *check_idx(SEXP idx, int max, bool *anyNA_out, bool *orderedSubset_ou
 // error if any negatives, zeros or >max since they should have been dealt with by convertNegAndZeroIdx() called earlier at R level.
 // single cache efficient sweep with prefetch, so very low priority to go parallel
 {
-  if (!isInteger(idx)) error(_("Internal error. Argument '%s' to %s is type '%s' not '%s'"), "idx", "check_idx", type2char(TYPEOF(idx)), "integer"); // # nocov
+  if (!isInteger(idx)) internal_error(__func__, "Argument '%s' to %s is type '%s' not '%s'", "idx", "check_idx", type2char(TYPEOF(idx)), "integer"); // # nocov
   bool anyLess=false, anyNA=false;
   int last = INT32_MIN;
   int *idxp = INTEGER(idx), n=LENGTH(idx);
@@ -132,12 +132,17 @@ SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax, SEXP allowNA
   // allowOverMaxArg is false when := (test 1024), otherwise true for selecting
   // allowNAArg is false when nomatch=NULL #3109 #3666
 
-  if (!isInteger(idx)) error(_("Internal error. 'idx' is type '%s' not 'integer'"), type2char(TYPEOF(idx))); // # nocov
-  if (!isInteger(maxArg) || length(maxArg)!=1) error(_("Internal error. 'maxArg' is type '%s' and length %d, should be an integer singleton"), type2char(TYPEOF(maxArg)), length(maxArg)); // # nocov
-  if (!isLogical(allowOverMax) || LENGTH(allowOverMax)!=1 || LOGICAL(allowOverMax)[0]==NA_LOGICAL) error(_("Internal error: allowOverMax must be TRUE/FALSE"));  // # nocov
+  if (!isInteger(idx))
+    internal_error(__func__, "'idx' is type '%s' not 'integer'", type2char(TYPEOF(idx))); // # nocov
+  if (!isInteger(maxArg) || length(maxArg)!=1)
+    internal_error(__func__, "'maxArg' is type '%s' and length %d, should be an integer singleton", type2char(TYPEOF(maxArg)), length(maxArg)); // # nocov
+  if (!isLogical(allowOverMax) || LENGTH(allowOverMax)!=1 || LOGICAL(allowOverMax)[0]==NA_LOGICAL)
+    internal_error(__func__, "allowOverMax must be TRUE/FALSE");  // # nocov
   const int max = INTEGER(maxArg)[0], n=LENGTH(idx);
-  if (max<0) error(_("Internal error. max is %d, must be >= 0."), max); // # nocov    includes NA which will print as INT_MIN
-  if (!isLogical(allowNAArg) || LENGTH(allowNAArg)!=1 || LOGICAL(allowNAArg)[0]==NA_LOGICAL) error(_("Internal error: allowNAArg must be TRUE/FALSE"));  // # nocov
+  if (max<0)
+    internal_error(__func__, "max is %d, must be >= 0.", max); // # nocov    includes NA which will print as INT_MIN
+  if (!isLogical(allowNAArg) || LENGTH(allowNAArg)!=1 || LOGICAL(allowNAArg)[0]==NA_LOGICAL)
+    internal_error(__func__, "allowNAArg must be TRUE/FALSE");  // # nocov
   const bool allowNA = LOGICAL(allowNAArg)[0];
 
   const int *idxp = INTEGER(idx);
@@ -271,7 +276,7 @@ static void checkCol(SEXP col, int colNum, int nrow, SEXP x)
 
 SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md and man/cdt.Rd
   int nprotect=0;
-  if (!isNewList(x)) error(_("Internal error. Argument '%s' to %s is type '%s' not '%s'"), "x", "CsubsetDT", type2char(TYPEOF(rows)), "list"); // # nocov
+  if (!isNewList(x)) internal_error(__func__, "Argument '%s' to %s is type '%s' not '%s'", "x", "CsubsetDT", type2char(TYPEOF(rows)), "list"); // # nocov
   if (!length(x)) return(x);  // return empty list
 
   const int nrow = length(VECTOR_ELT(x,0));
@@ -284,7 +289,7 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md
     if (err!=NULL) error("%s", err);
   }
 
-  if (!isInteger(cols)) error(_("Internal error. Argument '%s' to %s is type '%s' not '%s'"), "cols", "Csubset", type2char(TYPEOF(cols)), "integer"); // # nocov
+  if (!isInteger(cols)) internal_error(__func__, "Argument '%s' to %s is type '%s' not '%s'", "cols", "Csubset", type2char(TYPEOF(cols)), "integer"); // # nocov
   for (int i=0; i<LENGTH(cols); i++) {
     int this = INTEGER(cols)[i];
     if (this<1 || this>LENGTH(x)) error(_("Item %d of cols is %d which is outside the range [1,ncol(x)=%d]"), i+1, this, LENGTH(x));
@@ -361,9 +366,9 @@ SEXP subsetVector(SEXP x, SEXP idx) { // idx is 1-based passed from R level
   bool anyNA=false, orderedSubset=false;
   int nprotect=0;
   if (isNull(x))
-    error(_("Internal error: NULL can not be subset. It is invalid for a data.table to contain a NULL column."));      // # nocov
+    internal_error(__func__, "NULL can not be subset. It is invalid for a data.table to contain a NULL column");      // # nocov
   if (check_idx(idx, length(x), &anyNA, &orderedSubset) != NULL)
-    error(_("Internal error: CsubsetVector is internal-use-only but has received negatives, zeros or out-of-range"));  // # nocov
+    internal_error(__func__, "idx values negatives, zeros or out-of-range");  // # nocov
   SEXP ans = PROTECT(allocVector(TYPEOF(x), length(idx))); nprotect++;
   copyMostAttrib(x, ans);
   subsetVectorRaw(ans, x, idx, anyNA);

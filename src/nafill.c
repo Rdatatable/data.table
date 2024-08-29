@@ -167,7 +167,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
   else if (!strcmp(CHAR(STRING_ELT(type, 0)), "nocb"))
     itype = 2;
   else
-    error(_("Internal error: invalid %s argument in %s function should have been caught earlier. Please report to the data.table issue tracker."), "type", "nafillR"); // # nocov
+    internal_error(__func__, "invalid %s argument in %s function should have been caught earlier", "type", "nafillR"); // # nocov
 
   bool hasFill = !isLogical(fill) || LOGICAL(fill)[0]!=NA_LOGICAL;
   bool *isInt64 = (bool *)R_alloc(nx, sizeof(bool));
@@ -184,7 +184,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
         SET_VECTOR_ELT(fill, i, fill1);
     }
     if (!isNewList(fill))
-      error(_("internal error: 'fill' should be recycled as list already")); // # nocov
+      internal_error(__func__, "'fill' should be recycled as list already"); // # nocov
     for (R_len_t i=0; i<nx; i++) {
       SET_VECTOR_ELT(fill, i, coerceAs(VECTOR_ELT(fill, i), VECTOR_ELT(x, i), ScalarLogical(TRUE)));
       fillp[i] = SEXPPTR_RO(VECTOR_ELT(fill, i)); // do like this so we can use in parallel region

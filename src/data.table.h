@@ -19,6 +19,7 @@
 #define STRING_PTR_RO STRING_PTR
 #endif
 #include <stdint.h>    // for uint64_t rather than unsigned long long
+#include <stdarg.h>    // for va_list, va_start
 #include <stdbool.h>
 #include "types.h"
 #include "po.h"
@@ -33,9 +34,10 @@
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 // raise(SIGINT);
 
-#define IS_UTF8(x)  (LEVELS(x) & 8)
-#define IS_ASCII(x) (LEVELS(x) & 64)
-#define IS_LATIN(x) (LEVELS(x) & 4)
+/* we mean the encoding bits, not CE_NATIVE in a UTF-8 locale */
+#define IS_UTF8(x)  (getCharCE(x) == CE_UTF8)
+#define IS_LATIN(x) (getCharCE(x) == CE_LATIN1)
+#define IS_ASCII(x) (LEVELS(x) & 64) // API expected in R >= 4.5
 #define IS_TRUE(x)  (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]==TRUE)
 #define IS_FALSE(x) (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]==FALSE)
 #define IS_TRUE_OR_FALSE(x) (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]!=NA_LOGICAL)
@@ -59,14 +61,6 @@
 
 // for use with CPLXSXP, no macro provided by R internals
 #define ISNAN_COMPLEX(x) (ISNAN((x).r) || ISNAN((x).i)) // TRUE if either real or imaginary component is NA or NaN
-
-// Backport macros added to R in 2017 so we don't need to update dependency from R 3.0.0
-#ifndef MAYBE_SHARED
-#  define MAYBE_SHARED(x) (NAMED(x) > 1)
-#endif
-#ifndef MAYBE_REFERENCED
-#  define MAYBE_REFERENCED(x) ( NAMED(x) > 0 )
-#endif
 
 // If we find a non-ASCII, non-NA, non-UTF8 encoding, we try to convert it to UTF8. That is, marked non-ascii/non-UTF8 encodings will
 // always be checked in UTF8 locale. This seems to be the best fix Arun could think of to put the encoding issues to rest.
@@ -118,6 +112,7 @@ extern SEXP sym_tzone;
 extern SEXP sym_old_fread_datetime_character;
 extern SEXP sym_variable_table;
 extern SEXP sym_as_character;
+extern SEXP sym_as_posixct;
 extern double NA_INT64_D;
 extern long long NA_INT64_LL;
 extern Rcomplex NA_CPLX;  // initialized in init.c; see there for comments
@@ -148,6 +143,7 @@ uint64_t dtwiddle(double x);
 SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg);
 SEXP forderReuseSorting(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg, SEXP reuseSortingArg); // reuseSorting wrapper to forder
 int getNumericRounding_C(void);
+void internal_error_with_cleanup(const char *call_name, const char *format, ...);
 
 // reorder.c
 SEXP reorder(SEXP x, SEXP order);
@@ -195,9 +191,9 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols,
                 SEXP on, SEXP verbose, SEXP showProgressArg);
 
 // bmerge.c
-SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg,
-                SEXP xoArg, SEXP rollarg, SEXP rollendsArg, SEXP nomatchArg,
-                SEXP multArg, SEXP opArg, SEXP nqgrpArg, SEXP nqmaxgrpArg);
+SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg,
+            SEXP xoArg, SEXP rollarg, SEXP rollendsArg, SEXP nomatchArg,
+            SEXP multArg, SEXP opArg, SEXP nqgrpArg, SEXP nqmaxgrpArg);
 
 // quickselect
 double dquickselect(double *x, int n);
@@ -262,6 +258,7 @@ SEXP islockedR(SEXP x);
 bool need2utf8(SEXP x);
 SEXP coerceUtf8IfNeeded(SEXP x);
 SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg);
+void internal_error(const char *call_name, const char *format, ...);
 
 // types.c
 char *end(char *start);
