@@ -9,6 +9,8 @@
   #include "po.h"
   #define STOP     error
   #define DTPRINT  Rprintf
+  static char internal_error_buff[256];
+  #define INTERNAL_STOP(...) do {snprintf(internal_error_buff, 255, __VA_ARGS__); error("%s %s: %s. %s", _("Internal error in"), __func__, internal_error_buff, _("Please report to the data.table issues tracker"));} while (0)
 #endif
 
 typedef void writer_fun_t(const void *, int64_t, char **);

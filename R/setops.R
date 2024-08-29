@@ -143,7 +143,7 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
     targetTypes = vapply_1c(target, squashClass)
     currentTypes = vapply_1c(current, squashClass)
     if (length(targetTypes) != length(currentTypes))
-      stopf("Internal error: ncol(current)==ncol(target) was checked above") # nocov
+      internal_error("ncol(current)==ncol(target) was checked above") # nocov
     if (any( d<-(targetTypes != currentTypes))) {
       w = head(which(d),3L)
       return(paste0("Datasets have different column classes. First 3: ",paste(
@@ -263,7 +263,7 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
       x = target[[i]]
       y = current[[i]]
       if (XOR(is.factor(x), is.factor(y)))
-        stopf("Internal error: factor type mismatch should have been caught earlier") # nocov
+        internal_error("factor type mismatch should have been caught earlier") # nocov
       cols.r = TRUE
       if (is.factor(x)) {
         if (!identical(levels(x),levels(y))) {

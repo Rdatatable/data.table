@@ -53,6 +53,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   groupingsets.data.table = data.table:::groupingsets.data.table
   guess = data.table:::guess
   INT = data.table:::INT
+  internal_error = data.table:::internal_error
   is_na = data.table:::is_na
   is.sorted = data.table:::is.sorted
   isReallyReal = data.table:::isReallyReal
@@ -19051,3 +19052,8 @@ test(2279.2, set(copy(dt), j="dates", value=dates), ans, warning="POSIXlt.*conve
 test(2279.3, {dt1 = copy(dt); dt1$dates=dates; dt1}, ans, warning="POSIXlt.*converted to POSIXct")
 test(2279.4, copy(dt)[, dates := strptime(dates_char, "%Y-%m-%d", tz="UTC")], ans, warning="POSIXlt.*converted to POSIXct")
 
+# coverage for internal_error wrapper
+test(2280.1, internal_error("broken"), error="Internal error.*broken")
+test(2280.2, internal_error("broken %d%s", 1, "2"), error="Internal error.*broken 12")
+foo = function(...) internal_error("broken")
+test(2280.3, foo(), error="Internal error in foo: broken")
