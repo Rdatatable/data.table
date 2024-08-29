@@ -435,6 +435,87 @@ SEXP startsWithAny(const SEXP x, const SEXP y, SEXP start) {
   return ScalarLogical(false);
 }
 
+// if (length(x)) length(x[[1L]]) else 0L
+int NROW(SEXP x) {
+  // used in src/mergelist.c and below in commented out set_row_names
+  if (!LENGTH(x))
+    return 0; // # nocov # not yet reached from anywhere, cbindlist uses it but escapes for !NCOL(x)
+  return length(VECTOR_ELT(x, 0));
+}
+
+// length(x)
+int NCOL(SEXP x) {
+  // used in src/mergelist.c
+  // to be an abstraction layer on C level
+  return LENGTH(x);
+}
+
+/*
+ Below commented out functions will be uncommented when addressing #4439
+ // c("data.table","data.frame")
+ static SEXP char2_dtdf() {
+ SEXP char2_dtdf = PROTECT(allocVector(STRSXP, 2));
+ SET_STRING_ELT(char2_dtdf, 0, char_datatable);
+ SET_STRING_ELT(char2_dtdf, 1, char_dataframe);
+ UNPROTECT(1);
+ return char2_dtdf;
+ }
+ 
+ // .set_row_names(x)
+ static SEXP set_row_names(int n) {
+ SEXP ans = R_NilValue;
+ if (n) {
+ ans = PROTECT(allocVector(INTSXP, 2));
+ INTEGER(ans)[0] = NA_INTEGER;
+ INTEGER(ans)[1] = -n;
+ } else {
+ ans = PROTECT(allocVector(INTSXP, 0));
+ }
+ UNPROTECT(1);
+ return ans;
+ }
+ 
+ // setDT(x) ## not in-place!
+ SEXP setDT(SEXP x) {
+ if (!isNewList(x))
+ error("internal error: C setDT should be called only on a list"); // # nocov
+ setAttrib(x, R_ClassSymbol, char2_dtdf());
+ setAttrib(x, sym_rownames, set_row_names(NROW(x)));
+ return alloccolwrapper(x, GetOption(sym_alloccol, R_NilValue), GetOption(sym_verbose, R_NilValue));
+ }*/
+
+// inherits(x, "data.table")
+bool isDataTable(SEXP x) {
+  return INHERITS(x, char_datatable);
+}
+
+// if (length(x)>1L) length(unique(vapply(x, length, 0L)))==1L else TRUE
+static inline bool equalLens(SEXP x) {
+  int n = LENGTH(x);
+  if (n < 2)
+    return true;
+  R_xlen_t nr = xlength(VECTOR_ELT(x, 0));
+  for (int i=1; i<n; ++i) {
+    if (xlength(VECTOR_ELT(x, i)) != nr)
+      return false;
+  }
+  return true;
+}
+
+// is.list(x) && equalLens(x) && (!length(x) || !is.null(names(x)))
+bool isDataList(SEXP x) {
+  return isNewList(x) && (!LENGTH(x) || (equalLens(x) && !isNull(getAttrib(x, R_NamesSymbol))));
+}
+
+// TODO: use isDataFrame (when included in any R release).
+// isDataTable(x) || isFrame(x) || isDataList(x)
+bool perhapsDataTable(SEXP x) {
+  return isDataTable(x) || isFrame(x) || isDataList(x);
+}
+SEXP perhapsDataTableR(SEXP x) {
+  return ScalarLogical(perhapsDataTable(x));
+}
+
 void internal_error(const char *call_name, const char *format, ...) {
   char buff[1024];
   va_list args;
