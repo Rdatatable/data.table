@@ -256,7 +256,7 @@ mergelist = function(l, on, cols, how=c("left","inner","full","right","semi","an
     out = if (!n) as.data.table(l) else l[[1L]]
     if (copy) out = copy(out)
     if (verbose)
-      cat(sprintf("mergelist: merging %d table(s), took %.3fs\n", n, proc.time()[[3L]]-p))
+      catf("mergelist: merging %d table(s), took %.3fs\n", n, proc.time()[[3L]]-p)
     return(out)
   }
   {
@@ -327,7 +327,7 @@ mergelist = function(l, on, cols, how=c("left","inner","full","right","semi","an
   if (copy)
     .Call(CcopyCols, out, colnamesInt(out, names(out.mem)[out.mem %chin% unique(unlist(l.mem, recursive=FALSE))]))
   if (verbose)
-    cat(sprintf("mergelist: merging %d tables, took %.3fs\n", n, proc.time()[[3L]]-p))
+    catf("mergelist: merging %d tables, took %.3fs\n", n, proc.time()[[3L]]-p)
   out
 }
 
