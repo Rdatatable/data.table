@@ -73,7 +73,7 @@ SEXP cbindlist(SEXP x, SEXP copyArg) {
   for (int i=0, ians=0; i<nx; ++i) {
     int protecti =0;
     SEXP thisx = VECTOR_ELT(x, i);
-    SEXP thisnames = PROTECT(getAttrib(thisx, R_NamesSymbol)); protecti++
+    SEXP thisnames = PROTECT(getAttrib(thisx, R_NamesSymbol)); protecti++;
     for (int j=0; j<nnx[i]; ++j, ++ians) {
       SEXP thisxcol;
       if (copy) {
