@@ -2,9 +2,17 @@
 
 # data.table [v1.16.99](https://github.com/Rdatatable/data.table/milestone/31)  (in development)
 
+## POTENTIALLY BREAKING CHANGES
+
+1. In `DT[, variable := value]`, when value is class `POSIXlt`, we automatically coerce it to class `POSIXct` instead, [#1724](https://github.com/Rdatatable/data.table/issues/1724). Thanks to @linzhp for the report, and Benjamin Schwendinger for the fix.
+
 ## NOTES
 
 1. Tests run again when some Suggests packages are missing, [#6411](https://github.com/Rdatatable/data.table/issues/6411). Thanks @aadler for the note and @MichaelChirico for the fix.
+
+2. Continued work to remove non-API C functions, [#6180](https://github.com/Rdatatable/data.table/issues/6180). Thanks Ivan Krylov for the PR and for writing a clear and concise guide about the R API: https://aitap.codeberg.page/R-api/.
+
+3. `data.table` again properly detects OpenMP support when built using `gcc` on macOS, [#6409](https://github.com/Rdatatable/data.table/issues/6409). Thanks @barracuda156 for the report and @kevinushey for the fix.
 
 # data.table [v1.16.0](https://github.com/Rdatatable/data.table/milestone/30)  (25 August 2024)
 

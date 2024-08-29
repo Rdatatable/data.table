@@ -43,7 +43,7 @@ int getMaxStringLen(const SEXP *col, const int64_t n) {
 
 int getMaxCategLen(SEXP col) {
   col = getAttrib(col, R_LevelsSymbol);
-  if (!isString(col)) error(_("Internal error: col passed to getMaxCategLen is missing levels"));
+  if (!isString(col)) internal_error(__func__, "col passed to getMaxCategLen is missing levels");
   return getMaxStringLen( STRING_PTR_RO(col), LENGTH(col) );
 }
 
@@ -77,7 +77,7 @@ void writeList(const void *col, int64_t row, char **pch) {
   SEXP v = ((const SEXP *)col)[row];
   int32_t wf = whichWriter(v);
   if (TYPEOF(v)==VECSXP || wf==INT32_MIN || isFactor(v)) {
-    error(_("Internal error: getMaxListItemLen should have caught this up front."));  // # nocov
+    internal_error(__func__, "TYPEOF(v)!=VECSXP && wf!=INT32_MIN && !isFactor(v); getMaxListItem should have caught this up front");  // # nocov
   }
   char *ch = *pch;
   write_chars(sep2start, &ch);
@@ -105,7 +105,7 @@ int getMaxListItemLen(const SEXP *col, const int64_t n) {
     }
     int width = writerMaxLen[wf];
     if (width==0) {
-      if (wf!=WF_String) STOP(_("Internal error: row %"PRId64" of list column has no max length method implemented"), i+1); // # nocov
+      if (wf!=WF_String) internal_error(__func__, "row %"PRId64" of list column has no max length method implemented", i+1); // # nocov
       const int l = LENGTH(this);
       for (int j=0; j<l; ++j) width+=LENGTH(STRING_ELT(this, j));
     } else {

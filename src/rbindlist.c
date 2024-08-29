@@ -19,7 +19,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
     usenames=TRUE;
   }
   const bool idcol = !isNull(idcolArg);
-  if (idcol && (!isString(idcolArg) || LENGTH(idcolArg)!=1)) error(_("Internal error: rbindlist.c idcol is not a single string"));  // # nocov
+  if (idcol && (!isString(idcolArg) || LENGTH(idcolArg)!=1)) internal_error(__func__, "idcol is not a single string");  // # nocov
   int ncol=0, first=0;
   int64_t nrow=0, upperBoundUniqueNames=1;
   bool anyNames=false;
@@ -191,7 +191,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
     // for (int i=0; i<LENGTH(l); ++i) { for (int j=0; j<ncol; ++j) Rprintf(_("%2d "),colMap[i*ncol + j]);  Rprintf(_("\n")); }
   }
 
-  if (fill && usenames==NA_LOGICAL) error(_("Internal error: usenames==NA but fill=TRUE. usenames should have been set to TRUE earlier with warning."));
+  if (fill && usenames==NA_LOGICAL) internal_error(__func__, "usenames==NA but fill=TRUE. usenames should have been set to TRUE earlier with warning"); // # nocov
   if (!fill && (usenames==TRUE || usenames==NA_LOGICAL)) {
     // Ensure no missings in both cases, and (when usenames==NA) all columns in same order too
     // We proceeded earlier as if fill was true, so varying ncol items will have missing here
@@ -206,7 +206,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
         if (w==-1) {
           int missi = i;
           while (colMap[i*ncol + j]==-1 && i<LENGTH(l)) i++;
-          if (i==LENGTH(l)) error(_("Internal error: could not find the first column name not present in earlier item"));
+          if (i==LENGTH(l)) internal_error(__func__, "could not find the first column name not present in earlier item"); // # nocov
           SEXP s = getAttrib(VECTOR_ELT(l, i), R_NamesSymbol);
           int w2 = colMap[i*ncol + j];
           const char *str = isString(s) ? CHAR(STRING_ELT(s,w2)) : "";
@@ -218,7 +218,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
         }
         if (w!=j && usenames==NA_LOGICAL) {
           SEXP s = getAttrib(VECTOR_ELT(l, i), R_NamesSymbol);
-          if (!isString(s) || i==0) error(_("Internal error: usenames==NA but an out-of-order name has been found in an item with no names or the first item. [%d]"), i);
+          if (!isString(s) || i==0) internal_error(__func__, "usenames==NA but an out-of-order name has been found in an item with no names or the first item. [%d]", i); // # nocov
           snprintf(buff, 1000, _("Column %d ['%s'] of item %d appears in position %d in item %d. Set use.names=TRUE to match by column name, or use.names=FALSE to ignore column names.%s"),
                                w+1, CHAR(STRING_ELT(s,w)), i+1, j+1, i, extra);
           i = LENGTH(l);
@@ -337,7 +337,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
     if (!foundName) { static char buff[12]; snprintf(buff,12,"V%d",j+1), SET_STRING_ELT(ansNames, idcol+j, mkChar(buff)); foundName=buff; }
     if (factor) maxType=INTSXP;  // if any items are factors then a factor is created (could be an option)
     if (int64 && maxType!=REALSXP)
-      error(_("Internal error: column %d of result is determined to be integer64 but maxType=='%s' != REALSXP"), j+1, type2char(maxType)); // # nocov
+      internal_error(__func__, "column %d of result is determined to be integer64 but maxType=='%s' != REALSXP", j+1, type2char(maxType)); // # nocov
     if (date && INHERITS(firstCol, char_IDate)) maxType=INTSXP; // first encountered Date determines class and type #5309
     SEXP target;
     SET_VECTOR_ELT(ans, idcol+j, target=allocVector(maxType, nrow));  // does not initialize logical & numerics, but does initialize character and list
