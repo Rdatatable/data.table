@@ -78,8 +78,10 @@ cc = function(test=FALSE, clean=FALSE, debug=FALSE, omp=!debug, path=Sys.getenv(
     # when -std=c99, macro WIN32 is not defined (MinGW) so we define it
     # otherwise will fail as sys/mman.h does not exists in windows (fread.c)
     W32 = "-DWIN32"
+    dt_object = "data_table"
   } else {
     W32 = ""
+    dt_object = "data_table.so"
   }
 
   old = getwd()
@@ -91,12 +93,12 @@ cc = function(test=FALSE, clean=FALSE, debug=FALSE, omp=!debug, path=Sys.getenv(
   if (debug) {
     cmd = sprintf("MAKEFLAGS='-j CC=%s PKG_CFLAGS=-f%sopenmp CFLAGS=-std=c99\\ -O0\\ -ggdb\\ %s\\ -pedantic' R CMD SHLIB -d -o data_table.so *.c", CC, OMP, W32)
   } else {
-    cmd = sprintf("MAKEFLAGS='-j CC=%s CFLAGS=-f%sopenmp\\ -std=c99\\ -O3\\ -pipe\\ -Wall\\ -pedantic\\ -Wstrict-prototypes\\ -isystem\\ /usr/share/R/include\\ %s\\ -fno-common' R CMD SHLIB -o data_table.so *.c", CC, OMP, W32)
+    cmd = sprintf(R"(MAKEFLAGS='-j CC=%s CFLAGS=-f%sopenmp\ -std=c99\ -O3\ -pipe\ -Wall\ -pedantic\ -Wstrict-prototypes\ -isystem\ /usr/share/R/include\ %s\ -fno-common' R CMD SHLIB -o data_table.so *.c)", CC, OMP, W32)
     # the -isystem suppresses strict-prototypes warnings from R's headers, #5477. Look at the output to see what -I is and pass the same path to -isystem.
     # TODO add -Wextra too?
   }
   cat(cmd, "\n")
-  ret = system(ignore.stdout=quiet, cmd)
+  ret = system(cmd, ignore.stdout=quiet)
   if (ret) return()
   # clang -Weverything includes -pedantic and issues many more warnings than gcc
   # system("R CMD SHLIB -o data_table.so *.c")
