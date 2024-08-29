@@ -97,7 +97,7 @@ cc = function(test=FALSE, clean=FALSE, debug=FALSE, omp=!debug, path=Sys.getenv(
     # the -isystem suppresses strict-prototypes warnings from R's headers, #5477. Look at the output to see what -I is and pass the same path to -isystem.
     # TODO add -Wextra too?
   }
-  cat(cmd, "\n")
+  cat(cmd); cat("\n")
   ret = system(cmd, ignore.stdout=quiet)
   if (ret) return()
   # clang -Weverything includes -pedantic and issues many more warnings than gcc
