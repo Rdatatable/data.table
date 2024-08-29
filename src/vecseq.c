@@ -1,7 +1,6 @@
 #include "data.table.h"
 
-SEXP vecseq(SEXP x, SEXP len, SEXP clamp)
-{
+SEXP vecseq(SEXP x, SEXP len, SEXP clamp) {
   // Name taken from bit::vecseq, but,
   //   * implemented in C rather than R
   //   * takes len rather than y endpoints
@@ -46,3 +45,37 @@ SEXP vecseq(SEXP x, SEXP len, SEXP clamp)
   return(ans);
 }
 
+SEXP seqexp(SEXP x) {
+  // used in R/mergelist.R
+  // function(x) unlist(lapply(seq_along(x), function(i) rep(i, x[[i]])))
+  // used to expand bmerge()$lens, when $starts does not have NAs (or duplicates?)
+  // replaces rep.int(indices__, len__) where indices__ was seq_along(x)
+  // input:  1,1,2,  1,3,    1,0,1,2
+  // output: 1,2,3,3,4,5,5,5,6,  8,9,9
+  // all1 returns NULL, this is now commented out to reduce overhead becase seqexp is called only when !(ans$allLen1 && (!inner || len.x==length(ans$starts))) if seqexp would be used in another place we could enable that
+  if (!isInteger(x))
+    error("internal error: 'x' must be an integer"); // # nocov
+  const int *xp = INTEGER(x), nx = LENGTH(x);
+  int nans = 0;
+  for (int i=0; i<nx; ++i)
+    nans += xp[i];
+  /*bool hasZero=false;
+  for (int i=0; i<nx; ++i) {
+    int thisx = xp[i];
+    if (!thisx)
+      hasZero = true;
+    nans += thisx;
+  }
+  if (!hasZero && nans==nx) // short-circuit: if !hasZeros && nans=length(x), then all must be 1
+    return R_NilValue;*/
+  SEXP ans = PROTECT(allocVector(INTSXP, nans));
+  int *ansp = INTEGER(ans);
+  for (int i=0, ians=0; i<nx; ++i) {
+    int thisx = xp[i];
+    int thisi = i+1; // R's 1-based index
+    for (int j=0; j<thisx; ++j)
+      ansp[ians++] = thisi;
+  }
+  UNPROTECT(1);
+  return ans;
+}

@@ -71,6 +71,7 @@ R_CallMethodDef callMethods[] = {
 {"Creorder", (DL_FUNC) &reorder, -1},
 {"Crbindlist", (DL_FUNC) &rbindlist, -1},
 {"Cvecseq", (DL_FUNC) &vecseq, -1},
+{"Cseqexp", (DL_FUNC) &seqexp, -1},
 {"Csetlistelt", (DL_FUNC) &setlistelt, -1},
 {"Caddress", (DL_FUNC) &address, -1},
 {"CexpandAltRep", (DL_FUNC) &expandAltRep, -1},
