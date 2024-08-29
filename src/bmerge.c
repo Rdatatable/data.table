@@ -29,7 +29,7 @@ static SEXP nqgrp;
 static int ncol, *o, *xo, *retFirst, *retLength, *retIndex, *allLen1, *allGrp1, *rollends, ilen, anslen;
 static int *op, nqmaxgrp;
 static int ctr, nomatch; // populating matches for non-equi joins
-enum {ALL, FIRST, LAST} mult = ALL;
+enum {ALL, FIRST, LAST, ERR} mult = ALL;
 static double roll, rollabs;
 static Rboolean rollToNearest=FALSE;
 #define XIND(i) (xo ? xo[(i)]-1 : i)
@@ -113,6 +113,8 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP r
     mult = FIRST;
   else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "last"))
     mult = LAST;
+  else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "error"))
+    mult = ERR;
   else
     internal_error(__func__, "invalid value for 'mult'"); // # nocov
 
@@ -425,7 +427,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
         for (int j=ilow+1; j<iupp; j++) {
           const int k = o ? o[j]-1 : j;
           if (retFirst[k] != nomatch) {
-            if (mult == ALL) {
+            if (mult == ALL || mult == ERR) { // len>1 && mult==ERR already checked, no dup matches, continue as mult=ALL
               // for this irow, we've matches on more than one group
               allGrp1[0] = FALSE;
               retFirst[ctr+ilen] = xlow+2;
@@ -447,7 +449,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
             }
           } else {
             // none of the groups so far have filled in for this index. So use it!
-            if (mult == ALL) {
+            if (mult == ALL || mult == ERR) {
               retFirst[k] = xlow+2;
               retLength[k] = len;
               retIndex[k] = k+1;
