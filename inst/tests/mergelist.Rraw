@@ -1,0 +1,72 @@
+require(methods)
+
+if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
+  if ((tt<-compiler::enableJIT(-1))>0)
+    cat("This is dev mode and JIT is enabled (level ", tt, ") so there will be a brief pause around the first test.\n", sep="")
+} else {
+  require(data.table)
+  test = data.table:::test
+}
+
+addresses = function(x) vapply(x, address, "")
+
+# cbindlist
+
+l = list(
+  d1 = data.table(x=1:3, v1=1L),
+  d2 = data.table(y=3:1, v2=2L),
+  d3 = data.table(z=2:4, v3=3L)
+)
+ans = cbindlist(l)
+expected = data.table(l$d1, l$d2, l$d3)
+test(11.01, ans, expected)
+test(11.02, intersect(addresses(ans), addresses(expected)), character())
+ans = cbindlist(l, copy=FALSE)
+expected = setDT(c(l$d1, l$d2, l$d3))
+test(11.03, ans, expected)
+test(11.04, length(intersect(addresses(ans), addresses(expected))), ncol(expected))
+test(11.05, cbindlist(list(data.table(a=1L), data.table(), data.table(d=2L), data.table(f=3L))), data.table(a=1L,d=2L,f=3L))
+rm(expected)
+## codecov
+test(12.01, cbindlist(data.frame(a=1L), data.frame(b=1L)), error="must be a list")
+test(12.02, cbindlist(TRUE, FALSE), error="must be a list")
+test(12.03, cbindlist(list(), NA), error="must be TRUE or FALSE")
+test(12.04, cbindlist(list(data.table(a=1L), 1L)), error="is not of data.table type")
+test(12.05, options = c(datatable.verbose=TRUE), cbindlist(list(data.table(a=1:2), data.table(b=1:2))), data.table(a=1:2, b=1:2), output="cbindlist.*took")
+test(12.06, cbindlist(list(data.table(), data.table(a=1:2), data.table(b=1:2))), data.table(a=1:2, b=1:2))
+test(12.07, cbindlist(list(data.table(), data.table(a=1:2), list(b=1:2))), data.table(a=1:2, b=1:2))
+test(12.08, cbindlist(list(data.table(a=integer()), list(b=integer()))), data.table(a=integer(), b=integer()))
+## duplicated names
+test(12.09, cbindlist(list(data.table(a=1L, b=2L), data.table(b=3L, d=4L))), data.table(a=1L, b=2L, b=3L, d=4L))
+ans = cbindlist(list(setindexv(data.table(a=2:1, b=1:2),"a"), data.table(a=1:2, b=2:1, key="a"), data.table(a=2:1, b=1:2)))
+test(12.10, ans, data.table(a=2:1, b=1:2, a=1:2, b=2:1, a=2:1, b=1:2))
+test(12.11, indices(ans), NULL)
+## recycling, first ensure cbind recycling that we want to match to
+test(12.12, cbind(data.table(x=integer()), data.table(a=1:2)), data.table(x=c(NA_integer_,NA), a=1:2))
+test(12.13, cbind(data.table(x=1L), data.table(a=1:2)), data.table(x=c(1L,1L), a=1:2))
+test(12.14, cbindlist(list(data.table(a=integer()), data.table(b=1:2))), error="recycling.*not yet implemented")
+test(12.15, cbindlist(list(data.table(a=1L), data.table(b=1:2))), error="recycling.*not yet implemented")
+test(12.16, cbindlist(list(data.table(a=integer()), data.table(b=1:2)), copy=FALSE), error="has to have equal nrow")
+test(12.17, cbindlist(list(data.table(a=1L), data.table(b=1:2)), copy=FALSE), error="has to have equal nrow")
+
+## retain indices
+d = data.table(x=1:2, y=2:1, z=2:1, v1=1:2) ## ensure setDT will retain key and indices when it is called on the list, bc Ccbindlist returns list
+setkeyv(d, "x"); setindexv(d, list("y", "z"))
+a = attributes(d)
+attributes(d) = a[!names(a) %in% c("class",".internal.selfref","row.names")]
+test(13.01, class(d), "list")
+setDT(d)
+test(13.02, key(d), "x")
+# test(13.03, hasindex(d, "y") && hasindex(d, "z"))
+l = list(
+  data.table(id1=1:5, id2=5:1, id3=1:5, v1=1:5),
+  data.table(id4=5:1, id5=1:5, v2=1:5),
+  data.table(id6=5:1, id7=1:5, v3=1:5),
+  data.table(id8=5:1, id9=5:1, v4=1:5)
+)
+setkeyv(l[[1L]], "id1"); setindexv(l[[1L]], list("id1", "id2", "id3", c("id1","id2","id3"))); setindexv(l[[3L]], list("id6", "id7")); setindexv(l[[4L]], "id9")
+ii = lapply(l, indices)
+ans = cbindlist(l)
+test(13.04, key(ans), "id1")
+test(13.05, indices(ans), c("id1","id2","id3","id1__id2__id3","id6","id7","id9"))
+test(13.06, ii, lapply(l, indices)) ## this tests that original indices have not been touched, shallow_duplicate in mergeIndexAttrib
