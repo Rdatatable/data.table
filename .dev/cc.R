@@ -70,20 +70,35 @@ cc = function(test=FALSE, clean=FALSE, debug=FALSE, omp=!debug, path=Sys.getenv(
   dll = grep("data_table.so", dll, fixed=TRUE, value=TRUE)
   sapply(dll, dyn.unload)
   gc()
+  
+  # hack for windows under mingw-like environment
+  # PROJ_PATH must be windows like i.e.: export PROJ_PATH=$(Rscript -e 'getwd()')
+  if (.Platform$OS.type == "windows") {
+    system = function(command, ...) shell(shQuote(command, "sh"), shell = "sh",...)
+    # when -std=c99, macro WIN32 is not defined (MinGW) so we define it
+    # otherwise will fail as sys/mman.h does not exists in windows (fread.c)
+    W32 = "-DWIN32"
+    dt_object = "data_table"
+  } else {
+    W32 = ""
+    dt_object = "data_table.so"
+  }
 
   old = getwd()
   on.exit(setwd(old))
   setwd(file.path(path,"src"))
   if (!quiet) cat(getwd(),"\n")
   if (clean) system("rm *.o *.so")
-  OMP = if (omp) "" else "no-"
+  OMP = if (omp) "openmp" else "no-openmp"
   if (debug) {
-    ret = system(ignore.stdout=quiet, sprintf("MAKEFLAGS='-j CC=%s PKG_CFLAGS=-f%sopenmp CFLAGS=-std=c99\\ -O0\\ -ggdb\\ -pedantic' R CMD SHLIB -d -o data_table.so *.c", CC, OMP))
+    cmd = sprintf(R"(MAKEFLAGS='-j CC=%s PKG_CFLAGS=-f% CFLAGS=-std=c99\ -O0\ -ggdb\ %s\ -pedantic' R CMD SHLIB -d -o data_table.so *.c)", CC, OMP, W32)
   } else {
-    ret = system(ignore.stdout=quiet, sprintf("MAKEFLAGS='-j CC=%s CFLAGS=-f%sopenmp\\ -std=c99\\ -O3\\ -pipe\\ -Wall\\ -pedantic\\ -Wstrict-prototypes\\ -isystem\\ /usr/share/R/include\\ -fno-common' R CMD SHLIB -o data_table.so *.c", CC, OMP))
+    cmd = sprintf(R"(MAKEFLAGS='-j CC=%s CFLAGS=-f%s\ -std=c99\ -O3\ -pipe\ -Wall\ -pedantic\ -Wstrict-prototypes\ -isystem\ /usr/share/R/include\ %s\ -fno-common' R CMD SHLIB -o data_table.so *.c)", CC, OMP, W32)
     # the -isystem suppresses strict-prototypes warnings from R's headers, #5477. Look at the output to see what -I is and pass the same path to -isystem.
     # TODO add -Wextra too?
   }
+  cat(sprintf("Running command:\n%s\n", cmd))
+  ret = system(cmd, ignore.stdout=quiet)
   if (ret) return()
   # clang -Weverything includes -pedantic and issues many more warnings than gcc
   # system("R CMD SHLIB -o data_table.so *.c")
@@ -93,7 +108,7 @@ cc = function(test=FALSE, clean=FALSE, debug=FALSE, omp=!debug, path=Sys.getenv(
       break
     }
   }
-  dyn.load("data_table.so")
+  dyn.load(dt_object)
   setwd(old)
   xx = getDLLRegisteredRoutines("data_table",TRUE)
   for (Call in xx$.Call)
