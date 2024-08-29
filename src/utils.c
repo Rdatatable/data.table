@@ -513,10 +513,7 @@ bool perhapsDataTable(SEXP x) {
   return isDataTable(x) || isFrame(x) || isDataList(x);
 }
 SEXP perhapsDataTableR(SEXP x) {
-  SEXP ans = PROTECT(allocVector(LGLSXP, 1));
-  LOGICAL(ans)[0] = (int)perhapsDataTable(x);
-  UNPROTECT(1);
-  return ans;
+  return ScalarLogical(perhapsDataTable(x));
 }
 
 void internal_error(const char *call_name, const char *format, ...) {
