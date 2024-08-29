@@ -163,13 +163,9 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP r
     retFirst[j] = nomatch;   // default to no match for NA goto below
   }
   // retLength[j] = 0;   // TO DO: do this to save the branch below and later branches at R level to set .N to 0
-  if (nomatch==0) {
-    for (int j=0; j<anslen; j++)
-      retLength[j] = 0;
-  } else { // nomatch==NA
-    for (int j=0; j<anslen; j++)
-      retLength[j] = 1;
-  }
+  int retLengthVal = (int)(nomatch != 0);
+  for (int j=0; j<anslen; j++)
+    retLength[j] = retLengthVal;
 
   // allLen1Arg
   allLen1Arg = PROTECT(allocVector(LGLSXP, 1));
