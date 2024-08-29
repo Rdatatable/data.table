@@ -373,7 +373,7 @@ Yes:
 
 The general form is:
 
-```{r, eval = FALSE}
+```r
 DT[where, select|update, group by][order by][...] ... [...]
 ```
 
@@ -400,6 +400,7 @@ A key advantage of column vectors in R is that they are _ordered_, unlike SQL[^2
  - `check.names` is by default `TRUE` in `data.frame` but `FALSE` in data.table, for convenience.
  - `data.table` has always set `stringsAsFactors=FALSE` by default. In R 4.0.0 (Apr 2020), `data.frame`'s default was changed from `TRUE` to `FALSE` and there is no longer a difference in this regard; see [stringsAsFactors, Kurt Hornik, Feb 2020](https://developer.r-project.org/Blog/public/2020/02/16/stringsasfactors/).
  - Atomic vectors in `list` columns are collapsed when printed using `", "` in `data.frame`, but `","` in data.table with a trailing comma after the 6th item to avoid accidental printing of large embedded objects.
+ - Unlike data.frames a data.table cannot store rows with no columns, as rows are considered to be the children of columns: `nrow(DF[, 0])` returns the number of rows, while `nrow(DT[, 0])` always returns 0; but see issue [#2422](https://github.com/Rdatatable/data.table/issues/2422).
 
 In `[.data.frame` we very often set `drop = FALSE`. When we forget, bugs can arise in edge cases where single columns are selected and all of a sudden a vector is returned rather than a single column `data.frame`. In `[.data.table` we took the opportunity to make it consistent and dropped `drop`.
 

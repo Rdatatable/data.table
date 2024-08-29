@@ -9,9 +9,11 @@ Rplots.pdf
 data.table_*.tar.gz
 data.table.Rcheck
 src/Makevars
+.Rprofile
 
 # Package install
 inst/cc
+config.log
 
 # Emacs IDE files
 .emacs.desktop
@@ -20,6 +22,9 @@ inst/cc
 # RStudio IDE files
 .Rproj.user
 data.table.Rproj
+
+# zed editor
+.zed
 
 # produced vignettes
 vignettes/*.html

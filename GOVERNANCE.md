@@ -64,7 +64,7 @@ Functionality that is out of current scope:
 
 * Definition: permission to commit to, and merge PRs into, master branch. 
 * How to obtain this role: after a reviewer has a consistent history of careful reviews of others' PRs, then a current Committer should ask all other current Committers if they approve promoting the Reviewer to Committer, and it should be done if there is Consensus among active Committers. 
-* How this role is recognized: credited via role="aut" in DESCRIPTION (so they appear in Author list on CRAN), and added to https://github.com/orgs/Rdatatable/teams/maintainers which gives permission to merge PRs into master branch. 
+* How this role is recognized: credited via role="aut" in DESCRIPTION (so they appear in Author list on CRAN), and added to https://github.com/orgs/Rdatatable/teams/committers which gives permission to merge PRs into master branch. 
 
 ## CRAN maintainer
 
@@ -123,6 +123,9 @@ data.table Version line in DESCRIPTION typically has the following meanings
 
 # Governance history
 
+Feb 2024: change team name/link maintainers to committers, to be consistent with role defined in governance.
+
 Nov-Dec 2023: initial version drafted by Toby Dylan Hocking and
 reviewed by Tyson Barrett, Jan Gorecki, Michael Chirico, Benjamin
 Schwendinger.
+

@@ -1,7 +1,7 @@
 useDynLib("data_table", .registration=TRUE)
 
 ## For S4-ization
-import(methods)
+importFrom(methods, "S3Part<-", slotNames)
 exportClasses(data.table, IDate, ITime)
 ##
 
@@ -27,7 +27,9 @@ export(tstrsplit)
 export(frank)
 export(frankv)
 export(address)
-export(.SD,.N,.I,.GRP,.NGRP,.BY,.EACHI)
+export(.SD,.N,.I,.GRP,.NGRP,.BY,.EACHI, measure, patterns)
+# TODO(#6197): Export these.
+# export(., J)
 export(rleid)
 export(rleidv)
 export(rowid)
@@ -60,7 +62,6 @@ export(substitute2)
 #export(DT)  # mtcars |> DT(i,j,by)  #4872 #5472
 
 S3method("[", data.table)
-export("[.data.table")  # so that functional DT() finds it; PR#5176
 S3method("[<-", data.table)
 # S3method("[[", data.table)
 # S3method("[[<-", data.table)
@@ -127,14 +128,14 @@ S3method(melt, default)
 
 # exported for historical reasons -- if reshape2 is higher on search path,
 # dcast(DT) will not dispatch since reshape2::dcast is not generic. So users
-# and many packges on CRAN call dcast.data.table() and/or melt.data.table() directly. See #3082.
+# and many packages on CRAN call dcast.data.table() and/or melt.data.table() directly. See #3082.
 export(melt.data.table, dcast.data.table)
 
-import(utils)
+importFrom(utils, capture.output, contrib.url, download.file, flush.console, getS3method, head, packageVersion, tail, untar, unzip)
 export(update_dev_pkg)
 S3method(tail, data.table)
 S3method(head, data.table)
-import(stats)
+importFrom(stats, as.formula, na.omit, setNames, terms)
 S3method(na.omit, data.table)
 
 S3method(as.data.table, xts)
@@ -200,5 +201,5 @@ S3method(format_col, expression)
 export(format_list_item)
 S3method(format_list_item, default)
 
-export(fdroplevels)
+export(fdroplevels, setdroplevels)
 S3method(droplevels, data.table)

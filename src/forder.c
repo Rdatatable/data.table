@@ -32,6 +32,7 @@
 
 static int nth = 1;                 // number of threads to use, throttled by default; used by cleanup() to ensure no mismatch in getDTthreads() calls
 static bool retgrp = true;          // return group sizes as well as the ordering vector? If so then use gs, gsalloc and gsn :
+static bool retstats = true;        // return extra flags for any NA, NaN, -Inf, +Inf, non-ASCII, non-UTF8
 static int nrow = 0;                // used as group size stack allocation limit (when all groups are 1 row)
 static int *gs = NULL;              // gs = final groupsizes e.g. 23,12,87,2,1,34,...
 static int gs_alloc = 0;            // allocated size of gs
@@ -56,15 +57,16 @@ static int *anso = NULL;
 static bool notFirst=false;
 
 static char msg[1001];
-#define STOP(...) do {snprintf(msg, 1000, __VA_ARGS__); cleanup(); error("%s", msg);} while(0)      // http://gcc.gnu.org/onlinedocs/cpp/Swallowing-the-Semicolon.html#Swallowing-the-Semicolon
 // use STOP in this file (not error()) to ensure cleanup() is called first
 // snprintf to msg first in case nrow (just as an example) is provided in the message because cleanup() sets nrow to 0
+#define STOP(...) do {snprintf(msg, 1000, __VA_ARGS__); cleanup(); error("%s", msg);} while(0)      // http://gcc.gnu.org/onlinedocs/cpp/Swallowing-the-Semicolon.html#Swallowing-the-Semicolon
+
 #undef warning
 #define warning(...) Do not use warning in this file                // since it can be turned to error via warn=2
 /* Using OS realloc() in this file to benefit from (often) in-place realloc() to save copy
  * We have to trap on exit anyway to call savetl_end().
  * NB: R_alloc() would be more convenient (fails within) and robust (auto free) but there is no R_realloc(). Implementing R_realloc() would be an alloc and copy, iiuc.
- *     Calloc/Realloc needs to be Free'd, even before error() [R-exts$6.1.2]. An oom within Calloc causes a previous Calloc to leak so Calloc would still needs to be trapped anyway.
+ *     R_Calloc/R_Realloc needs to be R_Free'd, even before error() [R-exts$6.1.2]. An oom within R_Calloc causes a previous R_Calloc to leak so R_Calloc would still needs to be trapped anyway.
  * Therefore, using <<if (!malloc()) STOP(_("helpful context msg"))>> approach to cleanup() on error.
  */
 
@@ -95,6 +97,18 @@ static void cleanup(void) {
   if (key!=NULL) { int i=0; while (key[i]!=NULL) free(key[i++]); }  // ==nradix, other than rare cases e.g. tests 1844.5-6 (#3940), and if a calloc fails
   free(key); key=NULL; nradix=0;
   savetl_end();  // Restore R's own usage of tl. Must run after the for loop in free_ustr() since only CHARSXP which had tl>0 (R's usage) are stored there.
+}
+
+void internal_error_with_cleanup(const char *call_name, const char *format, ...) {
+  char buff[1024];
+  va_list args;
+  va_start(args, format);
+
+  vsnprintf(buff, 1023, format, args);
+  va_end(args);
+
+  cleanup();
+  error("%s %s: %s. %s", _("Internal error in"), call_name, buff, _("Please report to the data.table issues tracker."));
 }
 
 static void push(const int *x, const int n) {
@@ -267,21 +281,23 @@ static void cradix_r(SEXP *xsub, int n, int radix)
 static void cradix(SEXP *x, int n)
 {
   cradix_counts = (int *)calloc(ustr_maxlen*256, sizeof(int));  // counts for the letters of left-aligned strings
-  if (!cradix_counts) STOP(_("Failed to alloc cradix_counts"));
   cradix_xtmp = (SEXP *)malloc(ustr_n*sizeof(SEXP));
-  if (!cradix_xtmp) STOP(_("Failed to alloc cradix_tmp"));
+  if (!cradix_counts || !cradix_xtmp) {
+    free(cradix_counts); free(cradix_xtmp);
+    STOP(_("Failed to alloc cradix_counts and/or cradix_tmp"));
+  }
   cradix_r(x, n, 0);
   free(cradix_counts); cradix_counts=NULL;
   free(cradix_xtmp);   cradix_xtmp=NULL;
 }
 
-static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int *out_na_count)
+static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int *out_na_count, bool *out_anynotascii, bool *out_anynotutf8)
 // group numbers are left in truelength to be fetched by WRITE_KEY
 {
   int na_count=0;
-  bool anyneedutf8=false;
-  if (ustr_n!=0) STOP(_("Internal error: ustr isn't empty when starting range_str: ustr_n=%d, ustr_alloc=%d"), ustr_n, ustr_alloc);  // # nocov
-  if (ustr_maxlen!=0) STOP(_("Internal error: ustr_maxlen isn't 0 when starting range_str"));  // # nocov
+  bool anynotascii=false, anynotutf8=false;
+  if (ustr_n!=0) internal_error_with_cleanup(__func__, "ustr isn't empty when starting range_str: ustr_n=%d, ustr_alloc=%d", ustr_n, ustr_alloc);  // # nocov
+  if (ustr_maxlen!=0) internal_error_with_cleanup(__func__, "ustr_maxlen isn't 0 when starting range_str");  // # nocov
   // savetl_init() has already been called at the start of forder
   #pragma omp parallel for num_threads(getDTthreads(n, true))
   for(int i=0; i<n; i++) {
@@ -306,21 +322,30 @@ static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int 
       ustr[ustr_n++] = s;
       SET_TRUELENGTH(s, -ustr_n);  // unique in any order is fine. first-appearance order is achieved later in count_group
       if (LENGTH(s)>ustr_maxlen) ustr_maxlen=LENGTH(s);
-      if (!anyneedutf8 && NEED2UTF8(s)) anyneedutf8=true;
+      if (!anynotutf8 &&    // even if anynotascii we still want to know if anynotutf8, and anynotutf8 implies anynotascii already
+            !IS_ASCII(s)) { // anynotutf8 implies anynotascii and IS_ASCII will be cheaper than IS_UTF8, so start with this one
+        if (!anynotascii)
+          anynotascii=true;
+        if (!IS_UTF8(s))
+          anynotutf8=true;
+      }
     }
   }
   *out_na_count = na_count;
+  *out_anynotascii = anynotascii;
+  *out_anynotutf8 = anynotutf8;
   if (ustr_n==0) {  // all na
     *out_min = 0;
     *out_max = 0;
     return;
   }
-  if (anyneedutf8) {
+  if (anynotutf8) {
     SEXP ustr2 = PROTECT(allocVector(STRSXP, ustr_n));
     for (int i=0; i<ustr_n; i++) SET_STRING_ELT(ustr2, i, ENC2UTF8(ustr[i]));
     SEXP *ustr3 = (SEXP *)malloc(ustr_n * sizeof(SEXP));
-    if (!ustr3) STOP(_("Failed to alloc ustr3 when converting strings to UTF8"));  // # nocov
-    memcpy(ustr3, STRING_PTR(ustr2), ustr_n*sizeof(SEXP));
+    if (!ustr3)
+      STOP(_("Failed to alloc ustr3 when converting strings to UTF8"));  // # nocov
+    memcpy(ustr3, STRING_PTR_RO(ustr2), ustr_n*sizeof(SEXP));
     // need to reset ustr_maxlen because we need ustr_maxlen for utf8 strings
     ustr_maxlen = 0;
     for (int i=0; i<ustr_n; i++) {
@@ -337,8 +362,9 @@ static void range_str(SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int 
     }
     // now use the 1-1 mapping from ustr to ustr2 to get the ordering back into original ustr, being careful to reset tl to 0
     int *tl = (int *)malloc(ustr_n * sizeof(int));
-    if (!tl) STOP(_("Failed to alloc tl when converting strings to UTF8"));  // # nocov
-    SEXP *tt = STRING_PTR(ustr2);
+    if (!tl)
+      STOP(_("Failed to alloc tl when converting strings to UTF8"));  // # nocov
+    const SEXP *tt = STRING_PTR_RO(ustr2);
     for (int i=0; i<ustr_n; i++) tl[i] = TRUELENGTH(tt[i]);   // fetches the o in ustr3 into tl which is ordered by ustr
     for (int i=0; i<ustr_n; i++) SET_TRUELENGTH(ustr3[i], 0);    // reset to 0 tl of the UTF8 (and possibly non-UTF in ustr too)
     for (int i=0; i<ustr_n; i++) SET_TRUELENGTH(ustr[i], tl[i]); // put back the o into ustr's tl
@@ -368,9 +394,10 @@ SEXP setNumericRounding(SEXP droundArg)
 {
   if (!isInteger(droundArg) || LENGTH(droundArg)!=1) error(_("Must an integer or numeric vector length 1"));
   if (INTEGER(droundArg)[0] < 0 || INTEGER(droundArg)[0] > 2) error(_("Must be 2, 1 or 0"));
+  int oldRound = dround;
   dround = INTEGER(droundArg)[0];
   dmask = dround ? 1 << (8*dround-1) : 0;
-  return R_NilValue;
+  return ScalarInteger(oldRound);
 }
 
 SEXP getNumericRounding(void)
@@ -406,7 +433,7 @@ uint64_t dtwiddle(double x) //const void *p, int i)
 
 void radix_r(const int from, const int to, const int radix);
 
-SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg)
+SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg)
 // sortGroups TRUE from setkey and regular forder, FALSE from by= for efficiency so strings don't have to be sorted and can be left in appearance order
 // when sortGroups is TRUE, ascArg contains +1/-1 for ascending/descending of each by column; when FALSE ascArg is ignored
 {
@@ -423,9 +450,9 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
 
   if (!isNewList(DT)) {
     if (!isVectorAtomic(DT))
-      STOP(_("Internal error: input is not either a list of columns, or an atomic vector."));  // # nocov; caught by colnamesInt at R level, test 1962.0472
+      internal_error_with_cleanup(__func__, "input is not either a list of columns, or an atomic vector.");  // # nocov; caught by colnamesInt at R level, test 1962.0472
     if (!isNull(by))
-      STOP(_("Internal error: input is an atomic vector (not a list of columns) but by= is not NULL"));  // # nocov; caught at R level, test 1962.043
+      internal_error_with_cleanup(__func__, "input is an atomic vector (not a list of columns) but by= is not NULL");  // # nocov; caught at R level, test 1962.043
     if (!isInteger(ascArg) || LENGTH(ascArg)!=1)
       STOP(_("Input is an atomic vector (not a list of columns) but order= is not a length 1 integer"));
     if (verbose)
@@ -440,31 +467,45 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
       Rprintf(_("forder.c received %d rows and %d columns\n"), length(VECTOR_ELT(DT,0)), length(DT));
   }
   if (!length(DT))
-    STOP(_("Internal error: DT is an empty list() of 0 columns"));  // # nocov  should have been caught be colnamesInt, test 2099.1
+    internal_error_with_cleanup(__func__, "DT is an empty list() of 0 columns");  // # nocov # caught in reuseSorting forder
   if (!isInteger(by) || !LENGTH(by))
-    STOP(_("Internal error: DT has %d columns but 'by' is either not integer or is length 0"), length(DT));  // # nocov  colnamesInt catches, 2099.2
-  if (!isInteger(ascArg) || LENGTH(ascArg)!=LENGTH(by))
-    STOP(_("Either order= is not integer or its length (%d) is different to by='s length (%d)"), LENGTH(ascArg), LENGTH(by));
+    internal_error_with_cleanup(__func__, "DT has %d columns but 'by' is either not integer or is length 0", length(DT));  // # nocov  colnamesInt catches, 2099.2
+  if (!isInteger(ascArg))
+    internal_error_with_cleanup(__func__, "'order' must be integer"); // # nocov
+  if (LENGTH(ascArg) != LENGTH(by)) {
+    if (LENGTH(ascArg)!=1)
+      STOP(_("'order' length (%d) is different to by='s length (%d)"), LENGTH(ascArg), LENGTH(by));
+    SEXP recycleAscArg = PROTECT(allocVector(INTSXP, LENGTH(by)));
+    for (int j=0; j<LENGTH(recycleAscArg); j++)
+      INTEGER(recycleAscArg)[j] = INTEGER(ascArg)[0];
+    ascArg = recycleAscArg;
+    UNPROTECT(1); // recycleAscArg
+  }
   nrow = length(VECTOR_ELT(DT,0));
   int n_cplx = 0;
   for (int i=0; i<LENGTH(by); i++) {
     int by_i = INTEGER(by)[i];
     if (by_i < 1 || by_i > length(DT))
-      STOP(_("internal error: 'by' value %d out of range [1,%d]"), by_i, length(DT)); // # nocov # R forderv already catch that using C colnamesInt
+      internal_error_with_cleanup(__func__, "'by' value %d out of range [1,%d]", by_i, length(DT)); // # nocov # R forderv already catch that using C colnamesInt
     if ( nrow != length(VECTOR_ELT(DT, by_i-1)) )
       STOP(_("Column %d is length %d which differs from length of column 1 (%d), are you attempting to order by a list column?\n"), INTEGER(by)[i], length(VECTOR_ELT(DT, INTEGER(by)[i]-1)), nrow);
     if (TYPEOF(VECTOR_ELT(DT, by_i-1)) == CPLXSXP) n_cplx++;
   }
   if (!IS_TRUE_OR_FALSE(retGrpArg))
-    STOP(_("%s must be TRUE or FALSE"), "retGrp");
+    STOP(_("retGrp must be TRUE or FALSE")); // # nocov # covered in reuseSorting forder
   retgrp = LOGICAL(retGrpArg)[0]==TRUE;
+  if (!IS_TRUE_OR_FALSE(retStatsArg))
+    STOP(_("retStats must be TRUE or FALSE")); // # nocov # covered in reuseSorting forder
+  retstats = LOGICAL(retStatsArg)[0]==TRUE;
+  if (!retstats && retgrp)
+    error("retStats must be TRUE whenever retGrp is TRUE"); // # nocov # covered in reuseSorting forder
   if (!IS_TRUE_OR_FALSE(sortGroupsArg))
-    STOP(_("%s must be TRUE or FALSE"), "sort");
+    STOP(_("sort must be TRUE or FALSE")); // # nocov # covered in reuseSorting forder
   sortType = LOGICAL(sortGroupsArg)[0]==TRUE;   // if sortType is 1, it is later flipped between +1/-1 according to ascArg. Otherwise ascArg is ignored when sortType==0
   if (!retgrp && !sortType)
     STOP(_("At least one of retGrp= or sort= must be TRUE"));
   if (!isLogical(naArg) || LENGTH(naArg) != 1)
-    STOP(_("na.last must be logical TRUE, FALSE or NA of length 1"));
+    STOP(_("na.last must be logical TRUE, FALSE or NA of length 1")); // # nocov # covered in reuseSorting forder
   nalast = (LOGICAL(naArg)[0] == NA_LOGICAL) ? -1 : LOGICAL(naArg)[0]; // 1=na last, 0=na first (default), -1=remove na
 
   if (nrow==0) {
@@ -473,6 +514,12 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
     if (retgrp) {
       setAttrib(ans, sym_starts, allocVector(INTSXP, 0));
       setAttrib(ans, sym_maxgrpn, ScalarInteger(0));
+    }
+    if (retstats) {
+      setAttrib(ans, sym_anyna, ScalarInteger(0));
+      setAttrib(ans, sym_anyinfnan, ScalarInteger(0));
+      setAttrib(ans, sym_anynotascii, ScalarInteger(0));
+      setAttrib(ans, sym_anynotutf8, ScalarInteger(0));
     }
     UNPROTECT(n_protect);
     return ans;
@@ -499,12 +546,14 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
   bool complexRerun = false;   // see comments below in CPLXSXP case
   SEXP CplxPart = R_NilValue;
   if (n_cplx) { CplxPart=PROTECT(allocVector(REALSXP, nrow)); n_protect++; } // one alloc is reused for each part
+  int any_na=0, any_infnan=0, any_notascii=0, any_notutf8=0; // collect more statistics about the data #2879, allow optimize of order(na.last=TRUE) as well #3023
   TEND(2);
   for (int col=0; col<ncol; col++) {
     // Rprintf(_("Finding range of column %d ...\n"), col);
     SEXP x = VECTOR_ELT(DT,INTEGER(by)[col]-1);
     uint64_t min=0, max=0;     // min and max of non-NA finite values
     int na_count=0, infnan_count=0;
+    bool anynotascii=false, anynotutf8=false;
     if (sortType) {
       sortType=INTEGER(ascArg)[col];  // if sortType!=0 (not first-appearance) then +1/-1 comes from ascArg.
       if (sortType!=1 && sortType!=-1)
@@ -547,12 +596,20 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
       break;
     case STRSXP :
       // need2utf8 now happens inside range_str on the uniques
-      range_str(STRING_PTR(x), nrow, &min, &max, &na_count);
+      range_str(STRING_PTR_RO(x), nrow, &min, &max, &na_count, &anynotascii, &anynotutf8);
       break;
     default:
       STOP(_("Column %d passed to [f]order is type '%s', not yet supported."), col+1, type2char(TYPEOF(x)));
     }
     TEND(3);
+    if (na_count>0)
+      any_na = 1; // may be written multiple times, for each column that has NA, but thats fine
+    if (infnan_count>0)
+      any_infnan = 1;
+    if (anynotascii)
+      any_notascii = 1;
+    if (anynotutf8)
+      any_notutf8 = 1;
     if (na_count==nrow || (min>0 && min==max && na_count==0 && infnan_count==0)) {
       // all same value; skip column as nothing to do;  [min,max] is just of finite values (excludes +Inf,-Inf,NaN and NA)
       if (na_count==nrow && nalast==-1) { for (int i=0; i<nrow; i++) anso[i]=0; }
@@ -688,7 +745,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
       }
       break;
     case STRSXP : {
-      SEXP *xd = STRING_PTR(x);
+      const SEXP *xd = STRING_PTR_RO(x);
       #pragma omp parallel for num_threads(getDTthreads(nrow, true))
       for (int i=0; i<nrow; i++) {
         uint64_t elem=0;
@@ -703,7 +760,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
       free_ustr();  // ustr could be left allocated and reused, but free now in case large and we're tight on ram
       break;
     default:
-       STOP(_("Internal error: column not supported, not caught earlier"));  // # nocov
+       internal_error_with_cleanup(__func__, "column not supported, not caught earlier");  // # nocov
     }
     nradix += nbyte-1+(spare==0);
     TEND(4)
@@ -718,13 +775,19 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
   nth = getDTthreads(nrow, true);  // this nth is relied on in cleanup(); throttle=true/false debated for #5077
   TMP =  (int *)malloc(nth*UINT16_MAX*sizeof(int)); // used by counting sort (my_n<=65536) in radix_r()
   UGRP = (uint8_t *)malloc(nth*256);                // TODO: align TMP and UGRP to cache lines (and do the same for stack allocations too)
-  if (!TMP || !UGRP /*|| TMP%64 || UGRP%64*/) STOP(_("Failed to allocate TMP or UGRP or they weren't cache line aligned: nth=%d"), nth);
+  if (!TMP || !UGRP /*|| TMP%64 || UGRP%64*/) {
+    free(TMP); free(UGRP);
+    STOP(_("Failed to allocate TMP or UGRP or they weren't cache line aligned: nth=%d"), nth);
+  }
   
   if (retgrp) {
     gs_thread = calloc(nth, sizeof(int *));     // thread private group size buffers
     gs_thread_alloc = calloc(nth, sizeof(int));
     gs_thread_n = calloc(nth, sizeof(int));
-    if (!gs_thread || !gs_thread_alloc || !gs_thread_n) STOP(_("Could not allocate (very tiny) group size thread buffers"));
+    if (!gs_thread || !gs_thread_alloc || !gs_thread_n) {
+      free(gs_thread); free(gs_thread_alloc); free(gs_thread_n);
+      STOP(_("Could not allocate (very tiny) group size thread buffers"));
+    }
   }
   if (nradix) {
     radix_r(0, nrow-1, 0);  // top level recursive call: (from, to, radix)
@@ -768,6 +831,12 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, S
       tmp+=elem;
     }
     setAttrib(ans, sym_maxgrpn, ScalarInteger(maxgrpn));
+  }
+  if (retstats) {
+    setAttrib(ans, sym_anyna, ScalarInteger(any_na));
+    setAttrib(ans, sym_anyinfnan, ScalarInteger(any_infnan));
+    setAttrib(ans, sym_anynotascii, ScalarInteger(any_notascii));
+    setAttrib(ans, sym_anynotutf8, ScalarInteger(any_notutf8));
   }
 
   cleanup();
@@ -834,7 +903,9 @@ void radix_r(const int from, const int to, const int radix) {
     #endif
 
     uint8_t *restrict my_key = key[radix]+from;  // safe to write as we don't use this radix again
-    uint8_t o[my_n];
+    uint8_t *o = (uint8_t *)malloc(my_n * sizeof(uint8_t));
+    if (!o)
+      STOP(_("Failed to allocate %d bytes for '%s'."), (int)(my_n * sizeof(uint8_t)), "o");
     // if last key (i.e. radix+1==nradix) there are no more keys to reorder so we could reorder osub by reference directly and save allocating and populating o just
     // to use it once. However, o's type is uint8_t so many moves within this max-256 vector should be faster than many moves in osub (4 byte or 8 byte ints) [1 byte
     // type is always aligned]
@@ -901,7 +972,11 @@ void radix_r(const int from, const int to, const int radix) {
     }
     if (!skip) {
       // reorder osub and each remaining ksub
-      int TMP[my_n];  // on stack fine since my_n is very small (<=256)
+      int *TMP = malloc(my_n * sizeof(int));
+      if (!TMP) {
+        free(o);
+        STOP(_("Failed to allocate %d bytes for '%s'."), (int)(my_n * sizeof(int)), "TMP");
+      }
       const int *restrict osub = anso+from;
       for (int i=0; i<my_n; i++) TMP[i] = osub[o[i]];
       memcpy((int *restrict)(anso+from), TMP, my_n*sizeof(int));
@@ -910,14 +985,19 @@ void radix_r(const int from, const int to, const int radix) {
         for (int i=0; i<my_n; i++) ((uint8_t *)TMP)[i] = ksub[o[i]];
         memcpy((uint8_t *restrict)(key[r]+from), (uint8_t *)TMP, my_n);
       }
+      free(TMP);
       TEND(8)
     }
+    free(o);
     // my_key is now grouped (and sorted by group too if sort!=0)
     // all we have left to do is find the group sizes and either recurse or push
     if (radix+1==nradix && !retgrp) {
       return;
     }
-    int ngrp=0, my_gs[my_n];  //minor TODO: could know number of groups with certainty up above
+    int ngrp=0; //minor TODO: could know number of groups with certainty up above
+    int *my_gs = malloc(my_n * sizeof(int));
+    if (!my_gs)
+      STOP(_("Failed to allocate %d bytes for '%s'."), (int)(my_n * sizeof(int)), "my_gs");
     my_gs[ngrp]=1;
     for (int i=1; i<my_n; i++) {
       if (my_key[i]!=my_key[i-1]) my_gs[++ngrp] = 1;
@@ -933,6 +1013,7 @@ void radix_r(const int from, const int to, const int radix) {
         f+=my_gs[i];
       }
     }
+    free(my_gs);
     return;
   }
   else if (my_n<=UINT16_MAX) {    // UINT16_MAX==65535 (important not 65536)
@@ -1016,7 +1097,9 @@ void radix_r(const int from, const int to, const int radix) {
     if (!retgrp && radix+1==nradix) {
       return;  // we're done. avoid allocating and populating very last group sizes for last key
     }
-    int my_gs[ngrp==0 ? 256 : ngrp];  // ngrp==0 when sort and skip==true; we didn't count the non-zeros in my_counts yet in that case
+    int *my_gs = malloc((ngrp==0 ? 256 : ngrp) * sizeof(int)); // ngrp==0 when sort and skip==true; we didn't count the non-zeros in my_counts yet in that case
+    if (!my_gs)
+      STOP(_("Failed to allocate %d bytes for '%s'."), (int)((ngrp==0 ? 256 : ngrp) * sizeof(int)), "my_gs");
     if (sortType!=0) {
       ngrp=0;
       for (int i=0; i<256; i++) if (my_counts[i]) my_gs[ngrp++]=my_counts[i];  // this casts from uint16_t to int32, too
@@ -1034,6 +1117,7 @@ void radix_r(const int from, const int to, const int radix) {
         my_from+=my_gs[i];
       }
     }
+    free(my_gs);
     return;
   }
   // else parallel batches. This is called recursively but only once or maybe twice before resolving to UINT16_MAX branch above
@@ -1044,7 +1128,10 @@ void radix_r(const int from, const int to, const int radix) {
   uint16_t *counts = calloc(nBatch*256,sizeof(uint16_t));
   uint8_t  *ugrps =  malloc(nBatch*256*sizeof(uint8_t));
   int      *ngrps =  calloc(nBatch    ,sizeof(int));
-  if (!counts || !ugrps || !ngrps) STOP(_("Failed to allocate parallel counts. my_n=%d, nBatch=%d"), my_n, nBatch);
+  if (!counts || !ugrps || !ngrps) {
+    free(counts); free(ugrps); free(ngrps);
+    STOP(_("Failed to allocate parallel counts. my_n=%d, nBatch=%d"), my_n, nBatch);
+  }
 
   bool skip=true;
   const int n_rem = nradix-radix-1;   // how many radix are remaining after this one
@@ -1053,6 +1140,10 @@ void radix_r(const int from, const int to, const int radix) {
   {
     int     *my_otmp = malloc(batchSize * sizeof(int)); // thread-private write
     uint8_t *my_ktmp = malloc(batchSize * sizeof(uint8_t) * n_rem);
+    if (!my_otmp || !my_ktmp) {
+      free(my_otmp); free(my_ktmp);
+      STOP(_("Failed to allocate 'my_otmp' and/or 'my_ktmp' arrays (%d bytes)."), (int)(batchSize*(sizeof(int) + sizeof(uint8_t))));
+    }
     // TODO: move these up above and point restrict[me] to them. Easier to Error that way if failed to alloc.
     #pragma omp for
     for (int batch=0; batch<nBatch; batch++) {
@@ -1120,7 +1211,7 @@ void radix_r(const int from, const int to, const int radix) {
       if (!seen[my_ugrp[i]]) {
         seen[my_ugrp[i]] = true;
         ugrp[ngrp++] = last_seen = my_ugrp[i];
-      } else if (skip && my_ugrp[i]!=last_seen) {   // ==last_seen would occur accross batch boundaries, like 2=>17 and 5=>15 in illustration above
+      } else if (skip && my_ugrp[i]!=last_seen) {   // ==last_seen would occur across batch boundaries, like 2=>17 and 5=>15 in illustration above
         skip=false;
       }
     }
@@ -1138,6 +1229,8 @@ void radix_r(const int from, const int to, const int radix) {
   // If skip==true and we're already done, we still need the first row of this cummulate (diff to get total group sizes) to push() or recurse below
 
   int *starts = calloc(nBatch*256, sizeof(int));  // keep starts the same shape and ugrp order as counts
+  if (!starts)
+    STOP(_("Failed to allocate %d bytes for '%s'."), (int)(nBatch*256*sizeof(int)), "starts");
   for (int j=0, sum=0; j<ngrp; j++) {  // iterate through columns (ngrp bytes)
     uint16_t *tmp1 = counts+ugrp[j];
     int      *tmp2 = starts+ugrp[j];
@@ -1153,7 +1246,8 @@ void radix_r(const int from, const int to, const int radix) {
   TEND(18 + notFirst*3)
   if (!skip) {
     int *TMP = malloc(my_n * sizeof(int));
-    if (!TMP) STOP(_("Unable to allocate TMP for my_n=%d items in parallel batch counting"), my_n);
+    if (!TMP)
+      STOP(_("Unable to allocate TMP for my_n=%d items in parallel batch counting"), my_n);
     #pragma omp parallel for num_threads(getDTthreads(nBatch, false))
     for (int batch=0; batch<nBatch; batch++) {
       const int *restrict      my_starts = starts + batch*256;
@@ -1190,7 +1284,9 @@ void radix_r(const int from, const int to, const int radix) {
   TEND(19 + notFirst*3)
   notFirst = true;
 
-  int my_gs[ngrp];
+  int *my_gs = malloc(ngrp * sizeof(int));
+  if (!my_gs)
+    STOP(_("Failed to allocate %d bytes for '%s'."), (int)(ngrp * sizeof(int)), "my_gs");
   for (int i=1; i<ngrp; i++) my_gs[i-1] = starts[ugrp[i]] - starts[ugrp[i-1]];   // use the first row of starts to get totals
   my_gs[ngrp-1] = my_n - starts[ugrp[ngrp-1]];
 
@@ -1244,6 +1340,7 @@ void radix_r(const int from, const int to, const int radix) {
       TEND(25)
     }
   }
+  free(my_gs);
   free(counts);
   free(starts);
   free(ugrps);
@@ -1261,7 +1358,7 @@ SEXP issorted(SEXP x, SEXP by)
   // TODO: test in big steps first to return faster if unsortedness is at the end (a common case of rbind'ing data to end)
   // These are all sequential access to x, so quick and cache efficient. Could be parallel by checking continuity at batch boundaries.
 
-  if (!isNull(by) && !isInteger(by)) STOP(_("Internal error: issorted 'by' must be NULL or integer vector"));
+  if (!isNull(by) && !isInteger(by)) internal_error_with_cleanup(__func__, "issorted 'by' must be NULL or integer vector");
   if (isVectorAtomic(x) || length(by)==1) {
     // one-column special case is very common so specialize it by avoiding column-type switches inside the row-loop later
     if (length(by)==1) {
@@ -1287,7 +1384,7 @@ SEXP issorted(SEXP x, SEXP by)
       }
       break;
     case STRSXP : {
-      SEXP *xd = STRING_PTR(x);
+      const SEXP *xd = STRING_PTR_RO(x);
       i = 0;
       while (i<n && xd[i]==NA_STRING) i++;
       if (i==n) break; // xd consists only of NA_STRING #5070
@@ -1330,7 +1427,7 @@ SEXP issorted(SEXP x, SEXP by)
       break;
     case STRSXP:
       types[j] = 3;
-      ptrs[j] = (const char *)STRING_PTR(col);
+      ptrs[j] = (const char *)STRING_PTR_RO(col);
       break;
     default:
       STOP(_("type '%s' is not yet supported"), type2char(TYPEOF(col)));  // # nocov
@@ -1419,3 +1516,253 @@ SEXP binary(SEXP x)
   return ans;
 }
 
+// all(x==1L)
+static bool all1(SEXP x) {
+  if (!isInteger(x))
+    internal_error_with_cleanup(__func__, "all1 got non-integer"); // # nocov
+  int *xp = INTEGER(x);
+  for (int i=0; i<LENGTH(x); ++i) if (xp[i] != 1) return false;
+  return true;
+}
+
+// identical(cols, head(chmatch(key(x), names(x)), length(cols)))
+bool colsKeyHead(SEXP x, SEXP cols) {
+  if (!isNewList(x))
+    internal_error_with_cleanup(__func__, "'x' must be a list"); // # nocov
+  if (!isInteger(cols))
+    internal_error_with_cleanup(__func__, "'cols' must be an integer"); // # nocov
+  SEXP key = PROTECT(getAttrib(x, sym_sorted));
+  if (isNull(key) || (length(key) < length(cols))) {
+    UNPROTECT(1); // key
+    return false;
+  }
+  SEXP keynames = PROTECT(chmatch(key, getAttrib(x, R_NamesSymbol), 0));
+  UNPROTECT(1); // key
+  int *keynamesp = INTEGER(keynames), *colsp = INTEGER(cols);
+  for (int i=0; i<LENGTH(cols); ++i) {
+    if (colsp[i]!=keynamesp[i]) {
+      UNPROTECT(1);
+      return false;
+    }
+  }
+  UNPROTECT(1);
+  return true;
+}
+
+// paste0("__", names(x)[cols], collapse="")
+SEXP idxName(SEXP x, SEXP cols) {
+  if (!isInteger(cols))
+    internal_error_with_cleanup(__func__, "'cols' must be an integer"); // # nocov
+  SEXP dt_names = PROTECT(getAttrib(x, R_NamesSymbol));
+  if (!isString(dt_names))
+    internal_error_with_cleanup(__func__, "'DT' has no names"); // # nocov
+  SEXP idx_names = PROTECT(subsetVector(dt_names, cols));
+  UNPROTECT(2); // down-stack to 'dt_names'
+  PROTECT(idx_names);
+  SEXP char_underscore2 = PROTECT(ScalarString(mkChar("__")));
+  SEXP char_empty = PROTECT(ScalarString(mkChar("")));
+  SEXP sym_paste0 = install("paste0");
+  SEXP call_paste0 = PROTECT(lang4(sym_paste0, char_underscore2, idx_names, char_empty));
+  SET_TAG(CDDDR(call_paste0), install("collapse"));
+  SEXP ans = PROTECT(eval(call_paste0, R_GlobalEnv));
+  UNPROTECT(5);
+  return ans;
+}
+
+// attr(attr(x, "index"), idxName(x, cols))
+SEXP getIndex(SEXP x, SEXP cols) {
+  if (!isInteger(cols))
+    internal_error_with_cleanup(__func__, "'cols' must be an integer"); // # nocov
+  SEXP index = getAttrib(x, sym_index);
+  if (isNull(index))
+    return index;
+  SEXP name_idx = PROTECT(idxName(x, cols));
+  SEXP sym_idx = install(CHAR(STRING_ELT(name_idx, 0)));
+  SEXP idx = getAttrib(index, sym_idx);
+  UNPROTECT(1);
+  return idx;
+}
+
+// attr(attr(x, "index"), idxName(x, cols)) <- o
+void putIndex(SEXP x, SEXP cols, SEXP o) {
+  if (!isInteger(cols))
+    internal_error_with_cleanup(__func__, "'cols' must be an integer"); // # nocov
+  if (!isInteger(o))
+    internal_error_with_cleanup(__func__, "'o' must be an integer"); // # nocov
+  SEXP index = getAttrib(x, sym_index);
+  if (isNull(index)) {
+    index = PROTECT(allocVector(INTSXP, 0));
+    setAttrib(x, sym_index, index);
+    UNPROTECT(1);
+  }
+  SEXP name_idx = PROTECT(idxName(x, cols));
+  SEXP sym_idx = install(CHAR(STRING_ELT(name_idx, 0)));
+  SEXP idx = getAttrib(index, sym_idx);
+  if (!isNull(idx) && !isNull(getAttrib(idx, sym_starts))) // we override retGrp=F index with retGrp=T index
+    internal_error_with_cleanup(__func__, "trying to put index but it was already there, that should have been escaped before"); // # nocov
+  setAttrib(index, sym_idx, o);
+  UNPROTECT(1);
+}
+
+// isTRUE(getOption("datatable.use.index"))
+bool GetUseIndex(void) {
+  SEXP opt = GetOption(install("datatable.use.index"), R_NilValue);
+  if (!IS_TRUE_OR_FALSE(opt))
+    error("'datatable.use.index' option must be TRUE or FALSE"); // # nocov
+  return LOGICAL(opt)[0];
+}
+
+// isTRUE(getOption("datatable.auto.index"))
+bool GetAutoIndex(void) {
+  // for now temporarily 'forder.auto.index' not 'auto.index' to disabled it by default
+  // because it writes attr on .SD which is re-used by all groups leading to incorrect results
+  // DT[, .(uN=uniqueN(.SD)), by=A]
+  SEXP opt = GetOption(install("datatable.forder.auto.index"), R_NilValue);
+  if (isNull(opt))
+    return false;
+  if (!IS_TRUE_OR_FALSE(opt))
+    error("'datatable.forder.auto.index' option must be TRUE or FALSE"); // # nocov
+  return LOGICAL(opt)[0];
+}
+
+// attr(idx, "anyna")>0 || attr(idx, "anyinfnan")>0
+bool idxAnyNF(SEXP idx) {
+  return INTEGER(getAttrib(idx, sym_anyna))[0]>0 || INTEGER(getAttrib(idx, sym_anyinfnan))[0]>0;
+}
+
+// forder, re-use existing key or index if possible, otherwise call forder
+SEXP forderReuseSorting(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg, SEXP reuseSortingArg) {
+  const bool verbose = GetVerbose();
+  int protecti = 0;
+  double tic=0.0;
+  if (verbose)
+    tic = omp_get_wtime();
+  if (isNull(DT))
+    error("DT is NULL");
+  if (!IS_TRUE_OR_FALSE(retGrpArg))
+    error("retGrp must be TRUE or FALSE");
+  bool retGrp = (bool)LOGICAL(retGrpArg)[0];
+  if (!IS_TRUE_OR_FALSE(retStatsArg))
+    error("retStats must be TRUE or FALSE");
+  bool retStats = (bool)LOGICAL(retStatsArg)[0];
+  if (!retStats && retGrp)
+    error("retStats must be TRUE whenever retGrp is TRUE"); // retStats doesnt cost anything and it will be much easier to optimize use of index
+  if (!IS_TRUE_OR_FALSE(sortGroupsArg))
+    error("sort must be TRUE or FALSE");
+  bool sortGroups = (bool)LOGICAL(sortGroupsArg)[0];
+  if (!isLogical(naArg) || LENGTH(naArg) != 1)
+    error("na.last must be logical TRUE, FALSE or NA of length 1");
+  bool na = (bool)LOGICAL(naArg)[0];
+  if (!isInteger(ascArg))
+    error("order must be integer"); // # nocov # coerced to int in R
+  if (!isLogical(reuseSortingArg) || LENGTH(reuseSortingArg) != 1)
+    error("reuseSorting must be logical TRUE, FALSE or NA of length 1");
+  int reuseSorting = LOGICAL(reuseSortingArg)[0];
+  if (!length(DT))
+    return allocVector(INTSXP, 0);
+  int opt = -1; // -1=unknown, 0=none, 1=keyOpt, 2=idxOpt
+  if (reuseSorting==NA_LOGICAL) {
+    if (INHERITS(DT, char_datatable) && // unnamed list should not be optimized
+        sortGroups &&
+        all1(ascArg)) { // could ascArg=-1 be handled by a rev()?
+      opt = -1;
+    } else {
+      if (verbose)
+        Rprintf("forderReuseSorting: opt not possible: is.data.table(DT)=%d, sortGroups=%d, all1(ascArg)=%d\n", INHERITS(DT,char_datatable), sortGroups, all1(ascArg));
+      opt = 0;
+    }
+  } else if (reuseSorting) {
+    if (!INHERITS(DT,char_datatable))
+      internal_error_with_cleanup(__func__, "reuseSorting set to TRUE but DT is not a data.table"); // # nocov
+    if (!sortGroups)
+      internal_error_with_cleanup(__func__, "reuseSorting set to TRUE but sort is FALSE"); // # nocov
+    if (!all1(ascArg))
+      internal_error_with_cleanup(__func__, "reuseSorting set to TRUE but order is not all 1"); // # nocov
+    opt = -1;
+  } else if (!reuseSorting) {
+    opt = 0;
+  }
+  SEXP ans = R_NilValue;
+  if (opt == -1 && !na && !retGrp && colsKeyHead(DT, by)) {
+    opt = 1; // keyOpt
+    ans = PROTECT(allocVector(INTSXP, 0)); protecti++;
+    if (verbose)
+      Rprintf("forderReuseSorting: using key: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
+  }
+  if (opt == -1 && GetUseIndex()) {
+    SEXP idx = getIndex(DT, by);
+    if (!isNull(idx)) {
+      bool hasStats = !isNull(getAttrib(idx, sym_anyna));
+      if (!na ||                           // na.last=FALSE
+          (hasStats && !idxAnyNF(idx))) {  // na.last=TRUE && !anyNA
+        bool hasGrp = !isNull(getAttrib(idx, sym_starts));
+        if (hasGrp && !hasStats)
+          internal_error_with_cleanup(__func__, "index has 'starts' attribute but not 'anyna', please report to issue tracker"); // # nocov
+        if (hasGrp==retGrp && hasStats==retStats) {
+          opt = 2; // idxOpt
+        } else if (
+            (hasGrp && !retGrp && !(!hasStats && retStats)) || // !hasStats should never happen when hasGrp
+              (hasStats && !retStats && !(!hasGrp && retGrp))
+          ) {
+          // shallow_duplicate is faster than copyAsPlain, but shallow_duplicate is AFAIK good for VECSXP, not for INTSXP
+          // it is still the bottleneck in this opt, it is better to call retGrp=TRUE and just not use those extra attributes
+          // can we do better here? real shallow for INTSXP? If we could just re-point data pointer... like we do for DT columns
+          // SEXP new; INTEGER(new) = INTEGER(idx); setAttrib(new, ..., R_NilValue)
+          idx = shallow_duplicate(idx);
+          if (hasGrp && !retGrp) {
+            setAttrib(idx, sym_starts, R_NilValue);
+            setAttrib(idx, sym_maxgrpn, R_NilValue);
+          }
+          if (hasStats && !retStats) {
+            setAttrib(idx, sym_anyna, R_NilValue);
+            setAttrib(idx, sym_anyinfnan, R_NilValue);
+            setAttrib(idx, sym_anynotascii, R_NilValue);
+            setAttrib(idx, sym_anynotutf8, R_NilValue);
+          }
+          opt = 2; // idxOpt but need to drop groups or stats
+        } else if (!hasGrp && retGrp && !hasStats && retStats) {
+          if (verbose)
+            Rprintf("forderReuseSorting: index found but not for retGrp and retStats: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
+        } else if (!hasGrp && retGrp) {
+          if (verbose)
+            Rprintf("forderReuseSorting: index found but not for retGrp: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
+        } else if (!hasStats && retStats) {
+          if (verbose)
+            Rprintf("forderReuseSorting: index found but not for retStats: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
+        } else {
+          internal_error_with_cleanup(__func__, "reuseSorting forder index optimization unhandled branch of retGrp-retStats"); // # nocov
+        }
+      } else {
+        if (!hasStats) {
+          if (verbose)
+            Rprintf("forderReuseSorting: index found but na.last=TRUE and no stats available: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
+        } else if (idxAnyNF(idx)) {
+          if (verbose)
+            Rprintf("forderReuseSorting: index found but na.last=TRUE and NAs present: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
+        } else {
+          internal_error_with_cleanup(__func__, "reuseSorting forder index optimization unhandled branch of last.na=T"); // # nocov
+        }
+      }
+      if (opt == 2) {
+        ans = idx;
+        if (verbose)
+          Rprintf("forderReuseSorting: using existing index: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
+      }
+    }
+  }
+  if (opt < 1) {
+    ans = PROTECT(forder(DT, by, retGrpArg, retStatsArg, sortGroupsArg, ascArg, naArg)); protecti++;
+    if (opt == -1 && // opt==0 means that arguments (sort, asc) were not of type index, or reuseSorting=FALSE
+        (!na || (retStats && !idxAnyNF(ans))) && // lets create index even if na.last=T used but no NAs detected!
+        GetUseIndex() &&
+        GetAutoIndex()) { // disabled by default, use datatable.forder.auto.index=T to enable, do not export/document, use for debugging only
+      putIndex(DT, by, ans);
+      if (verbose)
+        Rprintf("forderReuseSorting: setting index (retGrp=%d, retStats=%d) on DT: %s\n", retGrp, retStats, CHAR(STRING_ELT(idxName(DT, by), 0)));
+    }
+  }
+  if (verbose)
+    Rprintf("forderReuseSorting: opt=%d, took %.3fs\n", opt, omp_get_wtime()-tic);
+  UNPROTECT(protecti);
+  return ans;
+}
