@@ -27,6 +27,7 @@
 ^src/Makevars$
 ^CODEOWNERS$
 ^GOVERNANCE\.md$
+^Seal_of_Approval\.md$
 
 ^\.RData$
 ^\.Rhistory$
