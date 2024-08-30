@@ -6,6 +6,10 @@
 
 1. In `DT[, variable := value]`, when value is class `POSIXlt`, we automatically coerce it to class `POSIXct` instead, [#1724](https://github.com/Rdatatable/data.table/issues/1724). Thanks to @linzhp for the report, and Benjamin Schwendinger for the fix.
 
+## NEW FEATURES
+
+1. (add example here?) New functions `cbindlist` and `mergelist` have been implemented and exported. Works like `cbind`/`merge` but takes `list` of data.tables on input. `merge` happens in `Reduce` fashion. Supports `how` (_left_, _inner_, _full_, _right_, _semi_, _anti_, _cross_) joins and `mult` argument, closes [#599](https://github.com/Rdatatable/data.table/issues/599) and [#2576](https://github.com/Rdatatable/data.table/issues/2576).
+
 ## NOTES
 
 1. Tests run again when some Suggests packages are missing, [#6411](https://github.com/Rdatatable/data.table/issues/6411). Thanks @aadler for the note and @MichaelChirico for the fix.
