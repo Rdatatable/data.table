@@ -18508,7 +18508,7 @@ local({
     c(paste0(ja_ko, " ", paste0(ja_n, dots), " ", paste0(accented_a, dots)),
     paste0(c(ja_ko, ja_n, accented_a), dots, collapse=" "),
     paste0(c(ja_ko, ja_n, accented_a), dots, collapse=" ")))
-  # test for NA values, #6441
+  # test for data.table with NA, #6441
   test(2253.20, options=list(datatable.prettyprint.char = 1L), data.table(a = NA), output = "    a\n1: NA")
 })
 
