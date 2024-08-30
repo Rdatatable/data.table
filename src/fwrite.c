@@ -647,9 +647,9 @@ void fwriteMain(fwriteMainArgs args)
   // could be console output) and writing column names to it.
 
   double t0 = wallclock();
-  size_t maxLineLen = eolLen + args.ncol * (2 * (doQuote!=0) + sepLen);
+  size_t maxLineLen = eolLen + args.ncol * (2*(doQuote!=0) + sepLen);
   if (args.doRowNames) {
-    maxLineLen += args.rowNames==NULL ? 1 + (int) log10(args.nrow)   // the width of the row number
+    maxLineLen += args.rowNames==NULL ? 1 + (int)log10(args.nrow)   // the width of the row number
                   : (args.rowNameFun==WF_String ? getMaxStringLen(args.rowNames, args.nrow) * 2  // *2 in case longest row name is all quotes (!) and all get escaped
                   : 11); // specific integer names could be MAX_INT 2147483647 (10 chars) even on a 5 row table, and data.frame allows negative integer rownames hence 11 for the sign
     maxLineLen += 2/*possible quotes*/ + sepLen;
