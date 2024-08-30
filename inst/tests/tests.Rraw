@@ -18509,7 +18509,7 @@ local({
     paste0(c(ja_ko, ja_n, accented_a), dots, collapse=" "),
     paste0(c(ja_ko, ja_n, accented_a), dots, collapse=" ")))
   # test for data.table with NA, #6441
-  test(2253.20, options=list(datatable.prettyprint.char = 1L), data.table(a = NA), output = "    a\n1: NA")
+  test(2253.20, options=list(datatable.prettyprint.char = 1L), data.table(a = c("abc", NA)), output="      a\n1: a...\n2: <NA>")
 })
 
 # allow 1-D matrix in j for consistency, #783
