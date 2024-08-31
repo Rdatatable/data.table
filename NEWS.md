@@ -2,6 +2,10 @@
 
 # data.table [v1.16.1](https://github.com/Rdatatable/data.table/milestone/35)
 
+## BUG FIXES
+
+1. Using `print.data.table()` with character truncation using `datatable.prettyprint.char` no longer errors with `NA` entries, [#6441](https://github.com/Rdatatable/data.table/issues/6441). Thanks to @r2evans for the bug report, and @joshhwuu for the fix.
+
 ## NOTES
 
 1. Fixed a typo in the NEWS for the last release -- that's version 1.16.0, not 1.6.0; apologies. Thanks @r2evans for flagging, [#6443](https://github.com/Rdatatable/data.table/issues/6443).
