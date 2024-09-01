@@ -4,7 +4,7 @@ msgfmt_linter <- function(po_file) {
   mo_tmp <- tempfile()
   on.exit(unlink(mo_tmp))
 
-  res = system2("msgfmt", c("--statistics", po_file, "-o", mo_tmp)), stdout=TRUE, stderr=TRUE)
+  res = system2("msgfmt", c("--statistics", po_file, "-o", mo_tmp), stdout=TRUE, stderr=TRUE)
   if (any(grepl("untranslated message|fuzzy translation", res))) {
     cat(sprintf("In %s, found incomplete translations:\n%s\n", po_file, paste(res, collapse="\n")))
     stop("Please fix.")
