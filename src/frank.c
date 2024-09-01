@@ -107,8 +107,7 @@ SEXP dt_na(SEXP x, SEXP cols) {
 
 SEXP frank(SEXP xorderArg, SEXP xstartArg, SEXP xlenArg, SEXP ties_method) {
   const int *xstart = INTEGER(xstartArg), *xlen = INTEGER(xlenArg), *xorder = INTEGER(xorderArg);
-  // initialize in case compiler doesn't recognize exhaustive nature of below if/else ladder.
-  enum {MEAN, MAX, MIN, DENSE, SEQUENCE, LAST} ties=0; // RUNLENGTH
+  enum {MEAN, MAX, MIN, DENSE, SEQUENCE, LAST} ties; // RUNLENGTH
 
   const char *pties = CHAR(STRING_ELT(ties_method, 0));
   if (!strcmp(pties, "average"))  ties = MEAN;
