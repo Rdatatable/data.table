@@ -470,11 +470,11 @@ To reproduce this issue:
 library(data.table)
 
 # Create a sample data.table
-DT <- data.table(x = rep(c("a", "b", "c"), each = 3), y = c(1, 3, 6), v = 1:9)
+DT <- data.table(x=rep(c("a", "b", "c"), each = 3), y=c(1, 3, 6), v=1:9)
 
 # Using TRUE/FALSE works as expected
 # This selects the first two columns (x and y) and excludes the third one (v)
-DT[, .SD, .SDcols = c(TRUE, TRUE, FALSE)]
+DT[, .SD, .SDcols=c(TRUE, TRUE, FALSE)]
 #>    x y
 #> 1: a 1
 #> 2: a 3
@@ -488,23 +488,14 @@ DT[, .SD, .SDcols = c(TRUE, TRUE, FALSE)]
 
 # Using T/F may lead to unexpected behavior
 # data.table treats T and F as variable names, not logical constants
-DT[, .SD, .SDcols = c(T, T, F)]
+DT[, .SD, .SDcols=c(T, T, F)]
 #> Detected that j uses these columns: <none>
 #> [1]  TRUE  TRUE FALSE
 
 # Using with = FALSE works as expected
 # This forces data.table to treat T/F as logical constants
-DT[, .SD, .SDcols = c(T, T, F), with = FALSE]
-#>    x y
-#> 1: a 1
-#> 2: a 3
-#> 3: a 6
-#> 4: b 1
-#> 5: b 3
-#> 6: b 6
-#> 7: c 1
-#> 8: c 3
-#> 9: c 6
+DT[, .SD, .SDcols=c(T, T, F), with=FALSE]
+# same output as DT[, .SD, .SDcols=c(TRUE, TRUE, FALSE)]
 ```
 
  **Explanation:**
