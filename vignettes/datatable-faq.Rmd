@@ -462,9 +462,7 @@ However, features like basic S3 dispatch (pasting the function name together wit
 
 ## Why do `T` and `F` behave differently from `TRUE` and `FALSE` in some `data.table` queries?
 
-Using `T` and `F` as abbreviations for `TRUE` and `FALSE` in `data.table` can lead to unexpected behavior. This is because `T` and `F` are global variables that can be redefined, which causes them to be treated as variable names rather than logical constants. This issue does not occur with `TRUE` and `FALSE`.
-
-To reproduce this issue:
+Using `T` and `F` as abbreviations for `TRUE` and `FALSE` in `data.table` can lead to unexpected behavior. This is because `T` and `F` are global variables that can be redefined, which causes them to be treated as variable names rather than logical constants. This issue does not occur with `TRUE` and `FALSE`. Avoiding `T` and `F` is advice for using R generally, but it shows up in data.table in some perhaps surprising ways, for example:
 
 ```r
 library(data.table)
@@ -498,22 +496,7 @@ DT[, .SD, .SDcols=c(T, T, F), with=FALSE]
 # same output as DT[, .SD, .SDcols=c(TRUE, TRUE, FALSE)]
 ```
 
- **Explanation:**
-1. **Using `TRUE`/`FALSE` works as expected:**
-   When you use `TRUE` and `FALSE` in `DT[, .SD, .SDcols = c(TRUE, TRUE, FALSE)]`, `data.table` correctly identifies them as logical constants. This selects the first two columns (`x` and `y`) and excludes the third column (`v`).
-
-2. **Using `T`/`F` leads to unexpected behavior:**
-   When you use `T` and `F` in `DT[, .SD, .SDcols = c(T, T, F)]`, `data.table` treats `T` and `F` as variable names rather than logical constants. Since these variables are not defined within the `data.table` scope, it results in incorrect behavior.
-
-3. **Using `with = FALSE` works as expected:**
-   By adding `with = FALSE` in `DT[, .SD, .SDcols = c(T, T, F), with = FALSE]`, you force `data.table` to evaluate `T` and `F` as logical constants, leading to the correct selection of columns.
-
-**Best Practices:**
-- **Always use `TRUE` and `FALSE`:** To avoid these issues, always use `TRUE` and `FALSE` for logical subsetting and column selection in `data.table`.
-- **Avoid using `T` and `F`:** This prevents unexpected behavior due to their potential redefinition in the user environment.
-
-**Additional Tip:**
-To help catch these potential pitfalls, consider using linters like `T_and_F_symbol_linter()` from the `lintr` package. This linter detects the usage of `T` and `F` and suggests replacing them with `TRUE` and `FALSE` to avoid such issues.
+As a general word of advice, `lintr::T_and_F_symbol_linter()` detects the usage of `T` and `F` and suggests replacing them with `TRUE` and `FALSE` to avoid such issues.
 
 # Questions relating to compute time
 
