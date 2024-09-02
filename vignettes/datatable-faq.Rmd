@@ -462,16 +462,13 @@ However, features like basic S3 dispatch (pasting the function name together wit
 
 ## Why do `T` and `F` behave differently from `TRUE` and `FALSE` in some `data.table` queries?
 
-Using `T` and `F` as abbreviations for `TRUE` and `FALSE` in `data.table` can lead to unexpected behavior. This is because `T` and `F` are global variables that can be redefined, which causes them to be treated as variable names rather than logical constants. This issue does not occur with `TRUE` and `FALSE`. Avoiding `T` and `F` is advice for using R generally, but it shows up in data.table in some perhaps surprising ways, for example:
+Using `T` and `F` as abbreviations for `TRUE` and `FALSE` in `data.table` can lead to unexpected behavior. This is because `T` and `F` are global variables that can be redefined, which causes them to be treated as variable names rather than logical constants. This issue does not occur with `TRUE` and `FALSE`. Avoiding `T` and `F` is advice for using R generally, but it shows up in `data.table` in some perhaps surprising ways, for example:
 
 ```r
-library(data.table)
-
-# Create a sample data.table
 DT <- data.table(x=rep(c("a", "b", "c"), each = 3), y=c(1, 3, 6), v=1:9)
 
-# Using TRUE/FALSE works as expected
-# This selects the first two columns (x and y) and excludes the third one (v)
+# Using TRUE/FALSE works as expected in cases like the ones below:
+# A) This selects the first two columns (x and y) and excludes the third one (v)
 DT[, .SD, .SDcols=c(TRUE, TRUE, FALSE)]
 #>    x y
 #> 1: a 1
@@ -483,17 +480,15 @@ DT[, .SD, .SDcols=c(TRUE, TRUE, FALSE)]
 #> 7: c 1
 #> 8: c 3
 #> 9: c 6
+# B) This forces data.table to treat T/F as logical constants
+DT[, .SD, .SDcols=c(T, T, F), with=FALSE]
+# Same output as DT[, .SD, .SDcols=c(TRUE, TRUE, FALSE)]
 
-# Using T/F may lead to unexpected behavior
+# But, using T/F may lead to unexpected behavior in cases like:
 # data.table treats T and F as variable names, not logical constants
 DT[, .SD, .SDcols=c(T, T, F)]
 #> Detected that j uses these columns: <none>
 #> [1]  TRUE  TRUE FALSE
-
-# Using with = FALSE works as expected
-# This forces data.table to treat T/F as logical constants
-DT[, .SD, .SDcols=c(T, T, F), with=FALSE]
-# same output as DT[, .SD, .SDcols=c(TRUE, TRUE, FALSE)]
 ```
 
 As a general word of advice, `lintr::T_and_F_symbol_linter()` detects the usage of `T` and `F` and suggests replacing them with `TRUE` and `FALSE` to avoid such issues.
