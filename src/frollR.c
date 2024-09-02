@@ -15,7 +15,8 @@ SEXP coerceToRealListR(SEXP obj) {
     SEXP this_obj = VECTOR_ELT(obj, i);
     if (!(isReal(this_obj) || isInteger(this_obj) || isLogical(this_obj)))
       error(_("x must be of type numeric or logical, or a list, data.frame or data.table of such"));
-    SET_VECTOR_ELT(x, i, coerceAs(this_obj, ScalarReal(NA_REAL), /*copyArg=*/ScalarLogical(false))); // copyArg=false will make type-class match to return as-is, no copy
+    SET_VECTOR_ELT(x, i, coerceAs(this_obj, PROTECT(ScalarReal(NA_REAL)), /*copyArg=*/ScalarLogical(false))); // copyArg=false will make type-class match to return as-is, no copy
+    UNPROTECT(1); // as= input to coerceAs()
   }
   UNPROTECT(protecti);
   return x;
@@ -106,7 +107,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   else if (!strcmp(CHAR(STRING_ELT(align, 0)), "left"))
     ialign = -1;
   else
-    error(_("Internal error: invalid %s argument in %s function should have been caught earlier. Please report to the data.table issue tracker."), "align", "rolling"); // # nocov
+    internal_error(__func__, "invalid %s argument in %s function should have been caught earlier.", "align", "rolling"); // # nocov
 
   if (badaptive && ialign!=1)
     error(_("using adaptive TRUE and align argument different than 'right' is not implemented"));
@@ -138,14 +139,15 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   } else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "sum")) {
     sfun = SUM;
   } else {
-    error(_("Internal error: invalid %s argument in %s function should have been caught earlier. Please report to the data.table issue tracker."), "fun", "rolling"); // # nocov
+    internal_error(__func__, "invalid %s argument in %s function should have been caught earlier", "fun", "rolling"); // # nocov
   }
 
   if (length(fill) != 1)
     error(_("fill must be a vector of length 1"));
   if (!isInteger(fill) && !isReal(fill) && !isLogical(fill))
     error(_("fill must be numeric or logical"));
-  double dfill = REAL(PROTECT(coerceAs(fill, ScalarReal(NA_REAL), ScalarLogical(true))))[0]; protecti++;
+  double dfill = REAL(PROTECT(coerceAs(fill, PROTECT(ScalarReal(NA_REAL)), ScalarLogical(true))))[0]; protecti++;
+  UNPROTECT(1); // as= input to coerceAs()
 
   bool bnarm = LOGICAL(narm)[0];
 
@@ -160,12 +162,12 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   else if (!strcmp(CHAR(STRING_ELT(algo, 0)), "exact"))
     ialgo = 1;                                                  // exact = 1
   else
-    error(_("Internal error: invalid %s argument in %s function should have been caught earlier. Please report to the data.table issue tracker."), "algo", "rolling"); // # nocov
+    internal_error(__func__, "invalid %s argument in %s function should have been caught earlier", "algo", "rolling"); // # nocov
 
   int* iik = NULL;
   if (!badaptive) {
     if (!isInteger(ik))
-      error(_("Internal error: badaptive=%d but ik is not integer"), badaptive); // # nocov
+      internal_error(__func__, "badaptive=%d but ik is not integer", badaptive); // # nocov
     iik = INTEGER(ik);                                          // pointer to non-adaptive window width, still can be vector when doing multiple windows
   } else {
     // ik is still R_NilValue from initialization. But that's ok as it's only needed below when !badaptive.
@@ -194,7 +196,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
           fadaptiverollsum(ialgo, dx[i], inx[i], &dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, verbose);
         break;
       default:
-        error(_("Internal error: Unknown sfun value in froll: %d"), sfun); // #nocov
+        internal_error(__func__, "Unknown sfun value: %d", sfun); // # nocov
       }
     }
   }
@@ -213,9 +215,9 @@ SEXP frollapplyR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP rho) {
   const bool verbose = GetVerbose();
 
   if (!isFunction(fun))
-    error(_("internal error: 'fun' must be a function")); // # nocov
+    internal_error(__func__, "'fun' must be a function"); // # nocov
   if (!isEnvironment(rho))
-    error(_("internal error: 'rho' should be an environment")); // # nocov
+    internal_error(__func__, "'rho' should be an environment"); // # nocov
 
   if (!xlength(obj))
     return(obj);
@@ -250,14 +252,15 @@ SEXP frollapplyR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP rho) {
   } else if (!strcmp(CHAR(STRING_ELT(align, 0)), "left")) {
     ialign = -1;
   } else {
-    error(_("Internal error: invalid %s argument in %s function should have been caught earlier. Please report to the data.table issue tracker."), "align", "rolling"); // # nocov
+    internal_error(__func__, "invalid %s argument in %s function should have been caught earlier", "align", "rolling"); // # nocov
   }
 
   if (length(fill) != 1)
     error(_("fill must be a vector of length 1"));
   if (!isInteger(fill) && !isReal(fill) && !isLogical(fill))
     error(_("fill must be numeric or logical"));
-  double dfill = REAL(PROTECT(coerceAs(fill, ScalarReal(NA_REAL), ScalarLogical(true))))[0]; protecti++;
+  double dfill = REAL(PROTECT(coerceAs(fill, PROTECT(ScalarReal(NA_REAL)), ScalarLogical(true))))[0]; protecti++;
+  UNPROTECT(1); // as= input to coerceAs()
 
   SEXP ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++;
   if (verbose)

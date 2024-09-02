@@ -36,6 +36,8 @@ typedef enum {
   NUMTYPE          // placeholder for the number of types including drop; used for allocation and loop bounds
 } colType;
 
+#define IS_DEC_TYPE(x) ((x) == CT_FLOAT64 || (x) == CT_FLOAT64_EXT) // types where dec matters
+
 extern int8_t typeSize[NUMTYPE];
 extern const char typeName[NUMTYPE][10];
 extern const long double pow10lookup[301];

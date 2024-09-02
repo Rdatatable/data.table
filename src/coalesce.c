@@ -1,10 +1,8 @@
 #include "data.table.h"
 
 SEXP coalesce(SEXP x, SEXP inplaceArg) {
-  if (TYPEOF(x)!=VECSXP)
-    error(_("Internal error in coalesce.c: input is list(...) at R level")); // # nocov
-  if (!IS_TRUE_OR_FALSE(inplaceArg))
-    error(_("Internal error in coalesce.c: argument 'inplaceArg' must be TRUE or FALSE")); // # nocov
+  if (TYPEOF(x)!=VECSXP) internal_error(__func__, "input is list(...) at R level"); // # nocov
+  if (!IS_TRUE_OR_FALSE(inplaceArg)) internal_error(__func__, "argument 'inplaceArg' must be TRUE or FALSE"); // # nocov
   const bool inplace = LOGICAL(inplaceArg)[0];
   const bool verbose = GetVerbose();
   int nprotect = 0;
@@ -141,7 +139,7 @@ SEXP coalesce(SEXP x, SEXP inplaceArg) {
     }
   } break;
   case STRSXP: {
-    const SEXP *xP = STRING_PTR(first);
+    const SEXP *xP = STRING_PTR_RO(first);
     SEXP finalVal=NA_STRING;
     int k=0;
     for (int j=0; j<nval; ++j) {
@@ -152,7 +150,7 @@ SEXP coalesce(SEXP x, SEXP inplaceArg) {
         finalVal = tt;
         break;
       }
-      valP[k++] = STRING_PTR(item);
+      valP[k++] = STRING_PTR_RO(item);
     }
     const bool final = (finalVal!=NA_STRING);
     for (int i=0; i<nrow; ++i) {

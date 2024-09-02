@@ -84,10 +84,10 @@ SEXP freadR(
   dtnrows = 0;
 
   if (!isString(inputArg) || LENGTH(inputArg)!=1)
-    error(_("Internal error: freadR input not a single character string: a filename or the data itself. Should have been caught at R level."));  // # nocov
+    internal_error(__func__, "freadR input not a single character string: a filename or the data itself. Should have been caught at R level.");  // # nocov
   const char *ch = (const char *)CHAR(STRING_ELT(inputArg,0));
   if (!isLogical(isFileNameArg) || LENGTH(isFileNameArg)!=1 || LOGICAL(isFileNameArg)[0]==NA_LOGICAL)
-    error(_("Internal error: freadR isFileNameArg not TRUE or FALSE"));  // # nocov
+    internal_error(__func__, "freadR isFileNameArg not TRUE or FALSE");  // # nocov
   if (LOGICAL(isFileNameArg)[0]) {
     if (verbose) DTPRINT(_("freadR.c has been passed a filename: %s\n"), ch);
     args.filename = R_ExpandFileName(ch);  // for convenience so user doesn't have to call path.expand()
@@ -99,12 +99,13 @@ SEXP freadR(
   }
 
   if (!isString(sepArg) || LENGTH(sepArg)!=1 || strlen(CHAR(STRING_ELT(sepArg,0)))>1)
-    error(_("Internal error: freadR sep not a single character. R level catches this."));  // # nocov
+    internal_error(__func__, "sep not a single character. R level catches this");  // # nocov
   args.sep = CHAR(STRING_ELT(sepArg,0))[0];   // '\0' when default "auto" was replaced by "" at R level
 
-  if (!(isString(decArg) && LENGTH(decArg)==1 && strlen(CHAR(STRING_ELT(decArg,0)))==1))
-    error(_("Internal error: freadR dec not a single character. R level catches this."));  // # nocov
-  args.dec = CHAR(STRING_ELT(decArg,0))[0];
+  if (!isString(decArg) || LENGTH(decArg)!=1 || strlen(CHAR(STRING_ELT(decArg,0)))>1) {
+    internal_error(__func__, "freadR dec not a single character. R level catches this.");  // # nocov
+  }
+  args.dec = CHAR(STRING_ELT(decArg,0))[0];   // '\0' when default "auto" was replaced by "" at R level
 
   if (IS_FALSE(quoteArg)) {
     args.quote = '\0';
@@ -122,7 +123,7 @@ SEXP freadR(
 
   args.nrowLimit = INT64_MAX;
   if (!isReal(nrowLimitArg) || length(nrowLimitArg)!=1)
-    error(_("Internal error: freadR nrows not a single real. R level catches this."));  // # nocov
+    internal_error(__func__, "nrows not a single real. R level catches this.");  // # nocov
   if (R_FINITE(REAL(nrowLimitArg)[0]) && REAL(nrowLimitArg)[0]>=0.0)
     args.nrowLimit = (int64_t)(REAL(nrowLimitArg)[0]);
 
@@ -138,10 +139,10 @@ SEXP freadR(
     args.skipString = CHAR(STRING_ELT(skipArg,0));  // LENGTH==1 was checked at R level
   } else if (isInteger(skipArg)) {
     args.skipNrow = (int64_t)INTEGER(skipArg)[0];
-  } else error(_("Internal error: skip not integer or string in freadR.c")); // # nocov
+  } else internal_error(__func__, "skip not integer or string"); // # nocov
 
   if (!isNull(NAstringsArg) && !isString(NAstringsArg))
-    error(_("Internal error: NAstringsArg is type '%s'. R level catches this"), type2char(TYPEOF(NAstringsArg)));  // # nocov
+    internal_error(__func__, "NAstringsArg is type '%s'. R level catches this", type2char(TYPEOF(NAstringsArg)));  // # nocov
   int nnas = length(NAstringsArg);
   const char **NAstrings = (const char **)R_alloc((nnas + 1), sizeof(char*));  // +1 for the final NULL to save a separate nna variable
   for (int i=0; i<nnas; i++)
@@ -249,8 +250,8 @@ static void applyDrop(SEXP items, int8_t *type, int ncol, int dropSource) {
 bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int ncol)
 {
   // use typeSize superfluously to avoid not-used warning; otherwise could move typeSize from fread.h into fread.c
-  if (typeSize[CT_BOOL8_N]!=1) STOP(_("Internal error: typeSize[CT_BOOL8_N] != 1")); // # nocov
-  if (typeSize[CT_STRING]!=8) STOP(_("Internal error: typeSize[CT_STRING] != 1")); // # nocov
+  if (typeSize[CT_BOOL8_N]!=1) internal_error(__func__, "typeSize[CT_BOOL8_N] != 1"); // # nocov
+  if (typeSize[CT_STRING]!=8) internal_error(__func__, "typeSize[CT_STRING] != 1"); // # nocov
   colNamesSxp = R_NilValue;
   SET_VECTOR_ELT(RCHK, 1, colNamesSxp=allocVector(STRSXP, ncol));
   for (int i=0; i<ncol; i++) {
@@ -306,7 +307,7 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
       else type[i]=CT_DROP;
     }
   }
-  colClassesAs = NULL;
+  colClassesAs = NULL; // any coercions we can't handle here in C are deferred to R (to handle with methods::as) via this attribute
   if (length(colClassesSxp)) {
     SEXP typeRName_sxp = PROTECT(allocVector(STRSXP, NUT));
     for (int i=0; i<NUT; i++) SET_STRING_ELT(typeRName_sxp, i, mkChar(typeRName[i]));
@@ -315,7 +316,7 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
       SET_STRING_ELT(typeRName_sxp, CT_ISO8601_DATE, R_BlankString);
       SET_STRING_ELT(typeRName_sxp, CT_ISO8601_TIME, R_BlankString);
     }
-    SET_VECTOR_ELT(RCHK, 2, colClassesAs=allocVector(STRSXP, ncol));  // if any, this attached to the DT for R level to call as_ methods on
+    SET_VECTOR_ELT(RCHK, 2, colClassesAs=allocVector(STRSXP, ncol));
     if (isString(colClassesSxp)) {
       SEXP typeEnum_idx = PROTECT(chmatch(colClassesSxp, typeRName_sxp, NUT));
       if (selectColClasses==false) {
@@ -340,9 +341,9 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
           }
         }
       } else { // selectColClasses==true
-        if (!selectInts) STOP(_("Internal error: selectInts is NULL but selectColClasses is true"));
+        if (!selectInts) internal_error(__func__, "selectInts is NULL but selectColClasses is true"); // # nocov
         const int n = length(colClassesSxp);
-        if (length(selectSxp)!=n) STOP(_("Internal error: length(selectSxp)!=length(colClassesSxp) but selectColClasses is true"));
+        if (length(selectSxp)!=n) internal_error(__func__, "length(selectSxp)!=length(colClassesSxp) but selectColClasses is true"); // # nocov
         for (int i=0; i<n; ++i) {
           SEXP tt = STRING_ELT(colClassesSxp,i);
           if (tt==NA_STRING || tt==R_BlankString) continue;
@@ -374,45 +375,49 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
       }
 
       for (int i=0; i<LENGTH(colClassesSxp); i++) {
-        const int w = INTEGER(typeEnum_idx)[i];
-        signed char thisType = typeEnum[w-1];
-        if (thisType==CT_DROP) continue;  // was dealt with earlier above
+        const int colClassTypeIdx = INTEGER(typeEnum_idx)[i];
+        signed char colClassType = typeEnum[colClassTypeIdx-1];
+        if (colClassType == CT_DROP) continue;  // was dealt with earlier above
         SEXP items = VECTOR_ELT(colClassesSxp,i);
         SEXP itemsInt;
         if (isString(items)) itemsInt = PROTECT(chmatch(items, colNamesSxp, NA_INTEGER));
         else                 itemsInt = PROTECT(coerceVector(items, INTSXP));
         // UNPROTECTed directly just after this for loop. No nprotect++ here is correct.
         for (int j=0; j<LENGTH(items); j++) {
-          int k = INTEGER(itemsInt)[j];
-          if (k==NA_INTEGER) {
+          int colIdx = INTEGER(itemsInt)[j]; // NB: 1-based
+          if (colIdx == NA_INTEGER) {
             if (isString(items))
               DTWARN(_("Column name '%s' (colClasses[[%d]][%d]) not found"), CHAR(STRING_ELT(items, j)), i+1, j+1);
             else
               DTWARN(_("colClasses[[%d]][%d] is NA"), i+1, j+1);
+            continue;
+          }
+          if (colIdx<1 || colIdx>ncol) {
+            DTWARN(_("Column number %d (colClasses[[%d]][%d]) is out of range [1,ncol=%d]"), colIdx, i+1, j+1, ncol);
+            continue;
+          }
+          if (type[colIdx-1]<0) {
+            DTWARN(_("Column %d ('%s') appears more than once in colClasses. The second time is colClasses[[%d]][%d]."), colIdx, CHAR(STRING_ELT(colNamesSxp,colIdx-1)), i+1, j+1);
+            continue;
+          }
+          if (type[colIdx-1] == CT_DROP) {
+            continue;
+          }
+          if (selectRankD) selectRankD[colIdx-1] = rank++;
+          // NB: mark as negative to indicate 'seen'
+          if (colClassType == CT_ISO8601_TIME && type[colIdx-1]!=CT_ISO8601_TIME) {
+            type[colIdx-1] = -CT_STRING; // don't use in-built UTC parser, defer to character and as.POSIXct afterwards which reads in local time
+            SET_STRING_ELT(colClassesAs, colIdx-1, STRING_ELT(listNames, i));
           } else {
-            if (k>=1 && k<=ncol) {
-              if (type[k-1]<0)
-                DTWARN(_("Column %d ('%s') appears more than once in colClasses. The second time is colClasses[[%d]][%d]."), k, CHAR(STRING_ELT(colNamesSxp,k-1)), i+1, j+1);
-              else if (type[k-1]!=CT_DROP) {
-                if (thisType==CT_ISO8601_TIME && type[k-1]!=CT_ISO8601_TIME) {
-                  type[k-1] = -CT_STRING; // don't use in-built UTC parser, defer to character and as.POSIXct afterwards which reads in local time
-                  SET_STRING_ELT(colClassesAs, k-1, STRING_ELT(listNames,i));
-                } else {
-                  type[k-1] = -thisType;     // freadMain checks bump up only not down.  Deliberately don't catch here to test freadMain; e.g. test 959
-                  if (w==NUT) SET_STRING_ELT(colClassesAs, k-1, STRING_ELT(listNames,i));
-                }
-                if (selectRankD) selectRankD[k-1] = rank++;
-              }
-            } else {
-              DTWARN(_("Column number %d (colClasses[[%d]][%d]) is out of range [1,ncol=%d]"), k, i+1, j+1, ncol);
-            }
+            type[colIdx-1] = -colClassType;     // freadMain checks bump up only not down.  Deliberately don't catch here to test freadMain; e.g. test 959
+            if (colClassTypeIdx == NUT) SET_STRING_ELT(colClassesAs, colIdx-1, STRING_ELT(listNames, i)); // unknown type --> defer to R
           }
         }
         UNPROTECT(1); // UNPROTECTing itemsInt inside loop to save protection stack
       }
       for (int i=0; i<ncol; i++) {
         if (type[i]<0) type[i] *= -1;                  // undo sign; was used to detect duplicates
-        else if (selectColClasses) type[i] = CT_DROP;  // reading will proceed in order of columns in file; reorder happens afterwards at R level
+        else if (selectColClasses) type[i] = CT_DROP;  // not seen --> drop; reading will proceed in order of columns in file; reorder happens afterwards at R level
       }
       UNPROTECT(2);  // listNames and typeEnum_idx
     }
@@ -641,7 +646,7 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx)
           src1 += rowSize1;
           dest++;
         }
-      } else STOP(_("Internal error: unexpected field of size %d\n"), thisSize);  // # nocov
+      } else internal_error(__func__, "unexpected field of size %d\n", thisSize);  // # nocov
       done++;
     }
     off8 += (size[j] & 8);
