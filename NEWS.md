@@ -111,6 +111,10 @@
 
 14. Passing functions programmatically with `env=` doesn't produce an opaque error, e.g. `DT[, f(b), env = list(f=sum)]`, [#6026](https://github.com/Rdatatable/data.table/issues/6026). Note that it's much better to pass functions like `f="sum"` instead. Thanks to @MichaelChirico for the bug report and fix.
 
+15. `fwrite()` with compress="gzip" produces slightly incompatible gz files with multiple independent chunks [#6356](https://github.com/Rdatatable/data.table/issues/6356). This has been fixed by an internal refactoring of the fwrite function. Thanks to @olivierfoster for report and @philippechataignon for the fix.
+
+16. `fwrite()` gains a new parameter `compressLevel` to control compression level for gzip [#5506](https://github.com/Rdatatable/data.table/issues/5506)] [#5513](https://github.com/Rdatatable/data.table/issues/5513)
+
 ## NOTES
 
 1. `transform()` method for data.table sped up substantially when creating new columns on large tables. Thanks to @OfekShilon for the report and PR. The implemented solution was proposed by @ColeMiller1.
@@ -123,7 +127,7 @@
 
 5. Input files are now kept open during `mmap()` when running under Emscripten, [emscripten-core/emscripten#20459](https://github.com/emscripten-core/emscripten/issues/20459). This avoids an error in `fread()` when running in WebAssembly, [#5969](https://github.com/Rdatatable/data.table/issues/5969). Thanks to @maek-ies for the report and @georgestagg for the PR.
 
-6. `dcast()` improves behavior for the situation that the `fun.aggregate` value of `length()` is used but not provided by the user. 
+6. `dcast()` improves behavior for the situation that the `fun.aggregate` value of `length()` is used but not provided by the user.
 
     a. This now triggers a warning, not a message, since relying on this default often signals unexpected duplicates in the data, [#5386](https://github.com/Rdatatable/data.table/issues/5386). The warning is classed as `dt_missing_fun_aggregate_warning`, allowing for more targeted handling in user code. Thanks @MichaelChirico for the suggestion and @Nj221102 for the fix.
 
@@ -838,7 +842,7 @@
 
 14. The options `datatable.print.class` and `datatable.print.keys` are now `TRUE` by default. They have been available since v1.9.8 (Nov 2016) and v1.11.0 (May 2018) respectively.
 
-15. Thanks to @ssh352, Václav Tlapák, Cole Miller, András Svraka and Toby Dylan Hocking for reporting and bisecting a significant performance regression in dev. This was fixed before release thanks to a PR by Jan Gorecki, [#5463](https://github.com/Rdatatable/data.table/pull/5463). 
+15. Thanks to @ssh352, Václav Tlapák, Cole Miller, András Svraka and Toby Dylan Hocking for reporting and bisecting a significant performance regression in dev. This was fixed before release thanks to a PR by Jan Gorecki, [#5463](https://github.com/Rdatatable/data.table/pull/5463).
 
 16. `key(x) <- value` is now fully deprecated (from warning to error). Use `setkey()` to set a table's key. We started warning not to use this approach in 2012, with a stronger warning starting in 2019 (1.12.2). This function will be removed in the next release.
 
