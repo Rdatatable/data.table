@@ -438,7 +438,6 @@ void writePOSIXct(const void *col, int64_t row, char **pch)
     ch -= squashDateTime;
     write_time(t, &ch);
     if (squashDateTime || (m && m%1000==0)) {
-      Rprintf("here i\n");
       // when squashDateTime always write 3 digits of milliseconds even if 000, for consistent scale of squash integer64
       // don't use writeInteger() because it doesn't 0 pad which we need here
       // integer64 is big enough for squash with milli but not micro; trunc (not round) micro when squash
@@ -450,7 +449,6 @@ void writePOSIXct(const void *col, int64_t row, char **pch)
       *ch     = '0'+m;
       ch += 3;
     } else if (m) {
-      Rprintf("here ii\n");
       // microseconds are present and !squashDateTime
       *ch++ = dec;
       *(ch+5) = '0'+m%10; m/=10;
@@ -474,7 +472,6 @@ void writeNanotime(const void *col, int64_t row, char **pch)
   if (x == INT64_MIN) {
     write_chars(na, &ch);
   } else {
-    Rprintf("here iii\n");
     int d/*days*/, s/*secs*/, n/*nanos*/;
     n = x % 1000000000;
     x /= 1000000000;
