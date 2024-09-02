@@ -111,7 +111,7 @@
 
 14. Passing functions programmatically with `env=` doesn't produce an opaque error, e.g. `DT[, f(b), env = list(f=sum)]`, [#6026](https://github.com/Rdatatable/data.table/issues/6026). Note that it's much better to pass functions like `f="sum"` instead. Thanks to @MichaelChirico for the bug report and fix.
 
-15. `fwrite()` with compress="gzip" produces slightly incompatible gz files with multiple independent chunks [#6356](https://github.com/Rdatatable/data.table/issues/6356). This has been fixed by an internal refactoring of the fwrite function. Thanks to @olivierfoster for report and @philippechataignon for the fix.
+15. `fwrite()` with `compress="gzip"` produces compatible gz files when composed of multiple independent chunks owing to parallelization, [#6356](https://github.com/Rdatatable/data.table/issues/6356).  Earlier `fwrite()` versions could have issues with HTTP upload using `Content-Encoding: gzip` and `Transfer-Encoding: chunked`. Thanks to @oliverfoster for report and @philippechataignon for the fix.
 
 16. `fwrite()` gains a new parameter `compressLevel` to control compression level for gzip, [#5506](https://github.com/Rdatatable/data.table/issues/5506). This parameter balances compression speed and total compression, and corresponds directly to the analogous command-line parameter, e.g. `compressLevel=4` corresponds to passing `-4`; the default, `6`, matches the command-line default. Thanks @mgarbuzov for the request and @philippechataignon for implementing.
 
