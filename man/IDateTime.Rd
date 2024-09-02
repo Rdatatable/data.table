@@ -88,11 +88,11 @@ second(x)
 minute(x)
 hour(x)
 yday(x)
-wday(x, label = FALSE)
+wday(x, local_name = FALSE)
 mday(x)
 week(x)
 isoweek(x)
-month(x, label = FALSE)
+month(x, local_name = FALSE)
 quarter(x)
 year(x)
 yearmon(x)
@@ -113,7 +113,7 @@ yearqtr(x)
   the S3 generic.}
   \item{units}{one of the units listed for truncating. May be abbreviated.}
   \item{ms}{ For \code{as.ITime} methods, what should be done with sub-second fractions of input? Valid values are \code{'truncate'} (floor), \code{'nearest'} (round), and \code{'ceil'} (ceiling). See Details. }
-  \item{label}{ For \code{wday} and \code{month}, setting \code{label} to \code{TRUE} will return day and month names instead of integers. Names will be in the regional language according to the locale setting. }
+  \item{local_name}{ For \code{wday} and \code{month}, setting \code{local_name} to \code{TRUE} will return day and month names instead of integers. These match the \code{%A} and \code{%B} formats of \code{\link{strptime}}, respectively, which match current locale settings. }
 }
 \details{
 \code{IDate} is a date class derived from \code{Date}. It has the same

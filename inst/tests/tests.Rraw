@@ -18815,7 +18815,8 @@ test(2274.31, merge(x,y, all.y=TRUE), data.table(a=structure(2:3, class=c("a", "
 test(2274.32, rbind(x,y), error="Class attribute .* does not match with .*")
 test(2274.33, rbind(x,y, ignore.attr=TRUE), data.table(a=structure(c(1L, 2L, 2L, 3L), class=c("a", "integer"))))
 
-# test month and wday labels
-test(2275.1, month("2024-07-01", label=TRUE), "July")
-test(2275.2, wday("2024-07-01", label=TRUE), "Monday")
+# month(), wday() can return locale-specific labels, #1286.
+t = "2024-07-01"
+test(2275.1, month(t, local_name=TRUE), format(as.Date(t, "%B")))
+test(2275.2, wday(t, local_name=TRUE), format(as.Date(t, "%A")))
 
