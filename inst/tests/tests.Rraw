@@ -198,6 +198,7 @@ base_messages = list(
   stopifnot = get_msg(stopifnot(FALSE), fmt="FALSE"),
   not_yet_used = get_msg(.NotYetUsed("abc"), "'", fmt=TRUE), # NB: need fmt= because the English message has '(yet)' --> parens in regex
   ambiguous_date_fmt = get_msg(as.Date('xxx')),
+  match_arg_length = get_msg(match.arg(c('a', 'b'), letters))
   NULL
 )
 
@@ -9973,7 +9974,7 @@ test(1658.27, fwrite(DT, na="NA", verbose=TRUE), output='Writing bom .false., ya
 test(1658.28, fwrite(ok_dt, 1), error=base_messages$stopifnot("is.character(file) && length(file) == 1L && !is.na(file)"))
 test(1658.29, fwrite(ok_dt, quote=123), error="identical\\(quote.*auto.*FALSE.*TRUE")
 test(1658.30, fwrite(ok_dt, sep="..."), error="nchar(sep)")
-test(1658.31, fwrite(ok_dt, qmethod=c("double", "double")), error="length(qmethod)")
+test(1658.31, fwrite(ok_dt, qmethod=c("double", "double")), error=base_messages$match_arg_length)
 test(1658.32, fwrite(ok_dt, col.names="foobar"), error="isTRUEorFALSE(col.names)")
 
 # null data table (no columns)
@@ -10943,7 +10944,7 @@ DT = data.table(
   D = as.POSIXct(dt<-paste(d,t), tz="UTC"),
   E = as.POSIXct(paste0(dt,c(".999",".0",".5",".111112",".123456",".023",".0",".999999",".99",".0009")), tz="UTC"))
 
-test(1740.0, fwrite(DT,dateTimeAs="iso"), error="dateTimeAs must be 'ISO','squash','epoch' or 'write.csv'")
+test(1740.0, fwrite(DT,dateTimeAs="iso"), error="ISO")
 test(1740.1, fwrite(DT,dateTimeAs=c("ISO","squash")), error="dateTimeAs must be a single string")
 test(1740.2, capture.output(fwrite(DT,dateTimeAs="ISO")), c(
 "A,B,C,D,E",
