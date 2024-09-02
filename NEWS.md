@@ -113,7 +113,7 @@
 
 15. `fwrite()` with compress="gzip" produces slightly incompatible gz files with multiple independent chunks [#6356](https://github.com/Rdatatable/data.table/issues/6356). This has been fixed by an internal refactoring of the fwrite function. Thanks to @olivierfoster for report and @philippechataignon for the fix.
 
-16. `fwrite()` gains a new parameter `compressLevel` to control compression level for gzip [#5506](https://github.com/Rdatatable/data.table/issues/5506)] [#5513](https://github.com/Rdatatable/data.table/issues/5513)
+16. `fwrite()` gains a new parameter `compressLevel` to control compression level for gzip, [#5506](https://github.com/Rdatatable/data.table/issues/5506). This parameter balances compression speed and total compression, and corresponds directly to the analogous command-line parameter, e.g. `compressLevel=4` corresponds to passing `-4`; the default, `6`, matches the command-line default. Thanks @mgarbuzov for the request and @philippechataignon for implementing.
 
 ## NOTES
 
