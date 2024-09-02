@@ -143,7 +143,7 @@ uint64_t dtwiddle(double x);
 SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg);
 SEXP forderReuseSorting(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg, SEXP reuseSortingArg); // reuseSorting wrapper to forder
 int getNumericRounding_C(void);
-NORET void internal_error_with_cleanup(const char *call_name, const char *format, ...);
+void internal_error_with_cleanup(const char *call_name, const char *format, ...);
 
 // reorder.c
 SEXP reorder(SEXP x, SEXP order);
