@@ -1,6 +1,26 @@
 **If you are viewing this file on CRAN, please check [latest news on GitHub](https://github.com/Rdatatable/data.table/blob/master/NEWS.md) where the formatting is also better.**
 
-# data.table [v1.15.99](https://github.com/Rdatatable/data.table/milestone/30)  (in development)
+# data.table [v1.16.99](https://github.com/Rdatatable/data.table/milestone/31)  (in development)
+
+## POTENTIALLY BREAKING CHANGES
+
+1. In `DT[, variable := value]`, when value is class `POSIXlt`, we automatically coerce it to class `POSIXct` instead, [#1724](https://github.com/Rdatatable/data.table/issues/1724). Thanks to @linzhp for the report, and Benjamin Schwendinger for the fix.
+
+## BUG FIXES
+
+1. Using `print.data.table()` with character truncation using `datatable.prettyprint.char` no longer errors with `NA` entries, [#6441](https://github.com/Rdatatable/data.table/issues/6441). Thanks to @r2evans for the bug report, and @joshhwuu for the fix.
+
+## NOTES
+
+1. Tests run again when some Suggests packages are missing, [#6411](https://github.com/Rdatatable/data.table/issues/6411). Thanks @aadler for the note and @MichaelChirico for the fix.
+
+2. Continued work to remove non-API C functions, [#6180](https://github.com/Rdatatable/data.table/issues/6180). Thanks Ivan Krylov for the PR and for writing a clear and concise guide about the R API: https://aitap.codeberg.page/R-api/.
+
+3. `data.table` again properly detects OpenMP support when built using `gcc` on macOS, [#6409](https://github.com/Rdatatable/data.table/issues/6409). Thanks @barracuda156 for the report and @kevinushey for the fix.
+
+4. The translations submitted for 1.16.0 are now actually shipped with the package -- our deepest apologies to the translators for the omission. We have added a CI check to ensure that the .mo binaries which get shipped with the package are always up-to-date.
+
+# data.table [v1.16.0](https://github.com/Rdatatable/data.table/milestone/30)  (25 August 2024)
 
 ## BREAKING CHANGES
 

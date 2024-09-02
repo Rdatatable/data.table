@@ -257,6 +257,6 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
       # removed 'setcolorder()' here, #1153
     setattr(ans, 'names', c(lhsnames, allcols))
     setDT(ans); setattr(ans, 'sorted', lhsnames)
-  } else stopf("Internal error -- empty rhsnames in dcast; please report") # nocov
+  } else internal_error("empty rhsnames") # nocov
   return(ans)
 }

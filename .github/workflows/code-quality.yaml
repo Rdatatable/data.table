@@ -56,21 +56,18 @@ jobs:
       - uses: r-lib/actions/setup-r@v2
       - name: Check translations
         run: |
-          setwd("po")
-          for (po_file in list.files(pattern = "[.]po$")) {
-            res = tools::checkPoFile(po_file, strictPlural=TRUE)
-            if (NROW(res)) { print(res); stop("Fix the above .po file issues.") }
-
-            if (!any(grepl("charset=UTF-8", readLines(po_file), fixed=TRUE)))
-              stop("In ", po_file, ", please use charset=UTF-8.")
-
-            res = system2("msgfmt", c("--statistics", po_file, "-o", tempfile()), stdout=TRUE, stderr=TRUE)
-            if (any(grepl("untranslated message|fuzzy translation", res))) {
-              cat(sprintf("In %s, found incomplete translations:\n%s\n", po_file, paste(res, collapse="\n")))
-              stop("Please fix.")
-            }
+          linter_env = new.env()
+          for (f in list.files('.ci/linters/po', full.names=TRUE)) sys.source(f, linter_env)
+          for (po_file in list.files(pattern = "[.]po$", full.names=TRUE)) {
+            # only pay attention to files edited in the current PR, otherwise we can get
+            #   a situation like after #6424 where some untranslated messages were added
+            #   as part of non-translation maintenance, but this GHA would go red repeatedly
+            #   until a translation is added or the blank/fuzzy translations removed. We'd
+            #   rather only have the failure on one PR, then ignore these files later.
+            diff_v_master = system2("git", c("diff", "master", po_file), stdout=TRUE)
+            if (!length(diff_v_master)) next
+            for (linter in ls(linter_env)) linter_env[[linter]](po_file)
           }
-          cat("All translation quality checks completed successfully!\n")
         shell: Rscript {0}
   lint-md:
     runs-on: ubuntu-latest

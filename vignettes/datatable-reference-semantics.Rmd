@@ -265,7 +265,7 @@ head(flights)
 ```{r}
 flights[, names(.SD) := lapply(.SD, as.factor), .SDcols = is.character]
 ```
-Let's clean up again and convert our newly-made factor columns back into character columns. This time we will make use of `.SDcols` accepting a function to decide which columns to include. In this case, `is.factor()` will return the columns which are factors. For more on the **S**ubset of the **D**ata, there is also an [SD Usage vignette](https://cran.r-project.org/web/packages/data.table/vignettes/datatable-sd-usage.html).
+Let's clean up again and convert our newly-made factor columns back into character columns. This time we will make use of `.SDcols` accepting a function to decide which columns to include. In this case, `is.factor()` will return the columns which are factors. For more on the **S**ubset of the **D**ata, there is also an [SD Usage vignette](https://cran.r-project.org/package=data.table/vignettes/datatable-sd-usage.html).
 
 Sometimes, it is also nice to keep track of columns that we transform. That way, even after we convert our columns we would be able to call the specific columns we were updating.
 ```{r}
@@ -273,6 +273,7 @@ factor_cols <- sapply(flights, is.factor)
 flights[, names(.SD) := lapply(.SD, as.character), .SDcols = factor_cols]
 str(flights[, ..factor_cols])
 ```
+
 #### {.bs-callout .bs-callout-info}
 
 * We also could have used `(factor_cols)` on the `LHS` instead of `names(.SD)`.

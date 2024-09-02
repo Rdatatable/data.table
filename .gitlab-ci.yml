@@ -272,6 +272,7 @@ test-win-old:
   tags:
     - saas-macos-medium-m1
   before_script:
+    - if ! command -v R &> /dev/null || ! command -v Rscript &> /dev/null; then brew install r; fi
     - *install-deps
     - cp $(ls -1t bus/build/data.table_*.tar.gz | head -n 1) .
   after_script:
@@ -288,7 +289,7 @@ test-mac-rel:
   variables:
     R_VERSION: "$R_REL_VERSION"
   script:
-    - R CMD check $(ls -1t data.table_*.tar.gz | head -n 1)
+    - R CMD check --no-manual $(ls -1t data.table_*.tar.gz | head -n 1)
     - R CMD INSTALL --build $(ls -1t data.table_*.tar.gz | head -n 1)
 
 ## integrate artifacts

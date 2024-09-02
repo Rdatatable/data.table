@@ -21,6 +21,15 @@ nan_is_na = function(x) {
   stopf("Argument 'nan' must be NA or NaN")
 }
 
+internal_error = function(...) {
+  e1 = gettext("Internal error in")
+  e2 = deparse(head(tail(sys.calls(), 2L), 1L)[[1L]][[1L]])
+  e3 = do.call(sprintf, list(...))
+  e4 = gettext("Please report to the data.table issues tracker.")
+  e = paste0(e1, ' ', e2, ': ', e3, '. ', e4)
+  stop(e, call. = FALSE, domain = NA)
+}
+
 # TODO(R>=4.0.0): Remove this workaround. From R 4.0.0, rep_len() dispatches rep.Date(), which we need.
 #   Before that, rep_len() strips attributes --> breaks data.table()'s internal recycle() helper.
 #   This also impacts test 2 in S4.Rraw, because the error message differs for rep.int() vs. rep_len().
@@ -34,7 +43,7 @@ if (inherits(rep_len(Sys.Date(), 1L), "Date")) {
 }
 
 # endsWith no longer used from #5097 so no need to backport; prevent usage to avoid dev delay until GLCI's R 3.1.0 test
-endsWith = function(...) stop("Internal error: use endsWithAny instead of base::endsWith", call.=FALSE)
+endsWith = function(...) internal_error("use endsWithAny instead of base::endsWith")
 
 startsWithAny = function(x,y) .Call(CstartsWithAny, x, y, TRUE)
 endsWithAny = function(x,y) .Call(CstartsWithAny, x, y, FALSE)

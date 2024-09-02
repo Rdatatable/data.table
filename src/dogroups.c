@@ -76,12 +76,12 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   double startTime = (showProgress) ? wallclock() : 0;
   double nextTime = (showProgress) ? startTime+3 : 0; // wait 3 seconds before printing progress
 
-  if (!isInteger(order)) error(_("Internal error: order not integer vector")); // # nocov
-  if (TYPEOF(starts) != INTSXP) error(_("Internal error: starts not integer")); // # nocov
-  if (TYPEOF(lens) != INTSXP) error(_("Internal error: lens not integer")); // # nocov
+  if (!isInteger(order)) internal_error(__func__, "order not integer vector"); // # nocov
+  if (TYPEOF(starts) != INTSXP) internal_error(__func__, "starts not integer"); // # nocov
+  if (TYPEOF(lens) != INTSXP) internal_error(__func__, "lens not integer"); // # nocov
   // starts can now be NA (<0): if (INTEGER(starts)[0]<0 || INTEGER(lens)[0]<0) error(_("starts[1]<0 or lens[1]<0"));
-  if (!isNull(jiscols) && LENGTH(order) && !LOGICAL(on)[0]) error(_("Internal error: jiscols not NULL but o__ has length")); // # nocov
-  if (!isNull(xjiscols) && LENGTH(order) && !LOGICAL(on)[0]) error(_("Internal error: xjiscols not NULL but o__ has length")); // # nocov
+  if (!isNull(jiscols) && LENGTH(order) && !LOGICAL(on)[0]) internal_error(__func__, "jiscols not NULL but o__ has length"); // # nocov
+  if (!isNull(xjiscols) && LENGTH(order) && !LOGICAL(on)[0]) internal_error(__func__, "xjiscols not NULL but o__ has length"); // # nocov
   if(!isEnvironment(env)) error(_("env is not an environment"));
   ngrp = length(starts);  // the number of groups  (nrow(groups) will be larger when by)
   ngrpcols = length(grpcols);
@@ -101,7 +101,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     SET_STRING_ELT(bynames, i, STRING_ELT(getAttrib(groups,R_NamesSymbol), j));
     defineVar(install(CHAR(STRING_ELT(bynames,i))), VECTOR_ELT(BY,i), env);      // by vars can be used by name in j as well as via .BY
     if (SIZEOF(VECTOR_ELT(BY,i))==0)
-      error(_("Internal error: unsupported size-0 type '%s' in column %d of 'by' should have been caught earlier"), type2char(TYPEOF(VECTOR_ELT(BY, i))), i+1); // # nocov
+      internal_error(__func__, "unsupported size-0 type '%s' in column %d of 'by' should have been caught earlier", type2char(TYPEOF(VECTOR_ELT(BY, i))), i+1); // # nocov
     SET_TRUELENGTH(VECTOR_ELT(BY,i), -1); // marker for anySpecialStatic(); see its comments
   }
   setAttrib(BY, R_NamesSymbol, bynames); // Fix for #42 - BY doesn't retain names anymore
@@ -141,9 +141,9 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   for(int i=0; i<length(SDall); ++i) {
     SEXP this = VECTOR_ELT(SDall, i);
     if (SIZEOF(this)==0)
-      error(_("Internal error: size-0 type %d in .SD column %d should have been caught earlier"), TYPEOF(this), i); // # nocov
+      internal_error(__func__, "size-0 type %d in .SD column %d should have been caught earlier", TYPEOF(this), i); // # nocov
     if (LENGTH(this) != maxGrpSize)
-      error(_("Internal error: SDall %d length = %d != %d"), i+1, LENGTH(this), maxGrpSize); // # nocov
+      internal_error(__func__, "SDall %d length = %d != %d", i+1, LENGTH(this), maxGrpSize); // # nocov
     nameSyms[i] = install(CHAR(STRING_ELT(names, i)));
     // fixes http://stackoverflow.com/questions/14753411/why-does-data-table-lose-class-definition-in-sd-after-group-by
     copyMostAttrib(VECTOR_ELT(dt,INTEGER(dtcols)[i]-1), this);  // not names, otherwise test 778 would fail
@@ -155,7 +155,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   SEXP *xknameSyms = (SEXP *)R_alloc(length(xknames), sizeof(SEXP));
   for(int i=0; i<length(xSD); ++i) {
     if (SIZEOF(VECTOR_ELT(xSD, i))==0)
-      error(_("Internal error: type %d in .xSD column %d should have been caught by now"), TYPEOF(VECTOR_ELT(xSD, i)), i); // # nocov
+      internal_error(__func__, "type %d in .xSD column %d should have been caught by now", TYPEOF(VECTOR_ELT(xSD, i)), i); // # nocov
     xknameSyms[i] = install(CHAR(STRING_ELT(xknames, i)));
   }
 
@@ -312,7 +312,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         RHS = VECTOR_ELT(jval,j%LENGTH(jval));
         if (isNull(target)) {
           // first time adding to new column
-          if (TRUELENGTH(dt) < colj+1) error(_("Internal error: Trying to add new column by reference but tl is full; setalloccol should have run first at R level before getting to this point in dogroups")); // # nocov
+          if (TRUELENGTH(dt) < colj+1) internal_error(__func__, "Trying to add new column by reference but tl is full; setalloccol should have run first at R level before getting to this point"); // # nocov
           target = PROTECT(allocNAVectorLike(RHS, n));
           // Even if we could know reliably to switch from allocNAVectorLike to allocVector for slight speedup, user code could still
           // contain a switched halt, and in that case we'd want the groups not yet done to have NA rather than 0 or uninitialized.
@@ -484,7 +484,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   SET_TRUELENGTH(N, 1);
   SET_TRUELENGTH(GRP, 1);
   if (verbose) {
-    if (nblock[0] && nblock[1]) error(_("Internal error: block 0 [%d] and block 1 [%d] have both run"), nblock[0], nblock[1]); // # nocov
+    if (nblock[0] && nblock[1]) internal_error(__func__, "block 0 [%d] and block 1 [%d] have both run", nblock[0], nblock[1]); // # nocov
     int w = nblock[1]>0;
     Rprintf(_("\n  %s took %.3fs for %d groups\n"), w ? "collecting discontiguous groups" : "memcpy contiguous groups",
                           1.0*tblock[w]/CLOCKS_PER_SEC, nblock[w]);
@@ -537,7 +537,7 @@ SEXP growVector(SEXP x, const R_len_t newlen)
       SET_VECTOR_ELT(newx, i, xd[i]);
   } break;
   default :
-    error(_("Internal error: growVector doesn't support type '%s'"), type2char(TYPEOF(x)));  // # nocov
+    internal_error(__func__, "type '%s' not supported", type2char(TYPEOF(x)));  // # nocov
   }
   // if (verbose) Rprintf(_("Growing vector from %d to %d items of type '%s'\n"), len, newlen, type2char(TYPEOF(x)));
   // Would print for every column if here. Now just up in dogroups (one msg for each table grow).

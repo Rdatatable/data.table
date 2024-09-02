@@ -237,12 +237,12 @@ SEXP copyAsPlain(SEXP x) {
     for (int64_t i=0; i<n; ++i) SET_VECTOR_ELT(ans, i, copyAsPlain(xp[i]));
   } break;
   default:                                                                                           // # nocov
-    error(_("Internal error: type '%s' not supported in %s"), type2char(TYPEOF(x)), "copyAsPlain()"); // # nocov
+    internal_error(__func__, "type '%s' not supported in %s", type2char(TYPEOF(x)), "copyAsPlain()"); // # nocov
   }
   DUPLICATE_ATTRIB(ans, x);
   // aside: unlike R's duplicate we do not copy truelength here; important for dogroups.c which uses negative truelenth to mark its specials
   if (ALTREP(ans))
-    error(_("Internal error: copyAsPlain returning ALTREP for type '%s'"), type2char(TYPEOF(x))); // # nocov
+    internal_error(__func__, "copyAsPlain returning ALTREP for type '%s'", type2char(TYPEOF(x))); // # nocov
   UNPROTECT(1);
   return ans;
 }
@@ -414,7 +414,7 @@ SEXP startsWithAny(const SEXP x, const SEXP y, SEXP start) {
   // startsWith was added to R in 3.3.0 so we need something to support R 3.1.0
   // short and simple ascii-only
   if (!isString(x) || !isString(y) || length(x)!=1 || length(y)<1 || !isLogical(start) || length(start)!=1 || LOGICAL(start)[0]==NA_LOGICAL)
-    error("Internal error: data.table's internal startsWithAny types or lengths incorrect");
+    internal_error(__func__, "types or lengths incorrect");
   const char *xd = CHAR(STRING_ELT(x, 0));
   const int n=length(y);
   if (LOGICAL(start)[0]) {
@@ -435,3 +435,13 @@ SEXP startsWithAny(const SEXP x, const SEXP y, SEXP start) {
   return ScalarLogical(false);
 }
 
+void internal_error(const char *call_name, const char *format, ...) {
+  char buff[1024];
+  va_list args;
+  va_start(args, format);
+
+  vsnprintf(buff, 1023, format, args);
+  va_end(args);
+
+  error("%s %s: %s. %s", _("Internal error in"), call_name, buff, _("Please report to the data.table issues tracker."));
+}

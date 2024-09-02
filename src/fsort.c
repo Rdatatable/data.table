@@ -231,7 +231,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
     // sort bins by size, largest first to minimise last-man-home
     uint64_t *msbCounts = counts + (nBatch-1)*MSBsize;
     // msbCounts currently contains the ending position of each MSB (the starting location of the next) even across empty
-    if (msbCounts[MSBsize-1] != xlength(x)) error(_("Internal error: counts[nBatch-1][MSBsize-1] != length(x)")); // # nocov
+    if (msbCounts[MSBsize-1] != xlength(x)) internal_error(__func__, "counts[nBatch-1][MSBsize-1] != length(x)"); // # nocov
     uint64_t *msbFrom = (uint64_t *)R_alloc(MSBsize, sizeof(uint64_t));
     int *order = (int *)R_alloc(MSBsize, sizeof(int));
     uint64_t cumSum = 0;
