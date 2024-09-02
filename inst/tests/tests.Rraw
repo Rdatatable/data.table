@@ -10944,7 +10944,7 @@ DT = data.table(
   D = as.POSIXct(dt<-paste(d,t), tz="UTC"),
   E = as.POSIXct(paste0(dt,c(".999",".0",".5",".111112",".123456",".023",".0",".999999",".99",".0009")), tz="UTC"))
 
-test(1740.1, fwrite(DT,dateTimeAs="iso"), error=base_messages$match_arg_4_choices("ISO", "epoch", "squash", "write.csv"))
+test(1740.1, fwrite(DT,dateTimeAs="iso"), error=base_messages$match_arg_4_choices("ISO", "squash", "epoch", "write.csv"))
 test(1740.2, fwrite(DT,dateTimeAs=c("ISO","squash")), error=base_messages$match_arg_length)
 test(1740.3, capture.output(fwrite(DT,dateTimeAs="ISO")), c(
 "A,B,C,D,E",
