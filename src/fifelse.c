@@ -210,13 +210,15 @@ SEXP fcaseR(SEXP rho, SEXP args) {
   }
   int nprotect=0, l;
   int64_t n_ans=0, n_this_arg=0, n_undecided=0;
-  SEXP ans=R_NilValue, value0=R_NilValue, tracker=R_NilValue, whens=R_NilValue, thens=R_NilValue;
+  SEXP ans=R_NilValue, tracker=R_NilValue, whens=R_NilValue, thens=R_NilValue;
+  SEXP ans_class, ans_levels;
   PROTECT_INDEX Iwhens, Ithens;
   PROTECT_WITH_INDEX(whens, &Iwhens); nprotect++;
   PROTECT_WITH_INDEX(thens, &Ithens); nprotect++;
   SEXPTYPE ans_type=NILSXP;
   // naout means if the output is scalar logic na
   bool imask = true, naout = false, idefault = false;
+  bool ans_is_factor;
   int *restrict p = NULL;
   const int n = narg/2;
   for (int i=0; i<n; ++i) {
@@ -235,7 +237,11 @@ SEXP fcaseR(SEXP rho, SEXP args) {
       n_ans = xlength(whens);
       n_undecided = n_ans;
       ans_type = TYPEOF(thens);
-      value0 = thens;
+      ans_class = PROTECT(getAttrib(thens, R_ClassSymbol)); nprotect++;
+      ans_is_factor = isFactor(thens);
+      if (ans_is_factor) {
+        ans_levels = PROTECT(getAttrib(thens, R_LevelsSymbol)); nprotect++;
+      }
       ans = PROTECT(allocVector(ans_type, n_ans)); nprotect++;
       copyMostAttrib(thens, ans);
       tracker = PROTECT(allocVector(INTSXP, n_ans)); nprotect++;
@@ -260,7 +266,7 @@ SEXP fcaseR(SEXP rho, SEXP args) {
         }
       }
       if (!naout) {
-        if (!R_compute_identical(PROTECT(getAttrib(value0, R_ClassSymbol)),  PROTECT(getAttrib(thens, R_ClassSymbol)), 0)) {
+        if (!R_compute_identical(ans_class,  PROTECT(getAttrib(thens, R_ClassSymbol)), 0)) {
           if (idefault) {
             error(_("Resulting value has different class than 'default'. "
                     "Please make sure that both arguments have the same class."));
@@ -269,17 +275,17 @@ SEXP fcaseR(SEXP rho, SEXP args) {
                     "Please make sure all output values have the same class."), i*2+2);
           }
         }
-        UNPROTECT(2); // class(value0), class(thens)
+        UNPROTECT(1); // class(thens)
       }
-      if (!naout && isFactor(value0)) {
-        if (!R_compute_identical(PROTECT(getAttrib(value0, R_LevelsSymbol)),  PROTECT(getAttrib(thens, R_LevelsSymbol)), 0)) {
+      if (!naout && ans_is_factor) {
+        if (!R_compute_identical(ans_levels,  PROTECT(getAttrib(thens, R_LevelsSymbol)), 0)) {
           if (idefault) {
             error(_("Resulting value and 'default' are both type factor but their levels are different."));
           } else {
             error(_("Argument #2 and argument #%d are both factor but their levels are different."), i*2+2);
           }
         }
-        UNPROTECT(2); // levels(value0), levels(thens)
+        UNPROTECT(1); // levels(thens)
       }
     }
     n_this_arg = xlength(thens);
