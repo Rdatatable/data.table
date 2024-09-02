@@ -435,7 +435,7 @@ SEXP startsWithAny(const SEXP x, const SEXP y, SEXP start) {
   return ScalarLogical(false);
 }
 
-NORET void internal_error(const char *call_name, const char *format, ...) {
+void internal_error(const char *call_name, const char *format, ...) {
   char buff[1024];
   va_list args;
   va_start(args, format);
