@@ -19,13 +19,10 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   if (length(encoding) != 1L || !encoding %chin% c("", "UTF-8", "native")) {
     stopf("Argument 'encoding' must be '', 'UTF-8' or 'native'.")
   }
-  if (missing(qmethod)) qmethod = qmethod[1L]
-  if (missing(compress)) compress = compress[1L]
-  if (missing(compressLevel)) compressLevel = 6L
-  if (missing(dateTimeAs)) { dateTimeAs = dateTimeAs[1L] }
-  else if (length(dateTimeAs)>1L) stopf("dateTimeAs must be a single string")
-  dateTimeAs = chmatch(dateTimeAs, c("ISO","squash","epoch","write.csv"))-1L
-  if (is.na(dateTimeAs)) stopf("dateTimeAs must be 'ISO','squash','epoch' or 'write.csv'")
+  qmethod = match.arg(qmethod)
+  compress = match.arg(compress)
+  dateTimeAs = match.arg(dateTimeAs)
+  dateTimeAs = chmatch(dateTimeAs, c("ISO", "squash", "epoch", "write.csv"))-1L
   if (!missing(logical01) && !missing(logicalAsInt))
     stopf("logicalAsInt has been renamed logical01. Use logical01 only, not both.")
   if (!missing(logicalAsInt)) {
