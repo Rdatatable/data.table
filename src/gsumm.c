@@ -37,6 +37,11 @@ static int nbit(int n)
   return nb;
 }
 
+/*
+  Functions with GForce optimization are internally parallelized to speed up
+    grouped summaries over a large data.table. OpenMP is used here to
+    parallelize operations involved in calculating common group-wise statistics.
+*/
 SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   double started = wallclock();
   const bool verbose = GetVerbose();

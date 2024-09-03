@@ -60,3 +60,6 @@
 # performance testing
 /.ci/atime/tests.R @tdhock @Anirban166
 /.github/workflows/performance-tests.yaml @Anirban166
+
+# docs
+/man/openmp-utils.Rd @Anirban166

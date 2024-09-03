@@ -1,5 +1,7 @@
 # A list of performance tests.
 #
+# See documentation in https://github.com/Rdatatable/data.table/wiki/Performance-testing for best practices.
+#
 # Each entry in this list corresponds to a performance test and contains a sublist with three mandatory arguments:
 # - N: A numeric sequence of data sizes to vary.
 # - setup: An expression evaluated for every data size before measuring time/memory.
