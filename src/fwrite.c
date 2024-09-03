@@ -673,7 +673,7 @@ void fwriteMain(fwriteMainArgs args)
     }
     if (args.whichFun[j] == WF_Float64 && args.scipen > 0)
         // clamp width to IEEE754 max to avoid scipen=99999 allocating buffer larger than can ever be written
-        width += args.scipen < 350 ? args.scipen : 350;
+        width += (args.scipen < 350) ? args.scipen : 350;
     if (width < naLen)
         width = naLen;
     maxLineLen += width * 2;  // *2 in case the longest string is all quotes and they all need to be escaped
