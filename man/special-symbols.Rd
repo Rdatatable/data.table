@@ -34,7 +34,7 @@
 
     Note that \code{.N} in \code{i} is computed up-front, while that in \code{j} applies \emph{after filtering in \code{i}}. That means that even absent grouping, \code{.N} in \code{i} can be different from \code{.N} in \code{j}. See Examples.
 
-    Note also that you should consider these symbols read-only -- internal data.table code might manipulate them in unexpected ways, and as such their bindings are locked. But there are subtle ways to wind up with copies of the wrong object; see examples. When in doubt, \code{copy()} is your friend.
+    Note also that you should consider these symbols read-only and of limited scope -- internal data.table code might manipulate them in unexpected ways, and as such their bindings are locked. There are subtle ways to wind up with the wrong object, especially when attempting to copy their values outside a grouping context. See examples; when in doubt, \code{copy()} is your friend.
 }
 \seealso{
     \code{\link{data.table}}, \code{\link{:=}}, \code{\link{set}}, \code{\link{datatable-optimize}}
