@@ -433,6 +433,19 @@ uint64_t dtwiddle(double x) //const void *p, int i)
 
 void radix_r(const int from, const int to, const int radix);
 
+/*
+  OpenMP is used here to parallelize multiple operations that come together to
+    sort a data.table using the Radix algorithm. These include:
+
+    - The counting of unique values and recursively sorting subsets of data
+      across different threads
+    - The process of finding the range and distribution of data for efficient
+      grouping and sorting
+    - Creation of histograms which are used to sort data based on significant
+      bits (each thread processes a separate batch of the data, computes the
+      MSB of each element, and then increments the corresponding bins), with
+      the distribution and merging of buckets
+*/
 SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg)
 // sortGroups TRUE from setkey and regular forder, FALSE from by= for efficiency so strings don't have to be sorted and can be left in appearance order
 // when sortGroups is TRUE, ascArg contains +1/-1 for ascending/descending of each by column; when FALSE ascArg is ignored
