@@ -70,6 +70,7 @@ DT[, .(.I, min(.SD[,-1]))]
 DT[, .(min(.SD[,-1])), by=.I]
 
 # Do not expect this to correctly append the value of .BY in each group; copy(.BY) will work.
-DT[, { append(by_tracker, .BY); do_group() }, by=.(a, b, c)]
+by_tracker = list()
+DT[, { append(by_tracker, .BY); sum(v) }, by=x]
 }
 \keyword{ data }
