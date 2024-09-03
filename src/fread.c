@@ -1268,6 +1268,14 @@ static int detect_types( const char **pch, int8_t type[], int ncol, bool *bumped
 //
 // Returns 1 if it finishes successfully, and 0 otherwise.
 //
+//  OpenMP is used here to:
+//    - Parallelize the reading of data in chunks
+//    - Avoid race conditions or concurrent writes to the output data.table by having atomic
+//      operations on the string data 
+//    - Manage synchronized updates to the progress bar and serialize the output to the console
+//  This function is highly optimized in reading and processing data with both large numbers of
+//    rows and columns, but the efficiency is more pronounced across rows.
+//
 //=================================================================================================
 int freadMain(freadMainArgs _args) {
   args = _args;  // assign to global for use by DTPRINT() in other functions

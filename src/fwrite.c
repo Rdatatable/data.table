@@ -587,6 +587,14 @@ int compressbuff(z_stream *stream, void* dest, size_t *destLen, const void* sour
 }
 #endif
 
+/*
+  OpenMP is used here primarily to parallelize the process of writing rows
+    to the output file, but error handling and compression (if enabled) are
+    also managed within the parallel region. Special attention is paid to
+    thread safety and synchronization, especially in the ordered sections
+    where output to the file and handling of errors is serialized to maintain
+    the correct sequence of rows.
+*/
 void fwriteMain(fwriteMainArgs args)
 {
   double startTime = wallclock();

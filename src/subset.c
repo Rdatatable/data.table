@@ -272,8 +272,9 @@ static void checkCol(SEXP col, int colNum, int nrow, SEXP x)
 *   2) Originally for subsetting vectors in fcast and now the beginnings of [.data.table ported to C
 *   3) Immediate need is for R 3.1 as lglVec[1] now returns R's global TRUE and we don't want := to change that global [think 1 row data.tables]
 *   4) Could do it other ways but may as well go to C now as we were going to do that anyway
+*
+*  OpenMP is used here to parallelize the loops that perform the subsetting of vectors, with conditional checks and filtering of data. 
 */
-
 SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md and man/cdt.Rd
   int nprotect=0;
   if (!isNewList(x)) internal_error(__func__, "Argument '%s' to %s is type '%s' not '%s'", "x", "CsubsetDT", type2char(TYPEOF(rows)), "list"); // # nocov

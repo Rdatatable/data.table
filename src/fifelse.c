@@ -1,5 +1,11 @@
 #include "data.table.h"
 
+/*
+  OpenMP is being used here to parallelize loops that perform conditional
+    checks along with assignment operations over the elements of the
+    supplied logical vector based on the condition (test) and values
+    provided for the remaining arguments (yes, no, and na).
+*/
 SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
   if (!isLogical(l)) {
     error(_("Argument 'test' must be logical."));
