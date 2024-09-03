@@ -15,7 +15,7 @@
     \code{.EACHI} is a symbol passed to \code{by}; i.e. \code{by=.EACHI}, \code{.NATURAL} is a symbol passed to \code{on}; i.e. \code{on=.NATURAL}
 }
 \details{
-    The bindings of these variables are locked and attempting to assign to them will generate an error. If you wish to manipulate \code{.SD} before returning it, take a \code{copy(.SD)} first (see FAQ 4.5). Using \code{:=} in the \code{j} of \code{.SD} is reserved for future use as a (tortuously) flexible way to update \code{DT} by reference by group (even when groups are not contiguous in an ad hoc by).
+    The bindings of these variables are locked and attempting to assign to them will generate an error. If you wish to manipulate \code{.SD} before returning it, take a \code{\link{copy}(.SD)} first (see FAQ 4.5). Using \code{:=} in the \code{j} of \code{.SD} is reserved for future use as a (tortuously) flexible way to update \code{DT} by reference by group (even when groups are not contiguous in an ad hoc by).
 
     These symbols used in \code{j} are defined as follows.
 
@@ -34,7 +34,7 @@
 
     Note that \code{.N} in \code{i} is computed up-front, while that in \code{j} applies \emph{after filtering in \code{i}}. That means that even absent grouping, \code{.N} in \code{i} can be different from \code{.N} in \code{j}. See Examples.
 
-    Note: When appending `.BY` to a list or using it outside the current `data.table` context, ensure each group's `.BY` value is correctly captured by employing `copy(.BY)`. Without `copy()`, `.BY` will reference the same memory location across iterations, resulting in all list elements containing the `.BY` value of the last group. See the examples for better understanding.
+    Note also that you should consider these symbols read-only -- internal data.table code might manipulate them in unexpected ways, and as such their bindings are locked. But there are subtle ways to wind up with copies of the wrong object; see examples. When in doubt, \code{copy()} is your friend.
 }
 \seealso{
     \code{\link{data.table}}, \code{\link{:=}}, \code{\link{set}}, \code{\link{datatable-optimize}}
@@ -69,24 +69,7 @@ DT[{cat(sprintf('in i, .N is \%d\n', .N)); a < .N/2},
 DT[, .(.I, min(.SD[,-1]))]
 DT[, .(min(.SD[,-1])), by=.I]
 
-# These examples illustrate the importance of using copy(.BY) when capturing .BY values in a list outside the data.table context to avoid unexpected behavior.
-dt <- data.table(l = letters[1:5], b = rnorm(5))
-setkey(dt, l)
-
-## Incorrect usage
-byg <- list()
-dt[, m := {
-  byg <<- append(byg, .BY)  # Incorrect: Missing copy(.BY)
-  mean(b)
-}, by = l]
-str(byg)  # All elements of 'byg' will contain the .BY value of the last group
-
-## Correct usage
-byg <- list()
-dt[, m := {
-  byg <<- append(byg, copy(.BY))  # Correct: Using copy(.BY)
-  mean(b)
-}, by = l]
-str(byg)  # 'byg' now correctly captures .BY values for each group
+# Do not expect this to correctly append the value of .BY in each group; copy(.BY) will work.
+DT[, { append(by_tracker, .BY); do_group() }, by=.(a, b, c)]
 }
 \keyword{ data }
