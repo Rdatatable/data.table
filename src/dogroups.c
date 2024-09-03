@@ -486,8 +486,9 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   if (verbose) {
     if (nblock[0] && nblock[1]) error(_("Internal error: block 0 [%d] and block 1 [%d] have both run"), nblock[0], nblock[1]); // # nocov
     int w = nblock[1]>0;
-    Rprintf(_("\n  %s took %.3fs for %d groups\n"), w ? "collecting discontiguous groups" : "memcpy contiguous groups",
-                          1.0*tblock[w], nblock[w]);
+    Rprintf(w ? _("\n  collecting discontiguous groups took %.3fs for %d groups\n")
+              : _("\n  memcpy contiguous groups took %.3fs for %d groups\n"),
+            1.0*tblock[w], nblock[w]);
     Rprintf(_("  eval(j) took %.3fs for %d calls\n"), 1.0*tblock[2], nblock[2]);
   }
   UNPROTECT(nprotect);
