@@ -53,7 +53,6 @@
 
   We endeavor to keep this list up to date, but note that the canonical reference here is the source code itself.
 }
-
 \examples{
   getDTthreads(verbose=TRUE)
 }
