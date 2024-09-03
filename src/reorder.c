@@ -1,5 +1,10 @@
 #include "data.table.h"
 
+/*
+  OpenMP is used here to reorder a vector or each column in a list of vectors
+    (such as in a data.table) based on a given vector that dictates the new
+    ordering of elements
+*/
 SEXP reorder(SEXP x, SEXP order)
 {
   // For internal use only by setkey().

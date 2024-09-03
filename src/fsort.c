@@ -98,6 +98,10 @@ int qsort_cmp(const void *a, const void *b) {
   return (x<y)-(x>y);   // largest first in a safe branchless way casting long to int
 }
 
+/*
+  OpenMP is used here to find the range and distribution of data for efficient
+    grouping and sorting.
+*/
 SEXP fsort(SEXP x, SEXP verboseArg) {
   double t[10];
   t[0] = wallclock();
