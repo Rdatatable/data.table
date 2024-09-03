@@ -65,7 +65,7 @@ cedta = function(n=2L) {
   if (!ans && getOption("datatable.verbose")) {
     # nocov start
     catf("cedta decided '%s' wasn't data.table aware. Here is call stack with [[1L]] applied:\n", nsname)
-    print(sapply(sys.calls(), "[[", 1L))
+    print(sapply(sys.calls(), `[[`, 1L))
     # nocov end
     # so we can trace the namespace name that may need to be added (very unusually)
   }

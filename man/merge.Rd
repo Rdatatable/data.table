@@ -41,7 +41,7 @@ data from both \code{x} and \code{y} are included in the output.}
 \item{sort}{logical. If \code{TRUE} (default), the rows of the merged
 \code{data.table} are sorted by setting the key to the \code{by / by.x} columns. If
 \code{FALSE}, unlike base R's \code{merge} for which row order is unspecified, the
-row order in \code{x} is retained (including retaining the position of missings when
+row order in \code{x} is retained (including retaining the position of missing entries when
 \code{all.x=TRUE}), followed by \code{y} rows that don't match \code{x} (when \code{all.y=TRUE})
 retaining the order those appear in \code{y}.}
 \item{suffixes}{A \code{character(2)} specifying the suffixes to be used for
