@@ -564,6 +564,13 @@ int init_stream(z_stream *stream) {
   stream->zalloc = Z_NULL;
   stream->zfree = Z_NULL;
   stream->opaque = Z_NULL;
+  // In deflateInit2, windowBits can be –8..–15 for raw deflate, 15 is the bigger window size.
+  // With -15, deflate() will generate raw deflate data with no zlib header or trailer, and will not compute a check value.
+  // Previously this parameter was 31 baecause windowBits can be greater than 15 for optional gzip encoding.
+  // Adding 16 writes a simple gzip header and trailer around the compressed data.
+  // Now we manage header and trailer. gzip file is slighty lower with -15 because no header/trailer are
+  // written for each chunk.
+  // For memLevel, 8 is the default value (128 KiB). memLevel=9 uses maximum memory for optimal speed. To be tested ?
   int err = deflateInit2(stream, gzip_level, Z_DEFLATED, -15, 8, Z_DEFAULT_STRATEGY);
   return err;  // # nocov
 }
