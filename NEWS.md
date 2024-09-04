@@ -12,6 +12,8 @@
 
 2. `fwrite()` respects `dec=','` for timestamp columns (`POSIXct` or `nanotime`) with sub-second accuracy, [#6446](https://github.com/Rdatatable/data.table/issues/6446). Thanks @kav2k for pointing out the inconsistency and @MichaelChirico for the PR.
 
+3. `rbindlist(l, use.names=TRUE)` can now handle different encodings for the column names, [#5452](https://github.com/Rdatatable/data.table/issues/5452). Thanks to @MEO265 for the report, and Benjamin Schwendinger for the fix.
+
 ## NOTES
 
 1. Tests run again when some Suggests packages are missing, [#6411](https://github.com/Rdatatable/data.table/issues/6411). Thanks @aadler for the note and @MichaelChirico for the fix.
@@ -132,8 +134,6 @@
 13. Selecting the key column like `DT[, .(key1, key2)]` will retain the key without a performance penalty, [#4498](https://github.com/Rdatatable/data.table/issues/4498). Thanks to @user9439449 on StackOverflow for the report and @MichaelChirico for the fix.
 
 14. Passing functions programmatically with `env=` doesn't produce an opaque error, e.g. `DT[, f(b), env = list(f=sum)]`, [#6026](https://github.com/Rdatatable/data.table/issues/6026). Note that it's much better to pass functions like `f="sum"` instead. Thanks to @MichaelChirico for the bug report and fix.
-
-8. `rbindlist(l, use.names=TRUE)` can now handle different encodings for the column names, [#5452](https://github.com/Rdatatable/data.table/issues/5452). Thanks to @MEO265 for the report, and Benjamin Schwendinger for the fix.
 
 ## NOTES
 
