@@ -86,7 +86,7 @@ foverlaps = function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=k
   yclass = c(class(yval1), class(yval2))
   isdouble = FALSE; isposix = FALSE
   if ( any(c("numeric", "POSIXct") %chin% yclass) ) {
-    # next representive double > x under the given precision (48,56 or 64-bit in data.table) = x*incr
+    # next representative double > x under the given precision (48,56 or 64-bit in data.table) = x*incr
     dt_eps = function() {
       bits = floor(log2(.Machine$double.eps))
       2 ^ (bits + (getNumericRounding() * 8L))
