@@ -73,7 +73,7 @@ rm(dt_linters)
 # TODO(lintr#2172): Glob with lintr itself.
 exclusions = c(local({
   exclusion_for_dir <- function(dir, exclusions) {
-    files = file.path("..", list.files(dir, pattern = "\\.(R|Rmd|Rraw)$", full.names=TRUE, recursive=TRUE))
+    files = file.path("..", list.files(dir, pattern = "\\.(R|Rmd|Rraw)$", full.names=TRUE))
     stats::setNames(rep(list(exclusions), length(files)), files)
   }
   c(

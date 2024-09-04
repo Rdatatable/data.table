@@ -29,7 +29,7 @@ Il est très facile d'utiliser `data.table` comme dépendance car `data.table` n
 
 ## fichier `DESCRIPTION` {#DESCRIPTION}
 
-Le premier endroit pour définir une dépendance dans un package est le fichier `DESCRIPTION`. Le plus souvent, vous devrez ajouter `data.table` dans le champ `Imports:`. Cela nécessitera l'installation de `data.table` avant que votre package ne puisse être compilé/installé. Comme mentionné ci-dessus, aucun autre package ne sera installé car `data.table` n'a pas de dépendances propres. Vous pouvez aussi spécifier la version minimale requise d'une dépendance ; par exemple, si votre package utilise la fonction `fwrite`, qui a été introduite dans `data.table` dans la version 1.9.8, vous devriez l'incorporer comme `Imports: data.table (>= 1.9.8)`. De cette façon, vous pouvez vous assurer que la version de `data.table` installée est 1.9.8 ou plus récente avant que vos utilisateurs ne puissent installer votre paquet. En plus du champ `Imports:`, vous pouvez aussi utiliser `Depends: data.table` mais nous décourageons fortement cette approche (et nous pourrions l'interdire dans le futur) parce que cela charge `data.table` dans l'espace de travail de votre utilisateur ; i.e. cela active la fonctionnalité `data.table` dans les scripts de votre utilisateur sans qu'il ne le demande. `Imports:` est la bonne façon d'utiliser `data.table` dans votre paquet sans infliger `data.table` à votre utilisateur. En fait, nous espérons que le champ `Depends:` sera un jour déprécié dans R car ceci est vrai pour tous les paquets.
+Le premier endroit pour définir une dépendance dans un package est le fichier `DESCRIPTION`. Le plus souvent, vous devrez ajouter `data.table` dans le champ `Imports:`. Cela nécessitera l'installation de `data.table` avant que votre package ne puisse être compilé/installé. Comme mentionné ci-dessus, aucun autre package ne sera installé car `data.table` n'a pas de dépendances propres. Vous pouvez aussi spécifier la version minimale requise d'une dépendance ; par exemple, si votre package utilise la fonction `fwrite`, qui a été introduite dans `data.table` dans la version 1.9.8, vous devriez l'incorporer comme `Imports: data.table (>= 1.9.8)`. De cette façon, vous pouvez vous assurer que la version de `data.table` installée est 1.9.8 ou plus récente avant que vos utilisateurs ne puissent installer votre package. En plus du champ `Imports:`, vous pouvez aussi utiliser `Depends: data.table` mais nous décourageons fortement cette approche (et nous pourrions l'interdire dans le futur) parce que cela charge `data.table` dans l'espace de travail de votre utilisateur ; i.e. cela active la fonctionnalité `data.table` dans les scripts de votre utilisateur sans qu'il ne le demande. `Imports:` est la bonne façon d'utiliser `data.table` dans votre package sans infliger `data.table` à votre utilisateur. En fait, nous espérons que le champ `Depends:` sera un jour déprécié dans R car ceci est vrai pour tous les packages.
 
 ## fichier `NAMESPACE` {#NAMESPACE}
 
@@ -75,7 +75,7 @@ Lorsque vous testez votre package, vous pouvez utiliser `R CMD check --no-stop-o
 
 ## Tester en utilisant `testthat`
 
-Il est très courant d'utiliser le package `testthat` pour effectuer des tests. Tester un paquet qui importe `data.table` n'est pas différent de tester d'autres paquets. Un exemple de script de test `tests/testthat/test-pkg.R` :
+Il est très courant d'utiliser le package `testthat` pour effectuer des tests. Tester un package qui importe `data.table` n'est pas différent de tester d'autres packages. Un exemple de script de test `tests/testthat/test-pkg.R` :
 
 ```r
 context("pkg tests")
@@ -126,7 +126,7 @@ importFrom(data.table, .N, .I, ':=')
 
 Il est beaucoup plus simple d'utiliser `import(data.table)` qui autorisera avidement l'utilisation dans le code de votre package de tout objet exporté de `data.table`.
 
-Si cela ne vous dérange pas d'avoir `id` et `grp` enregistrés comme variables globalement dans l'espace de noms de votre package, vous pouvez utiliser `?globalVariables`. Soyez conscient que ces notes n'ont aucun impact sur le code ou ses fonctionnalités ; si vous n'avez pas l'intention de publier votre paquet, vous pouvez simplement choisir de les ignorer.
+Si cela ne vous dérange pas d'avoir `id` et `grp` enregistrés comme variables globalement dans l'espace de noms de votre package, vous pouvez utiliser `?globalVariables`. Soyez conscient que ces notes n'ont aucun impact sur le code ou ses fonctionnalités ; si vous n'avez pas l'intention de publier votre package, vous pouvez simplement choisir de les ignorer.
 
 ## Précautions à prendre lors de la fourniture et de l'utilisation des options
 
@@ -148,7 +148,7 @@ Depuis la version 1.10.5, `data.table` est sous licence Mozilla Public License (
 
 ## Importe optionnellement `data.table` : `Suggests`
 
-Si vous voulez utiliser `data.table` de manière conditionnelle, c'est-à-dire seulement quand il est installé, vous devriez utiliser `Suggests: data.table` dans votre fichier `DESCRIPTION` au lieu d'utiliser `Imports: data.table`. Par défaut, cette définition ne forcera pas l'installation de `data.table` lors de l'installation de votre package. Cela vous oblige aussi à utiliser conditionnellement `data.table` dans le code de votre paquet, ce qui doit être fait en utilisant la fonction `?requireNamespace`. L'exemple ci-dessous démontre l'utilisation conditionnelle de la fonction d'écriture de CSV rapide de `?fwrite` du package `data.table`. Si le paquet `data.table` n'est pas installé, la fonction de base R `?write.table`, beaucoup plus lente, est utilisée à la place.
+Si vous voulez utiliser `data.table` de manière conditionnelle, c'est-à-dire seulement quand il est installé, vous devriez utiliser `Suggests: data.table` dans votre fichier `DESCRIPTION` au lieu d'utiliser `Imports: data.table`. Par défaut, cette définition ne forcera pas l'installation de `data.table` lors de l'installation de votre package. Cela vous oblige aussi à utiliser conditionnellement `data.table` dans le code de votre package, ce qui doit être fait en utilisant la fonction `?requireNamespace`. L'exemple ci-dessous démontre l'utilisation conditionnelle de la fonction d'écriture de CSV rapide de `?fwrite` du package `data.table`. Si le package `data.table` n'est pas installé, la fonction de base R `?write.table`, beaucoup plus lente, est utilisée à la place.
 
 ```r
 my.write = function (x) {
@@ -173,7 +173,7 @@ my.write = function (x) {
 }
 ```
 
-Lorsque vous utilisez un package comme dépendance suggérée, vous ne devez pas l'"importer" dans le fichier `NAMESPACE`. Mentionnez-le simplement dans le fichier `DESCRIPTION`. Lorsque vous utilisez les fonctions `data.table` dans le code d'un package (fichiers R/*), vous devez utiliser le préfixe `data.table::` car aucune d'entre elles n'est importée. Lorsque vous utilisez `data.table` dans des paquets de tests (par exemple des fichiers tests/testthat/test*), vous devez déclarer `.datatable.aware=TRUE` dans l'un des fichiers R/*.
+Lorsque vous utilisez un package comme dépendance suggérée, vous ne devez pas l'"importer" dans le fichier `NAMESPACE`. Mentionnez-le simplement dans le fichier `DESCRIPTION`. Lorsque vous utilisez les fonctions `data.table` dans le code d'un package (fichiers R/*), vous devez utiliser le préfixe `data.table::` car aucune d'entre elles n'est importée. Lorsque vous utilisez `data.table` dans des packages de tests (par exemple des fichiers tests/testthat/test*), vous devez déclarer `.datatable.aware=TRUE` dans l'un des fichiers R/*.
 
 ## `data.table` dans `Imports` mais rien d'importé
 
@@ -183,7 +183,7 @@ Dans ce cas, la fonction non exportée `[.data.table` reviendra à appeler `[.da
 
 Si c'est l'approche que vous préférez pour le développement de packages, définissez `.datatable.aware = TRUE` n'importe où dans votre code source R (pas besoin d'exporter). Cela indique à `data.table` que vous, en tant que développeur du package, avez conçu votre code pour qu'il s'appuie intentionnellement sur les fonctionnalités de `data.table`, même si cela n'est pas évident en inspectant votre fichier `NAMESPACE`.
 
-`data.table` détermine à la volée si la fonction appelante est consciente qu'elle puise dans `data.table` avec la fonction interne `cedta` (**C**alling **E**nvironment is **D**ata **T**able **A**ware), qui, en plus de vérifier le `?getNamespaceImports` de votre paquet, vérifie également l'existence de cette variable (entre autres choses).
+`data.table` détermine à la volée si la fonction appelante est consciente qu'elle puise dans `data.table` avec la fonction interne `cedta` (**C**alling **E**nvironment is **D**ata **T**able **A**ware), qui, en plus de vérifier le `?getNamespaceImports` de votre package, vérifie également l'existence de cette variable (entre autres choses).
 
 ## Plus d'informations sur les dépendances
 

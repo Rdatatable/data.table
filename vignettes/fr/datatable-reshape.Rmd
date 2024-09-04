@@ -243,7 +243,7 @@ DT.m3
 
 Dans le code ci-dessus, nous avons utilisé `sep="_child"`, ce qui entraîne la transformation des colonnes uniquement si elle contiennent cette chaîne (six noms de colonnes séparés en deux groupes chacun). L'argument `child=as.integer` signifie que le second groupe donnera lieu à une colonne de sortie nommée `child` avec des valeurs définies en appliquant la fonction `as.integer` aux chaînes de caractères de ce groupe.
 
-Enfin, nous considérons un exemple (emprunté au paquet tidyr) où nous devons définir les groupes à l'aide d'une expression régulière plutôt qu'un séparateur.
+Enfin, nous considérons un exemple (emprunté au package tidyr) où nous devons définir les groupes à l'aide d'une expression régulière plutôt qu'un séparateur.
 
 ```{r}
 (who <- data.table(id=1, new_sp_m5564=2, newrel_f65=3))

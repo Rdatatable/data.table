@@ -177,7 +177,7 @@ flights["JFK", on = "origin"]
 
 #### -- Comment puis-je faire un sous-ensemble basé sur les colonnes `origin` *et* `dest` ?
 
-Par exemple, si nous voulons un sous-ensemble combinant `"JFK" et "LAX"`, alors :
+Par exemple, si nous voulons un sous-ensemble combinant `c("JFK", "LAX")`, alors :
 
 ```{r}
 flights[.("JFK", "LAX"), on = c("origin", "dest")][1:5]
