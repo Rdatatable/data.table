@@ -584,7 +584,7 @@ int compressbuff(z_stream *stream, void* dest, size_t *destLen, const void* sour
   int err = deflate(stream, Z_SYNC_FLUSH);
   *destLen = *destLen - stream->avail_out;
   // *destLen = stream->total_out;
-  return err != Z_STREAM_ERROR ? Z_OK : err;
+  return (err != Z_STREAM_ERROR) ? Z_OK : err;
 }
 #endif
 
