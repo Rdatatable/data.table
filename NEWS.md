@@ -22,6 +22,8 @@
 
 4. The translations submitted for 1.16.0 are now actually shipped with the package -- our deepest apologies to the translators for the omission. We have added a CI check to ensure that the .mo binaries which get shipped with the package are always up-to-date.
 
+5. Grouping operations now use internal `wallclock()` for verbose reporting, reducing a significant overhead on non-Windows platforms introduced by C's native `clock()` function.
+
 # data.table [v1.16.0](https://github.com/Rdatatable/data.table/milestone/30)  (25 August 2024)
 
 ## BREAKING CHANGES
