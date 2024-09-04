@@ -15,12 +15,16 @@
 }
 \details{
 In contrast to \code{\link[base]{ifelse}} attributes are copied from the first non-\code{NA} argument to the output. This is useful when returning \code{Date}, \code{factor} or other classes.
+
+Unlike \code{\link[base]{ifelse}}, \code{fifelse} evaluates both \code{yes} and \code{no} arguments for type checking regardless of the result of \code{test}. This means that neither \code{yes} nor \code{no} should be recursive function calls. For recursion, use \code{fcase} instead.
 }
 \value{
 A vector of the same length as \code{test} and attributes as \code{yes}. Data values are taken from the values of \code{yes} and \code{no}, eventually \code{na}.
 }
 \seealso{
   \code{\link{fcoalesce}}
+
+  \code{\link{fcase}}
 }
 \examples{
 x = c(1:4, 3:2, 1:4)
@@ -37,5 +41,9 @@ fifelse(c(TRUE,FALSE,TRUE), yes, no)
 
 # Example of using the 'na' argument
 fifelse(test = c(-5L:5L < 0L, NA), yes = 1L, no = 0L, na = 2L)
+
+# Example showing both 'yes' and 'no' arguments are evaluated, unlike ifelse
+fifelse(1 == 1, print("yes"), print("no"))
+ifelse(1 == 1, print("yes"), print("no"))
 }
 \keyword{ data }

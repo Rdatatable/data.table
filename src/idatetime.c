@@ -16,6 +16,12 @@ void convertSingleDate(int x, datetype type, void *out)
     static const char months[] = {31, 30, 31, 30, 31, 31, 30, 31, 30, 31, 31, 29};
     static const int quarter[] = {31, 91, 92, 92, 60};
 
+    if (x == NA_INTEGER) {
+        if (type == YEARMON || type == YEARQTR) *(double *)out = NA_REAL;
+        else *(int *)out = NA_INTEGER;
+        return;
+    }
+
     if (type == WDAY) {
         int wday = (x + 4) % 7;
         if (wday < 0) wday += 7;
@@ -121,7 +127,7 @@ SEXP convertDate(SEXP x, SEXP type)
     const int *ix = INTEGER(x);
     const int n = length(x);
     if (!isString(type) || length(type) != 1)
-        error(_("Internal error: invalid type for convertDate(), should have been caught before. please report to data.table issue tracker")); // # nocov
+        internal_error(__func__, "invalid type for, should have been caught before"); // # nocov
     datetype ctype;
     bool ansint = true;
     if (!strcmp(CHAR(STRING_ELT(type, 0)), "yday")) ctype = YDAY;
@@ -133,7 +139,7 @@ SEXP convertDate(SEXP x, SEXP type)
     else if (!strcmp(CHAR(STRING_ELT(type, 0)), "year")) ctype = YEAR;
     else if (!strcmp(CHAR(STRING_ELT(type, 0)), "yearmon")) { ctype = YEARMON; ansint = false; }
     else if (!strcmp(CHAR(STRING_ELT(type, 0)), "yearqtr")) { ctype = YEARQTR; ansint = false; }
-    else error(_("Internal error: invalid type for convertDate, should have been caught before. please report to data.table issue tracker")); // # nocov
+    else internal_error(__func__, "invalid type for, should have been caught before"); // # nocov
 
     SEXP ans;
     if (ansint) {
