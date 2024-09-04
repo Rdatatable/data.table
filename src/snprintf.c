@@ -19,6 +19,7 @@
 #include "data.table.h"
 #include <stdarg.h>
 #include <ctype.h>  // isdigit
+#include <string.h>  // strncpy
 #undef snprintf // on Windows, just in this file, we do want to use the C library's snprintf
 
 int dt_win_snprintf(char *dest, const size_t n, const char *fmt, ...)

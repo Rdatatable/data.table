@@ -6,7 +6,12 @@ fcoalesce   = function(...) .Call(Ccoalesce, list(...), FALSE)
 setcoalesce = function(...) .Call(Ccoalesce, list(...), TRUE)
 
 fifelse = function(test, yes, no, na=NA) .Call(CfifelseR, test, yes, no, na)
-fcase   = function(..., default=NA) .Call(CfcaseR, parent.frame(), as.list(substitute(list(..., TRUE, default)))[-1L])
+fcase   = function(..., default=NA) {
+  # TODO(R>=3.5.0): Use ...length() to avoid the need for suppressWarnings() here
+  default_condition <- suppressWarnings(rep(TRUE, length(switch(1, ...)))) # better than ..1/..elt(1): won't fail for empty fcase()
+  arg_list <- as.list(substitute(list(..., default_condition, default)))[-1L]
+  .Call(CfcaseR, parent.frame(), arg_list)
+}
 
 colnamesInt = function(x, cols, check_dups=FALSE, skip_absent=FALSE) .Call(CcolnamesInt, x, cols, check_dups, skip_absent)
 

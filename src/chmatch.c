@@ -4,12 +4,12 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
   if (!isString(table) && !isNull(table))
     error(_("table is type '%s' (must be 'character' or NULL)"), type2char(TYPEOF(table)));
   if (chin && chmatchdup)
-    error(_("Internal error: either chin or chmatchdup should be true not both"));  // # nocov
+    internal_error(__func__, "either chin or chmatchdup should be true not both");  // # nocov
   SEXP sym = NULL;
   const int xlen = length(x);
   if (TYPEOF(x) == SYMSXP) {
     if (xlen!=1)
-      error(_("Internal error: length of SYMSXP is %d not 1"), xlen); // # nocov
+      internal_error(__func__, "length of SYMSXP is %d not 1", xlen); // # nocov
     sym = PRINTNAME(x);  // so we can do &sym to get a length 1 (const SEXP *)STRING_PTR_RO(x) and save an alloc for coerce to STRSXP
   } else if (!isString(x) && !isSymbol(x) && !isNull(x)) {
     if (chin && !isVectorAtomic(x)) {
@@ -68,7 +68,7 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
       // We rely on that 0-initialization, and that R's internal hash is positive.
       // # nocov start
       savetl_end();
-      error(_("Internal error: CHARSXP '%s' has a negative truelength (%d). Please file an issue on the data.table tracker."), CHAR(s), tl);
+      internal_error(__func__, "CHARSXP '%s' has a negative truelength (%d)", CHAR(s), tl); // # nocov
       // # nocov end
     }
   }
