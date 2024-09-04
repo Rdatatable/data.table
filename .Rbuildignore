@@ -16,6 +16,7 @@
 ^\.devcontainer$
 ^\.graphics$
 ^\.github$
+^\.zed$
 
 ^\.gitlab-ci\.yml$
 
@@ -26,6 +27,7 @@
 ^src/Makevars$
 ^CODEOWNERS$
 ^GOVERNANCE\.md$
+^Seal_of_Approval\.md$
 
 ^\.RData$
 ^\.Rhistory$
@@ -45,3 +47,6 @@
 ^lib$
 ^library$
 ^devwd$
+
+# only the inst/po compressed files are needed, not raw .pot/.po
+^po$

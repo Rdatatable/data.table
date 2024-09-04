@@ -1,3 +1,11 @@
+Community and Governance
+------------------------
+
+Welcome, and thanks for your interest in contributing to `data.table`!
+We have always encouraged users to contribute back to the project, and even become project members/committers.
+* [GOVERNANCE.md](https://github.com/Rdatatable/data.table/blob/master/GOVERNANCE.md) defines our community governance model, and how you can obtain special roles/permissions in the project.
+* [The GitHub Teams Page](https://github.com/orgs/Rdatatable/teams/project-members/teams) is a list of special tasks that project members can help with -- if you are interested to help, please create an issue and contact the relevant team by mentioning, for example `@Rdatatable/revdep-managers`
+
 Filing issues
 -------------
 
@@ -114,7 +122,7 @@ and then the `commit` and `push` shown above would push to the branch in the mai
 
 #### Translations
 
-`data.table` offers some translations so that our users can get feedback (errors, warnings, verbose messages) in their native language. Currently we only support Mandarin Chinese.
+`data.table` offers some translations so that our users can get feedback (errors, warnings, verbose messages) in their native language. There is a [translation team](https://github.com/orgs/Rdatatable/teams/translators/teams) for each currently supported translation.
 
 The data for these translations lives in the `po` folder. You do not need to make any changes here for your PR -- translations are updated in a batch before each CRAN release.
 
