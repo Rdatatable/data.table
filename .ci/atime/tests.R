@@ -158,5 +158,17 @@ test.list <- atime::atime_test_list(
     Slow = "3ca83738d70d5597d9e168077f3768e32569c790", # Circa 2024 master parent of close-to-last merge commit (https://github.com/Rdatatable/data.table/commit/353dc7a6b66563b61e44b2fa0d7b73a0f97ca461) in the PR (https://github.com/Rdatatable/data.table/pull/4501/commits) that fixes the issue 
     Slower = "cacdc92df71b777369a217b6c902c687cf35a70d"), # Circa 2020 parent of the first commit (https://github.com/Rdatatable/data.table/commit/74636333d7da965a11dad04c322c752a409db098) in the PR (https://github.com/Rdatatable/data.table/pull/4501/commits) that fixes the issue 
 
+  # Issue reported in: https://github.com/Rdatatable/data.table/issues/6286
+  # Fixed in: https://github.com/Rdatatable/data.table/pull/6296
+  "DT[by, verbose = TRUE] improved in #6296" = atime::atime_test(
+    N = 10^seq(1, 9),
+    setup = {
+      dt = data.table(a = 1:N)
+      dt_mod <- copy(dt)
+    },
+    expr = data.table:::`[.data.table`(dt_mod, , 1, by = a, verbose = TRUE),
+    Slow = "a9331b649a21532b83db8d8518cd2c8ca26d002e", # Parent of the commit that fixes the issue (https://github.com/Rdatatable/data.table/commit/f248bbe6d1204dfc8def62328788eaadcc8e17a1)
+    Fast = "f248bbe6d1204dfc8def62328788eaadcc8e17a1", # Merge commit of the PR that fixes the issue (https://github.com/Rdatatable/data.table/pull/6296)
+
   NULL)
 # nolint end: undesirable_operator_linter.
