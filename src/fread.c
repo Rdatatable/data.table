@@ -1985,7 +1985,7 @@ int freadMain(freadMainArgs _args) {
       autoFirstColName = (ncol-tt==1);
       if (autoFirstColName) {
         DTWARN(_("Detected %d column names but the data has %d columns (i.e. invalid file). Added an extra default column name for the first column which is guessed to be row names or an index. Use setnames() afterwards if this guess is not correct, or fix the file write command that created the file to create a valid file.\n"),
-              tt, ncol, ncol-tt);
+              tt, ncol);
       } else {
         DTWARN(_("Detected %d column names but the data has %d columns (i.e. invalid file). Added %d extra default column names at the end.\n"), tt, ncol, ncol-tt);
       }
