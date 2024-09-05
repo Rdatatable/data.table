@@ -6,7 +6,9 @@
 
 1. In `DT[, variable := value]`, when value is class `POSIXlt`, we automatically coerce it to class `POSIXct` instead, [#1724](https://github.com/Rdatatable/data.table/issues/1724). Thanks to @linzhp for the report, and Benjamin Schwendinger for the fix.
 
-15. Introduce a new function `rowwiseDT()`. It can be used to create a data.table object "rowwisely". Thanks to @shrektan for the suggestion and PR, @tdeenes for the idea of the `name=` syntax.
+## NEW FEATURES
+
+1. Introduce a new function `rowwiseDT()`. It can be used to create a data.table object "rowwisely". Thanks to @shrektan for the suggestion and PR, @tdeenes for the idea of the `name=` syntax.
 
 ```r
 library(data.table)
