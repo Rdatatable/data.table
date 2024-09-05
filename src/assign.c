@@ -24,7 +24,7 @@ static void finalizer(SEXP p)
 }
 
 void setselfref(SEXP x) {
-  if( !INHERITS(x, char_datatable) )  return; // #5286
+  if(!INHERITS(x, char_datatable))  return; // #5286
   SEXP p;
   // Store pointer to itself so we can detect if the object has been copied. See
   // ?copy for why copies are not just inefficient but cause a problem for over-allocated data.tables.
@@ -194,7 +194,6 @@ static SEXP shallow(SEXP dt, SEXP cols, R_len_t n)
   SETLENGTH(newdt,l);
   SET_TRUELENGTH(newdt,n);
   setselfref(newdt);
-
   UNPROTECT(protecti);
   return(newdt);
 }
