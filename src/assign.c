@@ -393,9 +393,9 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
         UNPROTECT(protecti);
         return(dt); // all items of rows either 0 or NA. !length(newcolnames) for #759
       }
-      if (verbose) Rprintf(ngettext("Added %d new column initialized with all-NA\n",
-                                    "Added %d new columns initialized with all-NA\n",
-                                    length(newcolnames)),
+      if (verbose) Rprintf(Pl_("Added %d new column initialized with all-NA\n",
+                               "Added %d new columns initialized with all-NA\n",
+                               length(newcolnames)),
                            length(newcolnames));
     }
   }

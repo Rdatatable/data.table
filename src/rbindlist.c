@@ -57,9 +57,9 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
   if (numZero) {  // #1871
     SEXP names = getAttrib(VECTOR_ELT(l, firstZeroItem), R_NamesSymbol);
     const char *ch = names==R_NilValue ? "" : CHAR(STRING_ELT(names, firstZeroCol));
-    warning(ngettext("Column %d ['%s'] of item %d is length 0. This (and %d other like it) has been filled with NA (NULL for list columns) to make each item uniform.",
-                     "Column %d ['%s'] of item %d is length 0. This (and %d others like it) has been filled with NA (NULL for list columns) to make each item uniform.",
-                     numZero-1),
+    warning(Pl_("Column %d ['%s'] of item %d is length 0. This (and %d other like it) has been filled with NA (NULL for list columns) to make each item uniform.",
+                "Column %d ['%s'] of item %d is length 0. This (and %d others like it) has been filled with NA (NULL for list columns) to make each item uniform.",
+                numZero-1),
             firstZeroCol+1, ch, firstZeroItem+1, numZero-1);
   }
   if (nrow==0 && ncol==0) return(R_NilValue);

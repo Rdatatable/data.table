@@ -1597,9 +1597,9 @@ int freadMain(freadMainArgs _args) {
     if (ch > sof && verbose)
       DTPRINT(_("  Skipped to line %"PRIu64" in the file"), (uint64_t)row1line);
     if (ch>=eof)
-      STOP(ngettext("skip=%"PRIu64" but the input only has %"PRIu64" line",
-                    "skip=%"PRIu64" but the input only has %"PRIu64" lines",
-                    row1line),
+      STOP(Pl_("skip=%"PRIu64" but the input only has %"PRIu64" line",
+               "skip=%"PRIu64" but the input only has %"PRIu64" lines",
+               row1line),
            (uint64_t)args.skipNrow, (uint64_t)row1line);
     pos = ch;
   }
