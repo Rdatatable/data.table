@@ -14,6 +14,7 @@
 
 3. The data.table-only attribute `$.internal.selfref` is no longer set for data.frames. [#5286](https://github.com/Rdatatable/data.table/issues/5286). Thanks @OfekShilon for the report and fix.
 
+4. `setDT()` no longer modifies the class of other names bound to the origin data.frame - e.g., argument DFs names at a caller to a function which uses setDT. Cf [#4784](https://github.com/Rdatatable/data.table/issues/4784). Thanks @OfekShilon for the report and fix.
 ## NOTES
 
 1. Tests run again when some Suggests packages are missing, [#6411](https://github.com/Rdatatable/data.table/issues/6411). Thanks @aadler for the note and @MichaelChirico for the fix.

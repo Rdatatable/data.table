@@ -2887,9 +2887,13 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     rn = if (!identical(keep.rownames, FALSE)) rownames(x) else NULL
     setattr(x, "row.names", .set_row_names(nrow(x)))
     if (check.names) setattr(x, "names", make.names(names(x), unique=TRUE))
+
+    # setalloccol results in a shallow copy. Must be performed before class setting,
+    # to have the class apply only to the new copy. #4784
+    setalloccol(x)
     # fix for #1078 and #1128, see .resetclass() for explanation.
     setattr(x, "class", .resetclass(x, 'data.frame'))
-    setalloccol(x)
+
     if (!is.null(rn)) {
       nm = c(if (is.character(keep.rownames)) keep.rownames[1L] else "rn", names(x))
       x[, (nm[1L]) := rn]

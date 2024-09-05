@@ -19063,3 +19063,9 @@ test(2280.3, foo(), error="Internal error in foo: broken")
 # fwrite respects dec=',' for sub-second timestamps, #6446
 test(2281.1, fwrite(data.table(a=.POSIXct(0.001)), dec=',', sep=';'), output="1970-01-01T00:00:00,001Z")
 test(2281.2, fwrite(data.table(a=.POSIXct(0.0001)), dec=',', sep=';'), output="1970-01-01T00:00:00,000100Z")
+
+# setDT no longer leaks class modification to origin copy, #4784
+d1 <- data.frame(a=1)
+d2 <- d1
+setDT(d2)
+test(2283, !is.data.table(d1))
