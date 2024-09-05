@@ -2488,9 +2488,9 @@ test(827.1, names(a[b]), c("User ID","Blah Blah","Yadda Yadda"))
 
 # setcolorder and merge check for dup column names, #2193(ii)
 setnames(DT2,"b","a")
-test(828, setcolorder(DT2,c("a","b")), error="x has duplicated column name: [a]. Please remove or rename")
-test(829, merge(DT1,DT2), error="y has duplicated column name: [a]. Please remove or rename")
-test(830, merge(DT2,DT1), error="x has duplicated column name: [a]. Please remove or rename")
+test(828, setcolorder(DT2,c("a","b")), error="x has duplicated column name [a]. Please remove or rename")
+test(829, merge(DT1,DT2), error="y has duplicated column name [a]. Please remove or rename")
+test(830, merge(DT2,DT1), error="x has duplicated column name [a]. Please remove or rename")
 
 # attribs such as "comments" should be retained, #2270
 DT1 <- data.table(id = seq.int(1, 10), A = LETTERS[1:10], key = "id")
