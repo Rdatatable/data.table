@@ -12,19 +12,17 @@
 
 2. `fwrite()` respects `dec=','` for timestamp columns (`POSIXct` or `nanotime`) with sub-second accuracy, [#6446](https://github.com/Rdatatable/data.table/issues/6446). Thanks @kav2k for pointing out the inconsistency and @MichaelChirico for the PR.
 
-3. Tests run again when some Suggests packages are missing, [#6411](https://github.com/Rdatatable/data.table/issues/6411). Thanks @aadler for the note and @MichaelChirico for the fix.
-
-4. Continued work to remove non-API C functions, [#6180](https://github.com/Rdatatable/data.table/issues/6180). Thanks Ivan Krylov for the PR and for writing a clear and concise guide about the R API: https://aitap.codeberg.page/R-api/.
-
-5. `data.table` again properly detects OpenMP support when built using `gcc` on macOS, [#6409](https://github.com/Rdatatable/data.table/issues/6409). Thanks @barracuda156 for the report and @kevinushey for the fix.
-
-6. The translations submitted for 1.16.0 are now actually shipped with the package -- our deepest apologies to the translators for the omission. We have added a CI check to ensure that the .mo binaries which get shipped with the package are always up-to-date.
-
-7. The data.table-only attribute `$.internal.selfref` is no longer set for data.frames. [#5286](https://github.com/Rdatatable/data.table/issues/5286). Thanks @OfekShilon for the report and fix.
-
 ## NOTES
 
-1. Some grouping operations run much faster under `verbose=TRUE`, [#6286](https://github.com/Rdatatable/data.table/issues/6286). Thanks @joshhwuu for the report and fix. This overhead was not present on Windows. As a rule, users should expect `verbose=TRUE` operations to run more slowly, as extra statistics might be calculated as part of the report; here was a case where the overhead was particularly high and the fix was particularly easy.
+1. Tests run again when some Suggests packages are missing, [#6411](https://github.com/Rdatatable/data.table/issues/6411). Thanks @aadler for the note and @MichaelChirico for the fix.
+
+2. Continued work to remove non-API C functions, [#6180](https://github.com/Rdatatable/data.table/issues/6180). Thanks Ivan Krylov for the PR and for writing a clear and concise guide about the R API: https://aitap.codeberg.page/R-api/.
+
+3. `data.table` again properly detects OpenMP support when built using `gcc` on macOS, [#6409](https://github.com/Rdatatable/data.table/issues/6409). Thanks @barracuda156 for the report and @kevinushey for the fix.
+
+4. The translations submitted for 1.16.0 are now actually shipped with the package -- our deepest apologies to the translators for the omission. We have added a CI check to ensure that the .mo binaries which get shipped with the package are always up-to-date.
+
+5. Some grouping operations run much faster under `verbose=TRUE`, [#6286](https://github.com/Rdatatable/data.table/issues/6286). Thanks @joshhwuu for the report and fix. This overhead was not present on Windows. As a rule, users should expect `verbose=TRUE` operations to run more slowly, as extra statistics might be calculated as part of the report; here was a case where the overhead was particularly high and the fix was particularly easy.
 
 # data.table [v1.16.0](https://github.com/Rdatatable/data.table/milestone/30)  (25 August 2024)
 
