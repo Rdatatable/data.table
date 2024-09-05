@@ -1,17 +1,17 @@
 \name{rowwiseDT}
 \alias{rowwiseDT}
-\title{ Create a data.table rowwisely }
+\title{ Create a data.table row-wise }
 \description{
-  \code{rowwiseDT} allows the user to create a \code{data.table} object by specifying a row-by-row layout. It's convinient and highly readable when the table is small.
+  \code{rowwiseDT} creates a \code{data.table} object by specifying a row-by-row layout. This is convenient and highly readable for small tables.
 }
 \usage{
 rowwiseDT(...)
 }
 \arguments{
-  \item{...}{ Arguments that defines the structure of a \code{data.table}. The column names must be specified as \code{col=} and may only appear before the data. See the examples section for details. }
+  \item{...}{ Arguments that define the structure of a \code{data.table}. The column names come from named arguments (like \code{col=}), which must precede the data. See Examples. }
 }
 \value{
-A \code{data.table} object. The default is for each column to return as a vector. However, if any column has a length that is not one (e.g., \code{list(1, 2)}), the whole column will be converted to a list column.
+A \code{data.table}. The default is for each column to return as a vector. However, if any entry has a length that is not one (e.g., \code{list(1, 2)}), the whole column will be converted to a list column.
 }
 \seealso{
   \code{\link{data.table}}

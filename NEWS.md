@@ -8,13 +8,13 @@
 
 ## NEW FEATURES
 
-1. Introduce a new function `rowwiseDT()`. It can be used to create a data.table object "rowwisely". Thanks to @shrektan for the suggestion and PR, @tdeenes for the idea of the `name=` syntax.
+1. New function `rowwiseDT()` for creating a data.table object "row-wise", often convenient for readability of small, literally-defined tables. Thanks to @shrektan for the suggestion and PR and @tdeenes for the idea of the `name=` syntax.
 
 ```r
 library(data.table)
 rowwiseDT(
   a=,b=,c=,  d=,
-  1, 2, "a", (2:3),
+  1, 2, "a", 2:3,
   3, 4, "b", list("e"),
   5, 6, "c", ~a+b,
 )
