@@ -167,7 +167,7 @@ test.list <- atime::atime_test_list(
       dt_mod <- copy(dt)
     },
     expr = data.table:::`[.data.table`(dt_mod, , 1, by = a, verbose = TRUE),
-    Slow = "a01f00f7438daf4612280d6886e6929fa8c8f76e" # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/fc0c1e76408c34a8482f16f7421d262c7f1bde32) in the PR (https://github.com/Rdatatable/data.table/pull/6296/commits) that fixes the issue
+    Slow = "a01f00f7438daf4612280d6886e6929fa8c8f76e", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/fc0c1e76408c34a8482f16f7421d262c7f1bde32) in the PR (https://github.com/Rdatatable/data.table/pull/6296/commits) that fixes the issue
     Fast = "efe631a167818b48f80e15132638fa625768c668"), # Last commit in the PR (https://github.com/Rdatatable/data.table/pull/6296/commits) that fixes the issue
 
   NULL)
