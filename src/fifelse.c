@@ -368,7 +368,7 @@ SEXP fcaseR(SEXP rho, SEXP args) {
       }
     } break;
     case STRSXP: {
-      const SEXP *restrict pthens;
+      const SEXP *restrict pthens=NULL;
       if (!naout) pthens = STRING_PTR_RO(thens); // the content is not useful if out is NA_LOGICAL scalar
       const SEXP pna = NA_STRING;
       for (int64_t j=0; j<len2; ++j) {
@@ -386,7 +386,7 @@ SEXP fcaseR(SEXP rho, SEXP args) {
     case VECSXP: {
       // the default value of VECSXP is `NULL` so we don't need to explicitly
       // assign the NA values as it does for other atomic types
-      const SEXP *restrict pthens;
+      const SEXP *restrict pthens=NULL;
       if (!naout) pthens = SEXPPTR_RO(thens); // the content is not useful if out is NA_LOGICAL scalar
       for (int64_t j=0; j<len2; ++j) {
         const int64_t idx = imask ? j : p[j];
