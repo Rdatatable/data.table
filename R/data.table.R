@@ -53,7 +53,7 @@ rowwiseDT = function(...) {
   header = nms[header_pos]
   ncols = length(header)
   body = lapply(x[-header_pos], eval, envir = parent.frame())
-  if (length(body) %% ncols != 0L) 
+  if (length(body) %% ncols != 0L)
     stopf("There are %d columns but the number of cells is %d, which is not an integer multiple of the columns", ncols, length(body))
   # make all the non-scalar elements to a list
   body = lapply(body, function(x) if (length(x) != 1L) list(x) else x)
