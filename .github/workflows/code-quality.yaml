@@ -58,7 +58,7 @@ jobs:
         run: |
           linter_env = new.env()
           for (f in list.files('.ci/linters/po', full.names=TRUE)) sys.source(f, linter_env)
-          for (po_file in list.files(pattern = "[.]po$", full.names=TRUE)) {
+          for (po_file in list.files('po', pattern = "[.]po$", full.names=TRUE)) {
             # only pay attention to files edited in the current PR, otherwise we can get
             #   a situation like after #6424 where some untranslated messages were added
             #   as part of non-translation maintenance, but this GHA would go red repeatedly
