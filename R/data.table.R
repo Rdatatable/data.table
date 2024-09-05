@@ -712,7 +712,9 @@ replace_dot_alias = function(e) {
       if (is.factor(j)) j = as.character(j)  # fix for FR: #358
       if (is.character(j)) {
         if (notj) {
-          if (anyNA(idx <- chmatch(j, names_x))) warningf("column(s) not removed because not found: %s", brackify(j[is.na(idx)]))
+          if (anyNA(idx <- chmatch(j, names_x)))
+            warningf(ngettext(sum(is.na(idx)), "column not removed because not found: %s", "columns not removed because not found: %s"),
+                     brackify(j[is.na(idx)]), domain=NA)
           # all duplicates of the name in names(x) must be removed; e.g. data.table(x=1, y=2, x=3)[, !"x"] should just output 'y'.
           w = !names_x %chin% j
           ansvars = names_x[w]
@@ -726,7 +728,8 @@ replace_dot_alias = function(e) {
         if (!length(ansvals)) return(null.data.table())
         if (!length(leftcols)) {
           if (!anyNA(ansvals)) return(.Call(CsubsetDT, x, irows, ansvals))
-          else stopf("column(s) not found: %s", brackify(ansvars[is.na(ansvals)]))
+          else stopf(ngettext(sum(is.na(ansvals)), "column not found: %s", "columns not found: %s"),
+                     brackify(ansvars[is.na(ansvals)]), domain=NA)
         }
         # else the NA in ansvals are for join inherited scope (test 1973), and NA could be in irows from join and data in i should be returned (test 1977)
         #   in both cases leave to the R-level subsetting of i and x together further below
