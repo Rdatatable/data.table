@@ -8,7 +8,7 @@
 
 ## NEW FEATURES
 
-1. New function `rowwiseDT()` for creating a data.table object "row-wise", often convenient for readability of small, literally-defined tables. Thanks to @shrektan for the suggestion and PR and @tdeenes for the idea of the `name=` syntax.
+1. New function `rowwiseDT()` for creating a data.table object "row-wise", often convenient for readability of small, literally-defined tables. Thanks to @shrektan for the suggestion and PR and @tdeenes for the idea of the `name=` syntax. Inspired by `tibble::tribble()`.
 
 ```r
 library(data.table)
