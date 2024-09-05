@@ -895,7 +895,10 @@ replace_dot_alias = function(e) {
           }
         }
         tt = lengths(byval)
-        if (any(tt!=xnrow)) stopf("The items in the 'by' or 'keyby' list are length(s) %s. Each must be length %d; the same length as there are rows in x (after subsetting if i is provided).", brackify(tt), xnrow)
+        if (any(tt!=xnrow)) {
+          plural_part <- sprintf(ngettext(length(tt), "The item in the 'by' or 'keyby' list is length %s.", "The items in the 'by' or 'keyby' list have lengths %s."), brackify(tt))
+          stopf("%s Each must be length %d; the same length as there are rows in x (after subsetting if i is provided).", plural_part, xnrow)
+        }
         if (is.null(bynames)) bynames = rep.int("",length(byval))
         if (length(idx <- which(!nzchar(bynames))) && !bynull) {
           # TODO: improve this and unify auto-naming of jsub and bysub
@@ -2702,8 +2705,8 @@ setnames = function(x,old,new,skip_absent=FALSE) {
 
 setcolorder = function(x, neworder=key(x), before=NULL, after=NULL)  # before/after #4358
 {
-  if (is.character(neworder) && anyDuplicated(names(x)))
-    stopf("x has some duplicated column name(s): %s. Please remove or rename the duplicate(s) and try again.", brackify(unique(names(x)[duplicated(names(x))])))
+  if (is.character(neworder))
+    check_duplicate_names(x)
   if (!is.null(before) && !is.null(after))
     stopf("Provide either before= or after= but not both")
   if (length(before)>1L || length(after)>1L)
