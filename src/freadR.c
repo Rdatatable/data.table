@@ -84,10 +84,10 @@ SEXP freadR(
   dtnrows = 0;
 
   if (!isString(inputArg) || LENGTH(inputArg)!=1)
-    error(_("Internal error: freadR input not a single character string: a filename or the data itself. Should have been caught at R level."));  // # nocov
+    internal_error(__func__, "freadR input not a single character string: a filename or the data itself. Should have been caught at R level.");  // # nocov
   const char *ch = (const char *)CHAR(STRING_ELT(inputArg,0));
   if (!isLogical(isFileNameArg) || LENGTH(isFileNameArg)!=1 || LOGICAL(isFileNameArg)[0]==NA_LOGICAL)
-    error(_("Internal error: freadR isFileNameArg not TRUE or FALSE"));  // # nocov
+    internal_error(__func__, "freadR isFileNameArg not TRUE or FALSE");  // # nocov
   if (LOGICAL(isFileNameArg)[0]) {
     if (verbose) DTPRINT(_("freadR.c has been passed a filename: %s\n"), ch);
     args.filename = R_ExpandFileName(ch);  // for convenience so user doesn't have to call path.expand()
@@ -99,11 +99,11 @@ SEXP freadR(
   }
 
   if (!isString(sepArg) || LENGTH(sepArg)!=1 || strlen(CHAR(STRING_ELT(sepArg,0)))>1)
-    error(_("Internal error: freadR sep not a single character. R level catches this."));  // # nocov
+    internal_error(__func__, "sep not a single character. R level catches this");  // # nocov
   args.sep = CHAR(STRING_ELT(sepArg,0))[0];   // '\0' when default "auto" was replaced by "" at R level
 
   if (!isString(decArg) || LENGTH(decArg)!=1 || strlen(CHAR(STRING_ELT(decArg,0)))>1) {
-    error(_("Internal error: freadR dec not a single character. R level catches this."));  // # nocov
+    internal_error(__func__, "freadR dec not a single character. R level catches this.");  // # nocov
   }
   args.dec = CHAR(STRING_ELT(decArg,0))[0];   // '\0' when default "auto" was replaced by "" at R level
 
@@ -123,7 +123,7 @@ SEXP freadR(
 
   args.nrowLimit = INT64_MAX;
   if (!isReal(nrowLimitArg) || length(nrowLimitArg)!=1)
-    error(_("Internal error: freadR nrows not a single real. R level catches this."));  // # nocov
+    internal_error(__func__, "nrows not a single real. R level catches this.");  // # nocov
   if (R_FINITE(REAL(nrowLimitArg)[0]) && REAL(nrowLimitArg)[0]>=0.0)
     args.nrowLimit = (int64_t)(REAL(nrowLimitArg)[0]);
 
@@ -139,10 +139,10 @@ SEXP freadR(
     args.skipString = CHAR(STRING_ELT(skipArg,0));  // LENGTH==1 was checked at R level
   } else if (isInteger(skipArg)) {
     args.skipNrow = (int64_t)INTEGER(skipArg)[0];
-  } else error(_("Internal error: skip not integer or string in freadR.c")); // # nocov
+  } else internal_error(__func__, "skip not integer or string"); // # nocov
 
   if (!isNull(NAstringsArg) && !isString(NAstringsArg))
-    error(_("Internal error: NAstringsArg is type '%s'. R level catches this"), type2char(TYPEOF(NAstringsArg)));  // # nocov
+    internal_error(__func__, "NAstringsArg is type '%s'. R level catches this", type2char(TYPEOF(NAstringsArg)));  // # nocov
   int nnas = length(NAstringsArg);
   const char **NAstrings = (const char **)R_alloc((nnas + 1), sizeof(char*));  // +1 for the final NULL to save a separate nna variable
   for (int i=0; i<nnas; i++)
@@ -250,8 +250,8 @@ static void applyDrop(SEXP items, int8_t *type, int ncol, int dropSource) {
 bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int ncol)
 {
   // use typeSize superfluously to avoid not-used warning; otherwise could move typeSize from fread.h into fread.c
-  if (typeSize[CT_BOOL8_N]!=1) STOP(_("Internal error: typeSize[CT_BOOL8_N] != 1")); // # nocov
-  if (typeSize[CT_STRING]!=8) STOP(_("Internal error: typeSize[CT_STRING] != 1")); // # nocov
+  if (typeSize[CT_BOOL8_N]!=1) internal_error(__func__, "typeSize[CT_BOOL8_N] != 1"); // # nocov
+  if (typeSize[CT_STRING]!=8) internal_error(__func__, "typeSize[CT_STRING] != 1"); // # nocov
   colNamesSxp = R_NilValue;
   SET_VECTOR_ELT(RCHK, 1, colNamesSxp=allocVector(STRSXP, ncol));
   for (int i=0; i<ncol; i++) {
@@ -341,9 +341,9 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
           }
         }
       } else { // selectColClasses==true
-        if (!selectInts) STOP(_("Internal error: selectInts is NULL but selectColClasses is true"));
+        if (!selectInts) internal_error(__func__, "selectInts is NULL but selectColClasses is true"); // # nocov
         const int n = length(colClassesSxp);
-        if (length(selectSxp)!=n) STOP(_("Internal error: length(selectSxp)!=length(colClassesSxp) but selectColClasses is true"));
+        if (length(selectSxp)!=n) internal_error(__func__, "length(selectSxp)!=length(colClassesSxp) but selectColClasses is true"); // # nocov
         for (int i=0; i<n; ++i) {
           SEXP tt = STRING_ELT(colClassesSxp,i);
           if (tt==NA_STRING || tt==R_BlankString) continue;
@@ -646,7 +646,7 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx)
           src1 += rowSize1;
           dest++;
         }
-      } else STOP(_("Internal error: unexpected field of size %d\n"), thisSize);  // # nocov
+      } else internal_error(__func__, "unexpected field of size %d\n", thisSize);  // # nocov
       done++;
     }
     off8 += (size[j] & 8);
