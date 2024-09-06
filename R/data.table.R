@@ -1986,8 +1986,8 @@ replace_dot_alias = function(e) {
     setattr(ans, "names", c(bynames, jvnames))
   } else {
     nonbynames = names(ans)[-seq_along(bynames)] #related to 2311. make naming of empty columns names more consistent
-    ww = which(nonbynames=="")
-    if (any(ww)) nonbynames[ww] = paste0("V",ww)
+    ww = which(!nzchar(nonbynames))
+    if (length(ww)) nonbynames[ww] = paste0("V", ww)
     setattr(ans, "names", c(bynames, nonbynames))   # TO DO: reinvestigate bynames flowing from dogroups here and simplify
   }
   if (byjoin && keyby && !bysameorder) {
