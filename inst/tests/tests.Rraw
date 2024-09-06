@@ -19161,4 +19161,6 @@ DT = data.table(a = 1)
 test(2284.1, DT[, `:=`(a := 2)], error="It looks like you re-used `:=`")
 # special case where length(jsub) == 3 that would have failed later
 test(2284.2, DT[, `:=`(a := 2, c := 3)], error="It looks like you re-used `:=` in argument 1")
-test(2284.3, DT[, `:=`(a = 2, c := 3)], error="It looks like you re-used `:=` in argument 2")
+test(2284.3, DT[, `:=`(2, c := 3)], error="It looks like you re-used `:=` in argument 2")
+# partially-named `:=`(...) --> different branch, same error
+test(2284.4, DT[, `:=`(a = 2, c := 3)], error="It looks like you re-used `:=` in argument 2")
