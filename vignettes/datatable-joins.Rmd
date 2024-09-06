@@ -22,7 +22,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-In this vignette you will learn how to perform any join operation using next resources available in the `data.table` syntax.
+In this vignette you will learn how to perform any join operation using resources available in the `data.table` syntax.
 
 It assumes familiarity with the `data.table` syntax. If that is not the case, please read the following vignettes:
 
@@ -125,13 +125,13 @@ The next diagram shows a description for each basic argument. In the following s
 ```
 x[i, on, nomatch]
 | |  |   |
-| |  |   ----> If NULL only returns rows linked in x and i tables
-| |  ----> a character vector o list defining match logict
-| ----> principal data.table, list or data.frame
-----> secundary data.table
+| |  |   \__ If NULL only returns rows linked in x and i tables
+| |  \____ a character vector o list defining match logict
+| \_____ primary data.table, list or data.frame
+\____ secondary data.table
 ```
 
-An important difference between the regular `data.table` syntax is that _the only argument you can pass by position is the `i` argument_, the rest as you will see are going to be passed by name, so **feel free to change the argument order any time using the argument names** if it seems more convenient.
+> Please keep in mind that the standard argument order in data.table is `dt[i, j, by]`. For join operations, it is recommended to pass the `on` and `nomatch` arguments by name to avoid using `j` and `by` when they are not needed.
 
 ## 3. Equi joins
 
@@ -148,13 +148,13 @@ In most of the following examples we will perform *one to many* matches, but we 
 
 ### 3.1. Right join
 
-Use this method if you need to combine columns from 2 tables based on one or more references but ***keeping all rows present in the table located on the right***.
+Use this method if you need to combine columns from 2 tables based on one or more references but ***keeping all rows present in the table located on the right (in the the square brackets)***.
 
 In our supermarket context, we can perform a right join to see more details about the products received as this is relation *one to many* by passing a vector to the `on` argument.
 
 ```{r}
 Products[ProductReceived,
-         on = c("id" = "product_id")]
+         on = c(id = "product_id")]
 ```
 
 As many things have changed, let's explain the new characteristics in the following groups:
@@ -225,7 +225,7 @@ Most of the time after a join is complete we need to make some additional transf
 Our recommendation is to use the second alternative if possible, as it is **faster** and uses **less memory** than the first one.
 
 
-##### 3.1.3.1. Managing shared column Names with the j argument
+##### Managing shared column Names with the j argument
 
 The `j` argument has great alternatives to manage joins with tables **sharing the same names for several columns**. By default all columns are taking their source from the the `x` table, but we can also use the `x.` prefix to make clear the source and use the prefix `i.` to use any column form the table declared in the `i` argument of the `x` table.
 
@@ -235,37 +235,41 @@ Going back to the little supermarket, after updating the `ProductReceived` table
 - Adding the `total_value`.
 
 ```{r}
-Products[ProductReceived,
-         on = c("id" = "product_id"),
-         j = .(product_id = x.id,
-               name = x.name,
-               price,
-               received_id = i.id,
-               date = i.date,
-               count,
-               total_value = price * count)]
+Products[
+  ProductReceived,
+  on = c("id" = "product_id"),
+  j = .(product_id = x.id,
+        name = x.name,
+        price,
+        received_id = i.id,
+        date = i.date,
+        count,
+        total_value = price * count)
+]
 ```
 
 
-##### 3.1.3.2. Summarizing with on in data.table
+##### Summarizing with on in data.table
 
 We can also use this alternative to return aggregated results based columns present in the `x` table.
 
 For example, we might interested in how much money we expend buying products each date regardless the products.
 
 ```{r}
-dt1 =
-  ProductReceived[Products,
-                  on = c("product_id" = "id"),
-                  by = .EACHI,
-                  j = .(total_value_received  = sum(price * count))]
+dt1 = ProductReceived[
+  Products,
+  on = c("product_id" = "id"),
+  by = .EACHI,
+  j = .(total_value_received  = sum(price * count))
+]
 
 
-dt2 =
-  ProductReceived[Products,
-                  on = c("product_id" = "id"),
-  ][, .(total_value_received  = sum(price * count)),
-    by = "product_id"]
+dt2 = ProductReceived[
+  Products,
+  on = c("product_id" = "id"),
+][, .(total_value_received  = sum(price * count)),
+  by = "product_id"
+]
 
 identical(dt1, dt2)
 ```
@@ -341,10 +345,12 @@ To make this, you can apply the following steps:
 1. Perform a **inner join** with `which = TRUE` to save the row number related to each matching row of the `x` table.
 
 ```{r}
-SubSetRows = Products[ProductReceived,
-                       on = .(id = product_id),
-                       nomatch = NULL,
-                       which = TRUE]
+SubSetRows = Products[
+  ProductReceived,
+  on = .(id = product_id),
+  nomatch = NULL,
+  which = TRUE
+]
 
 SubSetRows
 ```
@@ -393,13 +399,16 @@ Here some important considerations:
 One of the key features of `data.table` is that we can apply several operations before saving our final results by chaining brackets.
 
 ```r
-DT[ ...
-   ][ ...
-     ][ ...
-       ]
+DT[
+  ...
+][
+  ...
+][
+  ...
+]
 ```
 
-So far, if after applying all that operations **we want to join new columns without removing any row**, we would need to stop the chaining process, save a temporal table and later apply the join operation.
+So far, if after applying all that operations **we want to join new columns without removing any row**, we would need to stop the chaining process, save a temporary table and later apply the join operation.
 
 To avoid that situation, we can use special symbols `.SD`, to apply a **right join based on the changed table**.
 
@@ -445,7 +454,7 @@ ProductReceived[ProductSales,
                 allow.cartesian = TRUE]
 ```
 
-> `allow.cartesian` is defaulted to FALSE as this joins can can lead to a very large number of rows in the result.For example, if Table A has 100 rows and Table B has 50 rows, their Cartesian product would result in 5000 rows (100 * 50). This can quickly become memory-intensive for large datasets.
+> `allow.cartesian` is defaulted to FALSE as this joins can can lead to a very large number of rows in the result. For example, if Table A has 100 rows and Table B has 50 rows, their Cartesian product would result in 5000 rows (100 * 50). This can quickly become memory-intensive for large datasets.
 
 
 #### 3.6.1. Selecting one match
@@ -523,7 +532,7 @@ A non-equi join is a type of join where the condition for matching rows is not b
 It's a great alternative if after applying a right of inner join:
 
 - You want to decrease the number of returned rows based on comparing numeric columns of different table.
-- You don't need to keep the columns from table `x`*(secundary data.table)* in the final table.
+- You don't need to keep the columns from table `x`*(secondary data.table)* in the final table.
 
 To illustrate how this work, let's center over attention on how are the sales and receives for product 2.
   
