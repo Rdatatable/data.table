@@ -10,12 +10,13 @@ rowwiseDT = function(...) {
   header = nms[header_pos]
   ncols = length(header)
   body = lapply(x[-header_pos], eval, envir = parent.frame())
-  if (length(body) %% ncols != 0L)
+  nrows = length(body) %/% ncols
+  if (length(body) != nrows * ncols)
     stopf("There are %d columns but the number of cells is %d, which is not an integer multiple of the columns", ncols, length(body))
   # make all the non-scalar elements to a list
   needs_list = lengths(body) > 1L
   body[needs_list] = lapply(body[needs_list], list)
-  body = split(body, rep(seq_len(length(body) / ncols), each = ncols))
+  body = split(body, rep(seq_len(nrows), each = ncols))
   ans = rbindlist(body)
   setnames(ans, header)
   ans
