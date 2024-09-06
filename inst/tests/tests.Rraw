@@ -19075,7 +19075,7 @@ test(2282.02, rowwiseDT(A=,B=2,1,2), error="Named arguments must be empty")
 # error if no header
 test(2282.03, rowwiseDT(1,"a"), error = "Must provide at least one column")
 # error if body is not multiple length of the header
-test(2282.04, rowwiseDT(A=,B=,C=, 1,"a",2,"b",3), error = "There're 3 columns but the number of cells is 5, which is not an integer multiple of the columns")
+test(2282.04, rowwiseDT(A=,B=,C=, 1,"a",2,"b",3), error = "There are 3 columns but the number of cells is 5, which is not an integer multiple of the columns")
 # create list element automatically
 test(2282.05, rowwiseDT(A=,list(1)), data.table(A=list(1)))
 test(2282.06, rowwiseDT(A=,1:2), data.table(A=list(1:2)))
