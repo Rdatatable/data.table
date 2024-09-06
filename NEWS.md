@@ -33,6 +33,26 @@ rowwiseDT(
 
 3. The data.table-only attribute `$.internal.selfref` is no longer set for data.frames. [#5286](https://github.com/Rdatatable/data.table/issues/5286). Thanks @OfekShilon for the report and fix.
 
+4. Tagging/naming arguments of `c()` in `j=c()` should now more closely follow base R conventions for concatenation of named lists during grouping, [#2311](https://github.com/Rdatatable/data.table/issues/2311). Naming an `lapply(.SD, FUN)` call as an argument of `c()` in `j` will now always cause that tag to get prepended (with a single dot separator) to the resulting column names. Additionally, naming a `list()` call as an argument of `c()` in `j` will now always cause that tag to get prepended to any names specified within the list call. This bug only affected queries with (1) `by=` grouping (2) `getOption("datatable.optimize") >= 1L` and (3) `lapply(.SD, FUN)` in `j`.
+
+    While the names returned by `data.table` when `j=c()` will now mostly follow base R conventions for concatenating lists, note that names which are completely unspecified will still be named positionally, matching the typical behavior in `j` and `data.table()`. according to position in `j` (e.g. `V1`, `V2`).
+    
+    Thanks to @franknarf1 for reporting and @myoung3 for the PR.
+
+    ```r
+    # tag 'mean' prepended to lapply()-named columns
+    names(mtcars[, c(mean=lapply(.SD,sum)), by="cyl", .SDcols=c("am", "carb")])
+    # [1] "cyl" "mean.am" "mean.carb"
+
+    # tag 'mean' is prepended to the first named sublist, 'sum' to the second
+    names(mtcars[, c(mean=list(a=mean(hp), b=mean(wt)), sum=lapply(.SD, sum)), by="cyl", .SDcols=c("am", "carb")])
+    # [1] "cyl" "mean.a" "mean.b" "sum.am" "sum.carb"
+
+    # strict base naming would result in names c("", "b", "c") here
+    names(mtcars[, c(list(mean(hp), b=mean(wt)), c=list(mean(cyl)))])
+    # [1] "V1" "b" "c"
+    ```
+
 ## NOTES
 
 1. Tests run again when some Suggests packages are missing, [#6411](https://github.com/Rdatatable/data.table/issues/6411). Thanks @aadler for the note and @MichaelChirico for the fix.

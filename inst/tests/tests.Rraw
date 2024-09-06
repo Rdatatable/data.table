@@ -19085,3 +19085,73 @@ test(2282.08, rowwiseDT(A=,B=,1,2,C=,4), error="Header must be the first N argum
 # evaluate arguments in the correct frame
 ncols = 1e6
 test(2282.09, rowwiseDT(A=,ncols), data.table(A=ncols))
+
+# named arguments of c() in j get prepended to lapply(.SD, FUN) #2311
+
+M <- as.data.table(mtcars)
+M[, " " := hp]
+M[, "." := hp]
+
+sdnames <- setdiff(names(M), "cyl")
+sdlist <- vector("list", length(sdnames))
+names(sdlist) <- sdnames
+
+for (opt in c(0, 1, 2)) {
+  test(2283 + opt/10 + 0.001, options=c(datatable.optimize=opt),
+       names(M[, c(m=lapply(.SD, mean)), by="cyl"]),
+       c("cyl", names(c(m=sdlist))))
+  test(2283 + opt/10 + 0.002, options=c(datatable.optimize=opt),
+       names(M[, c(Mpg=list(mpg), lapply(.SD, mean)), by="cyl"]),
+       c("cyl", "Mpg", sdnames))
+  test(2283 + opt/10 + 0.003, options=c(datatable.optimize=opt),
+       names(M[, c(Mpg=list(mpg), m=lapply(.SD, mean)), by="cyl"]),
+       c("cyl", "Mpg", names(c(m=sdlist))))
+  test(2283 + opt/10 + 0.004, options=c(datatable.optimize=opt),
+       names(M[, c(mpg=list(mpg), mpg=lapply(.SD, mean)), by="cyl"]),
+       c("cyl", "mpg", names(c(mpg=sdlist))))
+  test(2283 + opt/10 + 0.005, options=c(datatable.optimize=opt),
+       names(M[, c(list(mpg), lapply(.SD, mean)), by="cyl"]),
+       c("cyl", "V1", sdnames))
+  test(2283 + opt/10 + 0.006, options=c(datatable.optimize=opt),
+       names(M[, c(lapply(.SD, mean), list(mpg)), by="cyl"]),
+       c("cyl", sdnames, sprintf("V%d", length(sdnames)+1L)))
+  test(2283 + opt/10 + 0.007, options=c(datatable.optimize=opt),
+       names(M[, c(lapply(.SD, mean), lapply(.SD, sum)), by="cyl"]),
+       c("cyl", sdnames, sdnames))
+  test(2283 + opt/10 + 0.008, options=c(datatable.optimize=opt),
+       names(M[, c(mean=lapply(.SD, mean), sum=lapply(.SD,  sum)), by="cyl"]),
+       c("cyl", names(c(mean=sdlist, sum=sdlist))))
+  test(2283 + opt/10 + 0.009, options=c(datatable.optimize=opt),
+       names(M[, c(lapply(.SD, mean), sum=lapply(.SD,  sum)), by="cyl"]),
+       c("cyl", sdnames, names(c(sum=sdlist))) )
+  test(2283 + opt/10 + 0.010, options=c(datatable.optimize=opt),
+       names(M[, c(" "=lapply(.SD, mean), "."=lapply(.SD,  sum)), by="cyl"]),
+       c("cyl", names(c(" "=sdlist, "."=sdlist))))
+  test(2283 + opt/10 + 0.011, options=c(datatable.optimize=opt),
+       names(M[, c(A=list(a=mpg, b=hp), lapply(.SD, mean)), by="cyl"]),
+       c("cyl", names(c(A=list(a=0, b=0))), sdnames))
+  test(2283 + opt/10 + 0.012, options=c(datatable.optimize=opt),
+       names(M[, c(A=list(mpg, hp), lapply(.SD, mean)), by="cyl"]),
+       c("cyl", names(c(A=list(0, 0))), sdnames))
+  test(2283 + opt/10 + 0.013, options=c(datatable.optimize=opt),
+       names(M[, c(A=list(mpg, b=hp, wt), lapply(.SD, mean)), by="cyl"]),
+       c("cyl", names(c(A=list(0, b=0, 0))), sdnames))
+  test(2283 + opt/10 + 0.014, options=c(datatable.optimize=opt),
+       names(M[, c(A=list(mpg), lapply(.SD, mean)), by="cyl"]),
+       c("cyl", names(c(A=list(0))), sdnames))
+  test(2283 + opt/10 + 0.015, options=c(datatable.optimize=opt),
+       names(M[, c(" "=list(" "=hp, "."=disp, mpg), lapply(.SD, mean)), by="cyl"]),
+       c("cyl", names(c(" "=list(" "=0, "."=0, 0))), sdnames))
+  test(2283 + opt/10 + 0.016, options=c(datatable.optimize=opt),
+       names(M[, c("."=list(" "=hp, "."=disp, mpg), lapply(.SD, mean)), by="cyl"]),
+       c("cyl", names(c("."=list(" "=0, "."=0, 0))), sdnames))
+  test(2283 + opt/10 + 0.017, options=c(datatable.optimize=opt),
+       names(M[, c(list(mpg, b=hp), lapply(.SD, mean)), by="cyl", .SDcols=c("vs", "am")]),
+       c("cyl", "V1", "b", "vs", "am"))
+  test(2283 + opt/10 + 0.018, options=c(datatable.optimize=opt),
+       names(M[, c(list(mpg, b=hp), c(lapply(.SD, mean))), by="cyl", .SDcols=c("vs", "am")]),
+       c("cyl", "V1", "b", "vs", "am"))
+  test(2283 + opt/10 + 0.019, options=c(datatable.optimize=opt),
+       names(M[, c(mpg[1], list(mpg, b=hp), c(lapply(.SD, mean))), by="cyl", .SDcols=c("vs", "am")]),
+       c("cyl", "V1", "V2", "b", "vs", "am"))
+}
