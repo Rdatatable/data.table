@@ -589,7 +589,7 @@ rowwiseDT(
 
 ## BUG FIXES
 
-1. `by=.EACHI` when `i` is keyed but `on=` different columns than `i`'s key could create an invalidly keyed result, [#4603](https://github.com/Rdatatable/data.table/issues/4603) [#4911](https://github.com/Rdatatable/data.table/issues/4911). Thanks to Michael Young and @adamaltmejd for reporting, and @ColeMiller1 for the PR. An invalid key is where a `data.table` is marked as sorted by the key columns but the data is not sorted by those columns, leading to incorrect results from subsequent queries.
+1. `by=.EACHI` when `i` is keyed but `on=` different columns than `i`'s key could create an invalidly keyed result, [#4603](https://github.com/Rdatatable/data.table/issues/4603) [#4911](https://github.com/Rdatatable/data.table/issues/4911). Thanks to @myoung3 and @adamaltmejd for reporting, and @ColeMiller1 for the PR. An invalid key is where a `data.table` is marked as sorted by the key columns but the data is not sorted by those columns, leading to incorrect results from subsequent queries.
 
 2. `print(DT, trunc.cols=TRUE)` and the corresponding `datatable.print.trunc.cols` option (new feature 3 in v1.13.0) could incorrectly display an extra column, [#4266](https://github.com/Rdatatable/data.table/issues/4266). Thanks to @tdhock for the bug report and @MichaelChirico for the PR.
 
