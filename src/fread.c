@@ -437,19 +437,23 @@ static const char* filesize_to_str(size_t fsize)
   snprintf(output, BUFFSIZE, "%"PRIu64" bytes", (uint64_t)lsize);
   return output;
 }
-
 void copyFile(size_t fileSize, const char *msg, bool verbose)  // only called in very very rare cases
 {
   double tt = wallclock();
   mmp_copy = (char *)malloc((size_t)fileSize + 1/* extra \0 */);
-  if (!mmp_copy)
-    STOP(_("Unable to allocate %s of contiguous virtual RAM. %s allocation."), filesize_to_str(fileSize), msg);
+  if (!mmp_copy) {
+    if (!verbose)
+      DTPRINT("%s", msg);
+    STOP(_("Unable to allocate %s of contiguous virtual RAM."), filesize_to_str(fileSize));
+  }
   memcpy(mmp_copy, mmp, fileSize);
   sof = mmp_copy;
   eof = (char *)mmp_copy + fileSize;
   tt = wallclock()-tt;
-  if (tt>0.5) DTPRINT(_("Avoidable %.3f seconds. %s time to copy.\n"), tt, msg);  // not warning as that could feasibly cause CRAN tests to fail, say, if test machine is heavily loaded
-  if (verbose) DTPRINT(_("  File copy in RAM took %.3f seconds.\n"), tt);
+  if (verbose)
+    DTPRINT(_("  File copy in RAM took %.3f seconds.\n"), tt);
+  else if (tt>0.5)
+    DTPRINT(_("Avoidable %.3f seconds. %s\n"), tt, msg);  // not warning as that could feasibly cause CRAN tests to fail, say, if test machine is heavily loaded
 }
 
 
@@ -1534,8 +1538,8 @@ int freadMain(freadMainArgs _args) {
         // field) since we rely on that logic to avoid the copy below when fileSize$4096==0 but there is a final eol ok.
         // TODO: portable way to discover relevant page size. 4096 is lowest common denominator, though, and should suffice.
       } else {
-        const char *msg = _("This file is very unusual: it ends abruptly without a final newline, and also its size is a multiple of 4096 bytes. Please properly end the last row with a newline using for example 'echo >> file' to avoid this ");
-        if (verbose) DTPRINT(_("  File ends abruptly with '%c'. Copying file in RAM. %s copy.\n"), eof[-1], msg);
+        const char *msg = _("This file is very unusual: it ends abruptly without a final newline, and also its size is a multiple of 4096 bytes. Please properly end the last row with a newline using for example 'echo >> file' to avoid this copy.");
+        if (verbose) DTPRINT(_("  File ends abruptly with '%c'. Final end-of-line is missing. Copying file in RAM. %s\n"), eof[-1], msg);
         // In future, we may discover a way to mmap fileSize+1 on all OS when fileSize%4096==0, reliably. If and when, this clause can be updated with no code impact elsewhere.
         copyFile(fileSize, msg, verbose);
       }
