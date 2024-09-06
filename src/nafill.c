@@ -164,7 +164,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
     }
   }
 
-  unsigned int itype;
+  unsigned int itype=-1;
   if (!strcmp(CHAR(STRING_ELT(type, 0)), "const"))
     itype = 0;
   else if (!strcmp(CHAR(STRING_ELT(type, 0)), "locf"))
