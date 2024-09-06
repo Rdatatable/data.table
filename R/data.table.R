@@ -1113,7 +1113,7 @@ replace_dot_alias = function(e) {
           # `:=`(LHS,RHS) is valid though, but more because can't see how to detect that, than desire
           this_call = if (root == "let") "let" else "`:=`"
           for (jj in 2:length(jsub)) if (jsub[[jj]] %iscall% ":=")
-            stopf("It looks like you re-used `:=` in argument %d a functional assignment call -- use `=` instead: %s(col1=val1, col2=val2, ...)", jj, this_call)
+            stopf("It looks like you re-used `:=` in argument %d a functional assignment call -- use `=` instead: %s(col1=val1, col2=val2, ...)", jj-1L, this_call)
           if (length(jsub) != 3L)
             stopf("In %s(col1=val1, col2=val2, ...) form, all arguments must be named.", this_call)
           lhs = jsub[[2L]]
