@@ -19,7 +19,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
     usenames=TRUE;
   }
   const bool idcol = !isNull(idcolArg);
-  if (idcol && (!isString(idcolArg) || LENGTH(idcolArg)!=1)) error(_("Internal error: rbindlist.c idcol is not a single string"));  // # nocov
+  if (idcol && (!isString(idcolArg) || LENGTH(idcolArg)!=1)) internal_error(__func__, "idcol is not a single string");  // # nocov
   int ncol=0, first=0;
   int64_t nrow=0, upperBoundUniqueNames=1;
   bool anyNames=false;
@@ -80,7 +80,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
       if (isNull(li) || !LENGTH(li)) continue;
       const SEXP cn = getAttrib(li, R_NamesSymbol);
       if (!length(cn)) continue;
-      const SEXP *cnp = STRING_PTR(cn);
+      const SEXP *cnp = STRING_PTR_RO(cn);
       for (int j=0; j<thisncol; j++) {
         SEXP s = cnp[j];
         if (TRUELENGTH(s)<0) continue;  // seen this name before
@@ -111,7 +111,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
       if (thisncol==0) continue;
       const SEXP cn = getAttrib(li, R_NamesSymbol);
       if (!length(cn)) continue;
-      const SEXP *cnp = STRING_PTR(cn);
+      const SEXP *cnp = STRING_PTR_RO(cn);
       memset(counts, 0, nuniq*sizeof(int));
       for (int j=0; j<thisncol; j++) {
         SEXP s = cnp[j];
@@ -151,7 +151,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
       if (!length(cn)) {
         for (int j=0; j<thisncol; j++) colMapRaw[i*ncol + j] = j;
       } else {
-        const SEXP *cnp = STRING_PTR(cn);
+        const SEXP *cnp = STRING_PTR_RO(cn);
         memset(counts, 0, nuniq*sizeof(int));
         for (int j=0; j<thisncol; j++) {
           SEXP s = cnp[j];
@@ -191,7 +191,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
     // for (int i=0; i<LENGTH(l); ++i) { for (int j=0; j<ncol; ++j) Rprintf(_("%2d "),colMap[i*ncol + j]);  Rprintf(_("\n")); }
   }
 
-  if (fill && usenames==NA_LOGICAL) error(_("Internal error: usenames==NA but fill=TRUE. usenames should have been set to TRUE earlier with warning."));
+  if (fill && usenames==NA_LOGICAL) internal_error(__func__, "usenames==NA but fill=TRUE. usenames should have been set to TRUE earlier with warning"); // # nocov
   if (!fill && (usenames==TRUE || usenames==NA_LOGICAL)) {
     // Ensure no missings in both cases, and (when usenames==NA) all columns in same order too
     // We proceeded earlier as if fill was true, so varying ncol items will have missing here
@@ -206,7 +206,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
         if (w==-1) {
           int missi = i;
           while (colMap[i*ncol + j]==-1 && i<LENGTH(l)) i++;
-          if (i==LENGTH(l)) error(_("Internal error: could not find the first column name not present in earlier item"));
+          if (i==LENGTH(l)) internal_error(__func__, "could not find the first column name not present in earlier item"); // # nocov
           SEXP s = getAttrib(VECTOR_ELT(l, i), R_NamesSymbol);
           int w2 = colMap[i*ncol + j];
           const char *str = isString(s) ? CHAR(STRING_ELT(s,w2)) : "";
@@ -218,7 +218,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
         }
         if (w!=j && usenames==NA_LOGICAL) {
           SEXP s = getAttrib(VECTOR_ELT(l, i), R_NamesSymbol);
-          if (!isString(s) || i==0) error(_("Internal error: usenames==NA but an out-of-order name has been found in an item with no names or the first item. [%d]"), i);
+          if (!isString(s) || i==0) internal_error(__func__, "usenames==NA but an out-of-order name has been found in an item with no names or the first item. [%d]", i); // # nocov
           snprintf(buff, 1000, _("Column %d ['%s'] of item %d appears in position %d in item %d. Set use.names=TRUE to match by column name, or use.names=FALSE to ignore column names.%s"),
                                w+1, CHAR(STRING_ELT(s,w)), i+1, j+1, i, extra);
           i = LENGTH(l);
@@ -244,9 +244,9 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
     ncol = length(VECTOR_ELT(l, first));  // ncol was increased as if fill=true, so reduce it back given fill=false (fill==false checked above)
   }
 
-  int nprotect = 0;
-  SEXP ans = PROTECT(allocVector(VECSXP, idcol + ncol)); nprotect++;
-  SEXP ansNames = PROTECT(allocVector(STRSXP, idcol + ncol)); nprotect++;
+  int nprotect = 2;
+  SEXP ans = PROTECT(allocVector(VECSXP, idcol + ncol));
+  SEXP ansNames = PROTECT(allocVector(STRSXP, idcol + ncol));
   setAttrib(ans, R_NamesSymbol, ansNames);
   if (idcol) {
     SET_STRING_ELT(ansNames, 0, STRING_ELT(idcolArg, 0));
@@ -337,7 +337,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
     if (!foundName) { static char buff[12]; snprintf(buff,12,"V%d",j+1), SET_STRING_ELT(ansNames, idcol+j, mkChar(buff)); foundName=buff; }
     if (factor) maxType=INTSXP;  // if any items are factors then a factor is created (could be an option)
     if (int64 && maxType!=REALSXP)
-      error(_("Internal error: column %d of result is determined to be integer64 but maxType=='%s' != REALSXP"), j+1, type2char(maxType)); // # nocov
+      internal_error(__func__, "column %d of result is determined to be integer64 but maxType=='%s' != REALSXP", j+1, type2char(maxType)); // # nocov
     if (date && INHERITS(firstCol, char_IDate)) maxType=INTSXP; // first encountered Date determines class and type #5309
     SEXP target;
     SET_VECTOR_ELT(ans, idcol+j, target=allocVector(maxType, nrow));  // does not initialize logical & numerics, but does initialize character and list
@@ -372,7 +372,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
         //      c( a<c<b, c<b, 'c,b'   ) => a<c<b  because the regular factor/character items c and b exist in the ordered levels
         //      c( a<c<b, c<b, 'c,d'   ) => a<c<b<d  'd' from non-ordered item added on the end of longest ordered levels
         //      c( a<c<b, c<b<d<e )  => regular factor because this case isn't yet implemented. a<c<b<d<e would be possible in future (extending longest at the beginning or end)
-        const SEXP *sd = STRING_PTR(longestLevels);
+        const SEXP *sd = STRING_PTR_RO(longestLevels);
         nLevel = allocLevel = longestLen;
         levelsRaw = (SEXP *)malloc(nLevel * sizeof(SEXP));
         if (!levelsRaw) {
@@ -392,7 +392,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
           SEXP thisCol = VECTOR_ELT(li, w);
           if (isOrdered(thisCol)) {
             SEXP levels = getAttrib(thisCol, R_LevelsSymbol);
-            const SEXP *levelsD = STRING_PTR(levels);
+            const SEXP *levelsD = STRING_PTR_RO(levels);
             const int n = length(levels);
             for (int k=0, last=0; k<n; ++k) {
               SEXP s = levelsD[k];
@@ -431,7 +431,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
           SEXP thisCol = VECTOR_ELT(li, w);
           SEXP thisColStr = isFactor(thisCol) ? getAttrib(thisCol, R_LevelsSymbol) : (isString(thisCol) ? thisCol : VECTOR_ELT(coercedForFactor, i));
           const int n = length(thisColStr);
-          const SEXP *thisColStrD = STRING_PTR(thisColStr);  // D for data
+          const SEXP *thisColStrD = STRING_PTR_RO(thisColStr);  // D for data
           for (int k=0; k<n; ++k) {
             SEXP s = thisColStrD[k];
             if (s==NA_STRING ||             // remove NA from levels; test 1979 found by package emil when revdep testing 1.12.2 (#3473)
@@ -498,7 +498,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
               }
             }
           } else {
-            const SEXP *sd = STRING_PTR(thisColStr);
+            const SEXP *sd = STRING_PTR_RO(thisColStr);
             if (length(thisCol)<=1) {
               const int val = (length(thisCol)==1 && sd[0]!=NA_STRING) ? -TRUELENGTH(sd[0]) : NA_INTEGER;
               for (int r=0; r<thisnrow; ++r) targetd[ansloc+r] = val;
@@ -534,15 +534,18 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
         if (w==-1 || !length(thisCol=VECTOR_ELT(li, w))) {  // !length for zeroCol warning above; #1871
           writeNA(target, ansloc, thisnrow, false);  // writeNA is integer64 aware and writes INT64_MIN
         } else {
-          bool listprotect = false;
-          if ((TYPEOF(target)==VECSXP || TYPEOF(target)==EXPRSXP) && TYPEOF(thisCol)!=TYPEOF(target)) {
-            // do an as.list() on the atomic column; #3528
-            thisCol = PROTECT(coerceVector(thisCol, TYPEOF(target))); listprotect = true;
+          bool listprotect = (TYPEOF(target)==VECSXP || TYPEOF(target)==EXPRSXP) && TYPEOF(thisCol)!=TYPEOF(target);
+          // do an as.list() on the atomic column; #3528
+          if (listprotect) {
+            thisCol = PROTECT(coerceVector(thisCol, TYPEOF(target)));
+            // else coerces if needed within memrecycle; with a no-alloc direct coerce from 1.12.4 (PR #3909)
+            const char *ret = memrecycle(target, R_NilValue, ansloc, thisnrow, thisCol, 0, -1, idcol+j+1, foundName);
+            UNPROTECT(1); // earlier unprotect rbindlist calls with lots of lists #4536
+            if (ret) warning(_("Column %d of item %d: %s"), w+1, i+1, ret);
+          } else {
+            const char *ret = memrecycle(target, R_NilValue, ansloc, thisnrow, thisCol, 0, -1, idcol+j+1, foundName);
+            if (ret) warning(_("Column %d of item %d: %s"), w+1, i+1, ret);
           }
-          // else coerces if needed within memrecycle; with a no-alloc direct coerce from 1.12.4 (PR #3909)
-          const char *ret = memrecycle(target, R_NilValue, ansloc, thisnrow, thisCol, 0, -1, idcol+j+1, foundName);
-          if (listprotect) UNPROTECT(1); // earlier unprotect rbindlist calls with lots of lists #4536
-          if (ret) warning(_("Column %d of item %d: %s"), w+1, i+1, ret);
           // e.g. when precision is lost like assigning 3.4 to integer64; test 2007.2
           // TODO: but maxType should handle that and this should never warn
         }
@@ -550,6 +553,6 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
       }
     }
   }
-  UNPROTECT(nprotect);  // ans, coercedForFactor, thisCol
+  UNPROTECT(nprotect); // ans, ansNames, coercedForFactor?
   return(ans);
 }

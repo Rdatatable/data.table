@@ -61,7 +61,7 @@ removeClass("S4Composition")
 # miscellaneous missing tests uncovered by CodeCov difference in the process of PR #2573 [S4 portion, c.f. 1872.* in tests.Rraw]
 ## data.table cannot recycle complicated types
 short_s4_col = getClass("MethodDefinition")
-test(2, data.table(a = 1:4, short_s4_col), error="attempt to replicate non-vector")
+test(2, data.table(a = 1:4, short_s4_col), error="attempt to replicate.*(non-vector|S4)")
 
 # print dims in list-columns, #3671, c.f. 2130.* in tests.Rraw
 s4class = setClass("ex_class", slots = list(x="integer", y="character", z="numeric"))
