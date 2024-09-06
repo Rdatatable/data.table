@@ -12,11 +12,15 @@ and melt them into separate columns. See the \code{Efficient reshaping using
 data.tables} vignette linked below to learn more.
 }
 \usage{
-patterns(\dots, cols=character(0))
+patterns(
+  \dots, cols=character(0),
+  ignore.case=FALSE, perl=FALSE,
+  fixed=FALSE, useBytes=FALSE)
 }
 \arguments{
   \item{\dots}{A set of regular expression patterns.}
   \item{cols}{A character vector of names to which each pattern is matched.}
+  \item{ignore.case, perl, fixed, useBytes}{Passed to \code{\link{grep}}.}
 }
 \seealso{
   \code{\link{melt}},

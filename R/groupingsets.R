@@ -73,6 +73,7 @@ groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, ...)
     stopf("Expression passed to grouping sets function must not update by reference. Use ':=' on results of your grouping function.")
   if (missing(.SDcols))
     .SDcols = if (".SD" %chin% av) setdiff(names(x), by) else NULL
+  if (length(names(by))) by = unname(by)
   # 0 rows template data.table to keep colorder and type
   empty = if (length(.SDcols)) x[0L, eval(jj), by, .SDcols=.SDcols] else x[0L, eval(jj), by]
   if (id && "grouping" %chin% names(empty)) # `j` could have been evaluated to `grouping` field
