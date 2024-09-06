@@ -441,9 +441,8 @@ double copyFile(size_t fileSize)  // only called in very very rare cases
 {
   double tt = wallclock();
   mmp_copy = (char *)malloc((size_t)fileSize + 1 /* extra \0 */);
-  if (!mmp_copy) {
+  if (!mmp_copy)
     return -1.0;
-  }
   memcpy(mmp_copy, mmp, fileSize);
   sof = mmp_copy;
   eof = (char *)mmp_copy + fileSize;
@@ -1546,6 +1545,7 @@ int freadMain(freadMainArgs _args) {
           DTPRINT(_("  File copy in RAM took %.3f seconds.\n"), time_taken);
         else if (time_taken > 0.5)
           DTPRINT(_("Avoidable file copy in RAM took %.3f seconds. %s.\n"), time_taken, msg);  // not warning as that could feasibly cause CRAN tests to fail, say, if test machine is heavily loaded
+      }
     }
     *_const_cast(eof) = '\0';  // cow page
   }
