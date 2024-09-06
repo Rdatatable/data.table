@@ -19155,3 +19155,10 @@ for (opt in c(0, 1, 2)) {
        names(M[, c(mpg[1], list(mpg, b=hp), c(lapply(.SD, mean))), by="cyl", .SDcols=c("vs", "am")]),
        c("cyl", "V1", "V2", "b", "vs", "am"))
 }
+
+# error message improvement, #5296
+DT = data.table(a = 1)
+test(2284.1, DT[, `:=`(a := 2)], error="It looks like you re-used `:=`")
+# special case where length(jsub) == 3 that would have failed later
+test(2284.2, DT[, `:=`(a := 2, c := 3)], error="It looks like you re-used `:=` in argument 1")
+test(2284.3, DT[, `:=`(a = 2, c := 3)], error="It looks like you re-used `:=` in argument 2")
