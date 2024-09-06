@@ -169,7 +169,7 @@ as.data.table.list = function(x,
       #       not worse than before, and gets us in a better centralized place to port as.data.table.list to C and use MAYBE_REFERENCED
       #       again in future, for #617.
     }
-    if (identical(x, list())) vector("list", nrow) else rep_len(x, nrow)   # new objects don't need copy
+    if (identical(x, list())) vector("list", nrow) else safe_rep_len(x, nrow)   # new objects don't need copy
   }
   vnames = character(ncol)
   k = 1L

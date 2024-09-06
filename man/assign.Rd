@@ -35,7 +35,7 @@ set(x, i = NULL, j, value)
 \item{LHS}{ A character vector of column names (or numeric positions) or a variable that evaluates as such. If the column doesn't exist, it is added, \emph{by reference}. }
 \item{RHS}{ A list of replacement values. It is recycled in the usual way to fill the number of rows satisfying \code{i}, if any.  To remove a column use \code{NULL}. }
 \item{x}{ A \code{data.table}. Or, \code{set()} accepts \code{data.frame}, too. }
-\item{i}{ Optional. Indicates the rows on which the values must be updated with. If not provided, implies \emph{all rows}. The \code{:=} form is more powerful as it allows \emph{subsets} and \code{joins} based add/update columns by reference. See \code{Details}.
+\item{i}{ Optional. Indicates the rows on which the values must be updated. If not \code{NULL}, implies \emph{all rows}. Missing or zero values are ignored. The \code{:=} form is more powerful as it allows adding/updating columns by reference based on \emph{subsets} and \code{joins}. See \code{Details}.
 
     In \code{set}, only integer type is allowed in \code{i} indicating which rows \code{value} should be assigned to. \code{NULL} represents all rows more efficiently than creating a vector such as \code{1:nrow(x)}. }
 \item{j}{ Column name(s) (character) or number(s) (integer) to be assigned \code{value} when column(s) already exist, and only column name(s) if they are to be created. }
@@ -85,7 +85,7 @@ Unlike \code{<-} for \code{data.frame}, the (potentially large) LHS is not coerc
 Since \code{[.data.table} incurs overhead to check the existence and type of arguments (for example), \code{set()} provides direct (but less flexible) assignment by reference with low overhead, appropriate for use inside a \code{for} loop. See examples. \code{:=} is more powerful and flexible than \code{set()} because \code{:=} is intended to be combined with \code{i} and \code{by} in single queries on large datasets.
 }
 \note{
-    \code{DT[a > 4, b := c]} is different from \code{DT[a > 4][, b := c]}. The first expression updates (or adds) column \code{b} with the value \code{c} on those rows where \code{a > 4} evaluates to \code{TRUE}. \code{X} is updated \emph{by reference}, therefore no assignment needed.
+    \code{DT[a > 4, b := c]} is different from \code{DT[a > 4][, b := c]}. The first expression updates (or adds) column \code{b} with the value \code{c} on those rows where \code{a > 4} evaluates to \code{TRUE}. \code{X} is updated \emph{by reference}, therefore no assignment needed.  Note that this does not apply when `i` is missing, i.e. \code{DT[]}.
 
     The second expression on the other hand updates a \emph{new} \code{data.table} that's returned by the subset operation. Since the subsetted data.table is ephemeral (it is not assigned to a symbol), the result would be lost; unless the result is assigned, for example, as follows: \code{ans <- DT[a > 4][, b := c]}.
 }
@@ -139,6 +139,21 @@ DT[ , grep('a$', names(DT)) := tolower(a)]
 sq_col_idx = grep('d$', names(DT))
 DT[ , (sq_col_idx) := lapply(.SD, dnorm),
    .SDcols = sq_col_idx]
+
+# Examples using `set` function
+## Set value for single cell
+set(DT, 1L, "b", 10L)
+## Set values for multiple columns in a specific row
+set(DT, 2L, c("b", "d"), list(20L, 30L))
+## Set values by column indices
+set(DT, 3L, c(2L, 4L), list(40L, 50L))
+## Set value for an entire column without specifying rows
+set(DT, j = "b", value = 100L)
+set(DT, NULL, "b", 100L) # equivalent
+## Set values for multiple columns without specifying rows
+set(DT, j = c("b", "d"), value = list(200L, 300L))
+## Set values for multiple columns with multiple specified rows.
+set(DT, c(1L, 3L), c("b", "d"), value = list(500L, 800L))
 
 \dontrun{
 # Speed example:
