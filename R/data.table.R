@@ -1698,29 +1698,21 @@ replace_dot_alias = function(e) {
               funi = funi + 1L # Fix for #985
               jsubl[[i_]] = as.list(deparse_ans[[1L]][-1L]) # just keep the '.' from list(.)
               jn__ = deparse_ans[[2L]]
-              if (!is.null(names(jsubl)[i_]) && names(jsubl)[i_] != "") {
+              if (isTRUE(nzchar(names(jsubl)[i_]))) {
                 # Fix for #2311, prepend named arguments of c() to column names of .SD
-                # e.g. c(mean=lapply(.SD, mean))
-                jn__ = paste(names(jsubl)[i_], jn__, sep=".") 
-                # sep="." for consistency with c(A=list(a=1,b=1))
+                #   e.g. c(mean=lapply(.SD, mean))
+                jn__ = paste(names(jsubl)[i_], jn__, sep=".") # sep="." for consistency with c(A=list(a=1,b=1))
               }
               jvnames = c(jvnames, jn__)
             } else if (this[[1L]] == "list") {
               # also handle c(lapply(.SD, sum), list()) - silly, yes, but can happen
               if (length(this) > 1L) {
                 jl__ = as.list(jsubl[[i_]])[-1L] # just keep the '.' from list(.)
-                if (!is.null(names(jsubl)[i_]) && names(jsubl)[i_] != "") {
-                  # Fix for #2311, prepend named list arguments of c() to that list's names:
-                  #e.g. x[, c(A=list(<something>), lapply(.SD, mean)),by="z"]
-                  #now consider:
-                  #x[, c(A=list(x,y), lapply(.SD, mean)),by="z"] #--> names A1 A2
-                  #x[, c(A=list(x,b=y), lapply(.SD, mean)),by="z"] #--> names A1 A.b
-                  #x[, c(A=list(a=x,b=y), lapply(.SD, mean)),by="z"] #--> names A.a A.b
-                  #x[, c(A=list(x), lapply(.SD, mean)),by="z"] #--> names A (note length-1 doesn't get integer suffix)
-                  #these all follow base R. e.g. c(A=list(0,b=0))
+                if (isTRUE(nzchar(names(jsubl)[i_]))) {
+                  # Fix for #2311, prepend named list arguments of c() to that list's names. See tests 2283.*
                   njl__ = if (is.null(names(jl__))) rep("", length(jl__)) else names(jl__)
-                  njl__nonblank = names(jl__) != ""
-                  if (length(jl__)>1L) {
+                  njl__nonblank = nzchar(names(jl__))
+                  if (length(jl__) > 1L) {
                     jn__ = paste0(names(jsubl)[i_], seq_along(jl__))
                   } else {
                     jn__ = names(jsubl)[i_]
