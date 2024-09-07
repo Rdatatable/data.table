@@ -19157,8 +19157,11 @@ for (opt in c(0, 1, 2)) {
 }
 
 # Confusing behavior with DT[, min(var):max(var)] #2069
-DT = data.table(
-  id = c(1L, 1L, 1L, 2L, 2L, 2L, 3L, 3L, 3L, 4L, 4L, 4L, 5L, 5L, 5L, 6L, 6L, 6L),
-  t = c(4L, 9L, 14L, 1L, 4L, 9L, 5L, 14L, 18L, 1L, 3L, 12L, 3L, 5L, 7L, 4L, 10L, 13L)
-)
-test(2284, DT[, min(t):max(t)], with(DT, min(t):max(t)))
+DT = data.table(t = c(2L, 1L, 3L))
+test(2284.1, DT[, min(t):max(t)], with(DT, min(t):max(t)))
+test(2284.2, DT[, 1:max(t)], with(DT, 1:max(t)))
+test(2284.3, DT[, max(t):1], with(DT, max(t):1))
+test(2284.4, DT[, 1:t[1L]], with(DT, 1:t[1L]))
+test(2284.5, DT[, t[2L]:1], with(DT, t[2L]:1))
+test(2284.6, DT[1L, t:max(t)], with(DT[1L], t:max(t)))
+test(2284.7, DT[1L, min(t):t], with(DT[1L], min(t):t))
