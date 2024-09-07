@@ -1,5 +1,11 @@
 #include "data.table.h"
 
+/*
+  OpenMP is being used here to parallelize loops that perform conditional
+    checks along with assignment operations over the elements of the
+    supplied logical vector based on the condition (test) and values
+    provided for the remaining arguments (yes, no, and na).
+*/
 SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
   if (!isLogical(l)) {
     error(_("Argument 'test' must be logical."));
@@ -368,7 +374,7 @@ SEXP fcaseR(SEXP rho, SEXP args) {
       }
     } break;
     case STRSXP: {
-      const SEXP *restrict pthens;
+      const SEXP *restrict pthens=NULL;
       if (!naout) pthens = STRING_PTR_RO(thens); // the content is not useful if out is NA_LOGICAL scalar
       const SEXP pna = NA_STRING;
       for (int64_t j=0; j<n_undecided; ++j) {
@@ -386,7 +392,7 @@ SEXP fcaseR(SEXP rho, SEXP args) {
     case VECSXP: {
       // the default value of VECSXP is `NULL` so we don't need to explicitly
       // assign the NA values as it does for other atomic types
-      const SEXP *restrict pthens;
+      const SEXP *restrict pthens=NULL;
       if (!naout) pthens = SEXPPTR_RO(thens); // the content is not useful if out is NA_LOGICAL scalar
       for (int64_t j=0; j<n_undecided; ++j) {
         const int64_t idx = imask ? j : p[j];

@@ -1268,6 +1268,14 @@ static int detect_types( const char **pch, int8_t type[], int ncol, bool *bumped
 //
 // Returns 1 if it finishes successfully, and 0 otherwise.
 //
+//  OpenMP is used here to:
+//    - Parallelize the reading of data in chunks
+//    - Avoid race conditions or concurrent writes to the output data.table by having atomic
+//      operations on the string data 
+//    - Manage synchronized updates to the progress bar and serialize the output to the console
+//  This function is highly optimized in reading and processing data with both large numbers of
+//    rows and columns, but the efficiency is more pronounced across rows.
+//
 //=================================================================================================
 int freadMain(freadMainArgs _args) {
   args = _args;  // assign to global for use by DTPRINT() in other functions
@@ -1586,8 +1594,13 @@ int freadMain(freadMainArgs _args) {
         row1line++;
       }
     }
-    if (ch > sof && verbose) DTPRINT(_("  Skipped to line %"PRIu64" in the file"), (uint64_t)row1line);
-    if (ch>=eof) STOP(_("skip=%"PRIu64" but the input only has %"PRIu64" line%s"), (uint64_t)args.skipNrow, (uint64_t)row1line, row1line>1?"s":"");
+    if (ch > sof && verbose)
+      DTPRINT(_("  Skipped to line %"PRIu64" in the file"), (uint64_t)row1line);
+    if (ch>=eof)
+      STOP(Pl_(row1line,
+               "skip=%"PRIu64" but the input only has %"PRIu64" line",
+               "skip=%"PRIu64" but the input only has %"PRIu64" lines"),
+           (uint64_t)args.skipNrow, (uint64_t)row1line);
     pos = ch;
   }
 
@@ -1969,9 +1982,13 @@ int freadMain(freadMainArgs _args) {
     if (ch!=pos)  INTERNAL_STOP("ch!=pos after counting fields in the line before the first data row"); // # nocov
     if (verbose) DTPRINT(_("Types in 1st data row match types in 2nd data row but previous row has %d fields. Taking previous row as column names."), tt);
     if (tt<ncol) {
-      autoFirstColName = (tt==ncol-1);
-      DTWARN(_("Detected %d column names but the data has %d columns (i.e. invalid file). Added %d extra default column name%s\n"), tt, ncol, ncol-tt,
-             autoFirstColName ? _(" for the first column which is guessed to be row names or an index. Use setnames() afterwards if this guess is not correct, or fix the file write command that created the file to create a valid file.") : _("s at the end."));
+      autoFirstColName = (ncol-tt==1);
+      if (autoFirstColName) {
+        DTWARN(_("Detected %d column names but the data has %d columns (i.e. invalid file). Added an extra default column name for the first column which is guessed to be row names or an index. Use setnames() afterwards if this guess is not correct, or fix the file write command that created the file to create a valid file.\n"),
+              tt, ncol);
+      } else {
+        DTWARN(_("Detected %d column names but the data has %d columns (i.e. invalid file). Added %d extra default column names at the end.\n"), tt, ncol, ncol-tt);
+      }
     } else if (tt>ncol) {
       if (fill) INTERNAL_STOP("fill=true but there is a previous row which should already have been filled"); // # nocov
       DTWARN(_("Detected %d column names but the data has %d columns. Filling rows automatically. Set fill=TRUE explicitly to avoid this warning.\n"), tt, ncol);

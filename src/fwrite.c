@@ -442,7 +442,7 @@ void writePOSIXct(const void *col, int64_t row, char **pch)
       // don't use writeInteger() because it doesn't 0 pad which we need here
       // integer64 is big enough for squash with milli but not micro; trunc (not round) micro when squash
       m /= 1000;
-      *ch++ = '.';
+      *ch++ = dec;
       ch -= squashDateTime;
       *(ch+2) = '0'+m%10; m/=10;
       *(ch+1) = '0'+m%10; m/=10;
@@ -450,7 +450,7 @@ void writePOSIXct(const void *col, int64_t row, char **pch)
       ch += 3;
     } else if (m) {
       // microseconds are present and !squashDateTime
-      *ch++ = '.';
+      *ch++ = dec;
       *(ch+5) = '0'+m%10; m/=10;
       *(ch+4) = '0'+m%10; m/=10;
       *(ch+3) = '0'+m%10; m/=10;
@@ -488,7 +488,7 @@ void writeNanotime(const void *col, int64_t row, char **pch)
     *ch++ = 'T';
     ch -= squashDateTime;
     write_time(s, &ch);
-    *ch++ = '.';
+    *ch++ = dec;
     ch -= squashDateTime;
     for (int i=8; i>=0; i--) { *(ch+i) = '0'+n%10; n/=10; }  // always 9 digits for nanoseconds
     ch += 9;
@@ -587,6 +587,14 @@ int compressbuff(z_stream *stream, void* dest, size_t *destLen, const void* sour
 }
 #endif
 
+/*
+  OpenMP is used here primarily to parallelize the process of writing rows
+    to the output file, but error handling and compression (if enabled) are
+    also managed within the parallel region. Special attention is paid to
+    thread safety and synchronization, especially in the ordered sections
+    where output to the file and handling of errors is serialized to maintain
+    the correct sequence of rows.
+*/
 void fwriteMain(fwriteMainArgs args)
 {
   double startTime = wallclock();
@@ -952,10 +960,10 @@ void fwriteMain(fwriteMainArgs args)
             int ETA = (int)((args.nrow-end)*((now-startTime)/end));
             if (hasPrinted || ETA >= 2) {
               if (verbose && !hasPrinted) DTPRINT("\n");
-              DTPRINT("\rWritten %.1f%% of %"PRId64" rows in %d secs using %d thread%s. "
-                      "maxBuffUsed=%d%%. ETA %d secs.      ",
-                       (100.0*end)/args.nrow, args.nrow, (int)(now-startTime), nth, nth==1?"":"s",
-                       maxBuffUsedPC, ETA);
+              DTPRINT(Pl_(nth,
+                          "\rWritten %.1f%% of %"PRId64" rows in %d secs using %d thread. maxBuffUsed=%d%%. ETA %d secs.      ",
+                          "\rWritten %.1f%% of %"PRId64" rows in %d secs using %d threads. maxBuffUsed=%d%%. ETA %d secs.      "),
+                       (100.0*end)/args.nrow, args.nrow, (int)(now-startTime), nth, maxBuffUsedPC, ETA);
               // TODO: use progress() as in fread
               nextTime = now+1;
               hasPrinted = true;

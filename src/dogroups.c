@@ -69,12 +69,12 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   int nprotect=0;
   SEXP ans=NULL, jval, thiscol, BY, N, I, GRP, iSD, xSD, rownames, s, RHS, target, source;
   Rboolean wasvector, firstalloc=FALSE, NullWarnDone=FALSE;
-  clock_t tstart=0, tblock[10]={0}; int nblock[10]={0};
   const bool verbose = LOGICAL(verboseArg)[0]==1;
   const bool showProgress = LOGICAL(showProgressArg)[0]==1;
-  bool hasPrinted = false;
-  double startTime = (showProgress) ? wallclock() : 0;
+  double tstart=0, tblock[10]={0}; int nblock[10]={0}; // For verbose printing, tstart is updated each block
+  double startTime = (showProgress) ? wallclock() : 0; // For progress printing, startTime is set at the beginning
   double nextTime = (showProgress) ? startTime+3 : 0; // wait 3 seconds before printing progress
+  bool hasPrinted = false;
 
   if (!isInteger(order)) internal_error(__func__, "order not integer vector"); // # nocov
   if (TYPEOF(starts) != INTSXP) internal_error(__func__, "starts not integer"); // # nocov
@@ -230,7 +230,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         writeNA(VECTOR_ELT(xSD, j), 0, 1, false);
       }
     } else {
-      if (verbose) tstart = clock();
+      if (verbose) tstart = wallclock();
       SETLENGTH(I, grpn);
       int *iI = INTEGER(I);
       if (LENGTH(order)==0) {
@@ -242,7 +242,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
           for (int j=0; j<length(xSD); ++j)
             memrecycle(VECTOR_ELT(xSD,j), R_NilValue, 0, 1, VECTOR_ELT(dt, INTEGER(xjiscols)[j]-1), rownum, 1, j+1, "Internal error assigning to xSD");
         }
-        if (verbose) { tblock[0] += clock()-tstart; nblock[0]++; }
+        if (verbose) { tblock[0] += wallclock()-tstart; nblock[0]++; }
       } else {
         const int rownum = istarts[i]-1;
         for (int k=0; k<grpn; ++k) iI[k] = iorder[rownum+k];
@@ -250,14 +250,14 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
           // this is the main non-contiguous gather, and is parallel (within-column) for non-SEXP
           subsetVectorRaw(VECTOR_ELT(SDall,j), VECTOR_ELT(dt,INTEGER(dtcols)[j]-1), I, anyNA);
         }
-        if (verbose) { tblock[1] += clock()-tstart; nblock[1]++; }
+        if (verbose) { tblock[1] += wallclock()-tstart; nblock[1]++; }
         // The two blocks have separate timing statements to make sure which is running
       }
     }
 
-    if (verbose) tstart = clock();  // call to clock() is more expensive than an 'if'
+    if (verbose) tstart = wallclock();  // call to wallclock() is more expensive than an 'if'
     PROTECT(jval = eval(jexp, env));
-    if (verbose) { tblock[2] += clock()-tstart; nblock[2]++; }
+    if (verbose) { tblock[2] += wallclock()-tstart; nblock[2]++; }
 
     if (isNull(jval))  {
       // j may be a plot or other side-effect only
@@ -459,7 +459,10 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     }
     else UNPROTECT(1);  // the jval. Don't want them to build up. The first jval can stay protected till the end ok.
   }
-  if (showProgress && hasPrinted) Rprintf(_("\rProcessed %d groups out of %d. %.0f%% done. Time elapsed: %ds. ETA: %ds.\n"), ngrp, ngrp, 100.0, (int)(wallclock()-startTime), 0);
+  if (showProgress && hasPrinted) {
+    Rprintf(_("\rProcessed %d groups out of %d. %.0f%% done. Time elapsed: %ds. ETA: %ds."), ngrp, ngrp, 100.0, (int)(wallclock()-startTime), 0);
+    Rprintf("\n"); // separated so this & the earlier message are identical for translation purposes.
+  }
   if (isNull(lhs) && ans!=NULL) {
     if (ansloc < LENGTH(VECTOR_ELT(ans,0))) {
       if (verbose) Rprintf(_("Wrote less rows (%d) than allocated (%d).\n"),ansloc,LENGTH(VECTOR_ELT(ans,0)));
@@ -486,9 +489,10 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   if (verbose) {
     if (nblock[0] && nblock[1]) internal_error(__func__, "block 0 [%d] and block 1 [%d] have both run", nblock[0], nblock[1]); // # nocov
     int w = nblock[1]>0;
-    Rprintf(_("\n  %s took %.3fs for %d groups\n"), w ? "collecting discontiguous groups" : "memcpy contiguous groups",
-                          1.0*tblock[w]/CLOCKS_PER_SEC, nblock[w]);
-    Rprintf(_("  eval(j) took %.3fs for %d calls\n"), 1.0*tblock[2]/CLOCKS_PER_SEC, nblock[2]);
+    Rprintf(w ? _("\n  collecting discontiguous groups took %.3fs for %d groups\n")
+              : _("\n  memcpy contiguous groups took %.3fs for %d groups\n"),
+            1.0*tblock[w], nblock[w]);
+    Rprintf(_("  eval(j) took %.3fs for %d calls\n"), 1.0*tblock[2], nblock[2]);
   }
   UNPROTECT(nprotect);
   return(ans);

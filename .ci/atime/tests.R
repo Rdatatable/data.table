@@ -1,5 +1,7 @@
 # A list of performance tests.
 #
+# See documentation in https://github.com/Rdatatable/data.table/wiki/Performance-testing for best practices.
+#
 # Each entry in this list corresponds to a performance test and contains a sublist with three mandatory arguments:
 # - N: A numeric sequence of data sizes to vary.
 # - setup: An expression evaluated for every data size before measuring time/memory.
@@ -155,6 +157,18 @@ test.list <- atime::atime_test_list(
     Fast = "353dc7a6b66563b61e44b2fa0d7b73a0f97ca461", # Close-to-last merge commit in the PR (https://github.com/Rdatatable/data.table/pull/4501/commits) that fixes the issue 
     Slow = "3ca83738d70d5597d9e168077f3768e32569c790", # Circa 2024 master parent of close-to-last merge commit (https://github.com/Rdatatable/data.table/commit/353dc7a6b66563b61e44b2fa0d7b73a0f97ca461) in the PR (https://github.com/Rdatatable/data.table/pull/4501/commits) that fixes the issue 
     Slower = "cacdc92df71b777369a217b6c902c687cf35a70d"), # Circa 2020 parent of the first commit (https://github.com/Rdatatable/data.table/commit/74636333d7da965a11dad04c322c752a409db098) in the PR (https://github.com/Rdatatable/data.table/pull/4501/commits) that fixes the issue 
+
+  # Issue reported in: https://github.com/Rdatatable/data.table/issues/6286
+  # Fixed in: https://github.com/Rdatatable/data.table/pull/6296
+  "DT[by, verbose = TRUE] improved in #6296" = atime::atime_test(
+    N = 10^seq(1, 9),
+    setup = {
+      dt = data.table(a = 1:N)
+      dt_mod <- copy(dt)
+    },
+    expr = data.table:::`[.data.table`(dt_mod, , 1, by = a, verbose = TRUE),
+    Slow = "a01f00f7438daf4612280d6886e6929fa8c8f76e", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/fc0c1e76408c34a8482f16f7421d262c7f1bde32) in the PR (https://github.com/Rdatatable/data.table/pull/6296/commits) that fixes the issue
+    Fast = "f248bbe6d1204dfc8def62328788eaadcc8e17a1"), # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/6296) that fixes the issue
 
   NULL)
 # nolint end: undesirable_operator_linter.

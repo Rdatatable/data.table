@@ -24,6 +24,7 @@ static void finalizer(SEXP p)
 }
 
 void setselfref(SEXP x) {
+  if(!INHERITS(x, char_datatable))  return; // #5286
   SEXP p;
   // Store pointer to itself so we can detect if the object has been copied. See
   // ?copy for why copies are not just inefficient but cause a problem for over-allocated data.tables.
@@ -392,8 +393,10 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
         UNPROTECT(protecti);
         return(dt); // all items of rows either 0 or NA. !length(newcolnames) for #759
       }
-      if (verbose) Rprintf(_("Added %d new column%s initialized with all-NA\n"),
-                           length(newcolnames), (length(newcolnames)>1)?"s":"");
+      if (verbose) Rprintf(Pl_(length(newcolnames),
+                               "Added %d new column initialized with all-NA\n",
+                               "Added %d new columns initialized with all-NA\n"),
+                           length(newcolnames));
     }
   }
   if (!length(cols)) {
