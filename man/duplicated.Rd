@@ -28,7 +28,8 @@ memory efficient.
 \usage{
 \method{duplicated}{data.table}(x, incomparables=FALSE, fromLast=FALSE, by=seq_along(x), \dots)
 
-\method{unique}{data.table}(x, incomparables=FALSE, fromLast=FALSE, by=seq_along(x), \dots)
+\method{unique}{data.table}(x, incomparables=FALSE, fromLast=FALSE,
+by=seq_along(x), cols=NULL, \dots)
 
 \method{anyDuplicated}{data.table}(x, incomparables=FALSE, fromLast=FALSE, by=seq_along(x), \dots)
 
@@ -39,13 +40,16 @@ uniqueN(x, by=if (is.list(x)) seq_along(x) else NULL, na.rm=FALSE)
 as well.}
 \item{\dots}{ Not used at this time. }
 \item{incomparables}{ Not used. Here for S3 method consistency. }
-\item{fromLast}{ logical indicating if duplication should be considered from
-the reverse side, i.e., the last (or rightmost) of identical elements would
-correspond to \code{duplicated = FALSE}.}
+\item{fromLast}{Logical indicating if duplication should be considered from
+the reverse side. For \code{duplicated}, this means the last (or rightmost) of identical elements 
+will correspond to \code{duplicated = FALSE}. For \code{unique}, this means the last 
+(or rightmost) of identical elements will be kept. See examples.}
 \item{by}{\code{character} or \code{integer} vector indicating which combinations
 of columns from \code{x} to use for uniqueness checks. By default all columns
 are being used. That was changed recently for consistency to data.frame methods.
 In version \code{< 1.9.8} default was \code{key(x)}.}
+\item{cols}{Columns (in addition to \code{by}) from \code{x} to include in the
+  resulting \code{data.table}.}
 \item{na.rm}{Logical (default is \code{FALSE}). Should missing values (including
 \code{NaN}) be removed?}
 }
@@ -59,7 +63,11 @@ handle cases where limitations in floating point representation is undesirable.
 
 \code{v1.9.4} introduces \code{anyDuplicated} method for data.tables and is
 similar to base in functionality. It also implements the logical argument
-\code{fromLast} for all three functions, with default value \code{FALSE}.
+\code{fromLast} for all three functions, with default value
+\code{FALSE}.
+
+Note: When \code{cols} is specified, the resulting table will have
+columns \code{c(by, cols)}, in that order.
 }
 \value{
 \code{duplicated} returns a logical vector of length \code{nrow(x)}
@@ -81,7 +89,7 @@ If none exists, 0L is returned.
 }
 \examples{
 DT <- data.table(A = rep(1:3, each=4), B = rep(1:4, each=3),
-                  C = rep(1:2, 6), key = "A,B")
+                  C = rep(1:2, 6), key = c("A", "B"))
 duplicated(DT)
 unique(DT)
 
@@ -104,11 +112,14 @@ DT[,which.min(a)]            # row 10, the strictly smallest floating point valu
 identical(unique(DT),DT[1])  # TRUE, stable within tolerance
 identical(unique(DT),DT[10]) # FALSE
 
-# fromLast=TRUE
-DT <- data.table(A = rep(1:3, each=4), B = rep(1:4, each=3),
-                 C = rep(1:2, 6), key = "A,B")
-duplicated(DT, by="B", fromLast=TRUE)
-unique(DT, by="B", fromLast=TRUE)
+# fromLast = TRUE vs. FALSE
+DT <- data.table(A = c(1, 1, 2, 2, 3), B = c(1, 2, 1, 1, 2), C = c("a", "b", "a", "b", "a"))
+
+duplicated(DT, by="B", fromLast=FALSE) # rows 3,4,5 are duplicates
+unique(DT, by="B", fromLast=FALSE) # equivalent: DT[!duplicated(DT, by="B", fromLast=FALSE)]
+
+duplicated(DT, by="B", fromLast=TRUE) # rows 1,2,3 are duplicates
+unique(DT, by="B", fromLast=TRUE) # equivalent: DT[!duplicated(DT, by="B", fromLast=TRUE)]
 
 # anyDuplicated
 anyDuplicated(DT, by=c("A", "B"))    # 3L

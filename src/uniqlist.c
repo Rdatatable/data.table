@@ -11,18 +11,18 @@ SEXP uniqlist(SEXP l, SEXP order)
   // (maximum length the number of rows) and the length returned in anslen.
   // No NA in order which is guaranteed since internal-only. Used at R level internally (Cuniqlist) but is not and should not be exported.
   // DONE: ans is now grown
-  if (!isNewList(l)) error(_("Internal error: uniqlist has not been passed a list of columns")); // # nocov
+  if (!isNewList(l)) internal_error(__func__, "l is not a list of columns"); // # nocov
   R_len_t ncol = length(l);
   R_len_t nrow = length(VECTOR_ELT(l,0));
-  if (!isInteger(order)) error(_("Internal error: uniqlist has been passed a non-integer order")); // # nocov
-  if (LENGTH(order)<1) error(_("Internal error: uniqlist has been passed a length-0 order")); // # nocov
-  if (LENGTH(order)>1 && LENGTH(order)!=nrow) error(_("Internal error: uniqlist has been passed length(order)==%d but nrow==%d"), LENGTH(order), nrow); // # nocov
+  if (!isInteger(order)) internal_error(__func__, "order is non-integer"); // # nocov
+  if (LENGTH(order)<1) internal_error(__func__, "order is length-0"); // # nocov
+  if (LENGTH(order)>1 && LENGTH(order)!=nrow) internal_error(__func__, "length(order)==%d but nrow==%d", LENGTH(order), nrow); // # nocov
   bool via_order = INTEGER(order)[0] != -1;  // has an ordering vector been passed in that we have to hop via? Don't use MISSING() here as it appears unstable on Windows
 
   unsigned long long *ulv; // for numeric check speed-up
   SEXP v, ans;
   R_len_t len, thisi, previ, isize=1000;
-  int *iidx = Calloc(isize, int); // for 'idx'
+  int *iidx = R_Calloc(isize, int); // for 'idx'
   len = 1;
   iidx[0] = 1; // first row is always the first of the first group
 
@@ -45,7 +45,7 @@ SEXP uniqlist(SEXP l, SEXP order)
           iidx[len++] = i+1;                                                     \
           if (len>=isize) {                                                      \
             isize = MIN(nrow, (size_t)(1.1*(double)isize*((double)nrow/i)));     \
-            iidx = Realloc(iidx, isize, int);                                    \
+            iidx = R_Realloc(iidx, isize, int);                                    \
           }                                                                      \
         }                                                                        \
         prev = elem;                                                             \
@@ -66,7 +66,7 @@ SEXP uniqlist(SEXP l, SEXP order)
       }
     } break;
     case STRSXP : {
-      const SEXP *vd=STRING_PTR(v);
+      const SEXP *vd=STRING_PTR_RO(v);
       SEXP prev, elem;
       if (via_order) {
         COMPARE1_VIA_ORDER && ENC2UTF8(elem)!=ENC2UTF8(prev) COMPARE2   // but most of the time they are equal, so ENC2UTF8 doesn't need to be called
@@ -75,25 +75,27 @@ SEXP uniqlist(SEXP l, SEXP order)
       }
     } break;
     case REALSXP : {
-      const uint64_t *vd=(const uint64_t *)REAL(v);
-      uint64_t prev, elem;
       // grouping by integer64 makes sense (ids). grouping by float supported but a good use-case for that is harder to imagine
       if (getNumericRounding_C()==0 /*default*/ || inherits(v, "integer64")) {
+        const uint64_t *vd=(const uint64_t *)REAL(v);
+        uint64_t prev, elem;
         if (via_order) {
           COMPARE1_VIA_ORDER COMPARE2
         } else {
           COMPARE1           COMPARE2
         }
       } else {
+        const double *vd=(const double *)REAL(v);
+        double prev, elem;
         if (via_order) {
-          COMPARE1_VIA_ORDER && dtwiddle(&elem, 0)!=dtwiddle(&prev, 0) COMPARE2
+          COMPARE1_VIA_ORDER && dtwiddle(elem)!=dtwiddle(prev) COMPARE2
         } else {
-          COMPARE1           && dtwiddle(&elem, 0)!=dtwiddle(&prev, 0) COMPARE2
+          COMPARE1           && dtwiddle(elem)!=dtwiddle(prev) COMPARE2
         }
       }
     } break;
     default :
-      error(_("Type '%s' not supported"), type2char(TYPEOF(v)));  // # nocov
+      error(_("Type '%s' is not supported"), type2char(TYPEOF(v)));  // # nocov
     }
   } else {
     // ncol>1
@@ -119,27 +121,27 @@ SEXP uniqlist(SEXP l, SEXP order)
           ulv = (unsigned long long *)REAL(v);
           b = ulv[thisi] == ulv[previ]; // (gives >=2x speedup)
           if (!b && !i64[j]) {
-            b = dtwiddle(ulv, thisi) == dtwiddle(ulv, previ);
+            b = dtwiddle(REAL(v)[thisi]) == dtwiddle(REAL(v)[previ]);
             // could store LHS for use next time as RHS (to save calling dtwiddle twice). However: i) there could be multiple double columns so vector of RHS would need
             // to be stored, ii) many short-circuit early before the if (!b) anyway (negating benefit) and iii) we may not have needed LHS this time so logic would be complex.
           }
           break;
         default :
-          error(_("Type '%s' not supported"), type2char(TYPEOF(v)));  // # nocov
+          error(_("Type '%s' is not supported"), type2char(TYPEOF(v)));  // # nocov
         }
       }
       if (!b) {
         iidx[len++] = i+1;
         if (len >= isize) {
           isize = MIN(nrow, (size_t)(1.1*(double)isize*((double)nrow/i)));
-          iidx = Realloc(iidx, isize, int);
+          iidx = R_Realloc(iidx, isize, int);
         }
       }
     }
   }
   PROTECT(ans = allocVector(INTSXP, len));
   memcpy(INTEGER(ans), iidx, sizeof(int)*len); // sizeof is of type size_t - no integer overflow issues
-  Free(iidx);
+  R_Free(iidx);
   UNPROTECT(1);
   return(ans);
 }
@@ -169,7 +171,7 @@ SEXP rleid(SEXP l, SEXP cols) {
   int *icols = INTEGER(cols);
   for (int i=0; i<lencols; i++) {
     int elem = icols[i];
-    if (elem<1 || elem>ncol) error(_("Item %d of cols is %d which is outside range of l [1,length(l)=%d]"), i+1, elem, ncol);
+    if (elem<1 || elem>ncol) error(_("Item %d of cols is %d which is outside the range [1,length(l)=%d]"), i+1, elem, ncol);
   }
   for (int i=1; i<ncol; i++) {
     if (xlength(VECTOR_ELT(l,i)) != nrow) error(_("All elements to input list must be of same length. Element [%d] has length %"PRIu64" != length of first element = %"PRIu64"."), i+1, (uint64_t)xlength(VECTOR_ELT(l,i)), (uint64_t)nrow);
@@ -206,7 +208,7 @@ SEXP rleid(SEXP l, SEXP cols) {
           same = memcmp(&pz[i], &pz[i-1], sizeof(Rcomplex))==0; // compiler optimization should replace library call with best 16-byte fixed method
         } break;
         default :
-          error(_("Type '%s' not supported"), type2char(TYPEOF(jcol)));  // # nocov
+          error(_("Type '%s' is not supported"), type2char(TYPEOF(jcol)));  // # nocov
         }
       }
       ians[i] = (grp+=!same);
@@ -222,7 +224,7 @@ SEXP rleid(SEXP l, SEXP cols) {
       }
     } break;
     case STRSXP : {
-      const SEXP *jd = STRING_PTR(jcol);
+      const SEXP *jd = STRING_PTR_RO(jcol);
       for (R_xlen_t i=1; i<nrow; i++) {
         bool same = jd[i]==jd[i-1];
         ians[i] = (grp+=!same);
@@ -243,7 +245,7 @@ SEXP rleid(SEXP l, SEXP cols) {
       }
     } break;
     default :
-      error(_("Type '%s' not supported"), type2char(TYPEOF(jcol)));
+      error(_("Type '%s' is not supported"), type2char(TYPEOF(jcol)));
     }
   }
   UNPROTECT(1);
@@ -253,22 +255,22 @@ SEXP rleid(SEXP l, SEXP cols) {
 SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP multArg) {
   Rboolean byorder = (length(order)>0);
   SEXP v, ans;
-  if (!isNewList(l) || length(l) < 1) error(_("Internal error: nestedid was not passed a list length 1 or more")); // # nocov
+  if (!isNewList(l) || length(l) < 1) internal_error(__func__, "l is not a list length 1 or more"); // # nocov
   R_len_t nrows = length(VECTOR_ELT(l,0)), ncols = length(cols);
   if (nrows==0) return(allocVector(INTSXP, 0));
   R_len_t thisi, previ, ansgrpsize=1000, nansgrp=0;
-  R_len_t *ansgrp = Calloc(ansgrpsize, R_len_t), starts, grplen; // #3401 fix. Needs to be Calloc due to Realloc below .. else segfaults.
+  R_len_t *ansgrp = R_Calloc(ansgrpsize, R_len_t), starts, grplen; // #3401 fix. Needs to be R_Calloc due to R_Realloc below .. else segfaults.
   R_len_t ngrps = length(grps);
   bool *i64 = (bool *)R_alloc(ncols, sizeof(bool));
-  if (ngrps==0) error(_("Internal error: nrows[%d]>0 but ngrps==0"), nrows); // # nocov
+  if (ngrps==0) internal_error(__func__, "nrows[%d]>0 but ngrps==0", nrows); // # nocov
   R_len_t resetctr=0, rlen = length(resetvals) ? INTEGER(resetvals)[0] : 0;
-  if (!isInteger(cols) || ncols == 0) error(_("cols must be an integer vector of positive length"));
+  if (!isInteger(cols) || ncols == 0) error(_("cols must be an integer vector with length >= 1"));
   // mult arg
   enum {ALL, FIRST, LAST} mult = ALL;
   if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "all")) mult = ALL;
   else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "first")) mult = FIRST;
   else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "last")) mult = LAST;
-  else error(_("Internal error: invalid value for 'mult'. please report to data.table issue tracker")); // # nocov
+  else internal_error(__func__, "invalid value for 'mult'"); // # nocov
   // integer64
   for (int j=0; j<ncols; j++) {
     i64[j] = INHERITS(VECTOR_ELT(l, INTEGER(cols)[j]-1), char_integer64);
@@ -313,10 +315,10 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
         case REALSXP: {
           double *xd = REAL(v);
           b = i64[j] ? ((int64_t *)xd)[thisi] >= ((int64_t *)xd)[previ] :
-                       dtwiddle(xd, thisi) >= dtwiddle(xd, previ);
+                       dtwiddle(xd[thisi]) >= dtwiddle(xd[previ]);
         } break;
         default:
-          error(_("Type '%s' not supported"), type2char(TYPEOF(v)));  // # nocov
+          error(_("Type '%s' is not supported"), type2char(TYPEOF(v)));  // # nocov
         }
       }
       if (b) break;
@@ -333,14 +335,14 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
     }
     if (nansgrp >= ansgrpsize) {
       ansgrpsize = MIN(nrows, (size_t)(1.1*(double)ansgrpsize*((double)nrows/i)));
-      ansgrp = Realloc(ansgrp, ansgrpsize, int);
+      ansgrp = R_Realloc(ansgrp, ansgrpsize, int);
     }
     for (int j=0; j<grplen; j++) {
       ians[byorder ? INTEGER(order)[igrps[i]-1+j]-1 : igrps[i]-1+j] = tmp+1;
     }
     ansgrp[tmp] = thisi;
   }
-  Free(ansgrp);
+  R_Free(ansgrp);
   UNPROTECT(1);
   return(ans);
 }
@@ -348,7 +350,8 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
 SEXP uniqueNlogical(SEXP x, SEXP narmArg) {
   // single pass; short-circuit and return as soon as all 3 values are found
   if (!isLogical(x)) error(_("x is not a logical vector"));
-  if (!isLogical(narmArg) || length(narmArg)!=1 || INTEGER(narmArg)[0]==NA_INTEGER) error(_("na.rm must be TRUE or FALSE"));
+  if (!IS_TRUE_OR_FALSE(narmArg))
+    error(_("%s must be TRUE or FALSE"), "na.rm");
   bool narm = LOGICAL(narmArg)[0]==1;
   const R_xlen_t n = xlength(x);
   if (n==0)
