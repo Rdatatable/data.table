@@ -19042,3 +19042,14 @@ test(2278.3, set(copy(dt), 0L,          "b", NA),         copy(dt)[0L, b := NA])
 test(2278.4, set(copy(dt), NA_integer_, "b", logical(0)), copy(dt)[NA_integer_, b := logical(0)])
 test(2278.5, set(copy(dt), integer(0),  "b", numeric(0)), copy(dt)[integer(0),  b := numeric(0)])
 test(2278.6, { set(dt, 0L, "b", logical(0)); set(dt, 1L, "a", 2L); dt }, data.table(a=2L, b=NA))
+
+# ensure proper PROTECT() within fcase, #6448
+x <- 1:3
+test(2279,
+     fcase(
+       x<2, structure(list(1), class = "foo"),
+       x<3, structure(list(2), class = "foo"),
+       # Force gc() and some allocations which have a good chance at landing in the region that was earlier left unprotected
+       { gc(full = TRUE); replicate(10, FALSE); x<4 },
+       `attr<-`(list(3), "class", "foo")),
+     structure(list(1, 2, 3), class = "foo"))
