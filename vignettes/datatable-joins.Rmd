@@ -320,14 +320,14 @@ Products[!ProductReceived,
          on = c("id" = "product_id")]
 ```
 
-As you ca see the result only results banana, as it was the only product that is not present in the `ProductReceived` table.
+As you can see, the result only has 'banana', as it was the only product that is not present in the `ProductReceived` table.
 
 ```{r}
 ProductReceived[!Products,
                 on = c("product_id" = "id")]
 ```
 
-In this case, the operation returns the row with `product_id = 6` as it is not present on the `Products` table.
+In this case, the operation returns the row with `product_id = 6,` as it is not present on the `Products` table.
 
 ### 3.4. Semi join
 
@@ -342,7 +342,7 @@ It's very similar to subset as join, but as in this time we are passing a comple
 
 To make this, you can apply the following steps:
 
-1. Perform a **inner join** with `which = TRUE` to save the row number related to each matching row of the `x` table.
+1. Perform a **inner join** with `which = TRUE` to save the row numbers related to each matching row of the `x` table.
 
 ```{r}
 SubSetRows = Products[
@@ -375,7 +375,7 @@ Products[SubSetRowsSorted]
 
 Use this method if you need to combine columns from 2 tables based on one or more references but ***keeping all rows present in the table located on the left***.
 
-To perform this operation we just need to **exchange the order between both tables** and the columns names in the `on` argument.
+To perform this operation, we just need to **exchange the order between both tables** and the columns names in the `on` argument.
 
 ```{r}
 ProductReceived[Products,
@@ -436,7 +436,7 @@ And 4 rows in our `ProductSales` table.
 ProductSales[product_id == 1L]
 ```
 
-To perform this join we just need to filter `product_id == 1L` in the `i` table to limit the join just to that product and set the argument `allow.cartesian = TRUE` to allow combining every row from one table with every row from another table.
+To perform this join we just need to filter `product_id == 1L` in the `i` table to limit the join just to that product and set the argument `allow.cartesian = TRUE` to allow combining each row from one table with every row from the other table.
 
 ```{r}
 ProductReceived[ProductSales[list(1L),
@@ -454,7 +454,7 @@ ProductReceived[ProductSales,
                 allow.cartesian = TRUE]
 ```
 
-> `allow.cartesian` is defaulted to FALSE as this joins can can lead to a very large number of rows in the result. For example, if Table A has 100 rows and Table B has 50 rows, their Cartesian product would result in 5000 rows (100 * 50). This can quickly become memory-intensive for large datasets.
+> `allow.cartesian` is defaulted to FALSE as this is seldom what the user wants, and such a cross join can lead to a very large number of rows in the result. For example, if Table A has 100 rows and Table B has 50 rows, their Cartesian product would result in 5000 rows (100 * 50). This can quickly become memory-intensive for large datasets.
 
 
 #### 3.6.1. Selecting one match
@@ -508,9 +508,9 @@ AllProductsMix[, !c("type", "i.type")]
 
 Use this method if you need to combine columns from 2 tables based on one or more references ***without removing any row***.
 
-As we saw in the prior section, any of the prior operations can keep the missing `product_id = 6` and the **soda** (`product_id = 4`) as part of the results.
+As we saw in the previous section, any of the prior operations can keep the missing `product_id = 6` and the **soda** (`product_id = 4`) as part of the results.
 
-To solve this problem we can use the `merge` function even thought it is lower than using the native `data.table`'s joining syntax.
+To save this problem, we can use the `merge` function even thought it is lower than using the native `data.table`'s joining syntax.
 
 ```{r}
 merge(x = Products,
@@ -522,7 +522,7 @@ merge(x = Products,
 ```
 
 
-## 4. Non-equi joins
+## 4. Non-equi join
 
 A non-equi join is a type of join where the condition for matching rows is not based on equality, but on other comparison operators like <, >, <=, or >=. This allows for **more flexible joining criteria**. In `data.table`, non-equi joins are particularly useful for operations like:
 
@@ -581,7 +581,7 @@ For example, in financial data, you might use a rolling join to assign the most 
 
 In our supermarket example, we can use a rolling join to match sales with the most recent product information.
 
-Let's assume that the price for Bananas and Carrots changes the first date of each month.
+Let's assume that the price for Bananas and Carrots changes at the first date of each month.
 
 ```{r}
 ProductPriceHistory = data.table(
@@ -594,7 +594,7 @@ ProductPriceHistory = data.table(
 ProductPriceHistory
 ```
 
-Now, we can perform a right join giving a different price for each product based on the sale date.
+Now, we can perform a right join giving a different prices for each product based on the sale date.
 
 ```{r}
 ProductPriceHistory[ProductSales, 
@@ -621,7 +621,7 @@ As we just saw in the prior section the `x` table gets filtered by the values av
 
 To filter the `x` table at speed we don't to pass a complete `data.table`, we can pass a `list()` of vectors with the values that we want to keep or omit from the original table.
 
-For example, to filter dates where the market received 100 units of bananas (`product_id = 1`) or popcorn (`product_id = 3`) we can apply the next code.
+For example, to filter dates where the market received 100 units of bananas (`product_id = 1`) or popcorn (`product_id = 3`) we can use the following:
 
 ```{r}
 ProductReceived[list(c(1L, 3L), 100L),
@@ -637,7 +637,7 @@ ProductReceived[list(c(1L, 3L), 100L),
 ```
 
 
-We can also use this technique to filter out any combination of values by placing an exclamation mark (`!`) to negate the expression in the `i` argument and keeping the `nomatch` with its default value. For example, we can filter out the 2 rows we filtered before.
+We can also use this technique to filter out any combination of values by prefixing them with `!` to negate the expression in the `i` argument and keeping the `nomatch` with its default value. For example, we can filter out the 2 rows we filtered before.
 
 ```{r}
 ProductReceived[!list(c(1L, 3L), 100L),
