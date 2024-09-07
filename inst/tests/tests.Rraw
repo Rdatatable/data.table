@@ -19155,3 +19155,13 @@ for (opt in c(0, 1, 2)) {
        names(M[, c(mpg[1], list(mpg, b=hp), c(lapply(.SD, mean))), by="cyl", .SDcols=c("vs", "am")]),
        c("cyl", "V1", "V2", "b", "vs", "am"))
 }
+
+# Confusing behavior with DT[, min(var):max(var)] #2069
+DT = data.table(t = c(2L, 1L, 3L))
+test(2284.1, DT[, min(t):max(t)], with(DT, min(t):max(t)))
+test(2284.2, DT[, 1:max(t)], with(DT, 1:max(t)))
+test(2284.3, DT[, max(t):1], with(DT, max(t):1))
+test(2284.4, DT[, 1:t[1L]], with(DT, 1:t[1L]))
+test(2284.5, DT[, t[2L]:1], with(DT, t[2L]:1))
+test(2284.6, DT[1L, t:max(t)], with(DT[1L], t:max(t)))
+test(2284.7, DT[1L, min(t):t], with(DT[1L], min(t):t))
