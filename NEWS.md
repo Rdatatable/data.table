@@ -55,6 +55,8 @@ rowwiseDT(
 
 5. Queries like `DT[, min(x):max(x)]` now work as expected, i.e. the same as `DT[, seq(min(x), max(x))]` or `with(DT, min(x):max(x))`, [#2069](https://github.com/Rdatatable/data.table/issues/2069). Shorthand like `DT[, a:b]` meaning "select from columns `a` through `b`" still works. Thanks to @franknarf1 for reporting and @jangorecki for the fix.
 
+6. Fixed a segfault in `fcase()`, [#6448](https://github.com/Rdatatable/data.table/issues/6448). Thanks @ethanbsmith for reporting with reprex, @aitap for finding the root cause, and @MichaelChirico for the PR.
+
 ## NOTES
 
 1. Tests run again when some Suggests packages are missing, [#6411](https://github.com/Rdatatable/data.table/issues/6411). Thanks @aadler for the note and @MichaelChirico for the fix.
