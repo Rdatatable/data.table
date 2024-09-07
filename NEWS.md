@@ -53,6 +53,8 @@ rowwiseDT(
     # [1] "V1" "b" "c"
     ```
 
+5. When using `:` operator on a _call_ object(s) inside `j` argument, it could have been improperly recognised as an attempt to select columns (`with=FALSE`) rather than evaluate expression within a data.table, [#2069](https://github.com/Rdatatable/data.table/issues/2069). Thanks to @franknarf1 for reporting.
+
 ## NOTES
 
 1. Tests run again when some Suggests packages are missing, [#6411](https://github.com/Rdatatable/data.table/issues/6411). Thanks @aadler for the note and @MichaelChirico for the fix.
