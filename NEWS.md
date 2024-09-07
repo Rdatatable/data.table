@@ -25,6 +25,8 @@ rowwiseDT(
 #> 3:     5     6      c ~a + b
 ```
 
+2. `lagby()`, a convenience function to carry last observations from a group to the next group. Closes [#4284](https://github.com/Rdatatable/data.table/issues/4284). Check `?lagby` examples section for usage scenarios.
+
 ## BUG FIXES
 
 1. Using `print.data.table()` with character truncation using `datatable.prettyprint.char` no longer errors with `NA` entries, [#6441](https://github.com/Rdatatable/data.table/issues/6441). Thanks to @r2evans for the bug report, and @joshhwuu for the fix.
