@@ -69,6 +69,8 @@ rowwiseDT(
 
 5. Some grouping operations run much faster under `verbose=TRUE`, [#6286](https://github.com/Rdatatable/data.table/issues/6286). Thanks @joshhwuu for the report and fix. This overhead was not present on Windows. As a rule, users should expect `verbose=TRUE` operations to run more slowly, as extra statistics might be calculated as part of the report; here was a case where the overhead was particularly high and the fix was particularly easy.
 
+6. `set()` and `:=` now provide an improved error message when attempting to directly assign `NULL` to a list column item. The new message guides users to use `list(list(NULL))` instead, enhancing clarity and preventing common mistakes. Previously, this operation would throw a generic error, but now the message is more informative and helpful. Thanks to @Nj221102 for the implementation and @MichaelChirico for the suggestion.
+
 # data.table [v1.16.0](https://github.com/Rdatatable/data.table/milestone/30)  (25 August 2024)
 
 ## BREAKING CHANGES
@@ -271,8 +273,6 @@ rowwiseDT(
 18. `?melt` has long documented that the returned `variable` column should contain integer column indices when `measure.vars` is a list, but when the list length is 1, `variable` is actually a character column name, which is inconsistent with the documentation, [#5209](https://github.com/Rdatatable/data.table/issues/5209). To increase consistency in the next release, we plan to change `variable` to integer, so users who were relying on this behavior should change `measure.vars=list("col_name")` (`variable` currently is a column name but will be a column index/integer after this planned change) to `measure.vars="col_name"` (`variable` is column name before and after the planned change). For now, relying on this undocumented behavior throws a new warning.
 
 19. `?dcast` has always required `fun.aggregate` to return a single value, and when `fill=NULL`, `dcast` would indeed error if a vector with `length!=1` was returned, but an undefined result was silently returned for non-`NULL` fill. Now `dcast()` will additionally warn that this is undefined behavior when fill is not `NULL`, [#6032](https://github.com/Rdatatable/data.table/issues/6032). In particular, this will warn for `fun.aggregate=identity`, which was observed in several revdeps. We may change this to an error in a future release, so revdeps should fix their code as soon as possible. Thanks to @tdhock for the PR, and @MichaelChirico for analysis of GitHub revdeps.
-
-25. `set()` and `:=` now provide an improved error message when attempting to directly assign `NULL` to a list column item. The new message guides users to use `list(list(NULL))` instead, enhancing clarity and preventing common mistakes. Previously, this operation would throw a generic error, but now the message is more informative and helpful. Thanks to @Nj221102 for the implementation and @MichaelChirico for the suggestion.
 
 ## TRANSLATIONS
 
