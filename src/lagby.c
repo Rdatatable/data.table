@@ -49,7 +49,7 @@ SEXP lagby(SEXP obj, SEXP g, SEXP objfill) {
 
 			case REALSXP :
 				thisfill = PROTECT(coerceVector(f, REALSXP)); protecti++;
-				if (Rinherits(el, char_integer64)) {
+				if (Rf_inherits(el, char_integer64)) {
 					int64_t *vd = (int64_t *)REAL(thisfill);
 					if (INTEGER(f)[0] == NA_INTEGER)
 						vd[0] = NA_INTEGER64;
