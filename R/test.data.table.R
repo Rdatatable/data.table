@@ -325,11 +325,12 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     # NB: Sys.setenv() (no arguments) errors
     if (!all(to_unset)) do.call(Sys.setenv, as.list(env[!to_unset]))
     Sys.unsetenv(names(env)[to_unset])
-    on.exit(add=TRUE, {
+    # TODO(R>=4.0.2): Use add=TRUE up-front in on.exit() once non-positional arguments are supported.
+    on.exit({
       is_preset = !is.na(old)
       if (any(is_preset)) do.call(Sys.setenv, as.list(old[is_preset]))
       Sys.unsetenv(names(old)[!is_preset])
-    })
+    }, add=TRUE)
   }
   if (!is.null(options)) {
     old_options <- do.call(base::options, as.list(options)) # as.list(): allow passing named character vector for convenience
@@ -365,7 +366,8 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     foreign = get("foreign", parent.frame())
     showProgress = get("showProgress", parent.frame())
     time = nTest = RSS = NULL  # to avoid 'no visible binding' note
-    if (num>0) on.exit( add=TRUE, {
+    # TODO(R>=4.0.2): Use add=TRUE up-front in on.exit() once non-positional arguments are supported.
+    if (num>0) on.exit({
        took = proc.time()[3L]-lasttime  # so that prep time between tests is attributed to the following test
        timings[as.integer(num), `:=`(time=time+took, nTest=nTest+1L), verbose=FALSE]
        if (memtest) {
@@ -376,7 +378,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
          if (memtest==2L) gc()
        }
        assign("lasttime", proc.time()[3L], parent.frame(), inherits=TRUE)  # after gc() to exclude gc() time from next test when memtest
-    } )
+    }, add=TRUE )
     if (showProgress)
       # \r can't be in gettextf msg
       cat("\rRunning test id", numStr, "         ")   # nocov.

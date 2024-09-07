@@ -203,14 +203,17 @@ test-lin-dev-clang-cran:
     - >-
         Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); notes<-"Status: 3 NOTEs"; if (!identical(l, notes)) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote(notes), " (size of tarball, installed package size, non-API calls) but ", shQuote(l)) else q("no")'
 
-## R 3.1.0
 # stated dependency on R
-test-lin-310-cran:
-  image: registry.gitlab.com/jangorecki/dockerfiles/r-3.1.0
+test-lin-ancient-cran:
   <<: *test-lin
+  image: registry.gitlab.com/jangorecki/dockerfiles/r-3.3.0
+  variables:
+    _R_CHECK_FORCE_SUGGESTS_: "FALSE" # can be removed if all dependencies are available (knitr, xts, etc.)
   script:
     - *install-deps
-    - R CMD check --no-manual $(ls -1t data.table_*.tar.gz | head -n 1)
+    # knitr requires evaluate, which requires R 3.6.0.
+    # Restore checking vignettes if upgrading our R dependency means knitr can be installed.
+    - R CMD check --no-manual --no-build-vignettes --ignore-vignettes $(ls -1t data.table_*.tar.gz | head -n 1)
 
 .test-win-template: &test-win
   <<: *test
@@ -269,6 +272,7 @@ test-win-old:
   tags:
     - saas-macos-medium-m1
   before_script:
+    - if ! command -v R &> /dev/null || ! command -v Rscript &> /dev/null; then brew install r; fi
     - *install-deps
     - cp $(ls -1t bus/build/data.table_*.tar.gz | head -n 1) .
   after_script:
@@ -280,13 +284,12 @@ test-win-old:
     - echo $CI_JOB_IMAGE > bus/$CI_JOB_NAME/image
 
 ## R-release on MacOS
-# no macosx runner set yet
-.test-mac-rel:
+test-mac-rel:
   <<: *test-mac
   variables:
     R_VERSION: "$R_REL_VERSION"
   script:
-    - R CMD check $(ls -1t data.table_*.tar.gz | head -n 1)
+    - R CMD check --no-manual $(ls -1t data.table_*.tar.gz | head -n 1)
     - R CMD INSTALL --build $(ls -1t data.table_*.tar.gz | head -n 1)
 
 ## integrate artifacts
@@ -301,7 +304,7 @@ integration:
     - saas-linux-medium-amd64
   only:
     - master
-  needs: ["mirror-packages","build","test-lin-rel","test-lin-rel-cran","test-lin-dev-gcc-strict-cran","test-lin-dev-clang-cran","test-lin-rel-vanilla","test-lin-310-cran","test-win-rel","test-win-dev" ,"test-win-old"]
+  needs: ["mirror-packages","build","test-lin-rel","test-lin-rel-cran","test-lin-dev-gcc-strict-cran","test-lin-dev-clang-cran","test-lin-rel-vanilla","test-lin-ancient-cran","test-win-rel","test-win-dev" ,"test-win-old"]
   script:
     - R --version
     - *install-deps ## markdown pkg not present in r-pkgdown image

@@ -127,10 +127,10 @@ SEXP setDTthreads(SEXP threads, SEXP restore_after_fork, SEXP percent, SEXP thro
     }
     int num_procs = imax(omp_get_num_procs(), 1); // max just in case omp_get_num_procs() returns <= 0 (perhaps error, or unsupported)
     if (!isLogical(percent) || length(percent)!=1 || LOGICAL(percent)[0]==NA_LOGICAL) {
-      error(_("Internal error: percent= must be TRUE or FALSE at C level"));  // # nocov
+      internal_error(__func__, "percent= must be TRUE or FALSE at C level");  // # nocov
     }
     if (LOGICAL(percent)[0]) {
-      if (n<2 || n>100) error(_("Internal error: threads==%d should be between 2 and 100 (percent=TRUE at C level)."), n);  // # nocov
+      if (n<2 || n>100) internal_error(__func__, "threads==%d should be between 2 and 100 (percent=TRUE at C level)", n);  // # nocov
       n = num_procs*n/100;  // if 0 it will be reset to 1 in the imax() below
     } else {
       if (n==0 || n>num_procs) n = num_procs; // setDTthreads(0) == setDTthread(percent=100); i.e. use all logical CPUs (the default in 1.12.0 and before, from 1.12.2 it's 50%)
