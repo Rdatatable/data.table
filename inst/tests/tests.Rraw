@@ -19201,6 +19201,10 @@ test(2286,
 
 # error message improvement, #5296
 DT = data.table(a = 1)
-test(2287.1, DT[, `:=`(a := b)], error="It looks like you re-used `:=`")
+test(2287.1, DT[, `:=`(a := 2)], error="It looks like you re-used `:=`")
 # special case where length(jsub) == 3 that would have failed later
-test(2287.2, DT[, `:=`(a := b, c := d)], error="It looks like you re-used `:=`")
+test(2287.2, DT[, `:=`(a := 2, c := 3)], error="It looks like you re-used `:=` in argument 1")
+# NB: _not_ a = 2, because that means partially-named --> not currently covered
+test(2287.3, DT[, `:=`(a, c := 3)], error="It looks like you re-used `:=` in argument 2")
+# partially-named `:=`(...) --> different branch, same error
+test(2287.4, DT[, `:=`(a = 2, c := 3)], error="It looks like you re-used `:=` in argument 2")
