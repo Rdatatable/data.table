@@ -2,11 +2,11 @@
 title: "Joins in data.table"
 date: "`r Sys.Date()`"
 output:
-  rmarkdown::html_vignette
+  markdown::html_format
 vignette: >
   %\VignetteIndexEntry{Joins in data.table}
+  %\VignetteEngine{knitr::knitr}
   \usepackage[utf8]{inputenc}
-  %\VignetteEngine{knitr::rmarkdown}
 editor_options: 
   chunk_output_type: console
 ---
