@@ -245,9 +245,10 @@ replace_dot_alias = function(e) {
     jsub = replace_dot_alias(jsub)
     root = root_name(jsub)
     av = all.vars(jsub)
-    if ((.is_withFALSE_range(jsub, x, root, av)) ||                        ## x[, V1:V2]; but not x[, (V1):(V2)] #2069
+    all..names = FALSE
+    if ((.is_withFALSE_range(jsub, x, root, av)) ||
         (root %chin% c("-","!") && jsub[[2L]] %iscall% '(' && jsub[[2L]][[2L]] %iscall% ':') || ## x[, !(V8:V10)]
-        ( (!length(av) || all(startsWith(av, ".."))) &&                         ## x[, "V1"]; x[, ..v]
+        ( (!length(av) || (all..names <- all(startsWith(av, "..")))) &&                      ## x[, "V1"]; x[, ..v]
           root %chin% c("","c","paste","paste0","-","!") &&                                     ## x[, c("V1","V2")]; x[, paste("V",1:2,sep="")]; x[, paste0("V",1:2)]
           missingby )) {   # test 763. TODO: likely that !missingby iff with==TRUE (so, with can be removed)
       # When no variable names (i.e. symbols) occur in j, scope doesn't matter because there are no symbols to find.
@@ -262,18 +263,19 @@ replace_dot_alias = function(e) {
       # want decisions like this to depend on the data or vector lengths since that can introduce
       # inconsistency reminiscent of drop=TRUE in [.data.frame that we seek to avoid.
       with=FALSE
-      if (length(av) && all(startsWith(av, ".."))) {
+      if (all..names) {
         for (..name in av) {
           name = substr(..name, 3L, nchar(..name))
           if (!nzchar(name)) stopf("The symbol .. is invalid. The .. prefix must be followed by at least one character.")
+          parent_has_..name = exists(..name, where=parent.frame())
           if (!exists(name, where=parent.frame())) {
-            suggested = if (exists(..name, where=parent.frame()))
+            suggested = if (parent_has_..name)
               gettextf(" Variable '..%s' does exist in calling scope though, so please just removed the .. prefix from that variable name in calling scope.", name)
             # We have recommended 'manual' .. prefix in the past, so try to be helpful
             else
               ""
             stopf("Variable '%s' is not found in calling scope. Looking in calling scope because you used the .. prefix.%s", name, suggested)
-          } else if (exists(..name, where=parent.frame())) {
+          } else if (parent_has_..name) {
             warningf("Both '%1$s' and '..%1$s' exist in calling scope. Please remove the '..%1$s' variable in calling scope for clarity.", name)
           }
         }
@@ -3029,7 +3031,7 @@ rleidv = function(x, cols=seq_along(x), prefix=NULL) {
   if (root != ":") return(FALSE)
   if (!length(vars)) return(TRUE)              # e.g. 1:10
   if (!all(vars %chin% names(x))) return(TRUE) # e.g. 1:ncol(x)
-  is.name(e[[1L]]) && is.name(e[[2L]])         # e.g. V1:V2
+  is.name(e[[1L]]) && is.name(e[[2L]])         # e.g. V1:V2, but not min(V1):max(V2) or 1:max(V2)
 }
 
 # GForce functions
