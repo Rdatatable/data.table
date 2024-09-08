@@ -59,6 +59,8 @@ rowwiseDT(
 
 7. `fread()` performance improves when specifying `Date` among `colClasses`, [#6105](https://github.com/Rdatatable/data.table/issues/6105). One implication of the change is that the column will be an `IDate` (which also inherits from `Date`), which may affect code strongly relying on the column class to be `Date` exactly; computations with `IDate` and `Date` columns should otherwise be the same. If you strongly prefer the `Date` class, run `as.Date()` explicitly following `fread()`. Thanks @scipima for the report and @MichaelChirico for the fix.
 
+8. `dt[, col]` now returns a copy of `col` also when it is a list column, as in any other case, [#4877](https://github.com/Rdatatable/data.table/issues/4877). Thanks to @tlapak for reporting and the PR.
+
 ## NOTES
 
 1. Tests run again when some Suggests packages are missing, [#6411](https://github.com/Rdatatable/data.table/issues/6411). Thanks @aadler for the note and @MichaelChirico for the fix.

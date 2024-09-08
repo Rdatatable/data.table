@@ -19201,3 +19201,10 @@ test(2286,
        { gc(full = TRUE); replicate(10, FALSE); x<4 },
        `attr<-`(list(3), "class", "foo")),
      structure(list(1, 2, 3), class = "foo"))
+
+# Always return a copy of columns, even when returning a single list column, #4788
+dt = data.table(A=list('a', 'b', 'c'))
+test(2287.1, address(dt[, A]) != address(dt[, A]))
+l = dt[, A]
+dt[1L, A := .(list(1L))]
+test(2287.2, !identical(DT$A[[1L]], l[[1L]]))
