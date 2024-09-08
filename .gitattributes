@@ -1,3 +1,9 @@
-* -text
-*.Rraw linguist-language=R
-
+* text eol=lf
+*.ico   -text
+*.mo    -text
+*.png   -text
+*.RData -text
+# Important for test CSV files, where we definitely
+#   want to preserve the line endings robustly
+inst/tests/** -text
+inst/tests/*.Rraw text eol=lf linguist-language=R
