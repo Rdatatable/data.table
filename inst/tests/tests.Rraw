@@ -18273,7 +18273,7 @@ DT = data.table(a=1, b=2, c=3)
 test(2242.1, DT[, .SD, .SDcols=2-1], DT[, .(a)])
 test(2242.2, DT[, .SD, .SDcols=length(DT)-1], DT[, .SD, .SDcols=2])
 
-# turn off GForce where arguments are calls but still allow variables, #5547	
+# turn off GForce where arguments are calls but still allow variables, #5547
 options(datatable.optimize=2L)
 dt = data.table(x=c("a","b","c","d"), y=c(1L,1L,2L,2L))
 i = c(0,1)
