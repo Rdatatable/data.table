@@ -540,7 +540,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
           bool listprotect = (TYPEOF(target)==VECSXP || TYPEOF(target)==EXPRSXP) && TYPEOF(thisCol)!=TYPEOF(target);
           // do an as.list() on the atomic column; #3528
           if (listprotect) {
-            // coerceAs for int64 to copy attributes and coerceVector otherwise
+            // coerceAs for int64 to copy attributes (coerceVector does not copy atts)
             thisCol = PROTECT(INHERITS(thisCol, char_integer64) ? coerceAs(thisCol, target, ScalarLogical(TRUE)) : coerceVector(thisCol, TYPEOF(target)));
             // else coerces if needed within memrecycle; with a no-alloc direct coerce from 1.12.4 (PR #3909)
             const char *ret = memrecycle(target, R_NilValue, ansloc, thisnrow, thisCol, 0, -1, idcol+j+1, foundName);
