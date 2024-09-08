@@ -245,7 +245,7 @@ replace_dot_alias = function(e) {
     jsub = replace_dot_alias(jsub)
     root = root_name(jsub)
     av = all.vars(jsub)
-    if ((.is_withFALSE_range(x, root, av)) ||                        ## x[, V1:V2]; but not x[, (V1):(V2)] #2069
+    if ((.is_withFALSE_range(jsub, x, root, av)) ||                        ## x[, V1:V2]; but not x[, (V1):(V2)] #2069
         (root %chin% c("-","!") && jsub[[2L]] %iscall% '(' && jsub[[2L]][[2L]] %iscall% ':') || ## x[, !(V8:V10)]
         ( (!length(av) || all(startsWith(av, ".."))) &&                         ## x[, "V1"]; x[, ..v]
           root %chin% c("","c","paste","paste0","-","!") &&                                     ## x[, c("V1","V2")]; x[, paste("V",1:2,sep="")]; x[, paste0("V",1:2)]
@@ -3025,10 +3025,11 @@ rleidv = function(x, cols=seq_along(x), prefix=NULL) {
   ids
 }
 
-.is_withFALSE_range = function(x, root, vars) {
+.is_withFALSE_range = function(e, x, root=root_name(e), vars=all.vars(e)) {
   if (root != ":") return(FALSE)
-  if (!length(vars)) return(TRUE) # e.g. 1:10
-  !all(vars %chin% names(x))
+  if (!length(vars)) return(TRUE)              # e.g. 1:10
+  if (!all(vars %chin% names(x))) return(TRUE) # e.g. 1:ncol(x)
+  is.name(e[[1L]]) && is.name(e[[2L]])         # e.g. V1:V2
 }
 
 # GForce functions
