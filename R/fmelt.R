@@ -39,7 +39,7 @@ measure = function(..., sep="_", pattern, cols, multiple.keyword="value.name") {
   formal.names = names(formals())
   formal.i.vec = which(names(L) %in% formal.names)
   fun.list = L[-formal.i.vec]
-  user.named = names(fun.list) != ""
+  user.named = nzchar(names(fun.list))
   is.symb = sapply(fun.list, is.symbol)
   bad.i = which((!user.named) & (!is.symb))
   if (length(bad.i)) {
@@ -73,7 +73,7 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
   if (!missing(sep) && !missing(pattern)) {
     stopf("both sep and pattern arguments used; must use either sep or pattern (not both)")
   }
-  if (!(is.character(multiple.keyword) && length(multiple.keyword)==1 && !is.na(multiple.keyword) && nchar(multiple.keyword)>0)) {
+  if (!(is.character(multiple.keyword) && length(multiple.keyword)==1 && !is.na(multiple.keyword) && nzchar(multiple.keyword))) {
     stopf("multiple.keyword must be a character string with nchar>0")
   }
   if (!is.character(cols)) {
@@ -82,7 +82,7 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
   prob.i <- if (is.null(names(fun.list))) {
     seq_along(fun.list)
   } else {
-    which(names(fun.list) == "")
+    which(!nzchar(names(fun.list)))
   }
   if (length(prob.i)) {
     stopf("in measurev, %s must be named, problems: %s", group.desc, brackify(prob.i))

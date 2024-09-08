@@ -1,5 +1,4 @@
-
-uniqlist = function (l, order = -1L)
+uniqlist = function(l, order = -1L)
 {
   # Assumes input list is ordered by each list item (or by 'order' if supplied), and that all list elements are the same length
   # Finds the non-duplicate rows. Was called duplist but now grows vector - doesn't over-allocate result vector and

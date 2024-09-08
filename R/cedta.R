@@ -31,11 +31,11 @@ cedta.pkgEvalsUserCode = c("gWidgetsWWW","statET","FastRWeb","slidify","rmarkdow
 .any_eval_calls_in_stack <- function() {
   calls = sys.calls()
   # likelier to be close to the end of the call stack, right?
-  for (ii in length(calls):1) { # rev(seq_len(length(calls)))? See https://bugs.r-project.org/show_bug.cgi?id=18406.
+  for (ii in length(calls):1) { # nolint: seq_linter. rev(seq_len(length(calls)))? See https://bugs.r-project.org/show_bug.cgi?id=18406.
     the_call <- calls[[ii]][[1L]]
     if (is.name(the_call) && (the_call %chin% c("eval", "evalq"))) return(TRUE)
   }
-  return(FALSE)
+  FALSE
 }
 # nocov end
 
@@ -65,7 +65,7 @@ cedta = function(n=2L) {
   if (!ans && getOption("datatable.verbose")) {
     # nocov start
     catf("cedta decided '%s' wasn't data.table aware. Here is call stack with [[1L]] applied:\n", nsname)
-    print(sapply(sys.calls(), "[[", 1L))
+    print(sapply(sys.calls(), `[[`, 1L))
     # nocov end
     # so we can trace the namespace name that may need to be added (very unusually)
   }
