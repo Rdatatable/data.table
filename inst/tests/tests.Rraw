@@ -5580,9 +5580,14 @@ test(1352.7, DT[,sum(b),by=.(Grp=a%%2)], DT[,sum(b),by=list(Grp=a%%2)])
 test(1352.8, DT[,sum(b),by=.(a%%2,c)], DT[,sum(b),by=list(a%%2,c)])
 
 # that :=NULL together with i is now an error
-DT = data.table(a=1:3, b=1:6)
+DT = data.table(a=1:3, b=1:6, c=list(7, 8, 9, 8, 7, 6))
 test(1353.1, DT[2, b:=NULL], error="When deleting columns, i should not be provided")
 test(1353.2, DT[2, c("a","b"):=list(42, NULL)], error="When deleting columns, i should not be provided")
+# #5526: friendlier error nudging to the correct way to sub-assign NULL to list columns
+test(1353.3, DT[2, c := NULL], error="Invalid attempt to delete a list column.*did you intend to add NULL")
+test(1353.4, DT[2, c := .(NULL)], error="Invalid attempt to delete a list column.*did you intend to add NULL")
+test(1353.5, DT[2, `:=`(b=2, c=NULL)], error="Invalid attempt to delete a list column.*did you intend to add NULL")
+test(1353.6, DT[2, d := NULL], error="Doubly-invalid attempt to delete a non-existent column while also providing i")
 
 # order optimisation caused trouble due to chaining because of 'substitute(x)' usage in [.data.table.
 set.seed(1L)
@@ -7246,7 +7251,7 @@ if (test_bit64) {
 # fix for #1082
 dt1 = data.table(x=rep(c("a","b","c"),each=3), y=c(1,3,6), v=1:9, key=c("x", "y"))
 dt2 = copy(dt1)
-test(1502.1, dt1["a", z := NULL], error="When deleting columns, i should not be provided")
+test(1502.1, dt1["a", z := NULL], error="Doubly-invalid attempt to delete a non-existent column while also providing i")
 # this shouldn't segfault on 'dt1[...]'
 test(1502.2, dt1["a", z := 42L], dt2["a", z := 42L])
 
