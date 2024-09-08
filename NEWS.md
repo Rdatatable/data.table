@@ -61,6 +61,8 @@ rowwiseDT(
 
 8. `dt[, col]` now returns a copy of `col` also when it is a list column, as in any other case, [#4877](https://github.com/Rdatatable/data.table/issues/4877). Thanks to @tlapak for reporting and the PR.
 
+9. `rbindlist` and `rbind` binding `bit64::integer64` columns with `character`/`complex`/`list` columns now works, [#5504](https://github.com/Rdatatable/data.table/issues/5504). Thanks to @MichaelChirico for the request and @ben-schwen for the PR.
+
 ## NOTES
 
 1. Tests run again when some Suggests packages are missing, [#6411](https://github.com/Rdatatable/data.table/issues/6411). Thanks @aadler for the note and @MichaelChirico for the fix.

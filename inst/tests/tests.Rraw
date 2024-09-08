@@ -18736,7 +18736,7 @@ test(2264.8, print(DT, show.indices=TRUE), output=ans)
 if (test_bit64) local({
   DT = data.table(a = 'abc', b = as.integer64(1))
   suppressPackageStartupMessages(unloadNamespace("bit64"))
-  on.exit(suppressPackageStartupMessages(library(bit64)))
+  on.exit(suppressPackageStartupMessages(library(bit64, pos="package:base")))
   test(2265, DT, output="abc\\s*1$")
 })
 
@@ -19208,3 +19208,17 @@ test(2287.1, address(dt[, A]) != address(dt[, A]))
 l = dt[, A]
 dt[1L, A := .(list(1L))]
 test(2287.2, !identical(DT$A[[1L]], l[[1L]]))
+
+# rbind do not copy class/attributes for integer64 and CPLXSXP/STRSXP/VECSXP #5504
+if (test_bit64) {
+  a = data.table(as.integer64(c(1,2)))
+  b = data.table(c("a","b"))
+  c = data.table(complex(real = 3:4, imaginary = 5:6))
+  d = data.table(list(3.5, 4L))
+  test(2288.1, rbind(a,b), data.table(c("1","2","a","b")))
+  test(2288.2, rbind(b,a), data.table(c("a","b","1","2")))
+  test(2288.3, rbind(a,c), data.table(complex(real = 1:4, imaginary = c(0, 0, 5:6))))
+  test(2288.4, rbind(c,a), data.table(complex(real = c(3:4, 1:2), imaginary = c(5:6, 0, 0))))
+  test(2288.5, rbind(a,d), data.table(list(as.integer64(1), as.integer64(2), 3.5, 4L)))
+  test(2288.6, rbind(d,a), data.table(list(3.5, 4L, as.integer64(1), as.integer64(2))))
+}
