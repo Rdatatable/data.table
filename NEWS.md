@@ -69,7 +69,7 @@ rowwiseDT(
 
 5. Some grouping operations run much faster under `verbose=TRUE`, [#6286](https://github.com/Rdatatable/data.table/issues/6286). Thanks @joshhwuu for the report and fix. This overhead was not present on Windows. As a rule, users should expect `verbose=TRUE` operations to run more slowly, as extra statistics might be calculated as part of the report; here was a case where the overhead was particularly high and the fix was particularly easy.
 
-6. `set()` and `:=` now provide an improved error message when attempting to directly assign `NULL` to a list column item. The new message guides users to use `list(list(NULL))` instead, enhancing clarity and preventing common mistakes. Previously, this operation would throw a generic error, but now the message is more informative and helpful. Thanks to @Nj221102 for the implementation and @MichaelChirico for the suggestion.
+6. `set()` and `:=` now provide some extra guidance for common incorrect approaches to assigning `NULL` to some rows of a list column. The correct way is to put `list(list(NULL))` on the RHS of `:=` (or `.(.(NULL))` for short). Thanks to @MichaelChirico for the suggestion and @Nj221102 for the implementation.
 
 # data.table [v1.16.0](https://github.com/Rdatatable/data.table/milestone/30)  (25 August 2024)
 
