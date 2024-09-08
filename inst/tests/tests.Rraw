@@ -19222,3 +19222,8 @@ if (test_bit64) {
   test(2288.5, rbind(a,d), data.table(list(as.integer64(1), as.integer64(2), 3.5, 4L)))
   test(2288.6, rbind(d,a), data.table(list(3.5, 4L, as.integer64(1), as.integer64(2))))
 }
+
+# support column type 'expression' #5596
+dt = data.table(a=1:2, b=expression(1,2))
+test(2289.1, dt[1,], data.table(a=1L, b=expression(1)))
+test(2289.2, dt[,b,a], dt)
