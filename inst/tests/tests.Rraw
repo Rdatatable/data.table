@@ -12479,7 +12479,7 @@ if (test_R.utils) {
              output = "Copying file in RAM.*file is very unusual.*ends abruptly.*multiple of 4096")
   test(1869.7, fread(testDir("onecol4096.csv.bz2"), verbose=TRUE)[c(1,2,245,246,249,255:.N),],
              data.table(A=c("FooBarBazQux000","FooBarBazQux001","","FooBarBazQux245","","FooBarBazQux254","FooBarBazQux","FooBarBaz12","FooBarBazQux256","","","")),
-             output = "Copying file in RAM.*file is very unusual.*one single column, ends with 2 or more end-of-line.*and is a multiple of 4096")
+             output = "Copying file in RAM.*file is very unusual.*one single column, ends with 2 or more end-of-line.*and the file size is a multiple of 4096")
 }
 
 # better colname detection by comparing potential column names to the whole sample not just the first row of the sample, #2526
