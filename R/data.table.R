@@ -248,7 +248,7 @@ replace_dot_alias = function(e) {
     all..names = FALSE
     if ((.is_withFALSE_range(jsub, x, root, av)) ||
         (root %chin% c("-","!") && jsub[[2L]] %iscall% '(' && jsub[[2L]][[2L]] %iscall% ':') || ## x[, !(V8:V10)]
-        ( (!length(av) || (all..names <- all(startsWith(av, "..")))) &&                      ## x[, "V1"]; x[, ..v]
+        ( (!length(av) || (all..names <- all(startsWith(av, "..")))) &&                         ## x[, "V1"]; x[, ..v]
           root %chin% c("","c","paste","paste0","-","!") &&                                     ## x[, c("V1","V2")]; x[, paste("V",1:2,sep="")]; x[, paste0("V",1:2)]
           missingby )) {   # test 763. TODO: likely that !missingby iff with==TRUE (so, with can be removed)
       # When no variable names (i.e. symbols) occur in j, scope doesn't matter because there are no symbols to find.
