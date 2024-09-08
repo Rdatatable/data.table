@@ -244,9 +244,10 @@ replace_dot_alias = function(e) {
   if (!missing(j)) {
     jsub = replace_dot_alias(jsub)
     root = root_name(jsub)
-    if ((root == ":" && !is.call(jsub[[2L]]) && !is.call(jsub[[3L]])) ||                        ## x[, V1:V2]; but not x[, (V1):(V2)] #2069
+    av = all.vars(jsub)
+    if ((.is_withFALSE_range(x, root, av)) ||                        ## x[, V1:V2]; but not x[, (V1):(V2)] #2069
         (root %chin% c("-","!") && jsub[[2L]] %iscall% '(' && jsub[[2L]][[2L]] %iscall% ':') || ## x[, !(V8:V10)]
-        ( (!length(av<-all.vars(jsub)) || all(startsWith(av, ".."))) &&                         ## x[, "V1"]; x[, ..v]
+        ( (!length(av) || all(startsWith(av, ".."))) &&                         ## x[, "V1"]; x[, ..v]
           root %chin% c("","c","paste","paste0","-","!") &&                                     ## x[, c("V1","V2")]; x[, paste("V",1:2,sep="")]; x[, paste0("V",1:2)]
           missingby )) {   # test 763. TODO: likely that !missingby iff with==TRUE (so, with can be removed)
       # When no variable names (i.e. symbols) occur in j, scope doesn't matter because there are no symbols to find.
@@ -261,7 +262,7 @@ replace_dot_alias = function(e) {
       # want decisions like this to depend on the data or vector lengths since that can introduce
       # inconsistency reminiscent of drop=TRUE in [.data.frame that we seek to avoid.
       with=FALSE
-      if (length(av)) {
+      if (length(av) && all(startsWith(av, ".."))) {
         for (..name in av) {
           name = substr(..name, 3L, nchar(..name))
           if (!nzchar(name)) stopf("The symbol .. is invalid. The .. prefix must be followed by at least one character.")
@@ -3022,6 +3023,12 @@ rleidv = function(x, cols=seq_along(x), prefix=NULL) {
   ids = .Call(Crleid, x, cols)
   if (!is.null(prefix)) ids = paste0(prefix, ids)
   ids
+}
+
+.is_withFALSE_range = function(x, root, vars) {
+  if (root != ":") return(FALSE)
+  if (!length(vars)) return(TRUE) # e.g. 1:10
+  !all(vars %chin% names(x))
 }
 
 # GForce functions
