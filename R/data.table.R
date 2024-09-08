@@ -1384,9 +1384,9 @@ replace_dot_alias = function(e) {
         jval = copy(jval)
       } else {
         sd_addresses = vapply_1c(SDenv, address)
-        jcpy = which(vapply_1c(jval, address) %chin% sd_addresses)
+        jcpy = which(!vapply_1b(jval, is.null) & vapply_1c(jval, address) %chin% sd_addresses)
         if (length(jcpy)) {
-          for (jidx in jcpy) if (!is.null(jval[[jidx]])) jval[[jidx]] = copy(jval[[jidx]])
+          for (jidx in jcpy) jval[[jidx]] = copy(jval[[jidx]])
         } else if (address(jval) %chin% sd_addresses) {
           jval = copy(jval) # fix for #4877, includes fix for #1212
         }
