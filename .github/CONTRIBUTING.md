@@ -1,3 +1,11 @@
+Community and Governance
+------------------------
+
+Welcome, and thanks for your interest in contributing to `data.table`!
+We have always encouraged users to contribute back to the project, and even become project members/committers.
+* [GOVERNANCE.md](https://github.com/Rdatatable/data.table/blob/master/GOVERNANCE.md) defines our community governance model, and how you can obtain special roles/permissions in the project.
+* [The GitHub Teams Page](https://github.com/orgs/Rdatatable/teams/project-members/teams) is a list of special tasks that project members can help with -- if you are interested to help, please create an issue and contact the relevant team by mentioning, for example `@Rdatatable/revdep-managers`
+
 Filing issues
 -------------
 
@@ -9,6 +17,12 @@ Filing issues
 
 Pull Requests (PRs)
 -------------------
+
+Contributors are requested not to use code assistants if they are not able to evaluate license of the code provided by an assistant, and to provide proper citation. Taking GitHub Copilot as an example, as explained in [GitHub Copilot documentation](https://docs.github.com/en/copilot/overview-of-github-copilot/about-github-copilot-individual#using-github-copilot):
+
+> You are respon­si­ble for ensur­ing the secu­rity and qual­ity of your code. We rec­om­mend you take the same pre­cau­tions when using code gen­er­ated by GitHub Copi­lot that you would when using any code you didn’t write your­self. These pre­cau­tions include rig­or­ous test­ing, IP [(= intel­lec­tual prop­erty)] scan­ning, and track­ing for secu­rity vul­ner­a­bil­i­ties.
+
+Security and quality is something that developer and PR reviewers can easily evaluate. Intellectual properly is not. It seems that GitHub/Microsoft does not provide any tools to perform mentioned intellectual property "scanning". Therefore we request contributors to the project not to use these kinds of code assistants. More info on the topic can be found in the [Hacker News](https://news.ycombinator.com/item?id=33240341) thread.
 
 If you are not fixing an open issue and you are confident, you do not need to file a new issue before submitting the PR. It's easier for us to accept and merge a self-contained PR with everything in one place. If discussion is needed, it can be done in the PR. However, **the PR's status must be passing tests before we will start to look at it**. So, before you spend the time getting to that stage, it may save you time to create an issue first and start a discussion to see if your idea would be accepted in principle. If you are going to spend more than a day on the PR, creating an issue first lets other people know you are working on it to save duplicate effort.
 
@@ -108,7 +122,7 @@ and then the `commit` and `push` shown above would push to the branch in the mai
 
 #### Translations
 
-`data.table` offers some translations so that our users can get feedback (errors, warnings, verbose messages) in their native language. Currently we only support Mandarin Chinese.
+`data.table` offers some translations so that our users can get feedback (errors, warnings, verbose messages) in their native language. There is a [translation team](https://github.com/orgs/Rdatatable/teams/translators/teams) for each currently supported translation.
 
 The data for these translations lives in the `po` folder. You do not need to make any changes here for your PR -- translations are updated in a batch before each CRAN release.
 

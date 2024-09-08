@@ -77,7 +77,15 @@ The first way to impact what `.SD` is is to limit the _columns_ contained in `.S
 Pitching[ , .SD, .SDcols = c('W', 'L', 'G')]
 ```
 
-This is just for illustration and was pretty boring. But even this simply usage lends itself to a wide variety of highly beneficial / ubiquitous data manipulation operations:
+This is just for illustration and was pretty boring. In addition to accepting a character vector, `.SDcols` also accepts:
+
+1. any function such as `is.character` to filter _columns_
+2. the function^{*} `patterns()` to filter _column names_ by regular expression
+3. integer and logical vectors
+
+*see `?patterns` for more details
+
+This simple usage lends itself to a wide variety of highly beneficial / ubiquitous data manipulation operations:
 
 ## Column Type Conversion
 
@@ -91,52 +99,40 @@ We notice that the following columns are stored as `character` in the `Teams` da
 # teamIDretro: Team ID used by Retrosheet
 fkt = c('teamIDBR', 'teamIDlahman45', 'teamIDretro')
 # confirm that they're stored as `character`
-Teams[ , sapply(.SD, is.character), .SDcols = fkt]
+str(Teams[ , ..fkt])
 ```
 
-If you're confused by the use of `sapply` here, note that it's quite similar for base R `data.frames`:
-
-```{r identify_factors_as_df}
-setDF(Teams) # convert to data.frame for illustration
-sapply(Teams[ , fkt], is.character)
-setDT(Teams) # convert back to data.table
-```
-
-The key to understanding this syntax is to recall that a `data.table` (as well as a `data.frame`) can be considered as a `list` where each element is a column -- thus, `sapply`/`lapply` applies the `FUN` argument (in this case, `is.character`) to each _column_ and returns the result as `sapply`/`lapply` usually would.
-
-The syntax to now convert these columns to `factor` is very similar -- simply add the `:=` assignment operator:
+The syntax to now convert these columns to `factor` is simple:
 
 ```{r assign_factors}
-Teams[ , (fkt) := lapply(.SD, factor), .SDcols = fkt]
+Teams[ , names(.SD) := lapply(.SD, factor), .SDcols = patterns('teamID')]
 # print out the first column to demonstrate success
 head(unique(Teams[[fkt[1L]]]))
 ```
 
-Note that we must wrap `fkt` in parentheses `()` to force `data.table` to interpret this as column names, instead of trying to assign a column named `'fkt'`.
+Note: 
 
-Actually, the `.SDcols` argument is quite flexible; above, we supplied a `character` vector of column names. In other situations, it is more convenient to supply an `integer` vector of column _positions_ or a `logical` vector dictating include/exclude for each column. `.SDcols` even accepts regular expression-based pattern matching.
+1. The `:=` is an assignment operator to update the `data.table` in place without making a copy. See [reference semantics](https://cran.r-project.org/package=data.table/vignettes/datatable-reference-semantics.html) for more. 
+2. The LHS, `names(.SD)`, indicates which columns we are updating - in this case we update the entire `.SD`.
+3. The RHS, `lapply()`, loops through each column of the `.SD` and converts the column to a factor.
+4. We use the `.SDcols` to only select columns that have pattern of `teamID`.
+
+Again, the `.SDcols` argument is quite flexible; above, we supplied `patterns` but we could have also supplied `fkt` or any `character` vector of column names. In other situations, it is more convenient to supply an `integer` vector of column _positions_ or a `logical` vector dictating include/exclude for each column. Finally, the use of a function to filter columns is very helpful.
 
 For example, we could do the following to convert all `factor` columns to `character`:
 
 ```{r sd_as_logical}
-# while .SDcols accepts a logical vector,
-#   := does not, so we need to convert to column
-#   positions with which()
-fkt_idx = which(sapply(Teams, is.factor))
-Teams[ , (fkt_idx) := lapply(.SD, as.character), .SDcols = fkt_idx]
-head(unique(Teams[[fkt_idx[1L]]]))
+fct_idx = Teams[, which(sapply(.SD, is.factor))] # column numbers to show the class changing
+str(Teams[[fct_idx[1L]]])
+Teams[ , names(.SD) := lapply(.SD, as.character), .SDcols = is.factor]
+str(Teams[[fct_idx[1L]]])
 ```
 
 Lastly, we can do pattern-based matching of columns in `.SDcols` to select all columns which contain `team` back to `factor`:
 
 ```{r sd_patterns}
 Teams[ , .SD, .SDcols = patterns('team')]
-
-# now convert these columns to factor;
-#   value = TRUE in grep() is for the LHS of := to
-#   get column names instead of positions
-team_idx = grep('team', names(Teams), value = TRUE)
-Teams[ , (team_idx) := lapply(.SD, factor), .SDcols = team_idx]
+Teams[ , names(.SD) := lapply(.SD, factor), .SDcols = patterns('team')]
 ```
 
 ** A proviso to the above: _explicitly_ using column numbers (like `DT[ , (1) := rnorm(.N)]`) is bad practice and can lead to silently corrupted code over time if column positions change. Even implicitly using numbers can be dangerous if we don't keep smart/strict control over the ordering of when we create the numbered index and when we use it.
@@ -173,7 +169,7 @@ lm_coef = sapply(models, function(rhs) {
 })
 barplot(lm_coef, names.arg = sapply(models, paste, collapse = '/'),
         main = 'Wins Coefficient\nWith Various Covariates',
-        col = col16, las = 2L, cex.names = .8)
+        col = col16, las = 2L, cex.names = 0.8)
 ```
 
 The coefficient always has the expected sign (better pitchers tend to have more wins and fewer runs allowed), but the magnitude can vary substantially depending on what else we control for.
@@ -197,7 +193,7 @@ Pitching[rank_in_team == 1, team_performance :=
            Teams[.SD, Rank, on = c('teamID', 'yearID')]]
 ```
 
-Note that the `x[y]` syntax returns `nrow(y)` values (i.e., it's a right join), which is why `.SD` is on the right in `Teams[.SD]` (since the RHS of `:=` in this case requires `nrow(Pitching[rank_in_team == 1])` values.
+Note that the `x[y]` syntax returns `nrow(y)` values (i.e., it's a right join), which is why `.SD` is on the right in `Teams[.SD]` (since the RHS of `:=` in this case requires `nrow(Pitching[rank_in_team == 1])` values).
 
 # Grouped `.SD` operations
 

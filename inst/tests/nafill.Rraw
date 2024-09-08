@@ -11,8 +11,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
 }
 
 sugg = c(
-  "bit64",
-  "nanotime"
+  "bit64"
 )
 for (s in sugg) {
   assign(paste0("test_",s), loaded<-suppressWarnings(suppressMessages(
@@ -84,13 +83,7 @@ if (test_bit64) {
   test(1.76, nafill(as.integer64(c(1,2,NA,4)), fill=NA_real_), as.integer64(c(1:2,NA,4L)))
   test(1.77, nafill(as.integer64(c(1,2,NA,4)), fill=NA), as.integer64(c(1:2,NA,4L)))
 }
-if (test_nanotime) {
-  l = list(a=nanotime(c(1:2,NA,4:5)), b=nanotime(c(NA,2L,NA,4L,NA)))
-  test(1.91, lapply(nafill(l, "locf"), as.character), lapply(list(a=nanotime(c(1:2,2L,4:5)), b=nanotime(c(NA,2L,2L,4L,4L))), as.character))
-  test(1.92, lapply(nafill(l, "nocb"), as.character), lapply(list(a=nanotime(c(1:2,4L,4:5)), b=nanotime(c(2L,2L,4L,4L,NA))), as.character))
-  test(1.93, lapply(nafill(l, fill=0), as.character), lapply(list(a=nanotime(c(1:2,0L,4:5)), b=nanotime(c(0L,2L,0L,4L,0L))), as.character))
-  test(1.94, lapply(nafill(l, fill=nanotime(0)), as.character), lapply(list(a=nanotime(c(1:2,0L,4:5)), b=nanotime(c(0L,2L,0L,4L,0L))), as.character))
-}
+# 1.91 tested nanotime moved to other.Rraw 27.11, #6139
 
 # setnafill
 dt = data.table(V1=1:10, V2=10:1, V3=1:10/2)
@@ -149,8 +142,22 @@ test(4.20, colnamesInt(dt, integer()), integer())
 test(4.21, colnamesInt(dt, NULL), seq_along(dt))
 test(4.22, colnamesInt("asd", 1), error="must be data.table compatible")
 test(4.23, colnamesInt(dt, 1, check_dups="a"), error="check_dups")
+test(4.24, colnamesInt(dt, c("a", "e"), skip_absent=TRUE), c(1L,0L))
+test(4.25, colnamesInt(dt, c(1L, 4L), skip_absent=TRUE), c(1L,0L))
+test(4.26, colnamesInt(dt, c(1, 4), skip_absent=TRUE), c(1L,0L))
+test(4.27, colnamesInt(dt, c("a", NA), skip_absent=TRUE), c(1L,0L))
+test(4.28, colnamesInt(dt, c(1L, 0L), skip_absent=TRUE), error="received non-existing column*.*0")
+test(4.29, colnamesInt(dt, c(1, -5), skip_absent=TRUE), error="received non-existing column*.*-5")
+test(4.30, colnamesInt(dt, c(1, 4), skip_absent=NULL), error="skip_absent must be TRUE or FALSE")
+test(4.31, colnamesInt(dt, c(1L, 1000L), skip_absent=TRUE), c(1L,0L))
+cols=c(1L,100L)
+test(4.32, colnamesInt(dt, cols, skip_absent=TRUE), c(1L, 0L))
+test(4.33, cols, c(1L, 100L)) # ensure input was not overwritten with output 0
+cols=c(1,100)
+test(4.34, colnamesInt(dt, cols, skip_absent=TRUE), c(1L, 0L))
+test(4.35, cols, c(1, 100)) # ensure input was not overwritten with output 0
 names(dt) <- NULL
-test(4.24, colnamesInt(dt, "a"), error="has no names")
+test(4.36, colnamesInt(dt, "a"), error="has no names")
 
 # verbose
 dt = data.table(a=c(1L, 2L, NA_integer_), b=c(1, 2, NA_real_))
@@ -245,6 +252,8 @@ if (test_bit64) {
 # coerceAs verbose
 options(datatable.verbose=2L)
 input = 1
+# use levels= explicitly to avoid locale-related sorting of letters
+xy_factor = factor(c("x", "y"), levels=c("x", "y"))
 test(10.01, ans<-coerceAs(input, 1), 1, output="double[numeric] into double[numeric]")
 test(10.02, address(input)!=address(ans))
 test(10.03, ans<-coerceAs(input, 1, copy=FALSE), 1, output="copy=false and input already of expected type and class double[numeric]")
@@ -260,11 +269,11 @@ test(10.12, coerceAs("a", factor()), factor("a"), output="character[character] i
 test(10.13, coerceAs(1, factor("x")), factor("x"), output="double[numeric] into integer[factor]")
 test(10.14, coerceAs(1, factor("x", levels=c("x","y"))), factor("x", levels=c("x","y")), output="double[numeric] into integer[factor]")
 test(10.15, coerceAs(2, factor("x", levels=c("x","y"))), factor("y", levels=c("x","y")), output="double[numeric] into integer[factor]")
-test(10.16, coerceAs(1:2, factor(c("x","y"))), factor(c("x","y")), output="integer[integer] into integer[factor]")
-test(10.17, coerceAs(1:3, factor(c("x","y"))), output="integer[integer] into integer[factor]", error="factor numbers.*3 is outside the level range")
-test(10.18, coerceAs(c(1,2,3), factor(c("x","y"))), output="double[numeric] into integer[factor]", error="factor numbers.*3.000000 is outside the level range")
-test(10.19, coerceAs(factor("x"), factor(c("x","y"))), factor("x", levels=c("x","y")), output="integer[factor] into integer[factor]")
-test(10.20, coerceAs(factor("x"), factor(c("x","y")), copy=FALSE), factor("x", levels=c("x","y")), output="input already of expected type and class") ## copy=F has copyMostAttrib
+test(10.16, coerceAs(1:2, xy_factor), xy_factor, output="integer[integer] into integer[factor]")
+test(10.17, coerceAs(1:3, xy_factor), output="integer[integer] into integer[factor]", error="factor numbers.*3 is outside the level range")
+test(10.18, coerceAs(c(1,2,3), xy_factor), output="double[numeric] into integer[factor]", error="factor numbers.*3.000000 is outside the level range")
+test(10.19, coerceAs(factor("x"), xy_factor), factor("x", levels=c("x","y")), output="integer[factor] into integer[factor]")
+test(10.20, coerceAs(factor("x"), xy_factor, copy=FALSE), factor("x", levels=c("x","y")), output="input already of expected type and class") ## copy=F has copyMostAttrib
 a = structure("a", class="a")
 b = structure("b", class="b")
 test(10.21, coerceAs(a, b), structure("a", class="b"), output="character[a] into character[b]")
@@ -291,16 +300,8 @@ if (test_bit64) {
   options(datatable.verbose=2L)
   test(10.89, coerceAs(-2147483649, x), as.integer64(-2147483649), output="double[numeric] into double[integer64]")
 }
-if (test_nanotime) {
-  x = nanotime(1L)
-  test(10.91, coerceAs(x, 1), 1, output="double[nanotime] into double[numeric]")
-  test(10.92, coerceAs(x, 1L), 1L, output="double[nanotime] into integer[integer]")
-  test(10.93, substring(coerceAs(x, "1"),1,11) %in% c("1","1970-01-01T"), output="double[nanotime] into character[character]")
-                                                     # ^ https://github.com/eddelbuettel/nanotime/issues/92; %in% so as not to break if nanotime adds as.character method
-  test(10.94, coerceAs(1, x), x, output="double[numeric] into double[nanotime]")
-  test(10.95, coerceAs(1L, x), x, output="integer[integer] into double[nanotime]")
-  test(10.96, coerceAs("1", x), x, output="character[character] into double[nanotime]", warning="Coercing.*character")
-}
+# 10.91 tested nanotime moved to other.Rraw 27.21, #6139
+
 options(datatable.verbose=FALSE)
 test(11.01, coerceAs(list(a=1), 1), error="is not atomic")
 test(11.02, coerceAs(1, list(a=1)), list(1))
@@ -322,7 +323,6 @@ test(11.09, coerceAs(1L, a), error="must not be matrix or array")
 ## POSIXct
 ## IDate
 ## ITime
-## nanotime
 
 # related to !is.integer(verbose)
 test(99.1, data.table(a=1,b=2)[1,1, verbose=1], error="verbose must be logical or integer")
@@ -331,4 +331,3 @@ test(99.3, data.table(a=1,b=2)[1,1, verbose=NA], error="verbose must be length 1
 options(datatable.verbose=1)
 test(99.4, coerceAs(1, 2L), error="verbose option must be length 1 non-NA logical or integer")
 options(datatable.verbose=FALSE)
-

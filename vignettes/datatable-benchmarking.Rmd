@@ -33,7 +33,7 @@ sudo lshw -class disk
 sudo hdparm -t /dev/sda
 ```
 
-When comparing `fread` to non-R solutions be aware that R requires values of character columns to be added to _R's global string cache_. This takes time when reading data but later operations benefit since the character strings have already been cached. Consequently as well timing isolated tasks (such as `fread` alone), it's a good idea to benchmark a pipeline of tasks such as reading data, computing operators and producing final output and report the total time of the pipeline.
+When comparing `fread` to non-R solutions be aware that R requires values of character columns to be added to _R's global string cache_. This takes time when reading data but later operations benefit since the character strings have already been cached. Consequently, in addition to timing isolated tasks (such as `fread` alone), it's a good idea to benchmark the total time of an end-to-end pipeline of tasks such as reading data, manipulating it, and producing final output.
 
 # subset: threshold for index optimization on compound queries
 
@@ -68,7 +68,7 @@ options(datatable.auto.index=TRUE)
 options(datatable.use.index=TRUE)
 ```
 
-- `use.index=FALSE` will force query not to use indices even if they exists, but existing keys are still used for optimization.
+- `use.index=FALSE` will force the query not to use indices even if they exist, but existing keys are still used for optimization.
 - `auto.index=FALSE` disables building index automatically when doing subset on non-indexed data, but if indices were created before this option was set, or explicitly by calling `setindex` they still will be used for optimization.
 
 Two other options control optimization globally, including use of indices:
@@ -77,27 +77,27 @@ options(datatable.optimize=2L)
 options(datatable.optimize=3L)
 ```
 `options(datatable.optimize=2L)` will turn off optimization of subsets completely, while `options(datatable.optimize=3L)` will switch it back on.
-Those options affects much more optimizations thus should not be used when only control of index is needed. Read more in `?datatable.optimize`.
+Those options affect many more optimizations and thus should not be used when only control of indices is needed. Read more in `?datatable.optimize`.
 
 # _by reference_ operations
 
-When benchmarking `set*` functions it make sense to measure only first run. Those functions updates data.table by reference thus in subsequent runs they get already processed `data.table` on input.
+When benchmarking `set*` functions it only makes sense to measure the first run. These functions update their input by reference, so subsequent runs will use the already-processed `data.table`, biasing the results. 
 
 Protecting your `data.table` from being updated by reference operations can be achieved using `copy` or `data.table:::shallow` functions. Be aware `copy` might be very expensive as it needs to duplicate whole object. It is unlikely we want to include duplication time in time of the actual task we are benchmarking.
 
 # try to benchmark atomic processes
 
 If your benchmark is meant to be published it will be much more insightful if you will split it to measure time of atomic processes. This way your readers can see how much time was spent on reading data from source, cleaning, actual transformation, exporting results.
-Of course if your benchmark is meant to present _full workflow_ then it perfectly make sense to present total timing, still splitting timings might give good insight into bottlenecks in such workflow.
-There are another cases when it might not be desired, for example when benchmarking _reading csv_, followed by _grouping_. R requires to populate _R's global string cache_ which adds extra overhead when importing character data to R session. On the other hand _global string cache_ might speed up processes like _grouping_. In such cases when comparing R to other languages it might be useful to include total timing.
+Of course if your benchmark is meant to present to present an _end-to-end workflow_, then it makes perfect sense to present the overall timing. Nevertheless, separating out timing of individual steps is useful for understanding which steps are the main bottlenecks of a workflow.
+There are other cases when atomic benchmarking might not be desirable, for example when _reading a csv_, followed by _grouping_. R requires populating _R's global string cache_ which adds extra overhead when importing character data to an R session. On the other hand, the _global string cache_ might speed up processes like _grouping_. In such cases when comparing R to other languages it might be useful to include total timing.
 
 # avoid class coercion
 
-Unless this is what you truly want to measure you should prepare input objects for every tools you are benchmarking in expected class.
+Unless this is what you truly want to measure you should prepare input objects of the expected class for every tool you are benchmarking.
 
 # avoid `microbenchmark(..., times=100)`
 
-Repeating benchmarking many times usually does not fit well for data processing tools. Of course it perfectly make sense for more atomic calculations. It does not well represent use case for common data processing tasks, which rather consists of batches sequentially provided transformations, each run once.
+Repeating a benchmark many times usually does not give the clearest picture for data processing tools. Of course, it makes perfect sense for more atomic calculations, but this is not a good representation of the most common way these tools will actually be used, namely for data processing tasks, which consist of batches of sequentially provided transformations, each run once.
 Matt once said:
 
 > I'm very wary of benchmarks measured in anything under 1 second. Much prefer 10 seconds or more for a single run, achieved by increasing data size. A repetition count of 500 is setting off alarm bells. 3-5 runs should be enough to convince on larger data. Call overhead and time to GC affect inferences at this very small scale.
@@ -106,8 +106,8 @@ This is very valid. The smaller time measurement is the relatively bigger noise 
 
 # multithreaded processing
 
-One of the main factor that is likely to impact timings is number of threads in your machine. In recent versions of `data.table` some of the functions has been parallelized.
-You can control how much threads you want to use with `setDTthreads`.
+One of the main factors that is likely to impact timings is the number of threads available to your R session. In recent versions of `data.table`, some functions are parallelized.
+You can control the number of threads you want to use with `setDTthreads`.
 
 ```r
 setDTthreads(0)    # use all available cores (default)

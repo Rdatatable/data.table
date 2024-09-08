@@ -4,7 +4,6 @@
 <!-- badges: start -->
 [![CRAN status](https://badges.cranchecks.info/flavor/release/data.table.svg)](https://cran.r-project.org/web/checks/check_results_data.table.html)
 [![R-CMD-check](https://github.com/Rdatatable/data.table/workflows/R-CMD-check/badge.svg)](https://github.com/Rdatatable/data.table/actions)
-[![AppVeyor build status](https://ci.appveyor.com/api/projects/status/kayjdh5qtgymhoxr/branch/master?svg=true)](https://ci.appveyor.com/project/Rdatatable/data-table)
 [![Codecov test coverage](https://codecov.io/github/Rdatatable/data.table/coverage.svg?branch=master)](https://app.codecov.io/github/Rdatatable/data.table?branch=master)
 [![GitLab CI build status](https://gitlab.com/Rdatatable/data.table/badges/master/pipeline.svg)](https://gitlab.com/Rdatatable/data.table/-/pipelines)
 [![downloads](https://cranlogs.r-pkg.org/badges/data.table)](https://www.rdocumentation.org/trends)
@@ -86,14 +85,18 @@ DT[Petal.Width > 1.0, mean(Petal.Length), by = Species]
 
 `data.table` is widely used by the R community. It is being directly used by hundreds of CRAN and Bioconductor packages, and indirectly by thousands. It is one of the [top most starred](https://medium.datadriveninvestor.com/most-starred-and-forked-github-repos-for-r-in-data-science-fb87a54d2a6a) R packages on GitHub, and was highly rated by the [Depsy project](http://depsy.org/package/r/data.table). If you need help, the `data.table` community is active on [StackOverflow](https://stackoverflow.com/questions/tagged/data.table).
 
+A list of packages that significantly support, extend, or make use of `data.table` can be found in the [Seal of Approval](Seal_of_Approval.md) document.
+
 ### Stay up-to-date
 
 - click the **Watch** button at the top and right of GitHub project page
 - read [NEWS file](https://github.com/Rdatatable/data.table/blob/master/NEWS.md)
-- follow [#rdatatable](https://twitter.com/hashtag/rdatatable) on twitter
-- follow [#rdatatable](https://fosstodon.org/tags/rdatatable) on fosstodon
+- follow [#rdatatable](https://twitter.com/hashtag/rdatatable) and the [r_data_table](https://x.com/r_data_table) account on X/Twitter
+- follow [#rdatatable](https://fosstodon.org/tags/rdatatable) and the [r_data_table account](https://fosstodon.org/@r_data_table) on fosstodon
+- follow the [data.table community page](https://www.linkedin.com/company/data-table-community) on LinkedIn
 - watch recent [Presentations](https://github.com/Rdatatable/data.table/wiki/Presentations)
 - read recent [Articles](https://github.com/Rdatatable/data.table/wiki/Articles)
+- read posts on [The Raft](https://rdatatable-community.github.io/The-Raft/)
 
 ### Contributing
 

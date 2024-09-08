@@ -20,7 +20,7 @@ knitr::opts_chunk$set(
 .old.th = setDTthreads(1)
 ```
 
-This vignette is aimed at those who are already familiar with *data.table* syntax, its general form, how to subset rows in `i`, select and compute on columns, add/modify/delete columns *by reference* in `j` and  group by using `by`. If you're not familiar with these concepts, please read the *"Introduction to data.table"* and *"Reference semantics"* vignettes first.
+This vignette is aimed at those who are already familiar with *data.table* syntax, its general form, how to subset rows in `i`, select and compute on columns, add/modify/delete columns *by reference* in `j` and group by using `by`. If you're not familiar with these concepts, please read the *"Introduction to data.table"* and *"Reference semantics"* vignettes first.
 
 ***
 
@@ -147,7 +147,7 @@ head(flights)
 
 #### set* and `:=`:
 
-In *data.table*, the `:=` operator and all the `set*` (e.g., `setkey`, `setorder`, `setnames` etc..) functions are the only ones which modify the input object *by reference*.
+In *data.table*, the `:=` operator and all the `set*` (e.g., `setkey`, `setorder`, `setnames` etc.) functions are the only ones which modify the input object *by reference*.
 
 Once you *key* a *data.table* by certain columns, you can subset by querying those key columns using the `.()` notation in `i`. Recall that `.()` is an *alias to* `list()`.
 
@@ -157,7 +157,7 @@ Once you *key* a *data.table* by certain columns, you can subset by querying tho
 flights[.("JFK")]
 
 ## alternatively
-# flights[J("JFK")] (or) 
+# flights[J("JFK")] (or)
 # flights[list("JFK")]
 ```
 
@@ -239,7 +239,7 @@ flights[.(unique(origin), "MIA")]
 
 #### What's happening here?
 
-* Read [this](#multiple-key-point) again. The value provided for the second key column *"MIA"* has to find the matching values in `dest` key column *on the matching rows provided by the first key column `origin`*. We can not skip the values of key columns *before*. Therefore we provide *all* unique values from key column `origin`.
+* Read [this](#multiple-key-point) again. The value provided for the second key column *"MIA"* has to find the matching values in `dest` key column *on the matching rows provided by the first key column `origin`*. We can not skip the values of key columns *before*. Therefore, we provide *all* unique values from key column `origin`.
 
 * *"MIA"* is automatically recycled to fit the length of `unique(origin)` which is *3*.
 
@@ -308,7 +308,7 @@ key(flights)
 
 * And on those row indices, we replace the `key` column with the value `0`.
 
-* Since we have replaced values on the *key* column, the *data.table* `flights` isn't sorted by `hour` any more. Therefore, the key has been automatically removed by setting to NULL.
+* Since we have replaced values on the *key* column, the *data.table* `flights` isn't sorted by `hour` anymore. Therefore, the key has been automatically removed by setting to NULL.
 
 Now, there shouldn't be any *24* in the `hour` column.
 
@@ -464,7 +464,7 @@ Now let us look at binary search approach (method 2). Recall from [Properties of
 
 Here's a very simple illustration. Let's consider the (sorted) numbers shown below:
 
-```{r eval = FALSE}
+```
 1, 5, 10, 19, 22, 23, 30
 ```
 

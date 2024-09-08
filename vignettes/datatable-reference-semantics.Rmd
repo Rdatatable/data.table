@@ -78,6 +78,8 @@ A *shallow* copy is just a copy of the vector of column pointers (corresponding 
 
 A *deep* copy on the other hand copies the entire data to another location in memory.
 
+When subsetting a *data.table* using `i` (e.g., `DT[1:10]`), a *deep* copy is made. However, when `i` is not provided or equals `TRUE`, a *shallow* copy is made.
+
 #
 With *data.table's* `:=` operator, absolutely no copies are made in *both* (1) and (2), irrespective of R version you are using. This is because `:=` operator updates *data.table* columns *in-place* (by reference).
 
@@ -257,6 +259,24 @@ Before moving on to the next section, let's clean up the newly created columns `
 flights[, c("speed", "max_speed", "max_dep_delay", "max_arr_delay") := NULL]
 head(flights)
 ```
+
+#### -- How can we update multiple existing columns in place using `.SD`?
+
+```{r}
+flights[, names(.SD) := lapply(.SD, as.factor), .SDcols = is.character]
+```
+Let's clean up again and convert our newly-made factor columns back into character columns. This time we will make use of `.SDcols` accepting a function to decide which columns to include. In this case, `is.factor()` will return the columns which are factors. For more on the **S**ubset of the **D**ata, there is also an [SD Usage vignette](https://cran.r-project.org/package=data.table/vignettes/datatable-sd-usage.html).
+
+Sometimes, it is also nice to keep track of columns that we transform. That way, even after we convert our columns we would be able to call the specific columns we were updating.
+```{r}
+factor_cols <- sapply(flights, is.factor)
+flights[, names(.SD) := lapply(.SD, as.character), .SDcols = factor_cols]
+str(flights[, ..factor_cols])
+```
+
+#### {.bs-callout .bs-callout-info}
+
+* We also could have used `(factor_cols)` on the `LHS` instead of `names(.SD)`.
 
 ## 3. `:=` and `copy()`
 

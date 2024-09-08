@@ -1,4 +1,4 @@
-test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=FALSE, showProgress=interactive()&&!silent,
+test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=FALSE, showProgress=interactive()&&!silent, testPattern=NULL,
                            memtest=Sys.getenv("TEST_DATA_TABLE_MEMTEST", 0), memtest.id=NULL) {
   stopifnot(isTRUEorFALSE(verbose), isTRUEorFALSE(silent), isTRUEorFALSE(showProgress))
   memtest = as.integer(memtest)
@@ -7,7 +7,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   if (length(memtest.id)) {
     if (length(memtest.id)==1L) memtest.id = rep(memtest.id, 2L)  # for convenience of supplying one id rather than always a range
     stopifnot(length(memtest.id)<=2L,  # conditions quoted to user when false so "<=2L" even though following conditions rely on ==2L
-                     !anyNA(memtest.id), memtest.id[1L]<=memtest.id[2L]) 
+                     !anyNA(memtest.id), memtest.id[1L]<=memtest.id[2L])
     if (memtest==0L) memtest=1L  # using memtest.id implies memtest
   }
   if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
@@ -15,7 +15,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     # nocov start
     dev = TRUE
     if ("package:data.table" %chin% search()) stopf("data.table package is loaded. Unload or start a fresh R session.")
-    rootdir = if (pkg!="." && pkg %chin% dir()) file.path(getwd(), pkg) else Sys.getenv("PROJ_PATH")
+    rootdir = if (pkg!="." && pkg %chin% dir()) file.path(getwd(), pkg) else Sys.getenv("PROJ_PATH", normalizePath("."))
     subdir = file.path("inst","tests")
     env = new.env(parent=.GlobalEnv)  # in dev cc() sources all functions in .GlobalEnv
     # nocov end
@@ -38,7 +38,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     scripts = scripts[!grepl("bench|other", scripts)]
     scripts = gsub("[.]bz2$","",scripts)
     return(sapply(scripts, function(fn) {
-      err = try(test.data.table(script=fn, verbose=verbose, pkg=pkg, silent=silent, showProgress=showProgress))
+      err = try(test.data.table(script=fn, verbose=verbose, pkg=pkg, silent=silent, showProgress=showProgress, testPattern=testPattern))
       cat("\n");
       isTRUE(err)
     }))
@@ -79,6 +79,8 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   # sample method changed in R 3.6 to remove bias; see #3431 for links and notes
   # This can be removed (and over 120 tests updated) if and when the oldest R version we test and support is moved to R 3.6
 
+  userNumericRounding = setNumericRounding(0) # Initialise to 0 in case the user has set it to a different value. Restore to user's value when finished.
+
   # TO DO: reinstate solution for C locale of CRAN's Mac (R-Forge's Mac is ok)
   # oldlocale = Sys.getlocale("LC_CTYPE")
   # Sys.setlocale("LC_CTYPE", "")   # just for CRAN's Mac to get it off C locale (post to r-devel on 16 Jul 2012)
@@ -98,6 +100,8 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     datatable.print.trunc.cols = FALSE, #4552
     datatable.rbindlist.check = NULL,
     datatable.integer64 = "integer64",
+    digits = 7L, # ensure printing rounds to the expected number of digits in all sessions, #5285
+    warn = 0L,   # ensure signals are emitted as they are in the code, #5285
     warnPartialMatchArgs = base::getRversion()>="3.6.0", # ensure we don't rely on partial argument matching in internal code, #3664; >=3.6.0 for #3865
     warnPartialMatchAttr = TRUE,
     warnPartialMatchDollar = TRUE,
@@ -123,7 +127,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   assign("prevtest", -1L, envir=env)
   assign("whichfail", NULL, envir=env)
   assign("started.at", proc.time(), envir=env)
-  assign("lasttime", proc.time()[3L], envir=env)  # used by test() to attribute time inbetween tests to the next test
+  assign("lasttime", proc.time()[3L], envir=env)  # used by test() to attribute time in between tests to the next test
   assign("timings", data.table( ID = seq_len(9999L), time=0.0, nTest=0L, RSS=0.0 ), envir=env)   # test timings aggregated to integer id
   assign("memtest", memtest, envir=env)
   assign("memtest.id", memtest.id, envir=env)
@@ -132,11 +136,73 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
 
   owd = setwd(tempdir()) # ensure writeable directory; e.g. tests that plot may write .pdf here depending on device option and/or batch mode; #5190
   on.exit(setwd(owd))
-  
+
   if (memtest) {
     catf("\n***\n*** memtest=%d. This should be the first call in a fresh R_GC_MEM_GROW=0 R session for best results. Ctrl-C now if not.\n***\n\n", memtest)
     if (is.na(rss())) stopf("memtest intended for Linux. Step through data.table:::rss() to see what went wrong.")
   }
+
+  # nocov start: only used interactively -- "production" suites should always run in full
+  if (!is.null(testPattern)) {
+    # due to how non-hermetic our tests are, the simple approach (pass this to test(), return early if 'numStr' matches testPattern)
+    #   does not work, or at least getting it to work is not much more efficient (see initial commit of #6040). so instead,
+    #   here we parse the file, extract the tests that match the pattern to a new file, and include other setup lines likely required
+    #   to run the tests successfully. two major drawbacks (1) we can only take a guess which lines are required, so this approach
+    #   can't work (or at least, may need a lot of adjustment) for _every_ test, though not working is also a good sign that test
+    #   should be refactored to be more hermetic (2) not all tests have literal test numbers, meaning we can't always match the
+    #   runtime test number (i.e. 'numStr') since we're just doing a static check here, though we _are_ careful to match the
+    #   full test expression string, i.e., not just limited to numeric literal test numbers.
+    arg_line = call_id = col1 = col2 = i.line1 = id = line1 = parent = preceding_line = test_start_line = text = token = x.line1 = x.parent = NULL # R CMD check
+    pd = setDT(utils::getParseData(parse(fn, keep.source=TRUE)))
+    file_lines = readLines(fn)
+    # NB: a call looks like (with id/parent tracking)
+    # <expr>
+    #   <expr "lhs"><SYMBOL_FUNCTION_CALL>name</SYMBOL_FUNCTION_CALL></expr>
+    #   <LEFT_PAREN>(</LEFT_PAREN>
+    #   <expr "arg1"> ... </expr>
+    #   ...
+    #   <RIGHT_PAREN>)</RIGHT_PAREN>
+    # </expr>
+    ## navigate up two steps from 'test' SYMBOL_FUNCTION_CALL to the overall 'expr' for the call
+    test_calls = pd[
+      pd[
+        pd[token == 'SYMBOL_FUNCTION_CALL' & text == 'test'],
+        list(call_lhs_id=id, call_id=x.parent),
+        on=c(id='parent')],
+      list(line1, id),
+      on=c(id='call_id')]
+    ## all the arguments for each call to test()
+    test_call_args = test_calls[pd[token == 'expr'], list(call_id=parent, arg_line=i.line1, col1, col2), on=c(id='parent'), nomatch=NULL]
+    ## 2nd argument is the num= argument
+    test_num_expr = test_call_args[ , .SD[2L], by="call_id"]
+    # NB: subtle assumption that 2nd arg to test() is all on one line, true as of 2024-Apr and likely to remain so
+    keep_test_ids = test_num_expr[grepl(testPattern, substring(file_lines[arg_line], col1, col2)), call_id]
+    # Now find all tests just previous to the keep tests; we want to keep non-test setup lines between them, e.g.
+    # test(drop, ...)
+    # setup_line1     # retain
+    # setup_line2     # retain
+    # test(keep, ...) # retain
+    intertest_ranges = test_calls[!id %in% keep_test_ids][
+      test_calls[id %in% keep_test_ids],
+      list(preceding_line=x.line1, test_start_line=i.line1),
+      on='line1',
+      roll=TRUE]
+    # TODO(michaelchirico): this doesn't do well with tests inside control statements.
+    #   those could be included by looking for tests with parent!=0, i.e., not-top-level tests,
+    #   and including the full parent for such tests. omitting for now until needed.
+    keep_lines = intertest_ranges[, sort(unique(unlist(Map(function(l, u) l:u, preceding_line+1L, test_start_line))))]
+    header_lines = seq_len(test_calls$line1[1L]-1L)
+
+    tryCatch(error = function(c) warningf("Attempt to subset to %d tests matching '%s' failed, running full suite.", length(keep_test_ids), testPattern), {
+      new_script = file_lines[c(header_lines, keep_lines)]
+      parse(text = new_script) # as noted above the static approach is not fool-proof (yet?), so force the script to at least parse before continuing.
+      fn = tempfile()
+      on.exit(unlink(fn), add=TRUE)
+      catf("Running %d of %d tests matching '%s'\n", length(keep_test_ids), nrow(test_calls), testPattern)
+      writeLines(new_script, fn)
+    })
+  }
+  # nocov end
 
   err = try(sys.source(fn, envir=env), silent=silent)
 
@@ -145,11 +211,13 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     if (is.na(oldEnv[i]))
       Sys.unsetenv(names(oldEnv)[i])
     else
-      do.call("Sys.setenv", as.list(oldEnv[i])) # nocov
+      do.call(Sys.setenv, as.list(oldEnv[i])) # nocov
   }
   # Sys.setlocale("LC_CTYPE", oldlocale)
-  suppressWarnings(do.call("RNGkind",as.list(oldRNG)))
+  suppressWarnings(do.call(RNGkind,as.list(oldRNG)))
   # suppressWarnings for the unlikely event that user selected sample='Rounding' themselves before calling test.data.table()
+
+  setNumericRounding(userNumericRounding)  # Restore the user's numeric rounding value
 
   # Now output platform trace before error (if any) to be sure to always show it; e.g. to confirm endianness in #4099.
   # As one long dense line for cases when 00check.log only shows the last 13 lines of log; to only use up one
@@ -166,7 +234,8 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     ", Sys.timezone()=='", suppressWarnings(Sys.timezone()), "'",
     ", Sys.getlocale()=='", Sys.getlocale(), "'",
     ", l10n_info()=='", paste0(names(l10n_info()), "=", l10n_info(), collapse="; "), "'",
-    ", getDTthreads()=='", paste0(gsub("[ ][ ]+","==",gsub("^[ ]+","",capture.output(invisible(getDTthreads(verbose=TRUE))))), collapse="; "), "'",
+    ", getDTthreads()=='", paste(gsub("[ ][ ]+","==",gsub("^[ ]+","",capture.output(invisible(getDTthreads(verbose=TRUE))))), collapse="; "), "'",
+    ", .libPaths()==", paste0("'", .libPaths(), "'", collapse = ","),
     ", ", .Call(Cdt_zlib_version),
     "\n", sep="")
 
@@ -191,7 +260,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   }
 
   # There aren't any errors, so we can use up 11 lines for the timings table
-  nTest = RSS = NULL  # to avoid 'no visible binding' note
+  time = nTest = RSS = NULL  # to avoid 'no visible binding' note
   timings = env$timings[nTest>0]
   if (!memtest) {
     ans = head(timings[if (dev) -1L else TRUE][order(-time)], 10L)[,RSS:=NULL]   # exclude id 1 in dev as that includes JIT
@@ -243,13 +312,30 @@ INT = function(...) { as.integer(c(...)) }   # utility used in tests.Rraw
 gc_mem = function() {
   # nocov start
   # gc reports memory in MB
-  m = apply(gc()[, c(2L, 4L, 6L)], 2L, sum)
+  m = colSums(gc()[, c(2L, 4L, 6L)])
   names(m) = c("GC_used", "GC_gc_trigger", "GC_max_used")
   m
   # nocov end
 }
 
-test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,notOutput=NULL,ignore.warning=NULL) {
+test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,notOutput=NULL,ignore.warning=NULL,options=NULL,env=NULL) {
+  if (!is.null(env)) {
+    old = Sys.getenv(names(env), names=TRUE, unset=NA)
+    to_unset = !lengths(env)
+    # NB: Sys.setenv() (no arguments) errors
+    if (!all(to_unset)) do.call(Sys.setenv, as.list(env[!to_unset]))
+    Sys.unsetenv(names(env)[to_unset])
+    # TODO(R>=4.0.2): Use add=TRUE up-front in on.exit() once non-positional arguments are supported.
+    on.exit({
+      is_preset = !is.na(old)
+      if (any(is_preset)) do.call(Sys.setenv, as.list(old[is_preset]))
+      Sys.unsetenv(names(old)[!is_preset])
+    }, add=TRUE)
+  }
+  if (!is.null(options)) {
+    old_options <- do.call(base::options, as.list(options)) # as.list(): allow passing named character vector for convenience
+    on.exit(base::options(old_options), add=TRUE)
+  }
   # Usage:
   # i) tests that x equals y when both x and y are supplied, the most common usage
   # ii) tests that x is TRUE when y isn't supplied
@@ -265,11 +351,11 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
   #    from all.equal and different to identical related to row.names and unused factor levels
   # 3) each test has a unique id which we refer to in commit messages, emails etc.
   # 4) test that a query generates exactly 2 warnings, that they are both the correct warning messages, and that the result is the one expected
-  .test.data.table = exists("nfail", parent.frame()) # test() can be used inside functions defined in tests.Rraw, so inherits=TRUE (default) here
+  nfail = get0("nfail", parent.frame()) # test() can be used inside functions defined in tests.Rraw, so inherits=TRUE (default) here
+  .test.data.table = !is.null(nfail)
   numStr = sprintf("%.8g", num)
   if (.test.data.table) {
     prevtest = get("prevtest", parent.frame())
-    nfail = get("nfail", parent.frame())   # to cater for both test.data.table() and stepping through tests in dev
     whichfail = get("whichfail", parent.frame())
     assign("ntest", get("ntest", parent.frame()) + if (num>0) 1L else 0L, parent.frame(), inherits=TRUE)   # bump number of tests run
     lasttime = get("lasttime", parent.frame())
@@ -280,7 +366,8 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     foreign = get("foreign", parent.frame())
     showProgress = get("showProgress", parent.frame())
     time = nTest = RSS = NULL  # to avoid 'no visible binding' note
-    if (num>0) on.exit( {
+    # TODO(R>=4.0.2): Use add=TRUE up-front in on.exit() once non-positional arguments are supported.
+    if (num>0) on.exit({
        took = proc.time()[3L]-lasttime  # so that prep time between tests is attributed to the following test
        timings[as.integer(num), `:=`(time=time+took, nTest=nTest+1L), verbose=FALSE]
        if (memtest) {
@@ -291,7 +378,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
          if (memtest==2L) gc()
        }
        assign("lasttime", proc.time()[3L], parent.frame(), inherits=TRUE)  # after gc() to exclude gc() time from next test when memtest
-    } )
+    }, add=TRUE )
     if (showProgress)
       # \r can't be in gettextf msg
       cat("\rRunning test id", numStr, "         ")   # nocov.
@@ -319,18 +406,18 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
   xsub = substitute(x)
   ysub = substitute(y)
 
-  actual = list("warning"=NULL, "error"=NULL, "message"=NULL)
+  actual = list2env(list(warning=NULL, error=NULL, message=NULL))
   wHandler = function(w) {
     # Thanks to: https://stackoverflow.com/a/4947528/403310
-    actual$warning <<- c(actual$warning, conditionMessage(w))
+    actual$warning <- c(actual$warning, conditionMessage(w))
     invokeRestart("muffleWarning")
   }
   eHandler = function(e) {
-    actual$error <<- conditionMessage(e)
+    actual$error <- conditionMessage(e)
     e
   }
   mHandler = function(m) {
-    actual$message <<- c(actual$message, conditionMessage(m))
+    actual$message <- c(actual$message, conditionMessage(m))
     m
   }
   if (is.null(output) && is.null(notOutput)) {
@@ -356,12 +443,12 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     if (type=="warning" && length(observed) && !is.null(ignore.warning)) {
       # if a warning containing this string occurs, ignore it. First need for #4182 where warning about 'timedatectl' only
       # occurs in R 3.4, and maybe only on docker too not for users running test.data.table().
-      stopifnot(length(ignore.warning)==1L, is.character(ignore.warning), !is.na(ignore.warning), nchar(ignore.warning)>=1L)
-      observed = grep(ignore.warning, observed, value=TRUE, invert=TRUE)
+      stopifnot(is.character(ignore.warning), !anyNA(ignore.warning), nchar(ignore.warning)>=1L)
+      for (msg in ignore.warning) observed = grep(msg, observed, value=TRUE, invert=TRUE) # allow multiple for translated messages rather than relying on '|' to always work
     }
     if (length(expected) != length(observed)) {
       # nocov start
-      catf("Test %s produced %d %ss but expected %d\n%s\n%s\n", numStr, length(observed), type, length(expected), paste("Expected:", expected), paste("Observed:", observed))
+      catf("Test %s produced %d %ss but expected %d\n%s\n%s\n", numStr, length(observed), type, length(expected), paste("Expected:", expected), paste("Observed:", observed, collapse = "\n"))
       fail = TRUE
       # nocov end
     } else {
@@ -391,6 +478,10 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
       catf("Test %s did not produce correct output:\n", numStr)
       catf("Expected: <<%s>>\n", encodeString(output))  # \n printed as '\\n' so the two lines of output can be compared vertically
       catf("Observed: <<%s>>\n", encodeString(out))
+      if (anyNonAscii(output) || anyNonAscii((out))) {
+        catf("Expected (raw): <<%s>>\n", paste(charToRaw(output), collapse = " "))
+        catf("Observed (raw): <<%s>>\n", paste(charToRaw(out), collapse = " "))
+      }
       fail = TRUE
       # nocov end
     }
@@ -399,12 +490,16 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
       catf("Test %s produced output but should not have:\n", numStr)
       catf("Expected absent (case insensitive): <<%s>>\n", encodeString(notOutput))
       catf("Observed: <<%s>>\n", encodeString(out))
+      if (anyNonAscii(notOutput) || anyNonAscii((out))) {
+        catf("Expected absent (raw): <<%s>>\n", paste(charToRaw(notOutput), collapse = " "))
+        catf("Observed (raw): <<%s>>\n", paste(charToRaw(out), collapse = " "))
+      }
       fail = TRUE
       # nocov end
     }
   }
   if (!fail && !length(error) && (!length(output) || !missing(y))) {   # TODO test y when output=, too
-    y = try(y,TRUE)
+    capture.output(y <- try(y, silent=TRUE)) # y might produce verbose output, just toss it
     if (identical(x,y)) return(invisible(TRUE))
     all.equal.result = TRUE
     if (is.data.frame(x) && is.data.frame(y)) {
@@ -444,6 +539,10 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
           # head.matrix doesn't restrict columns
           if (length(d <- dim(x))) do.call(`[`, c(list(x, drop = FALSE), lapply(pmin(d, 6L), seq_len)))
           else print(head(x))
+          if (typeof(x) == 'character' && anyNonAscii(x)) {
+            cat("Non-ASCII string detected, raw representation:\n")
+            print(lapply(head(x), charToRaw))
+          }
         }
       }
       failPrint(x, deparse(xsub))
@@ -462,3 +561,4 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
   invisible(!fail)
 }
 
+anyNonAscii = function(x) anyNA(iconv(x, to="ASCII")) # nocov

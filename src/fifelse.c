@@ -1,5 +1,11 @@
 #include "data.table.h"
 
+/*
+  OpenMP is being used here to parallelize loops that perform conditional
+    checks along with assignment operations over the elements of the
+    supplied logical vector based on the condition (test) and values
+    provided for the remaining arguments (yes, no, and na).
+*/
 SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
   if (!isLogical(l)) {
     error(_("Argument 'test' must be logical."));
@@ -146,9 +152,9 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
     }
   } break;
   case STRSXP : {
-    const SEXP *restrict pa = na_a ? NULL : STRING_PTR(a);
-    const SEXP *restrict pb = na_b ? NULL : STRING_PTR(b);
-    const SEXP *restrict pna = na_n ? NULL : STRING_PTR(na);
+    const SEXP *restrict pa = na_a ? NULL : STRING_PTR_RO(a);
+    const SEXP *restrict pb = na_b ? NULL : STRING_PTR_RO(b);
+    const SEXP *restrict pna = na_n ? NULL : STRING_PTR_RO(na);
     const SEXP na = NA_STRING;
     for (int64_t i=0; i<len0; ++i) {
       SET_STRING_ELT(
@@ -201,105 +207,112 @@ SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
   return ans;
 }
 
-SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
-  const int narg=length(args);
+SEXP fcaseR(SEXP rho, SEXP args) {
+  const int narg=length(args); // `default` will take the last two positions
   if (narg % 2) {
     error(_("Received %d inputs; please supply an even number of arguments in ..., "
             "consisting of logical condition, resulting value pairs (in that order). "
-            "Note that the default argument must be named explicitly, e.g., default=0"), narg);
+            "Note that the default argument must be named explicitly, e.g., default=0"), narg - 2);
   }
-  if (narg==0) return R_NilValue;
-
-  SEXP cons0 = PROTECT(eval(SEXPPTR_RO(args)[0], rho));
-  SEXP value0 = PROTECT(eval(SEXPPTR_RO(args)[1], rho)); // value0 will be compared to from loop so leave it protected throughout
-  SEXPTYPE type0 = TYPEOF(value0);
-  int64_t len0=xlength(cons0), len2=len0;
-  if (isS4(value0) && !INHERITS(value0, char_nanotime)) {
-    error(_("S4 class objects (except nanotime) are not supported. Please see https://github.com/Rdatatable/data.table/issues/4131."));
-    // otherwise 'invalid type/length (S4/1) in vector allocation' from test 2132.3
-  }
-  SEXP ans = PROTECT(allocVector(type0, len0));
-  SEXP tracker = PROTECT(allocVector(INTSXP, len0));
-  int *restrict p = INTEGER(tracker);
-  copyMostAttrib(value0, ans);
-
-  bool nonna=!isNull(na);
-  if (nonna) {
-    if (xlength(na) != 1) {
-      error(_("Length of 'default' must be 1."));
-    }
-    SEXPTYPE tn = TYPEOF(na);
-    if (tn==LGLSXP && LOGICAL(na)[0]==NA_LOGICAL) {
-      nonna = false;
-    } else {
-      if (tn != type0) {
-        error(_("Resulting value is of type %s but 'default' is of type %s. "
-                "Please make sure that both arguments have the same type."), type2char(type0), type2char(tn));
-      }
-      if (!R_compute_identical(PROTECT(getAttrib(value0,R_ClassSymbol)),  PROTECT(getAttrib(na,R_ClassSymbol)), 0)) {
-        error(_("Resulting value has different class than 'default'. "
-                "Please make sure that both arguments have the same class."));
-      }
-      UNPROTECT(2);
-      if (isFactor(value0)) {
-        if (!R_compute_identical(PROTECT(getAttrib(value0,R_LevelsSymbol)),  PROTECT(getAttrib(na,R_LevelsSymbol)), 0)) {
-          error(_("Resulting value and 'default' are both type factor but their levels are different."));
-        }
-        UNPROTECT(2);
-      }
-    }
-  }
-
+  int nprotect=0, l;
+  int64_t n_ans=0, n_this_arg=0, n_undecided=0;
+  SEXP ans=R_NilValue, tracker=R_NilValue, whens=R_NilValue, thens=R_NilValue;
+  SEXP ans_class, ans_levels;
+  PROTECT_INDEX Iwhens, Ithens;
+  PROTECT_WITH_INDEX(whens, &Iwhens); nprotect++;
+  PROTECT_WITH_INDEX(thens, &Ithens); nprotect++;
+  SEXPTYPE ans_type=NILSXP;
+  // naout means if the output is scalar logic na
+  bool imask = true, naout = false, idefault = false;
+  bool ans_is_factor;
+  int *restrict p = NULL;
   const int n = narg/2;
   for (int i=0; i<n; ++i) {
-    SEXP cons = PROTECT(i==0 ? cons0 : eval(SEXPPTR_RO(args)[2*i], rho)); // protect cons0 again for easy unprotect at the end of this loop
-    SEXP outs = PROTECT(i==0 ? value0 : eval(SEXPPTR_RO(args)[2*i+1], rho));
-    if (isS4(outs) && !INHERITS(outs, char_nanotime)) {
+    idefault = i == (n - 1); // mark if the current eval is the `default` on R side
+    REPROTECT(whens = eval(SEXPPTR_RO(args)[2*i], rho), Iwhens);
+    REPROTECT(thens = eval(SEXPPTR_RO(args)[2*i+1], rho), Ithens);
+    if (isS4(thens) && !INHERITS(thens, char_nanotime)) {
       error(_("S4 class objects (except nanotime) are not supported. Please see https://github.com/Rdatatable/data.table/issues/4131."));
     }
-    if (!isLogical(cons)) {
-      error(_("Argument #%d must be logical."), 2*i+1);
+    if (!isLogical(whens)) {
+      error(_("Argument #%d must be logical but was of type %s."), 2*i+1, type2char(TYPEOF(whens)));
     }
-    if (i>0) {
-      if (xlength(cons) != len0) {
-        error(_("Argument #%d has a different length than argument #1. "
+    const int *restrict pwhens = LOGICAL(whens);
+    l = 0;
+    if (i == 0) {
+      n_ans = xlength(whens);
+      n_undecided = n_ans;
+      ans_type = TYPEOF(thens);
+      ans_class = PROTECT(getAttrib(thens, R_ClassSymbol)); nprotect++;
+      ans_is_factor = isFactor(thens);
+      if (ans_is_factor) {
+        ans_levels = PROTECT(getAttrib(thens, R_LevelsSymbol)); nprotect++;
+      }
+      ans = PROTECT(allocVector(ans_type, n_ans)); nprotect++;
+      copyMostAttrib(thens, ans);
+      tracker = PROTECT(allocVector(INTSXP, n_ans)); nprotect++;
+      p = INTEGER(tracker);     
+    } else {
+      imask = false;
+      naout = xlength(thens) == 1 && TYPEOF(thens) == LGLSXP && LOGICAL(thens)[0]==NA_LOGICAL;
+      if (xlength(whens) != n_ans) {
+        // no need to check `idefault` here because the con for default is always `TRUE`
+        error(_("Argument #%d has length %lld which differs from that of argument #1 (%lld). "
                 "Please make sure all logical conditions have the same length."),
-                i*2+1);
+                i*2+1, (long long)xlength(whens), (long long)n_ans);
       }
-      if (TYPEOF(outs) != type0) {
-        error(_("Argument #%d is of type %s, however argument #2 is of type %s. "
-                "Please make sure all output values have the same type."),
-                i*2+2, type2char(TYPEOF(outs)), type2char(type0));
-      }
-      if (!R_compute_identical(PROTECT(getAttrib(value0,R_ClassSymbol)),  PROTECT(getAttrib(outs,R_ClassSymbol)), 0)) {
-        error(_("Argument #%d has different class than argument #2, "
-                "Please make sure all output values have the same class."), i*2+2);
-      }
-      UNPROTECT(2);
-      if (isFactor(value0)) {
-        if (!R_compute_identical(PROTECT(getAttrib(value0,R_LevelsSymbol)),  PROTECT(getAttrib(outs,R_LevelsSymbol)), 0)) {
-          error(_("Argument #2 and argument #%d are both factor but their levels are different."), i*2+2);
+      if (!naout && TYPEOF(thens) != ans_type) {
+        if (idefault) {
+          error(_("Resulting value is of type %s but 'default' is of type %s. "
+                  "Please make sure that both arguments have the same type."), type2char(ans_type), type2char(TYPEOF(thens)));
+        } else {
+          error(_("Argument #%d is of type %s, however argument #2 is of type %s. "
+                  "Please make sure all output values have the same type."),
+                  i*2+2, type2char(TYPEOF(thens)), type2char(ans_type));
         }
-        UNPROTECT(2);
+      }
+      if (!naout) {
+        if (!R_compute_identical(ans_class,  PROTECT(getAttrib(thens, R_ClassSymbol)), 0)) {
+          if (idefault) {
+            error(_("Resulting value has different class than 'default'. "
+                    "Please make sure that both arguments have the same class."));
+          } else {
+            error(_("Argument #%d has different class than argument #2, "
+                    "Please make sure all output values have the same class."), i*2+2);
+          }
+        }
+        UNPROTECT(1); // class(thens)
+      }
+      if (!naout && ans_is_factor) {
+        if (!R_compute_identical(ans_levels,  PROTECT(getAttrib(thens, R_LevelsSymbol)), 0)) {
+          if (idefault) {
+            error(_("Resulting value and 'default' are both type factor but their levels are different."));
+          } else {
+            error(_("Argument #2 and argument #%d are both factor but their levels are different."), i*2+2);
+          }
+        }
+        UNPROTECT(1); // levels(thens)
       }
     }
-    int64_t len1 = xlength(outs);
-    if (len1!=len0 && len1!=1) {
-      error(_("Length of output value #%d must either be 1 or length of logical condition."), i*2+2);
+    n_this_arg = xlength(thens);
+    if (n_this_arg != n_ans && n_this_arg != 1) {
+      if (idefault) {
+        error(_("Length of 'default' must be 1 or %lld."), (long long)n_ans);
+      } else {
+        error(_("Length of output value #%d (%lld) must either be 1 or match the length of the logical condition (%lld)."), i*2+2, (long long)n_this_arg, (long long)n_ans);
+      }
     }
-    int64_t amask = len1>1 ? INT64_MAX : 0;
-    const int *restrict pcons = LOGICAL(cons);
-    const bool imask = i==0;
-    int64_t l=0; // how many this case didn't satisfy; i.e. left for next case
-    switch(TYPEOF(outs)) {
+    int64_t thenMask = n_this_arg>1 ? INT64_MAX : 0;
+    switch(TYPEOF(ans)) {
     case LGLSXP: {
-      const int *restrict pouts = LOGICAL(outs);
+      const int *restrict pthens;
+      if (!naout) pthens = LOGICAL(thens); // the content is not useful if out is NA_LOGICAL scalar
       int *restrict pans = LOGICAL(ans);
-      const int pna = nonna ? LOGICAL(na)[0] : NA_LOGICAL;
-      for (int64_t j=0; j<len2; ++j) {
+      const int pna = NA_LOGICAL;
+      for (int64_t j=0; j<n_undecided; ++j) {
         const int64_t idx = imask ? j : p[j];
-        if (pcons[idx]==1) {
-          pans[idx] = pouts[idx & amask];
+        if (pwhens[idx]==1) {
+          pans[idx] = naout ? pna : pthens[idx & thenMask];
         } else {
           if (imask) {
             pans[j] = pna;
@@ -309,13 +322,14 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
       }
     } break;
     case INTSXP: {
-      const int *restrict pouts = INTEGER(outs);
+      const int *restrict pthens;
+      if (!naout) pthens = INTEGER(thens); // the content is not useful if out is NA_LOGICAL scalar
       int *restrict pans = INTEGER(ans);
-      const int pna = nonna ? INTEGER(na)[0] : NA_INTEGER;
-      for (int64_t j=0; j<len2; ++j) {
+      const int pna = NA_INTEGER;
+      for (int64_t j=0; j<n_undecided; ++j) {
         const int64_t idx = imask ? j : p[j];
-        if (pcons[idx]==1) {
-          pans[idx] = pouts[idx & amask];
+        if (pwhens[idx]==1) {
+          pans[idx] = naout ? pna : pthens[idx & thenMask];
         } else {
           if (imask) {
             pans[j] = pna;
@@ -325,14 +339,15 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
       }
     } break;
     case REALSXP: {
-      const double *restrict pouts = REAL(outs);
+      const double *restrict pthens;
+      if (!naout) pthens = REAL(thens); // the content is not useful if out is NA_LOGICAL scalar
       double *restrict pans = REAL(ans);
-      const double na_double = INHERITS(outs, char_integer64) ? NA_INT64_D : NA_REAL;
-      const double pna = nonna ? REAL(na)[0] : na_double;
-      for (int64_t j=0; j<len2; ++j) {
+      const double na_double = INHERITS(ans, char_integer64) ? NA_INT64_D : NA_REAL;
+      const double pna = na_double;
+      for (int64_t j=0; j<n_undecided; ++j) {
         const int64_t idx = imask ? j : p[j];
-        if (pcons[idx]==1) {
-          pans[idx] = pouts[idx & amask];
+        if (pwhens[idx]==1) {
+          pans[idx] = naout ? pna : pthens[idx & thenMask];
         } else {
           if (imask) {
             pans[j] = pna;
@@ -342,13 +357,14 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
       }
     } break;
     case CPLXSXP: {
-      const Rcomplex *restrict pouts = COMPLEX(outs);
+      const Rcomplex *restrict pthens;
+      if (!naout) pthens = COMPLEX(thens); // the content is not useful if out is NA_LOGICAL scalar
       Rcomplex *restrict pans = COMPLEX(ans);
-      const Rcomplex pna = nonna ? COMPLEX(na)[0] : NA_CPLX;
-      for (int64_t j=0; j<len2; ++j) {
+      const Rcomplex pna = NA_CPLX;
+      for (int64_t j=0; j<n_undecided; ++j) {
         const int64_t idx = imask ? j : p[j];
-        if (pcons[idx]==1) {
-          pans[idx] = pouts[idx & amask];
+        if (pwhens[idx]==1) {
+          pans[idx] = naout ? pna : pthens[idx & thenMask];
         } else {
           if (imask) {
             pans[j] = pna;
@@ -358,44 +374,43 @@ SEXP fcaseR(SEXP na, SEXP rho, SEXP args) {
       }
     } break;
     case STRSXP: {
-      const SEXP *restrict pouts = STRING_PTR(outs);
-      const SEXP pna = nonna ? STRING_PTR(na)[0] : NA_STRING;
-      for (int64_t j=0; j<len2; ++j) {
+      const SEXP *restrict pthens=NULL;
+      if (!naout) pthens = STRING_PTR_RO(thens); // the content is not useful if out is NA_LOGICAL scalar
+      const SEXP pna = NA_STRING;
+      for (int64_t j=0; j<n_undecided; ++j) {
         const int64_t idx = imask ? j : p[j];
-        if (pcons[idx]==1) {
-          SET_STRING_ELT(ans, idx, pouts[idx & amask]);
+        if (pwhens[idx]==1) {
+          SET_STRING_ELT(ans, idx, naout ? pna : pthens[idx & thenMask]);
         } else {
           if (imask) {
-            SET_STRING_ELT(ans, idx, pna);
+            SET_STRING_ELT(ans, j, pna);
           }
           p[l++] = idx;
         }
       }
     } break;
     case VECSXP: {
-      const SEXP *restrict pouts = SEXPPTR_RO(outs);
-      const SEXP pna = SEXPPTR_RO(na)[0];
-      for (int64_t j=0; j<len2; ++j) {
+      // the default value of VECSXP is `NULL` so we don't need to explicitly
+      // assign the NA values as it does for other atomic types
+      const SEXP *restrict pthens=NULL;
+      if (!naout) pthens = SEXPPTR_RO(thens); // the content is not useful if out is NA_LOGICAL scalar
+      for (int64_t j=0; j<n_undecided; ++j) {
         const int64_t idx = imask ? j : p[j];
-        if (pcons[idx]==1) {
-          SET_VECTOR_ELT(ans, idx, pouts[idx & amask]);
+        if (pwhens[idx]==1) {
+          if (!naout) SET_VECTOR_ELT(ans, idx, pthens[idx & thenMask]);
         } else {
-          if (imask && nonna) {
-            SET_VECTOR_ELT(ans, idx, pna);
-          }
           p[l++] = idx;
         }
       }
     } break;
     default:
-      error(_("Type '%s' is not supported"), type2char(TYPEOF(outs)));
+      error(_("Type '%s' is not supported."), type2char(TYPEOF(ans)));
     }
-    UNPROTECT(2); // this cons and outs
     if (l==0) {
       break;  // stop early as nothing left to do
     }
-    len2 = l;
+    n_undecided = l;
   }
-  UNPROTECT(4); // cons0, value0, ans, tracker
+  UNPROTECT(nprotect); // whens, thens, ans, tracker
   return ans;
 }

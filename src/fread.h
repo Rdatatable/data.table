@@ -36,6 +36,8 @@ typedef enum {
   NUMTYPE          // placeholder for the number of types including drop; used for allocation and loop bounds
 } colType;
 
+#define IS_DEC_TYPE(x) ((x) == CT_FLOAT64 || (x) == CT_FLOAT64_EXT) // types where dec matters
+
 extern int8_t typeSize[NUMTYPE];
 extern const char typeName[NUMTYPE][10];
 extern const long double pow10lookup[301];
@@ -124,8 +126,10 @@ typedef struct freadMainArgs
   bool skipEmptyLines;
 
   // If True, then rows are allowed to have variable number of columns, and
-  // all ragged rows will be filled with NAs on the right.
-  bool fill;
+  // all ragged rows will be filled with NAs on the right. Supplying integer
+  // argument > 1 results in setting an upper bound estimate for the number
+  // of columns.
+  int fill;
 
   // If True, then emit progress messages during the parsing.
   bool showProgress;
@@ -347,6 +351,11 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx);
  */
 void setFinalNrow(size_t nrows);
 
+
+/**
+ * Called at the end to delete columns added due to too high user guess for fill.
+ */
+void dropFilledCols(int* dropArg, int ndrop);
 
 /**
  * Free any srtuctures associated with the thread-local parsing context.
