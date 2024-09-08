@@ -18736,7 +18736,7 @@ test(2264.8, print(DT, show.indices=TRUE), output=ans)
 if (test_bit64) local({
   DT = data.table(a = 'abc', b = as.integer64(1))
   suppressPackageStartupMessages(unloadNamespace("bit64"))
-  on.exit(suppressPackageStartupMessages(library(bit64)))
+  on.exit(suppressPackageStartupMessages(library(bit64, pos="package:base")))
   test(2265, DT, output="abc\\s*1$")
 })
 
