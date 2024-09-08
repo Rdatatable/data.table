@@ -1,0 +1,111 @@
+search_order <- match(c("package:data.table", "package:methods"), search(), 0L)
+if (diff(search_order) < 0L) {
+  cat("'methods' must be attached before 'data.table' for dispatch to register correctly; quitting\n")
+  q("no")
+}
+library(methods)
+
+if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
+  if ((tt<-compiler::enableJIT(-1))>0)
+    cat("This is dev mode and JIT is enabled (level ", tt, ") so there will be a brief pause around the first test.\n", sep="")
+} else {
+  library(data.table)
+
+  is_utc = data.table:::is_utc
+  shallow = data.table:::shallow
+  test = data.table:::test
+}
+
+tt = Sys.getenv("TZ", unset=NA)
+TZnotUTC = !identical(tt,"") && !is_utc(tt)
+
+suppressWarnings({
+  setClass("Data.Table", contains="data.table")  # suppress "Created a package name, '2018-05-26 06:14:43.444', when none found"
+  setClass("S4Composition", representation(data="data.table"))
+})
+# data.table can be a parent class
+ids <- sample(letters[1:3], 10, replace=TRUE)
+scores <- stats::rnorm(10)
+dt <- data.table(id=ids, score=scores)
+dt.s4 <- new("Data.Table", data.table(id=ids, score=scores))
+test(1.01, isS4(dt.s4))
+test(1.02, inherits(dt.s4, 'data.table'))
+# Test possible regression. shallow() needs to preserve the S4 bit to support S4 classes that contain data.table
+test(1.03, isS4(shallow(dt.s4)))
+## pull out data from S4 as.list, and compare to list from dt
+dt.s4.list <- dt.s4@.Data
+names(dt.s4.list) <- names(dt.s4)
+test(1.04, dt.s4.list, as.list(dt))  # Underlying data not identical
+# simple S4 conversion-isms work
+df = data.frame(a=sample(letters, 10), b=1:10)
+dt = as.data.table(df)
+test(1.05, identical(methods::as(df, 'data.table'), dt))
+test(1.06, identical(methods::as(dt, 'data.frame'), df))
+# data.table can be used in an S4 slot
+dt <- data.table(a=sample(letters[1:3], 10, replace=TRUE), score=stats::rnorm(10))
+dt.comp <- new("S4Composition", data=dt)
+test(1.07, dt.comp@data, dt)
+# S4 methods dispatch properly on data.table slots"
+dt <- data.table(a=sample(letters[1:3], 10, replace=TRUE), score=stats::rnorm(10))
+dt.comp <- new("S4Composition", data=dt)
+setGeneric("dtGet", function(x, what) standardGeneric("dtGet"))
+setMethod("dtGet", c(x="S4Composition", what="missing"), function(x, what){x@data})
+setMethod("dtGet", c(x="S4Composition", what="ANY"), function(x, what) {x@data[[what]]})
+test(1.08, dtGet(dt.comp), dt)  # actually
+test(1.09, identical(dtGet(dt.comp, 1), dt[[1]]))
+test(1.10, identical(dtGet(dt.comp, 'b'), dt$b))
+removeClass("Data.Table")   # so that test 1914.2 passes on the second run of cc() in dev
+removeClass("S4Composition")
+# END port of old testthat tests
+
+# miscellaneous missing tests uncovered by CodeCov difference in the process of PR #2573 [S4 portion, c.f. 1872.* in tests.Rraw]
+## data.table cannot recycle complicated types
+short_s4_col = getClass("MethodDefinition")
+test(2, data.table(a = 1:4, short_s4_col), error="attempt to replicate.*(non-vector|S4)")
+
+# print dims in list-columns, #3671, c.f. 2130.* in tests.Rraw
+s4class = setClass("ex_class", slots = list(x="integer", y="character", z="numeric"))
+DT = data.table(
+  x = 1:2,
+  y = list(s4class(x=1L, y=c("yes", "no"), z=2.5),
+           s4class(x=2L, y="yes", z=1)))
+test(3, print(DT), output=c("   x             y", "1: 1 <ex_class[3]>",     "2: 2 <ex_class[3]>"))
+
+# S4 object not supported in fifelse and fcase, #4135
+class4 = setClass("class4", slots=list(x="numeric"))
+s1 = class4(x=20191231)
+s2 = class4(x=20191230)
+test(4.1, fifelse(TRUE, s1, s2),      error = "S4 class objects (except nanotime) are not supported.")
+test(4.2, fifelse(TRUE, 1, s2),       error = "S4 class objects (except nanotime) are not supported.")
+test(4.3, fcase(TRUE, s1, FALSE, s2), error = "S4 class objects (except nanotime) are not supported. Please see")
+test(4.4, fcase(FALSE, 1, TRUE, s1),  error = "S4 class objects (except nanotime) are not supported. Please see")
+rm(s1, s2, class4)
+
+# native reading of timestamp strings in fread
+# NB: S4 required for methods::as()
+test(5.1, options=c(datatable.old.fread.datetime.character=TRUE),
+     fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date","IDate","POSIXct")),
+     ans<-data.table(a=as.Date("2015-01-01"), b=as.IDate("2015-01-02"), c=as.POSIXct("2015-01-03 01:02:03")))
+ans_print = utils::capture.output(print(ans))
+if (TZnotUTC) {
+  test(5.2, options=list(datatable.old.fread.datetime.character=NULL),
+       fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date","IDate","POSIXct"), tz=""),
+       copy(ans)[, a := as.IDate(a)], output=ans_print)
+  test(5.3, options=list(datatable.old.fread.datetime.character=NULL),
+       fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date",NA,NA), tz=""),
+       data.table(a=as.IDate("2015-01-01"), b=as.IDate("2015-01-02"), c="2015-01-03 01:02:03"), output=ans_print)
+} else {
+  test(5.4, options=list(datatable.old.fread.datetime.character=NULL),
+       fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date","IDate","POSIXct")),
+       ans<-data.table(a=as.IDate("2015-01-01"), b=as.IDate("2015-01-02"), c=as.POSIXct("2015-01-03 01:02:03", tz="UTC")), output=ans_print)
+  test(5.5, options=list(datatable.old.fread.datetime.character=NULL),
+       fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date",NA,NA)),
+       ans, output=ans_print)
+}
+
+# S4 object in grouping output requiring growVector
+#   coverage test towards refactoring for #6180
+DT = data.table(a = rep(1:2, c(1, 100)))
+# Set the S4 bit on a simple object
+DT[, b := asS4(seq_len(.N))]
+test(6, DT[, b, by=a, verbose=TRUE][, isS4(b)], output="dogroups: growing")

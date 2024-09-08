@@ -78,15 +78,15 @@ test(6000.011, frollmean(x, n, adaptive=TRUE), list(c(NA, 1, 1.25), c(NA, 1, 1.2
 
 #### error on unsupported type
 dx = data.table(real=1:10/2, char=letters[1:10])
-test(6000.012, frollmean(dx, 3), error="x must be list, data.frame or data.table of numeric or logical types")
+test(6000.012, frollmean(dx, 3), error="x must be of type numeric or logical, or a list, data.frame or data.table of such")
 dx = data.table(real=1:10/2, fact=factor(letters[1:10]))
-test(6000.013, frollmean(dx, 3), error="x must be list, data.frame or data.table of numeric or logical types")
+test(6000.013, frollmean(dx, 3), error="x must be of type numeric or logical, or a list, data.frame or data.table of such")
 #dx = data.table(real=1:10/2, logi=logical(10))
 #test(6000.014, frollmean(dx, 3), error="x must be list, data.frame or data.table of numeric types") # commented out as support added in #3749, tested in .009
 dx = data.table(real=1:10/2, list=rep(list(NA), 10))
-test(6000.015, frollmean(dx, 3), error="x must be list, data.frame or data.table of numeric or logical types")
+test(6000.015, frollmean(dx, 3), error="x must be of type numeric or logical, or a list, data.frame or data.table of such")
 x = letters[1:10]
-test(6000.016, frollmean(x, 3), error="x must be of type numeric or logical")
+test(6000.016, frollmean(x, 3), error="x must be of type numeric or logical, or a list, data.frame or data.table of such")
 x = 1:10/2
 test(6000.017, frollmean(x, "a"), error="n must be integer")
 test(6000.018, frollmean(x, factor("a")), error="n must be integer")
@@ -355,8 +355,8 @@ test(6000.074, frollmean(1:3, 2, fill=0L), c(0, 1.5, 2.5))
 test(6000.075, frollmean(1:3, 2, fill=NA_integer_), c(NA_real_, 1.5, 2.5))
 test(6000.076, frollmean(1:3, 2, fill=1:2), error="fill must be a vector of length 1")
 test(6000.077, frollmean(1:3, 2, fill=NA), c(NA_real_, 1.5, 2.5))
-test(6000.078, frollmean(1:3, 2, fill=TRUE), error="fill must be numeric")
-test(6000.079, frollmean(1:3, 2, fill=FALSE), error="fill must be numeric")
+test(6000.078, frollmean(1:3, 2, fill=TRUE), frollmean(1:3, 2, fill=1)) #error="fill must be numeric") # fill already coerced, as 'x' arg
+test(6000.079, frollmean(1:3, 2, fill=FALSE), frollmean(1:3, 2, fill=0)) #error="fill must be numeric")
 test(6000.080, frollmean(1:3, 2, fill="a"), error="fill must be numeric")
 test(6000.081, frollmean(1:3, 2, fill=factor("a")), error="fill must be numeric")
 test(6000.082, frollmean(1:3, 2, fill=list(NA)), error="fill must be numeric")

@@ -98,13 +98,17 @@ int qsort_cmp(const void *a, const void *b) {
   return (x<y)-(x>y);   // largest first in a safe branchless way casting long to int
 }
 
+/*
+  OpenMP is used here to find the range and distribution of data for efficient
+    grouping and sorting.
+*/
 SEXP fsort(SEXP x, SEXP verboseArg) {
   double t[10];
   t[0] = wallclock();
-  if (!isLogical(verboseArg) || LENGTH(verboseArg)!=1 || LOGICAL(verboseArg)[0]==NA_LOGICAL)
-    error(_("verbose must be TRUE or FALSE"));
+  if (!IS_TRUE_OR_FALSE(verboseArg))
+    error(_("%s must be TRUE or FALSE"), "verbose");
   Rboolean verbose = LOGICAL(verboseArg)[0];
-  if (!isNumeric(x)) error(_("x must be a vector of type 'double' currently"));
+  if (!isNumeric(x)) error(_("x must be a vector of type double currently"));
   // TODO: not only detect if already sorted, but if it is, just return x to save the duplicate
 
   SEXP ansVec = PROTECT(allocVector(REALSXP, xlength(x)));
@@ -125,7 +129,12 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   // and ii) for small vectors with just one batch
 
   t[1] = wallclock();
-  double mins[nBatch], maxs[nBatch];
+  double *mins = (double *)malloc(nBatch * sizeof(double));
+  double *maxs = (double *)malloc(nBatch * sizeof(double));
+  if (!mins || !maxs) {
+    free(mins); free(maxs);
+    error(_("Failed to allocate %d bytes in fsort()."), (int)(2 * nBatch * sizeof(double)));
+  }
   const double *restrict xp = REAL(x);
   #pragma omp parallel for schedule(dynamic) num_threads(getDTthreads(nBatch, false))
   for (int batch=0; batch<nBatch; ++batch) {
@@ -149,12 +158,13 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
     if (mins[i]<min) min=mins[i];
     if (maxs[i]>max) max=maxs[i];
   }
+  free(mins); free(maxs);
   if (verbose) Rprintf(_("Range = [%g,%g]\n"), min, max);
   if (min < 0.0) error(_("Cannot yet handle negatives."));
   // TODO: -0ULL should allow negatives
   //       avoid twiddle function call as expensive in recent tests (0.34 vs 2.7)
   //       possibly twiddle once to *ans, then untwiddle at the end in a fast parallel sweep
- 
+
   union {double d; uint64_t u64;} u;
   u.d = max;
   uint64_t maxULL = u.u64;
@@ -165,7 +175,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   int MSBNbits = maxBit > 15 ? 16 : maxBit+1;       // how many bits make up the MSB
   int shift = maxBit + 1 - MSBNbits;                // the right shift to leave the MSB bits remaining
   size_t MSBsize = 1LL<<MSBNbits;                   // the number of possible MSB values (16 bits => 65,536)
-  if (verbose) Rprintf(_("maxBit=%d; MSBNbits=%d; shift=%d; MSBsize=%d\n"), maxBit, MSBNbits, shift, MSBsize);
+  if (verbose) Rprintf(_("maxBit=%d; MSBNbits=%d; shift=%d; MSBsize=%zu\n"), maxBit, MSBNbits, shift, MSBsize);
 
   uint64_t *counts = (uint64_t *)R_alloc(nBatch*MSBsize, sizeof(uint64_t));
   memset(counts, 0, nBatch*MSBsize*sizeof(uint64_t));
@@ -225,7 +235,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
     // sort bins by size, largest first to minimise last-man-home
     uint64_t *msbCounts = counts + (nBatch-1)*MSBsize;
     // msbCounts currently contains the ending position of each MSB (the starting location of the next) even across empty
-    if (msbCounts[MSBsize-1] != xlength(x)) error(_("Internal error: counts[nBatch-1][MSBsize-1] != length(x)")); // # nocov
+    if (msbCounts[MSBsize-1] != xlength(x)) internal_error(__func__, "counts[nBatch-1][MSBsize-1] != length(x)"); // # nocov
     uint64_t *msbFrom = (uint64_t *)R_alloc(MSBsize, sizeof(uint64_t));
     int *order = (int *)R_alloc(MSBsize, sizeof(int));
     uint64_t cumSum = 0;
@@ -242,11 +252,11 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
 
     if (verbose) {
       Rprintf(_("Top 20 MSB counts: ")); for(int i=0; i<MIN(MSBsize,20); i++) Rprintf(_("%"PRId64" "), (int64_t)msbCounts[order[i]]); Rprintf(_("\n"));
-      Rprintf(_("Reduced MSBsize from %d to "), MSBsize);
+      Rprintf(_("Reduced MSBsize from %zu to "), MSBsize);
     }
     while (MSBsize>0 && msbCounts[order[MSBsize-1]] < 2) MSBsize--;
     if (verbose) {
-      Rprintf(_("%d by excluding 0 and 1 counts\n"), MSBsize);
+      Rprintf(_("%zu by excluding 0 and 1 counts\n"), MSBsize);
     }
 
     bool failed=false, alloc_fail=false, non_monotonic=false; // shared bools only ever assigned true; no need for atomic or critical assign
@@ -256,13 +266,13 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
       // each thread has its own small stack of counts
       // don't use VLAs here: perhaps too big for stack yes but more that VLAs apparently fail with schedule(dynamic)
       uint64_t *restrict mycounts = calloc((toBit/8 + 1)*256, sizeof(uint64_t));
-      if (mycounts==NULL) {
+      if (!mycounts) {
         failed=true; alloc_fail=true;  // # nocov
       }
       double *restrict myworking = NULL;
       // the working memory for the largest group per thread is allocated when the thread receives its first iteration
       int myfirstmsb = -1;  // for the monotonicity check
-      
+
       #pragma omp for schedule(monotonic_dynamic,1)
       // We require here that a thread can never be assigned to an earlier iteration; e.g. threads 0:(nth-1)
       // get iterations 0:(nth-1), possibly out of order, then first-come-first-served in order after that.
@@ -283,7 +293,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
 
         if (myworking==NULL) {
           myworking = malloc(thisN * sizeof(double));
-          if (myworking==NULL) {
+          if (!myworking) {
             failed=true; alloc_fail=true; continue;  // # nocov
           }
           myfirstmsb = msb;
@@ -291,7 +301,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
         if (myfirstmsb==-1 || msb<myfirstmsb) {
           failed=true; non_monotonic=true; continue;  // # nocov
         }
-        
+
         // Depends on msbCounts being sorted largest first before this parallel loop
         // Could be significant RAM saving if the largest msb is
         // a lot larger than the 2nd largest msb, especially as nth grows to perhaps 128 on X1.
@@ -312,12 +322,12 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
       free(myworking);
     }
     if (non_monotonic)
-      error("OpenMP %d did not assign threads to iterations monotonically. Please search Stack Overflow for this message.", MY_OPENMP); // # nocov; #4786 in v1.13.4
+      error(_("OpenMP %d did not assign threads to iterations monotonically. Please search Stack Overflow for this message."), MY_OPENMP); // # nocov; #4786 in v1.13.4
     if (alloc_fail)
       error(_("Unable to allocate working memory")); // # nocov
   }
   t[7] = wallclock();
-  
+
   // TODO: parallel sweep to check sorted using <= on original input. Feasible that twiddling messed up.
   //       After a few years of heavy use remove this check for speed, and move into unit tests.
   //       It's a perfectly contiguous and cache efficient parallel scan so should be relatively negligible.
