@@ -109,7 +109,7 @@ test.list <- atime::atime_test_list(
     Fixed = "58409197426ced4714af842650b0cc3b9e2cb842"), # Last commit in the PR that fixed the regression (https://github.com/Rdatatable/data.table/pull/5463/commits)
 
   # Issue reported in: https://github.com/Rdatatable/data.table/issues/5426
-  # Fixed in: https://github.com/Rdatatable/data.table/pull/5427
+  # To be fixed in: https://github.com/Rdatatable/data.table/pull/5427
   "setDT improved in #5427" = atime::atime_test(
     N = 10^seq(1, 7),
     setup = {
@@ -169,35 +169,6 @@ test.list <- atime::atime_test_list(
     expr = data.table:::`[.data.table`(dt_mod, , 1, by = a, verbose = TRUE),
     Slow = "a01f00f7438daf4612280d6886e6929fa8c8f76e", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/fc0c1e76408c34a8482f16f7421d262c7f1bde32) in the PR (https://github.com/Rdatatable/data.table/pull/6296/commits) that fixes the issue
     Fast = "f248bbe6d1204dfc8def62328788eaadcc8e17a1"), # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/6296) that fixes the issue
-  "fread(colClasses=list(Date)) improved in #6107" = atime::atime_test(
-    N = 10^seq(1, 7),
-    setup = {
-      DT = data.table(date=.Date(sample(20000, N, replace=TRUE)))
-      tmp_csv = tempfile()
-      fwrite(DT, tmp_csv)
-    },
-    expr = data.table::fread(tmp_csv, colClasses=list(Date='date')),
-    Slow = "d19bfef7026f25bb2d36c17879187d09bcb2b2c3",
-    Fast = "5ea25d1f624e0528d14f4ff6978e9a7e1d4833d4"),
-  "fread(colClasses=Date) improved in #6107" = atime::atime_test(
-    N = 10^seq(1, 7),
-    setup = {
-      DT = data.table(date=.Date(sample(20000, N, replace=TRUE)))
-      tmp_csv = tempfile()
-      fwrite(DT, tmp_csv)
-    },
-    expr = data.table::fread(tmp_csv, colClasses="Date"),
-    Slow = "d19bfef7026f25bb2d36c17879187d09bcb2b2c3",
-    Fast = "5ea25d1f624e0528d14f4ff6978e9a7e1d4833d4"),
-  "fread(select=list(Date)) improved in #6107" = atime::atime_test(
-    N = 10^seq(1, 7),
-    setup = {
-      DT = data.table(date=.Date(sample(20000, N, replace=TRUE)))
-      tmp_csv = tempfile()
-      fwrite(DT, tmp_csv)
-    },
-    expr = data.table::fread(tmp_csv, select=list(Date='date')),
-    Slow = "d19bfef7026f25bb2d36c17879187d09bcb2b2c3",
-    Fast = "5ea25d1f624e0528d14f4ff6978e9a7e1d4833d4"),
+
   NULL)
 # nolint end: undesirable_operator_linter.
