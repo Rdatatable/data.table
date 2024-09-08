@@ -25,7 +25,7 @@ rowwiseDT(
 #> 3:     5     6      c ~a + b
 ```
 
-2. Subsetting or aggregating columns of type `expression` works, [#5596](https://github.com/Rdatatable/data.table/issues/5596). Thanks to @tsp for the report, and @ben-schwen for the fix.
+2. Limited support for subsetting or aggregating columns of type `expression`, [#5596](https://github.com/Rdatatable/data.table/issues/5596). Thanks to @tsp for the report, and @ben-schwen for the fix.
 
 ## BUG FIXES
 
