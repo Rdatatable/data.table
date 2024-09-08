@@ -40,7 +40,7 @@ To illustrate how to use the method available with real life examples, let's sim
 
 ```{r}
 Products = data.table(
-  id = c(1:4, 
+  id = c(1:4,
          NA_integer_),
   name = c("banana",
            "carrots",
@@ -84,7 +84,7 @@ set.seed(2156)
 
 ProductReceived = data.table(
   id = 1:10,
-  date = seq(from = as.IDate("2024-01-08"), length.out = 10L, by = "week"), 
+  date = seq(from = as.IDate("2024-01-08"), length.out = 10L, by = "week"),
   product_id = sample(c(NA_integer_, 1:3, 6L), size = 10L, replace = TRUE),
   count = sample(c(50L, 100L, 150L), size = 10L, replace = TRUE)
 )
@@ -100,14 +100,14 @@ sample_date = function(from, to, size, ...){
   weekdays = all_days[wday(all_days) %in% 2:6]
   days_sample = sample(weekdays, size, ...)
   days_sample_desc = sort(days_sample)
-  return(days_sample_desc)
+  days_sample_desc
 }
 
 set.seed(5415)
 
 ProductSales = data.table(
   id = 1:10,
-  date = ProductReceived[, sample_date(min(date), max(date), 10L)], 
+  date = ProductReceived[, sample_date(min(date), max(date), 10L)],
   product_id = sample(c(1:3, 7L), size = 10L, replace = TRUE),
   count = sample(c(50L, 100L, 150L), size = 10L, replace = TRUE)
 )
@@ -413,7 +413,7 @@ So far, if after applying all that operations **we want to join new columns with
 To avoid that situation, we can use special symbols `.SD`, to apply a **right join based on the changed table**.
 
 ```{r}
-NewTax[Products, 
+NewTax[Products,
        on = c("unit", "type")
 ][, ProductReceived[.SD,
                     on = list(product_id = id)],
@@ -493,7 +493,7 @@ ProductsTempId = copy(Products)[, temp_id := 1L]
 
 ```{r}
 AllProductsMix =
-  ProductsTempId[ProductsTempId, 
+  ProductsTempId[ProductsTempId,
                  on = "temp_id",
                  allow.cartesian = TRUE]
 
@@ -597,7 +597,7 @@ ProductPriceHistory
 Now, we can perform a right join giving a different prices for each product based on the sale date.
 
 ```{r}
-ProductPriceHistory[ProductSales, 
+ProductPriceHistory[ProductSales,
                     on = .(product_id, date),
                     roll = TRUE,
                     j = .(product_id, date, count, price)]
@@ -606,7 +606,7 @@ ProductPriceHistory[ProductSales,
 If we just want to see the matching cases we just need to add the argument `nomatch = NULL` to perform an inner rolling join.
 
 ```{r}
-ProductPriceHistory[ProductSales, 
+ProductPriceHistory[ProductSales,
                     on = .(product_id, date),
                     roll = TRUE,
                     nomatch = NULL,
@@ -665,7 +665,7 @@ The `:=` operator in data.table is used for updating or adding columns by refere
 Let's update our `Products` table with the latest price from `ProductPriceHistory`:
 
 ```{r}
-copy(Products)[ProductPriceHistory, 
+copy(Products)[ProductPriceHistory,
                on = .(id = product_id),
                j = `:=`(price = tail(i.price, 1),
                         last_updated = tail(i.date, 1)),
