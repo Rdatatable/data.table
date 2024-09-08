@@ -244,10 +244,10 @@ replace_dot_alias = function(e) {
   if (!missing(j)) {
     jsub = replace_dot_alias(jsub)
     root = root_name(jsub)
-    if (root == ":" ||
-        (root %chin% c("-","!") && jsub[[2L]] %iscall% '(' && jsub[[2L]][[2L]] %iscall% ':') ||
-        ( (!length(av<-all.vars(jsub)) || all(startsWith(av, ".."))) &&
-          root %chin% c("","c","paste","paste0","-","!") &&
+    if ((root == ":" && !is.call(jsub[[2L]]) && !is.call(jsub[[3L]])) ||                        ## x[, V1:V2]; but not x[, (V1):(V2)] #2069
+        (root %chin% c("-","!") && jsub[[2L]] %iscall% '(' && jsub[[2L]][[2L]] %iscall% ':') || ## x[, !(V8:V10)]
+        ( (!length(av<-all.vars(jsub)) || all(startsWith(av, ".."))) &&                         ## x[, "V1"]; x[, ..v]
+          root %chin% c("","c","paste","paste0","-","!") &&                                     ## x[, c("V1","V2")]; x[, paste("V",1:2,sep="")]; x[, paste0("V",1:2)]
           missingby )) {   # test 763. TODO: likely that !missingby iff with==TRUE (so, with can be removed)
       # When no variable names (i.e. symbols) occur in j, scope doesn't matter because there are no symbols to find.
       # If variable names do occur, but they are all prefixed with .., then that means look up in calling scope.
@@ -1382,10 +1382,14 @@ replace_dot_alias = function(e) {
         if (jcpy) jval = copy(jval)
       } else if (address(jval) == address(SDenv$.SD)) {
         jval = copy(jval)
-      } else if ( length(jcpy <- which(vapply_1c(jval, address) %chin% vapply_1c(SDenv, address))) ) {
-        for (jidx in jcpy) { if(!is.null(jval[[jidx]])) jval[[jidx]] = copy(jval[[jidx]]) }
-      } else if (jsub %iscall% 'get') {
-        jval = copy(jval) # fix for #1212
+      } else {
+        sd_addresses = vapply_1c(SDenv, address)
+        jcpy = which(!vapply_1b(jval, is.null) & vapply_1c(jval, address) %chin% sd_addresses)
+        if (length(jcpy)) {
+          for (jidx in jcpy) jval[[jidx]] = copy(jval[[jidx]])
+        } else if (address(jval) %chin% sd_addresses) {
+          jval = copy(jval) # fix for #4877, includes fix for #1212
+        }
       }
     }
 
