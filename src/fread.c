@@ -1536,7 +1536,7 @@ int freadMain(freadMainArgs _args) {
           DTPRINT(_("  File ends abruptly with '%c'. Final end-of-line is missing. Copying file in RAM. %s.\n"), eof[-1], msg);
         // In future, we may discover a way to mmap fileSize+1 on all OS when fileSize%4096==0, reliably. If and when, this clause can be updated with no code impact elsewhere.
         double time_taken = copyFile(fileSize);
-        if (time_taken < 0) {
+        if (time_taken == -1.0) {
           if (!verbose)
             DTPRINT("%s. Attempt to copy file in RAM failed.", msg);
           STOP(_("Unable to allocate %s of contiguous virtual RAM."), filesize_to_str(fileSize));
@@ -1818,7 +1818,7 @@ int freadMain(freadMainArgs _args) {
         DTPRINT(_("  Copying file in RAM. %s\n"), msg);
       ASSERT(mmp_copy==NULL, "mmp has already been copied due to abrupt non-eol ending, so it does not end with 2 or more eol.%s", ""/*dummy arg for macro*/); // #nocov
       double time_taken = copyFile(fileSize);
-      if (time_taken < 0) {
+      if (time_taken == -1.0) {
         if (!verbose)
           DTPRINT("%s. Attempt to copy file in RAM failed.", msg);
         STOP(_("Unable to allocate %s of contiguous virtual RAM."), filesize_to_str(fileSize));
