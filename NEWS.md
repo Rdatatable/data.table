@@ -71,6 +71,8 @@ rowwiseDT(
 
 6. `set()` and `:=` now provide some extra guidance for common incorrect approaches to assigning `NULL` to some rows of a list column. The correct way is to put `list(list(NULL))` on the RHS of `:=` (or `.(.(NULL))` for short). Thanks to @MichaelChirico for the suggestion and @Nj221102 for the implementation.
 
+7. Improved the error message when trying to write code like `DT[, ":="(a := b, c := d)]` (which should be `DT[, ":="(a = b, c = d)]`), [#5296](https://github.com/Rdatatable/data.table/issues/5296). Thanks @MichaelChirico for the suggestion & fix.
+
 # data.table [v1.16.0](https://github.com/Rdatatable/data.table/milestone/30)  (25 August 2024)
 
 ## BREAKING CHANGES
