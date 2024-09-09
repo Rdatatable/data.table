@@ -24,6 +24,7 @@ static void finalizer(SEXP p)
 }
 
 void setselfref(SEXP x) {
+  if(!INHERITS(x, char_datatable))  return; // #5286
   SEXP p;
   // Store pointer to itself so we can detect if the object has been copied. See
   // ?copy for why copies are not just inefficient but cause a problem for over-allocated data.tables.
@@ -392,8 +393,10 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
         UNPROTECT(protecti);
         return(dt); // all items of rows either 0 or NA. !length(newcolnames) for #759
       }
-      if (verbose) Rprintf(_("Added %d new column%s initialized with all-NA\n"),
-                           length(newcolnames), (length(newcolnames)>1)?"s":"");
+      if (verbose) Rprintf(Pl_(length(newcolnames),
+                               "Added %d new column initialized with all-NA\n",
+                               "Added %d new columns initialized with all-NA\n"),
+                           length(newcolnames));
     }
   }
   if (!length(cols)) {
@@ -464,11 +467,17 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     }
     coln--;
     SEXP thisvalue = RHS_list_of_columns ? VECTOR_ELT(values, i) : values;
-    vlen = length(thisvalue);
-    if (isNull(thisvalue) && !isNull(rows)) error(_("When deleting columns, i should not be provided"));  // #1082, #3089
+    if (isNull(thisvalue) && !isNull(rows)) {
+      if (coln >= oldncol)
+        error(_("Doubly-invalid attempt to delete a non-existent column while also providing i"));
+      if (TYPEOF(VECTOR_ELT(dt, coln)) == VECSXP)
+        error(_("Invalid attempt to delete a list column while also providing i; did you intend to add NULL to those rows instead? If so, use list_col := list(list(NULL)).")); // #5526
+      error(_("When deleting columns, i should not be provided"));  // #1082, #3089
+    }
     if (coln+1 <= oldncol) colnam = STRING_ELT(names,coln);
     else colnam = STRING_ELT(newcolnames,coln-length(names));
     if (coln+1 <= oldncol && isNull(thisvalue)) continue;  // delete existing column(s) afterwards, near end of this function
+    vlen = length(thisvalue);
     //if (vlen<1 && nrow>0) {
     if (coln+1 <= oldncol && nrow>0 && vlen<1 && numToDo>0) { // numToDo > 0 fixes #2829, see test 1911
       error(_("RHS of assignment to existing column '%s' is zero length but not NULL. If you intend to delete the column use NULL. Otherwise, the RHS must have length > 0; e.g., NA_integer_. If you are trying to change the column type to be an empty list column then, as with all column type changes, provide a full length RHS vector such as vector('list',nrow(DT)); i.e., 'plonk' in the new column."), CHAR(STRING_ELT(names,coln)));

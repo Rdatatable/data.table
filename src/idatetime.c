@@ -128,7 +128,7 @@ SEXP convertDate(SEXP x, SEXP type)
     const int n = length(x);
     if (!isString(type) || length(type) != 1)
         internal_error(__func__, "invalid type for, should have been caught before"); // # nocov
-    datetype ctype;
+    datetype ctype=0;
     bool ansint = true;
     if (!strcmp(CHAR(STRING_ELT(type, 0)), "yday")) ctype = YDAY;
     else if (!strcmp(CHAR(STRING_ELT(type, 0)), "wday")) ctype = WDAY;

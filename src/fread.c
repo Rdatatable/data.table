@@ -437,19 +437,16 @@ static const char* filesize_to_str(size_t fsize)
   snprintf(output, BUFFSIZE, "%"PRIu64" bytes", (uint64_t)lsize);
   return output;
 }
-
-void copyFile(size_t fileSize, const char *msg, bool verbose)  // only called in very very rare cases
+double copyFile(size_t fileSize)  // only called in very very rare cases
 {
   double tt = wallclock();
-  mmp_copy = (char *)malloc((size_t)fileSize + 1/* extra \0 */);
+  mmp_copy = (char *)malloc((size_t)fileSize + 1 /* extra \0 */);
   if (!mmp_copy)
-    STOP(_("Unable to allocate %s of contiguous virtual RAM. %s allocation."), filesize_to_str(fileSize), msg);
+    return -1.0;
   memcpy(mmp_copy, mmp, fileSize);
   sof = mmp_copy;
   eof = (char *)mmp_copy + fileSize;
-  tt = wallclock()-tt;
-  if (tt>0.5) DTPRINT(_("Avoidable %.3f seconds. %s time to copy.\n"), tt, msg);  // not warning as that could feasibly cause CRAN tests to fail, say, if test machine is heavily loaded
-  if (verbose) DTPRINT(_("  File copy in RAM took %.3f seconds.\n"), tt);
+  return wallclock()-tt;
 }
 
 
@@ -1268,6 +1265,14 @@ static int detect_types( const char **pch, int8_t type[], int ncol, bool *bumped
 //
 // Returns 1 if it finishes successfully, and 0 otherwise.
 //
+//  OpenMP is used here to:
+//    - Parallelize the reading of data in chunks
+//    - Avoid race conditions or concurrent writes to the output data.table by having atomic
+//      operations on the string data 
+//    - Manage synchronized updates to the progress bar and serialize the output to the console
+//  This function is highly optimized in reading and processing data with both large numbers of
+//    rows and columns, but the efficiency is more pronounced across rows.
+//
 //=================================================================================================
 int freadMain(freadMainArgs _args) {
   args = _args;  // assign to global for use by DTPRINT() in other functions
@@ -1526,10 +1531,20 @@ int freadMain(freadMainArgs _args) {
         // field) since we rely on that logic to avoid the copy below when fileSize$4096==0 but there is a final eol ok.
         // TODO: portable way to discover relevant page size. 4096 is lowest common denominator, though, and should suffice.
       } else {
-        const char *msg = _("This file is very unusual: it ends abruptly without a final newline, and also its size is a multiple of 4096 bytes. Please properly end the last row with a newline using for example 'echo >> file' to avoid this ");
-        if (verbose) DTPRINT(_("  File ends abruptly with '%c'. Copying file in RAM. %s copy.\n"), eof[-1], msg);
+        const char *msg = _("This file is very unusual: it ends abruptly without a final newline, and also its size is a multiple of 4096 bytes. Please properly end the last row with a newline using for example 'echo >> file'");
+        if (verbose)
+          DTPRINT(_("  File ends abruptly with '%c'. Final end-of-line is missing. Copying file in RAM. %s.\n"), eof[-1], msg);
         // In future, we may discover a way to mmap fileSize+1 on all OS when fileSize%4096==0, reliably. If and when, this clause can be updated with no code impact elsewhere.
-        copyFile(fileSize, msg, verbose);
+        double time_taken = copyFile(fileSize);
+        if (time_taken == -1.0) {
+          if (!verbose)
+            DTPRINT("%s. Attempt to copy file in RAM failed.", msg);
+          STOP(_("Unable to allocate %s of contiguous virtual RAM."), filesize_to_str(fileSize));
+        }
+        if (verbose)
+          DTPRINT(_("  File copy in RAM took %.3f seconds.\n"), time_taken);
+        else if (time_taken > 0.5)
+          DTPRINT(_("Avoidable file copy in RAM took %.3f seconds. %s.\n"), time_taken, msg);  // not warning as that could feasibly cause CRAN tests to fail, say, if test machine is heavily loaded
       }
     }
     *_const_cast(eof) = '\0';  // cow page
@@ -1586,8 +1601,13 @@ int freadMain(freadMainArgs _args) {
         row1line++;
       }
     }
-    if (ch > sof && verbose) DTPRINT(_("  Skipped to line %"PRIu64" in the file"), (uint64_t)row1line);
-    if (ch>=eof) STOP(_("skip=%"PRIu64" but the input only has %"PRIu64" line%s"), (uint64_t)args.skipNrow, (uint64_t)row1line, row1line>1?"s":"");
+    if (ch > sof && verbose)
+      DTPRINT(_("  Skipped to line %"PRIu64" in the file"), (uint64_t)row1line);
+    if (ch>=eof)
+      STOP(Pl_(row1line,
+               "skip=%"PRIu64" but the input only has %"PRIu64" line",
+               "skip=%"PRIu64" but the input only has %"PRIu64" lines"),
+           (uint64_t)args.skipNrow, (uint64_t)row1line);
     pos = ch;
   }
 
@@ -1793,10 +1813,20 @@ int freadMain(freadMainArgs _args) {
   if (ncol==1 && lastEOLreplaced && (eof[-1]=='\n' || eof[-1]=='\r')) {
     // Multiple newlines at the end are significant in the case of 1-column files only (multiple NA at the end)
     if (fileSize%4096==0) {
-      const char *msg = _("This file is very unusual: it's one single column, ends with 2 or more end-of-line (representing several NA at the end), and is a multiple of 4096, too.");
-      if (verbose) DTPRINT(_("  Copying file in RAM. %s\n"), msg);
+      const char *msg = _("This file is very unusual: it's one single column, ends with 2 or more end-of-line (representing several NA at the end), and the file size is a multiple of 4096, too");
+      if (verbose)
+        DTPRINT(_("  Copying file in RAM. %s\n"), msg);
       ASSERT(mmp_copy==NULL, "mmp has already been copied due to abrupt non-eol ending, so it does not end with 2 or more eol.%s", ""/*dummy arg for macro*/); // #nocov
-      copyFile(fileSize, msg, verbose);
+      double time_taken = copyFile(fileSize);
+      if (time_taken == -1.0) {
+        if (!verbose)
+          DTPRINT("%s. Attempt to copy file in RAM failed.", msg);
+        STOP(_("Unable to allocate %s of contiguous virtual RAM."), filesize_to_str(fileSize));
+      }
+      if (verbose)
+        DTPRINT(_("  File copy in RAM took %.3f seconds.\n"), time_taken);
+      else if (tt>0.5)
+        DTPRINT(_("Avoidable file copy in RAM took %.3f seconds. %s.\n"), time_taken, msg);  // not warning as that could feasibly cause CRAN tests to fail, say, if test machine is heavily loaded
       pos = sof + (pos-(const char *)mmp);
       firstJumpEnd = sof + (firstJumpEnd-(const char *)mmp);
     } else {
@@ -1969,9 +1999,13 @@ int freadMain(freadMainArgs _args) {
     if (ch!=pos)  INTERNAL_STOP("ch!=pos after counting fields in the line before the first data row"); // # nocov
     if (verbose) DTPRINT(_("Types in 1st data row match types in 2nd data row but previous row has %d fields. Taking previous row as column names."), tt);
     if (tt<ncol) {
-      autoFirstColName = (tt==ncol-1);
-      DTWARN(_("Detected %d column names but the data has %d columns (i.e. invalid file). Added %d extra default column name%s\n"), tt, ncol, ncol-tt,
-             autoFirstColName ? _(" for the first column which is guessed to be row names or an index. Use setnames() afterwards if this guess is not correct, or fix the file write command that created the file to create a valid file.") : _("s at the end."));
+      autoFirstColName = (ncol-tt==1);
+      if (autoFirstColName) {
+        DTWARN(_("Detected %d column names but the data has %d columns (i.e. invalid file). Added an extra default column name for the first column which is guessed to be row names or an index. Use setnames() afterwards if this guess is not correct, or fix the file write command that created the file to create a valid file.\n"),
+              tt, ncol);
+      } else {
+        DTWARN(_("Detected %d column names but the data has %d columns (i.e. invalid file). Added %d extra default column names at the end.\n"), tt, ncol, ncol-tt);
+      }
     } else if (tt>ncol) {
       if (fill) INTERNAL_STOP("fill=true but there is a previous row which should already have been filled"); // # nocov
       DTWARN(_("Detected %d column names but the data has %d columns. Filling rows automatically. Set fill=TRUE explicitly to avoid this warning.\n"), tt, ncol);

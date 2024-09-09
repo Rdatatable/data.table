@@ -15,7 +15,7 @@
     \code{.EACHI} is a symbol passed to \code{by}; i.e. \code{by=.EACHI}, \code{.NATURAL} is a symbol passed to \code{on}; i.e. \code{on=.NATURAL}
 }
 \details{
-    The bindings of these variables are locked and attempting to assign to them will generate an error. If you wish to manipulate \code{.SD} before returning it, take a \code{copy(.SD)} first (see FAQ 4.5). Using \code{:=} in the \code{j} of \code{.SD} is reserved for future use as a (tortuously) flexible way to update \code{DT} by reference by group (even when groups are not contiguous in an ad hoc by).
+    The bindings of these variables are locked and attempting to assign to them will generate an error. If you wish to manipulate \code{.SD} before returning it, take a \code{\link{copy}(.SD)} first (see FAQ 4.5). Using \code{:=} in the \code{j} of \code{.SD} is reserved for future use as a (tortuously) flexible way to update \code{DT} by reference by group (even when groups are not contiguous in an ad hoc by).
 
     These symbols used in \code{j} are defined as follows.
 
@@ -33,6 +33,8 @@
     \code{.NATURAL} is defined as \code{NULL} but its value is not used. Its usage is \code{on=.NATURAL} (alternative of \code{X[on=Y]}) which joins two tables on their common column names, performing a natural join; see \code{\link{data.table}}'s \code{on} argument for more details.
 
     Note that \code{.N} in \code{i} is computed up-front, while that in \code{j} applies \emph{after filtering in \code{i}}. That means that even absent grouping, \code{.N} in \code{i} can be different from \code{.N} in \code{j}. See Examples.
+
+    Note also that you should consider these symbols read-only and of limited scope -- internal data.table code might manipulate them in unexpected ways, and as such their bindings are locked. There are subtle ways to wind up with the wrong object, especially when attempting to copy their values outside a grouping context. See examples; when in doubt, \code{copy()} is your friend.
 }
 \seealso{
     \code{\link{data.table}}, \code{\link{:=}}, \code{\link{set}}, \code{\link{datatable-optimize}}
@@ -66,5 +68,9 @@ DT[{cat(sprintf('in i, .N is \%d\n', .N)); a < .N/2},
 # .I can be different in j and by, enabling rowwise operations in by
 DT[, .(.I, min(.SD[,-1]))]
 DT[, .(min(.SD[,-1])), by=.I]
+
+# Do not expect this to correctly append the value of .BY in each group; copy(.BY) will work.
+by_tracker = list()
+DT[, { append(by_tracker, .BY); sum(v) }, by=x]
 }
 \keyword{ data }

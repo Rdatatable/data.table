@@ -286,7 +286,11 @@ void copySharedColumns(SEXP x) {
       if (shared[i])
         SET_VECTOR_ELT(x, i, copyAsPlain(xp[i]));
     }
-    if (GetVerbose()) Rprintf(_("Found and copied %d column%s with a shared memory address\n"), nShared, nShared>1?"s":"");
+    if (GetVerbose())
+      Rprintf(Pl_(nShared,
+                  "Found and copied %d column with a shared memory address\n",
+                  "Found and copied %d columns with a shared memory address\n"),
+              nShared);
     // GetVerbose() (slightly expensive call of all options) called here only when needed
   }
 }
