@@ -1114,7 +1114,10 @@ replace_dot_alias = function(e) {
         if (is.null(names(jsub))) {
           # regular LHS:=RHS usage, or `:=`(...) with no named arguments (an error)
           # `:=`(LHS,RHS) is valid though, but more because can't see how to detect that, than desire
-          if (length(jsub)!=3L) stopf("In %s(col1=val1, col2=val2, ...) form, all arguments must be named.", if (root == "let") "let" else "`:=`")
+          this_call = if (root == "let") "let" else "`:=`"
+          .check_nested_walrus(jsub, 2:length(jsub), this_call)
+          if (length(jsub) != 3L)
+            stopf("In %s(col1=val1, col2=val2, ...) form, all arguments must be named.", this_call)
           lhs = jsub[[2L]]
           jsub = jsub[[3L]]
           if (is.name(lhs)) {
@@ -1134,11 +1137,12 @@ replace_dot_alias = function(e) {
           if (!all(named_idx <- nzchar(lhs))) {
             # friendly error for common case: trailing terminal comma
             n_lhs = length(lhs)
-            root_name <- if (root == "let") "let" else "`:=`"
+            this_call <- if (root == "let") "let" else "`:=`"
+            .check_nested_walrus(jsub, which(!named_idx)+1L, this_call)
             if (!named_idx[n_lhs] && all(named_idx[-n_lhs])) {
-              stopf("In %s(col1=val1, col2=val2, ...) form, all arguments must be named, but the last argument has no name. Did you forget a trailing comma?", root_name)
+              stopf("In %s(col1=val1, col2=val2, ...) form, all arguments must be named, but the last argument has no name. Did you forget a trailing comma?", this_call)
             } else {
-              stopf("In %s(col1=val1, col2=val2, ...) form, all arguments must be named, but these arguments lack names: %s.", root_name, brackify(which(!named_idx)))
+              stopf("In %s(col1=val1, col2=val2, ...) form, all arguments must be named, but these arguments lack names: %s.", this_call, brackify(which(!named_idx)))
             }
           }
           names(jsub)=""
@@ -3152,6 +3156,11 @@ is_constantish = function(q, check_singleton=FALSE) {
     }
   }
   q
+}
+
+.check_nested_walrus = function(e, check_entries, call_name) {
+  for (jj in check_entries) if (e[[jj]] %iscall% ":=")
+    stopf("It looks like you re-used `:=` in argument %d a functional assignment call -- use `=` instead: %s(col1=val1, col2=val2, ...)", jj-1L, call_name)
 }
 
 .prepareFastSubset = function(isub, x, enclos, notjoin, verbose = FALSE){
