@@ -19227,3 +19227,13 @@ if (test_bit64) {
 dt = data.table(a=1:2, b=expression(1,2))
 test(2289.1, dt[1,], data.table(a=1L, b=expression(1)))
 test(2289.2, dt[,b,a], dt)
+
+# error message improvement, #5296
+DT = data.table(a = 1)
+test(2290.1, DT[, `:=`(a := 2)], error="It looks like you re-used `:=`")
+# special case where length(jsub) == 3 that would have failed later
+test(2290.2, DT[, `:=`(a := 2, c := 3)], error="It looks like you re-used `:=` in argument 1")
+# NB: _not_ a = 2, because that means partially-named --> not currently covered
+test(2290.3, DT[, `:=`(a, c := 3)], error="It looks like you re-used `:=` in argument 2")
+# partially-named `:=`(...) --> different branch, same error
+test(2290.4, DT[, `:=`(a = 2, c := 3)], error="It looks like you re-used `:=` in argument 2")
