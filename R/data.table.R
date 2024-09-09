@@ -1337,7 +1337,6 @@ replace_dot_alias = function(e) {
           ## check key on i as well!
           ichk = is.data.table(i) && haskey(i) &&
                  identical(head(key(i), length(leftcols)), names_i[leftcols]) # i has the correct key, #3061
-          dt_types = function(x, cols = seq_along(x)) vapply_1c(cols, function(j) typeof(x[[j]]))
           if (
             keylen
             && (
@@ -1347,7 +1346,7 @@ replace_dot_alias = function(e) {
                 .Call(CisOrderedSubset, irows, nrow(x))
                 && (!roll || length(irows) == 1L) # see #1010. don't set key when i has no key, but irows is ordered and roll != FALSE
                 && (  #5361 merging on keyed factor with character, check if resulting character is really sorted
-                  identical(dt_types(i, leftcols), dt_types(x, rightcols)) # can only be not identical
+                  identical(vapply_1c(.shallow(i, leftcols), typeof), vapply_1c(.shallow(x, rightcols), typeof)) # can only be not identical
                   || is.sorted(ans, by=head(key(x), keylen))
                 )
               )
