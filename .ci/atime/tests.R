@@ -172,11 +172,12 @@ test.list <- atime::atime_test_list(
 
   NULL)
 
+# #6107 fixed performance across 3 ways to specify a column as Date, test each individually
 extra.args.6107 <- c(
   "colClasses=list(Date='date')",
   "colClasses='Date'",
   "select=list(Date='date')")
-for(extra.arg in extra.args.6107){
+for (extra.arg in extra.args.6107){
   this.test <- atime::atime_test(
     N = 10^seq(1, 7, by=0.25),
     pkg.edit.fun=test.list[[1]]$pkg.edit.fun,
@@ -188,7 +189,7 @@ for(extra.arg in extra.args.6107){
     },
     Slow = "e9087ce9860bac77c51467b19e92cf4b72ca78c7", # Parent of the merge commit (https://github.com/Rdatatable/data.table/commit/a77e8c22e44e904835d7b34b047df2eff069d1f2) of the PR (https://github.com/Rdatatable/data.table/pull/6107) that fixes the issue
     Fast = "a77e8c22e44e904835d7b34b047df2eff069d1f2") # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/6107) that fixes the issue
-  this.test$expr = parse(text=sprintf("data.table::fread(tmp_csv, %s)", extra.arg))[[1]]
+  this.test$expr = str2lang(sprintf("data.table::fread(tmp_csv, %s)", extra.arg))
   test.list[[sprintf("fread(%s) improved in #6107", extra.arg)]] <- this.test
 }
 
