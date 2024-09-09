@@ -19165,14 +19165,17 @@ for (opt in c(0, 1, 2)) {
 }
 
 # Confusing behavior with DT[, min(var):max(var)] #2069
-DT = data.table(t = c(2L, 1L, 3L))
+DT = data.table(t = c(2L, 1L, 3L), a=0, b=1)
 test(2284.1, DT[, min(t):max(t)], with(DT, min(t):max(t)))
 test(2284.2, DT[, 1:max(t)], with(DT, 1:max(t)))
 test(2284.3, DT[, max(t):1], with(DT, max(t):1))
 test(2284.4, DT[, 1:t[1L]], with(DT, 1:t[1L]))
 test(2284.5, DT[, t[2L]:1], with(DT, t[2L]:1))
-test(2284.6, DT[1L, t:max(t)], with(DT[1L], t:max(t)))
-test(2284.7, DT[1L, min(t):t], with(DT[1L], min(t):t))
+test(2284.6, DT[, min(a):max(t)], with(DT, min(a):max(t)))
+# but not every `:` with a call in from or to is with=TRUE, #6486
+test(2284.7, DT[, 1:ncol(DT)], DT)
+test(2284.8, DT[, 2:(ncol(DT) - 1L)], DT[, "a"])
+test(2284.9, DT[, (ncol(DT) - 1L):ncol(DT)], DT[, c("a", "b")])
 
 # Extra regression tests for #4772, which was already incidentally fixed by #5183.
 x = data.table(a=1:3)
