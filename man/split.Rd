@@ -12,13 +12,13 @@
 }
 \arguments{
   \item{x}{data.table }
-  \item{f}{factor or list of factors. Same as \code{\link[base:split]{split.data.frame}}. Use \code{by} argument instead, this is just for consistency with data.frame method.}
+  \item{f}{Same as \code{\link[base:split]{split.data.frame}}. Use \code{by} argument instead, this is just for consistency with data.frame method.}
   \item{drop}{logical. Default \code{FALSE} will not drop empty list elements caused by factor levels not referred by that factors. Works also with new arguments of split data.table method.}
   \item{by}{character vector. Column names on which split should be made. For \code{length(by) > 1L} and \code{flatten} FALSE it will result nested lists with data.tables on leafs.}
   \item{sorted}{When default \code{FALSE} it will retain the order of groups we are splitting on. When \code{TRUE} then sorted list(s) are returned. Does not have effect for \code{f} argument.}
   \item{keep.by}{logical default \code{TRUE}. Keep column provided to \code{by} argument.}
   \item{flatten}{logical default \code{TRUE} will unlist nested lists of data.tables. When using \code{f} results are always flattened to list of data.tables.}
-  \item{\dots}{passed to data.frame way of processing when using \code{f} argument.}
+  \item{\dots}{When using \code{f}, passed to \code{\link[base:split]{split.data.frame}}. When using \code{by}, \code{sep} is recognized as with the default method.}
   \item{verbose}{logical default \code{FALSE}. When \code{TRUE} it will print to console data.table split query used to split data.}
 }
 \details{

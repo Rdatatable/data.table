@@ -18,15 +18,9 @@ setindexv = function(x, cols, verbose=getOption("datatable.verbose")) {
   }
 }
 
-# upgrade to error after Mar 2020. Has already been warning since 2012, and stronger warning in Mar 2019 (note in news for 1.12.2); #3399
+# Has been warning since 2012, with stronger warning in Mar 2019 (note in news for 1.12.2); #3399
 "key<-" = function(x,value) {
-  warningf("key(x)<-value is deprecated and not supported. Please change to use setkey() with perhaps copy(). Has been warning since 2012 and will be an error in future.")
-  setkeyv(x,value)
-  # The returned value here from key<- is then copied by R before assigning to x, it seems. That's
-  # why we can't do anything about it without a change in R itself. If we return NULL (or invisible()) from this key<-
-  # method, the table gets set to NULL. So, although we call setkeyv(x,cols) here, and that doesn't copy, the
-  # returned value (x) then gets copied by R.
-  # So, solution is that caller has to call setkey or setkeyv directly themselves, to avoid <- dispatch and its copy.
+  stopf("key(x)<-value is deprecated and not supported. Please change to use setkey() with perhaps copy(). Has been warning since 2012.")
 }
 
 setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRUE)
@@ -56,23 +50,9 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
   miss = !(cols %chin% colnames(x))
   if (any(miss)) stopf("some columns are not in the data.table: %s", brackify(cols[miss]))
 
-  ## determine, whether key is already present:
-  if (identical(key(x),cols)) {
-    if (!physical) {
-      ## create index as integer() because already sorted by those columns
-      if (is.null(attr(x, "index", exact=TRUE))) setattr(x, "index", integer())
-      setattr(attr(x, "index", exact=TRUE), paste0("__", cols, collapse=""), integer())
-    }
-    return(invisible(x))
-  } else if(identical(head(key(x), length(cols)), cols)){
-    if (!physical) {
-      ## create index as integer() because already sorted by those columns
-      if (is.null(attr(x, "index", exact=TRUE))) setattr(x, "index", integer())
-      setattr(attr(x, "index", exact=TRUE), paste0("__", cols, collapse=""), integer())
-    } else {
-      ## key is present but x has a longer key. No sorting needed, only attribute is changed to shorter key.
-      setattr(x,"sorted",cols)
-    }
+  if (physical && identical(head(key(x), length(cols)), cols)){ ## for !physical we need to compute groups as well #4387
+    ## key is present but x has a longer key. No sorting needed, only attribute is changed to shorter key.
+    setattr(x,"sorted",cols)
     return(invisible(x))
   }
 
@@ -81,28 +61,22 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
     .xi = x[[i]]  # [[ is copy on write, otherwise checking type would be copying each column
     if (!typeof(.xi) %chin% ORDERING_TYPES) stopf("Column '%s' is type '%s' which is not supported as a key column type, currently.", i, typeof(.xi))
   }
-  if (!is.character(cols) || length(cols)<1L) stopf("Internal error. 'cols' should be character at this point in setkey; please report.") # nocov
+  if (!is.character(cols) || length(cols)<1L) internal_error("'cols' should be character at this point") # nocov
 
-  newkey = paste0(cols, collapse="__")
-  if (!any(indices(x) == newkey)) {
-    if (verbose) {
-      tt = suppressMessages(system.time(o <- forderv(x, cols, sort=TRUE, retGrp=FALSE)))  # system.time does a gc, so we don't want this always on, until refcnt is on by default in R
-      # suppress needed for tests 644 and 645 in verbose mode
-      catf("forder took %.03f sec\n", tt["user.self"]+tt["sys.self"])
-    } else {
-      o = forderv(x, cols, sort=TRUE, retGrp=FALSE)
-    }
+  if (verbose) {
+    # we now also retGrp=TRUE #4387 for !physical
+    tt = suppressMessages(system.time(o <- forderv(x, cols, sort=TRUE, retGrp=!physical, reuseSorting=TRUE)))  # system.time does a gc, so we don't want this always on, until refcnt is on by default in R
+    # suppress needed for tests 644 and 645 in verbose mode
+    catf("forder took %.03f sec\n", tt["user.self"]+tt["sys.self"])
   } else {
-    if (verbose) catf("setkey on columns %s using existing index '%s'\n", brackify(cols), newkey)
-    o = getindex(x, newkey)
+    o = forderv(x, cols, sort=TRUE, retGrp=!physical, reuseSorting=TRUE)
   }
-  if (!physical) {
-    if (is.null(attr(x, "index", exact=TRUE))) setattr(x, "index", integer())
-    setattr(attr(x, "index", exact=TRUE), paste0("__", cols, collapse=""), o)
+  if (!physical) { # index COULD BE saved from C forderReuseSorting already, but disabled for now
+    maybe_reset_index(x, o, cols)
     return(invisible(x))
   }
-  setattr(x,"index",NULL)   # TO DO: reorder existing indexes likely faster than rebuilding again. Allow optionally. Simpler for now to clear.
   if (length(o)) {
+    setattr(x,"index",NULL)   # TO DO: reorder existing indexes likely faster than rebuilding again. Allow optionally. Simpler for now to clear. Only when order changes.
     if (verbose) { last.started.at = proc.time() }
     .Call(Creorder,x,o)
     if (verbose) { catf("reorder took %s\n", timetaken(last.started.at)); flush.console() }
@@ -128,9 +102,9 @@ getindex = function(x, name) {
   # name can be "col", or "col1__col2", or c("col1","col2")
   ans = attr(attr(x, 'index', exact=TRUE), paste0("__",name,collapse=""), exact=TRUE)
   if (!is.null(ans) && (!is.integer(ans) || (length(ans)!=nrow(x) && length(ans)!=0L))) {
-    stopf("Internal error: index '%s' exists but is invalid", name)   # nocov
+    internal_error("index '%s' exists but is invalid", name)   # nocov
   }
-  ans
+  c(ans) ## drop starts and maxgrpn attributes
 }
 
 haskey = function(x) !is.null(key(x))
@@ -166,19 +140,24 @@ is.sorted = function(x, by=NULL) {
   # Return value of TRUE/FALSE is relied on in [.data.table quite a bit on vectors. Simple. Stick with that (rather than -1/0/+1)
 }
 
+maybe_reset_index = function(x, idx, cols) {
+  if (isTRUE(getOption("datatable.forder.auto.index"))) return(invisible())
+  if (is.null(attr(x, "index", exact=TRUE))) setattr(x, "index", integer())
+  setattr(attr(x, "index", exact=TRUE), paste0("__", cols, collapse=""), idx)
+  invisible(x)
+}
+
 ORDERING_TYPES = c('logical', 'integer', 'double', 'complex', 'character')
-forderv = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L, na.last=FALSE)
-{
-  if (is.atomic(x)) {  # including forderv(NULL) which returns error consistent with base::order(NULL),
+forderv = function(x, by=seq_along(x), retGrp=FALSE, retStats=retGrp, sort=TRUE, order=1L, na.last=FALSE, reuseSorting=getOption("datatable.reuse.sorting", NA)) {
+  if (is.atomic(x) || is.null(x)) {  # including forderv(NULL) which returns error consistent with base::order(NULL),
     if (!missing(by) && !is.null(by)) stopf("x is a single vector, non-NULL 'by' doesn't make sense")
     by = NULL
   } else {
     if (!length(x)) return(integer(0L)) # e.g. forderv(data.table(NULL)) and forderv(list()) return integer(0L))
     by = colnamesInt(x, by, check_dups=FALSE)
-    if (length(order) == 1L) order = rep(order, length(by))
   }
   order = as.integer(order) # length and contents of order being +1/-1 is checked at C level
-  .Call(Cforder, x, by, retGrp, sort, order, na.last)  # returns integer() if already sorted, regardless of sort=TRUE|FALSE
+  .Call(CforderReuseSorting, x, by, retGrp, retStats, sort, order, na.last, reuseSorting)  # returns integer() if already sorted, regardless of sort=TRUE|FALSE
 }
 
 forder = function(..., na.last=TRUE, decreasing=FALSE)
@@ -215,7 +194,7 @@ forder = function(..., na.last=TRUE, decreasing=FALSE)
     data = eval(sub, parent.frame(), parent.frame())
   }
   stopifnot(isTRUEorFALSE(decreasing))
-  o = forderv(data, seq_along(data), sort=TRUE, retGrp=FALSE, order= if (decreasing) -asc else asc, na.last)
+  o = forderv(data, seq_along(data), retGrp=FALSE, retStats=FALSE, sort=TRUE, order=if (decreasing) -asc else asc, na.last=na.last)
   if (!length(o) && length(data)>=1L) o = seq_along(data[[1L]]) else o
   o
 }
@@ -290,7 +269,7 @@ setorderv = function(x, cols = colnames(x), order=1L, na.last=FALSE)
     .xi = x[[i]]  # [[ is copy on write, otherwise checking type would be copying each column
     if (!typeof(.xi) %chin% ORDERING_TYPES) stopf("Column '%s' is type '%s' which is not supported for ordering currently.", i, typeof(.xi))
   }
-  if (!is.character(cols) || length(cols)<1L) stopf("Internal error. 'cols' should be character at this point in setkey; please report.") # nocov
+  if (!is.character(cols) || length(cols)<1L) internal_error("'cols' should be character at this point") # nocov
 
   o = forderv(x, cols, sort=TRUE, retGrp=FALSE, order=order, na.last=na.last)
   if (length(o)) {
@@ -308,7 +287,7 @@ setorderv = function(x, cols = colnames(x), order=1L, na.last=FALSE)
 
 binary = function(x) .Call(Cbinary, x)
 
-setNumericRounding = function(x) {.Call(CsetNumericRounding, as.integer(x)); invisible()}
+setNumericRounding = function(x) invisible(.Call(CsetNumericRounding, as.integer(x)))
 getNumericRounding = function() .Call(CgetNumericRounding)
 
 SJ = function(...) {
@@ -325,13 +304,8 @@ CJ = function(..., sorted = TRUE, unique = FALSE)
   # Cross Join will then produce a join table with the combination of all values (cross product).
   # The last vector is varied the quickest in the table, so dates should be last for roll for example
   l = list(...)
-  if (isFALSE(getOption("datatable.CJ.names", TRUE))) {  # default TRUE from v1.12.0, FALSE before. TODO: remove option in v1.13.0 as stated in news
-    if (is.null(vnames <- names(l))) vnames = paste0("V", seq_len(length(l)))
-    else if (any(tt <- vnames=="")) vnames[tt] = paste0("V", which(tt))
-  } else {
-    vnames = name_dots(...)$vnames
-    if (any(tt <- vnames=="")) vnames[tt] = paste0("V", which(tt))
-  }
+  vnames = name_dots(...)$vnames
+  if (any(tt <- !nzchar(vnames))) vnames[tt] = paste0("V", which(tt))
   dups = FALSE # fix for #1513
   for (i in seq_along(l)) {
     y = l[[i]]
@@ -351,7 +325,7 @@ CJ = function(..., sorted = TRUE, unique = FALSE)
       if (unique) l[[i]] = unique(y)
     }
   }
-  nrow = prod( vapply_1i(l, length) )  # lengths(l) will work from R 3.2.0
+  nrow = prod(lengths(l))
   if (nrow > .Machine$integer.max) stopf("Cross product of elements provided to CJ() would result in %.0f rows which exceeds .Machine$integer.max == %d", nrow, .Machine$integer.max)
   l = .Call(Ccj, l)
   setDT(l)
@@ -364,4 +338,3 @@ CJ = function(..., sorted = TRUE, unique = FALSE)
   }
   l
 }
-
