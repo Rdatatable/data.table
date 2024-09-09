@@ -25,6 +25,8 @@ rowwiseDT(
 #> 3:     5     6      c ~a + b
 ```
 
+2. Limited support for subsetting or aggregating columns of type `expression`, [#5596](https://github.com/Rdatatable/data.table/issues/5596). Thanks to @tsp for the report, and @ben-schwen for the fix.
+
 ## BUG FIXES
 
 1. Using `print.data.table()` with character truncation using `datatable.prettyprint.char` no longer errors with `NA` entries, [#6441](https://github.com/Rdatatable/data.table/issues/6441). Thanks to @r2evans for the bug report, and @joshhwuu for the fix.
@@ -56,6 +58,12 @@ rowwiseDT(
 5. Queries like `DT[, min(x):max(x)]` now work as expected, i.e. the same as `DT[, seq(min(x), max(x))]` or `with(DT, min(x):max(x))`, [#2069](https://github.com/Rdatatable/data.table/issues/2069). Shorthand like `DT[, a:b]` meaning "select from columns `a` through `b`" still works. Thanks to @franknarf1 for reporting and @jangorecki for the fix.
 
 6. Fixed a segfault in `fcase()`, [#6448](https://github.com/Rdatatable/data.table/issues/6448). Thanks @ethanbsmith for reporting with reprex, @aitap for finding the root cause, and @MichaelChirico for the PR.
+
+7. `fread()` performance improves when specifying `Date` among `colClasses`, [#6105](https://github.com/Rdatatable/data.table/issues/6105). One implication of the change is that the column will be an `IDate` (which also inherits from `Date`), which may affect code strongly relying on the column class to be `Date` exactly; computations with `IDate` and `Date` columns should otherwise be the same. If you strongly prefer the `Date` class, run `as.Date()` explicitly following `fread()`. Thanks @scipima for the report and @MichaelChirico for the fix.
+
+8. `dt[, col]` now returns a copy of `col` also when it is a list column, as in any other case, [#4877](https://github.com/Rdatatable/data.table/issues/4877). Thanks to @tlapak for reporting and the PR.
+
+9. `rbindlist` and `rbind` binding `bit64::integer64` columns with `character`/`complex`/`list` columns now works, [#5504](https://github.com/Rdatatable/data.table/issues/5504). Thanks to @MichaelChirico for the request and @ben-schwen for the PR.
 
 ## NOTES
 

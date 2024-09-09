@@ -437,19 +437,16 @@ static const char* filesize_to_str(size_t fsize)
   snprintf(output, BUFFSIZE, "%"PRIu64" bytes", (uint64_t)lsize);
   return output;
 }
-
-void copyFile(size_t fileSize, const char *msg, bool verbose)  // only called in very very rare cases
+double copyFile(size_t fileSize)  // only called in very very rare cases
 {
   double tt = wallclock();
-  mmp_copy = (char *)malloc((size_t)fileSize + 1/* extra \0 */);
+  mmp_copy = (char *)malloc((size_t)fileSize + 1 /* extra \0 */);
   if (!mmp_copy)
-    STOP(_("Unable to allocate %s of contiguous virtual RAM. %s allocation."), filesize_to_str(fileSize), msg);
+    return -1.0;
   memcpy(mmp_copy, mmp, fileSize);
   sof = mmp_copy;
   eof = (char *)mmp_copy + fileSize;
-  tt = wallclock()-tt;
-  if (tt>0.5) DTPRINT(_("Avoidable %.3f seconds. %s time to copy.\n"), tt, msg);  // not warning as that could feasibly cause CRAN tests to fail, say, if test machine is heavily loaded
-  if (verbose) DTPRINT(_("  File copy in RAM took %.3f seconds.\n"), tt);
+  return wallclock()-tt;
 }
 
 
@@ -1534,10 +1531,20 @@ int freadMain(freadMainArgs _args) {
         // field) since we rely on that logic to avoid the copy below when fileSize$4096==0 but there is a final eol ok.
         // TODO: portable way to discover relevant page size. 4096 is lowest common denominator, though, and should suffice.
       } else {
-        const char *msg = _("This file is very unusual: it ends abruptly without a final newline, and also its size is a multiple of 4096 bytes. Please properly end the last row with a newline using for example 'echo >> file' to avoid this ");
-        if (verbose) DTPRINT(_("  File ends abruptly with '%c'. Copying file in RAM. %s copy.\n"), eof[-1], msg);
+        const char *msg = _("This file is very unusual: it ends abruptly without a final newline, and also its size is a multiple of 4096 bytes. Please properly end the last row with a newline using for example 'echo >> file'");
+        if (verbose)
+          DTPRINT(_("  File ends abruptly with '%c'. Final end-of-line is missing. Copying file in RAM. %s.\n"), eof[-1], msg);
         // In future, we may discover a way to mmap fileSize+1 on all OS when fileSize%4096==0, reliably. If and when, this clause can be updated with no code impact elsewhere.
-        copyFile(fileSize, msg, verbose);
+        double time_taken = copyFile(fileSize);
+        if (time_taken == -1.0) {
+          if (!verbose)
+            DTPRINT("%s. Attempt to copy file in RAM failed.", msg);
+          STOP(_("Unable to allocate %s of contiguous virtual RAM."), filesize_to_str(fileSize));
+        }
+        if (verbose)
+          DTPRINT(_("  File copy in RAM took %.3f seconds.\n"), time_taken);
+        else if (time_taken > 0.5)
+          DTPRINT(_("Avoidable file copy in RAM took %.3f seconds. %s.\n"), time_taken, msg);  // not warning as that could feasibly cause CRAN tests to fail, say, if test machine is heavily loaded
       }
     }
     *_const_cast(eof) = '\0';  // cow page
@@ -1806,10 +1813,20 @@ int freadMain(freadMainArgs _args) {
   if (ncol==1 && lastEOLreplaced && (eof[-1]=='\n' || eof[-1]=='\r')) {
     // Multiple newlines at the end are significant in the case of 1-column files only (multiple NA at the end)
     if (fileSize%4096==0) {
-      const char *msg = _("This file is very unusual: it's one single column, ends with 2 or more end-of-line (representing several NA at the end), and is a multiple of 4096, too.");
-      if (verbose) DTPRINT(_("  Copying file in RAM. %s\n"), msg);
+      const char *msg = _("This file is very unusual: it's one single column, ends with 2 or more end-of-line (representing several NA at the end), and the file size is a multiple of 4096, too");
+      if (verbose)
+        DTPRINT(_("  Copying file in RAM. %s\n"), msg);
       ASSERT(mmp_copy==NULL, "mmp has already been copied due to abrupt non-eol ending, so it does not end with 2 or more eol.%s", ""/*dummy arg for macro*/); // #nocov
-      copyFile(fileSize, msg, verbose);
+      double time_taken = copyFile(fileSize);
+      if (time_taken == -1.0) {
+        if (!verbose)
+          DTPRINT("%s. Attempt to copy file in RAM failed.", msg);
+        STOP(_("Unable to allocate %s of contiguous virtual RAM."), filesize_to_str(fileSize));
+      }
+      if (verbose)
+        DTPRINT(_("  File copy in RAM took %.3f seconds.\n"), time_taken);
+      else if (tt>0.5)
+        DTPRINT(_("Avoidable file copy in RAM took %.3f seconds. %s.\n"), time_taken, msg);  // not warning as that could feasibly cause CRAN tests to fail, say, if test machine is heavily loaded
       pos = sof + (pos-(const char *)mmp);
       firstJumpEnd = sof + (firstJumpEnd-(const char *)mmp);
     } else {

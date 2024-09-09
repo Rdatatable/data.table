@@ -335,10 +335,10 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
               type[i]=CT_STRING; // e.g. CT_ISO8601_DATE changed to character here so that as.POSIXct treats the date-only as local time in tests 1743.122 and 2150.11
               SET_STRING_ELT(colClassesAs, i, tt);
             }
-          } else {
+          } else if (type[i] != CT_ISO8601_DATE || tt != char_Date) {
             type[i] = typeEnum[w-1];                           // freadMain checks bump up only not down
             if (w==NUT) SET_STRING_ELT(colClassesAs, i, tt);
-          }
+          } // else (when colClasses="Date" and fread found an IDate), don't update type[i] and don't signal any coercion needed on R side
         }
       } else { // selectColClasses==true
         if (!selectInts) internal_error(__func__, "selectInts is NULL but selectColClasses is true"); // # nocov
@@ -355,7 +355,7 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
               type[y-1]=CT_STRING;
               SET_STRING_ELT(colClassesAs, y-1, tt);
             }
-          } else {
+          } else if (type[i] != CT_ISO8601_DATE || tt != char_Date) {
             type[y-1] = typeEnum[w-1];
             if (w==NUT) SET_STRING_ELT(colClassesAs, y-1, tt);
           }
@@ -405,7 +405,9 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
           }
           if (selectRankD) selectRankD[colIdx-1] = rank++;
           // NB: mark as negative to indicate 'seen'
-          if (colClassType == CT_ISO8601_TIME && type[colIdx-1]!=CT_ISO8601_TIME) {
+          if (type[colIdx-1]==CT_ISO8601_DATE && colClassType==CT_STRING && STRING_ELT(listNames, i) == char_Date) {
+            type[colIdx-1] *= -1;
+          } else if (colClassType == CT_ISO8601_TIME && type[colIdx-1]!=CT_ISO8601_TIME) {
             type[colIdx-1] = -CT_STRING; // don't use in-built UTC parser, defer to character and as.POSIXct afterwards which reads in local time
             SET_STRING_ELT(colClassesAs, colIdx-1, STRING_ELT(listNames, i));
           } else {
