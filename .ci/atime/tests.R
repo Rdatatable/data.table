@@ -177,8 +177,8 @@ test.list <- atime::atime_test_list(
       fwrite(DT, tmp_csv)
     },
     expr = data.table::fread(tmp_csv, colClasses=list(Date='date')),
-    Slow = "e9087ce9860bac77c51467b19e92cf4b72ca78c7",  # PR #6107 merged to master
-    Fast = "a77e8c22e44e904835d7b34b047df2eff069d1f2"), # Commit prior to #6107 merged to master
+    Slow = "e9087ce9860bac77c51467b19e92cf4b72ca78c7",  # Parent of merge commit for #6107 to master
+    Fast = "a77e8c22e44e904835d7b34b047df2eff069d1f2"), # Merge commit for PR #6107 to master
   "fread(colClasses=Date) improved in #6107" = atime::atime_test(
     N = 10^seq(1, 7),
     setup = {
