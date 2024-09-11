@@ -173,7 +173,8 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
       xo = forderv(nqx, c(ncol(nqx), xcols))
       if (verbose) {catf("done in %s\n",timetaken(last.started.at)); flush.console()}
     } else nqgrp = integer(0L)
-    if (verbose) catf("  Found %d non-equi group(s) ...\n", nqmaxgrp)
+    if (verbose)
+      catf(ngettext(nqmaxgrp, "  Found %d non-equi group ...\n", "  Found %d non-equi groups ...\n"), nqmaxgrp, domain=NA)
   }
 
   if (verbose) {last.started.at=proc.time();catf("Starting bmerge ...\n");flush.console()}

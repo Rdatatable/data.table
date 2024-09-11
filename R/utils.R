@@ -30,6 +30,15 @@ internal_error = function(...) {
   stop(e, call. = FALSE, domain = NA)
 }
 
+check_duplicate_names = function(x, table_name=deparse(substitute(x))) {
+  if (!anyDuplicated(nm <- names(x))) return(invisible())
+  duplicate_names = unique(nm[duplicated(nm)])
+  stopf(ngettext(length(duplicate_names),
+                  "%s has duplicated column name %s. Please remove or rename the duplicate and try again.",
+                  "%s has duplicated column names %s. Please remove or rename the duplicates and try again."),
+        table_name, brackify(duplicate_names), domain=NA)
+}
+
 # TODO(R>=4.0.0): Remove this workaround. From R 4.0.0, rep_len() dispatches rep.Date(), which we need.
 #   Before that, rep_len() strips attributes --> breaks data.table()'s internal recycle() helper.
 #   This also impacts test 2 in S4.Rraw, because the error message differs for rep.int() vs. rep_len().
