@@ -2756,7 +2756,7 @@ set = function(x, i = NULL, j, value) {
   x = .Call(Cassign, x, i, j, NULL, value)
   if (old_add != address(x)) {
     # assign is needed to replace x on address change due to possible new allocation
-    assign(name, x, envir = parent.frame(), inherits = TRUE)
+    assign(name, x, envir=parent.frame())
   }
   invisible(x)
 }
