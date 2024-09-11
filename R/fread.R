@@ -326,7 +326,9 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     } else {
       cols_to_factor = which(vapply_1b(ans, is.character))
     }
-    if (verbose) catf("stringsAsFactors=%s converted %d column(s): %s\n", stringsAsFactors, length(cols_to_factor), brackify(names(ans)[cols_to_factor]))
+    if (verbose)
+      catf(ngettext(length(cols_to_factor), "stringsAsFactors=%s converted %d column: %s\n", "stringsAsFactors=%s converted %d columns: %s\n"),
+           stringsAsFactors, length(cols_to_factor), brackify(names(ans)[cols_to_factor]), domain=NA)
     for (j in cols_to_factor) set(ans, j=j, value=as_factor(.subset2(ans, j)))
   }
 
