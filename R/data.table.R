@@ -2713,15 +2713,13 @@ setcolorder = function(x, neworder=key(x), before=NULL, after=NULL)  # before/af
   invisible(x)
 }
 
-set = function(x,i=NULL,j,value)  # low overhead, loopable
-{
-  if (is.character(j)) {
-    name = substitute(x)
-    x = .Call(Cassign,x,i,j,NULL,value)
-    if (is.name(name))
-      assign(as.character(name),x,parent.frame(),inherits=TRUE)
-  } else {
-    .Call(Cassign,x,i,j,NULL,value)
+set = function(x, i = NULL, j, value) {
+  name = as.chracter(substitute(x))
+  old_add = address(x)
+  x = .Call(Cassign, x, i, j, NULL, value)
+  if (old_add != address(x)) {
+    # assign is needed to replace x on address change due to possible new allocation
+    assign(name, x, envir = parent.frame(), inherits = TRUE)
   }
   invisible(x)
 }
