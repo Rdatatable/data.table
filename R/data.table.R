@@ -2751,7 +2751,7 @@ setcolorder = function(x, neworder=key(x), before=NULL, after=NULL)  # before/af
 }
 
 set = function(x, i = NULL, j, value) {
-  name = as.chracter(substitute(x))
+  name = as.character(substitute(x))
   old_add = address(x)
   x = .Call(Cassign, x, i, j, NULL, value)
   if (old_add != address(x)) {
