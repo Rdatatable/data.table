@@ -19244,6 +19244,6 @@ test(2290.4, DT[, `:=`(a = 2, c := 3)], error="It looks like you re-used `:=` in
 
 # re-overallocate in set if quota is reached #496 #4100
 DT = data.table()
-test(2235.1, options=c(datatable.alloccol=1L), {for (i in seq(10L)) set(DT, j = paste0("V",i), value = i); ncol(DT)}, 10L)
+test(2291.1, options=c(datatable.alloccol=1L), {for (i in seq(10L)) set(DT, j = paste0("V",i), value = i); ncol(DT)}, 10L)
 DT = structure(list(a = 1, b = 2), class = c("data.table", "data.frame"))
-test(2235.2, options=c(datatable.alloccol=1L), set(DT, j="c", value=3), data.table(a=1, b=2, c=3))
+test(2291.2, options=c(datatable.alloccol=1L), set(DT, j="c", value=3), data.table(a=1, b=2, c=3))
