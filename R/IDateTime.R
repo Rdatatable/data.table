@@ -83,7 +83,7 @@ as.list.IDate = function(x, ...) NextMethod()
 ## round.IDate = function (x, digits, units=digits, ...) {
 ##     if (missing(digits)) digits = units # workaround to provide a units argument to match the round generic and round.POSIXt
 ##     units = match.arg(digits, c("weeks", "months", "quarters", "years"))
-round.IDate = function (x, digits=c("weeks", "months", "quarters", "years"), ...) {
+round.IDate = function(x, digits=c("weeks", "months", "quarters", "years"), ...) {
   units = match.arg(digits)
   as.IDate(switch(units,
           weeks  = round(x, "year") + 7L * (yday(x) %/% 7L),
@@ -93,12 +93,12 @@ round.IDate = function (x, digits=c("weeks", "months", "quarters", "years"), ...
 }
 
 #Adapted from `+.Date`
-`+.IDate` = function (e1, e2) {
+`+.IDate` = function(e1, e2) {
   if (nargs() == 1L)
     return(e1)
   # TODO: investigate Ops.IDate method a la Ops.difftime
   if (inherits(e1, "difftime") || inherits(e2, "difftime"))
-    stopf("Internal error -- difftime objects may not be added to IDate, but Ops dispatch should have intervened to prevent this") # nocov
+    internal_error("difftime objects may not be added to IDate, but Ops dispatch should have intervened to prevent this") # nocov
   if (isReallyReal(e1) || isReallyReal(e2)) {
     return(`+.Date`(e1, e2))
     # IDate doesn't support fractional days; revert to base Date
@@ -108,17 +108,17 @@ round.IDate = function (x, digits=c("weeks", "months", "quarters", "years"), ...
   (setattr(as.integer(unclass(e1) + unclass(e2)), "class", c("IDate", "Date")))  # () wrap to return visibly
 }
 
-`-.IDate` = function (e1, e2) {
+`-.IDate` = function(e1, e2) {
   if (!inherits(e1, "IDate")) {
     if (inherits(e1, 'Date')) return(base::`-.Date`(e1, e2))
     stopf("can only subtract from \"IDate\" objects")
   }
   if (storage.mode(e1) != "integer")
-    stopf("Internal error: storage mode of IDate is somehow no longer integer") # nocov
+    internal_error("storage mode of IDate is somehow no longer integer") # nocov
   if (nargs() == 1L)
     stopf("unary - is not defined for \"IDate\" objects")
   if (inherits(e2, "difftime"))
-    stopf("Internal error -- difftime objects may not be subtracted from IDate, but Ops dispatch should have intervened to prevent this") # nocov
+    internal_error("difftime objects may not be subtracted from IDate, but Ops dispatch should have intervened to prevent this") # nocov
 
   if ( isReallyReal(e2) ) {
     # IDate deliberately doesn't support fractional days so revert to base Date
@@ -129,7 +129,7 @@ round.IDate = function (x, digits=c("weeks", "months", "quarters", "years"), ...
   }
   ans = as.integer(unclass(e1) - unclass(e2))
   if (!inherits(e2, "Date")) setattr(ans, "class", c("IDate", "Date"))
-  return(ans)
+  ans
 }
 
 
@@ -177,7 +177,7 @@ as.ITime.character = function(x, format, ...) {
       w = w[!nna]
     }
   }
-  return(as.ITime(y, ...))
+  as.ITime(y, ...)
 }
 
 as.ITime.POSIXlt = function(x, ms = 'truncate', ...) {
@@ -228,7 +228,7 @@ print.ITime = function(x, ...) {
   print(format(x))
 }
 
-rep.ITime = function (x, ...)
+rep.ITime = function(x, ...)
 {
   y = rep(unclass(x), ...)
   class(y) = "ITime"   # unlass and rep could feasibly not copy, hence use class<- not setattr()
@@ -314,9 +314,9 @@ clip_msec = function(secs, action) {
 # Date - time extraction functions
 #   Adapted from Hadley Wickham's routines cited below to ensure
 #   integer results.
-#     http://gist.github.com/10238
-#   See also Hadley's more advanced and complex lubridate package:
-#     http://github.com/hadley/lubridate
+#     https://gist.github.com/hadley/10238
+#   See also Hadley et al's more advanced and complex lubridate package:
+#     https://github.com/tidyverse/lubridate
 #   lubridate routines do not return integer values.
 ###################################################################
 
@@ -338,10 +338,10 @@ hour = function(x) {
   if (inherits(x, 'ITime')) return(as.integer(x) %/% 3600L %% 24L)
   as.POSIXlt(x)$hour
 }
-yday    = function(x) as.POSIXlt(x)$yday + 1L
-wday    = function(x) (unclass(as.IDate(x)) + 4L) %% 7L + 1L
-mday    = function(x) as.POSIXlt(x)$mday
-week    = function(x) yday(x) %/% 7L + 1L
+yday    = function(x) convertDate(as.IDate(x), "yday")
+wday    = function(x) convertDate(as.IDate(x), "wday")
+mday    = function(x) convertDate(as.IDate(x), "mday")
+week    = function(x) convertDate(as.IDate(x), "week")
 isoweek = function(x) {
   # ISO 8601-conformant week, as described at
   #   https://en.wikipedia.org/wiki/ISO_week_date
@@ -356,7 +356,13 @@ isoweek = function(x) {
   1L + (nearest_thurs - year_start) %/% 7L
 }
 
-month   = function(x) as.POSIXlt(x)$mon + 1L
-quarter = function(x) as.POSIXlt(x)$mon %/% 3L + 1L
-year    = function(x) as.POSIXlt(x)$year + 1900L
+month   = function(x) convertDate(as.IDate(x), "month")
+quarter = function(x) convertDate(as.IDate(x), "quarter")
+year    = function(x) convertDate(as.IDate(x), "year")
+yearmon = function(x) convertDate(as.IDate(x), "yearmon")
+yearqtr = function(x) convertDate(as.IDate(x), "yearqtr")
 
+convertDate = function(x, type) {
+  type = match.arg(type, c("yday", "wday", "mday", "week", "month", "quarter", "year", "yearmon", "yearqtr"))
+  .Call(CconvertDate, x, type)
+}

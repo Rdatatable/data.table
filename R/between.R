@@ -84,7 +84,7 @@ inrange = function(x,lower,upper,incbounds=TRUE) {
   options(datatable.verbose=verbose)
   if (verbose) {last.started.at=proc.time();catf("Generating final logical vector ... ");flush.console()}
   .Call(Cinrange, idx <- vector("logical", length(x)), xo, ans[["starts"]], ans[["lens"]])
-  if (verbose) {catf("done in %s\n",timetaken(last.started.at)); flush.console}
+  if (verbose) {catf("done in %s\n",timetaken(last.started.at)); flush.console()}
   idx
 }
 

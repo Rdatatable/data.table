@@ -1,5 +1,11 @@
 #include "data.table.h"
 
+/*
+  OpenMP is used here to parallelize:
+   - The element assignment in vectors
+   - The memory copying operations (blockwise replication of data using memcpy)
+   - The creation of all combinations of the input vectors over the cross-product space
+*/
 SEXP cj(SEXP base_list) {
   int ncol = LENGTH(base_list);
   SEXP out = PROTECT(allocVector(VECSXP, ncol));
@@ -62,7 +68,7 @@ SEXP cj(SEXP base_list) {
       }
     } break;
     case STRSXP: {
-      const SEXP *sourceP = STRING_PTR(source);
+      const SEXP *sourceP = STRING_PTR_RO(source);
       int start = 0;
       for (int i=0; i<ncopy; ++i) {
         for (int j=0; j<thislen; ++j) {

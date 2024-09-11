@@ -43,4 +43,3 @@ DT[1,a:=10L][]                        # yes. ...[] == oops, forgot print(...)
 tryCatch(DT[,foo:=ColumnNameTypo], error=function(e) e$message)         # error: not found.
 DT                                    # yes
 DT                                    # yes
-
