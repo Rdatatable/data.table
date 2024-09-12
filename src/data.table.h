@@ -269,7 +269,7 @@ SEXP substitute_call_arg_namesR(SEXP expr, SEXP env);
 SEXP notchin(SEXP x, SEXP table);
 
 // topn.c
-SEXP topn(SEXP x, SEXP nArg, SEXP ascArg, SEXP naArg, SEXP sortedArg);
+SEXP topn(SEXP, SEXP, SEXP, SEXP, SEXP);
 
 // functions called from R level .Call/.External and registered in init.c
 // these now live here to pass -Wstrict-prototypes, #5477
