@@ -10,7 +10,7 @@ static inline bool icmp(const int *x, int i, int j, bool min, bool nalast) {
 }
 
 static inline bool dcmp(const double *x, int i, int j, bool min, bool nalast) {
-  if (x[i]==x[j] || isnan(x[i]) && isnan(x[j])) return i > j;
+  if (x[i]==x[j] || (isnan(x[i]) && isnan(x[j]))) return i > j;
   if (isnan(x[i])) return nalast;
   if (isnan(x[j])) return !nalast;
   return min ? x[i] < x[j] : x[i] > x[j];
