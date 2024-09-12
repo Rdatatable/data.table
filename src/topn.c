@@ -3,7 +3,7 @@
 static inline void swap(int *a, int *b) { int tmp=*a; *a=*b; *b=tmp; }
 
 static inline bool icmp(const int *x, const int a, const int b, const bool min, const bool nalast) {
-  if (x[a]==x[b]) return(a > b);
+  if (x[a]==x[b]) return a > b;
   if (x[a]==NA_INTEGER) return(nalast);
   if (x[b]==NA_INTEGER) return(!nalast);
   return(min ? x[a] < x[b] : x[a] > x[b]);
