@@ -3,41 +3,41 @@
 static inline void swap(int *a, int *b) { int tmp=*a; *a=*b; *b=tmp; }
 
 static inline bool icmp(const int *x, const int i, const int j, const bool min, const bool nalast) {
-  if (x[i]==x[j]) return(i > j);
-  if (x[i]==NA_INTEGER) return(nalast);
-  if (x[j]==NA_INTEGER) return(!nalast);
-  return(min ? x[i] < x[j] : x[i] > x[j]);
+  if (x[i]==x[j]) return i > j;
+  if (x[i]==NA_INTEGER) return nalast;
+  if (x[j]==NA_INTEGER) return !nalast;
+  return min ? x[i] < x[j] : x[i] > x[j];
 }
 static inline bool dcmp(const double *x, const int i, const int j, const bool min, const bool nalast) {
-  if (x[i]==x[j] || isnan(x[i]) && isnan(x[j])) return(i > j);
-  if (isnan(x[i])) return(nalast);
-  if (isnan(x[j])) return(!nalast);
-  return(min ? x[i] < x[j] : x[i] > x[j]);
+  if (x[i]==x[j] || isnan(x[i]) && isnan(x[j])) return i > j;
+  if (isnan(x[i])) return nalast;
+  if (isnan(x[j])) return !nalast;
+  return min ? x[i] < x[j] : x[i] > x[j];
 }
 
 static inline bool i64cmp(const int64_t *x, const int i, const int j, const bool min, const bool nalast) {
-  if (x[i]==x[j]) return(i > j);
-  if (x[i]==NA_INTEGER64) return(nalast);
-  if (x[j]==NA_INTEGER64) return(!nalast);
-  return(min ? x[i] < x[j] : x[i] > x[j]);
+  if (x[i]==x[j]) return i > j;
+  if (x[i]==NA_INTEGER64) return nalast;
+  if (x[j]==NA_INTEGER64) return !nalast;
+  return min ? x[i] < x[j] : x[i] > x[j];
 }
 
 static inline bool scmp(const SEXP *restrict x, const int i, const int j, const bool min, const bool nalast) {
-  if (strcmp(CHAR(x[i]), CHAR(x[j])) == 0) return (i > j);
-  if (x[i]==NA_STRING) return(nalast);
-  if (x[j]==NA_STRING) return(!nalast);
-  return(min ? strcmp(CHAR(x[i]),CHAR(x[j]))<0 : strcmp(CHAR(x[i]),CHAR(x[j])))>0;
+  if (strcmp(CHAR(x[i]), CHAR(x[j])) == 0) return i > j;
+  if (x[i]==NA_STRING) return nalast;
+  if (x[j]==NA_STRING) return !nalast;
+  return min ? strcmp(CHAR(x[i]),CHAR(x[j]))<0 : strcmp(CHAR(x[i]),CHAR(x[j]))>0;
 }
 
 static inline bool ccmp(const Rcomplex *x, const int i, const int j, const bool min, const bool nalast) {
-  if (ISNAN_COMPLEX(x[i]) && ISNAN_COMPLEX(x[j])) return (i > j);
+  if (ISNAN_COMPLEX(x[i]) && ISNAN_COMPLEX(x[j])) return i > j;
   if (x[i].r==x[j].r) {
-    if (x[i].i==x[j].i) return(i > j);
-    return(min ? x[i].i < x[j].i : x[i].i > x[j].i);
+    if (x[i].i==x[j].i) return i > j;
+    return min ? x[i].i < x[j].i : x[i].i > x[j].i;
   }
-  if (ISNAN_COMPLEX(x[i])) return(nalast);
-  if (ISNAN_COMPLEX(x[j])) return(!nalast);
-  return(min ? x[i].r < x[j].r : x[i].r > x[j].r);
+  if (ISNAN_COMPLEX(x[i])) return nalast;
+  if (ISNAN_COMPLEX(x[j])) return !nalast;
+  return min ? x[i].r < x[j].r : x[i].r > x[j].r;
 }
 
 // compare value with both childs and sift value down if child value smaller
