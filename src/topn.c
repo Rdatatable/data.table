@@ -41,8 +41,7 @@ static inline bool ccmp(const Rcomplex *x, int i, int j, bool min, bool nalast) 
   return min ? x[i].r < x[j].r : x[i].r > x[j].r;
 }
 
-// compare value with both childs and sift value down if child value smaller
-// than parent (for minheap)
+// compare value of node with values of left/right child nodes and sift value down if value of child node is smaller than parent (for minheap)
 #undef SIFT
 #define SIFT(CMP) {                                                   \
   int smallest, l, r;                                                 \
