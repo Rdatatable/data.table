@@ -123,7 +123,7 @@ test.list <- atime::atime_test_list(
   
   # Issue reported in: https://github.com/Rdatatable/data.table/issues/3735
   # To be fixed in: https://github.com/Rdatatable/data.table/pull/4488
-  "Row-wise selection improved in #4488" = atime::atime_test(
+  "DT[i] improved in #4488" = atime::atime_test(
     N = 10^seq(1, 20),
     setup = {
       allIterations <- data.frame(v1 = runif(N), v2 = runif(N))
