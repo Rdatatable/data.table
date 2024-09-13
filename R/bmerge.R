@@ -102,7 +102,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
         if (!isReallyReal(i[[ic]])) {
           # common case of ad hoc user-typed integers missing L postfix joining to correct integer keys
           # we've always coerced to int and returned int, for convenience.
-          if (verbose) catf("Coercing double column %s (which contains no fractions) to type integer to match type of %s", iname, xname)
+          if (verbose) catf("Coercing double column %s (which contains no fractions) to type integer to match type of %s.\n", iname, xname)
           val = as.integer(i[[ic]])
           if (!is.null(attributes(i[[ic]]))) attributes(val) = attributes(i[[ic]])  # to retain Date for example; 3679
           set(i, j=ic, value=val)
@@ -117,9 +117,6 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
       }
     }
   }
-
-  ## after all modifications of i, check if i has a proper key on all icols
-  io = identical(icols, head(chmatch(key(i), names(i)), length(icols)))
 
   ## after all modifications of x, check if x has a proper key on all xcols.
   ## If not, calculate the order. Also for non-equi joins, the order must be calculated.
@@ -176,11 +173,12 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
       xo = forderv(nqx, c(ncol(nqx), xcols))
       if (verbose) {catf("done in %s\n",timetaken(last.started.at)); flush.console()}
     } else nqgrp = integer(0L)
-    if (verbose) catf("  Found %d non-equi group(s) ...\n", nqmaxgrp)
+    if (verbose)
+      catf(ngettext(nqmaxgrp, "  Found %d non-equi group ...\n", "  Found %d non-equi groups ...\n"), nqmaxgrp, domain=NA)
   }
 
   if (verbose) {last.started.at=proc.time();catf("Starting bmerge ...\n");flush.console()}
-  ans = .Call(Cbmerge, i, x, as.integer(icols), as.integer(xcols), io, xo, roll, rollends, nomatch, mult, ops, nqgrp, nqmaxgrp)
+  ans = .Call(Cbmerge, i, x, as.integer(icols), as.integer(xcols), xo, roll, rollends, nomatch, mult, ops, nqgrp, nqmaxgrp)
   if (verbose) {catf("bmerge done in %s\n",timetaken(last.started.at)); flush.console()}
   # TO DO: xo could be moved inside Cbmerge
 

@@ -35,11 +35,19 @@
 /src/shift.c @ben-schwen @michaelchirico
 /man/shift.Rd @ben-schwen @michaelchirico
 
+# rbind
+/src/rbindlist.c @ben-schwen
+/man/rbindlist.Rd @ben-schwen
+
 # translations
 /inst/po/ @michaelchirico
 /po/ @michaelchirico
 /R/translation.R @michaelchirico
 /src/po.h @michaelchirico
+/po/*.pot @Rdatatable/translators
+/po/*zh_CN.po @Rdatatable/chinese
+/po/*pt_BR.po @Rdatatable/brazil
+/po/*es.po @Rdatatable/spanish
 
 # printing
 /R/print.data.table.R @michaelchirico
@@ -56,3 +64,6 @@
 # performance testing
 /.ci/atime/tests.R @tdhock @Anirban166
 /.github/workflows/performance-tests.yaml @Anirban166
+
+# docs
+/man/openmp-utils.Rd @Anirban166

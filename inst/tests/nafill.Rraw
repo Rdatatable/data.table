@@ -11,8 +11,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
 }
 
 sugg = c(
-  "bit64",
-  "nanotime"
+  "bit64"
 )
 for (s in sugg) {
   assign(paste0("test_",s), loaded<-suppressWarnings(suppressMessages(
@@ -84,13 +83,7 @@ if (test_bit64) {
   test(1.76, nafill(as.integer64(c(1,2,NA,4)), fill=NA_real_), as.integer64(c(1:2,NA,4L)))
   test(1.77, nafill(as.integer64(c(1,2,NA,4)), fill=NA), as.integer64(c(1:2,NA,4L)))
 }
-if (test_nanotime) {
-  l = list(a=nanotime(c(1:2,NA,4:5)), b=nanotime(c(NA,2L,NA,4L,NA)))
-  test(1.91, lapply(nafill(l, "locf"), as.character), lapply(list(a=nanotime(c(1:2,2L,4:5)), b=nanotime(c(NA,2L,2L,4L,4L))), as.character))
-  test(1.92, lapply(nafill(l, "nocb"), as.character), lapply(list(a=nanotime(c(1:2,4L,4:5)), b=nanotime(c(2L,2L,4L,4L,NA))), as.character))
-  test(1.93, lapply(nafill(l, fill=0), as.character), lapply(list(a=nanotime(c(1:2,0L,4:5)), b=nanotime(c(0L,2L,0L,4L,0L))), as.character))
-  test(1.94, lapply(nafill(l, fill=nanotime(0)), as.character), lapply(list(a=nanotime(c(1:2,0L,4:5)), b=nanotime(c(0L,2L,0L,4L,0L))), as.character))
-}
+# 1.91 tested nanotime moved to other.Rraw 27.11, #6139
 
 # setnafill
 dt = data.table(V1=1:10, V2=10:1, V3=1:10/2)
@@ -307,16 +300,8 @@ if (test_bit64) {
   options(datatable.verbose=2L)
   test(10.89, coerceAs(-2147483649, x), as.integer64(-2147483649), output="double[numeric] into double[integer64]")
 }
-if (test_nanotime) {
-  x = nanotime(1L)
-  test(10.91, coerceAs(x, 1), 1, output="double[nanotime] into double[numeric]")
-  test(10.92, coerceAs(x, 1L), 1L, output="double[nanotime] into integer[integer]")
-  test(10.93, substring(coerceAs(x, "1"),1,11) %in% c("1","1970-01-01T"), output="double[nanotime] into character[character]")
-                                                     # ^ https://github.com/eddelbuettel/nanotime/issues/92; %in% so as not to break if nanotime adds as.character method
-  test(10.94, coerceAs(1, x), x, output="double[numeric] into double[nanotime]")
-  test(10.95, coerceAs(1L, x), x, output="integer[integer] into double[nanotime]")
-  test(10.96, coerceAs("1", x), x, output="character[character] into double[nanotime]", warning="Coercing.*character")
-}
+# 10.91 tested nanotime moved to other.Rraw 27.21, #6139
+
 options(datatable.verbose=FALSE)
 test(11.01, coerceAs(list(a=1), 1), error="is not atomic")
 test(11.02, coerceAs(1, list(a=1)), list(1))
@@ -338,7 +323,6 @@ test(11.09, coerceAs(1L, a), error="must not be matrix or array")
 ## POSIXct
 ## IDate
 ## ITime
-## nanotime
 
 # related to !is.integer(verbose)
 test(99.1, data.table(a=1,b=2)[1,1, verbose=1], error="verbose must be logical or integer")

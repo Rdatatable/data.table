@@ -84,7 +84,7 @@ static double NAND;
 static double INFD;
 
 // NAN and INFINITY constants are float, so cast to double once up front.
-void init(void) {
+static void init(void) {
   NAND = (double)NAN;
   INFD = (double)INFINITY;
 }
@@ -105,12 +105,7 @@ typedef struct FieldParseContext {
 // Forward declarations
 static void Field(FieldParseContext *ctx);
 
-// note -- because ASSERT is doing literal char array concatenation, it is
-//   not possible to do translation of its messages without refactoring --
-//   essentially that would come down to creating f() g() in the code after
-//   macro expansion, which is not valid. These are internal errors, so just concede.
-#define ASSERT(cond, msg, ...) \
-  if (!(cond)) STOP(_("Internal error in line %d of fread.c, please report on data.table GitHub:  " msg), __LINE__, __VA_ARGS__) // # nocov
+#define ASSERT(cond, msg, ...) if (!(cond)) INTERNAL_STOP(msg, __VA_ARGS__) // # nocov
 
 #define AS_DIGIT(x) (uint_fast8_t)(x - '0')
 #define IS_DIGIT(x) AS_DIGIT(x) < 10
@@ -222,7 +217,7 @@ static char *typeLetter = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopq
 
 static char *typesAsString(int ncol) {
   int nLetters = strlen(typeLetter);
-  if (NUMTYPE>nLetters) STOP(_("Internal error: NUMTYPE(%d) > nLetters(%d)"), NUMTYPE, nLetters); // # nocov
+  if (NUMTYPE>nLetters) INTERNAL_STOP("NUMTYPE(%d) > nLetters(%d)", NUMTYPE, nLetters); // # nocov
   static char str[101];
   int i=0;
   if (ncol<=100) {
@@ -442,19 +437,16 @@ static const char* filesize_to_str(size_t fsize)
   snprintf(output, BUFFSIZE, "%"PRIu64" bytes", (uint64_t)lsize);
   return output;
 }
-
-void copyFile(size_t fileSize, const char *msg, bool verbose)  // only called in very very rare cases
+double copyFile(size_t fileSize)  // only called in very very rare cases
 {
   double tt = wallclock();
-  mmp_copy = (char *)malloc((size_t)fileSize + 1/* extra \0 */);
+  mmp_copy = (char *)malloc((size_t)fileSize + 1 /* extra \0 */);
   if (!mmp_copy)
-    STOP(_("Unable to allocate %s of contiguous virtual RAM. %s allocation."), filesize_to_str(fileSize), msg);
+    return -1.0;
   memcpy(mmp_copy, mmp, fileSize);
   sof = mmp_copy;
   eof = (char *)mmp_copy + fileSize;
-  tt = wallclock()-tt;
-  if (tt>0.5) DTPRINT(_("Avoidable %.3f seconds. %s time to copy.\n"), tt, msg);  // not warning as that could feasibly cause CRAN tests to fail, say, if test machine is heavily loaded
-  if (verbose) DTPRINT(_("  File copy in RAM took %.3f seconds.\n"), tt);
+  return wallclock()-tt;
 }
 
 
@@ -1273,6 +1265,14 @@ static int detect_types( const char **pch, int8_t type[], int ncol, bool *bumped
 //
 // Returns 1 if it finishes successfully, and 0 otherwise.
 //
+//  OpenMP is used here to:
+//    - Parallelize the reading of data in chunks
+//    - Avoid race conditions or concurrent writes to the output data.table by having atomic
+//      operations on the string data 
+//    - Manage synchronized updates to the progress bar and serialize the output to the console
+//  This function is highly optimized in reading and processing data with both large numbers of
+//    rows and columns, but the efficiency is more pronounced across rows.
+//
 //=================================================================================================
 int freadMain(freadMainArgs _args) {
   args = _args;  // assign to global for use by DTPRINT() in other functions
@@ -1303,7 +1303,7 @@ int freadMain(freadMainArgs _args) {
 
   int64_t nrowLimit = args.nrowLimit;
   NAstrings = args.NAstrings;
-  if (NAstrings==NULL) STOP(_("Internal error: NAstrings is itself NULL. When empty it should be pointer to NULL.")); // # nocov
+  if (NAstrings==NULL) INTERNAL_STOP("NAstrings is itself NULL. When empty it should be pointer to NULL"); // # nocov
   any_number_like_NAstrings = false;
   blank_is_a_NAstring = false;
   // if we know there are no nastrings which are numbers (like -999999) then in the number
@@ -1387,7 +1387,7 @@ int freadMain(freadMainArgs _args) {
     sof = args.input;
     fileSize = strlen(sof);
     eof = sof+fileSize;
-    if (*eof!='\0') STOP(_("Internal error: last byte of character input isn't \\0")); // # nocov
+    if (*eof!='\0') INTERNAL_STOP("last byte of character input isn't \\0"); // # nocov
   }
   else if (args.filename) {
     if (verbose) DTPRINT(_("  Opening file %s\n"), args.filename);
@@ -1449,7 +1449,7 @@ int freadMain(freadMainArgs _args) {
     sof = (const char*) mmp;
     if (verbose) DTPRINT(_("  Memory mapped ok\n"));
   } else {
-    STOP(_("Internal error: Neither `input` nor `filename` are given, nothing to read.")); // # nocov
+    INTERNAL_STOP("neither `input` nor `filename` are given, nothing to read"); // # nocov
   }
   eof = sof + fileSize;
   tMap = wallclock();
@@ -1531,10 +1531,20 @@ int freadMain(freadMainArgs _args) {
         // field) since we rely on that logic to avoid the copy below when fileSize$4096==0 but there is a final eol ok.
         // TODO: portable way to discover relevant page size. 4096 is lowest common denominator, though, and should suffice.
       } else {
-        const char *msg = _("This file is very unusual: it ends abruptly without a final newline, and also its size is a multiple of 4096 bytes. Please properly end the last row with a newline using for example 'echo >> file' to avoid this ");
-        if (verbose) DTPRINT(_("  File ends abruptly with '%c'. Copying file in RAM. %s copy.\n"), eof[-1], msg);
+        const char *msg = _("This file is very unusual: it ends abruptly without a final newline, and also its size is a multiple of 4096 bytes. Please properly end the last row with a newline using for example 'echo >> file'");
+        if (verbose)
+          DTPRINT(_("  File ends abruptly with '%c'. Final end-of-line is missing. Copying file in RAM. %s.\n"), eof[-1], msg);
         // In future, we may discover a way to mmap fileSize+1 on all OS when fileSize%4096==0, reliably. If and when, this clause can be updated with no code impact elsewhere.
-        copyFile(fileSize, msg, verbose);
+        double time_taken = copyFile(fileSize);
+        if (time_taken == -1.0) {
+          if (!verbose)
+            DTPRINT("%s. Attempt to copy file in RAM failed.", msg);
+          STOP(_("Unable to allocate %s of contiguous virtual RAM."), filesize_to_str(fileSize));
+        }
+        if (verbose)
+          DTPRINT(_("  File copy in RAM took %.3f seconds.\n"), time_taken);
+        else if (time_taken > 0.5)
+          DTPRINT(_("Avoidable file copy in RAM took %.3f seconds. %s.\n"), time_taken, msg);  // not warning as that could feasibly cause CRAN tests to fail, say, if test machine is heavily loaded
       }
     }
     *_const_cast(eof) = '\0';  // cow page
@@ -1591,8 +1601,13 @@ int freadMain(freadMainArgs _args) {
         row1line++;
       }
     }
-    if (ch > sof && verbose) DTPRINT(_("  Skipped to line %"PRIu64" in the file"), (uint64_t)row1line);
-    if (ch>=eof) STOP(_("skip=%"PRIu64" but the input only has %"PRIu64" line%s"), (uint64_t)args.skipNrow, (uint64_t)row1line, row1line>1?"s":"");
+    if (ch > sof && verbose)
+      DTPRINT(_("  Skipped to line %"PRIu64" in the file"), (uint64_t)row1line);
+    if (ch>=eof)
+      STOP(Pl_(row1line,
+               "skip=%"PRIu64" but the input only has %"PRIu64" line",
+               "skip=%"PRIu64" but the input only has %"PRIu64" lines"),
+           (uint64_t)args.skipNrow, (uint64_t)row1line);
     pos = ch;
   }
 
@@ -1784,10 +1799,10 @@ int freadMain(freadMainArgs _args) {
     }
   }
 
-  if (ncol<1 || row1line<1) STOP(_("Internal error: ncol==%d line==%d after detecting sep, ncol and first line"), ncol, row1line); // # nocov
+  if (ncol<1 || row1line<1) INTERNAL_STOP("ncol==%d line==%d after detecting sep, ncol and first line", ncol, row1line); // # nocov
   int tt = countfields(&ch);
   ch = pos; // move back to start of line since countfields() moved to next
-  if (!fill && tt!=ncol) STOP(_("Internal error: first line has field count %d but expecting %d"), tt, ncol); // # nocov
+  if (!fill && tt!=ncol) INTERNAL_STOP("first line has field count %d but expecting %d", tt, ncol); // # nocov
   if (verbose) {
     DTPRINT(_("  Detected %d columns on line %d. This line is either column names or first data row. Line starts as: <<%s>>\n"),
             tt, row1line, strlim(pos, 30));
@@ -1798,10 +1813,20 @@ int freadMain(freadMainArgs _args) {
   if (ncol==1 && lastEOLreplaced && (eof[-1]=='\n' || eof[-1]=='\r')) {
     // Multiple newlines at the end are significant in the case of 1-column files only (multiple NA at the end)
     if (fileSize%4096==0) {
-      const char *msg = _("This file is very unusual: it's one single column, ends with 2 or more end-of-line (representing several NA at the end), and is a multiple of 4096, too.");
-      if (verbose) DTPRINT(_("  Copying file in RAM. %s\n"), msg);
-      ASSERT(mmp_copy==NULL, "mmp has already been copied due to abrupt non-eol ending, so it does not end with 2 or more eol.", 1/*dummy arg for macro*/); // #nocov
-      copyFile(fileSize, msg, verbose);
+      const char *msg = _("This file is very unusual: it's one single column, ends with 2 or more end-of-line (representing several NA at the end), and the file size is a multiple of 4096, too");
+      if (verbose)
+        DTPRINT(_("  Copying file in RAM. %s\n"), msg);
+      ASSERT(mmp_copy==NULL, "mmp has already been copied due to abrupt non-eol ending, so it does not end with 2 or more eol.%s", ""/*dummy arg for macro*/); // #nocov
+      double time_taken = copyFile(fileSize);
+      if (time_taken == -1.0) {
+        if (!verbose)
+          DTPRINT("%s. Attempt to copy file in RAM failed.", msg);
+        STOP(_("Unable to allocate %s of contiguous virtual RAM."), filesize_to_str(fileSize));
+      }
+      if (verbose)
+        DTPRINT(_("  File copy in RAM took %.3f seconds.\n"), time_taken);
+      else if (tt>0.5)
+        DTPRINT(_("Avoidable file copy in RAM took %.3f seconds. %s.\n"), time_taken, msg);  // not warning as that could feasibly cause CRAN tests to fail, say, if test machine is heavily loaded
       pos = sof + (pos-(const char *)mmp);
       firstJumpEnd = sof + (firstJumpEnd-(const char *)mmp);
     } else {
@@ -1970,15 +1995,19 @@ int freadMain(freadMainArgs _args) {
     // Maybe previous line (if there is one, prevStart!=NULL) contains column names but there are too few (which is why it didn't become the first data row).
     ch = prevStart;
     int tt = countfields(&ch);
-    if (tt==ncol) STOP(_("Internal error: row before first data row has the same number of fields but we're not using it.")); // # nocov
-    if (ch!=pos)  STOP(_("Internal error: ch!=pos after counting fields in the line before the first data row.")); // # nocov
+    if (tt==ncol) INTERNAL_STOP("row before first data row has the same number of fields but we're not using it"); // # nocov
+    if (ch!=pos)  INTERNAL_STOP("ch!=pos after counting fields in the line before the first data row"); // # nocov
     if (verbose) DTPRINT(_("Types in 1st data row match types in 2nd data row but previous row has %d fields. Taking previous row as column names."), tt);
     if (tt<ncol) {
-      autoFirstColName = (tt==ncol-1);
-      DTWARN(_("Detected %d column names but the data has %d columns (i.e. invalid file). Added %d extra default column name%s\n"), tt, ncol, ncol-tt,
-             autoFirstColName ? _(" for the first column which is guessed to be row names or an index. Use setnames() afterwards if this guess is not correct, or fix the file write command that created the file to create a valid file.") : _("s at the end."));
+      autoFirstColName = (ncol-tt==1);
+      if (autoFirstColName) {
+        DTWARN(_("Detected %d column names but the data has %d columns (i.e. invalid file). Added an extra default column name for the first column which is guessed to be row names or an index. Use setnames() afterwards if this guess is not correct, or fix the file write command that created the file to create a valid file.\n"),
+              tt, ncol);
+      } else {
+        DTWARN(_("Detected %d column names but the data has %d columns (i.e. invalid file). Added %d extra default column names at the end.\n"), tt, ncol, ncol-tt);
+      }
     } else if (tt>ncol) {
-      if (fill) STOP(_("Internal error: fill=true but there is a previous row which should already have been filled.")); // # nocov
+      if (fill) INTERNAL_STOP("fill=true but there is a previous row which should already have been filled"); // # nocov
       DTWARN(_("Detected %d column names but the data has %d columns. Filling rows automatically. Set fill=TRUE explicitly to avoid this warning.\n"), tt, ncol);
       fill = true;
       type =    (int8_t *)realloc(type,    (size_t)tt * sizeof(int8_t));
@@ -2054,7 +2083,7 @@ int freadMain(freadMainArgs _args) {
               (uint64_t)allocnrow, (uint64_t)estnrow, (int)(100.0*allocnrow/estnrow-100.0));
       DTPRINT(_("  =====\n"));
     } else {
-      if (sampleLines > allocnrow) STOP(_("Internal error: sampleLines(%"PRIu64") > allocnrow(%"PRIu64")"), (uint64_t)sampleLines, (uint64_t)allocnrow); // # nocov
+      if (sampleLines > allocnrow) INTERNAL_STOP("sampleLines(%"PRIu64") > allocnrow(%"PRIu64")", (uint64_t)sampleLines, (uint64_t)allocnrow); // # nocov
     }
   }
   if (nrowLimit < allocnrow) {
@@ -2101,7 +2130,7 @@ int freadMain(freadMainArgs _args) {
     }
     if (eol(&ch)) pos = ++ch;
     else if (*ch=='\0') pos = ch;
-    else STOP(_("Internal error: reading colnames ending on '%c'"), *ch); // # nocov
+    else INTERNAL_STOP("reading colnames ending on '%c'", *ch); // # nocov
     // now on first data row (row after column names)
     // when fill=TRUE and column names shorter (test 1635.2), leave calloc initialized lenOff.len==0
   }
@@ -2238,7 +2267,7 @@ int freadMain(freadMainArgs _args) {
       nth = omp_get_num_threads();
       if (me!=0) {
         // # nocov start
-        snprintf(internalErr, internalErrSize, _("Internal error: Master thread is not thread 0 but thread %d.\n"), me);
+        snprintf(internalErr, internalErrSize, "Master thread is not thread 0 but thread %d.\n", me);
         stopTeam = true;
         // # nocov end
       }
@@ -2502,7 +2531,7 @@ int freadMain(freadMainArgs _args) {
         }
         else if (headPos!=thisJumpStart && nrowLimit>0) { // do not care for dirty jumps since we do not read data and only want to know types
            // # nocov start
-          snprintf(internalErr, internalErrSize, _("Internal error: invalid head position. jump=%d, headPos=%p, thisJumpStart=%p, sof=%p"), jump, (void*)headPos, (void*)thisJumpStart, (void*)sof);
+          snprintf(internalErr, internalErrSize, "invalid head position. jump=%d, headPos=%p, thisJumpStart=%p, sof=%p", jump, (void*)headPos, (void*)thisJumpStart, (void*)sof);
           stopTeam = true;
           // # nocov end
         }
@@ -2589,7 +2618,7 @@ int freadMain(freadMainArgs _args) {
 
   if (stopTeam) {
     if (internalErr[0]!='\0') {
-      STOP("%s", internalErr);  // # nocov
+      STOP("%s %s: %s. %s", _("Internal error in"), __func__, internalErr, _("Please report to the data.table issues tracker"));  // # nocov
     }
     stopTeam = false;
 
@@ -2604,7 +2633,7 @@ int freadMain(freadMainArgs _args) {
     }
     if (restartTeam && nrowLimit>0) { // no restarting needed for nrows=0 since we discard read data anyway
       if (verbose) DTPRINT(_("  Restarting team from jump %d. nSwept==%d quoteRule==%d\n"), jump0, nSwept, quoteRule);
-      ASSERT(nSwept>0 || quoteRuleBumpedCh!=NULL, "Internal error: team restart but nSwept==%d and quoteRuleBumpedCh==%p", nSwept, quoteRuleBumpedCh); // # nocov
+      ASSERT(nSwept>0 || quoteRuleBumpedCh!=NULL, "team restart but nSwept==%d and quoteRuleBumpedCh==%p", nSwept, (void *)quoteRuleBumpedCh); // # nocov
       goto read;
     }
     // else nrowLimit applied and stopped early normally

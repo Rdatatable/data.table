@@ -247,7 +247,8 @@ char.trunc = function(x, trunc.char = getOption("datatable.prettyprint.char")) {
   nchar_width = nchar(x, 'width') # Check whether string is full-width or half-width, #5096
   nchar_chars = nchar(x, 'char')
   is_full_width = nchar_width > nchar_chars
-  idx = pmin(nchar_width, nchar_chars) > trunc.char
+  idx = !is.na(x) & pmin(nchar_width, nchar_chars) > trunc.char
+  if (!any(idx)) return(x) # strtrim() errors for width=integer() on R 3.3.0
   x[idx] = paste0(strtrim(x[idx], trunc.char * fifelse(is_full_width[idx], 2L, 1L)), "...")
   x
 }
@@ -282,7 +283,8 @@ trunc_cols_message = function(not_printed, abbs, class, col.names){
   n = length(not_printed)
   if (class && col.names != "none") classes = paste0(" ", tail(abbs, n)) else classes = ""
   catf(
-    "%d variable(s) not shown: %s\n",
-    n, brackify(paste0(not_printed, classes))
+    ngettext(n, "%d variable not shown: %s\n", "%d variables not shown: %s\n"),
+    n, brackify(paste0(not_printed, classes)),
+    domain=NA
   )
 }

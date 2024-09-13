@@ -30,6 +30,7 @@ if (!all(loaded)) {
   options(warning.length=8000)
   stop(
     "test.data.table('other.Rraw') failed to attach required package(s): ", toString(sort(names(loaded)[!loaded])), ".",
+    "\nHere's .libPaths():\n  ", paste(.libPaths(), collapse="|"),
     "\nHere's all installed packages:\n  ", paste(sort(rownames(installed.packages())), collapse=","),
     "\nHere's the search() path:\n  ", paste(search(), collapse="->"),
     "\nIf you can't install them and this is R CMD check, please set environment variable TEST_DATA_TABLE_WITH_OTHER_PACKAGES back to the default, false; it's currently ", Sys.getenv("TEST_DATA_TABLE_WITH_OTHER_PACKAGES", "<unset>"), ".")
@@ -699,6 +700,31 @@ if (loaded[["nanotime"]]) {
   DT = data.table(time=nanotime(c(1,NA,3)))
   test(27, na.omit(DT), DT[c(1,3)])
 
+  # rbind with vectors with class attributes #5309
+  x = data.table(a=1L, b=as.nanotime(0))
+  y = data.table(a=2L, b=NA)
+  test(27.01, rbind(x,y), data.table(a = c(1L, 2L), b=as.nanotime(c(0, NA))))
+  test(27.02, rbind(y,x), data.table(a = c(2L, 1L), b=as.nanotime(c(NA, 0))))
+  y[, b := NULL]
+  test(27.03, rbind(x,y, fill = TRUE), data.table(a = c(1L, 2L), b=as.nanotime(c(0, NA))))
+  test(27.04, rbind(y,x, fill = TRUE), data.table(a = c(2L, 1L), b=as.nanotime(c(NA, 0))))
+
+  # Was 1.91-1.94 in nafill.Rraw, #6139
+  l = list(a=nanotime(c(1:2,NA,4:5)), b=nanotime(c(NA,2L,NA,4L,NA)))
+  test(27.11, lapply(nafill(l, "locf"), as.character), lapply(list(a=nanotime(c(1:2,2L,4:5)), b=nanotime(c(NA,2L,2L,4L,4L))), as.character))
+  test(27.12, lapply(nafill(l, "nocb"), as.character), lapply(list(a=nanotime(c(1:2,4L,4:5)), b=nanotime(c(2L,2L,4L,4L,NA))), as.character))
+  test(27.13, lapply(nafill(l, fill=0), as.character), lapply(list(a=nanotime(c(1:2,0L,4:5)), b=nanotime(c(0L,2L,0L,4L,0L))), as.character))
+  test(27.14, lapply(nafill(l, fill=nanotime(0)), as.character), lapply(list(a=nanotime(c(1:2,0L,4:5)), b=nanotime(c(0L,2L,0L,4L,0L))), as.character))
+
+  # coerceAs verbose. Was 10.91-10.96 in nafill.Rraw, #6139
+  x = nanotime(1L)
+  test(27.21, options=c(datatable.verbose=2L), coerceAs(x, 1), 1, output="double[nanotime] into double[numeric]")
+  test(27.22, options=c(datatable.verbose=2L), coerceAs(x, 1L), 1L, output="double[nanotime] into integer[integer]")
+  test(27.23, options=c(datatable.verbose=2L), substring(coerceAs(x, "1"),1,11) %in% c("1","1970-01-01T"), output="double[nanotime] into character[character]")
+                                                     # ^ https://github.com/eddelbuettel/nanotime/issues/92; %in% so as not to break if nanotime adds as.character method
+  test(27.24, options=c(datatable.verbose=2L), coerceAs(1, x), x, output="double[numeric] into double[nanotime]")
+  test(27.25, options=c(datatable.verbose=2L), coerceAs(1L, x), x, output="integer[integer] into double[nanotime]")
+  test(27.26, options=c(datatable.verbose=2L), coerceAs("1", x), x, output="character[character] into double[nanotime]", warning="Coercing.*character")
 }
 
 # that plot works; moved from tests.Rraw 167 to here to save ram of loading graphics package and possible screen device issues on overloaded servers, #5517
@@ -734,4 +760,9 @@ if (loaded[["dplyr"]]) {
   # regression test for converting character->list column in a magrittr (dplyr) pipe, #2651
   DT = data.table(a = 1, b = 2, c = '1,2,3,4', d = 4)
   test(30, DT[, c := strsplit(c, ',', fixed = TRUE) %>% lapply(as.integer) %>% as.list]$c, list(1:4)) # nolint: pipe_call_linter. Mimicking MRE as filed.
+}
+
+if (loaded[["nanotime"]]) {
+  # respect dec=',' for nanotime, related to #6446, corresponding to tests 2281.*
+  test(31, fwrite(data.table(as.nanotime(.POSIXct(0))), dec=',', sep=';'), output="1970-01-01T00:00:00,000000000Z")
 }

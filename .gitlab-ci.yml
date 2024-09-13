@@ -110,6 +110,7 @@ test-lin-rel:
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-data.table
   variables:
+    _R_CHECK_COMPILATION_FLAGS_KNOWN_: "-Wvla"
     _R_CHECK_CRAN_INCOMING_: "FALSE"
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
     _R_CHECK_FORCE_SUGGESTS_: "TRUE"
@@ -117,8 +118,8 @@ test-lin-rel:
     OPENBLAS_MAIN_FREE: "1"
   script:
     - *install-deps
-    - echo 'CFLAGS=-g -O3 -flto=auto -fno-common -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
-    - echo 'CXXFLAGS=-g -O3 -flto=auto -fno-common -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
+    - echo 'CFLAGS=-g -O3 -flto=auto -fno-common -fopenmp -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
+    - echo 'CXXFLAGS=-g -O3 -flto=auto -fno-common -fopenmp -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
     - R CMD check $(ls -1t data.table_*.tar.gz | head -n 1)
     - (! grep "warning:" data.table.Rcheck/00install.out)
 
@@ -131,9 +132,11 @@ test-lin-rel:
 test-lin-rel-vanilla:
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-base-gcc
+  variables:
+    _R_CHECK_COMPILATION_FLAGS_KNOWN_: "-Wvla"
   script:
-    - echo 'CFLAGS=-g -O0 -fno-openmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
-    - echo 'CXXFLAGS=-g -O0 -fno-openmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
+    - echo 'CFLAGS=-g -O0 -fno-openmp -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
+    - echo 'CXXFLAGS=-g -O0 -fno-openmp -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
     - R CMD check --no-manual --ignore-vignettes $(ls -1t data.table_*.tar.gz | head -n 1)
 
 ## R-release on Linux
@@ -143,14 +146,15 @@ test-lin-rel-cran:
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-base
   variables:
+    _R_CHECK_COMPILATION_FLAGS_KNOWN_: "-Wvla"
     _R_CHECK_CRAN_INCOMING_: "TRUE"           ## stricter --as-cran checks should run in dev pipelines continuously (not sure what they are though)
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"   ## Other than no URL checking (takes many minutes) or 'Days since last update 0' NOTEs needed, #3284
     _R_CHECK_CRAN_INCOMING_TARBALL_THRESHOLD_: "7500000" ## bytes
     _R_CHECK_PKG_SIZES_THRESHOLD_: "7"        ## MB 'checking installed package size' NOTE
   script:
     - *install-deps
-    - echo 'CFLAGS=-g -O2 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
-    - echo 'CXXFLAGS=-g -O2 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
+    - echo 'CFLAGS=-g -O2 -fopenmp -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
+    - echo 'CXXFLAGS=-g -O2 -fopenmp -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
     - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
     - >-
         Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); if (!identical(l, "Status: OK")) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote("Status: OK"), " but ", shQuote(l)) else q("no")'
@@ -163,13 +167,14 @@ test-lin-dev-gcc-strict-cran:
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-devel-gcc-strict
   variables:
+    _R_CHECK_COMPILATION_FLAGS_KNOWN_: "-Wvla"
     _R_CHECK_CRAN_INCOMING_: "TRUE"
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
     _R_S3_METHOD_LOOKUP_BASEENV_AFTER_GLOBALENV_: "FALSE" ## detects S3 method lookup found on search path #4777
     _R_S3_METHOD_LOOKUP_REPORT_SEARCH_PATH_USES_: "TRUE"
   script:
-    - echo 'CFLAGS=-g -O2 -flto=auto -fno-common -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
-    - echo 'CXXFLAGS=-g -O2 -flto=auto -fno-common -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
+    - echo 'CFLAGS=-g -O2 -flto=auto -fno-common -fopenmp -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
+    - echo 'CXXFLAGS=-g -O2 -flto=auto -fno-common -fopenmp -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
     - *install-deps
     - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
     - (! grep "warning:" data.table.Rcheck/00install.out)
@@ -184,27 +189,31 @@ test-lin-dev-clang-cran:
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-devel-clang
   variables:
+    _R_CHECK_COMPILATION_FLAGS_KNOWN_: "-Wvla"
     _R_CHECK_CRAN_INCOMING_: "TRUE"
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
     _R_S3_METHOD_LOOKUP_BASEENV_AFTER_GLOBALENV_: "FALSE"
     _R_S3_METHOD_LOOKUP_REPORT_SEARCH_PATH_USES_: "TRUE"
   script:
-    - echo 'CFLAGS=-g -O2 -fno-common -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
-    - echo 'CXXFLAGS=-g -O2 -fno-common -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
+    - echo 'CFLAGS=-g -O2 -fno-common -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
+    - echo 'CXXFLAGS=-g -O2 -fno-common -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
     - *install-deps
     - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
     - (! grep "warning:" data.table.Rcheck/00install.out)
     - >-
         Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); notes<-"Status: 3 NOTEs"; if (!identical(l, notes)) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote(notes), " (size of tarball, installed package size, non-API calls) but ", shQuote(l)) else q("no")'
 
-## R 3.1.0
 # stated dependency on R
-test-lin-310-cran:
-  image: registry.gitlab.com/jangorecki/dockerfiles/r-3.1.0
+test-lin-ancient-cran:
   <<: *test-lin
+  image: registry.gitlab.com/jangorecki/dockerfiles/r-3.3.0
+  variables:
+    _R_CHECK_FORCE_SUGGESTS_: "FALSE" # can be removed if all dependencies are available (knitr, xts, etc.)
   script:
     - *install-deps
-    - R CMD check --no-manual $(ls -1t data.table_*.tar.gz | head -n 1)
+    # knitr requires evaluate, which requires R 3.6.0.
+    # Restore checking vignettes if upgrading our R dependency means knitr can be installed.
+    - R CMD check --no-manual --no-build-vignettes --ignore-vignettes $(ls -1t data.table_*.tar.gz | head -n 1)
 
 .test-win-template: &test-win
   <<: *test
@@ -263,6 +272,7 @@ test-win-old:
   tags:
     - saas-macos-medium-m1
   before_script:
+    - if ! command -v R &> /dev/null || ! command -v Rscript &> /dev/null; then brew install r; fi
     - *install-deps
     - cp $(ls -1t bus/build/data.table_*.tar.gz | head -n 1) .
   after_script:
@@ -274,13 +284,12 @@ test-win-old:
     - echo $CI_JOB_IMAGE > bus/$CI_JOB_NAME/image
 
 ## R-release on MacOS
-# no macosx runner set yet
-.test-mac-rel:
+test-mac-rel:
   <<: *test-mac
   variables:
     R_VERSION: "$R_REL_VERSION"
   script:
-    - R CMD check $(ls -1t data.table_*.tar.gz | head -n 1)
+    - R CMD check --no-manual $(ls -1t data.table_*.tar.gz | head -n 1)
     - R CMD INSTALL --build $(ls -1t data.table_*.tar.gz | head -n 1)
 
 ## integrate artifacts
@@ -295,7 +304,7 @@ integration:
     - saas-linux-medium-amd64
   only:
     - master
-  needs: ["mirror-packages","build","test-lin-rel","test-lin-rel-cran","test-lin-dev-gcc-strict-cran","test-lin-dev-clang-cran","test-lin-rel-vanilla","test-lin-310-cran","test-win-rel","test-win-dev" ,"test-win-old"]
+  needs: ["mirror-packages","build","test-lin-rel","test-lin-rel-cran","test-lin-dev-gcc-strict-cran","test-lin-dev-clang-cran","test-lin-rel-vanilla","test-lin-ancient-cran","test-win-rel","test-win-dev" ,"test-win-old"]
   script:
     - R --version
     - *install-deps ## markdown pkg not present in r-pkgdown image

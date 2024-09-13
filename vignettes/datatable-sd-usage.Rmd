@@ -112,7 +112,7 @@ head(unique(Teams[[fkt[1L]]]))
 
 Note: 
 
-1. The `:=` is an assignment operator to update the `data.table` in place without making a copy. See [reference semantics](https://cran.r-project.org/web/packages/data.table/vignettes/datatable-reference-semantics.html) for more. 
+1. The `:=` is an assignment operator to update the `data.table` in place without making a copy. See [reference semantics](https://cran.r-project.org/package=data.table/vignettes/datatable-reference-semantics.html) for more. 
 2. The LHS, `names(.SD)`, indicates which columns we are updating - in this case we update the entire `.SD`.
 3. The RHS, `lapply()`, loops through each column of the `.SD` and converts the column to a factor.
 4. We use the `.SDcols` to only select columns that have pattern of `teamID`.

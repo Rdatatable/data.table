@@ -42,7 +42,9 @@ funique = function(x) {
   if (!identical(names(x), names(y))) stopf("x and y must have the same column order")
   bad_types = c("raw", "complex", if (block_list) "list")
   found = bad_types %chin% c(vapply_1c(x, typeof), vapply_1c(y, typeof))
-  if (any(found)) stopf("unsupported column type(s) found in x or y: %s", brackify(bad_types[found]))
+  if (any(found))
+    stopf(ngettext(sum(found), "unsupported column type found in x or y: %s", "unsupported column types found in x or y: %s"),
+          brackify(bad_types[found]), domain=NA)
   super = function(x) {
     # allow character->factor and integer->numeric because from v1.12.4 i's type is retained by joins, #3820
     ans = class(x)[1L]
@@ -143,7 +145,7 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
     targetTypes = vapply_1c(target, squashClass)
     currentTypes = vapply_1c(current, squashClass)
     if (length(targetTypes) != length(currentTypes))
-      stopf("Internal error: ncol(current)==ncol(target) was checked above") # nocov
+      internal_error("ncol(current)==ncol(target) was checked above") # nocov
     if (any( d<-(targetTypes != currentTypes))) {
       w = head(which(d),3L)
       return(paste0("Datasets have different column classes. First 3: ",paste(
@@ -263,7 +265,7 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
       x = target[[i]]
       y = current[[i]]
       if (XOR(is.factor(x), is.factor(y)))
-        stopf("Internal error: factor type mismatch should have been caught earlier") # nocov
+        internal_error("factor type mismatch should have been caught earlier") # nocov
       cols.r = TRUE
       if (is.factor(x)) {
         if (!identical(levels(x),levels(y))) {
