@@ -167,7 +167,7 @@ test.list <- atime::atime_test_list(
     Fast = "f248bbe6d1204dfc8def62328788eaadcc8e17a1"), # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/6296) that fixes the issue
 
   # Issue reported in: https://github.com/Rdatatable/data.table/issues/1534
-  # To be fixed in: https://github.com/Rdatatable/data.table/pull/5205
+  # Fixed in: https://github.com/Rdatatable/data.table/pull/5205
   "DT shift improved in #5205" = atime::atime_test(
     N = 10^seq(1, 7),
     setup = {
