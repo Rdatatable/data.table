@@ -175,7 +175,7 @@ test.list <- atime::atime_test_list(
     },
     expr = data.table:::`[.data.table`(DT, , shift(x, 1, type = "lag"), y),
     Regression = "7f0ce147eef1dd5cd5ff05dffc3c72f472bcde51", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/58135017a985f3cc2c6f0d091c4effaec4442f56) in the PR (https://github.com/Rdatatable/data.table/pull/5205/commits) that fixes the issue
-    Fixed = "a6abac319446ae7dde8bc4501fae40eeb5cc228c"), # Commit before the last commit in the PR (https://github.com/Rdatatable/data.table/pull/5205/commits) that fixes the regression
+    Fixed = "5eec8f2d00521edb0a4a088ad154d065daa869c6"), # Last commit in the PR (https://github.com/Rdatatable/data.table/pull/5205/commits) that fixes the regression
 
   NULL)
 # nolint end: undesirable_operator_linter.
