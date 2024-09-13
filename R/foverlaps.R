@@ -44,10 +44,11 @@ foverlaps = function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=k
     stopf("Duplicate columns are not allowed in overlap joins. This may change in the future.")
   if (length(by.x) != length(by.y))
     stopf("length(by.x) != length(by.y). Columns specified in by.x should correspond to columns specified in by.y and should be of same lengths.")
-  if (any(dup.x<-duplicated(names(x)))) #1730 - handling join possible but would require workarounds on setcolorder further, it is really better just to rename dup column
-    stopf("%s has some duplicated column name(s): %s. Please remove or rename the duplicate(s) and try again.", "x", brackify(unique(names(x)[dup.x])))
-  if (any(dup.y<-duplicated(names(y))))
-    stopf("%s has some duplicated column name(s): %s. Please remove or rename the duplicate(s) and try again.", "y", brackify(unique(names(y)[dup.y])))
+
+  #1730 - handling join possible but would require workarounds on setcolorder further, it is really better just to rename dup column
+  check_duplicate_names(x)
+  check_duplicate_names(y)
+
   xnames = by.x; xintervals = tail(xnames, 2L)
   ynames = by.y; yintervals = tail(ynames, 2L)
   xval1 = x[[xintervals[1L]]]; xval2 = x[[xintervals[2L]]]

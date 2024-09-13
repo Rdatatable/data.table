@@ -191,7 +191,14 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
   if (run_agg_funs) {
     fun.call = aggregate_funs(fun.call, lvals, sep, ...)
     maybe_err = function(list.of.columns) {
-      if (any(lengths(list.of.columns) != 1L)) stopf("Aggregating function(s) should take vector inputs and return a single value (length=1). However, function(s) returns length!=1. This value will have to be used to fill any missing combinations, and therefore must be length=1. Either override by setting the 'fill' argument explicitly or modify your function to handle this case appropriately.")
+      if (!all(lengths(list.of.columns) == 1L)) {
+        msg <- gettext("Aggregating functions should take a vector as input and return a single value (length=1), but they do not, so the result is undefined. Please fix by modifying your function so that a single value is always returned.")
+        if (is.null(fill)) { # TODO change to always stopf #6329
+          stop(msg, domain=NA, call. = FALSE)
+        } else {
+          warning(msg, domain=NA, call. = FALSE)
+        }
+      }
       list.of.columns
     }
     dat = dat[, maybe_err(eval(fun.call)), by=c(varnames)]
@@ -250,6 +257,6 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
       # removed 'setcolorder()' here, #1153
     setattr(ans, 'names', c(lhsnames, allcols))
     setDT(ans); setattr(ans, 'sorted', lhsnames)
-  } else stopf("Internal error -- empty rhsnames in dcast; please report") # nocov
+  } else internal_error("empty rhsnames") # nocov
   return(ans)
 }

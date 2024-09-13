@@ -1,6 +1,6 @@
 on:
   schedule:
-   - cron: '17 13 18 * *' # 18th of month at 13:17 UTC
+   - cron: '17 13 23 * *' # 23rd of month at 13:17 UTC
 
 # A more complete suite of checks to run monthly; each PR/merge need not pass all these, but they should pass before CRAN release
 name: R-CMD-check-occasional
@@ -42,7 +42,6 @@ jobs:
             r: '4.1'
 
     env:
-      R_REMOTES_NO_ERRORS_FROM_WARNINGS: true
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
@@ -76,27 +75,11 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: |
             sudo apt-get update
-            sudo apt-get install -y libcurl4-openssl-dev libudunits2-dev libgdal-dev libgeos-dev libproj-dev
+            sudo apt-get install -y libcurl4-openssl-dev libudunits2-dev libgdal-dev libgeos-dev libproj-dev pandoc
 
       - name: Install check dependencies (macOS)
         if: matrix.os == 'macOS-latest'
         run: brew install gdal proj
-
-      - name: Install remotes
-        env:
-          R_LIBS_USER: /home/runner/work/r-lib
-        run: install.packages("remotes")
-        shell: Rscript {0}
-
-      - name: Install system dependencies
-        if: runner.os == 'Linux'
-        env:
-          R_LIBS_USER: /home/runner/work/r-lib
-        run: |
-          while read -r cmd
-          do
-            eval sudo $cmd
-          done < <(Rscript -e 'writeLines(remotes::system_requirements("ubuntu", "20.04"))')
 
       - name: Check
         env:
@@ -104,26 +87,20 @@ jobs:
           _R_CHECK_FORCE_SUGGESTS_: false
           _R_CHECK_CRAN_INCOMING_REMOTE_: false
           _R_CHECK_TESTS_NLINES_: 0
-          R_LIBS_USER: /home/runner/work/r-lib
         run: |
           options(crayon.enabled = TRUE)
-          install.packages("remotes") # different R_LIBS_USER now...
-          remotes::install_deps(dependencies=TRUE, force=TRUE)
-
-          # we define this in data.table namespace, but it appears to be exec
-          if (!exists("isFALSE", "package:base")) { # R>=3.5.0
-            if (!exists("isFALSE", asNamespace("data.table"))) {
-              message("isFALSE not found in base, but data.table did not define it either!\n")
-            }
-            # attempt defining it here as a workaround...
-            isFALSE = function(x) is.logical(x) && length(x) == 1L && !is.na(x) && !x
-          }
+          message("*** Using the following repos for installation ***")
+          print(getOption("repos"))
+          message("*** Installing Suggested packages ***")
+          sugg <- names(tools:::.split_dependencies(read.dcf("DESCRIPTION", "Suggests")))
+          install.packages(sugg)
 
           other_deps_expr = parse('inst/tests/other.Rraw', n=1L)
           eval(other_deps_expr)
           other_pkgs = get(as.character(other_deps_expr[[1L]][[2L]]))
           # Many will not install on oldest R versions
-          try(remotes::install_cran(c(other_pkgs, "rcmdcheck"), force=TRUE))
+          message("*** Installing fully optional packages ***")
+          try(install.packages(c(other_pkgs, "rcmdcheck")))
 
           has_other_pkg = sapply(other_pkgs, requireNamespace, quietly=TRUE)
           run_other = all(has_other_pkg)
@@ -133,8 +110,7 @@ jobs:
           message("Will try and set TEST_DATA_TABLE_WITH_OTHER_PACKAGES=", as.character(run_other), " in R CMD check.")
           # IINM rcmdcheck isolates its env from the calling process', besides what's passed to env=
           env = c(
-            TEST_DATA_TABLE_WITH_OTHER_PACKAGES=as.character(run_other),
-            R_LIBS_USER=Sys.getenv("R_LIBS_USER")
+            TEST_DATA_TABLE_WITH_OTHER_PACKAGES=as.character(run_other)
           )
 
           do_vignettes = requireNamespace("knitr", quietly=TRUE)
@@ -153,9 +129,9 @@ jobs:
             system2(Rbin, c("CMD", "build", ".", build_args))
             dt_tar = list.files(pattern = "^data[.]table_.*[.]tar[.]gz$")
             if (!length(dt_tar)) stop("Built tar.gz not found among: ", toString(list.files()))
-            res = system2(Rbin, c("CMD", "check", dt_tar[1L], check_args), stdout=TRUE, env=sprintf("%s=%s", names(env), env))
-            if (!is.null(attr(res, "status")) || grep("^Status:.*(ERROR|WARNING)", res)) {
-              writeLines(res)
+            res = system2(Rbin, c("CMD", "check", dt_tar[1L], check_args), stdout=TRUE, stderr=TRUE, env=sprintf("%s=%s", names(env), env))
+            if (!is.null(attr(res, "status")) || is.na(res) || grep("^Status:.*(ERROR|WARNING)", res)) {
+              writeLines(as.character(res))
               stop("R CMD check failed")
             }
           }
