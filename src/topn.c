@@ -125,3 +125,76 @@ SEXP topn(SEXP x, SEXP nArg, SEXP naArg, SEXP ascArg, SEXP sortedArg) {
   UNPROTECT(1);
   return(ans);
 }
+
+#undef QUICKN
+#define QUICKN(CTYPE, RTYPE, CMP, SWAP)             \
+  CTYPE *ix = (CTYPE *)RTYPE(x);                    \
+  CTYPE *ians = (CTYPE *)RTYPE(ans);                \
+  unsigned long l = 0, ir = xlen - 1;               \
+  for (;;) {                                        \
+    if (ir <= l + 1) {                              \
+      if (ir == l + 1 && CMP(ix,l,ir,min,nalast)) { \
+        SWAP(ix+l, ix+ir);                          \
+      }                                             \
+      break;                                        \
+    } else {                                        \
+      unsigned long mid = (l + ir) >> 1;            \
+      SWAP(ix+mid, ix+l + 1);                       \
+      if (CMP(ix,l,ir,min,nalast)) {                \
+        SWAP(ix+l, ix+ir);                          \
+      }                                             \
+      if (CMP(ix,l+1,ir,min,nalast)) {              \
+        SWAP(ix+l+1, ix+ir);                        \
+      }                                             \
+      if (CMP(ix,l,l+1,min,nalast)) {               \
+        SWAP(ix+l, ix+l+1);                         \
+      }                                             \
+      unsigned long i = l + 1, j = ir;              \
+      for (;;) {                                    \
+        do i++; while (CMP(ix,l+1,i,min,nalast));   \
+        do j--; while (CMP(ix,j,l+1,min,nalast));   \
+        if (j < i) break;                           \
+        SWAP(ix+i, ix+j);                           \
+      }                                             \
+      SWAP(ix+l+1, ix+j);                           \
+      if (j >= n) ir = j - 1;                       \
+      if (j <= n) l = i;                            \
+    }                                               \
+  }                                                 \
+  for (int i=0; i<n; i++) {                         \
+    ians[i] = ix[i];                                \
+  }
+
+static inline void iswap(int *a, int *b)           {int      tmp=*a; *a=*b; *b=tmp;}
+static inline void dswap(double *a, double *b)     {double   tmp=*a; *a=*b; *b=tmp;}
+static inline void i64swap(int64_t *a, int64_t *b) {int64_t  tmp=*a; *a=*b; *b=tmp;}
+static inline void cswap(Rcomplex *a, Rcomplex *b) {Rcomplex tmp=*a; *a=*b; *b=tmp;}
+
+SEXP quickn(SEXP x, SEXP nArg, SEXP naArg, SEXP ascArg) {
+  if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<=0 || INTEGER(nArg)[0]==NA_INTEGER) error(_("topn(x,n) only implemented for n > 0."));
+  if (!IS_TRUE_OR_FALSE(ascArg)) error(_("%s must be TRUE or FALSE"), "decreasing");
+  if (!IS_TRUE_OR_FALSE(naArg)) error(_("%s must be TRUE or FALSE"), "na.last");
+
+  const int xlen = LENGTH(x);
+  int n = INTEGER(nArg)[0];
+  x = PROTECT(duplicate(x));
+
+  const bool min = LOGICAL(ascArg)[0];
+  const bool nalast = LOGICAL(naArg)[0];
+
+  SEXP ans;
+  ans = PROTECT(allocVector(TYPEOF(x), n));
+  switch(TYPEOF(x)) {
+  case LGLSXP: case INTSXP: {          QUICKN(int,      INTEGER,    icmp, iswap); } break;
+  case REALSXP: {
+    if (INHERITS(x, char_integer64)) { QUICKN(int64_t,  REAL,       i64cmp, i64swap); }
+    else {                             QUICKN(double,   REAL,       dcmp,   dswap); } break; }
+  case CPLXSXP: {                      QUICKN(Rcomplex, COMPLEX,    ccmp,   cswap); } break;
+  default:
+    error(_("Type '%s' not supported by quickn."), type2char(TYPEOF(x)));
+  }
+  copyMostAttrib(x, ans);
+  UNPROTECT(2);
+  return(ans);
+}
+

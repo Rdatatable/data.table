@@ -270,6 +270,7 @@ SEXP notchin(SEXP x, SEXP table);
 
 // topn.c
 SEXP topn(SEXP, SEXP, SEXP, SEXP, SEXP);
+SEXP quickn(SEXP, SEXP, SEXP, SEXP);
 
 // functions called from R level .Call/.External and registered in init.c
 // these now live here to pass -Wstrict-prototypes, #5477
