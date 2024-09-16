@@ -252,8 +252,8 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   if (nfail > 0L) {
     # nocov start
     stopf(
-      "%d error(s) out of %d. Search %s for test number(s) %s. Duration: %s.",
-      nfail, ntest, names(fn), toString(env$whichfail), timetaken(env$started.at)
+      ngettext(nfail, "%d error out of %d. Search %s for test number %s. Duration: %s.", "%d errors out of %d. Search %s for test numbers %s. Duration: %s."),
+      nfail, ntest, names(fn), toString(env$whichfail), timetaken(env$started.at), domain=NA
     )
     # important to stopf() here, so that 'R CMD check' fails
     # nocov end
