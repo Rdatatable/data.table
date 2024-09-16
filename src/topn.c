@@ -64,8 +64,8 @@ static inline bool ccmp(const Rcomplex *x, int i, int j, bool min, bool nalast) 
 
 // for finding decreasing topn build minheap and add values if they exceed
 // minimum by overwriting minimum and following down sifting
-#undef TOPN
-#define TOPN(CTYPE, RTYPE, CMP, SORTED) {                 \
+#undef HEAPN
+#define HEAPN(CTYPE, RTYPE, CMP, SORTED) {                \
   const CTYPE *restrict VAL = (const CTYPE *)RTYPE(x);    \
   for (int i=n/2; i>=0; --i) { k=i; len=n; SIFT(CMP); }   \
   for (int i=n; i<xlen; ++i) {                            \
@@ -113,12 +113,12 @@ SEXP topn(SEXP x, SEXP nArg, SEXP naArg, SEXP ascArg, SEXP sortedArg) {
   if(INDEX == NULL) error(_("Internal error: Couldn't allocate memory for heap indices.")); // # nocov
   for (int i=0; i<n; ++i) INDEX[i] = i;
   switch(TYPEOF(x)) {
-  case LGLSXP: case INTSXP: {          TOPN(int,      INTEGER,    icmp,   sorted); } break;
+  case LGLSXP: case INTSXP: {          HEAPN(int,      INTEGER,    icmp,   sorted); } break;
   case REALSXP: {
-    if (INHERITS(x, char_integer64)) { TOPN(int64_t,  REAL,       i64cmp, sorted); }
-    else {                             TOPN(double,   REAL,       dcmp,   sorted); } break; }
-  case CPLXSXP: {                      TOPN(Rcomplex, COMPLEX,    ccmp,   sorted); } break;
-  case STRSXP: {                       TOPN(SEXP,     STRING_PTR, scmp,   sorted); } break;
+    if (INHERITS(x, char_integer64)) { HEAPN(int64_t,  REAL,       i64cmp, sorted); }
+    else {                             HEAPN(double,   REAL,       dcmp,   sorted); } break; }
+  case CPLXSXP: {                      HEAPN(Rcomplex, COMPLEX,    ccmp,   sorted); } break;
+  case STRSXP: {                       HEAPN(SEXP,     STRING_PTR, scmp,   sorted); } break;
   default:
     free(INDEX); error(_("Type '%s' not supported by topn."), type2char(TYPEOF(x)));
   }
@@ -169,6 +169,7 @@ static inline void iswap(int *a, int *b)           {int      tmp=*a; *a=*b; *b=t
 static inline void dswap(double *a, double *b)     {double   tmp=*a; *a=*b; *b=tmp;}
 static inline void i64swap(int64_t *a, int64_t *b) {int64_t  tmp=*a; *a=*b; *b=tmp;}
 static inline void cswap(Rcomplex *a, Rcomplex *b) {Rcomplex tmp=*a; *a=*b; *b=tmp;}
+static inline void sswap(SEXP *a, SEXP *b)         {SEXP     tmp=*a; *a=*b; *b=tmp;}
 
 SEXP quickn(SEXP x, SEXP nArg, SEXP naArg, SEXP ascArg) {
   if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<=0 || INTEGER(nArg)[0]==NA_INTEGER) error(_("topn(x,n) only implemented for n > 0."));
@@ -190,6 +191,7 @@ SEXP quickn(SEXP x, SEXP nArg, SEXP naArg, SEXP ascArg) {
     if (INHERITS(x, char_integer64)) { QUICKN(int64_t,  REAL,       i64cmp, i64swap); }
     else {                             QUICKN(double,   REAL,       dcmp,   dswap); } break; }
   case CPLXSXP: {                      QUICKN(Rcomplex, COMPLEX,    ccmp,   cswap); } break;
+  case STRSXP: {                       QUICKN(SEXP,     STRING_PTR, scmp,   sswap); } break;
   default:
     error(_("Type '%s' not supported by quickn."), type2char(TYPEOF(x)));
   }
@@ -197,4 +199,3 @@ SEXP quickn(SEXP x, SEXP nArg, SEXP naArg, SEXP ascArg) {
   UNPROTECT(2);
   return(ans);
 }
-
