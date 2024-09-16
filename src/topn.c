@@ -161,9 +161,7 @@ SEXP topn(SEXP x, SEXP nArg, SEXP naArg, SEXP ascArg, SEXP sortedArg) {
       if (j <= n) l = i;                            \
     }                                               \
   }                                                 \
-  for (int i=0; i<n; i++) {                         \
-    ians[i] = ix[i];                                \
-  }
+  memcpy(ians, ix, n * sizeof(CTYPE))               
 
 static inline void iswap(int *a, int *b)           {int      tmp=*a; *a=*b; *b=tmp;}
 static inline void dswap(double *a, double *b)     {double   tmp=*a; *a=*b; *b=tmp;}
