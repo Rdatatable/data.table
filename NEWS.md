@@ -69,6 +69,8 @@ rowwiseDT(
 
 11. `fread()` automatically detects timestamps with sub-second accuracy again, [#6440](https://github.com/Rdatatable/data.table/issues/6440). This was a regression due to interference with new `dec='auto'` support. Thanks @kav2k for the concise report and @MichaelChirico for the fix.
 
+12. Restore some join operations on `x` and `i` (e.g. an anti-join `x[!i]`)  where `i` is an extended data.frame, but not a data.table (e.g. a `tbl`), [#6501](https://github.com/Rdatatable/data.table/issues/6501). Thanks @MichaelChirico for the report and PR.
+
 ## NOTES
 
 1. Tests run again when some Suggests packages are missing, [#6411](https://github.com/Rdatatable/data.table/issues/6411). Thanks @aadler for the note and @MichaelChirico for the fix.

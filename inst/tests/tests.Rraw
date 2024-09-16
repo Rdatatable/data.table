@@ -19263,3 +19263,10 @@ df = data.frame(a=1:3)
 setDT(df)
 attr(df, "att") = 1
 test(2291.1, set(df, NULL, "new", "new"), error="attributes .* have been reassigned")
+
+# don't try to re-use sorting on a non-data.table, #6501
+x = data.table(id = "aaa")
+y = data.frame(id = "bbb")
+test(2292.1, x[!y, on='id'], x)
+class(y) = c("tbl_df", "tbl", "data.frame")
+test(2292.2, x[!y, on = "id"], x)
