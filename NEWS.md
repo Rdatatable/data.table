@@ -65,6 +65,8 @@ rowwiseDT(
 
 9. `rbindlist` and `rbind` binding `bit64::integer64` columns with `character`/`complex`/`list` columns now works, [#5504](https://github.com/Rdatatable/data.table/issues/5504). Thanks to @MichaelChirico for the request and @ben-schwen for the PR.
 
+10. Using a namespace-qualified call on the RHS of `by=`, e.g. `DT[,.N,by=base::mget(v)]`, works again, fixing [#6493](https://github.com/Rdatatable/data.table/issues/6493). Thanks to @mmoisse for the report and @MichaelChirico for the fix.
+
 ## NOTES
 
 1. Tests run again when some Suggests packages are missing, [#6411](https://github.com/Rdatatable/data.table/issues/6411). Thanks @aadler for the note and @MichaelChirico for the fix.
