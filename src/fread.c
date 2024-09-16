@@ -1072,7 +1072,6 @@ static void parse_iso8601_timestamp(FieldParseContext *ctx)
 
   date_only:
 
-  //Rprintf("date=%d\thour=%d\tz_hour=%d\tminute=%d\ttz_minute=%d\tsecond=%.1f\n", date, hour, tz_hour, minute, tz_minute, second);
   // cast upfront needed to prevent silent overflow
   *target = 86400*(double)date + 3600*(hour - tz_hour) + 60*(minute - tz_minute) + second;
 
@@ -1233,9 +1232,13 @@ static int detect_types( const char **pch, int8_t type[], int ncol, bool *bumped
         }
       }
       ch = fieldStart;
-      if (autoDec && IS_DEC_TYPE(tmpType[field]) && dec == '.') { // . didn't parse a double; try ,
-        dec = ',';
-        continue;
+      if (autoDec && IS_DEC_TYPE(tmpType[field])) {
+        if (dec == '.') { // '.' didn't parse a double; try ','
+          dec = ',';
+          continue; // i.e., restart since tmpType not incremented
+        } else if (dec == ',') { // ',' didn't parse a double either; reset
+          dec = '\0';
+        }
       }
       while (++tmpType[field]<CT_STRING && disabled_parsers[tmpType[field]]) {};
       *bumped = true;

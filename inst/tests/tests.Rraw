@@ -18549,21 +18549,38 @@ test(2255, as.data.table(DF), output="DF1.V1.*DF1.V2.*DF2.V3.*DF2.V4.*V5")
 DT = data.table(a = letters, b = 1:26/6, c = 1:26)
 ## auto-detect dec=','
 fwrite(DT, f <- tempfile(), dec=',', sep=';')
-test(2256.1, fread(f), DT)
+test(2256.01, fread(f), DT)
 
 fwrite(DT, f, dec=',', sep='|')
-test(2256.2, fread(f), DT)
+test(2256.02, fread(f), DT)
 
 ## auto-detect dec='.'
 fwrite(DT, f)
-test(2256.3, fread(f), DT)
+test(2256.03, fread(f), DT)
 
 ## verbose output
-test(2256.4, fread(f, verbose=TRUE), DT, output="sep=',' so dec set to '.'")
+test(2256.04, fread(f, verbose=TRUE), DT, output="sep=',' so dec set to '.'")
 
 fwrite(DT, f, dec=',', sep=';')
-test(2256.5, fread(f, verbose=TRUE), DT, output="dec=',' detected based on a balance of 18")
-test(2256.6, fread('a;b\n1,14;5', verbose=TRUE), data.table(a=1.14, b=5L), output="dec=',' detected based on a balance of 1 ")
+test(2256.05, fread(f, verbose=TRUE), DT, output="dec=',' detected based on a balance of 18")
+test(2256.06, fread('a;b\n1,14;5', verbose=TRUE), data.table(a=1.14, b=5L), output="dec=',' detected based on a balance of 1 ")
+
+## timestamps with subsecond accuracy thrown off by auto-dec #6440
+test(2256.07, fread(text="t\n2023-10-12T06:53:53.123Z"), data.table(t=as.POSIXct('2023-10-12 06:53:53.123', tz='UTC')))
+### TODO(#6447): sep="\t" shouldn't be needed here, right?
+test(2256.08, fread(text="t\n2023-10-12T06:53:53,123Z", sep="\t"), data.table(t=as.POSIXct('2023-10-12 06:53:53.123', tz='UTC')))
+test(2256.09, fread(text="x,t\n1.0,2023-10-12T06:53:53.123Z"), data.table(x=1.0, t=as.POSIXct('2023-10-12 06:53:53.123', tz='UTC')))
+test(2256.10, fread(text="t,x\n2023-10-12T06:53:53.123Z,1.0"), data.table(t=as.POSIXct('2023-10-12 06:53:53.123', tz='UTC'), x=1.0))
+### from PR comment
+s = 'CoilID;AntennaID;Time;TagID;Pen;Side;Position;Location;Coil_Y;Coil_X
+1;16403160;2023-10-12T10:30:55.270Z;DA2C6411;1;AKB;Litter central;middle;1;6
+3;16403160;2023-10-12T10:30:55.270Z;DA459D86;1;AKB;Litter central;middle;1;4
+15;16402963;2023-10-12T10:31:00.900Z;DA459D86;1;AKB;Litter central;right;2;3
+14;16402963;2023-10-12T10:31:02.240Z;DA2C6411;1;AKB;Litter central;right;2;1
+11;16403160;2023-10-12T10:31:02.650Z;DA2C6411;1;AKB;Litter central;middle;2;6'
+test(2256.11,
+     unname(sapply(fread(s, sep=';'), function(x) class(x)[1L])),
+     c("integer", "integer", "POSIXct", "character", "integer", "character", "character", "character", "integer", "integer"))
 
 # helpful error about deleting during grouping, #1873
 DT = data.table(id = c(1, 1, 2, 2), a = 1:4, b = 5:8)
