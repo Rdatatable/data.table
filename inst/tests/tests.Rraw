@@ -19268,3 +19268,10 @@ test(2291.1, set(df, NULL, "new", "new"), error="attributes .* have been reassig
 DT = data.table(a = 1)
 test(2292.1, DT[, .N, by=base::mget("a")], data.table(a = 1, N = 1L))
 test(2292.2, DT[, .N, by=base::c("a")], data.table(a = 1, N = 1L))
+
+# don't try to re-use sorting on a non-data.table, #6501
+x = data.table(id = "aaa")
+y = data.frame(id = "bbb")
+test(2293.1, x[!y, on='id'], x)
+class(y) = c("tbl_df", "tbl", "data.frame")
+test(2293.2, x[!y, on = "id"], x)
