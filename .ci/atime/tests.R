@@ -166,5 +166,25 @@ test.list <- atime::atime_test_list(
     Slow = "a01f00f7438daf4612280d6886e6929fa8c8f76e", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/fc0c1e76408c34a8482f16f7421d262c7f1bde32) in the PR (https://github.com/Rdatatable/data.table/pull/6296/commits) that fixes the issue
     Fast = "f248bbe6d1204dfc8def62328788eaadcc8e17a1"), # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/6296) that fixes the issue
 
+  # Issue reported in: https://github.com/Rdatatable/data.table/issues/3735
+  # To be fixed in: https://github.com/Rdatatable/data.table/pull/4488
+  "DT[i] improved in #4488" = atime::atime_test(
+    N = 10^seq(1, 20),
+    setup = {
+      allIterations <- data.frame(v1 = runif(N), v2 = runif(N))
+      DoSomething <- function(row) {
+      someCalculation <- row[["v1"]] + 1
+      }
+      allIteration_dt <- as.data.table(allIterations)
+      setDTthreads(1)
+    },
+    expr = {
+      for (r in 1:nrow(allIterations)) {
+        DoSomething(data.table:::`[.data.table`(allIterations, r, ))
+      }
+    },
+    Slow = "d47a83fb2e25582e508f191f87a31ca81b736b57", # Parent of the first commit ( https://github.com/Rdatatable/data.table/commit/c33e98bb0a2f919bc1b428a5b7985f45f9d88a77 ) in the PR ( https://github.com/Rdatatable/data.table/pull/4488/commits ) that fixes the issue
+    Fast = "958e3dd3cba7c259220aa653bef4beb8ad74b239"), # last commit in the PR ( https://github.com/Rdatatable/data.table/pull/4488/commits ) that fixes the issue 
+
   NULL)
 # nolint end: undesirable_operator_linter.
