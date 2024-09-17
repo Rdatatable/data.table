@@ -802,7 +802,7 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
   }
   int protecti=0;
   dtnames = PROTECT(getAttrib(DT, R_NamesSymbol)); protecti++;
-  if (isNull(dtnames)) error(_("names(data) is NULL. Please report to data.table-help"));
+  if (isNull(dtnames)) error(_("names(data) is NULL. Please report to the data.table issue tracker"));
   if (LOGICAL(narmArg)[0] == TRUE) narm = TRUE;
   if (LOGICAL(verboseArg)[0] == TRUE) verbose = TRUE;
   struct processData data;
