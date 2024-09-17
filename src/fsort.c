@@ -252,11 +252,13 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
 
     if (verbose) {
       Rprintf(_("Top 20 MSB counts: ")); for(int i=0; i<MIN(MSBsize,20); i++) Rprintf(_("%"PRId64" "), (int64_t)msbCounts[order[i]]); Rprintf(_("\n"));
-      Rprintf(_("Reduced MSBsize from %zu to "), MSBsize);
     }
-    while (MSBsize>0 && msbCounts[order[MSBsize-1]] < 2) MSBsize--;
-    if (verbose) {
-      Rprintf(_("%zu by excluding 0 and 1 counts\n"), MSBsize);
+    {
+      size_t oldMSBsize = MSBsize;
+      while (MSBsize>0 && msbCounts[order[MSBsize-1]] < 2) MSBsize--;
+      if (verbose) {
+        Rprintf(_("Reduced MSBsize from %zu to %zu by excluding 0 and 1 counts\n"), oldMSBsize, MSBsize);
+      }
     }
 
     bool failed=false, alloc_fail=false, non_monotonic=false; // shared bools only ever assigned true; no need for atomic or critical assign
