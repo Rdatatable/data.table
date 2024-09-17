@@ -364,7 +364,7 @@ SEXP beforeR340(void) {
 extern int *_Last_updated;  // assign.c
 
 SEXP initLastUpdated(SEXP var) {
-  if (!isInteger(var) || LENGTH(var)!=1) error(_(".Last.value in namespace is not a length 1 integer"));
+  if (!isInteger(var) || LENGTH(var)!=1) error(_(".Last.updated in namespace is not a length 1 integer"));
   _Last_updated = INTEGER(var);
   return R_NilValue;
 }
