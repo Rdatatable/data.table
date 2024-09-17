@@ -2036,9 +2036,9 @@ int freadMain(freadMainArgs _args) {
     if (verbose) {
       if (sampleLines==0) {
         if (args.header)
-          DTPRINT(_("  'header' determined to be true because there are no number fields in the first and only row\n"));
+          DTPRINT(_("  'header' determined to be TRUE because there are no number fields in the first and only row\n"));
         else
-          DTPRINT(_("  'header' determined to be false because there are number fields in the first and only row\n"));
+          DTPRINT(_("  'header' determined to be FALSE because there are number fields in the first and only row\n"));
       } else {
         if (args.header)
           DTPRINT(_("  'header' determined to be true because all columns are type string and a better guess is not possible\n"));
