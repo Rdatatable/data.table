@@ -1930,8 +1930,10 @@ int freadMain(freadMainArgs _args) {
       }
       if ( (thisNcol<ncol && ncol>1 && !fill) ||
            (!eol(&ch) && ch!=eof) ) {
-        if (verbose) DTPRINT(_("  A line with too-%s fields (%d/%d) was found on line %d of sample jump %d. %s\n"),
-                             thisNcol<ncol ? _("few") : _("many"), thisNcol, ncol, jumpLine, jump, jump>0 ? _("Most likely this jump landed awkwardly so type bumps here will be skipped.") : "");
+        if (verbose)
+          DTPRINT(thisNcol<ncol ? _("  A line with too-few fields (%d/%d) was found on line %d of sample jump %d. %s\n")
+                                : _("  A line with too-many fields (%d/%d) was found on line %d of sample jump %d. %s\n"),
+                  thisNcol, ncol, jumpLine, jump, jump>0 ? _("Most likely this jump landed awkwardly so type bumps here will be skipped.") : "");
         bumped = false;
         if (jump==0) lastRowEnd=eof;  // to prevent the end from being tested; e.g. a short file with blank line within first 100 like test 976
         break;
