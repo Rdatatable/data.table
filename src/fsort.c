@@ -98,6 +98,15 @@ int qsort_cmp(const void *a, const void *b) {
   return (x<y)-(x>y);   // largest first in a safe branchless way casting long to int
 }
 
+static size_t shrinkMSB(size_t MSBsize, uint64_t * msbCounts, int * order, Rboolean verbose) {
+  size_t oldMSBsize = MSBsize;
+  while (MSBsize>0 && msbCounts[order[MSBsize-1]] < 2) MSBsize--;
+  if (verbose) {
+    Rprintf(_("Reduced MSBsize from %zu to %zu by excluding 0 and 1 counts\n"), oldMSBsize, MSBsize);
+  }
+  return MSBsize;
+}
+
 /*
   OpenMP is used here to find the range and distribution of data for efficient
     grouping and sorting.
@@ -253,13 +262,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
     if (verbose) {
       Rprintf(_("Top 20 MSB counts: ")); for(int i=0; i<MIN(MSBsize,20); i++) Rprintf(_("%"PRId64" "), (int64_t)msbCounts[order[i]]); Rprintf(_("\n"));
     }
-    {
-      size_t oldMSBsize = MSBsize;
-      while (MSBsize>0 && msbCounts[order[MSBsize-1]] < 2) MSBsize--;
-      if (verbose) {
-        Rprintf(_("Reduced MSBsize from %zu to %zu by excluding 0 and 1 counts\n"), oldMSBsize, MSBsize);
-      }
-    }
+    MSBsize = shrinkMSB(MSBsize, msbCounts, order, verbose);
 
     bool failed=false, alloc_fail=false, non_monotonic=false; // shared bools only ever assigned true; no need for atomic or critical assign
     t[6] = wallclock();
