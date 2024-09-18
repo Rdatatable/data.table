@@ -1888,11 +1888,14 @@ int freadMain(freadMainArgs _args) {
     // *2 to get a good spacing. We don't want overlaps resulting in double counting.
   }
   if (verbose) {
-    DTPRINT(_("  Number of sampling jump points = %d because "), nJumps);
-    if (nrowLimit<INT64_MAX) DTPRINT(_("nrow limit (%"PRIu64") supplied\n"), (uint64_t)nrowLimit);
-    else if (jump0size==0) DTPRINT(_("jump0size==0\n"));
-    else DTPRINT(_("(%"PRIu64" bytes from row 1 to eof) / (2 * %"PRIu64" jump0size) == %"PRIu64"\n"),
-                 (uint64_t)sz, (uint64_t)jump0size, (uint64_t)(sz/(2*jump0size)));
+    if (nrowLimit<INT64_MAX) {
+      DTPRINT(_("  Number of sampling jump points = %d because nrow limit (%"PRIu64") supplied\n"), nJumps, (uint64_t)nrowLimit);
+    } else if (jump0size==0) {
+      DTPRINT(_("  Number of sampling jump points = %d because jump0size==0\n"), nJumps);
+    } else {
+      DTPRINT(_("  Number of sampling jump points = %d because (%"PRIu64" bytes from row 1 to eof) / (2 * %"PRIu64" jump0size) == %"PRIu64"\n"),
+              nJumps, (uint64_t)sz, (uint64_t)jump0size, (uint64_t)(sz/(2*jump0size)));
+    }
   }
   nJumps++; // the extra sample at the very end (up to eof) is sampled and format checked but not jumped to when reading
   if (nrowLimit<INT64_MAX && nrowLimit>0) nJumps=1; // when nrows>0 supplied by user, no jumps (not even at the end) and single threaded
