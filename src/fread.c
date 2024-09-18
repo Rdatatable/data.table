@@ -2626,7 +2626,7 @@ int freadMain(freadMainArgs _args) {
 
   if (stopTeam) {
     if (internalErr[0]!='\0') {
-      STOP("%s %s: %s. %s", _("Internal error in"), __func__, internalErr, _("Please report to the data.table issues tracker"));  // # nocov
+      STOP(_("Internal error in %s: %s. Please report to the data.table issues tracker"), __func__, internalErr); // # nocov
     }
     stopTeam = false;
 
