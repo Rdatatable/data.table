@@ -101,7 +101,7 @@ int qsort_cmp(const void *a, const void *b) {
 static size_t shrinkMSB(size_t MSBsize, uint64_t * msbCounts, int * order, Rboolean verbose) {
   size_t oldMSBsize = MSBsize;
   while (MSBsize>0 && msbCounts[order[MSBsize-1]] < 2) MSBsize--;
-  if (verbose) {
+  if (verbose && oldMSBsize != MSBsize) {
     Rprintf(_("Reduced MSBsize from %zu to %zu by excluding 0 and 1 counts\n"), oldMSBsize, MSBsize);
   }
   return MSBsize;
