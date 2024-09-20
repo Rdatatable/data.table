@@ -168,7 +168,7 @@ test.list <- atime::atime_test_list(
 
   # Issue mentioned and fixed in: https://github.com/Rdatatable/data.table/pull/5493
   "transform improved in #5493" = atime::atime_test(
-    N = 2^seq(1, 20),
+    N = 10^seq(1, 7),
     setup = {
       df <- data.frame(x = runif(N))
       dt <- as.data.table(df)
