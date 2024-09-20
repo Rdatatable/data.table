@@ -222,9 +222,9 @@ void attribute_visible R_init_data_table(DllInfo *info)
   if (ld != 0.0) error(_("Checking memset(&ld, 0, sizeof(long double)); ld == (long double)0.0 %s"), msg);
 
   // Check unsigned cast used in fread.c. This isn't overflow/underflow, just cast.
-  if ((uint_fast8_t)('0'-'/') != 1) error(_("The ascii character '/' is not just before '0'"));
+  if ((uint_fast8_t)('0'-'/') != 1) error(_("Unlike the very common case, e.g. ASCII, the character '/' is not just before '0'."));
   if ((uint_fast8_t)('/'-'0') < 10) error(_("The C expression (uint_fast8_t)('/'-'0')<10 is true. Should be false."));
-  if ((uint_fast8_t)(':'-'9') != 1) error(_("The ascii character ':' is not just after '9'"));
+  if ((uint_fast8_t)(':'-'9') != 1) error(_("Unlike the very common case, e.g. ASCII, the character ':' is not just after '9'."));
   if ((uint_fast8_t)('9'-':') < 10) error(_("The C expression (uint_fast8_t)('9'-':')<10 is true. Should be false."));
 
   // Variables rather than #define for NA_INT64 to ensure correct usage; i.e. not casted
@@ -364,7 +364,7 @@ SEXP beforeR340(void) {
 extern int *_Last_updated;  // assign.c
 
 SEXP initLastUpdated(SEXP var) {
-  if (!isInteger(var) || LENGTH(var)!=1) error(_(".Last.value in namespace is not a length 1 integer"));
+  if (!isInteger(var) || LENGTH(var)!=1) error(_(".Last.updated in namespace is not a length 1 integer"));
   _Last_updated = INTEGER(var);
   return R_NilValue;
 }

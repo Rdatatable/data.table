@@ -338,12 +338,13 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
 
     if (!foundName) { static char buff[12]; snprintf(buff,12,"V%d",j+1), SET_STRING_ELT(ansNames, idcol+j, mkChar(buff)); foundName=buff; }
     if (factor) maxType=INTSXP;  // if any items are factors then a factor is created (could be an option)
-    if (int64 && maxType!=REALSXP)
+    if (int64 && !(maxType==REALSXP || maxType==STRSXP || maxType==VECSXP || maxType==CPLXSXP))
       internal_error(__func__, "column %d of result is determined to be integer64 but maxType=='%s' != REALSXP", j+1, type2char(maxType)); // # nocov
     if (date && INHERITS(firstCol, char_IDate)) maxType=INTSXP; // first encountered Date determines class and type #5309
     SEXP target;
     SET_VECTOR_ELT(ans, idcol+j, target=allocVector(maxType, nrow));  // does not initialize logical & numerics, but does initialize character and list
-    if (!factor) copyMostAttrib(firstCol, target); // all but names,dim and dimnames; mainly for class. And if so, we want a copy here, not keepattr's SET_ATTRIB.
+    // #5504 do not copy class for mixing int64 and higher maxTypes CPLXSXP/STRSXP/VECSXP
+    if (!factor && !(int64 && (maxType==STRSXP || maxType==VECSXP || maxType==CPLXSXP))) copyMostAttrib(firstCol, target); // all but names,dim and dimnames; mainly for class. And if so, we want a copy here, not keepattr's SET_ATTRIB.
 
     if (factor && anyNotStringOrFactor) {
       // in future warn, or use list column instead ... warning(_("Column %d contains a factor but not all items for the column are character or factor"), idcol+j+1);
@@ -539,7 +540,8 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
           bool listprotect = (TYPEOF(target)==VECSXP || TYPEOF(target)==EXPRSXP) && TYPEOF(thisCol)!=TYPEOF(target);
           // do an as.list() on the atomic column; #3528
           if (listprotect) {
-            thisCol = PROTECT(coerceVector(thisCol, TYPEOF(target)));
+            // coerceAs for int64 to copy attributes (coerceVector does not copy atts)
+            thisCol = PROTECT(INHERITS(thisCol, char_integer64) ? coerceAs(thisCol, target, ScalarLogical(TRUE)) : coerceVector(thisCol, TYPEOF(target)));
             // else coerces if needed within memrecycle; with a no-alloc direct coerce from 1.12.4 (PR #3909)
             const char *ret = memrecycle(target, R_NilValue, ansloc, thisnrow, thisCol, 0, -1, idcol+j+1, foundName);
             UNPROTECT(1); // earlier unprotect rbindlist calls with lots of lists #4536
