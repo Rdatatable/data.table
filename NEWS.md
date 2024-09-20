@@ -27,7 +27,7 @@ rowwiseDT(
 
 2. Limited support for subsetting or aggregating columns of type `expression`, [#5596](https://github.com/Rdatatable/data.table/issues/5596). Thanks to @tsp for the report, and @ben-schwen for the fix.
 
-3. `patterns()` returns character instead of integer vector, to support user-defined `cols`, which can be useful to specify a subset of columns to reshape without having to use a regex, [#6498](https://github.com/Rdatatable/data.table/issues/6498). Thanks to @hongyuanjia for the report, and to @tdhock for the PR.
+3. `patterns()` returns character instead of integer vector(s), to support user-defined `cols`, which can be useful to specify a subset of columns to reshape without having to use a regex, [#6498](https://github.com/Rdatatable/data.table/issues/6498). Thanks to @hongyuanjia for the report, and to @tdhock for the PR.
 
 ## BUG FIXES
 
