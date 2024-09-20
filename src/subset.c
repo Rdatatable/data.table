@@ -79,7 +79,7 @@ void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
       for (int i=0; i<n; i++) {                     SET_STRING_ELT(ans, i, sp[idxp[i]-1]); }
     }
   } break;
-  case VECSXP : {
+  case VECSXP: case EXPRSXP: {
     const SEXP *sp = SEXPPTR_RO(source);
     if (anyNA) {
       for (int i=0; i<n; i++) { int elem = idxp[i]; SET_VECTOR_ELT(ans, i, elem==NA_INTEGER ? R_NilValue : sp[elem-1]); }

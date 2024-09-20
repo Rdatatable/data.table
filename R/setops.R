@@ -42,7 +42,9 @@ funique = function(x) {
   if (!identical(names(x), names(y))) stopf("x and y must have the same column order")
   bad_types = c("raw", "complex", if (block_list) "list")
   found = bad_types %chin% c(vapply_1c(x, typeof), vapply_1c(y, typeof))
-  if (any(found)) stopf("unsupported column type(s) found in x or y: %s", brackify(bad_types[found]))
+  if (any(found))
+    stopf(ngettext(sum(found), "unsupported column type found in x or y: %s", "unsupported column types found in x or y: %s"),
+          brackify(bad_types[found]), domain=NA)
   super = function(x) {
     # allow character->factor and integer->numeric because from v1.12.4 i's type is retained by joins, #3820
     ans = class(x)[1L]
