@@ -22,8 +22,8 @@ melt.default = function(data, ..., na.rm = FALSE, value.name = "value") {
 patterns = function(..., cols=character(0L), ignore.case=FALSE, perl=FALSE, fixed=FALSE, useBytes=FALSE) {
   # if ... has no names, names(list(...)) will be "";
   #   this assures they'll be NULL instead
-  if(!is.character(cols) || any(is.na(cols))){
-    stop("cols must be a character vector of column names")
+  if(!is.character(cols) || anyNA(cols)){
+    stopf("cols must be a character vector of column names")
   }
   L = list(...)
   p = unlist(L, use.names = any(nzchar(names(L))))
