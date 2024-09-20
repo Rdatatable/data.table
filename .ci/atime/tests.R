@@ -175,7 +175,7 @@ test.list <- atime::atime_test_list(
     },
     expr = data.table:::transform.data.table(dt, y = round(x)),
     Slow = "bf499090c0e6fd5cb492bf8b1603d93c1ee21dfb", # Parent of the merge commit (https://github.com/Rdatatable/data.table/commit/2d1a0575f87cc50e90f64825c30d7a6cb6b05dd7) of the PR (https://github.com/Rdatatable/data.table/pull/5493) that fixes the issue
-    Fast = "2d1a0575f87cc50e90f64825c30d7a6cb6b05dd7"), # Merge commit (master branch) of the PR (https://github.com/Rdatatable/data.table/pull/5493) that fixes the issue
+    Fast = "2d1a0575f87cc50e90f64825c30d7a6cb6b05dd7"), # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/5493) that fixes the issue
   
   NULL)
 # nolint end: undesirable_operator_linter.
