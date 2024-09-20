@@ -166,5 +166,16 @@ test.list <- atime::atime_test_list(
     Slow = "a01f00f7438daf4612280d6886e6929fa8c8f76e", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/fc0c1e76408c34a8482f16f7421d262c7f1bde32) in the PR (https://github.com/Rdatatable/data.table/pull/6296/commits) that fixes the issue
     Fast = "f248bbe6d1204dfc8def62328788eaadcc8e17a1"), # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/6296) that fixes the issue
 
+  # Issue mentioned and fixed in: https://github.com/Rdatatable/data.table/pull/5493
+  "transform improved in #5493" = atime::atime_test(
+    N = 10^seq(1, 20),
+    setup = {
+      df <- data.frame(x = runif(N))
+      dt <- as.data.table(df)
+    },
+    expr = data.table:::transform.data.table(dt, y = round(x)),
+    Slow = "bf499090c0e6fd5cb492bf8b1603d93c1ee21dfb", # Parent of the merge commit (https://github.com/Rdatatable/data.table/commit/2d1a0575f87cc50e90f64825c30d7a6cb6b05dd7) of the PR (https://github.com/Rdatatable/data.table/pull/5493) that fixes the issue
+    Fast = "2d1a0575f87cc50e90f64825c30d7a6cb6b05dd7"), # Merge commit (master branch) of the PR (https://github.com/Rdatatable/data.table/pull/5493) that fixes the issue
+  
   NULL)
 # nolint end: undesirable_operator_linter.
