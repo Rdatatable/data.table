@@ -192,6 +192,4 @@ test.list <- atime::atime_test_list(
     Fast = "f248bbe6d1204dfc8def62328788eaadcc8e17a1"), # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/6296) that fixes the issue
 
   tests=extra.test.list)
-
-
 # nolint end: undesirable_operator_linter.
