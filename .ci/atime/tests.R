@@ -174,7 +174,7 @@ test.list <- atime::atime_test_list(
       dt <- as.data.table(df)
     },
     expr = data.table:::transform.data.table(dt, y = round(x)),
-    Slow = "0895fa247afcf6b38044bd5f56c0d209691ddb31" # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/93ce3ce1373bf733ebd2036e2883d2ffe377ab58) in the PR (https://github.com/Rdatatable/data.table/pull/5493/commits) that fixes the issue
+    Slow = "0895fa247afcf6b38044bd5f56c0d209691ddb31", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/93ce3ce1373bf733ebd2036e2883d2ffe377ab58) in the PR (https://github.com/Rdatatable/data.table/pull/5493/commits) that fixes the issue
     Fast = "2d1a0575f87cc50e90f64825c30d7a6cb6b05dd7"), # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/5493) that fixes the issue
   
   NULL)
