@@ -1888,11 +1888,14 @@ int freadMain(freadMainArgs _args) {
     // *2 to get a good spacing. We don't want overlaps resulting in double counting.
   }
   if (verbose) {
-    DTPRINT(_("  Number of sampling jump points = %d because "), nJumps);
-    if (nrowLimit<INT64_MAX) DTPRINT(_("nrow limit (%"PRIu64") supplied\n"), (uint64_t)nrowLimit);
-    else if (jump0size==0) DTPRINT(_("jump0size==0\n"));
-    else DTPRINT(_("(%"PRIu64" bytes from row 1 to eof) / (2 * %"PRIu64" jump0size) == %"PRIu64"\n"),
-                 (uint64_t)sz, (uint64_t)jump0size, (uint64_t)(sz/(2*jump0size)));
+    if (nrowLimit<INT64_MAX) {
+      DTPRINT(_("  Number of sampling jump points = %d because nrow limit (%"PRIu64") supplied\n"), nJumps, (uint64_t)nrowLimit);
+    } else if (jump0size==0) {
+      DTPRINT(_("  Number of sampling jump points = %d because jump0size==0\n"), nJumps);
+    } else {
+      DTPRINT(_("  Number of sampling jump points = %d because (%"PRIu64" bytes from row 1 to eof) / (2 * %"PRIu64" jump0size) == %"PRIu64"\n"),
+              nJumps, (uint64_t)sz, (uint64_t)jump0size, (uint64_t)(sz/(2*jump0size)));
+    }
   }
   nJumps++; // the extra sample at the very end (up to eof) is sampled and format checked but not jumped to when reading
   if (nrowLimit<INT64_MAX && nrowLimit>0) nJumps=1; // when nrows>0 supplied by user, no jumps (not even at the end) and single threaded
@@ -1930,8 +1933,10 @@ int freadMain(freadMainArgs _args) {
       }
       if ( (thisNcol<ncol && ncol>1 && !fill) ||
            (!eol(&ch) && ch!=eof) ) {
-        if (verbose) DTPRINT(_("  A line with too-%s fields (%d/%d) was found on line %d of sample jump %d. %s\n"),
-                             thisNcol<ncol ? _("few") : _("many"), thisNcol, ncol, jumpLine, jump, jump>0 ? _("Most likely this jump landed awkwardly so type bumps here will be skipped.") : "");
+        if (verbose)
+          DTPRINT(thisNcol<ncol ? _("  A line with too-few fields (%d/%d) was found on line %d of sample jump %d. %s\n")
+                                : _("  A line with too-many fields (%d/%d) was found on line %d of sample jump %d. %s\n"),
+                  thisNcol, ncol, jumpLine, jump, jump>0 ? _("Most likely this jump landed awkwardly so type bumps here will be skipped.") : "");
         bumped = false;
         if (jump==0) lastRowEnd=eof;  // to prevent the end from being tested; e.g. a short file with blank line within first 100 like test 976
         break;
@@ -2035,7 +2040,10 @@ int freadMain(freadMainArgs _args) {
     }
     if (verbose) {
       if (sampleLines==0) {
-        DTPRINT(_("  'header' determined to be %s because there are%s number fields in the first and only row\n"), args.header?"TRUE":"FALSE", args.header?_(" no"):"");
+        if (args.header)
+          DTPRINT(_("  'header' determined to be TRUE because there are no number fields in the first and only row\n"));
+        else
+          DTPRINT(_("  'header' determined to be FALSE because there are number fields in the first and only row\n"));
       } else {
         if (args.header)
           DTPRINT(_("  'header' determined to be true because all columns are type string and a better guess is not possible\n"));
@@ -2621,7 +2629,7 @@ int freadMain(freadMainArgs _args) {
 
   if (stopTeam) {
     if (internalErr[0]!='\0') {
-      STOP("%s %s: %s. %s", _("Internal error in"), __func__, internalErr, _("Please report to the data.table issues tracker"));  // # nocov
+      STOP(_("Internal error in %s: %s. Please report to the data.table issues tracker"), __func__, internalErr); // # nocov
     }
     stopTeam = false;
 
