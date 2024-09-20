@@ -26,7 +26,7 @@ patterns = function(..., cols=character(0L), ignore.case=FALSE, perl=FALSE, fixe
   p = unlist(L, use.names = any(nzchar(names(L))))
   if (!is.character(p))
     stopf("Input patterns must be of type character.")
-  matched = lapply(p, grep, cols, ignore.case=ignore.case, perl=perl, fixed=fixed, useBytes=useBytes)
+  matched = lapply(p, grep, cols, ignore.case=ignore.case, perl=perl, fixed=fixed, useBytes=useBytes, value=TRUE)
   if (length(idx <- which(lengths(matched) == 0L)))
     stopf(ngettext(length(idx), 'Pattern not found: [%s]', 'Patterns not found: [%s]'), brackify(p[idx]), domain=NA)
   if (length(matched) == 1L) return(matched[[1L]])
