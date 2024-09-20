@@ -98,7 +98,7 @@ int qsort_cmp(const void *a, const void *b) {
   return (x<y)-(x>y);   // largest first in a safe branchless way casting long to int
 }
 
-static size_t shrinkMSB(size_t MSBsize, uint64_t * msbCounts, int * order, Rboolean verbose) {
+static size_t shrinkMSB(size_t MSBsize, uint64_t *msbCounts, int *order, Rboolean verbose) {
   size_t oldMSBsize = MSBsize;
   while (MSBsize>0 && msbCounts[order[MSBsize-1]] < 2) MSBsize--;
   if (verbose && oldMSBsize != MSBsize) {
