@@ -1,3 +1,24 @@
+# #6107 fixed performance across 3 ways to specify a column as Date, test each individually
+extra.args.6107 <- c(
+  "colClasses=list(Date='date')",
+  "colClasses='Date'",
+  "select=list(Date='date')")
+extra.test.list <- list()
+for (extra.arg in extra.args.6107){
+  this.test <- atime::atime_test(
+    N = 10^seq(1, 7, by=0.25),
+    setup = {
+      set.seed(1)
+      DT = data.table(date=.Date(sample(20000, N, replace=TRUE)))
+      tmp_csv = tempfile()
+      fwrite(DT, tmp_csv)
+    },
+    Slow = "e9087ce9860bac77c51467b19e92cf4b72ca78c7", # Parent of the merge commit (https://github.com/Rdatatable/data.table/commit/a77e8c22e44e904835d7b34b047df2eff069d1f2) of the PR (https://github.com/Rdatatable/data.table/pull/6107) that fixes the issue
+    Fast = "a77e8c22e44e904835d7b34b047df2eff069d1f2") # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/6107) that fixes the issue
+  this.test$expr = str2lang(sprintf("data.table::fread(tmp_csv, %s)", extra.arg))
+  extra.test.list[[sprintf("fread(%s) improved in #6107", extra.arg)]] <- this.test
+}
+
 # A list of performance tests.
 #
 # See documentation in https://github.com/Rdatatable/data.table/wiki/Performance-testing for best practices.
@@ -170,27 +191,7 @@ test.list <- atime::atime_test_list(
     Slow = "a01f00f7438daf4612280d6886e6929fa8c8f76e", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/fc0c1e76408c34a8482f16f7421d262c7f1bde32) in the PR (https://github.com/Rdatatable/data.table/pull/6296/commits) that fixes the issue
     Fast = "f248bbe6d1204dfc8def62328788eaadcc8e17a1"), # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/6296) that fixes the issue
 
-  NULL)
+  tests=extra.test.list)
 
-# #6107 fixed performance across 3 ways to specify a column as Date, test each individually
-extra.args.6107 <- c(
-  "colClasses=list(Date='date')",
-  "colClasses='Date'",
-  "select=list(Date='date')")
-for (extra.arg in extra.args.6107){
-  this.test <- atime::atime_test(
-    N = 10^seq(1, 7, by=0.25),
-    pkg.edit.fun=test.list[[1]]$pkg.edit.fun,
-    setup = {
-      set.seed(1)
-      DT = data.table(date=.Date(sample(20000, N, replace=TRUE)))
-      tmp_csv = tempfile()
-      fwrite(DT, tmp_csv)
-    },
-    Slow = "e9087ce9860bac77c51467b19e92cf4b72ca78c7", # Parent of the merge commit (https://github.com/Rdatatable/data.table/commit/a77e8c22e44e904835d7b34b047df2eff069d1f2) of the PR (https://github.com/Rdatatable/data.table/pull/6107) that fixes the issue
-    Fast = "a77e8c22e44e904835d7b34b047df2eff069d1f2") # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/6107) that fixes the issue
-  this.test$expr = str2lang(sprintf("data.table::fread(tmp_csv, %s)", extra.arg))
-  test.list[[sprintf("fread(%s) improved in #6107", extra.arg)]] <- this.test
-}
 
 # nolint end: undesirable_operator_linter.
