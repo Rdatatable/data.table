@@ -71,6 +71,8 @@ rowwiseDT(
 
 12. Using a namespace-qualified call on the RHS of `by=`, e.g. `DT[,.N,by=base::mget(v)]`, works again, fixing [#6493](https://github.com/Rdatatable/data.table/issues/6493). Thanks to @mmoisse for the report and @MichaelChirico for the fix.
 
+13. Restore some join operations on `x` and `i` (e.g. an anti-join `x[!i]`)  where `i` is an extended data.frame, but not a data.table (e.g. a `tbl`), [#6501](https://github.com/Rdatatable/data.table/issues/6501). Thanks @MichaelChirico for the report and PR.
+
 ## NOTES
 
 1. Tests run again when some Suggests packages are missing, [#6411](https://github.com/Rdatatable/data.table/issues/6411). Thanks @aadler for the note and @MichaelChirico for the fix.

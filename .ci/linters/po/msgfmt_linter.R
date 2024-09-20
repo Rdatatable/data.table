@@ -33,7 +33,7 @@ msgfmt_linter <- function(po_file) {
 
   unmo_tmp = tempfile()
   unmo_ref = tempfile()
-  on.exit(unlink(c(unmo_tmp, unmo_ref), add=TRUE))
+  on.exit(unlink(c(unmo_tmp, unmo_ref)), add=TRUE)
   system2("msgunfmt", c(mo_tmp, "-o", unmo_tmp))
   system2("msgunfmt", c(mo_ref, "-o", unmo_ref))
   cat("Here are the observed differences after converting back to .po:\n\n")
