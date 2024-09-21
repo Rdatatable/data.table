@@ -140,7 +140,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
 
   for(int i=0; i<length(SDall); ++i) {
     SEXP this = VECTOR_ELT(SDall, i);
-    if (SIZEOF(this)==0)
+    if (SIZEOF(this)==0 && TYPEOF(this)!=EXPRSXP)
       internal_error(__func__, "size-0 type %d in .SD column %d should have been caught earlier", TYPEOF(this), i); // # nocov
     if (LENGTH(this) != maxGrpSize)
       internal_error(__func__, "SDall %d length = %d != %d", i+1, LENGTH(this), maxGrpSize); // # nocov
@@ -459,7 +459,10 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     }
     else UNPROTECT(1);  // the jval. Don't want them to build up. The first jval can stay protected till the end ok.
   }
-  if (showProgress && hasPrinted) Rprintf(_("\rProcessed %d groups out of %d. %.0f%% done. Time elapsed: %ds. ETA: %ds.\n"), ngrp, ngrp, 100.0, (int)(wallclock()-startTime), 0);
+  if (showProgress && hasPrinted) {
+    Rprintf(_("\rProcessed %d groups out of %d. %.0f%% done. Time elapsed: %ds. ETA: %ds."), ngrp, ngrp, 100.0, (int)(wallclock()-startTime), 0);
+    Rprintf("\n"); // separated so this & the earlier message are identical for translation purposes.
+  }
   if (isNull(lhs) && ans!=NULL) {
     if (ansloc < LENGTH(VECTOR_ELT(ans,0))) {
       if (verbose) Rprintf(_("Wrote less rows (%d) than allocated (%d).\n"),ansloc,LENGTH(VECTOR_ELT(ans,0)));

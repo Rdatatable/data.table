@@ -63,7 +63,8 @@ SEXP whichwrapper(SEXP x, SEXP val) {
 
 static const char *concat(SEXP vec, SEXP idx) {
   if (!isString(vec)) error(_("concat: 'vec' must be a character vector"));
-  if (!isInteger(idx) || length(idx) < 0) error(_("concat: 'idx' must be an integer vector of length >= 0"));
+  if (!isInteger(idx))
+    error(_("concat: 'idx' must be an integer vector"));
 
   static char ans[1024];  // so only one call to concat() per calling warning/error
   int nidx=length(idx), nvec=length(vec);
@@ -802,7 +803,8 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
   }
   int protecti=0;
   dtnames = PROTECT(getAttrib(DT, R_NamesSymbol)); protecti++;
-  if (isNull(dtnames)) error(_("names(data) is NULL. Please report to data.table-help"));
+  if (isNull(dtnames))
+    internal_error(__func__, "names(data) is NULL");
   if (LOGICAL(narmArg)[0] == TRUE) narm = TRUE;
   if (LOGICAL(verboseArg)[0] == TRUE) verbose = TRUE;
   struct processData data;
