@@ -165,6 +165,8 @@ rowwiseDT(
 
     e. Displays `integer64` columns correctly by loading {bit64} if needed, [#6224](https://github.com/Rdatatable/data.table/issues/6224). Thanks @renkun-ken for the report and @MichaelChirico for the fix.
 
+14. `all.equal.data.table` gains `ignore.indices` argument, [#6134](https://github.com/Rdatatable/data.table/issues/6134).
+
 ## BUG FIXES
 
 1. `unique()` returns a copy when `nrows(x) <= 1` instead of a mutable alias, [#5932](https://github.com/Rdatatable/data.table/pull/5932). This is consistent with existing `unique()` behavior when the input has no duplicates but more than one row. Thanks to @brookslogan for the report and @dshemetov for the fix.

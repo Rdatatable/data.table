@@ -8,8 +8,8 @@
 
 \usage{
   \method{all.equal}{data.table}(target, current, trim.levels=TRUE, check.attributes=TRUE,
-    ignore.col.order=FALSE, ignore.row.order=FALSE, tolerance=sqrt(.Machine$double.eps),
-    \dots)
+    ignore.indices=FALSE, ignore.col.order=FALSE, ignore.row.order=FALSE,
+    tolerance=sqrt(.Machine$double.eps), \dots)
 }
 
 \arguments{
@@ -25,6 +25,10 @@
 
   \item{check.attributes}{
     A logical indicating whether or not to check attributes, will apply not only to data.table but also attributes of the columns. It will skip \code{c("row.names",".internal.selfref")} data.table attributes.
+  }
+
+  \item{ignore.indices}{
+    A logical indicating whether or not to ignore if tables differ by indices. Since \code{data.table} indices are attributes, \code{ignore.indices} is implied when \code{check.attributes} is FALSE.
   }
 
   \item{ignore.col.order}{
