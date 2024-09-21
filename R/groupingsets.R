@@ -60,9 +60,9 @@ groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, labe
   if (!(is.null(label) ||
         (is.atomic(label) && length(label) == 1L) ||
         (is.list(label) && all(vapply_1b(label, is.atomic)) &&
-         all(vapply_1i(label, length) == 1L) && !is.null(names(label)))))
+         all(lengths(label) == 1L) && !is.null(names(label)))))
     stopf("Argument 'label', if not NULL, must be a scalar or a named list of scalars.")
-  if (is.list(label) && !is.null(names(label)) && ("" %chin% names(label) || any(is.na(names(label)))))
+  if (is.list(label) && !is.null(names(label)) && ("" %chin% names(label) || anyNA(names(label))))
     stopf("When argument 'label' is a list, all of the list elements must be named.")
   if (is.list(label) && anyDuplicated(names(label)))
     stopf("When argument 'label' is a list, the element names must not contain duplicates.")
@@ -81,7 +81,7 @@ groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, labe
                                  other.allowed.names)
     if (!all(names(label) %in% allowed.label.list.names))
       stopf(paste0("When argument 'label' is a list, all element names must be (1) in 'by', or (2) the first element of the class in the data.table 'x' of a variable in 'by', or (3) one of ",
-                   paste(paste0("\"", other.allowed.names, "\""), collapse = ", "),
+                   toString(paste0("\"", other.allowed.names, "\"")),
                    ". Element names not satisfying this condition: %s"),
             brackify(setdiff(names(label), allowed.label.list.names)))
     label.classes = lapply(label, class)
@@ -98,11 +98,9 @@ groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, labe
       label.names.in.by.classes.mismatch.info =
         paste0(label.names.in.by[!label.names.in.by.classes.match],
                " (label: ",
-               vapply_1c(label.names.in.by.classes[!label.names.in.by.classes.match],
-                         function(u) paste(u, collapse=", ")),
+               vapply_1c(label.names.in.by.classes[!label.names.in.by.classes.match], toString),
                "; data: ",
-               vapply_1c(x.label.names.in.by.classes[!label.names.in.by.classes.match],
-                         function(u) paste(u, collapse=", ")), ")")
+               vapply_1c(x.label.names.in.by.classes[!label.names.in.by.classes.match], toString), ")")
       stopf("When argument 'label' is a list, the class of each 'label' element with name in 'by' must match the class of the corresponding column of the data.table 'x'. Class mismatch for: %s",
             brackify(label.names.in.by.classes.mismatch.info))
     }
