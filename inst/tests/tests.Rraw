@@ -2830,8 +2830,14 @@ test(932, DT[J(c(0,2,6,8)), roll=+Inf, rollends=TRUE, v], INT(1,1,6,7))
 test(933, DT[J(c(0,2,6,8)), roll=-Inf, rollends=TRUE, v], INT(1,2,7,7))
 test(934, DT[J(c(0,2,6,8)), roll=+Inf, v], INT(NA,1,6,7))
 test(935, DT[J(c(0,2,6,8)), roll=-Inf, v], INT(1,2,7,NA))
-test(936, DT[J(c(-10,-1,2,12,13)), roll=5, rollends=TRUE, v], INT(NA,1,1,7,NA))
-test(937, DT[J(c(-10,-1,2,12,13)), roll=-5, rollends=TRUE, v], INT(NA,1,2,7,NA))
+test(936.1, DT[J(c(-10,-1,2,12,13)), roll=5, rollends=TRUE, v], INT(NA,1,1,7,NA))
+test(936.2, DT[J(c(-10,-1,-4,2,12,9,13)), roll=5, rollends=TRUE, v], INT(NA,1,1,1,7,7,NA))  # include -4 (exactly row1-roll) and out-of-order too
+test(936.3, DT[J(c(-10,-1,2,12,13)), roll=5, v], INT(NA,NA,1,7,NA))  # default rollends when roll>0 is c(FALSE,TRUE)
+test(936.4, DT[J(c(-10,-1,-4,2,12,13,9)), roll=5, v], INT(NA,NA,NA,1,7,NA,7))
+test(937.1, DT[J(c(-10,-1,2,12,13)), roll=-5, rollends=TRUE, v], INT(NA,1,2,7,NA))
+test(937.2, DT[J(c(-10,-1,-4,2,12,9,13)), roll=-5, rollends=TRUE, v], INT(NA,1,1,2,7,7,NA))
+test(937.3, DT[J(c(-10,-1,2,12,13)), roll=-5, v], INT(NA,1,2,NA,NA))
+test(937.4, DT[J(c(-10,-1,-4,2,12,9,13)), roll=-5, v], INT(NA,1,1,2,NA,NA,NA))
 test(938, DT[J(c(-10,2,6,7,8)), roll="nearest", v], INT(1,1,7,7,7))
 test(939, DT[J(c(-10,2,6,7,8)), roll="nearest", rollends=c(TRUE,FALSE), v], INT(1,1,7,7,NA))
 test(940, DT[J(c(-10,2,6,7,8)), roll="nearest", rollends=c(FALSE,TRUE), v], INT(NA,1,7,7,7))
@@ -4425,7 +4431,7 @@ test(1196.1, DT[,.N,by=val]$N, INT(1,1,1,1))
 test(1196.2, DT[.(x),.N], 1L)
 old_rounding = setNumericRounding(2L) # default is 0
 test(1197.1, DT[,.N,by=val]$N, INT(1,1,2))
-test(1197.2, DT[.(x),.N], 2L)
+# test(1197.2, DT[.(x),.N], 2L)  # setNumericRounding to be removed, and bmerge ignores it as from PR#XXX in v1.14.4
 setNumericRounding(old_rounding)
 
 DT = data.table(id=INT(1,2,1), val1=3:1, val2=3:1, val3=list(2:3,4:6,7:10))   # 5380
@@ -9780,7 +9786,7 @@ nqjoin_test <- function(x, y, k=1L, test_no, mult="all") {
   for (i in seq_along(runcmb)) {
     thiscols = runcmb[[i]]
     thisops = runops[[i]]
-    # cat("k = ", k, "\ti = ", i, "\t thiscols = [", paste0(thiscols,collapse=","), "]\t thisops = [", paste0(thisops,collapse=","), "]\t ", sep="")
+    # cat("k = ", k, "\ti = ", i, "\t thiscols = [", paste0(thiscols,collapse=","), "]\t thisops = [", paste0(thisops,collapse=","), "]\n", sep="")
     ans1 = nq(x, y, thiscols, thisops, 0L, mult=mult)
     ans2 = check(x, y, thiscols, thisops, mult=mult)
     test_no = test_no + .001
