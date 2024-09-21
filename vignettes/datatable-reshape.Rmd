@@ -241,7 +241,7 @@ melt(two.iris, measure.vars = measure(value.name, dim, sep="."))
 ```
 
 Using the code above we get one value column per flower part. If we
-instead want a value column for each measurement dimension, we can do
+instead want a value column for each measurement dimension, we can do:
 
 ```{r}
 melt(two.iris, measure.vars = measure(part, value.name, sep="."))
