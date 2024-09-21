@@ -221,7 +221,6 @@ void *gather(SEXP x, bool *anyNA)
 {
   double started=wallclock();
   const bool verbose = GetVerbose();
-  if (verbose) Rprintf(_("gather took ... "));
   switch (TYPEOF(x)) {
   case LGLSXP: case INTSXP: {
     const int *restrict thisx = INTEGER(x);
@@ -341,7 +340,7 @@ void *gather(SEXP x, bool *anyNA)
   default :
     error(_("gather implemented for INTSXP, REALSXP, and CPLXSXP but not '%s'"), type2char(TYPEOF(x)));   // # nocov
   }
-  if (verbose) { Rprintf(_("%.3fs\n"), wallclock()-started); }
+  if (verbose) { Rprintf(_("gather took %.3fs\n"), wallclock()-started); }
   return gx;
 }
 

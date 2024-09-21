@@ -67,6 +67,12 @@ rowwiseDT(
 
 10. Fixed possible segfault in `setDT(df); attr(df, key) <- value; set(df, ...)`, i.e. adding columns to an object with `set()` that was converted to data.table with `setDT()` and later had attributes add with `attr<-`, [#6410](https://github.com/Rdatatable/data.table/issues/6410). Thanks to @hongyuanjia for the report and @ben-schwen for the PR. Note that `setattr()` should be preferred for adding attributes to a data.table.
 
+11. `fread()` automatically detects timestamps with sub-second accuracy again, [#6440](https://github.com/Rdatatable/data.table/issues/6440). This was a regression due to interference with new `dec='auto'` support. Thanks @kav2k for the concise report and @MichaelChirico for the fix.
+
+12. Using a namespace-qualified call on the RHS of `by=`, e.g. `DT[,.N,by=base::mget(v)]`, works again, fixing [#6493](https://github.com/Rdatatable/data.table/issues/6493). Thanks to @mmoisse for the report and @MichaelChirico for the fix.
+
+13. Restore some join operations on `x` and `i` (e.g. an anti-join `x[!i]`)  where `i` is an extended data.frame, but not a data.table (e.g. a `tbl`), [#6501](https://github.com/Rdatatable/data.table/issues/6501). Thanks @MichaelChirico for the report and PR.
+
 ## NOTES
 
 1. Tests run again when some Suggests packages are missing, [#6411](https://github.com/Rdatatable/data.table/issues/6411). Thanks @aadler for the note and @MichaelChirico for the fix.
