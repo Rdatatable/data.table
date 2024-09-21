@@ -12429,8 +12429,9 @@ DTout = data.table(
 test(1866.6, melt(DT, measure.vars = patterns("^x", "^y", cols=names(DT))), DTout)
 
 # informative errors for bad user-provided cols arg to patterns
-test(1866.80, melt(data.table(x1=1,x2=2,y1=3,y2=4),measure.vars=patterns("2",cols=NULL)), error="cols must be a character vector of column names")
-test(1866.81, melt(data.table(x1=1,x2=2,y1=3,y2=4),measure.vars=patterns("2",cols=NA_character_)), error="cols must be a character vector of column names")
+DT = data.table(x1=1,x2=2,y1=3,y2=4)
+test(1866.80, melt(DT, measure.vars=patterns("2", cols=NULL)), error="cols must be a character vector of column names")
+test(1866.81, melt(DT, measure.vars=patterns("2", cols=NA_character_)), error="cols must be a character vector of column names")
 
 # auto fill too few column names (#1625) and auto fill=TRUE when too many column names
 test(1867.01, fread("A,B\n1,3,5,7\n2,4,6,8\n"), data.table(A=1:2, B=3:4, V3=5:6, V4=7:8),
