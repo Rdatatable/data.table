@@ -21,7 +21,7 @@ msgfmt_linter <- function(po_file) {
   }
   if (tools::md5sum(mo_ref) == tools::md5sum(mo_tmp)) return(invisible())
   # TODO(#6517): Re-activate this part of the check to ensure .mo is up to date.
-  cat("Note: MD5 sum of msgfmt output for %s does not match %s.\n", po_file, mo_ref)
+  cat(sprintf("Note: MD5 sum of msgfmt output for %s does not match %s.\n", po_file, mo_ref))
   return(invisible())
 
   # NB: file.mtime() will probably be wrong, it will reflect the check-out time of the git repo.
