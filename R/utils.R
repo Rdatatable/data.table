@@ -104,7 +104,7 @@ vapply_1i = function(x, fun, ..., use.names = TRUE) {
   vapply(X = x, FUN = fun, ..., FUN.VALUE = NA_integer_, USE.NAMES = use.names)
 }
 
-class1 = function(x) class(x)[1L]
+class1 = function(x) class(x)[1L] # nolint: class1_linter.
 classes1 = function(x, ..., use.names=FALSE) vapply_1c(x, class1, ..., use.names=use.names)
 
 # base::xor(), but with scalar operators
