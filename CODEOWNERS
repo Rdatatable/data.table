@@ -67,3 +67,6 @@
 
 # docs
 /man/openmp-utils.Rd @Anirban166
+
+# meta
+/.graphics/translation-team-logos/*.png @tdhock
