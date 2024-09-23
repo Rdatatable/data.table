@@ -91,21 +91,19 @@ groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, labe
     label.names.not.in.by.classes1 = vapply_1c(label.classes[label.names.not.in.by], function(u) u[1])
     label.names.not.in.by.classes1.match = (label.names.not.in.by == label.names.not.in.by.classes1)
     if (!all(label.names.in.by.classes.match)) {
-      label.names.in.by.classes.mismatch.info =
-        paste0(label.names.in.by[!label.names.in.by.classes.match],
-               " (label: ",
-               vapply_1c(label.names.in.by.classes[!label.names.in.by.classes.match], toString),
-               "; data: ",
-               vapply_1c(x.label.names.in.by.classes[!label.names.in.by.classes.match], toString), ")")
+      label.names.in.by.classes.mismatch.info = gettextf(
+        "%s (label: %s; data: %s)",
+        label.names.in.by[!label.names.in.by.classes.match],
+        vapply_1c(label.names.in.by.classes[!label.names.in.by.classes.match], toString),
+        vapply_1c(x.label.names.in.by.classes[!label.names.in.by.classes.match], toString))
       stopf("When argument 'label' is a list, the class of each 'label' element with name in 'by' must match the class of the corresponding column of the data.table 'x'. Class mismatch for: %s",
             brackify(label.names.in.by.classes.mismatch.info))
     }
     if (!all(label.names.not.in.by.classes1.match)) {
-      label.names.not.in.by.classes1.mismatch.info =
-        paste0("(label name: ",
-               label.names.not.in.by[!label.names.not.in.by.classes1.match],
-               "; label class[1]: ",
-               label.names.not.in.by.classes1[!label.names.not.in.by.classes1.match], ")")
+      label.names.not.in.by.classes1.mismatch.info = gettextf(
+        "(label name: %s; label class[1]: %s)",
+        label.names.not.in.by[!label.names.not.in.by.classes1.match],
+        label.names.not.in.by.classes1[!label.names.not.in.by.classes1.match])
       stopf("When argument 'label' is a list, the name of each element of 'label' not in 'by' must match the first element of the class of the element value. Mismatches: %s",
             brackify(label.names.not.in.by.classes1.mismatch.info))
     }
