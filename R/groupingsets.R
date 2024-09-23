@@ -59,8 +59,7 @@ groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, labe
     stopf("Argument 'id' must be a logical scalar.")
   if (!(is.null(label) ||
         (is.atomic(label) && length(label) == 1L) ||
-        (is.list(label) && all(vapply_1b(label, is.atomic)) &&
-         all(lengths(label) == 1L) && !is.null(names(label)))))
+        (is.list(label) && all(vapply_1b(label, is.atomic)) && all(lengths(label) == 1L) && !is.null(names(label)))))
     stopf("Argument 'label', if not NULL, must be a scalar or a named list of scalars.")
   if (is.list(label) && !is.null(names(label)) && ("" %chin% names(label) || anyNA(names(label))))
     stopf("When argument 'label' is a list, all of the list elements must be named.")
