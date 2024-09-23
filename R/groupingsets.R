@@ -87,25 +87,21 @@ groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, labe
     label.names.not.in.by = setdiff(label.names, label.names.in.by)
     label.names.in.by.classes = label.classes[label.names.in.by]
     x.label.names.in.by.classes = lapply(.shallow(x, label.names.in.by), class)
-    label.names.in.by.classes.match = mapply(identical, label.names.in.by.classes, x.label.names.in.by.classes)
     label.names.not.in.by.classes1 = vapply_1c(label.classes[label.names.not.in.by], function(u) u[1])
-    label.names.not.in.by.classes1.match = (label.names.not.in.by == label.names.not.in.by.classes1)
-    if (!all(label.names.in.by.classes.match)) {
-      label.names.in.by.classes.mismatch.info = gettextf(
+    if (!all(idx <- mapply(identical, label.names.in.by.classes, x.label.names.in.by.classes))) {
+      info = gettextf(
         "%s (label: %s; data: %s)",
-        label.names.in.by[!label.names.in.by.classes.match],
-        vapply_1c(label.names.in.by.classes[!label.names.in.by.classes.match], toString),
-        vapply_1c(x.label.names.in.by.classes[!label.names.in.by.classes.match], toString))
-      stopf("When argument 'label' is a list, the class of each 'label' element with name in 'by' must match the class of the corresponding column of the data.table 'x'. Class mismatch for: %s",
-            brackify(label.names.in.by.classes.mismatch.info))
+        label.names.in.by[!idx],
+        vapply_1c(label.names.in.by.classes[!idx], toString),
+        vapply_1c(x.label.names.in.by.classes[!idx], toString))
+      stopf("When argument 'label' is a list, the class of each 'label' element with name in 'by' must match the class of the corresponding column of the data.table 'x'. Class mismatch for: %s", brackify(info))
     }
-    if (!all(label.names.not.in.by.classes1.match)) {
-      label.names.not.in.by.classes1.mismatch.info = gettextf(
+    if (!all(idx <- label.names.not.in.by == label.names.not.in.by.classes1)) {
+      info = gettextf(
         "(label name: %s; label class[1]: %s)",
-        label.names.not.in.by[!label.names.not.in.by.classes1.match],
-        label.names.not.in.by.classes1[!label.names.not.in.by.classes1.match])
-      stopf("When argument 'label' is a list, the name of each element of 'label' not in 'by' must match the first element of the class of the element value. Mismatches: %s",
-            brackify(label.names.not.in.by.classes1.mismatch.info))
+        label.names.not.in.by[!idx],
+        label.names.not.in.by.classes1[!idx])
+      stopf("When argument 'label' is a list, the name of each element of 'label' not in 'by' must match the first element of the class of the element value. Mismatches: %s", brackify(info))
     }
   }
   # input arguments handling
