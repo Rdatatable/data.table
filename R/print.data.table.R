@@ -103,7 +103,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
       factor = "<fctr>", POSIXct = "<POSc>", logical = "<lgcl>",
       IDate = "<IDat>", integer64 = "<i64>", raw = "<raw>",
       expression = "<expr>", ordered = "<ord>")
-    classes = vapply_1c(x, function(col) class(col)[1L], use.names=FALSE)
+    classes = classes1(x)
     abbs = unname(class_abb[classes])
     if ( length(idx <- which(is.na(abbs))) ) abbs[idx] = paste0("<", classes[idx], ">")
     toprint = rbind(abbs, toprint)
@@ -233,7 +233,7 @@ format_list_item.default = function(x, ...) {
     # format_list_item would not be reached) but this particular list item does have a format method so use it
     formatted
   } else {
-    paste0("<", class(x)[1L], paste_dims(x), ">")
+    paste0("<", class1(x), paste_dims(x), ">")
   }
 }
 
