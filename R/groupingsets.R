@@ -76,7 +76,7 @@ groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, labe
     warningf("'sets' contains a duplicate (i.e., equivalent up to sorting) element at index %d; as such, there will be duplicate rows in the output -- note that grouping by A,B and B,A will produce the same aggregations. Use `sets=unique(lapply(sets, sort))` to eliminate duplicates.", idx)
   if (is.list(label)) {
     other.allowed.names = c("character", "integer", "numeric", "factor", "Date", "IDate")
-    allowed.label.list.names = c(by, vapply_1c(x[, by, with=FALSE], function(u) class(u)[1]),
+    allowed.label.list.names = c(by, vapply_1c(.shallow(x, by), function(u) class(u)[1]),
                                  other.allowed.names)
     if (!all(names(label) %in% allowed.label.list.names))
       stopf("When argument 'label' is a list, all element names must be (1) in 'by', or (2) the first element of the class in the data.table 'x' of a variable in 'by', or (3) one of %s. Element names not satisfying this condition: %s",
