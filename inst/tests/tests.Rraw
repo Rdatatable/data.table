@@ -19454,7 +19454,7 @@ test(2294.09,
                               "VCharA",
                               character()),
                   label = list(VCharA = "Total VCharA", z = "Total", VNumA = 1)),
-     error = "When argument 'label' is a list, all element names must be (1) in 'by', or (2) the first element of the class in the data.table 'x' of a variable in 'by', or (3) one of \"character\", \"integer\", \"numeric\", \"factor\", \"Date\", \"IDate\". Element names not satisfying this condition: [z, VNumA]")
+     error = "When argument 'label' is a list, all element names must be (1) in 'by', or (2) the first element of the class in the data.table 'x' of a variable in 'by', or (3) one of [character, integer, numeric, factor, Date, IDate]. Element names not satisfying this condition: [z, VNumA]")
 # 10. label is a list and an element with name in 'by' has class not matching class in 'x'.
 test(2294.10,
      groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
