@@ -140,8 +140,8 @@ groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, labe
     }
     label.use = label.expanded[intersect(total.vars, names(label.expanded))]
     if (any(idx <- vapply_1b(names(label.expanded), function(u) label.expanded[[u]] %in% x[[u]]))) {
-      label.value.in.x.info = gettextf("%s (label: %s)", names(label.expanded)[idx], vapply_1c(label.expanded[idx], as.character))
-      warningf("For the following variables, the 'label' value was already in the data: %s", brackify(label.value.in.x.info))
+      info = gettextf("%s (label: %s)", names(label.expanded)[idx], vapply_1c(label.expanded[idx], as.character))
+      warningf("For the following variables, the 'label' value was already in the data: %s", brackify(info))
     }
   }
   # workaround for rbindlist fill=TRUE on integer64 #1459
