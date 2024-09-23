@@ -29,7 +29,7 @@ rowwiseDT(
 
 3. `groupingsets.data.table()`, `cube.data.table()`, and `rollup.data.table()` gain a `label` argument, which allows the user to specify a label for each grouping variable, to be included in the grouping variable column in the output in rows where the variable has been aggregated, [#5351](https://github.com/Rdatatable/data.table/issues/5351). Thanks to @markseeto for the request, @jangorecki and @markseeto for specifying the desired behaviour, and @markseeto for implementing.
 
-    ```R
+    ```r
     DT = data.table(V1 = rep(c("a1", "a2"), each = 5),
                     V2 = rep(rep(c("b1", "b2"), c(3, 2)), 2),
                     V3 = rep(c("c1", "c2"), c(3, 7)),
