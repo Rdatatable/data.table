@@ -80,10 +80,8 @@ groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, labe
     allowed.label.list.names = c(by, vapply_1c(x[, by, with=FALSE], function(u) class(u)[1]),
                                  other.allowed.names)
     if (!all(names(label) %in% allowed.label.list.names))
-      stopf(paste0("When argument 'label' is a list, all element names must be (1) in 'by', or (2) the first element of the class in the data.table 'x' of a variable in 'by', or (3) one of ",
-                   toString(paste0("\"", other.allowed.names, "\"")),
-                   ". Element names not satisfying this condition: %s"),
-            brackify(setdiff(names(label), allowed.label.list.names)))
+      stopf("When argument 'label' is a list, all element names must be (1) in 'by', or (2) the first element of the class in the data.table 'x' of a variable in 'by', or (3) one of %s. Element names not satisfying this condition: %s",
+            brackify(other.allowed.names), brackify(setdiff(names(label), allowed.label.list.names)))
     label.classes = lapply(label, class)
     label.names.in.by = intersect(names(label), by)
     label.names.not.in.by = setdiff(names(label), label.names.in.by)
