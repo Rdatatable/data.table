@@ -180,12 +180,12 @@ replace_dot_alias = function(e) {
   naturaljoin = FALSE
   names_x = names(x)
   if (missing(i) && !missing(on)) {
-    tt = eval.parent(.massagei(substitute(on)))
-    if (!is.list(tt) || !length(names(tt))) {
-      warningf("When on= is provided but not i=, on= must be a named list or data.table|frame, and a natural join (i.e. join on common names) is invoked. Ignoring on= which is '%s'.", class(tt)[1L])
+    on_tmp = eval.parent(.massagei(substitute(on)))
+    if (!is.list(on_tmp) || !length(names(on_tmp))) {
+      warningf("When on= is provided but not i=, on= must be a named list or data.table|frame, and a natural join (i.e. join on common names) is invoked. Ignoring on= which is '%s'.", class1(on_tmp))
       on = NULL
     } else {
-      i = tt
+      i = on_tmp
       naturaljoin = TRUE
     }
   }
@@ -2798,7 +2798,7 @@ cbind.data.table = data.table
 
 rbindlist = function(l, use.names="check", fill=FALSE, idcol=NULL, ignore.attr=FALSE) {
   if (is.null(l)) return(null.data.table())
-  if (!is.list(l) || is.data.frame(l)) stopf("Input is %s but should be a plain list of items to be stacked", class(l)[1L])
+  if (!is.list(l) || is.data.frame(l)) stopf("Input is %s but should be a plain list of items to be stacked", class1(l))
   if (isFALSE(idcol)) { idcol = NULL }
   else if (!is.null(idcol)) {
     if (isTRUE(idcol)) idcol = ".id"

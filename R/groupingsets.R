@@ -76,8 +76,7 @@ groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, labe
     warningf("'sets' contains a duplicate (i.e., equivalent up to sorting) element at index %d; as such, there will be duplicate rows in the output -- note that grouping by A,B and B,A will produce the same aggregations. Use `sets=unique(lapply(sets, sort))` to eliminate duplicates.", idx)
   if (is.list(label)) {
     other.allowed.names = c("character", "integer", "numeric", "factor", "Date", "IDate")
-    allowed.label.list.names = c(by, vapply_1c(.shallow(x, by), function(u) class(u)[1]),
-                                 other.allowed.names)
+    allowed.label.list.names = c(by, classes1(.shallow(x, by)), other.allowed.names)
     label.names = names(label)
     if (!all(label.names %in% allowed.label.list.names))
       stopf("When argument 'label' is a list, all element names must be (1) in 'by', or (2) the first element of the class in the data.table 'x' of a variable in 'by', or (3) one of %s. Element names not satisfying this condition: %s",
@@ -128,13 +127,13 @@ groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, labe
     total.vars = intersect(by, unlist(lapply(sets, function(u) setdiff(by, u))))
     if (is.list(label)) {
       by.vars.not.in.label = setdiff(by, names(label))
-      by.vars.not.in.label.class1 = vapply_1c(x, function(u) class(u)[1L])[by.vars.not.in.label]
+      by.vars.not.in.label.class1 = classes1(x, use.names=TRUE)[by.vars.not.in.label]
       labels.by.vars.not.in.label = label[by.vars.not.in.label.class1[by.vars.not.in.label.class1 %in% label.names.not.in.by]]
       names(labels.by.vars.not.in.label) <- by.vars.not.in.label[by.vars.not.in.label.class1 %in% label.names.not.in.by]
       label.expanded = c(label[label.names.in.by], labels.by.vars.not.in.label)
       label.expanded = label.expanded[intersect(by, names(label.expanded))] # reorder
     } else {
-      by.vars.matching.scalar.class1 = by[vapply_1c(x, function(u) class(u)[1L])[by] == class(label)[1L]]
+      by.vars.matching.scalar.class1 = by[classes1(x, use.names=TRUE)[by] == class1(label)]
       label.expanded = as.list(rep(label, length(by.vars.matching.scalar.class1)))
       names(label.expanded) <- by.vars.matching.scalar.class1
     }
