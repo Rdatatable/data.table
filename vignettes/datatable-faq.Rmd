@@ -632,7 +632,7 @@ Yes, for both 32-bit and 64-bit on all platforms. Thanks to CRAN. There are no s
 ## I think it's great. What can I do?
 Please file suggestions, bug reports and enhancement requests on our [issues tracker](https://github.com/Rdatatable/data.table/issues). This helps make the package better.
 
-Please do star the package on [GitHub](https://github.com/Rdatatable/data.table/wiki). This helps encourage the developers and helps other R users find the package.
+Please do star the package on [GitHub](https://github.com/Rdatatable/data.table). This helps encourage the developers and helps other R users find the package.
 
 You can submit pull requests to change the code and/or documentation yourself; see our [Contribution Guidelines](https://github.com/Rdatatable/data.table/blob/master/.github/CONTRIBUTING.md).
 
