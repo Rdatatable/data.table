@@ -157,7 +157,7 @@ DT.m1[, c("variable", "child") := tstrsplit(variable, "_", fixed = TRUE)]
 DT.c1 = dcast(DT.m1, family_id + age_mother + child ~ variable, value.var = "value")
 DT.c1
 
-str(DT.c1) ## gender column is character type now!
+str(DT.c1) ## gender column is class IDate now!
 ```
 
 #### Issues
@@ -241,7 +241,7 @@ melt(two.iris, measure.vars = measure(value.name, dim, sep="."))
 ```
 
 Using the code above we get one value column per flower part. If we
-instead want a value column for each measurement dimension, we can do
+instead want a value column for each measurement dimension, we can do:
 
 ```{r}
 melt(two.iris, measure.vars = measure(part, value.name, sep="."))

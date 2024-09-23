@@ -1,3 +1,24 @@
+# #6107 fixed performance across 3 ways to specify a column as Date, test each individually
+extra.args.6107 <- c(
+  "colClasses=list(Date='date')",
+  "colClasses='Date'",
+  "select=list(Date='date')")
+extra.test.list <- list()
+for (extra.arg in extra.args.6107){
+  this.test <- atime::atime_test(
+    N = 10^seq(1, 7, by=0.25),
+    setup = {
+      set.seed(1)
+      DT = data.table(date=.Date(sample(20000, N, replace=TRUE)))
+      tmp_csv = tempfile()
+      fwrite(DT, tmp_csv)
+    },
+    Slow = "e9087ce9860bac77c51467b19e92cf4b72ca78c7", # Parent of the merge commit (https://github.com/Rdatatable/data.table/commit/a77e8c22e44e904835d7b34b047df2eff069d1f2) of the PR (https://github.com/Rdatatable/data.table/pull/6107) that fixes the issue
+    Fast = "a77e8c22e44e904835d7b34b047df2eff069d1f2") # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/6107) that fixes the issue
+  this.test$expr = str2lang(sprintf("data.table::fread(tmp_csv, %s)", extra.arg))
+  extra.test.list[[sprintf("fread(%s) improved in #6107", extra.arg)]] <- this.test
+}
+
 # A list of performance tests.
 #
 # See documentation in https://github.com/Rdatatable/data.table/wiki/Performance-testing for best practices.
@@ -166,5 +187,16 @@ test.list <- atime::atime_test_list(
     Slow = "a01f00f7438daf4612280d6886e6929fa8c8f76e", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/fc0c1e76408c34a8482f16f7421d262c7f1bde32) in the PR (https://github.com/Rdatatable/data.table/pull/6296/commits) that fixes the issue
     Fast = "f248bbe6d1204dfc8def62328788eaadcc8e17a1"), # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/6296) that fixes the issue
 
-  NULL)
+  # Issue mentioned and fixed in: https://github.com/Rdatatable/data.table/pull/5493
+  "transform improved in #5493" = atime::atime_test(
+    N = 10^seq(1, 7),
+    setup = {
+      df <- data.frame(x = runif(N))
+      dt <- as.data.table(df)
+    },
+    expr = data.table:::transform.data.table(dt, y = round(x)),
+    Slow = "0895fa247afcf6b38044bd5f56c0d209691ddb31", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/93ce3ce1373bf733ebd2036e2883d2ffe377ab58) in the PR (https://github.com/Rdatatable/data.table/pull/5493/commits) that fixes the issue
+    Fast = "2d1a0575f87cc50e90f64825c30d7a6cb6b05dd7"), # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/5493) that fixes the issue
+
+  tests=extra.test.list)
 # nolint end: undesirable_operator_linter.

@@ -27,6 +27,42 @@ rowwiseDT(
 
 2. Limited support for subsetting or aggregating columns of type `expression`, [#5596](https://github.com/Rdatatable/data.table/issues/5596). Thanks to @tsp for the report, and @ben-schwen for the fix.
 
+3. `groupingsets.data.table()`, `cube.data.table()`, and `rollup.data.table()` gain a `label` argument, which allows the user to specify a label for each grouping variable, to be included in the grouping variable column in the output in rows where the variable has been aggregated, [#5351](https://github.com/Rdatatable/data.table/issues/5351). Thanks to @markseeto for the request, @jangorecki and @markseeto for specifying the desired behaviour, and @markseeto for implementing.
+
+    ```r
+    DT = data.table(V1 = rep(c("a1", "a2"), each = 5),
+                    V2 = rep(rep(c("b1", "b2"), c(3, 2)), 2),
+                    V3 = rep(c("c1", "c2"), c(3, 7)),
+                    V4 = rep(1:2, c(6, 4)),
+                    V5 = rep(1:2, c(9, 1)),
+                    V6 = rep(c(1.1, 1.2), c(2, 8)))
+
+    # Call groupingsets() and specify a label for V1, a different label for the other character grouping
+    # variables, a label for the integer grouping variables, and a label for the numeric grouping variable.
+
+    groupingsets(DT, .N, by = c("V1", "V2", "V3", "V4", "V5", "V6"),
+                 sets = list(c("V1", "V2", "V3"), c("V1", "V4"), c("V4", "V6"), "V2", "V5", character()),
+                 label = list(V1 = "All values", character = "Total", integer = 999L, numeric = NaN))
+
+    #             V1     V2     V3    V4    V5    V6     N
+    #         <char> <char> <char> <int> <int> <num> <int>
+    #  1:         a1     b1     c1   999   999   NaN     3
+    #  2:         a1     b2     c2   999   999   NaN     2
+    #  3:         a2     b1     c2   999   999   NaN     3
+    #  4:         a2     b2     c2   999   999   NaN     2
+    #  5:         a1  Total  Total     1   999   NaN     5
+    #  6:         a2  Total  Total     1   999   NaN     1
+    #  7:         a2  Total  Total     2   999   NaN     4
+    #  8: All values  Total  Total     1   999   1.1     2
+    #  9: All values  Total  Total     1   999   1.2     4
+    # 10: All values  Total  Total     2   999   1.2     4
+    # 11: All values     b1  Total   999   999   NaN     6
+    # 12: All values     b2  Total   999   999   NaN     4
+    # 13: All values  Total  Total   999     1   NaN     9
+    # 14: All values  Total  Total   999     2   NaN     1
+    # 15: All values  Total  Total   999   999   NaN    10
+    ```
+
 ## BUG FIXES
 
 1. Using `print.data.table()` with character truncation using `datatable.prettyprint.char` no longer errors with `NA` entries, [#6441](https://github.com/Rdatatable/data.table/issues/6441). Thanks to @r2evans for the bug report, and @joshhwuu for the fix.
