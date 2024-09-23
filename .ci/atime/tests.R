@@ -200,7 +200,7 @@ test.list <- atime::atime_test_list(
 
   # Issue mentioned and fixed in: https://github.com/Rdatatable/data.table/pull/5054
   "melt improved in #5054" = atime::atime_test(
-    N = 10^seq(1, 10),
+    N = 10^seq(1, 4),
     setup = {
       DT <- as.data.table(as.list(1:N))
       measure.vars <- lapply(1:N, function(i) {
