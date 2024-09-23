@@ -129,24 +129,19 @@ groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, labe
     if (is.list(label)) {
       by.vars.not.in.label = setdiff(by, names(label))
       by.vars.not.in.label.class1 = vapply_1c(x, function(u) class(u)[1L])[by.vars.not.in.label]
-      labels.by.vars.not.in.label =
-        structure(label[by.vars.not.in.label.class1[by.vars.not.in.label.class1 %in% label.names.not.in.by]],
-                  names = by.vars.not.in.label[by.vars.not.in.label.class1 %in% label.names.not.in.by])
+      labels.by.vars.not.in.label = label[by.vars.not.in.label.class1[by.vars.not.in.label.class1 %in% label.names.not.in.by]]
+      names(labels.by.vars.not.in.label) <- by.vars.not.in.label[by.vars.not.in.label.class1 %in% label.names.not.in.by]
       label.expanded = c(label[label.names.in.by], labels.by.vars.not.in.label)
       label.expanded = label.expanded[intersect(by, names(label.expanded))] # reorder
     } else {
       by.vars.matching.scalar.class1 = by[vapply_1c(x, function(u) class(u)[1L])[by] == class(label)[1L]]
-      label.expanded = structure(as.list(rep(label, length(by.vars.matching.scalar.class1))),
-                                 names = by.vars.matching.scalar.class1)
+      label.expanded = as.list(rep(label, length(by.vars.matching.scalar.class1)))
+      names(label.expanded) <- by.vars.matching.scalar.class1
     }
     label.use = label.expanded[intersect(total.vars, names(label.expanded))]
-    label.expanded.value.in.x = vapply_1b(names(label.expanded), function(u) label.expanded[[u]] %in% x[[u]])
-    if (any(label.expanded.value.in.x)) {
-      label.value.in.x.info =
-        paste0(names(label.expanded)[label.expanded.value.in.x], " (label: ",
-               vapply_1c(label.expanded[label.expanded.value.in.x], as.character), ")")
-      warningf("For the following variables, the 'label' value was already in the data: %s",
-               brackify(label.value.in.x.info))
+    if (any(idx <- vapply_1b(names(label.expanded), function(u) label.expanded[[u]] %in% x[[u]]))) {
+      label.value.in.x.info = gettextf("%s (label: %s)", names(label.expanded)[idx], vapply_1c(label.expanded[idx], as.character))
+      warningf("For the following variables, the 'label' value was already in the data: %s", brackify(label.value.in.x.info))
     }
   }
   # workaround for rbindlist fill=TRUE on integer64 #1459
