@@ -1,5 +1,5 @@
 # Test case adapted from https://github.com/Rdatatable/data.table/issues/6105#issue-2268691745 which is where the issue was reported.
-# https://github.com/Rdatatable/data.table/pull/6107 fixed performance across 3 ways to specify a column as Date, test each individually.
+# https://github.com/Rdatatable/data.table/pull/6107 fixed performance across 3 ways to specify a column as Date, and we test each individually.
 extra.args.6107 <- c(
   "colClasses=list(Date='date')",
   "colClasses='Date'",
