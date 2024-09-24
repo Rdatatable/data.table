@@ -112,7 +112,7 @@ test.list <- atime::atime_test_list(
     Fixed = "9d3b9202fddb980345025a4f6ac451ed26a423be"), # Merge commit in the PR that fixed the regression (https://github.com/Rdatatable/data.table/pull/4440)
 
   # Test based on https://github.com/Rdatatable/data.table/issues/5424
-  # Performance regression introduced from a commit in: https://github.com/Rdatatable/data.table/pull/4491
+  # Performance regression introduced from a commit in https://github.com/Rdatatable/data.table/pull/4491
   # Test case adapted from https://github.com/Rdatatable/data.table/pull/5463#issue-1373642456 which is the fix PR.
   "memrecycle regression fixed in #5463" = atime::atime_test(
     setup = {
@@ -158,7 +158,7 @@ test.list <- atime::atime_test_list(
     Regression = "c152ced0e5799acee1589910c69c1a2c6586b95d", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/15f0598b9828d3af2eb8ddc9b38e0356f42afe4f) in the PR (https://github.com/Rdatatable/data.table/pull/4558/commits) that fixes the regression
     Fixed = "f750448a2efcd258b3aba57136ee6a95ce56b302"), # Second commit of the PR (https://github.com/Rdatatable/data.table/pull/4558/commits) that fixes the regression
 
-  # Issue with sorting again when already sorted: https://github.com/Rdatatable/data.table/issues/4498
+  # Issue with sorting again when already sorted, as reported in https://github.com/Rdatatable/data.table/issues/4498
   # Test case adapted from https://github.com/Rdatatable/data.table/pull/4501#issue-625311918 which is the fix PR.
   "DT[,.SD] improved in #4501" = atime::atime_test(
     setup = {
