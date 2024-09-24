@@ -198,5 +198,20 @@ test.list <- atime::atime_test_list(
     Slow = "0895fa247afcf6b38044bd5f56c0d209691ddb31", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/93ce3ce1373bf733ebd2036e2883d2ffe377ab58) in the PR (https://github.com/Rdatatable/data.table/pull/5493/commits) that fixes the issue
     Fast = "2d1a0575f87cc50e90f64825c30d7a6cb6b05dd7"), # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/5493) that fixes the issue
 
+  # Issue mentioned and fixed in: https://github.com/Rdatatable/data.table/pull/5054
+  "melt improved in #5054" = atime::atime_test(
+    N = 10^seq(1, 4),
+    setup = {
+      DT <- as.data.table(as.list(1:N))
+      measure.vars <- lapply(1:N, function(i) {
+        x = rep(NA, N)
+        x[i] = i
+        x
+      })  
+    },
+    expr = data.table:::melt(DT, measure.vars = measure.vars),
+    Slow = "fd24a3105953f7785ea7414678ed8e04524e6955", # Parent of the merge commit (https://github.com/Rdatatable/data.table/commit/ed72e398df76a0fcfd134a4ad92356690e4210ea) of the PR (https://github.com/Rdatatable/data.table/pull/5054) that fixes the issue
+    Fast = "ed72e398df76a0fcfd134a4ad92356690e4210ea"), # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/5054) that fixes the issue
+
   tests=extra.test.list)
 # nolint end: undesirable_operator_linter.
