@@ -90,19 +90,9 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
   if (length(prob.i)) {
     stopf("in measurev, %s must be named, problems: %s", group.desc, brackify(prob.i))
   }
-  err.names.unique = function(err.what, name.vec) {
-    name.tab = table(name.vec)
-    bad.counts = name.tab[1 < name.tab]
-    if (length(bad.counts)) {
-      stopf("%s should be uniquely named, problems: %s", err.what, brackify(names(bad.counts)))
-    }
+  if (length(dup.funs <- duplicated_values(names(fun.list)))) {
+    stopf("%s should be uniquely named, problems: %s", group.desc, brackify(dup.funs))
   }
-  err.args.groups = function(type, N){
-    if (N != length(fun.list)) {
-      stopf("number of %s =%d must be same as %s =%d", group.desc, length(fun.list), type, N)
-    }
-  }
-  err.names.unique(group.desc, names(fun.list))
   # 2. compute initial group data table, used as variable_table attribute.
   group.mat = if (!missing(pattern)) {
     if (!is.character(pattern)) {
@@ -117,7 +107,9 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
     if (is.null(start)) {
       stopf("pattern must contain at least one capture group (parenthesized sub-pattern)")
     }
-    err.args.groups("number of capture groups in pattern", ncol(start))
+    if (ncol(start) != length(fun.list)) {
+      stopf("number of %s (%d) must be the same as the number of capture groups in pattern (%d)", group.desc, length(fun.list), ncol(start))
+    }
     end = attr(match.vec, "capture.length")[measure.vec.i,]+start-1L
     measure.vec <- cols[measure.vec.i]
     names.mat = matrix(measure.vec, nrow(start), ncol(start))
@@ -132,12 +124,16 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
     if (n.groups == 1) {
       stopf("each column name results in only one item after splitting using sep, which means that all columns would be melted; to fix please either specify melt on all columns directly without using measure, or use a different sep/pattern specification")
     }
-    err.args.groups("max number of items after splitting column names", n.groups)
+    if (n.groups != length(fun.list)) {
+      stopf("number of %s (%d) must be the same as the max number of items after splitting column names (%d)", group.desc, length(fun.list), n.groups)
+    }
     measure.vec.i = which(vector.lengths==n.groups)
     measure.vec = cols[measure.vec.i]
     do.call(rbind, list.of.vectors[measure.vec.i])
   }
-  err.names.unique("measured columns", measure.vec)
+  if (length(dup.measures <- duplicated_values(measure.vec))) {
+    stopf("measured columns should be uniquely named, problems: %s", brackify(dup.measures))
+  }
   uniq.mat = unique(group.mat)
   if (nrow(uniq.mat) < nrow(group.mat)) {
     stopf("number of unique column IDs =%d is less than number of melted columns =%d; fix by changing pattern/sep", nrow(uniq.mat), nrow(group.mat))
