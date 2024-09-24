@@ -1,4 +1,4 @@
-# test case adapted from https://github.com/Rdatatable/data.table/issues/6105#issue-2268691745 which is where the issue was reported.
+# Test case adapted from https://github.com/Rdatatable/data.table/issues/6105#issue-2268691745 which is where the issue was reported.
 # https://github.com/Rdatatable/data.table/pull/6107 fixed performance across 3 ways to specify a column as Date, test each individually.
 extra.args.6107 <- c(
   "colClasses=list(Date='date')",
@@ -98,7 +98,7 @@ test.list <- atime::atime_test_list(
   },
 
   # Performance regression discussed in https://github.com/Rdatatable/data.table/issues/4311
-  # test case adapted from https://github.com/Rdatatable/data.table/pull/4440#issuecomment-632842980 which is the fix PR.
+  # Test case adapted from https://github.com/Rdatatable/data.table/pull/4440#issuecomment-632842980 which is the fix PR.
   "shallow regression fixed in #4440" = atime::atime_test(
     setup = {
       set.seed(1L)
@@ -112,7 +112,7 @@ test.list <- atime::atime_test_list(
 
   # Test based on https://github.com/Rdatatable/data.table/issues/5424
   # Performance regression introduced from a commit in: https://github.com/Rdatatable/data.table/pull/4491
-  # test case adapted from https://github.com/Rdatatable/data.table/pull/5463#issue-1373642456 which is the fix PR.
+  # Test case adapted from https://github.com/Rdatatable/data.table/pull/5463#issue-1373642456 which is the fix PR.
   "memrecycle regression fixed in #5463" = atime::atime_test(
     setup = {
       bigN <- N*100
@@ -129,7 +129,7 @@ test.list <- atime::atime_test_list(
     Fixed = "58409197426ced4714af842650b0cc3b9e2cb842"), # Last commit in the PR (https://github.com/Rdatatable/data.table/pull/5463/commits) that fixed the regression
 
   # Issue reported in https://github.com/Rdatatable/data.table/issues/5426
-  # test case adapted from https://github.com/Rdatatable/data.table/pull/5427#issue-1323678063 which is the fix PR.
+  # Test case adapted from https://github.com/Rdatatable/data.table/pull/5427#issue-1323678063 which is the fix PR.
   "setDT improved in #5427" = atime::atime_test(
     setup = {
       L <- replicate(N, 1, simplify = FALSE)
@@ -142,7 +142,7 @@ test.list <- atime::atime_test_list(
     Slow = "c4a2085e35689a108d67dacb2f8261e4964d7e12", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/7cc4da4c1c8e568f655ab5167922dcdb75953801) in the PR (https://github.com/Rdatatable/data.table/pull/5427/commits) that fixes the issue
     Fast = "af48a805e7a5026a0c2d0a7fd9b587fea5cfa3c4"), # Last commit in the PR (https://github.com/Rdatatable/data.table/pull/5427/commits) that fixes the issue
 
-  # test case adapted from https://github.com/Rdatatable/data.table/issues/4200#issuecomment-645980224 which is where the issue was reported.
+  # Test case adapted from https://github.com/Rdatatable/data.table/issues/4200#issuecomment-645980224 which is where the issue was reported.
   # Fixed in https://github.com/Rdatatable/data.table/pull/4558
   "DT[by] fixed in #4558" = atime::atime_test(
     setup = {
@@ -158,7 +158,7 @@ test.list <- atime::atime_test_list(
     Fixed = "f750448a2efcd258b3aba57136ee6a95ce56b302"), # Second commit of the PR (https://github.com/Rdatatable/data.table/pull/4558/commits) that fixes the regression
 
   # Issue with sorting again when already sorted: https://github.com/Rdatatable/data.table/issues/4498
-  # test case adapted from https://github.com/Rdatatable/data.table/pull/4501#issue-625311918 which is the fix PR.
+  # Test case adapted from https://github.com/Rdatatable/data.table/pull/4501#issue-625311918 which is the fix PR.
   "DT[,.SD] improved in #4501" = atime::atime_test(
     setup = {
       set.seed(1)
@@ -171,7 +171,7 @@ test.list <- atime::atime_test_list(
     Slow = "3ca83738d70d5597d9e168077f3768e32569c790", # Circa 2024 master parent of close-to-last merge commit (https://github.com/Rdatatable/data.table/commit/353dc7a6b66563b61e44b2fa0d7b73a0f97ca461) in the PR (https://github.com/Rdatatable/data.table/pull/4501/commits) that fixes the issue 
     Slower = "cacdc92df71b777369a217b6c902c687cf35a70d"), # Circa 2020 parent of the first commit (https://github.com/Rdatatable/data.table/commit/74636333d7da965a11dad04c322c752a409db098) in the PR (https://github.com/Rdatatable/data.table/pull/4501/commits) that fixes the issue 
 
-  # test case adapted from https://github.com/Rdatatable/data.table/issues/6286#issue-2412141289 which is where the issue was reported.
+  # Test case adapted from https://github.com/Rdatatable/data.table/issues/6286#issue-2412141289 which is where the issue was reported.
   # Fixed in https://github.com/Rdatatable/data.table/pull/6296
   "DT[by,verbose=TRUE] improved in #6296" = atime::atime_test(
     setup = {
@@ -182,7 +182,7 @@ test.list <- atime::atime_test_list(
     Slow = "a01f00f7438daf4612280d6886e6929fa8c8f76e", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/fc0c1e76408c34a8482f16f7421d262c7f1bde32) in the PR (https://github.com/Rdatatable/data.table/pull/6296/commits) that fixes the issue
     Fast = "f248bbe6d1204dfc8def62328788eaadcc8e17a1"), # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/6296) that fixes the issue
 
-  # test case adapted from https://github.com/Rdatatable/data.table/issues/5492#issue-1416598382 which is where the issue was reported,
+  # Test case adapted from https://github.com/Rdatatable/data.table/issues/5492#issue-1416598382 which is where the issue was reported,
   # and from https://github.com/Rdatatable/data.table/pull/5493#issue-1416656788 which is the fix PR.
   "transform improved in #5493" = atime::atime_test(
     setup = {
@@ -193,7 +193,7 @@ test.list <- atime::atime_test_list(
     Slow = "0895fa247afcf6b38044bd5f56c0d209691ddb31", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/93ce3ce1373bf733ebd2036e2883d2ffe377ab58) in the PR (https://github.com/Rdatatable/data.table/pull/5493/commits) that fixes the issue
     Fast = "2d1a0575f87cc50e90f64825c30d7a6cb6b05dd7"), # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/5493) that fixes the issue
 
-  # test case created directly using the atime code below (not adapted from any other benchmark), based on the issue/fix PR https://github.com/Rdatatable/data.table/pull/5054#issue-930603663 "melt should be more efficient when there are missing input columns."
+  # Test case created directly using the atime code below (not adapted from any other benchmark), based on the issue/fix PR https://github.com/Rdatatable/data.table/pull/5054#issue-930603663 "melt should be more efficient when there are missing input columns."
   "melt improved in #5054" = atime::atime_test(
     setup = {
       DT <- as.data.table(as.list(1:N))
