@@ -744,8 +744,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
 #define MSGSIZE 1000
 static char memrecycle_message[MSGSIZE+1]; // returned to rbindlist so it can prefix with which one of the list of data.table-like objects
 
-static char column_desc[MSGSIZE+1]; // can contain column names, hence relatively large allocation.
 const char *columnDesc(int colnum, const char *colname) {
+  static char column_desc[MSGSIZE+1]; // can contain column names, hence relatively large allocation.
   snprintf(column_desc, MSGSIZE, _("column %d named '%s'"), colnum, colname);
   return column_desc;
 }
