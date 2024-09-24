@@ -746,7 +746,7 @@ static char memrecycle_message[MSGSIZE+1]; // returned to rbindlist so it can pr
 
 const char *columnDesc(int colnum, const char *colname) {
   static char column_desc[MSGSIZE+1]; // can contain column names, hence relatively large allocation.
-  snprintf(column_desc, MSGSIZE, _("column %d named '%s'"), colnum, colname);
+  snprintf(column_desc, MSGSIZE, _("(column %d named '%s')"), colnum, colname);
   return column_desc;
 }
 
@@ -947,7 +947,8 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
           const char *tType = targetIsI64 ? "integer64" : type2char(TYPEOF(target));                                        \
           snprintf(memrecycle_message, MSGSIZE, FMT,                                                                        \
             FMTVAL, sType, i+1, tType,                                                                                      \
-            colnum == 0 ? _("target vector") : columnDesc(colnum, colname));                                                \
+            /* NB: important for () to be part of the translated string as a signal of nominative case to translators */    \
+            colnum == 0 ? _("(target vector)") : columnDesc(colnum, colname));                                              \
           /* string returned so that rbindlist/dogroups can prefix it with which item of its list this refers to  */        \
           break;                                                                                                            \
         }                                                                                                                   \
@@ -957,36 +958,36 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
     switch(TYPEOF(target)) {
     case LGLSXP:
       switch (TYPEOF(source)) {
-      case RAWSXP:  CHECK_RANGE(Rbyte, RAW,    val!=0 && val!=1,                                        val, _("%d (type '%s') at RHS position %d taken as TRUE when assigning to type '%s' (%s)"))
-      case INTSXP:  CHECK_RANGE(int, INTEGER,  val!=0 && val!=1 && val!=NA_INTEGER,                     val, _("%d (type '%s') at RHS position %d taken as TRUE when assigning to type '%s' (%s)"))
+      case RAWSXP:  CHECK_RANGE(Rbyte, RAW,    val!=0 && val!=1,                                        val, _("%d (type '%s') at RHS position %d taken as TRUE when assigning to type '%s' %s"))
+      case INTSXP:  CHECK_RANGE(int, INTEGER,  val!=0 && val!=1 && val!=NA_INTEGER,                     val, _("%d (type '%s') at RHS position %d taken as TRUE when assigning to type '%s' %s"))
       case REALSXP: if (sourceIsI64)
-                    CHECK_RANGE(int64_t, REAL, val!=0 && val!=1 && val!=NA_INTEGER64,                   val, _("%"PRId64" (type '%s') at RHS position %d taken as TRUE when assigning to type '%s' (%s)"))
-              else  CHECK_RANGE(double, REAL,  !ISNAN(val) && val!=0.0 && val!=1.0,                     val, _("%f (type '%s') at RHS position %d taken as TRUE when assigning to type '%s' (%s)"))
+                    CHECK_RANGE(int64_t, REAL, val!=0 && val!=1 && val!=NA_INTEGER64,                   val, _("%"PRId64" (type '%s') at RHS position %d taken as TRUE when assigning to type '%s' %s"))
+              else  CHECK_RANGE(double, REAL,  !ISNAN(val) && val!=0.0 && val!=1.0,                     val, _("%f (type '%s') at RHS position %d taken as TRUE when assigning to type '%s' %s"))
       } break;
     case RAWSXP:
       switch (TYPEOF(source)) {
-      case INTSXP:  CHECK_RANGE(int, INTEGER,  val<0 || val>255,                                        val, _("%d (type '%s' at RHS position %d taken as 0 when assigning to type '%s' (%s)"))
+      case INTSXP:  CHECK_RANGE(int, INTEGER,  val<0 || val>255,                                        val, _("%d (type '%s' at RHS position %d taken as 0 when assigning to type '%s' %s"))
       case REALSXP: if (sourceIsI64)
-                    CHECK_RANGE(int64_t, REAL, val<0 || val>255,                                        val, _("%"PRId64" (type '%s') at RHS position %d taken as 0 when assigning to type '%s' (%s)"))
-              else  CHECK_RANGE(double, REAL,  !R_FINITE(val) || val<0.0 || val>256.0 || (int)val!=val, val, _("%f (type '%s') at RHS position %d either truncated (precision lost) or taken as 0 when assigning to type '%s' (%s)"))
+                    CHECK_RANGE(int64_t, REAL, val<0 || val>255,                                        val, _("%"PRId64" (type '%s') at RHS position %d taken as 0 when assigning to type '%s' %s"))
+              else  CHECK_RANGE(double, REAL,  !R_FINITE(val) || val<0.0 || val>256.0 || (int)val!=val, val, _("%f (type '%s') at RHS position %d either truncated (precision lost) or taken as 0 when assigning to type '%s' %s"))
       } break;
     case INTSXP:
       switch (TYPEOF(source)) {
       case REALSXP: if (sourceIsI64)
-                    CHECK_RANGE(int64_t, REAL, val!=NA_INTEGER64 && (val<=NA_INTEGER || val>INT_MAX),   val, _("%"PRId64" (type '%s') at RHS position %d out-of-range (NA) when assigning to type '%s' (%s)"))
-              else  CHECK_RANGE(double, REAL,  !ISNAN(val) && (!within_int32_repres(val) || (int)val!=val),        val, _("%f (type '%s') at RHS position %d out-of-range(NA) or truncated (precision lost) when assigning to type '%s' (%s)"))
+                    CHECK_RANGE(int64_t, REAL, val!=NA_INTEGER64 && (val<=NA_INTEGER || val>INT_MAX),   val, _("%"PRId64" (type '%s') at RHS position %d out-of-range (NA) when assigning to type '%s' %s"))
+              else  CHECK_RANGE(double, REAL,  !ISNAN(val) && (!within_int32_repres(val) || (int)val!=val),        val, _("%f (type '%s') at RHS position %d out-of-range(NA) or truncated (precision lost) when assigning to type '%s' %s"))
       case CPLXSXP: CHECK_RANGE(Rcomplex, COMPLEX, !((ISNAN(val.i) || (R_FINITE(val.i) && val.i==0.0)) &&
-                                                     (ISNAN(val.r) || (within_int32_repres(val.r) && (int)val.r==val.r))), val.r, _("%f (type '%s') at RHS position %d either imaginary part discarded or real part truncated (precision lost) when assigning to type '%s' (%s)"))
+                                                     (ISNAN(val.r) || (within_int32_repres(val.r) && (int)val.r==val.r))), val.r, _("%f (type '%s') at RHS position %d either imaginary part discarded or real part truncated (precision lost) when assigning to type '%s' %s"))
       } break;
     case REALSXP:
       switch (TYPEOF(source)) {
       case REALSXP: if (targetIsI64 && !sourceIsI64)
-                    CHECK_RANGE(double, REAL,  !ISNAN(val) && (!within_int64_repres(val) || (int64_t)val!=val),    val, _("%f (type '%s') at RHS position %d out-of-range(NA) or truncated (precision lost) when assigning to type '%s' (%s)"))
+                    CHECK_RANGE(double, REAL,  !ISNAN(val) && (!within_int64_repres(val) || (int64_t)val!=val),    val, _("%f (type '%s') at RHS position %d out-of-range(NA) or truncated (precision lost) when assigning to type '%s' %s"))
                     break;
       case CPLXSXP: if (targetIsI64)
                     CHECK_RANGE(Rcomplex, COMPLEX, !((ISNAN(val.i) || (R_FINITE(val.i) && val.i==0.0)) &&
-                                                     (ISNAN(val.r) || (R_FINITE(val.r) && (int64_t)val.r==val.r))), val.r, _("%f (type '%s') at RHS position %d either imaginary part discarded or real part truncated (precision lost) when assigning to type '%s' (%s)"))
-              else  CHECK_RANGE(Rcomplex, COMPLEX, !(ISNAN(val.i) || (R_FINITE(val.i) && val.i==0.0)),  val.r, _("%f (type '%s') at RHS position %d imaginary part discarded when assigning to type '%s' (%s)"))
+                                                     (ISNAN(val.r) || (R_FINITE(val.r) && (int64_t)val.r==val.r))), val.r, _("%f (type '%s') at RHS position %d either imaginary part discarded or real part truncated (precision lost) when assigning to type '%s' %s"))
+              else  CHECK_RANGE(Rcomplex, COMPLEX, !(ISNAN(val.i) || (R_FINITE(val.i) && val.i==0.0)),  val.r, _("%f (type '%s') at RHS position %d imaginary part discarded when assigning to type '%s' %s"))
       }
     }
   }
