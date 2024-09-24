@@ -19,3 +19,5 @@ To add your package to this list, please [submit a Pull Request to The Raft](htt
 - [dtplyr](https://github.com/tidyverse/dtplyr): A `data.table` backend for `dplyr`
 
 ## Partner package: Not necessarily directly connected to `data.table`, but deliberately follows the [core philosophies of `data.table`](https://github.com/Rdatatable/data.table/blob/master/GOVERNANCE.md#the-r-package).
+
+- [collapse](https://github.com/SebKrantz/collapse): Advanced and Fast Data Transformation in R
