@@ -40,7 +40,7 @@ for (extra.arg in extra.args.6107){
 # @note Please check https://github.com/tdhock/atime/blob/main/vignettes/data.table.Rmd for more information.
 # nolint start: undesirable_operator_linter. ':::' needed+appropriate here.
 test.list <- atime::atime_test_list(
-  N = 10^seq(1, 7, by=0.25),
+  N = as.integer(10^seq(1, 7, by=0.25)),
   # A function to customize R package metadata and source files to facilitate version-specific installation and testing.
   #
   # This is specifically tailored for handling data.table which requires specific changes in non-standard files (such as the object file name in Makevars and version checking code in onLoad.R)
