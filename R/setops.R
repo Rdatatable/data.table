@@ -6,7 +6,7 @@ setdiff_ = function(x, y, by.x=seq_along(x), by.y=seq_along(y), use.names=FALSE)
   by.x = colnamesInt(x, by.x, check_dups=TRUE)
   if (!nrow(y)) return(unique(x, by=by.x))
   by.y = colnamesInt(y, by.y, check_dups=TRUE)
-  if (length(by.x) != length(by.y)) stopf("length(by.x) != length(by.y)") # nontranslate
+  if (length(by.x) != length(by.y)) stopf("length(by.x) != length(by.y)", domain=NA)
   # factor in x should've factor/character in y, and vice-versa
   for (a in seq_along(by.x)) {
     lc = by.y[a]
