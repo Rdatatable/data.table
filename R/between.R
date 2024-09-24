@@ -10,9 +10,9 @@ between = function(x, lower, upper, incbounds=TRUE, NAbounds=TRUE, check=FALSE) 
     tz = attr(x, "tzone", exact=TRUE)
     if (is.null(tz)) tz = ""
     if (is.character(lower)) lower = tryCatch(as.POSIXct(lower, tz=tz), error=function(e)stopf(
-      "'between' function the 'x' argument is a POSIXct value while '%s' was not, coercion to POSIXct failed with: %s", 'lower', e$message))
+      "The 'x' argument of the 'between' function is POSIXct while '%s' was not, coercion to POSIXct failed with: %s", 'lower', conditionMessage(e)))
     if (is.character(upper)) upper = tryCatch(as.POSIXct(upper, tz=tz), error=function(e)stopf(
-      "'between' function the 'x' argument is a POSIXct value while '%s' was not, coercion to POSIXct failed with: %s", 'upper', e$message))
+      "The 'x' argument of the 'between' function is POSIXct while '%s' was not, coercion to POSIXct failed with: %s", 'upper', conditionMessage(e)))
     stopifnot(is.px(x), is.px(lower), is.px(upper)) # nocov # internal
   }
   # POSIX check timezone match
