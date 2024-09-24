@@ -40,6 +40,7 @@ for (extra.arg in extra.args.6107){
 # @note Please check https://github.com/tdhock/atime/blob/main/vignettes/data.table.Rmd for more information.
 # nolint start: undesirable_operator_linter. ':::' needed+appropriate here.
 test.list <- atime::atime_test_list(
+  # Common N and pkg.edit.fun are defined here, and inherited in all test cases below which do not re-define them.
   N = as.integer(10^seq(1, 7, by=0.25)),
   # A function to customize R package metadata and source files to facilitate version-specific installation and testing.
   #
