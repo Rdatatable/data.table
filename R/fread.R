@@ -311,7 +311,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
              methods::as(v, new_class))
       },
       warning = fun <- function(e) {
-        warningf("Column '%s' was requested to be '%s' but fread encountered the following %s:\n\t%s\nso the column has been left as type '%s'", names(ans)[j], new_class, if (inherits(e, "error")) "error" else "warning", e$message, typeof(v))
+        warningf("Column '%s' was requested to be '%s' but fread encountered the following %s:\n\t%s\nso the column has been left as type '%s'", names(ans)[j], new_class, if (inherits(e, "error")) gettext("error") else gettext("warning"), e$message, typeof(v))
         v
       },
       error = fun)
