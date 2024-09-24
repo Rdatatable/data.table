@@ -115,11 +115,11 @@ test.list <- atime::atime_test_list(
   # test case adapted from https://github.com/Rdatatable/data.table/pull/5463#issue-1373642456 which is the fix PR.
   "memrecycle regression fixed in #5463" = atime::atime_test(
     setup = {
-      n <- N/100
+      bigN <- N*100
       set.seed(2L)
       dt <- data.table(
-        g = sample(seq_len(n), N, TRUE),
-        x = runif(N),
+        g = sample(seq_len(N), bigN, TRUE),
+        x = runif(bigN),
         key = "g")
       dt_mod <- copy(dt)
     },
