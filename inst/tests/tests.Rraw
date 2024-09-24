@@ -7539,7 +7539,7 @@ test(1538.2, !is.unsorted(tables(order.col="NROW")$NROW), output="Total:")
 
 # uniqueN not support list-of-list: reverted #1224
 d1 <- data.table(a = 1:4, l = list(list(letters[1:2]),list(Sys.time()),list(1:10),list(letters[1:2])))
-test(1539, d1[,uniqueN(l)], error = "x must be an atomic vector or data.frames/data.tables")
+test(1539, d1[,uniqueN(l)], error = "x must be an atomic vector or a data.frame/data.table")
 
 # feature #1130 - joins without setting keys
 # can't test which=TRUE with DT1.copy's results..
@@ -14920,10 +14920,10 @@ options(old)
 
 # exceptions in char to POSIX coercion
 dn = 'aa2016-09-18 08:00:00'
-test(2038.14, between(x, dn, up), error="coercion to POSIX failed")
+test(2038.14, between(x, dn, up), error="coercion to POSIXct failed")
 dn = '2016-09-18 08:00:00'
 up = 'bb2016-09-18 09:00:00'
-test(2038.15, between(x, dn, up), error="coercion to POSIX failed")
+test(2038.15, between(x, dn, up), error="coercion to POSIXct failed")
 
 # exceptions due to timezone mismatch
 x = as.POSIXct("2016-09-18 07:00:00", tz="UTC") + 0:10*60*15
