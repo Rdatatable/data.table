@@ -64,14 +64,11 @@ measure = function(..., sep="_", pattern, cols, multiple.keyword="value.name") {
     }
     fun.list[[fun.i]] = fun
   }
-  measurev.args = c(
-    list(fun.list),
-    L[formal.i.vec],
-    list(group.desc="... arguments to measure"))
+  measurev.args = c(list(fun.list), L[formal.i.vec])
   do.call(measurev, measurev.args)
 }
 
-measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.name", group.desc="elements of fun.list"){
+measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.name"){
   # 1. basic error checking.
   if (!missing(sep) && !missing(pattern)) {
     stopf("both sep and pattern arguments used; must use either sep or pattern (not both)")
@@ -88,10 +85,10 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
     which(!nzchar(names(fun.list)))
   }
   if (length(prob.i)) {
-    stopf("in measurev, %s must be named, problems: %s", group.desc, brackify(prob.i))
+    stopf("in measurev, elements of fun.list must be named, problems: %s", brackify(prob.i))
   }
   if (length(dup.funs <- duplicated_values(names(fun.list)))) {
-    stopf("%s should be uniquely named, problems: %s", group.desc, brackify(dup.funs))
+    stopf("elements of fun.list should be uniquely named, problems: %s", brackify(dup.funs))
   }
   # 2. compute initial group data table, used as variable_table attribute.
   group.mat = if (!missing(pattern)) {
@@ -108,7 +105,7 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
       stopf("pattern must contain at least one capture group (parenthesized sub-pattern)")
     }
     if (ncol(start) != length(fun.list)) {
-      stopf("number of %s (%d) must be the same as the number of capture groups in pattern (%d)", group.desc, length(fun.list), ncol(start))
+      stopf("number of elements of fun.list (%d) must be the same as the number of capture groups in pattern (%d)", length(fun.list), ncol(start))
     }
     end = attr(match.vec, "capture.length")[measure.vec.i,]+start-1L
     measure.vec <- cols[measure.vec.i]
@@ -125,7 +122,7 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
       stopf("each column name results in only one item after splitting using sep, which means that all columns would be melted; to fix please either specify melt on all columns directly without using measure, or use a different sep/pattern specification")
     }
     if (n.groups != length(fun.list)) {
-      stopf("number of %s (%d) must be the same as the max number of items after splitting column names (%d)", group.desc, length(fun.list), n.groups)
+      stopf("number of elements of fun.list (%d) must be the same as the max number of items after splitting column names (%d)", length(fun.list), n.groups)
     }
     measure.vec.i = which(vector.lengths==n.groups)
     measure.vec = cols[measure.vec.i]
