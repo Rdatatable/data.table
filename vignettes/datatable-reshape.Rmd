@@ -80,7 +80,7 @@ str(DT.m1)
 
 * `measure.vars` specify the set of columns we would like to collapse (or combine) together.
 
-* We can also specify column *indices* instead of *names*.
+* We can also specify column *positions* instead of *names*.
 
 * By default, `variable` column is of type `factor`. Set `variable.factor` argument to `FALSE` if you'd like to return a *`character`* vector instead.
 
@@ -157,7 +157,7 @@ DT.m1[, c("variable", "child") := tstrsplit(variable, "_", fixed = TRUE)]
 DT.c1 = dcast(DT.m1, family_id + age_mother + child ~ variable, value.var = "value")
 DT.c1
 
-str(DT.c1) ## gender column is character type now!
+str(DT.c1) ## gender column is class IDate now!
 ```
 
 #### Issues
@@ -241,7 +241,7 @@ melt(two.iris, measure.vars = measure(value.name, dim, sep="."))
 ```
 
 Using the code above we get one value column per flower part. If we
-instead want a value column for each measurement dimension, we can do
+instead want a value column for each measurement dimension, we can do:
 
 ```{r}
 melt(two.iris, measure.vars = measure(part, value.name, sep="."))
