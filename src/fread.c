@@ -1340,10 +1340,10 @@ int freadMain(freadMainArgs _args) {
     if (*NAstrings == NULL) {
       DTPRINT(_("  No NAstrings provided.\n"));
     } else {
-      DTPRINT(_("  NAstrings = ["));
+      DTPRINT("  NAstrings = ["); // # notranslate
       const char * const* s = NAstrings;
       while (*s++) DTPRINT(*s? "<<%s>>, " : "<<%s>>", s[-1]);
-      DTPRINT(_("]\n"));
+      DTPRINT("]\n");             // # notranslate
       if (any_number_like_NAstrings)
         DTPRINT(_("  One or more of the NAstrings looks like a number.\n"));
       else
@@ -2085,14 +2085,14 @@ int freadMain(freadMainArgs _args) {
     // sd can be very close to 0.0 sometimes, so apply a +10% minimum
     // blank lines have length 1 so for fill=true apply a +100% maximum. It'll be grown if needed.
     if (verbose) {
-      DTPRINT(_("  =====\n"));
+      DTPRINT("  =====\n"); // # notranslate
       DTPRINT(_("  Sampled %"PRIu64" rows (handled \\n inside quoted fields) at %d jump points\n"), (uint64_t)sampleLines, nJumps);
       DTPRINT(_("  Bytes from first data row on line %d to the end of last row: %"PRIu64"\n"), row1line, (uint64_t)bytesRead);
       DTPRINT(_("  Line length: mean=%.2f sd=%.2f min=%d max=%d\n"), meanLineLen, sd, minLen, maxLen);
       DTPRINT(_("  Estimated number of rows: %"PRIu64" / %.2f = %"PRIu64"\n"), (uint64_t)bytesRead, meanLineLen, (uint64_t)estnrow);
       DTPRINT(_("  Initial alloc = %"PRIu64" rows (%"PRIu64" + %d%%) using bytes/max(mean-2*sd,min) clamped between [1.1*estn, 2.0*estn]\n"),
               (uint64_t)allocnrow, (uint64_t)estnrow, (int)(100.0*allocnrow/estnrow-100.0));
-      DTPRINT(_("  =====\n"));
+      DTPRINT("  =====\n"); // # notranslate
     } else {
       if (sampleLines > allocnrow) INTERNAL_STOP("sampleLines(%"PRIu64") > allocnrow(%"PRIu64")", (uint64_t)sampleLines, (uint64_t)allocnrow); // # nocov
     }
@@ -2266,8 +2266,8 @@ int freadMain(freadMainArgs _args) {
   if (verbose) DTPRINT(_("[11] Read the data\n"));
   read:  // we'll return here to reread any columns with out-of-sample type exceptions, or dirty jumps
   restartTeam = false;
-  if (verbose) DTPRINT(_("  jumps=[%d..%d), chunk_size=%"PRIu64", total_size=%"PRIu64"\n"),
-                       jump0, nJumps, (uint64_t)chunkBytes, (uint64_t)(eof-pos));
+  if (verbose)
+    DTPRINT("  jumps=[%d..%d), chunk_size=%"PRIu64", total_size=%"PRIu64"\n", jump0, nJumps, (uint64_t)chunkBytes, (uint64_t)(eof-pos)); // # notranslate
   ASSERT(allocnrow <= nrowLimit, "allocnrow(%"PRIu64") <= nrowLimit(%"PRIu64")", (uint64_t)allocnrow, (uint64_t)nrowLimit);
   #pragma omp parallel num_threads(nth)
   {
@@ -2744,7 +2744,7 @@ int freadMain(freadMainArgs _args) {
   }
 
   if (verbose) {
-    DTPRINT(_("=============================\n"));
+    DTPRINT("=============================\n"); // # notranslate
     if (tTot<0.000001) tTot=0.000001;  // to avoid nan% output in some trivially small tests where tot==0.000s
     DTPRINT(_("%8.3fs (%3.0f%%) Memory map %.3fGB file\n"), tMap-t0, 100.0*(tMap-t0)/tTot, 1.0*fileSize/(1024*1024*1024));
     DTPRINT(_("%8.3fs (%3.0f%%) sep="), tLayout-tMap, 100.0*(tLayout-tMap)/tTot);

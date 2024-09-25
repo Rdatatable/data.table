@@ -155,7 +155,8 @@ SEXP freadR(
   args.skipEmptyLines = LOGICAL(skipEmptyLinesArg)[0];
   args.fill = INTEGER(fillArg)[0];
   args.showProgress = LOGICAL(showProgressArg)[0];
-  if (INTEGER(nThreadArg)[0]<1) error(_("nThread(%d)<1"), INTEGER(nThreadArg)[0]);
+  if (INTEGER(nThreadArg)[0]<1)
+    error("nThread(%d)<1", INTEGER(nThreadArg)[0]); // # notranslate
   args.nth = (uint32_t)INTEGER(nThreadArg)[0];
   args.verbose = verbose;
   args.warningsAreErrors = warningsAreErrors;
@@ -716,7 +717,7 @@ void __halt(bool warn, const char *format, ...) {
   // if (warn) warning(_("%s"), msg);
   //   this warning() call doesn't seem to honor warn=2 straight away in R 3.6, so now always call error() directly to be sure
   //   we were going via warning() before to get the (converted from warning) prefix in the message (which we could mimic in future)
-  error(_("%s"), msg); // include "%s" because data in msg might include '%'
+  error("%s", msg); // # notranslate. include "%s" because data in msg might include '%'
 }
 
 void prepareThreadContext(ThreadLocalFreadParsingContext *ctx) {}

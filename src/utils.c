@@ -388,7 +388,7 @@ SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg) {
     Rprintf(_("Coercing %s[%s] into %s[%s]\n"), type2char(TYPEOF(x)), class1(x), type2char(TYPEOF(as)), class1(as));
   const char *ret = memrecycle(/*target=*/ans, /*where=*/R_NilValue, /*start=*/0, /*len=*/LENGTH(x), /*source=*/x, /*sourceStart=*/0, /*sourceLen=*/-1, /*colnum=*/0, /*colname=*/"");
   if (ret)
-    warning(_("%s"), ret);
+    warning("%s", ret); // # notranslate
   UNPROTECT(1);
   return ans;
 }

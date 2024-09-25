@@ -86,15 +86,17 @@ SEXP getDTthreads_R(SEXP verbose) {
     // this output is captured, paste0(collapse="; ")'d, and placed at the end of test.data.table() for display in the last 13 lines of CRAN check logs
     // it is also printed at the start of test.data.table() so that we can trace any Killed events on CRAN before the end is reached
     // this is printed verbatim (e.g. without using data.table to format the output) in case there is a problem even with simple data.table creation/printing
-    Rprintf(_("  omp_get_num_procs()            %d\n"), omp_get_num_procs());
-    Rprintf(_("  R_DATATABLE_NUM_PROCS_PERCENT  %s\n"), mygetenv("R_DATATABLE_NUM_PROCS_PERCENT", "unset (default 50)"));
-    Rprintf(_("  R_DATATABLE_NUM_THREADS        %s\n"), mygetenv("R_DATATABLE_NUM_THREADS", "unset"));
-    Rprintf(_("  R_DATATABLE_THROTTLE           %s\n"), mygetenv("R_DATATABLE_THROTTLE", "unset (default 1024)"));
-    Rprintf(_("  omp_get_thread_limit()         %d\n"), omp_get_thread_limit());
-    Rprintf(_("  omp_get_max_threads()          %d\n"), omp_get_max_threads());
-    Rprintf(_("  OMP_THREAD_LIMIT               %s\n"), mygetenv("OMP_THREAD_LIMIT", "unset"));  // CRAN sets to 2
-    Rprintf(_("  OMP_NUM_THREADS                %s\n"), mygetenv("OMP_NUM_THREADS", "unset"));
-    Rprintf(_("  RestoreAfterFork               %s\n"), RestoreAfterFork ? "true" : "false");
+    // # notranslate start
+    Rprintf("  omp_get_num_procs()            %d\n", omp_get_num_procs());
+    Rprintf("  R_DATATABLE_NUM_PROCS_PERCENT  %s\n", mygetenv("R_DATATABLE_NUM_PROCS_PERCENT", "unset (default 50)"));
+    Rprintf("  R_DATATABLE_NUM_THREADS        %s\n", mygetenv("R_DATATABLE_NUM_THREADS", "unset"));
+    Rprintf("  R_DATATABLE_THROTTLE           %s\n", mygetenv("R_DATATABLE_THROTTLE", "unset (default 1024)"));
+    Rprintf("  omp_get_thread_limit()         %d\n", omp_get_thread_limit());
+    Rprintf("  omp_get_max_threads()          %d\n", omp_get_max_threads());
+    Rprintf("  OMP_THREAD_LIMIT               %s\n", mygetenv("OMP_THREAD_LIMIT", "unset"));  // CRAN sets to 2
+    Rprintf("  OMP_NUM_THREADS                %s\n", mygetenv("OMP_NUM_THREADS", "unset"));
+    Rprintf("  RestoreAfterFork               %s\n", RestoreAfterFork ? "true" : "false");
+    // # notranslate end
     Rprintf(_("  data.table is using %d threads with throttle==%d. See ?setDTthreads.\n"), getDTthreads(INT_MAX, false), DTthrottle);
   }
   return ScalarInteger(getDTthreads(INT_MAX, false));
