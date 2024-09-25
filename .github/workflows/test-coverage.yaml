@@ -36,9 +36,9 @@ jobs:
 
       - name: Install dependencies
         run: |
-          install.packages(c("remotes"))
+          install.packages("remotes")
           remotes::install_deps(dependencies = TRUE)
-          remotes::install_cran("covr")
+          remotes::install_version("covr", "3.6.3") # TODO(r-lib/covr#567): Go back to just installing CRAN covr
         shell: Rscript {0}
 
       - name: Test coverage
