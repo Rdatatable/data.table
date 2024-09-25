@@ -16,7 +16,7 @@ jobs:
 
       - uses: r-lib/actions/setup-r@v2
         with:
-          r-version: '4.3' # TODO(r-lib/covr#567): Go back to using r-devel
+          r-version: '4.2' # TODO(r-lib/covr#567): Go back to using r-devel
 
       - uses: r-lib/actions/setup-pandoc@v2
 
@@ -38,7 +38,7 @@ jobs:
         run: |
           install.packages("remotes")
           remotes::install_deps(dependencies = TRUE)
-          remotes::install_version("covr", "3.6.3") # TODO(r-lib/covr#567): Go back to just installing CRAN covr
+          remotes::install_version("covr", "3.6.2") # TODO(r-lib/covr#567): Go back to just installing CRAN covr
         shell: Rscript {0}
 
       - name: Test coverage
