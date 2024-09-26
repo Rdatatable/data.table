@@ -437,7 +437,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     values = PROTECT(eval(PROTECT(lang2(sym_as_posixct, values)), R_GlobalEnv)); protecti+=2;
   }
   bool RHS_list_of_columns = TYPEOF(values)==VECSXP && length(cols)>1;  // initial value; may be revised below
-  if (verbose) Rprintf(_("RHS_list_of_columns == %s\n"), RHS_list_of_columns ? "true" : "false");
+  if (verbose)
+    Rprintf("RHS_list_of_columns == %s\n", RHS_list_of_columns ? "true" : "false"); // # notranslate
   if (TYPEOF(values)==VECSXP && length(cols)==1 && length(values)==1) {
     SEXP item = VECTOR_ELT(values,0);
     if (isNull(item) || length(item)==1 || length(item)==targetlen) {

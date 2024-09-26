@@ -628,15 +628,16 @@ void fwriteMain(fwriteMainArgs args)
 
   if (verbose) {
     DTPRINT(_("Column writers: "));
+    // # notranslate start
     if (args.ncol<=50) {
-      for (int j=0; j<args.ncol; j++) DTPRINT(_("%d "), args.whichFun[j]);
+      for (int j=0; j<args.ncol; j++) DTPRINT("%d ", args.whichFun[j]);
     } else {
-      for (int j=0; j<30; j++) DTPRINT(_("%d "), args.whichFun[j]);
+      for (int j=0; j<30; j++) DTPRINT("%d ", args.whichFun[j]);
       DTPRINT(_("... "));
-      for (int j=args.ncol-10; j<args.ncol; j++) DTPRINT(_("%d "), args.whichFun[j]);
+      for (int j=args.ncol-10; j<args.ncol; j++) DTPRINT("%d ", args.whichFun[j]);
     }
-    DTPRINT(_("\nargs.doRowNames=%d args.rowNames=%p args.rowNameFun=%d doQuote=%d args.nrow=%"PRId64" args.ncol=%d eolLen=%d\n"),
-          args.doRowNames, args.rowNames, args.rowNameFun, doQuote, args.nrow, args.ncol, eolLen);
+    DTPRINT("\nargs.doRowNames=%d args.rowNames=%p args.rowNameFun=%d doQuote=%d args.nrow=%"PRId64" args.ncol=%d eolLen=%d\n", args.doRowNames, args.rowNames, args.rowNameFun, doQuote, args.nrow, args.ncol, eolLen);
+    // # notranslate end
   }
 
   // Calculate upper bound for line length. Numbers use a fixed maximum (e.g. 12 for integer) while strings find the longest

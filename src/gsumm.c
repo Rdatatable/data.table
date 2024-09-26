@@ -60,7 +60,8 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   }
   else error(_("irowsArg is neither an integer vector nor NULL"));  // # nocov
   ngrp = LENGTH(l);
-  if (LENGTH(f) != ngrp) error(_("length(f)=%d != length(l)=%d"), LENGTH(f), ngrp);
+  if (LENGTH(f) != ngrp)
+    error("length(f)=%d != length(l)=%d", LENGTH(f), ngrp); // # notranslate
   nrow=0;
   grpsize = INTEGER(l);
   maxgrpn = 0;

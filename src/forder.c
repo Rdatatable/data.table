@@ -781,7 +781,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
   }
   if (key[nradix]!=NULL) nradix++;  // nradix now number of bytes in key
   #ifdef TIMING_ON
-  Rprintf(_("nradix=%d\n"), nradix);
+  Rprintf("nradix=%d\n", nradix); // # notranslate
   #endif
 
   // global nth, TMP & UGRP
@@ -869,9 +869,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
     for (int i=0; i<=last; i++) {
       Rprintf(_("Timing block %2d%s = %8.3f   %8d\n"), i, (i>=17&&i<=19)?"(*)":"   ", tblock[i], nblock[i]);
     }
-    for (int i=0; i<=256; i++) {
-      if (stat[i]) Rprintf(_("stat[%03d]==%20"PRIu64"\n"), i, (uint64_t)stat[i]);
-    }
+    for (int i=0; i<=256; i++) if (stat[i])
+      Rprintf("stat[%03d]==%20"PRIu64"\n", i, (uint64_t)stat[i]); // # notranslate
   }
   #endif
   return ans;
