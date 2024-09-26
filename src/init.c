@@ -349,7 +349,6 @@ SEXP hasOpenMP(void) {
 #endif
 
 }
-// # nocov end
 
 SEXP beforeR340(void) {
   // used in onAttach.R for message about fread memory leak fix needing R 3.4.0
@@ -360,6 +359,7 @@ SEXP beforeR340(void) {
   return ScalarLogical(false);
   #endif
 }
+// # nocov end
 
 extern int *_Last_updated;  // assign.c
 

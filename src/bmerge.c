@@ -381,8 +381,8 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     }
     break;
   // supported types were checked up front to avoid handling an error here in (future) parallel region
-  default:
-    error(_("Type '%s' is not supported for joining/merging"), type2char(TYPEOF(xc)));
+  default: // # nocov
+    internal_error("Invalid join/merge type '%s' should have been caught earlier", type2char(TYPEOF(xc))); // # nocov
   }
 
   if (xlow<xupp-1 || rollLow || rollUpp) { // if value found, xlow and xupp surround it, unlike standard binary search where low falls on it
