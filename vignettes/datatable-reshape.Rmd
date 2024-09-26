@@ -80,7 +80,7 @@ str(DT.m1)
 
 * `measure.vars` specify the set of columns we would like to collapse (or combine) together.
 
-* We can also specify column *indices* instead of *names*.
+* We can also specify column *positions* instead of *names*.
 
 * By default, `variable` column is of type `factor`. Set `variable.factor` argument to `FALSE` if you'd like to return a *`character`* vector instead.
 

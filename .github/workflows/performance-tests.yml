@@ -1,4 +1,4 @@
-name: Autocomment atime-based performance regression analysis on PRs
+name: atime performance tests
 
 on:
   pull_request:

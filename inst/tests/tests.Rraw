@@ -7539,7 +7539,7 @@ test(1538.2, !is.unsorted(tables(order.col="NROW")$NROW), output="Total:")
 
 # uniqueN not support list-of-list: reverted #1224
 d1 <- data.table(a = 1:4, l = list(list(letters[1:2]),list(Sys.time()),list(1:10),list(letters[1:2])))
-test(1539, d1[,uniqueN(l)], error = "x must be an atomic vector or data.frames/data.tables")
+test(1539, d1[,uniqueN(l)], error = "x must be an atomic vector or a data.frame/data.table")
 
 # feature #1130 - joins without setting keys
 # can't test which=TRUE with DT1.copy's results..
@@ -12427,6 +12427,9 @@ DTout = data.table(
   value2 = c("a", "b", "c", "d", "e", "f", "g", "h", "i", "j")
 )
 test(1866.6, melt(DT, measure.vars = patterns("^x", "^y", cols=names(DT))), DTout)
+# patterns supports cols arg, #6498
+test(1866.71, melt(data.table(x1=1,x2=2,y1=3,y2=4),measure.vars=patterns("2",cols=c("y1","y2"))), data.table(x1=1,x2=2,y1=3,variable=factor("y2"),value=4))
+test(1866.72, DT[, lapply(.SD, sum), .SDcols=patterns("2",cols=c("x1","x2"))], data.table(x2=40L))
 
 # informative errors for bad user-provided cols arg to patterns
 DT = data.table(x1=1,x2=2,y1=3,y2=4)
@@ -14920,10 +14923,10 @@ options(old)
 
 # exceptions in char to POSIX coercion
 dn = 'aa2016-09-18 08:00:00'
-test(2038.14, between(x, dn, up), error="coercion to POSIX failed")
+test(2038.14, between(x, dn, up), error="coercion to POSIXct failed")
 dn = '2016-09-18 08:00:00'
 up = 'bb2016-09-18 09:00:00'
-test(2038.15, between(x, dn, up), error="coercion to POSIX failed")
+test(2038.15, between(x, dn, up), error="coercion to POSIXct failed")
 
 # exceptions due to timezone mismatch
 x = as.POSIXct("2016-09-18 07:00:00", tz="UTC") + 0:10*60*15
@@ -17301,11 +17304,11 @@ test(2183.00020, melt(iris.dt, measure.vars=measurev(value.name, dim, sep=".", p
 test(2183.000201, melt(iris.dt, measure.vars=measurev(list(NULL, dim=NULL), sep=".")), error="in measurev, elements of fun.list must be named, problems: [1]")
 test(2183.000202, melt(iris.dt, measure.vars=measurev(list(NULL, NULL), sep=".")), error="in measurev, elements of fun.list must be named, problems: [1, 2]")
 test(2183.00027, melt(iris.dt, measure.vars=measurev(list(value.name=NULL, dim="bar"), sep=".")), error="in the measurev fun.list, each non-NULL element must be a function with at least one argument, problem: dim")
-test(2183.00028, melt(iris.dt, measure.vars=measurev(list(value.name=NULL, dim=NULL, baz=NULL), sep=".")), error="number of elements of fun.list =3 must be same as max number of items after splitting column names =2")
+test(2183.00028, melt(iris.dt, measure.vars=measurev(list(value.name=NULL, dim=NULL, baz=NULL), sep=".")), error="number of elements of fun.list (3) must be the same as the max number of items after splitting column names (2)")
 test(2183.00042, melt(DTid, measure.vars=measurev(list(value.name=NULL, istr=function()1), pattern="([ab])([12])")), error="in the measurev fun.list, each non-NULL element must be a function with at least one argument, problem: istr")
 test(2183.00043, melt(DTid, measure.vars=measurev(list(value.name=NULL, istr=interactive), pattern="([ab])([12])")), error="in the measurev fun.list, each non-NULL element must be a function with at least one argument, problem: istr")
 test(2183.00044, melt(DTid, measure.vars=measurev(list(value.name=NULL, istr=function(x)1), pattern="([ab])([12])")), error="each conversion function must return an atomic vector with same length as its first argument, problem: istr")
-test(2183.00045, melt(iris.dt, measure.vars=measurev(list(value.name=NULL, dim=NULL, baz=NULL), pattern="(.*)[.](.*)")), error="number of elements of fun.list =3 must be same as number of capture groups in pattern =2")
+test(2183.00045, melt(iris.dt, measure.vars=measurev(list(value.name=NULL, dim=NULL, baz=NULL), pattern="(.*)[.](.*)")), error="number of elements of fun.list (3) must be the same as the number of capture groups in pattern (2)")
 test(2183.00048, melt(iris.dt, measure.vars=measurev(list(value.name=NULL, value.name=NULL), sep=".")), error="elements of fun.list should be uniquely named, problems: [value.name]")
 # measure with factor conversion.
 myfac = function(x)factor(x)#user-defined conversion function.
@@ -17348,7 +17351,7 @@ test(2183.24, names(melt(iris.dt, measure.vars=measure(value.name, dim, sep=".")
 test(2183.25, names(melt(iris.dt, measure.vars=measure(part, value.name, sep="."))), c("Species", "part", "Length", "Width"))
 test(2183.26, names(melt(iris.dt, measure.vars=measure(part, dim, sep="."))), c("Species", "part", "dim", "value"))
 test(2183.27, melt(iris.dt, measure.vars=measure(value.name, dim="bar", sep=".")), error="each ... argument to measure must be a function with at least one argument, problem: dim")
-test(2183.28, melt(iris.dt, measure.vars=measure(value.name, dim, baz, sep=".")), error="number of ... arguments to measure =3 must be same as max number of items after splitting column names =2")
+test(2183.28, melt(iris.dt, measure.vars=measure(value.name, dim, baz, sep=".")), error="number of elements of fun.list (3) must be the same as the max number of items after splitting column names (2)")
 test(2183.29, melt(iris.dt, measure.vars=measure()), error="each column name results in only one item after splitting using sep, which means that all columns would be melted; to fix please either specify melt on all columns directly without using measure, or use a different sep/pattern specification")
 # patterns with iris data.
 test(2183.40, names(melt(iris.dt, measure.vars=patterns("[.]"))), c("Species", "variable", "value"))
@@ -17357,10 +17360,10 @@ test(2183.41, melt(DTid, measure.vars=measure(value.name, istr="bar", pattern="(
 test(2183.42, melt(DTid, measure.vars=measure(value.name, istr=function()1, pattern="([ab])([12])")), error="each ... argument to measure must be a function with at least one argument, problem: istr")
 test(2183.43, melt(DTid, measure.vars=measure(value.name, istr=interactive, pattern="([ab])([12])")), error="each ... argument to measure must be a function with at least one argument, problem: istr")
 test(2183.44, melt(DTid, measure.vars=measure(value.name, istr=function(x)1, pattern="([ab])([12])")), error="each conversion function must return an atomic vector with same length as its first argument, problem: istr")
-test(2183.45, melt(iris.dt, measure.vars=measure(value.name, dim, baz, pattern="(.*)[.](.*)")), error="number of ... arguments to measure =3 must be same as number of capture groups in pattern =2")
+test(2183.45, melt(iris.dt, measure.vars=measure(value.name, dim, baz, pattern="(.*)[.](.*)")), error="number of elements of fun.list (3) must be the same as the number of capture groups in pattern (2)")
 test(2183.46, melt(iris.dt, measure.vars=measure(function(x)factor(x), dim, pattern="(.*)[.](.*)")), error="each ... argument to measure must be either a symbol without argument name, or a function with argument name, problems: [1]")
 test(2183.47, melt(iris.dt, measure.vars=measure(function(x)factor(x), pattern="(.*)[.](.*)")), error="each ... argument to measure must be either a symbol without argument name, or a function with argument name, problems: [1]")
-test(2183.48, melt(iris.dt, measure.vars=measure(value.name, value.name, sep=".")), error="... arguments to measure should be uniquely named, problems: [value.name]")
+test(2183.48, melt(iris.dt, measure.vars=measure(value.name, value.name, sep=".")), error="elements of fun.list should be uniquely named, problems: [value.name]")
 # measure with factor conversion.
 myfac = function(x)factor(x)#user-defined conversion function.
 test(2183.60, melt(DTid, measure.vars=measure(letter=myfac, value.name, pattern="([ab])([12])")), data.table(id=1, letter=factor(c("a","b")), "2"=c(2,2), "1"=c(NA,1)))
