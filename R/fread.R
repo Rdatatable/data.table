@@ -158,6 +158,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     }
     # whitespace at the beginning or end of na.strings is checked at C level and is an error there; test 1804
   }
+  # nocov start. Tested in other.Rraw tests 16, not in the main suite.
   if (yaml) {
     if (!requireNamespace('yaml', quietly = TRUE))
       stopf("'data.table' relies on the package 'yaml' to parse the file header; please add this to your library with install.packages('yaml') and try again.") # nocov
@@ -267,6 +268,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     }
     if (is.integer(skip)) skip = skip + n_read
   }
+  # nocov end
   warnings2errors = getOption("warn") >= 2
   stopifnot(identical(tz,"UTC") || identical(tz,""))
   if (tz=="") {
@@ -341,7 +343,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
       key = cols_from_csv(key)
     setkeyv(ans, key)
   }
-  if (yaml) setattr(ans, 'yaml_metadata', yaml_header)
+  if (yaml) setattr(ans, 'yaml_metadata', yaml_header) # nocov
   if (!is.null(index) && data.table) {
     if (!all(vapply_1b(index, is.character)))
       stopf("index argument of data.table() must be a character vector naming columns (NB: col.names are applied before this)")

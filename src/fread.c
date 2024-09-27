@@ -442,7 +442,7 @@ double copyFile(size_t fileSize)  // only called in very very rare cases
   double tt = wallclock();
   mmp_copy = (char *)malloc((size_t)fileSize + 1 /* extra \0 */);
   if (!mmp_copy)
-    return -1.0;
+    return -1.0; // # nocov
   memcpy(mmp_copy, mmp, fileSize);
   sof = mmp_copy;
   eof = (char *)mmp_copy + fileSize;
@@ -563,7 +563,7 @@ static void Field(FieldParseContext *ctx)
       if (ch!=ch2) fieldStart--;   // field ending is this sep|eol; neither (*1) or (*2) happened; opening quote wasn't really an opening quote
     }
     break;
-  default:
+  default: // # nocov
     return;  // # nocov Internal error: undefined quote rule
   }
   target->len = (int32_t)(ch - fieldStart);
@@ -1540,14 +1540,16 @@ int freadMain(freadMainArgs _args) {
         // In future, we may discover a way to mmap fileSize+1 on all OS when fileSize%4096==0, reliably. If and when, this clause can be updated with no code impact elsewhere.
         double time_taken = copyFile(fileSize);
         if (time_taken == -1.0) {
+          // # nocov start
           if (!verbose)
             DTPRINT("%s. Attempt to copy file in RAM failed.", msg);
           STOP(_("Unable to allocate %s of contiguous virtual RAM."), filesize_to_str(fileSize));
+          // # nocov end
         }
         if (verbose)
           DTPRINT(_("  File copy in RAM took %.3f seconds.\n"), time_taken);
         else if (time_taken > 0.5)
-          DTPRINT(_("Avoidable file copy in RAM took %.3f seconds. %s.\n"), time_taken, msg);  // not warning as that could feasibly cause CRAN tests to fail, say, if test machine is heavily loaded
+          DTPRINT(_("Avoidable file copy in RAM took %.3f seconds. %s.\n"), time_taken, msg);  // # nocov. not warning as that could feasibly cause CRAN tests to fail, say, if test machine is heavily loaded
       }
     }
     *_const_cast(eof) = '\0';  // cow page
@@ -1822,14 +1824,16 @@ int freadMain(freadMainArgs _args) {
       ASSERT(mmp_copy==NULL, "mmp has already been copied due to abrupt non-eol ending, so it does not end with 2 or more eol.%s", ""/*dummy arg for macro*/); // #nocov
       double time_taken = copyFile(fileSize);
       if (time_taken == -1.0) {
+        // # nocov start
         if (!verbose)
           DTPRINT("%s. Attempt to copy file in RAM failed.", msg);
         STOP(_("Unable to allocate %s of contiguous virtual RAM."), filesize_to_str(fileSize));
+        // # nocov end
       }
       if (verbose)
         DTPRINT(_("  File copy in RAM took %.3f seconds.\n"), time_taken);
-      else if (tt>0.5)
-        DTPRINT(_("Avoidable file copy in RAM took %.3f seconds. %s.\n"), time_taken, msg);  // not warning as that could feasibly cause CRAN tests to fail, say, if test machine is heavily loaded
+      else if (tt>0.5) // # nocov
+        DTPRINT(_("Avoidable file copy in RAM took %.3f seconds. %s.\n"), time_taken, msg);  // # nocov. not warning as that could feasibly cause CRAN tests to fail, say, if test machine is heavily loaded
       pos = sof + (pos-(const char *)mmp);
       firstJumpEnd = sof + (firstJumpEnd-(const char *)mmp);
     } else {
@@ -1858,8 +1862,8 @@ int freadMain(freadMainArgs _args) {
   type =    (int8_t *)malloc((size_t)ncol * sizeof(int8_t));
   tmpType = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));  // used i) in sampling to not stop on errors when bad jump point and ii) when accepting user overrides
   if (!type || !tmpType) {
-    free(type); free(tmpType);
-    STOP(_("Failed to allocate 2 x %d bytes for type and tmpType: %s"), ncol, strerror(errno));
+    free(type); free(tmpType); // # nocov
+    STOP(_("Failed to allocate 2 x %d bytes for type and tmpType: %s"), ncol, strerror(errno)); // # nocov
   }
 
   if (sep == ',' && dec == '\0') { // if sep=',' detected, don't attempt to detect dec [NB: . is not par of seps]
@@ -2119,7 +2123,7 @@ int freadMain(freadMainArgs _args) {
   } else {
     colNames = (lenOff*) calloc((size_t)ncol, sizeof(lenOff));
     if (!colNames)
-      STOP(_("Unable to allocate %d*%d bytes for column name pointers: %s"), ncol, sizeof(lenOff), strerror(errno));
+      STOP(_("Unable to allocate %d*%d bytes for column name pointers: %s"), ncol, sizeof(lenOff), strerror(errno)); // # nocov
     if (sep==' ') while (*ch==' ') ch++;
     void *targets[9] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, colNames + autoFirstColName};
     FieldParseContext fctx = {
@@ -2174,7 +2178,7 @@ int freadMain(freadMainArgs _args) {
   rowSize8 = 0;
   size = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));  // TODO: remove size[] when we implement Pasha's idea to += size inside processor
   if (!size)
-    STOP(_("Failed to allocate %d bytes for '%s': %s"), (int)(ncol * sizeof(int8_t)), "size", strerror(errno));
+    STOP(_("Failed to allocate %d bytes for '%s': %s"), (int)(ncol * sizeof(int8_t)), "size", strerror(errno)); // # nocov
   nStringCols = 0;
   nNonStringCols = 0;
   for (int j=0; j<ncol; j++) {
@@ -2615,7 +2619,7 @@ int freadMain(freadMainArgs _args) {
     }
     dropFill = (int *)malloc((size_t)ndropFill * sizeof(int));
     if (!dropFill)
-      STOP(_("Failed to allocate %d bytes for '%s'."), (int)(ndropFill * sizeof(int)), "dropFill");
+      STOP(_("Failed to allocate %d bytes for '%s'."), (int)(ndropFill * sizeof(int)), "dropFill"); // # nocov
     int i=0;
     for (int j=max_col; j<ncol; ++j) {
       type[j] = CT_DROP;

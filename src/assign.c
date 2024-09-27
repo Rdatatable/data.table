@@ -1190,7 +1190,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
       }
     }
   } break;
-  default :
+  default : // # nocov
     error(_("Unsupported column type in assign.c:memrecycle '%s'"), type2char(TYPEOF(target)));  // # nocov
   }
   UNPROTECT(protecti);
@@ -1244,7 +1244,7 @@ void writeNA(SEXP v, const int from, const int n, const bool listNA)
   case EXPRSXP :
     for (int i=from; i<=to; ++i) SET_VECTOR_ELT(v, i, R_NilValue);
     break;
-  default :
+  default : // # nocov
     internal_error(__func__, "Unsupported type '%s' for v", type2char(TYPEOF(v)));  // # nocov
   }
 }
@@ -1283,8 +1283,8 @@ void savetl_init(void) {
   saveds = (SEXP *)malloc(nalloc * sizeof(SEXP));
   savedtl = (R_len_t *)malloc(nalloc * sizeof(R_len_t));
   if (!saveds || !savedtl) {
-    free(saveds); free(savedtl);
-    savetl_end();                                                        // # nocov
+    free(saveds); free(savedtl);                                            // # nocov
+    savetl_end();                                                           // # nocov
     error(_("Failed to allocate initial %d items in savetl_init"), nalloc); // # nocov
   }
 }

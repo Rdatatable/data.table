@@ -97,7 +97,7 @@ void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
     Rbyte *ap = RAW(ans);
     PARLOOP(0)
   } break;
-  default :
+  default : // # nocov
     internal_error(__func__, "column type '%s' not supported by data.table subset, but all known types are supported", type2char(TYPEOF(source)));  // # nocov
   }
 }

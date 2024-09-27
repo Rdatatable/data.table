@@ -2256,8 +2256,8 @@ tail.data.table = function(x, n=6L, ...) {
 
 "$<-.data.table" = function(x, name, value) {
   if (!cedta()) {
-    ans = `$<-.data.frame`(x, name, value)
-    return(setalloccol(ans))           # over-allocate (again)
+    ans = `$<-.data.frame`(x, name, value) # nocov
+    return(setalloccol(ans))           # nocov. over-allocate (again)
   }
   x = copy(x)
   set(x,j=name,value=value)  # important i is missing here
@@ -2430,7 +2430,7 @@ which_ = function(x, bool = TRUE) {
 }
 
 is.na.data.table = function(x) {
-  if (!cedta()) return(is.na.data.frame(x))
+  if (!cedta()) return(is.na.data.frame(x)) # nocov
   do.call(cbind, lapply(x, is.na))
 }
 

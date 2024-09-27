@@ -137,7 +137,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   // using <- in j (which is valid, useful and tested), they are repointed to the .SD cols for each group.
   SEXP names = PROTECT(getAttrib(SDall, R_NamesSymbol)); nprotect++;
   if (length(names) != length(SDall))
-    error("length(names)!=length(SD)"); // # notranslate
+    internal_error(__func__, "length(names)!=length(SD)"); // # nocov
   SEXP *nameSyms = (SEXP *)R_alloc(length(names), sizeof(SEXP));
 
   for(int i=0; i<length(SDall); ++i) {
@@ -154,7 +154,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
 
   SEXP xknames = PROTECT(getAttrib(xSD, R_NamesSymbol)); nprotect++;
   if (length(xknames) != length(xSD))
-    error("length(xknames)!=length(xSD)"); // # notranslate
+    internal_error(__func__, "length(xknames)!=length(xSD)"); // # nocov
   SEXP *xknameSyms = (SEXP *)R_alloc(length(xknames), sizeof(SEXP));
   for(int i=0; i<length(xSD); ++i) {
     if (SIZEOF(VECTOR_ELT(xSD, i))==0)
@@ -544,7 +544,7 @@ SEXP growVector(SEXP x, const R_len_t newlen)
     for (int i=0; i<len; ++i)
       SET_VECTOR_ELT(newx, i, xd[i]);
   } break;
-  default :
+  default : // # nocov
     internal_error(__func__, "type '%s' not supported", type2char(TYPEOF(x)));  // # nocov
   }
   // if (verbose) Rprintf(_("Growing vector from %d to %d items of type '%s'\n"), len, newlen, type2char(TYPEOF(x)));
