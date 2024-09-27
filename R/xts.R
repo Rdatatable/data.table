@@ -1,3 +1,4 @@
+# nocov start. See tests 18.* in other.Rraw, not in the main suite.
 as.data.table.xts = function(x, keep.rownames = TRUE, key=NULL, ...) {
   stopifnot(requireNamespace("xts"), !missing(x), xts::is.xts(x))
   if (length(keep.rownames) != 1L) stopf("keep.rownames must be length 1")
@@ -26,3 +27,4 @@ as.xts.data.table = function(x, numeric.only = TRUE, ...) {
   }
   return(xts::xts(as.matrix(r), order.by = if (inherits(x[[1L]], "IDate")) as.Date(x[[1L]]) else x[[1L]]))
 }
+# nocov end
