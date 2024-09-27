@@ -1,8 +1,7 @@
 #include "data.table.h"
 
 static void substitute_call_arg_names(SEXP expr, SEXP env) {
-  R_len_t len = length(expr);
-  if (!len || !isLanguage(expr))
+  if (!length(expr) || !isLanguage(expr))
     return; // isLanguage is R's is.call
   SEXP arg_names = getAttrib(expr, R_NamesSymbol);
   if (!isNull(arg_names)) {
