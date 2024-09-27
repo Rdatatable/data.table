@@ -157,9 +157,9 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
     k1 = key(target)
     k2 = key(current)
     if (!identical(k1, k2)) {
-      return(gettextf(
-        "Datasets have different %s. 'target': %s. 'current': %s.",
-        "keys",
+      return(sprintf(
+        "%s. 'target': %s. 'current': %s.",
+        gettext("Datasets have different keys"),
         if(length(k1)) brackify(k1) else gettextf("has no key"),
         if(length(k2)) brackify(k2) else gettextf("has no key")
       ))
@@ -168,9 +168,9 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
     i1 = indices(target)
     i2 = indices(current)
     if (!identical(i1, i2)) {
-      return(gettextf(
-        "Datasets have different %s. 'target': %s. 'current': %s.",
-        "indices",
+      return(sprintf(
+        "%s. 'target': %s. 'current': %s.",
+        gettext("Datasets have different indices"),
         if(length(i1)) brackify(i1) else gettextf("has no index"),
         if(length(i2)) brackify(i2) else gettextf("has no index")
       ))
