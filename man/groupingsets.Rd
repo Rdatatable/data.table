@@ -56,17 +56,22 @@ DT <- data.table(
 )
 
 # rollup
-rollup(DT, j = sum(value), by = c("color","year","status")) # default id=FALSE
-rollup(DT, j = sum(value), by = c("color","year","status"), id=TRUE)
-rollup(DT, j = lapply(.SD, sum), by = c("color","year","status"), id=TRUE, .SDcols="value")
-rollup(DT, j = c(list(count=.N), lapply(.SD, sum)), by = c("color","year","status"), id=TRUE)
-rollup(DT, j = sum(value), by = c("color","year","status"),
-       label = list(color = "total", year = as.Date("3000-01-01"), status = factor("total"))) # specify label by variable name
-rollup(DT, j = sum(value), by = c("color","year","status"),
-       label = list(color = "total", Date = as.Date("3000-01-01"), factor = factor("total"))) # specify label by variable name and first element of class
-rollup(DT, j = sum(value), by = c("color","year","status"), label = "total") # label is character scalar so applies to color only
-rollup(DT, j = .N, by = c("color","year","status","value"),
-       label = list(color = NA_character_, year = as.Date(NA), status = factor(NA), value = NaN)) # label can be explicitly specified as NA or NaN
+by_vars = c("color", "year", "status")
+rollup(DT, j=sum(value), by=by_vars) # default id=FALSE
+rollup(DT, j=sum(value), by=by_vars, id=TRUE)
+rollup(DT, j=lapply(.SD, sum), by=by_vars, id=TRUE, .SDcols="value")
+rollup(DT, j=c(list(count=.N), lapply(.SD, sum)), by=by_vars, id=TRUE)
+rollup(DT, j=sum(value), by=by_vars,
+       # specify label by variable name
+       label=list(color="total", year=as.Date("3000-01-01"), status=factor("total")))
+rollup(DT, j=sum(value), by=by_vars,
+       # specify label by variable name and first element of class
+       label=list(color="total", Date=as.Date("3000-01-01"), factor=factor("total")))
+# label is character scalar so applies to color only
+rollup(DT, j=sum(value), by=by_vars, label="total")
+rollup(DT, j=.N, by=c("color", "year", "status", "value"),
+       # label can be explicitly specified as NA or NaN
+       label = list(color=NA_character_, year=as.Date(NA), status=factor(NA), value=NaN))
 
 # cube
 cube(DT, j = sum(value), by = c("color","year","status"), id=TRUE)
