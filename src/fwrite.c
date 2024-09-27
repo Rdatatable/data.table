@@ -465,6 +465,7 @@ void writePOSIXct(const void *col, int64_t row, char **pch)
   *pch = ch;
 }
 
+// # nocov start. Covered in other.Rraw test 22, not the main suite.
 void writeNanotime(const void *col, int64_t row, char **pch)
 {
   int64_t x = ((const int64_t *)col)[row];
@@ -497,6 +498,7 @@ void writeNanotime(const void *col, int64_t row, char **pch)
   }
   *pch = ch;
 }
+// # nocov end
 
 static inline void write_string(const char *x, char **pch)
 {
@@ -640,15 +642,16 @@ void fwriteMain(fwriteMainArgs args)
 
   if (verbose) {
     DTPRINT(_("Column writers: "));
+    // # notranslate start
     if (args.ncol<=50) {
-      for (int j=0; j<args.ncol; j++) DTPRINT(_("%d "), args.whichFun[j]);
+      for (int j=0; j<args.ncol; j++) DTPRINT("%d ", args.whichFun[j]);
     } else {
-      for (int j=0; j<30; j++) DTPRINT(_("%d "), args.whichFun[j]);
+      for (int j=0; j<30; j++) DTPRINT("%d ", args.whichFun[j]);
       DTPRINT(_("... "));
-      for (int j=args.ncol-10; j<args.ncol; j++) DTPRINT(_("%d "), args.whichFun[j]);
+      for (int j=args.ncol-10; j<args.ncol; j++) DTPRINT("%d ", args.whichFun[j]);
     }
-    DTPRINT(_("\nargs.doRowNames=%d args.rowNames=%p args.rowNameFun=%d doQuote=%d args.nrow=%"PRId64" args.ncol=%d eolLen=%d\n"),
-          args.doRowNames, args.rowNames, args.rowNameFun, doQuote, args.nrow, args.ncol, eolLen);
+    DTPRINT("\nargs.doRowNames=%d args.rowNames=%p args.rowNameFun=%d doQuote=%d args.nrow=%"PRId64" args.ncol=%d eolLen=%d\n", args.doRowNames, args.rowNames, args.rowNameFun, doQuote, args.nrow, args.ncol, eolLen);
+    // # notranslate end
   }
 
   // Calc maxLineLen
@@ -683,7 +686,7 @@ void fwriteMain(fwriteMainArgs args)
       case WF_List:
         width = getMaxListItemLen(args.columns[j], args.nrow);
         break;
-      default:
+      default: // # nocov
         INTERNAL_STOP("type %d has no max length method implemented", args.whichFun[j]);  // # nocov
       }
     }
@@ -1053,10 +1056,10 @@ void fwriteMain(fwriteMainArgs args)
           if (hasPrinted || ETA >= 2) {
             if (verbose && !hasPrinted)
                 DTPRINT("\n");
-            DTPRINT("\rWritten %.1f%% of %"PRId64" rows in %d secs using %d thread%s. "
-                    "maxBuffUsed=%d%%. ETA %d secs.      ",
-                    (100.0*end)/args.nrow, args.nrow, (int)(now-startTime), nth, nth ==1 ? "" : "s",
-                    maxBuffUsedPC, ETA);
+            DTPRINT(Pl_(nth,
+                        "\rWritten %.1f%% of %"PRId64" rows in %d secs using %d thread. maxBuffUsed=%d%%. ETA %d secs.      ",
+                        "\rWritten %.1f%% of %"PRId64" rows in %d secs using %d threads. maxBuffUsed=%d%%. ETA %d secs.      "),
+                    (100.0*end)/args.nrow, args.nrow, (int)(now-startTime), nth, maxBuffUsedPC, ETA);
                 // TODO: use progress() as in fread
             nextTime = now + 1;
             hasPrinted = true;

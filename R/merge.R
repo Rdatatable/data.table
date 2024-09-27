@@ -21,10 +21,11 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
     else
       warningf("Input data.table '%s' has no columns.", "y")
   }
+  check_duplicate_names(x)
+  check_duplicate_names(y)
+
   nm_x = names(x)
   nm_y = names(y)
-  if (anyDuplicated(nm_x)) stopf("%s has some duplicated column name(s): %s. Please remove or rename the duplicate(s) and try again.", "x", brackify(nm_x[duplicated(nm_x)]))
-  if (anyDuplicated(nm_y)) stopf("%s has some duplicated column name(s): %s. Please remove or rename the duplicate(s) and try again.", "y", brackify(nm_y[duplicated(nm_y)]))
 
   ## set up 'by'/'by.x'/'by.y'
   if ( (!is.null(by.x) || !is.null(by.y)) && length(by.x)!=length(by.y) )

@@ -24,7 +24,8 @@
     if (dllV != RV) {
       dll = if (.Platform$OS.type=="windows") "dll" else "so"
       # https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478
-      stopf("The data_table.%s version (%s) does not match the package (%s). Please close all R sessions to release the old %s and reinstall data.table in a fresh R session. The root cause is that R's package installer can in some unconfirmed circumstances leave a package in a state that is apparently functional but where new R code is calling old C code silently: https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478. Once a package is in this mismatch state it may produce wrong results silently until you next upgrade the package. Please help by adding precise circumstances to 17478 to move the status to confirmed. This mismatch between R and C code can happen with any package not just data.table. It is just that data.table has added this check.", dll, dllV, RV, toupper(dll))
+      # TODO(R>=4.0.0): Remove or adjust this message once we're sure all users are unaffected
+      stopf("The data_table.%s version (%s) does not match the package (%s). Please close all R sessions to release the old %s and reinstall data.table in a fresh R session. Prior to R version 3.6.0 patched, R's package installer could leave a package in an apparently functional state where new R code was calling old C code silently: https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478. Once a package is in this mismatch state it may produce wrong results silently until you next upgrade the package. This mismatch between R and C code can happen with any package not just data.table. It is just that data.table has added this check.", dll, dllV, RV, toupper(dll))
     }
     builtPath = system.file("Meta", "package.rds", package="data.table")
     if (builtPath != "" && !identical(session_r_version>="4.0.0", (build_r_version <- readRDS(builtPath)$Built$R)>="4.0.0")) {
@@ -43,7 +44,7 @@
     # If R 3.6.2 (not yet released) includes the c|rbind S3 dispatch fix, then this workaround still works.
     tt = base::cbind.data.frame
     ss = body(tt)
-    if (class(ss)[1L]!="{") ss = as.call(c(as.name("{"), ss))
+    if (class1(ss) != "{") ss = as.call(c(as.name("{"), ss))
     prefix = if (!missing(pkgname)) "data.table::" else ""  # R provides the arguments when it calls .onLoad, I don't in dev/test
     if (!length(grep("data.table", ss[[2L]], fixed = TRUE))) {
       ss = ss[c(1L, NA, 2L:length(ss))]
@@ -55,7 +56,7 @@
     }
     tt = base::rbind.data.frame
     ss = body(tt)
-    if (class(ss)[1L]!="{") ss = as.call(c(as.name("{"), ss))
+    if (class1(ss) != "{") ss = as.call(c(as.name("{"), ss))
     if (!length(grep("data.table", ss[[2L]], fixed = TRUE))) {
       ss = ss[c(1L, NA, 2L:length(ss))]
       ss[[2L]] = parse(text=paste0("for (x in list(...)) { if (inherits(x,'data.table')) return(",prefix,".rbind.data.table(...)) }"))[[1L]] # fix for #89

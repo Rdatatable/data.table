@@ -5,14 +5,14 @@ between = function(x, lower, upper, incbounds=TRUE, NAbounds=TRUE, check=FALSE) 
   if (is.logical(upper)) upper = as.integer(upper)   # typically NA (which is logical type)
   is.px = function(x) inherits(x, "POSIXct")
   is.i64 = function(x) inherits(x, "integer64")   # this is true for nanotime too
-  # POSIX special handling to auto coerce character
+  # POSIXct special handling to auto coerce character
   if (is.px(x) && (is.character(lower) || is.character(upper))) {
     tz = attr(x, "tzone", exact=TRUE)
     if (is.null(tz)) tz = ""
     if (is.character(lower)) lower = tryCatch(as.POSIXct(lower, tz=tz), error=function(e)stopf(
-      "'between' function the 'x' argument is a POSIX class while '%s' was not, coercion to POSIX failed with: %s", 'lower', e$message))
+      "The 'x' argument of the 'between' function is POSIXct while '%s' was not, coercion to POSIXct failed with: %s", 'lower', conditionMessage(e)))
     if (is.character(upper)) upper = tryCatch(as.POSIXct(upper, tz=tz), error=function(e)stopf(
-      "'between' function the 'x' argument is a POSIX class while '%s' was not, coercion to POSIX failed with: %s", 'upper', e$message))
+      "The 'x' argument of the 'between' function is POSIXct while '%s' was not, coercion to POSIXct failed with: %s", 'upper', conditionMessage(e)))
     stopifnot(is.px(x), is.px(lower), is.px(upper)) # nocov # internal
   }
   # POSIX check timezone match
