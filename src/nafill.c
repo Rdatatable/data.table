@@ -87,6 +87,11 @@ void nafillInteger64(int64_t *x, uint_fast64_t nx, unsigned int type, int64_t fi
     snprintf(ans->message[0], 500, _("%s: took %.3fs\n"), __func__, omp_get_wtime()-tic);
 }
 
+/*
+  OpenMP is being used here to parallelize the loop that fills missing values
+    over columns of the input data. This includes handling different data types
+    and applying the designated filling method to each column in parallel. 
+*/
 SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, SEXP cols) {
   int protecti=0;
   const bool verbose = GetVerbose();
@@ -159,7 +164,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
     }
   }
 
-  unsigned int itype;
+  unsigned int itype=-1;
   if (!strcmp(CHAR(STRING_ELT(type, 0)), "const"))
     itype = 0;
   else if (!strcmp(CHAR(STRING_ELT(type, 0)), "locf"))
@@ -223,7 +228,10 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
   ansMsg(vans, nx, verbose, __func__);
 
   if (verbose)
-    Rprintf(_("%s: parallel processing of %d column(s) took %.3fs\n"), __func__, nx, omp_get_wtime()-tic);
+    Rprintf(Pl_(nx,
+                "%s: parallel processing of %d column took %.3fs\n",
+                "%s: parallel processing of %d columns took %.3fs\n"),
+            __func__, nx, omp_get_wtime()-tic);
 
   UNPROTECT(protecti);
   if (binplace) {

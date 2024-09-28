@@ -1,5 +1,11 @@
 #include "data.table.h"
 
+/*
+  OpenMP is being used here to parallelize loops that perform conditional
+    checks along with assignment operations over the elements of the
+    supplied logical vector based on the condition (test) and values
+    provided for the remaining arguments (yes, no, and na).
+*/
 SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na) {
   if (!isLogical(l)) {
     error(_("Argument 'test' must be logical."));
@@ -209,14 +215,16 @@ SEXP fcaseR(SEXP rho, SEXP args) {
             "Note that the default argument must be named explicitly, e.g., default=0"), narg - 2);
   }
   int nprotect=0, l;
-  int64_t len0=0, len1=0, len2=0;
-  SEXP ans=R_NilValue, value0=R_NilValue, tracker=R_NilValue, whens=R_NilValue, thens=R_NilValue;
+  int64_t n_ans=0, n_this_arg=0, n_undecided=0;
+  SEXP ans=R_NilValue, tracker=R_NilValue, whens=R_NilValue, thens=R_NilValue;
+  SEXP ans_class, ans_levels;
   PROTECT_INDEX Iwhens, Ithens;
   PROTECT_WITH_INDEX(whens, &Iwhens); nprotect++;
   PROTECT_WITH_INDEX(thens, &Ithens); nprotect++;
-  SEXPTYPE type0=NILSXP;
+  SEXPTYPE ans_type=NILSXP;
   // naout means if the output is scalar logic na
   bool imask = true, naout = false, idefault = false;
+  bool ans_is_factor;
   int *restrict p = NULL;
   const int n = narg/2;
   for (int i=0; i<n; ++i) {
@@ -232,35 +240,39 @@ SEXP fcaseR(SEXP rho, SEXP args) {
     const int *restrict pwhens = LOGICAL(whens);
     l = 0;
     if (i == 0) {
-      len0 = xlength(whens);
-      len2 = len0;
-      type0 = TYPEOF(thens);
-      value0 = thens;
-      ans = PROTECT(allocVector(type0, len0)); nprotect++;
+      n_ans = xlength(whens);
+      n_undecided = n_ans;
+      ans_type = TYPEOF(thens);
+      ans_class = PROTECT(getAttrib(thens, R_ClassSymbol)); nprotect++;
+      ans_is_factor = isFactor(thens);
+      if (ans_is_factor) {
+        ans_levels = PROTECT(getAttrib(thens, R_LevelsSymbol)); nprotect++;
+      }
+      ans = PROTECT(allocVector(ans_type, n_ans)); nprotect++;
       copyMostAttrib(thens, ans);
-      tracker = PROTECT(allocVector(INTSXP, len0)); nprotect++;
+      tracker = PROTECT(allocVector(INTSXP, n_ans)); nprotect++;
       p = INTEGER(tracker);     
     } else {
       imask = false;
       naout = xlength(thens) == 1 && TYPEOF(thens) == LGLSXP && LOGICAL(thens)[0]==NA_LOGICAL;
-      if (xlength(whens) != len0) {
+      if (xlength(whens) != n_ans) {
         // no need to check `idefault` here because the con for default is always `TRUE`
         error(_("Argument #%d has length %lld which differs from that of argument #1 (%lld). "
                 "Please make sure all logical conditions have the same length."),
-                i*2+1, (long long)xlength(whens), (long long)len0);
+                i*2+1, (long long)xlength(whens), (long long)n_ans);
       }
-      if (!naout && TYPEOF(thens) != type0) {
+      if (!naout && TYPEOF(thens) != ans_type) {
         if (idefault) {
           error(_("Resulting value is of type %s but 'default' is of type %s. "
-                  "Please make sure that both arguments have the same type."), type2char(type0), type2char(TYPEOF(thens)));
+                  "Please make sure that both arguments have the same type."), type2char(ans_type), type2char(TYPEOF(thens)));
         } else {
           error(_("Argument #%d is of type %s, however argument #2 is of type %s. "
                   "Please make sure all output values have the same type."),
-                  i*2+2, type2char(TYPEOF(thens)), type2char(type0));
+                  i*2+2, type2char(TYPEOF(thens)), type2char(ans_type));
         }
       }
       if (!naout) {
-        if (!R_compute_identical(PROTECT(getAttrib(value0, R_ClassSymbol)),  PROTECT(getAttrib(thens, R_ClassSymbol)), 0)) {
+        if (!R_compute_identical(ans_class,  PROTECT(getAttrib(thens, R_ClassSymbol)), 0)) {
           if (idefault) {
             error(_("Resulting value has different class than 'default'. "
                     "Please make sure that both arguments have the same class."));
@@ -269,35 +281,35 @@ SEXP fcaseR(SEXP rho, SEXP args) {
                     "Please make sure all output values have the same class."), i*2+2);
           }
         }
-        UNPROTECT(2); // class(value0), class(thens)
+        UNPROTECT(1); // class(thens)
       }
-      if (!naout && isFactor(value0)) {
-        if (!R_compute_identical(PROTECT(getAttrib(value0, R_LevelsSymbol)),  PROTECT(getAttrib(thens, R_LevelsSymbol)), 0)) {
+      if (!naout && ans_is_factor) {
+        if (!R_compute_identical(ans_levels,  PROTECT(getAttrib(thens, R_LevelsSymbol)), 0)) {
           if (idefault) {
             error(_("Resulting value and 'default' are both type factor but their levels are different."));
           } else {
             error(_("Argument #2 and argument #%d are both factor but their levels are different."), i*2+2);
           }
         }
-        UNPROTECT(2); // levels(value0), levels(thens)
+        UNPROTECT(1); // levels(thens)
       }
     }
-    len1 = xlength(thens);
-    if (len1 != len0 && len1 != 1) {
+    n_this_arg = xlength(thens);
+    if (n_this_arg != n_ans && n_this_arg != 1) {
       if (idefault) {
-        error(_("Length of 'default' must be 1 or %lld."), (long long)len0);
+        error(_("Length of 'default' must be 1 or %lld."), (long long)n_ans);
       } else {
-        error(_("Length of output value #%d (%lld) must either be 1 or match the length of the logical condition (%lld)."), i*2+2, (long long)len1, (long long)len0);
+        error(_("Length of output value #%d (%lld) must either be 1 or match the length of the logical condition (%lld)."), i*2+2, (long long)n_this_arg, (long long)n_ans);
       }
     }
-    int64_t thenMask = len1>1 ? INT64_MAX : 0;
+    int64_t thenMask = n_this_arg>1 ? INT64_MAX : 0;
     switch(TYPEOF(ans)) {
     case LGLSXP: {
       const int *restrict pthens;
       if (!naout) pthens = LOGICAL(thens); // the content is not useful if out is NA_LOGICAL scalar
       int *restrict pans = LOGICAL(ans);
       const int pna = NA_LOGICAL;
-      for (int64_t j=0; j<len2; ++j) {
+      for (int64_t j=0; j<n_undecided; ++j) {
         const int64_t idx = imask ? j : p[j];
         if (pwhens[idx]==1) {
           pans[idx] = naout ? pna : pthens[idx & thenMask];
@@ -314,7 +326,7 @@ SEXP fcaseR(SEXP rho, SEXP args) {
       if (!naout) pthens = INTEGER(thens); // the content is not useful if out is NA_LOGICAL scalar
       int *restrict pans = INTEGER(ans);
       const int pna = NA_INTEGER;
-      for (int64_t j=0; j<len2; ++j) {
+      for (int64_t j=0; j<n_undecided; ++j) {
         const int64_t idx = imask ? j : p[j];
         if (pwhens[idx]==1) {
           pans[idx] = naout ? pna : pthens[idx & thenMask];
@@ -332,7 +344,7 @@ SEXP fcaseR(SEXP rho, SEXP args) {
       double *restrict pans = REAL(ans);
       const double na_double = INHERITS(ans, char_integer64) ? NA_INT64_D : NA_REAL;
       const double pna = na_double;
-      for (int64_t j=0; j<len2; ++j) {
+      for (int64_t j=0; j<n_undecided; ++j) {
         const int64_t idx = imask ? j : p[j];
         if (pwhens[idx]==1) {
           pans[idx] = naout ? pna : pthens[idx & thenMask];
@@ -349,7 +361,7 @@ SEXP fcaseR(SEXP rho, SEXP args) {
       if (!naout) pthens = COMPLEX(thens); // the content is not useful if out is NA_LOGICAL scalar
       Rcomplex *restrict pans = COMPLEX(ans);
       const Rcomplex pna = NA_CPLX;
-      for (int64_t j=0; j<len2; ++j) {
+      for (int64_t j=0; j<n_undecided; ++j) {
         const int64_t idx = imask ? j : p[j];
         if (pwhens[idx]==1) {
           pans[idx] = naout ? pna : pthens[idx & thenMask];
@@ -362,10 +374,10 @@ SEXP fcaseR(SEXP rho, SEXP args) {
       }
     } break;
     case STRSXP: {
-      const SEXP *restrict pthens;
+      const SEXP *restrict pthens=NULL;
       if (!naout) pthens = STRING_PTR_RO(thens); // the content is not useful if out is NA_LOGICAL scalar
       const SEXP pna = NA_STRING;
-      for (int64_t j=0; j<len2; ++j) {
+      for (int64_t j=0; j<n_undecided; ++j) {
         const int64_t idx = imask ? j : p[j];
         if (pwhens[idx]==1) {
           SET_STRING_ELT(ans, idx, naout ? pna : pthens[idx & thenMask]);
@@ -380,9 +392,9 @@ SEXP fcaseR(SEXP rho, SEXP args) {
     case VECSXP: {
       // the default value of VECSXP is `NULL` so we don't need to explicitly
       // assign the NA values as it does for other atomic types
-      const SEXP *restrict pthens;
+      const SEXP *restrict pthens=NULL;
       if (!naout) pthens = SEXPPTR_RO(thens); // the content is not useful if out is NA_LOGICAL scalar
-      for (int64_t j=0; j<len2; ++j) {
+      for (int64_t j=0; j<n_undecided; ++j) {
         const int64_t idx = imask ? j : p[j];
         if (pwhens[idx]==1) {
           if (!naout) SET_VECTOR_ELT(ans, idx, pthens[idx & thenMask]);
@@ -397,7 +409,7 @@ SEXP fcaseR(SEXP rho, SEXP args) {
     if (l==0) {
       break;  // stop early as nothing left to do
     }
-    len2 = l;
+    n_undecided = l;
   }
   UNPROTECT(nprotect); // whens, thens, ans, tracker
   return ans;

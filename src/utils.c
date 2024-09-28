@@ -286,7 +286,11 @@ void copySharedColumns(SEXP x) {
       if (shared[i])
         SET_VECTOR_ELT(x, i, copyAsPlain(xp[i]));
     }
-    if (GetVerbose()) Rprintf(_("Found and copied %d column%s with a shared memory address\n"), nShared, nShared>1?"s":"");
+    if (GetVerbose())
+      Rprintf(Pl_(nShared,
+                  "Found and copied %d column with a shared memory address\n",
+                  "Found and copied %d columns with a shared memory address\n"),
+              nShared);
     // GetVerbose() (slightly expensive call of all options) called here only when needed
   }
 }
@@ -384,7 +388,7 @@ SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg) {
     Rprintf(_("Coercing %s[%s] into %s[%s]\n"), type2char(TYPEOF(x)), class1(x), type2char(TYPEOF(as)), class1(as));
   const char *ret = memrecycle(/*target=*/ans, /*where=*/R_NilValue, /*start=*/0, /*len=*/LENGTH(x), /*source=*/x, /*sourceStart=*/0, /*sourceLen=*/-1, /*colnum=*/0, /*colname=*/"");
   if (ret)
-    warning(_("%s"), ret);
+    warning("%s", ret); // # notranslate
   UNPROTECT(1);
   return ans;
 }
