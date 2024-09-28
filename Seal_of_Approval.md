@@ -12,6 +12,8 @@ To add your package to this list, please [submit a Pull Request to The Raft](htt
 
 ## Application packages: Use `data.table` to accomplish a particular task or analysis.
 
+- [mlr3](https://github.com/mlr-org/mlr3): A versatile machine learning framework built on data.table.
+
 ## Bridge package: Translate data.table syntax to different syntax or provides helper functions for transitioning between `data.table` and another object type.
 
 - [tidyfast](https://github.com/TysonStanley/tidyfast): Fast and efficient alternatives to tidyr functions built on data.table
