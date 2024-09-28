@@ -9,6 +9,7 @@ variables:
   _R_CHECK_FORCE_SUGGESTS_: "false"
   _R_CHECK_NO_STOP_ON_TEST_ERROR_: "true"
   _R_CHECK_SYSTEM_CLOCK_: "false"  ## https://stackoverflow.com/questions/63613301/r-cmd-check-note-unable-to-verify-current-time
+  _R_CHECK_TESTS_NLINES_: "0"
   TZ: "UTC"  ## to avoid 'Failed to create bus connection' from timedatectl via Sys.timezone() on Docker with R 3.4.
              ## Setting TZ for all GLCI jobs to isolate them from timezone. We could have a new GLCI job to test under
              ## a non-UTC timezone, although, that's what we do routinely in dev.
@@ -114,7 +115,6 @@ test-lin-rel:
     _R_CHECK_CRAN_INCOMING_: "FALSE"
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
     _R_CHECK_FORCE_SUGGESTS_: "TRUE"
-    _R_CHECK_TESTS_NLINES_: "0"
     OPENBLAS_MAIN_FREE: "1"
   script:
     - *install-deps
