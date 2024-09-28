@@ -91,6 +91,5 @@ Authors@R: c(
   person("Doris", "Amoakohene",    role="ctb"),
   person("Ivan", "Krylov",         role="ctb"),
   person("Michael","Young",        role="ctb"),
-  person("Mark", "Seeto",          role="ctb"),
-  NULL
+  person("Mark", "Seeto",          role="ctb")
   )
