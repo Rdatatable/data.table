@@ -2933,7 +2933,7 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     # fix for #1078 and #1128, see .resetclass() for explanation.
     setattr(x, "class", .resetclass(x, 'data.frame'))
     setalloccol(x)
-  
+
     if (!is.null(rn)) {
       nm = c(if (is.character(keep.rownames)) keep.rownames[1L] else "rn", names(x))
       x[, (nm[1L]) := rn]
