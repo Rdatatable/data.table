@@ -13,8 +13,8 @@ melt.default = function(data, ..., na.rm = FALSE, value.name = "value") {
   # nocov start
   data_name = deparse(substitute(data))
   ns = tryCatch(getNamespace("reshape2"), error=function(e)
-    stopf("The %1$s generic in data.table has been passed a %2$s, but data.table::%1$s currently only has a method for data.tables. Please confirm your input is a data.table, with setDT(%3$s) or as.data.table(%3$s). If you intend to use a method from reshape2, try installing that package first, but do note that reshape2 is superseded and is no longer actively developed.", "melt", class(data)[1L], data_name))
-  warningf("The %1$s generic in data.table has been passed a %2$s and will attempt to redirect to the relevant reshape2 method; please note that reshape2 is superseded and is no longer actively developed, and this redirection is now deprecated. To continue using melt methods from reshape2 while both libraries are attached, e.g. melt.list, you can prepend the namespace, i.e. reshape2::%1$s(%3$s). In the next version, this warning will become an error.", "melt", class(data)[1L], data_name)
+    stopf("The %1$s generic in data.table has been passed a %2$s, but data.table::%1$s currently only has a method for data.tables. Please confirm your input is a data.table, with setDT(%3$s) or as.data.table(%3$s). If you intend to use a method from reshape2, try installing that package first, but do note that reshape2 is superseded and is no longer actively developed.", "melt", class1(data), data_name))
+  warningf("The %1$s generic in data.table has been passed a %2$s and will attempt to redirect to the relevant reshape2 method; please note that reshape2 is superseded and is no longer actively developed, and this redirection is now deprecated. To continue using melt methods from reshape2 while both packages are attached, e.g. melt.list, you can prepend the namespace, i.e. reshape2::%1$s(%3$s). In the next version, this warning will become an error.", "melt", class1(data), data_name)
   ns$melt(data, ..., na.rm=na.rm, value.name=value.name)
   # nocov end
 }
@@ -22,13 +22,16 @@ melt.default = function(data, ..., na.rm = FALSE, value.name = "value") {
 patterns = function(..., cols=character(0L), ignore.case=FALSE, perl=FALSE, fixed=FALSE, useBytes=FALSE) {
   # if ... has no names, names(list(...)) will be "";
   #   this assures they'll be NULL instead
+  if (!is.character(cols) || anyNA(cols)) {
+    stopf("cols must be a character vector of column names")
+  }
   L = list(...)
   p = unlist(L, use.names = any(nzchar(names(L))))
   if (!is.character(p))
     stopf("Input patterns must be of type character.")
-  matched = lapply(p, grep, cols, ignore.case=ignore.case, perl=perl, fixed=fixed, useBytes=useBytes)
+  matched = lapply(p, grep, cols, ignore.case=ignore.case, perl=perl, fixed=fixed, useBytes=useBytes, value=TRUE)
   if (length(idx <- which(lengths(matched) == 0L)))
-    stopf('Pattern(s) not found: [%s]', brackify(p[idx]))
+    stopf(ngettext(length(idx), 'Pattern not found: [%s]', 'Patterns not found: [%s]'), brackify(p[idx]), domain=NA)
   if (length(matched) == 1L) return(matched[[1L]])
   matched
 }
@@ -61,14 +64,11 @@ measure = function(..., sep="_", pattern, cols, multiple.keyword="value.name") {
     }
     fun.list[[fun.i]] = fun
   }
-  measurev.args = c(
-    list(fun.list),
-    L[formal.i.vec],
-    list(group.desc="... arguments to measure"))
+  measurev.args = c(list(fun.list), L[formal.i.vec])
   do.call(measurev, measurev.args)
 }
 
-measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.name", group.desc="elements of fun.list"){
+measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.name"){
   # 1. basic error checking.
   if (!missing(sep) && !missing(pattern)) {
     stopf("both sep and pattern arguments used; must use either sep or pattern (not both)")
@@ -85,21 +85,11 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
     which(!nzchar(names(fun.list)))
   }
   if (length(prob.i)) {
-    stopf("in measurev, %s must be named, problems: %s", group.desc, brackify(prob.i))
+    stopf("in measurev, elements of fun.list must be named, problems: %s", brackify(prob.i))
   }
-  err.names.unique = function(err.what, name.vec) {
-    name.tab = table(name.vec)
-    bad.counts = name.tab[1 < name.tab]
-    if (length(bad.counts)) {
-      stopf("%s should be uniquely named, problems: %s", err.what, brackify(names(bad.counts)))
-    }
+  if (length(dup.funs <- duplicated_values(names(fun.list)))) {
+    stopf("elements of fun.list should be uniquely named, problems: %s", brackify(dup.funs))
   }
-  err.args.groups = function(type, N){
-    if (N != length(fun.list)) {
-      stopf("number of %s =%d must be same as %s =%d", group.desc, length(fun.list), type, N)
-    }
-  }
-  err.names.unique(group.desc, names(fun.list))
   # 2. compute initial group data table, used as variable_table attribute.
   group.mat = if (!missing(pattern)) {
     if (!is.character(pattern)) {
@@ -114,7 +104,9 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
     if (is.null(start)) {
       stopf("pattern must contain at least one capture group (parenthesized sub-pattern)")
     }
-    err.args.groups("number of capture groups in pattern", ncol(start))
+    if (ncol(start) != length(fun.list)) {
+      stopf("number of elements of fun.list (%d) must be the same as the number of capture groups in pattern (%d)", length(fun.list), ncol(start))
+    }
     end = attr(match.vec, "capture.length")[measure.vec.i,]+start-1L
     measure.vec <- cols[measure.vec.i]
     names.mat = matrix(measure.vec, nrow(start), ncol(start))
@@ -129,12 +121,16 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
     if (n.groups == 1) {
       stopf("each column name results in only one item after splitting using sep, which means that all columns would be melted; to fix please either specify melt on all columns directly without using measure, or use a different sep/pattern specification")
     }
-    err.args.groups("max number of items after splitting column names", n.groups)
+    if (n.groups != length(fun.list)) {
+      stopf("number of elements of fun.list (%d) must be the same as the max number of items after splitting column names (%d)", length(fun.list), n.groups)
+    }
     measure.vec.i = which(vector.lengths==n.groups)
     measure.vec = cols[measure.vec.i]
     do.call(rbind, list.of.vectors[measure.vec.i])
   }
-  err.names.unique("measured columns", measure.vec)
+  if (length(dup.measures <- duplicated_values(measure.vec))) {
+    stopf("measured columns should be uniquely named, problems: %s", brackify(dup.measures))
+  }
   uniq.mat = unique(group.mat)
   if (nrow(uniq.mat) < nrow(group.mat)) {
     stopf("number of unique column IDs =%d is less than number of melted columns =%d; fix by changing pattern/sep", nrow(uniq.mat), nrow(group.mat))
@@ -165,7 +161,7 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
   # 4. compute measure.vars list or vector.
   if (multiple.keyword %in% names(fun.list)) {# multiple output columns.
     if (!is.character(group.dt[[multiple.keyword]])) {
-      stopf("%s column class=%s after applying conversion function, but must be character", multiple.keyword, class(group.dt[[multiple.keyword]])[1L])
+      stopf("%s column class=%s after applying conversion function, but must be character", multiple.keyword, class1(group.dt[[multiple.keyword]]))
     }
     is.other = names(group.dt) != multiple.keyword
     if (!any(is.other)) {

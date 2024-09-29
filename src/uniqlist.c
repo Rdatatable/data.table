@@ -94,7 +94,7 @@ SEXP uniqlist(SEXP l, SEXP order)
         }
       }
     } break;
-    default :
+    default : // # nocov
       error(_("Type '%s' is not supported"), type2char(TYPEOF(v)));  // # nocov
     }
   } else {
@@ -126,7 +126,7 @@ SEXP uniqlist(SEXP l, SEXP order)
             // to be stored, ii) many short-circuit early before the if (!b) anyway (negating benefit) and iii) we may not have needed LHS this time so logic would be complex.
           }
           break;
-        default :
+        default : // # nocov
           error(_("Type '%s' is not supported"), type2char(TYPEOF(v)));  // # nocov
         }
       }
@@ -207,7 +207,7 @@ SEXP rleid(SEXP l, SEXP cols) {
           Rcomplex *pz = COMPLEX(jcol);
           same = memcmp(&pz[i], &pz[i-1], sizeof(Rcomplex))==0; // compiler optimization should replace library call with best 16-byte fixed method
         } break;
-        default :
+        default : // # nocov
           error(_("Type '%s' is not supported"), type2char(TYPEOF(jcol)));  // # nocov
         }
       }
@@ -317,7 +317,7 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
           b = i64[j] ? ((int64_t *)xd)[thisi] >= ((int64_t *)xd)[previ] :
                        dtwiddle(xd[thisi]) >= dtwiddle(xd[previ]);
         } break;
-        default:
+        default: // # nocov
           error(_("Type '%s' is not supported"), type2char(TYPEOF(v)));  // # nocov
         }
       }

@@ -252,8 +252,8 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   if (nfail > 0L) {
     # nocov start
     stopf(
-      "%d error(s) out of %d. Search %s for test number(s) %s. Duration: %s.",
-      nfail, ntest, names(fn), toString(env$whichfail), timetaken(env$started.at)
+      ngettext(nfail, "%d error out of %d. Search %s for test number %s. Duration: %s.", "%d errors out of %d. Search %s for test numbers %s. Duration: %s."),
+      nfail, ntest, names(fn), toString(env$whichfail), timetaken(env$started.at), domain=NA
     )
     # important to stopf() here, so that 'R CMD check' fails
     # nocov end
@@ -290,13 +290,13 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
 
 # nocov start
 compactprint = function(DT, topn=2L) {
-  tt = vapply_1c(DT,function(x)class(x)[1L])
-  tt[tt=="integer64"] = "i64"
-  tt = substr(tt, 1L, 3L)
+  classes = classes1(DT)
+  classes[classes == "integer64"] = "i64"
+  classes = substr(classes, 1L, 3L)
   makeString = function(x) paste(x, collapse = ",")  # essentially toString.default
-  cn = paste0(" [Key=",makeString(key(DT)),
-             " Types=", makeString(substr(sapply(DT, typeof), 1L, 3L)),
-             " Classes=", makeString(tt), "]")
+  cn = paste0(" [Key=", makeString(key(DT)),
+             " Types=", makeString(substr(vapply_1c(DT, typeof), 1L, 3L)),
+             " Classes=", makeString(classes), "]")
   if (nrow(DT)) {
     print(copy(DT)[,(cn):="",verbose=FALSE], topn=topn, class=FALSE)
   } else {

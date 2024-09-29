@@ -30,6 +30,21 @@ internal_error = function(...) {
   stop(e, call. = FALSE, domain = NA)
 }
 
+check_duplicate_names = function(x, table_name=deparse(substitute(x))) {
+  if (!anyDuplicated(nm <- names(x))) return(invisible())
+  duplicate_names = unique(nm[duplicated(nm)])
+  stopf(ngettext(length(duplicate_names),
+                 "%s has duplicated column name %s. Please remove or rename the duplicate and try again.",
+                 "%s has duplicated column names %s. Please remove or rename the duplicates and try again."),
+        table_name, brackify(duplicate_names), domain=NA)
+}
+
+duplicated_values = function(x) {
+  # fast anyDuplicated for the typical/non-error case; second duplicated() pass for (usually) error case
+  if (!anyDuplicated(x)) return(vector(typeof(x)))
+  unique(x[duplicated(x)])
+}
+
 # TODO(R>=4.0.0): Remove this workaround. From R 4.0.0, rep_len() dispatches rep.Date(), which we need.
 #   Before that, rep_len() strips attributes --> breaks data.table()'s internal recycle() helper.
 #   This also impacts test 2 in S4.Rraw, because the error message differs for rep.int() vs. rep_len().
@@ -94,6 +109,9 @@ vapply_1b = function(x, fun, ..., use.names = TRUE) {
 vapply_1i = function(x, fun, ..., use.names = TRUE) {
   vapply(X = x, FUN = fun, ..., FUN.VALUE = NA_integer_, USE.NAMES = use.names)
 }
+
+class1 = function(x) class(x)[1L] # nolint: class1_linter.
+classes1 = function(x, ..., use.names=FALSE) vapply_1c(x, class1, ..., use.names=use.names)
 
 # base::xor(), but with scalar operators
 XOR = function(x, y) (x || y) && !(x && y)

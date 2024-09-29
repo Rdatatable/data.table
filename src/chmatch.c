@@ -98,8 +98,8 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
     int *counts = (int *)calloc(nuniq, sizeof(int));
     int *map =    (int *)calloc(mapsize, sizeof(int));
     if (!counts || !map) {
-      free(counts); free(map);
       // # nocov start
+      free(counts); free(map);
       for (int i=0; i<tablelen; i++) SET_TRUELENGTH(td[i], 0);
       savetl_end();
       error(_("Failed to allocate %"PRIu64" bytes working memory in chmatchdup: length(table)=%d length(unique(table))=%d"), ((uint64_t)tablelen*2+nuniq)*sizeof(int), tablelen, nuniq);
