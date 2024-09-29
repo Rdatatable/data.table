@@ -12,17 +12,17 @@ variables:
   TZ: "UTC"  ## to avoid 'Failed to create bus connection' from timedatectl via Sys.timezone() on Docker with R 3.4.
              ## Setting TZ for all GLCI jobs to isolate them from timezone. We could have a new GLCI job to test under
              ## a non-UTC timezone, although, that's what we do routinely in dev.
-  R_REL_VERSION:  "4.3"
-  R_REL_WIN_BIN:  "https://cloud.r-project.org/bin/windows/base/old/4.3.2/R-4.3.2-win.exe"
-  RTOOLS_REL_BIN: "https://cloud.r-project.org/bin/windows/Rtools/rtools43/files/rtools43-5958-5975.exe"
+  R_REL_VERSION:  "4.4"
+  R_REL_WIN_BIN:  "https://cloud.r-project.org/bin/windows/base/old/4.4.1/R-4.4.1-win.exe"
+  RTOOLS_REL_BIN: "https://cloud.r-project.org/bin/windows/Rtools/rtools44/files/rtools44-6104-6039.exe"
   RTOOLS43_HOME:  "/c/rtools"
-  R_DEV_VERSION:  "4.4"
+  R_DEV_VERSION:  "4.5"
   R_DEV_WIN_BIN:  "https://cloud.r-project.org/bin/windows/base/R-devel-win.exe"
-  RTOOLS_DEV_BIN: "https://cloud.r-project.org/bin/windows/Rtools/rtools43/files/rtools43-5958-5975.exe"
-  RTOOLS44_HOME:  "" ## in case R-devel will use new Rtools toolchain, now it uses 4.3 env var
-  R_OLD_VERSION:  "4.2"
-  R_OLD_WIN_BIN:  "https://cloud.r-project.org/bin/windows/base/old/4.2.3/R-4.2.3-win.exe"
-  RTOOLS_OLD_BIN: "https://cloud.r-project.org/bin/windows/Rtools/rtools42/files/rtools42-5355-5357.exe"
+  RTOOLS_DEV_BIN: "https://cloud.r-project.org/bin/windows/Rtools/rtools44/files/rtools44-6104-6039.exe"
+  RTOOLS44_HOME:  "" ## in case R-devel will use new Rtools toolchain, now it uses 4.4 env var
+  R_OLD_VERSION:  "4.3"
+  R_OLD_WIN_BIN:  "https://cloud.r-project.org/bin/windows/base/old/4.3.3/R-4.3.3-win.exe"
+  RTOOLS_OLD_BIN: "https://cloud.r-project.org/bin/windows/Rtools/rtools43/files/rtools43-5958-5975.exe"
   RTOOLS42_HOME:  "/c/rtools"
 
 stages:
