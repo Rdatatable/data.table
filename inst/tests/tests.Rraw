@@ -20588,4 +20588,5 @@ test(2294.72,
 d1 = data.frame(a=1)
 d2 = d1
 setDT(d2)
-test(2295, !is.data.table(d1))
+test(2295.1, !is.data.table(d1))
+test(2295.2, is.data.table(d2))
