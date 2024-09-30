@@ -2,8 +2,6 @@ name: atime performance tests
 
 on:
   pull_request:
-    branches:
-      - '*'
     types:
       - opened
       - reopened
