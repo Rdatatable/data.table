@@ -284,6 +284,9 @@ SEXP substitute_call_arg_namesR(SEXP expr, SEXP env);
 //negate.c
 SEXP notchin(SEXP x, SEXP table);
 
+// mergelist.c
+SEXP cbindlist(SEXP x, SEXP copyArg);
+
 // functions called from R level .Call/.External and registered in init.c
 // these now live here to pass -Wstrict-prototypes, #5477
 // all arguments must be SEXP since they are called from R level
