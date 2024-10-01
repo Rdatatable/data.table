@@ -125,6 +125,116 @@ dtmerge = function(x, i, on, how, mult, join.many, void=FALSE, verbose) {
   return(list(ans=ans, irows=irows, xrows=xrows))
 }
 
+# atomic join between two tables
+mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=names(rhs), copy=TRUE, join.many=TRUE, verbose=FALSE) {
+  semianti = how=="semi" || how=="anti"
+  innerfull = how=="inner" || how=="full"
+  {
+    if (how!="cross") {
+      if (is.null(on)) {
+        if (how=="left" || semianti) on = key(rhs)
+        else if (how=="right") on = key(lhs)
+        else if (innerfull) on = onkeys(key(lhs), key(rhs))
+        if (is.null(on))
+          stopf("'on' is missing and necessary key is not present")
+      }
+      if (any(bad.on <- !on %chin% names(lhs)))
+        stopf("'on' argument specify columns to join [%s] that are not present in LHS table [%s]", brackify(on[bad.on]), brackify(names(lhs)))
+      if (any(bad.on <- !on %chin% names(rhs)))
+        stopf("'on' argument specify columns to join [%s] that are not present in RHS table [%s]", brackify(on[bad.on]), brackify(names(rhs)))
+    } else if (is.null(on)) {
+      on = character() ## cross join only
+    }
+  } ## on
+  {
+    if (how!="right") {
+      jnfm = lhs; fm.cols = lhs.cols; jnto = rhs; to.cols = rhs.cols
+    } else {
+      jnfm = rhs; fm.cols = rhs.cols; jnto = lhs; to.cols = lhs.cols
+    }
+  } ## join-to and join-from tables and columns (right outer join swap)
+
+  ## ensure symmetric join for inner|full join, apply mult on both tables, bmerge do only 'x' table
+  cp.i = FALSE ## copy marker of out.i
+  if ((innerfull) && !is.null(mult) && (mult=="first" || mult=="last")) {
+    jnfm = fdistinct(jnfm, on=on, mult=mult, cols=fm.cols, copy=FALSE) ## might not copy when already unique by 'on'
+    cp.i = nrow(jnfm)!=nrow(lhs) ## nrow(lhs) bc how='inner|full' so jnfm=lhs
+  } else if (how=="inner" && (is.null(mult) || mult=="error")) { ## we do this branch only to raise error from bmerge, we cannot use forder to just find duplicates because those duplicates might not have matching rows in another table, full join checks mult='error' during two non-void bmerges
+    dtmerge(x=jnfm, i=jnto, on=on, how=how, mult=mult, verbose=verbose, join.many=join.many, void=TRUE)
+  }
+
+  ## binary merge
+  ans = dtmerge(x=jnto, i=jnfm, on=on, how=how, mult=mult, verbose=verbose, join.many=join.many)
+
+  ## make i side
+  out.i = if (is.null(ans$irows))
+    .shallow(jnfm, cols=someCols(jnfm, fm.cols, keep=on, retain.order=semianti), retain.key=TRUE)
+  else
+    .Call(CsubsetDT, jnfm, ans$irows, someCols(jnfm, fm.cols, keep=on, retain.order=semianti))
+  cp.i = cp.i || !is.null(ans$irows)
+
+  ## make x side
+  if (semianti) {
+    out.x = list(); cp.x = TRUE
+  } else {
+    out.x = if (is.null(ans$xrows)) ## as of now xrows cannot be NULL #4409 thus nocov below
+      internal_error("dtmerge()$xrows returned NULL, #4409 been resolved but related code has not been updated?") #.shallow(jnto, cols=someCols(jnto, to.cols, drop=on), retain.key=TRUE) # nocov ## as of now nocov does not make difference r-lib/covr#279
+    else
+      .Call(CsubsetDT, jnto, ans$xrows, someCols(jnto, to.cols, drop=on))
+    cp.x = !is.null(ans$xrows)
+    ## ensure no duplicated column names in merge results
+    if (any(dup.i<-names(out.i) %chin% names(out.x)))
+      stopf("merge result has duplicated column names, use 'cols' argument or rename columns in 'l' tables, duplicated column(s): %s", brackify(names(out.i)[dup.i]))
+  }
+
+  ## stack i and x
+  if (how!="full") {
+    if (!cp.i && copy) out.i = copy(out.i)
+    #if (!cp.x && copy) out.x = copy(out.x) ## as of now cp.x always TRUE, search for #4409 here
+    out = .Call(Ccbindlist, list(out.i, out.x), FALSE)
+    if (how=="right") setcolorder(out, neworder=c(on, names(out.x))) ## arrange columns: i.on, x.cols, i.cols
+  } else { # how=="full"
+    ## we made left join side above, proceed to right join side, so swap tbls
+    jnfm = rhs; fm.cols = rhs.cols; jnto = lhs; to.cols = lhs.cols
+
+    cp.r = FALSE
+    if (!is.null(mult) && (mult=="first" || mult=="last")) {
+      jnfm = fdistinct(jnfm, on=on, mult=mult, cols=fm.cols, copy=FALSE)
+      cp.r = nrow(jnfm)!=nrow(rhs) ## nrow(rhs) bc jnfm=rhs
+    } ## mult=="error" check was made on one side already, below we do on the second side, test 101.43
+
+    ## binary merge anti join
+    bns = dtmerge(x=jnto, i=jnfm, on=on, how="anti", mult=if (!is.null(mult) && mult!="all") mult, verbose=verbose, join.many=join.many)
+
+    ## make anti join side
+    out.r = if (is.null(bns$irows))
+      .shallow(jnfm, cols=someCols(jnfm, fm.cols, keep=on), retain.key=TRUE) ## retain.key is used only in the edge case when !nrow(out.i)
+    else
+      .Call(CsubsetDT, jnfm, bns$irows, someCols(jnfm, fm.cols, keep=on))
+    cp.r = cp.r || !is.null(bns$irows)
+
+    ## short circuit to avoid rbindlist to empty sets and retains keys
+    if (!nrow(out.r)) { ## possibly also !nrow(out.i)
+      if (!cp.i && copy) out.i = copy(out.i)
+      #if (!cp.x && copy) out.x = copy(out.x) ## as of now cp.x always TRUE, search for #4409 here
+      out = .Call(Ccbindlist, list(out.i, out.x), FALSE)
+    } else if (!nrow(out.i)) { ## but not !nrow(out.r)
+      if (!cp.r && copy) out.r = copy(out.r)
+      if (length(add<-setdiff(names(out.i), names(out.r)))) { ## add missing columns of proper types NA
+        neworder = copy(names(out.i)) #set(out.r, NULL, add, lapply(unclass(out.i)[add], `[`, 1L)) ## 291.04 overalloc exceed fail during set()
+        out.i = lapply(unclass(out.i)[add], `[`, seq_len(nrow(out.r))) ## could eventually remove this when cbindlist recycle 0 rows up, note that we need out.r not to be copied
+        out.r = .Call(Ccbindlist, list(out.r, out.i), FALSE)
+        setcolorder(out.r, neworder=neworder)
+      }
+      out = out.r
+    } else { ## all might have not been copied yet, rbindlist will copy
+      out.l = .Call(Ccbindlist, list(out.i, out.x), FALSE)
+      out = rbindlist(list(out.l, out.r), use.names=TRUE, fill=TRUE)
+    }
+  }
+  setDT(out)
+}
+
 # Previously, we had a custom C implementation here, which is ~2x faster,
 #   but this is fast enough we don't bother maintaining a new routine.
 #   Hopefully in the future rep() can recognize the ALTREP and use that, too.
