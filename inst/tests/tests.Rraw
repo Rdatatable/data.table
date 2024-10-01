@@ -20583,3 +20583,11 @@ test(2294.72,
                                 character(0)),
                     label = list(character = "C3", VCharA = "Total", integer = 2L))),
      warning = "For the following variables, the 'label' value was already in the data: [VCharB (label: C3), VIntA (label: 2)]")
+
+# setDT no longer leaks class modification to origin copy, #4784
+d1 = data.frame(a=1, row.names='b')
+d2 = d1
+setDT(d2)
+test(2295.1, !is.data.table(d1))
+test(2295.2, rownames(d1), 'b')
+test(2295.3, is.data.table(d2))
