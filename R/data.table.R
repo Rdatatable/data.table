@@ -2923,7 +2923,7 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
       }
     }
 
-    # setalloccol results in a shallow copy. Must be performed before class setting not to affect other copies of x (#4784)
+    # Done to avoid affecting other copies of x when we setattr() below (#4784)
     x = .shallow(x)
 
     rn = if (!identical(keep.rownames, FALSE)) rownames(x) else NULL
