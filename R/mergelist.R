@@ -235,6 +235,102 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
   setDT(out)
 }
 
+mergelist = function(l, on, cols, how=c("left","inner","full","right","semi","anti","cross"), mult, copy=TRUE, join.many=getOption("datatable.join.many")) {
+  verbose = getOption("datatable.verbose")
+  if (verbose)
+    p = proc.time()[[3L]]
+  {
+    if (!is.list(l) || is.data.frame(l))
+      stopf("'l' must be a list")
+    if (!all(vapply_1b(l, is.data.table)))
+      stopf("Every element of 'l' list must be data.table objects")
+    if (!all(lengths(l)))
+      stopf("Tables in 'l' argument must be non-zero columns tables")
+    if (any(vapply_1i(l, function(x) anyDuplicated(names(x)))))
+      stopf("Some of the tables in 'l' have duplicated column names")
+  } ## l
+  if (!isTRUEorFALSE(copy))
+    stopf("'%s' must be TRUE or FALSE", "copy")
+  n = length(l)
+  if (n<2L) {
+    out = if (!n) as.data.table(l) else l[[1L]]
+    if (copy) out = copy(out)
+    if (verbose)
+      catf("mergelist: merging %d table(s), took %.3fs\n", n, proc.time()[[3L]]-p)
+    return(out)
+  }
+  {
+    if (!is.list(join.many))
+      join.many = rep(list(join.many), n-1L)
+    if (length(join.many)!=n-1L || !all(vapply_1b(join.many, isTRUEorFALSE)))
+      stopf("'join.many' must be TRUE or FALSE, or a list of such which length must be length(l)-1L")
+  } ## join.many
+  {
+    if (missing(mult))
+      mult = NULL
+    if (!is.list(mult))
+      mult = rep(list(mult), n-1L)
+    if (length(mult)!=n-1L || !all(vapply_1b(mult, function(x) is.null(x) || (is.character(x) && length(x)==1L && !anyNA(x) && x %chin% c("error","all","first","last")))))
+      stopf("'mult' must be one of [error, all, first, last] or NULL, or a list of such which length must be length(l)-1L")
+  } ## mult
+  {
+    if (missing(how) || is.null(how))
+      how = match.arg(how)
+    if (!is.list(how))
+      how = rep(list(how), n-1L)
+    if (length(how)!=n-1L || !all(vapply_1b(how, function(x) is.character(x) && length(x)==1L && !anyNA(x) && x %chin% c("left","inner","full","right","semi","anti","cross"))))
+      stopf("'how' must be one of [left, inner, full, right, semi, anti, cross], or a list of such which length must be length(l)-1L")
+  } ## how
+  {
+    if (missing(cols) || is.null(cols)) {
+      cols = vector("list", n)
+    } else {
+      if (!is.list(cols))
+        stopf("'%s' must be a list", "cols")
+      if (length(cols) != n)
+        stopf("'cols' must be same length as 'l'")
+      skip = vapply_1b(cols, is.null)
+      if (!all(vapply_1b(cols[!skip], function(x) is.character(x) && !anyNA(x) && !anyDuplicated(x))))
+        stopf("'cols' must be a list of non-zero length, non-NA, non-duplicated, character vectors, or eventually NULLs (all columns)")
+      if (any(mapply(function(x, icols) !all(icols %chin% names(x)), l[!skip], cols[!skip])))
+        stopf("'cols' specify columns not present in corresponding table")
+    }
+  } ## cols
+  {
+    if (missing(on) || is.null(on)) {
+      on = vector("list", n-1L)
+    } else {
+      if (!is.list(on))
+        on = rep(list(on), n-1L)
+      if (length(on)!=n-1L || !all(vapply_1b(on, function(x) is.character(x) && !anyNA(x) && !anyDuplicated(x)))) ## length checked in dtmerge
+        stopf("'on' must be non-NA, non-duplicated, character vector, or a list of such which length must be length(l)-1L")
+    }
+  } ## on
+
+  l.mem = lapply(l, vapply, address, "")
+  out = l[[1L]]
+  out.cols = cols[[1L]]
+  for (join.i in seq_len(n-1L)) {
+    rhs.i = join.i + 1L
+    out = mergepair(
+      lhs = out, rhs = l[[rhs.i]],
+      on = on[[join.i]],
+      how = how[[join.i]], mult = mult[[join.i]],
+      lhs.cols = out.cols, rhs.cols = cols[[rhs.i]],
+      copy = FALSE, ## avoid any copies inside, will copy once below
+      join.many = join.many[[join.i]],
+      verbose = verbose
+    )
+    out.cols = copy(names(out))
+  }
+  out.mem = vapply_1c(out, address)
+  if (copy)
+    .Call(CcopyCols, out, colnamesInt(out, names(out.mem)[out.mem %chin% unique(unlist(l.mem, recursive=FALSE))]))
+  if (verbose)
+    catf("mergelist: merging %d tables, took %.3fs\n", n, proc.time()[[3L]]-p)
+  out
+}
+
 # Previously, we had a custom C implementation here, which is ~2x faster,
 #   but this is fast enough we don't bother maintaining a new routine.
 #   Hopefully in the future rep() can recognize the ALTREP and use that, too.

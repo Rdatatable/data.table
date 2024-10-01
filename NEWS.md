@@ -65,6 +65,8 @@ rowwiseDT(
 
 4. `patterns()` in `melt()` combines correctly with user-defined `cols=`, which can be useful to specify a subset of columns to reshape without having to use a regex, for example `patterns("2", cols=c("y1", "y2"))` will only give `y2` even if there are other columns in the input matching `2`, [#6498](https://github.com/Rdatatable/data.table/issues/6498). Thanks to @hongyuanjia for the report, and to @tdhock for the PR.
 
+5. (add example here?) New functions `cbindlist` and `mergelist` have been implemented and exported. Works like `cbind`/`merge` but takes `list` of data.tables on input. `merge` happens in `Reduce` fashion. Supports `how` (_left_, _inner_, _full_, _right_, _semi_, _anti_, _cross_) joins and `mult` argument, closes [#599](https://github.com/Rdatatable/data.table/issues/599) and [#2576](https://github.com/Rdatatable/data.table/issues/2576).
+
 ## BUG FIXES
 
 1. Using `print.data.table()` with character truncation using `datatable.prettyprint.char` no longer errors with `NA` entries, [#6441](https://github.com/Rdatatable/data.table/issues/6441). Thanks to @r2evans for the bug report, and @joshhwuu for the fix.
