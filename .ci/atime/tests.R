@@ -208,5 +208,20 @@ test.list <- atime::atime_test_list(
     Slow = "fd24a3105953f7785ea7414678ed8e04524e6955", # Parent of the merge commit (https://github.com/Rdatatable/data.table/commit/ed72e398df76a0fcfd134a4ad92356690e4210ea) of the PR (https://github.com/Rdatatable/data.table/pull/5054) that fixes the issue
     Fast = "ed72e398df76a0fcfd134a4ad92356690e4210ea"), # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/5054) that fixes the issue
 
+# Improvement discussed in and brought by https://github.com/Rdatatable/data.table/pull/4386
+"forderv improved in #4386" = atime::atime_test(
+  N = 10^seq(3, 8), # 1e9 exceeds the runner's memory (process gets killed)
+  setup = {
+    options(datatable.forder.auto.index = TRUE, datatable.forder.reuse.sorting = TRUE)
+    dt <- data.table(index = sample(N), values = sample(N))
+    data.table:::forderv(dt, "index") # Initial sort to create the index and initialize caching
+  },
+  expr = {
+    data.table:::forderv(dt, "index", retGrp = FALSE) # Reusing the cached index (no group information required)
+    data.table:::forderv(dt, "index", retGrp = TRUE) # Reusing the index and computing group info.
+  },
+  Slow = "c152ced0e5799acee1589910c69c1a2c6586b95d", # Parent of the merge commit of the PR (https://github.com/Rdatatable/data.table/pull/4386/commits) that fixes the regression
+  Fast = "1a84514f6d20ff1f9cc614ea9b92ccdee5541506"), # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/4386/commits) that fixes the regression
+  
   tests=extra.test.list)
 # nolint end: undesirable_operator_linter.
