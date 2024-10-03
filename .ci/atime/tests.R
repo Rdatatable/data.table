@@ -211,7 +211,7 @@ test.list <- atime::atime_test_list(
 # Improvement discussed in and brought by https://github.com/Rdatatable/data.table/pull/4386
 "forderv improved in #4386" = atime::atime_test(
   setup = {
-    options(datatable.forder.auto.index = TRUE, datatable.forder.reuse.sorting = TRUE)
+    options(datatable.forder.auto.index = TRUE)
     set.seed(1)
     dt <- data.table(index = sample(N), values = sample(N))
     data.table:::forderv(dt, "index") # Initial sort to create the index and initialize caching
