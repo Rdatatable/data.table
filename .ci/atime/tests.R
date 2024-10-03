@@ -23,7 +23,7 @@ for (extra.arg in extra.args.6107){
 retGrp_values <- c("T","F")
 for(retGrp_setup in retGrp_values){
   for(retGrp_expr in retGrp_values){
-    test.name <- sprintf("forderv(retGrp=%s->%s) improved in #4386", retGrp_setup, retGrp_expr)
+    test.name <- sprintf("forderv(retGrp=%s-%s) improved in #4386", retGrp_setup, retGrp_expr)
     extra.test.list[[test.name]] <- list(
     setup = substitute({
       options(datatable.forder.auto.index = TRUE)
