@@ -38,8 +38,6 @@ for(retGrp_setup in retGrp_values){
     Fast = "ffe431fbc1fe2d52ed9499f78e7e16eae4d71a93") # Last commit of the PR (https://github.com/Rdatatable/data.table/pull/4386/commits) where the performance was improved.
   }
 }
-  
-
 
 # A list of performance tests.
 #
