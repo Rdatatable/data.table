@@ -34,8 +34,8 @@ for(retGrp_setup in retGrp_values){
     expr = substitute({
       data.table:::forderv(dt, "index", retGrp = RETGRP) # Reusing the index and computing group info.
     }, list(RETGRP=str2lang(retGrp_expr))),
-    Slow = "c152ced0e5799acee1589910c69c1a2c6586b95d", # Parent of the merge commit of the PR (https://github.com/Rdatatable/data.table/pull/4386/commits) that fixes the regression
-    Fast = "1a84514f6d20ff1f9cc614ea9b92ccdee5541506") # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/4386/commits) that fixes the regression
+    Slow = "b1b1832b0d2d4032b46477d9fe6efb15006664f4", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/b0efcf59442a7d086c6df17fa6a45c81b082322e) in the PR (https://github.com/Rdatatable/data.table/pull/4386/commits) where the performance was improved.
+    Fast = "ffe431fbc1fe2d52ed9499f78e7e16eae4d71a93") # Last commit of the PR (https://github.com/Rdatatable/data.table/pull/4386/commits) where the performance was improved.
   }
 }
   
