@@ -19,6 +19,28 @@ for (extra.arg in extra.args.6107){
   extra.test.list[[sprintf("fread(%s) improved in #6107", extra.arg)]] <- this.test
 }
 
+# Test case adapted from https://github.com/Rdatatable/data.table/pull/4386#issue-602528139 which is where the performance was improved.
+retGrp_values <- c("T","F")
+for(retGrp_setup in retGrp_values){
+  for(retGrp_expr in retGrp_values){
+    test.name <- sprintf("forderv(retGrp=%s->%s) improved in #4386", retGrp_setup, retGrp_expr)
+    extra.test.list[[test.name]] <- list(
+    setup = substitute({
+      options(datatable.forder.auto.index = TRUE)
+      set.seed(1)
+      dt <- data.table(index = sample(N), values = sample(N))
+      data.table:::forderv(dt, "index", retGrp = RETGRP) # Initial sort to create the index and initialize caching
+    }, list(RETGRP=str2lang(retGrp_setup))),
+    expr = substitute({
+      data.table:::forderv(dt, "index", retGrp = RETGRP) # Reusing the index and computing group info.
+    }, list(RETGRP=str2lang(retGrp_expr))),
+    Slow = "c152ced0e5799acee1589910c69c1a2c6586b95d", # Parent of the merge commit of the PR (https://github.com/Rdatatable/data.table/pull/4386/commits) that fixes the regression
+    Fast = "1a84514f6d20ff1f9cc614ea9b92ccdee5541506") # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/4386/commits) that fixes the regression
+  }
+}
+  
+
+
 # A list of performance tests.
 #
 # See documentation in https://github.com/Rdatatable/data.table/wiki/Performance-testing for best practices.
@@ -207,21 +229,6 @@ test.list <- atime::atime_test_list(
     expr = data.table:::melt(DT, measure.vars = measure.vars),
     Slow = "fd24a3105953f7785ea7414678ed8e04524e6955", # Parent of the merge commit (https://github.com/Rdatatable/data.table/commit/ed72e398df76a0fcfd134a4ad92356690e4210ea) of the PR (https://github.com/Rdatatable/data.table/pull/5054) that fixes the issue
     Fast = "ed72e398df76a0fcfd134a4ad92356690e4210ea"), # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/5054) that fixes the issue
-
-# Improvement discussed in and brought by https://github.com/Rdatatable/data.table/pull/4386
-"forderv improved in #4386" = atime::atime_test(
-  setup = {
-    options(datatable.forder.auto.index = TRUE)
-    set.seed(1)
-    dt <- data.table(index = sample(N), values = sample(N))
-    data.table:::forderv(dt, "index") # Initial sort to create the index and initialize caching
-  },
-  expr = {
-    data.table:::forderv(dt, "index", retGrp = FALSE) # Reusing the cached index (no group information required)
-    data.table:::forderv(dt, "index", retGrp = TRUE) # Reusing the index and computing group info.
-  },
-  Slow = "c152ced0e5799acee1589910c69c1a2c6586b95d", # Parent of the merge commit of the PR (https://github.com/Rdatatable/data.table/pull/4386/commits) that fixes the regression
-  Fast = "1a84514f6d20ff1f9cc614ea9b92ccdee5541506"), # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/4386/commits) that fixes the regression
   
   tests=extra.test.list)
 # nolint end: undesirable_operator_linter.
