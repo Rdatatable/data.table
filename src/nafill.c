@@ -228,7 +228,10 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
   ansMsg(vans, nx, verbose, __func__);
 
   if (verbose)
-    Rprintf(_("%s: parallel processing of %d column(s) took %.3fs\n"), __func__, nx, omp_get_wtime()-tic);
+    Rprintf(Pl_(nx,
+                "%s: parallel processing of %d column took %.3fs\n",
+                "%s: parallel processing of %d columns took %.3fs\n"),
+            __func__, nx, omp_get_wtime()-tic);
 
   UNPROTECT(protecti);
   if (binplace) {

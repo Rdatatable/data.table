@@ -158,6 +158,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     }
     # whitespace at the beginning or end of na.strings is checked at C level and is an error there; test 1804
   }
+  # nocov start. Tested in other.Rraw tests 16, not in the main suite.
   if (yaml) {
     if (!requireNamespace('yaml', quietly = TRUE))
       stopf("'data.table' relies on the package 'yaml' to parse the file header; please add this to your library with install.packages('yaml') and try again.") # nocov
@@ -267,6 +268,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     }
     if (is.integer(skip)) skip = skip + n_read
   }
+  # nocov end
   warnings2errors = getOption("warn") >= 2
   stopifnot(identical(tz,"UTC") || identical(tz,""))
   if (tz=="") {
@@ -310,8 +312,14 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
              # finally:
              methods::as(v, new_class))
       },
-      warning = fun <- function(e) {
-        warningf("Column '%s' was requested to be '%s' but fread encountered the following %s:\n\t%s\nso the column has been left as type '%s'", names(ans)[j], new_class, if (inherits(e, "error")) "error" else "warning", e$message, typeof(v))
+      warning = fun <- function(c) {
+        # NB: branch here for translation purposes (e.g. if error/warning have different grammatical gender)
+        if (inherits(c, "warning")) {
+          msg_fmt <- gettext("Column '%s' was requested to be '%s' but fread encountered the following warning:\n\t%s\nso the column has been left as type '%s'")
+        } else {
+          msg_fmt <- gettext("Column '%s' was requested to be '%s' but fread encountered the following error:\n\t%s\nso the column has been left as type '%s'")
+        }
+        warningf(msg_fmt, names(ans)[j], new_class, conditionMessage(c), typeof(v), domain=NA)
         v
       },
       error = fun)
@@ -326,7 +334,9 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     } else {
       cols_to_factor = which(vapply_1b(ans, is.character))
     }
-    if (verbose) catf("stringsAsFactors=%s converted %d column(s): %s\n", stringsAsFactors, length(cols_to_factor), brackify(names(ans)[cols_to_factor]))
+    if (verbose)
+      catf(ngettext(length(cols_to_factor), "stringsAsFactors=%s converted %d column: %s\n", "stringsAsFactors=%s converted %d columns: %s\n"),
+           stringsAsFactors, length(cols_to_factor), brackify(names(ans)[cols_to_factor]), domain=NA)
     for (j in cols_to_factor) set(ans, j=j, value=as_factor(.subset2(ans, j)))
   }
 
@@ -339,7 +349,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
       key = cols_from_csv(key)
     setkeyv(ans, key)
   }
-  if (yaml) setattr(ans, 'yaml_metadata', yaml_header)
+  if (yaml) setattr(ans, 'yaml_metadata', yaml_header) # nocov
   if (!is.null(index) && data.table) {
     if (!all(vapply_1b(index, is.character)))
       stopf("index argument of data.table() must be a character vector naming columns (NB: col.names are applied before this)")

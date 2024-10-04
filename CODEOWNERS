@@ -35,6 +35,10 @@
 /src/shift.c @ben-schwen @michaelchirico
 /man/shift.Rd @ben-schwen @michaelchirico
 
+# rbind
+/src/rbindlist.c @ben-schwen
+/man/rbindlist.Rd @ben-schwen
+
 # translations
 /inst/po/ @michaelchirico
 /po/ @michaelchirico
