@@ -28,7 +28,7 @@ export(tstrsplit)
 export(frank)
 export(frankv)
 export(address)
-export(.SD,.N,.I,.GRP,.NGRP,.BY,.EACHI, measure, patterns)
+export(.SD,.N,.I,.GRP,.NGRP,.BY,.EACHI, measure, measurev, patterns)
 # TODO(#6197): Export these.
 # export(., J)
 export(rleid)
