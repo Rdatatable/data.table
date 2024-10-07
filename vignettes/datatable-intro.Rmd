@@ -665,7 +665,7 @@ We can do much more in `i` by keying a `data.table`, which allows for blazing fa
 
 3. Compute on columns: `DT[, .(sum(colA), mean(colB))]`.
 
-4. Provide names if necessary: `DT[, .(sA =sum(colA), mB = mean(colB))]`.
+4. Provide names if necessary: `DT[, .(sA = sum(colA), mB = mean(colB))]`.
 
 5. Combine with `i`: `DT[colA > value, sum(colB)]`.
 

@@ -6,6 +6,65 @@
 
 1. In `DT[, variable := value]`, when value is class `POSIXlt`, we automatically coerce it to class `POSIXct` instead, [#1724](https://github.com/Rdatatable/data.table/issues/1724). Thanks to @linzhp for the report, and Benjamin Schwendinger for the fix.
 
+## NEW FEATURES
+
+1. New function `rowwiseDT()` for creating a data.table object "row-wise", often convenient for readability of small, literally-defined tables. Thanks to @shrektan for the suggestion and PR and @tdeenes for the idea of the `name=` syntax. Inspired by `tibble::tribble()`.
+
+```r
+library(data.table)
+rowwiseDT(
+  a=,b=,c=,  d=,
+  1, 2, "a", 2:3,
+  3, 4, "b", list("e"),
+  5, 6, "c", ~a+b,
+)
+#>        a     b      c      d
+#>    <num> <num> <char> <list>
+#> 1:     1     2      a    2,3
+#> 2:     3     4      b      e
+#> 3:     5     6      c ~a + b
+```
+
+2. Limited support for subsetting or aggregating columns of type `expression`, [#5596](https://github.com/Rdatatable/data.table/issues/5596). Thanks to @tsp for the report, and @ben-schwen for the fix.
+
+3. `groupingsets.data.table()`, `cube.data.table()`, and `rollup.data.table()` gain a `label` argument, which allows the user to specify a label for each grouping variable, to be included in the grouping variable column in the output in rows where the variable has been aggregated, [#5351](https://github.com/Rdatatable/data.table/issues/5351). Thanks to @markseeto for the request, @jangorecki and @markseeto for specifying the desired behaviour, and @markseeto for implementing.
+
+    ```r
+    DT = data.table(V1 = rep(c("a1", "a2"), each = 5),
+                    V2 = rep(rep(c("b1", "b2"), c(3, 2)), 2),
+                    V3 = rep(c("c1", "c2"), c(3, 7)),
+                    V4 = rep(1:2, c(6, 4)),
+                    V5 = rep(1:2, c(9, 1)),
+                    V6 = rep(c(1.1, 1.2), c(2, 8)))
+
+    # Call groupingsets() and specify a label for V1, a different label for the other character grouping
+    # variables, a label for the integer grouping variables, and a label for the numeric grouping variable.
+
+    groupingsets(DT, .N, by = c("V1", "V2", "V3", "V4", "V5", "V6"),
+                 sets = list(c("V1", "V2", "V3"), c("V1", "V4"), c("V4", "V6"), "V2", "V5", character()),
+                 label = list(V1 = "All values", character = "Total", integer = 999L, numeric = NaN))
+
+    #             V1     V2     V3    V4    V5    V6     N
+    #         <char> <char> <char> <int> <int> <num> <int>
+    #  1:         a1     b1     c1   999   999   NaN     3
+    #  2:         a1     b2     c2   999   999   NaN     2
+    #  3:         a2     b1     c2   999   999   NaN     3
+    #  4:         a2     b2     c2   999   999   NaN     2
+    #  5:         a1  Total  Total     1   999   NaN     5
+    #  6:         a2  Total  Total     1   999   NaN     1
+    #  7:         a2  Total  Total     2   999   NaN     4
+    #  8: All values  Total  Total     1   999   1.1     2
+    #  9: All values  Total  Total     1   999   1.2     4
+    # 10: All values  Total  Total     2   999   1.2     4
+    # 11: All values     b1  Total   999   999   NaN     6
+    # 12: All values     b2  Total   999   999   NaN     4
+    # 13: All values  Total  Total   999     1   NaN     9
+    # 14: All values  Total  Total   999     2   NaN     1
+    # 15: All values  Total  Total   999   999   NaN    10
+    ```
+
+4. `patterns()` in `melt()` combines correctly with user-defined `cols=`, which can be useful to specify a subset of columns to reshape without having to use a regex, for example `patterns("2", cols=c("y1", "y2"))` will only give `y2` even if there are other columns in the input matching `2`, [#6498](https://github.com/Rdatatable/data.table/issues/6498). Thanks to @hongyuanjia for the report, and to @tdhock for the PR.
+
 ## BUG FIXES
 
 1. Using `print.data.table()` with character truncation using `datatable.prettyprint.char` no longer errors with `NA` entries, [#6441](https://github.com/Rdatatable/data.table/issues/6441). Thanks to @r2evans for the bug report, and @joshhwuu for the fix.
@@ -13,6 +72,46 @@
 2. `fwrite()` respects `dec=','` for timestamp columns (`POSIXct` or `nanotime`) with sub-second accuracy, [#6446](https://github.com/Rdatatable/data.table/issues/6446). Thanks @kav2k for pointing out the inconsistency and @MichaelChirico for the PR.
 
 3. The data.table-only attribute `$.internal.selfref` is no longer set for data.frames. [#5286](https://github.com/Rdatatable/data.table/issues/5286). Thanks @OfekShilon for the report and fix.
+
+4. Tagging/naming arguments of `c()` in `j=c()` should now more closely follow base R conventions for concatenation of named lists during grouping, [#2311](https://github.com/Rdatatable/data.table/issues/2311). Naming an `lapply(.SD, FUN)` call as an argument of `c()` in `j` will now always cause that tag to get prepended (with a single dot separator) to the resulting column names. Additionally, naming a `list()` call as an argument of `c()` in `j` will now always cause that tag to get prepended to any names specified within the list call. This bug only affected queries with (1) `by=` grouping (2) `getOption("datatable.optimize") >= 1L` and (3) `lapply(.SD, FUN)` in `j`.
+
+    While the names returned by `data.table` when `j=c()` will now mostly follow base R conventions for concatenating lists, note that names which are completely unspecified will still be named positionally, matching the typical behavior in `j` and `data.table()`. according to position in `j` (e.g. `V1`, `V2`).
+    
+    Thanks to @franknarf1 for reporting and @myoung3 for the PR.
+
+    ```r
+    # tag 'mean' prepended to lapply()-named columns
+    names(mtcars[, c(mean=lapply(.SD,sum)), by="cyl", .SDcols=c("am", "carb")])
+    # [1] "cyl" "mean.am" "mean.carb"
+
+    # tag 'mean' is prepended to the first named sublist, 'sum' to the second
+    names(mtcars[, c(mean=list(a=mean(hp), b=mean(wt)), sum=lapply(.SD, sum)), by="cyl", .SDcols=c("am", "carb")])
+    # [1] "cyl" "mean.a" "mean.b" "sum.am" "sum.carb"
+
+    # strict base naming would result in names c("", "b", "c") here
+    names(mtcars[, c(list(mean(hp), b=mean(wt)), c=list(mean(cyl)))])
+    # [1] "V1" "b" "c"
+    ```
+
+5. Queries like `DT[, min(x):max(x)]` now work as expected, i.e. the same as `DT[, seq(min(x), max(x))]` or `with(DT, min(x):max(x))`, [#2069](https://github.com/Rdatatable/data.table/issues/2069). Shorthand like `DT[, a:b]` meaning "select from columns `a` through `b`" still works. Thanks to @franknarf1 for reporting, @jangorecki for the fix, and @MichaelChirico for a follow-up ensuring back-compatibility.
+
+6. Fixed a segfault in `fcase()`, [#6448](https://github.com/Rdatatable/data.table/issues/6448). Thanks @ethanbsmith for reporting with reprex, @aitap for finding the root cause, and @MichaelChirico for the PR.
+
+7. `fread()` performance improves when specifying `Date` among `colClasses`, [#6105](https://github.com/Rdatatable/data.table/issues/6105). One implication of the change is that the column will be an `IDate` (which also inherits from `Date`), which may affect code strongly relying on the column class to be `Date` exactly; computations with `IDate` and `Date` columns should otherwise be the same. If you strongly prefer the `Date` class, run `as.Date()` explicitly following `fread()`. Thanks @scipima for the report and @MichaelChirico for the fix.
+
+8. `dt[, col]` now returns a copy of `col` also when it is a list column, as in any other case, [#4877](https://github.com/Rdatatable/data.table/issues/4877). Thanks to @tlapak for reporting and the PR.
+
+9. `rbindlist` and `rbind` binding `bit64::integer64` columns with `character`/`complex`/`list` columns now works, [#5504](https://github.com/Rdatatable/data.table/issues/5504). Thanks to @MichaelChirico for the request and @ben-schwen for the PR.
+
+10. Fixed possible segfault in `setDT(df); attr(df, key) <- value; set(df, ...)`, i.e. adding columns to an object with `set()` that was converted to data.table with `setDT()` and later had attributes add with `attr<-`, [#6410](https://github.com/Rdatatable/data.table/issues/6410). Thanks to @hongyuanjia for the report and @ben-schwen for the PR. Note that `setattr()` should be preferred for adding attributes to a data.table.
+
+11. `fread()` automatically detects timestamps with sub-second accuracy again, [#6440](https://github.com/Rdatatable/data.table/issues/6440). This was a regression due to interference with new `dec='auto'` support. Thanks @kav2k for the concise report and @MichaelChirico for the fix.
+
+12. Using a namespace-qualified call on the RHS of `by=`, e.g. `DT[,.N,by=base::mget(v)]`, works again, fixing [#6493](https://github.com/Rdatatable/data.table/issues/6493). Thanks to @mmoisse for the report and @MichaelChirico for the fix.
+
+13. Restore some join operations on `x` and `i` (e.g. an anti-join `x[!i]`)  where `i` is an extended data.frame, but not a data.table (e.g. a `tbl`), [#6501](https://github.com/Rdatatable/data.table/issues/6501). Thanks @MichaelChirico for the report and PR.
+
+14. `setDT()` no longer modifies the class of other names bound to the origin data.frame, e.g., in `DF1 <- data.frame(a=1); DF2 <- DF1; setDT(DF2)`, `DF1`'s class will not change. [#4784](https://github.com/Rdatatable/data.table/issues/4784). Thanks @OfekShilon for the report and fix.
 
 ## NOTES
 
@@ -25,6 +124,10 @@
 4. The translations submitted for 1.16.0 are now actually shipped with the package -- our deepest apologies to the translators for the omission. We have added a CI check to ensure that the .mo binaries which get shipped with the package are always up-to-date.
 
 5. Some grouping operations run much faster under `verbose=TRUE`, [#6286](https://github.com/Rdatatable/data.table/issues/6286). Thanks @joshhwuu for the report and fix. This overhead was not present on Windows. As a rule, users should expect `verbose=TRUE` operations to run more slowly, as extra statistics might be calculated as part of the report; here was a case where the overhead was particularly high and the fix was particularly easy.
+
+6. `set()` and `:=` now provide some extra guidance for common incorrect approaches to assigning `NULL` to some rows of a list column. The correct way is to put `list(list(NULL))` on the RHS of `:=` (or `.(.(NULL))` for short). Thanks to @MichaelChirico for the suggestion and @Nj221102 for the implementation.
+
+7. Improved the error message when trying to write code like `DT[, ":="(a := b, c := d)]` (which should be `DT[, ":="(a = b, c = d)]`), [#5296](https://github.com/Rdatatable/data.table/issues/5296). Thanks @MichaelChirico for the suggestion & fix.
 
 # data.table [v1.16.0](https://github.com/Rdatatable/data.table/milestone/30)  (25 August 2024)
 

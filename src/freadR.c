@@ -155,7 +155,8 @@ SEXP freadR(
   args.skipEmptyLines = LOGICAL(skipEmptyLinesArg)[0];
   args.fill = INTEGER(fillArg)[0];
   args.showProgress = LOGICAL(showProgressArg)[0];
-  if (INTEGER(nThreadArg)[0]<1) error(_("nThread(%d)<1"), INTEGER(nThreadArg)[0]);
+  if (INTEGER(nThreadArg)[0]<1)
+    error("nThread(%d)<1", INTEGER(nThreadArg)[0]); // # notranslate
   args.nth = (uint32_t)INTEGER(nThreadArg)[0];
   args.verbose = verbose;
   args.warningsAreErrors = warningsAreErrors;
@@ -335,10 +336,10 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
               type[i]=CT_STRING; // e.g. CT_ISO8601_DATE changed to character here so that as.POSIXct treats the date-only as local time in tests 1743.122 and 2150.11
               SET_STRING_ELT(colClassesAs, i, tt);
             }
-          } else {
+          } else if (type[i] != CT_ISO8601_DATE || tt != char_Date) {
             type[i] = typeEnum[w-1];                           // freadMain checks bump up only not down
             if (w==NUT) SET_STRING_ELT(colClassesAs, i, tt);
-          }
+          } // else (when colClasses="Date" and fread found an IDate), don't update type[i] and don't signal any coercion needed on R side
         }
       } else { // selectColClasses==true
         if (!selectInts) internal_error(__func__, "selectInts is NULL but selectColClasses is true"); // # nocov
@@ -355,7 +356,7 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
               type[y-1]=CT_STRING;
               SET_STRING_ELT(colClassesAs, y-1, tt);
             }
-          } else {
+          } else if (type[i] != CT_ISO8601_DATE || tt != char_Date) {
             type[y-1] = typeEnum[w-1];
             if (w==NUT) SET_STRING_ELT(colClassesAs, y-1, tt);
           }
@@ -405,7 +406,9 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
           }
           if (selectRankD) selectRankD[colIdx-1] = rank++;
           // NB: mark as negative to indicate 'seen'
-          if (colClassType == CT_ISO8601_TIME && type[colIdx-1]!=CT_ISO8601_TIME) {
+          if (type[colIdx-1]==CT_ISO8601_DATE && colClassType==CT_STRING && STRING_ELT(listNames, i) == char_Date) {
+            type[colIdx-1] *= -1;
+          } else if (colClassType == CT_ISO8601_TIME && type[colIdx-1]!=CT_ISO8601_TIME) {
             type[colIdx-1] = -CT_STRING; // don't use in-built UTC parser, defer to character and as.POSIXct afterwards which reads in local time
             SET_STRING_ELT(colClassesAs, colIdx-1, STRING_ELT(listNames, i));
           } else {
@@ -714,7 +717,7 @@ void __halt(bool warn, const char *format, ...) {
   // if (warn) warning(_("%s"), msg);
   //   this warning() call doesn't seem to honor warn=2 straight away in R 3.6, so now always call error() directly to be sure
   //   we were going via warning() before to get the (converted from warning) prefix in the message (which we could mimic in future)
-  error(_("%s"), msg); // include "%s" because data in msg might include '%'
+  error("%s", msg); // # notranslate. include "%s" because data in msg might include '%'
 }
 
 void prepareThreadContext(ThreadLocalFreadParsingContext *ctx) {}
