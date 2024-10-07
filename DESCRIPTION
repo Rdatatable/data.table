@@ -90,6 +90,7 @@ Authors@R: c(
   person("Anirban", "Chetia",      role="ctb"),
   person("Doris", "Amoakohene",    role="ctb"),
   person("Ivan", "Krylov",         role="ctb"),
+  person("Angel", "Feliz",         role="ctb"),
   person("Michael","Young",        role="ctb"),
   person("Mark", "Seeto",          role="ctb")
   )

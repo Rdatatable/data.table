@@ -475,7 +475,7 @@ ans
 
 **Keys:** Actually `keyby` does a little more than *just ordering*. It also *sets a key* after ordering by setting an `attribute` called `sorted`. 
 
-We'll learn more about `keys` in the *Keys and fast binary search based subset* vignette; for now, all you have to know is that you can use `keyby` to automatically order the result by the columns specified in `by`.
+We'll learn more about `keys` in the `vignette("datatable-keys-fast-subset", package="data.table")`; for now, all you have to know is that you can use `keyby` to automatically order the result by the columns specified in `by`.
 
 ### c) Chaining
 
@@ -655,7 +655,7 @@ We have seen so far that,
 
 * We can also sort a `data.table` using `order()`, which internally uses data.table's fast order for better performance.
 
-We can do much more in `i` by keying a `data.table`, which allows for blazing fast subsets and joins. We will see this in the *"Keys and fast binary search based subsets"* and *"Joins and rolling joins"* vignette.
+We can do much more in `i` by keying a `data.table`, which allows for blazing fast subsets and joins. We will see this in the `vignette("datatable-keys-fast-subset", package="data.table")` and the `vignette("datatable-joins", package="data.table")`.
 
 #### Using `j`:
 
@@ -689,7 +689,7 @@ We can do much more in `i` by keying a `data.table`, which allows for blazing fa
 
 As long as `j` returns a `list`, each element of the list will become a column in the resulting `data.table`.
 
-We will see how to *add/update/delete* columns *by reference* and how to combine them with `i` and `by` in the next vignette.
+We will see how to *add/update/delete* columns *by reference* and how to combine them with `i` and `by` in the next vignette (`vignette("datatable-reference-semantics", package="data.table")`).
 
 ***
 
