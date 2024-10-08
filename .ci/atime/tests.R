@@ -24,11 +24,12 @@ for(retGrp_chr in c("T","F"))extra.test.list[[sprintf(
   "forderv(retGrp=%s) improved in #4386", retGrp_chr
 )]] <- list(
   setup = quote({
-    options(datatable.forder.auto.index = TRUE)
     dt <- data.table(group = rep(1:2, l=N))
   }),
   expr = substitute({
+    old.opt <- options(datatable.forder.auto.index = TRUE) # required for test, un-documented, comments in forder.c say it is for debugging only.
     data.table:::forderv(dt, "group", retGrp = RETGRP)
+    options(old.opt) # so the option does not affect other tests.
   }, list(RETGRP=eval(str2lang(retGrp_chr)))),
   ## From ?bench::mark, "Each expression will always run at least twice,
   ## once to measure the memory allocation and store results
