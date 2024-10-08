@@ -39,7 +39,7 @@ for(retGrp_chr in c("T","F"))extra.test.list[[sprintf(
   ## (also sets the index of dt in this example),
   ## then 10 more times for time measurement.
   ## Timings should be constant if the cached index is used (Fast),
-  ## and linear if the index is re-computed (Slow).
+  ## and (log-)linear if the index is re-computed (Slow).
   Slow = "b1b1832b0d2d4032b46477d9fe6efb15006664f4", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/b0efcf59442a7d086c6df17fa6a45c81b082322e) in the PR (https://github.com/Rdatatable/data.table/pull/4386/commits) where the performance was improved.
   Fast = "ffe431fbc1fe2d52ed9499f78e7e16eae4d71a93" # Last commit of the PR (https://github.com/Rdatatable/data.table/pull/4386/commits) where the performance was improved.
 )
