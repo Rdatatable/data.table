@@ -34,6 +34,8 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
         ( length(SYS) >= 3L && is.symbol(thisSYS <- SYS[[length(SYS)-2L]][[1L]]) &&
           as.character(thisSYS) == 'source') || # suppress printing from source(echo = TRUE) calls, #2369
         ( length(SYS) > 3L && is.symbol(thisSYS <- SYS[[length(SYS)-3L]][[1L]]) &&
+          as.character(thisSYS) %chin% mimicsAutoPrint ) ||
+        ( length(SYS) > 6L && is.symbol(thisSYS <- SYS[[length(SYS)-6L]][[1L]]) &&
           as.character(thisSYS) %chin% mimicsAutoPrint ) )  {
       return(invisible(x))
       # is.symbol() temp fix for #1758.
