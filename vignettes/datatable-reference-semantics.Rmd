@@ -19,13 +19,13 @@ knitr::opts_chunk$set(
  collapse = TRUE)
 .old.th = setDTthreads(1)
 ```
-This vignette discusses *data.table*'s reference semantics which allows to *add/update/delete* columns of a *data.table by reference*, and also combine them with `i` and `by`. It is aimed at those who are already familiar with *data.table* syntax, its general form, how to subset rows in `i`, select and compute on columns, and perform aggregations by group. If you're not familiar with these concepts, please read the *"Introduction to data.table"* vignette first.
+This vignette discusses *data.table*'s reference semantics which allows to *add/update/delete* columns of a *data.table by reference*, and also combine them with `i` and `by`. It is aimed at those who are already familiar with *data.table* syntax, its general form, how to subset rows in `i`, select and compute on columns, and perform aggregations by group. If you're not familiar with these concepts, please read the `vignette("datatable-intro", package="data.table")` first.
 
 ***
 
 ## Data {#data}
 
-We will use the same `flights` data as in the *"Introduction to data.table"* vignette.
+We will use the same `flights` data as in the `vignette("datatable-intro", package="data.table")`.
 
 ```{r echo = FALSE}
 options(width = 100L)
@@ -165,7 +165,7 @@ We see that there are totally `25` unique values in the data. Both *0* and *24* 
 flights[hour == 24L, hour := 0L]
 ```
 
-* We can use `i` along with `:=` in `j` the very same way as we have already seen in the *"Introduction to data.table"* vignette.
+* We can use `i` along with `:=` in `j` the very same way as we have already seen in the `vignette("datatable-intro", package="data.table")`.
 
 * Column `hour` is replaced with `0` only on those *row indices* where the condition `hour == 24L` specified in `i` evaluates to `TRUE`.
 
@@ -230,7 +230,7 @@ head(flights)
 
 * We provide the columns to group by the same way as shown in the *Introduction to data.table* vignette. For each group, `max(speed)` is computed, which returns a single value. That value is recycled to fit the length of the group. Once again, no copies are being made at all. `flights` *data.table* is modified *in-place*.
 
-* We could have also provided `by` with a *character vector* as we saw in the *Introduction to data.table* vignette, e.g., `by = c("origin", "dest")`.
+* We could have also provided `by` with a *character vector* as we saw in the `vignette("datatable-intro", package="data.table")`, e.g., `by = c("origin", "dest")`.
 
 #
 
@@ -249,7 +249,7 @@ head(flights)
 
 * Note that since we allow assignment by reference without quoting column names when there is only one column as explained in [Section 2c](#delete-convenience), we can not do `out_cols := lapply(.SD, max)`. That would result in adding one new column named `out_cols`. Instead we should do either `c(out_cols)` or simply `(out_cols)`. Wrapping the variable name with `(` is enough to differentiate between the two cases.
 
-* The `LHS := RHS` form allows us to operate on multiple columns. In the RHS, to compute the `max` on columns specified in `.SDcols`, we make use of the base function `lapply()` along with `.SD` in the same way as we have seen before in the *"Introduction to data.table"* vignette. It returns a list of two elements, containing the maximum value corresponding to `dep_delay` and `arr_delay` for each group.
+* The `LHS := RHS` form allows us to operate on multiple columns. In the RHS, to compute the `max` on columns specified in `.SDcols`, we make use of the base function `lapply()` along with `.SD` in the same way as we have seen before in the `vignette("datatable-intro", package="data.table")`. It returns a list of two elements, containing the maximum value corresponding to `dep_delay` and `arr_delay` for each group.
 
 #
 Before moving on to the next section, let's clean up the newly created columns `speed`, `max_speed`, `max_dep_delay` and `max_arr_delay`.
@@ -365,7 +365,7 @@ However we could improve this functionality further by *shallow* copying instead
 
 * It is used to *add/update/delete* columns by reference.
 
-* We have also seen how to use `:=` along with `i` and `by` the same way as we have seen in the *Introduction to data.table* vignette. We can in the same way use `keyby`, chain operations together, and pass expressions to `by` as well all in the same way. The syntax is *consistent*.
+* We have also seen how to use `:=` along with `i` and `by` the same way as we have seen in the `vignette("datatable-intro", package="data.table")`. We can in the same way use `keyby`, chain operations together, and pass expressions to `by` as well all in the same way. The syntax is *consistent*.
 
 * We can use `:=` for its side effect or use `copy()` to not modify the original object while updating by reference.
 
@@ -375,6 +375,6 @@ setDTthreads(.old.th)
 
 #
 
-So far we have seen a whole lot in `j`, and how to combine it with `by` and little of `i`. Let's turn our attention back to `i` in the next vignette *"Keys and fast binary search based subset"* to perform *blazing fast subsets* by *keying data.tables*.
+So far we have seen a whole lot in `j`, and how to combine it with `by` and little of `i`. Let's turn our attention back to `i` in the next vignette `vignette("datatable-keys-fast-subset", package="data.table")` to perform *blazing fast subsets* by *keying data.tables*.
 
 ***
