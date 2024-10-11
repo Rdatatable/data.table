@@ -19,6 +19,31 @@ for (extra.arg in extra.args.6107){
   extra.test.list[[sprintf("fread(%s) improved in #6107", extra.arg)]] <- this.test
 }
 
+# Test case adapted from https://github.com/Rdatatable/data.table/pull/4386#issue-602528139 which is where the performance was improved.
+for(retGrp_chr in c("T","F"))extra.test.list[[sprintf(
+  "forderv(retGrp=%s) improved in #4386", retGrp_chr
+)]] <- list(
+  setup = quote({
+    dt <- data.table(group = rep(1:2, l=N))
+  }),
+  expr = substitute({
+    old.opt <- options(datatable.forder.auto.index = TRUE) # required for test, un-documented, comments in forder.c say it is for debugging only.
+    data.table:::forderv(dt, "group", retGrp = RETGRP)
+    options(old.opt) # so the option does not affect other tests.
+  }, list(RETGRP=eval(str2lang(retGrp_chr)))),
+  ## From ?bench::mark, "Each expression will always run at least twice,
+  ## once to measure the memory allocation and store results
+  ## and one or more times to measure timing."
+  ## So for atime(times=10) that means 11 times total.
+  ## First time for memory allocation measurement,
+  ## (also sets the index of dt in this example),
+  ## then 10 more times for time measurement.
+  ## Timings should be constant if the cached index is used (Fast),
+  ## and (log-)linear if the index is re-computed (Slow).
+  Slow = "b1b1832b0d2d4032b46477d9fe6efb15006664f4", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/b0efcf59442a7d086c6df17fa6a45c81b082322e) in the PR (https://github.com/Rdatatable/data.table/pull/4386/commits) where the performance was improved.
+  Fast = "ffe431fbc1fe2d52ed9499f78e7e16eae4d71a93" # Last commit of the PR (https://github.com/Rdatatable/data.table/pull/4386/commits) where the performance was improved.
+)
+
 # A list of performance tests.
 #
 # See documentation in https://github.com/Rdatatable/data.table/wiki/Performance-testing for best practices.
