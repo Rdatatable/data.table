@@ -1,0 +1,576 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: assign 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: 2024-10-10 22:46+0100\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: hi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: assign.c:122
+msgid ""
+".internal.selfref ptr is NULL. This is expected and normal for a data.table "
+"loaded from disk. Please remember to always setDT() immediately after loading "
+"to prevent unexpected behavior. If this table was not loaded from disk or "
+"you've already run setDT(), please report to data.table issue tracker.\n"
+msgstr ""
+
+#: assign.c:203
+#, c-format
+msgid ""
+"Some columns are a multi-column type (such as a matrix column), for example "
+"column %d. setDT will retain these columns as-is but subsequent operations "
+"like grouping and joining may fail. Please consider as.data.table() instead "
+"which will create a new column for each embedded column."
+msgstr ""
+
+#: assign.c:220
+#, c-format
+msgid ""
+"Column %d has class 'POSIXlt'. Please convert it to POSIXct (using as."
+"POSIXct) and run setDT() again. We do not recommend the use of POSIXlt at all "
+"because it uses 40 bytes to store one date."
+msgstr ""
+
+#: assign.c:240
+#, c-format
+msgid ""
+"All elements in argument 'x' to 'setDT' must be of equal length, but input %d "
+"has length %d whereas the first non-empty input had length %d"
+msgstr ""
+
+#: assign.c:250
+msgid "alloccol has been passed a NULL dt"
+msgstr ""
+
+#: assign.c:251
+msgid "dt passed to alloccol isn't type VECSXP"
+msgstr ""
+
+#: assign.c:253
+msgid ""
+"dt passed to alloccol has no class attribute. Please report result of "
+"traceback() to data.table issue tracker."
+msgstr ""
+
+#: assign.c:270
+#, c-format
+msgid ""
+"tl (%d) is greater than 10,000 items over-allocated (l = %d). If you didn't "
+"set the datatable.alloccol option to be very large, please report to data."
+"table issue tracker including the result of sessionInfo()."
+msgstr ""
+
+#: assign.c:272
+#, c-format
+msgid ""
+"Attempt to reduce allocation from %d to %d ignored. Can only increase "
+"allocation via shallow copy. Please do not use DT[...]<- or DT$someCol<-. "
+"Use := inside DT[...] instead."
+msgstr ""
+
+#: assign.c:280
+msgid ""
+"Has getOption('datatable.alloccol') somehow become unset? It should be a "
+"number, by default 1024."
+msgstr ""
+
+#: assign.c:282
+#, c-format
+msgid ""
+"getOption('datatable.alloccol') should be a number, by default 1024. But its "
+"type is '%s'."
+msgstr ""
+
+#: assign.c:284
+#, c-format
+msgid ""
+"getOption('datatable.alloc') is a numeric vector ok but its length is %d. Its "
+"length should be 1."
+msgstr ""
+
+#: assign.c:287
+#, c-format
+msgid "getOption('datatable.alloc')==%d.  It must be >=0 and not NA."
+msgstr ""
+
+#: assign.c:293
+#, c-format
+msgid "%s must be TRUE or FALSE"
+msgstr ""
+
+#: assign.c:341
+msgid "assign has been passed a NULL dt"
+msgstr ""
+
+#: assign.c:342
+msgid "dt passed to assign isn't type VECSXP"
+msgstr ""
+
+#: assign.c:344
+msgid ""
+".SD is locked. Updating .SD by reference using := or set are reserved for "
+"future use. Use := in j directly. Or use copy(.SD) as a (slow) last resort, "
+"until shallow() is exported."
+msgstr ""
+
+#: assign.c:356
+msgid "dt passed to assign has no names"
+msgstr ""
+
+#: assign.c:360
+msgid ""
+"data.table is NULL; malformed. A null data.table should be an empty list. "
+"typeof() should always return 'list' for data.table."
+msgstr ""
+
+#: assign.c:370
+#, c-format
+msgid "Assigning to all %d rows\n"
+msgstr ""
+
+#: assign.c:375
+msgid ""
+"Coerced i from numeric to integer. Please pass integer for efficiency; e.g., "
+"2L rather than 2"
+msgstr ""
+
+#: assign.c:378
+#, c-format
+msgid ""
+"i is type '%s'. Must be integer, or numeric is coerced with warning. If i is "
+"a logical subset, simply wrap with which(), and take the which() outside the "
+"loop if possible for efficiency."
+msgstr ""
+
+#: assign.c:384
+#, c-format
+msgid "i[%d] is %d which is out of range [1,nrow=%d]"
+msgstr ""
+
+#: assign.c:387
+#, c-format
+msgid "Assigning to %d row subset of %d rows\n"
+msgstr ""
+
+#: assign.c:403
+msgid "length(LHS)==0; no columns to delete or assign RHS to."
+msgstr ""
+
+#: assign.c:417
+msgid ""
+"set() on a data.frame is for changing existing columns, not adding new ones. "
+"Please use a data.table for that. data.table's are over-allocated and don't "
+"shallow copy."
+msgstr ""
+
+#: assign.c:428
+msgid ""
+"Coerced j from numeric to integer. Please pass integer for efficiency; e.g., "
+"2L rather than 2"
+msgstr ""
+
+#: assign.c:431
+#, c-format
+msgid ""
+"j is type '%s'. Must be integer, character, or numeric is coerced with "
+"warning."
+msgstr ""
+
+#: assign.c:433
+msgid ""
+"Can't assign to the same column twice in the same query (duplicates detected)."
+msgstr ""
+
+#: assign.c:434
+msgid "newcolnames is supplied but isn't a character vector"
+msgstr ""
+
+#: assign.c:436
+msgid ""
+"Values of type POSIXlt detected and converted to POSIXct. We do not recommend "
+"the use of POSIXlt at all because it typically takes more than 6 times the "
+"storage as an equivalent POSIXct column. Use as.POSIXct() to avoid this "
+"warning."
+msgstr ""
+
+#: assign.c:446
+#, c-format
+msgid ""
+"RHS_list_of_columns revised to true because RHS list has 1 item which is "
+"NULL, or whose length %d is either 1 or targetlen (%d). Please unwrap RHS.\n"
+msgstr ""
+
+#: assign.c:451
+#, c-format
+msgid ""
+"Supplied %d columns to be assigned an empty list (which may be an empty data."
+"table or data.frame since they are lists too). To delete multiple columns use "
+"NULL instead. To add multiple empty list columns, use list(list())."
+msgstr ""
+
+#: assign.c:456
+#, c-format
+msgid "Recycling single RHS list item across %d columns. Please unwrap RHS.\n"
+msgstr ""
+
+#: assign.c:458
+#, c-format
+msgid ""
+"Supplied %d columns to be assigned %d items. Please see NEWS for v1.12.2."
+msgstr ""
+
+#: assign.c:466
+#, c-format
+msgid ""
+"Item %d of column numbers in j is %d which is outside range [1,ncol=%d]. "
+"set() on a data.frame is for changing existing columns, not adding new ones. "
+"Please use a data.table for that."
+msgstr ""
+
+#: assign.c:467
+#, c-format
+msgid ""
+"Item %d of column numbers in j is %d which is outside range [1,ncol=%d]. Use "
+"column names instead in j to add new columns."
+msgstr ""
+
+#: assign.c:473
+msgid ""
+"Doubly-invalid attempt to delete a non-existent column while also providing i"
+msgstr ""
+
+#: assign.c:475
+msgid ""
+"Invalid attempt to delete a list column while also providing i; did you "
+"intend to add NULL to those rows instead? If so, use list_col := "
+"list(list(NULL))."
+msgstr ""
+
+#: assign.c:476
+msgid "When deleting columns, i should not be provided"
+msgstr ""
+
+#: assign.c:484
+#, c-format
+msgid ""
+"RHS of assignment to existing column '%s' is zero length but not NULL. If you "
+"intend to delete the column use NULL. Otherwise, the RHS must have length > "
+"0; e.g., NA_integer_. If you are trying to change the column type to be an "
+"empty list column then, as with all column type changes, provide a full "
+"length RHS vector such as vector('list',nrow(DT)); i.e., 'plonk' in the new "
+"column."
+msgstr ""
+
+#: assign.c:491
+#, c-format
+msgid ""
+"Tried to assign NULL to column '%s', but this column does not exist to remove"
+msgstr ""
+
+#: assign.c:499
+#, c-format
+msgid "%d column matrix RHS of := will be treated as one vector"
+msgstr ""
+
+#: assign.c:504
+#, c-format
+msgid ""
+"Can't assign to column '%s' (type 'factor') a value of type '%s' (not "
+"character, factor, integer or numeric)"
+msgstr ""
+
+#: assign.c:510
+#, c-format
+msgid ""
+"Supplied %d items to be assigned to %d items of column '%s'. If you wish to "
+"'recycle' the RHS please use rep() to make this intent clear to readers of "
+"your code."
+msgstr ""
+
+#: assign.c:520
+msgid ""
+"This data.table has either been loaded from disk (e.g. using readRDS()/"
+"load()) or constructed manually (e.g. using structure()). Please run setDT() "
+"or setalloccol() on it first (to pre-allocate space for new columns) before "
+"assigning by reference to it."
+msgstr ""
+
+#: assign.c:523
+#, c-format
+msgid ""
+"truelength (%d) is greater than 10,000 items over-allocated (length = %d). "
+"See ?truelength. If you didn't set the datatable.alloccol option very large, "
+"please report to data.table issue tracker including the result of "
+"sessionInfo()."
+msgstr ""
+
+#: assign.c:527
+msgid ""
+"It appears that at some earlier point, names of this data.table have been "
+"reassigned. Please ensure to use setnames() rather than names<- or "
+"colnames<-. Otherwise, please report to data.table issue tracker."
+msgstr ""
+
+#: assign.c:534
+msgid ""
+"It appears that at some earlier point, attributes of this data.table have "
+"been reassigned. Please use setattr(DT, name, value) rather than attr(DT, "
+"name) <- value. If that doesn't apply to you, please report your case to the "
+"data.table issue tracker."
+msgstr ""
+
+#: assign.c:564
+#, c-format
+msgid ""
+"RHS for item %d has been duplicated because MAYBE_REFERENCED==%d "
+"MAYBE_SHARED==%d, but then is being plonked. length(values)==%d; "
+"length(cols)==%d)\n"
+msgstr ""
+
+#: assign.c:569
+#, c-format
+msgid ""
+"Direct plonk of unnamed RHS, no copy. MAYBE_REFERENCED==%d, MAYBE_SHARED==%d\n"
+msgstr ""
+
+#: assign.c:638
+#, c-format
+msgid ""
+"Dropping index '%s' as it doesn't have '__' at the beginning of its name. It "
+"was very likely created by v1.9.4 of data.table.\n"
+msgstr ""
+
+#: assign.c:683 assign.c:699
+#, c-format
+msgid "Dropping index '%s' due to an update on a key column\n"
+msgstr ""
+
+#: assign.c:692
+#, c-format
+msgid "Shortening index '%s' to '%s' due to an update on a key column\n"
+msgstr ""
+
+#: assign.c:750
+#, c-format
+msgid "(column %d named '%s')"
+msgstr ""
+
+#: assign.c:784
+#, c-format
+msgid ""
+"Cannot assign 'factor' to '%s'. Factors can only be assigned to factor, "
+"character or list columns."
+msgstr ""
+
+#: assign.c:799
+#, c-format
+msgid ""
+"Assigning factor numbers to target vector. But %d is outside the level range "
+"[1,%d]"
+msgstr ""
+
+#: assign.c:801
+#, c-format
+msgid ""
+"Assigning factor numbers to column %d named '%s'. But %d is outside the level "
+"range [1,%d]"
+msgstr ""
+
+#: assign.c:811
+#, c-format
+msgid ""
+"Assigning factor numbers to target vector. But %f is outside the level range "
+"[1,%d], or is not a whole number."
+msgstr ""
+
+#: assign.c:813
+#, c-format
+msgid ""
+"Assigning factor numbers to column %d named '%s'. But %f is outside the level "
+"range [1,%d], or is not a whole number."
+msgstr ""
+
+#: assign.c:819
+#, c-format
+msgid ""
+"Cannot assign '%s' to 'factor'. Factor columns can be assigned factor, "
+"character, NA in any type, or level numbers."
+msgstr ""
+
+#: assign.c:879
+msgid "Unable to allocate working memory of %zu bytes to combine factor levels"
+msgstr ""
+
+#: assign.c:906
+#, c-format
+msgid "Coercing 'character' RHS to '%s' to match the type of target vector."
+msgstr ""
+
+#: assign.c:908
+#, c-format
+msgid ""
+"Coercing 'character' RHS to '%s' to match the type of column %d named '%s'."
+msgstr ""
+
+#: assign.c:916
+msgid ""
+"Cannot coerce 'list' RHS to 'integer64' to match the type of target vector."
+msgstr ""
+
+#: assign.c:918
+#, c-format
+msgid ""
+"Cannot coerce 'list' RHS to 'integer64' to match the type of column %d named "
+"'%s'."
+msgstr ""
+
+#: assign.c:924
+#, c-format
+msgid "Coercing 'list' RHS to '%s' to match the type of target vector."
+msgstr ""
+
+#: assign.c:926
+#, c-format
+msgid "Coercing 'list' RHS to '%s' to match the type of column %d named '%s'."
+msgstr ""
+
+#: assign.c:934
+#, c-format
+msgid "Zero-copy coerce when assigning '%s' to '%s' target vector.\n"
+msgstr ""
+
+#: assign.c:936
+#, c-format
+msgid ""
+"Zero-copy coerce when assigning '%s' to column %d named '%s' which is '%s'.\n"
+msgstr ""
+
+#: assign.c:952
+#, c-format
+msgid "(target vector)"
+msgstr ""
+
+#: assign.c:962 assign.c:963
+#, c-format
+msgid ""
+"%d (type '%s') at RHS position %d taken as TRUE when assigning to type '%s' %s"
+msgstr ""
+
+#: assign.c:965
+#, c-format
+msgid ""
+"%<PRId64> (type '%s') at RHS position %d taken as TRUE when assigning to type "
+"'%s' %s"
+msgstr ""
+
+#: assign.c:966
+#, c-format
+msgid ""
+"%f (type '%s') at RHS position %d taken as TRUE when assigning to type '%s' %s"
+msgstr ""
+
+#: assign.c:970
+#, c-format
+msgid ""
+"%d (type '%s' at RHS position %d taken as 0 when assigning to type '%s' %s"
+msgstr ""
+
+#: assign.c:972
+#, c-format
+msgid ""
+"%<PRId64> (type '%s') at RHS position %d taken as 0 when assigning to type "
+"'%s' %s"
+msgstr ""
+
+#: assign.c:973
+#, c-format
+msgid ""
+"%f (type '%s') at RHS position %d either truncated (precision lost) or taken "
+"as 0 when assigning to type '%s' %s"
+msgstr ""
+
+#: assign.c:978
+#, c-format
+msgid ""
+"%<PRId64> (type '%s') at RHS position %d out-of-range (NA) when assigning to "
+"type '%s' %s"
+msgstr ""
+
+#: assign.c:979 assign.c:986
+#, c-format
+msgid ""
+"%f (type '%s') at RHS position %d out-of-range(NA) or truncated (precision "
+"lost) when assigning to type '%s' %s"
+msgstr ""
+
+#: assign.c:981 assign.c:990
+#, c-format
+msgid ""
+"%f (type '%s') at RHS position %d either imaginary part discarded or real "
+"part truncated (precision lost) when assigning to type '%s' %s"
+msgstr ""
+
+#: assign.c:991
+#, c-format
+msgid ""
+"%f (type '%s') at RHS position %d imaginary part discarded when assigning to "
+"type '%s' %s"
+msgstr ""
+
+#: assign.c:1036
+#, c-format
+msgid "type '%s' cannot be coerced to '%s'"
+msgstr ""
+
+#: assign.c:1194
+#, c-format
+msgid "Unsupported column type in assign.c:memrecycle '%s'"
+msgstr ""
+
+#: assign.c:1279
+#, c-format
+msgid "savetl_init checks failed (%d %d %p %p)"
+msgstr ""
+
+#: assign.c:1288
+#, c-format
+msgid "Failed to allocate initial %d items in savetl_init"
+msgstr ""
+
+#: assign.c:1304
+#, c-format
+msgid "Failed to realloc saveds to %d items in savetl"
+msgstr ""
+
+#: assign.c:1310
+#, c-format
+msgid "Failed to realloc savedtl to %d items in savetl"
+msgstr ""
+
+#: assign.c:1333
+msgid "x must be a character vector"
+msgstr ""
+
+#: assign.c:1334
+msgid "'which' must be an integer vector"
+msgstr ""
+
+#: assign.c:1335
+msgid "'new' must be a character vector"
+msgstr ""
+
+#: assign.c:1336
+#, c-format
+msgid "'new' is length %d. Should be the same as length of 'which' (%d)"
+msgstr ""
+
+#: assign.c:1339
+#, c-format
+msgid ""
+"Item %d of 'which' is %d which is outside range of the length %d character "
+"vector"
+msgstr ""
