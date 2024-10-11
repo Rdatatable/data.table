@@ -1,0 +1,136 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: bmerge 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+
+#: bmerge.R:48 bmerge.R:49
+msgid "%s is type %s which is not supported by data.table join"
+msgstr ""
+
+#: bmerge.R:52
+msgid ""
+"Attempting roll join on factor column when joining %s to %s. Only integer, "
+"double or character columns may be roll joined."
+msgstr ""
+
+#: bmerge.R:54
+msgid "Matching %s factor levels to %s factor levels."
+msgstr ""
+
+#: bmerge.R:59
+msgid "Coercing factor column %s to type character to match type of %s."
+msgstr ""
+
+#: bmerge.R:64
+msgid "Matching character column %s to factor levels in %s."
+msgstr ""
+
+#: bmerge.R:71
+msgid ""
+"Incompatible join types: %s (%s) and %s (%s). Factor columns must join to "
+"factor or character columns."
+msgstr ""
+
+#: bmerge.R:74
+msgid "%s has same type (%s) as %s. No coercion needed."
+msgstr ""
+
+#: bmerge.R:81 bmerge.R:86
+msgid "Coercing all-NA %s (%s) to type %s to match type of %s."
+msgstr ""
+
+#: bmerge.R:90
+msgid "Incompatible join types: %s (%s) and %s (%s)"
+msgstr ""
+
+#: bmerge.R:96
+msgid "Coercing %s column %s%s to type integer64 to match type of %s."
+msgstr ""
+
+#: bmerge.R:98
+msgid ""
+"Incompatible join types: %s is type integer64 but %s is type double and "
+"contains fractions"
+msgstr ""
+
+#: bmerge.R:105
+msgid ""
+"Coercing double column %s (which contains no fractions) to type integer to "
+"match type of %s."
+msgstr ""
+
+#: bmerge.R:111
+msgid ""
+"Coercing integer column %s to type double to match type of %s which contains "
+"fractions."
+msgstr ""
+
+#: bmerge.R:115
+msgid "Coercing integer column %s to type double for join to match type of %s."
+msgstr ""
+
+#: bmerge.R:128
+msgid "on= matches existing key, using key"
+msgstr ""
+
+#: bmerge.R:133
+msgid "on= matches existing index, using index"
+msgstr ""
+
+#: bmerge.R:138
+msgid "Calculated ad hoc index in %s"
+msgstr ""
+
+#: bmerge.R:149
+msgid "Non-equi join operators detected ..."
+msgstr ""
+
+#: bmerge.R:150
+msgid "roll is not implemented for non-equi joins yet."
+msgstr ""
+
+#: bmerge.R:151
+msgid "forder took ..."
+msgstr ""
+
+#: bmerge.R:160
+msgid "Generating group lengths ..."
+msgstr ""
+
+#: bmerge.R:163 bmerge.R:167 bmerge.R:174
+msgid "done in %s"
+msgstr ""
+
+#: bmerge.R:165
+msgid "Generating non-equi group ids ..."
+msgstr ""
+
+#: bmerge.R:170
+msgid "Column name '_nqgrp_' is reserved for non-equi joins."
+msgstr ""
+
+#: bmerge.R:171
+msgid "Recomputing forder with non-equi ids ..."
+msgstr ""
+
+#: bmerge.R:180
+msgid "Starting bmerge ..."
+msgstr ""
+
+#: bmerge.R:182
+msgid "bmerge done in %s"
+msgstr ""
+
+#: bmerge.R:177
+msgid "  Found %d non-equi group ...\n"
+msgid_plural "  Found %d non-equi groups ...\n"
+msgstr[0] ""
+msgstr[1] ""
