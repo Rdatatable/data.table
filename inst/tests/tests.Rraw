@@ -18768,7 +18768,7 @@ if (test_bit64) local({
 # non-ASCII plain symbol in by, #4708
 # NB: recall we can't use non-ASCII symbols in the test script. The text is a-<n-tilde>-o (year in Spanish)
 native_ano = iconv("a\U00F1o", "UTF-8", "")
-if (!is.na(native_ano)) { # #6339: symbol must be represented in native encoding
+if (identical(native_ano, "a\U00F1o")) { # #6339: symbol must be represented in native encoding
   DT = data.table(a = rep(1:3, 2))
   setnames(DT, "a", native_ano)
   test(2266, eval(parse(text=sprintf("DT[ , .N, %s]$N[1L]", native_ano))), 2L)
