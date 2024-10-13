@@ -12,28 +12,32 @@ msgstr ""
 
 #: frank.R:3
 msgid "length(na.last) = 0"
-msgstr ""
+msgstr "length(na.last) = 0"
 
 #: frank.R:5
 msgid "length(na.last) > 1, only the first element will be used"
-msgstr ""
+msgstr "length(na.last) > 1, केवल पहला तत्व ही उपयोग किया जाएगा"
 
 #: frank.R:17
 msgid "x is a single vector, non-NULL 'cols' doesn't make sense"
-msgstr ""
+msgstr "x एक सिंगल (single)  वेक्टर (vector) है, non-NULL 'cols' का कोई अर्थ नहीं है"
 
 #: frank.R:23
 msgid "x is a list, 'cols' can not be 0-length"
-msgstr ""
+msgstr "x एक list है, 'cols' की 0-length नहीं हो सकती"
 
 #: frank.R:31
 msgid ""
 "Input column '..na_prefix..' conflicts with data.table internal usage; please "
 "rename"
 msgstr ""
+"इनपुट (Input) कॉलम (column) '..na_prefix..' का data.table के आंतरिक उपयोग के साथ टकराव हो रहा है; कृपया "
+"नाम बदलें"
 
 #: frank.R:46
 msgid ""
 "Input column '..stats_runif..' conflicts with data.table internal usage; "
 "please rename"
 msgstr ""
+"इनपुट (Input) कॉलम (column) '..stats_runif..' का data.table के आंतरिक उपयोग के साथ टकराव हो रहा है; "
+"कृपया नाम बदलें"
