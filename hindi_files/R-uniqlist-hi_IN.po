@@ -12,4 +12,4 @@ msgstr ""
 
 #: uniqlist.R:11
 msgid "l not type list"
-msgstr ""
+msgstr "l लिस्ट (list) प्रकार नहीं है"
