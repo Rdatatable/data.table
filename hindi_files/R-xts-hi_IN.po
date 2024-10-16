@@ -12,11 +12,11 @@ msgstr ""
 
 #: xts.R:4
 msgid "keep.rownames must be length 1"
-msgstr ""
+msgstr "keep.rownames की length 1 होनी चाहिए"
 
 #: xts.R:5
 msgid "keep.rownames must not be NA"
-msgstr ""
+msgstr "keep.rownames NA नहीं हो सकता"
 
 #: xts.R:11
 msgid ""
@@ -24,13 +24,18 @@ msgid ""
 "duplicate column names. Rename '%s' column in xts or use `keep.rownames` to "
 "change the index column name."
 msgstr ""
+"इनपुट (Input) xts ऑब्जेक्ट (object) में '%s' कॉलम (column) नहीं होना चाहिए क्योंकि इससे डुप्लिकेट (duplicate) कॉलम (column) नाम हो जाएंगे।"
+"xts में '%s' कॉलम (column) का नाम बदलें या keep.rownames का"
+" उपयोग करें।"
 
 #: xts.R:21
 msgid ""
 "data.table must have a time based column in first position, use `setcolorder` "
 "function to change the order, or see ?timeBased for supported types"
 msgstr ""
+"data.table के पहले स्थान पर एक समय-आधारित कॉलम (column) होना चाहिए, क्रम बदलने के लिए"
+"'setcolorder' फ़ंक्शन (function) का उपयोग करें, या समर्थित प्रकारों के लिए ?timeBased देखें"
 
 #: xts.R:25
 msgid "Following columns are not numeric and will be omitted: %s"
-msgstr ""
+msgstr "निम्नलिखित कॉलम (column) संख्यात्मक नहीं हैं और इन्हें छोड़ दिया जाएगा: %s"
