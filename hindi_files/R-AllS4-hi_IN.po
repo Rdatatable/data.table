@@ -12,4 +12,4 @@ msgstr ""
 
 #: AllS4.R:2
 msgid "data.table package loaded. When developing don't load package"
-msgstr ""
+msgstr "data.table पैकेज लोड हो गया है। विकास करते समय पैकेज लोड न करें।"
