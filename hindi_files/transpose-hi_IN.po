@@ -12,32 +12,34 @@ msgstr ""
 
 #: transpose.c:9
 msgid "l must be a list."
-msgstr ""
+msgstr "l एक सूची (list) होनी चाहिए।"
 
 #: transpose.c:13
 msgid "ignore.empty should be logical TRUE/FALSE."
-msgstr ""
+msgstr "ignore.empty तार्किक TRUE/FALSE होना चाहिए।"
 
 #: transpose.c:16
 msgid ""
 "keep.names should be either NULL, or the name of the first column of the "
 "result in which to place the names of the input"
 msgstr ""
+"keep.names या तो NULL होना चाहिए, या परिणाम की पहली कॉलम (column) का नाम होना चाहिए"
+"जिसमें इनपुट (Input) के नाम रखें।"
 
 #: transpose.c:19
 msgid "fill must be a length 1 vector, such as the default NA"
-msgstr ""
+msgstr "fill की लंबाई 1 का एक वेक्टर (vector) होना चाहिए, जैसे कि डिफ़ॉल्ट NA।"
 
 #: transpose.c:22
 msgid "list.cols should be logical TRUE/FALSE."
-msgstr ""
+msgstr "list.cols तार्किक TRUE/FALSE होना चाहिए।"
 
 #: transpose.c:31
 #, c-format
 msgid "Item %d of list input is not either an atomic vector, or a list"
-msgstr ""
+msgstr "सूची (list) इनपुट (Input) का आइटम %d न तो एक एटॉमिक (atomic) वेक्टर (vector) है और न ही एक सूची (list)।"
 
 #: transpose.c:97
 #, c-format
 msgid "Unsupported column type '%s'"
-msgstr ""
+msgstr "असमर्थित कॉलम (column) प्रकार '%s'"
