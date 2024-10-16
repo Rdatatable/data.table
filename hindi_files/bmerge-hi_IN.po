@@ -13,30 +13,30 @@ msgstr ""
 #: bmerge.c:65
 #, c-format
 msgid "icols[%d]=%d outside range [1,length(i)=%d]"
-msgstr ""
+msgstr "icols[%d]=%d रेंज [1,length(i)=%d] के बाहर है"
 
 #: bmerge.c:66
 #, c-format
 msgid "xcols[%d]=%d outside range [1,length(x)=%d]"
-msgstr ""
+msgstr "xcols[%d]=%d रेंज [1,length(x)=%d] के बाहर है"
 
 #: bmerge.c:72
 #, c-format
 msgid "Type '%s' is not supported for joining/merging"
-msgstr ""
+msgstr "प्रकार '%s' को जोड़ने/मर्ज करने के लिए समर्थित नहीं है"
 
 #: bmerge.c:78
 msgid "roll is character but not 'nearest'"
-msgstr ""
+msgstr "roll एक चर है लेकिन 'nearest' नहीं है"
 
 #: bmerge.c:79
 msgid "roll='nearest' can't be applied to a character column, yet."
-msgstr ""
+msgstr "roll='nearest' को अभी तक एक चर कॉलम (column) पर लागू नहीं किया जा सकता है।"
 
 #: bmerge.c:87
 msgid "rollends must be a length 2 logical vector"
-msgstr ""
+msgstr "rollends की लंबाई 2 का एक तार्किक वेक्टर (vector) होना चाहिए"
 
 #: bmerge.c:116
 msgid "Only '==' operator is supported for columns of type character."
-msgstr ""
+msgstr "केवल '==' ऑपरेटर (operator) को चर प्रकार के कॉलम (column) के लिए समर्थित किया गया है।"
