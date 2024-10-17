@@ -12,8 +12,8 @@ msgstr ""
 
 #: duplicated.R:7
 msgid "'fromLast' must be TRUE or FALSE"
-msgstr ""
+msgstr "'fromLast' TRUE या FALSE होना चाहिए"
 
 #: duplicated.R:105
 msgid "x must be an atomic vector or a data.frame/data.table"
-msgstr ""
+msgstr "x एक ऐटॉमिक (atomic) वेक्टर (vector) या data.frame/data.table होना चाहिए"
