@@ -12,4 +12,4 @@ msgstr ""
 
 #: timetaken.R:3
 msgid "Use started.at=proc.time() not Sys.time() (POSIXt and slow)"
-msgstr ""
+msgstr "started.at=proc.time() का उपयोग करें, Sys.time() (POSIXt और धीमा) का नहीं"
