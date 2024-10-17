@@ -12,12 +12,12 @@ msgstr ""
 
 #: tables.R:31
 msgid "No objects of class data.table exist in %s"
-msgstr ""
+msgstr "%s में data.table वर्ग की कोई वस्तुएँ नहीं हैं"
 
 #: tables.R:46
 msgid "order.col='%s' not a column name of info"
-msgstr ""
+msgstr "order.col='%s' info का कोई कॉलम (column) नाम नहीं है"
 
 #: tables.R:59
 msgid "Total: %sMB using %s"
-msgstr ""
+msgstr "कुल: %sMB उपयोग कर रहे हैं %s"
