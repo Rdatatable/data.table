@@ -23,15 +23,15 @@ msgid ""
 "Argument 'value.name' must be scalar character, non-NA and at least one "
 "character"
 msgstr ""
-"तर्क 'value.name' स्केलर (scalar) कैरेक्टर (character) होना चाहिए, नॉन-NA और कम से कम एक कैरेक्टर (character) होना चाहिए"
+"तर्क 'value.name' स्केलर (scalar) कैरेक्टर (character) होना चाहिए, non-NA और कम से कम एक कैरेक्टर (character) होना चाहिए"
 
 #: as.data.table.R:90
 msgid "Argument 'sorted' must be scalar logical and non-NA"
-msgstr "तर्क 'sorted' स्केलर (scalar) लॉजिकल (logical) और गैर-NA होना चाहिए"
+msgstr "तर्क 'sorted' स्केलर (scalar) लॉजिकल (logical) और non-NA होना चाहिए"
 
 #: as.data.table.R:92
 msgid "Argument 'na.rm' must be scalar logical and non-NA"
-msgstr "तर्क 'na.rm' स्केलर (scalar) लॉजिकल (logical) और गैर-NA होना चाहिए"
+msgstr "तर्क 'na.rm' स्केलर (scalar) लॉजिकल (logical) और non-NA होना चाहिए"
 
 #: as.data.table.R:94
 msgid "Please provide either 'key' or 'sorted', but not both."
