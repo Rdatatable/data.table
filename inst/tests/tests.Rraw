@@ -13909,7 +13909,9 @@ test(1967.48, x[ , b, .SDcols = 'a'], 6:10,
      warning = "This j doesn't use .SD")
 test(1967.49, x[ , list(5) := 6], error = 'LHS of := must be a symbol')
 test(1967.50, x[ , 1 + 3i := 6], error = "LHS of := isn't column names")
-test(1967.511, x[ , .(5L), by = .EACHI, mult = 'all'], error='logical error. i is not data.table')
+test(1967.511, x[ , .(5L), by = .EACHI, mult = 'all'], error='logical error. i is not a data.table')
+test(1967.5111, x[1, on="a"], error='logical error. i is not a data.table')
+test(1967.5112, x[1, on=NULL], x[1]) #6579
 test(1967.512, x[1+3i], error='i has evaluated to type complex. Expecting logical, integer or double')
 test(1967.521, x[1:2, by=a], x[1:2,], warning="Ignoring by/keyby because 'j' is not supplied")
 test(1967.522, x[, by=a],    x,       warning=c("Ignoring by/keyby because 'j' is not supplied","i and j are both missing.*upgraded to error in future"))

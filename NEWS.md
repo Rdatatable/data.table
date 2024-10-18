@@ -113,6 +113,8 @@ rowwiseDT(
 
 14. `setDT()` no longer modifies the class of other names bound to the origin data.frame, e.g., in `DF1 <- data.frame(a=1); DF2 <- DF1; setDT(DF2)`, `DF1`'s class will not change. [#4784](https://github.com/Rdatatable/data.table/issues/4784). Thanks @OfekShilon for the report and fix.
 
+15. `DT[1, on=NULL]` now works for returning the first row, [#6579](https://github.com/Rdatatable/data.table/issues/6579). Thanks to @Kodiologist for the report and @tdhock for the PR.
+
 ## NOTES
 
 1. Tests run again when some Suggests packages are missing, [#6411](https://github.com/Rdatatable/data.table/issues/6411). Thanks @aadler for the note and @MichaelChirico for the fix.
