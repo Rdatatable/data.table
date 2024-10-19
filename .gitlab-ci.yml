@@ -214,13 +214,13 @@ test-lin-ancient-cran:
   tags:
     - saas-windows-medium-amd64
   before_script:
-    - curl.exe -s -o ../R-win.exe $R_BIN --fail; if (!(Test-Path -Path ..\R-win.exe)) {Write-Error "R-win.exe not found, download failed?"}
+    - Invoke-WebRequest -Uri $R_BIN -OutFile ../R-win.exe -ErrorAction Stop; if (!(Test-Path -Path ..\R-win.exe)) {Write-Error "R-win.exe not found, download failed?"}
     - Start-Process -FilePath ..\R-win.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
     - $VERSION = $RTOOLS_VERSION -replace '\.', ''
     - Write-Host $VERSION
     - $RTOOLS_BIN="https://github.com/r-hub/rtools${VERSION}/releases/download/latest/rtools${VERSION}.exe"
     - Write-Host $RTOOLS_BIN
-    - curl.exe -s -o ../rtools.exe $RTOOLS_BIN --fail; if (!(Test-Path -Path ..\rtools.exe)) {Write-Error "rtools.exe not found, download failed?"}
+    - Invoke-WebRequest -Uri $RTOOLS_BIN -OutFile ../rtools.exe -ErrorAction Stop; if (!(Test-Path -Path ..\rtools.exe)) {Write-Error "rtools.exe not found, download failed?"}
     - Start-Process -FilePath ..\rtools.exe -ArgumentList "/VERYSILENT /DIR=C:\rtools" -NoNewWindow -Wait
     - New-Variable -Name "RTOOLS${VERSION}_HOME" -Value "/c/rtools" -Scope Global
     - Write-Host "RTOOLS${VERSION}_HOME"
