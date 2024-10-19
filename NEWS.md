@@ -207,6 +207,8 @@ rowwiseDT(
 
     e. Displays `integer64` columns correctly by loading {bit64} if needed, [#6224](https://github.com/Rdatatable/data.table/issues/6224). Thanks @renkun-ken for the report and @MichaelChirico for the fix.
 
+11. `setcolorder()` gains `skip_absent` to ignore unrecognized columns (i.e. columns included in `neworder` but not present in the data), [#6044,  #6068](https://github.com/Rdatatable/data.table/pull/6044). Default behavior (`skip_absent=FALSE`) remains unchanged, i.e. unrecognized columns result in an error. Thanks to @sluga for the suggestion and @sluga & @Nj221102 for the PRs.
+
 ## BUG FIXES
 
 1. `unique()` returns a copy when `nrows(x) <= 1` instead of a mutable alias, [#5932](https://github.com/Rdatatable/data.table/pull/5932). This is consistent with existing `unique()` behavior when the input has no duplicates but more than one row. Thanks to @brookslogan for the report and @dshemetov for the fix.
