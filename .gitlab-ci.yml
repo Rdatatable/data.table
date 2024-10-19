@@ -218,7 +218,7 @@ test-lin-ancient-cran:
     - Start-Process -FilePath ..\R-win.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
     - $VERSION = $RTOOLS_VERSION -replace '\.', ''
     - $RTOOLS_BIN="https://github.com/r-hub/rtools${VERSION}/releases/download/latest/rtools${VERSION}.exe"
-    - Add-Content -Path ".\.Renviron" -Value "RTOOLS${VERSION}_HOME='/c/tools'"
+    - Add-Content -Path ".\.Renviron" -Value "RTOOLS${VERSION}_HOME='/c/rtools'"
     - Invoke-WebRequest -Uri $RTOOLS_BIN -OutFile ../rtools.exe -ErrorAction Stop; if (!(Test-Path -Path ..\rtools.exe)) {Write-Error "rtools.exe not found, download failed?"}
     - Start-Process -FilePath ..\rtools.exe -ArgumentList "/VERYSILENT /DIR=C:\rtools" -NoNewWindow -Wait
     - $env:PATH = "C:\R\bin;C:\rtools\usr\bin;$env:PATH"
