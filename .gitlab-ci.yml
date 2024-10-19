@@ -217,17 +217,14 @@ test-lin-ancient-cran:
     - Invoke-WebRequest -Uri $R_BIN -OutFile ../R-win.exe -ErrorAction Stop; if (!(Test-Path -Path ..\R-win.exe)) {Write-Error "R-win.exe not found, download failed?"}
     - Start-Process -FilePath ..\R-win.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
     - $VERSION = $RTOOLS_VERSION -replace '\.', ''
-    - Write-Host $VERSION
     - $RTOOLS_BIN="https://github.com/r-hub/rtools${VERSION}/releases/download/latest/rtools${VERSION}.exe"
-    - Write-Host $RTOOLS_BIN
     - Invoke-WebRequest -Uri $RTOOLS_BIN -OutFile ../rtools.exe -ErrorAction Stop; if (!(Test-Path -Path ..\rtools.exe)) {Write-Error "rtools.exe not found, download failed?"}
     - Start-Process -FilePath ..\rtools.exe -ArgumentList "/VERYSILENT /DIR=C:\rtools" -NoNewWindow -Wait
-    - New-Variable -Name "RTOOLS${VERSION}_HOME" -Value "/c/rtools" -Scope Global
-    - Write-Host "RTOOLS${VERSION}_HOME"
     - $env:PATH = "C:\R\bin;C:\rtools\usr\bin;$env:PATH"
     - Rscript.exe -e "source('.ci/ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='all'), repos=file.path('file://',getwd(),'bus/mirror-packages/cran'), quiet=TRUE)"
     - cp.exe $(ls.exe -1t bus/build/data.table_*.tar.gz | head.exe -n 1) .
   script:
+    - New-Variable -Name "RTOOLS${VERSION}_HOME" -Value "/c/rtools" -Scope Global
     - R.exe CMD check --no-manual $(ls.exe -1t data.table_*.tar.gz | head.exe -n 1)
     - R.exe CMD INSTALL --build $(ls.exe -1t data.table_*.tar.gz | head.exe -n 1)
     - -not (grep.exe "warning:" data.table.Rcheck\00install.out)
