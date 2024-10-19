@@ -15,6 +15,7 @@ editor_options:
 require(data.table)
 opts = litedown::reactor()
 opts$comment = "#"
+opts$error = FALSE
 ```
 
 In this vignette you will learn how to perform any join operation using resources available in the `data.table` syntax.

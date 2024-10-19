@@ -13,6 +13,7 @@ vignette: >
 require(data.table)
 opts = litedown::reactor()
 opts$comment = "#"
+opts$error = FALSE
 ```
 
 

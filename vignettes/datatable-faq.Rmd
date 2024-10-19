@@ -25,6 +25,7 @@ h2 {
 library(data.table)
 opts = litedown::reactor()
 opts$comment = "#"
+opts$error = FALSE
 .old.th = setDTthreads(1)
 ```
 
