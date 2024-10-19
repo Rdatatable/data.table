@@ -23,12 +23,6 @@ h2 {
 
 ```{r, echo = FALSE, message = FALSE}
 library(data.table)
-knitr::opts_chunk$set(
-  comment = "#",
-    error = FALSE,
-     tidy = FALSE,
-    cache = FALSE,
- collapse = TRUE)
 .old.th = setDTthreads(1)
 ```
 

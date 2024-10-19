@@ -13,13 +13,6 @@ editor_options:
 
 ```{r, echo = FALSE, message = FALSE}
 require(data.table)
-knitr::opts_chunk$set(
-  comment = "#",
-    error = FALSE,
-     tidy = FALSE,
-    cache = FALSE,
- collapse = TRUE
-)
 ```
 
 In this vignette you will learn how to perform any join operation using resources available in the `data.table` syntax.

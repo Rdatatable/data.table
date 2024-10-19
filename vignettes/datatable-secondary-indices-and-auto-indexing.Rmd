@@ -11,12 +11,6 @@ vignette: >
 
 ```{r, echo = FALSE, message = FALSE}
 require(data.table)
-knitr::opts_chunk$set(
-  comment = "#",
-    error = FALSE,
-     tidy = FALSE,
-    cache = FALSE,
- collapse = TRUE)
 .old.th = setDTthreads(1)
 ```
 
