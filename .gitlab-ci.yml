@@ -225,7 +225,6 @@ test-lin-ancient-cran:
     - Rscript.exe -e "source('.ci/ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='all'), repos=file.path('file://',getwd(),'bus/mirror-packages/cran'), quiet=TRUE)"
     - cp.exe $(ls.exe -1t bus/build/data.table_*.tar.gz | head.exe -n 1) .
   script:
-    - Rscript.exe -e "Sys.getenv('RTOOLS${VERSION}_HOME')"
     - R.exe CMD check --no-manual $(ls.exe -1t data.table_*.tar.gz | head.exe -n 1)
     - R.exe CMD INSTALL --build $(ls.exe -1t data.table_*.tar.gz | head.exe -n 1)
     - -not (grep.exe "warning:" data.table.Rcheck\00install.out)
@@ -243,7 +242,6 @@ test-lin-ancient-cran:
 test-win-rel:
   <<: *test-win
   variables:
-    R_VERSION: "$R_REL_VERSION"
     R_BIN: "$R_REL_WIN_BIN"
     RTOOLS_VERSION: "$R_REL_VERSION"
 
@@ -252,7 +250,6 @@ test-win-rel:
 test-win-dev:
   <<: *test-win
   variables:
-    R_VERSION: "$R_DEV_VERSION"
     R_BIN: "$R_DEV_WIN_BIN"
     RTOOLS_VERSION: "$R_REL_VERSION"
 
@@ -261,7 +258,6 @@ test-win-dev:
 test-win-old:
   <<: *test-win
   variables:
-    R_VERSION: "$R_OLD_VERSION"
     R_BIN: "$R_OLD_WIN_BIN"
     RTOOLS_VERSION: "$R_OLD_VERSION"
 
