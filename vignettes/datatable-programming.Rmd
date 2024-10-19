@@ -11,6 +11,8 @@ vignette: >
 
 ```{r init, include = FALSE}
 require(data.table)
+opts = litedown::reactor()
+opts$comment = "#"
 ```
 
 

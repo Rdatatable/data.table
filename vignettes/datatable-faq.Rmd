@@ -23,6 +23,8 @@ h2 {
 
 ```{r, echo = FALSE, message = FALSE}
 library(data.table)
+opts = litedown::reactor()
+opts$comment = "#"
 .old.th = setDTthreads(1)
 ```
 
