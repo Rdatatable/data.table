@@ -217,8 +217,9 @@ test-lin-ancient-cran:
     - Invoke-WebRequest -Uri $R_BIN -OutFile ../R-win.exe -ErrorAction Stop; if (!(Test-Path -Path ..\R-win.exe)) {Write-Error "R-win.exe not found, download failed?"}
     - Start-Process -FilePath ..\R-win.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
     - $VERSION = $RTOOLS_VERSION -replace '\.', ''
-    - $RTOOLS_BIN="https://github.com/r-hub/rtools${VERSION}/releases/download/latest/rtools${VERSION}.exe"
+    # persist RTOOLSXX_HOME="/c/rtools" which is needed for finding gcc #6552
     - Add-Content -Path ".\.Renviron" -Value "RTOOLS${VERSION}_HOME='/c/rtools'"
+    - $RTOOLS_BIN="https://github.com/r-hub/rtools${VERSION}/releases/download/latest/rtools${VERSION}.exe"
     - Invoke-WebRequest -Uri $RTOOLS_BIN -OutFile ../rtools.exe -ErrorAction Stop; if (!(Test-Path -Path ..\rtools.exe)) {Write-Error "rtools.exe not found, download failed?"}
     - Start-Process -FilePath ..\rtools.exe -ArgumentList "/VERYSILENT /DIR=C:\rtools" -NoNewWindow -Wait
     - $env:PATH = "C:\R\bin;C:\rtools\usr\bin;$env:PATH"
