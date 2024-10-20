@@ -312,7 +312,7 @@ integration:
   only:
     - master
     - macos_binaries
-ckages","build","test-lin-rel","test-lin-rel-cran","test-lin-dev-gcc-strict-cran","test-lin-dev-clang-cran","test-lin-rel-vanilla","test-lin-ancient-cran","test-win-rel","test-win-dev" ,"test-win-old"]
+needs: ["mirror-packages","build","test-lin-rel","test-lin-rel-cran","test-lin-dev-gcc-strict-cran","test-lin-dev-clang-cran","test-lin-rel-vanilla","test-lin-ancient-cran","test-win-rel","test-win-dev" ,"test-win-old"]
   script:
     - R --version
     - *install-deps ## markdown pkg not present in r-pkgdown image
