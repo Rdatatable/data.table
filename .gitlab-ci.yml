@@ -13,18 +13,12 @@ variables:
   TZ: "UTC"  ## to avoid 'Failed to create bus connection' from timedatectl via Sys.timezone() on Docker with R 3.4.
              ## Setting TZ for all GLCI jobs to isolate them from timezone. We could have a new GLCI job to test under
              ## a non-UTC timezone, although, that's what we do routinely in dev.
-  R_REL_VERSION:  "4.4"
+  R_REL_VERSION:  "4.4" # only raise when RTOOLS for REL is available
   R_REL_WIN_BIN:  "https://cloud.r-project.org/bin/windows/base/old/4.4.1/R-4.4.1-win.exe"
-  RTOOLS_REL_BIN: "https://cloud.r-project.org/bin/windows/Rtools/rtools44/files/rtools44-6104-6039.exe"
-  RTOOLS43_HOME:  "/c/rtools"
   R_DEV_VERSION:  "4.5"
   R_DEV_WIN_BIN:  "https://cloud.r-project.org/bin/windows/base/R-devel-win.exe"
-  RTOOLS_DEV_BIN: "https://cloud.r-project.org/bin/windows/Rtools/rtools44/files/rtools44-6104-6039.exe"
-  RTOOLS44_HOME:  "" ## in case R-devel will use new Rtools toolchain, now it uses 4.4 env var
   R_OLD_VERSION:  "4.3"
   R_OLD_WIN_BIN:  "https://cloud.r-project.org/bin/windows/base/old/4.3.3/R-4.3.3-win.exe"
-  RTOOLS_OLD_BIN: "https://cloud.r-project.org/bin/windows/Rtools/rtools43/files/rtools43-5958-5975.exe"
-  RTOOLS42_HOME:  "/c/rtools"
 
 stages:
   - dependencies
@@ -220,9 +214,13 @@ test-lin-ancient-cran:
   tags:
     - saas-windows-medium-amd64
   before_script:
-    - curl.exe -s -o ../R-win.exe $R_BIN --fail; if (!(Test-Path -Path ..\R-win.exe)) {Write-Error "R-win.exe not found, download failed?"}
+    - Invoke-WebRequest -Uri $R_BIN -OutFile ../R-win.exe -ErrorAction Stop; if (!(Test-Path -Path ..\R-win.exe)) {Write-Error "R-win.exe not found, download failed?"}
     - Start-Process -FilePath ..\R-win.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
-    - curl.exe -s -o ../rtools.exe $RTOOLS_BIN --fail; if (!(Test-Path -Path ..\rtools.exe)) {Write-Error "rtools.exe not found, download failed?"}
+    - $VERSION = $RTOOLS_VERSION -replace '\.', ''
+    # persist RTOOLSXX_HOME="/c/rtools" which is needed for finding gcc #6552
+    - Add-Content -Path ".\.Renviron" -Value "RTOOLS${VERSION}_HOME='/c/rtools'"
+    - $RTOOLS_BIN="https://github.com/r-hub/rtools${VERSION}/releases/download/latest/rtools${VERSION}.exe"
+    - Invoke-WebRequest -Uri $RTOOLS_BIN -OutFile ../rtools.exe -ErrorAction Stop; if (!(Test-Path -Path ..\rtools.exe)) {Write-Error "rtools.exe not found, download failed?"}
     - Start-Process -FilePath ..\rtools.exe -ArgumentList "/VERYSILENT /DIR=C:\rtools" -NoNewWindow -Wait
     - $env:PATH = "C:\R\bin;C:\rtools\usr\bin;$env:PATH"
     - Rscript.exe -e "source('.ci/ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='all'), repos=file.path('file://',getwd(),'bus/mirror-packages/cran'), quiet=TRUE)"
@@ -245,27 +243,24 @@ test-lin-ancient-cran:
 test-win-rel:
   <<: *test-win
   variables:
-    R_VERSION: "$R_REL_VERSION"
     R_BIN: "$R_REL_WIN_BIN"
-    RTOOLS_BIN: "$RTOOLS_REL_BIN"
+    RTOOLS_VERSION: "$R_REL_VERSION"
 
 ## R-devel on Windows
 # test and build binaries
 test-win-dev:
   <<: *test-win
   variables:
-    R_VERSION: "$R_DEV_VERSION"
     R_BIN: "$R_DEV_WIN_BIN"
-    RTOOLS_BIN: "$RTOOLS_DEV_BIN"
+    RTOOLS_VERSION: "$R_REL_VERSION"
 
 ## R-oldrel on Windows
 # test and build binaries
 test-win-old:
   <<: *test-win
   variables:
-    R_VERSION: "$R_OLD_VERSION"
     R_BIN: "$R_OLD_WIN_BIN"
-    RTOOLS_BIN: "$RTOOLS_OLD_BIN"
+    RTOOLS_VERSION: "$R_OLD_VERSION"
 
 .test-mac-template: &test-mac
   <<: *test
