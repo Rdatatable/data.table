@@ -47,19 +47,19 @@ Base R implemented helper script to orchestrate generation of most artifacts and
 
 ## GitLab Open Source Program
 
-We are currently part of the GitLab for Open Source Program. This gives us 50,000 compute minutes per month for our GitLab CI. Our license needs to renewed yearly and is currently managed by @ben-schwen.
+We are currently part of the GitLab for [Open Source Program](https://about.gitlab.com/solutions/open-source/). This gives us 50,000 compute minutes per month for our GitLab CI. Our license needs to renewed yearly and is currently managed by @ben-schwen.
 
 ## Updating CI pipeline
 
-Basic CI checks are also run on every push to the GitLab repository. This can **and should** be used for testing changes to the CI pipeline before pushing them to master.
+Basic CI checks are also run on every push to the GitLab repository. This can **and should** be used for PRs changing the CI pipeline before merging them to master.
 
-```git
-# fetch changes from remote (Github) and push them to GitLab 
+```shell
+# fetch changes from remote (GitHub) and push them to GitLab 
 git fetch git@github.com:Rdatatable/data.table.git new_branch:new_branch
 git push
-# on update, pull changes from remote and push to GitLab
+# after updating at GitHub, pull changes from remote and push to GitLab
 git pull git@github.com:Rdatatable/data.table.git new_branch
 git push
 ```
 
-
+Make sure to include a link to the pipeline results in your PR. 
