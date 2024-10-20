@@ -53,7 +53,7 @@ mirror-packages:
     - mkdir -p bus/$CI_JOB_NAME/cran/src/contrib
     - Rscript -e 'mirror.packages(dcf.dependencies("DESCRIPTION", "all"), repos=Sys.getenv("CRAN_MIRROR"), repodir="bus/mirror-packages/cran")'
     - Rscript -e 'sapply(simplify=FALSE, setNames(nm=Sys.getenv(c("R_REL_VERSION","R_DEV_VERSION","R_OLD_VERSION"))), function(binary.ver) mirror.packages(type="win.binary", dcf.dependencies("DESCRIPTION", "all"), repos=Sys.getenv("CRAN_MIRROR"), repodir="bus/mirror-packages/cran", binary.ver=binary.ver))'
-    - Rscript -e 'sapply(simplify=FALSE, setNames(nm=Sys.getenv(c("R_REL_VERSION","R_DEV_VERSION","R_OLD_VERSION"))), function(binary.ver) mirror.packages(type="mac.binary.big-sur-arm64", dcf.dependencies("DESCRIPTION", "all"), repos=Sys.getenv("CRAN_MIRROR"), repodir="bus/mirror-packages/cran", binary.ver=binary.ver))'
+    - Rscript -e 'sapply(simplify=FALSE, setNames(nm=Sys.getenv(c("R_REL_VERSION","R_OLD_VERSION"))), function(binary.ver) mirror.packages(type="mac.binary.big-sur-arm64", dcf.dependencies("DESCRIPTION", "all"), repos=Sys.getenv("CRAN_MIRROR"), repodir="bus/mirror-packages/cran", binary.ver=binary.ver))'
   <<: *artifacts
 
 ## install deps alias
@@ -349,7 +349,7 @@ integration:
     - '[ -f bus/test-win-old/data.table_*.zip ] && cp bus/test-win-old/data.table_*.zip bus/integration/cran/bin/windows/contrib/$R_OLD_VERSION/'
     - ls -1 "bus/integration/cran/bin/windows/contrib/$R_OLD_VERSION"/data.table_*.zip || true
     - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="win.binary", ver=Sys.getenv("R_REL_VERSION")), type="win.binary", fields="Revision", addFiles=TRUE)'
-    - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="win.binary", ver=Sys.getenv("R_DEV_VERSION")), type="win.binary", fields="Revision", addFiles=TRUE)'
+    # - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="win.binary", ver=Sys.getenv("R_DEV_VERSION")), type="win.binary", fields="Revision", addFiles=TRUE)'
     - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="win.binary", ver=Sys.getenv("R_OLD_VERSION")), type="win.binary", fields="Revision", addFiles=TRUE)'
     #### macos mkdir cran/bin/.../contrib/...
     - mkdir -p bus/integration/cran/bin/macosx/big-sur-arm64/contrib/$R_REL_VERSION/
@@ -358,13 +358,13 @@ integration:
     #### macos move binaries
     - '[ -f bus/test-mac-rel/data.table_*.tgz ] && cp bus/test-mac-rel/data.table_*.tgz bus/integration/cran/bin/macosx/big-sur-arm64/contrib/$R_REL_VERSION/'
     - ls -1 "bus/integration/cran/bin/macosx/big-sur-arm64/contrib/$R_REL_VERSION"/data.table_*.tgz || true
-    - '[ -f bus/test-mac-dev/data.table_*.tgz ] && cp bus/test-mac-dev/data.table_*.tgz bus/integration/cran/bin/macosx/big-sur-arm64/contrib/$R_DEV_VERSION/'
-    - ls -1 "bus/integration/cran/bin/macosx/big-sur-arm64/contrib/$R_DEV_VERSION"/data.table_*.tgz || true
+    # - '[ -f bus/test-mac-dev/data.table_*.tgz ] && cp bus/test-mac-dev/data.table_*.tgz bus/integration/cran/bin/macosx/big-sur-arm64/contrib/$R_DEV_VERSION/'
+    # - ls -1 "bus/integration/cran/bin/macosx/big-sur-arm64/contrib/$R_DEV_VERSION"/data.table_*.tgz || true
     - '[ -f bus/test-mac-old/data.table_*.tgz ] && cp bus/test-mac-old/data.table_*.tgz bus/integration/cran/bin/macosx/big-sur-arm64/contrib/$R_OLD_VERSION/'
     - ls -1 "bus/integration/cran/bin/macosx/big-sur-arm64/contrib/$R_OLD_VERSION"/data.table_*.tgz || true
     #### macos write_PACKAGES
     - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="mac.binary.big-sur-arm64", ver=Sys.getenv("R_REL_VERSION")), type="mac.binary.big-sur-arm64", fields="Revision", addFiles=TRUE)'
-    - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="mac.binary.big-sur-arm64", ver=Sys.getenv("R_DEV_VERSION")), type="mac.binary.big-sur-arm64", fields="Revision", addFiles=TRUE)'
+    # - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="mac.binary.big-sur-arm64", ver=Sys.getenv("R_DEV_VERSION")), type="mac.binary.big-sur-arm64", fields="Revision", addFiles=TRUE)'
     - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="mac.binary.big-sur-arm64", ver=Sys.getenv("R_OLD_VERSION")), type="mac.binary.big-sur-arm64", fields="Revision", addFiles=TRUE)'
     ## install pkg to render html
     - mkdir -p /tmp/opencran/library /tmp/opencran/doc/html
