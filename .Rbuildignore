@@ -16,6 +16,7 @@
 ^\.devcontainer$
 ^\.graphics$
 ^\.github$
+^\.vscode$
 ^\.zed$
 
 ^\.gitlab-ci\.yml$
@@ -27,6 +28,7 @@
 ^src/Makevars$
 ^CODEOWNERS$
 ^GOVERNANCE\.md$
+^Seal_of_Approval\.md$
 
 ^\.RData$
 ^\.Rhistory$

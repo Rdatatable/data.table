@@ -1,5 +1,14 @@
 #include "data.table.h"
 
+/*
+  OpenMP is used here to parallelize the loops in frollmean and frollsum.
+
+  These functions benefit more in terms of speedup when the data has a large
+    number of columns, primarily due to the efficient memory access patterns
+    (cache-friendly) used when processing the data for each column
+    sequentially in memory to compute the rolling statistic.
+*/
+
 /* fast rolling mean - router
  * early stopping for window bigger than input
  * also handles 'align' in single place

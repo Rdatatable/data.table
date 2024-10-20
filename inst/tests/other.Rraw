@@ -761,3 +761,8 @@ if (loaded[["dplyr"]]) {
   DT = data.table(a = 1, b = 2, c = '1,2,3,4', d = 4)
   test(30, DT[, c := strsplit(c, ',', fixed = TRUE) %>% lapply(as.integer) %>% as.list]$c, list(1:4)) # nolint: pipe_call_linter. Mimicking MRE as filed.
 }
+
+if (loaded[["nanotime"]]) {
+  # respect dec=',' for nanotime, related to #6446, corresponding to tests 2281.*
+  test(31, fwrite(data.table(as.nanotime(.POSIXct(0))), dec=',', sep=';'), output="1970-01-01T00:00:00,000000000Z")
+}

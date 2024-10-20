@@ -98,7 +98,7 @@ round.IDate = function(x, digits=c("weeks", "months", "quarters", "years"), ...)
     return(e1)
   # TODO: investigate Ops.IDate method a la Ops.difftime
   if (inherits(e1, "difftime") || inherits(e2, "difftime"))
-    stopf("Internal error -- difftime objects may not be added to IDate, but Ops dispatch should have intervened to prevent this") # nocov
+    internal_error("difftime objects may not be added to IDate, but Ops dispatch should have intervened to prevent this") # nocov
   if (isReallyReal(e1) || isReallyReal(e2)) {
     return(`+.Date`(e1, e2))
     # IDate doesn't support fractional days; revert to base Date
@@ -114,11 +114,11 @@ round.IDate = function(x, digits=c("weeks", "months", "quarters", "years"), ...)
     stopf("can only subtract from \"IDate\" objects")
   }
   if (storage.mode(e1) != "integer")
-    stopf("Internal error: storage mode of IDate is somehow no longer integer") # nocov
+    internal_error("storage mode of IDate is somehow no longer integer") # nocov
   if (nargs() == 1L)
     stopf("unary - is not defined for \"IDate\" objects")
   if (inherits(e2, "difftime"))
-    stopf("Internal error -- difftime objects may not be subtracted from IDate, but Ops dispatch should have intervened to prevent this") # nocov
+    internal_error("difftime objects may not be subtracted from IDate, but Ops dispatch should have intervened to prevent this") # nocov
 
   if ( isReallyReal(e2) ) {
     # IDate deliberately doesn't support fractional days so revert to base Date
