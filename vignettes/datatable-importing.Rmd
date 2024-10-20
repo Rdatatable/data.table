@@ -9,6 +9,14 @@ vignette: >
   \usepackage[utf8]{inputenc}
 ---
 
+```{r, echo = FALSE, message = FALSE}
+opts = litedown::reactor()
+opts$comment = "# "
+opts$error = FALSE
+opts$print = xfun:::record_print.default
+.old.th = setDTthreads(1)
+```
+
 <style>
 h2 {
     font-size: 20px;

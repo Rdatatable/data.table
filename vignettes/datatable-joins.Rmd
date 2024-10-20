@@ -12,10 +12,11 @@ editor_options:
 ---
 
 ```{r, echo = FALSE, message = FALSE}
-require(data.table)
+library(data.table)
 opts = litedown::reactor()
-opts$comment = "#"
+opts$comment = "# "
 opts$error = FALSE
+opts$print = xfun:::record_print.default
 ```
 
 In this vignette you will learn how to perform any join operation using resources available in the `data.table` syntax.

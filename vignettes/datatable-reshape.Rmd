@@ -10,10 +10,11 @@ vignette: >
 ---
 
 ```{r, echo = FALSE, message = FALSE}
-require(data.table)
+library(data.table)
 opts = litedown::reactor()
-opts$comment = "#"
+opts$comment = "# "
 opts$error = FALSE
+opts$print = xfun:::record_print.default
 .old.th = setDTthreads(1)
 ```
 

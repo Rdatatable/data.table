@@ -14,6 +14,14 @@ vignette: >
   \usepackage[utf8]{inputenc}
 ---
 
+```{r, echo = FALSE, message = FALSE}
+library(data.table)
+opts = litedown::reactor()
+opts$comment = "# "
+opts$error = FALSE
+opts$print = xfun:::record_print.default
+```
+
 <style>
 h2 {
     font-size: 20px;

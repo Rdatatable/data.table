@@ -9,11 +9,12 @@ vignette: >
   \usepackage[utf8]{inputenc}
 ---
 
-```{r init, include = FALSE}
-require(data.table)
+```{r init, echo = FALSE, message = FALSE}
+library(data.table)
 opts = litedown::reactor()
-opts$comment = "#"
+opts$comment = "# "
 opts$error = FALSE
+opts$print = xfun:::record_print.default
 ```
 
 

@@ -13,6 +13,14 @@ vignette: >
   %\VignetteEngine{litedown::vignette}
   \usepackage[utf8]{inputenc}
 ---
+```{r, echo = FALSE, message = FALSE}
+library(data.table)
+opts = litedown::reactor()
+opts$comment = "# "
+opts$error = FALSE
+opts$print = xfun:::record_print.default
+.old.th = setDTthreads(1)
+```
 
 <style>
 h2 {
@@ -20,14 +28,6 @@ h2 {
 }
 #TOC { width: 100%; }
 </style>
-
-```{r, echo = FALSE, message = FALSE}
-library(data.table)
-opts = litedown::reactor()
-opts$comment = "#"
-opts$error = FALSE
-.old.th = setDTthreads(1)
-```
 
 The first section, Beginner FAQs, is intended to be read in order, from start to finish.  It's just written in a FAQ style to be digested more easily. It isn't really the most frequently asked questions. A better measure for that is looking on Stack Overflow.
 
