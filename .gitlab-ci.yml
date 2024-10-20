@@ -310,7 +310,7 @@ integration:
   tags:
     - saas-linux-medium-amd64
   only:
-    - master
+    - master, macos_binaries
   needs: ["mirror-packages","build","test-lin-rel","test-lin-rel-cran","test-lin-dev-gcc-strict-cran","test-lin-dev-clang-cran","test-lin-rel-vanilla","test-lin-ancient-cran","test-win-rel","test-win-dev" ,"test-win-old"]
   script:
     - R --version
