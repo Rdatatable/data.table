@@ -1,6 +1,6 @@
 # data.table continuous integration and deployment
 
-On each Pull Request opened in GitHub we run GitHub Actions test jobs to provide prompt feedback about the status of PR. Our main CI pipeline runs on GitLab CI nightly. GitLab repository automatically mirrors our GitHub repository and runs pipeline on `master` branch every night. It tests more environments and different configurations. It publish variety of artifacts.
+On each Pull Request opened in GitHub we run GitHub Actions test jobs to provide prompt feedback about the status of PR. Our main CI pipeline runs on GitLab CI nightly. GitLab repository automatically mirrors our GitHub repository and runs pipeline on `master` branch every night. It tests more environments and different configurations. It publish variety of artifacts such as our [homepage](https://rdatatable.gitlab.io/data.table/) and [CRAN-like website for dev version](https://rdatatable.gitlab.io/data.table/web/packages/data.table/index.html) including windows binaries for the dev version.
 
 ## Environments
 
@@ -44,3 +44,22 @@ Base R implemented helper script, [originally proposed to base R](https://svn.r-
 ### [`publish.R`](./publish.R)
 
 Base R implemented helper script to orchestrate generation of most artifacts and to arrange them nicely. It is being used only in [_integration_ stage in GitLab CI pipeline](./../.gitlab-ci.yml).
+
+## GitLab Open Source Program
+
+We are currently part of the GitLab for Open Source Program. This gives us 50,000 compute minutes per month for our GitLab CI. Our license needs to renewed yearly and is currently managed by @ben-schwen.
+
+## Updating CI pipeline
+
+Basic CI checks are also run on every push to the GitLab repository. This can **and should** be used for testing changes to the CI pipeline before pushing them to master.
+
+```git
+# fetch changes from remote (Github) and push them to GitLab 
+git fetch git@github.com:Rdatatable/data.table.git new_branch:new_branch
+git push
+# on update, pull changes from remote and push to GitLab
+git pull git@github.com:Rdatatable/data.table.git new_branch
+git push
+```
+
+
