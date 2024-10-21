@@ -2,22 +2,19 @@
 title: "Programming on data.table"
 date: "`r Sys.Date()`"
 output:
-  markdown::html_format
+  litedown::html_format
 vignette: >
   %\VignetteIndexEntry{Programming on data.table}
-  %\VignetteEngine{knitr::knitr}
+  %\VignetteEngine{litedown::vignette}
   \usepackage[utf8]{inputenc}
 ---
 
-```{r init, include = FALSE}
-require(data.table)
-knitr::opts_chunk$set(
-  comment = "#",
-    error = FALSE,
-     tidy = FALSE,
-    cache = FALSE,
- collapse = TRUE
-)
+```{r init, echo = FALSE, message = FALSE}
+library(data.table)
+opts = litedown::reactor()
+opts$comment = "# "
+opts$error = FALSE
+opts$print = xfun:::record_print.default
 ```
 
 
