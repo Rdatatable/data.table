@@ -30,13 +30,8 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     # Other options investigated (could revisit): Cstack_info(), .Last.value gets set first before autoprint, history(), sys.status(),
     #   topenv(), inspecting next statement in caller, using clock() at C level to timeout suppression after some number of cycles
     SYS = sys.calls()
-    if (length(SYS) <= 2L ||  # "> DT" auto-print or "> print(DT)" explicit print (cannot distinguish from R 3.2.0 but that's ok)
-        ( length(SYS) >= 3L && is.symbol(thisSYS <- SYS[[length(SYS)-2L]][[1L]]) &&
-          as.character(thisSYS) == 'source') || # suppress printing from source(echo = TRUE) calls, #2369
-        ( length(SYS) > 3L && is.symbol(thisSYS <- SYS[[length(SYS)-3L]][[1L]]) &&
-          as.character(thisSYS) %chin% mimicsAutoPrint ) )  {
+    if (length(SYS) <= 2L) { # "> DT" auto-print or "> print(DT)" explicit print (cannot distinguish from R 3.2.0 but that's ok)
       return(invisible(x))
-      # is.symbol() temp fix for #1758.
     }
   }
   if (!is.numeric(nrows)) nrows = 100L
@@ -157,9 +152,6 @@ format.data.table = function(x, ..., justify="none") {
   }
   do.call(cbind, lapply(x, format_col, ..., justify=justify))
 }
-
-mimicsAutoPrint = c("knit_print.default")
-# add maybe repr_text.default.  See https://github.com/Rdatatable/data.table/issues/933#issuecomment-220237965
 
 shouldPrint = function(x) {
   ret = (identical(.global$print, "") ||   # to save address() calls and adding lots of address strings to R's global cache
@@ -287,4 +279,10 @@ trunc_cols_message = function(not_printed, abbs, class, col.names){
     n, brackify(paste0(not_printed, classes)),
     domain=NA
   )
+}
+
+# Maybe add a method for repr::repr_text.  See https://github.com/Rdatatable/data.table/issues/933#issuecomment-220237965
+knit_print.data.table <- function(x, ...) {
+  if (!shouldPrint(x)) return(invisible(x))
+  NextMethod()
 }
