@@ -686,8 +686,8 @@ void fwriteMain(fwriteMainArgs args)
       case WF_List:
         width = getMaxListItemLen(args.columns[j], args.nrow);
         break;
-      default: // # nocov
-        INTERNAL_STOP("type %d has no max length method implemented", args.whichFun[j]);  // # nocov
+      default: // #nocov
+        STOP(_("type %d has no max length method implemented"), args.whichFun[j]);  // # nocov
       }
     }
     if (args.whichFun[j] == WF_Float64 && args.scipen > 0)
