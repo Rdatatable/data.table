@@ -27,7 +27,7 @@ format.bins <- function(ver, bin_ver, cran.home, os.type, pkg, version, repodir)
     plat.path = "windows"
   } else if (os.type=="macosx") {
     ext = "tgz"
-    plat.path = "macosx/el-capitan"
+    plat.path = "macosx/big-sur-arm64"
   } else stop("format.bins only valid for 'windows' or 'macosx' os.type")
   file = sprintf("bin/%s/contrib/%s/%s_%s.%s", plat.path, bin_ver, pkg, version, ext)
   fe = file.exists(file.path(repodir, file))
