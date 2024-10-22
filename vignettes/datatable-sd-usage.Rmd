@@ -2,7 +2,7 @@
 title: "Using .SD for Data Analysis"
 date: "`r Sys.Date()`"
 output:
-  markdown::html_format:
+  litedown::html_format:
     options:
       toc: true
       number_sections: true
@@ -10,21 +10,16 @@ output:
       css: [default, css/toc.css]
 vignette: >
   %\VignetteIndexEntry{Using .SD for Data Analysis}
-  %\VignetteEngine{knitr::knitr}
+  %\VignetteEngine{litedown::vignette}
   \usepackage[utf8]{inputenc}
 ---
 
 ```{r, echo = FALSE, message = FALSE}
-require(data.table)
-knitr::opts_chunk$set(
-  comment = "#",
-  error = FALSE,
-  tidy = FALSE,
-  cache = FALSE,
-  collapse = TRUE,
-  out.width = '100%',
-  dpi = 144
-)
+library(data.table)
+opts = litedown::reactor()
+opts$comment = "# "
+opts$error = FALSE
+opts$print = xfun:::record_print.default
 .old.th = setDTthreads(1)
 ```
 
