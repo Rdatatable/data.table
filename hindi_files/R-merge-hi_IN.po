@@ -28,7 +28,7 @@ msgstr "प्रविष्टि data.table '%s' में कोई कॉ�
 
 #: merge.R:32
 msgid "`by.x` and `by.y` must be of same length."
-msgstr "`by.x` और `by.y` को एक ही लेंथ (length) का होना चाहिए। चाहिए।"
+msgstr "`by.x` और `by.y` की लेंथ (length) समान होनी चाहिए|"
 
 #: merge.R:34
 msgid "Supplied both `by` and `by.x/by.y`. `by` argument will be ignored."
