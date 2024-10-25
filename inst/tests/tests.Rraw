@@ -20591,3 +20591,6 @@ setDT(d2)
 test(2295.1, !is.data.table(d1))
 test(2295.2, rownames(d1), 'b')
 test(2295.3, is.data.table(d2))
+
+# #6588: .checkTypos used to give arbitrary strings to stopf as the first argument
+test(2296, d2[x %no such operator% 1], error = '%no such operator%')
