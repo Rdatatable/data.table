@@ -47,7 +47,7 @@ Base R implemented helper script to orchestrate generation of most artifacts and
 
 ## GitLab Open Source Program
 
-We are currently part of the [GitLab for Open Source Program](https://about.gitlab.com/solutions/open-source/). This gives us 50,000 compute minutes per month for our GitLab CI. Our license needs to be renewed yearly and is currently managed by @ben-schwen.
+We are currently part of the [GitLab for Open Source Program](https://about.gitlab.com/solutions/open-source/). This gives us 50,000 compute minutes per month for our GitLab CI. Our license needs to be renewed yearly (around July) and is currently managed by @ben-schwen.
 
 ## Updating CI pipeline
 
