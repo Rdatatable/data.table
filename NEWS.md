@@ -115,7 +115,7 @@ rowwiseDT(
 
 15. `DT[1, on=NULL]` now works for returning the first row, [#6579](https://github.com/Rdatatable/data.table/issues/6579). Thanks to @Kodiologist for the report and @tdhock for the PR.
 
-16. Using `print.data.table()` with nested dataframes no longer errors when one of the nested dataframes has only one column, [#6592](https://github.com/Rdatatable/data.table/issues). Thanks to @r2evans for the but report and fix.
+16. Using `print.data.table()` with nested dataframes no longer errors when one of the nested dataframes has only one column, [#6592](https://github.com/Rdatatable/data.table/issues). Thanks to @r2evans for the bug report and fix.
 
 ## NOTES
 
