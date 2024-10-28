@@ -201,6 +201,7 @@ S3method(format_col, POSIXct)
 S3method(format_col, expression)
 export(format_list_item)
 S3method(format_list_item, default)
+S3method(format_list_item, data.frame)
 
 export(fdroplevels, setdroplevels)
 S3method(droplevels, data.table)
