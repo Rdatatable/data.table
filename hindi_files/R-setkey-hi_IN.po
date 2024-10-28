@@ -15,21 +15,26 @@ msgid ""
 "x may no longer be the character name of the data.table. The possibility was "
 "undocumented and has been removed."
 msgstr ""
+"x अब data.table का नाम कैरेक्टर (character) नहीं हो सकता है।"
+"यह संभावना अप्रलेखित थी और हटा दी गई है।"
 
 #: setkey.R:23
 msgid ""
 "key(x)<-value is deprecated and not supported. Please change to use setkey() "
 "with perhaps copy(). Has been warning since 2012."
 msgstr ""
+"key(x)<-value को हटाया जा चुका है और इसका समर्थन नहीं किया जाता है। कृपया setkey() का उपयोग करें, संभवतः copy() के साथ।"
+"2012 से चेतावनी दी जा रही है।"
 
 #: setkey.R:39
 msgid "x is not a data.table"
-msgstr ""
+msgstr "x एक data.table नहीं है"
 
 #: setkey.R:40
 msgid ""
 "cols is not a character vector. Please see further information in ?setkey."
 msgstr ""
+"cols एक कैरेक्टर (character) वेक्टर (vector) नहीं है। कृपया ?setkey में आगे की जानकारी देखें।"
 
 #: setkey.R:41
 msgid ""
