@@ -121,6 +121,7 @@ static int _selfrefok(SEXP x, Rboolean checkNames, Rboolean verbose) {
   p = R_ExternalPtrAddr(v);
   if (p==NULL) {
     if (verbose) Rprintf(_(".internal.selfref ptr is NULL. This is expected and normal for a data.table loaded from disk. Please remember to always setDT() immediately after loading to prevent unexpected behavior. If this table was not loaded from disk or you've already run setDT(), please report to data.table issue tracker.\n"));
+    UNPROTECT(nprotect);
     return -1;
   }
   if (!isNull(p)) internal_error(__func__, ".internal.selfref ptr is neither NULL nor R_NilValue"); // # nocov
@@ -132,8 +133,10 @@ static int _selfrefok(SEXP x, Rboolean checkNames, Rboolean verbose) {
     // R copied this vector not data.table; it's not actually over-allocated. It looks over-allocated
     // because R copies the original vector's tl over despite allocating length.
   prot = R_ExternalPtrProtected(v);
-  if (TYPEOF(prot) != EXTPTRSXP)   // Very rare. Was error(_(".internal.selfref prot is not itself an extptr")).
+  if (TYPEOF(prot) != EXTPTRSXP) { // Very rare. Was error(_(".internal.selfref prot is not itself an extptr")).
+    UNPROTECT(nprotect);
     return 0;                      // # nocov ; see http://stackoverflow.com/questions/15342227/getting-a-random-internal-selfref-error-in-data-table-for-r
+  }
   if (x!=R_ExternalPtrAddr(prot) && !ALTREP(x))
     SET_TRUELENGTH(x, LENGTH(x));  // R copied this vector not data.table, it's not actually over-allocated
   int ok = checkNames ? names==tag : x==R_ExternalPtrAddr(prot);

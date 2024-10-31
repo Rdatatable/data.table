@@ -345,7 +345,7 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md
   // clear any index that was copied over by copyMostAttrib() above, e.g. #1760 and #1734 (test 1678)
   setAttrib(ans, sym_index, R_NilValue);
   // but maintain key if ordered subset
-  SEXP key = getAttrib(x, sym_sorted);
+  SEXP key = PROTECT(getAttrib(x, sym_sorted)); nprotect++;
   if (length(key)) {
     SEXP ans_names = PROTECT(getAttrib(ans, R_NamesSymbol)); nprotect++;
     SEXP in = PROTECT(chin(key, ans_names)); nprotect++;
