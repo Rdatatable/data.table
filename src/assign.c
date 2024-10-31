@@ -107,7 +107,8 @@ Moved out of ?setkey Details section in 1.12.2 (Mar 2019). Revisit this w.r.t. t
 
 static int _selfrefok(SEXP x, Rboolean checkNames, Rboolean verbose) {
   SEXP v, p, tag, prot, names;
-  v = getAttrib(x, SelfRefSymbol);
+  int nprotect=0;
+  v = PROTECT(getAttrib(x, SelfRefSymbol)); nprotect++;
   if (v==R_NilValue || TYPEOF(v)!=EXTPTRSXP) {
     // .internal.selfref missing is expected and normal for i) a pre v1.7.8 data.table loaded
     //  from disk, and ii) every time a new data.table is over-allocated for the first time.
@@ -124,7 +125,7 @@ static int _selfrefok(SEXP x, Rboolean checkNames, Rboolean verbose) {
   if (!isNull(p)) error(_("Internal error: .internal.selfref ptr is neither NULL nor R_NilValue")); // # nocov
   tag = R_ExternalPtrTag(v);
   if (!(isNull(tag) || isString(tag))) error(_("Internal error: .internal.selfref tag is neither NULL nor a character vector")); // # nocov
-  names = getAttrib(x, R_NamesSymbol);
+  names = PROTECT(getAttrib(x, R_NamesSymbol)); nprotect++;
   if (names!=tag && isString(names) && !ALTREP(names))  // !ALTREP for #4734
     SET_TRUELENGTH(names, LENGTH(names));
     // R copied this vector not data.table; it's not actually over-allocated. It looks over-allocated
@@ -134,7 +135,9 @@ static int _selfrefok(SEXP x, Rboolean checkNames, Rboolean verbose) {
     return 0;                      // # nocov ; see http://stackoverflow.com/questions/15342227/getting-a-random-internal-selfref-error-in-data-table-for-r
   if (x!=R_ExternalPtrAddr(prot) && !ALTREP(x))
     SET_TRUELENGTH(x, LENGTH(x));  // R copied this vector not data.table, it's not actually over-allocated
-  return checkNames ? names==tag : x==R_ExternalPtrAddr(prot);
+  int ok = checkNames ? names==tag : x==R_ExternalPtrAddr(prot);
+  UNPROTECT(nprotect);
+  return ok;
 }
 
 static Rboolean selfrefok(SEXP x, Rboolean verbose) {   // for readability
@@ -221,7 +224,7 @@ SEXP setdt_nrows(SEXP x)
     if (Rf_inherits(xi, "POSIXlt")) {
       error(_("Column %d has class 'POSIXlt'. Please convert it to POSIXct (using as.POSIXct) and run setDT() again. We do not recommend the use of POSIXlt at all because it uses 40 bytes to store one date."), i+1);
     }
-    SEXP dim_xi = getAttrib(xi, R_DimSymbol);
+    SEXP dim_xi = PROTECT(getAttrib(xi, R_DimSymbol));
     R_len_t len_xi;
     R_len_t n_dim = LENGTH(dim_xi);
     if (n_dim) {
@@ -233,6 +236,7 @@ SEXP setdt_nrows(SEXP x)
     } else {
       len_xi = LENGTH(xi);
     }
+    UNPROTECT(1);
     if (!base_length) {
       base_length = len_xi;
     } else if (len_xi != base_length) {

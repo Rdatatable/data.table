@@ -327,7 +327,9 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md
   SET_TRUELENGTH(tmp, LENGTH(tmp));
   SETLENGTH(tmp, LENGTH(cols));
   setAttrib(ans, R_NamesSymbol, tmp);
-  subsetVectorRaw(tmp, getAttrib(x, R_NamesSymbol), cols, /*anyNA=*/false);
+  SEXP x_names = PROTECT(getAttrib(x, R_NamesSymbol));
+  subsetVectorRaw(tmp, x_names, cols, /*anyNA=*/false);
+  UNPROTECT(1);
 
   tmp = PROTECT(allocVector(INTSXP, 2)); nprotect++;
   INTEGER(tmp)[0] = NA_INTEGER;
@@ -339,7 +341,8 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md
   // but maintain key if ordered subset
   SEXP key = getAttrib(x, sym_sorted);
   if (length(key)) {
-    SEXP in = PROTECT(chin(key, getAttrib(ans,R_NamesSymbol))); nprotect++;
+    SEXP ans_names = PROTECT(getAttrib(ans, R_NamesSymbol)); nprotect++;
+    SEXP in = PROTECT(chin(key, ans_names)); nprotect++;
     int i = 0;  while(i<LENGTH(key) && LOGICAL(in)[i]) i++;
     // i is now the keylen that can be kept. 2 lines above much easier in C than R
     if (i==0 || !orderedSubset) {
