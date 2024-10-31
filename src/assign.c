@@ -219,7 +219,7 @@ SEXP setdt_nrows(SEXP x)
     if (Rf_inherits(xi, "POSIXlt")) {
       error(_("Column %d has class 'POSIXlt'. Please convert it to POSIXct (using as.POSIXct) and run setDT() again. We do not recommend the use of POSIXlt at all because it uses 40 bytes to store one date."), i+1);
     }
-    SEXP dim_xi = getAttrib(xi, R_DimSymbol);
+    SEXP dim_xi = PROTECT(getAttrib(xi, R_DimSymbol));
     R_len_t len_xi;
     // NB: LENGTH() produces an undefined large number here on R 3.3.0.
     //   There's also a note in NEWS for R 3.1.0 saying length() should always be used by packages,
@@ -234,6 +234,7 @@ SEXP setdt_nrows(SEXP x)
     } else {
       len_xi = LENGTH(xi);
     }
+    UNPROTECT(1);
     if (!base_length) {
       base_length = len_xi;
     } else if (len_xi != base_length) {
