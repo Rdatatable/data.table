@@ -61,7 +61,7 @@ removeClass("S4Composition")
 # miscellaneous missing tests uncovered by CodeCov difference in the process of PR #2573 [S4 portion, c.f. 1872.* in tests.Rraw]
 ## data.table cannot recycle complicated types
 short_s4_col = getClass("MethodDefinition")
-test(2, data.table(a = 1:4, short_s4_col), error="attempt to replicate non-vector")
+test(2, data.table(a = 1:4, short_s4_col), error="attempt to replicate.*(non-vector|S4)")
 
 # print dims in list-columns, #3671, c.f. 2130.* in tests.Rraw
 s4class = setClass("ex_class", slots = list(x="integer", y="character", z="numeric"))
@@ -90,14 +90,14 @@ ans_print = utils::capture.output(print(ans))
 if (TZnotUTC) {
   test(5.2, options=list(datatable.old.fread.datetime.character=NULL),
        fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date","IDate","POSIXct"), tz=""),
-       ans, output=ans_print)
+       copy(ans)[, a := as.IDate(a)], output=ans_print)
   test(5.3, options=list(datatable.old.fread.datetime.character=NULL),
        fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date",NA,NA), tz=""),
-       data.table(a=as.Date("2015-01-01"), b=as.IDate("2015-01-02"), c="2015-01-03 01:02:03"), output=ans_print)
+       data.table(a=as.IDate("2015-01-01"), b=as.IDate("2015-01-02"), c="2015-01-03 01:02:03"), output=ans_print)
 } else {
   test(5.4, options=list(datatable.old.fread.datetime.character=NULL),
        fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date","IDate","POSIXct")),
-       ans<-data.table(a=as.Date("2015-01-01"), b=as.IDate("2015-01-02"), c=as.POSIXct("2015-01-03 01:02:03", tz="UTC")), output=ans_print)
+       ans<-data.table(a=as.IDate("2015-01-01"), b=as.IDate("2015-01-02"), c=as.POSIXct("2015-01-03 01:02:03", tz="UTC")), output=ans_print)
   test(5.5, options=list(datatable.old.fread.datetime.character=NULL),
        fread("a,b,c\n2015-01-01,2015-01-02,2015-01-03 01:02:03", colClasses=c("Date",NA,NA)),
        ans, output=ans_print)

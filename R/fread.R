@@ -95,10 +95,9 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     }
 
     # support zip and tar files #3834
-    zip_signature = charToRaw("PK\x03\x04")
     file_signature = readBin(file, raw(), 8L)
 
-    if ((w <- endsWithAny(file, c(".zip", ".tar"))) || identical(head(file_signature, 4L), zip_signature)) {
+    if ((w <- endsWithAny(file, c(".zip", ".tar"))) || is_zip(file_signature)) {
       FUN = if (w==2L) untar else unzip
       fnames = FUN(file, list=TRUE)
       if (is.data.frame(fnames)) fnames = fnames[,1L]
@@ -110,12 +109,10 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
       on.exit(unlink(decompFile), add=TRUE)
     }
 
-    gz_signature = as.raw(c(0x1F, 0x8B))
-    bz2_signature = as.raw(c(0x42, 0x5A, 0x68))
     gzsig = FALSE
-    if ((w <- endsWithAny(file, c(".gz", ".bgz",".bz2"))) || (gzsig <- identical(head(file_signature, 2L), gz_signature)) || identical(head(file_signature, 3L), bz2_signature)) {
+    if ((w <- endsWithAny(file, c(".gz", ".bgz",".bz2"))) || (gzsig <- is_gzip(file_signature)) || is_bzip(file_signature)) {
       if (!requireNamespace("R.utils", quietly = TRUE))
-        stopf("To read gz and bz2 files directly, fread() requires 'R.utils' package which cannot be found. Please install 'R.utils' using 'install.packages('R.utils')'.") # nocov
+        stopf("To read %s files directly, fread() requires 'R.utils' package which cannot be found. Please install 'R.utils' using 'install.packages('R.utils')'.", if (w<=2L || gzsig) "gz" else "bz2") # nocov
       FUN = if (w<=2L || gzsig) gzfile else bzfile
       R.utils::decompressFile(file, decompFile<-tempfile(tmpdir=tmpdir), ext=NULL, FUN=FUN, remove=FALSE)   # ext is not used by decompressFile when destname is supplied, but isn't optional
       file = decompFile   # don't use 'tmpFile' symbol again, as tmpFile might be the http://domain.org/file.csv.gz download
@@ -161,6 +158,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     }
     # whitespace at the beginning or end of na.strings is checked at C level and is an error there; test 1804
   }
+  # nocov start. Tested in other.Rraw tests 16, not in the main suite.
   if (yaml) {
     if (!requireNamespace('yaml', quietly = TRUE))
       stopf("'data.table' relies on the package 'yaml' to parse the file header; please add this to your library with install.packages('yaml') and try again.") # nocov
@@ -270,6 +268,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     }
     if (is.integer(skip)) skip = skip + n_read
   }
+  # nocov end
   warnings2errors = getOption("warn") >= 2
   stopifnot(identical(tz,"UTC") || identical(tz,""))
   if (tz=="") {
@@ -299,6 +298,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
   for (j in which(nzchar(colClassesAs))) {       # # 1634
     v = .subset2(ans, j)
     new_class = colClassesAs[j]
+    if (new_class %chin% c("POSIXct")) v[!nzchar(v)] = NA_character_ # as.POSIXct/as.POSIXlt cannot handle as.POSIXct("") correctly #6208
     new_v = tryCatch({    # different to read.csv; i.e. won't error if a column won't coerce (fallback with warning instead)
       switch(new_class,
              "factor" = as_factor(v),
@@ -312,8 +312,14 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
              # finally:
              methods::as(v, new_class))
       },
-      warning = fun <- function(e) {
-        warningf("Column '%s' was requested to be '%s' but fread encountered the following %s:\n\t%s\nso the column has been left as type '%s'", names(ans)[j], new_class, if (inherits(e, "error")) "error" else "warning", e$message, typeof(v))
+      warning = fun <- function(c) {
+        # NB: branch here for translation purposes (e.g. if error/warning have different grammatical gender)
+        if (inherits(c, "warning")) {
+          msg_fmt <- gettext("Column '%s' was requested to be '%s' but fread encountered the following warning:\n\t%s\nso the column has been left as type '%s'")
+        } else {
+          msg_fmt <- gettext("Column '%s' was requested to be '%s' but fread encountered the following error:\n\t%s\nso the column has been left as type '%s'")
+        }
+        warningf(msg_fmt, names(ans)[j], new_class, conditionMessage(c), typeof(v), domain=NA)
         v
       },
       error = fun)
@@ -328,7 +334,9 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     } else {
       cols_to_factor = which(vapply_1b(ans, is.character))
     }
-    if (verbose) catf("stringsAsFactors=%s converted %d column(s): %s\n", stringsAsFactors, length(cols_to_factor), brackify(names(ans)[cols_to_factor]))
+    if (verbose)
+      catf(ngettext(length(cols_to_factor), "stringsAsFactors=%s converted %d column: %s\n", "stringsAsFactors=%s converted %d columns: %s\n"),
+           stringsAsFactors, length(cols_to_factor), brackify(names(ans)[cols_to_factor]), domain=NA)
     for (j in cols_to_factor) set(ans, j=j, value=as_factor(.subset2(ans, j)))
   }
 
@@ -341,7 +349,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
       key = cols_from_csv(key)
     setkeyv(ans, key)
   }
-  if (yaml) setattr(ans, 'yaml_metadata', yaml_header)
+  if (yaml) setattr(ans, 'yaml_metadata', yaml_header) # nocov
   if (!is.null(index) && data.table) {
     if (!all(vapply_1b(index, is.character)))
       stopf("index argument of data.table() must be a character vector naming columns (NB: col.names are applied before this)")
@@ -358,6 +366,30 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     setindexv(ans, index)
   }
   ans
+}
+
+known_signatures = list(
+  zip = as.raw(c(0x50, 0x4b, 0x03, 0x04)), # charToRaw("PK\x03\x04")
+  gzip = as.raw(c(0x1F, 0x8B)),
+  bzip = as.raw(c(0x42, 0x5A, 0x68))
+)
+
+# https://en.wikipedia.org/wiki/ZIP_(file_format)#File_headers
+# not checked: what's a valid 'version' entry to check the 5th+6th bytes
+is_zip = function(file_signature) {
+  identical(file_signature[1:4], known_signatures$zip)
+}
+
+# https://en.wikipedia.org/wiki/Gzip#File_format
+# not checked: remaining 8 bytes of header
+is_gzip = function(file_signature) {
+  identical(file_signature[1:2], known_signatures$gzip)
+}
+
+# https://en.wikipedia.org/wiki/Bzip2#File_format
+is_bzip = function(file_signature) {
+  identical(file_signature[1:3], known_signatures$bzip) &&
+    isTRUE(file_signature[4L] %in% charToRaw('123456789')) # for #6304
 }
 
 # simplified but faster version of `factor()` for internal use.

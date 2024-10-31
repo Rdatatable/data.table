@@ -63,7 +63,8 @@ SEXP whichwrapper(SEXP x, SEXP val) {
 
 static const char *concat(SEXP vec, SEXP idx) {
   if (!isString(vec)) error(_("concat: 'vec' must be a character vector"));
-  if (!isInteger(idx) || length(idx) < 0) error(_("concat: 'idx' must be an integer vector of length >= 0"));
+  if (!isInteger(idx))
+    error(_("concat: 'idx' must be an integer vector"));
 
   static char ans[1024];  // so only one call to concat() per calling warning/error
   int nidx=length(idx), nvec=length(vec);
@@ -72,7 +73,7 @@ static const char *concat(SEXP vec, SEXP idx) {
   const int *iidx = INTEGER(idx);
   for (int i=0; i<nidx; ++i) {
     if (iidx[i]<1 || iidx[i]>nvec)
-      error(_("Internal error in concat: 'idx' must take values between 1 and length(vec); 1 <= idx <= %d"), nvec); // # nocov
+      internal_error(__func__, "'idx' must take values between 1 and length(vec); 1 <= idx <= %d", nvec); // # nocov
   }
   if (nidx>4) nidx=4;  // first 4 following by ... if there are more than 4
   int remaining=1018;  // leaving space for ", ...\0" at the end of the 1024, potentially
@@ -394,21 +395,21 @@ static SEXP combineFactorLevels(SEXP factorLevels, SEXP target, int * factorType
   int maxlevels=0, nitem=length(factorLevels);
   for (int i=0; i<nitem; ++i) {
     SEXP this = VECTOR_ELT(factorLevels, i);
-    if (!isString(this)) error(_("Internal error: combineFactorLevels in fmelt.c expects all-character input"));  // # nocov
+    if (!isString(this)) internal_error(__func__, "expects all-character input");  // # nocov
     maxlevels+=length(this);
   }
-  if (!isString(target)) error(_("Internal error: combineFactorLevels in fmelt.c expects a character target to factorize"));  // # nocov
+  if (!isString(target)) internal_error(__func__, "expects a character target to factorize");  // # nocov
   int nrow = length(target);
   SEXP ans = PROTECT(allocVector(INTSXP, nrow));
   SEXP *levelsRaw = (SEXP *)R_alloc(maxlevels, sizeof(SEXP));  // allocate for worst-case all-unique levels
   int *ansd = INTEGER(ans);
-  const SEXP *targetd = STRING_PTR(target);
+  const SEXP *targetd = STRING_PTR_RO(target);
   savetl_init();
   // no alloc or any fail point until savetl_end()
   int nlevel=0;
   for (int i=0; i<nitem; ++i) {
     const SEXP this = VECTOR_ELT(factorLevels, i);
-    const SEXP *thisd = STRING_PTR(this);
+    const SEXP *thisd = STRING_PTR_RO(this);
     const int thisn = length(this);
     for (int k=0; k<thisn; ++k) {
       SEXP s = thisd[k];
@@ -593,11 +594,14 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
   SEXP ansvars=PROTECT(allocVector(VECSXP, data->lvars)); protecti++;
   SEXP target;
   if (data->lvalues==1 && length(VECTOR_ELT(data->valuecols, 0)) != data->lmax)
-    error(_("Internal error: fmelt.c:getvarcols %d %d"), length(VECTOR_ELT(data->valuecols, 0)), data->lmax);  // # nocov
+    internal_error(__func__, "getvarcols %d %d", length(VECTOR_ELT(data->valuecols, 0)), data->lmax);  // # nocov
   if (isNull(data->variable_table)) {
+    if ((data->lvalues == 1) & data->measure_is_list) {
+      warning("measure.vars is a list with length=1, which as long documented should return integer indices in the 'variable' column, but currently returns character column names. To increase consistency in the next release, we plan to change 'variable' to integer, so users who were relying on this behavior should change measure.vars=list('col_name') (output variable is column name now, but will become column index/integer) to measure.vars='col_name' (variable is column name before and after the planned change).");
+    }
     if (!varfactor) {
       SET_VECTOR_ELT(ansvars, 0, target=allocVector(STRSXP, data->totlen));
-      if (!data->measure_is_list) {//one value column to output.
+      if (data->lvalues == 1) {//one value column to output. TODO #5247 change to !data->measure_is_list
         const int *thisvaluecols = INTEGER(VECTOR_ELT(data->valuecols, 0));
         for (int j=0, ansloc=0; j<data->lmax; ++j) {
           const int thislen = data->narm ? length(VECTOR_ELT(data->not_NA_indices, j)) : data->nrow;
@@ -616,7 +620,7 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
       SET_VECTOR_ELT(ansvars, 0, target=allocVector(INTSXP, data->totlen));
       SEXP levels;
       int *td = INTEGER(target);
-      if (!data->measure_is_list) {//one value column to output.
+      if (data->lvalues == 1) {//one value column to output. TODO #5247 change to !data->measure_is_list
         SEXP thisvaluecols = VECTOR_ELT(data->valuecols, 0);
         int len = length(thisvaluecols);
         levels = PROTECT(allocVector(STRSXP, len)); protecti++;
@@ -745,7 +749,7 @@ SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data
           counter += thislen;
         }
       } else {
-        const SEXP *s = STRING_PTR(thiscol);  // to reduce overhead of STRING_ELT() inside loop below. Read-only hence const.
+        const SEXP *s = STRING_PTR_RO(thiscol);  // to reduce overhead of STRING_ELT() inside loop below. Read-only hence const.
         for (int j=0; j<data->lmax; ++j) {
           for (int k=0; k<data->nrow; ++k) {
             SET_STRING_ELT(target, j*data->nrow + k, s[k]);
@@ -799,7 +803,8 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
   }
   int protecti=0;
   dtnames = PROTECT(getAttrib(DT, R_NamesSymbol)); protecti++;
-  if (isNull(dtnames)) error(_("names(data) is NULL. Please report to data.table-help"));
+  if (isNull(dtnames))
+    internal_error(__func__, "names(data) is NULL"); // # nocov
   if (LOGICAL(narmArg)[0] == TRUE) narm = TRUE;
   if (LOGICAL(verboseArg)[0] == TRUE) verbose = TRUE;
   struct processData data;

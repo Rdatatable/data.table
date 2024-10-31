@@ -15,7 +15,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     # nocov start
     dev = TRUE
     if ("package:data.table" %chin% search()) stopf("data.table package is loaded. Unload or start a fresh R session.")
-    rootdir = if (pkg!="." && pkg %chin% dir()) file.path(getwd(), pkg) else Sys.getenv("PROJ_PATH")
+    rootdir = if (pkg!="." && pkg %chin% dir()) file.path(getwd(), pkg) else Sys.getenv("PROJ_PATH", normalizePath("."))
     subdir = file.path("inst","tests")
     env = new.env(parent=.GlobalEnv)  # in dev cc() sources all functions in .GlobalEnv
     # nocov end
@@ -252,8 +252,8 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   if (nfail > 0L) {
     # nocov start
     stopf(
-      "%d error(s) out of %d. Search %s for test number(s) %s. Duration: %s.",
-      nfail, ntest, names(fn), toString(env$whichfail), timetaken(env$started.at)
+      ngettext(nfail, "%d error out of %d. Search %s for test number %s. Duration: %s.", "%d errors out of %d. Search %s for test numbers %s. Duration: %s."),
+      nfail, ntest, names(fn), toString(env$whichfail), timetaken(env$started.at), domain=NA
     )
     # important to stopf() here, so that 'R CMD check' fails
     # nocov end
@@ -290,13 +290,13 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
 
 # nocov start
 compactprint = function(DT, topn=2L) {
-  tt = vapply_1c(DT,function(x)class(x)[1L])
-  tt[tt=="integer64"] = "i64"
-  tt = substr(tt, 1L, 3L)
+  classes = classes1(DT)
+  classes[classes == "integer64"] = "i64"
+  classes = substr(classes, 1L, 3L)
   makeString = function(x) paste(x, collapse = ",")  # essentially toString.default
-  cn = paste0(" [Key=",makeString(key(DT)),
-             " Types=", makeString(substr(sapply(DT, typeof), 1L, 3L)),
-             " Classes=", makeString(tt), "]")
+  cn = paste0(" [Key=", makeString(key(DT)),
+             " Types=", makeString(substr(vapply_1c(DT, typeof), 1L, 3L)),
+             " Classes=", makeString(classes), "]")
   if (nrow(DT)) {
     print(copy(DT)[,(cn):="",verbose=FALSE], topn=topn, class=FALSE)
   } else {
@@ -325,11 +325,12 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     # NB: Sys.setenv() (no arguments) errors
     if (!all(to_unset)) do.call(Sys.setenv, as.list(env[!to_unset]))
     Sys.unsetenv(names(env)[to_unset])
-    on.exit(add=TRUE, {
+    # TODO(R>=4.0.2): Use add=TRUE up-front in on.exit() once non-positional arguments are supported.
+    on.exit({
       is_preset = !is.na(old)
       if (any(is_preset)) do.call(Sys.setenv, as.list(old[is_preset]))
       Sys.unsetenv(names(old)[!is_preset])
-    })
+    }, add=TRUE)
   }
   if (!is.null(options)) {
     old_options <- do.call(base::options, as.list(options)) # as.list(): allow passing named character vector for convenience
@@ -365,7 +366,8 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     foreign = get("foreign", parent.frame())
     showProgress = get("showProgress", parent.frame())
     time = nTest = RSS = NULL  # to avoid 'no visible binding' note
-    if (num>0) on.exit( add=TRUE, {
+    # TODO(R>=4.0.2): Use add=TRUE up-front in on.exit() once non-positional arguments are supported.
+    if (num>0) on.exit({
        took = proc.time()[3L]-lasttime  # so that prep time between tests is attributed to the following test
        timings[as.integer(num), `:=`(time=time+took, nTest=nTest+1L), verbose=FALSE]
        if (memtest) {
@@ -376,7 +378,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
          if (memtest==2L) gc()
        }
        assign("lasttime", proc.time()[3L], parent.frame(), inherits=TRUE)  # after gc() to exclude gc() time from next test when memtest
-    } )
+    }, add=TRUE )
     if (showProgress)
       # \r can't be in gettextf msg
       cat("\rRunning test id", numStr, "         ")   # nocov.
