@@ -108,8 +108,7 @@ Moved out of ?setkey Details section in 1.12.2 (Mar 2019). Revisit this w.r.t. t
 
 static int _selfrefok(SEXP x, Rboolean checkNames, Rboolean verbose) {
   SEXP v, p, tag, prot, names;
-  int nprotect=0;
-  v = PROTECT(getAttrib(x, SelfRefSymbol)); nprotect++;
+  v = PROTECT(getAttrib(x, SelfRefSymbol));
   if (v==R_NilValue || TYPEOF(v)!=EXTPTRSXP) {
     // .internal.selfref missing is expected and normal for i) a pre v1.7.8 data.table loaded
     //  from disk, and ii) every time a new data.table is over-allocated for the first time.
@@ -121,26 +120,26 @@ static int _selfrefok(SEXP x, Rboolean checkNames, Rboolean verbose) {
   p = R_ExternalPtrAddr(v);
   if (p==NULL) {
     if (verbose) Rprintf(_(".internal.selfref ptr is NULL. This is expected and normal for a data.table loaded from disk. Please remember to always setDT() immediately after loading to prevent unexpected behavior. If this table was not loaded from disk or you've already run setDT(), please report to data.table issue tracker.\n"));
-    UNPROTECT(nprotect);
+    UNPROTECT(1);
     return -1;
   }
   if (!isNull(p)) internal_error(__func__, ".internal.selfref ptr is neither NULL nor R_NilValue"); // # nocov
   tag = R_ExternalPtrTag(v);
   if (!(isNull(tag) || isString(tag))) internal_error(__func__, ".internal.selfref tag is neither NULL nor a character vector"); // # nocov
-  names = PROTECT(getAttrib(x, R_NamesSymbol)); nprotect++;
+  names = PROTECT(getAttrib(x, R_NamesSymbol));
   if (names!=tag && isString(names) && !ALTREP(names))  // !ALTREP for #4734
     SET_TRUELENGTH(names, LENGTH(names));
     // R copied this vector not data.table; it's not actually over-allocated. It looks over-allocated
     // because R copies the original vector's tl over despite allocating length.
   prot = R_ExternalPtrProtected(v);
   if (TYPEOF(prot) != EXTPTRSXP) { // Very rare. Was error(_(".internal.selfref prot is not itself an extptr")).
-    UNPROTECT(nprotect);
+    UNPROTECT(2);
     return 0;                      // # nocov ; see http://stackoverflow.com/questions/15342227/getting-a-random-internal-selfref-error-in-data-table-for-r
   }
   if (x!=R_ExternalPtrAddr(prot) && !ALTREP(x))
     SET_TRUELENGTH(x, LENGTH(x));  // R copied this vector not data.table, it's not actually over-allocated
   int ok = checkNames ? names==tag : x==R_ExternalPtrAddr(prot);
-  UNPROTECT(nprotect);
+  UNPROTECT(2);
   return ok;
 }
 
