@@ -425,7 +425,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   } else {
     if (isReal(cols)) {
       cols = PROTECT(coerceVector(cols, INTSXP)); protecti++;
-      warning(_("Coerced j from numeric to integer. Please pass integer for efficiency; e.g., 2L rather than 2"));
+      if (verbose)
+        Rprintf(_("Coerced j from numeric to integer. Please pass integer for efficiency; e.g., 2L rather than 2"));
     }
     if (!isInteger(cols))
       error(_("j is type '%s'. Must be integer, character, or numeric is coerced with warning."), type2char(TYPEOF(cols)));
