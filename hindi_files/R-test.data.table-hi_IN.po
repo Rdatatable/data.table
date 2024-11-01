@@ -13,25 +13,27 @@ msgstr ""
 
 #: test.data.table.R:17
 msgid "data.table package is loaded. Unload or start a fresh R session."
-msgstr ""
+msgstr "data.table पैकेज (package) लोड है। इसे अनलोड करें या एक नई R सेशन शुरू करें।"
 
 #: test.data.table.R:33
 msgid ""
 "script must end with '.Rraw'. If a file ending '.Rraw.bz2' exists, that will "
 "be found and used."
 msgstr ""
+"स्क्रिप्ट को '.Rraw' पर समाप्त होना चाहिए। यदि '.Rraw.bz2' से समाप्त होने वाली फ़ाइल मौजूद है,"
+"वह पाई जाएगी और उपयोग की जाएगी।"
 
 #: test.data.table.R:63
 msgid "Neither %s nor %s exist in %s"
-msgstr ""
+msgstr "न तो %s और न ही %s %s में मौजूद है"
 
 #: test.data.table.R:114
 msgid "test.data.table() running: %s"
-msgstr ""
+msgstr "test.data.table() चल रहा है: %s"
 
 #: test.data.table.R:118
 msgid "object '%s' not found"
-msgstr ""
+msgstr "ऑब्जेक्ट (object) '%s' नहीं मिला।"
 
 #: test.data.table.R:121
 msgid ""
@@ -40,6 +42,10 @@ msgid ""
 "**** warnings are produced. However, to test the text of each error/warning "
 "too, please restart R with LANGUAGE=en"
 msgstr ""
+"**** इस R सत्र की भाषा अंग्रेज़ी नहीं है। प्रत्येक परीक्षण अभी भी यह जाँच करेगा"
+"कि त्रुटियों और/या\n"
+"**** चेतावनियों की सही संख्या उत्पन्न होती है। हालाँकि, प्रत्येक त्रुटि/चेतावनी के पाठ का परीक्षण करने के लिए"
+"कृपया LANGUAGE=en के साथ R को पुनः प्रारंभ करें।"
 
 #: test.data.table.R:141
 msgid ""
