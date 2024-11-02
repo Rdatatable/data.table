@@ -99,10 +99,11 @@ msgid ""
 "Test %s is invalid: when error= is provided it does not make sense to pass y "
 "as well"
 msgstr ""
+"परिक्षण %s अमान्य है: जब error= दिया गया है, तो y को भी पास (pass) करना समझ में नहीं आता है"
 
 #: test.data.table.R:434
 msgid "Test id %s is not in increasing order"
-msgstr ""
+msgstr "परीक्षण संख्या %s बढ़ती क्रम में नहीं है"
 
 #: test.data.table.R:451
 msgid ""
@@ -110,6 +111,9 @@ msgid ""
 "%s\n"
 "%s"
 msgstr ""
+"परीक्षण %s ने %d %ss उत्पन्न किए लेकिन अपेक्षित %d थे"
+"%s\n"
+"%s"
 
 #: test.data.table.R:459
 msgid ""
@@ -117,57 +121,60 @@ msgid ""
 "Expected: %s\n"
 "Observed: %s"
 msgstr ""
+"परीक्षण %s ने सही %s उत्पन्न नहीं किया:\n"
+"अपेक्षित: %s\n"
+"देखा गया: %s"
 
 #: test.data.table.R:468
 msgid "Output captured before unexpected warning/error/message:"
-msgstr ""
+msgstr "अप्रत्याशित चेतावनी/त्रुटि/संदेश से पहले अंकित किया गया आउटपुट (output):"
 
 #: test.data.table.R:478
 msgid "Test %s did not produce correct output:"
-msgstr ""
+msgstr "परीक्षण %s ने सही आउटपुट (output) उत्पन्न नहीं किया:"
 
 #: test.data.table.R:479
 msgid "Expected: <<%s>>"
-msgstr ""
+msgstr "अपेक्षित: <<%s>>"
 
 #: test.data.table.R:480 test.data.table.R:492
 msgid "Observed: <<%s>>"
-msgstr ""
+msgstr "देखा गया: <<%s>>"
 
 #: test.data.table.R:482
 msgid "Expected (raw): <<%s>>"
-msgstr ""
+msgstr "अपेक्षित (असंसाधित): <<%s>>"
 
 #: test.data.table.R:483 test.data.table.R:495
 msgid "Observed (raw): <<%s>>"
-msgstr ""
+msgstr "देखा गया (असंसाधित): <<%s>>"
 
 #: test.data.table.R:490
 msgid "Test %s produced output but should not have:"
-msgstr ""
+msgstr "परीक्षण %s ने आउटपुट (output) उत्पन्न किया लेकिन ऐसा नहीं होना चाहिए था:"
 
 #: test.data.table.R:491
 msgid "Expected absent (case insensitive): <<%s>>"
-msgstr ""
+msgstr "अनुपस्थित की अपेक्षा (केस (case) निरपेक्ष): <<%s>>"
 
 #: test.data.table.R:494
 msgid "Expected absent (raw): <<%s>>"
-msgstr ""
+msgstr "अनुपस्थित की अपेक्षा (असंसाधित): <<%s>>"
 
 #: test.data.table.R:508
 msgid "Test %s ran without errors but selfrefok(%s) is FALSE"
-msgstr ""
+msgstr "परीक्षण %s बिना किसी त्रुटि के चला लेकिन selfrefok(%s) FALSE है"
 
 #: test.data.table.R:533
 msgid "Test %s ran without errors but failed check that x equals y:"
-msgstr ""
+msgstr "परीक्षण %s बिना किसी त्रुटि के चला लेकिन यह जाँच असफल रही कि x y के बराबर है:"
 
 #: test.data.table.R:538
 msgid "First %d of %d (type '%s'):"
-msgstr ""
+msgstr "पहले %d में से %d (प्रकार '%s'):"
 
 #: test.data.table.R:255
 msgid "%d error out of %d. Search %s for test number %s. Duration: %s."
 msgid_plural "%d errors out of %d. Search %s for test numbers %s. Duration: %s."
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "%d त्रुटि %d में से। परीक्षण संख्या %s के लिए %s में खोजें। अवधि: %s।"
+msgstr[1] "%d त्रुटियाँ %d में से। परीक्षण संख्याओं %s के लिए %s में खोजें। अवधि: %s।"
