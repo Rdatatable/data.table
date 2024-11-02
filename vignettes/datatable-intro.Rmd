@@ -14,7 +14,7 @@ library(data.table)
 opts = litedown::reactor()
 opts$comment = "# "
 opts$error = FALSE
-opts$print = xfun:::record_print.default
+opts$print = function (x, ...) capture.output(if (isS4(x)) methods::show(x, ...) else print(x, ...))
 .old.th = setDTthreads(1)
 ```
 
