@@ -16,7 +16,7 @@ library(data.table)
 opts = litedown::reactor()
 opts$comment = "# "
 opts$error = FALSE
-opts$print = function (x, ...) capture.output(if (isS4(x)) methods::show(x, ...) else print(x, ...))
+opts$print = function(x, ...) capture.output(if (isS4(x)) methods::show(x, ...) else print(x, ...))
 ```
 
 In this vignette you will learn how to perform any join operation using resources available in the `data.table` syntax.
