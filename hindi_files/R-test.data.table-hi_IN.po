@@ -84,15 +84,15 @@ msgstr "समय की गणना में असमानता: %d बन
 
 #: test.data.table.R:270
 msgid "10 longest running tests took %ds (%d%% of %ds)"
-msgstr ""
+msgstr "10 सबसे लंबे चलने वाले परीक्षणों में %ds समाय लगा (%d%% %ds का)"
 
 #: test.data.table.R:275
 msgid "10 largest RAM increases (MB); see plot for cumulative effect (if any)"
-msgstr ""
+msgstr "10 सबसे बड़े RAM वृद्धि (MB); संचयी प्रभाव (अगर कोई हो) के लिए ग्राफ़ देखें"
 
 #: test.data.table.R:285
 msgid "All %d tests (last %.8g) in %s completed ok in %s"
-msgstr ""
+msgstr "सभी %d परीक्षण (आखिरी %.8g) %s में ठीक से पूरे हुए %s"
 
 #: test.data.table.R:399
 msgid ""
