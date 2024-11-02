@@ -54,28 +54,33 @@ msgid ""
 "session for best results. Ctrl-C now if not.\n"
 "***"
 msgstr ""
+"***\n"
+"memtest=%d. सर्वश्रेष्ठ परिणामों के लिए यह एक नई R_GC_MEM_GROW=0 R सेशन में पहली कॉल होनी चाहिए।"
+"यदि ऐसा नहीं है, तो अभी Ctrl-C दबाएँ।\n"
+"***"
 
 #: test.data.table.R:142
 msgid ""
 "memtest intended for Linux. Step through data.table:::rss() to see what went "
 "wrong."
 msgstr ""
+"memtest केवल Linux के लिए है। क्या गलत हुआ यह देखने के लिए data.table:::rss() के माध्यम से जाँच करें।"
 
 #: test.data.table.R:196
 msgid "Attempt to subset to %d tests matching '%s' failed, running full suite."
-msgstr ""
+msgstr "%d परीक्षणों को '%s' से मेल खाते हुए सबसेट (subset) करने का प्रयास विफल रहा, पूरी श्रृंखला चलाई जा रही है।"
 
 #: test.data.table.R:201
 msgid "Running %d of %d tests matching '%s'"
-msgstr ""
+msgstr "'%s' से मेल खाते हुए %d में से %d परीक्षण चलाए जा रहे हैं।"
 
 #: test.data.table.R:245
 msgid "Failed in %s after test %s before the next test() call in %s"
-msgstr ""
+msgstr "%s में, अगले test() कॉल (call) से पहले %s परीक्षण के बाद %s में विफल।"
 
 #: test.data.table.R:268
 msgid "Timings count mismatch: %d vs %d"
-msgstr ""
+msgstr "समय की गणना में असमानता: %d बनाम %d"
 
 #: test.data.table.R:270
 msgid "10 longest running tests took %ds (%d%% of %ds)"
