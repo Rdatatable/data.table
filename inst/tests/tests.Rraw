@@ -20596,3 +20596,12 @@ test(2295.3, is.data.table(d2))
 
 # #6588: .checkTypos used to give arbitrary strings to stopf as the first argument
 test(2296, d2[x %no such operator% 1], error = '%no such operator%')
+
+# coerce Dates to double if join on multiple columns, #6602
+date_int = seq(as.Date('2015-01-01'), as.Date('2015-01-01'), by="day")
+date_dbl = as.Date('2015-01-01')
+x = data.table(a=date_int, b=1L)
+y = data.table(c=date_int, d=date_dbl)
+
+test(2297.1, options=c(datatable.verbose=TRUE), y[x, on=.(c == a)], data.table(c=date_int, d=date_dbl, b=1L), output="No coercion needed.")
+test(2297.2, options=c(datatable.verbose=TRUE), y[x, on=.(c == a, d == a)], data.table(c=date_dbl, d=date_dbl, b=1L), output="coercing to double.")
