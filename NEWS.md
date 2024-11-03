@@ -133,6 +133,8 @@ rowwiseDT(
 
 8. `measurev()` was implemented and documented in v1.15.0, for use within `melt()`, and it is now exported (dependent packages can now use without a NOTE from CRAN check).
 
+9. Using a double vector in `set()`'s `j=` no longer throws a warning about preferring integer, [#6594](https://github.com/Rdatatable/data.table/issues/6594). While it may improve efficiency to use integer, there's no guarantee it's an improvement and the difference is likely to be minimal. The coercion will still be reported under `datatable.verbose=TRUE`. For package/production use cases, static analyzers such as `lintr::implicit_integer_linter()` can also report when numeric literals should be rewritten as integer literals.
+
 # data.table [v1.16.0](https://github.com/Rdatatable/data.table/milestone/30)  (25 August 2024)
 
 ## BREAKING CHANGES
