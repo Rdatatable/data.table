@@ -71,7 +71,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
       stopf("Incompatible join types: %s (%s) and %s (%s). Factor columns must join to factor or character columns.", xname, xclass, iname, iclass)
     }
     if (xclass == iclass) {
-      if (length(icols)>1 && class(x[[xc]])=="Date" && class(i[[ic]]=="Date")) {
+      if (length(icols)>1 && class(x[[xc]])=="Date" && class(i[[ic]])=="Date") {
         set(x, j=xc, value=as.double(x[[xc]]))
         set(i, j=ic, value=as.double(i[[ic]]))
         if (verbose) catf("%s and %s are both Dates. R does not guarentee a type for Date internally, hence, coercing to double.\n",  iname, xname)
