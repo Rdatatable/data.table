@@ -19299,7 +19299,6 @@ DT1 = data.table(VCharA = rep(c("C1", "C2", "C3"), each = 12),
 DT1[, `:=`(VDate = as.Date(sub("F", "2024-01-0", VFacA)),
            VIDate = as.IDate(sub("F", "2024-01-0", VFacB)),
            VNumA = as.numeric(VIntA),
-           VNumB = as.numeric(VIntB),
            integer = VCharB,
            Y = 1:36)]
 DT1[35:36, VCharA := NA]
