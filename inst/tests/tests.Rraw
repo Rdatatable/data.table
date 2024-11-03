@@ -53,6 +53,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   groupingsets.data.table = data.table:::groupingsets.data.table
   guess = data.table:::guess
   INT = data.table:::INT
+  internal_error = data.table:::internal_error
   is_na = data.table:::is_na
   is.sorted = data.table:::is.sorted
   isReallyReal = data.table:::isReallyReal
@@ -2426,9 +2427,9 @@ test(811.2, DT[c("b","foo","c"),which=NA,nomatch=NULL], error="which=NA with nom
 DT = data.table(a=1:3,b=4:6,c=7:9)
 # old tests using with=FALSE retained.  Eventually will deprecate with=FALSE.
 test(812.1, DT[,!"b",with=FALSE], DT[,-match("b",names(DT)),with=FALSE])
-test(812.2, DT[,"foo",with=FALSE], error="column(s) not found: [foo]")
-test(812.3, DT[,!"foo",with=FALSE], DT, warning="column(s) not removed because not found: [foo]")
-test(812.4, DT[,!c("b","foo"),with=FALSE], DT[,list(a,c)], warning="column(s) not removed because not found: [foo]")
+test(812.2, DT[,"foo",with=FALSE], error="column not found: [foo]")
+test(812.3, DT[,!"foo",with=FALSE], DT, warning="column not removed because not found: [foo]")
+test(812.4, DT[,!c("b","foo"),with=FALSE], DT[,list(a,c)], warning="column not removed because not found: [foo]")
 test(812.5, DT[,!2:3,with=FALSE], DT[,-(2:3),with=FALSE])  # for consistency, but ! is really for character column names
 mycols = "b"
 test(812.6, DT[,!mycols,with=FALSE], DT[,list(a,c)])
@@ -2446,11 +2447,11 @@ test(813.4, rownames(DT[2,"a"]), "1")
 # also repeat 812.* but without with=FALSE since that will be deprecated in future, and cover - as well as !
 test(814.01, DT[,!"b"], DT[,c("a","c")])
 test(814.02, DT[,-"b"], DT[,c("a","c")])
-test(814.03, DT[,"foo"], error="column(s) not found: [foo]")
-test(814.04, DT[,!"foo"], DT, warning="column(s) not removed because not found: [foo]")
-test(814.05, DT[,-"foo"], DT, warning="column(s) not removed because not found: [foo]")
-test(814.06, DT[,!c("b","foo")], DT[,list(a,c)], warning="column(s) not removed because not found: [foo]")
-test(814.07, DT[,-c("b","foo")], DT[,list(a,c)], warning="column(s) not removed because not found: [foo]")
+test(814.03, DT[,"foo"], error="column not found: [foo]")
+test(814.04, DT[,!"foo"], DT, warning="column not removed because not found: [foo]")
+test(814.05, DT[,-"foo"], DT, warning="column not removed because not found: [foo]")
+test(814.06, DT[,!c("b","foo")], DT[,list(a,c)], warning="column not removed because not found: [foo]")
+test(814.07, DT[,-c("b","foo")], DT[,list(a,c)], warning="column not removed because not found: [foo]")
 test(814.08, DT[,!2:3], DT[,"a"])  # for consistency, and ! avoids needing to wrap with () as in next test
 test(814.09, DT[,-(2:3)], DT[,"a"])
 mycols = "b"
@@ -2487,9 +2488,9 @@ test(827.1, names(a[b]), c("User ID","Blah Blah","Yadda Yadda"))
 
 # setcolorder and merge check for dup column names, #2193(ii)
 setnames(DT2,"b","a")
-test(828, setcolorder(DT2,c("a","b")), error="x has some duplicated column name(s): [a]. Please remove or rename")
-test(829, merge(DT1,DT2), error="y has some duplicated column name(s): [a]. Please remove or rename")
-test(830, merge(DT2,DT1), error="x has some duplicated column name(s): [a]. Please remove or rename")
+test(828, setcolorder(DT2,c("a","b")), error="x has duplicated column name [a]. Please remove or rename")
+test(829, merge(DT1,DT2), error="y has duplicated column name [a]. Please remove or rename")
+test(830, merge(DT2,DT1), error="x has duplicated column name [a]. Please remove or rename")
 
 # attribs such as "comments" should be retained, #2270
 DT1 <- data.table(id = seq.int(1, 10), A = LETTERS[1:10], key = "id")
@@ -5579,9 +5580,14 @@ test(1352.7, DT[,sum(b),by=.(Grp=a%%2)], DT[,sum(b),by=list(Grp=a%%2)])
 test(1352.8, DT[,sum(b),by=.(a%%2,c)], DT[,sum(b),by=list(a%%2,c)])
 
 # that :=NULL together with i is now an error
-DT = data.table(a=1:3, b=1:6)
+DT = data.table(a=1:3, b=1:6, c=list(7, 8, 9, 8, 7, 6))
 test(1353.1, DT[2, b:=NULL], error="When deleting columns, i should not be provided")
 test(1353.2, DT[2, c("a","b"):=list(42, NULL)], error="When deleting columns, i should not be provided")
+# #5526: friendlier error nudging to the correct way to sub-assign NULL to list columns
+test(1353.3, DT[2, c := NULL], error="Invalid attempt to delete a list column.*did you intend to add NULL")
+test(1353.4, DT[2, c := .(NULL)], error="Invalid attempt to delete a list column.*did you intend to add NULL")
+test(1353.5, DT[2, `:=`(b=2, c=NULL)], error="Invalid attempt to delete a list column.*did you intend to add NULL")
+test(1353.6, DT[2, d := NULL], error="Doubly-invalid attempt to delete a non-existent column while also providing i")
 
 # order optimisation caused trouble due to chaining because of 'substitute(x)' usage in [.data.table.
 set.seed(1L)
@@ -7245,7 +7251,7 @@ if (test_bit64) {
 # fix for #1082
 dt1 = data.table(x=rep(c("a","b","c"),each=3), y=c(1,3,6), v=1:9, key=c("x", "y"))
 dt2 = copy(dt1)
-test(1502.1, dt1["a", z := NULL], error="When deleting columns, i should not be provided")
+test(1502.1, dt1["a", z := NULL], error="Doubly-invalid attempt to delete a non-existent column while also providing i")
 # this shouldn't segfault on 'dt1[...]'
 test(1502.2, dt1["a", z := 42L], dt2["a", z := 42L])
 
@@ -7533,7 +7539,7 @@ test(1538.2, !is.unsorted(tables(order.col="NROW")$NROW), output="Total:")
 
 # uniqueN not support list-of-list: reverted #1224
 d1 <- data.table(a = 1:4, l = list(list(letters[1:2]),list(Sys.time()),list(1:10),list(letters[1:2])))
-test(1539, d1[,uniqueN(l)], error = "x must be an atomic vector or data.frames/data.tables")
+test(1539, d1[,uniqueN(l)], error = "x must be an atomic vector or a data.frame/data.table")
 
 # feature #1130 - joins without setting keys
 # can't test which=TRUE with DT1.copy's results..
@@ -8619,7 +8625,7 @@ ll = list(a=as.POSIXlt("2015-01-01", tz='UTC'), b=1:5)
 test(1612.1, as.data.table(ll), data.table(a=as.POSIXct("2015-01-01", tz='UTC'), b=1:5), warning="POSIXlt column type detected")
 dt = data.table(d1="1984-03-17")
 ans = data.table(d1="1984-03-17", d2=as.POSIXct("1984-03-17", tz='UTC'))
-test(1612.2, dt[, d2 := strptime(d1, "%Y-%m-%d", tz='UTC')], ans, warning="strptime() usage detected and wrapped with as.POSIXct()")
+test(1612.2, dt[, d2 := strptime(d1, "%Y-%m-%d", tz='UTC')], ans, warning="POSIXlt detected and converted to POSIXct")
 ll = list(a=as.POSIXlt("2015-01-01"), b=2L)
 test(1612.3, setDT(ll), error="Column 1 has class 'POSIXlt'")
 
@@ -8985,26 +8991,26 @@ test(1626.45, nrow(fsetdiff(dt[rep(1L,4)], dt[rep(1L,5)], all=TRUE)), 0L)
 dt = data.table(V1 = 1:4, V2 = letters[1:4], V3 = lapply(1:4, function(x) new.env()))
 x = dt[c(2:4,2L,2L)]
 y = dt[c(1:3,2L)]
-test(1626.46, fintersect(x, y), error = "unsupported column type(s) found in x or y: [list]")
-test(1626.47, fintersect(x, y, all=TRUE), error = "unsupported column type(s) found in x or y: [list]")
-test(1626.48, fsetdiff(x, y), error = "unsupported column type(s) found in x or y: [list]")
-test(1626.49, fsetdiff(x, y, all=TRUE), error = "unsupported column type(s) found in x or y: [list]")
-test(1626.50, funion(x, y), error = "unsupported column type(s) found in x or y: [list]")
+test(1626.46, fintersect(x, y), error = "unsupported column type found in x or y: [list]")
+test(1626.47, fintersect(x, y, all=TRUE), error = "unsupported column type found in x or y: [list]")
+test(1626.48, fsetdiff(x, y), error = "unsupported column type found in x or y: [list]")
+test(1626.49, fsetdiff(x, y, all=TRUE), error = "unsupported column type found in x or y: [list]")
+test(1626.50, funion(x, y), error = "unsupported column type found in x or y: [list]")
 test(1626.51, funion(x, y, all=TRUE), dt[c(2:4,2L,2L,1:3,2L)])
-test(1626.52, fsetequal(x, y), error = "unsupported column type(s) found in x or y: [list]")
-test(1626.53, fsetequal(dt[c(1:2,2L)], dt[c(1:2,2L)]), error = "unsupported column type(s) found in x or y: [list]")
+test(1626.52, fsetequal(x, y), error = "unsupported column type found in x or y: [list]")
+test(1626.53, fsetequal(dt[c(1:2,2L)], dt[c(1:2,2L)]), error = "unsupported column type found in x or y: [list]")
 # unsupported type in set-ops: complex, raw
 dt = data.table(V1 = 1:4, V2 = letters[1:4], V3 = as.complex(1:4), V4 = as.raw(1:4), V5 = lapply(1:4, function(x) NULL))
 x = dt[c(2:4,2L,2L)]
 y = dt[c(1:3,2L)]
-test(1626.54, fintersect(x, y), error = "unsupported column type(s) found in x or y: [raw, complex, list]")
-test(1626.55, fintersect(x, y, all=TRUE), error = "unsupported column type(s) found in x or y: [raw, complex, list]")
-test(1626.56, fsetdiff(x, y), error = "unsupported column type(s) found in x or y: [raw, complex, list]")
-test(1626.57, fsetdiff(x, y, all=TRUE), error = "unsupported column type(s) found in x or y: [raw, complex, list]")
-test(1626.58, funion(x, y), error = "unsupported column type(s) found in x or y: [raw, complex, list]")
-test(1626.59, funion(x, y, all=TRUE), error = "unsupported column type(s) found in x or y: [raw, complex]") # no 'list' here which is supported for `all=TRUE`
-test(1626.60, fsetequal(x, y), error = "unsupported column type(s) found in x or y: [raw, complex, list]")
-test(1626.61, fsetequal(dt[c(1:2,2L)], dt[c(1:2,2L)]), error = "unsupported column type(s) found in x or y: [raw, complex, list]")
+test(1626.54, fintersect(x, y), error = "unsupported column types found in x or y: [raw, complex, list]")
+test(1626.55, fintersect(x, y, all=TRUE), error = "unsupported column types found in x or y: [raw, complex, list]")
+test(1626.56, fsetdiff(x, y), error = "unsupported column types found in x or y: [raw, complex, list]")
+test(1626.57, fsetdiff(x, y, all=TRUE), error = "unsupported column types found in x or y: [raw, complex, list]")
+test(1626.58, funion(x, y), error = "unsupported column types found in x or y: [raw, complex, list]")
+test(1626.59, funion(x, y, all=TRUE), error = "unsupported column types found in x or y: [raw, complex]") # no 'list' here which is supported for `all=TRUE`
+test(1626.60, fsetequal(x, y), error = "unsupported column types found in x or y: [raw, complex, list]")
+test(1626.61, fsetequal(dt[c(1:2,2L)], dt[c(1:2,2L)]), error = "unsupported column types found in x or y: [raw, complex, list]")
 # supported types multi column test
 dt = data.table(
   V1 = 1:4,
@@ -10259,8 +10265,8 @@ unlink(f)
 # duplicate names in foverlaps #1730
 a = data.table(start = 1:5, end = 2:6, c2 = rnorm(10), c2 = rnorm(10), key=c("start","end"))
 b = data.table(start = 1:5, end = 2:6, c3 = rnorm(5), key=c("start","end"))
-test(1677.1, foverlaps(a, b), error="x has some duplicated column")
-test(1677.2, foverlaps(b, a), error="y has some duplicated column")
+test(1677.1, foverlaps(a, b), error="x has duplicated column")
+test(1677.2, foverlaps(b, a), error="y has duplicated column")
 
 # na.omit.data.table removes indices #1734
 dt = data.table(a=4:1, b=c(letters[c(1L,NA,2:3)]))
@@ -11036,20 +11042,20 @@ test(1743.044, fread("a\n1", colClasses=""), data.table(a=1L))
 # Issue #1634: 'fread doesn't check colClasses to be valid type'
 # Currently using BioGenerics, which doesn't support USE.NAMES
 ## Date supported character/list colClasses
-test(1743.05, sapply(fread("a,b\n2017-01-01,1", colClasses=c("Date", "integer")), class), c(a="Date", b="integer"))
-test(1743.06, sapply(fread("a,b\n2017-01-01,1", colClasses=list(Date = 1L, integer = 2L)), class), c(a="Date", b="integer"))
-test(1743.07, sapply(fread("a,b\n2017-01-01,2017-01-02", colClasses=list(Date = 1:2)), class), c(a="Date", b="Date"))
-test(1743.08, sapply(fread("a,b,c\n2017-01-01,1,1+3i", colClasses=c("Date", "integer", "complex")), class), c(a="Date", b="integer", c="complex"))
-test(1743.09, sapply(fread("a,b,c\n2017-01-01,1,1+3i", colClasses=c("Date", "integer", "complex")), class), c(a="Date", b="integer", c="complex"))
-test(1743.10, sapply(fread("a,b,c,d\n2017-01-01,1,1+3i,05", colClasses=c("Date", "integer", "complex", NA)), class), c(a="Date",b="integer",c="complex",d="integer"))
-test(1743.11, sapply(fread("a,b,c,d\n2017-01-01,1,1+3i,05", colClasses=c("Date", "integer", "complex", "raw")), class), c(a="Date",b="integer",c="complex",d="raw"))
+test(1743.05, lapply(fread("a,b\n2017-01-01,1", colClasses=c("Date", "integer")), class), list(a=c("IDate", "Date"), b="integer"))
+test(1743.06, lapply(fread("a,b\n2017-01-01,1", colClasses=list(Date = 1L, integer = 2L)), class), list(a=c("IDate", "Date"), b="integer"))
+test(1743.07, lapply(fread("a,b\n2017-01-01,2017-01-02", colClasses=list(Date = 1:2)), class), list(a=c("IDate", "Date"), b=c("IDate", "Date")))
+test(1743.08, lapply(fread("a,b,c\n2017-01-01,1,1+3i", colClasses=c("Date", "integer", "complex")), class), list(a=c("IDate", "Date"), b="integer", c="complex"))
+test(1743.09, lapply(fread("a,b,c\n2017-01-01,1,1+3i", colClasses=c("Date", "integer", "complex")), class), list(a=c("IDate", "Date"), b="integer", c="complex"))
+test(1743.10, lapply(fread("a,b,c,d\n2017-01-01,1,1+3i,05", colClasses=c("Date", "integer", "complex", NA)), class), list(a=c("IDate", "Date"), b="integer", c="complex", d="integer"))
+test(1743.11, lapply(fread("a,b,c,d\n2017-01-01,1,1+3i,05", colClasses=c("Date", "integer", "complex", "raw")), class), list(a=c("IDate", "Date"), b="integer", c="complex", d="raw"))
 test(1743.121, sapply(fread("a,b\n2015-01-01,2015-01-01", colClasses=c(NA,"IDate")), inherits, what="IDate"), c(a=TRUE, b=TRUE))
-test(1743.122, fread("a,b\n2015-01-01,2015-01-01", colClasses=c("POSIXct","Date")), data.table(a=as.POSIXct("2015-01-01"), b=as.Date("2015-01-01")))
+test(1743.122, fread("a,b\n2015-01-01,2015-01-01", colClasses=c("POSIXct","Date")), data.table(a=as.POSIXct("2015-01-01"), b=as.IDate("2015-01-01")))
 test(1743.123, fread("a,b\n1+3i,2015-01-01", colClasses=c(NA,"IDate")), data.table(a="1+3i", b=as.IDate("2015-01-01")))
 
 ## Attempts to impose incompatible colClasses is a warning (not an error)
 ## and does not change the value of the columns
-test(1743.13, sapply(fread("a,b\n09/05/98,2015-01-01", colClasses = "Date"), class), y=c(a="character", b="Date"), warning=base_messages$ambiguous_date_fmt)
+test(1743.13, lapply(fread("a,b\n09/05/98,2015-01-01", colClasses = "Date"), class), y=list(a="character", b=c("IDate", "Date")), warning=base_messages$ambiguous_date_fmt)
 
 ## Just invalid
 test(1743.14, options = c(useFancyQuotes = FALSE),
@@ -11079,6 +11085,9 @@ test(1743.201, fread("A,B,C,D\nA,B,X,4", select=list(factor="A"), colClasses="ch
 test(1743.202, fread("A,B,C,D\nA,B,X,4", select=c(A="factor"), colClasses="character"), error="select= is a named vector.*but colClasses= has been provided as well. Please remove colClasses=.")
 test(1743.203, fread("A,B,C,D\nA,B,X,4", select=list(character="D", factor="B")), data.table(D="4", B=factor("B")))
 test(1743.204, fread("A,B,C,D\nA,B,X,4", select=list(character=4, character=2)), data.table(D="4", B="B"))
+## Date+select
+test(1743.205, fread("a,b\n2017-01-01,1", colClasses="Date", select="a"), data.table(a=as.IDate("2017-01-01")))
+test(1743.206, fread("a,b\n2017-01-01,1", select=list(Date="a")), data.table(a=as.IDate("2017-01-01")))
 
 ## factors
 test(1743.211, sapply(fread("a,b,c\n2,2,f", colClasses = list(factor = 1L), select = 2:3), class), y = c(b="integer", c="character"))
@@ -12418,6 +12427,14 @@ DTout = data.table(
   value2 = c("a", "b", "c", "d", "e", "f", "g", "h", "i", "j")
 )
 test(1866.6, melt(DT, measure.vars = patterns("^x", "^y", cols=names(DT))), DTout)
+# patterns supports cols arg, #6498
+test(1866.71, melt(data.table(x1=1,x2=2,y1=3,y2=4),measure.vars=patterns("2",cols=c("y1","y2"))), data.table(x1=1,x2=2,y1=3,variable=factor("y2"),value=4))
+test(1866.72, DT[, lapply(.SD, sum), .SDcols=patterns("2",cols=c("x1","x2"))], data.table(x2=40L))
+
+# informative errors for bad user-provided cols arg to patterns
+DT = data.table(x1=1,x2=2,y1=3,y2=4)
+test(1866.80, melt(DT, measure.vars=patterns("2", cols=NULL)), error="cols must be a character vector of column names")
+test(1866.81, melt(DT, measure.vars=patterns("2", cols=NA_character_)), error="cols must be a character vector of column names")
 
 # auto fill too few column names (#1625) and auto fill=TRUE when too many column names
 test(1867.01, fread("A,B\n1,3,5,7\n2,4,6,8\n"), data.table(A=1:2, B=3:4, V3=5:6, V4=7:8),
@@ -12426,22 +12443,22 @@ test(1867.02, fread("A,B,C,D,E\n1,3,5,7\n2,4,6,8\n"), data.table(A=1:2, B=3:4, C
               warning="Detected 5.*but.*4.*Filling rows automatically.")
 if (test_R.utils) {
   test(1867.03, fread(testDir("fillheader.csv.bz2"))[c(1,.N), c(1,29,30)], data.table("V1"="Ashburton District", EASTING=c(5154177L,5144032L), NORTHING=NA),
-              warning="Detected 29.*but.*30.*Added 1 extra default column name.*guessed to be row names or an index.*valid file")
+              warning="Detected 29.*but.*30.*Added an extra default column name.*guessed to be row names or an index.*valid file")
               # in this unusual case, every data row has a trailing comma but the column names do not. So the guess is wrong; a deliberate choice currently.
 }
 test(1867.04, fread("A,B\nCol1,Col2,Col3\n1,3,5\n2,4,6\n"), data.table(Col1=1:2, Col2=3:4, Col3=5:6))
-test(1867.05, fread("A\nCol1,Col2\n1,3,5\n2,4,6\n"), data.table(V1=1:2, Col1=3:4, Col2=5:6), warning="Added 1 extra default column name.*guessed to be row names or an index")
+test(1867.05, fread("A\nCol1,Col2\n1,3,5\n2,4,6\n"), data.table(V1=1:2, Col1=3:4, Col2=5:6), warning="Added an extra default column name.*guessed to be row names or an index")
 test(1867.06, fread("Some header\ninfo\nCol1,Col2,Col3\n1,3,5\n2,4,6\n"), data.table(Col1=1:2, Col2=3:4, Col3=5:6))
-test(1867.07, fread("Some header\ninfo\n\nCol1,Col2\n1,3,5\n2,4,6\n"), data.table(V1=1:2, Col1=3:4, Col2=5:6), warning="Added 1 extra")
+test(1867.07, fread("Some header\ninfo\n\nCol1,Col2\n1,3,5\n2,4,6\n"), data.table(V1=1:2, Col1=3:4, Col2=5:6), warning="Added an extra")
 test(1867.08, fread("A,B,C,D,E\n1,3,5\n2,4,6\n"), data.table(A=1:2, B=3:4, C=5:6, D=NA, E=NA), warning="Detected 5.*but.*3.*Filling rows automatically")
 test(1867.09, fread("Heading text\nA,B,C,D,E\n1,3,5\n2,4,6\n"), data.table(A=1:2, B=3:4, C=5:6, D=NA, E=NA), warning="Detected 5.*but.*3.*Filling rows automatically")
 test(1867.10, fread("Heading text\n1,3,5\n2,4,6\n"), data.table("Heading text"=1:2, V2=3:4, V3=5:6), warning="Added 2 extra default column names at the end")
 test(1867.11, fread("A,B\n\n1,3,5\n2,4,6\n"), data.table(V1=1:2, V2=3:4, V3=5:6))
-test(1867.12, fread("A\n1,3\n2,4\n"), data.table(V1=1:2, A=3:4), warning="Added 1 extra default column name")
+test(1867.12, fread("A\n1,3\n2,4\n"), data.table(V1=1:2, A=3:4), warning="Added an extra default column name")
 # test from #763, covers #1818 too
 DT = data.table(x=rep(c("a","b","c"),each=3), y=c(1L,3L,6L), v=10:18)
 write.table(DT, file = (f<-tempfile()), sep = "\t")
-test(1867.13, fread(f), data.table(V1=1:9, x=DT$x, y=DT$y, v=DT$v), warning="Added 1 extra default column name")
+test(1867.13, fread(f), data.table(V1=1:9, x=DT$x, y=DT$y, v=DT$v), warning="Added an extra default column name")
 unlink(f)
 # test(1867.14, fread(testDir("iterations.txt.bz2")))
 
@@ -12470,7 +12487,7 @@ if (test_R.utils) {
              output = "Copying file in RAM.*file is very unusual.*ends abruptly.*multiple of 4096")
   test(1869.7, fread(testDir("onecol4096.csv.bz2"), verbose=TRUE)[c(1,2,245,246,249,255:.N),],
              data.table(A=c("FooBarBazQux000","FooBarBazQux001","","FooBarBazQux245","","FooBarBazQux254","FooBarBazQux","FooBarBaz12","FooBarBazQux256","","","")),
-             output = "Copying file in RAM.*file is very unusual.*one single column, ends with 2 or more end-of-line.*and is a multiple of 4096")
+             output = "Copying file in RAM.*file is very unusual.*one single column, ends with 2 or more end-of-line.*and the file size is a multiple of 4096")
 }
 
 # better colname detection by comparing potential column names to the whole sample not just the first row of the sample, #2526
@@ -12879,7 +12896,7 @@ test(1908, observed, expected)
 if (test_R.utils) {
   test(1909.1, names(ans<-fread(testDir("genotypes_genome.txt.bz2"), skip="Samples:", sep=" ", colClasses="character")),
                c("V1","Samples:"),
-               warning="Detected 1 column name.*but the data has 2 columns.*Added 1 extra default column name for the first column")
+               warning="Detected 1 column name.*but the data has 2 columns.*Added an extra default column name for the first column")
   test(1909.2, ans$V1, c("POP1:","POP1:","POP1:"))
   test(1909.3, nchar(ans[["Samples:"]]), INT(3287,3287,3287))
   test(1909.4, names(ans<-fread(testDir("genotypes_genome.txt.bz2"), skip="POP1:", sep=" ", colClasses="character", header=FALSE)),
@@ -13301,9 +13318,9 @@ test(1952.2, d1[a==2, 2, which=TRUE], error="which==TRUE.*but j is also supplied
 # 3106 -- melt patterns don't match any columns (and more coverage tests)
 DT = data.table(id = 1:3, a1 = rnorm(3), a2 = rnorm(3))
 test(1953.1, melt(DT, id.vars = 'id', measure.vars = patterns(a = 'a', b = 'b')),
-             error = 'Pattern(s) not found')
+             error = 'Pattern not found')
 test(1953.2, melt(DT, id.vars = 'id', measure.vars = patterns(a = 'a', b = 'b', c = 'c')),
-             error = 'Pattern(s) not found')
+             error = 'Patterns not found')
 test(1953.3, melt(DT, id.vars = 'id', measure.vars = patterns(1L)),
              error = 'Input patterns must be of type character')
 setDF(DT)
@@ -13339,7 +13356,7 @@ test(1956.6, DT[, .SD, .SDcols = 3i], error = '.SDcols should be column numbers 
 test(1957.1, brackify(1:3), '[1, 2, 3]')
 test(1957.2, brackify(1:11), "[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, ...]")
 test(1957.3, fread("A,B\na,b\nc,d\n", stringsAsFactors=TRUE, verbose=TRUE), data.table(A=factor(c("a","c")), B=factor(c("b","d"))),
-             output="stringsAsFactors=TRUE converted 2 column(s): [A, B]")
+             output="stringsAsFactors=TRUE converted 2 columns: [A, B]")
 
 # misc. coverage tests in fread
 test(1958.01, fread('\U0001f64d', encoding = 'UTF-16'), error = "Argument 'encoding' must be")
@@ -13892,7 +13909,9 @@ test(1967.48, x[ , b, .SDcols = 'a'], 6:10,
      warning = "This j doesn't use .SD")
 test(1967.49, x[ , list(5) := 6], error = 'LHS of := must be a symbol')
 test(1967.50, x[ , 1 + 3i := 6], error = "LHS of := isn't column names")
-test(1967.511, x[ , .(5L), by = .EACHI, mult = 'all'], error='logical error. i is not data.table')
+test(1967.511, x[ , .(5L), by = .EACHI, mult = 'all'], error='logical error. i is not a data.table')
+test(1967.5111, x[1, on="a"], error='logical error. i is not a data.table')
+test(1967.5112, x[1, on=NULL], x[1]) #6579
 test(1967.512, x[1+3i], error='i has evaluated to type complex. Expecting logical, integer or double')
 test(1967.521, x[1:2, by=a], x[1:2,], warning="Ignoring by/keyby because 'j' is not supplied")
 test(1967.522, x[, by=a],    x,       warning=c("Ignoring by/keyby because 'j' is not supplied","i and j are both missing.*upgraded to error in future"))
@@ -14130,7 +14149,7 @@ test(1984.07, DT[, sum(a), by=call('sin',pi)], error='must evaluate to a vector 
 test(1984.081, DT[, sum(a), by=as.raw(0)],     error="Column or expression.*1.*type 'raw'.*not.*supported")
 test(1984.082, data.table(A=1:4, L=list(1, 1:2, 1, 1:3), V=1:4)[, sum(V), by=.(A,L)],  # better error message, 4308
                error="Column or expression.*2.*type 'list'.*not.*supported")
-test(1984.09, DT[, sum(a), by=.(1,1:2)],       error="The items in the 'by' or 'keyby' list are length(s) [1, 2]. Each must be length 10; the same length as there are rows in x (after subsetting if i is provided).")
+test(1984.09, DT[, sum(a), by=.(1,1:2)],       error="The items in the 'by' or 'keyby' list have lengths [1, 2]. Each must be length 10; the same length as there are rows in x (after subsetting if i is provided).")
 options('datatable.optimize' = Inf)
 test(1984.10, DT[ , 1, by = .(a %% 2), verbose = TRUE],
      data.table(a = c(1, 0), V1 = c(1, 1)),
@@ -14157,7 +14176,7 @@ test(1984.242, na.omit(data.table(A=c(1,NA,2)), cols=character()), data.table(A=
 test(1984.25, rbindlist(list(DT[1L], DT[2L]), idcol = TRUE), data.table(.id=1:2, a=1:2))
 test(1984.26, setalloccol(`*tmp*`), error='setalloccol attempting to modify `*tmp*`')
 DF = as.data.frame(DT)
-test(1984.27, shallow(DF), DF)  # shallow (which is not exported) works on DF from v1.14.2
+test(1984.27, identical(shallow(DF), DF))  # shallow (which is not exported) works on DF from v1.14.2. identical() to force checking the selfref attribute for #5286.
 test(1984.28, split.data.table(DF), error='argument must be a data.table')
 test(1984.29, split(DT, by='a', f='a'), error="passing 'f' argument together with 'by' is not allowed")
 test(1984.30, split(DT), error="Either 'by' or 'f' argument must be supplied")
@@ -14471,7 +14490,7 @@ test(2005.10, set(DT, 1L, "d", expression(x+2)), error="type 'expression' cannot
 test(2005.11, set(DT, 1L, "e", expression(x+2)), error="type 'expression' cannot be coerced to 'double'")
 test(2005.12, set(DT, 1L, "f", expression(x+2)), error="type 'expression' cannot be coerced to 'complex'")
 test(2005.30, DT[2:3,c:=c(TRUE,FALSE), verbose=3L]$c, as.raw(INT(7,1,0)), ## note verbose=3L for more deeper verbose output due to memrecycle messages when it is being re-used internally #4491
-              output="Zero-copy coerce when assigning 'logical' to 'raw' column 3 named 'c'")
+              output="Zero-copy coerce when assigning 'logical' to column 3 named 'c' which is 'raw'")
 test(2005.31, set(DT,1L,"c",NA)$c, as.raw(INT(0,1,0)))
 test(2005.32, set(DT,1:2,"c",INT(-1,255))$c, as.raw(INT(0,255,0)),
               warning="-1.*integer.*position 1 taken as 0 when assigning.*raw.*column 3 named 'c'")
@@ -14906,10 +14925,10 @@ options(old)
 
 # exceptions in char to POSIX coercion
 dn = 'aa2016-09-18 08:00:00'
-test(2038.14, between(x, dn, up), error="coercion to POSIX failed")
+test(2038.14, between(x, dn, up), error="coercion to POSIXct failed")
 dn = '2016-09-18 08:00:00'
 up = 'bb2016-09-18 09:00:00'
-test(2038.15, between(x, dn, up), error="coercion to POSIX failed")
+test(2038.15, between(x, dn, up), error="coercion to POSIXct failed")
 
 # exceptions due to timezone mismatch
 x = as.POSIXct("2016-09-18 07:00:00", tz="UTC") + 0:10*60*15
@@ -16494,8 +16513,8 @@ DT = data.table(a = "aaaaaaaaaaaaa",
                 c = "ccccccccccccc",
                 d = "ddddddddddddd")
 test(2125.01,
-     capture.output(print(DT, trunc.cols=TRUE))[3L],
-     "2 variable(s) not shown: [c, d]")
+     print(DT, trunc.cols=TRUE),
+     output="2 variables not shown: [c, d]")
 # Printing with dots
 DT = data.table(a = vector("integer", 102L),
                 b = "bbbbbbbbbbbbb",
@@ -16514,7 +16533,7 @@ test(2125.02, capture.output(print(DT, trunc.cols=TRUE)),
        "100: 0 bbbbbbbbbbbbb ccccccccccccc",
        "101: 0 bbbbbbbbbbbbb ccccccccccccc",
        "102: 0 bbbbbbbbbbbbb ccccccccccccc",
-       "1 variable(s) not shown: [d]"))
+       "1 variable not shown: [d]"))
 test(2125.03, capture.output(print(DT, trunc.cols=TRUE, row.names=FALSE)),
      c("   a             b             c",
        "   0 bbbbbbbbbbbbb ccccccccccccc",
@@ -16528,22 +16547,22 @@ test(2125.03, capture.output(print(DT, trunc.cols=TRUE, row.names=FALSE)),
        "   0 bbbbbbbbbbbbb ccccccccccccc",
        "   0 bbbbbbbbbbbbb ccccccccccccc",
        "   0 bbbbbbbbbbbbb ccccccccccccc",
-       "1 variable(s) not shown: [d]" ))
+       "1 variable not shown: [d]" ))
 # also testing #4266 -- getting width of row #s register right
 #   TODO: understand why 2 variables truncated here. a,b,c combined have width
 #     _exactly_ 40, but still wraps. If we set options(width=41) it won't truncate.
 #     seems to be an issue with print.default.
 test(2125.04, capture.output(print(DT, trunc.cols=TRUE, class=TRUE))[14L],
-     "2 variable(s) not shown: [c <char>, d <char>]")
+     "2 variables not shown: [c <char>, d <char>]")
 test(2125.05, capture.output(print(DT, trunc.cols=TRUE, class=TRUE, row.names=FALSE))[c(1,14)],
      c("     a             b             c",
-       "1 variable(s) not shown: [d <char>]" ))
+       "1 variable not shown: [d <char>]" ))
 test(2125.06, capture.output(print(DT, trunc.cols=TRUE, col.names="none"))[c(1,12)],
      c("  1: 0 bbbbbbbbbbbbb ccccccccccccc",
-       "1 variable(s) not shown: [d]" ))
+       "1 variable not shown: [d]" ))
 test(2125.07, capture.output(print(DT, trunc.cols=TRUE, class=TRUE, col.names="none"))[c(1,13)],
      c("  1: 0 bbbbbbbbbbbbb",
-       "2 variable(s) not shown: [c, d]" ),
+       "2 variables not shown: [c, d]" ),
      warning = "Column classes will be suppressed when col.names is 'none'")
 options("width" = 20)
 DT = data.table(a = vector("integer", 2),
@@ -16554,16 +16573,16 @@ test(2125.08, capture.output(print(DT, trunc.cols=TRUE)),
      c("   a             b",
        "1: 0 bbbbbbbbbbbbb",
        "2: 0 bbbbbbbbbbbbb",
-       "2 variable(s) not shown: [c, d]"))
+       "2 variables not shown: [c, d]"))
 options("width" = 10)
 DT = data.table(a = "aaaaaaaaaaaaa",
                 b = "bbbbbbbbbbbbb",
                 c = "ccccccccccccc",
                 d = "ddddddddddddd")
 test(2125.09, capture.output(print(DT, trunc.cols=TRUE)),
-     "4 variable(s) not shown: [a, b, c, d]")
+     "4 variables not shown: [a, b, c, d]")
 test(2125.10, capture.output(print(DT, trunc.cols=TRUE, class=TRUE)),
-     "4 variable(s) not shown: [a <char>, b <char>, c <char>, d <char>]")
+     "4 variables not shown: [a <char>, b <char>, c <char>, d <char>]")
 options(old_width)
 
 # segfault when i is NULL or zero-column, #4060
@@ -16952,7 +16971,7 @@ test(2150.10, fread(tmp), copy(DT)[ , times := format(times, '%FT%T+00:XX')])
 test(2150.11,fread("a,b\n2015-01-01,2015-01-01", colClasses="POSIXct"),  # local time for backwards compatibility
      data.table(a=as.POSIXct("2015-01-01"), b=as.POSIXct("2015-01-01")))
 test(2150.12,fread("a,b\n2015-01-01,2015-01-01", select=c(a="Date",b="POSIXct")),  # select colClasses form, for coverage
-     data.table(a=as.Date("2015-01-01"), b=as.POSIXct("2015-01-01")))
+     data.table(a=as.IDate("2015-01-01"), b=as.POSIXct("2015-01-01")))
 test(2150.13, fread("a,b\n2015-01-01,1.1\n2015-01-02 01:02:03,1.2", tz=""), # no Z, tz="" needed for this test from v1.14.0
      if (TZnotUTC) data.table(a=c("2015-01-01","2015-01-02 01:02:03"), b=c(1.1, 1.2))
      else          data.table(a=setattr(as.POSIXct(c("2015-01-01 00:00:00", "2015-01-02 01:02:03"), tz="UTC"), "tzone", "UTC"), b=c(1.1, 1.2)))
@@ -17287,11 +17306,11 @@ test(2183.00020, melt(iris.dt, measure.vars=measurev(value.name, dim, sep=".", p
 test(2183.000201, melt(iris.dt, measure.vars=measurev(list(NULL, dim=NULL), sep=".")), error="in measurev, elements of fun.list must be named, problems: [1]")
 test(2183.000202, melt(iris.dt, measure.vars=measurev(list(NULL, NULL), sep=".")), error="in measurev, elements of fun.list must be named, problems: [1, 2]")
 test(2183.00027, melt(iris.dt, measure.vars=measurev(list(value.name=NULL, dim="bar"), sep=".")), error="in the measurev fun.list, each non-NULL element must be a function with at least one argument, problem: dim")
-test(2183.00028, melt(iris.dt, measure.vars=measurev(list(value.name=NULL, dim=NULL, baz=NULL), sep=".")), error="number of elements of fun.list =3 must be same as max number of items after splitting column names =2")
+test(2183.00028, melt(iris.dt, measure.vars=measurev(list(value.name=NULL, dim=NULL, baz=NULL), sep=".")), error="number of elements of fun.list (3) must be the same as the max number of items after splitting column names (2)")
 test(2183.00042, melt(DTid, measure.vars=measurev(list(value.name=NULL, istr=function()1), pattern="([ab])([12])")), error="in the measurev fun.list, each non-NULL element must be a function with at least one argument, problem: istr")
 test(2183.00043, melt(DTid, measure.vars=measurev(list(value.name=NULL, istr=interactive), pattern="([ab])([12])")), error="in the measurev fun.list, each non-NULL element must be a function with at least one argument, problem: istr")
 test(2183.00044, melt(DTid, measure.vars=measurev(list(value.name=NULL, istr=function(x)1), pattern="([ab])([12])")), error="each conversion function must return an atomic vector with same length as its first argument, problem: istr")
-test(2183.00045, melt(iris.dt, measure.vars=measurev(list(value.name=NULL, dim=NULL, baz=NULL), pattern="(.*)[.](.*)")), error="number of elements of fun.list =3 must be same as number of capture groups in pattern =2")
+test(2183.00045, melt(iris.dt, measure.vars=measurev(list(value.name=NULL, dim=NULL, baz=NULL), pattern="(.*)[.](.*)")), error="number of elements of fun.list (3) must be the same as the number of capture groups in pattern (2)")
 test(2183.00048, melt(iris.dt, measure.vars=measurev(list(value.name=NULL, value.name=NULL), sep=".")), error="elements of fun.list should be uniquely named, problems: [value.name]")
 # measure with factor conversion.
 myfac = function(x)factor(x)#user-defined conversion function.
@@ -17334,7 +17353,7 @@ test(2183.24, names(melt(iris.dt, measure.vars=measure(value.name, dim, sep=".")
 test(2183.25, names(melt(iris.dt, measure.vars=measure(part, value.name, sep="."))), c("Species", "part", "Length", "Width"))
 test(2183.26, names(melt(iris.dt, measure.vars=measure(part, dim, sep="."))), c("Species", "part", "dim", "value"))
 test(2183.27, melt(iris.dt, measure.vars=measure(value.name, dim="bar", sep=".")), error="each ... argument to measure must be a function with at least one argument, problem: dim")
-test(2183.28, melt(iris.dt, measure.vars=measure(value.name, dim, baz, sep=".")), error="number of ... arguments to measure =3 must be same as max number of items after splitting column names =2")
+test(2183.28, melt(iris.dt, measure.vars=measure(value.name, dim, baz, sep=".")), error="number of elements of fun.list (3) must be the same as the max number of items after splitting column names (2)")
 test(2183.29, melt(iris.dt, measure.vars=measure()), error="each column name results in only one item after splitting using sep, which means that all columns would be melted; to fix please either specify melt on all columns directly without using measure, or use a different sep/pattern specification")
 # patterns with iris data.
 test(2183.40, names(melt(iris.dt, measure.vars=patterns("[.]"))), c("Species", "variable", "value"))
@@ -17343,10 +17362,10 @@ test(2183.41, melt(DTid, measure.vars=measure(value.name, istr="bar", pattern="(
 test(2183.42, melt(DTid, measure.vars=measure(value.name, istr=function()1, pattern="([ab])([12])")), error="each ... argument to measure must be a function with at least one argument, problem: istr")
 test(2183.43, melt(DTid, measure.vars=measure(value.name, istr=interactive, pattern="([ab])([12])")), error="each ... argument to measure must be a function with at least one argument, problem: istr")
 test(2183.44, melt(DTid, measure.vars=measure(value.name, istr=function(x)1, pattern="([ab])([12])")), error="each conversion function must return an atomic vector with same length as its first argument, problem: istr")
-test(2183.45, melt(iris.dt, measure.vars=measure(value.name, dim, baz, pattern="(.*)[.](.*)")), error="number of ... arguments to measure =3 must be same as number of capture groups in pattern =2")
+test(2183.45, melt(iris.dt, measure.vars=measure(value.name, dim, baz, pattern="(.*)[.](.*)")), error="number of elements of fun.list (3) must be the same as the number of capture groups in pattern (2)")
 test(2183.46, melt(iris.dt, measure.vars=measure(function(x)factor(x), dim, pattern="(.*)[.](.*)")), error="each ... argument to measure must be either a symbol without argument name, or a function with argument name, problems: [1]")
 test(2183.47, melt(iris.dt, measure.vars=measure(function(x)factor(x), pattern="(.*)[.](.*)")), error="each ... argument to measure must be either a symbol without argument name, or a function with argument name, problems: [1]")
-test(2183.48, melt(iris.dt, measure.vars=measure(value.name, value.name, sep=".")), error="... arguments to measure should be uniquely named, problems: [value.name]")
+test(2183.48, melt(iris.dt, measure.vars=measure(value.name, value.name, sep=".")), error="elements of fun.list should be uniquely named, problems: [value.name]")
 # measure with factor conversion.
 myfac = function(x)factor(x)#user-defined conversion function.
 test(2183.60, melt(DTid, measure.vars=measure(letter=myfac, value.name, pattern="([ab])([12])")), data.table(id=1, letter=factor(c("a","b")), "2"=c(2,2), "1"=c(NA,1)))
@@ -18744,14 +18763,14 @@ test(2264.8, print(DT, show.indices=TRUE), output=ans)
 if (test_bit64) local({
   DT = data.table(a = 'abc', b = as.integer64(1))
   suppressPackageStartupMessages(unloadNamespace("bit64"))
-  on.exit(suppressPackageStartupMessages(library(bit64)))
+  on.exit(suppressPackageStartupMessages(library(bit64, pos="package:base")))
   test(2265, DT, output="abc\\s*1$")
 })
 
 # non-ASCII plain symbol in by, #4708
 # NB: recall we can't use non-ASCII symbols in the test script. The text is a-<n-tilde>-o (year in Spanish)
 native_ano = iconv("a\U00F1o", "UTF-8", "")
-if (!is.na(native_ano)) { # #6339: symbol must be represented in native encoding
+if (identical(native_ano, "a\U00F1o")) { # #6339: symbol must be represented in native encoding
   DT = data.table(a = rep(1:3, 2))
   setnames(DT, "a", native_ano)
   test(2266, eval(parse(text=sprintf("DT[ , .N, %s]$N[1L]", native_ano))), 2L)
@@ -19060,25 +19079,1520 @@ test(2278.4, set(copy(dt), NA_integer_, "b", logical(0)), copy(dt)[NA_integer_, 
 test(2278.5, set(copy(dt), integer(0),  "b", numeric(0)), copy(dt)[integer(0),  b := numeric(0)])
 test(2278.6, { set(dt, 0L, "b", logical(0)); set(dt, 1L, "a", 2L); dt }, data.table(a=2L, b=NA))
 
+# convert POSIXlt to POSIXct in set and := #1724
+dt = data.table(a=1:2)
+dates_char = c("2024-01-01", "2024-01-02")
+dates = as.POSIXlt(dates_char, tz="UTC")
+ans = data.table(a=1:2, dates=as.POSIXct(dates))
+test(2279.1, copy(dt)[, dates := dates], ans, warning="POSIXlt.*converted to POSIXct")
+test(2279.2, set(copy(dt), j="dates", value=dates), ans, warning="POSIXlt.*converted to POSIXct")
+test(2279.3, {dt1 = copy(dt); dt1$dates=dates; dt1}, ans, warning="POSIXlt.*converted to POSIXct")
+test(2279.4, copy(dt)[, dates := strptime(dates_char, "%Y-%m-%d", tz="UTC")], ans, warning="POSIXlt.*converted to POSIXct")
+
+# coverage for internal_error wrapper
+test(2280.1, internal_error("broken"), error="Internal error.*broken")
+test(2280.2, internal_error("broken %d%s", 1, "2"), error="Internal error.*broken 12")
+foo = function(...) internal_error("broken")
+test(2280.3, foo(), error="Internal error in foo: broken")
+
+# fwrite respects dec=',' for sub-second timestamps, #6446
+test(2281.1, fwrite(data.table(a=.POSIXct(0.001)), dec=',', sep=';'), output="1970-01-01T00:00:00,001Z")
+test(2281.2, fwrite(data.table(a=.POSIXct(0.0001)), dec=',', sep=';'), output="1970-01-01T00:00:00,000100Z")
+
+# rowwisely creating a data.table
+DT = rowwiseDT(
+  A=, B=,
+  1, "a"
+)
+test(2282.01, DT, data.table(A = 1, B = "a"))
+# error if named argument is not empty
+test(2282.02, rowwiseDT(A=,B=2,1,2), error="Named arguments must be empty")
+# error if no header
+test(2282.03, rowwiseDT(1,"a"), error = "Must provide at least one column")
+# error if body is not multiple length of the header
+test(2282.04, rowwiseDT(A=,B=,C=, 1,"a",2,"b",3), error = "There are 3 columns but the number of cells is 5, which is not an integer multiple of the columns")
+# create list element automatically
+test(2282.05, rowwiseDT(A=,list(1)), data.table(A=list(1)))
+test(2282.06, rowwiseDT(A=,1:2), data.table(A=list(1:2)))
+test(2282.07, rowwiseDT(A=,double()), data.table(A=list(double())))
+# error if named argument is in the middle
+test(2282.08, rowwiseDT(A=,B=,1,2,C=,4), error="Header must be the first N arguments")
+# evaluate arguments in the correct frame
+ncols = 1e6
+test(2282.09, rowwiseDT(A=,ncols), data.table(A=ncols))
+
+# named arguments of c() in j get prepended to lapply(.SD, FUN) #2311
+
+M <- as.data.table(mtcars)
+M[, " " := hp]
+M[, "." := hp]
+
+sdnames <- setdiff(names(M), "cyl")
+sdlist <- vector("list", length(sdnames))
+names(sdlist) <- sdnames
+
+for (opt in c(0, 1, 2)) {
+  test(2283 + opt/10 + 0.001, options=c(datatable.optimize=opt),
+       names(M[, c(m=lapply(.SD, mean)), by="cyl"]),
+       c("cyl", names(c(m=sdlist))))
+  test(2283 + opt/10 + 0.002, options=c(datatable.optimize=opt),
+       names(M[, c(Mpg=list(mpg), lapply(.SD, mean)), by="cyl"]),
+       c("cyl", "Mpg", sdnames))
+  test(2283 + opt/10 + 0.003, options=c(datatable.optimize=opt),
+       names(M[, c(Mpg=list(mpg), m=lapply(.SD, mean)), by="cyl"]),
+       c("cyl", "Mpg", names(c(m=sdlist))))
+  test(2283 + opt/10 + 0.004, options=c(datatable.optimize=opt),
+       names(M[, c(mpg=list(mpg), mpg=lapply(.SD, mean)), by="cyl"]),
+       c("cyl", "mpg", names(c(mpg=sdlist))))
+  test(2283 + opt/10 + 0.005, options=c(datatable.optimize=opt),
+       names(M[, c(list(mpg), lapply(.SD, mean)), by="cyl"]),
+       c("cyl", "V1", sdnames))
+  test(2283 + opt/10 + 0.006, options=c(datatable.optimize=opt),
+       names(M[, c(lapply(.SD, mean), list(mpg)), by="cyl"]),
+       c("cyl", sdnames, sprintf("V%d", length(sdnames)+1L)))
+  test(2283 + opt/10 + 0.007, options=c(datatable.optimize=opt),
+       names(M[, c(lapply(.SD, mean), lapply(.SD, sum)), by="cyl"]),
+       c("cyl", sdnames, sdnames))
+  test(2283 + opt/10 + 0.008, options=c(datatable.optimize=opt),
+       names(M[, c(mean=lapply(.SD, mean), sum=lapply(.SD,  sum)), by="cyl"]),
+       c("cyl", names(c(mean=sdlist, sum=sdlist))))
+  test(2283 + opt/10 + 0.009, options=c(datatable.optimize=opt),
+       names(M[, c(lapply(.SD, mean), sum=lapply(.SD,  sum)), by="cyl"]),
+       c("cyl", sdnames, names(c(sum=sdlist))) )
+  test(2283 + opt/10 + 0.010, options=c(datatable.optimize=opt),
+       names(M[, c(" "=lapply(.SD, mean), "."=lapply(.SD,  sum)), by="cyl"]),
+       c("cyl", names(c(" "=sdlist, "."=sdlist))))
+  test(2283 + opt/10 + 0.011, options=c(datatable.optimize=opt),
+       names(M[, c(A=list(a=mpg, b=hp), lapply(.SD, mean)), by="cyl"]),
+       c("cyl", names(c(A=list(a=0, b=0))), sdnames))
+  test(2283 + opt/10 + 0.012, options=c(datatable.optimize=opt),
+       names(M[, c(A=list(mpg, hp), lapply(.SD, mean)), by="cyl"]),
+       c("cyl", names(c(A=list(0, 0))), sdnames))
+  test(2283 + opt/10 + 0.013, options=c(datatable.optimize=opt),
+       names(M[, c(A=list(mpg, b=hp, wt), lapply(.SD, mean)), by="cyl"]),
+       c("cyl", names(c(A=list(0, b=0, 0))), sdnames))
+  test(2283 + opt/10 + 0.014, options=c(datatable.optimize=opt),
+       names(M[, c(A=list(mpg), lapply(.SD, mean)), by="cyl"]),
+       c("cyl", names(c(A=list(0))), sdnames))
+  test(2283 + opt/10 + 0.015, options=c(datatable.optimize=opt),
+       names(M[, c(" "=list(" "=hp, "."=disp, mpg), lapply(.SD, mean)), by="cyl"]),
+       c("cyl", names(c(" "=list(" "=0, "."=0, 0))), sdnames))
+  test(2283 + opt/10 + 0.016, options=c(datatable.optimize=opt),
+       names(M[, c("."=list(" "=hp, "."=disp, mpg), lapply(.SD, mean)), by="cyl"]),
+       c("cyl", names(c("."=list(" "=0, "."=0, 0))), sdnames))
+  test(2283 + opt/10 + 0.017, options=c(datatable.optimize=opt),
+       names(M[, c(list(mpg, b=hp), lapply(.SD, mean)), by="cyl", .SDcols=c("vs", "am")]),
+       c("cyl", "V1", "b", "vs", "am"))
+  test(2283 + opt/10 + 0.018, options=c(datatable.optimize=opt),
+       names(M[, c(list(mpg, b=hp), c(lapply(.SD, mean))), by="cyl", .SDcols=c("vs", "am")]),
+       c("cyl", "V1", "b", "vs", "am"))
+  test(2283 + opt/10 + 0.019, options=c(datatable.optimize=opt),
+       names(M[, c(mpg[1], list(mpg, b=hp), c(lapply(.SD, mean))), by="cyl", .SDcols=c("vs", "am")]),
+       c("cyl", "V1", "V2", "b", "vs", "am"))
+}
+
+# Confusing behavior with DT[, min(var):max(var)] #2069
+DT = data.table(t = c(2L, 1L, 3L), a=0, b=1)
+test(2284.1, DT[, min(t):max(t)], with(DT, min(t):max(t)))
+test(2284.2, DT[, 1:max(t)], with(DT, 1:max(t)))
+test(2284.3, DT[, max(t):1], with(DT, max(t):1))
+test(2284.4, DT[, 1:t[1L]], with(DT, 1:t[1L]))
+test(2284.5, DT[, t[2L]:1], with(DT, t[2L]:1))
+test(2284.6, DT[, min(a):max(t)], with(DT, min(a):max(t)))
+# but not every `:` with a call in from or to is with=TRUE, #6486
+test(2284.7, DT[, 1:ncol(DT)], DT)
+test(2284.8, DT[, 2:(ncol(DT) - 1L)], DT[, "a"])
+test(2284.9, DT[, (ncol(DT) - 1L):ncol(DT)], DT[, c("a", "b")])
+
+# Extra regression tests for #4772, which was already incidentally fixed by #5183.
+x = data.table(a=1:3)
+y = data.table(a=2:4)
+z = data.table(a=3:5)
+test(2285.01, merge(x, merge(y, z)), data.table(a=3L, key="a"))
+test(2285.02, merge(x, merge(z, y)), data.table(a=3L, key="a"))
+test(2285.03, merge(y, merge(x, z)), data.table(a=3L, key="a"))
+test(2285.04, merge(y, merge(z, x)), data.table(a=3L, key="a"))
+test(2285.05, merge(z, merge(x, y)), data.table(a=3L, key="a"))
+test(2285.06, merge(z, merge(y, x)), data.table(a=3L, key="a"))
+test(2285.07, merge(merge(x, y), z), data.table(a=3L, key="a"))
+test(2285.08, merge(merge(x, z), y), data.table(a=3L, key="a"))
+test(2285.09, merge(merge(y, x), z), data.table(a=3L, key="a"))
+test(2285.10, merge(merge(y, z), x), data.table(a=3L, key="a"))
+test(2285.11, merge(merge(z, x), y), data.table(a=3L, key="a"))
+test(2285.12, merge(merge(z, y), x), data.table(a=3L, key="a"))
+
 # ensure proper PROTECT() within fcase, #6448
 x <- 1:3
-test(2279,
+test(2286,
      fcase(
        x<2, structure(list(1), class = "foo"),
        x<3, structure(list(2), class = "foo"),
        # Force gc() and some allocations which have a good chance at landing in the region that was earlier left unprotected
-       { gc(full = TRUE); replicate(10, FALSE); x<4 },
+       # TODO(R>=3.5.0): no need to branch here for gc(full=TRUE)
+       { if ("full" %in% names(formals(gc))) gc(full = TRUE) else gc(); replicate(10, FALSE); x<4 },
        `attr<-`(list(3), "class", "foo")),
      structure(list(1, 2, 3), class = "foo"))
 
+# Always return a copy of columns, even when returning a single list column, #4788
+dt = data.table(A=list('a', 'b', 'c'))
+test(2287.1, address(dt[, A]) != address(dt[, A]))
+l = dt[, A]
+dt[1L, A := .(list(1L))]
+test(2287.2, !identical(DT$A[[1L]], l[[1L]]))
+
+# rbind do not copy class/attributes for integer64 and CPLXSXP/STRSXP/VECSXP #5504
+if (test_bit64) {
+  a = data.table(as.integer64(c(1,2)))
+  b = data.table(c("a","b"))
+  c = data.table(complex(real = 3:4, imaginary = 5:6))
+  d = data.table(list(3.5, 4L))
+  test(2288.1, rbind(a,b), data.table(c("1","2","a","b")))
+  test(2288.2, rbind(b,a), data.table(c("a","b","1","2")))
+  test(2288.3, rbind(a,c), data.table(complex(real = 1:4, imaginary = c(0, 0, 5:6))))
+  test(2288.4, rbind(c,a), data.table(complex(real = c(3:4, 1:2), imaginary = c(5:6, 0, 0))))
+  test(2288.5, rbind(a,d), data.table(list(as.integer64(1), as.integer64(2), 3.5, 4L)))
+  test(2288.6, rbind(d,a), data.table(list(3.5, 4L, as.integer64(1), as.integer64(2))))
+}
+
+# support column type 'expression' #5596
+dt = data.table(a=1:2, b=expression(1,2))
+test(2289.1, dt[1,], data.table(a=1L, b=expression(1)))
+test(2289.2, dt[,b,a], dt)
+
+# error message improvement, #5296
+DT = data.table(a = 1)
+test(2290.1, DT[, `:=`(a := 2)], error="It looks like you re-used `:=`")
+# special case where length(jsub) == 3 that would have failed later
+test(2290.2, DT[, `:=`(a := 2, c := 3)], error="It looks like you re-used `:=` in argument 1")
+# NB: _not_ a = 2, because that means partially-named --> not currently covered
+test(2290.3, DT[, `:=`(a, c := 3)], error="It looks like you re-used `:=` in argument 2")
+# partially-named `:=`(...) --> different branch, same error
+test(2290.4, DT[, `:=`(a = 2, c := 3)], error="It looks like you re-used `:=` in argument 2")
+
+# segfault when selfref is not ok before set #6410
+df = data.frame(a=1:3)
+setDT(df)
+attr(df, "att") = 1
+test(2291.1, set(df, NULL, "new", "new"), error="attributes .* have been reassigned")
+
 # ns-qualified bysub error, #6493
 DT = data.table(a = 1)
-test(2280.1, DT[, .N, by=base::mget("a")], data.table(a = 1, N = 1L))
-test(2280.2, DT[, .N, by=base::c("a")], data.table(a = 1, N = 1L))
+test(2292.1, DT[, .N, by=base::mget("a")], data.table(a = 1, N = 1L))
+test(2292.2, DT[, .N, by=base::c("a")], data.table(a = 1, N = 1L))
 
 # don't try to re-use sorting on a non-data.table, #6501
 x = data.table(id = "aaa")
 y = data.frame(id = "bbb")
-test(2281.1, x[!y, on='id'], x)
+test(2293.1, x[!y, on='id'], x)
 class(y) = c("tbl_df", "tbl", "data.frame")
-test(2281.2, x[!y, on = "id"], x)
+test(2293.2, x[!y, on = "id"], x)
+
+# groupingsets/cube/rollup 'label' argument, #5351
+DT1 = data.table(VCharA = rep(c("C1", "C2", "C3"), each = 12),
+                 VCharB = c(rep(c("C3", "C4"), c(6, 6)),
+                            rep(c("C3", "C4"), c(8, 4)),
+                            rep(c("C3", "C4"), c(4, 8))),
+                 VFacA = factor(rep(c("F1", "F2", "F3"), c(14, 12, 10))),
+                 VFacB = factor(rep(c("F3", "F4"), c(30, 6))),
+                 VIntA = rep(1:2, c(24, 12)),
+                 VIntB = rep(2:3, c(6, 30)))
+DT1[, `:=`(VDate = as.Date(sub("F", "2024-01-0", VFacA)),
+           VIDate = as.IDate(sub("F", "2024-01-0", VFacB)),
+           VNumA = as.numeric(VIntA),
+           VNumB = as.numeric(VIntB),
+           integer = VCharB,
+           Y = 1:36)]
+DT1[35:36, VCharA := NA]
+DT1[36, VFacA := NA]
+DT1[36, VDate := NA]
+# Ans1: character, factor, integer grouping variables.
+Ans1 = rbind(DT1[, .(Count = .N, Y_Sum = sum(Y)),
+                 by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB")],
+             DT1[, .(VFacB = factor("Total"), VIntB = 999L, Count = .N, Y_Sum = sum(Y)),
+                 by = c("VCharA", "VCharB", "VFacA", "VIntA")],
+             DT1[, .(VFacB = factor("Total"), VIntA = 999L, VIntB = 999L, Count = .N, Y_Sum = sum(Y)),
+                 by = c("VCharA", "VCharB", "VFacA")],
+             DT1[, .(VFacA = factor("Total"), VIntA = 999L, VIntB = 999L, Count = .N, Y_Sum = sum(Y)),
+                 by = c("VCharA", "VCharB", "VFacB")],
+             DT1[, .(VCharB = "Total", VFacA = factor("Total"), VIntA = 999L, VIntB = 999L,
+                     Count = .N, Y_Sum = sum(Y)),
+                 by = c("VCharA", "VFacB")],
+             DT1[, .(VCharA = "Total", VFacB = factor("Total"), VIntA = 999L, VIntB = 999L,
+                     Count = .N, Y_Sum = sum(Y)),
+                 by = c("VCharB", "VFacA")],
+             DT1[, .(VCharB = "Total", VFacA = factor("Total"), VFacB = factor("Total"),
+                     VIntA = 999L, VIntB = 999L, Count = .N, Y_Sum = sum(Y)),
+                 by = "VCharA"],
+             DT1[, .(VCharA = "Total", VCharB = "Total", VFacA = factor("Total"), VFacB = factor("Total"),
+                     VIntA = 999L, VIntB = 999L, Count = .N, Y_Sum = sum(Y))]
+             )
+# Ans2: character, factor, integer grouping variables; some variables have no 'total' rows.
+Ans2 = rbind(DT1[0, .(Count = .N, Y_Sum = sum(Y)),
+                 by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB")],
+             DT1[, .(VFacB = factor("Total"), VIntB = 999L, Count = .N, Y_Sum = sum(Y)),
+                 by = c("VCharA", "VCharB", "VFacA", "VIntA")],
+             DT1[, .(VFacB = factor("Total"), VIntA = 999L, VIntB = 999L, Count = .N, Y_Sum = sum(Y)),
+                 by = c("VCharA", "VCharB", "VFacA")])
+# Ans3: character, Date, IDate, numeric grouping variables.
+Ans3 = Ans1[, .(VCharA, VCharB,
+                VDate = fifelse(VFacA == "Total", as.Date("3000-01-01"), as.Date(sub("F", "2024-01-0", VFacA))),
+                VIDate = fifelse(VFacB == "Total", as.IDate("3000-01-01"), as.IDate(sub("F", "2024-01-0", VFacB))),
+                VNumA = as.numeric(VIntA),
+                VNumB = as.numeric(VIntB),
+                Count, Y_Sum)]
+# 01. label is an atomic vector with length = 0.
+test(2294.01,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                              c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA"),
+                              c("VCharA", "VCharB", "VFacB"),
+                              c("VCharA", "VFacB"),
+                              c("VCharB", "VFacA"),
+                              "VCharA",
+                              character()),
+                  label = character(0)),
+     error = "Argument 'label', if not NULL, must be a scalar or a named list of scalars.")
+# 02. label is an atomic vector with length > 1.
+test(2294.02,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                              c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA"),
+                              c("VCharA", "VCharB", "VFacB"),
+                              c("VCharA", "VFacB"),
+                              c("VCharB", "VFacA"),
+                              "VCharA",
+                              character()),
+                  label = c("Total A", "Total B")),
+     error = "Argument 'label', if not NULL, must be a scalar or a named list of scalars.")
+# 03. label is a list and one of the elements is a list.
+test(2294.03,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                              c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA"),
+                              c("VCharA", "VCharB", "VFacB"),
+                              c("VCharA", "VFacB"),
+                              c("VCharB", "VFacA"),
+                              "VCharA",
+                              character()),
+                  label = list(character = list(VCharA = "Total VCharA", VCharB = "Total VCharB"))),
+     error = "Argument 'label', if not NULL, must be a scalar or a named list of scalars.")
+# 04. label is a list and one of the elements is an atomic vector with length > 1.
+test(2294.04,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                              c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA"),
+                              c("VCharA", "VCharB", "VFacB"),
+                              c("VCharA", "VFacB"),
+                              c("VCharB", "VFacA"),
+                              "VCharA",
+                              character()),
+                  label = list(VCharA = "Total VCharA", VCharB = c("Total VCharB", "Total"))),
+     error = "Argument 'label', if not NULL, must be a scalar or a named list of scalars.")
+# 05. label is a list with no elements named.
+test(2294.05,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                              c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA"),
+                              c("VCharA", "VCharB", "VFacB"),
+                              c("VCharA", "VFacB"),
+                              c("VCharB", "VFacA"),
+                              "VCharA",
+                              character()),
+                  label = list("Total VCharA", "Total VCharB")),
+     error = "Argument 'label', if not NULL, must be a scalar or a named list of scalars.")
+# 06. label is a list with some but not all elements named.
+test(2294.06,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                              c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA"),
+                              c("VCharA", "VCharB", "VFacB"),
+                              c("VCharA", "VFacB"),
+                              c("VCharB", "VFacA"),
+                              "VCharA",
+                              character()),
+                  label = list(VCharA = "Total VCharA", "Total VCharB")),
+     error = "When argument 'label' is a list, all of the list elements must be named.")
+# 07. label is a list with an NA name.
+test(2294.07,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                              c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA"),
+                              c("VCharA", "VCharB", "VFacB"),
+                              c("VCharA", "VFacB"),
+                              c("VCharB", "VFacA"),
+                              "VCharA",
+                              character()),
+                  label = structure(list("Total VCharA", "Total VCharB"), names = c("VCharA", NA))),
+     error = "When argument 'label' is a list, all of the list elements must be named.")
+# 08. label is a list with duplicate names.
+test(2294.08,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                              c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA"),
+                              c("VCharA", "VCharB", "VFacB"),
+                              c("VCharA", "VFacB"),
+                              c("VCharB", "VFacA"),
+                              "VCharA",
+                              character()),
+                  label = list(VCharA = "Total VCharA", VCharA = "Total VCharA", VCharB = "Total VCharB")),
+     error = "When argument 'label' is a list, the element names must not contain duplicates.")
+# 09. label is a list with a name not in 'by', not first element of class in 'x' of a variable in 'by', and not one of the other allowed names.
+test(2294.09,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                              c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA"),
+                              c("VCharA", "VCharB", "VFacB"),
+                              c("VCharA", "VFacB"),
+                              c("VCharB", "VFacA"),
+                              "VCharA",
+                              character()),
+                  label = list(VCharA = "Total VCharA", z = "Total", VNumA = 1)),
+     error = "When argument 'label' is a list, all element names must be (1) in 'by', or (2) the first element of the class in the data.table 'x' of a variable in 'by', or (3) one of [character, integer, numeric, factor, Date, IDate]. Element names not satisfying this condition: [z, VNumA]")
+# 10. label is a list and an element with name in 'by' has class not matching class in 'x'.
+test(2294.10,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                              c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA"),
+                              c("VCharA", "VCharB", "VFacB"),
+                              c("VCharA", "VFacB"),
+                              c("VCharB", "VFacA"),
+                              "VCharA",
+                              character()),
+                  label = list(VCharA = "Total VCharA", VCharB = 999L,
+                               VFacA = "Total VFacA", VFacB = 1L,
+                               VIntA = 100L, VIntB = 200)),
+     error = "When argument 'label' is a list, the class of each 'label' element with name in 'by' must match the class of the corresponding column of the data.table 'x'. Class mismatch for: [VCharB (label: integer; data: character), VFacA (label: character; data: factor), VFacB (label: integer; data: factor), VIntB (label: numeric; data: integer)]")
+# 11. label is a list and an element with name in 'by' has class not matching class in 'x' with classes that have length > 1.
+test(2294.11,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VDate", "VIDate"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VFacB", "VDate", "VIDate"),
+                              c("VCharA", "VCharB", "VFacA", "VDate"),
+                              c("VCharA", "VCharB", "VFacA"),
+                              c("VCharA", "VCharB", "VFacB"),
+                              c("VCharA", "VFacB"),
+                              c("VCharB", "VFacA"),
+                              "VCharA",
+                              character()),
+                  label = list(VCharA = "Total VCharA", VCharB = "Total VCharB",
+                               VFacA = factor("Total VFacA"), VFacB = factor("Total VFacB"),
+                               VDate = as.IDate("3000-01-01"), VIDate = as.Date("3000-01-01"))),
+     error = "When argument 'label' is a list, the class of each 'label' element with name in 'by' must match the class of the corresponding column of the data.table 'x'. Class mismatch for: [VDate (label: IDate, Date; data: Date), VIDate (label: Date; data: IDate, Date)]")
+# 12. label is a list and an element with name in 'by' has class not matching class in 'x', and the variable name is also first element of the class of other variables in 'by'.
+test(2294.12,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "integer", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "integer", "VFacA", "VFacB", "VIntA", "VIntB"),
+                              c("VCharA", "integer", "VFacA", "VIntA"),
+                              c("VCharA", "integer", "VFacA"),
+                              c("VCharA", "integer", "VFacB"),
+                              c("VCharA", "VFacB"),
+                              c("integer", "VFacA"),
+                              "VCharA",
+                              character()),
+                  label = list(integer = 999L)),
+     error = "When argument 'label' is a list, the class of each 'label' element with name in 'by' must match the class of the corresponding column of the data.table 'x'. Class mismatch for: [integer (label: integer; data: character)]")
+# 13. label is a list and an element with name not in 'by' has name not matching first element of class of the element.
+test(2294.13,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                              c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA"),
+                              c("VCharA", "VCharB", "VFacB"),
+                              c("VCharA", "VFacB"),
+                              c("VCharB", "VFacA"),
+                              "VCharA",
+                              character()),
+                  label = list(character = "Total", factor = "Total", integer = 999,
+                               Date = as.IDate("3000-01-01"), IDate = as.Date("3000-01-01"))),
+     error = "When argument 'label' is a list, the name of each element of 'label' not in 'by' must match the first element of the class of the element value. Mismatches: [(label name: factor; label class[1]: character), (label name: integer; label class[1]: numeric), (label name: Date; label class[1]: IDate), (label name: IDate; label class[1]: Date)]")
+# 14. label specified by variable for each variable.
+test(2294.14,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                              c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA"),
+                              c("VCharA", "VCharB", "VFacB"),
+                              c("VCharA", "VFacB"),
+                              c("VCharB", "VFacA"),
+                              "VCharA",
+                              character()),
+                  label = list(VCharA = "Total", VCharB = "Total",
+                               VFacA = factor("Total"), VFacB = factor("Total"),
+                               VIntA = 999L, VIntB = 999L)),
+     Ans1)
+# 15. label specified by variable for each variable with different values for different variables.
+test(2294.15,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                              c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA"),
+                              c("VCharA", "VCharB", "VFacB"),
+                              c("VCharA", "VFacB"),
+                              c("VCharB", "VFacA"),
+                              "VCharA",
+                              character()),
+                  label = list(VCharA = "Total VCharA", VCharB = "Total VCharB",
+                               VFacA = factor("Total VFacA"), VFacB = factor("Total VFacB"),
+                               VIntA = 901L, VIntB = 902L)),
+     Ans1[, .(VCharA = fifelse(VCharA == "Total", "Total VCharA", VCharA),
+              VCharB = fifelse(VCharB == "Total", "Total VCharB", VCharB),
+              VFacA = factor(VFacA, levels = levels(VFacA),
+                             labels = sub("Total", "Total VFacA", levels(VFacA))),
+              VFacB = factor(VFacB, levels = levels(VFacB),
+                             labels = sub("Total", "Total VFacB", levels(VFacB))),
+              VIntA = fifelse(VIntA == 999L, 901L, VIntA),
+              VIntB = fifelse(VIntB == 999L, 902L, VIntB),
+              Count, Y_Sum)])
+# 16. label specified by variable but not for all variables.
+test(2294.16,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                              c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA"),
+                              c("VCharA", "VCharB", "VFacB"),
+                              c("VCharA", "VFacB"),
+                              c("VCharB", "VFacA"),
+                              "VCharA",
+                              character()),
+                  label = list(VCharA = "Total", VFacA = factor("Total"))),
+     Ans1[, .(VCharA,
+              VCharB = fifelse(VCharB == "Total", NA_character_, VCharB),
+              VFacA,
+              VFacB = fifelse(VFacB == "Total", factor(NA, levels = levels(VFacB)), VFacB),
+              VIntA = fifelse(VIntA == 999L, NA_integer_, VIntA),
+              VIntB = fifelse(VIntB == 999L, NA_integer_, VIntB),
+              Count, Y_Sum)])
+# 17. label specified by variable with some label values being NA.
+test(2294.17,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                              c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA"),
+                              c("VCharA", "VCharB", "VFacB"),
+                              c("VCharA", "VFacB"),
+                              c("VCharB", "VFacA"),
+                              "VCharA",
+                              character()),
+                  label = list(VCharA = "Total", VCharB = NA_character_,
+                               VFacA = factor("Total"), VFacB = factor(NA),
+                               VIntA = NA_integer_, VIntB = 999L)),
+     Ans1[, .(VCharA,
+              VCharB = fifelse(VCharB == "Total", NA_character_, VCharB),
+              VFacA,
+              VFacB = fifelse(VFacB == "Total", factor(NA, levels = levels(VFacB)), VFacB),
+              VIntA = fifelse(VIntA == 999L, NA_integer_, VIntA), VIntB,
+              Count, Y_Sum)])
+# 18. label specified by first element of class.
+test(2294.18,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                              c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA"),
+                              c("VCharA", "VCharB", "VFacB"),
+                              c("VCharA", "VFacB"),
+                              c("VCharB", "VFacA"),
+                              "VCharA",
+                              character()),
+                  label = list(character = "Total", factor = factor("Total"), integer = 999L)),
+     Ans1)
+# 19. label specified by first element of class but not for all classes of variable in 'by'.
+test(2294.19,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                              c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA"),
+                              c("VCharA", "VCharB", "VFacB"),
+                              c("VCharA", "VFacB"),
+                              c("VCharB", "VFacA"),
+                              "VCharA",
+                              character()),
+                  label = list(factor = factor("Total"))),
+     Ans1[, .(VCharA = fifelse(VCharA == "Total", NA_character_, VCharA),
+              VCharB = fifelse(VCharB == "Total", NA_character_, VCharB),
+              VFacA, VFacB,
+              VIntA = fifelse(VIntA == 999L, NA_integer_, VIntA),
+              VIntB = fifelse(VIntB == 999L, NA_integer_, VIntB),
+              Count, Y_Sum)])
+# 20. label specified by first element of class but for none of the classes of variables in 'by'.
+test(2294.20,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                              c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA"),
+                              c("VCharA", "VCharB", "VFacB"),
+                              c("VCharA", "VFacB"),
+                              c("VCharB", "VFacA"),
+                              "VCharA",
+                              character()),
+                  label = list(Date = as.Date("3000-01-01"))),
+     Ans1[, .(VCharA = fifelse(VCharA == "Total", NA_character_, VCharA),
+              VCharB = fifelse(VCharB == "Total", NA_character_, VCharB),
+              VFacA = fifelse(VFacA == "Total", factor(NA, levels = levels(VFacA)), VFacA),
+              VFacB = fifelse(VFacB == "Total", factor(NA, levels = levels(VFacB)), VFacB),
+              VIntA = fifelse(VIntA == 999L, NA_integer_, VIntA),
+              VIntB = fifelse(VIntB == 999L, NA_integer_, VIntB),
+              Count, Y_Sum)])
+# 21. label specified by variable for some classes and by class for other classes.
+test(2294.21,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                              c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA"),
+                              c("VCharA", "VCharB", "VFacB"),
+                              c("VCharA", "VFacB"),
+                              c("VCharB", "VFacA"),
+                              "VCharA",
+                              character()),
+                  label = list(VCharA = "Total", VCharB = "Total", factor = factor("Total"), integer = 999L)),
+     Ans1)
+# 22. label specified by variable for some classes and by class for other classes.
+test(2294.22,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                              c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA"),
+                              c("VCharA", "VCharB", "VFacB"),
+                              c("VCharA", "VFacB"),
+                              c("VCharB", "VFacA"),
+                              "VCharA",
+                              character()),
+                  label = list(VFacA = factor("Total"), VFacB = factor("Total"),
+                               VIntA = 999L, VIntB = 999L, character = "Total")),
+     Ans1)
+# 23. label specified by variable for some variables having a particular class and by class for other variables having that class.
+test(2294.23,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                              c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA"),
+                              c("VCharA", "VCharB", "VFacB"),
+                              c("VCharA", "VFacB"),
+                              c("VCharB", "VFacA"),
+                              "VCharA",
+                              character()),
+                  label = list(VCharA = "Total VCharA", character = "Total",
+                               factor = factor("Total"), integer = 999L,
+                               VFacB = factor("Total VFacB"), VIntA = 901L)),
+     Ans1[, .(VCharA = fifelse(VCharA == "Total", "Total VCharA", VCharA),
+              VCharB, VFacA,
+              VFacB = factor(VFacB, levels = levels(VFacB),
+                             labels = sub("Total", "Total VFacB", levels(VFacB))),
+              VIntA = fifelse(VIntA == 999L, 901L, VIntA),
+              VIntB, Count, Y_Sum)])
+# 24. label specified by variable for some variables having a particular class and by class for other variables having that class, and specified for a class not in 'by'.
+test(2294.24,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                              c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA"),
+                              c("VCharA", "VCharB", "VFacB"),
+                              c("VCharA", "VFacB"),
+                              c("VCharB", "VFacA"),
+                              "VCharA",
+                              character()),
+                  label = list(VCharA = "Total VCharA", character = "Total",
+                               factor = factor("Total"), integer = 999L,
+                               VFacB = factor("Total VFacB"), VIntA = 901L, Date = as.Date("3000-01-01"))),
+     Ans1[, .(VCharA = fifelse(VCharA == "Total", "Total VCharA", VCharA),
+              VCharB, VFacA,
+              VFacB = factor(VFacB, levels = levels(VFacB),
+                             labels = sub("Total", "Total VFacB", levels(VFacB))),
+              VIntA = fifelse(VIntA == 999L, 901L, VIntA),
+              VIntB, Count, Y_Sum)])
+# 25. label specified by variable and by class, with class specification not used because all matching variables are specified by variable.
+test(2294.25,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                              c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA"),
+                              c("VCharA", "VCharB", "VFacB"),
+                              c("VCharA", "VFacB"),
+                              c("VCharB", "VFacA"),
+                              "VCharA",
+                              character()),
+                  label = list(character = "Total", VCharA = "Total VCharA", VCharB = "Total VCharB",
+                               VFacA = factor("Total VFacA"), VFacB = factor("Total VFacB"),
+                               integer = 999L, VIntA = 901L, VIntB = 902L, factor = factor("Total"))),
+     Ans1[, .(VCharA = fifelse(VCharA == "Total", "Total VCharA", VCharA),
+              VCharB = fifelse(VCharB == "Total", "Total VCharB", VCharB),
+              VFacA = factor(VFacA, levels = levels(VFacA),
+                             labels = sub("Total", "Total VFacA", levels(VFacA))),
+              VFacB = factor(VFacB, levels = levels(VFacB),
+                             labels = sub("Total", "Total VFacB", levels(VFacB))),
+              VIntA = fifelse(VIntA == 999L, 901L, VIntA),
+              VIntB = fifelse(VIntB == 999L, 902L, VIntB),
+              Count, Y_Sum)])
+# 26. label specified by variable for a variable with name that is also first element of the class of other variables in 'by'.
+test(2294.26,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "integer", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "integer", "VFacA", "VFacB", "VIntA", "VIntB"),
+                              c("VCharA", "integer", "VFacA", "VIntA"),
+                              c("VCharA", "integer", "VFacA"),
+                              c("VCharA", "integer", "VFacB"),
+                              c("VCharA", "VFacB"),
+                              c("integer", "VFacA"),
+                              "VCharA",
+                              character()),
+                  label = list(VCharA = "Total", integer = "Total", factor = factor("Total"))),
+     Ans1[, .(VCharA, integer = VCharB, VFacA, VFacB,
+              VIntA = fifelse(VIntA == 999L, NA_integer_, VIntA),
+              VIntB = fifelse(VIntB == 999L, NA_integer_, VIntB),
+              Count, Y_Sum)])
+# 27. label specified by variable and by class, with id=TRUE.
+# Get correct 'grouping' values by using groupingsets() without 'label'.
+grouping_correct = groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                                by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                                sets = list(c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                                            c("VCharA", "VCharB", "VFacA", "VIntA"),
+                                            c("VCharA", "VCharB", "VFacA"),
+                                            c("VCharA", "VCharB", "VFacB"),
+                                            c("VCharA", "VFacB"),
+                                            c("VCharB", "VFacA"),
+                                            "VCharA",
+                                            character()),
+                                id=TRUE)$grouping
+test(2294.27,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                              c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA"),
+                              c("VCharA", "VCharB", "VFacB"),
+                              c("VCharA", "VFacB"),
+                              c("VCharB", "VFacA"),
+                              "VCharA",
+                              character()),
+                  id=TRUE,
+                  label = list(VCharA = "Total", VCharB = "Total", factor = factor("Total"), integer = 999L)),
+     data.table(grouping = grouping_correct, Ans1))
+# 28. label specified by variable and by class, with id=TRUE and .SDcols used.
+test(2294.28,
+     groupingsets(DT1, lapply(.SD, sum), .SDcols = "Y",
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                              c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA"),
+                              c("VCharA", "VCharB", "VFacB"),
+                              c("VCharA", "VFacB"),
+                              c("VCharB", "VFacA"),
+                              "VCharA",
+                              character()),
+                  id=TRUE,
+                  label = list(VCharA = "Total", VCharB = "Total", factor = factor("Total"), integer = 999L)),
+     Ans1[, .(grouping = grouping_correct,
+              VCharA, VCharB, VFacA, VFacB, VIntA, VIntB, Y = Y_Sum)])
+# 29. label specified by variable with label value in the data for one variable.
+test(2294.29,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                              c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA"),
+                              c("VCharA", "VCharB", "VFacB"),
+                              c("VCharA", "VFacB"),
+                              c("VCharB", "VFacA"),
+                              "VCharA",
+                              character()),
+                  label = list(VCharA = "C2", VCharB = "Total",
+                               VFacA = factor("Total"), VFacB = factor("Total"),
+                               VIntA = 999L, VIntB = 999L)),
+     Ans1[, .(VCharA = fifelse(VCharA == "Total", "C2", VCharA),
+              VCharB, VFacA, VFacB, VIntA, VIntB, Count, Y_Sum)],
+     warning = "For the following variables, the 'label' value was already in the data: [VCharA (label: C2)]")
+# 30. label specified by variable with label value in the data for more than one variable.
+test(2294.30,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                              c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA"),
+                              c("VCharA", "VCharB", "VFacB"),
+                              c("VCharA", "VFacB"),
+                              c("VCharB", "VFacA"),
+                              "VCharA",
+                              character()),
+                  label = list(VCharA = "C2", VCharB = "Total",
+                               VFacA = factor("Total"), VFacB = factor("F3"),
+                               VIntA = 1L, VIntB = 3L)),
+     Ans1[, .(VCharA = fifelse(VCharA == "Total", "C2", VCharA),
+              VCharB, VFacA,
+              VFacB = fifelse(VFacB == "Total", factor("F3", levels = levels(VFacB)), VFacB),
+              VIntA = fifelse(VIntA == 999L, 1L, VIntA),
+              VIntB = fifelse(VIntB == 999L, 3L, VIntB),
+              Count, Y_Sum)],
+     warning = "For the following variables, the 'label' value was already in the data: [VCharA (label: C2), VFacB (label: F3), VIntA (label: 1), VIntB (label: 3)]")
+# 31. label specified by first element of class with label value in the data.
+test(2294.31,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                              c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA"),
+                              c("VCharA", "VCharB", "VFacB"),
+                              c("VCharA", "VFacB"),
+                              c("VCharB", "VFacA"),
+                              "VCharA",
+                              character()),
+                  label = list(character = "C2", factor = factor("Total"), integer = 999L)),
+     Ans1[, .(VCharA = fifelse(VCharA == "Total", "C2", VCharA),
+              VCharB = fifelse(VCharB == "Total", "C2", VCharB),
+              VFacA, VFacB, VIntA, VIntB, Count, Y_Sum)],
+     warning = "For the following variables, the 'label' value was already in the data: [VCharA (label: C2)]")
+# 32. label specified by first element of class with label value in the data.
+test(2294.32,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                              c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA"),
+                              c("VCharA", "VCharB", "VFacB"),
+                              c("VCharA", "VFacB"),
+                              c("VCharB", "VFacA"),
+                              "VCharA",
+                              character()),
+                  label = list(character = "C3", factor = factor("F4"), integer = 3L)),
+     Ans1[, .(VCharA = fifelse(VCharA == "Total", "C3", VCharA),
+              VCharB = fifelse(VCharB == "Total", "C3", VCharB),
+              VFacA = factor(VFacA, levels = levels(VFacA), labels = sub("Total", "F4", levels(VFacA))),
+              VFacB = fifelse(VFacB == "Total", factor("F4", levels = setdiff(levels(VFacB), "Total")),
+                              factor(VFacB, levels = setdiff(levels(VFacB), "Total"))),
+              VIntA = fifelse(VIntA == 999L, 3L, VIntA),
+              VIntB = fifelse(VIntB == 999L, 3L, VIntB),
+              Count, Y_Sum)],
+     warning = "For the following variables, the 'label' value was already in the data: [VCharA (label: C3), VCharB (label: C3), VFacB (label: F4), VIntB (label: 3)]")
+# 33. label specified by first element of class with label value in the data.
+test(2294.33,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                              c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA"),
+                              c("VCharA", "VCharB", "VFacB"),
+                              c("VCharA", "VFacB"),
+                              c("VCharB", "VFacA"),
+                              "VCharA",
+                              character()),
+                  label = list(character = "C3", factor = factor("F3"), integer = 2L)),
+     Ans1[, .(VCharA = fifelse(VCharA == "Total", "C3", VCharA),
+              VCharB = fifelse(VCharB == "Total", "C3", VCharB),
+              VFacA = fifelse(VFacA == "Total", factor("F3", levels = setdiff(levels(VFacA), "Total")),
+                              factor(VFacA, levels = setdiff(levels(VFacA), "Total"))),
+              VFacB = fifelse(VFacB == "Total", factor("F3", levels = setdiff(levels(VFacB), "Total")),
+                              factor(VFacB, levels = setdiff(levels(VFacB), "Total"))),
+              VIntA = fifelse(VIntA == 999L, 2L, VIntA),
+              VIntB = fifelse(VIntB == 999L, 2L, VIntB),
+              Count, Y_Sum)],
+     warning = "For the following variables, the 'label' value was already in the data: [VCharA (label: C3), VCharB (label: C3), VFacA (label: F3), VFacB (label: F3), VIntA (label: 2), VIntB (label: 2)]")
+# 34. label specified by variable and class with label value in the data.
+test(2294.34,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                              c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA"),
+                              c("VCharA", "VCharB", "VFacB"),
+                              c("VCharA", "VFacB"),
+                              c("VCharB", "VFacA"),
+                              "VCharA",
+                              character()),
+                  label = list(VCharA = "C3", character = "Total",
+                               factor = factor("F3"), integer = 2L,
+                               VFacA = factor("Total"), VIntA = 999L)),
+     Ans1[, .(VCharA = fifelse(VCharA == "Total", "C3", VCharA),
+              VCharB, VFacA,
+              VFacB = fifelse(VFacB == "Total", factor("F3", levels = setdiff(levels(VFacB), "Total")),
+                              factor(VFacB, levels = setdiff(levels(VFacB), "Total"))),
+              VIntA,
+              VIntB = fifelse(VIntB == 999L, 2L, VIntB),
+              Count, Y_Sum)],
+     warning = "For the following variables, the 'label' value was already in the data: [VCharA (label: C3), VFacB (label: F3), VIntB (label: 2)]")
+# 35. label specified by variable and class with label value in the data.
+test(2294.35,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                              c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA"),
+                              c("VCharA", "VCharB", "VFacB"),
+                              c("VCharA", "VFacB"),
+                              c("VCharB", "VFacA"),
+                              "VCharA",
+                              character()),
+                  label = list(VCharA = "Total", character = "C3",
+                               factor = factor("Total"), integer = 999L,
+                               VFacA = factor("F3"), VIntA = 2L)),
+     Ans1[, .(VCharA,
+              VCharB = fifelse(VCharB == "Total", "C3", VCharB),
+              VFacA = fifelse(VFacA == "Total", factor("F3", levels = setdiff(levels(VFacA), "Total")),
+                              factor(VFacA, levels = setdiff(levels(VFacA), "Total"))),
+              VFacB,
+              VIntA = fifelse(VIntA == 999L, 2L, VIntA),
+              VIntB,
+              Count, Y_Sum)],
+     warning = "For the following variables, the 'label' value was already in the data: [VCharB (label: C3), VFacA (label: F3), VIntA (label: 2)]")
+# 36. label specified by variable and class with label value in the data.
+test(2294.36,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                              c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA"),
+                              c("VCharA", "VCharB", "VFacB"),
+                              c("VCharA", "VFacB"),
+                              c("VCharB", "VFacA"),
+                              "VCharA",
+                              character()),
+                  label = list(VCharA = "C2", character = "C3",
+                               factor = factor("F4"), integer = 3L,
+                               VFacA = factor("F3"), VIntA = 2L)),
+     Ans1[, .(VCharA = fifelse(VCharA == "Total", "C2", VCharA),
+              VCharB = fifelse(VCharB == "Total", "C3", VCharB),
+              VFacA = fifelse(VFacA == "Total", factor("F3", levels = setdiff(levels(VFacA), "Total")),
+                              factor(VFacA, levels = setdiff(levels(VFacA), "Total"))),
+              VFacB = fifelse(VFacB == "Total", factor("F4", levels = setdiff(levels(VFacB), "Total")),
+                              factor(VFacB, levels = setdiff(levels(VFacB), "Total"))),
+              VIntA = fifelse(VIntA == 999L, 2L, VIntA),
+              VIntB = fifelse(VIntB == 999L, 3L, VIntB),
+              Count, Y_Sum)],
+     warning = "For the following variables, the 'label' value was already in the data: [VCharA (label: C2), VCharB (label: C3), VFacA (label: F3), VFacB (label: F4), VIntA (label: 2), VIntB (label: 3)]")
+# 37. Some variables have no 'total' rows, label specified by variable.
+test(2294.37,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA")),
+                  label = list(VCharA = "Total", VCharB = "Total",
+                               VFacA = factor("Total"), VFacB = factor("Total"),
+                               VIntA = 999L, VIntB = 999L)),
+     Ans2)
+# 38. Some variables have no 'total' rows, label specified by first element of class.
+test(2294.38,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA")),
+                  label = list(character = "Total", factor = factor("Total"), integer = 999L)),
+     Ans2)
+# 39. Some variables have no 'total' rows, label specified by variable and by first element of class.
+test(2294.39,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA")),
+                  label = list(VCharA = "Total VCharA", character = "Total",
+                               factor = factor("Total"), integer = 999L,
+                               VFacA = factor("Total VFacA"), VIntA = 901L)),
+     Ans2[, .(VCharA = fifelse(VCharA == "Total", "Total VCharA", VCharA),
+              VCharB,
+              VFacA = factor(VFacA, levels = levels(VFacA),
+                             labels = sub("Total", "Total VFacA", levels(VFacA))),
+              VFacB,
+              VIntA = fifelse(VIntA == 999L, 901L, VIntA),
+              VIntB, Count, Y_Sum)])
+# 40. Some variables have no 'total' rows, label specified by variable with label value in the data.
+test(2294.40,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA")),
+                  label = list(VCharA = "C2", VCharB = "C4",
+                               VFacA = factor("F2"), VFacB = factor("F4"),
+                               VIntA = 2L, VIntB = 3L)),
+     Ans2[, .(VCharA, VCharB, VFacA,
+              VFacB = fifelse(VFacB == "Total", factor("F4", levels = setdiff(levels(VFacB), "Total")),
+                              factor(VFacB, levels = setdiff(levels(VFacB), "Total"))),
+              VIntA = fifelse(VIntA == 999L, 2L, VIntA),
+              VIntB = fifelse(VIntB == 999L, 3L, VIntB),
+              Count, Y_Sum)],
+     warning = "For the following variables, the 'label' value was already in the data: [VCharA (label: C2), VCharB (label: C4), VFacA (label: F2), VFacB (label: F4), VIntA (label: 2), VIntB (label: 3)]")
+# 41. Some variables have no 'total' rows, label specified by first element of class with label value in the data.
+test(2294.41,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA")),
+                  label = list(character = "C3", factor = factor("F3"), integer = 2L)),
+     Ans2[, .(VCharA, VCharB, VFacA,
+              VFacB = fifelse(VFacB == "Total", factor("F3", levels = setdiff(levels(VFacB), "Total")),
+                              factor(VFacB, levels = setdiff(levels(VFacB), "Total"))),
+              VIntA = fifelse(VIntA == 999L, 2L, VIntA),
+              VIntB = fifelse(VIntB == 999L, 2L, VIntB),
+              Count, Y_Sum)],
+     warning = "For the following variables, the 'label' value was already in the data: [VCharA (label: C3), VCharB (label: C3), VFacA (label: F3), VFacB (label: F3), VIntA (label: 2), VIntB (label: 2)]")
+# 42. Date, IDate, numeric: label specified by variable for each variable.
+test(2294.42,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+             by = c("VCharA", "VCharB", "VDate", "VIDate", "VNumA", "VNumB"),
+             sets = list(c("VCharA", "VCharB", "VDate", "VIDate", "VNumA", "VNumB"),
+                         c("VCharA", "VCharB", "VDate", "VNumA"),
+                         c("VCharA", "VCharB", "VDate"),
+                         c("VCharA", "VCharB", "VIDate"),
+                         c("VCharA", "VIDate"),
+                         c("VCharB", "VDate"),
+                         "VCharA",
+                         character()),
+                  label = list(VCharA = "Total", VCharB = "Total",
+                               VDate = as.Date("3000-01-01"), VIDate = as.IDate("3000-01-01"),
+                               VNumA = 999, VNumB = 999)),
+     Ans3)
+# 43. Date, IDate, numeric: label specified by first element of class.
+test(2294.43,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VDate", "VIDate", "VNumA", "VNumB"),
+                  sets = list(c("VCharA", "VCharB", "VDate", "VIDate", "VNumA", "VNumB"),
+                              c("VCharA", "VCharB", "VDate", "VNumA"),
+                              c("VCharA", "VCharB", "VDate"),
+                              c("VCharA", "VCharB", "VIDate"),
+                              c("VCharA", "VIDate"),
+                              c("VCharB", "VDate"),
+                              "VCharA",
+                              character()),
+                  label = list(character = "Total", Date = as.Date("3000-01-01"),
+                               IDate = as.IDate("3000-01-01"), numeric = 999)),
+     Ans3)
+# 44. Date, IDate, numeric: label specified by first element of class but not for all classes of variable in 'by'.
+test(2294.44,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VDate", "VIDate", "VNumA", "VNumB"),
+                  sets = list(c("VCharA", "VCharB", "VDate", "VIDate", "VNumA", "VNumB"),
+                              c("VCharA", "VCharB", "VDate", "VNumA"),
+                              c("VCharA", "VCharB", "VDate"),
+                              c("VCharA", "VCharB", "VIDate"),
+                              c("VCharA", "VIDate"),
+                              c("VCharB", "VDate"),
+                              "VCharA",
+                              character()),
+                  label = list(Date = as.Date("3000-01-01"))),
+     Ans3[, .(VCharA = fifelse(VCharA == "Total", NA_character_, VCharA),
+              VCharB = fifelse(VCharB == "Total", NA_character_, VCharB),
+              VDate,
+              VIDate = fifelse(VIDate == as.IDate("3000-01-01"), as.IDate(NA), VIDate),
+              VNumA = fifelse(abs(VNumA - 999) < 0.1, NA_real_, VNumA),
+              VNumB = fifelse(abs(VNumB - 999) < 0.1, NA_real_, VNumB),
+              Count, Y_Sum)])
+# 45. Date, IDate, numeric: label specified by variable for some classes and by class for other classes.
+test(2294.45,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VDate", "VIDate", "VNumA", "VNumB"),
+                  sets = list(c("VCharA", "VCharB", "VDate", "VIDate", "VNumA", "VNumB"),
+                              c("VCharA", "VCharB", "VDate", "VNumA"),
+                              c("VCharA", "VCharB", "VDate"),
+                              c("VCharA", "VCharB", "VIDate"),
+                              c("VCharA", "VIDate"),
+                              c("VCharB", "VDate"),
+                              "VCharA",
+                              character()),
+                  label = list(VCharA = "Total", VCharB = "Total",
+                               Date = as.Date("3000-01-01"), IDate = as.IDate("3000-01-01"),
+                               numeric = 999)),
+     Ans3)
+# 46. Date, IDate, numeric: label specified by variable for some classes and by class for other classes.
+test(2294.46,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VDate", "VIDate", "VNumA", "VNumB"),
+                  sets = list(c("VCharA", "VCharB", "VDate", "VIDate", "VNumA", "VNumB"),
+                              c("VCharA", "VCharB", "VDate", "VNumA"),
+                              c("VCharA", "VCharB", "VDate"),
+                              c("VCharA", "VCharB", "VIDate"),
+                              c("VCharA", "VIDate"),
+                              c("VCharB", "VDate"),
+                              "VCharA",
+                              character()),
+                  label = list(VDate = as.Date("3000-01-01"), VIDate = as.IDate("3000-01-01"),
+                               VNumA = 999, VNumB = 999, character = "Total")),
+     Ans3)
+# 47. Date, IDate, numeric: label specified by variable for some variables having a particular class and by class for other variables having that class.
+test(2294.47,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VDate", "VIDate", "VNumA", "VNumB"),
+                  sets = list(c("VCharA", "VCharB", "VDate", "VIDate", "VNumA", "VNumB"),
+                              c("VCharA", "VCharB", "VDate", "VNumA"),
+                              c("VCharA", "VCharB", "VDate"),
+                              c("VCharA", "VCharB", "VIDate"),
+                              c("VCharA", "VIDate"),
+                              c("VCharB", "VDate"),
+                              "VCharA",
+                              character()),
+                  label = list(VCharA = "Total VCharA", character = "Total",
+                               Date = as.Date("3000-01-01"), IDate = as.IDate("3000-01-01"),
+                               numeric = 999, VNumA = 901)),
+     Ans3[, .(VCharA = fifelse(VCharA == "Total", "Total VCharA", VCharA),
+              VCharB, VDate, VIDate,
+              VNumA = fifelse(abs(VNumA - 999) < 0.1, 901, VNumA),
+              VNumB, Count, Y_Sum)])
+# 48. Date, IDate, numeric: label specified by variable and by class, with class specification not used because all matching variables are specified by variable.
+test(2294.48,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VDate", "VIDate", "VNumA", "VNumB"),
+                  sets = list(c("VCharA", "VCharB", "VDate", "VIDate", "VNumA", "VNumB"),
+                              c("VCharA", "VCharB", "VDate", "VNumA"),
+                              c("VCharA", "VCharB", "VDate"),
+                              c("VCharA", "VCharB", "VIDate"),
+                              c("VCharA", "VIDate"),
+                              c("VCharB", "VDate"),
+                              "VCharA",
+                              character()),
+                  label = list(character = "Total", VCharA = "Total VCharA", VCharB = "Total VCharB",
+                               VDate = as.Date("2999-01-01"), VIDate = as.IDate("2999-01-01"),
+                               numeric = 999, VNumA = 901, VNumB = 902,
+                               Date = as.Date("3000-01-01"), IDate = as.IDate("3000-01-01"))),
+     Ans3[, .(VCharA = fifelse(VCharA == "Total", "Total VCharA", VCharA),
+              VCharB = fifelse(VCharB == "Total", "Total VCharB", VCharB),
+              VDate = fifelse(VDate == as.Date("3000-01-01"), as.Date("2999-01-01"), VDate),
+              VIDate = fifelse(VIDate == as.IDate("3000-01-01"), as.IDate("2999-01-01"), VIDate),
+              VNumA = fifelse(abs(VNumA - 999) < 0.1, 901, VNumA),
+              VNumB = fifelse(abs(VNumB - 999) < 0.1, 902, VNumB),
+              Count, Y_Sum)])
+# 49. Date, IDate, numeric: label specified by variable with label value in the data.
+test(2294.49,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VDate", "VIDate", "VNumA", "VNumB"),
+                  sets = list(c("VCharA", "VCharB", "VDate", "VIDate", "VNumA", "VNumB"),
+                              c("VCharA", "VCharB", "VDate", "VNumA"),
+                              c("VCharA", "VCharB", "VDate"),
+                              c("VCharA", "VCharB", "VIDate"),
+                              c("VCharA", "VIDate"),
+                              c("VCharB", "VDate"),
+                              "VCharA",
+                              character()),
+                  label = list(VCharA = "C2", VCharB = "Total",
+                               VDate = as.Date("2024-01-03"), VIDate = as.IDate("2024-01-03"),
+                               VNumA = 1, VNumB = 3)),
+     Ans3[, .(VCharA = fifelse(VCharA == "Total", "C2", VCharA),
+              VCharB,
+              VDate = fifelse(VDate == as.Date("3000-01-01"), as.Date("2024-01-03"), VDate),
+              VIDate = fifelse(VIDate == as.IDate("3000-01-01"), as.IDate("2024-01-03"), VIDate),
+              VNumA = fifelse(abs(VNumA - 999) < 0.1, 1, VNumA),
+              VNumB = fifelse(abs(VNumB - 999) < 0.1, 3, VNumB),
+              Count, Y_Sum)],
+     warning = "For the following variables, the 'label' value was already in the data: [VCharA (label: C2), VDate (label: 2024-01-03), VIDate (label: 2024-01-03), VNumA (label: 1), VNumB (label: 3)]")
+# 50. Date, IDate, numeric: label specified by first element of class with label value in the data.
+test(2294.50,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VDate", "VIDate", "VNumA", "VNumB"),
+                  sets = list(c("VCharA", "VCharB", "VDate", "VIDate", "VNumA", "VNumB"),
+                              c("VCharA", "VCharB", "VDate", "VNumA"),
+                              c("VCharA", "VCharB", "VDate"),
+                              c("VCharA", "VCharB", "VIDate"),
+                              c("VCharA", "VIDate"),
+                              c("VCharB", "VDate"),
+                              "VCharA",
+                              character()),
+                  label = list(character = "C3", Date = as.Date("2024-01-03"),
+                               IDate = as.IDate("3000-01-01"), numeric = 3)),
+     Ans3[, .(VCharA = fifelse(VCharA == "Total", "C3", VCharA),
+              VCharB = fifelse(VCharB == "Total", "C3", VCharB),
+              VDate = fifelse(VDate == as.Date("3000-01-01"), as.Date("2024-01-03"), VDate),
+              VIDate,
+              VNumA = fifelse(abs(VNumA - 999) < 0.1, 3, VNumA),
+              VNumB = fifelse(abs(VNumB - 999) < 0.1, 3, VNumB),
+              Count, Y_Sum)],
+     warning = "For the following variables, the 'label' value was already in the data: [VCharA (label: C3), VCharB (label: C3), VDate (label: 2024-01-03), VNumB (label: 3)]")
+# 51. Date, IDate, numeric: label specified by first element of class with label value in the data.
+test(2294.51,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VDate", "VIDate", "VNumA", "VNumB"),
+                  sets = list(c("VCharA", "VCharB", "VDate", "VIDate", "VNumA", "VNumB"),
+                              c("VCharA", "VCharB", "VDate", "VNumA"),
+                              c("VCharA", "VCharB", "VDate"),
+                              c("VCharA", "VCharB", "VIDate"),
+                              c("VCharA", "VIDate"),
+                              c("VCharB", "VDate"),
+                              "VCharA",
+                              character()),
+                  label = list(character = "C3", Date = as.Date("2024-01-03"),
+                               IDate = as.IDate("2024-01-03"), numeric = 2)),
+     Ans3[, .(VCharA = fifelse(VCharA == "Total", "C3", VCharA),
+              VCharB = fifelse(VCharB == "Total", "C3", VCharB),
+              VDate = fifelse(VDate == as.Date("3000-01-01"), as.Date("2024-01-03"), VDate),
+              VIDate = fifelse(VIDate == as.IDate("3000-01-01"), as.IDate("2024-01-03"), VIDate),
+              VNumA = fifelse(abs(VNumA - 999) < 0.1, 2, VNumA),
+              VNumB = fifelse(abs(VNumB - 999) < 0.1, 2, VNumB),
+              Count, Y_Sum)],
+     warning = "For the following variables, the 'label' value was already in the data: [VCharA (label: C3), VCharB (label: C3), VDate (label: 2024-01-03), VIDate (label: 2024-01-03), VNumA (label: 2), VNumB (label: 2)]")
+# 52. Date, IDate, numeric: label specified by variable and class with label value in the data.
+test(2294.52,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VDate", "VIDate", "VNumA", "VNumB"),
+                  sets = list(c("VCharA", "VCharB", "VDate", "VIDate", "VNumA", "VNumB"),
+                              c("VCharA", "VCharB", "VDate", "VNumA"),
+                              c("VCharA", "VCharB", "VDate"),
+                              c("VCharA", "VCharB", "VIDate"),
+                              c("VCharA", "VIDate"),
+                              c("VCharB", "VDate"),
+                              "VCharA",
+                              character()),
+                  label = list(VCharA = "C2", character = "C3",
+                               Date = as.Date("2024-01-03"), IDate = as.IDate("3000-01-01"),
+                               numeric = 3, VDate = as.Date("3000-01-01"),
+                               VNumA = 2)),
+     Ans3[, .(VCharA = fifelse(VCharA == "Total", "C2", VCharA),
+              VCharB = fifelse(VCharB == "Total", "C3", VCharB),
+              VDate, VIDate,
+              VNumA = fifelse(abs(VNumA - 999) < 0.1, 2, VNumA),
+              VNumB = fifelse(abs(VNumB - 999) < 0.1, 3, VNumB),
+              Count, Y_Sum)],
+     warning = "For the following variables, the 'label' value was already in the data: [VCharA (label: C2), VCharB (label: C3), VNumA (label: 2), VNumB (label: 3)]")
+# 53. label is a character scalar.
+test(2294.53,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                              c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA"),
+                              c("VCharA", "VCharB", "VFacB"),
+                              c("VCharA", "VFacB"),
+                              c("VCharB", "VFacA"),
+                              "VCharA",
+                              character()),
+                  label = "Total"),
+     Ans1[, .(VCharA, VCharB,
+              VFacA = fifelse(VFacA == "Total", factor(NA, levels = levels(VFacA)), VFacA),
+              VFacB = fifelse(VFacB == "Total", factor(NA, levels = levels(VFacB)), VFacB),
+              VIntA = fifelse(VIntA == 999L, NA_integer_, VIntA),
+              VIntB = fifelse(VIntB == 999L, NA_integer_, VIntB),
+              Count, Y_Sum)])
+# 54. label is a named character scalar.
+test(2294.54,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                              c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA"),
+                              c("VCharA", "VCharB", "VFacB"),
+                              c("VCharA", "VFacB"),
+                              c("VCharB", "VFacA"),
+                              "VCharA",
+                              character()),
+                  label = c(z = "Total")),
+     Ans1[, .(VCharA, VCharB,
+              VFacA = fifelse(VFacA == "Total", factor(NA, levels = levels(VFacA)), VFacA),
+              VFacB = fifelse(VFacB == "Total", factor(NA, levels = levels(VFacB)), VFacB),
+              VIntA = fifelse(VIntA == 999L, NA_integer_, VIntA),
+              VIntB = fifelse(VIntB == 999L, NA_integer_, VIntB),
+              Count, Y_Sum)])
+# 55. label is a factor scalar.
+test(2294.55,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                              c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA"),
+                              c("VCharA", "VCharB", "VFacB"),
+                              c("VCharA", "VFacB"),
+                              c("VCharB", "VFacA"),
+                              "VCharA",
+                              character()),
+                  label = factor("Total")),
+     Ans1[, .(VCharA = fifelse(VCharA == "Total", NA_character_, VCharA),
+              VCharB = fifelse(VCharB == "Total", NA_character_, VCharB),
+              VFacA, VFacB,
+              VIntA = fifelse(VIntA == 999L, NA_integer_, VIntA),
+              VIntB = fifelse(VIntB == 999L, NA_integer_, VIntB),
+              Count, Y_Sum)])
+# 56. label is an integer scalar.
+test(2294.56,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                              c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA"),
+                              c("VCharA", "VCharB", "VFacB"),
+                              c("VCharA", "VFacB"),
+                              c("VCharB", "VFacA"),
+                              "VCharA",
+                              character()),
+                  label = 999L),
+     Ans1[, .(VCharA = fifelse(VCharA == "Total", NA_character_, VCharA),
+              VCharB = fifelse(VCharB == "Total", NA_character_, VCharB),
+              VFacA = fifelse(VFacA == "Total", factor(NA, levels = levels(VFacA)), VFacA),
+              VFacB = fifelse(VFacB == "Total", factor(NA, levels = levels(VFacB)), VFacB),
+              VIntA, VIntB,
+              Count, Y_Sum)])
+# 57. label is a Date scalar.
+test(2294.57,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VDate", "VIDate", "VNumA", "VNumB"),
+                  sets = list(c("VCharA", "VCharB", "VDate", "VIDate", "VNumA", "VNumB"),
+                              c("VCharA", "VCharB", "VDate", "VNumA"),
+                              c("VCharA", "VCharB", "VDate"),
+                              c("VCharA", "VCharB", "VIDate"),
+                              c("VCharA", "VIDate"),
+                              c("VCharB", "VDate"),
+                              "VCharA",
+                              character()),
+                  label = as.Date("3000-01-01")),
+     Ans3[, .(VCharA = fifelse(VCharA == "Total", NA_character_, VCharA),
+              VCharB = fifelse(VCharB == "Total", NA_character_, VCharB),
+              VDate,
+              VIDate = fifelse(VIDate == as.IDate("3000-01-01"), as.IDate(NA), VIDate),
+              VNumA = fifelse(abs(VNumA - 999) < 0.1, NA_real_, VNumA),
+              VNumB = fifelse(abs(VNumB - 999) < 0.1, NA_real_, VNumB),
+              Count, Y_Sum)])
+# 58. label is an IDate scalar.
+test(2294.58,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VDate", "VIDate", "VNumA", "VNumB"),
+                  sets = list(c("VCharA", "VCharB", "VDate", "VIDate", "VNumA", "VNumB"),
+                              c("VCharA", "VCharB", "VDate", "VNumA"),
+                              c("VCharA", "VCharB", "VDate"),
+                              c("VCharA", "VCharB", "VIDate"),
+                              c("VCharA", "VIDate"),
+                              c("VCharB", "VDate"),
+                              "VCharA",
+                              character()),
+                  label = as.IDate("3000-01-01")),
+     Ans3[, .(VCharA = fifelse(VCharA == "Total", NA_character_, VCharA),
+              VCharB = fifelse(VCharB == "Total", NA_character_, VCharB),
+              VDate = fifelse(VDate == as.Date("3000-01-01"), as.Date(NA), VDate),
+              VIDate,
+              VNumA = fifelse(abs(VNumA - 999) < 0.1, NA_real_, VNumA),
+              VNumB = fifelse(abs(VNumB - 999) < 0.1, NA_real_, VNumB),
+              Count, Y_Sum)])
+# 59. label is a numeric scalar.
+test(2294.59,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VDate", "VIDate", "VNumA", "VNumB"),
+                  sets = list(c("VCharA", "VCharB", "VDate", "VIDate", "VNumA", "VNumB"),
+                              c("VCharA", "VCharB", "VDate", "VNumA"),
+                              c("VCharA", "VCharB", "VDate"),
+                              c("VCharA", "VCharB", "VIDate"),
+                              c("VCharA", "VIDate"),
+                              c("VCharB", "VDate"),
+                              "VCharA",
+                              character()),
+                  label = 999),
+     Ans3[, .(VCharA = fifelse(VCharA == "Total", NA_character_, VCharA),
+              VCharB = fifelse(VCharB == "Total", NA_character_, VCharB),
+              VDate = fifelse(VDate == as.Date("3000-01-01"), as.Date(NA), VDate),
+              VIDate = fifelse(VIDate == as.IDate("3000-01-01"), as.IDate(NA), VIDate),
+              VNumA, VNumB, Count, Y_Sum)])
+# 60. label is a scalar with class not matching any variable in 'by'.
+test(2294.60,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                              c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA"),
+                              c("VCharA", "VCharB", "VFacB"),
+                              c("VCharA", "VFacB"),
+                              c("VCharB", "VFacA"),
+                              "VCharA",
+                              character()),
+                  label = as.Date("3000-01-01")),
+     Ans1[, .(VCharA = fifelse(VCharA == "Total", NA_character_, VCharA),
+              VCharB = fifelse(VCharB == "Total", NA_character_, VCharB),
+              VFacA = fifelse(VFacA == "Total", factor(NA, levels = levels(VFacA)), VFacA),
+              VFacB = fifelse(VFacB == "Total", factor(NA, levels = levels(VFacB)), VFacB),
+              VIntA = fifelse(VIntA == 999L, NA_integer_, VIntA),
+              VIntB = fifelse(VIntB == 999L, NA_integer_, VIntB),
+              Count, Y_Sum)])
+# 61. label is a character scalar with value in the data.
+test(2294.61,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                              c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA"),
+                              c("VCharA", "VCharB", "VFacB"),
+                              c("VCharA", "VFacB"),
+                              c("VCharB", "VFacA"),
+                              "VCharA",
+                              character()),
+                  label = "C2"),
+     Ans1[, .(VCharA = fifelse(VCharA == "Total", "C2", VCharA),
+              VCharB = fifelse(VCharB == "Total", "C2", VCharB),
+              VFacA = fifelse(VFacA == "Total", factor(NA, levels = levels(VFacA)), VFacA),
+              VFacB = fifelse(VFacB == "Total", factor(NA, levels = levels(VFacB)), VFacB),
+              VIntA = fifelse(VIntA == 999L, NA_integer_, VIntA),
+              VIntB = fifelse(VIntB == 999L, NA_integer_, VIntB),
+              Count, Y_Sum)],
+     warning = "For the following variables, the 'label' value was already in the data: [VCharA (label: C2)")
+# 62. label is a factor scalar with value in the data.
+test(2294.62,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                              c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA"),
+                              c("VCharA", "VCharB", "VFacB"),
+                              c("VCharA", "VFacB"),
+                              c("VCharB", "VFacA"),
+                              "VCharA",
+                              character()),
+                  label = factor("F3")),
+     Ans1[, .(VCharA = fifelse(VCharA == "Total", NA_character_, VCharA),
+              VCharB = fifelse(VCharB == "Total", NA_character_, VCharB),
+              VFacA = fifelse(VFacA == "Total", factor("F3", levels = setdiff(levels(VFacA), "Total")),
+                              factor(VFacA, levels = setdiff(levels(VFacA), "Total"))),
+              VFacB = fifelse(VFacB == "Total", factor("F3", levels = setdiff(levels(VFacB), "Total")),
+                              factor(VFacB, levels = setdiff(levels(VFacB), "Total"))),
+              VIntA = fifelse(VIntA == 999L, NA_integer_, VIntA),
+              VIntB = fifelse(VIntB == 999L, NA_integer_, VIntB),
+              Count, Y_Sum)],
+     warning = "For the following variables, the 'label' value was already in the data: [VFacA (label: F3), VFacB (label: F3)")
+# 63. label is a numeric scalar with value in the data.
+test(2294.63,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VDate", "VIDate", "VNumA", "VNumB"),
+                  sets = list(c("VCharA", "VCharB", "VDate", "VIDate", "VNumA", "VNumB"),
+                              c("VCharA", "VCharB", "VDate", "VNumA"),
+                              c("VCharA", "VCharB", "VDate"),
+                              c("VCharA", "VCharB", "VIDate"),
+                              c("VCharA", "VIDate"),
+                              c("VCharB", "VDate"),
+                              "VCharA",
+                              character()),
+                  label = 2),
+     Ans3[, .(VCharA = fifelse(VCharA == "Total", NA_character_, VCharA),
+              VCharB = fifelse(VCharB == "Total", NA_character_, VCharB),
+              VDate = fifelse(VDate == as.Date("3000-01-01"), as.Date(NA), VDate),
+              VIDate = fifelse(VIDate == as.IDate("3000-01-01"), as.IDate(NA), VIDate),
+              VNumA = fifelse(abs(VNumA - 999) < 0.1, 2, VNumA),
+              VNumB = fifelse(abs(VNumB - 999) < 0.1, 2, VNumB),
+              Count, Y_Sum)],
+     warning = "For the following variables, the 'label' value was already in the data: [VNumA (label: 2), VNumB (label: 2)")
+# 64. label is a character scalar with value in the data and the character variables have no 'total' rows.
+test(2294.64,
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)),
+                  by = c("VCharA", "VCharB", "VFacA", "VFacB", "VIntA", "VIntB"),
+                  sets = list(c("VCharA", "VCharB", "VFacA", "VIntA"),
+                              c("VCharA", "VCharB", "VFacA")),
+                  label = "C3"),
+     Ans2[, .(VCharA = fifelse(VCharA == "Total", "C3", VCharA),
+              VCharB = fifelse(VCharB == "Total", "C3", VCharB),
+              VFacA = fifelse(VFacA == "Total", factor(NA, levels = levels(VFacA)), VFacA),
+              VFacB = fifelse(VFacB == "Total", factor(NA, levels = levels(VFacB)), VFacB),
+              VIntA = fifelse(VIntA == 999L, NA_integer_, VIntA),
+              VIntB = fifelse(VIntB == 999L, NA_integer_, VIntB),
+              Count, Y_Sum)],
+     warning = "For the following variables, the 'label' value was already in the data: [VCharA (label: C3), VCharB (label: C3)]")
+# 65. cube: label is a list and an element with name in 'by' has class not matching class in 'x'.
+test(2294.65,
+     cube(DT1, .(Count = .N, Y_Sum = sum(Y)), by = c("VCharA", "VCharB", "VFacA"),
+          label = list(VCharA = "Total", VCharB = 999, VFacA = "Total")),
+     error = "When argument 'label' is a list, the class of each 'label' element with name in 'by' must match the class of the corresponding column of the data.table 'x'. Class mismatch for: [VCharB (label: numeric; data: character), VFacA (label: character; data: factor)]")
+# 66. cube: label specified by variable for each variable.
+test(2294.66,
+     cube(DT1, .(Count = .N, Y_Sum = sum(Y)), by = c("VCharA", "VCharB", "VFacA"),
+          label = list(VCharA = "Total", VCharB = "Total", VFacA = factor("Total"))),
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)), by = c("VCharA", "VCharB", "VFacA"),
+                  sets = list(c("VCharA", "VCharB", "VFacA"),
+                              c("VCharA", "VCharB"),
+                              c("VCharA", "VFacA"),
+                              "VCharA",
+                              c("VCharB", "VFacA"),
+                              "VCharB", "VFacA",
+                              character(0)),
+                  label = list(VCharA = "Total", VCharB = "Total", VFacA = factor("Total"))))
+# 67. cube: label specified by variable and by class.
+test(2294.67,
+     cube(DT1, .(Count = .N, Y_Sum = sum(Y)), by = c("VCharA", "VCharB", "VIntA"),
+          label = list(character = "Total", VCharA = "Total VIntA", integer = 999L)),
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)), by = c("VCharA", "VCharB", "VIntA"),
+                  sets = list(c("VCharA", "VCharB", "VIntA"),
+                              c("VCharA", "VCharB"),
+                              c("VCharA", "VIntA"),
+                              "VCharA",
+                              c("VCharB", "VIntA"),
+                              "VCharB", "VIntA",
+                              character(0)),
+                  label = list(character = "Total", VCharA = "Total VIntA", integer = 999L)))
+# 68. cube: label specified by variable and by class with label value in the data.
+test(2294.68,
+     cube(DT1, .(Count = .N, Y_Sum = sum(Y)), by = c("VCharA", "VCharB", "VIntA"),
+          label = list(character = "C3", VCharA = "Total", integer = 2L)),
+     suppressWarnings(
+       groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)), by = c("VCharA", "VCharB", "VIntA"),
+                    sets = list(c("VCharA", "VCharB", "VIntA"),
+                                c("VCharA", "VCharB"),
+                                c("VCharA", "VIntA"),
+                                "VCharA",
+                                c("VCharB", "VIntA"),
+                                "VCharB", "VIntA",
+                                character(0)),
+                    label = list(character = "C3", VCharA = "Total", integer = 2L))),
+     warning = "For the following variables, the 'label' value was already in the data: [VCharB (label: C3), VIntA (label: 2)]")
+# 69: rollup: label is a list and an element with name in 'by' has class not matching class in 'x'.
+test(2294.69,
+     rollup(DT1, .(Count = .N, Y_Sum = sum(Y)), by = c("VCharA", "VCharB", "VFacA"),
+            label = list(VCharA = "Total", VCharB = 999, VFacA = "Total")),
+     error = "When argument 'label' is a list, the class of each 'label' element with name in 'by' must match the class of the corresponding column of the data.table 'x'. Class mismatch for: [VCharB (label: numeric; data: character), VFacA (label: character; data: factor)]")
+# 70. rollup: label specified by variable for each variable.
+test(2294.70,
+     rollup(DT1, .(Count = .N, Y_Sum = sum(Y)), by = c("VCharA", "VCharB", "VFacA"),
+            label = list(VCharA = "Total", VCharB = "Total", VFacA = factor("Total"))),
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)), by = c("VCharA", "VCharB", "VFacA"),
+                  sets = list(c("VCharA", "VCharB", "VFacA"),
+                              c("VCharA", "VCharB"),
+                              "VCharA",
+                              character(0)),
+                  label = list(VCharA = "Total", VCharB = "Total", VFacA = factor("Total"))))
+# 71. rollup: label specified by variable and by class.
+test(2294.71,
+     rollup(DT1, .(Count = .N, Y_Sum = sum(Y)), by = c("VCharA", "VCharB", "VIntA"),
+            label = list(character = "Total", VCharA = "Total VIntA", integer = 999L)),
+     groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)), by = c("VCharA", "VCharB", "VIntA"),
+                  sets = list(c("VCharA", "VCharB", "VIntA"),
+                              c("VCharA", "VCharB"),
+                              "VCharA",
+                              character(0)),
+                  label = list(character = "Total", VCharA = "Total VIntA", integer = 999L)))
+# 72. rollup: label specified by variable and by class with label value in the data.
+test(2294.72,
+     rollup(DT1, .(Count = .N, Y_Sum = sum(Y)), by = c("VCharA", "VCharB", "VIntA"),
+            label = list(character = "C3", VCharA = "Total", integer = 2L)),
+     suppressWarnings(
+       groupingsets(DT1, .(Count = .N, Y_Sum = sum(Y)), by = c("VCharA", "VCharB", "VIntA"),
+                    sets = list(c("VCharA", "VCharB", "VIntA"),
+                                c("VCharA", "VCharB"),
+                                "VCharA",
+                                character(0)),
+                    label = list(character = "C3", VCharA = "Total", integer = 2L))),
+     warning = "For the following variables, the 'label' value was already in the data: [VCharB (label: C3), VIntA (label: 2)]")
+
+# setDT no longer leaks class modification to origin copy, #4784
+d1 = data.frame(a=1, row.names='b')
+d2 = d1
+setDT(d2)
+test(2295.1, !is.data.table(d1))
+test(2295.2, rownames(d1), 'b')
+test(2295.3, is.data.table(d2))
+
+# #6588: .checkTypos used to give arbitrary strings to stopf as the first argument
+test(2296, d2[x %no such operator% 1], error = '%no such operator%')

@@ -91,6 +91,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
       return(invisible())
     }
   }
+  # nocov start. See test 17 in other.Rraw, not tested in the main suite.
   yaml = if (!yaml) "" else {
     if (!requireNamespace('yaml', quietly=TRUE))
       stopf("'data.table' relies on the package 'yaml' to write the file header; please add this to your library with install.packages('yaml') and try again.") # nocov
@@ -114,6 +115,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
     )
     paste0('---', eol, yaml::as.yaml(yaml_header, line.sep=eol), '---', eol) # NB: as.yaml adds trailing newline
   }
+  # nocov end
   file = enc2native(file) # CfwriteR cannot handle UTF-8 if that is not the native encoding, see #3078.
   .Call(CfwriteR, x, file, sep, sep2, eol, na, dec, quote, qmethod=="escape", append,
         row.names, col.names, logical01, scipen, dateTimeAs, buffMB, nThread,
