@@ -15727,7 +15727,8 @@ DT = data.table(z = 1i)
 test(2069.33, DT[DT, on = 'z'], error = "Type 'complex' is not supported for joining/merging")
 
 # forder verbose message when !isReallyReal Date, #1738
-DT = data.table(d=sample(seq(as.Date("2015-01-01"), as.Date("2015-01-05"), by="days"), 20, replace=TRUE))
+date_dbl = as.Date(as.double(seq(as.Date("2015-01-01"), as.Date("2015-01-05"), by="days")), origin="1970-01-01")
+DT = data.table(d=sample(date_dbl, 20, replace=TRUE))
 test(2070.01, typeof(DT$d), "double")
 test(2070.02, DT[, .N, keyby=d, verbose=TRUE], output="Column 1.*date.*8 byte double.*no fractions are present.*4 byte integer.*to save space and time")
 
@@ -20604,4 +20605,4 @@ x = data.table(a=date_int, b=1L)
 y = data.table(c=date_int, d=date_dbl)
 
 test(2297.1, options=c(datatable.verbose=TRUE), y[x, on=.(c == a)], data.table(c=date_int, d=date_dbl, b=1L), output="No coercion needed.")
-test(2297.2, options=c(datatable.verbose=TRUE), y[x, on=.(c == a, d == a)], data.table(c=date_dbl, d=date_dbl, b=1L), output="coercing to double.")
+test(2297.2, options=c(datatable.verbose=TRUE), y[x, on=.(c == a, d == a)], data.table(c=date_int, d=date_int, b=1L), output="coercing to double.")
