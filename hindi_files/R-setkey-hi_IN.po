@@ -146,7 +146,7 @@ msgstr ""
 
 #: setkey.R:270
 msgid "Column '%s' is type '%s' which is not supported for ordering currently."
-msgstr ""
+msgstr "कॉलम (column) '%s' का प्रकार '%s' है, जो वर्तमान में क्रमबद्ध करने के लिए समर्थित नहीं है।"
 
 #: setkey.R:314
 msgid ""
