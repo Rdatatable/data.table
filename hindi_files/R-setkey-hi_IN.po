@@ -42,12 +42,17 @@ msgid ""
 "the original data's order by group. Try setindex() instead. Or, set*(copy(."
 "SD)) as a (slow) last resort."
 msgstr ""
+".SD पर एक भौतिक कुंजी सेट (set) करना भविष्य के संभावित उपयोग के लिए आरक्षित है; समूह के अनुसार मूल डेटा (data) के आदेश को संशोधित करने के लिए।"
+"इसके बजाय setindex() का उपयोग करें।"
+"या, set*(copy(.SD)) को एक (धीमे) अंतिम उपाय के रूप में उपयोग करें।"
 
 #: setkey.R:43
 msgid ""
 "cols is a character vector of zero length. Removed the key, but use NULL "
 "instead, or wrap with suppressWarnings() to avoid this warning."
 msgstr ""
+"cols एक शून्य लेंथ (length) का कैरेक्टर (character) वेक्टर (vector) है।"
+"कुंजी हटा दी गई, लेकिन इसके बजाय NULL का उपयोग करें, या इस चेतावनी से बचने के लिए suppressWarnings() के साथ रैप (wrap) करें।"
 
 #: setkey.R:47
 msgid "cols is the empty string. Use NULL to remove the key."
@@ -115,6 +120,8 @@ msgid ""
 "Input is not a vector of type double. New parallel sort has only been done "
 "for double vectors so far. Using one thread."
 msgstr ""
+"इनपुट (input) डबल (double) प्रकार का वेक्टर (vector) नहीं है। अब तक नए समानांतर सॉर्ट (sort) केवल डबल (double) वेक्टर (vector) के लिए किया गया है।"
+"यह एक थ्रेड (thread) का उपयोग कर रहा है।"
 
 #: setkey.R:215
 msgid ""
