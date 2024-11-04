@@ -97,7 +97,7 @@ msgstr "x एक वेक्टर (vector) है लेकिन 'by' प्�
 
 #: setkey.R:153
 msgid "x is a single vector, non-NULL 'by' doesn't make sense"
-msgstr "x एक एकल वेक्टर (vector) है, नॉन-NULL 'by' का कोई मतलब नहीं है"
+msgstr "x एक एकल वेक्टर (vector) है, non-NULL 'by' का कोई मतलब नहीं है"
 
 #: setkey.R:184
 msgid "Attempting to order a 0-column data.table or data.frame."
@@ -151,12 +151,15 @@ msgstr "na.last को लॉजिकल (logical) TRUE/FALSE होना च�
 msgid ""
 "cols is not a character vector. Please see further information in ?setorder."
 msgstr ""
+"cols एक कैरेक्टर (character) वेक्टर (vector) नहीं है। कृपया अधिक जानकारी के लिए ?setorder देखें।"
 
 #: setkey.R:259
 msgid ""
 "cols is a character vector of zero length. Use NULL instead, or wrap with "
 "suppressWarnings() to avoid this warning."
 msgstr ""
+"cols एक शून्य लेंथ (length) का कैरेक्टर (character) वेक्टर (vector) है।"
+"इसके बजाय NULL का उपयोग करें, या इस चेतावनी से बचने के लिए suppressWarnings() के साथ रैप (wrap) करें।"
 
 #: setkey.R:270
 msgid "Column '%s' is type '%s' which is not supported for ordering currently."
@@ -167,9 +170,13 @@ msgid ""
 "'sorted' is TRUE but element %d is non-atomic, which can't be sorted; try "
 "setting sorted = FALSE"
 msgstr ""
+"'sorted' TRUE है लेकिन तत्व %d non-atomic है, जिसे सॉर्ट (sort) नहीं किया जा सकता है।"
+"sorted = FALSE सेट (set) करने का प्रयास करें"
 
 #: setkey.R:329
 msgid ""
 "Cross product of elements provided to CJ() would result in %.0f rows which "
 "exceeds .Machine$integer.max == %d"
 msgstr ""
+"CJ() को प्रदान किए गए तत्वों का क्रॉस (cross) प्रोडक्ट (product) %.0f रोज़ (rows) में परिणामित होगा, "
+"जो .Machine$integer.max == %d से अधिक है"
