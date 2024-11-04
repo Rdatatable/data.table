@@ -72,6 +72,7 @@ msgid ""
 "Column '%s' is type '%s' which is not supported as a key column type, "
 "currently."
 msgstr ""
+"कॉलम (column) '%s' का प्रकार '%s' है जो वर्तमान में कुंजी कॉलम (column) प्रकार के रूप में समर्थित नहीं है।"
 
 #: setkey.R:70
 msgid "forder took %.03f sec"
@@ -95,13 +96,15 @@ msgstr "x एक एकल वेक्टर (vector) है, नॉन-NULL 'b
 
 #: setkey.R:184
 msgid "Attempting to order a 0-column data.table or data.frame."
-msgstr ""
+msgstr "0-कॉलम (column) data.table या data.frame को क्रमबद्ध करने का प्रयास किया जा रहा है।"
 
 #: setkey.R:189
 msgid ""
 "The first item passed to [f]order is a plain list but there are more items. "
 "It should be a data.table or data.frame."
 msgstr ""
+"पहला आइटम (item) जो [f]order को पास किया गया है वह एक साधारण (item) है लेकिन और भी आइटम (item) हैं।"
+"यह एक data.table या data.frame होना चाहिए।"
 
 #: setkey.R:206
 msgid "Internal code should not be being called on type double"
