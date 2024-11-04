@@ -24,7 +24,7 @@ msgid ""
 "with perhaps copy(). Has been warning since 2012."
 msgstr ""
 "key(x)<-value को हटाया जा चुका है और इसका समर्थन नहीं किया जाता है। कृपया setkey() का उपयोग करें, संभवतः copy() के साथ।"
-"2012 से चेतावनी दी जा रही है।"
+"२०१२ से चेतावनी दी जा रही है।"
 
 #: setkey.R:39
 msgid "x is not a data.table"
@@ -51,7 +51,7 @@ msgstr ""
 
 #: setkey.R:47
 msgid "cols is the empty string. Use NULL to remove the key."
-msgstr ""
+msgstr "cols खाली स्ट्रिंग है। कुंजी हटाने के लिए NULL का उपयोग करें।"
 
 #: setkey.R:48 setkey.R:262
 msgid "cols contains some blanks."
@@ -59,12 +59,13 @@ msgstr ""
 
 #: setkey.R:51 setkey.R:266
 msgid "some columns are not in the data.table: %s"
-msgstr ""
+msgstr "कुछ कॉलम (column) data.table में नहीं हैं: %s"
 
 #: setkey.R:59 setkey.R:267
 msgid ""
 "x contains a column called '.xi'. Conflicts with internal use by data.table."
 msgstr ""
+"x में '.xi' नामक एक कॉलम (column) है। यह data.table के आंतरिक उपयोग से टकराव करता है।"
 
 #: setkey.R:62
 msgid ""
