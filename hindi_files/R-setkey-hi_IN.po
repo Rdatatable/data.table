@@ -55,7 +55,7 @@ msgstr "cols खाली स्ट्रिंग है। कुंजी ह
 
 #: setkey.R:48 setkey.R:262
 msgid "cols contains some blanks."
-msgstr ""
+msgstr "cols में कुछ रिक्त स्थान हैं।"
 
 #: setkey.R:51 setkey.R:266
 msgid "some columns are not in the data.table: %s"
@@ -75,23 +75,23 @@ msgstr ""
 
 #: setkey.R:70
 msgid "forder took %.03f sec"
-msgstr ""
+msgstr "forder ने %.03f सेकंड लिया"
 
 #: setkey.R:82
 msgid "reorder took %s"
-msgstr ""
+msgstr "reorder ने %s लिया"
 
 #: setkey.R:84
 msgid "x is already ordered by these columns, no need to call reorder"
-msgstr ""
+msgstr "x पहले से इन कोलम (columns) द्वारा क्रमबद्ध है, reorder कॉल (call) करने की आवश्यकता नहीं है।"
 
 #: setkey.R:137
 msgid "x is vector but 'by' is supplied"
-msgstr ""
+msgstr "x एक वेक्टर (vector) है लेकिन 'by' प्रदान किया गया है।"
 
 #: setkey.R:153
 msgid "x is a single vector, non-NULL 'by' doesn't make sense"
-msgstr ""
+msgstr "x एक एकल वेक्टर (vector) है, नॉन-NULL 'by' का कोई मतलब नहीं है"
 
 #: setkey.R:184
 msgid "Attempting to order a 0-column data.table or data.frame."
