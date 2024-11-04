@@ -108,7 +108,7 @@ msgstr ""
 
 #: setkey.R:206
 msgid "Internal code should not be being called on type double"
-msgstr ""
+msgstr "आंतरिक कोड (code) को प्रकार डबल (double) पर नहीं चलाना चाहिए।"
 
 #: setkey.R:214
 msgid ""
@@ -121,20 +121,24 @@ msgid ""
 "New parallel sort has not been implemented for decreasing=TRUE so far. Using "
 "one thread."
 msgstr ""
+"अब तक decreasing=TRUE के लिए नया समानांतर सॉर्ट (sort) लागू नहीं किया गया है।"
+"यह एक थ्रेड (thread) का उपयोग कर रहा है।"
 
 #: setkey.R:216
 msgid ""
 "New parallel sort has not been implemented for vectors containing NA values "
 "so far. Using one thread."
 msgstr ""
+"नए समानांतर क्रम (sort) को अब तक NA मान वाले वेक्टर (vector) के लिए लागू नहीं किया गया है।"
+"यह एक थ्रेड (thread) का उपयोग कर रहा है।"
 
 #: setkey.R:228 setkey.R:254
 msgid "x must be a data.frame or data.table"
-msgstr ""
+msgstr "x एक data.table या data.frame होना चाहिए"
 
 #: setkey.R:256
 msgid "na.last must be logical TRUE/FALSE"
-msgstr ""
+msgstr "na.last को लॉजिकल (logical) TRUE/FALSE होना चाहिए"
 
 #: setkey.R:257
 msgid ""
