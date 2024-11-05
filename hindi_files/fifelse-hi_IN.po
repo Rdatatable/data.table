@@ -128,6 +128,8 @@ msgid ""
 "Argument #%d has length %lld which differs from that of argument #1 (%lld). "
 "Please make sure all logical conditions have the same length."
 msgstr ""
+"तर्क #%d की लेंथ (length) %lld है जो तर्क #1 (%lld) से भिन्न है।"
+"कृपया सुनिश्चित करें कि सभी तार्किक स्थितियों की लेंथ (length) समान हो।"
 
 #: fifelse.c:266
 #, c-format
@@ -135,6 +137,8 @@ msgid ""
 "Resulting value is of type %s but 'default' is of type %s. Please make sure "
 "that both arguments have the same type."
 msgstr ""
+"परिणामी मान प्रकार %s का है लेकिन 'डिफ़ॉल्ट’ (default) प्रकार %s का है।"
+"कृपया सुनिश्चित करें कि दोनों तर्कों का प्रकार समान हो।"
 
 #: fifelse.c:269
 #, c-format
@@ -142,12 +146,16 @@ msgid ""
 "Argument #%d is of type %s, however argument #2 is of type %s. Please make "
 "sure all output values have the same type."
 msgstr ""
+"तर्क #%d प्रकार %s का है, हालाँकि तर्क #2 प्रकार %s का है।"
+"कृपया सुनिश्चित करें कि दोनों तर्कों का प्रकार समान हो।"
 
 #: fifelse.c:277
 msgid ""
 "Resulting value has different class than 'default'. Please make sure that "
 "both arguments have the same class."
 msgstr ""
+"परिणामी मान की 'डिफ़ॉल्ट' (default) से अलग क्लास (class) है।"
+"कृपया सुनिश्चित करें कि दोनों तर्कों का प्रकार समान हो।"
 
 #: fifelse.c:280
 #, c-format
@@ -155,23 +163,27 @@ msgid ""
 "Argument #%d has different class than argument #2, Please make sure all "
 "output values have the same class."
 msgstr ""
+"तर्क #%d की तर्क #2 से अलग क्लास (class) है,"
+"कृपया सुनिश्चित करें कि दोनों तर्कों का प्रकार समान हो।"
 
 #: fifelse.c:289
 msgid ""
 "Resulting value and 'default' are both type factor but their levels are "
 "different."
 msgstr ""
+"परिणामी मान और 'डिफ़ॉल्ट' (default) दोनों का प्रकार फ़ैक्टर (factor) हैं लेकिन उनके स्तर (levels) भिन्न हैं।"
 
 #: fifelse.c:291
 #, c-format
 msgid ""
 "Argument #2 and argument #%d are both factor but their levels are different."
 msgstr ""
+"तर्क #2 और तर्क #%d दोनों फ़ैक्टर (factor) हैं लेकिन उनके स्तर (levels) भिन्न हैं।"
 
 #: fifelse.c:300
 #, c-format
 msgid "Length of 'default' must be 1 or %lld."
-msgstr ""
+msgstr "'डिफ़ॉल्ट' (default) की लेंथ (length) 1 या %lld होनी चाहिए।"
 
 #: fifelse.c:302
 #, c-format
@@ -179,8 +191,10 @@ msgid ""
 "Length of output value #%d (%lld) must either be 1 or match the length of the "
 "logical condition (%lld)."
 msgstr ""
+"आउटपुट (output) मान #%d (%lld) की लेंथ (length) 1 होनी चाहिए या"
+"तार्किक स्थिति की लेंथ (length) (%lld) के साथ मेल खानी चाहिए।"
 
 #: fifelse.c:407
 #, c-format
 msgid "Type '%s' is not supported."
-msgstr ""
+msgstr "प्रकार '%s' का समर्थन नहीं किया जाता है।"
