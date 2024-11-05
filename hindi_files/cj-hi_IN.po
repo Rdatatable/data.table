@@ -13,4 +13,4 @@ msgstr ""
 #: cj.c:95
 #, c-format
 msgid "Type '%s' is not supported by CJ."
-msgstr ""
+msgstr "प्रकार '%s' CJ द्वारा समर्थित नहीं है।"
