@@ -13,4 +13,4 @@ msgstr ""
 #: types.c:71
 #, c-format
 msgid "%s: allocating memory for results %dx%d\n"
-msgstr ""
+msgstr "%s: परिणामों के लिए %dx%d मेमोरी (memory) आवंटित कर रहा है\n"
