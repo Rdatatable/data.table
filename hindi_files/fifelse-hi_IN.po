@@ -12,23 +12,25 @@ msgstr ""
 
 #: fifelse.c:11
 msgid "Argument 'test' must be logical."
-msgstr ""
+msgstr "तर्क 'test' लॉजिकल (logical) होना चाहिए।"
 
 #: fifelse.c:15
 msgid "S4 class objects (except nanotime) are not supported."
-msgstr ""
+msgstr "S4 वर्ग के ऑब्जेक्ट (object) (सिवाय nanotime) का समर्थन नहीं किया जाता है।"
 
 #: fifelse.c:30
 #, c-format
 msgid ""
 "Length of 'yes' is %<PRId64> but must be 1 or length of 'test' (%<PRId64>)."
 msgstr ""
+"'yes' की लेंथ (length) %<PRId64> है लेकिन इसे 1 या 'test' की लेंथ (length) (%<PRId64>) होना चाहिए।"
 
 #: fifelse.c:32
 #, c-format
 msgid ""
 "Length of 'no' is %<PRId64> but must be 1 or length of 'test' (%<PRId64>)."
 msgstr ""
+"'no' की लेंथ (length) %<PRId64> है लेकिन इसे 1 या 'test' की लेंथ (length) (%<PRId64>) होना चाहिए।"
 
 #: fifelse.c:34
 #, c-format
