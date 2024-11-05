@@ -14,23 +14,23 @@ msgstr ""
 
 #: utils.R:18
 msgid "Argument 'nan' must be length 1"
-msgstr ""
+msgstr "तर्क 'nan' की लंबाई 1 होनी चाहिए"
 
 #: utils.R:21
 msgid "Argument 'nan' must be NA or NaN"
-msgstr ""
+msgstr "तर्क 'nan' को NA या NaN होना चाहिए"
 
 #: utils.R:25
 msgid "Internal error in"
-msgstr ""
+msgstr "आंतरिक एरर (error)"
 
 #: utils.R:28
 msgid "Please report to the data.table issues tracker."
-msgstr ""
+msgstr "कृपया data.table मुद्दों के ट्रैकर पर रिपोर्ट करें"
 
 #: utils.R:72 utils.R:81
 msgid "x not boolean"
-msgstr ""
+msgstr "x बूलियन (boolean) नहीं है"
 
 #: utils.R:92
 msgid ""
@@ -39,6 +39,10 @@ msgid ""
 "to reload the data. Simply install.packages('bit64') to obtain the integer64 "
 "print method and print the data again."
 msgstr ""
+"कुछ कॉलम (column) 'integer64' प्रकार के हैं, लेकिन पैकेज (package) bit64 इंस्टॉल (installed) नहीं है"
+"वे कॉलम (column) अजीब दिखने वाले फ्लोटिंग (floating) पॉइंट (point) डेटा (data)के रूप में प्रिंट (print) होंगे"
+"डेटा (data) को पुनः लोड (load) करने की आवश्यकता नहीं है"
+"बस install.packages('bit64') चलाएँ ताकि integer64 प्रिंट (print) विधि उपलब्ध हो सके और डेटा (data) को फिर से प्रिंट (print) करें"
 
 #: utils.R:36
 msgid ""
@@ -48,4 +52,8 @@ msgid_plural ""
 "%s has duplicated column names %s. Please remove or rename the duplicates and "
 "try again."
 msgstr[0] ""
+"%s में डुप्लिकेट (duplicate) कॉलम (column) नाम %s है। कृपया डुप्लिकेट (duplicate) को हटाएं या उसका नाम बदलें और"
+"पुनः प्रयास करें"
 msgstr[1] ""
+"%s में डुप्लिकेट (duplicate) कॉलम (column) नाम %s हैं। कृपया डुप्लिकेट्स (duplicates) को हटाएं या उनके नाम बदलें और"
+"पुनः प्रयास करें"
