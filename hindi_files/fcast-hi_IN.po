@@ -13,4 +13,4 @@ msgstr ""
 #: fcast.c:101
 #, c-format
 msgid "Unsupported column type in fcast val: '%s'"
-msgstr ""
+msgstr "fcast val में असमर्थित कॉलम (column) प्रकार: '%s'"
