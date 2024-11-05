@@ -13,9 +13,9 @@ msgstr ""
 #: fastmean.c:39
 #, c-format
 msgid "%s should be TRUE or FALSE"
-msgstr ""
+msgstr "%s TRUE या FALSE होना चाहिए"
 
 #: fastmean.c:45
 #, c-format
 msgid "fastmean was passed type %s, not numeric or logical"
-msgstr ""
+msgstr "fastmean में प्रकार %s पास (pass) किया गया था, जो न तो न्यूमेरिक (numeric) है और न ही लॉजिकल (logical)"
