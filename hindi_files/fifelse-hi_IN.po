@@ -37,6 +37,7 @@ msgstr ""
 msgid ""
 "Length of 'na' is %<PRId64> but must be 1 or length of 'test' (%<PRId64>)."
 msgstr ""
+"'na' की लेंथ (length) %<PRId64> है लेकिन इसे 1 या 'test' की लेंथ (length) (%<PRId64>) होना चाहिए।"
 
 #: fifelse.c:52
 #, c-format
@@ -44,6 +45,8 @@ msgid ""
 "'no' is of type %s but '%s' is %s. Please make all arguments have the same "
 "type."
 msgstr ""
+"'no' प्रकार %s का है लेकिन '%s' %s है।"
+"कृपया सभी तर्कों को एक ही प्रकार का बनाएं।"
 
 #: fifelse.c:58
 #, c-format
@@ -51,41 +54,49 @@ msgid ""
 "'na' is of type %s but '%s' is %s. Please make all arguments have the same "
 "type."
 msgstr ""
+"'no' प्रकार %s का है लेकिन '%s' %s है।"
+"कृपया सभी तर्कों को एक ही प्रकार का बनाएं।"
 
 #: fifelse.c:63
 msgid ""
 "'yes' has different class than 'no'. Please make sure that both arguments "
 "have the same class."
 msgstr ""
+"'yes' की 'no' से अलग क्लास (class) है।"
+"कृपया सुनिश्चित करें कि दोनों तर्कों की क्लास (class) समान हो।"
 
 #: fifelse.c:68
 msgid ""
 "'yes' has different class than 'na'. Please make sure that both arguments "
 "have the same class."
 msgstr ""
+"'yes' की 'na' से अलग क्लास (class) है।"
+"कृपया सुनिश्चित करें कि दोनों तर्कों की क्लास (class) समान हो।"
 
 #: fifelse.c:73
 msgid ""
 "'no' has different class than 'na'. Please make sure that both arguments have "
 "the same class."
 msgstr ""
+"'no' की 'na' से अलग क्लास (class) है।"
+"कृपया सुनिश्चित करें कि दोनों तर्कों की क्लास (class) समान हो।"
 
 #: fifelse.c:80
 msgid "'yes' and 'no' are both type factor but their levels are different."
-msgstr ""
+msgstr "'yes' और 'no' दोनों का प्रकार फ़ैक्टर (factor) हैं लेकिन उनके स्तर भिन्न हैं।"
 
 #: fifelse.c:85
 msgid "'yes' and 'na' are both type factor but their levels are different."
-msgstr ""
+msgstr "'yes' और 'na' दोनों का प्रकार फ़ैक्टर (factor) हैं लेकिन उनके स्तर भिन्न हैं।"
 
 #: fifelse.c:90
 msgid "'no' and 'na' are both type factor but their levels are different."
-msgstr ""
+msgstr "'no' और 'na' दोनों का प्रकार फ़ैक्टर (factor) हैं लेकिन उनके स्तर भिन्न हैं।"
 
 #: fifelse.c:199
 #, c-format
 msgid "Type '%s' is not supported"
-msgstr ""
+msgstr "प्रकार '%s' का समर्थन नहीं किया जाता है।"
 
 #: fifelse.c:213
 #, c-format
@@ -94,17 +105,22 @@ msgid ""
 "consisting of logical condition, resulting value pairs (in that order). Note "
 "that the default argument must be named explicitly, e.g., default=0"
 msgstr ""
+"%d इनपुट (input) प्राप्त हुए; कृपया ... में तर्कों की एक सम संख्या प्रदान करें"
+"जिसमें तार्किक स्थिति, परिणामस्वरूप मान के जोड़े (इस क्रम में) शामिल हों।"
+"ध्यान दें कि डिफ़ॉल्ट (default) तर्क को स्पष्ट रूप से नामित किया जाना चाहिए, जैसे, default=0"
 
 #: fifelse.c:235
 msgid ""
 "S4 class objects (except nanotime) are not supported. Please see https://"
 "github.com/Rdatatable/data.table/issues/4131."
 msgstr ""
+"S4 वर्ग के ऑब्जेक्ट (object) (सिवाय nanotime) का समर्थन नहीं किया जाता है।"
+"कृपया https://github.com/Rdatatable/data.table/issues/4131 देखें।"
 
 #: fifelse.c:238
 #, c-format
 msgid "Argument #%d must be logical but was of type %s."
-msgstr ""
+msgstr "तर्क #%d लॉजिकल (logical) होना चाहिए लेकिन यह प्रकार %s का है।"
 
 #: fifelse.c:260
 #, c-format
