@@ -465,6 +465,7 @@ void writePOSIXct(const void *col, int64_t row, char **pch)
   *pch = ch;
 }
 
+// # nocov start. Covered in other.Rraw test 22, not the main suite.
 void writeNanotime(const void *col, int64_t row, char **pch)
 {
   int64_t x = ((const int64_t *)col)[row];
@@ -497,6 +498,7 @@ void writeNanotime(const void *col, int64_t row, char **pch)
   }
   *pch = ch;
 }
+// # nocov end
 
 static inline void write_string(const char *x, char **pch)
 {
@@ -587,6 +589,14 @@ int compressbuff(z_stream *stream, void* dest, size_t *destLen, const void* sour
 }
 #endif
 
+/*
+  OpenMP is used here primarily to parallelize the process of writing rows
+    to the output file, but error handling and compression (if enabled) are
+    also managed within the parallel region. Special attention is paid to
+    thread safety and synchronization, especially in the ordered sections
+    where output to the file and handling of errors is serialized to maintain
+    the correct sequence of rows.
+*/
 void fwriteMain(fwriteMainArgs args)
 {
   double startTime = wallclock();
@@ -620,15 +630,16 @@ void fwriteMain(fwriteMainArgs args)
 
   if (verbose) {
     DTPRINT(_("Column writers: "));
+    // # notranslate start
     if (args.ncol<=50) {
-      for (int j=0; j<args.ncol; j++) DTPRINT(_("%d "), args.whichFun[j]);
+      for (int j=0; j<args.ncol; j++) DTPRINT("%d ", args.whichFun[j]);
     } else {
-      for (int j=0; j<30; j++) DTPRINT(_("%d "), args.whichFun[j]);
+      for (int j=0; j<30; j++) DTPRINT("%d ", args.whichFun[j]);
       DTPRINT(_("... "));
-      for (int j=args.ncol-10; j<args.ncol; j++) DTPRINT(_("%d "), args.whichFun[j]);
+      for (int j=args.ncol-10; j<args.ncol; j++) DTPRINT("%d ", args.whichFun[j]);
     }
-    DTPRINT(_("\nargs.doRowNames=%d args.rowNames=%p args.rowNameFun=%d doQuote=%d args.nrow=%"PRId64" args.ncol=%d eolLen=%d\n"),
-          args.doRowNames, args.rowNames, args.rowNameFun, doQuote, args.nrow, args.ncol, eolLen);
+    DTPRINT("\nargs.doRowNames=%d args.rowNames=%p args.rowNameFun=%d doQuote=%d args.nrow=%"PRId64" args.ncol=%d eolLen=%d\n", args.doRowNames, args.rowNames, args.rowNameFun, doQuote, args.nrow, args.ncol, eolLen);
+    // # notranslate end
   }
 
   // Calculate upper bound for line length. Numbers use a fixed maximum (e.g. 12 for integer) while strings find the longest
@@ -661,7 +672,7 @@ void fwriteMain(fwriteMainArgs args)
       case WF_List:
         width = getMaxListItemLen(args.columns[j], args.nrow);
         break;
-      default:
+      default: // # nocov
         INTERNAL_STOP("type %d has no max length method implemented", args.whichFun[j]);  // # nocov
       }
     }
@@ -716,7 +727,7 @@ void fwriteMain(fwriteMainArgs args)
   if (headerLen) {
     char *buff = malloc(headerLen);
     if (!buff)
-      STOP(_("Unable to allocate %zu MiB for header: %s"), headerLen / 1024 / 1024, strerror(errno));
+      STOP(_("Unable to allocate %zu MiB for header: %s"), headerLen / 1024 / 1024, strerror(errno)); // # nocov
     char *ch = buff;
     if (args.bom) {*ch++=(char)0xEF; *ch++=(char)0xBB; *ch++=(char)0xBF; }  // 3 appears above (search for "bom")
     memcpy(ch, args.yaml, yamlLen);
@@ -850,7 +861,7 @@ void fwriteMain(fwriteMainArgs args)
 #ifndef NOZLIB
   z_stream *thread_streams = (z_stream *)malloc(nth * sizeof(z_stream));
   if (!thread_streams)
-    STOP(_("Failed to allocated %d bytes for '%s'."), (int)(nth * sizeof(z_stream)), "thread_streams");
+    STOP(_("Failed to allocated %d bytes for '%s'."), (int)(nth * sizeof(z_stream)), "thread_streams"); // # nocov
   // VLA on stack should be fine for nth structs; in zlib v1.2.11 sizeof(struct)==112 on 64bit
   // not declared inside the parallel region because solaris appears to move the struct in
   // memory when the #pragma omp for is entered, which causes zlib's internal self reference
@@ -952,10 +963,10 @@ void fwriteMain(fwriteMainArgs args)
             int ETA = (int)((args.nrow-end)*((now-startTime)/end));
             if (hasPrinted || ETA >= 2) {
               if (verbose && !hasPrinted) DTPRINT("\n");
-              DTPRINT("\rWritten %.1f%% of %"PRId64" rows in %d secs using %d thread%s. "
-                      "maxBuffUsed=%d%%. ETA %d secs.      ",
-                       (100.0*end)/args.nrow, args.nrow, (int)(now-startTime), nth, nth==1?"":"s",
-                       maxBuffUsedPC, ETA);
+              DTPRINT(Pl_(nth,
+                          "\rWritten %.1f%% of %"PRId64" rows in %d secs using %d thread. maxBuffUsed=%d%%. ETA %d secs.      ",
+                          "\rWritten %.1f%% of %"PRId64" rows in %d secs using %d threads. maxBuffUsed=%d%%. ETA %d secs.      "),
+                       (100.0*end)/args.nrow, args.nrow, (int)(now-startTime), nth, maxBuffUsedPC, ETA);
               // TODO: use progress() as in fread
               nextTime = now+1;
               hasPrinted = true;

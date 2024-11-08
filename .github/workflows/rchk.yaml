@@ -17,8 +17,7 @@
 # under the License.
 on:
   push:
-    branches:
-      - master
+    branches: [master]
   pull_request:
 
 name: 'rchk'

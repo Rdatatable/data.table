@@ -16,6 +16,7 @@
 ^\.devcontainer$
 ^\.graphics$
 ^\.github$
+^\.vscode$
 ^\.zed$
 
 ^\.gitlab-ci\.yml$
