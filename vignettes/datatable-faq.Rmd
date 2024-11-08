@@ -26,6 +26,10 @@ h2 {
 }
 </style>
 
+Translations of this document are available in
+
+* [French](https://rdatatable.gitlab.io/data.table/articles/fr/datatable-faq.html)
+
 ```{r, echo = FALSE, message = FALSE}
 library(data.table)
 knitr::opts_chunk$set(
