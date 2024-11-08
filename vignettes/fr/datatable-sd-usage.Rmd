@@ -6,8 +6,6 @@ output:
     options:
       toc: true
       number_sections: true
-    meta:
-      css: [default, ../css/toc.css]
 vignette: >
   %\VignetteIndexEntry{Utiliser .SD pour l’analyse de données}
   %\VignetteEngine{knitr::knitr}
