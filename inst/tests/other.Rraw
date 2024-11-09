@@ -771,5 +771,5 @@ if (loaded[["nanotime"]]) {
 .e <- new.env() ## to not populate the .GlobalEnv
 .e[["DT"]] <- as.data.table(lapply(1:15,function(i) runif(20e6)))
 res <- tables(env=.e)
-test(32, res[, .(NAME,NROW,NCOL,MB)], data.table(NAME="DT",NROW=20000000L,NCOL=15L,MB=2288))
+test(32, res[, .(NAME,NROW,NCOL,MB)], data.table(NAME="DT",NROW=20000000L,NCOL=15L,MB=2288.0))
 rm(.e, res)
