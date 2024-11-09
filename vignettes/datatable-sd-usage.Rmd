@@ -6,13 +6,20 @@ output:
     options:
       toc: true
       number_sections: true
-    meta:
-      css: [default, css/toc.css]
 vignette: >
   %\VignetteIndexEntry{Using .SD for Data Analysis}
   %\VignetteEngine{knitr::knitr}
   \usepackage[utf8]{inputenc}
 ---
+
+<style>
+#TOC {
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding-left: 1em;
+  background: #f6f6f6;
+}
+</style>
 
 ```{r, echo = FALSE, message = FALSE}
 require(data.table)
