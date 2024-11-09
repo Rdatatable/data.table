@@ -2,21 +2,19 @@
 title: "Secondary indices and auto indexing"
 date: "`r Sys.Date()`"
 output:
-  markdown::html_format
+  litedown::html_format
 vignette: >
   %\VignetteIndexEntry{Secondary indices and auto indexing}
-  %\VignetteEngine{knitr::knitr}
+  %\VignetteEngine{litedown::vignette}
   \usepackage[utf8]{inputenc}
 ---
 
 ```{r, echo = FALSE, message = FALSE}
-require(data.table)
-knitr::opts_chunk$set(
-  comment = "#",
-    error = FALSE,
-     tidy = FALSE,
-    cache = FALSE,
- collapse = TRUE)
+library(data.table)
+opts = litedown::reactor()
+opts$comment = "# "
+opts$error = FALSE
+opts$print = function(x, ...) capture.output(if (isS4(x)) methods::show(x, ...) else print(x, ...))
 .old.th = setDTthreads(1)
 ```
 
