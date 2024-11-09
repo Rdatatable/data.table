@@ -766,3 +766,10 @@ if (loaded[["nanotime"]]) {
   # respect dec=',' for nanotime, related to #6446, corresponding to tests 2281.*
   test(31, fwrite(data.table(as.nanotime(.POSIXct(0))), dec=',', sep=';'), output="1970-01-01T00:00:00,000000000Z")
 }
+
+# test for bug#6607
+local({
+  DT <- as.data.table(lapply(1:15,function(i) runif(20e6)))
+  res <- tables()
+  data.table:::test(32, res[NAME=='DT',.(NAME,NROW,NCOL,MB)], data.table(NAME="DT",NROW=20000000L,NCOL=15L,MB=2288))
+})
