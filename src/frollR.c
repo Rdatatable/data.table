@@ -99,7 +99,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   if (LOGICAL(hasna)[0]==FALSE && LOGICAL(narm)[0])
     error(_("using hasNA FALSE and na.rm TRUE does not make sense, if you know there are NA values use hasNA TRUE, otherwise leave it as default NA"));
 
-  int ialign;                                                   // decode align to integer
+  int ialign=-2;                                                   // decode align to integer
   if (!strcmp(CHAR(STRING_ELT(align, 0)), "right"))
     ialign = 1;
   else if (!strcmp(CHAR(STRING_ELT(align, 0)), "center"))
@@ -133,7 +133,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
     dx[i] = REAL(VECTOR_ELT(x, i));                             // assign source columns to C pointers
   }
 
-  enum {MEAN, SUM} sfun;
+  enum {MEAN, SUM} sfun=0;
   if (!strcmp(CHAR(STRING_ELT(fun, 0)), "mean")) {
     sfun = MEAN;
   } else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "sum")) {
@@ -156,7 +156,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
     LOGICAL(hasna)[0]==TRUE ? 1 :                               // hasna TRUE, might be some NAs
     -1;                                                         // hasna FALSE, there should be no NAs
 
-  unsigned int ialgo;                                           // decode algo to integer
+  unsigned int ialgo=-1;                                           // decode algo to integer
   if (!strcmp(CHAR(STRING_ELT(algo, 0)), "fast"))
     ialgo = 0;                                                  // fast = 0
   else if (!strcmp(CHAR(STRING_ELT(algo, 0)), "exact"))
@@ -244,7 +244,7 @@ SEXP frollapplyR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP rho) {
     error(_("n must be non 0 length"));
   int *ik = INTEGER(k);
 
-  int ialign;
+  int ialign=-2;
   if (!strcmp(CHAR(STRING_ELT(align, 0)), "right")) {
     ialign = 1;
   } else if (!strcmp(CHAR(STRING_ELT(align, 0)), "center")) {

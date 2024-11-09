@@ -6,7 +6,7 @@ setdiff_ = function(x, y, by.x=seq_along(x), by.y=seq_along(y), use.names=FALSE)
   by.x = colnamesInt(x, by.x, check_dups=TRUE)
   if (!nrow(y)) return(unique(x, by=by.x))
   by.y = colnamesInt(y, by.y, check_dups=TRUE)
-  if (length(by.x) != length(by.y)) stopf("length(by.x) != length(by.y)")
+  if (length(by.x) != length(by.y)) stopf("length(by.x) != length(by.y)", domain=NA)
   # factor in x should've factor/character in y, and vice-versa
   for (a in seq_along(by.x)) {
     lc = by.y[a]
@@ -42,15 +42,17 @@ funique = function(x) {
   if (!identical(names(x), names(y))) stopf("x and y must have the same column order")
   bad_types = c("raw", "complex", if (block_list) "list")
   found = bad_types %chin% c(vapply_1c(x, typeof), vapply_1c(y, typeof))
-  if (any(found)) stopf("unsupported column type(s) found in x or y: %s", brackify(bad_types[found]))
+  if (any(found))
+    stopf(ngettext(sum(found), "unsupported column type found in x or y: %s", "unsupported column types found in x or y: %s"),
+          brackify(bad_types[found]), domain=NA)
   super = function(x) {
     # allow character->factor and integer->numeric because from v1.12.4 i's type is retained by joins, #3820
-    ans = class(x)[1L]
+    ans = class1(x)
     switch(ans, factor="character", integer="numeric", ans)
   }
   if (!identical(sx<-sapply(x, super), sy<-sapply(y, super))) {
     w = which.first(sx!=sy)
-    stopf("Item %d of x is '%s' but the corresponding item of y is '%s'.", w, class(x[[w]])[1L], class(y[[w]])[1L])
+    stopf("Item %d of x is '%s' but the corresponding item of y is '%s'.", w, class1(x[[w]]), class1(y[[w]]))
   }
   if (.seqn && ".seqn" %chin% names(x)) stopf("None of the datasets should contain a column named '.seqn'")
 }
@@ -155,9 +157,9 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
     k1 = key(target)
     k2 = key(current)
     if (!identical(k1, k2)) {
-      return(gettextf(
-        "Datasets have different %s. 'target': %s. 'current': %s.",
-        "keys",
+      return(sprintf(
+        "%s. 'target': %s. 'current': %s.",
+        gettext("Datasets have different keys"),
         if(length(k1)) brackify(k1) else gettextf("has no key"),
         if(length(k2)) brackify(k2) else gettextf("has no key")
       ))
@@ -166,9 +168,9 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
     i1 = indices(target)
     i2 = indices(current)
     if (!identical(i1, i2)) {
-      return(gettextf(
-        "Datasets have different %s. 'target': %s. 'current': %s.",
-        "indices",
+      return(sprintf(
+        "%s. 'target': %s. 'current': %s.",
+        gettext("Datasets have different indices"),
         if(length(i1)) brackify(i1) else gettextf("has no index"),
         if(length(i2)) brackify(i2) else gettextf("has no index")
       ))
