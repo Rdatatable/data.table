@@ -105,7 +105,7 @@ rowwiseDT(
 
 10. `DT[1, on=NULL]` now works for returning the first row, [#6579](https://github.com/Rdatatable/data.table/issues/6579). Thanks to @Kodiologist for the report and @tdhock for the PR.
 
-11. `tables()` does not return NA as size for large data tables, [#6607](https://github.com/Rdatatable/data.table/issues/6607). Thanks to @vlulla for the report and the PR.
+11. `tables()` now returns the correct size for large data.tables, [#6607](https://github.com/Rdatatable/data.table/issues/6607). Thanks to @vlulla for the report and the PR.
 
 ## NOTES
 
