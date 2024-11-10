@@ -293,20 +293,22 @@
 
 41. `tables()` is faster by default by excluding the size of character strings in R's global cache (which may be shared) and excluding the size of list column items (which also may be shared). `mb=` now accepts any function which accepts a `data.table` and returns a higher and better estimate of its size in bytes, albeit more slowly; e.g. `mb = utils::object.size`.
 
-27. New function `topn(x,n)` [#3804](https://github.com/Rdatatable/data.table/issues/3804). It returns the indices of the `n` smallest/largest values of a vector `x`. Previously, one had to use `order(x)[1:n]` which produced a full sorting of `x`. Usage of `topn` is advised for large vectors where sorting takes long time. Thanks to Michael Chirico for requesting, and Benjamin Schwendinger for PR.
+27. New function `topn(x,n)` [#3804](https://github.com/Rdatatable/data.table/issues/3804). It returns the indices of the `n` smallest/largest values of a vector `x`. Previously, one had to use `order(x)[1:n]` which produced a full sorting of `x`. Usage of `topn` is advised for large vectors where sorting takes long time. Thanks to Michael Chirico for requesting, and Benjamin Schwendinger for the PR.
 
     ```R
     set.seed(123)
     x = rnorm(1e8)
-    system.time(topn(x, 5L,sorted=TRUE))
-    #   user  system elapsed
-    #  0.287   0.000   0.288
-    system.time(topn(x, 5L,sorted=FALSE))
-    #   user  system elapsed
-    #  0.283   0.000   0.282
-    system.time(order(x)[1L:5L])
-    #   user  system elapsed
-    #  6.658   0.620   7.279
+    bm = bench::mark(check=FALSE, min_iterations=10,
+       topn(x, 5L, sorted=TRUE),
+       topn(x, 5L, sorted=FALSE),
+       order(x)[1:5] 
+    )
+    setDT(bm)[, .(expression, min, median, lapply(time, max), mem_alloc)]
+    #                     expression          min       median     V4     mem_alloc
+    #                   <bench_expr> <bench_time> <bench_time> <list> <bench_bytes>
+    # 1:  topn(x, 5L, sorted = TRUE)     151.65ms     155.21ms  171ms            0B
+    # 2: topn(x, 5L, sorted = FALSE)     151.59ms     158.77ms  176ms            0B
+    # 3:               order(x)[1:5]        2.69s        2.77s  2.84s         381MB
     ```
 
 ## BUG FIXES
