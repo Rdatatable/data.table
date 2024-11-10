@@ -767,7 +767,7 @@ if (loaded[["nanotime"]]) {
   test(31, fwrite(data.table(as.nanotime(.POSIXct(0))), dec=',', sep=';'), output="1970-01-01T00:00:00,000000000Z")
 }
 
-# test for bug#6607
+# tables() with large environment #6607
 .e <- new.env() ## to not populate the .GlobalEnv
 .e[["DT"]] <- as.data.table(lapply(1:15,function(i) runif(20e6)))
 res <- tables(env=.e)
