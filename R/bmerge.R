@@ -70,6 +70,14 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
       }
       stopf("Incompatible join types: %s (%s) and %s (%s). Factor columns must join to factor or character columns.", xname, xclass, iname, iclass)
     }
+    # data.table::as.ITime, chron::times, nanotime::nanotime
+    timeclasses = c("Date", "POSIXt", "ITime", "times", "nanotime")
+    xclass_time = intersect(class(x[[xc]]), timeclasses)
+    iclass_time = intersect(class(i[[ic]]), timeclasses)
+    if (length(xclass_time) > 0L && length(iclass_time) > 0L && !identical(sort(xclass_time), sort(iclass_time))) {
+      warningf("Attempting to join column %s (%s) with column %s (%s). They are likely to be incompatible numbers, suggest you convert one to the other's class.",
+               xname, toString(xclass_time), iname, toString(iclass_time))
+    }
     if (xclass == iclass) {
       if (verbose) catf("%s has same type (%s) as %s. No coercion needed.\n", iname, xclass, xname)
       next

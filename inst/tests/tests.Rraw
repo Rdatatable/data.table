@@ -20596,3 +20596,6 @@ test(2295.3, is.data.table(d2))
 
 # #6588: .checkTypos used to give arbitrary strings to stopf as the first argument
 test(2296, d2[x %no such operator% 1], error = '%no such operator%')
+
+# #6605: Joins do not warn user when using POSc and Date comparisons
+test(2297.1, data.table(a = Sys.time(), v1 = 1)[data.table(a = Sys.Date(), v2 = 2), on = "a"], output = ".+", warning = "incompatible")

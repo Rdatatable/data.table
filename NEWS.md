@@ -115,6 +115,8 @@ rowwiseDT(
 
 15. `DT[1, on=NULL]` now works for returning the first row, [#6579](https://github.com/Rdatatable/data.table/issues/6579). Thanks to @Kodiologist for the report and @tdhock for the PR.
 
+16. Joining with incompatible column times (e.g., `Date` with `POSIXt`) now provides a clear warning, [#6605](https://github.com/Rdatatable/data.table/issues/6605). Thanks to @al-obrien for the report and @r2evans for the PR.
+
 ## NOTES
 
 1. Tests run again when some Suggests packages are missing, [#6411](https://github.com/Rdatatable/data.table/issues/6411). Thanks @aadler for the note and @MichaelChirico for the fix.
