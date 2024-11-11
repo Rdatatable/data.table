@@ -67,13 +67,11 @@ rowwiseDT(
 
 ## BUG FIXES
 
-1. Using `print.data.table()` with character truncation using `datatable.prettyprint.char` no longer errors with `NA` entries, [#6441](https://github.com/Rdatatable/data.table/issues/6441). Thanks to @r2evans for the bug report, and @joshhwuu for the fix.
+1. `fwrite()` respects `dec=','` for timestamp columns (`POSIXct` or `nanotime`) with sub-second accuracy, [#6446](https://github.com/Rdatatable/data.table/issues/6446). Thanks @kav2k for pointing out the inconsistency and @MichaelChirico for the PR.
 
-2. `fwrite()` respects `dec=','` for timestamp columns (`POSIXct` or `nanotime`) with sub-second accuracy, [#6446](https://github.com/Rdatatable/data.table/issues/6446). Thanks @kav2k for pointing out the inconsistency and @MichaelChirico for the PR.
+2. The data.table-only attribute `$.internal.selfref` is no longer set for data.frames. [#5286](https://github.com/Rdatatable/data.table/issues/5286). Thanks @OfekShilon for the report and fix.
 
-3. The data.table-only attribute `$.internal.selfref` is no longer set for data.frames. [#5286](https://github.com/Rdatatable/data.table/issues/5286). Thanks @OfekShilon for the report and fix.
-
-4. Tagging/naming arguments of `c()` in `j=c()` should now more closely follow base R conventions for concatenation of named lists during grouping, [#2311](https://github.com/Rdatatable/data.table/issues/2311). Naming an `lapply(.SD, FUN)` call as an argument of `c()` in `j` will now always cause that tag to get prepended (with a single dot separator) to the resulting column names. Additionally, naming a `list()` call as an argument of `c()` in `j` will now always cause that tag to get prepended to any names specified within the list call. This bug only affected queries with (1) `by=` grouping (2) `getOption("datatable.optimize") >= 1L` and (3) `lapply(.SD, FUN)` in `j`.
+3. Tagging/naming arguments of `c()` in `j=c()` should now more closely follow base R conventions for concatenation of named lists during grouping, [#2311](https://github.com/Rdatatable/data.table/issues/2311). Naming an `lapply(.SD, FUN)` call as an argument of `c()` in `j` will now always cause that tag to get prepended (with a single dot separator) to the resulting column names. Additionally, naming a `list()` call as an argument of `c()` in `j` will now always cause that tag to get prepended to any names specified within the list call. This bug only affected queries with (1) `by=` grouping (2) `getOption("datatable.optimize") >= 1L` and (3) `lapply(.SD, FUN)` in `j`.
 
     While the names returned by `data.table` when `j=c()` will now mostly follow base R conventions for concatenating lists, note that names which are completely unspecified will still be named positionally, matching the typical behavior in `j` and `data.table()`. according to position in `j` (e.g. `V1`, `V2`).
     
@@ -93,43 +91,55 @@ rowwiseDT(
     # [1] "V1" "b" "c"
     ```
 
-5. Queries like `DT[, min(x):max(x)]` now work as expected, i.e. the same as `DT[, seq(min(x), max(x))]` or `with(DT, min(x):max(x))`, [#2069](https://github.com/Rdatatable/data.table/issues/2069). Shorthand like `DT[, a:b]` meaning "select from columns `a` through `b`" still works. Thanks to @franknarf1 for reporting, @jangorecki for the fix, and @MichaelChirico for a follow-up ensuring back-compatibility.
+4. Queries like `DT[, min(x):max(x)]` now work as expected, i.e. the same as `DT[, seq(min(x), max(x))]` or `with(DT, min(x):max(x))`, [#2069](https://github.com/Rdatatable/data.table/issues/2069). Shorthand like `DT[, a:b]` meaning "select from columns `a` through `b`" still works. Thanks to @franknarf1 for reporting, @jangorecki for the fix, and @MichaelChirico for a follow-up ensuring back-compatibility.
 
-6. Fixed a segfault in `fcase()`, [#6448](https://github.com/Rdatatable/data.table/issues/6448). Thanks @ethanbsmith for reporting with reprex, @aitap for finding the root cause, and @MichaelChirico for the PR.
+5. `fread()` performance improves when specifying `Date` among `colClasses`, [#6105](https://github.com/Rdatatable/data.table/issues/6105). One implication of the change is that the column will be an `IDate` (which also inherits from `Date`), which may affect code strongly relying on the column class to be `Date` exactly; computations with `IDate` and `Date` columns should otherwise be the same. If you strongly prefer the `Date` class, run `as.Date()` explicitly following `fread()`. Thanks @scipima for the report and @MichaelChirico for the fix.
 
-7. `fread()` performance improves when specifying `Date` among `colClasses`, [#6105](https://github.com/Rdatatable/data.table/issues/6105). One implication of the change is that the column will be an `IDate` (which also inherits from `Date`), which may affect code strongly relying on the column class to be `Date` exactly; computations with `IDate` and `Date` columns should otherwise be the same. If you strongly prefer the `Date` class, run `as.Date()` explicitly following `fread()`. Thanks @scipima for the report and @MichaelChirico for the fix.
+6. `dt[, col]` now returns a copy of `col` also when it is a list column, as in any other case, [#4877](https://github.com/Rdatatable/data.table/issues/4877). Thanks to @tlapak for reporting and the PR.
 
-8. `dt[, col]` now returns a copy of `col` also when it is a list column, as in any other case, [#4877](https://github.com/Rdatatable/data.table/issues/4877). Thanks to @tlapak for reporting and the PR.
+7. `rbindlist` and `rbind` binding `bit64::integer64` columns with `character`/`complex`/`list` columns now works, [#5504](https://github.com/Rdatatable/data.table/issues/5504). Thanks to @MichaelChirico for the request and @ben-schwen for the PR.
 
-9. `rbindlist` and `rbind` binding `bit64::integer64` columns with `character`/`complex`/`list` columns now works, [#5504](https://github.com/Rdatatable/data.table/issues/5504). Thanks to @MichaelChirico for the request and @ben-schwen for the PR.
+8. Fixed possible segfault in `setDT(df); attr(df, key) <- value; set(df, ...)`, i.e. adding columns to an object with `set()` that was converted to data.table with `setDT()` and later had attributes add with `attr<-`, [#6410](https://github.com/Rdatatable/data.table/issues/6410). Thanks to @hongyuanjia for the report and @ben-schwen for the PR. Note that `setattr()` should be preferred for adding attributes to a data.table.
 
-10. Fixed possible segfault in `setDT(df); attr(df, key) <- value; set(df, ...)`, i.e. adding columns to an object with `set()` that was converted to data.table with `setDT()` and later had attributes add with `attr<-`, [#6410](https://github.com/Rdatatable/data.table/issues/6410). Thanks to @hongyuanjia for the report and @ben-schwen for the PR. Note that `setattr()` should be preferred for adding attributes to a data.table.
+9. `setDT()` no longer modifies the class of other names bound to the origin data.frame, e.g., in `DF1 <- data.frame(a=1); DF2 <- DF1; setDT(DF2)`, `DF1`'s class will not change. [#4784](https://github.com/Rdatatable/data.table/issues/4784). Thanks @OfekShilon for the report and fix.
 
-11. `fread()` automatically detects timestamps with sub-second accuracy again, [#6440](https://github.com/Rdatatable/data.table/issues/6440). This was a regression due to interference with new `dec='auto'` support. Thanks @kav2k for the concise report and @MichaelChirico for the fix.
-
-12. Using a namespace-qualified call on the RHS of `by=`, e.g. `DT[,.N,by=base::mget(v)]`, works again, fixing [#6493](https://github.com/Rdatatable/data.table/issues/6493). Thanks to @mmoisse for the report and @MichaelChirico for the fix.
-
-13. Restore some join operations on `x` and `i` (e.g. an anti-join `x[!i]`)  where `i` is an extended data.frame, but not a data.table (e.g. a `tbl`), [#6501](https://github.com/Rdatatable/data.table/issues/6501). Thanks @MichaelChirico for the report and PR.
-
-14. `setDT()` no longer modifies the class of other names bound to the origin data.frame, e.g., in `DF1 <- data.frame(a=1); DF2 <- DF1; setDT(DF2)`, `DF1`'s class will not change. [#4784](https://github.com/Rdatatable/data.table/issues/4784). Thanks @OfekShilon for the report and fix.
+10. `DT[1, on=NULL]` now works for returning the first row, [#6579](https://github.com/Rdatatable/data.table/issues/6579). Thanks to @Kodiologist for the report and @tdhock for the PR.
 
 ## NOTES
 
 1. Tests run again when some Suggests packages are missing, [#6411](https://github.com/Rdatatable/data.table/issues/6411). Thanks @aadler for the note and @MichaelChirico for the fix.
+
+2. Some grouping operations run much faster under `verbose=TRUE`, [#6286](https://github.com/Rdatatable/data.table/issues/6286). Thanks @joshhwuu for the report and fix. This overhead was not present on Windows. As a rule, users should expect `verbose=TRUE` operations to run more slowly, as extra statistics might be calculated as part of the report; here was a case where the overhead was particularly high and the fix was particularly easy.
+
+3. `set()` and `:=` now provide some extra guidance for common incorrect approaches to assigning `NULL` to some rows of a list column. The correct way is to put `list(list(NULL))` on the RHS of `:=` (or `.(.(NULL))` for short). Thanks to @MichaelChirico for the suggestion and @Nj221102 for the implementation.
+
+4. Improved the error message when trying to write code like `DT[, ":="(a := b, c := d)]` (which should be `DT[, ":="(a = b, c = d)]`), [#5296](https://github.com/Rdatatable/data.table/issues/5296). Thanks @MichaelChirico for the suggestion & fix.
+
+5. `measurev()` was implemented and documented in v1.15.0, for use within `melt()`, and it is now exported (dependent packages can now use without a NOTE from CRAN check).
+
+# data.table [v1.16.2](https://github.com/Rdatatable/data.table/milestone/35) (9 October 2024)
+
+## BUG FIXES
+
+1. Using `print.data.table()` with character truncation using `datatable.prettyprint.char` no longer errors with `NA` entries, [#6441](https://github.com/Rdatatable/data.table/issues/6441). Thanks to @r2evans for the bug report, and @joshhwuu for the fix.
+
+2. Fixed a segfault in `fcase()`, [#6448](https://github.com/Rdatatable/data.table/issues/6448). Thanks @ethanbsmith for reporting with reprex, @aitap for finding the root cause, and @MichaelChirico for the PR.
+
+3. `fread()` automatically detects timestamps with sub-second accuracy again, [#6440](https://github.com/Rdatatable/data.table/issues/6440). This was a regression due to interference with new `dec='auto'` support. Thanks @kav2k for the concise report and @MichaelChirico for the fix.
+
+4. Using a namespace-qualified call on the RHS of `by=`, e.g. `DT[,.N,by=base::mget(v)]`, works again, fixing [#6493](https://github.com/Rdatatable/data.table/issues/6493). Thanks to @mmoisse for the report and @MichaelChirico for the fix.
+
+5. Restore some join operations on `x` and `i` (e.g. an anti-join `x[!i]`)  where `i` is an extended data.frame, but not a data.table (e.g. a `tbl`), [#6501](https://github.com/Rdatatable/data.table/issues/6501). Thanks @MichaelChirico for the report and PR.
+
+## NOTES
+
+1. Fixed a typo in the NEWS for the last release -- that's version 1.16.0, not 1.6.0; apologies. Thanks @r2evans for flagging, [#6443](https://github.com/Rdatatable/data.table/issues/6443).
 
 2. Continued work to remove non-API C functions, [#6180](https://github.com/Rdatatable/data.table/issues/6180). Thanks Ivan Krylov for the PR and for writing a clear and concise guide about the R API: https://aitap.codeberg.page/R-api/.
 
 3. `data.table` again properly detects OpenMP support when built using `gcc` on macOS, [#6409](https://github.com/Rdatatable/data.table/issues/6409). Thanks @barracuda156 for the report and @kevinushey for the fix.
 
 4. The translations submitted for 1.16.0 are now actually shipped with the package -- our deepest apologies to the translators for the omission. We have added a CI check to ensure that the .mo binaries which get shipped with the package are always up-to-date.
-
-5. Some grouping operations run much faster under `verbose=TRUE`, [#6286](https://github.com/Rdatatable/data.table/issues/6286). Thanks @joshhwuu for the report and fix. This overhead was not present on Windows. As a rule, users should expect `verbose=TRUE` operations to run more slowly, as extra statistics might be calculated as part of the report; here was a case where the overhead was particularly high and the fix was particularly easy.
-
-6. `set()` and `:=` now provide some extra guidance for common incorrect approaches to assigning `NULL` to some rows of a list column. The correct way is to put `list(list(NULL))` on the RHS of `:=` (or `.(.(NULL))` for short). Thanks to @MichaelChirico for the suggestion and @Nj221102 for the implementation.
-
-7. Improved the error message when trying to write code like `DT[, ":="(a := b, c := d)]` (which should be `DT[, ":="(a = b, c = d)]`), [#5296](https://github.com/Rdatatable/data.table/issues/5296). Thanks @MichaelChirico for the suggestion & fix.
-
-8. `measurev()` was implemented and documented in v1.15.0, for use within `melt()`, and it is now exported (dependent packages can now use without a NOTE from CRAN check).
 
 # data.table [v1.16.0](https://github.com/Rdatatable/data.table/milestone/30)  (25 August 2024)
 

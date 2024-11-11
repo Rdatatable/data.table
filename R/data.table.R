@@ -123,7 +123,8 @@ replace_dot_alias = function(e) {
       stopf("Object '%s' not found amongst %s", used, brackify(ref))
     }
   } else {
-    stopf(err$message)
+    # Don't use stopf() directly, since err$message might have '%', #6588
+    stopf("%s", err$message, domain=NA)
   }
 }
 
@@ -586,7 +587,7 @@ replace_dot_alias = function(e) {
       }
     }
     else {
-      if (!missing(on)) {
+      if (!is.null(on)) {
         stopf("logical error. i is not a data.table, but 'on' argument is provided.")
       }
       # TO DO: TODO: Incorporate which_ here on DT[!i] where i is logical. Should avoid i = !i (above) - inefficient.
@@ -1497,7 +1498,7 @@ replace_dot_alias = function(e) {
   if (byjoin) {
     # The groupings come instead from each row of the i data.table.
     # Much faster for a few known groups vs a 'by' for all followed by a subset
-    if (!is.data.table(i)) stopf("logical error. i is not data.table, but mult='all' and 'by'=.EACHI")
+    if (!is.data.table(i)) stopf("logical error. i is not a data.table, but mult='all' and 'by'=.EACHI")
     byval = i
     bynames = if (missing(on)) head(key(x),length(leftcols)) else names(on)
     allbyvars = NULL
