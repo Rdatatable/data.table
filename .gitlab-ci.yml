@@ -390,7 +390,7 @@ integration:
     - Rscript -e 'check.flavors(names(test.jobs))'
     ## pkgdown vignettes workaround r-lib/pkgdown#2383
     - mkdir -p website/articles
-    - cp bus/integration/cran/library/data.table/doc/*.html website/articles/.
+    - cp -r bus/integration/cran/library/data.table/doc/* website/articles/.
     - rm website/articles/index.html
     ## pkgdown merge
     - Rscript -e 'common_files<-function(path1, path2) intersect(list.files(path1, all.files=TRUE, no..=TRUE), list.files(path2, all.files=TRUE, no..=TRUE)); msg = if (length(f<-common_files("website","bus/integration/cran"))) paste(c("Following artifacts will be overwritten by pkgdown artifacts:", paste0("  ", f)), collapse="\n") else "No overlapping files from pkgdown artifacts"; message(msg); q("no")'
