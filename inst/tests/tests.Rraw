@@ -20598,4 +20598,4 @@ test(2295.3, is.data.table(d2))
 test(2296, d2[x %no such operator% 1], error = '%no such operator%')
 
 # #6605: Joins do not warn user when using POSc and Date comparisons
-test(2297.1, data.table(a = Sys.time(), v1 = 1)[data.table(a = Sys.Date(), v2 = 2), on = "a"], output = ".+", warning = "incompatible")
+test(2297.1, data.table(a = .POSIXct(20000L), v1 = 1)[data.table(a = .Date(20000L), v2 = 2), on = "a"], output = ".+", warning = "incompatible")

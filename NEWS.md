@@ -107,7 +107,7 @@ rowwiseDT(
 
 11. `tables()` now returns the correct size for data.tables over 2GiB, [#6607](https://github.com/Rdatatable/data.table/issues/6607). Thanks to @vlulla for the report and the PR.
 
-16. Joining with incompatible column times (e.g., `Date` with `POSIXt`) now provides a clear warning, [#6605](https://github.com/Rdatatable/data.table/issues/6605). Thanks to @al-obrien for the report and @r2evans for the PR.
+12. Joining with incompatible column times (e.g., `Date` with `POSIXt`) now provides a clear warning, [#6605](https://github.com/Rdatatable/data.table/issues/6605). Thanks to @al-obrien for the report and @r2evans for the PR.
 
 ## NOTES
 
