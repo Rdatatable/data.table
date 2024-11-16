@@ -16,9 +16,9 @@ msgstr ""
 #: snprintf.c:239 snprintf.c:242 snprintf.c:245
 #, c-format
 msgid "dt_win_snprintf test %d failed: %s"
-msgstr ""
+msgstr "dt_win_snprintf परीक्षण %d विफल हो गया: %s"
 
 #: snprintf.c:218
 #, c-format
 msgid "dt_win_snprintf test %d failed: %d"
-msgstr ""
+msgstr "dt_win_snprintf परीक्षण %d विफल हो गया: %d"
