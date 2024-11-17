@@ -13,23 +13,24 @@ msgstr ""
 #: nafill.c:87
 #, c-format
 msgid "%s: took %.3fs\n"
-msgstr ""
+msgstr "%s: %.3fs में लिया\n"
 
 #: nafill.c:108
 #, c-format
 msgid "%s must be TRUE or FALSE"
-msgstr ""
+msgstr "%s TRUE या FALSE होना चाहिए"
 
 #: nafill.c:115
 msgid ""
 "'x' argument is atomic vector, in-place update is supported only for list/"
 "data.table"
 msgstr ""
+"'x' आर्ग्युमेंट (argument) एक एटोमिक (atomic) वेक्टर (vector) है; इन-प्लेस (in-place) अपडेट (update) केवल लिस्ट (list)/data.table के लिए समर्थित है"
 
 #: nafill.c:117 nafill.c:128
 msgid "'x' argument must be numeric type, or list/data.table of numeric types"
-msgstr ""
+msgstr "'x' तर्क (argument) न्यूमेरिक (numeric) प्रकार का होना चाहिए, या न्यूमेरिक प्रकारों की लिस्ट (list)/data.table होना चाहिए"
 
 #: nafill.c:184
 msgid "fill must be a vector of length 1 or a list of length of x"
-msgstr ""
+msgstr "fill एक वेक्टर (vector) होना चाहिए जिसकी लेंथ (length) 1 हो या x की लेंथ (length) के बराबर की लिस्ट (list) हो"
