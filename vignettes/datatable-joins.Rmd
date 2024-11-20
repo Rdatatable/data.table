@@ -26,9 +26,9 @@ In this vignette you will learn how to perform any join operation using resource
 
 It assumes familiarity with the `data.table` syntax. If that is not the case, please read the following vignettes:
 
-- [*Introduction to data.table*](datatable-intro.html)
-- [*Reference semantics*](datatable-reference-semantics.html)
-- [*Keys and fast binary search based subset*](datatable-keys-fast-subset.html)
+- [`vignette("datatable-intro", package="data.table")`](datatable-intro.html)
+- [`vignette("datatable-reference-semantics", package="data.table")`](datatable-reference-semantics.html)
+- [`vignette("datatable-keys-fast-subset", package="data.table")`](datatable-keys-fast-subset.html)
 
 ***
 
