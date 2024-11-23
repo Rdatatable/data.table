@@ -9,10 +9,6 @@ vignette: >
   \usepackage[utf8]{inputenc}
 ---
 
-Translations of this document are available in
-
-* [French](https://rdatatable.gitlab.io/data.table/articles/fr/datatable-intro.html)
-
 ```{r, echo = FALSE, message = FALSE}
 require(data.table)
 knitr::opts_chunk$set(
@@ -24,6 +20,10 @@ knitr::opts_chunk$set(
 )
 .old.th = setDTthreads(1)
 ```
+
+```{r echo=FALSE, file='_translation_links.R'}
+```
+`r .write.translation.links("Translations of this document are available in: %s")`
 
 This vignette introduces the `data.table` syntax, its general form, how to *subset* rows, *select and compute* on columns, and perform aggregations *by group*. Familiarity with the `data.frame` data structure from base R is useful, but not essential to follow this vignette.
 
