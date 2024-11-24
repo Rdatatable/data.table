@@ -34,7 +34,11 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     ans
   }
 
-  if (nrow(i)) { 
+  if (nrow(i)) {
+    x_merge_types = vapply_1c(x[0L, ..xcols], getClass)
+    i_merge_types = vapply_1c(x[0L, ..icols], getClass)
+    xnames = paste0("x.", names(x)[xcols])
+    inames = paste0("i.", names(i)[icols])
     for (a in seq_along(icols)) {
       # - check that join columns have compatible types
       # - do type coercions if necessary on just the shallow local copies for the purpose of join
@@ -42,10 +46,10 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
       # Note that if i is keyed, if this coerces i's key gets dropped by set()
       ic = icols[a]
       xc = xcols[a]
-      x_merge_type = getClass(x[[xc]])
-      i_merge_type = getClass(i[[ic]])
-      xname = paste0("x.", names(x)[xc])
-      iname = paste0("i.", names(i)[ic])
+      x_merge_type = x_merge_types[a]
+      i_merge_type = i_merge_types[a]
+      xname = xnames[a]
+      iname = inames[a]
       if (!x_merge_type %chin% supported) stopf("%s is type %s which is not supported by data.table join", xname, x_merge_type)
       if (!i_merge_type %chin% supported) stopf("%s is type %s which is not supported by data.table join", iname, i_merge_type)
       if (x_merge_type=="factor" || i_merge_type=="factor") {
@@ -115,6 +119,14 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
         } else {
           if (verbose) catf("Coercing integer column %s to type double for join to match type of %s.\n", iname, xname)
           set(i, j=ic, value=as.double(i[[ic]]))
+          ic_idx = which(ic == icols)
+          if (length(ic_idx)>1) {
+            for (b in which(x_merge_types[ic_idx] != "double")) {
+              xb = xcols[b]
+              if (verbose) catf("Coercing integer column %s to type double for join to match type of %s.\n", xnames[b], xname)
+              set(x, j=xb, value=as.double(x[[xb]]))
+            }
+          }
         }
       }
     }
