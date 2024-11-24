@@ -41,26 +41,26 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     # Note that if i is keyed, if this coerces i's key gets dropped by set()
     ic = icols[a]
     xc = xcols[a]
-    xclass = getClass(x[[xc]])
-    iclass = getClass(i[[ic]])
+    x_merge_type = getClass(x[[xc]])
+    i_merge_type = getClass(i[[ic]])
     xname = paste0("x.", names(x)[xc])
     iname = paste0("i.", names(i)[ic])
-    if (!xclass %chin% supported) stopf("%s is type %s which is not supported by data.table join", xname, xclass)
-    if (!iclass %chin% supported) stopf("%s is type %s which is not supported by data.table join", iname, iclass)
-    if (xclass=="factor" || iclass=="factor") {
+    if (!x_merge_type %chin% supported) stopf("%s is type %s which is not supported by data.table join", xname, x_merge_type)
+    if (!i_merge_type %chin% supported) stopf("%s is type %s which is not supported by data.table join", iname, i_merge_type)
+    if (x_merge_type=="factor" || i_merge_type=="factor") {
       if (roll!=0.0 && a==length(icols))
         stopf("Attempting roll join on factor column when joining %s to %s. Only integer, double or character columns may be roll joined.", xname, iname)
-      if (xclass=="factor" && iclass=="factor") {
+      if (x_merge_type=="factor" && i_merge_type=="factor") {
         if (verbose) catf("Matching %s factor levels to %s factor levels.\n", iname, xname)
         set(i, j=ic, value=chmatch(levels(i[[ic]]), levels(x[[xc]]), nomatch=0L)[i[[ic]]])  # nomatch=0L otherwise a level that is missing would match to NA values
         next
       } else {
-        if (xclass=="character") {
+        if (x_merge_type=="character") {
           if (verbose) catf("Coercing factor column %s to type character to match type of %s.\n", iname, xname)
           set(i, j=ic, value=val<-as.character(i[[ic]]))
           set(callersi, j=ic, value=val)  # factor in i joining to character in x will return character and not keep x's factor; e.g. for antaresRead #3581
           next
-        } else if (iclass=="character") {
+        } else if (i_merge_type=="character") {
           if (verbose) catf("Matching character column %s to factor levels in %s.\n", iname, xname)
           newvalue = chmatch(i[[ic]], levels(x[[xc]]), nomatch=0L)
           if (anyNA(i[[ic]])) newvalue[is.na(i[[ic]])] = NA_integer_  # NA_character_ should match to NA in factor, #3809
@@ -68,43 +68,43 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
           next
         }
       }
-      stopf("Incompatible join types: %s (%s) and %s (%s). Factor columns must join to factor or character columns.", xname, xclass, iname, iclass)
+      stopf("Incompatible join types: %s (%s) and %s (%s). Factor columns must join to factor or character columns.", xname, x_merge_type, iname, i_merge_type)
     }
-    if (xclass == iclass) {
+    if (x_merge_type == i_merge_type) {
       if (length(icols)>1 && is(x[[xc]], "Date") && is(i[[ic]], "Date")) {
         set(x, j=xc, value=as.double(x[[xc]]))
         set(i, j=ic, value=as.double(i[[ic]]))
         if (verbose) catf("%s and %s are both Dates. R does not guarentee a type for Date internally, hence, coercing to double.\n",  iname, xname)
       } else {
-        if (verbose) catf("%s has same type (%s) as %s. No coercion needed.\n", iname, xclass, xname)
+        if (verbose) catf("%s has same type (%s) as %s. No coercion needed.\n", iname, x_merge_type, xname)
       }
       next
     }
-    if (xclass=="character" || iclass=="character" ||
-        xclass=="logical" || iclass=="logical" ||
-        xclass=="factor" || iclass=="factor") {
+    if (x_merge_type=="character" || i_merge_type=="character" ||
+        x_merge_type=="logical" || i_merge_type=="logical" ||
+        x_merge_type=="factor" || i_merge_type=="factor") {
       if (anyNA(i[[ic]]) && allNA(i[[ic]])) {
-        if (verbose) catf("Coercing all-NA %s (%s) to type %s to match type of %s.\n", iname, iclass, xclass, xname)
-        set(i, j=ic, value=match.fun(paste0("as.", xclass))(i[[ic]]))
+        if (verbose) catf("Coercing all-NA %s (%s) to type %s to match type of %s.\n", iname, i_merge_type, x_merge_type, xname)
+        set(i, j=ic, value=match.fun(paste0("as.", x_merge_type))(i[[ic]]))
         next
       }
       else if (anyNA(x[[xc]]) && allNA(x[[xc]])) {
-        if (verbose) catf("Coercing all-NA %s (%s) to type %s to match type of %s.\n", xname, xclass, iclass, iname)
-        set(x, j=xc, value=match.fun(paste0("as.", iclass))(x[[xc]]))
+        if (verbose) catf("Coercing all-NA %s (%s) to type %s to match type of %s.\n", xname, x_merge_type, i_merge_type, iname)
+        set(x, j=xc, value=match.fun(paste0("as.", i_merge_type))(x[[xc]]))
         next
       }
-      stopf("Incompatible join types: %s (%s) and %s (%s)", xname, xclass, iname, iclass)
+      stopf("Incompatible join types: %s (%s) and %s (%s)", xname, x_merge_type, iname, i_merge_type)
     }
-    if (xclass=="integer64" || iclass=="integer64") {
+    if (x_merge_type=="integer64" || i_merge_type=="integer64") {
       nm = c(iname, xname)
-      if (xclass=="integer64") { w=i; wc=ic; wclass=iclass; } else { w=x; wc=xc; wclass=xclass; nm=rev(nm) }  # w is which to coerce
+      if (x_merge_type=="integer64") { w=i; wc=ic; wclass=i_merge_type; } else { w=x; wc=xc; wclass=x_merge_type; nm=rev(nm) }  # w is which to coerce
       if (wclass=="integer" || (wclass=="double" && !isReallyReal(w[[wc]]))) {
         if (verbose) catf("Coercing %s column %s%s to type integer64 to match type of %s.\n", wclass, nm[1L], if (wclass=="double") " (which contains no fractions)" else "", nm[2L])
         set(w, j=wc, value=bit64::as.integer64(w[[wc]]))
       } else stopf("Incompatible join types: %s is type integer64 but %s is type double and contains fractions", nm[2L], nm[1L])
     } else {
       # just integer and double left
-      if (iclass=="double") {
+      if (i_merge_type=="double") {
         if (!isReallyReal(i[[ic]])) {
           # common case of ad hoc user-typed integers missing L postfix joining to correct integer keys
           # we've always coerced to int and returned int, for convenience.
