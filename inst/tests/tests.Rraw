@@ -20596,3 +20596,12 @@ test(2295.3, is.data.table(d2))
 
 # #6588: .checkTypos used to give arbitrary strings to stopf as the first argument
 test(2296, d2[x %no such operator% 1], error = '%no such operator%')
+
+# #6619: .SDcols supports list of expressions
+DT = data.table(int1=1L, int2=2L, chr1="A", chr2="B", num1=1, num2=2, lgl=TRUE)
+test(2297.1, DT[, .SD, .SDcols = .(is.logical, !is.numeric)], DT[, .(lgl, chr1, chr2)])
+test(2297.2, DT[, .SD, .SDcols = .(patterns("r2"), c(1L, 1L, 2L, 3L))], DT[, .(chr2, int1, int1, int2, chr1)])
+test(2297.3, DT[, .SD, .SDcols = .("lgl", is.numeric)], DT[, .(lgl, int1, int2, num1, num2)])
+# difference between `--` and `!`
+test(2297.4, DT[, .SD, .SDcols = .(patterns("1$"), --is.integer)], DT[, .(chr1, num1)])
+test(2297.5, DT[, .SD, .SDcols = .(patterns("1$"), !is.integer)], DT[, .(int1, chr1, num1, chr2 ,num2, lgl)])
