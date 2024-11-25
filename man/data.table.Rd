@@ -152,7 +152,17 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
 
     Inversion (column dropping instead of keeping) can be accomplished be prepending the argument with \code{!} or \code{-} (there's no difference between these), e.g. \code{.SDcols = !c('x', 'y')}.
 
-    Finally, you can filter columns to include in \code{.SD} based on their \emph{names} according to regular expressions via \code{.SDcols=patterns(regex1, regex2, ...)}. The included columns will be the \emph{intersection} of the columns identified by each pattern; pattern unions can easily be specified with \code{|} in a regex. You can filter columns on \code{values} by passing a function, e.g. \code{.SDcols=\link{is.numeric}}. You can also invert a pattern as usual with \code{.SDcols=!patterns(...)} or \code{.SDcols=!is.numeric}.
+    You can filter columns to include in \code{.SD} based on their \emph{names} according to regular expressions via \code{.SDcols=patterns(regex1, regex2, ...)}. The included columns will be the \emph{intersection} of the columns identified by each pattern; pattern unions can easily be specified with \code{|} in a regex. You can filter columns on \code{values} by passing a function, e.g. \code{.SDcols=\link{is.numeric}}. You can also invert a pattern as usual with \code{.SDcols=!patterns(...)} or \code{.SDcols=!is.numeric}.
+
+    Finally, you can combine any of the other column-selection methods in a list of different column-selection methods. Considerations:
+
+      \itemize{
+          \item The selection of columns is \emph{additive}, meaning that \code{.SDcols=.(is.numeric, 'x')} will include all columns that are numeric and the column named 'x' (whether or not it contains numeric data).
+          \item Selection-inversion (selecting columns that do not meet a condition) works the same using the traditional \code{!} or \code{-}.
+          \item Deduplication. Columns in one element that were selected in previous elements will not be added again. For example, if column \code{x} is a numeric column, then \code{.SDcols=.(is.numeric, 'x')} will return only one instance of the \code{x} column. One can still explicitly choose duplicate columns within each selection, such as \code{.SDcols=.(is.numeric, c(1,1,2,3))}.
+          \item Removing columns that were selected in previous elements in the list is done with a double-minus, as in \code{--cols}. This supports any of the accepted column-selection methods (integers, strings, function calls, etc). For example, \code{.SDcols=.(is.numeric, --'x'} will select all numeric columns except one whose column name is 'x'. Because this only removes columns that were previously selected, a \code{--cols} removal as the first element of \code{.SDcols} has no effect.
+     }
+
 }
   \item{verbose}{ \code{TRUE} turns on status and information messages to the console. Turn this on by default using \code{options(datatable.verbose=TRUE)}. The quantity and types of verbosity may be expanded in future.
 

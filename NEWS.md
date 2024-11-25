@@ -65,6 +65,29 @@ rowwiseDT(
 
 4. `patterns()` in `melt()` combines correctly with user-defined `cols=`, which can be useful to specify a subset of columns to reshape without having to use a regex, for example `patterns("2", cols=c("y1", "y2"))` will only give `y2` even if there are other columns in the input matching `2`, [#6498](https://github.com/Rdatatable/data.table/issues/6498). Thanks to @hongyuanjia for the report, and to @tdhock for the PR.
 
+5. `.SDcols=` now supports a list of expressions. The default action for the second and subsequent expressions will be to add to columns already selected, but if an expression is prefaced with the literal `--` then columns found in that expression will be removed from the columns selected so far. The order matters, columns removed in one `--expr` may be added in the next expression (so order of `--`-expressions within the list of expressions matters). All current forms of expressions normally supported are still allowed in the list of expressions. Thanks to @r2evans for the request and PR.
+
+    ```r
+    DT = data.table(int1=1L, int2=2L, chr1="A", chr2="B", num1=1, num2=2, lgl=TRUE)
+    DT[, .SD, .SDcols = .(is.logical, !is.numeric)]
+    #     lgl chr1 chr2
+    # 1: TRUE    A    B
+    DT[, .SD, .SDcols = .(patterns("r2"), c(1L, 1L, 2L, 3L))]
+    #    chr2 int1 int1 int2 chr1
+    # 1:    B    1    1    2    A
+    DT[, .SD, .SDcols = .("lgl", is.numeric)]
+    #     lgl int1 int2 num1 num2
+    # 1: TRUE    1    2    1    2
+    DT[, .SD, .SDcols = .(patterns("1$"), --is.integer)]
+    #    chr1 num1
+    # 1:    A    1
+    DT[, .SD, .SDcols = .(patterns("1$"), !is.integer)]
+    #    int1 chr1 num1 chr2 num2  lgl
+    # 1:    1    A    1    B    2 TRUE
+    ```
+
+    Please note in the last two examples that `--` is distinct from `!`/`-`: with `--is.integer`, already-selected columns that are integers will be _removed_ from the set of columns to return, whereas with `!is.integer`, all columns that are not integers will be _added_ to the set of columns to return.
+
 ## BUG FIXES
 
 1. `fwrite()` respects `dec=','` for timestamp columns (`POSIXct` or `nanotime`) with sub-second accuracy, [#6446](https://github.com/Rdatatable/data.table/issues/6446). Thanks @kav2k for pointing out the inconsistency and @MichaelChirico for the PR.
