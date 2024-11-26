@@ -11,7 +11,7 @@ bool within_int64_repres(double x) {
   return R_FINITE(x) && x <= (double)INT64_MAX && x >= (double)INT64_MIN;
 }
 
-static R_xlen_t firstNonInt(SEXP x) {
+static R_xlen_t firstNonInt32(SEXP x) {
   R_xlen_t n=xlength(x), i=0;
   const double *dx = REAL(x);
   while (i<n &&
@@ -33,23 +33,22 @@ static R_xlen_t firstNonInt64(SEXP x) {
   return i==n ? 0 : i+1;
 }
 
-bool isRealReallyInt(SEXP x) {
-  return isReal(x) ? firstNonInt(x)==0 : false;
-  // used to error if not passed type double but this needed extra is.double() calls in calling R code
-  // which needed a repeat of the argument. Hence simpler and more robust to return false when not type double.
+// used to error if not passed type double but this needed extra is.double() calls in calling R code
+// which needed a repeat of the argument. Hence simpler and more robust to return false when not type double.
+bool isRealReallyInt32(SEXP x) {
+  return isReal(x) ? firstNonInt32(x)==0 : false;
 }
 
-SEXP isRealReallyIntR(SEXP x) {
-  return ScalarLogical(isRealReallyInt(x));
+SEXP isRealReallyInt32R(SEXP x) {
+  return ScalarLogical(isRealReallyInt32(x));
 }
 
-// return the 1-based location of first element which is really real (i.e. not an integer) otherwise 0 (false)
-SEXP isReallyReal(SEXP x, SEXP i64) {
-  if (LOGICAL(i64)[0]) {
-    return ScalarInteger(isReal(x) ? firstNonInt64(x) : 0);
-  } else {
-    return ScalarInteger(isReal(x) ? firstNonInt(x) : 0);
-  }
+bool isRealReallyInt64(SEXP x) {
+  return isReal(x) ? firstNonInt64(x)==0 : false;
+}
+
+SEXP isRealReallyInt64R(SEXP x) {
+  return ScalarLogical(isRealReallyInt64(x));
 }
 
 bool allNA(SEXP x, bool errorForBadType) {
@@ -140,7 +139,7 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent) {
       } else
         ricols = cols;
     } else if (isReal(cols)) {
-      if (!isRealReallyInt(cols))
+      if (!isRealReallyInt32(cols))
         error(_("argument specifying columns is type 'double' and one or more items in it are not whole integers"));
       ricols = PROTECT(coerceVector(cols, INTSXP)); protecti++;
     }

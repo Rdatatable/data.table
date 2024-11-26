@@ -92,14 +92,14 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     if (xclass=="integer64" || iclass=="integer64") {
       nm = c(iname, xname)
       if (xclass=="integer64") { w=i; wc=ic; wclass=iclass; } else { w=x; wc=xc; wclass=xclass; nm=rev(nm) }  # w is which to coerce
-      if (wclass=="integer" || (wclass=="double" && !isReallyReal(w[[wc]], vs='i64'))) {
+      if (wclass=="integer" || (wclass=="double" && !isRealReallyInt64(w[[wc]]))) {
         if (verbose) catf("Coercing %s column %s%s to type integer64 to match type of %s.\n", wclass, nm[1L], if (wclass=="double") " (which has integer64 representation, e.g. no fractions)" else "", nm[2L])
         set(w, j=wc, value=bit64::as.integer64(w[[wc]]))
       } else stopf("Incompatible join types: %s is type integer64 but %s is type double and cannot be coerced to integer64 (e.g. has fractions)", nm[2L], nm[1L])
     } else {
       # just integer and double left
       if (iclass=="double") {
-        if (!isReallyReal(i[[ic]])) {
+        if (!isRealReallyInt32(i[[ic]])) {
           # common case of ad hoc user-typed integers missing L postfix joining to correct integer keys
           # we've always coerced to int and returned int, for convenience.
           if (verbose) catf("Coercing double column %s (which contains no fractions) to type integer to match type of %s.\n", iname, xname)
