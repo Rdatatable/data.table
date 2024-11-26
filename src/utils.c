@@ -23,7 +23,7 @@ bool isRealReallyInt32(SEXP x) {
          (within_int32_repres(dx[i]) && dx[i]==(int)(dx[i])))) {
     i++;
   }
-  return i!=n;
+  return i==n;
 }
 
 SEXP isRealReallyInt32R(SEXP x) {
@@ -40,7 +40,7 @@ bool isRealReallyInt64(SEXP x) {
          (within_int64_repres(dx[i]) && dx[i]==(int64_t)(dx[i])))) {
     i++;
   }
-  return i!=n;
+  return i==n;
 }
 
 SEXP isRealReallyInt64R(SEXP x) {
