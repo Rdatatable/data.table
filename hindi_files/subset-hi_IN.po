@@ -33,8 +33,8 @@ msgid ""
 "Item %d of i is %d but there are only %d rows. Ignoring this and %d more like "
 "it out of %d."
 msgstr ""
-"i का आइटम (item) %d का मान %d है लेकिन केवल %d पंक्तियाँ (rows) हैं।"
-"i का आइटम (item) %d का मान %d है लेकिन केवल %d पंक्तियाँ (rows) हैं। इसे और %d अन्य इसी प्रकार के को %d में से अनदेखा कर रहे हैं।"
+"i का आइटम (item) %d का मान %d है लेकिन केवल %d पंक्तियाँ (rows) हैं। इसे और %d अन्य इसी "
+"प्रकार के को %d में से अनदेखा कर रहे हैं।"
 
 #: subset.c:241
 #, c-format
@@ -43,7 +43,7 @@ msgid ""
 "Ignoring this dup and %d other dups."
 msgstr ""
 "i का आइटम (item) %d का मान %d है जो उस आइटम (item) को हटा देता है, लेकिन यह पहले भी हुआ है।"
-"इस डुप्लिकेट (duplicate) और %d अन्य डुप्लिकेट्स (duplicates) को अनदेखा कर रहे हैं।"
+"इस dup और %d अन्य dups को अनदेखा कर रहे हैं।"
 
 #: subset.c:255
 #, c-format

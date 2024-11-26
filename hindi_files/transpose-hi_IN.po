@@ -24,11 +24,11 @@ msgid ""
 "result in which to place the names of the input"
 msgstr ""
 "keep.names या तो NULL होना चाहिए, या परिणाम की पहली कॉलम (column) का नाम होना चाहिए"
-"जिसमें इनपुट (Input) के नाम रखें।"
+"जिसमें इनपुट (input) के नाम रखें"
 
 #: transpose.c:19
 msgid "fill must be a length 1 vector, such as the default NA"
-msgstr "fill की length 1 का एक वेक्टर (vector) होना चाहिए, जैसे कि डिफ़ॉल्ट (default) NA।"
+msgstr "fill की length 1 का एक वेक्टर (vector) होना चाहिए, जैसे कि डिफ़ॉल्ट (default) NA"
 
 #: transpose.c:22
 msgid "list.cols should be logical TRUE/FALSE."
