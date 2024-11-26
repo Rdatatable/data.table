@@ -103,29 +103,46 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
       } else stopf("Incompatible join types: %s is type integer64 but %s is type double and contains fractions", nm[2L], nm[1L])
     } else {
       # just integer and double left
+      ic_idx = which(ic == icols)
       if (i_merge_type=="double") {
+        coerce_x = FALSE
         if (!isReallyReal(i[[ic]])) {
           # common case of ad hoc user-typed integers missing L postfix joining to correct integer keys
           # we've always coerced to int and returned int, for convenience.
-          if (verbose) catf("Coercing double column %s (which contains no fractions) to type integer to match type of %s.\n", iname, xname)
-          val = as.integer(i[[ic]])
-          if (!is.null(attributes(i[[ic]]))) attributes(val) = attributes(i[[ic]])  # to retain Date for example; 3679
-          set(i, j=ic, value=val)
-          set(callersi, j=ic, value=val)       # change the shallow copy of i up in [.data.table to reflect in the result, too.
-        } else {
+          for (b in which(x_merge_types[ic_idx] == "double")) {
+            xb = xcols[b] 
+            if (isReallyReal(x[[xb]])) {
+              coerce_x = TRUE
+              break
+            }
+          }
+          if (!coerce_x) {
+            if (verbose) catf("Coercing double column %s (which contains no fractions) to type integer to match type of %s.\n", iname, xname)
+            val = as.integer(i[[ic]])
+            if (!is.null(attributes(i[[ic]]))) attributes(val) = attributes(i[[ic]])  # to retain Date for example; 3679
+            set(i, j=ic, value=val)
+            set(callersi, j=ic, value=val)       # change the shallow copy of i up in [.data.table to reflect in the result, too.
+            for (b in which(x_merge_types[ic_idx] == "double")) {
+              xb = xcols[b]
+              val = as.integer(x[[xb]])
+              if (!is.null(attributes(x[[xb]]))) attributes(val) = attributes(x[[xb]])
+              if (verbose) catf("Coercing double column %s (which contains no fractions) to type integer to match type of %s.\n", xnames[b], xname)
+              set(x, j=xb, value=val)
+            }
+          }
+        }
+        if (coerce_x) {
+          ic_idx = which()
           if (verbose) catf("Coercing integer column %s to type double to match type of %s which contains fractions.\n", xname, iname)
           set(x, j=xc, value=as.double(x[[xc]]))
         }
       } else {
         if (verbose) catf("Coercing integer column %s to type double for join to match type of %s.\n", iname, xname)
         set(i, j=ic, value=as.double(i[[ic]]))
-        ic_idx = which(ic == icols)
-        if (length(ic_idx)>1) {
-          for (b in which(x_merge_types[ic_idx] != "double")) {
-            xb = xcols[b]
-            if (verbose) catf("Coercing integer column %s to type double for join to match type of %s.\n", xnames[b], xname)
-            set(x, j=xb, value=as.double(x[[xb]]))
-          }
+        for (b in which(x_merge_types[ic_idx] == "integer")) {
+          xb = xcols[b]
+          if (verbose) catf("Coercing integer column %s to type double for join to match type of %s.\n", xnames[b], xname)
+          set(x, j=xb, value=as.double(x[[xb]]))
         }
       }
     }  
