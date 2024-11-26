@@ -34,22 +34,17 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     ans
   }
 
-  if (nrow(i)) {
-    x_merge_types = vapply_1c(x[0L, ..xcols], getClass)
-    i_merge_types = vapply_1c(x[0L, ..icols], getClass)
-    xnames = paste0("x.", names(x)[xcols])
-    inames = paste0("i.", names(i)[icols])
-    for (a in seq_along(icols)) {
+  if (nrow(i)) for (a in seq_along(icols)) {
     # - check that join columns have compatible types
     # - do type coercions if necessary on just the shallow local copies for the purpose of join
     # - handle factor columns appropriately
     # Note that if i is keyed, if this coerces i's key gets dropped by set()
     ic = icols[a]
     xc = xcols[a]
-    x_merge_type = x_merge_types[a]
-    i_merge_type = i_merge_types[a]
-    xname = xnames[a]
-    iname = inames[a]
+    x_merge_type = getClass(x[[xc]])
+    i_merge_type = getClass(i[[ic]])
+    xname = paste0("x.", names(x)[xc])
+    iname = paste0("i.", names(i)[ic])
     if (!x_merge_type %chin% supported) stopf("%s is type %s which is not supported by data.table join", xname, x_merge_type)
     if (!i_merge_type %chin% supported) stopf("%s is type %s which is not supported by data.table join", iname, i_merge_type)
     if (x_merge_type=="factor" || i_merge_type=="factor") {
@@ -109,11 +104,14 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
         if (!isReallyReal(i[[ic]])) {
           # common case of ad hoc user-typed integers missing L postfix joining to correct integer keys
           # we've always coerced to int and returned int, for convenience.
-          for (b in which(x_merge_types[ic_idx] == "double")) {
-            xb = xcols[b]
-            if (isReallyReal(x[[xb]])) {
-              coerce_x = TRUE
-              break
+          if (length(ic_idx)>1L) {
+            xc_idx = xcols[ic_idx]
+            for (b in which(vapply_1c(x[0L, ..xc_idx], getClass) == "double")) {
+              xb = xcols[b]
+              if (isReallyReal(x[[xb]])) {
+                coerce_x = TRUE
+                break
+              }
             }
           }
           if (!coerce_x) {
@@ -122,12 +120,15 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
             if (!is.null(attributes(i[[ic]]))) attributes(val) = attributes(i[[ic]])  # to retain Date for example; 3679
             set(i, j=ic, value=val)
             set(callersi, j=ic, value=val)       # change the shallow copy of i up in [.data.table to reflect in the result, too.
-            for (b in which(x_merge_types[ic_idx] == "double")) {
-              xb = xcols[b]
-              val = as.integer(x[[xb]])
-              if (!is.null(attributes(x[[xb]]))) attributes(val) = attributes(x[[xb]])
-              if (verbose) catf("Coercing double column %s (which contains no fractions) to type integer to match type of %s.\n", xnames[b], xname)
-              set(x, j=xb, value=val)
+            if (length(ic_idx)>1L) {
+              xc_idx = xcols[ic_idx]
+              for (b in which(vapply_1c(x[0L, ..xc_idx], getClass) == "double")) {
+                xb = xcols[b]
+                val = as.integer(x[[xb]])
+                if (!is.null(attributes(x[[xb]]))) attributes(val) = attributes(x[[xb]])
+                if (verbose) catf("Coercing double column %s (which contains no fractions) to type integer to match type of %s.\n", paste0("x.", names(x)[xb]), xname)
+                set(x, j=xb, value=val)
+              }
             }
           }
         }
@@ -139,14 +140,16 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
       } else {
         if (verbose) catf("Coercing integer column %s to type double for join to match type of %s.\n", iname, xname)
         set(i, j=ic, value=as.double(i[[ic]]))
-        for (b in which(x_merge_types[ic_idx] == "integer")) {
-          xb = xcols[b]
-          if (verbose) catf("Coercing integer column %s to type double for join to match type of %s.\n", xnames[b], xname)
-          set(x, j=xb, value=as.double(x[[xb]]))
+        if (length(ic_idx)>1L) {
+          xc_idx = xcols[ic_idx]
+          for (b in which(vapply_1c(x[0L, ..xc_idx], getClass) == "integer")) {
+            xb = xcols[b]
+            if (verbose) catf("Coercing integer column %s to type double for join to match type of %s.\n", paste0("x.", names(x)[xb]), xname)
+            set(x, j=xb, value=as.double(x[[xb]]))
+          }
         }
       }
     }
-  }
   }
 
   ## after all modifications of x, check if x has a proper key on all xcols.
