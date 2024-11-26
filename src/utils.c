@@ -11,7 +11,11 @@ bool within_int64_repres(double x) {
   return R_FINITE(x) && x <= (double)INT64_MAX && x >= (double)INT64_MIN;
 }
 
-static R_xlen_t firstNonInt32(SEXP x) {
+// used to error if not passed type double but this needed extra is.double() calls in calling R code
+// which needed a repeat of the argument. Hence simpler and more robust to return false when not type double.
+bool isRealReallyInt32(SEXP x) {
+  if (!isReal(x))
+    return false;
   R_xlen_t n=xlength(x), i=0;
   const double *dx = REAL(x);
   while (i<n &&
@@ -19,24 +23,7 @@ static R_xlen_t firstNonInt32(SEXP x) {
          (within_int32_repres(dx[i]) && dx[i]==(int)(dx[i])))) {
     i++;
   }
-  return i==n ? 0 : i+1;
-}
-
-static R_xlen_t firstNonInt64(SEXP x) {
-  R_xlen_t n=xlength(x), i=0;
-  const double *dx = REAL(x);
-  while (i<n &&
-         ( ISNA(dx[i]) ||
-         (within_int64_repres(dx[i]) && dx[i]==(int64_t)(dx[i])))) {
-    i++;
-  }
-  return i==n ? 0 : i+1;
-}
-
-// used to error if not passed type double but this needed extra is.double() calls in calling R code
-// which needed a repeat of the argument. Hence simpler and more robust to return false when not type double.
-bool isRealReallyInt32(SEXP x) {
-  return isReal(x) ? firstNonInt32(x)==0 : false;
+  return i!=n;
 }
 
 SEXP isRealReallyInt32R(SEXP x) {
@@ -44,7 +31,16 @@ SEXP isRealReallyInt32R(SEXP x) {
 }
 
 bool isRealReallyInt64(SEXP x) {
-  return isReal(x) ? firstNonInt64(x)==0 : false;
+  if (!isReal(x))
+    return false;
+  R_xlen_t n=xlength(x), i=0;
+  const double *dx = REAL(x);
+  while (i<n &&
+         ( ISNA(dx[i]) ||
+         (within_int64_repres(dx[i]) && dx[i]==(int64_t)(dx[i])))) {
+    i++;
+  }
+  return i!=n;
 }
 
 SEXP isRealReallyInt64R(SEXP x) {
