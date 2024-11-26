@@ -18,6 +18,6 @@ colnamesInt = function(x, cols, check_dups=FALSE, skip_absent=FALSE) .Call(Ccoln
 testMsg = function(status=0L, nx=2L, nk=2L) .Call(CtestMsgR, as.integer(status)[1L], as.integer(nx)[1L], as.integer(nk)[1L])
 
 isRealReallyInt = function(x) .Call(CisRealReallyIntR, x)
-isReallyReal = function(x, i64=FALSE) .Call(CisReallyReal, x, i64)
+isReallyReal = function(x, vs='i32') .Call(CisReallyReal, x, identical(vs, 'i64'))
 
 coerceAs = function(x, as, copy=TRUE) .Call(CcoerceAs, x, as, copy)
