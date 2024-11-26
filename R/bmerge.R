@@ -139,13 +139,17 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
         }
       } else {
         if (verbose) catf("Coercing integer column %s to type double for join to match type of %s.\n", iname, xname)
-        set(i, j=ic, value=as.double(i[[ic]]))
+        val = as.double(i[[ic]])
+        if (!is.null(attributes(i[[ic]]))) attributes(val) = attributes(i[[ic]])  # to retain Date for example; 3679
+        set(i, j=ic, value=val)
         if (length(ic_idx)>1L) {
           xc_idx = xcols[ic_idx]
           for (b in which(vapply_1c(x[0L, ..xc_idx], getClass) == "integer")) {
             xb = xcols[b]
+            val = as.double(x[[xb]])
+            if (!is.null(attributes(x[[xb]]))) attributes(val) = attributes(x[[xb]])
             if (verbose) catf("Coercing integer column %s to type double for join to match type of %s.\n", paste0("x.", names(x)[xb]), xname)
-            set(x, j=xb, value=as.double(x[[xb]]))
+            set(x, j=xb, value=val)
           }
         }
       }
