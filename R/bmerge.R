@@ -102,19 +102,20 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
       if (i_merge_type=="double") {
         coerce_x = FALSE
         if (!isReallyReal(i[[ic]])) {
+          coerce_x = TRUE
           # common case of ad hoc user-typed integers missing L postfix joining to correct integer keys
           # we've always coerced to int and returned int, for convenience.
           if (length(ic_idx)>1L) {
             xc_idx = xcols[ic_idx]
             for (b in which(vapply_1c(x[0L, ..xc_idx], getClass) == "double")) {
               xb = xcols[b]
-              if (isReallyReal(x[[xb]])) {
-                coerce_x = TRUE
+              if (!isReallyReal(x[[xb]])) {
+                coerce_x = FALSE
                 break
               }
             }
           }
-          if (!coerce_x) {
+          if (coerce_x) {
             if (verbose) catf("Coercing double column %s (which contains no fractions) to type integer to match type of %s.\n", iname, xname)
             val = as.integer(i[[ic]])
             if (!is.null(attributes(i[[ic]]))) attributes(val) = attributes(i[[ic]])  # to retain Date for example; 3679
@@ -132,8 +133,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
             }
           }
         }
-        if (coerce_x) {
-          ic_idx = which()
+        if (!coerce_x) {
           if (verbose) catf("Coercing integer column %s to type double to match type of %s which contains fractions.\n", xname, iname)
           set(x, j=xc, value=as.double(x[[xc]]))
         }
