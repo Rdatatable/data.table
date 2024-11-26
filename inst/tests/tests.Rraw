@@ -20596,3 +20596,15 @@ test(2295.3, is.data.table(d2))
 
 # #6588: .checkTypos used to give arbitrary strings to stopf as the first argument
 test(2296, d2[x %no such operator% 1], error = '%no such operator%')
+
+if (test_bit64) {
+  # Join to integer64 doesn't require integer32 representation, just integer64, #6625
+  i64_val = .Machine$integer.max + 1
+  DT1 = data.table(id = as.integer64(i64_val))
+  DT2 = data.table(id = i64_val)
+  test(2297.1, DT1[DT2, on='id', verbose=TRUE], DT2, output="has integer64 representation")
+  test(2297.2, DT2[DT1, on='id', verbose=TRUE], DT1, output="has integer64 representation")
+  DT2[, id := id+.01]
+  test(2297.3, DT1[DT2, on='id'], error="Incompatible join types")
+  test(2297.4, DT2[DT1, on='id'], error="Incompatible join types")
+}

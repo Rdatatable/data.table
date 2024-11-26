@@ -22,6 +22,17 @@ static R_xlen_t firstNonInt(SEXP x) {
   return i==n ? 0 : i+1;
 }
 
+static R_xlen_t firstNonInt64(SEXP x) {
+  R_xlen_t n=xlength(x), i=0;
+  const double *dx = REAL(x);
+  while (i<n &&
+         ( ISNA(dx[i]) ||
+         (within_int64_repres(dx[i]) && dx[i]==(int64_t)(dx[i])))) {
+    i++;
+  }
+  return i==n ? 0 : i+1;
+}
+
 bool isRealReallyInt(SEXP x) {
   return isReal(x) ? firstNonInt(x)==0 : false;
   // used to error if not passed type double but this needed extra is.double() calls in calling R code
@@ -32,9 +43,13 @@ SEXP isRealReallyIntR(SEXP x) {
   return ScalarLogical(isRealReallyInt(x));
 }
 
-SEXP isReallyReal(SEXP x) {
-  return ScalarInteger(isReal(x) ? firstNonInt(x) : 0);
-  // return the 1-based location of first element which is really real (i.e. not an integer) otherwise 0 (false)
+// return the 1-based location of first element which is really real (i.e. not an integer) otherwise 0 (false)
+SEXP isReallyReal(SEXP x, SEXP i64) {
+  if (LOGICAL(i64)[0]) {
+    return ScalarInteger(isReal(x) ? firstNonInt64(x) : 0);
+  } else {
+    return ScalarInteger(isReal(x) ? firstNonInt(x) : 0);
+  }
 }
 
 bool allNA(SEXP x, bool errorForBadType) {
