@@ -110,7 +110,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
           # common case of ad hoc user-typed integers missing L postfix joining to correct integer keys
           # we've always coerced to int and returned int, for convenience.
           for (b in which(x_merge_types[ic_idx] == "double")) {
-            xb = xcols[b] 
+            xb = xcols[b]
             if (isReallyReal(x[[xb]])) {
               coerce_x = TRUE
               break
@@ -145,7 +145,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
           set(x, j=xb, value=as.double(x[[xb]]))
         }
       }
-    }  
+    }
   }
   }
 
