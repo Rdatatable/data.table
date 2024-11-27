@@ -7358,7 +7358,7 @@ x = runif(2)
 test(1514.6, isRealReallyInt32(x), FALSE)
 x = numeric()
 test(1514.7, isRealReallyInt32(x), TRUE)
-test(1514.8, isRealReallyInt32(9L), TRUE)
+test(1514.8, isRealReallyInt32(9L), FALSE) # b/c not double input
 
 # #1091
 options(datatable.prettyprint.char = 5L)
@@ -15137,9 +15137,9 @@ if (test_bit64) {
                 output = "Coercing integer column x.int to type integer64 to match type of i.int64")
   test(2044.67, dt1[dt2, ..cols, on="doubleInt==int64", nomatch=0L, verbose=TRUE],
                 ans,
-                output = "Coercing double column x.doubleInt (which contains no fractions) to type integer64 to match type of i.int64")
+                output = "Coercing double column x.doubleInt (which has integer64 representation, e.g. no fractions) to type integer64 to match type of i.int64")
   test(2044.68, dt1[dt2, ..cols, on="realDouble==int64", nomatch=0L, verbose=TRUE],
-                error="Incompatible join types: i.int64 is type integer64 but x.realDouble is type double and contains fractions")
+                error="Incompatible join types: i.int64 is type integer64 but x.realDouble is type double and cannot be coerced to integer64")
   # int64 in x
   test(2044.69, dt1[dt2, ..cols, on="int64==int", nomatch=0L, verbose=TRUE],
                 ans<-data.table(x.int=1:5, x.doubleInt=as.double(1:5), x.realDouble=c(0.5,1.0,1.5,2.0,2.5), x.int64=as.integer64(1:5),
@@ -15147,9 +15147,9 @@ if (test_bit64) {
                 output = "Coercing integer column i.int to type integer64 to match type of x.int64")
   test(2044.70, dt1[dt2, ..cols, on="int64==doubleInt", nomatch=0L, verbose=TRUE],
                 ans,
-                output = "Coercing double column i.doubleInt (which contains no fractions) to type integer64 to match type of x.int64")
+                output = "Coercing double column i.doubleInt (which has integer64 representation, e.g. no fractions) to type integer64 to match type of x.int64")
   test(2044.71, dt1[dt2, ..cols, on="int64==realDouble", nomatch=0L, verbose=TRUE],
-                error="Incompatible join types: x.int64 is type integer64 but i.realDouble is type double and contains fractions")
+                error="Incompatible join types: x.int64 is type integer64 but i.realDouble is type double and cannot be coerced to integer64")
 }
 # coercion of all-NA
 dt1 = data.table(a=1,  b=NA_character_)
