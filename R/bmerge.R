@@ -104,7 +104,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
       } else stopf("Incompatible join types: %s is type integer64 but %s is type double and contains fractions", nm[2L], nm[1L])
     } else {
       # just integer and double left
-      ic_idx = which(ic == icols)
+      ic_idx = which(ic == icols) # check if on is joined on multiple conditions
       if (i_merge_type=="double") {
         coerce_x = FALSE
         if (!isReallyReal(i[[ic]])) {
@@ -113,7 +113,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
           # we've always coerced to int and returned int, for convenience.
           if (length(ic_idx)>1L) {
             xc_idx = xcols[ic_idx]
-            for (xb in xcols[which(vapply_1c(x[0L, xc_idx, with=FALSE], getClass) == "double")]) {
+            for (xb in xc_idx[which(vapply_1c(x[0L, xc_idx, with=FALSE], getClass) == "double")]) {
               if (isReallyReal(x[[xb]])) {
                 coerce_x = FALSE
                 break
@@ -127,7 +127,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
             set(callersi, j=ic, value=val)       # change the shallow copy of i up in [.data.table to reflect in the result, too.
             if (length(ic_idx)>1L) {
               xc_idx = xcols[ic_idx]
-              for (xb in xcols[which(vapply_1c(x[0L, xc_idx, with=FALSE], getClass) == "double")]) {
+              for (xb in xc_idx[which(vapply_1c(x[0L, xc_idx, with=FALSE], getClass) == "double")]) {
                 if (verbose) catf("Coercing double column %s (which contains no fractions) to type integer to match type of %s.\n", paste0("x.", names(x)[xb]), xname)
                 set(x, j=xb, value=cast_with_atts(x[[xb]], as.integer))
               }
@@ -144,7 +144,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
         set(i, j=ic, value=val)
         if (length(ic_idx)>1L) {
           xc_idx = xcols[ic_idx]
-          for (xb in xcols[which(vapply_1c(x[0L, xc_idx, with=FALSE], getClass) == "integer")]) {
+          for (xb in xc_idx[which(vapply_1c(x[0L, xc_idx, with=FALSE], getClass) == "integer")]) {
             if (verbose) catf("Coercing integer column %s to type double for join to match type of %s.\n", paste0("x.", names(x)[xb]), xname)
             set(x, j=xb, value=cast_with_atts(x[[xb]], as.double))
           }
