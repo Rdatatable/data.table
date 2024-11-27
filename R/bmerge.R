@@ -107,7 +107,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
       } else stopf("Incompatible join types: %s is type integer64 but %s is type double and contains fractions", nm[2L], nm[1L])
     } else {
       # just integer and double left
-      ic_idx = which(icol == icols) # check if on is joined on multiple conditions
+      ic_idx = which(icol == icols) # check if on is joined on multiple conditions, #6602
       if (i_merge_type=="double") {
         coerce_x = FALSE
         if (!isReallyReal(i[[icol]])) {
