@@ -88,7 +88,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
         set(i, j=ic, value=match.fun(paste0("as.", x_merge_type))(i[[ic]]))
         next
       }
-      else if (anyNA(x[[xc]]) && allNA(x[[xc]])) {
+      if (anyNA(x[[xc]]) && allNA(x[[xc]])) {
         if (verbose) catf("Coercing all-NA %s (%s) to type %s to match type of %s.\n", xname, x_merge_type, i_merge_type, iname)
         set(x, j=xc, value=match.fun(paste0("as.", i_merge_type))(x[[xc]]))
         next
@@ -115,7 +115,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
             xc_idx = xcols[ic_idx]
             for (b in which(vapply_1c(x[0L, ..xc_idx], getClass) == "double")) {
               xb = xcols[b]
-              if (!isReallyReal(x[[xb]])) {
+              if (isReallyReal(x[[xb]])) {
                 coerce_x = FALSE
                 break
               }
