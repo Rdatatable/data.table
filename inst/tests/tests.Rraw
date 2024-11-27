@@ -12226,10 +12226,11 @@ DT1 = data.table(RANDOM_STRING = rand_strings(n),
                  DATE = sample(seq(as.Date('2016-01-01'), as.Date('2016-12-31'), by="day"), n, replace=TRUE))
 DT2 = data.table(RANDOM_STRING = rand_strings(n),
                  START_DATE = sample(seq(as.Date('2015-01-01'), as.Date('2017-12-31'), by="day"), n, replace=TRUE))
+as.intDate = function(x) .Date(as.integer(as.Date(x)))
 DT2[, EXPIRY_DATE := START_DATE + floor(runif(1000, 200,300))]
-DT1[, DT1_ID := .I][, DATE := as.Date(DATE)]
+DT1[, DT1_ID := .I][, DATE := as.intDate(DATE)]
 cols = c("START_DATE", "EXPIRY_DATE")
-DT2[, DT2_ID := .I][, (cols) := lapply(.SD, as.Date), .SDcols=cols]
+DT2[, DT2_ID := .I][, (cols) := lapply(.SD, as.intDate), .SDcols=cols]
 ans1 = DT2[DT1, on=.(RANDOM_STRING, START_DATE <= DATE, EXPIRY_DATE >= DATE), .N, by=.EACHI ]$N > 0L
 tmp  = DT1[DT2, on=.(RANDOM_STRING, DATE >= START_DATE, DATE <= EXPIRY_DATE), which=TRUE, nomatch=0L]
 ans2 = DT1[, DT1_ID %in% tmp]

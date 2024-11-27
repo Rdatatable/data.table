@@ -113,7 +113,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
           # we've always coerced to int and returned int, for convenience.
           if (length(ic_idx)>1L) {
             xc_idx = xcols[ic_idx]
-            for (b in which(vapply_1c(x[0L, ..xc_idx], getClass) == "double")) {
+            for (b in which(vapply_1c(x[0L, xc_idx, with=FALSE], getClass) == "double")) {
               xb = xcols[b]
               if (isReallyReal(x[[xb]])) {
                 coerce_x = FALSE
@@ -128,7 +128,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
             set(callersi, j=ic, value=val)       # change the shallow copy of i up in [.data.table to reflect in the result, too.
             if (length(ic_idx)>1L) {
               xc_idx = xcols[ic_idx]
-              for (b in which(vapply_1c(x[0L, ..xc_idx], getClass) == "double")) {
+              for (b in which(vapply_1c(x[0L, xc_idx, with=FALSE], getClass) == "double")) {
                 xb = xcols[b]
                 if (verbose) catf("Coercing double column %s (which contains no fractions) to type integer to match type of %s.\n", paste0("x.", names(x)[xb]), xname)
                 set(x, j=xb, value=cast_with_atts(x[[xb]], as.integer))
@@ -146,7 +146,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
         set(i, j=ic, value=val)
         if (length(ic_idx)>1L) {
           xc_idx = xcols[ic_idx]
-          for (b in which(vapply_1c(x[0L, ..xc_idx], getClass) == "integer")) {
+          for (b in which(vapply_1c(x[0L, xc_idx, with=FALSE], getClass) == "integer")) {
             xb = xcols[b]
             if (verbose) catf("Coercing integer column %s to type double for join to match type of %s.\n", paste0("x.", names(x)[xb]), xname)
             set(x, j=xb, value=cast_with_atts(x[[xb]], as.double))
