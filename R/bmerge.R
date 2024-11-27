@@ -41,7 +41,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
   }
 
   coerce_col = function(dt, col, from_type, to_type, from_name, to_name, verbose_msg) {
-    if (verbose) catf(verbose_msg, from_type, from_name, to_type, to_name)
+    if (verbose) catf(verbose_msg, from_type, from_name, to_type, to_name, domain=NULL)
     set(dt, j=col, value=cast_with_atts(dt[[col]], match.fun(paste0("as.", to_type))))
   }
 
@@ -87,7 +87,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     }
     cfl = c("character", "logical", "factor")
     if (x_merge_type %chin% cfl || i_merge_type %chin% cfl) {
-      msg = "Coercing all-NA %s column %s to type %s to match type of %s.\n"
+      msg = gettext("Coercing all-NA %s column %s to type %s to match type of %s.\n")
       if (anyNA(i[[ic]]) && allNA(i[[ic]])) {
         coerce_col(i, ic, i_merge_type, x_merge_type, iname, xname, msg)
         next
@@ -124,7 +124,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
             }
           }
           if (coerce_x) {
-            msg = "Coercing %s column %s (which contains no fractions) to type %s to match type of %s.\n"
+            msg = gettext("Coercing %s column %s (which contains no fractions) to type %s to match type of %s.\n")
             coerce_col(i, ic, "double", "integer", iname, xname, msg)
             set(callersi, j=ic, value=i[[ic]])       # change the shallow copy of i up in [.data.table to reflect in the result, too.
             if (length(ic_idx)>1L) {
@@ -136,11 +136,11 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
           }
         }
         if (!coerce_x) {
-          msg = "Coercing %s column %s to type %s to match type of %s which contains fractions.\n"
+          msg = gettext("Coercing %s column %s to type %s to match type of %s which contains fractions.\n")
           coerce_col(x, xc, "integer", "double", xname, iname, msg)
         }
       } else {
-        msg = "Coercing %s column %s to type %s for join to match type of %s.\n"
+        msg = gettext("Coercing %s column %s to type %s for join to match type of %s.\n")
         coerce_col(i, ic, "integer", "double", iname, xname, msg)
         if (length(ic_idx)>1L) {
           xc_idx = xcols[ic_idx]
