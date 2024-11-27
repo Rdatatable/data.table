@@ -34,6 +34,12 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     ans
   }
 
+  cast_with_atts = function(x, f) {
+    ans = f(x)
+    if (!is.null(attributes(x))) attributes(ans) = attributes(x)
+    ans
+  }
+
   if (nrow(i)) for (a in seq_along(icols)) {
     # - check that join columns have compatible types
     # - do type coercions if necessary on just the shallow local copies for the purpose of join
@@ -117,18 +123,15 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
           }
           if (coerce_x) {
             if (verbose) catf("Coercing double column %s (which contains no fractions) to type integer to match type of %s.\n", iname, xname)
-            val = as.integer(i[[ic]])
-            if (!is.null(attributes(i[[ic]]))) attributes(val) = attributes(i[[ic]])  # to retain Date for example; 3679
+            val = cast_with_atts(i[[ic]], as.integer)  # to retain Date for example; 3679
             set(i, j=ic, value=val)
             set(callersi, j=ic, value=val)       # change the shallow copy of i up in [.data.table to reflect in the result, too.
             if (length(ic_idx)>1L) {
               xc_idx = xcols[ic_idx]
               for (b in which(vapply_1c(x[0L, ..xc_idx], getClass) == "double")) {
                 xb = xcols[b]
-                val = as.integer(x[[xb]])
-                if (!is.null(attributes(x[[xb]]))) attributes(val) = attributes(x[[xb]])
                 if (verbose) catf("Coercing double column %s (which contains no fractions) to type integer to match type of %s.\n", paste0("x.", names(x)[xb]), xname)
-                set(x, j=xb, value=val)
+                set(x, j=xb, value=cast_with_atts(x[[xb]], as.integer))
               }
             }
           }
@@ -139,17 +142,14 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
         }
       } else {
         if (verbose) catf("Coercing integer column %s to type double for join to match type of %s.\n", iname, xname)
-        val = as.double(i[[ic]])
-        if (!is.null(attributes(i[[ic]]))) attributes(val) = attributes(i[[ic]])  # to retain Date for example; 3679
+        val = cast_with_atts(i[[ic]], as.double)
         set(i, j=ic, value=val)
         if (length(ic_idx)>1L) {
           xc_idx = xcols[ic_idx]
           for (b in which(vapply_1c(x[0L, ..xc_idx], getClass) == "integer")) {
             xb = xcols[b]
-            val = as.double(x[[xb]])
-            if (!is.null(attributes(x[[xb]]))) attributes(val) = attributes(x[[xb]])
             if (verbose) catf("Coercing integer column %s to type double for join to match type of %s.\n", paste0("x.", names(x)[xb]), xname)
-            set(x, j=xb, value=val)
+            set(x, j=xb, value=cast_with_atts(x[[xb]], as.double))
           }
         }
       }
