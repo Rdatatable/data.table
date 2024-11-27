@@ -40,6 +40,11 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     ans
   }
 
+  coerce_col = function(dt, col, from_type, to_type, from_name, to_name, verbose_msg) {
+    if (verbose) catf(verbose_msg, from_type, from_name, to_type, to_name)
+    set(dt, j=col, value=cast_with_atts(dt[[col]], match.fun(paste0("as.", to_type))))
+  }
+
   if (nrow(i)) for (a in seq_along(icols)) {
     # - check that join columns have compatible types
     # - do type coercions if necessary on just the shallow local copies for the purpose of join
@@ -120,30 +125,28 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
             }
           }
           if (coerce_x) {
-            if (verbose) catf("Coercing double column %s (which contains no fractions) to type integer to match type of %s.\n", iname, xname)
-            set(i, j=ic, value=val<-cast_with_atts(i[[ic]], as.integer)) # to retain Date for example; 3679
-            set(callersi, j=ic, value=val)       # change the shallow copy of i up in [.data.table to reflect in the result, too.
+            msg = "Coercing %s column %s (which contains no fractions) to type %s to match type of %s.\n"
+            coerce_col(i, ic, "double", "integer", iname, xname, msg)
+            set(callersi, j=ic, value=i[[ic]])       # change the shallow copy of i up in [.data.table to reflect in the result, too.
             if (length(ic_idx)>1L) {
               xc_idx = xcols[ic_idx]
               for (xb in xc_idx[which(vapply_1c(x[0L, xc_idx, with=FALSE], getClass) == "double")]) {
-                if (verbose) catf("Coercing double column %s (which contains no fractions) to type integer to match type of %s.\n", paste0("x.", names(x)[xb]), xname)
-                set(x, j=xb, value=cast_with_atts(x[[xb]], as.integer))
+                coerce_col(x, xb, "double", "integer", paste0("x.", names(x)[xb]), xname, msg)
               }
             }
           }
         }
         if (!coerce_x) {
-          if (verbose) catf("Coercing integer column %s to type double to match type of %s which contains fractions.\n", xname, iname)
-          set(x, j=xc, value=as.double(x[[xc]]))
+          msg = "Coercing %s column %s to type %s to match type of %s which contains fractions.\n"
+          coerce_col(x, xc, "integer", "double", xname, iname, msg)
         }
       } else {
-        if (verbose) catf("Coercing integer column %s to type double for join to match type of %s.\n", iname, xname)
-        set(i, j=ic, value=cast_with_atts(i[[ic]], as.double))
+        msg = "Coercing %s column %s to type %s for join to match type of %s.\n"
+        coerce_col(i, ic, "integer", "double", iname, xname, msg)
         if (length(ic_idx)>1L) {
           xc_idx = xcols[ic_idx]
           for (xb in xc_idx[which(vapply_1c(x[0L, xc_idx, with=FALSE], getClass) == "integer")]) {
-            if (verbose) catf("Coercing integer column %s to type double for join to match type of %s.\n", paste0("x.", names(x)[xb]), xname)
-            set(x, j=xb, value=cast_with_atts(x[[xb]], as.double))
+            coerce_col(x, xb, "integer", "double", paste0("x.", names(x)[xb]), xname, msg)
           }
         }
       }
