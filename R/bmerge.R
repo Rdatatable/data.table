@@ -80,9 +80,8 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
       if (verbose) catf("%s has same type (%s) as %s. No coercion needed.\n", iname, x_merge_type, xname)
       next
     }
-    if (x_merge_type=="character" || i_merge_type=="character" ||
-        x_merge_type=="logical" || i_merge_type=="logical" ||
-        x_merge_type=="factor" || i_merge_type=="factor") {
+    cfl = c("character", "logical", "factor")
+    if (x_merge_type %chin% cfl || i_merge_type %chin% cfl) {
       if (anyNA(i[[ic]]) && allNA(i[[ic]])) {
         if (verbose) catf("Coercing all-NA %s (%s) to type %s to match type of %s.\n", iname, i_merge_type, x_merge_type, xname)
         set(i, j=ic, value=match.fun(paste0("as.", x_merge_type))(i[[ic]]))
@@ -122,8 +121,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
           }
           if (coerce_x) {
             if (verbose) catf("Coercing double column %s (which contains no fractions) to type integer to match type of %s.\n", iname, xname)
-            val = cast_with_atts(i[[ic]], as.integer)  # to retain Date for example; 3679
-            set(i, j=ic, value=val)
+            set(i, j=ic, value=val<-cast_with_atts(i[[ic]], as.integer)) # to retain Date for example; 3679
             set(callersi, j=ic, value=val)       # change the shallow copy of i up in [.data.table to reflect in the result, too.
             if (length(ic_idx)>1L) {
               xc_idx = xcols[ic_idx]
@@ -140,8 +138,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
         }
       } else {
         if (verbose) catf("Coercing integer column %s to type double for join to match type of %s.\n", iname, xname)
-        val = cast_with_atts(i[[ic]], as.double)
-        set(i, j=ic, value=val)
+        set(i, j=ic, value=cast_with_atts(i[[ic]], as.double))
         if (length(ic_idx)>1L) {
           xc_idx = xcols[ic_idx]
           for (xb in xc_idx[which(vapply_1c(x[0L, xc_idx, with=FALSE], getClass) == "integer")]) {
