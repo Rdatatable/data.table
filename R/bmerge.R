@@ -87,14 +87,13 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     }
     cfl = c("character", "logical", "factor")
     if (x_merge_type %chin% cfl || i_merge_type %chin% cfl) {
+      msg = "Coercing all-NA %s column %s to type %s to match type of %s.\n"
       if (anyNA(i[[ic]]) && allNA(i[[ic]])) {
-        if (verbose) catf("Coercing all-NA %s (%s) to type %s to match type of %s.\n", iname, i_merge_type, x_merge_type, xname)
-        set(i, j=ic, value=match.fun(paste0("as.", x_merge_type))(i[[ic]]))
+        coerce_col(i, ic, i_merge_type, x_merge_type, iname, xname, msg)
         next
       }
       if (anyNA(x[[xc]]) && allNA(x[[xc]])) {
-        if (verbose) catf("Coercing all-NA %s (%s) to type %s to match type of %s.\n", xname, x_merge_type, i_merge_type, iname)
-        set(x, j=xc, value=match.fun(paste0("as.", i_merge_type))(x[[xc]]))
+        coerce_col(x, xc, x_merge_type, i_merge_type, xname, iname, msg)
         next
       }
       stopf("Incompatible join types: %s (%s) and %s (%s)", xname, x_merge_type, iname, i_merge_type)
