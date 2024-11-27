@@ -25,7 +25,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
 
   supported = c(ORDERING_TYPES, "factor", "integer64")
 
-  getClass = function(x) {
+  mergeType = function(x) {
     ans = typeof(x)
     if      (ans=="integer") { if (is.factor(x))             ans = "factor"    }
     else if (ans=="double")  { if (inherits(x, "integer64")) ans = "integer64" }
@@ -52,8 +52,8 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     # Note that if i is keyed, if this coerces i's key gets dropped by set()
     ic = icols[a]
     xc = xcols[a]
-    x_merge_type = getClass(x[[xc]])
-    i_merge_type = getClass(i[[ic]])
+    x_merge_type = mergeType(x[[xc]])
+    i_merge_type = mergeType(i[[ic]])
     xname = paste0("x.", names(x)[xc])
     iname = paste0("i.", names(i)[ic])
     if (!x_merge_type %chin% supported) stopf("%s is type %s which is not supported by data.table join", xname, x_merge_type)
@@ -116,7 +116,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
           # we've always coerced to int and returned int, for convenience.
           if (length(ic_idx)>1L) {
             xc_idx = xcols[ic_idx]
-            for (xb in xc_idx[which(vapply_1c(x[0L, xc_idx, with=FALSE], getClass) == "double")]) {
+            for (xb in xc_idx[which(vapply_1c(x[0L, xc_idx, with=FALSE], mergeType) == "double")]) {
               if (isReallyReal(x[[xb]])) {
                 coerce_x = FALSE
                 break
@@ -129,7 +129,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
             set(callersi, j=ic, value=i[[ic]])       # change the shallow copy of i up in [.data.table to reflect in the result, too.
             if (length(ic_idx)>1L) {
               xc_idx = xcols[ic_idx]
-              for (xb in xc_idx[which(vapply_1c(x[0L, xc_idx, with=FALSE], getClass) == "double")]) {
+              for (xb in xc_idx[which(vapply_1c(x[0L, xc_idx, with=FALSE], mergeType) == "double")]) {
                 coerce_col(x, xb, "double", "integer", paste0("x.", names(x)[xb]), xname, msg)
               }
             }
@@ -144,7 +144,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
         coerce_col(i, ic, "integer", "double", iname, xname, msg)
         if (length(ic_idx)>1L) {
           xc_idx = xcols[ic_idx]
-          for (xb in xc_idx[which(vapply_1c(x[0L, xc_idx, with=FALSE], getClass) == "integer")]) {
+          for (xb in xc_idx[which(vapply_1c(x[0L, xc_idx, with=FALSE], mergeType) == "integer")]) {
             coerce_col(x, xb, "integer", "double", paste0("x.", names(x)[xb]), xname, msg)
           }
         }
