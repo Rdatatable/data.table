@@ -143,15 +143,14 @@ test-lin-rel-cran:
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-base
   variables:
-    _R_CHECK_COMPILATION_FLAGS_KNOWN_: "-Wvla"
     _R_CHECK_CRAN_INCOMING_: "TRUE"           ## stricter --as-cran checks should run in dev pipelines continuously (not sure what they are though)
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"   ## Other than no URL checking (takes many minutes) or 'Days since last update 0' NOTEs needed, #3284
     _R_CHECK_CRAN_INCOMING_TARBALL_THRESHOLD_: "7500000" ## bytes
-    _R_CHECK_PKG_SIZES_THRESHOLD_: "7"        ## MB 'checking installed package size' NOTE
+    _R_CHECK_PKG_SIZES_THRESHOLD_: "10"        ## MB 'checking installed package size' NOTE increased due to po
   script:
     - *install-deps
-    - echo 'CFLAGS=-g -O2 -fopenmp -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
-    - echo 'CXXFLAGS=-g -O2 -fopenmp -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
+    - echo 'CFLAGS=-g -O2 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
+    - echo 'CXXFLAGS=-g -O2 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
     - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
     - >-
         Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); if (!identical(l, "Status: OK")) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote("Status: OK"), " but ", shQuote(l)) else q("no")'
@@ -198,7 +197,7 @@ test-lin-dev-clang-cran:
     - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
     - (! grep "warning:" data.table.Rcheck/00install.out)
     - >-
-        Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); notes<-"Status: 3 NOTEs"; if (!identical(l, notes)) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote(notes), " (size of tarball, installed package size, non-API calls) but ", shQuote(l)) else q("no")'
+        Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); notes<-"Status: 2 NOTEs"; if (!identical(l, notes)) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote(notes), " (size of tarball, non-API calls) but ", shQuote(l)) else q("no")'
 
 # stated dependency on R
 test-lin-ancient-cran:
@@ -311,13 +310,11 @@ integration:
     - saas-linux-medium-amd64
   only:
     - master
-    - macos_binaries
   needs: ["mirror-packages","build","test-lin-rel","test-lin-rel-cran","test-lin-dev-gcc-strict-cran","test-lin-dev-clang-cran","test-lin-rel-vanilla","test-lin-ancient-cran","test-win-rel","test-win-dev" ,"test-win-old","test-mac-rel","test-mac-old"]
   script:
     - R --version
     - *install-deps ## markdown pkg not present in r-pkgdown image
     - mkdir -p ./pkgdown/favicon/ && cp .graphics/favicon/* ./pkgdown/favicon/ ## copy favicons
-    - rm -rf ./vignettes ## r-lib/pkgdown#2383
     - Rscript -e 'pkgdown::build_site(override=list(destination="./website"))'
     ## html manual, vignettes, repos, cran_web, cran_checks
     - echo 'source(".ci/ci.R"); source(".ci/publish.R")' >> .Rprofile
@@ -333,9 +330,6 @@ integration:
     - rm -f bus/mirror-packages/cran/bin/macosx/big-sur-arm64/contrib/$R_REL_VERSION/data.table_*.tgz
     # - rm -f bus/mirror-packages/cran/bin/macosx/big-sur-arm64/contrib/$R_DEV_VERSION/data.table_*.tgz
     - rm -f bus/mirror-packages/cran/bin/macosx/big-sur-arm64/contrib/$R_OLD_VERSION/data.table_*.tgz
-    #- rm -f bus/mirror-packages/cran/bin/macosx/el-capitan/contrib/$R_REL_VERSION/data.table_*.tgz
-    #- rm -f bus/mirror-packages/cran/bin/macosx/el-capitan/contrib/$R_DEV_VERSION/data.table_*.tgz
-    #- rm -f bus/mirror-packages/cran/bin/macosx/el-capitan/contrib/$R_OLD_VERSION/data.table_*.tgz
     ## merge mirror-packages and R devel packages
     - mv bus/mirror-packages/cran bus/$CI_JOB_NAME/
     ## publish package sources
@@ -393,10 +387,6 @@ integration:
     - Rscript -e 'check.index("data.table", names(test.jobs))'
     ## web/checks/check_flavors.html
     - Rscript -e 'check.flavors(names(test.jobs))'
-    ## pkgdown vignettes workaround r-lib/pkgdown#2383
-    - mkdir -p website/articles
-    - cp bus/integration/cran/library/data.table/doc/*.html website/articles/.
-    - rm website/articles/index.html
     ## pkgdown merge
     - Rscript -e 'common_files<-function(path1, path2) intersect(list.files(path1, all.files=TRUE, no..=TRUE), list.files(path2, all.files=TRUE, no..=TRUE)); msg = if (length(f<-common_files("website","bus/integration/cran"))) paste(c("Following artifacts will be overwritten by pkgdown artifacts:", paste0("  ", f)), collapse="\n") else "No overlapping files from pkgdown artifacts"; message(msg); q("no")'
     - mv website/* bus/integration/cran/

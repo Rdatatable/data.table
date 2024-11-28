@@ -5,7 +5,7 @@ type_size = function(DT) {
   # for speed and ram efficiency, a lower bound by not descending into character string lengths or list items
   # if a more accurate and higher estimate is needed then user can pass object.size or alternative to mb=
   # in case number of columns is very large (e.g. 1e6 columns) then we use a for() to avoid allocation of sapply()
-  ans = 0L
+  ans = 0.0
   lookup = c("raw"=1L, "integer"=4L, "double"=8L, "complex"=16L)
   for (i in seq_along(DT)) {
     col = DT[[i]]

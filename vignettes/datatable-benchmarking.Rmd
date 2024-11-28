@@ -6,8 +6,6 @@ output:
     options:
       toc: true
       number_sections: true
-    meta:
-      css: [default, css/toc.css]
 vignette: >
   %\VignetteIndexEntry{Benchmarking data.table}
   %\VignetteEngine{knitr::knitr}
@@ -18,7 +16,18 @@ vignette: >
 h2 {
     font-size: 20px;
 }
+
+#TOC {
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding-left: 1em;
+  background: #f6f6f6;
+}
 </style>
+
+Translations of this document are available in
+
+* [French](https://rdatatable.gitlab.io/data.table/articles/fr/datatable-benchmarking.html)
 
 This document is meant to guide on measuring performance of `data.table`. Single place to document best practices and traps to avoid.
 
