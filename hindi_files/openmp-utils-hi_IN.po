@@ -42,12 +42,12 @@ msgstr ""
 #: openmp-utils.c:84
 #, c-format
 msgid "  OpenMP version (_OPENMP)       %d\n"
-msgstr "  OpenMP संस्करण (_OPENMP)     %d\n"
+msgstr "  OpenMP वर्जन (version) (_OPENMP)     %d\n"
 
 #: openmp-utils.c:100
 #, c-format
 msgid "  data.table is using %d threads with throttle==%d. See ?setDTthreads.\n"
-msgstr "  data.table %d थ्रेड्स का उपयोग कर रहा है जिसमें throttle==%d है। अधिक जानकारी के लिए ?setDTthreads देखें।\n"
+msgstr "  data.table %d थ्रेड्स (threads) का उपयोग कर रहा है जिसमें throttle==%d है। अधिक जानकारी के लिए ?setDTthreads देखें।\n"
 
 #: openmp-utils.c:108
 msgid ""
@@ -59,8 +59,8 @@ msgstr ""
 
 #: openmp-utils.c:114
 msgid "'throttle' must be a single number, non-NA, and >=1"
-msgstr "'throttle' एक एकल संख्या, non-NA, और >=1 होना चाहिए।"
+msgstr "'throttle' एक सिंगल (single) संख्या, non-NA, और >=1 होना चाहिए।"
 
 #: openmp-utils.c:128
 msgid "threads= must be either NULL or a single number >= 0. See ?setDTthreads."
-msgstr "threads= या तो NULL होना चाहिए या एक एकल संख्या >= 0। अधिक जानकारी के लिए ?setDTthreads देखें।"
+msgstr "threads= या तो NULL होना चाहिए या एक सिंगल (single) संख्या >= 0। अधिक जानकारी के लिए ?setDTthreads देखें।"
