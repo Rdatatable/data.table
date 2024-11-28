@@ -15,7 +15,7 @@ msgid ""
 "as.data.table.array method should only be called for arrays with 3+ "
 "dimensions; use the matrix method for 2-dimensional arrays"
 msgstr ""
-"as.data.table.array विधि केवल 3+ आयामों वाले एरे (array) के लिए ही कॉल की जानी चाहिए; "
+"as.data.table.array विधि केवल 3+ आयामों वाले एरे (array) के लिए ही कॉल (call) की जानी चाहिए; "
 "2-आयामी एरे (array) के लिए मैट्रिक्स (matrix) विधि का उपयोग करें"
 
 #: as.data.table.R:88
@@ -23,15 +23,15 @@ msgid ""
 "Argument 'value.name' must be scalar character, non-NA and at least one "
 "character"
 msgstr ""
-"तर्क 'value.name' स्केलर (scalar) कैरेक्टर (character) होना चाहिए, non-NA और कम से कम एक कैरेक्टर (character) होना चाहिए"
+"तर्क 'value.name' स्केलर (scalar) कैरेक्टर (character), non-NA और कम से कम एक कैरेक्टर (character) का होना चाहिए"
 
 #: as.data.table.R:90
 msgid "Argument 'sorted' must be scalar logical and non-NA"
-msgstr "तर्क 'sorted' स्केलर (scalar) लॉजिकल (logical) और non-NA होना चाहिए"
+msgstr "आर्गुमेंट (argument) 'sorted' स्केलर (scalar) लॉजिकल (logical) और non-NA होना चाहिए"
 
 #: as.data.table.R:92
 msgid "Argument 'na.rm' must be scalar logical and non-NA"
-msgstr "तर्क 'na.rm' स्केलर (scalar) लॉजिकल (logical) और non-NA होना चाहिए"
+msgstr "आर्गुमेंट (argument) 'na.rm' स्केलर (scalar) लॉजिकल (logical) और non-NA होना चाहिए"
 
 #: as.data.table.R:94
 msgid "Please provide either 'key' or 'sorted', but not both."
@@ -39,7 +39,7 @@ msgstr "कृपया 'key' या 'sorted' में से एक प्र�
 
 #: as.data.table.R:108
 msgid "Argument 'value.name' should not overlap with column names in result: %s"
-msgstr "तर्क 'value.name' परिणाम में कॉलम (column) नामों के साथ परस्पर नहीं होना चाहिए: %s"
+msgstr "तर्क 'value.name' परिणाम में कॉलम (column) नाम के साथ परस्पर नहीं होना चाहिए: %s"
 
 #: as.data.table.R:140
 msgid ""
@@ -51,7 +51,7 @@ msgstr ""
 
 #: as.data.table.R:181
 msgid "Item %d has %d rows but longest item has %d; recycled with remainder."
-msgstr "आइटम (item) %d में %d पंक्तियाँ हैं लेकिन सबसे लंबे आइटम (item) में %d है; शेष के साथ पुनः चक्रित किया गया।"
+msgstr "आइटम (item) %d में %d रोज़ (rows) हैं लेकिन सबसे लंबे आइटम (item) में %d है; शेष के साथ पुनः चक्रित किया गया।"
 
 #: as.data.table.R:196
 msgid "A column may not be called .SD. That has special meaning."
@@ -59,4 +59,4 @@ msgstr "कोई कॉलम (column) .SD नामित नहीं कि�
 
 #: as.data.table.R:210
 msgid "class must be length 1"
-msgstr "क्लास (class) की लेन्थ (length) 1 होनी चाहिए।"
+msgstr "क्लास (class) की लेन्थ (length) 1 होनी चाहिए"

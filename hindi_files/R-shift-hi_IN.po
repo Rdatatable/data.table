@@ -12,4 +12,4 @@ msgstr ""
 
 #: shift.R:3
 msgid "Provided argument fill=%s will be ignored since type='cyclic'."
-msgstr "दिया गया तर्क fill=%s को अनदेखा किया जाएगा क्योंकि type='cyclic' है।"
+msgstr "दिया गया आर्गुमेंट (argument) fill=%s अनदेखा किया जाएगा क्योंकि type='cyclic' है।"

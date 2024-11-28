@@ -15,7 +15,7 @@ msgid ""
 "x may no longer be the character name of the data.table. The possibility was "
 "undocumented and has been removed."
 msgstr ""
-"x अब data.table का नाम कैरेक्टर (character) नहीं हो सकता है।"
+"x अब data.table का कैरेक्टर (character) नाम नहीं हो सकता है।"
 "यह संभावना अप्रलेखित थी और हटा दी गई है।"
 
 #: setkey.R:23
@@ -42,7 +42,7 @@ msgid ""
 "the original data's order by group. Try setindex() instead. Or, set*(copy(."
 "SD)) as a (slow) last resort."
 msgstr ""
-".SD पर एक भौतिक कुंजी सेट (set) करना भविष्य के संभावित उपयोग के लिए आरक्षित है; समूह के अनुसार मूल डेटा (data) के आदेश को संशोधित करने के लिए।"
+".SD पर एक भौतिक कुंजी सेट (set) करना भविष्य के संभावित उपयोग के लिए आरक्षित है; समूह के अनुसार मूल डेटा (data) के क्रम को परिवर्तित करने के लिए।"
 "इसके बजाय setindex() का उपयोग करें।"
 "या, set*(copy(.SD)) को एक (धीमे) अंतिम उपाय के रूप में उपयोग करें।"
 
@@ -56,7 +56,7 @@ msgstr ""
 
 #: setkey.R:47
 msgid "cols is the empty string. Use NULL to remove the key."
-msgstr "cols खाली स्ट्रिंग है। कुंजी हटाने के लिए NULL का उपयोग करें।"
+msgstr "cols खाली स्ट्रिंग (string) है। कुंजी हटाने के लिए NULL का उपयोग करें।"
 
 #: setkey.R:48 setkey.R:262
 msgid "cols contains some blanks."
@@ -77,7 +77,7 @@ msgid ""
 "Column '%s' is type '%s' which is not supported as a key column type, "
 "currently."
 msgstr ""
-"कॉलम (column) '%s' का प्रकार '%s' है जो वर्तमान में कुंजी कॉलम (column) प्रकार के रूप में समर्थित नहीं है।"
+"कॉलम (column) '%s' का प्रकार '%s' है जो वर्तमान में मुख्य कॉलम (column) प्रकार के रूप में समर्थित नहीं है।"
 
 #: setkey.R:70
 msgid "forder took %.03f sec"
@@ -89,11 +89,11 @@ msgstr "reorder ने %s लिया"
 
 #: setkey.R:84
 msgid "x is already ordered by these columns, no need to call reorder"
-msgstr "x पहले से इन कोलम (columns) द्वारा क्रमबद्ध है, reorder कॉल (call) करने की आवश्यकता नहीं है।"
+msgstr "x पहले से इन कॉलम्स (columns) द्वारा क्रमबद्ध है, reorder कॉल (call) करने की आवश्यकता नहीं है"
 
 #: setkey.R:137
 msgid "x is vector but 'by' is supplied"
-msgstr "x एक वेक्टर (vector) है लेकिन 'by' प्रदान किया गया है।"
+msgstr "x एक वेक्टर (vector) है लेकिन 'by' प्रदान किया गया है"
 
 #: setkey.R:153
 msgid "x is a single vector, non-NULL 'by' doesn't make sense"
@@ -108,7 +108,7 @@ msgid ""
 "The first item passed to [f]order is a plain list but there are more items. "
 "It should be a data.table or data.frame."
 msgstr ""
-"पहला आइटम (item) जो [f]order को पास किया गया है वह एक साधारण (item) है लेकिन और भी आइटम (item) हैं।"
+"पहला आइटम (item) जो [f]order को पास किया गया है वह एक साधारण list है लेकिन और भी आइटम्स (items) हैं।"
 "यह एक data.table या data.frame होना चाहिए।"
 
 #: setkey.R:206
@@ -121,7 +121,7 @@ msgid ""
 "for double vectors so far. Using one thread."
 msgstr ""
 "इनपुट (input) डबल (double) प्रकार का वेक्टर (vector) नहीं है। अब तक नए समानांतर सॉर्ट (sort) केवल डबल (double) वेक्टर (vector) के लिए किया गया है।"
-"यह एक थ्रेड (thread) का उपयोग कर रहा है।"
+"एक थ्रेड (thread) का उपयोग किया जा रहा है।"
 
 #: setkey.R:215
 msgid ""
@@ -129,7 +129,7 @@ msgid ""
 "one thread."
 msgstr ""
 "अब तक decreasing=TRUE के लिए नया समानांतर सॉर्ट (sort) लागू नहीं किया गया है।"
-"यह एक थ्रेड (thread) का उपयोग कर रहा है।"
+"एक थ्रेड (thread) का उपयोग किया जा रहा है।"
 
 #: setkey.R:216
 msgid ""
@@ -137,7 +137,7 @@ msgid ""
 "so far. Using one thread."
 msgstr ""
 "नए समानांतर क्रम (sort) को अब तक NA मान वाले वेक्टर (vector) के लिए लागू नहीं किया गया है।"
-"यह एक थ्रेड (thread) का उपयोग कर रहा है।"
+"एक थ्रेड (thread) का उपयोग किया जा रहा है।"
 
 #: setkey.R:228 setkey.R:254
 msgid "x must be a data.frame or data.table"

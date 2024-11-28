@@ -12,19 +12,19 @@ msgstr ""
 
 #: merge.R:4
 msgid "Argument 'sort' should be logical TRUE/FALSE"
-msgstr "तर्क 'sort' लॉजिकल (logical) TRUE/FALSE होना चाहिए"
+msgstr "आर्गुमेंट (argument) 'sort' लॉजिकल (logical) TRUE/FALSE होना चाहिए"
 
 #: merge.R:6
 msgid "Argument 'no.dups' should be logical TRUE/FALSE"
-msgstr "तर्क 'no.dups' लॉजिकल (logical) TRUE/FALSE होना चाहिए"
+msgstr "आर्गुमेंट (argument) 'no.dups' लॉजिकल (logical) TRUE/FALSE होना चाहिए"
 
 #: merge.R:18
 msgid "Neither of the input data.tables to join have columns."
-msgstr "कोई भी प्रविष्टि data.tables, जिन्हें जोड़ा जाना है, में कॉलम (column) नहीं हैं।"
+msgstr "कोई भी इनपुट (input) data.tables, जिन्हें जोड़ा जाना है, में कॉलम (column) नहीं हैं।"
 
 #: merge.R:20 merge.R:22
 msgid "Input data.table '%s' has no columns."
-msgstr "प्रविष्टि data.table '%s' में कोई कॉलम (column) नहीं हैं।"
+msgstr "इनपुट (input) data.table '%s' में कोई कॉलम (column) नहीं हैं।"
 
 #: merge.R:32
 msgid "`by.x` and `by.y` must be of same length."
@@ -32,11 +32,11 @@ msgstr "`by.x` और `by.y` की लेंथ (length) समान होन
 
 #: merge.R:34
 msgid "Supplied both `by` and `by.x/by.y`. `by` argument will be ignored."
-msgstr "दोनों `by` और `by.x/by.y` प्रदान किए गए। `by` तर्क की अनदेखी की जाएगी।"
+msgstr "दोनों `by` और `by.x/by.y` प्रदान किए गए। `by` आर्गुमेंट (argument) की अनदेखी की जाएगी।"
 
 #: merge.R:37
 msgid "A non-empty vector of column names is required for `by.x` and `by.y`."
-msgstr "`by.x` और `by.y` के लिए एक गैर-खाली कॉलम (column) नामों का वेक्टर (vector) आवश्यक है।"
+msgstr "`by.x` और `by.y` के लिए एक गैर-खाली कॉलम (column) नाम का वेक्टर (vector) आवश्यक है।"
 
 #: merge.R:39
 msgid "Elements listed in `by.x` must be valid column names in x."
@@ -48,19 +48,19 @@ msgstr "`by.y` में सूचीबद्ध तत्वों को y �
 
 #: merge.R:52
 msgid "A non-empty vector of column names for `by` is required."
-msgstr "`by` के लिए एक गैर-खाली कॉलम (column) नामों का वेक्टर (vector) आवश्यक है।"
+msgstr "`by` के लिए एक गैर-खाली कॉलम (column) नाम का वेक्टर (vector) आवश्यक है।"
 
 #: merge.R:54
 msgid "Elements listed in `by` must be valid column names in x and y"
-msgstr "`by` में सूचीबद्ध तत्वों को x और y में मान्य कॉलम (column) नाम होना चाहिए।"
+msgstr "`by` में सूचीबद्ध तत्वों को x और y में मान्य कॉलम (column) नाम होना चाहिए"
 
 #: merge.R:62
 msgid "Unknown argument '%s' has been passed."
-msgstr "अज्ञात तर्क '%s' को पारित किया गया है।"
+msgstr "अज्ञात आर्गुमेंट (argument) '%s' को पारित किया गया है।"
 
 #: merge.R:65
 msgid "Passed %d unknown and unnamed arguments."
-msgstr "%d अज्ञात और अनाम तर्क पारित किए गए हैं।"
+msgstr "%d अज्ञात और अनाम आर्गुमेंट्स (arguments) पारित किए गए हैं।"
 
 #: merge.R:115
 msgid "column names %s are duplicated in the result"

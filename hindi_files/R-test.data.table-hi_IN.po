@@ -13,14 +13,14 @@ msgstr ""
 
 #: test.data.table.R:17
 msgid "data.table package is loaded. Unload or start a fresh R session."
-msgstr "data.table पैकेज (package) लोड है। इसे अनलोड करें या एक नई R सेशन शुरू करें।"
+msgstr "data.table पैकेज (package) लोडेड (loaded) है। इसे अनलोड (unload) करें या एक नई R सेशन (session) शुरू करें।"
 
 #: test.data.table.R:33
 msgid ""
 "script must end with '.Rraw'. If a file ending '.Rraw.bz2' exists, that will "
 "be found and used."
 msgstr ""
-"स्क्रिप्ट को '.Rraw' पर समाप्त होना चाहिए। यदि '.Rraw.bz2' से समाप्त होने वाली फ़ाइल मौजूद है,"
+"स्क्रिप्ट (script) को '.Rraw' पर समाप्त होना चाहिए। यदि '.Rraw.bz2' से समाप्त होने वाली फ़ाइल मौजूद है,"
 "वह पाई जाएगी और उपयोग की जाएगी।"
 
 #: test.data.table.R:63
@@ -33,7 +33,7 @@ msgstr "test.data.table() चल रहा है: %s"
 
 #: test.data.table.R:118
 msgid "object '%s' not found"
-msgstr "ऑब्जेक्ट (object) '%s' नहीं मिला।"
+msgstr "ऑब्जेक्ट (object) '%s' नहीं मिला"
 
 #: test.data.table.R:121
 msgid ""
@@ -42,7 +42,7 @@ msgid ""
 "**** warnings are produced. However, to test the text of each error/warning "
 "too, please restart R with LANGUAGE=en"
 msgstr ""
-"**** इस R सत्र की भाषा अंग्रेज़ी नहीं है। प्रत्येक परीक्षण अभी भी यह जाँच करेगा"
+"**** इस R सेशन (session) की भाषा अंग्रेज़ी नहीं है। प्रत्येक परीक्षण अभी भी यह जाँच करेगा"
 "कि त्रुटियों और/या\n"
 "**** चेतावनियों की सही संख्या उत्पन्न होती है। हालाँकि, प्रत्येक त्रुटि/चेतावनी के पाठ का परीक्षण करने के लिए"
 "कृपया LANGUAGE=en के साथ R को पुनः प्रारंभ करें।"
@@ -55,7 +55,7 @@ msgid ""
 "***"
 msgstr ""
 "***\n"
-"memtest=%d. सर्वश्रेष्ठ परिणामों के लिए यह एक नई R_GC_MEM_GROW=0 R सेशन में पहली कॉल होनी चाहिए।"
+"memtest=%d. सर्वश्रेष्ठ परिणामों के लिए यह एक नई R_GC_MEM_GROW=0 R सेशन (session) में पहली कॉल होनी चाहिए।"
 "यदि ऐसा नहीं है, तो अभी Ctrl-C दबाएँ।\n"
 "***"
 
@@ -72,7 +72,7 @@ msgstr "%d परीक्षणों को '%s' से मेल खाते
 
 #: test.data.table.R:201
 msgid "Running %d of %d tests matching '%s'"
-msgstr "'%s' से मेल खाते हुए %d में से %d परीक्षण चलाए जा रहे हैं।"
+msgstr "'%s' से मेल खाते हुए %d में से %d परीक्षण चलाए जा रहे हैं"
 
 #: test.data.table.R:245
 msgid "Failed in %s after test %s before the next test() call in %s"
