@@ -21,7 +21,7 @@
 }
 
 \examples{
-## Used in inheritence.
+## Used in inheritance.
 setClass('SuperDataTable', contains='data.table')
 
 ## Used in a slot

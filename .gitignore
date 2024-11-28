@@ -1,13 +1,19 @@
-# Source: https://github.com/github/gitignore/blob/master/R.gitignore
 # History files
 .RData
 .Rhistory
 .Rapp.history
+Rplots.pdf
 
 # Package build process
 *-Ex.R
 data.table_*.tar.gz
 data.table.Rcheck
+src/Makevars
+.Rprofile
+
+# Package install
+inst/cc
+config.log
 
 # Emacs IDE files
 .emacs.desktop
@@ -17,15 +23,36 @@ data.table.Rcheck
 .Rproj.user
 data.table.Rproj
 
+# zed editor
+.zed
+
 # produced vignettes
 vignettes/*.html
 vignettes/*.pdf
+vignettes/plots/figures
 
 # object and shared objects
 *.o
 *.so
+*.dll
 
+# temp files
 *~
 .DS_Store
 .idea
 *.sw[op]
+
+# common devel objects
+.Renviron
+lib
+library
+devwd
+dev.R
+*.csv
+*.csvy
+*.RDS
+*.diff
+*.patch
+
+# pkgdown
+docs

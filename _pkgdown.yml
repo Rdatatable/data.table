@@ -1,0 +1,71 @@
+url: https://rdatatable.gitlab.io/data.table
+
+template:
+  bootstrap: 5
+
+development:
+  version_tooltip: "Development version"
+
+home:
+  links:
+  - text: CRAN-like website
+    href: web/packages/data.table/index.html
+  - text: CRAN-like checks
+    href: web/checks/check_results_data.table.html
+  - text: Community blog
+    href: https://rdatatable-community.github.io/The-Raft/
+
+navbar:
+  structure:
+    left:  [home, introduction, articles, news, benchmarks, presentations, communityarticles, reference]
+    right: [github]
+  components:
+    home:
+      icon: fas fa-home fa-lg
+      href: index.html
+    introduction:
+      text: Introduction
+      href: articles/datatable-intro.html
+    articles:
+      text: Vignettes
+      menu:
+      - text: "Introduction to data.table"
+        href: articles/datatable-intro.html
+      - text: "Reference semantics"
+        href: articles/datatable-reference-semantics.html
+      - text: "Using .SD for Data Analysis"
+        href: articles/datatable-sd-usage.html
+      - text: "Keys and fast binary search based subset"
+        href: articles/datatable-keys-fast-subset.html
+      - text: "Joins in data.table"
+        href: articles/datatable-joins.html
+      - text: "Secondary indices and auto indexing"
+        href: articles/datatable-secondary-indices-and-auto-indexing.html
+      - text: "Efficient reshaping using data.table"
+        href: articles/datatable-reshape.html
+      - text: "Programming on data.table"
+        href: articles/datatable-programming.html
+      - text: "Frequently asked questions"
+        href: articles/datatable-faq.html
+      - text: "Importing data.table"
+        href: articles/datatable-importing.html
+      - text: "Benchmarking data.table"
+        href: articles/datatable-benchmarking.html
+    news:
+      text: News
+      href: news/index.html
+    benchmarks:
+      text: Benchmarks
+      href: https://duckdblabs.github.io/db-benchmark
+    presentations:
+      text: Presentations
+      href: https://github.com/Rdatatable/data.table/wiki/Presentations
+    communityarticles:
+      text: Articles
+      href: https://github.com/Rdatatable/data.table/wiki/Articles
+    reference:
+      text: Manual
+      href: reference/index.html
+    github:
+      icon: fab fa-github fa-lg
+      href: https://github.com/Rdatatable/data.table

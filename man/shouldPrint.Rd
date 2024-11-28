@@ -21,5 +21,7 @@
   \url{https://github.com/IRkernel/IRkernel/issues/127}\cr
   \url{https://github.com/Rdatatable/data.table/issues/933}\cr
 }
-
+\examples{
+# dummy example section to pass release check that all .Rd files have examples
+}
 
