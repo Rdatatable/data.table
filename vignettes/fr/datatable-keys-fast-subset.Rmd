@@ -1,10 +1,10 @@
 ---
-title: "Extraire des sous-ensemble avec les clés et la recherche binaire rapide"
+title: "Extraire des sous-ensembles avec les clés et la recherche binaire rapide"
 date: "`r Sys.Date()`"
 output:
   markdown::html_format
 vignette: >
-  %\VignetteIndexEntry{Extraire des sous-ensemble avec les clés et la recherche binaire rapide}
+  %\VignetteIndexEntry{Extraire des sous-ensembles avec les clés et la recherche binaire rapide}
   %\VignetteEngine{knitr::knitr}
   \usepackage[utf8]{inputenc}
 ---
