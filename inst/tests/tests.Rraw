@@ -20623,3 +20623,7 @@ x = data.table(a=1)
 y = data.table(c=1.5, d=1L)
 test(2297.21, y[x, on=.(c == a, d == a)], data.table(c=1, d=1))
 test(2297.22, y[x, on=.(d == a, c == a)], data.table(c=1, d=1))
+# non right join
+x = data.table(a=1, b=2L)
+y = data.table(c=1.5, d=1L)
+test(2297.31, y[x, on=.(c == a, d == a), nomatch=NULL], output="Empty data.table (0 rows and 3 cols): c,d,b")
