@@ -115,6 +115,8 @@ rowwiseDT(
 
 15. `DT[1, on=NULL]` now works for returning the first row, [#6579](https://github.com/Rdatatable/data.table/issues/6579). Thanks to @Kodiologist for the report and @tdhock for the PR.
 
+16. Joins on multiple columns, such as `x[y, on=c("x1==y1", "x2==y1")]`, could fail during type coercions if `x1` and `x2` had different but still compatible types, [#6602](https://github.com/Rdatatable/data.table/issues/6602). This was particularly unexpected when all columns `x1, x2, and y1` were of the same class e.g. `Date` but differed in their underlying types. Thanks to Benjamin Schwendinger for the report and the fix.
+
 ## NOTES
 
 1. Tests run again when some Suggests packages are missing, [#6411](https://github.com/Rdatatable/data.table/issues/6411). Thanks @aadler for the note and @MichaelChirico for the fix.
