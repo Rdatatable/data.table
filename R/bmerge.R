@@ -1,4 +1,25 @@
 
+
+mergeType = function(x) {
+  ans = typeof(x)
+  if      (ans=="integer") { if (is.factor(x))             ans = "factor"    }
+  else if (ans=="double")  { if (inherits(x, "integer64")) ans = "integer64" }
+  # do not call isReallyReal(x) yet because i) if both types are double we don't need to coerce even if one or both sides
+  # are int-as-double, and ii) to save calling it until we really need it
+  ans
+}
+
+cast_with_atts = function(x, as.f) {
+  ans = as.f(x)
+  if (!is.null(attributes(x))) attributes(ans) = attributes(x)
+  ans
+}
+
+coerce_col = function(dt, col, from_type, to_type, from_name, to_name, verbose_msg=NULL) {
+  if (!is.null(verbose_msg)) catf(verbose_msg, from_type, from_name, to_type, to_name, domain=NULL)
+  set(dt, j=col, value=cast_with_atts(dt[[col]], match.fun(paste0("as.", to_type))))
+}
+
 bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbose)
 {
   callersi = i
@@ -24,26 +45,6 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
   }
 
   supported = c(ORDERING_TYPES, "factor", "integer64")
-
-  mergeType = function(x) {
-    ans = typeof(x)
-    if      (ans=="integer") { if (is.factor(x))             ans = "factor"    }
-    else if (ans=="double")  { if (inherits(x, "integer64")) ans = "integer64" }
-    # do not call isReallyReal(x) yet because i) if both types are double we don't need to coerce even if one or both sides
-    # are int-as-double, and ii) to save calling it until we really need it
-    ans
-  }
-
-  cast_with_atts = function(x, as.f) {
-    ans = as.f(x)
-    if (!is.null(attributes(x))) attributes(ans) = attributes(x)
-    ans
-  }
-
-  coerce_col = function(dt, col, from_type, to_type, from_name, to_name, verbose_msg) {
-    if (verbose) catf(verbose_msg, from_type, from_name, to_type, to_name, domain=NULL)
-    set(dt, j=col, value=cast_with_atts(dt[[col]], match.fun(paste0("as.", to_type))))
-  }
 
   if (nrow(i)) for (a in seq_along(icols)) {
     # - check that join columns have compatible types
@@ -88,7 +89,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     }
     cfl = c("character", "logical", "factor")
     if (x_merge_type %chin% cfl || i_merge_type %chin% cfl) {
-      msg = gettext("Coercing all-NA %s column %s to type %s to match type of %s.\n")
+      msg = if(verbose) gettext("Coercing all-NA %s column %s to type %s to match type of %s.\n") else NULL
       if (anyNA(i[[icol]]) && allNA(i[[icol]])) {
         coerce_col(i, icol, i_merge_type, x_merge_type, iname, xname, msg)
         next
@@ -125,7 +126,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
             }
           }
           if (coerce_x) {
-            msg = gettext("Coercing %s column %s (which contains no fractions) to type %s to match type of %s.\n")
+            msg = if (verbose) gettext("Coercing %s column %s (which contains no fractions) to type %s to match type of %s.\n") else NULL
             coerce_col(i, icol, "double", "integer", iname, xname, msg)
             set(callersi, j=icol, value=i[[icol]])       # change the shallow copy of i up in [.data.table to reflect in the result, too.
             if (length(ic_idx)>1L) {
@@ -137,11 +138,11 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
           }
         }
         if (!coerce_x) {
-          msg = gettext("Coercing %s column %s to type %s to match type of %s which contains fractions.\n")
+          msg = if (verbose) gettext("Coercing %s column %s to type %s to match type of %s which contains fractions.\n") else NULL
           coerce_col(x, xcol, "integer", "double", xname, iname, msg)
         }
       } else {
-        msg = gettext("Coercing %s column %s to type %s for join to match type of %s.\n")
+        msg = if (verbose) gettext("Coercing %s column %s to type %s for join to match type of %s.\n") else NULL
         coerce_col(i, icol, "integer", "double", iname, xname, msg)
         if (length(ic_idx)>1L) {
           xc_idx = xcols[ic_idx]
