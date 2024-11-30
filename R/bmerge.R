@@ -116,7 +116,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
           # we've always coerced to int and returned int, for convenience.
           if (length(ic_idx)>1L) {
             xc_idx = xcols[ic_idx]
-            for (xb in xc_idx[which(vapply_1c(x[0L, xc_idx, with=FALSE], mergeType) == "double")]) {
+            for (xb in xc_idx[which(vapply_1c(.shallow(x, xc_idx), mergeType) == "double")]) {
               if (isReallyReal(x[[xb]])) {
                 coerce_x = FALSE
                 break
@@ -129,7 +129,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
             set(callersi, j=icol, value=i[[icol]])       # change the shallow copy of i up in [.data.table to reflect in the result, too.
             if (length(ic_idx)>1L) {
               xc_idx = xcols[ic_idx]
-              for (xb in xc_idx[which(vapply_1c(x[0L, xc_idx, with=FALSE], mergeType) == "double")]) {
+              for (xb in xc_idx[which(vapply_1c(.shallow(x, xc_idx), mergeType) == "double")]) {
                 coerce_col(x, xb, "double", "integer", paste0("x.", names(x)[xb]), xname, msg)
               }
             }
@@ -144,7 +144,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
         coerce_col(i, icol, "integer", "double", iname, xname, msg)
         if (length(ic_idx)>1L) {
           xc_idx = xcols[ic_idx]
-          for (xb in xc_idx[which(vapply_1c(x[0L, xc_idx, with=FALSE], mergeType) == "integer")]) {
+          for (xb in xc_idx[which(vapply_1c(.shallow(x, xc_idx), mergeType) == "integer")]) {
             coerce_col(x, xb, "integer", "double", paste0("x.", names(x)[xb]), xname, msg)
           }
         }
