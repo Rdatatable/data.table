@@ -92,5 +92,11 @@ Authors@R: c(
   person("Ivan", "Krylov",         role="ctb"),
   person("Angel", "Feliz",         role="ctb"),
   person("Michael","Young",        role="ctb"),
-  person("Mark", "Seeto",          role="ctb")
+  person("Mark", "Seeto",          role="ctb"),
+  person("Philippe", "Grosjean",   role="ctb"),
+  person("Vincent", "Runge",       role="ctb"),
+  person("Christian", "Wia",       role="ctb"),
+  person("Elise", "Maigné",        role="ctb"),
+  person("Vincent", "Rocher",      role="ctb"),
+  person("Vijay", "Lulla",         role="ctb")
   )

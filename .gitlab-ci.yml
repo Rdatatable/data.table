@@ -315,7 +315,6 @@ integration:
     - R --version
     - *install-deps ## markdown pkg not present in r-pkgdown image
     - mkdir -p ./pkgdown/favicon/ && cp .graphics/favicon/* ./pkgdown/favicon/ ## copy favicons
-    - rm -rf ./vignettes ## r-lib/pkgdown#2383
     - Rscript -e 'pkgdown::build_site(override=list(destination="./website"))'
     ## html manual, vignettes, repos, cran_web, cran_checks
     - echo 'source(".ci/ci.R"); source(".ci/publish.R")' >> .Rprofile
@@ -388,10 +387,6 @@ integration:
     - Rscript -e 'check.index("data.table", names(test.jobs))'
     ## web/checks/check_flavors.html
     - Rscript -e 'check.flavors(names(test.jobs))'
-    ## pkgdown vignettes workaround r-lib/pkgdown#2383
-    - mkdir -p website/articles
-    - cp bus/integration/cran/library/data.table/doc/*.html website/articles/.
-    - rm website/articles/index.html
     ## pkgdown merge
     - Rscript -e 'common_files<-function(path1, path2) intersect(list.files(path1, all.files=TRUE, no..=TRUE), list.files(path2, all.files=TRUE, no..=TRUE)); msg = if (length(f<-common_files("website","bus/integration/cran"))) paste(c("Following artifacts will be overwritten by pkgdown artifacts:", paste0("  ", f)), collapse="\n") else "No overlapping files from pkgdown artifacts"; message(msg); q("no")'
     - mv website/* bus/integration/cran/
