@@ -103,7 +103,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     if (x_merge_type=="integer64" || i_merge_type=="integer64") {
       nm = c(iname, xname)
       if (x_merge_type=="integer64") { w=i; wc=icol; wclass=i_merge_type; } else { w=x; wc=xcol; wclass=x_merge_type; nm=rev(nm) }  # w is which to coerce
-      if (wclass=="integer" || (wclass=="double" && !isRealReallyInt64(w[[wc]]))) {
+      if (wclass=="integer" || (wclass=="double" && isRealReallyInt64(w[[wc]]))) {
         if (verbose) catf("Coercing %s column %s%s to type integer64 to match type of %s.\n", wclass, nm[1L], if (wclass=="double") " (which has integer64 representation, e.g. no fractions)" else "", nm[2L])
         set(w, j=wc, value=bit64::as.integer64(w[[wc]]))
       } else stopf("Incompatible join types: %s is type integer64 but %s is type double and cannot be coerced to integer64 (e.g. has fractions)", nm[2L], nm[1L])
@@ -112,14 +112,14 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
       ic_idx = which(icol == icols) # check if on is joined on multiple conditions, #6602
       if (i_merge_type=="double") {
         coerce_x = FALSE
-        if (!isRealReallyInt32(i[[icol]])) {
+        if (isRealReallyInt32(i[[icol]])) {
           coerce_x = TRUE
           # common case of ad hoc user-typed integers missing L postfix joining to correct integer keys
           # we've always coerced to int and returned int, for convenience.
           if (length(ic_idx)>1L) {
             xc_idx = xcols[ic_idx]
             for (xb in xc_idx[which(vapply_1c(.shallow(x, xc_idx), mergeType) == "double")]) {
-              if (isRealReallyInt32(x[[xb]])) {
+              if (!isRealReallyInt32(x[[xb]])) {
                 coerce_x = FALSE
                 break
               }
