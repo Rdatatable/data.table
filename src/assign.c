@@ -115,6 +115,7 @@ static int _selfrefok(SEXP x, Rboolean checkNames, Rboolean verbose) {
     //  Not being an extptr is for when users construct a data.table via structure() using dput, post
     //  a question, and find the extptr doesn't parse so put quotes around it (for example).
     //  In both cases the selfref is not ok.
+    UNPROTECT(1);
     return 0;
   }
   p = R_ExternalPtrAddr(v);
