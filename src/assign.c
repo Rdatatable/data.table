@@ -133,7 +133,7 @@ static int _selfrefok(SEXP x, Rboolean checkNames, Rboolean verbose) {
     // because R copies the original vector's tl over despite allocating length.
   prot = R_ExternalPtrProtected(v);
   if (TYPEOF(prot) != EXTPTRSXP) { // Very rare. Was error(_(".internal.selfref prot is not itself an extptr")).
-    UNPROTECT(2);
+    UNPROTECT(2);                  // # nocov
     return 0;                      // # nocov ; see http://stackoverflow.com/questions/15342227/getting-a-random-internal-selfref-error-in-data-table-for-r
   }
   if (x!=R_ExternalPtrAddr(prot) && !ALTREP(x))
