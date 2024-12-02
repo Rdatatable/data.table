@@ -15155,15 +15155,15 @@ if (test_bit64) {
 dt1 = data.table(a=1,  b=NA_character_)
 dt2 = data.table(a=2L, b=NA)
 test(2044.80, dt1[dt2, on="a==b",             verbose=TRUE], data.table(a=NA, b=NA_character_, i.a=2L),
-              output=msg<-"Coercing all-NA i.b (logical) to type double to match type of x.a")
+              output=msg<-"Coercing all-NA logical column i.b to type double to match type of x.a")
 test(2044.81, dt1[dt2, on="a==b", nomatch=0L, verbose=TRUE], data.table(a=logical(), b=character(), i.a=integer()),
               output=msg)
 test(2044.82, dt1[dt2, on="b==b",             verbose=TRUE], data.table(a=1, b=NA, i.a=2L),
-              output=msg<-"Coercing all-NA i.b (logical) to type character to match type of x.b")
+              output=msg<-"Coercing all-NA logical column i.b to type character to match type of x.b")
 test(2044.83, dt1[dt2, on="b==b", nomatch=0L, verbose=TRUE], data.table(a=1, b=NA, i.a=2L),
               output=msg)
 test(2044.84, dt1[dt2, on="b==a",             verbose=TRUE], data.table(a=NA_real_, b=2L, i.b=NA),
-              output=msg<-"Coercing all-NA x.b (character) to type integer to match type of i.a")
+              output=msg<-"Coercing all-NA character column x.b to type integer to match type of i.a")
 test(2044.85, dt1[dt2, on="b==a", nomatch=0L, verbose=TRUE], data.table(a=double(), b=integer(), i.b=logical()),
               output=msg)
 
@@ -15726,7 +15726,8 @@ DT = data.table(z = 1i)
 test(2069.33, DT[DT, on = 'z'], error = "Type 'complex' is not supported for joining/merging")
 
 # forder verbose message when !isReallyReal Date, #1738
-DT = data.table(d=sample(seq(as.Date("2015-01-01"), as.Date("2015-01-05"), by="days"), 20, replace=TRUE))
+date_dbl = as.Date(as.double(seq(as.Date("2015-01-01"), as.Date("2015-01-05"), by="days")), origin="1970-01-01")
+DT = data.table(d=sample(date_dbl, 20, replace=TRUE))
 test(2070.01, typeof(DT$d), "double")
 test(2070.02, DT[, .N, keyby=d, verbose=TRUE], output="Column 1.*date.*8 byte double.*no fractions are present.*4 byte integer.*to save space and time")
 
@@ -20596,14 +20597,44 @@ test(2295.3, is.data.table(d2))
 # #6588: .checkTypos used to give arbitrary strings to stopf as the first argument
 test(2296, d2[x %no such operator% 1], error = '%no such operator%')
 
+# fix coercing integer/double for joins on multiple columns, #6602
+x = data.table(a=1L)
+y = data.table(c=1L, d=1)
+test(2297.01, y[x, on=.(c == a, d == a), verbose=TRUE], data.table(c=1L, d=1L), output="Coercing .*a to type double.*Coercing .*c to type double")
+test(2297.02, y[x, on=.(d == a, c == a), verbose=TRUE], data.table(c=1L, d=1L), output="Coercing .*a to type double.*Coercing .*c to type double")
+x = data.table(a=1)
+y = data.table(c=1, d=1L)
+test(2297.03, y[x, on=.(c == a, d == a), verbose=TRUE], data.table(c=1L, d=1L), output="Coercing .*a .*no fractions.* to type integer.*Coercing .*c .*no fractions.* to type integer")
+test(2297.04, y[x, on=.(d == a, c == a), verbose=TRUE], data.table(c=1L, d=1L), output="Coercing .*a .*no fractions.* to type integer.*Coercing .*c .*no fractions.* to type integer")
+# dates
+d_int = .Date(1L)
+d_dbl = .Date(1)
+x = data.table(a=d_int)
+y = data.table(c=d_int, d=d_dbl)
+test(2297.11, y[x, on=.(c == a, d == a)], data.table(c=d_int, d=d_int))
+test(2297.12, y[x, on=.(d == a, c == a)], data.table(c=d_int, d=d_int))
+x = data.table(a=d_dbl)
+y = data.table(c=d_dbl, d=d_int)
+test(2297.13, y[x, on=.(c == a, d == a)], data.table(c=d_int, d=d_int))
+test(2297.14, y[x, on=.(d == a, c == a)], data.table(c=d_int, d=d_int))
+# real double
+x = data.table(a=1)
+y = data.table(c=1.5, d=1L)
+test(2297.21, y[x, on=.(c == a, d == a)], data.table(c=1, d=1))
+test(2297.22, y[x, on=.(d == a, c == a)], data.table(c=1, d=1))
+# non right join
+x = data.table(a=1, b=2L)
+y = data.table(c=1.5, d=1L)
+test(2297.31, y[x, on=.(c == a, d == a), nomatch=NULL], output="Empty data.table (0 rows and 3 cols): c,d,b")
+
 if (test_bit64) {
   # Join to integer64 doesn't require integer32 representation, just integer64, #6625
   i64_val = .Machine$integer.max + 1
   DT1 = data.table(id = as.integer64(i64_val))
   DT2 = data.table(id = i64_val)
-  test(2297.1, DT1[DT2, on='id', verbose=TRUE], DT2, output="has integer64 representation")
-  test(2297.2, DT2[DT1, on='id', verbose=TRUE], DT1, output="has integer64 representation")
+  test(2298.1, DT1[DT2, on='id', verbose=TRUE], DT2, output="has integer64 representation")
+  test(2298.2, DT2[DT1, on='id', verbose=TRUE], DT1, output="has integer64 representation")
   DT2[, id := id+.01]
-  test(2297.3, DT1[DT2, on='id'], error="Incompatible join types")
-  test(2297.4, DT2[DT1, on='id'], error="Incompatible join types")
+  test(2298.3, DT1[DT2, on='id'], error="Incompatible join types")
+  test(2298.4, DT2[DT1, on='id'], error="Incompatible join types")
 }

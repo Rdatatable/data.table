@@ -107,7 +107,9 @@ rowwiseDT(
 
 11. `tables()` now returns the correct size for data.tables over 2GiB, [#6607](https://github.com/Rdatatable/data.table/issues/6607). Thanks to @vlulla for the report and the PR.
 
-12. Joins of `integer64` and `double` columns succeed when the `double` column has lossless `integer64` representation, [#4167](https://github.com/Rdatatable/data.table/issues/4167) and [#6625](https://github.com/Rdatatable/data.table/issues/6625). Previously, this only worked when the double column had lossless _32-bit_ integer representation. Thanks @MichaelChirico for the reports and fix.
+12. Joins on multiple columns, such as `x[y, on=c("x1==y1", "x2==y1")]`, could fail during implicit type coercions if `x1` and `x2` had different but still compatible types, [#6602](https://github.com/Rdatatable/data.table/issues/6602). This was particularly unexpected when columns `x1`, `x2`, and `y1` were all of the same class, e.g. `Date`, but differed in their underlying storage types. Thanks to Benjamin Schwendinger for the report and the fix.
+
+13. Joins of `integer64` and `double` columns succeed when the `double` column has lossless `integer64` representation, [#4167](https://github.com/Rdatatable/data.table/issues/4167) and [#6625](https://github.com/Rdatatable/data.table/issues/6625). Previously, this only worked when the double column had lossless _32-bit_ integer representation. Thanks @MichaelChirico for the reports and fix.
 
 ## NOTES
 
