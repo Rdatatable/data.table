@@ -57,6 +57,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   is_na = data.table:::is_na
   is.sorted = data.table:::is.sorted
   isRealReallyInt32 = data.table:::isRealReallyInt32
+  isRealReallyInt64 = data.table:::isRealReallyInt64
   is_utc = data.table:::is_utc
   melt.data.table = data.table:::melt.data.table  # for test 1953.4
   messagef = data.table:::messagef
