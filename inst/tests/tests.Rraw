@@ -7359,6 +7359,7 @@ test(1514.6, isRealReallyInt32(x), FALSE)
 x = numeric()
 test(1514.7, isRealReallyInt32(x), TRUE)
 test(1514.8, isRealReallyInt32(9L), FALSE) # b/c not double input
+test(1514.9, isRealReallyInt64(9L), FALSE)
 
 # #1091
 options(datatable.prettyprint.char = 5L)
