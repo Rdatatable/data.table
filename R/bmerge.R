@@ -4,7 +4,7 @@ mergeType = function(x) {
   ans = typeof(x)
   if      (ans=="integer") { if (is.factor(x))             ans = "factor"    }
   else if (ans=="double")  { if (inherits(x, "integer64")) ans = "integer64" }
-  # do not call isReallyReal(x) yet because i) if both types are double we don't need to coerce even if one or both sides
+  # do not call isRealReallyInt*(x) yet because i) if both types are double we don't need to coerce even if one or both sides
   # are int-as-double, and ii) to save calling it until we really need it
   ans
 }
@@ -119,7 +119,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
           if (length(ic_idx)>1L) {
             xc_idx = xcols[ic_idx]
             for (xb in xc_idx[which(vapply_1c(.shallow(x, xc_idx), mergeType) == "double")]) {
-              if (isReallyReal(x[[xb]])) {
+              if (isRealReallyInt32(x[[xb]])) {
                 coerce_x = FALSE
                 break
               }
