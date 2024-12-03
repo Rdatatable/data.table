@@ -21,10 +21,11 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
     else
       warningf("Input data.table '%s' has no columns.", "y")
   }
+  check_duplicate_names(x)
+  check_duplicate_names(y)
+
   nm_x = names(x)
   nm_y = names(y)
-  if (anyDuplicated(nm_x)) stopf("%s has some duplicated column name(s): %s. Please remove or rename the duplicate(s) and try again.", "x", brackify(nm_x[duplicated(nm_x)]))
-  if (anyDuplicated(nm_y)) stopf("%s has some duplicated column name(s): %s. Please remove or rename the duplicate(s) and try again.", "y", brackify(nm_y[duplicated(nm_y)]))
 
   ## set up 'by'/'by.x'/'by.y'
   if ( (!is.null(by.x) || !is.null(by.y)) && length(by.x)!=length(by.y) )
@@ -59,7 +60,7 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   if (length(list(...))) {
     ell = as.list(substitute(list(...)))[-1L]
     for (n in setdiff(names(ell), "")) warningf("Unknown argument '%s' has been passed.", n)
-    unnamed_n = length(ell) - sum(names(ell) != "")
+    unnamed_n = length(ell) - sum(nzchar(names(ell)))
     if (unnamed_n)
       warningf("Passed %d unknown and unnamed arguments.", unnamed_n)
   }
@@ -96,21 +97,7 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   if (all.y && nrow(y)) {  # If y does not have any rows, no need to proceed
     # Perhaps not very commonly used, so not a huge deal that the join is redone here.
     missingyidx = y[!x, which=TRUE, on=by, allow.cartesian=allow.cartesian]
-    # TO DO: replace by following once #5446 is merged
-    # if (length(missingyidx)) dt = rbind(dt, y[missingyidx], use.names=FALSE, fill=TRUE, ignore.attr=TRUE)
-    if (length(missingyidx)) {
-      yy = y[missingyidx]
-      othercolsx = setdiff(nm_x, by)
-      if (length(othercolsx)) {
-        # create NA rectangle with correct types and attributes of x to cbind to y
-        tmp = rep.int(NA_integer_, length(missingyidx))
-        # TO DO: use set() here instead..
-        yy = cbind(yy, x[tmp, othercolsx, with = FALSE])
-      }
-      # empty data.tables (nrow =0, ncol>0) doesn't skip names anymore in new rbindlist
-      # takes care of #24 without having to save names. This is how it should be, IMHO.
-      dt = rbind(dt, yy, use.names=FALSE)
-    }
+    if (length(missingyidx)) dt = rbind(dt, y[missingyidx], use.names=FALSE, fill=TRUE, ignore.attr=TRUE)
   }
   # X[Y] syntax puts JIS i columns at the end, merge likes them alongside i.
   newend = setdiff(nm_y, by.y)

@@ -6,13 +6,24 @@ output:
     options:
       toc: true
       number_sections: true
-    meta:
-      css: [default, css/toc.css]
 vignette: >
   %\VignetteIndexEntry{Using .SD for Data Analysis}
   %\VignetteEngine{knitr::knitr}
   \usepackage[utf8]{inputenc}
 ---
+
+<style>
+#TOC {
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding-left: 1em;
+  background: #f6f6f6;
+}
+</style>
+
+Translations of this document are available in
+
+* [French](https://rdatatable.gitlab.io/data.table/articles/fr/datatable-sd-usage.html)
 
 ```{r, echo = FALSE, message = FALSE}
 require(data.table)
@@ -112,7 +123,8 @@ head(unique(Teams[[fkt[1L]]]))
 
 Note: 
 
-1. The `:=` is an assignment operator to update the `data.table` in place without making a copy. See [reference semantics](https://cran.r-project.org/web/packages/data.table/vignettes/datatable-reference-semantics.html) for more. 
+
+1. The `:=` is an assignment operator to update the `data.table` in place without making a copy. See [`vignette("datatable-reference-semantics", package="data.table")`](datatable-reference-semantics.html) for more.
 2. The LHS, `names(.SD)`, indicates which columns we are updating - in this case we update the entire `.SD`.
 3. The RHS, `lapply()`, loops through each column of the `.SD` and converts the column to a factor.
 4. We use the `.SDcols` to only select columns that have pattern of `teamID`.
@@ -169,7 +181,7 @@ lm_coef = sapply(models, function(rhs) {
 })
 barplot(lm_coef, names.arg = sapply(models, paste, collapse = '/'),
         main = 'Wins Coefficient\nWith Various Covariates',
-        col = col16, las = 2L, cex.names = .8)
+        col = col16, las = 2L, cex.names = 0.8)
 ```
 
 The coefficient always has the expected sign (better pitchers tend to have more wins and fewer runs allowed), but the magnitude can vary substantially depending on what else we control for.

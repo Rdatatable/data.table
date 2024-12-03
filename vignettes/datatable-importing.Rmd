@@ -15,7 +15,11 @@ h2 {
 }
 </style>
 
-This document is focused on using `data.table` as a dependency in other R packages. If you are interested in using `data.table` C code from a non-R application, or in calling its C functions directly, jump to the [last section](#non-r-API) of this vignette.
+Translations of this document are available in
+
+* [French](https://rdatatable.gitlab.io/data.table/articles/fr/datatable-importing.html)
+
+This document is focused on using `data.table` as a dependency in other R packages. If you are interested in using `data.table` C code from a non-R application, or in calling its C functions directly, jump to the [last section](#non-r-api) of this vignette.
 
 Importing `data.table` is no different from importing other R packages. This vignette is meant to answer the most common questions arising around that subject; the lessons presented here can be applied to other R packages.
 
@@ -27,11 +31,11 @@ One of the biggest features of `data.table` is its concise syntax which makes ex
 
 It is very easy to use `data.table` as a dependency due to the fact that `data.table` does not have any of its own dependencies. This applies both to operating system and to R dependencies. It means that if you have R installed on your machine, it already has everything needed to install `data.table`.  It also means that adding `data.table` as a dependency of your package will not result in a chain of other recursive dependencies to install, making it very convenient for offline installation.
 
-## `DESCRIPTION` file {DESCRIPTION}
+## `DESCRIPTION` file {#DESCRIPTION}
 
 The first place to define a dependency in a package is the `DESCRIPTION` file. Most commonly, you will need to add `data.table` under the `Imports:` field. Doing so will necessitate an installation of `data.table` before your package can compile/install. As mentioned above, no other packages will be installed because `data.table` does not have any dependencies of its own. You can also specify the minimal required version of a dependency; for example, if your package is using the `fwrite` function, which was introduced in `data.table` in version 1.9.8, you should incorporate this as `Imports: data.table (>= 1.9.8)`. This way you can ensure that the version of `data.table` installed is 1.9.8 or later before your users will be able to install your package. Besides the `Imports:` field, you can also use `Depends: data.table` but we strongly discourage this approach (and may disallow it in future) because this loads `data.table` into your user's workspace; i.e. it enables `data.table` functionality in your user's scripts without them requesting that. `Imports:` is the proper way to use `data.table` within your package without inflicting `data.table` on your user. In fact, we hope the `Depends:` field is eventually deprecated in R since this is true for all packages.
 
-## `NAMESPACE` file {NAMESPACE}
+## `NAMESPACE` file {#NAMESPACE}
 
 The next thing is to define what content of `data.table` your package is using. This needs to be done in the `NAMESPACE` file. Most commonly, package authors will want to use `import(data.table)` which will import all exported (i.e., listed in `data.table`'s own `NAMESPACE` file) functions from `data.table`.
 
@@ -118,7 +122,7 @@ aggr = function (x) {
 }
 ```
 
-The case for `data.table`'s special symbols (`.SD`, `.BY`, `.N`, `.I`, `.GRP`, `.NGRP`, and `.EACHI`; see `?.N`) and assignment operator (`:=`) is slightly different. You should import whichever of these values you use from `data.table`'s namespace to protect against any issues arising from the unlikely scenario that we change the exported value of these in the future, e.g. if you want to use `.N`, `.I`, and `:=`, a minimal `NAMESPACE` would have:
+The case for `data.table`'s special symbols (e.g. `.SD` and `.N`) and assignment operator (`:=`) is slightly different (see `?.N` for more, including a complete listing of such symbols). You should import whichever of these values you use from `data.table`'s namespace to protect against any issues arising from the unlikely scenario that we change the exported value of these in the future, e.g. if you want to use `.N`, `.I`, and `:=`, a minimal `NAMESPACE` would have:
 
 ```r
 importFrom(data.table, .N, .I, ':=')
@@ -130,7 +134,7 @@ If you don't mind having `id` and `grp` registered as variables globally in your
 
 ## Care needed when providing and using options
 
-Common practice by R packages is to provide customization options set by `options(name=val)` and fetched using `getOption("name", default)`. Function arguments often specify a call to `getOption()` so that the user knows (from `?fun` or `args(fun)`) the name of the option controlling the default for that parameter; e.g. `fun(..., verbose=getOption("datatable.verbose", FALSE))`. All `data.table` options start with `datatable.` so as to not conflict with options in other packages. A user simply calls `options(datatable.verbose=TRUE)` to turn on verbosity. This affects all calls to `fun()` other the ones which have been provided `verbose=` explicity; e.g. `fun(..., verbose=FALSE)`.
+Common practice by R packages is to provide customization options set by `options(name=val)` and fetched using `getOption("name", default)`. Function arguments often specify a call to `getOption()` so that the user knows (from `?fun` or `args(fun)`) the name of the option controlling the default for that parameter; e.g. `fun(..., verbose=getOption("datatable.verbose", FALSE))`. All `data.table` options start with `datatable.` so as to not conflict with options in other packages. A user simply calls `options(datatable.verbose=TRUE)` to turn on verbosity. This affects all data.table function calls unless `verbose=FALSE` is provided explicitly; e.g. `fun(..., verbose=FALSE)`.
 
 The option mechanism in R is _global_. Meaning that if a user sets a `data.table` option for their own use, that setting also affects code inside any package that is using `data.table` too. For an option like `datatable.verbose`, this is exactly the desired behavior since the desire is to trace and log all `data.table` operations from wherever they originate; turning on verbosity does not affect the results. Another unique-to-R and excellent-for-production option is R's `options(warn=2)` which turns all warnings into errors. Again, the desire is to affect any warning in any package so as to not miss any warnings in production. There are 6 `datatable.print.*` options and 3 optimization options which do not affect the result of operations. However, there is one `data.table` option that does and is now a concern: `datatable.nomatch`. This option changes the default join from outer to inner. [Aside, the default join is outer because outer is safer; it doesn't drop missing data silently; moreover it is consistent to base R way of matching by names and indices.] Some users prefer inner join to be the default and we provided this option for them. However, a user setting this option can unintentionally change the behavior of joins inside packages that use `data.table`. Accordingly, in v1.12.4 (Oct 2019) a message was printed when the `datatable.nomatch` option was used, and from v1.14.2 it is now ignored with warning. It was the only `data.table` option with this concern.
 
@@ -195,6 +199,87 @@ For more canonical documentation of defining packages dependency check the offic
 
 Some of internally used C routines are now exported on C level thus can be used in R packages directly from their C code. See [`?cdt`](https://rdatatable.gitlab.io/data.table/reference/cdt.html) for details and [Writing R Extensions](https://cran.r-project.org/doc/manuals/r-release/R-exts.html) _Linking to native routines in other packages_ section for usage.
 
-## Importing from non-R Applications {non-r-API}
+## Importing from non-r Applications {#non-r-api}
 
 Some tiny parts of `data.table` C code were isolated from the R C API and can now be used from non-R applications by linking to .so / .dll files. More concrete details about this will be provided later; for now you can study the C code that was isolated from the R C API in [src/fread.c](https://github.com/Rdatatable/data.table/blob/master/src/fread.c) and [src/fwrite.c](https://github.com/Rdatatable/data.table/blob/master/src/fwrite.c).
+
+## How to convert your Depends dependency on data.table to Imports
+
+To convert a `Depends` dependency on `data.table` to an `Imports` dependency in your package, follow these steps:
+
+### Step 0. Ensure your package is passing R CMD check initially
+
+### Step 1. Update the DESCRIPTION file to put data.table in Imports, not Depends
+
+**Before:**
+```dcf
+Depends:
+    R (>= 3.5.0),
+    data.table
+Imports:
+```
+
+**After:**
+```dcf
+Depends:
+    R (>= 3.5.0)
+Imports:
+    data.table
+```
+
+### Step 2.1: Run `R CMD check`
+
+Run `R CMD check` to identify any missing imports or symbols. This step helps:
+
+- Automatically detect any functions or symbols from `data.table` that are not explicitly imported.
+- Flag missing special symbols like `.N`, `.SD`, and `:=`.
+- Provide immediate feedback on what needs to be added to the NAMESPACE file.
+
+Note: Not all such usages are caught by `R CMD check`. In particular, `R CMD check` skips some symbols/functions in formulas and will completely miss parsed expressions like `parse(text = "data.table(a = 1)")`. Packages will need good test coverage to detect these edge cases.
+
+### Step 2.2: Modify the NAMESPACE file
+
+Based on the `R CMD check` results, ensure all used functions, special symbols, S3 generics, and S4 classes from `data.table` are imported.
+
+That means adding `importFrom(data.table, ...)` directives for symbols, functions, and S3 generics, and/or `importClassesFrom(data.table, ...)` directives for S4 classes as appropriate. See 'Writing R Extensions' for full details on how to do so properly.
+
+#### Blanket import
+
+Alternatively, you can import all functions from `data.table` at once, though this is generally not recommended:
+
+```r
+import(data.table)
+```
+
+**Justification for Avoiding Blanket Imports:**
+1. **Documentation**: The NAMESPACE file can serve as good documentation of how you depend on certain packages.
+2. **Avoiding Conflicts**: Blanket imports leave you open to subtle breakage. For example, if you `import(pkgA)` and `import(pkgB)`, but later pkgB exports a function also exported by pkgA, this will break your package due to conflicts in your namespace, which is disallowed by `R CMD check` and CRAN.
+
+### Step 3: Update Your R code files outside the package's R/ directory
+
+When you move a package from `Depends` to `Imports`, it will no longer be automatically attached when your package is loaded. This can be important for examples, tests, vignettes, and demos, where `Imports` packages need to be attached explicitly.
+
+**Before (with `Depends`):**
+```r
+# data.table functions are directly available
+library(MyPkgDependsDataTable)
+dt <- data.table(x = 1:10, y = letters[1:10])
+setDT(dt)
+result <- merge(dt, other_dt, by = "x")
+```
+
+**After (with `Imports`):**
+```r
+# Explicitly load data.table in user scripts or vignettes
+library(data.table)
+library(MyPkgDependsDataTable)
+dt <- data.table(x = 1:10, y = letters[1:10])
+setDT(dt)
+result <- merge(dt, other_dt, by = "x")
+```
+
+### Benefits of using `Imports`
+- **User-Friendliness**: `Depends` alters your users' `search()` path, possibly without their wanting to do so.
+- **Namespace Management**: Only the functions your package explicitly imports are available, reducing the risk of function name clashes.
+- **Cleaner Package Loading**: Your package's dependencies are not attached to the search path, making the loading process cleaner and potentially faster.
+- **Easier Maintenance**: It simplifies maintenance tasks as upstream dependencies' APIs evolve. Depending too much on `Depends` can lead to conflicts and compatibility issues over time.

@@ -9,6 +9,10 @@ vignette: >
   \usepackage[utf8]{inputenc}
 ---
 
+Translations of this document are available in
+
+* [French](https://rdatatable.gitlab.io/data.table/articles/fr/datatable-keys-fast-subset.html)
+
 ```{r, echo = FALSE, message = FALSE}
 require(data.table)
 knitr::opts_chunk$set(
@@ -20,13 +24,13 @@ knitr::opts_chunk$set(
 .old.th = setDTthreads(1)
 ```
 
-This vignette is aimed at those who are already familiar with *data.table* syntax, its general form, how to subset rows in `i`, select and compute on columns, add/modify/delete columns *by reference* in `j` and group by using `by`. If you're not familiar with these concepts, please read the *"Introduction to data.table"* and *"Reference semantics"* vignettes first.
+This vignette is aimed at those who are already familiar with *data.table* syntax, its general form, how to subset rows in `i`, select and compute on columns, add/modify/delete columns *by reference* in `j` and group by using `by`. If you're not familiar with these concepts, please read the vignettes [`vignette("datatable-intro", package="data.table")`](datatable-intro.html) and [`vignette("datatable-reference-semantics", package="data.table")`](datatable-reference-semantics.html) first.
 
 ***
 
 ## Data {#data}
 
-We will use the same `flights` data as in the *"Introduction to data.table"* vignette.
+We will use the same `flights` data as in the [`vignette("datatable-intro", package="data.table")`](datatable-intro.html) vignette.
 
 ```{r echo = FALSE}
 options(width = 100L)
@@ -54,7 +58,7 @@ In this vignette, we will
 
 ### a) What is a *key*?
 
-In the *"Introduction to data.table"* vignette, we saw how to subset rows in `i` using logical expressions, row numbers and using `order()`. In this section, we will look at another way of subsetting incredibly fast - using *keys*.
+In the [`vignette("datatable-intro", package="data.table")`](datatable-intro.html) vignette, we saw how to subset rows in `i` using logical expressions, row numbers and using `order()`. In this section, we will look at another way of subsetting incredibly fast - using *keys*.
 
 But first, let's start by looking at *data.frames*. All *data.frames* have a row names attribute. Consider the *data.frame* `DF` below.
 
@@ -139,7 +143,7 @@ head(flights)
 
 * Alternatively you can pass a character vector of column names to the function `setkeyv()`. This is particularly useful while designing functions to pass columns to set key on as function arguments.
 
-* Note that we did not have to assign the result back to a variable. This is because like the `:=` function we saw in the *"Reference semantics"* vignette, `setkey()` and `setkeyv()` modify the input *data.table* *by reference*. They return the result invisibly.
+* Note that we did not have to assign the result back to a variable. This is because like the `:=` function we saw in the [`vignette("datatable-reference-semantics", package="data.table")`](datatable-reference-semantics.html) vignette, `setkey()` and `setkeyv()` modify the input *data.table* *by reference*. They return the result invisibly.
 
 * The *data.table* is now reordered (or sorted) by the column we provided - `origin`. Since we reorder by reference, we only require additional memory of one column of length equal to the number of rows in the *data.table*, and is therefore very memory efficient.
 
@@ -157,7 +161,7 @@ Once you *key* a *data.table* by certain columns, you can subset by querying tho
 flights[.("JFK")]
 
 ## alternatively
-# flights[J("JFK")] (or) 
+# flights[J("JFK")] (or)
 # flights[list("JFK")]
 ```
 
@@ -258,7 +262,7 @@ flights[.("LGA", "TPA"), .(arr_delay)]
 
 * The *row indices* corresponding to `origin == "LGA"` and `dest == "TPA"` are obtained using *key based subset*.
 
-* Once we have the row indices, we look at `j` which requires only the `arr_delay` column. So we simply select the column `arr_delay` for those *row indices* in the exact same way as we have seen in *Introduction to data.table* vignette.
+* Once we have the row indices, we look at `j` which requires only the `arr_delay` column. So we simply select the column `arr_delay` for those *row indices* in the exact same way as we have seen in the [`vignette("datatable-intro", package="data.table")`](datatable-intro.html) vignette.
 
 * We could have returned the result by using `with = FALSE` as well.
 
@@ -286,7 +290,7 @@ flights[.("LGA", "TPA"), max(arr_delay)]
 
 ### d) *sub-assign* by reference using `:=` in `j`
 
-We have seen this example already in the *Reference semantics* vignette. Let's take a look at all the `hours` available in the `flights` *data.table*:
+We have seen this example already in the [`vignette("datatable-reference-semantics", package="data.table")`](datatable-reference-semantics.html) vignette. Let's take a look at all the `hours` available in the `flights` *data.table*:
 
 ```{r}
 # get all 'hours' in flights
@@ -464,7 +468,7 @@ Now let us look at binary search approach (method 2). Recall from [Properties of
 
 Here's a very simple illustration. Let's consider the (sorted) numbers shown below:
 
-```{r eval = FALSE}
+```
 1, 5, 10, 19, 22, 23, 30
 ```
 
@@ -494,7 +498,7 @@ In this vignette, we have learnt another method to subset rows in `i` by keying 
 
 * combine key based subsets with `j` and `by`. Note that the `j` and `by` operations are exactly the same as before.
 
-Key based subsets are **incredibly fast** and are particularly useful when the task involves *repeated subsetting*. But it may not be always desirable to set key and physically reorder the *data.table*. In the next vignette, we will address this using a *new* feature -- *secondary indexes*.
+Key based subsets are **incredibly fast** and are particularly useful when the task involves *repeated subsetting*. But it may not be always desirable to set key and physically reorder the *data.table*. In the next [next vignette (`vignette("datatable-secondary-indices-and-auto-indexing", package="data.table")`)](datatable-secondary-indices-and-auto-indexing.html), we will address this using a *new* feature -- *secondary indexes*.
 
 
 ```{r, echo=FALSE}

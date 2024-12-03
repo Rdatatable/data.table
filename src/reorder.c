@@ -1,5 +1,10 @@
 #include "data.table.h"
 
+/*
+  OpenMP is used here to reorder a vector or each column in a list of vectors
+    (such as in a data.table) based on a given vector that dictates the new
+    ordering of elements
+*/
 SEXP reorder(SEXP x, SEXP order)
 {
   // For internal use only by setkey().
@@ -25,13 +30,15 @@ SEXP reorder(SEXP x, SEXP order)
   } else {
     if (SIZEOF(x)!=4 && SIZEOF(x)!=8 && SIZEOF(x)!=16 && SIZEOF(x)!=1)
       error(_("reorder accepts vectors but this non-VECSXP is type '%s' which isn't yet supported (SIZEOF=%zu)"), type2char(TYPEOF(x)), SIZEOF(x));
-    if (ALTREP(x)) error(_("Internal error in reorder.c: cannot reorder an ALTREP vector. Please see NEWS item 2 in v1.11.4 and report this as a bug.")); // # nocov
+    if (ALTREP(x)) internal_error(__func__, "cannot reorder an ALTREP vector. Please see NEWS item 2 in v1.11.4"); // # nocov
     maxSize = SIZEOF(x);
     nrow = length(x);
     ncol = 1;
   }
-  if (!isInteger(order)) error(_("order must be an integer vector"));
-  if (length(order) != nrow) error(_("nrow(x)[%d]!=length(order)[%d]"),nrow,length(order));
+  if (!isInteger(order))
+    error(_("order must be an integer vector"));
+  if (length(order) != nrow)
+    error("nrow(x)[%d]!=length(order)[%d]", nrow, length(order)); // # notranslate
   int nprotect = 0;
   if (ALTREP(order)) { order=PROTECT(copyAsPlain(order)); nprotect++; }  // TODO: if it's an ALTREP sequence some optimizations are possible rather than expand
 
@@ -110,7 +117,7 @@ SEXP setcolorder(SEXP x, SEXP o)
   const int ncol=LENGTH(x);
   if (isNull(names)) error(_("dt passed to setcolorder has no names"));
   if (ncol != LENGTH(names))
-    error(_("Internal error: dt passed to setcolorder has %d columns but %d names"), ncol, LENGTH(names));  // # nocov
+    internal_error(__func__, "dt passed to setcolorder has %d columns but %d names", ncol, LENGTH(names));  // # nocov
   SEXP tt = PROTECT(allocVector(VECSXP, 2));
   SET_VECTOR_ELT(tt, 0, names);
   SET_VECTOR_ELT(tt, 1, x);

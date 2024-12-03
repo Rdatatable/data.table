@@ -9,6 +9,10 @@ vignette: >
   \usepackage[utf8]{inputenc}
 ---
 
+Translations of this document are available in
+
+* [French](https://rdatatable.gitlab.io/data.table/articles/fr/datatable-secondary-indices-and-auto-indexing.html)
+
 ```{r, echo = FALSE, message = FALSE}
 require(data.table)
 knitr::opts_chunk$set(
@@ -20,13 +24,13 @@ knitr::opts_chunk$set(
 .old.th = setDTthreads(1)
 ```
 
-This vignette assumes that the reader is familiar with data.table's `[i, j, by]` syntax, and how to perform fast key based subsets. If you're not familiar with these concepts, please read the *"Introduction to data.table"*,  *"Reference semantics"* and *"Keys and fast binary search based subset"* vignettes first.
+This vignette assumes that the reader is familiar with data.table's `[i, j, by]` syntax, and how to perform fast key based subsets. If you're not familiar with these concepts, please read the [`vignette("datatable-intro", package="data.table")`](datatable-intro.html), [`vignette("datatable-reference-semantics", package="data.table")`](datatable-reference-semantics.html), and [`vignette("datatable-keys-fast-subset", package="data.table")`](datatable-keys-fast-subset.html) vignettes first.
 
 ***
 
 ## Data {#data}
 
-We will use the same `flights` data as in the *"Introduction to data.table"* vignette.
+We will use the same `flights` data as in the [`vignette("datatable-intro", package="data.table")`](datatable-intro.html) vignette.
 
 ```{r echo = FALSE}
 options(width = 100L)
@@ -189,7 +193,7 @@ flights[.("JFK", "LAX"), on = c("origin", "dest")][1:5]
 
 ### b) Select in `j`
 
-All the operations we will discuss below are no different to the ones we already saw in the *Keys and fast binary search based subset* vignette. Except we'll be using the `on` argument instead of setting keys.
+All the operations we will discuss below are no different to the ones we already saw in the [`vignette("datatable-keys-fast-subset", package="data.table")`](datatable-keys-fast-subset.html) vignette. Except we'll be using the `on` argument instead of setting keys.
 
 #### -- Return `arr_delay` column alone as a data.table corresponding to `origin = "LGA"` and `dest = "TPA"`
 
@@ -215,7 +219,7 @@ flights[.("LGA", "TPA"), max(arr_delay), on = c("origin", "dest")]
 
 ### e) *sub-assign* by reference using `:=` in `j`
 
-We have seen this example already in the *Reference semantics* and *Keys and fast binary search based subset* vignette. Let's take a look at all the `hours` available in the `flights` *data.table*:
+We have seen this example already in the vignettes [`vignette("datatable-reference-semantics", package="data.table")`](datatable-reference-semantics.html) and [`vignette("datatable-keys-fast-subset", package="data.table")`](datatable-keys-fast-subset.html). Let's take a look at all the `hours` available in the `flights` *data.table*:
 
 ```{r}
 # get all 'hours' in flights
@@ -249,7 +253,7 @@ head(ans)
 
 ### g) The *mult* argument
 
-The other arguments including `mult` work exactly the same way as we saw in the *Keys and fast binary search based subset* vignette. The default value for `mult` is "all". We can choose, instead only the "first" or "last" matching rows should be returned.
+The other arguments including `mult` work exactly the same way as we saw in the [`vignette("datatable-keys-fast-subset", package="data.table")`](datatable-keys-fast-subset.html) vignette. The default value for `mult` is "all". We can choose, instead only the "first" or "last" matching rows should be returned.
 
 #### -- Subset only the first matching row where `dest` matches *"BOS"* and *"DAY"*
 
@@ -323,7 +327,7 @@ system.time(dt[x %in% 1989:2012])
 
 In recent version we extended auto indexing to expressions involving more than one column (combined with `&` operator). In the future, we plan to extend binary search to work with more binary operators like `<`, `<=`, `>` and `>=`.
 
-We will discuss fast *subsets* using keys and secondary indices to *joins* in the next vignette, *"Joins and rolling joins"*.
+We will discuss fast *subsets* using keys and secondary indices to *joins* in the [next vignette (`vignette("datatable-joins", package="data.table")`)](datatable-joins.html).
 
 ***
 

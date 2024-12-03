@@ -6,8 +6,6 @@ output:
     options:
       toc: true
       number_sections: true
-    meta:
-      css: [default, css/toc.css]
 vignette: >
   %\VignetteIndexEntry{Frequently Asked Questions about data.table}
   %\VignetteEngine{knitr::knitr}
@@ -18,8 +16,19 @@ vignette: >
 h2 {
     font-size: 20px;
 }
-#TOC { width: 100%; }
+
+#TOC {
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding-left: 1em;
+  background: #f6f6f6;
+  width: 100%; 
+}
 </style>
+
+Translations of this document are available in
+
+* [French](https://rdatatable.gitlab.io/data.table/articles/fr/datatable-faq.html)
 
 ```{r, echo = FALSE, message = FALSE}
 library(data.table)
@@ -373,7 +382,7 @@ Yes:
 
 The general form is:
 
-```{r, eval = FALSE}
+```r
 DT[where, select|update, group by][order by][...] ... [...]
 ```
 
@@ -459,6 +468,42 @@ You might now ask: where is this documented in R? Answer: it's quite clear, but,
 Happily, an internet search for "How does R method dispatch work" (at the time of this writing) returns the `?UseMethod` help page in the top few links. Admittedly, other links rapidly descend into the intricacies of S3 vs S4, internal generics and so on.
 
 However, features like basic S3 dispatch (pasting the function name together with the class name) is why some R folk love R. It's so simple. No complicated registration or signature is required. There isn't much needed to learn. To create the `merge` method for data.table all that was required, literally, was to merely create a function called `merge.data.table`.
+
+## Why do `T` and `F` behave differently from `TRUE` and `FALSE` in some `data.table` queries?
+
+Using `T` and `F` as abbreviations for `TRUE` and `FALSE` in `data.table` can lead to unexpected behavior. This is because `T` and `F` are global variables that can be redefined, which causes them to be treated as variable names rather than logical constants. This issue does not occur with `TRUE` and `FALSE`. Avoiding `T` and `F` is advice for using R generally, but it shows up in `data.table` in some perhaps surprising ways, for example:
+
+```r
+DT <- data.table(x=rep(c("a", "b", "c"), each = 3), y=c(1, 3, 6), v=1:9)
+
+# Using TRUE/FALSE works as expected in cases like the ones below:
+
+DT[, .SD, .SDcols=c(TRUE, TRUE, FALSE)]
+# A) This selects the first two columns (x and y) and excludes the third one (v). Output:
+#>    x y
+#> 1: a 1
+#> 2: a 3
+#> 3: a 6
+#> 4: b 1
+#> 5: b 3
+#> 6: b 6
+#> 7: c 1
+#> 8: c 3
+#> 9: c 6
+
+DT[, .SD, .SDcols=c(T, T, F), with=FALSE]
+# B) This forces data.table to treat T/F as logical constants.
+# Same output as DT[, .SD, .SDcols=c(TRUE, TRUE, FALSE)]
+
+# But, using T/F may lead to unexpected behavior in cases like:
+
+DT[, .SD, .SDcols=c(T, T, F)]
+# data.table treats T and F as variable names here, not logical constants. Output:
+#> Detected that j uses these columns: <none>
+#> [1]  TRUE  TRUE FALSE
+```
+
+As a general word of advice, `lintr::T_and_F_symbol_linter()` detects the usage of `T` and `F` and suggests replacing them with `TRUE` and `FALSE` to avoid such issues.
 
 # Questions relating to compute time
 
@@ -596,7 +641,7 @@ Yes, for both 32-bit and 64-bit on all platforms. Thanks to CRAN. There are no s
 ## I think it's great. What can I do?
 Please file suggestions, bug reports and enhancement requests on our [issues tracker](https://github.com/Rdatatable/data.table/issues). This helps make the package better.
 
-Please do star the package on [GitHub](https://github.com/Rdatatable/data.table/wiki). This helps encourage the developers and helps other R users find the package.
+Please do star the package on [GitHub](https://github.com/Rdatatable/data.table). This helps encourage the developers and helps other R users find the package.
 
 You can submit pull requests to change the code and/or documentation yourself; see our [Contribution Guidelines](https://github.com/Rdatatable/data.table/blob/master/.github/CONTRIBUTING.md).
 

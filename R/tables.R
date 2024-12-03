@@ -5,14 +5,14 @@ type_size = function(DT) {
   # for speed and ram efficiency, a lower bound by not descending into character string lengths or list items
   # if a more accurate and higher estimate is needed then user can pass object.size or alternative to mb=
   # in case number of columns is very large (e.g. 1e6 columns) then we use a for() to avoid allocation of sapply()
-  ans = 0L
+  ans = 0.0
   lookup = c("raw"=1L, "integer"=4L, "double"=8L, "complex"=16L)
   for (i in seq_along(DT)) {
     col = DT[[i]]
     tt = lookup[storage.mode(col)]
     if (is.na(tt)) tt = .Machine$sizeof.pointer
     tt = tt*nrow(DT)
-    if (is.factor(col)) tt = tt + length(levels(col))*.Machine$sizeof.pointer
+    if (is.factor(col)) tt = tt + nlevels(col)*.Machine$sizeof.pointer
     ans = ans + tt
   }
   ans + ncol(DT)*.Machine$sizeof.pointer  # column name pointers
@@ -60,4 +60,3 @@ tables = function(mb=type_size, order.col="NAME", width=80,
   }
   invisible(info)
 }
-

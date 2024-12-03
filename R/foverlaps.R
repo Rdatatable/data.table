@@ -44,10 +44,11 @@ foverlaps = function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=k
     stopf("Duplicate columns are not allowed in overlap joins. This may change in the future.")
   if (length(by.x) != length(by.y))
     stopf("length(by.x) != length(by.y). Columns specified in by.x should correspond to columns specified in by.y and should be of same lengths.")
-  if (any(dup.x<-duplicated(names(x)))) #1730 - handling join possible but would require workarounds on setcolorder further, it is really better just to rename dup column
-    stopf("%s has some duplicated column name(s): %s. Please remove or rename the duplicate(s) and try again.", "x", brackify(unique(names(x)[dup.x])))
-  if (any(dup.y<-duplicated(names(y))))
-    stopf("%s has some duplicated column name(s): %s. Please remove or rename the duplicate(s) and try again.", "y", brackify(unique(names(y)[dup.y])))
+
+  #1730 - handling join possible but would require workarounds on setcolorder further, it is really better just to rename dup column
+  check_duplicate_names(x)
+  check_duplicate_names(y)
+
   xnames = by.x; xintervals = tail(xnames, 2L)
   ynames = by.y; yintervals = tail(ynames, 2L)
   xval1 = x[[xintervals[1L]]]; xval2 = x[[xintervals[2L]]]
@@ -86,7 +87,7 @@ foverlaps = function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=k
   yclass = c(class(yval1), class(yval2))
   isdouble = FALSE; isposix = FALSE
   if ( any(c("numeric", "POSIXct") %chin% yclass) ) {
-    # next representive double > x under the given precision (48,56 or 64-bit in data.table) = x*incr
+    # next representative double > x under the given precision (48,56 or 64-bit in data.table) = x*incr
     dt_eps = function() {
       bits = floor(log2(.Machine$double.eps))
       2 ^ (bits + (getNumericRounding() * 8L))
@@ -179,10 +180,10 @@ foverlaps = function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=k
   # CsubsetDT bug has been fixed by Matt. So back to using it! Should improve subset substantially.
   if (which) {
     if (mult %chin% c("first", "last"))
-      return (olaps$yid)
+      return(olaps$yid)
     else if (!is.na(nomatch))
-      return (.Call(CsubsetDT, olaps, which(olaps$yid > 0L), seq_along(olaps)))
-    else return (olaps)
+      return(.Call(CsubsetDT, olaps, which(olaps$yid > 0L), seq_along(olaps)))
+    else return(olaps)
   } else {
     if (!is.na(nomatch))
       olaps = .Call(CsubsetDT, olaps, which(olaps$yid > 0L), seq_along(olaps))
@@ -195,7 +196,7 @@ foverlaps = function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=k
     xcols2 = setdiff(names(ans), xcols1)
     ans[, (ycols) := .Call(CsubsetDT, origy, olaps$yid, chmatch(ycols, names(origy)))]
     setcolorder(ans, c(xcols1, ycols, xcols2))
-    return (ans[])
+    return(ans[])
   }
 }
 
@@ -247,4 +248,3 @@ foverlaps = function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=k
 # Tests are added to ensure we cover these aspects (to my knowledge) to ensure that any undesirable changes in the future breaks those tests.
 
 # Conclusion: floating point manipulations are hell!
-

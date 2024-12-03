@@ -9,6 +9,10 @@ vignette: >
   \usepackage[utf8]{inputenc}
 ---
 
+Translations of this document are available in
+
+* [French](https://rdatatable.gitlab.io/data.table/articles/fr/datatable-reference-semantics.html)
+
 ```{r, echo = FALSE, message = FALSE}
 require(data.table)
 knitr::opts_chunk$set(
@@ -19,13 +23,13 @@ knitr::opts_chunk$set(
  collapse = TRUE)
 .old.th = setDTthreads(1)
 ```
-This vignette discusses *data.table*'s reference semantics which allows to *add/update/delete* columns of a *data.table by reference*, and also combine them with `i` and `by`. It is aimed at those who are already familiar with *data.table* syntax, its general form, how to subset rows in `i`, select and compute on columns, and perform aggregations by group. If you're not familiar with these concepts, please read the *"Introduction to data.table"* vignette first.
+This vignette discusses *data.table*'s reference semantics which allows to *add/update/delete* columns of a *data.table by reference*, and also combine them with `i` and `by`. It is aimed at those who are already familiar with *data.table* syntax, its general form, how to subset rows in `i`, select and compute on columns, and perform aggregations by group. If you're not familiar with these concepts, please read the [`vignette("datatable-intro", package="data.table")`](datatable-intro.html) vignette first.
 
 ***
 
 ## Data {#data}
 
-We will use the same `flights` data as in the *"Introduction to data.table"* vignette.
+We will use the same `flights` data as in the [`vignette("datatable-intro", package="data.table")`](datatable-intro.html) vignette.
 
 ```{r echo = FALSE}
 options(width = 100L)
@@ -68,7 +72,7 @@ DF$c <- 18:13               # (1) -- replace entire column
 DF$c[DF$ID == "b"] <- 15:13 # (2) -- subassign in column 'c'
 ```
 
-both (1) and (2) resulted in deep copy of the entire data.frame in versions of `R` versions `< 3.1`. [It copied more than once](https://stackoverflow.com/q/23898969/559784). To improve performance by avoiding these redundant copies, *data.table* utilised the [available but unused `:=` operator in R](https://stackoverflow.com/q/7033106/559784).
+both (1) and (2) resulted in deep copy of the entire data.frame in versions of `R < 3.1`. [It copied more than once](https://stackoverflow.com/q/23898969/559784). To improve performance by avoiding these redundant copies, *data.table* utilised the [available but unused `:=` operator in R](https://stackoverflow.com/q/7033106/559784).
 
 Great performance improvements were made in `R v3.1` as a result of which only a *shallow* copy is made for (1) and not *deep* copy. However, for (2) still, the entire column is *deep* copied even in `R v3.1+`. This means the more columns one subassigns to in the *same query*, the more *deep* copies R does.
 
@@ -77,6 +81,8 @@ Great performance improvements were made in `R v3.1` as a result of which only a
 A *shallow* copy is just a copy of the vector of column pointers (corresponding to the columns in a *data.frame* or *data.table*). The actual data is not physically copied in memory.
 
 A *deep* copy on the other hand copies the entire data to another location in memory.
+
+When subsetting a *data.table* using `i` (e.g., `DT[1:10]`), a *deep* copy is made. However, when `i` is not provided or equals `TRUE`, a *shallow* copy is made.
 
 #
 With *data.table's* `:=` operator, absolutely no copies are made in *both* (1) and (2), irrespective of R version you are using. This is because `:=` operator updates *data.table* columns *in-place* (by reference).
@@ -163,7 +169,7 @@ We see that there are totally `25` unique values in the data. Both *0* and *24* 
 flights[hour == 24L, hour := 0L]
 ```
 
-* We can use `i` along with `:=` in `j` the very same way as we have already seen in the *"Introduction to data.table"* vignette.
+* We can use `i` along with `:=` in `j` the very same way as we have already seen in the [`vignette("datatable-intro", package="data.table")`](datatable-intro.html) vignette.
 
 * Column `hour` is replaced with `0` only on those *row indices* where the condition `hour == 24L` specified in `i` evaluates to `TRUE`.
 
@@ -228,7 +234,7 @@ head(flights)
 
 * We provide the columns to group by the same way as shown in the *Introduction to data.table* vignette. For each group, `max(speed)` is computed, which returns a single value. That value is recycled to fit the length of the group. Once again, no copies are being made at all. `flights` *data.table* is modified *in-place*.
 
-* We could have also provided `by` with a *character vector* as we saw in the *Introduction to data.table* vignette, e.g., `by = c("origin", "dest")`.
+* We could have also provided `by` with a *character vector* as we saw in the [`vignette("datatable-intro", package="data.table")`](datatable-intro.html) vignette, e.g., `by = c("origin", "dest")`.
 
 #
 
@@ -245,9 +251,9 @@ head(flights)
 
 * We use the `LHS := RHS` form. We store the input column names and the new columns to add in separate variables and provide them to `.SDcols` and for `LHS` (for better readability).
 
-* Note that since we allow assignment by reference without quoting column names when there is only one column as explained in [Section 2c](#delete-convenience), we can not do `out_cols := lapply(.SD, max)`. That would result in adding one new column named `out_col`. Instead we should do either `c(out_cols)` or simply `(out_cols)`. Wrapping the variable name with `(` is enough to differentiate between the two cases.
+* Note that since we allow assignment by reference without quoting column names when there is only one column as explained in [Section 2c](#delete-convenience), we can not do `out_cols := lapply(.SD, max)`. That would result in adding one new column named `out_cols`. Instead we should do either `c(out_cols)` or simply `(out_cols)`. Wrapping the variable name with `(` is enough to differentiate between the two cases.
 
-* The `LHS := RHS` form allows us to operate on multiple columns. In the RHS, to compute the `max` on columns specified in `.SDcols`, we make use of the base function `lapply()` along with `.SD` in the same way as we have seen before in the *"Introduction to data.table"* vignette. It returns a list of two elements, containing the maximum value corresponding to `dep_delay` and `arr_delay` for each group.
+* The `LHS := RHS` form allows us to operate on multiple columns. In the RHS, to compute the `max` on columns specified in `.SDcols`, we make use of the base function `lapply()` along with `.SD` in the same way as we have seen before in the [`vignette("datatable-intro", package="data.table")`](datatable-intro.html) vignette. It returns a list of two elements, containing the maximum value corresponding to `dep_delay` and `arr_delay` for each group.
 
 #
 Before moving on to the next section, let's clean up the newly created columns `speed`, `max_speed`, `max_dep_delay` and `max_arr_delay`.
@@ -263,7 +269,7 @@ head(flights)
 ```{r}
 flights[, names(.SD) := lapply(.SD, as.factor), .SDcols = is.character]
 ```
-Let's clean up again and convert our newly-made factor columns back into character columns. This time we will make use of `.SDcols` accepting a function to decide which columns to include. In this case, `is.factor()` will return the columns which are factors. For more on the **S**ubset of the **D**ata, there is also an [SD Usage vignette](https://cran.r-project.org/web/packages/data.table/vignettes/datatable-sd-usage.html).
+Let's clean up again and convert our newly-made factor columns back into character columns. This time we will make use of `.SDcols` accepting a function to decide which columns to include. In this case, `is.factor()` will return the columns which are factors. For more on the **S**ubset of the **D**ata, there is also an [SD Usage vignette](https://cran.r-project.org/package=data.table/vignettes/datatable-sd-usage.html).
 
 Sometimes, it is also nice to keep track of columns that we transform. That way, even after we convert our columns we would be able to call the specific columns we were updating.
 ```{r}
@@ -271,6 +277,7 @@ factor_cols <- sapply(flights, is.factor)
 flights[, names(.SD) := lapply(.SD, as.character), .SDcols = factor_cols]
 str(flights[, ..factor_cols])
 ```
+
 #### {.bs-callout .bs-callout-info}
 
 * We also could have used `(factor_cols)` on the `LHS` instead of `names(.SD)`.
@@ -362,7 +369,7 @@ However we could improve this functionality further by *shallow* copying instead
 
 * It is used to *add/update/delete* columns by reference.
 
-* We have also seen how to use `:=` along with `i` and `by` the same way as we have seen in the *Introduction to data.table* vignette. We can in the same way use `keyby`, chain operations together, and pass expressions to `by` as well all in the same way. The syntax is *consistent*.
+* We have also seen how to use `:=` along with `i` and `by` the same way as we have seen in the [`vignette("datatable-intro", package="data.table")`](datatable-intro.html) vignette. We can in the same way use `keyby`, chain operations together, and pass expressions to `by` as well all in the same way. The syntax is *consistent*.
 
 * We can use `:=` for its side effect or use `copy()` to not modify the original object while updating by reference.
 
@@ -372,6 +379,6 @@ setDTthreads(.old.th)
 
 #
 
-So far we have seen a whole lot in `j`, and how to combine it with `by` and little of `i`. Let's turn our attention back to `i` in the next vignette *"Keys and fast binary search based subset"* to perform *blazing fast subsets* by *keying data.tables*.
+So far we have seen a whole lot in `j`, and how to combine it with `by` and little of `i`. Let's turn our attention back to `i` in the [next vignette (`vignette("datatable-keys-fast-subset", package="data.table")`)](datatable-keys-fast-subset.html) to perform *blazing fast subsets* by *keying data.tables*.
 
 ***
