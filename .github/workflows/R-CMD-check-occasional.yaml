@@ -65,7 +65,7 @@ jobs:
           echo "LC_ALL=lv_LV.utf8" >> $GITHUB_ENV
           echo "LANGUAGE=lv_LV" >> $GITHUB_ENV
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - uses: r-lib/actions/setup-r@v2
         with:
