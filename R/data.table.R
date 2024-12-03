@@ -2736,7 +2736,7 @@ setnames = function(x,old,new,skip_absent=FALSE) {
   invisible(x)
 }
 
-setcolorder = function(x, neworder=key(x), before=NULL, after=NULL,skip_absent=FALSE)  # before/after #4358
+setcolorder = function(x, neworder=key(x), before=NULL, after=NULL, skip_absent=FALSE)  # before/after #4358
 {
   if (is.character(neworder))
     check_duplicate_names(x)
