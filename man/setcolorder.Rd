@@ -9,7 +9,7 @@
 }
 
 \usage{
-setcolorder(x, neworder=key(x), before=NULL, after=NULL,skip_absent=FALSE)
+setcolorder(x, neworder=key(x), before=NULL, after=NULL, skip_absent=FALSE)
 }
 \arguments{
   \item{x}{ A \code{data.table}. }
