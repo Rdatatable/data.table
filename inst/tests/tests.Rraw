@@ -8913,8 +8913,8 @@ ans2[ , (date_cols) := lapply(.SD, as.IDate), .SDcols = date_cols]
 test(1622.1, ans1, ans2)
 test(1622.2, ans1, fread(testDir("issue_1573_fill.txt"), fill=TRUE, sep=" ", na.strings=""))
 
-# fix for #989
-test(1623, fread("~"), error="File '~' is a directory")
+# fix for #989; possibly skip for #6576
+if (dir.exists("~")) test(1623, fread("~"), error="File '~' is a directory")
 
 # testing print.rownames option, #1097 (part of #1523)
 options(datatable.print.rownames = FALSE)
@@ -13914,7 +13914,9 @@ test(1967.48, x[ , b, .SDcols = 'a'], 6:10,
      warning = "This j doesn't use .SD")
 test(1967.49, x[ , list(5) := 6], error = 'LHS of := must be a symbol')
 test(1967.50, x[ , 1 + 3i := 6], error = "LHS of := isn't column names")
-test(1967.511, x[ , .(5L), by = .EACHI, mult = 'all'], error='logical error. i is not data.table')
+test(1967.511, x[ , .(5L), by = .EACHI, mult = 'all'], error='logical error. i is not a data.table')
+test(1967.5111, x[1, on="a"], error='logical error. i is not a data.table')
+test(1967.5112, x[1, on=NULL], x[1]) #6579
 test(1967.512, x[1+3i], error='i has evaluated to type complex. Expecting logical, integer or double')
 test(1967.521, x[1:2, by=a], x[1:2,], warning="Ignoring by/keyby because 'j' is not supplied")
 test(1967.522, x[, by=a],    x,       warning=c("Ignoring by/keyby because 'j' is not supplied","i and j are both missing.*upgraded to error in future"))
@@ -15159,15 +15161,15 @@ if (test_bit64) {
 dt1 = data.table(a=1,  b=NA_character_)
 dt2 = data.table(a=2L, b=NA)
 test(2044.80, dt1[dt2, on="a==b",             verbose=TRUE], data.table(a=NA, b=NA_character_, i.a=2L),
-              output=msg<-"Coercing all-NA i.b (logical) to type double to match type of x.a")
+              output=msg<-"Coercing all-NA logical column i.b to type double to match type of x.a")
 test(2044.81, dt1[dt2, on="a==b", nomatch=0L, verbose=TRUE], data.table(a=logical(), b=character(), i.a=integer()),
               output=msg)
 test(2044.82, dt1[dt2, on="b==b",             verbose=TRUE], data.table(a=1, b=NA, i.a=2L),
-              output=msg<-"Coercing all-NA i.b (logical) to type character to match type of x.b")
+              output=msg<-"Coercing all-NA logical column i.b to type character to match type of x.b")
 test(2044.83, dt1[dt2, on="b==b", nomatch=0L, verbose=TRUE], data.table(a=1, b=NA, i.a=2L),
               output=msg)
 test(2044.84, dt1[dt2, on="b==a",             verbose=TRUE], data.table(a=NA_real_, b=2L, i.b=NA),
-              output=msg<-"Coercing all-NA x.b (character) to type integer to match type of i.a")
+              output=msg<-"Coercing all-NA character column x.b to type integer to match type of i.a")
 test(2044.85, dt1[dt2, on="b==a", nomatch=0L, verbose=TRUE], data.table(a=double(), b=integer(), i.b=logical()),
               output=msg)
 
@@ -15730,7 +15732,8 @@ DT = data.table(z = 1i)
 test(2069.33, DT[DT, on = 'z'], error = "Type 'complex' is not supported for joining/merging")
 
 # forder verbose message when !isReallyReal Date, #1738
-DT = data.table(d=sample(seq(as.Date("2015-01-01"), as.Date("2015-01-05"), by="days"), 20, replace=TRUE))
+date_dbl = as.Date(as.double(seq(as.Date("2015-01-01"), as.Date("2015-01-05"), by="days")), origin="1970-01-01")
+DT = data.table(d=sample(date_dbl, 20, replace=TRUE))
 test(2070.01, typeof(DT$d), "double")
 test(2070.02, DT[, .N, keyby=d, verbose=TRUE], output="Column 1.*date.*8 byte double.*no fractions are present.*4 byte integer.*to save space and time")
 
@@ -18773,7 +18776,7 @@ if (test_bit64) local({
 # non-ASCII plain symbol in by, #4708
 # NB: recall we can't use non-ASCII symbols in the test script. The text is a-<n-tilde>-o (year in Spanish)
 native_ano = iconv("a\U00F1o", "UTF-8", "")
-if (!is.na(native_ano)) { # #6339: symbol must be represented in native encoding
+if (identical(native_ano, "a\U00F1o")) { # #6339: symbol must be represented in native encoding
   DT = data.table(a = rep(1:3, 2))
   setnames(DT, "a", native_ano)
   test(2266, eval(parse(text=sprintf("DT[ , .N, %s]$N[1L]", native_ano))), 2L)
@@ -19231,7 +19234,8 @@ test(2286,
        x<2, structure(list(1), class = "foo"),
        x<3, structure(list(2), class = "foo"),
        # Force gc() and some allocations which have a good chance at landing in the region that was earlier left unprotected
-       { gc(full = TRUE); replicate(10, FALSE); x<4 },
+       # TODO(R>=3.5.0): no need to branch here for gc(full=TRUE)
+       { if ("full" %in% names(formals(gc))) gc(full = TRUE) else gc(); replicate(10, FALSE); x<4 },
        `attr<-`(list(3), "class", "foo")),
      structure(list(1, 2, 3), class = "foo"))
 
@@ -20587,3 +20591,44 @@ test(2294.72,
                                 character(0)),
                     label = list(character = "C3", VCharA = "Total", integer = 2L))),
      warning = "For the following variables, the 'label' value was already in the data: [VCharB (label: C3), VIntA (label: 2)]")
+
+# setDT no longer leaks class modification to origin copy, #4784
+d1 = data.frame(a=1, row.names='b')
+d2 = d1
+setDT(d2)
+test(2295.1, !is.data.table(d1))
+test(2295.2, rownames(d1), 'b')
+test(2295.3, is.data.table(d2))
+
+# #6588: .checkTypos used to give arbitrary strings to stopf as the first argument
+test(2296, d2[x %no such operator% 1], error = '%no such operator%')
+
+# fix coercing integer/double for joins on multiple columns, #6602
+x = data.table(a=1L)
+y = data.table(c=1L, d=1)
+test(2297.01, y[x, on=.(c == a, d == a), verbose=TRUE], data.table(c=1L, d=1L), output="Coercing .*a to type double.*Coercing .*c to type double")
+test(2297.02, y[x, on=.(d == a, c == a), verbose=TRUE], data.table(c=1L, d=1L), output="Coercing .*a to type double.*Coercing .*c to type double")
+x = data.table(a=1)
+y = data.table(c=1, d=1L)
+test(2297.03, y[x, on=.(c == a, d == a), verbose=TRUE], data.table(c=1L, d=1L), output="Coercing .*a .*no fractions.* to type integer.*Coercing .*c .*no fractions.* to type integer")
+test(2297.04, y[x, on=.(d == a, c == a), verbose=TRUE], data.table(c=1L, d=1L), output="Coercing .*a .*no fractions.* to type integer.*Coercing .*c .*no fractions.* to type integer")
+# dates
+d_int = .Date(1L)
+d_dbl = .Date(1)
+x = data.table(a=d_int)
+y = data.table(c=d_int, d=d_dbl)
+test(2297.11, y[x, on=.(c == a, d == a)], data.table(c=d_int, d=d_int))
+test(2297.12, y[x, on=.(d == a, c == a)], data.table(c=d_int, d=d_int))
+x = data.table(a=d_dbl)
+y = data.table(c=d_dbl, d=d_int)
+test(2297.13, y[x, on=.(c == a, d == a)], data.table(c=d_int, d=d_int))
+test(2297.14, y[x, on=.(d == a, c == a)], data.table(c=d_int, d=d_int))
+# real double
+x = data.table(a=1)
+y = data.table(c=1.5, d=1L)
+test(2297.21, y[x, on=.(c == a, d == a)], data.table(c=1, d=1))
+test(2297.22, y[x, on=.(d == a, c == a)], data.table(c=1, d=1))
+# non right join
+x = data.table(a=1, b=2L)
+y = data.table(c=1.5, d=1L)
+test(2297.31, y[x, on=.(c == a, d == a), nomatch=NULL], output="Empty data.table (0 rows and 3 cols): c,d,b")

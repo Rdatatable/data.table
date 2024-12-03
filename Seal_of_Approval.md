@@ -6,18 +6,28 @@ Further detail about these packages and their relationship to `data.table` can b
 
 To add your package to this list, please [submit a Pull Request to The Raft](https://github.com/rdatatable-community/The-Raft/), making sure to follow the templated instructions.
 
-## Extension packages: Add to the internal functionality of `data.table`
+## Extension packages
+
+Adds to the internal functionality of `data.table`.
 
 - [nc](https://github.com/tdhock/nc): Named capture regular expressions for text parsing and data reshaping.
 
-## Application packages: Use `data.table` to accomplish a particular task or analysis.
+## Application packages
 
-## Bridge package: Translate data.table syntax to different syntax or provides helper functions for transitioning between `data.table` and another object type.
+Uses `data.table` to accomplish a particular task or analysis.
 
-- [tidyfast](https://github.com/TysonStanley/tidyfast): Fast and efficient alternatives to tidyr functions built on data.table
+- [mlr3](https://github.com/mlr-org/mlr3): A versatile machine learning framework built on data.table.
 
-- [dtplyr](https://github.com/tidyverse/dtplyr): A `data.table` backend for `dplyr`
+## Bridge packages
 
-## Partner package: Not necessarily directly connected to `data.table`, but deliberately follows the [core philosophies of `data.table`](https://github.com/Rdatatable/data.table/blob/master/GOVERNANCE.md#the-r-package).
+Translates `data.table` syntax to a different syntax, or provides helper functions for transitioning between `data.table` and another object type.
 
-- [collapse](https://github.com/SebKrantz/collapse): Advanced and Fast Data Transformation in R
+- [tidyfast](https://github.com/TysonStanley/tidyfast): Fast and efficient alternatives to tidyr functions built on `data.table`.
+
+- [dtplyr](https://github.com/tidyverse/dtplyr): A `data.table` backend for `dplyr`.
+
+## Partner packages
+
+Not necessarily directly connected to `data.table`, but deliberately follows the [core philosophies of `data.table`](https://github.com/Rdatatable/data.table/blob/master/GOVERNANCE.md#the-r-package).
+
+- [collapse](https://github.com/SebKrantz/collapse): Advanced and Fast Data Transformation in R.
