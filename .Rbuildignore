@@ -1,4 +1,5 @@
 .dir-locals.el
+.check.translations.R
 ^\.Rprofile$
 ^data\.table_.*\.tar\.gz$
 ^config\.log$
