@@ -69,10 +69,10 @@
   if (session_r_version < "3.6.0") {
     # no delayed registration support for NAMESPACE; perform it manually
     if (isNamespaceLoaded("knitr")) {
-        registerS3method("knit_print", "data.table", knit_print.data.table, envir = asNamespace("knitr"))
+      registerS3method("knit_print", "data.table", knit_print.data.table, envir = asNamespace("knitr"))
     }
     setHook(packageEvent("knitr", "onLoad"), function(...) {
-        registerS3method("knit_print", "data.table", knit_print.data.table, envir = asNamespace("knitr"))
+      registerS3method("knit_print", "data.table", knit_print.data.table, envir = asNamespace("knitr"))
     })
   }
 
