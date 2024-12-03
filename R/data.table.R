@@ -2736,7 +2736,7 @@ setnames = function(x,old,new,skip_absent=FALSE) {
   invisible(x)
 }
 
-setcolorder = function(x, neworder=key(x), before=NULL, after=NULL)  # before/after #4358
+setcolorder = function(x, neworder=key(x), before=NULL, after=NULL, skip_absent=FALSE)  # before/after #4358
 {
   if (is.character(neworder))
     check_duplicate_names(x)
@@ -2744,7 +2744,8 @@ setcolorder = function(x, neworder=key(x), before=NULL, after=NULL)  # before/af
     stopf("Provide either before= or after= but not both")
   if (length(before)>1L || length(after)>1L)
     stopf("before=/after= accept a single column name or number, not more than one")
-  neworder = colnamesInt(x, neworder, check_dups=FALSE)  # dups are now checked inside Csetcolorder below
+  neworder = colnamesInt(x, neworder, check_dups=FALSE, skip_absent=skip_absent)  # dups are now checked inside Csetcolorder below
+  neworder = neworder[neworder != 0] # tests 498.11, 498.13 fail w/o this
   if (length(before))
     neworder = c(setdiff(seq_len(colnamesInt(x, before) - 1L), neworder), neworder)
   if (length(after))
