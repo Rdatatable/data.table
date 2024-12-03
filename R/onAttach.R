@@ -31,7 +31,7 @@
     if (!.Call(ChasOpenMP)) {
       packageStartupMessagef("**********\nThis installation of data.table has not detected OpenMP support. It should still work but in single-threaded mode.\n", appendLF=FALSE)
       if (Sys.info()["sysname"] == "Darwin")
-        packageStartupMessagef("This is a Mac. Please read https://mac.r-project.org/openmp/. If you are a MacPorts users, reinstall data.table with OpenMP option: 'port install r-data.table +openmp'. Please engage with Apple and ask them for support. Check r-datatable.com for updates, and our Mac instructions here: https://github.com/Rdatatable/data.table/wiki/Installation. After several years of many reports of installation problems on Mac, it's time to gingerly point out that there have been no similar problems on Windows or Linux.\n**********")
+        packageStartupMessagef("This is a Mac. Please read https://mac.r-project.org/openmp/. MacPorts users may reinstall data.table with the OpenMP flag: 'port install r-data.table +openmp'. Please engage with Apple and ask them for support. Check r-datatable.com for updates, and our Mac instructions here: https://github.com/Rdatatable/data.table/wiki/Installation. After several years of many reports of installation problems on Mac, it's time to gingerly point out that there have been no similar problems on Windows or Linux.\n**********")
       else
         packageStartupMessagef("This is %s. This warning should not normally occur on Windows or Linux where OpenMP is turned on by data.table's configure script by passing -fopenmp to the compiler. If you see this warning on Windows or Linux, please file a GitHub issue.\n**********", Sys.info()["sysname"])
     }
