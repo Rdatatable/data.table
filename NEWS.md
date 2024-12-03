@@ -111,6 +111,8 @@ rowwiseDT(
 
 12. Joins on multiple columns, such as `x[y, on=c("x1==y1", "x2==y1")]`, could fail during implicit type coercions if `x1` and `x2` had different but still compatible types, [#6602](https://github.com/Rdatatable/data.table/issues/6602). This was particularly unexpected when columns `x1`, `x2`, and `y1` were all of the same class, e.g. `Date`, but differed in their underlying storage types. Thanks to Benjamin Schwendinger for the report and the fix.
 
+13. `rbindlist(l, use.names=TRUE)` can now handle different encodings for the column names in different entries of `l`, [#5452](https://github.com/Rdatatable/data.table/issues/5452). Thanks to @MEO265 for the report, and Benjamin Schwendinger for the fix.
+
 ## NOTES
 
 1. Tests run again when some Suggests packages are missing, [#6411](https://github.com/Rdatatable/data.table/issues/6411). Thanks @aadler for the note and @MichaelChirico for the fix.
