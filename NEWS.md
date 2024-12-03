@@ -113,6 +113,8 @@ rowwiseDT(
 
 13. `rbindlist(l, use.names=TRUE)` can now handle different encodings for the column names in different entries of `l`, [#5452](https://github.com/Rdatatable/data.table/issues/5452). Thanks to @MEO265 for the report, and Benjamin Schwendinger for the fix.
 
+14. Added a `data.frame` method for `format_list_item()` to fix error printing data.tables with columns containing 1-column data.frames, [#6592](https://github.com/Rdatatable/data.table/issues/6592). Thanks to @r2evans for the bug report and fix.
+
 ## NOTES
 
 1. Tests run again when some Suggests packages are missing, [#6411](https://github.com/Rdatatable/data.table/issues/6411). Thanks @aadler for the note and @MichaelChirico for the fix.
