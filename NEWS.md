@@ -65,6 +65,8 @@ rowwiseDT(
 
 4. `patterns()` in `melt()` combines correctly with user-defined `cols=`, which can be useful to specify a subset of columns to reshape without having to use a regex, for example `patterns("2", cols=c("y1", "y2"))` will only give `y2` even if there are other columns in the input matching `2`, [#6498](https://github.com/Rdatatable/data.table/issues/6498). Thanks to @hongyuanjia for the report, and to @tdhock for the PR.
 
+5. `setcolorder()` gains `skip_absent` to ignore unrecognized columns (i.e. columns included in `neworder` but not present in the data), [#6044,  #6068](https://github.com/Rdatatable/data.table/pull/6044). Default behavior (`skip_absent=FALSE`) remains unchanged, i.e. unrecognized columns result in an error. Thanks to @sluga for the suggestion and @sluga & @Nj221102 for the PRs.
+
 ## BUG FIXES
 
 1. `fwrite()` respects `dec=','` for timestamp columns (`POSIXct` or `nanotime`) with sub-second accuracy, [#6446](https://github.com/Rdatatable/data.table/issues/6446). Thanks @kav2k for pointing out the inconsistency and @MichaelChirico for the PR.
@@ -220,8 +222,6 @@ rowwiseDT(
     d. Gains new argument `show.indices` (with corresponding option `datatable.show.indices`) that allows the user to print a `data.table`'s indices as columns without having to modify the `data.table` itself. Thanks @MichaelChirico for the report and @joshhwuu for the PR.
 
     e. Displays `integer64` columns correctly by loading {bit64} if needed, [#6224](https://github.com/Rdatatable/data.table/issues/6224). Thanks @renkun-ken for the report and @MichaelChirico for the fix.
-
-11. `setcolorder()` gains `skip_absent` to ignore unrecognized columns (i.e. columns included in `neworder` but not present in the data), [#6044,  #6068](https://github.com/Rdatatable/data.table/pull/6044). Default behavior (`skip_absent=FALSE`) remains unchanged, i.e. unrecognized columns result in an error. Thanks to @sluga for the suggestion and @sluga & @Nj221102 for the PRs.
 
 ## BUG FIXES
 
