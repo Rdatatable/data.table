@@ -67,7 +67,7 @@ rowwiseDT(
 
 5. `fwrite()` with `compress="gzip"` produces compatible gz files when composed of multiple independent chunks owing to parallelization, [#6356](https://github.com/Rdatatable/data.table/issues/6356).  Earlier `fwrite()` versions could have issues with HTTP upload using `Content-Encoding: gzip` and `Transfer-Encoding: chunked`. Thanks to @oliverfoster for report and @philippechataignon for the fix.
 
-6. `fwrite()` gains a new parameter `compressLevel` to control compression level for gzip, [#5506](https://github.com/Rdatatable/data.table/issues/5506). This parameter balances compression speed and total compression, and corresponds directly to the analogous command-line parameter, e.g. `compressLevel=4` corresponds to passing `-4`; the default, `6`, matches the command-line default. Thanks @mgarbuzov for the request and @philippechataignon for implementing.
+6. `fwrite()` gains a new parameter `compressLevel` to control compression level for gzip, [#5506](https://github.com/Rdatatable/data.table/issues/5506). This parameter balances compression speed and total compression, and corresponds directly to the analogous command-line parameter, e.g. `compressLevel=4` corresponds to passing `-4`; the default, `6`, matches the command-line default, i.e. equivalent to passing `-6`. Thanks @mgarbuzov for the request and @philippechataignon for implementing.
 
 ## BUG FIXES
 
