@@ -10543,9 +10543,11 @@ test(1702.1, isoweek(test_cases), test_values)
 #   but calculating from Date brings these into play, #2407
 test(1702.2, isoweek(as.Date(test_cases)), test_values)
 
-# *** DST ERROR WHEN Sys.timezone() = 'America/Argentina/Buenos_Aires' ***
+# *** OBSCURE DST ERROR WHEN Sys.timezone() = 'America/Argentina/Buenos_Aires' ***
 # *** 00:00 does not exist, h/t rikivillalba@ who worked through this  ***
 # *** https://techcommunity.microsoft.com/blog/dstblog/argentina-is-changing-their-daylight-saving-time-on-december-30/311020 ***
+# *** https://mm.icann.org/pipermail/tz/2007-December/014743.html ***
+# *** Official IANA sources: https://www.iana.org/time-zones ***
 test(1702.3, isoweek(as.POSIXct(test_cases)), test_values)
 
 # 1% sample of a 400-year cycle of dates for extra robustness
