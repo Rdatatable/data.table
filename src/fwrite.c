@@ -184,7 +184,7 @@ void writeFloat64(const void *col, int64_t row, char **pch)
   // technique similar to base R (format.c:formatReal and printutils.c:EncodeReal0)
   // differences/tricks :
   //   i) no buffers. writes straight to the final file buffer passed to write()
-  //  ii) no C libary calls such as sprintf() where the fmt string has to be interpretted over and over
+  //  ii) no C library calls such as sprintf() where the fmt string has to be interpreted over and over
   // iii) no need to return variables or flags.  Just writes.
   //  iv) shorter, easier to read and reason with in one self contained place.
   double x = ((const double *)col)[row];
@@ -371,7 +371,7 @@ static inline void write_date(int32_t x, char **pch)
     write_chars(na, &ch);
   } else {
     x += 719468;  // convert days from 1970-01-01 to days from 0000-03-01 (the day after 29 Feb 0000)
-    int y = (x - x/1461 + x/36525 - x/146097) / 365;  // year of the preceeding March 1st
+    int y = (x - x/1461 + x/36525 - x/146097) / 365;  // year of the preceding March 1st
     int z =  x - y*365 - y/4 + y/100 - y/400 + 1;     // days from March 1st in year y
     int md = monthday[z];  // See fwriteLookups.h for how the 366 item lookup 'monthday' is arranged
     y += z && (md/100)<3;  // The +1 above turned z=-1 to 0 (meaning Feb29 of year y not Jan or Feb of y+1)
@@ -442,7 +442,7 @@ void writePOSIXct(const void *col, int64_t row, char **pch)
       // don't use writeInteger() because it doesn't 0 pad which we need here
       // integer64 is big enough for squash with milli but not micro; trunc (not round) micro when squash
       m /= 1000;
-      *ch++ = '.';
+      *ch++ = dec;
       ch -= squashDateTime;
       *(ch+2) = '0'+m%10; m/=10;
       *(ch+1) = '0'+m%10; m/=10;
@@ -450,7 +450,7 @@ void writePOSIXct(const void *col, int64_t row, char **pch)
       ch += 3;
     } else if (m) {
       // microseconds are present and !squashDateTime
-      *ch++ = '.';
+      *ch++ = dec;
       *(ch+5) = '0'+m%10; m/=10;
       *(ch+4) = '0'+m%10; m/=10;
       *(ch+3) = '0'+m%10; m/=10;
@@ -465,6 +465,7 @@ void writePOSIXct(const void *col, int64_t row, char **pch)
   *pch = ch;
 }
 
+// # nocov start. Covered in other.Rraw test 22, not the main suite.
 void writeNanotime(const void *col, int64_t row, char **pch)
 {
   int64_t x = ((const int64_t *)col)[row];
@@ -488,7 +489,7 @@ void writeNanotime(const void *col, int64_t row, char **pch)
     *ch++ = 'T';
     ch -= squashDateTime;
     write_time(s, &ch);
-    *ch++ = '.';
+    *ch++ = dec;
     ch -= squashDateTime;
     for (int i=8; i>=0; i--) { *(ch+i) = '0'+n%10; n/=10; }  // always 9 digits for nanoseconds
     ch += 9;
@@ -497,6 +498,7 @@ void writeNanotime(const void *col, int64_t row, char **pch)
   }
   *pch = ch;
 }
+// # nocov end
 
 static inline void write_string(const char *x, char **pch)
 {
@@ -587,6 +589,14 @@ int compressbuff(z_stream *stream, void* dest, size_t *destLen, const void* sour
 }
 #endif
 
+/*
+  OpenMP is used here primarily to parallelize the process of writing rows
+    to the output file, but error handling and compression (if enabled) are
+    also managed within the parallel region. Special attention is paid to
+    thread safety and synchronization, especially in the ordered sections
+    where output to the file and handling of errors is serialized to maintain
+    the correct sequence of rows.
+*/
 void fwriteMain(fwriteMainArgs args)
 {
   double startTime = wallclock();
@@ -599,6 +609,7 @@ void fwriteMain(fwriteMainArgs args)
   dec = args.dec;
   scipen = args.scipen;
   doQuote = args.doQuote;
+  int8_t quoteHeaders = args.doQuote;
   verbose = args.verbose;
 
   // When NA is a non-empty string, then we must quote all string fields in case they contain the na string
@@ -619,15 +630,16 @@ void fwriteMain(fwriteMainArgs args)
 
   if (verbose) {
     DTPRINT(_("Column writers: "));
+    // # notranslate start
     if (args.ncol<=50) {
-      for (int j=0; j<args.ncol; j++) DTPRINT(_("%d "), args.whichFun[j]);
+      for (int j=0; j<args.ncol; j++) DTPRINT("%d ", args.whichFun[j]);
     } else {
-      for (int j=0; j<30; j++) DTPRINT(_("%d "), args.whichFun[j]);
+      for (int j=0; j<30; j++) DTPRINT("%d ", args.whichFun[j]);
       DTPRINT(_("... "));
-      for (int j=args.ncol-10; j<args.ncol; j++) DTPRINT(_("%d "), args.whichFun[j]);
+      for (int j=args.ncol-10; j<args.ncol; j++) DTPRINT("%d ", args.whichFun[j]);
     }
-    DTPRINT(_("\nargs.doRowNames=%d args.rowNames=%p args.rowNameFun=%d doQuote=%d args.nrow=%"PRId64" args.ncol=%d eolLen=%d\n"),
-          args.doRowNames, args.rowNames, args.rowNameFun, doQuote, args.nrow, args.ncol, eolLen);
+    DTPRINT("\nargs.doRowNames=%d args.rowNames=%p args.rowNameFun=%d doQuote=%d args.nrow=%"PRId64" args.ncol=%d eolLen=%d\n", args.doRowNames, args.rowNames, args.rowNameFun, doQuote, args.nrow, args.ncol, eolLen);
+    // # notranslate end
   }
 
   // Calculate upper bound for line length. Numbers use a fixed maximum (e.g. 12 for integer) while strings find the longest
@@ -660,8 +672,8 @@ void fwriteMain(fwriteMainArgs args)
       case WF_List:
         width = getMaxListItemLen(args.columns[j], args.nrow);
         break;
-      default:
-        STOP(_("Internal error: type %d has no max length method implemented"), args.whichFun[j]);  // # nocov
+      default: // # nocov
+        INTERNAL_STOP("type %d has no max length method implemented", args.whichFun[j]);  // # nocov
       }
     }
     if (args.whichFun[j]==WF_Float64 && args.scipen>0) width+=MIN(args.scipen,350); // clamp width to IEEE754 max to avoid scipen=99999 allocating buffer larger than can ever be written
@@ -714,7 +726,8 @@ void fwriteMain(fwriteMainArgs args)
   }
   if (headerLen) {
     char *buff = malloc(headerLen);
-    if (!buff) STOP(_("Unable to allocate %zu MiB for header: %s"), headerLen / 1024 / 1024, strerror(errno));
+    if (!buff)
+      STOP(_("Unable to allocate %zu MiB for header: %s"), headerLen / 1024 / 1024, strerror(errno)); // # nocov
     char *ch = buff;
     if (args.bom) {*ch++=(char)0xEF; *ch++=(char)0xBB; *ch++=(char)0xBF; }  // 3 appears above (search for "bom")
     memcpy(ch, args.yaml, yamlLen);
@@ -726,11 +739,14 @@ void fwriteMain(fwriteMainArgs args)
         *ch = sep;
         ch += sepLen;
       }
+      int8_t tempDoQuote = doQuote;
+      doQuote = quoteHeaders; // temporary overwrite since headers might get different quoting behavior, #2964
       for (int j=0; j<args.ncol; j++) {
         writeString(args.colNames, j, &ch);
         *ch = sep;
         ch += sepLen;
       }
+      doQuote = tempDoQuote;
       ch -= sepLen; // backup over the last sep
       write_chars(args.eol, &ch);
     }
@@ -767,7 +783,7 @@ void fwriteMain(fwriteMainArgs args)
       free(buff);
       if (ret1 || ret2==-1) {
         // # nocov start
-        int errwrite = errno; // capture write errno now incase close fails with a different errno
+        int errwrite = errno; // capture write errno now in case close fails with a different errno
         CLOSE(f);
         if (ret1) STOP(_("Compress gzip error: %d"), ret1);
         else      STOP(_("%s: '%s'"), strerror(errwrite), args.filename);
@@ -826,8 +842,8 @@ void fwriteMain(fwriteMainArgs args)
   }
   char *zbuffPool = NULL;
   if (args.is_gzip) {
-    zbuffPool = malloc(nth*(size_t)zbuffSize);
 #ifndef NOZLIB
+    zbuffPool = malloc(nth*(size_t)zbuffSize);
     if (!zbuffPool) {
       // # nocov start
       free(buffPool);
@@ -843,7 +859,9 @@ void fwriteMain(fwriteMainArgs args)
   int failed_write = 0;    // same. could use +ve and -ve in the same code but separate it out to trace Solaris problem, #3931
 
 #ifndef NOZLIB
-  z_stream thread_streams[nth];
+  z_stream *thread_streams = (z_stream *)malloc(nth * sizeof(z_stream));
+  if (!thread_streams)
+    STOP(_("Failed to allocated %d bytes for '%s'."), (int)(nth * sizeof(z_stream)), "thread_streams"); // # nocov
   // VLA on stack should be fine for nth structs; in zlib v1.2.11 sizeof(struct)==112 on 64bit
   // not declared inside the parallel region because solaris appears to move the struct in
   // memory when the #pragma omp for is entered, which causes zlib's internal self reference
@@ -945,10 +963,10 @@ void fwriteMain(fwriteMainArgs args)
             int ETA = (int)((args.nrow-end)*((now-startTime)/end));
             if (hasPrinted || ETA >= 2) {
               if (verbose && !hasPrinted) DTPRINT("\n");
-              DTPRINT("\rWritten %.1f%% of %"PRId64" rows in %d secs using %d thread%s. "
-                      "maxBuffUsed=%d%%. ETA %d secs.      ",
-                       (100.0*end)/args.nrow, args.nrow, (int)(now-startTime), nth, nth==1?"":"s",
-                       maxBuffUsedPC, ETA);
+              DTPRINT(Pl_(nth,
+                          "\rWritten %.1f%% of %"PRId64" rows in %d secs using %d thread. maxBuffUsed=%d%%. ETA %d secs.      ",
+                          "\rWritten %.1f%% of %"PRId64" rows in %d secs using %d threads. maxBuffUsed=%d%%. ETA %d secs.      "),
+                       (100.0*end)/args.nrow, args.nrow, (int)(now-startTime), nth, maxBuffUsedPC, ETA);
               // TODO: use progress() as in fread
               nextTime = now+1;
               hasPrinted = true;
@@ -982,7 +1000,10 @@ void fwriteMain(fwriteMainArgs args)
     }
   }
   free(buffPool);
+#ifndef NOZLIB
+  free(thread_streams);
   free(zbuffPool);
+#endif
 
   // Finished parallel region and can call R API safely now.
   if (hasPrinted) {

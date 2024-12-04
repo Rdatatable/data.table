@@ -6,8 +6,8 @@
 SEXP dt_na(SEXP x, SEXP cols) {
   int n=0, elem;
 
-  if (!isNewList(x)) error(_("Internal error. Argument '%s' to %s is type '%s' not '%s'"), "x", "Cdt_na", type2char(TYPEOF(x)), "list"); // # nocov
-  if (!isInteger(cols)) error(_("Internal error. Argument '%s' to %s is type '%s' not '%s'"), "cols", "Cdt_na", type2char(TYPEOF(cols)), "integer"); // # nocov
+  if (!isNewList(x)) internal_error(__func__, "Argument '%s' to %s is type '%s' not '%s'", "x", "Cdt_na", type2char(TYPEOF(x)), "list"); // # nocov
+  if (!isInteger(cols)) internal_error(__func__, "Argument '%s' to %s is type '%s' not '%s'", "cols", "Cdt_na", type2char(TYPEOF(cols)), "integer"); // # nocov
   for (int i=0; i<LENGTH(cols); ++i) {
     elem = INTEGER(cols)[i];
     if (elem<1 || elem>LENGTH(x))
@@ -34,7 +34,7 @@ SEXP dt_na(SEXP x, SEXP cols) {
     }
       break;
     case STRSXP: {
-      const SEXP *sv = STRING_PTR(v);
+      const SEXP *sv = STRING_PTR_RO(v);
       for (int j=0; j<n; ++j) ians[j] |= (sv[j] == NA_STRING);
     }
       break;
@@ -107,7 +107,7 @@ SEXP dt_na(SEXP x, SEXP cols) {
 
 SEXP frank(SEXP xorderArg, SEXP xstartArg, SEXP xlenArg, SEXP ties_method) {
   const int *xstart = INTEGER(xstartArg), *xlen = INTEGER(xlenArg), *xorder = INTEGER(xorderArg);
-  enum {MEAN, MAX, MIN, DENSE, SEQUENCE, LAST} ties; // RUNLENGTH
+  enum {MEAN, MAX, MIN, DENSE, SEQUENCE, LAST} ties=0; // RUNLENGTH
 
   const char *pties = CHAR(STRING_ELT(ties_method, 0));
   if (!strcmp(pties, "average"))  ties = MEAN;
@@ -117,7 +117,7 @@ SEXP frank(SEXP xorderArg, SEXP xstartArg, SEXP xlenArg, SEXP ties_method) {
   else if (!strcmp(pties, "sequence")) ties = SEQUENCE;
   else if (!strcmp(pties, "last")) ties = LAST;
   // else if (!strcmp(pties, "runlength")) ties = RUNLENGTH;
-  else error(_("Internal error: invalid ties.method for frankv(), should have been caught before. please report to data.table issue tracker")); // # nocov
+  else internal_error(__func__, "invalid ties.method, should have been caught before"); // # nocov
   const int n = length(xorderArg);
   SEXP ans = PROTECT(allocVector(ties==MEAN ? REALSXP : INTSXP, n));
   int *ians=NULL;
@@ -174,7 +174,7 @@ SEXP frank(SEXP xorderArg, SEXP xstartArg, SEXP xlenArg, SEXP ties_method) {
     //       INTEGER(ans)[xorder[j]-1] = k++;
     //   }
     //   break;
-    default: error(_("Internal error: unknown ties value in frank: %d"), ties); // #nocov
+    default: internal_error(__func__, "unknown ties value: %d", ties); // # nocov
     }
   }
   UNPROTECT(1);
@@ -184,8 +184,8 @@ SEXP frank(SEXP xorderArg, SEXP xstartArg, SEXP xlenArg, SEXP ties_method) {
 // internal version of anyNA for data.tables
 SEXP anyNA(SEXP x, SEXP cols) {
   int n=0;
-  if (!isNewList(x)) error(_("Internal error. Argument '%s' to %s is type '%s' not '%s'"), "x", "CanyNA", type2char(TYPEOF(x)), "list"); // #nocov
-  if (!isInteger(cols)) error(_("Internal error. Argument '%s' to %s is type '%s' not '%s'"), "cols", "CanyNA", type2char(TYPEOF(cols)), "integer"); // # nocov
+  if (!isNewList(x)) internal_error(__func__, "Argument '%s' to %s is type '%s' not '%s'", "x", "CanyNA", type2char(TYPEOF(x)), "list"); // #nocov
+  if (!isInteger(cols)) internal_error(__func__, "Argument '%s' to %s is type '%s' not '%s'", "cols", "CanyNA", type2char(TYPEOF(cols)), "integer"); // # nocov
   for (int i=0; i<LENGTH(cols); ++i) {
     const int elem = INTEGER(cols)[i];
     if (elem<1 || elem>LENGTH(x))
@@ -209,7 +209,7 @@ SEXP anyNA(SEXP x, SEXP cols) {
       while(j<n && iv[j]!=NA_INTEGER) j++;
     } break;
     case STRSXP: {
-      const SEXP *sv = STRING_PTR(v);
+      const SEXP *sv = STRING_PTR_RO(v);
       while (j<n && sv[j]!=NA_STRING) j++;
     } break;
     case REALSXP:

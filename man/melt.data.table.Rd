@@ -27,11 +27,11 @@ non-measure columns will be assigned to it. If integer, must be positive; see De
     \item{ When missing, \code{measure.vars} will become all columns outside \code{id.vars}. }
     \item{ Vector can be \code{integer} (implying column numbers) or \code{character} (column names). }
     \item{ \code{list} is a generalization of the vector version -- each element of the list (which should be \code{integer} or \code{character} as above) will become a \code{melt}ed column. }
-    \item{ Pattern-based column matching can be achieved with the regular expression-based \code{\link{patterns}} syntax; multiple patterns will produce multiple columns. }
+    \item{ Pattern-based column matching can be achieved with the regular expression-based \code{\link{patterns}} (regex without capture groups; matching column names are used in the \code{variable.name} output column), or \code{\link{measure}} (regex with capture groups; each capture group becomes an output column). }
   }
 
     For convenience/clarity in the case of multiple \code{melt}ed columns, resulting column names can be supplied as names to the elements \code{measure.vars} (in the \code{list} and \code{patterns} usages). See also \code{Examples}. }
-\item{variable.name}{name (default \code{'variable'}) of output column containing information about which input column(s) were melted. If \code{measure.vars} is an integer/character vector, then each entry of this column contains the name of a melted column from \code{data}. If \code{measure.vars} is a list of integer/character vectors, then each entry of this column contains an integer indicating an index/position in each of those vectors. If \code{measure.vars} has attribute \code{variable_table} then it must be a data table with nrow = length of \code{measure.vars} vector(s), each row describing the corresponding measured variables(s), (typically created via \code{measure}) and its columns will be output instead of the \code{variable.name} column.}
+\item{variable.name}{name (default \code{'variable'}) of output column containing information about which input column(s) were melted. If \code{measure.vars} is an integer/character vector, then each entry of this column contains the name of a melted column from \code{data}. If \code{measure.vars} is a list of integer/character vectors, then each entry of this column contains an integer indicating an index/position in each of those vectors. If \code{measure.vars} has attribute \code{variable_table} then it must be a data table with nrow = length of \code{measure.vars} vector(s), each row describing the corresponding measured variables(s), (typically created via \code{\link{measure}}) and its columns will be output instead of the \code{variable.name} column.}
 \item{value.name}{name for the molten data values column(s). The default name is \code{'value'}. Multiple names can be provided here for the case when \code{measure.vars} is a \code{list}, though note well that the names provided in \code{measure.vars} take precedence. }
 \item{na.rm}{If \code{TRUE}, \code{NA} values will be removed from the molten
 data.}
@@ -66,8 +66,8 @@ into multiple columns in a single function call efficiently.
 If a vector in the list contains missing values, or is shorter than the
 max length of the list elements, then the output will include runs of
 missing values at the specified position, or at the end.
-The function
-\code{\link{patterns}} can be used to provide regular expression patterns. When
+The functions
+\code{\link{patterns}} and \code{\link{measure}} can be used to provide regular expression patterns. When
 used along with \code{melt}, if \code{cols} argument is not provided, the
 patterns will be matched against \code{names(data)}, for convenience.
 
@@ -154,6 +154,11 @@ melt(DT.missing.cols, measure.vars=measure(value.name, number=as.integer, sep="_
 
 # specifying columns to melt via regex.
 melt(DT.missing.cols, measure.vars=measure(value.name, number=as.integer, pattern="(.)_(.)"))
+melt(DT.missing.cols, measure.vars=measure(value.name, number=as.integer, pattern="([dc])_(.)"))
+
+# cols arg of measure can be used if you do not want to use regex
+melt(DT.missing.cols, measure.vars=measure(
+  value.name, number=as.integer, sep="_", cols=c("d_1","d_2","c_1")))
 }
 \seealso{
   \code{\link{dcast}}, \url{https://cran.r-project.org/package=reshape}

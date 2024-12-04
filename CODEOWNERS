@@ -1,9 +1,12 @@
 # https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
-* @mattdowle
+* @michaelchirico
 
-# melt
+# reshaping
+/R/fcast.R @tdhock
 /R/fmelt.R @tdhock
+/src/fcast.c @tdhock
 /src/fmelt.c @tdhock
+/man/dcast.data.table.Rd @tdhock
 /man/melt.data.table.Rd @tdhock
 /vignettes/datatable-reshape.Rmd @tdhock
 
@@ -32,14 +35,39 @@
 /src/shift.c @ben-schwen @michaelchirico
 /man/shift.Rd @ben-schwen @michaelchirico
 
+# rbind
+/src/rbindlist.c @ben-schwen
+/man/rbindlist.Rd @ben-schwen
+
 # translations
 /inst/po/ @michaelchirico
 /po/ @michaelchirico
 /R/translation.R @michaelchirico
 /src/po.h @michaelchirico
+/po/*.pot @Rdatatable/translators
+/po/*zh_CN.po @Rdatatable/chinese
+/po/*pt_BR.po @Rdatatable/brazil
+/po/*es.po @Rdatatable/spanish
 
 # printing
 /R/print.data.table.R @michaelchirico
 
 # .SD vignette
 /vignettes/datatable-sd-usage.Rmd @michaelchirico
+
+# assign
+/src/assign.c @HughParsonage
+
+# utils
+/src/utils.c @HughParsonage
+
+# performance testing
+/.ci/atime/tests.R @tdhock @Anirban166
+/.github/workflows/performance-tests.yaml @Anirban166
+
+# docs
+/man/openmp-utils.Rd @Anirban166
+/Seal_of_Approval.md @tdhock
+
+# GLCI
+.gitlab-ci.yml @jangorecki @ben-schwen

@@ -1,7 +1,7 @@
 // For translations (#4402) we need positional specifiers (%n$), a non-C99 POSIX extension.
 // On Linux and Mac, standard snprintf supports positional specifiers.
 // On Windows, we tried many things but just couldn't achieve linking to _sprintf_p. Even
-// if we managed that on AppVeyor we may have fragility in the future on Windows given
+// if we managed that on AppVeyor (now GHA) we may have fragility in the future on Windows given
 // varying Windows versions, compile environments/flags, and dll libraries. This may be
 // why R uses a third party library, trio, on Windows. But R does not expose trio for use
 // by packages.
@@ -19,6 +19,7 @@
 #include "data.table.h"
 #include <stdarg.h>
 #include <ctype.h>  // isdigit
+#include <string.h>  // strncpy
 #undef snprintf // on Windows, just in this file, we do want to use the C library's snprintf
 
 int dt_win_snprintf(char *dest, const size_t n, const char *fmt, ...)
@@ -106,7 +107,7 @@ int dt_win_snprintf(char *dest, const size_t n, const char *fmt, ...)
       return -1;
     }
     *ch2++ = '%';
-    strncpy(ch2, strp[i], strl[i]); // write the reordered specifers without the n$ part
+    strncpy(ch2, strp[i], strl[i]); // write the reordered specifiers without the n$ part
     ch2 += strl[i];
     strcpy(ch2, delim); // includes '\0'
     ch2 += NDELIM;      // now resting on the '\0'
@@ -119,7 +120,7 @@ int dt_win_snprintf(char *dest, const size_t n, const char *fmt, ...)
     return -1;
     // # nocov end
   }
-  // now spec contains the specifiers (minus their $n parts) in the same oder as ap
+  // now spec contains the specifiers (minus their $n parts) in the same order as ap
   int res = vsnprintf(buff, n, spec, ap); // C library does all the (non-positional) hard work here
   va_end(ap);
   if (res>=n) {

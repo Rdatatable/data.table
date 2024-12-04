@@ -11,13 +11,13 @@ ii) Overhead of repeated calls to S3 dispatch of mean to mean.default
 is avoided by calling C directly. See wiki point 3 for the large
 difference this makes.
 Ordinarily we prefer not to duplicate base R stats functions in case
-we introduce a bug or create additonal maintenance burden. But,
+we introduce a bug or create additional maintenance burden. But,
 mean() is so slow, and so much slower than sum(), and so commonly used
 and benchmarked, that it warrants this fast mean.
 We can't call .Internal(mean(x)) because that's disallowed by QC.R, but
 anyway .Internal(mean(x)) doesn't respect na.rm=TRUE.
 We are careful to retain the double scan that summary.c does that
-adjusts for accumalated rounding errors in floating point.
+adjusts for accumulated rounding errors in floating point.
 
 We explicitly test that fastmean returns the same result as
 base::mean in test.data.table(). For that we use exact equality under
@@ -36,7 +36,7 @@ SEXP fastmean(SEXP args)
   if (length(args)>2) {
     tmp = CADDR(args);
     if (!isLogical(tmp) || LENGTH(tmp)!=1 || LOGICAL(tmp)[0]==NA_LOGICAL)
-      error(_("narm should be TRUE or FALSE"));  // # nocov ; [.data.table should construct the .External call correctly
+      error(_("%s should be TRUE or FALSE"), "narm");  // # nocov ; [.data.table should construct the .External call correctly
     narm=LOGICAL(tmp)[0];
   }
   PROTECT(ans = allocNAVector(REALSXP, 1));
@@ -61,7 +61,7 @@ SEXP fastmean(SEXP args)
       break;
     case REALSXP:
       for (int i=0; i<l; ++i) {
-        if(ISNAN(REAL(x)[i])) continue;  // TO DO: could drop this line and let NA propogate?
+        if(ISNAN(REAL(x)[i])) continue;  // TO DO: could drop this line and let NA propagate?
         s += REAL(x)[i];
         n++;
       }
@@ -79,8 +79,8 @@ SEXP fastmean(SEXP args)
       }
       REAL(ans)[0] = (double) s;
       break;
-    default:
-      error(_("Internal error: type '%s' not caught earlier in fastmean"), type2char(TYPEOF(x)));  // # nocov
+    default: // # nocov
+      internal_error(__func__, "type '%s' not caught earlier in fastmean", type2char(TYPEOF(x)));  // # nocov
     }
   } else {  // narm==FALSE
     switch(TYPEOF(x)) {
@@ -107,8 +107,8 @@ SEXP fastmean(SEXP args)
       }
       REAL(ans)[0] = (double) s;
       break;
-    default:
-      error(_("Internal error: type '%s' not caught earlier in fastmean"), type2char(TYPEOF(x)));  // # nocov
+    default: // # nocov
+      internal_error(__func__, "type '%s' not caught earlier in fastmean", type2char(TYPEOF(x)));  // # nocov
     }
   }
   UNPROTECT(1);

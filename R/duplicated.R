@@ -28,7 +28,7 @@ unique.data.table = function(x, incomparables=FALSE, fromLast=FALSE, by=seq_alon
   if (!isFALSE(incomparables)) {
     .NotYetUsed("incomparables != FALSE")
   }
-  if (nrow(x) <= 1L) return(x)
+  if (nrow(x) <= 1L) return(copy(x)) # unique(x)[, col := val] should not alter x, #5932
   if (!length(by)) by = NULL  #4594
   o = forderv(x, by=by, sort=FALSE, retGrp=TRUE)
   if (!is.null(cols)) {
@@ -102,7 +102,7 @@ anyDuplicated.data.table = function(x, incomparables=FALSE, fromLast=FALSE, by=s
 uniqueN = function(x, by = if (is.list(x)) seq_along(x) else NULL, na.rm=FALSE) { # na.rm, #1455
   if (is.null(x)) return(0L)
   if (!is.atomic(x) && !is.data.frame(x))
-    stopf("x must be an atomic vector or data.frames/data.tables")
+    stopf("x must be an atomic vector or a data.frame/data.table")
   if (is.atomic(x)) {
     if (is.logical(x)) return(.Call(CuniqueNlogical, x, na.rm=na.rm))
     x = as_list(x)
@@ -118,4 +118,3 @@ uniqueN = function(x, by = if (is.list(x)) seq_along(x) else NULL, na.rm=FALSE) 
     length(starts)
   }
 }
-

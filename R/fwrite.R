@@ -27,7 +27,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   if (!missing(logical01) && !missing(logicalAsInt))
     stopf("logicalAsInt has been renamed logical01. Use logical01 only, not both.")
   if (!missing(logicalAsInt)) {
-    # TODO: warningf("logicalAsInt has been renamed logical01 for consistency with fread. It will work fine but please change to logical01 at your convenience so we can remove logicalAsInt in future.")
+    warningf("logicalAsInt has been renamed logical01 for consistency with fread. It works fine for now but please change to logical01 at your convenience so we can remove logicalAsInt in future.")
     logical01 = logicalAsInt
     logicalAsInt=NULL
   }
@@ -38,11 +38,17 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   # validate arguments
   if (is.matrix(x)) { # coerce to data.table if input object is matrix
     messagef("x being coerced from class: matrix to data.table")
-    x = as.data.table(x)
+    # keep row.names for matrix input #5315
+    if (row.names && !is.null(rownames(x))) {
+      row.names = FALSE
+      x = as.data.table(x, keep.rownames="")
+    } else {
+      x = as.data.table(x)
+    }
   }
   stopifnot(is.list(x),
     identical(quote,"auto") || isTRUEorFALSE(quote),
-    is.character(sep) && length(sep)==1L && (nchar(sep) == 1L || sep == ""),
+    is.character(sep) && length(sep)==1L && (nchar(sep) == 1L || identical(sep, "")),
     is.character(sep2) && length(sep2)==3L && nchar(sep2[2L])==1L,
     is.character(dec) && length(dec)==1L && nchar(dec) == 1L,
     dec != sep,  # sep2!=dec and sep2!=sep checked at C level when we know if list columns are present
@@ -58,7 +64,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
     length(nThread)==1L && !is.na(nThread) && nThread>=1L
     )
 
-  is_gzip = compress == "gzip" || (compress == "auto" && grepl("\\.gz$", file))
+  is_gzip = compress == "gzip" || (compress == "auto" && endsWithAny(file, ".gz"))
 
   file = path.expand(file)  # "~/foo/bar"
   if (append && (file=="" || file.exists(file))) {
@@ -85,6 +91,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
       return(invisible())
     }
   }
+  # nocov start. See test 17 in other.Rraw, not tested in the main suite.
   yaml = if (!yaml) "" else {
     if (!requireNamespace('yaml', quietly=TRUE))
       stopf("'data.table' relies on the package 'yaml' to write the file header; please add this to your library with install.packages('yaml') and try again.") # nocov
@@ -108,6 +115,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
     )
     paste0('---', eol, yaml::as.yaml(yaml_header, line.sep=eol), '---', eol) # NB: as.yaml adds trailing newline
   }
+  # nocov end
   file = enc2native(file) # CfwriteR cannot handle UTF-8 if that is not the native encoding, see #3078.
   .Call(CfwriteR, x, file, sep, sep2, eol, na, dec, quote, qmethod=="escape", append,
         row.names, col.names, logical01, scipen, dateTimeAs, buffMB, nThread,
@@ -116,4 +124,3 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
 }
 
 haszlib = function() .Call(Cdt_has_zlib)
-

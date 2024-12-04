@@ -41,17 +41,18 @@
     \item\file{cj.c} - \code{\link{CJ}()}
     \item\file{coalesce.c} - \code{\link{fcoalesce}()}
     \item\file{fifelse.c} - \code{\link{fifelse}()}
-    \item\file{fread.c} - \code{\link{fread}()}
+    \item\file{fread.c}, \file{freadR.c} - \code{\link{fread}(). Parallelized across row-based chunks of the file.}
     \item\file{forder.c}, \file{fsort.c}, and \file{reorder.c} - \code{\link{forder}()} and related
     \item\file{froll.c}, \file{frolladaptive.c}, and \file{frollR.c} - \code{\link{froll}()} and family
-    \item\file{fwrite.c} - \code{\link{fwrite}()}
-    \item\file{gsumm.c} - GForce in various places, see \link{GForce}
+    \item\file{fwrite.c} - \code{\link{fwrite}(). Parallelized across rows.}
+    \item\file{gsumm.c} - GForce in various places, see \link{GForce}. Parallelized across groups.
     \item\file{nafill.c} - \code{\link{nafill}()}
     \item\file{subset.c} - Used in \code{\link[=data.table]{[.data.table}} subsetting
     \item\file{types.c} - Internal testing usage
   }
+
+  We endeavor to keep this list up to date, but note that the canonical reference here is the source code itself.
 }
 \examples{
   getDTthreads(verbose=TRUE)
 }
-\keyword{ data }

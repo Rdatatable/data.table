@@ -21,11 +21,15 @@
     nth = getDTthreads(verbose=FALSE)
     if (dev)
       packageStartupMessagef("data.table %s IN DEVELOPMENT built %s%s using %d threads (see ?getDTthreads).  ", v, d, g, nth, appendLF=FALSE)
-    else 
+    else
       packageStartupMessagef("data.table %s using %d threads (see ?getDTthreads).  ", v, nth, appendLF=FALSE)
     packageStartupMessagef("Latest news: r-datatable.com")
-    if (gettext("TRANSLATION CHECK") != "TRANSLATION CHECK")
-      packageStartupMessagef("**********\nRunning data.table in English; package support is available in English only. When searching for online help, be sure to also check for the English error message. This can be obtained by looking at the po/R-<locale>.po and po/<locale>.po files in the package source, where the native language and English error messages can be found side-by-side\n**********")
+    if (gettext("TRANSLATION CHECK") != "TRANSLATION CHECK") {
+      packageStartupMessagef(
+        "**********\nRunning data.table in English; package support is available in English only. When searching for online help, be sure to also check for the English error message. This can be obtained by looking at the po/R-<locale>.po and po/<locale>.po files in the package source, where the native language and English error messages can be found side-by-side.%s\n**********",
+        if (exists('Sys.setLanguage', envir=baseenv())) " You can also try calling Sys.setLanguage('en') prior to reproducing the error message." else ""
+      )
+    }
     if (dev && (Sys.Date() - as.Date(d))>28L)
       packageStartupMessagef("**********\nThis development version of data.table was built more than 4 weeks ago. Please update: data.table::update_dev_pkg()\n**********")
     if (!.Call(ChasOpenMP)) {

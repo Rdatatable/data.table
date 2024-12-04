@@ -111,7 +111,7 @@ mirror.packages <-
 function(pkgs,
          which = c("Depends", "Imports", "LinkingTo"),
          repos = getOption("repos"),
-         type = c("source", "mac.binary", "win.binary"),
+         type = c("source", "mac.binary.big-sur-arm64", "win.binary"),
          repodir,
          except.repodir = repodir,
          except.priority = "base",
@@ -169,7 +169,8 @@ function(pkgs,
     newpkgs <- newpkgs[availpkgs]
   }
 
-  pkgsext <- switch(type,
+  typeshort <- if (startsWith(type, "mac.binary.")) "mac.binary" else type
+  pkgsext <- switch(typeshort,
                     "source" = "tar.gz",
                     "mac.binary" = "tgz",
                     "win.binary" = "zip")
@@ -181,7 +182,7 @@ function(pkgs,
   dp <- utils::download.packages(pkgs = newpkgs, destdir = destdir,
                                  available = db, contriburl = repos.url,
                                  type = type, method = method, quiet = quiet)
-  tools::write_PACKAGES(dir = destdir, type = type, ...)
+  tools::write_PACKAGES(dir = destdir, type = typeshort, ...)
   dp
 }
 
