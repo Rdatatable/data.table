@@ -50,5 +50,14 @@ class(dt) <- c("foo", "data.table", "data.frame")
 print.foo <- function(x, ...) {
   NextMethod("print")
 }
-
 dt[, y := 1]                          # no
+
+# withAutoprint() testing (since R3.4.0)
+if (!exists("withAutoprint", baseenv())) {
+  q("no")
+}
+if (TRUE) withAutoprint({
+  DT                                  # yes
+  DT[1L, 1L]                          # yes
+  DT[2L, a := 10L]                    # no
+})
