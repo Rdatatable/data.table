@@ -20667,12 +20667,11 @@ test(2299.12, data.table(a=list(data.table(b=1))),                    output="a\
 
 # as.data.table should remove extra attributes from extended data.frames #5699
 x = data.frame(a=c(1,5,3), b=c(2,4,6))
-class(x) = c("tbl","data.frame")
+class(x) = c("tbl", "data.frame")
 attr(x, "t1") = "a"
 as.data.frame.tbl = function(x) {
   attr(x, "t1") = NULL
   class(x) = "data.frame"
   x
 }
-y = as.data.table(x)
-test(2300, attr(y, "t1", TRUE), NULL)
+test(2300, attr(as.data.table(y), "t1"), attr(as.data.frame(y), "t1"))
