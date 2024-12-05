@@ -117,15 +117,17 @@ rowwiseDT(
 
 ## NOTES
 
-1. Tests run again when some Suggests packages are missing, [#6411](https://github.com/Rdatatable/data.table/issues/6411). Thanks @aadler for the note and @MichaelChirico for the fix.
+1. There is a new vignette on joins! See `vignette("datatable-joins")`. Thanks to Angel Feliz for authoring it! Feedback welcome. This vignette has been highly requested since 2017: [#2181](https://github.com/Rdatatable/data.table/issues/2181).
 
-2. Some grouping operations run much faster under `verbose=TRUE`, [#6286](https://github.com/Rdatatable/data.table/issues/6286). Thanks @joshhwuu for the report and fix. This overhead was not present on Windows. As a rule, users should expect `verbose=TRUE` operations to run more slowly, as extra statistics might be calculated as part of the report; here was a case where the overhead was particularly high and the fix was particularly easy.
+2. Tests run again when some Suggests packages are missing, [#6411](https://github.com/Rdatatable/data.table/issues/6411). Thanks @aadler for the note and @MichaelChirico for the fix.
 
-3. `set()` and `:=` now provide some extra guidance for common incorrect approaches to assigning `NULL` to some rows of a list column. The correct way is to put `list(list(NULL))` on the RHS of `:=` (or `.(.(NULL))` for short). Thanks to @MichaelChirico for the suggestion and @Nj221102 for the implementation.
+3. Some grouping operations run much faster under `verbose=TRUE`, [#6286](https://github.com/Rdatatable/data.table/issues/6286). Thanks @joshhwuu for the report and fix. This overhead was not present on Windows. As a rule, users should expect `verbose=TRUE` operations to run more slowly, as extra statistics might be calculated as part of the report; here was a case where the overhead was particularly high and the fix was particularly easy.
 
-4. Improved the error message when trying to write code like `DT[, ":="(a := b, c := d)]` (which should be `DT[, ":="(a = b, c = d)]`), [#5296](https://github.com/Rdatatable/data.table/issues/5296). Thanks @MichaelChirico for the suggestion & fix.
+4. `set()` and `:=` now provide some extra guidance for common incorrect approaches to assigning `NULL` to some rows of a list column. The correct way is to put `list(list(NULL))` on the RHS of `:=` (or `.(.(NULL))` for short). Thanks to @MichaelChirico for the suggestion and @Nj221102 for the implementation.
 
-5. `measurev()` was implemented and documented in v1.15.0, for use within `melt()`, and it is now exported (dependent packages can now use without a NOTE from CRAN check).
+5. Improved the error message when trying to write code like `DT[, ":="(a := b, c := d)]` (which should be `DT[, ":="(a = b, c = d)]`), [#5296](https://github.com/Rdatatable/data.table/issues/5296). Thanks @MichaelChirico for the suggestion & fix.
+
+6. `measurev()` was implemented and documented in v1.15.0, for use within `melt()`, and it is now exported (dependent packages can now use without a NOTE from CRAN check).
 
 # data.table [v1.16.2](https://github.com/Rdatatable/data.table/milestone/35) (9 October 2024)
 
