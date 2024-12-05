@@ -28,33 +28,46 @@ msgid ""
 "code can happen with any package not just data.table. It is just that data."
 "table has added this check."
 msgstr ""
+"data_table.%s वर्ज़न (version) (%s) पैकेज (%s) से मेल नहीं खाता।"
+“कृपया सभी R सेशंस (sessions) को बंद करें ताकि पुराने %s को रिलीज़ (release) किया जा सके और एक नए R सेशन (session) में data.table को पुनः इंस्टॉल (install) करें।”
+“R वर्ज़न (version) 3.6.0 patched से पहले, R के पैकेज (package) इंस्टॉलर (installer) से पैकेज(package) को एक ऐसी स्थिति में छोड़ने की संभावना थी जहाँ नया R कोड पुराने C कोड को साइलेंटली (silently) कॉल कर रहा था: https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17478।”
+“एक बार जब पैकेज (package) इस असंगति स्थिति में आ जाता है, तो यह अगली बार पैकेज (package) को अपग्रेड (upgrade) करने तक साइलेंटली (silently) गलत परिणाम उत्पन्न कर सकता है।
+“R और C कोड (code) के बीच यह असंगति किसी भी पैकेज (package) के साथ हो सकती है, न केवल data.table के साथ।”
+“बस इतना है कि data.table ने इस जांच को जोड़ा है।"
 
 #: onLoad.R:32
 msgid ""
 "This is R %s but data.table has been installed using R %s. The major version "
 "must match. Please reinstall data.table."
 msgstr ""
+"यह R %s है लेकिन data.table को R %s का उपयोग करके इंस्टॉल (install) किया गया है। मुख्य वर्ज़न (version)"
+"मेल खाना चाहिए। कृपया data.table को पुनः इंस्टॉल (install) करें।"
 
 #: onLoad.R:99
 msgid "Unexpected base R behaviour: list(x) has copied x"
-msgstr ""
+msgstr "अप्रत्याशित base R व्यवहार: list(x) ने x को कॉपी (copy) कर दिया है"
 
 #: onLoad.R:107
 msgid "Unexpected base R behaviour: names<- has copied column contents"
-msgstr ""
+msgstr "अप्रत्याशित base R व्यवहार: names<- ने कॉलम (column) की सामग्री को कॉपी (copy) कर दिया है"
 
 #: onLoad.R:117
 msgid ""
 "Unexpected base R behaviour: DF[2,2]<- did not copy column 2 which was "
 "assigned to"
 msgstr ""
+"अप्रत्याशित base R व्यवहार: DF[2,2]<- ने कॉलम (column) 2 को कॉपी (copy) नहीं किया जिसे"
+"असाइन (assign) किया गया था"
 
 #: onLoad.R:118
 msgid ""
 "Unexpected base R behaviour: DF[2,2]<- copied the first column which was not "
 "assigned to, too"
 msgstr ""
+"अप्रत्याशित base R व्यवहार: DF[2,2]<- ने पहले कॉलम (column) को भी कॉपी (copy) कर दिया जो"
+"असाइन (assign) नहीं किया गया था"
 
 #: onLoad.R:120
 msgid "Unexpected base R behaviour: DF[2,2]<- has not copied address(DF)"
 msgstr ""
+"अप्रत्याशित base R व्यवहार: DF[2,2]<- ने address(DF) को कॉपी (copy) नहीं किया है"
