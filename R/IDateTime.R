@@ -100,7 +100,7 @@ round.IDate = function(x, digits=c("weeks", "months", "quarters", "years"), ...)
   if (inherits(e1, "difftime") || inherits(e2, "difftime"))
     internal_error("difftime objects may not be added to IDate, but Ops dispatch should have intervened to prevent this") # nocov
   # IDate doesn't support fractional days; revert to base Date
-  if ((is.double(e1) && !isRealReallyInt32(e1)) || (is.double(e2) && !isRealReallyInt32(e2))) {
+  if ((is.double(e1) && !fitsInInt32(e1)) || (is.double(e2) && !fitsInInt32(e2))) {
     return(`+.Date`(e1, e2))
   }
   if (inherits(e1, "Date") && inherits(e2, "Date"))
@@ -120,7 +120,7 @@ round.IDate = function(x, digits=c("weeks", "months", "quarters", "years"), ...)
   if (inherits(e2, "difftime"))
     internal_error("difftime objects may not be subtracted from IDate, but Ops dispatch should have intervened to prevent this") # nocov
 
-  if ( is.double(e2) && !isRealReallyInt32(e2) ) {
+  if ( is.double(e2) && !fitsInInt32(e2) ) {
     # IDate deliberately doesn't support fractional days so revert to base Date
     return(base::`-.Date`(as.Date(e1), e2))
     # can't call base::.Date directly (last line of base::`-.Date`) as tried in PR#3168 because

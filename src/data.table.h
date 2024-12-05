@@ -243,10 +243,10 @@ SEXP coalesce(SEXP x, SEXP inplace);
 // utils.c
 bool within_int32_repres(double x);
 bool within_int64_repres(double x);
-bool isRealReallyInt32(SEXP x);
-SEXP isRealReallyInt32R(SEXP x);
-bool isRealReallyInt64(SEXP x);
-SEXP isRealReallyInt64R(SEXP x);
+bool fitsInInt32(SEXP x);
+SEXP fitsInInt32R(SEXP x);
+bool fitsInInt64(SEXP x);
+SEXP fitsInInt64R(SEXP x);
 bool allNA(SEXP x, bool errorForBadType);
 SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent);
 bool INHERITS(SEXP x, SEXP char_);

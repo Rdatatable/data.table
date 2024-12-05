@@ -13,7 +13,7 @@ bool within_int64_repres(double x) {
 
 // used to error if not passed type double but this needed extra is.double() calls in calling R code
 // which needed a repeat of the argument. Hence simpler and more robust to return false when not type double.
-bool isRealReallyInt32(SEXP x) {
+bool fitsInInt32(SEXP x) {
   if (!isReal(x))
     return false;
   R_xlen_t n=xlength(x), i=0;
@@ -26,11 +26,11 @@ bool isRealReallyInt32(SEXP x) {
   return i==n;
 }
 
-SEXP isRealReallyInt32R(SEXP x) {
-  return ScalarLogical(isRealReallyInt32(x));
+SEXP fitsInInt32R(SEXP x) {
+  return ScalarLogical(fitsInInt32(x));
 }
 
-bool isRealReallyInt64(SEXP x) {
+bool fitsInInt64(SEXP x) {
   if (!isReal(x))
     return false;
   R_xlen_t n=xlength(x), i=0;
@@ -43,8 +43,8 @@ bool isRealReallyInt64(SEXP x) {
   return i==n;
 }
 
-SEXP isRealReallyInt64R(SEXP x) {
-  return ScalarLogical(isRealReallyInt64(x));
+SEXP fitsInInt64R(SEXP x) {
+  return ScalarLogical(fitsInInt64(x));
 }
 
 bool allNA(SEXP x, bool errorForBadType) {
@@ -135,7 +135,7 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent) {
       } else
         ricols = cols;
     } else if (isReal(cols)) {
-      if (!isRealReallyInt32(cols))
+      if (!fitsInInt32(cols))
         error(_("argument specifying columns is type 'double' and one or more items in it are not whole integers"));
       ricols = PROTECT(coerceVector(cols, INTSXP)); protecti++;
     }

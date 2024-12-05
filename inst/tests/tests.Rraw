@@ -56,8 +56,8 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   internal_error = data.table:::internal_error
   is_na = data.table:::is_na
   is.sorted = data.table:::is.sorted
-  isRealReallyInt32 = data.table:::isRealReallyInt32
-  isRealReallyInt64 = data.table:::isRealReallyInt64
+  fitsInInt32 = data.table:::fitsInInt32
+  fitsInInt64 = data.table:::fitsInInt64
   is_utc = data.table:::is_utc
   melt.data.table = data.table:::melt.data.table  # for test 1953.4
   messagef = data.table:::messagef
@@ -7356,23 +7356,23 @@ if (test_bit64) {
 X = list(a = 4:1, b=runif(4))
 test(1513, setkey(as.data.table(X), a), setDT(X, key="a"))
 
-# Adding tests for `isRealReallyInt32`
+# Adding tests for `fitsInInt32`
 x = as.numeric(sample(10))
-test(1514.1, isRealReallyInt32(x), TRUE)
+test(1514.1, fitsInInt32(x), TRUE)
 x = as.numeric(sample(c(1:5, NA)))
-test(1514.2, isRealReallyInt32(x), TRUE) # NAs in numeric can be coerced to integer NA without loss
+test(1514.2, fitsInInt32(x), TRUE) # NAs in numeric can be coerced to integer NA without loss
 x = c(1:2, NaN, NA)
-test(1514.3, isRealReallyInt32(x), FALSE)
+test(1514.3, fitsInInt32(x), FALSE)
 x = c(1:2, Inf, NA)
-test(1514.4, isRealReallyInt32(x), FALSE)
+test(1514.4, fitsInInt32(x), FALSE)
 x = c(1:2, -Inf, NA)
-test(1514.5, isRealReallyInt32(x), FALSE)
+test(1514.5, fitsInInt32(x), FALSE)
 x = runif(2)
-test(1514.6, isRealReallyInt32(x), FALSE)
+test(1514.6, fitsInInt32(x), FALSE)
 x = numeric()
-test(1514.7, isRealReallyInt32(x), TRUE)
-test(1514.8, isRealReallyInt32(9L), FALSE) # b/c not double input
-test(1514.9, isRealReallyInt64(9L), FALSE)
+test(1514.7, fitsInInt32(x), TRUE)
+test(1514.8, fitsInInt32(9L), FALSE) # b/c not double input
+test(1514.9, fitsInInt64(9L), FALSE)
 
 # #1091
 options(datatable.prettyprint.char = 5L)
@@ -17604,18 +17604,18 @@ test(2204, as.data.table(mtcars, keep.rownames='model', key='model'),
 
 # 2205 tested nanotime moved to other.Rraw 27, #5516
 
-# isRealReallyInt32, #3966
-test(2206.01, isRealReallyInt32(c(-2147483647.0, NA, 0.0, 2147483647.0)), TRUE)
-test(2206.02, isRealReallyInt32(2147483648.0), FALSE) # >INT_MAX
-test(2206.03, isRealReallyInt32(-2147483648.0), FALSE) # <=INT_MIN since INT_MIN==NA_integer_
-test(2206.04, isRealReallyInt32(c(5,-5,2147483648)), FALSE)  # test real last position
-test(2206.05, isRealReallyInt32(NaN), FALSE)
-test(2206.06, isRealReallyInt32(+Inf), FALSE)
-test(2206.07, isRealReallyInt32(-Inf), FALSE)
-test(2206.08, isRealReallyInt32(0.1), FALSE)
-test(2206.09, isRealReallyInt32(numeric()), TRUE)
-test(2206.10, isRealReallyInt32(9L), FALSE) # must be type double
-test(2206.11, isRealReallyInt32(integer()), FALSE)
+# fitsInInt32, #3966
+test(2206.01, fitsInInt32(c(-2147483647.0, NA, 0.0, 2147483647.0)), TRUE)
+test(2206.02, fitsInInt32(2147483648.0), FALSE) # >INT_MAX
+test(2206.03, fitsInInt32(-2147483648.0), FALSE) # <=INT_MIN since INT_MIN==NA_integer_
+test(2206.04, fitsInInt32(c(5,-5,2147483648)), FALSE)  # test real last position
+test(2206.05, fitsInInt32(NaN), FALSE)
+test(2206.06, fitsInInt32(+Inf), FALSE)
+test(2206.07, fitsInInt32(-Inf), FALSE)
+test(2206.08, fitsInInt32(0.1), FALSE)
+test(2206.09, fitsInInt32(numeric()), TRUE)
+test(2206.10, fitsInInt32(9L), FALSE) # must be type double
+test(2206.11, fitsInInt32(integer()), FALSE)
 
 # dcast supports complex value to cast, #4855
 DT = CJ(x=1:3, y=letters[1:2])
