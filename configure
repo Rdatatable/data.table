@@ -75,57 +75,42 @@ fi
 # necessarily here in configure). Hence use -fopenmp directly for this detection step.
 # printf not echo to pass checkbashisms w.r.t. to the \n
 
-cat <<EOF > test-omp.c
-#include <omp.h>
-int main() {
-  return omp_get_num_threads();
+check_openmp_flags () {
+  "${R_HOME}/bin/Rscript" tools/check-openmp-flags.R "$1" "$2"
 }
-EOF
 
 detect_openmp () {
+  printf "%s" "* checking if R installation is configured to use OpenMP... "
+  if check_openmp_flags '$(SHLIB_OPENMP_CFLAGS)' '$(SHLIB_OPENMP_CFLAGS)' >> config.log 2>&1; then
+    echo "yes"
+    export R_OPENMP_CFLAGS='$(SHLIB_OPENMP_CFLAGS)'
+    export R_OPENMP_LIBS='$(SHLIB_OPENMP_CFLAGS)'
+    export R_OPENMP_ENABLED=1
+    return
+  else
+    echo "no"
+  fi
 
-  if [ "$(uname)" = "Linux" ]; then
-
-    printf "%s" "* checking if R installation supports OpenMP without any extra hints... "
-    if "${R_HOME}/bin/R" CMD SHLIB test-omp.c >> config.log 2>&1; then
-      echo "yes"
-      export R_OPENMP_ENABLED=1
-      return
-    else
-      echo "no"
-    fi
-
-
-    printf "%s" "* checking if R installation supports openmp with \"-fopenmp\" flag... "
-    if ${CC} ${CFLAGS} -fopenmp test-omp.c >> config.log 2>&1; then
-      echo "yes"
-      export PKG_CFLAGS="${PKG_CFLAGS} -fopenmp"
-      export R_OPENMP_ENABLED=1
-      return
-    else
-      echo "no"
-    fi
-  fi # uname=Linux
+  # https://github.com/Rdatatable/data.table/issues/6409
+  printf "%s" "* checking if R installation supports openmp with \"-fopenmp\" flag... "
+  if check_openmp_flags -fopenmp -fopenmp >> config.log 2>&1; then
+    echo "yes"
+    export R_OPENMP_CFLAGS="-fopenmp"
+    export R_OPENMP_LIBS="-fopenmp"
+    export R_OPENMP_ENABLED=1
+    return
+  else
+    echo "no"
+  fi
 
   if [ "$(uname)" = "Darwin" ]; then
 
     # https://mac.r-project.org/openmp
     printf "%s" "* checking if R installation supports OpenMP with \"-Xclang -fopenmp\" ... "
-    if CPPFLAGS="${CPPFLAGS} -Xclang -fopenmp" PKG_LIBS="-lomp" "${R_HOME}/bin/R" CMD SHLIB test-omp.c >> config.log 2>&1; then
+    if check_openmp_flags "-Xclang -fopenmp" -lomp >> config.log 2>&1; then
       echo "yes"
-      export PKG_CFLAGS="${PKG_CFLAGS} -Xclang -fopenmp"
-      export PKG_LIBS="${PKG_LIBS} -lomp"
-      export R_OPENMP_ENABLED=1
-      return
-    else
-      echo "no"
-    fi
-
-    # https://github.com/Rdatatable/data.table/issues/6409
-    printf "%s" "* checking if R installation supports OpenMP with \"-fopenmp\" ... "
-    if CPPFLAGS="${CPPFLAGS} -fopenmp" "${R_HOME}/bin/R" CMD SHLIB test-omp.c >> config.log 2>&1; then
-      echo "yes"
-      export PKG_CFLAGS="${PKG_CFLAGS} -fopenmp"
+      export R_OPENMP_CFLAGS="-Xclang -fopenmp"
+      export R_OPENMP_LIBS="-lomp"
       export R_OPENMP_ENABLED=1
       return
     else
@@ -142,10 +127,10 @@ detect_openmp () {
       printf "%s" "* checking if libomp installation at ${HOMEBREW_PREFIX}/opt/libomp can be used... "
       LIBOMP_INCLUDE="-I${HOMEBREW_PREFIX}/opt/libomp/include -Xclang -fopenmp"
       LIBOMP_LINK="-L${HOMEBREW_PREFIX}/opt/libomp/lib -lomp"
-      if ${CC} ${CFLAGS} ${LIBOMP_INCLUDE} ${LIBOMP_LINK} test-omp.c >> config.log 2>&1; then
+      if check_openmp_flags "${LIBOMP_INCLUDE}" "${LIBOMP_LINK}" >> config.log 2>&1; then
         echo "yes"
-        export PKG_CFLAGS="${PKG_CFLAGS} ${LIBOMP_INCLUDE}"
-        export PKG_LIBS="${PKG_LIBS} ${LIBOMP_LINK}"
+        export R_OPENMP_CFLAGS="${LIBOMP_INCLUDE}"
+        export R_OPENMP_LIBS="${LIBOMP_LINK}"
         export R_OPENMP_ENABLED=1
         return
       else
@@ -160,8 +145,6 @@ detect_openmp () {
 }
 
 detect_openmp
-# Clean up.
-rm -f test-omp.* a.out
 
 if [ "${R_OPENMP_ENABLED}" = "0" ]; then
   echo "***"
@@ -171,9 +154,9 @@ if [ "${R_OPENMP_ENABLED}" = "0" ]; then
   echo "***   https://github.com/Rdatatable/data.table/wiki/Installation"
   echo "*** Continuing installation without OpenMP support..."
   echo "***"
-  sed -e "s|@openmp_cflags@||" src/Makevars.in > src/Makevars
+  sed -e "s|@openmp_cflags@||" -e "s|@openmp_ldflags@||" src/Makevars.in > src/Makevars
 else
-  sed -e "s|@openmp_cflags@|\$(SHLIB_OPENMP_CFLAGS)|" src/Makevars.in > src/Makevars
+  sed -e "s|@openmp_cflags@|${R_OPENMP_CFLAGS}|" -e "s|@openmp_ldflags@|${R_OPENMP_LIBS}|" src/Makevars.in > src/Makevars
 fi
 
 # retain user supplied PKG_ env variables, #4664. See comments in Makevars.in too.
