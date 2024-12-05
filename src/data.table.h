@@ -260,7 +260,6 @@ bool need2utf8(SEXP x);
 SEXP coerceUtf8IfNeeded(SEXP x);
 SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg);
 void internal_error(const char *call_name, const char *format, ...);
-SEXP setDT(SEXP list);
 
 // types.c
 char *end(char *start);
