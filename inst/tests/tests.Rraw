@@ -8613,7 +8613,7 @@ DT2 = data.table(
   Dcol = as.Date('2016-01-01') + 0:2,
   Pcol = as.POSIXct('2016-01-01 01:00:00', tz = 'UTC') + 86400L*(0:2),
   gcol = TRUE, Icol = as.IDate(16801) + 0:2,
-  ucol = `class<-`(1:3, 'asdf')
+  ucol = `class<-`(1:3, 'asdf') # TODO: update to .Date on R 3.5
 )
 test(1610.2, capture.output(print(DT2, class=TRUE)),
      c("         Dcol                Pcol   gcol       Icol   ucol",
@@ -15031,7 +15031,7 @@ test(2042.3, DT[ , format(mean(date),"%b-%Y"), by=g, verbose=TRUE ],  # just thi
 # also incidentally fixed #2491
 DT = data.table(
   Group = c("A", "A", "B", "B", "C", "C"),
-  Date1 = `class<-`(c(17446.0291040738, 17470.0221205444, 17445.0765226481,  # `class<-`() == .Date() to pass on R 3.1.0
+  Date1 = `class<-`(c(17446.0291040738, 17470.0221205444, 17445.0765226481,  # `class<-`() == .Date() to pass on R 3.1.0 # TODO: update to .Date on R 3.5
                   17456.0360002079, 17440.0230725919, 17451.0572453837), "Date"),
   Date2 = `class<-`(c(17459.1561177987, 17451.1086757995, 17449.0820898537,
                   17443.1175238448, 17461.0463715783, 17448.1033968224), "Date")
