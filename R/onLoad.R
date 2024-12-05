@@ -66,7 +66,7 @@
       lockBinding("rbind.data.frame",baseenv())
     }
   }
-  if (session_r_version < "3.6.0") {
+  if (session_r_version < "3.6.0") { # corresponds to S3method() directive in NAMESPACE
     # no delayed registration support for NAMESPACE; perform it manually
     if (isNamespaceLoaded("knitr")) {
       registerS3method("knit_print", "data.table", knit_print.data.table, envir = asNamespace("knitr"))
