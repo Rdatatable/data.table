@@ -194,6 +194,7 @@ test-lin-dev-clang-cran:
     - echo 'CFLAGS=-g -O2 -fno-common -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
     - echo 'CXXFLAGS=-g -O2 -fno-common -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
     - *install-deps
+    - clang-tidy -extra-arg=-I/usr/local/lib/R/include -checks='readability-inconsistent-declaration-parameter' src/*.c -- -std=c99
     - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
     - (! grep "warning:" data.table.Rcheck/00install.out)
     - >-
