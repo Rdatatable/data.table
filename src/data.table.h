@@ -291,7 +291,6 @@ SEXP setdt_nrows(SEXP);
 SEXP alloccolwrapper(SEXP, SEXP, SEXP);
 SEXP selfrefokwrapper(SEXP, SEXP);
 SEXP truelength(SEXP);
-SEXP settruelength(SEXP, SEXP);
 SEXP setcharvec(SEXP, SEXP, SEXP);
 SEXP chmatch_R(SEXP, SEXP, SEXP);
 SEXP chmatchdup_R(SEXP, SEXP, SEXP);
