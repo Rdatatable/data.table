@@ -169,6 +169,7 @@ NULL
 > DT = data.table(a = 1)
 
 > DT[, `:=`(a, 1)]
+> 
 > # child class of data.table doesn't induce unintended print, #3029
 > dt <- data.table(x = 1)
 > class(dt) <- c("foo", "data.table", "data.frame")
