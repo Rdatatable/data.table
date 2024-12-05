@@ -115,6 +115,8 @@ rowwiseDT(
 
 14. Added a `data.frame` method for `format_list_item()` to fix error printing data.tables with columns containing 1-column data.frames, [#6592](https://github.com/Rdatatable/data.table/issues/6592). Thanks to @r2evans for the bug report and fix.
 
+15. The auto-printing suppression in `knitr` documents is now done by implementing a method for `knit_print` instead of looking up the call stack, [#6589](https://github.com/Rdatatable/data.table/pull/6589). Thanks to @jangorecki for the report [#6509](https://github.com/Rdatatable/data.table/issues/6509) and @aitap for the fix.
+
 ## NOTES
 
 1. Tests run again when some Suggests packages are missing, [#6411](https://github.com/Rdatatable/data.table/issues/6411). Thanks @aadler for the note and @MichaelChirico for the fix.
