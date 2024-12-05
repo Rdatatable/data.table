@@ -15031,7 +15031,7 @@ test(2042.3, DT[ , format(mean(date),"%b-%Y"), by=g, verbose=TRUE ],  # just thi
 # also incidentally fixed #2491
 DT = data.table(
   Group = c("A", "A", "B", "B", "C", "C"),
-  Date1 = `class<-`(c(17446.0291040738, 17470.0221205444, 17445.0765226481,  # `class<-`() == .Date() to pass on R 3.1.0
+  Date1 = `class<-`(c(17446.0291040738, 17470.0221205444, 17445.0765226481,  # `class<-`() == .Date() to pass on R 3.1.0 # TODO: update to .Date on R 3.5
                   17456.0360002079, 17440.0230725919, 17451.0572453837), "Date"),
   Date2 = `class<-`(c(17459.1561177987, 17451.1086757995, 17449.0820898537,
                   17443.1175238448, 17461.0463715783, 17448.1033968224), "Date")
@@ -20620,8 +20620,8 @@ y = data.table(c=1, d=1L)
 test(2297.03, y[x, on=.(c == a, d == a), verbose=TRUE], data.table(c=1L, d=1L), output="Coercing .*a .*no fractions.* to type integer.*Coercing .*c .*no fractions.* to type integer")
 test(2297.04, y[x, on=.(d == a, c == a), verbose=TRUE], data.table(c=1L, d=1L), output="Coercing .*a .*no fractions.* to type integer.*Coercing .*c .*no fractions.* to type integer")
 # dates
-d_int = `class<-`(1L, "Date")
-d_dbl = `class<-`(1, "Date")
+d_int = .Date(1L) # TODO: update to .Date on R 3.5
+d_dbl = .Date(1)
 x = data.table(a=d_int)
 y = data.table(c=d_int, d=d_dbl)
 test(2297.11, y[x, on=.(c == a, d == a)], data.table(c=d_int, d=d_int))
