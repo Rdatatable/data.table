@@ -1604,6 +1604,18 @@ test(498.03, setcolorder(DT, 1, after=3), data.table(b=2, c=3, a=1))
 test(498.04, setcolorder(DT, 3, before=1), data.table(a=1, b=2, c=3))
 test(498.05, setcolorder(DT, 1, before=1, after=1), error="Provide either before= or after= but not both")
 test(498.06, setcolorder(DT, 1, before=1:2), error="before=/after= accept a single column name or number, not more than one")
+# skip_absent, #6044
+test(498.07, setcolorder(DT, skip_absent='TRUE'), error='TRUE or FALSE')
+test(498.08, setcolorder(DT, skip_absent=1), error='TRUE or FALSE')
+test(498.09, setcolorder(DT, skip_absent=c(TRUE, FALSE)), error='TRUE or FALSE')
+test(498.10, setcolorder(DT, c('d', 'c', 'b', 'a')), error='non-existing column')
+test(498.11, setcolorder(DT, c('d', 'c', 'b', 'a'), skip_absent=TRUE), data.table(c=3, b=2, a=1))
+test(498.12, setcolorder(DT, 4:1), error='non-existing column')
+test(498.13, setcolorder(DT, 4:1, skip_absent=TRUE), data.table(a=1, b=2, c=3))
+test(498.14, setcolorder(DT, c(1, 1, 2, 3), skip_absent=TRUE), error='!=')
+## `c` is not dropped
+test(498.15, setcolorder(DT, neworder='b', skip_absent=TRUE), data.table(b=2, a=1, c=3))
+test(498.16, setcolorder(DT, neworder=c('a', 'b', 'd'), skip_absent=TRUE), data.table(a=1, b=2, c=3))
 
 # test first group listens to nomatch when j uses join inherited scope.
 x <- data.table(x=c(1,3,8),x1=10:12, key="x")
@@ -15020,7 +15032,7 @@ test(2042.3, DT[ , format(mean(date),"%b-%Y"), by=g, verbose=TRUE ],  # just thi
 # also incidentally fixed #2491
 DT = data.table(
   Group = c("A", "A", "B", "B", "C", "C"),
-  Date1 = `class<-`(c(17446.0291040738, 17470.0221205444, 17445.0765226481,  # `class<-`() == .Date() to pass on R 3.1.0
+  Date1 = `class<-`(c(17446.0291040738, 17470.0221205444, 17445.0765226481,  # `class<-`() == .Date() to pass on R 3.1.0 # TODO: update to .Date on R 3.5
                   17456.0360002079, 17440.0230725919, 17451.0572453837), "Date"),
   Date2 = `class<-`(c(17459.1561177987, 17451.1086757995, 17449.0820898537,
                   17443.1175238448, 17461.0463715783, 17448.1033968224), "Date")
@@ -20609,8 +20621,8 @@ y = data.table(c=1, d=1L)
 test(2297.03, y[x, on=.(c == a, d == a), verbose=TRUE], data.table(c=1L, d=1L), output="Coercing .*a .*no fractions.* to type integer.*Coercing .*c .*no fractions.* to type integer")
 test(2297.04, y[x, on=.(d == a, c == a), verbose=TRUE], data.table(c=1L, d=1L), output="Coercing .*a .*no fractions.* to type integer.*Coercing .*c .*no fractions.* to type integer")
 # dates
-d_int = .Date(1L)
-d_dbl = .Date(1)
+d_int = `class<-`(1L, "Date") # TODO: update to .Date on R 3.5
+d_dbl = `class<-`(1, "Date")
 x = data.table(a=d_int)
 y = data.table(c=d_int, d=d_dbl)
 test(2297.11, y[x, on=.(c == a, d == a)], data.table(c=d_int, d=d_int))
@@ -20629,14 +20641,39 @@ x = data.table(a=1, b=2L)
 y = data.table(c=1.5, d=1L)
 test(2297.31, y[x, on=.(c == a, d == a), nomatch=NULL], output="Empty data.table (0 rows and 3 cols): c,d,b")
 
+# rbindlist(l, use.names=TRUE) should handle different colnames encodings #5452
+x = data.table(a = 1, b = 2, c = 3)
+y = data.table(x = 4, y = 5, z = 6)
+# a-umlaut, o-umlaut, u-umlaut
+setnames(x , c("\u00e4", "\u00f6", "\u00fc"))
+setnames(y , iconv(c("\u00f6", "\u00fc", "\u00e4"), from = "UTF-8", to = "latin1"))
+test(2298.1, rbindlist(list(x,y), use.names=TRUE), data.table("\u00e4"=c(1,6), "\u00f6"=c(2,4), "\u00fc"=c(3,5)))
+test(2298.2, rbindlist(list(y,x), use.names=TRUE), data.table("\u00f6"=c(4,2), "\u00fc"=c(5,3), "\u00e4"=c(6,1)))
+set(y, j="\u00e4", value=NULL)
+test(2298.3, rbindlist(list(x,y), use.names=TRUE, fill=TRUE), data.table("\u00e4"=c(1,NA), "\u00f6"=c(2,4), "\u00fc"=c(3,5)))
+test(2298.4, rbindlist(list(y,x), use.names=TRUE, fill=TRUE), data.table("\u00f6"=c(4,2),  "\u00fc"=c(5,3), "\u00e4"=c(NA,1)))
+
+# #6592: printing nested single-column frames
+test(2299.01, format_list_item(data.frame(a=1)),                      output="<data.frame[1x1]>")
+test(2299.02, format_list_item(data.frame(a=1)[0,,drop=FALSE]),       output="<data.frame[0x1]>")
+test(2299.03, format_list_item(data.frame(a=1)[,0]),                  output="<data.frame[1x0]>")
+test(2299.04, format_list_item(data.frame(a=1, b=2)[0,,drop=FALSE]),  output="<data.frame[0x2]>")
+test(2299.06, format_list_item(data.table(a=1)),                      output="<data.table[1x1]>")
+test(2299.07, format_list_item(data.table(a=numeric())),              output="<data.table[0x1]>")
+test(2299.08, format_list_item(data.table()),                         output="<data.table[0x0]>")
+test(2299.09, format_list_item(data.table(a=numeric(), b=numeric())), output="<data.table[0x2]>")
+test(2299.10, data.table(a=1),                                        output="a\n1: *1")
+test(2299.11, data.table(a=list(data.frame(b=1))),                    output="a\n1: <data.frame[1x1]>")
+test(2299.12, data.table(a=list(data.table(b=1))),                    output="a\n1: <data.table[1x1]>")
+
 if (test_bit64) {
   # Join to integer64 doesn't require integer32 representation, just integer64, #6625
   i64_val = .Machine$integer.max + 1
   DT1 = data.table(id = as.integer64(i64_val))
   DT2 = data.table(id = i64_val)
-  test(2298.1, DT1[DT2, on='id', verbose=TRUE], DT2, output="has integer64 representation")
-  test(2298.2, DT2[DT1, on='id', verbose=TRUE], DT1, output="has integer64 representation")
+  test(2300.1, DT1[DT2, on='id', verbose=TRUE], DT2, output="has integer64 representation")
+  test(2300.2, DT2[DT1, on='id', verbose=TRUE], DT1, output="has integer64 representation")
   DT2[, id := id+.01]
-  test(2298.3, DT1[DT2, on='id'], error="Incompatible join types")
-  test(2298.4, DT2[DT1, on='id'], error="Incompatible join types")
+  test(2300.3, DT1[DT2, on='id'], error="Incompatible join types")
+  test(2300.4, DT2[DT1, on='id'], error="Incompatible join types")
 }
