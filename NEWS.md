@@ -113,6 +113,8 @@ rowwiseDT(
 
 13. `rbindlist(l, use.names=TRUE)` can now handle different encodings for the column names in different entries of `l`, [#5452](https://github.com/Rdatatable/data.table/issues/5452). Thanks to @MEO265 for the report, and Benjamin Schwendinger for the fix.
 
+14. The auto-printing suppression in `knitr` documents is now done by implementing a method for `knit_print` instead of looking up the call stack, [#6589](https://github.com/Rdatatable/data.table/pull/6589). Thanks to @jangorecki for the report [#6509](https://github.com/Rdatatable/data.table/issues/6509) and @aitap for the fix.
+
 ## NOTES
 
 1. Tests run again when some Suggests packages are missing, [#6411](https://github.com/Rdatatable/data.table/issues/6411). Thanks @aadler for the note and @MichaelChirico for the fix.
