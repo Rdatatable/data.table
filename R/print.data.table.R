@@ -193,8 +193,6 @@ has_format_method = function(x) {
 format_col.default = function(x, ...) {
   if (!is.null(dim(x)))
     "<multi-column>"
-  else if (has_format_method(x) && length(formatted<-format(x, ...))==length(x))
-    formatted  #PR5224 motivated by package sf where column class is c("sfc_MULTIPOLYGON","sfc") and sf:::format.sfc exists
   else if (is.list(x))
     vapply_1c(x, format_list_item, ...)
   else
@@ -235,6 +233,8 @@ format_list_item.default = function(x, ...) {
 format_list_item.data.frame = function(x, ...) {
   paste0("<", class1(x), paste_dims(x), ">")
 }
+
+# format_list_item.vctrs_list_of = function(, .)
 
 # FR #1091 for pretty printing of character
 # TODO: maybe instead of doing "this is...", we could do "this ... test"?
