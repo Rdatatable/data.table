@@ -1124,8 +1124,8 @@ SEXP gmedian(SEXP x, SEXP narmArg) {
 }
 
 static SEXP gfirstlast(SEXP x, const bool first, const int w, const bool nthvalue) {
-  if (w>1 && assignByRef)
-    error(_("Is first/last/head/tail with n>1 and := by group intentional? Please provide a use case to the GitHub issue tracker. It could be implemented."));
+  //if (w>1 && assignByRef)
+  //  error(_("Is first/last/head/tail with n>1 and := by group intentional? Please provide a use case to the GitHub issue tracker. It could be implemented."));
   // select 1:w when first=TRUE, and (n-w+1):n when first=FALSE
   // or select w'th item when nthvalue=TRUE; e.g. the n=0 case in test 280
   const bool nosubset = irowslen == -1;
