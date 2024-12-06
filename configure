@@ -94,7 +94,7 @@ detect_openmp () {
   check_openmp_flags "R installation is configured to use OpenMP" '$(SHLIB_OPENMP_CFLAGS)' '$(SHLIB_OPENMP_CFLAGS)' && return
 
   # https://github.com/Rdatatable/data.table/issues/6409
-  check_openmp_flags "R installation supports openmp with \"-fopenmp\" flag" -fopenmp -fopenmp && return
+  check_openmp_flags "R installation supports OpenMP with \"-fopenmp\" flag" -fopenmp -fopenmp && return
 
   if [ "$(uname)" = "Darwin" ]; then
 
