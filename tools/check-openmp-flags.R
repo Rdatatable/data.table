@@ -1,9 +1,9 @@
 args <- commandArgs(TRUE)
-stopifnot(`Usage: Rscript check-openmp-flags.R CFLAGS LDFLAGS` = length(args) == 2)
+stopifnot(`Usage: Rscript check-openmp-flags.R CFLAGS LIBS` = length(args) == 2)
 # We'll need to create Makevars (and object and DLL files too)
 setwd(tempdir())
 cat(sprintf(
-  "Testing if OpenMP works with CFLAGS='%s' and LDFLAGS='%s':\n",
+  "Testing if OpenMP works with CFLAGS='%s' and LIBS='%s':\n",
   args[[1]], args[[2]]
 ))
 
