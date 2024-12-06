@@ -595,12 +595,12 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
       if (INHERITS(x, char_integer64)) {
         range_i64((int64_t *)REAL(x), nrow, &min, &max, &na_count);
       } else {
-        if (verbose && INHERITS(x, char_Date) && INTEGER(isReallyReal(x))[0]==0) {
-          Rprintf(_("\n*** Column %d passed to forder is a date stored as an 8 byte double but no fractions are present. Please consider a 4 byte integer date such as IDate to save space and time.\n"), col+1);
-          // Note the (slightly expensive) isReallyReal will only run when verbose is true. Prefix '***' just to make it stand out in verbose output
+        if (verbose && INHERITS(x, char_Date) && fitsInInt32(x)) {
+          // Note the (slightly expensive) fitsInInt32 will only run when verbose is true. Prefix '***' just to make it stand out in verbose output
           // In future this could be upgraded to option warning. But I figured that's what we use verbose to do (to trace problems and look for efficiencies).
           // If an automatic coerce is desired (see discussion in #1738) then this is the point to do that in this file. Move the INTSXP case above to be
           // next, do the coerce of Date to integer now to a tmp, and then let this case fall through to INTSXP in the same way as CPLXSXP falls through to REALSXP.
+          Rprintf(_("\n*** Column %d passed to forder is a date stored as an 8 byte double but no fractions are present. Please consider a 4 byte integer date such as IDate to save space and time.\n"), col+1);
         }
         range_d(REAL(x), nrow, &min, &max, &na_count, &infnan_count);
         if (min==0 && na_count<nrow) { min=3; max=4; } // column contains no finite numbers and is not-all NA; create dummies to yield positive min-2 later
