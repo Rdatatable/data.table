@@ -234,8 +234,6 @@ format_list_item.data.frame = function(x, ...) {
   paste0("<", class1(x), paste_dims(x), ">")
 }
 
-# format_list_item.vctrs_list_of = function(, .)
-
 # FR #1091 for pretty printing of character
 # TODO: maybe instead of doing "this is...", we could do "this ... test"?
 # Current implementation may have issues when dealing with strings that have combinations of full-width and half-width characters,
