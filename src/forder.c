@@ -72,7 +72,7 @@ static char msg[1001];
 
 static void free_ustr(void) {
   for(int i=0; i<ustr_n; i++)
-    SET_TRUELENGTH(ustr[i],0);
+    SET_TRULEN(ustr[i],0);
   free(ustr); ustr=NULL;
   ustr_alloc=0; ustr_n=0; ustr_maxlen=0;
 }
@@ -307,10 +307,10 @@ static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max
       na_count++;
       continue;
     }
-    if (TRUELENGTH(s)<0) continue;  // seen this group before
+    if (TRULEN(s)<0) continue;  // seen this group before
     #pragma omp critical
-    if (TRUELENGTH(s)>=0) {  // another thread may have set it while I was waiting, so check it again
-      if (TRUELENGTH(s)>0)   // save any of R's own usage of tl (assumed positive, so we can both count and save in one scan), to restore
+    if (TRULEN(s)>=0) {  // another thread may have set it while I was waiting, so check it again
+      if (TRULEN(s)>0)   // save any of R's own usage of tl (assumed positive, so we can both count and save in one scan), to restore
         savetl(s);           // afterwards. From R 2.14.0, tl is initialized to 0, prior to that it was random so this step saved too much.
       // now save unique SEXP in ustr so i) we can loop through them afterwards and reset TRUELENGTH to 0 and ii) sort uniques when sorting too
       if (ustr_alloc<=ustr_n) {
@@ -320,7 +320,7 @@ static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max
         if (ustr==NULL) STOP(_("Unable to realloc %d * %d bytes in range_str"), ustr_alloc, (int)sizeof(SEXP));  // # nocov
       }
       ustr[ustr_n++] = s;
-      SET_TRUELENGTH(s, -ustr_n);  // unique in any order is fine. first-appearance order is achieved later in count_group
+      SET_TRULEN(s, -ustr_n);  // unique in any order is fine. first-appearance order is achieved later in count_group
       if (LENGTH(s)>ustr_maxlen) ustr_maxlen=LENGTH(s);
       if (!anynotutf8 &&    // even if anynotascii we still want to know if anynotutf8, and anynotutf8 implies anynotascii already
             !IS_ASCII(s)) { // anynotutf8 implies anynotascii and IS_ASCII will be cheaper than IS_UTF8, so start with this one
@@ -351,23 +351,23 @@ static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max
     for (int i=0; i<ustr_n; i++) {
       SEXP s = ustr3[i];
       if (LENGTH(s)>ustr_maxlen) ustr_maxlen=LENGTH(s);
-      if (TRUELENGTH(s)>0) savetl(s);
+      if (TRULEN(s)>0) savetl(s);
     }
     cradix(ustr3, ustr_n);  // sort to detect possible duplicates after converting; e.g. two different non-utf8 map to the same utf8
-    SET_TRUELENGTH(ustr3[0], -1);
+    SET_TRULEN(ustr3[0], -1);
     int o = -1;
     for (int i=1; i<ustr_n; i++) {
       if (ustr3[i] == ustr3[i-1]) continue;  // use the same o for duplicates
-      SET_TRUELENGTH(ustr3[i], --o);
+      SET_TRULEN(ustr3[i], --o);
     }
     // now use the 1-1 mapping from ustr to ustr2 to get the ordering back into original ustr, being careful to reset tl to 0
     int *tl = (int *)malloc(ustr_n * sizeof(int));
     if (!tl)
       STOP(_("Failed to alloc tl when converting strings to UTF8"));  // # nocov
     const SEXP *tt = STRING_PTR_RO(ustr2);
-    for (int i=0; i<ustr_n; i++) tl[i] = TRUELENGTH(tt[i]);   // fetches the o in ustr3 into tl which is ordered by ustr
-    for (int i=0; i<ustr_n; i++) SET_TRUELENGTH(ustr3[i], 0);    // reset to 0 tl of the UTF8 (and possibly non-UTF in ustr too)
-    for (int i=0; i<ustr_n; i++) SET_TRUELENGTH(ustr[i], tl[i]); // put back the o into ustr's tl
+    for (int i=0; i<ustr_n; i++) tl[i] = TRULEN(tt[i]);   // fetches the o in ustr3 into tl which is ordered by ustr
+    for (int i=0; i<ustr_n; i++) SET_TRULEN(ustr3[i], 0);    // reset to 0 tl of the UTF8 (and possibly non-UTF in ustr too)
+    for (int i=0; i<ustr_n; i++) SET_TRULEN(ustr[i], tl[i]); // put back the o into ustr's tl
     free(tl);
     free(ustr3);
     UNPROTECT(1);
@@ -380,7 +380,7 @@ static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max
       // that this is always ascending; descending is done in WRITE_KEY using max-this
       cradix(ustr, ustr_n);  // sorts ustr in-place by reference. assumes NA_STRING not present.
       for(int i=0; i<ustr_n; i++)     // save ordering in the CHARSXP. negative so as to distinguish with R's own usage.
-        SET_TRUELENGTH(ustr[i], -i-1);
+        SET_TRULEN(ustr[i], -i-1);
     }
     // else group appearance order was already saved to tl in the first pass
   }
@@ -766,7 +766,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
           if (nalast==-1) anso[i]=0;
           elem = naval;
         } else {
-          elem = -TRUELENGTH(xd[i]);
+          elem = -TRULEN(xd[i]);
         }
         WRITE_KEY
       }}

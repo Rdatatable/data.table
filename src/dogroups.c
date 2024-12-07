@@ -46,9 +46,9 @@ static bool anySpecialStatic(SEXP x) {
   if (n==0)
     return false;
   if (isVectorAtomic(x))
-    return ALTREP(x) || TRUELENGTH(x)<0;
+    return ALTREP(x) || TRULEN(x)<0;
   if (isNewList(x)) {
-    if (TRUELENGTH(x)<0)
+    if (TRULEN(x)<0)
       return true;  // test 2158
     for (int i=0; i<n; ++i) {
       list_el = VECTOR_ELT(x,i);
@@ -102,7 +102,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     defineVar(install(CHAR(STRING_ELT(bynames,i))), VECTOR_ELT(BY,i), env);      // by vars can be used by name in j as well as via .BY
     if (SIZEOF(VECTOR_ELT(BY,i))==0)
       internal_error(__func__, "unsupported size-0 type '%s' in column %d of 'by' should have been caught earlier", type2char(TYPEOF(VECTOR_ELT(BY, i))), i+1); // # nocov
-    SET_TRUELENGTH(VECTOR_ELT(BY,i), -1); // marker for anySpecialStatic(); see its comments
+    SET_TRULEN(VECTOR_ELT(BY,i), -1); // marker for anySpecialStatic(); see its comments
   }
   setAttrib(BY, R_NamesSymbol, bynames); // Fix for #42 - BY doesn't retain names anymore
   R_LockBinding(sym_BY, env);
@@ -111,9 +111,9 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   // TO DO: check this check above.
 
   N =   PROTECT(findVar(install(".N"), env));   nprotect++; // PROTECT for rchk
-  SET_TRUELENGTH(N, -1);  // marker for anySpecialStatic(); see its comments
+  SET_TRULEN(N, -1);  // marker for anySpecialStatic(); see its comments
   GRP = PROTECT(findVar(install(".GRP"), env)); nprotect++;
-  SET_TRUELENGTH(GRP, -1);  // marker for anySpecialStatic(); see its comments
+  SET_TRULEN(GRP, -1);  // marker for anySpecialStatic(); see its comments
   iSD = PROTECT(findVar(install(".iSD"), env)); nprotect++; // 1-row and possibly no cols (if no i variables are used via JIS)
   xSD = PROTECT(findVar(install(".xSD"), env)); nprotect++;
   R_len_t maxGrpSize = 0;
@@ -122,7 +122,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     if (ilens[i] > maxGrpSize) maxGrpSize = ilens[i];
   }
   defineVar(install(".I"), I = PROTECT(allocVector(INTSXP, maxGrpSize)), env); nprotect++;
-  SET_TRUELENGTH(I, -maxGrpSize);  // marker for anySpecialStatic(); see its comments
+  SET_TRULEN(I, -maxGrpSize);  // marker for anySpecialStatic(); see its comments
   R_LockBinding(install(".I"), env);
 
   SEXP dtnames = PROTECT(getAttrib(dt, R_NamesSymbol)); nprotect++; // added here to fix #91 - `:=` did not issue recycling warning during "by"
@@ -149,7 +149,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     nameSyms[i] = install(CHAR(STRING_ELT(names, i)));
     // fixes http://stackoverflow.com/questions/14753411/why-does-data-table-lose-class-definition-in-sd-after-group-by
     copyMostAttrib(VECTOR_ELT(dt,INTEGER(dtcols)[i]-1), this);  // not names, otherwise test 778 would fail
-    SET_TRUELENGTH(this, -maxGrpSize);  // marker for anySpecialStatic(); see its comments
+    SET_TRULEN(this, -maxGrpSize);  // marker for anySpecialStatic(); see its comments
   }
 
   SEXP xknames = PROTECT(getAttrib(xSD, R_NamesSymbol)); nprotect++;
@@ -194,7 +194,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     INTEGER(GRP)[0] = i+1;  // group counter exposed as .GRP
     INTEGER(rownames)[1] = -grpn;  // the .set_row_names() of .SD. Not .N when nomatch=NA and this is a nomatch
     for (int j=0; j<length(SDall); ++j) {
-      SETLENGTH(VECTOR_ELT(SDall,j), grpn);  // before copying data in otherwise assigning after the end could error R API checks
+      SET_LEN(VECTOR_ELT(SDall,j), grpn);  // before copying data in otherwise assigning after the end could error R API checks
       defineVar(nameSyms[j], VECTOR_ELT(SDall, j), env);
       // Redo this defineVar for each group in case user's j assigned to the column names (env is static) (tests 387 and 388)
       // nameSyms pre-stored to save repeated install() for efficiency, though.
@@ -227,14 +227,14 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         // and we hope that reference counting on by default from R 4.0 will avoid costly gc()s.
       }
       grpn = 1;  // it may not be 1 e.g. test 722. TODO: revisit.
-      SETLENGTH(I, grpn);
+      SET_LEN(I, grpn);
       INTEGER(I)[0] = 0;
       for (int j=0; j<length(xSD); ++j) {
         writeNA(VECTOR_ELT(xSD, j), 0, 1, false);
       }
     } else {
       if (verbose) tstart = wallclock();
-      SETLENGTH(I, grpn);
+      SET_LEN(I, grpn);
       int *iI = INTEGER(I);
       if (LENGTH(order)==0) {
         const int rownum = grpn ? istarts[i]-1 : -1;
@@ -315,13 +315,13 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
         RHS = VECTOR_ELT(jval,j%LENGTH(jval));
         if (isNull(target)) {
           // first time adding to new column
-          if (TRUELENGTH(dt) < colj+1) internal_error(__func__, "Trying to add new column by reference but tl is full; setalloccol should have run first at R level before getting to this point"); // # nocov
+          if (TRULEN(dt) < colj+1) internal_error(__func__, "Trying to add new column by reference but tl is full; setalloccol should have run first at R level before getting to this point"); // # nocov
           target = PROTECT(allocNAVectorLike(RHS, n));
           // Even if we could know reliably to switch from allocNAVectorLike to allocVector for slight speedup, user code could still
           // contain a switched halt, and in that case we'd want the groups not yet done to have NA rather than 0 or uninitialized.
           // Increment length only if the allocation passes, #1676. But before SET_VECTOR_ELT otherwise attempt-to-set-index-n/n R error
-          SETLENGTH(dtnames, LENGTH(dtnames)+1);
-          SETLENGTH(dt, LENGTH(dt)+1);
+          SET_LEN(dtnames, LENGTH(dtnames)+1);
+          SET_LEN(dt, LENGTH(dt)+1);
           SET_VECTOR_ELT(dt, colj, target);
           UNPROTECT(1);
           SET_STRING_ELT(dtnames, colj, STRING_ELT(newnames, colj-origncol));
@@ -479,17 +479,17 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   // Also reset truelength on specials; see comments in anySpecialStatic().
   for (int j=0; j<length(SDall); ++j) {
     SEXP this = VECTOR_ELT(SDall,j);
-    SETLENGTH(this, maxGrpSize);
-    SET_TRUELENGTH(this, maxGrpSize);
+    SET_LEN(this, maxGrpSize);
+    SET_TRULEN(this, maxGrpSize);
   }
-  SETLENGTH(I, maxGrpSize);
-  SET_TRUELENGTH(I, maxGrpSize);
+  SET_LEN(I, maxGrpSize);
+  SET_TRULEN(I, maxGrpSize);
   for (int i=0; i<length(BY); ++i) {
     SEXP this = VECTOR_ELT(BY, i);
-    SET_TRUELENGTH(this, length(this)); // might be 0 or 1; see its allocVector above
+    SET_TRULEN(this, length(this)); // might be 0 or 1; see its allocVector above
   }
-  SET_TRUELENGTH(N, 1);
-  SET_TRUELENGTH(GRP, 1);
+  SET_TRULEN(N, 1);
+  SET_TRULEN(GRP, 1);
   if (verbose) {
     if (nblock[0] && nblock[1]) internal_error(__func__, "block 0 [%d] and block 1 [%d] have both run", nblock[0], nblock[1]); // # nocov
     int w = nblock[1]>0;

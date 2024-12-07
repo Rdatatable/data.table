@@ -516,7 +516,7 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
 
         setAttrib(thiscol, sym_tzone, ScalarString(char_UTC)); // see news for v1.13.0
       }
-      SET_TRUELENGTH(thiscol, allocNrow);
+      SET_TRULEN(thiscol, allocNrow);
       DTbytes += SIZEOF(thiscol)*allocNrow;
     }
     resi++;
@@ -533,9 +533,9 @@ void setFinalNrow(size_t nrow) {
       return;
     const int ncol=LENGTH(DT);
     for (int i=0; i<ncol; i++) {
-      SETLENGTH(VECTOR_ELT(DT,i), nrow);
-      SET_TRUELENGTH(VECTOR_ELT(DT,i), dtnrows);
-      SET_GROWABLE_BIT(VECTOR_ELT(DT,i));  // #3292
+      SET_LEN(VECTOR_ELT(DT,i), nrow);
+      SET_TRULEN(VECTOR_ELT(DT,i), dtnrows);
+      SET_GROWBLE_BIT(VECTOR_ELT(DT,i));  // #3292
     }
   }
   R_FlushConsole(); // # 2481. Just a convenient place; nothing per se to do with setFinalNrow()
@@ -548,8 +548,8 @@ void dropFilledCols(int* dropArg, int ndelete) {
     SET_VECTOR_ELT(DT, dropFill[i], R_NilValue);
     SET_STRING_ELT(colNamesSxp, dropFill[i], NA_STRING);
   }
-  SETLENGTH(DT, ndt-ndelete);
-  SETLENGTH(colNamesSxp, ndt-ndelete);
+  SET_LEN(DT, ndt-ndelete);
+  SET_LEN(colNamesSxp, ndt-ndelete);
 }
 
 void pushBuffer(ThreadLocalFreadParsingContext *ctx)

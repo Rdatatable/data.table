@@ -58,10 +58,10 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
   savetl_init();
   for (int i=0; i<xlen; i++) {
     SEXP s = xd[i];
-    const int tl = TRUELENGTH(s);
+    const int tl = TRULEN(s);
     if (tl>0) {
       savetl(s);  // R's internal hash (which is positive); save it
-      SET_TRUELENGTH(s,0);
+      SET_TRULEN(s,0);
     } else if (tl<0) {
       // R 2.14.0+ initializes truelength to 0 (before that it was uninitialized/random).
       // Now that data.table depends on R 3.1.0+, that is after 2.14.0 too.
@@ -75,13 +75,13 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
   int nuniq=0;
   for (int i=0; i<tablelen; ++i) {
     const SEXP s = td[i];
-    int tl = TRUELENGTH(s);
+    int tl = TRULEN(s);
     if (tl>0) { savetl(s); tl=0; }
-    if (tl==0) SET_TRUELENGTH(s, chmatchdup ? -(++nuniq) : -i-1); // first time seen this string in table
+    if (tl==0) SET_TRULEN(s, chmatchdup ? -(++nuniq) : -i-1); // first time seen this string in table
   }
   // in future if we need NAs in x not to be matched to NAs in table ...
-  // if (!matchNAtoNA && TRUELENGTH(NA_STRING)<0)
-  //   SET_TRUELENGTH(NA_STRING, 0);
+  // if (!matchNAtoNA && TRULEN(NA_STRING)<0)
+  //   SET_TRULEN(NA_STRING, 0);
   if (chmatchdup) {
     // chmatchdup() is basically base::pmatch() but without the partial matching part. For example :
     //   chmatchdup(c("a", "a"), c("a", "a"))   # 1,2  - the second 'a' in 'x' has a 2nd match in 'table'
@@ -100,21 +100,21 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
     if (!counts || !map) {
       // # nocov start
       free(counts); free(map);
-      for (int i=0; i<tablelen; i++) SET_TRUELENGTH(td[i], 0);
+      for (int i=0; i<tablelen; i++) SET_TRULEN(td[i], 0);
       savetl_end();
       error(_("Failed to allocate %"PRIu64" bytes working memory in chmatchdup: length(table)=%d length(unique(table))=%d"), ((uint64_t)tablelen*2+nuniq)*sizeof(int), tablelen, nuniq);
       // # nocov end
     }
-    for (int i=0; i<tablelen; ++i) counts[-TRUELENGTH(td[i])-1]++;
+    for (int i=0; i<tablelen; ++i) counts[-TRULEN(td[i])-1]++;
     for (int i=0, sum=0; i<nuniq; ++i) { int tt=counts[i]; counts[i]=sum; sum+=tt+1; }
-    for (int i=0; i<tablelen; ++i) map[counts[-TRUELENGTH(td[i])-1]++] = i+1;           // 0 is left ending each group thanks to the calloc
+    for (int i=0; i<tablelen; ++i) map[counts[-TRULEN(td[i])-1]++] = i+1;           // 0 is left ending each group thanks to the calloc
     for (int i=0, last=0; i<nuniq; ++i) {int tt=counts[i]+1; counts[i]=last; last=tt;}  // rewind counts to the beginning of each group
     for (int i=0; i<xlen; ++i) {
-      int u = TRUELENGTH(xd[i]);
+      int u = TRULEN(xd[i]);
       if (u<0) {
         const int w = counts[-u-1]++;
         if (map[w]) { ansd[i]=map[w]; continue; }
-        SET_TRUELENGTH(xd[i],0); // w falls on ending 0 marker: dups used up; any more dups should return nomatch
+        SET_TRULEN(xd[i],0); // w falls on ending 0 marker: dups used up; any more dups should return nomatch
         // we still need the 0-setting loop at the end of this function because often there will be some values in table that are not matched to at all.
       }
       ansd[i] = nomatch;
@@ -123,16 +123,16 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
     free(map);
   } else if (chin) {
     for (int i=0; i<xlen; i++) {
-      ansd[i] = TRUELENGTH(xd[i])<0;
+      ansd[i] = TRULEN(xd[i])<0;
     }
   } else {
     for (int i=0; i<xlen; i++) {
-      const int m = TRUELENGTH(xd[i]);
+      const int m = TRULEN(xd[i]);
       ansd[i] = (m<0) ? -m : nomatch;
     }
   }
   for (int i=0; i<tablelen; i++)
-    SET_TRUELENGTH(td[i], 0);  // reinstate 0 rather than leave the -i-1
+    SET_TRULEN(td[i], 0);  // reinstate 0 rather than leave the -i-1
   savetl_end();
   UNPROTECT(nprotect);  // ans, xd, td
   return ans;

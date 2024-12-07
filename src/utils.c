@@ -267,27 +267,27 @@ void copySharedColumns(SEXP x) {
   // the savetl() function elsewhere is for CHARSXP. Here, we are using truelength on atomic vectors.
   for (int i=0; i<ncol; ++i) {
     const SEXP thiscol = xp[i];
-    savetl[i] = ALTREP(thiscol) ? 0 : TRUELENGTH(thiscol);
-    SET_TRUELENGTH(thiscol, 0);
+    savetl[i] = TRULEN(thiscol);
+    SET_TRULEN(thiscol, 0);
   }
   int nShared=0;
   for (int i=0; i<ncol; ++i) {
     SEXP thiscol = xp[i];
-    if (ALTREP(thiscol) || TRUELENGTH(thiscol)<0) {
+    if (ALTREP(thiscol) || TRULEN(thiscol)<0) {
       shared[i] = true;  // we mark ALTREP as 'shared' too, whereas 'tocopy' would be better word to use for ALTREP
       nShared++;
       // do not copyAsPlain() here yet, as its alloc might fail. Must restore tl first to all columns before attempting any copies.
     } else {
       shared[i] = false;              // so the first column will never be shared (unless it is an altrep) even it is shared
                                       // 'shared' means a later column shares an earlier column
-      SET_TRUELENGTH(thiscol, -i-1);  // -i-1 so that if, for example, column 3 shares column 1, in iteration 3 we'll know not
+      SET_TRULEN(thiscol, -i-1);  // -i-1 so that if, for example, column 3 shares column 1, in iteration 3 we'll know not
                                       // only that the 3rd column is shared with an earlier column, but which one too. Although
                                       // we don't use that information currently, we could do in future.
     }
   }
   // now we know nShared and which ones they are (if any), restore original tl back to the unique set of columns
   for (int i=0; i<ncol; ++i) {
-    if (!shared[i]) SET_TRUELENGTH(xp[i], savetl[i]);
+    if (!shared[i]) SET_TRULEN(xp[i], savetl[i]);
     //  ^^^^^^^^^^ important because if there are shared columns, the dup will have savetl==0 but we want the first restore to stand
   }
   // now that truelength has been restored for all columns, we can finally call copyAsPlain()
