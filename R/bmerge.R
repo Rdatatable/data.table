@@ -66,10 +66,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     iname = paste0("i.", names(i)[icol])
     if (!x_merge_type %chin% supported) stopf("%s is type %s which is not supported by data.table join", xname, x_merge_type)
     if (!i_merge_type %chin% supported) stopf("%s is type %s which is not supported by data.table join", iname, i_merge_type)
-    if (x_merge_type == i_merge_type) {
-      if (verbose) catf("%s has same type (%s) as %s. No coercion needed.\n", iname, x_merge_type, xname)
-      next
-    }
+    # we check factors first because they might have different levels
     if (x_merge_type=="factor" || i_merge_type=="factor") {
       if (x_merge_type=="factor" && i_merge_type=="factor") {
         if (verbose) catf("Matching %s factor levels to %s factor levels.\n", iname, xname)
@@ -90,6 +87,10 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
         }
       }
       stopf("Incompatible join types: %s (%s) and %s (%s). Factor columns must join to factor or character columns.", xname, x_merge_type, iname, i_merge_type)
+    }
+    if (x_merge_type == i_merge_type) {
+      if (verbose) catf("%s has same type (%s) as %s. No coercion needed.\n", iname, x_merge_type, xname)
+      next
     }
     cfl = c("character", "logical", "factor")
     if (x_merge_type %chin% cfl || i_merge_type %chin% cfl) {
