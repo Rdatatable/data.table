@@ -307,10 +307,10 @@ static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max
       na_count++;
       continue;
     }
-    if (TRULEN(s)<0) continue;  // seen this group before
+    if (STDVEC_TRUELENGTH(s)<0) continue;  // seen this group before
     #pragma omp critical
-    if (TRULEN(s)>=0) {  // another thread may have set it while I was waiting, so check it again
-      if (TRULEN(s)>0)   // save any of R's own usage of tl (assumed positive, so we can both count and save in one scan), to restore
+    if (STDVEC_TRUELENGTH(s)>=0) {  // another thread may have set it while I was waiting, so check it again
+      if (STDVEC_TRUELENGTH(s)>0)   // save any of R's own usage of tl (assumed positive, so we can both count and save in one scan), to restore
         savetl(s);           // afterwards. From R 2.14.0, tl is initialized to 0, prior to that it was random so this step saved too much.
       // now save unique SEXP in ustr so i) we can loop through them afterwards and reset TRUELENGTH to 0 and ii) sort uniques when sorting too
       if (ustr_alloc<=ustr_n) {
@@ -351,7 +351,7 @@ static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max
     for (int i=0; i<ustr_n; i++) {
       SEXP s = ustr3[i];
       if (LENGTH(s)>ustr_maxlen) ustr_maxlen=LENGTH(s);
-      if (TRULEN(s)>0) savetl(s);
+      if (STDVEC_TRUELENGTH(s)>0) savetl(s);
     }
     cradix(ustr3, ustr_n);  // sort to detect possible duplicates after converting; e.g. two different non-utf8 map to the same utf8
     SET_TRULEN(ustr3[0], -1);
@@ -365,7 +365,7 @@ static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max
     if (!tl)
       STOP(_("Failed to alloc tl when converting strings to UTF8"));  // # nocov
     const SEXP *tt = STRING_PTR_RO(ustr2);
-    for (int i=0; i<ustr_n; i++) tl[i] = TRULEN(tt[i]);   // fetches the o in ustr3 into tl which is ordered by ustr
+    for (int i=0; i<ustr_n; i++) tl[i] = STDVEC_TRUELENGTH(tt[i]);   // fetches the o in ustr3 into tl which is ordered by ustr
     for (int i=0; i<ustr_n; i++) SET_TRULEN(ustr3[i], 0);    // reset to 0 tl of the UTF8 (and possibly non-UTF in ustr too)
     for (int i=0; i<ustr_n; i++) SET_TRULEN(ustr[i], tl[i]); // put back the o into ustr's tl
     free(tl);
@@ -766,7 +766,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
           if (nalast==-1) anso[i]=0;
           elem = naval;
         } else {
-          elem = -TRULEN(xd[i]);
+          elem = -STDVEC_TRUELENGTH(xd[i]);
         }
         WRITE_KEY
       }}

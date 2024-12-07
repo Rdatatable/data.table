@@ -58,7 +58,7 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
   savetl_init();
   for (int i=0; i<xlen; i++) {
     SEXP s = xd[i];
-    const int tl = TRULEN(s);
+    const int tl = STDVEC_TRUELENGTH(s);
     if (tl>0) {
       savetl(s);  // R's internal hash (which is positive); save it
       SET_TRULEN(s,0);
@@ -75,7 +75,7 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
   int nuniq=0;
   for (int i=0; i<tablelen; ++i) {
     const SEXP s = td[i];
-    int tl = TRULEN(s);
+    int tl = STDVEC_TRUELENGTH(s);
     if (tl>0) { savetl(s); tl=0; }
     if (tl==0) SET_TRULEN(s, chmatchdup ? -(++nuniq) : -i-1); // first time seen this string in table
   }
@@ -105,12 +105,12 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
       error(_("Failed to allocate %"PRIu64" bytes working memory in chmatchdup: length(table)=%d length(unique(table))=%d"), ((uint64_t)tablelen*2+nuniq)*sizeof(int), tablelen, nuniq);
       // # nocov end
     }
-    for (int i=0; i<tablelen; ++i) counts[-TRULEN(td[i])-1]++;
+    for (int i=0; i<tablelen; ++i) counts[-STDVEC_TRUELENGTH(td[i])-1]++;
     for (int i=0, sum=0; i<nuniq; ++i) { int tt=counts[i]; counts[i]=sum; sum+=tt+1; }
-    for (int i=0; i<tablelen; ++i) map[counts[-TRULEN(td[i])-1]++] = i+1;           // 0 is left ending each group thanks to the calloc
+    for (int i=0; i<tablelen; ++i) map[counts[-STDVEC_TRUELENGTH(td[i])-1]++] = i+1;           // 0 is left ending each group thanks to the calloc
     for (int i=0, last=0; i<nuniq; ++i) {int tt=counts[i]+1; counts[i]=last; last=tt;}  // rewind counts to the beginning of each group
     for (int i=0; i<xlen; ++i) {
-      int u = TRULEN(xd[i]);
+      int u = STDVEC_TRUELENGTH(xd[i]);
       if (u<0) {
         const int w = counts[-u-1]++;
         if (map[w]) { ansd[i]=map[w]; continue; }
@@ -123,11 +123,11 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
     free(map);
   } else if (chin) {
     for (int i=0; i<xlen; i++) {
-      ansd[i] = TRULEN(xd[i])<0;
+      ansd[i] = STDVEC_TRUELENGTH(xd[i])<0;
     }
   } else {
     for (int i=0; i<xlen; i++) {
-      const int m = TRULEN(xd[i]);
+      const int m = STDVEC_TRUELENGTH(xd[i]);
       ansd[i] = (m<0) ? -m : nomatch;
     }
   }
