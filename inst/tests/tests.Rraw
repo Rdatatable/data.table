@@ -56,8 +56,8 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   internal_error = data.table:::internal_error
   is_na = data.table:::is_na
   is.sorted = data.table:::is.sorted
-  isReallyReal = data.table:::isReallyReal
-  isRealReallyInt = data.table:::isRealReallyInt
+  fitsInInt32 = data.table:::fitsInInt32
+  fitsInInt64 = data.table:::fitsInInt64
   is_utc = data.table:::is_utc
   melt.data.table = data.table:::melt.data.table  # for test 1953.4
   messagef = data.table:::messagef
@@ -7356,22 +7356,23 @@ if (test_bit64) {
 X = list(a = 4:1, b=runif(4))
 test(1513, setkey(as.data.table(X), a), setDT(X, key="a"))
 
-# Adding tests for `isReallyReal`
+# Adding tests for `fitsInInt32`
 x = as.numeric(sample(10))
-test(1514.1, isReallyReal(x), 0L)
+test(1514.1, fitsInInt32(x), TRUE)
 x = as.numeric(sample(c(1:5, NA)))
-test(1514.2, isReallyReal(x), 0L) # NAs in numeric can be coerced to integer NA without loss
+test(1514.2, fitsInInt32(x), TRUE) # NAs in numeric can be coerced to integer NA without loss
 x = c(1:2, NaN, NA)
-test(1514.3, isReallyReal(x), 3L)
+test(1514.3, fitsInInt32(x), FALSE)
 x = c(1:2, Inf, NA)
-test(1514.4, isReallyReal(x), 3L)
+test(1514.4, fitsInInt32(x), FALSE)
 x = c(1:2, -Inf, NA)
-test(1514.5, isReallyReal(x), 3L)
+test(1514.5, fitsInInt32(x), FALSE)
 x = runif(2)
-test(1514.6, isReallyReal(x), 1L)
+test(1514.6, fitsInInt32(x), FALSE)
 x = numeric()
-test(1514.7, isReallyReal(x), 0L)
-test(1514.8, isReallyReal(9L), 0L)
+test(1514.7, fitsInInt32(x), TRUE)
+test(1514.8, fitsInInt32(9L), FALSE) # b/c not double input
+test(1514.9, fitsInInt64(9L), FALSE)
 
 # #1091
 options(datatable.prettyprint.char = 5L)
@@ -15150,9 +15151,9 @@ if (test_bit64) {
                 output = "Coercing integer column x.int to type integer64 to match type of i.int64")
   test(2044.67, dt1[dt2, ..cols, on="doubleInt==int64", nomatch=0L, verbose=TRUE],
                 ans,
-                output = "Coercing double column x.doubleInt (which contains no fractions) to type integer64 to match type of i.int64")
+                output = "Coercing double column x.doubleInt (which has integer64 representation, e.g. no fractions) to type integer64 to match type of i.int64")
   test(2044.68, dt1[dt2, ..cols, on="realDouble==int64", nomatch=0L, verbose=TRUE],
-                error="Incompatible join types: i.int64 is type integer64 but x.realDouble is type double and contains fractions")
+                error="Incompatible join types: i.int64 is type integer64 but x.realDouble is type double and cannot be coerced to integer64")
   # int64 in x
   test(2044.69, dt1[dt2, ..cols, on="int64==int", nomatch=0L, verbose=TRUE],
                 ans<-data.table(x.int=1:5, x.doubleInt=as.double(1:5), x.realDouble=c(0.5,1.0,1.5,2.0,2.5), x.int64=as.integer64(1:5),
@@ -15160,9 +15161,9 @@ if (test_bit64) {
                 output = "Coercing integer column i.int to type integer64 to match type of x.int64")
   test(2044.70, dt1[dt2, ..cols, on="int64==doubleInt", nomatch=0L, verbose=TRUE],
                 ans,
-                output = "Coercing double column i.doubleInt (which contains no fractions) to type integer64 to match type of x.int64")
+                output = "Coercing double column i.doubleInt (which has integer64 representation, e.g. no fractions) to type integer64 to match type of x.int64")
   test(2044.71, dt1[dt2, ..cols, on="int64==realDouble", nomatch=0L, verbose=TRUE],
-                error="Incompatible join types: x.int64 is type integer64 but i.realDouble is type double and contains fractions")
+                error="Incompatible join types: x.int64 is type integer64 but i.realDouble is type double and cannot be coerced to integer64")
 }
 # coercion of all-NA
 dt1 = data.table(a=1,  b=NA_character_)
@@ -17603,18 +17604,18 @@ test(2204, as.data.table(mtcars, keep.rownames='model', key='model'),
 
 # 2205 tested nanotime moved to other.Rraw 27, #5516
 
-# isRealReallyInt, #3966
-test(2206.01, isRealReallyInt(c(-2147483647.0, NA, 0.0, 2147483647.0)), TRUE)
-test(2206.02, isRealReallyInt(2147483648.0), FALSE) # >INT_MAX
-test(2206.03, isRealReallyInt(-2147483648.0), FALSE) # <=INT_MIN since INT_MIN==NA_integer_
-test(2206.04, isRealReallyInt(c(5,-5,2147483648)), FALSE)  # test real last position
-test(2206.05, isRealReallyInt(NaN), FALSE)
-test(2206.06, isRealReallyInt(+Inf), FALSE)
-test(2206.07, isRealReallyInt(-Inf), FALSE)
-test(2206.08, isRealReallyInt(0.1), FALSE)
-test(2206.09, isRealReallyInt(numeric()), TRUE)
-test(2206.10, isRealReallyInt(9L), FALSE) # must be type double
-test(2206.11, isRealReallyInt(integer()), FALSE)
+# fitsInInt32, #3966
+test(2206.01, fitsInInt32(c(-2147483647.0, NA, 0.0, 2147483647.0)), TRUE)
+test(2206.02, fitsInInt32(2147483648.0), FALSE) # >INT_MAX
+test(2206.03, fitsInInt32(-2147483648.0), FALSE) # <=INT_MIN since INT_MIN==NA_integer_
+test(2206.04, fitsInInt32(c(5,-5,2147483648)), FALSE)  # test real last position
+test(2206.05, fitsInInt32(NaN), FALSE)
+test(2206.06, fitsInInt32(+Inf), FALSE)
+test(2206.07, fitsInInt32(-Inf), FALSE)
+test(2206.08, fitsInInt32(0.1), FALSE)
+test(2206.09, fitsInInt32(numeric()), TRUE)
+test(2206.10, fitsInInt32(9L), FALSE) # must be type double
+test(2206.11, fitsInInt32(integer()), FALSE)
 
 # dcast supports complex value to cast, #4855
 DT = CJ(x=1:3, y=letters[1:2])
@@ -20664,3 +20665,15 @@ test(2299.09, format_list_item(data.table(a=numeric(), b=numeric())), output="<d
 test(2299.10, data.table(a=1),                                        output="a\n1: *1")
 test(2299.11, data.table(a=list(data.frame(b=1))),                    output="a\n1: <data.frame[1x1]>")
 test(2299.12, data.table(a=list(data.table(b=1))),                    output="a\n1: <data.table[1x1]>")
+
+if (test_bit64) {
+  # Join to integer64 doesn't require integer32 representation, just integer64, #6625
+  i64_val = .Machine$integer.max + 1
+  DT1 = data.table(id = as.integer64(i64_val))
+  DT2 = data.table(id = i64_val)
+  test(2300.1, DT1[DT2, on='id', verbose=TRUE], DT2, output="has integer64 representation")
+  test(2300.2, DT2[DT1, on='id', verbose=TRUE], DT1, output="has integer64 representation")
+  DT2[, id := id+.01]
+  test(2300.3, DT1[DT2, on='id'], error="Incompatible join types")
+  test(2300.4, DT2[DT1, on='id'], error="Incompatible join types")
+}
