@@ -8,7 +8,7 @@ static void finalizer(SEXP p)
   p = R_ExternalPtrTag(p);
   if (!isString(p)) internal_error(__func__, "ExternalPtr doesn't see names in tag"); // # nocov
   l = LENGTH(p);
-  tl = TRUELENGTH(p);
+  tl = TRULEN(p);
   if (l<0 || tl<l) internal_error(__func__, "l=%d, tl=%d", l, tl); // # nocov
   n = tl-l;
   if (n==0) {
@@ -18,7 +18,7 @@ static void finalizer(SEXP p)
   }
   x = PROTECT(allocVector(INTSXP, 50));  // 50 so it's big enough to be on LargeVector heap. See NodeClassSize in memory.c:allocVector
                                          // INTSXP rather than VECSXP so that GC doesn't inspect contents after LENGTH (thanks to Karl Miller, Jul 2015)
-  SETLENGTH(x,50+n*2*sizeof(void *)/4);  // 1*n for the names, 1*n for the VECSXP itself (both are over allocated).
+  SET_LEN(x,50+n*2*sizeof(void *)/4);  // 1*n for the names, 1*n for the VECSXP itself (both are over allocated).
   UNPROTECT(1);
   return;
 }
@@ -86,8 +86,8 @@ closest I got to getting it to pass all tests :
   UNPROTECT(2);
 
 Then in finalizer:
-  SETLENGTH(names, tl)
-  SETLENGTH(dt, tl)
+  SET_LEN(names, tl)
+  SET_LEN(dt, tl)
 
 and that finalizer indeed now happens before the GC releases memory (thanks to the env wrapper).
 
@@ -127,14 +127,14 @@ static int _selfrefok(SEXP x, Rboolean checkNames, Rboolean verbose) {
   if (!(isNull(tag) || isString(tag))) internal_error(__func__, ".internal.selfref tag is neither NULL nor a character vector"); // # nocov
   names = getAttrib(x, R_NamesSymbol);
   if (names!=tag && isString(names) && !ALTREP(names))  // !ALTREP for #4734
-    SET_TRUELENGTH(names, LENGTH(names));
+    SET_TRULEN(names, LENGTH(names));
     // R copied this vector not data.table; it's not actually over-allocated. It looks over-allocated
     // because R copies the original vector's tl over despite allocating length.
   prot = R_ExternalPtrProtected(v);
   if (TYPEOF(prot) != EXTPTRSXP)   // Very rare. Was error(_(".internal.selfref prot is not itself an extptr")).
     return 0;                      // # nocov ; see http://stackoverflow.com/questions/15342227/getting-a-random-internal-selfref-error-in-data-table-for-r
   if (x!=R_ExternalPtrAddr(prot) && !ALTREP(x))
-    SET_TRUELENGTH(x, LENGTH(x));  // R copied this vector not data.table, it's not actually over-allocated
+    SET_TRULEN(x, LENGTH(x));  // R copied this vector not data.table, it's not actually over-allocated
   return checkNames ? names==tag : x==R_ExternalPtrAddr(prot);
 }
 
@@ -189,10 +189,10 @@ static SEXP shallow(SEXP dt, SEXP cols, R_len_t n)
   setAttrib(newdt, R_NamesSymbol, newnames);
   // setAttrib appears to change length and truelength, so need to do that first _then_ SET next,
   // otherwise (if the SET were were first) the 100 tl is assigned to length.
-  SETLENGTH(newnames,l);
-  SET_TRUELENGTH(newnames,n);
-  SETLENGTH(newdt,l);
-  SET_TRUELENGTH(newdt,n);
+  SET_LEN(newnames,l);
+  SET_TRULEN(newnames,n);
+  SET_LEN(newdt,l);
+  SET_TRULEN(newdt,n);
   setselfref(newdt);
   UNPROTECT(protecti);
   return(newdt);
@@ -260,10 +260,10 @@ SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
     return shallow(dt,R_NilValue,(n>l) ? n : l);  // e.g. test 848 and 851 in R > 3.0.2
     // added (n>l) ? ... for #970, see test 1481.
   // TO DO:  test realloc names if selfrefnamesok (users can setattr(x,"name") themselves for example.
-  // if (TRUELENGTH(getAttrib(dt,R_NamesSymbol))!=tl)
-  //    internal_error(__func__, "tl of dt passes checks, but tl of names (%d) != tl of dt (%d)", tl, TRUELENGTH(getAttrib(dt,R_NamesSymbol))); // # nocov
+  // if (TRULEN(getAttrib(dt,R_NamesSymbol))!=tl)
+  //    internal_error(__func__, "tl of dt passes checks, but tl of names (%d) != tl of dt (%d)", tl, TRULEN(getAttrib(dt,R_NamesSymbol))); // # nocov
 
-  tl = TRUELENGTH(dt);
+  tl = TRULEN(dt);
   // R <= 2.13.2 and we didn't catch uninitialized tl somehow
   if (tl<0) internal_error(__func__, "tl of class is marked but tl<0"); // # nocov
   if (tl>0 && tl<l) internal_error(__func__, "tl (%d) < l (%d) but tl of class is marked", tl, l); // # nocov
@@ -313,11 +313,11 @@ SEXP shallowwrapper(SEXP dt, SEXP cols) {
   if (!selfrefok(dt, FALSE)) {
     int n = isNull(cols) ? length(dt) : length(cols);
     return(shallow(dt, cols, n));
-  } else return(shallow(dt, cols, TRUELENGTH(dt)));
+  } else return(shallow(dt, cols, TRULEN(dt)));
 }
 
 SEXP truelength(SEXP x) {
-  return ScalarInteger(isNull(x) ? 0 : TRUELENGTH(x));
+  return ScalarInteger(isNull(x) ? 0 : TRULEN(x));
 }
 
 SEXP selfrefokwrapper(SEXP x, SEXP verbose) {
@@ -514,7 +514,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   // modify DT by reference. Other than if new columns are being added and the allocVec() fails with
   // out-of-memory. In that case the user will receive hard halt and know to rerun.
   if (length(newcolnames)) {
-    oldtncol = TRUELENGTH(dt);   // TO DO: oldtncol can be just called tl now, as we won't realloc here any more.
+    oldtncol = TRULEN(dt);   // TO DO: oldtncol can be just called tl now, as we won't realloc here any more.
 
     if (oldtncol<oldncol) {
       if (oldtncol==0) error(_("This data.table has either been loaded from disk (e.g. using readRDS()/load()) or constructed manually (e.g. using structure()). Please run setDT() or setalloccol() on it first (to pre-allocate space for new columns) before assigning by reference to it."));   // #2996
@@ -527,13 +527,13 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       error(_("It appears that at some earlier point, names of this data.table have been reassigned. Please ensure to use setnames() rather than names<- or colnames<-. Otherwise, please report to data.table issue tracker."));  // # nocov
       // Can growVector at this point easily enough, but it shouldn't happen in first place so leave it as
       // strong error message for now.
-    else if (TRUELENGTH(names) != oldtncol)
+    else if (TRULEN(names) != oldtncol)
       // Use (long long) to cast R_xlen_t to a fixed type to robustly avoid -Wformat compiler warnings, see #5768, PRId64 didn't work
-      internal_error(__func__, "selfrefnames is ok but tl names [%lld] != tl [%d]", (long long)TRUELENGTH(names), oldtncol);  // # nocov
+      internal_error(__func__, "selfrefnames is ok but tl names [%lld] != tl [%d]", (long long)TRULEN(names), oldtncol);  // # nocov
     if (!selfrefok(dt, verbose)) // #6410 setDT(dt) and subsequent attr<- can lead to invalid selfref
       error(_("It appears that at some earlier point, attributes of this data.table have been reassigned. Please use setattr(DT, name, value) rather than attr(DT, name) <- value. If that doesn't apply to you, please report your case to the data.table issue tracker."));
-    SETLENGTH(dt, oldncol+LENGTH(newcolnames));
-    SETLENGTH(names, oldncol+LENGTH(newcolnames));
+    SET_LEN(dt, oldncol+LENGTH(newcolnames));
+    SET_LEN(names, oldncol+LENGTH(newcolnames));
     for (int i=0; i<LENGTH(newcolnames); ++i)
       SET_STRING_ELT(names,oldncol+i,STRING_ELT(newcolnames,i));
     // truelengths of both already set by alloccol
@@ -730,8 +730,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       SET_VECTOR_ELT(dt, i, R_NilValue);
       SET_STRING_ELT(names, i, NA_STRING);  // release reference to the CHARSXP
     }
-    SETLENGTH(dt,    ndt-ndelete);
-    SETLENGTH(names, ndt-ndelete);
+    SET_LEN(dt,    ndt-ndelete);
+    SET_LEN(names, ndt-ndelete);
     if (LENGTH(names)==0) {
       // That was last column deleted, leaving NULL data.table, so we need to reset .row_names, so that it really is the NULL data.table.
       PROTECT(nullint=allocVector(INTSXP, 0)); protecti++;
@@ -830,26 +830,26 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
         savetl_init();
         for (int k=0; k<nTargetLevels; ++k) {
           const SEXP s = targetLevelsD[k];
-          const int tl = TRUELENGTH(s);
+          const int tl = TRULEN(s);
           if (tl>0) {
             savetl(s);
           } else if (tl<0) {
             // # nocov start
-            for (int j=0; j<k; ++j) SET_TRUELENGTH(s, 0);  // wipe our negative usage and restore 0
+            for (int j=0; j<k; ++j) SET_TRULEN(s, 0);  // wipe our negative usage and restore 0
             savetl_end();                                  // then restore R's own usage (if any)
             internal_error(__func__, "levels of target are either not unique or have truelength<0"); // # nocov
             // # nocov end
           }
-          SET_TRUELENGTH(s, -k-1);
+          SET_TRULEN(s, -k-1);
         }
         int nAdd = 0;
         for (int k=0; k<nSourceLevels; ++k) {
           const SEXP s = sourceLevelsD[k];
-          const int tl = TRUELENGTH(s);
+          const int tl = TRULEN(s);
           if (tl>=0) {
             if (!sourceIsFactor && s==NA_STRING) continue; // don't create NA factor level when assigning character to factor; test 2117
             if (tl>0) savetl(s);
-            SET_TRUELENGTH(s, -nTargetLevels-(++nAdd));
+            SET_TRULEN(s, -nTargetLevels-(++nAdd));
           } // else, when sourceIsString, it's normal for there to be duplicates here
         }
         const int nSource = length(source);
@@ -858,34 +858,34 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
           const int *sourceD = INTEGER(source);
           for (int i=0; i<nSource; ++i) {  // convert source integers to refer to target levels
             const int val = sourceD[i];
-            newSourceD[i] = val==NA_INTEGER ? NA_INTEGER : -TRUELENGTH(sourceLevelsD[val-1]); // retains NA factor levels here via TL(NA_STRING); e.g. ordered factor
+            newSourceD[i] = val==NA_INTEGER ? NA_INTEGER : -TRULEN(sourceLevelsD[val-1]); // retains NA factor levels here via TL(NA_STRING); e.g. ordered factor
           }
         } else {
           const SEXP *sourceD = STRING_PTR_RO(source);
           for (int i=0; i<nSource; ++i) {  // convert source integers to refer to target levels
             const SEXP val = sourceD[i];
-            newSourceD[i] = val==NA_STRING ? NA_INTEGER : -TRUELENGTH(val);
+            newSourceD[i] = val==NA_STRING ? NA_INTEGER : -TRULEN(val);
           }
         }
         source = newSource;
-        for (int k=0; k<nTargetLevels; ++k) SET_TRUELENGTH(targetLevelsD[k], 0);  // don't need those anymore
+        for (int k=0; k<nTargetLevels; ++k) SET_TRULEN(targetLevelsD[k], 0);  // don't need those anymore
         if (nAdd) {
           // cannot grow the levels yet as that would be R call which could fail to alloc and we have no hook to clear up
           SEXP *temp = (SEXP *)malloc(nAdd * sizeof(SEXP *));
           if (!temp) {
             // # nocov start
-            for (int k=0; k<nSourceLevels; ++k) SET_TRUELENGTH(sourceLevelsD[k], 0);
+            for (int k=0; k<nSourceLevels; ++k) SET_TRULEN(sourceLevelsD[k], 0);
             savetl_end();
             error(_("Unable to allocate working memory of %zu bytes to combine factor levels"), nAdd*sizeof(SEXP *));
             // # nocov end
           }
           for (int k=0, thisAdd=0; thisAdd<nAdd; ++k) {   // thisAdd<nAdd to stop early when the added ones are all reached
             SEXP s = sourceLevelsD[k];
-            int tl = TRUELENGTH(s);
+            int tl = TRULEN(s);
             if (tl) {  // tl negative here
               if (tl != -nTargetLevels-thisAdd-1) internal_error(__func__, "extra level check sum failed"); // # nocov
               temp[thisAdd++] = s;
-              SET_TRUELENGTH(s,0);
+              SET_TRULEN(s,0);
             }
           }
           savetl_end();
@@ -1312,14 +1312,14 @@ void savetl(SEXP s)
     savedtl = (R_len_t *)tmp;
   }
   saveds[nsaved] = s;
-  savedtl[nsaved] = TRUELENGTH(s);
+  savedtl[nsaved] = TRULEN(s);
   nsaved++;
 }
 
 void savetl_end(void) {
   // Can get called if nothing has been saved yet (nsaved==0), or even if _init() hasn't been called yet (pointers NULL). Such
   // as to clear up before error. Also, it might be that nothing needed to be saved anyway.
-  for (int i=0; i<nsaved; i++) SET_TRUELENGTH(saveds[i],savedtl[i]);
+  for (int i=0; i<nsaved; i++) SET_TRULEN(saveds[i],savedtl[i]);
   free(saveds);  // possible free(NULL) which is safe no-op
   saveds = NULL;
   free(savedtl);
