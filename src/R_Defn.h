@@ -76,7 +76,7 @@ typedef struct {
   SETSCAL(__x__, __v__ == 1 ? 1 : 0);	     \
 } while (0)                                
 // https://github.com/wch/r-source/blob/05bb18266d49e87f2477120ecb0ab1440f4e9b40/src/main/memory.c#L4072  
-#define SET_LEN(x, v) SET_STDVEC_LENGTH((x), (v))
+#define SET_LEN SET_STDVEC_LENGTH
 
 // LEVELS: https://github.com/wch/r-source/blob/2640a203d13473f95c9c7508eb2976fefb5c931c/src/include/Defn.h#L228    
 #define LEVLS(x)	(((SEXPREC_partial *)(x))->sxpinfo.gp)
