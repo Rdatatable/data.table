@@ -335,6 +335,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg, SEXP grp
   }
 
   if (!lens) {
+    Rprintf("no lens!\n");
     // every group is length-1 (no dynamic or fixed_over_1 results) so can just use the gans as-is and we're done
     for (int i=0; i<ngans; ++i) {
       SET_VECTOR_ELT(ans, ngrpcol+i, VECTOR_ELT(gans, i));
@@ -365,57 +366,18 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg, SEXP grp
       // TODO: expand subsetVector to accept 'rep=' and 'len=' so that subset and rep.int can be done in one step avoiding intermediate subset of first_each_group, and pass len=anslen which we know already
     }
 
-    for (int i=0; i<ngans; ++i) {
-      SEXP tt = VECTOR_ELT(gans, i);
-      SEXP att = getAttrib(tt, sym_gforce_dynamic);  // how long the items are, we won't parallelize within column so we can sweep forwards
-      if (isNull(att)) {
-        // e.g. the mean in .(mean(colA), first(colB, n=2));    TODO test
-        SET_VECTOR_ELT(ans, ngrpcol+i, eval(PROTECT(lang3(install("rep.int"), tt, lens)), R_GlobalEnv));
-        UNPROTECT(1);
-      } else {
-        // att can be i) empty lens vec in which case this ans col's shape is min(grpsize,w). If this matches the end result shape (i.e. all ans columns are the same, then no need to allocate copy)
-        //           ii) presence of lens vec always needs a copy and pad? (or could loop it and test if the same since looping through ngrp is much faster than nrow vector) 
-        const int *ss = isNull(VECTOR_ELT(att,0)) ? NULL : INTEGER(VECTOR_ELT(att,0));
-        const bool first = LOGICAL(VECTOR_ELT(att, 1))[0];
-        const int w = INTEGER(VECTOR_ELT(att,2))[0];
-        SEXP newcol = PROTECT(allocVector(TYPEOF(tt), anslen));
-        copyMostAttrib(tt, newcol);
-        setAttrib(newcol, sym_gforce_dynamic, R_NilValue);
-        int ansi=0, k=0;
-
-        #define DOGANS(CTYPE, RTYPE, RNA, ASSIGN) {                                                   \
-        const CTYPE *xd = (const CTYPE *)RTYPE(tt);                                                    \
-        CTYPE *ansd = (CTYPE *)RTYPE(newcol);                                                          \
-        CTYPE val = RNA;                                                                               \
-        for (int g=0; g<ngrp; ++g) {                                                                   \
-          const int grp_allocated = MIN(grpsize[g], w);                                                \
-          const int thislen = ss ? ss[g] : grp_allocated;                                              \
-          const int targetlen = lensp[g];                                                              \
-          const int napad = targetlen-thislen;                                                         \
-          k += (!first)*(grp_allocated-thislen);                                                       \
-          for (int i=0; i<thislen; ++i) { val=xd[k++]; ASSIGN; }                                       \
-          val=RNA; for (int i=0; i<napad; ++i) ASSIGN;                                                 \
-          k += (first)*(grp_allocated-thislen);                                                        \
-        }                                                                                              \
-        ansd++; /* just to suppress unused-variable warning in STRSXP and VECSXP cases */              \
-        } break;
-
-        switch(TYPEOF(tt)) {
-        case RAWSXP:  DOGANS(Rbyte,    RAW,     0,            ansd[ansi++]=val)
-        case LGLSXP:  DOGANS(int,      LOGICAL, NA_LOGICAL,   ansd[ansi++]=val)
-        case INTSXP:  DOGANS(int,      INTEGER, NA_INTEGER,   ansd[ansi++]=val)
-        case REALSXP: if (INHERITS(tt, char_integer64)) {
-                      DOGANS(int64_t,  REAL,    NA_INTEGER64, ansd[ansi++]=val)
-             } else { DOGANS(double,   REAL,    NA_REAL,      ansd[ansi++]=val) }
-        case CPLXSXP: DOGANS(Rcomplex, COMPLEX, NA_CPLX,      ansd[ansi++]=val)
-        case STRSXP:  DOGANS(SEXP,  STRING_PTR, NA_STRING,    SET_STRING_ELT(newcol,ansi++,val))
-        case VECSXP:  DOGANS(SEXP,  SEXPPTR_RO, ScalarLogical(NA_LOGICAL), SET_VECTOR_ELT(newcol,ansi++,val))       /* TODO: global replace ScalarLogical() with fixed constant R_NAValue, depending on R dependency */
-        default:
-          error(_("Type '%s' is not supported by gforce padding."), type2char(TYPEOF(tt)));
-        }
-        SET_VECTOR_ELT(ans, ngrpcol+i, newcol);
-        UNPROTECT(1); // newcol
-      }
+    // Now copy gans into ans like in dogropus
+    SEXP source;
+    int thislen;
+    for (int j=0; j<ngans; ++j) {
+      source = VECTOR_ELT(gans,j);
+      thislen = length(source);
+      if (thislen!=anslen)
+        error(_("Supplied %d items for column %d which has %d rows. The RHS length must match the LHS length exactly. If you wish to 'recycle' the RHS please use rep() explicitly to make this intent clear to readers of your code."), thislen, ngrpcol+j, anslen);
+      // clear attributes
+      if (!isNull(getAttrib(source, sym_gforce_dynamic)))
+        setAttrib(source, sym_gforce_dynamic, R_NilValue);
+      SET_VECTOR_ELT(ans, j+ngrpcol, source);
     }
   }
   UNPROTECT(nprotect);
