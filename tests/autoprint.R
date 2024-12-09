@@ -44,3 +44,14 @@ tryCatch(DT[,foo:=ColumnNameTypo], error=function(e) e$message)         # error:
 DT                                    # yes
 DT                                    # yes
 
+# Regression test for auto-printing suppression in source(), #2369
+local({
+  f = tempfile(fileext = ".R")
+  on.exit(unlink(f))
+  writeLines(c(
+    "library(data.table)",
+    "DT = data.table(a = 1)",
+    "DT[,a:=1] # not auto-printed"
+  ), f)
+  source(f, local = TRUE, echo = TRUE)
+})

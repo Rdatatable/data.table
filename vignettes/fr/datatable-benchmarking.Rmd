@@ -1,0 +1,130 @@
+---
+title: "Analyse comparative (benchmark) de data.table"
+date: "`r Sys.Date()`"
+output:
+  markdown::html_format:
+    options:
+      toc: true
+      number_sections: true
+vignette: >
+  %\VignetteIndexEntry{Analyse comparative (benchmark) de data.table}
+  %\VignetteEngine{knitr::knitr}
+  \usepackage[utf8]{inputenc}
+---
+
+<style>
+h2 {
+    font-size: 20px;
+}
+</style>
+
+Ce document a pour but de guider la mesure de la performance de `data.table`. Il centralise la documentation des meilleures pratiques et des pièges à éviter.
+
+# fread : effacer les caches
+
+Idéalement, chaque appel à `fread` devrait être exécuté dans une nouvelle session avec les commandes suivantes précédant l'exécution de R. Cela permet d'effacer le fichier cache du système d'exploitation en RAM et le cache du disque dur.
+
+```sh
+free -g
+sudo sh -c 'echo 3 >/proc/sys/vm/drop_caches'
+sudo lshw -class disk
+sudo hdparm -t /dev/sda
+```
+
+Lorsque l'on compare `fread` à des solutions non-R, il faut savoir que R exige que les valeurs des colonnes de caractères soient ajoutées au *cache global de chaînes de caractères de R*. Cela prend du temps lors de la lecture des données, mais les opérations ultérieures en bénéficient puisque les chaînes de caractères ont déjà été mises en cache. Par conséquent, en plus de chronométrer des tâches isolées (comme `fread` seul), c'est une bonne idée d'évaluer le temps total d'un pipeline de traitement de données de bout en bout contenant des tâches telles que la lecture de données, leur manipulation et la production de la sortie finale.
+
+# sous-ensemble : seuil d'optimisation de l'index pour les requêtes composées
+
+L'optimisation de l'index pour les requêtes de filtres composés ne sera pas utilisée lorsque le produit croisé des éléments fournis au filtre dépasse 1e4 éléments.
+
+```r
+DT = data.table(V1=1:10, V2=1:10, V3=1:10, V4=1:10)
+setindex(DT)
+v = c(1L, rep(11L, 9))
+length(v)^4               # produit en croix des éléments du filtre
+#[1] 10000                # <= 10000
+DT[V1 %in% v & V2 %in% v & V3 %in% v & V4 %in% v, verbose=TRUE]
+#Optimisation du sous-ensemble avec l'index 'V1__V2__V3__V4'
+#on= correspond à l'index existant, utilise l'index
+#Démarrage de bmerge ...terminé en 0.000sec
+#...
+v = c(1L, rep(11L, 10))
+length(v)^4              # produit croisé des éléments du filtre
+#[1] 14641                # > 10000
+DT[V1 %in% v & V2 %in% v & V3 %in% v & V4 %in% v, verbose=TRUE]
+#Optimisation de la substitution désactivée car le produit croisé des valeurs du membre droit dépasse 1e4, ce qui cause des problèmes de mémoire.
+#...
+```
+
+# sous-ensemble : analyse comparative basée sur l'index
+
+Pour des raisons de commodité, `data.table` construit automatiquement un index sur les champs que vous utilisez pour sous-répertorier les données. Cela ajoutera une certaine surcharge au premier sous-ensemble sur des champs particuliers, mais réduira considérablement le temps d'interrogation de ces colonnes dans les exécutions suivantes. La meilleure façon de mesurer la vitesse est de mesurer séparément la création d'un index et les requêtes utilisant un index. Avec de tels temps, il est facile de décider quelle est la stratégie optimale pour votre cas d'utilisation. Pour contrôler l'utilisation de l'index, employez les options suivantes :
+
+```r
+options(datatable.auto.index=TRUE)
+options(datatable.use.index=TRUE)
+```
+
+- `use.index=FALSE` forcera la requête à ne pas utiliser les index même s'ils existent, mais les clés existantes sont toujours utilisées pour l'optimisation.
+- `auto.index=FALSE` désactive la construction automatique d'index lors d'un sous-ensemble sur des données non indexées, mais si les index ont été créés avant que cette option ne soit définie, ou explicitement en appelant `setindex`, ils seront toujours utilisés pour l'optimisation.
+
+Deux autres options permettent de contrôler l'optimisation de manière globale, y compris l'utilisation d'index :
+
+```r
+options(datatable.optimize=2L)
+options(datatable.optimize=3L)
+```
+
+`options(datatable.optimize=2L)` désactivera complètement l'optimisation des sous-ensembles, tandis que `options(datatable.optimize=3L)` la réactivera. Ces options affectent beaucoup plus d'optimisations et ne devraient donc pas être utilisées lorsque seul le contrôle des index est nécessaire. Plus d'informations dans `?datatable.optimize`.
+
+# opérations *par référence*
+
+Lors de l'évaluation des fonctions `set*`, il n'est utile de mesurer que la première exécution. Ces fonctions mettent à jour leur entrée par référence, donc les exécutions suivantes utiliseront le fichier `data.table` déjà traité, ce qui faussera les résultats.
+
+Protéger votre `data.table` d'une mise à jour par des opérations de référence peut être réalisé en utilisant les fonctions `copy` ou `data.table:::shallow`. Soyez conscient que `copy` peut être très coûteux car il doit dupliquer l'objet entier. Il est peu probable que nous voulions inclure le temps de duplication dans le temps de la tâche réelle que nous benchmarkons.
+
+# tenter d'étalonner les processus atomiques
+
+Si votre analyse comparative est destinée à être publiée, elle sera beaucoup plus utile si vous la divisez pour mesurer la durée des processus atomiques. De cette manière, vos lecteurs pourront voir combien de temps a été consacré à la lecture des données à partir de la source, au nettoyage, à la transformation proprement dite et à l'exportation des résultats. Bien sûr, si votre benchmark est destiné à présenter un *flux de travail de bout en bout*, il est tout à fait logique de présenter le temps global. Néanmoins, la séparation des temps des étapes individuelles est utile pour comprendre quelles étapes sont les principaux goulots d'étranglement d'un flux de travail. Il existe d'autres cas où le benchmarking atomique n'est pas souhaitable, par exemple lors de la *lecture d'un csv*, suivie d'un *regroupement*. R nécessite de remplir le *cache global de chaînes de caractères de R*, ce qui ajoute une surcharge supplémentaire lors de l'importation de données de caractères dans une session R. D'un autre côté, le *cache global de chaînes de caractères* peut accélérer des processus tels que le *regroupement*. Dans de tels cas, lorsque l'on compare R à d'autres langages, il peut être utile d'inclure le temps total.
+
+# éviter la coercition de classe
+
+Si ce n'est pas ce que vous voulez vraiment mesurer, vous devez préparer des objets d'entrée de la classe attendue pour chaque outil que vous comparez.
+
+# éviter `microbenchmark(..., times=100)`
+
+Répéter un benchmark plusieurs fois ne donne généralement pas l'image la plus claire des outils de traitement des données. Bien sûr, c'est parfaitement logique pour les calculs plus atomiques, mais ce n'est pas une bonne représentation de la manière la plus courante dont ces outils seront utilisés, à savoir pour les tâches de traitement des données, qui consistent en des lots de transformations fournies de manière séquentielle, chacune exécutée une fois. Matt a dit un jour :
+
+> Je me méfie beaucoup des benchmarks qui prennent moins d'une seconde. Je préfère de loin 10 secondes ou plus pour une seule exécution, obtenues en augmentant la taille des données. Un nombre de répétitions de 500 tire la sonnette d'alarme. 3 à 5 exécutions devraient suffire à convaincre sur des données plus importantes. Le coût des appels de fonctions et le temps nécessaire au GC affectent les calculs à une si petite échelle.
+
+Ceci est tout à fait vrai. Plus la mesure du temps est petite, plus le bruit est important, de manière relative. Le bruit est généré par le dispatching des méthodes, l'initialisation de packages/classes, etc. Le benchmark devrait se concentrer sur des scénarios d'utilisation réelle.
+
+# traitement multithread
+
+L'un des principaux facteurs susceptibles d'influer les délais d’exécution est le nombre de threads disponibles dans votre session R. Dans les versions récentes de `data.table`, certaines fonctions sont parallélisées. Vous pouvez contrôler le nombre de threads que vous voulez utiliser avec `setDTthreads`.
+
+```r
+setDTthreads(0)    # utilise tous les cœurs disponibles (par défaut)
+getDTthreads()     # vérifie combien de cœurs sont actuellement utilisés
+```
+
+# à l'intérieur d'une boucle, préférez `set` au lieu de `:=`
+
+À moins que vous n'utilisiez l'index en faisant un *sous-affectation par référence*, vous devriez préférer la fonction `set` qui n'impose pas la surcharge de l'appel à la méthode `[.data.table`.
+
+```r
+DT = data.table(a=3:1, b=lettres[1:3])
+setindex(DT, a)
+
+# for (...) {                 # imaginez une boucle ici
+
+  DT[a==2L, b := "z"]         # sous-affectation par référence, utilise l'index
+  DT[, d := "z"]              # pas de sous-affectation par référence, n'utilise pas l'index et ajoute la surcharge de `[.data.table`
+  set(DT, j="d", value="z")   # pas de surcharge `[.data.table`, mais pas encore d'index, jusqu'à #1196
+
+# }
+```
+
+# à l'intérieur d'une boucle, préférez `setDT` au lieu de `data.table()`
+
+Pour l'instant, `data.table()` a un surcoût, donc à l'intérieur des boucles, il est préférable d'utiliser `as.data.table()` ou `setDT()` sur une liste valide.
