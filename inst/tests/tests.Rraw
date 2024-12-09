@@ -5567,6 +5567,10 @@ test(1343.5, fread("A,B\n1,true\n2,\n3,false"), data.table(A=1:3, B=c(TRUE,NA,FA
 test(1343.6, fread("A,B\n1,true\n2,NA\n3,"), data.table(A=1:3, B=c(TRUE,NA,NA)))
 test(1344.1, fread("A,B\n1,2\n0,3\n,1\n", logical01=FALSE), data.table(A=c(1L,0L,NA),      B=c(2L,3L,1L)))
 test(1344.2, fread("A,B\n1,2\n0,3\n,1\n", logical01=TRUE),  data.table(A=c(TRUE,FALSE,NA), B=c(2L,3L,1L)))
+test(1344.3, fread("A,B\nY,2\nN,3\nNA,1\n", logicalYN=FALSE), data.table(A=c('Y','N',NA),    B=c(2L,3L,1L)))
+test(1344.4, fread("A,B\nY,2\nN,3\nNA,1\n", logicalYN=TRUE),  data.table(A=c(TRUE,FALSE,NA), B=c(2L,3L,1L)))
+test(1344.5, fread("A,B\nY,2\nN,3\n,1\n", logicalYN=FALSE, na.strings=""), data.table(A=c('Y','N',NA),    B=c(2L,3L,1L)))
+test(1344.6, fread("A,B\nY,2\nN,3\n,1\n", logicalYN=TRUE, na.strings=""),  data.table(A=c(TRUE,FALSE,NA), B=c(2L,3L,1L)))
 
 # .N now available in i
 DT = data.table(a=1:3,b=1:6)
@@ -7870,9 +7874,14 @@ str = "a,b\n1.5,\"at the 5\" end of the gene.\""
 test(1551.1, fread(str), data.table(a = 1.5, b = "at the 5\" end of the gene."), warning=w<-"resolved improper quoting")
 #1256
 str = "x,y\nx1,\"oops\" y1\n"
-test(1551.2, fread(str), data.table(x = "x1", y = "\"oops\" y1"), warning=w)
+test(1551.21, fread(str), data.table(x='x1', y='"oops" y1'), warning=w)
+# during header detection, 'y' is seen as a valid value --> header determined 'FALSE' despite later non-Y/N data
+test(1551.22, fread(str, logicalYN=TRUE), data.table(V1=c('x', 'x1'), V2=c('y', '"oops" y1')), warning=w)
+test(1551.23, fread(str, logicalYN=TRUE, header=TRUE), data.table(x='x1', y='"oops" y1'), warning=w)
 str = "x,y\nx1,\"oops\" y1"
-test(1551.3, fread(str), data.table(x = "x1", y = "\"oops\" y1"), warning=w)
+test(1551.31, fread(str), data.table(x="x1", y='"oops" y1'), warning=w)
+test(1551.32, fread(str, logicalYN=TRUE), data.table(V1=c('x', 'x1'), V2=c('y', '"oops" y1')), warning=w)
+test(1551.33, fread(str, logicalYN=TRUE, header=TRUE), data.table(x="x1", y='"oops" y1'), warning=w)
 #1077
 str = '2,3\n""foo,bar'
 test(1551.4, fread(str), data.table(V1=c("2","\"\"foo"), V2=c("3","bar")), warning=w)
@@ -7882,8 +7891,12 @@ test(1551.5, fread(str),
   data.table(L1 = c("L2", "L3"), some = c("some", "this"), unquoted = c("\"half\" quoted", "should work"), stuff = c("stuff", "ok though")),
   warning = w)
 #1095
-rhs = read.table(testDir("issue_1095_fread.txt.bz2"), sep=",", comment.char="", stringsAsFactors=FALSE, quote="", strip.white=TRUE)
-if (test_R.utils) test(1551.6, fread(testDir("issue_1095_fread.txt.bz2"), logical01=FALSE), setDT(rhs), warning=w)
+rhs = setDT(read.table(testDir("issue_1095_fread.txt.bz2"), sep=",", comment.char="", stringsAsFactors=FALSE, quote="", strip.white=TRUE))
+if (test_R.utils) {
+  test(1551.61, fread(testDir("issue_1095_fread.txt.bz2"), logical01=FALSE), rhs, warning=w)
+  rhs[, names(.SD) := lapply(.SD, \(x) x == "Y"), .SDcols = c("V16", "V17", "V45")]
+  test(1551.62, fread(testDir("issue_1095_fread.txt.bz2"), logical01=FALSE, logicalYN=TRUE), rhs, warning=w)
+}
 
 # FR #1314 rest of na.strings issue
 str = "a,b,c,d\n#N/A,+1,5.5,FALSE\n#N/A,5,6.6,TRUE\n#N/A,+1,#N/A,-999\n#N/A,#N/A,-999,FALSE\n#N/A,1,NA,TRUE"
@@ -7896,8 +7909,10 @@ test(1552.3, fread(str, na.strings=c("#N/A", "-999", "+1")), read_table(str, na.
 test(1552.4, fread(str, na.strings=c("#N/A", "-999", "+1", "1")), read_table(str, na.strings=c("#N/A", "-999", "+1", "1"))) # enabled by FR #2927
 test(1552.5, fread(str, na.strings=c("#N/A", "-999", "FALSE")), error="NAstring <<FALSE>>.*boolean.*not permitted")
 test(1552.6, fread("A\n1.0\n2\n-", na.strings=c("-")), data.table(A=c(1.0, 2.0, NA)))
-test(1552.7, fread(str, na.strings=c("#N/A", "-999", "+1", "1"), logical01=TRUE),
+test(1552.71, fread(str, na.strings=c("#N/A", "-999", "+1", "1"), logical01=TRUE),
   error="NAstring <<1>> and logical01=TRUE.*not permitted")
+test(1552.72, fread(str, na.strings=c("#N/A", "-999", "+1", "Y"), logicalYN=TRUE),
+  error="NAstring <<Y>> and logicalYN=TRUE.*not permitted")
 str = "a,b,c\n0,1,2\n1,0,2"
 test(1552.8, fread(str, na.strings = "0"), data.table(a=c(NA,1L), b=c(1L,NA), c=c(2L,2L)))
 test(1552.9, fread(str, na.strings = c("0","1")), data.table(a=c(NA,NA), b=c(NA,NA), c=c(2L,2L)))
@@ -8896,8 +8911,10 @@ test(1618.5, fread("a,c,b\n1,2,3", select=c("b", "c"), col.names=c("q", "r")), d
 test(1618.6, fread("a,c,b\n1,2,3", select=c("b", "z")), data.table(b=3L), warning="Column name 'z' not found.*skipping")
 
 # Additional test for 1445 for non-monotonic integer select
-select1618.8 <- c(4, 9, 8, 23, 1, 21, 5, 18, 11, 13)
-test(1618.8, names(fread("a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z\na,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z", select = select1618.8)), letters[select1618.8])
+select1618 <- c(4, 9, 8, 23, 1, 21, 5, 18, 11, 13)
+str = paste0(paste(letters, collapse=','), '\n', paste(letters, collapse=','))
+test(1618.8, names(fread(str, select=select1618)), letters[select1618])
+test(1618.9, names(fread(str, select=select1618, logicalYN=TRUE)), paste0('V', select1618))
 
 # fix for #1270. Have been problems with R before vs after 3.1.0 here. But now ok in all R versions.
 DT = data.table(x=1:2, y=5:6)
@@ -9106,7 +9123,8 @@ test(1626.91, fsetdiff(DT, DT["b"]), DT[c(1,4)])
 # fix for #1087 and #1465
 test(1627.1, charToRaw(names(fread(testDir("issue_1087_utf8_bom.csv")))[1L]), as.raw(97L))
 test(1627.2, names(fread(testDir("issue_1087_utf8_bom.csv"), verbose=TRUE))[1L], "a", output="UTF-8 byte order mark EF BB BF found")
-test(1627.3, names(fread(testDir("gb18030.txt")))[1L], "x", warning="GB-18030 encoding detected")
+test(1627.31, names(fread(testDir("gb18030.txt")))[1L], "x", warning="GB-18030 encoding detected")
+test(1627.32, names(fread(testDir("gb18030.txt"), logicalYN=TRUE))[1L], "V1", warning="GB-18030 encoding detected")
 test(1627.4, fread(testDir("utf16le.txt")), error="File is encoded in UTF-16")
 test(1627.5, fread(testDir("utf16be.txt")), error="File is encoded in UTF-16")
 
@@ -11448,9 +11466,11 @@ unlink(f)
 test(1753.1, fread("X,Y\n1,2\n3,4\n5,6"), data.table(X=INT(1,3,5),Y=INT(2,4,6)))
 test(1753.2, fread("X,Y\n1,2\n3,4,\n5,6",logical01=TRUE), ans<-data.table(X=TRUE,Y=2L), warning="Stopped.*line 3. Expected 2 fields but found 3.*discarded.*<<3,4,>>")
 test(1753.3, fread("X,Y\n1,2\n3,4,7\n5,6",logical01=TRUE), ans,                         warning="Stopped.*line 3. Expected 2 fields but found 3.*discarded.*<<3,4,7>>")
+test(1753.4, fread("X,Y\nY,2\n3,4,\n5,6",logicalYN=TRUE), ans<-data.table(X=TRUE,Y=2L), warning="Stopped.*line 3. Expected 2 fields but found 3.*discarded.*<<3,4,>>")
+test(1753.5, fread("X,Y\nY,2\n3,4,7\n5,6",logicalYN=TRUE), ans,                         warning="Stopped.*line 3. Expected 2 fields but found 3.*discarded.*<<3,4,7>>")
 
 # issue 2051 where a quoted field contains ",  New quote rule detection handles it.
-if (test_R.utils) test(1753.4, fread(testDir("issue_2051.csv.gz"))[2,grep("^Our.*tool$",COLUMN50)], 1L)
+if (test_R.utils) test(1753.6, fread(testDir("issue_2051.csv.gz"))[2,grep("^Our.*tool$",COLUMN50)], 1L)
 
 # check omp critical around SET_STRING_ELT
 # minimal construction big enough for parallelism with 8 or less threads. On a machine with more, do setDTthreads(8) first otherwise
