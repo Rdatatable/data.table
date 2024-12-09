@@ -150,6 +150,10 @@ typedef struct freadMainArgs
   // will become integer.
   bool logical01;
 
+  // If true, then column of Ns and Ys will be read as logical, otherwise it
+  // will become character.
+  bool logicalYN;
+
   bool keepLeadingZeros;
 
   // should datetime with no Z or UTZ-offset be read as UTC?

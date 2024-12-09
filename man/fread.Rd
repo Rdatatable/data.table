@@ -23,6 +23,7 @@ showProgress=getOption("datatable.showProgress", interactive()),
 data.table=getOption("datatable.fread.datatable", TRUE),
 nThread=getDTthreads(verbose),
 logical01=getOption("datatable.logical01", FALSE),  # due to change to TRUE; see NEWS
+logicalYN=getOption("datatable.logicalYN", FALSE),
 keepLeadingZeros = getOption("datatable.keepLeadingZeros", FALSE),
 yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC"
 )

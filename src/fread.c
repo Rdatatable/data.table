@@ -1342,7 +1342,9 @@ int freadMain(freadMainArgs _args) {
           strcmp(ch,"True")==0 || strcmp(ch,"False")==0)
         STOP(_("freadMain: NAstring <<%s>> is recognized as type boolean, this is not permitted."), ch);
       if ((strcmp(ch,"1")==0 || strcmp(ch,"0")==0) && args.logical01)
-        STOP(_("freadMain: NAstring <<%s>> and logical01=TRUE, this is not permitted."), ch);
+        STOP(_("freadMain: NAstring <<%s>> and %s=TRUE, this is not permitted."), ch, "logical01");
+      if ((strcmp(ch,"Y")==0 || strcmp(ch,"N")==0) && args.logicalYN)
+        STOP(_("freadMain: NAstring <<%s>> and %s=TRUE, this is not permitted."), ch, "logicalYN");
       char *end;
       errno = 0;
       (void)strtod(ch, &end);  // careful not to let "" get to here as strtod considers "" numeric
@@ -1351,6 +1353,7 @@ int freadMain(freadMainArgs _args) {
     nastr++;
   }
   disabled_parsers[CT_BOOL8_N] = !args.logical01;
+  disabled_parsers[CT_BOOL8_Y] = !args.logicalYN;
   disabled_parsers[CT_ISO8601_DATE] = disabled_parsers[CT_ISO8601_TIME] = args.oldNoDateTime; // temporary new option in v1.13.0; see NEWS
   if (verbose) {
     if (*NAstrings == NULL) {
@@ -1369,6 +1372,7 @@ int freadMain(freadMainArgs _args) {
     if (args.skipString) DTPRINT(_("  skip to string = <<%s>>\n"), args.skipString);
     DTPRINT(_("  show progress = %d\n"), args.showProgress);
     DTPRINT(_("  0/1 column will be read as %s\n"), args.logical01? "boolean" : "integer");
+    DTPRINT(_("  Y/N column will be read as %s\n"), args.logicalYN? "boolean" : "character");
   }
   if (*NAstrings==NULL ||                             // user sets na.strings=NULL
       (**NAstrings=='\0' && *(NAstrings+1)==NULL)) {  // user sets na.strings=""

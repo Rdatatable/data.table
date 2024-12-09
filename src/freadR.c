@@ -66,6 +66,7 @@ SEXP freadR(
   SEXP verboseArg,
   SEXP warnings2errorsArg,
   SEXP logical01Arg,
+  SEXP logicalYNArg,
 
   // extras needed by callbacks from freadMain
   SEXP selectArg,
@@ -128,6 +129,7 @@ SEXP freadR(
     args.nrowLimit = (int64_t)(REAL(nrowLimitArg)[0]);
 
   args.logical01 = LOGICAL(logical01Arg)[0];
+  args.logicalYN = LOGICAL(logicalYNArg)[0];
   {
     SEXP tt = PROTECT(GetOption(sym_old_fread_datetime_character, R_NilValue));
     args.oldNoDateTime = oldNoDateTime = isLogical(tt) && LENGTH(tt)==1 && LOGICAL(tt)[0]==TRUE;
