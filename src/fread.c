@@ -75,6 +75,7 @@ static freadMainArgs args = {0};  // global for use by DTPRINT; static implies =
   static int mmp_fd = -1;
 #endif
 
+// See header for more explanation.
 const char typeName[NUMTYPE][10] = {"drop", "bool8", "bool8", "bool8", "bool8", "bool8", "bool8", "int32", "int64", "float64", "float64", "float64", "int32", "float64", "string"};
 int8_t     typeSize[NUMTYPE]     = { 0,      1,       1,       1,       1,       1,      1,       4,       8,       8,         8,         8,         4,       8       ,  8      };
 
