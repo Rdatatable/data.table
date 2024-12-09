@@ -91,6 +91,9 @@ check_openmp_flags () {
 }
 
 detect_openmp () {
+  R_OPENMP_CFLAGS=
+  R_OPENMP_LIBS=
+
   check_openmp_flags "R installation is configured to use OpenMP" '$(SHLIB_OPENMP_CFLAGS)' '$(SHLIB_OPENMP_CFLAGS)' && return
 
   # https://github.com/Rdatatable/data.table/issues/6409
@@ -129,10 +132,8 @@ if [ "${R_OPENMP_ENABLED}" = "0" ]; then
   echo "***   https://github.com/Rdatatable/data.table/wiki/Installation"
   echo "*** Continuing installation without OpenMP support..."
   echo "***"
-  sed -e "s|@openmp_cflags@||" -e "s|@openmp_libs@||" src/Makevars.in > src/Makevars
-else
-  sed -e "s|@openmp_cflags@|${R_OPENMP_CFLAGS}|" -e "s|@openmp_libs@|${R_OPENMP_LIBS}|" src/Makevars.in > src/Makevars
 fi
+sed -e "s|@openmp_cflags@|${R_OPENMP_CFLAGS}|" -e "s|@openmp_libs@|${R_OPENMP_LIBS}|" src/Makevars.in > src/Makevars
 
 # retain user supplied PKG_ env variables, #4664. See comments in Makevars.in too.
 sed -e "s|@PKG_CFLAGS@|$PKG_CFLAGS|" src/Makevars > src/Makevars.tmp && mv src/Makevars.tmp src/Makevars
