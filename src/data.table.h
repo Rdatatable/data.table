@@ -10,19 +10,20 @@
 #  define R_Realloc(x, y, z) Realloc(x, y, z)
 #  define R_Free(x) Free(x)
 #endif
-#if R_VERSION < R_Version(3, 4, 0)
-#  define SET_GROWABLE_BIT(x)  // #3292
-#endif
+// #if R_VERSION < R_Version(3, 4, 0)
+// #  define SET_GROWABLE_BIT(x)  // #3292
+// #endif
 #include <Rinternals.h>
 #define SEXPPTR_RO(x) ((const SEXP *)DATAPTR_RO(x))  // to avoid overhead of looped STRING_ELT and VECTOR_ELT
 #ifndef STRING_PTR_RO
-#define STRING_PTR_RO STRING_PTR
+#define STRING_PTR_RO SEXPPTR
 #endif
 #include <stdint.h>    // for uint64_t rather than unsigned long long
 #include <stdarg.h>    // for va_list, va_start
 #include <stdbool.h>
 #include "types.h"
 #include "po.h"
+#include "R_Defn.h"
 #ifdef WIN32  // positional specifiers (%n$) used in translations; #4402
 #  define snprintf dt_win_snprintf  // see our snprintf.c; tried and failed to link to _sprintf_p on Windows
 #endif
@@ -37,7 +38,7 @@
 /* we mean the encoding bits, not CE_NATIVE in a UTF-8 locale */
 #define IS_UTF8(x)  (getCharCE(x) == CE_UTF8)
 #define IS_LATIN(x) (getCharCE(x) == CE_LATIN1)
-#define IS_ASCII(x) (LEVELS(x) & 64) // API expected in R >= 4.5
+#define IS_ASCII(x) (LEVLS(x) & 64) // API expected in R >= 4.5
 #define IS_TRUE(x)  (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]==TRUE)
 #define IS_FALSE(x) (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]==FALSE)
 #define IS_TRUE_OR_FALSE(x) (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]!=NA_LOGICAL)

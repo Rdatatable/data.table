@@ -414,10 +414,10 @@ static SEXP combineFactorLevels(SEXP factorLevels, SEXP target, int * factorType
     for (int k=0; k<thisn; ++k) {
       SEXP s = thisd[k];
       if (s==NA_STRING) continue;  // NA shouldn't be in levels but remove it just in case
-      int tl = TRUELENGTH(s);
+      int tl = TRULEN(s);
       if (tl<0) continue;  // seen this level before
       if (tl>0) savetl(s);
-      SET_TRUELENGTH(s,-(++nlevel));
+      SET_TRULEN(s,-(++nlevel));
       levelsRaw[nlevel-1] = s;
     }
   }
@@ -425,11 +425,11 @@ static SEXP combineFactorLevels(SEXP factorLevels, SEXP target, int * factorType
     if (targetd[i]==NA_STRING) {
       *ansd++ = NA_INTEGER;
     } else {
-      int tl = TRUELENGTH(targetd[i]);
+      int tl = TRULEN(targetd[i]);
       *ansd++ = tl<0 ? -tl : NA_INTEGER;
     }
   }
-  for (int i=0; i<nlevel; ++i) SET_TRUELENGTH(levelsRaw[i], 0);
+  for (int i=0; i<nlevel; ++i) SET_TRULEN(levelsRaw[i], 0);
   savetl_end();
   // now after savetl_end, we can alloc (which might fail)
   SEXP levelsSxp;
