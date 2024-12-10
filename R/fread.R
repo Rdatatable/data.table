@@ -7,7 +7,7 @@ showProgress=getOption("datatable.showProgress",interactive()), data.table=getOp
 nThread=getDTthreads(verbose), logical01=getOption("datatable.logical01",FALSE),
 logicalYN=getOption("datatable.logicalYN", FALSE),
 keepLeadingZeros=getOption("datatable.keepLeadingZeros",FALSE),
-yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
+yaml=FALSE, autostart=NULL, tmpdir=tempdir(), tz="UTC")
 {
   if (missing(input)+is.null(file)+is.null(text)+is.null(cmd) < 3L) stopf("Used more than one of the arguments input=, file=, text= and cmd=.")
   input_has_vars = length(all.vars(substitute(input)))>0L  # see news for v1.11.6
@@ -124,7 +124,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
 
     input = file
   }
-  if (!missing(autostart)) warningf("'autostart' is now deprecated and ignored. Consider skip='string' or skip=n");
+  if (!is.null(autostart)) stopf("'autostart' is deprecated. Consider skip='string' or skip=n. This argument will be removed in the next release.");
   if (is.logical(colClasses)) {
     if (!allNA(colClasses)) stopf("colClasses is type 'logical' which is ok if all NA but it has some TRUE or FALSE values in it which is not allowed. Please consider the drop= or select= argument instead. See ?fread.")
     colClasses = NULL
