@@ -1645,11 +1645,7 @@ test(504, dtB$k, 1:4)  # or dtB
 DT = data.table(a=1:2,b=1:4,key="a")
 test(505, DT[J(a=1,b=6),sum(i.b*b),by=.EACHI]$V1, 24)  # 24 now 'double' because i.b is 'double'
 
-# Test := after a key<-
-DT = data.table(a=3:1,b=4:6)
-test(506, key(DT)<-"a", error="deprecated")
-
-# tests 508, 509, 510 related to follow-up operations after key<-, which are now irrelevant
+# tests 506, 508, 509, 510 related to follow-up operations after key<-, which are now irrelevant
 
 # Test new functions chmatch and %chin%
 y=letters
