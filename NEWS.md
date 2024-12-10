@@ -137,6 +137,8 @@ rowwiseDT(
 
 6. `measurev()` was implemented and documented in v1.15.0, for use within `melt()`, and it is now exported (dependent packages can now use without a NOTE from CRAN check).
 
+7. The `dcast()` and `melt()` generics no longer attempt to redirect to {reshape2} methods when passed non-`data.table`s. If you're still using {reshape2}, you must use namespace-qualification: `reshape2::dcast()`, `reshape2::melt()`. We have been warning about the deprecation since v1.12.4 (2019). Please note that {reshape2} is retired.
+
 # data.table [v1.16.2](https://github.com/Rdatatable/data.table/milestone/35) (9 October 2024)
 
 ## BUG FIXES
