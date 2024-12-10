@@ -1,22 +1,15 @@
 # reshape2 dependency was originally abandoned because (1) we wanted to be in control
 #   of the R version dependency and (2) reshape2::dcast is not generic.
-#   reshape2 package is deprecated since December 2017, so we'll deprecate our
+#   reshape2 package is deprecated since December 2017, so we've deprecated our
 #   redirection as well
 
 melt = function(data, ..., na.rm = FALSE, value.name = "value") {
   UseMethod("melt", data)
 }
 
+# TODO(>=1.19.0): Remove this, just let dispatch to 'default' method fail.
 melt.default = function(data, ..., na.rm = FALSE, value.name = "value") {
-  # if no registered method exists for data, attempts to redirect data to reshape2::melt;
-  # CRAN package edarf and others fail without the redirection
-  # nocov start
-  data_name = deparse(substitute(data))
-  ns = tryCatch(getNamespace("reshape2"), error=function(e)
-    stopf("The %1$s generic in data.table has been passed a %2$s, but data.table::%1$s currently only has a method for data.tables. Please confirm your input is a data.table, with setDT(%3$s) or as.data.table(%3$s). If you intend to use a method from reshape2, try installing that package first, but do note that reshape2 is superseded and is no longer actively developed.", "melt", class1(data), data_name))
-  warningf("The %1$s generic in data.table has been passed a %2$s and will attempt to redirect to the relevant reshape2 method; please note that reshape2 is superseded and is no longer actively developed, and this redirection is now deprecated. To continue using melt methods from reshape2 while both packages are attached, e.g. melt.list, you can prepend the namespace, i.e. reshape2::%1$s(%3$s). In the next version, this warning will become an error.", "melt", class1(data), data_name)
-  ns$melt(data, ..., na.rm=na.rm, value.name=value.name)
-  # nocov end
+  stopf("The %1$s generic in data.table has been passed a %2$s and will attempt to redirect to the relevant reshape2 method; please note that reshape2 is superseded and is no longer actively developed, and this redirection is now deprecated. To continue using melt methods from reshape2 while both packages are attached, e.g. melt.list, you can prepend the namespace, i.e. reshape2::%1$s(%3$s). In the next version, this warning will become an error.", "melt", class1(data), deparse(substitute(data))) # nocov
 }
 
 patterns = function(..., cols=character(0L), ignore.case=FALSE, perl=FALSE, fixed=FALSE, useBytes=FALSE) {
