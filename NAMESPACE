@@ -5,7 +5,7 @@ importFrom(methods, "S3Part<-", slotNames)
 exportClasses(data.table, IDate, ITime)
 ##
 
-export(data.table, tables, setkey, setkeyv, key, "key<-", haskey, CJ, SJ, copy)
+export(data.table, tables, setkey, setkeyv, key, haskey, CJ, SJ, copy)
 export(rowwiseDT)
 export(setindex, setindexv, indices)
 export(as.data.table,is.data.table,test.data.table)
