@@ -137,6 +137,8 @@ rowwiseDT(
 
 6. `measurev()` was implemented and documented in v1.15.0, for use within `melt()`, and it is now exported (dependent packages can now use without a NOTE from CRAN check).
 
+7. Deprecation of `:=` and `with=FALSE` has been upgraded from warning (since v1.15.0) to error. Long ago (before 2014), this was needed when, e.g., assigning to a vector of column names defined outside the table, but `with=FALSE` is no longer needed to do so: `DT[, (cols) := ...]` works fine.
+
 # data.table [v1.16.2](https://github.com/Rdatatable/data.table/milestone/35) (9 October 2024)
 
 ## BUG FIXES
