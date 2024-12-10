@@ -685,19 +685,11 @@ replace_dot_alias = function(e) {
     # j was substituted before dealing with i so that := can set allow.cartesian=FALSE (#800) (used above in i logic)
     if (is.null(jsub)) return(NULL)
 
-    if (!with && jsub %iscall% ":=") {
-      # TODO: make these both errors (or single long error in both cases) in next release.
-      # i.e. using with=FALSE together with := at all will become an error. Eventually with will be removed.
-      if (is.null(names(jsub)) && is.name(jsub[[2L]])) {
-        warningf("with=FALSE together with := was deprecated in v1.9.4 released Oct 2014. Please wrap the LHS of := with parentheses; e.g., DT[,(myVar):=sum(b),by=a] to assign to column name(s) held in variable myVar. See ?':=' for other examples. As warned in 2014, this is now a warning.")
-        jsub[[2L]] = eval(jsub[[2L]], parent.frame(), parent.frame())
-      } else {
-        warningf("with=FALSE ignored, it isn't needed when using :=. See ?':=' for examples.")
-      }
-      with = TRUE
-    }
-
     if (!with) {
+      if (jsub %iscall% ":=") {
+        # TODO(>=1.18.0): Simplify this error
+        stopf("with=FALSE together with := was deprecated in v1.9.4 released Oct 2014; this has been warning since v1.15.0. Please wrap the LHS of := with parentheses; e.g., DT[,(myVar):=sum(b),by=a] to assign to column name(s) held in variable myVar. See ?':=' for other examples.")
+      }
       # missingby was already checked above before dealing with i
       if (jsub %iscall% c("!", "-") && length(jsub)==2L) {  # length 2 to only match unary, #2109
         notj = TRUE
