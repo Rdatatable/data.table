@@ -137,6 +137,8 @@ rowwiseDT(
 
 6. `measurev()` was implemented and documented in v1.15.0, for use within `melt()`, and it is now exported (dependent packages can now use without a NOTE from CRAN check).
 
+7. Deprecation of `logicalAsInt` argument to `fwrite()` has been upgraded from a warning (since v1.15.0) to an error. It will be removed in the next release.
+
 # data.table [v1.16.2](https://github.com/Rdatatable/data.table/milestone/35) (9 October 2024)
 
 ## BUG FIXES
