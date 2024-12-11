@@ -449,6 +449,12 @@ SEXP startsWithAny(const SEXP x, const SEXP y, SEXP start) {
   return ScalarLogical(false);
 }
 
+SEXP length_with_dispatch(SEXP x) {
+  SEXP l = PROTECT(eval(PROTECT(lang2(install("length"), x)), R_GlobalEnv));
+  UNPROTECT(2);
+  return l;
+}
+
 void internal_error(const char *call_name, const char *format, ...) {
   char buff[1024];
   va_list args;

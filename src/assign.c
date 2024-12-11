@@ -239,8 +239,7 @@ SEXP setdt_nrows(SEXP x)
       len_xi = INTEGER(dim_xi)[0];
     } else {
       // Be sure to do length() dispatch, #4800
-      len_xi = INTEGER(PROTECT(eval(PROTECT(lang2(install("length"), xi)), R_GlobalEnv)))[0];
-      UNPROTECT(2);
+      len_xi = INTEGER(length_with_dispatch(xi))[0];
     }
     if (!base_length) {
       base_length = len_xi;
