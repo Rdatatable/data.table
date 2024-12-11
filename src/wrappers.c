@@ -124,3 +124,8 @@ SEXP warn_matrix_column_r(SEXP i) {
   warn_matrix_column(INTEGER(i)[0]);
   return R_NilValue;
 }
+
+SEXP warn_posixl_column_r(SEXP i) {
+  warn_posixl_column(INTEGER(i)[0]);
+  return R_NilValue;
+}

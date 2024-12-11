@@ -203,11 +203,16 @@ void warn_matrix_column(/* 1-indexed */ int i) {
   warning(_("Some columns are a multi-column type (such as a matrix column), for example column %d. setDT will retain these columns as-is but subsequent operations like grouping and joining may fail. Please consider as.data.table() instead which will create a new column for each embedded column."), i);
 }
 
+void warn_posixl_column(/* 1-indexed */ int i) {
+  warning(_("Column %d has class 'POSIXlt'. setDT will retain these columns as-is but subsequent operations may fail. We do not recommend the use of POSIXlt at all because it uses 40 bytes to store one date. Please consider as.data.table() instead which will convert to POSIXct."), i+1);
+}
+
 // input validation for setDT() list input; assume is.list(x) was tested in R
 SEXP setdt_nrows(SEXP x)
 {
   int base_length = 0;
   bool test_matrix_cols = true;
+  bool test_posixl_cols = true;
 
   for (R_len_t i = 0; i < LENGTH(x); ++i) {
     SEXP xi = VECTOR_ELT(x, i);
@@ -216,8 +221,9 @@ SEXP setdt_nrows(SEXP x)
      *   e.g. in package eplusr which calls setDT on a list when parsing JSON. Operations which
      *   fail for NULL columns will give helpful error at that point, #3480 and #3471 */
     if (Rf_isNull(xi)) continue;
-    if (Rf_inherits(xi, "POSIXlt")) {
-      error(_("Column %d has class 'POSIXlt'. Please convert it to POSIXct (using as.POSIXct) and run setDT() again. We do not recommend the use of POSIXlt at all because it uses 40 bytes to store one date."), i+1);
+    if (test_posixl_cols && Rf_inherits(xi, "POSIXlt")) {
+      warn_posixl_column(i+1);
+      test_posixl_cols = false;
     }
     SEXP dim_xi = getAttrib(xi, R_DimSymbol);
     R_len_t len_xi;

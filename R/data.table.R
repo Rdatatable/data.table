@@ -2900,7 +2900,7 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     home = function(x, env) {
       if (identical(env, emptyenv()))
         stopf("Cannot find symbol %s", cname)
-      else if (exists(x, env, inherits=FALSE)) env
+      else if (exists(x, env, inherits=FALSE)) env # NB: _not_ get0(), since returning 'env' not 'get(x)'
       else home(x, parent.env(env))
     }
     cname = as.character(name)
@@ -2918,10 +2918,15 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
   } else if (is.data.frame(x)) {
     # check no matrix-like columns, #3760. Allow a single list(matrix) is unambiguous and depended on by some revdeps, #3581
     # for performance, only warn on the first such column, #5426
+    test_matrix_column = test_posixl_column = TRUE
     for (jj in seq_along(x)) {
-      if (length(dim(x[[jj]])) > 1L) {
+      if (test_posixl_column && inherits(x[[jj]], "POSIXlt")) {
+        .Call(Cwarn_posixl_column_r, jj)
+        test_posixl_column = FALSE
+      }
+      if (test_matrix_column && length(dim(x[[jj]])) > 1L) {
         .Call(Cwarn_matrix_column_r, jj)
-        break
+        test_matrix_column = FALSE
       }
     }
 

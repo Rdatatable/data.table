@@ -150,6 +150,7 @@ R_CallMethodDef callMethods[] = {
 {"CconvertDate", (DL_FUNC)&convertDate, -1},
 {"Cnotchin", (DL_FUNC)&notchin, -1},
 {"Cwarn_matrix_column_r", (DL_FUNC)&warn_matrix_column_r, -1},
+{"Cwarn_posixl_column_r", (DL_FUNC)&warn_posixl_column_r, -1},
 {NULL, NULL, 0}
 };
 
