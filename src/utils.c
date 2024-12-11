@@ -449,8 +449,8 @@ SEXP startsWithAny(const SEXP x, const SEXP y, SEXP start) {
   return ScalarLogical(false);
 }
 
-SEXP length_with_dispatch(SEXP x) {
-  SEXP l = PROTECT(eval(PROTECT(lang2(install("length"), x)), R_GlobalEnv));
+int length_with_dispatch(SEXP x) {
+  int l = INTEGER(PROTECT(eval(PROTECT(lang2(install("length"), x)), R_GlobalEnv)))[0];
   UNPROTECT(2);
   return l;
 }

@@ -239,7 +239,7 @@ SEXP setdt_nrows(SEXP x)
       len_xi = INTEGER(dim_xi)[0];
     } else {
       // Be sure to do length() dispatch, #4800
-      len_xi = INTEGER(length_with_dispatch(xi))[0];
+      len_xi = length_with_dispatch(xi);
     }
     if (!base_length) {
       base_length = len_xi;

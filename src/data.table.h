@@ -258,6 +258,7 @@ SEXP islockedR(SEXP x);
 bool need2utf8(SEXP x);
 SEXP coerceUtf8IfNeeded(SEXP x);
 SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg);
+int length_with_dispatch(SEXP);
 void internal_error(const char *call_name, const char *format, ...);
 
 // types.c
@@ -350,6 +351,5 @@ SEXP test_dt_win_snprintf(void);
 SEXP dt_zlib_version(void);
 SEXP dt_has_zlib(void);
 SEXP startsWithAny(SEXP, SEXP, SEXP);
-SEXP length_with_dispatch(SEXP);
 SEXP convertDate(SEXP, SEXP);
 SEXP fastmean(SEXP);
