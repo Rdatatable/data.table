@@ -5,44 +5,45 @@
 
 // global constants extern in data.table.h for gcc10 -fno-common; #4091
 // these are written to once here on initialization, but because of that write they can't be declared const
+SEXP char_allGrp1;
+SEXP char_allLen1;
+SEXP char_AsIs;
+SEXP char_dataframe;
+SEXP char_datatable;
+SEXP char_Date;
+SEXP char_factor;
+SEXP char_IDate;
+SEXP char_indices;
 SEXP char_integer64;
 SEXP char_ITime;
-SEXP char_IDate;
-SEXP char_Date;
+SEXP char_lens;
+SEXP char_maxString;
+SEXP char_nanotime;
+SEXP char_NULL;
+SEXP char_ordered;
 SEXP char_POSIXct;
 SEXP char_POSIXt;
 SEXP char_UTC;
-SEXP char_nanotime;
-SEXP char_lens;
-SEXP char_indices;
-SEXP char_allLen1;
-SEXP char_allGrp1;
-SEXP char_factor;
-SEXP char_ordered;
-SEXP char_datatable;
-SEXP char_dataframe;
-SEXP char_NULL;
-SEXP char_maxString;
-SEXP char_AsIs;
-SEXP sym_sorted;
-SEXP sym_index;
-SEXP sym_BY;
-SEXP sym_starts, char_starts;
-SEXP sym_maxgrpn;
-SEXP sym_anyna;
+SEXP SelfRefSymbol;
 SEXP sym_anyinfnan;
+SEXP sym_anyna;
 SEXP sym_anynotascii;
 SEXP sym_anynotutf8;
-SEXP sym_colClassesAs;
-SEXP sym_verbose;
-SEXP SelfRefSymbol;
-SEXP sym_inherits;
-SEXP sym_datatable_locked;
-SEXP sym_tzone;
-SEXP sym_old_fread_datetime_character;
-SEXP sym_variable_table;
 SEXP sym_as_character;
 SEXP sym_as_posixct;
+SEXP sym_BY;
+SEXP sym_colClassesAs;
+SEXP sym_datatable_locked;
+SEXP sym_index;
+SEXP sym_inherits;
+SEXP sym_length;
+SEXP sym_maxgrpn;
+SEXP sym_old_fread_datetime_character;
+SEXP sym_sorted;
+SEXP sym_starts, char_starts;
+SEXP sym_tzone;
+SEXP sym_variable_table;
+SEXP sym_verbose;
 double NA_INT64_D;
 long long NA_INT64_LL;
 Rcomplex NA_CPLX;
@@ -249,26 +250,26 @@ void attribute_visible R_init_data_table(DllInfo *info)
   // create needed strings in advance for speed, same technique as R_*Symbol
   // Following R-exts 5.9.4; paragraph and example starting "Using install ..."
   // either use PRINTNAME(install()) or R_PreserveObject(mkChar()) here.
+  char_allGrp1 =   PRINTNAME(install("allGrp1"));
+  char_allLen1 =   PRINTNAME(install("allLen1"));
+  char_AsIs =      PRINTNAME(install("AsIs"));
+  char_dataframe = PRINTNAME(install("data.frame"));
+  char_datatable = PRINTNAME(install("data.table"));
+  char_Date =      PRINTNAME(install("Date"));   // used for IDate too since IDate inherits from Date
+  char_factor =    PRINTNAME(install("factor"));
+  char_IDate =     PRINTNAME(install("IDate"));
+  char_indices =   PRINTNAME(install("indices"));
   char_integer64 = PRINTNAME(install("integer64"));
   char_ITime =     PRINTNAME(install("ITime"));
-  char_IDate =     PRINTNAME(install("IDate"));
-  char_Date =      PRINTNAME(install("Date"));   // used for IDate too since IDate inherits from Date
+  char_lens =      PRINTNAME(install("lens"));
+  char_maxString = PRINTNAME(install("\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"));
+  char_nanotime =  PRINTNAME(install("nanotime"));
+  char_NULL =      PRINTNAME(install("NULL"));
+  char_ordered =   PRINTNAME(install("ordered"));
   char_POSIXct =   PRINTNAME(install("POSIXct"));
   char_POSIXt =    PRINTNAME(install("POSIXt"));
-  char_UTC =       PRINTNAME(install("UTC"));
-  char_nanotime =  PRINTNAME(install("nanotime"));
   char_starts =    PRINTNAME(sym_starts = install("starts"));
-  char_lens =      PRINTNAME(install("lens"));
-  char_indices =   PRINTNAME(install("indices"));
-  char_allLen1 =   PRINTNAME(install("allLen1"));
-  char_allGrp1 =   PRINTNAME(install("allGrp1"));
-  char_factor =    PRINTNAME(install("factor"));
-  char_ordered =   PRINTNAME(install("ordered"));
-  char_datatable = PRINTNAME(install("data.table"));
-  char_dataframe = PRINTNAME(install("data.frame"));
-  char_NULL =      PRINTNAME(install("NULL"));
-  char_maxString = PRINTNAME(install("\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"));
-  char_AsIs =      PRINTNAME(install("AsIs"));
+  char_UTC =       PRINTNAME(install("UTC"));
 
   if (TYPEOF(char_integer64) != CHARSXP) {
     // checking one is enough in case of any R-devel changes
@@ -282,24 +283,25 @@ void attribute_visible R_init_data_table(DllInfo *info)
   // avoids the gc without needing an extra PROTECT and immediate UNPROTECT after the setAttrib which would
   // look odd (and devs in future might be tempted to remove them). Avoiding passing install() to API calls
   // keeps the code neat and readable. Also see grep's added to CRAN_Release.cmd to find such calls.
-  sym_sorted  = install("sorted");
-  sym_index   = install("index");
-  sym_BY      = install(".BY");
-  sym_maxgrpn = install("maxgrpn");
-  sym_anyna   = install("anyna");
+  SelfRefSymbol = install(".internal.selfref");
   sym_anyinfnan = install("anyinfnan");
+  sym_anyna   = install("anyna");
   sym_anynotascii = install("anynotascii");
   sym_anynotutf8 = install("anynotutf8");
-  sym_colClassesAs = install("colClassesAs");
-  sym_verbose = install("datatable.verbose");
-  SelfRefSymbol = install(".internal.selfref");
-  sym_inherits = install("inherits");
-  sym_datatable_locked = install(".data.table.locked");
-  sym_tzone = install("tzone");
-  sym_old_fread_datetime_character = install("datatable.old.fread.datetime.character");
-  sym_variable_table = install("variable_table");
   sym_as_character = install("as.character");
   sym_as_posixct = install("as.POSIXct");
+  sym_BY      = install(".BY");
+  sym_colClassesAs = install("colClassesAs");
+  sym_datatable_locked = install(".data.table.locked");
+  sym_index   = install("index");
+  sym_inherits = install("inherits");
+  sym_length = install("length");
+  sym_maxgrpn = install("maxgrpn");
+  sym_old_fread_datetime_character = install("datatable.old.fread.datetime.character");
+  sym_sorted  = install("sorted");
+  sym_tzone = install("tzone");
+  sym_variable_table = install("variable_table");
+  sym_verbose = install("datatable.verbose");
 
   initDTthreads();
   avoid_openmp_hang_within_fork();

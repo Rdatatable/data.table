@@ -204,7 +204,7 @@ void warn_matrix_column(/* 1-indexed */ int i) {
 }
 
 void warn_posixl_column(/* 1-indexed */ int i) {
-  warning(_("Column %d has class 'POSIXlt'. setDT will retain these columns as-is but subsequent operations may fail. We do not recommend the use of POSIXlt at all because it uses 40 bytes to store one date. Please consider as.data.table() instead which will convert to POSIXct."), i+1);
+  warning(_("Column %d has class 'POSIXlt'. setDT will retain these columns as-is but subsequent operations may fail. We do not recommend the use of POSIXlt at all because it uses 40 bytes to store one date. Please consider as.data.table() instead which will convert to POSIXct."), i);
 }
 
 // input validation for setDT() list input; assume is.list(x) was tested in R
@@ -238,7 +238,9 @@ SEXP setdt_nrows(SEXP x)
       }
       len_xi = INTEGER(dim_xi)[0];
     } else {
-      len_xi = LENGTH(xi);
+      // Be sure to do length() dispatch, #4800
+      len_xi = INTEGER(PROTECT(eval(PROTECT(lang2(install("length"), xi)), R_GlobalEnv)))[0];
+      UNPROTECT(2);
     }
     if (!base_length) {
       base_length = len_xi;
