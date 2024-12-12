@@ -220,9 +220,8 @@ SEXP setdt_nrows(SEXP x)
      *   e.g. in package eplusr which calls setDT on a list when parsing JSON. Operations which
      *   fail for NULL columns will give helpful error at that point, #3480 and #3471 */
     if (Rf_isNull(xi)) continue;
-    if (test_posixl_cols && Rf_inherits(xi, "POSIXlt")) {
-      warn_posixl_column(i+1);
-      test_posixl_cols = false;
+    if (Rf_inherits(xi, "POSIXlt")) {
+      err_posixl_column(i+1);
     }
     SEXP dim_xi = getAttrib(xi, R_DimSymbol);
     R_len_t len_xi;

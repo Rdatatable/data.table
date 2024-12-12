@@ -2919,10 +2919,10 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     # check no matrix-like columns, #3760. Allow a single list(matrix) is unambiguous and depended on by some revdeps, #3581
     # for performance, only warn on the first such column, #5426
     for (jj in seq_along(x)) {
-      if (test_posixl_column && inherits(x[[jj]], "POSIXlt")) {
+      if (inherits(x[[jj]], "POSIXlt")) {
         .Call(Cerr_posixl_column_r, jj)
       }
-      if (test_matrix_column && length(dim(x[[jj]])) > 1L) {
+      if (length(dim(x[[jj]])) > 1L) {
         .Call(Cwarn_matrix_column_r, jj)
         break
       }
