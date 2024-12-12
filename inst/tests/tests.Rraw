@@ -3167,8 +3167,10 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
         c_1 = sample(c(letters[1:3], NA), N, TRUE),
         d_1 = as.Date(c(1:3,NA,4:5), origin="2013-09-01"),
         d_2 = as.Date(6:1, origin="2012-01-01"))
-  DT[, l_1 := DT[, list(c=list(rep(i_1, sample(5,1)))), by = i_1]$c] # generate list cols
-  DT[, l_2 := DT[, list(c=list(rep(c_1, sample(5,1)))), by = i_1]$c]
+  DT[, `:=`(
+    l_1=lapply(i_1, function(x) rep(x, sample(5L, 1L))),
+    l_2=lapply(c_1, function(x) rep(x, sample(5L, 1L)))
+  )]
 
   test(1035.010, melt(DT, id.vars=1:2, measure.vars=3:4), melt(DT, id.vars=c("i_1", "i_2"), measure.vars=c("f_1", "c_1")))
   test(1035.011, melt(DT, id.vars=as.raw(0), measure.vars=3:4),
@@ -3299,6 +3301,41 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
   test(1035.30, melt(dt, id.vars=NA_integer_), error="One or more values in 'id.vars'")
   test(1035.31, melt(dt, measure.vars=NA_character_), error="One or more values in 'measure.vars'")
   test(1035.32, melt(dt, id.vars=NA_character_), error="One or more values in 'id.vars'")
+
+  # melt.data.frame (#4024). Copied earlier 1035.* tests with data.frame input and other appropriate adjustments (esp. around row names)
+  N=18L  # increased in v1.12.2 from 6 to 18 to get NA in f_1 for coverage
+  DF <- data.frame(
+        i_1 = c(1:(N-1L), NA),
+        i_2 = c(NA,(N:(2L*N-2L))),
+        f_1 = factor(sample(c(letters[1:3], NA), N, TRUE)),
+        c_1 = sample(c(letters[1:3], NA), N, TRUE),
+        d_1 = as.Date(c(1:3,NA,4:5), origin="2013-09-01"),
+        d_2 = as.Date(6:1, origin="2012-01-01"))
+  DF$l_1 = lapply(DF$i_1, function(x) rep(x, sample(5L, 1L)))
+  DF$l_2 = lapply(DF$c_1, function(x) rep(x, sample(5L, 1L)))
+
+  test(1035.33, melt(DF, id.vars=1:2, measure.vars=3:4), melt(DF, id.vars=c("i_1", "i_2"), measure.vars=c("f_1", "c_1")))
+  test(1035.34, melt(DF, id.vars=as.raw(0), measure.vars=3:4), error="Unknown 'id.vars' type raw")
+  test(1035.35, melt(DF, id.vars=1:3, measure.vars=as.raw(0)), error="Unknown 'measure.vars' type raw")
+
+  ans1 = cbind(DF[c(1L, 2L, 8L)], variable=factor("l_1"))
+  ans1$value = DF$l_1
+  test(1035.36, melt(DF, id.vars=c("i_1", "i_2", "l_2"), measure.vars="l_1"), ans1)
+
+  ans2 = subset(data.frame(c_1=DF$c_1, variable=rep(c("d_1", "d_2"), each=N), value=as.Date(c(DF$d_1, DF$d_2), origin="1970-01-01")), !is.na(value)) # NB: origin= required for some old R versions
+  rownames(ans2) = seq_len(nrow(ans2))
+  test(1035.37, melt(DF, id.vars=4, measure.vars=5:6, na.rm=TRUE, variable.factor=FALSE), ans2)
+
+  DF$f_2 = factor(sample(letters, N), ordered=TRUE)
+  DF$id = seq_len(nrow(DF))
+  ans1 = cbind(
+    melt(DF, id.vars="id", measure.vars=5:6, value.name="value1"),
+    within(melt(DF, id.vars=integer(0), measure.vars=7:8, value.name="value2"), rm("variable")))
+  levels(ans1$variable) = as.character(1:2)
+  test(1035.38, melt(DF, id.vars="id", measure.vars=list(5:6, 7:8)), ans1)
+  ## use numeric index
+  test(1035.39, melt(DF, id.vars="id", measure.vars=list(c(5, 6), c(7, 8))), ans1)
+  test(1035.40, melt(DF, id.vars="id", measure.vars=patterns("d_", "l_")), ans1)
 
   if (test_R.utils) {
     # dup names in variable used to generate malformed factor error and/or segfault, #1754;  was test 1570

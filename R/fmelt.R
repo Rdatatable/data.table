@@ -7,6 +7,8 @@ melt = function(data, ..., na.rm = FALSE, value.name = "value") {
   UseMethod("melt", data)
 }
 
+melt.data.frame = function(data, ..., na.rm=FALSE, value.name="value") setDF(melt(as.data.table(data), ..., na.rm=na.rm, value.name=value.name))
+
 # TODO(>=1.19.0): Remove this, just let dispatch to 'default' method fail.
 melt.default = function(data, ..., na.rm = FALSE, value.name = "value") {
   stopf("The %1$s generic in data.table has been passed a %2$s and will attempt to redirect to the relevant reshape2 method; please note that reshape2 is superseded and is no longer actively developed, and this redirection is now deprecated. To continue using melt methods from reshape2 while both packages are attached, e.g. melt.list, you can prepend the namespace, i.e. reshape2::%1$s(%3$s). In the next version, this warning will become an error.", "melt", class1(data), deparse(substitute(data))) # nocov
