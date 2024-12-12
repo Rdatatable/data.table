@@ -213,11 +213,6 @@ format_col.POSIXct = function(x, ..., timezone=FALSE) {
   x
 }
 
-format_col.POSIXlt = function(x, ...) {
-  names(x) = names(unclass(as.POSIXlt(Sys.time())))
-  format_col(as.POSIXct(x), ...)
-}
-
 # #3011 -- expression columns can wrap to newlines which breaks printing
 format_col.expression = function(x, ...) format(char.trunc(as.character(x)), ...)
 
