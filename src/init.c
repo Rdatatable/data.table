@@ -150,8 +150,7 @@ R_CallMethodDef callMethods[] = {
 {"CstartsWithAny", (DL_FUNC)&startsWithAny, -1},
 {"CconvertDate", (DL_FUNC)&convertDate, -1},
 {"Cnotchin", (DL_FUNC)&notchin, -1},
-{"Cwarn_matrix_column_r", (DL_FUNC)&warn_matrix_column_r, -1},
-{"Cerr_posixl_column_r", (DL_FUNC)&err_posixl_column_r, -1},
+{"Ccheck_problematic_columns", (DL_FUNC)&check_problematic_columns, -1},
 {NULL, NULL, 0}
 };
 

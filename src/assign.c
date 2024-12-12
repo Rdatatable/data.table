@@ -198,20 +198,33 @@ static SEXP shallow(SEXP dt, SEXP cols, R_len_t n)
   return(newdt);
 }
 
-// Wrapped in a function so the same message is issued for the data.frame case at the R level
-void warn_matrix_column(/* 1-indexed */ int i) {
-  warning(_("Some columns are a multi-column type (such as a matrix column), for example column %d. setDT will retain these columns as-is but subsequent operations like grouping and joining may fail. Please consider as.data.table() instead which will create a new column for each embedded column."), i);
+// check no matrix-like columns, #3760. Allow a single list(matrix) is unambiguous and depended on by some revdeps, #3581
+// for performance, only warn on the first such column, #5426
+SEXP check_problematic_columns(SEXP x) {
+  if (!isNewList(x))
+    return R_NilValue;
+
+  SEXP xi;
+  for (R_len_t i=0; i<LENGTH(x); ++i) {
+    xi = VECTOR_ELT(x, i);
+
+    if (Rf_inherits(xi, "POSIXlt")) {
+      error(_("Column %d has class 'POSIXlt'. Please convert it to POSIXct (using as.POSIXct) and run setDT() again, or use as.data.table() instead. We do not recommend the use of POSIXlt at all because it uses 40 bytes to store one date."), i+1);
+    }
+
+    if (length(getAttrib(xi, R_DimSymbol)) > 1) {
+      warning(_("Some columns are a multi-column type (such as a matrix column), for example column %d. setDT will retain these columns as-is but subsequent operations like grouping and joining may fail. Please consider as.data.table() instead which will create a new column for each embedded column."), i+1);
+      break;
+    }
+  }
+
+  return R_NilValue;
 }
 
-void err_posixl_column(/* 1-indexed */ int i) {
-  error(_("Column %d has class 'POSIXlt'. Please convert it to POSIXct (using as.POSIXct) and run setDT() again, or use as.data.table() instead. We do not recommend the use of POSIXlt at all because it uses 40 bytes to store one date."), i);
-}
-
-// input validation for setDT() list input; assume is.list(x) was tested in R
+// input validation for setDT() list input; assume is.list(x) and check_problematic_columns() was tested in R
 SEXP setdt_nrows(SEXP x)
 {
   int base_length = 0;
-  bool test_matrix_cols = true;
 
   for (R_len_t i = 0; i < LENGTH(x); ++i) {
     SEXP xi = VECTOR_ELT(x, i);
@@ -220,20 +233,12 @@ SEXP setdt_nrows(SEXP x)
      *   e.g. in package eplusr which calls setDT on a list when parsing JSON. Operations which
      *   fail for NULL columns will give helpful error at that point, #3480 and #3471 */
     if (Rf_isNull(xi)) continue;
-    if (Rf_inherits(xi, "POSIXlt")) {
-      err_posixl_column(i+1);
-    }
     SEXP dim_xi = getAttrib(xi, R_DimSymbol);
     R_len_t len_xi;
     // NB: LENGTH() produces an undefined large number here on R 3.3.0.
     //   There's also a note in NEWS for R 3.1.0 saying length() should always be used by packages,
     //   but with some overhead for being a function/not macro...
-    R_len_t n_dim = length(dim_xi);
-    if (n_dim) {
-      if (test_matrix_cols && n_dim > 1) {
-        warn_matrix_column(i+1);
-        test_matrix_cols = false;
-      }
+    if (length(dim_xi)) {
       len_xi = INTEGER(dim_xi)[0];
     } else {
       len_xi = LENGTH(xi);

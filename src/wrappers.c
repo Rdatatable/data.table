@@ -120,13 +120,3 @@ SEXP dim(SEXP x)
   UNPROTECT(1);
   return ans;
 }
-
-SEXP warn_matrix_column_r(SEXP i) {
-  warn_matrix_column(INTEGER(i)[0]);
-  return R_NilValue;
-}
-
-SEXP err_posixl_column_r(SEXP i) {
-  err_posixl_column(INTEGER(i)[0]);
-  return R_NilValue;
-}
