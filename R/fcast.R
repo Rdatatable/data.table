@@ -9,13 +9,23 @@ guess = function(x) {
 }
 
 dcast <- function(
-  data, formula, fun.aggregate = NULL, ..., margins = NULL,
-  subset = NULL, fill = NULL, value.var = guess(data)
+  data, formula, fun.aggregate=NULL, ..., margins=NULL,
+  subset=NULL, fill=NULL, value.var=guess(data)
 ) {
-  # TODO(>=1.19.0): Remove this, just let dispatch to 'default' method fail.
-  if (!is.data.table(data))
-    stopf("The %1$s generic in data.table has been passed a %2$s, but data.table::%1$s currently only has a method for data.tables. Please confirm your input is a data.table, with setDT(%3$s) or as.data.table(%3$s). If you intend to use a method from reshape2, try installing that package first, but do note that reshape2 is superseded and is no longer actively developed.", "dcast", class1(data), deparse(substitute(data))) # nocov
-  UseMethod("dcast", data)
+  UseMethod("dcast")
+}
+
+# TODO(>=1.19.0): Remove this, just let dispatch to 'default' method fail.
+dcast.default = function(data, formula, fun.aggregate=NULL, ..., margins=NULL, subset=NULL, fill=NULL, value.var=guess(data))
+  stopf("The %1$s generic in data.table has been passed a %2$s, but data.table::%1$s currently only has a method for data.tables. Please confirm your input is a data.table, with setDT(%3$s) or as.data.table(%3$s). If you intend to use a method from reshape2, try installing that package first, but do note that reshape2 is superseded and is no longer actively developed.", "dcast", class1(data), deparse(substitute(data))) # nocov
+
+dcast.data.frame = function(data, formula, fun.aggregate=NULL, ..., margins=NULL, subset=NULL, fill=NULL, value.var=guess(data)) {
+  # lazy-eval means we need to do 'subset' here, not in dcast.data.table
+  if (!is.null(subset)) {
+    idx = which(eval(substitute(subset), data, parent.frame()))
+    data = data[idx, ]
+  }
+  setDF(dcast(as.data.table(data), formula=formula, fun.aggregate=fun.aggregate, ..., margins=margins, fill=fill, value.var=value.var))
 }
 
 check_formula = function(formula, varnames, valnames, value.var.in.LHSdots, value.var.in.RHSdots) {
