@@ -53,7 +53,7 @@ SEXP coalesce(SEXP x, SEXP inplaceArg) {
     first = PROTECT(copyAsPlain(first)); nprotect++;
     if (verbose) Rprintf(_("coalesce copied first item (inplace=FALSE)\n"));
   }
-  void **valP = (void **)R_alloc(nval, sizeof(void *));
+  const void **valP = (const void **)R_alloc(nval, sizeof(void *));
   switch(TYPEOF(first)) {
   case LGLSXP:
   case INTSXP: {
@@ -66,7 +66,7 @@ SEXP coalesce(SEXP x, SEXP inplaceArg) {
         finalVal = tt;
         break;  // stop early on the first singleton that is not NA; minimizes deepest loop body below
       }
-      valP[k++] = INTEGER(item);
+      valP[k++] = INTEGER_RO(item);
     }
     const bool final=(finalVal!=NA_INTEGER);
     #pragma omp parallel for num_threads(getDTthreads(nrow, true))
@@ -89,7 +89,7 @@ SEXP coalesce(SEXP x, SEXP inplaceArg) {
           finalVal = tt;
           break;
         }
-        valP[k++] = REAL(item);
+        valP[k++] = REAL_RO(item);
       }
       const bool final = (finalVal!=NA_INTEGER64);
       #pragma omp parallel for num_threads(getDTthreads(nrow, true))
@@ -110,7 +110,7 @@ SEXP coalesce(SEXP x, SEXP inplaceArg) {
           finalVal = tt;
           break;
         }
-        valP[k++] = REAL(item);
+        valP[k++] = REAL_RO(item);
       }
       const bool final = !ISNAN(finalVal);
       #pragma omp parallel for num_threads(getDTthreads(nrow, true))
@@ -133,7 +133,7 @@ SEXP coalesce(SEXP x, SEXP inplaceArg) {
         finalVal = tt;
         break;
       }
-      valP[k++] = COMPLEX(item);
+      valP[k++] = COMPLEX_RO(item);
     }
     const bool final = !ISNAN(finalVal.r) && !ISNAN(finalVal.i);
     #pragma omp parallel for num_threads(getDTthreads(nrow, true))

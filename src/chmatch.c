@@ -35,12 +35,13 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
     return ans;
   }
   // Since non-ASCII strings may be marked with different encodings, it only make sense to compare
-  // the bytes under a same encoding (UTF-8) #3844 #3850
+  // the bytes under a same encoding (UTF-8) #3844 #3850.
+  // Not 'const' because we might SET_TRUELENGTH() below.
   SEXP *xd;
   if (isSymbol(x)) {
     xd = &sym;
   } else {
-    xd = STRING_PTR_RO(PROTECT(coerceUtf8IfNeeded(x))); nprotect++;
+    xd = (SEXP *)STRING_PTR_RO(PROTECT(coerceUtf8IfNeeded(x))); nprotect++;
   }
   const SEXP *td = STRING_PTR_RO(PROTECT(coerceUtf8IfNeeded(table))); nprotect++;
   if (xlen==1) {

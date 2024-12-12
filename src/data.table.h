@@ -7,6 +7,9 @@
 #  define USE_RINTERNALS  // #3301
 #  define DATAPTR_RO(x) ((const void *)DATAPTR(x))
 #  define STRING_PTR_RO STRING_PTR
+#  define INTEGER_RO INTEGER
+#  define REAL_RO REAL
+#  define COMPLEX_RO COMPLEX
 #  define R_Calloc(x, y) Calloc(x, y)         // #6380
 #  define R_Realloc(x, y, z) Realloc(x, y, z)
 #  define R_Free(x) Free(x)
