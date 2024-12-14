@@ -2077,8 +2077,6 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   if (!is.null(rownames)) {
     if (!is.null(rownames.value)) stopf("rownames and rownames.value cannot both be used at the same time")
     if (length(rownames)>1L) {
-      # TODO in future as warned in NEWS for 1.11.6:
-      #   warningf("length(rownames)>1 is deprecated. Please use rownames.value= instead")
       if (length(rownames)!=nrow(x))
         stopf("length(rownames)==%d but nrow(DT)==%d. The rownames argument specifies a single column name or number. Consider rownames.value= instead.", length(rownames), nrow(x))
       rownames.value = rownames
