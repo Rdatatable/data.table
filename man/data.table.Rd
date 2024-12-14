@@ -36,7 +36,10 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
   verbose = getOption("datatable.verbose"),                   # default: FALSE
   allow.cartesian = getOption("datatable.allow.cartesian"),   # default: FALSE
   drop = NULL, on = NULL, env = NULL, 
-  showProgress = getOption("datatable.showProgress", interactive()))
+  showProgress = getOption("datatable.showProgress", interactive()),
+  old.nonequi = mget(".datatable.old.nonequi", envir=parent.frame(),
+                     inherits=TRUE, ifnotfound=TRUE)[[1L]]    # default: TRUE
+)
 }
 \arguments{
     \item{\dots}{ Just as \code{\dots} in \code{\link{data.frame}}. Usual recycling rules are applied to vectors of different lengths to create a list of equal length vectors.}
@@ -176,10 +179,12 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
         }
         See examples as well as \href{../doc/datatable-secondary-indices-and-auto-indexing.html}{\code{vignette("datatable-secondary-indices-and-auto-indexing")}}.
     }
-
   \item{env}{ List or an environment, passed to \code{\link{substitute2}} for substitution of parameters in \code{i}, \code{j} and \code{by} (or \code{keyby}). Use \code{verbose} to preview constructed expressions. For more details see \href{../doc/datatable-programming.html}{\code{vignette("datatable-programming")}}. }
 
   \item{showProgress}{ \code{TRUE} shows progress indicator with estimated time to completion for lengthy "by" operations. }
+
+  \item{old.nonequi}{ New migration argument added in v1.TODO. Default \code{TRUE} preserves old unpopular behaviour of not including both columns from \code{x} and \code{i} which have been non-equi joined. Here "non-equi" refers both to non-equi in \code{on=} and the last join column of \code{roll=} too. When \code{FALSE}, new behaviour is invoked which adds extra columns in the result and also no longer names the non-equi column data from \code{i} with the name from \code{x}, as users have consistently requested. The value \code{"warning"} performs old behaviour but warns for every non-equi usage in your code so you can find this usage and check them. Since the same column name in the result now contains different data, it is important to use the \code{"warning"} feature and check every usage of non-equi \code{on=} and \code{roll=} in your code, before setting the option to \code{FALSE}. }
+
 }
 \details{
 \code{data.table} builds on base \R functionality to reduce 2 types of time:\cr
