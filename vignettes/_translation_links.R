@@ -13,7 +13,7 @@
       pattern = glob2rx(knitr::current_input(FALSE))
     )
     transl_lang = ifelse(dirname(translation) == ".", "en", dirname(translation))
-    block = if (length(which(transl_lang != lang))) {
+    block = if (!all(transl_lang == lang)) {
       sprintf(
         fmt, paste(collapse = " | ", sprintf(
           "[%s](%s)",
