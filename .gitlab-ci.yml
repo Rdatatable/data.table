@@ -136,6 +136,21 @@ test-lin-rel-vanilla:
     - echo 'CXXFLAGS=-g -O0 -fno-openmp -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
     - R CMD check --no-manual --ignore-vignettes $(ls -1t data.table_*.tar.gz | head -n 1)
 
+## alpine linux
+test-lin-alp-rel-cran:
+  <<: *test-lin
+  image: registry.gitlab.com/jangorecki/dockerfiles/r-base-alpine
+  variables:
+    _R_CHECK_CRAN_INCOMING_: "TRUE"           ## stricter --as-cran checks should run in dev pipelines continuously (not sure what they are though)
+    _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"   ## Other than no URL checking (takes many minutes) or 'Days since last update 0' NOTEs needed, #3284
+    _R_CHECK_CRAN_INCOMING_TARBALL_THRESHOLD_: "7500000" ## bytes
+    _R_CHECK_PKG_SIZES_THRESHOLD_: "10"        ## MB 'checking installed package size' NOTE increased due to po
+  script:
+    - *install-deps
+    - echo 'CFLAGS=-g -O2 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
+    - echo 'CXXFLAGS=-g -O2 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
+    - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
+
 ## R-release on Linux
 # strict checks for 0 NOTEs
 # extra NOTEs check and build pdf manual thus not from cran-lin template
