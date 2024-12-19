@@ -4,6 +4,8 @@ mergeType = function(x) {
   ans = typeof(x)
   if      (ans=="integer") { if (is.factor(x))             ans = "factor"    }
   else if (ans=="double")  { if (inherits(x, "integer64")) ans = "integer64" }
+  else if (ans == "complex") { if (all(Im(x) == 0))        ans = "double"    
+                              else                         ans = "invalid"  }
   # do not call fitsInInt*(x) yet because i) if both types are double we don't need to coerce even if one or both sides
   # are int-as-double, and ii) to save calling it until we really need it
   ans
@@ -108,9 +110,13 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
         set(w, j=wc, value=bit64::as.integer64(w[[wc]]))
       } else stopf("Incompatible join types: %s is type integer64 but %s is type double and cannot be coerced to integer64 (e.g. has fractions)", nm[2L], nm[1L])
     } else {
-      # just integer and double left
+      # integer, double, and complex types remaining; complex treated as double if Im(x) == 0, otherwise invalid
       ic_idx = which(icol == icols) # check if on is joined on multiple conditions, #6602
-      if (i_merge_type=="double") {
+      if (x_merge_type == "complex" || i_merge_type == "complex") {
+        if (x_merge_type == "invalid" || i_merge_type == "invalid") {
+          stopf("Incompatible join types: %s (%s) and %s (%s). Complex columns with non-zero imaginary parts are not supported.", xname, x_merge_type, iname, i_merge_type)
+        }
+      } else if (i_merge_type=="double") {
         coerce_x = FALSE
         if (fitsInInt32(i[[icol]])) {
           coerce_x = TRUE
