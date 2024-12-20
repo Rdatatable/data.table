@@ -55,7 +55,18 @@ haskey(x)
 \arguments{
 \item{x}{ A \code{data.table}. }
 \item{\dots}{ The columns to sort by. Do not quote the column names. If \code{\dots} is missing (i.e. \code{setkey(DT)}), all the columns are used. \code{NULL} removes the key. }
-\item{cols}{ A character vector of column names. For \code{setindexv}, this can be a \code{list} of character vectors, in which case each element will be applied as an index in turn. }
+\item{cols}{ A character vector of column names. For \code{setindexv}, this can be a \code{list} of character vectors, in which case each element will be applied as an index in turn. 
+
+# Example: Single character vector of column names
+DT = data.table(A = 5:1, B = letters[5:1], C = 10:6)
+setindex(DT, A)        # Set index using a single column
+indices(DT)            # View the indices
+
+# Example: List of character vectors
+setindexv(DT, list(c("A", "B"), c("B", "C"))) # Setting multiple indices
+indices(DT)            # View all indices
+indices(DT, vectors = TRUE) # View indices as a list of vectors
+}
 \item{verbose}{ Output status and information. }
 \item{physical}{ \code{TRUE} changes the order of the data in RAM. \code{FALSE} adds an index. }
 \item{vectors}{ \code{logical} scalar, default \code{FALSE}; when set to \code{TRUE}, a \code{list} of character vectors is returned, each referring to one index. }
