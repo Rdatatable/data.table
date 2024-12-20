@@ -35,10 +35,14 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   if (!is.null(by.x)) {
     if (length(by.x)==0L || !is.character(by.x) || !is.character(by.y))
       stopf("A non-empty vector of column names is required for `by.x` and `by.y`.")
-    if (!all(by.x %chin% nm_x))
-      stopf("Elements listed in `by.x` must be valid column names in x.")
-    if (!all(by.y %chin% nm_y))
-      stopf("Elements listed in `by.y` must be valid column names in y.")
+    if (!all(by.x %chin% nm_x)) {
+      missing_by_x = setdiff(by.x, nm_x)
+      stopf("Elements listed in `by.x` must be valid column names in x. Missing: %s", toString(missing_by_x)) # changed here
+    }
+    if (!all(by.y %chin% nm_y)) {
+      missing_by_y = setdiff(by.y, nm_y)
+      stopf("Elements listed in `by.y` must be valid column names in y. Missing: %s", toString(missing_by_y)) # changed here
+    }
     by = by.x
     names(by) = by.y
   } else {
@@ -50,8 +54,12 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
       by = intersect(nm_x, nm_y)
     if (length(by) == 0L || !is.character(by))
       stopf("A non-empty vector of column names for `by` is required.")
-    if (!all(by %chin% intersect(nm_x, nm_y)))
-      stopf("Elements listed in `by` must be valid column names in x and y")
+    if (!all(by %chin% intersect(nm_x, nm_y))) {
+      missing_in_x = setdiff(by, nm_x)
+      missing_in_y = setdiff(by, nm_y)
+      stopf("Elements listed in `by` must be valid column names in x and y. Missing in x: %s. Missing in y: %s", 
+            toString(missing_in_x), toString(missing_in_y)) # changed here
+    }
     by = unname(by)
     by.x = by.y = by
   }
