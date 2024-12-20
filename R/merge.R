@@ -37,11 +37,11 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
       stopf("A non-empty vector of column names is required for `by.x` and `by.y`.")
     if (!all(by.x %chin% nm_x)) {
       missing_by_x = setdiff(by.x, nm_x)
-      stopf("Elements listed in `by.x` must be valid column names in x. Missing: %s", paste(missing_by_x, collapse = ", "))
+      stopf("Elements listed in `by.x` must be valid column names in x. Missing: %s", toString(missing_by_x)) # changed here
     }
     if (!all(by.y %chin% nm_y)) {
       missing_by_y = setdiff(by.y, nm_y)
-      stopf("Elements listed in `by.y` must be valid column names in y. Missing: %s", paste(missing_by_y, collapse = ", "))
+      stopf("Elements listed in `by.y` must be valid column names in y. Missing: %s", toString(missing_by_y)) # changed here
     }
     by = by.x
     names(by) = by.y
@@ -58,7 +58,7 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
       missing_in_x = setdiff(by, nm_x)
       missing_in_y = setdiff(by, nm_y)
       stopf("Elements listed in `by` must be valid column names in x and y. Missing in x: %s. Missing in y: %s", 
-            paste(missing_in_x, collapse = ", "), paste(missing_in_y, collapse = ", "))
+            toString(missing_in_x), toString(missing_in_y)) # changed here
     }
     by = unname(by)
     by.x = by.y = by
