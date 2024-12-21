@@ -1,0 +1,34 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: rowwiseDT 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: 2024-10-10 22:46+0100\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: hi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: rowwiseDT.R:4
+msgid ""
+"Must provide at least one column (use `name=`). See ?rowwiseDT for details"
+msgstr ""
+"कम से कम एक कॉलम (column) प्रदान करना अनिवार्य है (कृपया name= का उपयोग करें)। विवरण के लिए ?rowwiseDT देखें"
+
+#: rowwiseDT.R:7
+msgid "Named arguments must be empty"
+msgstr "
+नामित तर्क (arguments) रिक्त होने चाहिए"
+
+#: rowwiseDT.R:9
+msgid "Header must be the first N arguments"
+msgstr "हेडर (header) पहले N तर्क (arguments) होने चाहिए"
+
+#: rowwiseDT.R:15
+msgid ""
+"There are %d columns but the number of cells is %d, which is not an integer "
+"multiple of the columns"
+msgstr ""
+"यहाँ %d कॉलम (column) हैं, लेकिन सेल्स (cells) की संख्या %d है,"
+"जो कॉलम्स (columns) के पूर्णांक गुणक (integer multiple) के बराबर नहीं है"
