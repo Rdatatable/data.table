@@ -2900,7 +2900,7 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     home = function(x, env) {
       if (identical(env, emptyenv()))
         stopf("Cannot find symbol %s", cname)
-      else if (exists(x, env, inherits=FALSE)) env
+      else if (exists(x, env, inherits=FALSE)) env # NB: _not_ get0(), since returning 'env' not 'get(x)'
       else home(x, parent.env(env))
     }
     cname = as.character(name)
@@ -2915,16 +2915,11 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     if (!missing(key)) setkeyv(x, key) # fix for #1169
     if (check.names) setattr(x, "names", make.names(names(x), unique=TRUE))
     if (selfrefok(x) > 0L) return(invisible(x)) else setalloccol(x)
-  } else if (is.data.frame(x)) {
-    # check no matrix-like columns, #3760. Allow a single list(matrix) is unambiguous and depended on by some revdeps, #3581
-    # for performance, only warn on the first such column, #5426
-    for (jj in seq_along(x)) {
-      if (length(dim(x[[jj]])) > 1L) {
-        .Call(Cwarn_matrix_column_r, jj)
-        break
-      }
-    }
+  }
 
+  .Call(Ccheck_problematic_columns, x)
+
+  if (is.data.frame(x)) {
     # Done to avoid affecting other copies of x when we setattr() below (#4784)
     x = .shallow(x)
 
