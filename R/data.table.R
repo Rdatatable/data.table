@@ -2532,6 +2532,18 @@ split.data.table = function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = TR
   }
 }
 
+sort_by.data.table <- function (x, y, ...)
+{
+  if (!cedta()) return(NextMethod()) # nocov
+  if (inherits(y, "formula"))
+    y <- .formula2varlist(y, x)
+  if (!is.list(y))
+    y <- list(y)
+  # use forder instead of base 'order'
+  o <- do.call(forder, c(unname(y), list(...)))
+  x[o, , drop = FALSE]
+}
+
 # TO DO, add more warnings e.g. for by.data.table(), telling user what the data.table syntax is but letting them dispatch to data.frame if they want
 
 copy = function(x) {
