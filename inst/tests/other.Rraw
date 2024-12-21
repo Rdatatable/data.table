@@ -1,4 +1,4 @@
-pkgs = c("ggplot2", "hexbin", "plyr", "dplyr", "caret", "zoo", "xts", "gdata", "nlme", "bit64", "knitr", "parallel", "sf", "nanotime", "R.utils", "yaml")
+pkgs = c("bit64", "caret", "dplyr", "gdata", "ggplot2", "hexbin", "knitr", "nanotime", "nlme", "parallel", "plyr", "R.utils", "sf", "vctrs", "xts", "yaml", "zoo")
 # First expression of this file must be as above: .gitlab-ci.yml uses parse(,n=1L) to read one expression from this file and installs pkgs.
 # So that these dependencies of other.Rraw are maintained in a single place.
 # TEST_DATA_TABLE_WITH_OTHER_PACKAGES is off by default so this other.Rraw doesn't run on CRAN. It is run by GLCI, locally in dev, and by
@@ -773,3 +773,9 @@ if (loaded[["nanotime"]]) {
 res <- tables(env=.e)
 test(32, res[, .(NAME,NROW,NCOL,MB)], data.table(NAME="DT",NROW=20000000L,NCOL=15L,MB=2288.0))
 rm(.e, res)
+
+if (loaded[["vctrs"]]) {
+  # vctrs::list_of() columns are treated the same as other list() columns
+  DT = data.table(a = 1, b = list_of(mtcars))
+  test(33, DT, output="<vctrs_list_of>.*<data\\.frame\\[32x11\\]>")
+}
