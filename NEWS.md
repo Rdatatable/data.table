@@ -69,6 +69,9 @@ rowwiseDT(
 
 6. `fread()` gains `logicalYN` argument to read columns consisting only of strings `Y`, `N` as `logical` (as opposed to character), [#4563](https://github.com/Rdatatable/data.table/issues/4563). The default is controlled by option `datatable.logicalYN`, itself defaulting to `FALSE`, for back-compatibility -- some smaller tables (especially sharded tables) might inadvertently read a "true" string column as `logical` and cause bugs. This is particularly important for tables with a column named `y` or `n` -- automatic header detection under `logicalYN=TRUE` will see these values in the first row as being "data" as opposed to column names. A parallel option was not included for `fwrite()` at this time -- users looking for a compact representation of logical columns can still use `fwrite(logical01=TRUE)`. We also opted for now to check only `Y`, `N` and not `Yes`/`No`/`YES`/`NO`.
 
+7. Base R generic `sort_by()` (new in R 4.4.0) is implemented for data.table's. It internally uses data.table's `forder()` instead of base R `order()` for efficiency. Hence, it uses C-locale as data.table's conventional sorting (suggested by @rikivillalba).
+
+
 ## BUG FIXES
 
 1. `fwrite()` respects `dec=','` for timestamp columns (`POSIXct` or `nanotime`) with sub-second accuracy, [#6446](https://github.com/Rdatatable/data.table/issues/6446). Thanks @kav2k for pointing out the inconsistency and @MichaelChirico for the PR.
