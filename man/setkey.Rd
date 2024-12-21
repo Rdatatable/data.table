@@ -116,16 +116,6 @@ reference.
 \examples{
 # Type 'example(setkey)' to run these at the prompt and browse output
 
-# Example: Single character vector of column names
-DT = data.table(A = 5:1, B = letters[5:1], C = 10:6)
-setindex(DT, A)        # Set index using a single column
-indices(DT)            # View the indices
-
-# Example: List of character vectors
-setindexv(DT, list(c("A", "B"), c("B", "C"))) # Setting multiple indices
-indices(DT)            # View all indices
-indices(DT, vectors = TRUE) # View indices as a list of vectors
-
 DT = data.table(A=5:1,B=letters[5:1])
 DT # before
 setkey(DT,B)          # re-orders table and marks it sorted.
@@ -151,6 +141,11 @@ setindex(DT, A)
 setindex(DT, B)
 indices(DT)           # get indices single vector
 indices(DT, vectors = TRUE) # get indices list
+
+# Setting multiple indices at once
+DT = data.table(A = 5:1, B = letters[5:1], C = 10:6)
+setindexv(DT, list(c("A", "B"), c("B", "C")))
+print(DT, show.indices=TRUE)
 
 # Use the dot .(subset_value) syntax with integer keys:
 DT = data.table(id = 2:1)
