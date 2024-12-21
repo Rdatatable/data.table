@@ -35,10 +35,12 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   if (!is.null(by.x)) {
     if (length(by.x)==0L || !is.character(by.x) || !is.character(by.y))
       stopf("A non-empty vector of column names is required for `by.x` and `by.y`.")
-    if (!all(by.x %chin% nm_x))
-      stopf("Elements listed in `by.x` must be valid column names in x.")
-    if (!all(by.y %chin% nm_y))
-      stopf("Elements listed in `by.y` must be valid column names in y.")
+    missing_in_x <- setdiff(by.x, nm_x)
+    missing_in_y <- setdiff(by.y, nm_y)
+    if (length(missing_in_x) > 0)
+      stopf("The following columns specified in `by.x` are missing in `x`: %s", toString(missing_in_x))
+    if (length(missing_in_y) > 0)
+      stopf("The following columns specified in `by.y` are missing in `y`: %s", toString(missing_in_y))
     by = by.x
     names(by) = by.y
   } else {
@@ -50,8 +52,13 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
       by = intersect(nm_x, nm_y)
     if (length(by) == 0L || !is.character(by))
       stopf("A non-empty vector of column names for `by` is required.")
-    if (!all(by %chin% intersect(nm_x, nm_y)))
-      stopf("Elements listed in `by` must be valid column names in x and y")
+    missing_in_x <- setdiff(by, nm_x)
+    missing_in_y <- setdiff(by, nm_y)
+    if (length(missing_in_x) > 0 || length(missing_in_y) > 0) {
+      stopf("Error in merge.data.table():\n%s\n%s",
+            if (length(missing_in_x)) paste("! Missing in x:", toString(missing_in_x)) else "",
+            if (length(missing_in_y)) paste("! Missing in y:", toString(missing_in_y)) else "")
+    }
     by = unname(by)
     by.x = by.y = by
   }
