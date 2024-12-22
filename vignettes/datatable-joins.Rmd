@@ -613,7 +613,7 @@ ProductPriceHistory[ProductSales,
                     j = .(product_id, date, count, price)]
 ```
 
-## 7. Taking advange of joining speed
+## 7. Taking advantage of joining speed
 
 ### 7.1. Subsets as joins
 
