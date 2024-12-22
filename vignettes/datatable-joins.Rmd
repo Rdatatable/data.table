@@ -306,8 +306,8 @@ Despite both tables having the same information, they present some relevant diff
 
 - They present different column ordering.
 - They have column name differences:
-  - The `id` column of first table has the same information as the `product_id` in the second table.
-  - The `i.id` column of first table has the same information as the `id` in the second table.
+  - The `id` column on the first table has the same information as the `product_id` in the second table.
+  - The `i.id` column on the first table has the same information as the `id` in the second table.
 
 ### 3.3. Not join
 
