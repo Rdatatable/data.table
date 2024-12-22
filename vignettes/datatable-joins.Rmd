@@ -126,7 +126,7 @@ The next diagram shows a description for each basic argument. In the following s
 x[i, on, nomatch]
 | |  |   |
 | |  |   \__ If NULL only returns rows linked in x and i tables
-| |  \____ a character vector o list defining match logic
+| |  \____ a character vector or list defining match logic
 | \_____ primary data.table, list or data.frame
 \____ secondary data.table
 ```
