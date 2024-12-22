@@ -524,7 +524,7 @@ merge(x = Products,
 
 ## 4. Non-equi join
 
-A non-equi join is a type of join where the condition for matching rows is not based on equality, but on other comparison operators like <, >, <=, or >=. This allows for **more flexible joining criteria**. In `data.table`, non-equi joins are particularly useful for operations like:
+A non-equi join is a type of join where the condition for matching rows is not based on equality, but on other comparison operators like `<`, `>`, `<=`, or `>=`. This allows for **more flexible joining criteria**. In `data.table`, non-equi joins are particularly useful for operations like:
 
 - Finding the nearest match.
 - Comparing ranges of values between tables.
