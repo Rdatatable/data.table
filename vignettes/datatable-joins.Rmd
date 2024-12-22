@@ -131,7 +131,7 @@ x[i, on, nomatch]
 \____ secondary data.table
 ```
 
-> Please keep in mind that the standard argument order in data.table is `dt[i, j, by]`. For join operations, it is recommended to pass the `on` and `nomatch` arguments by name to avoid using `j` and `by` when they are not needed.
+> Please keep in mind that the standard argument order in `data.table` is `dt[i, j, by]`. For join operations, it is recommended to pass the `on` and `nomatch` arguments by name to avoid using `j` and `by` when they are not needed.
 
 ## 3. Equi joins
 
@@ -160,8 +160,8 @@ Products[ProductReceived,
 As many things have changed, let's explain the new characteristics in the following groups:
 
 - **Column level**
-  - The *first group* of columns in the new data.table comes from the `x` table.
-  - The *second group* of columns in the new data.table comes from the `i` table.
+  - The *first group* of columns in the new `data.table` comes from the `x` table.
+  - The *second group* of columns in the new `data.table` comes from the `i` table.
   - If the join operation presents a present any **name conflict** (both table have same column name) the ***prefix*** `i.` is added to column names from the **right-hand table** (table on `i` position).
   
 - **Row level**
@@ -183,7 +183,7 @@ Products[ProductReceived,
          on = list(id = product_id)]
 ```
 
-- Wrapping the related columns in the data.table `list`	alias `.`.
+- Wrapping the related columns in the `data.table` `list`	alias `.`.
 
 ```{r, eval=FALSE}
 Products[ProductReceived,
@@ -249,7 +249,7 @@ Products[
 ```
 
 
-##### Summarizing with on in data.table
+##### Summarizing with on in `data.table`
 
 We can also use this alternative to return aggregated results based columns present in the `x` table.
 
@@ -524,7 +524,7 @@ merge(x = Products,
 
 ## 4. Non-equi join
 
-A non-equi join is a type of join where the condition for matching rows is based on comparison operators other than equality, such as `<`, `>`, `<=`, or `>=`. This allows for **more flexible joining criteria**. In data.table, non-equi joins are particularly useful for operations like:
+A non-equi join is a type of join where the condition for matching rows is based on comparison operators other than equality, such as `<`, `>`, `<=`, or `>=`. This allows for **more flexible joining criteria**. In `data.table`, non-equi joins are particularly useful for operations like:
 
 - Finding the nearest match.
 - Comparing ranges of values between tables.
@@ -532,7 +532,7 @@ A non-equi join is a type of join where the condition for matching rows is based
 It is a great alternative when, after applying a right or inner join, you:
 
 - Want to reduce the number of returned rows based on comparisons of numeric columns between tables.
-- Do not need to retain the columns from table x *(the secondary data.table)* in the final result.
+- Do not need to retain the columns from table x *(the secondary `data.table`)* in the final result.
 
 To illustrate how this works, let's focus on the sales and receives for product 2.
   
@@ -660,7 +660,7 @@ Products[!"popcorn",
 
 ### 7.2. Updating by reference
 
-The `:=` operator in data.table is used for updating or adding columns by reference. This means it modifies the original data.table without creating a copy, which is very memory-efficient, especially for large datasets. When used inside a data.table, `:=` allows you to **add new columns** or **modify existing ones** as part of your query.
+The `:=` operator in `data.table` is used for updating or adding columns by reference. This means it modifies the original `data.table` without creating a copy, which is very memory-efficient, especially for large datasets. When used inside a `data.table`, `:=` allows you to **add new columns** or **modify existing ones** as part of your query.
 
 Let's update our `Products` table with the latest price from `ProductPriceHistory`:
 
