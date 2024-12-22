@@ -313,7 +313,7 @@ Despite both tables having the same information, they present some relevant diff
 
 This method **keeps only the rows that don't match with any row of a second table**.
 
-To apply this technique we just need to negate (`!`) the table located on the `i` argument.
+To apply this technique we can negate (`!`) the table located on the `i` argument.
 
 ```{r}
 Products[!ProductReceived,
