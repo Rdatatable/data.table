@@ -130,6 +130,3 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   setattr(dt, "class", class_x)
   dt
 }
-
-
-
