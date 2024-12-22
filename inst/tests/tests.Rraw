@@ -20697,3 +20697,46 @@ if (test_bit64) {
   test(2300.3, DT1[DT2, on='id'], error="Incompatible join types")
   test(2300.4, DT2[DT1, on='id'], error="Incompatible join types")
 }
+
+if (test_bit64) {
+  # Test for identifying missing columns in the `by` argument
+  DT1 = data.table(x = as.integer64(1:5), y = letters[1:5])
+  DT2 = data.table(a = as.integer64(6:10), b = letters[6:10])
+  
+  # Missing column in both data tables
+  test(2301.1, {
+    tryCatch({
+      merge.data.table(DT1, DT2, by = "z")
+    }, error = function(e) {
+      e$message
+    })
+  }, "Columns listed in `by` must be valid column names in both data.tables.\n✖ Missing in x: z\n✖ Missing in y: z")
+  
+  # Multiple missing columns
+  test(2301.2, {
+    tryCatch({
+      merge.data.table(DT1, DT2, by = c("x", "a"))
+    }, error = function(e) {
+      e$message
+    })
+  }, "Columns listed in `by` must be valid column names in both data.tables.\n✖ Missing in x: a\n✖ Missing in y: x")
+  
+  # Valid columns for `by`
+  test(2301.3, {
+    tryCatch({
+      merge.data.table(DT1, DT2, by = c("y", "b"))
+    }, error = function(e) {
+      e$message
+    })
+  }, NULL)  # Expect no error since `y` and `b` exist in DT1 and DT2 respectively
+  
+  # Incompatible join types
+  DT2[, a := as.numeric(a)]
+  test(2301.4, {
+    tryCatch({
+      merge.data.table(DT1, DT2, by = c("x", "a"))
+    }, error = function(e) {
+      e$message
+    })
+  }, "Incompatible join types")
+}
