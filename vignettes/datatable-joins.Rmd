@@ -331,7 +331,7 @@ In this case, the operation returns the row with `product_id = 6,` as it is not 
 
 ### 3.4. Semi join
 
-This method extract **keeps only the rows that match with any row in a second table** without combining the column of the tables.
+This method extracts **only the rows that match any row in a second table**, without combining the columns of the tables.
 
 It's very similar to subset as join, but as in this time we are passing a complete table to the `i` we need to ensure that:
 
