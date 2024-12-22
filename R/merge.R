@@ -29,16 +29,16 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
 
   ## set up 'by'/'by.x'/'by.y'
   if ( (!is.null(by.x) || !is.null(by.y)) && length(by.x)!=length(by.y) )
-    stopf("`by.x` and `by.y` must be of same length.")
+    stopf("by.x and by.y must be of same length.")
   if (!missing(by) && !missing(by.x))
-    warningf("Supplied both `by` and `by.x/by.y`. `by` argument will be ignored.")
+    warningf("Supplied both by and by.x/by.y. by argument will be ignored.")
   if (!is.null(by.x)) {
     if (length(by.x)==0L || !is.character(by.x) || !is.character(by.y))
-      stopf("A non-empty vector of column names is required for `by.x` and `by.y`.")
+      stopf("A non-empty vector of column names is required for by.x and by.y.")
     if (!all(by.x %chin% nm_x))
-      stopf("Elements listed in `by.x` must be valid column names in x.")
+      stopf("Elements listed in by.x must be valid column names in x.")
     if (!all(by.y %chin% nm_y))
-      stopf("Elements listed in `by.y` must be valid column names in y.")
+      stopf("Elements listed in by.y must be valid column names in y.")
     by = by.x
     names(by) = by.y
   } else {
@@ -49,9 +49,20 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
     if (!length(by))
       by = intersect(nm_x, nm_y)
     if (length(by) == 0L || !is.character(by))
-      stopf("A non-empty vector of column names for `by` is required.")
-    if (!all(by %chin% intersect(nm_x, nm_y)))
-      stopf("Elements listed in `by` must be valid column names in x and y")
+      stopf("A non-empty vector of column names for by is required.")
+
+    ## Updated Error Handling Section
+    missing_in_x = setdiff(by, nm_x)
+    missing_in_y = setdiff(by, nm_y)
+    if (length(missing_in_x) > 0 || length(missing_in_y) > 0) {
+      error_msg = "Columns listed in by must be valid column names in both data.tables.\n"
+      if (length(missing_in_x) > 0) 
+        error_msg = paste0(error_msg, sprintf("✖ Missing in x: %s\n", paste(missing_in_x, collapse = ", ")))
+      if (length(missing_in_y) > 0) 
+        error_msg = paste0(error_msg, sprintf("✖ Missing in y: %s", paste(missing_in_y, collapse = ", ")))
+      stopf(error_msg)
+    }
+
     by = unname(by)
     by.x = by.y = by
   }
@@ -109,7 +120,7 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   }
 
   # Throw warning if there are duplicate column names in 'dt' (i.e. if
-  # `suffixes=c("","")`, to match behaviour in base:::merge.data.frame)
+  # suffixes=c("",""), to match behaviour in base:::merge.data.frame)
   resultdupnames = names(dt)[duplicated(names(dt))]
   if (length(resultdupnames)) {
     warningf("column names %s are duplicated in the result", brackify(resultdupnames))
