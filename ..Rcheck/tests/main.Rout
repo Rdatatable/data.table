@@ -1,0 +1,62 @@
+
+R version 4.3.3 (2024-02-29) -- "Angel Food Cake"
+Copyright (C) 2024 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> require(data.table)
+Loading required package: data.table
+> 
+> test.data.table()  # runs the main test suite of 5,000+ tests in /inst/tests/tests.Rraw
+getDTthreads(verbose=TRUE):
+  OpenMP version (_OPENMP)       201511
+  omp_get_num_procs()            12
+  R_DATATABLE_NUM_PROCS_PERCENT  unset (default 50)
+  R_DATATABLE_NUM_THREADS        unset
+  R_DATATABLE_THROTTLE           unset (default 1024)
+  omp_get_thread_limit()         2147483647
+  omp_get_max_threads()          12
+  OMP_THREAD_LIMIT               unset
+  OMP_NUM_THREADS                unset
+  RestoreAfterFork               true
+  data.table is using 6 threads with throttle==1024. See ?setDTthreads.
+test.data.table() running: /home/vinni/data.table/..Rcheck/data.table/tests/tests.Rraw
+
+Mon Dec 23 01:43:23 2024  endian==little, sizeof(long double)==16, longdouble.digits==64, sizeof(pointer)==8, TZ==unset, Sys.timezone()=='Asia/Kolkata', Sys.getlocale()=='LC_CTYPE=en_US.UTF-8;LC_NUMERIC=C;LC_TIME=en_US.UTF-8;LC_COLLATE=C;LC_MONETARY=en_US.UTF-8;LC_MESSAGES=en_US.UTF-8;LC_PAPER=en_US.UTF-8;LC_NAME=C;LC_ADDRESS=C;LC_TELEPHONE=C;LC_MEASUREMENT=en_US.UTF-8;LC_IDENTIFICATION=C', l10n_info()=='MBCS=TRUE; UTF-8=TRUE; Latin-1=FALSE; codeset=UTF-8', getDTthreads()=='OpenMP version (_OPENMP)==201511; omp_get_num_procs()==12; R_DATATABLE_NUM_PROCS_PERCENT==unset (default 50); R_DATATABLE_NUM_THREADS==unset; R_DATATABLE_THROTTLE==unset (default 1024); omp_get_thread_limit()==2147483647; omp_get_max_threads()==12; OMP_THREAD_LIMIT==unset; OMP_NUM_THREADS==unset; RestoreAfterFork==true; data.table is using 6 threads with throttle==1024. See ?setDTthreads.', .libPaths()=='/home/vinni/data.table/..Rcheck','/home/vinni/R/x86_64-pc-linux-gnu-library/4.3','/usr/local/lib/R/site-library','/usr/lib/R/site-library','/usr/lib/R/library', zlibVersion()==1.3 ZLIB_VERSION==1.3
+10 longest running tests took 11s (43% of 25s)
+      ID  time nTest
+ 1: 1438 1.694   738
+ 2: 2155 1.534     5
+ 3: 1652 1.359    91
+ 4: 1650 1.304    91
+ 5: 1648 1.201    91
+ 6: 1437 1.199    36
+ 7: 1646 0.759    91
+ 8: 1644 0.738    91
+ 9: 1642 0.721    91
+10: 2233 0.696    55
+All 11639 tests (last 2300.4) in tests/tests.Rraw completed ok in 29.5s elapsed (33.1s cpu)
+> 
+> # Turn on showProgress temporarily for GLCI and CRAN (not interactive()) when a segfault
+> # occurs and it's taking time to reproduce locally. See comments in PR#4090.
+> # test.data.table(showProgress=TRUE)
+> 
+> # Turn off verbose repeat to save time (particularly Travis, but also CRAN) :
+> # test.data.table(verbose=TRUE)
+> # Calling it again in the past revealed some memory bugs but also verbose mode checks the verbose messages run ok
+> # TO DO: check we test each verbose message at least once, instead of a full repeat of all tests
+> 
+> proc.time()
+   user  system elapsed 
+ 33.254   0.491  29.649 

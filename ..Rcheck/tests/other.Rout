@@ -1,0 +1,26 @@
+
+R version 4.3.3 (2024-02-29) -- "Angel Food Cake"
+Copyright (C) 2024 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library(data.table)
+> if (!isTRUE(as.logical(Sys.getenv("TEST_DATA_TABLE_WITH_OTHER_PACKAGES")))) {
++   cat("Skipping tests in 'other' and quitting, set TEST_DATA_TABLE_WITH_OTHER_PACKAGES to proceed.\n")
++   q('no')
++ }
+Skipping tests in 'other' and quitting, set TEST_DATA_TABLE_WITH_OTHER_PACKAGES to proceed.
+> proc.time()
+   user  system elapsed 
+  0.118   0.041   0.150 

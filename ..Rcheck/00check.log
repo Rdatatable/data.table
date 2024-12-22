@@ -1,0 +1,171 @@
+* using log directory ‘/home/vinni/data.table/..Rcheck’
+* using R version 4.3.3 (2024-02-29)
+* using platform: x86_64-pc-linux-gnu (64-bit)
+* R was compiled by
+    gcc (Ubuntu 13.2.0-23ubuntu3) 13.2.0
+    GNU Fortran (Ubuntu 13.2.0-23ubuntu3) 13.2.0
+* running under: Linux Mint 22
+* using session charset: UTF-8
+* checking for file ‘./DESCRIPTION’ ... OK
+* this is package ‘data.table’ version ‘1.16.99’
+* package encoding: UTF-8
+* checking package namespace information ... OK
+* checking package dependencies ... OK
+* checking if this is a source package ... WARNING
+Subdirectory ‘data.table/src’ contains apparent object files/libraries
+  assign.o between.o bmerge.o chmatch.o cj.o coalesce.o data_table.so
+  dogroups.o fastmean.o fcast.o fifelse.o fmelt.o forder.o frank.o
+  fread.o freadR.o froll.o frollR.o frolladaptive.o fsort.o fwrite.o
+  fwriteR.o gsumm.o idatetime.o ijoin.o init.o inrange.o nafill.o
+  negate.o nqrecreateindices.o openmp-utils.o programming.o
+  quickselect.o rbindlist.o reorder.o shift.o snprintf.o subset.o
+  transpose.o types.o uniqlist.o utils.o vecseq.o wrappers.o
+Object files/libraries should not be included in a source package.
+* checking if there is a namespace ... OK
+* checking for executable files ... OK
+* checking for hidden files and directories ... NOTE
+Found the following hidden files and directories:
+  .ci/.lintr.R
+  .dev/.Rprofile
+  .dev/.bash_aliases
+  .devcontainer/.Rprofile
+  .gitattributes
+  .github/.gitignore
+  .gitignore
+  .gitlab-ci.yml
+  vignettes/.check.translations.R
+  ..Rcheck
+  .ci
+  .dev
+  .devcontainer
+  .git
+  .github
+  .graphics
+These were most likely included in error. See section ‘Package
+structure’ in the ‘Writing R Extensions’ manual.
+* checking for portable file names ... OK
+* checking for sufficient/correct file permissions ... OK
+* checking whether package ‘data.table’ can be installed ... OK
+* used C compiler: ‘gcc (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0’
+* checking installed package size ... NOTE
+  installed size is  6.1Mb
+  sub-directories of 1Mb or more:
+    libs    1.8Mb
+    po      1.3Mb
+    tests   1.9Mb
+* checking package directory ... OK
+* checking DESCRIPTION meta-information ... NOTE
+Checking should be performed on sources prepared by ‘R CMD build’.
+* checking top-level files ... OK
+* checking for left-over files ... OK
+* checking index information ... OK
+* checking package subdirectories ... WARNING
+Found the following directory with the name of a check directory:
+  ./..Rcheck
+Most likely, these were included erroneously.
+* checking R files for non-ASCII characters ... WARNING
+Found the following file with non-ASCII characters:
+  merge.R
+Portable packages must use only ASCII characters in their R code,
+except perhaps in comments.
+Use \uxxxx escapes for other characters.
+* checking R files for syntax errors ... OK
+* checking whether the package can be loaded ... OK
+* checking whether the package can be loaded with stated dependencies ... OK
+* checking whether the package can be unloaded cleanly ... OK
+* checking whether the namespace can be loaded with stated dependencies ... OK
+* checking whether the namespace can be unloaded cleanly ... OK
+* checking loading without being on the library search path ... OK
+* checking startup messages can be suppressed ... OK
+* checking dependencies in R code ... OK
+* checking S3 generic/method consistency ... OK
+* checking replacement functions ... OK
+* checking foreign function calls ... OK
+* checking R code for possible problems ... OK
+* checking Rd files ... OK
+* checking Rd metadata ... OK
+* checking Rd cross-references ... OK
+* checking for missing documentation entries ... OK
+* checking for code/documentation mismatches ... OK
+* checking Rd \usage sections ... OK
+* checking Rd contents ... OK
+* checking for unstated dependencies in examples ... OK
+* checking line endings in shell scripts ... OK
+* checking line endings in C/C++/Fortran sources/headers ... OK
+* checking line endings in Makefiles ... OK
+* checking compilation flags in Makevars ... NOTE
+Package has both ‘src/Makevars.in’ and ‘src/Makevars’.
+Installation with --no-configure' is unlikely to work.  If you intended
+‘src/Makevars’ to be used on Windows, rename it to ‘src/Makevars.win’
+otherwise remove it.  If ‘configure’ created ‘src/Makevars’, you need a
+‘cleanup’ script.
+* checking for GNU extensions in Makefiles ... WARNING
+Found the following file(s) containing GNU extensions:
+  Makefile
+Portable Makefiles do not use GNU extensions such as +=, :=, $(shell),
+$(wildcard), ifeq ... endif, .NOTPARALLEL See section ‘Writing portable
+packages’ in the ‘Writing R Extensions’ manual.
+* checking for portable use of $(BLAS_LIBS) and $(LAPACK_LIBS) ... OK
+* checking use of PKG_*FLAGS in Makefiles ... OK
+* checking include directives in Makefiles ... OK
+* checking compiled code ... OK
+* checking files in ‘vignettes’ ... WARNING
+Files in the 'vignettes' directory but no files in 'inst/doc':
+  ‘Pitching.RData’ ‘Teams.RData’ ‘datatable-benchmarking.Rmd’
+  ‘datatable-faq.Rmd’ ‘datatable-importing.Rmd’ ‘datatable-intro.Rmd’
+  ‘datatable-joins.Rmd’ ‘datatable-keys-fast-subset.Rmd’
+  ‘datatable-programming.Rmd’ ‘datatable-reference-semantics.Rmd’
+  ‘datatable-reshape.Rmd’ ‘datatable-sd-usage.Rmd’
+  ‘datatable-secondary-indices-and-auto-indexing.Rmd’ ‘flights14.csv’
+  ‘fr/datatable-benchmarking.Rmd’ ‘fr/datatable-faq.Rmd’
+  ‘fr/datatable-importing.Rmd’ ‘fr/datatable-intro.Rmd’
+  ‘fr/datatable-keys-fast-subset.Rmd’ ‘fr/datatable-programming.Rmd’
+  ‘fr/datatable-reference-semantics.Rmd’ ‘fr/datatable-reshape.Rmd’
+  ‘fr/datatable-sd-usage.Rmd’
+  ‘fr/datatable-secondary-indices-and-auto-indexing.Rmd’
+  ‘plots/grouping_illustration.png’
+* checking examples ... OK
+* checking for unstated dependencies in ‘tests’ ... OK
+* checking tests ... OK
+  Running ‘S4.R’
+  Running ‘autoprint.R’
+  Comparing ‘autoprint.Rout’ to ‘autoprint.Rout.save’ ... OK
+  Running ‘froll.R’
+  Running ‘knitr.R’
+  Comparing ‘knitr.Rout’ to ‘knitr.Rout.save’ ... OK
+  Running ‘main.R’
+  Running ‘nafill.R’
+  Running ‘other.R’
+  Running ‘programming.R’
+  Running ‘types.R’
+* checking for unstated dependencies in vignettes ... OK
+* checking package vignettes in ‘inst/doc’ ... WARNING
+Directory 'inst/doc' does not exist.
+Package vignettes without corresponding single PDF/HTML:
+  ‘datatable-benchmarking.Rmd’
+  ‘datatable-faq.Rmd’
+  ‘datatable-importing.Rmd’
+  ‘datatable-intro.Rmd’
+  ‘datatable-joins.Rmd’
+  ‘datatable-keys-fast-subset.Rmd’
+  ‘datatable-programming.Rmd’
+  ‘datatable-reference-semantics.Rmd’
+  ‘datatable-reshape.Rmd’
+  ‘datatable-sd-usage.Rmd’
+  ‘datatable-secondary-indices-and-auto-indexing.Rmd’
+* checking running R code from vignettes ... OK
+  ‘datatable-benchmarking.Rmd’ using ‘UTF-8’... OK
+  ‘datatable-faq.Rmd’ using ‘UTF-8’... OK
+  ‘datatable-importing.Rmd’ using ‘UTF-8’... OK
+  ‘datatable-intro.Rmd’ using ‘UTF-8’... OK
+  ‘datatable-joins.Rmd’ using ‘UTF-8’... OK
+  ‘datatable-keys-fast-subset.Rmd’ using ‘UTF-8’... OK
+  ‘datatable-programming.Rmd’ using ‘UTF-8’... OK
+  ‘datatable-reference-semantics.Rmd’ using ‘UTF-8’... OK
+  ‘datatable-reshape.Rmd’ using ‘UTF-8’... OK
+  ‘datatable-sd-usage.Rmd’ using ‘UTF-8’... OK
+  ‘datatable-secondary-indices-and-auto-indexing.Rmd’ using ‘UTF-8’... OK
+* checking re-building of vignette outputs ... OK
+* checking PDF version of manual ... OK
+* DONE
+Status: 6 WARNINGs, 4 NOTEs

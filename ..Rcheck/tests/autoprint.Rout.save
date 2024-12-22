@@ -1,0 +1,203 @@
+
+R Under development (unstable) (2024-12-01 r87412) -- "Unsuffered Consequences"
+Copyright (C) 2024 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> require(data.table)
+Loading required package: data.table
+> # Tests the suppression of := output
+> # Since this tests autoprinting at the console, it needs to use the .Rout.save mechanism in R CMD check
+> DT = data.table(a=1:2)                # Should print at console?
+> DT                                    # yes
+       a
+   <int>
+1:     1
+2:     2
+> DT[1]                                 # yes
+       a
+   <int>
+1:     1
+> DT[2,a:=3L]                           # no
+> DT                                    # yes
+       a
+   <int>
+1:     1
+2:     3
+> DT[FALSE,a:=3L]                       # no
+> DT[a==4L,a:=5L]                       # no
+> DT[a %in% 4:8, a:=5L]                 # no
+> DT                                    # yes
+Index: <a>
+       a
+   <int>
+1:     1
+2:     3
+> print(DT[2,a:=4L])                    # yes, as of #6631
+       a
+   <int>
+1:     1
+2:     4
+> print(DT)                             # yes
+       a
+   <int>
+1:     1
+2:     4
+> if (TRUE) DT[2,a:=5L]                 # no. used to print before v1.9.5
+> if (TRUE) if (TRUE) DT[2,a:=6L]       # no. used to print before v1.9.5
+> (function(){DT[2,a:=5L];NULL})()      # print NULL
+NULL
+> DT                                    # no (from v1.9.5+). := suppresses next auto print (can't distinguish just "DT" symbol alone at the prompt)
+> DT                                    # yes. 2nd time needed, or solutions below
+       a
+   <int>
+1:     1
+2:     5
+> (function(){DT[2,a:=5L];NULL})()      # print NULL
+NULL
+> DT[]                                  # yes. guaranteed print
+       a
+   <int>
+1:     1
+2:     5
+> (function(){DT[2,a:=5L];NULL})()      # print NULL
+NULL
+> print(DT)                             # yes. restored in #6631 behavior that had changed in 1.9.6.
+       a
+   <int>
+1:     1
+2:     5
+> (function(){DT[2,a:=5L][];NULL})()    # print NULL
+NULL
+> DT                                    # yes. i) function needs to add [] after last one, so that "DT" alone is guaranteed anyway
+       a
+   <int>
+1:     1
+2:     5
+> (function(){DT[2,a:=5L];DT[];NULL})() # print NULL
+NULL
+> DT                                    # yes. ii) or as a separate DT[] after the last := inside the function
+       a
+   <int>
+1:     1
+2:     5
+> DT2 = data.table(b=3:4)               # no
+> (function(){DT[2,a:=6L];DT2[1,b:=7L];NULL})()
+NULL
+> DT                                    # yes. last := was on DT2 not DT
+       a
+   <int>
+1:     1
+2:     6
+> {DT[2,a:=6L];invisible()}             # no
+> print(DT)                             # yes
+       a
+   <int>
+1:     1
+2:     6
+> (function(){print(DT[2,a:=7L]);print(DT);invisible()})()    # yes*2
+       a
+   <int>
+1:     1
+2:     7
+       a
+   <int>
+1:     1
+2:     7
+> {print(DT[2,a:=8L]);print(DT);invisible()}                  # yes*2  as at prompt, again as of #6631
+       a
+   <int>
+1:     1
+2:     8
+       a
+   <int>
+1:     1
+2:     8
+> DT[1][,a:=9L]      # no (was too tricky to detect that DT[1] is a new object). Simple rule is that := always doesn't print
+> DT[2,a:=10L][1]                       # yes
+       a
+   <int>
+1:     1
+> DT[1,a:=10L][1,a:=10L]                # no
+> DT[,a:=as.integer(a)]                 # no
+> DT[1,a:=as.integer(a)]                # no
+> DT[1,a:=10L][]                        # yes. ...[] == oops, forgot print(...)
+       a
+   <int>
+1:    10
+2:    10
+> 
+> # Test that error in := doesn't suppress next valid print, bug #2376
+> tryCatch(DT[,foo:=ColumnNameTypo], error=function(e) e$message)         # error: not found.
+[1] "object 'ColumnNameTypo' not found"
+> DT                                    # yes
+       a
+   <int>
+1:    10
+2:    10
+> DT                                    # yes
+       a
+   <int>
+1:    10
+2:    10
+> 
+> # Regression test for auto-printing suppression in source(), #2369
+> local({
++   f = tempfile(fileext = ".R")
++   on.exit(unlink(f))
++   writeLines(c(
++     "library(data.table)",
++     "DT = data.table(a = 1)",
++     "DT[,a:=1]"                       # no
++   ), f)
++   source(f, local = TRUE, echo = TRUE)
++ })
+
+> library(data.table)
+
+> DT = data.table(a = 1)
+
+> DT[, `:=`(a, 1)]
+> 
+> # child class of data.table doesn't induce unintended print, #3029
+> dt <- data.table(x = 1)
+> class(dt) <- c("foo", "data.table", "data.frame")
+> print.foo <- function(x, ...) {
++   NextMethod("print")
++ }
+> dt[, y := 1]                          # no
+> 
+> # withAutoprint() testing (since R3.4.0)
+> if (!exists("withAutoprint", baseenv())) {
++   q("no")
++ }
+> if (TRUE) withAutoprint({
++   DT                                  # yes
++   DT[1L, 1L]                          # yes
++   DT[2L, a := 10L]                    # no
++ })
+> DT
+       a
+   <int>
+1:    10
+2:    10
+> DT[1L, 1L]
+       a
+   <int>
+1:    10
+> DT[2L, `:=`(a, 10L)]
+> 
+> proc.time()
+   user  system elapsed 
+  0.182   0.056   0.246 

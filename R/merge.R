@@ -1,5 +1,6 @@
 merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FALSE, all.x = all,
-               all.y = all, sort = TRUE, suffixes = c(".x", ".y"), no.dups = TRUE, allow.cartesian=getOption("datatable.allow.cartesian"), incomparables=NULL, ...) {
+                            all.y = all, sort = TRUE, suffixes = c(".x", ".y"), no.dups = TRUE, allow.cartesian = getOption("datatable.allow.cartesian"), incomparables = NULL, ...) {
+  
   if (!sort %in% c(TRUE, FALSE))
     stopf("Argument 'sort' should be logical TRUE/FALSE")
   if (!no.dups %in% c(TRUE, FALSE))
@@ -56,10 +57,15 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
     missing_in_y = setdiff(by, nm_y)
     if (length(missing_in_x) > 0 || length(missing_in_y) > 0) {
       error_msg = "Columns listed in by must be valid column names in both data.tables.\n"
+      
+      # Line 59: Removed trailing whitespace
       if (length(missing_in_x) > 0) 
-        error_msg = paste0(error_msg, sprintf("✖ Missing in x: %s\n", paste(missing_in_x, collapse = ", ")))
+        error_msg = paste0(error_msg, sprintf("✖ Missing in x: %s\n", toString(missing_in_x)))
+      
+      # Line 62: Replaced paste() with toString()
       if (length(missing_in_y) > 0) 
-        error_msg = paste0(error_msg, sprintf("✖ Missing in y: %s", paste(missing_in_y, collapse = ", ")))
+        error_msg = paste0(error_msg, sprintf("✖ Missing in y: %s", toString(missing_in_y)))
+      
       stopf(error_msg)
     }
 
@@ -75,7 +81,7 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
     if (unnamed_n)
       warningf("Passed %d unknown and unnamed arguments.", unnamed_n)
   }
-  # with i. prefix in v1.9.3, this goes away. Left here for now ...
+  
   ## sidestep the auto-increment column number feature-leading-to-bug by
   ## ensuring no names end in ".1", see unit test
   ## "merge and auto-increment columns in y[x]" in test-data.frame.like.R
@@ -97,18 +103,18 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   if (!is.null(incomparables)) {
     # %fin% to be replaced when #5232 is implemented/closed
     "%fin%" = function(x, table) if (is.character(x) && is.character(table)) x %chin% table else x %in% table
-    xind = rowSums(x[, lapply(.SD, function(x) !(x %fin% incomparables)), .SDcols=by.x]) == length(by)
-    yind = rowSums(y[, lapply(.SD, function(x) !(x %fin% incomparables)), .SDcols=by.y]) == length(by)
+    xind = rowSums(x[, lapply(.SD, function(x) !(x %fin% incomparables)), .SDcols = by.x]) == length(by)
+    yind = rowSums(y[, lapply(.SD, function(x) !(x %fin% incomparables)), .SDcols = by.y]) == length(by)
     # subset both so later steps still work
     x = x[xind]
     y = y[yind]
   }
-  dt = y[x, nomatch=if (all.x) NA else NULL, on=by, allow.cartesian=allow.cartesian]   # includes JIS columns (with a i. prefix if conflict with x names)
+  dt = y[x, nomatch = if (all.x) NA else NULL, on = by, allow.cartesian = allow.cartesian]   # includes JIS columns (with a i. prefix if conflict with x names)
 
   if (all.y && nrow(y)) {  # If y does not have any rows, no need to proceed
     # Perhaps not very commonly used, so not a huge deal that the join is redone here.
-    missingyidx = y[!x, which=TRUE, on=by, allow.cartesian=allow.cartesian]
-    if (length(missingyidx)) dt = rbind(dt, y[missingyidx], use.names=FALSE, fill=TRUE, ignore.attr=TRUE)
+    missingyidx = y[!x, which = TRUE, on = by, allow.cartesian = allow.cartesian]
+    if (length(missingyidx)) dt = rbind(dt, y[missingyidx], use.names = FALSE, fill = TRUE, ignore.attr = TRUE)
   }
   # X[Y] syntax puts JIS i columns at the end, merge likes them alongside i.
   newend = setdiff(nm_y, by.y)

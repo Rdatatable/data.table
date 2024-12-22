@@ -3,10 +3,12 @@ Version: 1.16.99
 Title: Extension of `data.frame`
 Depends: R (>= 3.3.0)
 Imports: methods
-Suggests: bit64 (>= 4.0.0), bit (>= 4.0.4), R.utils, xts, zoo (>= 1.8-1), yaml, knitr, markdown
+Suggests: bit64 (>= 4.0.0), bit (>= 4.0.4), R.utils, xts, zoo (>=
+        1.8-1), yaml, knitr, markdown
 Description: Fast aggregation of large data (e.g. 100GB in RAM), fast ordered joins, fast add/modify/delete of columns by group using no copies at all, list columns, friendly and fast character-separated-value read/write. Offers a natural and flexible syntax, for faster development.
 License: MPL-2.0 | file LICENSE
-URL: https://r-datatable.com, https://Rdatatable.gitlab.io/data.table, https://github.com/Rdatatable/data.table
+URL: https://r-datatable.com, https://Rdatatable.gitlab.io/data.table,
+        https://github.com/Rdatatable/data.table
 BugReports: https://github.com/Rdatatable/data.table/issues
 VignetteBuilder: knitr
 Encoding: UTF-8
@@ -104,3 +106,4 @@ Authors@R: c(
   )
 Author: Matt Dowle <mattjdowle@gmail.com>
 Maintainer: Matt Dowle <mattjdowle@gmail.com>
+Built: R 4.3.3; x86_64-pc-linux-gnu; 2024-12-22 20:12:21 UTC; unix
