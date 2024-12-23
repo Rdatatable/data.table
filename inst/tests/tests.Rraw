@@ -20686,6 +20686,13 @@ test(2299.10, data.table(a=1),                                        output="a\
 test(2299.11, data.table(a=list(data.frame(b=1))),                    output="a\n1: <data.frame[1x1]>")
 test(2299.12, data.table(a=list(data.table(b=1))),                    output="a\n1: <data.table[1x1]>")
 
+# sort_by.data.table
+DT1 = data.table(a = c(1, 3, 2, NA, 3) , b = 4:0)
+DT2 = data.table(a =  c("c", "a", "B"))  # data.table uses C-locale and should sort_by if cedta()
+test(2300.01, sort_by(DT1, ~ a + b), data.table(a = c(1,2,3,3,NA), b = c(4L,2L,0L,3L,1L)))
+test(2300.02, sort_by(DT1, ~ I(a + b)), data.table(a = c(3,2,1,3,NA), b = c(0L,2L,4L,3L,1L)))
+test(2300.03, sort_by(DT2, ~ a), data.table(a = c("B", "a", "c")))
+
 if (test_bit64) {
   # Join to integer64 doesn't require integer32 representation, just integer64, #6625
   i64_val = .Machine$integer.max + 1
