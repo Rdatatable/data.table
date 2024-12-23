@@ -249,7 +249,7 @@ Products[
 ```
 
 
-##### Summarizing with on in `data.table`
+##### Summarizing with `on` in `data.table`
 
 We can also use this alternative to return aggregated results based columns present in the `x` table.
 
@@ -302,12 +302,12 @@ ProductReceived[Products,
                 nomatch = NULL]
 ```
 
-Despite both tables having the same information, they present some relevant differences:
+Despite both tables having the same information, there are some relevant differences:
 
 - They present different column ordering.
 - They have column name differences:
-  - The `id` column on the first table has the same information as the `product_id` in the second table.
-  - The `i.id` column on the first table has the same information as the `id` in the second table.
+  - The `id` column in the first table has the same information as the `product_id` in the second table.
+  - The `i.id` column in the first table has the same information as the `id` in the second table.
 
 ### 3.3. Not join
 
