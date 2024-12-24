@@ -2,9 +2,11 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
                             all.y = all, sort = TRUE, suffixes = c(".x", ".y"), no.dups = TRUE,
                             allow.cartesian = getOption("datatable.allow.cartesian"), 
                             incomparables = NULL, ...) {
+  # Error handling for logical arguments
   if (!is.logical(sort)) stopf("Argument 'sort' should be logical TRUE/FALSE")
   if (!is.logical(no.dups)) stopf("Argument 'no.dups' should be logical TRUE/FALSE")
   
+  # Convert y to data.table if not already
   class_x = class(x)
   if (!is.data.table(y)) {
     y = as.data.table(y)
@@ -13,6 +15,7 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
     }
   }
   
+  # Handle case when either x or y is empty
   x0 = length(x) == 0L
   y0 = length(y) == 0L
   
