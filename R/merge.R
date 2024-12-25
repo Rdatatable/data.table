@@ -50,11 +50,30 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
       by = intersect(nm_x, nm_y)
     if (length(by) == 0L || !is.character(by))
       stopf("A non-empty vector of column names for `by` is required.")
-    if (!all(by %chin% intersect(nm_x, nm_y)))
-      stopf("Elements listed in `by` must be valid column names in x and y")
-    by = unname(by)
-    by.x = by.y = by
+    # UPDATED PART STARTS HERE
+  if (!all(by %chin% intersect(nm_x, nm_y))) {
+    # Identify which keys are missing from each data table
+    missing_x = setdiff(by, nm_x)
+    missing_y = setdiff(by, nm_y)
+    
+    # Construct a more detailed error message
+    error_message = "Elements listed in `by` must be valid column names in x and y."
+    
+    if (length(missing_x) > 0) {
+      error_message = paste(error_message, "\nMissing columns in 'x':", paste(missing_x, collapse = ", "))
+    }
+    if (length(missing_y) > 0) {
+      error_message = paste(error_message, "\nMissing columns in 'y':", paste(missing_y, collapse = ", "))
+    }
+    
+    # Raise the error with the detailed message
+    stopf(error_message)
   }
+  # UPDATED PART ENDS HERE
+  
+  by = unname(by)
+  by.x = by.y = by
+}
 
   # warn about unused arguments #2587
   if (length(list(...))) {
