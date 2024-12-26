@@ -3,7 +3,7 @@
 #include <fcntl.h>
 #include <time.h>
 
-static bool anySpecialStatic(SEXP x) {
+static bool anySpecialStatic(SEXP x, hashtab * specials) {
   // Special refers to special symbols .BY, .I, .N, and .GRP; see special-symbols.Rd
   // Static because these are like C static arrays which are the same memory for each group; e.g., dogroups
   // creates .SD for the largest group once up front, overwriting the contents for each group. Their
@@ -46,16 +46,16 @@ static bool anySpecialStatic(SEXP x) {
   if (n==0)
     return false;
   if (isVectorAtomic(x))
-    return ALTREP(x) || TRUELENGTH(x)<0;
+    return ALTREP(x) || hash_lookup(specials, x, 0)<0;
   if (isNewList(x)) {
-    if (TRUELENGTH(x)<0)
+    if (hash_lookup(specials, x, 0)<0)
       return true;  // test 2158
     for (int i=0; i<n; ++i) {
       list_el = VECTOR_ELT(x,i);
-      if (anySpecialStatic(list_el))
+      if (anySpecialStatic(list_el, specials))
         return true;
       for(attribs = ATTRIB(list_el); attribs != R_NilValue; attribs = CDR(attribs)) {
-        if (anySpecialStatic(CAR(attribs)))
+        if (anySpecialStatic(CAR(attribs), specials))
           return true;  // #4936
       }
     }
@@ -86,10 +86,12 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   // fix for longstanding FR/bug, #495. E.g., DT[, c(sum(v1), lapply(.SD, mean)), by=grp, .SDcols=v2:v3] resulted in error.. the idea is, 1) we create .SDall, which is normally == .SD. But if extra vars are detected in jexp other than .SD, then .SD becomes a shallow copy of .SDall with only .SDcols in .SD. Since internally, we don't make a copy, changing .SDall will reflect in .SD. Hopefully this'll workout :-).
   SEXP SDall = PROTECT(findVar(install(".SDall"), env)); nprotect++;  // PROTECT for rchk
   SEXP SD = PROTECT(findVar(install(".SD"), env)); nprotect++;
-  
+
   const bool showProgress = LOGICAL(showProgressArg)[0]==1 && ngrp > 1; // showProgress only if more than 1 group
   double startTime = (showProgress) ? wallclock() : 0; // For progress printing, startTime is set at the beginning
   double nextTime = (showProgress) ? startTime+3 : 0; // wait 3 seconds before printing progress
+
+  hashtab * specials = hash_create(3 + ngrpcols + xlength(SDall)); // .I, .N, .GRP plus columns of .BY plus SDall
 
   defineVar(sym_BY, BY = PROTECT(allocVector(VECSXP, ngrpcols)), env); nprotect++;  // PROTECT for rchk
   SEXP bynames = PROTECT(allocVector(STRSXP, ngrpcols));  nprotect++;   // TO DO: do we really need bynames, can we assign names afterwards in one step?
@@ -103,7 +105,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     defineVar(install(CHAR(STRING_ELT(bynames,i))), VECTOR_ELT(BY,i), env);      // by vars can be used by name in j as well as via .BY
     if (SIZEOF(VECTOR_ELT(BY,i))==0)
       internal_error(__func__, "unsupported size-0 type '%s' in column %d of 'by' should have been caught earlier", type2char(TYPEOF(VECTOR_ELT(BY, i))), i+1); // # nocov
-    SET_TRUELENGTH(VECTOR_ELT(BY,i), -1); // marker for anySpecialStatic(); see its comments
+    hash_set(specials, VECTOR_ELT(BY,i), -1); // marker for anySpecialStatic(); see its comments
   }
   setAttrib(BY, R_NamesSymbol, bynames); // Fix for #42 - BY doesn't retain names anymore
   R_LockBinding(sym_BY, env);
@@ -112,9 +114,9 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   // TO DO: check this check above.
 
   N =   PROTECT(findVar(install(".N"), env));   nprotect++; // PROTECT for rchk
-  SET_TRUELENGTH(N, -1);  // marker for anySpecialStatic(); see its comments
+  hash_set(specials, N, -1);  // marker for anySpecialStatic(); see its comments
   GRP = PROTECT(findVar(install(".GRP"), env)); nprotect++;
-  SET_TRUELENGTH(GRP, -1);  // marker for anySpecialStatic(); see its comments
+  hash_set(specials, GRP, -1);  // marker for anySpecialStatic(); see its comments
   iSD = PROTECT(findVar(install(".iSD"), env)); nprotect++; // 1-row and possibly no cols (if no i variables are used via JIS)
   xSD = PROTECT(findVar(install(".xSD"), env)); nprotect++;
   R_len_t maxGrpSize = 0;
@@ -123,7 +125,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     if (ilens[i] > maxGrpSize) maxGrpSize = ilens[i];
   }
   defineVar(install(".I"), I = PROTECT(allocVector(INTSXP, maxGrpSize)), env); nprotect++;
-  SET_TRUELENGTH(I, -maxGrpSize);  // marker for anySpecialStatic(); see its comments
+  hash_set(specials, I, -maxGrpSize);  // marker for anySpecialStatic(); see its comments
   R_LockBinding(install(".I"), env);
 
   SEXP dtnames = PROTECT(getAttrib(dt, R_NamesSymbol)); nprotect++; // added here to fix #91 - `:=` did not issue recycling warning during "by"
@@ -150,7 +152,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     nameSyms[i] = install(CHAR(STRING_ELT(names, i)));
     // fixes http://stackoverflow.com/questions/14753411/why-does-data-table-lose-class-definition-in-sd-after-group-by
     copyMostAttrib(VECTOR_ELT(dt,INTEGER(dtcols)[i]-1), this);  // not names, otherwise test 778 would fail
-    SET_TRUELENGTH(this, -maxGrpSize);  // marker for anySpecialStatic(); see its comments
+    hash_set(specials, this, -maxGrpSize);  // marker for anySpecialStatic(); see its comments
   }
 
   SEXP xknames = PROTECT(getAttrib(xSD, R_NamesSymbol)); nprotect++;
@@ -329,7 +331,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
           copyMostAttrib(RHS, target); // attributes of first group dominate; e.g. initial factor levels come from first group
         }
         bool copied = false;
-        if (isNewList(target) && anySpecialStatic(RHS)) {  // see comments in anySpecialStatic()
+        if (isNewList(target) && anySpecialStatic(RHS, specials)) {  // see comments in anySpecialStatic()
           RHS = PROTECT(copyAsPlain(RHS));
           copied = true;
         }
@@ -435,7 +437,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
           error(_("Supplied %d items for column %d of group %d which has %d rows. The RHS length must either be 1 (single values are ok) or match the LHS length exactly. If you wish to 'recycle' the RHS please use rep() explicitly to make this intent clear to readers of your code."), thislen, j+1, i+1, maxn);
         }
         bool copied = false;
-        if (isNewList(target) && anySpecialStatic(source)) {  // see comments in anySpecialStatic()
+        if (isNewList(target) && anySpecialStatic(source, specials)) {  // see comments in anySpecialStatic()
           source = PROTECT(copyAsPlain(source));
           copied = true;
         }
@@ -485,12 +487,6 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   }
   SETLENGTH(I, maxGrpSize);
   SET_TRUELENGTH(I, maxGrpSize);
-  for (int i=0; i<length(BY); ++i) {
-    SEXP this = VECTOR_ELT(BY, i);
-    SET_TRUELENGTH(this, length(this)); // might be 0 or 1; see its allocVector above
-  }
-  SET_TRUELENGTH(N, 1);
-  SET_TRUELENGTH(GRP, 1);
   if (verbose) {
     if (nblock[0] && nblock[1]) internal_error(__func__, "block 0 [%d] and block 1 [%d] have both run", nblock[0], nblock[1]); // # nocov
     int w = nblock[1]>0;
