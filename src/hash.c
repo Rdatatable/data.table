@@ -27,7 +27,8 @@ hashtab * hash_create_(size_t n, double load_factor) {
   // precondition: sizeof hashtab + hash_pair[n_full] < SIZE_MAX
   //                        n_full * sizeof hash_pair < SIZE_MAX - sizeof hashtab
   //                                 sizeof hash_pair < (SIZE_MAX - sizeof hashtab) / n_full
-  if (sizeof(struct hash_pair) >= (SIZE_MAX - sizeof(hashtab)) / n_full) internal_error(
+  // (note that sometimes n is 0)
+  if (n_full && sizeof(struct hash_pair) >= (SIZE_MAX - sizeof(hashtab)) / n_full) internal_error(
     "hash_create", "n=%zu with load_factor=%g would overflow total allocation size",
     n, load_factor
   );

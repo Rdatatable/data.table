@@ -74,7 +74,10 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
     SEXP *uniq = (SEXP *)malloc(upperBoundUniqueNames * sizeof(SEXP));  // upperBoundUniqueNames was initialized with 1 to ensure this is defined (otherwise 0 when no item has names)
     if (!uniq)
       error(_("Failed to allocate upper bound of %"PRId64" unique column names [sum(lapply(l,ncol))]"), (int64_t)upperBoundUniqueNames); // # nocov
-    savetl_init();
+    R_xlen_t lh = 0;
+    for (R_xlen_t i=0; i<xlength(l); i++)
+      lh += xlength(getAttrib(VECTOR_ELT(l, i), R_NamesSymbol));
+    hashtab * marks = hash_create(lh);
     int nuniq=0;
     // first pass - gather unique column names
     for (int i=0; i<LENGTH(l); i++) {
@@ -86,10 +89,9 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
       const SEXP *cnp = STRING_PTR_RO(cn);
       for (int j=0; j<thisncol; j++) {
         SEXP s = ENC2UTF8(cnp[j]); // convert different encodings for use.names #5452
-        if (TRUELENGTH(s)<0) continue;  // seen this name before
-        if (TRUELENGTH(s)>0) savetl(s);
+        if (hash_lookup(marks, s, 0)<0) continue;  // seen this name before
         uniq[nuniq++] = s;
-        SET_TRUELENGTH(s,-nuniq);
+        hash_set(marks, s,-nuniq);
       }
     }
     if (nuniq>0) uniq = realloc(uniq, nuniq*sizeof(SEXP));  // shrink to only what we need to release the spare
@@ -99,9 +101,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
     int *maxdup = (int *)calloc(nuniq, sizeof(int)); // the most number of dups for any name within one colname vector
     if (!counts || !maxdup) {
       // # nocov start
-      for (int i=0; i<nuniq; ++i) SET_TRUELENGTH(uniq[i], 0);
       free(uniq); free(counts); free(maxdup);
-      savetl_end();
       error(_("Failed to allocate nuniq=%d items working memory in rbindlist.c"), nuniq);
       // # nocov end
     }
@@ -116,7 +116,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
       memset(counts, 0, nuniq*sizeof(int));
       for (int j=0; j<thisncol; j++) {
         SEXP s = ENC2UTF8(cnp[j]); // convert different encodings for use.names #5452
-        counts[ -TRUELENGTH(s)-1 ]++;
+        counts[ -hash_lookup(marks, s, 0)-1 ]++;
       }
       for (int u=0; u<nuniq; u++) {
         if (counts[u] > maxdup[u]) maxdup[u] = counts[u];
@@ -134,9 +134,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
     int *dupLink = (int *)malloc(ncol * sizeof(int)); // if a colname has occurred before (a dup) links from the 1st to the 2nd time in the final result, 2nd to 3rd, etc
     if (!colMapRaw || !uniqMap || !dupLink) {
       // # nocov start
-      for (int i=0; i<nuniq; ++i) SET_TRUELENGTH(uniq[i], 0);
       free(uniq); free(counts); free(colMapRaw); free(uniqMap); free(dupLink);
-      savetl_end();
       error(_("Failed to allocate ncol=%d items working memory in rbindlist.c"), ncol);
       // # nocov end
     }
@@ -157,7 +155,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
         memset(counts, 0, nuniq*sizeof(int));
         for (int j=0; j<thisncol; j++) {
           SEXP s = ENC2UTF8(cnp[j]); // convert different encodings for use.names #5452
-          int w = -TRUELENGTH(s)-1;
+          int w = -hash_lookup(marks, s, 0)-1;
           int wi = counts[w]++; // how many dups have we seen before of this name within this item
           if (uniqMap[w]==-1) {
             // first time seen this name across all items
@@ -174,9 +172,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
         }
       }
     }
-    for (int i=0; i<nuniq; ++i) SET_TRUELENGTH(uniq[i], 0);  // zero out our usage of tl
     free(uniq); free(counts); free(uniqMap); free(dupLink);  // all local scope so no need to set to NULL
-    savetl_end();  // restore R's usage
 
     // colMapRaw is still allocated. It was allocated with malloc because we needed to catch if the alloc failed.
     // move it to R's heap so it gets automatically free'd on exit, and on any error between now and the end of rbindlist.
