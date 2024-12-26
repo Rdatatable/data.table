@@ -59,7 +59,7 @@ void hash_set(hashtab * h, SEXP key, R_xlen_t value) {
       return;
     } else if (!cell->key) {
       if (!h->free) internal_error(
-        "hash_insert", "no free slots left (size=%zu after the load factor)", h->size
+        "hash_insert", "no free slots left (full size=%zu)", h->size
       );
       --h->free;
       *cell = (struct hash_pair){.key = key, .value = value};
@@ -67,7 +67,7 @@ void hash_set(hashtab * h, SEXP key, R_xlen_t value) {
     }
   }
   internal_error(
-    "hash_insert", "did not find a free slot for key %p despite size=%zu, free=%zu",
+    "hash_insert", "did not find a free slot for key %p; size=%zu, free=%zu",
     (void*)key, h->size, h->free
   );
 }
