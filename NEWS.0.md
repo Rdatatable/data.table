@@ -1072,6 +1072,8 @@
      query once and will never have noticed these, but anyone looping calls to grouping (such as when running in parallel, or benchmarking) may have suffered. Tests added. Thanks to many including vc273 and Y T for reporting [here](https://stackoverflow.com/questions/20349159/memory-leak-in-data-table-grouped-assignment-by-reference) and [here](https://stackoverflow.com/questions/15651515/slow-memory-leak-in-data-table-when-returning-named-lists-in-j-trying-to-reshap) on SO.
 
   2.  In long running computations where data.table is called many times repetitively the following error could sometimes occur, #2647: *"Internal error: .internal.selfref prot is not itself an extptr"*. Now fixed. Thanks to theEricStone, StevieP and JasonB for (difficult) reproducible examples [here](https://stackoverflow.com/questions/15342227/getting-a-random-internal-selfref-error-in-data-table-for-r).
+  for more info about internal.selfref  Refer to [internal.selfref](../man/internal.selfref.Rd) for additional information.
+
 
   3.  If `fread` returns a data error (such as no closing quote on a quoted field) it now closes the file first rather than holding a lock open, a Windows only problem.
      Thanks to nigmastar for reporting [here](https://stackoverflow.com/questions/18597123/fread-data-table-locks-files) and Carl Witthoft for the hint. Tests added.
