@@ -4,11 +4,8 @@
 \description{
 The `.internal.selfref` attribute is an internal mechanism used by \code{data.table} to optimize memory management and performance. This attribute ensures that \code{data.table} objects can be modified by reference without unnecessary copying, enabling efficient data manipulation.
 }
-\usage{
-\code{.internal.selfref}
-}
 \details{
-The `.internal.selfref` attribute is a pointer that allows \code{data.table} objects to reference their own memory location. This avoids redundant memory allocation when performing in-place modifications such as adding or updating columns, filtering rows, or performing joins. 
+The `.internal.selfref` attribute is a pointer that allows \code{data.table} objects to reference their own memory location. This avoids redundant memory allocation when performing in-place modifications such as adding or updating columns, filtering rows, or performing joins.
 
 If the `.internal.selfref` attribute is lost or corrupted (e.g., due to operations that inadvertently break reference semantics), \code{data.table} falls back to standard \code{data.frame}-like behavior, which can lead to reduced performance due to copying.
 
