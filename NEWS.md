@@ -139,6 +139,8 @@ rowwiseDT(
 
 7. The `dcast()` and `melt()` generics no longer attempt to redirect to {reshape2} methods when passed non-`data.table`s. If you're still using {reshape2}, you must use namespace-qualification: `reshape2::dcast()`, `reshape2::melt()`. We have been warning about the deprecation since v1.12.4 (2019). Please note that {reshape2} is retired.
 
+8. `showProgress` in `[` is disabled for "trivial" grouping (`.NGRP==1L`), [#6668](https://github.com/Rdatatable/data.table/issues/6668). Thanks @MichaelChirico for the request and @joshhwuu for the PR.
+
 # data.table [v1.16.2](https://github.com/Rdatatable/data.table/milestone/35) (9 October 2024)
 
 ## BUG FIXES
