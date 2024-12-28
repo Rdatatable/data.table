@@ -1256,62 +1256,6 @@ SEXP allocNAVectorLike(SEXP x, R_len_t n) {
   return(v);
 }
 
-static SEXP *saveds=NULL;
-static R_len_t *savedtl=NULL, nalloc=0, nsaved=0;
-
-void savetl_init(void) {
-  if (nsaved || nalloc || saveds || savedtl) {
-    internal_error(__func__, _("savetl_init checks failed (%d %d %p %p)"), nsaved, nalloc, (void *)saveds, (void *)savedtl); // # nocov
-  }
-  nsaved = 0;
-  nalloc = 100;
-  saveds = (SEXP *)malloc(nalloc * sizeof(SEXP));
-  savedtl = (R_len_t *)malloc(nalloc * sizeof(R_len_t));
-  if (!saveds || !savedtl) {
-    free(saveds); free(savedtl);                                            // # nocov
-    savetl_end();                                                           // # nocov
-    error(_("Failed to allocate initial %d items in savetl_init"), nalloc); // # nocov
-  }
-}
-
-void savetl(SEXP s)
-{
-  if (nsaved==nalloc) {
-    if (nalloc==INT_MAX) {
-      savetl_end();                                                                                                     // # nocov
-      internal_error(__func__, "reached maximum %d items for savetl", nalloc); // # nocov
-    }
-    nalloc = nalloc>(INT_MAX/2) ? INT_MAX : nalloc*2;
-    char *tmp = (char *)realloc(saveds, nalloc*sizeof(SEXP));
-    if (tmp==NULL) {
-      // C spec states that if realloc() fails the original block is left untouched; it is not freed or moved. We rely on that here.
-      savetl_end();                                                      // # nocov  free(saveds) happens inside savetl_end
-      error(_("Failed to realloc saveds to %d items in savetl"), nalloc);   // # nocov
-    }
-    saveds = (SEXP *)tmp;
-    tmp = (char *)realloc(savedtl, nalloc*sizeof(R_len_t));
-    if (tmp==NULL) {
-      savetl_end();                                                      // # nocov
-      error(_("Failed to realloc savedtl to %d items in savetl"), nalloc);  // # nocov
-    }
-    savedtl = (R_len_t *)tmp;
-  }
-  saveds[nsaved] = s;
-  savedtl[nsaved] = TRUELENGTH(s);
-  nsaved++;
-}
-
-void savetl_end(void) {
-  // Can get called if nothing has been saved yet (nsaved==0), or even if _init() hasn't been called yet (pointers NULL). Such
-  // as to clear up before error. Also, it might be that nothing needed to be saved anyway.
-  for (int i=0; i<nsaved; i++) SET_TRUELENGTH(saveds[i],savedtl[i]);
-  free(saveds);  // possible free(NULL) which is safe no-op
-  saveds = NULL;
-  free(savedtl);
-  savedtl = NULL;
-  nsaved = nalloc = 0;
-}
-
 SEXP setcharvec(SEXP x, SEXP which, SEXP newx)
 {
   int w;
