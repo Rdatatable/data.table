@@ -523,7 +523,7 @@ SEXP growVector(SEXP x, const R_len_t newlen)
   SEXP newx;
   R_len_t len = length(x);
   if (isNull(x)) error(_("growVector passed NULL"));
-  PROTECT(newx = allocVector(TYPEOF(x), newlen));   // TO DO: R_realloc(?) here?
+  PROTECT(newx = growable_allocate(TYPEOF(x), newlen, newlen)); // may be shrunk later by fread
   if (newlen < len) len=newlen;   // i.e. shrink
   switch (TYPEOF(x)) {
   case RAWSXP:  memcpy(RAW(newx),     RAW(x),     len*SIZEOF(x)); break;
