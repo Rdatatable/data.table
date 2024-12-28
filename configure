@@ -126,6 +126,7 @@ detect_openmp () {
     if CPPFLAGS="${CPPFLAGS} -fopenmp" "${R_HOME}/bin/R" CMD SHLIB test-omp.c >> config.log 2>&1; then
       echo "yes"
       export PKG_CFLAGS="${PKG_CFLAGS} -fopenmp"
+      export PKG_LIBS="${PKG_LIBS} -fopenmp"
       export R_OPENMP_ENABLED=1
       return
     else
