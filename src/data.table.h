@@ -298,6 +298,14 @@ void hash_set(hashtab *, SEXP key, R_xlen_t value);
 // Returns the value corresponding to the key present in the hash, otherwise returns ifnotfound.
 R_xlen_t hash_lookup(const hashtab *, SEXP key, R_xlen_t ifnotfound);
 
+// growable.c
+// Return a new vector of given type. Initially its xlength() is equal to size. Using growable_resize(), it can be increased to up to max_size.
+SEXP growable_allocate(SEXPTYPE type, R_xlen_t size, R_xlen_t max_size);
+// Return the max_size of a growable vector. Behaviour is undefined if x was not allocated by growable_allocate.
+R_xlen_t growable_max_size(SEXP x);
+// Resize a growable vector to newsize. Will signal an error if newsize exceeds max_size.
+void growable_resize(SEXP x, R_xlen_t newsize);
+
 // functions called from R level .Call/.External and registered in init.c
 // these now live here to pass -Wstrict-prototypes, #5477
 // all arguments must be SEXP since they are called from R level
