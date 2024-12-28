@@ -124,3 +124,13 @@ SEXP warn_matrix_column_r(SEXP i) {
   warn_matrix_column(INTEGER(i)[0]);
   return R_NilValue;
 }
+
+SEXP setgrowable(SEXP x) {
+  for (R_xlen_t i = 0; i < xlength(x); ++i) {
+    SEXP this = VECTOR_ELT(x, i);
+    // relying on the rest of data.table machinery to avoid the need for resizing
+    if (!is_growable(this) && !ALTREP(this))
+      SET_VECTOR_ELT(x, i, make_growable(this));
+  }
+  return R_NilValue;
+}

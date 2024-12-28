@@ -305,6 +305,10 @@ SEXP growable_allocate(SEXPTYPE type, R_xlen_t size, R_xlen_t max_size);
 R_xlen_t growable_max_size(SEXP x);
 // Resize a growable vector to newsize. Will signal an error if newsize exceeds max_size.
 void growable_resize(SEXP x, R_xlen_t newsize);
+// Return TRUE if growable_resize(x) and growable_max_size(x) are valid operations.
+Rboolean is_growable(SEXP x);
+// Transform x into a growable vector. The return value must be reprotected in place of x. What happens to x is deliberately not specified, but no copying occurs.
+SEXP make_growable(SEXP x);
 
 // functions called from R level .Call/.External and registered in init.c
 // these now live here to pass -Wstrict-prototypes, #5477
@@ -379,4 +383,5 @@ SEXP dt_has_zlib(void);
 SEXP startsWithAny(SEXP, SEXP, SEXP);
 SEXP convertDate(SEXP, SEXP);
 SEXP fastmean(SEXP);
+SEXP setgrowable(SEXP x);
 
