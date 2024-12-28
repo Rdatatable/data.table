@@ -1,5 +1,6 @@
 #include "data.table.h"
 
+#if R_VERSION < R_Version(3,4,0) // not needed with GROWABLE_BIT
 static void finalizer(SEXP p)
 {
   SEXP x;
@@ -22,6 +23,7 @@ static void finalizer(SEXP p)
   UNPROTECT(1);
   return;
 }
+#endif
 
 void setselfref(SEXP x) {
   if(!INHERITS(x, char_datatable))  return; // #5286
@@ -38,7 +40,9 @@ void setselfref(SEXP x) {
       R_NilValue
     ))
   ));
+#if R_VERSION < R_Version(3,4,0) // not needed with GROWABLE_BIT
   R_RegisterCFinalizerEx(p, finalizer, FALSE);
+#endif
   UNPROTECT(2);
 
 /*
@@ -126,15 +130,24 @@ static int _selfrefok(SEXP x, Rboolean checkNames, Rboolean verbose) {
   tag = R_ExternalPtrTag(v);
   if (!(isNull(tag) || isString(tag))) internal_error(__func__, ".internal.selfref tag is neither NULL nor a character vector"); // # nocov
   names = getAttrib(x, R_NamesSymbol);
-  if (names!=tag && isString(names) && !ALTREP(names))  // !ALTREP for #4734
+  // On R >= 3.4, either
+  // (1) we allocate the data.table and/or its names, so it has the GROWABLE_BIT set, so copies will have zero TRUELENGTH, or
+  // (2) someone else creates them from scratch, so (only using the API) will have zero TRUELENGTH.
+  // We then return false and either re-create the data.table from scratch or signal an error, so the current object having a zero TRUELENGTH is fine.
+  // R < 3.4 doesn't have the GROWABLE_BIT, so let's reset the TRUELENGTH just in case.
+#if R_VERSION < R_Version(3,4,0)
+  if (names!=tag && isString(names))
     SET_TRUELENGTH(names, LENGTH(names));
     // R copied this vector not data.table; it's not actually over-allocated. It looks over-allocated
     // because R copies the original vector's tl over despite allocating length.
+#endif
   prot = R_ExternalPtrProtected(v);
   if (TYPEOF(prot) != EXTPTRSXP)   // Very rare. Was error(_(".internal.selfref prot is not itself an extptr")).
     return 0;                      // # nocov ; see http://stackoverflow.com/questions/15342227/getting-a-random-internal-selfref-error-in-data-table-for-r
-  if (x!=R_ExternalPtrAddr(prot) && !ALTREP(x))
+#if R_VERSION < R_Version(3,4,0)
+  if (x!=R_ExternalPtrAddr(prot))
     SET_TRUELENGTH(x, LENGTH(x));  // R copied this vector not data.table, it's not actually over-allocated
+#endif
   return checkNames ? names==tag : x==R_ExternalPtrAddr(prot);
 }
 
@@ -151,7 +164,8 @@ static SEXP shallow(SEXP dt, SEXP cols, R_len_t n)
   // called from alloccol where n is checked carefully, or from shallow() at R level
   // where n is set to truelength (i.e. a shallow copy only with no size change)
   int protecti=0;
-  SEXP newdt = PROTECT(allocVector(VECSXP, n)); protecti++;   // to do, use growVector here?
+  const int l = isNull(cols) ? length(dt) : length(cols);
+  SEXP newdt = PROTECT(growable_allocate(VECSXP, l, n)); protecti++;   // to do, use growVector here?
   SHALLOW_DUPLICATE_ATTRIB(newdt, dt);
 
   // TO DO: keepattr() would be faster, but can't because shallow isn't merely a shallow copy. It
@@ -169,8 +183,7 @@ static SEXP shallow(SEXP dt, SEXP cols, R_len_t n)
   setAttrib(newdt, sym_sorted, duplicate(sorted));
 
   SEXP names = PROTECT(getAttrib(dt, R_NamesSymbol)); protecti++;
-  SEXP newnames = PROTECT(allocVector(STRSXP, n)); protecti++;
-  const int l = isNull(cols) ? LENGTH(dt) : length(cols);
+  SEXP newnames = PROTECT(growable_allocate(STRSXP, l, n)); protecti++;
   if (isNull(cols)) {
     for (int i=0; i<l; ++i) SET_VECTOR_ELT(newdt, i, VECTOR_ELT(dt,i));
     if (length(names)) {
@@ -186,13 +199,8 @@ static SEXP shallow(SEXP dt, SEXP cols, R_len_t n)
       for (int i=0; i<l; ++i) SET_STRING_ELT( newnames, i, STRING_ELT(names,INTEGER(cols)[i]-1) );
     }
   }
+  // setAttrib used to change length and truelength, but as of R-3.3 no longer does that
   setAttrib(newdt, R_NamesSymbol, newnames);
-  // setAttrib appears to change length and truelength, so need to do that first _then_ SET next,
-  // otherwise (if the SET were were first) the 100 tl is assigned to length.
-  SETLENGTH(newnames,l);
-  SET_TRUELENGTH(newnames,n);
-  SETLENGTH(newdt,l);
-  SET_TRUELENGTH(newdt,n);
   setselfref(newdt);
   UNPROTECT(protecti);
   return(newdt);
@@ -260,10 +268,8 @@ SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
     return shallow(dt,R_NilValue,(n>l) ? n : l);  // e.g. test 848 and 851 in R > 3.0.2
     // added (n>l) ? ... for #970, see test 1481.
   // TO DO:  test realloc names if selfrefnamesok (users can setattr(x,"name") themselves for example.
-  // if (TRUELENGTH(getAttrib(dt,R_NamesSymbol))!=tl)
-  //    internal_error(__func__, "tl of dt passes checks, but tl of names (%d) != tl of dt (%d)", tl, TRUELENGTH(getAttrib(dt,R_NamesSymbol))); // # nocov
 
-  tl = TRUELENGTH(dt);
+  tl = growable_max_size(dt);
   // R <= 2.13.2 and we didn't catch uninitialized tl somehow
   if (tl<0) internal_error(__func__, "tl of class is marked but tl<0"); // # nocov
   if (tl>0 && tl<l) internal_error(__func__, "tl (%d) < l (%d) but tl of class is marked", tl, l); // # nocov
@@ -313,11 +319,11 @@ SEXP shallowwrapper(SEXP dt, SEXP cols) {
   if (!selfrefok(dt, FALSE)) {
     int n = isNull(cols) ? length(dt) : length(cols);
     return(shallow(dt, cols, n));
-  } else return(shallow(dt, cols, TRUELENGTH(dt)));
+  } else return(shallow(dt, cols, growable_max_size(dt)));
 }
 
 SEXP truelength(SEXP x) {
-  return ScalarInteger(isNull(x) ? 0 : TRUELENGTH(x));
+  return ScalarInteger(isNull(x) ? 0 : growable_max_size(x));
 }
 
 SEXP selfrefokwrapper(SEXP x, SEXP verbose) {
@@ -514,7 +520,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   // modify DT by reference. Other than if new columns are being added and the allocVec() fails with
   // out-of-memory. In that case the user will receive hard halt and know to rerun.
   if (length(newcolnames)) {
-    oldtncol = TRUELENGTH(dt);   // TO DO: oldtncol can be just called tl now, as we won't realloc here any more.
+    oldtncol = growable_max_size(dt);   // TO DO: oldtncol can be just called tl now, as we won't realloc here any more.
 
     if (oldtncol<oldncol) {
       if (oldtncol==0) error(_("This data.table has either been loaded from disk (e.g. using readRDS()/load()) or constructed manually (e.g. using structure()). Please run setDT() or setalloccol() on it first (to pre-allocate space for new columns) before assigning by reference to it."));   // #2996
@@ -527,13 +533,13 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       error(_("It appears that at some earlier point, names of this data.table have been reassigned. Please ensure to use setnames() rather than names<- or colnames<-. Otherwise, please report to data.table issue tracker."));  // # nocov
       // Can growVector at this point easily enough, but it shouldn't happen in first place so leave it as
       // strong error message for now.
-    else if (TRUELENGTH(names) != oldtncol)
+    else if (growable_max_size(names) != oldtncol)
       // Use (long long) to cast R_xlen_t to a fixed type to robustly avoid -Wformat compiler warnings, see #5768, PRId64 didn't work
-      internal_error(__func__, "selfrefnames is ok but tl names [%lld] != tl [%d]", (long long)TRUELENGTH(names), oldtncol);  // # nocov
+      internal_error(__func__, "selfrefnames is ok but tl names [%lld] != tl [%d]", (long long)growable_max_size(names), oldtncol);  // # nocov
     if (!selfrefok(dt, verbose)) // #6410 setDT(dt) and subsequent attr<- can lead to invalid selfref
       error(_("It appears that at some earlier point, attributes of this data.table have been reassigned. Please use setattr(DT, name, value) rather than attr(DT, name) <- value. If that doesn't apply to you, please report your case to the data.table issue tracker."));
-    SETLENGTH(dt, oldncol+LENGTH(newcolnames));
-    SETLENGTH(names, oldncol+LENGTH(newcolnames));
+    growable_resize(dt, oldncol+LENGTH(newcolnames));
+    growable_resize(names, oldncol+LENGTH(newcolnames));
     for (int i=0; i<LENGTH(newcolnames); ++i)
       SET_STRING_ELT(names,oldncol+i,STRING_ELT(newcolnames,i));
     // truelengths of both already set by alloccol
@@ -730,8 +736,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       SET_VECTOR_ELT(dt, i, R_NilValue);
       SET_STRING_ELT(names, i, NA_STRING);  // release reference to the CHARSXP
     }
-    SETLENGTH(dt,    ndt-ndelete);
-    SETLENGTH(names, ndt-ndelete);
+    growable_resize(dt,    ndt-ndelete);
+    growable_resize(names, ndt-ndelete);
     if (LENGTH(names)==0) {
       // That was last column deleted, leaving NULL data.table, so we need to reset .row_names, so that it really is the NULL data.table.
       PROTECT(nullint=allocVector(INTSXP, 0)); protecti++;
