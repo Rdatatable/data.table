@@ -16,7 +16,7 @@ static const double hash_multiplier = 0.618033988749895;
 
 hashtab * hash_create_(size_t n, double load_factor) {
   if (load_factor <= 0 || load_factor >= 1)
-    internal_error("hash_create", "load_factor=%g not in (0, 1)", load_factor);
+    internal_error("hash_create", "load_factor=%g not in (0, 1)", load_factor); // # nocov
   // precondition: n / load_factor < SIZE_MAX
   // truncate to compare in exact integer arithmetic and preserve all bits of n
   if ((size_t)(SIZE_MAX * load_factor) <= n) internal_error(
@@ -66,7 +66,7 @@ void hash_set(hashtab * h, SEXP key, R_xlen_t value) {
       return;
     }
   }
-  internal_error(
+  internal_error( // # nocov
     "hash_insert", "did not find a free slot for key %p; size=%zu, free=%zu",
     (void*)key, h->size, h->free
   );
@@ -82,5 +82,5 @@ R_xlen_t hash_lookup(const hashtab * h, SEXP key, R_xlen_t ifnotfound) {
     }
   }
   // Should be impossible with a load factor below 1, but just in case:
-  return ifnotfound;
+  return ifnotfound; // # nocov
 }
