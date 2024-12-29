@@ -45,11 +45,10 @@ static bool anySpecialStatic(SEXP x, hashtab * specials) {
   // (see data.table.h), and isNewList() is true for NULL
   if (n==0)
     return false;
+  if (hash_lookup(specials, x, 0)<0) return true; // test 2158
   if (isVectorAtomic(x))
-    return ALTREP(x) || hash_lookup(specials, x, 0)<0;
+    return ALTREP(x); // see test 2156: ALTREP is a source of sharing we can't trace reliably
   if (isNewList(x)) {
-    if (hash_lookup(specials, x, 0)<0)
-      return true;  // test 2158
     for (int i=0; i<n; ++i) {
       list_el = VECTOR_ELT(x,i);
       if (anySpecialStatic(list_el, specials))

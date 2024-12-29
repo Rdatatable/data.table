@@ -17,6 +17,9 @@
 #if R_VERSION < R_Version(3, 4, 0)
 #  define SET_GROWABLE_BIT(x)  // #3292
 #endif
+#if R_VERSION >= R_Version(4, 3, 0)
+#  define USE_GROWABLE_ALTREP
+#endif
 #include <Rinternals.h>
 #define SEXPPTR_RO(x) ((const SEXP *)DATAPTR_RO(x))  // to avoid overhead of looped STRING_ELT and VECTOR_ELT
 #include <stdint.h>    // for uint64_t rather than unsigned long long
@@ -309,6 +312,9 @@ void growable_resize(SEXP x, R_xlen_t newsize);
 Rboolean is_growable(SEXP x);
 // Transform x into a growable vector. The return value must be reprotected in place of x. What happens to x is deliberately not specified, but no copying occurs.
 SEXP make_growable(SEXP x);
+#if R_VERSION >= R_Version(4, 3, 0)
+void register_altrep_classes(DllInfo*);
+#endif
 
 // functions called from R level .Call/.External and registered in init.c
 // these now live here to pass -Wstrict-prototypes, #5477

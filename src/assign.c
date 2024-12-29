@@ -323,7 +323,7 @@ SEXP shallowwrapper(SEXP dt, SEXP cols) {
 }
 
 SEXP truelength(SEXP x) {
-  return ScalarInteger(isNull(x) ? 0 : growable_max_size(x));
+  return ScalarInteger(is_growable(x) ? growable_max_size(x) : 0);
 }
 
 SEXP selfrefokwrapper(SEXP x, SEXP verbose) {
@@ -520,7 +520,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   // modify DT by reference. Other than if new columns are being added and the allocVec() fails with
   // out-of-memory. In that case the user will receive hard halt and know to rerun.
   if (length(newcolnames)) {
-    oldtncol = growable_max_size(dt);   // TO DO: oldtncol can be just called tl now, as we won't realloc here any more.
+    oldtncol = is_growable(dt) ? growable_max_size(dt) : 0;   // TO DO: oldtncol can be just called tl now, as we won't realloc here any more.
 
     if (oldtncol<oldncol) {
       if (oldtncol==0) error(_("This data.table has either been loaded from disk (e.g. using readRDS()/load()) or constructed manually (e.g. using structure()). Please run setDT() or setalloccol() on it first (to pre-allocate space for new columns) before assigning by reference to it."));   // #2996
