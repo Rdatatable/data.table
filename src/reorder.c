@@ -24,13 +24,17 @@ SEXP reorder(SEXP x, SEXP order)
         error(_("Column %d is length %d which differs from length of column 1 (%d). Invalid data.table."), i+1, length(v), nrow);
       if (SIZEOF(v) > maxSize)
         maxSize=SIZEOF(v);
+#ifndef USE_GROWABLE_ALTREP
       if (ALTREP(v)) SET_VECTOR_ELT(x, i, copyAsPlain(v));
+#endif
     }
     copySharedColumns(x); // otherwise two columns which point to the same vector would be reordered and then re-reordered, issues linked in PR#3768
   } else {
     if (SIZEOF(x)!=4 && SIZEOF(x)!=8 && SIZEOF(x)!=16 && SIZEOF(x)!=1)
       error(_("reorder accepts vectors but this non-VECSXP is type '%s' which isn't yet supported (SIZEOF=%zu)"), type2char(TYPEOF(x)), SIZEOF(x));
+#ifndef USE_GROWABLE_ALTREP
     if (ALTREP(x)) internal_error(__func__, "cannot reorder an ALTREP vector. Please see NEWS item 2 in v1.11.4"); // # nocov
+#endif
     maxSize = SIZEOF(x);
     nrow = length(x);
     ncol = 1;
@@ -40,7 +44,9 @@ SEXP reorder(SEXP x, SEXP order)
   if (length(order) != nrow)
     error("nrow(x)[%d]!=length(order)[%d]", nrow, length(order)); // # notranslate
   int nprotect = 0;
+#ifndef USE_GROWABLE_ALTREP
   if (ALTREP(order)) { order=PROTECT(copyAsPlain(order)); nprotect++; }  // TODO: if it's an ALTREP sequence some optimizations are possible rather than expand
+#endif
 
   const int *restrict idx = INTEGER(order);
   int i=0;

@@ -297,7 +297,7 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md
   }
 
   int overAlloc = checkOverAlloc(GetOption(install("datatable.alloccol"), R_NilValue));
-  SEXP ans = PROTECT(allocVector(VECSXP, LENGTH(cols)+overAlloc)); nprotect++;  // doing alloc.col directly here; eventually alloc.col can be deprecated.
+  SEXP ans = PROTECT(growable_allocate(VECSXP, LENGTH(cols), LENGTH(cols)+overAlloc)); nprotect++;  // doing alloc.col directly here; eventually alloc.col can be deprecated.
 
   // user-defined and superclass attributes get copied as from v1.12.0
   copyMostAttrib(x, ans);
@@ -305,8 +305,6 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md
   // includes row.names (oddly, given other dims aren't) and "sorted" dealt with below
   // class is also copied here which retains superclass name in class vector as has been the case for many years; e.g. tests 1228.* for #64
 
-  SET_TRUELENGTH(ans, LENGTH(ans));
-  SETLENGTH(ans, LENGTH(cols));
   int ansn;
   if (isNull(rows)) {
     ansn = nrow;
@@ -329,9 +327,7 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md
       subsetVectorRaw(target, source, rows, anyNA);  // parallel within column
     }
   }
-  SEXP tmp = PROTECT(allocVector(STRSXP, LENGTH(cols)+overAlloc)); nprotect++;
-  SET_TRUELENGTH(tmp, LENGTH(tmp));
-  SETLENGTH(tmp, LENGTH(cols));
+  SEXP tmp = PROTECT(growable_allocate(STRSXP, LENGTH(cols), LENGTH(cols)+overAlloc)); nprotect++;
   setAttrib(ans, R_NamesSymbol, tmp);
   subsetVectorRaw(tmp, getAttrib(x, R_NamesSymbol), cols, /*anyNA=*/false);
 

@@ -202,6 +202,9 @@ inline bool INHERITS(SEXP x, SEXP char_) {
   return false;
 }
 
+#ifdef USE_GROWABLE_ALTREP
+SEXP copyAsPlain(SEXP x) { return duplicate(x); }
+#else
 SEXP copyAsPlain(SEXP x) {
   // v1.12.2 and before used standard R duplicate() to do this. But duplicate() is not guaranteed to not return an ALTREP.
   // e.g. ALTREP 'wrapper' on factor column (with materialized INTSXP) in package VIM under example(hotdeck)
@@ -256,6 +259,7 @@ SEXP copyAsPlain(SEXP x) {
   UNPROTECT(1);
   return ans;
 }
+#endif
 
 void copySharedColumns(SEXP x) {
   const int ncol = length(x);
@@ -266,7 +270,12 @@ void copySharedColumns(SEXP x) {
   int nShared=0;
   for (int i=0; i<ncol; ++i) {
     SEXP thiscol = xp[i];
-    if (ALTREP(thiscol) || hash_lookup(marks, thiscol, 0)<0) {
+    if (
+      hash_lookup(marks, thiscol, 0)<0
+#ifndef USE_GROWABLE_ALTREP
+      || ALTREP(thiscol)
+#endif
+    ) {
       shared[i] = true;  // we mark ALTREP as 'shared' too, whereas 'tocopy' would be better word to use for ALTREP
       nShared++;
     } else {

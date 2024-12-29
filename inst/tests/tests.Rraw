@@ -19303,12 +19303,6 @@ test(2290.3, DT[, `:=`(a, c := 3)], error="It looks like you re-used `:=` in arg
 # partially-named `:=`(...) --> different branch, same error
 test(2290.4, DT[, `:=`(a = 2, c := 3)], error="It looks like you re-used `:=` in argument 2")
 
-# segfault when selfref is not ok before set #6410
-df = data.frame(a=1:3)
-setDT(df)
-attr(df, "att") = 1
-test(2291.1, set(df, NULL, "new", "new"), error="attributes .* have been reassigned")
-
 # ns-qualified bysub error, #6493
 DT = data.table(a = 1)
 test(2292.1, DT[, .N, by=base::mget("a")], data.table(a = 1, N = 1L))
