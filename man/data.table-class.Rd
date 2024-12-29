@@ -17,9 +17,8 @@
 
 \author{ Steve Lianoglou }
 \seealso{
-  \code{\link{data.table}},\code{\link{internal.selfref}}
+  \code{\link{data.table}}, \code{\link{tables}}, \code{\link{J}}, \code{\link[base:order]{sort.list}}, \code{\link{copy}}, \code{\link{setDT}}, \code{\link{setDF}}, \code{\link{set}}, \code{\link{:=}}, \code{\link{setorder}}, \code{\link{setcolorder}}, \code{\link{setattr}}, \code{\link{setnames}}, \code{\link{chorder}}, \code{\link{setNumericRounding}}, \code{\link{.internal.selfref}}
 }
-
 \examples{
 ## Used in inheritance.
 setClass('SuperDataTable', contains='data.table')

@@ -107,11 +107,8 @@ reference.
   \url{https://cran.r-project.org/package=bit64}\cr
   \url{https://github.com/Rdatatable/data.table/wiki/Presentations}
 }
-\seealso{ \code{\link{data.table}}, \code{\link{tables}}, \code{\link{J}},
-\code{\link[base:order]{sort.list}}, \code{\link{copy}}, \code{\link{setDT}},
-\code{\link{setDF}}, \code{\link{set}} \code{\link{:=}}, \code{\link{setorder}},
-\code{\link{setcolorder}}, \code{\link{setattr}}, \code{\link{setnames}},
-\code{\link{chorder}}, \code{\link{setNumericRounding}},\code{\link{internal.selfref}}
+\seealso{
+  \code{\link{setkey}}, \code{\link{setcolorder}}, \code{\link{setattr}}, \code{\link{setnames}}, \code{\link{set}}, \code{\link{:=}}, \code{\link{setDT}}, \code{\link{setDF}}, \code{\link{copy}}, \code{\link{setNumericRounding}}, \code{\link{.internal.selfref}}
 }
 \examples{
 # Type 'example(setkey)' to run these at the prompt and browse output

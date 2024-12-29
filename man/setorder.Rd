@@ -111,10 +111,7 @@ If you require a copy, take a copy first (using \code{DT2 = copy(DT)}). See
   \url{https://medium.com/basecs/getting-to-the-root-of-sorting-with-radix-sort-f8e9240d4224}
 }
 \seealso{
-  \code{\link{setkey}}, \code{\link{setcolorder}}, \code{\link{setattr}},
-  \code{\link{setnames}}, \code{\link{set}}, \code{\link{:=}}, \code{\link{setDT}},
-  \code{\link{setDF}}, \code{\link{copy}}, \code{\link{setNumericRounding}},
-  \code{\link{internal.selfref}} 
+  \code{\link{data.table}}, \code{\link{as.data.table}}, \code{\link{setDF}}, \code{\link{copy}}, \code{\link{setkey}}, \code{\link{setcolorder}}, \code{\link{setattr}}, \code{\link{setnames}}, \code{\link{set}}, \code{\link{:=}}, \code{\link{setorder}}, \code{\link{.internal.selfref}}
 }
 \examples{
 

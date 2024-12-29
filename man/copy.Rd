@@ -24,7 +24,7 @@ A \code{copy()} may be required when doing \code{dt_names = names(DT)}. Due to R
   Returns a copy of the object.
 }
 \seealso{
-  \code{\link{data.table}}, \code{\link{address}}, \code{\link{setkey}}, \code{\link{setDT}}, \code{\link{setDF}}, \code{\link{set}} \code{\link{:=}}, \code{\link{setorder}}, \code{\link{setattr}}, \code{\link{setnames}},\code{\link{internal.selfref}}
+  \code{\link{data.table}}, \code{\link{address}}, \code{\link{setkey}}, \code{\link{setDT}}, \code{\link{setDF}}, \code{\link{set}}, \code{\link{:=}}, \code{\link{setorder}}, \code{\link{setattr}}, \code{\link{setnames}}, \code{\link{.internal.selfref}}
 }
 \examples{
 # Type 'example(copy)' to run these at prompt and browse output

@@ -92,12 +92,12 @@ Since \code{[.data.table} incurs overhead to check the existence and type of arg
 \value{
 \code{DT} is modified by reference and returned invisibly. If you require a copy, take a \code{\link{copy}} first (using \code{DT2 = copy(DT)}).
 }
-\seealso{ \code{\link{data.table}}, \code{\link{copy}}, \code{\link{setalloccol}}, \code{\link{truelength}}, \code{\link{set}}, \code{\link{.Last.updated}},\code{\link{internal.selfref}}
+\seealso{ \code{\link{data.table}}, \code{\link{copy}}, \code{\link{setalloccol}}, \code{\link{truelength}}, \code{\link{set}}, \code{\link{.Last.updated}},\code{\link{.internal.selfref}}
 }
 \examples{
 DT = data.table(a = LETTERS[c(3L,1:3)], b = 4:7)
 DT[, c := 8]                # add a numeric column, 8 for all rows
-DT[, d := 9L]               # add an integer column, 9L for all rows\code{\link{.Last.updated}}
+DT[, d := 9L]               # add an integer column, 9L for all rows
 DT[, c := NULL]             # remove column c
 DT[2, d := -8L]             # subassign by reference to d; 2nd row is -8L now
 DT                          # DT changed by reference
