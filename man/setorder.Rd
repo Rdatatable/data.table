@@ -113,7 +113,8 @@ If you require a copy, take a copy first (using \code{DT2 = copy(DT)}). See
 \seealso{
   \code{\link{setkey}}, \code{\link{setcolorder}}, \code{\link{setattr}},
   \code{\link{setnames}}, \code{\link{set}}, \code{\link{:=}}, \code{\link{setDT}},
-  \code{\link{setDF}}, \code{\link{copy}}, \code{\link{setNumericRounding}}
+  \code{\link{setDF}}, \code{\link{copy}}, \code{\link{setNumericRounding}},
+  \code{\link{internal.selfref}} 
 }
 \examples{
 

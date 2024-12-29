@@ -17,7 +17,7 @@
 
 \author{ Steve Lianoglou }
 \seealso{
-  \code{\link{data.table}}
+  \code{\link{data.table}},\code{\link{internal.selfref}}
 }
 
 \examples{

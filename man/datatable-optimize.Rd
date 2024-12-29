@@ -102,7 +102,7 @@ Auto indexing can be switched off with the global option
 \code{options(datatable.auto.index = FALSE)}. To switch off using existing
 indices set global option \code{options(datatable.use.index = FALSE)}.
 }
-\seealso{ \code{\link{setNumericRounding}}, \code{\link{getNumericRounding}} }
+\seealso{ \code{\link{setNumericRounding}}, \code{\link{getNumericRounding}},\code{\link{internal.selfref}} }
 \examples{
 \dontrun{
 old = options(datatable.optimize = Inf)
