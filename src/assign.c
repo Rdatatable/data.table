@@ -255,7 +255,7 @@ SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
   names = getAttrib(dt,R_NamesSymbol);
   // names may be NULL when null.data.table() passes list() to alloccol for example.
   // So, careful to use length() on names, not LENGTH().
-  if (length(names)!=l) internal_error(__func__, "length of names (%d) is not length of dt (%d)", length(names),l); // # nocov
+  if (length(names)!=l && length(names)>0) internal_error(__func__, "length of names (%d) is not length of dt (%d)", length(names),l); // # nocov
   if (!selfrefok(dt,verbose))
     return shallow(dt,R_NilValue,(n>l) ? n : l);  // e.g. test 848 and 851 in R > 3.0.2
     // added (n>l) ? ... for #970, see test 1481.
