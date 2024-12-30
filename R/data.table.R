@@ -459,9 +459,9 @@ replace_dot_alias = function(e) {
         if (!len_common_names) stopf("Attempting to do natural join but no common columns in provided tables")
         if (verbose) {
           which_cols_msg = if (len_common_names == length(x)) {
-            catf("Joining but 'x' has no key, natural join using all 'x' columns")
+            catf("Joining but 'x' has no key, natural join using all 'x' columns\n")
           } else {
-            catf("Joining but 'x' has no key, natural join using: %s", brackify(common_names))
+            catf("Joining but 'x' has no key, natural join using: %s\n", brackify(common_names))
           }
         }
         on = common_names
@@ -2077,8 +2077,6 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
   if (!is.null(rownames)) {
     if (!is.null(rownames.value)) stopf("rownames and rownames.value cannot both be used at the same time")
     if (length(rownames)>1L) {
-      # TODO in future as warned in NEWS for 1.11.6:
-      #   warningf("length(rownames)>1 is deprecated. Please use rownames.value= instead")
       if (length(rownames)!=nrow(x))
         stopf("length(rownames)==%d but nrow(DT)==%d. The rownames argument specifies a single column name or number. Consider rownames.value= instead.", length(rownames), nrow(x))
       rownames.value = rownames
