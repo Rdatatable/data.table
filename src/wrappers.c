@@ -113,14 +113,10 @@ SEXP dim(SEXP x)
     INTEGER(ans)[1] = 0;
   }
   else {
-    INTEGER(ans)[0] = length(VECTOR_ELT(x, 0));
+    // Column class might require dispatch to get length() correct
+    INTEGER(ans)[0] = length_with_dispatch(VECTOR_ELT(x, 0));
     INTEGER(ans)[1] = length(x);
   }
   UNPROTECT(1);
   return ans;
-}
-
-SEXP warn_matrix_column_r(SEXP i) {
-  warn_matrix_column(INTEGER(i)[0]);
-  return R_NilValue;
 }
