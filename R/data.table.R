@@ -2532,7 +2532,7 @@ split.data.table = function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = TR
   }
 }
 
-sort_by.data.table <- function (x, y, ...)
+sort_by.data.table <- function(x, y, ...)
 {
   if (!cedta()) return(NextMethod()) # nocov
   if (inherits(y, "formula"))
