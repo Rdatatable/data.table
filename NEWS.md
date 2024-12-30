@@ -141,6 +141,8 @@ rowwiseDT(
 
 8. `showProgress` in `[` is disabled for "trivial" grouping (`.NGRP==1L`), [#6668](https://github.com/Rdatatable/data.table/issues/6668). Thanks @MichaelChirico for the request and @joshhwuu for the PR.
 
+9. `key<-`, marked as deprecated since 2012 and unusable since v1.15.0, has been fully removed.
+
 # data.table [v1.16.2](https://github.com/Rdatatable/data.table/milestone/35) (9 October 2024)
 
 ## BUG FIXES
