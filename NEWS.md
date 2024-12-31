@@ -139,6 +139,14 @@ rowwiseDT(
 
 7. The `dcast()` and `melt()` generics no longer attempt to redirect to {reshape2} methods when passed non-`data.table`s. If you're still using {reshape2}, you must use namespace-qualification: `reshape2::dcast()`, `reshape2::melt()`. We have been warning about the deprecation since v1.12.4 (2019). Please note that {reshape2} is retired.
 
+8. `showProgress` in `[` is disabled for "trivial" grouping (`.NGRP==1L`), [#6668](https://github.com/Rdatatable/data.table/issues/6668). Thanks @MichaelChirico for the request and @joshhwuu for the PR.
+
+9. `key<-`, marked as deprecated since 2012 and unusable since v1.15.0, has been fully removed.
+
+10. Deprecation of `logicalAsInt` argument to `fwrite()` has been upgraded from a warning (since v1.15.0) to an error. It will be removed in the next release.
+
+11. Deprecation of `fread(autostart=)` has been upgraded to an error. It has been warning since v1.11.0 (6 years ago). The argument will be removed in the next release.
+
 # data.table [v1.16.2](https://github.com/Rdatatable/data.table/milestone/35) (9 October 2024)
 
 ## BUG FIXES

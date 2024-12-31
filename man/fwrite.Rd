@@ -12,7 +12,7 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   na = "", dec = ".", row.names = FALSE, col.names = TRUE,
   qmethod = c("double","escape"),
   logical01 = getOption("datatable.logical01", FALSE),  # due to change to TRUE; see NEWS
-  logicalAsInt = logical01,  # deprecated
+  logicalAsInt = NULL,  # deprecated
   scipen = getOption('scipen', 0L),
   dateTimeAs = c("ISO","squash","epoch","write.csv"),
   buffMB = 8L, nThread = getDTthreads(verbose),
