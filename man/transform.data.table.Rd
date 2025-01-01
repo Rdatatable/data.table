@@ -33,7 +33,9 @@ columns that appear in \ldots) are not in the key of the data.table.
 \value{
    The modified value of a copy of \code{data}.
 }
-\seealso{ \code{\link[base]{transform}}, \code{\link[base:with]{within}} and \code{\link{:=}} }
+\seealso{
+  \code{\link{data.table}}, \code{\link{setDT}}, \code{\link{setDF}}, \code{\link{set}}, \code{\link{:=}}, \code{\link{.internal.selfref}}
+}
 \examples{
 DT <- data.table(a=rep(1:3, each=2), b=1:6)
 
