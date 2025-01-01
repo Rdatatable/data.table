@@ -287,7 +287,7 @@ static void cradix(SEXP *x, int n)
   free(cradix_xtmp);   cradix_xtmp=NULL;
 }
 
-static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int *out_na_count, bool *out_anynotascii, bool *out_anynotutf8, hashtab * marks)
+static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max, int *out_na_count, bool *out_anynotascii, bool *out_anynotutf8, dhashtab * marks)
 // group numbers are left in truelength to be fetched by WRITE_KEY
 {
   int na_count=0;
@@ -302,13 +302,13 @@ static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max
       na_count++;
       continue;
     }
-    // Why is it acceptable to call hash_lookup when marks can be shared between threads?
-    // 1. There are no pointers to follow for hash_lookup() inside the hash table, so there's no danger of crashing by following a partially written pointer.
-    // 2. If another thread writes s into the hash but hash_lookup() fails to see a non-zero value, we'll safely check it again in the critical section below.
+    // Why is it acceptable to call dhash_lookup when marks can be shared between threads?
+    // 1. We have rwlocks to avoid crashing on a pointer being invalidated by a different thread.
+    // 2. We check again after entering the critical section.
     // 3. We only change the marks from zero to nonzero, so once a nonzero value is seen, it must be correct.
-    if (hash_lookup(marks,s,0)<0) continue; // seen this group before
-    #pragma omp critical
-    if (hash_lookup(marks,s,0)>=0) {  // another thread may have set it while I was waiting, so check it again
+    if (dhash_lookup(marks,s,0)<0) continue; // seen this group before
+    #pragma omp critical(range_str_write)
+    if (dhash_lookup(marks,s,0)>=0) {  // another thread may have set it while I was waiting, so check it again
       // now save unique SEXP in ustr so we can loop sort uniques when sorting too
       if (ustr_alloc<=ustr_n) {
         ustr_alloc = (ustr_alloc==0) ? 16384 : ustr_alloc*2;  // small initial guess, negligible time to alloc 128KB (32 pages)
@@ -317,7 +317,7 @@ static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max
         if (ustr==NULL) STOP(_("Unable to realloc %d * %d bytes in range_str"), ustr_alloc, (int)sizeof(SEXP));  // # nocov
       }
       ustr[ustr_n++] = s;
-      hash_set(marks, s, -ustr_n);  // unique in any order is fine. first-appearance order is achieved later in count_group
+      dhash_set(marks, s, -ustr_n);  // unique in any order is fine. first-appearance order is achieved later in count_group
       if (LENGTH(s)>ustr_maxlen) ustr_maxlen=LENGTH(s);
       if (!anynotutf8 &&    // even if anynotascii we still want to know if anynotutf8, and anynotutf8 implies anynotascii already
             !IS_ASCII(s)) { // anynotutf8 implies anynotascii and IS_ASCII will be cheaper than IS_UTF8, so start with this one
@@ -350,20 +350,20 @@ static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max
       if (LENGTH(s)>ustr_maxlen) ustr_maxlen=LENGTH(s);
     }
     cradix(ustr3, ustr_n);  // sort to detect possible duplicates after converting; e.g. two different non-utf8 map to the same utf8
-    hash_set(marks, ustr3[0], -1);
+    dhash_set(marks, ustr3[0], -1);
     int o = -1;
     for (int i=1; i<ustr_n; i++) {
       if (ustr3[i] == ustr3[i-1]) continue;  // use the same o for duplicates
-      hash_set(marks, ustr3[i], --o);
+      dhash_set(marks, ustr3[i], --o);
     }
     // now use the 1-1 mapping from ustr to ustr2 to get the ordering back into original ustr, being careful to reset tl to 0
     int *tl = (int *)malloc(ustr_n * sizeof(int));
     if (!tl)
       STOP(_("Failed to alloc tl when converting strings to UTF8"));  // # nocov
     const SEXP *tt = STRING_PTR_RO(ustr2);
-    for (int i=0; i<ustr_n; i++) tl[i] = hash_lookup(marks, tt[i], 0);   // fetches the o in ustr3 into tl which is ordered by ustr
-    for (int i=0; i<ustr_n; i++) hash_set(marks, ustr3[i], 0);    // reset to 0 tl of the UTF8 (and possibly non-UTF in ustr too)
-    for (int i=0; i<ustr_n; i++) hash_set(marks, ustr[i], tl[i]); // put back the o into ustr's tl
+    for (int i=0; i<ustr_n; i++) tl[i] = dhash_lookup(marks, tt[i], 0);   // fetches the o in ustr3 into tl which is ordered by ustr
+    for (int i=0; i<ustr_n; i++) dhash_set(marks, ustr3[i], 0);    // reset to 0 tl of the UTF8 (and possibly non-UTF in ustr too)
+    for (int i=0; i<ustr_n; i++) dhash_set(marks, ustr[i], tl[i]); // put back the o into ustr's tl
     free(tl);
     free(ustr3);
     UNPROTECT(1);
@@ -376,7 +376,7 @@ static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max
       // that this is always ascending; descending is done in WRITE_KEY using max-this
       cradix(ustr, ustr_n);  // sorts ustr in-place by reference. assumes NA_STRING not present.
       for(int i=0; i<ustr_n; i++)     // save ordering in the CHARSXP. negative so as to distinguish with R's own usage.
-        hash_set(marks, ustr[i], -i-1);
+        dhash_set(marks, ustr[i], -i-1);
     }
     // else group appearance order was already saved to tl in the first pass
   }
@@ -568,7 +568,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
         STOP(_("Item %d of order (ascending/descending) is %d. Must be +1 or -1."), col+1, sortType);
     }
     //Rprintf(_("sortType = %d\n"), sortType);
-    hashtab * marks = NULL; // only used for STRSXP below
+    dhashtab * marks = NULL; // only used for STRSXP below
     switch(TYPEOF(x)) {
     case INTSXP : case LGLSXP :  // TODO skip LGL and assume range [0,1]
       range_i32(INTEGER(x), nrow, &min, &max, &na_count);
@@ -605,7 +605,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
       break;
     case STRSXP :
       // need2utf8 now happens inside range_str on the uniques
-      marks = hash_create(nrow*2); // we mark both original and converted strings, hence the factor of 2
+      marks = dhash_create(4096); // relatively small to allocate, can grow exponentially later
+      PROTECT(marks->prot); n_protect++;
       range_str(STRING_PTR_RO(x), nrow, &min, &max, &na_count, &anynotascii, &anynotutf8, marks);
       break;
     default:
@@ -763,7 +764,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
           if (nalast==-1) anso[i]=0;
           elem = naval;
         } else {
-          elem = -hash_lookup(marks, xd[i], 0);
+          elem = -dhash_lookup(marks, xd[i], 0);
         }
         WRITE_KEY
       }}

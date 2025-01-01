@@ -283,13 +283,10 @@ SEXP notchin(SEXP x, SEXP table);
 typedef struct hash_tab hashtab;
 // Allocate, initialise, and return a pointer to the new hash table.
 // n is the maximal number of elements that will be inserted.
-// load_factor is a real in (0, 1) specifying the desired fraction of used table elements.
 // Lower load factors lead to fewer collisions and faster lookups, but waste memory.
 // May raise an R error if an allocation fails or a size is out of bounds.
 // The table is temporary (allocated via R_alloc()) and will be unprotected upon return from the .Call().
 // See vmaxget()/vmaxset() if you need to unprotect it manually.
-hashtab * hash_create_(size_t n, double load_factor);
-// Hard-coded "good enough" load_factor
 hashtab * hash_create(size_t n);
 // Inserts a new key-value pair into the hash, or overwrites an existing value.
 // Will raise an R error if inserting more than n elements.
@@ -297,6 +294,15 @@ hashtab * hash_create(size_t n);
 void hash_set(hashtab *, SEXP key, R_xlen_t value);
 // Returns the value corresponding to the key present in the hash, otherwise returns ifnotfound.
 R_xlen_t hash_lookup(const hashtab *, SEXP key, R_xlen_t ifnotfound);
+
+// The dynamically-allocated hash table has a public field for the R protection wrapper.
+// Keep it PROTECTed while the table is in use.
+typedef struct dhash_tab {
+  SEXP prot;
+} dhashtab;
+dhashtab * dhash_create(size_t n);
+void dhash_set(dhashtab * h, SEXP key, R_xlen_t value);
+R_xlen_t dhash_lookup(dhashtab * h, SEXP key, R_xlen_t ifnotfound);
 
 // functions called from R level .Call/.External and registered in init.c
 // these now live here to pass -Wstrict-prototypes, #5477
