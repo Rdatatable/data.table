@@ -18,11 +18,6 @@ setindexv = function(x, cols, verbose=getOption("datatable.verbose")) {
   }
 }
 
-# Has been warning since 2012, with stronger warning in Mar 2019 (note in news for 1.12.2); #3399
-"key<-" = function(x,value) {
-  stopf("key(x)<-value is deprecated and not supported. Please change to use setkey() with perhaps copy(). Has been warning since 2012.")
-}
-
 setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRUE)
 {
   if (is.null(cols)) {   # this is done on a data.frame when !cedta at top of [.data.table
