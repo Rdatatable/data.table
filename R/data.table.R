@@ -1221,7 +1221,7 @@ replace_dot_alias = function(e) {
             setalloccol(x, n, verbose=verbose)   # always assigns to calling scope; i.e. this scope
             if (is.name(name)) {
               assign(as.character(name),x,parent.frame(),inherits=TRUE)
-            } else if (name %iscall% c('$', '[[') && is.name(name[[2L]])) {
+            } else if (.is_simple_extraction(name)) { # TODO(#6702): use a helper here as the code is very similar to setDT().
               k = eval(name[[2L]], parent.frame(), parent.frame())
               if (is.list(k)) {
                 origj = j = if (name[[1L]] == "$") as.character(name[[3L]]) else eval(name[[3L]], parent.frame(), parent.frame())
@@ -1233,6 +1233,8 @@ replace_dot_alias = function(e) {
                 .Call(Csetlistelt,k,as.integer(j), x)
               } else if (is.environment(k) && exists(as.character(name[[3L]]), k)) {
                 assign(as.character(name[[3L]]), x, k, inherits=FALSE)
+              } else if (isS4(k)) {
+                .Call(CsetS4elt, k, as.character(name[[3L]]), x)
               }
             } # TO DO: else if env$<- or list$<-
           }
@@ -2967,7 +2969,7 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
   if (is.name(name)) {
     name = as.character(name)
     assign(name, x, parent.frame(), inherits=TRUE)
-  } else if (name %iscall% c('$', '[[') && is.name(name[[2L]])) {
+  } else if (.is_simple_extraction(name)) {
     # common case is call from 'lapply()'
     k = eval(name[[2L]], parent.frame(), parent.frame())
     if (is.list(k)) {
@@ -2979,9 +2981,11 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
             stopf("Item '%s' not found in names of input list", origj)
         }
       }
-      .Call(Csetlistelt,k,as.integer(j), x)
+      .Call(Csetlistelt, k, as.integer(j), x)
     } else if (is.environment(k) && exists(as.character(name[[3L]]), k)) {
       assign(as.character(name[[3L]]), x, k, inherits=FALSE)
+    } else if (isS4(k)) {
+      .Call(CsetS4elt, k, as.character(name[[3L]]), x)
     }
   }
   .Call(CexpandAltRep, x)  # issue#2866 and PR#2882
@@ -3047,6 +3051,9 @@ rleidv = function(x, cols=seq_along(x), prefix=NULL) {
   if (!all(vars %chin% names(x))) return(TRUE) # e.g. 1:ncol(x)
   is.name(e[[1L]]) && is.name(e[[2L]])         # e.g. V1:V2, but not min(V1):max(V2) or 1:max(V2)
 }
+
+# for assignments like x[[1]][, a := 2] or setDT(x@DT)
+.is_simple_extraction = function(e) e %iscall% c('$', '@', '[[') && is.name(e[[2L]])
 
 # GForce functions
 #   to add a new function to GForce (from the R side -- the easy part!):
