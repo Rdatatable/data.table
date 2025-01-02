@@ -19219,16 +19219,29 @@ for (opt in c(0, 1, 2)) {
 
 # Confusing behavior with DT[, min(var):max(var)] #2069
 DT = data.table(t = c(2L, 1L, 3L), a=0, b=1)
-test(2284.1, DT[, min(t):max(t)], with(DT, min(t):max(t)))
-test(2284.2, DT[, 1:max(t)], with(DT, 1:max(t)))
-test(2284.3, DT[, max(t):1], with(DT, max(t):1))
-test(2284.4, DT[, 1:t[1L]], with(DT, 1:t[1L]))
-test(2284.5, DT[, t[2L]:1], with(DT, t[2L]:1))
-test(2284.6, DT[, min(a):max(t)], with(DT, min(a):max(t)))
+test(2284.01, DT[, min(t):max(t)], with(DT, min(t):max(t)))
+test(2284.02, DT[, 1:max(t)], with(DT, 1:max(t)))
+test(2284.03, DT[, max(t):1], with(DT, max(t):1))
+test(2284.04, DT[, 1:t[1L]], with(DT, 1:t[1L]))
+test(2284.05, DT[, t[2L]:1], with(DT, t[2L]:1))
+test(2284.06, DT[, min(a):max(t)], with(DT, min(a):max(t)))
 # but not every `:` with a call in from or to is with=TRUE, #6486
-test(2284.7, DT[, 1:ncol(DT)], DT)
-test(2284.8, DT[, 2:(ncol(DT) - 1L)], DT[, "a"])
-test(2284.9, DT[, (ncol(DT) - 1L):ncol(DT)], DT[, c("a", "b")])
+test(2284.07, DT[, 1:ncol(DT)], DT)
+test(2284.08, DT[, 2:(ncol(DT) - 1L)], DT[, "a"])
+test(2284.09, DT[, (ncol(DT) - 1L):ncol(DT)], DT[, c("a", "b")])
+# literal:var is the same as literal:literal and var:var
+test(2284.10, DT[, 1:a], DT[, t:a])
+test(2284.11, DT[, 1:a], DT[, 1:2])
+test(2284.12, DT[, t:2], DT[, t:a])
+test(2284.13, DT[, t:2], DT[, 1:2])
+test(2284.14, DT[, 1:b], DT[, t:b])
+test(2284.15, DT[, 1:b], DT[, 1:3])
+test(2284.16, DT[, t:3], DT[, t:b])
+test(2284.17, DT[, t:3], DT[, 1:3])
+test(2284.18, DT[, 2:b], DT[, a:b])
+test(2284.19, DT[, 2:b], DT[, 2:3])
+test(2284.20, DT[, a:3], DT[, a:b])
+test(2284.21, DT[, a:3], DT[, 2:3])
 
 # Extra regression tests for #4772, which was already incidentally fixed by #5183.
 x = data.table(a=1:3)
