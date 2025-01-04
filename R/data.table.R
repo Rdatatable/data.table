@@ -3053,7 +3053,7 @@ rleidv = function(x, cols=seq_along(x), prefix=NULL) {
   if (is.name(bysub)) return(TRUE)
   if (identical(bysub[[1L]], quote(list))) bysub = bysub[-1L]
   if (length(all.names(bysub)) > length(byvars)) return(FALSE)
-  return(TRUE)
+  TRUE
 }
 
 .is_withFALSE_range = function(e, x, root=root_name(e), vars=all.vars(e)) {
