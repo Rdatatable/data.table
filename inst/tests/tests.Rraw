@@ -20694,3 +20694,5 @@ if (test_bit64) {
 DT = data.table(a=1:2, key='a')
 test(2301.1, DT[, .N, by=.(b=rev(a))], data.table(b=2:1, N=1L))
 test(2301.2, DT[, .(N=1L), by=.(b=rev(a))], data.table(b=2:1, N=1L)) # ensure no interaction with GForce
+DT = data.table(a=2:3, b=1:0, key=c('a', 'b'))
+test(2301.3, DT[, .N, by=.(ab=a^b, d=c(1L, 1L))], data.table(ab=c(2, 1), d=1L, N=1L))
