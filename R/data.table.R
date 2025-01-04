@@ -1526,6 +1526,7 @@ replace_dot_alias = function(e) {
     if (length(byval) && length(byval[[1L]])) {
       if (!bysameorder && isFALSE(byindex)) {
         if (verbose) {last.started.at=proc.time();catf("Finding groups using forderv ... ");flush.console()}
+        browser()
         o__ = forderv(byval, sort=keyby, retGrp=TRUE)
         # The sort= argument is called sortGroups at C level. It's primarily for saving the sort of unique strings at
         # C level for efficiency when by= not keyby=. Other types also retain appearance order, but at byte level to

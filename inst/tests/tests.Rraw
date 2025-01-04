@@ -20689,3 +20689,8 @@ if (test_bit64) {
   test(2300.3, DT1[DT2, on='id'], error="Incompatible join types")
   test(2300.4, DT2[DT1, on='id'], error="Incompatible join types")
 }
+
+# by=foo(KEY) does not retain key (no way to guarantee monotonic transformation), #5583
+DT = data.table(a=1:2, key='a')
+test(2301.1, DT[, .N, by=.(b=rev(a))], data.table(b=2:1, N=1L))
+test(2301.2, DT[, .(N=1L), by=.(b=rev(a))], data.table(b=2:1, N=1L)) # ensure no interaction with GForce
