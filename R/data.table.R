@@ -1526,7 +1526,6 @@ replace_dot_alias = function(e) {
     if (length(byval) && length(byval[[1L]])) {
       if (!bysameorder && isFALSE(byindex)) {
         if (verbose) {last.started.at=proc.time();catf("Finding groups using forderv ... ");flush.console()}
-        browser()
         o__ = forderv(byval, sort=keyby, retGrp=TRUE)
         # The sort= argument is called sortGroups at C level. It's primarily for saving the sort of unique strings at
         # C level for efficiency when by= not keyby=. Other types also retain appearance order, but at byte level to
@@ -2013,8 +2012,8 @@ replace_dot_alias = function(e) {
     if (verbose) {last.started.at=proc.time();catf("setkey() afterwards for keyby=.EACHI ... ");flush.console()}
     setkeyv(ans,names(ans)[seq_along(byval)])
     if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
-  } else if (keyby || (haskey(x) && bysameorder && (byjoin || (length(allbyvars) && identical(allbyvars,head(key(x),length(allbyvars))))))) {
-    setattr(ans,"sorted",names(ans)[seq_along(grpcols)])
+  } else if (.by_result_is_keyable(x, keyby, bysameorder, byjoin, allbyvars, bysub)) {
+    setattr(ans, "sorted", names(ans)[seq_along(grpcols)])
   }
   setalloccol(ans)   # TODO: overallocate in dogroups in the first place and remove this line
 }
@@ -3040,6 +3039,21 @@ rleidv = function(x, cols=seq_along(x), prefix=NULL) {
   ids = .Call(Crleid, x, cols)
   if (!is.null(prefix)) ids = paste0(prefix, ids)
   ids
+}
+
+.by_result_is_keyable = function(x, keyby, bysameorder, byjoin, byvars, bysub) {
+  if (keyby) return(TRUE)
+  k = key(x)
+  if (is.null(k)) return(FALSE) # haskey(x) but saving 'k' for below
+  if (!bysameorder) return(FALSE)
+  if (byjoin) return(TRUE)
+  if (!length(byvars)) return(FALSE)
+  if (!identical(byvars, head(k, length(byvars)))) return(FALSE) # match key exactly, in order
+  # For #5583, we also ensure there are no function calls in by (which might break sortedness)
+  if (is.name(bysub)) return(TRUE)
+  if (identical(bysub[[1L]], quote(list))) bysub = bysub[-1L]
+  if (length(all.names(bysub)) > length(byvars)) return(FALSE)
+  return(TRUE)
 }
 
 .is_withFALSE_range = function(e, x, root=root_name(e), vars=all.vars(e)) {
