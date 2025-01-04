@@ -123,6 +123,8 @@ rowwiseDT(
 
 16. Joins of `integer64` and `double` columns succeed when the `double` column has lossless `integer64` representation, [#4167](https://github.com/Rdatatable/data.table/issues/4167) and [#6625](https://github.com/Rdatatable/data.table/issues/6625). Previously, this only worked when the double column had lossless _32-bit_ integer representation. Thanks @MichaelChirico for the reports and fix.
 
+17. Grouped queries on keyed tables no longer return an incorrectly keyed result if the _ad hoc_ `by=` list has some function call (in particular, a function which happens to return a strictly decreasing function of the keys), e.g. `by=.(a = rev(a))`, [#5583](https://github.com/Rdatatable/data.table/issues/5583). Thanks @AbrJA for the report and @MichaelChirico for the fix.
+
 ## NOTES
 
 1. There is a new vignette on joins! See `vignette("datatable-joins")`. Thanks to Angel Feliz for authoring it! Feedback welcome. This vignette has been highly requested since 2017: [#2181](https://github.com/Rdatatable/data.table/issues/2181).
