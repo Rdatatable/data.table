@@ -123,6 +123,8 @@ rowwiseDT(
 
 17. `DT[order(...)]` better matches `base::order()` behavior by (1) recognizing the `method=` argument (and erroring since this is not supported) and (2) accepting a vector of `TRUE`/`FALSE` in `decreasing=` as an alternative to using `-a` to convey "sort `a` decreasing", [#4456](https://github.com/Rdatatable/data.table/issues/4456). Thanks @jangorecki for the FR and @MichaelChirico for the PR.
 
+17. Assignment with `:=` to an S4 slot of an under-allocated data.table now works, [#6704](https://github.com/Rdatatable/data.table/issues/6704). Thanks @MichaelChirico for the report and fix.
+
 ## NOTES
 
 1. There is a new vignette on joins! See `vignette("datatable-joins")`. Thanks to Angel Feliz for authoring it! Feedback welcome. This vignette has been highly requested since 2017: [#2181](https://github.com/Rdatatable/data.table/issues/2181).
