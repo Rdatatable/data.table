@@ -121,7 +121,7 @@ rowwiseDT(
 
 15. Joins of `integer64` and `double` columns succeed when the `double` column has lossless `integer64` representation, [#4167](https://github.com/Rdatatable/data.table/issues/4167) and [#6625](https://github.com/Rdatatable/data.table/issues/6625). Previously, this only worked when the double column had lossless _32-bit_ integer representation. Thanks @MichaelChirico for the reports and fix.
 
-17. `DT[order(...)]` better matches `base::order()` behavior by (1) recognizing the `method=` argument (and erroring since this is not supported) and (2) accepting a vector of `TRUE`/`FALSE` in `decreasing=` as an alternative to using `-a` to convey "sort `a` decreasing", [#4456](https://github.com/Rdatatable/data.table/issues/4456). Thanks @jangorecki for the FR and @MichaelChirico for the PR.
+16. `DT[order(...)]` better matches `base::order()` behavior by (1) recognizing the `method=` argument (and erroring since this is not supported) and (2) accepting a vector of `TRUE`/`FALSE` in `decreasing=` as an alternative to using `-a` to convey "sort `a` decreasing", [#4456](https://github.com/Rdatatable/data.table/issues/4456). Thanks @jangorecki for the FR and @MichaelChirico for the PR.
 
 17. Assignment with `:=` to an S4 slot of an under-allocated data.table now works, [#6704](https://github.com/Rdatatable/data.table/issues/6704). Thanks @MichaelChirico for the report and fix.
 
