@@ -8448,11 +8448,8 @@ baseR = base::order(c(x2,x1,x1,x2))
   # are so relaxed now that they barely testing anything. It appears base R behaviour is undefined in this rare case of identical strings in different encodings.
 test(1590.04, identical(baseR, INT(1,4,2,3)) || identical(baseR, INT(2,3,1,4)) || identical(baseR, 1:4))
 Encoding(x2) = "unknown"
-# TODO(#6350): Decide if this test should be adjusted for Alpine Linux, or just dropped.
-if (!file.exists("/etc/alpine-release")) {
-  test(1590.05, x1!=x2)
-  test(1590.06, forderv(    c(x2,x1,x1,x2)), INT(1,4,2,3))  # consistent with Windows-1252 result, tested further below
-}
+# test(1590.05, x1!=x2) # Skip this test of R's own behavior since R itself does not give platform-consistent results, #6350
+test(1590.06, forderv(    c(x2,x1,x1,x2)), INT(1,4,2,3))  # consistent with Windows-1252 result, tested further below
 baseR = base::order(c(x2,x1,x1,x2))
 test(1590.07, identical(baseR, INT(1,4,2,3)) || identical(baseR, INT(2,3,1,4)) || identical(baseR, 1:4))
 Sys.setlocale("LC_CTYPE", ctype)
