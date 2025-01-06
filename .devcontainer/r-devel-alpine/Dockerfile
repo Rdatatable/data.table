@@ -2,8 +2,10 @@ FROM docker.io/rhub/r-minimal:devel
 
 RUN apk update \
   && apk add --no-cache \
-     gcc git musl-dev openmp pkgconf zlib-dev \
+     gcc git musl-dev openmp pkgconf tzdata zlib-dev \
   && echo 'options("repos"="https://cloud.r-project.org")' >> /usr/local/lib/R/etc/Rprofile.site
+
+ENV TZDIR=/usr/share/zoneinfo
 
 COPY DESCRIPTION .
 
