@@ -147,6 +147,12 @@ rowwiseDT(
 
 11. Deprecation of `fread(autostart=)` has been upgraded to an error. It has been warning since v1.11.0 (6 years ago). The argument will be removed in the next release.
 
+# data.table [v1.16.4](https://github.com/Rdatatable/data.table/milestone/36) 4 December 2024
+
+## BUG FIXES
+
+1. Joins on multiple columns, such as `x[y, on=c("x1==y1", "x2==y1")]`, could fail during implicit type coercions if `x1` and `x2` had different but still compatible types, [#6602](https://github.com/Rdatatable/data.table/issues/6602). This was particularly unexpected when columns `x1`, `x2`, and `y1` were all of the same class, e.g. `Date`, but differed in their underlying storage types. Thanks to Benjamin Schwendinger for the report and the fix.
+
 # data.table [v1.16.2](https://github.com/Rdatatable/data.table/milestone/35) (9 October 2024)
 
 ## BUG FIXES
