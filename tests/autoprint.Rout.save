@@ -1,7 +1,7 @@
 
-R version 4.3.2 (2023-10-31) -- "Eye Holes"
-Copyright (C) 2023 The R Foundation for Statistical Computing
-Platform: x86_64-pc-linux-gnu (64-bit)
+R Under development (unstable) (2024-12-01 r87412) -- "Unsuffered Consequences"
+Copyright (C) 2024 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu
 
 R is free software and comes with ABSOLUTELY NO WARRANTY.
 You are welcome to redistribute it under certain conditions.
@@ -44,7 +44,11 @@ Index: <a>
    <int>
 1:     1
 2:     3
-> print(DT[2,a:=4L])                    # no
+> print(DT[2,a:=4L])                    # yes, as of #6631
+       a
+   <int>
+1:     1
+2:     4
 > print(DT)                             # yes
        a
    <int>
@@ -69,7 +73,11 @@ NULL
 2:     5
 > (function(){DT[2,a:=5L];NULL})()      # print NULL
 NULL
-> print(DT)                             # no. only DT[] is guaranteed print from v1.9.6 and R 3.2.0
+> print(DT)                             # yes. restored in #6631 behavior that had changed in 1.9.6.
+       a
+   <int>
+1:     1
+2:     5
 > (function(){DT[2,a:=5L][];NULL})()    # print NULL
 NULL
 > DT                                    # yes. i) function needs to add [] after last one, so that "DT" alone is guaranteed anyway
@@ -93,7 +101,11 @@ NULL
 1:     1
 2:     6
 > {DT[2,a:=6L];invisible()}             # no
-> print(DT)                             # no
+> print(DT)                             # yes
+       a
+   <int>
+1:     1
+2:     6
 > (function(){print(DT[2,a:=7L]);print(DT);invisible()})()    # yes*2
        a
    <int>
@@ -103,7 +115,11 @@ NULL
    <int>
 1:     1
 2:     7
-> {print(DT[2,a:=8L]);print(DT);invisible()}                  # yes*1  Not within function so as at prompt
+> {print(DT[2,a:=8L]);print(DT);invisible()}                  # yes*2  as at prompt, again as of #6631
+       a
+   <int>
+1:     1
+2:     8
        a
    <int>
 1:     1
@@ -136,6 +152,52 @@ NULL
 1:    10
 2:    10
 > 
+> # Regression test for auto-printing suppression in source(), #2369
+> local({
++   f = tempfile(fileext = ".R")
++   on.exit(unlink(f))
++   writeLines(c(
++     "library(data.table)",
++     "DT = data.table(a = 1)",
++     "DT[,a:=1]"                       # no
++   ), f)
++   source(f, local = TRUE, echo = TRUE)
++ })
+
+> library(data.table)
+
+> DT = data.table(a = 1)
+
+> DT[, `:=`(a, 1)]
+> 
+> # child class of data.table doesn't induce unintended print, #3029
+> dt <- data.table(x = 1)
+> class(dt) <- c("foo", "data.table", "data.frame")
+> print.foo <- function(x, ...) {
++   NextMethod("print")
++ }
+> dt[, y := 1]                          # no
+> 
+> # withAutoprint() testing (since R3.4.0)
+> if (!exists("withAutoprint", baseenv())) {
++   q("no")
++ }
+> if (TRUE) withAutoprint({
++   DT                                  # yes
++   DT[1L, 1L]                          # yes
++   DT[2L, a := 10L]                    # no
++ })
+> DT
+       a
+   <int>
+1:    10
+2:    10
+> DT[1L, 1L]
+       a
+   <int>
+1:    10
+> DT[2L, `:=`(a, 10L)]
+> 
 > proc.time()
    user  system elapsed 
-  0.223   0.016   0.231 
+  0.182   0.056   0.246 

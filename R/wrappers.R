@@ -17,7 +17,7 @@ colnamesInt = function(x, cols, check_dups=FALSE, skip_absent=FALSE) .Call(Ccoln
 
 testMsg = function(status=0L, nx=2L, nk=2L) .Call(CtestMsgR, as.integer(status)[1L], as.integer(nx)[1L], as.integer(nk)[1L])
 
-isRealReallyInt = function(x) .Call(CisRealReallyIntR, x)
-isReallyReal = function(x) .Call(CisReallyReal, x)
+fitsInInt32 = function(x) .Call(CfitsInInt32R, x)
+fitsInInt64 = function(x) .Call(CfitsInInt64R, x)
 
 coerceAs = function(x, as, copy=TRUE) .Call(CcoerceAs, x, as, copy)

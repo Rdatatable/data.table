@@ -30,8 +30,8 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg, S
   const bool verbose = GetVerbose();
 
   if (isInteger(x)) {
-    if ((isInteger(lower) || isRealReallyInt(lower)) &&
-        (isInteger(upper) || isRealReallyInt(upper))) { // #3517 coerce to num to int when possible
+    if ((isInteger(lower) || fitsInInt32(lower)) &&
+        (isInteger(upper) || fitsInInt32(upper))) { // #3517 coerce to num to int when possible
       if (!isInteger(lower)) {
         lower = PROTECT(coerceVector(lower, INTSXP)); nprotect++;
       }

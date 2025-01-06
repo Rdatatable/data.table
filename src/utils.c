@@ -11,7 +11,11 @@ bool within_int64_repres(double x) {
   return R_FINITE(x) && x <= (double)INT64_MAX && x >= (double)INT64_MIN;
 }
 
-static R_xlen_t firstNonInt(SEXP x) {
+// used to error if not passed type double but this needed extra is.double() calls in calling R code
+// which needed a repeat of the argument. Hence simpler and more robust to return false when not type double.
+bool fitsInInt32(SEXP x) {
+  if (!isReal(x))
+    return false;
   R_xlen_t n=xlength(x), i=0;
   const double *dx = REAL(x);
   while (i<n &&
@@ -19,22 +23,28 @@ static R_xlen_t firstNonInt(SEXP x) {
          (within_int32_repres(dx[i]) && dx[i]==(int)(dx[i])))) {
     i++;
   }
-  return i==n ? 0 : i+1;
+  return i==n;
 }
 
-bool isRealReallyInt(SEXP x) {
-  return isReal(x) ? firstNonInt(x)==0 : false;
-  // used to error if not passed type double but this needed extra is.double() calls in calling R code
-  // which needed a repeat of the argument. Hence simpler and more robust to return false when not type double.
+SEXP fitsInInt32R(SEXP x) {
+  return ScalarLogical(fitsInInt32(x));
 }
 
-SEXP isRealReallyIntR(SEXP x) {
-  return ScalarLogical(isRealReallyInt(x));
+bool fitsInInt64(SEXP x) {
+  if (!isReal(x))
+    return false;
+  R_xlen_t n=xlength(x), i=0;
+  const double *dx = REAL(x);
+  while (i<n &&
+         ( ISNA(dx[i]) ||
+         (within_int64_repres(dx[i]) && dx[i]==(int64_t)(dx[i])))) {
+    i++;
+  }
+  return i==n;
 }
 
-SEXP isReallyReal(SEXP x) {
-  return ScalarInteger(isReal(x) ? firstNonInt(x) : 0);
-  // return the 1-based location of first element which is really real (i.e. not an integer) otherwise 0 (false)
+SEXP fitsInInt64R(SEXP x) {
+  return ScalarLogical(fitsInInt64(x));
 }
 
 bool allNA(SEXP x, bool errorForBadType) {
@@ -125,7 +135,7 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent) {
       } else
         ricols = cols;
     } else if (isReal(cols)) {
-      if (!isRealReallyInt(cols))
+      if (!fitsInInt32(cols))
         error(_("argument specifying columns is type 'double' and one or more items in it are not whole integers"));
       ricols = PROTECT(coerceVector(cols, INTSXP)); protecti++;
     }
