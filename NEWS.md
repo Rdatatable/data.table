@@ -111,17 +111,15 @@ rowwiseDT(
 
 11. `tables()` now returns the correct size for data.tables over 2GiB, [#6607](https://github.com/Rdatatable/data.table/issues/6607). Thanks to @vlulla for the report and the PR.
 
-12. Joins on multiple columns, such as `x[y, on=c("x1==y1", "x2==y1")]`, could fail during implicit type coercions if `x1` and `x2` had different but still compatible types, [#6602](https://github.com/Rdatatable/data.table/issues/6602). This was particularly unexpected when columns `x1`, `x2`, and `y1` were all of the same class, e.g. `Date`, but differed in their underlying storage types. Thanks to Benjamin Schwendinger for the report and the fix.
+12. `rbindlist(l, use.names=TRUE)` can now handle different encodings for the column names in different entries of `l`, [#5452](https://github.com/Rdatatable/data.table/issues/5452). Thanks to @MEO265 for the report, and Benjamin Schwendinger for the fix.
 
-13. `rbindlist(l, use.names=TRUE)` can now handle different encodings for the column names in different entries of `l`, [#5452](https://github.com/Rdatatable/data.table/issues/5452). Thanks to @MEO265 for the report, and Benjamin Schwendinger for the fix.
+13. Added a `data.frame` method for `format_list_item()` to fix error printing data.tables with columns containing 1-column data.frames, [#6592](https://github.com/Rdatatable/data.table/issues/6592). Thanks to @r2evans for the bug report and fix.
 
-14. Added a `data.frame` method for `format_list_item()` to fix error printing data.tables with columns containing 1-column data.frames, [#6592](https://github.com/Rdatatable/data.table/issues/6592). Thanks to @r2evans for the bug report and fix.
-
-15. Auto-printing gets some substantial improvements
+14. Auto-printing gets some substantial improvements
    - Suppression in `knitr` documents is now done by implementing a method for `knit_print` instead of looking up the call stack, [#6589](https://github.com/Rdatatable/data.table/pull/6589). The old way was fragile and wound up broken by some implementation changes in {knitr}. Thanks to @jangorecki for the report [#6509](https://github.com/Rdatatable/data.table/issues/6509) and @aitap for the fix.
    - `print()` methods for S3 subclasses of data.table (e.g. an object of class `c("my.table", "data.table", "data.frame")`) no longer print where plain data.tables wouldn't, e.g. `myDT[, y := 2]`, [#3029](https://github.com/Rdatatable/data.table/issues/3029). The improved detection of auto-printing scenarios has the added benefit of _allowing_ print in highly explicit statements like `print(DT[, y := 2])`, obviating our recommendation since v1.9.6 to append `[]` to signal "please print me".
 
-16. Joins of `integer64` and `double` columns succeed when the `double` column has lossless `integer64` representation, [#4167](https://github.com/Rdatatable/data.table/issues/4167) and [#6625](https://github.com/Rdatatable/data.table/issues/6625). Previously, this only worked when the double column had lossless _32-bit_ integer representation. Thanks @MichaelChirico for the reports and fix.
+15. Joins of `integer64` and `double` columns succeed when the `double` column has lossless `integer64` representation, [#4167](https://github.com/Rdatatable/data.table/issues/4167) and [#6625](https://github.com/Rdatatable/data.table/issues/6625). Previously, this only worked when the double column had lossless _32-bit_ integer representation. Thanks @MichaelChirico for the reports and fix.
 
 ## NOTES
 
@@ -146,6 +144,12 @@ rowwiseDT(
 10. Deprecation of `logicalAsInt` argument to `fwrite()` has been upgraded from a warning (since v1.15.0) to an error. It will be removed in the next release.
 
 11. Deprecation of `fread(autostart=)` has been upgraded to an error. It has been warning since v1.11.0 (6 years ago). The argument will be removed in the next release.
+
+# data.table [v1.16.4](https://github.com/Rdatatable/data.table/milestone/36) 4 December 2024
+
+## BUG FIXES
+
+1. Joins on multiple columns, such as `x[y, on=c("x1==y1", "x2==y1")]`, could fail during implicit type coercions if `x1` and `x2` had different but still compatible types, [#6602](https://github.com/Rdatatable/data.table/issues/6602). This was particularly unexpected when columns `x1`, `x2`, and `y1` were all of the same class, e.g. `Date`, but differed in their underlying storage types. Thanks to Benjamin Schwendinger for the report and the fix.
 
 # data.table [v1.16.2](https://github.com/Rdatatable/data.table/milestone/35) (9 October 2024)
 
