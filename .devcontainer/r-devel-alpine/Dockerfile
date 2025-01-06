@@ -1,7 +1,8 @@
 FROM docker.io/rhub/r-minimal:devel
 
 RUN apk update \
-  && apk add --no-cache git \
+  && apk add --no-cache \
+     gcc git musl-dev openmp pkgconf zlib-dev \
   && echo 'options("repos"="https://cloud.r-project.org")' >> /usr/local/lib/R/etc/Rprofile.site
 
 COPY DESCRIPTION .
