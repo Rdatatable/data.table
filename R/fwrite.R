@@ -4,7 +4,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
            na="", dec=".", row.names=FALSE, col.names=TRUE,
            qmethod=c("double","escape"),
            logical01=getOption("datatable.logical01", FALSE), # due to change to TRUE; see NEWS
-           logicalAsInt=logical01,
+           logicalAsInt=NULL,
            scipen=getOption('scipen', 0L),
            dateTimeAs = c("ISO","squash","epoch","write.csv"),
            buffMB=8, nThread=getDTthreads(verbose),
@@ -24,12 +24,8 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   else if (length(dateTimeAs)>1L) stopf("dateTimeAs must be a single string")
   dateTimeAs = chmatch(dateTimeAs, c("ISO","squash","epoch","write.csv"))-1L
   if (is.na(dateTimeAs)) stopf("dateTimeAs must be 'ISO','squash','epoch' or 'write.csv'")
-  if (!missing(logical01) && !missing(logicalAsInt))
-    stopf("logicalAsInt has been renamed logical01. Use logical01 only, not both.")
-  if (!missing(logicalAsInt)) {
-    warningf("logicalAsInt has been renamed logical01 for consistency with fread. It works fine for now but please change to logical01 at your convenience so we can remove logicalAsInt in future.")
-    logical01 = logicalAsInt
-    logicalAsInt=NULL
+  if (!is.null(logicalAsInt)) {
+    stopf("logicalAsInt has been renamed logical01 for consistency with fread.")
   }
   scipen = if (is.numeric(scipen)) as.integer(scipen) else 0L
   buffMB = as.integer(buffMB)

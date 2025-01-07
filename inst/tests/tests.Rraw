@@ -1645,11 +1645,7 @@ test(504, dtB$k, 1:4)  # or dtB
 DT = data.table(a=1:2,b=1:4,key="a")
 test(505, DT[J(a=1,b=6),sum(i.b*b),by=.EACHI]$V1, 24)  # 24 now 'double' because i.b is 'double'
 
-# Test := after a key<-
-DT = data.table(a=3:1,b=4:6)
-test(506, key(DT)<-"a", error="deprecated")
-
-# tests 508, 509, 510 related to follow-up operations after key<-, which are now irrelevant
+# tests 506, 508, 509, 510 related to follow-up operations after key<-, which are now irrelevant
 
 # Test new functions chmatch and %chin%
 y=letters
@@ -2908,7 +2904,7 @@ test(966, fread(input, colClasses=list(character=2:4)), data.table(A=1:2, B=c("f
 # Character input more than 4096 bytes (used to be passed through path.expand which imposed the limit), #2649
 test(967, nrow(fread( strrep('a\tb\n', 10000L), header=FALSE)), 10000L)
 
-# Test fread warns about removal of any footer (and autostart skips up over it)
+# Test fread warns about removal of any footer (and skip= skips up over it)
 test(968, fread("A,B\n1,3\n2,4\n\nRowcount: 2\n"), data.table(A=1:2,B=3:4), warning="Discarded single-line footer.*Rowcount: 2")
 test(969, fread("A,B\n1,3\n2,4\n\n\nRowcount: 2"), data.table(A=1:2,B=3:4), warning="Discarded single-line footer.*Rowcount: 2")
 test(970, fread("A,B\n1,3\n2,4\n\n\nRowcount: 2\n\n"), data.table(A=1:2,B=3:4), warning="Discarded single-line footer.*Rowcount: 2")
@@ -8452,11 +8448,9 @@ baseR = base::order(c(x2,x1,x1,x2))
   # are so relaxed now that they barely testing anything. It appears base R behaviour is undefined in this rare case of identical strings in different encodings.
 test(1590.04, identical(baseR, INT(1,4,2,3)) || identical(baseR, INT(2,3,1,4)) || identical(baseR, 1:4))
 Encoding(x2) = "unknown"
-# TODO(#6350): Decide if this test should be adjusted for Alpine Linux, or just dropped.
-if (!file.exists("/etc/alpine-release")) {
-  test(1590.05, x1!=x2)
-  test(1590.06, forderv(    c(x2,x1,x1,x2)), INT(1,4,2,3))  # consistent with Windows-1252 result, tested further below
-}
+# test(1590.05, x1!=x2) # Skip this test of R's own behavior since R itself does not give platform-consistent results, #6350
+# TODO(#6350): Restore this test. On Alpine, forder() finds this input to be sorted, but we want to be platform-independent.
+if (!file.exists("/etc/alpine-release")) test(1590.06, forderv(    c(x2,x1,x1,x2)), INT(1,4,2,3))  # consistent with Windows-1252 result, tested further below
 baseR = base::order(c(x2,x1,x1,x2))
 test(1590.07, identical(baseR, INT(1,4,2,3)) || identical(baseR, INT(2,3,1,4)) || identical(baseR, 1:4))
 Sys.setlocale("LC_CTYPE", ctype)
@@ -10937,10 +10931,7 @@ test(1736.03, fwrite(DT, sep2=c("",",","")), error="sep.*,.*sep2.*,.*must all be
 test(1736.04, fwrite(DT, sep2=c("","||","")), error="nchar.*sep2.*2")
 test(1736.05, capture.output(fwrite(DT, sep='|', sep2=c("c(",",",")"), logical01=FALSE)), c("A|B|C", "1|c(1,2,3,4,5,6,7,8,9,10)|c(s,t,u,v,w)",
  "2|c(15,16,17,18)|c(1.2,2.3,3.4,3.14159265358979,-9)", "3|c(7)|c(foo,bar)", "4|c(9,10)|c(TRUE,TRUE,FALSE)"))
-test(1736.06, capture.output(fwrite(DT, sep='|', sep2=c("{",",","}"), logicalAsInt=TRUE)),
- c("A|B|C", "1|{1,2,3,4,5,6,7,8,9,10}|{s,t,u,v,w}",
- "2|{15,16,17,18}|{1.2,2.3,3.4,3.14159265358979,-9}", "3|{7}|{foo,bar}", "4|{9,10}|{1,1,0}"),
- warning="logicalAsInt has been renamed logical01")
+test(1736.06, fwrite(DT, sep='|', sep2=c("{",",","}"), logicalAsInt=TRUE), error="logicalAsInt has been renamed logical01")
 DT = data.table(A=c("foo","ba|r","baz"))
 test(1736.07, capture.output(fwrite(DT,na="")), c("A","foo","ba|r","baz"))    # no list column so no need to quote
 test(1736.08, capture.output(fwrite(DT)), c("A","foo","ba|r","baz"))
@@ -13184,7 +13175,7 @@ test(1925.10, as.ITime(x),               structure(c(12L, 67L), class="ITime"))
 test(1925.11, as.ITime(x, ms='nearest'), structure(c(12L, 68L), class="ITime"))
 test(1925.12, as.ITime(x, ms='ceil'),    structure(c(13L, 68L), class="ITime"))
 
-test(1936.1, fread("A,B\n1,3\n2,4", autostart=1), data.table(A=1:2, B=3:4), warning="autostart.*deprecated.*Consider skip")
+test(1936.1, fread("A,B\n1,3\n2,4", autostart=1), error="autostart.*deprecated.*Consider skip")
 if (.Platform$OS.type == "unix") test(1936.2, is.data.table(fread("ls .")))
 
 # add helpful error to %between%
@@ -13614,8 +13605,9 @@ test(1962.0482, forder(L), 3:1)
 test(1962.0483, forder(), NULL)
 setDT(DT)
 test(1962.049, forder(DT[ , 0L]), error = 'Attempting to order a 0-column')
-test(1962.050, forder(DT, decreasing = NA), error = base_messages$stopifnot('isTRUEorFALSE(decreasing)'))
-test(1962.051, forder(DT, decreasing = 1.4), error = base_messages$stopifnot('isTRUEorFALSE(decreasing)'))
+test(1962.0500, forder(DT, decreasing = NA), error = base_messages$stopifnot('!is.na(decreasing)'))
+test(1962.0510, forder(DT, decreasing = 1.4), error = base_messages$stopifnot('is.logical(decreasing)'))
+test(1962.0511, forder(DT, decreasing=logical()), error=base_messages$stopifnot('length(decreasing) > 0L'))
 test(1962.052, forder(DT, NULL), 3:1)
 test(1962.053, forder(DT), 3:1)
 test(1962.054, forder(DT, ), 3:1)
@@ -15961,8 +15953,7 @@ DT[ , z := 0L]
 test(2074.31, dcast(DT, V1 ~ z, fun.aggregate=eval(quote(length)), value.var='z'),
      data.table(V1=c('a', 'b'), `0`=2:1,key='V1'))
 
-# fwrite both logical args
-test(2074.32, fwrite(DT, logical01=TRUE, logicalAsInt=TRUE), error="logicalAsInt has been renamed")
+# 2074.32 tested that setting both logical01 and logicalAsInt errored; no longer relevant
 
 # merge.data.table
 test(2074.33, merge(DT, DT, by.x = 1i, by.y=1i), error="A non-empty vector of column names is required")
@@ -19227,16 +19218,29 @@ for (opt in c(0, 1, 2)) {
 
 # Confusing behavior with DT[, min(var):max(var)] #2069
 DT = data.table(t = c(2L, 1L, 3L), a=0, b=1)
-test(2284.1, DT[, min(t):max(t)], with(DT, min(t):max(t)))
-test(2284.2, DT[, 1:max(t)], with(DT, 1:max(t)))
-test(2284.3, DT[, max(t):1], with(DT, max(t):1))
-test(2284.4, DT[, 1:t[1L]], with(DT, 1:t[1L]))
-test(2284.5, DT[, t[2L]:1], with(DT, t[2L]:1))
-test(2284.6, DT[, min(a):max(t)], with(DT, min(a):max(t)))
+test(2284.01, DT[, min(t):max(t)], with(DT, min(t):max(t)))
+test(2284.02, DT[, 1:max(t)], with(DT, 1:max(t)))
+test(2284.03, DT[, max(t):1], with(DT, max(t):1))
+test(2284.04, DT[, 1:t[1L]], with(DT, 1:t[1L]))
+test(2284.05, DT[, t[2L]:1], with(DT, t[2L]:1))
+test(2284.06, DT[, min(a):max(t)], with(DT, min(a):max(t)))
 # but not every `:` with a call in from or to is with=TRUE, #6486
-test(2284.7, DT[, 1:ncol(DT)], DT)
-test(2284.8, DT[, 2:(ncol(DT) - 1L)], DT[, "a"])
-test(2284.9, DT[, (ncol(DT) - 1L):ncol(DT)], DT[, c("a", "b")])
+test(2284.07, DT[, 1:ncol(DT)], DT)
+test(2284.08, DT[, 2:(ncol(DT) - 1L)], DT[, "a"])
+test(2284.09, DT[, (ncol(DT) - 1L):ncol(DT)], DT[, c("a", "b")])
+# literal:var is the same as literal:literal and var:var
+test(2284.10, DT[, 1:a], DT[, t:a])
+test(2284.11, DT[, 1:a], DT[, 1:2])
+test(2284.12, DT[, t:2], DT[, t:a])
+test(2284.13, DT[, t:2], DT[, 1:2])
+test(2284.14, DT[, 1:b], DT[, t:b])
+test(2284.15, DT[, 1:b], DT[, 1:3])
+test(2284.16, DT[, t:3], DT[, t:b])
+test(2284.17, DT[, t:3], DT[, 1:3])
+test(2284.18, DT[, 2:b], DT[, a:b])
+test(2284.19, DT[, 2:b], DT[, 2:3])
+test(2284.20, DT[, a:3], DT[, a:b])
+test(2284.21, DT[, a:3], DT[, 2:3])
 
 # Extra regression tests for #4772, which was already incidentally fixed by #5183.
 x = data.table(a=1:3)
@@ -20697,3 +20701,10 @@ if (test_bit64) {
   test(2300.3, DT1[DT2, on='id'], error="Incompatible join types")
   test(2300.4, DT2[DT1, on='id'], error="Incompatible join types")
 }
+
+# interpret more arguments to order() correctly when translating to forder(), #4456
+DT = data.table(a=rep(1:3, 4), b=rep(1:2, 6))
+test(2301.1, DT[order(a, method="auto")], error="no support for sorting by method='auto'")
+test(2301.2, DT[order(a, b, decreasing=c(TRUE, FALSE))], DT[order(-a, b)])
+test(2301.3, DT[order(a, -b, decreasing=c(TRUE, TRUE))], error="Mixing '-' with vector decreasing")
+test(2301.4, DT[order(a, b, decreasing=c(TRUE, TRUE, FALSE))], error="decreasing= has length 3")

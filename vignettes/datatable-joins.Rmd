@@ -126,12 +126,12 @@ The next diagram shows a description for each basic argument. In the following s
 x[i, on, nomatch]
 | |  |   |
 | |  |   \__ If NULL only returns rows linked in x and i tables
-| |  \____ a character vector o list defining match logict
+| |  \____ a character vector or list defining match logic
 | \_____ primary data.table, list or data.frame
 \____ secondary data.table
 ```
 
-> Please keep in mind that the standard argument order in data.table is `dt[i, j, by]`. For join operations, it is recommended to pass the `on` and `nomatch` arguments by name to avoid using `j` and `by` when they are not needed.
+> Please keep in mind that the standard argument order in `data.table` is `dt[i, j, by]`. For join operations, it is recommended to pass the `on` and `nomatch` arguments by name to avoid using `j` and `by` when they are not needed.
 
 ## 3. Equi joins
 
@@ -160,8 +160,8 @@ Products[ProductReceived,
 As many things have changed, let's explain the new characteristics in the following groups:
 
 - **Column level**
-  - The *first group* of columns in the new data.table comes from the `x` table.
-  - The *second group* of columns in the new data.table comes from the `i` table.
+  - The *first group* of columns in the new `data.table` comes from the `x` table.
+  - The *second group* of columns in the new `data.table` comes from the `i` table.
   - If the join operation presents a present any **name conflict** (both table have same column name) the ***prefix*** `i.` is added to column names from the **right-hand table** (table on `i` position).
   
 - **Row level**
@@ -183,7 +183,7 @@ Products[ProductReceived,
          on = list(id = product_id)]
 ```
 
-- Wrapping the related columns in the data.table `list`	alias `.`.
+- Wrapping the related columns in the `data.table` `list` alias `.`.
 
 ```{r, eval=FALSE}
 Products[ProductReceived,
@@ -249,7 +249,7 @@ Products[
 ```
 
 
-##### Summarizing with on in data.table
+##### Summarizing with `on` in `data.table`
 
 We can also use this alternative to return aggregated results based columns present in the `x` table.
 
@@ -302,18 +302,18 @@ ProductReceived[Products,
                 nomatch = NULL]
 ```
 
-Despite both tables have the same information, they present some relevant differences:
+Despite both tables having the same information, there are some relevant differences:
 
-- They present different order for their columns
-- They have some name differences on their columns names:
-  - The `id` column of first table has the same information as the `product_id` in the second table.
-  - The `i.id` column of first table has the same information as the `id` in the second table.
+- They present different column ordering.
+- They have column name differences:
+  - The `id` column in the first table has the same information as the `product_id` in the second table.
+  - The `i.id` column in the first table has the same information as the `id` in the second table.
 
 ### 3.3. Not join
 
 This method **keeps only the rows that don't match with any row of a second table**.
 
-To apply this technique we just need to negate (`!`) the table located on the `i` argument.
+To apply this technique we can negate (`!`) the table located on the `i` argument.
 
 ```{r}
 Products[!ProductReceived,
@@ -331,7 +331,7 @@ In this case, the operation returns the row with `product_id = 6,` as it is not 
 
 ### 3.4. Semi join
 
-This method extract **keeps only the rows that match with any row in a second table** without combining the column of the tables.
+This method extracts **only the rows that match any row in a second table**, without combining the columns of the tables.
 
 It's very similar to subset as join, but as in this time we are passing a complete table to the `i` we need to ensure that:
 
@@ -391,7 +391,7 @@ Here some important considerations:
   
 - **Row level**
   - All rows from in the `i` table were kept as we never received any banana but row is still part of the results.
-  - The row related to `product_id = 6` is no part of the results any more as it is not present in the `Products` table.
+  - The row related to `product_id = 6` is not part of the results any more as it is not present in the `Products` table.
 
 
 #### 3.5.1. Joining after chain operations
@@ -510,7 +510,7 @@ Use this method if you need to combine columns from 2 tables based on one or mor
 
 As we saw in the previous section, any of the prior operations can keep the missing `product_id = 6` and the **soda** (`product_id = 4`) as part of the results.
 
-To save this problem, we can use the `merge` function even thought it is lower than using the native `data.table`'s joining syntax.
+To save this problem, we can use the `merge` function even though it is lower than using the native `data.table`'s joining syntax.
 
 ```{r}
 merge(x = Products,
@@ -524,24 +524,24 @@ merge(x = Products,
 
 ## 4. Non-equi join
 
-A non-equi join is a type of join where the condition for matching rows is not based on equality, but on other comparison operators like <, >, <=, or >=. This allows for **more flexible joining criteria**. In `data.table`, non-equi joins are particularly useful for operations like:
+A non-equi join is a type of join where the condition for matching rows is based on comparison operators other than equality, such as `<`, `>`, `<=`, or `>=`. This allows for **more flexible joining criteria**. In `data.table`, non-equi joins are particularly useful for operations like:
 
-- Finding the nearest match
-- Comparing ranges of values between tables
+- Finding the nearest match.
+- Comparing ranges of values between tables.
 
-It's a great alternative if after applying a right of inner join:
+It is a great alternative when, after applying a right or inner join, you:
 
-- You want to decrease the number of returned rows based on comparing numeric columns of different table.
-- You don't need to keep the columns from table `x`*(secondary data.table)* in the final table.
+- Want to reduce the number of returned rows based on comparisons of numeric columns between tables.
+- Do not need to retain the columns from table x *(the secondary `data.table`)* in the final result.
 
-To illustrate how this work, let's center over attention on how are the sales and receives for product 2.
+To illustrate how this works, let's focus on the sales and receives for product 2.
   
 ```{r}
 ProductSalesProd2 = ProductSales[product_id == 2L]
 ProductReceivedProd2 = ProductReceived[product_id == 2L]
 ```
 
-If want to know, for example, if can find any receive that took place before a sales date, we can apply the next code.
+If want to know, for example, you can find any receive that took place before a sales date, we can apply the following.
 
 ```{r}
 ProductReceivedProd2[ProductSalesProd2,
@@ -552,16 +552,16 @@ ProductReceivedProd2[ProductSalesProd2,
 
 What does happen if we just apply the same logic on the list passed to `on`?
 
-- As this opperation it's still a right join, it returns all rows from the `i` table, but only shows the values for `id` and `count` when the rules are met.
+- As this operation is still a right join, it returns all rows from the `i` table, but only shows the values for `id` and `count` when the rules are met.
 
-- The date related `ProductReceivedProd2` was omited from this new table.
+- The date related `ProductReceivedProd2` was omitted from this new table.
 
 ```{r}
 ProductReceivedProd2[ProductSalesProd2,
                      on = list(product_id, date < date)]
 ```
 
-Now, after applying the join, we can limit the results only show the cases that meet all joining criteria.                                                               
+Now, after applying the join, we can limit the results only showing the cases that meet all joining criteria.                                                               
 
 ```{r}
 ProductReceivedProd2[ProductSalesProd2,
@@ -574,7 +574,7 @@ ProductReceivedProd2[ProductSalesProd2,
 
 Rolling joins are particularly useful in time-series data analysis. They allow you to **match rows based on the nearest value** in a sorted column, typically a date or time column. 
 
-This is valuable when you need to align data from different sources **that may not have exactly matching timestamps**, or when you want to carry forward the most recent value. 
+This is valuable when you need to align data from different sources **that may not have exact matching timestamps**, or when you want to carry forward the most recent value. 
 
 For example, in financial data, you might use a rolling join to assign the most recent stock price to each transaction, even if the price updates and transactions don't occur at the exact same times.
 
@@ -594,7 +594,7 @@ ProductPriceHistory = data.table(
 ProductPriceHistory
 ```
 
-Now, we can perform a right join giving a different prices for each product based on the sale date.
+Now, we can perform a right join giving a different price for each product based on the sale date.
 
 ```{r}
 ProductPriceHistory[ProductSales,
@@ -613,13 +613,13 @@ ProductPriceHistory[ProductSales,
                     j = .(product_id, date, count, price)]
 ```
 
-## 7. Taking advange of joining speed
+## 7. Taking advantage of joining speed
 
 ### 7.1. Subsets as joins
 
-As we just saw in the prior section the `x` table gets filtered by the values available in the `i` table. Actually, that process is faster than passing a Boolean expression to the `i` argument.
+As we just saw in the prior section the `x` table gets filtered by the values available in the `i` table. This process is faster than passing a Boolean expression to the `i` argument.
 
-To filter the `x` table at speed we don't to pass a complete `data.table`, we can pass a `list()` of vectors with the values that we want to keep or omit from the original table.
+To filter the `x` table at speed we don't need to pass a complete `data.table`, we can pass a `list()` of vectors with the values that we want to keep or omit from the original table.
 
 For example, to filter dates where the market received 100 units of bananas (`product_id = 1`) or popcorn (`product_id = 3`) we can use the following:
 
@@ -628,7 +628,7 @@ ProductReceived[list(c(1L, 3L), 100L),
                 on = c("product_id", "count")]
 ```
 
-As at the end, we are filtering based on a join operation the code returned a **row that was not present in original table**. To avoid that behavior, it is recommended to always to add the argument `nomatch = NULL`.
+As at the end, we are filtering based on a join operation the code returned a **row that was not present in original table**. To avoid that behavior, it is recommended to always add the argument `nomatch = NULL`.
 
 ```{r}
 ProductReceived[list(c(1L, 3L), 100L),
@@ -644,7 +644,7 @@ ProductReceived[!list(c(1L, 3L), 100L),
                 on = c("product_id", "count")]
 ```
 
-If you just want to filter a value for a single **character column**, you can omit calling the `list()` function pass the value to been filtered in the `i` argument.
+If you just want to filter a value for a single **character column**, you can omit calling the `list()` function and pass the value to be filtered in the `i` argument.
 
 ```{r}
 Products[c("banana","popcorn"),
@@ -660,7 +660,7 @@ Products[!"popcorn",
 
 ### 7.2. Updating by reference
 
-The `:=` operator in data.table is used for updating or adding columns by reference. This means it modifies the original data.table without creating a copy, which is very memory-efficient, especially for large datasets. When used inside a data.table, `:=` allows you to **add new columns** or **modify existing ones** as part of your query.
+The `:=` operator in `data.table` is used for updating or adding columns by reference. This means it modifies the original `data.table` without creating a copy, which is very memory-efficient, especially for large datasets. When used inside a `data.table`, `:=` allows you to **add new columns** or **modify existing ones** as part of your query.
 
 Let's update our `Products` table with the latest price from `ProductPriceHistory`:
 
@@ -674,7 +674,7 @@ copy(Products)[ProductPriceHistory,
 
 In this operation:
 
-- The function `copy` prevent that `:=` changes by reference the `Products` table.s
+- The function copy creates a ***deep*** copy of the `Products` table, preventing modifications made by `:=` from changing the original table by reference.
 - We join `Products` with `ProductPriceHistory` based on `id` and `product_id`.
 - We update the `price` column with the latest price from `ProductPriceHistory`.
 - We add a new `last_updated` column to track when the price was last changed.
