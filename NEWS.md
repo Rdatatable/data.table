@@ -149,6 +149,8 @@ rowwiseDT(
 
 11. Deprecation of `fread(autostart=)` has been upgraded to an error. It has been warning since v1.11.0 (6 years ago). The argument will be removed in the next release.
 
+12. Deprecation of `droplevels(in.place=TRUE)` (warning since v1.16.0) has been upgraded from warning to error. The argument will be removed in the next release.
+
 # data.table [v1.16.4](https://github.com/Rdatatable/data.table/milestone/36) 4 December 2024
 
 ## BUG FIXES
