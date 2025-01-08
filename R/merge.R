@@ -38,12 +38,12 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
     if (!all(by.x %chin% nm_x)) {
       missing_in_x <- setdiff(by.x, nm_x)
       stopf("The following columns listed in `by.x` are missing from `x`: %s",
-            paste(missing_in_x, collapse = ", "))
+            toString(missing_in_x))
     }
     if (!all(by.y %chin% nm_y)) {
       missing_in_y <- setdiff(by.y, nm_y)
       stopf("The following columns listed in `by.y` are missing from `y`: %s",
-            paste(missing_in_y, collapse = ", "))
+            toString(missing_in_y))
     }
     by = by.x
     names(by) = by.y
@@ -60,8 +60,8 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
     missing_in_y <- setdiff(by, nm_y)
     if (length(missing_in_x) > 0 || length(missing_in_y) > 0) {
       stopf("The following columns are missing:\n%s%s",
-            if (length(missing_in_x) > 0) sprintf(" - From `x`: %s\n", paste(missing_in_x, collapse = ", ")) else "",
-            if (length(missing_in_y) > 0) sprintf(" - From `y`: %s\n", paste(missing_in_y, collapse = ", ")) else "")
+            if (length(missing_in_x) > 0) sprintf(" - From `x`: %s\n", toString(missing_in_x)) else "",
+            if (length(missing_in_y) > 0) sprintf(" - From `y`: %s\n", toString(missing_in_y)) else "")
     }
     by = unname(by)
     by.x = by.y = by
