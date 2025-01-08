@@ -35,10 +35,16 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   if (!is.null(by.x)) {
     if (length(by.x)==0L || !is.character(by.x) || !is.character(by.y))
       stopf("A non-empty vector of column names is required for `by.x` and `by.y`.")
-    if (!all(by.x %chin% nm_x))
-      stopf("Elements listed in `by.x` must be valid column names in x.")
-    if (!all(by.y %chin% nm_y))
-      stopf("Elements listed in `by.y` must be valid column names in y.")
+    if (!all(by.x %chin% nm_x)) {
+      missing_in_x <- setdiff(by.x, nm_x)
+      stopf("The following columns listed in `by.x` are missing from `x`: %s",
+            paste(missing_in_x, collapse = ", "))
+    }
+    if (!all(by.y %chin% nm_y)) {
+      missing_in_y <- setdiff(by.y, nm_y)
+      stopf("The following columns listed in `by.y` are missing from `y`: %s",
+            paste(missing_in_y, collapse = ", "))
+    }
     by = by.x
     names(by) = by.y
   } else {
@@ -50,8 +56,13 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
       by = intersect(nm_x, nm_y)
     if (length(by) == 0L || !is.character(by))
       stopf("A non-empty vector of column names for `by` is required.")
-    if (!all(by %chin% intersect(nm_x, nm_y)))
-      stopf("Elements listed in `by` must be valid column names in x and y")
+    missing_in_x <- setdiff(by, nm_x)
+    missing_in_y <- setdiff(by, nm_y)
+    if (length(missing_in_x) > 0 || length(missing_in_y) > 0) {
+      stopf("The following columns are missing:\n%s%s",
+            if (length(missing_in_x) > 0) sprintf(" - From `x`: %s\n", paste(missing_in_x, collapse = ", ")) else "",
+            if (length(missing_in_y) > 0) sprintf(" - From `y`: %s\n", paste(missing_in_y, collapse = ", ")) else "")
+    }
     by = unname(by)
     by.x = by.y = by
   }
@@ -109,7 +120,7 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   }
 
   # Throw warning if there are duplicate column names in 'dt' (i.e. if
-  # `suffixes=c("","")`, to match behaviour in base:::merge.data.frame)
+  # `suffixes=c("",""), to match behaviour in base:::merge.data.frame)
   resultdupnames = names(dt)[duplicated(names(dt))]
   if (length(resultdupnames)) {
     warningf("column names %s are duplicated in the result", brackify(resultdupnames))
