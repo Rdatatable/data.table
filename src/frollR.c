@@ -229,7 +229,7 @@ SEXP frollapplyR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP rho) {
 
   if (!isInteger(k)) {
     if (isReal(k)) {
-      if (isRealReallyInt(k)) {
+      if (fitsInInt32(k)) {
         SEXP ik = PROTECT(coerceVector(k, INTSXP)); protecti++;
         k = ik;
       } else {

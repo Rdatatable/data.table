@@ -12,17 +12,10 @@ dcast <- function(
   data, formula, fun.aggregate = NULL, ..., margins = NULL,
   subset = NULL, fill = NULL, value.var = guess(data)
 ) {
-  if (is.data.table(data)) UseMethod("dcast", data)
-  # nocov start
-  else {
-    data_name = deparse(substitute(data))
-    ns = tryCatch(getNamespace("reshape2"), error=function(e)
-      stopf("The %1$s generic in data.table has been passed a %2$s, but data.table::%1$s currently only has a method for data.tables. Please confirm your input is a data.table, with setDT(%3$s) or as.data.table(%3$s). If you intend to use a method from reshape2, try installing that package first, but do note that reshape2 is superseded and is no longer actively developed.", "dcast", class1(data), data_name))
-    warningf("The %1$s generic in data.table has been passed a %2$s and will attempt to redirect to the relevant reshape2 method; please note that reshape2 is superseded and is no longer actively developed, and this redirection is now deprecated. Please do this redirection yourself like reshape2::%1$s(%3$s). In the next version, this warning will become an error.", "dcast", class1(data), data_name)
-    ns$dcast(data, formula, fun.aggregate = fun.aggregate, ..., margins = margins,
-             subset = subset, fill = fill, value.var = value.var)
-  }
-  # nocov end
+  # TODO(>=1.19.0): Remove this, just let dispatch to 'default' method fail.
+  if (!is.data.table(data))
+    stopf("The %1$s generic in data.table has been passed a %2$s, but data.table::%1$s currently only has a method for data.tables. Please confirm your input is a data.table, with setDT(%3$s) or as.data.table(%3$s). If you intend to use a method from reshape2, try installing that package first, but do note that reshape2 is superseded and is no longer actively developed.", "dcast", class1(data), deparse(substitute(data))) # nocov
+  UseMethod("dcast", data)
 }
 
 check_formula = function(formula, varnames, valnames, value.var.in.LHSdots, value.var.in.RHSdots) {
