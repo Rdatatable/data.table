@@ -8449,11 +8449,9 @@ baseR = base::order(c(x2,x1,x1,x2))
   # are so relaxed now that they barely testing anything. It appears base R behaviour is undefined in this rare case of identical strings in different encodings.
 test(1590.04, identical(baseR, INT(1,4,2,3)) || identical(baseR, INT(2,3,1,4)) || identical(baseR, 1:4))
 Encoding(x2) = "unknown"
-# TODO(#6350): Decide if this test should be adjusted for Alpine Linux, or just dropped.
-if (!file.exists("/etc/alpine-release")) {
-  test(1590.05, x1!=x2)
-  test(1590.06, forderv(    c(x2,x1,x1,x2)), INT(1,4,2,3))  # consistent with Windows-1252 result, tested further below
-}
+# test(1590.05, x1!=x2) # Skip this test of R's own behavior since R itself does not give platform-consistent results, #6350
+# TODO(#6350): Restore this test. On Alpine, forder() finds this input to be sorted, but we want to be platform-independent.
+if (!file.exists("/etc/alpine-release")) test(1590.06, forderv(    c(x2,x1,x1,x2)), INT(1,4,2,3))  # consistent with Windows-1252 result, tested further below
 baseR = base::order(c(x2,x1,x1,x2))
 test(1590.07, identical(baseR, INT(1,4,2,3)) || identical(baseR, INT(2,3,1,4)) || identical(baseR, 1:4))
 Sys.setlocale("LC_CTYPE", ctype)
@@ -17794,7 +17792,7 @@ if (base::getRversion() >= "3.4.0") {
 }
 test(2214.06, droplevels(DT)[["a"]], droplevels(DT[1:5,a]))
 test(2214.07, droplevels(DT, 1)[["a"]], x[1:5])
-test(2214.08, droplevels(DT, in.place=TRUE), DT, warning="droplevels() with in.place=TRUE is deprecated.")
+test(2214.08, droplevels(DT, in.place=TRUE), error="droplevels() with in.place=TRUE is deprecated.")
 # support ordered factors in fdroplevels
 o = factor(letters[1:10], ordered=TRUE)
 test(2214.09, fdroplevels(o[1:5]), droplevels(o[1:5]))
