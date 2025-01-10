@@ -637,8 +637,8 @@ void fwriteMain(fwriteMainArgs args)
   // Aside: codacy wants strnlen but strnlen is not in C99 (neither is strlen_s). To pass `gcc -std=c99 -Wall -pedantic`
   //        we'd need `#define _POSIX_C_SOURCE 200809L` before #include <string.h> but that seems a step too far
   //        and platform specific. We prefer to be pure C99.
-  if (eolLen<=0)
-      STOP(_("eol must be 1 or more bytes (usually either \\n or \\r\\n) but is length %d"), eolLen);
+  if (eolLen <= 0) // #nocov
+      STOP(_("eol must be 1 or more bytes (usually either \\n or \\r\\n) but is length %d"), eolLen); // #nocov
 
   if (verbose) {
     DTPRINT(_("Column writers: "));
@@ -693,6 +693,7 @@ void fwriteMain(fwriteMainArgs args)
     if (args.whichFun[j] == WF_Float64 && args.scipen > 0)
         // clamp width to IEEE754 max to avoid scipen=99999 allocating buffer larger than can ever be written
         width += (args.scipen < 350) ? args.scipen : 350;
+    // ensure that NA string can be written
     if (width < naLen)
         width = naLen;
     maxLineLen += width * 2;  // *2 in case the longest string is all quotes and they all need to be escaped
@@ -749,14 +750,13 @@ void fwriteMain(fwriteMainArgs args)
   int nth = args.nth;
 
   // Calc buffSize
-  if (args.buffMB < 1 || args.buffMB > 1024)
-      STOP(_("buffMB = %d is outside range 1..1024, exiting"), args.buffMB);
   size_t buffSize = args.buffMB * MEGA;
 
   // Decide buffer size and rowsPerBatch for each thread
   // Once rowsPerBatch is decided it can't be changed
 
-  // if maxLineLen is greater than buffize, increase buffSize
+  // # nocov start
+  // if maxLineLen is greater than buffSize, increase buffSize
   if (buffSize < maxLineLen) {
       buffSize = maxLineLen;
   }
@@ -764,6 +764,7 @@ void fwriteMain(fwriteMainArgs args)
   if (nth * buffSize < headerLen) {
       buffSize = headerLen / nth + 1;
   }
+  // # nocov end
 
   int rowsPerBatch = buffSize / maxLineLen;
   // + 1 because of the last incomplete loop
@@ -810,8 +811,8 @@ void fwriteMain(fwriteMainArgs args)
     if (verbose) {
         DTPRINT(_("Allocate %zu bytes for thread_streams\n"), nth * sizeof(z_stream));
     }
-    if (!thread_streams)
-        STOP(_("Failed to allocated %d bytes for threads_streams."), (int)(nth * sizeof(z_stream)));
+    if (!thread_streams) // #nocov
+        STOP(_("Failed to allocated %d bytes for threads_streams."), (int)(nth * sizeof(z_stream))); // #nocov
     // VLA on stack should be fine for nth structs; in zlib v1.2.11 sizeof(struct)==112 on 64bit
     // not declared inside the parallel region because solaris appears to move the struct in
     // memory when the #pragma omp for is entered, which causes zlib's internal self reference
@@ -819,8 +820,8 @@ void fwriteMain(fwriteMainArgs args)
 
   // compute zbuffSize which is the same for each thread
     z_stream *stream = thread_streams;
-    if (init_stream(stream) != Z_OK)
-        STOP(_("Can't init stream structure for deflateBound"));
+    if (init_stream(stream) != Z_OK) // #nocov
+        STOP(_("Can't init stream structure for deflateBound")); // #nocov
     zbuffSize = deflateBound(stream, buffSize);
     if (verbose)
         DTPRINT(_("zbuffSize=%d returned from deflateBound\n"), (int)zbuffSize);
@@ -886,8 +887,8 @@ void fwriteMain(fwriteMainArgs args)
       if (args.is_gzip) {
 #ifndef NOZLIB
         z_stream *stream = thread_streams;
-        if (init_stream(stream) != Z_OK)
-            STOP(_("Can't init stream structure for writing header"));
+        if (init_stream(stream) != Z_OK) // #nocov
+            STOP(_("Can't init stream structure for writing header")); // #nocov
         char* zbuff = zbuffPool;
         // write minimal gzip header
         char* header = "\037\213\10\0\0\0\0\0\0\3";
@@ -920,6 +921,9 @@ void fwriteMain(fwriteMainArgs args)
   }
   if (verbose)
       DTPRINT(_("Initialization done in %.3fs\n"), 1.0*(wallclock()-t0));
+
+  // empty file is test in fwrite.R
+  // # nocov start
   if (args.nrow == 0) {
     if (verbose)
         DTPRINT(_("No data rows present (nrow==0)\n"));
@@ -927,6 +931,7 @@ void fwriteMain(fwriteMainArgs args)
         STOP(_("%s: '%s'"), strerror(errno), args.filename);
     return;
   }
+  // # nocov end
 
   // Write rows ----
 
@@ -1088,8 +1093,8 @@ void fwriteMain(fwriteMainArgs args)
         PUT4(tail + 6, len);
         int ret = WRITE(f, tail, 10);
         compress_len += 10;
-        if (ret == -1)
-            STOP("Error: can't write gzip tailer");
+        if (ret == -1) // #nocov
+            STOP("Error: can't write gzip tailer"); // #nocov
 #endif
     }
 
