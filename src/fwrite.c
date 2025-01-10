@@ -755,16 +755,14 @@ void fwriteMain(fwriteMainArgs args)
   // Decide buffer size and rowsPerBatch for each thread
   // Once rowsPerBatch is decided it can't be changed
 
-  // # nocov start
   // if maxLineLen is greater than buffSize, increase buffSize
   if (buffSize < maxLineLen) {
-      buffSize = maxLineLen;
+      buffSize = maxLineLen; // # nocov
   }
   // ensure buffer can take header line
   if (nth * buffSize < headerLen) {
-      buffSize = headerLen / nth + 1;
+      buffSize = headerLen / nth + 1; // # nocov
   }
-  // # nocov end
 
   int rowsPerBatch = buffSize / maxLineLen;
   // + 1 because of the last incomplete loop
@@ -793,10 +791,8 @@ void fwriteMain(fwriteMainArgs args)
   }
   char *buffPool = malloc(alloc_size);
   if (!buffPool) {
-    // # nocov start
-    STOP(_("Unable to allocate %zu MB * %d thread buffers; '%d: %s'. Please read ?fwrite for nThread, buffMB and verbose options."),
-         buffSize / MEGA, nth, errno, strerror(errno));
-    // # nocov end
+    STOP(_("Unable to allocate %zu MB * %d thread buffers; '%d: %s'. Please read ?fwrite for nThread, buffMB and verbose options."), // # nocov
+         buffSize / MEGA, nth, errno, strerror(errno)); // # nocov
   }
 
   // init compress variables
@@ -923,15 +919,13 @@ void fwriteMain(fwriteMainArgs args)
       DTPRINT(_("Initialization done in %.3fs\n"), 1.0*(wallclock()-t0));
 
   // empty file is test in fwrite.R
-  // # nocov start
   if (args.nrow == 0) {
     if (verbose)
-        DTPRINT(_("No data rows present (nrow==0)\n"));
+        DTPRINT(_("No data rows present (nrow==0)\n")); // # nocov
     if (f != -1 && CLOSE(f))
-        STOP(_("%s: '%s'"), strerror(errno), args.filename);
-    return;
+        STOP(_("%s: '%s'"), strerror(errno), args.filename); // # nocov
+    return; // # nocov
   }
-  // # nocov end
 
   // Write rows ----
 
@@ -1015,12 +1009,10 @@ void fwriteMain(fwriteMainArgs args)
       // ordered region ----
 #pragma omp ordered
       if (failed) {
-        // # nocov start
         if (failed_compress==0 && my_failed_compress!=0) {
-          failed_compress = my_failed_compress;
+          failed_compress = my_failed_compress; // # nocov
         }
         // else another thread could have failed below while I was working or waiting above; their reason got here first
-        // # nocov end
       } else {
         errno=0;
         int ret = 0;
@@ -1056,20 +1048,18 @@ void fwriteMain(fwriteMainArgs args)
           // Not only is this ordered section one-at-a-time but we'll also Rprintf() here only from the
           // master thread (me==0) and hopefully this will work on Windows. If not, user should set
           // showProgress=FALSE until this can be fixed or removed.
-          // # nocov start
           int ETA = (int)((args.nrow - end) * (now-startTime) /end);
           if (hasPrinted || ETA >= 2) {
             if (verbose && !hasPrinted)
-                DTPRINT("\n");
+                DTPRINT("\n"); // # nocov
             DTPRINT(Pl_(nth,
-                        "\rWritten %.1f%% of %"PRId64" rows in %d secs using %d thread. maxBuffUsed=%d%%. ETA %d secs.      ",
-                        "\rWritten %.1f%% of %"PRId64" rows in %d secs using %d threads. maxBuffUsed=%d%%. ETA %d secs.      "),
-                    (100.0*end)/args.nrow, args.nrow, (int)(now-startTime), nth, maxBuffUsedPC, ETA);
-                // TODO: use progress() as in fread
+                    "\rWritten %.1f%% of %"PRId64" rows in %d secs using %d thread. maxBuffUsed=%d%%. ETA %d secs.      ",
+                    "\rWritten %.1f%% of %"PRId64" rows in %d secs using %d threads. maxBuffUsed=%d%%. ETA %d secs.      "),
+                (100.0*end)/args.nrow, args.nrow, (int)(now-startTime), nth, maxBuffUsedPC, ETA); // # nocov
+            // TODO: use progress() as in fread
             nextTime = now + 1;
             hasPrinted = true;
           }
-          // # nocov end
         }
       }
       if (args.is_gzip) {
@@ -1106,14 +1096,12 @@ void fwriteMain(fwriteMainArgs args)
 
   // Finished parallel region and can call R API safely now.
   if (hasPrinted) {
-    // # nocov start
     if (!failed) { // clear the progress meter
       DTPRINT("\r                                                                       "
               "                                                              \r\n");
     } else {       // don't clear any potentially helpful output before error
-      DTPRINT("\n");
+      DTPRINT("\n"); // # nocov
     }
-    // # nocov end
   }
 
   if (verbose) {
@@ -1135,16 +1123,14 @@ void fwriteMain(fwriteMainArgs args)
   // '&& !failed' is to not report the error as just 'closing file' but the next line for more detail
   // from the original error.
   if (failed) {
-    // # nocov start
 #ifndef NOZLIB
     if (failed_compress)
-      STOP(_("zlib %s (zlib.h %s) deflate() returned error %d Z_FINISH=%d Z_BLOCK=%d. %s"),
-           zlibVersion(), ZLIB_VERSION, failed_compress, Z_FINISH, Z_BLOCK,
-           verbose ? _("Please include the full output above and below this message in your data.table bug report.")
-                   : _("Please retry fwrite() with verbose=TRUE and include the full output with your data.table bug report."));
+      STOP(_("zlib %s (zlib.h %s) deflate() returned error %d Z_FINISH=%d Z_BLOCK=%d. %s"), // # nocov
+           zlibVersion(), ZLIB_VERSION, failed_compress, Z_FINISH, Z_BLOCK, // # nocov
+           verbose ? _("Please include the full output above and below this message in your data.table bug report.") // # nocov
+                   : _("Please retry fwrite() with verbose=TRUE and include the full output with your data.table bug report.")); // # nocov
 #endif
     if (failed_write)
-      STOP("%s: '%s'", strerror(failed_write), args.filename);
-    // # nocov end
+      STOP("%s: '%s'", strerror(failed_write), args.filename); // # nocov
   }
 }
