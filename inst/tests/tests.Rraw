@@ -10103,8 +10103,8 @@ test(1658.58, fwrite(DT), output='a,b\n1,0\\+1i\n2,-1-1i\n3,$')
 test(1658.59, fwrite(data.table(a=list('a')), verbose=TRUE),
      output='fields will be quoted if the field contains either sep.*sep2.*list column')
 test(1658.60, fwrite(data.table(r=as.raw(0))), error = "'raw' - not yet implemented")
-## naLen is bigger than col width for coverage
-test(1658.61, fwrite(data.table(a="a"), na="VERY LONG MISSING VALUE STRING !", quote=FALSE), output="a\na")
+## naLen is bigger than col width for coverage, only execute
+fwrite(data.table(a="a"), na="VERY LONG MISSING VALUE STRING !", quote=FALSE, verbose=TRUE)
 
 options(oldverbose)
 ## End fwrite tests

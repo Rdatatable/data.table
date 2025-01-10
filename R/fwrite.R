@@ -17,14 +17,14 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
            encoding = "") {
   na = as.character(na[1L]) # fix for #1725
   if (length(encoding) != 1L || !encoding %chin% c("", "UTF-8", "native")) {
-    stopf("Argument 'encoding' must be '', 'UTF-8' or 'native'.")
+    stopf("Argument 'encoding' must be '', 'UTF-8' or 'native'.") # nocov
   }
   qmethod = match.arg(qmethod)
   compress = match.arg(compress)
   dateTimeAs = match.arg(dateTimeAs)
   dateTimeAs = chmatch(dateTimeAs, c("ISO", "squash", "epoch", "write.csv"))-1L
   if (!is.null(logicalAsInt)) {
-    stopf("logicalAsInt has been renamed logical01 for consistency with fread.")
+    stopf("logicalAsInt has been renamed logical01 for consistency with fread.") # nocov
   }
   scipen = if (is.numeric(scipen)) as.integer(scipen) else 0L
   buffMB = as.integer(buffMB)

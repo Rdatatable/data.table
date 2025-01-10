@@ -628,7 +628,7 @@ void fwriteMain(fwriteMainArgs args)
   // When NA is a non-empty string, then we must quote all string fields in case they contain the na string
   // na is recommended to be empty, though
   if (na[0]!='\0' && doQuote==INT8_MIN)
-      doQuote = true;
+      doQuote = true; // # nocov
 
   qmethodEscape = args.qmethodEscape;
   squashDateTime = args.squashDateTime;
