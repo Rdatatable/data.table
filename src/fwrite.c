@@ -1097,8 +1097,8 @@ void fwriteMain(fwriteMainArgs args)
   // Finished parallel region and can call R API safely now.
   if (hasPrinted) {
     if (!failed) { // clear the progress meter
-      DTPRINT("\r                                                                       "
-              "                                                              \r\n");
+      DTPRINT("\r                                                                       " // #nocov
+              "                                                              \r\n"); // #nocov
     } else {       // don't clear any potentially helpful output before error
       DTPRINT("\n"); // # nocov
     }
@@ -1122,7 +1122,7 @@ void fwriteMain(fwriteMainArgs args)
   // If a write failed, the line above tries close() to clean up, but that might fail as well. So the
   // '&& !failed' is to not report the error as just 'closing file' but the next line for more detail
   // from the original error.
-  if (failed) {
+  if (failed) { // #nocov
 #ifndef NOZLIB
     if (failed_compress)
       STOP(_("zlib %s (zlib.h %s) deflate() returned error %d Z_FINISH=%d Z_BLOCK=%d. %s"), // # nocov
@@ -1130,7 +1130,7 @@ void fwriteMain(fwriteMainArgs args)
            verbose ? _("Please include the full output above and below this message in your data.table bug report.") // # nocov
                    : _("Please retry fwrite() with verbose=TRUE and include the full output with your data.table bug report.")); // # nocov
 #endif
-    if (failed_write)
+    if (failed_write) // #nocov
       STOP("%s: '%s'", strerror(failed_write), args.filename); // # nocov
   }
 }
