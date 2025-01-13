@@ -861,7 +861,7 @@ void fwriteMain(fwriteMainArgs args)
 #ifndef NOZLIB
   z_stream *thread_streams = (z_stream *)malloc(nth * sizeof(z_stream));
   if (!thread_streams)
-    STOP(_("Failed to allocated %d bytes for '%s'."), (int)(nth * sizeof(z_stream)), "thread_streams"); // # nocov
+    STOP(_("Failed to allocate %d bytes for '%s'."), (int)(nth * sizeof(z_stream)), "thread_streams"); // # nocov
   // VLA on stack should be fine for nth structs; in zlib v1.2.11 sizeof(struct)==112 on 64bit
   // not declared inside the parallel region because solaris appears to move the struct in
   // memory when the #pragma omp for is entered, which causes zlib's internal self reference
