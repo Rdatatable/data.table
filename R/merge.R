@@ -17,9 +17,9 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
     if (x0 && y0)
       warningf("Neither of the input data.tables to join have columns.")
     else if (x0)
-      warningf("Input data.table '%s' has no columns.", "x")
+      warningf("Input data.table x has no columns.")
     else
-      warningf("Input data.table '%s' has no columns.", "y")
+      warningf("Input data.table y has no columns.")
   }
   check_duplicate_names(x)
   check_duplicate_names(y)
@@ -29,20 +29,20 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
 
   ## set up 'by'/'by.x'/'by.y'
   if ( (!is.null(by.x) || !is.null(by.y)) && length(by.x)!=length(by.y) )
-    stopf("`by.x` and `by.y` must be of same length.")
+    stopf("by.x and by.y must be of same length.")
   if (!missing(by) && !missing(by.x))
-    warningf("Supplied both `by` and `by.x/by.y`. `by` argument will be ignored.")
+    warningf("Supplied both by and by.x/by.y. by argument will be ignored.")
   if (!is.null(by.x)) {
     if (length(by.x)==0L || !is.character(by.x) || !is.character(by.y))
-      stopf("A non-empty vector of column names is required for `by.x` and `by.y`.")
+      stopf("A non-empty vector of column names is required for by.x and by.y.")
     if (!all(by.x %chin% nm_x)) {
       missing_in_x <- setdiff(by.x, nm_x)
-      stopf("The following columns listed in `by.x` are missing from `x`: %s",
+      stopf("The following columns listed in by.x are missing from x: %s",
             toString(missing_in_x))
     }
     if (!all(by.y %chin% nm_y)) {
       missing_in_y <- setdiff(by.y, nm_y)
-      stopf("The following columns listed in `by.y` are missing from `y`: %s",
+      stopf("The following columns listed in by.y are missing from y: %s",
             toString(missing_in_y))
     }
     by = by.x
@@ -55,13 +55,13 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
     if (!length(by))
       by = intersect(nm_x, nm_y)
     if (length(by) == 0L || !is.character(by))
-      stopf("A non-empty vector of column names for `by` is required.")
+      stopf("A non-empty vector of column names for by is required.")
     missing_in_x <- setdiff(by, nm_x)
     missing_in_y <- setdiff(by, nm_y)
     if (length(missing_in_x) > 0 || length(missing_in_y) > 0) {
-      stopf("The following columns are missing:\n%s%s",
-            if (length(missing_in_x) > 0) sprintf(" - From `x`: %s\n", toString(missing_in_x)) else "",
-            if (length(missing_in_y) > 0) sprintf(" - From `y`: %s\n", toString(missing_in_y)) else "")
+      stopf("The following columns are missing:%s%s",
+            if (length(missing_in_x) > 0) sprintf(" - From x: %s", toString(missing_in_x)) else "",
+            if (length(missing_in_y) > 0) sprintf(" - From y: %s", toString(missing_in_y)) else "")
     }
     by = unname(by)
     by.x = by.y = by
