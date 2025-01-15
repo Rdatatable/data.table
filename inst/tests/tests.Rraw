@@ -10108,6 +10108,7 @@ test(1658.61, fwrite(data.table(a="a"), na="VERY LONG MISSING VALUE STRING !", q
      output="maxLineLen=66")
 ## eol="" error
 test(1658.62, fwrite(data.table(a=1), tempfile(), eol=''), error='eol must be 1 or more bytes')
+
 ## buffMB < single line width and < header width
 f = tempfile()
 test(1658.63, fwrite(data.table(a=strrep('x', 2**21)), f, buffMB=1.0), NULL)
@@ -10117,6 +10118,8 @@ setnames(DT, strrep('y', 2**21))
 test(1658.65, fwrite(DT, f, buffMB=1.0, nThread=1L), NULL)
 test(1658.66, file.size(f) > 2**20)
 unlink(f)
+
+test(1658.67, fwrite(data.table(a=numeric()), verbose=TRUE), output='No data rows present')
 
 options(oldverbose)
 ## End fwrite tests
