@@ -159,6 +159,9 @@ TZnotUTC = !identical(tt,"") && !is_utc(tt)
 #   (3) function factory for matching messages exactly by substituting anything between delimiters [delim, fmt=TRUE]
 #   (4) function factory for matching messages exactly by substituting a generic string [fmt=string]
 get_msg = function(e, delim, fmt=FALSE) {
+  ufq = options(useFancyQuotes = FALSE) # otherwise we get angled quotes, hard to match robustly
+  on.exit(options(ufq))
+
   condition = tryCatch({e; NULL}, error=identity, warning=identity)
   if (is.null(condition)) return(condition)
   msg = condition$message
@@ -170,17 +173,13 @@ get_msg = function(e, delim, fmt=FALSE) {
     sprintf("%s%s%s", delim[1L], if (fmt) "%s" else ".+", delim[2L]),
     msg
   )
-  if (fmt) return(function(x) sprintf(msg, x))
+  if (fmt) return(function(...) sprintf(msg, ...))
   return(msg)
 }
 base_messages = list(
   missing_object = get_msg(`__dt_test_missing_` + 1, "'", fmt=TRUE),
   missing_function = get_msg(`__dt_test_missing_`(), '"', fmt=TRUE),
-  missing_coerce_method = get_msg(delim = '"', {
-    old = options(useFancyQuotes = FALSE) # otherwise we get angled quotes, hard to match robustly
-    on.exit(options(old))
-    methods::as(TRUE, 'foo')
-  }),
+  missing_coerce_method = get_msg(methods::as(TRUE, 'foo'), delim = '"'),
   missing_dispatch_method = get_msg(conditionMessage(structure(1, class="foo")), '[\'"]'),
   invalid_arg_unary_operator = get_msg(-'a'),
   invalid_arg_binary_operator = get_msg(1 + 'a'),
@@ -199,6 +198,8 @@ base_messages = list(
   stopifnot = get_msg(stopifnot(FALSE), fmt="FALSE"),
   not_yet_used = get_msg(.NotYetUsed("abc"), "'", fmt=TRUE), # NB: need fmt= because the English message has '(yet)' --> parens in regex
   ambiguous_date_fmt = get_msg(as.Date('xxx')),
+  match_arg_length = get_msg(match.arg(c('a', 'b'), letters)),
+  match_arg_4_choices = get_msg(match.arg('e', letters[1:4]), delim='"', fmt=TRUE),
   NULL
 )
 
@@ -10006,7 +10007,7 @@ test(1658.27, fwrite(DT, na="NA", verbose=TRUE), output='Writing bom .false., ya
 test(1658.28, fwrite(ok_dt, 1), error=base_messages$stopifnot("is.character(file) && length(file) == 1L && !is.na(file)"))
 test(1658.29, fwrite(ok_dt, quote=123), error="identical\\(quote.*auto.*FALSE.*TRUE")
 test(1658.30, fwrite(ok_dt, sep="..."), error="nchar(sep)")
-test(1658.31, fwrite(ok_dt, qmethod=c("double", "double")), error="length(qmethod)")
+test(1658.31, fwrite(ok_dt, qmethod=c("double", "double")), error=base_messages$match_arg_length)
 test(1658.32, fwrite(ok_dt, col.names="foobar"), error="isTRUEorFALSE(col.names)")
 
 # null data table (no columns)
@@ -10048,8 +10049,12 @@ if (!haszlib()) {
   test(1658.423, file.info(f1)$size < file.info(f2)$size)  # 74 < 804  (file.size() isn't available in R 3.1.0)
   if (test_R.utils) test(1658.43, fread(f1), DT)  # use fread to decompress gz (works cross-platform)
   fwrite(DT, file=f3<-tempfile(), compress="gzip")   # compress to filename not ending .gz
+  fwrite(DT, file=f4<-tempfile(), compress="gzip", compressLevel=1)   # test compressLevel
+  fwrite(DT, file=f5<-tempfile(), compress="gzip", compressLevel=9)
   test(1658.441, file.info(f3)$size, file.info(f1)$size)
-  unlink(c(f1,f2,f3))
+  test(1658.442, file.info(f4)$size >= file.info(f1)$size)
+  test(1658.443, file.info(f1)$size >= file.info(f5)$size)
+  unlink(c(f1,f2,f3,f4,f5))
 }
 DT = data.table(a=1:3, b=list(1:4, c(3.14, 100e10), c("foo", "bar", "baz")))
 test(1658.45, fwrite(DT), output=c("a,b","1,1|2|3|4","2,3.14|1e+12","3,foo|bar|baz"))
@@ -10098,6 +10103,23 @@ test(1658.58, fwrite(DT), output='a,b\n1,0\\+1i\n2,-1-1i\n3,$')
 test(1658.59, fwrite(data.table(a=list('a')), verbose=TRUE),
      output='fields will be quoted if the field contains either sep.*sep2.*list column')
 test(1658.60, fwrite(data.table(r=as.raw(0))), error = "'raw' - not yet implemented")
+## naLen is bigger than col width
+test(1658.61, fwrite(data.table(a="a"), na="VERY LONG MISSING VALUE STRING !", quote=FALSE, verbose=TRUE),
+     output="maxLineLen=66")
+## eol="" error
+test(1658.62, fwrite(data.table(a=1), tempfile(), eol=''), error='eol must be 1 or more bytes')
+
+## buffMB < single line width and < header width
+f = tempfile()
+test(1658.63, fwrite(data.table(a=strrep('x', 2**21)), f, buffMB=1.0), NULL)
+test(1658.64, file.size(f) > 2**20) # almost exactly 2**21, but exact number will vary by platform. we just care we didn't truncate at 1MiB.
+DT=data.table(1L)
+setnames(DT, strrep('y', 2**21))
+test(1658.65, fwrite(DT, f, buffMB=1.0, nThread=1L), NULL)
+test(1658.66, file.size(f) > 2**20)
+unlink(f)
+
+test(1658.67, fwrite(data.table(a=numeric()), verbose=TRUE), output='No data rows present')
 
 options(oldverbose)
 ## End fwrite tests
@@ -10969,9 +10991,9 @@ DT = data.table(
   D = as.POSIXct(dt<-paste(d,t), tz="UTC"),
   E = as.POSIXct(paste0(dt,c(".999",".0",".5",".111112",".123456",".023",".0",".999999",".99",".0009")), tz="UTC"))
 
-test(1740.0, fwrite(DT,dateTimeAs="iso"), error="dateTimeAs must be 'ISO','squash','epoch' or 'write.csv'")
-test(1740.1, fwrite(DT,dateTimeAs=c("ISO","squash")), error="dateTimeAs must be a single string")
-test(1740.2, capture.output(fwrite(DT,dateTimeAs="ISO")), c(
+test(1740.1, fwrite(DT,dateTimeAs="iso"), error=base_messages$match_arg_4_choices("ISO", "squash", "epoch", "write.csv"))
+test(1740.2, fwrite(DT,dateTimeAs=c("ISO","squash")), error=base_messages$match_arg_length)
+test(1740.3, capture.output(fwrite(DT,dateTimeAs="ISO")), c(
 "A,B,C,D,E",
 "1907-10-21,1907-10-21,23:59:59,1907-10-21T23:59:59Z,1907-10-21T23:59:59.999Z",
 "1907-10-22,1907-10-22,00:00:00,1907-10-22T00:00:00Z,1907-10-22T00:00:00Z",
@@ -10983,7 +11005,7 @@ test(1740.2, capture.output(fwrite(DT,dateTimeAs="ISO")), c(
 "1999-12-31,1999-12-31,01:23:45,1999-12-31T01:23:45Z,1999-12-31T01:23:45.999999Z",
 "2000-02-29,2000-02-29,23:59:59,2000-02-29T23:59:59Z,2000-02-29T23:59:59.990Z",
 "2016-09-12,2016-09-12,01:30:30,2016-09-12T01:30:30Z,2016-09-12T01:30:30.000900Z"))
-test(1740.3, capture.output(fwrite(DT,dateTimeAs="squash")), c(
+test(1740.4, capture.output(fwrite(DT,dateTimeAs="squash")), c(
 "A,B,C,D,E",
 "19071021,19071021,235959,19071021235959000,19071021235959999",
 "19071022,19071022,000000,19071022000000000,19071022000000000",
@@ -10995,7 +11017,7 @@ test(1740.3, capture.output(fwrite(DT,dateTimeAs="squash")), c(
 "19991231,19991231,012345,19991231012345000,19991231012345999",
 "20000229,20000229,235959,20000229235959000,20000229235959990",
 "20160912,20160912,013030,20160912013030000,20160912013030000"))
-test(1740.4, capture.output(fwrite(DT,dateTimeAs="epoch")), c(
+test(1740.5, capture.output(fwrite(DT,dateTimeAs="epoch")), c(
 "A,B,C,D,E",
 "-22718,-22718,86399,-1962748801,-1962748800.001",
 "-22717,-22717,0,-1962748800,-1962748800",

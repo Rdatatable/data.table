@@ -10,6 +10,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
            buffMB=8, nThread=getDTthreads(verbose),
            showProgress=getOption("datatable.showProgress", interactive()),
            compress = c("auto", "none", "gzip"),
+           compressLevel = 6L,
            yaml = FALSE,
            bom = FALSE,
            verbose=getOption("datatable.verbose", FALSE),
@@ -18,18 +19,17 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   if (length(encoding) != 1L || !encoding %chin% c("", "UTF-8", "native")) {
     stopf("Argument 'encoding' must be '', 'UTF-8' or 'native'.")
   }
-  if (missing(qmethod)) qmethod = qmethod[1L]
-  if (missing(compress)) compress = compress[1L]
-  if (missing(dateTimeAs)) { dateTimeAs = dateTimeAs[1L] }
-  else if (length(dateTimeAs)>1L) stopf("dateTimeAs must be a single string")
-  dateTimeAs = chmatch(dateTimeAs, c("ISO","squash","epoch","write.csv"))-1L
-  if (is.na(dateTimeAs)) stopf("dateTimeAs must be 'ISO','squash','epoch' or 'write.csv'")
+  qmethod = match.arg(qmethod)
+  compress = match.arg(compress)
+  dateTimeAs = match.arg(dateTimeAs)
+  dateTimeAs = chmatch(dateTimeAs, c("ISO", "squash", "epoch", "write.csv")) - 1L
   if (!is.null(logicalAsInt)) {
     stopf("logicalAsInt has been renamed logical01 for consistency with fread.")
   }
   scipen = if (is.numeric(scipen)) as.integer(scipen) else 0L
   buffMB = as.integer(buffMB)
   nThread = as.integer(nThread)
+  compressLevel = as.integer(compressLevel)
   # write.csv default is 'double' so fwrite follows suit. write.table's default is 'escape'
   # validate arguments
   if (is.matrix(x)) { # coerce to data.table if input object is matrix
@@ -42,7 +42,8 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
       x = as.data.table(x)
     }
   }
-  stopifnot(is.list(x),
+  stopifnot(
+    is.list(x),
     identical(quote,"auto") || isTRUEorFALSE(quote),
     is.character(sep) && length(sep)==1L && (nchar(sep) == 1L || identical(sep, "")),
     is.character(sep2) && length(sep2)==3L && nchar(sep2[2L])==1L,
@@ -51,6 +52,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
     is.character(eol) && length(eol)==1L,
     length(qmethod) == 1L && qmethod %chin% c("double", "escape"),
     length(compress) == 1L && compress %chin% c("auto", "none", "gzip"),
+    length(compressLevel) == 1L && 0 <= compressLevel && compressLevel <= 9,
     isTRUEorFALSE(col.names), isTRUEorFALSE(append), isTRUEorFALSE(row.names),
     isTRUEorFALSE(verbose), isTRUEorFALSE(showProgress), isTRUEorFALSE(logical01),
     isTRUEorFALSE(bom),
@@ -58,7 +60,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
     is.character(file) && length(file)==1L && !is.na(file),
     length(buffMB)==1L && !is.na(buffMB) && 1L<=buffMB && buffMB<=1024L,
     length(nThread)==1L && !is.na(nThread) && nThread>=1L
-    )
+  )
 
   is_gzip = compress == "gzip" || (compress == "auto" && endsWithAny(file, ".gz"))
 
@@ -115,7 +117,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   file = enc2native(file) # CfwriteR cannot handle UTF-8 if that is not the native encoding, see #3078.
   .Call(CfwriteR, x, file, sep, sep2, eol, na, dec, quote, qmethod=="escape", append,
         row.names, col.names, logical01, scipen, dateTimeAs, buffMB, nThread,
-        showProgress, is_gzip, bom, yaml, verbose, encoding)
+        showProgress, is_gzip, compressLevel, bom, yaml, verbose, encoding)
   invisible()
 }
 
