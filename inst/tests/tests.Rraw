@@ -10106,6 +10106,8 @@ test(1658.60, fwrite(data.table(r=as.raw(0))), error = "'raw' - not yet implemen
 ## naLen is bigger than col width
 test(1658.61, fwrite(data.table(a="a"), na="VERY LONG MISSING VALUE STRING !", quote=FALSE, verbose=TRUE),
      output="maxLineLen=66")
+## eol="" error
+test(1658.62, fwrite(data.table(a=1), tempfile(), eol=''), error='eol must be 1 or more bytes')
 
 options(oldverbose)
 ## End fwrite tests
