@@ -10108,6 +10108,10 @@ test(1658.61, fwrite(data.table(a="a"), na="VERY LONG MISSING VALUE STRING !", q
      output="maxLineLen=66")
 ## eol="" error
 test(1658.62, fwrite(data.table(a=1), tempfile(), eol=''), error='eol must be 1 or more bytes')
+## buffMB < single line width
+f = tempfile()
+test(1658.63, fwrite(data.table(a=strrep('x', 2**21)), f, buffMB=1.0), NULL)
+test(1658.64, file.size(f) > 2**20) # almost exactly 2**21, but exact number will vary by platform. we just care we didn't truncate at 1MiB.
 
 options(oldverbose)
 ## End fwrite tests
