@@ -53,7 +53,7 @@ jobs:
           RHOME=$(R RHOME)
           echo "RHOME=${RHOME}"
           ls ${RHOME}
-          cp "${RHOME}/{left.jpg,up.jpg,Rlogo.svg,R.css,index.html}" doc/html
+          cp "${RHOME}/doc/html/{left.jpg,up.jpg,Rlogo.svg,R.css,index.html}" doc/html
       #     cp /usr/share/R/doc/html/{left.jpg,up.jpg,Rlogo.svg,R.css,index.html} doc/html
       #     Rscript -e 'utils::make.packages.html("library", docdir="doc")'
       #     sed -i "s|file://|../..|g" doc/html/packages.html
