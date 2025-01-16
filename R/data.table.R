@@ -2991,7 +2991,7 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     name = match.call(get, name)
     name[[1L]] = quote(assign)
     name$value = quote(x)
-    eval(name)
+    eval(name, parent.frame())
   }
   .Call(CexpandAltRep, x)  # issue#2866 and PR#2882
   invisible(x)
