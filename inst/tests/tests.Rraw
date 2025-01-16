@@ -20656,10 +20656,10 @@ test(2295.3, is.data.table(d2))
 # Ensure against regression noted in #6725
 x = data.frame(a=1)
 e = environment()
-foo = function() {
-  setDT(get('x', envir=e))
+foo = function(nm, env) {
+  setDT(get(nm, envir=env))
 }
-foo()
+foo('x', e)
 test(2295.4, is.data.table(x))
 
 # #6588: .checkTypos used to give arbitrary strings to stopf as the first argument
