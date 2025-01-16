@@ -2989,9 +2989,9 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     }
   } else if (name %iscall% "get") { # #6725
     name = match.call(get, name)
-    e = eval(name$envir, parent.frame(), parent.frame())
-    k = eval(name$x, parent.frame(), parent.frame())
-    assign(k, x, envir=e)
+    name[[1L]] = quote(assign)
+    name$value = x
+    eval(name, parent.frame(), parent.frame())
   }
   .Call(CexpandAltRep, x)  # issue#2866 and PR#2882
   invisible(x)
