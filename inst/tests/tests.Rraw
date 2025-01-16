@@ -20661,6 +20661,9 @@ foo = function(nm, env) {
 }
 foo('x', e)
 test(2295.4, is.data.table(x))
+e = new.env(parent=topenv())
+e$x = data.frame(a=1)
+foo('x', e)
 
 # #6588: .checkTypos used to give arbitrary strings to stopf as the first argument
 test(2296, d2[x %no such operator% 1], error = '%no such operator%')
