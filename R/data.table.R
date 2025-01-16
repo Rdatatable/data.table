@@ -2987,6 +2987,11 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     } else if (isS4(k)) {
       .Call(CsetS4elt, k, as.character(name[[3L]]), x)
     }
+  } else if (name %iscall% "get") { # #6725
+    name = match.call(get, name)
+    name[[1L]] = quote(assign)
+    name$value = quote(x)
+    eval(name)
   }
   .Call(CexpandAltRep, x)  # issue#2866 and PR#2882
   invisible(x)
