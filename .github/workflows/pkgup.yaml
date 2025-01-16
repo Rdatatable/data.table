@@ -9,8 +9,8 @@ concurrency:
 
 on:
   push:
-    branches:
-      - 'master'
+    #branches:
+    #  - 'master'
 
 name: pkgdown-deploy
 
@@ -50,25 +50,28 @@ jobs:
           cp -R ${{ env.R_LIBS_USER }} library
           R CMD INSTALL --library="library" $(ls -1t data.table_*.tar.gz | head -n 1) --html
           mkdir -p doc/html
-          cp /usr/share/R/doc/html/{left.jpg,up.jpg,Rlogo.svg,R.css,index.html} doc/html
-          Rscript -e 'utils::make.packages.html("library", docdir="doc")'
-          sed -i "s|file://|../..|g" doc/html/packages.html
-          mkdir -p public
-          mv doc public/doc
-          cp -r --parents library/*/{html,help,doc,demo,DESCRIPTION,README,NEWS,README.md,NEWS.md} public 2>/dev/null || :
-          sed -i 's|"/doc/html/|"/data.table/doc/html/|g' public/library/data.table/doc/index.html 2>/dev/null || :
-      - name: repo
-        if: github.ref == 'refs/heads/master'
-        run: |
-          mkdir -p public/src/contrib
-          mv $(ls -1t data.table_*.tar.gz | head -n 1) public/src/contrib
-          Rscript -e 'tools::write_PACKAGES("public/src/contrib", fields="Revision")'
-      - name: upload
-        if: github.ref == 'refs/heads/master'
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: "public"
-      - name: deploy
-        if: github.ref == 'refs/heads/master'
-        id: deployment
-        uses: actions/deploy-pages@v4
+          RHOME=$(Rscript -e "R.home()")
+          echo "R.home()=${RHOME}"
+          ls /usr/share/R/doc/html
+      #     cp /usr/share/R/doc/html/{left.jpg,up.jpg,Rlogo.svg,R.css,index.html} doc/html
+      #     Rscript -e 'utils::make.packages.html("library", docdir="doc")'
+      #     sed -i "s|file://|../..|g" doc/html/packages.html
+      #     mkdir -p public
+      #     mv doc public/doc
+      #     cp -r --parents library/*/{html,help,doc,demo,DESCRIPTION,README,NEWS,README.md,NEWS.md} public 2>/dev/null || :
+      #     sed -i 's|"/doc/html/|"/data.table/doc/html/|g' public/library/data.table/doc/index.html 2>/dev/null || :
+      # - name: repo
+      #   if: github.ref == 'refs/heads/master'
+      #   run: |
+      #     mkdir -p public/src/contrib
+      #     mv $(ls -1t data.table_*.tar.gz | head -n 1) public/src/contrib
+      #     Rscript -e 'tools::write_PACKAGES("public/src/contrib", fields="Revision")'
+      # - name: upload
+      #   if: github.ref == 'refs/heads/master'
+      #   uses: actions/upload-pages-artifact@v3
+      #   with:
+      #     path: "public"
+      # - name: deploy
+      #   if: github.ref == 'refs/heads/master'
+      #   id: deployment
+      #   uses: actions/deploy-pages@v4
