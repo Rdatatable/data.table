@@ -2988,6 +2988,7 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
       .Call(CsetS4elt, k, as.character(name[[3L]]), x)
     }
   } else if (name %iscall% "get") { # #6725
+    # edit 'get(nm, env)' call to be 'assign(nm, x, envir=env)'
     name = match.call(get, name)
     name[[1L]] = quote(assign)
     name$value = x
