@@ -17,9 +17,9 @@ name: pkgdown-deploy
 jobs:
   build:
     name: data.table
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+    # environment:
+    #   name: github-pages
+    #   url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -45,7 +45,7 @@ jobs:
         run: |
           R CMD check --as-cran --no-manual $(ls -1t data.table_*.tar.gz | head -n 1)
       - name: manual
-        if: github.ref == 'refs/heads/master'
+        # if: github.ref == 'refs/heads/master'
         run: |
           cp -R ${{ env.R_LIBS_USER }} library
           R CMD INSTALL --library="library" $(ls -1t data.table_*.tar.gz | head -n 1) --html
