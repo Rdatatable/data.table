@@ -20653,6 +20653,18 @@ setDT(d2)
 test(2295.1, !is.data.table(d1))
 test(2295.2, rownames(d1), 'b')
 test(2295.3, is.data.table(d2))
+# Ensure against regression noted in #6725
+x = data.frame(a=1)
+e = environment()
+foo = function(nm, env) {
+  setDT(get(nm, envir=env))
+}
+foo('x', e)
+test(2295.4, is.data.table(x))
+e = new.env(parent=topenv())
+e$x = data.frame(a=1)
+foo('x', e)
+test(2295.5, is.data.table(e$x))
 
 # #6588: .checkTypos used to give arbitrary strings to stopf as the first argument
 test(2296, d2[x %no such operator% 1], error = '%no such operator%')
