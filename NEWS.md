@@ -154,6 +154,7 @@ rowwiseDT(
     DT[, c('L', 'i') := list(NULL, 3L)]         # delete L, assign to i
     DT[, c('L', 'i') := list(list(NULL), NULL)] # assign to L, delete i
     ```
+21. An integer overflow in `fread()` with lines longer than `2^(31/2)` bytes is prevented, [#6729](https://github.com/Rdatatable/data.table/issues/6729). The typical impact was no worse than a wrong initial allocation size, corrected later. Thanks to @TaikiSan21 for the report and @aitap for the fix.
 
 ## NOTES
 
