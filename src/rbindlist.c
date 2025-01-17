@@ -76,6 +76,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
       error(_("Failed to allocate upper bound of %"PRId64" unique column names [sum(lapply(l,ncol))]"), (int64_t)upperBoundUniqueNames); // # nocov
     savetl_init();
     int nuniq=0;
+    // first pass - gather unique column names
     for (int i=0; i<LENGTH(l); i++) {
       SEXP li = VECTOR_ELT(l, i);
       int thisncol=LENGTH(li);
@@ -84,18 +85,15 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
       if (!length(cn)) continue;
       const SEXP *cnp = STRING_PTR_RO(cn);
       for (int j=0; j<thisncol; j++) {
-        SEXP s = cnp[j];
+        SEXP s = ENC2UTF8(cnp[j]); // convert different encodings for use.names #5452
         if (TRUELENGTH(s)<0) continue;  // seen this name before
         if (TRUELENGTH(s)>0) savetl(s);
         uniq[nuniq++] = s;
         SET_TRUELENGTH(s,-nuniq);
       }
     }
-    if (nuniq>0) {
-      SEXP *tt = realloc(uniq, nuniq*sizeof(SEXP));  // shrink to only what we need to release the spare
-      if (!tt) free(uniq);  // shrink never fails; just keep codacy happy
-      uniq = tt;
-    }
+    if (nuniq>0) uniq = realloc(uniq, nuniq*sizeof(SEXP));  // shrink to only what we need to release the spare
+
     // now count the dups (if any) and how they're distributed across the items
     int *counts = (int *)calloc(nuniq, sizeof(int)); // counts of names for each colnames
     int *maxdup = (int *)calloc(nuniq, sizeof(int)); // the most number of dups for any name within one colname vector
@@ -107,6 +105,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
       error(_("Failed to allocate nuniq=%d items working memory in rbindlist.c"), nuniq);
       // # nocov end
     }
+    // second pass - count duplicates
     for (int i=0; i<LENGTH(l); i++) {
       SEXP li = VECTOR_ELT(l, i);
       int thisncol=length(li);
@@ -116,7 +115,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
       const SEXP *cnp = STRING_PTR_RO(cn);
       memset(counts, 0, nuniq*sizeof(int));
       for (int j=0; j<thisncol; j++) {
-        SEXP s = cnp[j];
+        SEXP s = ENC2UTF8(cnp[j]); // convert different encodings for use.names #5452
         counts[ -TRUELENGTH(s)-1 ]++;
       }
       for (int u=0; u<nuniq; u++) {
@@ -145,6 +144,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
     for (int i=0; i<ncol; ++i) {uniqMap[i] = dupLink[i] = -1;}
     int nextCol=0, lastDup=ncol-1;
 
+    // third pass - create final column mapping colMapRaw
     for (int i=0; i<LENGTH(l); ++i) {
       SEXP li = VECTOR_ELT(l, i);
       int thisncol=length(li);
@@ -156,7 +156,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
         const SEXP *cnp = STRING_PTR_RO(cn);
         memset(counts, 0, nuniq*sizeof(int));
         for (int j=0; j<thisncol; j++) {
-          SEXP s = cnp[j];
+          SEXP s = ENC2UTF8(cnp[j]); // convert different encodings for use.names #5452
           int w = -TRUELENGTH(s)-1;
           int wi = counts[w]++; // how many dups have we seen before of this name within this item
           if (uniqMap[w]==-1) {

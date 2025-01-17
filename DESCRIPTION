@@ -99,5 +99,6 @@ Authors@R: c(
   person("Elise", "Maigné",        role="ctb"),
   person("Vincent", "Rocher",      role="ctb"),
   person("Vijay", "Lulla",         role="ctb"),
+  person("Aljaž", "Sluga",         role="ctb"),
   person("Bill", "Evans",          role="ctb")
   )

@@ -66,6 +66,15 @@
       lockBinding("rbind.data.frame",baseenv())
     }
   }
+  if (session_r_version < "3.6.0") { # corresponds to S3method() directive in NAMESPACE
+    # no delayed registration support for NAMESPACE; perform it manually
+    if (isNamespaceLoaded("knitr")) {
+      registerS3method("knit_print", "data.table", knit_print.data.table, envir = asNamespace("knitr"))
+    }
+    setHook(packageEvent("knitr", "onLoad"), function(...) {
+      registerS3method("knit_print", "data.table", knit_print.data.table, envir = asNamespace("knitr"))
+    })
+  }
 
   # Set options for the speed boost in v1.8.0 by avoiding 'default' arg of getOption(,default=)
   # In fread and fwrite we have moved back to using getOption's default argument since it is unlikely fread and fread will be called in a loop many times, plus they

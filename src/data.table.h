@@ -6,6 +6,10 @@
 #  define ALTREP(x) 0     // #2866
 #  define USE_RINTERNALS  // #3301
 #  define DATAPTR_RO(x) ((const void *)DATAPTR(x))
+#  define STRING_PTR_RO STRING_PTR
+#  define INTEGER_RO INTEGER
+#  define REAL_RO REAL
+#  define COMPLEX_RO COMPLEX
 #  define R_Calloc(x, y) Calloc(x, y)         // #6380
 #  define R_Realloc(x, y, z) Realloc(x, y, z)
 #  define R_Free(x) Free(x)
@@ -15,9 +19,6 @@
 #endif
 #include <Rinternals.h>
 #define SEXPPTR_RO(x) ((const SEXP *)DATAPTR_RO(x))  // to avoid overhead of looped STRING_ELT and VECTOR_ELT
-#ifndef STRING_PTR_RO
-#define STRING_PTR_RO STRING_PTR
-#endif
 #include <stdint.h>    // for uint64_t rather than unsigned long long
 #include <stdarg.h>    // for va_list, va_start
 #include <stdbool.h>
@@ -243,9 +244,10 @@ SEXP coalesce(SEXP x, SEXP inplace);
 // utils.c
 bool within_int32_repres(double x);
 bool within_int64_repres(double x);
-bool isRealReallyInt(SEXP x);
-SEXP isRealReallyIntR(SEXP x);
-SEXP isReallyReal(SEXP x);
+bool fitsInInt32(SEXP x);
+SEXP fitsInInt32R(SEXP x);
+bool fitsInInt64(SEXP x);
+SEXP fitsInInt64R(SEXP x);
 bool allNA(SEXP x, bool errorForBadType);
 SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent);
 bool INHERITS(SEXP x, SEXP char_);
@@ -293,10 +295,11 @@ SEXP setcharvec(SEXP, SEXP, SEXP);
 SEXP chmatch_R(SEXP, SEXP, SEXP);
 SEXP chmatchdup_R(SEXP, SEXP, SEXP);
 SEXP chin_R(SEXP, SEXP);
-SEXP freadR(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
-SEXP fwriteR(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+SEXP freadR(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+SEXP fwriteR(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP rbindlist(SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP setlistelt(SEXP, SEXP, SEXP);
+SEXP setS4elt(SEXP, SEXP, SEXP);
 SEXP address(SEXP);
 SEXP expandAltRep(SEXP);
 SEXP fmelt(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
