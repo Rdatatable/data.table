@@ -73,7 +73,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
         next
       } else {
         if (x_merge_type=="character") {
-          coerce_col(i, icol, "factor", "character", iname, xname, verbose = verbose)
+          coerce_col(i, icol, "factor", "character", iname, xname, verbose=verbose)
           set(callersi, j=icol, value=i[[icol]])  # factor in i joining to character in x will return character and not keep x's factor; e.g. for antaresRead #3581
           next
         } else if (i_merge_type=="character") {
@@ -94,11 +94,11 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     cfl = c("character", "logical", "factor")
     if (x_merge_type %chin% cfl || i_merge_type %chin% cfl) {
       if (anyNA(i[[icol]]) && allNA(i[[icol]])) {
-        coerce_col(i, icol, i_merge_type, x_merge_type, iname, xname, gettext(" (all-NA)"), verbose = verbose)
+        coerce_col(i, icol, i_merge_type, x_merge_type, iname, xname, from_detail=gettext(" (all-NA)"), verbose=verbose)
         next
       }
       if (anyNA(x[[xcol]]) && allNA(x[[xcol]])) {
-        coerce_col(x, xcol, x_merge_type, i_merge_type, xname, iname, gettext(" (all-NA)"), verbose = verbose)
+        coerce_col(x, xcol, x_merge_type, i_merge_type, xname, iname, to_detail=gettext(" (all-NA)"), verbose=verbose)
         next
       }
       stopf("Incompatible join types: %s (%s) and %s (%s)", xname, x_merge_type, iname, i_merge_type)
@@ -107,8 +107,8 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
       nm = c(iname, xname)
       if (x_merge_type=="integer64") { w=i; wc=icol; wclass=i_merge_type; } else { w=x; wc=xcol; wclass=x_merge_type; nm=rev(nm) }  # w is which to coerce
       if (wclass=="integer" || (wclass=="double" && fitsInInt64(w[[wc]]))) {
-        from_det_msg = if (wclass == "double") gettext(" (which has integer64 representation, e.g. no fractions)") else ""
-        coerce_col(w, wc, wclass, "integer64", nm[1L], nm[2L], from_det_msg, verbose = verbose)
+        from_detail = if (wclass == "double") gettext(" (which has integer64 representation, e.g. no fractions)") else ""
+        coerce_col(w, wc, wclass, "integer64", nm[1L], nm[2L], from_detail, verbose=verbose)
       } else stopf("Incompatible join types: %s is type integer64 but %s is type double and cannot be coerced to integer64 (e.g. has fractions)", nm[2L], nm[1L])
     } else {
       # just integer and double left
@@ -129,13 +129,13 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
             }
           }
           if (coerce_x) {
-            from_det_msg = gettext(" (which contains no fractions)")
-            coerce_col(i, icol, "double", "integer", iname, xname, from_det_msg, verbose = verbose)
+            from_detail = gettext(" (which contains no fractions)")
+            coerce_col(i, icol, "double", "integer", iname, xname, from_detail, verbose=verbose)
             set(callersi, j=icol, value=i[[icol]])       # change the shallow copy of i up in [.data.table to reflect in the result, too.
             if (length(ic_idx)>1L) {
               xc_idx = xcols[ic_idx]
               for (xb in xc_idx[which(vapply_1c(.shallow(x, xc_idx), mergeType) == "double")]) {
-                coerce_col(x, xb, "double", "integer", paste0("x.", names(x)[xb]), xname, from_det_msg, verbose = verbose)
+                coerce_col(x, xb, "double", "integer", paste0("x.", names(x)[xb]), xname, from_detail, verbose=verbose)
               }
             }
           }
@@ -144,11 +144,11 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
           coerce_col(x, xcol, "integer", "double", xname, iname, to_detail=gettext(" (which contains fractions)"), verbose=verbose)
         }
       } else {
-        coerce_col(i, icol, "integer", "double", iname, xname, gettext(" (for join)"), verbose = verbose)
+        coerce_col(i, icol, "integer", "double", iname, xname, from_detail=gettext(" (for join)"), verbose=verbose)
         if (length(ic_idx)>1L) {
           xc_idx = xcols[ic_idx]
           for (xb in xc_idx[which(vapply_1c(.shallow(x, xc_idx), mergeType) == "integer")]) {
-            coerce_col(x, xb, "integer", "double", paste0("x.", names(x)[xb]), xname, verbose = verbose)
+            coerce_col(x, xb, "integer", "double", paste0("x.", names(x)[xb]), xname, verbose=verbose)
           }
         }
       }
