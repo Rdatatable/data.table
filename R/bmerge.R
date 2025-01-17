@@ -9,20 +9,20 @@ mergeType = function(x) {
   ans
 }
 
-cast_with_atts = function(x, as.f) {
-  ans = as.f(x)
-  if (!is.null(attributes(x))) attributes(ans) = attributes(x)
+cast_with_attrs = function(x, cast_fun) {
+  ans = cast_fun(x)
+  # do not copy attributes when coercing factor (to character)
+  if (!is.factor(x) && !is.null(attributes(x))) attributes(ans) = attributes(x)
   ans
 }
 
-coerce_col = function(dt, col, from_type, to_type, from_name, to_name, from_detail = "", to_detail = "", verbose) {
+coerce_col = function(dt, col, from_type, to_type, from_name, to_name, from_detail="", to_detail="", verbose) {
   if (verbose) catf(
     "Coercing %s column %s%s to type %s to match type of %s%s.\n",
     from_type, from_name, from_detail, to_type, to_name, to_detail
   )
-  as.f = switch(to_type, integer64 = bit64::as.integer64, match.fun(paste0("as.", to_type)))
-  # do not copy attributes when coercing factor (to character)
-  set(dt, j=col, value = if (is.factor(dt[[col]])) as.f(dt[[col]]) else cast_with_atts(dt[[col]], as.f))
+  cast_fun = switch(to_type, integer64 = bit64::as.integer64, match.fun(paste0("as.", to_type)))
+  set(dt, j=col, value=cast_with_attrs(dt[[col]], cast_fun))
 }
 
 bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbose)
