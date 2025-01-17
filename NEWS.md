@@ -133,7 +133,7 @@ rowwiseDT(
 
 19. Grouped queries on keyed tables no longer return an incorrectly keyed result if the _ad hoc_ `by=` list has some function call (in particular, a function which happens to return a strictly decreasing function of the keys), e.g. `by=.(a = rev(a))`, [#5583](https://github.com/Rdatatable/data.table/issues/5583). Thanks @AbrJA for the report and @MichaelChirico for the fix.
 
-10. `set()` now automatically pre-allocates new column slots if needed, similar to what `:=` already does, [#496](https://github.com/Rdatatable/data.table/issues/496) [#4100](https://github.com/Rdatatable/data.table/issues/4100). Thanks to Huashan Chen and @tyner for the report and Benjamin Schwendinger for the fix.
+20. `set()` now automatically pre-allocates new column slots if needed, similar to what `:=` already does, [#496](https://github.com/Rdatatable/data.table/issues/496) [#4100](https://github.com/Rdatatable/data.table/issues/4100). Thanks to Huashan Chen and @tyner for the report and Benjamin Schwendinger for the fix.
 
 ## NOTES
 
