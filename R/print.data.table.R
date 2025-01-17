@@ -30,13 +30,10 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     # Other options investigated (could revisit): Cstack_info(), .Last.value gets set first before autoprint, history(), sys.status(),
     #   topenv(), inspecting next statement in caller, using clock() at C level to timeout suppression after some number of cycles
     SYS = sys.calls()
-    if (length(SYS) <= 2L ||  # "> DT" auto-print or "> print(DT)" explicit print (cannot distinguish from R 3.2.0 but that's ok)
+    if (identical(SYS[[1L]][[1L]], print) || # this is what auto-print looks like, i.e. '> DT' and '> DT[, a:=b]' in the terminal; see #3029.
         ( length(SYS) >= 3L && is.symbol(thisSYS <- SYS[[length(SYS)-2L]][[1L]]) &&
-          as.character(thisSYS) == 'source') || # suppress printing from source(echo = TRUE) calls, #2369
-        ( length(SYS) > 3L && is.symbol(thisSYS <- SYS[[length(SYS)-3L]][[1L]]) &&
-          as.character(thisSYS) %chin% mimicsAutoPrint ) )  {
+          as.character(thisSYS) == 'source') ) { # suppress printing from source(echo = TRUE) calls, #2369
       return(invisible(x))
-      # is.symbol() temp fix for #1758.
     }
   }
   if (!is.numeric(nrows)) nrows = 100L
@@ -103,7 +100,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
       factor = "<fctr>", POSIXct = "<POSc>", logical = "<lgcl>",
       IDate = "<IDat>", integer64 = "<i64>", raw = "<raw>",
       expression = "<expr>", ordered = "<ord>")
-    classes = vapply_1c(x, function(col) class(col)[1L], use.names=FALSE)
+    classes = classes1(x)
     abbs = unname(class_abb[classes])
     if ( length(idx <- which(is.na(abbs))) ) abbs[idx] = paste0("<", classes[idx], ">")
     toprint = rbind(abbs, toprint)
@@ -157,9 +154,6 @@ format.data.table = function(x, ..., justify="none") {
   }
   do.call(cbind, lapply(x, format_col, ..., justify=justify))
 }
-
-mimicsAutoPrint = c("knit_print.default")
-# add maybe repr_text.default.  See https://github.com/Rdatatable/data.table/issues/933#issuecomment-220237965
 
 shouldPrint = function(x) {
   ret = (identical(.global$print, "") ||   # to save address() calls and adding lots of address strings to R's global cache
@@ -233,8 +227,13 @@ format_list_item.default = function(x, ...) {
     # format_list_item would not be reached) but this particular list item does have a format method so use it
     formatted
   } else {
-    paste0("<", class(x)[1L], paste_dims(x), ">")
+    paste0("<", class1(x), paste_dims(x), ">")
   }
+}
+
+# #6592 -- nested 1-column frames breaks printing
+format_list_item.data.frame = function(x, ...) {
+  paste0("<", class1(x), paste_dims(x), ">")
 }
 
 # FR #1091 for pretty printing of character
@@ -283,7 +282,14 @@ trunc_cols_message = function(not_printed, abbs, class, col.names){
   n = length(not_printed)
   if (class && col.names != "none") classes = paste0(" ", tail(abbs, n)) else classes = ""
   catf(
-    "%d variable(s) not shown: %s\n",
-    n, brackify(paste0(not_printed, classes))
+    ngettext(n, "%d variable not shown: %s\n", "%d variables not shown: %s\n"),
+    n, brackify(paste0(not_printed, classes)),
+    domain=NA
   )
+}
+
+# Maybe add a method for repr::repr_text.  See https://github.com/Rdatatable/data.table/issues/933#issuecomment-220237965
+knit_print.data.table <- function(x, ...) {
+  if (!shouldPrint(x)) return(invisible(x))
+  NextMethod()
 }

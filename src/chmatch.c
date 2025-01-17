@@ -35,12 +35,13 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
     return ans;
   }
   // Since non-ASCII strings may be marked with different encodings, it only make sense to compare
-  // the bytes under a same encoding (UTF-8) #3844 #3850
+  // the bytes under a same encoding (UTF-8) #3844 #3850.
+  // Not 'const' because we might SET_TRUELENGTH() below.
   SEXP *xd;
   if (isSymbol(x)) {
     xd = &sym;
   } else {
-    xd = STRING_PTR_RO(PROTECT(coerceUtf8IfNeeded(x))); nprotect++;
+    xd = (SEXP *)STRING_PTR_RO(PROTECT(coerceUtf8IfNeeded(x))); nprotect++;
   }
   const SEXP *td = STRING_PTR_RO(PROTECT(coerceUtf8IfNeeded(table))); nprotect++;
   if (xlen==1) {
@@ -98,8 +99,8 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
     int *counts = (int *)calloc(nuniq, sizeof(int));
     int *map =    (int *)calloc(mapsize, sizeof(int));
     if (!counts || !map) {
-      free(counts); free(map);
       // # nocov start
+      free(counts); free(map);
       for (int i=0; i<tablelen; i++) SET_TRUELENGTH(td[i], 0);
       savetl_end();
       error(_("Failed to allocate %"PRIu64" bytes working memory in chmatchdup: length(table)=%d length(unique(table))=%d"), ((uint64_t)tablelen*2+nuniq)*sizeof(int), tablelen, nuniq);
