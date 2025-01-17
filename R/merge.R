@@ -13,7 +13,6 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   }
   x0 = length(x) == 0L
   y0 = length(y) == 0L
-
   if (x0 || y0) { 
     if (x0 && y0) {
       warningf("Neither of the input data.tables to join have columns.")
@@ -23,13 +22,11 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
       warningf("Input data.table '%s' has no columns.", "y")
     }
   }
-
 check_duplicate_names(x)
 check_duplicate_names(y)
 
 nm_x = names(x)
 nm_y = names(y)
-
 
   ## set up 'by'/'by.x'/'by.y'
   if ( (!is.null(by.x) || !is.null(by.y)) && length(by.x)!=length(by.y) )
