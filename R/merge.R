@@ -13,7 +13,7 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   }
   x0 = length(x) == 0L
   y0 = length(y) == 0L
-  if (x0 || y0) { 
+  if (x0 || y0){
     if (x0 && y0) {
       warningf("Neither of the input data.tables to join have columns.")
     } else if (x0) {
