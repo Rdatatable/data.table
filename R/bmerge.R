@@ -20,7 +20,7 @@ coerce_col = function(dt, col, from_type, to_type, from_name, to_name, from_deta
     "Coercing %s column %s%s to type %s to match type of %s%s.\n",
     from_type, from_name, from_detail, to_type, to_name, to_detail
   )
-  as.f = switch(to_type, integer64 = bit64::as.integer64, match.fun(paste0("as.", to_type))) 
+  as.f = switch(to_type, integer64 = bit64::as.integer64, match.fun(paste0("as.", to_type)))
   # do not copy attributes when coercing factor (to character)
   set(dt, j=col, value = if (is.factor(dt[[col]])) as.f(dt[[col]]) else cast_with_atts(dt[[col]], as.f))
 }
