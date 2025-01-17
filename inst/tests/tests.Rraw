@@ -20742,3 +20742,14 @@ test(2301.1, DT[order(a, method="auto")], error="no support for sorting by metho
 test(2301.2, DT[order(a, b, decreasing=c(TRUE, FALSE))], DT[order(-a, b)])
 test(2301.3, DT[order(a, -b, decreasing=c(TRUE, TRUE))], error="Mixing '-' with vector decreasing")
 test(2301.4, DT[order(a, b, decreasing=c(TRUE, TRUE, FALSE))], error="decreasing= has length 3")
+
+# as.data.table should remove extra attributes from extended data.frames #5699
+x = data.frame(a=c(1,5,3), b=c(2,4,6))
+class(x) = c("tbl", "data.frame")
+attr(x, "t1") = "a"
+as.data.frame.tbl = function(x) {
+  attr(x, "t1") = NULL
+  class(x) = "data.frame"
+  x
+}
+test(2302, attr(as.data.table(y), "t1"), attr(as.data.frame(y), "t1"))
