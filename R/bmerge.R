@@ -141,7 +141,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
           }
         }
         if (!coerce_x) {
-          coerce_col(x, xcol, "integer", "double", xname, iname, , gettext(" (which contains fractions)"), verbose = verbose)
+          coerce_col(x, xcol, "integer", "double", xname, iname, to_detail=gettext(" (which contains fractions)"), verbose=verbose)
         }
       } else {
         coerce_col(i, icol, "integer", "double", iname, xname, gettext(" (for join)"), verbose = verbose)
