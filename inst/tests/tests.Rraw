@@ -20757,3 +20757,10 @@ as.data.frame.tbl = function(x) {
   x
 }
 test(2302, attr(as.data.table(y), "t1"), attr(as.data.frame(y), "t1"))
+
+# by=foo(KEY) does not retain key (no way to guarantee monotonic transformation), #5583
+DT = data.table(a=1:2, key='a')
+test(2303.1, DT[, .N, by=.(b=rev(a))], data.table(b=2:1, N=1L))
+test(2303.2, DT[, .(N=1L), by=.(b=rev(a))], data.table(b=2:1, N=1L)) # ensure no interaction with GForce
+DT = data.table(a=2:3, b=1:0, key=c('a', 'b'))
+test(2303.3, DT[, .N, by=.(ab=a^b, d=c(1L, 1L))], data.table(ab=c(2, 1), d=1L, N=1L))
