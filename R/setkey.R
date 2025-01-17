@@ -155,8 +155,10 @@ forderv = function(x, by=seq_along(x), retGrp=FALSE, retStats=retGrp, sort=TRUE,
   .Call(CforderReuseSorting, x, by, retGrp, retStats, sort, order, na.last, reuseSorting)  # returns integer() if already sorted, regardless of sort=TRUE|FALSE
 }
 
-forder = function(..., na.last=TRUE, decreasing=FALSE)
+forder = function(..., na.last=TRUE, decreasing=FALSE, method="radix")
 {
+  if (method != "radix") stopf("data.table has no support for sorting by method='%s'. Use base::order(), not order(), if you really need this.", method)
+  stopifnot(is.logical(decreasing), length(decreasing) > 0L, !is.na(decreasing))
   sub = substitute(list(...))
   tt = vapply_1b(sub, function(x) is.null(x) || (is.symbol(x) && !nzchar(x)))
   if (any(tt)) sub[tt] = NULL  # remove any NULL or empty arguments; e.g. test 1962.052: forder(DT, NULL) and forder(DT, )
@@ -164,8 +166,8 @@ forder = function(..., na.last=TRUE, decreasing=FALSE)
   asc = rep.int(1L, length(sub)-1L)  # ascending (1) or descending (-1) per column
   # the idea here is to intercept - (and unusual --+ deriving from built expressions) before vectors in forder(DT, -colA, colB) so that :
   # 1) - on character vector works; ordinarily in R that fails with type error
-  # 2) each column/expression can have its own +/- more easily that having to use a separate decreasing=TRUE/FALSE
-  # 3) we can pass the decreasing (-) flag to C and avoid what normally happens in R; i.e. allocate a new vector and apply - to every element first
+  # 2) each column/expression can have its own +/- more easily than having to use a separate decreasing=TRUE/FALSE
+  # 3) we can pass the decreasing (-) flag to C and avoid what normally happens in R; i.e. allocate a new vector and negate every element first
   # We intercept the unevaluated expressions and massage them before evaluating in with(DT) scope or not depending on the first item.
   for (i in seq.int(2L, length(sub))) {
     v = sub[[i]]
@@ -188,8 +190,16 @@ forder = function(..., na.last=TRUE, decreasing=FALSE)
   } else {
     data = eval(sub, parent.frame(), parent.frame())
   }
-  stopifnot(isTRUEorFALSE(decreasing))
-  o = forderv(data, seq_along(data), retGrp=FALSE, retStats=FALSE, sort=TRUE, order=if (decreasing) -asc else asc, na.last=na.last)
+  if (length(decreasing) > 1L) {
+    if (any(asc < 0L)) stopf("Mixing '-' with vector decreasing= is not supported.")
+    if (length(decreasing) != length(asc)) stopf("decreasing= has length %d applied to sorting %d columns.", length(decreasing), length(asc))
+    orderArg = fifelse(decreasing, -asc, asc)
+  } else if (decreasing) {
+    orderArg = -asc
+  } else {
+    orderArg = asc
+  }
+  o = forderv(data, seq_along(data), retGrp=FALSE, retStats=FALSE, sort=TRUE, order=orderArg, na.last=na.last)
   if (!length(o) && length(data)>=1L) o = seq_along(data[[1L]]) else o
   o
 }
