@@ -129,7 +129,9 @@ rowwiseDT(
 
 17. Assignment with `:=` to an S4 slot of an under-allocated data.table now works, [#6704](https://github.com/Rdatatable/data.table/issues/6704). Thanks @MichaelChirico for the report and fix.
 
-18. Joining with incompatible column times (e.g., `Date` with `POSIXt`) now provides a clear warning, [#6605](https://github.com/Rdatatable/data.table/issues/6605). Thanks to @al-obrien for the report and @r2evans for the PR.
+18. `as.data.table()` method for `data.frame`s (especially those with extended classes) is more consistent with `as.data.frame()` with respect to rention of attributes, [#5699](https://github.com/Rdatatable/data.table/issues/5699). Thanks @jangorecki for the report and fix.
+
+19. Joining with incompatible column times (e.g., `Date` with `POSIXt`) now provides a clear warning, [#6605](https://github.com/Rdatatable/data.table/issues/6605). Thanks to @al-obrien for the report and @r2evans for the PR.
 
 ## NOTES
 
