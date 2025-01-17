@@ -13554,11 +13554,8 @@ test(1962.019,
 test(1962.0201, merge(DT1, DT2, by=character(0L)), ans)  # was error before PR#5183
 test(1962.0202, merge(DT1, DT2, by=NULL),          ans)  # test explicit NULL too as missing() could be used inside merge()
 test(1962.021, {
-  if (!"z" %in% colnames(DT1) || !"z" %in% colnames(DT2)) {
-    stop("The columns listed in `by` are missing from either x or y: [z]")
-  }
   merge(DT1, DT2, by = 'z')
-}, error = 'The columns listed in `by` are missing from either x or y: [z]')
+}, error = 'The following columns are missing:\n - From x: [z]\n - From y: [z]')
 
 ## frank.R
 x = c(1, 1, 2, 5, 4, 3, 4, NA, 6)
