@@ -21042,3 +21042,6 @@ test(2304.098, copy(DT)[2L, `:=`(L1=list(NULL), L2=list(NULL))], ans)
 test(2304.099, copy(DT)[2L, let(L1=list(NULL), L2=list(NULL))], ans)
 # using set()
 test(2304.100, set(copy(DT), i=2L, j=c("L1", "L2"), value=list(list(NULL), list(NULL))), ans)
+
+# the integer overflow in #6729 is only noticeable with UBSan
+test(2305, { fread(testDir("issue_6729.txt.bz2")); TRUE })
