@@ -137,13 +137,16 @@ rowwiseDT(
 
     ```r
     DT = data.table(L=list(1L), i=2L, c='a')
+
     DT[, i := NULL] # delete i
     DT[, L := NULL] # delete L
 
-    DT[, i := list(NULL)] # delete i
+    DT[, i := list(NULL)] # overwrite: identical(DT$i, list(NULL))
+    # ^ ** THIS IS A CHANGE FROM PREVIOUS BEHAVIOR WHICH WOULD DELETE i **
     DT[, L := list(NULL)] # assignment: identical(DT$L, list(NULL))
 
     DT[, i := .(3L)]         # assignment: identical(DT$i, 3L)
+    DT[, i := .('a')]        # overwrite: identical(DT$i, 'a')
     DT[, L := .(list(NULL))] # assignment: identical(DT$L, list(NULL))
 
     DT[, c('L', 'i') := list(NULL, NULL)]       # delete L,i
