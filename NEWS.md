@@ -129,6 +129,10 @@ rowwiseDT(
 
 17. Assignment with `:=` to an S4 slot of an under-allocated data.table now works, [#6704](https://github.com/Rdatatable/data.table/issues/6704). Thanks @MichaelChirico for the report and fix.
 
+18. `as.data.table()` method for `data.frame`s (especially those with extended classes) is more consistent with `as.data.frame()` with respect to rention of attributes, [#5699](https://github.com/Rdatatable/data.table/issues/5699). Thanks @jangorecki for the report and fix.
+
+19. Grouped queries on keyed tables no longer return an incorrectly keyed result if the _ad hoc_ `by=` list has some function call (in particular, a function which happens to return a strictly decreasing function of the keys), e.g. `by=.(a = rev(a))`, [#5583](https://github.com/Rdatatable/data.table/issues/5583). Thanks @AbrJA for the report and @MichaelChirico for the fix.
+
 ## NOTES
 
 1. There is a new vignette on joins! See `vignette("datatable-joins")`. Thanks to Angel Feliz for authoring it! Feedback welcome. This vignette has been highly requested since 2017: [#2181](https://github.com/Rdatatable/data.table/issues/2181).

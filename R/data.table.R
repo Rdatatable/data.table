@@ -2014,8 +2014,8 @@ replace_dot_alias = function(e) {
     if (verbose) {last.started.at=proc.time();catf("setkey() afterwards for keyby=.EACHI ... ");flush.console()}
     setkeyv(ans,names(ans)[seq_along(byval)])
     if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
-  } else if (keyby || (haskey(x) && bysameorder && (byjoin || (length(allbyvars) && identical(allbyvars,head(key(x),length(allbyvars))))))) {
-    setattr(ans,"sorted",names(ans)[seq_along(grpcols)])
+  } else if (.by_result_is_keyable(x, keyby, bysameorder, byjoin, allbyvars, bysub)) {
+    setattr(ans, "sorted", names(ans)[seq_along(grpcols)])
   }
   setalloccol(ans)   # TODO: overallocate in dogroups in the first place and remove this line
 }
@@ -2987,6 +2987,12 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     } else if (isS4(k)) {
       .Call(CsetS4elt, k, as.character(name[[3L]]), x)
     }
+  } else if (name %iscall% "get") { # #6725
+    # edit 'get(nm, env)' call to be 'assign(nm, x, envir=env)'
+    name = match.call(get, name)
+    name[[1L]] = quote(assign)
+    name$value = x
+    eval(name, parent.frame(), parent.frame())
   }
   .Call(CexpandAltRep, x)  # issue#2866 and PR#2882
   invisible(x)
@@ -3043,6 +3049,21 @@ rleidv = function(x, cols=seq_along(x), prefix=NULL) {
   ids = .Call(Crleid, x, cols)
   if (!is.null(prefix)) ids = paste0(prefix, ids)
   ids
+}
+
+.by_result_is_keyable = function(x, keyby, bysameorder, byjoin, byvars, bysub) {
+  if (keyby) return(TRUE)
+  k = key(x)
+  if (is.null(k)) return(FALSE) # haskey(x) but saving 'k' for below
+  if (!bysameorder) return(FALSE)
+  if (byjoin) return(TRUE)
+  if (!length(byvars)) return(FALSE)
+  if (!identical(byvars, head(k, length(byvars)))) return(FALSE) # match key exactly, in order
+  # For #5583, we also ensure there are no function calls in by (which might break sortedness)
+  if (is.name(bysub)) return(TRUE)
+  if (identical(bysub[[1L]], quote(list))) bysub = bysub[-1L]
+  if (length(all.names(bysub)) > length(byvars)) return(FALSE)
+  TRUE
 }
 
 .is_withFALSE_range = function(e, x, root=root_name(e), vars=all.vars(e)) {

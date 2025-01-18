@@ -10581,7 +10581,11 @@ test(1702.1, isoweek(test_cases), test_values)
 #   but calculating from Date brings these into play, #2407
 test(1702.2, isoweek(as.Date(test_cases)), test_values)
 
-# *** OBSCURE ERROR WHEN Sys.timezone() = 'America/Argentina/Buenos_Aires' ***
+# *** OBSCURE DST ERROR WHEN Sys.timezone() = 'America/Argentina/Buenos_Aires' ***
+# *** 00:00 does not exist, h/t rikivillalba@ who worked through this  ***
+# *** https://techcommunity.microsoft.com/blog/dstblog/argentina-is-changing-their-daylight-saving-time-on-december-30/311020 ***
+# *** https://mm.icann.org/pipermail/tz/2007-December/014743.html ***
+# *** Official IANA sources: https://www.iana.org/time-zones ***
 test(1702.3, isoweek(as.POSIXct(test_cases)), test_values)
 
 # 1% sample of a 400-year cycle of dates for extra robustness
@@ -20659,6 +20663,18 @@ setDT(d2)
 test(2295.1, !is.data.table(d1))
 test(2295.2, rownames(d1), 'b')
 test(2295.3, is.data.table(d2))
+# Ensure against regression noted in #6725
+x = data.frame(a=1)
+e = environment()
+foo = function(nm, env) {
+  setDT(get(nm, envir=env))
+}
+foo('x', e)
+test(2295.4, is.data.table(x))
+e = new.env(parent=topenv())
+e$x = data.frame(a=1)
+foo('x', e)
+test(2295.5, is.data.table(e$x))
 
 # #6588: .checkTypos used to give arbitrary strings to stopf as the first argument
 test(2296, d2[x %no such operator% 1], error = '%no such operator%')
@@ -20736,3 +20752,21 @@ test(2301.1, DT[order(a, method="auto")], error="no support for sorting by metho
 test(2301.2, DT[order(a, b, decreasing=c(TRUE, FALSE))], DT[order(-a, b)])
 test(2301.3, DT[order(a, -b, decreasing=c(TRUE, TRUE))], error="Mixing '-' with vector decreasing")
 test(2301.4, DT[order(a, b, decreasing=c(TRUE, TRUE, FALSE))], error="decreasing= has length 3")
+
+# as.data.table should remove extra attributes from extended data.frames #5699
+x = data.frame(a=c(1,5,3), b=c(2,4,6))
+class(x) = c("tbl", "data.frame")
+attr(x, "t1") = "a"
+as.data.frame.tbl = function(x) {
+  attr(x, "t1") = NULL
+  class(x) = "data.frame"
+  x
+}
+test(2302, attr(as.data.table(y), "t1"), attr(as.data.frame(y), "t1"))
+
+# by=foo(KEY) does not retain key (no way to guarantee monotonic transformation), #5583
+DT = data.table(a=1:2, key='a')
+test(2303.1, DT[, .N, by=.(b=rev(a))], data.table(b=2:1, N=1L))
+test(2303.2, DT[, .(N=1L), by=.(b=rev(a))], data.table(b=2:1, N=1L)) # ensure no interaction with GForce
+DT = data.table(a=2:3, b=1:0, key=c('a', 'b'))
+test(2303.3, DT[, .N, by=.(ab=a^b, d=c(1L, 1L))], data.table(ab=c(2, 1), d=1L, N=1L))
