@@ -133,6 +133,25 @@ rowwiseDT(
 
 19. Grouped queries on keyed tables no longer return an incorrectly keyed result if the _ad hoc_ `by=` list has some function call (in particular, a function which happens to return a strictly decreasing function of the keys), e.g. `by=.(a = rev(a))`, [#5583](https://github.com/Rdatatable/data.table/issues/5583). Thanks @AbrJA for the report and @MichaelChirico for the fix.
 
+20. Assigning `list(NULL)` to a list column now replaces the column with `list(NULL)`, instead of deleting the column [#5558](https://github.com/Rdatatable/data.table/issues/5558). This behavior is now consistent with base `data.frame`. Thanks @tdhock for the report and @joshhwuu for the fix. This is due to a fundamental ambiguity from both allowing list columns _and_ making the use of `list()` to wrap `j=` arguments optional. We think that the code behaves as expected in all cases now. See the below for some illustration:
+
+    ```r
+    DT = data.table(L=list(1L), i=2L, c='a')
+    DT[, i := NULL] # delete i
+    DT[, L := NULL] # delete L
+
+    DT[, i := list(NULL)] # delete i
+    DT[, L := list(NULL)] # assignment: identical(DT$L, list(NULL))
+
+    DT[, i := .(3L)]         # assignment: identical(DT$i, 3L)
+    DT[, L := .(list(NULL))] # assignment: identical(DT$L, list(NULL))
+
+    DT[, c('L', 'i') := list(NULL, NULL)]       # delete L,i
+    DT[, c('L', 'i') := list(list(NULL), 3L)]   # assignment: identical(DT$L, list(NULL)), identical(DT$i, 3L)
+    DT[, c('L', 'i') := list(NULL, 3L)]         # delete L, assign to i
+    DT[, c('L', 'i') := list(list(NULL), NULL)] # assign to L, delete i
+    ```
+
 ## NOTES
 
 1. There is a new vignette on joins! See `vignette("datatable-joins")`. Thanks to Angel Feliz for authoring it! Feedback welcome. This vignette has been highly requested since 2017: [#2181](https://github.com/Rdatatable/data.table/issues/2181).
@@ -299,25 +318,6 @@ rowwiseDT(
 13. Selecting the key column like `DT[, .(key1, key2)]` will retain the key without a performance penalty, [#4498](https://github.com/Rdatatable/data.table/issues/4498). Thanks to @user9439449 on StackOverflow for the report and @MichaelChirico for the fix.
 
 14. Passing functions programmatically with `env=` doesn't produce an opaque error, e.g. `DT[, f(b), env = list(f=sum)]`, [#6026](https://github.com/Rdatatable/data.table/issues/6026). Note that it's much better to pass functions like `f="sum"` instead. Thanks to @MichaelChirico for the bug report and fix.
-
-10. Assigning `list(NULL)` to a list column now replaces the column with `list(NULL)`, instead of deleting the column [#5558](https://github.com/Rdatatable/data.table/issues/5558). This behavior is now consistent with base `data.frame`. Thanks @tdhock for the report and @joshhwuu for the fix. This is due to a fundamental ambiguity from both allowing list columns _and_ making the use of `list()` to wrap `j=` arguments optional. We think that the code behaves as expected in all cases now. See the below for some illustration:
-
-    ```r
-    DT = data.table(L=list(1L), i=2L, c='a')
-    DT[, i := NULL] # delete i
-    DT[, L := NULL] # delete L
-
-    DT[, i := list(NULL)] # delete i
-    DT[, L := list(NULL)] # assignment: identical(DT$L, list(NULL))
-
-    DT[, i := .(3L)]         # assignment: identical(DT$i, 3L)
-    DT[, L := .(list(NULL))] # assignment: identical(DT$L, list(NULL))
-
-    DT[, c('L', 'i') := list(NULL, NULL)]       # delete L,i
-    DT[, c('L', 'i') := list(list(NULL), 3L)]   # assignment: identical(DT$L, list(NULL)), identical(DT$i, 3L)
-    DT[, c('L', 'i') := list(NULL, 3L)]         # delete L, assign to i
-    DT[, c('L', 'i') := list(list(NULL), NULL)] # assign to L, delete i
-    ```
 
 ## NOTES
 
