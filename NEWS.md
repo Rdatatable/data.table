@@ -64,6 +64,25 @@
 
 9. In `DT[,j,by]`, `by` retains its attributes (e.g. class) when `j` is GForce optimized, [#5567](https://github.com/Rdatatable/data.table/issues/5567). Thanks to @danwwilson for the report, and @ben-schwen for the PR.
 
+10. Assigning `list(NULL)` to a list column now replaces the column with `list(NULL)`, instead of deleting the column [#5558](https://github.com/Rdatatable/data.table/issues/5558). This behavior is now consistent with base `data.frame`. Thanks @tdhock for the report and @joshhwuu for the fix. This is due to a fundamental ambiguity from both allowing list columns _and_ making the use of `list()` to wrap `j=` arguments optional. We think that the code behaves as expected in all cases now. See the below for some illustration:
+
+    ```r
+    DT = data.table(L=list(1L), i=2L, c='a')
+    DT[, i := NULL] # delete i
+    DT[, L := NULL] # delete L
+
+    DT[, i := list(NULL)] # delete i
+    DT[, L := list(NULL)] # assignment: identical(DT$L, list(NULL))
+
+    DT[, i := .(3L)]         # assignment: identical(DT$i, 3L)
+    DT[, L := .(list(NULL))] # assignment: identical(DT$L, list(NULL))
+
+    DT[, c('L', 'i') := list(NULL, NULL)]       # delete L,i
+    DT[, c('L', 'i') := list(list(NULL), 3L)]   # assignment: identical(DT$L, list(NULL)), identical(DT$i, 3L)
+    DT[, c('L', 'i') := list(NULL, 3L)]         # delete L, assign to i
+    DT[, c('L', 'i') := list(list(NULL), NULL)] # assign to L, delete i
+    ```
+
 ## NOTES
 
 1. `transform` method for data.table sped up substantially when creating new columns on large tables. Thanks to @OfekShilon for the report and PR. The implemented solution was proposed by @ColeMiller1.
@@ -99,8 +118,6 @@
 15. `dcast()` now issues a warning when `fun.aggregate` is used but not provided by the user. `fun.aggregate` defaults to `length` in this case. Previously, only a message was issued. However, relying on this default often signals unexpected duplicates in the data. Therefore, a stricter class of signal was deemed more appropriate, [#5386](https://github.com/Rdatatable/data.table/issues/5386). The warning is classed as `dt_missing_fun_aggregate_warning`, allowing for more targeted handling in user code. Thanks @MichaelChirico for the suggestion and @Nj221102 for the fix.
 
 16. `print.data.table` gains new argument `show.indices` and option `datatable.show.indices` that allows the user to print a `data.table`'s indices as columns without having to modify the `data.table` itself. Thanks @MichaelChirico for the report and @joshhwuu for the PR.
-
-17. Assigning `list(NULL)` to a list column now replaces the column with `list(NULL)`, instead of deleting the column [#5558](https://github.com/Rdatatable/data.table/issues/5558). This behavior is now consistent with base `data.frame`. Thanks @tdhock for the report and @joshhwuu for the fix.
 
 ## TRANSLATIONS
 
