@@ -169,7 +169,7 @@ as.data.table.list = function(x,
       #       not worse than before, and gets us in a better centralized place to port as.data.table.list to C and use MAYBE_REFERENCED
       #       again in future, for #617.
     }
-    if (identical(x, list())) vector("list", nrow) else rep_len(x, nrow)   # new objects don't need copy
+    if (identical(x, list())) vector("list", nrow) else safe_rep_len(x, nrow)   # new objects don't need copy
   }
   vnames = character(ncol)
   k = 1L
@@ -214,6 +214,7 @@ as.data.table.list = function(x,
 }
 
 as.data.table.data.frame = function(x, keep.rownames=FALSE, key=NULL, ...) {
+  if (!identical(class(x), "data.frame")) return(as.data.table(as.data.frame(x)))
   if (!isFALSE(keep.rownames)) {
     # can specify col name to keep.rownames, #575; if it's the same as key,
     #   kludge it to 'rn' since we only apply the new name afterwards, #4468

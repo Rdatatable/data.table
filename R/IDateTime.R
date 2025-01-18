@@ -98,10 +98,10 @@ round.IDate = function(x, digits=c("weeks", "months", "quarters", "years"), ...)
     return(e1)
   # TODO: investigate Ops.IDate method a la Ops.difftime
   if (inherits(e1, "difftime") || inherits(e2, "difftime"))
-    stopf("Internal error -- difftime objects may not be added to IDate, but Ops dispatch should have intervened to prevent this") # nocov
-  if (isReallyReal(e1) || isReallyReal(e2)) {
+    internal_error("difftime objects may not be added to IDate, but Ops dispatch should have intervened to prevent this") # nocov
+  # IDate doesn't support fractional days; revert to base Date
+  if ((is.double(e1) && !fitsInInt32(e1)) || (is.double(e2) && !fitsInInt32(e2))) {
     return(`+.Date`(e1, e2))
-    # IDate doesn't support fractional days; revert to base Date
   }
   if (inherits(e1, "Date") && inherits(e2, "Date"))
     stopf("binary + is not defined for \"IDate\" objects")
@@ -114,13 +114,13 @@ round.IDate = function(x, digits=c("weeks", "months", "quarters", "years"), ...)
     stopf("can only subtract from \"IDate\" objects")
   }
   if (storage.mode(e1) != "integer")
-    stopf("Internal error: storage mode of IDate is somehow no longer integer") # nocov
+    internal_error("storage mode of IDate is somehow no longer integer") # nocov
   if (nargs() == 1L)
     stopf("unary - is not defined for \"IDate\" objects")
   if (inherits(e2, "difftime"))
-    stopf("Internal error -- difftime objects may not be subtracted from IDate, but Ops dispatch should have intervened to prevent this") # nocov
+    internal_error("difftime objects may not be subtracted from IDate, but Ops dispatch should have intervened to prevent this") # nocov
 
-  if ( isReallyReal(e2) ) {
+  if ( is.double(e2) && !fitsInInt32(e2) ) {
     # IDate deliberately doesn't support fractional days so revert to base Date
     return(base::`-.Date`(as.Date(e1), e2))
     # can't call base::.Date directly (last line of base::`-.Date`) as tried in PR#3168 because
@@ -314,7 +314,7 @@ clip_msec = function(secs, action) {
 # Date - time extraction functions
 #   Adapted from Hadley Wickham's routines cited below to ensure
 #   integer results.
-#     http://gist.github.com/10238
+#     https://gist.github.com/hadley/10238
 #   See also Hadley et al's more advanced and complex lubridate package:
 #     https://github.com/tidyverse/lubridate
 #   lubridate routines do not return integer values.

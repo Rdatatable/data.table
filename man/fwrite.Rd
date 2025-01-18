@@ -12,12 +12,13 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   na = "", dec = ".", row.names = FALSE, col.names = TRUE,
   qmethod = c("double","escape"),
   logical01 = getOption("datatable.logical01", FALSE),  # due to change to TRUE; see NEWS
-  logicalAsInt = logical01,  # deprecated
+  logicalAsInt = NULL,  # deprecated
   scipen = getOption('scipen', 0L),
   dateTimeAs = c("ISO","squash","epoch","write.csv"),
   buffMB = 8L, nThread = getDTthreads(verbose),
   showProgress = getOption("datatable.showProgress", interactive()),
   compress = c("auto", "none", "gzip"),
+  compressLevel = 6L,
   yaml = FALSE,
   bom = FALSE,
   verbose = getOption("datatable.verbose", FALSE),
@@ -58,10 +59,11 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   \item{nThread}{The number of threads to use. Experiment to see what works best for your data on your hardware.}
   \item{showProgress}{ Display a progress meter on the console? Ignored when \code{file==""}. }
   \item{compress}{If \code{compress = "auto"} and if \code{file} ends in \code{.gz} then output format is gzipped csv else csv. If \code{compress = "none"}, output format is always csv. If \code{compress = "gzip"} then format is gzipped csv. Output to the console is never gzipped even if \code{compress = "gzip"}. By default, \code{compress = "auto"}.}
+  \item{compressLevel}{Level of compression between 1 and 9, 6 by default. See \url{https://linux.die.net/man/1/gzip} for details.}
   \item{yaml}{If \code{TRUE}, \code{fwrite} will output a CSVY file, that is, a CSV file with metadata stored as a YAML header, using \code{\link[yaml]{as.yaml}}. See \code{Details}. }
   \item{bom}{If \code{TRUE} a BOM (Byte Order Mark) sequence (EF BB BF) is added at the beginning of the file; format 'UTF-8 with BOM'.}
   \item{verbose}{Be chatty and report timings?}
-  \item{encoding}{ The encoding of the strings written to the CSV file. Default is \code{""}, which means writting raw bytes without considering the encoding. Other possible options are \code{"UTF-8"} and \code{"native"}. }
+  \item{encoding}{ The encoding of the strings written to the CSV file. Default is \code{""}, which means writing raw bytes without considering the encoding. Other possible options are \code{"UTF-8"} and \code{"native"}. }
 }
 \details{
 \code{fwrite} began as a community contribution with \href{https://github.com/Rdatatable/data.table/pull/1613}{pull request #1613} by Otto Seiskari. This gave Matt Dowle the impetus to specialize the numeric formatting and to parallelize: \url{https://h2o.ai/blog/2016/fast-csv-writing-for-r/}. Final items were tracked in \href{https://github.com/Rdatatable/data.table/issues/1664}{issue #1664} such as automatic quoting, \code{bit64::integer64} support, decimal/scientific formatting exactly matching \code{write.csv} between 2.225074e-308 and 1.797693e+308 to 15 significant figures, \code{row.names}, dates (between 0000-03-01 and 9999-12-31), times and \code{sep2} for \code{list} columns where each cell can itself be a vector.

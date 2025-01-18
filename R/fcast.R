@@ -12,17 +12,10 @@ dcast <- function(
   data, formula, fun.aggregate = NULL, ..., margins = NULL,
   subset = NULL, fill = NULL, value.var = guess(data)
 ) {
-  if (is.data.table(data)) UseMethod("dcast", data)
-  # nocov start
-  else {
-    data_name = deparse(substitute(data))
-    ns = tryCatch(getNamespace("reshape2"), error=function(e)
-      stopf("The %1$s generic in data.table has been passed a %2$s, but data.table::%1$s currently only has a method for data.tables. Please confirm your input is a data.table, with setDT(%3$s) or as.data.table(%3$s). If you intend to use a method from reshape2, try installing that package first, but do note that reshape2 is superseded and is no longer actively developed.", "dcast", class(data)[1L], data_name))
-    warningf("The %1$s generic in data.table has been passed a %2$s and will attempt to redirect to the relevant reshape2 method; please note that reshape2 is superseded and is no longer actively developed, and this redirection is now deprecated. Please do this redirection yourself like reshape2::%1$s(%3$s). In the next version, this warning will become an error.", "dcast", class(data)[1L], data_name)
-    ns$dcast(data, formula, fun.aggregate = fun.aggregate, ..., margins = margins,
-             subset = subset, fill = fill, value.var = value.var)
-  }
-  # nocov end
+  # TODO(>=1.19.0): Remove this, just let dispatch to 'default' method fail.
+  if (!is.data.table(data))
+    stopf("The %1$s generic in data.table has been passed a %2$s, but data.table::%1$s currently only has a method for data.tables. Please confirm your input is a data.table, with setDT(%3$s) or as.data.table(%3$s). If you intend to use a method from reshape2, try installing that package first, but do note that reshape2 is superseded and is no longer actively developed.", "dcast", class1(data), deparse(substitute(data))) # nocov
+  UseMethod("dcast", data)
 }
 
 check_formula = function(formula, varnames, valnames, value.var.in.LHSdots, value.var.in.RHSdots) {
@@ -191,7 +184,14 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
   if (run_agg_funs) {
     fun.call = aggregate_funs(fun.call, lvals, sep, ...)
     maybe_err = function(list.of.columns) {
-      if (any(lengths(list.of.columns) != 1L)) stopf("Aggregating function(s) should take vector inputs and return a single value (length=1). However, function(s) returns length!=1. This value will have to be used to fill any missing combinations, and therefore must be length=1. Either override by setting the 'fill' argument explicitly or modify your function to handle this case appropriately.")
+      if (!all(lengths(list.of.columns) == 1L)) {
+        msg <- gettext("Aggregating functions should take a vector as input and return a single value (length=1), but they do not, so the result is undefined. Please fix by modifying your function so that a single value is always returned.")
+        if (is.null(fill)) { # TODO change to always stopf #6329
+          stop(msg, domain=NA, call. = FALSE)
+        } else {
+          warning(msg, domain=NA, call. = FALSE)
+        }
+      }
       list.of.columns
     }
     dat = dat[, maybe_err(eval(fun.call)), by=c(varnames)]
@@ -203,7 +203,7 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
     o[idx] # subsetVector retains attributes, using R's subset for now
   }
   cj_uniq = function(DT) {
-    do.call("CJ", lapply(DT, function(x)
+    do.call(CJ, lapply(DT, function(x)
       if (is.factor(x)) {
         xint = seq_along(levels(x))
         setattr(xint, 'levels', levels(x))
@@ -236,20 +236,20 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
       lhs = lhs_; rhs = rhs_
     }
     maplen = lengths(mapunique)
-    idx = do.call("CJ", mapunique)[map, 'I' := .I][["I"]] # TO DO: move this to C and avoid materialising the Cross Join.
+    idx = do.call(CJ, mapunique)[map, 'I' := .I][["I"]] # TO DO: move this to C and avoid materialising the Cross Join.
     some_fill = anyNA(idx)
     fill.default = if (run_agg_funs && is.null(fill) && some_fill) dat_for_default_fill[, maybe_err(eval(fun.call))]
     if (run_agg_funs && is.null(fill) && some_fill) {
       fill.default = dat_for_default_fill[0L][, maybe_err(eval(fun.call))]
     }
     ans = .Call(Cfcast, lhs, val, maplen[[1L]], maplen[[2L]], idx, fill, fill.default, is.null(fun.call), some_fill)
-    allcols = do.call("paste", c(rhs, sep=sep))
+    allcols = do.call(paste, c(rhs, sep=sep))
     if (length(valnames) > 1L)
-      allcols = do.call("paste", if (identical(".", allcols)) list(valnames, sep=sep)
+      allcols = do.call(paste, if (identical(".", allcols)) list(valnames, sep=sep)
             else c(CJ(valnames, allcols, sorted=FALSE), sep=sep))
       # removed 'setcolorder()' here, #1153
     setattr(ans, 'names', c(lhsnames, allcols))
     setDT(ans); setattr(ans, 'sorted', lhsnames)
-  } else stopf("Internal error -- empty rhsnames in dcast; please report") # nocov
+  } else internal_error("empty rhsnames") # nocov
   return(ans)
 }

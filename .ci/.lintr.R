@@ -1,5 +1,5 @@
 dt_linters = new.env()
-for (f in list.files('.ci/linters', full.names=TRUE)) sys.source(f, dt_linters)
+for (f in list.files('.ci/linters/r', full.names=TRUE)) sys.source(f, dt_linters)
 rm(f)
 
 # NB: Could do this inside the linter definition, this separation makes those files more standardized
@@ -84,7 +84,7 @@ exclusions = c(local({
       infix_spaces_linter = Inf,
       undesirable_function_linter = Inf
     )),
-    exclusion_for_dir("vignettes", list(
+    exclusion_for_dir(c("vignettes", "vignettes/fr"), list(
       quotes_linter = Inf,
       sample_int_linter = Inf
       # strings_as_factors_linter = Inf

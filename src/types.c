@@ -50,9 +50,16 @@ void testRaiseMsg(ans_t *ans, int istatus, bool verbose) {
   }
   ans->int_v[0] = ans->status;
 }
+/*
+  This caters to internal tests (not user-facing), and OpenMP is being used
+    here to test a message printing function inside a nested loop which has
+    been collapsed into a single loop of the combined iteration space using
+    collapse(2), along with specification of dynamic scheduling for distributing
+    the iterations in a way that can balance the workload among the threads.
+*/
 SEXP testMsgR(SEXP status, SEXP x, SEXP k) {
   if (!isInteger(status) || !isInteger(x) || !isInteger(k))
-    error(_("internal error: status, nx, nk must be integer")); // # nocov
+    internal_error(__func__, "status, nx, nk must be integer"); // # nocov
   int protecti = 0;
   const bool verbose = GetVerbose();
   int istatus = INTEGER(status)[0], nx = INTEGER(x)[0], nk = INTEGER(k)[0];

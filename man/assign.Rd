@@ -35,7 +35,7 @@ set(x, i = NULL, j, value)
 \item{LHS}{ A character vector of column names (or numeric positions) or a variable that evaluates as such. If the column doesn't exist, it is added, \emph{by reference}. }
 \item{RHS}{ A list of replacement values. It is recycled in the usual way to fill the number of rows satisfying \code{i}, if any.  To remove a column use \code{NULL}. }
 \item{x}{ A \code{data.table}. Or, \code{set()} accepts \code{data.frame}, too. }
-\item{i}{ Optional. Indicates the rows on which the values must be updated with. If not provided, implies \emph{all rows}. The \code{:=} form is more powerful as it allows \emph{subsets} and \code{joins} based add/update columns by reference. See \code{Details}.
+\item{i}{ Optional. Indicates the rows on which the values must be updated. If not \code{NULL}, implies \emph{all rows}. Missing or zero values are ignored. The \code{:=} form is more powerful as it allows adding/updating columns by reference based on \emph{subsets} and \code{joins}. See \code{Details}.
 
     In \code{set}, only integer type is allowed in \code{i} indicating which rows \code{value} should be assigned to. \code{NULL} represents all rows more efficiently than creating a vector such as \code{1:nrow(x)}. }
 \item{j}{ Column name(s) (character) or number(s) (integer) to be assigned \code{value} when column(s) already exist, and only column name(s) if they are to be created. }

@@ -1,0 +1,501 @@
+---
+title: "Extraire des sous-ensemble avec les clés et la recherche binaire rapide"
+date: "`r Sys.Date()`"
+output:
+  markdown::html_format
+vignette: >
+  %\VignetteIndexEntry{Extraire des sous-ensemble avec les clés et la recherche binaire rapide}
+  %\VignetteEngine{knitr::knitr}
+  \usepackage[utf8]{inputenc}
+---
+
+```{r, echo = FALSE, message = FALSE}
+require(data.table)
+knitr::opts_chunk$set(
+  comment = "#",
+    error = FALSE,
+     tidy = FALSE,
+    cache = FALSE,
+ collapse = TRUE)
+.old.th = setDTthreads(1)
+```
+
+Cette vignette s'adresse à ceux qui sont déjà familiers avec la syntaxe de *data.table*, sa forme générale, comment extraire des sous-ensembles de lignes dans `i`, sélectionner et faire des opérations sur des colonnes, ajouter/modifier/supprimer des colonnes *par référence* dans `j` et grouper en utilisant `by`. Si vous n'êtes pas familier avec ces concepts, veuillez d'abord lire les vignettes *"Introduction à data.table"* et *"Sémantique de référence"*.
+
+***
+
+## Données {#data}
+
+Nous utiliserons les mêmes données `flights` que dans la vignette *"Introduction à data.table"*.
+
+```{r echo = FALSE}
+options(with = 100L)
+```
+
+```{r}
+flights <- fread("../flights14.csv")
+head(flights)
+dim(flights)
+```
+
+## Introduction
+
+Dans cette vignette, nous allons
+
+* introduire le concept de `clé` dans une *data.table*, définir et utiliser des clés pour extraire des sous-ensembles basés sur une *recherche binaire rapide* dans `i`,
+
+* voir que nous pouvons combiner des sous-ensembles basés sur les clés avec `j` et `by` exactement de la même manière que précédemment,
+
+* voir d'autres arguments utiles - `mult` et `nomatch`,
+
+* et enfin conclure en examinant l'avantage de définir des clés - extraire des *sous-ensembles basés sur la recherche binaire rapide* et comparer avec l'approche traditionnelle du balayage vectoriel.
+
+## 1. Clés
+
+### a) Qu'est-ce qu'une *clé* ?
+
+Dans la vignette *"Introduction à data.table"*, nous avons vu comment sous-diviser des lignes dans `i` en utilisant des expressions logiques, des numéros de lignes et en utilisant `order()`. Dans cette section, nous allons voir une autre façon d'extraire des sous-ensembles de façon incroyablement rapide - en utilisant les *clés*.
+
+Mais tout d'abord, commençons par examiner les *data.frames*. Tous les *data.frames* ont un attribut de noms de lignes (row names). Considérons le *data.frame* `DF` ci-dessous.
+
+```{r}
+set.seed(1L)
+DF = data.frame(ID1 = sample(letters[1:2], 10, TRUE),
+                ID2 = sample(1:3, 10, TRUE),
+                val = sample(10),
+                stringsAsFactors = FALSE,
+                row.names = sample(LETTERS[1:10]))
+DF
+
+rownames(DF)
+```
+
+Nous pouvons récupérer un *sous-ensemble* composé d'une ligne particulière en utilisant son nom de ligne comme indiqué ci-dessous :
+
+```{r}
+DF["C", ]
+```
+
+autrement dit, les noms de lignes sont plus ou moins *un indice* des lignes d'un *data.frame*. Cependant,
+
+1. Chaque ligne est limitée à *exactement* un nom de ligne.
+
+    Mais une personne (par exemple) a au moins deux noms - un *prénom* et un *second* nom. Il est utile d'organiser un annuaire téléphonique par *nom* puis *prénom*.
+
+2. Et les noms de ligne doivent être *uniques*.
+
+    ```{r eval = FALSE}
+    rownames(DF) = sample(LETTERS[1:5], 10, TRUE)
+    
+    # Warning: non-unique values when setting 'row.names': 'C', 'D'
+    # Error in `.rowNamesDF<-`(x, value = value): duplicate 'row.names' are not allowed
+    ```
+
+Nous allons maintenant le convertir en *data.table*.
+
+```{r}
+DT = as.data.table(DF)
+DT
+
+rownames(DT)
+```
+
+* Notez que les noms des lignes ont été réinitialisés.
+
+* Les *data.tables* n'utilisent jamais de noms de ligne. Puisque les *data.tables* **héritent** des *data.frames*, ils possèdent toujours l'attribut des noms de lignes (`row names`). Mais ils ne les utilisent jamais. Nous verrons dans un instant pourquoi.
+
+    Si vous souhaitez conserver les noms des lignes, utilisez `keep.rownames = TRUE` dans `as.data.table()` - cela créera une nouvelle colonne appelée `rn` et attribuera les noms des lignes à cette colonne.
+
+Au lieu de cela, dans les *data.tables*, nous définissons et utilisons des `clés`. Pensez aux `clés` comme à des **"super" noms de lignes**.
+
+#### Les clés et leurs propriétés {#key-properties}
+
+1. Nous pouvons définir des clés sur *plusieurs colonnes* et les colonnes peuvent être de *différents types* -- *entier*, *numérique*, *caractère*, *facteur*, *entier64* etc. Les types *liste* et *complexe* ne sont pas encore supportés.
+
+2. L'unicité n'est pas requise, c'est-à-dire que les valeurs de clé dupliquées sont autorisées. Les lignes étant triées par clé, tout doublon dans les colonnes de la clé apparaîtra consécutivement.
+
+3. Définir une `clé` fait *deux* choses : 
+
+    a. les lignes de la *data.table* sont réorganisées physiquement en fonction des colonnes fournies *par référence*, toujours dans un ordre *incrémentiel*.
+    
+    b. ces colonnes sont marquées comme des colonnes de *clés* en définissant un attribut appelé `sorted` à *data.table*.
+    
+    Puisque les lignes sont réordonnées, une *data.table* ne peut avoir qu'une seule clé car elle ne peut pas être triée de plusieurs façons simultanément.
+
+Pour le reste de la vignette, nous travaillerons avec le jeu de données `flights`.
+
+### b) Définir, obtenir et utiliser des clés sur une *data.table*
+
+#### -- Comment définir la colonne `origin` comme clé dans la *data.table* `flights` ?
+
+```{r}
+setkey(flights, origin)
+head(flights)
+
+## nous pouvons aussi fournir des vecteurs de caractères à la fonction 'setkeyv()'
+# setkeyv(flights, "origin") # utile pour la programmation
+```
+
+* Vous pouvez utiliser la fonction `setkey()` et fournir les noms des colonnes (sans les entourer de guillemets). Ceci est utile lors d'une utilisation interactive.
+
+* Alternativement, vous pouvez passer un vecteur de caractères contenant les noms de colonnes à la fonction `setkeyv()`. Cela est particulièrement utile lors de la conception de fonctions pour passer des colonnes à définir comme clé via des arguments de fonction.
+
+* Notez que nous n'avons pas eu besoin d'assigner le résultat à une variable. C'est parce que, comme la fonction `:=` que nous avons vue dans la vignette *"Sémantique de référence"*, `setkey()` et `setkeyv()` modifient l'entrée *data.table* *par référence*. Elles renvoient le résultat de manière invisible.
+
+* La *data.table* est maintenant réordonnée (ou triée) par la colonne que nous avons fournie - `origin`. Comme nous réorganisons par référence, nous n'avons besoin que de la mémoire supplémentaire d'une colonne dont la longueur est égale au nombre de lignes de la *data.table*, ce qui est donc très efficace en termes de mémoire.
+
+* Vous pouvez également définir les clés directement lors de la création de *data.tables* en utilisant la fonction `data.table()` avec l'argument `key`. Elle prend un vecteur de caractères de noms de colonnes.
+
+#### set* et `:=` :
+
+Dans *data.table*, l'opérateur `:=` et toutes les fonctions `set*` (par exemple, `setkey`, `setorder`, `setnames`, etc.) sont les seules qui modifient l'objet d'entrée *par référence*.
+
+Une fois que vous avez défini une *clé* pour une *data.table* par certaines colonnes, vous pouvez sous-sélectionner en interrogeant ces colonnes clés en utilisant la notation `.()` dans `i`. Rappelez-vous que `.()` est un *alias de* `list()`.
+
+#### -- Utilisez la colonne `origin` définie comme clé pour extraire toutes les lignes dont l'aéroport d'origine correspond à *"JFK"*
+
+```{r}
+flights[.("JFK")]
+
+## ou alors :
+# flights[J("JFK")] (ou)
+# flights[list("JFK")]
+```
+
+* La `clé` a déjà été définie sur la colonne `origin`. Il suffit donc de fournir la valeur, ici *"JFK"*, directement. La syntaxe `.()` permet d'identifier que la tâche nécessite de rechercher la valeur *"JFK"* dans la colonne définie comme clé de *data.table* (ici la colonne `origin` du *data.table* `flights`).
+
+* Les *indices de ligne* correspondant à la valeur *"JFK"* dans `origin` sont obtenus en premier. Et comme il n'y a pas d'expression dans `j`, toutes les colonnes correspondant à ces indices de ligne sont renvoyées.
+
+* Pour une clé sur une seule colonne de type *caractère*, vous pouvez omettre la notation `.()` et utiliser les valeurs directement lors de l'extraction du sous-ensemble, comme si vous faisiez un sous-ensemble avec les noms de lignes dans un *data.frames*.
+
+    ```{r eval = FALSE}
+    flights["JFK"] ## identique à flights[.("JFK")]
+    ```
+
+* Nous pouvons extraire autant de valeurs que nécessaire 
+
+    ```{r eval = FALSE}
+    flights[c("JFK", "LGA")] ## same as flights[.(c("JFK", "LGA"))]
+    ```
+    
+    Ceci renvoie toutes les colonnes correspondant aux lignes où la colonne `origin` correspond à *"JFK"* ou *"LGA"*.
+
+#### -- Comment obtenir la (les) colonne(s) d'une *data.table* définie(s) par une clé ?
+
+En utilisant la fonction `key()`.
+
+```{r}
+key(flights)
+```
+
+* Elle renvoie un vecteur de caractères contenant toutes les colonnes définies comme clés.
+
+* Si aucune clé n'est définie, elle renvoie `NULL`.
+
+### c) Clés et colonnes multiples
+
+Pour rappel, les clés sont comme des noms de lignes *surpuissants*. Nous pouvons définir des clés sur plusieurs colonnes, et elles peuvent être de types multiples.
+
+#### -- Comment puis-je définir des clés sur les colonnes `origin` *et* `dest` ?
+
+```{r}
+setkey(flights, origin, dest)
+head(flights)
+
+## ou alors :
+# setkeyv(flights, c("origin", "dest")) # fournir un vecteur de caractères pour les noms de colonnes
+
+key(flights)
+```
+
+* Cela trie la *data.table* d'abord par la colonne `origin` et ensuite par `dest` *par référence*.
+
+#### -- Extraire toutes les lignes en utilisant les colonnes définies comme clés où la première clé `origin` correspond à *"JFK"* et la deuxième clé `dest` correspond à *"MIA"*
+
+```{r}
+flights[.("JFK", "MIA")]
+```
+
+#### Comment l'extraction du sous-ensemble fonctionne ici ? {#multiple-key-point}
+
+* Il est important de comprendre comment cela fonctionne en interne. *"JFK"* est d'abord comparé à la première colonne clé `origin`. Et *dans ces lignes correspondantes*, *"MIA"* est comparé à la deuxième colonne clé `dest` pour obtenir des *indices de ligne* où `origin` et `dest` correspondent aux valeurs données.
+
+* Étant donné qu'il n'y a pas d'expression dans `j`, nous renvoyons simplement *toutes les colonnes* correspondant à ces indices de ligne.
+
+#### -- Extraire toutes les lignes où seule la première colonne clé `origin` correspond à *"JFK"*
+
+```{r}
+key(flights)
+
+flights[.("JFK")] ## ou dans ce cas simplement flights["JFK"], par commodité
+```
+
+* Puisque nous n'avons pas fourni de valeurs pour la deuxième colonne clé `dest`, il fait simplement correspondre *"JFK"* à la première colonne clé `origin` et renvoie toutes les lignes correspondantes.
+
+#### -- Extraire toutes les lignes où seule la deuxième colonne clé `dest` correspond à *"MIA"*
+
+```{r}
+flights[.(unique(origin), "MIA")]
+```
+
+#### Que se passe-t-il ici ?
+
+* Relisez bien [ceci](#multiple-key-point). La valeur fournie pour la deuxième colonne clé *"MIA"* doit trouver les valeurs correspondantes dans la colonne clé `dest` *parmi les lignes correspondantes fournies par la première colonne clé `origin`*. Nous ne pouvons pas ignorer les valeurs des colonnes clés *précédentes*. Par conséquent, nous fournissons *toutes* les valeurs uniques de la colonne clé `origin`.
+
+* *"MIA"* est automatiquement recyclée pour s'adapter à la longueur de `unique(origin)` qui est de *3*.
+
+## 2. Combiner les clés avec `j` et `by`
+
+Tout ce que nous avons vu jusqu'à présent repose sur le même concept -- obtenir les *indices de lignes* dans `i`, mais en utilisant une méthode différente -- en utilisant des `clés`. Il n'est donc pas surprenant que nous puissions faire exactement les mêmes opérations pour `j` et `by`, comme vu dans les vignettes précédentes. Nous allons illustrer cela avec quelques exemples.
+
+### b) Sélection dans `j`
+
+#### -- Renvoie la colonne `arr_delay` sous forme de *data.table* correspondant à `origin = "LGA"` et `dest = "TPA"`.
+
+```{r}
+key(flights)
+flights[.("LGA", "TPA"), .(arr_delay)]
+```
+
+* Les *indices de ligne* correspondant à `origin == "LGA"` et `dest == "TPA"` sont obtenus à l'aide d'un *sous-ensemble basé sur une clé*.
+
+* Une fois que nous avons les indices des lignes, nous examinons `j` qui ne nécessite que la colonne `arr_delay`. Nous sélectionnons donc simplement la colonne `arr_delay` pour ces *indices de lignes* de la même manière que nous l'avons vu dans la vignette *Introduction à data.table*.
+
+* Nous aurions également pu renvoyer le résultat en utilisant `with = FALSE`.
+
+    ```{r eval = FALSE}
+    flights[.("LGA", "TPA"), "arr_delay", with = FALSE]
+    ```
+
+### b) Chaînage
+
+#### -- Sur la base du résultat obtenu ci-dessus, utilisez le chaînage pour trier la colonne dans l'ordre décroissant.
+
+```{r}
+flights[.("LGA", "TPA"), .(arr_delay)][order(-arr_delay)]
+```
+
+### c) Calculer ou *exécuter* dans `j`
+
+#### -- Trouvez le retard d'arrivée maximal correspondant à `origin = "LGA"` et `dest = "TPA"`.
+
+```{r}
+flights[.("LGA", "TPA"), max(arr_delay)]
+```
+
+* Nous pouvons vérifier que le résultat est identique à la première valeur (486) de l'exemple précédent.
+
+### d) *sous-affectation* par référence en utilisant `:=` dans `j`
+
+Nous avons déjà vu cet exemple dans la vignette *Sémantique de référence*. Jetons un coup d'œil à toutes les heures (`hour`) disponibles dans la *data.table* `flights` :
+
+```{r}
+# récupère toutes les 'hours' de flights
+flights[, sort(unique(hour))]
+```
+
+Nous voyons qu'il y a au total `25` valeurs uniques dans les données. Les heures *0* et *24* semblent toutes les deux être présentes. Allons-y et remplaçons *24* par *0*, mais cette fois en utilisant *key*.
+
+```{r}
+setkey(flights, hour)
+key(flights)
+flights[.(24), hour := 0L]
+key(flights)
+```
+
+* Nous définissons d'abord la clé (`key`) sur `hour`. Cela réorganise `flights` en fonction de la colonne `hour` et marque cette colonne comme `clé`.
+
+* Nous pouvons maintenant faire un sous-ensemble sur `hour` en utilisant la notation `.()`. Nous extrayons les valeurs pour *24* et obtenons les *indices des lignes* correspondants.
+
+* Et sur ces indices de lignes, nous remplaçons la colonne `clé` par la valeur `0`.
+
+* Comme nous avons remplacé les valeurs de la colonne *clé*, le *data.table* `flights` n'est plus triée par `hour`. Par conséquent, la clé a été automatiquement supprimée en la définissant sur NULL.
+
+Maintenant, Il ne devrait plus y avoir de *24* dans la colonne `hour`.
+
+```{r}
+flights[, sort(unique(hour))]
+```
+
+### e) Agrégation avec `by`
+
+Remettons d'abord la clé sur `origin, dest`.
+
+```{r}
+setkey(flights, origin, dest)
+key(flights)
+```
+
+#### -- Obtenir le retard maximum de départ pour chaque mois (`month`) correspondant à `origin = "JFK"`. Classer les résultats par `mois`
+
+```{r}
+ans <- flights["JFK", max(dep_delay), keyby = month]
+head(ans)
+key(ans)
+```
+
+* Nous extrayons un sous-ensemble à partir de la colonne `clé` *origin* pour obtenir les *indices des lignes* correspondant à *"JFK"*.
+
+* Une fois que nous avons obtenu les indices des lignes, nous n'avons besoin que de deux colonnes - `month` pour grouper et `dep_delay` pour obtenir `max()` pour chaque groupe. L'optimisation des requêtes de *data.table* permet d'extraire un sous-ensemble juste à partir de ces deux colonnes, correspondant aux *indices de lignes* obtenus dans `i`, pour la rapidité et l'efficacité mémoire.
+
+* Et sur ce sous-ensemble, nous regroupons par *mois* (*month*) et calculons `max(dep_delay)`.
+
+* Nous utilisons `keyby` pour définir automatiquement cette clé par *mois*. Nous comprenons maintenant ce que cela signifie. En plus de l'ordre, cela définit *month* comme la colonne `key`.
+
+## 3. Arguments supplémentaires - `mult` et `nomatch`
+
+### g) L'argument *mult*
+
+Nous pouvons choisir, pour chaque requête, si *"toutes"* les lignes correspondantes doivent être retournées, ou seulement la *"première"* ou la *"dernière"* en utilisant l'argument `mult`. La valeur par défaut est *"all"* - ce que nous avons vu jusqu'à présent.
+
+#### -- Extraire uniquement la première ligne correspondante parmi toutes les lignes où `origin` correspond à *"JFK"* et `dest` correspond à *"MIA"*
+
+```{r}
+flights[.("JFK", "MIA"), mult = "first"]
+```
+
+#### -- Extraire uniquement la dernière ligne correspondante parmi toutes les lignes où `origin` correspond à *"LGA", "JFK", "EWR"* et `dest` correspond à *"XNA"*
+
+```{r}
+flights[.(c("LGA", "JFK", "EWR"), "XNA"), mult = "last"]
+```
+
+* La requête *"JFK", "XNA"* ne correspond à aucune ligne dans `flights` et renvoie donc `NA`.
+
+* Encore une fois, la requête pour la deuxième colonne clé `dest`, *"XNA"*, est réutilisée pour correspondre à la longueur de la requête pour la première colonne clé `origin`, qui est de longueur de 3.
+
+### b) L'argument *nomatch*
+
+Nous pouvons choisir si les requêtes qui ne correspondent pas doivent renvoyer `NA` ou être ignorées en utilisant l'argument `nomatch`.
+
+#### -- D'après l'exemple précédent, extraire toutes les lignes uniquement si elles correspondent
+
+```{r}
+flights[.(c("LGA", "JFK", "EWR"), "XNA"), mult = "last", nomatch = NULL]
+```
+
+* La valeur par défaut de `nomatch` est `NA`. En définissant `nomatch = NULL`, on ignore les requêtes qui n'ont pas de correspondance.
+
+* La requête "JFK", "XNA" ne correspond à aucune ligne dans `flights` et est donc ignorée.
+
+## 4. recherche binaire vs balayage vectoriel
+
+Nous avons vu jusqu'à présent comment définir et utiliser des clés pour extraire des sous-ensembles. Mais quel est l'avantage ? Par exemple, au lieu de faire :
+
+```{r eval = FALSE}
+# clé par origin,dest columns
+flights[.("JFK", "MIA")]
+```
+
+nous aurions pu faire :
+
+```{r eval = FALSE}
+flights[origin == "JFK" & dest == "MIA"]
+```
+
+Un avantage évident est d'avoir une syntaxe plus courte. Mais plus encore, *extraire des sous-ensembles basés par recherche binaire* est **incroyablement rapide**.
+
+Au fil du temps, `data.table` bénéficie de nouvelles optimisations et actuellement, obtenir un sous-ensemble basé sur cette méthode applique automatiquement la *recherche binaire*. Afin d'utiliser la méthode lente par *balayage vectoriel*, la clé doit être supprimée.
+
+```{r eval = FALSE}
+setkey(flights, NULL)
+flights[origin == "JFK" & dest == "MIA"]
+```
+
+### a) Performance de l'approche par recherche binaire
+
+Pour illustrer cela, créons un *data.table* avec 20 millions de lignes et trois colonnes, avec pour clés les colonnes `x` et `y`.
+
+```{r}
+set.seed(2L)
+N = 2e7L
+DT = data.table(x = sample(letters, N, TRUE),
+                y = sample(1000L, N, TRUE),
+                val = runif(N))
+print(object.size(DT), units = "Mb")
+```
+
+`DT` est de ~380Mo. Ce n'est pas vraiment énorme, mais suffisant pour illustrer le propos.
+
+D'après ce que nous avons vu dans la section Introduction à data.table, nous pouvons faire un sous-ensemble des lignes où les colonnes `x = "g"` et `y = 877` comme suit :
+
+```{r}
+key(DT)
+## (1) Méthode habituelle pour extraire un sous-ensemble - approche par balayage vectoriel
+t1 <- system.time(ans1 <- DT[x == "g" & y == 877L])
+t1
+head(ans1)
+dim(ans1)
+```
+
+Essayons maintenant de faire un sous-ensemble en utilisant des clés.
+
+```{r}
+setkeyv(DT, c("x", "y"))
+key(DT)
+## (2) Sous-ensemble à l'aide de clés
+t2 <- system.time(ans2 <- DT[.("g", 877L)])
+t2
+head(ans2)
+dim(ans2)
+
+identical(ans1$val, ans2$val)
+```
+
+* Le gain de vitesse est d'envrion **~`r round(t1[3]/max(t2[3], .001))`x**!
+
+### b)  Pourquoi le fait de définir une clé pour une *data.table* permet-il d'obtenir des sous-ensembles extrêmement rapides ?
+
+Pour comprendre cela, examinons d'abord ce que fait l'approche par *balayage vectoriel* (méthode 1).
+
+#### Approche par balayage vectoriel
+
+* La colonne `x` est parcourue ligne par ligne pour rechercher la valeur *"g"* parmi les 20 millions de lignes. Cela produit un *vecteur logique* de taille 20 millions, avec les valeurs `TRUE, FALSE ou NA` correspondant à la valeur de `x`.
+
+* De même, la colonne `y` est parcourue pour rechercher la valeur `877` parmi les 20 millions de lignes, et les résultats sont stockés dans un autre vecteur logique.
+
+* Ensuite, une opération élément par élément `&` est effectuée sur les vecteurs logiques intermédiaires et toutes les lignes où l'expression est évaluée à `TRUE` sont renvoyées.
+
+C'est ce que nous appelons une *approche par balayage vectoriel*. Cette méthode est assez inefficace, en particulier pour les tableaux volumineux ou lorsque des sous-ensembles doivent être créés de manière répétée, car elle doit parcourir toutes les lignes à chaque fois.
+
+Examinons maintenant l'approche de la recherche binaire (méthode 2). Rappelons que dans [Les clés et leurs propriétés](#key-properties) - *lorsque l’on définit des clés, cela réorganise la data.table selon les colonnes clés*. Étant donné que les données sont triées, nous n'avons pas besoin de *parcourir toute la longueur de la colonne* ! Nous pouvons utiliser *la recherche binaire* pour rechercher une valeur en `O(log n)` au lieu de `O(n)` dans le cas de *l'approche par balayage vectoriel*, où `n` est le nombre de lignes dans la *data.table*.
+
+#### Approche par recherche binaire
+
+Prenons un exemple très simple. Considérons les nombres (triés) ci-dessous :
+
+```
+1, 5, 10, 19, 22, 23, 30
+```
+
+Supposons que nous voulions trouver la position correspondant à la valeur *1*, en utilisant la recherche binaire. Voici comment nous procéderions -(en sachant que les données sont *triées*).
+
+* Commencez par la valeur du milieu = 19. Est-ce que 1 == 19 ? Non. 1 < 19.
+
+* Comme la valeur recherchée est plus petite que 19, elle doit se trouver quelque part avant 19. Nous pouvons donc écarter le reste de la moitié qui est >= 19.
+
+* Notre ensemble est maintenant réduit à *1, 5, 10*. Prenons à nouveau la valeur centrale = 5. Est-ce que 1 == 5 ? Non. 1 < 5.
+
+* Notre ensemble est réduit à *1*. Est-ce que 1 == 1 ? Oui. L'indice correspondant est également 1. Et c'est la seule correspondance.
+
+Avec une approche de balayage vectoriel, nous aurions dû parcourir toutes les valeurs (ici, 7 valeurs).
+
+On peut constater qu'à chaque recherche, le nombre de recherches est réduit de moitié. C'est pourquoi la construction de sous-ensembles en utilisant la recherche binaire est **incroyablement rapide**. Étant donné que les lignes de chaque colonne des *data.tables* sont stockées de manière contiguë en mémoire, les opérations sont effectuées de manière très efficace en termes de cache (ce qui contribue également à la *vitesse*).
+
+De plus, comme nous obtenons directement les indices des lignes correspondantes sans avoir à créer ces énormes vecteurs logiques (égal au nombre de lignes d'un *data.table*), cette méthode est également très **très efficace en termes de mémoire**.
+
+## Résumé
+
+Dans cette vignette, nous avons appris une autre méthode pour subdiviser les lignes dans `i` en utilisant les clés d'une *data.table*. Définir des clés nous permet de créer des sous-ensembles extrêmement rapidement en utilisant la *recherche binaire*. En particulier, nous avons vu comment
+
+* définir une clé et utiliser cette clé pour créer des sous-ensembles dans une *data.table*.
+
+* utiliser les clés pour obtenir des *indices de lignes* en `i`, mais beaucoup plus rapidement.
+
+* combiner les sous-ensembles basés sur les clés avec `j` et `by`. Notez que les opérations `j` et `by` sont exactement les mêmes que précédemment.
+
+La création de sous-ensembles basés sur les clés est **incroyablement rapide** et particulièrement utile lorsque la tâche implique de créer des *sous-ensembles de manière répété*. Cependant, il peut ne pas toujours être souhaitable de définir une clé et de réorganiser physiquement la *data.table*. Dans la prochaine vignette, nous aborderons ce problème en utilisant une *nouvelle* fonctionnalité -- les *indices secondaires*.
+
+```{r, echo=FALSE}
+setDTthreads(.old.th)
+```

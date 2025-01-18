@@ -9,21 +9,18 @@ variables:
   _R_CHECK_FORCE_SUGGESTS_: "false"
   _R_CHECK_NO_STOP_ON_TEST_ERROR_: "true"
   _R_CHECK_SYSTEM_CLOCK_: "false"  ## https://stackoverflow.com/questions/63613301/r-cmd-check-note-unable-to-verify-current-time
+  _R_CHECK_TESTS_NLINES_: "0"
   TZ: "UTC"  ## to avoid 'Failed to create bus connection' from timedatectl via Sys.timezone() on Docker with R 3.4.
              ## Setting TZ for all GLCI jobs to isolate them from timezone. We could have a new GLCI job to test under
              ## a non-UTC timezone, although, that's what we do routinely in dev.
-  R_REL_VERSION:  "4.3"
-  R_REL_WIN_BIN:  "https://cloud.r-project.org/bin/windows/base/old/4.3.2/R-4.3.2-win.exe"
-  RTOOLS_REL_BIN: "https://cloud.r-project.org/bin/windows/Rtools/rtools43/files/rtools43-5958-5975.exe"
-  RTOOLS43_HOME:  "/c/rtools"
-  R_DEV_VERSION:  "4.4"
+  R_REL_VERSION:  "4.4" # only raise when RTOOLS for REL is available
+  R_REL_WIN_BIN:  "https://cloud.r-project.org/bin/windows/base/old/4.4.1/R-4.4.1-win.exe"
+  R_DEV_VERSION:  "4.5"
   R_DEV_WIN_BIN:  "https://cloud.r-project.org/bin/windows/base/R-devel-win.exe"
-  RTOOLS_DEV_BIN: "https://cloud.r-project.org/bin/windows/Rtools/rtools43/files/rtools43-5958-5975.exe"
-  RTOOLS44_HOME:  "" ## in case R-devel will use new Rtools toolchain, now it uses 4.3 env var
-  R_OLD_VERSION:  "4.2"
-  R_OLD_WIN_BIN:  "https://cloud.r-project.org/bin/windows/base/old/4.2.3/R-4.2.3-win.exe"
-  RTOOLS_OLD_BIN: "https://cloud.r-project.org/bin/windows/Rtools/rtools42/files/rtools42-5355-5357.exe"
-  RTOOLS42_HOME:  "/c/rtools"
+  R_OLD_VERSION:  "4.3"
+  R_OLD_WIN_BIN:  "https://cloud.r-project.org/bin/windows/base/old/4.3.3/R-4.3.3-win.exe"  
+  R_REL_MAC_BIN:  "https://cloud.r-project.org/bin/macosx/big-sur-arm64/base/R-4.4.1-arm64.pkg"
+  R_OLD_MAC_BIN:  "https://cloud.r-project.org/bin/macosx/big-sur-arm64/base/R-4.3.3-arm64.pkg"
 
 stages:
   - dependencies
@@ -46,7 +43,7 @@ stages:
 mirror-packages:
   stage: dependencies
   tags:
-    - linux
+    - saas-linux-medium-amd64
   image: registry.gitlab.com/jangorecki/dockerfiles/r-base-minimal
   cache:
     paths:
@@ -56,6 +53,7 @@ mirror-packages:
     - mkdir -p bus/$CI_JOB_NAME/cran/src/contrib
     - Rscript -e 'mirror.packages(dcf.dependencies("DESCRIPTION", "all"), repos=Sys.getenv("CRAN_MIRROR"), repodir="bus/mirror-packages/cran")'
     - Rscript -e 'sapply(simplify=FALSE, setNames(nm=Sys.getenv(c("R_REL_VERSION","R_DEV_VERSION","R_OLD_VERSION"))), function(binary.ver) mirror.packages(type="win.binary", dcf.dependencies("DESCRIPTION", "all"), repos=Sys.getenv("CRAN_MIRROR"), repodir="bus/mirror-packages/cran", binary.ver=binary.ver))'
+    - Rscript -e 'sapply(simplify=FALSE, setNames(nm=Sys.getenv(c("R_REL_VERSION","R_OLD_VERSION"))), function(binary.ver) mirror.packages(type="mac.binary.big-sur-arm64", dcf.dependencies("DESCRIPTION", "all"), repos=Sys.getenv("CRAN_MIRROR"), repodir="bus/mirror-packages/cran", binary.ver=binary.ver))'
   <<: *artifacts
 
 ## install deps alias
@@ -68,7 +66,7 @@ mirror-packages:
 build:
   stage: build
   tags:
-    - linux
+    - saas-linux-medium-amd64
   image: registry.gitlab.com/jangorecki/dockerfiles/r-base-gcc
   needs: ["mirror-packages"]
   before_script:
@@ -91,7 +89,7 @@ build:
 .test-lin-template: &test-lin
   <<: *test
   tags:
-    - linux
+    - saas-linux-medium-amd64
   before_script:
     - cp $(ls -1t bus/build/data.table_*.tar.gz | head -n 1) .
     - mkdir -p ~/.R
@@ -110,15 +108,15 @@ test-lin-rel:
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-data.table
   variables:
+    _R_CHECK_COMPILATION_FLAGS_KNOWN_: "-Wvla"
     _R_CHECK_CRAN_INCOMING_: "FALSE"
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
     _R_CHECK_FORCE_SUGGESTS_: "TRUE"
-    _R_CHECK_TESTS_NLINES_: "0"
     OPENBLAS_MAIN_FREE: "1"
   script:
     - *install-deps
-    - echo 'CFLAGS=-g -O3 -flto=auto -fno-common -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
-    - echo 'CXXFLAGS=-g -O3 -flto=auto -fno-common -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
+    - echo 'CFLAGS=-g -O3 -flto=auto -fno-common -fopenmp -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
+    - echo 'CXXFLAGS=-g -O3 -flto=auto -fno-common -fopenmp -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
     - R CMD check $(ls -1t data.table_*.tar.gz | head -n 1)
     - (! grep "warning:" data.table.Rcheck/00install.out)
 
@@ -131,9 +129,11 @@ test-lin-rel:
 test-lin-rel-vanilla:
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-base-gcc
+  variables:
+    _R_CHECK_COMPILATION_FLAGS_KNOWN_: "-Wvla"
   script:
-    - echo 'CFLAGS=-g -O0 -fno-openmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
-    - echo 'CXXFLAGS=-g -O0 -fno-openmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
+    - echo 'CFLAGS=-g -O0 -fno-openmp -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
+    - echo 'CXXFLAGS=-g -O0 -fno-openmp -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
     - R CMD check --no-manual --ignore-vignettes $(ls -1t data.table_*.tar.gz | head -n 1)
 
 ## R-release on Linux
@@ -146,7 +146,7 @@ test-lin-rel-cran:
     _R_CHECK_CRAN_INCOMING_: "TRUE"           ## stricter --as-cran checks should run in dev pipelines continuously (not sure what they are though)
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"   ## Other than no URL checking (takes many minutes) or 'Days since last update 0' NOTEs needed, #3284
     _R_CHECK_CRAN_INCOMING_TARBALL_THRESHOLD_: "7500000" ## bytes
-    _R_CHECK_PKG_SIZES_THRESHOLD_: "7"        ## MB 'checking installed package size' NOTE
+    _R_CHECK_PKG_SIZES_THRESHOLD_: "10"        ## MB 'checking installed package size' NOTE increased due to po
   script:
     - *install-deps
     - echo 'CFLAGS=-g -O2 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
@@ -163,18 +163,19 @@ test-lin-dev-gcc-strict-cran:
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-devel-gcc-strict
   variables:
+    _R_CHECK_COMPILATION_FLAGS_KNOWN_: "-Wvla"
     _R_CHECK_CRAN_INCOMING_: "TRUE"
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
     _R_S3_METHOD_LOOKUP_BASEENV_AFTER_GLOBALENV_: "FALSE" ## detects S3 method lookup found on search path #4777
     _R_S3_METHOD_LOOKUP_REPORT_SEARCH_PATH_USES_: "TRUE"
   script:
-    - echo 'CFLAGS=-g -O2 -flto=auto -fno-common -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
-    - echo 'CXXFLAGS=-g -O2 -flto=auto -fno-common -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
+    - echo 'CFLAGS=-g -O2 -flto=auto -fno-common -fopenmp -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
+    - echo 'CXXFLAGS=-g -O2 -flto=auto -fno-common -fopenmp -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
     - *install-deps
     - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
     - (! grep "warning:" data.table.Rcheck/00install.out)
     - >-
-        Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); notes<-"Status: 2 NOTEs"; if (!identical(l, notes)) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote(notes), " (size of tarball, installed package size) but ", shQuote(l)) else q("no")'
+        Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); notes<-"Status: 3 NOTEs"; if (!identical(l, notes)) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote(notes), " (size of tarball, installed package size, non-API calls) but ", shQuote(l)) else q("no")'
 
 ## R-devel on Linux clang
 # R compiled with clang, flags removed: -flto=auto -fopenmp
@@ -184,36 +185,45 @@ test-lin-dev-clang-cran:
   <<: *test-lin
   image: registry.gitlab.com/jangorecki/dockerfiles/r-devel-clang
   variables:
+    _R_CHECK_COMPILATION_FLAGS_KNOWN_: "-Wvla"
     _R_CHECK_CRAN_INCOMING_: "TRUE"
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
     _R_S3_METHOD_LOOKUP_BASEENV_AFTER_GLOBALENV_: "FALSE"
     _R_S3_METHOD_LOOKUP_REPORT_SEARCH_PATH_USES_: "TRUE"
   script:
-    - echo 'CFLAGS=-g -O2 -fno-common -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
-    - echo 'CXXFLAGS=-g -O2 -fno-common -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
+    - echo 'CFLAGS=-g -O2 -fno-common -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
+    - echo 'CXXFLAGS=-g -O2 -fno-common -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
     - *install-deps
+    - clang-tidy -extra-arg=-I/usr/local/lib/R/include -checks='readability-inconsistent-declaration-parameter' src/*.c -- -std=c99
     - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
     - (! grep "warning:" data.table.Rcheck/00install.out)
     - >-
-        Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); notes<-"Status: 2 NOTEs"; if (!identical(l, notes)) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote(notes), " (size of tarball, installed package size) but ", shQuote(l)) else q("no")'
+        Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); notes<-"Status: 2 NOTEs"; if (!identical(l, notes)) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote(notes), " (size of tarball, non-API calls) but ", shQuote(l)) else q("no")'
 
-## R 3.1.0
 # stated dependency on R
-test-lin-310-cran:
-  image: registry.gitlab.com/jangorecki/dockerfiles/r-3.1.0
+test-lin-ancient-cran:
   <<: *test-lin
+  image: registry.gitlab.com/jangorecki/dockerfiles/r-3.3.0
+  variables:
+    _R_CHECK_FORCE_SUGGESTS_: "FALSE" # can be removed if all dependencies are available (knitr, xts, etc.)
   script:
     - *install-deps
-    - R CMD check --no-manual $(ls -1t data.table_*.tar.gz | head -n 1)
+    # knitr requires evaluate, which requires R 3.6.0.
+    # Restore checking vignettes if upgrading our R dependency means knitr can be installed.
+    - R CMD check --no-manual --no-build-vignettes --ignore-vignettes $(ls -1t data.table_*.tar.gz | head -n 1)
 
 .test-win-template: &test-win
   <<: *test
   tags:
-    - shared-windows
+    - saas-windows-medium-amd64
   before_script:
-    - curl.exe -s -o ../R-win.exe $R_BIN --fail; if (!(Test-Path -Path ..\R-win.exe)) {Write-Error "R-win.exe not found, download failed?"}
+    - Invoke-WebRequest -Uri $R_BIN -OutFile ../R-win.exe -ErrorAction Stop; if (!(Test-Path -Path ..\R-win.exe)) {Write-Error "R-win.exe not found, download failed?"}
     - Start-Process -FilePath ..\R-win.exe -ArgumentList "/VERYSILENT /DIR=C:\R" -NoNewWindow -Wait
-    - curl.exe -s -o ../rtools.exe $RTOOLS_BIN --fail; if (!(Test-Path -Path ..\rtools.exe)) {Write-Error "rtools.exe not found, download failed?"}
+    - $VERSION = $RTOOLS_VERSION -replace '\.', ''
+    # persist RTOOLSXX_HOME="/c/rtools" which is needed for finding gcc #6552
+    - Add-Content -Path ".\.Renviron" -Value "RTOOLS${VERSION}_HOME='/c/rtools'"
+    - $RTOOLS_BIN="https://github.com/r-hub/rtools${VERSION}/releases/download/latest/rtools${VERSION}.exe"
+    - Invoke-WebRequest -Uri $RTOOLS_BIN -OutFile ../rtools.exe -ErrorAction Stop; if (!(Test-Path -Path ..\rtools.exe)) {Write-Error "rtools.exe not found, download failed?"}
     - Start-Process -FilePath ..\rtools.exe -ArgumentList "/VERYSILENT /DIR=C:\rtools" -NoNewWindow -Wait
     - $env:PATH = "C:\R\bin;C:\rtools\usr\bin;$env:PATH"
     - Rscript.exe -e "source('.ci/ci.R'); install.packages(dcf.dependencies('DESCRIPTION', which='all'), repos=file.path('file://',getwd(),'bus/mirror-packages/cran'), quiet=TRUE)"
@@ -236,35 +246,37 @@ test-lin-310-cran:
 test-win-rel:
   <<: *test-win
   variables:
-    R_VERSION: "$R_REL_VERSION"
     R_BIN: "$R_REL_WIN_BIN"
-    RTOOLS_BIN: "$RTOOLS_REL_BIN"
+    RTOOLS_VERSION: "$R_REL_VERSION"
 
 ## R-devel on Windows
 # test and build binaries
 test-win-dev:
   <<: *test-win
   variables:
-    R_VERSION: "$R_DEV_VERSION"
     R_BIN: "$R_DEV_WIN_BIN"
-    RTOOLS_BIN: "$RTOOLS_DEV_BIN"
+    RTOOLS_VERSION: "$R_REL_VERSION"
 
 ## R-oldrel on Windows
 # test and build binaries
 test-win-old:
   <<: *test-win
   variables:
-    R_VERSION: "$R_OLD_VERSION"
     R_BIN: "$R_OLD_WIN_BIN"
-    RTOOLS_BIN: "$RTOOLS_OLD_BIN"
+    RTOOLS_VERSION: "$R_OLD_VERSION"
 
 .test-mac-template: &test-mac
   <<: *test
   tags:
     - saas-macos-medium-m1
   before_script:
+    - curl -O $R_BIN
+    - sudo installer -pkg "$(ls -1t R-*-arm64.pkg | head -n 1)" -target /
     - *install-deps
     - cp $(ls -1t bus/build/data.table_*.tar.gz | head -n 1) .
+  script:
+    - R CMD check --no-manual $(ls -1t data.table_*.tar.gz | head -n 1)
+    - R CMD INSTALL --build $(ls -1t data.table_*.tar.gz | head -n 1)
   after_script:
     - mkdir -p bus/$CI_JOB_NAME
     - '[ -d data.table.Rcheck ] && mv data.table.Rcheck bus/$CI_JOB_NAME/'
@@ -274,14 +286,18 @@ test-win-old:
     - echo $CI_JOB_IMAGE > bus/$CI_JOB_NAME/image
 
 ## R-release on MacOS
-# no macosx runner set yet
-.test-mac-rel:
+test-mac-rel:
   <<: *test-mac
   variables:
     R_VERSION: "$R_REL_VERSION"
-  script:
-    - R CMD check $(ls -1t data.table_*.tar.gz | head -n 1)
-    - R CMD INSTALL --build $(ls -1t data.table_*.tar.gz | head -n 1)
+    R_BIN: "$R_REL_MAC_BIN"
+
+## R-oldrel on MacOS
+test-mac-old:
+  <<: *test-mac
+  variables:
+    R_VERSION: "$R_OLD_VERSION"
+    R_BIN: "$R_OLD_MAC_BIN"
 
 ## integrate artifacts
 # merging package tarballs and binaries into single R repository
@@ -292,15 +308,14 @@ integration:
   stage: integration
   image: registry.gitlab.com/jangorecki/dockerfiles/r-pkgdown
   tags:
-    - linux
+    - saas-linux-medium-amd64
   only:
     - master
-  needs: ["mirror-packages","build","test-lin-rel","test-lin-rel-cran","test-lin-dev-gcc-strict-cran","test-lin-dev-clang-cran","test-lin-rel-vanilla","test-lin-310-cran","test-win-rel","test-win-dev" ,"test-win-old"]
+  needs: ["mirror-packages","build","test-lin-rel","test-lin-rel-cran","test-lin-dev-gcc-strict-cran","test-lin-dev-clang-cran","test-lin-rel-vanilla","test-lin-ancient-cran","test-win-rel","test-win-dev" ,"test-win-old","test-mac-rel","test-mac-old"]
   script:
     - R --version
     - *install-deps ## markdown pkg not present in r-pkgdown image
     - mkdir -p ./pkgdown/favicon/ && cp .graphics/favicon/* ./pkgdown/favicon/ ## copy favicons
-    - rm -rf ./vignettes ## r-lib/pkgdown#2383
     - Rscript -e 'pkgdown::build_site(override=list(destination="./website"))'
     ## html manual, vignettes, repos, cran_web, cran_checks
     - echo 'source(".ci/ci.R"); source(".ci/publish.R")' >> .Rprofile
@@ -313,9 +328,9 @@ integration:
     - rm -f bus/mirror-packages/cran/bin/windows/contrib/$R_REL_VERSION/data.table_*.zip
     - rm -f bus/mirror-packages/cran/bin/windows/contrib/$R_DEV_VERSION/data.table_*.zip
     - rm -f bus/mirror-packages/cran/bin/windows/contrib/$R_OLD_VERSION/data.table_*.zip
-    #- rm -f bus/mirror-packages/cran/bin/macosx/el-capitan/contrib/$R_REL_VERSION/data.table_*.tgz
-    #- rm -f bus/mirror-packages/cran/bin/macosx/el-capitan/contrib/$R_DEV_VERSION/data.table_*.tgz
-    #- rm -f bus/mirror-packages/cran/bin/macosx/el-capitan/contrib/$R_OLD_VERSION/data.table_*.tgz
+    - rm -f bus/mirror-packages/cran/bin/macosx/big-sur-arm64/contrib/$R_REL_VERSION/data.table_*.tgz
+    # - rm -f bus/mirror-packages/cran/bin/macosx/big-sur-arm64/contrib/$R_DEV_VERSION/data.table_*.tgz
+    - rm -f bus/mirror-packages/cran/bin/macosx/big-sur-arm64/contrib/$R_OLD_VERSION/data.table_*.tgz
     ## merge mirror-packages and R devel packages
     - mv bus/mirror-packages/cran bus/$CI_JOB_NAME/
     ## publish package sources
@@ -336,8 +351,20 @@ integration:
     - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="win.binary", ver=Sys.getenv("R_DEV_VERSION")), type="win.binary", fields="Revision", addFiles=TRUE)'
     - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="win.binary", ver=Sys.getenv("R_OLD_VERSION")), type="win.binary", fields="Revision", addFiles=TRUE)'
     #### macos mkdir cran/bin/.../contrib/...
+    - mkdir -p bus/integration/cran/bin/macosx/big-sur-arm64/contrib/$R_REL_VERSION/
+    # - mkdir -p bus/integration/cran/bin/macosx/big-sur-arm64/contrib/$R_DEV_VERSION/
+    - mkdir -p bus/integration/cran/bin/macosx/big-sur-arm64/contrib/$R_OLD_VERSION/
     #### macos move binaries
+    - '[ -f bus/test-mac-rel/data.table_*.tgz ] && cp bus/test-mac-rel/data.table_*.tgz bus/integration/cran/bin/macosx/big-sur-arm64/contrib/$R_REL_VERSION/'
+    - ls -1 "bus/integration/cran/bin/macosx/big-sur-arm64/contrib/$R_REL_VERSION"/data.table_*.tgz || true
+    # - '[ -f bus/test-mac-dev/data.table_*.tgz ] && cp bus/test-mac-dev/data.table_*.tgz bus/integration/cran/bin/macosx/big-sur-arm64/contrib/$R_DEV_VERSION/'
+    # - ls -1 "bus/integration/cran/bin/macosx/big-sur-arm64/contrib/$R_DEV_VERSION"/data.table_*.tgz || true
+    - '[ -f bus/test-mac-old/data.table_*.tgz ] && cp bus/test-mac-old/data.table_*.tgz bus/integration/cran/bin/macosx/big-sur-arm64/contrib/$R_OLD_VERSION/'
+    - ls -1 "bus/integration/cran/bin/macosx/big-sur-arm64/contrib/$R_OLD_VERSION"/data.table_*.tgz || true
     #### macos write_PACKAGES
+    - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="mac.binary.big-sur-arm64", ver=Sys.getenv("R_REL_VERSION")), type="mac.binary", fields="Revision", addFiles=TRUE)'
+    # - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="mac.binary.big-sur-arm64", ver=Sys.getenv("R_DEV_VERSION")), type="mac.binary", fields="Revision", addFiles=TRUE)'
+    - Rscript -e 'tools::write_PACKAGES(contrib.url("bus/integration/cran", type="mac.binary.big-sur-arm64", ver=Sys.getenv("R_OLD_VERSION")), type="mac.binary", fields="Revision", addFiles=TRUE)'
     ## install pkg to render html
     - mkdir -p /tmp/opencran/library /tmp/opencran/doc/html
     - Rscript -e 'install.packages("data.table", lib="/tmp/opencran/library", repos=file.path("file:",normalizePath("bus/integration/cran")), INSTALL_opts="--html", quiet=TRUE)'
@@ -361,10 +388,6 @@ integration:
     - Rscript -e 'check.index("data.table", names(test.jobs))'
     ## web/checks/check_flavors.html
     - Rscript -e 'check.flavors(names(test.jobs))'
-    ## pkgdown vignettes workaround r-lib/pkgdown#2383
-    - mkdir -p website/articles
-    - cp bus/integration/cran/library/data.table/doc/*.html website/articles/.
-    - rm website/articles/index.html
     ## pkgdown merge
     - Rscript -e 'common_files<-function(path1, path2) intersect(list.files(path1, all.files=TRUE, no..=TRUE), list.files(path2, all.files=TRUE, no..=TRUE)); msg = if (length(f<-common_files("website","bus/integration/cran"))) paste(c("Following artifacts will be overwritten by pkgdown artifacts:", paste0("  ", f)), collapse="\n") else "No overlapping files from pkgdown artifacts"; message(msg); q("no")'
     - mv website/* bus/integration/cran/
@@ -381,7 +404,7 @@ pages:
   stage: deploy
   environment: production
   tags:
-    - linux
+    - saas-linux-medium-amd64
   only:
     - master
   image: ubuntu

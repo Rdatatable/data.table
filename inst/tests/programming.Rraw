@@ -112,7 +112,7 @@ test(2.54, substitute2(c(list(v1=v2, v1=v3)), env=list(v1="nm",v2=2L,v3=3L)), qu
 # substitute2 env as environment class
 e = as.environment(list(v=1L, .v=2L))
 test(2.81, substitute2(.(v, .v), e), quote(.(1L, 2L)))
-# unline in base R substitute, the env arg is always evaluated
+# unlike in base R substitute, the env arg is always evaluated
 e = new.env()
 delayedAssign("a_promise", stop("I am the error"), assign.env=e)
 e$x = 5L
@@ -135,7 +135,7 @@ test(2.94, substitute2(.(v), structure(list(1L,2L), names=c("","v"))), error="'e
 test(2.95, substitute2(.(v), structure(list(1,2), names=c(NA,"v"))), error="'env' argument has NA names")
 test(2.96, substitute2(.(v), list(v=1,v=2)), error="'env' argument has duplicated names")
 
-# substitute2 re-use inside another function
+# substitute2 reuse inside another function
 f = function(expr, env) {
   eval(substitute(
     substitute2(.expr, env),
@@ -153,7 +153,7 @@ cl = f(
   )
 )
 test(3.01, cl, quote(.(sum_x = sum(x, na.rm = TRUE))))
-# substitute2 nested re-use inside another function
+# substitute2 nested reuse inside another function
 cl = substitute2(list(nm = fun(.(out_col_name = fun(in_col_name, fun_arg1=fun_arg1val)),
   env = list(
     in_col_name = "x",

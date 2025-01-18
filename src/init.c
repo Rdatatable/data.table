@@ -23,11 +23,16 @@ SEXP char_datatable;
 SEXP char_dataframe;
 SEXP char_NULL;
 SEXP char_maxString;
+SEXP char_AsIs;
 SEXP sym_sorted;
 SEXP sym_index;
 SEXP sym_BY;
 SEXP sym_starts, char_starts;
 SEXP sym_maxgrpn;
+SEXP sym_anyna;
+SEXP sym_anyinfnan;
+SEXP sym_anynotascii;
+SEXP sym_anynotutf8;
 SEXP sym_colClassesAs;
 SEXP sym_verbose;
 SEXP SelfRefSymbol;
@@ -37,6 +42,7 @@ SEXP sym_tzone;
 SEXP sym_old_fread_datetime_character;
 SEXP sym_variable_table;
 SEXP sym_as_character;
+SEXP sym_as_posixct;
 double NA_INT64_D;
 long long NA_INT64_LL;
 Rcomplex NA_CPLX;
@@ -66,12 +72,14 @@ R_CallMethodDef callMethods[] = {
 {"Crbindlist", (DL_FUNC) &rbindlist, -1},
 {"Cvecseq", (DL_FUNC) &vecseq, -1},
 {"Csetlistelt", (DL_FUNC) &setlistelt, -1},
+{"CsetS4elt", (DL_FUNC) &setS4elt, -1},
 {"Caddress", (DL_FUNC) &address, -1},
 {"CexpandAltRep", (DL_FUNC) &expandAltRep, -1},
 {"Cfmelt", (DL_FUNC) &fmelt, -1},
 {"Cfcast", (DL_FUNC) &fcast, -1},
 {"Cuniqlist", (DL_FUNC) &uniqlist, -1},
 {"Cuniqlengths", (DL_FUNC) &uniqlengths, -1},
+{"CforderReuseSorting", (DL_FUNC) &forderReuseSorting, -1},
 {"Cforder", (DL_FUNC) &forder, -1},
 {"Cissorted", (DL_FUNC) &issorted, -1},
 {"Cgforce", (DL_FUNC) &gforce, -1},
@@ -94,8 +102,8 @@ R_CallMethodDef callMethods[] = {
 {"Cshift", (DL_FUNC) &shift, -1},
 {"Ctranspose", (DL_FUNC) &transpose, -1},
 {"CanyNA", (DL_FUNC) &anyNA, -1},
-{"CisReallyReal", (DL_FUNC) &isReallyReal, -1},
-{"CisRealReallyIntR", (DL_FUNC) &isRealReallyIntR, -1},
+{"CfitsInInt32R", (DL_FUNC) &fitsInInt32R, -1},
+{"CfitsInInt64R", (DL_FUNC) &fitsInInt64R, -1},
 {"Csetlevels", (DL_FUNC) &setlevels, -1},
 {"Crleid", (DL_FUNC) &rleid, -1},
 {"Cgmedian", (DL_FUNC) &gmedian, -1},
@@ -215,9 +223,9 @@ void attribute_visible R_init_data_table(DllInfo *info)
   if (ld != 0.0) error(_("Checking memset(&ld, 0, sizeof(long double)); ld == (long double)0.0 %s"), msg);
 
   // Check unsigned cast used in fread.c. This isn't overflow/underflow, just cast.
-  if ((uint_fast8_t)('0'-'/') != 1) error(_("The ascii character '/' is not just before '0'"));
+  if ((uint_fast8_t)('0'-'/') != 1) error(_("Unlike the very common case, e.g. ASCII, the character '/' is not just before '0'."));
   if ((uint_fast8_t)('/'-'0') < 10) error(_("The C expression (uint_fast8_t)('/'-'0')<10 is true. Should be false."));
-  if ((uint_fast8_t)(':'-'9') != 1) error(_("The ascii character ':' is not just after '9'"));
+  if ((uint_fast8_t)(':'-'9') != 1) error(_("Unlike the very common case, e.g. ASCII, the character ':' is not just after '9'."));
   if ((uint_fast8_t)('9'-':') < 10) error(_("The C expression (uint_fast8_t)('9'-':')<10 is true. Should be false."));
 
   // Variables rather than #define for NA_INT64 to ensure correct usage; i.e. not casted
@@ -238,7 +246,7 @@ void attribute_visible R_init_data_table(DllInfo *info)
   setNumericRounding(PROTECT(ScalarInteger(0))); // #1642, #1728, #1463, #485
   UNPROTECT(1);
 
-  // create needed strings in advance for speed, same techique as R_*Symbol
+  // create needed strings in advance for speed, same technique as R_*Symbol
   // Following R-exts 5.9.4; paragraph and example starting "Using install ..."
   // either use PRINTNAME(install()) or R_PreserveObject(mkChar()) here.
   char_integer64 = PRINTNAME(install("integer64"));
@@ -260,6 +268,7 @@ void attribute_visible R_init_data_table(DllInfo *info)
   char_dataframe = PRINTNAME(install("data.frame"));
   char_NULL =      PRINTNAME(install("NULL"));
   char_maxString = PRINTNAME(install("\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"));
+  char_AsIs =      PRINTNAME(install("AsIs"));
 
   if (TYPEOF(char_integer64) != CHARSXP) {
     // checking one is enough in case of any R-devel changes
@@ -277,6 +286,10 @@ void attribute_visible R_init_data_table(DllInfo *info)
   sym_index   = install("index");
   sym_BY      = install(".BY");
   sym_maxgrpn = install("maxgrpn");
+  sym_anyna   = install("anyna");
+  sym_anyinfnan = install("anyinfnan");
+  sym_anynotascii = install("anynotascii");
+  sym_anynotutf8 = install("anynotutf8");
   sym_colClassesAs = install("colClassesAs");
   sym_verbose = install("datatable.verbose");
   SelfRefSymbol = install(".internal.selfref");
@@ -286,6 +299,7 @@ void attribute_visible R_init_data_table(DllInfo *info)
   sym_old_fread_datetime_character = install("datatable.old.fread.datetime.character");
   sym_variable_table = install("variable_table");
   sym_as_character = install("as.character");
+  sym_as_posixct = install("as.POSIXct");
 
   initDTthreads();
   avoid_openmp_hang_within_fork();
@@ -336,28 +350,28 @@ SEXP hasOpenMP(void) {
 #endif
 
 }
-// # nocov end
 
 SEXP beforeR340(void) {
   // used in onAttach.R for message about fread memory leak fix needing R 3.4.0
   // at C level to catch if user upgrades R but does not reinstall data.table
-  #if defined(R_VERSION) && R_VERSION<R_Version(3,4,0)
+  #if R_VERSION < R_Version(3,4,0)
   return ScalarLogical(true);
   #else
   return ScalarLogical(false);
   #endif
 }
+// # nocov end
 
 extern int *_Last_updated;  // assign.c
 
 SEXP initLastUpdated(SEXP var) {
-  if (!isInteger(var) || LENGTH(var)!=1) error(_(".Last.value in namespace is not a length 1 integer"));
+  if (!isInteger(var) || LENGTH(var)!=1) error(_(".Last.updated in namespace is not a length 1 integer"));
   _Last_updated = INTEGER(var);
   return R_NilValue;
 }
 
 SEXP dllVersion(void) {
   // .onLoad calls this and checks the same as packageVersion() to ensure no R/C version mismatch, #3056
-  return(ScalarString(mkChar("1.15.99")));
+  return(ScalarString(mkChar("1.16.99")));
 }
 

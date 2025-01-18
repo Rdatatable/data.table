@@ -18,11 +18,6 @@ setindexv = function(x, cols, verbose=getOption("datatable.verbose")) {
   }
 }
 
-# Has been warning since 2012, with stronger warning in Mar 2019 (note in news for 1.12.2); #3399
-"key<-" = function(x,value) {
-  stopf("key(x)<-value is deprecated and not supported. Please change to use setkey() with perhaps copy(). Has been warning since 2012.")
-}
-
 setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRUE)
 {
   if (is.null(cols)) {   # this is done on a data.frame when !cedta at top of [.data.table
@@ -50,23 +45,9 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
   miss = !(cols %chin% colnames(x))
   if (any(miss)) stopf("some columns are not in the data.table: %s", brackify(cols[miss]))
 
-  ## determine, whether key is already present:
-  if (identical(key(x),cols)) {
-    if (!physical) {
-      ## create index as integer() because already sorted by those columns
-      if (is.null(attr(x, "index", exact=TRUE))) setattr(x, "index", integer())
-      setattr(attr(x, "index", exact=TRUE), paste0("__", cols, collapse=""), integer())
-    }
-    return(invisible(x))
-  } else if(identical(head(key(x), length(cols)), cols)){
-    if (!physical) {
-      ## create index as integer() because already sorted by those columns
-      if (is.null(attr(x, "index", exact=TRUE))) setattr(x, "index", integer())
-      setattr(attr(x, "index", exact=TRUE), paste0("__", cols, collapse=""), integer())
-    } else {
-      ## key is present but x has a longer key. No sorting needed, only attribute is changed to shorter key.
-      setattr(x,"sorted",cols)
-    }
+  if (physical && identical(head(key(x), length(cols)), cols)){ ## for !physical we need to compute groups as well #4387
+    ## key is present but x has a longer key. No sorting needed, only attribute is changed to shorter key.
+    setattr(x,"sorted",cols)
     return(invisible(x))
   }
 
@@ -75,28 +56,22 @@ setkeyv = function(x, cols, verbose=getOption("datatable.verbose"), physical=TRU
     .xi = x[[i]]  # [[ is copy on write, otherwise checking type would be copying each column
     if (!typeof(.xi) %chin% ORDERING_TYPES) stopf("Column '%s' is type '%s' which is not supported as a key column type, currently.", i, typeof(.xi))
   }
-  if (!is.character(cols) || length(cols)<1L) stopf("Internal error. 'cols' should be character at this point in setkey; please report.") # nocov
+  if (!is.character(cols) || length(cols)<1L) internal_error("'cols' should be character at this point") # nocov
 
-  newkey = paste(cols, collapse="__")
-  if (!any(indices(x) == newkey)) {
-    if (verbose) {
-      tt = suppressMessages(system.time(o <- forderv(x, cols, sort=TRUE, retGrp=FALSE)))  # system.time does a gc, so we don't want this always on, until refcnt is on by default in R
-      # suppress needed for tests 644 and 645 in verbose mode
-      catf("forder took %.03f sec\n", tt["user.self"]+tt["sys.self"])
-    } else {
-      o = forderv(x, cols, sort=TRUE, retGrp=FALSE)
-    }
+  if (verbose) {
+    # we now also retGrp=TRUE #4387 for !physical
+    tt = suppressMessages(system.time(o <- forderv(x, cols, sort=TRUE, retGrp=!physical, reuseSorting=TRUE)))  # system.time does a gc, so we don't want this always on, until refcnt is on by default in R
+    # suppress needed for tests 644 and 645 in verbose mode
+    catf("forder took %.03f sec\n", tt["user.self"]+tt["sys.self"])
   } else {
-    if (verbose) catf("setkey on columns %s using existing index '%s'\n", brackify(cols), newkey)
-    o = getindex(x, newkey)
+    o = forderv(x, cols, sort=TRUE, retGrp=!physical, reuseSorting=TRUE)
   }
-  if (!physical) {
-    if (is.null(attr(x, "index", exact=TRUE))) setattr(x, "index", integer())
-    setattr(attr(x, "index", exact=TRUE), paste0("__", cols, collapse=""), o)
+  if (!physical) { # index COULD BE saved from C forderReuseSorting already, but disabled for now
+    maybe_reset_index(x, o, cols)
     return(invisible(x))
   }
-  setattr(x,"index",NULL)   # TO DO: reorder existing indexes likely faster than rebuilding again. Allow optionally. Simpler for now to clear.
   if (length(o)) {
+    setattr(x,"index",NULL)   # TO DO: reorder existing indexes likely faster than rebuilding again. Allow optionally. Simpler for now to clear. Only when order changes.
     if (verbose) { last.started.at = proc.time() }
     .Call(Creorder,x,o)
     if (verbose) { catf("reorder took %s\n", timetaken(last.started.at)); flush.console() }
@@ -122,9 +97,9 @@ getindex = function(x, name) {
   # name can be "col", or "col1__col2", or c("col1","col2")
   ans = attr(attr(x, 'index', exact=TRUE), paste0("__",name,collapse=""), exact=TRUE)
   if (!is.null(ans) && (!is.integer(ans) || (length(ans)!=nrow(x) && length(ans)!=0L))) {
-    stopf("Internal error: index '%s' exists but is invalid", name)   # nocov
+    internal_error("index '%s' exists but is invalid", name)   # nocov
   }
-  ans
+  c(ans) ## drop starts and maxgrpn attributes
 }
 
 haskey = function(x) !is.null(key(x))
@@ -160,23 +135,30 @@ is.sorted = function(x, by=NULL) {
   # Return value of TRUE/FALSE is relied on in [.data.table quite a bit on vectors. Simple. Stick with that (rather than -1/0/+1)
 }
 
+maybe_reset_index = function(x, idx, cols) {
+  if (isTRUE(getOption("datatable.forder.auto.index"))) return(invisible())
+  if (is.null(attr(x, "index", exact=TRUE))) setattr(x, "index", integer())
+  setattr(attr(x, "index", exact=TRUE), paste0("__", cols, collapse=""), idx)
+  invisible(x)
+}
+
 ORDERING_TYPES = c('logical', 'integer', 'double', 'complex', 'character')
-forderv = function(x, by=seq_along(x), retGrp=FALSE, sort=TRUE, order=1L, na.last=FALSE)
-{
+forderv = function(x, by=seq_along(x), retGrp=FALSE, retStats=retGrp, sort=TRUE, order=1L, na.last=FALSE, reuseSorting=getOption("datatable.reuse.sorting", NA)) {
   if (is.atomic(x) || is.null(x)) {  # including forderv(NULL) which returns error consistent with base::order(NULL),
     if (!missing(by) && !is.null(by)) stopf("x is a single vector, non-NULL 'by' doesn't make sense")
     by = NULL
   } else {
     if (!length(x)) return(integer(0L)) # e.g. forderv(data.table(NULL)) and forderv(list()) return integer(0L))
     by = colnamesInt(x, by, check_dups=FALSE)
-    if (length(order) == 1L) order = rep(order, length(by))
   }
   order = as.integer(order) # length and contents of order being +1/-1 is checked at C level
-  .Call(Cforder, x, by, retGrp, sort, order, na.last)  # returns integer() if already sorted, regardless of sort=TRUE|FALSE
+  .Call(CforderReuseSorting, x, by, retGrp, retStats, sort, order, na.last, reuseSorting)  # returns integer() if already sorted, regardless of sort=TRUE|FALSE
 }
 
-forder = function(..., na.last=TRUE, decreasing=FALSE)
+forder = function(..., na.last=TRUE, decreasing=FALSE, method="radix")
 {
+  if (method != "radix") stopf("data.table has no support for sorting by method='%s'. Use base::order(), not order(), if you really need this.", method)
+  stopifnot(is.logical(decreasing), length(decreasing) > 0L, !is.na(decreasing))
   sub = substitute(list(...))
   tt = vapply_1b(sub, function(x) is.null(x) || (is.symbol(x) && !nzchar(x)))
   if (any(tt)) sub[tt] = NULL  # remove any NULL or empty arguments; e.g. test 1962.052: forder(DT, NULL) and forder(DT, )
@@ -184,8 +166,8 @@ forder = function(..., na.last=TRUE, decreasing=FALSE)
   asc = rep.int(1L, length(sub)-1L)  # ascending (1) or descending (-1) per column
   # the idea here is to intercept - (and unusual --+ deriving from built expressions) before vectors in forder(DT, -colA, colB) so that :
   # 1) - on character vector works; ordinarily in R that fails with type error
-  # 2) each column/expression can have its own +/- more easily that having to use a separate decreasing=TRUE/FALSE
-  # 3) we can pass the decreasing (-) flag to C and avoid what normally happens in R; i.e. allocate a new vector and apply - to every element first
+  # 2) each column/expression can have its own +/- more easily than having to use a separate decreasing=TRUE/FALSE
+  # 3) we can pass the decreasing (-) flag to C and avoid what normally happens in R; i.e. allocate a new vector and negate every element first
   # We intercept the unevaluated expressions and massage them before evaluating in with(DT) scope or not depending on the first item.
   for (i in seq.int(2L, length(sub))) {
     v = sub[[i]]
@@ -208,8 +190,16 @@ forder = function(..., na.last=TRUE, decreasing=FALSE)
   } else {
     data = eval(sub, parent.frame(), parent.frame())
   }
-  stopifnot(isTRUEorFALSE(decreasing))
-  o = forderv(data, seq_along(data), sort=TRUE, retGrp=FALSE, order= if (decreasing) -asc else asc, na.last)
+  if (length(decreasing) > 1L) {
+    if (any(asc < 0L)) stopf("Mixing '-' with vector decreasing= is not supported.")
+    if (length(decreasing) != length(asc)) stopf("decreasing= has length %d applied to sorting %d columns.", length(decreasing), length(asc))
+    orderArg = fifelse(decreasing, -asc, asc)
+  } else if (decreasing) {
+    orderArg = -asc
+  } else {
+    orderArg = asc
+  }
+  o = forderv(data, seq_along(data), retGrp=FALSE, retStats=FALSE, sort=TRUE, order=orderArg, na.last=na.last)
   if (!length(o) && length(data)>=1L) o = seq_along(data[[1L]]) else o
   o
 }
@@ -284,7 +274,7 @@ setorderv = function(x, cols = colnames(x), order=1L, na.last=FALSE)
     .xi = x[[i]]  # [[ is copy on write, otherwise checking type would be copying each column
     if (!typeof(.xi) %chin% ORDERING_TYPES) stopf("Column '%s' is type '%s' which is not supported for ordering currently.", i, typeof(.xi))
   }
-  if (!is.character(cols) || length(cols)<1L) stopf("Internal error. 'cols' should be character at this point in setkey; please report.") # nocov
+  if (!is.character(cols) || length(cols)<1L) internal_error("'cols' should be character at this point") # nocov
 
   o = forderv(x, cols, sort=TRUE, retGrp=FALSE, order=order, na.last=na.last)
   if (length(o)) {
