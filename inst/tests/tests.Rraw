@@ -21019,13 +21019,13 @@ DT$L[2L] = list(NULL)
 test(2304.091, DT, ans)
 DT = data.table(L=list("A", "B"), i=1L)
 # standard form with := operator
-test(2304.092, copy(DT)[2L, L := list(NULL)], ans)
+test(2304.092, copy(DT)[2L, L := list(list(NULL))], ans)
 # functional form with := operator
 test(2304.093, copy(DT)[2L, `:=`(L=list(NULL))], ans)
 # functional form with 'let' alias
 test(2304.094, copy(DT)[2L, let(L=list(NULL))], ans)
 # using set()
-test(2304.095, set(copy(DT), i=2L, j="L", value=list(NULL)), ans)
+test(2304.095, set(copy(DT), i=2L, j="L", value=list(list(NULL))), ans)
 
 # sub-assignment of multiple list columns with list(NULL) in a multi-row data.table, using different assignment methods
 DT = data.table(L1=list("A", "B"), L2=list("B", "C"), i=1L)
