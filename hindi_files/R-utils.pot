@@ -1,0 +1,47 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: R 0.0\n"
+"Report-Msgid-Bugs-To: bugs.r-project.org\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+
+#: utils.R:18
+msgid "Argument 'nan' must be length 1"
+msgstr ""
+
+#: utils.R:21
+msgid "Argument 'nan' must be NA or NaN"
+msgstr ""
+
+#: utils.R:25
+msgid "Internal error in"
+msgstr ""
+
+#: utils.R:28
+msgid "Please report to the data.table issues tracker."
+msgstr ""
+
+#: utils.R:72 utils.R:81
+msgid "x not boolean"
+msgstr ""
+
+#: utils.R:92
+msgid ""
+"Some columns are type 'integer64' but package bit64 is not installed. Those "
+"columns will print as strange looking floating point data. There is no need "
+"to reload the data. Simply install.packages('bit64') to obtain the integer64 "
+"print method and print the data again."
+msgstr ""
+
+#: utils.R:36
+msgid "%s has duplicated column name %s. Please remove or rename the duplicate and try again."
+msgid_plural "%s has duplicated column names %s. Please remove or rename the duplicates and try again."
+msgstr[0] ""
+msgstr[1] ""
