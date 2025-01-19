@@ -128,7 +128,18 @@ replace_dot_alias = function(e) {
   }
 }
 
-"[.data.table" = function(x, i, j, by, keyby, with=TRUE, nomatch=NA, mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, on=NULL, env=NULL, showProgress=getOption("datatable.showProgress", interactive()))
+# A (relatively) fast (uses DT grouping) wrapper for matching two vectors, BUT:
+# it behaves like 'pmatch' but only the 'exact' matching part. That is, a value in
+# 'x' is matched to 'table' only once. No index will be present more than once.
+# This should make it even clearer:
+# chmatch2(c("a", "a"), c("a", "a")) # 1,2 - the second 'a' in 'x' has a 2nd match in 'table'
+# chmatch2(c("a", "a"), c("a", "b")) # 1,NA - the second one doesn't 'see' the first 'a'
+# chmatch2(c("a", "a"), c("a", "a.1")) # 1,NA - this is where it differs from pmatch - we don't need the partial match.
+chmatch2 <- function(x, table, nomatch=NA_integer_) {
+  .Call(Cchmatch2, x, table, as.integer(nomatch)) # this is in 'rbindlist.c' for now.
+}
+
+"[.data.table" <- function (x, i, j, by, keyby, with=TRUE, nomatch=getOption("datatable.nomatch"), mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, on=NULL, env=NULL, showProgress=getOption("datatable.showProgress", interactive()), old.nonequi=mget(".datatable.old.nonequi", envir=parent.frame(), inherits=TRUE, ifnotfound=TRUE)[[1L]])
 {
   # ..selfcount <<- ..selfcount+1  # in dev, we check no self calls, each of which doubles overhead, or could
   # test explicitly if the caller is [.data.table (even stronger test. TO DO.)
@@ -497,9 +508,42 @@ replace_dot_alias = function(e) {
         setnames(i, orignames[leftcols])
         setattr(i, 'sorted', names(i)) # since 'x' has key set, this'll always be sorted
       }
-      i = .shallow(i, retain.key = TRUE)
+      io = if (missing(on)) haskey(i) else identical(unname(on), head(key(i), length(on)))
+      i = .shallow(i, retain.key = io)
       ans = bmerge(i, x, leftcols, rightcols, roll, rollends, nomatch, mult, ops, verbose=verbose)
       xo = ans$xo ## to make it available for further use.
+      # Fix for #1615, #1700 and related issues - keep columns used for non-equi joins from both x and i.
+      # keep copies of the full leftcols and rightcols which are needed if by = .EACHI is also used.
+      allleftcols = leftcols
+      allrightcols = rightcols
+      # Drop any non-equi join columns from leftcols and rightcols so they are kept from both x and i
+      if (!missing(on) && !is.na(non_equi)) {
+        if (identical(old.nonequi, "warning")) {
+          warning("old.nonequi=='warning' occurs in on=", call.=TRUE)
+        } else if (identical(old.nonequi, "error")) {
+          # warnings in examples and vignettes do not cause R CMD check to warn
+          stop("old.nonequi=='error' occurs in on=", call.=TRUE)
+        } else if (identical(old.nonequi, FALSE)) {
+          leftcols = leftcols[ops == 1]  # ops > 1 where there is a non-equi opertor
+          rightcols = rightcols[ops == 1]
+        }
+      }
+      # Do the same for rolling joins. The column used for the roll is always the last key column
+      if (roll != 0) {
+        if (identical(old.nonequi, "warning")) {
+          warning("old.nonequi=='warning' occurs in roll=", call.=TRUE)
+        } else if (identical(old.nonequi, "error")) {
+          stop("old.nonequi=='error' occurs in roll=", call.=TRUE)
+        } else if (identical(old.nonequi, FALSE)) {
+          leftcols = leftcols[-length(leftcols)]
+          rightcols = rightcols[-length(rightcols)]
+        }
+      }
+      # If there are only non-equi / roll keys then leftcols and rightcols become integer(0),
+      # which is used as a switch to keep only columns in x. Use NULL instead to signify
+      # keeping all columns in both x and i.
+      if (!length(leftcols)) leftcols = NULL
+      if (!length(rightcols)) rightcols = NULL
       # temp fix for issue spotted by Jan, test #1653.1. TODO: avoid this
       # 'setorder', as there's another 'setorder' in generating 'irows' below...
       if (length(ans$indices)) setorder(setDT(ans[1L:3L]), indices)
@@ -657,7 +701,20 @@ replace_dot_alias = function(e) {
   if (missing(j)) {
     # missingby was already checked above before dealing with i
     if (!length(x)) return(null.data.table())
-    if (!length(leftcols)) {
+    if (is.null(leftcols)) { # Keep all columns for non-equi / roll joins with no equi keys
+      jisvars = names(i)
+      tt = jisvars %chin% names(x)
+      if (length(tt)) jisvars[tt] = paste0("i.",jisvars[tt])
+      nx = names(x)
+      ansvars = make.unique(c(nx, jisvars))
+      icols = seq_along(i)
+      icolsAns = seq.int(length(nx)+1, length.out=ncol(i))
+      xcols = xcolsAns = seq_along(x)
+    } else if (!length(leftcols)) {
+      ## ansvars = nx = names(x)
+      ## jisvars = character()
+      ## xcols = xcolsAns = seq_along(x)
+      ## TODO the commented code above is from #2420 merged Oct 2017 https://github.com/Rdatatable/data.table/blame/sritchie73-non-equi-key/R/data.table.R#L760 so probably not useful anymore because other code below is more recent, from #3213 merged Dec 2018 https://github.com/Rdatatable/data.table/blame/546259ddaba0e8ab1506729113688f85ca2986fd/R/data.table.R#L662 but keeping for now during conflict resolution.
       # basic x[i] subset, #2951
       if (is.null(irows)) return(shallow(x))   # e.g. DT[TRUE] (#3214); otherwise CsubsetDT would materialize a deep copy
       else                return(.Call(CsubsetDT, x, irows, seq_along(x)) )
@@ -1259,6 +1316,17 @@ replace_dot_alias = function(e) {
         xcols = w
         xcolsAns = seq_along(ansvars)
         icols = icolsAns = integer()
+      } else if (is.null(leftcols)) {
+        xcols = w[!wna]
+        xcolsAns = which(!wna)
+        ivars = names(i)
+        w2 = chmatch(ansvars[wna], ivars)
+        if (any(w2na <- is.na(w2))) {
+          ivars = paste0("i.",ivars)
+          w2[w2na] = chmatch(ansvars[wna][w2na], ivars)
+        }
+        icols = w2
+        icolsAns = which(wna)
       } else {
         if (!length(leftcols)) internal_error("column(s) not found: %s", brackify(ansvars[wna])) # nocov
         xcols = w[!wna]
@@ -1281,6 +1349,11 @@ replace_dot_alias = function(e) {
       }
     }
   }  # end of  if !missing(j)
+
+  # Restore full leftcols and rightcols now that we have kept non-equi
+  # and rolling join columns from both x and i.
+  if (!identical(leftcols, integer(0L))) leftcols = allleftcols
+  if (!identical(rightcols, integer(0L))) rightcols = allrightcols
 
   SDenv = new.env(parent=parent.frame())
 
