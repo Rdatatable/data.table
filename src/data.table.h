@@ -184,7 +184,6 @@ SEXP dt_na(SEXP x, SEXP cols);
 SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose);
 const char *memrecycle(const SEXP target, const SEXP where, const int start, const int len, SEXP source, const int sourceStart, const int sourceLen, const int colnum, const char *colname);
 SEXP shallowwrapper(SEXP dt, SEXP cols);
-void warn_matrix_column(int i);
 
 SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols,
                 SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts,
@@ -260,6 +259,7 @@ SEXP islockedR(SEXP x);
 bool need2utf8(SEXP x);
 SEXP coerceUtf8IfNeeded(SEXP x);
 SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg);
+int length_with_dispatch(SEXP);
 void internal_error(const char *call_name, const char *format, ...);
 
 // types.c
@@ -331,7 +331,7 @@ SEXP glast(SEXP);
 SEXP gfirst(SEXP);
 SEXP gnthvalue(SEXP, SEXP);
 SEXP dim(SEXP);
-SEXP warn_matrix_column_r(SEXP);
+SEXP check_problematic_columns(SEXP);
 SEXP gvar(SEXP, SEXP);
 SEXP gsd(SEXP, SEXP);
 SEXP gprod(SEXP, SEXP);
@@ -354,4 +354,3 @@ SEXP dt_has_zlib(void);
 SEXP startsWithAny(SEXP, SEXP, SEXP);
 SEXP convertDate(SEXP, SEXP);
 SEXP fastmean(SEXP);
-
