@@ -1893,10 +1893,11 @@ replace_dot_alias = function(e) {
     assign(".N", len__, thisEnv) # For #334
     #fix for #1683
     if (use.I) assign(".I", seq_len(nrow(x)), thisEnv)
-    ans = gforce(thisEnv, jsub, o__, f__, len__, irows) # irows needed for #971.
+    ans = gforce(thisEnv, jsub, o__, f__, len__, irows,  # irows needed for #971
+                 .Call(CsubsetVector, groups, grpcols),  # just a list() subset to make C level neater; doesn't copy column contents
+                 lhs)  # for now this just prevents := with new feature first/last n>1; in future see TODO below
     gi = if (length(o__)) o__[f__] else f__
     g = lapply(grpcols, function(i) .Call(CsubsetVector, groups[[i]], gi)) # use CsubsetVector instead of [ to preserve attributes #5567
-
     # returns all rows instead of one per group
     nrow_funs = c("gshift")
     .is_nrows = function(q) {
@@ -1907,25 +1908,8 @@ replace_dot_alias = function(e) {
         q[[1L]] %chin% nrow_funs
       }
     }
-
     # adding ghead/gtail(n) support for n > 1 #5060 #523
-    q3 = 0
-    if (!is.symbol(jsub)) {
-      headTail_arg = function(q) {
-        if (length(q)==3L && length(q3 <- q[[3L]])==1L && is.numeric(q3) &&
-         (q[[1L]]) %chin% c("ghead", "gtail") && q3!=1) q3
-        else 0
-      }
-      if (jsub %iscall% "list"){
-        q3 = max(sapply(jsub, headTail_arg))
-      } else if (length(jsub)==3L) {
-        q3 = headTail_arg(jsub)
-      }
-    }
-    if (q3 > 0) {
-      grplens = pmin.int(q3, len__)
-      g = lapply(g, rep.int, times=grplens)
-    } else if (.is_nrows(jsub)) {
+    if (.is_nrows(jsub)) {
       g = lapply(g, rep.int, times=len__)
       # unpack list of lists for nrows functions
       zip_items = function(ll) do.call(mapply, c(list(FUN = c), ll, SIMPLIFY=FALSE, USE.NAMES=FALSE))
@@ -1933,7 +1917,6 @@ replace_dot_alias = function(e) {
         ans = lapply(ans, zip_items)
       }
     }
-    ans = c(g, ans)
   } else {
     ans = .Call(Cdogroups, x, xcols, groups, grpcols, jiscols, xjiscols, grporder, o__, f__, len__, jsub, SDenv, cols, newnames, !missing(on), verbose, showProgress)
   }
@@ -3114,7 +3097,7 @@ gshift = function(x, n=1L, fill=NA, type=c("lag", "lead", "shift", "cyclic")) {
   stopifnot(is.numeric(n))
   .Call(Cgshift, x, as.integer(n), fill, type)
 }
-gforce = function(env, jsub, o, f, l, rows) .Call(Cgforce, env, jsub, o, f, l, rows)
+gforce = function(env, jsub, o, f, l, rows, grpcols, lhs) .Call(Cgforce, env, jsub, o, f, l, rows, grpcols, lhs)
 
 # GForce needs to evaluate all arguments not present in the data.table before calling C part #5547
 # Safe cases: variables [i], calls without variables [c(0,1), list(1)] # TODO extend this list

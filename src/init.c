@@ -29,6 +29,7 @@ SEXP sym_index;
 SEXP sym_BY;
 SEXP sym_starts, char_starts;
 SEXP sym_maxgrpn;
+SEXP sym_gforce_dynamic;
 SEXP sym_anyna;
 SEXP sym_anyinfnan;
 SEXP sym_anynotascii;
@@ -286,6 +287,7 @@ void attribute_visible R_init_data_table(DllInfo *info)
   sym_index   = install("index");
   sym_BY      = install(".BY");
   sym_maxgrpn = install("maxgrpn");
+  sym_gforce_dynamic = install("gforce_dynamic");
   sym_anyna   = install("anyna");
   sym_anyinfnan = install("anyinfnan");
   sym_anynotascii = install("anynotascii");

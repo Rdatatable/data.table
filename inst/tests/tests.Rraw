@@ -18157,9 +18157,9 @@ test(2233.25, copy(DT)[a!=4, v := head(b, 3L), a, verbose=TRUE], copy(DT)[a!=4, 
 DT = data.table(a=1:3,b=(1:9)/10)
 test(2233.26, DT[, c("v1","v2") := .(min(b), max(b)), a,         verbose=TRUE], data.table(a=1:3, b=(1:9)/10, v1=(1:3)/10, v2=(7:9)/10), output="GForce optimized j to")
 test(2233.27, DT[, c("v1","v2") := .(head(b,3L), tail(b,3L)), a, verbose=TRUE], data.table(a=1:3, b=(1:9)/10, v1=(1:9)/10, v2=(1:9)/10), output="GForce optimized j to")
-test(2233.28, DT[, c("v1","v2") := .(head(b,3L), tail(b,2L)), a], error="Supplied 6 items to be assigned to 9 items of column 'v2'.")
-test(2233.29, DT[, c("v1","v2") := .(head(b,2L), tail(b,3L)), a], error="Supplied 6 items to be assigned to 9 items of column 'v1'.")
-test(2233.30, DT[, c("v1","v2") := .(head(b,2L), tail(b,2L)), a], error="Supplied 6 items to be assigned to 9 items of column 'v1'.")
+test(2233.28, DT[, c("v1","v2") := .(head(b,3L), tail(b,2L)), a], error="Supplied 6 items.*9")
+test(2233.29, DT[, c("v1","v2") := .(head(b,2L), tail(b,3L)), a], error="Supplied 6 items.*9")
+test(2233.30, DT[, c("v1","v2") := .(head(b,2L), tail(b,2L)), a], error="Supplied 6 items.*9.")
 test(2233.31, DT[, c("v1","v2") := .(min(b), max(b)), a,         verbose=TRUE], DT[, c("v1","v2") := .(base::min(b), base::max(b)), a          ], output="GForce optimized j to")
 test(2233.32, DT[, c("v1","v2") := .(head(b,3L), tail(b,3L)), a, verbose=TRUE], DT[, c("v1","v2") := .(utils::head(b,3L), utils::tail(b,3L)), a], output="GForce optimized j to")
 
