@@ -22,34 +22,34 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
       warningf("Input data.table '%s' has no columns.", "y")
     }
   }
-check_duplicate_names(x)
-check_duplicate_names(y)
+  check_duplicate_names(x)
+  check_duplicate_names(y)
 
-nm_x = names(x)
-nm_y = names(y)
+  nm_x = names(x)
+  nm_y = names(y)
 
   ## set up 'by'/'by.x'/'by.y'
-  if ( (!is.null(by.x) || !is.null(by.y)) && length(by.x)!=length(by.y) )
+  if ((!is.null(by.x) || !is.null(by.y)) && length(by.x) != length(by.y))
     stopf("'by.x' and 'by.y' must be of same length.")
   if (!missing(by) && !missing(by.x))
     warningf("Supplied both by and 'by.x/by.y.' by argument will be ignored.")
   if (!is.null(by.x)) {
-    if (length(by.x)==0L || !is.character(by.x) || !is.character(by.y))
+    if (length(by.x) == 0L || !is.character(by.x) || !is.character(by.y))
       stopf("A non-empty vector of column names is required for 'by.x' and 'by.y'.")
     if (!all(by.x %chin% nm_x)) {
-  missing_in_x <- setdiff(by.x, nm_x)
-  stopf("The following columns listed in 'by.x' are missing from x: %s", brackify(missing_in_x))
-  }
-  if (!all(by.y %chin% nm_y)) {
-     missing_in_y <- setdiff(by.y, nm_y)
-     stopf("The following columns listed in 'by.y' are missing from y: %s", brackify(missing_in_y))
-  }
-by = by.x
-names(by) = by.y
+      missing_in_x <- setdiff(by.x, nm_x)
+      stopf("The following columns listed in 'by.x' are missing from x: %s", brackify(missing_in_x))
+    }
+    if (!all(by.y %chin% nm_y)) {
+      missing_in_y <- setdiff(by.y, nm_y)
+      stopf("The following columns listed in 'by.y' are missing from y: %s", brackify(missing_in_y))
+    }
+    by = by.x
+    names(by) = by.y
   } else {
     if (is.null(by))
       by = intersect(key(x), key(y))
-    if (!length(by))   # was is.null() before PR#5183  changed to !length()
+    if (!length(by)) # was is.null() before PR#5183 changed to !length()
       by = key(x)
     if (!length(by))
       by = intersect(nm_x, nm_y)
@@ -59,12 +59,12 @@ names(by) = by.y
     missing_in_y <- setdiff(by, nm_y)
     if (length(missing_in_x) > 0 || length(missing_in_y) > 0) {
       stopf(gettextf("The following columns are missing:\n%s%s",
-                     if (length(missing_in_x) > 0) gettextf(" - From x: %s\n", brackify(missing_in_x)) else "",
-                     if (length(missing_in_y) > 0) gettextf(" - From y: %s\n", brackify(missing_in_y)) else ""))
+        if (length(missing_in_x) > 0) gettextf(" - From x: %s\n", brackify(missing_in_x)) else "",
+        if (length(missing_in_y) > 0) gettextf(" - From y: %s\n", brackify(missing_in_y)) else ""))
     }
     by = unname(by)
     by.x = by.y = by
-   }
+  }
   # warn about unused arguments #2587
   if (length(list(...))) {
     ell = as.list(substitute(list(...)))[-1L]
