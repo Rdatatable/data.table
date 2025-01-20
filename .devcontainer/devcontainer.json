@@ -1,9 +1,10 @@
 {
-  "build": { "dockerfile": "r-devel-gcc/Dockerfile", "context": ".." },
+  "build": { "dockerfile": "Dockerfile", "context": "../.." },
   "customizations": { "vscode": {
      "extensions": [
       "REditorSupport.r",
       "ms-vscode.cpptools-extension-pack"
      ]
-  }}
+  }},
+  "postCreateCommand": "apt-get update && apt-get install -y docker.io"
 }
