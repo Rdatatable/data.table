@@ -123,7 +123,7 @@ data.table Version line in DESCRIPTION typically has the following meanings
 
 # Governance history
 
-Jan 2025: clarify role names as proper nouns throughout
+Jan 2025: clarify role names as proper nouns (i.e., upper-case) throughout.
 
 Feb 2024: change team name/link maintainers to committers, to be consistent with role defined in governance.
 
