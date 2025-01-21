@@ -20759,6 +20759,8 @@ as.data.frame.tbl = function(x) {
 test(2302.1, attr(as.data.table(y), "t1"), attr(as.data.frame(y), "t1"))
 class(x) = c("data.frame", "data.table", "data.frame") # #6739
 test(2302.2, as.data.table(x), data.table(a=c(1, 5, 3), b=c(2, 4, 6)))
+class(x) = c("data.frame", "data.table") # duplicate class is overkill
+test(2302.3, as.data.table(x), data.table(a=c(1, 5, 3), b=c(2, 4, 6)))
 
 # by=foo(KEY) does not retain key (no way to guarantee monotonic transformation), #5583
 DT = data.table(a=1:2, key='a')
