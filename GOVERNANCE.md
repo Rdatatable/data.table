@@ -96,6 +96,8 @@ A pull request can be merged by any committer, if there is one approving review,
 
 There is no special process for changing this document. Submit a PR and ask for review, making sure to tag `@Rdatatable/committers` to ensure all current Committers are aware of the change.
 
+Please also make a note in the change log under [`# Governance history`](#governance-history)
+
 # Code of conduct
 
 As contributors of this project, we pledge to respect all people who contribute through reporting issues, posting feature requests, updating documentation, submitting pull requests or patches, and other activities.
@@ -121,6 +123,8 @@ data.table Version line in DESCRIPTION typically has the following meanings
 * patch/hotfix development should occur on GitHub as z=odd (1.15.1) and release to CRAN as z=even (1.15.2).
 
 # Governance history
+
+Jan 2025: clarify that edits to governance should notify all committers
 
 Feb 2024: change team name/link maintainers to committers, to be consistent with role defined in governance.
 
