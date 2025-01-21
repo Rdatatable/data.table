@@ -124,7 +124,7 @@ data.table Version line in DESCRIPTION typically has the following meanings
 
 # Governance history
 
-Jan 2025: clarify that edits to governance should notify all committers
+Jan 2025: clarify that edits to governance should notify all committers.
 
 Feb 2024: change team name/link maintainers to committers, to be consistent with role defined in governance.
 
