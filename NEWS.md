@@ -176,11 +176,12 @@ rowwiseDT(
 
 9. `key<-`, marked as deprecated since 2012 and unusable since v1.15.0, has been fully removed.
 
-10. Deprecation of `logicalAsInt` argument to `fwrite()` has been upgraded from a warning (since v1.15.0) to an error. It will be removed in the next release.
+10. The following in-progress deprecations have proceeded:
 
-11. Deprecation of `fread(autostart=)` has been upgraded to an error. It has been warning since v1.11.0 (6 years ago). The argument will be removed in the next release.
-
-12. Deprecation of `droplevels(in.place=TRUE)` (warning since v1.16.0) has been upgraded from warning to error. The argument will be removed in the next release.
+   + Using `fwrite(logicalAsInt=)` has been upgraded from a warning (since v1.15.0) to an error. It will be removed in the next release.
+   + Using `fread(autostart=)` has been upgraded to an error. It has been warning since v1.11.0 (6 years ago). The argument will be removed in the next release.
+   + Using `droplevels(in.place=TRUE)` (warning since v1.16.0) has been upgraded from warning to error. The argument will be removed in the next release.
+   + Use of `:=` and `with=FALSE` in `[` has been upgraded from warning (since v1.15.0) to error. Long ago (before 2014), this was needed when, e.g., assigning to a vector of column names defined outside the table, but `with=FALSE` is no longer needed to do so: `DT[, (cols) := ...]` works fine.
 
 # data.table [v1.16.4](https://github.com/Rdatatable/data.table/milestone/36) 4 December 2024
 
