@@ -1,3 +1,8 @@
+name: R-CMD-check-sanitized
+concurrency:
+  group: ${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
 on:
   push:
     branches:
@@ -6,46 +11,27 @@ on:
   workflow_dispatch:
   pull_request:
 
-name: R-CMD-check-sanitized
-
-concurrency:
-  group: ${{ github.event.pull_request.number || github.run_id }}
-  cancel-in-progress: true
-
 jobs:
-  R-CMD-check-sanitized:
+  linux-containers:
     runs-on: ubuntu-latest
+    name: "Check with sanitizers enabled"
+    strategy:
+      fail-fast: false
     container:
       image: docker://ghcr.io/r-hub/containers/clang-asan
 
-    strategy:
-      fail-fast: true
-
     steps:
-      - uses: actions/checkout@v4
-
-      - name: "Set things up"
+      - uses: r-hub/actions/checkout@v1
+      - uses: r-hub/actions/platform-info@v1
+      - uses: r-hub/actions/setup-deps@v1
+      - name: "Additional setup"
         run: |
-          # setting aside the other.Rraw dependencies for now (will need cache)
-          Rscript -e 'pak::pak()'
           # this should at least help with the build step
           echo "MAKEFLAGS=-j$(nproc)" >> $GITHUB_ENV
           # fontconfig is known to leak; add more suppressions as discovered
           echo "LSAN_OPTIONS=suppressions=$(realpath .github/workflows/LSan.supp)" >> $GITHUB_ENV
           # disabled by default, so reenable (needs suppressions above)
           echo "ASAN_OPTIONS=detect_leaks=1" >> $GITHUB_ENV
-          # otherwise there are literal jumps to ud1 in the code with no diagnostics
+          # see r-hub/containers#84
           sed -i 's/-fsanitize-trap\S*//g' /opt/R/devel-asan/lib/R/etc/Makeconf
-
-      - name: "Build"
-        run: R CMD build .
-
-      - name: "Check"
-        run: |
-          set +e # expect some things to fail and keep going
-          echo "::group::full R CMD check output"
-          R CMD check --no-manual data.table_*.tar.gz; res1=$?
-          echo "::endgroup::"
-          perl -nle '(print, $a=1) if /: runtime error: |ERROR: LeakSanitizer/../SUMMARY.*Sanitizer/ }{ exit $a' data.table.Rcheck/**/*.Rout*; res2=$?
-          # fail if R CMD check had failed or if sanitizer output found
-          [ $res1 -eq 0 ] && [ $res2 -eq 0 ]
+      - uses: r-hub/actions/run-check@v1
