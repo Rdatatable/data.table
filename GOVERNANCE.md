@@ -94,8 +94,7 @@ A pull request can be merged by any committer, if there is one approving review,
 
 ## Changing this GOVERNANCE.md document
 
-There is no special process for changing this document (submit a PR
-and ask for review).
+There is no special process for changing this document. Submit a PR and ask for review, making sure to tag `@Rdatatable/committers` to ensure all current Committers are aware of the change.
 
 # Code of conduct
 
