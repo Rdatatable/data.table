@@ -15,12 +15,9 @@
     )
     transl_lang = ifelse(dirname(translation) == ".", "en", dirname(translation))
     block = if (!all(transl_lang == lang)) {
-      sprintf(
-        fmt, paste(collapse = " | ", sprintf(
-          "[%s](%s)",
-          transl_lang[transl_lang != lang],
-          file.path(url, sub("(?i)\\.Rmd$", ".html", translation[transl_lang != lang]))
-      )))
+      linked_transl = sprintf("[%s](%s)", transl_lang, file.path(url, sub("(?i)\\.Rmd$", ".html", translation)))
+      linked_transl[transl_lang == lang] = lang
+      sprintf(fmt, paste(linked_transl, collapse = " | "))
     } else ""
     knitr::asis_output(block)
 }
