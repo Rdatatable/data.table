@@ -72,3 +72,7 @@
 
 # GLCI
 .gitlab-ci.yml @jangorecki @ben-schwen
+
+# C code tricks
+/src/chmatch.c @aitap
+/src/fread.c @aitap
