@@ -22,6 +22,26 @@ methods::setPackageName("data.table",.global)
 is.data.table = function(x) inherits(x, "data.table")
 is.ff = function(x) inherits(x, "ff")  # define this in data.table so that we don't have to require(ff), but if user is using ff we'd like it to work
 
+# Helper function to process assignment operations in lists or environments.
+# Used internally for efficient recursive assignments in data.table.
+
+process_assignment <- function(name, x, parent_env) {
+   k = eval(name[[2L]], parent_env, parent_env) 
+   if (is.list(k)) { 
+      origj = j = if (name[[1L]] == "$") as.character(name[[3L]]) else eval(name[[3L]], parent_env, parent_env) 
+      if (is.character(j)) { 
+         if (length(j) != 1L) 
+            stopf("Cannot assign to an under-allocated recursively indexed list -- L[[i]][,:=] syntax is only valid when i is length 1, but its length is %d", length(j)) 
+         j = match(j, names(k)) 
+         if (is.na(j)) 
+            stopf("Item '%s' not found in names of input list", origj) 
+      } 
+      .Call(Csetlistelt, k, as.integer(j), x) 
+   } else if (is.environment(k) && exists(as.character(name[[3L]]), k)) { 
+      assign(as.character(name[[3L]]), x, k, inherits = FALSE) 
+   }
+}
+
 #NCOL = function(x) {
 #    # copied from base, but additionally covers data.table via is.list()
 #    # because NCOL in base explicitly tests using is.data.frame()
@@ -1214,22 +1234,9 @@ replace_dot_alias = function(e) {
             setalloccol(x, n, verbose=verbose)   # always assigns to calling scope; i.e. this scope
             if (is.name(name)) {
               assign(as.character(name),x,parent.frame(),inherits=TRUE)
-            } else if (.is_simple_extraction(name)) { # TODO(#6702): use a helper here as the code is very similar to setDT().
-              k = eval(name[[2L]], parent.frame(), parent.frame())
-              if (is.list(k)) {
-                origj = j = if (name[[1L]] == "$") as.character(name[[3L]]) else eval(name[[3L]], parent.frame(), parent.frame())
-                if (is.character(j)) {
-                  if (length(j)!=1L) stopf("Cannot assign to an under-allocated recursively indexed list -- L[[i]][,:=] syntax is only valid when i is length 1, but its length is %d", length(j))
-                  j = match(j, names(k))
-                  if (is.na(j)) internal_error("item '%s' not found in names of list", origj) # nocov
-                }
-                .Call(Csetlistelt,k,as.integer(j), x)
-              } else if (is.environment(k) && exists(as.character(name[[3L]]), k)) {
-                assign(as.character(name[[3L]]), x, k, inherits=FALSE)
-              } else if (isS4(k)) {
-                .Call(CsetS4elt, k, as.character(name[[3L]]), x)
-              }
-            } # TO DO: else if env$<- or list$<-
+            } else if (name %iscall% c('$', '[[') && is.name(name[[2L]])) {
+            process_assignment(name, x, parent.frame())
+            }
           }
         }
       }
@@ -2962,25 +2969,13 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
   if (is.name(name)) {
     name = as.character(name)
     assign(name, x, parent.frame(), inherits=TRUE)
-  } else if (.is_simple_extraction(name)) {
-    # common case is call from 'lapply()'
-    k = eval(name[[2L]], parent.frame(), parent.frame())
-    if (is.list(k)) {
-      origj = j = if (name[[1L]] == "$") as.character(name[[3L]]) else eval(name[[3L]], parent.frame(), parent.frame())
-      if (length(j) == 1L) {
-        if (is.character(j)) {
-          j = match(j, names(k))
-          if (is.na(j))
-            stopf("Item '%s' not found in names of input list", origj)
-        }
-      }
-      .Call(Csetlistelt, k, as.integer(j), x)
-    } else if (is.environment(k) && exists(as.character(name[[3L]]), k)) {
-      assign(as.character(name[[3L]]), x, k, inherits=FALSE)
-    } else if (isS4(k)) {
+  } else if (name %iscall% c('$', '[[') && is.name(name[[2L]])) {
+   process_assignment(name, x, parent.frame())
+  }
+  else if (isS4(k)) {
       .Call(CsetS4elt, k, as.character(name[[3L]]), x)
     }
-  } else if (name %iscall% "get") { # #6725
+     else if (name %iscall% "get") { # #6725
     # edit 'get(nm, env)' call to be 'assign(nm, x, envir=env)'
     name = match.call(get, name)
     name[[1L]] = quote(assign)
