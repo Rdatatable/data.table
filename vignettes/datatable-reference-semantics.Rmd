@@ -9,10 +9,6 @@ vignette: >
   \usepackage[utf8]{inputenc}
 ---
 
-Translations of this document are available in
-
-* [French](https://rdatatable.gitlab.io/data.table/articles/fr/datatable-reference-semantics.html)
-
 ```{r, echo = FALSE, message = FALSE}
 require(data.table)
 knitr::opts_chunk$set(
@@ -23,6 +19,11 @@ knitr::opts_chunk$set(
  collapse = TRUE)
 .old.th = setDTthreads(1)
 ```
+
+```{r echo=FALSE, file='_translation_links.R'}
+```
+`r .write.translation.links("Translations of this document are available in: %s")`
+
 This vignette discusses *data.table*'s reference semantics which allows to *add/update/delete* columns of a *data.table by reference*, and also combine them with `i` and `by`. It is aimed at those who are already familiar with *data.table* syntax, its general form, how to subset rows in `i`, select and compute on columns, and perform aggregations by group. If you're not familiar with these concepts, please read the [`vignette("datatable-intro", package="data.table")`](datatable-intro.html) vignette first.
 
 ***
