@@ -184,7 +184,7 @@ melt.data.table = function(data, id.vars, measure.vars, variable.name = "variabl
   if (!is.data.table(data)) stopf("'data' must be a data.table")
 
   # Validate id.vars
-  if (any(is.na(id.vars) | id.vars == "")) {
+  if (any(is.na(id.vars) | !nzchar(id.vars))) {
     stopf("One or more values in 'id.vars' is invalid.")
   }
 
