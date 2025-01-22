@@ -68,6 +68,11 @@
 # docs
 /man/openmp-utils.Rd @Anirban166
 /Seal_of_Approval.md @tdhock
+/GOVERNANCE.md: @Rdatatable/committers
 
 # GLCI
 .gitlab-ci.yml @jangorecki @ben-schwen
+
+# C code tricks
+/src/chmatch.c @aitap
+/src/fread.c @aitap
