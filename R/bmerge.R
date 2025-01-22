@@ -98,7 +98,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
         next
       }
       if (anyNA(x[[xcol]]) && allNA(x[[xcol]])) {
-        coerce_col(x, xcol, x_merge_type, i_merge_type, xname, iname, to_detail=gettext(" (all-NA)"), verbose=verbose)
+        coerce_col(x, xcol, x_merge_type, i_merge_type, xname, iname, from_detail=gettext(" (all-NA)"), verbose=verbose)
         next
       }
       stopf("Incompatible join types: %s (%s) and %s (%s)", xname, x_merge_type, iname, i_merge_type)
