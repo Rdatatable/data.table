@@ -26,20 +26,20 @@ is.ff = function(x) inherits(x, "ff")  # define this in data.table so that we do
 # Used internally for efficient recursive assignments in data.table.
 
 process_assignment <- function(name, x, parent_env) {
-   k = eval(name[[2L]], parent_env, parent_env) 
-   if (is.list(k)) { 
-      origj = j = if (name[[1L]] == "$") as.character(name[[3L]]) else eval(name[[3L]], parent_env, parent_env) 
-      if (is.character(j)) { 
-         if (length(j) != 1L) 
-            stopf("Cannot assign to an under-allocated recursively indexed list -- L[[i]][,:=] syntax is only valid when i is length 1, but its length is %d", length(j)) 
-         j = match(j, names(k)) 
-         if (is.na(j)) 
-            stopf("Item '%s' not found in names of input list", origj) 
-      } 
-      .Call(Csetlistelt, k, as.integer(j), x) 
-   } else if (is.environment(k) && exists(as.character(name[[3L]]), k)) { 
-      assign(as.character(name[[3L]]), x, k, inherits = FALSE) 
-   }
+  k = eval(name[[2L]], parent_env, parent_env)
+  if (is.list(k)) {
+    origj = j = if (name[[1L]] == "$") as.character(name[[3L]]) else eval(name[[3L]], parent_env, parent_env)
+    if (is.character(j)) {
+      if (length(j) != 1L)
+        stopf("Cannot assign to an under-allocated recursively indexed list -- L[[i]][,:=] syntax is only valid when i is length 1, but its length is %d", length(j))
+      j = match(j, names(k))
+      if (is.na(j))
+        stopf("Item '%s' not found in names of input list", origj)
+    }
+    .Call(Csetlistelt, k, as.integer(j), x)
+  } else if (is.environment(k) && exists(as.character(name[[3L]]), k)) {
+    assign(as.character(name[[3L]]), x, k, inherits = FALSE)
+  }
 }
 
 #NCOL = function(x) {
