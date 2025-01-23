@@ -905,6 +905,7 @@ void fwriteMain(fwriteMainArgs args)
           free(zbuffPool);
 #endif
           STOP(_("Can't init stream structure for writing header"));
+          // # nocov end
         }
         char* zbuff = zbuffPool;
         // write minimal gzip header
@@ -958,6 +959,7 @@ void fwriteMain(fwriteMainArgs args)
       free(zbuffPool);
 #endif
       STOP(_("%s: '%s'"), strerror(errno), args.filename);
+      // # nocov end
     }
     return;
   }
