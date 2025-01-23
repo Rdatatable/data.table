@@ -784,7 +784,7 @@ void fwriteMain(fwriteMainArgs args)
   }
 
   // alloc nth write buffers
-  errno=0;
+  errno = 0;
   size_t alloc_size = nth * buffSize;
   if (verbose) {
     DTPRINT(_("Allocate %zu bytes (%zu MiB) for buffPool\n"), alloc_size, alloc_size / MEGA);
@@ -797,39 +797,19 @@ void fwriteMain(fwriteMainArgs args)
 
   // init compress variables
 #ifndef NOZLIB
-  z_stream *thread_streams = NULL;
-  char *zbuffPool = NULL;
+  z_stream strm;
+  char *zbuffPool;
   size_t zbuffSize = 0;
   size_t compress_len = 0;
   if (args.is_gzip) {
-  // alloc zlib streams
-    thread_streams = (z_stream*) malloc(nth * sizeof(z_stream));
-    if (!thread_streams) {
+    // compute zbuffSize which is the same for each thread
+    if (init_stream(&strm) != Z_OK) {
       // # nocov start
       free(buffPool);
-      STOP(_("Failed to allocated %d bytes for threads_streams."), (int)(nth * sizeof(z_stream)));
-      // # nocov end
-    }
-    if (verbose) {
-      DTPRINT(_("Allocate %zu bytes for thread_streams\n"), nth * sizeof(z_stream));
-    }
-    // VLA on stack should be fine for nth structs; in zlib v1.2.11 sizeof(struct)==112 on 64bit
-    // not declared inside the parallel region because solaris appears to move the struct in
-    // memory when the #pragma omp for is entered, which causes zlib's internal self reference
-    // pointer to mismatch, #4099
-
-  // compute zbuffSize which is the same for each thread
-    z_stream *stream = thread_streams;
-    if (init_stream(stream) != Z_OK) {
-      // # nocov start
-      free(buffPool);
-#ifndef NOZLIB
-      free(thread_streams);
-#endif
       STOP(_("Can't init stream structure for deflateBound"));
       // # nocov end
     }
-    zbuffSize = deflateBound(stream, buffSize);
+    zbuffSize = deflateBound(&strm, buffSize);
     if (verbose)
       DTPRINT(_("zbuffSize=%d returned from deflateBound\n"), (int)zbuffSize);
 
@@ -840,17 +820,18 @@ void fwriteMain(fwriteMainArgs args)
       DTPRINT(_("Allocate %zu bytes (%zu MiB) for zbuffPool\n"), alloc_size, alloc_size / MEGA);
     }
     zbuffPool = malloc(alloc_size);
-    if (!zbuffPool) {
+    if (zbuffPool == NULL) {
       // # nocov start
       free(buffPool);
-#ifndef NOZLIB
-      free(thread_streams);
-#endif
       STOP(_("Unable to allocate %zu MiB * %d thread compressed buffers; '%d: %s'. Please read ?fwrite for nThread, buffMB and verbose options."),
            zbuffSize / MEGA, nth, errno, strerror(errno));
       // # nocov end
     }
+  } else {
+    // if no is_gzip, malloc 0 for allowing freeing zbuffPool
+    zbuffPool = malloc(0);
   }
+
 #endif
 
   // write header
@@ -896,17 +877,6 @@ void fwriteMain(fwriteMainArgs args)
       int ret0=0, ret1=0, ret2=0;
 #ifndef NOZLIB
       if (args.is_gzip) {
-        z_stream *stream = thread_streams;
-        if (init_stream(stream) != Z_OK) {
-          // # nocov start
-          free(buffPool);
-#ifndef NOZLIB
-          free(thread_streams);
-          free(zbuffPool);
-#endif
-          STOP(_("Can't init stream structure for writing header"));
-          // # nocov end
-        }
         char* zbuff = zbuffPool;
         // write minimal gzip header
         char* header = "\037\213\10\0\0\0\0\0\0\3";
@@ -917,7 +887,8 @@ void fwriteMain(fwriteMainArgs args)
         size_t zbuffUsed = zbuffSize;
         len = (size_t)(ch - buff);
         crc = crc32(crc, (unsigned char*)buff, len);
-        ret1 = compressbuff(stream, zbuff, &zbuffUsed, buff, len);
+        ret1 = compressbuff(&strm, zbuff, &zbuffUsed, buff, len);
+        deflateEnd(&strm);
         if (ret1==Z_OK) {
           ret2 = WRITE(f, zbuff, (int)zbuffUsed);
           compress_len += zbuffUsed;
@@ -934,7 +905,6 @@ void fwriteMain(fwriteMainArgs args)
         CLOSE(f);
         free(buffPool);
 #ifndef NOZLIB
-        free(thread_streams);
         free(zbuffPool);
 #endif
         if (ret0 == -1) STOP(_("Can't write gzip header error: %d"), ret0);
@@ -955,7 +925,6 @@ void fwriteMain(fwriteMainArgs args)
       // # nocov start
       free(buffPool);
 #ifndef NOZLIB
-      free(thread_streams);
       free(zbuffPool);
 #endif
       STOP(_("%s: '%s'"), strerror(errno), args.filename);
@@ -984,15 +953,14 @@ void fwriteMain(fwriteMainArgs args)
     char* ch = myBuff;
 
 #ifndef NOZLIB
+    z_stream mystream;
     size_t mylen = 0;
     int mycrc = 0;
-    z_stream *mystream = NULL;
     void *myzBuff = NULL;
     size_t myzbuffUsed = 0;
     if (args.is_gzip) {
-      mystream = &thread_streams[me];
       myzBuff = zbuffPool + me * zbuffSize;
-      if (init_stream(mystream) != Z_OK) { // this should be thread safe according to zlib documentation
+      if (init_stream(&mystream) != Z_OK) { // this should be thread safe according to zlib documentation
         failed = true;              // # nocov
         my_failed_compress = -998;  // # nocov
       }
@@ -1040,7 +1008,8 @@ void fwriteMain(fwriteMainArgs args)
       myzbuffUsed = zbuffSize;
       mylen = (size_t)(ch - myBuff);
       mycrc = crc32(0, (unsigned char*)myBuff, mylen);
-      int ret = compressbuff(mystream, myzBuff, &myzbuffUsed, myBuff, mylen);
+      int ret = compressbuff(&mystream, myzBuff, &myzbuffUsed, myBuff, mylen);
+      deflateEnd(&mystream);
       if (ret) {
         failed=true;
         my_failed_compress=ret;
@@ -1107,18 +1076,12 @@ void fwriteMain(fwriteMainArgs args)
         }
       }
     }
-#ifndef NOZLIB
-    if (args.is_gzip) {
-      deflateEnd(mystream);
-    }
-#endif
 
   } // end of parallel for loop
 
   free(buffPool);
 
 #ifndef NOZLIB
-  free(thread_streams);
   free(zbuffPool);
 
 /* put a 4-byte integer into a byte array in LSB order */
