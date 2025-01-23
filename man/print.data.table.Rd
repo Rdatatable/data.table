@@ -14,7 +14,7 @@
 
   \code{format_col} and \code{format_list_item} generics provide flexibility for end-users to define custom printing methods for generic classes.
 
-  Note also the option \code{datatable.prettyprint.char}; character columns entries exceeding this limit will be truncated, with \code{...} indicating the truncation. Truncation is done with \code{\link{strtrim}}; please note there some potential limitations of this routine with respect to invisible characters like \code{\n}.
+  Note also the option \code{datatable.prettyprint.char}; character columns entries exceeding this limit will be truncated, with \code{...} indicating the truncation. Truncation is done with \code{\link{strtrim}}; please read there some potential limitations of this routine with respect to invisible characters like \code{\n}.
 }
 \usage{
   \method{print}{data.table}(x,
