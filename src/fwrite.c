@@ -820,7 +820,7 @@ void fwriteMain(fwriteMainArgs args)
       DTPRINT(_("Allocate %zu bytes (%zu MiB) for zbuffPool\n"), alloc_size, alloc_size / MEGA);
     }
     zbuffPool = malloc(alloc_size);
-    if (zbuffPool == NULL) {
+    if (!zbuffPool) {
       // # nocov start
       free(buffPool);
       STOP(_("Unable to allocate %zu MiB * %d thread compressed buffers; '%d: %s'. Please read ?fwrite for nThread, buffMB and verbose options."),
