@@ -20,6 +20,13 @@ jobs:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       repo_token: ${{ secrets.GITHUB_TOKEN }}
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: refactor-helper-function-issue-6702
+      - run: |
+          echo "Current branch:"
+          git branch
+          echo "Listing all branches:"
+          git branch -a
       - uses: Anirban166/Autocomment-atime-results@v1.4.1
-      - name: Checkout branch
-        run: git checkout refactor-helper-function-issue-6702 || echo "Branch not found"
