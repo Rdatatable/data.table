@@ -21,3 +21,5 @@ jobs:
       repo_token: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: Anirban166/Autocomment-atime-results@v1.4.1
+      - name: Checkout branch
+        run: git checkout refactor-helper-function-issue-6702 || echo "Branch not found"
