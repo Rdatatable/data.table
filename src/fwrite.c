@@ -984,10 +984,11 @@ void fwriteMain(fwriteMainArgs args)
 #ifndef NOZLIB
     size_t mylen = 0;
     int mycrc = 0;
-    z_stream *mystream = &thread_streams[me];
+    z_stream *mystream = NULL;
     void *myzBuff = NULL;
     size_t myzbuffUsed = 0;
     if (args.is_gzip) {
+      mystream = &thread_streams[me];
       myzBuff = zbuffPool + me * zbuffSize;
       if (init_stream(mystream) != Z_OK) { // this should be thread safe according to zlib documentation
         failed = true;              // # nocov
