@@ -18,21 +18,25 @@ setDT(x, keep.rownames=FALSE, key=NULL, check.names=FALSE)
 }
 
 \details{
-  When working on large \code{lists} or \code{data.frames}, it might be both time and memory consuming to convert them to a \code{data.table} using \code{as.data.table(.)}, as this will make a complete copy of the input object before to convert it to a \code{data.table}. The \code{setDT} function takes care of this issue by allowing to convert \code{lists} - both named and unnamed lists and \code{data.frames} \emph{by reference} instead. That is, the input object is modified in place, no copy is being made.
+  When working on large \code{list}s or \code{data.frame}s, it might be both time- and memory-consuming to convert them to a \code{data.table} using \code{as.data.table(.)}, which will make a complete copy of the input object before converting it to a \code{data.table}. \code{setDT} takes care of this issue by converting any \code{list} (named or unnamed, data.frame or not) \emph{by reference} instead. That is, the input object is modified in place with no copy.
+
+  This should come with low overhead, but note that \code{setDT} does check that the input is valid by looking for inconsistent input lengths and inadmissible column types (e.g. matrix).
 }
 
 \value{
-    The input is modified by reference, and returned (invisibly) so it can be used in compound statements; e.g., \code{setDT(X)[, sum(B), by=A]}. If you require a copy, take a copy first (using \code{DT2 = copy(DT)}). See \code{?copy}.
+  The input is modified by reference, and returned (invisibly) so it can be used in compound statements; e.g., \code{setDT(X)[, sum(B), by=A]}. If you require a copy, take a copy first (using \code{DT2 = copy(DT)}). See \code{?copy}.
 }
 
-\seealso{ \code{\link{data.table}}, \code{\link{as.data.table}}, \code{\link{setDF}}, \code{\link{copy}}, \code{\link{setkey}}, \code{\link{setcolorder}}, \code{\link{setattr}}, \code{\link{setnames}}, \code{\link{set}}, \code{\link{:=}}, \code{\link{setorder}}
+\seealso{
+  \code{\link{data.table}}, \code{\link{as.data.table}}, \code{\link{setDF}}, \code{\link{copy}}, \code{\link{setkey}}, \code{\link{setcolorder}}, \code{\link{setattr}}, \code{\link{setnames}}, \code{\link{set}}, \code{\link{:=}}, \code{\link{setorder}}
 }
 \examples{
 
 set.seed(45L)
-X = data.frame(A=sample(3, 10, TRUE),
-         B=sample(letters[1:3], 10, TRUE),
-         C=sample(10), stringsAsFactors=FALSE)
+X = data.frame(
+  A=sample(3, 10, TRUE),
+  B=sample(letters[1:3], 10, TRUE),
+  C=sample(10))
 
 # Convert X to data.table by reference and
 # get the frequency of each "A,B" combination
