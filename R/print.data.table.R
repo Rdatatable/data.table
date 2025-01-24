@@ -261,7 +261,7 @@ dt_width = function(x, nrow, class, row.names, col.names) {
   if (class) widths = pmax(widths, 6L)
   if (col.names != "none") names = sapply(colnames(x), nchar, type="width") else names = 0L
   dt_widths = pmax(widths, names)
-  rownum_width = if (row.names) as.integer(ceiling(log10(nrow))+2) else 0L
+  rownum_width = if (row.names) as.integer(ceiling(log10(nrow))+2.0) else 0L
   cumsum(dt_widths + 1L) + rownum_width
 }
 # keeps the dim and dimnames attributes
