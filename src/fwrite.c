@@ -823,6 +823,7 @@ void fwriteMain(fwriteMainArgs args)
     if (!zbuffPool) {
       // # nocov start
       free(buffPool);
+      deflateEnd(&strm);
       STOP(_("Unable to allocate %zu MiB * %d thread compressed buffers; '%d: %s'. Please read ?fwrite for nThread, buffMB and verbose options."),
            zbuffSize / MEGA, nth, errno, strerror(errno));
       // # nocov end
