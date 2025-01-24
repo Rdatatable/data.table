@@ -7066,7 +7066,7 @@ ee = new.env()
 ee$DT = data.frame(x=1L, y=1:3)
 setattr(ee$DT, 'class', c("data.table", "data.frame"))
 test(1482.1, truelength(ee$DT), 0L) # make sure that the simulated environment is right.
-test(1482.2, ee$DT[, z := 3:1], data.table(x=1L, y=1:3, z=3:1), warning="Invalid .internal.selfref detected and")
+test(1482.2, ee$DT[, z := 3:1], data.table(x=1L, y=1:3, z=3:1), warning="A shallow copy of this data.table was taken")
 test(1482.3, truelength(ee$DT), 1027L)
 test(1482.4, ee$DT[, za := 4:6], data.table(x=1L, y=1:3, z=3:1, za=4:6))
 test(1482.5, truelength(ee$DT), 1027L)   # should have used spare slot i.e. no increase in tl
@@ -14942,7 +14942,7 @@ test(2037.1, foo(DT), output='Please remember to always setDT()')
 # no assignment was made to DT
 test(2037.2, names(DT), 'a')
 # _selrefok() verbose message was duplicated
-test(2037.3, unname(table(unlist(strsplit(capture.output(foo(DT)), '\n|\\s+')))['ptr']), 1L)
+test(2037.3, foo(DT), output="data.table internal attributes", notOutput="data.table internal attributes.*data.table internal attributes")
 
 # `between` invalid args, and verbose #3516
 test(2038.01, between(1:5, 2, 4, incbounds=423), error="incbounds must be TRUE or FALSE")

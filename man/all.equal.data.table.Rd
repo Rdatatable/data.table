@@ -24,7 +24,7 @@
   }
 
   \item{check.attributes}{
-    A logical indicating whether or not to check attributes, will apply not only to data.table but also attributes of the columns. It will skip \code{c("row.names",".internal.selfref")} data.table attributes.
+    A logical indicating whether or not to check attributes. Note that this will apply not only to the data.tables, but also to attributes of the columns. \code{"row.names"} and any internal data.table attributes are always skipped.
   }
 
   \item{ignore.col.order}{
