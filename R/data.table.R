@@ -2918,9 +2918,6 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
       }
     }
 
-    # Done to avoid affecting other copies of x when we setattr() below (#4784)
-    x = .shallow(x)
-
     rn = if (!identical(keep.rownames, FALSE)) rownames(x) else NULL
     setattr(x, "row.names", .set_row_names(nrow(x)))
     if (check.names) setattr(x, "names", make.names(names(x), unique=TRUE))
