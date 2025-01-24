@@ -1971,7 +1971,7 @@ int freadMain(freadMainArgs _args) {
       int thisLineLen = (int)(ch-lineStart);  // ch is now on start of next line so this includes line ending already
       sampleLines++;
       sumLen += thisLineLen;
-      sumLenSq += thisLineLen*thisLineLen;
+      sumLenSq += (double)thisLineLen*thisLineLen; // avoid integer overflow, #6729
       if (thisLineLen<minLen) minLen=thisLineLen;
       if (thisLineLen>maxLen) maxLen=thisLineLen;
       if (jump==0 && bumped) {

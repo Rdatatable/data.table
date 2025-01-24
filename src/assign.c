@@ -33,7 +33,7 @@ void setselfref(SEXP x) {
     R_NilValue,                  // for identical() to return TRUE. identical() doesn't look at tag and prot
     PROTECT(getAttrib(x, R_NamesSymbol)),  // to detect if names has been replaced and its tl lost, e.g. setattr(DT,"names",...)
     PROTECT(R_MakeExternalPtr(   // to avoid an infinite loop in object.size(), if prot=x here
-      x,                         // to know if this data.table has been copied by key<-, attr<-, names<-, etc.
+      x,                         // to know if this data.table has been copied by attr<-, names<-, etc.
       R_NilValue,                // this tag and prot currently unused
       R_NilValue
     ))
@@ -549,6 +549,11 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   for (int i=0; i<length(cols); ++i) {
     coln = INTEGER(cols)[i]-1;
     SEXP thisvalue = RHS_list_of_columns ? VECTOR_ELT(values, i) : values;
+    // if values is list(NULL), then replace with a list of NULLs instead of deleting, #5558
+    if (RHS_list_of_columns && length(values)==1 && TYPEOF(VECTOR_ELT(values, 0))==NILSXP && coln < oldncol) {
+        SET_VECTOR_ELT(dt, coln, targetcol=allocNAVector(VECSXP, length(VECTOR_ELT(dt, coln))));
+        continue;
+    }
     if (TYPEOF(thisvalue)==NILSXP) {
       if (!isNull(rows)) internal_error(__func__, "earlier error 'When deleting columns, i should not be provided' did not happen"); // # nocov
       ndelete++;
