@@ -798,7 +798,8 @@ void fwriteMain(fwriteMainArgs args)
   // init compress variables
 #ifndef NOZLIB
   z_stream strm;
-  char *zbuffPool;
+  // NB: fine to free() this even if unallocated
+  char *zbuffPool = NULL;
   size_t zbuffSize = 0;
   size_t compress_len = 0;
   if (args.is_gzip) {
@@ -828,9 +829,6 @@ void fwriteMain(fwriteMainArgs args)
            zbuffSize / MEGA, nth, errno, strerror(errno));
       // # nocov end
     }
-  } else {
-    // if no is_gzip, malloc 0 for allowing freeing zbuffPool
-    zbuffPool = malloc(0);
   }
 
 #endif
