@@ -921,15 +921,12 @@ void fwriteMain(fwriteMainArgs args)
   if (args.nrow == 0) {
     if (verbose)
       DTPRINT(_("No data rows present (nrow==0)\n"));
-    if (f != -1 && CLOSE(f)) {
-      // # nocov start
-      free(buffPool);
+    free(buffPool);
 #ifndef NOZLIB
-      free(zbuffPool);
+    free(zbuffPool);
 #endif
-      STOP(_("%s: '%s'"), strerror(errno), args.filename);
-      // # nocov end
-    }
+    if (f != -1 && CLOSE(f))
+      STOP(_("%s: '%s'"), strerror(errno), args.filename); // # nocov
     return;
   }
 
