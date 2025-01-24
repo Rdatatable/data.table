@@ -1095,7 +1095,7 @@ void fwriteMain(fwriteMainArgs args)
     int ret = WRITE(f, tail, 10);
     compress_len += 10;
     if (ret == -1)
-      STOP("Error: can't write gzip tailer"); // # nocov
+      STOP(_("Failed to write gzip trailer")); // # nocov
   }
 #endif
 
