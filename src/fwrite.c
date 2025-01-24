@@ -1114,11 +1114,11 @@ void fwriteMain(fwriteMainArgs args)
   if (verbose) {
 #ifndef NOZLIB
     if (args.is_gzip) {
-      DTPRINT("zlib: uncompressed length=%zu (%zu MiB), compressed length=%zu (%zu MiB), ratio=%.1f%%, crc=%x\n",
+      DTPRINT(_("zlib: uncompressed length=%zu (%zu MiB), compressed length=%zu (%zu MiB), ratio=%.1f%%, crc=%x\n"),
               len, len / MEGA, compress_len, compress_len / MEGA, len != 0 ? (100.0 * compress_len) / len : 0, crc);
     }
 #endif
-    DTPRINT("Written %"PRId64" rows in %.3f secs using %d thread%s. MaxBuffUsed=%d%%\n",
+    DTPRINT(_("Written %"PRId64" rows in %.3f secs using %d thread%s. MaxBuffUsed=%d%%\n"),
             args.nrow, 1.0*(wallclock()-t0), nth, nth ==1 ? "" : "s", maxBuffUsedPC);
   }
 
