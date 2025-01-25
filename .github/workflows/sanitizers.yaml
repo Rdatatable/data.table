@@ -1,0 +1,37 @@
+name: R-CMD-check-sanitized
+concurrency:
+  group: ${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches:
+      - master
+      - GHA-sanitizers # during development
+  workflow_dispatch:
+  pull_request:
+
+jobs:
+  linux-containers:
+    runs-on: ubuntu-latest
+    name: "Check with sanitizers enabled"
+    strategy:
+      fail-fast: false
+    container:
+      image: docker://ghcr.io/r-hub/containers/clang-asan
+
+    steps:
+      - uses: r-hub/actions/checkout@v1
+      - uses: r-hub/actions/platform-info@v1
+      - uses: r-hub/actions/setup-deps@v1
+      - name: "Additional setup"
+        run: |
+          # this should at least help with the build step
+          echo "MAKEFLAGS=-j$(nproc)" >> $GITHUB_ENV
+          # fontconfig is known to leak; add more suppressions as discovered
+          echo "LSAN_OPTIONS=suppressions=$(realpath .github/workflows/LSan.supp)" >> $GITHUB_ENV
+          # disabled by default, so reenable (needs suppressions above)
+          echo "ASAN_OPTIONS=detect_leaks=1" >> $GITHUB_ENV
+          # see r-hub/containers#84
+          sed -i 's/-fsanitize-trap\S*//g' /opt/R/devel-asan/lib/R/etc/Makeconf
+      - uses: r-hub/actions/run-check@v1
