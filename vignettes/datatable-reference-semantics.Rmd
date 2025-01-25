@@ -118,32 +118,11 @@ Note that the code above explains how `:=` can be used. They are not working exa
 
 * On the other hand, (b) is handy if you would like to jot some comments down for later.
 
-* In general, (a) and (b) should produce the same result, however there are minor differences in certain cases due to the implementation details of `:=`. Specifically, when using (b), the `:=` operator behaves like an alias to `list`, therefore if `RHS` is a `list` in functional form the column will become a list. See example below.
-
 * The result is returned *invisibly*.
 
 * Since `:=` is available in `j`, we can combine it with `i` and `by` operations just like the aggregation operations we saw in the previous vignette.
 
 #
-
-Although in most cases they are the same, there is a minor difference between the standard and functional forms mentioned above. Let's see an example to understand this.
-```{r}
-DT = data.table(a = list('A', 'B', 'C'))
-l = list(1L:3L)
-
-DT[, new_int := l] # Standard form, new column is integer
-
-DT[, `:=`(new_list = l)] # Functional form, new column is a list of integer vectors
-
-DT[, new_list := list(l)] # Same as above, we can see that `:=` is an alias to list in functional form
-
-# This can be avoided by using a vector instead of a list:
-v = 1L:3L
-
-DT[, new_int := v] # Standard form, new column is integer
-
-DT[, `:=`(new_int = v)] # Functional form, new column is integer
-```
 
 In the two forms of `:=` shown above, note that we don't assign the result back to a variable. Because we don't need to. The input *data.table* is modified by reference. Let's go through examples to understand what we mean by this.
 
