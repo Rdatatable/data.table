@@ -1,20 +1,30 @@
-fwrite = function(x, file="", append=FALSE, quote="auto",
-           sep=getOption("datatable.fwrite.sep", ","),
-           sep2=c("","|",""), eol=if (.Platform$OS.type=="windows") "\r\n" else "\n",
-           na="", dec=".", row.names=FALSE, col.names=TRUE,
-           qmethod=c("double","escape"),
-           logical01=getOption("datatable.logical01", FALSE), # due to change to TRUE; see NEWS
-           logicalAsInt=NULL,
-           scipen=getOption('scipen', 0L),
-           dateTimeAs = c("ISO","squash","epoch","write.csv"),
-           buffMB=8L, nThread=getDTthreads(verbose),
-           showProgress=getOption("datatable.showProgress", interactive()),
-           compress = c("auto", "none", "gzip"),
-           compressLevel = 6L,
-           yaml = FALSE,
-           bom = FALSE,
-           verbose=getOption("datatable.verbose", FALSE),
-           encoding = "") {
+fwrite = function(
+  x,
+  file="",
+  append=FALSE,
+  quote="auto",
+  sep=getOption("datatable.fwrite.sep", ","),
+  sep2=c("","|",""),
+  eol=if (.Platform$OS.type=="windows") "\r\n" else "\n",
+  na="",
+  dec=".",
+  row.names=FALSE,
+  col.names=TRUE,
+  qmethod=c("double","escape"),
+  logical01=getOption("datatable.logical01", FALSE), # due to change to TRUE; see NEWS
+  logicalAsInt=NULL,
+  scipen=0L,
+  dateTimeAs = c("ISO","squash","epoch","write.csv"),
+  buffMB=8L,
+  nThread=getDTthreads(verbose),
+  showProgress=getOption("datatable.showProgress", interactive()),
+  compress = c("auto", "none", "gzip"),
+  compressLevel = 6L,
+  yaml = FALSE,
+  bom = FALSE,
+  verbose=getOption("datatable.verbose", FALSE),
+  encoding = "")
+{
   na = as.character(na[1L]) # fix for #1725
   if (length(encoding) != 1L || !encoding %chin% c("", "UTF-8", "native")) {
     stopf("Argument 'encoding' must be '', 'UTF-8' or 'native'.")
