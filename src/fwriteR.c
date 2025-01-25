@@ -85,9 +85,10 @@ void writeList(const void *col, int64_t row, char **pch) {
   writer_fun_t *fun = funs[wf];
   for (int j=0; j<LENGTH(v); j++) {
     (*fun)(data, j, &ch);
-    *ch++ = sep2;
+    if (sep2)
+        *ch++ = sep2;
   }
-  if (LENGTH(v)) ch--; // backup over the last sep2 after the last item
+  if (LENGTH(v) && sep2) ch--; // backup over the last sep2 after the last item
   write_chars(sep2end, &ch);
   *pch = ch;
 }
@@ -280,7 +281,7 @@ SEXP fwriteR(
   args.sep2 = sep2 = *CHAR(STRING_ELT(sep2_Arg, 1));
   args.dec = *CHAR(STRING_ELT(dec_Arg,0));
 
-  if (!firstListColumn) {
+  if (!firstListColumn && sep2) {
     if (args.verbose) Rprintf(_("No list columns are present. Setting sep2='' otherwise quote='auto' would quote fields containing sep2.\n"));
     args.sep2 = sep2 = '\0';
   } else {

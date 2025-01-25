@@ -46,7 +46,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
     is.list(x),
     identical(quote,"auto") || isTRUEorFALSE(quote),
     is.character(sep) && length(sep)==1L && (nchar(sep) == 1L || identical(sep, "")),
-    is.character(sep2) && length(sep2)==3L && nchar(sep2[2L])==1L,
+    is.character(sep2) && length(sep2)==3L && nchar(sep2[2L])<=1L,
     is.character(dec) && length(dec)==1L && nchar(dec) == 1L,
     dec != sep,  # sep2!=dec and sep2!=sep checked at C level when we know if list columns are present
     is.character(eol) && length(eol)==1L,

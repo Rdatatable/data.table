@@ -10964,6 +10964,8 @@ test(1736.08, capture.output(fwrite(DT)), c("A","foo","ba|r","baz"))
 DT = data.table(A=c("foo","ba|r","baz"), B=list(1:3,1:4,c("fo|o","ba,r","baz"))) # now list column and need to quote
 test(1736.09, capture.output(fwrite(DT)), c("A,B", "foo,1|2|3", "\"ba|r\",1|2|3|4", "baz,\"fo|o\"|\"ba,r\"|baz"))
 test(1736.10, capture.output(fwrite(DT,quote=TRUE)), c("\"A\",\"B\"", "\"foo\",1|2|3", "\"ba|r\",1|2|3|4", "\"baz\",\"fo|o\"|\"ba,r\"|\"baz\""))
+test(1736.11, capture.output(fwrite(DT[c(1,3,4)], col.names = FALSE, sep = " ", sep2 = c("","",""))), 
+    c("1 12345678910 stuvw", "3 7 foobar", "4 910 TRUETRUEFALSE"))
 
 # any list of same length vector input
 test(1737.1, fwrite(list()), NULL, warning="fwrite was passed an empty list of no columns")
