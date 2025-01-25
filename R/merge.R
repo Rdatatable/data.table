@@ -11,15 +11,16 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
       by = key(x)
     }
   }
-  x0 = length(x)==0L
-  y0 = length(y)==0L
-  if (x0 || y0) {
-    if (x0 && y0)
+  x0 = length(x) == 0L
+  y0 = length(y) == 0L
+  if (x0 || y0){
+    if (x0 && y0) {
       warningf("Neither of the input data.tables to join have columns.")
-    else if (x0)
+    } else if (x0) {
       warningf("Input data.table '%s' has no columns.", "x")
-    else
+    } else if (y0) {
       warningf("Input data.table '%s' has no columns.", "y")
+    }
   }
   check_duplicate_names(x)
   check_duplicate_names(y)
@@ -28,34 +29,42 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   nm_y = names(y)
 
   ## set up 'by'/'by.x'/'by.y'
-  if ( (!is.null(by.x) || !is.null(by.y)) && length(by.x)!=length(by.y) )
-    stopf("`by.x` and `by.y` must be of same length.")
+  if ((!is.null(by.x) || !is.null(by.y)) && length(by.x) != length(by.y))
+    stopf("'by.x' and 'by.y' must be of same length.")
   if (!missing(by) && !missing(by.x))
-    warningf("Supplied both `by` and `by.x/by.y`. `by` argument will be ignored.")
+    warningf("Supplied both by and 'by.x/by.y.' by argument will be ignored.")
   if (!is.null(by.x)) {
-    if (length(by.x)==0L || !is.character(by.x) || !is.character(by.y))
-      stopf("A non-empty vector of column names is required for `by.x` and `by.y`.")
-    if (!all(by.x %chin% nm_x))
-      stopf("Elements listed in `by.x` must be valid column names in x.")
-    if (!all(by.y %chin% nm_y))
-      stopf("Elements listed in `by.y` must be valid column names in y.")
+    if (length(by.x) == 0L || !is.character(by.x) || !is.character(by.y))
+      stopf("A non-empty vector of column names is required for 'by.x' and 'by.y'.")
+    if (!all(by.x %chin% nm_x)) {
+      missing_in_x <- setdiff(by.x, nm_x)
+      stopf("The following columns listed in 'by.x' are missing from x: %s", brackify(missing_in_x))
+    }
+    if (!all(by.y %chin% nm_y)) {
+      missing_in_y <- setdiff(by.y, nm_y)
+      stopf("The following columns listed in 'by.y' are missing from y: %s", brackify(missing_in_y))
+    }
     by = by.x
     names(by) = by.y
   } else {
     if (is.null(by))
       by = intersect(key(x), key(y))
-    if (!length(by))   # was is.null() before PR#5183  changed to !length()
+    if (!length(by)) # was is.null() before PR#5183 changed to !length()
       by = key(x)
     if (!length(by))
       by = intersect(nm_x, nm_y)
     if (length(by) == 0L || !is.character(by))
-      stopf("A non-empty vector of column names for `by` is required.")
-    if (!all(by %chin% intersect(nm_x, nm_y)))
-      stopf("Elements listed in `by` must be valid column names in x and y")
+      stopf("A non-empty vector of column names for by is required.")
+    missing_in_x <- setdiff(by, nm_x)
+    missing_in_y <- setdiff(by, nm_y)
+    if (length(missing_in_x) > 0 || length(missing_in_y) > 0) {
+      stopf(gettextf("The following columns are missing:\n%s%s",
+        if (length(missing_in_x) > 0) gettextf(" - From x: %s\n", brackify(missing_in_x)) else "",
+        if (length(missing_in_y) > 0) gettextf(" - From y: %s\n", brackify(missing_in_y)) else ""))
+    }
     by = unname(by)
     by.x = by.y = by
   }
-
   # warn about unused arguments #2587
   if (length(list(...))) {
     ell = as.list(substitute(list(...)))[-1L]
@@ -109,7 +118,7 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   }
 
   # Throw warning if there are duplicate column names in 'dt' (i.e. if
-  # `suffixes=c("","")`, to match behaviour in base:::merge.data.frame)
+  # `suffixes=c("",""), to match behaviour in base:::merge.data.frame)
   resultdupnames = names(dt)[duplicated(names(dt))]
   if (length(resultdupnames)) {
     warningf("column names %s are duplicated in the result", brackify(resultdupnames))
