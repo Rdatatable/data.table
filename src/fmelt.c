@@ -1,5 +1,7 @@
 #include "data.table.h"
 #include <Rdefines.h>
+
+
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 // raise(SIGINT);
 
@@ -176,32 +178,78 @@ bool is_default_measure(SEXP vec) {
 
 // maybe unlist, then unique, then set_diff.
 SEXP uniq_diff(SEXP int_or_list, int ncol, bool is_measure) {
+  // Protect input list/vector, unlisting if necessary
   SEXP int_vec = PROTECT(isNewList(int_or_list) ? unlist_(int_or_list) : int_or_list);
+  
+  // Check for duplicated elements in the input vector
   SEXP is_duplicated = PROTECT(duplicated(int_vec, FALSE)); 
+  
   int n_unique_cols = 0;
-  for (int i=0; i<length(int_vec); ++i) {
+  
+  // Allocate a vector to store invalid column indices (initially max size is length of int_vec)
+  SEXP invalid_columns = PROTECT(allocVector(INTSXP, length(int_vec)));
+  int* invalid_col_ptr = INTEGER(invalid_columns);
+  int invalid_count = 0;
+  
+  // Iterate through the column numbers to identify invalid and unique columns
+  for (int i = 0; i < length(int_vec); ++i) {
     int col_number = INTEGER(int_vec)[i];
+    
+    // Check if the column number is within valid range
     bool good_number = 0 < col_number && col_number <= ncol;
-    if (is_measure) good_number |= (col_number==NA_INTEGER);
-    if (!good_number) {
-      if (is_measure) {
-        error(_("One or more values in 'measure.vars' is invalid."));
-      } else {
-        error(_("One or more values in 'id.vars' is invalid."));
-      }
-    } else if (!LOGICAL(is_duplicated)[i]) n_unique_cols++;
+    
+    // Special check for 'measure' case (NA_INTEGER handling)
+    if (is_measure) good_number |= (col_number == NA_INTEGER);
+    
+    // Collect invalid columns if not valid or out of range
+    if (!good_number || col_number == 0) {
+      invalid_col_ptr[invalid_count++] = col_number;
+    } else if (!LOGICAL(is_duplicated)[i]) {
+      n_unique_cols++;
+    }
   }
+  
+  // If invalid columns are found, construct the error message
+  if (invalid_count > 0) {
+    // Buffer for concatenated invalid column messages
+    char buffer[4096] = ""; // Large enough to store the concatenated string
+    for (int i = 0; i < invalid_count; ++i) {
+      char temp[32];
+      snprintf(temp, 32, "[%d]", invalid_col_ptr[i]); // Format the column number
+
+      if (i > 0) {
+        strncat(buffer, ", ", sizeof(buffer) - strlen(buffer) - 1); // Add separator
+      }
+      strncat(buffer, temp, sizeof(buffer) - strlen(buffer) - 1); // Append to the buffer
+    }
+
+    // Throw the error with the concatenated message
+    error(_("One or more values in '%s' are invalid; please fix by removing: %s"), 
+          is_measure ? "measure.vars" : "id.vars", buffer);
+  }
+  
+  // Proceed with collecting unique columns
   SEXP unique_col_numbers = PROTECT(allocVector(INTSXP, n_unique_cols)); 
   int unique_i = 0;
-  for (int i=0; i<length(is_duplicated); ++i) {
+  
+  // Populate the unique column numbers into the new vector
+  for (int i = 0; i < length(is_duplicated); ++i) {
     if (!LOGICAL(is_duplicated)[i]) {
       INTEGER(unique_col_numbers)[unique_i++] = INTEGER(int_vec)[i];
     }
   }
+  
+  // Apply set difference to get final unique column indices
   SEXP out = set_diff(unique_col_numbers, ncol);
-  UNPROTECT(3);
+  
+  // Unprotect all allocated objects
+  UNPROTECT(4); // Unprotect input, duplication check, invalid columns, and unique columns
+  
   return out;
 }
+
+
+
 
 SEXP cols_to_int_or_list(SEXP cols, SEXP dtnames, bool is_measure) {
   switch(TYPEOF(cols)) {
