@@ -1282,7 +1282,7 @@ msgstr "Tipo 'measure.vars' desconocido %s en el índice %d de la lista"
 
 #: fmelt.c:187
 msgid "One or more values in 'measure.vars' is invalid; please fix by removing: %s"
-msgstr "Uno o más valores en 'measure.vars' no son válidos; por favor corrige eliminando: %s"
+msgstr "Uno o más valores en 'measure.vars' no son válidos."
 
 #: fmelt.c:189
 msgid "One or more values in 'id.vars' is invalid."
