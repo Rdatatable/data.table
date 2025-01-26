@@ -1008,7 +1008,7 @@ msgstr "\n"
 msgid ""
 "\rProcessed %d groups out of %d. %.0f%% done. Time elapsed: %ds. ETA: %ds."
 msgstr ""
-"Processados %d grupos de %d. %.0f%% concluído. Tempo decorrido: %ds. "
+"\rProcessados %d grupos de %d. %.0f%% concluído. Tempo decorrido: %ds. "
 "Estimado: %ds."
 
 #: dogroups.c:462
@@ -1016,7 +1016,7 @@ msgstr ""
 msgid ""
 "\rProcessed %d groups out of %d. %.0f%% done. Time elapsed: %ds. ETA: %ds.\n"
 msgstr ""
-"Processados %d grupos de %d. %.0f%% concluído. Tempo decorrido: %ds. "
+"\rProcessados %d grupos de %d. %.0f%% concluído. Tempo decorrido: %ds. "
 "Estimado: %ds.\n"
 
 #: dogroups.c:465
@@ -1165,7 +1165,7 @@ msgstr ""
 #: fifelse.c:230
 #, c-format
 msgid "Argument #%d must be logical but was of type %s."
-msgstr "Argumento #%d deve ser lógico, mas é do tipo %s."
+msgstr "Argumento #%d deve ser lógico, mas era do tipo %s."
 
 #: fifelse.c:248
 #, c-format
@@ -1173,7 +1173,7 @@ msgid ""
 "Argument #%d has length %lld which differs from that of argument #1 (%lld). "
 "Please make sure all logical conditions have the same length."
 msgstr ""
-"Argumento #%d tem um comprimento %lld. o que difere do comprimento do "
+"Argumento #%d tem um comprimento %lld, que é diferente do comprimento do "
 "argumento #1 (%lld). Favor garantir que todas as condições lógicas tenham o "
 "mesmo comprimento."
 
