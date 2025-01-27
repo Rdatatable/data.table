@@ -784,7 +784,7 @@ void fwriteMain(fwriteMainArgs args)
   }
 
   // alloc nth write buffers
-  errno=0;
+  errno = 0;
   size_t alloc_size = nth * buffSize;
   if (verbose) {
     DTPRINT(_("Allocate %zu bytes (%zu MiB) for buffPool\n"), alloc_size, alloc_size / MEGA);
@@ -797,28 +797,20 @@ void fwriteMain(fwriteMainArgs args)
 
   // init compress variables
 #ifndef NOZLIB
-  z_stream *thread_streams = NULL;
+  z_stream strm;
+  // NB: fine to free() this even if unallocated
   char *zbuffPool = NULL;
   size_t zbuffSize = 0;
   size_t compress_len = 0;
   if (args.is_gzip) {
-  // alloc zlib streams
-    thread_streams = (z_stream*) malloc(nth * sizeof(z_stream));
-    if (verbose) {
-      DTPRINT(_("Allocate %zu bytes for thread_streams\n"), nth * sizeof(z_stream));
+    // compute zbuffSize which is the same for each thread
+    if (init_stream(&strm) != Z_OK) {
+      // # nocov start
+      free(buffPool);
+      STOP(_("Can't init stream structure for deflateBound"));
+      // # nocov end
     }
-    if (!thread_streams)
-      STOP(_("Failed to allocated %d bytes for threads_streams."), (int)(nth * sizeof(z_stream))); // #nocov
-    // VLA on stack should be fine for nth structs; in zlib v1.2.11 sizeof(struct)==112 on 64bit
-    // not declared inside the parallel region because solaris appears to move the struct in
-    // memory when the #pragma omp for is entered, which causes zlib's internal self reference
-    // pointer to mismatch, #4099
-
-  // compute zbuffSize which is the same for each thread
-    z_stream *stream = thread_streams;
-    if (init_stream(stream) != Z_OK)
-      STOP(_("Can't init stream structure for deflateBound")); // #nocov
-    zbuffSize = deflateBound(stream, buffSize);
+    zbuffSize = deflateBound(&strm, buffSize);
     if (verbose)
       DTPRINT(_("zbuffSize=%d returned from deflateBound\n"), (int)zbuffSize);
 
@@ -832,11 +824,13 @@ void fwriteMain(fwriteMainArgs args)
     if (!zbuffPool) {
       // # nocov start
       free(buffPool);
+      deflateEnd(&strm);
       STOP(_("Unable to allocate %zu MiB * %d thread compressed buffers; '%d: %s'. Please read ?fwrite for nThread, buffMB and verbose options."),
            zbuffSize / MEGA, nth, errno, strerror(errno));
       // # nocov end
     }
   }
+
 #endif
 
   // write header
@@ -880,11 +874,8 @@ void fwriteMain(fwriteMainArgs args)
       DTPRINT("%s", buff);
     } else {
       int ret0=0, ret1=0, ret2=0;
-      if (args.is_gzip) {
 #ifndef NOZLIB
-        z_stream *stream = thread_streams;
-        if (init_stream(stream) != Z_OK)
-          STOP(_("Can't init stream structure for writing header")); // #nocov
+      if (args.is_gzip) {
         char* zbuff = zbuffPool;
         // write minimal gzip header
         char* header = "\037\213\10\0\0\0\0\0\0\3";
@@ -895,19 +886,26 @@ void fwriteMain(fwriteMainArgs args)
         size_t zbuffUsed = zbuffSize;
         len = (size_t)(ch - buff);
         crc = crc32(crc, (unsigned char*)buff, len);
-        ret1 = compressbuff(stream, zbuff, &zbuffUsed, buff, len);
+        ret1 = compressbuff(&strm, zbuff, &zbuffUsed, buff, len);
+        deflateEnd(&strm);
         if (ret1==Z_OK) {
           ret2 = WRITE(f, zbuff, (int)zbuffUsed);
           compress_len += zbuffUsed;
         }
-#endif
       } else {
+#endif
         ret2 = WRITE(f,  buff, (int)(ch-buff));
+#ifndef NOZLIB
       }
+#endif
       if (ret0 == -1 || ret1 || ret2 == -1) {
         // # nocov start
         int errwrite = errno; // capture write errno now in case close fails with a different errno
         CLOSE(f);
+        free(buffPool);
+#ifndef NOZLIB
+        free(zbuffPool);
+#endif
         if (ret0 == -1) STOP(_("Can't write gzip header error: %d"), ret0);
         else if (ret1) STOP(_("Compress gzip error: %d"), ret1);
         else STOP(_("%s: '%s'"), strerror(errwrite), args.filename);
@@ -922,6 +920,10 @@ void fwriteMain(fwriteMainArgs args)
   if (args.nrow == 0) {
     if (verbose)
       DTPRINT(_("No data rows present (nrow==0)\n"));
+    free(buffPool);
+#ifndef NOZLIB
+    free(zbuffPool);
+#endif
     if (f != -1 && CLOSE(f))
       STOP(_("%s: '%s'"), strerror(errno), args.filename); // # nocov
     return;
@@ -947,14 +949,14 @@ void fwriteMain(fwriteMainArgs args)
     char* ch = myBuff;
 
 #ifndef NOZLIB
+    z_stream mystream;
     size_t mylen = 0;
     int mycrc = 0;
-    z_stream *mystream = &thread_streams[me];
     void *myzBuff = NULL;
     size_t myzbuffUsed = 0;
     if (args.is_gzip) {
       myzBuff = zbuffPool + me * zbuffSize;
-      if (init_stream(mystream) != Z_OK) { // this should be thread safe according to zlib documentation
+      if (init_stream(&mystream) != Z_OK) { // this should be thread safe according to zlib documentation
         failed = true;              // # nocov
         my_failed_compress = -998;  // # nocov
       }
@@ -1002,7 +1004,8 @@ void fwriteMain(fwriteMainArgs args)
       myzbuffUsed = zbuffSize;
       mylen = (size_t)(ch - myBuff);
       mycrc = crc32(0, (unsigned char*)myBuff, mylen);
-      int ret = compressbuff(mystream, myzBuff, &myzbuffUsed, myBuff, mylen);
+      int ret = compressbuff(&mystream, myzBuff, &myzbuffUsed, myBuff, mylen);
+      deflateEnd(&mystream);
       if (ret) {
         failed=true;
         my_failed_compress=ret;
@@ -1023,12 +1026,14 @@ void fwriteMain(fwriteMainArgs args)
       if (f == -1) {
         *ch='\0';  // standard C string end marker so DTPRINT knows where to stop
         DTPRINT("%s", myBuff);
-      } else if (args.is_gzip) {
+      } else
 #ifndef NOZLIB
-        ret = WRITE(f, myzBuff, (int)myzbuffUsed);
-        compress_len += myzbuffUsed;
+        if (args.is_gzip) {
+          ret = WRITE(f, myzBuff, (int)myzbuffUsed);
+          compress_len += myzbuffUsed;
+        } else
 #endif
-      } else {
+      {
         ret = WRITE(f, myBuff,  (int)(ch-myBuff));
       }
       if (ret == -1) {
@@ -1036,12 +1041,12 @@ void fwriteMain(fwriteMainArgs args)
         failed_write=errno;  // # nocov
       }
 
-      if (args.is_gzip) {
 #ifndef NOZLIB
+      if (args.is_gzip) {
           crc = crc32_combine(crc, mycrc, mylen);
           len += mylen;
-#endif
       }
+#endif
 
       int used = 100 * ((double)(ch - myBuff)) / buffSize;  // percentage of original buffMB
       if (used > maxBuffUsedPC)
@@ -1067,36 +1072,29 @@ void fwriteMain(fwriteMainArgs args)
         }
       }
     }
-    if (args.is_gzip) {
-#ifndef NOZLIB
-      deflateEnd(mystream);
-#endif
-    }
 
   } // end of parallel for loop
+
+  free(buffPool);
+
+#ifndef NOZLIB
+  free(zbuffPool);
 
 /* put a 4-byte integer into a byte array in LSB order */
 #define PUT4(a,b) ((a)[0]=(b), (a)[1]=(b)>>8, (a)[2]=(b)>>16, (a)[3]=(b)>>24)
 
   // write gzip tailer with crc and len
-    if (args.is_gzip) {
-#ifndef NOZLIB
-      unsigned char tail[10];
-      tail[0] = 3;
-      tail[1] = 0;
-      PUT4(tail + 2, crc);
-      PUT4(tail + 6, len);
-      int ret = WRITE(f, tail, 10);
-      compress_len += 10;
-      if (ret == -1)
-        STOP("Error: can't write gzip tailer"); // # nocov
-#endif
-    }
-
-  free(buffPool);
-#ifndef NOZLIB
-  free(thread_streams);
-  free(zbuffPool);
+  if (args.is_gzip) {
+    unsigned char tail[10];
+    tail[0] = 3;
+    tail[1] = 0;
+    PUT4(tail + 2, crc);
+    PUT4(tail + 6, len);
+    int ret = WRITE(f, tail, 10);
+    compress_len += 10;
+    if (ret == -1)
+      STOP(_("Failed to write gzip trailer")); // # nocov
+  }
 #endif
 
   // Finished parallel region and can call R API safely now.
@@ -1112,13 +1110,13 @@ void fwriteMain(fwriteMainArgs args)
   }
 
   if (verbose) {
-    if (args.is_gzip) {
 #ifndef NOZLIB
-      DTPRINT("zlib: uncompressed length=%zu (%zu MiB), compressed length=%zu (%zu MiB), ratio=%.1f%%, crc=%x\n",
+    if (args.is_gzip) {
+      DTPRINT(_("zlib: uncompressed length=%zu (%zu MiB), compressed length=%zu (%zu MiB), ratio=%.1f%%, crc=%x\n"),
               len, len / MEGA, compress_len, compress_len / MEGA, len != 0 ? (100.0 * compress_len) / len : 0, crc);
-#endif
     }
-    DTPRINT("Written %"PRId64" rows in %.3f secs using %d thread%s. MaxBuffUsed=%d%%\n",
+#endif
+    DTPRINT(_("Written %"PRId64" rows in %.3f secs using %d thread%s. MaxBuffUsed=%d%%\n"),
             args.nrow, 1.0*(wallclock()-t0), nth, nth ==1 ? "" : "s", maxBuffUsedPC);
   }
 

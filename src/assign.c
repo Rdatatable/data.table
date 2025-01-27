@@ -119,7 +119,7 @@ static int _selfrefok(SEXP x, Rboolean checkNames, Rboolean verbose) {
   }
   p = R_ExternalPtrAddr(v);
   if (p==NULL) {
-    if (verbose) Rprintf(_(".internal.selfref ptr is NULL. This is expected and normal for a data.table loaded from disk. Please remember to always setDT() immediately after loading to prevent unexpected behavior. If this table was not loaded from disk or you've already run setDT(), please report to data.table issue tracker.\n"));
+    if (verbose) Rprintf(_("The data.table internal attributes of this table are invalid. This is expected and normal for a data.table loaded from disk. Please remember to always setDT() immediately after loading to prevent unexpected behavior. If this table was not loaded from disk or you've already run setDT(), please report to the data.table issue tracker.\n"));
     return -1;
   }
   if (!isNull(p)) internal_error(__func__, ".internal.selfref ptr is neither NULL nor R_NilValue"); // # nocov
@@ -549,6 +549,11 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   for (int i=0; i<length(cols); ++i) {
     coln = INTEGER(cols)[i]-1;
     SEXP thisvalue = RHS_list_of_columns ? VECTOR_ELT(values, i) : values;
+    // if values is list(NULL), then replace with a list of NULLs instead of deleting, #5558
+    if (RHS_list_of_columns && length(values)==1 && TYPEOF(VECTOR_ELT(values, 0))==NILSXP && coln < oldncol) {
+        SET_VECTOR_ELT(dt, coln, targetcol=allocNAVector(VECSXP, length(VECTOR_ELT(dt, coln))));
+        continue;
+    }
     if (TYPEOF(thisvalue)==NILSXP) {
       if (!isNull(rows)) internal_error(__func__, "earlier error 'When deleting columns, i should not be provided' did not happen"); // # nocov
       ndelete++;

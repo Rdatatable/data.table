@@ -114,12 +114,6 @@ grep -P "\t" ./src/*.c
 grep -n "[^A-Za-z0-9]T[^A-Za-z0-9]" ./inst/tests/tests.Rraw
 grep -n "[^A-Za-z0-9]F[^A-Za-z0-9]" ./inst/tests/tests.Rraw
 
-# All integers internally should have L suffix to avoid lots of one-item coercions
-# Where 0 numeric is intended we should perhaps use 0.0 for clarity and make the grep easier
-# 1) tolerance=0 usages in setops.R are valid numeric 0, as are anything in strings
-# 2) leave the rollends default using roll>=0 though; comments in PR #3803
-grep -Enr "^[^#]*(?:\[|==|>|<|>=|<=|,|\(|\+)\s*[-]?[0-9]+[^0-9L:.e]" R | grep -Ev "stop|warning|tolerance"
-
 # Never use ifelse. fifelse for vectors when necessary (nothing yet)
 grep -Enr "\bifelse" R
 
@@ -134,10 +128,6 @@ grep -Fn "tryCatch" ./inst/tests/*.Rraw
 
 # All % in *.Rd should be escaped otherwise text gets silently chopped
 grep -n "[^\]%" ./man/*.Rd
-
-# if (a & b) is either invalid or inefficient (ditto for replace & with |);
-#   if(any(a [&|] b)) is appropriate b/c of collapsing the logical vector to scalar
-grep -nr "^[^#]*if[^&#]*[^&#\"][&][^&]" R | grep -Ev "if\s*[(](?:any|all)"
 
 # seal leak potential where two unprotected API calls are passed to the same
 # function call, usually involving install() or mkChar()
