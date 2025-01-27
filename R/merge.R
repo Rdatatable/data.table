@@ -36,13 +36,11 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   if (!is.null(by.x)) {
     if (length(by.x) == 0L || !is.character(by.x) || !is.character(by.y))
       stopf("A non-empty vector of column names is required for `by.x` and `by.y`.")
-    if (!all(by.x %chin% nm_x)) {
-      missing_in_x <- setdiff(by.x, nm_x)
-      stopf("The following columns listed in `%s` are missing from %s: %s", "by.x", "x", brackify(missing_in_x))
+    if (!all(idx <- by.x %chin% nm_x)) {
+      stopf("The following columns listed in `%s` are missing from %s: %s", "by.x", "x", brackify(by.x[!idx]))
     }
-    if (!all(by.y %chin% nm_y)) {
-      missing_in_y <- setdiff(by.y, nm_y)
-      stopf("The following columns listed in `%s` are missing from %s: %s", "by.y", "y", brackify(missing_in_y))
+    if (!all(idx <- by.y %chin% nm_y)) {
+      stopf("The following columns listed in `%s` are missing from %s: %s", "by.y", "y", brackify(by.y[!idx]))
     }
     by = by.x
     names(by) = by.y
@@ -55,13 +53,11 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
       by = intersect(nm_x, nm_y)
     if (length(by) == 0L || !is.character(by))
       stopf("A non-empty vector of column names for `by` is required.")
-    missing_in_x <- setdiff(by, nm_x)
-    if (length(missing_in_x) > 0L) {
-      stopf("The following columns listed in `%s` are missing from %s: %s", "by", "x", brackify(missing_in_x))
+    if (!all(idx <- by %in% nm_x)) {
+      stopf("The following columns listed in `%s` are missing from %s: %s", "by", "x", brackify(by[!idx]))
     }
-    missing_in_y <- setdiff(by, nm_y)
-    if (length(missing_in_y) > 0L) {
-      stopf("The following columns listed in `%s` are missing from %s: %s", "by", "y", brackify(missing_in_y))
+    if (!all(idx <- by %in% nm_y)) {
+      stopf("The following columns listed in `%s` are missing from %s: %s", "by", "y", brackify(by[!idx]))
     }
     by = unname(by)
     by.x = by.y = by

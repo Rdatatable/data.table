@@ -8569,15 +8569,15 @@ test(1601.1, merge(DT1, DT1, by="a"), data.table(a=1, key="a"))
 test(1601.2, 
      merge(DT1, DT0, by="a"), 
      warning="Input data.table 'y' has no columns.",
-     error="The following columns are missing:\n - From y: [a]")
+     error="The following columns listed in `by` are missing from y: [a]")
 test(1601.3, 
      merge(DT0, DT1, by="a"), 
      warning="Input data.table 'x' has no columns.",
-     error="The following columns are missing:\n - From x: [a]")
+     error="The following columns listed in `by` are missing from x: [a]")
 test(1601.4, 
      merge(DT0, DT0, by="a"), 
      warning="Neither of the input data.tables to join have columns.",
-     error="The following columns are missing:\n - From x: [a]\n - From y: [a]")
+     error="The following columns listed in `by` are missing from x: [a]")
 # fix for #1549
 d1 <- data.table(v1=1:2,x=x)
 d2 <- data.table(v1=3:4)
@@ -13556,7 +13556,7 @@ test(1962.019, merge(DT1, DT2, by.x='a', by.y='z'),
 test(1962.0201, merge(DT1, DT2, by=character(0L)), ans)  # was error before PR#5183
 test(1962.0202, merge(DT1, DT2, by=NULL),          ans)  # test explicit NULL too as missing() could be used inside merge()
 test(1962.021, merge(DT1, DT2, by='z'),
-     error='The following columns are missing:\n - From x: [z]\n - From y: [z]')
+     error='The following columns listed in `by` are missing from x: [z]')
 
 ## frank.R
 x = c(1, 1, 2, 5, 4, 3, 4, NA, 6)
