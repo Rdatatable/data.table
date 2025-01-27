@@ -2,20 +2,21 @@
 # Translators:
 # Italo Santos <ids37@nau.edu>, 2024
 # Leonardo Fontenelle <leonardof@leonardof.med.br>, 2024
-# Rafael Fontenelle <rffontenelle@gmail.com>, 2024
+# Rafael Fontenelle <rffontenelle@gmail.com>, 2024-2025.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.15.99\n"
 "POT-Creation-Date: 2024-08-28 21:08+0000\n"
-"PO-Revision-Date: 2024-06-20 20:50-0300\n"
-"Last-Translator: Leonardo Fontenelle <leonardof@leonardof.med.br>\n"
+"PO-Revision-Date: 2025-01-13 15:14-0300\n"
+"Last-Translator: Rafael Fontenelle <rffontenelle@gmail.com>\n"
 "Language-Team: Brazilian Portuguese\n"
 "Language: pt_BR\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"Plural-Forms: nplurals=2; plural=(n > 1)\n"
+"X-Generator: Gtranslator 47.1\n"
 
 #: AllS4.R:2
 #, c-format
@@ -574,11 +575,11 @@ msgid ""
 "to assign to column name(s) held in variable myVar. See ?':=' for other "
 "examples. As warned in 2014, this is now a warning."
 msgstr ""
-"o uso de with=FALSE junto com := é obsoleto desde v1.9.4, lançada em outubro "
-"de 2014. Coloque o lado esquerdo de := entre parênteses; por exemplo, DT[,"
-"(minhaVar):=sum(b),by=a] para atribuir para nomes de colunas mantidos na "
-"variável minhaVar. Veja ?':=' para outros exemplos.  Tal como antecipado em "
-"2014, isto é agora um aviso."
+"o uso de with=FALSE junto com := está obsoleto desde v1.9.4, lançada em "
+"outubro de 2014. Coloque o lado esquerdo de := entre parênteses; por "
+"exemplo, DT[,(minhaVar):=sum(b),by=a] para atribuir para nomes de colunas "
+"mantidos na variável minhaVar. Veja ?':=' para outros exemplos.  Tal como "
+"antecipado em 2014, isto é agora um aviso."
 
 #: data.table.R:691
 #, c-format
@@ -640,6 +641,11 @@ msgid ""
 "commas), or pass a vector length 1 containing comma separated column names. "
 "See ?data.table for other possibilities."
 msgstr ""
+"'by' é um vetor de caracteres de comprimento %d, mas um ou mais itens "
+"incluem uma vírgula. Passe um vetor de nomes de colunas (que pode conter "
+"espaços, mas nenhuma vírgula) ou passe um vetor de comprimento 1 contendo "
+"nomes de colunas separados por vírgula. Veja ?data.table para outras "
+"possibilidades."
 
 #: data.table.R:801
 #, c-format
@@ -1252,11 +1258,7 @@ msgstr ""
 "o comportamento padrão. Consulte ?rbindlist."
 
 #: data.table.R:2789
-#, fuzzy, c-format
-#| msgid ""
-#| "Check that is.data.table(DT) == TRUE. Otherwise, :=, `:=`(...) and "
-#| "let(...) are defined for use in j, once only and in particular ways. See "
-#| "help(\":=\")."
+#, c-format
 msgid ""
 "Check that is.data.table(DT) == TRUE. Otherwise, :=, `:=`(...) and let(...) "
 "are defined for use in j, once only and in particular ways. Note that "
@@ -1265,7 +1267,8 @@ msgid ""
 msgstr ""
 "Verifique se is.data.table(DT) == TRUE. De qualquer forma, :=, `:=`(...) e "
 "let(...) são definidos para uso em j, apenas uma vez e de maneiras "
-"específicas. Veja help(\":=\")."
+"específicas. Note que qualificação de namespace como data.table::`:=`(...) "
+"não é suportado. Veja help(\":=\")."
 
 #: data.table.R:2806
 #, c-format
@@ -1441,7 +1444,7 @@ msgstr ""
 "Um %2$s foi passado para o genérico %1$s em data.table e vai tentar "
 "redirecionar para o método relevante no pacote reshape2; favor notar que "
 "reshape2 foi substituído e não está mais em desenvolvimento ativo, e que "
-"esse redirecionamento agora é obsoleto. Por favor, faça esse "
+"esse redirecionamento agora está obsoleto. Por favor, faça esse "
 "redirecionamento por conta própria usando reshape2::%1$s(%3$s). Na próxima "
 "versão, este aviso se tornará um erro."
 
@@ -1535,12 +1538,17 @@ msgid ""
 "value (length=1), but they do not, so the result is undefined. Please fix by "
 "modifying your function so that a single value is always returned."
 msgstr ""
+"Funções de agregação devem receber um vetor como entrada e retornar um único "
+"valor (length=1), mas não o fazem, então o resultado é indefinido. Corrija "
+"modificando sua função para que um único valor seja sempre retornado."
 
 #: fdroplevels.R:13
 #, c-format
 msgid ""
 "droplevels() with in.place=TRUE is deprecated. Use setdroplevels() instead."
 msgstr ""
+"droplevels() com in.place=TRUE está obsoleto. Use setdroplevels() em vez "
+"disso."
 
 #: fmelt.R:17
 #, c-format
@@ -1555,9 +1563,9 @@ msgstr ""
 "Um %2$s foi passado para o genérico %1$s em data.table, que vai tentar "
 "redirecionar para o método relevante no pacote reshape2; favor notar que "
 "reshape2 foi substituído e não está mais em desenvolvimento ativo, e que "
-"esse redirecionamento agora é obsoleto. Para continuar usando métodos melt "
-"de reshape2 enquanto ambos os pacotes estão anexados, p.ex. melt.list, você "
-"pode prefixar com o namespace, p.ex. reshape2::%1$s(%3$s). Na próxima "
+"esse redirecionamento agora está obsoleto. Para continuar usando métodos "
+"melt de reshape2 enquanto ambos os pacotes estão anexados, p.ex. melt.list, "
+"você pode prefixar com o namespace, p.ex. reshape2::%1$s(%3$s). Na próxima "
 "versão, este aviso se tornará um erro."
 
 #: fmelt.R:28
@@ -2084,25 +2092,20 @@ msgstr ""
 "atualmente."
 
 #: fread.R:115
-#, fuzzy, c-format
-#| msgid ""
-#| "To read gz and bz2 files directly, fread() requires 'R.utils' package "
-#| "which cannot be found. Please install 'R.utils' using 'install."
-#| "packages('R.utils')'."
+#, c-format
 msgid ""
 "To read %s files directly, fread() requires 'R.utils' package which cannot "
 "be found. Please install 'R.utils' using 'install.packages('R.utils')'."
 msgstr ""
-"Para ler arquivos gz e bz2 diretamente, fread() requer o pacote 'R.utils' "
-"que não pôde ser encontrado. Instale 'R.utils' usando 'install.packages('R."
-"utils')'."
+"Para ler arquivos %s diretamente, fread() requer o pacote 'R.utils' que não "
+"pôde ser encontrado. Instale 'R.utils' usando 'install.packages('R.utils')'."
 
 #: fread.R:125
 #, c-format
 msgid ""
 "'autostart' is now deprecated and ignored. Consider skip='string' or skip=n"
 msgstr ""
-"'autostart' agora está descontinuado e é ignorado. Considere skip='string' "
+"'autostart' agora está obsoleto e é ignorado. Considere skip='string' "
 "ou skip=n"
 
 #: fread.R:127
@@ -2864,8 +2867,8 @@ msgid ""
 "key(x)<-value is deprecated and not supported. Please change to use setkey() "
 "with perhaps copy(). Has been warning since 2012."
 msgstr ""
-"key(x)<-value está obsoleto e não é suportado. Por favor, mude para usar "
-"setkey() com talvez copy(). Tem sido um aviso desde 2012."
+"key(x)<-value está obsoleto e não é suportado. Por favor, mude para "
+"usar setkey() com talvez copy(). Tem sido um aviso desde 2012."
 
 #: setkey.R:39
 #, c-format
@@ -3360,7 +3363,7 @@ msgstr "Erro interno in"
 
 #: utils.R:28
 msgid "Please report to the data.table issues tracker."
-msgstr ""
+msgstr "Por favor, relate isso no rastreador de problemas do data.table."
 
 #: utils.R:57 utils.R:66
 #, c-format
