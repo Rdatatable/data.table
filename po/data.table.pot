@@ -1024,7 +1024,7 @@ msgid "Unknown 'measure.vars' type %s at index %d of list"
 msgstr ""
 
 #: fmelt.c:187
-msgid "One or more values in 'measure.vars' is invalid; please fix by removing: %s"
+msgid "One or more values in 'measure.vars' is invalid."
 msgstr ""
 
 #: fmelt.c:189

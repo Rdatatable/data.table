@@ -1154,7 +1154,7 @@ msgid "Unknown 'measure.vars' type %s at index %d of list"
 msgstr "未知'measure.vars'类型 %s，位于列表中 %d"
 
 #: fmelt.c:187
-msgid "One or more values in 'measure.vars' is invalid; please fix by removing: %s"
+msgid "One or more values in 'measure.vars' is invalid."
 msgstr "'measure.vars'里，一或多个数值无效"
 
 #: fmelt.c:189
