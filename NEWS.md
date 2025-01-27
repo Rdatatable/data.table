@@ -181,6 +181,8 @@ rowwiseDT(
    + Using `droplevels(in.place=TRUE)` (warning since v1.16.0) has been upgraded from warning to error. The argument will be removed in the next release.
    + Use of `:=` and `with=FALSE` in `[` has been upgraded from warning (since v1.15.0) to error. Long ago (before 2014), this was needed when, e.g., assigning to a vector of column names defined outside the table, but `with=FALSE` is no longer needed to do so: `DT[, (cols) := ...]` works fine.
 
+11. Better handling of multibyte characters in `print()`, added in 1.16.0, has the side effect of possibly ignoring invisible characters like `\n` or `\t` for the purposes of counting width for `datatable.prettyprint.char`. That's because we switched to using `strtrim()` over `substring()`, the latter of which is explicitly discouraged for the purposes of truncating strings, whereas the former of which has platform-dependent behavior for whether invisible characters count towards string width.
+
 # data.table [v1.16.4](https://github.com/Rdatatable/data.table/milestone/36) 4 December 2024
 
 ## BUG FIXES
