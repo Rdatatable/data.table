@@ -8565,13 +8565,13 @@ test(1600.2, names(DT1[DT2, .(id1=id1, val=val, bla=sum(z1, na.rm=TRUE)), on="id
 DT0 = data.table(NULL)
 DT1 = data.table(a=1)
 test(1601.1, merge(DT1, DT1, by="a"), data.table(a=1, key="a"))
-test(1601.2, merge(DT1, DT0, by="a"), 
+test(1601.2, merge(DT1, DT0, by="a"),
      warning="Input data.table 'y' has no columns.",
      error="The following columns listed in `by` are missing from y: [a]")
-test(1601.3, merge(DT0, DT1, by="a"), 
+test(1601.3, merge(DT0, DT1, by="a"),
      warning="Input data.table 'x' has no columns.",
      error="The following columns listed in `by` are missing from x: [a]")
-test(1601.4, merge(DT0, DT0, by="a"), 
+test(1601.4, merge(DT0, DT0, by="a"),
      warning="Neither of the input data.tables to join have columns.",
      error="The following columns listed in `by` are missing from x: [a]")
 # fix for #1549
