@@ -62,6 +62,7 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
     by = unname(by)
     by.x = by.y = by
   }
+
   # warn about unused arguments #2587
   if (length(list(...))) {
     ell = as.list(substitute(list(...)))[-1L]

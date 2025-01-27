@@ -8563,19 +8563,15 @@ test(1600.2, names(DT1[DT2, .(id1=id1, val=val, bla=sum(z1, na.rm=TRUE)), on="id
 
 # warn when merge empty data.table #597
 DT0 = data.table(NULL)
-DT1 = data.table(a = 1)
-
+DT1 = data.table(a=1)
 test(1601.1, merge(DT1, DT1, by="a"), data.table(a=1, key="a"))
-test(1601.2, 
-     merge(DT1, DT0, by="a"), 
+test(1601.2, merge(DT1, DT0, by="a"), 
      warning="Input data.table 'y' has no columns.",
      error="The following columns listed in `by` are missing from y: [a]")
-test(1601.3, 
-     merge(DT0, DT1, by="a"), 
+test(1601.3, merge(DT0, DT1, by="a"), 
      warning="Input data.table 'x' has no columns.",
      error="The following columns listed in `by` are missing from x: [a]")
-test(1601.4, 
-     merge(DT0, DT0, by="a"), 
+test(1601.4, merge(DT0, DT0, by="a"), 
      warning="Neither of the input data.tables to join have columns.",
      error="The following columns listed in `by` are missing from x: [a]")
 # fix for #1549
@@ -13549,7 +13545,7 @@ test(1962.016, merge(DT1, DT2, by.x = 'a', by.y = c('a', 'V')),
 test(1962.017, merge(DT1, DT2, by = 'V', by.x = 'a', by.y = 'a'),
      data.table(a = 2:3, V.x = c("a", "a"), V.y = c("b", "b"), key = 'a'),
      warning = 'Supplied both.*argument will be ignored')
-test(1962.018, merge(DT1, DT2, by.x='z', by.y='a'), 
+test(1962.018, merge(DT1, DT2, by.x='z', by.y='a'),
      error="The following columns listed in `by.x` are missing from x: [z]")
 test(1962.019, merge(DT1, DT2, by.x='a', by.y='z'),
      error="The following columns listed in `by.y` are missing from y: [z]")
@@ -16934,7 +16930,7 @@ test(2144, rbind(DT,list(c=4L,a=7L)), error="Column 1 ['c'] of item 2 is missing
 A = data.table(A='a')
 B = data.table(B='b')
 test(2145.1, A[B, on=character(0)], error = "'on' argument should be a named atomic vector")
-test(2145.2, merge(A, B, by=character(0)                                     ), error = "A non-empty vector of column names for `by` is required.")
+test(2145.2, merge(A, B, by=character(0)                                     ), error = "non-empty vector of column names for `by` is required.")
 test(2145.3, merge(A, B,                 by.x=character(0), by.y=character(0)), error = "non-empty vector of column names is required")
 # Also shouldn't crash when using internal functions
 test(2145.4, bmerge(A, B, integer(), integer(), 0, c(FALSE, TRUE), NA, 'all', integer(), FALSE), error = 'icols and xcols must be non-empty')
