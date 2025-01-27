@@ -1301,8 +1301,8 @@ msgid "Unknown 'measure.vars' type %s at index %d of list"
 msgstr "Type inconnu de 'measure.vars' %s à l'indice %d de la liste"
 
 #: fmelt.c:187
-msgid "One or more values in 'measure.vars' is invalid; please fix by removing: %s"
-msgstr "Une ou plusieurs valeurs de 'measure.vars' ne sont pas valides; veuillez corriger en supprimant : %s"
+msgid "One or more values in 'measure.vars' is invalid."
+msgstr "Une ou plusieurs valeurs de 'measure.vars' ne sont pas valides."
 
 #: fmelt.c:189
 msgid "One or more values in 'id.vars' is invalid."
