@@ -69,7 +69,7 @@ rowwiseDT(
 
 6. `fread()` gains `logicalYN` argument to read columns consisting only of strings `Y`, `N` as `logical` (as opposed to character), [#4563](https://github.com/Rdatatable/data.table/issues/4563). The default is controlled by option `datatable.logicalYN`, itself defaulting to `FALSE`, for back-compatibility -- some smaller tables (especially sharded tables) might inadvertently read a "true" string column as `logical` and cause bugs. This is particularly important for tables with a column named `y` or `n` -- automatic header detection under `logicalYN=TRUE` will see these values in the first row as being "data" as opposed to column names. A parallel option was not included for `fwrite()` at this time -- users looking for a compact representation of logical columns can still use `fwrite(logical01=TRUE)`. We also opted for now to check only `Y`, `N` and not `Yes`/`No`/`YES`/`NO`.
 
-7. `fwrite()` with `compress="gzip"` produces compatible gz files when composed of multiple independent chunks owing to parallelization, [#6356](https://github.com/Rdatatable/data.table/issues/6356).  Earlier `fwrite()` versions could have issues with HTTP upload using `Content-Encoding: gzip` and `Transfer-Encoding: chunked`. Thanks to @oliverfoster for report and @philippechataignon for the fix.
+7. `fwrite()` with `compress="gzip"` produces compatible gz files when composed of multiple independent chunks owing to parallelization, [#6356](https://github.com/Rdatatable/data.table/issues/6356).  Earlier `fwrite()` versions could have issues with HTTP upload using `Content-Encoding: gzip` and `Transfer-Encoding: chunked`. Thanks to @oliverfoster for report and @philippechataignon for the fix. Thanks also @aitap for pre-release testing that found some possible memory leaks in the initial fix.
 
 8. `fwrite()` gains a new parameter `compressLevel` to control compression level for gzip, [#5506](https://github.com/Rdatatable/data.table/issues/5506). This parameter balances compression speed and total compression, and corresponds directly to the analogous command-line parameter, e.g. `compressLevel=4` corresponds to passing `-4`; the default, `6`, matches the command-line default, i.e. equivalent to passing `-6`. Thanks @mgarbuzov for the request and @philippechataignon for implementing.
 
@@ -109,31 +109,29 @@ rowwiseDT(
 
 8. Fixed possible segfault in `setDT(df); attr(df, key) <- value; set(df, ...)`, i.e. adding columns to an object with `set()` that was converted to data.table with `setDT()` and later had attributes add with `attr<-`, [#6410](https://github.com/Rdatatable/data.table/issues/6410). Thanks to @hongyuanjia for the report and @ben-schwen for the PR. Note that `setattr()` should be preferred for adding attributes to a data.table.
 
-9. `setDT()` no longer modifies the class of other names bound to the origin data.frame, e.g., in `DF1 <- data.frame(a=1); DF2 <- DF1; setDT(DF2)`, `DF1`'s class will not change. [#4784](https://github.com/Rdatatable/data.table/issues/4784). Thanks @OfekShilon for the report and fix.
+9. `DT[1, on=NULL]` now works for returning the first row, [#6579](https://github.com/Rdatatable/data.table/issues/6579). Thanks to @Kodiologist for the report and @tdhock for the PR.
 
-10. `DT[1, on=NULL]` now works for returning the first row, [#6579](https://github.com/Rdatatable/data.table/issues/6579). Thanks to @Kodiologist for the report and @tdhock for the PR.
+10. `tables()` now returns the correct size for data.tables over 2GiB, [#6607](https://github.com/Rdatatable/data.table/issues/6607). Thanks to @vlulla for the report and the PR.
 
-11. `tables()` now returns the correct size for data.tables over 2GiB, [#6607](https://github.com/Rdatatable/data.table/issues/6607). Thanks to @vlulla for the report and the PR.
+11. `rbindlist(l, use.names=TRUE)` can now handle different encodings for the column names in different entries of `l`, [#5452](https://github.com/Rdatatable/data.table/issues/5452). Thanks to @MEO265 for the report, and Benjamin Schwendinger for the fix.
 
-12. `rbindlist(l, use.names=TRUE)` can now handle different encodings for the column names in different entries of `l`, [#5452](https://github.com/Rdatatable/data.table/issues/5452). Thanks to @MEO265 for the report, and Benjamin Schwendinger for the fix.
+12. Added a `data.frame` method for `format_list_item()` to fix error printing data.tables with columns containing 1-column data.frames, [#6592](https://github.com/Rdatatable/data.table/issues/6592). Thanks to @r2evans for the bug report and fix.
 
-13. Added a `data.frame` method for `format_list_item()` to fix error printing data.tables with columns containing 1-column data.frames, [#6592](https://github.com/Rdatatable/data.table/issues/6592). Thanks to @r2evans for the bug report and fix.
-
-14. Auto-printing gets some substantial improvements
+13. Auto-printing gets some substantial improvements
    - Suppression in `knitr` documents is now done by implementing a method for `knit_print` instead of looking up the call stack, [#6589](https://github.com/Rdatatable/data.table/pull/6589). The old way was fragile and wound up broken by some implementation changes in {knitr}. Thanks to @jangorecki for the report [#6509](https://github.com/Rdatatable/data.table/issues/6509) and @aitap for the fix.
    - `print()` methods for S3 subclasses of data.table (e.g. an object of class `c("my.table", "data.table", "data.frame")`) no longer print where plain data.tables wouldn't, e.g. `myDT[, y := 2]`, [#3029](https://github.com/Rdatatable/data.table/issues/3029). The improved detection of auto-printing scenarios has the added benefit of _allowing_ print in highly explicit statements like `print(DT[, y := 2])`, obviating our recommendation since v1.9.6 to append `[]` to signal "please print me".
 
-15. Joins of `integer64` and `double` columns succeed when the `double` column has lossless `integer64` representation, [#4167](https://github.com/Rdatatable/data.table/issues/4167) and [#6625](https://github.com/Rdatatable/data.table/issues/6625). Previously, this only worked when the double column had lossless _32-bit_ integer representation. Thanks @MichaelChirico for the reports and fix.
+14. Joins of `integer64` and `double` columns succeed when the `double` column has lossless `integer64` representation, [#4167](https://github.com/Rdatatable/data.table/issues/4167) and [#6625](https://github.com/Rdatatable/data.table/issues/6625). Previously, this only worked when the double column had lossless _32-bit_ integer representation. Thanks @MichaelChirico for the reports and fix.
 
-16. `DT[order(...)]` better matches `base::order()` behavior by (1) recognizing the `method=` argument (and erroring since this is not supported) and (2) accepting a vector of `TRUE`/`FALSE` in `decreasing=` as an alternative to using `-a` to convey "sort `a` decreasing", [#4456](https://github.com/Rdatatable/data.table/issues/4456). Thanks @jangorecki for the FR and @MichaelChirico for the PR.
+15. `DT[order(...)]` better matches `base::order()` behavior by (1) recognizing the `method=` argument (and erroring since this is not supported) and (2) accepting a vector of `TRUE`/`FALSE` in `decreasing=` as an alternative to using `-a` to convey "sort `a` decreasing", [#4456](https://github.com/Rdatatable/data.table/issues/4456). Thanks @jangorecki for the FR and @MichaelChirico for the PR.
 
-17. Assignment with `:=` to an S4 slot of an under-allocated data.table now works, [#6704](https://github.com/Rdatatable/data.table/issues/6704). Thanks @MichaelChirico for the report and fix.
+16. Assignment with `:=` to an S4 slot of an under-allocated data.table now works, [#6704](https://github.com/Rdatatable/data.table/issues/6704). Thanks @MichaelChirico for the report and fix.
 
-18. `as.data.table()` method for `data.frame`s (especially those with extended classes) is more consistent with `as.data.frame()` with respect to rention of attributes, [#5699](https://github.com/Rdatatable/data.table/issues/5699). Thanks @jangorecki for the report and fix.
+17. `as.data.table()` method for `data.frame`s (especially those with extended classes) is more consistent with `as.data.frame()` with respect to rention of attributes, [#5699](https://github.com/Rdatatable/data.table/issues/5699). Thanks @jangorecki for the report and fix.
 
-19. Grouped queries on keyed tables no longer return an incorrectly keyed result if the _ad hoc_ `by=` list has some function call (in particular, a function which happens to return a strictly decreasing function of the keys), e.g. `by=.(a = rev(a))`, [#5583](https://github.com/Rdatatable/data.table/issues/5583). Thanks @AbrJA for the report and @MichaelChirico for the fix.
+18. Grouped queries on keyed tables no longer return an incorrectly keyed result if the _ad hoc_ `by=` list has some function call (in particular, a function which happens to return a strictly decreasing function of the keys), e.g. `by=.(a = rev(a))`, [#5583](https://github.com/Rdatatable/data.table/issues/5583). Thanks @AbrJA for the report and @MichaelChirico for the fix.
 
-20. Assigning `list(NULL)` to a list column now replaces the column with `list(NULL)`, instead of deleting the column [#5558](https://github.com/Rdatatable/data.table/issues/5558). This behavior is now consistent with base `data.frame`. Thanks @tdhock for the report and @joshhwuu for the fix. This is due to a fundamental ambiguity from both allowing list columns _and_ making the use of `list()` to wrap `j=` arguments optional. We think that the code behaves as expected in all cases now. See the below for some illustration:
+19. Assigning `list(NULL)` to a list column now replaces the column with `list(NULL)`, instead of deleting the column [#5558](https://github.com/Rdatatable/data.table/issues/5558). This behavior is now consistent with base `data.frame`. Thanks @tdhock for the report and @joshhwuu for the fix. This is due to a fundamental ambiguity from both allowing list columns _and_ making the use of `list()` to wrap `j=` arguments optional. We think that the code behaves as expected in all cases now. See the below for some illustration:
 
     ```r
     DT = data.table(L=list(1L), i=2L, c='a')
@@ -154,7 +152,7 @@ rowwiseDT(
     DT[, c('L', 'i') := list(NULL, 3L)]         # delete L, assign to i
     DT[, c('L', 'i') := list(list(NULL), NULL)] # assign to L, delete i
     ```
-21. An integer overflow in `fread()` with lines longer than `2^(31/2)` bytes is prevented, [#6729](https://github.com/Rdatatable/data.table/issues/6729). The typical impact was no worse than a wrong initial allocation size, corrected later. Thanks to @TaikiSan21 for the report and @aitap for the fix.
+20. An integer overflow in `fread()` with lines longer than `2^(31/2)` bytes is prevented, [#6729](https://github.com/Rdatatable/data.table/issues/6729). The typical impact was no worse than a wrong initial allocation size, corrected later. Thanks to @TaikiSan21 for the report and @aitap for the fix.
 
 ## NOTES
 
@@ -176,11 +174,12 @@ rowwiseDT(
 
 9. `key<-`, marked as deprecated since 2012 and unusable since v1.15.0, has been fully removed.
 
-10. Deprecation of `logicalAsInt` argument to `fwrite()` has been upgraded from a warning (since v1.15.0) to an error. It will be removed in the next release.
+10. The following in-progress deprecations have proceeded:
 
-11. Deprecation of `fread(autostart=)` has been upgraded to an error. It has been warning since v1.11.0 (6 years ago). The argument will be removed in the next release.
-
-12. Deprecation of `droplevels(in.place=TRUE)` (warning since v1.16.0) has been upgraded from warning to error. The argument will be removed in the next release.
+   + Using `fwrite(logicalAsInt=)` has been upgraded from a warning (since v1.15.0) to an error. It will be removed in the next release.
+   + Using `fread(autostart=)` has been upgraded to an error. It has been warning since v1.11.0 (6 years ago). The argument will be removed in the next release.
+   + Using `droplevels(in.place=TRUE)` (warning since v1.16.0) has been upgraded from warning to error. The argument will be removed in the next release.
+   + Use of `:=` and `with=FALSE` in `[` has been upgraded from warning (since v1.15.0) to error. Long ago (before 2014), this was needed when, e.g., assigning to a vector of column names defined outside the table, but `with=FALSE` is no longer needed to do so: `DT[, (cols) := ...]` works fine.
 
 # data.table [v1.16.4](https://github.com/Rdatatable/data.table/milestone/36) 4 December 2024
 

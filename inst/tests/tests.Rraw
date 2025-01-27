@@ -4655,7 +4655,7 @@ test(1241, DT[order(x,-y)],       # optimized to forder()
 
 DT = data.table(a=1:3, b=4:6)
 myCol = "a"
-test(1242.1, DT[2,myCol:=6L,with=FALSE], data.table(a=INT(1,6,3), b=4:6), warning="with=FALSE together with := was deprecated in v1.9.4 released Oct 2014. Please")
+test(1242.1, DT[2,myCol:=6L,with=FALSE], error="with=FALSE together with := was deprecated in v1.9.4")
 test(1242.2, DT[2,(myCol):=7L], data.table(a=INT(1,7,3), b=4:6))
 
 # consistency of output type of mult, #340
@@ -7066,7 +7066,7 @@ ee = new.env()
 ee$DT = data.frame(x=1L, y=1:3)
 setattr(ee$DT, 'class', c("data.table", "data.frame"))
 test(1482.1, truelength(ee$DT), 0L) # make sure that the simulated environment is right.
-test(1482.2, ee$DT[, z := 3:1], data.table(x=1L, y=1:3, z=3:1), warning="Invalid .internal.selfref detected and")
+test(1482.2, ee$DT[, z := 3:1], data.table(x=1L, y=1:3, z=3:1), warning="A shallow copy of this data.table was taken")
 test(1482.3, truelength(ee$DT), 1027L)
 test(1482.4, ee$DT[, za := 4:6], data.table(x=1L, y=1:3, z=3:1, za=4:6))
 test(1482.5, truelength(ee$DT), 1027L)   # should have used spare slot i.e. no increase in tl
@@ -13953,8 +13953,8 @@ test(1967.42, x[3, rollends = rep(TRUE, 10L)], error = 'rollends must be length 
 test(1967.43, x[ , ..], error = 'symbol .. is invalid')
 test(1967.44, x[NULL], data.table(NULL))
 test(1967.45, x[ , NULL], NULL)
-test(1967.46, x[ , 'b' := 6:10, with = FALSE],
-     data.table(a = 1:5, b = 6:10), warning = 'with=FALSE ignored')
+test(1967.46, x[ , 'b' := 6:10, with=FALSE], error='with=FALSE together with :=')
+x[, b := 6:10]
 test(1967.47, x[ , -1L, with = FALSE], data.table(b = 6:10))
 test(1967.48, x[ , b, .SDcols = 'a'], 6:10,
      warning = "This j doesn't use .SD")
@@ -14942,7 +14942,7 @@ test(2037.1, foo(DT), output='Please remember to always setDT()')
 # no assignment was made to DT
 test(2037.2, names(DT), 'a')
 # _selrefok() verbose message was duplicated
-test(2037.3, unname(table(unlist(strsplit(capture.output(foo(DT)), '\n|\\s+')))['ptr']), 1L)
+test(2037.3, foo(DT), output="data.table internal attributes", notOutput="data.table internal attributes.*data.table internal attributes")
 
 # `between` invalid args, and verbose #3516
 test(2038.01, between(1:5, 2, 4, incbounds=423), error="incbounds must be TRUE or FALSE")
@@ -20650,13 +20650,14 @@ test(2294.72,
                     label = list(character = "C3", VCharA = "Total", integer = 2L))),
      warning = "For the following variables, the 'label' value was already in the data: [VCharB (label: C3), VIntA (label: 2)]")
 
+# tests 1-3 disabled -- fix for #4784 causes various breaking changes, at least partially covered by 2295.4+.
 # setDT no longer leaks class modification to origin copy, #4784
-d1 = data.frame(a=1, row.names='b')
-d2 = d1
-setDT(d2)
-test(2295.1, !is.data.table(d1))
-test(2295.2, rownames(d1), 'b')
-test(2295.3, is.data.table(d2))
+# d1 = data.frame(a=1, row.names='b')
+# d2 = d1
+# setDT(d2)
+# test(2295.1, !is.data.table(d1))
+# test(2295.2, rownames(d1), 'b')
+# test(2295.3, is.data.table(d2))
 # Ensure against regression noted in #6725
 x = data.frame(a=1)
 e = environment()
@@ -20669,6 +20670,18 @@ e = new.env(parent=topenv())
 e$x = data.frame(a=1)
 foo('x', e)
 test(2295.5, is.data.table(e$x))
+# More regressions noted in #6735
+baz = function(x) setDT(x)
+foo = function(x) {
+  bar = function() baz(x)
+  x = data.frame(a=1)
+  bar()
+  is.data.table(x)
+}
+test(2295.6, foo())
+x = data.frame(a=1)
+baz(x)
+test(2295.7, is.data.table(x))
 
 # #6588: .checkTypos used to give arbitrary strings to stopf as the first argument
 test(2296, d2[x %no such operator% 1], error = '%no such operator%')
@@ -20748,7 +20761,7 @@ test(2301.3, DT[order(a, -b, decreasing=c(TRUE, TRUE))], error="Mixing '-' with 
 test(2301.4, DT[order(a, b, decreasing=c(TRUE, TRUE, FALSE))], error="decreasing= has length 3")
 
 # as.data.table should remove extra attributes from extended data.frames #5699
-x = data.frame(a=c(1,5,3), b=c(2,4,6))
+x = data.frame(a=c(1, 5, 3), b=c(2, 4, 6))
 class(x) = c("tbl", "data.frame")
 attr(x, "t1") = "a"
 as.data.frame.tbl = function(x) {
@@ -20756,7 +20769,11 @@ as.data.frame.tbl = function(x) {
   class(x) = "data.frame"
   x
 }
-test(2302, attr(as.data.table(y), "t1"), attr(as.data.frame(y), "t1"))
+test(2302.1, attr(as.data.table(y), "t1"), attr(as.data.frame(y), "t1"))
+class(x) = c("data.frame", "data.table", "data.frame") # #6739
+test(2302.2, attr(as.data.table(y), "t1"), attr(as.data.frame(y), "t1"))
+class(x) = c("data.frame", "data.table") # duplicate class is overkill
+test(2302.3, attr(as.data.table(y), "t1"), attr(as.data.frame(y), "t1"))
 
 # by=foo(KEY) does not retain key (no way to guarantee monotonic transformation), #5583
 DT = data.table(a=1:2, key='a')

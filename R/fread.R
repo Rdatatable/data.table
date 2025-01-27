@@ -32,7 +32,7 @@ yaml=FALSE, autostart=NULL, tmpdir=tempdir(), tz="UTC")
   )
   fill = if(identical(fill, Inf)) .Machine$integer.max else as.integer(fill)
   nrows=as.double(nrows) #4686
-  if (is.na(nrows) || nrows<0) nrows=Inf   # accept -1 to mean Inf, as read.table does
+  if (is.na(nrows) || nrows<0L) nrows=Inf   # accept -1 to mean Inf, as read.table does
   if (identical(header,"auto")) header=NA
   stopifnot(
     is.logical(header), length(header)==1L,  # TRUE, FALSE or NA
@@ -271,7 +271,7 @@ yaml=FALSE, autostart=NULL, tmpdir=tempdir(), tz="UTC")
     if (is.integer(skip)) skip = skip + n_read
   }
   # nocov end
-  warnings2errors = getOption("warn") >= 2
+  warnings2errors = getOption("warn") >= 2L
   stopifnot(identical(tz,"UTC") || identical(tz,""))
   if (tz=="") {
     tt = Sys.getenv("TZ", unset=NA_character_)

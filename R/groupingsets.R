@@ -86,7 +86,7 @@ groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, labe
     label.names.not.in.by = setdiff(label.names, label.names.in.by)
     label.names.in.by.classes = label.classes[label.names.in.by]
     x.label.names.in.by.classes = lapply(.shallow(x, label.names.in.by), class)
-    label.names.not.in.by.classes1 = vapply_1c(label.classes[label.names.not.in.by], function(u) u[1])
+    label.names.not.in.by.classes1 = vapply_1c(label.classes[label.names.not.in.by], function(u) u[1L])
     if (!all(idx <- mapply(identical, label.names.in.by.classes, x.label.names.in.by.classes))) {
       info = gettextf(
         "%s (label: %s; data: %s)",

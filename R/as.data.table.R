@@ -214,6 +214,7 @@ as.data.table.list = function(x,
 }
 
 as.data.table.data.frame = function(x, keep.rownames=FALSE, key=NULL, ...) {
+  if (is.data.table(x)) return(as.data.table.data.table(x)) # S3 is weird, #6739. Also # nocov; this is tested in 2302.{2,3}, not sure why it doesn't show up in coverage.
   if (!identical(class(x), "data.frame")) return(as.data.table(as.data.frame(x)))
   if (!isFALSE(keep.rownames)) {
     # can specify col name to keep.rownames, #575; if it's the same as key,

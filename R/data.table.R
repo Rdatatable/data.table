@@ -128,7 +128,7 @@ replace_dot_alias = function(e) {
   }
 }
 
-"[.data.table" = function(x, i, j, by, keyby, with=TRUE, nomatch=NA, mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, on=NULL, env=NULL, showProgress=getOption("datatable.showProgress", interactive()))
+"[.data.table" = function(x, i, j, by, keyby, with=TRUE, nomatch=NA, mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0.0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, on=NULL, env=NULL, showProgress=getOption("datatable.showProgress", interactive()))
 {
   # ..selfcount <<- ..selfcount+1  # in dev, we check no self calls, each of which doubles overhead, or could
   # test explicitly if the caller is [.data.table (even stronger test. TO DO.)
@@ -149,7 +149,7 @@ replace_dot_alias = function(e) {
   }
   if (!missing(verbose)) {
     if (!is.integer(verbose) && !is.logical(verbose)) stopf("verbose must be logical or integer")
-    if (length(verbose)!=1 || anyNA(verbose)) stopf("verbose must be length 1 non-NA")
+    if (length(verbose)!=1L || anyNA(verbose)) stopf("verbose must be length 1 non-NA")
     # set the global verbose option because that is fetched from C code without having to pass it through
     oldverbose = options(datatable.verbose=verbose)
     on.exit(options(oldverbose))
@@ -215,7 +215,7 @@ replace_dot_alias = function(e) {
   # TO DO (document/faq/example). Removed for now ... if ((roll || rolltolast) && missing(mult)) mult="last" # for when there is exact match to mult. This does not control cases where the roll is mult, that is always the last one.
   .unsafe.opt() #3585
   missingnomatch = missing(nomatch)
-  nomatch0 = identical(nomatch,0) || identical(nomatch,0L) || identical(nomatch, FALSE)  # for warning with row-numbers in i; #4353
+  nomatch0 = identical(nomatch,0.0) || identical(nomatch,0L) || identical(nomatch, FALSE)  # for warning with row-numbers in i; #4353
   if (nomatch0) nomatch=NULL  # retain nomatch=0|FALSE backwards compatibility, #857 #5214
   if (!is.null(nomatch)) {
     if (!(length(nomatch)==1L && is.na(nomatch))) stopf("nomatch= must be either NA or NULL (or 0 for backwards compatibility which is the same as NULL but please use NULL)")
@@ -572,7 +572,7 @@ replace_dot_alias = function(e) {
           ## benchmarks have shown that starting with 1e6 irows, a tweak can significantly reduce time
           ## (see #2366)
           if (verbose) {last.started.at=proc.time();catf("Reordering %d rows after bmerge done in ... ", length(irows));flush.console()}
-          if(length(irows) < 1e6){
+          if(length(irows) < 1e6L){
             irows = fsort(irows, internal=TRUE) ## internally, fsort on integer falls back to forderv
             } else {
               irows = as.integer(fsort(as.numeric(irows))) ## nocov; parallelized for numeric, but overhead of type conversion
@@ -685,19 +685,11 @@ replace_dot_alias = function(e) {
     # j was substituted before dealing with i so that := can set allow.cartesian=FALSE (#800) (used above in i logic)
     if (is.null(jsub)) return(NULL)
 
-    if (!with && jsub %iscall% ":=") {
-      # TODO: make these both errors (or single long error in both cases) in next release.
-      # i.e. using with=FALSE together with := at all will become an error. Eventually with will be removed.
-      if (is.null(names(jsub)) && is.name(jsub[[2L]])) {
-        warningf("with=FALSE together with := was deprecated in v1.9.4 released Oct 2014. Please wrap the LHS of := with parentheses; e.g., DT[,(myVar):=sum(b),by=a] to assign to column name(s) held in variable myVar. See ?':=' for other examples. As warned in 2014, this is now a warning.")
-        jsub[[2L]] = eval(jsub[[2L]], parent.frame(), parent.frame())
-      } else {
-        warningf("with=FALSE ignored, it isn't needed when using :=. See ?':=' for examples.")
-      }
-      with = TRUE
-    }
-
     if (!with) {
+      if (jsub %iscall% ":=") {
+        # TODO(>=1.18.0): Simplify this error
+        stopf("with=FALSE together with := was deprecated in v1.9.4 released Oct 2014; this has been warning since v1.15.0. Please wrap the LHS of := with parentheses; e.g., DT[,(myVar):=sum(b),by=a] to assign to column name(s) held in variable myVar. See ?':=' for other examples.")
+      }
       # missingby was already checked above before dealing with i
       if (jsub %iscall% c("!", "-") && length(jsub)==2L) {  # length 2 to only match unary, #2109
         notj = TRUE
@@ -1196,7 +1188,7 @@ replace_dot_alias = function(e) {
           #   ok=-1 which will trigger setalloccol with verbose in the next
           #   branch, which again calls _selfrefok and returns the message then
           if ((ok<-selfrefok(x, verbose=FALSE))==0L)   # ok==0 so no warning when loaded from disk (-1) [-1 considered TRUE by R]
-            if (is.data.table(x)) warningf("Invalid .internal.selfref detected and fixed by taking a (shallow) copy of the data.table so that := can add this new column by reference. At an earlier point, this data.table has been copied by R (or was created manually using structure() or similar). Avoid names<- and attr<- which in R currently (and oddly) may copy the whole data.table. Use set* syntax instead to avoid copying: ?set, ?setnames and ?setattr. If this message doesn't help, please report your use case to the data.table issue tracker so the root cause can be fixed or this message improved.")
+            if (is.data.table(x)) warningf("A shallow copy of this data.table was taken so that := can add or remove %d columns by reference. At an earlier point, this data.table was copied by R (or was created manually using structure() or similar). Avoid names<- and attr<- which in R currently (and oddly) may copy the whole data.table. Use set* syntax instead to avoid copying: ?set, ?setnames and ?setattr. It's also not unusual for data.table-agnostic packages to produce tables affected by this issue. If this message doesn't help, please report your use case to the data.table issue tracker so the root cause can be fixed or this message improved.", length(newnames))
             # !is.data.table for DF |> DT(,:=) tests 2212.16-19 (#5113) where a shallow copy is routine for data.frame
           if ((ok<1L) || (truelength(x) < ncol(x)+length(newnames))) {
             DT = x  # in case getOption contains "ncol(DT)" as it used to.  TODO: warn and then remove
@@ -1909,12 +1901,12 @@ replace_dot_alias = function(e) {
     }
 
     # adding ghead/gtail(n) support for n > 1 #5060 #523
-    q3 = 0
+    q3 = 0L
     if (!is.symbol(jsub)) {
       headTail_arg = function(q) {
         if (length(q)==3L && length(q3 <- q[[3L]])==1L && is.numeric(q3) &&
-         (q[[1L]]) %chin% c("ghead", "gtail") && q3!=1) q3
-        else 0
+         (q[[1L]]) %chin% c("ghead", "gtail") && q3!=1L) q3
+        else 0L
       }
       if (jsub %iscall% "list"){
         q3 = max(sapply(jsub, headTail_arg))
@@ -1922,7 +1914,7 @@ replace_dot_alias = function(e) {
         q3 = headTail_arg(jsub)
       }
     }
-    if (q3 > 0) {
+    if (q3 > 0L) {
       grplens = pmin.int(q3, len__)
       g = lapply(g, rep.int, times=grplens)
     } else if (.is_nrows(jsub)) {
@@ -2746,7 +2738,7 @@ setcolorder = function(x, neworder=key(x), before=NULL, after=NULL, skip_absent=
   if (length(before)>1L || length(after)>1L)
     stopf("before=/after= accept a single column name or number, not more than one")
   neworder = colnamesInt(x, neworder, check_dups=FALSE, skip_absent=skip_absent)  # dups are now checked inside Csetcolorder below
-  neworder = neworder[neworder != 0] # tests 498.11, 498.13 fail w/o this
+  neworder = neworder[neworder != 0L] # tests 498.11, 498.13 fail w/o this
   if (length(before))
     neworder = c(setdiff(seq_len(colnamesInt(x, before) - 1L), neworder), neworder)
   if (length(after))
@@ -2926,9 +2918,6 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
       }
     }
 
-    # Done to avoid affecting other copies of x when we setattr() below (#4784)
-    x = .shallow(x)
-
     rn = if (!identical(keep.rownames, FALSE)) rownames(x) else NULL
     setattr(x, "row.names", .set_row_names(nrow(x)))
     if (check.names) setattr(x, "names", make.names(names(x), unique=TRUE))
@@ -3097,10 +3086,10 @@ gweighted.mean = function(x, w, ..., na.rm=FALSE) {
   else {
     if (na.rm) { # take those indices out of the equation by setting them to 0
       ix <- is.na(x)
-      x[ix] <- 0
-      w[ix] <- 0
+      x[ix] <- 0.0
+      w[ix] <- 0.0
     }
-    gsum((w!=0)*x*w, na.rm=FALSE)/gsum(w, na.rm=FALSE)
+    gsum((w!=0.0)*x*w, na.rm=FALSE)/gsum(w, na.rm=FALSE)
   }
 }
 gprod = function(x, na.rm=FALSE) .Call(Cgprod, x, na.rm)
@@ -3254,7 +3243,7 @@ is_constantish = function(q, check_singleton=FALSE) {
       ## redirect to normal DT[x == TRUE]
       stub = call("==", as.symbol(col), TRUE)
     }
-    if (length(stub[[1L]]) != 1) return(NULL) # nocov Whatever it is, definitely not one of the valid operators
+    if (length(stub[[1L]]) != 1L) return(NULL) # nocov Whatever it is, definitely not one of the valid operators
     operator = as.character(stub[[1L]])
     if (!operator %chin% validOps$op) return(NULL) ## operator not supported
     if (!is.name(stub[[2L]])) return(NULL)
@@ -3295,7 +3284,7 @@ is_constantish = function(q, check_singleton=FALSE) {
   }
   if (length(i) == 0L) internal_error("i became length-0") # nocov
   ## convert i to data.table with all combinations in rows.
-  if(length(i) > 1L && prod(lengths(i)) > 1e4){
+  if(length(i) > 1L && prod(lengths(i)) > 1e4L){
     ## CJ would result in more than 1e4 rows. This would be inefficient, especially memory-wise #2635
     if (verbose) {catf("Subsetting optimization disabled because the cross-product of RHS values exceeds 1e4, causing memory problems.\n");flush.console()}
     return(NULL)
