@@ -72,6 +72,7 @@ R_CallMethodDef callMethods[] = {
 {"Crbindlist", (DL_FUNC) &rbindlist, -1},
 {"Cvecseq", (DL_FUNC) &vecseq, -1},
 {"Csetlistelt", (DL_FUNC) &setlistelt, -1},
+{"CsetS4elt", (DL_FUNC) &setS4elt, -1},
 {"Caddress", (DL_FUNC) &address, -1},
 {"CexpandAltRep", (DL_FUNC) &expandAltRep, -1},
 {"Cfmelt", (DL_FUNC) &fmelt, -1},
@@ -101,8 +102,8 @@ R_CallMethodDef callMethods[] = {
 {"Cshift", (DL_FUNC) &shift, -1},
 {"Ctranspose", (DL_FUNC) &transpose, -1},
 {"CanyNA", (DL_FUNC) &anyNA, -1},
-{"CisReallyReal", (DL_FUNC) &isReallyReal, -1},
-{"CisRealReallyIntR", (DL_FUNC) &isRealReallyIntR, -1},
+{"CfitsInInt32R", (DL_FUNC) &fitsInInt32R, -1},
+{"CfitsInInt64R", (DL_FUNC) &fitsInInt64R, -1},
 {"Csetlevels", (DL_FUNC) &setlevels, -1},
 {"Crleid", (DL_FUNC) &rleid, -1},
 {"Cgmedian", (DL_FUNC) &gmedian, -1},
@@ -349,7 +350,6 @@ SEXP hasOpenMP(void) {
 #endif
 
 }
-// # nocov end
 
 SEXP beforeR340(void) {
   // used in onAttach.R for message about fread memory leak fix needing R 3.4.0
@@ -360,6 +360,7 @@ SEXP beforeR340(void) {
   return ScalarLogical(false);
   #endif
 }
+// # nocov end
 
 extern int *_Last_updated;  // assign.c
 

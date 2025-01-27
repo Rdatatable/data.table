@@ -129,7 +129,8 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
 
   int nth = getDTthreads(xlength(x), true);
   int nBatch=nth*2;  // at least nth; more to reduce last-man-home; but not too large to keep counts small in cache
-  if (verbose) Rprintf(_("nth=%d, nBatch=%d\n"),nth,nBatch);
+  if (verbose)
+    Rprintf("nth=%d, nBatch=%d\n", nth, nBatch); // # notranslate
 
   size_t batchSize = (xlength(x)-1)/nBatch + 1;
   if (batchSize < 1024) batchSize = 1024; // simple attempt to work reasonably for short vector. 1024*8 = 2 4kb pages
@@ -142,8 +143,8 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   double *mins = (double *)malloc(nBatch * sizeof(double));
   double *maxs = (double *)malloc(nBatch * sizeof(double));
   if (!mins || !maxs) {
-    free(mins); free(maxs);
-    error(_("Failed to allocate %d bytes in fsort()."), (int)(2 * nBatch * sizeof(double)));
+    free(mins); free(maxs); // # nocov
+    error(_("Failed to allocate %d bytes in fsort()."), (int)(2 * nBatch * sizeof(double))); // # nocov
   }
   const double *restrict xp = REAL(x);
   #pragma omp parallel for schedule(dynamic) num_threads(getDTthreads(nBatch, false))
@@ -185,7 +186,8 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   int MSBNbits = maxBit > 15 ? 16 : maxBit+1;       // how many bits make up the MSB
   int shift = maxBit + 1 - MSBNbits;                // the right shift to leave the MSB bits remaining
   size_t MSBsize = 1LL<<MSBNbits;                   // the number of possible MSB values (16 bits => 65,536)
-  if (verbose) Rprintf(_("maxBit=%d; MSBNbits=%d; shift=%d; MSBsize=%zu\n"), maxBit, MSBNbits, shift, MSBsize);
+  if (verbose)
+    Rprintf("maxBit=%d; MSBNbits=%d; shift=%d; MSBsize=%zu\n", maxBit, MSBNbits, shift, MSBsize); // # notranslate
 
   uint64_t *counts = (uint64_t *)R_alloc(nBatch*MSBsize, sizeof(uint64_t));
   memset(counts, 0, nBatch*MSBsize*sizeof(uint64_t));

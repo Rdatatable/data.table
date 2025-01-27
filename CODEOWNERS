@@ -49,6 +49,9 @@
 /po/*pt_BR.po @Rdatatable/brazil
 /po/*es.po @Rdatatable/spanish
 
+# meta
+/.graphics/translation-team-logos/*.png @jmrung
+
 # printing
 /R/print.data.table.R @michaelchirico
 
@@ -67,6 +70,12 @@
 
 # docs
 /man/openmp-utils.Rd @Anirban166
+/Seal_of_Approval.md @tdhock
+/GOVERNANCE.md: @Rdatatable/committers
 
-# meta
-/.graphics/translation-team-logos/*.png @jmrung
+# GLCI
+.gitlab-ci.yml @jangorecki @ben-schwen
+
+# C code tricks
+/src/chmatch.c @aitap
+/src/fread.c @aitap

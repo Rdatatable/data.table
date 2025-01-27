@@ -60,7 +60,8 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   }
   else error(_("irowsArg is neither an integer vector nor NULL"));  // # nocov
   ngrp = LENGTH(l);
-  if (LENGTH(f) != ngrp) error(_("length(f)=%d != length(l)=%d"), LENGTH(f), ngrp);
+  if (LENGTH(f) != ngrp)
+    error("length(f)=%d != length(l)=%d", LENGTH(f), ngrp); // # notranslate
   nrow=0;
   grpsize = INTEGER(l);
   maxgrpn = 0;
@@ -119,8 +120,8 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     int *counts = calloc(nBatch*highSize, sizeof(int));  // TODO: cache-line align and make highSize a multiple of 64
     int *TMP   = malloc(nrow*2l*sizeof(int)); // must multiple the long int otherwise overflow may happen, #4295
     if (!counts || !TMP ) {
-      free(counts); free(TMP);
-      error(_("Failed to allocate counts or TMP when assigning g in gforce"));
+      free(counts); free(TMP); // # nocov
+      error(_("Failed to allocate counts or TMP when assigning g in gforce")); // # nocov
     }
     #pragma omp parallel for num_threads(getDTthreads(nBatch, false))   // schedule(dynamic,1)
     for (int b=0; b<nBatch; b++) {
@@ -337,7 +338,7 @@ void *gather(SEXP x, bool *anyNA)
       if (my_anyNA) *anyNA = true;  // naked write ok since just bool and always writing true; and no performance issue as maximum nBatch writes
     }
   } break;
-  default :
+  default : // # nocov
     error(_("gather implemented for INTSXP, REALSXP, and CPLXSXP but not '%s'"), type2char(TYPEOF(x)));   // # nocov
   }
   if (verbose) { Rprintf(_("gather took %.3fs\n"), wallclock()-started); }
@@ -626,7 +627,7 @@ SEXP gmean(SEXP x, SEXP narmArg)
       // narm==true and anyNA==true
       int *restrict nna_counts = calloc(ngrp, sizeof(int));
       if (!nna_counts)
-        error(_("Unable to allocate %d * %zu bytes for non-NA counts in gmean na.rm=TRUE"), ngrp, sizeof(int));
+        error(_("Unable to allocate %d * %zu bytes for non-NA counts in gmean na.rm=TRUE"), ngrp, sizeof(int)); // # nocov
       #pragma omp parallel for num_threads(getDTthreads(highSize, false))
       for (int h=0; h<highSize; h++) {
           double *restrict _ans = ansp + (h<<bitshift);
@@ -1125,7 +1126,7 @@ SEXP gprod(SEXP x, SEXP narmArg) {
   if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gprod");
   long double *s = malloc(ngrp * sizeof(long double));
   if (!s)
-    error(_("Unable to allocate %d * %zu bytes for gprod"), ngrp, sizeof(long double));
+    error(_("Unable to allocate %d * %zu bytes for gprod"), ngrp, sizeof(long double)); // # nocov
   for (int i=0; i<ngrp; ++i) s[i] = 1.0;
   switch(TYPEOF(x)) {
   case LGLSXP: case INTSXP: {

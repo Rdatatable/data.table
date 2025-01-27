@@ -804,7 +804,7 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
   int protecti=0;
   dtnames = PROTECT(getAttrib(DT, R_NamesSymbol)); protecti++;
   if (isNull(dtnames))
-    internal_error(__func__, "names(data) is NULL");
+    internal_error(__func__, "names(data) is NULL"); // # nocov
   if (LOGICAL(narmArg)[0] == TRUE) narm = TRUE;
   if (LOGICAL(verboseArg)[0] == TRUE) verbose = TRUE;
   struct processData data;
