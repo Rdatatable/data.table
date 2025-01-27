@@ -16,11 +16,10 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   if (x0 || y0){
     if (x0 && y0) {
       warningf("Neither of the input data.tables to join have columns.")
-    } else if (x0) {
+    else if (x0)
       warningf("Input data.table '%s' has no columns.", "x")
-    } else {
+    else
       warningf("Input data.table '%s' has no columns.", "y")
-    }
   }
   check_duplicate_names(x)
   check_duplicate_names(y)
