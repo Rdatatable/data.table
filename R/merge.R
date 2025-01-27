@@ -56,11 +56,12 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
     if (length(by) == 0L || !is.character(by))
       stopf("A non-empty vector of column names for `by` is required.")
     missing_in_x <- setdiff(by, nm_x)
+    if (length(missing_in_x) > 0L) {
+      stopf("The following columns listed in `%s` are missing from %s: %s", "by", "x", brackify(missing_in_x))
+    }
     missing_in_y <- setdiff(by, nm_y)
-    if (length(missing_in_x) > 0L || length(missing_in_y) > 0L) {
-      stopf("The following columns are missing:\n%s%s",
-        if (length(missing_in_x) > 0L) gettextf(" - From x: %s\n", brackify(missing_in_x)) else "",
-        if (length(missing_in_y) > 0L) gettextf(" - From y: %s\n", brackify(missing_in_y)) else "")
+    if (length(missing_in_y) > 0L) {
+      stopf("The following columns listed in `%s` are missing from %s: %s", "by", "y", brackify(missing_in_y))
     }
     by = unname(by)
     by.x = by.y = by
