@@ -19,7 +19,7 @@ setdroplevels = function(x, except=NULL, exclude=NULL) {
   if (!nrow(x)) return(invisible(x))
   ix = vapply_1b(x, is.factor)
   if (!is.null(except)) {
-    stopifnot(is.numeric(except), except >= 1, except <= length(x))
+    stopifnot(is.numeric(except), except >= 1L, except <= length(x))
     ix[except] = FALSE
   }
   if (!any(ix)) return(invisible(x))
