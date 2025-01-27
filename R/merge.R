@@ -30,26 +30,26 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
 
   ## set up 'by'/'by.x'/'by.y'
   if ((!is.null(by.x) || !is.null(by.y)) && length(by.x) != length(by.y))
-    stopf("'by.x' and 'by.y' must be of same length.")
+    stopf("`by.x` and `by.y` must be of same length.")
   if (!missing(by) && !missing(by.x))
-    warningf("Supplied both by and 'by.x/by.y.' by argument will be ignored.")
+    warningf("Supplied both `by` and `by.x`/`by.y`. `by` argument will be ignored.")
   if (!is.null(by.x)) {
     if (length(by.x) == 0L || !is.character(by.x) || !is.character(by.y))
       stopf("A non-empty vector of column names is required for 'by.x' and 'by.y'.")
     if (!all(by.x %chin% nm_x)) {
       missing_in_x <- setdiff(by.x, nm_x)
-      stopf("The following columns listed in 'by.x' are missing from x: %s", brackify(missing_in_x))
+      stopf("The following columns listed in `by.x` are missing from x: %s", brackify(missing_in_x))
     }
     if (!all(by.y %chin% nm_y)) {
       missing_in_y <- setdiff(by.y, nm_y)
-      stopf("The following columns listed in 'by.y' are missing from y: %s", brackify(missing_in_y))
+      stopf("The following columns listed in `by.y` are missing from y: %s", brackify(missing_in_y))
     }
     by = by.x
     names(by) = by.y
   } else {
     if (is.null(by))
       by = intersect(key(x), key(y))
-    if (!length(by)) # was is.null() before PR#5183 changed to !length()
+    if (!length(by))   # was is.null() before PR#5183  changed to !length()
       by = key(x)
     if (!length(by))
       by = intersect(nm_x, nm_y)
@@ -118,7 +118,7 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   }
 
   # Throw warning if there are duplicate column names in 'dt' (i.e. if
-  # `suffixes=c("",""), to match behaviour in base:::merge.data.frame)
+  # `suffixes=c("","")`, to match behaviour in base:::merge.data.frame)
   resultdupnames = names(dt)[duplicated(names(dt))]
   if (length(resultdupnames)) {
     warningf("column names %s are duplicated in the result", brackify(resultdupnames))
