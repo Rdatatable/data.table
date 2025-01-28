@@ -1,37 +1,81 @@
-name: R-CMD-check-sanitized
-concurrency:
-  group: ${{ github.event.pull_request.number || github.run_id }}
-  cancel-in-progress: true
-
 on:
   push:
     branches:
       - master
       - GHA-sanitizers # during development
   workflow_dispatch:
-  pull_request:
+
+name: R-CMD-check-sanitized
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  linux-containers:
+  R-CMD-check-sanitized:
     runs-on: ubuntu-latest
-    name: "Check with sanitizers enabled"
-    strategy:
-      fail-fast: false
     container:
-      image: docker://ghcr.io/r-hub/containers/clang-asan
+      image: docker://docker.io/rocker/r-devel-ubsan-clang
+
+    strategy:
+      fail-fast: true
 
     steps:
-      - uses: r-hub/actions/checkout@v1
-      - uses: r-hub/actions/platform-info@v1
-      - uses: r-hub/actions/setup-deps@v1
-      - name: "Additional setup"
+      - uses: actions/checkout@v4
+
+      - name: "Environment setup"
         run: |
-          # this should at least help with the build step
+          RDscript -e '
+            # install the dependencies into a separate directory to cache them
+            dir.create(lib <- Sys.getenv("R_LIBS_USER"), recursive = TRUE)
+            writeLines(paste0("R_LIBS_USER=", lib), Sys.getenv("GITHUB_ENV"))
+            # to be used as the cache key
+            writeLines(R.version.string, ".R_version_string")
+          '
           echo "MAKEFLAGS=-j$(nproc)" >> $GITHUB_ENV
           # fontconfig is known to leak; add more suppressions as discovered
           echo "LSAN_OPTIONS=suppressions=$(realpath .github/workflows/LSan.supp)" >> $GITHUB_ENV
-          # disabled by default, so reenable (needs suppressions above)
-          echo "ASAN_OPTIONS=detect_leaks=1" >> $GITHUB_ENV
-          # see r-hub/containers#84
-          sed -i 's/-fsanitize-trap\S*//g' /opt/R/devel-asan/lib/R/etc/Makeconf
-      - uses: r-hub/actions/run-check@v1
+          # disable for most operations just in case
+          echo "ASAN_OPTIONS=detect_leaks=0" >> $GITHUB_ENV
+          # needed by udunits2, sf
+          apt-get update && apt-get install -y libudunits2-dev libgdal-dev
+
+      - name: "Restore dependency cache"
+        id: dependency-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.R_LIBS_USER }}/*
+          key: r-clang-san-deps-${{hashFiles('.R_version_string')}}
+
+      - name: "Install dependencies"
+        shell: RDscript {0}
+        run: |
+          lib <- Sys.getenv('R_LIBS_USER') # why doesn't it work by itself?
+          if (!requireNamespace('BiocManager')) install.packages('BiocManager', lib = lib)
+          union(
+            'DESCRIPTION' |> read.dcf('Suggests') |> tools:::.split_dependencies() |> names(),
+            'inst/tests/other.Rraw' |> parse() |> _[[1]][[3]] |> eval()
+          ) |> setdiff(tools::standard_package_names()$base) |>
+          BiocManager::install(lib = lib, update = TRUE, ask = FALSE)
+
+      - name: "Save dependency cache"
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.R_LIBS_USER }}/*
+          key: ${{ steps.dependency-cache.outputs.cache-primary-key }}
+
+      - name: "Build"
+        run: |
+          rm .R_version_string # there's probably a better place for this
+          RD CMD build .
+
+      - name: "Check"
+        run: |
+          set +e # expect some things to fail and keep going
+          echo "::group::full R CMD check output"
+          # only use leak checking for this run
+          ASAN_OPTIONS=detect_leaks=1 RD CMD check --no-manual data.table_*.tar.gz; res1=$?
+          echo "::endgroup::"
+          perl -nle '(print, $a=1) if /: runtime error: |ERROR: LeakSanitizer/../SUMMARY.*Sanitizer/ }{ exit $a' data.table.Rcheck/**/*.Rout*; res2=$?
+          # fail if R CMD check had failed or if sanitizer output found
+          [ $res1 -eq 0 ] && [ $res2 -eq 0 ]
