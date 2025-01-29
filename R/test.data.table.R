@@ -1,5 +1,5 @@
 test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=FALSE, showProgress=interactive()&&!silent, testPattern=NULL,
-                           memtest=Sys.getenv("TEST_DATA_TABLE_MEMTEST", 0), memtest.id=NULL) {
+                           memtest=Sys.getenv("TEST_DATA_TABLE_MEMTEST", 0L), memtest.id=NULL) {
   stopifnot(isTRUEorFALSE(verbose), isTRUEorFALSE(silent), isTRUEorFALSE(showProgress))
   memtest = as.integer(memtest)
   stopifnot(length(memtest)==1L, memtest %in% 0:2)
@@ -79,7 +79,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   # sample method changed in R 3.6 to remove bias; see #3431 for links and notes
   # This can be removed (and over 120 tests updated) if and when the oldest R version we test and support is moved to R 3.6
 
-  userNumericRounding = setNumericRounding(0) # Initialise to 0 in case the user has set it to a different value. Restore to user's value when finished.
+  userNumericRounding = setNumericRounding(0L) # Initialise to 0 in case the user has set it to a different value. Restore to user's value when finished.
 
   # TO DO: reinstate solution for C locale of CRAN's Mac (R-Forge's Mac is ok)
   # oldlocale = Sys.getlocale("LC_CTYPE")
@@ -261,25 +261,26 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
 
   # There aren't any errors, so we can use up 11 lines for the timings table
   time = nTest = RSS = NULL  # to avoid 'no visible binding' note
-  timings = env$timings[nTest>0]
+  timings = env$timings[nTest>0.0]
   if (!memtest) {
     ans = head(timings[if (dev) -1L else TRUE][order(-time)], 10L)[,RSS:=NULL]   # exclude id 1 in dev as that includes JIT
     if ((x<-sum(timings[["nTest"]])) != ntest) {
       warningf("Timings count mismatch: %d vs %d", x, ntest)  # nocov
     }
-    catf("10 longest running tests took %ds (%d%% of %ds)\n", as.integer(tt<-ans[, sum(time)]), as.integer(100*tt/(ss<-timings[,sum(time)])), as.integer(ss))
+    catf("10 longest running tests took %ds (%d%% of %ds)\n", as.integer(tt<-ans[, sum(time)]), as.integer(100.0*tt/(ss<-timings[,sum(time)])), as.integer(ss))
     print(ans, class=FALSE)
   } else {
     y = head(order(-diff(timings$RSS)), 10L)
-    ans = timings[, diff:=c(NA,round(diff(RSS),1))][y+1L][,time:=NULL]  # time is distracting and influenced by gc() calls; just focus on RAM usage here
+    ans = timings[, diff := c(NA_real_, round(diff(RSS), 1L))][y + 1L]
+    ans[, time:=NULL]  # time is distracting and influenced by gc() calls; just focus on RAM usage here
     catf("10 largest RAM increases (MB); see plot for cumulative effect (if any)\n")
     print(ans, class=FALSE)
-    get("dev.new")(width=14, height=7)
-    get("par")(mfrow=c(1,2))
-    get("plot")(timings$RSS, main=paste(basename(fn),"\nylim[0]=0 for context"), ylab="RSS (MB)", ylim=c(0,max(timings$RSS)))
-    get("mtext")(lastRSS<-as.integer(ceiling(last(timings$RSS))), side=4, at=lastRSS, las=1, font=2)
+    get("dev.new")(width=14.0, height=7.0)
+    get("par")(mfrow=1:2)
+    get("plot")(timings$RSS, main=paste(basename(fn),"\nylim[0]=0 for context"), ylab="RSS (MB)", ylim=c(0.0, max(timings$RSS)))
+    get("mtext")(lastRSS<-as.integer(ceiling(last(timings$RSS))), side=4L, at=lastRSS, las=1L, font=2L)
     get("plot")(timings$RSS, main=paste(basename(fn),"\nylim=range for inspection"), ylab="RSS (MB)")
-    get("mtext")(lastRSS, side=4, at=lastRSS, las=1, font=2)
+    get("mtext")(lastRSS, side=4L, at=lastRSS, las=1L, font=2L)
   }
 
   catf("All %d tests (last %.8g) in %s completed ok in %s\n", ntest, env$prevtest, names(fn), timetaken(env$started.at))
@@ -357,7 +358,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
   if (.test.data.table) {
     prevtest = get("prevtest", parent.frame())
     whichfail = get("whichfail", parent.frame())
-    assign("ntest", get("ntest", parent.frame()) + if (num>0) 1L else 0L, parent.frame(), inherits=TRUE)   # bump number of tests run
+    assign("ntest", get("ntest", parent.frame()) + if (num>0.0) 1L else 0L, parent.frame(), inherits=TRUE)   # bump number of tests run
     lasttime = get("lasttime", parent.frame())
     timings = get("timings", parent.frame())
     memtest = get("memtest", parent.frame())
@@ -367,7 +368,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     showProgress = get("showProgress", parent.frame())
     time = nTest = RSS = NULL  # to avoid 'no visible binding' note
     # TODO(R>=4.0.2): Use add=TRUE up-front in on.exit() once non-positional arguments are supported.
-    if (num>0) on.exit({
+    if (num>0.0) on.exit({
        took = proc.time()[3L]-lasttime  # so that prep time between tests is attributed to the following test
        timings[as.integer(num), `:=`(time=time+took, nTest=nTest+1L), verbose=FALSE]
        if (memtest) {
@@ -428,7 +429,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     out = capture.output(print(x <- suppressMessages(withCallingHandlers(tryCatch(x, error=eHandler), warning=wHandler, message=mHandler))))
   }
   fail = FALSE
-  if (.test.data.table && num>0) {
+  if (.test.data.table && num>0.0) {
     if (num<prevtest+0.0000005) {
       # nocov start
       catf("Test id %s is not in increasing order\n", numStr)
@@ -552,7 +553,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     }
     # nocov end
   }
-  if (fail && .test.data.table && num>0) {
+  if (fail && .test.data.table && num>0.0) {
     # nocov start
     assign("nfail", nfail+1L, parent.frame(), inherits=TRUE)
     assign("whichfail", c(whichfail, numStr), parent.frame(), inherits=TRUE)

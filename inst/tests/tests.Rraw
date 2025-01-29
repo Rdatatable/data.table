@@ -7066,7 +7066,7 @@ ee = new.env()
 ee$DT = data.frame(x=1L, y=1:3)
 setattr(ee$DT, 'class', c("data.table", "data.frame"))
 test(1482.1, truelength(ee$DT), 0L) # make sure that the simulated environment is right.
-test(1482.2, ee$DT[, z := 3:1], data.table(x=1L, y=1:3, z=3:1), warning="Invalid .internal.selfref detected and")
+test(1482.2, ee$DT[, z := 3:1], data.table(x=1L, y=1:3, z=3:1), warning="A shallow copy of this data.table was taken")
 test(1482.3, truelength(ee$DT), 1027L)
 test(1482.4, ee$DT[, za := 4:6], data.table(x=1L, y=1:3, z=3:1, za=4:6))
 test(1482.5, truelength(ee$DT), 1027L)   # should have used spare slot i.e. no increase in tl
@@ -8567,14 +8567,13 @@ DT1 = data.table(a=1)
 test(1601.1, merge(DT1, DT1, by="a"), data.table(a=1, key="a"))
 test(1601.2, merge(DT1, DT0, by="a"),
      warning="Input data.table 'y' has no columns.",
-     error="Elements listed in `by`")
+     error="The following columns listed in `by` are missing from y: [a]")
 test(1601.3, merge(DT0, DT1, by="a"),
      warning="Input data.table 'x' has no columns.",
-     error="Elements listed in `by`")
+     error="The following columns listed in `by` are missing from x: [a]")
 test(1601.4, merge(DT0, DT0, by="a"),
      warning="Neither of the input data.tables to join have columns.",
-     error="Elements listed in `by`")
-
+     error="The following columns listed in `by` are missing from x: [a]")
 # fix for #1549
 d1 <- data.table(v1=1:2,x=x)
 d2 <- data.table(v1=3:4)
@@ -13546,14 +13545,14 @@ test(1962.016, merge(DT1, DT2, by.x = 'a', by.y = c('a', 'V')),
 test(1962.017, merge(DT1, DT2, by = 'V', by.x = 'a', by.y = 'a'),
      data.table(a = 2:3, V.x = c("a", "a"), V.y = c("b", "b"), key = 'a'),
      warning = 'Supplied both.*argument will be ignored')
-test(1962.018, merge(DT1, DT2, by.x = 'z', by.y = 'a'),
-     error = 'Elements listed in `by.x`')
-test(1962.019, merge(DT1, DT2, by.x = 'a', by.y = 'z'),
-     error = 'Elements listed in `by.y`')
+test(1962.018, merge(DT1, DT2, by.x='z', by.y='a'),
+     error="The following columns listed in `by.x` are missing from x: [z]")
+test(1962.019, merge(DT1, DT2, by.x='a', by.y='z'),
+     error="The following columns listed in `by.y` are missing from y: [z]")
 test(1962.0201, merge(DT1, DT2, by=character(0L)), ans)  # was error before PR#5183
 test(1962.0202, merge(DT1, DT2, by=NULL),          ans)  # test explicit NULL too as missing() could be used inside merge()
-test(1962.021, merge(DT1, DT2, by = 'z'),
-     error = 'must be valid column names in x and y')
+test(1962.021, merge(DT1, DT2, by='z'),
+     error='The following columns listed in `by` are missing from x: [z]')
 
 ## frank.R
 x = c(1, 1, 2, 5, 4, 3, 4, NA, 6)
@@ -14942,7 +14941,7 @@ test(2037.1, foo(DT), output='Please remember to always setDT()')
 # no assignment was made to DT
 test(2037.2, names(DT), 'a')
 # _selrefok() verbose message was duplicated
-test(2037.3, unname(table(unlist(strsplit(capture.output(foo(DT)), '\n|\\s+')))['ptr']), 1L)
+test(2037.3, foo(DT), output="data.table internal attributes", notOutput="data.table internal attributes.*data.table internal attributes")
 
 # `between` invalid args, and verbose #3516
 test(2038.01, between(1:5, 2, 4, incbounds=423), error="incbounds must be TRUE or FALSE")
@@ -18014,7 +18013,7 @@ test(2230.4, setDF(merge(DT, y, by="k2", incomparables=c(1, NA, 4, 5))), merge(x
 test(2230.5, setDF(merge(DT, y, by="k2", incomparables=c(NA, 3, 4, 5))), merge(x, y, by="k2", incomparables=c(NA,3,4,5)))
 test(2230.6, merge(DT, y, by="k2", unk=1), merge(DT, y, by="k2"), warning="Unknown argument 'unk' has been passed.")
 test(2230.7, merge(DT, y, by="k2", NULL, NULL, FALSE, FALSE, FALSE, TRUE, c(".x", ".y"), TRUE, getOption("datatable.allow.cartesian"), NULL, 1L),
-             merge(DT, y, by="k2"), warning=c("Supplied both `by` and `by.x/by.y`. `by` argument will be ignored.", "Passed 1 unknown and unnamed arguments."))
+             merge(DT, y, by="k2"), warning=c("Supplied both `by` and `by.x`/`by.y`. `by` argument will be ignored.", "Passed 1 unknown and unnamed arguments."))
 
 # weighted.mean GForce optimized, #3977
 old = options(datatable.optimize=1L)
@@ -20650,13 +20649,14 @@ test(2294.72,
                     label = list(character = "C3", VCharA = "Total", integer = 2L))),
      warning = "For the following variables, the 'label' value was already in the data: [VCharB (label: C3), VIntA (label: 2)]")
 
+# tests 1-3 disabled -- fix for #4784 causes various breaking changes, at least partially covered by 2295.4+.
 # setDT no longer leaks class modification to origin copy, #4784
-d1 = data.frame(a=1, row.names='b')
-d2 = d1
-setDT(d2)
-test(2295.1, !is.data.table(d1))
-test(2295.2, rownames(d1), 'b')
-test(2295.3, is.data.table(d2))
+# d1 = data.frame(a=1, row.names='b')
+# d2 = d1
+# setDT(d2)
+# test(2295.1, !is.data.table(d1))
+# test(2295.2, rownames(d1), 'b')
+# test(2295.3, is.data.table(d2))
 # Ensure against regression noted in #6725
 x = data.frame(a=1)
 e = environment()
@@ -20669,6 +20669,18 @@ e = new.env(parent=topenv())
 e$x = data.frame(a=1)
 foo('x', e)
 test(2295.5, is.data.table(e$x))
+# More regressions noted in #6735
+baz = function(x) setDT(x)
+foo = function(x) {
+  bar = function() baz(x)
+  x = data.frame(a=1)
+  bar()
+  is.data.table(x)
+}
+test(2295.6, foo())
+x = data.frame(a=1)
+baz(x)
+test(2295.7, is.data.table(x))
 
 # #6588: .checkTypos used to give arbitrary strings to stopf as the first argument
 test(2296, d2[x %no such operator% 1], error = '%no such operator%')

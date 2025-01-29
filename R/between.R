@@ -76,8 +76,13 @@ inrange = function(x,lower,upper,incbounds=TRUE) {
   verbose = isTRUE(getOption("datatable.verbose"))
   if (verbose) {last.started.at=proc.time();catf("forderv(query) took ... ");flush.console()}
   if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
-  ans = bmerge(shallow(subject), query, 1L:2L, c(1L,1L),
-      0, c(FALSE, TRUE), 0L, "all", ops, verbose) # fix for #1819, turn on verbose messages
+  ans = bmerge(
+    shallow(subject), query,
+    icols=1L:2L, xcols=c(1L, 1L),
+    roll=0.0, rollends=c(FALSE, TRUE),
+    nomatch=0L, mult="all",
+    ops=ops, verbose=verbose # fix for #1819, turn on verbose messages
+  )
   xo = ans$xo
   options(datatable.verbose=FALSE)
   setDT(ans[c("starts", "lens")], key=c("starts", "lens"))
