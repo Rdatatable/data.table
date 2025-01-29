@@ -159,6 +159,9 @@ TZnotUTC = !identical(tt,"") && !is_utc(tt)
 #   (3) function factory for matching messages exactly by substituting anything between delimiters [delim, fmt=TRUE]
 #   (4) function factory for matching messages exactly by substituting a generic string [fmt=string]
 get_msg = function(e, delim, fmt=FALSE) {
+  ufq = options(useFancyQuotes = FALSE) # otherwise we get angled quotes, hard to match robustly
+  on.exit(options(ufq))
+
   condition = tryCatch({e; NULL}, error=identity, warning=identity)
   if (is.null(condition)) return(condition)
   msg = condition$message
@@ -11102,7 +11105,7 @@ test(1743.123, fread("a,b\n1+3i,2015-01-01", colClasses=c(NA,"IDate")), data.tab
 test(1743.13, lapply(fread("a,b\n09/05/98,2015-01-01", colClasses = "Date"), class), y=list(a="character", b=c("IDate", "Date")), warning=base_messages$ambiguous_date_fmt)
 
 ## Just invalid
-test(1743.14,
+test(1743.14, options = c(useFancyQuotes = FALSE),
      sapply(fread("a,b\n2017-01-01,1", colClasses=c("foo", "integer")), class), c(a="character", b="integer"),
      warning=base_messages$missing_coerce_method)
 test(1743.15, sapply(fread("a,b\n2017-01-01,1", colClasses=c("foo", "integer")), class), c(a="character", b="integer"), warning="the column has been left as type .*character")
