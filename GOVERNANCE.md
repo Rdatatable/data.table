@@ -94,8 +94,9 @@ A pull request can be merged by any Committer, if there is one approving review,
 
 ## Changing this GOVERNANCE.md document
 
-There is no special process for changing this document (submit a PR
-and ask for review).
+There is no special process for changing this document. Submit a PR and ask for review; the group `@Rdatatable/committers` will automatically be assigned to ensure all current Committers are aware of the change.
+
+Please also make a note in the change log under [`# Governance history`](#governance-history)
 
 # Code of conduct
 
@@ -123,7 +124,7 @@ data.table Version line in DESCRIPTION typically has the following meanings
 
 # Governance history
 
-Jan 2025: clarify role names as proper nouns (i.e., upper-case) throughout.
+Jan 2025: clarify that edits to governance should notify all committers, and that role names are proper nouns (i.e., upper-case) throughout.
 
 Feb 2024: change team name/link maintainers to committers, to be consistent with role defined in governance.
 
