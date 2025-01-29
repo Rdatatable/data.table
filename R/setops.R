@@ -193,25 +193,25 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
     bad.type = setNames(c("raw","complex","list") %chin% c(vapply_1c(current, typeof), vapply_1c(target, typeof)), c("raw","complex","list"))
     if (any(bad.type))
       stopf("Datasets to compare with 'ignore.row.order' must not have unsupported column types: %s", brackify(names(bad.type)[bad.type]))
-    if (between(tolerance, 0, sqrt(.Machine$double.eps), incbounds=FALSE)) {
+    if (between(tolerance, 0.0, sqrt(.Machine$double.eps), incbounds=FALSE)) {
       warningf("Argument 'tolerance' was forced to lowest accepted value `sqrt(.Machine$double.eps)` from provided %s", format(tolerance, scientific=FALSE))
       tolerance = sqrt(.Machine$double.eps)
     }
     target_dup = as.logical(anyDuplicated(target))
     current_dup = as.logical(anyDuplicated(current))
-    tolerance.msg = if (identical(tolerance, 0)) ", be aware you are using `tolerance=0` which may result into visually equal data" else ""
+    tolerance.msg = if (identical(tolerance, 0.0)) ", be aware you are using `tolerance=0` which may result into visually equal data" else ""
     if (target_dup || current_dup) {
       # handling 'tolerance' for duplicate rows - those `msg` will be returned only when equality with tolerance will fail
-      if (any(vapply_1c(target,typeof)=="double") && !identical(tolerance, 0)) {
+      if (any(vapply_1c(target, typeof) == "double") && !identical(tolerance, 0.0)) {
         if (target_dup && !current_dup) msg = c(msg, "Dataset 'target' has duplicate rows while 'current' doesn't")
         else if (!target_dup && current_dup) msg = c(msg, "Dataset 'current' has duplicate rows while 'target' doesn't")
         else { # both
           if (!identical(tolerance, sqrt(.Machine$double.eps))) # non-default will raise error
             stopf("Duplicate rows in datasets, numeric columns and ignore.row.order cannot be used with non 0 tolerance argument")
           msg = c(msg, "Both datasets have duplicate rows, they also have numeric columns, together with ignore.row.order this force 'tolerance' argument to 0")
-          tolerance = 0
+          tolerance = 0.0
         }
-      } else { # no numeric columns or tolerance==0L
+      } else { # no numeric columns or tolerance==0
         if (target_dup && !current_dup)
           return(sprintf("Dataset 'target' has duplicate rows while 'current' doesn't%s", tolerance.msg))
         if (!target_dup && current_dup)
@@ -219,17 +219,17 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
       }
     }
     # handling 'tolerance' for factor cols - those `msg` will be returned only when equality with tolerance will fail
-    if (any(vapply_1b(target,is.factor)) && !identical(tolerance, 0)) {
+    if (any(vapply_1b(target, is.factor)) && !identical(tolerance, 0.0)) {
       if (!identical(tolerance, sqrt(.Machine$double.eps))) # non-default will raise error
         stopf("Factor columns and ignore.row.order cannot be used with non 0 tolerance argument")
       msg = c(msg, "Using factor columns together together with ignore.row.order, this force 'tolerance' argument to 0")
-      tolerance = 0
+      tolerance = 0.0
     }
     jn.on = copy(names(target)) # default, possible altered later on
-    dbl.cols = vapply_1c(target,typeof)=="double"
-    if (!identical(tolerance, 0)) {
+    dbl.cols = vapply_1c(target, typeof)=="double"
+    if (!identical(tolerance, 0.0)) {
       if (!any(dbl.cols)) { # dbl.cols handles (removed) "all character columns" (char.cols) case as well
-        tolerance = 0
+        tolerance = 0.0
       } else {
         jn.on = jn.on[c(which(!dbl.cols), which(dbl.cols))] # double column must be last for rolling join
       }
@@ -240,7 +240,7 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
       jn.on = c(".seqn", jn.on)
     }
     # roll join to support 'tolerance' argument, conditional to retain support for factor when tolerance=0
-    ans = if (identical(tolerance, 0)) target[current, nomatch=NA, which=TRUE, on=jn.on] else {
+    ans = if (identical(tolerance, 0.0)) target[current, nomatch=NA, which=TRUE, on=jn.on] else {
       ans1 = target[current, roll=tolerance, rollends=TRUE, which=TRUE, on=jn.on]
       ans2 = target[current, roll=-tolerance, rollends=TRUE, which=TRUE, on=jn.on]
       pmin(ans1, ans2, na.rm=TRUE)
@@ -250,7 +250,7 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
       return(msg)
     }
     # rolling join other way around
-    ans = if (identical(tolerance, 0)) current[target, nomatch=NA, which=TRUE, on=jn.on] else {
+    ans = if (identical(tolerance, 0.0)) current[target, nomatch=NA, which=TRUE, on=jn.on] else {
       ans1 = current[target, roll=tolerance, rollends=TRUE, which=TRUE, on=jn.on]
       ans2 = current[target, roll=-tolerance, rollends=TRUE, which=TRUE, on=jn.on]
       pmin(ans1, ans2, na.rm=TRUE)

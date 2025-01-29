@@ -45,31 +45,31 @@ Functionality that is out of current scope:
 ## Contributor
 
 * Definition: a user who has written/commented at least one issue, worked to label/triage issues, written a blog post, given a talk, etc. 
-* How this role is recognized: there is no central list of contributors / no formal recognition for contributors.
+* How this role is recognized: there is no central list of Contributors / no formal recognition for Contributors.
 
-## Project member
+## Project Member
 
-* Definition: some one who has submitted at least one PR with substantial contributions, that has been merged into master. PRs improving documentation are welcome, and substantial contributions to the docs should count toward membership, but minor contributions such as spelling fixes do not count toward membership.
-* How to obtain this role: any user/contributor can become a member by submitting a PR with substantial contributions, then having it reviewed and merged into master. Contributors who have written issues should be encouraged to submit their first PR to become a project member. Contributors can look at https://github.com/Rdatatable/data.table/labels/beginner-task for easy issues to work on.
-* How this role is recognized: Members are credited via role="ctb" in DESCRIPTION (so they appear in Author list on CRAN), and they are added to https://github.com/orgs/Rdatatable/teams/project-members so they can create new branches in the Rdatatable/data.table GitHub repo. They also appear on https://github.com/Rdatatable/data.table/graphs/contributors (Contributions to master, excluding merge commits).
+* Definition: some one who has submitted at least one PR with substantial contributions, that has been merged into master. PRs improving documentation are welcome, and substantial contributions to the docs should count toward Project Membership, but minor contributions such as spelling fixes do not count toward Project Membership.
+* How to obtain this role: anybody can become a Project Member by submitting a PR with substantial contributions, then having it reviewed and merged into master. Contributors who have written issues should be encouraged to submit their first PR to become a Project Member. Contributors can look at https://github.com/Rdatatable/data.table/labels/beginner-task for easy issues to work on.
+* How this role is recognized: Project Members are credited via role="ctb" in DESCRIPTION (so they appear in Author list on CRAN), and they are added to https://github.com/orgs/Rdatatable/teams/project-members so they can create new branches in the Rdatatable/data.table GitHub repo. They also appear on https://github.com/Rdatatable/data.table/graphs/contributors (Contributions to master, excluding merge commits).
 
 ## Reviewer
 
-* Definition: a member who has volunteered to do code reviews for some features/files. 
-* How to obtain this role: after one or more significant PRs to a given file, a member should be invited to add their name as a reviewer of that file in CODEOWNERS, and after that is merged into master, then they are considered a reviewer. 
-* How this role is recognized: same credit in DESCRIPTION as a regular member, role="ctb" (so they appear in Author list on CRAN). 
+* Definition: a Project Member who has volunteered to do code reviews for some features/files. 
+* How to obtain this role: after one or more significant PRs to a given file, a Project Member should be invited to add their name as a reviewer of that file in CODEOWNERS, and after that is merged into master, then they are considered a Reviewer. 
+* How this role is recognized: same credit in DESCRIPTION as a regular Project Member, role="ctb" (so they appear in Author list on CRAN). 
 * Note: having your name in CODEOWNERS does not give any special permission, but it does mean that you will be notified whenever there is a new PR with changes to that file. 
 
 ## Committer
 
 * Definition: permission to commit to, and merge PRs into, master branch. 
-* How to obtain this role: after a reviewer has a consistent history of careful reviews of others' PRs, then a current Committer should ask all other current Committers if they approve promoting the Reviewer to Committer, and it should be done if there is Consensus among active Committers. 
+* How to obtain this role: after a Reviewer has a consistent history of careful reviews of others' PRs, then a current Committer should ask all other current Committers if they approve promoting the Reviewer to Committer, and it should be done if there is Consensus among active Committers. 
 * How this role is recognized: credited via role="aut" in DESCRIPTION (so they appear in Author list on CRAN), and added to https://github.com/orgs/Rdatatable/teams/committers which gives permission to merge PRs into master branch. 
 
-## CRAN maintainer
+## CRAN Maintainer
 
 * Definition: in charge of communication with CRAN. Responsible for submitting releases to CRAN on a regular basis, and for responding to requests from CRAN.
-* How to obtain this role: (1) merge into master a PR adding role="cre" to DESCRIPTION, and (2) submit updated package to CRAN (previous CRAN maintainer will have to confirm change by email to CRAN). 
+* How to obtain this role: (1) merge into master a PR adding role="cre" to DESCRIPTION, and (2) submit updated package to CRAN (previous CRAN Maintainer will have to confirm change by email to CRAN). 
 * How this role is recognized: credited via role="cre" in DESCRIPTION, so they appear as Maintainer on CRAN. 
 
 # Decision-making processes
@@ -80,17 +80,17 @@ Most decisions in the project happen by Consensus, which means that no active pe
 
 ## Pull Requests
 
-A pull request can be merged by any committer, if there is one approving review, and Consensus from active Reviewers and Committers. 
+A pull request can be merged by any Committer, if there is one approving review, and Consensus from active Reviewers and Committers. 
 * approving review must come from someone other than the author of the PR.
-* approving review ideally comes from a reviewer of the affected files.
-* approving review can and often will be by the committer who merges the PR.
+* approving review ideally comes from a Reviewer of the affected files.
+* approving review can and often will be by the Committer who merges the PR.
 
 ## CRAN updates
 
 * Regular CRAN releases should ideally occur twice per year, and can include new features.
-* A hotfix/patch CRAN release should occur when CRAN asks for one, at which time the CRAN maintainer should post an issue on github, and ask others to help fix/prepare the release. It should not include new features.
+* A hotfix/patch CRAN release should occur when CRAN asks for one, at which time the CRAN Maintainer should post an issue on github, and ask others to help fix/prepare the release. It should not include new features.
 * Both kinds of releases should be discussed in an issue, and the release should happen only if there is Consensus among active Reviewers and Committers.
-* It is the responsibility of the CRAN maintainer to ensure quality prior to release. This includes CRAN checks, unit tests, performance tests, etc, and these tasks can be delegated to others. 
+* It is the responsibility of the CRAN Maintainer to ensure quality prior to release. This includes CRAN checks, unit tests, performance tests, etc, and these tasks can be delegated to others. 
 
 ## Changing this GOVERNANCE.md document
 
@@ -124,7 +124,7 @@ data.table Version line in DESCRIPTION typically has the following meanings
 
 # Governance history
 
-Jan 2025: clarify that edits to governance should notify all committers.
+Jan 2025: clarify that edits to governance should notify all committers, and that role names are proper nouns (i.e., upper-case) throughout.
 
 Feb 2024: change team name/link maintainers to committers, to be consistent with role defined in governance.
 
