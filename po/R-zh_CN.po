@@ -102,15 +102,12 @@ msgid "between has been passed an argument x of type logical"
 msgstr "传入 between 的参数 x 为逻辑（logical）型"
 
 #: between.R:13 between.R:15
-#, fuzzy, c-format
-#| msgid ""
-#| "'between' function the 'x' argument is a POSIX class while '%s' was not, "
-#| "coercion to POSIX failed with: %s"
+#, c-format
 msgid ""
 "The 'x' argument of the 'between' function is POSIXct while '%s' was not, "
 "coercion to POSIXct failed with: %s"
 msgstr ""
-"'between' 中的 'x' 参数为 POSIX 类，而 '%s' 并不是，将其强制转换成 POSIX 时失"
+"'between' 中的 'x' 参数为 POSIXct 类，而 '%s' 并不是，将其强制转换成 POSIXct 时失"
 "败：%s"
 
 #: between.R:27
@@ -414,12 +411,7 @@ msgstr ""
 "with=FALSE。请使用 .. 符号前缀并且移除 with=FALSE。"
 
 #: data.table.R:296
-#, fuzzy, c-format
-#| msgid ""
-#| "You have wrapped := with {} which is ok but then := must be the only "
-#| "thing inside {}. You have something else inside {} as well. Consider "
-#| "placing the {} on the RHS of := instead; e.g. DT[,someCol:={tmpVar1<-...;"
-#| "tmpVar2<-...;tmpVar1*tmpVar2}"
+#, c-format
 msgid ""
 "You have wrapped := with {} which is ok but then := must be the only thing "
 "inside {}. You have something else inside {} as well. Consider placing the "
@@ -428,7 +420,7 @@ msgid ""
 msgstr ""
 "用 {} 套用 := 可行，但是 {} 中只能有 := 。而你现在 {} 中还有其他的参数。请尝"
 "试将 {} 置于 := 的RHS之上；比如，DT[,someCol:={tmpVar1<-...; tmpVar2<-...; "
-"tmpVar1*tmpVar2}"
+"tmpVar1*tmpVar2}]"
 
 #: data.table.R:314
 #, c-format
@@ -472,12 +464,7 @@ msgid "'%s' is not found in calling scope and it is not a column name either"
 msgstr "'%s' 既不存在于调用环境中，也非列名。"
 
 #: data.table.R:413
-#, fuzzy, c-format
-#| msgid ""
-#| "'%s' is not found in calling scope, but it is a column of type %s. If you "
-#| "wish to select rows where that column contains TRUE, or perhaps that "
-#| "column contains row numbers of itself to select, try DT[(col)], "
-#| "DT[DT$col], or DT[col==TRUE} is particularly clear and is optimized"
+#, c-format
 msgid ""
 "'%s' is not found in calling scope, but it is a column of type %s. If you "
 "wish to select rows where that column contains TRUE, or perhaps that column "
@@ -712,8 +699,7 @@ msgid ".SDcols missing at the following indices: %s"
 msgstr ".SDcols 的如下位置为缺失值：%s"
 
 #: data.table.R:1036
-#, fuzzy, c-format
-#| msgid ".SDcols is a logical vector length %d but there are %d columns"
+#, c-format
 msgid ".SDcols is a logical vector of length %d but there are %d columns"
 msgstr ".SDcols 为长度为 %d 的逻辑向量，但共计只有 %d 列"
 
@@ -875,8 +861,7 @@ msgstr ""
 "setnames(DT,'.I','I')"
 
 #: data.table.R:1495
-#, fuzzy, c-format
-#| msgid "logical error. i is not data.table, but mult='all' and 'by'=.EACHI"
+#, c-format
 msgid "logical error. i is not a data.table, but mult='all' and 'by'=.EACHI"
 msgstr "逻辑错误: i 不是data.table，但 mult='all' 及 'by'=.EACHI"
 
@@ -1338,8 +1323,7 @@ msgid "'fromLast' must be TRUE or FALSE"
 msgstr "'fromLast' 必须为 TRUE 或 FALSE"
 
 #: duplicated.R:105
-#, fuzzy, c-format
-#| msgid "x must be an atomic vector or data.frames/data.tables"
+#, c-format
 msgid "x must be an atomic vector or a data.frame/data.table"
 msgstr "x 必须是原子向量或data.frame/data.table"
 
@@ -1455,15 +1439,7 @@ msgid ""
 msgstr ""
 
 #: fmelt.R:12
-#, fuzzy, c-format
-#| msgid ""
-#| "The %1$s generic in data.table has been passed a %2$s and will attempt to "
-#| "redirect to the relevant reshape2 method; please note that reshape2 is "
-#| "superseded and is no longer actively developed, and this redirection is "
-#| "now deprecated. To continue using melt methods from reshape2 while both "
-#| "libraries are attached, e.g. melt.list, you can prepend the namespace, i."
-#| "e. reshape2::%1$s(%3$s). In the next version, this warning will become an "
-#| "error."
+#, c-format
 msgid ""
 "The %1$s generic in data.table has been passed a %2$s and will attempt to "
 "redirect to the relevant reshape2 method; please note that reshape2 is "
@@ -1954,16 +1930,12 @@ msgid ""
 msgstr "目前不支持包含多个文件的压缩文件。"
 
 #: fread.R:117
-#, fuzzy, c-format
-#| msgid ""
-#| "To read gz and bz2 files directly, fread() requires 'R.utils' package "
-#| "which cannot be found. Please install 'R.utils' using 'install."
-#| "packages('R.utils')'."
+#, c-format
 msgid ""
 "To read %s files directly, fread() requires 'R.utils' package which cannot "
 "be found. Please install 'R.utils' using 'install.packages('R.utils')'."
 msgstr ""
-"想要直接读取 gz 和 bz2 文件, fread() 需要 'R.utils' 包.请用 'install."
+"想要直接读取 %s 文件, fread() 需要 'R.utils' 包.请用 'install."
 "packages('R.utils')'安装 'R.utils' 包."
 
 #: fread.R:127
@@ -2420,10 +2392,9 @@ msgid "`by.x` and `by.y` must be of same length."
 msgstr "`by.x`和`by.y`必须是相同的长度。"
 
 #: merge.R:34
-#, fuzzy, c-format
-#| msgid "Supplied both `by` and `by.x/by.y`. `by` argument will be ignored."
+#, c-format
 msgid "Supplied both `by` and `by.x`/`by.y`. `by` argument will be ignored."
-msgstr "参数`by`和`by.x/by.y`都提供了值。参数`by`的值会被忽略。"
+msgstr "参数`by`和`by.x`/`by.y`都提供了值。参数`by`的值会被忽略。"
 
 #: merge.R:37
 #, c-format
@@ -2478,15 +2449,7 @@ msgid "TRANSLATION CHECK"
 msgstr "翻译检查"
 
 #: onAttach.R:29
-#, fuzzy, c-format
-#| msgid ""
-#| "**********\n"
-#| "Running data.table in English; package support is available in English "
-#| "only. When searching for online help, be sure to also check for the "
-#| "English error message. This can be obtained by looking at the po/R-"
-#| "<locale>.po and po/<locale>.po files in the package source, where the "
-#| "native language and English error messages can be found side-by-side\n"
-#| "**********"
+#, c-format
 msgid ""
 "**********\n"
 "Running data.table in English; package support is available in English only. "
@@ -2499,7 +2462,7 @@ msgstr ""
 "**********\n"
 "用中文执行data.table。软件包只提供英语支持。当在在线搜索帮助时，也要确保检查"
 "英语错误信息。这个可以通过查看软件包源文件中的po/R-zh_CN.po和po/zh_CN.po文件"
-"获得，这个文件可以并排找到母语和英语错误信息。\n"
+"获得，这个文件可以并排找到母语和英语错误信息。%s\n"
 "**********"
 
 #: onAttach.R:34
@@ -3291,15 +3254,11 @@ msgid_plural "  Found %d non-equi groups ...\n"
 msgstr[0] ""
 
 #: data.table.R:712
-#, fuzzy
-#| msgid "column(s) not removed because not found: %s"
 msgid "column not removed because not found: %s"
 msgid_plural "columns not removed because not found: %s"
 msgstr[0] "列未被删除因为不存在：%s"
 
 #: data.table.R:727
-#, fuzzy
-#| msgid "column(s) not found: %s"
 msgid "column not found: %s"
 msgid_plural "columns not found: %s"
 msgstr[0] "列不存在: %s"
@@ -3310,8 +3269,6 @@ msgid_plural "The items in the 'by' or 'keyby' list have lengths %s."
 msgstr[0] ""
 
 #: fmelt.R:27
-#, fuzzy
-#| msgid "Pattern(s) not found: [%s]"
 msgid "Pattern not found: [%s]"
 msgid_plural "Patterns not found: [%s]"
 msgstr[0] "未找到下列 pattern：[%s]"
@@ -3332,16 +3289,11 @@ msgid_plural "%d variables not shown: %s\n"
 msgstr[0] ""
 
 #: setops.R:46
-#, fuzzy
-#| msgid "unsupported column type(s) found in x or y: %s"
 msgid "unsupported column type found in x or y: %s"
 msgid_plural "unsupported column types found in x or y: %s"
 msgstr[0] "找到不支持的列类型在 x 或 y: %s"
 
 #: test.data.table.R:255
-#, fuzzy
-#| msgid ""
-#| "%d error(s) out of %d. Search %s for test number(s) %s. Duration: %s."
 msgid "%d error out of %d. Search %s for test number %s. Duration: %s."
 msgid_plural ""
 "%d errors out of %d. Search %s for test numbers %s. Duration: %s."
@@ -3349,10 +3301,6 @@ msgstr[0] ""
 "%2$d 中共产生 %1$d 个错误。搜索 %3$s 以定位测试编号 %4$s。用时：%5$s。"
 
 #: utils.R:36
-#, fuzzy
-#| msgid ""
-#| "%s has some duplicated column name(s): %s. Please remove or rename the "
-#| "duplicate(s) and try again."
 msgid ""
 "%s has duplicated column name %s. Please remove or rename the duplicate and "
 "try again."
