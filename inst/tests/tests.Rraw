@@ -10994,7 +10994,8 @@ DT = data.table(
   D = as.POSIXct(dt<-paste(d,t), tz="UTC"),
   E = as.POSIXct(paste0(dt,c(".999",".0",".5",".111112",".123456",".023",".0",".999999",".99",".0009")), tz="UTC"))
 
-test(1740.1, fwrite(DT,dateTimeAs="iso"), error=base_messages$match_arg_4_choices("ISO", "squash", "epoch", "write.csv"))
+test(1740.1, options=c(useFancyQuotes=FALSE), fwrite(DT,dateTimeAs="iso"),
+     error=base_messages$match_arg_4_choices("ISO", "squash", "epoch", "write.csv"))
 test(1740.2, fwrite(DT,dateTimeAs=c("ISO","squash")), error=base_messages$match_arg_length)
 test(1740.3, capture.output(fwrite(DT,dateTimeAs="ISO")), c(
 "A,B,C,D,E",
@@ -15165,13 +15166,13 @@ test(2044.60, dt1[dt2, ..cols, on="int==doubleInt", verbose=TRUE],
 test(2044.61, dt1[dt2, ..cols, on="int==realDouble", verbose=TRUE],  # this was wrong in v1.12.2 (the fractions were truncated and joined to next lowest int)
               data.table(x.bool=c(NA,FALSE,NA,FALSE,NA), x.int=INT(NA,1,NA,2,NA), x.doubleInt=c(NA,1,NA,2,NA),
                          i.bool=TRUE, i.int=1:5, i.doubleInt=as.double(1:5), i.char=letters[1:5]),
-              output="Coercing integer column x.int to type double to match type of i.realDouble which contains fractions")
+              output="Coercing integer column x.int to type double to match type of i.realDouble .which contains fractions.")
 test(2044.62, dt1[dt2, ..cols, on="doubleInt==int", verbose=TRUE],
               data.table(x.bool=FALSE, x.int=1:5, x.doubleInt=as.double(1:5), i.bool=TRUE, i.int=1:5, i.doubleInt=as.double(1:5), i.char=letters[1:5]),
-              output="Coercing integer column i.int to type double for join to match type of x.doubleInt")
+              output="Coercing integer column i.int .for join. to type double to match type of x.doubleInt")
 test(2044.63, dt1[dt2, ..cols, on="realDouble==int", verbose=TRUE],
               data.table(x.bool=c(rep(FALSE,4),TRUE), x.int=INT(2,4,6,8,10), x.doubleInt=c(2,4,6,8,10), i.bool=TRUE, i.int=1:5, i.doubleInt=as.double(1:5), i.char=letters[1:5]),
-              output="Coercing integer column i.int to type double for join to match type of x.realDouble")
+              output="Coercing integer column i.int .for join. to type double to match type of x.realDouble")
 cols = c("x.int","x.char","x.fact","i.int","i.char","i.char")
 test(2044.64, dt1[dt2, ..cols, on="char==fact", verbose=TRUE],
               ans<-data.table(x.int=1:5, x.char=letters[1:5], x.fact=factor(letters[1:5]), i.int=1:5, i.char=letters[1:5], i.char=letters[1:5]),
@@ -15206,15 +15207,15 @@ if (test_bit64) {
 dt1 = data.table(a=1,  b=NA_character_)
 dt2 = data.table(a=2L, b=NA)
 test(2044.80, dt1[dt2, on="a==b",             verbose=TRUE], data.table(a=NA, b=NA_character_, i.a=2L),
-              output=msg<-"Coercing all-NA logical column i.b to type double to match type of x.a")
+              output=msg<-"Coercing logical column i.b .all-NA. to type double to match type of x.a")
 test(2044.81, dt1[dt2, on="a==b", nomatch=0L, verbose=TRUE], data.table(a=logical(), b=character(), i.a=integer()),
               output=msg)
 test(2044.82, dt1[dt2, on="b==b",             verbose=TRUE], data.table(a=1, b=NA, i.a=2L),
-              output=msg<-"Coercing all-NA logical column i.b to type character to match type of x.b")
+              output=msg<-"Coercing logical column i.b .all-NA. to type character to match type of x.b")
 test(2044.83, dt1[dt2, on="b==b", nomatch=0L, verbose=TRUE], data.table(a=1, b=NA, i.a=2L),
               output=msg)
 test(2044.84, dt1[dt2, on="b==a",             verbose=TRUE], data.table(a=NA_real_, b=2L, i.b=NA),
-              output=msg<-"Coercing all-NA character column x.b to type integer to match type of i.a")
+              output=msg<-"Coercing character column x.b .all-NA. to type integer to match type of i.a")
 test(2044.85, dt1[dt2, on="b==a", nomatch=0L, verbose=TRUE], data.table(a=double(), b=integer(), i.b=logical()),
               output=msg)
 
@@ -15641,7 +15642,7 @@ i = data.table(date = dbl_date, key = 'date')
 test(2064.1, x[i, class(date), verbose=TRUE], 'Date',
              output="Coercing double column i.date (which contains no fractions) to type integer to match type of x.date")
 test(2064.2, i[x, class(date), verbose=TRUE], 'Date',
-             output="Coercing integer column i.date to type double for join to match type of x.date")
+             output="Coercing integer column i.date .for join. to type double to match type of x.date")
 
 # complex values in grouping, #3639
 set.seed(42)
@@ -20688,8 +20689,8 @@ test(2296, d2[x %no such operator% 1], error = '%no such operator%')
 # fix coercing integer/double for joins on multiple columns, #6602
 x = data.table(a=1L)
 y = data.table(c=1L, d=1)
-test(2297.01, y[x, on=.(c == a, d == a), verbose=TRUE], data.table(c=1L, d=1L), output="Coercing .*a to type double.*Coercing .*c to type double")
-test(2297.02, y[x, on=.(d == a, c == a), verbose=TRUE], data.table(c=1L, d=1L), output="Coercing .*a to type double.*Coercing .*c to type double")
+test(2297.01, y[x, on=.(c == a, d == a), verbose=TRUE], data.table(c=1L, d=1L), output="Coercing .*a .for join. to type double.*Coercing .*c to type double")
+test(2297.02, y[x, on=.(d == a, c == a), verbose=TRUE], data.table(c=1L, d=1L), output="Coercing .*a .for join. to type double.*Coercing .*c to type double")
 x = data.table(a=1)
 y = data.table(c=1, d=1L)
 test(2297.03, y[x, on=.(c == a, d == a), verbose=TRUE], data.table(c=1L, d=1L), output="Coercing .*a .*no fractions.* to type integer.*Coercing .*c .*no fractions.* to type integer")
