@@ -592,7 +592,7 @@ msgstr ""
 #: assign.c:970
 #, c-format
 msgid ""
-"%d (type '%s' at RHS position %d taken as 0 when assigning to type '%s' %s"
+"%d (type '%s') at RHS position %d taken as 0 when assigning to type '%s' %s"
 msgstr ""
 
 #: assign.c:972
