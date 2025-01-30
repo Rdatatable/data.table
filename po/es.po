@@ -1009,7 +1009,7 @@ msgstr "\n"
 #: dogroups.c:449
 #, c-format
 msgid ""
-"\rProcessed %d groups out of %d. %.0f%% done. Time elapsed: %ds. ETA: %ds."
+"Processed %d groups out of %d. %.0f%% done. Time elapsed: %ds. ETA: %ds."
 msgstr ""
 
 #: dogroups.c:462
