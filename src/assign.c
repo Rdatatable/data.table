@@ -1061,7 +1061,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
     case RAWSXP:    BODY(Rbyte, RAW,    int, val!=0,                                    td[i]=cval)
     case LGLSXP:
       if (mc) {
-                    memcpy(td, LOGICAL(source), slen*sizeof(Rboolean)); break;
+                    memcpy(td, LOGICAL(source), slen*sizeof(int)); break;
       } else        BODY(int, LOGICAL,  int, val,                                       td[i]=cval)
     case INTSXP:    BODY(int, INTEGER,  int, val==NA_INTEGER ? NA_LOGICAL : val!=0,     td[i]=cval)
     case REALSXP:
@@ -1207,7 +1207,7 @@ void writeNA(SEXP v, const int from, const int n, const bool listNA)
     memset(RAW(v)+from, 0, n*sizeof(Rbyte));
     break;
   case LGLSXP: {
-    Rboolean *vd = (Rboolean *)LOGICAL(v);
+    int *vd = (int *)LOGICAL(v);
     for (int i=from; i<=to; ++i) vd[i] = NA_LOGICAL;
   } break;
   case INTSXP: {
