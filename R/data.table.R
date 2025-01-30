@@ -1145,6 +1145,7 @@ replace_dot_alias = function(e) {
             }
           }
           names(jsub)=""
+          jsub[[1L]]=as.name("list")
         }
         av = all.vars(jsub,TRUE)
         if (!is.atomic(lhs)) stopf("LHS of := must be a symbol, or an atomic vector (column names or positions).")
