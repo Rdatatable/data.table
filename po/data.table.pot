@@ -481,7 +481,7 @@ msgstr ""
 #: assign.c:970
 #, c-format
 msgid ""
-"%d (type '%s' at RHS position %d taken as 0 when assigning to type '%s' %s"
+"%d (type '%s') at RHS position %d taken as 0 when assigning to type '%s' %s"
 msgstr ""
 
 #: assign.c:972
@@ -896,7 +896,7 @@ msgstr ""
 #: dogroups.c:454 dogroups.c:468
 #, c-format
 msgid ""
-"\rProcessed %d groups out of %d. %.0f%% done. Time elapsed: %ds. ETA: %ds."
+"Processed %d groups out of %d. %.0f%% done. Time elapsed: %ds. ETA: %ds."
 msgstr ""
 
 #: dogroups.c:473
