@@ -967,7 +967,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
       } break;
     case RAWSXP:
       switch (TYPEOF(source)) {
-      case INTSXP:  CHECK_RANGE(int, INTEGER,  val<0 || val>255,                                        val, _("%d (type '%s' at RHS position %d taken as 0 when assigning to type '%s' %s"))
+      case INTSXP:  CHECK_RANGE(int, INTEGER,  val<0 || val>255,                                        val, _("%d (type '%s') at RHS position %d taken as 0 when assigning to type '%s' %s"))
       case REALSXP: if (sourceIsI64)
                     CHECK_RANGE(int64_t, REAL, val<0 || val>255,                                        val, _("%"PRId64" (type '%s') at RHS position %d taken as 0 when assigning to type '%s' %s"))
               else  CHECK_RANGE(double, REAL,  !R_FINITE(val) || val<0.0 || val>256.0 || (int)val!=val, val, _("%f (type '%s') at RHS position %d either truncated (precision lost) or taken as 0 when assigning to type '%s' %s"))
