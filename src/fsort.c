@@ -117,7 +117,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   t[0] = wallclock();
   if (!IS_TRUE_OR_FALSE(verboseArg))
     error(_("%s must be TRUE or FALSE"), "verbose");
-  Rboolean verbose = LOGICAL(verboseArg)[0];
+  int verbose = LOGICAL(verboseArg)[0];
   if (!isNumeric(x)) error(_("x must be a vector of type double currently"));
   // TODO: not only detect if already sorted, but if it is, just return x to save the duplicate
 
