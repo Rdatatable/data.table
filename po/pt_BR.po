@@ -2,21 +2,16 @@
 # Translators:
 # Italo Santos <ids37@nau.edu>, 2024
 # Leonardo Fontenelle <leonardof@leonardof.med.br>, 2024
-# Rafael Fontenelle <rffontenelle@gmail.com>, 2024
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.15.99\n"
 "POT-Creation-Date: 2024-08-28 21:08+0000\n"
-"PO-Revision-Date: 2024-06-23 16:40-0300\n"
-"Last-Translator: Leonardo Fontenelle <leonardof@leonardof.med.br>\n"
 "Language-Team: Brazilian Portuguese\n"
 "Language: pt_BR\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n > 1);\n"
-"X-Generator: Gtranslator 46.1\n"
 
 #: assign.c:121
 msgid ""
@@ -264,6 +259,10 @@ msgid ""
 "times the storage as an equivalent POSIXct column. Use as.POSIXct() to avoid "
 "this warning."
 msgstr ""
+"Valores do tipo POSIXlt detectados e convertidos para POSIXct. Não "
+"recomendamos o uso de POSIXlt porque ele normalmente ocupa mais de 6 vezes o "
+"armazenamento de uma coluna POSIXct equivalente. Use as.POSIXct() para "
+"evitar esse aviso."
 
 #: assign.c:437
 #, c-format
@@ -418,28 +417,24 @@ msgstr ""
 "problemas do data.table"
 
 #: assign.c:552
-#, fuzzy, c-format
-#| msgid ""
-#| "RHS for item %d has been duplicated because NAMED==%d MAYBE_SHARED==%d, "
-#| "but then is being plonked. length(values)==%d; length(cols)==%d)\n"
+#, c-format
 msgid ""
 "RHS for item %d has been duplicated because MAYBE_REFERENCED==%d "
 "MAYBE_SHARED==%d, but then is being plonked. length(values)==%d; "
 "length(cols)==%d)\n"
 msgstr ""
-"O lado direito (RHS) para o item %d foi duplicado porque NAMED==%d "
-"MAYBE_SHARED==%d, mas depois está sendo plonked. length(values)==%d; "
-"length(cols)==%d)\n"
+"O lado direito (RHS) para o item %d foi duplicado porque "
+"MAYBE_REFERENCED==%d MAYBE_SHARED==%d, mas depois está sendo plonked. "
+"length(values)==%d; length(cols)==%d)\n"
 
 #: assign.c:557
-#, fuzzy, c-format
-#| msgid "Direct plonk of unnamed RHS, no copy. NAMED==%d, MAYBE_SHARED==%d\n"
+#, c-format
 msgid ""
 "Direct plonk of unnamed RHS, no copy. MAYBE_REFERENCED==%d, "
 "MAYBE_SHARED==%d\n"
 msgstr ""
-"Plonk direto de lado direito (RHS) sem nome, sem cópia. NAMED==%d, "
-"MAYBE_SHARED==%d\n"
+"Plonk direto de lado direito (RHS) sem nome, sem cópia. "
+"MAYBE_REFERENCED==%d, MAYBE_SHARED==%d\n"
 
 #: assign.c:626
 #, c-format
@@ -553,7 +548,7 @@ msgstr "Sem suporte ao tipo de coluna em assign.c:memrecycle '%s'"
 #: assign.c:1249
 #, c-format
 msgid "savetl_init checks failed (%d %d %p %p)"
-msgstr ""
+msgstr "Verificações de savetl_init falharam (%d %d %p %p)"
 
 #: assign.c:1258
 #, c-format
@@ -1013,12 +1008,16 @@ msgstr "\n"
 msgid ""
 "\rProcessed %d groups out of %d. %.0f%% done. Time elapsed: %ds. ETA: %ds."
 msgstr ""
+"\rProcessados %d grupos de %d. %.0f%% concluído. Tempo decorrido: %ds. "
+"Estimado: %ds."
 
 #: dogroups.c:462
 #, c-format
 msgid ""
 "\rProcessed %d groups out of %d. %.0f%% done. Time elapsed: %ds. ETA: %ds.\n"
 msgstr ""
+"\rProcessados %d grupos de %d. %.0f%% concluído. Tempo decorrido: %ds. "
+"Estimado: %ds.\n"
 
 #: dogroups.c:465
 #, c-format
@@ -1164,22 +1163,19 @@ msgstr ""
 "github.com/Rdatatable/data.table/issues/4131."
 
 #: fifelse.c:230
-#, fuzzy, c-format
-#| msgid "Argument #%d must be logical."
+#, c-format
 msgid "Argument #%d must be logical but was of type %s."
-msgstr "Argumento #%d deve ser lógico."
+msgstr "Argumento #%d deve ser lógico, mas era do tipo %s."
 
 #: fifelse.c:248
-#, fuzzy, c-format
-#| msgid ""
-#| "Argument #%d has a different length than argument #1. Please make sure "
-#| "all logical conditions have the same length."
+#, c-format
 msgid ""
 "Argument #%d has length %lld which differs from that of argument #1 (%lld). "
 "Please make sure all logical conditions have the same length."
 msgstr ""
-"Argumento #%d tem um comprimento diferente do argumento #1. Favor garantir "
-"que todas as condições lógicas tenham o mesmo comprimento."
+"Argumento #%d tem um comprimento %lld, que é diferente do comprimento do "
+"argumento #1 (%lld). Favor garantir que todas as condições lógicas tenham o "
+"mesmo comprimento."
 
 #: fifelse.c:254
 #, c-format
@@ -1232,28 +1228,23 @@ msgstr ""
 "Argumento #2 e argumento #%d são ambos fatores mas seus níveis são diferentes"
 
 #: fifelse.c:288
-#, fuzzy, c-format
-#| msgid "Length of 'default' must be 1."
+#, c-format
 msgid "Length of 'default' must be 1 or %lld."
-msgstr "Comprimento de 'default' deve ser 1."
+msgstr "Comprimento de 'default' deve ser 1 ou %lld."
 
 #: fifelse.c:290
-#, fuzzy, c-format
-#| msgid ""
-#| "Length of output value #%d must either be 1 or length of logical "
-#| "condition."
+#, c-format
 msgid ""
 "Length of output value #%d (%lld) must either be 1 or match the length of "
 "the logical condition (%lld)."
 msgstr ""
-"O comprimento do valor de saída #%d deve ser 1 ou o comprimento da "
-"comprimento da condição lógica."
+"O comprimento do valor de saída #%d (%lld) deve ser 1 ou corresponder ao "
+"comprimento da comprimento da condição lógica (%lld)."
 
 #: fifelse.c:395
-#, fuzzy, c-format
-#| msgid "Type '%s' is not supported"
+#, c-format
 msgid "Type '%s' is not supported."
-msgstr "Sem suporte ao tipo '%s'"
+msgstr "Sem suporte ao tipo '%s'."
 
 #: fmelt.c:18
 msgid "'x' must be an integer"
@@ -1482,10 +1473,8 @@ msgstr ""
 "0. radix=%d"
 
 #: forder.c:287
-#, fuzzy
-#| msgid "Failed to alloc cradix_counts"
 msgid "Failed to alloc cradix_counts and/or cradix_tmp"
-msgstr "Falha ao alocar cradix_counts"
+msgstr "Falha ao alocar cradix_counts e/ou cradix_tmp"
 
 #: forder.c:320
 #, c-format
@@ -1531,14 +1520,9 @@ msgid "forder.c received %d rows and %d columns\n"
 msgstr "forder.c recebeu %d linhas e %d colunas\n"
 
 #: forder.c:477
-#, fuzzy, c-format
-#| msgid ""
-#| "Either order= is not integer or its length (%d) is different to by='s "
-#| "length (%d)"
+#, c-format
 msgid "'order' length (%d) is different to by='s length (%d)"
-msgstr ""
-"Ou order= não é inteiro ou seu comprimento (%d) é diferente do comprimento "
-"de by= (%d)"
+msgstr "O comprimento de 'order' (%d) é diferente do comprimento de by= (%d)"
 
 #: forder.c:491
 #, c-format
@@ -1628,10 +1612,9 @@ msgstr "stat[%03d]==%20<PRIu64>\n"
 
 #: forder.c:908 forder.c:978 forder.c:1000 forder.c:1102 forder.c:1233
 #: forder.c:1289 fread.c:2573
-#, fuzzy, c-format
-#| msgid "Failed to allocate %d bytes for size array: %s"
+#, c-format
 msgid "Failed to allocate %d bytes for '%s'."
-msgstr "Falha ao alocar %d bytes para array de tamanho: %s"
+msgstr "Falha ao alocar %d bytes para '%s'."
 
 #: forder.c:1133
 #, c-format
@@ -1639,10 +1622,9 @@ msgid "Failed to allocate parallel counts. my_n=%d, nBatch=%d"
 msgstr "Falha ao alocar contagens paralelas. my_n=%d, nBatch=%d"
 
 #: forder.c:1145
-#, fuzzy, c-format
-#| msgid "Failed to allocate %d bytes for size array: %s"
+#, c-format
 msgid "Failed to allocate 'my_otmp' and/or 'my_ktmp' arrays (%d bytes)."
-msgstr "Falha ao alocar %d bytes para array de tamanho: %s"
+msgstr "Falha ao alocar os arrays 'my_otmp' e/ou 'my_ktmp' (%d bytes)."
 
 #: forder.c:1250
 #, c-format
@@ -2375,10 +2357,9 @@ msgid "  Cancelled by user: userOverride() returned false."
 msgstr "  Cancelado pelo usuário: userOverride() retornou falso."
 
 #: fread.c:2132
-#, fuzzy, c-format
-#| msgid "Failed to allocate %d bytes for size array: %s"
+#, c-format
 msgid "Failed to allocate %d bytes for '%s': %s"
-msgstr "Falha ao alocar %d bytes para array de tamanho: %s"
+msgstr "Falha ao alocar %d bytes para '%s': %s"
 
 #: fread.c:2139
 #, c-format
@@ -2492,11 +2473,7 @@ msgid "Discarded single-line footer: <<%s>>"
 msgstr "Rodapé de linha única descartado: <<%s>>"
 
 #: fread.c:2688
-#, fuzzy, c-format
-#| msgid ""
-#| "Stopped early on line %<PRIu64>. Expected %d fields but found %d. "
-#| "Consider fill=%d or even more based on your knowledge of the input file. "
-#| "First discarded non-empty line: <<%s>>"
+#, c-format
 msgid ""
 "Stopped early on line %<PRIu64>. Expected %d fields but found %d. Consider "
 "fill=%d or even more based on your knowledge of the input file. Use fill=Inf "
@@ -2505,7 +2482,8 @@ msgid ""
 msgstr ""
 "Parou cedo na linha %<PRIu64>. %d campos esperados, mas foram encontrados "
 "%d. Considere fill=%d ou mais com base em seu conhecimento do arquivo de "
-"entrada. Primeira linha descartada não vazia: <<%s>>"
+"entrada. Use fill=Inf para leitura de todo o arquivo para detecção do número "
+"de campos. Primeira linha descartada não vazia: <<%s>>"
 
 #: fread.c:2691
 #, c-format
@@ -3015,10 +2993,9 @@ msgid "nth=%d, nBatch=%d\n"
 msgstr "nth=%d, nBatch=%d\n"
 
 #: fsort.c:132
-#, fuzzy, c-format
-#| msgid "Failed to allocate %d bytes for size array: %s"
+#, c-format
 msgid "Failed to allocate %d bytes in fsort()."
-msgstr "Falha ao alocar %d bytes para array de tamanho: %s"
+msgstr "Falha ao alocar %d bytes em fsort()."
 
 #: fsort.c:158
 #, c-format
@@ -3225,10 +3202,9 @@ msgstr ""
 "Por favor, leia ?fwrite para as opções nThread, buffMB e verbose."
 
 #: fwrite.c:853
-#, fuzzy, c-format
-#| msgid "Failed to allocate %d bytes for size array: %s"
+#, c-format
 msgid "Failed to allocated %d bytes for '%s'."
-msgstr "Falha ao alocar %d bytes para array de tamanho: %s"
+msgstr "Falha ao alocar %d bytes para '%s'."
 
 #: fwrite.c:1019
 #, c-format
@@ -3959,16 +3935,14 @@ msgstr ""
 "malformada."
 
 #: rbindlist.c:330
-#, fuzzy, c-format
-#| msgid ""
-#| "Class attribute on column %d of item %d does not match with column %d of "
-#| "item %d."
+#, c-format
 msgid ""
 "Class attribute on column %d of item %d does not match with column %d of "
 "item %d. You can deactivate this safety-check by using ignore.attr=TRUE"
 msgstr ""
 "Atributo de classe na coluna %d do item %d não corresponde à coluna %d do "
-"item %d."
+"item %d. Você pode desativar essa verificação de segurança usando "
+"ignore.attr=TRUE"
 
 #: rbindlist.c:380
 #, c-format
