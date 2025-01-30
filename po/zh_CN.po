@@ -406,25 +406,21 @@ msgstr ""
 "问题追踪器，包含 sessionInfo() 的信息"
 
 #: assign.c:564
-#, fuzzy, c-format
-#| msgid ""
-#| "RHS for item %d has been duplicated because NAMED==%d MAYBE_SHARED==%d, "
-#| "but then is being plonked. length(values)==%d; length(cols)==%d)\n"
+#, c-format
 msgid ""
 "RHS for item %d has been duplicated because MAYBE_REFERENCED==%d "
 "MAYBE_SHARED==%d, but then is being plonked. length(values)==%d; "
 "length(cols)==%d)\n"
 msgstr ""
-"因为 NAMED==%d MAYBE_SHARED==%d， 所以条目 %d 的 RHS 已经被复制，但是接下来又"
+"因为 MAYBE_REFERENCED==%d MAYBE_SHARED==%d， 所以条目 %d 的 RHS 已经被复制，但是接下来又"
 "要被替换了。length(values)==%d; length(cols)==%d)\n"
 
 #: assign.c:569
-#, fuzzy, c-format
-#| msgid "Direct plonk of unnamed RHS, no copy. NAMED==%d, MAYBE_SHARED==%d\n"
+#, c-format
 msgid ""
 "Direct plonk of unnamed RHS, no copy. MAYBE_REFERENCED==%d, "
 "MAYBE_SHARED==%d\n"
-msgstr "直接替换没有名字的 RHS，并没有复制。 NAMED==%d, MAYBE_SHARED==%d\n"
+msgstr "直接替换没有名字的 RHS，并没有复制。 MAYBE_REFERENCED==%d, MAYBE_SHARED==%d\n"
 
 #: assign.c:638
 #, c-format
@@ -446,10 +442,9 @@ msgid "Shortening index '%s' to '%s' due to an update on a key column\n"
 msgstr "因为一个键(key)列的更新，缩短索引(index) '%s' 到 '%s'\n"
 
 #: assign.c:750
-#, fuzzy, c-format
-#| msgid "column %d named '%s'"
+#, c-format
 msgid "(column %d named '%s')"
-msgstr "第 %d 列名为 '%s'"
+msgstr "(第 %d 列名为 '%s')"
 
 #: assign.c:784
 #, c-format
@@ -563,10 +558,9 @@ msgid ""
 msgstr "在 %s 中将 '%s' 赋值成 '%s' 时发生了零拷贝强制转换。\n"
 
 #: assign.c:952
-#, fuzzy, c-format
-#| msgid "target vector"
+#, c-format
 msgid "(target vector)"
-msgstr "目标向量"
+msgstr "(目标向量)"
 
 #: assign.c:962 assign.c:963
 #, c-format
@@ -1247,10 +1241,9 @@ msgid ""
 msgstr "参数 #2 和参数 #%d 均为因子类型，但其因子水平不同。"
 
 #: fifelse.c:300
-#, fuzzy, c-format
-#| msgid "Length of 'default' must be 1."
+#, c-format
 msgid "Length of 'default' must be 1 or %lld."
-msgstr "'default' 长度必须是 1。"
+msgstr "'default' 长度必须是 1 或 %lld。"
 
 #: fifelse.c:302
 #, fuzzy, c-format
@@ -1263,10 +1256,9 @@ msgid ""
 msgstr "#%d 输出的长度必须为 1 或与逻辑判断条件的长度相同。"
 
 #: fifelse.c:407
-#, fuzzy, c-format
-#| msgid "Type '%s' is not supported"
+#, c-format
 msgid "Type '%s' is not supported."
-msgstr "不支持类型 '%s'"
+msgstr "不支持类型 '%s'。"
 
 #: fmelt.c:18
 msgid "'x' must be an integer"
@@ -1285,10 +1277,8 @@ msgid "concat: 'vec' must be a character vector"
 msgstr "concat：'vec' 必须是一个字符向量"
 
 #: fmelt.c:67
-#, fuzzy
-#| msgid "concat: 'idx' must be an integer vector of length >= 0"
 msgid "concat: 'idx' must be an integer vector"
-msgstr "concat：'idx' 必须为一个长度>= 0的整数向量"
+msgstr "concat：'idx' 必须为一个整数向量"
 
 #: fmelt.c:135
 #, c-format
@@ -1710,11 +1700,9 @@ msgid ""
 msgstr "freadMain: NAstring <<%s>> 被识别为布尔型，这是不允许"
 
 #: fread.c:1346 fread.c:1348
-#, fuzzy, c-format
-#| msgid ""
-#| "freadMain: NAstring <<%s>> and logical01=TRUE, this is not permitted."
+#, c-format
 msgid "freadMain: NAstring <<%s>> and %s=TRUE, this is not permitted."
-msgstr "freadMain: NAstring 为 <<%s>> 同时 logical01=TRUE，不允许这种情况。"
+msgstr "freadMain: NAstring 为 <<%s>> 同时 %s=TRUE，不允许这种情况。"
 
 #: fread.c:1361
 msgid "  No NAstrings provided.\n"
@@ -1749,10 +1737,9 @@ msgid "  0/1 column will be read as %s\n"
 msgstr "  0/1 列被读取为 %s\n"
 
 #: fread.c:1376
-#, fuzzy, c-format
-#| msgid "  0/1 column will be read as %s\n"
+#, c-format
 msgid "  Y/N column will be read as %s\n"
-msgstr "  0/1 列被读取为 %s\n"
+msgstr "  Y/N 列被读取为 %s\n"
 
 #: fread.c:1388
 #, c-format
@@ -2216,24 +2203,16 @@ msgid "Failed to realloc 2 x %d bytes for type and tmpType: %s"
 msgstr "为 %2$s 类型重新分配 2 x %1$d bytes失败"
 
 #: fread.c:2069
-#, fuzzy
-#| msgid ""
-#| "  'header' determined to be %s because there are%s number fields in the "
-#| "first and only row\n"
 msgid ""
 "  'header' determined to be TRUE because there are no number fields in the "
 "first and only row\n"
-msgstr " 参数'header' 被设置为%s， 因为唯一的一行包含 %s 个字段\n"
+msgstr " 参数'header' 被设置为TRUE， 因为唯一的一行包含没有一个字段\n"
 
 #: fread.c:2071
-#, fuzzy
-#| msgid ""
-#| "  'header' determined to be %s because there are%s number fields in the "
-#| "first and only row\n"
 msgid ""
 "  'header' determined to be FALSE because there are number fields in the "
 "first and only row\n"
-msgstr " 参数'header' 被设置为%s， 因为唯一的一行包含 %s 个字段\n"
+msgstr " 参数'header' 被设置为FALSE， 因为唯一的一行包含有一个字段\n"
 
 #: fread.c:2074
 msgid ""
@@ -2314,10 +2293,9 @@ msgid "  Cancelled by user: userOverride() returned false."
 msgstr "  用户已取消：userOverride() 返回 false。"
 
 #: fread.c:2202
-#, fuzzy, c-format
-#| msgid "Failed to allocate %d bytes for size array: %s"
+#, c-format
 msgid "Failed to allocate %d bytes for '%s': %s"
-msgstr "无法分配 %d 字节给 size 数组：%s"
+msgstr "无法分配 %d 字节给 '%s'：%s"
 
 #: fread.c:2209
 #, c-format
@@ -2893,10 +2871,9 @@ msgid "x must be a vector of type double currently"
 msgstr "x 目前必须是双精度 (double) 类型的向量"
 
 #: fsort.c:147
-#, fuzzy, c-format
-#| msgid "Failed to allocate %d bytes for size array: %s"
+#, c-format
 msgid "Failed to allocate %d bytes in fsort()."
-msgstr "无法分配 %d 字节给 size 数组：%s"
+msgstr "在 fsort() 无法分配 %d 字节给。"
 
 #: fsort.c:173
 #, c-format
@@ -2993,10 +2970,9 @@ msgstr ""
 "是否有空间以及路径是否存在？"
 
 #: fwrite.c:730
-#, fuzzy, c-format
-#| msgid "Writing bom (%s), yaml (%d characters) and column names (%s) ... "
+#, c-format
 msgid "Writing bom (%s), yaml (%d characters) and column names (%s)\n"
-msgstr "正在写入bom (%s), yaml (%d characters) 和 column names (%s) ..."
+msgstr "正在写入bom (%s), yaml (%d characters) 和 column names (%s)\n"
 
 #: fwrite.c:782
 #, fuzzy, c-format
@@ -3219,10 +3195,9 @@ msgid "gather implemented for INTSXP, REALSXP, and CPLXSXP but not '%s'"
 msgstr "gather 已支持 INTSXP，REALSXP 和 CPLXSXP，但不支持 '%s'"
 
 #: gsumm.c:344
-#, fuzzy, c-format
-#| msgid "gather took ... "
+#, c-format
 msgid "gather took %.3fs\n"
-msgstr "gather 用了 ..."
+msgstr "gather 用了 %.3fs\n"
 
 #: gsumm.c:354 gsumm.c:585 gsumm.c:736 gsumm.c:873 gsumm.c:1028 gsumm.c:1122
 #, c-format
@@ -3518,10 +3493,8 @@ msgid "verbose option must be length 1 non-NA logical or integer"
 msgstr "verbose 选项必须为一个长度为 1 的非 NA 逻辑值或整数"
 
 #: init.c:368
-#, fuzzy
-#| msgid ".Last.value in namespace is not a length 1 integer"
 msgid ".Last.updated in namespace is not a length 1 integer"
-msgstr "命名空间中，.Last.value 不是一个长度为 1 的整型"
+msgstr "命名空间中，.Last.updated 不是一个长度为 1 的整型"
 
 #: nafill.c:115
 msgid ""
