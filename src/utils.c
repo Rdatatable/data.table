@@ -227,7 +227,7 @@ SEXP copyAsPlain(SEXP x) {
     memcpy(RAW(ans),     RAW(x),     n*sizeof(Rbyte));
     break;
   case LGLSXP:
-    memcpy(LOGICAL(ans), LOGICAL(x), n*sizeof(Rboolean));
+    memcpy(LOGICAL(ans), LOGICAL(x), n*sizeof(int));
     break;
   case INTSXP:
     memcpy(INTEGER(ans), INTEGER(x), n*sizeof(int));             // covered by 10:1 after test 178
