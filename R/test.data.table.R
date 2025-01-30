@@ -95,12 +95,13 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     scipen = 0L,  # fwrite now respects scipen
     datatable.optimize = Inf,
     datatable.alloccol = 1024L,
-    datatable.print.class = FALSE,  # output= tests were written when default was FALSE
-    datatable.print.keys = FALSE,   # output= tests were written when default was FALSE
+    datatable.print.class = FALSE,  # many old output= tests were written when default was FALSE
+    datatable.print.keys = FALSE,   # many old output= tests were written when default was FALSE
     datatable.print.trunc.cols = FALSE, #4552
     datatable.rbindlist.check = NULL,
     datatable.integer64 = "integer64",
     digits = 7L, # ensure printing rounds to the expected number of digits in all sessions, #5285
+    useFancyQuotes = FALSE, # otherwise we get angled quotes, hard to match robustly
     warn = 0L,   # ensure signals are emitted as they are in the code, #5285
     warnPartialMatchArgs = base::getRversion()>="3.6.0", # ensure we don't rely on partial argument matching in internal code, #3664; >=3.6.0 for #3865
     warnPartialMatchAttr = TRUE,
