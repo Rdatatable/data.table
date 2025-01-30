@@ -356,13 +356,13 @@ SEXP uniqueNlogical(SEXP x, SEXP narmArg) {
   const R_xlen_t n = xlength(x);
   if (n==0)
     return ScalarInteger(0);  // empty vector
-  Rboolean first = LOGICAL(x)[0];
+  int first = LOGICAL(x)[0];
   R_xlen_t i=0;
   const int *ix = LOGICAL(x);
   while (++i<n && ix[i]==first);
   if (i==n)
     return ScalarInteger(first==NA_INTEGER && narm ? 0 : 1); // all one value
-  Rboolean second = ix[i];
+  int second = ix[i];
   // we've found 2 different values (first and second). Which one didn't we find? Then just look for that.
   // NA_LOGICAL == INT_MIN checked in init.c
   const int third = (first+second == 1) ? NA_LOGICAL : ( first+second == INT_MIN ? TRUE : FALSE );

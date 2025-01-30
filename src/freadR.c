@@ -644,7 +644,7 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx)
       } else
       if (thisSize == 1) {
         if (type[j] > CT_BOOL8_Y) STOP(_("Field size is 1 but the field is of type %d\n"), type[j]);
-        Rboolean *dest = (Rboolean *)LOGICAL(VECTOR_ELT(DT, resj)) + DTi;
+        int *dest = LOGICAL(VECTOR_ELT(DT, resj)) + DTi;
         const char *src1 = (char*)buff1 + off1;
         for (int i=0; i<nRows; ++i) {
           int8_t v = *(int8_t *)src1;
