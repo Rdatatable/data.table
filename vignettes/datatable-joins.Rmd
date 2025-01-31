@@ -22,6 +22,10 @@ knitr::opts_chunk$set(
 )
 ```
 
+```{r, echo=FALSE, file='_translation_links.R'}
+```
+`r .write.translation.links("Translations of this document are available in: %s")`
+
 In this vignette you will learn how to perform any join operation using resources available in the `data.table` syntax.
 
 It assumes familiarity with the `data.table` syntax. If that is not the case, please read the following vignettes:

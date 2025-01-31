@@ -9,10 +9,6 @@ vignette: >
   \usepackage[utf8]{inputenc}
 ---
 
-Translations of this document are available in
-
-* [French](https://rdatatable.gitlab.io/data.table/articles/fr/datatable-programming.html)
-
 ```{r init, include = FALSE}
 require(data.table)
 knitr::opts_chunk$set(
@@ -24,6 +20,9 @@ knitr::opts_chunk$set(
 )
 ```
 
+```{r echo=FALSE, file='_translation_links.R'}
+```
+`r .write.translation.links("Translations of this document are available in: %s")`
 
 ## Introduction
 
