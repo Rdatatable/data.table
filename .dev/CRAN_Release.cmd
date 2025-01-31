@@ -16,9 +16,7 @@ xgettext -o /dev/stdout ./*.c \
 Rscript -e "tools::update_pkg_po('.')"
 
 # 2) Open a PR with the new templates & contact the translators
-#   * zh_CN: @hongyuanjia
-#   * pt_BR: @rffontenelle
-#   * es: @rikivillalba
+#    using @Rdatatable/<lang>, e.g. @Rdatatable/chinese
 ## Translators to submit commits with translations to this PR
 ##   [or perhaps, if we get several languages, each to open
 ##    its own PR and merge to main translation PR]
