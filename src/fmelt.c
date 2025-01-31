@@ -383,9 +383,8 @@ static void preprocess(SEXP DT, SEXP id, SEXP measure, SEXP varnames, SEXP valna
 }
 
 static SEXP combineFactorLevels(SEXP factorLevels, SEXP target, int * factorType, Rboolean * isRowOrdered)
-// Finds unique levels directly in one pass with no need to create hash tables. Creates integer factor
-// too in the same single pass. Previous version called factor(x, levels=unique) where x was type character
-// and needed hash table.
+// Finds unique levels directly in one pass. Creates integer factor too in the same single pass. Previous
+// version called factor(x, levels=unique) where x was type character.
 // TODO keep the original factor columns as factor and use new technique in rbindlist.c. The calling
 // environments are a little difference hence postponed for now (e.g. rbindlist calls writeNA which
 // a general purpose combiner would need to know how many to write)
@@ -404,8 +403,10 @@ static SEXP combineFactorLevels(SEXP factorLevels, SEXP target, int * factorType
   SEXP *levelsRaw = (SEXP *)R_alloc(maxlevels, sizeof(SEXP));  // allocate for worst-case all-unique levels
   int *ansd = INTEGER(ans);
   const SEXP *targetd = STRING_PTR_RO(target);
-  savetl_init();
-  // no alloc or any fail point until savetl_end()
+  R_xlen_t hl = 0;
+  for (R_xlen_t i = 0; i < nitem; ++i)
+    hl += xlength(VECTOR_ELT(factorLevels, i));
+  hashtab * marks = hash_create(hl);
   int nlevel=0;
   for (int i=0; i<nitem; ++i) {
     const SEXP this = VECTOR_ELT(factorLevels, i);
@@ -414,10 +415,9 @@ static SEXP combineFactorLevels(SEXP factorLevels, SEXP target, int * factorType
     for (int k=0; k<thisn; ++k) {
       SEXP s = thisd[k];
       if (s==NA_STRING) continue;  // NA shouldn't be in levels but remove it just in case
-      int tl = TRUELENGTH(s);
+      int tl = hash_lookup(marks, s, 0);
       if (tl<0) continue;  // seen this level before
-      if (tl>0) savetl(s);
-      SET_TRUELENGTH(s,-(++nlevel));
+      hash_set(marks,s,-(++nlevel));
       levelsRaw[nlevel-1] = s;
     }
   }
@@ -425,13 +425,11 @@ static SEXP combineFactorLevels(SEXP factorLevels, SEXP target, int * factorType
     if (targetd[i]==NA_STRING) {
       *ansd++ = NA_INTEGER;
     } else {
-      int tl = TRUELENGTH(targetd[i]);
+      int tl = hash_lookup(marks,targetd[i],0);
       *ansd++ = tl<0 ? -tl : NA_INTEGER;
     }
   }
-  for (int i=0; i<nlevel; ++i) SET_TRUELENGTH(levelsRaw[i], 0);
-  savetl_end();
-  // now after savetl_end, we can alloc (which might fail)
+  // there used to be savetl_end, after which we can alloc (which might fail)
   SEXP levelsSxp;
   setAttrib(ans, R_LevelsSymbol, levelsSxp=allocVector(STRSXP, nlevel));
   for (int i=0; i<nlevel; ++i) SET_STRING_ELT(levelsSxp, i, levelsRaw[i]);
