@@ -441,7 +441,7 @@ static const char* filesize_to_str(size_t fsize)
 double copyFile(size_t fileSize)  // only called in very very rare cases
 {
   double tt = wallclock();
-  mmp_copy = (char *)malloc((size_t)fileSize + 1 /* extra \0 */);
+  mmp_copy = (char *)malloc(fileSize + 1 /* extra \0 */);
   if (!mmp_copy)
     return -1.0; // # nocov
   memcpy(mmp_copy, mmp, fileSize);

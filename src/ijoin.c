@@ -10,8 +10,8 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
 
   SEXP vv, tt, lookup, type_lookup;
   R_len_t *idx,*count,*type_count,xrows=INTEGER(xlen)[0],uxrows=LENGTH(VECTOR_ELT(ux, 0)),uxcols=LENGTH(ux);
-  int *from = (int *)INTEGER(VECTOR_ELT(indices, 0));
-  int *to   = (int *)INTEGER(VECTOR_ELT(indices, 1));
+  int *from = INTEGER(VECTOR_ELT(indices, 0));
+  int *to   = INTEGER(VECTOR_ELT(indices, 1));
   clock_t pass1, pass2, pass3, start;
   enum {ALL, FIRST, LAST} mult = ALL;
   enum {ANY, WITHIN, START, END, EQUAL} type = ANY;
@@ -31,8 +31,8 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
   // For reference: uxcols-1 = type_count, uxcols-2 = count, uxcols-3 = type_lookup, uxcols-4 = lookup
   // first pass: calculate lengths first
   start = clock();
-  count = (int *)INTEGER(VECTOR_ELT(ux, uxcols-2));
-  type_count = (int *)INTEGER(VECTOR_ELT(ux, uxcols-1));
+  count = INTEGER(VECTOR_ELT(ux, uxcols-2));
+  type_count = INTEGER(VECTOR_ELT(ux, uxcols-1));
   switch (mult) {
   case FIRST:
     switch(type) {
@@ -225,10 +225,10 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
 
   R_len_t uxcols=LENGTH(ux),rows=length(VECTOR_ELT(imatches,0));
   int nomatch = INTEGER(nomatchArg)[0], totlen=0, thislen;
-  int *from   = (int *)INTEGER(VECTOR_ELT(imatches, 0));
-  int *to     = (int *)INTEGER(VECTOR_ELT(imatches, 1));
-  int *count   = (int *)INTEGER(VECTOR_ELT(ux, uxcols-2));
-  int *type_count   = (int *)INTEGER(VECTOR_ELT(ux, uxcols-1));
+  int *from   = INTEGER(VECTOR_ELT(imatches, 0));
+  int *to     = INTEGER(VECTOR_ELT(imatches, 1));
+  int *count   = INTEGER(VECTOR_ELT(ux, uxcols-2));
+  int *type_count   = INTEGER(VECTOR_ELT(ux, uxcols-1));
   SEXP lookup = VECTOR_ELT(ux, uxcols-4);
   SEXP type_lookup = VECTOR_ELT(ux, uxcols-3);
   SEXP ans, f1__, f2__, tmp1, tmp2;
