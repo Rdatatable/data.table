@@ -9,10 +9,6 @@ vignette: >
   \usepackage[utf8]{inputenc}
 ---
 
- 
-
-* 	
-
 ```{r, echo = FALSE, message = FALSE}
 require(data.table)
 knitr::opts_chunk$set(
