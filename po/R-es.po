@@ -224,7 +224,7 @@ msgstr "(que no contiene fracciones)"
 
 #: bmerge.R:144
 msgid "(which contains fractions)"
-msgstr "(que contiene fracciones"
+msgstr "(que contiene fracciones)"
 
 #: bmerge.R:147
 msgid "(for join)"
