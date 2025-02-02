@@ -1178,7 +1178,7 @@ replace_dot_alias = function(e) {
             return(invisible(x))
           }
         } else {
-          # Adding new column(s). Allocation for columns and recalculation of target cols moved after the jval = eval(jsub) 
+          # Adding new column(s). Allocation for columns and recalculation of target cols moved after the jval = eval(jsub)
           # in case of error or by-reference modifications to the DT
           newnames=setdiff(lhs, names_x)
           m[is.na(m)] = ncol(x)+seq_len(length(newnames))
