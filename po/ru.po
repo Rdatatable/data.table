@@ -207,7 +207,7 @@ msgstr "i[%d] = %d, что находится за пределами диапа
 #: assign.c:387
 #, c-format
 msgid "Assigning to %d row subset of %d rows\n"
-msgstr "Присвоение %d подмножеству строк%d\n"
+msgstr "Присвоение подмножеству из %d строк (всего %d)\n"
 
 #: assign.c:403
 msgid "length(LHS)==0; no columns to delete or assign RHS to."
@@ -285,7 +285,7 @@ msgstr ""
 "%d переданным столбцам присваивается пустой список (который может быть "
 "пустой data.table или data.frame, поскольку они тоже являются списками). "
 "Чтобы удалить несколько столбцов, используйте вместо этого значение NULL. "
-"Чтобы добавить несколько пустых списочных столбцов, используйте list(list())."
+"Чтобы добавить несколько пустых столбцов-списков, используйте list(list())."
 
 #: assign.c:456
 #, c-format
@@ -453,7 +453,7 @@ msgid ""
 msgstr ""
 "В правой части элемент №%d был скопирован, поскольку MAYBE_REFERENCED==%d "
 "MAYBE_SHARED==%d, но потом присваивается напрямую. length(правая_часть)==%d; "
-"length(левая_часть)==%d)\n"
+"length(левая_часть)==%d\n"
 
 #: assign.c:569
 #, c-format
@@ -2576,8 +2576,8 @@ msgid ""
 "Read %<PRIu64> rows x %d columns from %s file in %02d:%06.3f wall clock "
 "time\n"
 msgstr ""
-"Чтение %<PRIu64> строк * %d столбцов из файла %s заняло %02d:%06.3f по "
-"часам\n"
+"Чтение %<PRIu64> строк * %d столбцов из файла %s заняло %02d:%06.3f "
+"мин:с\n"
 
 #: fread.c:2733
 msgid "[12] Finalizing the datatable\n"
@@ -3371,7 +3371,7 @@ msgid ""
 "No list columns are present. Setting sep2='' otherwise quote='auto' would "
 "quote fields containing sep2.\n"
 msgstr ""
-"Нет списочных столбцов. Если задать sep2=''; в противном случае quote='auto' "
+"Нет столбцов-списков. Задаю sep2=''; в противном случае quote='auto' "
 "приведёт к тому, что поля, содержащие sep2, будут заключены в кавычки.\n"
 
 #: fwriteR.c:288
