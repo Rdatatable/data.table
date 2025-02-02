@@ -1368,23 +1368,6 @@ replace_dot_alias = function(e) {
           # updates by reference to existing columns
           cols = as.integer(m)
           newnames=NULL
-          if (identical(irows, integer())) {
-            # Empty integer() means no rows e.g. logical i with only FALSE and NA
-            # got converted to empty integer() by the which() above
-            # Short circuit and do-nothing since columns already exist. If some don't
-            # exist then for consistency with cases where irows is non-empty, we need to create
-            # them of the right type and populate with NA.  Which will happen via the regular
-            # alternative branches below, to cover #759.
-            # We need this short circuit at all just for convenience. Otherwise users may need to
-            # fix errors in their RHS when called on empty edge cases, even when the result won't be
-            # used anyway (so it would be annoying to have to fix it.)
-            if (verbose) {
-              catf("No rows match i. No new columns to add so not evaluating RHS of :=\nAssigning to 0 row subset of %d rows\n", nrow(x))
-            }
-            .Call(Cassign, x, irows, NULL, NULL, NULL) # only purpose is to write 0 to .Last.updated
-            .global$print = address(x)
-            return(invisible(x))
-          }
         }else{
           # Adding new column(s).
           newnames=setdiff(lhs, names_x)
