@@ -1979,8 +1979,9 @@ test(632, merge(DT1,DT2,all=TRUE), data.table(a=c(1,2,3,4,5),total.x=c(2,NA,1,3,
 test(632.1, merge(DT1,DT2,all=TRUE), setkey(adt(merge(adf(DT1),adf(DT2),by="a",all=TRUE)),a))
 
 # Test that with=FALSE by number isn't messed up by dup column names, #2025
-DT = data.table(a=1:3,a=4:6)
-test(634, DT[,2:=200L], data.table(a=1:3,a=200L))
+DT = data.table(a=1:3, a=4:6, a=7:9)
+test(634, DT[,2:=200L], data.table(a=1:3, a=200L, a=7:9))
+test(634.1, DT[,c(2, 3):=200L], data.table(a=1:3, a=200L, a=200L))
 
 # Test names when not all items are named, #2029
 DT = data.table(x=1:3,y=1:3)
@@ -21063,3 +21064,9 @@ test(2304.100, set(copy(DT), i=2L, j=c("L1", "L2"), value=list(list(NULL), list(
 
 # the integer overflow in #6729 is only noticeable with UBSan
 test(2305, { fread(testDir("issue_6729.txt.bz2")); TRUE })
+
+# j expressions that modify a data.table by reference, (#6768)
+inner=function(dt){dt[,b:=4:6]}
+outer=function(dt){inner(dt); return(7:9)}
+DT = data.table(a=1:3)
+test(2306, DT[,c:=outer(DT)], data.table(a=1:3, b=4:6, c=7:9))

@@ -133,6 +133,8 @@ rowwiseDT(
 
 19. An integer overflow in `fread()` with lines longer than `2^(31/2)` bytes is prevented, [#6729](https://github.com/Rdatatable/data.table/issues/6729). The typical impact was no worse than a wrong initial allocation size, corrected later. Thanks to @TaikiSan21 for the report and @aitap for the fix.
 
+20. By reference assignments (':=') with functions that modify the data.table by reference e.g. (`foo=function(DT){DT[,b:=1L];return(2L)}`, `DT[,a:=foo(DT)]`) returned a mallformed data.table due to the the modification of the targeted named column ("a") index before and after the j expression evaluation. Thanks @AntonNM for the the report and fix.
+
 ## NOTES
 
 1. There is a new vignette on joins! See `vignette("datatable-joins")`. Thanks to Angel Feliz for authoring it! Feedback welcome. This vignette has been highly requested since 2017: [#2181](https://github.com/Rdatatable/data.table/issues/2181).
