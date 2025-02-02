@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.15.99\n"
 "POT-Creation-Date: 2025-01-29 23:31-0800\n"
-"PO-Revision-Date: 2025-01-31 13:52+0300\n"
+"PO-Revision-Date: 2025-02-02 22:32+0300\n"
 "Last-Translator: Ivan Krylov <ikrylov@disroot.org>\n"
 "Language-Team: Russian <https://translate.codeberg.org/projects/data-table-"
 "ru/gettext-R/ru/>\n"
@@ -3552,13 +3552,11 @@ msgstr[1] "%d переменные не показаны: %s\n"
 msgstr[2] "%d переменных не показано: %s\n"
 
 #: setops.R:46
-#, fuzzy
-#| msgid "unsupported column type(s) found in x or y: %s"
 msgid "unsupported column type found in x or y: %s"
 msgid_plural "unsupported column types found in x or y: %s"
-msgstr[0] "В «x» или «y» нашлись столбцы неподдерживаемых типов: %s"
-msgstr[1] "В «x» или «y» нашлись столбцы неподдерживаемых типов: %s"
-msgstr[2] "В «x» или «y» нашлись столбцы неподдерживаемых типов: %s"
+msgstr[0] "в «x» или «y» нашлись столбцы неподдерживаемых типов: %s"
+msgstr[1] "в «x» или «y» нашлись столбцы неподдерживаемых типов: %s"
+msgstr[2] "в «x» или «y» нашлись столбцы неподдерживаемых типов: %s"
 
 #: test.data.table.R:255
 msgid "%d error out of %d. Search %s for test number %s. Duration: %s."
@@ -3569,10 +3567,6 @@ msgstr[1] "%d ошибки из %d. Ищите в %s тесты №№%s. Про
 msgstr[2] "%d ошибок из %d. Ищите в %s тесты №№%s. Продолжительность: %s."
 
 #: utils.R:36
-#, fuzzy
-#| msgid ""
-#| "%s has some duplicated column name(s): %s. Please remove or rename the "
-#| "duplicate(s) and try again."
 msgid ""
 "%s has duplicated column name %s. Please remove or rename the duplicate and "
 "try again."
