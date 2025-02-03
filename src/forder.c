@@ -1733,23 +1733,23 @@ SEXP forderReuseSorting(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP
           opt = 2; // idxOpt but need to drop groups or stats
         } else if (!hasGrp && retGrp && !hasStats && retStats) {
           if (verbose)
-            Rprintf(_("forderReuseSorting: index found but not for retGrp and retStats: %s\n"));, CHAR(STRING_ELT(idxName(DT, by), 0)));
+            Rprintf(_("forderReuseSorting: index found but not for retGrp and retStats: %s\n"), CHAR(STRING_ELT(idxName(DT, by), 0)));
         } else if (!hasGrp && retGrp) {
           if (verbose)
-            Rprintf(_("forderReuseSorting: index found but not for retGrp: %s\n"));, CHAR(STRING_ELT(idxName(DT, by), 0)));
+            Rprintf(_("forderReuseSorting: index found but not for retGrp: %s\n"), CHAR(STRING_ELT(idxName(DT, by), 0)));
         } else if (!hasStats && retStats) {
           if (verbose)
-            Rprintf(_("forderReuseSorting: index found but not for retStats: %s\n"));, CHAR(STRING_ELT(idxName(DT, by), 0)));
+            Rprintf(_("forderReuseSorting: index found but not for retStats: %s\n"), CHAR(STRING_ELT(idxName(DT, by), 0)));
         } else {
           internal_error_with_cleanup(__func__, "reuseSorting forder index optimization unhandled branch of retGrp-retStats"); // # nocov
         }
       } else {
         if (!hasStats) {
           if (verbose)
-            Rprintf(_("forderReuseSorting: index found but na.last=TRUE and no stats available: %s\n"));, CHAR(STRING_ELT(idxName(DT, by), 0)));
+            Rprintf(_("forderReuseSorting: index found but na.last=TRUE and no stats available: %s\n"), CHAR(STRING_ELT(idxName(DT, by), 0)));
         } else if (idxAnyNF(idx)) {
           if (verbose)
-            Rprintf(_("forderReuseSorting: index found but na.last=TRUE and NAs present: %s\n"));, CHAR(STRING_ELT(idxName(DT, by), 0)));
+            Rprintf(_("forderReuseSorting: index found but na.last=TRUE and NAs present: %s\n"), CHAR(STRING_ELT(idxName(DT, by), 0)));
         } else {
           internal_error_with_cleanup(__func__, "reuseSorting forder index optimization unhandled branch of last.na=T"); // # nocov
         }
@@ -1757,7 +1757,7 @@ SEXP forderReuseSorting(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP
       if (opt == 2) {
         ans = idx;
         if (verbose)
-          Rprintf(_("forderReuseSorting: using existing index: %s\n"));, CHAR(STRING_ELT(idxName(DT, by), 0)));
+          Rprintf(_("forderReuseSorting: using existing index: %s\n"), CHAR(STRING_ELT(idxName(DT, by), 0)));
       }
     }
   }
@@ -1769,11 +1769,11 @@ SEXP forderReuseSorting(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP
         GetAutoIndex()) { // disabled by default, use datatable.forder.auto.index=T to enable, do not export/document, use for debugging only
       putIndex(DT, by, ans);
       if (verbose)
-        Rprintf(_("forderReuseSorting: setting index (retGrp=%d, retStats=%d) on DT: %s\n"));, retGrp, retStats, CHAR(STRING_ELT(idxName(DT, by), 0)));
+        Rprintf(_("forderReuseSorting: setting index (retGrp=%d, retStats=%d) on DT: %s\n"), retGrp, retStats, CHAR(STRING_ELT(idxName(DT, by), 0)));
     }
   }
   if (verbose)
-    Rprintf(_("forderReuseSorting: opt=%d, took %.3fs\n"));, opt, omp_get_wtime()-tic);
+    Rprintf(_("forderReuseSorting: opt=%d, took %.3fs\n"), opt, omp_get_wtime()-tic);
   UNPROTECT(protecti);
   return ans;
 }
