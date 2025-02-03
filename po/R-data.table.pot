@@ -679,13 +679,6 @@ msgid ""
 "toString), whilst taking care to maintain distinctness in the process."
 msgstr ""
 
-#: data.table.R:896
-#, c-format
-msgid ""
-"%s Each must be length %d; the same length as there are rows in x (after "
-"subsetting if i is provided)."
-msgstr ""
-
 #: data.table.R:916
 msgid ""
 "by-expression '%s' is not named, and the auto-generated name '%s' clashed "
@@ -3315,8 +3308,12 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: data.table.R:895
-msgid "The item in the 'by' or 'keyby' list is length %s."
-msgid_plural "The items in the 'by' or 'keyby' list have lengths %s."
+msgid "The item in the 'by' or 'keyby' list is length %s. Each must be length "
+"%d; the same length as there are rows in x (after subsetting if i is "
+"provided)."
+msgid_plural "The items in the 'by' or 'keyby' list have lengths %s. Each "
+"must be length %d; the same length as there are rows in x (after subsetting "
+"if i is provided)."
 msgstr[0] ""
 msgstr[1] ""
 
