@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.16.99\n"
-"POT-Creation-Date: 2025-02-02 15:34-0800\n"
+"POT-Creation-Date: 2025-02-02 23:58-0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -677,6 +677,16 @@ msgstr ""
 msgid "Only '==' operator is supported for columns of type character."
 msgstr ""
 
+#: bmerge.c:190
+#, c-format
+msgid "bmerge: looping bmerge_r took %.3fs\n"
+msgstr ""
+
+#: bmerge.c:222
+#, c-format
+msgid "bmerge: took %.3fs\n"
+msgstr ""
+
 #: chmatch.c:5
 #, c-format
 msgid "table is type '%s' (must be 'character' or NULL)"
@@ -1218,6 +1228,17 @@ msgstr ""
 msgid "Unknown column type '%s' for column '%s'."
 msgstr ""
 
+#: fmelt.c:600
+msgid ""
+"measure.vars is a list with length=1, which as long documented should return "
+"integer indices in the 'variable' column, but currently returns character "
+"column names. To increase consistency in the next release, we plan to change "
+"'variable' to integer, so users who were relying on this behavior should "
+"change measure.vars=list('col_name') (output variable is column name now, "
+"but will become column index/integer) to measure.vars='col_name' (variable "
+"is column name before and after the planned change)."
+msgstr ""
+
 #: fmelt.c:686
 #, c-format
 msgid "variable_table does not support column type '%s' for column '%s'."
@@ -1342,15 +1363,19 @@ msgid ""
 "attempting to order by a list column?\n"
 msgstr ""
 
-#: forder.c:508
+#: forder.c:508 forder.c:1654
 msgid "retGrp must be TRUE or FALSE"
 msgstr ""
 
-#: forder.c:511
+#: forder.c:511 forder.c:1657
 msgid "retStats must be TRUE or FALSE"
 msgstr ""
 
-#: forder.c:516
+#: forder.c:514 forder.c:1660
+msgid "retStats must be TRUE whenever retGrp is TRUE"
+msgstr ""
+
+#: forder.c:516 forder.c:1662
 msgid "sort must be TRUE or FALSE"
 msgstr ""
 
@@ -1358,7 +1383,7 @@ msgstr ""
 msgid "At least one of retGrp= or sort= must be TRUE"
 msgstr ""
 
-#: forder.c:521
+#: forder.c:521 forder.c:1665
 msgid "na.last must be logical TRUE, FALSE or NA of length 1"
 msgstr ""
 
@@ -1450,6 +1475,79 @@ msgstr ""
 
 #: forder.c:1512
 msgid "x must be type 'double'"
+msgstr ""
+
+#: forder.c:1622
+msgid "'datatable.use.index' option must be TRUE or FALSE"
+msgstr ""
+
+#: forder.c:1635
+msgid "'datatable.forder.auto.index' option must be TRUE or FALSE"
+msgstr ""
+
+#: forder.c:1652
+msgid "DT is NULL"
+msgstr ""
+
+#: forder.c:1668
+msgid "order must be integer"
+msgstr ""
+
+#: forder.c:1670
+msgid "reuseSorting must be logical TRUE, FALSE or NA of length 1"
+msgstr ""
+
+#: forder.c:1682
+#, c-format
+msgid ""
+"forderReuseSorting: opt not possible: is.data.table(DT)=%d, sortGroups=%d, "
+"all1(ascArg)=%d\n"
+msgstr ""
+
+#: forder.c:1701
+#, c-format
+msgid "forderReuseSorting: using key: %s\n"
+msgstr ""
+
+#: forder.c:1736
+#, c-format
+msgid "forderReuseSorting: index found but not for retGrp and retStats: %s\n"
+msgstr ""
+
+#: forder.c:1739
+#, c-format
+msgid "forderReuseSorting: index found but not for retGrp: %s\n"
+msgstr ""
+
+#: forder.c:1742
+#, c-format
+msgid "forderReuseSorting: index found but not for retStats: %s\n"
+msgstr ""
+
+#: forder.c:1749
+#, c-format
+msgid ""
+"forderReuseSorting: index found but na.last=TRUE and no stats available: %s\n"
+msgstr ""
+
+#: forder.c:1752
+#, c-format
+msgid "forderReuseSorting: index found but na.last=TRUE and NAs present: %s\n"
+msgstr ""
+
+#: forder.c:1760
+#, c-format
+msgid "forderReuseSorting: using existing index: %s\n"
+msgstr ""
+
+#: forder.c:1772
+#, c-format
+msgid "forderReuseSorting: setting index (retGrp=%d, retStats=%d) on DT: %s\n"
+msgstr ""
+
+#: forder.c:1776
+#, c-format
+msgid "forderReuseSorting: opt=%d, took %.3fs\n"
 msgstr ""
 
 #: frank.c:14 frank.c:192
@@ -1699,6 +1797,11 @@ msgstr ""
 msgid ""
 "  File ends abruptly with '%c'. Final end-of-line is missing. Copying file "
 "in RAM. %s.\n"
+msgstr ""
+
+#: fread.c:1566 fread.c:1850
+#, c-format
+msgid "%s. Attempt to copy file in RAM failed."
 msgstr ""
 
 #: fread.c:1567 fread.c:1851
@@ -2166,11 +2269,6 @@ msgstr ""
 msgid "%8.3fs (%3.0f%%) Memory map %.3fGB file\n"
 msgstr ""
 
-#: fread.c:2775
-#, c-format
-msgid "%8.3fs (%3.0f%%) sep="
-msgstr ""
-
 #: fread.c:2777
 #, c-format
 msgid " ncol=%d and header detection\n"
@@ -2437,7 +2535,7 @@ msgstr ""
 msgid "%s: results from provided FUN are not of type double"
 msgstr ""
 
-#: froll.c:472 nafill.c:87
+#: froll.c:472 nafill.c:43 nafill.c:65 nafill.c:87
 #, c-format
 msgid "%s: took %.3fs\n"
 msgstr ""
@@ -2484,7 +2582,7 @@ msgid ""
 "implemented"
 msgstr ""
 
-#: frollR.c:117 frollR.c:267 types.c:71
+#: frollR.c:117 frollR.c:267
 #, c-format
 msgid "%s: allocating memory for results %dx%d\n"
 msgstr ""
@@ -3124,6 +3222,10 @@ msgstr ""
 
 #: nafill.c:184
 msgid "fill must be a vector of length 1 or a list of length of x"
+msgstr ""
+
+#: negate.c:5
+msgid "not logical or integer vector"
 msgstr ""
 
 #: openmp-utils.c:23

@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.16.99\n"
-"POT-Creation-Date: 2025-02-02 15:34-0800\n"
+"POT-Creation-Date: 2025-02-02 23:58-0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -3047,99 +3047,107 @@ msgstr ""
 msgid "Running %d of %d tests matching '%s'"
 msgstr ""
 
-#: test.data.table.R:246
+#: test.data.table.R:248
 #, c-format
 msgid "Failed in %s after test %s before the next test() call in %s"
 msgstr ""
 
-#: test.data.table.R:269
+#: test.data.table.R:271
 #, c-format
 msgid "Timings count mismatch: %d vs %d"
 msgstr ""
 
-#: test.data.table.R:271
+#: test.data.table.R:273
 msgid "10 longest running tests took %ds (%d%% of %ds)"
 msgstr ""
 
-#: test.data.table.R:277
+#: test.data.table.R:279
 msgid "10 largest RAM increases (MB); see plot for cumulative effect (if any)"
 msgstr ""
 
-#: test.data.table.R:287
+#: test.data.table.R:289
 msgid "All %d tests (last %.8g) in %s completed ok in %s"
 msgstr ""
 
-#: test.data.table.R:401
+#: test.data.table.R:388
+msgid "Running test id"
+msgstr ""
+
+#: test.data.table.R:404
 #, c-format
 msgid ""
 "Test %s is invalid: when error= is provided it does not make sense to pass y "
 "as well"
 msgstr ""
 
-#: test.data.table.R:436
+#: test.data.table.R:439
 msgid "Test id %s is not in increasing order"
 msgstr ""
 
-#: test.data.table.R:453
+#: test.data.table.R:456
 msgid ""
 "Test %s produced %d %ss but expected %d\n"
 "%s\n"
 "%s"
 msgstr ""
 
-#: test.data.table.R:461
+#: test.data.table.R:464
 msgid ""
 "Test %s didn't produce the correct %s:\n"
 "Expected: %s\n"
 "Observed: %s"
 msgstr ""
 
-#: test.data.table.R:470
+#: test.data.table.R:473
 msgid "Output captured before unexpected warning/error/message:"
 msgstr ""
 
-#: test.data.table.R:480
+#: test.data.table.R:483
 msgid "Test %s did not produce correct output:"
 msgstr ""
 
-#: test.data.table.R:481
+#: test.data.table.R:484
 msgid "Expected: <<%s>>"
 msgstr ""
 
-#: test.data.table.R:482 test.data.table.R:494
+#: test.data.table.R:485 test.data.table.R:497
 msgid "Observed: <<%s>>"
 msgstr ""
 
-#: test.data.table.R:484
+#: test.data.table.R:487
 msgid "Expected (raw): <<%s>>"
 msgstr ""
 
-#: test.data.table.R:485 test.data.table.R:497
+#: test.data.table.R:488 test.data.table.R:500
 msgid "Observed (raw): <<%s>>"
 msgstr ""
 
-#: test.data.table.R:492
+#: test.data.table.R:495
 msgid "Test %s produced output but should not have:"
 msgstr ""
 
-#: test.data.table.R:493
+#: test.data.table.R:496
 msgid "Expected absent (case insensitive): <<%s>>"
 msgstr ""
 
-#: test.data.table.R:496
+#: test.data.table.R:499
 msgid "Expected absent (raw): <<%s>>"
 msgstr ""
 
-#: test.data.table.R:510
+#: test.data.table.R:513
 msgid "Test %s ran without errors but selfrefok(%s) is FALSE"
 msgstr ""
 
-#: test.data.table.R:535
+#: test.data.table.R:538
 msgid "Test %s ran without errors but failed check that x equals y:"
 msgstr ""
 
-#: test.data.table.R:540
+#: test.data.table.R:543
 msgid "First %d of %d (type '%s'):"
+msgstr ""
+
+#: test.data.table.R:548
+msgid "Non-ASCII string detected, raw representation:"
 msgstr ""
 
 #: timetaken.R:3
@@ -3342,7 +3350,7 @@ msgid_plural "unsupported column types found in x or y: %s"
 msgstr[0] ""
 msgstr[1] ""
 
-#: test.data.table.R:256
+#: test.data.table.R:258
 msgid "%d error out of %d. Search %s for test number %s. Duration: %s."
 msgid_plural "%d errors out of %d. Search %s for test numbers %s. Duration: %s."
 msgstr[0] ""
