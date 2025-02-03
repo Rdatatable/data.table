@@ -906,8 +906,8 @@ void fwriteMain(fwriteMainArgs args)
 #ifndef NOZLIB
         free(zbuffPool);
 #endif
-        if (ret0 == -1) STOP(_("Can't write gzip header error: %d"), ret0);
-        else if (ret1) STOP(_("Compress gzip error: %d"), ret1);
+        if (ret0 == -1) STOP(_("Failed to write gzip header. Write returned %d"), ret0);
+        else if (ret1) STOP(_("Failed to compress gzip. compressbuff() returned %d"), ret1);
         else STOP(_("%s: '%s'"), strerror(errwrite), args.filename);
         // # nocov end
       }
