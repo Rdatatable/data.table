@@ -1116,8 +1116,11 @@ void fwriteMain(fwriteMainArgs args)
               len, len / MEGA, compress_len, compress_len / MEGA, len != 0 ? (100.0 * compress_len) / len : 0, crc);
     }
 #endif
-    DTPRINT(_("Written %"PRId64" rows in %.3f secs using %d thread%s. MaxBuffUsed=%d%%\n"),
-            args.nrow, 1.0*(wallclock()-t0), nth, nth ==1 ? "" : "s", maxBuffUsedPC);
+    DTPRINT(Pl_(nth, Pl_(args.nrow, "Wrote %"PRId64" row in %.3f secs using %d thread. MaxBuffUsed=%d%%\n",
+                                    "Wrote %"PRId64" rows in %.3f secs using %d thread. MaxBuffUsed=%d%%\n"),
+                     Pl_(args.nrow, "Wrote %"PRId64" row in %.3f secs using %d threads. MaxBuffUsed=%d%%\n",
+                                    "Wrote %"PRId64" rows in %.3f secs using %d threads. MaxBuffUsed=%d%%\n")),
+            args.nrow, 1.0*(wallclock()-t0), nth, maxBuffUsedPC);
   }
 
   if (f != -1 && CLOSE(f) && !failed)
