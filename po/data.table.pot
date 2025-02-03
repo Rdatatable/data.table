@@ -536,11 +536,6 @@ msgstr ""
 msgid "Unsupported column type in assign.c:memrecycle '%s'"
 msgstr ""
 
-#: assign.c:1279
-#, c-format
-msgid "savetl_init checks failed (%d %d %p %p)"
-msgstr ""
-
 #: assign.c:1288
 #, c-format
 msgid "Failed to allocate initial %d items in savetl_init"
