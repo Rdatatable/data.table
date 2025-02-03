@@ -39,7 +39,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     scripts = gsub("[.]bz2$","",scripts)
     return(sapply(scripts, function(fn) {
       err = try(test.data.table(script=fn, verbose=verbose, pkg=pkg, silent=silent, showProgress=showProgress, testPattern=testPattern))
-      cat("\n");
+      cat("\n"); # notranslate
       isTRUE(err)
     }))
     # nocov end
