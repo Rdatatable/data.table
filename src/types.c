@@ -28,7 +28,7 @@ void ansMsg(ans_t *ans, int n, bool verbose, const char *func) {
  * R interface to test ansMsg function
  * see inst/tests/types.Rraw
  */
-# notranslate start
+// # notranslate start
 void testRaiseMsg(ans_t *ans, int istatus, bool verbose) {
   if (verbose) {
     snprintf(end(ans->message[0]), 500, "%s: stdout 1 message\n", __func__);
@@ -88,4 +88,4 @@ SEXP testMsgR(SEXP status, SEXP x, SEXP k) {
   UNPROTECT(protecti);
   return ans;
 }
-# notranslate end
+// # notranslate end
