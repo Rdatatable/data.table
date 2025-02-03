@@ -2692,12 +2692,12 @@ msgstr ""
 
 #: fwrite.c:909
 #, c-format
-msgid "Can't write gzip header error: %d"
+msgid "Failed to write gzip header. Write returned %d"
 msgstr ""
 
 #: fwrite.c:910
 #, c-format
-msgid "Compress gzip error: %d"
+msgid "Failed to compress gzip. compressbuff() returned %d"
 msgstr ""
 
 #: fwrite.c:911 fwrite.c:928
