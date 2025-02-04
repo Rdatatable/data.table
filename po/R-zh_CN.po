@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.12.5\n"
-"POT-Creation-Date: 2025-01-29 23:31-0800\n"
+"POT-Creation-Date: 2025-02-02 23:58-0800\n"
 "PO-Revision-Date: 2019-11-16 18:37+0800\n"
 "Last-Translator: Xianying Tan <shrektan@126.com>\n"
 "Language-Team: Mandarin\n"
@@ -102,12 +102,15 @@ msgid "between has been passed an argument x of type logical"
 msgstr "传入 between 的参数 x 为逻辑（logical）型"
 
 #: between.R:13 between.R:15
-#, c-format
+#, fuzzy, c-format
+#| msgid ""
+#| "'between' function the 'x' argument is a POSIX class while '%s' was not, "
+#| "coercion to POSIX failed with: %s"
 msgid ""
 "The 'x' argument of the 'between' function is POSIXct while '%s' was not, "
 "coercion to POSIXct failed with: %s"
 msgstr ""
-"'between' 中的 'x' 参数为 POSIXct 类，而 '%s' 并不是，将其强制转换成 POSIXct 时失"
+"'between' 中的 'x' 参数为 POSIX 类，而 '%s' 并不是，将其强制转换成 POSIX 时失"
 "败：%s"
 
 #: between.R:27
@@ -132,6 +135,12 @@ msgstr ""
 #, c-format
 msgid "trying to use integer64 class when 'bit64' package is not installed"
 msgstr "试图使用 intger64 类型但 'bit64' 包尚未安装"
+
+#: between.R:47
+msgid ""
+"optimised between not available for this data type, fallback to slow R "
+"routine"
+msgstr ""
 
 #: between.R:48
 #, c-format
@@ -162,6 +171,22 @@ msgstr ""
 "右侧（RHS）的长度为 %d；期望长度为 2。%s第一个元素应为下界；第二个元素应为上"
 "界。"
 
+#: between.R:77
+msgid "forderv(query) took ..."
+msgstr ""
+
+#: between.R:90
+msgid "Generating final logical vector ..."
+msgstr ""
+
+#: between.R:92 bmerge.R:200 bmerge.R:204 bmerge.R:211 data.table.R:496
+msgid "done in %s"
+msgstr ""
+
+#: bmerge.R:21
+msgid "Coercing %s column %s%s to type %s to match type of %s%s."
+msgstr ""
+
 #: bmerge.R:65 bmerge.R:66
 #, c-format
 msgid "%s is type %s which is not supported by data.table join"
@@ -176,6 +201,14 @@ msgstr ""
 "联接%s与%s时试图滚动联接（roll join）因子类型（factor）的列。但只有整数"
 "（integer）、双精度（double）或字符（character）类型的列可以使用滚动联接。"
 
+#: bmerge.R:71
+msgid "Matching %s factor levels to %s factor levels."
+msgstr ""
+
+#: bmerge.R:80
+msgid "Matching character column %s to factor levels in %s."
+msgstr ""
+
 #: bmerge.R:87
 #, c-format
 msgid ""
@@ -184,6 +217,10 @@ msgid ""
 msgstr ""
 "不兼容的联结类型: %s (%s) 和 %s (%s)。 因子类型的列必须与因子类型或字符类型的"
 "列才可以联结"
+
+#: bmerge.R:91
+msgid "%s has same type (%s) as %s. No coercion needed."
+msgstr ""
 
 #: bmerge.R:97 bmerge.R:101
 msgid "(all-NA)"
@@ -221,15 +258,61 @@ msgstr ""
 msgid "(for join)"
 msgstr ""
 
+#: bmerge.R:165
+msgid "on= matches existing key, using key"
+msgstr ""
+
+#: bmerge.R:170
+msgid "on= matches existing index, using index"
+msgstr ""
+
+#: bmerge.R:175
+msgid "Calculated ad hoc index in %s"
+msgstr ""
+
+#: bmerge.R:186
+msgid "Non-equi join operators detected ..."
+msgstr ""
+
 #: bmerge.R:187
 #, c-format
 msgid "roll is not implemented for non-equi joins yet."
 msgstr "不等长联结还不能执行 roll "
 
+#: bmerge.R:188
+msgid "forder took ..."
+msgstr ""
+
+#: bmerge.R:197
+msgid "Generating group lengths ..."
+msgstr ""
+
+#: bmerge.R:202
+msgid "Generating non-equi group ids ..."
+msgstr ""
+
 #: bmerge.R:207
 #, c-format
 msgid "Column name '_nqgrp_' is reserved for non-equi joins."
 msgstr "列名 '_nqgrp_' 是为不等长联结保留的"
+
+#: bmerge.R:208
+msgid "Recomputing forder with non-equi ids ..."
+msgstr ""
+
+#: bmerge.R:217
+msgid "Starting bmerge ..."
+msgstr ""
+
+#: bmerge.R:219
+msgid "bmerge done in %s"
+msgstr ""
+
+#: cedta.R:67
+msgid ""
+"cedta decided '%s' wasn't data.table aware. Here is call stack with [[1L]] "
+"applied:"
+msgstr ""
 
 #: data.table.R:55
 #, c-format
@@ -277,6 +360,10 @@ msgstr "因为没有提供 j= ，所以忽略 by/keyby"
 #, c-format
 msgid "When by and keyby are both provided, keyby must be TRUE or FALSE"
 msgstr "当 by 和 keyby 都提供的时候，keyby 必须是 TRUE 或 FALSE"
+
+#: data.table.R:177 data.table.R:242 data.table.R:331
+msgid "Argument '%s' after substitute: %s"
+msgstr ""
 
 #: data.table.R:186
 #, c-format
@@ -411,7 +498,12 @@ msgstr ""
 "with=FALSE。请使用 .. 符号前缀并且移除 with=FALSE。"
 
 #: data.table.R:296
-#, c-format
+#, fuzzy, c-format
+#| msgid ""
+#| "You have wrapped := with {} which is ok but then := must be the only "
+#| "thing inside {}. You have something else inside {} as well. Consider "
+#| "placing the {} on the RHS of := instead; e.g. DT[,someCol:={tmpVar1<-...;"
+#| "tmpVar2<-...;tmpVar1*tmpVar2}"
 msgid ""
 "You have wrapped := with {} which is ok but then := must be the only thing "
 "inside {}. You have something else inside {} as well. Consider placing the "
@@ -420,7 +512,7 @@ msgid ""
 msgstr ""
 "用 {} 套用 := 可行，但是 {} 中只能有 := 。而你现在 {} 中还有其他的参数。请尝"
 "试将 {} 置于 := 的RHS之上；比如，DT[,someCol:={tmpVar1<-...; tmpVar2<-...; "
-"tmpVar1*tmpVar2}]"
+"tmpVar1*tmpVar2}"
 
 #: data.table.R:314
 #, c-format
@@ -464,7 +556,12 @@ msgid "'%s' is not found in calling scope and it is not a column name either"
 msgstr "'%s' 既不存在于调用环境中，也非列名。"
 
 #: data.table.R:413
-#, c-format
+#, fuzzy, c-format
+#| msgid ""
+#| "'%s' is not found in calling scope, but it is a column of type %s. If you "
+#| "wish to select rows where that column contains TRUE, or perhaps that "
+#| "column contains row numbers of itself to select, try DT[(col)], "
+#| "DT[DT$col], or DT[col==TRUE} is particularly clear and is optimized"
 msgid ""
 "'%s' is not found in calling scope, but it is a column of type %s. If you "
 "wish to select rows where that column contains TRUE, or perhaps that column "
@@ -515,6 +612,30 @@ msgstr ""
 msgid "Attempting to do natural join but no common columns in provided tables"
 msgstr "尝试进行自然连接然而并没有找到表格中相同的列"
 
+#: data.table.R:462
+msgid "Joining but 'x' has no key, natural join using all 'x' columns"
+msgstr ""
+
+#: data.table.R:464
+msgid "Joining but 'x' has no key, natural join using: %s"
+msgstr ""
+
+#: data.table.R:493
+msgid "not-join called with 'by=.EACHI'; Replacing !i with i=setdiff_(x,i) ..."
+msgstr ""
+
+#: data.table.R:523
+msgid "Constructing irows for '!byjoin || nqbyjoin' ..."
+msgstr ""
+
+#: data.table.R:562
+msgid "Reorder irows for 'mult==\"all\" && !allGrp1' ..."
+msgstr ""
+
+#: data.table.R:574
+msgid "Reordering %d rows after bmerge done in ..."
+msgstr ""
+
 #: data.table.R:591
 #, c-format
 msgid "logical error. i is not a data.table, but 'on' argument is provided."
@@ -544,6 +665,10 @@ msgid ""
 "(Jan 2019)"
 msgstr ""
 "请使用 nomatch=NULL 而非 nomatch=0；参见 v1.12.0 (2019年1月) 中更新条目 5"
+
+#: data.table.R:635
+msgid "Inverting irows for notjoin done in ..."
+msgstr ""
 
 #: data.table.R:691
 #, fuzzy, c-format
@@ -606,6 +731,20 @@ msgstr ""
 msgid "At least one entry of by is empty"
 msgstr "至少有一个 by 的元素为空"
 
+#: data.table.R:827
+msgid "by index '%s' but that index has 0 length. Ignoring."
+msgstr ""
+
+#: data.table.R:850
+msgid "i clause present and columns used in by detected, only these subset: %s"
+msgstr ""
+
+#: data.table.R:853
+msgid ""
+"i clause present but columns used in by not detected. Having to subset all "
+"columns before evaluating 'by': '%s'"
+msgstr ""
+
 #: data.table.R:875
 #, c-format
 msgid ""
@@ -640,18 +779,11 @@ msgstr ""
 "解决办法是，将列转换为支持的类型，例如 by=sapply(list_col, toString)，同时请"
 "确保在转换后其值仍保持不同。"
 
-#: data.table.R:896
-#, fuzzy, c-format
-#| msgid ""
-#| "The items in the 'by' or 'keyby' list are length(s) %s. Each must be "
-#| "length %d; the same length as there are rows in x (after subsetting if i "
-#| "is provided)."
+#: data.table.R:916
 msgid ""
-"%s Each must be length %d; the same length as there are rows in x (after "
-"subsetting if i is provided)."
+"by-expression '%s' is not named, and the auto-generated name '%s' clashed "
+"with variable(s) in j. Therefore assigning the entire by-expression as name."
 msgstr ""
-"在'by'或'keyby'列表中的项长度为 %s 。每一项的长度须均为%d，即应与 x （或经 i "
-"筛选后的子集）中所包含行数相同。"
 
 #: data.table.R:950
 #, c-format
@@ -699,7 +831,8 @@ msgid ".SDcols missing at the following indices: %s"
 msgstr ".SDcols 的如下位置为缺失值：%s"
 
 #: data.table.R:1036
-#, c-format
+#, fuzzy, c-format
+#| msgid ".SDcols is a logical vector length %d but there are %d columns"
 msgid ".SDcols is a logical vector of length %d but there are %d columns"
 msgstr ".SDcols 为长度为 %d 的逻辑向量，但共计只有 %d 列"
 
@@ -723,12 +856,28 @@ msgstr ".SDcols 应为列数或是列名"
 msgid "Some items of .SDcols are not column names: %s"
 msgstr ".SDcols 中的部份项目不是列名: %s"
 
+#: data.table.R:1063
+msgid ""
+"'(m)get' found in j. ansvars being set to all columns. Use .SDcols or a "
+"single j=eval(macro) instead. Both will detect the columns used which is "
+"important for efficiency.\n"
+"Old ansvars: %s"
+msgstr ""
+
+#: data.table.R:1083
+msgid "New ansvars: %s"
+msgstr ""
+
 #: data.table.R:1092
 #, c-format
 msgid ""
 "This j doesn't use .SD but .SDcols has been supplied. Ignoring .SDcols. See ?"
 "data.table."
 msgstr "此处 j 不使用 .SD 但提供了 .SDcols ，因此忽略 .SDcols详见 ?data.table"
+
+#: data.table.R:1095
+msgid "Detected that j uses these columns: %s"
+msgstr ""
 
 #: data.table.R:1108
 #, c-format
@@ -783,6 +932,12 @@ msgid ""
 "'numeric')"
 msgstr ":= 的 LHS 不是列名('字符')或列的位置('整数'或'数值')"
 
+#: data.table.R:1175
+msgid ""
+"No rows match i. No new columns to add so not evaluating RHS of :=\n"
+"Assigning to 0 row subset of %d rows"
+msgstr ""
+
 #: data.table.R:1190
 #, fuzzy, c-format
 #| msgid ""
@@ -811,6 +966,23 @@ msgstr ""
 "R 中复制整个data.table的操作请改用 set* 语法以避免复制，详见 ?set、?setnames "
 "及 ?setattr如果以上讯息无法提供帮助，请回报你的案例至 data.table 问题追踪以助"
 "于修复根本原因或改进本讯息"
+
+#: data.table.R:1198
+msgid ""
+"Growing vector of column pointers from truelength %d to %d. A shallow copy "
+"has been taken, see ?setalloccol. Only a potential issue if two variables "
+"point to the same data (we can't yet detect that well) and if not you can "
+"safely ignore this. To avoid this message you could setalloccol() first, "
+"deep copy first using copy(), wrap with suppressWarnings() or increase the "
+"'datatable.alloccol' option."
+msgstr ""
+
+#: data.table.R:1200
+msgid ""
+"Note that the shallow copy will assign to the environment from which := was "
+"called. That means for example that if := was called within a function, the "
+"original table may be unaffected."
+msgstr ""
 
 #: data.table.R:1221
 #, c-format
@@ -860,10 +1032,55 @@ msgstr ""
 "无法对 '.I' 列进行分组，因为与 data.table 特有的 .I 变量冲突请先尝试 "
 "setnames(DT,'.I','I')"
 
+#: data.table.R:1486
+msgid ""
+"Note: forcing units=\"secs\" on implicit difftime by group; call difftime "
+"explicitly to choose custom units"
+msgstr ""
+
 #: data.table.R:1495
-#, c-format
+#, fuzzy, c-format
+#| msgid "logical error. i is not data.table, but mult='all' and 'by'=.EACHI"
 msgid "logical error. i is not a data.table, but mult='all' and 'by'=.EACHI"
 msgstr "逻辑错误: i 不是data.table，但 mult='all' 及 'by'=.EACHI"
+
+#: data.table.R:1522
+msgid "Finding groups using forderv ..."
+msgstr ""
+
+#: data.table.R:1536 data.table.R:1568
+msgid "Finding group sizes from the positions (can be avoided to save RAM) ..."
+msgstr ""
+
+#: data.table.R:1544
+msgid "Getting back original order ..."
+msgstr ""
+
+#: data.table.R:1556
+msgid "Finding groups using uniqlist on key ..."
+msgstr ""
+
+#: data.table.R:1560
+msgid "Finding groups using uniqlist on index '%s' ..."
+msgstr ""
+
+#: data.table.R:1779
+msgid "lapply optimization changed j from '%s' to '%s'"
+msgstr ""
+
+#: data.table.R:1781
+msgid "lapply optimization is on, j unchanged as '%s'"
+msgstr ""
+
+#: data.table.R:1790 data.table.R:1814
+msgid "GForce optimized j to '%s' (see ?GForce)"
+msgstr ""
+
+#: data.table.R:1815
+msgid ""
+"GForce is on, but not activated for this query; left j unchanged (see ?"
+"GForce)"
+msgstr ""
 
 #: data.table.R:1834
 #, c-format
@@ -876,6 +1093,30 @@ msgstr ""
 "果您直接使用 mean(x,TRUE)会被认定为 trim=TRUE，trim 是 mean() 中尚未被优化的"
 "第二顺位参数"
 
+#: data.table.R:1838
+msgid "Old mean optimization changed j from '%s' to '%s'"
+msgstr ""
+
+#: data.table.R:1840
+msgid "Old mean optimization is on, left j unchanged."
+msgstr ""
+
+#: data.table.R:1850
+msgid "All optimizations are turned off"
+msgstr ""
+
+#: data.table.R:1851
+msgid "Optimization is on but left j unchanged (single plain symbol): '%s'"
+msgstr ""
+
+#: data.table.R:1880
+msgid "Making each group and running j (GForce %s) ..."
+msgstr ""
+
+#: data.table.R:1976
+msgid "setkey() after the := with keyby= ..."
+msgstr ""
+
 #: data.table.R:1980
 #, c-format
 msgid ""
@@ -887,6 +1128,10 @@ msgstr ""
 "因为`:=`与`keyby=`一起使用且`keyby=`含有表达式, 所以代码跳过了一般`keyby=`会"
 "执行的`setkey()` -- 代码只执行了`by=`。若要避免此警告, 请使用`by=`, 或者提供"
 "`keyby=`现有的列名"
+
+#: data.table.R:2006
+msgid "setkey() afterwards for keyby=.EACHI ..."
+msgstr ""
 
 #: data.table.R:2072
 #, c-format
@@ -1044,6 +1289,10 @@ msgid ""
 "Argument 'by' must refer only to atomic-type columns, but the following "
 "columns are non-atomic: %s"
 msgstr "参数 'by' 只适用于原子类型的纵列，但现在关联的纵列不是原子类型: %s"
+
+#: data.table.R:2511
+msgid "Processing split.data.table with: %s"
+msgstr ""
 
 #: data.table.R:2596
 #, c-format
@@ -1267,6 +1516,28 @@ msgstr ""
 "%s 的右手侧 (RHS) 长度为 %d, 其非 1 或 总行数 nrow (%d)。考虑到程序的稳健性，"
 "只有在右侧元素长度为 1 的情况下，我们才会对之进行循环。考虑改用 %%in%% 。"
 
+#: data.table.R:3288
+msgid ""
+"Subsetting optimization disabled because the cross-product of RHS values "
+"exceeds 1e4, causing memory problems."
+msgstr ""
+
+#: data.table.R:3306
+msgid "Optimized subsetting with key %s"
+msgstr ""
+
+#: data.table.R:3325 data.table.R:3337
+msgid "Optimized subsetting with index '%s'"
+msgstr ""
+
+#: data.table.R:3332
+msgid "Creating new index '%s'"
+msgstr ""
+
+#: data.table.R:3333
+msgid "Creating index %s done in ..."
+msgstr ""
+
 #: data.table.R:3371
 #, c-format
 msgid ""
@@ -1309,6 +1580,14 @@ msgstr "无效联接操作符 %s。只允许如下操作符: %s。"
 msgid "There is no package %s in provided repository."
 msgstr "所提供的资料库中不含包%s"
 
+#: devel.R:30
+msgid ""
+"No revision information found in DESCRIPTION file for %s package. Make sure "
+"that '%s' is correct field in PACKAGES file in your package repository '%s'. "
+"Otherwise package will be re-installed every time, proceeding to "
+"installation."
+msgstr ""
+
 #: devel.R:39
 msgid "R %s package has been updated to %s (%s)"
 msgstr ""
@@ -1317,13 +1596,23 @@ msgstr ""
 msgid "R %s package is up-to-date at %s (%s)"
 msgstr ""
 
+#: devel.R:53
+msgid ""
+"Git revision is not available. Most likely data.table was installed from "
+"CRAN or local archive.\n"
+"Git revision is available when installing from our repositories 'https://"
+"Rdatatable.gitlab.io/data.table' and 'https://Rdatatable.github.io/data."
+"table'."
+msgstr ""
+
 #: duplicated.R:7
 #, c-format
 msgid "'fromLast' must be TRUE or FALSE"
 msgstr "'fromLast' 必须为 TRUE 或 FALSE"
 
 #: duplicated.R:105
-#, c-format
+#, fuzzy, c-format
+#| msgid "x must be an atomic vector or data.frames/data.tables"
 msgid "x must be an atomic vector or a data.frame/data.table"
 msgstr "x 必须是原子向量或data.frame/data.table"
 
@@ -1439,7 +1728,15 @@ msgid ""
 msgstr ""
 
 #: fmelt.R:12
-#, c-format
+#, fuzzy, c-format
+#| msgid ""
+#| "The %1$s generic in data.table has been passed a %2$s and will attempt to "
+#| "redirect to the relevant reshape2 method; please note that reshape2 is "
+#| "superseded and is no longer actively developed, and this redirection is "
+#| "now deprecated. To continue using melt methods from reshape2 while both "
+#| "libraries are attached, e.g. melt.list, you can prepend the namespace, i."
+#| "e. reshape2::%1$s(%3$s). In the next version, this warning will become an "
+#| "error."
 msgid ""
 "The %1$s generic in data.table has been passed a %2$s and will attempt to "
 "redirect to the relevant reshape2 method; please note that reshape2 is "
@@ -1632,6 +1929,12 @@ msgstr ""
 msgid "Please provide a name to each element of 'measure.vars'."
 msgstr "请为 'measure.vars' 中的每个元素提供一个名称。"
 
+#: fmelt.R:217
+msgid ""
+"Duplicate column names found in molten data.table. Setting unique names "
+"using 'make.names'"
+msgstr ""
+
 #: foverlaps.R:3
 #, c-format
 msgid ""
@@ -1801,6 +2104,14 @@ msgstr ""
 "显示却重叠'的印象，（所以）请确保POSIXct类型的间隔列具有相同的'时区'属性以避"
 "免混乱。"
 
+#: foverlaps.R:132
+msgid "unique() + setkey() operations done in ..."
+msgstr ""
+
+#: foverlaps.R:158
+msgid "binary search(es) done in ..."
+msgstr ""
+
 #: foverlaps.R:165 foverlaps.R:167 foverlaps.R:171
 #, c-format
 msgid "Not yet implemented"
@@ -1930,12 +2241,16 @@ msgid ""
 msgstr "目前不支持包含多个文件的压缩文件。"
 
 #: fread.R:117
-#, c-format
+#, fuzzy, c-format
+#| msgid ""
+#| "To read gz and bz2 files directly, fread() requires 'R.utils' package "
+#| "which cannot be found. Please install 'R.utils' using 'install."
+#| "packages('R.utils')'."
 msgid ""
 "To read %s files directly, fread() requires 'R.utils' package which cannot "
 "be found. Please install 'R.utils' using 'install.packages('R.utils')'."
 msgstr ""
-"想要直接读取 %s 文件, fread() 需要 'R.utils' 包.请用 'install."
+"想要直接读取 gz 和 bz2 文件, fread() 需要 'R.utils' 包.请用 'install."
 "packages('R.utils')'安装 'R.utils' 包."
 
 #: fread.R:127
@@ -2045,6 +2360,11 @@ msgid ""
 msgstr ""
 "至文件的结尾 YAML 文件头仍未结束。一个有效的 YAML 文件头是指符合正则表达式 "
 "\"%s\"的行。请再次检查输入文件是否为一有效的 csvy 文件。"
+
+#: fread.R:203
+msgid ""
+"Processed %d lines of YAML metadata with the following top-level fields: %s"
+msgstr ""
 
 #: fread.R:206
 #, c-format
@@ -2159,6 +2479,10 @@ msgstr ""
 #, c-format
 msgid "x being coerced from class: matrix to data.table"
 msgstr "x 的类将强制从 matrix 转变为 data.table"
+
+#: fwrite.R:70
+msgid "Appending to existing file so setting bom=FALSE and yaml=FALSE"
+msgstr ""
 
 #: fwrite.R:83
 #, c-format
@@ -2359,6 +2683,11 @@ msgid ""
 "Using integer64 class columns require to have 'bit64' package installed."
 msgstr "要在列中使用 integer64 类，需要先安装 'bit64' 包。"
 
+#: last.R:11 last.R:16 last.R:24 last.R:29 last.R:33 last.R:41 last.R:52
+#: last.R:57 last.R:65 last.R:70 last.R:74 last.R:82
+msgid "%s: using %s: %s"
+msgstr ""
+
 #: last.R:39 last.R:80
 #, c-format
 msgid ""
@@ -2392,9 +2721,10 @@ msgid "`by.x` and `by.y` must be of same length."
 msgstr "`by.x`和`by.y`必须是相同的长度。"
 
 #: merge.R:34
-#, c-format
+#, fuzzy, c-format
+#| msgid "Supplied both `by` and `by.x/by.y`. `by` argument will be ignored."
 msgid "Supplied both `by` and `by.x`/`by.y`. `by` argument will be ignored."
-msgstr "参数`by`和`by.x`/`by.y`都提供了值。参数`by`的值会被忽略。"
+msgstr "参数`by`和`by.x/by.y`都提供了值。参数`by`的值会被忽略。"
 
 #: merge.R:37
 #, c-format
@@ -2449,7 +2779,15 @@ msgid "TRANSLATION CHECK"
 msgstr "翻译检查"
 
 #: onAttach.R:29
-#, c-format
+#, fuzzy, c-format
+#| msgid ""
+#| "**********\n"
+#| "Running data.table in English; package support is available in English "
+#| "only. When searching for online help, be sure to also check for the "
+#| "English error message. This can be obtained by looking at the po/R-"
+#| "<locale>.po and po/<locale>.po files in the package source, where the "
+#| "native language and English error messages can be found side-by-side\n"
+#| "**********"
 msgid ""
 "**********\n"
 "Running data.table in English; package support is available in English only. "
@@ -2462,7 +2800,7 @@ msgstr ""
 "**********\n"
 "用中文执行data.table。软件包只提供英语支持。当在在线搜索帮助时，也要确保检查"
 "英语错误信息。这个可以通过查看软件包源文件中的po/R-zh_CN.po和po/zh_CN.po文件"
-"获得，这个文件可以并排找到母语和英语错误信息。%s\n"
+"获得，这个文件可以并排找到母语和英语错误信息。\n"
 "**********"
 
 #: onAttach.R:34
@@ -2647,6 +2985,18 @@ msgstr "对trunc.cols有效的参数为TRUE和FALSE"
 msgid "Column classes will be suppressed when col.names is 'none'"
 msgstr "当col.names为'none'时，列的类型将被抑制"
 
+#: print.data.table.R:47
+msgid "Key: <%s>"
+msgstr ""
+
+#: print.data.table.R:57
+msgid "Null data.%s (0 rows and 0 cols)"
+msgstr ""
+
+#: print.data.table.R:59
+msgid "Empty data.%s (%d rows and %d cols)"
+msgstr ""
+
 #: print.data.table.R:153
 #, c-format
 msgid ""
@@ -2785,6 +3135,18 @@ msgid ""
 "Column '%s' is type '%s' which is not supported as a key column type, "
 "currently."
 msgstr "列 '%s' 为 '%s' 类型，目前尚不支持该类型作为键列。"
+
+#: setkey.R:65
+msgid "forder took %.03f sec"
+msgstr ""
+
+#: setkey.R:77
+msgid "reorder took %s"
+msgstr ""
+
+#: setkey.R:79
+msgid "x is already ordered by these columns, no need to call reorder"
+msgstr ""
 
 #: setkey.R:132
 #, c-format
@@ -3024,10 +3386,18 @@ msgstr "因子列和 ignore.row.order 都不能与非 0 的容差（tolerance）
 msgid "Provided argument fill=%s will be ignored since type='cyclic'."
 msgstr "提供的 fill=%s 参数将被忽略，因为 type='cyclic'。"
 
+#: tables.R:31
+msgid "No objects of class data.table exist in %s"
+msgstr ""
+
 #: tables.R:46
 #, c-format
 msgid "order.col='%s' not a column name of info"
 msgstr "order.col='%s' 并非info的一个列名"
+
+#: tables.R:59
+msgid "Total: %sMB using %s"
+msgstr ""
 
 #: test.data.table.R:17
 #, c-format
@@ -3048,38 +3418,148 @@ msgstr ""
 msgid "Neither %s nor %s exist in %s"
 msgstr "%3$s 中 %1$s 也 %2$s 不存在"
 
-#: test.data.table.R:118
+#: test.data.table.R:115
+msgid "test.data.table() running: %s"
+msgstr ""
+
+#: test.data.table.R:119
 msgid "object '%s' not found"
 msgstr "未找到 '%s' 对象"
 
+#: test.data.table.R:122
+msgid ""
+"**** This R session's language is not English. Each test will still check "
+"that the correct number of errors and/or\n"
+"**** warnings are produced. However, to test the text of each error/warning "
+"too, please restart R with LANGUAGE=en"
+msgstr ""
+
 #: test.data.table.R:142
+msgid ""
+"***\n"
+"*** memtest=%d. This should be the first call in a fresh R_GC_MEM_GROW=0 R "
+"session for best results. Ctrl-C now if not.\n"
+"***"
+msgstr ""
+
+#: test.data.table.R:143
 #, c-format
 msgid ""
 "memtest intended for Linux. Step through data.table:::rss() to see what went "
 "wrong."
 msgstr "memtest 仅适用于 Linux。请逐步执行 data.table:::rss() 以查看错误原因。"
 
-#: test.data.table.R:196
+#: test.data.table.R:197
 #, c-format
 msgid "Attempt to subset to %d tests matching '%s' failed, running full suite."
 msgstr "尝试进行子集化 %d 个测试匹配 '%s' 失败，正在运行所有测试。"
 
-#: test.data.table.R:245
+#: test.data.table.R:202
+msgid "Running %d of %d tests matching '%s'"
+msgstr ""
+
+#: test.data.table.R:248
 #, c-format
 msgid "Failed in %s after test %s before the next test() call in %s"
 msgstr "测试于 %s 后失败，失败发生在测试 %s 之后、下一 test() 之前、调用 %s 时"
 
-#: test.data.table.R:268
+#: test.data.table.R:271
 #, c-format
 msgid "Timings count mismatch: %d vs %d"
 msgstr "计时不一致: %d 对 %d"
 
-#: test.data.table.R:400
+#: test.data.table.R:273
+msgid "10 longest running tests took %ds (%d%% of %ds)"
+msgstr ""
+
+#: test.data.table.R:279
+msgid "10 largest RAM increases (MB); see plot for cumulative effect (if any)"
+msgstr ""
+
+#: test.data.table.R:289
+msgid "All %d tests (last %.8g) in %s completed ok in %s"
+msgstr ""
+
+#: test.data.table.R:388
+msgid "Running test id"
+msgstr ""
+
+#: test.data.table.R:404
 #, c-format
 msgid ""
 "Test %s is invalid: when error= is provided it does not make sense to pass y "
 "as well"
 msgstr "%s 无效：当使用了error=，不应再输入y"
+
+#: test.data.table.R:439
+msgid "Test id %s is not in increasing order"
+msgstr ""
+
+#: test.data.table.R:456
+msgid ""
+"Test %s produced %d %ss but expected %d\n"
+"%s\n"
+"%s"
+msgstr ""
+
+#: test.data.table.R:464
+msgid ""
+"Test %s didn't produce the correct %s:\n"
+"Expected: %s\n"
+"Observed: %s"
+msgstr ""
+
+#: test.data.table.R:473
+msgid "Output captured before unexpected warning/error/message:"
+msgstr ""
+
+#: test.data.table.R:483
+msgid "Test %s did not produce correct output:"
+msgstr ""
+
+#: test.data.table.R:484
+msgid "Expected: <<%s>>"
+msgstr ""
+
+#: test.data.table.R:485 test.data.table.R:497
+msgid "Observed: <<%s>>"
+msgstr ""
+
+#: test.data.table.R:487
+msgid "Expected (raw): <<%s>>"
+msgstr ""
+
+#: test.data.table.R:488 test.data.table.R:500
+msgid "Observed (raw): <<%s>>"
+msgstr ""
+
+#: test.data.table.R:495
+msgid "Test %s produced output but should not have:"
+msgstr ""
+
+#: test.data.table.R:496
+msgid "Expected absent (case insensitive): <<%s>>"
+msgstr ""
+
+#: test.data.table.R:499
+msgid "Expected absent (raw): <<%s>>"
+msgstr ""
+
+#: test.data.table.R:513
+msgid "Test %s ran without errors but selfrefok(%s) is FALSE"
+msgstr ""
+
+#: test.data.table.R:538
+msgid "Test %s ran without errors but failed check that x equals y:"
+msgstr ""
+
+#: test.data.table.R:543
+msgid "First %d of %d (type '%s'):"
+msgstr ""
+
+#: test.data.table.R:548
+msgid "Non-ASCII string detected, raw representation:"
+msgstr ""
 
 #: timetaken.R:3
 #, c-format
@@ -3254,21 +3734,39 @@ msgid_plural "  Found %d non-equi groups ...\n"
 msgstr[0] ""
 
 #: data.table.R:712
+#, fuzzy
+#| msgid "column(s) not removed because not found: %s"
 msgid "column not removed because not found: %s"
 msgid_plural "columns not removed because not found: %s"
 msgstr[0] "列未被删除因为不存在：%s"
 
 #: data.table.R:727
+#, fuzzy
+#| msgid "column(s) not found: %s"
 msgid "column not found: %s"
 msgid_plural "columns not found: %s"
 msgstr[0] "列不存在: %s"
 
 #: data.table.R:895
-msgid "The item in the 'by' or 'keyby' list is length %s."
-msgid_plural "The items in the 'by' or 'keyby' list have lengths %s."
+#, fuzzy
+#| msgid ""
+#| "The items in the 'by' or 'keyby' list are length(s) %s. Each must be "
+#| "length %d; the same length as there are rows in x (after subsetting if i "
+#| "is provided)."
+msgid ""
+"The item in the 'by' or 'keyby' list is length %s. Each must be length %d; "
+"the same length as there are rows in x (after subsetting if i is provided)."
+msgid_plural ""
+"The items in the 'by' or 'keyby' list have lengths %s. Each must be length "
+"%d; the same length as there are rows in x (after subsetting if i is "
+"provided)."
 msgstr[0] ""
+"在'by'或'keyby'列表中的项长度为 %s 。每一项的长度须均为%d，即应与 x （或经 i "
+"筛选后的子集）中所包含行数相同。"
 
 #: fmelt.R:27
+#, fuzzy
+#| msgid "Pattern(s) not found: [%s]"
 msgid "Pattern not found: [%s]"
 msgid_plural "Patterns not found: [%s]"
 msgstr[0] "未找到下列 pattern：[%s]"
@@ -3289,11 +3787,16 @@ msgid_plural "%d variables not shown: %s\n"
 msgstr[0] ""
 
 #: setops.R:46
+#, fuzzy
+#| msgid "unsupported column type(s) found in x or y: %s"
 msgid "unsupported column type found in x or y: %s"
 msgid_plural "unsupported column types found in x or y: %s"
 msgstr[0] "找到不支持的列类型在 x 或 y: %s"
 
-#: test.data.table.R:255
+#: test.data.table.R:258
+#, fuzzy
+#| msgid ""
+#| "%d error(s) out of %d. Search %s for test number(s) %s. Duration: %s."
 msgid "%d error out of %d. Search %s for test number %s. Duration: %s."
 msgid_plural ""
 "%d errors out of %d. Search %s for test numbers %s. Duration: %s."
@@ -3301,6 +3804,10 @@ msgstr[0] ""
 "%2$d 中共产生 %1$d 个错误。搜索 %3$s 以定位测试编号 %4$s。用时：%5$s。"
 
 #: utils.R:36
+#, fuzzy
+#| msgid ""
+#| "%s has some duplicated column name(s): %s. Please remove or rename the "
+#| "duplicate(s) and try again."
 msgid ""
 "%s has duplicated column name %s. Please remove or rename the duplicate and "
 "try again."
@@ -3308,3 +3815,109 @@ msgid_plural ""
 "%s has duplicated column names %s. Please remove or rename the duplicates "
 "and try again."
 msgstr[0] "%s 中有如下重复的列名：%s。请移除或者重命名重复项后重试。"
+
+#, c-format
+#~ msgid ""
+#~ "with=FALSE ignored, it isn't needed when using :=. See ?':=' for examples."
+#~ msgstr ""
+#~ "当使用 :=. 的时候，with=FALSE 是多余的，会被忽略。输入 ?':=' 参看例子。"
+
+#, c-format
+#~ msgid ""
+#~ "x has some duplicated column name(s): %s. Please remove or rename the "
+#~ "duplicate(s) and try again."
+#~ msgstr "x 中有如下重复的列名：%s。请移除或者重命名重复项后重试。"
+
+#, c-format
+#~ msgid ""
+#~ "The %1$s generic in data.table has been passed a %2$s and will attempt to "
+#~ "redirect to the relevant reshape2 method; please note that reshape2 is "
+#~ "superseded and is no longer actively developed, and this redirection is "
+#~ "now deprecated. Please do this redirection yourself like reshape2::"
+#~ "%1$s(%3$s). In the next version, this warning will become an error."
+#~ msgstr ""
+#~ "data.table 中的 %1$s 泛型方法接收到了一个 %2$s 对象，将尝试重定向使用"
+#~ "reshape2 包中相关的方法。请注意 reshape2 包已经被其实包取代且不再积极开"
+#~ "发，故该重定向目前也不推荐使用。请手动执行该重定向，如 reshape2::"
+#~ "%1$s(%3$s)。下一版本中，本警告将变成一个错误。"
+
+#, c-format
+#~ msgid "number of %s =%d must be same as %s =%d"
+#~ msgstr "%s 的数量 =%d 必须与 %s 的数量 =%d 相同"
+
+#, c-format
+#~ msgid "dateTimeAs must be a single string"
+#~ msgstr "dataTimeAs 必须是单个字符串"
+
+#, c-format
+#~ msgid "dateTimeAs must be 'ISO','squash','epoch' or 'write.csv'"
+#~ msgstr "dateTimeAs 必须是 'ISO'，'squash'，'epoch' 或 'write.csv'"
+
+#, c-format
+#~ msgid ""
+#~ "logicalAsInt has been renamed logical01 for consistency with fread. It "
+#~ "works fine for now but please change to logical01 at your convenience so "
+#~ "we can remove logicalAsInt in future."
+#~ msgstr ""
+#~ "logicalAsInt 参数已重命名为 logical01 参数以与 fread 保持一致。目前它可以"
+#~ "正常工作，但请在方便的时候将其改为 logical01，以便我们在未来删除 "
+#~ "logicalAsInt 参数。"
+
+#, c-format
+#~ msgid "Elements listed in `by.x` must be valid column names in x."
+#~ msgstr "`by.x`中的列名必须是x的有效列。"
+
+#, c-format
+#~ msgid "Elements listed in `by.y` must be valid column names in y."
+#~ msgstr "`by.y`中的列名必须是y的有效列。"
+
+#, c-format
+#~ msgid "Elements listed in `by` must be valid column names in x and y"
+#~ msgstr "`by`中的列名必须是x和y的有效列"
+
+#, c-format
+#~ msgid ""
+#~ "key(x)<-value is deprecated and not supported. Please change to use "
+#~ "setkey() with perhaps copy(). Has been warning since 2012."
+#~ msgstr ""
+#~ "key(x)<-value 已经废弃，不再支持。请改为使用 setkey()，也许还需配合 "
+#~ "copy()。本警告从 2012 年就已存。"
+
+#, c-format
+#~ msgid "length(by.x) != length(by.y)"
+#~ msgstr "length(by.x) != length(by.y)"
+
+#, c-format
+#~ msgid ""
+#~ "strptime() usage detected and wrapped with as.POSIXct(). This is to "
+#~ "minimize the chance of assigning POSIXlt columns, which use 40+ bytes to "
+#~ "store one date (versus 8 for POSIXct). Use as.POSIXct() (which will call "
+#~ "strptime() as needed internally) to avoid this warning."
+#~ msgstr ""
+#~ "侦测到使用 strptime() ，已用 as.POSIXct() 包裹这么做是为了尽量避免列被指定"
+#~ "为 POSIXlt用40个以上的位元组储存日期(相较于 POSIXct 只用8位元组)请使用 as."
+#~ "POSIXct() 以避免本警告 (此函数会根据需求在内部调用 strptime())"
+
+#, c-format
+#~ msgid ""
+#~ "J() called outside of [.data.table. J() is only intended for use in i."
+#~ msgstr "J() 在 [.data.table. 外被使用。J() 仅适用于 i 中。"
+
+#, c-format
+#~ msgid ""
+#~ ".() called outside of [.data.table. .() is only intended as an alias for "
+#~ "list() inside DT[...]."
+#~ msgstr ""
+#~ ".() 在 [.data.table 外被使用。.() 仅适用于 DT[...] 内 list() 的别名。"
+
+#, c-format
+#~ msgid ""
+#~ "Aggregating function(s) should take vector inputs and return a single "
+#~ "value (length=1). However, function(s) returns length!=1. This value will "
+#~ "have to be used to fill any missing combinations, and therefore must be "
+#~ "length=1. Either override by setting the 'fill' argument explicitly or "
+#~ "modify your function to handle this case appropriately."
+#~ msgstr ""
+#~ "聚合函数应接收向量输入并返回单个值（长度为1）。然而，当前函数返回的长度不"
+#~ "为1。因为该单个值将用于填充任何缺失的组合，故必须为长度为1。你可以通过显式"
+#~ "设置'fill' 参数来覆盖该值，或修改你的函数以处理该情况。"
