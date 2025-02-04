@@ -3362,7 +3362,7 @@ msgstr ""
 #: fwrite.c:909
 #, c-format
 msgid "Failed to write gzip header. Write returned %d"
-msgstr "Falha ao escrever o cabeçalho gzip. A escrita retornou %d: %d"
+msgstr "Falha ao escrever o cabeçalho gzip. A escrita retornou %d"
 
 #: fwrite.c:910
 #, c-format
@@ -3410,8 +3410,7 @@ msgstr ""
 msgid ""
 "zlib %s (zlib.h %s) deflate() returned error %d Z_FINISH=%d Z_BLOCK=%d. %s"
 msgstr ""
-"zlib %s (zlib.h %s) deflate() retornou erro %d com z_stream->msg==\"%s\" "
-"Z_FINISH=%d Z_BLOCK=%d. %s"
+"zlib %s (zlib.h %s) deflate() retornou erro %d Z_FINISH=%d Z_BLOCK=%d. %s"
 
 #: fwrite.c:1135
 msgid ""
