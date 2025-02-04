@@ -39,7 +39,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     scripts = gsub("[.]bz2$","",scripts)
     return(sapply(scripts, function(fn) {
       err = try(test.data.table(script=fn, verbose=verbose, pkg=pkg, silent=silent, showProgress=showProgress, testPattern=testPattern))
-      cat("\n");
+      cat("\n"); # notranslate
       isTRUE(err)
     }))
     # nocov end
@@ -110,7 +110,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     datatable.old.fread.datetime.character = FALSE
   )
 
-  cat("getDTthreads(verbose=TRUE):\n")         # for tracing on CRAN; output to log before anything is attempted
+  cat("getDTthreads(verbose=TRUE):\n")         # notranslate: for tracing on CRAN; output to log before anything is attempted
   getDTthreads(verbose=TRUE)                   # includes the returned value in the verbose output (rather than dangling '[1] 4'); e.g. "data.table is using 4 threads"
   catf("test.data.table() running: %s\n", fn)  # print fn to log before attempting anything on it (in case it is missing); on same line for slightly easier grep
   assign("testDir", function(x) file.path(fulldir, x), envir=env)
@@ -226,6 +226,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   # does show the full file output these days, so the 13 line limit no longer bites so much. It still bit recently
   # when receiving output of R CMD check sent over email, though.
   tz = Sys.getenv("TZ", unset=NA)
+  # notranslate start
   cat("\n", date(),   # so we can tell exactly when these tests ran on CRAN to double-check the result is up to date
     "  endian==", .Platform$endian,
     ", sizeof(long double)==", .Machine$sizeof.longdouble,
@@ -239,6 +240,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     ", .libPaths()==", paste0("'", .libPaths(), "'", collapse = ","),
     ", ", .Call(Cdt_zlib_version),
     "\n", sep="")
+  # notranslate end
 
   if (inherits(err,"try-error")) {
     # nocov start
@@ -303,7 +305,7 @@ compactprint = function(DT, topn=2L) {
     print(copy(DT)[,(cn):="",verbose=FALSE], topn=topn, class=FALSE)
   } else {
     print(DT, class=FALSE)  # "Empty data.table (0 rows) of <ncol> columns ...
-    if (ncol(DT)) cat(cn,"\n")
+    if (ncol(DT)) cat(cn,"\n") # notranslate
   }
   invisible()
 }
@@ -376,14 +378,15 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
          if (memtest==1L) gc()  # see #5515 for before/after
          inum = as.integer(num)
          timings[inum, RSS:=max(rss(),RSS), verbose=FALSE]  # TODO prefix inum with .. for clarity when that works
-         if (length(memtest.id) && memtest.id[1L]<=inum && inum<=memtest.id[2L]) cat(rss(),"\n") # after 'testing id ...' output; not using between() as it has verbose output when getOption(datatable.verbose)
+         if (length(memtest.id) && memtest.id[1L]<=inum && inum<=memtest.id[2L]) cat(rss(),"\n") # notranslate. after 'testing id ...' output; not using between() as it has verbose output when getOption(datatable.verbose)
          if (memtest==2L) gc()
        }
        assign("lasttime", proc.time()[3L], parent.frame(), inherits=TRUE)  # after gc() to exclude gc() time from next test when memtest
     }, add=TRUE )
-    if (showProgress)
-      # \r can't be in gettextf msg
-      cat("\rRunning test id", numStr, "         ")   # nocov.
+    if (showProgress) {
+      cat("\r") # notranslate: \r can't be in gettextf msg
+      catf("Running test id", numStr, "         ")   # nocov.
+    }
     # See PR #4090 for comments about change here in Dec 2019.
     # If a segfault error occurs in future and we'd like to know after which test, then arrange for the
     # try(sys.source()) in test.data.table() to be run in a separate R process. That process could write out
@@ -534,7 +537,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     if (!fail) {
       catf("Test %s ran without errors but failed check that x equals y:\n", numStr)
       failPrint = function(x, xsub) {
-        cat(">", substitute(x), "=", xsub, "\n")
+        cat(">", substitute(x), "=", xsub, "\n") # notranslate
         if (is.data.table(x)) compactprint(x) else {
           nn = length(x)
           catf("First %d of %d (type '%s'): \n", min(nn, 6L), length(x), typeof(x))
@@ -542,7 +545,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
           if (length(d <- dim(x))) do.call(`[`, c(list(x, drop = FALSE), lapply(pmin(d, 6L), seq_len)))
           else print(head(x))
           if (typeof(x) == 'character' && anyNonAscii(x)) {
-            cat("Non-ASCII string detected, raw representation:\n")
+            catf("Non-ASCII string detected, raw representation:\n")
             print(lapply(head(x), charToRaw))
           }
         }

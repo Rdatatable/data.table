@@ -3,17 +3,19 @@
 ###############################################
 
 # 1) Update messages for new release
-## (a) Update C template file: src/data.table.pot
-##     ideally, we are including _() wrapping in
-##     new PRs throughout dev cycle, and this step
-##     becomes about tying up loose ends
-## Check the output here for translatable messages
-xgettext -o /dev/stdout ./*.c \
-  --keyword=Rprintf --keyword=error --keyword=warning --keyword=STOP --keyword=DTWARN --keyword=Error --keyword=DTPRINT --keyword=snprintf:3
+dt_custom_translators = list(
+  R = 'catf:fmt|1',
+  # TODO(MichaelChirico/potools#318): restore snprintf:3 here too
+  src = c('STOP:1', 'DTWARN:1', 'DTPRINT:1')
+)
+message_db =
+  potools::get_message_data(custom_translation_functions = dt_custom_translators)
+potools::check_cracked_messages(message_db)
+potools::check_untranslated_cat(message_db)
+potools::check_untranslated_src(message_db)
 
-## (b) Update R template file: src/R-data.table.pot
-##  NB: this relies on R >= 4.0 to remove a bug in update_pkg_po
-Rscript -e "tools::update_pkg_po('.')"
+## (b) Update R template files (po/*.pot)
+potools::po_extract(custom_translation_functions = dt_custom_translators)
 
 # 2) Open a PR with the new templates & contact the translators
 #   * zh_CN: @hongyuanjia

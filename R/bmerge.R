@@ -188,7 +188,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     if (verbose) {last.started.at=proc.time();catf("  forder took ... ");flush.console()}
     # TODO: could check/reuse secondary indices, but we need 'starts' attribute as well!
     xo = forderv(x, xcols, retGrp=TRUE)
-    if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
+    if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()} # notranslate
     xg = attr(xo, 'starts', exact=TRUE)
     resetcols = head(xcols, non_equi-1L)
     if (length(resetcols)) {
