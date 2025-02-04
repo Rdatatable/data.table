@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.16.99\n"
-"POT-Creation-Date: 2025-01-29 23:31-0800\n"
+"POT-Creation-Date: 2025-02-02 23:58-0800\n"
 "PO-Revision-Date: 2024-09-02 20:11+0200\n"
 "Last-Translator: Elise Maigné <elise.maigne@inrae.fr>\n"
 "Language-Team: \n"
@@ -454,11 +454,15 @@ msgstr ""
 "(issue tracker) de data.table."
 
 #: assign.c:564
-#, c-format
+#, fuzzy, c-format
+#| msgid ""
+#| "RHS for item %d has been duplicated because MAYBE_REFERENCED==%d "
+#| "MAYBE_SHARED==%d, but then is being plonked. length(values)==%d; "
+#| "length(cols)==%d)\n"
 msgid ""
 "RHS for item %d has been duplicated because MAYBE_REFERENCED==%d "
 "MAYBE_SHARED==%d, but then is being plonked. length(values)==%d; "
-"length(cols)==%d)\n"
+"length(cols)==%d\n"
 msgstr ""
 "Le membre de droite (RHS) pour l'élément %d a été dupliqué parce que "
 "MAYBE_REFERENCED==%d MAYBE_SHARED==%d, mais il est ensuite remplacé "
@@ -722,11 +726,6 @@ msgstr "le type '%s' ne peut pas être converti automatiquement en '%s'"
 msgid "Unsupported column type in assign.c:memrecycle '%s'"
 msgstr "Type de colonne non pris en charge dans assign.c:memrecycle '%s'"
 
-#: assign.c:1279
-#, c-format
-msgid "savetl_init checks failed (%d %d %p %p)"
-msgstr "les vérifications de savetl_init ont échoué (%d %d %p %p)"
-
 #: assign.c:1288
 #, c-format
 msgid "Failed to allocate initial %d items in savetl_init"
@@ -884,6 +883,17 @@ msgstr "'rollends' doit être un vecteur booléen de longueur 2"
 msgid "Only '==' operator is supported for columns of type character."
 msgstr ""
 "Seul l'opérateur '==' est pris en charge pour les colonnes de type caractère."
+
+#: bmerge.c:190
+#, c-format
+msgid "bmerge: looping bmerge_r took %.3fs\n"
+msgstr ""
+
+#: bmerge.c:222
+#, fuzzy, c-format
+#| msgid "%s: took %.3fs\n"
+msgid "bmerge: took %.3fs\n"
+msgstr "%s : a pris %.3fs\n"
 
 #: chmatch.c:5
 #, c-format
@@ -1167,20 +1177,22 @@ msgstr ""
 msgid "\n"
 msgstr "\n"
 
-#: dogroups.c:454 dogroups.c:468
-#, c-format
+#: dogroups.c:455 dogroups.c:470
+#, fuzzy, c-format
+#| msgid ""
+#| "\rProcessed %d groups out of %d. %.0f%% done. Time elapsed: %ds. ETA: %ds."
 msgid ""
 "Processed %d groups out of %d. %.0f%% done. Time elapsed: %ds. ETA: %ds."
 msgstr ""
-"Traitement de %d groupes sur %d. %.0f%% terminé. Temps écoulé : %ds. Heure "
+"\rTraitement de %d groupes sur %d. %.0f%% terminé. Temps écoulé : %ds. Heure "
 "d'arrivée prévue : %ds."
 
-#: dogroups.c:473
+#: dogroups.c:475
 #, c-format
 msgid "Wrote less rows (%d) than allocated (%d).\n"
 msgstr "Moins de lignes écrites (%d) que de lignes allouées (%d).\n"
 
-#: dogroups.c:497
+#: dogroups.c:499
 #, fuzzy, c-format
 #| msgid ""
 #| "\n"
@@ -1192,7 +1204,7 @@ msgstr ""
 "\n"
 "  %s a pris %.3fs pour %d groupes\n"
 
-#: dogroups.c:498
+#: dogroups.c:500
 #, fuzzy, c-format
 #| msgid ""
 #| "\n"
@@ -1204,12 +1216,12 @@ msgstr ""
 "\n"
 "  %s a pris %.3fs pour %d groupes\n"
 
-#: dogroups.c:500
+#: dogroups.c:502
 #, c-format
 msgid "  eval(j) took %.3fs for %d calls\n"
 msgstr "  eval(j) a pris %.3fs pour %d appels\n"
 
-#: dogroups.c:529
+#: dogroups.c:531
 msgid "growVector passed NULL"
 msgstr "'growVector' transmis NULL"
 
@@ -1249,16 +1261,16 @@ msgstr ""
 msgid ""
 "Length of 'no' is %<PRId64> but must be 1 or length of 'test' (%<PRId64>)."
 msgstr ""
-"La longueur de 'no' est %<PRId64> mais doit être 1 ou la longueur de "
-"'test' (%<PRId64>)."
+"La longueur de 'no' est %<PRId64> mais doit être 1 ou la longueur de 'test' "
+"(%<PRId64>)."
 
 #: fifelse.c:34
 #, c-format
 msgid ""
 "Length of 'na' is %<PRId64> but must be 1 or length of 'test' (%<PRId64>)."
 msgstr ""
-"La longueur de 'na' est %<PRId64> mais doit être 1 ou la longueur de "
-"'test' (%<PRId64>)."
+"La longueur de 'na' est %<PRId64> mais doit être 1 ou la longueur de 'test' "
+"(%<PRId64>)."
 
 #: fifelse.c:52
 #, c-format
@@ -1581,6 +1593,17 @@ msgstr ""
 msgid "Unknown column type '%s' for column '%s'."
 msgstr "Type de colonne inconnu '%s' pour la colonne '%s'."
 
+#: fmelt.c:600
+msgid ""
+"measure.vars is a list with length=1, which as long documented should return "
+"integer indices in the 'variable' column, but currently returns character "
+"column names. To increase consistency in the next release, we plan to change "
+"'variable' to integer, so users who were relying on this behavior should "
+"change measure.vars=list('col_name') (output variable is column name now, "
+"but will become column index/integer) to measure.vars='col_name' (variable "
+"is column name before and after the planned change)."
+msgstr ""
+
 #: fmelt.c:686
 #, c-format
 msgid "variable_table does not support column type '%s' for column '%s'."
@@ -1725,15 +1748,21 @@ msgstr ""
 "La colonne %d a une longueur %d qui diffère de la longueur de la colonne 1 "
 "(%d), essayez-vous d'ordonner par une colonne de type liste ?\n"
 
-#: forder.c:508
+#: forder.c:508 forder.c:1654
 msgid "retGrp must be TRUE or FALSE"
 msgstr "retGrp doit être TRUE ou FALSE"
 
-#: forder.c:511
+#: forder.c:511 forder.c:1657
 msgid "retStats must be TRUE or FALSE"
 msgstr "retStats doit être TRUE ou FALSE"
 
-#: forder.c:516
+#: forder.c:514 forder.c:1660
+#, fuzzy
+#| msgid "retStats must be TRUE or FALSE"
+msgid "retStats must be TRUE whenever retGrp is TRUE"
+msgstr "retStats doit être TRUE ou FALSE"
+
+#: forder.c:516 forder.c:1662
 msgid "sort must be TRUE or FALSE"
 msgstr "sort doit être TRUE ou FALSE"
 
@@ -1741,7 +1770,7 @@ msgstr "sort doit être TRUE ou FALSE"
 msgid "At least one of retGrp= or sort= must be TRUE"
 msgstr "Au moins l'un des deux, retGrp= ou sort=, doit être TRUE"
 
-#: forder.c:521
+#: forder.c:521 forder.c:1665
 msgid "na.last must be logical TRUE, FALSE or NA of length 1"
 msgstr "na.last doit être un booléen TRUE, FALSE ou NA de longueur 1"
 
@@ -1851,6 +1880,87 @@ msgstr "nrow==%d mais doit être >=0"
 #: forder.c:1512
 msgid "x must be type 'double'"
 msgstr "x doit être de type ‘double’ (nombre à virgule flottante)"
+
+#: forder.c:1622
+#, fuzzy
+#| msgid "sort must be TRUE or FALSE"
+msgid "'datatable.use.index' option must be TRUE or FALSE"
+msgstr "sort doit être TRUE ou FALSE"
+
+#: forder.c:1635
+#, fuzzy
+#| msgid "retGrp must be TRUE or FALSE"
+msgid "'datatable.forder.auto.index' option must be TRUE or FALSE"
+msgstr "retGrp doit être TRUE ou FALSE"
+
+#: forder.c:1652
+msgid "DT is NULL"
+msgstr ""
+
+#: forder.c:1668
+#, fuzzy
+#| msgid "n must be integer"
+msgid "order must be integer"
+msgstr "n doit être un nombre entier"
+
+#: forder.c:1670
+#, fuzzy
+#| msgid "na.last must be logical TRUE, FALSE or NA of length 1"
+msgid "reuseSorting must be logical TRUE, FALSE or NA of length 1"
+msgstr "na.last doit être un booléen TRUE, FALSE ou NA de longueur 1"
+
+#: forder.c:1682
+#, c-format
+msgid ""
+"forderReuseSorting: opt not possible: is.data.table(DT)=%d, sortGroups=%d, "
+"all1(ascArg)=%d\n"
+msgstr ""
+
+#: forder.c:1701
+#, c-format
+msgid "forderReuseSorting: using key: %s\n"
+msgstr ""
+
+#: forder.c:1736
+#, c-format
+msgid "forderReuseSorting: index found but not for retGrp and retStats: %s\n"
+msgstr ""
+
+#: forder.c:1739
+#, c-format
+msgid "forderReuseSorting: index found but not for retGrp: %s\n"
+msgstr ""
+
+#: forder.c:1742
+#, c-format
+msgid "forderReuseSorting: index found but not for retStats: %s\n"
+msgstr ""
+
+#: forder.c:1749
+#, c-format
+msgid ""
+"forderReuseSorting: index found but na.last=TRUE and no stats available: %s\n"
+msgstr ""
+
+#: forder.c:1752
+#, c-format
+msgid "forderReuseSorting: index found but na.last=TRUE and NAs present: %s\n"
+msgstr ""
+
+#: forder.c:1760
+#, c-format
+msgid "forderReuseSorting: using existing index: %s\n"
+msgstr ""
+
+#: forder.c:1772
+#, c-format
+msgid "forderReuseSorting: setting index (retGrp=%d, retStats=%d) on DT: %s\n"
+msgstr ""
+
+#: forder.c:1776
+#, c-format
+msgid "forderReuseSorting: opt=%d, took %.3fs\n"
+msgstr ""
 
 #: frank.c:14 frank.c:192
 #, c-format
@@ -2151,6 +2261,11 @@ msgid ""
 msgstr ""
 "  Le fichier se termine brusquement par '%c'. La fin de ligne est manquante. "
 "Utilisation d'une page ‘Copy-On-Write’ pour écrire 0 sur le dernier octet.\n"
+
+#: fread.c:1566 fread.c:1850
+#, c-format
+msgid "%s. Attempt to copy file in RAM failed."
+msgstr ""
 
 #: fread.c:1567 fread.c:1851
 #, fuzzy, c-format
@@ -2754,11 +2869,6 @@ msgstr ""
 msgid "%8.3fs (%3.0f%%) Memory map %.3fGB file\n"
 msgstr "%8.3fs (%3.0f%%) mappage de mémoire du fichier %.3fGo\n"
 
-#: fread.c:2775
-#, c-format
-msgid "%8.3fs (%3.0f%%) sep="
-msgstr "%8.3fs (%3.0f%%) sep="
-
 #: fread.c:2777
 #, c-format
 msgid " ncol=%d and header detection\n"
@@ -3089,7 +3199,7 @@ msgstr ""
 "%s : les résultats de FUN obtenus ne sont pas de type ‘double’ (nombre à "
 "virgule flottante)"
 
-#: froll.c:472 nafill.c:87
+#: froll.c:472 nafill.c:43 nafill.c:65 nafill.c:87
 #, c-format
 msgid "%s: took %.3fs\n"
 msgstr "%s : a pris %.3fs\n"
@@ -3142,7 +3252,7 @@ msgstr ""
 "l'utilisation de adaptative TRUE et d'un argument align différent de ‘right’ "
 "n'est pas implémentée"
 
-#: frollR.c:117 frollR.c:267 types.c:71
+#: frollR.c:117 frollR.c:267
 #, c-format
 msgid "%s: allocating memory for results %dx%d\n"
 msgstr "%s : allocation de mémoire pour les résultats %dx%d\n"
@@ -3404,15 +3514,14 @@ msgstr ""
 "et verbose."
 
 #: fwrite.c:909
-#, fuzzy, c-format
-#| msgid "Compress gzip error: %d"
-msgid "Can't write gzip header error: %d"
-msgstr "Erreur de compression gzip : %d"
+#, c-format
+msgid "Failed to write gzip header. Write returned %d"
+msgstr ""
 
 #: fwrite.c:910
 #, c-format
-msgid "Compress gzip error: %d"
-msgstr "Erreur de compression gzip : %d"
+msgid "Failed to compress gzip. compressbuff() returned %d"
+msgstr ""
 
 #: fwrite.c:911 fwrite.c:928
 #, c-format
@@ -3947,6 +4056,12 @@ msgstr ""
 #: nafill.c:184
 msgid "fill must be a vector of length 1 or a list of length of x"
 msgstr "fill doit être un vecteur de longueur 1 ou une liste de longueur x"
+
+#: negate.c:5
+#, fuzzy
+#| msgid "%s is not an integer vector"
+msgid "not logical or integer vector"
+msgstr "%s n'est pas un vecteur entier"
 
 #: openmp-utils.c:23
 #, c-format
@@ -4586,6 +4701,10 @@ msgstr ""
 #~ msgstr "RHS_list_of_columns == %s\n"
 
 #, c-format
+#~ msgid "savetl_init checks failed (%d %d %p %p)"
+#~ msgstr "les vérifications de savetl_init ont échoué (%d %d %p %p)"
+
+#, c-format
 #~ msgid "typeof x.%s (%s) != typeof i.%s (%s)"
 #~ msgstr "typeof x.%s (%s) != typeof i.%s (%s)"
 
@@ -4673,6 +4792,10 @@ msgstr ""
 #~ msgstr "=============================\n"
 
 #, c-format
+#~ msgid "%8.3fs (%3.0f%%) sep="
+#~ msgstr "%8.3fs (%3.0f%%) sep="
+
+#, c-format
 #~ msgid "nThread(%d)<1"
 #~ msgstr "nThread(%d)<1"
 
@@ -4721,6 +4844,10 @@ msgstr ""
 #~ msgstr ""
 #~ "Impossible d'allouer %zu mébioctets (MiB) pour la mémoire tampon de zlib "
 #~ "(zbuffer) : %s"
+
+#, c-format
+#~ msgid "Compress gzip error: %d"
+#~ msgstr "Erreur de compression gzip : %d"
 
 #, c-format
 #~ msgid "Failed to allocated %d bytes for '%s'."
