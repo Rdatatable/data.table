@@ -1,26 +1,24 @@
 #
 # Translators:
-# Italo Santos <ids37@nau.edu>, 2024
-# Leonardo Fontenelle <leonardof@leonardof.med.br>, 2024
+# Italo Santos <ids37@nau.edu>, 2024.
+# Rafael Fontenelle <rffontenelle@gmail.com>, 2024-2025.
+# Leonardo Fontenelle <leonardof@leonardof.med.br>, 2024-2025.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: data.table 1.15.99\n"
-"POT-Creation-Date: 2025-02-02 23:58-0800\n"
+"Project-Id-Version: data.table 1.16.99\n"
+"POT-Creation-Date: 2025-01-29 23:31-0800\n"
+"PO-Revision-Date: 2025-01-31 20:04-0300\n"
+"Last-Translator: Leonardo Fontenelle <leonardof@leonardof.med.br>\n"
 "Language-Team: Brazilian Portuguese\n"
 "Language: pt_BR\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1)\n"
+"X-Generator: Gtranslator 47.1\n"
 
 #: assign.c:122
-#, fuzzy
-#| msgid ""
-#| ".internal.selfref ptr is NULL. This is expected and normal for a data."
-#| "table loaded from disk. Please remember to always setDT() immediately "
-#| "after loading to prevent unexpected behavior. If this table was not "
-#| "loaded from disk or you've already run setDT(), please report to data."
-#| "table issue tracker.\n"
 msgid ""
 "The data.table internal attributes of this table are invalid. This is "
 "expected and normal for a data.table loaded from disk. Please remember to "
@@ -28,11 +26,11 @@ msgid ""
 "this table was not loaded from disk or you've already run setDT(), please "
 "report to the data.table issue tracker.\n"
 msgstr ""
-"ptr de .internal.selfref é NULL. Isso é esperado e normal para uma data."
-"table carregada do disco. Lembre-se de sempre executar setDT() imediatamente "
-"após o carregamento para evitar comportamento inesperado. Se esta tabela não "
-"foi carregada do disco ou você já executou setDT(), por favor, relate isso "
-"no rastreador de problemas do data.table.\n"
+"Os atributos data.table internos desta tabela são inválidos. Isso é esperado "
+"e normal para uma data.table carregada do disco. Lembre-se de sempre "
+"executar setDT() imediatamente após o carregamento para evitar comportamento "
+"inesperado. Se esta tabela não foi carregada do disco ou você já executou "
+"setDT(), por favor, relate isso no rastreador de problemas do data.table.\n"
 
 #: assign.c:203
 #, c-format
@@ -327,6 +325,8 @@ msgstr ""
 msgid ""
 "Doubly-invalid attempt to delete a non-existent column while also providing i"
 msgstr ""
+"Tentativa duplamente inválida de excluir uma coluna não-existente e ao mesmo "
+"tempo fornecer i"
 
 #: assign.c:475
 msgid ""
@@ -334,6 +334,9 @@ msgid ""
 "intend to add NULL to those rows instead? If so, use list_col := "
 "list(list(NULL))."
 msgstr ""
+"Tentativa inválida de excluir uma coluna de lista e ao mesmo tempo fornecer "
+"i. Você queria adicionar NULL a essas linhas em vez disso? Se for assim, use "
+"list_col := list(list(NULL))."
 
 #: assign.c:476
 msgid "When deleting columns, i should not be provided"
@@ -426,28 +429,19 @@ msgstr ""
 "problemas do data.table"
 
 #: assign.c:534
-#, fuzzy
-#| msgid ""
-#| "It appears that at some earlier point, names of this data.table have been "
-#| "reassigned. Please ensure to use setnames() rather than names<- or "
-#| "colnames<-. Otherwise, please report to data.table issue tracker."
 msgid ""
 "It appears that at some earlier point, attributes of this data.table have "
 "been reassigned. Please use setattr(DT, name, value) rather than attr(DT, "
 "name) <- value. If that doesn't apply to you, please report your case to the "
 "data.table issue tracker."
 msgstr ""
-"Parece que em algum momento anterior, os nomes desta data.table foram "
-"reatribuídos. Certifique-se de usar setnames() em vez de names<- ou "
-"colnames<-. Caso contrário, por favor, relate isso no rastreador de "
-"problemas do data.table"
+"Parece que em algum momento anterior, atributos desta data.table foram "
+"reatribuídos. Favor usar setattr(DT, nome, valor) em vez de attr(DT, nome) "
+"<- valor. Se isso não se aplicar ao seu caso, por favor, relate isso no "
+"rastreador de problemas do data.table"
 
 #: assign.c:564
-#, fuzzy, c-format
-#| msgid ""
-#| "RHS for item %d has been duplicated because MAYBE_REFERENCED==%d "
-#| "MAYBE_SHARED==%d, but then is being plonked. length(values)==%d; "
-#| "length(cols)==%d)\n"
+#, c-format
 msgid ""
 "RHS for item %d has been duplicated because MAYBE_REFERENCED==%d "
 "MAYBE_SHARED==%d, but then is being plonked. length(values)==%d; "
@@ -455,7 +449,7 @@ msgid ""
 msgstr ""
 "O lado direito (RHS) para o item %d foi duplicado porque "
 "MAYBE_REFERENCED==%d MAYBE_SHARED==%d, mas depois está sendo plonked. "
-"length(values)==%d; length(cols)==%d)\n"
+"length(values)==%d; length(cols)==%d\n"
 
 #: assign.c:569
 #, c-format
@@ -489,10 +483,9 @@ msgstr ""
 "chave\n"
 
 #: assign.c:750
-#, fuzzy, c-format
-#| msgid "column %d named '%s'"
+#, c-format
 msgid "(column %d named '%s')"
-msgstr "coluna %d de nome '%s'"
+msgstr "(coluna %d de nome '%s')"
 
 #: assign.c:784
 #, c-format
@@ -504,50 +497,40 @@ msgstr ""
 "a colunas de fator, caractere ou lista."
 
 #: assign.c:799
-#, fuzzy, c-format
-#| msgid ""
-#| "Assigning factor numbers to %s. But %d is outside the level range [1,%d]"
+#, c-format
 msgid ""
 "Assigning factor numbers to target vector. But %d is outside the level range "
 "[1,%d]"
 msgstr ""
-"Atribuindo números de fator a %s, mas %d está fora do intervalo de níveis [1,"
-"%d]"
+"Atribuindo números de fator ao vetor alvo. Mas %d está fora do intervalo de "
+"níveis [1,%d]"
 
 #: assign.c:801
-#, fuzzy, c-format
-#| msgid ""
-#| "Assigning factor numbers to %s. But %d is outside the level range [1,%d]"
+#, c-format
 msgid ""
 "Assigning factor numbers to column %d named '%s'. But %d is outside the "
 "level range [1,%d]"
 msgstr ""
-"Atribuindo números de fator a %s, mas %d está fora do intervalo de níveis [1,"
-"%d]"
+"Atribuindo números de fator à coluna %d de nome '%s'. Mas %d está fora do "
+"intervalo de níveis [1,%d]"
 
 #: assign.c:811
-#, fuzzy, c-format
-#| msgid ""
-#| "Assigning factor numbers to %s. But %f is outside the level range [1,%d], "
-#| "or is not a whole number."
+#, c-format
 msgid ""
 "Assigning factor numbers to target vector. But %f is outside the level range "
 "[1,%d], or is not a whole number."
 msgstr ""
-"Atribuindo números de fator a %s, mas %f está fora do intervalo de níveis [1,"
-"%d] ou não é de todo um número."
+"Atribuindo números de fator ao vetor alvo. Mas %f está fora do intervalo de "
+"níveis [1,%d] ou não é um número inteiro."
 
 #: assign.c:813
-#, fuzzy, c-format
-#| msgid ""
-#| "Assigning factor numbers to %s. But %f is outside the level range [1,%d], "
-#| "or is not a whole number."
+#, c-format
 msgid ""
 "Assigning factor numbers to column %d named '%s'. But %f is outside the "
 "level range [1,%d], or is not a whole number."
 msgstr ""
-"Atribuindo números de fator a %s, mas %f está fora do intervalo de níveis [1,"
-"%d] ou não é de todo um número."
+"Atribuindo números de fator à coluna %d de nome '%s'. Mas %f está fora do "
+"intervalo de níveis [1,%d], ou não é um número inteiro."
 
 #: assign.c:819
 #, c-format
@@ -565,75 +548,67 @@ msgstr ""
 "níveis de fator"
 
 #: assign.c:906
-#, fuzzy, c-format
-#| msgid "Coercing 'character' RHS to '%s' to match the type of %s."
+#, c-format
 msgid "Coercing 'character' RHS to '%s' to match the type of target vector."
 msgstr ""
 "Fazendo coerção de 'character' do lado direito (RHS) para '%s' para "
-"corresponder ao tipo de %s."
+"corresponder ao tipo do vetor alvo."
 
 #: assign.c:908
-#, fuzzy, c-format
-#| msgid "Coercing 'character' RHS to '%s' to match the type of %s."
+#, c-format
 msgid ""
 "Coercing 'character' RHS to '%s' to match the type of column %d named '%s'."
 msgstr ""
 "Fazendo coerção de 'character' do lado direito (RHS) para '%s' para "
-"corresponder ao tipo de %s."
+"corresponder ao tipo da coluna %d de nome '%s'."
 
 #: assign.c:916
-#, fuzzy
-#| msgid "Cannot coerce 'list' RHS to 'integer64' to match the type of %s."
 msgid ""
 "Cannot coerce 'list' RHS to 'integer64' to match the type of target vector."
 msgstr ""
 "Não foi possível fazer coerção de 'list' do lado direito (RHS) para "
-"'integer64' para corresponder ao tipo de %s."
+"'integer64' para corresponder ao tipo do vetor alvo."
 
 #: assign.c:918
-#, fuzzy, c-format
-#| msgid "Cannot coerce 'list' RHS to 'integer64' to match the type of %s."
+#, c-format
 msgid ""
 "Cannot coerce 'list' RHS to 'integer64' to match the type of column %d named "
 "'%s'."
 msgstr ""
 "Não foi possível fazer coerção de 'list' do lado direito (RHS) para "
-"'integer64' para corresponder ao tipo de %s."
+"'integer64' para corresponder ao tipo de da coluna %d de nome '%s'."
 
 #: assign.c:924
-#, fuzzy, c-format
-#| msgid "Coercing 'list' RHS to '%s' to match the type of %s."
+#, c-format
 msgid "Coercing 'list' RHS to '%s' to match the type of target vector."
 msgstr ""
 "Fazendo coerção de 'list' do lado direito (RHS) para '%s' para corresponder "
-"ao tipo de %s."
+"ao tipo do vetor alvo."
 
 #: assign.c:926
-#, fuzzy, c-format
-#| msgid "Coercing 'list' RHS to '%s' to match the type of %s."
+#, c-format
 msgid "Coercing 'list' RHS to '%s' to match the type of column %d named '%s'."
 msgstr ""
 "Fazendo coerção de 'list' do lado direito (RHS) para '%s' para corresponder "
-"ao tipo de %s."
+"ao tipo da coluna %d de nome '%s'."
 
 #: assign.c:934
-#, fuzzy, c-format
-#| msgid "Zero-copy coerce when assigning '%s' to '%s' %s.\n"
+#, c-format
 msgid "Zero-copy coerce when assigning '%s' to '%s' target vector.\n"
-msgstr "Fazendo coerção de zero cópia ao atribuir '%1$s' a %3$s '%2$s'.\n"
+msgstr "Fazendo coerção de zero cópia ao atribuir '%s' ao vetor alvo '%s'.\n"
 
 #: assign.c:936
-#, fuzzy, c-format
-#| msgid "Zero-copy coerce when assigning '%s' to '%s' %s.\n"
+#, c-format
 msgid ""
 "Zero-copy coerce when assigning '%s' to column %d named '%s' which is '%s'.\n"
-msgstr "Fazendo coerção de zero cópia ao atribuir '%1$s' a %3$s '%2$s'.\n"
+msgstr ""
+"Fazendo coerção de zero cópia ao atribuir '%s' à coluna %d de nome '%s' que "
+"é '%s'.\n"
 
 #: assign.c:952
-#, fuzzy, c-format
-#| msgid "target vector"
+#, c-format
 msgid "(target vector)"
-msgstr "vetor alvo"
+msgstr "(vetor alvo)"
 
 #: assign.c:962 assign.c:963
 #, c-format
@@ -641,6 +616,8 @@ msgid ""
 "%d (type '%s') at RHS position %d taken as TRUE when assigning to type '%s' "
 "%s"
 msgstr ""
+"%d (tipo '%s') na posição %d no lado direito interpretado como TRUE ao "
+"designar ao tipo '%s' %s"
 
 #: assign.c:965
 #, c-format
@@ -648,6 +625,8 @@ msgid ""
 "%<PRId64> (type '%s') at RHS position %d taken as TRUE when assigning to "
 "type '%s' %s"
 msgstr ""
+"%<PRId64> (tipo '%s') na posição %d no lado direito interpretado como TRUE "
+"ao designar ao tipo '%s' %s"
 
 #: assign.c:966
 #, c-format
@@ -655,12 +634,16 @@ msgid ""
 "%f (type '%s') at RHS position %d taken as TRUE when assigning to type '%s' "
 "%s"
 msgstr ""
+"%f (tipo '%s') na posição %d no lado direito interpretado como TRUE ao "
+"designar ao tipo '%s' %s"
 
 #: assign.c:970
 #, c-format
 msgid ""
 "%d (type '%s') at RHS position %d taken as 0 when assigning to type '%s' %s"
 msgstr ""
+"%d (tipo '%s') na posição %d no lado direito interpretado como 0 ao designar "
+"ao tipo '%s' %s"
 
 #: assign.c:972
 #, c-format
@@ -668,6 +651,8 @@ msgid ""
 "%<PRId64> (type '%s') at RHS position %d taken as 0 when assigning to type "
 "'%s' %s"
 msgstr ""
+"%<PRId64> (tipo '%s') na posição %d no lado direito interpretado como 0 ao "
+"designar ao tipo '%s' %s"
 
 #: assign.c:973
 #, c-format
@@ -675,6 +660,8 @@ msgid ""
 "%f (type '%s') at RHS position %d either truncated (precision lost) or taken "
 "as 0 when assigning to type '%s' %s"
 msgstr ""
+"%f (tipo '%s'), na posição %d no lado direito, truncado (perda de precisão) "
+"ou considerado como 0 ao designar ao designar ao tipo '%s' %s"
 
 #: assign.c:978
 #, c-format
@@ -682,6 +669,8 @@ msgid ""
 "%<PRId64> (type '%s') at RHS position %d out-of-range (NA) when assigning to "
 "type '%s' %s"
 msgstr ""
+"%<PRId64> (tipo '%s') na posição %d no lado direito fora de alcance (NA) ao "
+"designar ao tipo '%s' %s"
 
 #: assign.c:979 assign.c:986
 #, c-format
@@ -689,6 +678,8 @@ msgid ""
 "%f (type '%s') at RHS position %d out-of-range(NA) or truncated (precision "
 "lost) when assigning to type '%s' %s"
 msgstr ""
+"%f (tipo '%s') na posição %d no lado direito fora de alcance (NA) ou "
+"truncado (perda de precisão) ao designar ao tipo '%s' %s"
 
 #: assign.c:981 assign.c:990
 #, c-format
@@ -696,6 +687,8 @@ msgid ""
 "%f (type '%s') at RHS position %d either imaginary part discarded or real "
 "part truncated (precision lost) when assigning to type '%s' %s"
 msgstr ""
+"%f (tipo '%s'), na posição %d no lado direito, com ou parte imaginária ou "
+"parte real descartada (perda de precisão) ao designar ao tipo '%s' %s"
 
 #: assign.c:991
 #, c-format
@@ -703,6 +696,8 @@ msgid ""
 "%f (type '%s') at RHS position %d imaginary part discarded when assigning to "
 "type '%s' %s"
 msgstr ""
+"%f (tipo '%s') na posição %d no laldo direito com parte imaginária "
+"descartada ao designar ao tipo '%s' %s"
 
 #: assign.c:1036
 #, c-format
@@ -870,10 +865,9 @@ msgid "bmerge: looping bmerge_r took %.3fs\n"
 msgstr ""
 
 #: bmerge.c:222
-#, fuzzy, c-format
-#| msgid "%s: took %.3fs\n"
+#, c-format
 msgid "bmerge: took %.3fs\n"
-msgstr "%s: levou %.3fs\n"
+msgstr "bmerge: levou %.3fs\n"
 
 #: chmatch.c:5
 #, c-format
@@ -1156,13 +1150,11 @@ msgid "\n"
 msgstr "\n"
 
 #: dogroups.c:455 dogroups.c:470
-#, fuzzy, c-format
-#| msgid ""
-#| "\rProcessed %d groups out of %d. %.0f%% done. Time elapsed: %ds. ETA: %ds."
+#, c-format
 msgid ""
 "Processed %d groups out of %d. %.0f%% done. Time elapsed: %ds. ETA: %ds."
 msgstr ""
-"\rProcessados %d grupos de %d. %.0f%% concluído. Tempo decorrido: %ds. "
+"Processados %d grupos de %d. %.0f%% concluído. Tempo decorrido: %ds. "
 "Estimado: %ds."
 
 #: dogroups.c:475
@@ -1171,28 +1163,22 @@ msgid "Wrote less rows (%d) than allocated (%d).\n"
 msgstr "Foram escritas menos linhas (%d) do que alocadas (%d).\n"
 
 #: dogroups.c:499
-#, fuzzy, c-format
-#| msgid ""
-#| "\n"
-#| "  %s took %.3fs for %d groups\n"
+#, c-format
 msgid ""
 "\n"
 "  collecting discontiguous groups took %.3fs for %d groups\n"
 msgstr ""
 "\n"
-"  %s levou %.3fs para %d grupos\n"
+"  a coleta de grupos descontíguos levou %.3fs para %d grupos\n"
 
 #: dogroups.c:500
-#, fuzzy, c-format
-#| msgid ""
-#| "\n"
-#| "  %s took %.3fs for %d groups\n"
+#, c-format
 msgid ""
 "\n"
 "  memcpy contiguous groups took %.3fs for %d groups\n"
 msgstr ""
 "\n"
-"  %s levou %.3fs para %d grupos\n"
+"  memcpy dos grupos contíguos levou %.3fs para %d grupos\n"
 
 #: dogroups.c:502
 #, c-format
@@ -1424,10 +1410,8 @@ msgid "concat: 'vec' must be a character vector"
 msgstr "concat: 'vec' deve ser um vetor de caracteres"
 
 #: fmelt.c:67
-#, fuzzy
-#| msgid "concat: 'idx' must be an integer vector of length >= 0"
 msgid "concat: 'idx' must be an integer vector"
-msgstr "concat: 'idx' deve ser um vetor de inteiros com comprimento >= 0"
+msgstr "concat: 'idx' deve ser um vetor de inteiros"
 
 #: fmelt.c:135
 #, c-format
@@ -1973,11 +1957,9 @@ msgstr ""
 "permitido."
 
 #: fread.c:1346 fread.c:1348
-#, fuzzy, c-format
-#| msgid ""
-#| "freadMain: NAstring <<%s>> and logical01=TRUE, this is not permitted."
+#, c-format
 msgid "freadMain: NAstring <<%s>> and %s=TRUE, this is not permitted."
-msgstr "freadMain: NAstring <<%s>> e logic01=TRUE, e isso não é permitido."
+msgstr "freadMain: NAstring <<%s>> e %s=TRUE, e isso não é permitido."
 
 #: fread.c:1361
 msgid "  No NAstrings provided.\n"
@@ -2006,16 +1988,16 @@ msgstr "  pular para a string = <<%s>>\n"
 msgid "  show progress = %d\n"
 msgstr "  mostrar progresso = %d\n"
 
+# Coluna de zeros e uns
 #: fread.c:1375
 #, c-format
 msgid "  0/1 column will be read as %s\n"
-msgstr "  0/1 coluna será lida como %s\n"
+msgstr "  coluna 0/1 será lida como %s\n"
 
 #: fread.c:1376
-#, fuzzy, c-format
-#| msgid "  0/1 column will be read as %s\n"
+#, c-format
 msgid "  Y/N column will be read as %s\n"
-msgstr "  0/1 coluna será lida como %s\n"
+msgstr "  coluna Y/N coluna será lida como %s\n"
 
 #: fread.c:1388
 #, c-format
@@ -2180,33 +2162,24 @@ msgstr ""
 "último byte.\n"
 
 #: fread.c:1558
-#, fuzzy
-#| msgid ""
-#| "This file is very unusual: it ends abruptly without a final newline, and "
-#| "also its size is a multiple of 4096 bytes. Please properly end the last "
-#| "row with a newline using for example 'echo >> file' to avoid this "
 msgid ""
 "This file is very unusual: it ends abruptly without a final newline, and "
 "also its size is a multiple of 4096 bytes. Please properly end the last row "
 "with a newline using for example 'echo >> file'"
 msgstr ""
-"Este arquivo é muito incomum: termina abruptamente sem uma nova linha final "
-"e também seu tamanho é um múltiplo de 4096 bytes. Por favor, termine "
+"Este arquivo é muito incomum: ele termina abruptamente sem uma nova linha "
+"final, e também seu tamanho é um múltiplo de 4096 bytes. Por favor, termine "
 "corretamente a última linha com uma nova linha usando, por exemplo, 'echo >> "
-"arquivo' para evitar isto "
+"arquivo'"
 
 #: fread.c:1560
-#, fuzzy, c-format
-#| msgid ""
-#| "  File ends abruptly with '%c'. Final end-of-line is missing. Using cow "
-#| "page to write 0 to the last byte.\n"
+#, c-format
 msgid ""
 "  File ends abruptly with '%c'. Final end-of-line is missing. Copying file "
 "in RAM. %s.\n"
 msgstr ""
-"  O arquivo termina abruptamente com '%c'. Um fim de linha ao final está "
-"faltando. Usando a página de cópia na gravação (COW) para escrever 0 no "
-"último byte.\n"
+"  O arquivo termina abruptamente com '%c'. Está faltando um fim de linha ao "
+"final. Copiando o arquivo na RAM. %s.\n"
 
 #: fread.c:1566 fread.c:1850
 #, c-format
@@ -2214,10 +2187,9 @@ msgid "%s. Attempt to copy file in RAM failed."
 msgstr ""
 
 #: fread.c:1567 fread.c:1851
-#, fuzzy, c-format
-#| msgid "Unable to allocate %s of contiguous virtual RAM. %s allocation."
+#, c-format
 msgid "Unable to allocate %s of contiguous virtual RAM."
-msgstr "Não foi possível alocar %s de RAM virtual contígua. %s esta alocação."
+msgstr "Não foi possível alocar %s de RAM virtual contígua."
 
 #: fread.c:1571 fread.c:1855
 #, c-format
@@ -2225,10 +2197,9 @@ msgid "  File copy in RAM took %.3f seconds.\n"
 msgstr "  A cópia do arquivo na RAM demorou %.3f segundos.\n"
 
 #: fread.c:1573 fread.c:1857
-#, fuzzy, c-format
-#| msgid "  File copy in RAM took %.3f seconds.\n"
+#, c-format
 msgid "Avoidable file copy in RAM took %.3f seconds. %s.\n"
-msgstr "  A cópia do arquivo na RAM demorou %.3f segundos.\n"
+msgstr "A cópia desnecessária do arquivo na RAM demorou %.3f segundos. %s\n"
 
 #: fread.c:1605
 msgid "[05] Skipping initial rows if needed\n"
@@ -2351,19 +2322,14 @@ msgid "  fill=%s and the most number of columns found is %d\n"
 msgstr "  fill=%s e o maior número de colunas encontradas é %d\n"
 
 #: fread.c:1842
-#, fuzzy
-#| msgid ""
-#| "This file is very unusual: it's one single column, ends with 2 or more "
-#| "end-of-line (representing several NA at the end), and is a multiple of "
-#| "4096, too."
 msgid ""
 "This file is very unusual: it's one single column, ends with 2 or more end-"
 "of-line (representing several NA at the end), and the file size is a "
 "multiple of 4096, too"
 msgstr ""
 "Este arquivo é muito incomum: é uma única coluna, termina com 2 ou mais "
-"finais de linha (representando vários NA no final) e também é um múltiplo de "
-"4096."
+"finais de linha (representando vários NA no final), e também o tamanho do "
+"arquivo é um múltiplo de 4096."
 
 #: fread.c:1844
 #, c-format
@@ -2401,53 +2367,44 @@ msgid "  sep=',' so dec set to '.'\n"
 msgstr "  sep=',', então dec definido para '.'\n"
 
 #: fread.c:1917
-#, fuzzy, c-format
-#| msgid "  Number of sampling jump points = %d because "
+#, c-format
 msgid ""
 "  Number of sampling jump points = %d because nrow limit (%<PRIu64>) "
 "supplied\n"
-msgstr "  Número de pontos de pulo de amostragem = %d porque"
+msgstr ""
+"  Número de pontos de pulo de amostragem = %d porque limite de número de "
+"linhas (%<PRIu64>) fornecido\n"
 
 #: fread.c:1919
-#, fuzzy, c-format
-#| msgid "  Number of sampling jump points = %d because "
+#, c-format
 msgid "  Number of sampling jump points = %d because jump0size==0\n"
-msgstr "  Número de pontos de pulo de amostragem = %d porque"
+msgstr "  Número de pontos de pulo de amostragem = %d porque jump0size==0\n"
 
 #: fread.c:1921
-#, fuzzy, c-format
-#| msgid ""
-#| "(%<PRIu64> bytes from row 1 to eof) / (2 * %<PRIu64> jump0size) == "
-#| "%<PRIu64>\n"
+#, c-format
 msgid ""
 "  Number of sampling jump points = %d because (%<PRIu64> bytes from row 1 to "
 "eof) / (2 * %<PRIu64> jump0size) == %<PRIu64>\n"
 msgstr ""
-"(%<PRIu64> bytes da linha 1 até o fim do arquivo) / (2 * %<PRIu64> "
-"jump0size) == %<PRIu64>\n"
+"  Número de pontos de pulo de amostragem = %d porque (%<PRIu64> bytes da "
+"linha 1 até o fim do arquivo) / (2 * %<PRIu64> jump0size) == %<PRIu64>\n"
 
 #: fread.c:1962
-#, fuzzy, c-format
-#| msgid ""
-#| "  A line with too-%s fields (%d/%d) was found on line %d of sample jump "
-#| "%d. %s\n"
+#, c-format
 msgid ""
 "  A line with too-few fields (%d/%d) was found on line %d of sample jump %d. "
 "%s\n"
 msgstr ""
-"  Uma linha com muito %s campos (%d/%d) foi encontrada na linha %d de "
+"  Uma linha com muito poucos campos (%d/%d) foi encontrada na linha %d de "
 "amostra de pulo %d. %s\n"
 
 #: fread.c:1963
-#, fuzzy, c-format
-#| msgid ""
-#| "  A line with too-%s fields (%d/%d) was found on line %d of sample jump "
-#| "%d. %s\n"
+#, c-format
 msgid ""
 "  A line with too-many fields (%d/%d) was found on line %d of sample jump "
 "%d. %s\n"
 msgstr ""
-"  Uma linha com muito %s campos (%d/%d) foi encontrada na linha %d de "
+"  Uma linha com muitos campos (%d/%d) foi encontrada na linha %d de "
 "amostra de pulo %d. %s\n"
 
 #: fread.c:1964
@@ -2488,11 +2445,7 @@ msgstr ""
 "de coluna."
 
 #: fread.c:2037
-#, fuzzy, c-format
-#| msgid ""
-#| " for the first column which is guessed to be row names or an index. Use "
-#| "setnames() afterwards if this guess is not correct, or fix the file write "
-#| "command that created the file to create a valid file."
+#, c-format
 msgid ""
 "Detected %d column names but the data has %d columns (i.e. invalid file). "
 "Added an extra default column name for the first column which is guessed to "
@@ -2500,22 +2453,21 @@ msgid ""
 "correct, or fix the file write command that created the file to create a "
 "valid file.\n"
 msgstr ""
-" para a primeira coluna que se supõe ser nomes de linhas ou um índice. Use "
-"setnames() posteriormente se essa estimativa não estiver correta ou corrija "
-"o comando de gravação de arquivo que criou o arquivo para criar um arquivo "
-"válido."
+"Foram detectados %d nomes de coluna, mas os dados têm %d colunas (ou seja, "
+"arquivo inválido). Um nome de coluna padrão extra foi adicionado à primeira "
+"coluna, adivinhando que seja o nome das linhas ou um índice. Use setnames() "
+"posteriormente se essa estimativa não estiver correta, ou corrija o comando "
+"de gravação de arquivo que criou o arquivo para criar um arquivo válido.\n"
 
 #: fread.c:2040
-#, fuzzy, c-format
-#| msgid ""
-#| "Detected %d column names but the data has %d columns (i.e. invalid file). "
-#| "Added %d extra default column name%s\n"
+#, c-format
 msgid ""
 "Detected %d column names but the data has %d columns (i.e. invalid file). "
 "Added %d extra default column names at the end.\n"
 msgstr ""
 "Foram detectados %d nomes de colunas, mas os dados possuem %d colunas (ou "
-"seja, arquivo inválido). Adicionado(s) %d nome(s) de coluna padrão extra%s\n"
+"seja, arquivo inválido). Adicionados %d nomes de coluna padrão extra ao "
+"fim.\n"
 
 #: fread.c:2044
 #, c-format
@@ -2533,27 +2485,19 @@ msgid "Failed to realloc 2 x %d bytes for type and tmpType: %s"
 msgstr "Falha ao realocar 2 x %d bytes para tipo e tmpType: %s"
 
 #: fread.c:2069
-#, fuzzy
-#| msgid ""
-#| "  'header' determined to be %s because there are%s number fields in the "
-#| "first and only row\n"
 msgid ""
 "  'header' determined to be TRUE because there are no number fields in the "
 "first and only row\n"
 msgstr ""
-"  'header' determinado como %s porque%s há campo numérico na primeira e "
+"  'header' determinado como TRUE porque não há campo numérico na primeira e "
 "única linha\n"
 
 #: fread.c:2071
-#, fuzzy
-#| msgid ""
-#| "  'header' determined to be %s because there are%s number fields in the "
-#| "first and only row\n"
 msgid ""
 "  'header' determined to be FALSE because there are number fields in the "
 "first and only row\n"
 msgstr ""
-"  'header' determinado como %s porque%s há campo numérico na primeira e "
+"  'header' determinado como FALSE porque há campos numéricos na primeira e "
 "única linha\n"
 
 #: fread.c:2074
@@ -2707,11 +2651,12 @@ msgid "  Dropping %d overallocated columns\n"
 msgstr "  Descartando %d colunas sobrealocadas\n"
 
 #: fread.c:2657
-#, fuzzy, c-format
-#| msgid "Please report to the data.table issues tracker"
+#, c-format
 msgid ""
 "Internal error in %s: %s. Please report to the data.table issues tracker"
-msgstr "Por favor, relate isso no rastreador de problemas do data.table"
+msgstr ""
+"Erro interno em %s: %s. Por favor, relate isso no rastreador de problemas do "
+"data.table"
 
 #: fread.c:2664
 #, c-format
@@ -3252,10 +3197,8 @@ msgstr ""
 "narm %d\n"
 
 #: fsort.c:106
-#, fuzzy
-#| msgid "%zu by excluding 0 and 1 counts\n"
 msgid "Reduced MSBsize from %zu to %zu by excluding 0 and 1 counts\n"
-msgstr "%zu excluindo contagens 0 e 1\n"
+msgstr "MSBsize reduzido de %zu para %zu excluindo contagens 0 e 1\n"
 
 #: fsort.c:121
 msgid "x must be a vector of type double currently"
@@ -3337,7 +3280,7 @@ msgstr "Escritores de colunas: "
 #: fwrite.c:690
 #, c-format
 msgid "type %d has no max length method implemented"
-msgstr ""
+msgstr "tipo %d não tem método de comprimento máximo implementado"
 
 #: fwrite.c:702
 #, c-format
@@ -3367,27 +3310,22 @@ msgstr ""
 "caminho existe?"
 
 #: fwrite.c:730
-#, fuzzy, c-format
-#| msgid "Writing bom (%s), yaml (%d characters) and column names (%s) ... "
+#, c-format
 msgid "Writing bom (%s), yaml (%d characters) and column names (%s)\n"
-msgstr ""
-"Escrevendo bom (%s), yaml (%d caracteres) e nomes das colunas (%s) ... "
+msgstr "Escrevendo bom (%s), yaml (%d caracteres) e nomes das colunas (%s)\n"
 
 #: fwrite.c:782
-#, fuzzy, c-format
-#| msgid ""
-#| "Writing %<PRId64> rows in %d batches of %d rows (each buffer size %dMB, "
-#| "showProgress=%d, nth=%d)\n"
+#, c-format
 msgid ""
 "Writing %<PRId64> rows in %d batches of %d rows, each buffer size %zu bytes "
 "(%zu MiB), showProgress=%d, nth=%d\n"
 msgstr ""
-"Escrevendo %<PRId64> linhas em %d lotes de %d linhas (cada buffer de "
-"tamanho%dMB, showProgress=%d, nth=%d)\n"
+"Escrevendo %<PRId64> linhas em %d lotes de %d linhas, cada buffer de tamanho "
+"%zu bytes (%zu MiB), showProgress=%d, nth=%d)\n"
 
 #: fwrite.c:790
 msgid "Allocate %zu bytes (%zu MiB) for buffPool\n"
-msgstr ""
+msgstr "Alocar %zu bytes (%zu MiB) para buffPool\n"
 
 #: fwrite.c:794
 #, c-format
@@ -3398,11 +3336,10 @@ msgstr ""
 "Não foi possível alocar %zu MB * %d buffers de thread; '%d: %s'. Por favor, "
 "leia ?fwrite para as opções nThread, buffMB e verbose."
 
+# Pelo que entendi, 'stream' aqui é o nome da variável
 #: fwrite.c:810
-#, fuzzy
-#| msgid "Can't allocate gzip stream structure"
 msgid "Can't init stream structure for deflateBound"
-msgstr "Não é possível alocar a estrutura de fluxo gzip"
+msgstr "Não é possível inicializar a estrutura de stream para deflateBound"
 
 #: fwrite.c:815
 #, c-format
@@ -3411,29 +3348,26 @@ msgstr "zbuffSize=%d retornado de deflateBound\n"
 
 #: fwrite.c:821
 msgid "Allocate %zu bytes (%zu MiB) for zbuffPool\n"
-msgstr ""
+msgstr "Alocar %zu bytes (%zu MiB) para zbuffPool\n"
 
 #: fwrite.c:828
-#, fuzzy, c-format
-#| msgid ""
-#| "Unable to allocate %zu MB * %d thread compressed buffers; '%d: %s'. "
-#| "Please read ?fwrite for nThread, buffMB and verbose options."
+#, c-format
 msgid ""
 "Unable to allocate %zu MiB * %d thread compressed buffers; '%d: %s'. Please "
 "read ?fwrite for nThread, buffMB and verbose options."
 msgstr ""
-"Não foi possível alocar %zu MB * %d buffers comprimidos de thread; '%d: %s'. "
-"Por favor, leia ?fwrite para as opções nThread, buffMB e verbose."
+"Não foi possível alocar %zu MiB * %d buffers comprimidos de thread; '%d: "
+"%s'. Por favor, leia ?fwrite para as opções nThread, buffMB e verbose."
 
 #: fwrite.c:909
 #, c-format
 msgid "Failed to write gzip header. Write returned %d"
-msgstr ""
+msgstr "Falha ao escrever o cabeçalho gzip. A escrita retornou %d: %d"
 
 #: fwrite.c:910
 #, c-format
 msgid "Failed to compress gzip. compressbuff() returned %d"
-msgstr ""
+msgstr "Falha ao comprimir gzip. compressbuff() retornou %d"
 
 #: fwrite.c:911 fwrite.c:928
 #, c-format
@@ -3441,18 +3375,18 @@ msgid "%s: '%s'"
 msgstr "%s: '%s'"
 
 #: fwrite.c:917
-#, fuzzy, c-format
-#| msgid "done in %.3fs\n"
+#, c-format
 msgid "Initialization done in %.3fs\n"
-msgstr "concluído em %.3fs\n"
+msgstr "Inicialização concluída em %.3fs\n"
 
 #: fwrite.c:922
 msgid "No data rows present (nrow==0)\n"
 msgstr "Nenhuma linha de dados presente (nrow==0)\n"
 
+#. https://pt.wikipedia.org/wiki/Gzip#Formato
 #: fwrite.c:1096
 msgid "Failed to write gzip trailer"
-msgstr ""
+msgstr "Falhou em gravar o terminador do gzip"
 
 #: fwrite.c:1115
 #, c-format
@@ -3460,18 +3394,19 @@ msgid ""
 "zlib: uncompressed length=%zu (%zu MiB), compressed length=%zu (%zu MiB), "
 "ratio=%.1f%%, crc=%x\n"
 msgstr ""
+"zlib: comprimento não comprimido %zu (%zu MiB), comprimento comprimido %zu "
+"(%zu MiB), ratio=%.1f%%, crc=%x\n"
 
 #: fwrite.c:1119
 #, c-format
 msgid ""
 "Written %<PRId64> rows in %.3f secs using %d thread%s. MaxBuffUsed=%d%%\n"
 msgstr ""
+"%<PRId64> linhas escritas em %.3f segundos usando %d thread%s. "
+"MaxBuffUsed=%d%%\n"
 
 #: fwrite.c:1133
-#, fuzzy, c-format
-#| msgid ""
-#| "zlib %s (zlib.h %s) deflate() returned error %d with z_stream-"
-#| ">msg==\"%s\" Z_FINISH=%d Z_BLOCK=%d. %s"
+#, c-format
 msgid ""
 "zlib %s (zlib.h %s) deflate() returned error %d Z_FINISH=%d Z_BLOCK=%d. %s"
 msgstr ""
@@ -3601,10 +3536,9 @@ msgid "gather implemented for INTSXP, REALSXP, and CPLXSXP but not '%s'"
 msgstr "gather implementado para INTSXP, REALSXP e CPLXSXP, mas não para '%s'"
 
 #: gsumm.c:344
-#, fuzzy, c-format
-#| msgid "gather took ... "
+#, c-format
 msgid "gather took %.3fs\n"
-msgstr "gather levou ... "
+msgstr "gather levou %.3fs\n"
 
 #: gsumm.c:354 gsumm.c:585 gsumm.c:736 gsumm.c:873 gsumm.c:1028 gsumm.c:1122
 #, c-format
@@ -3664,8 +3598,9 @@ msgid ""
 "Type '%s' not supported by GForce mean (gmean). Either add the prefix base::"
 "mean(.) or turn off GForce optimization using options(datatable.optimize=1)"
 msgstr ""
-"Tipo '%s' não é suportado pelo GForce mean (gmean). Adicione o prefixo base::"
-"mean(.) ou desative a otimização GForce usando options(datatable.optimize=1)"
+"Tipo '%s' não é suportado pelo GForce mean (gmean). Adicione o prefixo "
+"base::mean(.) ou desative a otimização GForce usando "
+"options(datatable.optimize=1)"
 
 #: gsumm.c:734
 msgid ""
@@ -3869,12 +3804,12 @@ msgstr ""
 "Verificando se memset(&ld, 0, sizeof(long double)); ld == (long double)0.0 %s"
 
 #: init.c:226
-#, fuzzy
-#| msgid "The ascii character '/' is not just before '0'"
 msgid ""
 "Unlike the very common case, e.g. ASCII, the character '/' is not just "
 "before '0'."
-msgstr "O caractere ASCII '/' não está logo antes de '0'"
+msgstr ""
+"Ao contrário do esperado, como no ASCII, o caractere '/' não está logo antes "
+"de '0'."
 
 #: init.c:227
 msgid "The C expression (uint_fast8_t)('/'-'0')<10 is true. Should be false."
@@ -3882,12 +3817,12 @@ msgstr ""
 "A expressão em C (uint_fast8_t)('/'-'0')<10 é verdadeira. Deveria ser falsa."
 
 #: init.c:228
-#, fuzzy
-#| msgid "The ascii character ':' is not just after '9'"
 msgid ""
 "Unlike the very common case, e.g. ASCII, the character ':' is not just after "
 "'9'."
-msgstr "O caractere ASCII ':' não está logo após '9'"
+msgstr ""
+"Ao contrário do esperado, como no ASCII, o caractere ':' não está logo antes "
+"de '0'."
 
 #: init.c:229
 msgid "The C expression (uint_fast8_t)('9'-':')<10 is true. Should be false."
@@ -3925,10 +3860,8 @@ msgid "verbose option must be length 1 non-NA logical or integer"
 msgstr "A opção verbose deve ter comprimento 1 não-NA lógico ou inteiro"
 
 #: init.c:368
-#, fuzzy
-#| msgid ".Last.value in namespace is not a length 1 integer"
 msgid ".Last.updated in namespace is not a length 1 integer"
-msgstr ".Last.value no namespace não é um inteiro de comprimento 1"
+msgstr ".Last.updated no namespace não é um inteiro de comprimento 1"
 
 #: nafill.c:115
 msgid ""
