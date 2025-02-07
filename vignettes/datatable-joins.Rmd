@@ -529,14 +529,6 @@ A non-equi join is a type of join where the condition for matching rows is based
 - Finding the nearest match.
 - Comparing ranges of values between tables.
 
-### Key Constraints
-- **Column Requirements**:
-  - Only column *names* (not expressions) can be used with binary operators
-  - Left operand must be from `x` (left table)
-  - Right operand must be from `i` (right table)
-- **Naming Behavior**:
-  - Joined columns inherit names from `x` but contain values from `i`
-
 It is a great alternative when, after applying a right or inner join, you:
 
 - Want to reduce the number of returned rows based on comparisons of numeric columns between tables.
