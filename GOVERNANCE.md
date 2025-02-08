@@ -97,7 +97,33 @@ A pull request can be merged by any committer, if there is one approving review,
 There is no special process for changing this document (submit a PR
 and ask for review).
 
+# Finances and Funding
+
+There is currently no mechanism for the data.table project to receive funding as an entity.  
+
+Funding support for this project therefore may come in two forms:
+
+## Individual external funding
+
+Any individual developer or community member of data.table may apply for and receive funding for their work on the project.  Individuals or groups seeking funding support are strongly encouraged to consult directly with the data.table Project Members (by initiating an Issue on GitHub) to ensure funds are used meaningfully. Formally, however, decisions about use of funds are governed by the individual grantee(s) and their contract with the funding agency. 
+
+There is no guarantee that funded work will be incorporated into the data.table package; any contributions, whether funded or unfunded, are subject to the same review process as outlined above.
+
+## Direct donations
+
+Direct donations to the project may be made via GitHub Sponsorships, which allow individuals to fund a specific developer.  Those wishing to support the project in general, rather than a specific developer, should direct their donations to the current CRAN Maintainer.
+
+## Decision-making for future opportunities
+
+We here outline a procedure for disbursing funds, should this project in the future become a directly fundable entity (e.g. an LLC or a subsidiary of an umbrella LLC).
+
+Funds acquired by the data.table project will be at the discretion of the **committers**, defined as above.  The **CRAN Maintainer** will have authority to make final decisions in the event that no consensus is reached among committers prior to deadlines for use of funds, and will be responsible for disbursement logistics.
+
 # Code of conduct
+
+The full Code of Conduct can be found [here](CODE_OF_CONDUCT.md).
+
+## Special Role Pledge
 
 As contributors of this project, we pledge to respect all people who contribute through reporting issues, posting feature requests, updating documentation, submitting pull requests or patches, and other activities.
 
@@ -107,9 +133,16 @@ Examples of unacceptable behavior by participants include the use of sexual lang
 
 Committers have the right and responsibility to remove, edit, or reject comments, commits, code, wiki edits, issues, and other contributions that are not aligned to this Code of Conduct. A person with special roles who does not follow the Code of Conduct may have their roles revoked.
 
-Instances of abusive, harassing, or otherwise unacceptable behavior may be reported by opening an issue or emailing one or more of the Committers.
+## Reporting
 
-This Code of Conduct is adapted from Tidyverse code of conduct.
+Instances of unacceptable behavior may be reported by:
+
+* opening an issue,
+
+* emailing one or more of the Committers, or
+
+* emailing the current Community Engagement Coordinator.
+
 
 # Version numbering
 
