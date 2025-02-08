@@ -14,13 +14,13 @@ char *end(char *start) {
 void ansMsg(ans_t *ans, int n, bool verbose, const char *func) {
   for (int i=0; i<n; i++) {
     if (verbose && (ans[i].message[0][0] != '\0'))
-      Rprintf("%s: %d:\n%s", func, i+1, ans[i].message[0]);
+      Rprintf("%s: %d:\n%s", func, i+1, ans[i].message[0]); // # notranslate
     if (ans[i].message[1][0] != '\0')
-      REprintf("%s: %d:\n%s", func, i+1, ans[i].message[1]);
+      REprintf("%s: %d:\n%s", func, i+1, ans[i].message[1]); // # notranslate
     if (ans[i].message[2][0] != '\0')
-      warning("%s: %d:\n%s", func, i+1, ans[i].message[2]);
+      warning("%s: %d:\n%s", func, i+1, ans[i].message[2]); // # notranslate
     if (ans[i].status == 3)
-      error("%s: %d:\n%s:", func, i+1, ans[i].message[3]);
+      error("%s: %d:\n%s:", func, i+1, ans[i].message[3]); // # notranslate
   }
 }
 
@@ -28,6 +28,7 @@ void ansMsg(ans_t *ans, int n, bool verbose, const char *func) {
  * R interface to test ansMsg function
  * see inst/tests/types.Rraw
  */
+// # notranslate start
 void testRaiseMsg(ans_t *ans, int istatus, bool verbose) {
   if (verbose) {
     snprintf(end(ans->message[0]), 500, "%s: stdout 1 message\n", __func__);
@@ -50,9 +51,16 @@ void testRaiseMsg(ans_t *ans, int istatus, bool verbose) {
   }
   ans->int_v[0] = ans->status;
 }
+/*
+  This caters to internal tests (not user-facing), and OpenMP is being used
+    here to test a message printing function inside a nested loop which has
+    been collapsed into a single loop of the combined iteration space using
+    collapse(2), along with specification of dynamic scheduling for distributing
+    the iterations in a way that can balance the workload among the threads.
+*/
 SEXP testMsgR(SEXP status, SEXP x, SEXP k) {
   if (!isInteger(status) || !isInteger(x) || !isInteger(k))
-    error(_("internal error: status, nx, nk must be integer")); // # nocov
+    internal_error(__func__, "status, nx, nk must be integer"); // # nocov
   int protecti = 0;
   const bool verbose = GetVerbose();
   int istatus = INTEGER(status)[0], nx = INTEGER(x)[0], nk = INTEGER(k)[0];
@@ -80,3 +88,4 @@ SEXP testMsgR(SEXP status, SEXP x, SEXP k) {
   UNPROTECT(protecti);
   return ans;
 }
+// # notranslate end
