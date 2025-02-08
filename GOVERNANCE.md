@@ -72,6 +72,14 @@ Functionality that is out of current scope:
 * How to obtain this role: (1) merge into master a PR adding role="cre" to DESCRIPTION, and (2) submit updated package to CRAN (previous CRAN maintainer will have to confirm change by email to CRAN). 
 * How this role is recognized: credited via role="cre" in DESCRIPTION, so they appear as Maintainer on CRAN. 
 
+## Community Engagement Coordinator
+
+* Definition: An individual who is involved in the project but does **not** also occupy the Committer or CRAN Maintainer role.  In charge of maintaining The Raft blog, preparing Seal of Approval Applications, addressing Code of Conduct violations, and planning social or community events.
+
+* How to obtain this role: Contact the current Community Engagement Coordinator.
+
+* How this role is recognized: Holds the Owner role in the [rdatatable-community organization](https://github.com/orgs/rdatatable-community/people) on GitHub.
+
 # Decision-making processes
 
 ## Definition of Consensus
