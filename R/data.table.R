@@ -936,6 +936,42 @@ replace_dot_alias = function(e) {
         else
           x
       }
+      # extract the same codes from setDT() and do_j_names() for #6702
+      simple_extract <- function(name, x, checkSingleChar = TRUE, envir = parent.frame()) {
+        k = eval(name[[2L]], envir, envir)
+        if (is.list(k)) {
+          origj = j = if (name[[1L]] == "$") {
+            as.character(name[[3L]])
+          } else {
+            eval(name[[3L]], envir, envir)
+          }
+          if (is.character(j)) {
+            if (checkSingleChar) {
+              if (length(j) != 1L) {
+                stopf("Cannot assign to an under-allocated recursively indexed list -- L[[i]][,:=] syntax is only valid when i is length 1, but its length is %d", length(j))
+              }
+              j2 = match(j, names(k))
+              if (is.na(j2)) {
+                internal_error("item '%s' not found in names of list", origj)
+              }
+              j = j2
+            } else {
+              if (length(j) == 1L) {
+                j2 = match(j, names(k))
+                if (is.na(j2)) {
+                  stopf("Item '%s' not found in names of input list", origj)
+                }
+                j = j2
+              }
+            }
+          }
+          .Call(Csetlistelt, k, as.integer(j), x)
+        } else if (is.environment(k) && exists(as.character(name[[3L]]), k)) {
+          assign(as.character(name[[3L]]), x, k, inherits = FALSE)
+        } else if (isS4(k)) {
+          .Call(CsetS4elt, k, as.character(name[[3L]]), x)
+        }
+      }
       # handle auto-naming of last item of j (e.g. within {} or if/else, #2478)
       #   e.g. DT[, .(a=sum(v), v, .N), by=] should create columns named a, v, N
       do_j_names = function(q) {
@@ -1216,20 +1252,7 @@ replace_dot_alias = function(e) {
             if (is.name(name)) {
               assign(as.character(name),x,parent.frame(),inherits=TRUE)
             } else if (.is_simple_extraction(name)) { # TODO(#6702): use a helper here as the code is very similar to setDT().
-              k = eval(name[[2L]], parent.frame(), parent.frame())
-              if (is.list(k)) {
-                origj = j = if (name[[1L]] == "$") as.character(name[[3L]]) else eval(name[[3L]], parent.frame(), parent.frame())
-                if (is.character(j)) {
-                  if (length(j)!=1L) stopf("Cannot assign to an under-allocated recursively indexed list -- L[[i]][,:=] syntax is only valid when i is length 1, but its length is %d", length(j))
-                  j = match(j, names(k))
-                  if (is.na(j)) internal_error("item '%s' not found in names of list", origj) # nocov
-                }
-                .Call(Csetlistelt,k,as.integer(j), x)
-              } else if (is.environment(k) && exists(as.character(name[[3L]]), k)) {
-                assign(as.character(name[[3L]]), x, k, inherits=FALSE)
-              } else if (isS4(k)) {
-                .Call(CsetS4elt, k, as.character(name[[3L]]), x)
-              }
+              simple_extract(name, x, checkSingleChar = TRUE, envir = parent.frame())
             } # TO DO: else if env$<- or list$<-
           }
         }
@@ -2962,22 +2985,7 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     assign(name, x, parent.frame(), inherits=TRUE)
   } else if (.is_simple_extraction(name)) {
     # common case is call from 'lapply()'
-    k = eval(name[[2L]], parent.frame(), parent.frame())
-    if (is.list(k)) {
-      origj = j = if (name[[1L]] == "$") as.character(name[[3L]]) else eval(name[[3L]], parent.frame(), parent.frame())
-      if (length(j) == 1L) {
-        if (is.character(j)) {
-          j = match(j, names(k))
-          if (is.na(j))
-            stopf("Item '%s' not found in names of input list", origj)
-        }
-      }
-      .Call(Csetlistelt, k, as.integer(j), x)
-    } else if (is.environment(k) && exists(as.character(name[[3L]]), k)) {
-      assign(as.character(name[[3L]]), x, k, inherits=FALSE)
-    } else if (isS4(k)) {
-      .Call(CsetS4elt, k, as.character(name[[3L]]), x)
-    }
+    simple_extract(name, x, checkSingleChar = FALSE, envir = parent.frame())
   } else if (name %iscall% "get") { # #6725
     # edit 'get(nm, env)' call to be 'assign(nm, x, envir=env)'
     name = match.call(get, name)
