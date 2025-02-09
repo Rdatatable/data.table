@@ -18525,7 +18525,9 @@ rm(.datatable.aware)
 # tests for trunc.char handling wide characters # 5096
 local({
   lc_ctype = Sys.getlocale('LC_CTYPE')
-  Sys.setlocale('LC_CTYPE', "en_US.UTF-8") # Japanese multibyte characters require utf8
+  # Japanese multibyte characters require utf8. As of 2025, we're likely to be already running in a UTF-8 locale, but if not, try this setlocale() call as a last chance.
+  # Unfortunately, there is no guaranteed, portable way of switching to UTF-8 US English.
+  if (!l10n_info()$`UTF-8`) Sys.setlocale('LC_CTYPE', "en_US.UTF-8")
   on.exit(Sys.setlocale('LC_CTYPE', lc_ctype))
   accented_a = "\u0061\u0301"
   ja_ichi = "\u4E00"
