@@ -474,7 +474,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     writeLines(out)
     # nocov end
   }
-  if (!fail && !length(error) && (length(output) || length(notOutput))) {
+  if (!fail && !length(error) && (length(output) || length(notOutput)) && !foreign) {
     if (out[length(out)] == "NULL") out = out[-length(out)]
     out = paste(out, collapse="\n")
     output = paste(output, collapse="\n")  # so that output= can be either a \n separated string, or a vector of strings.
