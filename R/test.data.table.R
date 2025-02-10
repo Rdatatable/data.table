@@ -451,15 +451,15 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
       stopifnot(is.character(ignore.warning), !anyNA(ignore.warning), nchar(ignore.warning)>=1L)
       for (msg in ignore.warning) observed = grep(msg, observed, value=TRUE, invert=TRUE) # allow multiple for translated messages rather than relying on '|' to always work
     }
-    if (length(expected) != length(observed)) {
+    if (length(expected) != length(observed) && (!foreign || is.null(ignore.warning))) {
       # nocov start
       catf("Test %s produced %d %ss but expected %d\n%s\n%s\n", numStr, length(observed), type, length(expected), paste("Expected:", expected), paste("Observed:", observed, collapse = "\n"))
       fail = TRUE
       # nocov end
-    } else {
+    } else if (!foreign) {
       # the expected type occurred and, if more than 1 of that type, in the expected order
       for (i in seq_along(expected)) {
-        if (!foreign && !string_match(expected[i], observed[i])) {
+        if (!string_match(expected[i], observed[i])) {
           # nocov start
           catf("Test %s didn't produce the correct %s:\nExpected: %s\nObserved: %s\n", numStr, type, expected[i], observed[i])
           fail = TRUE
