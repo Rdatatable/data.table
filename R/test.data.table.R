@@ -474,11 +474,12 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     writeLines(out)
     # nocov end
   }
-  if (!fail && !length(error) && (length(output) || length(notOutput)) && !foreign) {
+  if (!fail && !length(error) && (length(output) || length(notOutput))) {
     if (out[length(out)] == "NULL") out = out[-length(out)]
     out = paste(out, collapse="\n")
     output = paste(output, collapse="\n")  # so that output= can be either a \n separated string, or a vector of strings.
-    if (length(output) && !string_match(output, out)) {
+    # it also happens to turn off the 'y' checking branch below
+    if (length(output) && !string_match(output, out) && !foreign) {
       # nocov start
       catf("Test %s did not produce correct output:\n", numStr)
       catf("Expected: <<%s>>\n", encodeString(output))  # \n printed as '\\n' so the two lines of output can be compared vertically
@@ -490,7 +491,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
       fail = TRUE
       # nocov end
     }
-    if (length(notOutput) && string_match(notOutput, out, ignore.case=TRUE)) {
+    if (length(notOutput) && string_match(notOutput, out, ignore.case=TRUE) && !foreign) {
       # nocov start
       catf("Test %s produced output but should not have:\n", numStr)
       catf("Expected absent (case insensitive): <<%s>>\n", encodeString(notOutput))
