@@ -1362,8 +1362,8 @@ if (test_bit64) {
 }
 
 # Test that unsetting datatable.alloccol is caught, #2014
-test(432.1, data.table(a=1:3), options=list(datatable.alloccol=NULL), error="Has getOption[(]'datatable.alloccol'[)] somehow become unset?")
-test(432.2, data.table(a=1:3), options=c(datatable.alloccol="1024"), error="getOption[(]'datatable.alloccol'[)] should be a number, by default 1024. But its type is 'character'.")
+test(432.1, data.table(a=1:3), options=list(datatable.alloccol=NULL), error="Has getOption('datatable.alloccol') somehow become unset?")
+test(432.2, data.table(a=1:3), options=c(datatable.alloccol="1024"), error="getOption('datatable.alloccol') should be a number, by default 1024. But its type is 'character'.")
 test(432.3, data.table(a=1:3), options=list(datatable.alloccol=c(10L,20L)), error="is a numeric vector ok but its length is 2. Its length should be 1.")
 test(432.4, data.table(a=1:3), options=c(datatable.alloccol=NA_integer_), error="It must be >=0 and not NA.")
 test(432.5, data.table(a=1:3), options=c(datatable.alloccol=-1), error="It must be >=0 and not NA.")
