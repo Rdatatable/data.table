@@ -488,11 +488,10 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
   if (LENGTH(ascArg) != LENGTH(by)) {
     if (LENGTH(ascArg)!=1)
       STOP(_("'order' length (%d) is different to by='s length (%d)"), LENGTH(ascArg), LENGTH(by));
-    SEXP recycleAscArg = PROTECT(allocVector(INTSXP, LENGTH(by)));
+    SEXP recycleAscArg = PROTECT(allocVector(INTSXP, LENGTH(by))); n_protect++;
     for (int j=0; j<LENGTH(recycleAscArg); j++)
       INTEGER(recycleAscArg)[j] = INTEGER(ascArg)[0];
     ascArg = recycleAscArg;
-    UNPROTECT(1); // recycleAscArg
   }
   nrow = length(VECTOR_ELT(DT,0));
   int n_cplx = 0;

@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.15.99\n"
-"POT-Creation-Date: 2025-01-29 23:31-0800\n"
-"PO-Revision-Date: 2025-01-31 13:59+0300\n"
+"POT-Creation-Date: 2025-02-02 23:58-0800\n"
+"PO-Revision-Date: 2025-02-09 21:01+0300\n"
 "Last-Translator: Ivan Krylov <ikrylov@disroot.org>\n"
 "Language-Team: Russian <https://translate.codeberg.org/projects/data-table-"
 "ru/gettext-C/ru/>\n"
@@ -449,9 +449,9 @@ msgstr ""
 msgid ""
 "RHS for item %d has been duplicated because MAYBE_REFERENCED==%d "
 "MAYBE_SHARED==%d, but then is being plonked. length(values)==%d; "
-"length(cols)==%d)\n"
+"length(cols)==%d\n"
 msgstr ""
-"В правой части элемент №%d был скопирован, поскольку MAYBE_REFERENCED==%d "
+"В правой части элемент №%d был скопирован, поскольку MAYBE_REFERENCED==%d и "
 "MAYBE_SHARED==%d, но потом присваивается напрямую. length(правая_часть)==%d; "
 "length(левая_часть)==%d\n"
 
@@ -710,11 +710,6 @@ msgstr "не могу привести значение типа '%s' к тип�
 msgid "Unsupported column type in assign.c:memrecycle '%s'"
 msgstr "Неподдерживаемый тип столбца '%s' в assign.c:memrecycle"
 
-#: assign.c:1279
-#, c-format
-msgid "savetl_init checks failed (%d %d %p %p)"
-msgstr "неудачная проверка в savetl_init (%d %d %p %p)"
-
 #: assign.c:1288
 #, c-format
 msgid "Failed to allocate initial %d items in savetl_init"
@@ -868,6 +863,16 @@ msgstr "rollends должен быть логическим вектором д�
 #: bmerge.c:116
 msgid "Only '==' operator is supported for columns of type character."
 msgstr "Только оператор '==' поддерживается для строковых столбцов."
+
+#: bmerge.c:190
+#, c-format
+msgid "bmerge: looping bmerge_r took %.3fs\n"
+msgstr "bmerge(): цикл bmerge_r занял %.3f с\n"
+
+#: bmerge.c:222
+#, c-format
+msgid "bmerge: took %.3fs\n"
+msgstr "bmerge: заняло %.3f с\n"
 
 #: chmatch.c:5
 #, c-format
@@ -1146,7 +1151,7 @@ msgstr ""
 msgid "\n"
 msgstr "\n"
 
-#: dogroups.c:454 dogroups.c:468
+#: dogroups.c:455 dogroups.c:470
 #, c-format
 msgid ""
 "Processed %d groups out of %d. %.0f%% done. Time elapsed: %ds. ETA: %ds."
@@ -1154,12 +1159,12 @@ msgstr ""
 "Обработано %d групп из %d. Всего сделано %.0f%%. Прошло времени: %d с. "
 "Осталось: %d с."
 
-#: dogroups.c:473
+#: dogroups.c:475
 #, c-format
 msgid "Wrote less rows (%d) than allocated (%d).\n"
 msgstr "Записано меньше строк (%d), чем для них выделено памяти (%d).\n"
 
-#: dogroups.c:497
+#: dogroups.c:499
 #, c-format
 msgid ""
 "\n"
@@ -1168,7 +1173,7 @@ msgstr ""
 "\n"
 "  сбор несмежных групп занял %.3f с для %d групп\n"
 
-#: dogroups.c:498
+#: dogroups.c:500
 #, c-format
 msgid ""
 "\n"
@@ -1177,12 +1182,12 @@ msgstr ""
 "\n"
 "  memcpy() для смежных групп заняло %.3f с для %d групп\n"
 
-#: dogroups.c:500
+#: dogroups.c:502
 #, c-format
 msgid "  eval(j) took %.3fs for %d calls\n"
 msgstr "  eval(j) заняло %.3f с для %d вызовов\n"
 
-#: dogroups.c:529
+#: dogroups.c:531
 msgid "growVector passed NULL"
 msgstr "функции growVector передан NULL"
 
@@ -1537,6 +1542,25 @@ msgstr ""
 msgid "Unknown column type '%s' for column '%s'."
 msgstr "Неизвестный тип столбца '%s' для столбца '%s'."
 
+#: fmelt.c:600
+msgid ""
+"measure.vars is a list with length=1, which as long documented should return "
+"integer indices in the 'variable' column, but currently returns character "
+"column names. To increase consistency in the next release, we plan to change "
+"'variable' to integer, so users who were relying on this behavior should "
+"change measure.vars=list('col_name') (output variable is column name now, "
+"but will become column index/integer) to measure.vars='col_name' (variable "
+"is column name before and after the planned change)."
+msgstr ""
+"measure.vars является списком длины 1. Согласно документации, в этой "
+"ситуации в столбце «variable» должны быть возвращены целочисленные номера "
+"столбцов, однако сейчас функция возвращает имена столбцов текстом. Чтобы "
+"исправить это недоразумение, в будущей версии «variable» станет "
+"целочисленным столбцом. Если Вам нужны имена столбцов, вместо measure."
+"vars=list('имя_столбца') (что будет возвращать номера столбцов) используйте "
+"measure.vars='имя_столбца' (что и сейчас, и в будущем будет возвращать их "
+"имена)."
+
 #: fmelt.c:686
 #, c-format
 msgid "variable_table does not support column type '%s' for column '%s'."
@@ -1674,15 +1698,19 @@ msgstr ""
 "Столбец №%d - длины %d, что отличается от длины столбца №%d. Возможно, в "
 "качестве ключа сортировки передан столбец-список?\n"
 
-#: forder.c:508
+#: forder.c:508 forder.c:1654
 msgid "retGrp must be TRUE or FALSE"
 msgstr "retGrp должно быть TRUE или FALSE"
 
-#: forder.c:511
+#: forder.c:511 forder.c:1657
 msgid "retStats must be TRUE or FALSE"
 msgstr "retStats должно быть TRUE или FALSE"
 
-#: forder.c:516
+#: forder.c:514 forder.c:1660
+msgid "retStats must be TRUE whenever retGrp is TRUE"
+msgstr "retStats должно быть TRUE всегда, когда retGrp == TRUE"
+
+#: forder.c:516 forder.c:1662
 msgid "sort must be TRUE or FALSE"
 msgstr "sort должно быть TRUE или FALSE"
 
@@ -1690,7 +1718,7 @@ msgstr "sort должно быть TRUE или FALSE"
 msgid "At least one of retGrp= or sort= must be TRUE"
 msgstr "Хотя бы один аргумент из retGtp= и sort= должен быть TRUE"
 
-#: forder.c:521
+#: forder.c:521 forder.c:1665
 msgid "na.last must be logical TRUE, FALSE or NA of length 1"
 msgstr "na.last должен быть TRUE, FALSE, или NA_logical_"
 
@@ -1800,6 +1828,88 @@ msgstr "nrow==%d, но должен быть >= 0"
 #: forder.c:1512
 msgid "x must be type 'double'"
 msgstr "x должен быть типа 'double'"
+
+#: forder.c:1622
+msgid "'datatable.use.index' option must be TRUE or FALSE"
+msgstr "опция 'datatable.use.index' должна быть TRUE или FALSE"
+
+#: forder.c:1635
+msgid "'datatable.forder.auto.index' option must be TRUE or FALSE"
+msgstr "опция 'datatable.forder.auto.index' должна быть TRUE или FALSE"
+
+#: forder.c:1652
+msgid "DT is NULL"
+msgstr "вместо аргумента-data.table передан NULL"
+
+#: forder.c:1668
+msgid "order must be integer"
+msgstr "order должен быть целочисленным"
+
+#: forder.c:1670
+msgid "reuseSorting must be logical TRUE, FALSE or NA of length 1"
+msgstr "reuseSorting должно быть TRUE, FALSE, или NA_logical_"
+
+#: forder.c:1682
+#, c-format
+msgid ""
+"forderReuseSorting: opt not possible: is.data.table(DT)=%d, sortGroups=%d, "
+"all1(ascArg)=%d\n"
+msgstr ""
+"forderReuseSorting(): не могу оптимизировать: is.data.table(DT)=%d, "
+"sortGroups=%d, all1(ascArg)=%d\n"
+
+#: forder.c:1701
+#, c-format
+msgid "forderReuseSorting: using key: %s\n"
+msgstr "forderReuseSorting(): использую ключ: %s\n"
+
+#: forder.c:1736
+#, c-format
+msgid "forderReuseSorting: index found but not for retGrp and retStats: %s\n"
+msgstr ""
+"forderReuseSorting(): индекс найден, но не для 'retGrp' и 'retStats': %s\n"
+
+#: forder.c:1739
+#, c-format
+msgid "forderReuseSorting: index found but not for retGrp: %s\n"
+msgstr "forderReuseSorting(): индекс найден, но не для retGrp: %s\n"
+
+#: forder.c:1742
+#, c-format
+msgid "forderReuseSorting: index found but not for retStats: %s\n"
+msgstr "forderReuseSorting(): индекс найден, но не для 'retStats': %s\n"
+
+#: forder.c:1749
+#, c-format
+msgid ""
+"forderReuseSorting: index found but na.last=TRUE and no stats available: %s\n"
+msgstr ""
+"forderReuseSorting(): индекс найден, но na.last=TRUE и соответствующая "
+"информация недоступна: %s\n"
+
+#: forder.c:1752
+#, c-format
+msgid "forderReuseSorting: index found but na.last=TRUE and NAs present: %s\n"
+msgstr ""
+"forderReuseSorting(): индекс найден, но na.last=TRUE и присутствуют "
+"пропущенные значения: %s\n"
+
+#: forder.c:1760
+#, c-format
+msgid "forderReuseSorting: using existing index: %s\n"
+msgstr "forderReuseSorting(): использую существующий индекс: %s\n"
+
+#: forder.c:1772
+#, c-format
+msgid "forderReuseSorting: setting index (retGrp=%d, retStats=%d) on DT: %s\n"
+msgstr ""
+"forderReuseSorting(): создаю индекс (retGrp=%d, retStats=%d) на таблице "
+"данных: %s\n"
+
+#: forder.c:1776
+#, c-format
+msgid "forderReuseSorting: opt=%d, took %.3fs\n"
+msgstr "forderReuseSorting(): opt=%d, заняло %.3f с\n"
 
 #: frank.c:14 frank.c:192
 #, c-format
@@ -1967,7 +2077,7 @@ msgstr "Не могу открыть файл после %d попыток (ош
 #: fread.c:1458
 #, c-format
 msgid "GetFileSizeEx failed (returned 0) on file: %s"
-msgstr "не получилось сделать GetFileSizeEx (функция вернула 0) для файла: %s"
+msgstr "Не получилось сделать GetFileSizeEx (функция вернула 0) для файла: %s"
 
 #: fread.c:1463
 #, c-format
@@ -2083,6 +2193,11 @@ msgstr ""
 "  Файл оканчивается '%c' без маркера конца строки. Копирую файл в "
 "оперативную память. %s.\n"
 
+#: fread.c:1566 fread.c:1850
+#, c-format
+msgid "%s. Attempt to copy file in RAM failed."
+msgstr "%s. Попытка скопировать файл в память не удалась."
+
 #: fread.c:1567 fread.c:1851
 #, c-format
 msgid "Unable to allocate %s of contiguous virtual RAM."
@@ -2119,8 +2234,8 @@ msgid ""
 "Found skip='%s' on line %<PRIu64>. Taking this to be header row or first row "
 "of data.\n"
 msgstr ""
-"skip='%s' нашлось в строке %<PRIu64>. Считаю, что это строка заголовка или "
-"первая строка данных.\n"
+"В строке %2$<PRIu64> нашлось skip='%1$s'. Считаю, что это строка заголовка "
+"или первая строка данных.\n"
 
 #: fread.c:1631
 #, c-format
@@ -2576,8 +2691,7 @@ msgid ""
 "Read %<PRIu64> rows x %d columns from %s file in %02d:%06.3f wall clock "
 "time\n"
 msgstr ""
-"Чтение %<PRIu64> строк * %d столбцов из файла %s заняло %02d:%06.3f "
-"мин:с\n"
+"Чтение %<PRIu64> строк * %d столбцов из файла %s заняло %02d:%06.3f мин:с\n"
 
 #: fread.c:2733
 msgid "[12] Finalizing the datatable\n"
@@ -2637,11 +2751,6 @@ msgstr ""
 msgid "%8.3fs (%3.0f%%) Memory map %.3fGB file\n"
 msgstr ""
 "%8.3f с (%3.0f%%) Отображение файла размером %.3f ГБ в виртуальную память\n"
-
-#: fread.c:2775
-#, c-format
-msgid "%8.3fs (%3.0f%%) sep="
-msgstr "%8.3f с (%3.0f%%) sep="
 
 #: fread.c:2777
 #, c-format
@@ -2960,7 +3069,7 @@ msgstr ""
 msgid "%s: results from provided FUN are not of type double"
 msgstr "%s: возвращаемое данной FUN значение не типа double"
 
-#: froll.c:472 nafill.c:87
+#: froll.c:472 nafill.c:43 nafill.c:65 nafill.c:87
 #, c-format
 msgid "%s: took %.3fs\n"
 msgstr "%s: заняло %.3f с\n"
@@ -3003,7 +3112,7 @@ msgid ""
 "using hasNA FALSE and na.rm TRUE does not make sense, if you know there are "
 "NA values use hasNA TRUE, otherwise leave it as default NA"
 msgstr ""
-"Использование вместе hasNA=FALSE и na.rm=TRUE не имеет смысла; если Вы "
+"использование вместе hasNA=FALSE и na.rm=TRUE не имеет смысла; если Вы "
 "знаете, что есть значения NA, используйте hasNA=TRUE, в противном случае "
 "оставьте по умолчанию hasNA=NA"
 
@@ -3011,9 +3120,9 @@ msgstr ""
 msgid ""
 "using adaptive TRUE and align argument different than 'right' is not "
 "implemented"
-msgstr "Сочетание adaptive=TRUE и align!='right' пока не реализовано"
+msgstr "сочетание adaptive=TRUE и align!='right' пока не реализовано"
 
-#: frollR.c:117 frollR.c:267 types.c:71
+#: frollR.c:117 frollR.c:267
 #, c-format
 msgid "%s: allocating memory for results %dx%d\n"
 msgstr "%s: выделяю память для результатов %d*%d\n"
@@ -3035,7 +3144,7 @@ msgid ""
 "length of integer vector(s) provided as list to 'n' argument must be equal "
 "to number of observations provided in 'x'"
 msgstr ""
-"Длина целочисленного(ых) вектора(ов), переданного(ых) в виде списка 'n', "
+"длина целочисленного(ых) вектора(ов), переданного(ых) в виде списка 'n', "
 "должна быть равна количеству наблюдений, переданных в 'x'"
 
 #: frollR.c:146 frollR.c:259 gsumm.c:1203 shift.c:21
@@ -3259,13 +3368,13 @@ msgstr ""
 
 #: fwrite.c:909
 #, c-format
-msgid "Can't write gzip header error: %d"
-msgstr "Не удалось записать заголовок gzip: %d"
+msgid "Failed to write gzip header. Write returned %d"
+msgstr "Не удалось записать заголовок gzip. Системный вызов вернул %d"
 
 #: fwrite.c:910
 #, c-format
-msgid "Compress gzip error: %d"
-msgstr "Ошибка сжатия gzip: %d"
+msgid "Failed to compress gzip. compressbuff() returned %d"
+msgstr "Не удалось сжать при помощи gzip. compressbuff() вернула %d"
 
 #: fwrite.c:911 fwrite.c:928
 #, c-format
@@ -3363,8 +3472,8 @@ msgid ""
 "input has specific integer rownames but their length (%lld) != nrow "
 "(%<PRId64>)"
 msgstr ""
-"У входного значения специальный целочисленный атрибут row.names, но его "
-"длина (%lld) != количеству строк (%<PRId64>)"
+"у входного значения специальный целочисленный атрибут row.names, но "
+"указанная длина (%lld) != количеству строк (%<PRId64>)"
 
 #: fwriteR.c:284
 msgid ""
@@ -3718,7 +3827,7 @@ msgid ""
 "'9'."
 msgstr ""
 "В отличие от ASCII-совместимых кодировок, в системной кодировке символ ':' "
-"не располагается сразу после '9'"
+"не располагается сразу после '9'."
 
 #: init.c:229
 msgid "The C expression (uint_fast8_t)('9'-':')<10 is true. Should be false."
@@ -3784,6 +3893,10 @@ msgstr ""
 msgid "fill must be a vector of length 1 or a list of length of x"
 msgstr ""
 "'fill' должен быть вектором длины 1 или списком такой же длины, как 'x'"
+
+#: negate.c:5
+msgid "not logical or integer vector"
+msgstr "не является логическим или целочисленным вектором"
 
 #: openmp-utils.c:23
 #, c-format
@@ -4390,6 +4503,18 @@ msgid ""
 msgstr ""
 "Для dim.data.table() в качестве входного аргумента нужна data.table (т.е. "
 "список), а досталось значение типа %s"
+
+#, c-format
+#~ msgid "savetl_init checks failed (%d %d %p %p)"
+#~ msgstr "неудачная проверка в savetl_init (%d %d %p %p)"
+
+#, c-format
+#~ msgid "%8.3fs (%3.0f%%) sep="
+#~ msgstr "%8.3f с (%3.0f%%) sep="
+
+#, c-format
+#~ msgid "Compress gzip error: %d"
+#~ msgstr "Ошибка сжатия gzip: %d"
 
 #, c-format
 #~ msgid "RHS_list_of_columns == %s\n"
