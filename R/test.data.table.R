@@ -495,7 +495,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
       fail = TRUE
       # nocov end
     }
-    if (length(notOutput) && string_match(notOutput, out, ignore.case=TRUE) && !foreign) {
+    if (length(notOutput) && !foreign && string_match(notOutput, out, ignore.case=TRUE)) {
       # nocov start
       catf("Test %s produced output but should not have:\n", numStr)
       catf("Expected absent (case insensitive): <<%s>>\n", encodeString(notOutput))
