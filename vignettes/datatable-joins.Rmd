@@ -569,6 +569,74 @@ ProductReceivedProd2[ProductSalesProd2,
                      nomatch = NULL]
 ```
 
+### 4.1 Handling Column Name Behavior in Non-Equi Joins
+
+When performing non-equi joins (<, >, <=, >=), it's important to understand how column names are assigned in the result.
+
+- The left operand (`x` column) determines the column name in the result.
+- The right operand (`i` column) contributes values but does not retain its original name.
+- By default, `data.table` does not retain the `i` column used in the join condition unless explicitly requested.
+`In non-equi joins, the resulting column inherits the name from the left (x) table but contains values from the right (i) table.`
+
+This can cause confusion when `x` and `i` have different column names.
+
+**Important**: Non-equi join conditions must use column names from `x` and `i`, *not arbitrary expressions*.  
+For example, `on = .(x_col >= i_col)` is valid, but `on = .(x_col >= i_col + 1)` is not.  
+
+In non-equi joins, the left side of the operator (e.g., `A` in `A >= B`) *must be a column from `x`*,  
+and the right side (e.g., `B`) *must be a column from `i`*.
+
+To use expressions, create temporary columns first (see example below).
+
+```{r}
+library(data.table)
+
+x <- data.table(A = 1:5, value_x = letters[1:5])
+i <- data.table(B = c(2, 4, 5), value_i = LETTERS[1:3])
+
+x[i, on = .(A >= B)]
+```
+In data.table, when using a non-equi join condition (>=, <, etc.), the column from x is retained in the result, while the column from i is not retained unless explicitly selected.
+
+Expected Output
+   A    value_x  value_i
+1: 2       b       A
+2: 4       d       B
+3: 5       e       C
+4: 5       e       C
+
+If multiple rows in x satisfy the join condition with a single row in i, those rows will be duplicated in the result.
+
+Notice that A appears in the result, but B from i is missing.
+**Note for SQL Users**: Unlike SQL, `data.table` non-equi joins:  
+- Do not retain the `i` column used in the join condition unless explicitly selected.  
+- Use the `x` column name in the result (e.g., `A` instead of `B` in `A >= B`).
+
+This is because B was only used for filtering and is not retained unless explicitly selected.
+However, columns from i that are not used in the join condition (e.g., value_i) are automatically included in the output by default, since data.table keeps all non-matching columns from i.
+
+`If you want to keep the B column from i, you need to explicitly select it in the result:`
+
+```{r}
+x[i, on = .(A >= B), .(B, A, value_x, value_i)]
+```
+Updated Output
+   B  A   value_x  value_i
+1: 2  2       b       A
+2: 4  4       d       B
+3: 5  5       e       C
+4: 5  5       e       C
+
+Now, B from i is explicitly retained in the final table.
+
+`important Consideration: nomatch = NULL in Non-Equi Joins`
+If you want to exclude unmatched rows, you should use nomatch = NULL:
+
+```{r}
+x[i, on = .(A >= B), .(B, A, value_x, value_i), nomatch = NULL]
+```
+
+This ensures that only matching cases are returned.
 
 ## 5. Rolling join
 
