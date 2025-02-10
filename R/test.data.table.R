@@ -336,10 +336,6 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
       Sys.unsetenv(names(old)[!is_preset])
     }, add=TRUE)
   }
-  if (!is.null(options)) {
-    old_options <- do.call(base::options, as.list(options)) # as.list(): allow passing named character vector for convenience
-    on.exit(base::options(old_options), add=TRUE)
-  }
   # Usage:
   # i) tests that x equals y when both x and y are supplied, the most common usage
   # ii) tests that x is TRUE when y isn't supplied
@@ -425,12 +421,20 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     actual$message <- c(actual$message, conditionMessage(m))
     m
   }
+  if (!is.null(options)) {
+    old_options <- do.call(base::options, as.list(options)) # as.list(): allow passing named character vector for convenience
+    on.exit(base::options(old_options), add=TRUE)
+  }
   if (is.null(output) && is.null(notOutput)) {
     x = suppressMessages(withCallingHandlers(tryCatch(x, error=eHandler), warning=wHandler, message=mHandler))
     # save the overhead of capture.output() since there are a lot of tests, often called in loops
     # Thanks to tryCatch2 by Jan here : https://github.com/jangorecki/logR/blob/master/R/logR.R#L21
   } else {
     out = capture.output(print(x <- suppressMessages(withCallingHandlers(tryCatch(x, error=eHandler), warning=wHandler, message=mHandler))))
+  }
+  if (!is.null(options)) {
+    base::options(old_options)
+    old_options <- list()
   }
   fail = FALSE
   if (.test.data.table && num>0.0) {
