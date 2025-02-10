@@ -22,9 +22,9 @@ This Code of Conduct applies both within project spaces and in public spaces whe
 
 Project members with the Committer role or the CRAN Maintainer role are pledged to promptly address any reported issues. Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to any individual with this role.
 
-Those who prefer to report in a way that is anonymous to the project maintainers may instead contact the Community Engagement Coordinator by e-mailing [r.data.table\@gmail.com](mailto:r.data.table@gmail.com). Messages sent to this e-mail address will be publicly visible only to the current Community Engagement Coordinator, a position always held by an individual who is not a Committer or CRAN Maintainer of the package.
+Those who prefer to report in a way that is anonymous to the project maintainers may instead contact the Community Engagement Coordinator by e-mailing [r.data.table\@gmail.com](mailto:r.data.table@gmail.com). Messages sent to this e-mail address will be visible only to the current Community Engagement Coordinator, a position always held by an individual who is not a Committer or CRAN Maintainer of the package.
 
-The current Contributors are Toby Hocking, Toby Dylan Hocking (@tdhock), Matt Dowle (@mattdowle), Arun Srinivasan (@arunsrinivasan), Jan Gorecki (@jangorecki), Michael Chirico (@MichaelChirico), and Benjamin Schwendinger (@ben-schwen).
+The current Committers are Toby Dylan Hocking (@tdhock), Matt Dowle (@mattdowle), Arun Srinivasan (@arunsrinivasan), Jan Gorecki (@jangorecki), Michael Chirico (@MichaelChirico), and Benjamin Schwendinger (@ben-schwen).
 
 The current CRAN Maintainer is Tyson Barrett (@tysonstanley).
 

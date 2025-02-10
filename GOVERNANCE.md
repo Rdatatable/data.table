@@ -131,14 +131,6 @@ Funds acquired by the data.table project will be at the discretion of the **comm
 
 The full Code of Conduct can be found [here](CODE_OF_CONDUCT.md), including details for reporting violations.
 
-## Pledge
-
-As contributors of this project, we pledge to respect all people who contribute through reporting issues, posting feature requests, updating documentation, submitting pull requests or patches, and other activities.
-
-We are committed to making participation in this project a harassment-free experience for everyone, regardless of level of experience, gender, gender identity and expression, sexual orientation, disability, personal appearance, body size, race, ethnicity, age, religion, etc.
-
-Committers have the right and responsibility to remove, edit, or reject comments, commits, code, wiki edits, issues, and other contributions that are not aligned to this Code of Conduct. A person with special roles who does not follow the Code of Conduct may have their roles revoked.
-
 ## Reporting Responsibility
 
 Committers and the Community Engagement Coordinator pledge to address any publicly posted issues or privately sent messages regarding Code of Conduct violations in a respectful and timely manner.
