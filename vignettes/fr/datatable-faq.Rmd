@@ -1,0 +1,630 @@
+---
+title: "Foire aux questions de data.table"
+date: "`r Sys.Date()`"
+output:
+  markdown::html_format:
+    options:
+      toc: true
+      number_sections: true
+vignette: >
+  %\VignetteIndexEntry{Foire aux questions de data.table}
+  %\VignetteEngine{knitr::knitr}
+  \usepackage[utf8]{inputenc}
+---
+
+<style>
+h2 {
+    font-size: 20px;
+}
+#TOC { width: 100%; }
+</style>
+
+```{r, echo = FALSE, message = FALSE}
+library(data.table)
+knitr::opts_chunk$set(
+  comment = "#",
+    error = FALSE,
+     tidy = FALSE,
+    cache = FALSE,
+ collapse = TRUE)
+.old.th = setDTthreads(1)
+```
+
+La première section, FAQ pour débutants, est destinée à être lue dans l'ordre, du début à la fin. Elle est simplement rédigée dans le style d'une FAQ afin d'être plus facile à assimiler. Il ne s'agit pas vraiment des questions les plus fréquemment posées. Une meilleure mesure pour cela est de regarder sur Stack Overflow.
+
+Cette FAQ est une lecture obligatoire et est considérée comme une documentation de base. Ne posez pas de questions sur Stack Overflow ou ne soulevez pas de problèmes (issues) sur GitHub avant de l'avoir lue. Nous savons tous que vous n'avez pas lu la FAQ lorsque vous posez une question. Si vous posez une question sans l'avoir lue, n'utilisez pas votre vrai nom.
+
+Ce document a été rapidement révisé en fonction des changements apportés à la version 1.9.8 publiée en novembre 2016. N'hésitez pas à soumettre des pull requests pour corriger des erreurs ou faire des améliorations. Si quelqu'un sait pourquoi la table des matières est si étroite et écrasée lorsqu'elle est affichée par le CRAN, merci de nous le faire savoir. Ce document était auparavant un PDF et nous l'avons récemment changé en HTML.
+
+# FAQ pour les débutants
+
+## Pourquoi `DT[ , 5]` et `DT[2, 5]` renvoient-ils un data.table à une colonne plutôt que des vecteurs comme `data.frame` ? {#j-num}
+
+Pour des raisons de cohérence, lorsque vous utilisez data.table dans des fonctions qui acceptent des entrées variables, vous pouvez compter sur `DT[...]` qui renvoie un data.table. Vous n'avez pas à vous souvenir d'inclure `drop=FALSE` comme vous le faites dans data.frame. data.table a été publié pour la première fois en 2006 et cette différence avec data.frame a été une caractéristique depuis le tout début.
+
+Vous avez peut-être entendu dire qu'il n'est généralement pas judicieux de désigner les colonnes par leur numéro plutôt que par leur nom. Si votre collègue vient à lire votre code plus tard, il devra peut-être chercher à savoir quelle colonne porte le numéro 5. Si vous ou lui changez l'ordre des colonnes plus haut dans votre programme R, vous risquez de produire des résultats erronés sans avertissement ni erreur si vous oubliez de modifier tous les endroits de votre code qui font référence à la colonne numéro 5. C'est votre faute, pas celle de R ou de data.table. C'est vraiment très mauvais. S'il vous plaît, ne le faites pas. C'est le même mantra que celui des développeurs SQL professionnels : ne jamais utiliser `select *`, toujours sélectionner explicitement par le nom de la colonne pour au moins essayer d'être robuste aux changements futurs.
+
+Disons que la colonne 5 s'appelle "region" et que vous devez vraiment extraire cette colonne en tant que vecteur et non en tant que data.table. Il est plus robuste d'utiliser le nom de la colonne et d'écrire `DT$region` ou `DT["region"]]` ; c'est à dire, la même chose que R de base. Pas lorsqu'ils sont combinés avec `<-` pour assigner (utilisez `:=` à la place pour cela) mais juste pour sélectionner une seule colonne par son nom, ils sont encouragés.
+
+Il y a des circonstances où se référer à une colonne par un numéro semble être la seule façon, comme une séquence de colonnes. Dans ces situations, tout comme data.frame, vous pouvez écrire `DT[, 5:10]` et `DT[,c(1,4,10)]`. Cependant, encore une fois, il est plus robuste (face à de futurs changements dans le nombre et l'ordre des colonnes de vos données) d'utiliser une plage nommée comme `DT[,columnRed:columnViolet]` ou de nommer chacune `DT[,c("columnRed", "columnOrange", "columnYellow")]`. C'est un travail plus difficile au départ, mais vous vous en féliciterez probablement et vos collègues vous en remercieront peut-être à l'avenir. Au moins, vous pourrez dire que vous avez fait de votre mieux pour écrire un code robuste en cas de problème.
+
+Cependant, ce que nous voulons vraiment que vous fassiez est `DT[,.(colonneRouge,colonneOrange,colonneJaune)]` ; c'est-à-dire, utiliser les noms de colonnes comme s'ils étaient des variables directement à l'intérieur de `DT[...]`. Vous n'avez pas besoin de préfixer chaque colonne avec `DT$` comme vous le faites dans data.frame. La partie `.()` est juste un alias pour `list()` et vous pouvez utiliser `list()` à la place si vous préférez. Vous pouvez placer n'importe quelle expression R de noms de colonnes, en utilisant n'importe quel package R, retournant différents types de longueurs différentes, juste ici. Nous voulions tellement vous encourager à le faire dans le passé que nous avons délibérément fait en sorte que `DT[,5]` ne fonctionne pas du tout. Avant la version 1.9.8 publiée en novembre 2016, `DT[,5]` retournait simplement `5`. L'idée était d'enseigner plus simplement que les parties à l'intérieur de `DT[...]` sont toujours évaluées dans le cadre de DT (ils voient les noms de colonnes comme s'il s'agissait de variables). Et `5` est évalué à `5`, de sorte que ce comportement est cohérent avec la règle unique. Nous vous avons demandé de passer par un obstacle supplémentaire délibéré `DT[,5,with=FALSE]` si vous vouliez vraiment sélectionner une colonne par nom ou par nombre. A partir de Nov 2016, vous n'aurez plus besoin d'utiliser `with=FALSE` et nous verrons comment une plus grande cohérence avec data.frame à cet égard aidera ou gênera les nouveaux utilisateurs et les utilisateurs de longue date. Les nouveaux utilisateurs qui ne lisent pas cette FAQ, pas même cette toute première entrée, ne trébucheront pas aussi vite avec data.table qu'ils l'ont fait auparavant s'ils s'attendaient à ce qu'il fonctionne comme data.frame. Nous espérons qu'ils ne manqueront pas de comprendre notre intention et notre recommandation de placer les expressions de colonnes à l'intérieur de `DT[i, j, by]`. S'ils utilisent data.table comme data.frame, ils n'en tireront aucun bénéfice. Si vous connaissez quelqu'un dans ce cas, donnez-lui un coup de pouce amical pour qu'il lise ce document comme vous le faites.
+
+Rappel : vous pouvez placer *n'importe quelle* expression R à l'intérieur de `DT[...]` en utilisant les noms de colonnes comme s'il s'agissait de variables ; par exemple, essayez `DT[, colA*colB/2]`. Cela renvoie un vecteur parce que vous avez utilisé les noms de colonnes comme s'il s'agissait de variables. Enveloppez avec `.()` pour retourner un data.table ; i.e. `DT[,.(colA*colB/2)]`. Nommez-le : `DT[,.(myResult = colA*colB/2)]`. Et nous vous laissons deviner comment retourner deux choses à partir de cette requête. Il est aussi assez courant de faire un tas de choses à l'intérieur d'un corps anonyme : `DT[, { x<-colA+10 ; x*x/2 }]` ou d'appeler une fonction d'un autre package : `DT[ , fitdistr(columnA, "normal")]`.
+
+## Pourquoi `DT[, "region"]` renvoie-t-il un data.table à une colonne plutôt qu'un vecteur ?
+
+Voir la [réponse ci-dessus](#j-num). Essayez `DT$region` à la place. Ou `DT[["region"]]`.
+
+## Pourquoi `DT[, region]` retourne un vecteur pour la colonne "region" ? Je voudrais un data.table à 1 colonne.
+
+Essayez plutôt `DT[ , .(region)]`. `.()` est un alias de `list()` et assure qu'un data.table est retournée.
+
+Poursuivez également votre lecture et consultez la FAQ qui suit. Parcourez des documents entiers avant de rester bloqué sur une partie.
+
+## Pourquoi `DT[ , x, y, z]` ne fonctionne pas ? Je voulais les 3 colonnes `x`,`y` et `z`.
+
+L'expression `j` est le 2ème argument. Essayez `DT[ , c("x", "y", "z")]` ou `DT[ , .(x,y,z)]`.
+
+## J'ai assigné une variable `mycol="x"` mais `DT[, mycol]` renvoie une erreur. Comment faire pour qu'il recherche le nom de la colonne contenue dans la variable `mycol` ?
+
+L'erreur est que la colonne nommée `"mycol"` ne peut pas être trouvée, et cette erreur est correcte. la portée de `data.table` est différente de celle de `data.frame` dans la mesure où vous pouvez utiliser les noms de colonnes comme s'il s'agissait de variables directement à l'intérieur de `DT[...]` sans préfixer chaque nom de colonne par `DT$` ; voir la FAQ 1.1 ci-dessus.
+
+Pour utiliser `mycol` afin de sélectionner la colonne `x` de `DT`, il y a quelques options :
+
+```r
+DT[, ..mycol] # ... préfixe indique qu'il faut rechercher le mycol un niveau plus haut dans l'appel
+DT[, mycol, with=FALSE] # revient au comportement data.frame
+DT[[mycol]]               # traiter DT comme une liste et utiliser [[ de la base R
+```
+
+Voir `?data.table` pour plus de détails sur le préfixe `..`.
+
+L'argument `with` tire son nom de la fonction `base` `with()`. Lorsque `with=TRUE` (par défaut), `data.table` fonctionne de manière similaire à `with()`, c'est-à-dire que `DT[, mycol]` se comporte comme `with(DT, mycol)`. Lorsque `with=FALSE`, les règles d'évaluation standard de `data.frame` s'appliquent à toutes les variables de `j` et vous ne pouvez plus utiliser les noms de colonnes directement.
+
+## Quels sont les avantages de pouvoir utiliser les noms de colonnes comme s'il s'agissait de variables à l'intérieur de `DT[...]` ?
+
+`j` n'a pas besoin d'être uniquement un nom de colonne. Vous pouvez écrire n'importe quelle *expression* R de noms de colonnes directement dans `j`, *e.g.*, `DT[ , mean(x*y/z)]`. La même chose s'applique à `i`, *e.g.*, `DT[x>1000, sum(y*z)]`.
+
+Ceci exécute l'expression `j` sur l'ensemble des lignes où l'expression `i` est vraie. Vous n'avez même pas besoin de renvoyer des données, *e.g.*, `DT[x>1000, plot(y, z)]`. Vous pouvez faire `j` par groupe en ajoutant simplement `by = ` ; par exemple, `DT[x>1000, sum(y*z), by = w]`. Ceci exécute `j` pour chaque groupe dans la colonne `w` mais seulement sur les lignes où `x>1000`. En plaçant les 3 parties de la requête (i=where, j=select et by=group by) à l'intérieur des crochets, data.table voit cette requête comme un tout avant qu'aucune partie ne soit évaluée. Il peut ainsi optimiser les performances de la requête combinée. Il peut le faire parce que le langage R dispose uniquement d'une évaluation paresseuse (ce qui n'est pas le cas de Python et de Julia). data.table voit les expressions à l'intérieur de `DT[...]` avant qu'elles ne soient évaluées et les optimise avant l'évaluation. Par exemple, si data.table voit que vous n'utilisez que 2 colonnes sur 100, il ne s'embêtera pas à sous-sélectionner les 98 qui ne sont pas nécessaires à votre expression j.
+
+## OK, je commence à comprendre ce qu'est data.table, mais pourquoi n'avez-vous pas simplement amélioré `data.frame` dans R ? Pourquoi faut-il que ce soit un nouveau package ?
+
+Comme [souligné ci-dessus] (#j-num), `j` dans `[.data.table` est fondamentalement différent de `j` dans `[.data.frame`. Même si quelque chose d'aussi simple que `DF[ , 1]` était modifié dans la base R pour retourner un data.frame plutôt qu'un vecteur, cela casserait le code existant dans des milliers de package CRAN et dans le code utilisateur. Dès que nous avons pris la décision de créer une nouvelle classe héritant de data.frame, nous avons eu l'opportunité de changer certaines choses et nous l'avons fait. Nous voulons que data.table soit légèrement différent et qu'il fonctionne de cette façon pour que la syntaxe plus compliquée fonctionne. Il existe également d'autres différences (voir [ci-dessous](#PetitesDifférences) ).
+
+De plus, data.table *hérite* de `data.frame`. C'est aussi un `data.frame`. Un data.table peut être passé à n'importe quel package qui n'accepte que `data.frame` et ce package peut utiliser la syntaxe `[.data.frame` sur le data.table. Voir [cette réponse] (https://stackoverflow.com/a/10529888/403310) pour savoir comment procéder.
+
+Nous avons également proposé des améliorations à R chaque fois que cela était possible. L'une d'entre elles a été acceptée comme nouvelle fonctionnalité dans R 2.12.0 :
+
+> `unique()` et `match()` sont maintenant plus rapides sur les vecteurs de caractères où tous les éléments sont dans le cache global CHARSXP et ont un encodage non marqué (ASCII). Merci à Matt Dowle pour avoir suggéré des améliorations dans la façon dont le code de hachage est généré dans unique.c.
+
+Une deuxième proposition était d'utiliser `memcpy` dans duplicate.c, qui est beaucoup plus rapide qu'une boucle for en C. Cela améliorerait la *manière* dont R copie les données en interne (sur certaines mesures, de 13 fois). Le fil de discussion sur r-devel est [ici] (https://stat.ethz.ch/pipermail/r-devel/2010-April/057249.html).
+
+Une troisième proposition plus significative qui a été acceptée est que R utilise maintenant le code de tri par base (radix sort) de data.table à partir de R 3.3.0 :
+
+> L'algorithme de tri par base (radix sort) et l'implémentation de data.table (forder) remplace l'ancien tri par base (comptage) et ajoute une nouvelle méthode pour order(). Proposé par Matt Dowle et Arun Srinivasan, le nouvel algorithme supporte les vecteurs de logiques, d’entiers (même avec de grandes valeurs), de réels et de caractères. Il est plus performant que toutes les autres méthodes, mais il y a quelques mises en garde (voir ?sort).
+
+C'était un grand événement pour nous et nous l'avons fêté jusqu'à ce que les vaches rentrent à la maison. (Pas vraiment.)
+
+## Pourquoi les valeurs par défaut sont-elles telles qu'elles sont ? Pourquoi le système fonctionne-t-il comme il le fait ?
+
+La réponse est simple : l'auteur principal l'a conçu à l'origine pour son propre usage. C'est ce qu'il voulait. Il trouve que c'est une façon plus naturelle et plus rapide d'écrire du code, qui s'exécute également plus rapidement.
+
+## N'est-ce pas déjà fait par `with()` et `subset()` dans `base` ?
+
+Certaines des caractéristiques discutées jusqu'à présent sont, oui. Le package s'appuie sur la fonctionnalité de base. Il fait le même genre de choses, mais avec moins de code et s'exécute beaucoup plus rapidement s'il est utilisé correctement.
+
+## Pourquoi `X[Y]` retourne-t-il aussi toutes les colonnes de `Y` ? Ne devrait-elle pas retourner un sous-ensemble de `X` ?
+
+Cela a été modifié dans la version 1.5.3 (février 2011). Depuis lors, `X[Y]` inclut les colonnes non-jointes de `Y`. Nous nous référons à cette fonctionnalité comme *join inherited scope* parce que non seulement les colonnes `X` sont disponibles pour l'expression `j`, mais les colonnes `Y` le sont aussi. L'inconvénient est que `X[Y]` est moins efficace puisque chaque élément des colonnes non-jointes de `Y` est dupliqué pour correspondre au nombre (probablement grand) de lignes dans `X` qui correspondent. Nous encourageons donc fortement l'utilisation de `X[Y, j]` au lieu de `X[Y]`. Voir [FAQ suivante](#MergeDiff).
+
+## Quelle est la différence entre `X[Y]` et `merge(X, Y)` ? {#MergeDiff}
+
+`X[Y]` est une jointure, qui recherche les lignes de `X` en utilisant `Y` (ou la clé de `Y` si elle en a une) comme index.
+
+`Y[X]` est une jointure, qui recherche les lignes de `Y` en utilisant `X` (ou la clé de `X` si elle en a une) comme index.
+
+`merge(X,Y)`[^1] fait les deux en même temps. Le nombre de lignes de `X[Y]` et de `Y[X]` est généralement différent, alors que le nombre de lignes retournées par `merge(X, Y)` et `merge(Y, X)` est le même.
+
+*MAIS* cela ne tient pas compte de l'essentiel. La plupart des tâches exigent que l'on fasse quelque chose sur les données après une jointure ou une fusion. Pourquoi fusionner toutes les colonnes de données pour n'en utiliser qu'un petit sous-ensemble par la suite ? Vous pouvez suggérer `merge(X[ , ColsNeeded1], Y[ , ColsNeed2])`, mais cela demande au programmeur de déterminer quelles colonnes sont nécessaires. `X[Y, j]` dans data.table fait tout cela en une seule étape pour vous. Quand vous écrivez `X[Y, sum(foo*bar)]`, data.table inspecte automatiquement l'expression `j` pour voir quelles colonnes elle utilise. Il ne prend qu’un sous-ensemble des colonnes ; les autres sont ignorées. La mémoire n'est créée que pour les colonnes que `j` utilise et les colonnes `Y` bénéficient des règles de recyclage standard de R dans le contexte de chaque groupe. Disons que `foo` est dans `X` et `bar` est dans `Y` (avec 20 autres colonnes dans `Y`). Est-ce que `X[Y, sum(foo*bar)]` n'est pas plus rapide à programmer et à exécuter qu'une `fusion` de tout ce qui est suivi par un `subset` ?
+
+[^1]: Il s'agit ici de la méthode `merge` *method* pour data.table ou de la méthode `merge` pour `data.frame` puisque les deux méthodes fonctionnent de la même manière à cet égard. Voir `?merge.data.table` et [below](#r-dispatch) pour plus d'informations sur la répartition des méthodes.
+
+## Autre chose à propos de `X[Y, sum(foo*bar)]` ?
+
+Ce comportement a changé dans la version 1.9.4 (septembre 2014). Il fait maintenant la jointure `X[Y]` et exécute ensuite `sum(foo*bar)` sur toutes les lignes ; c'est à dire, `X[Y][ , sum(foo*bar)]`. Il avait l'habitude d'exécuter `j` pour chaque *groupe* de `X` auquel correspondait chaque ligne de `Y`. Cela peut toujours être fait et c'est très utile, mais vous devez maintenant être explicite et spécifier `by = .EACHI`, *c'est-à-dire `X[Y, sum(foo*bar), by = .EACHI]`. C'est ce que nous appelons le *regroupement par chaque `i`*.
+
+Par exemple, (en le compliquant encore en utilisant *join inherited scope*, aussi) :
+
+```{r}
+X = data.table(grp = c("a", "a", "b",
+                       "b", "b", "c", "c"), foo = 1:7)
+setkey(X, grp)
+Y = data.table(c("b", "c"), bar = c(4, 2))
+X
+Y
+X[Y, sum(foo*bar)]
+X[Y, sum(foo*bar), by = .EACHI]
+```
+
+## C'est très bien. Comment avez-vous réussi à le modifier étant donné que les utilisateurs dépendaient de l'ancien comportement ?
+
+La demande de changement est venue des utilisateurs. Le sentiment était que si une requête fait du groupage, alors un `by=` explicite devrait être présent pour des raisons de lisibilité du code. Une option a été fournie pour retourner l'ancien comportement : `options(datatable.old.bywithoutby)`, par défaut `FALSE`. Cela a permis de tester les autres nouvelles fonctionnalités et corrections de bogues de la version 1.9.4, avec une migration ultérieure des requêtes by-without-by lorsqu'elles sont prêtes en ajoutant `by=.EACHI` à ces requêtes. Nous avons conservé 47 tests antérieurs au changement et les avons ajoutés en tant que nouveaux tests, testés sous `options(datatable.old.bywithoutby=TRUE)`. Nous avons ajouté un message de démarrage à propos du changement et de la façon de revenir à l'ancien comportement. Après 1 an, l'option a été dépréciée avec un avertissement en cas d'utilisation. Après 2 ans, l'option permettant de revenir à l'ancien comportement a été supprimée.
+
+Sur les 66 packages sur CRAN ou Bioconductor qui dépendaient ou importaient data.table au moment de la publication de la v1.9.4 (il y en a maintenant plus de 300), un seul a été affecté par le changement. Cela peut être dû au fait que de nombreux packages n'ont pas de tests complets, ou simplement au fait que le regroupement par chaque ligne dans `i` n'était pas beaucoup utilisé par les packages en aval. Nous testons toujours la nouvelle version avec tous les packages dépendants avant de la publier et nous coordonnons les changements avec les responsables de ces packages. Cette version a donc été assez simple à cet égard.
+
+Une autre raison convaincante de faire ce changement est qu'auparavant, il n'y avait pas de moyen efficace de réaliser ce que `X[Y, sum(foo*bar)]` fait maintenant. Il fallait écrire `X[Y][ , sum(foo*bar)]`. C'était sous-optimal parce que `X[Y]` joignait toutes les colonnes et les passait toutes à la seconde requête composée sans savoir que seuls `foo` et `bar` étaient nécessaires. Pour résoudre ce problème d'efficacité, un effort de programmation supplémentaire a été nécessaire : `X[Y, list(foo, bar)][ , sum(foo*bar)]`. Le passage à `by = .EACHI` a simplifié cela en permettant aux deux requêtes d'être exprimées dans une seule requête `DT[...]` pour plus d'efficacité.
+
+# Syntaxe générale
+
+## Comment éviter d'écrire une expression `j` très longue ? Vous avez dit que je devrais utiliser les *noms* de colonnes, mais j'ai beaucoup de colonnes.
+
+Lors du regroupement, l'expression `j` peut utiliser les noms de colonnes comme variables, comme vous le savez, mais elle peut aussi utiliser un symbole réservé `.SD` qui fait référence au **S**ous-ensemble de la **D**ata.table pour chaque groupe (à l'exclusion des colonnes de regroupement). Donc pour résumer toutes vos colonnes, c'est juste `DT[ , lapply(.SD, sum), by = grp]`. Cela peut sembler compliqué, mais c'est rapide à écrire et à exécuter. Notez que vous n'avez pas besoin de créer une fonction anonyme. L'objet `.SD` est efficacement implémenté en interne et plus efficace que de passer un argument à une fonction. Mais si le symbole `.SD` apparaît dans `j` alors data.table doit remplir `.SD` complètement pour chaque groupe même si `j` ne l'utilise pas entièrement.
+
+Ne faites donc pas, par exemple, `DT[ , sum(.SD[["sales"]]), by = grp]`. Cela fonctionne, mais c'est inefficace et inélégant. `DT[ , sum(sales), by = grp]` est ce qui était prévu, et il pourrait être des centaines de fois plus rapide. Si vous utilisez *toutes* les données de `.SD` pour chaque groupe (comme dans `DT[ , lapply(.SD, sum), by = grp]`) alors c'est une très bonne utilisation de `.SD`. Si vous utilisez *plusieurs* mais pas *toutes* les colonnes, vous pouvez combiner `.SD` avec `.SDcols` ; voir `?data.table`.
+
+## Pourquoi la valeur par défaut de `mult` est-elle maintenant `"all"` ?
+
+Dans la version 1.5.3, la valeur par défaut a été changée en "all". Quand `i` (ou la clé de `i` si elle en a une) a moins de colonnes que la clé de `x`, `mult` était déjà mis à `"all"` automatiquement. Changer la valeur par défaut rend la chose plus claire et plus facile pour les utilisateurs, car la question se posait assez souvent.
+
+Dans les versions antérieures à la v1.3, `"all"` était plus lent. En interne, `"all"` était implémenté en joignant en utilisant `"first"`, puis à nouveau à partir de zéro en utilisant `"last"`, après quoi un diff entre eux était effectué pour calculer l'étendue des correspondances dans `x` pour chaque ligne dans `i`. La plupart du temps, nous effectuons des jointures sur des lignes individuelles, où `"first"`,`"last"` et `"all"` renvoient le même résultat. Nous avons préféré une performance maximale dans la majorité des cas, c'est pourquoi nous avons choisi par défaut `"first"`. Lorsque l'on travaille avec une clé non unique (généralement une colonne unique contenant une variable de regroupement), `DT["A"]` renvoie la première ligne de ce groupe, donc `DT["A", mult = "all"]` est nécessaire pour renvoyer toutes les lignes de ce groupe.
+
+Dans la version 1.4, la recherche binaire en C a été modifiée pour se brancher au niveau le plus profond afin de trouver le premier et le dernier. Ce branchement se produira probablement dans les mêmes pages finales de RAM, donc il ne devrait plus y avoir de désavantage en termes de vitesse en mettant par défaut `mult` à `"all"`. Nous avons prévenu que la valeur par défaut pourrait changer et nous avons fait le changement dans la version 1.5.3.
+
+Une future version de data.table pourrait permettre une distinction entre une clé et une *clé unique*. En interne, `mult = "all"` fonctionnerait plus comme `mult = "first"` lorsque toutes les colonnes clés de `x` sont jointes et que la clé de `x` est une clé unique. data.table aurait besoin de vérifications lors de l'insertion et de la mise à jour pour s'assurer qu'une clé unique est maintenue. L'avantage de spécifier une clé unique serait que data.table s'assurerait qu'aucun duplicata ne puisse être inséré, en plus de la performance.
+
+## J'utilise `c()` dans `j` et j'obtiens des résultats étranges.
+
+Il s'agit d'une source de confusion fréquente. Dans `data.frame`, vous avez l'habitude de, par exemple :
+
+```{r}
+DF = data.frame(x = 1:3, y = 4:6, z = 7:9)
+DF
+DF[ , c("y", "z")]
+```
+
+qui renvoie les deux colonnes. Dans data.table, vous savez que vous pouvez utiliser les noms de colonnes directement et vous pouvez essayer :
+
+```{r}
+DT = data.table(DF)
+DT[ , c(y, z)]
+```
+
+mais il renvoie un vecteur. Rappelez-vous que l'expression `j` est évaluée dans l'environnement de `DT` et que `c()` renvoie un vecteur. Si 2 colonnes ou plus sont nécessaires, utilisez `list()` ou `.()` à la place :
+
+```{r}
+DT[ , .(y, z)]
+```
+
+`c()` peut également être utile dans un data.table, mais son comportement est différent de celui de `[.data.frame`.
+
+## J'ai créé un tableau complexe comportant de nombreuses colonnes. Je souhaite l'utiliser comme modèle pour un nouveau tableau ; *c'est-à-dire* créer un nouveau tableau sans lignes, mais avec les noms et les types de colonnes copiés à partir de mon tableau. Est-ce que je peux le faire facilement ?
+
+Si votre table complexe s'appelle `DT`, essayez `NEWDT = DT[0]`.
+
+## Un data.table nul est-il identique à `DT[0]` ?
+
+Non. Par « null.data.table », nous entendons le résultat de `data.table(NULL)` ou de `as.data.table(NULL)` ; *c'est-à-dire *,
+
+```{r}
+data.table(NULL)
+data.frame(NULL)
+as.data.table(NULL)
+as.data.frame(NULL)
+is.null(data.table(NULL))
+is.null(data.frame(NULL))
+```
+
+Le data.table|`frame` null est `NULL` avec quelques attributs attachés, ce qui signifie qu'il n'est plus `NULL`. Dans R, seul le `NULL` pur est `NULL`, comme testé par `is.null()`. Lorsque l'on se réfère au « nul data.table », on utilise la minuscule null pour faire la différence avec la majuscule `NULL`. Pour tester la nullité d'un data.table, utilisez `length(DT) == 0` ou `ncol(DT) == 0` (`length` est légèrement plus rapide car il s'agit d'une fonction primitive).
+
+Un data.table *vide* (`DT[0]`) possède une ou plusieurs colonnes, toutes vides. Ces colonnes vides ont toujours des noms et des types.
+
+```{r}
+DT = data.table(a = 1:3, b = c(4, 5, 6), d = c(7L,8L,9L))
+DT[0]
+sapply(DT[0], class)
+```
+
+## Pourquoi l'alias `DT()` a-t-il été supprimé ? {#DTremove1}
+
+`DT` a été introduit à l'origine comme une enveloppe pour une liste d'expressions `j`. Comme `DT` était un alias de data.table, c'était un moyen pratique de prendre en charge le recyclage silencieux dans les cas où chaque élément de la liste `j` était évalué à des longueurs différentes. L'alias était l'une des raisons pour lesquelles le groupage était lent.
+
+Depuis la version 1.3, `list()` ou `.()` devraient être passés à la place de l'argument `j`. Ces méthodes sont beaucoup plus rapides, en particulier lorsqu'il y a beaucoup de groupes. En interne, il s'agit d'un changement non trivial. Le recyclage des vecteurs est maintenant effectué en interne, ainsi que plusieurs autres améliorations de la vitesse de groupage.
+
+## Mais mon code utilise `j = DT(...)` et il fonctionne. La FAQ précédente dit que `DT()` a été supprimé. {#DTremove2}
+
+Vous utilisez alors une version antérieure à la 1.5.3. Avant la version 1.5.3, `[.data.table` détectait l'utilisation de `DT()` dans le `j` et le remplaçait automatiquement par un appel à `list()`. Ceci avait pour but de faciliter la transition pour les utilisateurs existants.
+
+## Quelles sont les règles des expressions en `j` ?
+
+Considérez le sous-ensemble comme un environnement où tous les noms de colonnes sont des variables. Lorsqu'une variable `foo` est utilisée dans le `j` d'une requête telle que `X[Y, sum(foo)]`, `foo` est recherché dans l'ordre suivant :
+
+ 1. La portée du sous-ensemble `X` ; *c'est-à-dire *, les noms de colonnes de `X`.
+ 2. La portée de chaque ligne de `Y` ; *i.e.*, les noms des colonnes de `Y` (*joint inherited scope*)
+ 3. La portée du cadre d'appel ; *e.g.*, la ligne qui apparaît avant la requête data.table.
+ 4. Exercice pour le lecteur : est-ce que cela se répercute ensuite sur les cadres d'appel ou est-ce que cela va directement à `globalenv()` ? 
+ 5. L'environnement global
+
+Il s'agit d'un *cadrage logique* comme expliqué dans [R FAQ 3.3.1](https://cran.r-project.org/doc/FAQ/R-FAQ.html#Lexical-scoping). L'environnement dans lequel la fonction a été créée n'est pas pertinent, cependant, parce qu'il n'y a *pas de fonction*. Aucune *fonction* anonyme n'est passée à `j`. Au lieu de cela, un *corps* anonyme est passé à `j` ; par exemple,
+
+```{r}
+DT = data.table(x = rep(c("a", "b"), c(2, 3)), y = 1:5)
+DT
+DT[ , {z = sum(y) ; z + 3}, by = x]
+```
+
+Certains langages de programmation appellent cela un *lambda*.
+
+## Puis-je tracer l'expression `j` au fur et à mesure qu'elle passe dans les groupes ? {#j-trace}
+
+Essayez quelque chose comme ceci :
+
+```{r}
+DT[ , {
+  cat("Objets :", paste(objects(), collapse = ","), "\n")
+  cat("Trace : x=", as.character(x), " y=", y, "\n")
+  sum(y)},
+  by = x]
+```
+
+## À l'intérieur de chaque groupe, pourquoi les variables de groupe sont-elles de longueur 1 ?
+
+[Above](#j-trace), `x` est une variable de regroupement et (à partir de la version 1.6.1) a une longueur de 1 (si elle est inspectée ou utilisée dans `j`). C'est pour des raisons d'efficacité et de commodité. Par conséquent, il n'y a pas de différence entre les deux déclarations suivantes :
+
+```{r}
+DT[ , .(g = 1, h = 2, i = 3, j = 4, repeatgroupname = x, sum(y)), by = x]
+DT[ , .(g = 1, h = 2, i = 3, j = 4, repeatgroupname = x[1], sum(y)), by = x]
+```
+
+Si vous avez besoin de la taille du groupe actuel, utilisez `.N` plutôt que d'appeler `length()` sur n'importe quelle colonne.
+
+## Seules les 10 premières lignes sont affichées, comment en afficher d'autres ?
+
+Il se passe deux choses ici. Premièrement, si le nombre de lignes d'un data.table est important (`> 100` par défaut), alors un résumé du data.table est imprimé sur la console par défaut. Deuxièmement, le résumé d'un grand data.table est imprimé en prenant les `n` (`= 5` par défaut) lignes du haut et du bas du data.table et en n'imprimant que celles-ci. Ces deux paramètres (quand déclencher un résumé et quelle partie du tableau utiliser comme résumé) sont configurables par le mécanisme `options` de R, ou en appelant directement la fonction `print`.
+
+Par exemple, pour forcer le résumé (summary) d'un data.table à ne se produire que lorsqu'un data.table est supérieur à 50 lignes, vous pourriez faire `options(datatable.print.nrows = 50)`. Pour désactiver complètement le résumé par défaut, vous pourriez faire `options(datatable.print.nrows = Inf)`. Vous pouvez aussi appeler `print` directement, comme dans `print(your.data.table, nrows = Inf)`.
+
+Si vous voulez afficher plus que les 10 premières (et dernières) lignes d'un tableau de données (disons 20), mettez `options(datatable.print.topn = 20)`, par exemple. Encore une fois, vous pouvez aussi appeler directement `print`, comme dans `print(your.data.table, topn = 20)`.
+
+## Avec une jointure `X[Y]`, que se passe-t-il si `X` contient une colonne appelée `"Y"` ?
+
+Lorsque `i` est un nom unique tel que `Y`, il est évalué dans d'appel. Dans tous les autres cas, comme les appels à `.()` ou d'autres expressions, `i` est évalué dans la portée de `X`. Cela facilite les *auto-joints* comme `X[J(unique(colA)), mult = "first"]`.
+
+## `X[Z[Y]]` échoue parce que `X` contient une colonne `"Y"`. J'aimerais qu'il utilise la table `Y` dans l’appel.
+
+La partie `Z[Y]` n'est pas un nom unique, elle est donc évaluée dans le cadre de `X` et le problème se produit. Essayez `tmp = Z[Y] ; X[tmp]`. Ceci est robuste à `X` contenant une colonne `"tmp"` parce que `tmp` est un nom unique. Si vous rencontrez souvent des conflits de ce type, une solution simple peut être de nommer toutes les tables en majuscules et tous les noms de colonnes en minuscules, ou un schéma similaire.
+
+## Pouvez-vous nous expliquer pourquoi data.table s'inspire de la syntaxe `A[B]` de `base` ?
+
+Considérons la syntaxe `A[B]` en utilisant un exemple de matrice `A` :
+
+```{r}
+A = matrix(1:12, nrow = 4)
+A
+```
+
+Pour obtenir les cellules `(1, 2) = 5` et `(3, 3) = 11`, de nombreux utilisateurs (nous pensons) peuvent d'abord essayer ceci :
+
+```{r}
+A[c(1, 3), c(2, 3)]
+```
+
+Cependant, cette méthode renvoie l'union de ces lignes et de ces colonnes. Pour référencer les cellules, une matrice à 2 colonnes est nécessaire. `?Extract` dit :
+
+> Lors de l'indexation des tableaux par `[`, un seul argument `i` peut être une matrice avec autant de colonnes qu'il y a de dimensions de `x` ; le résultat est alors un vecteur avec des éléments correspondant aux ensembles d'indices dans chaque ligne de `i`.
+
+Essayons encore une fois.
+
+```{r}
+B = cbind(c(1, 3), c(2, 3))
+B
+A[B]
+```
+
+Une matrice est une structure à 2 dimensions avec des noms de lignes et de colonnes. Peut-on faire la même chose avec les noms ?
+
+```{r}
+rownames(A) = letters[1:4]
+colnames(A) = LETTERS[1:3]
+A
+B = cbind(c("a", "c"), c("B", "C"))
+A[B]
+```
+
+Donc oui, nous pouvons le faire. Peut-on faire la même chose avec un `data.frame` ?
+
+```{r}
+A = data.frame(A = 1:4, B = letters[11:14], C = pi*1:4)
+rownames(A) = letters[1:4]
+A
+B
+A[B]
+```
+
+Mais, remarquez que le résultat a été forcé en `character.` R a forcé `A` en `matrix` d'abord pour que la syntaxe puisse fonctionner, mais le résultat n'est pas idéal. Essayons de faire de `B` un `data.frame`.
+
+```{r}
+B = data.frame(c("a", "c"), c("B", "C"))
+cat(try(A[B], silent = TRUE))
+```
+
+Nous ne pouvons donc pas extraire un sous-ensemble d’un `data.frame` par un `data.frame` dans la base R. Que faire si nous voulons des noms de lignes et de colonnes qui ne sont pas des `caractères` mais des `integer` ou des `float` ? Que faire si nous voulons plus de 2 dimensions de types mixtes ? Entrez dans data.table.
+
+En outre, les matrices, en particulier les matrices creuses, sont souvent stockées dans un tuple à trois colonnes : (i, j, valeur)`. Cela peut être considéré comme une paire clé-valeur où `i` et `j` forment une clé à 2 colonnes. Si nous avons plus d'une valeur, peut-être de types différents, cela peut ressembler à `(i, j, val1, val2, val3, ...)`. Cela ressemble beaucoup à un `data.frame`. C'est pourquoi data.table étend `data.frame` de sorte qu'un `data.frame` `X` puisse extraire un sous-ensemble d’un `data.frame` `Y`, ce qui conduit à la syntaxe `X[Y]`.
+
+## Est-il possible de modifier le package base pour faire cela, plutôt que de créer un nouveau package ?
+
+`data.frame` est utilisé *partout* et il est donc très difficile d'y apporter un quelconque changement. data.table *hérite* de `data.frame`. C'est aussi un `data.frame`. Un data.table *peut* être passé à n'importe quel package qui *seulement* accepte `data.frame`. Quand ce package utilise la syntaxe `[.data.frame` sur le data.table, cela fonctionne. Cela fonctionne parce que `[.data.table` regarde d'où il a été appelé. S'il a été appelé à partir d'un tel package, `[.data.table` se dirige vers `[.data.frame`.
+
+## J'ai entendu dire que la syntaxe de data.table était analogue à celle de SQL.
+
+Oui :
+
+ - `i` $\Leftrightarrow$ where
+ - `j` $\Leftrightarrow$ select
+ - ` :=` $\Leftrightarrow$ update
+ - `by` $\Leftrightarrow$ group by
+ - `i` $\Leftrightarrow$ order by (en syntaxe composée)
+ - `i` $\Leftrightarrow$ having (en syntaxe composée)
+ - `nomatch = NA` $\Leftrightarrow$ outer join
+ - `nomatch = NULL` $\Leftrightarrow$ inner join
+ - `mult = "first"|"last"` $\Leftrightarrow$ N/A parce que SQL est intrinsèquement non ordonné
+ - `roll = TRUE` $\Leftrightarrow$ N/A parce que SQL est intrinsèquement non ordonné
+
+La forme générale est la suivante :
+
+```r
+DT[where, select|update, group by][order by][...] ... [...]
+```
+
+L'un des principaux avantages des vecteurs colonnes dans R est qu'ils sont *ordonnés*, contrairement à SQL[^2]. Nous pouvons utiliser des fonctions ordonnées dans les requêtes `data.table` telles que `diff()` et nous pouvons utiliser *n'importe quelle* fonction R de n'importe quel package, pas seulement les fonctions qui sont définies dans SQL. L'inconvénient est que les objets R doivent tenir dans la mémoire, mais avec plusieurs packages R tels que `ff`, `bigmemory`, `mmap` et `indexing`, cela est en train de changer.
+
+[^2]: Il peut être surprenant d'apprendre que `select top 10 * from ...` ne renvoie pas de manière fiable les mêmes lignes dans le temps en SQL. Vous devez inclure une clause `order by`, ou utiliser un index en grappe pour garantir l'ordre des lignes ; *i.e.*, SQL est intrinsèquement non ordonné.
+
+## Quelles sont les petites différences de syntaxe entre `data.frame` et data.table {#SmallerDiffs}
+
+ - `DT[3]` fait référence à la 3ème *lignes*, mais `DF[3]` fait référence à la 3ème *colonne*
+ - `DT[3, ] == DT[3]`, mais `DF[ , 3] == DF[3]` (un peu déroutant dans data.frame, alors que data.table est cohérent)
+ - Pour cette raison, nous disons que la virgule est *optionnelle* dans `DT`, mais pas optionnelle dans `DF`
+ - `DT[[3]] == DF[, 3] == DF[[3]]`
+ - `DT[i, ]`, où `i` est un seul entier, renvoie une seule ligne, tout comme `DF[i, ]`, mais contrairement à un sous-ensemble de matrice à une seule ligne qui renvoie un vecteur.
+ - `DT[ , j]` où `j` est un entier renvoie un data.table à une colonne, contrairement à `DF[, j]` qui renvoie un vecteur par défaut
+ - `DT[ , "colA"][[1]] == DF[ , "colA"]`.
+ - `DT[ , colA] == DF[ , "colA"]` (actuellement dans data.table v1.9.8 mais est sur le point de changer, voir les notes de version)
+ - `DT[ , list(colA)] == DF[ , "colA", drop = FALSE]`
+ - `DT[NA]` renvoie 1 ligne de `NA`, mais `DF[NA]` renvoie une copie entière de `DF` contenant `NA` tout au long. Le symbole `NA` est de type `logique` dans R et est donc recyclé par `[.data.frame`. L'intention de l'utilisateur était probablement `DF[NA_integer_]`. par commodité, `[.data.table' se réoriente automatiquement vers cette intention probable.
+ - `DT[c(TRUE, NA, FALSE)]` traite le `NA` comme `FALSE`, mais `DF[c(TRUE, NA, FALSE)]` renvoie===== lignes `NA` pour chaque `NA` ===== - `DT[ColA == ColB]` est plus simple que `DF[!is.na(ColA) & !is.na(ColB) & ColA == ColB, ]`
+ - `data.frame(list(1:2, "k", 1:4))` crée 3 colonnes, data.table crée une colonne `list`.
+ - `check.names` est par défaut `TRUE` dans `data.frame` mais `FALSE` dans data.table, par commodité.
+ - `data.table` a toujours mis `stringsAsFactors=FALSE` par défaut. Dans R 4.0.0 (Apr 2020), la valeur par défaut de `data.frame` a été changée de `TRUE` à `FALSE` et il n'y a plus de différence à cet égard ; voir [stringsAsFactors, Kurt Hornik, Feb 2020](https://developer.r-project.org/Blog/public/2020/02/16/stringsasfactors/).
+ - Les vecteurs atomiques dans les colonnes de `list` sont réduits lorsqu'ils sont imprimés en utilisant `", "` dans `data.frame`, mais `","` dans data.table avec une virgule après le 6ème élément pour éviter l'impression accidentelle de gros objets intégrés.
+ - Contrairement aux data.frames, un data.table ne peut pas stocker des lignes sans colonnes, car les lignes sont considérées comme les enfants des colonnes : `nrow(DF[, 0])` renvoie le nombre de lignes, tandis que `nrow(DT[, 0])` renvoie toujours 0 ; mais voir le numéro [#2422](https://github.com/Rdatatable/data.table/issues/2422).
+
+Dans `[.data.frame`, nous mettons très souvent `drop = FALSE`. Lorsque nous l'oublions, des bogues peuvent apparaître dans les cas où une seule colonne est sélectionnée et où, tout à coup, un vecteur est retourné au lieu d'un `data.frame` à une seule colonne. Dans `[.data.table`, nous avons saisi l'opportunité de rendre les choses plus cohérentes et nous avons supprimé `drop`.
+
+Lorsqu'un data.table est transmis à un package ne prenant pas en compte data.table, ce package ne se préoccupe pas de ces différences ; il fonctionne simplement.
+
+## J'utilise `j` pour son effet secondaire uniquement, mais je reçois toujours des données en retour. Comment arrêter cela ?
+
+Dans ce cas, `j` peut être entouré de `invisible()` ; par exemple, `DT[ , invisible(hist(colB)), by = colA]`[^3]
+
+[^3]: *e.g.*, `hist()` renvoie les points d'arrêt en plus du tracé sur le périphérique graphique.
+
+## Pourquoi `[.data.table` a maintenant un argument `drop` depuis la version v1.5 ?
+
+Ainsi, data.table peut hériter de `data.frame` sans utiliser `...`. Si nous utilisions `...`, les noms d'arguments invalides ne seraient pas détectés.
+
+L'argument `drop` n'est jamais utilisé par `[.data.table`. C'est un substitut pour les packages non compatibles avec data.table lorsqu'ils utilisent la syntaxe `[.data.frame` directement sur un data.table.
+
+## Les jonctions par roulement sont cool et très rapides ! C'était difficile à programmer ?
+
+La ligne dominante sur ou avant la ligne `i` est la ligne finale que la recherche binaire teste de toute façon. Donc `roll = TRUE` est essentiellement un interrupteur dans le code C de la recherche binaire pour retourner cette ligne.
+
+## Pourquoi `DT[i, col := valeur]` retourne-t-il la totalité de `DT` ? Je m'attendais à ce qu'il n'y ait pas de valeur visible (ce qui est cohérent avec `<-`), ou à ce qu'il y ait un message ou une valeur de retour contenant le nombre de lignes mises à jour. Il n'est pas évident que les données aient été mises à jour par référence.
+
+Ceci a été modifié dans la version 1.8.3 pour répondre à vos attentes. Veuillez mettre à jour.
+
+L'ensemble de `DT` est retourné (maintenant de manière invisible) pour que la syntaxe composée puisse fonctionner ; *e.g.*, `DT[i, done := TRUE][ , sum(done)]`. Le nombre de lignes mises à jour est retourné quand `verbose` est `TRUE`, soit sur une base par requête, soit globalement en utilisant `options(datatable.verbose = TRUE)`.
+
+## D'accord, merci. Qu'y a-t-il de si difficile dans le fait que le résultat de `DT[i, col := value]` soit renvoyé de façon invisible ?
+
+R force en interne la visibilité pour `[`. La valeur de la colonne eval de FunTab (voir [src/main/names.c](https://github.com/wch/r-source/blob/trunk/src/main/names.c)) pour `[` est `0` ce qui signifie "force `R_Visible` on" (voir [R-Internals section 1.6](https://cran.r-project.org/doc/manuals/r-release/R-ints.html#Autoprinting) ). Par conséquent, lorsque nous avons essayé `invisible()` ou de mettre `R_Visible` à `0` directement nous-mêmes, `eval` dans [src/main/eval.c](https://github.com/wch/r-source/blob/trunk/src/main/eval.c) l'a forcé à nouveau.
+
+Pour résoudre ce problème, la clé était de ne plus essayer d'arrêter l'exécution de la méthode print après un `:=`. Au lieu de cela, à l'intérieur de `:=` nous mettons maintenant (à partir de la version 1.8.3) un drapeau global que la méthode print utilise pour savoir si elle doit imprimer ou non.
+
+## Pourquoi dois-je taper `DT` parfois deux fois après avoir utilisé `:=` pour imprimer le résultat dans la console ?
+
+C'est un inconvénient malheureux pour faire fonctionner [#869](https://github.com/Rdatatable/data.table/issues/869). Si un `:=` est utilisé à l'intérieur d'une fonction sans `DT[]` avant la fin de la fonction, alors la prochaine fois que `DT` est tapé à l'invite, rien ne sera affiché. Un `DT` répété sera affiché. Pour éviter cela : incluez un `DT[]` après le dernier `:=` dans votre fonction. Si ce n'est pas possible (par exemple, ce n'est pas une fonction que vous pouvez changer), alors `print(DT)` et `DT[]` à l'invite sont garantis de s’afficher. Comme précédemment, l'ajout d'un `[]` supplémentaire à la fin de la requête `:=` est un idiome recommandé pour mettre à jour et ensuite imprimer ; e.g.> `DT[,foo:=3L][]`.
+
+## J'ai remarqué que `base::cbind.data.frame` (et `base::rbind.data.frame`) semble être modifié par data.table. Comment cela est-il possible ? Pourquoi ?
+
+C'était une solution temporaire de dernier recours avant que le dispatching des méthodes S3 de rbind et cbind ne soit corrigé dans R >= 4.0.0. Essentiellement, le problème était que `data.table` hérite de `data.frame`, *et* `base::cbind` et `base::rbind` (uniquement) font leur propre dispatching S3 en interne comme documenté par `?cbind`. La solution pour `data.table` était d'ajouter une boucle `for` au début de chaque fonction directement dans `base`. Cette modification était faite dynamiquement, *c'est-à-dire* que la définition `base` de `cbind.data.frame` était récupérée, la boucle `for` ajoutée au début, et ensuite réassignée à `base`. Cette solution a été conçue pour être robuste aux différentes définitions de `base::cbind.data.frame` dans les différentes versions de R, y compris les changements futurs inconnus. Elle a bien fonctionné. Les exigences concurrentes étaient les suivantes :
+
+ - `cbind(DT, DF)` doit fonctionner. Définir `cbind.data.table` ne fonctionnait pas parce que `base::cbind` fait sa propre distribution S3 et requiert (avant R 4.0.0) que la *première* méthode `cbind` pour chaque objet qui lui est passé soit *identique*. Ce n'est pas vrai dans `cbind(DT, DF)` parce que la première méthode pour `DT` est `cbind.data.table` mais la première méthode pour `DF` est `cbind.data.frame`. `base::cbind` passe alors à son code `bind` interne qui semble traiter `DT` comme une `liste` normale et renvoie une sortie `matrix` très bizarre et inutilisable. Voir [ci-dessous](#cbinderror). Nous ne pouvons pas simplement conseiller aux utilisateurs de ne pas appeler `cbind(DT, DF)` parce que des packages comme `ggplot2` font un tel appel ([test 167.2](https://github.com/Rdatatable/data.table/blob/master/inst/tests/tests.Rraw#L444-L447)).
+
+ - Cela a naturellement conduit à essayer de masquer `cbind.data.frame` à la place. Puisqu'une data.table est un `data.frame`, `cbind` trouverait la même méthode pour `DT` et `DF`. Cependant, cela n'a pas fonctionné non plus parce que `base::cbind` semble trouver les méthodes dans `base` en premier ; *i.e.*, `base::cbind.data.frame` n'est pas masquable.
+
+ - Finalement, nous avons essayé de masquer `cbind` lui-même (v1.6.5 et v1.6.6). Cela a permis à `cbind(DT, DF)` de fonctionner, mais a introduit des problèmes de compatibilité avec le package `IRanges`, puisque `IRanges` masque aussi `cbind`. Cela fonctionnait si `IRanges` était plus bas dans le chemin `search()` que data.table, mais si `IRanges` était plus haut que data.table, `cbind` n'était jamais appelé et l'étrange sortie `matrix` se produisait à nouveau (voir [ci-dessous](#cbinderror)).
+
+Un grand merci à l'équipe de base de R pour avoir résolu le problème en septembre 2019. data.table v1.12.6+ n'applique plus la solution de contournement dans R >= 4.0.0.
+
+## J'ai lu des articles sur la répartition des méthodes (*e.g.* `merge` peut ou non être réparti dans `merge.data.table`) mais *comment* R sait-il comment répartir ? Les points sont-ils significatifs ou spéciaux ? Comment diable R sait-il quelle fonction doit être distribuée et à quel moment ? {#r-dispatch}
+
+On en parle souvent, mais c'est d'une simplicité déconcertante. Une fonction telle que `merge` est *générique* si elle consiste en un appel à `UseMethod`. Quand vous voyez des gens parler de la question de savoir si les fonctions sont *génériques* ou non, ils tapent simplement la fonction sans `()` après, regardent le code du programme à l'intérieur et s'ils voient un appel à `UseMethod` alors c'est *générique*. Que fait `UseMethod` ? Elle colle littéralement le nom de la fonction avec la classe du premier argument, séparés par un point (`.`) et appelle ensuite cette fonction, en lui passant les mêmes arguments. C'est aussi simple que cela. Par exemple, `merge(X, Y)` contient un appel à `UseMethod`, ce qui signifie qu'il *dispatche* (c'est-à-dire appelle) `paste("merge", class(X), sep = ".")`. Les fonctions avec des points dans leur nom peuvent ou non être des méthodes. Le point n'est pas vraiment pertinent, autre que le point est le séparateur utilisé par `UseMethod`. Connaître ce contexte devrait maintenant permettre de comprendre pourquoi, par exemple, il est évident pour les utilisateurs de R que `as.data.table.data.frame` est la méthode `data.frame` pour la fonction générique `as.data.table`. De plus, il peut être utile d'élucider que, oui, vous avez raison, il n'est pas évident à partir de son seul nom que `ls.fit` n'est pas la méthode fit de la fonction générique `ls`. Vous ne le savez qu'en tapant `ls` (pas `ls()`) et en observant qu'il n'y a pas un seul appel à `UseMethod`.
+
+Vous pouvez maintenant vous demander : où cela est-il documenté dans R ? Réponse : c'est assez clair, mais vous devez d'abord savoir qu'il faut chercher dans `?UseMethod` et *ce* fichier d'aide contient :
+
+> Lorsqu'une fonction appelant `UseMethod('fun')` est appliquée à un objet avec l'attribut de classe `c('first', 'second')`, le système recherche une fonction appelée `fun.first` et, s'il la trouve, l'applique à l'objet. Si aucune fonction de ce type n'est trouvée, une fonction appelée `fun.second` est essayée. Si aucun nom de classe ne produit une fonction appropriée, la fonction `fun.default` est utilisée, si elle existe, ou une erreur se produit.
+
+Heureusement, une recherche internet sur "How does R method dispatch work" (à l'heure où j'écris ces lignes) renvoie la page d'aide `?UseMethod` dans les premiers liens. Certes, les autres liens sortent rapidement dans les subtilités de S3 vs S4, les génériques internes et ainsi de suite.
+
+Cependant, des fonctionnalités telles que l'envoi S3 de base (coller le nom de la fonction avec le nom de la classe) sont la raison pour laquelle certains adeptes de R aiment R. C'est tellement simple. Aucune inscription ou signature compliquée n'est requise. Il n'y a pas grand chose à apprendre. Pour créer la méthode `merge` pour data.table, tout ce qui était nécessaire, littéralement, était de créer une fonction appelée `merge.data.table`.
+
+# Questions relatives au temps de calcul
+
+## J'ai 20 colonnes et un grand nombre de lignes. Pourquoi l'expression d'une colonne est-elle si rapide ?
+
+Plusieurs raisons à cela :
+
+ - Seule cette colonne est groupée, les 19 autres sont ignorées parce que data.table inspecte l'expression `j` et réalise qu'elle n'utilise pas les autres colonnes.
+ - Une allocation de mémoire est faite pour le plus grand groupe seulement, puis cette mémoire est réutilisée pour les autres groupes. Il y a très peu de déchets à collecter.
+ - R est un magasin de colonnes en mémoire, c'est-à-dire que les colonnes sont contiguës dans la RAM. Les extractions de pages de la RAM vers la mémoire cache L2 sont réduites au minimum.
+
+## Je n'ai pas de `key` sur une grande table, mais le regroupement est toujours très rapide. Comment cela se fait-il ?
+
+data.table utilise le tri par base (radix sort). Il est nettement plus rapide que les autres algorithmes de tri. Voir [nos présentations](https://github.com/Rdatatable/data.table/wiki/Presentations) pour plus d'informations, en particulier sur useR!2015 Danemark.
+
+C'est aussi l'une des raisons pour lesquelles `setkey()` est rapide.
+
+Lorsqu'aucune "clé" (‘key’) n'est définie, ou que l'on regroupe dans un ordre différent de celui de la clé, on parle d'un "by" *ad hoc.
+
+## Pourquoi le regroupement par colonnes dans la clé est-il plus rapide qu'un *ad hoc* `by` ?
+
+Parce que chaque groupe est contigu en RAM, ce qui minimise les recherches de pages et que la mémoire peut être copiée en masse (`memcpy` en C) plutôt qu'en boucle en C.
+
+## Que sont les indices primaires et secondaires dans data.table ?
+
+Manuel : [`?setkey`](https://www.rdocumentation.org/packages/data.table/functions/setkey) S.O. : [Quel est l'intérêt de définir une clé dans data.table ?](https://stackoverflow.com/questions/20039335/what-is-the-purpose-of-setting-a-key-in-data-table/20057411#20057411)
+
+`setkey(DT, col1, col2)` ordonne les lignes par la colonne `col1` puis à l'intérieur de chaque groupe de `col1` il ordonne par `col2`. Il s'agit d'un *index primaire*. L'ordre des lignes est modifié *par référence* en RAM. Les jointures et les groupes ultérieurs sur ces colonnes clés profitent alors de l'ordre de tri pour plus d'efficacité. (Imaginez à quel point la recherche d'un numéro de téléphone dans un annuaire imprimé serait difficile s'il n'était pas trié par nom puis par prénom. C'est littéralement tout ce que fait `setkey`. Il trie les lignes en fonction des colonnes que vous spécifiez) L'index n'utilise pas de RAM. Il change simplement l'ordre des lignes en RAM et marque les colonnes clés. Analogue à un *index groupé* en SQL.
+
+Cependant, vous ne pouvez avoir qu'une seule clé primaire car les données ne peuvent être triées physiquement dans la mémoire vive que d'une seule manière à la fois. Choisissez l'index primaire comme étant celui que vous utilisez le plus souvent (par exemple `[id,date]`). Parfois, il n'y a pas de choix évident pour la clé primaire ou vous devez joindre et grouper de nombreuses colonnes différentes dans des ordres différents. Entrez un index secondaire. Celui-ci utilise de la mémoire (`4*nrow` bytes indépendamment du nombre de colonnes dans l'index) pour stocker l'ordre des lignes selon les colonnes que vous spécifiez, mais ne réordonne pas réellement les lignes en RAM. Les jointures et les groupes ultérieurs profitent de l'ordre de la clé secondaire mais doivent *sauter* via cet index et ne sont donc pas aussi efficaces que les index primaires. Ils sont donc moins efficaces que les index primaires. Mais ils sont tout de même beaucoup plus rapides qu'un balayage vectoriel complet. Il n'y a pas de limite au nombre d'index secondaires puisque chacun d'entre eux est simplement un vecteur d'ordre différent. En général, il n'est pas nécessaire de créer des index secondaires. Ils sont créés automatiquement et utilisés pour vous automatiquement en utilisant data.table normalement ; *e.g.* `DT[someCol == someVal, ]` et `DT[someCol %in% someVals, ]` créeront, attacheront et utiliseront ensuite l'index secondaire. Ceci est plus rapide dans data.table qu'un balayage vectoriel, donc l'indexation automatique est activée par défaut puisqu'il n'y a pas de pénalité initiale. Il existe une option pour désactiver l'indexation automatique ; *e.g.*, si beaucoup d'index sont créés et que même la quantité relativement faible de mémoire supplémentaire devient trop importante.
+
+Nous utilisons les mots *index* et *key* de manière interchangeable.
+
+# Messages d'erreur
+
+## « Impossible de trouver la fonction `DT` »
+
+Voir ci-dessus [ici](#DTremove1) et [ici](#DTremove2).
+
+## « argument(s) non utilisé(s) (`MySum = sum(v)`) »
+
+Cette erreur est générée par `DT[ , MySum = sum(v)]`. `DT[ , .(MySum = sum(v))]` était prévu, ou `DT[ , j = .(MySum = sum(v))]`.
+
+## "`translateCharUTF8` doit être appelé sur un `CHARSXP`"
+
+Cette erreur (et d'autres similaires, *e.g.*, "`getCharCE` must be called on a `CHARSXP`") peut n'avoir rien à voir avec les données de caractères ou la locale. Au lieu de cela, cela peut être le symptôme d'une corruption de mémoire antérieure. Jusqu'à présent, ces problèmes ont pu être reproduits et corrigés (rapidement). Merci de le signaler sur notre [gestionnaire de tickets (issues tracker)](https://github.com/Rdatatable/data.table/issues).
+
+## `cbind(DT, DF)` renvoie un format étrange, *e.g.* `Integer,5` {#cbinderror}
+
+Cela se produit avant la version 1.6.5, pour `rbind(DT, DF)` également. Veuillez mettre à jour vers la version 1.6.7 ou une version ultérieure.
+
+## « Impossible de modifier la valeur d'une liaison verrouillée pour `.SD` »
+
+`.SD` est verrouillé par conception. Voir `?data.table`. Si vous voulez manipuler `.SD` avant de l'utiliser ou de le retourner, et que vous ne souhaitez pas modifier `DT` en utilisant `:=`, prenez d'abord une copie (voir `?copy`), *e.g.*,
+
+```{r}
+DT = data.table(a = rep(1:3, 1:3), b = 1:6, c = 7:12)
+DT
+DT[ , { mySD = copy(.SD)
+      mySD[1, b := 99L]
+      mySD},
+    by = a]
+```
+
+## « Impossible de modifier la valeur d'une liaison verrouillée pour `.N` »
+
+Veuillez mettre à jour vers la version 1.8.1 ou plus récente. A partir de cette version, si `.N` est retourné par `j`, il est renommé en `N` pour éviter toute ambiguïté dans un regroupement ultérieur entre la variable spéciale `.N` et une colonne appelée `".N"`.
+
+L'ancien comportement peut être reproduit en forçant `.N` à s'appeler `.N`, comme ceci :
+
+```{r}
+DT = data.table(a = c(1,1,2,2,2), b = c(1,2,2,2,1))
+DT
+DT[ , list(.N = .N), list(a, b)] # montrer le résultat intermédiaire pour l'exposition
+cat(try(
+    DT[ , list(.N = .N), by = list(a, b)][ , unique(.N), by = a] # composer une requête plus typique
+, silent = TRUE))
+```
+
+Si vous utilisez déjà la version 1.8.1 ou une version ultérieure, le message d'erreur est plus utile que l'erreur « Impossible de modifier la valeur d’une liaison verrouillée », comme vous pouvez le voir ci-dessus, puisque cette vignette a été produite avec la version 1.8.1 ou une version ultérieure.
+
+La syntaxe plus naturelle fonctionne désormais :
+
+```{r}
+if (packageVersion("data.table") >= "1.8.1") {
+    DT[ , .N, by = list(a, b)][ , unique(N), by = a]
+  }
+if (packageVersion("data.table") >= "1.9.3") {
+    DT[ , .N, by = .(a, b)][ , unique(N), by = a] # same
+}
+```
+
+# Messages d'avertissement
+
+## « Le(s) objet(s) suivant(s) est/sont masqué(s) dans `package:base` : `cbind`, `rbind` »
+
+Cet avertissement était présent dans les versions 1.6.5 et 1.6.6 uniquement, lors du chargement du package. La motivation était de permettre à `cbind(DT, DF)` de fonctionner, mais il s'est avéré que cela rompait la compatibilité (totale) avec le package `IRanges`. Veuillez mettre à jour vers la version 1.6.7 ou une version ultérieure.
+
+## « Coercition numérique du membre de droite (RHS) en entier pour correspondre au type de la colonne »
+
+J'espère que ce message s'explique de lui-même. Le message complet est le suivant :
+
+RHS numérique forcé en entier pour correspondre au type de la colonne ; peut avoir une précision tronquée. Vous pouvez soit changer la colonne en numérique en créant vous-même un nouveau tableau numérique de longueur 5 (nrows du tableau entier) et en l'assignant (c.-à-d. colonne "replace"), soit forcer vous-même le RHS en entier (par ex. 1L ou as.integer) pour que votre intention soit claire (et pour plus de rapidité). Ou encore, définissez correctement le type de colonne dès la création de la table et respectez-le, s'il vous plaît.
+
+Pour le générer, essayez :
+
+```{r}
+DT = data.table(a = 1:5, b = 1:5)
+suppressWarnings(
+DT[2, b := 6] # fonctionne (plus lentement) avec l'avertissement
+)
+class(6) # numérique pas entier
+DT[2, b := 7L] # fonctionne (plus rapidement) sans avertissement
+class(7L) # L en fait un entier
+DT[ , b := rnorm(5)] # « remplace » la colonne entière par une colonne numérique
+```
+
+## Lecture de data.table à partir d'un fichier RDS ou RData
+
+`*.RDS` et `*.RData` sont des types de fichiers qui permettent de stocker efficacement des objets R en mémoire sur le disque. Cependant, le stockage de data.table dans le fichier binaire perd sa sur-allocation de colonnes. Ce n'est pas très grave -- votre data.table sera copié en mémoire lors de la prochaine opération *par référence* et lancera un avertissement. Il est donc recommandé d'appeler `setalloccol()` sur chaque data.table chargée avec les appels `readRDS()` ou `load()`.
+
+# Questions générales sur le package
+
+## la version v1.3 semble être absente de l'archive CRAN ?
+
+C'est exact. La version 1.3 n'était disponible que sur R-Forge. Il y a eu plusieurs changements importants en interne et il a fallu du temps pour les tester en développement.
+
+## Data.table est-il compatible avec S-plus ?
+
+Pas actuellement.
+
+ - Quelques parties essentielles du package sont écrites en C et utilisent des fonctions R internes et des structures R.
+ - Le package utilise le cadrage lexical qui est l'une des différences entre R et **S-plus** expliquée par [R FAQ 3.3.1](https://cran.r-project.org/doc/FAQ/R-FAQ.html#Lexical-scoping)
+
+## Est-il disponible pour Linux, Mac et Windows ?
+
+Oui, à la fois pour 32-bit et 64-bit sur toutes les plateformes. Merci au CRAN. Aucune bibliothèque spéciale ou spécifique au système d'exploitation n'est utilisée.
+
+## Je pense que c'est très bien. Qu'est-ce que je peux faire ?
+
+Veuillez déposer des suggestions, des rapports de bogues et des demandes d'amélioration sur notre [gestionnaire de tickets (issues tracker)](https://github.com/Rdatatable/data.table/issues). Cela permet d'améliorer le package.
+
+Merci d'ajouter le package sur [GitHub](https://github.com/Rdatatable/data.table/wiki). Cela permet d'encourager les développeurs et d'aider les autres utilisateurs de R à trouver le package.
+
+Vous pouvez soumettre des demandes d'extraction pour modifier le code et/ou la documentation vous-même ; voir nos [Directives de contribution](https://github.com/Rdatatable/data.table/blob/master/.github/CONTRIBUTING.md).
+
+## Je pense que ce n'est pas génial. Comment puis-je informer les autres de mon expérience ?
+
+Nous ajoutons tous les articles dont nous avons connaissance (qu'ils soient positifs ou négatifs) à la page [Articles](https://github.com/Rdatatable/data.table/wiki/Articles). Toutes les pages du wiki du projet sur GitHub sont en accès libre sans restriction de modification. N'hésitez pas à écrire un article, à faire un lien vers un article négatif écrit par quelqu'un d'autre que vous avez trouvé, ou à ajouter une nouvelle page à notre wiki pour recueillir vos critiques. Veillez à ce qu'elles soient constructives afin que nous ayons une chance de nous améliorer.
+
+## J'ai une question à poser. Je sais que le guide d'affichage de r-help me dit de contacter le mainteneur (pas r-help), mais y a-t-il un groupe plus large de personnes à qui je peux demander ?
+
+Veuillez consulter le [guide d'assistance](https://github.com/Rdatatable/data.table/wiki/Support) sur la page d'accueil du projet, qui contient des liens actualisés.
+
+## Où sont les archives de datatable-help ?
+
+La [page d'accueil](https://github.com/Rdatatable/data.table/wiki) contient des liens vers les archives en plusieurs formats.
+
+## Je préférerais ne pas publier sur la page "Questions" (Issues). Puis-je envoyer un email à une ou deux personnes ?
+
+Bien sûr, mais il est plus probable que vous obteniez une réponse plus rapide sur la page Issues ou sur Stack Overflow. De plus, le fait de poser des questions publiquement à ces endroits aide à construire la base de connaissances générale.
+
+## J'ai créé un package qui utilise data.table. Comment puis-je m'assurer que mon package est compatible avec data.table pour que l'héritage de `data.frame` fonctionne ?
+
+Voir [cette réponse](https://stackoverflow.com/a/10529888/403310).
+
+```{r, echo=FALSE}
+setDTthreads(.old.th)
+```

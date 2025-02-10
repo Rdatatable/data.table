@@ -5,14 +5,14 @@ between = function(x, lower, upper, incbounds=TRUE, NAbounds=TRUE, check=FALSE) 
   if (is.logical(upper)) upper = as.integer(upper)   # typically NA (which is logical type)
   is.px = function(x) inherits(x, "POSIXct")
   is.i64 = function(x) inherits(x, "integer64")   # this is true for nanotime too
-  # POSIX special handling to auto coerce character
+  # POSIXct special handling to auto coerce character
   if (is.px(x) && (is.character(lower) || is.character(upper))) {
     tz = attr(x, "tzone", exact=TRUE)
     if (is.null(tz)) tz = ""
     if (is.character(lower)) lower = tryCatch(as.POSIXct(lower, tz=tz), error=function(e)stopf(
-      "'between' function the 'x' argument is a POSIX class while '%s' was not, coercion to POSIX failed with: %s", 'lower', e$message))
+      "The 'x' argument of the 'between' function is POSIXct while '%s' was not, coercion to POSIXct failed with: %s", 'lower', conditionMessage(e)))
     if (is.character(upper)) upper = tryCatch(as.POSIXct(upper, tz=tz), error=function(e)stopf(
-      "'between' function the 'x' argument is a POSIX class while '%s' was not, coercion to POSIX failed with: %s", 'upper', e$message))
+      "The 'x' argument of the 'between' function is POSIXct while '%s' was not, coercion to POSIXct failed with: %s", 'upper', conditionMessage(e)))
     stopifnot(is.px(x), is.px(lower), is.px(upper)) # nocov # internal
   }
   # POSIX check timezone match
@@ -75,9 +75,14 @@ inrange = function(x,lower,upper,incbounds=TRUE) {
   ops = if (incbounds) c(4L, 2L) else c(5L, 3L) # >=,<= and >,<
   verbose = isTRUE(getOption("datatable.verbose"))
   if (verbose) {last.started.at=proc.time();catf("forderv(query) took ... ");flush.console()}
-  if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
-  ans = bmerge(shallow(subject), query, 1L:2L, c(1L,1L),
-      0, c(FALSE, TRUE), 0L, "all", ops, verbose) # fix for #1819, turn on verbose messages
+  if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()} # notranslate
+  ans = bmerge(
+    shallow(subject), query,
+    icols=1L:2L, xcols=c(1L, 1L),
+    roll=0.0, rollends=c(FALSE, TRUE),
+    nomatch=0L, mult="all",
+    ops=ops, verbose=verbose # fix for #1819, turn on verbose messages
+  )
   xo = ans$xo
   options(datatable.verbose=FALSE)
   setDT(ans[c("starts", "lens")], key=c("starts", "lens"))
