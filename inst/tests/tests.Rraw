@@ -11810,15 +11810,15 @@ test(1775.1, capture.output(print(DT1, print.keys = TRUE)),
      c("Key: <a>", "   a", "1: 1", "2: 2", "3: 3"))
 DT2 <- data.table(a = 1:3, b = 4:6)
 setindexv(DT2, c("b","a"))
-test(1775.2, capture.output(print(DT2, print.keys = TRUE)),
-     c("Index: <b__a>", "   a b", "1: 1 4", "2: 2 5", "3: 3 6"))
+test(1775.2, print(DT2, print.keys = TRUE),
+     output = c("Index: <b__a>", "   a b", "1: 1 4", "2: 2 5", "3: 3 6"))
 setindexv(DT2, "b")
-test(1775.3, capture.output(print(DT2, print.keys = TRUE)),
-     c("Indices: <b__a>, <b>", "   a b", "1: 1 4", "2: 2 5", "3: 3 6"))
+test(1775.3, print(DT2, print.keys = TRUE),
+     output = c("Indices: <b__a>, <b>", "   a b", "1: 1 4", "2: 2 5", "3: 3 6"))
 setkey(DT2, a)
 setindexv(DT2, c("b","a"))
-test(1775.4, capture.output(print(DT2, print.keys = TRUE)),
-     c("Key: <a>", "Indices: <b__a>, <b>", "   a b", "1: 1 4", "2: 2 5", "3: 3 6")) ## index 'b' is still good, so we keep it
+test(1775.4, print(DT2, print.keys = TRUE),
+     output = c("Key: <a>", "Indices: <b__a>, <b>", "   a b", "1: 1 4", "2: 2 5", "3: 3 6")) ## index 'b' is still good, so we keep it
 
 # dev regression #2285
 cat("A  B  C\n1  2  3\n4  5  6", file=f<-tempfile())
@@ -12142,8 +12142,7 @@ test(1831.4, fread(paste0("A\n", "1.", src2)), data.table(A=1.1234567890098766))
 DT = as.data.table(matrix(5L, nrow=10, ncol=10))
 test(1832.1, fwrite(DT, f<-tempfile(), verbose=TRUE), output="Column writers")
 DT = as.data.table(matrix(5L, nrow=10, ncol=60))
-# Using capture.output directly to look for the "..." because test(,output=) intercepts [] for convenience elsewhere
-test(1832.2, any(grepl("^Column writers.* [.][.][.] ", capture.output(fwrite(DT, f, verbose=TRUE)))))
+test(1832.2, fwrite(DT, f, verbose=TRUE), output = "\nColumn writers.* [.][.][.] ")
 unlink(f)
 
 # ensure explicitly setting select to default value doesn't error, #2007
@@ -16568,69 +16567,69 @@ DT = data.table(a = vector("integer", 102L),
                 b = "bbbbbbbbbbbbb",
                 c = "ccccccccccccc",
                 d = c("ddddddddddddd", "d"))
-test(2125.02, capture.output(print(DT, trunc.cols=TRUE)),
-     c("     a             b             c",
-       "  1: 0 bbbbbbbbbbbbb ccccccccccccc",
-       "  2: 0 bbbbbbbbbbbbb ccccccccccccc",
-       "  3: 0 bbbbbbbbbbbbb ccccccccccccc",
-       "  4: 0 bbbbbbbbbbbbb ccccccccccccc",
-       "  5: 0 bbbbbbbbbbbbb ccccccccccccc",
-       " ---                              ",
-       " 98: 0 bbbbbbbbbbbbb ccccccccccccc",
-       " 99: 0 bbbbbbbbbbbbb ccccccccccccc",
-       "100: 0 bbbbbbbbbbbbb ccccccccccccc",
-       "101: 0 bbbbbbbbbbbbb ccccccccccccc",
-       "102: 0 bbbbbbbbbbbbb ccccccccccccc",
-       "1 variable not shown: [d]"))
-test(2125.03, capture.output(print(DT, trunc.cols=TRUE, row.names=FALSE)),
-     c("   a             b             c",
-       "   0 bbbbbbbbbbbbb ccccccccccccc",
-       "   0 bbbbbbbbbbbbb ccccccccccccc",
-       "   0 bbbbbbbbbbbbb ccccccccccccc",
-       "   0 bbbbbbbbbbbbb ccccccccccccc",
-       "   0 bbbbbbbbbbbbb ccccccccccccc",
-       " ---           ---           ---",
-       "   0 bbbbbbbbbbbbb ccccccccccccc",
-       "   0 bbbbbbbbbbbbb ccccccccccccc",
-       "   0 bbbbbbbbbbbbb ccccccccccccc",
-       "   0 bbbbbbbbbbbbb ccccccccccccc",
-       "   0 bbbbbbbbbbbbb ccccccccccccc",
-       "1 variable not shown: [d]" ))
+test(2125.02, print(DT, trunc.cols=TRUE),
+     output=c("     a             b             c",
+              "  1: 0 bbbbbbbbbbbbb ccccccccccccc",
+              "  2: 0 bbbbbbbbbbbbb ccccccccccccc",
+              "  3: 0 bbbbbbbbbbbbb ccccccccccccc",
+              "  4: 0 bbbbbbbbbbbbb ccccccccccccc",
+              "  5: 0 bbbbbbbbbbbbb ccccccccccccc",
+              " ---                              ",
+              " 98: 0 bbbbbbbbbbbbb ccccccccccccc",
+              " 99: 0 bbbbbbbbbbbbb ccccccccccccc",
+              "100: 0 bbbbbbbbbbbbb ccccccccccccc",
+              "101: 0 bbbbbbbbbbbbb ccccccccccccc",
+              "102: 0 bbbbbbbbbbbbb ccccccccccccc",
+              "1 variable not shown: [d]"))
+test(2125.03, print(DT, trunc.cols=TRUE, row.names=FALSE),
+     output=c("   a             b             c",
+              "   0 bbbbbbbbbbbbb ccccccccccccc",
+              "   0 bbbbbbbbbbbbb ccccccccccccc",
+              "   0 bbbbbbbbbbbbb ccccccccccccc",
+              "   0 bbbbbbbbbbbbb ccccccccccccc",
+              "   0 bbbbbbbbbbbbb ccccccccccccc",
+              " ---           ---           ---",
+              "   0 bbbbbbbbbbbbb ccccccccccccc",
+              "   0 bbbbbbbbbbbbb ccccccccccccc",
+              "   0 bbbbbbbbbbbbb ccccccccccccc",
+              "   0 bbbbbbbbbbbbb ccccccccccccc",
+              "   0 bbbbbbbbbbbbb ccccccccccccc",
+              "1 variable not shown: [d]" ))
 # also testing #4266 -- getting width of row #s register right
 #   TODO: understand why 2 variables truncated here. a,b,c combined have width
 #     _exactly_ 40, but still wraps. If we set options(width=41) it won't truncate.
 #     seems to be an issue with print.default.
-test(2125.04, capture.output(print(DT, trunc.cols=TRUE, class=TRUE))[14L],
-     "2 variables not shown: [c <char>, d <char>]")
-test(2125.05, capture.output(print(DT, trunc.cols=TRUE, class=TRUE, row.names=FALSE))[c(1,14)],
-     c("     a             b             c",
-       "1 variable not shown: [d <char>]" ))
-test(2125.06, capture.output(print(DT, trunc.cols=TRUE, col.names="none"))[c(1,12)],
-     c("  1: 0 bbbbbbbbbbbbb ccccccccccccc",
-       "1 variable not shown: [d]" ))
-test(2125.07, capture.output(print(DT, trunc.cols=TRUE, class=TRUE, col.names="none"))[c(1,13)],
-     c("  1: 0 bbbbbbbbbbbbb",
-       "2 variables not shown: [c, d]" ),
+test(2125.04, print(DT, trunc.cols=TRUE, class=TRUE),
+     output="2 variables not shown: [c <char>, d <char>]")
+test(2125.05, print(DT, trunc.cols=TRUE, class=TRUE, row.names=FALSE),
+     output=c("^     a             b             c", ".*",
+              "1 variable not shown: \\[d <char>\\]"))
+test(2125.06, print(DT, trunc.cols=TRUE, col.names="none"),
+     output=c("^  1: 0 bbbbbbbbbbbbb ccccccccccccc", ".*",
+              "1 variable not shown: \\[d\\]", ""))
+test(2125.07, print(DT, trunc.cols=TRUE, class=TRUE, col.names="none"),
+     output=c("^  1: 0 bbbbbbbbbbbbb", ".*",
+              "2 variables not shown: \\[c, d\\]", ""),
      warning = "Column classes will be suppressed when col.names is 'none'")
 options("width" = 20)
 DT = data.table(a = vector("integer", 2),
                 b = "bbbbbbbbbbbbb",
                 c = "ccccccccccccc",
                 d = "ddddddddddddd")
-test(2125.08, capture.output(print(DT, trunc.cols=TRUE)),
-     c("   a             b",
-       "1: 0 bbbbbbbbbbbbb",
-       "2: 0 bbbbbbbbbbbbb",
-       "2 variables not shown: [c, d]"))
+test(2125.08, print(DT, trunc.cols=TRUE),
+     output=c("   a             b",
+              "1: 0 bbbbbbbbbbbbb",
+              "2: 0 bbbbbbbbbbbbb",
+              "2 variables not shown: [c, d]"))
 options("width" = 10)
 DT = data.table(a = "aaaaaaaaaaaaa",
                 b = "bbbbbbbbbbbbb",
                 c = "ccccccccccccc",
                 d = "ddddddddddddd")
-test(2125.09, capture.output(print(DT, trunc.cols=TRUE)),
-     "4 variables not shown: [a, b, c, d]")
-test(2125.10, capture.output(print(DT, trunc.cols=TRUE, class=TRUE)),
-     "4 variables not shown: [a <char>, b <char>, c <char>, d <char>]")
+test(2125.09, print(DT, trunc.cols=TRUE),
+     output="4 variables not shown: [a, b, c, d]")
+test(2125.10, print(DT, trunc.cols=TRUE, class=TRUE),
+     output="4 variables not shown: [a <char>, b <char>, c <char>, d <char>]")
 options(old_width)
 
 # segfault when i is NULL or zero-column, #4060
