@@ -7888,7 +7888,7 @@ test(1551.5, fread(str),
 rhs = setDT(read.table(testDir("issue_1095_fread.txt.bz2"), sep=",", comment.char="", stringsAsFactors=FALSE, quote="", strip.white=TRUE))
 if (test_R.utils) {
   test(1551.61, fread(testDir("issue_1095_fread.txt.bz2"), logical01=FALSE), rhs, warning=w)
-  rhs[, names(.SD) := lapply(.SD, \(x) x == "Y"), .SDcols = c("V16", "V17", "V45")]
+  rhs[, names(.SD) := lapply(.SD, function(x) x == "Y"), .SDcols = c("V16", "V17", "V45")]
   test(1551.62, fread(testDir("issue_1095_fread.txt.bz2"), logical01=FALSE, logicalYN=TRUE), rhs, warning=w)
 }
 
