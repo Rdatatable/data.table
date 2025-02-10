@@ -589,11 +589,8 @@ and the right side (e.g., `B`) *must be a column from `i`*.
 To use expressions, create temporary columns first (see example below).
 
 ```{r}
-library(data.table)
-
 x <- data.table(A = 1:5, value_x = letters[1:5])
 i <- data.table(B = c(2, 4, 5), value_i = LETTERS[1:3])
-
 x[i, on = .(A >= B)]
 ```
 In data.table, when using a non-equi join condition (>=, <, etc.), the column from x is retained in the result, while the column from i is not retained unless explicitly selected.
@@ -635,8 +632,6 @@ If you want to exclude unmatched rows, you should use nomatch = NULL:
 ```{r}
 x[i, on = .(A >= B), .(B, A, value_x, value_i), nomatch = NULL]
 ```
-
-This ensures that only matching cases are returned.
 
 ## 5. Rolling join
 
