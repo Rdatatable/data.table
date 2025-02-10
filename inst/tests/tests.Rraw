@@ -1370,8 +1370,8 @@ test(432.5, data.table(a=1:3), options=c(datatable.alloccol=-1), error="It must 
 
 # Repeat the tests but this time with subsetting, to ensure the validity check on option happens for those too
 DT = data.table(a=1:3, b=4:6)
-test(433.1, DT[2,], options=list(datatable.alloccol=NULL), error="Has getOption[(]'datatable.alloccol'[)] somehow become unset?")
-test(433.2, DT[,2], options=c(datatable.alloccol="1024"), error="getOption[(]'datatable.alloccol'[)] should be a number, by default 1024. But its type is 'character'.")
+test(433.1, DT[2,], options=list(datatable.alloccol=NULL), error="Has getOption('datatable.alloccol') somehow become unset?")
+test(433.2, DT[,2], options=c(datatable.alloccol="1024"), error="getOption('datatable.alloccol') should be a number, by default 1024. But its type is 'character'.")
 test(433.3, DT[a>1], options=list(datatable.alloccol=c(10L,20L)), error="is a numeric vector ok but its length is 2. Its length should be 1.")
 test(433.4, DT[,"b"], options=c(datatable.alloccol=NA_integer_), error="It must be >=0 and not NA.")
 test(433.5, DT[2,"b"], options=c(datatable.alloccol=-1), error="It must be >=0 and not NA.")
