@@ -383,11 +383,13 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
        }
        assign("lasttime", proc.time()[3L], parent.frame(), inherits=TRUE)  # after gc() to exclude gc() time from next test when memtest
     }, add=TRUE )
-    if (showProgress) { # nocov start
+    if (showProgress) {
+      # nocov start
       cat("\r") # notranslate: \r can't be in gettextf msg
       catf("Running test id %s", numStr)
       cat("         ")   # notranslate
-    } # nocov end
+      # nocov end
+    }
     # See PR #4090 for comments about change here in Dec 2019.
     # If a segfault error occurs in future and we'd like to know after which test, then arrange for the
     # try(sys.source()) in test.data.table() to be run in a separate R process. That process could write out
