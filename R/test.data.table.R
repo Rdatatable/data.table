@@ -336,10 +336,6 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
       Sys.unsetenv(names(old)[!is_preset])
     }, add=TRUE)
   }
-  if (!is.null(options)) {
-    old_options <- do.call(base::options, as.list(options)) # as.list(): allow passing named character vector for convenience
-    on.exit(base::options(old_options), add=TRUE)
-  }
   # Usage:
   # i) tests that x equals y when both x and y are supplied, the most common usage
   # ii) tests that x is TRUE when y isn't supplied
@@ -428,12 +424,22 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     actual$message <- c(actual$message, conditionMessage(m))
     m
   }
+  if (!is.null(options)) {
+    old_options <- do.call(base::options, as.list(options)) # as.list(): allow passing named character vector for convenience
+    on.exit(base::options(old_options), add=TRUE)
+  }
   if (is.null(output) && is.null(notOutput)) {
     x = suppressMessages(withCallingHandlers(tryCatch(x, error=eHandler), warning=wHandler, message=mHandler))
     # save the overhead of capture.output() since there are a lot of tests, often called in loops
     # Thanks to tryCatch2 by Jan here : https://github.com/jangorecki/logR/blob/master/R/logR.R#L21
   } else {
     out = capture.output(print(x <- suppressMessages(withCallingHandlers(tryCatch(x, error=eHandler), warning=wHandler, message=mHandler))))
+  }
+  if (!is.null(options)) {
+    # some of the options passed to test() may break internal data.table use below (e.g. invalid datatable.alloccol), so undo them ASAP
+    base::options(old_options)
+    # this is still registered for on.exit(), keep empty
+    old_options <- list()
   }
   fail = FALSE
   if (.test.data.table && num>0.0) {
@@ -454,15 +460,15 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
       stopifnot(is.character(ignore.warning), !anyNA(ignore.warning), nchar(ignore.warning)>=1L)
       for (msg in ignore.warning) observed = grep(msg, observed, value=TRUE, invert=TRUE) # allow multiple for translated messages rather than relying on '|' to always work
     }
-    if (length(expected) != length(observed)) {
+    if (length(expected) != length(observed) && (!foreign || is.null(ignore.warning))) {
       # nocov start
       catf("Test %s produced %d %ss but expected %d\n%s\n%s\n", numStr, length(observed), type, length(expected), paste("Expected:", expected), paste("Observed:", observed, collapse = "\n"))
       fail = TRUE
       # nocov end
-    } else {
+    } else if (!foreign) {
       # the expected type occurred and, if more than 1 of that type, in the expected order
       for (i in seq_along(expected)) {
-        if (!foreign && !string_match(expected[i], observed[i])) {
+        if (!string_match(expected[i], observed[i])) {
           # nocov start
           catf("Test %s didn't produce the correct %s:\nExpected: %s\nObserved: %s\n", numStr, type, expected[i], observed[i])
           fail = TRUE
@@ -481,7 +487,8 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     if (out[length(out)] == "NULL") out = out[-length(out)]
     out = paste(out, collapse="\n")
     output = paste(output, collapse="\n")  # so that output= can be either a \n separated string, or a vector of strings.
-    if (length(output) && !string_match(output, out)) {
+    # it also happens to turn off the 'y' checking branch below
+    if (length(output) && !foreign && !string_match(output, out)) {
       # nocov start
       catf("Test %s did not produce correct output:\n", numStr)
       catf("Expected: <<%s>>\n", encodeString(output))  # \n printed as '\\n' so the two lines of output can be compared vertically
@@ -493,7 +500,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
       fail = TRUE
       # nocov end
     }
-    if (length(notOutput) && string_match(notOutput, out, ignore.case=TRUE)) {
+    if (length(notOutput) && !foreign && string_match(notOutput, out, ignore.case=TRUE)) {
       # nocov start
       catf("Test %s produced output but should not have:\n", numStr)
       catf("Expected absent (case insensitive): <<%s>>\n", encodeString(notOutput))
