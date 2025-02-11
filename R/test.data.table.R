@@ -433,7 +433,9 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     out = capture.output(print(x <- suppressMessages(withCallingHandlers(tryCatch(x, error=eHandler), warning=wHandler, message=mHandler))))
   }
   if (!is.null(options)) {
+    # some of the options passed to test() may break internal data.table use below (e.g. invalid datatable.alloccol), so undo them ASAP
     base::options(old_options)
+    # this is still registered for on.exit(), keep empty
     old_options <- list()
   }
   fail = FALSE
