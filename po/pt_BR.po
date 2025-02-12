@@ -1,15 +1,15 @@
 #
 # Translators:
 # Italo Santos <ids37@nau.edu>, 2024.
-# Rafael Fontenelle <rffontenelle@gmail.com>, 2024-2025.
 # Leonardo Fontenelle <leonardof@leonardof.med.br>, 2024-2025.
+# Rafael Fontenelle <rffontenelle@gmail.com>, 2024-2025.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.16.99\n"
 "POT-Creation-Date: 2025-01-29 23:31-0800\n"
-"PO-Revision-Date: 2025-01-31 20:04-0300\n"
-"Last-Translator: Leonardo Fontenelle <leonardof@leonardof.med.br>\n"
+"PO-Revision-Date: 2025-02-12 20:23-0300\n"
+"Last-Translator: Rafael Fontenelle <rffontenelle@gmail.com>\n"
 "Language-Team: Brazilian Portuguese\n"
 "Language: pt_BR\n"
 "MIME-Version: 1.0\n"
@@ -862,7 +862,7 @@ msgstr "Só há suporte ao operador '==' para colunas do tipo caractere."
 #: bmerge.c:190
 #, c-format
 msgid "bmerge: looping bmerge_r took %.3fs\n"
-msgstr ""
+msgstr "bmerge: a iteração de bmerge_r levou %.3fs\n"
 
 #: bmerge.c:222
 #, c-format
@@ -1552,6 +1552,14 @@ msgid ""
 "but will become column index/integer) to measure.vars='col_name' (variable "
 "is column name before and after the planned change)."
 msgstr ""
+"measure.vars é uma lista com length=1, que, como documentado há muito tempo, "
+"deve retornar índices inteiros na coluna 'variable', mas atualmente retorna "
+"nomes de colunas de caracteres. Para aumentar a consistência na próxima "
+"versão, planejamos alterar 'vbariable' para inteiro, então os usuários que "
+"estavam contando com esse comportamento devem alterar "
+"measure.vars=list('col_name') (a variável de saída é o nome da coluna agora, "
+"mas se tornará inteiro/índice da coluna) para measure.vars='col_name' (a "
+"variável é o nome da coluna antes e depois da alteração planejada)."
 
 #: fmelt.c:686
 #, c-format
@@ -1696,10 +1704,8 @@ msgid "retStats must be TRUE or FALSE"
 msgstr "retStats deve ser TRUE ou FALSE"
 
 #: forder.c:514 forder.c:1660
-#, fuzzy
-#| msgid "retStats must be TRUE or FALSE"
 msgid "retStats must be TRUE whenever retGrp is TRUE"
-msgstr "retStats deve ser TRUE ou FALSE"
+msgstr "retStats deve ser TRUE sempre que retGrp for TRUE"
 
 #: forder.c:516 forder.c:1662
 msgid "sort must be TRUE or FALSE"
@@ -1814,32 +1820,24 @@ msgid "x must be type 'double'"
 msgstr "x deve ser do tipo 'double'"
 
 #: forder.c:1622
-#, fuzzy
-#| msgid "sort must be TRUE or FALSE"
 msgid "'datatable.use.index' option must be TRUE or FALSE"
-msgstr "sort deve ser TRUE ou FALSE"
+msgstr "a opção 'datatable.use.index' deve ser TRUE ou FALSE"
 
 #: forder.c:1635
-#, fuzzy
-#| msgid "retGrp must be TRUE or FALSE"
 msgid "'datatable.forder.auto.index' option must be TRUE or FALSE"
-msgstr "retGrp deve ser TRUE ou FALSE"
+msgstr "a opção 'datatable.forder.auto.index' deve ser TRUE ou FALSE"
 
 #: forder.c:1652
 msgid "DT is NULL"
-msgstr ""
+msgstr "DT é NULL"
 
 #: forder.c:1668
-#, fuzzy
-#| msgid "n must be integer"
 msgid "order must be integer"
-msgstr "n deve ser inteiro"
+msgstr "a ordem deve ser inteiro"
 
 #: forder.c:1670
-#, fuzzy
-#| msgid "na.last must be logical TRUE, FALSE or NA of length 1"
 msgid "reuseSorting must be logical TRUE, FALSE or NA of length 1"
-msgstr "na.last deve ser lógico TRUE, FALSE ou NA de comprimento 1"
+msgstr "reuseSorting deve ser lógico TRUE, FALSE ou NA de comprimento 1"
 
 #: forder.c:1682
 #, c-format
@@ -1847,52 +1845,59 @@ msgid ""
 "forderReuseSorting: opt not possible: is.data.table(DT)=%d, sortGroups=%d, "
 "all1(ascArg)=%d\n"
 msgstr ""
+"forderReuseSorting: opt não possível: is.data.table(DT)=%d, sortGroups=%d, "
+"all1(ascArg)=%d\n"
 
 #: forder.c:1701
 #, c-format
 msgid "forderReuseSorting: using key: %s\n"
-msgstr ""
+msgstr "forderReuseSorting: usando chave: %s\n"
 
 #: forder.c:1736
 #, c-format
 msgid "forderReuseSorting: index found but not for retGrp and retStats: %s\n"
 msgstr ""
+"forderReuseSorting: índice encontrado, mas não para retGrp e retStats: %s\n"
 
 #: forder.c:1739
 #, c-format
 msgid "forderReuseSorting: index found but not for retGrp: %s\n"
-msgstr ""
+msgstr "forderReuseSorting: índice encontrado, mas não para retGrp: %s\n"
 
 #: forder.c:1742
 #, c-format
 msgid "forderReuseSorting: index found but not for retStats: %s\n"
-msgstr ""
+msgstr "forderReuseSorting: índice encontrado, mas não para retStats: %s\n"
 
 #: forder.c:1749
 #, c-format
 msgid ""
 "forderReuseSorting: index found but na.last=TRUE and no stats available: %s\n"
 msgstr ""
+"forderReuseSorting: índice encontrado, mas na.last=TRUE e nenhum estado  "
+"disponível: %s\n"
 
 #: forder.c:1752
 #, c-format
 msgid "forderReuseSorting: index found but na.last=TRUE and NAs present: %s\n"
 msgstr ""
+"forderReuseSorting: índice encontrado, mas na.last=TRUE e NAs presentes: %s\n"
 
 #: forder.c:1760
 #, c-format
 msgid "forderReuseSorting: using existing index: %s\n"
-msgstr ""
+msgstr "forderReuseSorting: usando índice existente: %s\n"
 
 #: forder.c:1772
 #, c-format
 msgid "forderReuseSorting: setting index (retGrp=%d, retStats=%d) on DT: %s\n"
 msgstr ""
+"forderReuseSorting: definindo índice (retGrp=%d, retStats=%d) na DT: %s\n"
 
 #: forder.c:1776
 #, c-format
 msgid "forderReuseSorting: opt=%d, took %.3fs\n"
-msgstr ""
+msgstr "forderReuseSorting: opt=%d, levou %.3fs\n"
 
 #: frank.c:14 frank.c:192
 #, c-format
@@ -2184,7 +2189,7 @@ msgstr ""
 #: fread.c:1566 fread.c:1850
 #, c-format
 msgid "%s. Attempt to copy file in RAM failed."
-msgstr ""
+msgstr "%s. Tentativa de copiar arquivo na RAM falhou."
 
 #: fread.c:1567 fread.c:1851
 #, c-format
@@ -3882,10 +3887,8 @@ msgstr ""
 "fill deve ser um vetor de comprimento 1 ou uma lista de comprimento igual a x"
 
 #: negate.c:5
-#, fuzzy
-#| msgid "%s is not an integer vector"
 msgid "not logical or integer vector"
-msgstr "%s não é um vetor de inteiros"
+msgstr "não é um vetor de inteiros ou lógico"
 
 #: openmp-utils.c:23
 #, c-format
