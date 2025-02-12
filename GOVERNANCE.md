@@ -76,7 +76,7 @@ Functionality that is out of current scope:
 
 * Definition: An individual who is involved in the project but does **not** also occupy the Committer or CRAN Maintainer role.  In charge of maintaining The Raft blog, preparing Seal of Approval Applications, addressing Code of Conduct violations, and planning social or community events.
 
-* How to obtain this role: Contact the current Community Engagement Coordinator.
+* How to obtain this role: At the discretion of the current Community Engagement Coordinator(s) in conversation with the current Committers.
 
 * How this role is recognized: Holds the Owner role in the [rdatatable-community organization](https://github.com/orgs/rdatatable-community/people) on GitHub.
 
