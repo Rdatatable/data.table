@@ -120,13 +120,13 @@ There is no guarantee that funded work will be incorporated into the data.table 
 
 ## Direct donations
 
-Direct donations to the project may be made via GitHub Sponsorships, which allow individuals to fund a specific developer.  Those wishing to support the project in general, rather than a specific developer, should direct their donations to the current CRAN Maintainer.
+Direct donations to the project may be made via GitHub Sponsorships, which allow individuals to fund a specific developer.  If the current CRAN Maintainer offers a personal sponsorship option, donations may be made to them to support the project in general.
 
 ## Decision-making for future opportunities
 
 We here outline a procedure for disbursing funds, should this project in the future become a directly fundable entity (e.g. an LLC or a subsidiary of an umbrella LLC).
 
-Funds acquired by the data.table project will be at the discretion of the **committers**, defined as above.  The **CRAN Maintainer** will have authority to make final decisions in the event that no consensus is reached among committers prior to deadlines for use of funds, and will be responsible for disbursement logistics.
+Funds acquired by the data.table project will be disbursed at the discretion of the **Committers**, defined as above.  The **CRAN Maintainer** will have authority to make final decisions in the event that no consensus is reached among committers prior to deadlines for use of funds, and will be responsible for disbursement logistics.
 
 # Code of conduct
 
