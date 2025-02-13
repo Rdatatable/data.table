@@ -613,7 +613,7 @@ msgid ""
 "%d (type '%s') at RHS position %d taken as TRUE when assigning to type '%s' "
 "%s"
 msgstr ""
-"%d (tipo '%s') en posición %d de RHS se toma como TRUE al asignarse a %5$s "
+"%1$d (tipo '%2$s') en posición %3$d de RHS se toma como TRUE al asignarse a %5$s "
 "(tipo '%4$s')"
 
 #: assign.c:965
@@ -622,7 +622,7 @@ msgid ""
 "%<PRId64> (type '%s') at RHS position %d taken as TRUE when assigning to "
 "type '%s' %s"
 msgstr ""
-"%<PRId64> (tipo '%s') en posición %d de RHS se toma como TRUE al asignarse a "
+"%1$<PRId64> (tipo '%2$s') en posición %3$d de RHS se toma como TRUE al asignarse a "
 "%5$s (tipo '%4$s')"
 
 #: assign.c:966
@@ -631,7 +631,7 @@ msgid ""
 "%f (type '%s') at RHS position %d taken as TRUE when assigning to type '%s' "
 "%s"
 msgstr ""
-"%f (tipo '%s') en posición %d de RHS se toma como TRUE al asignarse a %5$s "
+"%1$f (tipo '%2$s') en posición %3$d de RHS se toma como TRUE al asignarse a %5$s "
 "(tipo '%4$s')"
 
 #: assign.c:970
@@ -639,7 +639,7 @@ msgstr ""
 msgid ""
 "%d (type '%s') at RHS position %d taken as 0 when assigning to type '%s' %s"
 msgstr ""
-"%d (tipo '%s') en posición %d de RHS se toma como 0 al asignarse a a %5$s "
+"%1$d (tipo '%2$s') en posición %3$d de RHS se toma como 0 al asignarse a a %5$s "
 "(tipo '%4$s')"
 
 #: assign.c:972
@@ -648,7 +648,7 @@ msgid ""
 "%<PRId64> (type '%s') at RHS position %d taken as 0 when assigning to type "
 "'%s' %s"
 msgstr ""
-"%<PRId64> (tipo '%s') en posición %d de RHS se toma como 0 al asignarse a "
+"%1$<PRId64> (tipo '%2$s') en posición %3$d de RHS se toma como 0 al asignarse a "
 "%5$s (tipo '%4$s')"
 
 #: assign.c:973
@@ -657,7 +657,7 @@ msgid ""
 "%f (type '%s') at RHS position %d either truncated (precision lost) or taken "
 "as 0 when assigning to type '%s' %s"
 msgstr ""
-"%f (tipo '%s') en posición %d o bien se trunca (con pérdida de precisión) o "
+"%1$f (tipo '%2$s') en posición %3$d o bien se trunca (con pérdida de precisión) o "
 "se toma como 0 al asignarse a %5$s (tipo '%4$s')"
 
 #: assign.c:978
@@ -666,7 +666,7 @@ msgid ""
 "%<PRId64> (type '%s') at RHS position %d out-of-range (NA) when assigning to "
 "type '%s' %s"
 msgstr ""
-"%<PRId64> (tipo '%s') en posición %d de RHS está fuera de rango (NA) al "
+"%1$<PRId64> (tipo '%2$s') en posición %3$d de RHS está fuera de rango (NA) al "
 "asignarse a %5$s (tipo '%4$s')"
 
 #: assign.c:979 assign.c:986
@@ -675,7 +675,7 @@ msgid ""
 "%f (type '%s') at RHS position %d out-of-range(NA) or truncated (precision "
 "lost) when assigning to type '%s' %s"
 msgstr ""
-"%f (tipo '%s') en posición %d de RHS está fuera de rango (NA) o se trunca "
+"%1$f (tipo '%2$s') en posición %3$d de RHS está fuera de rango (NA) o se trunca "
 "(con pérdida de precisión) al asignarse a %5$s (tipo '%4$s')"
 
 #: assign.c:981 assign.c:990
@@ -684,7 +684,7 @@ msgid ""
 "%f (type '%s') at RHS position %d either imaginary part discarded or real "
 "part truncated (precision lost) when assigning to type '%s' %s"
 msgstr ""
-"%f (tipo '%s') en posición %d de RHS es, o bien truncada su parte real (con "
+"%1$f (tipo '%2$s') en posición %3$d de RHS es, o bien truncada su parte real (con "
 "pérdida de precisión), o bien deshechada su parte imaginaria, al asignarse a "
 "%5$s (tipo '%4$s')"
 
@@ -694,7 +694,7 @@ msgid ""
 "%f (type '%s') at RHS position %d imaginary part discarded when assigning to "
 "type '%s' %s"
 msgstr ""
-"%f (tipo '%s') en posición %d de RHS es deshechada su parte imaginaria al "
+"%1$f (tipo '%2$s') en posición %3$d de RHS es deshechada su parte imaginaria al "
 "asignarse a %5$s (tipo '%4$s')"
 
 #: assign.c:1036
