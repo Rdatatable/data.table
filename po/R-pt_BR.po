@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.15.99\n"
 "POT-Creation-Date: 2025-02-02 23:58-0800\n"
-"PO-Revision-Date: 2025-01-13 15:14-0300\n"
+"PO-Revision-Date: 2025-02-14 00:52-0300\n"
 "Last-Translator: Rafael Fontenelle <rffontenelle@gmail.com>\n"
 "Language-Team: Brazilian Portuguese\n"
 "Language: pt_BR\n"
@@ -155,6 +155,8 @@ msgid ""
 "optimised between not available for this data type, fallback to slow R "
 "routine"
 msgstr ""
+"between otimizado não disponível para este tipo de dados, retrocedendo para "
+"rotina R lenta"
 
 #: between.R:48
 #, c-format
@@ -186,19 +188,21 @@ msgstr ""
 
 #: between.R:77
 msgid "forderv(query) took ..."
-msgstr ""
+msgstr "forderv(query) levou ..."
 
 #: between.R:90
 msgid "Generating final logical vector ..."
-msgstr ""
+msgstr "Gerando vetor lógico final ..."
 
 #: between.R:92 bmerge.R:200 bmerge.R:204 bmerge.R:211 data.table.R:496
 msgid "done in %s"
-msgstr ""
+msgstr "concluído em %s"
 
 #: bmerge.R:21
 msgid "Coercing %s column %s%s to type %s to match type of %s%s."
 msgstr ""
+"Fazendo coerção de %s coluna %s%s para o tipo %s para corresponder ao tipo "
+"de %s%s."
 
 #: bmerge.R:65 bmerge.R:66
 #, c-format
@@ -217,11 +221,11 @@ msgstr ""
 
 #: bmerge.R:71
 msgid "Matching %s factor levels to %s factor levels."
-msgstr ""
+msgstr "Correspondendo níveis de fator de %s a níveis de fator de %s."
 
 #: bmerge.R:80
 msgid "Matching character column %s to factor levels in %s."
-msgstr ""
+msgstr "Correspondendo coluna de caracteres %s para níveis de fator em %s."
 
 #: bmerge.R:87
 #, c-format
@@ -234,7 +238,7 @@ msgstr ""
 
 #: bmerge.R:91
 msgid "%s has same type (%s) as %s. No coercion needed."
-msgstr ""
+msgstr "%s tem o mesmo tipo (%s) como %s. Nenhuma coerção necessária."
 
 #: bmerge.R:97 bmerge.R:101
 msgid "(all-NA)"
@@ -272,19 +276,19 @@ msgstr "(para junção)"
 
 #: bmerge.R:165
 msgid "on= matches existing key, using key"
-msgstr ""
+msgstr "on= corresponde a chave existente, usando chave"
 
 #: bmerge.R:170
 msgid "on= matches existing index, using index"
-msgstr ""
+msgstr "on= corresponde a índice existente, usando índice"
 
 #: bmerge.R:175
 msgid "Calculated ad hoc index in %s"
-msgstr ""
+msgstr "Calculado índice ad hoc em %s"
 
 #: bmerge.R:186
 msgid "Non-equi join operators detected ..."
-msgstr ""
+msgstr "Operadores de junção não-equi detectados ..."
 
 #: bmerge.R:187
 #, c-format
@@ -293,15 +297,15 @@ msgstr "'roll' ainda não está implementado para junções por desigualdade."
 
 #: bmerge.R:188
 msgid "forder took ..."
-msgstr ""
+msgstr "forder levou ..."
 
 #: bmerge.R:197
 msgid "Generating group lengths ..."
-msgstr ""
+msgstr "Gerando comprimentos de grupo ..."
 
 #: bmerge.R:202
 msgid "Generating non-equi group ids ..."
-msgstr ""
+msgstr "Gerando is de grupo não-equi ..."
 
 #: bmerge.R:207
 #, c-format
@@ -311,21 +315,23 @@ msgstr ""
 
 #: bmerge.R:208
 msgid "Recomputing forder with non-equi ids ..."
-msgstr ""
+msgstr "Recalculando forder com ids não-equi ..."
 
 #: bmerge.R:217
 msgid "Starting bmerge ..."
-msgstr ""
+msgstr "Iniciando bmerge ..."
 
 #: bmerge.R:219
 msgid "bmerge done in %s"
-msgstr ""
+msgstr "bmerge concluído em %s"
 
 #: cedta.R:67
 msgid ""
 "cedta decided '%s' wasn't data.table aware. Here is call stack with [[1L]] "
 "applied:"
 msgstr ""
+"cedta dediu que '%s' não estava ciente de data.table. Aqui está a pilha de "
+"chamadas com [[1L]] aplicado:"
 
 #: data.table.R:55
 #, c-format
@@ -378,7 +384,7 @@ msgstr "Quando by e keyby são ambos fornecidos, keyby deve ser TRUE ou FALSE"
 
 #: data.table.R:177 data.table.R:242 data.table.R:331
 msgid "Argument '%s' after substitute: %s"
-msgstr ""
+msgstr "Argumento '%s' após substituto: %s"
 
 #: data.table.R:186
 #, c-format
@@ -642,26 +648,29 @@ msgstr ""
 #: data.table.R:462
 msgid "Joining but 'x' has no key, natural join using all 'x' columns"
 msgstr ""
+"Fazendo junção, mas 'x' não tem chave; junção natural usando todas as "
+"colunas de 'x'"
 
 #: data.table.R:464
 msgid "Joining but 'x' has no key, natural join using: %s"
-msgstr ""
+msgstr "Fazendo junção, mas 'x' não tem chave; junção natural usando: %s"
 
 #: data.table.R:493
 msgid "not-join called with 'by=.EACHI'; Replacing !i with i=setdiff_(x,i) ..."
 msgstr ""
+"não-junção chamada com 'by=.EACHI'; Substituindo !i com i=setdiff_(x,i) ..."
 
 #: data.table.R:523
 msgid "Constructing irows for '!byjoin || nqbyjoin' ..."
-msgstr ""
+msgstr "Construindo irows para '!byjoin || nqbyjoin' ..."
 
 #: data.table.R:562
 msgid "Reorder irows for 'mult==\"all\" && !allGrp1' ..."
-msgstr ""
+msgstr "Reordene irows para 'mult==\"all\" && !allGrp1' ..."
 
 #: data.table.R:574
 msgid "Reordering %d rows after bmerge done in ..."
-msgstr ""
+msgstr "Reordenação de %d linhas após bmerge ser concluído em ..."
 
 #: data.table.R:591
 #, c-format
@@ -698,7 +707,7 @@ msgstr ""
 
 #: data.table.R:635
 msgid "Inverting irows for notjoin done in ..."
-msgstr ""
+msgstr "Inversão de irows para notjoin concluído em ..."
 
 #: data.table.R:691
 #, c-format
@@ -770,17 +779,21 @@ msgstr "Ao menos uma entrada de by está vazia"
 
 #: data.table.R:827
 msgid "by index '%s' but that index has 0 length. Ignoring."
-msgstr ""
+msgstr "índice by '%s', mas aquele índice tem comprimento 0. Ignorando."
 
 #: data.table.R:850
 msgid "i clause present and columns used in by detected, only these subset: %s"
 msgstr ""
+"cláusula de i presente e colunas usadas em by detectadas, apenas estes "
+"subconjuntos: %s"
 
 #: data.table.R:853
 msgid ""
 "i clause present but columns used in by not detected. Having to subset all "
 "columns before evaluating 'by': '%s'"
 msgstr ""
+"cláusula de i presente, mas colunas usadas em by não detectadas. Ter um "
+"subconjunto de todas as colunas antes de avaliar 'by': '%s'"
 
 #: data.table.R:875
 #, c-format
@@ -824,6 +837,9 @@ msgid ""
 "by-expression '%s' is not named, and the auto-generated name '%s' clashed "
 "with variable(s) in j. Therefore assigning the entire by-expression as name."
 msgstr ""
+"expressão by '%s' não nomeada, e o nome gerado automaticamente '%s' entrou "
+"em conflito com a(s) variável(eis) em j. Portanto, atribuindo toda a "
+"expressão by como nome."
 
 #: data.table.R:950
 #, c-format
@@ -908,10 +924,14 @@ msgid ""
 "important for efficiency.\n"
 "Old ansvars: %s"
 msgstr ""
+"'(m)get' encontrado em j. ansvars sendo definido para todas as colunas. "
+"Use .SDcols ou um único j=eval(macro) em vez disso. Ambos detectarão as "
+"colunas usadas, o que é importante para a eficiência.\n"
+"ansvars antigo: %s"
 
 #: data.table.R:1083
 msgid "New ansvars: %s"
-msgstr ""
+msgstr "Novo ansvars: %s"
 
 #: data.table.R:1092
 #, c-format
@@ -924,7 +944,7 @@ msgstr ""
 
 #: data.table.R:1095
 msgid "Detected that j uses these columns: %s"
-msgstr ""
+msgstr "Detectado que j usa estas colunas: %s"
 
 #: data.table.R:1108
 #, c-format
@@ -994,6 +1014,9 @@ msgid ""
 "No rows match i. No new columns to add so not evaluating RHS of :=\n"
 "Assigning to 0 row subset of %d rows"
 msgstr ""
+"Nenhuma linha corresponde a i. Nenhuma coluna nova para adicionar, portanto, "
+"não será avaliado o lado direito de :=\n"
+"Atribuindo a 0 linha de %d linhas"
 
 #: data.table.R:1190
 #, c-format
@@ -1027,6 +1050,13 @@ msgid ""
 "deep copy first using copy(), wrap with suppressWarnings() or increase the "
 "'datatable.alloccol' option."
 msgstr ""
+"Vetor crescente de ponteiros de coluna de truelength %d para %d. Uma cópia "
+"rasa foi feita, veja ?setalloccol. Apenas um problema potencial se duas "
+"variáveis ​​apontarem para os mesmos dados (ainda não conseguimos detectar "
+"isso bem) e se não, você pode ignorar isso com segurança. Para evitar essa "
+"mensagem, você pode fazer setalloccol() primeiro, fazer uma cópia profunda "
+"primeiro usando copy(), encapsular com suppressWarnings() ou aumentar a "
+"opção 'datatable.alloccol'."
 
 #: data.table.R:1200
 msgid ""
@@ -1034,6 +1064,9 @@ msgid ""
 "called. That means for example that if := was called within a function, the "
 "original table may be unaffected."
 msgstr ""
+"Note que a cópia rasa será atribuída ao ambiente do qual := foi chamado. "
+"Isso significa, por exemplo, que se := foi chamado dentro de uma função, a "
+"tabela original pode não ser afetada."
 
 #: data.table.R:1221
 #, c-format
@@ -1090,6 +1123,8 @@ msgid ""
 "Note: forcing units=\"secs\" on implicit difftime by group; call difftime "
 "explicitly to choose custom units"
 msgstr ""
+"Nota: forçar unidades=\"secs\" em difftime implícito por grupo; chamar "
+"difftime explicitamente para escolher unidades personalizadas"
 
 #: data.table.R:1495
 #, c-format
@@ -1098,41 +1133,45 @@ msgstr "erro lógico. i não é data.table, mas mult='all' e 'by'=.EACHI"
 
 #: data.table.R:1522
 msgid "Finding groups using forderv ..."
-msgstr ""
+msgstr "Encontrando grupos usando forderv ..."
 
 #: data.table.R:1536 data.table.R:1568
 msgid "Finding group sizes from the positions (can be avoided to save RAM) ..."
 msgstr ""
+"Encontrar tamanhos de grupo a partir das posições (pode ser evitado para "
+"economizar RAM) ..."
 
 #: data.table.R:1544
 msgid "Getting back original order ..."
-msgstr ""
+msgstr "Retornando a ordem original..."
 
 #: data.table.R:1556
 msgid "Finding groups using uniqlist on key ..."
-msgstr ""
+msgstr "Encontrando grupos usando uniqlist na chave ..."
 
 #: data.table.R:1560
 msgid "Finding groups using uniqlist on index '%s' ..."
-msgstr ""
+msgstr "Encontrando grupos usando uniqlist no índice '%s' ..."
 
 #: data.table.R:1779
 msgid "lapply optimization changed j from '%s' to '%s'"
-msgstr ""
+msgstr "otimização lapply mudou j de '%s' para '%s'"
 
 #: data.table.R:1781
 msgid "lapply optimization is on, j unchanged as '%s'"
-msgstr ""
+msgstr "otimização lapply está ativada, j inalterado como '%s'"
 
 #: data.table.R:1790 data.table.R:1814
 msgid "GForce optimized j to '%s' (see ?GForce)"
-msgstr ""
+msgstr "GForce otimizou j para '%s' (veja ?GForce)"
 
 #: data.table.R:1815
 msgid ""
 "GForce is on, but not activated for this query; left j unchanged (see ?"
 "GForce)"
 msgstr ""
+"GForce está ligado, mas não ativado para esta consulta; j esquerdo "
+"inalterado (veja ?GForce)"
 
 #: data.table.R:1834
 #, c-format
@@ -1148,27 +1187,29 @@ msgstr ""
 
 #: data.table.R:1838
 msgid "Old mean optimization changed j from '%s' to '%s'"
-msgstr ""
+msgstr "A otimização média antiga mudou j de '%s' para '%s'"
 
 #: data.table.R:1840
 msgid "Old mean optimization is on, left j unchanged."
-msgstr ""
+msgstr "A otimização média antiga está ativada, o j esquerdo não foi alterado."
 
 #: data.table.R:1850
 msgid "All optimizations are turned off"
-msgstr ""
+msgstr "Todas as otimizações estão desativadas"
 
 #: data.table.R:1851
 msgid "Optimization is on but left j unchanged (single plain symbol): '%s'"
 msgstr ""
+"A otimização está ativada, mas j esquerdo inalterado (símbolo simples "
+"único): '%s'"
 
 #: data.table.R:1880
 msgid "Making each group and running j (GForce %s) ..."
-msgstr ""
+msgstr "Criando cada grupo e executando j (GForce %s) ..."
 
 #: data.table.R:1976
 msgid "setkey() after the := with keyby= ..."
-msgstr ""
+msgstr "setkey() depois de := com keyby= ..."
 
 #: data.table.R:1980
 #, c-format
@@ -1185,7 +1226,7 @@ msgstr ""
 
 #: data.table.R:2006
 msgid "setkey() afterwards for keyby=.EACHI ..."
-msgstr ""
+msgstr "setkey() depois para keyby=.EACHI ..."
 
 #: data.table.R:2072
 #, c-format
@@ -1356,7 +1397,7 @@ msgstr ""
 
 #: data.table.R:2511
 msgid "Processing split.data.table with: %s"
-msgstr ""
+msgstr "Processando split.data.table com: %s"
 
 #: data.table.R:2596
 #, c-format
@@ -1582,7 +1623,7 @@ msgid ""
 "It looks like you re-used `:=` in argument %d a functional assignment call "
 "-- use `=` instead: %s(col1=val1, col2=val2, ...)"
 msgstr ""
-"Parece que você reutilizou `:=` no argumento %d, uma chamada de atribuicão "
+"Parece que você reutilizou `:=` no argumento %d, uma chamada de atribuição "
 "funcional -- use `=` em vez disso: %s(col1=val1, col2=val2, ...)"
 
 #: data.table.R:3256
@@ -1600,22 +1641,26 @@ msgid ""
 "Subsetting optimization disabled because the cross-product of RHS values "
 "exceeds 1e4, causing memory problems."
 msgstr ""
+"Otimização de subconjuntos desabilitada porque o produto cruzado dos valores "
+"do lado direito excede 1e4, causando problemas de memória."
 
 #: data.table.R:3306
+#, fuzzy
 msgid "Optimized subsetting with key %s"
-msgstr ""
+msgstr "Subconjunto otimizado com chave %s"
 
 #: data.table.R:3325 data.table.R:3337
+#, fuzzy
 msgid "Optimized subsetting with index '%s'"
-msgstr ""
+msgstr "Subconjunto otimizado com índice '%s'"
 
 #: data.table.R:3332
 msgid "Creating new index '%s'"
-msgstr ""
+msgstr "Criando novo índice '%s'"
 
 #: data.table.R:3333
 msgid "Creating index %s done in ..."
-msgstr ""
+msgstr "Criação de índice %s concluída em ..."
 
 #: data.table.R:3371
 #, c-format
@@ -1672,6 +1717,10 @@ msgid ""
 "Otherwise package will be re-installed every time, proceeding to "
 "installation."
 msgstr ""
+"Nenhuma informação de revisão encontrada no arquivo DESCRIPTION para o "
+"pacote %s. Certifique-se de que '%s' é o campo correto no arquivo PACKAGES "
+"no seu repositório de pacotes '%s'. Caso contrário, o pacote será "
+"reinstalado todas as vezes, prosseguindo para a instalação."
 
 #: devel.R:39
 msgid "R %s package has been updated to %s (%s)"
@@ -1686,9 +1735,11 @@ msgid ""
 "Git revision is not available. Most likely data.table was installed from "
 "CRAN or local archive.\n"
 "Git revision is available when installing from our repositories 'https://"
-"Rdatatable.gitlab.io/data.table' and 'https://Rdatatable.github.io/data."
-"table'."
 msgstr ""
+"A revisão do Git não está disponível. Provavelmente data.table foi instalado "
+"do CRAN ou do arquivo local.\n"
+"A revisão do Git está disponível ao instalar de nossos repositórios 'https://"
+"Rdatatable.gitlab.io/data.table' e 'https://Rdatatable.github.io/data.table'."
 
 #: duplicated.R:7
 #, c-format
@@ -1850,7 +1901,7 @@ msgstr "cols deve ser um vetor de caracteres de nomes de coluna"
 #: fmelt.R:24
 #, c-format
 msgid "Input patterns must be of type character."
-msgstr "Padrões de entrada devem ser do tipo caracter."
+msgstr "Padrões de entrada devem ser do tipo caractere."
 
 #: fmelt.R:42
 #, c-format
@@ -2045,6 +2096,8 @@ msgid ""
 "Duplicate column names found in molten data.table. Setting unique names "
 "using 'make.names'"
 msgstr ""
+"Nomes de colunas duplicados encontrados em data.table fundida. Definindo "
+"nomes exclusivos usando 'make.names'"
 
 #: foverlaps.R:3
 #, c-format
@@ -2240,11 +2293,11 @@ msgstr ""
 
 #: foverlaps.R:132
 msgid "unique() + setkey() operations done in ..."
-msgstr ""
+msgstr "operações unique() + setkey() concluídas em ..."
 
 #: foverlaps.R:158
 msgid "binary search(es) done in ..."
-msgstr ""
+msgstr "pesquisa(s) binária(s) concluída(s) em ..."
 
 #: foverlaps.R:165 foverlaps.R:167 foverlaps.R:171
 #, c-format
@@ -2510,6 +2563,8 @@ msgstr ""
 msgid ""
 "Processed %d lines of YAML metadata with the following top-level fields: %s"
 msgstr ""
+"Processadas %d linhas de metadados YAML com os seguintes campos de nível "
+"superior: %s"
 
 #: fread.R:206
 #, c-format
@@ -2625,7 +2680,7 @@ msgstr "fazendo coerção de x da classe matrix para data.table"
 
 #: fwrite.R:70
 msgid "Appending to existing file so setting bom=FALSE and yaml=FALSE"
-msgstr ""
+msgstr "Anexando ao arquivo existente, definindo bom=FALSE e yaml=FALSE"
 
 #: fwrite.R:83
 #, c-format
@@ -2864,7 +2919,7 @@ msgstr ""
 #: last.R:11 last.R:16 last.R:24 last.R:29 last.R:33 last.R:41 last.R:52
 #: last.R:57 last.R:65 last.R:70 last.R:74 last.R:82
 msgid "%s: using %s: %s"
-msgstr ""
+msgstr "%s: usando %s: %s"
 
 #: last.R:39 last.R:80
 #, c-format
@@ -3169,15 +3224,15 @@ msgstr "As classes de colunas serão suprimidas quando col.names for 'none'"
 
 #: print.data.table.R:47
 msgid "Key: <%s>"
-msgstr ""
+msgstr "Chave: <%s>"
 
 #: print.data.table.R:57
 msgid "Null data.%s (0 rows and 0 cols)"
-msgstr ""
+msgstr "data.%s nula (0 linha e 0 coluna)"
 
 #: print.data.table.R:59
 msgid "Empty data.%s (%d rows and %d cols)"
-msgstr ""
+msgstr "data.%s vazia (%d linhas e %d colunas)"
 
 #: print.data.table.R:153
 #, c-format
@@ -3335,15 +3390,16 @@ msgstr ""
 
 #: setkey.R:65
 msgid "forder took %.03f sec"
-msgstr ""
+msgstr "forder legou %.03f s"
 
 #: setkey.R:77
 msgid "reorder took %s"
-msgstr ""
+msgstr "reorder levou %s"
 
 #: setkey.R:79
 msgid "x is already ordered by these columns, no need to call reorder"
 msgstr ""
+"x já está ordenado por essas colunas, não há necessidade de chamar reorder"
 
 #: setkey.R:132
 #, c-format
@@ -3600,7 +3656,7 @@ msgstr "O argumento fornecido fill=%s será ignorado, pois type='cyclic'."
 
 #: tables.R:31
 msgid "No objects of class data.table exist in %s"
-msgstr ""
+msgstr "Não existem objetos da classe data.table em %s"
 
 #: tables.R:46
 #, c-format
@@ -3609,7 +3665,7 @@ msgstr "order.col='%s' não é um nome de coluna de info"
 
 #: tables.R:59
 msgid "Total: %sMB using %s"
-msgstr ""
+msgstr "Total: %sMB usando %s"
 
 #: test.data.table.R:17
 #, c-format
@@ -3633,7 +3689,7 @@ msgstr "Nem %s ou %sexistem em %s"
 
 #: test.data.table.R:115
 msgid "test.data.table() running: %s"
-msgstr ""
+msgstr "test.data.table() em execução: %s"
 
 #: test.data.table.R:119
 msgid "object '%s' not found"
@@ -3646,6 +3702,10 @@ msgid ""
 "**** warnings are produced. However, to test the text of each error/warning "
 "too, please restart R with LANGUAGE=en"
 msgstr ""
+"**** O idioma desta sessão R não é inglês. Cada teste ainda verificará se o "
+"número correto de erros e/ou avisos\n"
+"**** são produzidos. No entanto, para testar o texto de cada erro/aviso "
+"também, reinicie o R com LANGUAGE=en"
 
 #: test.data.table.R:142
 msgid ""
@@ -3654,6 +3714,11 @@ msgid ""
 "session for best results. Ctrl-C now if not.\n"
 "***"
 msgstr ""
+"***\n"
+"*** memtest=%d. Esta deve ser a primeira chamada em uma nova sessão "
+"R_GC_MEM_GROW=0 R para melhores resultados.\n"
+"*** Ctrl-C agora se não for o caso.\n"
+"***"
 
 #: test.data.table.R:143
 #, c-format
@@ -3673,7 +3738,7 @@ msgstr ""
 
 #: test.data.table.R:202
 msgid "Running %d of %d tests matching '%s'"
-msgstr ""
+msgstr "Executando %d de %d testss correspondendo a '%s'"
 
 #: test.data.table.R:248
 #, c-format
@@ -3687,19 +3752,21 @@ msgstr "Contagem de tempos não corresponde: %d vs %d"
 
 #: test.data.table.R:273
 msgid "10 longest running tests took %ds (%d%% of %ds)"
-msgstr ""
+msgstr "10 testes de execução mais longa levaram %ds (%d%% de %ds)"
 
 #: test.data.table.R:279
 msgid "10 largest RAM increases (MB); see plot for cumulative effect (if any)"
 msgstr ""
+"10 maiores aumentos de RAM (MB); veja o gráfico para efeito cumulativo (se "
+"houver)"
 
 #: test.data.table.R:289
 msgid "All %d tests (last %.8g) in %s completed ok in %s"
-msgstr ""
+msgstr "Todos os %d testes (último %.8g) em %s concluíram corretamente em %s"
 
 #: test.data.table.R:388
 msgid "Running test id"
-msgstr ""
+msgstr "Executando id de teste"
 
 #: test.data.table.R:404
 #, c-format
@@ -3712,7 +3779,7 @@ msgstr ""
 
 #: test.data.table.R:439
 msgid "Test id %s is not in increasing order"
-msgstr ""
+msgstr "O id de teste %s não está em ordem crescente"
 
 #: test.data.table.R:456
 msgid ""
@@ -3720,6 +3787,9 @@ msgid ""
 "%s\n"
 "%s"
 msgstr ""
+"O teste %s produziu %d %ss, mas esperava-se %d\n"
+"%s\n"
+"%s"
 
 #: test.data.table.R:464
 msgid ""
@@ -3727,58 +3797,64 @@ msgid ""
 "Expected: %s\n"
 "Observed: %s"
 msgstr ""
+"O teste %s não produziu o %s correto:\n"
+"Esperado: %s\n"
+"Observado: %s"
 
 #: test.data.table.R:473
 msgid "Output captured before unexpected warning/error/message:"
-msgstr ""
+msgstr "Saída capturada antes de aviso/erro/mensagem inesperado:"
 
 #: test.data.table.R:483
 msgid "Test %s did not produce correct output:"
-msgstr ""
+msgstr "O teste %s não produziu saída correta:"
 
 #: test.data.table.R:484
 msgid "Expected: <<%s>>"
-msgstr ""
+msgstr "Esperado: <<%s>>"
 
 #: test.data.table.R:485 test.data.table.R:497
 msgid "Observed: <<%s>>"
-msgstr ""
+msgstr "Observado: <<%s>>"
 
 #: test.data.table.R:487
 msgid "Expected (raw): <<%s>>"
-msgstr ""
+msgstr "Esperado (bruto): <<%s>>"
 
 #: test.data.table.R:488 test.data.table.R:500
 msgid "Observed (raw): <<%s>>"
-msgstr ""
+msgstr "Observado (bruto): <<%s>>"
 
 #: test.data.table.R:495
 msgid "Test %s produced output but should not have:"
-msgstr ""
+msgstr "O teste %s produziu uma saída, mas não deveria ter:"
 
 #: test.data.table.R:496
 msgid "Expected absent (case insensitive): <<%s>>"
 msgstr ""
+"Ausência esperada (sem distinção entre maiúsculas e minúsculas): <<%s>>"
 
 #: test.data.table.R:499
 msgid "Expected absent (raw): <<%s>>"
-msgstr ""
+msgstr "Ausência esperada (bruto): <<%s>>"
 
 #: test.data.table.R:513
 msgid "Test %s ran without errors but selfrefok(%s) is FALSE"
-msgstr ""
+msgstr "O teste %s foi executado sem erros, mas selfrefok(%s) é FALSE"
 
 #: test.data.table.R:538
 msgid "Test %s ran without errors but failed check that x equals y:"
 msgstr ""
+"O teste %s foi executado sem erros, mas falhou na verificação de que x é "
+"igual a y:"
 
 #: test.data.table.R:543
 msgid "First %d of %d (type '%s'):"
-msgstr ""
+msgstr "Primeiros %d de %d (tipo '%s'):"
 
 #: test.data.table.R:548
 msgid "Non-ASCII string detected, raw representation:"
-msgstr ""
+msgstr "Sequência de caracteres não ASCII detectada, representação bruta:"
 
 #: timetaken.R:3
 #, c-format
@@ -3975,11 +4051,6 @@ msgstr[0] "coluna não encontrada: %s"
 msgstr[1] "colunas não encontradas: %s"
 
 #: data.table.R:895
-#, fuzzy
-#| msgid ""
-#| "The items in the 'by' or 'keyby' list are length(s) %s. Each must be "
-#| "length %d; the same length as there are rows in x (after subsetting if i "
-#| "is provided)."
 msgid ""
 "The item in the 'by' or 'keyby' list is length %s. Each must be length %d; "
 "the same length as there are rows in x (after subsetting if i is provided)."
@@ -3988,7 +4059,7 @@ msgid_plural ""
 "%d; the same length as there are rows in x (after subsetting if i is "
 "provided)."
 msgstr[0] ""
-"Os itens na lista 'by' ou 'keyby' têm comprimento(s) %s. Cada um deve ter "
+"O item na lista 'by' ou 'keyby' tem comprimento %s. Cada um deve ter "
 "comprimento %d; o mesmo comprimento que há linhas em x (após obter "
 "subconjuntos se i for fornecido)."
 msgstr[1] ""
