@@ -63,23 +63,23 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     return(invisible(x))
   }
   if (show.indices) {
-   indices <- names(attr(x, "index", exact = TRUE))  # Get actual index names
+    indices <- names(attr(x, "index", exact = TRUE))  
     if (length(indices)) {
       # Clean index formatting
-      cleaned_indices <- gsub("^__|_", ", ", indices)
+      cleaned_indices <- gsub("^__|_", ", ", indices)  
       cleaned_indices <- sub(", $", "", cleaned_indices)  
       # Create header string (matches key display style)
       header <- paste0("Indices: ", paste(cleaned_indices, collapse = ", "))
-
-    # Add to existing header metadata instead of toprint
-    if (exists("header", envir = parent.frame(), inherits = FALSE)) {
-      assign("header", c(get("header", envir = parent.frame()), header), 
-             envir = parent.frame())
+      # Add to existing header metadata instead of toprint
+      if (exists("header", envir = parent.frame(), inherits = FALSE)) {
+        assign("header", c(get("header", envir = parent.frame()), header), 
+               envir = parent.frame())
+      }
+    }
+    else {
+      show.indices <- FALSE  
     }
   }
-  else {
-    show.indices <- FALSE  
-}
   n_x = nrow(x)
   if ((topn*2L+1L)<n_x && (n_x>nrows || !topnmiss)) {
     toprint = rbindlist(list(head(x, topn), tail(x, topn)), use.names=FALSE)  # no need to match names because head and tail of same x, and #3306
