@@ -590,12 +590,13 @@ x[i, on = .(A >= B)]
 In data.table, when using a non-equi join condition (>=, <, etc.), the column from x is retained in the result, while the column from i is not retained unless explicitly selected.
 
 Expected Output
+```
    A    value_x  value_i
 1: 2       b       A
 2: 4       d       B
 3: 5       e       C
 4: 5       e       C
-
+```
 If multiple rows in x satisfy the join condition with a single row in i, those rows will be duplicated in the result.
 
 If you want to keep the B column from i, you need to explicitly select it in the result:
@@ -604,12 +605,13 @@ If you want to keep the B column from i, you need to explicitly select it in the
 x[i, on = .(A >= B), .(B, A, value_x, value_i)]
 ```
 Updated Output
+```
    B  A   value_x  value_i
 1: 2  2       b       A
 2: 4  4       d       B
 3: 5  5       e       C
 4: 5  5       e       C
-
+```
 If you want to exclude unmatched rows, you should use nomatch = NULL:
 
 ```{r}
