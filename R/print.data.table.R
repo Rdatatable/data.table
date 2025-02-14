@@ -63,26 +63,21 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     return(invisible(x))
   }
   if (show.indices) {
-    indices <- names(attr(x, "index", exact = TRUE))  # Get actual index names
+    indices <- names(attr(x, "index", exact = TRUE))
     if (length(indices)) {
-      # Clean index formatting
-      cleaned_indices <- gsub("^__|_", ", ", indices)  # Remove prefix and convert _ to ,
-      cleaned_indices <- sub(", $", "", cleaned_indices)  # Trim trailing comma
+      cleaned_indices <- gsub("^__|_", ", ", indices) 
+      cleaned_indices <- sub(", $", "", cleaned_indices) 
     
       # Create header string (matches key display style)
       header <- paste0("Indices: ", paste(cleaned_indices, collapse = ", "))
-    
-      # Add to existing header metadata instead of toprint
       if (exists("header", envir = parent.frame(), inherits = FALSE)) {
         # Match data.table's existing header handling
         assign("header", c(get("header", envir = parent.frame()), header), 
                envir = parent.frame())
       }
-    
-      # Remove all rbind-to-toprint logic
     }
     else {
-      show.indices <- FALSE  # No indices found
+      show.indices <- FALSE 
    }
  }
   n_x = nrow(x)
