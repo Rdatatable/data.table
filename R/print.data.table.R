@@ -63,28 +63,28 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     return(invisible(x))
   }
   if (show.indices) {
-    indices <- names(attr(x, "index", exact = TRUE))
+    indices <- names(attr(x, "index", exact = TRUE))  # Get actual index names
     if (length(indices)) {
-      # Get index metadata
-      index_dt <- as.data.table(attr(x, "index"))
-      index_names <- paste0("index", seq_along(indices), ":", gsub("__", ":", indices))
+      # Clean index formatting
+      cleaned_indices <- gsub("^__|_", ", ", indices)  # Remove prefix and convert _ to ,
+      cleaned_indices <- sub(", $", "", cleaned_indices)  # Trim trailing comma
     
-      # Format index columns to match test expectations
-      index_dt <- setnames(copy(index_dt), index_names)
+      # Create header string (matches key display style)
+      header <- paste0("Indices: ", paste(cleaned_indices, collapse = ", "))
     
-      # Combine with main data
-      toprint <- cbind(toprint, index_dt)
-    
-      # Add empty column for multi-index separation
-      if (ncol(index_dt) > 1) {
-        toprint <- cbind(toprint[, 1:(ncol(toprint)-ncol(index_dt))], 
-                        "",  # Empty column for visual separation
-                        toprint[, (ncol(toprint)-ncol(index_dt)+1):ncol(toprint)])
+      # Add to existing header metadata instead of toprint
+      if (exists("header", envir = parent.frame(), inherits = FALSE)) {
+        # Match data.table's existing header handling
+        assign("header", c(get("header", envir = parent.frame()), header), 
+               envir = parent.frame())
       }
-    } else {
-      show.indices <- FALSE
+    
+      # Remove all rbind-to-toprint logic
     }
-  }
+    else {
+      show.indices <- FALSE  # No indices found
+   }
+ }
   n_x = nrow(x)
   if ((topn*2L+1L)<n_x && (n_x>nrows || !topnmiss)) {
     toprint = rbindlist(list(head(x, topn), tail(x, topn)), use.names=FALSE)  # no need to match names because head and tail of same x, and #3306
