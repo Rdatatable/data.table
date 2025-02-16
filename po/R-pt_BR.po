@@ -1,7 +1,7 @@
 #
 # Translators:
-# Italo Santos <ids37@nau.edu>, 2024
-# Leonardo Fontenelle <leonardof@leonardof.med.br>, 2024
+# Italo Santos <ids37@nau.edu>, 2024.
+# Leonardo Fontenelle <leonardof@leonardof.med.br>, 2024-2025.
 # Rafael Fontenelle <rffontenelle@gmail.com>, 2024-2025.
 #
 msgid ""
@@ -792,8 +792,8 @@ msgid ""
 "i clause present but columns used in by not detected. Having to subset all "
 "columns before evaluating 'by': '%s'"
 msgstr ""
-"cláusula de i presente, mas colunas usadas em by não detectadas. Ter um "
-"subconjunto de todas as colunas antes de avaliar 'by': '%s'"
+"cláusula de i presente, mas colunas usadas em by não detectadas. Tendo "
+"que obter um subconjunto de todas as colunas antes de avaliar 'by': '%s'"
 
 #: data.table.R:875
 #, c-format
@@ -1016,7 +1016,7 @@ msgid ""
 msgstr ""
 "Nenhuma linha corresponde a i. Nenhuma coluna nova para adicionar, portanto, "
 "não será avaliado o lado direito de :=\n"
-"Atribuindo a 0 linha de %d linhas"
+"Atribuindo a um subconjunto com 0 linha das %d linhas"
 
 #: data.table.R:1190
 #, c-format
@@ -3845,8 +3845,8 @@ msgstr "O teste %s foi executado sem erros, mas selfrefok(%s) é FALSE"
 #: test.data.table.R:538
 msgid "Test %s ran without errors but failed check that x equals y:"
 msgstr ""
-"O teste %s foi executado sem erros, mas falhou na verificação de que x é "
-"igual a y:"
+"O teste %s foi executado sem erros, mas falhou na verificação de x "
+"ser igual a y:"
 
 #: test.data.table.R:543
 msgid "First %d of %d (type '%s'):"
