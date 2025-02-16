@@ -3825,8 +3825,8 @@ msgid ""
 "Unlike the very common case, e.g. ASCII, the character ':' is not just after "
 "'9'."
 msgstr ""
-"Ao contrário do esperado, como no ASCII, o caractere ':' não está logo antes "
-"de '0'."
+"Ao contrário do esperado, como no ASCII, o caractere ':' não está logo depois "
+"de '9'."
 
 #: init.c:229
 msgid "The C expression (uint_fast8_t)('9'-':')<10 is true. Should be false."
