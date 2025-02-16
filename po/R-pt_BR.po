@@ -221,11 +221,11 @@ msgstr ""
 
 #: bmerge.R:71
 msgid "Matching %s factor levels to %s factor levels."
-msgstr "Correspondendo níveis de fator de %s a níveis de fator de %s."
+msgstr "Fazendo os níveis do fator %s corresponderem aos níveis do fator %s."
 
 #: bmerge.R:80
 msgid "Matching character column %s to factor levels in %s."
-msgstr "Correspondendo coluna de caracteres %s para níveis de fator em %s."
+msgstr "Fazendo a coluna de caracteres %s corresponder aos níveis do fator %s."
 
 #: bmerge.R:87
 #, c-format
@@ -238,7 +238,7 @@ msgstr ""
 
 #: bmerge.R:91
 msgid "%s has same type (%s) as %s. No coercion needed."
-msgstr "%s tem o mesmo tipo (%s) como %s. Nenhuma coerção necessária."
+msgstr "%s tem o mesmo tipo (%s) de %s. Nenhuma coerção necessária."
 
 #: bmerge.R:97 bmerge.R:101
 msgid "(all-NA)"
@@ -276,11 +276,11 @@ msgstr "(para junção)"
 
 #: bmerge.R:165
 msgid "on= matches existing key, using key"
-msgstr "on= corresponde a chave existente, usando chave"
+msgstr "on= corresponde à chave existente, usando chave"
 
 #: bmerge.R:170
 msgid "on= matches existing index, using index"
-msgstr "on= corresponde a índice existente, usando índice"
+msgstr "on= corresponde ao índice existente, usando índice"
 
 #: bmerge.R:175
 msgid "Calculated ad hoc index in %s"
@@ -288,7 +288,7 @@ msgstr "Calculado índice ad hoc em %s"
 
 #: bmerge.R:186
 msgid "Non-equi join operators detected ..."
-msgstr "Operadores de junção não-equi detectados ..."
+msgstr "Operadores de junção por desigualdade detectados ..."
 
 #: bmerge.R:187
 #, c-format
@@ -305,7 +305,7 @@ msgstr "Gerando comprimentos de grupo ..."
 
 #: bmerge.R:202
 msgid "Generating non-equi group ids ..."
-msgstr "Gerando is de grupo não-equi ..."
+msgstr "Gerando ids de grupos por desigualdade ..."
 
 #: bmerge.R:207
 #, c-format
@@ -315,7 +315,7 @@ msgstr ""
 
 #: bmerge.R:208
 msgid "Recomputing forder with non-equi ids ..."
-msgstr "Recalculando forder com ids não-equi ..."
+msgstr "Recalculando forder com ids por desigualdade ..."
 
 #: bmerge.R:217
 msgid "Starting bmerge ..."
@@ -666,11 +666,11 @@ msgstr "Construindo irows para '!byjoin || nqbyjoin' ..."
 
 #: data.table.R:562
 msgid "Reorder irows for 'mult==\"all\" && !allGrp1' ..."
-msgstr "Reordene irows para 'mult==\"all\" && !allGrp1' ..."
+msgstr "Reordenar irows para 'mult==\"all\" && !allGrp1' ..."
 
 #: data.table.R:574
 msgid "Reordering %d rows after bmerge done in ..."
-msgstr "Reordenação de %d linhas após bmerge ser concluído em ..."
+msgstr "Reordenando %d linhas após bmerge ser concluído em ..."
 
 #: data.table.R:591
 #, c-format
@@ -707,7 +707,7 @@ msgstr ""
 
 #: data.table.R:635
 msgid "Inverting irows for notjoin done in ..."
-msgstr "Inversão de irows para notjoin concluído em ..."
+msgstr "Inversão de irows para não-junção concluída em ..."
 
 #: data.table.R:691
 #, c-format
@@ -1123,13 +1123,13 @@ msgid ""
 "Note: forcing units=\"secs\" on implicit difftime by group; call difftime "
 "explicitly to choose custom units"
 msgstr ""
-"Nota: forçar unidades=\"secs\" em difftime implícito por grupo; chamar "
+"Nota: force unidades=\"secs\" em difftime implícito por grupo; chame "
 "difftime explicitamente para escolher unidades personalizadas"
 
 #: data.table.R:1495
 #, c-format
 msgid "logical error. i is not a data.table, but mult='all' and 'by'=.EACHI"
-msgstr "erro lógico. i não é data.table, mas mult='all' e 'by'=.EACHI"
+msgstr "erro lógico. i não é uma data.table, mas mult='all' e 'by'=.EACHI"
 
 #: data.table.R:1522
 msgid "Finding groups using forderv ..."
@@ -1138,7 +1138,7 @@ msgstr "Encontrando grupos usando forderv ..."
 #: data.table.R:1536 data.table.R:1568
 msgid "Finding group sizes from the positions (can be avoided to save RAM) ..."
 msgstr ""
-"Encontrar tamanhos de grupo a partir das posições (pode ser evitado para "
+"Encontrando tamanhos de grupo a partir das posições (pode ser evitado para "
 "economizar RAM) ..."
 
 #: data.table.R:1544
@@ -1170,7 +1170,7 @@ msgid ""
 "GForce is on, but not activated for this query; left j unchanged (see ?"
 "GForce)"
 msgstr ""
-"GForce está ligado, mas não ativado para esta consulta; j esquerdo "
+"GForce está ligado, mas não ativado para esta consulta; j deixado "
 "inalterado (veja ?GForce)"
 
 #: data.table.R:1834
@@ -1191,7 +1191,7 @@ msgstr "A otimização média antiga mudou j de '%s' para '%s'"
 
 #: data.table.R:1840
 msgid "Old mean optimization is on, left j unchanged."
-msgstr "A otimização média antiga está ativada, o j esquerdo não foi alterado."
+msgstr "A antiga otimização de mean está ativa, j deixado alterado."
 
 #: data.table.R:1850
 msgid "All optimizations are turned off"
@@ -1200,7 +1200,7 @@ msgstr "Todas as otimizações estão desativadas"
 #: data.table.R:1851
 msgid "Optimization is on but left j unchanged (single plain symbol): '%s'"
 msgstr ""
-"A otimização está ativada, mas j esquerdo inalterado (símbolo simples "
+"A otimização está ativa, mas j deixado inalterado (símbolo simples "
 "único): '%s'"
 
 #: data.table.R:1880
@@ -2096,7 +2096,7 @@ msgid ""
 "Duplicate column names found in molten data.table. Setting unique names "
 "using 'make.names'"
 msgstr ""
-"Nomes de colunas duplicados encontrados em data.table fundida. Definindo "
+"Nomes de colunas duplicados encontrados em data.table 'derretida'. Definindo "
 "nomes exclusivos usando 'make.names'"
 
 #: foverlaps.R:3
@@ -3390,7 +3390,7 @@ msgstr ""
 
 #: setkey.R:65
 msgid "forder took %.03f sec"
-msgstr "forder legou %.03f s"
+msgstr "forder levou %.03f s"
 
 #: setkey.R:77
 msgid "reorder took %s"
@@ -3738,7 +3738,7 @@ msgstr ""
 
 #: test.data.table.R:202
 msgid "Running %d of %d tests matching '%s'"
-msgstr "Executando %d de %d testss correspondendo a '%s'"
+msgstr "Executando %d de %d testes correspondendo a '%s'"
 
 #: test.data.table.R:248
 #, c-format
@@ -4035,8 +4035,8 @@ msgstr "As seguintes colunas não são numéricas e serão omitidas: %s"
 #: bmerge.R:214
 msgid "  Found %d non-equi group ...\n"
 msgid_plural "  Found %d non-equi groups ...\n"
-msgstr[0] "  Encontrado %d grupo não-equi ...\n"
-msgstr[1] "  Encontrado %d grupos não-equi ...\n"
+msgstr[0] "  Encontrado %d grupo por desigualdade ...\n"
+msgstr[1] "  Encontrado %d grupos por desigualdade ...\n"
 
 #: data.table.R:712
 msgid "column not removed because not found: %s"
