@@ -535,7 +535,7 @@ SEXP growVector(SEXP x, const R_len_t newlen)
   if (isNull(x)) error(_("growVector passed NULL"));
   PROTECT(newx = allocVector(TYPEOF(x), newlen));   // TO DO: R_realloc(?) here?
   if (newlen < len) len=newlen;   // i.e. shrink
-  switch (TYPEOF(x)) {
+  if (len) switch (TYPEOF(x)) {
   case RAWSXP:  memcpy(RAW(newx),     RAW(x),     len*SIZEOF(x)); break;
   case LGLSXP:  memcpy(LOGICAL(newx), LOGICAL(x), len*SIZEOF(x)); break;
   case INTSXP:  memcpy(INTEGER(newx), INTEGER(x), len*SIZEOF(x)); break;

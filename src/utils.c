@@ -222,7 +222,7 @@ SEXP copyAsPlain(SEXP x) {
   }
   const int64_t n = XLENGTH(x);
   SEXP ans = PROTECT(allocVector(TYPEOF(x), n));
-  switch (TYPEOF(x)) {
+  if (n) switch (TYPEOF(x)) {
   case RAWSXP:
     memcpy(RAW(ans),     RAW(x),     n*sizeof(Rbyte));
     break;
