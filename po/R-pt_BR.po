@@ -1191,7 +1191,7 @@ msgstr "A otimização média antiga mudou j de '%s' para '%s'"
 
 #: data.table.R:1840
 msgid "Old mean optimization is on, left j unchanged."
-msgstr "A antiga otimização de mean está ativa, j deixado alterado."
+msgstr "A antiga otimização de mean está ativa, j deixado inalterado."
 
 #: data.table.R:1850
 msgid "All optimizations are turned off"
