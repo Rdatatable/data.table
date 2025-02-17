@@ -1123,7 +1123,7 @@ msgid ""
 "Note: forcing units=\"secs\" on implicit difftime by group; call difftime "
 "explicitly to choose custom units"
 msgstr ""
-"Nota: force unidades=\"secs\" em difftime implícito por grupo; chame "
+"Nota: forçando unidades=\"secs\" em difftime implícito por grupo; chame "
 "difftime explicitamente para escolher unidades personalizadas"
 
 #: data.table.R:1495
