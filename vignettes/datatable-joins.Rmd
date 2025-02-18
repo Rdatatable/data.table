@@ -320,7 +320,7 @@ Products[!ProductReceived,
          on = c("id" = "product_id")]
 ```
 
-As you can see, the result only has 'banana', as it was the only product that is not present in the `ProductReceived` table.
+As you can see, the result only has 'soda', as it was the only product that is not present in the `ProductReceived` table.
 
 ```{r}
 ProductReceived[!Products,
@@ -390,7 +390,7 @@ Here some important considerations:
   - It didn't add the prefix `i.` to any column.
   
 - **Row level**
-  - All rows from in the `i` table were kept as we never received any banana but row is still part of the results.
+  - All rows from the `i` table were kept: the soda entry from `Products` that was not matched by any row in `ProductReceived` is still part of the results.
   - The row related to `product_id = 6` is not part of the results any more as it is not present in the `Products` table.
 
 

@@ -57,8 +57,8 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
       catf("Null data.%s (0 rows and 0 cols)\n", class)  # See FAQ 2.5 and NEWS item in v1.8.9
     } else {
       catf("Empty data.%s (%d rows and %d cols)", class, NROW(x), NCOL(x))
-      if (length(x)>0L) cat(": ",paste(head(names(x),6L),collapse=","),if(length(x)>6L)"...",sep="")
-      cat("\n")
+      if (length(x)>0L) cat(": ",paste(head(names(x),6L),collapse=","),if(length(x)>6L)"...",sep="") # notranslate
+      cat("\n") # notranslate
     }
     return(invisible(x))
   }

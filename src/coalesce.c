@@ -100,7 +100,7 @@ SEXP coalesce(SEXP x, SEXP inplaceArg) {
         if (val!=NA_INTEGER64) xP[i]=val; else if (final) xP[i]=finalVal;
       }
     } else {
-      double *xP = (double *)REAL(first), finalVal=NA_REAL;
+      double *xP = REAL(first), finalVal=NA_REAL;
       int k=0;
       for (int j=0; j<nval; ++j) {
         SEXP item = VECTOR_ELT(x, j+off);
