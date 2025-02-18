@@ -571,7 +571,7 @@ ProductReceivedProd2[ProductSalesProd2,
 
 ### 4.1 Handling Column Name Behavior in Non-Equi Joins
 
-When performing non-equi joins (<, >, <=, >=), it's important to understand how column names are assigned in the result.
+When performing non-equi joins (<, >, <=, >=), column names are assigned as follows:
 
 - The left operand (`x` column) determines the column name in the result.
 - The right operand (`i` column) contributes values but does not retain its original name.
