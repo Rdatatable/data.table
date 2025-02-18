@@ -39,7 +39,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     scripts = gsub("[.]bz2$","",scripts)
     return(sapply(scripts, function(fn) {
       err = try(test.data.table(script=fn, verbose=verbose, pkg=pkg, silent=silent, showProgress=showProgress, testPattern=testPattern))
-      cat("\n");
+      cat("\n"); # notranslate
       isTRUE(err)
     }))
     # nocov end
@@ -95,12 +95,13 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     scipen = 0L,  # fwrite now respects scipen
     datatable.optimize = Inf,
     datatable.alloccol = 1024L,
-    datatable.print.class = FALSE,  # output= tests were written when default was FALSE
-    datatable.print.keys = FALSE,   # output= tests were written when default was FALSE
+    datatable.print.class = FALSE,  # many old output= tests were written when default was FALSE
+    datatable.print.keys = FALSE,   # many old output= tests were written when default was FALSE
     datatable.print.trunc.cols = FALSE, #4552
     datatable.rbindlist.check = NULL,
     datatable.integer64 = "integer64",
     digits = 7L, # ensure printing rounds to the expected number of digits in all sessions, #5285
+    useFancyQuotes = FALSE, # otherwise we get angled quotes, hard to match robustly
     warn = 0L,   # ensure signals are emitted as they are in the code, #5285
     warnPartialMatchArgs = base::getRversion()>="3.6.0", # ensure we don't rely on partial argument matching in internal code, #3664; >=3.6.0 for #3865
     warnPartialMatchAttr = TRUE,
@@ -109,7 +110,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     datatable.old.fread.datetime.character = FALSE
   )
 
-  cat("getDTthreads(verbose=TRUE):\n")         # for tracing on CRAN; output to log before anything is attempted
+  cat("getDTthreads(verbose=TRUE):\n")         # notranslate: for tracing on CRAN; output to log before anything is attempted
   getDTthreads(verbose=TRUE)                   # includes the returned value in the verbose output (rather than dangling '[1] 4'); e.g. "data.table is using 4 threads"
   catf("test.data.table() running: %s\n", fn)  # print fn to log before attempting anything on it (in case it is missing); on same line for slightly easier grep
   assign("testDir", function(x) file.path(fulldir, x), envir=env)
@@ -225,6 +226,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   # does show the full file output these days, so the 13 line limit no longer bites so much. It still bit recently
   # when receiving output of R CMD check sent over email, though.
   tz = Sys.getenv("TZ", unset=NA)
+  # notranslate start
   cat("\n", date(),   # so we can tell exactly when these tests ran on CRAN to double-check the result is up to date
     "  endian==", .Platform$endian,
     ", sizeof(long double)==", .Machine$sizeof.longdouble,
@@ -238,6 +240,7 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     ", .libPaths()==", paste0("'", .libPaths(), "'", collapse = ","),
     ", ", .Call(Cdt_zlib_version),
     "\n", sep="")
+  # notranslate end
 
   if (inherits(err,"try-error")) {
     # nocov start
@@ -302,7 +305,7 @@ compactprint = function(DT, topn=2L) {
     print(copy(DT)[,(cn):="",verbose=FALSE], topn=topn, class=FALSE)
   } else {
     print(DT, class=FALSE)  # "Empty data.table (0 rows) of <ncol> columns ...
-    if (ncol(DT)) cat(cn,"\n")
+    if (ncol(DT)) cat(cn,"\n") # notranslate
   }
   invisible()
 }
@@ -332,10 +335,6 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
       if (any(is_preset)) do.call(Sys.setenv, as.list(old[is_preset]))
       Sys.unsetenv(names(old)[!is_preset])
     }, add=TRUE)
-  }
-  if (!is.null(options)) {
-    old_options <- do.call(base::options, as.list(options)) # as.list(): allow passing named character vector for convenience
-    on.exit(base::options(old_options), add=TRUE)
   }
   # Usage:
   # i) tests that x equals y when both x and y are supplied, the most common usage
@@ -375,14 +374,18 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
          if (memtest==1L) gc()  # see #5515 for before/after
          inum = as.integer(num)
          timings[inum, RSS:=max(rss(),RSS), verbose=FALSE]  # TODO prefix inum with .. for clarity when that works
-         if (length(memtest.id) && memtest.id[1L]<=inum && inum<=memtest.id[2L]) cat(rss(),"\n") # after 'testing id ...' output; not using between() as it has verbose output when getOption(datatable.verbose)
+         if (length(memtest.id) && memtest.id[1L]<=inum && inum<=memtest.id[2L]) cat(rss(),"\n") # notranslate. after 'testing id ...' output; not using between() as it has verbose output when getOption(datatable.verbose)
          if (memtest==2L) gc()
        }
        assign("lasttime", proc.time()[3L], parent.frame(), inherits=TRUE)  # after gc() to exclude gc() time from next test when memtest
     }, add=TRUE )
-    if (showProgress)
-      # \r can't be in gettextf msg
-      cat("\rRunning test id", numStr, "         ")   # nocov.
+    if (showProgress) {
+      # nocov start
+      cat("\r") # notranslate: \r can't be in gettextf msg
+      catf("Running test id %s", numStr)
+      cat("         ")   # notranslate
+      # nocov end
+    }
     # See PR #4090 for comments about change here in Dec 2019.
     # If a segfault error occurs in future and we'd like to know after which test, then arrange for the
     # try(sys.source()) in test.data.table() to be run in a separate R process. That process could write out
@@ -421,12 +424,22 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     actual$message <- c(actual$message, conditionMessage(m))
     m
   }
+  if (!is.null(options)) {
+    old_options <- do.call(base::options, as.list(options)) # as.list(): allow passing named character vector for convenience
+    on.exit(base::options(old_options), add=TRUE)
+  }
   if (is.null(output) && is.null(notOutput)) {
     x = suppressMessages(withCallingHandlers(tryCatch(x, error=eHandler), warning=wHandler, message=mHandler))
     # save the overhead of capture.output() since there are a lot of tests, often called in loops
     # Thanks to tryCatch2 by Jan here : https://github.com/jangorecki/logR/blob/master/R/logR.R#L21
   } else {
     out = capture.output(print(x <- suppressMessages(withCallingHandlers(tryCatch(x, error=eHandler), warning=wHandler, message=mHandler))))
+  }
+  if (!is.null(options)) {
+    # some of the options passed to test() may break internal data.table use below (e.g. invalid datatable.alloccol), so undo them ASAP
+    base::options(old_options)
+    # this is still registered for on.exit(), keep empty
+    old_options <- list()
   }
   fail = FALSE
   if (.test.data.table && num>0.0) {
@@ -447,15 +460,15 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
       stopifnot(is.character(ignore.warning), !anyNA(ignore.warning), nchar(ignore.warning)>=1L)
       for (msg in ignore.warning) observed = grep(msg, observed, value=TRUE, invert=TRUE) # allow multiple for translated messages rather than relying on '|' to always work
     }
-    if (length(expected) != length(observed)) {
+    if (length(expected) != length(observed) && (!foreign || is.null(ignore.warning))) {
       # nocov start
       catf("Test %s produced %d %ss but expected %d\n%s\n%s\n", numStr, length(observed), type, length(expected), paste("Expected:", expected), paste("Observed:", observed, collapse = "\n"))
       fail = TRUE
       # nocov end
-    } else {
+    } else if (!foreign) {
       # the expected type occurred and, if more than 1 of that type, in the expected order
       for (i in seq_along(expected)) {
-        if (!foreign && !string_match(expected[i], observed[i])) {
+        if (!string_match(expected[i], observed[i])) {
           # nocov start
           catf("Test %s didn't produce the correct %s:\nExpected: %s\nObserved: %s\n", numStr, type, expected[i], observed[i])
           fail = TRUE
@@ -474,7 +487,8 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     if (out[length(out)] == "NULL") out = out[-length(out)]
     out = paste(out, collapse="\n")
     output = paste(output, collapse="\n")  # so that output= can be either a \n separated string, or a vector of strings.
-    if (length(output) && !string_match(output, out)) {
+    # it also happens to turn off the 'y' checking branch below
+    if (length(output) && !foreign && !string_match(output, out)) {
       # nocov start
       catf("Test %s did not produce correct output:\n", numStr)
       catf("Expected: <<%s>>\n", encodeString(output))  # \n printed as '\\n' so the two lines of output can be compared vertically
@@ -486,7 +500,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
       fail = TRUE
       # nocov end
     }
-    if (length(notOutput) && string_match(notOutput, out, ignore.case=TRUE)) {
+    if (length(notOutput) && !foreign && string_match(notOutput, out, ignore.case=TRUE)) {
       # nocov start
       catf("Test %s produced output but should not have:\n", numStr)
       catf("Expected absent (case insensitive): <<%s>>\n", encodeString(notOutput))
@@ -533,7 +547,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     if (!fail) {
       catf("Test %s ran without errors but failed check that x equals y:\n", numStr)
       failPrint = function(x, xsub) {
-        cat(">", substitute(x), "=", xsub, "\n")
+        cat(">", substitute(x), "=", xsub, "\n") # notranslate
         if (is.data.table(x)) compactprint(x) else {
           nn = length(x)
           catf("First %d of %d (type '%s'): \n", min(nn, 6L), length(x), typeof(x))
@@ -541,7 +555,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
           if (length(d <- dim(x))) do.call(`[`, c(list(x, drop = FALSE), lapply(pmin(d, 6L), seq_len)))
           else print(head(x))
           if (typeof(x) == 'character' && anyNonAscii(x)) {
-            cat("Non-ASCII string detected, raw representation:\n")
+            catf("Non-ASCII string detected, raw representation:\n")
             print(lapply(head(x), charToRaw))
           }
         }

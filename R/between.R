@@ -75,7 +75,7 @@ inrange = function(x,lower,upper,incbounds=TRUE) {
   ops = if (incbounds) c(4L, 2L) else c(5L, 3L) # >=,<= and >,<
   verbose = isTRUE(getOption("datatable.verbose"))
   if (verbose) {last.started.at=proc.time();catf("forderv(query) took ... ");flush.console()}
-  if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
+  if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()} # notranslate
   ans = bmerge(
     shallow(subject), query,
     icols=1L:2L, xcols=c(1L, 1L),

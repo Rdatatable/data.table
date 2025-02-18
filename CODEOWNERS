@@ -48,6 +48,8 @@
 /po/*zh_CN.po @Rdatatable/chinese
 /po/*pt_BR.po @Rdatatable/brazil
 /po/*es.po @Rdatatable/spanish
+/po/*ru.po @Rdatatable/russian
+/vignettes/ru/*.Rmd @Rdatatable/russian
 
 # printing
 /R/print.data.table.R @michaelchirico

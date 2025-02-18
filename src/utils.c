@@ -409,7 +409,7 @@ SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg) {
 SEXP dt_zlib_version(void) {
   char out[71];
 #ifndef NOZLIB
-  snprintf(out, 70, "zlibVersion()==%s ZLIB_VERSION==%s", zlibVersion(), ZLIB_VERSION);
+  snprintf(out, 70, "zlibVersion()==%s ZLIB_VERSION==%s", zlibVersion(), ZLIB_VERSION); // # notranslate
 #else
   snprintf(out, 70, _("zlib header files were not found when data.table was compiled"));
 #endif
