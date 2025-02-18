@@ -1645,12 +1645,10 @@ msgstr ""
 "do lado direito excede 1e4, causando problemas de memória."
 
 #: data.table.R:3306
-#, fuzzy
 msgid "Optimized subsetting with key %s"
 msgstr "Subconjunto otimizado com chave %s"
 
 #: data.table.R:3325 data.table.R:3337
-#, fuzzy
 msgid "Optimized subsetting with index '%s'"
 msgstr "Subconjunto otimizado com índice '%s'"
 
