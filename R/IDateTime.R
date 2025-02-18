@@ -99,9 +99,9 @@ round.IDate = function(x, digits=c("weeks", "months", "quarters", "years"), ...)
   # TODO: investigate Ops.IDate method a la Ops.difftime
   if (inherits(e1, "difftime") || inherits(e2, "difftime"))
     internal_error("difftime objects may not be added to IDate, but Ops dispatch should have intervened to prevent this") # nocov
-  if (isReallyReal(e1) || isReallyReal(e2)) {
+  # IDate doesn't support fractional days; revert to base Date
+  if ((is.double(e1) && !fitsInInt32(e1)) || (is.double(e2) && !fitsInInt32(e2))) {
     return(`+.Date`(e1, e2))
-    # IDate doesn't support fractional days; revert to base Date
   }
   if (inherits(e1, "Date") && inherits(e2, "Date"))
     stopf("binary + is not defined for \"IDate\" objects")
@@ -120,7 +120,7 @@ round.IDate = function(x, digits=c("weeks", "months", "quarters", "years"), ...)
   if (inherits(e2, "difftime"))
     internal_error("difftime objects may not be subtracted from IDate, but Ops dispatch should have intervened to prevent this") # nocov
 
-  if ( isReallyReal(e2) ) {
+  if ( is.double(e2) && !fitsInInt32(e2) ) {
     # IDate deliberately doesn't support fractional days so revert to base Date
     return(base::`-.Date`(as.Date(e1), e2))
     # can't call base::.Date directly (last line of base::`-.Date`) as tried in PR#3168 because
@@ -186,7 +186,7 @@ as.ITime.POSIXlt = function(x, ms = 'truncate', ...) {
 }
 
 as.ITime.times = function(x, ms = 'truncate', ...) {
-  secs = 86400 * (unclass(x) %% 1)
+  secs = 86400L * (unclass(x) %% 1L)
   secs = clip_msec(secs, ms)
   (setattr(secs, "class", "ITime"))  # the first line that creates sec will create a local copy so we can use setattr() to avoid potential copy of class()<-
 }
@@ -238,16 +238,16 @@ rep.ITime = function(x, ...)
 round.ITime <- function(x, digits = c("hours", "minutes"), ...)
 {
   (setattr(switch(match.arg(digits),
-                  hours = as.integer(round(unclass(x)/3600)*3600),
-                  minutes = as.integer(round(unclass(x)/60)*60)),
+                  hours = as.integer(round(unclass(x)/3600.0)*3600.0),
+                  minutes = as.integer(round(unclass(x)/60.0)*60.0)),
            "class", "ITime"))
 }
 
 trunc.ITime <- function(x, units = c("hours", "minutes"), ...)
 {
   (setattr(switch(match.arg(units),
-                  hours = as.integer(unclass(x)%/%3600*3600),
-                  minutes = as.integer(unclass(x)%/%60*60)),
+                  hours = as.integer(unclass(x)%/%3600.0*3600.0),
+                  minutes = as.integer(unclass(x)%/%60.0*60.0)),
            "class", "ITime"))
 }
 
@@ -280,7 +280,7 @@ IDateTime.default = function(x, ...) {
 
 # POSIXt support
 
-as.POSIXct.IDate = function(x, tz = "UTC", time = 0, ...) {
+as.POSIXct.IDate = function(x, tz = "UTC", time = 0.0, ...) {
   if (missing(time) && inherits(tz, "ITime")) {
     time = tz # allows you to use time as the 2nd argument
     tz = "UTC"

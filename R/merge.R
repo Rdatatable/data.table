@@ -11,8 +11,8 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
       by = key(x)
     }
   }
-  x0 = length(x)==0L
-  y0 = length(y)==0L
+  x0 = length(x) == 0L
+  y0 = length(y) == 0L
   if (x0 || y0) {
     if (x0 && y0)
       warningf("Neither of the input data.tables to join have columns.")
@@ -28,17 +28,19 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   nm_y = names(y)
 
   ## set up 'by'/'by.x'/'by.y'
-  if ( (!is.null(by.x) || !is.null(by.y)) && length(by.x)!=length(by.y) )
+  if ((!is.null(by.x) || !is.null(by.y)) && length(by.x) != length(by.y))
     stopf("`by.x` and `by.y` must be of same length.")
   if (!missing(by) && !missing(by.x))
-    warningf("Supplied both `by` and `by.x/by.y`. `by` argument will be ignored.")
+    warningf("Supplied both `by` and `by.x`/`by.y`. `by` argument will be ignored.")
   if (!is.null(by.x)) {
-    if (length(by.x)==0L || !is.character(by.x) || !is.character(by.y))
+    if (length(by.x) == 0L || !is.character(by.x) || !is.character(by.y))
       stopf("A non-empty vector of column names is required for `by.x` and `by.y`.")
-    if (!all(by.x %chin% nm_x))
-      stopf("Elements listed in `by.x` must be valid column names in x.")
-    if (!all(by.y %chin% nm_y))
-      stopf("Elements listed in `by.y` must be valid column names in y.")
+    if (!all(idx <- by.x %chin% nm_x)) {
+      stopf("The following columns listed in `%s` are missing from %s: %s", "by.x", "x", brackify(by.x[!idx]))
+    }
+    if (!all(idx <- by.y %chin% nm_y)) {
+      stopf("The following columns listed in `%s` are missing from %s: %s", "by.y", "y", brackify(by.y[!idx]))
+    }
     by = by.x
     names(by) = by.y
   } else {
@@ -50,8 +52,12 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
       by = intersect(nm_x, nm_y)
     if (length(by) == 0L || !is.character(by))
       stopf("A non-empty vector of column names for `by` is required.")
-    if (!all(by %chin% intersect(nm_x, nm_y)))
-      stopf("Elements listed in `by` must be valid column names in x and y")
+    if (!all(idx <- by %in% nm_x)) {
+      stopf("The following columns listed in `%s` are missing from %s: %s", "by", "x", brackify(by[!idx]))
+    }
+    if (!all(idx <- by %in% nm_y)) {
+      stopf("The following columns listed in `%s` are missing from %s: %s", "by", "y", brackify(by[!idx]))
+    }
     by = unname(by)
     by.x = by.y = by
   }
