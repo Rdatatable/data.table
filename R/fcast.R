@@ -220,9 +220,9 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
     setkeyv(dat, varnames)
   if (length(rhsnames)) {
     lhs = shallow(dat, lhsnames); rhs = shallow(dat, rhsnames); val = shallow(dat, valnames)
-     # handle drop=TRUE/FALSE - Update: Logic moved to R, AND faster than previous version. Take that... old me :-).
+    # handle drop=TRUE/FALSE - Update: Logic moved to R, AND faster than previous version. Take that... old me :-).
     if (all(drop)) {
-      map = setDT(lapply(list(lhsnames, rhsnames), function(cols) frankv(dat, cols=cols, ties.method="dense", na.last=FALSE)))
+      map = setDT(lapply(list(lhsnames, rhsnames), function(cols) frankv(dat, cols=cols, ties.method="dense", na.last=FALSE))) # #2202 fix
       maporder = lapply(map, order_)
       mapunique = lapply(seq_along(map), function(i) .Call(CsubsetVector, map[[i]], maporder[[i]]))
       lhs = .Call(CsubsetDT, lhs, maporder[[1L]], seq_along(lhs))
