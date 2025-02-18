@@ -561,7 +561,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
          (TYPEOF(values)!=VECSXP && i>0) // assigning the same values to a second column. Have to ensure a copy #2540
          ) {
         if (verbose) {
-          Rprintf(_("RHS for item %d has been duplicated because MAYBE_REFERENCED==%d MAYBE_SHARED==%d, but then is being plonked. length(values)==%d; length(cols)==%d)\n"),
+          Rprintf(_("RHS for item %d has been duplicated because MAYBE_REFERENCED==%d MAYBE_SHARED==%d, but then is being plonked. length(values)==%d; length(cols)==%d\n"),
                   i+1, MAYBE_REFERENCED(thisvalue), MAYBE_SHARED(thisvalue), length(values), length(cols));
         }
         thisvalue = copyAsPlain(thisvalue);   // PROTECT not needed as assigned as element to protected list below.
@@ -587,7 +587,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       targetcol = VECTOR_ELT(dt,coln);
     }
     const char *ret = memrecycle(targetcol, rows, 0, targetlen, thisvalue, 0, -1, coln+1, CHAR(STRING_ELT(names, coln)));
-    if (ret) warning("%s", ret);
+    if (ret) warning("%s", ret); // # notranslate
   }
 
   *_Last_updated = numToDo;  // the updates have taken place with no error, so update .Last.updated now
@@ -1207,7 +1207,7 @@ void writeNA(SEXP v, const int from, const int n, const bool listNA)
     memset(RAW(v)+from, 0, n*sizeof(Rbyte));
     break;
   case LGLSXP: {
-    int *vd = (int *)LOGICAL(v);
+    int *vd = LOGICAL(v);
     for (int i=from; i<=to; ++i) vd[i] = NA_LOGICAL;
   } break;
   case INTSXP: {
@@ -1276,7 +1276,7 @@ static R_len_t *savedtl=NULL, nalloc=0, nsaved=0;
 
 void savetl_init(void) {
   if (nsaved || nalloc || saveds || savedtl) {
-    internal_error(__func__, _("savetl_init checks failed (%d %d %p %p)"), nsaved, nalloc, (void *)saveds, (void *)savedtl); // # nocov
+    internal_error(__func__, "savetl_init checks failed (%d %d %p %p)", nsaved, nalloc, (void *)saveds, (void *)savedtl); // # nocov
   }
   nsaved = 0;
   nalloc = 100;

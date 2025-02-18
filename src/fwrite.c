@@ -871,7 +871,7 @@ void fwriteMain(fwriteMainArgs args)
     }
     if (f == -1) {
       *ch = '\0';
-      DTPRINT("%s", buff);
+      DTPRINT("%s", buff); // # notranslate
     } else {
       int ret0=0, ret1=0, ret2=0;
 #ifndef NOZLIB
@@ -906,8 +906,8 @@ void fwriteMain(fwriteMainArgs args)
 #ifndef NOZLIB
         free(zbuffPool);
 #endif
-        if (ret0 == -1) STOP(_("Can't write gzip header error: %d"), ret0);
-        else if (ret1) STOP(_("Compress gzip error: %d"), ret1);
+        if (ret0 == -1) STOP(_("Failed to write gzip header. Write returned %d"), ret0);
+        else if (ret1) STOP(_("Failed to compress gzip. compressbuff() returned %d"), ret1);
         else STOP(_("%s: '%s'"), strerror(errwrite), args.filename);
         // # nocov end
       }
@@ -1025,7 +1025,7 @@ void fwriteMain(fwriteMainArgs args)
       int ret = 0;
       if (f == -1) {
         *ch='\0';  // standard C string end marker so DTPRINT knows where to stop
-        DTPRINT("%s", myBuff);
+        DTPRINT("%s", myBuff); // # notranslate
       } else
 #ifndef NOZLIB
         if (args.is_gzip) {
@@ -1060,7 +1060,7 @@ void fwriteMain(fwriteMainArgs args)
         int ETA = (int)((args.nrow - end) * (now-startTime) /end);
         if (hasPrinted || ETA >= 2) {
           // # nocov start
-          if (verbose && !hasPrinted) DTPRINT("\n");
+          if (verbose && !hasPrinted) DTPRINT("\n"); // # notranslate
           DTPRINT(Pl_(nth,
                   "\rWritten %.1f%% of %"PRId64" rows in %d secs using %d thread. maxBuffUsed=%d%%. ETA %d secs.      ",
                   "\rWritten %.1f%% of %"PRId64" rows in %d secs using %d threads. maxBuffUsed=%d%%. ETA %d secs.      "),
@@ -1101,10 +1101,10 @@ void fwriteMain(fwriteMainArgs args)
   if (hasPrinted) {
     // # nocov start
     if (!failed) { // clear the progress meter
-      DTPRINT("\r                                                                       "
+      DTPRINT("\r                                                                       " // # notranslate
               "                                                              \r\n");
     } else {       // don't clear any potentially helpful output before error
-      DTPRINT("\n");
+      DTPRINT("\n"); // # notranslate
     }
     // # nocov end
   }
@@ -1116,12 +1116,15 @@ void fwriteMain(fwriteMainArgs args)
               len, len / MEGA, compress_len, compress_len / MEGA, len != 0 ? (100.0 * compress_len) / len : 0, crc);
     }
 #endif
-    DTPRINT(_("Written %"PRId64" rows in %.3f secs using %d thread%s. MaxBuffUsed=%d%%\n"),
-            args.nrow, 1.0*(wallclock()-t0), nth, nth ==1 ? "" : "s", maxBuffUsedPC);
+    DTPRINT(Pl_(nth, Pl_(args.nrow, "Wrote %"PRId64" row in %.3f secs using %d thread. MaxBuffUsed=%d%%\n",
+                                    "Wrote %"PRId64" rows in %.3f secs using %d thread. MaxBuffUsed=%d%%\n"),
+                     Pl_(args.nrow, "Wrote %"PRId64" row in %.3f secs using %d threads. MaxBuffUsed=%d%%\n",
+                                    "Wrote %"PRId64" rows in %.3f secs using %d threads. MaxBuffUsed=%d%%\n")),
+            args.nrow, 1.0*(wallclock()-t0), nth, maxBuffUsedPC);
   }
 
   if (f != -1 && CLOSE(f) && !failed)
-    STOP("%s: '%s'", strerror(errno), args.filename);  // # nocov
+    STOP("%s: '%s'", strerror(errno), args.filename);  // # nocov, # notranslate
   // quoted '%s' in case of trailing spaces in the filename
   // If a write failed, the line above tries close() to clean up, but that might fail as well. So the
   // '&& !failed' is to not report the error as just 'closing file' but the next line for more detail
@@ -1136,7 +1139,7 @@ void fwriteMain(fwriteMainArgs args)
                    : _("Please retry fwrite() with verbose=TRUE and include the full output with your data.table bug report."));
 #endif
     if (failed_write)
-      STOP("%s: '%s'", strerror(failed_write), args.filename);
+      STOP("%s: '%s'", strerror(failed_write), args.filename); // # notranslate
     // # nocov end
   }
 }

@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: data.table 1.16.99\n"
-"POT-Creation-Date: 2025-01-29 23:31-0800\n"
+"POT-Creation-Date: 2025-02-02 23:58-0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -330,7 +330,7 @@ msgstr ""
 msgid ""
 "RHS for item %d has been duplicated because MAYBE_REFERENCED==%d "
 "MAYBE_SHARED==%d, but then is being plonked. length(values)==%d; "
-"length(cols)==%d)\n"
+"length(cols)==%d\n"
 msgstr ""
 
 #: assign.c:569
@@ -536,11 +536,6 @@ msgstr ""
 msgid "Unsupported column type in assign.c:memrecycle '%s'"
 msgstr ""
 
-#: assign.c:1279
-#, c-format
-msgid "savetl_init checks failed (%d %d %p %p)"
-msgstr ""
-
 #: assign.c:1288
 #, c-format
 msgid "Failed to allocate initial %d items in savetl_init"
@@ -675,6 +670,16 @@ msgstr ""
 
 #: bmerge.c:116
 msgid "Only '==' operator is supported for columns of type character."
+msgstr ""
+
+#: bmerge.c:190
+#, c-format
+msgid "bmerge: looping bmerge_r took %.3fs\n"
+msgstr ""
+
+#: bmerge.c:222
+#, c-format
+msgid "bmerge: took %.3fs\n"
 msgstr ""
 
 #: chmatch.c:5
@@ -893,37 +898,37 @@ msgstr ""
 msgid "\n"
 msgstr ""
 
-#: dogroups.c:454 dogroups.c:468
+#: dogroups.c:455 dogroups.c:470
 #, c-format
 msgid ""
 "Processed %d groups out of %d. %.0f%% done. Time elapsed: %ds. ETA: %ds."
 msgstr ""
 
-#: dogroups.c:473
+#: dogroups.c:475
 #, c-format
 msgid "Wrote less rows (%d) than allocated (%d).\n"
 msgstr ""
 
-#: dogroups.c:497
+#: dogroups.c:499
 #, c-format
 msgid ""
 "\n"
 "  collecting discontiguous groups took %.3fs for %d groups\n"
 msgstr ""
 
-#: dogroups.c:498
+#: dogroups.c:500
 #, c-format
 msgid ""
 "\n"
 "  memcpy contiguous groups took %.3fs for %d groups\n"
 msgstr ""
 
-#: dogroups.c:500
+#: dogroups.c:502
 #, c-format
 msgid "  eval(j) took %.3fs for %d calls\n"
 msgstr ""
 
-#: dogroups.c:529
+#: dogroups.c:531
 msgid "growVector passed NULL"
 msgstr ""
 
@@ -1218,6 +1223,17 @@ msgstr ""
 msgid "Unknown column type '%s' for column '%s'."
 msgstr ""
 
+#: fmelt.c:600
+msgid ""
+"measure.vars is a list with length=1, which as long documented should return "
+"integer indices in the 'variable' column, but currently returns character "
+"column names. To increase consistency in the next release, we plan to change "
+"'variable' to integer, so users who were relying on this behavior should "
+"change measure.vars=list('col_name') (output variable is column name now, "
+"but will become column index/integer) to measure.vars='col_name' (variable "
+"is column name before and after the planned change)."
+msgstr ""
+
 #: fmelt.c:686
 #, c-format
 msgid "variable_table does not support column type '%s' for column '%s'."
@@ -1342,15 +1358,19 @@ msgid ""
 "attempting to order by a list column?\n"
 msgstr ""
 
-#: forder.c:508
+#: forder.c:508 forder.c:1654
 msgid "retGrp must be TRUE or FALSE"
 msgstr ""
 
-#: forder.c:511
+#: forder.c:511 forder.c:1657
 msgid "retStats must be TRUE or FALSE"
 msgstr ""
 
-#: forder.c:516
+#: forder.c:514 forder.c:1660
+msgid "retStats must be TRUE whenever retGrp is TRUE"
+msgstr ""
+
+#: forder.c:516 forder.c:1662
 msgid "sort must be TRUE or FALSE"
 msgstr ""
 
@@ -1358,7 +1378,7 @@ msgstr ""
 msgid "At least one of retGrp= or sort= must be TRUE"
 msgstr ""
 
-#: forder.c:521
+#: forder.c:521 forder.c:1665
 msgid "na.last must be logical TRUE, FALSE or NA of length 1"
 msgstr ""
 
@@ -1450,6 +1470,79 @@ msgstr ""
 
 #: forder.c:1512
 msgid "x must be type 'double'"
+msgstr ""
+
+#: forder.c:1622
+msgid "'datatable.use.index' option must be TRUE or FALSE"
+msgstr ""
+
+#: forder.c:1635
+msgid "'datatable.forder.auto.index' option must be TRUE or FALSE"
+msgstr ""
+
+#: forder.c:1652
+msgid "DT is NULL"
+msgstr ""
+
+#: forder.c:1668
+msgid "order must be integer"
+msgstr ""
+
+#: forder.c:1670
+msgid "reuseSorting must be logical TRUE, FALSE or NA of length 1"
+msgstr ""
+
+#: forder.c:1682
+#, c-format
+msgid ""
+"forderReuseSorting: opt not possible: is.data.table(DT)=%d, sortGroups=%d, "
+"all1(ascArg)=%d\n"
+msgstr ""
+
+#: forder.c:1701
+#, c-format
+msgid "forderReuseSorting: using key: %s\n"
+msgstr ""
+
+#: forder.c:1736
+#, c-format
+msgid "forderReuseSorting: index found but not for retGrp and retStats: %s\n"
+msgstr ""
+
+#: forder.c:1739
+#, c-format
+msgid "forderReuseSorting: index found but not for retGrp: %s\n"
+msgstr ""
+
+#: forder.c:1742
+#, c-format
+msgid "forderReuseSorting: index found but not for retStats: %s\n"
+msgstr ""
+
+#: forder.c:1749
+#, c-format
+msgid ""
+"forderReuseSorting: index found but na.last=TRUE and no stats available: %s\n"
+msgstr ""
+
+#: forder.c:1752
+#, c-format
+msgid "forderReuseSorting: index found but na.last=TRUE and NAs present: %s\n"
+msgstr ""
+
+#: forder.c:1760
+#, c-format
+msgid "forderReuseSorting: using existing index: %s\n"
+msgstr ""
+
+#: forder.c:1772
+#, c-format
+msgid "forderReuseSorting: setting index (retGrp=%d, retStats=%d) on DT: %s\n"
+msgstr ""
+
+#: forder.c:1776
+#, c-format
+msgid "forderReuseSorting: opt=%d, took %.3fs\n"
 msgstr ""
 
 #: frank.c:14 frank.c:192
@@ -1699,6 +1792,11 @@ msgstr ""
 msgid ""
 "  File ends abruptly with '%c'. Final end-of-line is missing. Copying file "
 "in RAM. %s.\n"
+msgstr ""
+
+#: fread.c:1566 fread.c:1850
+#, c-format
+msgid "%s. Attempt to copy file in RAM failed."
 msgstr ""
 
 #: fread.c:1567 fread.c:1851
@@ -2166,11 +2264,6 @@ msgstr ""
 msgid "%8.3fs (%3.0f%%) Memory map %.3fGB file\n"
 msgstr ""
 
-#: fread.c:2775
-#, c-format
-msgid "%8.3fs (%3.0f%%) sep="
-msgstr ""
-
 #: fread.c:2777
 #, c-format
 msgid " ncol=%d and header detection\n"
@@ -2437,7 +2530,7 @@ msgstr ""
 msgid "%s: results from provided FUN are not of type double"
 msgstr ""
 
-#: froll.c:472 nafill.c:87
+#: froll.c:472 nafill.c:43 nafill.c:65 nafill.c:87
 #, c-format
 msgid "%s: took %.3fs\n"
 msgstr ""
@@ -2484,7 +2577,7 @@ msgid ""
 "implemented"
 msgstr ""
 
-#: frollR.c:117 frollR.c:267 types.c:71
+#: frollR.c:117 frollR.c:267
 #, c-format
 msgid "%s: allocating memory for results %dx%d\n"
 msgstr ""
@@ -2692,12 +2785,12 @@ msgstr ""
 
 #: fwrite.c:909
 #, c-format
-msgid "Can't write gzip header error: %d"
+msgid "Failed to write gzip header. Write returned %d"
 msgstr ""
 
 #: fwrite.c:910
 #, c-format
-msgid "Compress gzip error: %d"
+msgid "Failed to compress gzip. compressbuff() returned %d"
 msgstr ""
 
 #: fwrite.c:911 fwrite.c:928
@@ -3124,6 +3217,10 @@ msgstr ""
 
 #: nafill.c:184
 msgid "fill must be a vector of length 1 or a list of length of x"
+msgstr ""
+
+#: negate.c:5
+msgid "not logical or integer vector"
 msgstr ""
 
 #: openmp-utils.c:23
