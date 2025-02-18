@@ -597,7 +597,7 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
     internal_error(__func__, "getvarcols %d %d", length(VECTOR_ELT(data->valuecols, 0)), data->lmax);  // # nocov
   if (isNull(data->variable_table)) {
     if ((data->lvalues == 1) & data->measure_is_list) {
-      warning("measure.vars is a list with length=1, which as long documented should return integer indices in the 'variable' column, but currently returns character column names. To increase consistency in the next release, we plan to change 'variable' to integer, so users who were relying on this behavior should change measure.vars=list('col_name') (output variable is column name now, but will become column index/integer) to measure.vars='col_name' (variable is column name before and after the planned change).");
+      warning(_("measure.vars is a list with length=1, which as long documented should return integer indices in the 'variable' column, but currently returns character column names. To increase consistency in the next release, we plan to change 'variable' to integer, so users who were relying on this behavior should change measure.vars=list('col_name') (output variable is column name now, but will become column index/integer) to measure.vars='col_name' (variable is column name before and after the planned change)."));
     }
     if (!varfactor) {
       SET_VECTOR_ELT(ansvars, 0, target=allocVector(STRSXP, data->totlen));
@@ -612,7 +612,7 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
         for (int j=0, ansloc=0, level=1; j<data->lmax; ++j) {
           const int thislen = data->narm ? length(VECTOR_ELT(data->not_NA_indices, j)) : data->nrow;
           char buff[20];
-          snprintf(buff, 20, "%d", level++);
+          snprintf(buff, 20, "%d", level++); // # notranslate
           for (int k=0; k<thislen; ++k) SET_STRING_ELT(target, ansloc++, mkChar(buff));
         }
       }
@@ -649,7 +649,7 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
         for (int j=0, ansloc=0; j<data->lmax; ++j) {
           const int thislen = data->narm ? length(VECTOR_ELT(data->not_NA_indices, j)) : data->nrow;
           char buff[20];
-          snprintf(buff, 20, "%d", nlevel+1);
+          snprintf(buff, 20, "%d", nlevel+1); // # notranslate
           SET_STRING_ELT(levels, nlevel++, mkChar(buff));  // generate levels = 1:nlevels
           for (int k=0; k<thislen; ++k) td[ansloc++] = nlevel;
         }

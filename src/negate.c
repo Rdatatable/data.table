@@ -2,7 +2,7 @@
 
 void negateByRef(SEXP x) {
   if(TYPEOF(x) != LGLSXP) {
-    error("not logical or integer vector");  // # nocov
+    error(_("not logical or integer vector"));  // # nocov
   }
   const int n = length(x);
   int *ansd = LOGICAL(x);

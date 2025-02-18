@@ -1361,43 +1361,20 @@ if (test_bit64) {
   test(431.5, DT[5,1:=as.integer64(NA)], data.table(a=factor(c(NA,NA,NA,NA,NA), levels=LETTERS[1:3]), b=1:5))
 }
 
-old = getOption("datatable.alloccol")  # Test that unsetting datatable.alloccol is caught, #2014
-options(datatable.alloccol=NULL) # In this =NULL case, options() in R 3.0.0 returned TRUE rather than the old value. This R bug was fixed in R 3.1.1.
-                                 # This is why getOption is called first rather than just using the result of option() like elsewhere in this test file.
-                                 # TODO: simplify this test if/when R dependency >= 3.1.1
-err1 = try(data.table(a=1:3), silent=TRUE)
-options(datatable.alloccol="1024")
-err2 = try(data.table(a=1:3), silent=TRUE)
-options(datatable.alloccol=c(10L,20L))
-err3 = try(data.table(a=1:3), silent=TRUE)
-options(datatable.alloccol=NA_integer_)
-err4 = try(data.table(a=1:3), silent=TRUE)
-options(datatable.alloccol=-1)
-err5 = try(data.table(a=1:3), silent=TRUE)
-options(datatable.alloccol=1024L)   # otherwise test() itself fails in its internals with the alloc.col error
-test(432.1, inherits(err1,"try-error") && grep("Has getOption[(]'datatable.alloccol'[)] somehow become unset?", err1))
-test(432.2, inherits(err2,"try-error") && grep("getOption[(]'datatable.alloccol'[)] should be a number, by default 1024. But its type is 'character'.", err2))
-test(432.3, inherits(err3,"try-error") && grep("is a numeric vector ok but its length is 2. Its length should be 1.", err3))
-test(432.4, inherits(err4,"try-error") && grep("It must be >=0 and not NA.", err4))
-test(432.5, inherits(err5,"try-error") && grep("It must be >=0 and not NA.", err5))
+# Test that unsetting datatable.alloccol is caught, #2014
+test(432.1, data.table(a=1:3), options=list(datatable.alloccol=NULL), error="Has getOption('datatable.alloccol') somehow become unset?")
+test(432.2, data.table(a=1:3), options=c(datatable.alloccol="1024"), error="getOption('datatable.alloccol') should be a number, by default 1024. But its type is 'character'.")
+test(432.3, data.table(a=1:3), options=list(datatable.alloccol=c(10L,20L)), error="is a numeric vector ok but its length is 2. Its length should be 1.")
+test(432.4, data.table(a=1:3), options=c(datatable.alloccol=NA_integer_), error="It must be >=0 and not NA.")
+test(432.5, data.table(a=1:3), options=c(datatable.alloccol=-1), error="It must be >=0 and not NA.")
+
 # Repeat the tests but this time with subsetting, to ensure the validity check on option happens for those too
 DT = data.table(a=1:3, b=4:6)
-options(datatable.alloccol=NULL)
-err1 = try(DT[2,], silent=TRUE)
-options(datatable.alloccol="1024")
-err2 = try(DT[,2], silent=TRUE)
-options(datatable.alloccol=c(10L,20L))
-err3 = try(DT[a>1], silent=TRUE)
-options(datatable.alloccol=NA_integer_)
-err4 = try(DT[,"b"], silent=TRUE)
-options(datatable.alloccol=-1)
-err5 = try(DT[2,"b"], silent=TRUE)
-options(datatable.alloccol=1024L)   # otherwise test() itself fails in its internals with the alloc.col error
-test(433.1, inherits(err1,"try-error") && grep("Has getOption[(]'datatable.alloccol'[)] somehow become unset?", err1))
-test(433.2, inherits(err2,"try-error") && grep("getOption[(]'datatable.alloccol'[)] should be a number, by default 1024. But its type is 'character'.", err2))
-test(433.3, inherits(err3,"try-error") && grep("is a numeric vector ok but its length is 2. Its length should be 1.", err3))
-test(433.4, inherits(err4,"try-error") && grep("It must be >=0 and not NA.", err4))
-test(433.5, inherits(err5,"try-error") && grep("It must be >=0 and not NA.", err5))
+test(433.1, DT[2,], options=list(datatable.alloccol=NULL), error="Has getOption('datatable.alloccol') somehow become unset?")
+test(433.2, DT[,2], options=c(datatable.alloccol="1024"), error="getOption('datatable.alloccol') should be a number, by default 1024. But its type is 'character'.")
+test(433.3, DT[a>1], options=list(datatable.alloccol=c(10L,20L)), error="is a numeric vector ok but its length is 2. Its length should be 1.")
+test(433.4, DT[,"b"], options=c(datatable.alloccol=NA_integer_), error="It must be >=0 and not NA.")
+test(433.5, DT[2,"b"], options=c(datatable.alloccol=-1), error="It must be >=0 and not NA.")
 
 # simple realloc test
 DT = data.table(a=1:3,b=4:6)
@@ -7888,7 +7865,7 @@ test(1551.5, fread(str),
 rhs = setDT(read.table(testDir("issue_1095_fread.txt.bz2"), sep=",", comment.char="", stringsAsFactors=FALSE, quote="", strip.white=TRUE))
 if (test_R.utils) {
   test(1551.61, fread(testDir("issue_1095_fread.txt.bz2"), logical01=FALSE), rhs, warning=w)
-  rhs[, names(.SD) := lapply(.SD, \(x) x == "Y"), .SDcols = c("V16", "V17", "V45")]
+  rhs[, names(.SD) := lapply(.SD, function(x) x == "Y"), .SDcols = c("V16", "V17", "V45")]
   test(1551.62, fread(testDir("issue_1095_fread.txt.bz2"), logical01=FALSE, logicalYN=TRUE), rhs, warning=w)
 }
 
@@ -8712,17 +8689,17 @@ test(1613.21, all.equal(DT2, DT1, ignore.row.order = TRUE), "Dataset 'current' h
 # test attributes: key
 DT1 <- data.table(a = 1:4, b = letters[1:4], key = "a")
 DT2 <- data.table(a = 1:4, b = letters[1:4])
-test(1613.22, all.equal(DT1, DT2), "Datasets have different keys. 'target': [a]. 'current': has no key.")
+test(1613.22, all.equal(DT1, DT2), output="Datasets have different keys. 'target': [a]. 'current': has no key.")
 test(1613.23, all.equal(DT1, DT2, check.attributes = FALSE), TRUE)
 test(1613.24, all.equal(DT1, setkeyv(DT2, "a"), check.attributes = TRUE), TRUE)
 # test attributes: index
 DT1 <- data.table(a = 1:4, b = letters[1:4])
 DT2 <- data.table(a = 1:4, b = letters[1:4])
 setindexv(DT1, "b")
-test(1613.25, all.equal(DT1, DT2), "Datasets have different indices. 'target': [b]. 'current': has no index.")
+test(1613.25, all.equal(DT1, DT2), output="Datasets have different indices. 'target': [b]. 'current': has no index.")
 test(1613.26, all.equal(DT1, DT2, check.attributes = FALSE), TRUE)
-test(1613.27, all.equal(DT1, setindexv(DT2, "a")), "Datasets have different indices. 'target': [b]. 'current': [a].")
-test(1613.28, all.equal(DT1, setindexv(DT2, "b")), "Datasets have different indices. 'target': [b]. 'current': [a, b].")
+test(1613.27, all.equal(DT1, setindexv(DT2, "a")), output="Datasets have different indices. 'target': [b]. 'current': [a].")
+test(1613.28, all.equal(DT1, setindexv(DT2, "b")), output="Datasets have different indices. 'target': [b]. 'current': [a, b].")
 test(1613.29, all.equal(DT1, setindexv(setindexv(DT2, NULL), "b")), TRUE)
 # test custom attribute
 DT1 <- data.table(a = 1:4, b = letters[1:4])
@@ -11810,15 +11787,15 @@ test(1775.1, capture.output(print(DT1, print.keys = TRUE)),
      c("Key: <a>", "   a", "1: 1", "2: 2", "3: 3"))
 DT2 <- data.table(a = 1:3, b = 4:6)
 setindexv(DT2, c("b","a"))
-test(1775.2, capture.output(print(DT2, print.keys = TRUE)),
-     c("Index: <b__a>", "   a b", "1: 1 4", "2: 2 5", "3: 3 6"))
+test(1775.2, print(DT2, print.keys = TRUE),
+     output=c("Index: <b__a>", "   a b", "1: 1 4", "2: 2 5", "3: 3 6"))
 setindexv(DT2, "b")
-test(1775.3, capture.output(print(DT2, print.keys = TRUE)),
-     c("Indices: <b__a>, <b>", "   a b", "1: 1 4", "2: 2 5", "3: 3 6"))
+test(1775.3, print(DT2, print.keys = TRUE),
+     output=c("Indices: <b__a>, <b>", "   a b", "1: 1 4", "2: 2 5", "3: 3 6"))
 setkey(DT2, a)
 setindexv(DT2, c("b","a"))
-test(1775.4, capture.output(print(DT2, print.keys = TRUE)),
-     c("Key: <a>", "Indices: <b__a>, <b>", "   a b", "1: 1 4", "2: 2 5", "3: 3 6")) ## index 'b' is still good, so we keep it
+test(1775.4, print(DT2, print.keys = TRUE),
+     output=c("Key: <a>", "Indices: <b__a>, <b>", "   a b", "1: 1 4", "2: 2 5", "3: 3 6")) ## index 'b' is still good, so we keep it
 
 # dev regression #2285
 cat("A  B  C\n1  2  3\n4  5  6", file=f<-tempfile())
@@ -12142,8 +12119,7 @@ test(1831.4, fread(paste0("A\n", "1.", src2)), data.table(A=1.1234567890098766))
 DT = as.data.table(matrix(5L, nrow=10, ncol=10))
 test(1832.1, fwrite(DT, f<-tempfile(), verbose=TRUE), output="Column writers")
 DT = as.data.table(matrix(5L, nrow=10, ncol=60))
-# Using capture.output directly to look for the "..." because test(,output=) intercepts [] for convenience elsewhere
-test(1832.2, any(grepl("^Column writers.* [.][.][.] ", capture.output(fwrite(DT, f, verbose=TRUE)))))
+test(1832.2, fwrite(DT, f, verbose=TRUE), output = "\nColumn writers.* [.][.][.] ")
 unlink(f)
 
 # ensure explicitly setting select to default value doesn't error, #2007
@@ -16568,69 +16544,69 @@ DT = data.table(a = vector("integer", 102L),
                 b = "bbbbbbbbbbbbb",
                 c = "ccccccccccccc",
                 d = c("ddddddddddddd", "d"))
-test(2125.02, capture.output(print(DT, trunc.cols=TRUE)),
-     c("     a             b             c",
-       "  1: 0 bbbbbbbbbbbbb ccccccccccccc",
-       "  2: 0 bbbbbbbbbbbbb ccccccccccccc",
-       "  3: 0 bbbbbbbbbbbbb ccccccccccccc",
-       "  4: 0 bbbbbbbbbbbbb ccccccccccccc",
-       "  5: 0 bbbbbbbbbbbbb ccccccccccccc",
-       " ---                              ",
-       " 98: 0 bbbbbbbbbbbbb ccccccccccccc",
-       " 99: 0 bbbbbbbbbbbbb ccccccccccccc",
-       "100: 0 bbbbbbbbbbbbb ccccccccccccc",
-       "101: 0 bbbbbbbbbbbbb ccccccccccccc",
-       "102: 0 bbbbbbbbbbbbb ccccccccccccc",
-       "1 variable not shown: [d]"))
-test(2125.03, capture.output(print(DT, trunc.cols=TRUE, row.names=FALSE)),
-     c("   a             b             c",
-       "   0 bbbbbbbbbbbbb ccccccccccccc",
-       "   0 bbbbbbbbbbbbb ccccccccccccc",
-       "   0 bbbbbbbbbbbbb ccccccccccccc",
-       "   0 bbbbbbbbbbbbb ccccccccccccc",
-       "   0 bbbbbbbbbbbbb ccccccccccccc",
-       " ---           ---           ---",
-       "   0 bbbbbbbbbbbbb ccccccccccccc",
-       "   0 bbbbbbbbbbbbb ccccccccccccc",
-       "   0 bbbbbbbbbbbbb ccccccccccccc",
-       "   0 bbbbbbbbbbbbb ccccccccccccc",
-       "   0 bbbbbbbbbbbbb ccccccccccccc",
-       "1 variable not shown: [d]" ))
+test(2125.02, print(DT, trunc.cols=TRUE),
+     output=c("     a             b             c",
+              "  1: 0 bbbbbbbbbbbbb ccccccccccccc",
+              "  2: 0 bbbbbbbbbbbbb ccccccccccccc",
+              "  3: 0 bbbbbbbbbbbbb ccccccccccccc",
+              "  4: 0 bbbbbbbbbbbbb ccccccccccccc",
+              "  5: 0 bbbbbbbbbbbbb ccccccccccccc",
+              " ---                              ",
+              " 98: 0 bbbbbbbbbbbbb ccccccccccccc",
+              " 99: 0 bbbbbbbbbbbbb ccccccccccccc",
+              "100: 0 bbbbbbbbbbbbb ccccccccccccc",
+              "101: 0 bbbbbbbbbbbbb ccccccccccccc",
+              "102: 0 bbbbbbbbbbbbb ccccccccccccc",
+              "1 variable not shown: [d]"))
+test(2125.03, print(DT, trunc.cols=TRUE, row.names=FALSE),
+     output=c("   a             b             c",
+              "   0 bbbbbbbbbbbbb ccccccccccccc",
+              "   0 bbbbbbbbbbbbb ccccccccccccc",
+              "   0 bbbbbbbbbbbbb ccccccccccccc",
+              "   0 bbbbbbbbbbbbb ccccccccccccc",
+              "   0 bbbbbbbbbbbbb ccccccccccccc",
+              " ---           ---           ---",
+              "   0 bbbbbbbbbbbbb ccccccccccccc",
+              "   0 bbbbbbbbbbbbb ccccccccccccc",
+              "   0 bbbbbbbbbbbbb ccccccccccccc",
+              "   0 bbbbbbbbbbbbb ccccccccccccc",
+              "   0 bbbbbbbbbbbbb ccccccccccccc",
+              "1 variable not shown: [d]" ))
 # also testing #4266 -- getting width of row #s register right
 #   TODO: understand why 2 variables truncated here. a,b,c combined have width
 #     _exactly_ 40, but still wraps. If we set options(width=41) it won't truncate.
 #     seems to be an issue with print.default.
-test(2125.04, capture.output(print(DT, trunc.cols=TRUE, class=TRUE))[14L],
-     "2 variables not shown: [c <char>, d <char>]")
-test(2125.05, capture.output(print(DT, trunc.cols=TRUE, class=TRUE, row.names=FALSE))[c(1,14)],
-     c("     a             b             c",
-       "1 variable not shown: [d <char>]" ))
-test(2125.06, capture.output(print(DT, trunc.cols=TRUE, col.names="none"))[c(1,12)],
-     c("  1: 0 bbbbbbbbbbbbb ccccccccccccc",
-       "1 variable not shown: [d]" ))
-test(2125.07, capture.output(print(DT, trunc.cols=TRUE, class=TRUE, col.names="none"))[c(1,13)],
-     c("  1: 0 bbbbbbbbbbbbb",
-       "2 variables not shown: [c, d]" ),
+test(2125.04, print(DT, trunc.cols=TRUE, class=TRUE),
+     output="2 variables not shown: [c <char>, d <char>]")
+test(2125.05, print(DT, trunc.cols=TRUE, class=TRUE, row.names=FALSE),
+     output=c("^     a             b             c", ".*",
+              "1 variable not shown: \\[d <char>\\]"))
+test(2125.06, print(DT, trunc.cols=TRUE, col.names="none"),
+     output=c("^  1: 0 bbbbbbbbbbbbb ccccccccccccc", ".*",
+              "1 variable not shown: \\[d\\]", ""))
+test(2125.07, print(DT, trunc.cols=TRUE, class=TRUE, col.names="none"),
+     output=c("^  1: 0 bbbbbbbbbbbbb", ".*",
+              "2 variables not shown: \\[c, d\\]", ""),
      warning = "Column classes will be suppressed when col.names is 'none'")
 options("width" = 20)
 DT = data.table(a = vector("integer", 2),
                 b = "bbbbbbbbbbbbb",
                 c = "ccccccccccccc",
                 d = "ddddddddddddd")
-test(2125.08, capture.output(print(DT, trunc.cols=TRUE)),
-     c("   a             b",
-       "1: 0 bbbbbbbbbbbbb",
-       "2: 0 bbbbbbbbbbbbb",
-       "2 variables not shown: [c, d]"))
+test(2125.08, print(DT, trunc.cols=TRUE),
+     output=c("   a             b",
+              "1: 0 bbbbbbbbbbbbb",
+              "2: 0 bbbbbbbbbbbbb",
+              "2 variables not shown: [c, d]"))
 options("width" = 10)
 DT = data.table(a = "aaaaaaaaaaaaa",
                 b = "bbbbbbbbbbbbb",
                 c = "ccccccccccccc",
                 d = "ddddddddddddd")
-test(2125.09, capture.output(print(DT, trunc.cols=TRUE)),
-     "4 variables not shown: [a, b, c, d]")
-test(2125.10, capture.output(print(DT, trunc.cols=TRUE, class=TRUE)),
-     "4 variables not shown: [a <char>, b <char>, c <char>, d <char>]")
+test(2125.09, print(DT, trunc.cols=TRUE),
+     output="4 variables not shown: [a, b, c, d]")
+test(2125.10, print(DT, trunc.cols=TRUE, class=TRUE),
+     output="4 variables not shown: [a <char>, b <char>, c <char>, d <char>]")
 options(old_width)
 
 # segfault when i is NULL or zero-column, #4060
@@ -18525,7 +18501,9 @@ rm(.datatable.aware)
 # tests for trunc.char handling wide characters # 5096
 local({
   lc_ctype = Sys.getlocale('LC_CTYPE')
-  Sys.setlocale('LC_CTYPE', "en_US.UTF-8") # Japanese multibyte characters require utf8
+  # Japanese multibyte characters require utf8. As of 2025, we're likely to be already running in a UTF-8 locale, but if not, try this setlocale() call as a last chance.
+  # Unfortunately, there is no guaranteed, portable way of switching to UTF-8 US English.
+  if (!l10n_info()$`UTF-8`) Sys.setlocale('LC_CTYPE', "en_US.UTF-8")
   on.exit(Sys.setlocale('LC_CTYPE', lc_ctype))
   accented_a = "\u0061\u0301"
   ja_ichi = "\u4E00"
