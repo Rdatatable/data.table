@@ -8,10 +8,9 @@ fdroplevels = function(x, exclude = if (anyNA(levels(x))) NULL else NA, ...) {
   return(ans)
 }
 
-droplevels.data.table = function(x, except=NULL, exclude, in.place=FALSE, ...){
-  stopifnot(is.logical(in.place))
-  if (isTRUE(in.place)) warningf("droplevels() with in.place=TRUE is deprecated. Use setdroplevels() instead.")
-  if (!in.place) x = copy(x)
+droplevels.data.table = function(x, except=NULL, exclude, in.place=NULL, ...){
+  if (!is.null(in.place)) stopf("droplevels() with in.place=TRUE is deprecated. Use setdroplevels() instead.")
+  x = copy(x)
   if (missing(exclude)) exclude = NULL
   setdroplevels(x, except, exclude)[]
 }
@@ -20,7 +19,7 @@ setdroplevels = function(x, except=NULL, exclude=NULL) {
   if (!nrow(x)) return(invisible(x))
   ix = vapply_1b(x, is.factor)
   if (!is.null(except)) {
-    stopifnot(is.numeric(except), except >= 1, except <= length(x))
+    stopifnot(is.numeric(except), except >= 1L, except <= length(x))
     ix[except] = FALSE
   }
   if (!any(ix)) return(invisible(x))

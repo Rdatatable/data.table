@@ -30,7 +30,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     # Other options investigated (could revisit): Cstack_info(), .Last.value gets set first before autoprint, history(), sys.status(),
     #   topenv(), inspecting next statement in caller, using clock() at C level to timeout suppression after some number of cycles
     SYS = sys.calls()
-    if (length(SYS) <= 2L ||  # "> DT" auto-print or "> print(DT)" explicit print (cannot distinguish from R 3.2.0 but that's ok)
+    if (identical(SYS[[1L]][[1L]], print) || # this is what auto-print looks like, i.e. '> DT' and '> DT[, a:=b]' in the terminal; see #3029.
         ( length(SYS) >= 3L && is.symbol(thisSYS <- SYS[[length(SYS)-2L]][[1L]]) &&
           as.character(thisSYS) == 'source') ) { # suppress printing from source(echo = TRUE) calls, #2369
       return(invisible(x))
@@ -57,8 +57,8 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
       catf("Null data.%s (0 rows and 0 cols)\n", class)  # See FAQ 2.5 and NEWS item in v1.8.9
     } else {
       catf("Empty data.%s (%d rows and %d cols)", class, NROW(x), NCOL(x))
-      if (length(x)>0L) cat(": ",paste(head(names(x),6L),collapse=","),if(length(x)>6L)"...",sep="")
-      cat("\n")
+      if (length(x)>0L) cat(": ",paste(head(names(x),6L),collapse=","),if(length(x)>6L)"...",sep="") # notranslate
+      cat("\n") # notranslate
     }
     return(invisible(x))
   }
@@ -261,7 +261,7 @@ dt_width = function(x, nrow, class, row.names, col.names) {
   if (class) widths = pmax(widths, 6L)
   if (col.names != "none") names = sapply(colnames(x), nchar, type="width") else names = 0L
   dt_widths = pmax(widths, names)
-  rownum_width = if (row.names) as.integer(ceiling(log10(nrow))+2) else 0L
+  rownum_width = if (row.names) as.integer(ceiling(log10(nrow))+2.0) else 0L
   cumsum(dt_widths + 1L) + rownum_width
 }
 # keeps the dim and dimnames attributes

@@ -8,7 +8,7 @@ setcoalesce = function(...) .Call(Ccoalesce, list(...), TRUE)
 fifelse = function(test, yes, no, na=NA) .Call(CfifelseR, test, yes, no, na)
 fcase   = function(..., default=NA) {
   # TODO(R>=3.5.0): Use ...length() to avoid the need for suppressWarnings() here
-  default_condition <- suppressWarnings(rep(TRUE, length(switch(1, ...)))) # better than ..1/..elt(1): won't fail for empty fcase()
+  default_condition <- suppressWarnings(rep(TRUE, length(switch(1L, ...)))) # better than ..1/..elt(1): won't fail for empty fcase()
   arg_list <- as.list(substitute(list(..., default_condition, default)))[-1L]
   .Call(CfcaseR, parent.frame(), arg_list)
 }
@@ -17,7 +17,7 @@ colnamesInt = function(x, cols, check_dups=FALSE, skip_absent=FALSE) .Call(Ccoln
 
 testMsg = function(status=0L, nx=2L, nk=2L) .Call(CtestMsgR, as.integer(status)[1L], as.integer(nx)[1L], as.integer(nk)[1L])
 
-isRealReallyInt = function(x) .Call(CisRealReallyIntR, x)
-isReallyReal = function(x) .Call(CisReallyReal, x)
+fitsInInt32 = function(x) .Call(CfitsInInt32R, x)
+fitsInInt64 = function(x) .Call(CfitsInInt64R, x)
 
 coerceAs = function(x, as, copy=TRUE) .Call(CcoerceAs, x, as, copy)
