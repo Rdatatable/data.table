@@ -129,24 +129,20 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
     stopf("Argument 'value.var.in.dots' should be logical TRUE/FALSE")
   if (!isTRUEorFALSE(value.var.in.LHSdots) || !isTRUEorFALSE(value.var.in.RHSdots))
     stopf("Arguments 'value.var.in.LHSdots', 'value.var.in.RHSdots' should be logical TRUE/FALSE")
-  handle_empty_strings = function(names) {
-    names[names == ""] = "empty_string"
-    names
-  }
-  ensure_unique_names = function(names) {
-    if (any(duplicated(names))) {
-      names = make.unique(names, sep = "_")
-    }
-    names
-  }
+  # #2980 if explicitly providing fun.aggregate=length but not a value.var,
+  #   just use the last column (as guess(data) would do) because length will be
+  #   the same on all columns
   if (missing(value.var) && !missing(fun.aggregate) && identical(fun.aggregate, length))
     value.var = names(data)[ncol(data)]
   lvals = value_vars(value.var, names(data))
   valnames = unique(unlist(lvals))
-  valnames = handle_empty_strings(valnames)
-  valnames = ensure_unique_names(valnames)
+  valnames[valnames == ""] = "empty_string" 
+  if (any(duplicated(valnames))) {
+    valnames = make.unique(valnames, sep = "_") 
+  }
   lvars = check_formula(formula, names(data), valnames, value.var.in.LHSdots, value.var.in.RHSdots)
   lvars = lapply(lvars, function(x) if (length(x)) x else quote(`.`))
+  # tired of lapply and the way it handles environments!
   allcols = c(unlist(lvars), lapply(valnames, as.name))
   dat = vector("list", length(allcols))
   for (i in seq_along(allcols)) {
@@ -156,6 +152,7 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
       stopf("Column [%s] not found or of unknown type.", deparse(x))
   }
   setattr(lvars, 'names', c("lhs", "rhs"))
+  # Have to take care of duplicate names, and provide names for expression columns properly.
   varnames = make.unique(vapply_1c(unlist(lvars), all.vars, max.names=1L), sep=sep)
   dupidx = which(valnames %chin% varnames)
   if (length(dupidx)) {
@@ -170,6 +167,7 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
     stopf("Columns specified in formula can not be of type list")
   }
   setDT(dat)
+
   m = as.list(match.call()[-1L])
   subset = m[["subset"]][[2L]]
   if (!is.null(subset)) {
@@ -192,7 +190,7 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
     maybe_err = function(list.of.columns) {
       if (!all(lengths(list.of.columns) == 1L)) {
         msg <- gettext("Aggregating functions should take a vector as input and return a single value (length=1), but they do not, so the result is undefined. Please fix by modifying your function so that a single value is always returned.")
-        if (is.null(fill)) {
+        if (is.null(fill)) { # TODO change to always stopf #6329
           stop(msg, domain=NA, call. = FALSE)
         } else {
           warning(msg, domain=NA, call. = FALSE)
@@ -206,7 +204,7 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
     o = forderv(x, retGrp=TRUE, sort=TRUE)
     idx = attr(o, 'starts', exact=TRUE)
     if (!length(o)) o = seq_along(x)
-    o[idx]
+    o[idx] # subsetVector retains attributes, using R's subset for now
   }
   cj_uniq = function(DT) {
     do.call(CJ, lapply(DT, function(x)
@@ -217,10 +215,12 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
       } else .Call(CsubsetVector, x, order_(x))
   ))}
   valnames = setdiff(names(dat), varnames)
+  # 'dat' != 'data'? then setkey to speed things up (slightly), else ad-hoc (for now). Still very fast!
   if (!is.null(fun.call) || !is.null(subset))
     setkeyv(dat, varnames)
   if (length(rhsnames)) {
     lhs = shallow(dat, lhsnames); rhs = shallow(dat, rhsnames); val = shallow(dat, valnames)
+     # handle drop=TRUE/FALSE - Update: Logic moved to R, AND faster than previous version. Take that... old me :-).
     if (all(drop)) {
       map = setDT(lapply(list(lhsnames, rhsnames), function(cols) frankv(dat, cols=cols, ties.method="dense", na.last=FALSE)))
       maporder = lapply(map, order_)
@@ -240,7 +240,7 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
       lhs = lhs_; rhs = rhs_
     }
     maplen = lengths(mapunique)
-    idx = do.call(CJ, mapunique)[map, 'I' := .I][["I"]]
+    idx = do.call(CJ, mapunique)[map, 'I' := .I][["I"]] # TO DO: move this to C and avoid materialising the Cross Join.
     some_fill = anyNA(idx)
     fill.default = if (run_agg_funs && is.null(fill) && some_fill) dat_for_default_fill[, maybe_err(eval(fun.call))]
     if (run_agg_funs && is.null(fill) && some_fill) {
@@ -251,11 +251,9 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
     if (length(valnames) > 1L)
       allcols = do.call(paste, if (identical(".", allcols)) list(valnames, sep=sep)
             else c(CJ(valnames, allcols, sorted=FALSE), sep=sep))
-    if (length(lhsnames) + length(allcols) != length(ans)) {
-      stopf("Length mismatch: 'names' attribute [%d] must match the vector length [%d].", length(lhsnames) + length(allcols), length(ans))
-    }
+      # removed 'setcolorder()' here, #1153
     setattr(ans, 'names', c(lhsnames, allcols))
     setDT(ans); setattr(ans, 'sorted', lhsnames)
-  } else internal_error("empty rhsnames")
+  } else internal_error("empty rhsnames") # nocov
   return(ans)
 }
