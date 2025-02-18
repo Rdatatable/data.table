@@ -110,8 +110,23 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
       IDate = "<IDat>", integer64 = "<i64>", raw = "<raw>",
       expression = "<expr>", ordered = "<ord>")
     classes = classes1(x)
+    col_names <- colnames(toprint)
+    classes <- sapply(col_names, function(col_name) {
+      if (grepl("^index:", col_name)) {
+        "index"
+      } else if (col_name %in% names(x)) {
+        cls <- class(x[[col_name]])
+        if (is.list(cls)) cls <- unlist(cls)  # Ensure it's a character vector
+        if (length(cls) == 0) cls <- "unknown"  # Handle empty cases
+        cls[1]  # Take only the first class name
+      } else {
+        "unknown"
+      }
+    })
     abbs = unname(class_abb[classes])
+    abbs[classes == "index"] <- "<index>"
     if ( length(idx <- which(is.na(abbs))) ) abbs[idx] = paste0("<", classes[idx], ">")
+    stopifnot(length(abbs) == ncol(toprint))
     toprint = rbind(abbs, toprint)
     rownames(toprint)[1L] = ""
   }
