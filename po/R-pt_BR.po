@@ -1646,11 +1646,11 @@ msgstr ""
 
 #: data.table.R:3306
 msgid "Optimized subsetting with key %s"
-msgstr "Subconjunto otimizado com chave %s"
+msgstr "Obtendo subconjunto de forma otimizada com chave %s"
 
 #: data.table.R:3325 data.table.R:3337
 msgid "Optimized subsetting with index '%s'"
-msgstr "Subconjunto otimizado com índice '%s'"
+msgstr "Obtendo subconjunto de forma otimizada com índice '%s'"
 
 #: data.table.R:3332
 msgid "Creating new index '%s'"
