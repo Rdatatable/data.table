@@ -136,7 +136,6 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
     value.var = names(data)[ncol(data)]
   lvals = value_vars(value.var, names(data))
   valnames = unique(unlist(lvals))
-  # Preserve empty string column names
   if (any(valnames == "")) {
     valnames[valnames == ""] = ""
   }
