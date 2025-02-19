@@ -595,13 +595,13 @@ Key Takeaways:
 If you want to keep the i_int column from i, you need to explicitly select it in the result:
 
 ```{r}
-x[i, on = .(x_int >= i_int), .(i_int, x_int, lower, UPPER)]
+x[i, on = .(x_int >= i_int), .(i_int = i.i_int, x_int = x.x_int, lower, UPPER)]
 ```
 
 If you want to exclude unmatched rows, you should use nomatch = NULL:
 
 ```{r}
-x[i, on = .(x_int >= i_int), .(i_int, x_int, lower, UPPER), nomatch = NULL]
+x[i, on = .(x_int >= i_int), .(i_int = i.i_int, x_int = x.x_int, lower, UPPER), nomatch = NULL]
 ```
 
 ## 5. Rolling join
