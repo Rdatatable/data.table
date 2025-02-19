@@ -235,7 +235,7 @@ rep.ITime = function(x, ...)
   y
 }
 
-round.ITime <- function(x, digits = c("hours", "minutes"), ...)
+round.ITime = function(x, digits = c("hours", "minutes"), ...)
 {
   (setattr(switch(match.arg(digits),
                   hours = as.integer(round(unclass(x)/3600.0)*3600.0),
@@ -243,7 +243,7 @@ round.ITime <- function(x, digits = c("hours", "minutes"), ...)
            "class", "ITime"))
 }
 
-trunc.ITime <- function(x, units = c("hours", "minutes"), ...)
+trunc.ITime = function(x, units = c("hours", "minutes"), ...)
 {
   (setattr(switch(match.arg(units),
                   hours = as.integer(unclass(x)%/%3600.0*3600.0),

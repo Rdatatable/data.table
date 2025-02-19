@@ -8,7 +8,7 @@ guess = function(x) {
   var
 }
 
-dcast <- function(
+dcast = function(
   data, formula, fun.aggregate = NULL, ..., margins = NULL,
   subset = NULL, fill = NULL, value.var = guess(data)
 ) {
@@ -115,7 +115,7 @@ aggregate_funs = function(funs, vals, sep="_", ...) {
     if (is.null(nm) || !nzchar(nm)) {
       nm = all.names(funs[[i]], max.names=1L, functions=TRUE)
     }
-    if (!length(nm)) nm <- paste0("fun", i)
+    if (!length(nm)) nm = paste0("fun", i)
     construct_funs(funs[i], nm, vals[[i]])
   })
   as.call(c(quote(list), unlist(ans)))
@@ -185,7 +185,7 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
     fun.call = aggregate_funs(fun.call, lvals, sep, ...)
     maybe_err = function(list.of.columns) {
       if (!all(lengths(list.of.columns) == 1L)) {
-        msg <- gettext("Aggregating functions should take a vector as input and return a single value (length=1), but they do not, so the result is undefined. Please fix by modifying your function so that a single value is always returned.")
+        msg = gettext("Aggregating functions should take a vector as input and return a single value (length=1), but they do not, so the result is undefined. Please fix by modifying your function so that a single value is always returned.")
         if (is.null(fill)) { # TODO change to always stopf #6329
           stop(msg, domain=NA, call. = FALSE)
         } else {
