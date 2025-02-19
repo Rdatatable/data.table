@@ -577,45 +577,31 @@ When performing non-equi joins (<, >, <=, >=), column names are assigned as foll
 - The right operand (`i` column) contributes values but does not retain its original name.
 - By default, `data.table` does not retain the `i` column used in the join condition unless explicitly requested.
 
-In non-equi joins, the left side of the operator (e.g., `A` in `A >= B`) must be a column from `x`,  
-and the right side (e.g., `B`) must be a column from `i`.  Non-equi join does not support  arbitrary expressions. For example, `on = .(x_col >= i_col)` is valid, but `on = .(x_col >= i_col + 1)` is not.  
+In non-equi joins, the left side of the operator (e.g., x_int in x_int >= i_int) must be a column from x, while the right side (e.g., i_int) must be a column from i. Non-equi joins do not support arbitrary expressions.
+For example, on = .(x_int >= i_int) is valid, but on = .(x_int >= i_int + 1) is not valid.
 
-Arbitrary comparisons can be accomplished by create temporary columns first. For example:
-
-```{r}
-x <- data.table(A = 1:5, value_x = letters[1:5])
-i <- data.table(B = c(2, 4, 5), value_i = LETTERS[1:3])
-x[i, on = .(A >= B)]
-```
-In data.table, when using a non-equi join condition (>=, <, etc.), the column from x is retained in the result, while the column from i is not retained unless explicitly selected.
-
-Expected Output
-```
-   A    value_x  value_i
-1: 2       b       A
-2: 4       d       B
-3: 5       e       C
-4: 5       e       C
-```
-If multiple rows in x satisfy the join condition with a single row in i, those rows will be duplicated in the result.
-
-If you want to keep the B column from i, you need to explicitly select it in the result:
+If you need to apply transformations, create a temporary column first.
 
 ```{r}
-x[i, on = .(A >= B), .(B, A, value_x, value_i)]
+x <- data.table(x_int = 2:4, lower = letters[1:3])
+i <- data.table(i_int = c(2, 4, 5), UPPER = LETTERS[1:3])
+x[i, on = .(x_int >= i_int)]
 ```
-Updated Output
+Key Takeaways:
+- The name of the output column (x_int) comes from x, but the values come from i_int in i.
+- The last row contains NA because no rows in x match the last row in i (UPPER = "C").
+- Multiple rows in x are returned to match the first row in i with UPPER = "A".
+
+If you want to keep the i_int column from i, you need to explicitly select it in the result:
+
+```{r}
+x[i, on = .(x_int >= i_int), .(i_int, x_int, lower, UPPER)]
 ```
-   B  A   value_x  value_i
-1: 2  2       b       A
-2: 4  4       d       B
-3: 5  5       e       C
-4: 5  5       e       C
-```
+
 If you want to exclude unmatched rows, you should use nomatch = NULL:
 
 ```{r}
-x[i, on = .(A >= B), .(B, A, value_x, value_i), nomatch = NULL]
+x[i, on = .(x_int >= i_int), .(i_int, x_int, lower, UPPER), nomatch = NULL]
 ```
 
 ## 5. Rolling join
