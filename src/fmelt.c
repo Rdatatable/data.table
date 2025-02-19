@@ -193,14 +193,13 @@ SEXP uniq_diff(SEXP int_or_list, int ncol, bool is_measure) {
     }
   }
   if (invalid_count > 0) {
-    char buffer[4096] = ""; 
+    char buffer[4096] = "", *nexti = buffer;
+    size_t remaining = sizeof buffer;
     for (int i = 0; i < invalid_count; ++i) {
-      char temp[32];
-      snprintf(temp, 32, "[%d]", invalid_col_ptr[i]); 
-      if (i > 0) {
-        strncat(buffer, ", ", sizeof(buffer) - strlen(buffer) - 1); 
-      }
-      strncat(buffer, temp, sizeof(buffer) - strlen(buffer) - 1); 
+      int offset = snprintf(nexti, remaining, "%s[%d]", i > 0 ? ", " : "", invalid_col_ptr[i]);
+      if (offset < 0 || (size_t)offset >= remaining) break;
+      nexti += offset;
+      remaining -= offset;
     }
       error(_("One or more values in '%s' are invalid; please fix by removing: %s"), 
           is_measure ? "measure.vars" : "id.vars", buffer);
