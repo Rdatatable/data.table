@@ -136,9 +136,12 @@ dcast.data.table = function(data, formula, fun.aggregate = NULL, sep = "_", ...,
     value.var = names(data)[ncol(data)]
   lvals = value_vars(value.var, names(data))
   valnames = unique(unlist(lvals))
-  valnames[valnames == ""] = "empty_string" 
+  # Preserve empty string column names
+  if (any(valnames == "")) {
+    valnames[valnames == ""] = ""
+  }
   if (any(duplicated(valnames))) {
-    valnames = make.unique(valnames, sep = "_") 
+    valnames = make.unique(valnames, sep = sep)
   }
   lvars = check_formula(formula, names(data), valnames, value.var.in.LHSdots, value.var.in.RHSdots)
   lvars = lapply(lvars, function(x) if (length(x)) x else quote(`.`))
