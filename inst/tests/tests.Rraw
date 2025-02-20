@@ -18784,6 +18784,11 @@ ans = c(
  "10:   83   64   41                 9                 9")
 # test where topn isn't necessary
 test(2264.8, print(DT, show.indices=TRUE), output=ans)
+# printing does not fail when indices are present
+test(2264.9, {
+  suppressWarnings( print(DT, show.indices=TRUE) )
+  TRUE 
+})
 
 # integer64 columns print even when bit64 isn't loaded
 if (test_bit64) local({

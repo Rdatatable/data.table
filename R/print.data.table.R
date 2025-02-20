@@ -111,22 +111,22 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
       expression = "<expr>", ordered = "<ord>")
     classes = classes1(x)
     col_names <- colnames(toprint)
-    classes <- sapply(col_names, function(col_name) {
-      if (grepl("^index:", col_name)) {
-        "index"
+    index_cols <- paste0("index:", indices(x))  
+    for (col_name in col_names) {
+      if (col_name %in% index_cols) {
+        classes[col_name] <- "index"
       } else if (col_name %in% names(x)) {
         cls <- class(x[[col_name]])
-        if (is.list(cls)) cls <- unlist(cls)  # Ensure it's a character vector
-        if (length(cls) == 0) cls <- "unknown"  # Handle empty cases
-        cls[1]  # Take only the first class name
+        if (is.list(cls)) cls <- unlist(cls)  
+        if (length(cls) == 0) cls <- "unknown"  
+        classes[col_name] <- cls[1]  
       } else {
-        "unknown"
+        classes[col_name] <- "unknown"
       }
-    })
-    abbs = unname(class_abb[classes])
-    abbs[classes == "index"] <- "<index>"
+    }
+    abbs = unname(class_abb[classes[col_names]])
+    abbs[col_names %in% index_cols] <- "<index>"
     if ( length(idx <- which(is.na(abbs))) ) abbs[idx] = paste0("<", classes[idx], ">")
-    stopifnot(length(abbs) == ncol(toprint))
     toprint = rbind(abbs, toprint)
     rownames(toprint)[1L] = ""
   }
