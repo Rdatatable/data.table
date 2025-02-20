@@ -28,6 +28,7 @@ linters = c(dt_linters, all_linters(
   undesirable_operator_linter(),
   # TODO(lintr#2765): Use upstream implementation.
   # assignment_linter(operator = "="),
+  assignment_linter = NULL,
   absolute_path_linter = NULL, # too many false positives
   # TODO(lintr#2442): Use this once x[ , j, by] is supported.
   commas_linter = NULL,
