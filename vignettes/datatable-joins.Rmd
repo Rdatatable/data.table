@@ -580,8 +580,6 @@ When performing non-equi joins (<, >, <=, >=), column names are assigned as foll
 In non-equi joins, the left side of the operator (e.g., x_int in x_int >= i_int) must be a column from x, while the right side (e.g., i_int) must be a column from i. Non-equi joins do not support arbitrary expressions.
 For example, on = .(x_int >= i_int) is valid, but on = .(x_int >= i_int + 1) is not valid.
 
-If you need to apply transformations, create a temporary column first.
-
 ```{r}
 x <- data.table(x_int = 2:4, lower = letters[1:3])
 i <- data.table(i_int = c(2, 4, 5), UPPER = LETTERS[1:3])
@@ -597,6 +595,7 @@ If you want to keep the i_int column from i, you need to explicitly select it in
 ```{r}
 x[i, on = .(x_int >= i_int), .(i_int = i.i_int, x_int = x.x_int, lower, UPPER)]
 ```
+This ensures the output clearly distinguishes i_int (from i) and x_int (from x).
 
 If you want to exclude unmatched rows, you should use nomatch = NULL:
 
