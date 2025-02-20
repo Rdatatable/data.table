@@ -60,7 +60,7 @@ between = function(x, lower, upper, incbounds=TRUE, NAbounds=TRUE, check=FALSE) 
     y = eval.parent(ysub)
   }
   if ((l <- length(y)) != 2L) {
-    suggestion <- if (ysub %iscall% 'c') gettextf("Perhaps you meant %s? ", capture.output(print(`[[<-`(ysub, 1L, quote(list))))) else ""
+    suggestion = if (ysub %iscall% 'c') gettextf("Perhaps you meant %s? ", capture.output(print(`[[<-`(ysub, 1L, quote(list))))) else ""
     stopf("RHS has length() %d; expecting length 2. %sThe first element should be the lower bound(s); the second element should be the upper bound(s).", l, suggestion)
   }
   between(x, y[[1L]], y[[2L]], incbounds=TRUE)

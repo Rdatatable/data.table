@@ -80,7 +80,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   }
   if (NCOL(x)==0L && file!="") {
     if (file.exists(file)) {
-      suggested <- if (append) "" else gettextf("\nIf you intended to overwrite the file at %s with an empty one, please use file.remove first.", file)
+      suggested = if (append) "" else gettextf("\nIf you intended to overwrite the file at %s with an empty one, please use file.remove first.", file)
       warningf("Input has no columns; doing nothing.%s", suggested)
       return(invisible())
     } else {

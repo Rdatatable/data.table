@@ -26,7 +26,8 @@ linters = c(dt_linters, all_linters(
   #   setwd = NULL
   # )),
   undesirable_operator_linter(),
-  # TODO(lintr#2441): Use upstream implementation.
+  # TODO(lintr#2765): Use upstream implementation.
+  # assignment_linter(operator = "="),
   assignment_linter = NULL,
   absolute_path_linter = NULL, # too many false positives
   # TODO(lintr#2442): Use this once x[ , j, by] is supported.
@@ -84,7 +85,8 @@ exclusions = c(local({
       infix_spaces_linter = Inf,
       undesirable_function_linter = Inf
     )),
-    exclusion_for_dir(c("vignettes", "vignettes/fr"), list(
+    exclusion_for_dir(c("vignettes", "vignettes/fr", "vignettes/ru"), list(
+      # assignment_linter = Inf,
       implicit_integer_linter = Inf,
       quotes_linter = Inf,
       sample_int_linter = Inf
