@@ -21047,14 +21047,14 @@ test(2305, { fread(testDir("issue_6729.txt.bz2")); TRUE })
 # Test for covering classes[col_name] <- "index"
 DT = data.table(A = 1:3, B = 4:6)
 setindex(DT, A)
-test(2306.1, DT, data.table(t(t(DT)), key = "A"))
+test(2306.1, DT, data.table(A = 1:3, B = 4:6, key = "A"))
 # Test for covering if (is.list(cls)) cls <- unlist(cls)
 DT = data.table(A = 1:3, B = list(NULL, NULL, NULL))
-test(2306.2, DT, data.table(t(t(DT))))
+test(2306.2, DT, data.table(A = 1:3, B = list(NULL, NULL, NULL)))
 # Test for covering if (length(cls) == 0) cls <- "unknown"
 DT = data.table(A = 1:3, B = I(list()))
-test(2306.3, DT, data.table(t(t(DT))))
+test(2306.3, DT, data.table(A = 1:3, B = I(list())))
 # Test for covering classes[col_name] <- "unknown"
 DT = data.table(A = 1:3, B = 4:6, C = 7:9)
 DT[, D := NULL]
-test(2306.4, DT, data.table(t(t(DT))))
+test(2306.4, DT, data.table(A = 1:3, B = 4:6, C = 7:9))
