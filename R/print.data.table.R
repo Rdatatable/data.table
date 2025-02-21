@@ -303,7 +303,7 @@ trunc_cols_message = function(not_printed, abbs, class, col.names){
 }
 
 # Maybe add a method for repr::repr_text.  See https://github.com/Rdatatable/data.table/issues/933#issuecomment-220237965
-knit_print.data.table <- function(x, ...) {
+knit_print.data.table = function(x, ...) {
   if (!shouldPrint(x)) return(invisible(x))
   NextMethod()
 }

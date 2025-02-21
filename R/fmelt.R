@@ -72,7 +72,7 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
   if (!is.character(cols)) {
     stopf("cols must be a character vector of column names")
   }
-  prob.i <- if (is.null(names(fun.list))) {
+  prob.i = if (is.null(names(fun.list))) {
     seq_along(fun.list)
   } else {
     which(!nzchar(names(fun.list)))
@@ -101,7 +101,7 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
       stopf("number of elements of fun.list (%d) must be the same as the number of capture groups in pattern (%d)", length(fun.list), ncol(start))
     }
     end = attr(match.vec, "capture.length")[measure.vec.i,]+start-1L
-    measure.vec <- cols[measure.vec.i]
+    measure.vec = cols[measure.vec.i]
     names.mat = matrix(measure.vec, nrow(start), ncol(start))
     substr(names.mat, start, end)
   } else { #pattern not specified, so split using sep.

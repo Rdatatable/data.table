@@ -171,9 +171,9 @@ NULL
 > DT[, `:=`(a, 1)]
 > 
 > # child class of data.table doesn't induce unintended print, #3029
-> dt <- data.table(x = 1)
-> class(dt) <- c("foo", "data.table", "data.frame")
-> print.foo <- function(x, ...) {
+> dt = data.table(x = 1)
+> class(dt) = c("foo", "data.table", "data.frame")
+> print.foo = function(x, ...) {
 +   NextMethod("print")
 + }
 > dt[, y := 1]                          # no
