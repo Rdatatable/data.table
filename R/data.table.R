@@ -1183,7 +1183,7 @@ replace_dot_alias = function(e) {
         } else {
           # Adding new column(s). TO DO: move after the first eval in case the jsub has an error.
           newnames=setdiff(lhs, names_x)
-          m[is.na(m)] = ncol(x)+seq_len(length(newnames))
+          m[is.na(m)] = ncol(x)+seq_along(newnames)
           cols = as.integer(m)
           # don't pass verbose to selfrefok here -- only activated when
           #   ok=-1 which will trigger setalloccol with verbose in the next
@@ -2380,7 +2380,7 @@ subset.data.table = function(x, subset, select, ...)
       ## Set the key on the returned data.table as long as the key
       ## columns that "remain" are the same as the original, or a
       ## prefix of it.
-      is.prefix = all(key(x)[seq_len(length(key.cols))] == key.cols)
+      is.prefix = all(key(x)[seq_along(key.cols)] == key.cols)
       if (is.prefix) {
         setattr(ans, "sorted", key.cols)
       }
@@ -2867,7 +2867,7 @@ setDF = function(x, rownames=NULL) {
       stopf("All elements in argument 'x' to 'setDF' must be of same length")
     xn = names(x)
     if (is.null(xn)) {
-      setattr(x, "names", paste0("V",seq_len(length(x))))
+      setattr(x, "names", paste0("V",seq_along(x)))
     } else {
       idx = !nzchar(xn) # NB: keepNA=FALSE intentional
       if (any(idx)) {

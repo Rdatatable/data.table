@@ -32,7 +32,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     SYS = sys.calls()
     if (identical(SYS[[1L]][[1L]], print) ||
         ( length(SYS) >= 3L && is.symbol(thisSYS <- SYS[[length(SYS)-2L]][[1L]]) &&
-          as.character(thisSYS) == 'source') ) { 
+          as.character(thisSYS) == 'source')) {
       return(invisible(x))
     }
   }
@@ -102,15 +102,15 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
       expression = "<expr>", ordered = "<ord>")
     classes = classes1(x)
     col_names <- colnames(toprint)
-    index_cols <- paste0("index:", indices(x))  
+    index_cols <- paste0("index:", indices(x))
     for (col_name in col_names) {
       if (col_name %in% index_cols) {
         classes[col_name] <- "index"
       } else if (col_name %in% names(x)) {
         cls <- class(x[[col_name]])
-        if (is.list(cls)) cls <- unlist(cls)  
-        if (length(cls) == 0) cls <- "unknown"  
-        classes[col_name] <- cls[1]  
+        if (is.list(cls)) cls <- unlist(cls)
+        if (length(cls) == 0) cls <- "unknown"
+        classes[col_name] <- cls[1]
       } else {
         classes[col_name] <- "unknown"
       }
