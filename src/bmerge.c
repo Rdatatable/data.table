@@ -187,7 +187,7 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP r
       bmerge_r(-1,xN,-1,iN,scols,kk+1,1,1);
     }
     if (verbose)
-      Rprintf("bmerge: looping bmerge_r took %.3fs\n", omp_get_wtime()-tic0);
+      Rprintf(_("bmerge: looping bmerge_r took %.3fs\n"), omp_get_wtime()-tic0);
   }
   ctr += iN;
   if (nqmaxgrp > 1 && mult == ALL) {
@@ -219,7 +219,7 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP r
     R_Free(retIndex);
   }
   if (verbose)
-    Rprintf("bmerge: took %.3fs\n", omp_get_wtime()-tic);
+    Rprintf(_("bmerge: took %.3fs\n"), omp_get_wtime()-tic);
   UNPROTECT(protecti);
   return (ans);
 }

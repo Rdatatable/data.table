@@ -35,6 +35,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: r-lib/actions/setup-r@v2
+      - name: Install Coccinelle
+        # relying on the action above us to have updated the package cache
+        run: /usr/bin/sudo apt-get -y install coccinelle
       - name: Lint
         run: |
           linter_env = new.env()
@@ -70,6 +73,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: r-lib/actions/setup-r@v2
       - name: Lint
         run: for (f in list.files('.ci/linters/md', full.names=TRUE)) source(f)
         shell: Rscript {0}
