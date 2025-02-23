@@ -20,7 +20,7 @@ rowwiseDT(
   a=,b=,c=,  d=,
   1, 2, "a", 2:3,
   3, 4, "b", list("e"),
-  5, 6, "c", ~a+b,
+  5, 6, "c", ~a+b
 )
 #>        a     b      c      d
 #>    <num> <num> <char> <list>
