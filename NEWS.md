@@ -2,7 +2,11 @@
 
 # data.table [v1.17.99](https://github.com/Rdatatable/data.table/milestone/35)  (in development)
 
+## NOTES
 
+1. The following in-progress deprecations have proceeded:
+
+   + Argument `logicalAsInt` to `fwrite()` has been removed.
 
 # data.table [v1.17.0](https://github.com/Rdatatable/data.table/milestone/34)  (20 Feb 2025)
 
