@@ -536,7 +536,7 @@ SEXP growVector(SEXP x, const R_len_t newlen)
   PROTECT(newx = allocVector(TYPEOF(x), newlen));   // TO DO: R_realloc(?) here?
   if (newlen < len) len=newlen;   // i.e. shrink
   if (!len) { // cannot memcpy invalid pointer, #6819
-    keepattr(newx, x)
+    keepattr(newx, x);
     UNPROTECT(1);
     return newx;
   }
