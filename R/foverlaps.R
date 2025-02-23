@@ -181,23 +181,22 @@ foverlaps = function(x, y, by.x=if (!is.null(key(x))) key(x) else key(y), by.y=k
   if (which) {
     if (mult %chin% c("first", "last"))
       return(olaps$yid)
-    else if (!is.na(nomatch))
-      return(.Call(CsubsetDT, olaps, which(olaps$yid > 0L), seq_along(olaps)))
-    else return(olaps)
-  } else {
     if (!is.na(nomatch))
-      olaps = .Call(CsubsetDT, olaps, which(olaps$yid > 0L), seq_along(olaps))
-    ycols = setdiff(names(origy), head(by.y, -2L))
-    idx = chmatch(ycols, names(origx), nomatch=0L)
-    ans = .Call(CsubsetDT, origx, olaps$xid, seq_along(origx))
-    if (any(idx>0L))
-      setnames(ans, names(ans)[idx], paste0("i.", names(ans)[idx]))
-    xcols1 = head(by.x, -2L)
-    xcols2 = setdiff(names(ans), xcols1)
-    ans[, (ycols) := .Call(CsubsetDT, origy, olaps$yid, chmatch(ycols, names(origy)))]
-    setcolorder(ans, c(xcols1, ycols, xcols2))
-    return(ans[])
+      return(.Call(CsubsetDT, olaps, which(olaps$yid > 0L), seq_along(olaps)))
+    return(olaps)
   }
+  if (!is.na(nomatch))
+    olaps = .Call(CsubsetDT, olaps, which(olaps$yid > 0L), seq_along(olaps))
+  ycols = setdiff(names(origy), head(by.y, -2L))
+  idx = chmatch(ycols, names(origx), nomatch=0L)
+  ans = .Call(CsubsetDT, origx, olaps$xid, seq_along(origx))
+  if (any(idx > 0L))
+    setnames(ans, names(ans)[idx], paste0("i.", names(ans)[idx]))
+  xcols1 = head(by.x, -2L)
+  xcols2 = setdiff(names(ans), xcols1)
+  ans[, (ycols) := .Call(CsubsetDT, origy, olaps$yid, chmatch(ycols, names(origy)))]
+  setcolorder(ans, c(xcols1, ycols, xcols2))
+  ans[]
 }
 
 # Notes: (If there's a better way than the solution I propose here, I'd be glad to apply it.)
