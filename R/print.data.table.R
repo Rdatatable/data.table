@@ -22,7 +22,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   if (col.names == "none" && class)
     warningf("Column classes will be suppressed when col.names is 'none'")
   if (!shouldPrint(x)) {
-#  := in [.data.table sets .global$print=address(x) to suppress the next print i.e., like <- does. See FAQ 2.22 and README item in v1.9.5
+    #  := in [.data.table sets .global$print=address(x) to suppress the next print i.e., like <- does. See FAQ 2.22 and README item in v1.9.5
     # The issue is distinguishing "> DT" (after a previous := in a function) from "> DT[,foo:=1]". To print.data.table(), there
     # is no difference. Now from R 3.2.0 a side effect of the very welcome and requested change to avoid silent deep copy is that
     # there is now no longer a difference between > DT and > print(DT). So decided that DT[] is now needed to guarantee print; simpler.
@@ -30,15 +30,15 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     # Other options investigated (could revisit): Cstack_info(), .Last.value gets set first before autoprint, history(), sys.status(),
     #   topenv(), inspecting next statement in caller, using clock() at C level to timeout suppression after some number of cycles
     SYS = sys.calls()
-    if (identical(SYS[[1L]][[1L]], print) ||
+    if (identical(SYS[[1L]][[1L]], print) || # this is what auto-print looks like, i.e. '> DT' and '> DT[, a:=b]' in the terminal; see #3029.
         ( length(SYS) >= 3L && is.symbol(thisSYS <- SYS[[length(SYS)-2L]][[1L]]) &&
-          as.character(thisSYS) == 'source')) {
+          as.character(thisSYS) == 'source') ) { # suppress printing from source(echo = TRUE) calls, #2369
       return(invisible(x))
     }
   }
   if (!is.numeric(nrows)) nrows = 100L
   if (!is.infinite(nrows)) nrows = as.integer(nrows)
-  if (nrows <= 0L) return(invisible(x))  # ability to turn off printing
+  if (nrows <= 0L) return(invisible(x))   # ability to turn off printing
   if (!is.numeric(topn)) topn = 5L
   topnmiss = missing(topn)
   topn = max(as.integer(topn),1L)
@@ -57,8 +57,8 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
       catf("Null data.%s (0 rows and 0 cols)\n", class)  # See FAQ 2.5 and NEWS item in v1.8.9
     } else {
       catf("Empty data.%s (%d rows and %d cols)", class, NROW(x), NCOL(x))
-      if (length(x)>0L) cat(": ",paste(head(names(x),6L),collapse=","),if(length(x)>6L)"...",sep="")  # notranslate
-      cat("\n")  # notranslate
+      if (length(x)>0L) cat(": ",paste(head(names(x),6L),collapse=","),if(length(x)>6L)"...",sep="") # notranslate
+      cat("\n") # notranslate
     }
     return(invisible(x))
   }
@@ -85,13 +85,18 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     printdots = FALSE
     if (show.indices) toprint = cbind(toprint, index_dt)
   }
+  classes <- classes1(toprint)
+  col_names <- colnames(toprint)
+  if (show.indices && !is.null(indices(x))) {
+    classes <- c(classes, rep("<index>", length(indices(x))))
+  }
   require_bit64_if_needed(x)
   toprint=format.data.table(toprint, na.encode=FALSE, timezone = timezone, ...)  # na.encode=FALSE so that NA in character cols print as <NA>
 
   # FR #353 - add row.names = logical argument to print.data.table
   if (isTRUE(row.names)) rownames(toprint)=paste0(format(rn,right=TRUE,scientific=FALSE),":") else rownames(toprint)=rep.int("", nrow(toprint))
   if (is.null(names(x)) || !any(nzchar(names(x), keepNA=TRUE)))
-# fixes bug #97 and #545
+    # fixes bug #97 and #545
     colnames(toprint)=rep("", ncol(toprint))
   if (isTRUE(class) && col.names != "none") {
     #Matching table for most common types & their abbreviations
@@ -100,23 +105,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
       factor = "<fctr>", POSIXct = "<POSc>", logical = "<lgcl>",
       IDate = "<IDat>", integer64 = "<i64>", raw = "<raw>",
       expression = "<expr>", ordered = "<ord>")
-    classes = classes1(x)
-    col_names <- colnames(toprint)
-    index_cols <- paste0("index:", indices(x))
-    for (col_name in col_names) {
-      if (col_name %in% index_cols) {
-        classes[col_name] <- "index"
-      } else if (col_name %in% names(x)) {
-        cls <- class(x[[col_name]])
-        if (is.list(cls)) cls <- unlist(cls)
-        if (length(cls) == 0) cls <- "unknown"
-        classes[col_name] <- cls[1]
-      } else {
-        classes[col_name] <- "unknown"
-      }
-    }
-    abbs = unname(class_abb[classes[col_names]])
-    abbs[col_names %in% index_cols] <- "<index>"
+    abbs = unname(class_abb[classes])
     if ( length(idx <- which(is.na(abbs))) ) abbs[idx] = paste0("<", classes[idx], ">")
     toprint = rbind(abbs, toprint)
     rownames(toprint)[1L] = ""
