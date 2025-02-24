@@ -108,7 +108,7 @@ replace_dot_alias = function(e) {
     # eval(parse()) to avoid "no visible binding for global variable" note from R CMD check
     # names starting with _ don't parse, so no leading _ in the name
   )
-  idx <- regexpr(missing_obj_fmt, err$message, perl=TRUE)
+  idx = regexpr(missing_obj_fmt, err$message, perl=TRUE)
   if (idx > 0L) {
     start = attr(idx, "capture.start", exact=TRUE)[ , "obj_name"]
     used = substr(
@@ -703,7 +703,7 @@ replace_dot_alias = function(e) {
         names(..syms) = ..syms
         j = eval(jsub, lapply(substr(..syms, 3L, nchar(..syms)), get, pos=parent.frame()), parent.frame())
       }
-      if (is.logical(j)) j <- which(j)
+      if (is.logical(j)) j = which(j)
       if (!length(j) && !notj) return( null.data.table() )
       if (is.factor(j)) j = as.character(j)  # fix for FR: #358
       if (is.character(j)) {
@@ -1138,7 +1138,7 @@ replace_dot_alias = function(e) {
           if (!all(named_idx <- nzchar(lhs))) {
             # friendly error for common case: trailing terminal comma
             n_lhs = length(lhs)
-            this_call <- if (root == "let") "let" else "`:=`"
+            this_call = if (root == "let") "let" else "`:=`"
             .check_nested_walrus(jsub, which(!named_idx)+1L, this_call)
             if (!named_idx[n_lhs] && all(named_idx[-n_lhs])) {
               stopf("In %s(col1=val1, col2=val2, ...) form, all arguments must be named, but the last argument has no name. Did you forget a trailing comma?", this_call)
@@ -1183,7 +1183,7 @@ replace_dot_alias = function(e) {
         } else {
           # Adding new column(s). TO DO: move after the first eval in case the jsub has an error.
           newnames=setdiff(lhs, names_x)
-          m[is.na(m)] = ncol(x)+seq_len(length(newnames))
+          m[is.na(m)] = ncol(x)+seq_along(newnames)
           cols = as.integer(m)
           # don't pass verbose to selfrefok here -- only activated when
           #   ok=-1 which will trigger setalloccol with verbose in the next
@@ -1288,7 +1288,7 @@ replace_dot_alias = function(e) {
       # warningf(sym," in j is looking for ",getName," in calling scope, but a column '", sym, "' exists. Column names should not start with ..")
     }
     getName = substr(sym, 3L, nchar(sym))
-    getNameVal <- get0(getName, parent.frame())
+    getNameVal = get0(getName, parent.frame())
     if (is.null(getNameVal)) {
       if (exists(sym, parent.frame())) next  # user did 'manual' prefix; i.e. variable in calling scope has .. prefix
       stopf("Variable '%s' is not found in calling scope. Looking in calling scope because this symbol was prefixed with .. in the j= parameter.", getName)
@@ -2166,8 +2166,8 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
       internal_error("length(X)==%d but a dimension is zero", length(X))  # nocov
     return(array(if (is.null(X)) NA else X, dim = dm, dimnames = list(rownames.value, cn)))
   }
-  dim(X) <- c(n, length(X)/n)
-  dimnames(X) <- list(rownames.value, unlist(collabs, use.names = FALSE))
+  dim(X) = c(n, length(X)/n)
+  dimnames(X) = list(rownames.value, unlist(collabs, use.names = FALSE))
   X
 }
 
@@ -2380,7 +2380,7 @@ subset.data.table = function(x, subset, select, ...)
       ## Set the key on the returned data.table as long as the key
       ## columns that "remain" are the same as the original, or a
       ## prefix of it.
-      is.prefix = all(key(x)[seq_len(length(key.cols))] == key.cols)
+      is.prefix = all(key(x)[seq_along(key.cols)] == key.cols)
       if (is.prefix) {
         setattr(ans, "sorted", key.cols)
       }
@@ -2454,7 +2454,7 @@ split.data.table = function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = TR
     # same as split.data.frame - handling all exceptions, factor orders etc, in a single stream of processing was a nightmare in factor and drop consistency
     # evaluate formula mirroring split.data.frame #5392. Mimics base::.formula2varlist.
     if (inherits(f, "formula"))
-        f <- eval(attr(terms(f), "variables"), x, environment(f))
+        f = eval(attr(terms(f), "variables"), x, environment(f))
     # be sure to use x[ind, , drop = FALSE], not x[ind], in case downstream methods don't follow the same subsetting semantics (#5365)
     return(lapply(split(x = seq_len(nrow(x)), f = f, drop = drop, ...), function(ind) x[ind, , drop = FALSE]))
   }
@@ -2559,7 +2559,7 @@ copy = function(x) {
     ## get correct key if cols are present
     cols = names(x)[cols]
     keylength = which.first(!key(ans) %chin% cols) - 1L
-    if (is.na(keylength)) keylength <- length(key(ans))
+    if (is.na(keylength)) keylength = length(key(ans))
     if (!keylength) {
       setattr(ans, "sorted", NULL) ## no key remaining
     } else {
@@ -2867,7 +2867,7 @@ setDF = function(x, rownames=NULL) {
       stopf("All elements in argument 'x' to 'setDF' must be of same length")
     xn = names(x)
     if (is.null(xn)) {
-      setattr(x, "names", paste0("V",seq_len(length(x))))
+      setattr(x, "names", paste0("V",seq_along(x)))
     } else {
       idx = !nzchar(xn) # NB: keepNA=FALSE intentional
       if (any(idx)) {
@@ -3086,9 +3086,9 @@ gweighted.mean = function(x, w, ..., na.rm=FALSE) {
   if (missing(w)) gmean(x, na.rm)
   else {
     if (na.rm) { # take those indices out of the equation by setting them to 0
-      ix <- is.na(x)
-      x[ix] <- 0.0
-      w[ix] <- 0.0
+      ix = is.na(x)
+      x[ix] = 0.0
+      w[ix] = 0.0
     }
     gsum((w!=0.0)*x*w, na.rm=FALSE)/gsum(w, na.rm=FALSE)
   }
@@ -3157,7 +3157,7 @@ is_constantish = function(q, check_singleton=FALSE) {
 
 # Check for na.rm= in expr in the expected slot; allows partial matching and
 #   is robust to unnamed expr. Note that NA names are not possible here.
-.arg_is_narm <- function(expr, which=3L) !is.null(nm <- names(expr)[which]) && startsWith(nm, "na")
+.arg_is_narm = function(expr, which=3L) !is.null(nm <- names(expr)[which]) && startsWith(nm, "na")
 
 .gforce_ok = function(q, x) {
   if (is.N(q)) return(TRUE) # For #334

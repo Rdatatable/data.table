@@ -63,7 +63,7 @@ as.data.table.matrix = function(x, keep.rownames=FALSE, key=NULL, ...) {
     for (i in ic) value[[i]] = x[, i]                  # <strike>for efficiency.</strike> For consistency - data.table likes and prefers "character"
   }
   else {
-    for (i in ic) value[[i]] <- as.vector(x[, i])       # to drop any row.names that would otherwise be retained inside every column of the data.table
+    for (i in ic) value[[i]] = as.vector(x[, i])       # to drop any row.names that would otherwise be retained inside every column of the data.table
   }
   col_labels = dimnames(x)[[2L]]
   setDT(value)

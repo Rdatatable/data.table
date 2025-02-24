@@ -6,8 +6,8 @@
   In \code{data.table}, all \code{set*} functions change their input \emph{by reference}. That is, no copy is made at all, other than temporary working memory which is as large as one column. The only other \code{data.table} operator that modifies input by reference is \code{\link{:=}}. Check out the \code{See Also} section below for other \code{set*} function that \code{data.table} provides.
 }
 \usage{
-setattr(x,name,value)
-setnames(x,old,new,skip_absent=FALSE)
+setattr(x, name, value)
+setnames(x, old, new, skip_absent=FALSE)
 }
 \arguments{
   \item{x}{ \code{setnames} accepts \code{data.frame} and \code{data.table}. \code{setattr} accepts any input; e.g, list, columns of a \code{data.frame} or \code{data.table}. }

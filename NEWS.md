@@ -1,6 +1,10 @@
 **If you are viewing this file on CRAN, please check [latest news on GitHub](https://github.com/Rdatatable/data.table/blob/master/NEWS.md) where the formatting is also better.**
 
-# data.table [v1.16.99](https://github.com/Rdatatable/data.table/milestone/31)  (in development)
+# data.table [v1.17.99](https://github.com/Rdatatable/data.table/milestone/35)  (in development)
+
+
+
+# data.table [v1.17.0](https://github.com/Rdatatable/data.table/milestone/34)  (20 Feb 2025)
 
 ## POTENTIALLY BREAKING CHANGES
 
@@ -16,7 +20,7 @@ rowwiseDT(
   a=,b=,c=,  d=,
   1, 2, "a", 2:3,
   3, 4, "b", list("e"),
-  5, 6, "c", ~a+b,
+  5, 6, "c", ~a+b
 )
 #>        a     b      c      d
 #>    <num> <num> <char> <list>
