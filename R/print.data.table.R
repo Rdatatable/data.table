@@ -90,6 +90,9 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   if (show.indices && !is.null(indices(x))) {
     classes <- c(classes, rep("<index>", length(indices(x))))
   }
+  if (!inherits(toprint, "data.table")) {
+    setDT(toprint)  
+  }
   require_bit64_if_needed(x)
   toprint=format.data.table(toprint, na.encode=FALSE, timezone = timezone, ...)  # na.encode=FALSE so that NA in character cols print as <NA>
 
