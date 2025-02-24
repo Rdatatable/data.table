@@ -71,7 +71,6 @@ linters = c(dt_linters, all_linters(
 ))
 rm(dt_linters)
 
-# NB: paths are relative to this file. See r-lib/lintr#2780
 exclusions = list(
   `../tests` = list(
     quotes_linter = Inf,
