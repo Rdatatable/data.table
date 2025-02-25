@@ -582,7 +582,7 @@ For example, `on = .(x_int >= i_int)` is valid, but `on = .(x_int >= i_int + 1)`
 
 We plan to allow arbitrary expressions eventually, see [#1639](https://github.com/Rdatatable/data.table/issues/1639).
 
-```{r}
+```{r non_equi_join_example}
 x <- data.table(x_int = 2:4, lower = letters[1:3])
 i <- data.table(i_int = c(2, 4, 5), UPPER = LETTERS[1:3])
 x[i, on = .(x_int >= i_int)]
@@ -594,7 +594,7 @@ Key Takeaways:
 
 If you want to keep the i_int column from i, you need to explicitly select it in the result:
 
-```{r}
+```{r retain_i_column}
 x[i, on = .(x_int >= i_int), .(i_int = i.i_int, x_int = x.x_int, lower, UPPER)]
 ```
 This ensures the output clearly distinguishes i_int (from i) and x_int (from x).
