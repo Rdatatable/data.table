@@ -172,7 +172,7 @@ paste_dims = function(x) {
   dims = if (isS4(x)) {
     length(slotNames(x))
   } else {
-    if (is.null(dim(x))) length(x) else dim(x)
+    dim(x) %||% length(x)
   }
   paste0("[", paste(dims,collapse="x"), "]")
 }
