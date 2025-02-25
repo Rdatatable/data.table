@@ -85,15 +85,15 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     printdots = FALSE
     if (show.indices) toprint = cbind(toprint, index_dt)
   }
+  require_bit64_if_needed(x)
+  if (!inherits(toprint, "data.frame")) {
+    class(toprint) <- c("data.table", "data.frame")
+  }
   classes <- classes1(toprint)
   col_names <- colnames(toprint)
   if (show.indices && !is.null(indices(x))) {
     classes <- c(classes, rep("<index>", length(indices(x))))
   }
-  if (!inherits(toprint, "data.frame")) {
-    class(toprint) <- c("data.table", "data.frame")
-  }
-  require_bit64_if_needed(x)
   toprint=format.data.table(toprint, na.encode=FALSE, timezone = timezone, ...)  # na.encode=FALSE so that NA in character cols print as <NA>
 
   # FR #353 - add row.names = logical argument to print.data.table
