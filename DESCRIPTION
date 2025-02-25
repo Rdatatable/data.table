@@ -1,5 +1,5 @@
 Package: data.table
-Version: 1.16.99
+Version: 1.17.99
 Title: Extension of `data.frame`
 Depends: R (>= 3.3.0)
 Imports: methods

@@ -413,19 +413,19 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
   actual = list2env(list(warning=NULL, error=NULL, message=NULL))
   wHandler = function(w) {
     # Thanks to: https://stackoverflow.com/a/4947528/403310
-    actual$warning <- c(actual$warning, conditionMessage(w))
+    actual$warning = c(actual$warning, conditionMessage(w))
     invokeRestart("muffleWarning")
   }
   eHandler = function(e) {
-    actual$error <- conditionMessage(e)
+    actual$error = conditionMessage(e)
     e
   }
   mHandler = function(m) {
-    actual$message <- c(actual$message, conditionMessage(m))
+    actual$message = c(actual$message, conditionMessage(m))
     m
   }
   if (!is.null(options)) {
-    old_options <- do.call(base::options, as.list(options)) # as.list(): allow passing named character vector for convenience
+    old_options = do.call(base::options, as.list(options)) # as.list(): allow passing named character vector for convenience
     on.exit(base::options(old_options), add=TRUE)
   }
   if (is.null(output) && is.null(notOutput)) {
@@ -439,7 +439,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     # some of the options passed to test() may break internal data.table use below (e.g. invalid datatable.alloccol), so undo them ASAP
     base::options(old_options)
     # this is still registered for on.exit(), keep empty
-    old_options <- list()
+    old_options = list()
   }
   fail = FALSE
   if (.test.data.table && num>0.0) {
@@ -527,8 +527,8 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
         xc=copy(x)
         yc=copy(y)  # so we don't affect the original data which may be used in the next test
         # drop unused levels in factors
-        if (length(x)) for (i in which(vapply_1b(x,is.factor))) {.xi=x[[i]];xc[[i]]<-factor(.xi)}
-        if (length(y)) for (i in which(vapply_1b(y,is.factor))) {.yi=y[[i]];yc[[i]]<-factor(.yi)}
+        if (length(x)) for (i in which(vapply_1b(x,is.factor))) {.xi = x[[i]]; xc[[i]] = factor(.xi)}
+        if (length(y)) for (i in which(vapply_1b(y,is.factor))) {.yi = y[[i]]; yc[[i]] = factor(.yi)}
         if (is.data.table(xc)) setattr(xc,"row.names",NULL)  # for test 165+, i.e. x may have row names set from inheritance but y won't, consider these equal
         if (is.data.table(yc)) setattr(yc,"row.names",NULL)
         setattr(xc,"index",NULL)   # too onerous to create test RHS with the correct index as well, just check result

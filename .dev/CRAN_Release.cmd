@@ -18,9 +18,7 @@ potools::check_untranslated_src(message_db)
 potools::po_extract(custom_translation_functions = dt_custom_translators)
 
 # 2) Open a PR with the new templates & contact the translators
-#   * zh_CN: @hongyuanjia
-#   * pt_BR: @rffontenelle
-#   * es: @rikivillalba
+#    using @Rdatatable/<lang>, e.g. @Rdatatable/chinese
 ## Translators to submit commits with translations to this PR
 ##   [or perhaps, if we get several languages, each to open
 ##    its own PR and merge to main translation PR]
