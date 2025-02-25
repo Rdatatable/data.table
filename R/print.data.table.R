@@ -90,6 +90,9 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   if (show.indices && !is.null(indices(x))) {
     classes <- c(classes, rep("<index>", length(indices(x))))
   }
+  if (!inherits(toprint, "data.frame")) {
+    class(toprint) <- c("data.table", "data.frame")
+  }
   require_bit64_if_needed(x)
   toprint=format.data.table(toprint, na.encode=FALSE, timezone = timezone, ...)  # na.encode=FALSE so that NA in character cols print as <NA>
 
@@ -130,6 +133,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   print_default = function(x) {
     if (col.names != "none") cut_colnames = identity
     cut_colnames(print(x, right=TRUE, quote=quote, na.print=na.print))
+    # prints names of variables not shown in the print
     if (trunc.cols) trunc_cols_message(not_printed, abbs, class, col.names)
   }
   if (printdots) {
