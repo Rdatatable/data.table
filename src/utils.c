@@ -222,12 +222,20 @@ SEXP copyAsPlain(SEXP x) {
   }
   const int64_t n = XLENGTH(x);
   SEXP ans = PROTECT(allocVector(TYPEOF(x), n));
+  // aside: unlike R's duplicate we do not copy truelength here; important for dogroups.c which uses negative truelenth to mark its specials
+  if (ALTREP(ans))
+    internal_error(__func__, "copyAsPlain returning ALTREP for type '%s'", type2char(TYPEOF(x))); // # nocov
+  if (!n) { // cannot memcpy invalid pointer, #6819
+    DUPLICATE_ATTRIB(ans, x);
+    UNPROTECT(1);
+    return ans;
+  }
   switch (TYPEOF(x)) {
   case RAWSXP:
     memcpy(RAW(ans),     RAW(x),     n*sizeof(Rbyte));
     break;
   case LGLSXP:
-    memcpy(LOGICAL(ans), LOGICAL(x), n*sizeof(Rboolean));
+    memcpy(LOGICAL(ans), LOGICAL(x), n*sizeof(int));
     break;
   case INTSXP:
     memcpy(INTEGER(ans), INTEGER(x), n*sizeof(int));             // covered by 10:1 after test 178
@@ -250,9 +258,6 @@ SEXP copyAsPlain(SEXP x) {
     internal_error(__func__, "type '%s' not supported in %s", type2char(TYPEOF(x)), "copyAsPlain()"); // # nocov
   }
   DUPLICATE_ATTRIB(ans, x);
-  // aside: unlike R's duplicate we do not copy truelength here; important for dogroups.c which uses negative truelenth to mark its specials
-  if (ALTREP(ans))
-    internal_error(__func__, "copyAsPlain returning ALTREP for type '%s'", type2char(TYPEOF(x))); // # nocov
   UNPROTECT(1);
   return ans;
 }
@@ -409,7 +414,7 @@ SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg) {
 SEXP dt_zlib_version(void) {
   char out[71];
 #ifndef NOZLIB
-  snprintf(out, 70, "zlibVersion()==%s ZLIB_VERSION==%s", zlibVersion(), ZLIB_VERSION);
+  snprintf(out, 70, "zlibVersion()==%s ZLIB_VERSION==%s", zlibVersion(), ZLIB_VERSION); // # notranslate
 #else
   snprintf(out, 70, _("zlib header files were not found when data.table was compiled"));
 #endif
