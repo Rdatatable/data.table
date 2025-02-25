@@ -569,7 +569,7 @@ ProductReceivedProd2[ProductSalesProd2,
                      nomatch = NULL]
 ```
 
-### 4.1 Handling Column Name Behavior in Non-Equi Joins
+### 4.1 Output column names in non-equi joins
 
 When performing non-equi joins (`<`, `>`, `<=`, `>=`), column names are assigned as follows:
 
