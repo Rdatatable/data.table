@@ -602,7 +602,7 @@ Using prefixes (`x.` and `i.`) is not strictly necessary in this case since the 
 
 If you want to exclude unmatched rows (an _inner join_), use `nomatch = NULL`:
 
-```{r}
+```{r retain_i_column_inner_join}
 x[i, on = .(x_int >= i_int), .(i_int = i.i_int, x_int = x.x_int, lower, UPPER), nomatch = NULL]
 ```
 
