@@ -9,6 +9,7 @@
    + Argument `logicalAsInt` to `fwrite()` has been removed.
    + Argument `autostart` to `fread()` has been removed.
    + Argument `in.place` to `droplevels` has been removed.
+   + It's now an error to set `datatable.nomatch`, which has been warning since 1.15.0.
 
 # data.table [v1.17.0](https://github.com/Rdatatable/data.table/milestone/34)  (20 Feb 2025)
 
