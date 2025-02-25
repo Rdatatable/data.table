@@ -1939,7 +1939,7 @@ replace_dot_alias = function(e) {
       if (inherits(x, 'data.table')) .Call(C_unlock, x)
       else return(lapply(x, runlock, current_depth = current_depth + 1L))
     }
-    return(invisible())
+    invisible()
   }
   runlock(ans)
   if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
@@ -3118,7 +3118,7 @@ is_constantish = function(q, check_singleton=FALSE) {
     return(FALSE)
   }
   # calls are allowed <=> there's no SYMBOLs in the sub-AST
-  return(length(all.vars(q, max.names=1L, unique=FALSE)) == 0L)
+  length(all.vars(q, max.names=1L, unique=FALSE)) == 0L
 }
 .gshift_ok = function(q) {
   q = match.call(shift, q)
@@ -3192,7 +3192,7 @@ is_constantish = function(q, check_singleton=FALSE) {
     stopf("It looks like you re-used `:=` in argument %d a functional assignment call -- use `=` instead: %s(col1=val1, col2=val2, ...)", jj-1L, call_name)
 }
 
-.prepareFastSubset = function(isub, x, enclos, notjoin, verbose = FALSE){
+.prepareFastSubset = function(isub, x, enclos, notjoin, verbose=FALSE) {
   ## helper that decides, whether a fast binary search can be performed, if i is a call
   ## For details on the supported queries, see \code{\link{datatable-optimize}}
   ## Additional restrictions are imposed if x is .SD, or if options indicate that no optimization
@@ -3342,13 +3342,8 @@ is_constantish = function(q, check_singleton=FALSE) {
     setkeyv(i, idxCols)
     on = on[idxCols] ## make sure 'on' is in the correct order. Otherwise the logic won't recognise that a key / index already exists.
   }
-  return(list(i  = i,
-              on = on,
-              notjoin = notjoin
-              )
-         )
+  list(i=i, on=on, notjoin=notjoin)
 }
-
 
 .parse_on = function(onsub, isnull_inames) {
   ## helper that takes the 'on' string(s) and extracts comparison operators and column names from it.
