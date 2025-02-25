@@ -598,7 +598,7 @@ If you want to keep the `i_int` column from `i`, you need to explicitly select i
 x[i, on = .(x_int >= i_int), .(i_int = i.i_int, x_int = x.x_int, lower, UPPER)]
 ```
 
-This ensures the output clearly distinguishes `i_int` (from `i`) and `x_int` (from `x`).
+Using prefixes (`x.` and `i.`) is not strictly necessary in this case since the names are unambiguous, but using them ensures the output clearly distinguishes `i_int` (from `i`) and `x_int` (from `x`).
 
 If you want to exclude unmatched rows (an _inner join_), you should use `nomatch = NULL`:
 
