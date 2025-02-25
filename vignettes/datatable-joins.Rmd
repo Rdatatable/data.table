@@ -579,7 +579,7 @@ When performing non-equi joins (`<`, `>`, `<=`, `>=`), column names are assigned
 
 In non-equi joins, the left side of the operator (e.g., `x_int` in `x_int >= i_int`) must be a column from `x`, while the right side (e.g., `i_int`) must be a column from `i`.
 
-Non-equi joins do not currently support arbitrary expressions (but see [#1639](https://github.com/Rdatatable/data.table/issues/1639)). For example, `on = .(x_int >= i_int)` is valid, but `on = .(x_int >= i_int + 1)` is not valid.
+Non-equi joins do not currently support arbitrary expressions (but see [#1639](https://github.com/Rdatatable/data.table/issues/1639)). For example, `on = .(x_int >= i_int)` is valid, but `on = .(x_int >= i_int + 1)` is not.
 
 ```{r non_equi_join_example}
 x <- data.table(x_int = 2:4, lower = letters[1:3])
