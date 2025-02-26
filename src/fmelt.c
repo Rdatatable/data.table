@@ -206,7 +206,7 @@ SEXP uniq_diff(SEXP int_or_list, int ncol, bool is_measure) {
   }
   SEXP unique_col_numbers = PROTECT(allocVector(INTSXP, n_unique_cols)); 
   int unique_i = 0;
-  for (int i = 0; i < length(is_duplicated); ++i) {
+  for (int i=0; i<length(is_duplicated); ++i) {
     if (!LOGICAL(is_duplicated)[i]) {
       INTEGER(unique_col_numbers)[unique_i++] = INTEGER(int_vec)[i];
     }
