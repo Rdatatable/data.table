@@ -184,9 +184,9 @@ SEXP uniq_diff(SEXP int_or_list, int ncol, bool is_measure) {
   int invalid_count = 0;
   for (int i = 0; i < length(int_vec); ++i) {
     int col_number = INTEGER(int_vec)[i];
-    bool good_number = 0 < col_number && col_number <= ncol;
-    if (is_measure) good_number |= (col_number == NA_INTEGER);
-    if (!good_number || col_number == 0) {
+    bool good_number = (col_number > 0 && col_number <= ncol);
+    if (is_measure) {good_number |= (col_number == NA_INTEGER);}
+    if (!good_number) {
       invalid_col_ptr[invalid_count++] = col_number;
     } else if (!LOGICAL(is_duplicated)[i]) {
       n_unique_cols++;
@@ -201,8 +201,8 @@ SEXP uniq_diff(SEXP int_or_list, int ncol, bool is_measure) {
       nexti += offset;
       remaining -= offset;
     }
-      error(_("One or more values in '%s' are invalid; please fix by removing: %s"), 
-          is_measure ? "measure.vars" : "id.vars", buffer);
+    error(_("One or more values in '%s' are invalid; please fix by removing: %s"), 
+    is_measure ? "measure.vars" : "id.vars", buffer);
   }
   SEXP unique_col_numbers = PROTECT(allocVector(INTSXP, n_unique_cols)); 
   int unique_i = 0;
