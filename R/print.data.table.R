@@ -62,7 +62,6 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     }
     return(invisible(x))
   }
-  index_dt <- NULL
   if (show.indices) {
     if (is.null(indices(x))) {
       show.indices = FALSE
@@ -84,9 +83,6 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     toprint = x
     rn = seq_len(n_x)
     printdots = FALSE
-    if (!is.null(index_dt) && nrow(index_dt) != nrow(toprint)) {
-      show.indices = FALSE
-    }
     if (show.indices) toprint = cbind(toprint, index_dt)
   }
   require_bit64_if_needed(x)
