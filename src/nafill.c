@@ -40,7 +40,7 @@ void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, b
     }
   }
   if (verbose)
-    snprintf(ans->message[0], 500, "%s: took %.3fs\n", __func__, omp_get_wtime()-tic);
+    snprintf(ans->message[0], 500, _("%s: took %.3fs\n"), __func__, omp_get_wtime()-tic);
 }
 void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill, ans_t *ans, bool verbose) {
   double tic=0.0;
@@ -62,7 +62,7 @@ void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill
     }
   }
   if (verbose)
-    snprintf(ans->message[0], 500, "%s: took %.3fs\n", __func__, omp_get_wtime()-tic);
+    snprintf(ans->message[0], 500, _("%s: took %.3fs\n"), __func__, omp_get_wtime()-tic);
 }
 void nafillInteger64(int64_t *x, uint_fast64_t nx, unsigned int type, int64_t fill, ans_t *ans, bool verbose) {
   double tic=0.0;

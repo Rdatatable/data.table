@@ -108,7 +108,7 @@ replace_dot_alias = function(e) {
     # eval(parse()) to avoid "no visible binding for global variable" note from R CMD check
     # names starting with _ don't parse, so no leading _ in the name
   )
-  idx <- regexpr(missing_obj_fmt, err$message, perl=TRUE)
+  idx = regexpr(missing_obj_fmt, err$message, perl=TRUE)
   if (idx > 0L) {
     start = attr(idx, "capture.start", exact=TRUE)[ , "obj_name"]
     used = substr(
@@ -128,7 +128,7 @@ replace_dot_alias = function(e) {
   }
 }
 
-"[.data.table" = function(x, i, j, by, keyby, with=TRUE, nomatch=NA, mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, on=NULL, env=NULL, showProgress=getOption("datatable.showProgress", interactive()))
+"[.data.table" = function(x, i, j, by, keyby, with=TRUE, nomatch=NA, mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0.0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, on=NULL, env=NULL, showProgress=getOption("datatable.showProgress", interactive()))
 {
   # ..selfcount <<- ..selfcount+1  # in dev, we check no self calls, each of which doubles overhead, or could
   # test explicitly if the caller is [.data.table (even stronger test. TO DO.)
@@ -149,7 +149,7 @@ replace_dot_alias = function(e) {
   }
   if (!missing(verbose)) {
     if (!is.integer(verbose) && !is.logical(verbose)) stopf("verbose must be logical or integer")
-    if (length(verbose)!=1 || anyNA(verbose)) stopf("verbose must be length 1 non-NA")
+    if (length(verbose)!=1L || anyNA(verbose)) stopf("verbose must be length 1 non-NA")
     # set the global verbose option because that is fetched from C code without having to pass it through
     oldverbose = options(datatable.verbose=verbose)
     on.exit(options(oldverbose))
@@ -215,7 +215,7 @@ replace_dot_alias = function(e) {
   # TO DO (document/faq/example). Removed for now ... if ((roll || rolltolast) && missing(mult)) mult="last" # for when there is exact match to mult. This does not control cases where the roll is mult, that is always the last one.
   .unsafe.opt() #3585
   missingnomatch = missing(nomatch)
-  nomatch0 = identical(nomatch,0) || identical(nomatch,0L) || identical(nomatch, FALSE)  # for warning with row-numbers in i; #4353
+  nomatch0 = identical(nomatch,0.0) || identical(nomatch,0L) || identical(nomatch, FALSE)  # for warning with row-numbers in i; #4353
   if (nomatch0) nomatch=NULL  # retain nomatch=0|FALSE backwards compatibility, #857 #5214
   if (!is.null(nomatch)) {
     if (!(length(nomatch)==1L && is.na(nomatch))) stopf("nomatch= must be either NA or NULL (or 0 for backwards compatibility which is the same as NULL but please use NULL)")
@@ -572,12 +572,12 @@ replace_dot_alias = function(e) {
           ## benchmarks have shown that starting with 1e6 irows, a tweak can significantly reduce time
           ## (see #2366)
           if (verbose) {last.started.at=proc.time();catf("Reordering %d rows after bmerge done in ... ", length(irows));flush.console()}
-          if(length(irows) < 1e6){
+          if(length(irows) < 1e6L){
             irows = fsort(irows, internal=TRUE) ## internally, fsort on integer falls back to forderv
             } else {
               irows = as.integer(fsort(as.numeric(irows))) ## nocov; parallelized for numeric, but overhead of type conversion
             }
-          if (verbose) {cat(timetaken(last.started.at), "\n");flush.console()}
+          if (verbose) {cat(timetaken(last.started.at), "\n");flush.console()} # notranslate
         }
         ## make sure, all columns are taken from x and not from i.
         ## This is done by simply telling data.table to continue as if there was a simple subset
@@ -634,7 +634,7 @@ replace_dot_alias = function(e) {
       irows = irows[irows!=0L]
       if (verbose) {last.started.at=proc.time();catf("Inverting irows for notjoin done in ... ");flush.console()}
       i = irows = if (length(irows)) seq_len(nrow(x))[-irows] else NULL  # NULL meaning all rows i.e. seq_len(nrow(x))
-      if (verbose) cat(timetaken(last.started.at), "\n")
+      if (verbose) cat(timetaken(last.started.at), "\n") # notranslate
       leftcols = integer()  # proceed as if row subset from now on, length(leftcols) is switched on later
       rightcols = integer()
       # Doing this once here, helps speed later when repeatedly subsetting each column. R's [irows] would do this for each
@@ -703,7 +703,7 @@ replace_dot_alias = function(e) {
         names(..syms) = ..syms
         j = eval(jsub, lapply(substr(..syms, 3L, nchar(..syms)), get, pos=parent.frame()), parent.frame())
       }
-      if (is.logical(j)) j <- which(j)
+      if (is.logical(j)) j = which(j)
       if (!length(j) && !notj) return( null.data.table() )
       if (is.factor(j)) j = as.character(j)  # fix for FR: #358
       if (is.character(j)) {
@@ -892,8 +892,10 @@ replace_dot_alias = function(e) {
         }
         tt = lengths(byval)
         if (any(tt!=xnrow)) {
-          plural_part <- sprintf(ngettext(length(tt), "The item in the 'by' or 'keyby' list is length %s.", "The items in the 'by' or 'keyby' list have lengths %s."), brackify(tt))
-          stopf("%s Each must be length %d; the same length as there are rows in x (after subsetting if i is provided).", plural_part, xnrow)
+          stopf(ngettext(length(tt),
+                         "The item in the 'by' or 'keyby' list is length %s. Each must be length %d; the same length as there are rows in x (after subsetting if i is provided).",
+                         "The items in the 'by' or 'keyby' list have lengths %s. Each must be length %d; the same length as there are rows in x (after subsetting if i is provided)."),
+                brackify(tt), xnrow, domain=NA)
         }
         if (is.null(bynames)) bynames = rep.int("",length(byval))
         if (length(idx <- which(!nzchar(bynames))) && !bynull) {
@@ -1136,7 +1138,7 @@ replace_dot_alias = function(e) {
           if (!all(named_idx <- nzchar(lhs))) {
             # friendly error for common case: trailing terminal comma
             n_lhs = length(lhs)
-            this_call <- if (root == "let") "let" else "`:=`"
+            this_call = if (root == "let") "let" else "`:=`"
             .check_nested_walrus(jsub, which(!named_idx)+1L, this_call)
             if (!named_idx[n_lhs] && all(named_idx[-n_lhs])) {
               stopf("In %s(col1=val1, col2=val2, ...) form, all arguments must be named, but the last argument has no name. Did you forget a trailing comma?", this_call)
@@ -1145,8 +1147,7 @@ replace_dot_alias = function(e) {
             }
           }
           names(jsub)=""
-          # dont wrap the RHS in list if it is a singular NULL and if not creating a new column
-          if (length(jsub[-1L]) == 1L && as.character(jsub[-1L]) == 'NULL' && all(lhs %chin% names_x)) jsub[[1L]]=as.name("identity") else jsub[[1L]]=as.name("list")
+          jsub[[1L]]=as.name("list")
         }
         av = all.vars(jsub,TRUE)
         if (!is.atomic(lhs)) stopf("LHS of := must be a symbol, or an atomic vector (column names or positions).")
@@ -1182,13 +1183,13 @@ replace_dot_alias = function(e) {
         } else {
           # Adding new column(s). TO DO: move after the first eval in case the jsub has an error.
           newnames=setdiff(lhs, names_x)
-          m[is.na(m)] = ncol(x)+seq_len(length(newnames))
+          m[is.na(m)] = ncol(x)+seq_along(newnames)
           cols = as.integer(m)
           # don't pass verbose to selfrefok here -- only activated when
           #   ok=-1 which will trigger setalloccol with verbose in the next
           #   branch, which again calls _selfrefok and returns the message then
           if ((ok<-selfrefok(x, verbose=FALSE))==0L)   # ok==0 so no warning when loaded from disk (-1) [-1 considered TRUE by R]
-            if (is.data.table(x)) warningf("Invalid .internal.selfref detected and fixed by taking a (shallow) copy of the data.table so that := can add this new column by reference. At an earlier point, this data.table has been copied by R (or was created manually using structure() or similar). Avoid names<- and attr<- which in R currently (and oddly) may copy the whole data.table. Use set* syntax instead to avoid copying: ?set, ?setnames and ?setattr. If this message doesn't help, please report your use case to the data.table issue tracker so the root cause can be fixed or this message improved.")
+            if (is.data.table(x)) warningf("A shallow copy of this data.table was taken so that := can add or remove %d columns by reference. At an earlier point, this data.table was copied by R (or was created manually using structure() or similar). Avoid names<- and attr<- which in R currently (and oddly) may copy the whole data.table. Use set* syntax instead to avoid copying: ?set, ?setnames and ?setattr. It's also not unusual for data.table-agnostic packages to produce tables affected by this issue. If this message doesn't help, please report your use case to the data.table issue tracker so the root cause can be fixed or this message improved.", length(newnames))
             # !is.data.table for DF |> DT(,:=) tests 2212.16-19 (#5113) where a shallow copy is routine for data.frame
           if ((ok<1L) || (truelength(x) < ncol(x)+length(newnames))) {
             DT = x  # in case getOption contains "ncol(DT)" as it used to.  TODO: warn and then remove
@@ -1287,7 +1288,7 @@ replace_dot_alias = function(e) {
       # warningf(sym," in j is looking for ",getName," in calling scope, but a column '", sym, "' exists. Column names should not start with ..")
     }
     getName = substr(sym, 3L, nchar(sym))
-    getNameVal <- get0(getName, parent.frame())
+    getNameVal = get0(getName, parent.frame())
     if (is.null(getNameVal)) {
       if (exists(sym, parent.frame())) next  # user did 'manual' prefix; i.e. variable in calling scope has .. prefix
       stopf("Variable '%s' is not found in calling scope. Looking in calling scope because this symbol was prefixed with .. in the j= parameter.", getName)
@@ -1901,12 +1902,12 @@ replace_dot_alias = function(e) {
     }
 
     # adding ghead/gtail(n) support for n > 1 #5060 #523
-    q3 = 0
+    q3 = 0L
     if (!is.symbol(jsub)) {
       headTail_arg = function(q) {
         if (length(q)==3L && length(q3 <- q[[3L]])==1L && is.numeric(q3) &&
-         (q[[1L]]) %chin% c("ghead", "gtail") && q3!=1) q3
-        else 0
+         (q[[1L]]) %chin% c("ghead", "gtail") && q3!=1L) q3
+        else 0L
       }
       if (jsub %iscall% "list"){
         q3 = max(sapply(jsub, headTail_arg))
@@ -1914,7 +1915,7 @@ replace_dot_alias = function(e) {
         q3 = headTail_arg(jsub)
       }
     }
-    if (q3 > 0) {
+    if (q3 > 0L) {
       grplens = pmin.int(q3, len__)
       g = lapply(g, rep.int, times=grplens)
     } else if (.is_nrows(jsub)) {
@@ -2165,8 +2166,8 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
       internal_error("length(X)==%d but a dimension is zero", length(X))  # nocov
     return(array(if (is.null(X)) NA else X, dim = dm, dimnames = list(rownames.value, cn)))
   }
-  dim(X) <- c(n, length(X)/n)
-  dimnames(X) <- list(rownames.value, unlist(collabs, use.names = FALSE))
+  dim(X) = c(n, length(X)/n)
+  dimnames(X) = list(rownames.value, unlist(collabs, use.names = FALSE))
   X
 }
 
@@ -2379,7 +2380,7 @@ subset.data.table = function(x, subset, select, ...)
       ## Set the key on the returned data.table as long as the key
       ## columns that "remain" are the same as the original, or a
       ## prefix of it.
-      is.prefix = all(key(x)[seq_len(length(key.cols))] == key.cols)
+      is.prefix = all(key(x)[seq_along(key.cols)] == key.cols)
       if (is.prefix) {
         setattr(ans, "sorted", key.cols)
       }
@@ -2453,7 +2454,7 @@ split.data.table = function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = TR
     # same as split.data.frame - handling all exceptions, factor orders etc, in a single stream of processing was a nightmare in factor and drop consistency
     # evaluate formula mirroring split.data.frame #5392. Mimics base::.formula2varlist.
     if (inherits(f, "formula"))
-        f <- eval(attr(terms(f), "variables"), x, environment(f))
+        f = eval(attr(terms(f), "variables"), x, environment(f))
     # be sure to use x[ind, , drop = FALSE], not x[ind], in case downstream methods don't follow the same subsetting semantics (#5365)
     return(lapply(split(x = seq_len(nrow(x)), f = f, drop = drop, ...), function(ind) x[ind, , drop = FALSE]))
   }
@@ -2525,6 +2526,18 @@ split.data.table = function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = TR
   }
 }
 
+sort_by.data.table <- function(x, y, ...)
+{
+  if (!cedta()) return(NextMethod()) # nocov
+  if (inherits(y, "formula"))
+    y <- .formula2varlist(y, x)
+  if (!is.list(y))
+    y <- list(y)
+  # use forder instead of base 'order'
+  o <- do.call(forder, c(unname(y), list(...)))
+  x[o, , drop=FALSE]
+}
+
 # TO DO, add more warnings e.g. for by.data.table(), telling user what the data.table syntax is but letting them dispatch to data.frame if they want
 
 copy = function(x) {
@@ -2558,7 +2571,7 @@ copy = function(x) {
     ## get correct key if cols are present
     cols = names(x)[cols]
     keylength = which.first(!key(ans) %chin% cols) - 1L
-    if (is.na(keylength)) keylength <- length(key(ans))
+    if (is.na(keylength)) keylength = length(key(ans))
     if (!keylength) {
       setattr(ans, "sorted", NULL) ## no key remaining
     } else {
@@ -2738,7 +2751,7 @@ setcolorder = function(x, neworder=key(x), before=NULL, after=NULL, skip_absent=
   if (length(before)>1L || length(after)>1L)
     stopf("before=/after= accept a single column name or number, not more than one")
   neworder = colnamesInt(x, neworder, check_dups=FALSE, skip_absent=skip_absent)  # dups are now checked inside Csetcolorder below
-  neworder = neworder[neworder != 0] # tests 498.11, 498.13 fail w/o this
+  neworder = neworder[neworder != 0L] # tests 498.11, 498.13 fail w/o this
   if (length(before))
     neworder = c(setdiff(seq_len(colnamesInt(x, before) - 1L), neworder), neworder)
   if (length(after))
@@ -2866,7 +2879,7 @@ setDF = function(x, rownames=NULL) {
       stopf("All elements in argument 'x' to 'setDF' must be of same length")
     xn = names(x)
     if (is.null(xn)) {
-      setattr(x, "names", paste0("V",seq_len(length(x))))
+      setattr(x, "names", paste0("V",seq_along(x)))
     } else {
       idx = !nzchar(xn) # NB: keepNA=FALSE intentional
       if (any(idx)) {
@@ -2917,9 +2930,6 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
         break
       }
     }
-
-    # Done to avoid affecting other copies of x when we setattr() below (#4784)
-    x = .shallow(x)
 
     rn = if (!identical(keep.rownames, FALSE)) rownames(x) else NULL
     setattr(x, "row.names", .set_row_names(nrow(x)))
@@ -3088,11 +3098,11 @@ gweighted.mean = function(x, w, ..., na.rm=FALSE) {
   if (missing(w)) gmean(x, na.rm)
   else {
     if (na.rm) { # take those indices out of the equation by setting them to 0
-      ix <- is.na(x)
-      x[ix] <- 0
-      w[ix] <- 0
+      ix = is.na(x)
+      x[ix] = 0.0
+      w[ix] = 0.0
     }
-    gsum((w!=0)*x*w, na.rm=FALSE)/gsum(w, na.rm=FALSE)
+    gsum((w!=0.0)*x*w, na.rm=FALSE)/gsum(w, na.rm=FALSE)
   }
 }
 gprod = function(x, na.rm=FALSE) .Call(Cgprod, x, na.rm)
@@ -3159,7 +3169,7 @@ is_constantish = function(q, check_singleton=FALSE) {
 
 # Check for na.rm= in expr in the expected slot; allows partial matching and
 #   is robust to unnamed expr. Note that NA names are not possible here.
-.arg_is_narm <- function(expr, which=3L) !is.null(nm <- names(expr)[which]) && startsWith(nm, "na")
+.arg_is_narm = function(expr, which=3L) !is.null(nm <- names(expr)[which]) && startsWith(nm, "na")
 
 .gforce_ok = function(q, x) {
   if (is.N(q)) return(TRUE) # For #334
@@ -3246,7 +3256,7 @@ is_constantish = function(q, check_singleton=FALSE) {
       ## redirect to normal DT[x == TRUE]
       stub = call("==", as.symbol(col), TRUE)
     }
-    if (length(stub[[1L]]) != 1) return(NULL) # nocov Whatever it is, definitely not one of the valid operators
+    if (length(stub[[1L]]) != 1L) return(NULL) # nocov Whatever it is, definitely not one of the valid operators
     operator = as.character(stub[[1L]])
     if (!operator %chin% validOps$op) return(NULL) ## operator not supported
     if (!is.name(stub[[2L]])) return(NULL)
@@ -3287,7 +3297,7 @@ is_constantish = function(q, check_singleton=FALSE) {
   }
   if (length(i) == 0L) internal_error("i became length-0") # nocov
   ## convert i to data.table with all combinations in rows.
-  if(length(i) > 1L && prod(lengths(i)) > 1e4){
+  if(length(i) > 1L && prod(lengths(i)) > 1e4L){
     ## CJ would result in more than 1e4 rows. This would be inefficient, especially memory-wise #2635
     if (verbose) {catf("Subsetting optimization disabled because the cross-product of RHS values exceeds 1e4, causing memory problems.\n");flush.console()}
     return(NULL)

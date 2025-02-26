@@ -63,7 +63,7 @@ SEXP reorder(SEXP x, SEXP order)
     // This check is once up front, and then idx is applied to all the columns which is where the most time is spent.
   }
 
-  char *TMP = (char *)R_alloc(nmid, maxSize);
+  char *TMP = R_alloc(nmid, maxSize);
 
   for (int i=0; i<ncol; ++i) {
     const SEXP v = isNewList(x) ? VECTOR_ELT(x,i) : x;

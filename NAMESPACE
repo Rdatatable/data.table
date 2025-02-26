@@ -206,3 +206,6 @@ S3method(format_list_item, data.frame)
 
 export(fdroplevels, setdroplevels)
 S3method(droplevels, data.table)
+
+# sort_by added in R 4.4.0, #6662, https://stat.ethz.ch/pipermail/r-announce/2024/000701.html
+if (getRversion() >= "4.4.0") S3method(sort_by, data.table)  
