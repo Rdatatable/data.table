@@ -21069,4 +21069,3 @@ if (exists("sort_by", "package:base")) {
   test(2306.23, DT1[, sort_by(.SD, ~a + b)], data.table(a=c(1, 2, 3, 3, NA), b=c(4L, 2L, 0L, 3L, 1L)))
   test(2306.24, DT1[, sort_by(.SD, ~.(a, b))], data.table(a=c(1, 2, 3, 3, NA), b=c(4L, 2L, 0L, 3L, 1L)))
 }
-
