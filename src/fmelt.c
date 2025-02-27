@@ -185,9 +185,7 @@ SEXP uniq_diff(SEXP int_or_list, int ncol, bool is_measure) {
   for (int i = 0; i < length(int_vec); ++i) {
     int col_number = INTEGER(int_vec)[i];
     bool good_number = (col_number > 0 && col_number <= ncol);
-    if (is_measure) {
-      good_number |= (col_number == NA_INTEGER);
-    }
+    if (is_measure) good_number |= (col_number == NA_INTEGER);
     if (!good_number) {
       invalid_col_ptr[invalid_count++] = col_number;
     } else if (!LOGICAL(is_duplicated)[i]) {
