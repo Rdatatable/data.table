@@ -21050,7 +21050,7 @@ test(2304.100, set(copy(DT), i=2L, j=c("L1", "L2"), value=list(list(NULL), list(
 # the integer overflow in #6729 is only noticeable with UBSan
 test(2305, { fread(testDir("issue_6729.txt.bz2")); TRUE })
 
-#test for enhancing error message of invalid column #6512
+# test for enhancing error message of invalid column #6512
 uniq_diff <- function(...) {
   .Call("uniq_diff", ...)
 }
