@@ -2,7 +2,9 @@
 
 # data.table [v1.17.99](https://github.com/Rdatatable/data.table/milestone/35)  (in development)
 
+## NEW FEATURES
 
+1. New `sort_by()` method for data.tables, [#6662](https://github.com/Rdatatable/data.table/issues/6662). It uses `forder()` to improve upon the data.frame method and also match `DT[order(...)]` behavior with respect to locale. Thanks @rikivillalba for the suggestion and PR.
 
 # data.table [v1.17.0](https://github.com/Rdatatable/data.table/milestone/34)  (20 Feb 2025)
 
@@ -20,7 +22,7 @@ rowwiseDT(
   a=,b=,c=,  d=,
   1, 2, "a", 2:3,
   3, 4, "b", list("e"),
-  5, 6, "c", ~a+b,
+  5, 6, "c", ~a+b
 )
 #>        a     b      c      d
 #>    <num> <num> <char> <list>

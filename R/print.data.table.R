@@ -86,6 +86,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     if (show.indices) toprint = cbind(toprint, index_dt)
   }
   require_bit64_if_needed(x)
+  classes = classes1(toprint)
   toprint=format.data.table(toprint, na.encode=FALSE, timezone = timezone, ...)  # na.encode=FALSE so that NA in character cols print as <NA>
 
   # FR #353 - add row.names = logical argument to print.data.table
@@ -100,7 +101,6 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
       factor = "<fctr>", POSIXct = "<POSc>", logical = "<lgcl>",
       IDate = "<IDat>", integer64 = "<i64>", raw = "<raw>",
       expression = "<expr>", ordered = "<ord>")
-    classes = classes1(x)
     abbs = unname(class_abb[classes])
     if ( length(idx <- which(is.na(abbs))) ) abbs[idx] = paste0("<", classes[idx], ">")
     toprint = rbind(abbs, toprint)
