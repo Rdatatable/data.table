@@ -16,7 +16,7 @@ methods::setAs("data.table", "data.frame", function(from) {
   as.data.frame(from)
 })
 
-methods::setOldClass("IDate")
+methods::setOldClass(c("IDate", "Date"))
 methods::setOldClass("ITime")
 
 methods::setAs("character", "IDate", function(from) as.IDate(from))

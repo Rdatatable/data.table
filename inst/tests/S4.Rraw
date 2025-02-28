@@ -118,3 +118,11 @@ test(7.1, is.data.table(DF@x))
 # Similar code for under-allocated data.tables in S4 slots, #6704
 setClass("DataTable", slots=c(x="data.table"))
 test(7.2, options=c(datatable.alloccol=0L), {DT = new("DataTable", x=data.table(a=1)); DT@x[, b := 2L]; DT@x$b}, 2L) # NB: requires assigning DT to test assignment back to that object
+
+# IDate was not visible as Date to S4 dispatch, #6839
+CustomDurationClass <- setClass("CustomDurationClass", contains = "integer")
+setGeneric("%foo%", function(e1, e2) stop("dispatch to default method"))
+setMethod(`%foo%`, c("Date", "CustomDurationClass"), function (e1, e2) e1 - e2@.Data)
+test(8, as.IDate("2025-03-01") %foo% CustomDurationClass(1), as.IDate("2025-02-28"))
+removeGeneric("%foo%")
+removeClass("CustomDurationClass")
