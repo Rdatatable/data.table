@@ -44,7 +44,7 @@ mirror-packages:
   stage: dependencies
   tags:
     - saas-linux-medium-amd64
-  image: registry.gitlab.com/jangorecki/dockerfiles/r-base-minimal
+  image: registry.gitlab.com/rdatatable/dockerfiles/r-base-minimal
   cache:
     paths:
       - bus/$CI_JOB_NAME/cran
@@ -67,7 +67,7 @@ build:
   stage: build
   tags:
     - saas-linux-medium-amd64
-  image: registry.gitlab.com/jangorecki/dockerfiles/r-base-gcc
+  image: registry.gitlab.com/rdatatable/dockerfiles/r-base-gcc
   needs: ["mirror-packages"]
   before_script:
     - *install-deps
@@ -106,7 +106,7 @@ build:
 # tests for compilation warnings
 test-lin-rel:
   <<: *test-lin
-  image: registry.gitlab.com/jangorecki/dockerfiles/r-data.table
+  image: registry.gitlab.com/rdatatable/dockerfiles/r-data.table
   variables:
     _R_CHECK_COMPILATION_FLAGS_KNOWN_: "-Wvla"
     _R_CHECK_CRAN_INCOMING_: "FALSE"
@@ -128,7 +128,7 @@ test-lin-rel:
 # flags: gcc -O0 -fno-openmp
 test-lin-rel-vanilla:
   <<: *test-lin
-  image: registry.gitlab.com/jangorecki/dockerfiles/r-base-gcc
+  image: registry.gitlab.com/rdatatable/dockerfiles/r-base-gcc
   variables:
     _R_CHECK_COMPILATION_FLAGS_KNOWN_: "-Wvla"
   script:
@@ -141,7 +141,7 @@ test-lin-rel-vanilla:
 # extra NOTEs check and build pdf manual thus not from cran-lin template
 test-lin-rel-cran:
   <<: *test-lin
-  image: registry.gitlab.com/jangorecki/dockerfiles/r-base
+  image: registry.gitlab.com/rdatatable/dockerfiles/r-base
   variables:
     _R_CHECK_CRAN_INCOMING_: "TRUE"           ## stricter --as-cran checks should run in dev pipelines continuously (not sure what they are though)
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"   ## Other than no URL checking (takes many minutes) or 'Days since last update 0' NOTEs needed, #3284
@@ -161,7 +161,7 @@ test-lin-rel-cran:
 # tests for new notes
 test-lin-dev-gcc-strict-cran:
   <<: *test-lin
-  image: registry.gitlab.com/jangorecki/dockerfiles/r-devel-gcc-strict
+  image: registry.gitlab.com/rdatatable/dockerfiles/r-devel-gcc-strict
   variables:
     _R_CHECK_COMPILATION_FLAGS_KNOWN_: "-Wvla"
     _R_CHECK_CRAN_INCOMING_: "TRUE"
@@ -183,7 +183,7 @@ test-lin-dev-gcc-strict-cran:
 # tests for new notes
 test-lin-dev-clang-cran:
   <<: *test-lin
-  image: registry.gitlab.com/jangorecki/dockerfiles/r-devel-clang
+  image: registry.gitlab.com/rdatatable/dockerfiles/r-devel-clang
   variables:
     _R_CHECK_COMPILATION_FLAGS_KNOWN_: "-Wvla"
     _R_CHECK_CRAN_INCOMING_: "TRUE"
@@ -203,7 +203,7 @@ test-lin-dev-clang-cran:
 # stated dependency on R
 test-lin-ancient-cran:
   <<: *test-lin
-  image: registry.gitlab.com/jangorecki/dockerfiles/r-3.3.0
+  image: registry.gitlab.com/rdatatable/dockerfiles/r-3.3.0
   variables:
     _R_CHECK_FORCE_SUGGESTS_: "FALSE" # can be removed if all dependencies are available (knitr, xts, etc.)
   script:
@@ -306,7 +306,7 @@ test-mac-old:
 # generating pkgdown website
 integration:
   stage: integration
-  image: registry.gitlab.com/jangorecki/dockerfiles/r-pkgdown
+  image: registry.gitlab.com/rdatatable/dockerfiles/r-pkgdown
   tags:
     - saas-linux-medium-amd64
   only:
