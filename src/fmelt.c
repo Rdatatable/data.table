@@ -176,12 +176,8 @@ bool is_default_measure(SEXP vec) {
 
 // maybe unlist, then unique, then set_diff.
 SEXP uniq_diff(SEXP int_or_list, int ncol, bool is_measure) {
-  // Protect input list/vector, unlisting if necessary
   SEXP int_vec = PROTECT(isNewList(int_or_list) ? unlist_(int_or_list) : int_or_list);
-  
-  // Check for duplicated elements in the input vector
   SEXP is_duplicated = PROTECT(duplicated(int_vec, FALSE)); 
-  
   int n_unique_cols = 0;
   SEXP invalid_columns = PROTECT(allocVector(INTSXP, length(int_vec)));
   int* invalid_col_ptr = INTEGER(invalid_columns);
@@ -189,7 +185,7 @@ SEXP uniq_diff(SEXP int_or_list, int ncol, bool is_measure) {
   for (int i = 0; i < length(int_vec); ++i) {
     int col_number = INTEGER(int_vec)[i];
     bool good_number = (col_number > 0 && col_number <= ncol);
-    if (is_measure) good_number |= (col_number == NA_INTEGER);
+    if (is_measure) good_number |= (col_number==NA_INTEGER);
     if (!good_number) {
       invalid_col_ptr[invalid_count++] = col_number;
     } else if (!LOGICAL(is_duplicated)[i]) {
@@ -210,22 +206,15 @@ SEXP uniq_diff(SEXP int_or_list, int ncol, bool is_measure) {
   }
   SEXP unique_col_numbers = PROTECT(allocVector(INTSXP, n_unique_cols)); 
   int unique_i = 0;
-  
-  // Populate the unique column numbers into the new vector
-  for (int i = 0; i < length(is_duplicated); ++i) {
+  for (int i=0; i<length(is_duplicated); ++i) {
     if (!LOGICAL(is_duplicated)[i]) {
       INTEGER(unique_col_numbers)[unique_i++] = INTEGER(int_vec)[i];
     }
   }
-  
-  // Apply set difference to get final unique column indices
   SEXP out = set_diff(unique_col_numbers, ncol);
   UNPROTECT(4);
   return out;
 }
-
-
-
 
 SEXP cols_to_int_or_list(SEXP cols, SEXP dtnames, bool is_measure) {
   switch(TYPEOF(cols)) {
