@@ -21077,14 +21077,4 @@ setindex(DT, b)
 test(2307, { capture.output(print(DT, class = TRUE, show.indices = TRUE)); TRUE })
 
 # test for enhancing error message of invalid column #6512
-uniq_diff <- function(...) {
-  .Call("uniq_diff", ...)
-}
-capture_error_message <- function(expr) {
-  msg <- tryCatch(
-    { expr; NULL }, 
-    error = function(e) e$message
-  )
-  msg
-}
-test(2308, {msg <- capture_error_message(uniq_diff(as.integer(c(1, 2, -1, 4)), 4, FALSE))print(msg)return(grepl("\\[-1\\]", msg))}, TRUE)
+test(2308, {msg <- tryCatch({ .Call("uniq_diff", as.integer(c(1, 2, -1, 4)), 4, FALSE); NULL }, error = function(e) e$message)print(msg)return(grepl("\\[-1\\]", msg))}, TRUE)
