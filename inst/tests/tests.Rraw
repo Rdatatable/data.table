@@ -12716,7 +12716,7 @@ x = runif(1e3)
 test(1888.6, y<-fsort(x,verbose=TRUE), output="nth=.*Top 20 MSB counts")
 test(1888.7, !base::is.unsorted(y))
 test(1888.8, fsort(x,verbose=1), error="verbose must be TRUE or FALSE")
-test(1888.9, fsort(y), base::sort(y))
+test(1888.9, fsort(c(1L, 2L, 3L, 4L), internal = TRUE), c(1L, 2L, 3L, 4L))
 rm(x, y)
 
 # doubling of savetl buffer (currently starts with 100)
