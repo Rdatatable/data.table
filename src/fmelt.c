@@ -1,7 +1,5 @@
 #include "data.table.h"
 #include <Rdefines.h>
-
-
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 // raise(SIGINT);
 
