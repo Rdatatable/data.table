@@ -296,7 +296,7 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md
     if (this<1 || this>LENGTH(x)) error(_("Item %d of cols is %d which is outside the range [1,ncol(x)=%d]"), i+1, this, LENGTH(x));
   }
 
-  int overAlloc = checkOverAlloc(GetOption(install("datatable.alloccol"), R_NilValue));
+  int overAlloc = checkOverAlloc(GetOption1(install("datatable.alloccol")));
   SEXP ans = PROTECT(allocVector(VECSXP, LENGTH(cols)+overAlloc)); nprotect++;  // doing alloc.col directly here; eventually alloc.col can be deprecated.
 
   // user-defined and superclass attributes get copied as from v1.12.0
