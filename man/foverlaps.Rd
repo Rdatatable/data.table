@@ -16,7 +16,7 @@ could be changed.
 }
 
 \usage{
-foverlaps(x, y, by.x = if (!is.null(key(x))) key(x) else key(y),
+foverlaps(x, y, by.x = key(x) \%||\% key(y),
     by.y = key(y), maxgap = 0L, minoverlap = 1L,
     type = c("any", "within", "start", "end", "equal"),
     mult = c("all", "first", "last"),
