@@ -8286,8 +8286,8 @@ test(1579.03, dt[, lapply(.SD, median), keyby=x],
               dt[, lapply(.SD, function(x) median(as.numeric(x))), keyby=x])
 test(1579.04, dt[, lapply(.SD, median, na.rm=TRUE), keyby=x],
               dt[, lapply(.SD, function(x) median(as.numeric(x), na.rm=TRUE)), keyby=x])
-ans = capture.output(dt[, lapply(.SD, median), by=x, verbose=TRUE])
-test(1579.05, any(grepl("GForce optimized", ans)), TRUE)
+test(1579.05, dt[, lapply(.SD, median), by=x, verbose=TRUE],
+              output = "GForce optimized")
 
 # testing gforce::ghead and gforce::gtail
 # head(.SD, 1) and tail(.SD, 1) optimisation
@@ -9280,11 +9280,9 @@ test(1633.4, dt[, .SD, by=1:nrow(dt)], data.table(nrow=1:nrow(dt), dt)) # make s
 
 # reuse secondary indices
 dt = data.table(x=sample(3, 10, TRUE), y=1:10)
-v1 = capture.output(ans1 <- dt[.(3:2), on="x", verbose=TRUE])
+test(1634.1, dt[.(3:2), on="x", verbose=TRUE], output = "ad hoc")
 setindex(dt, x)
-v2 = capture.output(ans2 <- dt[.(3:2), on="x", verbose=TRUE])
-test(1634.1, any(grepl("ad hoc", v1)), TRUE)
-test(1634.2, any(grepl("existing index", v2)), TRUE)
+test(1634.2, dt[.(3:2), on="x", verbose=TRUE], output = "existing index")
 
 # fread's fill argument detects separator better in complex cases as well, #1573
 # if pasted to the console, these tests won't work. But do work when sourced as these are tabs not spaces in text
@@ -11653,8 +11651,8 @@ test(1765.4, {warning("foobar1"); warning("foobar2"); warning("FOO"); 4L}, 4L, i
 test(1765.5, {warning("foobar1"); warning("foobar2"); warning("FOO"); 4L}, 4L, ignore.warning="2", warning=c("foobar1","FOO"))
 
 # print(null.data.table()) should not output NULL as well, #1852
-# use capture.output() in this case rather than output= to ensure NULL is not output
-test(1766, capture.output(print(data.table(NULL))), "Null data.table (0 rows and 0 cols)")
+# the ^, $ specifiers don't match embedded newlines (if any) so match will fail if NULL is also printed
+test(1766, data.table(NULL), output = "^Null data\\.table \\(0 rows and 0 cols\\)$")
 
 # Bug on subset of 1-row data.table when expr returns a named logical vector #2152
 options(datatable.auto.index=FALSE)
@@ -11888,8 +11886,8 @@ test(1774.17, as.data.table(x, na.rm='a'), error="'na.rm' must be scalar")
 
 # verify print.keys works
 DT1 <- data.table(a = 1:3, key = "a")
-test(1775.1, capture.output(print(DT1, print.keys = TRUE)),
-     c("Key: <a>", "   a", "1: 1", "2: 2", "3: 3"))
+test(1775.1, DT1, options = c(datatable.print.keys = TRUE),
+     output = c("Key: <a>", "   a", "1: 1", "2: 2", "3: 3"))
 DT2 <- data.table(a = 1:3, b = 4:6)
 setindexv(DT2, c("b","a"))
 test(1775.2, print(DT2, print.keys = TRUE),
@@ -13675,7 +13673,7 @@ test(1962.034, setkeyv(DT, c('a', '')),
 setkey(DT, a)
 test(1962.035, {setkeyv(DT, character(0L)); key(DT)}, NULL,
      warning = 'cols is a character vector of zero length')
-test(1962.036, any(grepl('already ordered', capture.output(setkey(DT, a, verbose = TRUE)))))
+test(1962.036, setkey(DT, a, verbose = TRUE), output = 'already ordered')
 setnames(DT, '.xi')
 setkey(DT, NULL)
 test(1962.037, setkey(DT, .xi),
