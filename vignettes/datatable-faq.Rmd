@@ -26,6 +26,10 @@ h2 {
 }
 </style>
 
+```{r echo=FALSE, file='_translation_links.R'}
+```
+`r .write.translation.links("Translations of this document are available in: %s")`
+
 ```{r, echo = FALSE, message = FALSE}
 library(data.table)
 knitr::opts_chunk$set(
@@ -36,10 +40,6 @@ knitr::opts_chunk$set(
  collapse = TRUE)
 .old.th = setDTthreads(1)
 ```
-
-```{r echo=FALSE, file='_translation_links.R'}
-```
-`r .write.translation.links("Translations of this document are available in: %s")`
 
 The first section, Beginner FAQs, is intended to be read in order, from start to finish.  It's just written in a FAQ style to be digested more easily. It isn't really the most frequently asked questions. A better measure for that is looking on Stack Overflow.
 
