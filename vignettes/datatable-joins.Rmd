@@ -708,9 +708,9 @@ Products[ProductPriceHistory, on = .(id = product_id), price := i.price]
 
 2) If we need to get the latest price and date (instead of all matches), we can still use := efficiently:
 ```{r Updating with the Latest Record}
-Products[ProductPriceHistory, 
+Products[ProductPriceHistory,
          on = .(id = product_id),
-         `:=`(price = last(i.price), last_updated = last(i.date)), 
+         `:=`(price = last(i.price), last_updated = last(i.date)),
          by = .EACHI]
 ```
 - last(i.price) ensures that only the latest price is selected.
@@ -720,10 +720,9 @@ Products[ProductPriceHistory,
 3) When we need to update Products with multiple columns from ProductPriceHistory
 ```{r Efficient Right Join Update }
 cols <- setdiff(names(ProductPriceHistory), 'product_id')
-Products[ProductPriceHistory, 
-         on = .(id = product_id), 
+Products[ProductPriceHistory,
+         on = .(id = product_id),
          (cols) := mget(cols)]
-
 ```
 - Efficiently updates multiple columns in Products from ProductPriceHistory.
 - mget(cols) retrieves multiple matching columns dynamically.
