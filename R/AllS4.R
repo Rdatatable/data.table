@@ -3,7 +3,6 @@ if ("package:data.table" %in% search()) stopf("data.table package loaded. When d
 
 ## Allows data.table to be defined as an object of an S4 class,
 ## or even have data.table be a super class of an S4 class.
-methods::setOldClass(c('data.frame'))
 methods::setOldClass(c('data.table', 'data.frame'))
 
 ## as(some.data.frame, "data.table")
@@ -16,7 +15,7 @@ methods::setAs("data.table", "data.frame", function(from) {
   as.data.frame(from)
 })
 
-methods::setOldClass("IDate")
+methods::setOldClass(c("IDate", "Date"))
 methods::setOldClass("ITime")
 
 methods::setAs("character", "IDate", function(from) as.IDate(from))

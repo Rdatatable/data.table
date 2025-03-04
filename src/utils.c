@@ -222,6 +222,14 @@ SEXP copyAsPlain(SEXP x) {
   }
   const int64_t n = XLENGTH(x);
   SEXP ans = PROTECT(allocVector(TYPEOF(x), n));
+  // aside: unlike R's duplicate we do not copy truelength here; important for dogroups.c which uses negative truelenth to mark its specials
+  if (ALTREP(ans))
+    internal_error(__func__, "copyAsPlain returning ALTREP for type '%s'", type2char(TYPEOF(x))); // # nocov
+  if (!n) { // cannot memcpy invalid pointer, #6819
+    DUPLICATE_ATTRIB(ans, x);
+    UNPROTECT(1);
+    return ans;
+  }
   switch (TYPEOF(x)) {
   case RAWSXP:
     memcpy(RAW(ans),     RAW(x),     n*sizeof(Rbyte));
@@ -250,9 +258,6 @@ SEXP copyAsPlain(SEXP x) {
     internal_error(__func__, "type '%s' not supported in %s", type2char(TYPEOF(x)), "copyAsPlain()"); // # nocov
   }
   DUPLICATE_ATTRIB(ans, x);
-  // aside: unlike R's duplicate we do not copy truelength here; important for dogroups.c which uses negative truelenth to mark its specials
-  if (ALTREP(ans))
-    internal_error(__func__, "copyAsPlain returning ALTREP for type '%s'", type2char(TYPEOF(x))); // # nocov
   UNPROTECT(1);
   return ans;
 }

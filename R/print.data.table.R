@@ -66,8 +66,8 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     if (is.null(indices(x))) {
       show.indices = FALSE
     } else {
-      index_dt <- as.data.table(attributes(attr(x, 'index')))
-      print_names <- paste0("index", if (ncol(index_dt) > 1L) seq_len(ncol(index_dt)) else "", ":", sub("^__", "", names(index_dt)))
+      index_dt = as.data.table(attributes(attr(x, 'index')))
+      print_names = paste0("index", if (ncol(index_dt) > 1L) seq_len(ncol(index_dt)) else "", ":", sub("^__", "", names(index_dt)))
       setnames(index_dt, print_names)
     }
   }
@@ -86,6 +86,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     if (show.indices) toprint = cbind(toprint, index_dt)
   }
   require_bit64_if_needed(x)
+  classes = classes1(toprint)
   toprint=format.data.table(toprint, na.encode=FALSE, timezone = timezone, ...)  # na.encode=FALSE so that NA in character cols print as <NA>
 
   # FR #353 - add row.names = logical argument to print.data.table
@@ -100,7 +101,6 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
       factor = "<fctr>", POSIXct = "<POSc>", logical = "<lgcl>",
       IDate = "<IDat>", integer64 = "<i64>", raw = "<raw>",
       expression = "<expr>", ordered = "<ord>")
-    classes = classes1(x)
     abbs = unname(class_abb[classes])
     if ( length(idx <- which(is.na(abbs))) ) abbs[idx] = paste0("<", classes[idx], ">")
     toprint = rbind(abbs, toprint)
@@ -121,7 +121,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     # When nrow(toprint) = 1, attributes get lost in the subset,
     #   function below adds those back when necessary
     toprint = toprint_subset(toprint, cols_to_print)
-    trunc.cols <- length(not_printed) > 0L
+    trunc.cols = length(not_printed) > 0L
   }
   print_default = function(x) {
     if (col.names != "none") cut_colnames = identity
@@ -289,7 +289,7 @@ trunc_cols_message = function(not_printed, abbs, class, col.names){
 }
 
 # Maybe add a method for repr::repr_text.  See https://github.com/Rdatatable/data.table/issues/933#issuecomment-220237965
-knit_print.data.table <- function(x, ...) {
+knit_print.data.table = function(x, ...) {
   if (!shouldPrint(x)) return(invisible(x))
   NextMethod()
 }

@@ -12,6 +12,7 @@ vignette: >
 Translations of this document are available in
 
 * [French](https://rdatatable.gitlab.io/data.table/articles/fr/datatable-intro.html)
+* [Russian](https://rdatatable.gitlab.io/data.table/articles/ru/datatable-intro.html)
 
 ```{r, echo = FALSE, message = FALSE}
 require(data.table)

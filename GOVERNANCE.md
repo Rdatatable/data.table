@@ -72,6 +72,14 @@ Functionality that is out of current scope:
 * How to obtain this role: (1) merge into master a PR adding role="cre" to DESCRIPTION, and (2) submit updated package to CRAN (previous CRAN Maintainer will have to confirm change by email to CRAN). 
 * How this role is recognized: credited via role="cre" in DESCRIPTION, so they appear as Maintainer on CRAN. 
 
+## Community Engagement Coordinator
+
+* Definition: An individual who is involved in the project but does **not** also occupy the Committer or CRAN Maintainer role.  In charge of maintaining The Raft blog, preparing Seal of Approval Applications, addressing Code of Conduct violations, and planning social or community events.
+
+* How to obtain this role: At the discretion of the current Community Engagement Coordinator(s) in conversation with the current Committers.
+
+* How this role is recognized: Holds the Owner role in the [rdatatable-community organization](https://github.com/orgs/rdatatable-community/people) on GitHub.
+
 # Decision-making processes
 
 ## Definition of Consensus
@@ -98,19 +106,35 @@ There is no special process for changing this document. Submit a PR and ask for 
 
 Please also make a note in the change log under [`# Governance history`](#governance-history)
 
+# Finances and Funding
+
+There is currently no mechanism for the data.table project to receive funding as an entity.  
+
+Funding support for this project therefore may come in two forms:
+
+## Individual external funding
+
+Any individual developer or community member of data.table may apply for and receive funding for their work on the project.  Individuals or groups seeking funding support are strongly encouraged to consult directly with the data.table Project Members (by initiating an Issue on GitHub) to ensure funds are used meaningfully. Formally, however, decisions about use of funds are governed by the individual grantee(s) and their contract with the funding agency. 
+
+There is no guarantee that funded work will be incorporated into the data.table package; any contributions, whether funded or unfunded, are subject to the same review process as outlined above.
+
+## Direct donations
+
+Direct donations to the project may be made via GitHub Sponsorships, which allow individuals to fund a specific developer.  If the current CRAN Maintainer offers a personal sponsorship option, donations may be made to them to support the project in general.
+
+## Decision-making for future opportunities
+
+We here outline a procedure for disbursing funds, should this project in the future become a directly fundable entity (e.g. an LLC or a subsidiary of an umbrella LLC).
+
+Funds acquired by the data.table project will be disbursed at the discretion of the **Committers**, defined as above.  The **CRAN Maintainer** will have authority to make final decisions in the event that no consensus is reached among committers prior to deadlines for use of funds, and will be responsible for disbursement logistics.
+
 # Code of conduct
 
-As contributors of this project, we pledge to respect all people who contribute through reporting issues, posting feature requests, updating documentation, submitting pull requests or patches, and other activities.
+The full Code of Conduct can be found [here](CODE_OF_CONDUCT.md), including details for reporting violations.
 
-We are committed to making participation in this project a harassment-free experience for everyone, regardless of level of experience, gender, gender identity and expression, sexual orientation, disability, personal appearance, body size, race, ethnicity, age, religion, etc.
+## Reporting Responsibility
 
-Examples of unacceptable behavior by participants include the use of sexual language or imagery, derogatory comments or personal attacks, trolling, public or private harassment, insults, or other unprofessional conduct.
-
-Committers have the right and responsibility to remove, edit, or reject comments, commits, code, wiki edits, issues, and other contributions that are not aligned to this Code of Conduct. A person with special roles who does not follow the Code of Conduct may have their roles revoked.
-
-Instances of abusive, harassing, or otherwise unacceptable behavior may be reported by opening an issue or emailing one or more of the Committers.
-
-This Code of Conduct is adapted from Tidyverse code of conduct.
+Committers and the Community Engagement Coordinator pledge to address any publicly posted issues or privately sent messages regarding Code of Conduct violations in a respectful and timely manner.
 
 # Version numbering
 
@@ -123,6 +147,8 @@ data.table Version line in DESCRIPTION typically has the following meanings
 * patch/hotfix development should occur on GitHub as z=odd (1.15.1) and release to CRAN as z=even (1.15.2).
 
 # Governance history
+
+Feb 2025: add Finances and Funding section, update Code of Conduct section to be a brief summary and reference the broader CoC document.
 
 Jan 2025: clarify that edits to governance should notify all committers, and that role names are proper nouns (i.e., upper-case) throughout.
 
