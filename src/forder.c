@@ -1616,7 +1616,7 @@ void putIndex(SEXP x, SEXP cols, SEXP o) {
 
 // isTRUE(getOption("datatable.use.index"))
 bool GetUseIndex(void) {
-  SEXP opt = GetOption(install("datatable.use.index"), R_NilValue);
+  SEXP opt = GetOption1(install("datatable.use.index"));
   if (!IS_TRUE_OR_FALSE(opt))
     error(_("'datatable.use.index' option must be TRUE or FALSE")); // # nocov
   return LOGICAL(opt)[0];
@@ -1627,7 +1627,7 @@ bool GetAutoIndex(void) {
   // for now temporarily 'forder.auto.index' not 'auto.index' to disabled it by default
   // because it writes attr on .SD which is re-used by all groups leading to incorrect results
   // DT[, .(uN=uniqueN(.SD)), by=A]
-  SEXP opt = GetOption(install("datatable.forder.auto.index"), R_NilValue);
+  SEXP opt = GetOption1(install("datatable.forder.auto.index"));
   if (isNull(opt))
     return false;
   if (!IS_TRUE_OR_FALSE(opt))
