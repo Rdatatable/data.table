@@ -42,6 +42,7 @@
 /* we mean the encoding bits, not CE_NATIVE in a UTF-8 locale */
 #define IS_UTF8(x)  (getCharCE(x) == CE_UTF8)
 #define IS_LATIN(x) (getCharCE(x) == CE_LATIN1)
+// TODO: remove the `R_SVN_VERSION` check when R 4.5.0 is released (circa Apr. 2025)
 #if R_VERSION < R_Version(4, 5, 0) || R_SVN_REVISION < 86789
 # define IS_ASCII(x) (LEVELS(x) & 64)
 #else
