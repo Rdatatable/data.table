@@ -215,18 +215,17 @@ test-lin-ancient-cran:
 # run the main checks with Address(+Leak),UBSanitizer enabled
 test-lin-san:
   <<: *test-lin
-  image: docker.io/rocker/r-devel-ubsan-clang
+  image: registry.gitlab.com/rdatatable/dockerfiles/r-devel-clang-san
   variables:
     # must be set for most of the process because there are pseudo-leaks everywhere
     ASAN_OPTIONS: "detect_leaks=0"
     # fontconfig is known to leak; add more suppressions as discovered
     LSAN_OPTIONS: "suppressions=$CI_PROJECT_DIR/.dev/lsan.supp"
-    UBSAN_OPTIONS: "suppressions=$CI_PROJECT_DIR/.dev/ubsan.supp"
+    UBSAN_OPTIONS: "suppressions=$CI_PROJECT_DIR/.dev/ubsan.supp:print_stacktrace=1"
   script:
-    - ln -svf "$(which RDscript)" "$(which Rscript)" # install-deps will run 'Rscript', we need R-devel+sanitizers
     - *install-deps
     - >-
-        ASAN_OPTIONS=detect_leaks=1 RD CMD check --no-manual $(ls -1t data.table_*.tar.gz | head -n 1); res1=$?
+        ASAN_OPTIONS=detect_leaks=1 R CMD check --no-manual $(ls -1t data.table_*.tar.gz | head -n 1); res1=$?
         perl -nle '(print, $a=1) if /: runtime error: |ERROR: LeakSanitizer/../SUMMARY.*Sanitizer/ }{ exit $a' data.table.Rcheck/**/*.Rout*; res2=$?
         # fail if R CMD check had failed or if sanitizer output found
         [ $res1 -eq 0 ] && [ $res2 -eq 0 ]
