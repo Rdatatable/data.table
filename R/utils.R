@@ -22,7 +22,7 @@ nan_is_na = function(x) {
 }
 
 # R 4.4.0
-if (!exists("%||%", "package:base")) `%||%` <- function(x, y) if (is.null(x)) y else x # nolint: null_coalescing_linter.
+if (!exists("%||%", "package:base")) `%||%` <- function(x, y) if (is.null(x)) y else x # nolint: coalesce_linter.
 
 internal_error = function(...) {
   e1 = gettext("Internal error in")
