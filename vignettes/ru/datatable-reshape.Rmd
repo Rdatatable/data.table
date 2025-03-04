@@ -22,7 +22,7 @@ knitr::opts_chunk$set(
 
 ```{r echo=FALSE, file='../_translation_links.R'}
 ```
-`r .write.translation.links("Translations of this document are available in: %s")`
+`r .write.translation.links("Данное руководство также доступно на следующих языках: %s")`
 
 В этом руководстве рассматривается стандартное использование функций
 изменения формы данных `melt` (из широкой в длинную) и `dcast` (из длинной в

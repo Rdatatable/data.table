@@ -17,7 +17,7 @@ h2 {
 
 ```{r echo=FALSE, file='../_translation_links.R'}
 ```
-`r .write.translation.links("Translations of this document are available in: %s")`
+`r .write.translation.links("Данное руководство также доступно на следующих языках: %s")`
 
 Этот документ рассказывает об использовании `data.table` в качестве
 зависимости в других R-пакетах. Если вас интересует использование C-кода
