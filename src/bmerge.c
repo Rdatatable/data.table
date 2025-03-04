@@ -49,24 +49,25 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP r
   // iArg, xArg, icolsArg and xcolsArg
   idtVec = SEXPPTR_RO(idt);  // set globals so bmerge_r can see them.
   xdtVec = SEXPPTR_RO(xdt);
-  if (!isInteger(icolsArg)) error(_("Internal error: icols is not integer vector")); // # nocov
-  if (!isInteger(xcolsArg)) error(_("Internal error: xcols is not integer vector")); // # nocov
+  if (!isInteger(icolsArg)) internal_error(__func__, "icols is not integer vector"); // # nocov
+  if (!isInteger(xcolsArg)) internal_error(__func__, "xcols is not integer vector"); // # nocov
   if ((LENGTH(icolsArg)==0 || LENGTH(xcolsArg)==0) && LENGTH(idt)>0) // We let through LENGTH(i) == 0 for tests 2126.*
-    error(_("Internal error: icols and xcols must be non-empty integer vectors."));
-  if (LENGTH(icolsArg) > LENGTH(xcolsArg)) error(_("Internal error: length(icols) [%d] > length(xcols) [%d]"), LENGTH(icolsArg), LENGTH(xcolsArg)); // # nocov
+    internal_error(__func__, "icols and xcols must be non-empty integer vectors");
+  if (LENGTH(icolsArg) > LENGTH(xcolsArg)) internal_error(__func__, "length(icols) [%d] > length(xcols) [%d]", LENGTH(icolsArg), LENGTH(xcolsArg)); // # nocov
   icols = INTEGER(icolsArg);
   xcols = INTEGER(xcolsArg);
   xN = LENGTH(xdt) ? LENGTH(VECTOR_ELT(xdt,0)) : 0;
   iN = ilen = anslen = LENGTH(idt) ? LENGTH(VECTOR_ELT(idt,0)) : 0;
   ncol = LENGTH(icolsArg);    // there may be more sorted columns in x than involved in the join
   for(int col=0; col<ncol; col++) {
-    if (icols[col]==NA_INTEGER) error(_("Internal error. icols[%d] is NA"), col); // # nocov
-    if (xcols[col]==NA_INTEGER) error(_("Internal error. xcols[%d] is NA"), col); // # nocov
+    if (icols[col]==NA_INTEGER) internal_error(__func__, "icols[%d] is NA", col); // # nocov
+    if (xcols[col]==NA_INTEGER) internal_error(__func__, "xcols[%d] is NA", col); // # nocov
     if (icols[col]>LENGTH(idt) || icols[col]<1) error(_("icols[%d]=%d outside range [1,length(i)=%d]"), col, icols[col], LENGTH(idt));
     if (xcols[col]>LENGTH(xdt) || xcols[col]<1) error(_("xcols[%d]=%d outside range [1,length(x)=%d]"), col, xcols[col], LENGTH(xdt));
     int it = TYPEOF(VECTOR_ELT(idt, icols[col]-1));
     int xt = TYPEOF(VECTOR_ELT(xdt, xcols[col]-1));
-    if (iN && it!=xt) error(_("typeof x.%s (%s) != typeof i.%s (%s)"), CHAR(STRING_ELT(getAttrib(xdt,R_NamesSymbol),xcols[col]-1)), type2char(xt), CHAR(STRING_ELT(getAttrib(idt,R_NamesSymbol),icols[col]-1)), type2char(it));
+    if (iN && it!=xt)
+      error("typeof x.%s (%s) != typeof i.%s (%s)", CHAR(STRING_ELT(getAttrib(xdt,R_NamesSymbol),xcols[col]-1)), type2char(xt), CHAR(STRING_ELT(getAttrib(idt,R_NamesSymbol),icols[col]-1)), type2char(it)); // # notranslate
     if (iN && it!=LGLSXP && it!=INTSXP && it!=REALSXP && it!=STRSXP)
       error(_("Type '%s' is not supported for joining/merging"), type2char(it));
   }
@@ -78,7 +79,7 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP r
     if (ncol>0 && TYPEOF(VECTOR_ELT(idt, icols[ncol-1]-1))==STRSXP) error(_("roll='nearest' can't be applied to a character column, yet."));
     roll=1.0; rollToNearest=TRUE;       // the 1.0 here is just any non-0.0, so roll!=0.0 can be used later
   } else {
-    if (!isReal(rollarg)) error(_("Internal error: roll is not character or double")); // # nocov
+    if (!isReal(rollarg)) internal_error(__func__, "roll is not character or double"); // # nocov
     roll = REAL(rollarg)[0];   // more common case (rolling forwards or backwards) or no roll when 0.0
   }
   rollabs = fabs(roll);
@@ -90,39 +91,39 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP r
     nomatch=0;
   } else {
     if (length(nomatchArg)!=1 || (!isLogical(nomatchArg) && !isInteger(nomatchArg)))
-      error(_("Internal error: nomatchArg must be NULL or length-1 logical/integer")); // # nocov
+      internal_error(__func__, "nomatchArg must be NULL or length-1 logical/integer"); // # nocov
     nomatch = INTEGER(nomatchArg)[0];
     if (nomatch!=NA_INTEGER && nomatch!=0)
-      error(_("Internal error: nomatchArg must be NULL, NA, NA_integer_ or 0L")); // # nocov
+      internal_error(__func__, "nomatchArg must be NULL, NA, NA_integer_ or 0L"); // # nocov
   }
 
   // mult arg
   if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "all")) mult = ALL;
   else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "first")) mult = FIRST;
   else if (!strcmp(CHAR(STRING_ELT(multArg, 0)), "last")) mult = LAST;
-  else error(_("Internal error: invalid value for 'mult'. please report to data.table issue tracker")); // # nocov
+  else internal_error(__func__, "invalid value for 'mult'"); // # nocov
 
   // opArg
   if (!isInteger(opArg) || length(opArg)!=ncol)
-    error(_("Internal error: opArg is not an integer vector of length equal to length(on)")); // # nocov
+    internal_error(__func__, "opArg is not an integer vector of length equal to length(on)"); // # nocov
   op = INTEGER(opArg);
   for (int i=0; i<ncol; ++i) {
     // check up front to avoid default: cases in non-equi switches which may be in parallel regions which could not call error()
     if (op[i]<EQ/*1*/ || op[i]>GT/*5*/)
-      error(_("Internal error in bmerge_r for x.'%s'. Unrecognized value op[col]=%d"), // # nocov
+      internal_error(__func__, "'%s'. Unrecognized value op[col]=%d", // # nocov
               CHAR(STRING_ELT(getAttrib(xdt,R_NamesSymbol),xcols[i]-1)), op[i]);       // # nocov
     if (op[i]!=EQ && TYPEOF(xdtVec[xcols[i]-1])==STRSXP)
       error(_("Only '==' operator is supported for columns of type character."));      // # nocov
   }
 
   if (!isInteger(nqgrpArg))
-    error(_("Internal error: nqgrpArg must be an integer vector")); // # nocov
+    internal_error(__func__, "nqgrpArg must be an integer vector"); // # nocov
   nqgrp = nqgrpArg; // set global for bmerge_r
   const int scols = (!length(nqgrpArg)) ? 0 : -1; // starting col index, -1 is external group column for non-equi join case
 
   // nqmaxgrpArg
   if (!isInteger(nqmaxgrpArg) || length(nqmaxgrpArg) != 1 || INTEGER(nqmaxgrpArg)[0] <= 0)
-    error(_("Internal error: nqmaxgrpArg is not a positive length-1 integer vector")); // # nocov
+    internal_error(__func__, "nqmaxgrpArg is not a positive length-1 integer vector"); // # nocov
   nqmaxgrp = INTEGER(nqmaxgrpArg)[0];
   if (nqmaxgrp>1 && mult == ALL) {
     // non-equi case with mult=ALL, may need reallocation
@@ -160,7 +161,8 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP r
   protecti += 2;
 
   SEXP ascArg = PROTECT(ScalarInteger(1));
-  SEXP oSxp = PROTECT(forderReuseSorting(idt, icolsArg, /* retGrpArg= */ScalarLogical(FALSE), /* retStatsArg= */ScalarLogical(FALSE), /* sortGroupsArg= */ScalarLogical(TRUE), ascArg, /* naArg= */ScalarLogical(FALSE), /* reuseSortingArg= */ScalarLogical(TRUE))); protecti++;
+  SEXP reuseSortingArg = INHERITS(idt, char_datatable) ? ScalarLogical(TRUE) : ScalarLogical(FALSE);
+  SEXP oSxp = PROTECT(forderReuseSorting(idt, icolsArg, /* retGrpArg= */ScalarLogical(FALSE), /* retStatsArg= */ScalarLogical(FALSE), /* sortGroupsArg= */ScalarLogical(TRUE), ascArg, /* naArg= */ScalarLogical(FALSE), reuseSortingArg)); protecti++;
   UNPROTECT(2); // down stack to 'ascArg'
   PROTECT(oSxp);
 
@@ -172,7 +174,7 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP r
   // xo arg
   xo = NULL;
   if (length(xoArg)) {
-    if (!isInteger(xoArg)) error(_("Internal error: xoArg is not an integer vector")); // # nocov
+    if (!isInteger(xoArg)) internal_error(__func__, "xoArg is not an integer vector"); // # nocov
     xo = INTEGER(xoArg);
   }
 
@@ -185,7 +187,7 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP r
       bmerge_r(-1,xN,-1,iN,scols,kk+1,1,1);
     }
     if (verbose)
-      Rprintf("bmerge: looping bmerge_r took %.3fs\n", omp_get_wtime()-tic0);
+      Rprintf(_("bmerge: looping bmerge_r took %.3fs\n"), omp_get_wtime()-tic0);
   }
   ctr += iN;
   if (nqmaxgrp > 1 && mult == ALL) {
@@ -217,7 +219,7 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP r
     R_Free(retIndex);
   }
   if (verbose)
-    Rprintf("bmerge: took %.3fs\n", omp_get_wtime()-tic);
+    Rprintf(_("bmerge: took %.3fs\n"), omp_get_wtime()-tic);
   UNPROTECT(protecti);
   return (ans);
 }
@@ -379,8 +381,8 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     }
     break;
   // supported types were checked up front to avoid handling an error here in (future) parallel region
-  default:
-    error(_("Type '%s' is not supported for joining/merging"), type2char(TYPEOF(xc)));
+  default: // # nocov
+    internal_error("Invalid join/merge type '%s' should have been caught earlier", type2char(TYPEOF(xc))); // # nocov
   }
 
   if (xlow<xupp-1 || rollLow || rollUpp) { // if value found, xlow and xupp surround it, unlike standard binary search where low falls on it

@@ -30,13 +30,10 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     # Other options investigated (could revisit): Cstack_info(), .Last.value gets set first before autoprint, history(), sys.status(),
     #   topenv(), inspecting next statement in caller, using clock() at C level to timeout suppression after some number of cycles
     SYS = sys.calls()
-    if (length(SYS) <= 2L ||  # "> DT" auto-print or "> print(DT)" explicit print (cannot distinguish from R 3.2.0 but that's ok)
+    if (identical(SYS[[1L]][[1L]], print) || # this is what auto-print looks like, i.e. '> DT' and '> DT[, a:=b]' in the terminal; see #3029.
         ( length(SYS) >= 3L && is.symbol(thisSYS <- SYS[[length(SYS)-2L]][[1L]]) &&
-          as.character(thisSYS) == 'source') || # suppress printing from source(echo = TRUE) calls, #2369
-        ( length(SYS) > 3L && is.symbol(thisSYS <- SYS[[length(SYS)-3L]][[1L]]) &&
-          as.character(thisSYS) %chin% mimicsAutoPrint ) )  {
+          as.character(thisSYS) == 'source') ) { # suppress printing from source(echo = TRUE) calls, #2369
       return(invisible(x))
-      # is.symbol() temp fix for #1758.
     }
   }
   if (!is.numeric(nrows)) nrows = 100L
@@ -60,8 +57,8 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
       catf("Null data.%s (0 rows and 0 cols)\n", class)  # See FAQ 2.5 and NEWS item in v1.8.9
     } else {
       catf("Empty data.%s (%d rows and %d cols)", class, NROW(x), NCOL(x))
-      if (length(x)>0L) cat(": ",paste(head(names(x),6L),collapse=","),if(length(x)>6L)"...",sep="")
-      cat("\n")
+      if (length(x)>0L) cat(": ",paste(head(names(x),6L),collapse=","),if(length(x)>6L)"...",sep="") # notranslate
+      cat("\n") # notranslate
     }
     return(invisible(x))
   }
@@ -69,8 +66,8 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     if (is.null(indices(x))) {
       show.indices = FALSE
     } else {
-      index_dt <- as.data.table(attributes(attr(x, 'index')))
-      print_names <- paste0("index", if (ncol(index_dt) > 1L) seq_len(ncol(index_dt)) else "", ":", sub("^__", "", names(index_dt)))
+      index_dt = as.data.table(attributes(attr(x, 'index')))
+      print_names = paste0("index", if (ncol(index_dt) > 1L) seq_len(ncol(index_dt)) else "", ":", sub("^__", "", names(index_dt)))
       setnames(index_dt, print_names)
     }
   }
@@ -89,6 +86,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     if (show.indices) toprint = cbind(toprint, index_dt)
   }
   require_bit64_if_needed(x)
+  classes = classes1(toprint)
   toprint=format.data.table(toprint, na.encode=FALSE, timezone = timezone, ...)  # na.encode=FALSE so that NA in character cols print as <NA>
 
   # FR #353 - add row.names = logical argument to print.data.table
@@ -103,7 +101,6 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
       factor = "<fctr>", POSIXct = "<POSc>", logical = "<lgcl>",
       IDate = "<IDat>", integer64 = "<i64>", raw = "<raw>",
       expression = "<expr>", ordered = "<ord>")
-    classes = vapply_1c(x, function(col) class(col)[1L], use.names=FALSE)
     abbs = unname(class_abb[classes])
     if ( length(idx <- which(is.na(abbs))) ) abbs[idx] = paste0("<", classes[idx], ">")
     toprint = rbind(abbs, toprint)
@@ -124,7 +121,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     # When nrow(toprint) = 1, attributes get lost in the subset,
     #   function below adds those back when necessary
     toprint = toprint_subset(toprint, cols_to_print)
-    trunc.cols <- length(not_printed) > 0L
+    trunc.cols = length(not_printed) > 0L
   }
   print_default = function(x) {
     if (col.names != "none") cut_colnames = identity
@@ -157,9 +154,6 @@ format.data.table = function(x, ..., justify="none") {
   }
   do.call(cbind, lapply(x, format_col, ..., justify=justify))
 }
-
-mimicsAutoPrint = c("knit_print.default")
-# add maybe repr_text.default.  See https://github.com/Rdatatable/data.table/issues/933#issuecomment-220237965
 
 shouldPrint = function(x) {
   ret = (identical(.global$print, "") ||   # to save address() calls and adding lots of address strings to R's global cache
@@ -233,8 +227,13 @@ format_list_item.default = function(x, ...) {
     # format_list_item would not be reached) but this particular list item does have a format method so use it
     formatted
   } else {
-    paste0("<", class(x)[1L], paste_dims(x), ">")
+    paste0("<", class1(x), paste_dims(x), ">")
   }
+}
+
+# #6592 -- nested 1-column frames breaks printing
+format_list_item.data.frame = function(x, ...) {
+  paste0("<", class1(x), paste_dims(x), ">")
 }
 
 # FR #1091 for pretty printing of character
@@ -247,7 +246,7 @@ char.trunc = function(x, trunc.char = getOption("datatable.prettyprint.char")) {
   nchar_width = nchar(x, 'width') # Check whether string is full-width or half-width, #5096
   nchar_chars = nchar(x, 'char')
   is_full_width = nchar_width > nchar_chars
-  idx = pmin(nchar_width, nchar_chars) > trunc.char
+  idx = !is.na(x) & pmin(nchar_width, nchar_chars) > trunc.char
   if (!any(idx)) return(x) # strtrim() errors for width=integer() on R 3.3.0
   x[idx] = paste0(strtrim(x[idx], trunc.char * fifelse(is_full_width[idx], 2L, 1L)), "...")
   x
@@ -262,7 +261,7 @@ dt_width = function(x, nrow, class, row.names, col.names) {
   if (class) widths = pmax(widths, 6L)
   if (col.names != "none") names = sapply(colnames(x), nchar, type="width") else names = 0L
   dt_widths = pmax(widths, names)
-  rownum_width = if (row.names) as.integer(ceiling(log10(nrow))+2) else 0L
+  rownum_width = if (row.names) as.integer(ceiling(log10(nrow))+2.0) else 0L
   cumsum(dt_widths + 1L) + rownum_width
 }
 # keeps the dim and dimnames attributes
@@ -283,7 +282,14 @@ trunc_cols_message = function(not_printed, abbs, class, col.names){
   n = length(not_printed)
   if (class && col.names != "none") classes = paste0(" ", tail(abbs, n)) else classes = ""
   catf(
-    "%d variable(s) not shown: %s\n",
-    n, brackify(paste0(not_printed, classes))
+    ngettext(n, "%d variable not shown: %s\n", "%d variables not shown: %s\n"),
+    n, brackify(paste0(not_printed, classes)),
+    domain=NA
   )
+}
+
+# Maybe add a method for repr::repr_text.  See https://github.com/Rdatatable/data.table/issues/933#issuecomment-220237965
+knit_print.data.table = function(x, ...) {
+  if (!shouldPrint(x)) return(invisible(x))
+  NextMethod()
 }

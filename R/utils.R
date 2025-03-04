@@ -21,6 +21,30 @@ nan_is_na = function(x) {
   stopf("Argument 'nan' must be NA or NaN")
 }
 
+internal_error = function(...) {
+  e1 = gettext("Internal error in")
+  e2 = deparse(head(tail(sys.calls(), 2L), 1L)[[1L]][[1L]])
+  e3 = do.call(sprintf, list(...))
+  e4 = gettext("Please report to the data.table issues tracker.")
+  e = paste0(e1, ' ', e2, ': ', e3, '. ', e4)
+  stop(e, call. = FALSE, domain = NA)
+}
+
+check_duplicate_names = function(x, table_name=deparse(substitute(x))) {
+  if (!anyDuplicated(nm <- names(x))) return(invisible())
+  duplicate_names = unique(nm[duplicated(nm)])
+  stopf(ngettext(length(duplicate_names),
+                 "%s has duplicated column name %s. Please remove or rename the duplicate and try again.",
+                 "%s has duplicated column names %s. Please remove or rename the duplicates and try again."),
+        table_name, brackify(duplicate_names), domain=NA)
+}
+
+duplicated_values = function(x) {
+  # fast anyDuplicated for the typical/non-error case; second duplicated() pass for (usually) error case
+  if (!anyDuplicated(x)) return(vector(typeof(x)))
+  unique(x[duplicated(x)])
+}
+
 # TODO(R>=4.0.0): Remove this workaround. From R 4.0.0, rep_len() dispatches rep.Date(), which we need.
 #   Before that, rep_len() strips attributes --> breaks data.table()'s internal recycle() helper.
 #   This also impacts test 2 in S4.Rraw, because the error message differs for rep.int() vs. rep_len().
@@ -34,7 +58,7 @@ if (inherits(rep_len(Sys.Date(), 1L), "Date")) {
 }
 
 # endsWith no longer used from #5097 so no need to backport; prevent usage to avoid dev delay until GLCI's R 3.1.0 test
-endsWith = function(...) stop("Internal error: use endsWithAny instead of base::endsWith", call.=FALSE)
+endsWith = function(...) internal_error("use endsWithAny instead of base::endsWith")
 
 startsWithAny = function(x,y) .Call(CstartsWithAny, x, y, TRUE)
 endsWithAny = function(x,y) .Call(CstartsWithAny, x, y, FALSE)
@@ -85,6 +109,9 @@ vapply_1b = function(x, fun, ..., use.names = TRUE) {
 vapply_1i = function(x, fun, ..., use.names = TRUE) {
   vapply(X = x, FUN = fun, ..., FUN.VALUE = NA_integer_, USE.NAMES = use.names)
 }
+
+class1 = function(x) class(x)[1L] # nolint: class1_linter.
+classes1 = function(x, ..., use.names=FALSE) vapply_1c(x, class1, ..., use.names=use.names)
 
 # base::xor(), but with scalar operators
 XOR = function(x, y) (x || y) && !(x && y)
@@ -182,6 +209,14 @@ rss = function() {  #5515 #5517
   cmd = paste0("ps -o rss --no-headers ", Sys.getpid()) # ps returns KB
   ans = tryCatch(as.numeric(system(cmd, intern=TRUE)), warning=function(w) NA_real_, error=function(e) NA_real_)
   if (length(ans)!=1L || !is.numeric(ans)) ans=NA_real_ # just in case
-  round(ans / 1024, 1L)  # return MB
+  round(ans / 1024.0, 1L)  # return MB
   # nocov end
+}
+
+formula_vars = function(f, x) { # .formula2varlist is not API and seems to have appeared after R-4.2, #6841
+  terms <- terms(f)
+  setNames(
+    eval(attr(terms, "variables"), x, environment(f)),
+    attr(terms, "term.labels")
+  )
 }

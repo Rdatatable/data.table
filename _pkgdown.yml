@@ -37,6 +37,8 @@ navbar:
         href: articles/datatable-sd-usage.html
       - text: "Keys and fast binary search based subset"
         href: articles/datatable-keys-fast-subset.html
+      - text: "Joins in data.table"
+        href: articles/datatable-joins.html
       - text: "Secondary indices and auto indexing"
         href: articles/datatable-secondary-indices-and-auto-indexing.html
       - text: "Efficient reshaping using data.table"
