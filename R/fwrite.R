@@ -3,8 +3,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
            sep2=c("","|",""), eol=if (.Platform$OS.type=="windows") "\r\n" else "\n",
            na="", dec=".", row.names=FALSE, col.names=TRUE,
            qmethod=c("double","escape"),
-           logical01=getOption("datatable.logical01", FALSE), # due to change to TRUE; see NEWS
-           logicalAsInt=NULL,
+           logical01=getOption("datatable.logical01", FALSE),
            scipen=getOption('scipen', 0L),
            dateTimeAs = c("ISO","squash","epoch","write.csv"),
            buffMB=8L, nThread=getDTthreads(verbose),
@@ -23,9 +22,6 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   compress = match.arg(compress)
   dateTimeAs = match.arg(dateTimeAs)
   dateTimeAs = chmatch(dateTimeAs, c("ISO", "squash", "epoch", "write.csv")) - 1L
-  if (!is.null(logicalAsInt)) {
-    stopf("logicalAsInt has been renamed logical01 for consistency with fread.")
-  }
   scipen = if (is.numeric(scipen)) as.integer(scipen) else 0L
   buffMB = as.integer(buffMB)
   nThread = as.integer(nThread)
