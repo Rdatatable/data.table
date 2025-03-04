@@ -36,7 +36,7 @@
 /* we mean the encoding bits, not CE_NATIVE in a UTF-8 locale */
 #define IS_UTF8(x)  (getCharCE(x) == CE_UTF8)
 #define IS_LATIN(x) (getCharCE(x) == CE_LATIN1)
-#if R_VERSION < R_Version(4, 5, 0)
+#if R_VERSION < R_Version(4, 5, 0) || R_SVN_REVISION < 86789
 # define IS_ASCII(x) (LEVELS(x) & 64)
 #else
 # define IS_ASCII(x) (Rf_charIsASCII(x)) // no CE_ASCII
