@@ -5,6 +5,7 @@
 \alias{fastorder}
 \alias{forder}
 \alias{forderv}
+\alias{sort_by}
 
 \title{Fast row reordering of a data.table by reference}
 \description{
@@ -32,6 +33,7 @@ setorderv(x, cols = colnames(x), order=1L, na.last=FALSE)
 # optimised to use data.table's internal fast order
 # x[order(., na.last=TRUE)]
 # x[order(., decreasing=TRUE)]
+# sort_by(x, ., na.last=TRUE, decreasing=FALSE)    # R >= 4.4.0
 }
 \arguments{
 \item{x}{ A \code{data.table}. }
@@ -46,7 +48,7 @@ when \code{b} is of type \code{character} as well. }
 \code{order} must be either \code{1} or equal to that of \code{cols}. If
 \code{length(order) == 1}, it is recycled to \code{length(cols)}. }
 \item{na.last}{ \code{logical}. If \code{TRUE}, missing values in the data are placed last; if \code{FALSE}, they are placed first; if \code{NA} they are removed.
-\code{na.last=NA} is valid only for \code{x[order(., na.last)]} and its
+\code{na.last=NA} is valid only for \code{x[order(., na.last)]} and related \code{sort_by(x, .)} (\eqn{\R \ge 4.4.0}) and its
 default is \code{TRUE}. \code{setorder} and \code{setorderv} only accept
 \code{TRUE}/\code{FALSE} with default \code{FALSE}. }
 }
@@ -71,8 +73,8 @@ sets the \code{sorted} attribute.
 
 \code{na.last} argument, by default, is \code{FALSE} for \code{setorder} and
 \code{setorderv} to be consistent with \code{data.table}'s \code{setkey} and
-is \code{TRUE} for \code{x[order(.)]} to be consistent with \code{base::order}.
-Only \code{x[order(.)]} can have \code{na.last = NA} as it is a subset operation
+is \code{TRUE} for \code{x[order(.)]} and \code{sort_by(x, .)} (\eqn{\R \ge 4.4.0}) to be consistent with \code{base::order}.
+Only \code{x[order(.)]} (and related \code{sort_by(x, .)}) can have \code{na.last = NA} as it is a subset operation
 as opposed to \code{setorder} or \code{setorderv} which reorders the data.table
 by reference.
 
@@ -96,6 +98,11 @@ was started in. By contrast, \code{"america" < "BRAZIL"} is always \code{FALSE} 
 
 If \code{setorder} results in reordering of the rows of a keyed \code{data.table},
 then its key will be set to \code{NULL}.
+
+Starting from \R 4.4.0, \code{sort_by(x, y, \dots)} is the S3 method for the generic \code{sort_by} for \code{data.table}'s. 
+It uses the same formula or list interfaces as data.frame's \code{sort_by} but internally uses \code{data.table}'s fast ordering, 
+hence it behaves the same as \code{x[order(.)]} and takes the same optional named arguments and their defaults.
+
 }
 \value{
 The input is modified by reference, and returned (invisibly) so it can be used

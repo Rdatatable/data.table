@@ -5,7 +5,7 @@ fdroplevels = function(x, exclude = if (anyNA(levels(x))) NULL else NA, ...) {
   ans = match(as.integer(x), lev)
   setattr(ans, 'levels', levels(x)[lev])
   setattr(ans, 'class', class(x))
-  return(ans)
+  ans
 }
 
 droplevels.data.table = function(x, except=NULL, exclude, in.place=NULL, ...){
