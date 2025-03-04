@@ -12716,7 +12716,8 @@ x = runif(1e3)
 test(1888.6, y<-fsort(x,verbose=TRUE), output="nth=.*Top 20 MSB counts")
 test(1888.7, !base::is.unsorted(y))
 test(1888.8, fsort(x,verbose=1), error="verbose must be TRUE or FALSE")
-rm(x)
+test(1888.9, fsort(c(1L, 2L, 3L, 4L), internal = TRUE), c(1L, 2L, 3L, 4L))
+rm(x, y)
 
 # doubling of savetl buffer (currently starts with 100)
 x = as.character(as.hexmode(1:1000))
@@ -21041,3 +21042,37 @@ test(2304.100, set(copy(DT), i=2L, j=c("L1", "L2"), value=list(list(NULL), list(
 
 # the integer overflow in #6729 is only noticeable with UBSan
 test(2305, { fread(testDir("issue_6729.txt.bz2")); TRUE })
+
+if (exists("sort_by", "package:base")) {
+  # sort_by.data.table
+  DT1 = data.table(a=c(1, 3, 2, NA, 3), b=4:0)
+  DT2 = data.table(a=c("c", "a", "B")) # data.table uses C-locale and should sort_by if cedta()
+  DT3 = data.table(a=c(1, 2, 3), b=list(c("a", "b", "", NA), c(1, 3, 2, 0), c(TRUE, TRUE, FALSE, NA))) # list column
+
+  # sort_by.data.table: basics
+  test(2306.01, sort_by(DT1, ~a + b), data.table(a=c(1, 2, 3, 3, NA), b=c(4L, 2L, 0L, 3L, 1L)))
+  test(2306.02, sort_by(DT1, ~I(a + b)), data.table(a=c(3, 2, 1, 3, NA), b=c(0L, 2L, 4L, 3L, 1L)))
+  test(2306.03, sort_by(DT2, ~a), data.table(a=c("B", "a", "c")))
+
+  # sort_by.data.table: list columns.
+  # NOTE 1: .formula2varlist works well with list columns.
+  # NOTE 2: 4 elem in DT of 3 row because forderv takes a list column as a DT.
+  test(2306.04, sort_by(DT3, ~b), DT3[order(b)]) # should be consistent.
+
+  # sort_by.data.table: additional C-locale sorting
+  test(2306.10, DT2[, sort_by(.SD, a)], data.table(a=c("B", "a", "c")))
+  test(2306.11, DT2[, sort_by(.SD, ~a)], data.table(a=c("B", "a", "c")))
+
+  # sort_by.data.table: various working interfaces
+  test(2306.20, sort_by(DT1, list(DT1$a, DT1$b)), data.table(a=c(1, 2, 3, 3, NA), b=c(4L, 2L, 0L, 3L, 1L)))
+  test(2306.21, sort_by(DT1, DT1[, .(a, b)]), data.table(a=c(1, 2, 3, 3, NA), b=c(4L, 2L, 0L, 3L, 1L)))
+  test(2306.22, DT1[, sort_by(.SD, .(a, b))], data.table(a=c(1, 2, 3, 3, NA), b=c(4L, 2L, 0L, 3L, 1L)))
+  test(2306.23, DT1[, sort_by(.SD, ~a + b)], data.table(a=c(1, 2, 3, 3, NA), b=c(4L, 2L, 0L, 3L, 1L)))
+  test(2306.24, DT1[, sort_by(.SD, ~.(a, b))], data.table(a=c(1, 2, 3, 3, NA), b=c(4L, 2L, 0L, 3L, 1L)))
+}
+
+DT <- data.table(a = 1:2, b = 2:1)
+setindex(DT, b)
+# make sure that print(DT) doesn't warn due to the header missing index column types, #6806
+# can't use output= here because the print() call is outside withCallingHandlers(...)
+test(2307, { capture.output(print(DT, class = TRUE, show.indices = TRUE)); TRUE })

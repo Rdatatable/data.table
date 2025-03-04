@@ -212,3 +212,11 @@ rss = function() {  #5515 #5517
   round(ans / 1024.0, 1L)  # return MB
   # nocov end
 }
+
+formula_vars = function(f, x) { # .formula2varlist is not API and seems to have appeared after R-4.2, #6841
+  terms <- terms(f)
+  setNames(
+    eval(attr(terms, "variables"), x, environment(f)),
+    attr(terms, "term.labels")
+  )
+}
