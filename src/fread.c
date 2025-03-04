@@ -1731,8 +1731,8 @@ int freadMain(freadMainArgs _args) {
             firstJumpEnd = ch;  // to know how many bytes jump 0 is, for nrow estimate later (a less-good estimate when fill=true since line lengths vary more)
             if (verbose) {
                 DTPRINT((unsigned)sep<32
-                        ? "  sep=%#02x  with %d fields using quote rule %d\n" 
-                        : "  sep='%c'  with %d fields using quote rule %d\n", 
+                        ? _("  sep=%#02x  with %d fields using quote rule %d\n")
+                        : _("  sep='%c'  with %d fields using quote rule %d\n"),
                         sep, topNumFields, quoteRule);
             }
           }
