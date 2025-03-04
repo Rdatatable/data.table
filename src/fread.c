@@ -1783,8 +1783,8 @@ int freadMain(freadMainArgs _args) {
             if (topSkip<0) topSkip=0;       // inelegant but will do for now to pass single row input such as test 890
             if (verbose) {
                 DTPRINT((unsigned)sep<32
-                        ? "  sep=%#02x  with %d lines of %d fields using quote rule %d\n" 
-                        : "  sep='%c'  with %d lines of %d fields using quote rule %d\n", 
+                        ? _("  sep=%#02x  with %d lines of %d fields using quote rule %d\n")
+                        : _("  sep='%c'  with %d lines of %d fields using quote rule %d\n"),
                         sep, topNumLines, topNumFields, topQuoteRule);
             }
           }
