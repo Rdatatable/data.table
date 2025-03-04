@@ -9,9 +9,9 @@ vignette: >
   \usepackage[utf8]{inputenc}
 ---
 
-Translations of this document are available in
-
-* [French](https://rdatatable.gitlab.io/data.table/articles/fr/datatable-intro.html)
+```{r echo=FALSE, file='_translation_links.R'}
+```
+`r .write.translation.links("Translations of this document are available in: %s")`
 
 ```{r, echo = FALSE, message = FALSE}
 require(data.table)
@@ -316,7 +316,7 @@ ans
 
 We could have accomplished the same operation by doing `nrow(flights[origin == "JFK" & month == 6L])`. However, it would have to subset the entire `data.table` first corresponding to the *row indices* in `i` *and then* return the rows using `nrow()`, which is unnecessary and inefficient. We will cover this and other optimisation aspects in detail under the *`data.table` design* vignette.
 
-### h) Great! But how can I refer to columns by names in `j` (like in a `data.frame`)? {#refer_j}
+### h) Great! But how can I refer to columns by names in `j` (like in a `data.frame`)? {#refer-j}
 
 If you're writing out the column names explicitly, there's no difference compared to a `data.frame` (since v1.9.8).
 
@@ -422,7 +422,7 @@ ans
 
     We'll use this convenient form wherever applicable hereafter.
 
-#### -- How can we calculate the number of trips for each origin airport for carrier code `"AA"`? {#origin-.N}
+#### -- How can we calculate the number of trips for each origin airport for carrier code `"AA"`? {#origin-N}
 
 The unique carrier code `"AA"` corresponds to *American Airlines Inc.*
 
@@ -435,7 +435,7 @@ ans
 
 * Using those *row indices*, we obtain the number of rows while grouped by `origin`. Once again no columns are actually materialised here, because the `j-expression` does not require any columns to be actually subsetted and is therefore fast and memory efficient.
 
-#### -- How can we get the total number of trips for each `origin, dest` pair for carrier code `"AA"`? {#origin-dest-.N}
+#### -- How can we get the total number of trips for each `origin, dest` pair for carrier code `"AA"`? {#origin-dest-N}
 
 ```{r}
 ans <- flights[carrier == "AA", .N, by = .(origin, dest)]
@@ -483,7 +483,7 @@ We'll learn more about `keys` in the [`vignette("datatable-keys-fast-subset", pa
 
 ### c) Chaining
 
-Let's reconsider the task of [getting the total number of trips for each `origin, dest` pair for carrier *"AA"*](#origin-dest-.N).
+Let's reconsider the task of [getting the total number of trips for each `origin, dest` pair for carrier *"AA"*](#origin-dest-N).
 
 ```{r}
 ans <- flights[carrier == "AA", .N, by = .(origin, dest)]
@@ -583,7 +583,7 @@ We are almost there. There is one little thing left to address. In our `flights`
 
 Using the argument `.SDcols`. It accepts either column names or column indices. For example, `.SDcols = c("arr_delay", "dep_delay")` ensures that `.SD` contains only these two columns for each group.
 
-Similar to [part g)](#refer_j), you can also specify the columns to remove instead of columns to keep using `-` or `!`. Additionally, you can select consecutive columns as `colA:colB` and deselect them as `!(colA:colB)` or `-(colA:colB)`.
+Similar to [part g)](#refer-j), you can also specify the columns to remove instead of columns to keep using `-` or `!`. Additionally, you can select consecutive columns as `colA:colB` and deselect them as `!(colA:colB)` or `-(colA:colB)`.
 
 Now let us try to use `.SD` along with `.SDcols` to get the `mean()` of `arr_delay` and `dep_delay` columns grouped by `origin`, `dest` and `month`.
 

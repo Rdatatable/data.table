@@ -4,8 +4,10 @@ na.strings=getOption("datatable.na.strings","NA"), stringsAsFactors=FALSE, verbo
 skip="__auto__", select=NULL, drop=NULL, colClasses=NULL, integer64=getOption("datatable.integer64","integer64"),
 col.names, check.names=FALSE, encoding="unknown", strip.white=TRUE, fill=FALSE, blank.lines.skip=FALSE, key=NULL, index=NULL,
 showProgress=getOption("datatable.showProgress",interactive()), data.table=getOption("datatable.fread.datatable",TRUE),
-nThread=getDTthreads(verbose), logical01=getOption("datatable.logical01",FALSE), keepLeadingZeros=getOption("datatable.keepLeadingZeros",FALSE),
-yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
+nThread=getDTthreads(verbose), logical01=getOption("datatable.logical01",FALSE),
+logicalYN=getOption("datatable.logicalYN", FALSE),
+keepLeadingZeros=getOption("datatable.keepLeadingZeros",FALSE),
+yaml=FALSE, autostart=NULL, tmpdir=tempdir(), tz="UTC")
 {
   if (missing(input)+is.null(file)+is.null(text)+is.null(cmd) < 3L) stopf("Used more than one of the arguments input=, file=, text= and cmd=.")
   input_has_vars = length(all.vars(substitute(input)))>0L  # see news for v1.11.6
@@ -24,13 +26,13 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
   }
   stopifnot(
     isTRUEorFALSE(strip.white), isTRUEorFALSE(blank.lines.skip), isTRUEorFALSE(fill) || is.numeric(fill) && length(fill)==1L && fill >= 0L, isTRUEorFALSE(showProgress),
-    isTRUEorFALSE(verbose), isTRUEorFALSE(check.names), isTRUEorFALSE(logical01), isTRUEorFALSE(keepLeadingZeros), isTRUEorFALSE(yaml),
+    isTRUEorFALSE(verbose), isTRUEorFALSE(check.names), isTRUEorFALSE(logical01), isTRUEorFALSE(logicalYN), isTRUEorFALSE(keepLeadingZeros), isTRUEorFALSE(yaml),
     isTRUEorFALSE(stringsAsFactors) || (is.double(stringsAsFactors) && length(stringsAsFactors)==1L && 0.0<=stringsAsFactors && stringsAsFactors<=1.0),
     is.numeric(nrows), length(nrows)==1L
   )
   fill = if(identical(fill, Inf)) .Machine$integer.max else as.integer(fill)
   nrows=as.double(nrows) #4686
-  if (is.na(nrows) || nrows<0) nrows=Inf   # accept -1 to mean Inf, as read.table does
+  if (is.na(nrows) || nrows<0L) nrows=Inf   # accept -1 to mean Inf, as read.table does
   if (identical(header,"auto")) header=NA
   stopifnot(
     is.logical(header), length(header)==1L,  # TRUE, FALSE or NA
@@ -122,7 +124,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
 
     input = file
   }
-  if (!missing(autostart)) warningf("'autostart' is now deprecated and ignored. Consider skip='string' or skip=n");
+  if (!is.null(autostart)) stopf("'autostart' is deprecated. Consider skip='string' or skip=n. This argument will be removed in the next release.");
   if (is.logical(colClasses)) {
     if (!allNA(colClasses)) stopf("colClasses is type 'logical' which is ok if all NA but it has some TRUE or FALSE values in it which is not allowed. Please consider the drop= or select= argument instead. See ?fread.")
     colClasses = NULL
@@ -269,7 +271,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
     if (is.integer(skip)) skip = skip + n_read
   }
   # nocov end
-  warnings2errors = getOption("warn") >= 2
+  warnings2errors = getOption("warn") >= 2L
   stopifnot(identical(tz,"UTC") || identical(tz,""))
   if (tz=="") {
     tt = Sys.getenv("TZ", unset=NA_character_)
@@ -277,7 +279,7 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
       tz="UTC"
   }
   ans = .Call(CfreadR,input,identical(input,file),sep,dec,quote,header,nrows,skip,na.strings,strip.white,blank.lines.skip,
-              fill,showProgress,nThread,verbose,warnings2errors,logical01,select,drop,colClasses,integer64,encoding,keepLeadingZeros,tz=="UTC")
+              fill,showProgress,nThread,verbose,warnings2errors,logical01,logicalYN,select,drop,colClasses,integer64,encoding,keepLeadingZeros,tz=="UTC")
   if (!length(ans)) return(null.data.table())  # test 1743.308 drops all columns
   nr = length(ans[[1L]])
   require_bit64_if_needed(ans)
@@ -315,9 +317,9 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC")
       warning = fun <- function(c) {
         # NB: branch here for translation purposes (e.g. if error/warning have different grammatical gender)
         if (inherits(c, "warning")) {
-          msg_fmt <- gettext("Column '%s' was requested to be '%s' but fread encountered the following warning:\n\t%s\nso the column has been left as type '%s'")
+          msg_fmt = gettext("Column '%s' was requested to be '%s' but fread encountered the following warning:\n\t%s\nso the column has been left as type '%s'")
         } else {
-          msg_fmt <- gettext("Column '%s' was requested to be '%s' but fread encountered the following error:\n\t%s\nso the column has been left as type '%s'")
+          msg_fmt = gettext("Column '%s' was requested to be '%s' but fread encountered the following error:\n\t%s\nso the column has been left as type '%s'")
         }
         warningf(msg_fmt, names(ans)[j], new_class, conditionMessage(c), typeof(v), domain=NA)
         v

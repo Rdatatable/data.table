@@ -45,32 +45,40 @@ Functionality that is out of current scope:
 ## Contributor
 
 * Definition: a user who has written/commented at least one issue, worked to label/triage issues, written a blog post, given a talk, etc. 
-* How this role is recognized: there is no central list of contributors / no formal recognition for contributors.
+* How this role is recognized: there is no central list of Contributors / no formal recognition for Contributors.
 
-## Project member
+## Project Member
 
-* Definition: some one who has submitted at least one PR with substantial contributions, that has been merged into master. PRs improving documentation are welcome, and substantial contributions to the docs should count toward membership, but minor contributions such as spelling fixes do not count toward membership.
-* How to obtain this role: any user/contributor can become a member by submitting a PR with substantial contributions, then having it reviewed and merged into master. Contributors who have written issues should be encouraged to submit their first PR to become a project member. Contributors can look at https://github.com/Rdatatable/data.table/labels/beginner-task for easy issues to work on.
-* How this role is recognized: Members are credited via role="ctb" in DESCRIPTION (so they appear in Author list on CRAN), and they are added to https://github.com/orgs/Rdatatable/teams/project-members so they can create new branches in the Rdatatable/data.table GitHub repo. They also appear on https://github.com/Rdatatable/data.table/graphs/contributors (Contributions to master, excluding merge commits).
+* Definition: some one who has submitted at least one PR with substantial contributions, that has been merged into master. PRs improving documentation are welcome, and substantial contributions to the docs should count toward Project Membership, but minor contributions such as spelling fixes do not count toward Project Membership.
+* How to obtain this role: anybody can become a Project Member by submitting a PR with substantial contributions, then having it reviewed and merged into master. Contributors who have written issues should be encouraged to submit their first PR to become a Project Member. Contributors can look at https://github.com/Rdatatable/data.table/labels/beginner-task for easy issues to work on.
+* How this role is recognized: Project Members are credited via role="ctb" in DESCRIPTION (so they appear in Author list on CRAN), and they are added to https://github.com/orgs/Rdatatable/teams/project-members so they can create new branches in the Rdatatable/data.table GitHub repo. They also appear on https://github.com/Rdatatable/data.table/graphs/contributors (Contributions to master, excluding merge commits).
 
 ## Reviewer
 
-* Definition: a member who has volunteered to do code reviews for some features/files. 
-* How to obtain this role: after one or more significant PRs to a given file, a member should be invited to add their name as a reviewer of that file in CODEOWNERS, and after that is merged into master, then they are considered a reviewer. 
-* How this role is recognized: same credit in DESCRIPTION as a regular member, role="ctb" (so they appear in Author list on CRAN). 
+* Definition: a Project Member who has volunteered to do code reviews for some features/files. 
+* How to obtain this role: after one or more significant PRs to a given file, a Project Member should be invited to add their name as a reviewer of that file in CODEOWNERS, and after that is merged into master, then they are considered a Reviewer. 
+* How this role is recognized: same credit in DESCRIPTION as a regular Project Member, role="ctb" (so they appear in Author list on CRAN). 
 * Note: having your name in CODEOWNERS does not give any special permission, but it does mean that you will be notified whenever there is a new PR with changes to that file. 
 
 ## Committer
 
 * Definition: permission to commit to, and merge PRs into, master branch. 
-* How to obtain this role: after a reviewer has a consistent history of careful reviews of others' PRs, then a current Committer should ask all other current Committers if they approve promoting the Reviewer to Committer, and it should be done if there is Consensus among active Committers. 
+* How to obtain this role: after a Reviewer has a consistent history of careful reviews of others' PRs, then a current Committer should ask all other current Committers if they approve promoting the Reviewer to Committer, and it should be done if there is Consensus among active Committers. 
 * How this role is recognized: credited via role="aut" in DESCRIPTION (so they appear in Author list on CRAN), and added to https://github.com/orgs/Rdatatable/teams/committers which gives permission to merge PRs into master branch. 
 
-## CRAN maintainer
+## CRAN Maintainer
 
 * Definition: in charge of communication with CRAN. Responsible for submitting releases to CRAN on a regular basis, and for responding to requests from CRAN.
-* How to obtain this role: (1) merge into master a PR adding role="cre" to DESCRIPTION, and (2) submit updated package to CRAN (previous CRAN maintainer will have to confirm change by email to CRAN). 
+* How to obtain this role: (1) merge into master a PR adding role="cre" to DESCRIPTION, and (2) submit updated package to CRAN (previous CRAN Maintainer will have to confirm change by email to CRAN). 
 * How this role is recognized: credited via role="cre" in DESCRIPTION, so they appear as Maintainer on CRAN. 
+
+## Community Engagement Coordinator
+
+* Definition: An individual who is involved in the project but does **not** also occupy the Committer or CRAN Maintainer role.  In charge of maintaining The Raft blog, preparing Seal of Approval Applications, addressing Code of Conduct violations, and planning social or community events.
+
+* How to obtain this role: At the discretion of the current Community Engagement Coordinator(s) in conversation with the current Committers.
+
+* How this role is recognized: Holds the Owner role in the [rdatatable-community organization](https://github.com/orgs/rdatatable-community/people) on GitHub.
 
 # Decision-making processes
 
@@ -80,36 +88,53 @@ Most decisions in the project happen by Consensus, which means that no active pe
 
 ## Pull Requests
 
-A pull request can be merged by any committer, if there is one approving review, and Consensus from active Reviewers and Committers. 
+A pull request can be merged by any Committer, if there is one approving review, and Consensus from active Reviewers and Committers. 
 * approving review must come from someone other than the author of the PR.
-* approving review ideally comes from a reviewer of the affected files.
-* approving review can and often will be by the committer who merges the PR.
+* approving review ideally comes from a Reviewer of the affected files.
+* approving review can and often will be by the Committer who merges the PR.
 
 ## CRAN updates
 
 * Regular CRAN releases should ideally occur twice per year, and can include new features.
-* A hotfix/patch CRAN release should occur when CRAN asks for one, at which time the CRAN maintainer should post an issue on github, and ask others to help fix/prepare the release. It should not include new features.
+* A hotfix/patch CRAN release should occur when CRAN asks for one, at which time the CRAN Maintainer should post an issue on github, and ask others to help fix/prepare the release. It should not include new features.
 * Both kinds of releases should be discussed in an issue, and the release should happen only if there is Consensus among active Reviewers and Committers.
-* It is the responsibility of the CRAN maintainer to ensure quality prior to release. This includes CRAN checks, unit tests, performance tests, etc, and these tasks can be delegated to others. 
+* It is the responsibility of the CRAN Maintainer to ensure quality prior to release. This includes CRAN checks, unit tests, performance tests, etc, and these tasks can be delegated to others. 
 
 ## Changing this GOVERNANCE.md document
 
-There is no special process for changing this document (submit a PR
-and ask for review).
+There is no special process for changing this document. Submit a PR and ask for review; the group `@Rdatatable/committers` will automatically be assigned to ensure all current Committers are aware of the change.
+
+Please also make a note in the change log under [`# Governance history`](#governance-history)
+
+# Finances and Funding
+
+There is currently no mechanism for the data.table project to receive funding as an entity.  
+
+Funding support for this project therefore may come in two forms:
+
+## Individual external funding
+
+Any individual developer or community member of data.table may apply for and receive funding for their work on the project.  Individuals or groups seeking funding support are strongly encouraged to consult directly with the data.table Project Members (by initiating an Issue on GitHub) to ensure funds are used meaningfully. Formally, however, decisions about use of funds are governed by the individual grantee(s) and their contract with the funding agency. 
+
+There is no guarantee that funded work will be incorporated into the data.table package; any contributions, whether funded or unfunded, are subject to the same review process as outlined above.
+
+## Direct donations
+
+Direct donations to the project may be made via GitHub Sponsorships, which allow individuals to fund a specific developer.  If the current CRAN Maintainer offers a personal sponsorship option, donations may be made to them to support the project in general.
+
+## Decision-making for future opportunities
+
+We here outline a procedure for disbursing funds, should this project in the future become a directly fundable entity (e.g. an LLC or a subsidiary of an umbrella LLC).
+
+Funds acquired by the data.table project will be disbursed at the discretion of the **Committers**, defined as above.  The **CRAN Maintainer** will have authority to make final decisions in the event that no consensus is reached among committers prior to deadlines for use of funds, and will be responsible for disbursement logistics.
 
 # Code of conduct
 
-As contributors of this project, we pledge to respect all people who contribute through reporting issues, posting feature requests, updating documentation, submitting pull requests or patches, and other activities.
+The full Code of Conduct can be found [here](CODE_OF_CONDUCT.md), including details for reporting violations.
 
-We are committed to making participation in this project a harassment-free experience for everyone, regardless of level of experience, gender, gender identity and expression, sexual orientation, disability, personal appearance, body size, race, ethnicity, age, religion, etc.
+## Reporting Responsibility
 
-Examples of unacceptable behavior by participants include the use of sexual language or imagery, derogatory comments or personal attacks, trolling, public or private harassment, insults, or other unprofessional conduct.
-
-Committers have the right and responsibility to remove, edit, or reject comments, commits, code, wiki edits, issues, and other contributions that are not aligned to this Code of Conduct. A person with special roles who does not follow the Code of Conduct may have their roles revoked.
-
-Instances of abusive, harassing, or otherwise unacceptable behavior may be reported by opening an issue or emailing one or more of the Committers.
-
-This Code of Conduct is adapted from Tidyverse code of conduct.
+Committers and the Community Engagement Coordinator pledge to address any publicly posted issues or privately sent messages regarding Code of Conduct violations in a respectful and timely manner.
 
 # Version numbering
 
@@ -122,6 +147,10 @@ data.table Version line in DESCRIPTION typically has the following meanings
 * patch/hotfix development should occur on GitHub as z=odd (1.15.1) and release to CRAN as z=even (1.15.2).
 
 # Governance history
+
+Feb 2025: add Finances and Funding section, update Code of Conduct section to be a brief summary and reference the broader CoC document.
+
+Jan 2025: clarify that edits to governance should notify all committers, and that role names are proper nouns (i.e., upper-case) throughout.
 
 Feb 2024: change team name/link maintainers to committers, to be consistent with role defined in governance.
 
