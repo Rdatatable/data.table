@@ -16770,7 +16770,7 @@ registerS3method("format_col", "complex", format_col.default)
 # then i) test 1610.1 fails if test.data.table() is rerun, ii) user display of complex data would be affected
 # did try wrapping with on.exit(,add=TRUE) but perhaps because this is a script that is sys.source'd, it ran straight away
 
-# format method for column takes predecedence over format method for each list item
+# as of #6637, format individual list items but not the whole list
 registerS3method("format", "myclass2130", function(x, ...) paste0("<", class(x)[1L], ":", x$id, ">"))
 DT = data.table(row=1:2, objs=list(structure(list(id="foo"), class="myclass2130"), structure(list(id="bar"), class="myclass2130")))
 test(2130.13, print(DT), output="myclass2130:foo.*myclass2130:bar")
@@ -16778,7 +16778,7 @@ setattr(DT$objs, "class", "foo2130")
 registerS3method("format", "foo2130", function(x, ...) "All hail foo")
 test(2130.14, print(DT), output="myclass2130:foo.*myclass2130:bar") # because length 1 from format but needs to be length(x)
 registerS3method("format", "foo2130", function(x, ...) rep("All hail foo",length(x)))
-test(2130.15, print(DT), output="All hail foo")  # e.g. sf:::format.sfc rather than sf:::format.sfg on each item
+test(2130.15, print(DT), output="myclass2130:foo.*myclass2130:bar") # used to call format(column), not vapply_1c(column, format)
 setattr(DT$objs, "class", "bar2130_with_no_method")
 test(2130.16, print(DT), output="myclass2130:foo.*myclass2130:bar")
 registerS3method("format", "myclass2130", format.default)
