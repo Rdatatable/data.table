@@ -926,6 +926,12 @@ void fwriteMain(fwriteMainArgs args)
       }
     }
   }
+#ifndef NOZLIB
+  else {
+    // was unconditionally initialized for zbuffSize, not used for header
+    deflateEnd(&strm);
+  }
+#endif
   if (verbose)
     DTPRINT(_("Initialization done in %.3fs\n"), 1.0*(wallclock()-t0));
 
