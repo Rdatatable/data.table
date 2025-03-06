@@ -845,7 +845,7 @@ void fwriteMain(fwriteMainArgs args)
         free(buffPool);
         free(zbuffPool);
         deflateEnd(&strm);
-        STOP(_("Failed to write gzip header. Write returned %d"), ret0);
+        STOP(_("Failed to write gzip header. Write returned %d"), errwrite);
         // # nocov end
       }
     }
