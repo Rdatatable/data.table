@@ -850,7 +850,7 @@ void fwriteMain(fwriteMainArgs args)
       }
     }
   }
-#endif
+#endif // #NOZLIB
 
   // write header
 
