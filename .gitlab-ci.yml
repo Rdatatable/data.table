@@ -225,10 +225,10 @@ test-lin-san:
   script:
     - *install-deps
     - >-
-        ASAN_OPTIONS=detect_leaks=1 R CMD check --no-manual $(ls -1t data.table_*.tar.gz | head -n 1); res1=$?
-        perl -nle '(print, $a=1) if /: runtime error: |ERROR: LeakSanitizer/../SUMMARY.*Sanitizer/ }{ exit $a' data.table.Rcheck/**/*.Rout*; res2=$?
+        res1=0; ASAN_OPTIONS=detect_leaks=1 R CMD check --no-manual $(ls -1t data.table_*.tar.gz | head -n 1) || res1=$?
+        res2=0; perl -nle '(print, $a=1) if /: runtime error: |ERROR: LeakSanitizer/../SUMMARY.*Sanitizer/ }{ exit $a' data.table.Rcheck/**/*.Rout* || res2=$?
         # fail if R CMD check had failed or if sanitizer output found
-        [ $res1 -eq 0 ] && [ $res2 -eq 0 ]
+        if [ $res1 -ne 0 ] || [ $res2 -ne 0 ]; then exit 1; fi
 
 .test-win-template: &test-win
   <<: *test
