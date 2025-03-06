@@ -1,2 +1,0 @@
-# TODO(bit>4.5.0.1): remove after a new 'bit' version is on CRAN
-function:R_doDotCall

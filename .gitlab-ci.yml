@@ -221,7 +221,7 @@ test-lin-san:
     ASAN_OPTIONS: "detect_leaks=0"
     # fontconfig is known to leak; add more suppressions as discovered
     LSAN_OPTIONS: "suppressions=$CI_PROJECT_DIR/.dev/lsan.supp"
-    UBSAN_OPTIONS: "suppressions=$CI_PROJECT_DIR/.dev/ubsan.supp:print_stacktrace=1"
+    UBSAN_OPTIONS: "print_stacktrace=1"
   script:
     - *install-deps
     - >-
