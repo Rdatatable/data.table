@@ -10024,9 +10024,12 @@ if (!haszlib()) {
   fwrite(DT, file=f3<-tempfile(), compress="gzip")   # compress to filename not ending .gz
   fwrite(DT, file=f4<-tempfile(), compress="gzip", compressLevel=1)   # test compressLevel
   fwrite(DT, file=f5<-tempfile(), compress="gzip", compressLevel=9)
+  # col.names=FALSE must not disable gzip header, #6852
+  fwrite(DT, file=f6<-tempfile(), compress="gzip", col.names=FALSE)
   test(1658.441, file.info(f3)$size, file.info(f1)$size)
   test(1658.442, file.info(f4)$size >= file.info(f1)$size)
   test(1658.443, file.info(f1)$size >= file.info(f5)$size)
+  test(1658.444, fread(f6, col.names = c("a", "b")), DT)
   unlink(c(f1,f2,f3,f4,f5))
 }
 DT = data.table(a=1:3, b=list(1:4, c(3.14, 100e10), c("foo", "bar", "baz")))
