@@ -2,6 +2,10 @@
 
 # data.table [v1.17.1](https://github.com/Rdatatable/data.table/milestone/38)
 
+## BUG FIXES
+
+1. `fwrite(compress="gzip")` once again produces a gzip header when the column names are missing or disabled, [@6852](https://github.com/Rdatatable/data.table/issues/6852). Thanks @maxscheiber for the report and @aitap for the fix.
+
 # data.table [v1.17.0](https://github.com/Rdatatable/data.table/milestone/34)  (20 Feb 2025)
 
 ## POTENTIALLY BREAKING CHANGES
