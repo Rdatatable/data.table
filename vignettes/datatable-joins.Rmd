@@ -726,6 +726,7 @@ Products[ProductPriceHistory,
 - The key difference between `last()` and `tail()` is:
 - `last(x):` Returns the last element of x, including NA if it's the last element.
 - `tail(x, 1):` Also returns the last element but works more consistently with different object types.
+- For lists, `last(list)` returns the last element, while `tail(list, 1)` returns a list of length 1 containing the last    element.
 
 ```{r Example_Behavior}
 # Test 1: Simple vector with NA at the end
