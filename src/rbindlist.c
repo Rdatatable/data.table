@@ -228,7 +228,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
         }
       }
       if (buff[0]) {
-        SEXP opt = GetOption(install("datatable.rbindlist.check"), R_NilValue);
+        SEXP opt = GetOption1(install("datatable.rbindlist.check"));
         if (!isNull(opt) && !(isString(opt) && length(opt)==1)) {
           warning(_("options()$datatable.rbindlist.check is set but is not a single string. See news item 5 in v1.12.2."));
           opt = R_NilValue;
