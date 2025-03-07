@@ -22,6 +22,10 @@ knitr::opts_chunk$set(
 )
 ```
 
+```{r, echo=FALSE, file='_translation_links.R'}
+```
+`r .write.translation.links("Translations of this document are available in: %s")`
+
 In this vignette you will learn how to perform any join operation using resources available in the `data.table` syntax.
 
 It assumes familiarity with the `data.table` syntax. If that is not the case, please read the following vignettes:
@@ -320,7 +324,7 @@ Products[!ProductReceived,
          on = c("id" = "product_id")]
 ```
 
-As you can see, the result only has 'banana', as it was the only product that is not present in the `ProductReceived` table.
+As you can see, the result only has 'soda', as it was the only product that is not present in the `ProductReceived` table.
 
 ```{r}
 ProductReceived[!Products,
@@ -390,7 +394,7 @@ Here some important considerations:
   - It didn't add the prefix `i.` to any column.
   
 - **Row level**
-  - All rows from in the `i` table were kept as we never received any banana but row is still part of the results.
+  - All rows from the `i` table were kept: the soda entry from `Products` that was not matched by any row in `ProductReceived` is still part of the results.
   - The row related to `product_id = 6` is not part of the results any more as it is not present in the `Products` table.
 
 
@@ -569,6 +573,42 @@ ProductReceivedProd2[ProductSalesProd2,
                      nomatch = NULL]
 ```
 
+### 4.1 Output column names in non-equi joins
+
+When performing non-equi joins (`<`, `>`, `<=`, `>=`), column names are assigned as follows:
+
+- The left operand (`x` column) determines the column name in the result.
+- The right operand (`i` column) contributes values but does not retain its original name.
+- By default, `data.table` does not retain the `i` column used in the join condition unless explicitly requested.
+
+In non-equi joins, the left side of the operator (e.g., `x_int` in `x_int >= i_int`) must be a column from `x`, while the right side (e.g., `i_int`) must be a column from `i`.
+
+Non-equi joins do not currently support arbitrary expressions (but see [#1639](https://github.com/Rdatatable/data.table/issues/1639)). For example, `on = .(x_int >= i_int)` is valid, but `on = .(x_int >= i_int + 1L)` is not. To perform such a non-equi join, first add the expression as a new column, e.g. `i[, i_int_plus_one := i_int + 1L]`, then do `.on(x_int >= i_int_plus_one)`.
+
+```{r non_equi_join_example}
+x <- data.table(x_int = 2:4, lower = letters[1:3])
+i <- data.table(i_int = c(2L, 4L, 5L), UPPER = LETTERS[1:3])
+x[i, on = .(x_int >= i_int)]
+```
+
+Key Takeaways:
+- The name of the output column (`x_int`) comes from `x`, but the values come from `i_int` in `i`.
+- The last row contains `NA` because no rows in `x` match the last row in `i` (`UPPER == "C"`).
+- Multiple rows in `x` are returned to match the first row in `i` with `UPPER == "A"`.
+
+If you want to keep the `i_int` column from `i`, you need to explicitly select it in the result:
+
+```{r retain_i_column}
+x[i, on = .(x_int >= i_int), .(i_int = i.i_int, x_int = x.x_int, lower, UPPER)]
+```
+
+Using prefixes (`x.` and `i.`) is not strictly necessary in this case since the names are unambiguous, but using them ensures the output clearly distinguishes `i_int` (from `i`) and `x_int` (from `x`).
+
+If you want to exclude unmatched rows (an _inner join_), use `nomatch = NULL`:
+
+```{r retain_i_column_inner_join}
+x[i, on = .(x_int >= i_int), .(i_int = i.i_int, x_int = x.x_int, lower, UPPER), nomatch = NULL]
+```
 
 ## 5. Rolling join
 

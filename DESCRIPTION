@@ -1,5 +1,5 @@
 Package: data.table
-Version: 1.16.99
+Version: 1.17.99
 Title: Extension of `data.frame`
 Depends: R (>= 3.3.0)
 Imports: methods
@@ -15,10 +15,11 @@ Authors@R: c(
   person("Tyson","Barrett",        role=c("aut","cre"), email="t.barrett88@gmail.com", comment = c(ORCID="0000-0002-2137-1391")),
   person("Matt","Dowle",           role="aut",          email="mattjdowle@gmail.com"),
   person("Arun","Srinivasan",      role="aut",          email="asrini@pm.me"),
-  person("Jan","Gorecki",          role="aut"),
-  person("Michael","Chirico",      role="aut", comment = c(ORCID="0000-0003-0787-087X")),
-  person("Toby","Hocking",         role="aut", comment = c(ORCID="0000-0002-3146-0865")),
+  person("Jan","Gorecki",          role="aut",          email="j.gorecki@wit.edu.pl"),
+  person("Michael","Chirico",      role="aut",          email="michaelchirico4@gmail.com", comment = c(ORCID="0000-0003-0787-087X")),
+  person("Toby","Hocking",         role="aut",          email="toby.hocking@r-project.org", comment = c(ORCID="0000-0002-3146-0865")),
   person("Benjamin","Schwendinger",role="aut", comment = c(ORCID="0000-0003-3315-8114")),
+  person("Ivan", "Krylov",         role="aut",          email="ikrylov@disroot.org",   comment = c(ORCID="0000-0002-0172-3812")),
   person("Pasha","Stetsenko",      role="ctb"),
   person("Tom","Short",            role="ctb"),
   person("Steve","Lianoglou",      role="ctb"),
@@ -89,7 +90,6 @@ Authors@R: c(
   person("Iago", "Giné-Vázquez",   role="ctb"),
   person("Anirban", "Chetia",      role="ctb"),
   person("Doris", "Amoakohene",    role="ctb"),
-  person("Ivan", "Krylov",         role="ctb"),
   person("Angel", "Feliz",         role="ctb"),
   person("Michael","Young",        role="ctb"),
   person("Mark", "Seeto",          role="ctb"),

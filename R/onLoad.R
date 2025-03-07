@@ -119,7 +119,7 @@
   add1 = address(DF$a)
   add2 = address(DF$b)
   add3 = address(DF)
-  DF[2L, "b"] = 7  # changed b but not a
+  DF[2L, "b"] = 7L  # changed b but not a
   add4 = address(DF$a)
   add5 = address(DF$b)
   add6 = address(DF)

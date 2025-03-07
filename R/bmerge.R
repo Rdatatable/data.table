@@ -9,15 +9,20 @@ mergeType = function(x) {
   ans
 }
 
-cast_with_atts = function(x, as.f) {
-  ans = as.f(x)
-  if (!is.null(attributes(x))) attributes(ans) = attributes(x)
+cast_with_attrs = function(x, cast_fun) {
+  ans = cast_fun(x)
+  # do not copy attributes when coercing factor (to character)
+  if (!is.factor(x) && !is.null(attributes(x))) attributes(ans) = attributes(x)
   ans
 }
 
-coerce_col = function(dt, col, from_type, to_type, from_name, to_name, verbose_msg=NULL) {
-  if (!is.null(verbose_msg)) catf(verbose_msg, from_type, from_name, to_type, to_name, domain=NULL)
-  set(dt, j=col, value=cast_with_atts(dt[[col]], match.fun(paste0("as.", to_type))))
+coerce_col = function(dt, col, from_type, to_type, from_name, to_name, from_detail="", to_detail="", verbose) {
+  if (verbose) catf(
+    "Coercing %s column %s%s to type %s to match type of %s%s.\n",
+    from_type, from_name, from_detail, to_type, to_name, to_detail
+  )
+  cast_fun = switch(to_type, integer64 = bit64::as.integer64, match.fun(paste0("as.", to_type)))
+  set(dt, j=col, value=cast_with_attrs(dt[[col]], cast_fun))
 }
 
 bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbose)
@@ -68,9 +73,8 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
         next
       } else {
         if (x_merge_type=="character") {
-          if (verbose) catf("Coercing factor column %s to type character to match type of %s.\n", iname, xname)
-          set(i, j=icol, value=val<-as.character(i[[icol]]))
-          set(callersi, j=icol, value=val)  # factor in i joining to character in x will return character and not keep x's factor; e.g. for antaresRead #3581
+          coerce_col(i, icol, "factor", "character", iname, xname, verbose=verbose)
+          set(callersi, j=icol, value=i[[icol]])  # factor in i joining to character in x will return character and not keep x's factor; e.g. for antaresRead #3581
           next
         } else if (i_merge_type=="character") {
           if (verbose) catf("Matching character column %s to factor levels in %s.\n", iname, xname)
@@ -89,13 +93,12 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     }
     cfl = c("character", "logical", "factor")
     if (x_merge_type %chin% cfl || i_merge_type %chin% cfl) {
-      msg = if(verbose) gettext("Coercing all-NA %s column %s to type %s to match type of %s.\n") else NULL
       if (anyNA(i[[icol]]) && allNA(i[[icol]])) {
-        coerce_col(i, icol, i_merge_type, x_merge_type, iname, xname, msg)
+        coerce_col(i, icol, i_merge_type, x_merge_type, iname, xname, from_detail=gettext(" (all-NA)"), verbose=verbose)
         next
       }
       if (anyNA(x[[xcol]]) && allNA(x[[xcol]])) {
-        coerce_col(x, xcol, x_merge_type, i_merge_type, xname, iname, msg)
+        coerce_col(x, xcol, x_merge_type, i_merge_type, xname, iname, from_detail=gettext(" (all-NA)"), verbose=verbose)
         next
       }
       stopf("Incompatible join types: %s (%s) and %s (%s)", xname, x_merge_type, iname, i_merge_type)
@@ -104,8 +107,8 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
       nm = c(iname, xname)
       if (x_merge_type=="integer64") { w=i; wc=icol; wclass=i_merge_type; } else { w=x; wc=xcol; wclass=x_merge_type; nm=rev(nm) }  # w is which to coerce
       if (wclass=="integer" || (wclass=="double" && fitsInInt64(w[[wc]]))) {
-        if (verbose) catf("Coercing %s column %s%s to type integer64 to match type of %s.\n", wclass, nm[1L], if (wclass=="double") " (which has integer64 representation, e.g. no fractions)" else "", nm[2L])
-        set(w, j=wc, value=bit64::as.integer64(w[[wc]]))
+        from_detail = if (wclass == "double") gettext(" (which has integer64 representation, e.g. no fractions)") else ""
+        coerce_col(w, wc, wclass, "integer64", nm[1L], nm[2L], from_detail, verbose=verbose)
       } else stopf("Incompatible join types: %s is type integer64 but %s is type double and cannot be coerced to integer64 (e.g. has fractions)", nm[2L], nm[1L])
     } else {
       # just integer and double left
@@ -126,28 +129,26 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
             }
           }
           if (coerce_x) {
-            msg = if (verbose) gettext("Coercing %s column %s (which contains no fractions) to type %s to match type of %s.\n") else NULL
-            coerce_col(i, icol, "double", "integer", iname, xname, msg)
+            from_detail = gettext(" (which contains no fractions)")
+            coerce_col(i, icol, "double", "integer", iname, xname, from_detail, verbose=verbose)
             set(callersi, j=icol, value=i[[icol]])       # change the shallow copy of i up in [.data.table to reflect in the result, too.
             if (length(ic_idx)>1L) {
               xc_idx = xcols[ic_idx]
               for (xb in xc_idx[which(vapply_1c(.shallow(x, xc_idx), mergeType) == "double")]) {
-                coerce_col(x, xb, "double", "integer", paste0("x.", names(x)[xb]), xname, msg)
+                coerce_col(x, xb, "double", "integer", paste0("x.", names(x)[xb]), xname, from_detail, verbose=verbose)
               }
             }
           }
         }
         if (!coerce_x) {
-          msg = if (verbose) gettext("Coercing %s column %s to type %s to match type of %s which contains fractions.\n") else NULL
-          coerce_col(x, xcol, "integer", "double", xname, iname, msg)
+          coerce_col(x, xcol, "integer", "double", xname, iname, to_detail=gettext(" (which contains fractions)"), verbose=verbose)
         }
       } else {
-        msg = if (verbose) gettext("Coercing %s column %s to type %s for join to match type of %s.\n") else NULL
-        coerce_col(i, icol, "integer", "double", iname, xname, msg)
+        coerce_col(i, icol, "integer", "double", iname, xname, from_detail=gettext(" (for join)"), verbose=verbose)
         if (length(ic_idx)>1L) {
           xc_idx = xcols[ic_idx]
           for (xb in xc_idx[which(vapply_1c(.shallow(x, xc_idx), mergeType) == "integer")]) {
-            coerce_col(x, xb, "integer", "double", paste0("x.", names(x)[xb]), xname, msg)
+            coerce_col(x, xb, "integer", "double", paste0("x.", names(x)[xb]), xname, verbose=verbose)
           }
         }
       }
@@ -187,7 +188,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     if (verbose) {last.started.at=proc.time();catf("  forder took ... ");flush.console()}
     # TODO: could check/reuse secondary indices, but we need 'starts' attribute as well!
     xo = forderv(x, xcols, retGrp=TRUE)
-    if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
+    if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()} # notranslate
     xg = attr(xo, 'starts', exact=TRUE)
     resetcols = head(xcols, non_equi-1L)
     if (length(resetcols)) {

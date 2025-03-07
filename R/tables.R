@@ -18,7 +18,7 @@ type_size = function(DT) {
   ans + ncol(DT)*.Machine$sizeof.pointer  # column name pointers
 }
 
-tables = function(mb=type_size, order.col="NAME", width=80,
+tables = function(mb=type_size, order.col="NAME", width=80L,
                   env=parent.frame(), silent=FALSE, index=FALSE)
 {
   # Prints name, size and colnames of all data.tables in the calling environment by default
@@ -31,12 +31,12 @@ tables = function(mb=type_size, order.col="NAME", width=80,
     if (!silent) catf("No objects of class data.table exist in %s\n", if (identical(env, .GlobalEnv)) ".GlobalEnv" else format(env))
     return(invisible(data.table(NULL)))
   }
-  info = data.table(NAME=names[w], NROW=0L, NCOL=0L, MB=0, COLS=list(), KEY=list(), INDICES=list())
+  info = data.table(NAME=names[w], NROW=0L, NCOL=0L, MB=0.0, COLS=list(), KEY=list(), INDICES=list())
   for (i in seq_along(w)) {  # avoid rbindlist(lapply(DT_names)) in case of a large number of tables
     DT = obj[[w[i]]]
     set(info, i, "NROW", nrow(DT))
     set(info, i, "NCOL", ncol(DT))
-    if (is.function(mb)) set(info, i, "MB", as.integer(mb(DT)/1024^2))
+    if (is.function(mb)) set(info, i, "MB", as.integer(mb(DT)/1048576L)) # i.e. 1024**2
     if (!is.null(tt<-names(DT))) set(info, i, "COLS", tt)  # TODO: don't need these if()s when #5526 is done
     if (!is.null(tt<-key(DT))) set(info, i, "KEY", tt)
     if (index && !is.null(tt<-indices(DT))) set(info, i, "INDICES", tt)

@@ -132,7 +132,7 @@ SEXP freadR(
   args.logical01 = LOGICAL(logical01Arg)[0];
   args.logicalYN = LOGICAL(logicalYNArg)[0];
   {
-    SEXP tt = PROTECT(GetOption(sym_old_fread_datetime_character, R_NilValue));
+    SEXP tt = PROTECT(GetOption1(sym_old_fread_datetime_character));
     args.oldNoDateTime = oldNoDateTime = isLogical(tt) && LENGTH(tt)==1 && LOGICAL(tt)[0]==TRUE;
     UNPROTECT(1);
   }
@@ -232,8 +232,8 @@ static void applyDrop(SEXP items, int8_t *type, int ncol, int dropSource) {
     int k = itemsD[j];
     if (k==NA_INTEGER || k<1 || k>ncol) {
       static char buff[51];
-      if (dropSource==-1) snprintf(buff, 50, "drop[%d]", j+1);
-      else snprintf(buff, 50, "colClasses[[%d]][%d]", dropSource+1, j+1);
+      if (dropSource==-1) snprintf(buff, 50, "drop[%d]", j+1); // # notranslate
+      else snprintf(buff, 50, "colClasses[[%d]][%d]", dropSource+1, j+1); // # notranslate
       if (k==NA_INTEGER) {
         if (isString(items))
           DTWARN(_("Column name '%s' (%s) not found"), CHAR(STRING_ELT(items, j)), buff);
@@ -262,7 +262,7 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
     SEXP elem;
     if (colNames==NULL || colNames[i].len<=0) {
       char buff[12];
-      snprintf(buff,12,"V%d",i+1);
+      snprintf(buff,12,"V%d",i+1); // # notranslate
       elem = mkChar(buff);  // no PROTECT as passed immediately to SET_STRING_ELT
     } else {
       elem = mkCharLenCE(anchor+colNames[i].off, colNames[i].len, ienc);  // no PROTECT as passed immediately to SET_STRING_ELT
@@ -624,7 +624,7 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx)
     resj++;
     if (type[j]!=CT_STRING && type[j]>0) {
       if (thisSize == 8) {
-        double *dest = (double *)REAL(VECTOR_ELT(DT, resj)) + DTi;
+        double *dest = REAL(VECTOR_ELT(DT, resj)) + DTi;
         const char *src8 = (char*)buff8 + off8;
         for (int i=0; i<nRows; ++i) {
           *dest = *(double *)src8;
@@ -633,7 +633,7 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx)
         }
       } else
       if (thisSize == 4) {
-        int *dest = (int *)INTEGER(VECTOR_ELT(DT, resj)) + DTi;
+        int *dest = INTEGER(VECTOR_ELT(DT, resj)) + DTi;
         const char *src4 = (char*)buff4 + off4;
         // debug line for #3369 ... if (DTi>2638000) printf("freadR.c:460: thisSize==4, resj=%d, %"PRIu64", %d, %d, j=%d, done=%d\n", resj, (uint64_t)DTi, off4, rowSize4, j, done);
         for (int i=0; i<nRows; ++i) {
@@ -644,7 +644,7 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx)
       } else
       if (thisSize == 1) {
         if (type[j] > CT_BOOL8_Y) STOP(_("Field size is 1 but the field is of type %d\n"), type[j]);
-        Rboolean *dest = (Rboolean *)LOGICAL(VECTOR_ELT(DT, resj)) + DTi;
+        int *dest = LOGICAL(VECTOR_ELT(DT, resj)) + DTi;
         const char *src1 = (char*)buff1 + off1;
         for (int i=0; i<nRows; ++i) {
           int8_t v = *(int8_t *)src1;
@@ -685,7 +685,7 @@ void progress(int p, int eta) {
     if (eta<3 || p>50) return;
     #pragma omp critical
     {
-      REprintf("|--------------------------------------------------|\n|");
+      REprintf("|--------------------------------------------------|\n|"); // # notranslate
       R_FlushConsole();
     }
     displayed = 0;
@@ -696,11 +696,11 @@ void progress(int p, int eta) {
   bar[toPrint] = '\0';
   #pragma omp critical
   {
-    REprintf("%s", bar);
+    REprintf("%s", bar); // # notranslate
     bar[toPrint] = '=';
     displayed = p;
     if (p==50) {
-      REprintf("|\n");
+      REprintf("|\n"); // # notranslate
       displayed = -1;
     }
     R_FlushConsole();

@@ -11,7 +11,7 @@ raise_condition = function(signal, message, classes, immediate=FALSE, appendLF=F
   setattr(obj, "class", classes)
   # cannot set immediate.=TRUE through warning(), so use the description in ?warning to replicate this behavior ourselves. tested manually.
   if (immediate) {
-    old = options(warn=1)
+    old = options(warn=1L)
     on.exit(options(old))
   }
   signal(obj)

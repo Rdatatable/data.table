@@ -12,7 +12,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
     error(_("%s should be TRUE or FALSE"), "ignore.attr");
   if (!length(l)) return(l);
   if (TYPEOF(l) != VECSXP) error(_("Input to rbindlist must be a list. This list can contain data.tables, data.frames or plain lists."));
-  Rboolean usenames = LOGICAL(usenamesArg)[0];
+  int usenames = LOGICAL(usenamesArg)[0];
   const bool fill = LOGICAL(fillArg)[0];
   const bool ignoreattr = LOGICAL(ignoreattrArg)[0];
   if (fill && usenames==NA_LOGICAL) {
@@ -214,7 +214,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
           const char *str = isString(s) ? CHAR(STRING_ELT(s,w2)) : "";
           snprintf(buff, 1000, _("Column %d ['%s'] of item %d is missing in item %d. Use fill=TRUE to fill with NA (NULL for list columns), or use.names=FALSE to ignore column names.%s"),
                         w2+1, str, i+1, missi+1, extra );
-          if (usenames==TRUE) error("%s", buff);
+          if (usenames==TRUE) error("%s", buff); // # notranslate
           i = LENGTH(l); // break from outer i loop
           break;         // break from inner j loop
         }
@@ -228,15 +228,15 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
         }
       }
       if (buff[0]) {
-        SEXP opt = GetOption(install("datatable.rbindlist.check"), R_NilValue);
+        SEXP opt = GetOption1(install("datatable.rbindlist.check"));
         if (!isNull(opt) && !(isString(opt) && length(opt)==1)) {
           warning(_("options()$datatable.rbindlist.check is set but is not a single string. See news item 5 in v1.12.2."));
           opt = R_NilValue;
         }
         const char *o = isNull(opt) ? "message" : CHAR(STRING_ELT(opt,0));
         if      (strcmp(o,"message")==0) { eval(PROTECT(lang2(install("message"),PROTECT(ScalarString(mkChar(buff))))), R_GlobalEnv); UNPROTECT(2); }
-        else if (strcmp(o,"warning")==0) warning("%s", buff);
-        else if (strcmp(o,"error")==0)   error("%s", buff);
+        else if (strcmp(o,"warning")==0) warning("%s", buff); // # notranslate
+        else if (strcmp(o,"error")==0)   error("%s", buff); // # notranslate
         else if (strcmp(o,"none")!=0)    warning(_("options()$datatable.rbindlist.check=='%s' which is not 'message'|'warning'|'error'|'none'. See news item 5 in v1.12.2."), o);
       }
     }
@@ -336,7 +336,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
       }
     }
 
-    if (!foundName) { static char buff[12]; snprintf(buff,12,"V%d",j+1), SET_STRING_ELT(ansNames, idcol+j, mkChar(buff)); foundName=buff; }
+    if (!foundName) { static char buff[12]; snprintf(buff,12,"V%d",j+1), SET_STRING_ELT(ansNames, idcol+j, mkChar(buff)); foundName=buff; } // # notranslate
     if (factor) maxType=INTSXP;  // if any items are factors then a factor is created (could be an option)
     if (int64 && !(maxType==REALSXP || maxType==STRSXP || maxType==VECSXP || maxType==CPLXSXP))
       internal_error(__func__, "column %d of result is determined to be integer64 but maxType=='%s' != REALSXP", j+1, type2char(maxType)); // # nocov
@@ -514,7 +514,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
       }
       for (int k=0; k<nLevel; ++k) SET_TRUELENGTH(levelsRaw[k], 0);
       savetl_end();
-      if (warnStr[0]) warning("%s", warnStr);  // now savetl_end() has happened it's safe to call warning (could error if options(warn=2))
+      if (warnStr[0]) warning("%s", warnStr);  // # notranslate. now savetl_end() has happened it's safe to call warning (could error if options(warn=2))
       SEXP levelsSxp;
       setAttrib(target, R_LevelsSymbol, levelsSxp=allocVector(STRSXP, nLevel));
       for (int k=0; k<nLevel; ++k) SET_STRING_ELT(levelsSxp, k, levelsRaw[k]);

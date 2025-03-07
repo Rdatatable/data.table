@@ -5,7 +5,7 @@ fdroplevels = function(x, exclude = if (anyNA(levels(x))) NULL else NA, ...) {
   ans = match(as.integer(x), lev)
   setattr(ans, 'levels', levels(x)[lev])
   setattr(ans, 'class', class(x))
-  return(ans)
+  ans
 }
 
 droplevels.data.table = function(x, except=NULL, exclude, in.place=NULL, ...){
@@ -19,7 +19,7 @@ setdroplevels = function(x, except=NULL, exclude=NULL) {
   if (!nrow(x)) return(invisible(x))
   ix = vapply_1b(x, is.factor)
   if (!is.null(except)) {
-    stopifnot(is.numeric(except), except >= 1, except <= length(x))
+    stopifnot(is.numeric(except), except >= 1L, except <= length(x))
     ix[except] = FALSE
   }
   if (!any(ix)) return(invisible(x))
