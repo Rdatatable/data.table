@@ -18,8 +18,7 @@ between = function(x, lower, upper, incbounds=TRUE, NAbounds=TRUE, check=FALSE) 
   # POSIX check timezone match
   if (is.px(x) && is.px(lower) && is.px(upper)) {
     tzs = sapply(list(x,lower,upper), function(x) {
-      tt = attr(x,"tzone",exact=TRUE)
-      if (is.null(tt)) "" else tt
+      attr(x, "tzone", exact=TRUE) %||% ""
     })
     # lower/upper should be more tightly linked than x/lower, so error
     #   if the former don't match but only inform if they latter don't
