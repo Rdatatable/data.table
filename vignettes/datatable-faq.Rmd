@@ -15,10 +15,7 @@ vignette: >
 ---
 ```{r, echo = FALSE, message = FALSE}
 library(data.table)
-opts = litedown::reactor()
-opts$comment = "# "
-opts$error = FALSE
-opts$print = function(x, ...) capture.output(if (isS4(x)) methods::show(x, ...) else print(x, ...))
+litedown::reactor(comment = "# ", print = NA)
 .old.th = setDTthreads(1)
 ```
 

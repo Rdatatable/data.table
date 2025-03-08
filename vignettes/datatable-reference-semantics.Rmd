@@ -11,10 +11,7 @@ vignette: >
 
 ```{r, echo = FALSE, message = FALSE}
 library(data.table)
-opts = litedown::reactor()
-opts$comment = "# "
-opts$error = FALSE
-opts$print = function(x, ...) capture.output(if (isS4(x)) methods::show(x, ...) else print(x, ...))
+litedown::reactor(comment = "# ", print = NA)
 .old.th = setDTthreads(1)
 ```
 This vignette discusses *data.table*'s reference semantics which allows to *add/update/delete* columns of a *data.table by reference*, and also combine them with `i` and `by`. It is aimed at those who are already familiar with *data.table* syntax, its general form, how to subset rows in `i`, select and compute on columns, and perform aggregations by group. If you're not familiar with these concepts, please read the `vignette("datatable-intro", package="data.table")` first.
