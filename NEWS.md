@@ -12,7 +12,7 @@
 
 2. `fwrite(compress="gzip")` once again produces a gzip header when the column names are missing or disabled, [@6852](https://github.com/Rdatatable/data.table/issues/6852). Thanks @maxscheiber for the report and @aitap for the fix.
 
-3. `fread(keepLeadingZeros=TRUE)` parsed dates with a leading zero as strings although `fread` correctly detected them as dates. Thanks @TurnaevEvgeny for the report and @ben-schwen for the fix.
+3. `fread(keepLeadingZeros=TRUE)` now correctly parses dates with leading zeros as dates instead of strings, [#6851](https://github.com/Rdatatable/data.table/issues/6851). Thanks @TurnaevEvgeny for the report and @ben-schwen for the fix.
 
 ## NOTES
 
