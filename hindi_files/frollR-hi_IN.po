@@ -1,0 +1,116 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: frollR 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: 2024-10-10 22:46+0100\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: hi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: frollR.c:17
+msgid ""
+"x must be of type numeric or logical, or a list, data.frame or data.table of "
+"such"
+msgstr ""
+"x का प्रकार संख्यात्मक या लॉजिकल (logical) होना चाहिए, या ऐसी लिस्ट (list), data.frame या data.table होना चाहिए"
+
+#: frollR.c:38 frollR.c:244
+msgid "n must be non 0 length"
+msgstr "n की लेंथ (length) 0 से अधिक होनी चाहिए"
+
+#: frollR.c:41 frollR.c:95
+#, c-format
+msgid "%s must be TRUE or FALSE"
+msgstr "%s को TRUE या FALSE होना चाहिए"
+
+#: frollR.c:49
+msgid "n must be integer, list is accepted for adaptive TRUE"
+msgstr "n को पूर्णांक (integer) होना चाहिए, लिस्ट (list) को adaptive TRUE के लिए स्वीकार किया जाता है"
+
+#: frollR.c:56 frollR.c:236 frollR.c:239
+msgid "n must be integer"
+msgstr "n को पूर्णांक (integer) होना चाहिए"
+
+#: frollR.c:63
+msgid "n must be positive integer values (> 0)"
+msgstr "n को सकारात्मक पूर्णांक (integer) मान (> 0) होना चाहिए"
+
+#: frollR.c:72 frollR.c:84
+msgid "n must be integer vector or list of integer vectors"
+msgstr "n को पूर्णांक (integer) वेक्टर (vector) या पूर्णांक (integer) वेक्टर (vector) की लिस्ट (list) होना चाहिए।"
+
+#: frollR.c:98
+msgid "hasNA must be TRUE, FALSE or NA"
+msgstr "hasNA को TRUE, FALSE या NA होना चाहिए"
+
+#: frollR.c:100
+msgid ""
+"using hasNA FALSE and na.rm TRUE does not make sense, if you know there are "
+"NA values use hasNA TRUE, otherwise leave it as default NA"
+msgstr ""
+"hasNA FALSE और na.rm TRUE का उपयोग करने का कोई मतलब नहीं है, यदि आप जानते हैं कि"
+"NA मान हैं तो hasNA TRUE का उपयोग करें, अन्यथा इसे डिफ़ॉल्ट (default) NA पर छोड़ दें"
+
+#: frollR.c:113
+msgid ""
+"using adaptive TRUE and align argument different than 'right' is not "
+"implemented"
+msgstr ""
+"adaptive TRUE का उपयोग करते समय align आर्ग्युमेंट (argument) 'right' से अलग लागू नहीं किया गया है"
+
+#: frollR.c:117 frollR.c:267
+#, c-format
+msgid "%s: allocating memory for results %dx%d\n"
+msgstr "%s: परिणामों के लिए स्मृति आवंटित कर रहा है %dx%d\n"
+
+#: frollR.c:126
+msgid ""
+"adaptive rolling function can only process 'x' having equal length of "
+"elements, like data.table or data.frame; If you want to call rolling function "
+"on list having variable length of elements call it for each field separately"
+msgstr ""
+"adaptive रोलिंग (rolling) फ़ंक्शन (function) केवल 'x' को समान लेंथ (length) वाले तत्वों के साथ प्रोसेस (process) कर सकता है,"
+" जैसे data.table या data.frame; यदि आप अलग-अलग लेंथ (length) के तत्वों वाली लिस्ट (list) पर कॉल (call) करना चाहते हैं,"
+" तो प्रत्येक फ़ील्ड (field) के लिए इसे अलग से कॉल (call) करें"
+
+#: frollR.c:128
+msgid ""
+"length of integer vector(s) provided as list to 'n' argument must be equal to "
+"number of observations provided in 'x'"
+msgstr ""
+"'n' आर्ग्युमेंट (argument) के लिए लिस्ट (list) के रूप में प्रदान किए गए पूर्णांक (integer) वेक्टर (vector) की"
+" लेंथ (length) 'x' में दी गई ऑब्ज़र्वेशन की संख्या के बराबर होनी चाहिए"
+
+#: frollR.c:146 frollR.c:259
+msgid "fill must be a vector of length 1"
+msgstr "fill को लेंथ (length) 1 का वेक्टर (vector) होना चाहिए"
+
+#: frollR.c:148 frollR.c:261
+msgid "fill must be numeric or logical"
+msgstr "fill को संख्यात्मक या लॉजिकल (logical) होना चाहिए"
+
+#: frollR.c:178
+#, c-format
+msgid ""
+"%s: %d column(s) and %d window(s), if product > 1 then entering parallel "
+"execution\n"
+msgstr ""
+"%s: %d कॉलम (column) और %d विंडो (window), यदि प्रोडक्ट (product) > 1 है"
+"तो समानांतर निष्पादन में प्रवेश कर रहा है\n"
+
+#: frollR.c:180
+#, c-format
+msgid ""
+"%s: %d column(s) and %d window(s), not entering parallel execution here "
+"because algo='exact' will compute results in parallel\n"
+msgstr ""
+"%s: %d कॉलम (column) और %d विंडो (window), यहां समानांतर निष्पादन में प्रवेश नहीं कर रहा क्योंकि"
+" algo='exact' समानांतर में परिणामों की गणना करेगा\n"
+
+#: frollR.c:207 frollR.c:299
+#, c-format
+msgid "%s: processing of %d column(s) and %d window(s) took %.3fs\n"
+msgstr "%s: %d कॉलम (column) और %d विंडो (window) का प्रोसेसिंग (process) %.3fs में हुआ\n"
