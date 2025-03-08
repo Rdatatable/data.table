@@ -3,22 +3,22 @@
 ###############################################
 
 # 1) Update messages for new release
-## (a) Update C template file: src/data.table.pot
-##     ideally, we are including _() wrapping in
-##     new PRs throughout dev cycle, and this step
-##     becomes about tying up loose ends
-## Check the output here for translatable messages
-xgettext -o /dev/stdout ./*.c \
-  --keyword=Rprintf --keyword=error --keyword=warning --keyword=STOP --keyword=DTWARN --keyword=Error --keyword=DTPRINT --keyword=snprintf:3
+dt_custom_translators = list(
+  R = 'catf:fmt|1',
+  # TODO(MichaelChirico/potools#318): restore snprintf:3 here too
+  src = c('STOP:1', 'DTWARN:1', 'DTPRINT:1')
+)
+message_db =
+  potools::get_message_data(custom_translation_functions = dt_custom_translators)
+potools::check_cracked_messages(message_db)
+potools::check_untranslated_cat(message_db)
+potools::check_untranslated_src(message_db)
 
-## (b) Update R template file: src/R-data.table.pot
-##  NB: this relies on R >= 4.0 to remove a bug in update_pkg_po
-Rscript -e "tools::update_pkg_po('.')"
+## (b) Update R template files (po/*.pot)
+potools::po_extract(custom_translation_functions = dt_custom_translators)
 
 # 2) Open a PR with the new templates & contact the translators
-#   * zh_CN: @hongyuanjia
-#   * pt_BR: @rffontenelle
-#   * es: @rikivillalba
+#    using @Rdatatable/<lang>, e.g. @Rdatatable/chinese
 ## Translators to submit commits with translations to this PR
 ##   [or perhaps, if we get several languages, each to open
 ##    its own PR and merge to main translation PR]
@@ -114,12 +114,6 @@ grep -P "\t" ./src/*.c
 grep -n "[^A-Za-z0-9]T[^A-Za-z0-9]" ./inst/tests/tests.Rraw
 grep -n "[^A-Za-z0-9]F[^A-Za-z0-9]" ./inst/tests/tests.Rraw
 
-# All integers internally should have L suffix to avoid lots of one-item coercions
-# Where 0 numeric is intended we should perhaps use 0.0 for clarity and make the grep easier
-# 1) tolerance=0 usages in setops.R are valid numeric 0, as are anything in strings
-# 2) leave the rollends default using roll>=0 though; comments in PR #3803
-grep -Enr "^[^#]*(?:\[|==|>|<|>=|<=|,|\(|\+)\s*[-]?[0-9]+[^0-9L:.e]" R | grep -Ev "stop|warning|tolerance"
-
 # Never use ifelse. fifelse for vectors when necessary (nothing yet)
 grep -Enr "\bifelse" R
 
@@ -134,10 +128,6 @@ grep -Fn "tryCatch" ./inst/tests/*.Rraw
 
 # All % in *.Rd should be escaped otherwise text gets silently chopped
 grep -n "[^\]%" ./man/*.Rd
-
-# if (a & b) is either invalid or inefficient (ditto for replace & with |);
-#   if(any(a [&|] b)) is appropriate b/c of collapsing the logical vector to scalar
-grep -nr "^[^#]*if[^&#]*[^&#\"][&][^&]" R | grep -Ev "if\s*[(](?:any|all)"
 
 # seal leak potential where two unprotected API calls are passed to the same
 # function call, usually involving install() or mkChar()

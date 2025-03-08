@@ -72,6 +72,7 @@ R_CallMethodDef callMethods[] = {
 {"Crbindlist", (DL_FUNC) &rbindlist, -1},
 {"Cvecseq", (DL_FUNC) &vecseq, -1},
 {"Csetlistelt", (DL_FUNC) &setlistelt, -1},
+{"CsetS4elt", (DL_FUNC) &setS4elt, -1},
 {"Caddress", (DL_FUNC) &address, -1},
 {"CexpandAltRep", (DL_FUNC) &expandAltRep, -1},
 {"Cfmelt", (DL_FUNC) &fmelt, -1},
@@ -101,8 +102,8 @@ R_CallMethodDef callMethods[] = {
 {"Cshift", (DL_FUNC) &shift, -1},
 {"Ctranspose", (DL_FUNC) &transpose, -1},
 {"CanyNA", (DL_FUNC) &anyNA, -1},
-{"CisReallyReal", (DL_FUNC) &isReallyReal, -1},
-{"CisRealReallyIntR", (DL_FUNC) &isRealReallyIntR, -1},
+{"CfitsInInt32R", (DL_FUNC) &fitsInInt32R, -1},
+{"CfitsInInt64R", (DL_FUNC) &fitsInInt64R, -1},
 {"Csetlevels", (DL_FUNC) &setlevels, -1},
 {"Crleid", (DL_FUNC) &rleid, -1},
 {"Cgmedian", (DL_FUNC) &gmedian, -1},
@@ -328,7 +329,7 @@ inline double LLtoD(long long x) {
 
 int GetVerbose(void) {
   // don't call repetitively; save first in that case
-  SEXP opt = GetOption(sym_verbose, R_NilValue);
+  SEXP opt = GetOption1(sym_verbose);
   if ((!isLogical(opt) && !isInteger(opt)) || LENGTH(opt)!=1 || INTEGER(opt)[0]==NA_INTEGER)
     error(_("verbose option must be length 1 non-NA logical or integer"));
   return INTEGER(opt)[0];
@@ -371,6 +372,6 @@ SEXP initLastUpdated(SEXP var) {
 
 SEXP dllVersion(void) {
   // .onLoad calls this and checks the same as packageVersion() to ensure no R/C version mismatch, #3056
-  return(ScalarString(mkChar("1.16.99")));
+  return(ScalarString(mkChar("1.17.99")));
 }
 

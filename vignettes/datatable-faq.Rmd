@@ -6,25 +6,35 @@ output:
     options:
       toc: true
       number_sections: true
-    meta:
-      css: [default, css/toc.css]
 vignette: >
   %\VignetteIndexEntry{Frequently Asked Questions about data.table}
   %\VignetteEngine{litedown::vignette}
   \usepackage[utf8]{inputenc}
 ---
-```{r, echo = FALSE, message = FALSE}
-library(data.table)
-litedown::reactor(comment = "# ", print = NA)
-.old.th = setDTthreads(1)
-```
 
 <style>
 h2 {
     font-size: 20px;
 }
-#TOC { width: 100%; }
+
+#TOC {
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding-left: 1em;
+  background: #f6f6f6;
+  width: 100%; 
+}
 </style>
+
+```{r echo=FALSE, file='_translation_links.R'}
+```
+`r .write.translation.links("Translations of this document are available in: %s")`
+
+```{r, echo = FALSE, message = FALSE}
+library(data.table)
+litedown::reactor(comment = "# ", print = NA)
+.old.th = setDTthreads(1)
+```
 
 The first section, Beginner FAQs, is intended to be read in order, from start to finish.  It's just written in a FAQ style to be digested more easily. It isn't really the most frequently asked questions. A better measure for that is looking on Stack Overflow.
 

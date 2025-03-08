@@ -75,8 +75,9 @@ static freadMainArgs args = {0};  // global for use by DTPRINT; static implies =
   static int mmp_fd = -1;
 #endif
 
-const char typeName[NUMTYPE][10] = {"drop", "bool8", "bool8", "bool8", "bool8", "bool8", "int32", "int64", "float64", "float64", "float64", "int32", "float64", "string"};
-int8_t     typeSize[NUMTYPE]     = { 0,      1,       1,       1,       1,       1,       4,       8,       8,         8,         8,         4,       8       ,  8      };
+// See header for more explanation.
+const char typeName[NUMTYPE][10] = {"drop", "bool8", "bool8", "bool8", "bool8", "bool8", "bool8", "int32", "int64", "float64", "float64", "float64", "int32", "float64", "string"};
+int8_t     typeSize[NUMTYPE]     = { 0,      1,       1,       1,       1,       1,      1,       4,       8,       8,         8,         8,         4,       8       ,  8      };
 
 // In AIX, NAN and INFINITY don't qualify as constant literals. Refer: PR #3043
 // So we assign them through below init function.
@@ -423,24 +424,24 @@ static const char* filesize_to_str(size_t fsize)
     }
     if (ndigits == 0 || (fsize == (fsize >> shift << shift))) {
       if (i < NSUFFIXES) {
-        snprintf(output, BUFFSIZE, "%"PRIu64"%cB (%"PRIu64" bytes)",
+        snprintf(output, BUFFSIZE, "%"PRIu64"%cB (%"PRIu64" bytes)", // # notranslate
                  (uint64_t)(lsize >> shift), suffixes[i], (uint64_t)lsize);
         return output;
       }
     } else {
-      snprintf(output, BUFFSIZE, "%.*f%cB (%"PRIu64" bytes)",
+      snprintf(output, BUFFSIZE, "%.*f%cB (%"PRIu64" bytes)", // # notranslate
                ndigits, (double)fsize / (1LL << shift), suffixes[i], (uint64_t)lsize);
       return output;
     }
   }
   if (fsize == 1) return one_byte;
-  snprintf(output, BUFFSIZE, "%"PRIu64" bytes", (uint64_t)lsize);
+  snprintf(output, BUFFSIZE, "%"PRIu64" bytes", (uint64_t)lsize); // # notranslate
   return output;
 }
 double copyFile(size_t fileSize)  // only called in very very rare cases
 {
   double tt = wallclock();
-  mmp_copy = (char *)malloc((size_t)fileSize + 1 /* extra \0 */);
+  mmp_copy = (char *)malloc(fileSize + 1 /* extra \0 */);
   if (!mmp_copy)
     return -1.0; // # nocov
   memcpy(mmp_copy, mmp, fileSize);
@@ -1154,6 +1155,21 @@ static void parse_bool_lowercase(FieldParseContext *ctx)
   }
 }
 
+/* Parse Y | y | N | n as boolean */
+static void parse_bool_yesno(FieldParseContext *ctx)
+{
+  const char *ch = *(ctx->ch);
+  int8_t *target = (int8_t*) ctx->targets[sizeof(int8_t)];
+  if (ch[0] == 'Y' || ch[0] == 'y') {
+    *target = 1;
+    *(ctx->ch) = ch + 1;
+  } else if (ch[0] == 'N' || ch[0] == 'n') {
+    *target = 0;
+    *(ctx->ch) = ch + 1;
+  } else {
+    *target = NA_BOOL8;
+  }
+}
 
 /* How to register a new parser
  *  (1) Write the parser
@@ -1170,6 +1186,7 @@ static reader_fun_t fun[NUMTYPE] = {
   (reader_fun_t) &parse_bool_uppercase,
   (reader_fun_t) &parse_bool_titlecase,
   (reader_fun_t) &parse_bool_lowercase,
+  (reader_fun_t) &parse_bool_yesno,
   (reader_fun_t) &StrtoI32,
   (reader_fun_t) &StrtoI64,
   (reader_fun_t) &parse_double_regular,
@@ -1326,7 +1343,9 @@ int freadMain(freadMainArgs _args) {
           strcmp(ch,"True")==0 || strcmp(ch,"False")==0)
         STOP(_("freadMain: NAstring <<%s>> is recognized as type boolean, this is not permitted."), ch);
       if ((strcmp(ch,"1")==0 || strcmp(ch,"0")==0) && args.logical01)
-        STOP(_("freadMain: NAstring <<%s>> and logical01=TRUE, this is not permitted."), ch);
+        STOP(_("freadMain: NAstring <<%s>> and %s=TRUE, this is not permitted."), ch, "logical01");
+      if ((strcmp(ch,"Y")==0 || strcmp(ch,"N")==0) && args.logicalYN)
+        STOP(_("freadMain: NAstring <<%s>> and %s=TRUE, this is not permitted."), ch, "logicalYN");
       char *end;
       errno = 0;
       (void)strtod(ch, &end);  // careful not to let "" get to here as strtod considers "" numeric
@@ -1335,6 +1354,7 @@ int freadMain(freadMainArgs _args) {
     nastr++;
   }
   disabled_parsers[CT_BOOL8_N] = !args.logical01;
+  disabled_parsers[CT_BOOL8_Y] = !args.logicalYN;
   disabled_parsers[CT_ISO8601_DATE] = disabled_parsers[CT_ISO8601_TIME] = args.oldNoDateTime; // temporary new option in v1.13.0; see NEWS
   if (verbose) {
     if (*NAstrings == NULL) {
@@ -1353,6 +1373,7 @@ int freadMain(freadMainArgs _args) {
     if (args.skipString) DTPRINT(_("  skip to string = <<%s>>\n"), args.skipString);
     DTPRINT(_("  show progress = %d\n"), args.showProgress);
     DTPRINT(_("  0/1 column will be read as %s\n"), args.logical01? "boolean" : "integer");
+    DTPRINT(_("  Y/N column will be read as %s\n"), args.logicalYN? "boolean" : "character");
   }
   if (*NAstrings==NULL ||                             // user sets na.strings=NULL
       (**NAstrings=='\0' && *(NAstrings+1)==NULL)) {  // user sets na.strings=""
@@ -1542,7 +1563,7 @@ int freadMain(freadMainArgs _args) {
         if (time_taken == -1.0) {
           // # nocov start
           if (!verbose)
-            DTPRINT("%s. Attempt to copy file in RAM failed.", msg);
+            DTPRINT(_("%s. Attempt to copy file in RAM failed."), msg);
           STOP(_("Unable to allocate %s of contiguous virtual RAM."), filesize_to_str(fileSize));
           // # nocov end
         }
@@ -1709,8 +1730,10 @@ int freadMain(freadMainArgs _args) {
             topQuoteRule = quoteRule;
             firstJumpEnd = ch;  // to know how many bytes jump 0 is, for nrow estimate later (a less-good estimate when fill=true since line lengths vary more)
             if (verbose) {
-              DTPRINT((unsigned)sep<32 ? "  sep=%#02x" : "  sep='%c'", sep);
-              DTPRINT(_("  with %d fields using quote rule %d\n"), topNumFields, quoteRule);
+                DTPRINT((unsigned)sep<32
+                        ? _("  sep=%#02x  with %d fields using quote rule %d\n")
+                        : _("  sep='%c'  with %d fields using quote rule %d\n"),
+                        sep, topNumFields, quoteRule);
             }
           }
         } else {
@@ -1759,8 +1782,10 @@ int freadMain(freadMainArgs _args) {
             topSkip = thisRow-thisBlockLines;
             if (topSkip<0) topSkip=0;       // inelegant but will do for now to pass single row input such as test 890
             if (verbose) {
-              DTPRINT((unsigned)sep<32 ? "  sep=%#02x" : "  sep='%c'", sep);
-              DTPRINT(_("  with %d lines of %d fields using quote rule %d\n"), topNumLines, topNumFields, topQuoteRule);
+                DTPRINT((unsigned)sep<32
+                        ? _("  sep=%#02x  with %d lines of %d fields using quote rule %d\n")
+                        : _("  sep='%c'  with %d lines of %d fields using quote rule %d\n"),
+                        sep, topNumLines, topNumFields, topQuoteRule);
             }
           }
         }
@@ -1826,7 +1851,7 @@ int freadMain(freadMainArgs _args) {
       if (time_taken == -1.0) {
         // # nocov start
         if (!verbose)
-          DTPRINT("%s. Attempt to copy file in RAM failed.", msg);
+          DTPRINT(_("%s. Attempt to copy file in RAM failed."), msg);
         STOP(_("Unable to allocate %s of contiguous virtual RAM."), filesize_to_str(fileSize));
         // # nocov end
       }
@@ -1950,7 +1975,7 @@ int freadMain(freadMainArgs _args) {
       int thisLineLen = (int)(ch-lineStart);  // ch is now on start of next line so this includes line ending already
       sampleLines++;
       sumLen += thisLineLen;
-      sumLenSq += thisLineLen*thisLineLen;
+      sumLenSq += (double)thisLineLen*thisLineLen; // avoid integer overflow, #6729
       if (thisLineLen<minLen) minLen=thisLineLen;
       if (thisLineLen>maxLen) maxLen=thisLineLen;
       if (jump==0 && bumped) {
@@ -2282,7 +2307,7 @@ int freadMain(freadMainArgs _args) {
       nth = omp_get_num_threads();
       if (me!=0) {
         // # nocov start
-        snprintf(internalErr, internalErrSize, "Master thread is not thread 0 but thread %d.\n", me);
+        snprintf(internalErr, internalErrSize, "Master thread is not thread 0 but thread %d.\n", me); // # notranslate
         stopTeam = true;
         // # nocov end
       }
@@ -2546,7 +2571,7 @@ int freadMain(freadMainArgs _args) {
         }
         else if (headPos!=thisJumpStart && nrowLimit>0) { // do not care for dirty jumps since we do not read data and only want to know types
            // # nocov start
-          snprintf(internalErr, internalErrSize, "invalid head position. jump=%d, headPos=%p, thisJumpStart=%p, sof=%p", jump, (void*)headPos, (void*)thisJumpStart, (void*)sof);
+          snprintf(internalErr, internalErrSize, "invalid head position. jump=%d, headPos=%p, thisJumpStart=%p, sof=%p", jump, (void*)headPos, (void*)thisJumpStart, (void*)sof); // # notranslate
           stopTeam = true;
           // # nocov end
         }
@@ -2752,7 +2777,7 @@ int freadMain(freadMainArgs _args) {
     if (tTot<0.000001) tTot=0.000001;  // to avoid nan% output in some trivially small tests where tot==0.000s
     DTPRINT(_("%8.3fs (%3.0f%%) Memory map %.3fGB file\n"), tMap-t0, 100.0*(tMap-t0)/tTot, 1.0*fileSize/(1024*1024*1024));
     DTPRINT(_("%8.3fs (%3.0f%%) sep="), tLayout-tMap, 100.0*(tLayout-tMap)/tTot);
-      DTPRINT(sep=='\t' ? "'\\t'" : (sep=='\n' ? "'\\n'" : "'%c'"), sep);
+      DTPRINT(sep=='\t' ? "'\\t'" : (sep=='\n' ? "'\\n'" : "'%c'"), sep); // # notranslate
       DTPRINT(_(" ncol=%d and header detection\n"), ncol);
     DTPRINT(_("%8.3fs (%3.0f%%) Column type detection using %"PRIu64" sample rows\n"),
             tColType-tLayout, 100.0*(tColType-tLayout)/tTot, (uint64_t)sampleLines);
@@ -2772,7 +2797,7 @@ int freadMain(freadMainArgs _args) {
       // if type bumps happened, it's useful to see them at the end after the timing 2 lines up showing the reread time
       // TODO - construct and output the copy and pastable colClasses argument so user can avoid the reread time if they are
       //        reading this file or files formatted like it many times (say in a production environment).
-      DTPRINT("%s", typeBumpMsg);
+      DTPRINT("%s", typeBumpMsg); // # notranslate
       free(typeBumpMsg);  // local scope and only populated in verbose mode
     }
   }

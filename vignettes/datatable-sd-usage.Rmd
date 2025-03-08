@@ -6,13 +6,24 @@ output:
     options:
       toc: true
       number_sections: true
-    meta:
-      css: [default, css/toc.css]
 vignette: >
   %\VignetteIndexEntry{Using .SD for Data Analysis}
   %\VignetteEngine{litedown::vignette}
   \usepackage[utf8]{inputenc}
 ---
+
+<style>
+#TOC {
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding-left: 1em;
+  background: #f6f6f6;
+}
+</style>
+
+```{r echo=FALSE, file='_translation_links.R'}
+```
+`r .write.translation.links("Translations of this document are available in: %s")`
 
 ```{r, echo = FALSE, message = FALSE}
 library(data.table)
@@ -105,7 +116,7 @@ head(unique(Teams[[fkt[1L]]]))
 Note: 
 
 
-1. The `:=` is an assignment operator to update the `data.table` in place without making a copy. See `vignette("datatable-reference-semantics", package="data.table")` for more.
+1. The `:=` is an assignment operator to update the `data.table` in place without making a copy. See [`vignette("datatable-reference-semantics", package="data.table")`](datatable-reference-semantics.html) for more.
 2. The LHS, `names(.SD)`, indicates which columns we are updating - in this case we update the entire `.SD`.
 3. The RHS, `lapply()`, loops through each column of the `.SD` and converts the column to a factor.
 4. We use the `.SDcols` to only select columns that have pattern of `teamID`.
