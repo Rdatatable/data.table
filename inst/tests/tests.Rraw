@@ -21079,3 +21079,8 @@ setindex(DT, b)
 # make sure that print(DT) doesn't warn due to the header missing index column types, #6806
 # can't use output= here because the print() call is outside withCallingHandlers(...)
 test(2307, { capture.output(print(DT, class = TRUE, show.indices = TRUE)); TRUE })
+
+# fread with colClasses and keepLeadingZeros=TRUE #6851
+dt = data.table(date=as.IDate(c(NA, "2014-12-05")))
+test(2308.01, fread("date\nNA\n2014-12-05", keepLeadingZeros=TRUE), dt)
+test(2308.02, fread("date\nNA\n2014-12-05", keepLeadingZeros=FALSE), dt)
