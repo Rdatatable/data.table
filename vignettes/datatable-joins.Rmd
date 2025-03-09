@@ -1,6 +1,6 @@
 ---
 title: "Joins in data.table"
-date: "`r Sys.Date()`"
+date: "`{r} Sys.Date()`"
 output:
   litedown::html_format
 vignette: >
@@ -18,7 +18,7 @@ litedown::reactor(comment = "# ", print = NA)
 
 ```{r, echo=FALSE, file='_translation_links.R'}
 ```
-`r .write.translation.links("Translations of this document are available in: %s")`
+`{r} .write.translation.links("Translations of this document are available in: %s")`
 
 In this vignette you will learn how to perform any join operation using resources available in the `data.table` syntax.
 
