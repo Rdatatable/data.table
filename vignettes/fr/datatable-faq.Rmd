@@ -19,6 +19,10 @@ h2 {
 #TOC { width: 100%; }
 </style>
 
+```{r echo=FALSE, file='../_translation_links.R'}
+```
+`r .write.translation.links("Translations of this document are available in: %s")`
+
 ```{r, echo = FALSE, message = FALSE}
 library(data.table)
 knitr::opts_chunk$set(

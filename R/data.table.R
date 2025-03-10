@@ -640,7 +640,7 @@ replace_dot_alias = function(e) {
       # Doing this once here, helps speed later when repeatedly subsetting each column. R's [irows] would do this for each
       # column when irows contains negatives.
     }
-    if (which) return( if (is.null(irows)) seq_len(nrow(x)) else irows )
+    if (which) return(irows %||% seq_len(nrow(x)))
   } else {  # missing(i)
     i = NULL
   }
@@ -754,7 +754,7 @@ replace_dot_alias = function(e) {
         if (".I" %in% bysubl) {  #1732
           if (!is.symbol(bysub) && (length(bysubl)!=2L || !is.symbol(bysubl[[2L]]) || !(bysubl[[1L]] %chin% c(".","c","list"))))
             stopf("'by' contains .I but only the following are currently supported: by=.I, by=.(.I), by=c(.I), by=list(.I)")
-          bysub = if (is.null(irows)) seq_len(nrow(x)) else irows
+          bysub = irows %||% seq_len(nrow(x))
           bysuborig = as.symbol("I")
         }
         if (is.name(bysub) && !(bysub %chin% names_x)) {  # TO DO: names(x),names(i),and i. and x. prefixes
@@ -1721,7 +1721,7 @@ replace_dot_alias = function(e) {
                 jl__ = as.list(jsubl[[i_]])[-1L] # just keep the '.' from list(.)
                 if (isTRUE(nzchar(names(jsubl)[i_]))) {
                   # Fix for #2311, prepend named list arguments of c() to that list's names. See tests 2283.*
-                  njl__ = if (is.null(names(jl__))) rep("", length(jl__)) else names(jl__)
+                  njl__ = names(jl__) %||% rep("", length(jl__))
                   njl__nonblank = nzchar(names(jl__))
                   if (length(jl__) > 1L) {
                     jn__ = paste0(names(jsubl)[i_], seq_along(jl__))
@@ -1730,7 +1730,7 @@ replace_dot_alias = function(e) {
                   }
                   jn__[njl__nonblank] = paste(names(jsubl)[i_], njl__[njl__nonblank], sep=".")
                 } else {
-                  jn__ = if (is.null(names(jl__))) rep("", length(jl__)) else names(jl__)
+                  jn__ = names(jl__) %||% rep("", length(jl__))
                 }
                 idx  = unlist(lapply(jl__, function(x) is.name(x) && x == ".I"))
                 if (any(idx))
@@ -1936,7 +1936,7 @@ replace_dot_alias = function(e) {
       if (inherits(x, 'data.table')) .Call(C_unlock, x)
       else return(lapply(x, runlock, current_depth = current_depth + 1L))
     }
-    return(invisible())
+    invisible()
   }
   runlock(ans)
   if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
@@ -2161,7 +2161,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     # retain highest type of input for empty output, #4762
     if (length(X)!=0L)
       internal_error("length(X)==%d but a dimension is zero", length(X))  # nocov
-    return(array(if (is.null(X)) NA else X, dim = dm, dimnames = list(rownames.value, cn)))
+    return(array(X %||% NA, dim=dm, dimnames=list(rownames.value, cn)))
   }
   dim(X) = c(n, length(X)/n)
   dimnames(X) = list(rownames.value, unlist(collabs, use.names = FALSE))
@@ -2451,7 +2451,7 @@ split.data.table = function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = TR
     # same as split.data.frame - handling all exceptions, factor orders etc, in a single stream of processing was a nightmare in factor and drop consistency
     # evaluate formula mirroring split.data.frame #5392. Mimics base::.formula2varlist.
     if (inherits(f, "formula"))
-        f = eval(attr(terms(f), "variables"), x, environment(f))
+        f = formula_vars(f, x)
     # be sure to use x[ind, , drop = FALSE], not x[ind], in case downstream methods don't follow the same subsetting semantics (#5365)
     return(lapply(split(x = seq_len(nrow(x)), f = f, drop = drop, ...), function(ind) x[ind, , drop = FALSE]))
   }
@@ -2521,6 +2521,18 @@ split.data.table = function(x, f, drop = FALSE, by, sorted = FALSE, keep.by = TR
   } else if (length(by) > 1L) {
     lapply(ll, split.data.table, drop=drop, by=by[-1L], sorted=sorted, keep.by=keep.by, flatten=flatten)
   }
+}
+
+sort_by.data.table <- function(x, y, ...)
+{
+  if (!cedta()) return(NextMethod()) # nocov
+  if (inherits(y, "formula"))
+    y <- formula_vars(y, x)
+  if (!is.list(y))
+    y <- list(y)
+  # use forder instead of base 'order'
+  o <- do.call(forder, c(unname(y), list(...)))
+  x[o, , drop=FALSE]
 }
 
 # TO DO, add more warnings e.g. for by.data.table(), telling user what the data.table syntax is but letting them dispatch to data.frame if they want
@@ -3115,7 +3127,7 @@ is_constantish = function(q, check_singleton=FALSE) {
     return(FALSE)
   }
   # calls are allowed <=> there's no SYMBOLs in the sub-AST
-  return(length(all.vars(q, max.names=1L, unique=FALSE)) == 0L)
+  length(all.vars(q, max.names=1L, unique=FALSE)) == 0L
 }
 .gshift_ok = function(q) {
   q = match.call(shift, q)
@@ -3189,7 +3201,7 @@ is_constantish = function(q, check_singleton=FALSE) {
     stopf("It looks like you re-used `:=` in argument %d a functional assignment call -- use `=` instead: %s(col1=val1, col2=val2, ...)", jj-1L, call_name)
 }
 
-.prepareFastSubset = function(isub, x, enclos, notjoin, verbose = FALSE){
+.prepareFastSubset = function(isub, x, enclos, notjoin, verbose=FALSE) {
   ## helper that decides, whether a fast binary search can be performed, if i is a call
   ## For details on the supported queries, see \code{\link{datatable-optimize}}
   ## Additional restrictions are imposed if x is .SD, or if options indicate that no optimization
@@ -3339,13 +3351,8 @@ is_constantish = function(q, check_singleton=FALSE) {
     setkeyv(i, idxCols)
     on = on[idxCols] ## make sure 'on' is in the correct order. Otherwise the logic won't recognise that a key / index already exists.
   }
-  return(list(i  = i,
-              on = on,
-              notjoin = notjoin
-              )
-         )
+  list(i=i, on=on, notjoin=notjoin)
 }
-
 
 .parse_on = function(onsub, isnull_inames) {
   ## helper that takes the 'on' string(s) and extracts comparison operators and column names from it.

@@ -829,9 +829,28 @@ void fwriteMain(fwriteMainArgs args)
            zbuffSize / MEGA, nth, errno, strerror(errno));
       // # nocov end
     }
-  }
+    len = 0;
+    crc = crc32(0L, Z_NULL, 0);
 
-#endif
+    if (f != -1) {
+      // write minimal gzip header, but not on the console
+      static const char header[] = "\037\213\10\0\0\0\0\0\0\3";
+      int ret0 = WRITE(f, header, (sizeof header) - 1);
+      compress_len += (sizeof header) - 1;
+
+      if (ret0 == -1) {
+        // # nocov start
+        int errwrite = errno; // capture write errno now in case close fails with a different errno
+        CLOSE(f);
+        free(buffPool);
+        free(zbuffPool);
+        deflateEnd(&strm);
+        STOP(_("Failed to write gzip header. Write returned %d"), errwrite);
+        // # nocov end
+      }
+    }
+  }
+#endif // #NOZLIB
 
   // write header
 
@@ -873,15 +892,10 @@ void fwriteMain(fwriteMainArgs args)
       *ch = '\0';
       DTPRINT("%s", buff); // # notranslate
     } else {
-      int ret0=0, ret1=0, ret2=0;
+      int ret1=0, ret2=0;
 #ifndef NOZLIB
       if (args.is_gzip) {
         char* zbuff = zbuffPool;
-        // write minimal gzip header
-        char* header = "\037\213\10\0\0\0\0\0\0\3";
-        ret0 = WRITE(f, header, 10);
-        compress_len += 10;
-        crc = crc32(0L, Z_NULL, 0);
 
         size_t zbuffUsed = zbuffSize;
         len = (size_t)(ch - buff);
@@ -898,7 +912,7 @@ void fwriteMain(fwriteMainArgs args)
 #ifndef NOZLIB
       }
 #endif
-      if (ret0 == -1 || ret1 || ret2 == -1) {
+      if (ret1 || ret2 == -1) {
         // # nocov start
         int errwrite = errno; // capture write errno now in case close fails with a different errno
         CLOSE(f);
@@ -906,13 +920,18 @@ void fwriteMain(fwriteMainArgs args)
 #ifndef NOZLIB
         free(zbuffPool);
 #endif
-        if (ret0 == -1) STOP(_("Failed to write gzip header. Write returned %d"), ret0);
-        else if (ret1) STOP(_("Failed to compress gzip. compressbuff() returned %d"), ret1);
+        if (ret1) STOP(_("Failed to compress gzip. compressbuff() returned %d"), ret1);
         else STOP(_("%s: '%s'"), strerror(errwrite), args.filename);
         // # nocov end
       }
     }
   }
+#ifndef NOZLIB
+  else if (args.is_gzip) {
+    // zstrm initialized for zbuffSize calculation, but not used for header
+    deflateEnd(&strm);
+  }
+#endif
   if (verbose)
     DTPRINT(_("Initialization done in %.3fs\n"), 1.0*(wallclock()-t0));
 
