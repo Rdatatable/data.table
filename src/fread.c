@@ -580,11 +580,11 @@ static void Field(FieldParseContext *ctx)
   }
 }
 
-static void str_to_i32_core(const char **pch, int32_t *target)
+static void str_to_i32_core(const char **pch, int32_t *target, bool parse_date)
 {
   const char *ch = *pch;
 
-  if (*ch=='0' && args.keepLeadingZeros && IS_DIGIT(ch[1])) return;
+  if (*ch=='0' && args.keepLeadingZeros && IS_DIGIT(ch[1]) && !parse_date) return;
   bool neg = *ch=='-';
   ch += (neg || *ch=='+');
   const char *start = ch;  // to know if at least one digit is present
@@ -620,7 +620,7 @@ static void str_to_i32_core(const char **pch, int32_t *target)
 
 static void StrtoI32(FieldParseContext *ctx)
 {
-  str_to_i32_core(ctx->ch, (int32_t*) ctx->targets[sizeof(int32_t)]);
+  str_to_i32_core(ctx->ch, (int32_t*) ctx->targets[sizeof(int32_t)], false);
 }
 
 
@@ -966,7 +966,7 @@ static void parse_iso8601_date_core(const char **pch, int32_t *target)
 
   int32_t year=0, month=0, day=0;
 
-  str_to_i32_core(&ch, &year);
+  str_to_i32_core(&ch, &year, true);
 
   // .Date(.Machine$integer.max*c(-1, 1)):
   //  -5877641-06-24 -- 5881580-07-11
@@ -979,12 +979,12 @@ static void parse_iso8601_date_core(const char **pch, int32_t *target)
   bool isLeapYear = year % 4 == 0 && (year % 100 != 0 || year/100 % 4 == 0);
   ch++;
 
-  str_to_i32_core(&ch, &month);
+  str_to_i32_core(&ch, &month, true);
   if (month == NA_INT32 || month < 1 || month > 12 || *ch != '-')
     goto fail;
   ch++;
 
-  str_to_i32_core(&ch, &day);
+  str_to_i32_core(&ch, &day, true);
   if (day == NA_INT32 || day < 1 ||
       (day > (isLeapYear ? leapYearDays[month-1] : normYearDays[month-1])))
     goto fail;
@@ -1022,12 +1022,12 @@ static void parse_iso8601_timestamp(FieldParseContext *ctx)
     // allows date-only field in a column with UTC-marked datetimes to be parsed as UTC too; test 2150.13
   ch++;
 
-  str_to_i32_core(&ch, &hour);
+  str_to_i32_core(&ch, &hour, true);
   if (hour == NA_INT32 || hour < 0 || hour > 23 || *ch != ':')
     goto fail;
   ch++;
 
-  str_to_i32_core(&ch, &minute);
+  str_to_i32_core(&ch, &minute, true);
   if (minute == NA_INT32 || minute < 0 || minute > 59 || *ch != ':')
     goto fail;
   ch++;
@@ -1044,7 +1044,7 @@ static void parse_iso8601_timestamp(FieldParseContext *ctx)
     if (*ch == '+' || *ch == '-') {
       const char *start = ch; // facilitates distinguishing +04, +0004, +0000, +00:00
       // three recognized formats: [+-]AA:BB, [+-]AABB, and [+-]AA
-      str_to_i32_core(&ch, &tz_hour);
+      str_to_i32_core(&ch, &tz_hour, true);
       if (tz_hour == NA_INT32)
         goto fail;
       if (ch - start == 5 && tz_hour != 0) { // +AABB
@@ -1057,7 +1057,7 @@ static void parse_iso8601_timestamp(FieldParseContext *ctx)
           goto fail;
         if (*ch == ':') {
           ch++;
-          str_to_i32_core(&ch, &tz_minute);
+          str_to_i32_core(&ch, &tz_minute, true);
           if (tz_minute == NA_INT32)
             goto fail;
         }
@@ -1730,8 +1730,10 @@ int freadMain(freadMainArgs _args) {
             topQuoteRule = quoteRule;
             firstJumpEnd = ch;  // to know how many bytes jump 0 is, for nrow estimate later (a less-good estimate when fill=true since line lengths vary more)
             if (verbose) {
-              DTPRINT((unsigned)sep<32 ? "  sep=%#02x" : "  sep='%c'", sep); // # notranslate
-              DTPRINT(_("  with %d fields using quote rule %d\n"), topNumFields, quoteRule);
+                DTPRINT((unsigned)sep<32
+                        ? _("  sep=%#02x  with %d fields using quote rule %d\n")
+                        : _("  sep='%c'  with %d fields using quote rule %d\n"),
+                        sep, topNumFields, quoteRule);
             }
           }
         } else {
@@ -1780,8 +1782,10 @@ int freadMain(freadMainArgs _args) {
             topSkip = thisRow-thisBlockLines;
             if (topSkip<0) topSkip=0;       // inelegant but will do for now to pass single row input such as test 890
             if (verbose) {
-              DTPRINT((unsigned)sep<32 ? "  sep=%#02x" : "  sep='%c'", sep); // # notranslate
-              DTPRINT(_("  with %d lines of %d fields using quote rule %d\n"), topNumLines, topNumFields, topQuoteRule);
+                DTPRINT((unsigned)sep<32
+                        ? _("  sep=%#02x  with %d lines of %d fields using quote rule %d\n")
+                        : _("  sep='%c'  with %d lines of %d fields using quote rule %d\n"),
+                        sep, topNumLines, topNumFields, topQuoteRule);
             }
           }
         }
