@@ -132,7 +132,7 @@ SEXP freadR(
   args.logical01 = LOGICAL(logical01Arg)[0];
   args.logicalYN = LOGICAL(logicalYNArg)[0];
   {
-    SEXP tt = PROTECT(GetOption(sym_old_fread_datetime_character, R_NilValue));
+    SEXP tt = PROTECT(GetOption1(sym_old_fread_datetime_character));
     args.oldNoDateTime = oldNoDateTime = isLogical(tt) && LENGTH(tt)==1 && LOGICAL(tt)[0]==TRUE;
     UNPROTECT(1);
   }

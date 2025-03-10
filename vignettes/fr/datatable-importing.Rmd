@@ -15,6 +15,10 @@ h2 {
 }
 </style>
 
+```{r echo=FALSE, file='../_translation_links.R'}
+```
+`r .write.translation.links("Translations of this document are available in: %s")`
+
 Ce document se concentre sur l'utilisation de `data.table` comme dépendance dans d'autres packages R. Si vous souhaitez utiliser le code C de `data.table` à partir d'une application non-R, ou appeler directement ses fonctions C, passez à la [dernière section](#non-r-API) de cette vignette.
 
 Importer `data.table` n'est pas différent qu'importer d'autres packages R. Cette vignette a pour but de répondre aux questions les plus courantes à ce sujet; les indications présentées ici peuvent être appliquées à d'autres packages R.
