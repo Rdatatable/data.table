@@ -10024,10 +10024,13 @@ if (!haszlib()) {
   fwrite(DT, file=f3<-tempfile(), compress="gzip")   # compress to filename not ending .gz
   fwrite(DT, file=f4<-tempfile(), compress="gzip", compressLevel=1)   # test compressLevel
   fwrite(DT, file=f5<-tempfile(), compress="gzip", compressLevel=9)
+  # col.names=FALSE must not disable gzip header, #6852
+  fwrite(DT, file=f6<-tempfile(), compress="gzip", col.names=FALSE)
   test(1658.441, file.info(f3)$size, file.info(f1)$size)
   test(1658.442, file.info(f4)$size >= file.info(f1)$size)
   test(1658.443, file.info(f1)$size >= file.info(f5)$size)
-  unlink(c(f1,f2,f3,f4,f5))
+  test(1658.444, fread(f6, col.names = c("a", "b")), DT)
+  unlink(c(f1,f2,f3,f4,f5,f6))
 }
 DT = data.table(a=1:3, b=list(1:4, c(3.14, 100e10), c("foo", "bar", "baz")))
 test(1658.45, fwrite(DT), output=c("a,b","1,1|2|3|4","2,3.14|1e+12","3,foo|bar|baz"))
@@ -21076,3 +21079,8 @@ setindex(DT, b)
 # make sure that print(DT) doesn't warn due to the header missing index column types, #6806
 # can't use output= here because the print() call is outside withCallingHandlers(...)
 test(2307, { capture.output(print(DT, class = TRUE, show.indices = TRUE)); TRUE })
+
+# fread with colClasses and keepLeadingZeros=TRUE #6851
+dt = data.table(date=as.IDate(c(NA, "2014-12-05")))
+test(2308.01, fread("date\nNA\n2014-12-05", keepLeadingZeros=TRUE), dt)
+test(2308.02, fread("date\nNA\n2014-12-05", keepLeadingZeros=FALSE), dt)

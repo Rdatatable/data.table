@@ -25,9 +25,9 @@ h2 {
 }
 </style>
 
-Translations of this document are available in
-
-* [French](https://rdatatable.gitlab.io/data.table/articles/fr/datatable-benchmarking.html)
+```{r echo=FALSE, file='_translation_links.R'}
+```
+`r .write.translation.links("Translations of this document are available in: %s")`
 
 This document is meant to guide on measuring performance of `data.table`. Single place to document best practices and traps to avoid.
 
