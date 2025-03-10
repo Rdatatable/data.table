@@ -21044,3 +21044,8 @@ test(2304.100, set(copy(DT), i=2L, j=c("L1", "L2"), value=list(list(NULL), list(
 
 # the integer overflow in #6729 is only noticeable with UBSan
 test(2305, { fread(testDir("issue_6729.txt.bz2")); TRUE })
+
+# fread with colClasses and keepLeadingZeros=TRUE #6851
+dt = data.table(date=as.IDate(c(NA, "2014-12-05")))
+test(2306.01, fread("date\nNA\n2014-12-05", keepLeadingZeros=TRUE), dt)
+test(2306.02, fread("date\nNA\n2014-12-05", keepLeadingZeros=FALSE), dt)
