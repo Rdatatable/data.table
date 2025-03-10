@@ -1157,7 +1157,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
           }
           break;
         }
-        if (OBJECT(source) && getAttrib(source, R_ClassSymbol)!=R_NilValue) {
+        if (isObject(source)) {
           // otherwise coerceVector doesn't call the as.character method for Date, IDate, integer64, nanotime, etc; PR#5189
           // this if() is to save the overhead of the R call eval() when we know there can be no method
           source = PROTECT(eval(PROTECT(lang2(sym_as_character, source)), R_GlobalEnv)); protecti+=2;

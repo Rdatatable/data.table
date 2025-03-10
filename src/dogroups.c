@@ -516,10 +516,10 @@ SEXP keepattr(SEXP to, SEXP from)
   SET_ATTRIB(to, ATTRIB(from));
   if (isS4(from)) {
     to = PROTECT(asS4(to, TRUE, 1));
-    SET_OBJECT(to, OBJECT(from));
+    SET_OBJECT(to, isObject(from));
     UNPROTECT(1);
   } else {
-    SET_OBJECT(to, OBJECT(from));
+    SET_OBJECT(to, isObject(from));
   }
   return to;
 }
