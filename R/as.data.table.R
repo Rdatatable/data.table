@@ -221,6 +221,7 @@ as.data.table.data.frame = function(x, keep.rownames=FALSE, key=NULL, ...) {
     #   kludge it to 'rn' since we only apply the new name afterwards, #4468
     if (is.character(keep.rownames) && identical(keep.rownames, key)) key='rn'
     ans = data.table(rn=rownames(x), x, keep.rownames=FALSE)
+    if (!is.null(key)) setkeyv(ans, key)
     if (is.character(keep.rownames))
       setnames(ans, 'rn', keep.rownames[1L])
     return(ans)
