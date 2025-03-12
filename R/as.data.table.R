@@ -214,14 +214,13 @@ as.data.table.list = function(x,
 }
 
 as.data.table.data.frame = function(x, keep.rownames=FALSE, key=NULL, ...) {
-  if (is.data.table(x)) return(as.data.table.data.table(x,keep.rownames = keep.rownames, key = key, ...)) # S3 is weird, #6739. Also # nocov; this is tested in 2302.{2,3}, not sure why it doesn't show up in coverage.
+  if (is.data.table(x)) return(as.data.table.data.table(x, ...)) # S3 is weird, #6739. Also # nocov; this is tested in 2302.{2,3}, not sure why it doesn't show up in coverage.
   if (!identical(class(x), "data.frame")) return(as.data.table(as.data.frame(x), keep.rownames=keep.rownames, key=key, ...))
   if (!isFALSE(keep.rownames)) {
     # can specify col name to keep.rownames, #575; if it's the same as key,
     #   kludge it to 'rn' since we only apply the new name afterwards, #4468
     if (is.character(keep.rownames) && identical(keep.rownames, key)) key='rn'
-    ans = data.table(rn=rownames(x), x, keep.rownames=FALSE)
-    if (!is.null(key)) setkeyv(ans, key)
+    ans = data.table(rn=rownames(x), x, keep.rownames=FALSE, key=key)
     if (is.character(keep.rownames))
       setnames(ans, 'rn', keep.rownames[1L])
     return(ans)
@@ -246,18 +245,18 @@ as.data.table.data.frame = function(x, keep.rownames=FALSE, key=NULL, ...) {
   ans
 }
 
-as.data.table.data.table = function(x, keep.rownames = FALSE, key = NULL, ...) {
+as.data.table.data.table = function(x, keep.rownames, key, ...) {
   # as.data.table always returns a copy, automatically takes care of #473
   if (any(cols_with_dims(x))) { # for test 2089.2
-    return(as.data.table.list(x, keep.rownames = keep.rownames, key = key, ...))
+    return(as.data.table.list(x, keep.rownames = if(missing(keep.rownames)) FALSE else keep.rownames, key = if(missing(key)) NULL else key, ...))
   }
   x = copy(x) # #1681
   # fix for #1078 and #1128, see .resetclass() for explanation.
   setattr(x, 'class', .resetclass(x, "data.table"))
-  if (!is.null(key)) {
+  if (!missing(key)){
     setkeyv(x, key)
   } else {
-    setkeyv(x, NULL)
+    setattr(x, "sorted", NULL)
   }
   x
 }
