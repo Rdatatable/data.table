@@ -246,7 +246,7 @@ as.data.table.data.frame = function(x, keep.rownames=FALSE, key=NULL, ...) {
 }
 
 as.data.table.data.table = function(x, ...) {
-    # Extract keep.rownames and key from ... if provided
+  # Extract keep.rownames and key from ... if provided
   dots = list(...)
   keep.rownames = if("keep.rownames" %in% names(dots)) dots$keep.rownames else FALSE
   key_provided = "key" %in% names(dots)

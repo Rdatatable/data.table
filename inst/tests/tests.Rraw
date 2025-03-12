@@ -21086,7 +21086,7 @@ test(2308.01, fread("date\nNA\n2014-12-05", keepLeadingZeros=TRUE), dt)
 test(2308.02, fread("date\nNA\n2014-12-05", keepLeadingZeros=FALSE), dt)
 
 # Test that as.data.table.data.table preserves key when explicitly specified but not when omitted
-test(2309.01, data.frame(t = c(3:1,4:5), y = 1:5) %>% as.data.table(key = "t") %>% key(), "t")
-test(2309.02, tibble::tibble(t = c(3:1,4:5), y = 1:5) %>% as.data.table(key = "t") %>% key(), "t")
-test(2309.03, data.table(t = c(3:1,4:5), y = 1:5) %>% as.data.table(key = "t") %>% key(), "t")
-test(2309.04, data.table(t = c(3:1,4:5), key = "t") %>% as.data.table() %>% key(), NULL)
+test(2309.01, key(as.data.table(data.frame(t = c(3:1,4:5), y = 1:5), key = "t")), "t")
+test(2309.02, key(as.data.table(tibble::tibble(t = c(3:1,4:5), y = 1:5), key = "t")), "t")
+test(2309.03, key(as.data.table(data.table(t = c(3:1,4:5), y = 1:5), key = "t")), "t")
+test(2309.04, key(as.data.table(data.table(t = c(3:1,4:5), key = "t"))), NULL)
