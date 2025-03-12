@@ -329,7 +329,7 @@ inline double LLtoD(long long x) {
 
 int GetVerbose(void) {
   // don't call repetitively; save first in that case
-  SEXP opt = GetOption(sym_verbose, R_NilValue);
+  SEXP opt = GetOption1(sym_verbose);
   if ((!isLogical(opt) && !isInteger(opt)) || LENGTH(opt)!=1 || INTEGER(opt)[0]==NA_INTEGER)
     error(_("verbose option must be length 1 non-NA logical or integer"));
   return INTEGER(opt)[0];
