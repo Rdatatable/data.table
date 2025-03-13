@@ -214,7 +214,7 @@ as.data.table.list = function(x,
 }
 
 as.data.table.data.frame = function(x, keep.rownames=FALSE, key=NULL, ...) {
-  if (is.data.table(x)) return(as.data.table.data.table(x)) # S3 is weird, #6739. Also # nocov; this is tested in 2302.{2,3}, not sure why it doesn't show up in coverage.
+  if (is.data.table(x)) return(as.data.table.data.table(x, key=key)) # S3 is weird, #6739. Also # nocov; this is tested in 2302.{2,3}, not sure why it doesn't show up in coverage.
   if (!identical(class(x), "data.frame")) return(as.data.table(as.data.frame(x), keep.rownames=keep.rownames, key=key, ...))
   if (!isFALSE(keep.rownames)) {
     # can specify col name to keep.rownames, #575; if it's the same as key,
@@ -245,17 +245,19 @@ as.data.table.data.frame = function(x, keep.rownames=FALSE, key=NULL, ...) {
   ans
 }
 
-as.data.table.data.table = function(x, keep.rownames = FALSE, ...) {
+as.data.table.data.table = function(x, ...) {
+  key = list(...)$key
   # as.data.table always returns a copy, automatically takes care of #473
   if (any(cols_with_dims(x))) { # for test 2089.2
-    return(as.data.table.list(x,keep.rownames = keep.rownames, ...))
+    return(as.data.table.list(x, ...))
   }
   x = copy(x) # #1681
   # fix for #1078 and #1128, see .resetclass() for explanation.
   setattr(x, 'class', .resetclass(x, "data.table"))
-  if (methods::hasArg("key")) {
-    key <- list(...)$key
+  if (!is.null(key)) {
     setkeyv(x, key)
+  } else {
+    setkey(x, NULL)
   }
   x
 }
