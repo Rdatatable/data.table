@@ -4629,7 +4629,7 @@ test(1241, DT[order(x,-y)],       # optimized to forder()
 
 DT = data.table(a=1:3, b=4:6)
 myCol = "a"
-test(1242.1, DT[2,myCol:=6L,with=FALSE], error="with=FALSE together with := was deprecated in v1.9.4")
+test(1242.1, DT[2,myCol:=6L,with=FALSE], error="`:=` is only supported under with=TRUE.")
 test(1242.2, DT[2,(myCol):=7L], data.table(a=INT(1,7,3), b=4:6))
 
 # consistency of output type of mult, #340
@@ -10933,7 +10933,7 @@ test(1736.03, fwrite(DT, sep2=c("",",","")), error="sep.*,.*sep2.*,.*must all be
 test(1736.04, fwrite(DT, sep2=c("","||","")), error="nchar.*sep2.*2")
 test(1736.05, capture.output(fwrite(DT, sep='|', sep2=c("c(",",",")"), logical01=FALSE)), c("A|B|C", "1|c(1,2,3,4,5,6,7,8,9,10)|c(s,t,u,v,w)",
  "2|c(15,16,17,18)|c(1.2,2.3,3.4,3.14159265358979,-9)", "3|c(7)|c(foo,bar)", "4|c(9,10)|c(TRUE,TRUE,FALSE)"))
-test(1736.06, fwrite(DT, sep='|', sep2=c("{",",","}"), logicalAsInt=TRUE), error="logicalAsInt has been renamed logical01")
+# 1736.06 was of defunct logicalAsInt argument
 DT = data.table(A=c("foo","ba|r","baz"))
 test(1736.07, capture.output(fwrite(DT,na="")), c("A","foo","ba|r","baz"))    # no list column so no need to quote
 test(1736.08, capture.output(fwrite(DT)), c("A","foo","ba|r","baz"))
@@ -13178,7 +13178,7 @@ test(1925.10, as.ITime(x),               structure(c(12L, 67L), class="ITime"))
 test(1925.11, as.ITime(x, ms='nearest'), structure(c(12L, 68L), class="ITime"))
 test(1925.12, as.ITime(x, ms='ceil'),    structure(c(13L, 68L), class="ITime"))
 
-test(1936.1, fread("A,B\n1,3\n2,4", autostart=1), error="autostart.*deprecated.*Consider skip")
+# 1936.1 was of defunct argument autostart
 if (.Platform$OS.type == "unix") test(1936.2, is.data.table(fread("ls .")))
 
 # add helpful error to %between%
@@ -13930,7 +13930,7 @@ test(1967.42, x[3, rollends = rep(TRUE, 10L)], error = 'rollends must be length 
 test(1967.43, x[ , ..], error = 'symbol .. is invalid')
 test(1967.44, x[NULL], data.table(NULL))
 test(1967.45, x[ , NULL], NULL)
-test(1967.46, x[ , 'b' := 6:10, with=FALSE], error='with=FALSE together with :=')
+test(1967.46, x[ , 'b' := 6:10, with=FALSE], error='`:=` is only supported under with=TRUE.')
 x[, b := 6:10]
 test(1967.47, x[ , -1L, with = FALSE], data.table(b = 6:10))
 test(1967.48, x[ , b, .SDcols = 'a'], 6:10,
@@ -17788,7 +17788,7 @@ if (base::getRversion() >= "3.4.0") {
 }
 test(2214.06, droplevels(DT)[["a"]], droplevels(DT[1:5,a]))
 test(2214.07, droplevels(DT, 1)[["a"]], x[1:5])
-test(2214.08, droplevels(DT, in.place=TRUE), error="droplevels() with in.place=TRUE is deprecated.")
+# 2214.08 was of defunct in.place argument
 # support ordered factors in fdroplevels
 o = factor(letters[1:10], ordered=TRUE)
 test(2214.09, fdroplevels(o[1:5]), droplevels(o[1:5]))
@@ -21079,3 +21079,8 @@ setindex(DT, b)
 # make sure that print(DT) doesn't warn due to the header missing index column types, #6806
 # can't use output= here because the print() call is outside withCallingHandlers(...)
 test(2307, { capture.output(print(DT, class = TRUE, show.indices = TRUE)); TRUE })
+
+# fread with colClasses and keepLeadingZeros=TRUE #6851
+dt = data.table(date=as.IDate(c(NA, "2014-12-05")))
+test(2308.01, fread("date\nNA\n2014-12-05", keepLeadingZeros=TRUE), dt)
+test(2308.02, fread("date\nNA\n2014-12-05", keepLeadingZeros=FALSE), dt)
