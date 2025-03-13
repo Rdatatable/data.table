@@ -21102,5 +21102,5 @@ test(2309.03, {
 }, "t")
 # data.table to data.table without key
 test(2309.04, {
-  key(as.data.table(.table(t = c(3:1, 4:5), key="t")))
+  key(as.data.table(data.table(t = c(3:1, 4:5), key="t")))
 }, NULL)
