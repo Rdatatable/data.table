@@ -254,10 +254,6 @@ as.data.table.data.table = function(x, ...) {
   x = copy(x) # #1681
   # fix for #1078 and #1128, see .resetclass() for explanation.
   setattr(x, 'class', .resetclass(x, "data.table"))
-  if (!is.null(key)) {
-    setkeyv(x, key)
-  } else {
-    setkey(x, NULL)
-  }
+  if (!missing(key)) setkeyv(x, key)
   x
 }
