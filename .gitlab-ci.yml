@@ -213,7 +213,7 @@ test-lin-ancient-cran:
     - R CMD check --no-manual --no-build-vignettes --ignore-vignettes $(ls -1t data.table_*.tar.gz | head -n 1)
 
 # run the main checks with Address(+Leak),UBSanitizer enabled
-test-lin-san:
+test-lin-dev-san:
   <<: *test-lin
   image: registry.gitlab.com/rdatatable/dockerfiles/r-devel-clang-san
   variables:
@@ -329,7 +329,7 @@ integration:
     - saas-linux-medium-amd64
   only:
     - master
-  needs: ["mirror-packages","build","test-lin-rel","test-lin-rel-cran","test-lin-dev-gcc-strict-cran","test-lin-dev-clang-cran","test-lin-rel-vanilla","test-lin-ancient-cran","test-lin-san","test-win-rel","test-win-dev" ,"test-win-old","test-mac-rel","test-mac-old"]
+  needs: ["mirror-packages","build","test-lin-rel","test-lin-rel-cran","test-lin-dev-gcc-strict-cran","test-lin-dev-clang-cran","test-lin-rel-vanilla","test-lin-ancient-cran","test-lin-dev-san","test-win-rel","test-win-dev" ,"test-win-old","test-mac-rel","test-mac-old"]
   script:
     - R --version
     - *install-deps ## markdown pkg not present in r-pkgdown image
