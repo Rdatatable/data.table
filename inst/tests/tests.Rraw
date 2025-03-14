@@ -21087,20 +21087,15 @@ test(2308.02, fread("date\nNA\n2014-12-05", keepLeadingZeros=FALSE), dt)
 
 # Test that as.data.table.data.table preserves key when explicitly specified but not when omitted
 # data.frame to data.table with key
-test(2309.01, {
-  key(as.data.table(data.frame(t = c(3:1, 4:5), y = 1:5), key="t"))
-}, "t")
+DF = data.frame(t = c(3:1, 4:5), y = 1:5)
+test(2309.01, key(as.data.table(DF, key="t")), "t")
 # tibble to data.table with key
 DF <- data.frame(t = c(3:1, 4:5), y = 1:5)
 class(DF) <- c("tbl_df", "tbl", "data.frame")
-test(2309.02, {
-  key(as.data.table(DF, key="t"))
-}, "t")
+test(2309.02, key(as.data.table(DF, key="t")), "t")
 # data.table to data.table with key
-test(2309.03, {
-  key(as.data.table(data.table(t = c(3:1, 4:5), y = 1:5), key="t"))
-}, "t")
+DT = data.table(t = c(3:1, 4:5), y = 1:5)
+test(2309.03, key(as.data.table(DT, key="t")), "t")
 # data.table to data.table without key
-test(2309.04, {
-  key(as.data.table(data.table(t = c(3:1, 4:5), key="t")))
-}, NULL)
+DT = data.table(t = c(3:1, 4:5), key="t")
+test(2309.04, key(as.data.table(DT)), NULL)

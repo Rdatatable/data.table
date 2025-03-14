@@ -241,15 +241,15 @@ as.data.table.data.frame = function(x, keep.rownames=FALSE, key=NULL, ...) {
   # fix for #1078 and #1128, see .resetclass() for explanation.
   setattr(ans, "class", .resetclass(x, "data.frame"))
   setalloccol(ans)
-  if (!is.null(key)) setkeyv(ans, key)
+  setkeyv(ans, key)
   ans
 }
 
-as.data.table.data.table = function(x, ...) {
-  key = list(...)$key
+as.data.table.data.table = function(x, keep.rownames, key, ...) {
+  if (missing(key))  key = NULL
   # as.data.table always returns a copy, automatically takes care of #473
   if (any(cols_with_dims(x))) { # for test 2089.2
-    return(as.data.table.list(x, ...))
+    return(as.data.table.list(x, key = key, ...))
   }
   x = copy(x) # #1681
   # fix for #1078 and #1128, see .resetclass() for explanation.
