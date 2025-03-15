@@ -42,7 +42,12 @@
 /* we mean the encoding bits, not CE_NATIVE in a UTF-8 locale */
 #define IS_UTF8(x)  (getCharCE(x) == CE_UTF8)
 #define IS_LATIN(x) (getCharCE(x) == CE_LATIN1)
-#define IS_ASCII(x) (LEVELS(x) & 64) // API expected in R >= 4.5
+// TODO: remove the `R_SVN_VERSION` check when R 4.5.0 is released (circa Apr. 2025)
+#if R_VERSION < R_Version(4, 5, 0) || R_SVN_REVISION < 86789
+# define IS_ASCII(x) (LEVELS(x) & 64)
+#else
+# define IS_ASCII(x) (Rf_charIsASCII(x)) // no CE_ASCII
+#endif
 #define IS_TRUE(x)  (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]==TRUE)
 #define IS_FALSE(x) (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]==FALSE)
 #define IS_TRUE_OR_FALSE(x) (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]!=NA_LOGICAL)

@@ -640,7 +640,7 @@ replace_dot_alias = function(e) {
       # Doing this once here, helps speed later when repeatedly subsetting each column. R's [irows] would do this for each
       # column when irows contains negatives.
     }
-    if (which) return( if (is.null(irows)) seq_len(nrow(x)) else irows )
+    if (which) return(irows %||% seq_len(nrow(x)))
   } else {  # missing(i)
     i = NULL
   }
@@ -686,10 +686,7 @@ replace_dot_alias = function(e) {
     if (is.null(jsub)) return(NULL)
 
     if (!with) {
-      if (jsub %iscall% ":=") {
-        # TODO(>=1.18.0): Simplify this error
-        stopf("with=FALSE together with := was deprecated in v1.9.4 released Oct 2014; this has been warning since v1.15.0. Please wrap the LHS of := with parentheses; e.g., DT[,(myVar):=sum(b),by=a] to assign to column name(s) held in variable myVar. See ?':=' for other examples.")
-      }
+      if (jsub %iscall% ":=") stopf("`:=` is only supported under with=TRUE, see ?`:=`.")
       # missingby was already checked above before dealing with i
       if (jsub %iscall% c("!", "-") && length(jsub)==2L) {  # length 2 to only match unary, #2109
         notj = TRUE
@@ -757,7 +754,7 @@ replace_dot_alias = function(e) {
         if (".I" %in% bysubl) {  #1732
           if (!is.symbol(bysub) && (length(bysubl)!=2L || !is.symbol(bysubl[[2L]]) || !(bysubl[[1L]] %chin% c(".","c","list"))))
             stopf("'by' contains .I but only the following are currently supported: by=.I, by=.(.I), by=c(.I), by=list(.I)")
-          bysub = if (is.null(irows)) seq_len(nrow(x)) else irows
+          bysub = irows %||% seq_len(nrow(x))
           bysuborig = as.symbol("I")
         }
         if (is.name(bysub) && !(bysub %chin% names_x)) {  # TO DO: names(x),names(i),and i. and x. prefixes
@@ -1724,7 +1721,7 @@ replace_dot_alias = function(e) {
                 jl__ = as.list(jsubl[[i_]])[-1L] # just keep the '.' from list(.)
                 if (isTRUE(nzchar(names(jsubl)[i_]))) {
                   # Fix for #2311, prepend named list arguments of c() to that list's names. See tests 2283.*
-                  njl__ = if (is.null(names(jl__))) rep("", length(jl__)) else names(jl__)
+                  njl__ = names(jl__) %||% rep("", length(jl__))
                   njl__nonblank = nzchar(names(jl__))
                   if (length(jl__) > 1L) {
                     jn__ = paste0(names(jsubl)[i_], seq_along(jl__))
@@ -1733,7 +1730,7 @@ replace_dot_alias = function(e) {
                   }
                   jn__[njl__nonblank] = paste(names(jsubl)[i_], njl__[njl__nonblank], sep=".")
                 } else {
-                  jn__ = if (is.null(names(jl__))) rep("", length(jl__)) else names(jl__)
+                  jn__ = names(jl__) %||% rep("", length(jl__))
                 }
                 idx  = unlist(lapply(jl__, function(x) is.name(x) && x == ".I"))
                 if (any(idx))
@@ -2164,7 +2161,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     # retain highest type of input for empty output, #4762
     if (length(X)!=0L)
       internal_error("length(X)==%d but a dimension is zero", length(X))  # nocov
-    return(array(if (is.null(X)) NA else X, dim = dm, dimnames = list(rownames.value, cn)))
+    return(array(X %||% NA, dim=dm, dimnames=list(rownames.value, cn)))
   }
   dim(X) = c(n, length(X)/n)
   dimnames(X) = list(rownames.value, unlist(collabs, use.names = FALSE))
