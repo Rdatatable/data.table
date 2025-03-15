@@ -191,33 +191,63 @@ flights[.("JFK", "LAX"), on = c("origin", "dest")][1:5]
 
 * Since the time to compute the secondary index is quite small, we don't have to use `setindex()`, unless, once again, the task involves repeated subsetting on the same column.
 
-### b) Select in `j`
+### b) Using named list elements in `i` 
+When subsetting using the on argument, values in `i` are typically passed as unnamed elements. However, naming elements explicitly in `i` improves readability, especially when dealing with multiple keys.
+
+- Example: Standard subsetting using unnamed elements
+```{r}
+flights[.("LGA", "TPA"), max(arr_delay), on = c("origin", "dest")]
+```
+While this syntax is concise, it may not be immediately clear which value corresponds to which key in `on`.
+
+- Subsetting using named elements in `i`
+```{r}
+flights[.(origin = "LGA", dest = "TPA"), max(arr_delay), on = c("origin", "dest")]
+```
+Here, naming the elements explicitly `(origin = "LGA", dest = "TPA")` makes it clear which variable each value corresponds to. This improves code maintainability, especially in complex queries.
+
+- Using named lists with multiple values
+When multiple values are passed, named elements further enhance clarity:
+```{r}
+flights[.("LGA", "JFK", "EWR"), mult = "last", on = c("origin", "dest"), nomatch = 0L]
+```
+- Named elements
+```{r}
+flights[.(origin = c("LGA", "JFK", "EWR"), dest = "XNA"), mult = "last", on = c("origin", "dest"), nomatch = 0L]
+```
+- Impact of named elements on key order
+It's important to note that naming elements in `i` only affects ordering when `on` is specified. If `on` is not used, data.table will match values based on key order, regardless of the names used.
+
+- When to use named list elements in `i`.
+when working with multiple keys in `on`, as it improves readability.
+
+### c) Select in `j`
 
 All the operations we will discuss below are no different to the ones we already saw in the [`vignette("datatable-keys-fast-subset", package="data.table")`](datatable-keys-fast-subset.html) vignette. Except we'll be using the `on` argument instead of setting keys.
 
 #### -- Return `arr_delay` column alone as a data.table corresponding to `origin = "LGA"` and `dest = "TPA"`
 
 ```{r}
-flights[.("LGA", "TPA"), .(arr_delay), on = c("origin", "dest")]
+flights[.(origin = "LGA", dest = "TPA"), .(arr_delay), on = c("origin", "dest")]
 ```
 
-### c) Chaining
+### d) Chaining
 
 #### -- On the result obtained above, use chaining to order the column in decreasing order.
 
 ```{r}
-flights[.("LGA", "TPA"), .(arr_delay), on = c("origin", "dest")][order(-arr_delay)]
+flights[.(origin = "LGA", dest = "TPA"), .(arr_delay), on = c("origin", "dest")][order(-arr_delay)]
 ```
 
-### d) Compute or *do* in `j`
+### e) Compute or *do* in `j`
 
 #### -- Find the maximum arrival delay corresponding to `origin = "LGA"` and `dest = "TPA"`.
 
 ```{r}
-flights[.("LGA", "TPA"), max(arr_delay), on = c("origin", "dest")]
+flights[.(origin = "LGA", dest = "TPA"), max(arr_delay), on = c("origin", "dest")]
 ```
 
-### e) *sub-assign* by reference using `:=` in `j`
+### f) *sub-assign* by reference using `:=` in `j`
 
 We have seen this example already in the vignettes [`vignette("datatable-reference-semantics", package="data.table")`](datatable-reference-semantics.html) and [`vignette("datatable-keys-fast-subset", package="data.table")`](datatable-keys-fast-subset.html). Let's take a look at all the `hours` available in the `flights` *data.table*:
 
@@ -240,7 +270,7 @@ flights[, sort(unique(hour))]
 
 * This is particularly a huge advantage of secondary indices. Previously, just to update a few rows of `hour`, we had to `setkey()` on it, which inevitably reorders the entire data.table. With `on`, the order is preserved, and the operation is much faster! Looking at the code, the task we wanted to perform is also quite clear.
 
-### f) Aggregation using `by`
+### g) Aggregation using `by`
 
 #### -- Get the maximum departure delay for each `month` corresponding to `origin = "JFK"`. Order the result by `month`
 
@@ -251,7 +281,7 @@ head(ans)
 
 * We would have had to set the `key` back to `origin, dest` again, if we did not use `on` which internally builds secondary indices on the fly.
 
-### g) The *mult* argument
+### h) The *mult* argument
 
 The other arguments including `mult` work exactly the same way as we saw in the [`vignette("datatable-keys-fast-subset", package="data.table")`](datatable-keys-fast-subset.html) vignette. The default value for `mult` is "all". We can choose, instead only the "first" or "last" matching rows should be returned.
 
@@ -264,17 +294,17 @@ flights[c("BOS", "DAY"), on = "dest", mult = "first"]
 #### -- Subset only the last matching row where `origin` matches *"LGA", "JFK", "EWR"* and `dest` matches *"XNA"*
 
 ```{r}
-flights[.(c("LGA", "JFK", "EWR"), "XNA"), on = c("origin", "dest"), mult = "last"]
+flights[.(origin = c("LGA", "JFK", "EWR"), dest = "XNA"), on = c("origin", "dest"), mult = "last"]
 ```
 
-### h) The *nomatch* argument
+### i) The *nomatch* argument
 
 We can choose if queries that do not match should return `NA` or be skipped altogether using the `nomatch` argument.
 
 #### -- From the previous example, subset all rows only if there's a match
 
 ```{r}
-flights[.(c("LGA", "JFK", "EWR"), "XNA"), mult = "last", on = c("origin", "dest"), nomatch = NULL]
+flights[.(origin = c("LGA", "JFK", "EWR"), dest = "XNA"), mult = "last", on = c("origin", "dest"), nomatch = NULL]
 ```
 
 * There are no flights connecting "JFK" and "XNA". Therefore, that row is skipped in the result.

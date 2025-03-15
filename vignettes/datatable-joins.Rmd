@@ -194,6 +194,40 @@ Products[ProductReceived,
          on = .(id = product_id)]
 ```
 
+#### 3.1.2. Using Named Lists for Explicit Joins
+In `data.table`, joins can be performed using unnamed lists `(list())` or named lists. Named lists provide greater clarity and reduce ambiguity when matching column names, especially when joining on multiple columns.
+
+- Using Unnamed
+```{r}
+dt1 <- data.table(id = c(1, 2, 3), value = c("A", "B", "C"))
+dt2 <- data.table(id = c(2, 3, 4), info = c("X", "Y", "Z"))
+dt1[dt2, on = "id"]
+```
+- Using a named list for explicit joins:
+```{r}
+dt1[dt2, on = .(id = id)]
+```
+- Here, .() is a shorthand for list(), and explicitly naming the column (id = id) makes the join easier to understand.
+
+#####  Named Lists for Multiple Column Joins
+When joining on multiple columns, named lists prevent mismatches and make the query more readable:
+```{r}
+dt1 <- data.table(id = c(1, 2, 3), key1 = c("A", "B", "C"), value = c(10, 20, 30))
+dt2 <- data.table(id = c(2, 3, 4), key1 = c("B", "C", "D"), info = c("X", "Y", "Z"))
+
+# Unnamed list approach (less readable)
+dt1[dt2, on = c("id", "key1")]
+
+# Named list approach (explicit and clear)
+dt1[dt2, on = .(id = id, key1 = key1)]
+```
+This ensures that column names are explicitly matched, which is especially useful when working with complex datasets.
+
+- When Should You Use Named Lists?
+There is potential ambiguity in column names.
+You are joining on multiple columns.
+You want to make your joins self-documenting and more readable.
+
 #### 3.1.2. Alternatives to define the `on` argument
 
 In all the prior example we have pass the column names we want to match to the `on` argument but `data.table` also have alternatives to that syntax.
