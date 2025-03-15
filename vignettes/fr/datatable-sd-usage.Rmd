@@ -1,6 +1,6 @@
 ---
 title: "Utiliser .SD pour l’analyse de données"
-date: "`r Sys.Date()`"
+date: "`{r} Sys.Date()`"
 output:
   markdown::html_format:
     options:
@@ -12,9 +12,9 @@ vignette: >
   \usepackage[utf8]{inputenc}
 ---
 
-```{r echo=FALSE, file='../_translation_links.R'}
+```{r, echo=FALSE, file='../_translation_links.R'}
 ```
-`r .write.translation.links("Translations of this document are available in: %s")`
+`{r} .write.translation.links("Translations of this document are available in: %s")`
 
 ```{r, echo = FALSE, message = FALSE}
 require(data.table)

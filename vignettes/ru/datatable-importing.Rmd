@@ -1,6 +1,6 @@
 ---
 title: "Использование data.table в других пакетах"
-date: "`r Sys.Date()`"
+date: "`{r} Sys.Date()`"
 output:
   markdown::html_format
 vignette: >
@@ -15,9 +15,9 @@ h2 {
 }
 </style>
 
-```{r echo=FALSE, file='../_translation_links.R'}
+```{r, echo=FALSE, file='../_translation_links.R'}
 ```
-`r .write.translation.links("Данное руководство также доступно на следующих языках: %s")`
+`{r} .write.translation.links("Данное руководство также доступно на следующих языках: %s")`
 
 Этот документ рассказывает об использовании `data.table` в качестве
 зависимости в других R-пакетах. Если вас интересует использование C-кода
