@@ -192,7 +192,7 @@ flights[.("JFK", "LAX"), on = c("origin", "dest")][1:5]
 * Since the time to compute the secondary index is quite small, we don't have to use `setindex()`, unless, once again, the task involves repeated subsetting on the same column.
 
 ### b) Using named list elements in `i` 
-When subsetting using the on argument, values in `i` are typically passed as unnamed elements. However, naming elements explicitly in `i` improves readability, especially when dealing with multiple keys.
+When subsetting using the `on` argument, values in `i` are typically passed as unnamed elements. However, naming elements explicitly in `i` improves readability, especially when dealing with multiple keys.
 
 - Example: Standard subsetting using unnamed elements
 ```{r}
@@ -204,20 +204,21 @@ While this syntax is concise, it may not be immediately clear which value corres
 ```{r}
 flights[.(origin = "LGA", dest = "TPA"), max(arr_delay), on = c("origin", "dest")]
 ```
-Here, naming the elements explicitly `(origin = "LGA", dest = "TPA")` makes it clear which variable each value corresponds to. This improves code maintainability, especially in complex queries.
+Naming elements explicitly `(origin = "LGA", dest = "TPA")` clarifies variable correspondence.
 
 - Using named lists with multiple values
 When multiple values are passed, named elements further enhance clarity:
-```{r}
+```{r unnamed_elemts}
 flights[.("LGA", "JFK", "EWR"), mult = "last", on = c("origin", "dest"), nomatch = 0L]
 ```
-- Named elements
-```{r}
+
+```{r named_elements}
 flights[.(origin = c("LGA", "JFK", "EWR"), dest = "XNA"), mult = "last", on = c("origin", "dest"), nomatch = 0L]
 ```
 - Impact of named elements on key order
-It's important to note that naming elements in `i` only affects ordering when `on` is specified. If `on` is not used, data.table will match values based on key order, regardless of the names used.
-
+```{r} 
+flights[.(dest = "TPA", origin = "LGA"), on = .(origin, dest)]  
+```
 - When to use named list elements in `i`.
 when working with multiple keys in `on`, as it improves readability.
 
