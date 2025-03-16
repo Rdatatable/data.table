@@ -246,7 +246,6 @@ as.data.table.data.frame = function(x, keep.rownames=FALSE, key=NULL, ...) {
 }
 
 as.data.table.data.table = function(x, keep.rownames, key=NULL, ...) {
-
   # as.data.table always returns a copy, automatically takes care of #473
   if (any(cols_with_dims(x))) { # for test 2089.2
     return(as.data.table.list(x, key = key, ...))
