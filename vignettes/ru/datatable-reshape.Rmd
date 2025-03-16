@@ -159,7 +159,7 @@ dcast(DT.m1, family_id + age_mother ~ child, value.var = "dob")
 одного наблюдения для каждой описываемой ею ячейки.
 
 ```{r}
-dcast(DT.m1, family_id ~ ., fun.agg = function(x) sum(!is.na(x)), value.var = "dob")
+dcast(DT.m1, family_id ~ ., fun.aggregate = function(x) sum(!is.na(x)), value.var = "dob")
 ```
 
 Ознакомьтесь с `?dcast`, чтобы узнать о других полезных аргументах и
@@ -191,7 +191,7 @@ DT
 примерно следующее:
 
 ```{r}
-DT.m1 = melt(DT, id = c("family_id", "age_mother"))
+DT.m1 = melt(DT, id.vars = c("family_id", "age_mother"))
 DT.m1[, c("variable", "child") := tstrsplit(variable, "_", fixed = TRUE)]
 DT.c1 = dcast(DT.m1, family_id + age_mother + child ~ variable, value.var = "value")
 DT.c1
@@ -241,7 +241,7 @@ str(DT.c1) ## столбец gender теперь класса IDate!
 ```{r}
 colA = paste0("dob_child", 1:3)
 colB = paste0("gender_child", 1:3)
-DT.m2 = melt(DT, measure = list(colA, colB), value.name = c("dob", "gender"))
+DT.m2 = melt(DT, measure.vars = list(colA, colB), value.name = c("dob", "gender"))
 DT.m2
 
 str(DT.m2) ## тип столбца сохранён
@@ -259,7 +259,7 @@ str(DT.m2) ## тип столбца сохранён
 `patterns()`. Приведенную выше операцию можно переписать так:
 
 ```{r}
-DT.m2 = melt(DT, measure = patterns("^dob", "^gender"), value.name = c("dob", "gender"))
+DT.m2 = melt(DT, measure.vars = patterns("^dob", "^gender"), value.name = c("dob", "gender"))
 DT.m2
 ```
 
@@ -312,7 +312,7 @@ melt(two.iris, measure.vars = measure(part, value.name, sep="."))
 для преобразования строковых значений `child` в целые числа:
 
 ```{r}
-DT.m3 = melt(DT, measure = measure(value.name, child=as.integer, sep="_child"))
+DT.m3 = melt(DT, measure.vars = measure(value.name, child=as.integer, sep="_child"))
 DT.m3
 ```
 
