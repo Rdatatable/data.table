@@ -47,13 +47,9 @@ void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill
   if (verbose)
     tic = omp_get_wtime();
   if (type==0) { // const
-    //Rprintf("fill=%d\n",fill);
     for (uint_fast64_t i=0; i<nx; i++) {
-      //Rprintf("before write: x[%d]=%d\n",i,x[i]);
       ans->int_v[i] = x[i]==NA_INTEGER ? fill : x[i];
-      //Rprintf("after write: ans->int_v[%d]=%d\n",i,ans->int_v[i]);
     }
-    //Rprintf("ans->int_v[nx-1]=%d\n",ans->int_v[nx-1]);
   } else if (type==1) { // locf
     ans->int_v[0] = x[0]==NA_INTEGER ? fill : x[0];
     for (uint_fast64_t i=1; i<nx; i++) {
@@ -95,16 +91,9 @@ void nafillString(const SEXP *x, uint_fast64_t nx, unsigned int type, SEXP fill,
   if (verbose)
     tic = omp_get_wtime();
   if (type==0) { // const
-    //for (uint_fast64_t i=0; i<nx; i++) Rprintf("x[%d]=%s\n", i, CHAR(x[i]));
     for (uint_fast64_t i=0; i<nx; i++) {
       SET_STRING_ELT(ans->char_v, i, x[i]==NA_STRING ? fill : x[i]);
-      //Rprintf("x[%d]=%s  ->  ", i, CHAR(x[i]));
-      //SEXP tmp = x[i]==NA_STRING ? fill : x[i]; // setnafill handle to not update when reading
-      //Rprintf("tmp=%s  ->  ", CHAR(tmp));
-      //SET_STRING_ELT((SEXP)ans->char_v, i, tmp);
-      //Rprintf("y[%d]=%s\n", i, CHAR(STRING_ELT((SEXP)ans->char_v, i)));
     }
-    //for (uint_fast64_t i=0; i<nx; i++) Rprintf("y[%d]=%s\n", i, CHAR(STRING_ELT((SEXP)ans->char_v, i)));
   } else if (type==1) { // locf
     SET_STRING_ELT(ans->char_v, 0, x[0]==NA_STRING ? fill : x[0]);
     const SEXP* thisans = SEXPPTR_RO(ans->char_v); // takes out STRING_ELT from loop
@@ -214,7 +203,6 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
       vans[i] = ((ans_t) { .dbl_v=(double *)p, .int_v=(int *)p, .int64_v=(int64_t *)p, .char_v=(SEXP)p, .status=0, .message={"\0","\0","\0","\0"} });
     }
   } else {
-    //ans = x; // only for debugging
     if (hadChar)
       error("setnafill and character column not yet implemented");
     for (R_len_t i=0; i<nx; i++) {
@@ -245,7 +233,6 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
       hasFill = false;
   }
   if (!badFill && hasFill) {
-    //Rprintf("hasFill branch\n");
     if (obj_scalar && isNewList(fill))
       badFill = true;
     if (!badFill && !isNewList(fill) && length(fill)!=1)
@@ -272,23 +259,12 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
     if (!isNewList(fill))
       internal_error(__func__, "'fill' should be recycled as list already"); // # nocov
     for (R_len_t i=0; i<nx; i++) {
-      //Rprintf("coercing fill[i]=\n");
-      //Rf_PrintValue(VECTOR_ELT(fill, i));
-      //Rprintf("to match x=\n");
-      //Rf_PrintValue(VECTOR_ELT(x, i));
       SET_VECTOR_ELT(fill, i, coerceAs(VECTOR_ELT(fill, i), VECTOR_ELT(x, i), ScalarLogical(TRUE)));
       if (isFactor(VECTOR_ELT(x, i)) && hasFill)
         error("'fill' on factor columns is not yet implemented");
       fillp[i] = SEXPPTR_RO(VECTOR_ELT(fill, i)); // do like this so we can use in parallel region
     }
-    //Rprintf("hasFill branch3\n");
   }
-  //Rprintf("before loop\n");
-  //Rf_PrintValue(ans);
-  //Rf_PrintValue(VECTOR_ELT(ans, 0));
-  //Rprintf("TYPEOF(ans)=%s\n", type2char(TYPEOF(VECTOR_ELT(ans, 0))));
-  //Rprintf("before loop fill\n");
-  //Rf_PrintValue(VECTOR_ELT(fill, 0));
   #pragma omp parallel for if (nx>1 && !hadChar) num_threads(getDTthreads(nx, true))
   for (R_len_t i=0; i<nx; i++) {
     switch (TYPEOF(VECTOR_ELT(x, i))) {
@@ -308,10 +284,6 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
     }
   }
 
-  //Rprintf("after loop\n");
-  //Rprintf("TYPEOF(ans)=%s\n", type2char(TYPEOF(VECTOR_ELT(ans, 0))));
-  //Rf_PrintValue(VECTOR_ELT(ans, 0));
-
   if (!binplace) {
     for (R_len_t i=0; i<nx; i++) {
       if (!isNull(ATTRIB(VECTOR_ELT(x, i)))) {
@@ -329,7 +301,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
       setAttrib(ans, R_NamesSymbol, ans_names);
     }
   }
-  //Rprintf("before ansMsg\n");
+
   ansMsg(vans, nx, verbose, __func__);
 
   if (verbose)
@@ -342,8 +314,6 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
   if (binplace) {
     return obj;
   } else {
-    //Rprintf("returning VECTOR_ELT(ans, 0)\n");
-    //Rf_PrintValue(VECTOR_ELT(ans, 0));
     return obj_scalar && length(ans) == 1 ? VECTOR_ELT(ans, 0) : ans;
   }
 }
