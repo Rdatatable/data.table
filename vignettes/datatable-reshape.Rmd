@@ -130,7 +130,7 @@ dcast(DT.m1, family_id + age_mother ~ child, value.var = "dob")
 You can also pass a function to aggregate by in `dcast` with the argument `fun.aggregate`. This is particularly essential when the formula provided does not identify single observation for each cell.
 
 ```{r}
-dcast(DT.m1, family_id ~ ., fun.agg = function(x) sum(!is.na(x)), value.var = "dob")
+dcast(DT.m1, family_id ~ ., fun.aggregate = function(x) sum(!is.na(x)), value.var = "dob")
 ```
 
 Check `?dcast` for other useful arguments and additional examples.
@@ -156,7 +156,7 @@ DT
 And you'd like to combine (`melt`) all the `dob` columns together, and `gender` columns together. Using the current functionality, we can do something like this:
 
 ```{r}
-DT.m1 = melt(DT, id = c("family_id", "age_mother"))
+DT.m1 = melt(DT, id.vars = c("family_id", "age_mother"))
 DT.m1[, c("variable", "child") := tstrsplit(variable, "_", fixed = TRUE)]
 DT.c1 = dcast(DT.m1, family_id + age_mother + child ~ variable, value.var = "value")
 DT.c1
@@ -191,7 +191,7 @@ The idea is quite simple. We pass a list of columns to `measure.vars`, where eac
 ```{r}
 colA = paste0("dob_child", 1:3)
 colB = paste0("gender_child", 1:3)
-DT.m2 = melt(DT, measure = list(colA, colB), value.name = c("dob", "gender"))
+DT.m2 = melt(DT, measure.vars = list(colA, colB), value.name = c("dob", "gender"))
 DT.m2
 
 str(DT.m2) ## col type is preserved
@@ -206,7 +206,7 @@ str(DT.m2) ## col type is preserved
 Usually in these problems, the columns we'd like to melt can be distinguished by a common pattern. We can use the function `patterns()`, implemented for convenience, to provide regular expressions for the columns to be combined together. The above operation can be rewritten as:
 
 ```{r}
-DT.m2 = melt(DT, measure = patterns("^dob", "^gender"), value.name = c("dob", "gender"))
+DT.m2 = melt(DT, measure.vars = patterns("^dob", "^gender"), value.name = c("dob", "gender"))
 DT.m2
 ```
 
@@ -256,7 +256,7 @@ can see a more complex usage of `measure`, involving a function which
 is used to convert the `child` string values to integers:
 
 ```{r}
-DT.m3 = melt(DT, measure = measure(value.name, child=as.integer, sep="_child"))
+DT.m3 = melt(DT, measure.vars = measure(value.name, child=as.integer, sep="_child"))
 DT.m3
 ```
 
