@@ -12,11 +12,15 @@ Test jobs:
 - `test-lin-rel-cran` - `--as-cran` on Linux, strict test for final status of `R CMD check`.
 - `test-lin-dev-gcc-strict-cran` - `--as-cran` on Linux, `r-devel` built with `-enable-strict-barrier --disable-long-double`, test for compilation warnings, test for new NOTEs/WARNINGs from `R CMD check`.
 - `test-lin-dev-clang-cran` - same as `gcc-strict` job but R built with `clang` and  no `--enable-strict-barrier --disable-long-double` flags.
-- `test-lin-310-cran` - R 3.1.0 on Linux, stated R dependency version.
+- `test-lin-ancient-cran` - Stated R dependency version (currently 3.3.0) on Linux.
+- `test-lin-dev-san` - `r-devel` on Linux built with `clang -fsanitize=address,undefined` (including LeakSanitizer), test for sanitizer output in tests and examples.
 - `test-win-rel` - `r-release` on Windows.
 - `test-win-dev` - `r-devel` on Windows.
 - `test-win-old` - `r-oldrel` on Windows.
-- `test-mac-rel` - macOS build not yet available, see [#3326](https://github.com/Rdatatable/data.table/issues/3326) for status
+- `test-mac-rel` - `r-release` on macOS.
+- `test-mac-old` - `r-oldrel` on macOS.
+
+The CI steps for the tests are [required](https://github.com/Rdatatable/data.table/blob/55eb0f160b169398d51f138131c14a66c86e5dc9/.ci/publish.R#L162-L168) to be named according to the pattern `test-(lin|win|mac)-<R version>[-<suffix>]*`, where `<R version>` is `rel`, `dev`, `old`, `ancient`, or three digits comprising an R version (e.g. `362` corresponding to R-3.6.2).
 
 Tests jobs are allowed to fail, summary and logs of test jobs are later published at _CRAN-like checks_ page, see artifacts below.
 
