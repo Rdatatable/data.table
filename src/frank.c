@@ -6,8 +6,8 @@
 SEXP dt_na(SEXP x, SEXP cols) {
   int n=0, elem;
 
-  if (!isNewList(x)) error(_("Internal error. Argument 'x' to Cdt_na is type '%s' not 'list'"), type2char(TYPEOF(x))); // # nocov
-  if (!isInteger(cols)) error(_("Internal error. Argument 'cols' to Cdt_na is type '%s' not 'integer'"), type2char(TYPEOF(cols))); // # nocov
+  if (!isNewList(x)) internal_error(__func__, "Argument '%s' to %s is type '%s' not '%s'", "x", "Cdt_na", type2char(TYPEOF(x)), "list"); // # nocov
+  if (!isInteger(cols)) internal_error(__func__, "Argument '%s' to %s is type '%s' not '%s'", "cols", "Cdt_na", type2char(TYPEOF(cols)), "integer"); // # nocov
   for (int i=0; i<LENGTH(cols); ++i) {
     elem = INTEGER(cols)[i];
     if (elem<1 || elem>LENGTH(x))
@@ -19,7 +19,7 @@ SEXP dt_na(SEXP x, SEXP cols) {
   for (int i=0; i<n; ++i) ians[i]=0;
   for (int i=0; i<LENGTH(cols); ++i) {
     SEXP v = VECTOR_ELT(x, INTEGER(cols)[i]-1);
-    if (!length(v) || isNewList(v) || isList(v)) continue; // like stats:::na.omit.data.frame, skip list/pairlist columns
+    if (!length(v) || isList(v)) continue; // like stats:::na.omit.data.frame, skip pairlist columns
     if (n != length(v))
       error(_("Column %d of input list x is length %d, inconsistent with first column of that item which is length %d."), i+1,length(v),n);
     switch (TYPEOF(v)) {
@@ -34,17 +34,16 @@ SEXP dt_na(SEXP x, SEXP cols) {
     }
       break;
     case STRSXP: {
-      const SEXP *sv = STRING_PTR(v);
+      const SEXP *sv = STRING_PTR_RO(v);
       for (int j=0; j<n; ++j) ians[j] |= (sv[j] == NA_STRING);
     }
       break;
     case REALSXP: {
-      const double *dv = REAL(v);
       if (INHERITS(v, char_integer64)) {
-        for (int j=0; j<n; ++j) {
-          ians[j] |= (DtoLL(dv[j]) == NA_INT64_LL);   // TODO: can be == NA_INT64_D directly
-        }
+        const int64_t *dv = (int64_t *)REAL(v);
+        for (int j=0; j<n; ++j) ians[j] |= (dv[j] == NA_INTEGER64);
       } else {
+        const double *dv = REAL(v);
         for (int j=0; j<n; ++j) ians[j] |= ISNAN(dv[j]);
       }
     }
@@ -59,6 +58,45 @@ SEXP dt_na(SEXP x, SEXP cols) {
       for (int j=0; j<n; ++j) ians[j] |= (ISNAN(COMPLEX(v)[j].r) || ISNAN(COMPLEX(v)[j].i));
     }
       break;
+    case VECSXP: {
+      // is.na(some_list) returns TRUE only for elements which are
+      // scalar NA.
+      for (int j=0; j<n; ++j) {
+        SEXP list_element = VECTOR_ELT(v, j);
+        switch (TYPEOF(list_element)) {
+        case LGLSXP: {
+          ians[j] |= (length(list_element)==1 && LOGICAL(list_element)[0] == NA_LOGICAL);
+        }
+          break;
+        case INTSXP: {
+          ians[j] |= (length(list_element)==1 && INTEGER(list_element)[0] == NA_INTEGER);
+        }
+          break;
+        case STRSXP: {
+          ians[j] |= (length(list_element)==1 && STRING_ELT(list_element,0) == NA_STRING);
+        }
+          break;
+        case CPLXSXP: {
+          if (length(list_element)==1) {
+            Rcomplex first_complex = COMPLEX(list_element)[0];
+            ians[j] |= (ISNAN(first_complex.r) || ISNAN(first_complex.i));
+          }
+        }
+          break;
+        case REALSXP: {
+          if (length(list_element)==1) {
+            if (INHERITS(list_element, char_integer64)) {
+              ians[j] |= ((const int64_t *)REAL(list_element))[0] == NA_INTEGER64;
+            } else {
+              ians[j] |= ISNAN(REAL(list_element)[0]);
+            }
+          }
+        }
+          break;
+        }
+      }
+    }
+      break;
     default:
       error(_("Unsupported column type '%s'"), type2char(TYPEOF(v)));
     }
@@ -69,7 +107,7 @@ SEXP dt_na(SEXP x, SEXP cols) {
 
 SEXP frank(SEXP xorderArg, SEXP xstartArg, SEXP xlenArg, SEXP ties_method) {
   const int *xstart = INTEGER(xstartArg), *xlen = INTEGER(xlenArg), *xorder = INTEGER(xorderArg);
-  enum {MEAN, MAX, MIN, DENSE, SEQUENCE, LAST} ties; // RUNLENGTH
+  enum {MEAN, MAX, MIN, DENSE, SEQUENCE, LAST} ties=0; // RUNLENGTH
 
   const char *pties = CHAR(STRING_ELT(ties_method, 0));
   if (!strcmp(pties, "average"))  ties = MEAN;
@@ -79,7 +117,7 @@ SEXP frank(SEXP xorderArg, SEXP xstartArg, SEXP xlenArg, SEXP ties_method) {
   else if (!strcmp(pties, "sequence")) ties = SEQUENCE;
   else if (!strcmp(pties, "last")) ties = LAST;
   // else if (!strcmp(pties, "runlength")) ties = RUNLENGTH;
-  else error(_("Internal error: invalid ties.method for frankv(), should have been caught before. please report to data.table issue tracker")); // # nocov
+  else internal_error(__func__, "invalid ties.method, should have been caught before"); // # nocov
   const int n = length(xorderArg);
   SEXP ans = PROTECT(allocVector(ties==MEAN ? REALSXP : INTSXP, n));
   int *ians=NULL;
@@ -136,7 +174,7 @@ SEXP frank(SEXP xorderArg, SEXP xstartArg, SEXP xlenArg, SEXP ties_method) {
     //       INTEGER(ans)[xorder[j]-1] = k++;
     //   }
     //   break;
-    default: error(_("Internal error: unknown ties value in frank: %d"), ties); // #nocov
+    default: internal_error(__func__, "unknown ties value: %d", ties); // # nocov
     }
   }
   UNPROTECT(1);
@@ -146,8 +184,8 @@ SEXP frank(SEXP xorderArg, SEXP xstartArg, SEXP xlenArg, SEXP ties_method) {
 // internal version of anyNA for data.tables
 SEXP anyNA(SEXP x, SEXP cols) {
   int n=0;
-  if (!isNewList(x)) error(_("Internal error. Argument 'x' to CanyNA is type '%s' not 'list'"), type2char(TYPEOF(x))); // #nocov
-  if (!isInteger(cols)) error(_("Internal error. Argument 'cols' to CanyNA is type '%s' not 'integer'"), type2char(TYPEOF(cols))); // # nocov
+  if (!isNewList(x)) internal_error(__func__, "Argument '%s' to %s is type '%s' not '%s'", "x", "CanyNA", type2char(TYPEOF(x)), "list"); // #nocov
+  if (!isInteger(cols)) internal_error(__func__, "Argument '%s' to %s is type '%s' not '%s'", "cols", "CanyNA", type2char(TYPEOF(cols)), "integer"); // # nocov
   for (int i=0; i<LENGTH(cols); ++i) {
     const int elem = INTEGER(cols)[i];
     if (elem<1 || elem>LENGTH(x))
@@ -171,7 +209,7 @@ SEXP anyNA(SEXP x, SEXP cols) {
       while(j<n && iv[j]!=NA_INTEGER) j++;
     } break;
     case STRSXP: {
-      const SEXP *sv = STRING_PTR(v);
+      const SEXP *sv = STRING_PTR_RO(v);
       while (j<n && sv[j]!=NA_STRING) j++;
     } break;
     case REALSXP:

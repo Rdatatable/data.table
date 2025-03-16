@@ -4,51 +4,55 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
            na="", dec=".", row.names=FALSE, col.names=TRUE,
            qmethod=c("double","escape"),
            logical01=getOption("datatable.logical01", FALSE), # due to change to TRUE; see NEWS
-           logicalAsInt=logical01,
+           logicalAsInt=NULL,
            scipen=getOption('scipen', 0L),
            dateTimeAs = c("ISO","squash","epoch","write.csv"),
-           buffMB=8, nThread=getDTthreads(verbose),
+           buffMB=8L, nThread=getDTthreads(verbose),
            showProgress=getOption("datatable.showProgress", interactive()),
            compress = c("auto", "none", "gzip"),
+           compressLevel = 6L,
            yaml = FALSE,
            bom = FALSE,
            verbose=getOption("datatable.verbose", FALSE),
            encoding = "") {
   na = as.character(na[1L]) # fix for #1725
   if (length(encoding) != 1L || !encoding %chin% c("", "UTF-8", "native")) {
-    stop("Argument 'encoding' must be '', 'UTF-8' or 'native'.")
+    stopf("Argument 'encoding' must be '', 'UTF-8' or 'native'.")
   }
-  if (missing(qmethod)) qmethod = qmethod[1L]
-  if (missing(compress)) compress = compress[1L]
-  if (missing(dateTimeAs)) { dateTimeAs = dateTimeAs[1L] }
-  else if (length(dateTimeAs)>1L) stop("dateTimeAs must be a single string")
-  dateTimeAs = chmatch(dateTimeAs, c("ISO","squash","epoch","write.csv"))-1L
-  if (is.na(dateTimeAs)) stop("dateTimeAs must be 'ISO','squash','epoch' or 'write.csv'")
-  if (!missing(logical01) && !missing(logicalAsInt))
-    stop("logicalAsInt has been renamed logical01. Use logical01 only, not both.")
-  if (!missing(logicalAsInt)) {
-    # TODO: warning("logicalAsInt has been renamed logical01 for consistency with fread. It will work fine but please change to logical01 at your convenience so we can remove logicalAsInt in future.")
-    logical01 = logicalAsInt
-    logicalAsInt=NULL
+  qmethod = match.arg(qmethod)
+  compress = match.arg(compress)
+  dateTimeAs = match.arg(dateTimeAs)
+  dateTimeAs = chmatch(dateTimeAs, c("ISO", "squash", "epoch", "write.csv")) - 1L
+  if (!is.null(logicalAsInt)) {
+    stopf("logicalAsInt has been renamed logical01 for consistency with fread.")
   }
   scipen = if (is.numeric(scipen)) as.integer(scipen) else 0L
   buffMB = as.integer(buffMB)
   nThread = as.integer(nThread)
+  compressLevel = as.integer(compressLevel)
   # write.csv default is 'double' so fwrite follows suit. write.table's default is 'escape'
   # validate arguments
   if (is.matrix(x)) { # coerce to data.table if input object is matrix
-    message("x being coerced from class: matrix to data.table")
-    x = as.data.table(x)
+    messagef("x being coerced from class: matrix to data.table")
+    # keep row.names for matrix input #5315
+    if (row.names && !is.null(rownames(x))) {
+      row.names = FALSE
+      x = as.data.table(x, keep.rownames="")
+    } else {
+      x = as.data.table(x)
+    }
   }
-  stopifnot(is.list(x),
+  stopifnot(
+    is.list(x),
     identical(quote,"auto") || isTRUEorFALSE(quote),
-    is.character(sep) && length(sep)==1L && nchar(sep) == 1L,
+    is.character(sep) && length(sep)==1L && (nchar(sep) == 1L || identical(sep, "")),
     is.character(sep2) && length(sep2)==3L && nchar(sep2[2L])==1L,
     is.character(dec) && length(dec)==1L && nchar(dec) == 1L,
     dec != sep,  # sep2!=dec and sep2!=sep checked at C level when we know if list columns are present
     is.character(eol) && length(eol)==1L,
     length(qmethod) == 1L && qmethod %chin% c("double", "escape"),
     length(compress) == 1L && compress %chin% c("auto", "none", "gzip"),
+    length(compressLevel) == 1L && 0L <= compressLevel && compressLevel <= 9L,
     isTRUEorFALSE(col.names), isTRUEorFALSE(append), isTRUEorFALSE(row.names),
     isTRUEorFALSE(verbose), isTRUEorFALSE(showProgress), isTRUEorFALSE(logical01),
     isTRUEorFALSE(bom),
@@ -56,9 +60,9 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
     is.character(file) && length(file)==1L && !is.na(file),
     length(buffMB)==1L && !is.na(buffMB) && 1L<=buffMB && buffMB<=1024L,
     length(nThread)==1L && !is.na(nThread) && nThread>=1L
-    )
+  )
 
-  is_gzip = compress == "gzip" || (compress == "auto" && grepl("\\.gz$", file))
+  is_gzip = compress == "gzip" || (compress == "auto" && endsWithAny(file, ".gz"))
 
   file = path.expand(file)  # "~/foo/bar"
   if (append && (file=="" || file.exists(file))) {
@@ -76,20 +80,19 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   }
   if (NCOL(x)==0L && file!="") {
     if (file.exists(file)) {
-      warning("Input has no columns; doing nothing.",
-              if (!append)
-                paste("\nIf you intended to overwrite the file at",
-                      file, "with an empty one, please use file.remove first."))
+      suggested = if (append) "" else gettextf("\nIf you intended to overwrite the file at %s with an empty one, please use file.remove first.", file)
+      warningf("Input has no columns; doing nothing.%s", suggested)
       return(invisible())
     } else {
-      warning("Input has no columns; creating an empty file at '", file, "' and exiting.")
+      warningf("Input has no columns; creating an empty file at '%s' and exiting.", file)
       file.create(file)
       return(invisible())
     }
   }
+  # nocov start. See test 17 in other.Rraw, not tested in the main suite.
   yaml = if (!yaml) "" else {
     if (!requireNamespace('yaml', quietly=TRUE))
-      stop("'data.table' relies on the package 'yaml' to write the file header; please add this to your library with install.packages('yaml') and try again.") # nocov
+      stopf("'data.table' relies on the package 'yaml' to write the file header; please add this to your library with install.packages('yaml') and try again.") # nocov
     schema_vec = sapply(x, class)
     # multi-class objects reduced to first class
     if (is.list(schema_vec)) schema_vec = sapply(schema_vec, `[`, 1L)
@@ -110,10 +113,12 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
     )
     paste0('---', eol, yaml::as.yaml(yaml_header, line.sep=eol), '---', eol) # NB: as.yaml adds trailing newline
   }
+  # nocov end
   file = enc2native(file) # CfwriteR cannot handle UTF-8 if that is not the native encoding, see #3078.
   .Call(CfwriteR, x, file, sep, sep2, eol, na, dec, quote, qmethod=="escape", append,
         row.names, col.names, logical01, scipen, dateTimeAs, buffMB, nThread,
-        showProgress, is_gzip, bom, yaml, verbose, encoding)
+        showProgress, is_gzip, compressLevel, bom, yaml, verbose, encoding)
   invisible()
 }
 
+haszlib = function() .Call(Cdt_has_zlib)

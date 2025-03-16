@@ -2,14 +2,14 @@
 \alias{fread}
 \title{ Fast and friendly file finagler }
 \description{
-   Similar to \code{read.table} but faster and more convenient. All controls such as \code{sep}, \code{colClasses} and \code{nrows} are automatically detected.
+   Similar to \code{\link[utils:read.csv]{read.csv()}} and \code{\link[utils:read.delim]{read.delim()}} but faster and more convenient. All controls such as \code{sep}, \code{colClasses} and \code{nrows} are automatically detected.
 
    \code{bit64::integer64}, \code{\link{IDate}}, and \code{\link{POSIXct}} types are also detected and read directly without needing to read as character before converting.
 
    \code{fread} is for \emph{regular} delimited files; i.e., where every row has the same number of columns. In future, secondary separator (\code{sep2}) may be specified \emph{within} each column. Such columns will be read as type \code{list} where each cell is itself a vector.
 }
 \usage{
-fread(input, file, text, cmd, sep="auto", sep2="auto", dec=".", quote="\"",
+fread(input, file, text, cmd, sep="auto", sep2="auto", dec="auto", quote="\"",
 nrows=Inf, header="auto",
 na.strings=getOption("datatable.na.strings","NA"),  # due to change to ""; see NEWS
 stringsAsFactors=FALSE, verbose=getOption("datatable.verbose", FALSE),
@@ -22,9 +22,10 @@ key=NULL, index=NULL,
 showProgress=getOption("datatable.showProgress", interactive()),
 data.table=getOption("datatable.fread.datatable", TRUE),
 nThread=getDTthreads(verbose),
-logical01=getOption("datatable.logical01", FALSE),  # due to change to TRUE; see NEWS
+logical01=getOption("datatable.logical01", FALSE),
+logicalYN=getOption("datatable.logicalYN", FALSE),
 keepLeadingZeros = getOption("datatable.keepLeadingZeros", FALSE),
-yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC"
+yaml=FALSE, autostart=NULL, tmpdir=tempdir(), tz="UTC"
 )
 }
 \arguments{
@@ -47,23 +48,24 @@ yaml=FALSE, autostart=NA, tmpdir=tempdir(), tz="UTC"
     If type coercion results in an error, introduces \code{NA}s, or would result in loss of accuracy, the coercion attempt is aborted for that column with warning and the column's type is left unchanged. If you really desire data loss (e.g. reading \code{3.14} as \code{integer}) you have to truncate such columns afterwards yourself explicitly so that this is clear to future readers of your code.
   }
   \item{integer64}{ "integer64" (default) reads columns detected as containing integers larger than 2^31 as type \code{bit64::integer64}. Alternatively, \code{"double"|"numeric"} reads as \code{utils::read.csv} does; i.e., possibly with loss of precision and if so silently. Or, "character". }
-  \item{dec}{ The decimal separator as in \code{utils::read.csv}. If not "." (default) then usually ",". See details. }
+  \item{dec}{ The decimal separator as in \code{utils::read.csv}. When \code{"auto"} (the default), an attempt is made to decide whether \code{"."} or \code{","} is more suitable for this input. See details. }
   \item{col.names}{ A vector of optional names for the variables (columns). The default is to use the header column if present or detected, or if not "V" followed by the column number. This is applied after \code{check.names} and before \code{key} and \code{index}. }
   \item{check.names}{default is \code{FALSE}. If \code{TRUE} then the names of the variables in the \code{data.table} are checked to ensure that they are syntactically valid variable names. If necessary they are adjusted (by \code{\link{make.names}}) so that they are, and also to ensure that there are no duplicates.}
   \item{encoding}{ default is \code{"unknown"}. Other possible options are \code{"UTF-8"} and \code{"Latin-1"}.  Note: it is not used to re-encode the input, rather enables handling of encoded strings in their native encoding. }
   \item{quote}{ By default (\code{"\""}), if a field starts with a double quote, \code{fread} handles embedded quotes robustly as explained under \code{Details}. If it fails, then another attempt is made to read the field \emph{as is}, i.e., as if quotes are disabled. By setting \code{quote=""}, the field is always read as if quotes are disabled. It is not expected to ever need to pass anything other than \"\" to quote; i.e., to turn it off. }
-  \item{strip.white}{ default is \code{TRUE}. Strips leading and trailing whitespaces of unquoted fields. If \code{FALSE}, only header trailing spaces are removed. }
-  \item{fill}{logical (default is \code{FALSE}). If \code{TRUE} then in case the rows have unequal length, blank fields are implicitly filled.}
+  \item{strip.white}{ Logical, default \code{TRUE}, in which case leading and trailing whitespace is stripped from unquoted \code{"character"} fields. \code{"numeric"} fields are always stripped of leading and trailing whitespace.}
+  \item{fill}{logical or integer (default is \code{FALSE}). If \code{TRUE} then in case the rows have unequal length, number of columns is estimated and blank fields are implicitly filled. If an integer is provided it is used as an upper bound for the number of columns. If \code{fill=Inf} then the whole file is read for detecting the number of columns. }
   \item{blank.lines.skip}{\code{logical}, default is \code{FALSE}. If \code{TRUE} blank lines in the input are ignored.}
-  \item{key}{Character vector of one or more column names which is passed to \code{\link{setkey}}. It may be a single comma separated string such as \code{key="x,y,z"}, or a vector of names such as \code{key=c("x","y","z")}. Only valid when argument \code{data.table=TRUE}. Where applicable, this should refer to column names given in \code{col.names}. }
+  \item{key}{Character vector of one or more column names which is passed to \code{\link{setkey}}. Only valid when argument \code{data.table=TRUE}. Where applicable, this should refer to column names given in \code{col.names}. }
   \item{index}{ Character vector or list of character vectors of one or more column names which is passed to \code{\link{setindexv}}. As with \code{key}, comma-separated notation like \code{index="x,y,z"} is accepted for convenience. Only valid when argument \code{data.table=TRUE}. Where applicable, this should refer to column names given in \code{col.names}. }
   \item{showProgress}{ \code{TRUE} displays progress on the console if the ETA is greater than 3 seconds. It is produced in fread's C code where the very nice (but R level) txtProgressBar and tkProgressBar are not easily available. }
   \item{data.table}{ TRUE returns a \code{data.table}. FALSE returns a \code{data.frame}. The default for this argument can be changed with \code{options(datatable.fread.datatable=FALSE)}.}
   \item{nThread}{The number of threads to use. Experiment to see what works best for your data on your hardware.}
   \item{logical01}{If TRUE a column containing only 0s and 1s will be read as logical, otherwise as integer.}
+  \item{logicalYN}{If TRUE a column containing only Ys and Ns will be read as logical, otherwise as character.}
   \item{keepLeadingZeros}{If TRUE a column containing numeric data with leading zeros will be read as character, otherwise leading zeros will be removed and converted to numeric.}
   \item{yaml}{ If \code{TRUE}, \code{fread} will attempt to parse (using \code{\link[yaml]{yaml.load}}) the top of the input as YAML, and further to glean parameters relevant to improving the performance of \code{fread} on the data itself. The entire YAML section is returned as parsed into a \code{list} in the \code{yaml_metadata} attribute. See \code{Details}. }
-  \item{autostart}{ Deprecated and ignored with warning. Please use \code{skip} instead. }
+  \item{autostart}{ Deprecated. Please use \code{skip} instead. }
   \item{tmpdir}{ Directory to use as the \code{tmpdir} argument for any \code{tempfile} calls, e.g. when the input is a URL or a shell command. The default is \code{tempdir()} which can be controlled by setting \code{TMPDIR} before starting the R session; see \code{\link[base:tempfile]{base::tempdir}}. }
   \item{tz}{ Relevant to datetime values which have no Z or UTC-offset at the end, i.e. \emph{unmarked} datetime, as written by \code{\link[utils:write.table]{utils::write.csv}}. The default \code{tz="UTC"} reads unmarked datetime as UTC POSIXct efficiently. \code{tz=""} reads unmarked datetime as type character (slowly) so that \code{as.POSIXct} can interpret (slowly) the character datetimes in local timezone; e.g. by using \code{"POSIXct"} in \code{colClasses=}. Note that \code{fwrite()} by default writes datetime in UTC including the final Z and therefore \code{fwrite}'s output will be read by \code{fread} consistently and quickly without needing to use \code{tz=} or \code{colClasses=}. If the \code{TZ} environment variable is set to \code{"UTC"} (or \code{""} on non-Windows where unset vs `""` is significant) then the R session's timezone is already UTC and \code{tz=""} will result in unmarked datetimes being read as UTC POSIXct. For more information, please see the news items from v1.13.0 and v1.14.0. }
 }
@@ -79,24 +81,24 @@ If an empty line is encountered then reading stops there with warning if any tex
 
 \bold{Line endings:} All known line endings are detected automatically: \code{\\n} (*NIX including Mac), \code{\\r\\n} (Windows CRLF), \code{\\r} (old Mac) and \code{\\n\\r} (just in case). There is no need to convert input files first. \code{fread} running on any architecture will read a file from any architecture. Both \code{\\r} and \code{\\n} may be embedded in character strings (including column names) provided the field is quoted.
 
-\bold{Decimal separator and locale:} \code{fread(\dots,dec=",")} should just work. \code{fread} uses C function \code{strtod} to read numeric data; e.g., \code{1.23} or \code{1,23}. \code{strtod} retrieves the decimal separator (\code{.} or \code{,} usually) from the locale of the R session rather than as an argument passed to the \code{strtod} function. So for \code{fread(\dots,dec=",")} to work, \code{fread} changes this (and only this) R session's locale temporarily to a locale which provides the desired decimal separator.
+\bold{Decimal separator:} \code{dec} is used to parse numeric fields as the separator between integral and fractional parts. When \code{dec='auto'}, during column type detection, when a field is a candidate for being numeric (i.e., parsing as lower types has already failed), \code{dec='.'} is tried, and, if it fails to create a numeric field, \code{dec=','} is tried. At the end of the sample lines, if more were successfully parsed with \code{dec=','}, \code{dec} is set to \code{','}; otherwise, \code{dec} is set to \code{'.'}.
 
-On Windows, "French_France.1252" is tried which should be available as standard (any locale with comma decimal separator would suffice) and on unix "fr_FR.utf8" (you may need to install this locale on unix). \code{fread()} is very careful to set the locale back again afterwards, even if the function fails with an error. The choice of locale is determined by \code{options()$datatable.fread.dec.locale}. This may be a \emph{vector} of locale names and if so they will be tried in turn until the desired \code{dec} is obtained; thus allowing more than two different decimal separators to be selected. This is a new feature in v1.9.6 and is experimental. In case of problems, turn it off with \code{options(datatable.fread.dec.experiment=FALSE)}.
+Automatic detection of \code{sep} occurs \emph{prior} to column type detection -- as such, it is possible that \code{sep} has been inferred to be \code{','}, in which case \code{dec} is set to \code{'.'}.
 
 \bold{Quotes:}
 
 When \code{quote} is a single character,
 
   \itemize{
-      \item{Spaces and other whitespace (other than \code{sep} and \code{\\n}) may appear in unquoted character fields, e.g., \code{\dots,2,Joe Bloggs,3.14,\dots}.}
+      \item Spaces and other whitespace (other than \code{sep} and \code{\\n}) may appear in unquoted character fields, e.g., \code{\dots,2,Joe Bloggs,3.14,\dots}.
 
-      \item{When \code{character} columns are \emph{quoted}, they must start and end with that quoting character immediately followed by \code{sep} or \code{\\n}, e.g., \code{\dots,2,"Joe Bloggs",3.14,\dots}.
+      \item When \code{character} columns are \emph{quoted}, they must start and end with that quoting character immediately followed by \code{sep} or \code{\\n}, e.g., \code{\dots,2,"Joe Bloggs",3.14,\dots}.
 
       In essence quoting character fields are \emph{required} only if \code{sep} or \code{\\n} appears in the string value. Quoting may be used to signify that numeric data should be read as text. Unescaped quotes may be present in a quoted field, e.g., \code{\dots,2,"Joe, "Bloggs"",3.14,\dots}, as well as escaped quotes, e.g., \code{\dots,2,"Joe \",Bloggs\"",3.14,\dots}.
 
       If an embedded quote is followed by the separator inside a quoted field, the embedded quotes up to that point in that field must be balanced; e.g. \code{\dots,2,"www.blah?x="one",y="two"",3.14,\dots}.
 
-      On those fields that do not satisfy these conditions, e.g., fields with unbalanced quotes, \code{fread} re-attempts that field as if it isn't quoted. This is quite useful in reading files that contains fields with unbalanced quotes as well, automatically.}
+      On those fields that do not satisfy these conditions, e.g., fields with unbalanced quotes, \code{fread} re-attempts that field as if it isn't quoted. This is quite useful in reading files that contains fields with unbalanced quotes as well, automatically.
   }
 
 To read fields \emph{as is} instead, use \code{quote = ""}.
@@ -106,16 +108,16 @@ To read fields \emph{as is} instead, use \code{quote = ""}.
 Currently, the \code{yaml} setting is somewhat inflexible with respect to incorporating metadata to facilitate file reading. Information on column classes should be stored at the top level under the heading \code{schema} and subheading \code{fields}; those with both a \code{type} and a \code{name} sub-heading will be merged into \code{colClasses}. Other supported elements are as follows:
 
   \itemize{
-    \item{ \code{sep} (or alias \code{delimiter}) }
-    \item{ \code{header} }
-    \item{ \code{quote} (or aliases \code{quoteChar}, \code{quote_char}) }
-    \item{ \code{dec} (or alias \code{decimal}) }
-    \item{ \code{na.strings} }
+    \item \code{sep} (or alias \code{delimiter}) 
+    \item \code{header} 
+    \item \code{quote} (or aliases \code{quoteChar}, \code{quote_char}) 
+    \item \code{dec} (or alias \code{decimal}) 
+    \item \code{na.strings} 
   }
 
 \bold{File Download:}
 
-When \code{input} begins with http://, https://, ftp://, ftps://, or file://, \code{fread} detects this and \emph{downloads} the target to a temporary file (at \code{tempfile()}) before proceeding to read the file as usual. Secure URLS (ftps:// and https://) are downloaded with \code{curl::curl_download}; ftp:// and http:// paths are downloaded with \code{download.file} and \code{method} set to \code{getOption("download.file.method")}, defaulting to \code{"auto"}; and file:// is downloaded with \code{download.file} with \code{method="internal"}. NB: this implies that for file://, even files found on the current machine will be "downloaded" (i.e., hard-copied) to a temporary file. See \code{\link{download.file}} for more details.
+When \code{input} begins with http://, https://, ftp://, ftps://, or file://, \code{fread} detects this and \emph{downloads} the target to a temporary file (at \code{tempfile()}) before proceeding to read the file as usual. URLS (ftps:// and https:// as well as ftp:// and http://) paths are downloaded with \code{download.file} and \code{method} set to \code{getOption("download.file.method")}, defaulting to \code{"auto"}; and file:// is downloaded with \code{download.file} with \code{method="internal"}. NB: this implies that for file://, even files found on the current machine will be "downloaded" (i.e., hard-copied) to a temporary file. See \code{\link{download.file}} for more details.
 
 \bold{Shell commands:}
 
@@ -129,7 +131,6 @@ When \code{input} begins with http://, https://, ftp://, ftps://, or file://, \c
 Background :\cr
 \url{https://cran.r-project.org/doc/manuals/R-data.html}\cr
 \url{https://stackoverflow.com/questions/1727772/quickly-reading-very-large-tables-as-dataframes-in-r}\cr
-\url{https://cerebralmastication.com/2009/11/loading-big-data-into-r/}\cr
 \url{https://stackoverflow.com/questions/9061736/faster-than-scan-with-rcpp}\cr
 \url{https://stackoverflow.com/questions/415515/how-can-i-read-and-manipulate-csv-file-data-in-c}\cr
 \url{https://stackoverflow.com/questions/9352887/strategies-for-reading-in-csv-files-in-pieces}\cr
@@ -141,7 +142,7 @@ Background :\cr
 
 finagler = "to get or achieve by guile or manipulation" \url{https://dictionary.reference.com/browse/finagler}
 
-On YAML, see \url{https://yaml.org/}; on csvy, see \url{https://csvy.org/}.
+On YAML, see \url{https://yaml.org/}.
 }
 \seealso{
   \code{\link[utils:read.table]{read.csv}}, \code{\link[base:connections]{url}}, \code{\link[base:locales]{Sys.setlocale}}, \code{\link{setDTthreads}}, \code{\link{fwrite}}, \href{https://CRAN.R-project.org/package=bit64}{\code{bit64::integer64}}
@@ -271,42 +272,13 @@ system.time(DT <- fread("testbig.csv"))
 
 all(mapply(all.equal, DF, DT))
 
-
-# Real data example (Airline data)
-# https://stat-computing.org/dataexpo/2009/the-data.html
-
-download.file("https://stat-computing.org/dataexpo/2009/2008.csv.bz2",
-              destfile="2008.csv.bz2")
-# 109MB (compressed)
-
-system("bunzip2 2008.csv.bz2")
-# 658MB (7,009,728 rows x 29 columns)
-
-colClasses = sapply(read.csv("2008.csv",nrows=100,stringsAsFactors=FALSE),class)
-# 4 character, 24 integer, 1 logical. Incorrect.
-
-colClasses = sapply(read.csv("2008.csv",nrows=200,stringsAsFactors=FALSE),class)
-# 5 character, 24 integer. Correct. Might have missed data only using 100 rows
-# since read.table assumes colClasses is correct.
-
-system.time(DF <- read.table("2008.csv", header=TRUE, sep=",",
-    quote="",stringsAsFactors=FALSE,comment.char="",nrows=7009730,
-    colClasses=colClasses))
-# 24.4 secs
-
-system.time(DT <- fread("2008.csv"))
-#  1.9 secs
-
-table(sapply(DT,class))
-# 5 character and 24 integer columns. Correct without needing to worry about colClasses
-# issue above.
-
-
 # Reads URLs directly :
 fread("https://www.stats.ox.ac.uk/pub/datasets/csb/ch11b.dat")
 
 # Decompresses .gz and .bz2 automatically :
-fread("https://stat-computing.org/dataexpo/2009/1987.csv.bz2")
+fread("https://github.com/Rdatatable/data.table/raw/1.14.0/inst/tests/ch11b.dat.bz2")
+
+fread("https://github.com/Rdatatable/data.table/raw/1.14.0/inst/tests/issue_785_fread.txt.gz")
 
 }
 }

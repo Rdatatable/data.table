@@ -1,35 +1,50 @@
 #include "data.table.h"
 
-bool isRealReallyInt(SEXP x) {
-  if (!isReal(x)) return(false);
+bool within_int32_repres(double x) {
+  // N.B. (int)2147483647.99 is not undefined behaviour since s 6.3.1.4 of the C
+  // standard states that behaviour is undefined only if the integral part of a
+  // finite value of standard floating type cannot be represented.
+  return R_FINITE(x) && x < 2147483648 && x > -2147483648;
+}
+
+bool within_int64_repres(double x) {
+  return R_FINITE(x) && x <= (double)INT64_MAX && x >= (double)INT64_MIN;
+}
+
+// used to error if not passed type double but this needed extra is.double() calls in calling R code
+// which needed a repeat of the argument. Hence simpler and more robust to return false when not type double.
+bool fitsInInt32(SEXP x) {
+  if (!isReal(x))
+    return false;
   R_xlen_t n=xlength(x), i=0;
-  double *dx = REAL(x);
+  const double *dx = REAL(x);
   while (i<n &&
          ( ISNA(dx[i]) ||
-         ( R_FINITE(dx[i]) && dx[i] == (int)(dx[i])))) {
+         (within_int32_repres(dx[i]) && dx[i]==(int)(dx[i])))) {
     i++;
   }
   return i==n;
 }
 
-SEXP isReallyReal(SEXP x) {
-  SEXP ans = PROTECT(allocVector(INTSXP, 1));
-  INTEGER(ans)[0] = 0;
-  // return 0 (FALSE) when not type double, or is type double but contains integers
-  // used to error if not passed type double but this needed extra is.double() calls in calling R code
-  // which needed a repeat of the argument. Hence simpler and more robust to return 0 when not type double.
-  if (isReal(x)) {
-    int n=length(x), i=0;
-    double *dx = REAL(x);
-    while (i<n &&
-        ( ISNA(dx[i]) ||
-        ( R_FINITE(dx[i]) && dx[i] == (int)(dx[i])))) {
-      i++;
-    }
-    if (i<n) INTEGER(ans)[0] = i+1;  // return the location of first element which is really real; i.e. not an integer
+SEXP fitsInInt32R(SEXP x) {
+  return ScalarLogical(fitsInInt32(x));
+}
+
+bool fitsInInt64(SEXP x) {
+  if (!isReal(x))
+    return false;
+  R_xlen_t n=xlength(x), i=0;
+  const double *dx = REAL(x);
+  while (i<n &&
+         ( ISNA(dx[i]) ||
+         (within_int64_repres(dx[i]) && dx[i]==(int64_t)(dx[i])))) {
+    i++;
   }
-  UNPROTECT(1);
-  return(ans);
+  return i==n;
+}
+
+SEXP fitsInInt64R(SEXP x) {
+  return ScalarLogical(fitsInInt64(x));
 }
 
 bool allNA(SEXP x, bool errorForBadType) {
@@ -50,7 +65,7 @@ bool allNA(SEXP x, bool errorForBadType) {
     return true;
   }
   case REALSXP:
-    if (Rinherits(x,char_integer64)) {
+    if (INHERITS(x, char_integer64)) {
       const int64_t *xd = (int64_t *)REAL(x);
       for (int i=0; i<n; ++i)  if (xd[i]!=NA_INTEGER64) {
         return false;
@@ -70,7 +85,7 @@ bool allNA(SEXP x, bool errorForBadType) {
     return true;
   }
   case STRSXP: {
-    const SEXP *xd = STRING_PTR(x);
+    const SEXP *xd = STRING_PTR_RO(x);
     for (int i=0; i<n; ++i)    if (xd[i]!=NA_STRING) {
       return false;
     }
@@ -92,16 +107,20 @@ SEXP allNAR(SEXP x) {
  * adds validation for:
  *   correct range [1,ncol], and if type real checks whole integer
  *   existing columns for character
- *   optionally check for no duplicates
+ *   optionally (check_dups) check for no duplicates
+ *   optionally (skip_absent) skip (return 0) for numbers outside the range or not naming extant columns
  */
-SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups) {
+SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent) {
   if (!isNewList(x))
     error(_("'x' argument must be data.table compatible"));
   if (!IS_TRUE_OR_FALSE(check_dups))
-    error(_("'check_dups' argument must be TRUE or FALSE"));
+    error(_("%s must be TRUE or FALSE"), "check_dups");
+  if (!IS_TRUE_OR_FALSE(skip_absent))
+    error(_("%s must be TRUE or FALSE"), "skip_absent");
   int protecti = 0;
   R_len_t nx = length(x);
   R_len_t nc = length(cols);
+  bool bskip_absent = LOGICAL(skip_absent)[0];
   SEXP ricols = R_NilValue;
   if (isNull(cols)) { // seq_along(x)
     ricols = PROTECT(allocVector(INTSXP, nx)); protecti++;
@@ -111,16 +130,21 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups) {
     ricols = PROTECT(allocVector(INTSXP, 0)); protecti++;
   } else if (isInteger(cols) || isReal(cols)) {
     if (isInteger(cols)) {
-      ricols = cols;
+      if (bskip_absent) { // we might overwrite values with 0, so make a copy
+        ricols = PROTECT(duplicate(cols)); protecti++;
+      } else
+        ricols = cols;
     } else if (isReal(cols)) {
-      if (!isRealReallyInt(cols))
+      if (!fitsInInt32(cols))
         error(_("argument specifying columns is type 'double' and one or more items in it are not whole integers"));
       ricols = PROTECT(coerceVector(cols, INTSXP)); protecti++;
     }
     int *icols = INTEGER(ricols);
-    for (int i=0; i<nc; i++) {
-      if ((icols[i]>nx) || (icols[i]<1))
-        error(_("argument specifying columns specify non existing column(s): cols[%d]=%d"), i+1, icols[i]); // handles NAs also
+    for (int i=0; i<nc; ++i) {
+      if ((!bskip_absent && icols[i]>nx) || (icols[i]<1))
+        error(_("argument specifying columns received non-existing column(s): cols[%d]=%d"), i+1, icols[i]); // handles NAs also
+      else if(bskip_absent && icols[i]>nx)
+        icols[i] = 0L;
     }
   } else if (isString(cols)) {
     SEXP xnames = PROTECT(getAttrib(x, R_NamesSymbol)); protecti++;
@@ -128,15 +152,17 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups) {
       error(_("'x' argument data.table has no names"));
     ricols = PROTECT(chmatch(cols, xnames, 0)); protecti++;
     int *icols = INTEGER(ricols);
-    for (int i=0; i<nc; i++) {
-      if (icols[i]==0)
-        error(_("argument specifying columns specify non existing column(s): cols[%d]='%s'"), i+1, CHAR(STRING_ELT(cols, i))); // handles NAs also
+    if (!bskip_absent) {
+      for (int i=0; i<nc; ++i) {
+        if (icols[i]==0)
+          error(_("argument specifying columns received non-existing column(s): cols[%d]='%s'"), i+1, CHAR(STRING_ELT(cols, i))); // handles NAs also
+      }
     }
   } else {
     error(_("argument specifying columns must be character or numeric"));
   }
   if (LOGICAL(check_dups)[0] && any_duplicated(ricols, FALSE))
-    error(_("argument specifying columns specify duplicated column(s)"));
+    error(_("argument specifying columns received duplicate column(s)"));
   UNPROTECT(protecti);
   return ricols;
 }
@@ -152,30 +178,28 @@ inline bool INHERITS(SEXP x, SEXP char_) {
   // ii) no attrib writes must be possible in other threads.
   SEXP klass;
   if (isString(klass = getAttrib(x, R_ClassSymbol))) {
-    for (int i=0; i<LENGTH(klass); i++) {
+    for (int i=0; i<LENGTH(klass); ++i) {
       if (STRING_ELT(klass, i) == char_) return true;
+    }
+    if (char_==char_integer64) {
+      // package:nanotime is S4 and inherits from integer64 via S3 extends; i.e. integer64 does not appear in its R_ClassSymbol
+      // R's C API inherits() does not cover S4 and returns FALSE for nanotime
+      // R's R-level inherits() calls objects.c:inherits2 which calls attrib.c:R_data_class2 and
+      // then attrib.c:S4_extends which itself calls R level methods:::.extendsForS3 which then calls R level methods::extends.
+      // Since that chain of calls is so complicated and involves evaluating R level (not thread-safe) we
+      // special case nanotime here. We used to have Rinherits() as well which did call R level but couldn't be called from
+      // parallel regions. That became too hard to reason about two functions, #4752.
+      // If any other classes come to light that, like nanotime, S4 inherit from integer64, we can i) encourage them to change
+      // to regular S3, or ii) state we simply don't support that; i.e. nanotime was an exception, or iii) add a function that
+      // gets called on C entry points which loops through columns and if any are S4 calls the old Rinherits() to see if they S4
+      // inherit from integer64, and if so add that class to a vector that gets looped through here. That way we isolate the
+      // non-TS call into argument massage header code, and we can continue to use INHERITS() throughout the code base.
+      for (int i=0; i<LENGTH(klass); ++i) {
+        if (STRING_ELT(klass, i) == char_nanotime) return true;
+      }
     }
   }
   return false;
-}
-
-bool Rinherits(SEXP x, SEXP char_) {
-  // motivation was nanotime which is S4 and inherits from integer64 via S3 extends
-  // R's C API inherits() does not cover S4 and returns FALSE for nanotime, as does our own INHERITS above.
-  // R's R-level inherits() calls objects.c:inherits2 which calls attrib.c:R_data_class2 and
-  // then attrib.c:S4_extends which itself calls R level methods:::.extendsForS3 which then calls R level methods::extends.
-  // Since that chain of calls is so complicated and involves evaluating R level anyway, let's just reuse it.
-  // Rinherits prefix with 'R' to signify i) it may call R level and is therefore not thread safe, and ii) includes R level inherits which covers S4.
-  bool ans = INHERITS(x, char_);        // try standard S3 class character vector first
-  if (!ans && char_==char_integer64)    // save the eval() for known S4 classes that inherit from integer64
-    ans = INHERITS(x, char_nanotime);   // comment this out to test the eval() works for nanotime
-  if (!ans && IS_S4_OBJECT(x)) {        // if it's not S4 we can save the overhead of R eval()
-    SEXP vec = PROTECT(ScalarString(char_));           // TODO: cover this branch by making two new test S4 classes: one that
-    SEXP call = PROTECT(lang3(sym_inherits, x, vec));  //       does inherit from integer64 and one that doesn't
-    ans = LOGICAL(eval(call, R_GlobalEnv))[0]==1;
-    UNPROTECT(2);
-  }
-  return ans;
 }
 
 SEXP copyAsPlain(SEXP x) {
@@ -198,12 +222,20 @@ SEXP copyAsPlain(SEXP x) {
   }
   const int64_t n = XLENGTH(x);
   SEXP ans = PROTECT(allocVector(TYPEOF(x), n));
+  // aside: unlike R's duplicate we do not copy truelength here; important for dogroups.c which uses negative truelenth to mark its specials
+  if (ALTREP(ans))
+    internal_error(__func__, "copyAsPlain returning ALTREP for type '%s'", type2char(TYPEOF(x))); // # nocov
+  if (!n) { // cannot memcpy invalid pointer, #6819
+    DUPLICATE_ATTRIB(ans, x);
+    UNPROTECT(1);
+    return ans;
+  }
   switch (TYPEOF(x)) {
   case RAWSXP:
     memcpy(RAW(ans),     RAW(x),     n*sizeof(Rbyte));
     break;
   case LGLSXP:
-    memcpy(LOGICAL(ans), LOGICAL(x), n*sizeof(Rboolean));
+    memcpy(LOGICAL(ans), LOGICAL(x), n*sizeof(int));
     break;
   case INTSXP:
     memcpy(INTEGER(ans), INTEGER(x), n*sizeof(int));             // covered by 10:1 after test 178
@@ -215,7 +247,7 @@ SEXP copyAsPlain(SEXP x) {
     memcpy(COMPLEX(ans), COMPLEX(x), n*sizeof(Rcomplex));
     break;
   case STRSXP: {
-    const SEXP *xp=STRING_PTR(x);                                // covered by as.character(as.hexmode(1:500)) after test 642
+    const SEXP *xp=STRING_PTR_RO(x);                              // covered by as.character(as.hexmode(1:500)) after test 642
     for (int64_t i=0; i<n; ++i) SET_STRING_ELT(ans, i, xp[i]);
   } break;
   case VECSXP: {
@@ -223,12 +255,9 @@ SEXP copyAsPlain(SEXP x) {
     for (int64_t i=0; i<n; ++i) SET_VECTOR_ELT(ans, i, copyAsPlain(xp[i]));
   } break;
   default:                                                                                           // # nocov
-    error(_("Internal error: unsupported type '%s' passed to copyAsPlain()"), type2char(TYPEOF(x))); // # nocov
+    internal_error(__func__, "type '%s' not supported in %s", type2char(TYPEOF(x)), "copyAsPlain()"); // # nocov
   }
   DUPLICATE_ATTRIB(ans, x);
-  // aside: unlike R's duplicate we do not copy truelength here; important for dogroups.c which uses negative truelenth to mark its specials
-  if (ALTREP(ans))
-    error(_("Internal error: copyAsPlain returning ALTREP for type '%s'"), type2char(TYPEOF(x))); // # nocov
   UNPROTECT(1);
   return ans;
 }
@@ -272,7 +301,11 @@ void copySharedColumns(SEXP x) {
       if (shared[i])
         SET_VECTOR_ELT(x, i, copyAsPlain(xp[i]));
     }
-    if (GetVerbose()) Rprintf(_("Found and copied %d column%s with a shared memory address\n"), nShared, nShared>1?"s":"");
+    if (GetVerbose())
+      Rprintf(Pl_(nShared,
+                  "Found and copied %d column with a shared memory address\n",
+                  "Found and copied %d columns with a shared memory address\n"),
+              nShared);
     // GetVerbose() (slightly expensive call of all options) called here only when needed
   }
 }
@@ -298,7 +331,7 @@ SEXP islockedR(SEXP DT) {
 
 bool need2utf8(SEXP x) {
   const int xlen = length(x);
-  SEXP *xd = STRING_PTR(x);
+  const SEXP *xd = STRING_PTR_RO(x);
   for (int i=0; i<xlen; i++) {
     if (NEED2UTF8(xd[i]))
       return(true);
@@ -311,7 +344,7 @@ SEXP coerceUtf8IfNeeded(SEXP x) {
     return(x);
   const int xlen = length(x);
   SEXP ans = PROTECT(allocVector(STRSXP, xlen));
-  SEXP *xd = STRING_PTR(x);
+  const SEXP *xd = STRING_PTR_RO(x);
   for (int i=0; i<xlen; i++) {
     SET_STRING_ELT(ans, i, ENC2UTF8(xd[i]));
   }
@@ -319,7 +352,7 @@ SEXP coerceUtf8IfNeeded(SEXP x) {
   return(ans);
 }
 
-// class1 is used by coerseAs only, which is used by frollR.c and nafill.c only
+// class1 is used by coerceAs only, which is used by frollR.c and nafill.c only
 const char *class1(SEXP x) {
   SEXP cl = getAttrib(x, R_ClassSymbol);
   if (length(cl))
@@ -348,31 +381,29 @@ const char *class1(SEXP x) {
   }
 }
 
-// main motivation for this function is to have coercion helper that is aware of int64 NAs, unline base R coerce #3913
+// main motivation for this function is to have coercion helper that is aware of int64 NAs, unlike base R coerce #3913
 SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg) {
   // copyArg does not update in place, but only IF an object is of the same type-class as class to be coerced, it will return with no copy
   if (!isVectorAtomic(x))
-    error("'x' is not atomic");
-  if (!isVectorAtomic(as))
-    error("'as' is not atomic");
+    error(_("'x' is not atomic"));
   if (!isNull(getAttrib(x, R_DimSymbol)))
-    error("'x' must not be matrix or array");
+    error(_("'x' must not be matrix or array"));
   if (!isNull(getAttrib(as, R_DimSymbol)))
-    error("'as' must not be matrix or array");
+    error(_("input must not be matrix or array"));
   bool verbose = GetVerbose()>=2; // verbose level 2 required
   if (!LOGICAL(copyArg)[0] && TYPEOF(x)==TYPEOF(as) && class1(x)==class1(as)) {
     if (verbose)
-      Rprintf("copy=false and input already of expected type and class %s[%s]\n", type2char(TYPEOF(x)), class1(x));
+      Rprintf(_("copy=false and input already of expected type and class %s[%s]\n"), type2char(TYPEOF(x)), class1(x));
     copyMostAttrib(as, x); // so attrs like factor levels are same for copy=T|F
     return(x);
   }
   int len = LENGTH(x);
   SEXP ans = PROTECT(allocNAVectorLike(as, len));
   if (verbose)
-    Rprintf("Coercing %s[%s] into %s[%s]\n", type2char(TYPEOF(x)), class1(x), type2char(TYPEOF(as)), class1(as));
+    Rprintf(_("Coercing %s[%s] into %s[%s]\n"), type2char(TYPEOF(x)), class1(x), type2char(TYPEOF(as)), class1(as));
   const char *ret = memrecycle(/*target=*/ans, /*where=*/R_NilValue, /*start=*/0, /*len=*/LENGTH(x), /*source=*/x, /*sourceStart=*/0, /*sourceLen=*/-1, /*colnum=*/0, /*colname=*/"");
   if (ret)
-    warning(_("%s"), ret);
+    warning("%s", ret); // # notranslate
   UNPROTECT(1);
   return ans;
 }
@@ -380,12 +411,56 @@ SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg) {
 #ifndef NOZLIB
 #include <zlib.h>
 #endif
-SEXP dt_zlib_version() {
-  char out[51];
+SEXP dt_zlib_version(void) {
+  char out[71];
 #ifndef NOZLIB
-  snprintf(out, 50, "zlibVersion()==%s ZLIB_VERSION==%s", zlibVersion(), ZLIB_VERSION);
+  snprintf(out, 70, "zlibVersion()==%s ZLIB_VERSION==%s", zlibVersion(), ZLIB_VERSION); // # notranslate
 #else
-  snprintf(out, 50, "zlib header files were not found when data.table was compiled");
+  snprintf(out, 70, _("zlib header files were not found when data.table was compiled"));
 #endif
   return ScalarString(mkChar(out));
+}
+SEXP dt_has_zlib(void) {
+#ifndef NOZLIB
+  return ScalarLogical(1);
+#else
+  return ScalarLogical(0);
+#endif
+}
+
+SEXP startsWithAny(const SEXP x, const SEXP y, SEXP start) {
+  // for is_url in fread.R added in #5097
+  // startsWith was added to R in 3.3.0 so we need something to support R 3.1.0
+  // short and simple ascii-only
+  if (!isString(x) || !isString(y) || length(x)!=1 || length(y)<1 || !isLogical(start) || length(start)!=1 || LOGICAL(start)[0]==NA_LOGICAL)
+    internal_error(__func__, "types or lengths incorrect");
+  const char *xd = CHAR(STRING_ELT(x, 0));
+  const int n=length(y);
+  if (LOGICAL(start)[0]) {
+    for (int i=0; i<n; ++i) {
+      const char *yd = CHAR(STRING_ELT(y, i));
+      if (strncmp(xd, yd, strlen(yd))==0)
+        return ScalarInteger(i+1);
+    }
+  } else {
+    const int xlen = strlen(xd);
+    for (int i=0; i<n; ++i) {
+      const char *yd = CHAR(STRING_ELT(y, i));
+      const int ylen=strlen(yd);
+      if (xlen>=ylen && strncmp(xd+xlen-ylen, yd, ylen)==0)
+        return ScalarInteger(i+1);
+    }
+  }
+  return ScalarLogical(false);
+}
+
+void internal_error(const char *call_name, const char *format, ...) {
+  char buff[1024];
+  va_list args;
+  va_start(args, format);
+
+  vsnprintf(buff, 1023, format, args);
+  va_end(args);
+
+  error("%s %s: %s. %s", _("Internal error in"), call_name, buff, _("Please report to the data.table issues tracker."));
 }

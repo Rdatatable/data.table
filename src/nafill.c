@@ -40,7 +40,7 @@ void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, b
     }
   }
   if (verbose)
-    snprintf(ans->message[0], 500, "%s: took %.3fs\n", __func__, omp_get_wtime()-tic);
+    snprintf(ans->message[0], 500, _("%s: took %.3fs\n"), __func__, omp_get_wtime()-tic);
 }
 void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill, ans_t *ans, bool verbose) {
   double tic=0.0;
@@ -66,7 +66,7 @@ void nafillInteger(int32_t *x, uint_fast64_t nx, unsigned int type, int32_t fill
     }
   }
   if (verbose)
-    snprintf(ans->message[0], 500, "%s: took %.3fs\n", __func__, omp_get_wtime()-tic);
+    snprintf(ans->message[0], 500, _("%s: took %.3fs\n"), __func__, omp_get_wtime()-tic);
 }
 void nafillInteger64(int64_t *x, uint_fast64_t nx, unsigned int type, int64_t fill, ans_t *ans, bool verbose) {
   double tic=0.0;
@@ -88,7 +88,7 @@ void nafillInteger64(int64_t *x, uint_fast64_t nx, unsigned int type, int64_t fi
     }
   }
   if (verbose)
-    snprintf(ans->message[0], 500, "%s: took %.3fs\n", __func__, omp_get_wtime()-tic);
+    snprintf(ans->message[0], 500, _("%s: took %.3fs\n"), __func__, omp_get_wtime()-tic);
 }
 void nafillString(const SEXP *x, uint_fast64_t nx, unsigned int type, SEXP fill, ans_t *ans, bool verbose) {
   double tic=0.0;
@@ -122,6 +122,11 @@ void nafillString(const SEXP *x, uint_fast64_t nx, unsigned int type, SEXP fill,
     snprintf(ans->message[0], 500, "%s: took %.3fs\n", __func__, omp_get_wtime()-tic);
 }
 
+/*
+  OpenMP is being used here to parallelize the loop that fills missing values
+    over columns of the input data. This includes handling different data types
+    and applying the designated filling method to each column in parallel. 
+*/
 SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, SEXP cols) {
   int protecti=0;
   const bool verbose = GetVerbose();
@@ -135,7 +140,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
 
   bool binplace = LOGICAL(inplace)[0];
   if (!IS_TRUE_OR_FALSE(nan_is_na_arg))
-    error("nan_is_na must be TRUE or FALSE"); // # nocov
+    error(_("%s must be TRUE or FALSE"), "nan_is_na"); // # nocov
   bool nan_is_na = LOGICAL(nan_is_na_arg)[0];
 
   SEXP x = R_NilValue;
@@ -149,7 +154,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
     obj = PROTECT(allocVector(VECSXP, 1)); protecti++; // wrap into list
     SET_VECTOR_ELT(obj, 0, obj1);
   }
-  SEXP ricols = PROTECT(colnamesInt(obj, cols, ScalarLogical(TRUE))); protecti++; // nafill cols=NULL which turns into seq_along(obj)
+  SEXP ricols = PROTECT(colnamesInt(obj, cols, /* check_dups= */ ScalarLogical(TRUE), /* skip_absent= */ ScalarLogical(FALSE))); protecti++; // nafill cols=NULL which turns into seq_along(obj)
   x = PROTECT(allocVector(VECSXP, length(ricols))); protecti++;
   int *icols = INTEGER(ricols);
   bool hadChar = false;
@@ -218,7 +223,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
     }
   }
 
-  unsigned int itype;
+  unsigned int itype=-1;
   if (!strcmp(CHAR(STRING_ELT(type, 0)), "const"))
     itype = 0;
   else if (!strcmp(CHAR(STRING_ELT(type, 0)), "locf"))
@@ -226,11 +231,11 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
   else if (!strcmp(CHAR(STRING_ELT(type, 0)), "nocb"))
     itype = 2;
   else
-    error(_("Internal error: invalid type argument in nafillR function, should have been caught before. Please report to data.table issue tracker.")); // # nocov
+    internal_error(__func__, "invalid %s argument in %s function should have been caught earlier", "type", "nafillR"); // # nocov
 
   bool *isInt64 = (bool *)R_alloc(nx, sizeof(bool));
   for (R_len_t i=0; i<nx; i++)
-    isInt64[i] = Rinherits(VECTOR_ELT(x, i), char_integer64);
+    isInt64[i] = INHERITS(VECTOR_ELT(x, i), char_integer64);
   const void **fillp = (const void **)R_alloc(nx, sizeof(void*)); // fill is (or will be) a list of length nx of matching types, scalar values for each column, this pointer points to each of those columns data pointers
   bool hasFill = true, badFill = false;
   if (isLogical(fill)) {
@@ -265,8 +270,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
         SET_VECTOR_ELT(fill, i, fill1);
     }
     if (!isNewList(fill))
-      error("internal error: 'fill' should be recycled as list already"); // # nocov
-    //Rprintf("hasFill branch2\n");
+      internal_error(__func__, "'fill' should be recycled as list already"); // # nocov
     for (R_len_t i=0; i<nx; i++) {
       //Rprintf("coercing fill[i]=\n");
       //Rf_PrintValue(VECTOR_ELT(fill, i));
@@ -329,8 +333,11 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
   ansMsg(vans, nx, verbose, __func__);
 
   if (verbose)
-    Rprintf(_("%s: parallel processing of %d column(s) took %.3fs\n"), __func__, nx, omp_get_wtime()-tic);
-  //Rprintf("before return\n");
+    Rprintf(Pl_(nx,
+                "%s: parallel processing of %d column took %.3fs\n",
+                "%s: parallel processing of %d columns took %.3fs\n"),
+            __func__, nx, omp_get_wtime()-tic);
+
   UNPROTECT(protecti);
   if (binplace) {
     return obj;

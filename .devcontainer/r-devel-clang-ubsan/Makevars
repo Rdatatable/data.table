@@ -1,0 +1,6 @@
+CC=clang -fsanitize=address,undefined -fno-sanitize=float-divide-by-zero -fno-sanitize=alignment -fno-omit-frame-pointer
+CXX=clang++ -fsanitize=address,undefined -fno-sanitize=float-divide-by-zero -fno-sanitize=alignment -fno-omit-frame-pointer -frtti
+CFLAGS=-g -O3 -Wall -pedantic
+FFLAGS=-g -O2
+CXXFLAGS=-g -O3 -Wall -pedantic
+LDFLAGS=-L/usr/lib/gcc/x86_64-linux-gnu/11/libubsan.so -lubsan

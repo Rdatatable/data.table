@@ -1,6 +1,7 @@
 # data.table defined last(x) with no arguments, just for last. If you need the last 10 then use tail(x,10).
 # for xts class objects it will dispatch to xts::last
 # reworked to avoid loading xts namespace (#3857) then again to fix dispatching of xts class (#4053)
+# nocov start. Tests 19.* in other.Rraw, not in the main suite.
 last = function(x, n=1L, ...) {
   verbose = isTRUE(getOption("datatable.verbose", FALSE))
   if (!inherits(x, "xts")) {
@@ -35,7 +36,7 @@ last = function(x, n=1L, ...) {
     }
   } else {
     if (!requireNamespace("xts", quietly=TRUE))
-      stop(domain=NA, gettextf("'xts' class passed to %s function but 'xts' is not available, you should have 'xts' installed already", "data.table::last")) # nocov
+      stopf("'xts' class passed to %s function but 'xts' is not available, you should have 'xts' installed already", "data.table::last") # nocov
     if (verbose)
       catf("%s: using %s: %s\n", "last", "xts::last", "is.xts(x)")
     xts::last(x, n=n, ...)
@@ -76,9 +77,10 @@ first = function(x, n=1L, ...) {
     }
   } else {
     if (!requireNamespace("xts", quietly=TRUE))
-      stop(domain=NA, gettextf("'xts' class passed to %s function but 'xts' is not available, you should have 'xts' installed already", "data.table::first")) # nocov
+      stopf("'xts' class passed to %s function but 'xts' is not available, you should have 'xts' installed already", "data.table::first") # nocov
     if (verbose)
       catf("%s: using %s: %s\n", "first", "xts::first", "is.xts(x)")
     xts::first(x, n=n, ...)
   }
 }
+# nocov end

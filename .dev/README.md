@@ -1,5 +1,15 @@
 # data.table developer
 
+## Setup
+
+To use the optional helper function `cc()`, one needs to set up the project path and source `.dev/cc.R` to use `cc()` conveniently. This works through creating an additional `.Rprofile` in the `data.table` directory.
+
+```r
+# content of .Rprofile in the package directory
+Sys.setenv(PROJ_PATH="~/git/data.table")
+source(".dev/cc.R")
+```
+
 ## Utilities
 
 ### [`cc.R`](./cc.R)
@@ -7,7 +17,7 @@
 Developer helper script providing `cc` function. If one starts R session in `data.table` project root directory `.dev/cc.R` file should be automatically sourced (due to local `.Rprofile` file) making `cc()` (and `dd()`) function available straightaway.
 
 ```r
-cc(test=FALSE, clean=FALSE, debug=FALSE, omp=!debug, cc_dir, path=Sys.getenv("PROJ_PATH"), CC="gcc")
+cc(test=FALSE, clean=FALSE, debug=FALSE, omp=!debug, path=Sys.getenv("PROJ_PATH", unset=normalizePath(".")), CC="gcc", quiet=FALSE)
 ```
 
 Use `cc()` to re-compile all C sources and attach all `data.table` R functions (including non-exported ones).
