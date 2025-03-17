@@ -796,7 +796,7 @@ When we need to update `Products` with multiple columns from `ProductPriceHistor
 cols <- setdiff(names(ProductPriceHistory), 'product_id')
 Products[ProductPriceHistory,
          on = .(id = product_id),
-         (cols) := mget(cols)]
+         (cols) := lapply(cols, function(cn) get(paste0("i.", cn)))]
 ```
 - Efficiently updates multiple columns in `Products` from `ProductPriceHistory`.
 - `mget(cols)` retrieves multiple matching columns dynamically.
