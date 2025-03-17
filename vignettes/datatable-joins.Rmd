@@ -702,7 +702,8 @@ Products[!"popcorn",
 
 The `:=` operator in `data.table` is used for updating or adding columns by reference. This means it modifies the original `data.table` without creating a copy, which is very memory-efficient, especially for large datasets. When used inside a `data.table`, `:=` allows you to **add new columns** or **modify existing ones** as part of your query.
 
-#### Let's update our `Products` table with the latest price from `ProductPriceHistory`:
+Let's update our `Products` table with the latest price from `ProductPriceHistory`:
+
 ```{r Simple_One_to_One_Update}
 Products[ProductPriceHistory, on = .(id = product_id), price := i.price]
 ```
@@ -710,23 +711,62 @@ Products[ProductPriceHistory, on = .(id = product_id), price := i.price]
 - The `on = .(id = product_id)` ensures that updates happen based on matching IDs.
 - This method modifies `Products` in place, avoiding unnecessary copies.
 
-#### If we need to get the latest price and date (instead of all matches), we can still use := efficiently:
+Grouped Updates with `.EACHI`
+
+If we need to get the latest price and date (instead of all matches), we can use grouped updates efficiently:
+
 ```{r Updating_with_the_Latest_Record}
 Products[ProductPriceHistory,
          on = .(id = product_id),
          `:=`(price = last(i.price), last_updated = last(i.date)),
          by = .EACHI]
 ```
-- `last(i.price)` ensures that only the latest price is selected.
-- `last_updated` column is added to track the last update date.
-- `by = .EACHI` ensures that `last(i.price)` is applied separately for each product."
+Grouped Behavior `(by = .EACHI)`:
+- The grouping `(by = .EACHI)` ensures that updates are performed separately for each product (id).
+- Within each group, only the last record `(last(i.price)` and `last(i.date))` is selected for updating.
+- This is different from a simple one-to-one match, where only the first matching record is used.
 
-#### Understanding last() vs. tail()
+Behavior of `last()`:
+- The function `last()` returns the last element of a vector or column within each group.
+- It does not skip `NA` values.
+```{r}
+data.table::last(c(1, NA))  # Returns NA
+dt <- data.table(group = c(1, 1, 2, 2), value = c(10, NA, 20, NA))
+dt[, .(last_value = last(value)), by = group]
+#    group last_value
+# 1:     1         NA
+# 2:     2         NA
+```
+Difference from Simple Join:
+- A simple join `(on)` updates rows based on matching IDs without considering grouping or ordering.
+- Grouped updates allow operations like selecting the "latest" record within each group using `.EACHI`.
 
-- The key difference between `last()` and `tail()` is:
-- `last(x):` Returns the last element of x, including NA if it's the last element.
-- `tail(x, 1):` Also returns the last element but works more consistently with different object types.
-- For lists, `last(list)` returns the last element, while `tail(list, 1)` returns a list of length 1 containing the last    element.
+**Right Join** 
+To update the right table by reference without copying (similar to SQL right join workflows), use `.SD` and `.SDcols`. This approach avoids modifying the left table directly while dynamically selecting columns.
+
+```{r}
+# Get all columns from Products except the ID column
+product_cols <- setdiff(names(Products), "id")
+
+# Update ProductPriceHistory with product details from Products
+ProductPriceHistory[, (product_cols) := Products[.SD, on = .(id = product_id), .SD, .SDcols = product_cols]]
+```
+- The dynamic selection of columns `(.SDcols)` ensures flexibility when column names are not known upfront.
+- The right table `(ProductPriceHistory)` is updated in place using columns from the left table `(Products)` without creating unnecessary copies.
+- This method is memory-efficient and avoids modifying the left table directly.
+
+Understanding last() vs. tail()
+
+last(x):
+- Returns the last element of a `vector`, `list`, or `data.table` column directly.
+- Dispatches to `xts::last()` if xts is loaded and the object inherits from xts.
+- Includes `NA` if it is the last element.
+- Optimized for use within `data.table` operations.
+
+tail(x, 1):
+- Returns the last element of a `vector` or `data.table` column.
+- For lists, it returns a `list` containing the last element instead of the element directly.
+- Handles negative values (n) correctly to exclude elements from the end.
 
 ```{r Example_Behavior}
 # Test 1: Simple vector with NA at the end
@@ -734,23 +774,24 @@ x <- c(1, 2, 3, NA)
 last(x)  # Returns NA
 tail(x, 1)  # Returns NA
 
-# Test 2: data.table grouping behavior
+# Test 2: Grouping behavior in data.table
 dt <- data.table(group = c(1,1,2,2), value = c(10, NA, 20, NA))
-dt[, .(last_value = last(value)), by = group]  # last() does not skip NA
-dt[, .(tail_value = tail(value, 1)), by = group]  # tail() behaves similarly
+dt[, .(last_value = last(value)), by = group]  # Returns NA
+dt[, .(tail_value = tail(value, 1)), by = group]  # Returns NA
 
 # Test 3: Working with lists
 l <- list(a = 1, b = 2, c = 3)
 last(l)  # Returns 3
-tail(l, 1)  # Returns a list of length 1
+tail(l, 1)  # Returns a list containing the last element (`list(c = 3)`)
 
 # Test 4: Empty vector behavior
 z <- numeric(0)
-length(last(z))  # Returns 0
-length(tail(z, 1))  # Returns 0
+length(last(z))  # Returns length of 0
+length(tail(z, 1))  # Returns length of 0
 ```
 
-#### When we need to update Products with multiple columns from ProductPriceHistory
+When we need to update `Products` with multiple columns from `ProductPriceHistory`
+
 ```{r Efficient_Right_Join_Update }
 cols <- setdiff(names(ProductPriceHistory), 'product_id')
 Products[ProductPriceHistory,
@@ -759,7 +800,7 @@ Products[ProductPriceHistory,
 ```
 - Efficiently updates multiple columns in `Products` from `ProductPriceHistory`.
 - `mget(cols)` retrieves multiple matching columns dynamically.
-- This method is faster and more memory-efficient than Products <- `ProductPriceHistory[Products, on=...]`.
+- This method avoids creating a copy of the data, making it more memory-efficient for large datasets.
 - Note: `:=` updates `Products` in place, but does not modify `ProductPriceHistory`.
    - Unlike traditional RIGHT JOIN, `data.table` does not allow i (right table) to be updated directly.
 
