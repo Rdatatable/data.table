@@ -2942,6 +2942,8 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
   } else if (is.list(x) && length(x)==1L && is.matrix(x[[1L]])) {
     # a single list(matrix) is unambiguous and depended on by some revdeps, #3581
     x = as.data.table.matrix(x[[1L]])
+  } else if (is.list(x) && length(x)==1L && isS4(x[[1L]])) {
+    x = as.data.table.data.frame(as.data.frame(x[[1L]]))
   } else if (is.null(x) || (is.list(x) && !length(x))) {
     x = null.data.table()
   } else if (is.list(x)) {
