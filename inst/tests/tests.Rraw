@@ -21104,3 +21104,8 @@ DT = data.table(a = 1:5, b = 1:5, x = 1:5)
 test(2309.06, key(as.data.table(DT, key="a")), "a")   
 test(2309.07, key(as.data.table(DT)), NULL)          
 test(2309.08, key(as.data.table(DT, key=NULL)), NULL) 
+
+# as.data.frame(x) does not reset class(x) to "data.frame" #6874
+as.data.frame.no.reset = function(x) x
+DF = structure(list(a = 1:2), class = c("data.frame", "no.reset"), row.names = c(NA, -2L))
+test(2310.01, as.data.table(DF), data.table(a=1:2))

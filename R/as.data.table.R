@@ -215,7 +215,11 @@ as.data.table.list = function(x,
 
 as.data.table.data.frame = function(x, keep.rownames=FALSE, key=NULL, ...) {
   if (is.data.table(x)) return(as.data.table.data.table(x, key=key)) # S3 is weird, #6739. Also # nocov; this is tested in 2302.{2,3}, not sure why it doesn't show up in coverage.
-  if (!identical(class(x), "data.frame")) return(as.data.table(as.data.frame(x), keep.rownames=keep.rownames, key=key, ...))
+  if (!identical(class(x), "data.frame")) {
+    x = as.data.frame(x)
+    setattr(x,"class","data.frame") # cater for cases when as.data.frame is overridden #6874
+    return(as.data.table(x, keep.rownames=keep.rownames, key=key, ...))
+  }
   if (!isFALSE(keep.rownames)) {
     # can specify col name to keep.rownames, #575; if it's the same as key,
     #   kludge it to 'rn' since we only apply the new name afterwards, #4468
