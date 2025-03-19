@@ -232,7 +232,7 @@ SEXP setdt_nrows(SEXP x)
       }
       len_xi = INTEGER(dim_xi)[0];
     } else {
-      len_xi = LENGTH(xi);
+      len_xi = length(xi);
     }
     if (!base_length) {
       base_length = len_xi;
