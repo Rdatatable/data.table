@@ -1,0 +1,225 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: fread 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+
+#: fread.R:10
+msgid "Used more than one of the arguments input=, file=, text= and cmd=."
+msgstr ""
+
+#: fread.R:23
+msgid "Argument 'encoding' must be 'unknown', 'UTF-8' or 'Latin-1'."
+msgstr ""
+
+#: fread.R:42
+msgid "'text=' is type %s but must be character."
+msgstr ""
+
+#: fread.R:55
+msgid ""
+"input= must be a single character string containing a file name, a system "
+"command containing at least one space, a URL starting 'http[s]://', "
+"'ftp[s]://' or 'file://', or, the input data itself containing at least one "
+"\\n or \\r"
+msgstr ""
+
+#: fread.R:60
+msgid ""
+"input= contains no \\n or \\r, but starts with a space. Please remove the "
+"leading space, or use text=, file= or cmd="
+msgstr ""
+
+#: fread.R:64
+msgid ""
+"Taking input= as a system command because it contains a space ('%s'). If "
+"it's a filename please remove the space, or use file= explicitly. A variable "
+"is being passed to input= and when this is taken as a system command there "
+"is a security concern if you are creating an app, the app could have a "
+"malicious user, and the app is not running in a secure environment; e.g. the "
+"app is running as root. Please read item 5 in the NEWS file for v1.11.6 for "
+"more information and for the option to suppress this message."
+msgstr ""
+
+#: fread.R:77
+msgid ""
+"file= must be a single character string containing a filename, or URL "
+"starting 'http[s]://', 'ftp[s]://' or 'file://'"
+msgstr ""
+
+#: fread.R:90
+msgid "File '%s' does not exist or is non-readable. getwd()=='%s'"
+msgstr ""
+
+#: fread.R:91
+msgid "File '%s' is a directory. Not yet implemented."
+msgstr ""
+
+#: fread.R:93
+msgid "File '%s' has size 0. Returning a NULL %s."
+msgstr ""
+
+#: fread.R:105
+msgid ""
+"Compressed files containing more than 1 file are currently not supported."
+msgstr ""
+
+#: fread.R:115
+msgid ""
+"To read %s files directly, fread() requires 'R.utils' package which cannot "
+"be found. Please install 'R.utils' using 'install.packages('R.utils')'."
+msgstr ""
+
+#: fread.R:125
+msgid ""
+"'autostart' is now deprecated and ignored. Consider skip='string' or skip=n"
+msgstr ""
+
+#: fread.R:127
+msgid ""
+"colClasses is type 'logical' which is ok if all NA but it has some TRUE or "
+"FALSE values in it which is not allowed. Please consider the drop= or "
+"select= argument instead. See ?fread."
+msgstr ""
+
+#: fread.R:131
+msgid "colClasses is not type list or character vector"
+msgstr ""
+
+#: fread.R:136
+msgid ""
+"colClasses=\"NULL\" (quoted) is interpreted as colClasses=NULL (the default) "
+"as opposed to dropping every column."
+msgstr ""
+
+#: fread.R:148
+#, c-format
+msgid "na.strings[%d]==\"%s\" consists only of whitespace, ignoring"
+msgstr ""
+
+#: fread.R:151
+msgid ""
+"%s. Since strip.white=TRUE (default), use na.strings=\"\" to specify that "
+"any number of spaces in a string column should be read as <NA>."
+msgstr ""
+
+#: fread.R:153
+msgid ""
+"%s. strip.white==TRUE (default) and \"\" is present in na.strings, so any "
+"number of spaces in string columns will already be read as <NA>."
+msgstr ""
+
+#: fread.R:157
+msgid ""
+"%s. But strip.white=FALSE. Use strip.white=TRUE (default) together with na."
+"strings=\"\" to turn any number of spaces in string columns into <NA>"
+msgstr ""
+
+#: fread.R:164
+msgid ""
+"'data.table' relies on the package 'yaml' to parse the file header; please "
+"add this to your library with install.packages('yaml') and try again."
+msgstr ""
+
+#: fread.R:168
+msgid ""
+"Combining a search string as 'skip' and reading a YAML header may not work "
+"as expected -- currently, reading will proceed to search for 'skip' from the "
+"beginning of the file, NOT from the end of the metadata; please file an "
+"issue on GitHub if you'd like to see more intuitive behavior supported."
+msgstr ""
+
+#: fread.R:178
+msgid ""
+"Encountered <%s%s> at the first unskipped line (%d), which does not "
+"constitute the start to a valid YAML header (expecting something matching "
+"regex \"%s\"); please check your input and try again."
+msgstr ""
+
+#: fread.R:190
+msgid ""
+"Reached the end of the file before finding a completion to the YAML header. "
+"A valid YAML header is bookended by lines matching the regex \"%s\". Please "
+"double check the input file is a valid csvy."
+msgstr ""
+
+#: fread.R:201
+msgid ""
+"Processed %d lines of YAML metadata with the following top-level fields: %s"
+msgstr ""
+
+#: fread.R:204
+msgid "User-supplied 'header' will override that found in metadata."
+msgstr ""
+
+#: fread.R:222
+msgid ""
+"User-supplied column names in 'col.names' will override those found in YAML "
+"metadata."
+msgstr ""
+
+#: fread.R:231
+msgid ""
+"colClasses dictated by user input and those read from YAML header are in "
+"conflict (specifically, for column(s) [%s]); the proceeding assumes the user "
+"input was an intentional override and will ignore the type(s) implied by the "
+"YAML header; please exclude the column(s) from colClasses if this was "
+"unintentional."
+msgstr ""
+
+#: fread.R:252
+msgid "User-supplied 'sep' will override that found in metadata."
+msgstr ""
+
+#: fread.R:257
+msgid "User-supplied 'quote' will override that found in metadata."
+msgstr ""
+
+#: fread.R:262
+msgid "User-supplied 'dec' will override that found in metadata."
+msgstr ""
+
+#: fread.R:266
+msgid "User-supplied 'na.strings' will override that found in metadata."
+msgstr ""
+
+#: fread.R:318
+msgid ""
+"Column '%s' was requested to be '%s' but fread encountered the following "
+"warning:\n"
+"\t%s\n"
+"so the column has been left as type '%s'"
+msgstr ""
+
+#: fread.R:320
+msgid ""
+"Column '%s' was requested to be '%s' but fread encountered the following "
+"error:\n"
+"\t%s\n"
+"so the column has been left as type '%s'"
+msgstr ""
+
+#: fread.R:347
+msgid ""
+"key argument of data.table() must be a character vector naming columns (NB: "
+"col.names are applied before this)"
+msgstr ""
+
+#: fread.R:355
+msgid ""
+"index argument of data.table() must be a character vector naming columns "
+"(NB: col.names are applied before this)"
+msgstr ""
+
+#: fread.R:338
+msgid "stringsAsFactors=%s converted %d column: %s\n"
+msgid_plural "stringsAsFactors=%s converted %d columns: %s\n"
+msgstr[0] ""
+msgstr[1] ""
