@@ -219,7 +219,7 @@ as.data.table.data.frame = function(x, keep.rownames=FALSE, key=NULL, ...) {
     class_orig = class(x)
     x = as.data.frame(x)
     if (identical(class(x), class_orig)) setattr(x, "class", "data.frame") # cater for cases when as.data.frame can generate a loop #6874
-    return(as.data.table(x, keep.rownames=keep.rownames, key=key, ...))
+    return(as.data.table.data.frame(x, keep.rownames=keep.rownames, key=key, ...))
   }
   if (!isFALSE(keep.rownames)) {
     # can specify col name to keep.rownames, #575; if it's the same as key,
