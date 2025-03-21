@@ -448,7 +448,7 @@ replace_dot_alias = function(e) {
     if (is.data.frame(i)) {
       if (missing(on)) {
         if (!haskey(x)) {
-          stopf("When i is a data.table (or character vector), the columns to join by must be specified using 'on=' argument (see ?data.table), by keying x (i.e. sorted, and, marked as sorted, see ?setkey), or by sharing column names between x and i (i.e., a natural join). Keyed joins might have further speed benefits on very large data due to x being sorted in RAM.")
+          stopf("When i is a data.table (or character vector), the columns to join by must be specified using the 'on=' argument (see ?data.table); by keying x (i.e., x is sorted and marked as such, see ?setkey); or by using 'on = .NATURAL' to indicate using the shared column names between x and i (i.e., a natural join). Keyed joins might have further speed benefits on very large data due to x being sorted in RAM.")
         }
       } else if (identical(substitute(on), as.name(".NATURAL"))) {
         naturaljoin = TRUE
