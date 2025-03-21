@@ -700,109 +700,47 @@ Products[!"popcorn",
 
 ### 7.2. Updating by reference
 
-The `:=` operator in `data.table` is used for updating or adding columns by reference. This means it modifies the original `data.table` without creating a copy, which is very memory-efficient, especially for large datasets. When used inside a `data.table`, `:=` allows you to **add new columns** or **modify existing ones** as part of your query.
+Use `:=` to modify columns **by reference** (no copy) during joins. General syntax: `x[i, on=, (cols) := val]`.
 
-Let's update our `Products` table with the latest price from `ProductPriceHistory`:
+- Simple One-to-One Update  
+Update `Products` with prices from `ProductPriceHistory`:
 
-```{r Simple_One_to_One_Update}
-Products[ProductPriceHistory, on = .(id = product_id), price := i.price]
+```{r}
+Products[ProductPriceHistory, 
+         on = .(id = product_id), 
+         price := i.price]
 ```
-- The `price` column in `Products` is updated using the `price` column from `ProductPriceHistory`.
-- The `on = .(id = product_id)` ensures that updates happen based on matching IDs.
-- This method modifies `Products` in place, avoiding unnecessary copies.
+- i.price refers to price from i (ProductPriceHistory).
+- Modifies Products in-place.
 
-Grouped Updates with `.EACHI`
-
-If we need to get the latest price and date (instead of all matches), we can use grouped updates efficiently:
-
+- Grouped Updates with `.EACHI`
+Get last price/date for each product:
 ```{r Updating_with_the_Latest_Record}
 Products[ProductPriceHistory,
          on = .(id = product_id),
          `:=`(price = last(i.price), last_updated = last(i.date)),
          by = .EACHI]
 ```
-Grouped Behavior `(by = .EACHI)`:
-- The grouping `(by = .EACHI)` ensures that updates are performed separately for each product (id).
-- Within each group, only the last record `(last(i.price)` and `last(i.date))` is selected for updating.
-- This is different from a simple one-to-one match, where only the first matching record is used.
-
-Behavior of `last()`:
-- The function `last()` returns the last element of a vector or column within each group.
-- It does not skip `NA` values.
-```{r}
-data.table::last(c(1, NA))  # Returns NA
-dt <- data.table(group = c(1, 1, 2, 2), value = c(10, NA, 20, NA))
-dt[, .(last_value = last(value)), by = group]
-#    group last_value
-# 1:     1         NA
-# 2:     2         NA
-```
-Difference from Simple Join:
-- A simple join `(on)` updates rows based on matching IDs without considering grouping or ordering.
-- Grouped updates allow operations like selecting the "latest" record within each group using `.EACHI`.
-
-**Right Join** 
-To update the right table by reference without copying (similar to SQL right join workflows), use `.SD` and `.SDcols`. This approach avoids modifying the left table directly while dynamically selecting columns.
+- by = .EACHI groups by i's rows (1 group per Products row).
+- last() returns last value including NA:
 
 ```{r}
-# Get all columns from Products except the ID column
-product_cols <- setdiff(names(Products), "id")
-
-# Update ProductPriceHistory with product details from Products
-ProductPriceHistory[, (product_cols) := Products[.SD, on = .(id = product_id), .SD, .SDcols = product_cols]]
+data.table::last(c(1, NA))  # NA
 ```
-- The dynamic selection of columns `(.SDcols)` ensures flexibility when column names are not known upfront.
-- The right table `(ProductPriceHistory)` is updated in place using columns from the left table `(Products)` without creating unnecessary copies.
-- This method is memory-efficient and avoids modifying the left table directly.
+-  Efficient Right Join Update
+Add product details to ProductPriceHistory without copying:
 
-Understanding last() vs. tail()
-
-last(x):
-- Returns the last element of a `vector`, `list`, or `data.table` column directly.
-- Dispatches to `xts::last()` if xts is loaded and the object inherits from xts.
-- Includes `NA` if it is the last element.
-- Optimized for use within `data.table` operations.
-
-tail(x, 1):
-- Returns the last element of a `vector` or `data.table` column.
-- For lists, it returns a `list` containing the last element instead of the element directly.
-- Handles negative values (n) correctly to exclude elements from the end.
-
-```{r Example_Behavior}
-# Test 1: Simple vector with NA at the end
-x <- c(1, 2, 3, NA)
-last(x)  # Returns NA
-tail(x, 1)  # Returns NA
-
-# Test 2: Grouping behavior in data.table
-dt <- data.table(group = c(1,1,2,2), value = c(10, NA, 20, NA))
-dt[, .(last_value = last(value)), by = group]  # Returns NA
-dt[, .(tail_value = tail(value, 1)), by = group]  # Returns NA
-
-# Test 3: Working with lists
-l <- list(a = 1, b = 2, c = 3)
-last(l)  # Returns 3
-tail(l, 1)  # Returns a list containing the last element (`list(c = 3)`)
-
-# Test 4: Empty vector behavior
-z <- numeric(0)
-length(last(z))  # Returns length of 0
-length(tail(z, 1))  # Returns length of 0
+```{r}
+cols <- setdiff(names(Products), "id")
+ProductPriceHistory[, (cols) := 
+  Products[.SD, on = .(id = product_id), .SD, .SDcols = cols]]
 ```
+- .SD refers to ProductPriceHistory during the join.
+- Updates ProductPriceHistory by reference.
 
-When we need to update `Products` with multiple columns from `ProductPriceHistory`
-
-```{r Efficient_Right_Join_Update }
-cols <- setdiff(names(ProductPriceHistory), 'product_id')
-Products[ProductPriceHistory,
-         on = .(id = product_id),
-         (cols) := mget(paste0("i.", cols))]
-```
-- Efficiently updates multiple columns in `Products` from `ProductPriceHistory`.
-- `mget(cols)` retrieves multiple matching columns dynamically.
-- This method avoids creating a copy of the data, making it more memory-efficient for large datasets.
-- Note: `:=` updates `Products` in place, but does not modify `ProductPriceHistory`.
-   - Unlike traditional RIGHT JOIN, `data.table` does not allow i (right table) to be updated directly.
+- last(x) vs tail(x,1): Both return last element, but tail() returns list for lists.
+- := always modifies x, never i. For right joins, update i directly via i[, ... := x[.SD]].
+- .EACHI is crucial for per-row operations; simple joins use first match.
 
 ***
 
