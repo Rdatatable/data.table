@@ -197,7 +197,7 @@ flights[.("JFK", "LAX"), on = c("origin", "dest")][1:5]
 flights[.(origin = "JFK", dest = "LAX"), on = c("origin", "dest")]
 ```
 
-This makes it clear which values correspond to which element of `on`.
+This makes it clear which entries in `j` correspond to which element of `on`.
 
 ### b) Select in `j`
 
