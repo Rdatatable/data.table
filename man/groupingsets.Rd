@@ -34,6 +34,8 @@ groupingsets(x, \dots)
     The \code{label} argument can be a named list of scalars, or a scalar, or \code{NULL}. When \code{label} is a list, each element name must be (1) a variable name in \code{by}, or (2) the first element of the class in the data.table \code{x} of a variable in \code{by}, or (3) one of 'character', 'integer', 'numeric', 'factor', 'Date', 'IDate'. The order of the list elements is not important. A label specified by variable name will apply only to that variable, while a label specified by first element of a class will apply to all variables in \code{by} for which the first element of the class of the variable in \code{x} matches the \code{label} element name, except for variables that have a label specified by variable name (that is, specification by variable name takes precedence over specification by class). For \code{label} elements with name in \code{by}, the class of the label value must be the same as the class of the variable in \code{x}. For \code{label} elements with name not in \code{by}, the first element of the class of the label value must be the same as the \code{label} element name. For example, \code{label = list(integer = 999, IDate = as.Date("3000-01-01"))} would produce an error because \code{class(999)[1]} is not \code{"integer"} and \code{class(as.Date("3000-01-01"))[1]} is not \code{"IDate"}. A corrected specification would be \code{label = list(integer = 999L, IDate = as.IDate("3000-01-01"))}.
 
     The \code{label = <scalar>} option provides a shorter alternative in the case where only one class of grouping variable requires a label. For example, \code{label = list(character = "Total")} can be shortened to \code{label = "Total"}. When this option is used, the label will be applied to all variables in \code{by} for which the first element of the class of the variable in \code{x} matches the first element of the class of the scalar.
+
+    The \code{jj} argument provides a mechanism to handle scoping issues when working with variables from outer environments. When using \code{j} directly with variables not defined in the columns of the data.table, R's evaluation rules may not find these variables, resulting in "object not found" errors. The \code{jj} argument accepts a quoted expression created with \code{substitute()}, which captures both the expression and its environment. This approach is particularly useful in functions where parameters need to be referenced within aggregation expressions. When \code{jj} is provided, the function will ignore any value specified in the \code{j} argument.
 }
 \value{
     A data.table with various aggregates.
@@ -81,5 +83,12 @@ cube(DT, j = c(list(count=.N), lapply(.SD, sum)), by = c("color","year","status"
 # groupingsets
 groupingsets(DT, j = c(list(count=.N), lapply(.SD, sum)), by = c("color","year","status"),
              sets = list("color", c("year","status"), character()), id=TRUE)
+# Using jj argument(enables access to variables from outer environments)
+groupingsets(DT, jj = substitute(c(list(count=.N), lapply(.SD, sum))), by = c("color","year","status"),  # Basic jj usage with substitute()
+             sets = list("color", c("year","status"), character()), id = TRUE, .SDcols = "value") 
+groupingsets(DT, jj = substitute(lapply(.SD, sum)), by = c("color","year","status"),   # Simple aggregation with jj
+             sets = list("color", c("year","status"), character()), id = TRUE, .SDcols = "value")
+groupingsets(DT, jj = substitute(list(count = .N, total = sum(value))), by = c("color","year","status"), # jj with direct column references         
+             sets = list("color", c("year","status"), character()), id = TRUE)      
 }
 \keyword{ data }
