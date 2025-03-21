@@ -84,11 +84,14 @@ cube(DT, j = c(list(count=.N), lapply(.SD, sum)), by = c("color","year","status"
 groupingsets(DT, j = c(list(count=.N), lapply(.SD, sum)), by = c("color","year","status"),
              sets = list("color", c("year","status"), character()), id=TRUE)
 # Using jj argument(enables access to variables from outer environments)
-groupingsets(DT, jj = substitute(c(list(count=.N), lapply(.SD, sum))), by = c("color","year","status"),  # Basic jj usage with substitute()
+groupingsets(DT, jj = substitute(c(list(count=.N), lapply(.SD, sum))), 
+             by = c("color","year","status"),  # Basic jj usage with substitute()
              sets = list("color", c("year","status"), character()), id = TRUE, .SDcols = "value") 
-groupingsets(DT, jj = substitute(lapply(.SD, sum)), by = c("color","year","status"),   # Simple aggregation with jj
+groupingsets(DT, jj = substitute(lapply(.SD, sum)),
+             by = c("color","year","status"),   # Simple aggregation with jj
              sets = list("color", c("year","status"), character()), id = TRUE, .SDcols = "value")
-groupingsets(DT, jj = substitute(list(count = .N, total = sum(value))), by = c("color","year","status"), # jj with direct column references         
+groupingsets(DT, jj = substitute(list(count = .N, total = sum(value))),
+             by = c("color","year","status"), # jj with direct column references         
              sets = list("color", c("year","status"), character()), id = TRUE)      
 }
 \keyword{ data }
