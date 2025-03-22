@@ -84,9 +84,9 @@ cube(DT, j = c(list(count=.N), lapply(.SD, sum)), by = c("color","year","status"
 groupingsets(DT, j = c(list(count=.N), lapply(.SD, sum)), by = c("color","year","status"),
              sets = list("color", c("year","status"), character()), id=TRUE)
 
-# Using jj argument(enables access to variables from outer environments)
+# Using jj argument with quote() for direct calls
 groupingsets(DT, jj = quote(c(list(count=.N), lapply(.SD, sum))), 
-             by = c("color","year","status"),  # Basic jj usage with substitute()
+             by = c("color","year","status"),  # Basic jj usage with quote()
              sets = list("color", c("year","status"), character()), id = TRUE, .SDcols = "value") 
 groupingsets(DT, jj = quote(lapply(.SD, sum)),
              by = c("color","year","status"),   # Simple aggregation with jj
