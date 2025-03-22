@@ -35,7 +35,7 @@ groupingsets(x, \dots)
 
     The \code{label = <scalar>} option provides a shorter alternative in the case where only one class of grouping variable requires a label. For example, \code{label = list(character = "Total")} can be shortened to \code{label = "Total"}. When this option is used, the label will be applied to all variables in \code{by} for which the first element of the class of the variable in \code{x} matches the first element of the class of the scalar.
 
-    The \code{jj} argument provides a mechanism to handle scoping issues when working with variables from outer environments. When using \code{j} directly with variables not defined in the columns of the data.table, R's evaluation rules may not find these variables, resulting in "object not found" errors. The \code{jj} argument accepts a quoted expression which can be created with either \code{quote()} (for direct calls referencing only columns and special symbols) or \code{substitute()} (when inside functions that need to capture parameters from the outer environment). This approach is particularly useful in functions where parameters need to be referenced within aggregation expressions. When \code{jj} is provided, the function will ignore any value specified in the \code{j} argument.    
+    The \code{jj} argument provides a mechanism to handle scoping issues when working with variables from outer environments. When using \code{j} directly with variables not defined in the columns of the data.table, R's evaluation rules may not find these variables, resulting in "object not found" errors. The \code{jj} argument accepts a quoted expression which can be created with either \code{quote()} (for direct calls referencing only columns and special symbols) or \code{substitute()} (when inside functions that need to capture parameters from the outer environment). For reliable behavior with function parameters, especially in nested environments, use the two-argument form \code{substitute(expr, list(param=value))} which binds values rather than symbols. This approach is particularly useful in functions where parameters need to be referenced within aggregation expressions. When \code{jj} is provided, the function will ignore any value specified in the \code{j} argument.
 }
 \value{
     A data.table with various aggregates.
@@ -96,9 +96,11 @@ groupingsets(DT, jj = quote(list(count = .N, total = sum(value))),
              sets = list("color", c("year","status"), character()), id = TRUE)      
 
 # Example showing when substitute() is necessary - in a wrapper function
+# Note: Use substitute(expr, list(param=value)) to bind values, not symbols
 custom_grouping <- function(DT, multiplier = 1) {
-  # Here substitute() is needed to capture 'multiplier' from function environment
-  groupingsets(DT, jj = substitute(list(count = .N, total = sum(value) * multiplier)),
+  # use substitute() with environment to ensure variable are properly evaluated
+  groupingsets(DT, jj = substitute(list(count = .N, total = sum(value) * multiplier),
+               list(multiplier = multiplier)),
                by = c("color", "year", "status"),
                sets = list("color", c("year", "status"), character()), id = TRUE)
 }
