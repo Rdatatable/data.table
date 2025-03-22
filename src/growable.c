@@ -204,8 +204,6 @@ void register_altrep_classes(DllInfo * info) {
   R_set_altlist_Set_elt_method(dta_grow_list, altlist_Set_elt);
 }
 
-static R_altrep_class_t dta_grow_string, dta_grow_integer, dta_grow_logical, dta_grow_real, dta_grow_complex, dta_grow_raw, dta_grow_list;
-
 static R_altrep_class_t type2class(SEXPTYPE type) {
   switch(type) {
   case STRSXP:
