@@ -96,11 +96,11 @@ groupingsets(DT, jj = quote(list(count = .N, total = sum(value))),
              sets = list("color", c("year","status"), character()), id = TRUE)      
 
 # Example showing when substitute() is necessary - in a wrapper function
-custom_grouping <- function(dt, multiplier = 1) {
+custom_grouping <- function(DT, multiplier = 1) {
   # Here substitute() is needed to capture 'multiplier' from function environment
-  groupingsets(dt, jj = substitute(list(count = .N, total = sum(value) * multiplier)),
-               by = c("color", "year", "status"),sets = list("color", c("year", "status"), character()),
-               id = TRUE)
+  groupingsets(DT, jj = substitute(list(count = .N, total = sum(value) * multiplier)),
+               by = c("color", "year", "status"),
+               sets = list("color", c("year", "status"), character()), id = TRUE)
 }
 # Using the wrapper function
 custom_grouping(DT, multiplier = 2)
