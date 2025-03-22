@@ -126,3 +126,9 @@ setMethod(`%foo%`, c("Date", "CustomDurationClass"), function (e1, e2) e1 - e2@.
 test(8, as.IDate("2025-03-01") %foo% CustomDurationClass(1), as.IDate("2025-02-28"))
 removeGeneric("%foo%")
 removeClass("CustomDurationClass")
+
+# data.table(s4) #6874 should work
+s4cl = setClass("s4cl", slots=list(x="integer"))
+DT = setalloccol(structure(list(a=new("s4cl", x=1L)), row.names=c(NA, -1L), class=c("data.table", "data.frame")))
+test(9, data.table(a=s4cl(x=1L)), DT)
+removeClass("s4cl")
