@@ -35,7 +35,7 @@ groupingsets(x, \dots)
 
     The \code{label = <scalar>} option provides a shorter alternative in the case where only one class of grouping variable requires a label. For example, \code{label = list(character = "Total")} can be shortened to \code{label = "Total"}. When this option is used, the label will be applied to all variables in \code{by} for which the first element of the class of the variable in \code{x} matches the first element of the class of the scalar.
 
-    The \code{jj} argument provides a mechanism to handle scoping issues when working with variables from outer environments. When using \code{j} directly with variables not defined in the columns of the data.table, R's evaluation rules may not find these variables, resulting in "object not found" errors. The \code{jj} argument accepts a quoted expression created with \code{substitute()}, which captures both the expression and its environment. This approach is particularly useful in functions where parameters need to be referenced within aggregation expressions. When \code{jj} is provided, the function will ignore any value specified in the \code{j} argument.
+    The \code{jj} argument provides a mechanism to handle scoping issues when working with variables from outer environments. When using \code{j} directly with variables not defined in the columns of the data.table, R's evaluation rules may not find these variables, resulting in "object not found" errors. The \code{jj} argument accepts a quoted expression which can be created with either \code{quote()} (for direct calls referencing only columns and special symbols) or \code{substitute()} (when inside functions that need to capture parameters from the outer environment). This approach is particularly useful in functions where parameters need to be referenced within aggregation expressions. When \code{jj} is provided, the function will ignore any value specified in the \code{j} argument.    
 }
 \value{
     A data.table with various aggregates.
@@ -83,15 +83,26 @@ cube(DT, j = c(list(count=.N), lapply(.SD, sum)), by = c("color","year","status"
 # groupingsets
 groupingsets(DT, j = c(list(count=.N), lapply(.SD, sum)), by = c("color","year","status"),
              sets = list("color", c("year","status"), character()), id=TRUE)
+
 # Using jj argument(enables access to variables from outer environments)
-groupingsets(DT, jj = substitute(c(list(count=.N), lapply(.SD, sum))), 
+groupingsets(DT, jj = quote(c(list(count=.N), lapply(.SD, sum))), 
              by = c("color","year","status"),  # Basic jj usage with substitute()
              sets = list("color", c("year","status"), character()), id = TRUE, .SDcols = "value") 
-groupingsets(DT, jj = substitute(lapply(.SD, sum)),
+groupingsets(DT, jj = quote(lapply(.SD, sum)),
              by = c("color","year","status"),   # Simple aggregation with jj
              sets = list("color", c("year","status"), character()), id = TRUE, .SDcols = "value")
-groupingsets(DT, jj = substitute(list(count = .N, total = sum(value))),
+groupingsets(DT, jj = quote(list(count = .N, total = sum(value))),
              by = c("color","year","status"), # jj with direct column references         
              sets = list("color", c("year","status"), character()), id = TRUE)      
+
+# Example showing when substitute() is necessary - in a wrapper function
+custom_grouping <- function(dt, multiplier = 1) {
+  # Here substitute() is needed to capture 'multiplier' from function environment
+  groupingsets(dt, jj = substitute(list(count = .N, total = sum(value) * multiplier)),
+               by = c("color", "year", "status"),sets = list("color", c("year", "status"), character()),
+               id = TRUE)
+}
+# Using the wrapper function
+custom_grouping(DT, multiplier = 2)
 }
 \keyword{ data }
