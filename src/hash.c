@@ -71,6 +71,16 @@ static R_INLINE size_t hash_index2(SEXP key, uintptr_t multiplier) {
     return ((((uintptr_t)key) >> 6) & 0x0fffffff) * multiplier;
 }
 
+void hash_rehash(hashtab *h) {
+  size_t new_size = h->size * 2;
+  hashtab *new_h = hash_create_(new_size, 0.5);
+
+  for (size_t i = 0; i < h->size; ++i) {
+    if (h->tb1[i].key) hash_set(new_h, h->tb1[i].key, h->tb1[i].value);
+    if (h->tb2[i].key) hash_set(new_h, h->tb2[i].key, h->tb2[i].value);
+  }
+    *h = *new_h;
+}
 
 void hash_set(hashtab *h, SEXP key, R_xlen_t value) {
   size_t max_relocations = h->size; 
@@ -94,7 +104,9 @@ void hash_set(hashtab *h, SEXP key, R_xlen_t value) {
     h->tb2[idx2] = item;
     item = temp;
   }
-  internal_error(__func__, "Cuckoo hashing cycle detected, rehash needed");
+  // need to rehash
+  hash_rehash(h);
+  hash_set(h, key, value);
 }
 
 R_xlen_t hash_lookup(const hashtab *h, SEXP key, R_xlen_t ifnotfound) {
