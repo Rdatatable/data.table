@@ -95,6 +95,30 @@ R_xlen_t hash_lookup(const hashtab * h, SEXP key, R_xlen_t ifnotfound) {
   return ifnotfound; // # nocov
 }
 
+R_xlen_t hash_lookup_or_insert(hashtab *h, SEXP key, R_xlen_t value) {
+  struct hash_pair *cell = h->tb + hash_index(key, h->multiplier) % h->size, *end = h->tb + h->size - 1;
+  for (size_t i = 0; i < h->size; ++i, cell = (cell == end ? h->tb : cell + 1)) {
+    if (cell->key == key) {
+      cell->value = value;
+      return cell->value;
+    } else if (!cell->key) {
+      if (!h->free) internal_error(
+        __func__, "no free slots left (full size=%zu)", h->size
+      );
+      --h->free;
+      *cell = (struct hash_pair){.key = key, .value = value};
+      return value;  // insert here
+    }
+  }
+
+  internal_error( // # nocov
+    __func__, "did not find a free slot for key %p; size=%zu, free=%zu",
+    (void*)key, h->size, h->free
+  );
+  // Should be impossible, but just in case:
+  return value;
+}
+
 typedef struct dhashtab_ {
   dhashtab public; // must be at offset 0
   size_t size, used, limit;
