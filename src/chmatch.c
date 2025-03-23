@@ -59,8 +59,7 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
   int nuniq=0;
   for (int i=0; i<tablelen; ++i) {
     const SEXP s = td[i];
-    int tl = hash_lookup(marks, s, 0);
-    if (tl==0) hash_set(marks, s, chmatchdup ? -(++nuniq) : -i-1); // first time seen this string in table
+    hash_set(marks, s, chmatchdup ? -(++nuniq) : -i-1); // first time seen this string in table
   }
   // in future if we need NAs in x not to be matched to NAs in table ...
   if (chmatchdup) {
