@@ -99,8 +99,7 @@ R_xlen_t hash_lookup_or_insert(hashtab *h, SEXP key, R_xlen_t value) {
   struct hash_pair *cell = h->tb + hash_index(key, h->multiplier) % h->size, *end = h->tb + h->size - 1;
   for (size_t i = 0; i < h->size; ++i, cell = (cell == end ? h->tb : cell + 1)) {
     if (cell->key == key) {
-      cell->value = value;
-      return cell->value;
+      return cell->value; // found key, only lookup, no insert
     } else if (!cell->key) {
       if (!h->free) internal_error(
         __func__, "no free slots left (full size=%zu)", h->size

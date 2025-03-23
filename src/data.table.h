@@ -294,6 +294,8 @@ hashtab * hash_create(size_t n);
 void hash_set(hashtab *, SEXP key, R_xlen_t value);
 // Returns the value corresponding to the key present in the hash, otherwise returns ifnotfound.
 R_xlen_t hash_lookup(const hashtab *, SEXP key, R_xlen_t ifnotfound);
+// Returns the value corresponding to the key present in the hash, otherwise inserts value.
+R_xlen_t hash_lookup_or_insert(hashtab *, SEXP key, R_xlen_t value);
 
 // The dynamically-allocated hash table has a public field for the R protection wrapper.
 // Keep it PROTECTed while the table is in use.
