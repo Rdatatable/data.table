@@ -448,7 +448,7 @@ replace_dot_alias = function(e) {
     if (is.data.frame(i)) {
       if (missing(on)) {
         if (!haskey(x)) {
-          stopf("When i is a data.table (or character vector), the columns to join by must be specified using 'on=' argument (see ?data.table), by keying x (i.e. sorted, and, marked as sorted, see ?setkey), or by sharing column names between x and i (i.e., a natural join). Keyed joins might have further speed benefits on very large data due to x being sorted in RAM.")
+          stopf("When i is a data.table (or character vector), the columns to join by must be specified using the 'on=' argument (see ?data.table); by keying x (i.e., x is sorted and marked as such, see ?setkey); or by using 'on = .NATURAL' to indicate using the shared column names between x and i (i.e., a natural join). Keyed joins might have further speed benefits on very large data due to x being sorted in RAM.")
         }
       } else if (identical(substitute(on), as.name(".NATURAL"))) {
         naturaljoin = TRUE
@@ -686,10 +686,7 @@ replace_dot_alias = function(e) {
     if (is.null(jsub)) return(NULL)
 
     if (!with) {
-      if (jsub %iscall% ":=") {
-        # TODO(>=1.18.0): Simplify this error
-        stopf("with=FALSE together with := was deprecated in v1.9.4 released Oct 2014; this has been warning since v1.15.0. Please wrap the LHS of := with parentheses; e.g., DT[,(myVar):=sum(b),by=a] to assign to column name(s) held in variable myVar. See ?':=' for other examples.")
-      }
+      if (jsub %iscall% ":=") stopf("`:=` is only supported under with=TRUE, see ?`:=`.")
       # missingby was already checked above before dealing with i
       if (jsub %iscall% c("!", "-") && length(jsub)==2L) {  # length 2 to only match unary, #2109
         notj = TRUE
