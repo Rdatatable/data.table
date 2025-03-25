@@ -97,14 +97,14 @@ groupingsets(DT, jj = quote(list(count = .N, total = sum(value))),
 
 # Example showing when substitute() is necessary - in a wrapper function
 # Note: Use substitute(expr, list(param=value)) to bind values, not symbols
-custom_grouping <- function(DT, multiplier = 1) {
+custom_grouping <- function(DT, multiplier) {
   # use substitute() with environment to ensure variable are properly evaluated
-  groupingsets(DT, jj = substitute(list(count = .N, total = sum(value) * multiplier),
-               list(multiplier = multiplier)),
+  groupingsets(DT, jj = substitute(list(count = .N, total = sum(value) * m),
+               list(m = multiplier)),
                by = c("color", "year", "status"),
                sets = list("color", c("year", "status"), character()), id = TRUE)
 }
 # Using the wrapper function
-custom_grouping(DT, multiplier = 2)
+local({ foo <- 3; custom_grouping(DT, multiplier = foo) })
 }
 \keyword{ data }
