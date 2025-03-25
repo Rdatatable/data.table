@@ -21105,6 +21105,10 @@ test(2309.06, key(as.data.table(DT, key="a")), "a")
 test(2309.07, key(as.data.table(DT)), NULL)          
 test(2309.08, key(as.data.table(DT, key=NULL)), NULL) 
 
+# as.data.table(x, keep.rownames=TRUE) keeps rownames for class(x)==c("*", "data.frame")
+df = structure(list(i = 1:2), class = c("tbl", "data.frame"), row.names = c("a","b"))
+test(2309.09, as.data.table(df, keep.rownames=TRUE), data.table(rn = c("a","b"), i=1:2))
+
 # as.data.frame(x) does not reset class(x) to "data.frame" #6874
 as.data.frame.no.reset = function(x) x
 DF = structure(list(a = 1:2), class = c("data.frame", "no.reset"), row.names = c(NA, -2L))
