@@ -183,6 +183,13 @@ melt.data.table = function(data, id.vars, measure.vars, variable.name = "variabl
        verbose = getOption("datatable.verbose")) {
   if (!is.data.table(data)) stopf("'data' must be a data.table")
   if (missing(id.vars)) id.vars=NULL
+  id.sub = substitute(id.vars)
+  if (is.call(id.sub)) {
+    eval.result = eval_with_cols(id.sub, names(data))
+    if (!is.null(eval.result)) {
+      id.vars = eval.result
+    }
+  }
   if (missing(measure.vars)) measure.vars = NULL
   measure.sub = substitute(measure.vars)
   if (is.call(measure.sub)) {
