@@ -710,7 +710,7 @@ Products[ProductPriceHistory,
          on = .(id = product_id), 
          price := i.price]
 ```
-- i.price refers to price from i (ProductPriceHistory).
+- `i.price` refers to price from `i` `(ProductPriceHistory)`.
 - Modifies Products in-place.
 
 **Grouped Updates with `.EACHI`**
@@ -721,22 +721,22 @@ Products[ProductPriceHistory,
          `:=`(price = last(i.price), last_updated = last(i.date)),
          by = .EACHI]
 ```
-- by = .EACHI groups by i's rows (1 group per Products row).
-- last() returns last value including NA:
+- `by = .EACHI` groups by i's rows (1 group per Products row).
+- `last()` returns last value including `NA`:
 
 ```{r}
 data.table::last(c(1, NA))  # NA
 ```
 **Efficient Right Join Update**
-Add product details to ProductPriceHistory without copying:
+Add product details to `ProductPriceHistory` without copying:
 
 ```{r}
 cols <- setdiff(names(Products), "id")
 ProductPriceHistory[, (cols) := 
   Products[.SD, on = .(id = product_id), .SD, .SDcols = cols]]
 ```
-- .SD refers to ProductPriceHistory during the join.
-- Updates ProductPriceHistory by reference.
+- `.SD` refers to `ProductPriceHistory` during the join.
+- Updates `ProductPriceHistory` by reference.
 
 **Handling Edge Cases and Dynamic Column Updates**
 To dynamically update columns and handle missing values:
