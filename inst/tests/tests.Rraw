@@ -21113,3 +21113,7 @@ test(2309.09, as.data.table(df, keep.rownames=TRUE), data.table(rn = c("a","b"),
 as.data.frame.no.reset = function(x) x
 DF = structure(list(a = 1:2), class = c("data.frame", "no.reset"), row.names = c(NA, -2L))
 test(2310.01, as.data.table(DF), data.table(a=1:2))
+
+# avoid translateChar*() in OpenMP threads, #6883
+DF = list(rep(iconv(strrep("\uf8", 100), to = "latin1"), 100000))
+test(2311, fwrite(DF, nullfile(), encoding = "UTF-8"), NULL)
