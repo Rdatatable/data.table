@@ -21113,3 +21113,8 @@ test(2309.09, as.data.table(df, keep.rownames=TRUE), data.table(rn = c("a","b"),
 as.data.frame.no.reset = function(x) x
 DF = structure(list(a = 1:2), class = c("data.frame", "no.reset"), row.names = c(NA, -2L))
 test(2310.01, as.data.table(DF), data.table(a=1:2))
+
+# memrecycle() did not consider string encodings for factor levels #6886
+DT = data.table(factor(rep(enc2utf8('ø'), 3)))
+DT[1,V1 := iconv('ø', to='latin1')]
+test(2311, length(levels(DT$V1)), 1L)
