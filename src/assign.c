@@ -823,8 +823,10 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
       SEXP targetLevels = PROTECT(getAttrib(target, R_LevelsSymbol)); protecti++;
       SEXP sourceLevels = source;  // character source
       if (sourceIsFactor) { sourceLevels=PROTECT(getAttrib(source, R_LevelsSymbol)); protecti++; }
+      sourceLevels = PROTECT(coerceUtf8IfNeeded(sourceLevels)); protecti++;
       if (!sourceIsFactor || !R_compute_identical(sourceLevels, targetLevels, 0)) {  // !sourceIsFactor for test 2115.6
         const int nTargetLevels=length(targetLevels), nSourceLevels=length(sourceLevels);
+        targetLevels = PROTECT(coerceUtf8IfNeeded(targetLevels)); protecti++;
         const SEXP *targetLevelsD=STRING_PTR_RO(targetLevels), *sourceLevelsD=STRING_PTR_RO(sourceLevels);
         SEXP newSource = PROTECT(allocVector(INTSXP, length(source))); protecti++;
         savetl_init();
