@@ -21115,5 +21115,5 @@ DF = structure(list(a = 1:2), class = c("data.frame", "no.reset"), row.names = c
 test(2310.01, as.data.table(DF), data.table(a=1:2))
 
 # avoid translateChar*() in OpenMP threads, #6883
-DF = list(rep(iconv(strrep("\uf8", 100), to = "latin1"), 100000))
+DF = list(rep(iconv(strrep("\uf8", 100), from = "UTF-8", to = "latin1"), 100000))
 test(2311, fwrite(DF, nullfile(), encoding = "UTF-8"), NULL)
