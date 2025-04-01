@@ -2832,11 +2832,8 @@ test(944.1, DT[, foo:=NULL], DT, warning="Tried to assign NULL to column 'foo', 
 test(944.2, DT[,a:=1L], data.table(a=1L))  # can now add columns to an empty data.table from v1.12.2
 test(944.3, DT[,aa:=NULL], data.table(a=1L), warning="Tried to assign NULL to column 'aa', but this column does not exist to remove")
 test(944.4, DT[,a:=NULL], data.table(NULL))
-if (base::getRversion() >= "3.4.0" && base::getRversion() < "4.6.0") {
-  test(944.5, typeof(structure(NULL, class=c("data.table","data.frame"))), 'list', warning="deprecated, as NULL cannot have attributes")  # R warns which is good and we like
-} else if (base::getRversion() >= "4.6.0" && !is.na(Rsvn <- as.numeric(R.version$`svn rev`)) && Rsvn >= 88075) {
-  test(944.5, structure(NULL, class=c("data.table","data.frame")), error = "attempt to set an attribute on NULL")
-}
+# 944.5 used to test base R behaviour regarding structure(NULL, ...), which changed from warning to error in 4.6.0 and isn't used in data.table.
+
 DT = data.table(a=numeric())
 test(945, DT[,b:=a+1], data.table(a=numeric(),b=numeric()))
 
