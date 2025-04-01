@@ -2832,9 +2832,10 @@ test(944.1, DT[, foo:=NULL], DT, warning="Tried to assign NULL to column 'foo', 
 test(944.2, DT[,a:=1L], data.table(a=1L))  # can now add columns to an empty data.table from v1.12.2
 test(944.3, DT[,aa:=NULL], data.table(a=1L), warning="Tried to assign NULL to column 'aa', but this column does not exist to remove")
 test(944.4, DT[,a:=NULL], data.table(NULL))
-if (base::getRversion() >= "3.4.0") {
-  test(944.5, typeof(structure(NULL, class=c("data.table","data.frame"))), 'list', warning="deprecated, as NULL cannot have attributes")  # R warns which is good and we like
-}
+# deactivate test since r88075 errors on structure(NULL)
+# if (base::getRversion() >= "3.4.0") {
+#   test(944.5, typeof(structure(NULL, class=c("data.table","data.frame"))), 'list', warning="deprecated, as NULL cannot have attributes")  # R warns which is good and we like
+# }
 DT = data.table(a=numeric())
 test(945, DT[,b:=a+1], data.table(a=numeric(),b=numeric()))
 
