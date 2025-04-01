@@ -20,7 +20,7 @@ multiple columns simultaneously.
 \item{data}{ A \code{data.table} object to melt.}
 \item{id.vars}{vector of id variables. Can be integer (corresponding id
 column numbers) or character (id column names) vector, perhaps created using \code{patterns()}. If missing, all
-non-measure columns will be assigned to it. If integer, must be positive; see Details.}
+non-measure columns will be assigned to it. If integer, must be positive; see Details. }
 \item{measure.vars}{Measure variables for \code{melt}ing. Can be missing, vector, list, or pattern-based.
 
   \itemize{
