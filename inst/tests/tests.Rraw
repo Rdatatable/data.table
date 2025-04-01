@@ -21112,3 +21112,12 @@ test(2309.09, as.data.table(df, keep.rownames=TRUE), data.table(rn = c("a","b"),
 as.data.frame.no.reset = function(x) x
 DF = structure(list(a = 1:2), class = c("data.frame", "no.reset"), row.names = c(NA, -2L))
 test(2310.01, as.data.table(DF), data.table(a=1:2))
+
+# memrecycle() did not consider string encodings for factor levels #6886
+DT = data.table(factor(rep("\uf8", 3)))
+# identical() to V1's only level but stored in a different CHARSXP
+samelevel = iconv(levels(DT$V1), from = "UTF-8", to = "latin1")
+DT[1, V1 := samelevel]
+test(2311.1, nlevels(DT$V1), 1L) # used to be 2
+DT[1, V1 := factor("a", levels = c("a", samelevel))]
+test(2311.2, nlevels(DT$V1), 2L) # used to be 3
