@@ -21115,6 +21115,6 @@ DF = structure(list(a = 1:2), class = c("data.frame", "no.reset"), row.names = c
 test(2310.01, as.data.table(DF), data.table(a=1:2))
 
 # memrecycle() did not consider string encodings for factor levels #6886
-DT = data.table(factor(rep(enc2utf8('ø'), 3)))
-DT[1,V1 := iconv('ø', to='latin1')]
-test(2311, length(levels(DT$V1)), 1L)
+DT = data.table(factor(rep(enc2utf8("\uf8"), 3)))
+DT[1, V1 := iconv(levels(V1), from = "UTF-8", to = "latin1")]
+test(2311, nlevels(DT$V1), 1L)
