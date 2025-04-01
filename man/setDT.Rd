@@ -28,7 +28,8 @@ setDT(x, keep.rownames=FALSE, key=NULL, check.names=FALSE)
 }
 
 \seealso{
-  \code{\link{data.table}}, \code{\link{as.data.table}}, \code{\link{setDF}}, \code{\link{copy}}, \code{\link{setkey}}, \code{\link{setcolorder}}, \code{\link{setattr}}, \code{\link{setnames}}, \code{\link{set}}, \code{\link{:=}}, \code{\link{setorder}}
+  \code{\link{data.table}}, \code{\link{as.data.table}}, \code{\link{setDF}}, \code{\link{copy}}, \code{\link{setkey}}, \code{\link{setcolorder}}, \code{\link{setattr}}, \code{\link{setnames}}, \code{\link{set}}, \code{\link{:=}}, \code{\link{setorder}},
+  See the FAQ vignette: \code{vignette("datatable-faq", package = "data.table")}.
 }
 \examples{
 
@@ -58,6 +59,14 @@ setDT(X, key="a")[]
 X = list(a=1:5, a=6:10)
 setDT(X, check.names=TRUE)[]
 
+# FAQ: Dealing with data.table loaded from RDS or RData files
+# Example to demonstrate the usage of setDT after loading from RDS
+if (file.exists("my_data.rds")) {
+  X = readRDS("my_data.rds")  # Load data.table from RDS if file exists
+  setDT(X)  # Make sure to use setDT() after loading
+} else {
+  message("my_data.rds file does not exist. Skipping RDS loading example.")
+}
 }
 \keyword{ data }
 

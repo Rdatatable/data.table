@@ -44,7 +44,7 @@ alloc.col(DT,
     \code{setalloccol} \emph{reallocates} \code{DT} by reference. This may be useful for efficiency if you know you are about to going to add a lot of columns in a loop.
     It also returns the new \code{DT}, for convenience in compound queries.
 }
-\seealso{ \code{\link{copy}} }
+\seealso{ \code{\link{copy}}, See the FAQ vignette: \code{vignette("datatable-faq", package = "data.table")}.}
 \examples{
 DT = data.table(a=1:3,b=4:6)
 length(DT)                 # 2 column pointer slots used
@@ -54,5 +54,14 @@ length(DT)                 # 2 used
 truelength(DT)             # 2050 allocated, 2048 free
 DT[,c:=7L]                 # add new column by assigning to spare slot
 truelength(DT)-length(DT)  # 2047 slots spare
+
+# FAQ: Dealing with data.table loaded from RDS or RData files
+# Example to demonstrate the usage of setDT after loading from RDS
+if (file.exists("my_data.rds")) {
+  X = readRDS("my_data.rds")  # Load data.table from RDS if file exists
+  setDT(X)  # Make sure to use setDT() after loading
+} else {
+  message("my_data.rds file does not exist. Skipping RDS loading example.")
+}
 }
 \keyword{ data }
