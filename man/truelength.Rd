@@ -57,11 +57,19 @@ truelength(DT)-length(DT)  # 2047 slots spare
 
 # FAQ: Dealing with data.table loaded from RDS or RData files
 # Example to demonstrate the usage of setDT after loading from RDS
-if (file.exists("my_data.rds")) {
-  X = readRDS("my_data.rds")  # Load data.table from RDS if file exists
-  setDT(X)  # Make sure to use setDT() after loading
-} else {
-  message("my_data.rds file does not exist. Skipping RDS loading example.")
+# Step 1: Define file path
+rds_file <- "my_data.rds"
+# Step 2: Create and save data.table if the file does not exist
+if (!file.exists(rds_file)) {
+  X <- data.table(a = 1:5, b = letters[1:5])  # Create a data.table
+  saveRDS(X, rds_file)  # Save it to an RDS file
+  message("Saved data.table to ", rds_file)
 }
+# Step 3: Load the data.table from the RDS file
+X_loaded <- readRDS(rds_file)
+# Step 4: Restore data.table attributes
+setDT(X_loaded)
+# Verify structure
+print(X_loaded)
 }
 \keyword{ data }
