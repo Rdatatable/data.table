@@ -62,7 +62,7 @@ setDT(X, check.names=TRUE)[]
 # FAQ: Dealing with data.table loaded from RDS or RData files
 # Example to demonstrate the usage of setDT after loading from RDS
 # Step 1: Define file path
-rds_file <- "my_data.rds"
+rds_file = tempfile("my_data.rds_")
 # Step 2: Create and save data.table if the file does not exist
 if (!file.exists(rds_file)) {
   X <- data.table(a = 1:5, b = letters[1:5])  # Create a data.table
