@@ -21121,3 +21121,7 @@ DT[1, V1 := samelevel]
 test(2311.1, nlevels(DT$V1), 1L) # used to be 2
 DT[1, V1 := factor("a", levels = c("a", samelevel))]
 test(2311.2, nlevels(DT$V1), 2L) # used to be 3
+
+# avoid translateChar*() in OpenMP threads, #6883
+DF = list(rep(iconv("\uf8", from = "UTF-8", to = "latin1"), 2e6))
+test(2312, fwrite(DF, nullfile(), encoding = "UTF-8", nThread = 2L), NULL)
