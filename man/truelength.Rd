@@ -69,7 +69,6 @@ if (!file.exists(rds_file)) {
 X_loaded <- readRDS(rds_file)
 # Step 4: Restore data.table attributes
 setDT(X_loaded)
-# Verify structure
 print(X_loaded)
 }
 \keyword{ data }
