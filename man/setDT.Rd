@@ -74,6 +74,8 @@ X_loaded <- readRDS(rds_file)
 # Step 4: Restore data.table attributes
 setDT(X_loaded)
 print(X_loaded)
+# Step 5: Clean up the temporary file
+unlink(rds_file); rm(rds_file)
 }
 \keyword{ data }
 
