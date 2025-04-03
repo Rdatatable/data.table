@@ -75,16 +75,15 @@ static int32_t whichWriter(SEXP);
 
 void writeList(const void *col, int64_t row, char **pch) {
   SEXP v = ((const SEXP *)col)[row];
-  int32_t wf = whichWriter(v);
+  const int32_t wf = whichWriter(v);
   if (TYPEOF(v)==VECSXP || wf==INT32_MIN || isFactor(v)) {
     internal_error(__func__, "TYPEOF(v)!=VECSXP && wf!=INT32_MIN && !isFactor(v); getMaxListItem should have caught this up front");  // # nocov
   }
   char *ch = *pch;
   write_chars(sep2start, &ch);
   const void *data = DATAPTR_RO(v);
-  writer_fun_t *fun = funs[wf];
   for (int j=0; j<LENGTH(v); j++) {
-    (*fun)(data, j, &ch);
+    funs[wf](data, j, &ch);
     *ch++ = sep2;
   }
   if (LENGTH(v)) ch--; // backup over the last sep2 after the last item
