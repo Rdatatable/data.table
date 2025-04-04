@@ -6,6 +6,8 @@
 
 1. New `sort_by()` method for data.tables, [#6662](https://github.com/Rdatatable/data.table/issues/6662). It uses `forder()` to improve upon the data.frame method and also match `DT[order(...)]` behavior with respect to locale. Thanks @rikivillalba for the suggestion and PR.
 
+2. `melt()` now supports using `patterns()` with `id.vars`, [#6867](https://github.com/Rdatatable/data.table/issues/6867). Thanks to Toby Dylan Hocking for the suggestion and PR.
+
 ## BUG FIXES
 
 1. Custom binary operators from the `lubridate` package now work with objects of class `IDate` as with a `Date` subclass, [#6839](https://github.com/Rdatatable/data.table/issues/6839). Thanks @emallickhossain for the report and @aitap for the fix.
@@ -19,6 +21,9 @@
 5. `as.data.table()` on `x` avoids an infinite loop if the output of the corresponding `as.data.frame()` method has the same class as the input, [#6874](https://github.com/Rdatatable/data.table/issues/6874). Concretely, we had `class(x) = c('foo', 'data.frame')` and `class(as.data.frame(x)) = c('foo', 'data.frame')`, so `as.data.frame.foo` wound up getting called repeatedly. Thanks @matschmitz for the report and @ben-schwen for the fix.
 
 6. By-reference sub-assignments to factor columns now match the levels in UTF-8, preventing their duplication when the same level exists in different encodings, [#6886](https://github.com/Rdatatable/data.table/issues/6886). Thanks @iagogv3 for the report and @aitap for the fix.
+
+7. `fwrite()` now avoids a crash when translating strings into a different encoding, [#6883](https://github.com/Rdatatable/data.table/issues/6883). Thanks @filipemsc for the report and @aitap for the fix.
+
 
 ## NOTES
 

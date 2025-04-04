@@ -3220,6 +3220,10 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
   test(1035.12, attr(melt(DT, id.vars=1:2)$x, "foo"), "bla1")
   test(1035.13, attr(melt(DT, id.vars=1:2)$y, "bar"), 1:4)
 
+  # issue #6867 - id.vars=patterns().
+  DT=data.table(x_long=0, x_short=0, z=0, y1=1, y2=2)
+  test(1035.131, melt(DT, measure.vars=patterns("y"), id.vars=patterns("x")), data.table(x_long=0, x_short=0, variable=factor(c("y1","y2")), value=c(1,2)))
+
   # bug #699 - melt segfaults when vars are not in dt; was test 1316
   x = data.table(a=c(1,2),b=c(2,3),c=c(3,4))
   test(1035.14, melt(x, id.vars="d"), error="One or more values")
@@ -21121,3 +21125,7 @@ DT[1, V1 := samelevel]
 test(2311.1, nlevels(DT$V1), 1L) # used to be 2
 DT[1, V1 := factor("a", levels = c("a", samelevel))]
 test(2311.2, nlevels(DT$V1), 2L) # used to be 3
+
+# avoid translateChar*() in OpenMP threads, #6883
+DF = list(rep(iconv("\uf8", from = "UTF-8", to = "latin1"), 2e6))
+test(2312, fwrite(DF, nullfile(), encoding = "UTF-8", nThread = 2L), NULL)
