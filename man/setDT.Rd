@@ -65,7 +65,7 @@ setDT(X, check.names=TRUE)[]
 rds_file = tempfile("my_data.rds_")
 # Step 2: Create and save data.table if the file does not exist
 if (!file.exists(rds_file)) {
-  X <- data.table(a = 1:5, b = letters[1:5])  # Create a data.table
+  X <- data.table(a=1:5, b=letters[1:5])  # Create a data.table
   saveRDS(X, rds_file)  # Save it to an RDS file
   message("Saved data.table to ", rds_file)
 }
