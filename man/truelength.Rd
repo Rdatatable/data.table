@@ -44,7 +44,7 @@ alloc.col(DT,
     \code{setalloccol} \emph{reallocates} \code{DT} by reference. This may be useful for efficiency if you know you are about to going to add a lot of columns in a loop.
     It also returns the new \code{DT}, for convenience in compound queries.
 }
-\seealso{ \code{\link{copy}}, See the FAQ vignette: \code{vignette("datatable-faq", package = "data.table")}.}
+\seealso{ \code{\link{copy}}}
 \examples{
 DT = data.table(a=1:3,b=4:6)
 length(DT)                 # 2 column pointer slots used
@@ -54,22 +54,5 @@ length(DT)                 # 2 used
 truelength(DT)             # 2050 allocated, 2048 free
 DT[,c:=7L]                 # add new column by assigning to spare slot
 truelength(DT)-length(DT)  # 2047 slots spare
-
-# FAQ: Dealing with data.table loaded from RDS or RData files
-# Example to demonstrate the usage of setDT after loading from RDS
-# Step 1: Define a temporary file path
-rds_file <- tempfile("my_data.rds_")
-# Step 2: Create and save data.table if the file does not exist
-X <- data.table(a = 1:5, b = letters[1:5])  # Create a data.table
-saveRDS(X, rds_file)  # Save it to an RDS file
-message("Saved data.table to ", rds_file)
-# Step 3: Load the data.table from the RDS file
-X_loaded <- readRDS(rds_file)
-# Step 4: Restore data.table attributes
-setDT(X_loaded)
-print(X_loaded)
-# Step 6: Clean up the temporary file
-unlink(rds_file)  # Delete the file
-rm(rds_file)  # Remove the variable reference
 }
 \keyword{ data }

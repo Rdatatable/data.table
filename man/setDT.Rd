@@ -59,23 +59,14 @@ setDT(X, key="a")[]
 X = list(a=1:5, a=6:10)
 setDT(X, check.names=TRUE)[]
 
-# FAQ: Dealing with data.table loaded from RDS or RData files
-# Example to demonstrate the usage of setDT after loading from RDS
-# Step 1: Define file path
-rds_file = tempfile("my_data.rds_")
-# Step 2: Create and save data.table if the file does not exist
-if (!file.exists(rds_file)) {
-  X <- data.table(a=1:5, b=letters[1:5])  # Create a data.table
-  saveRDS(X, rds_file)  # Save it to an RDS file
-  message("Saved data.table to ", rds_file)
-}
-# Step 3: Load the data.table from the RDS file
+# Example demonstrating setDT after loading from RDS
+rds_file <- tempfile(fileext = ".rds")
+X <- data.table(a = 1:5, b = letters[1:5])
+saveRDS(X, rds_file)
 X_loaded <- readRDS(rds_file)
-# Step 4: Restore data.table attributes
-setDT(X_loaded)
+setDT(X_loaded)  # restore internal data.table attributes
 print(X_loaded)
-# Step 5: Clean up the temporary file
-unlink(rds_file); rm(rds_file)
+unlink(rds_file)  # cleanup
 }
 \keyword{ data }
 
