@@ -21109,3 +21109,27 @@ test(2309.08, key(as.data.table(DT, key=NULL)), NULL)
 as.data.frame.no.reset = function(x) x
 DF = structure(list(a = 1:2), class = c("data.frame", "no.reset"), row.names = c(NA, -2L))
 test(2310.01, as.data.table(DF), data.table(a=1:2))
+
+# 'sets' is a local variable in groupingsets(), cube(), rollup() and shouldn't leak into the 'j' expression
+n = 24L
+set.seed(25)
+DT = data.table(
+    color = sample(c("green","yellow","red"), n, TRUE),
+    year = as.Date(sample(paste0(2011:2015,"-01-01"), n, TRUE)),
+    status = as.factor(sample(c("removed","active","inactive","archived"), n, TRUE)),
+    amount = sample(1:5, n, TRUE),
+    value = sample(c(3, 3.5, 2.5, 2), n, TRUE)
+)
+sets = 0
+test(2311.0,
+  groupingsets(DT, j = c(list(count=.N + ..sets)), by = c("color","year","status"), sets = list("color", c("year","status"), character()), id=TRUE),
+  groupingsets(DT, j = c(list(count=.N)), by = c("color","year","status"), sets = list("color", c("year","status"), character()), id=TRUE)
+)
+test(2311.1,
+  cube(DT, j = sum(value) + ..sets, by = c("color","year","status"), id=TRUE)
+  cube(DT, j = sum(value), by = c("color","year","status"), id=TRUE)
+)
+test(2311.2,
+  rollup(DT, j = sum(value) + ..sets, by=c("color","year","status"), label="total")
+  rollup(DT, j = sum(value), by=c("color","year","status"), label="total")
+)
