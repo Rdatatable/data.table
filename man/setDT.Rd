@@ -60,10 +60,10 @@ X = list(a=1:5, a=6:10)
 setDT(X, check.names=TRUE)[]
 
 # Example demonstrating setDT after loading from RDS
-rds_file <- tempfile(fileext = ".rds")
-X <- data.table(a = 1:5, b = letters[1:5])
+rds_file = tempfile(fileext = ".rds")
+X = data.table(a = 1:5, b = letters[1:5])
 saveRDS(X, rds_file)
-X_loaded <- readRDS(rds_file)
+X_loaded = readRDS(rds_file)
 setDT(X_loaded)  # restore internal data.table attributes
 print(X_loaded)
 unlink(rds_file)  # cleanup
