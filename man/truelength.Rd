@@ -44,7 +44,7 @@ alloc.col(DT,
     \code{setalloccol} \emph{reallocates} \code{DT} by reference. This may be useful for efficiency if you know you are about to going to add a lot of columns in a loop.
     It also returns the new \code{DT}, for convenience in compound queries.
 }
-\seealso{ \code{\link{copy}}}
+\seealso{ \code{\link{copy}} }
 \examples{
 DT = data.table(a=1:3,b=4:6)
 length(DT)                 # 2 column pointer slots used
