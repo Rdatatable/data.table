@@ -66,7 +66,7 @@ saveRDS(X, rds_file)
 X_loaded = readRDS(rds_file)
 setDT(X_loaded)  # restore internal data.table attributes
 print(X_loaded)
-unlink(rds_file)  # cleanup
+unlink(rds_file)
 }
 \keyword{ data }
 
