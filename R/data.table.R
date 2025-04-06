@@ -1212,22 +1212,9 @@ replace_dot_alias = function(e) {
             setalloccol(x, n, verbose=verbose)   # always assigns to calling scope; i.e. this scope
             if (is.name(name)) {
               assign(as.character(name),x,parent.frame(),inherits=TRUE)
-            } else if (.is_simple_extraction(name)) { # TODO(#6702): use a helper here as the code is very similar to setDT().
-              k = eval(name[[2L]], parent.frame(), parent.frame())
-              if (is.list(k)) {
-                origj = j = if (name[[1L]] == "$") as.character(name[[3L]]) else eval(name[[3L]], parent.frame(), parent.frame())
-                if (is.character(j)) {
-                  if (length(j)!=1L) stopf("Cannot assign to an under-allocated recursively indexed list -- L[[i]][,:=] syntax is only valid when i is length 1, but its length is %d", length(j))
-                  j = match(j, names(k))
-                  if (is.na(j)) internal_error("item '%s' not found in names of list", origj) # nocov
-                }
-                .Call(Csetlistelt,k,as.integer(j), x)
-              } else if (is.environment(k) && exists(as.character(name[[3L]]), k)) {
-                assign(as.character(name[[3L]]), x, k, inherits=FALSE)
-              } else if (isS4(k)) {
-                .Call(CsetS4elt, k, as.character(name[[3L]]), x)
-              }
-            } # TO DO: else if env$<- or list$<-
+            } else if (.is_simple_extraction(name)) {
+             assign_to_extracted_target(name, x, parent.frame())
+           }
           }
         }
       }
@@ -2970,19 +2957,8 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     name = as.character(name)
     assign(name, x, parent.frame(), inherits=TRUE)
   } else if (.is_simple_extraction(name)) {
-    # common case is call from 'lapply()'
-    k = eval(name[[2L]], parent.frame(), parent.frame())
-    if (is.list(k)) {
-      origj = j = if (name[[1L]] == "$") as.character(name[[3L]]) else eval(name[[3L]], parent.frame(), parent.frame())
-      if (length(j) == 1L) {
-        if (is.character(j)) {
-          j = match(j, names(k))
-          if (is.na(j))
-            stopf("Item '%s' not found in names of input list", origj)
-        }
-      }
-      .Call(Csetlistelt, k, as.integer(j), x)
-    } else if (is.environment(k) && exists(as.character(name[[3L]]), k)) {
+   assign_to_extracted_target(name, x, parent.frame())
+ } else if (is.environment(k) && exists(as.character(name[[3L]]), k)) {
       assign(as.character(name[[3L]]), x, k, inherits=FALSE)
     } else if (isS4(k)) {
       .Call(CsetS4elt, k, as.character(name[[3L]]), x)
@@ -3450,4 +3426,24 @@ is_constantish = function(q, check_singleton=FALSE) {
   on = iCols
   names(on) = xCols
   list(on = on, ops = idx_op)
+}
+assign_to_extracted_target <- function(name, x, parent_env = parent.frame()) {
+  k = eval(name[[2L]], parent_env, parent_env)
+  if (is.list(k)) {
+    origj = j = if (name[[1L]] == "$") as.character(name[[3L]]) else eval(name[[3L]], parent_env, parent_env)
+    if (is.character(j)) {
+      if (length(j) != 1L) {
+        stopf("Cannot assign to an under-allocated recursively indexed list -- L[[i]][,:=] syntax is only valid when i is length 1, but its length is %d", length(j))
+      }
+      j = match(j, names(k))
+      if (is.na(j)) {
+        internal_error("item '%s' not found in names of list", origj) # nocov
+      }
+    }
+    .Call(Csetlistelt, k, as.integer(j), x)
+  } else if (is.environment(k) && exists(as.character(name[[3L]]), k)) {
+    assign(as.character(name[[3L]]), x, k, inherits = FALSE)
+  } else if (isS4(k)) {
+    .Call(CsetS4elt, k, as.character(name[[3L]]), x)
+  }
 }
