@@ -1146,80 +1146,84 @@ replace_dot_alias = function(e) {
           names(jsub)=""
           jsub[[1L]]=as.name("list")
         }
-        av = all.vars(jsub,TRUE)
-        if (!is.atomic(lhs)) stopf("LHS of := must be a symbol, or an atomic vector (column names or positions).")
-        if (is.character(lhs)) {
-          m = chmatch(lhs, names_x)
-        } else if (is.numeric(lhs)) {
-          m = as.integer(lhs)
-          if (any(m<1L | ncol(x)<m)) stopf("LHS of := appears to be column positions but are outside [1,ncol] range. New columns can only be added by name.")
-          lhs = names_x[m]
-        } else
-          stopf("LHS of := isn't column names ('character') or positions ('integer' or 'numeric')")
-        if (!anyNA(m)) {
-          # updates by reference to existing columns
-          cols = as.integer(m)
-          newnames=NULL
-          if (identical(irows, integer())) {
-            # Empty integer() means no rows e.g. logical i with only FALSE and NA
-            # got converted to empty integer() by the which() above
-            # Short circuit and do-nothing since columns already exist. If some don't
-            # exist then for consistency with cases where irows is non-empty, we need to create
-            # them of the right type and populate with NA.  Which will happen via the regular
-            # alternative branches below, to cover #759.
-            # We need this short circuit at all just for convenience. Otherwise users may need to
-            # fix errors in their RHS when called on empty edge cases, even when the result won't be
-            # used anyway (so it would be annoying to have to fix it.)
-            if (verbose) {
-              catf("No rows match i. No new columns to add so not evaluating RHS of :=\nAssigning to 0 row subset of %d rows\n", nrow(x))
-            }
-            .Call(Cassign, x, irows, NULL, NULL, NULL) # only purpose is to write 0 to .Last.updated
-            .global$print = address(x)
-            return(invisible(x))
-          }
-        } else {
-          # Adding new column(s). TO DO: move after the first eval in case the jsub has an error.
-          newnames=setdiff(lhs, names_x)
-          m[is.na(m)] = ncol(x)+seq_along(newnames)
-          cols = as.integer(m)
-          # don't pass verbose to selfrefok here -- only activated when
-          #   ok=-1 which will trigger setalloccol with verbose in the next
-          #   branch, which again calls _selfrefok and returns the message then
-          if ((ok<-selfrefok(x, verbose=FALSE))==0L)   # ok==0 so no warning when loaded from disk (-1) [-1 considered TRUE by R]
-            if (is.data.table(x)) warningf("A shallow copy of this data.table was taken so that := can add or remove %d columns by reference. At an earlier point, this data.table was copied by R (or was created manually using structure() or similar). Avoid names<- and attr<- which in R currently (and oddly) may copy the whole data.table. Use set* syntax instead to avoid copying: ?set, ?setnames and ?setattr. It's also not unusual for data.table-agnostic packages to produce tables affected by this issue. If this message doesn't help, please report your use case to the data.table issue tracker so the root cause can be fixed or this message improved.", length(newnames))
-            # !is.data.table for DF |> DT(,:=) tests 2212.16-19 (#5113) where a shallow copy is routine for data.frame
-          if ((ok<1L) || (truelength(x) < ncol(x)+length(newnames))) {
-            DT = x  # in case getOption contains "ncol(DT)" as it used to.  TODO: warn and then remove
-            n = length(newnames) + eval(getOption("datatable.alloccol"))  # TODO: warn about expressions and then drop the eval()
-            # i.e. reallocate at the size as if the new columns were added followed by setalloccol().
-            name = substitute(x)
-            if (is.name(name) && ok && verbose) { # && NAMED(x)>0 (TO DO)    # ok here includes -1 (loaded from disk)
-              catf("Growing vector of column pointers from truelength %d to %d. A shallow copy has been taken, see ?setalloccol. Only a potential issue if two variables point to the same data (we can't yet detect that well) and if not you can safely ignore this. To avoid this message you could setalloccol() first, deep copy first using copy(), wrap with suppressWarnings() or increase the 'datatable.alloccol' option.\n", truelength(x), n)
-              # #1729 -- copying to the wrong environment here can cause some confusion
-              if (ok == -1L) catf("Note that the shallow copy will assign to the environment from which := was called. That means for example that if := was called within a function, the original table may be unaffected.\n")
+        
+av = all.vars(jsub, TRUE)
+if (!is.atomic(lhs)) stopf("LHS of := must be a symbol, or an atomic vector (column names or positions).")
+if (is.character(lhs)) {
+  m = chmatch(lhs, names_x)
+} else if (is.numeric(lhs)) {
+  m = as.integer(lhs)
+  if (any(m<1L | ncol(x)<m)) stopf("LHS of := appears to be column positions but are outside [1,ncol] range. New columns can only be added by name.")
+  lhs = names_x[m]
+} else
+  stopf("LHS of := isn't column names ('character') or positions ('integer' or 'numeric')")
 
-              # Verbosity should not issue warnings, so cat rather than warning.
-              # TO DO: Add option 'datatable.pedantic' to turn on warnings like this.
-
-              # TO DO ... comments moved up from C ...
-              # Note that the NAMED(dt)>1 doesn't work because .Call
-              # always sets to 2 (see R-ints), it seems. Work around
-              # may be possible but not yet working. When the NAMED test works, we can drop allocwarn argument too
-              # because that's just passed in as FALSE from [<- where we know `*tmp*` isn't really NAMED=2.
-              # Note also that this growing will happen for missing columns assigned NULL, too. But so rare, we
-              # don't mind.
-            }
-            setalloccol(x, n, verbose=verbose)   # always assigns to calling scope; i.e. this scope
-            if (is.name(name)) {
-              assign(as.character(name),x,parent.frame(),inherits=TRUE)
-            } else if (.is_simple_extraction(name)) {
-             assign_to_extracted_target(name, x, parent.frame())
-            }
-          }
+if (!anyNA(m)) {
+  # updates by reference to existing columns
+  cols = as.integer(m)
+  newnames = NULL
+  if (identical(irows, integer())) {
+    # Empty integer() means no rows e.g. logical i with only FALSE and NA
+    # got converted to empty integer() by the which() above
+    # Short circuit and do-nothing since columns already exist. If some don't
+    # exist then for consistency with cases where irows is non-empty, we need to create
+    # them of the right type and populate with NA.  Which will happen via the regular
+    # alternative branches below, to cover #759.
+    # We need this short circuit at all just for convenience. Otherwise users may need to
+    # fix errors in their RHS when called on empty edge cases, even when the result won't be
+    # used anyway (so it would be annoying to have to fix it.)
+    if (verbose) {
+      catf("No rows match i. No new columns to add so not evaluating RHS of :=\nAssigning to 0 row subset of %d rows\n", nrow(x))
+    }
+    .Call(Cassign, x, irows, NULL, NULL, NULL) # only purpose is to write 0 to .Last.updated
+    .global$print = address(x)
+    return(invisible(x))
+  }
+} else {
+  # Adding new column(s). TO DO: move after the first eval in case the jsub has an error.
+  newnames = setdiff(lhs, names_x)
+  m[is.na(m)] = ncol(x) + seq_along(newnames)
+  cols = as.integer(m)
+  # don't pass verbose to selfrefok here -- only activated when
+  #   ok=-1 which will trigger setalloccol with verbose in the next
+  #   branch, which again calls _selfrefok and returns the message then
+  if ((ok <- selfrefok(x, verbose=FALSE)) == 0L) {  # ok==0 so no warning when loaded from disk (-1) [-1 considered TRUE by R]
+    if (is.data.table(x)) warningf("A shallow copy of this data.table was taken so that := can add or remove %d columns by reference. At an earlier point, this data.table was copied by R (or was created manually using structure() or similar). Avoid names<- and attr<- which in R currently (and oddly) may copy the whole data.table. Use set* syntax instead to avoid copying: ?set, ?setnames and ?setattr. It's also not unusual for data.table-agnostic packages to produce tables affected by this issue. If this message doesn't help, please report your use case to the data.table issue tracker so the root cause can be fixed or this message improved.", length(newnames))
+    # !is.data.table for DF |> DT(,:=) tests 2212.16-19 (#5113) where a shallow copy is routine for data.frame
+  }
+  if ((ok < 1L) || (truelength(x) < ncol(x) + length(newnames))) {
+    DT = x  # in case getOption contains "ncol(DT)" as it used to.  TODO: warn and then remove
+    n = length(newnames) + eval(getOption("datatable.alloccol"))  # TODO: warn about expressions and then drop the eval()
+    # i.e. reallocate at the size as if the new columns were added followed by setalloccol().
+    name = substitute(x)
+    if (is.name(name) && ok && verbose) { # && NAMED(x)>0 (TO DO)    # ok here includes -1 (loaded from disk)
+      catf("Growing vector of column pointers from truelength %d to %d. A shallow copy has been taken, see ?setalloccol. Only a potential issue if two variables point to the same data (we can't yet detect that well) and if not you can safely ignore this. To avoid this message you could setalloccol() first, deep copy first using copy(), wrap with suppressWarnings() or increase the 'datatable.alloccol' option.\n", truelength(x), n)
+      # #1729 -- copying to the wrong environment here can cause some confusion
+      if (ok == -1L) catf("Note that the shallow copy will assign to the environment from which := was called. That means for example that if := was called within a function, the original table may be unaffected.\n")
+      # Verbosity should not issue warnings, so cat rather than warning.
+      # TO DO: Add option 'datatable.pedantic' to turn on warnings like this.
+      # TO DO ... comments moved up from C ...
+      # Note that the NAMED(dt)>1 doesn't work because .Call
+      # always sets to 2 (see R-ints), it seems. Work around
+      # may be possible but not yet working. When the NAMED test works, we can drop allocwarn argument too
+      # because that's just passed in as FALSE from [<- where we know `*tmp*` isn't really NAMED=2.
+      # Note also that this growing will happen for missing columns assigned NULL, too. But so rare, we
+      # don't mind.
+    }
+    setalloccol(x, n, verbose=verbose)   # always assigns to calling scope; i.e. this scope
+    if (is.name(name)) {
+      assign(as.character(name), x, parent.frame(), inherits=TRUE)
+    } else if (.is_simple_extraction(name)) { # TODO(#6702): use a helper here as the code is very similar to setDT().
+      if (!handle_list_env_assign(name, x, error_on_missing = FALSE, check_length = TRUE)) {
+        # Handle the S4 case which isn't in the helper function
+        k = eval(name[[2L]], parent.frame(), parent.frame())
+        if (isS4(k)) {
+          .Call(CsetS4elt, k, as.character(name[[3L]]), x)
         }
       }
-    }
-
+    } # TO DO: else if env$<- or list$<- what to remove and add
+  }
+}        
     if (length(ansvars)) {
       w = ansvals
       if (length(rightcols) && missingby) {
@@ -2915,53 +2919,48 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
       }
     }
 
-    rn = if (!identical(keep.rownames, FALSE)) rownames(x) else NULL
-    setattr(x, "row.names", .set_row_names(nrow(x)))
-    if (check.names) setattr(x, "names", make.names(names(x), unique=TRUE))
-    # fix for #1078 and #1128, see .resetclass() for explanation.
-    setattr(x, "class", .resetclass(x, 'data.frame'))
-    setalloccol(x)
-    if (!is.null(rn)) {
-      nm = c(if (is.character(keep.rownames)) keep.rownames[1L] else "rn", names(x))
-      x[, (nm[1L]) := rn]
-      setcolorder(x, nm)
-    }
-  } else if (is.list(x) && length(x)==1L && is.matrix(x[[1L]])) {
-    # a single list(matrix) is unambiguous and depended on by some revdeps, #3581
-    x = as.data.table.matrix(x[[1L]])
-  } else if (is.null(x) || (is.list(x) && !length(x))) {
-    x = null.data.table()
-  } else if (is.list(x)) {
-    # copied from as.data.table.list - except removed the copy
-    nrow = .Call(Csetdt_nrows, x)
-
-    xn = names(x)
-    if (is.null(xn)) {
-      setattr(x, "names", paste0("V", seq_along(x)))
-    } else {
-      idx = !nzchar(xn) # NB: keepNA=FALSE intentionally, see test 1006
-      if (any(idx)) {
-        xn[idx] = paste0("V", seq_along(which(idx)))
-        setattr(x, "names", xn)
-      }
-      if (check.names) setattr(x, "names", make.names(xn, unique=TRUE))
-    }
-    setattr(x, "row.names", .set_row_names(nrow))
-    setattr(x, "class", c("data.table", "data.frame"))
-    setalloccol(x)
+rn = if (!identical(keep.rownames, FALSE)) rownames(x) else NULL
+setattr(x, "row.names", .set_row_names(nrow(x)))
+if (check.names) setattr(x, "names", make.names(names(x), unique=TRUE))
+# fix for #1078 and #1128, see .resetclass() for explanation.
+setattr(x, "class", .resetclass(x, 'data.frame'))
+setalloccol(x)
+if (!is.null(rn)) {
+  nm = c(if (is.character(keep.rownames)) keep.rownames[1L] else "rn", names(x))
+  x[, (nm[1L]) := rn]
+  setcolorder(x, nm)
+} else if (is.list(x) && length(x)==1L && is.matrix(x[[1L]])) {
+  # a single list(matrix) is unambiguous and depended on by some revdeps, #3581
+  x = as.data.table.matrix(x[[1L]])
+} else if (is.null(x) || (is.list(x) && !length(x))) {
+  x = null.data.table()
+} else if (is.list(x)) {
+  # copied from as.data.table.list - except removed the copy
+  nrow = .Call(Csetdt_nrows, x)
+  xn = names(x)
+  if (is.null(xn)) {
+    setattr(x, "names", paste0("V", seq_along(x)))
   } else {
-    stopf("Argument 'x' to 'setDT' should be a 'list', 'data.frame' or 'data.table'")
+    idx = !nzchar(xn) # NB: keepNA=FALSE intentionally, see test 1006
+    if (any(idx)) {
+      xn[idx] = paste0("V", seq_along(which(idx)))
+      setattr(x, "names", xn)
+    }
+    if (check.names) setattr(x, "names", make.names(xn, unique=TRUE))
   }
+  setattr(x, "row.names", .set_row_names(nrow))
+  setattr(x, "class", c("data.table", "data.frame"))
+  setalloccol(x)
+} else {
+  stopf("Argument 'x' to 'setDT' should be a 'list', 'data.frame' or 'data.table'")
+}
 if (!is.null(key)) setkeyv(x, key)
 if (is.name(name)) {
   name = as.character(name)
   assign(name, x, parent.frame(), inherits = TRUE)
 } else if (.is_simple_extraction(name)) {
+  # Use the helper function we created earlier
   assign_to_extracted_target(name, x, parent.frame())
-} else if (is.environment(k) && exists(as.character(name[[3L]]), k)) {
-  assign(as.character(name[[3L]]), x, k, inherits = FALSE)
-} else if (isS4(k)) {
-  .Call(CsetS4elt, k, as.character(name[[3L]]), x)
 } else if (name %iscall% "get") { # #6725
   # edit 'get(nm, env)' call to be 'assign(nm, x, envir=env)'
   name = match.call(get, name)
@@ -3444,4 +3443,38 @@ assign_to_extracted_target <- function(name, x, parent_env=parent.frame()) {
   } else if (isS4(k)) {
     .Call(CsetS4elt, k, as.character(name[[3L]]), x)
   }
+}
+# Helper function to handle $ and [[ indexing in list/environment assignments
+handle_list_env_assign <- function(name, x, error_on_missing = TRUE, check_length = TRUE) {
+  if (name %iscall% c('$', '[[') && is.name(name[[2L]])) {
+    k = eval(name[[2L]], parent.frame(2), parent.frame(2))
+    
+    if (is.list(k)) {
+      origj = j = if (name[[1L]] == "$") as.character(name[[3L]]) 
+                  else eval(name[[3L]], parent.frame(2), parent.frame(2))
+      
+      if (is.character(j)) {
+        if (check_length && length(j) != 1L) {
+          stopf("Cannot assign to an under-allocated recursively indexed list -- L[[i]][,:=] syntax is only valid when i is length 1, but its length is %d", length(j))
+        }
+        
+        j = match(j, names(k))
+        if (is.na(j)) {
+          if (error_on_missing) {
+            stopf("Item '%s' not found in names of input list", origj)
+          } else {
+            internal_error("item '%s' not found in names of list", origj) # nocov
+          }
+        }
+      }
+      
+      .Call(Csetlistelt, k, as.integer(j), x)
+      return(TRUE)
+    } else if (is.environment(k) && exists(as.character(name[[3L]]), k)) {
+      assign(as.character(name[[3L]]), x, k, inherits=FALSE)
+      return(TRUE)
+    }
+  }
+  
+  return(FALSE)
 }
