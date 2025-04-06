@@ -1214,7 +1214,7 @@ replace_dot_alias = function(e) {
               assign(as.character(name),x,parent.frame(),inherits=TRUE)
             } else if (.is_simple_extraction(name)) {
              assign_to_extracted_target(name, x, parent.frame())
-           }
+            }
           }
         }
       }
@@ -2953,14 +2953,14 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     stopf("Argument 'x' to 'setDT' should be a 'list', 'data.frame' or 'data.table'")
   }
   if (!is.null(key)) setkeyv(x, key)
-  if (is.name(name)) {
-    name = as.character(name)
-    assign(name, x, parent.frame(), inherits=TRUE)
-  } else if (.is_simple_extraction(name)) {
-   assign_to_extracted_target(name, x, parent.frame())
- } else if (is.environment(k) && exists(as.character(name[[3L]]), k)) {
-      assign(as.character(name[[3L]]), x, k, inherits=FALSE)
-    } else if (isS4(k)) {
+if (is.name(name)) {
+  name = as.character(name)
+  assign(name, x, parent.frame(), inherits = TRUE)
+} else if (.is_simple_extraction(name)) {
+  assign_to_extracted_target(name, x, parent.frame())
+} else if (is.environment(k) && exists(as.character(name[[3L]]), k)) {
+  assign(as.character(name[[3L]]), x, k, inherits = FALSE)
+} else if (isS4(k)) {
       .Call(CsetS4elt, k, as.character(name[[3L]]), x)
     }
   } else if (name %iscall% "get") { # #6725
@@ -2972,7 +2972,6 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
   }
   .Call(CexpandAltRep, x)  # issue#2866 and PR#2882
   invisible(x)
-}
 
 as_list = function(x) {
   lx = vector("list", 1L)
@@ -3427,7 +3426,7 @@ is_constantish = function(q, check_singleton=FALSE) {
   names(on) = xCols
   list(on = on, ops = idx_op)
 }
-assign_to_extracted_target <- function(name, x, parent_env = parent.frame()) {
+assign_to_extracted_target <- function(name, x, parent_env=parent.frame()) {
   k = eval(name[[2L]], parent_env, parent_env)
   if (is.list(k)) {
     origj = j = if (name[[1L]] == "$") as.character(name[[3L]]) else eval(name[[3L]], parent_env, parent_env)
