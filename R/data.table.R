@@ -2952,7 +2952,7 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
   } else {
     stopf("Argument 'x' to 'setDT' should be a 'list', 'data.frame' or 'data.table'")
   }
-  if (!is.null(key)) setkeyv(x, key)
+if (!is.null(key)) setkeyv(x, key)
 if (is.name(name)) {
   name = as.character(name)
   assign(name, x, parent.frame(), inherits = TRUE)
@@ -2961,17 +2961,16 @@ if (is.name(name)) {
 } else if (is.environment(k) && exists(as.character(name[[3L]]), k)) {
   assign(as.character(name[[3L]]), x, k, inherits = FALSE)
 } else if (isS4(k)) {
-      .Call(CsetS4elt, k, as.character(name[[3L]]), x)
-    }
-  } else if (name %iscall% "get") { # #6725
-    # edit 'get(nm, env)' call to be 'assign(nm, x, envir=env)'
-    name = match.call(get, name)
-    name[[1L]] = quote(assign)
-    name$value = x
-    eval(name, parent.frame(), parent.frame())
-  }
-  .Call(CexpandAltRep, x)  # issue#2866 and PR#2882
-  invisible(x)
+  .Call(CsetS4elt, k, as.character(name[[3L]]), x)
+} else if (name %iscall% "get") { # #6725
+  # edit 'get(nm, env)' call to be 'assign(nm, x, envir=env)'
+  name = match.call(get, name)
+  name[[1L]] = quote(assign)
+  name$value = x
+  eval(name, parent.frame(), parent.frame())
+}
+.Call(CexpandAltRep, x)  # issue#2866 and PR#2882
+invisible(x)
 
 as_list = function(x) {
   lx = vector("list", 1L)
