@@ -3447,18 +3447,18 @@ assign_to_extracted_target <- function(name, x, parent_env=parent.frame()) {
 # Helper function to handle $ and [[ indexing in list/environment assignments
 handle_list_env_assign <- function(name, x, error_on_missing = TRUE, check_length = TRUE) {
   if (name %iscall% c('$', '[[') && is.name(name[[2L]])) {
-    k = eval(name[[2L]], parent.frame(2), parent.frame(2))
+    k <- eval(name[[2L]], parent.frame(2), parent.frame(2))
     
     if (is.list(k)) {
-      origj = j = if (name[[1L]] == "$") as.character(name[[3L]]) 
-                  else eval(name[[3L]], parent.frame(2), parent.frame(2))
+      origj <- j <- if (name[[1L]] == "$") as.character(name[[3L]]) 
+                    else eval(name[[3L]], parent.frame(2), parent.frame(2))
       
       if (is.character(j)) {
         if (check_length && length(j) != 1L) {
           stopf("Cannot assign to an under-allocated recursively indexed list -- L[[i]][,:=] syntax is only valid when i is length 1, but its length is %d", length(j))
         }
         
-        j = match(j, names(k))
+        j <- match(j, names(k))
         if (is.na(j)) {
           if (error_on_missing) {
             stopf("Item '%s' not found in names of input list", origj)
@@ -3471,7 +3471,7 @@ handle_list_env_assign <- function(name, x, error_on_missing = TRUE, check_lengt
       .Call(Csetlistelt, k, as.integer(j), x)
       return(TRUE)
     } else if (is.environment(k) && exists(as.character(name[[3L]]), k)) {
-      assign(as.character(name[[3L]]), x, k, inherits=FALSE)
+      assign(as.character(name[[3L]]), x, k, inherits = FALSE)
       return(TRUE)
     }
   }
