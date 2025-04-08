@@ -1,0 +1,123 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: fcast 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: 2024-10-10 22:46+0100\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: hi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: fcast.R:7
+msgid "Using '%s' as value column. Use 'value.var' to override"
+msgstr "%s' को मान कॉलम (column) के रूप में उपयोग किया जा रहा है। ओवरराइड (override) करने के लिए 'value.var' का उपयोग करें"
+
+#: fcast.R:20
+msgid ""
+"The %1$s generic in data.table has been passed a %2$s, but data.table::%1$s "
+"currently only has a method for data.tables. Please confirm your input is a "
+"data.table, with setDT(%3$s) or as.data.table(%3$s). If you intend to use a "
+"method from reshape2, try installing that package first, but do note that "
+"reshape2 is superseded and is no longer actively developed."
+msgstr ""
+"data.table में %1$s generic को %2$s पास (pass) किया गया है, लेकिन data.table::%1$s "
+"मैं अभी केवल data.tables के लिए एक विधि है। कृपया सुनिश्चित करें कि आपका इनपुट (input)"
+"data.table है, setDT(%3$s) या as.data.table(%3$s) से। यदि आप reshape2 से "
+"कोई विधि (method) उपयोग करना चाहते हैं, तो पहले उस पैकेज (package) को इंस्टॉल (install) करें, लेकिन ध्यान दें कि "
+"reshape2 अब सुपरसिडेड (superseded) है और सक्रिय रूप से डेवलप (develop) नहीं किया जा रहा है।"
+
+#: fcast.R:21
+msgid ""
+"The %1$s generic in data.table has been passed a %2$s and will attempt to "
+"redirect to the relevant reshape2 method; please note that reshape2 is "
+"superseded and is no longer actively developed, and this redirection is now "
+"deprecated. Please do this redirection yourself like reshape2::%1$s(%3$s). In "
+"the next version, this warning will become an error."
+msgstr ""
+"data.table में %1$s generic को %2$s पास (pass) किया गया है और इसे संबंधित reshape2 "
+"विधि (method) पर रीडायरेक्ट (redirect) करने का प्रयास किया जाएगा; कृपया ध्यान दें कि reshape2 अब "
+"सुपरसिडेड (superseded) है और सक्रिय रूप से डेवलप (develop) नहीं किया जा रहा है, और यह रीडायरेक्शन (redirection) अब "
+"डिप्रिकेटेड (deprecated) है। कृपया इस रीडायरेक्शन (redirection) को स्वयं इस तरह करें: reshape2::%1$s(%3$s)। अगली "
+"वर्ज़न (version) में, यह वॉर्निंग (warning) एरर (error) में बदल जाएगी।"
+
+#: fcast.R:31
+msgid ""
+"Invalid formula. Cast formula should be of the form LHS ~ RHS, for e.g., a + "
+"b ~ c."
+msgstr ""
+"अमान्य सूत्र। कास्ट (cast) सूत्र LHS ~ RHS के रूप में होना चाहिए, जैसे, a + b ~ c।"
+
+#: fcast.R:38
+msgid "data.table to cast must have unique column names"
+msgstr "कास्ट (cast) किए जाने वाले data.table में अद्वितीय कॉलम (column) नाम होने चाहिए"
+
+#: fcast.R:83
+msgid "value.var values %s are not found in 'data'."
+msgstr "'data' में value.var मान %s नहीं मिले।"
+
+#: fcast.R:99
+msgid ""
+"When 'fun.aggregate' and 'value.var' are both lists, 'value.var' must be "
+"either of length =1 or =length(fun.aggregate)."
+msgstr ""
+"जब 'fun.aggregate' और 'value.var' दोनों लिस्ट्स (lists) हो, तो 'value.var' की लेंथ (length) "
+"1 या =length(fun.aggregate) होनी चाहिए।"
+
+#: fcast.R:132
+msgid "'data' must be a data.table."
+msgstr "'data' में value.var मान %s नहीं मिले।"
+
+#: fcast.R:134
+msgid "'drop' must be logical TRUE/FALSE"
+msgstr "'drop' लॉजिकल (logical) TRUE/FALSE होना चाहिए"
+
+#: fcast.R:136
+msgid "Argument 'value.var.in.dots' should be logical TRUE/FALSE"
+msgstr "आर्ग्युमेंट (argument) 'value.var.in.dots' लॉजिकल (logical) TRUE/FALSE होना चाहिए"
+
+#: fcast.R:138
+msgid ""
+"Arguments 'value.var.in.LHSdots', 'value.var.in.RHSdots' should be logical "
+"TRUE/FALSE"
+msgstr ""
+"आर्गुमेंट्स (arguments) 'value.var.in.LHSdots', 'value.var.in.RHSdots' लॉजिकल (logical) "
+"TRUE/FALSE होने चाहिए"
+
+#: fcast.R:155
+msgid "Column [%s] not found or of unknown type."
+msgstr "कॉलम (column) [%s] नहीं मिला या अज्ञात type का है"
+
+#: fcast.R:170
+msgid "Columns specified in formula can not be of type list"
+msgstr "सूत्र में निर्दिष्ट कॉलम (column) लिस्ट (list) प्रकार के नहीं हो सकते"
+
+#: fcast.R:185
+msgid ""
+"'fun.aggregate' is NULL, but found duplicate row/column combinations, so "
+"defaulting to length(). That is, the variables %s used in 'formula' do not "
+"uniquely identify rows in the input 'data'. In such cases, 'fun.aggregate' is "
+"used to derive a single representative value for each combination in the "
+"output data.table, for example by summing or averaging (fun.aggregate=sum or "
+"fun.aggregate=mean, respectively). Check the resulting table for values "
+"larger than 1 to see which combinations were not unique. See ?dcast.data."
+"table for more details."
+msgstr ""
+"'fun.aggregate' NULL है, लेकिन डुप्लिकेट (duplicate) रो(row)/कॉलम(column) संयोजन मिले, इसलिए "
+"length() पर डिफॉल्ट (default) किया गया। यानी, 'formula' में उपयोग किए गए वेरिएबल्स (variables) %s”
+"'data' में रोज़(rows) को अद्वितीय रूप से पहचान नहीं सकते। ऐसे मामलों में, 'fun.aggregate' का उपयोग "
+"आउटपुट (output) data.table में प्रत्येक संयोजन के लिए सिंगल (single) प्रतिनिधि मान प्राप्त करने के लिए किया जाता है, "
+"उदाहरण के लिए summing या averaging (fun.aggregate=sum या fun.aggregate=mean, क्रमशः)। "
+“1 से बड़ी मानों के लिए परिणामी तालिका की जांच करें ताकि यह पता चल सके कि कौन से संयोजन अद्वितीय नहीं थे।”
+“अधिक जानकारी के लिए ?dcast.data.table देखें।"
+
+#: fcast.R:195
+msgid ""
+"Aggregating functions should take a vector as input and return a single value "
+"(length=1), but they do not, so the result is undefined. Please fix by "
+"modifying your function so that a single value is always returned."
+msgstr ""
+“Aggregating फंक्शन्स (functions) को एक वेक्टर (vector) को इनपुट (input) के रूप में लेना चाहिए और सिंगल (single) मान"
+"(length=1) लौटाना चाहिए, लेकिन वे ऐसा नहीं करते हैं, इसलिए परिणाम अज्ञात है|”
+"कृपया अपने फ़ंक्शन (function) को संशोधित करें ताकि हमेशा सिंगल (single) मान लौटाया जा सके।"
