@@ -194,6 +194,7 @@ as.data.table.list = function(x,
     }
   }
   if (any(vnames==".SD")) stopf("A column may not be called .SD. That has special meaning.")
+  browser()
   if (check.names) vnames = make.names(vnames, unique=TRUE)
   setattr(ans, "names", vnames)
   setDT(ans, key=key) # copy ensured above; also, setDT handles naming
