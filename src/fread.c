@@ -237,7 +237,7 @@ static inline void skip_white(const char **pch) {
   // skip space so long as sep isn't space and skip tab so long as sep isn't tab
   // always skip any \0 (NUL) that occur before end of file, #3400
   const char *ch = *pch;
-  if (whiteChar==0) {   // whiteChar==0 means skip both ' ' and '\t';  sep is neither ' ' nor '\t'.
+  if (whiteChar=='\0') {   // whiteChar==0 means skip both ' ' and '\t';  sep is neither ' ' nor '\t'.
     while (*ch==' ' || *ch=='\t' || (*ch=='\0' && ch<eof)) ch++;
   } else {
     while (*ch==whiteChar || (*ch=='\0' && ch<eof)) ch++;  // sep is ' ' or '\t' so just skip the other one.
@@ -1673,7 +1673,7 @@ int freadMain(freadMainArgs _args) {
     // unusual
     if (verbose) DTPRINT(_("  sep='\\n' passed in meaning read lines as single character column\n"));
     sep = 127;     // ASCII DEL: a character different from \r, \n and \0 that isn't in the data
-    whiteChar = 0;
+    whiteChar = '\0';
     quoteRule = 3; // Ignore quoting
     ncol = 1;
     int thisLine=0;
