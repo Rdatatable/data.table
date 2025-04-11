@@ -2,6 +2,7 @@ url: https://rdatatable.gitlab.io/data.table
 
 template:
   bootstrap: 5
+  light-switch: true
 
 development:
   version_tooltip: "Development version"
@@ -18,7 +19,7 @@ home:
 navbar:
   structure:
     left:  [home, introduction, articles, news, benchmarks, presentations, communityarticles, reference]
-    right: [github]
+    right: [search, github, lightswitch]
   components:
     home:
       icon: fas fa-home fa-lg
