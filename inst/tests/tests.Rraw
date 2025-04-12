@@ -21129,3 +21129,10 @@ test(2311.2, nlevels(DT$V1), 2L) # used to be 3
 # avoid translateChar*() in OpenMP threads, #6883
 DF = list(rep(iconv("\uf8", from = "UTF-8", to = "latin1"), 2e6))
 test(2312, fwrite(DF, nullfile(), encoding = "UTF-8", nThread = 2L), NULL)
+
+# Testing column footer display with col.names options in print.data.table #6902
+dt = data.table(id = 1:25, value = sample(letters, 25, replace = TRUE), number = rnorm(25))
+# Test with class=TRUE shows classes at bottom with default col.names="auto"
+test(2312.1, any(grepl("<int>", tail(capture.output(print(dt, class = TRUE)), 2))), TRUE)
+# Test that class=TRUE with col.names="top" doesn't show classes at bottom
+test(2312.2, !any(grepl("<int>", tail(capture.output(print(dt, class = TRUE, col.names = "top")), 2))), TRUE)
