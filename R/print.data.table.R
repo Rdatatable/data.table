@@ -148,8 +148,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
       mat_abbs <- matrix(abbs, nrow = 1L)
       rownames(mat_abbs) <- ""
       mat_abbs
-    }
-  )
+    })
   print_default(toprint)
   invisible(x)
 }
