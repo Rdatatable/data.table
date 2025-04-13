@@ -139,6 +139,8 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     print_default(toprint)
     return(invisible(x))
   }
+  if (col.names == "none") 
+  colnames(toprint) <- rep.int("", ncol(toprint))
   if (nrow(toprint)>20L && col.names == "auto")
     # repeat colnames at the bottom if over 20 rows so you don't have to scroll up to see them
     #   option to shut this off per request of Oleg Bondar on SO, #1482
@@ -263,8 +265,8 @@ char.trunc = function(x, trunc.char = getOption("datatable.prettyprint.char")) {
 dt_width = function(x, nrow, class, row.names, col.names) {
   widths = apply(nchar(x, type='width'), 2L, max)
   if (class) widths = pmax(widths, 6L)
-  if (col.names != "none") names = sapply(colnames(x), nchar, type="width") else names = 0L
-  dt_widths = pmax(widths, names)
+  names_widths = if (col.names == "none") rep(0L, ncol(x)) else sapply(colnames(x), nchar, type = "width")
+  dt_widths = pmax(widths, names_widths)
   rownum_width = if (row.names) as.integer(ceiling(log10(nrow))+2.0) else 0L
   cumsum(dt_widths + 1L) + rownum_width
 }
