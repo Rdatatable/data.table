@@ -993,7 +993,7 @@ void radix_r(const int from, const int to, const int radix) {
       for (int r=radix+1; r<nradix; r++) {
         const uint8_t *restrict ksub = key[r]+from;
         for (int i=0; i<my_n; i++) ((uint8_t *)TMP)[i] = ksub[o[i]];
-        memcpy((uint8_t *restrict)(key[r]+from), (uint8_t *)TMP, my_n);
+        memcpy((uint8_t *restrict)(key[r]+from), (const uint8_t *)TMP, my_n);
       }
       free(TMP);
       TEND(8)
@@ -1287,7 +1287,7 @@ void radix_r(const int from, const int to, const int radix) {
           ksub += len;
         }
       }
-      memcpy(key[radix+1+r]+from, (uint8_t *)TMP, my_n);
+      memcpy(key[radix+1+r]+from, (const uint8_t *)TMP, my_n);
     }
     free(TMP);
   }
