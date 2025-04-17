@@ -362,8 +362,10 @@ static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max
     }
     // now use the 1-1 mapping from ustr to ustr2 to get the ordering back into original ustr, being careful to reset tl to 0
     int *tl = (int *)malloc(ustr_n * sizeof(int));
-    if (!tl)
+    if (!tl) {
+      free(ustr3); // # nocov
       STOP(_("Failed to alloc tl when converting strings to UTF8"));  // # nocov
+    }
     const SEXP *tt = STRING_PTR_RO(ustr2);
     for (int i=0; i<ustr_n; i++) tl[i] = TRUELENGTH(tt[i]);   // fetches the o in ustr3 into tl which is ordered by ustr
     for (int i=0; i<ustr_n; i++) SET_TRUELENGTH(ustr3[i], 0);    // reset to 0 tl of the UTF8 (and possibly non-UTF in ustr too)
@@ -664,8 +666,10 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
     for (int b=0; b<nbyte; b++) {
       if (key[nradix+b]==NULL) {
         uint8_t *tt = calloc(nrow, sizeof(uint8_t));  // 0 initialize so that NA's can just skip (NA is always the 0 offset)
-        if (!tt)
+        if (!tt) {
+          free(key); // # nocov
           STOP(_("Unable to allocate %"PRIu64" bytes of working memory"), (uint64_t)nrow*sizeof(uint8_t)); // # nocov
+        }
         key[nradix+b] = tt;
       }
     }
