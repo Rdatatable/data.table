@@ -21130,7 +21130,7 @@ test(2311.2, nlevels(DT$V1), 2L) # used to be 3
 DF = list(rep(iconv("\uf8", from = "UTF-8", to = "latin1"), 2e6))
 test(2312, fwrite(DF, nullfile(), encoding = "UTF-8", nThread = 2L), NULL)
 
-# New tests for GitHub #6882 (col.names='none' column widths)
+# tests for #6882 (col.names='none' column widths)
 test(2313.1, {
   dt <- data.table(short=1:3, verylongcolumnname=4:6)
   print(dt, col.names="none")
