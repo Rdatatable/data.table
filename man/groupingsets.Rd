@@ -15,7 +15,7 @@ rollup(x, \dots)
 cube(x, \dots)
 \method{cube}{data.table}(x, j, by, .SDcols, id = FALSE, label = NULL, \dots)
 groupingsets(x, \dots)
-\method{groupingsets}{data.table}(x, j, by, sets, .SDcols, id = FALSE, jj, label = NULL, \dots)
+\method{groupingsets}{data.table}(x, j, by, sets, .SDcols, id = FALSE, jj, label = NULL, enclos = parent.frame(), \dots)
 }
 \arguments{
 	\item{x}{\code{data.table}.}
@@ -27,6 +27,7 @@ groupingsets(x, \dots)
 	\item{id}{logical default \code{FALSE}. If \code{TRUE} it will add leading column with bit mask of grouping sets.}
 	\item{jj}{quoted version of \code{j} argument, for convenience. When provided function will ignore \code{j} argument.}
 	\item{label}{label(s) to be used in the 'total' rows in the grouping variable columns of the output, that is, in rows where the grouping variable has been aggregated. Can be a named list of scalars, or a scalar, or \code{NULL}. Defaults to \code{NULL}, which results in the grouping variables having \code{NA} in their 'total' rows. See Details.}
+	\item{enclos}{the environment containing the symbols referenced by \code{jj}. When writing functions that accept a \code{j} environment for non-standard evaluation by \pkg{data.table}, \code{\link[base]{substitute}()} it and forward it to \code{groupingsets} using the \code{jj} argument, set this to the \code{\link[base]{parent.frame}()} of the function that captures \code{j}.}
 }
 \details{
     All three functions \code{rollup, cube, groupingsets} are generic methods, \code{data.table} methods are provided.
