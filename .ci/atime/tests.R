@@ -120,7 +120,7 @@ test.list <- atime::atime_test_list(
     # allow compilation on new R versions where 'Calloc' is not defined
     pkg_find_replace(
       file.path("src", "*.c"),
-      "\\b(Calloc|Free|Realloc)",
+      "\\b(Calloc|Free|Realloc)\\b",
       "R_\\1")
     pkg_find_replace(
       "NAMESPACE",
