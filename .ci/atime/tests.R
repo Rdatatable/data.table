@@ -117,6 +117,11 @@ test.list <- atime::atime_test_list(
       file.path("src", "init.c"),
       paste0("R_init_", Package_regex),
       paste0("R_init_", gsub("[.]", "_", new.Package_)))
+    # allow compilation on new R versions where 'Calloc' is not defined
+    pkg_find_replace(
+      file.path("src", "*.c"),
+      "\\b(Calloc|Free|Realloc)\\b",
+      "R_\\1")
     pkg_find_replace(
       "NAMESPACE",
       sprintf('useDynLib\\("?%s"?', Package_regex),
