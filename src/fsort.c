@@ -18,13 +18,13 @@ static void dinsert(double *x, const int n) {   // TODO: if and when twiddled, d
 
 static uint64_t minULL;
 
-static void dradix_r(  // single-threaded recursive worker
-  double *in,          // n doubles to be sorted
-  double *working,     // working memory to put the sorted items before copying over *in; must not overlap *in
-  uint64_t n,          // number of items to sort.  *in and *working must be at least n long
-  int fromBit,         // After twiddle to ordered ull, the bits [fromBit,toBit] are used to count
-  int toBit,           //   fromBit<toBit; bit 0 is the least significant; fromBit is right shift amount too
-  uint64_t *counts     // already zero'd counts vector, 2^(toBit-fromBit+1) long. A stack of these is reused.
+static void dradix_r(            // single-threaded recursive worker
+  double * restrict in,          // n doubles to be sorted
+  double * restrict working,     // working memory to put the sorted items before copying over *in; must not overlap *in
+  uint64_t n,                    // number of items to sort.  *in and *working must be at least n long
+  int fromBit,                   // After twiddle to ordered ull, the bits [fromBit,toBit] are used to count
+  int toBit,                     //   fromBit<toBit; bit 0 is the least significant; fromBit is right shift amount too
+  uint64_t * restrict counts     // already zero'd counts vector, 2^(toBit-fromBit+1) long. A stack of these is reused.
 ) {
   uint64_t width = 1ULL<<(toBit-fromBit+1);
   uint64_t mask = width-1;
