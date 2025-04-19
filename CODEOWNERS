@@ -23,6 +23,10 @@
 /src/programming.c @jangorecki
 /vignettes/datatable-programming.Rmd @jangorecki
 
+# roll-up & setops
+/R/groupingsets.R @jangorecki
+/R/setops.R @jangorecki
+
 # GForce groupby
 /src/gsumm.c @ben-schwen
 # datetime classes
