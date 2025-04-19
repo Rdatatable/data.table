@@ -232,19 +232,19 @@ SEXP copyAsPlain(SEXP x) {
   }
   switch (TYPEOF(x)) {
   case RAWSXP:
-    memcpy(RAW(ans),     RAW(x),     n*sizeof(Rbyte));
+    memcpy(RAW(ans),     RAW_RO(x),     n*sizeof(Rbyte));
     break;
   case LGLSXP:
-    memcpy(LOGICAL(ans), LOGICAL(x), n*sizeof(int));
+    memcpy(LOGICAL(ans), LOGICAL_RO(x), n*sizeof(int));
     break;
   case INTSXP:
-    memcpy(INTEGER(ans), INTEGER(x), n*sizeof(int));             // covered by 10:1 after test 178
+    memcpy(INTEGER(ans), INTEGER_RO(x), n*sizeof(int));             // covered by 10:1 after test 178
     break;
   case REALSXP:
-    memcpy(REAL(ans),    REAL(x),    n*sizeof(double));          // covered by as.Date("2013-01-01")+seq(1,1000,by=10) after test 1075
+    memcpy(REAL(ans),    REAL_RO(x),    n*sizeof(double));          // covered by as.Date("2013-01-01")+seq(1,1000,by=10) after test 1075
     break;
   case CPLXSXP:
-    memcpy(COMPLEX(ans), COMPLEX(x), n*sizeof(Rcomplex));
+    memcpy(COMPLEX(ans), COMPLEX_RO(x), n*sizeof(Rcomplex));
     break;
   case STRSXP: {
     const SEXP *xp=STRING_PTR_RO(x);                              // covered by as.character(as.hexmode(1:500)) after test 642
