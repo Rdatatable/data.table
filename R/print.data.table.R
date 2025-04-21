@@ -142,7 +142,11 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   if (nrow(toprint)>20L && col.names == "auto")
     # repeat colnames at the bottom if over 20 rows so you don't have to scroll up to see them
     #   option to shut this off per request of Oleg Bondar on SO, #1482
-    toprint = rbind(toprint, matrix(if (quote) old else colnames(toprint), nrow=1L)) # fixes bug #97
+    toprint = rbind(
+      toprint,
+      matrix(if (quote) old else colnames(toprint), nrow=1L), # see #97
+      if (isTRUE(class)) matrix(abbs, nrow=1L) # #6902
+    )
   print_default(toprint)
   invisible(x)
 }

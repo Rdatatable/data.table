@@ -111,6 +111,15 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   }
   # nocov end
   file = enc2native(file) # CfwriteR cannot handle UTF-8 if that is not the native encoding, see #3078.
+  # pre-encode any strings or factor levels to avoid translateChar trying to allocate from OpenMP threads
+  if (encoding %chin% c("UTF-8", "native")) {
+    enc = switch(encoding, "UTF-8" = enc2utf8, "native" = enc2native)
+    x = lapply(x, function(x) {
+      if (is.character(x)) x = enc(x)
+      if (is.factor(x)) levels(x) = enc(levels(x))
+      x
+    })
+  }
   .Call(CfwriteR, x, file, sep, sep2, eol, na, dec, quote, qmethod=="escape", append,
         row.names, col.names, logical01, scipen, dateTimeAs, buffMB, nThread,
         showProgress, is_gzip, compressLevel, bom, yaml, verbose, encoding)
