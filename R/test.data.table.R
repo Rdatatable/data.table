@@ -515,6 +515,8 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
   }
   if (!fail && !length(error) && (!length(output) || !missing(y))) {   # TODO test y when output=, too
     capture.output(y <- try(y, silent=TRUE)) # y might produce verbose output, just toss it
+    if (inherits(x, c("Date", "POSIXct"))) storage.mode(x) <- "numeric"
+    if (inherits(y, c("Date", "POSIXct"))) storage.mode(y) <- "numeric"
     if (identical(x,y)) return(invisible(TRUE))
     all.equal.result = TRUE
     if (is.data.frame(x) && is.data.frame(y)) {
