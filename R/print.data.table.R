@@ -265,8 +265,8 @@ char.trunc = function(x, trunc.char = getOption("datatable.prettyprint.char")) {
 dt_width = function(x, nrow, class, row.names, col.names) {
   widths = apply(nchar(x, type='width'), 2L, max)
   if (class) widths = pmax(widths, 6L)
-  names_widths = if (col.names == "none") rep(0L, ncol(x)) else sapply(colnames(x), nchar, type = "width")
-  dt_widths = pmax(widths, names_widths)
+  if (col.names != "none") names = sapply(colnames(x), nchar, type="width") else names = 0L
+  dt_widths = pmax(widths, names)
   rownum_width = if (row.names) as.integer(ceiling(log10(nrow))+2.0) else 0L
   cumsum(dt_widths + 1L) + rownum_width
 }
