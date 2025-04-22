@@ -1,5 +1,5 @@
 # is x[i] in between lower[i] and upper[i] ?
-between = function(x, lower, upper, incbounds=TRUE, NAbounds=TRUE, check=FALSE) {
+between = function(x, lower, upper, incbounds=TRUE, NAbounds=TRUE, check=FALSE, ignore_tzone=FALSE) {
   if (is.logical(x)) stopf("between has been passed an argument x of type logical")
   if (is.logical(lower)) lower = as.integer(lower)   # typically NA (which is logical type)
   if (is.logical(upper)) upper = as.integer(upper)   # typically NA (which is logical type)
@@ -16,7 +16,7 @@ between = function(x, lower, upper, incbounds=TRUE, NAbounds=TRUE, check=FALSE) 
     stopifnot(is.px(x), is.px(lower), is.px(upper)) # nocov # internal
   }
   # POSIX check timezone match
-  if (is.px(x) && is.px(lower) && is.px(upper)) {
+  if (!ignore_tzone && is.px(x) && is.px(lower) && is.px(upper)) {
     tzs = sapply(list(x,lower,upper), function(x) {
       attr(x, "tzone", exact=TRUE) %||% ""
     })
