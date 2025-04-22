@@ -10,7 +10,7 @@ vignette: >
 ---
 
 ```{r, echo = FALSE, message = FALSE}
-litedown::reactor(comment = "# ", print = NA)
+litedown::reactor(comment = "# ")
 .old.th = data.table::setDTthreads(1)
 ```
 

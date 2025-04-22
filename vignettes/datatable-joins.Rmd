@@ -13,7 +13,7 @@ editor_options:
 
 ```{r, echo = FALSE, message = FALSE}
 library(data.table)
-litedown::reactor(comment = "# ", print = NA)
+litedown::reactor(comment = "# ")
 ```
 
 ```{r, echo=FALSE, file='_translation_links.R'}

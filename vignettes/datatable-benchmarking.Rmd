@@ -14,7 +14,7 @@ vignette: >
 
 ```{r, echo = FALSE, message = FALSE}
 library(data.table)
-litedown::reactor(comment = "# ", print = NA)
+litedown::reactor(comment = "# ")
 ```
 
 <style>
