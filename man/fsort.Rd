@@ -20,9 +20,9 @@ fsort(x, decreasing = FALSE, na.last = FALSE, internal=FALSE, verbose=FALSE, \do
   Process will raise error if \code{x} contains negative values.
   Unless \code{x} is already sorted \code{fsort} will redirect processing to slower single threaded \emph{order} followed by \emph{subset} in following cases:
   \itemize{
-    \item{data type other than \emph{double} (\emph{numeric})}
-    \item{data having \code{NA}s}
-    \item{\code{decreasing==FALSE}}
+    \item data type other than \emph{double} (\emph{numeric})
+    \item data having \code{NA}s
+    \item \code{decreasing==FALSE}
   }
 }
 \value{

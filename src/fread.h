@@ -7,30 +7,49 @@
 #include "myomp.h"
 #ifdef DTPY
   #include "py_fread.h"
+  #define ENC2NATIVE(s) (s)
 #else
   #include "freadR.h"
+  extern cetype_t ienc;
+  // R's message functions only take C's char pointer not SEXP, where encoding info can't be stored
+  // so must convert the error message char to native encoding first in order to correctly display in R
+  #define ENC2NATIVE(s) translateChar(mkCharCE(s, ienc))
 #endif
 
 // Ordered hierarchy of types
+// Each of these corresponds to a parser; they must be ordered "preferentially", i.e., if the same
+//   input could be validly parsed as both types t1 and t2, and we "prefer" type t1, t1 must come
+//   before t2. Most commonly, we prefer types using less storage. For example, characters '1.34'
+//   in a file could be double, complex, or string. We prefer double, which uses only 8 bytes.
+//   Similarly, '1234' could be integer, double, integer64, complex, or string. We prefer integer,
+//   which uses only 4 bytes.
 typedef enum {
-  NEG = -1,       // dummy to force signed type; sign bit used for out-of-sample type bump management
-  CT_DROP = 0,    // skip column requested by user; it is navigated as a string column with the prevailing quoteRule
-  CT_BOOL8_N,     // int8_t; first enum value must be 1 not 0(=CT_DROP) so that it can be negated to -1.
+  NEG = -1,        // dummy to force signed type; sign bit used for out-of-sample type bump management
+  CT_DROP = 0,     // skip column requested by user; it is navigated as a string column with the prevailing quoteRule
+  CT_EMPTY,        // int8_t; first enum value must be 1 not 0(=CT_DROP) so that it can be negated to -1. EMPTY to help column heading guess, #5257
+  CT_BOOL8_N,      // int8_t
   CT_BOOL8_U,
   CT_BOOL8_T,
   CT_BOOL8_L,
-  CT_INT32,       // int32_t
-  CT_INT64,       // int64_t
-  CT_FLOAT64,     // double (64-bit IEEE 754 float)
-  CT_FLOAT64_EXT, // double, with NAN/INF literals
-  CT_FLOAT64_HEX, // double, in hexadecimal format
-  CT_STRING,      // lenOff struct below
-  NUMTYPE         // placeholder for the number of types including drop; used for allocation and loop bounds
+  CT_BOOL8_Y,      // Y/N-as-bool
+  CT_INT32,        // int32_t
+  CT_INT64,        // int64_t
+  CT_FLOAT64,      // double (64-bit IEEE 754 float)
+  CT_FLOAT64_EXT,  // double, with NAN/INF literals
+  CT_FLOAT64_HEX,  // double, in hexadecimal format
+  CT_ISO8601_DATE, // integer, as read from a date in ISO-8601 format
+  CT_ISO8601_TIME, // double, as read from a timestamp in ISO-8601 time
+  CT_STRING,       // lenOff struct below
+  NUMTYPE          // placeholder for the number of types including drop; used for allocation and loop bounds
 } colType;
 
-extern int8_t typeSize[NUMTYPE];
+#define IS_DEC_TYPE(x) ((x) == CT_FLOAT64 || (x) == CT_FLOAT64_EXT || (x) == CT_ISO8601_TIME) // types where dec matters
+
+// Used to govern when coercion is allowed. We cannot coerce to a "lower" type, unless it has the same typeName.
 extern const char typeName[NUMTYPE][10];
-extern const long double pow10lookup[601];
+extern int8_t typeSize[NUMTYPE];
+
+extern const long double pow10lookup[301];
 extern const uint8_t hexdigits[256];
 
 
@@ -116,8 +135,10 @@ typedef struct freadMainArgs
   bool skipEmptyLines;
 
   // If True, then rows are allowed to have variable number of columns, and
-  // all ragged rows will be filled with NAs on the right.
-  bool fill;
+  // all ragged rows will be filled with NAs on the right. Supplying integer
+  // argument > 1 results in setting an upper bound estimate for the number
+  // of columns.
+  int fill;
 
   // If True, then emit progress messages during the parsing.
   bool showProgress;
@@ -137,7 +158,14 @@ typedef struct freadMainArgs
   // will become integer.
   bool logical01;
 
+  // If true, then column of Ns and Ys will be read as logical, otherwise it
+  // will become character.
+  bool logicalYN;
+
   bool keepLeadingZeros;
+
+  // should datetime with no Z or UTZ-offset be read as UTC?
+  bool noTZasUTC;
 
   char _padding[1];
 
@@ -336,6 +364,11 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx);
  */
 void setFinalNrow(size_t nrows);
 
+
+/**
+ * Called at the end to delete columns added due to too high user guess for fill.
+ */
+void dropFilledCols(int* dropArg, int ndrop);
 
 /**
  * Free any srtuctures associated with the thread-local parsing context.

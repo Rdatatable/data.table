@@ -1,0 +1,23 @@
+name: atime performance tests
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+    paths:
+      - 'R/**'
+      - 'src/**'
+      - '.ci/atime/**'
+
+jobs:
+  comment:
+    if: github.repository == 'Rdatatable/data.table'
+    runs-on: ubuntu-latest
+    container: ghcr.io/iterative/cml:0-dvc2-base1
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      repo_token: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: Anirban166/Autocomment-atime-results@v1.4.1
