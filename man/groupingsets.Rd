@@ -34,8 +34,6 @@ groupingsets(x, \dots)
     The \code{label} argument can be a named list of scalars, or a scalar, or \code{NULL}. When \code{label} is a list, each element name must be (1) a variable name in \code{by}, or (2) the first element of the class in the data.table \code{x} of a variable in \code{by}, or (3) one of 'character', 'integer', 'numeric', 'factor', 'Date', 'IDate'. The order of the list elements is not important. A label specified by variable name will apply only to that variable, while a label specified by first element of a class will apply to all variables in \code{by} for which the first element of the class of the variable in \code{x} matches the \code{label} element name, except for variables that have a label specified by variable name (that is, specification by variable name takes precedence over specification by class). For \code{label} elements with name in \code{by}, the class of the label value must be the same as the class of the variable in \code{x}. For \code{label} elements with name not in \code{by}, the first element of the class of the label value must be the same as the \code{label} element name. For example, \code{label = list(integer = 999, IDate = as.Date("3000-01-01"))} would produce an error because \code{class(999)[1]} is not \code{"integer"} and \code{class(as.Date("3000-01-01"))[1]} is not \code{"IDate"}. A corrected specification would be \code{label = list(integer = 999L, IDate = as.IDate("3000-01-01"))}.
 
     The \code{label = <scalar>} option provides a shorter alternative in the case where only one class of grouping variable requires a label. For example, \code{label = list(character = "Total")} can be shortened to \code{label = "Total"}. When this option is used, the label will be applied to all variables in \code{by} for which the first element of the class of the variable in \code{x} matches the first element of the class of the scalar.
-
-    The \code{jj} argument provides a mechanism to handle scoping issues when working with variables from outer environments. When using \code{j} directly with variables not defined in the columns of the data.table, R's evaluation rules may not find these variables, resulting in "object not found" errors. The \code{jj} argument accepts a quoted expression which can be created with either \code{quote()} (for direct calls referencing only columns and special symbols) or \code{substitute()} (when inside functions that need to capture parameters from the outer environment). For reliable behavior with function parameters, especially in nested environments, use the two-argument form \code{substitute(expr, list(param=value))} which binds values rather than symbols. This approach is particularly useful in functions where parameters need to be referenced within aggregation expressions. When \code{jj} is provided, the function will ignore any value specified in the \code{j} argument.
 }
 \value{
     A data.table with various aggregates.
@@ -95,16 +93,13 @@ groupingsets(DT, jj = quote(list(count = .N, total = sum(value))),
              by = c("color","year","status"), # jj with direct column references         
              sets = list("color", c("year","status"), character()), id = TRUE)      
 
-# Example showing when substitute() is necessary - in a wrapper function
-# Note: Use substitute(expr, list(param=value)) to bind values, not symbols
-custom_grouping <- function(DT, multiplier) {
-  # use substitute() with environment to ensure variable are properly evaluated
-  groupingsets(DT, jj = substitute(list(count = .N, total = sum(value) * m),
-               list(m = multiplier)),
+# Wrapper around groupingsets demonstrating NSE with user-defined j expression
+mygrp = function(x, j) {
+  groupingsets(x, jj = substitute(j),
                by = c("color", "year", "status"),
                sets = list("color", c("year", "status"), character()), id = TRUE)
 }
-# Using the wrapper function
-local({ foo <- 3; custom_grouping(DT, multiplier = foo) })
+multiplier = 2
+mygrp(DT, .(count = .N, total = sum(value) * multiplier))
 }
 \keyword{ data }
