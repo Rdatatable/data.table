@@ -145,7 +145,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     toprint = rbind(
       toprint,
       matrix(if (quote) old else colnames(toprint), nrow=1L), # see #97
-      if (isTRUE(class)) matrix(abbs, nrow=1L) # #6902
+      if (isTRUE(class)) matrix(if (trunc.cols) abbs[cols_to_print] else abbs, nrow=1L) # #6902
     )
   print_default(toprint)
   invisible(x)
