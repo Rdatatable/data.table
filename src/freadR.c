@@ -536,9 +536,7 @@ void setFinalNrow(size_t nrow) {
       return;
     const int ncol=LENGTH(DT);
     for (int i=0; i<ncol; i++) {
-      SETLENGTH(VECTOR_ELT(DT,i), nrow);
-      SET_TRUELENGTH(VECTOR_ELT(DT,i), dtnrows);
-      SET_GROWABLE_BIT(VECTOR_ELT(DT,i));  // #3292
+      SET_VECTOR_ELT(DT, i, growVector(VECTOR_ELT(DT, i), nrow));
     }
   }
   R_FlushConsole(); // # 2481. Just a convenient place; nothing per se to do with setFinalNrow()
