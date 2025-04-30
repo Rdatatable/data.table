@@ -173,7 +173,7 @@ rowwiseDT(
 
 20. Fixed a memory issue causing segfaults in `forder`, [#6797](https://github.com/Rdatatable/data.table/issues/6797). Thanks @dkutner for the report and @MichaelChirico for the fix.
 
-10. `set()` now automatically pre-allocates new column slots if needed, similar to what `:=` already does, [#496](https://github.com/Rdatatable/data.table/issues/496) [#4100](https://github.com/Rdatatable/data.table/issues/4100). Thanks to Huashan Chen and @tyner for the report and Benjamin Schwendinger for the fix.
+20. `set()` now automatically pre-allocates new column slots if needed, similar to what `:=` already does, [#496](https://github.com/Rdatatable/data.table/issues/496) [#4100](https://github.com/Rdatatable/data.table/issues/4100). Thanks to Huashan Chen and @tyner for the report and Benjamin Schwendinger for the fix.
 
 ## NOTES
 
