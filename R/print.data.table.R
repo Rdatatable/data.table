@@ -19,6 +19,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     stopf("Valid options for col.names are 'auto', 'top', and 'none'")
   if (length(trunc.cols) != 1L || !is.logical(trunc.cols) || is.na(trunc.cols))
     stopf("Valid options for trunc.cols are TRUE and FALSE")
+  stopifnot(isTRUEorFALSE(class))
   if (col.names == "none" && class)
     warningf("Column classes will be suppressed when col.names is 'none'")
   if (!shouldPrint(x)) {
@@ -52,11 +53,11 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     ))
   }
   if (any(dim(x)==0L)) {
-    class = if (is.data.table(x)) "table" else "frame"  # a data.frame could be passed to print.data.table() directly, #3363
+    x_class = if (is.data.table(x)) "data.table" else "data.frame"  # a data.frame could be passed to print.data.table() directly, #3363
     if (all(dim(x)==0L)) {
-      catf("Null data.%s (0 rows and 0 cols)\n", class)  # See FAQ 2.5 and NEWS item in v1.8.9
+      catf("Null %s (0 rows and 0 cols)\n", x_class)  # See FAQ 2.5 and NEWS item in v1.8.9
     } else {
-      catf("Empty data.%s (%d rows and %d cols)", class, NROW(x), NCOL(x))
+      catf("Empty %s (%d rows and %d cols)", x_class, NROW(x), NCOL(x))
       if (length(x)>0L) cat(": ",paste(head(names(x),6L),collapse=","),if(length(x)>6L)"...",sep="") # notranslate
       cat("\n") # notranslate
     }
@@ -94,7 +95,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   if (is.null(names(x)) || !any(nzchar(names(x), keepNA=TRUE)))
     # fixes bug #97 and #545
     colnames(toprint)=rep("", ncol(toprint))
-  if (isTRUE(class) && col.names != "none") {
+  if (class && col.names != "none") {
     #Matching table for most common types & their abbreviations
     class_abb = c(list = "<list>", integer = "<int>", numeric = "<num>",
       character = "<char>", Date = "<Date>", complex = "<cplx>",
@@ -105,8 +106,9 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     if ( length(idx <- which(is.na(abbs))) ) abbs[idx] = paste0("<", classes[idx], ">")
     toprint = rbind(abbs, toprint)
     rownames(toprint)[1L] = ""
+  } else {
+    abbs = ""
   }
-  if (isFALSE(class) || (isTRUE(class) && col.names == "none")) abbs = ""
   if (quote) colnames(toprint) <- paste0('"', old <- colnames(toprint), '"')
   if (isTRUE(trunc.cols)) {
     # allow truncation of columns to print only what will fit in console PR #4074
