@@ -133,9 +133,9 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   }
   if (printdots) {
     if (isFALSE(row.names)) {
-      toprint = rbind(head(toprint, topn + isTRUE(class)), "---", tail(toprint, topn)) # 4083
+      toprint = rbind(head(toprint, topn + class), "---", tail(toprint, topn)) # 4083
     } else {
-      toprint = rbind(head(toprint, topn + isTRUE(class)), "---"="", tail(toprint, topn))
+      toprint = rbind(head(toprint, topn + class), "---"="", tail(toprint, topn))
     }
     rownames(toprint) = format(rownames(toprint), justify="right")
     print_default(toprint)
@@ -147,7 +147,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
     toprint = rbind(
       toprint,
       matrix(if (quote) old else colnames(toprint), nrow=1L), # see #97
-      if (isTRUE(class)) matrix(if (trunc.cols) abbs[cols_to_print] else abbs, nrow=1L) # #6902
+      if (class) matrix(if (trunc.cols) abbs[cols_to_print] else abbs, nrow=1L) # #6902
     )
   print_default(toprint)
   invisible(x)
