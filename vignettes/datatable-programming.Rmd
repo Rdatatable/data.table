@@ -387,7 +387,7 @@ DT[, fun(Petal.Width), env = list(fun = "mean"), verbose=TRUE]
 
 Users will usually want to substitute the function name rather than inserting the actual function body. Therefore, the second approach (passing a character string) is often preferred.
 
-In case of any doubts on the `env` interface functioning user is advised to look at `verbose` output.
+In case of any doubts on the `env` interface functioning, set `verbose = TRUE` to inspect how expressions are resolved internally.
 
 ## Retired interfaces
 
