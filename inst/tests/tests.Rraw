@@ -16614,6 +16614,12 @@ test(2125.09, print(DT, trunc.cols=TRUE),
      output="4 variables not shown: [a, b, c, d]")
 test(2125.10, print(DT, trunc.cols=TRUE, class=TRUE),
      output="4 variables not shown: [a <char>, b <char>, c <char>, d <char>]")
+options("width" = 20L)
+# truncated cols with class and printing class at bottom #6929
+DT = data.table(a = 1:30,
+                b = "bbbbbbbbbbbbb")
+test(2125.11, print(DT, trunc.cols=TRUE, class=TRUE),
+     output="1 variable not shown: [b <char>]")
 options(old_width)
 
 # segfault when i is NULL or zero-column, #4060
