@@ -376,6 +376,19 @@ print(j)
 DT[, j, env = list(j = j)]
 ```
 
+### Common mistakes
+
+It is important to understand the difference between passing an object and a name that points to an object. See the verbose output of following examples.
+
+```{r obj_vs_objname}
+DT[, fun(Petal.Width), env = list(fun = mean), verbose=TRUE]
+DT[, fun(Petal.Width), env = list(fun = "mean"), verbose=TRUE]
+```
+
+Users will usually want to substitute the function name rather than inserting the actual function body. Therefore, the second approach (passing a character string) is often preferred.
+
+In case of any doubts on the `env` interface functioning, set `verbose = TRUE` to inspect how expressions are resolved internally.
+
 ## Retired interfaces
 
 In `[.data.table`, it is also possible to use other mechanisms for variable substitution or for passing quoted expressions. These include `get` and `mget` for inline injection of variables by providing their names as strings, and `eval` that tells `[.data.table` that the expression we passed into an argument is a quoted expression and that it should be handled differently. Those interfaces should now be considered retired and we recommend using the new `env` argument, instead.
