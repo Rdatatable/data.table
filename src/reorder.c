@@ -35,8 +35,10 @@ SEXP reorder(SEXP x, SEXP order)
     nrow = length(x);
     ncol = 1;
   }
-  if (!isInteger(order)) error(_("order must be an integer vector"));
-  if (length(order) != nrow) error(_("nrow(x)[%d]!=length(order)[%d]"),nrow,length(order));
+  if (!isInteger(order))
+    error(_("order must be an integer vector"));
+  if (length(order) != nrow)
+    error("nrow(x)[%d]!=length(order)[%d]", nrow, length(order)); // # notranslate
   int nprotect = 0;
   if (ALTREP(order)) { order=PROTECT(copyAsPlain(order)); nprotect++; }  // TODO: if it's an ALTREP sequence some optimizations are possible rather than expand
 
@@ -61,7 +63,7 @@ SEXP reorder(SEXP x, SEXP order)
     // This check is once up front, and then idx is applied to all the columns which is where the most time is spent.
   }
 
-  char *TMP = (char *)R_alloc(nmid, maxSize);
+  char *TMP = R_alloc(nmid, maxSize);
 
   for (int i=0; i<ncol; ++i) {
     const SEXP v = isNewList(x) ? VECTOR_ELT(x,i) : x;

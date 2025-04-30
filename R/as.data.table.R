@@ -63,7 +63,7 @@ as.data.table.matrix = function(x, keep.rownames=FALSE, key=NULL, ...) {
     for (i in ic) value[[i]] = x[, i]                  # <strike>for efficiency.</strike> For consistency - data.table likes and prefers "character"
   }
   else {
-    for (i in ic) value[[i]] <- as.vector(x[, i])       # to drop any row.names that would otherwise be retained inside every column of the data.table
+    for (i in ic) value[[i]] = as.vector(x[, i])       # to drop any row.names that would otherwise be retained inside every column of the data.table
   }
   col_labels = dimnames(x)[[2L]]
   setDT(value)
@@ -214,6 +214,13 @@ as.data.table.list = function(x,
 }
 
 as.data.table.data.frame = function(x, keep.rownames=FALSE, key=NULL, ...) {
+  if (is.data.table(x)) return(as.data.table.data.table(x, key=key)) # S3 is weird, #6739. Also # nocov; this is tested in 2302.{2,3}, not sure why it doesn't show up in coverage.
+  if (!identical(class(x), "data.frame")) {
+    class_orig = class(x)
+    x = as.data.frame(x)
+    if (identical(class(x), class_orig)) setattr(x, "class", "data.frame") # cater for cases when as.data.frame can generate a loop #6874
+    return(as.data.table.data.frame(x, keep.rownames=keep.rownames, key=key, ...))
+  }
   if (!isFALSE(keep.rownames)) {
     # can specify col name to keep.rownames, #575; if it's the same as key,
     #   kludge it to 'rn' since we only apply the new name afterwards, #4468
@@ -226,7 +233,7 @@ as.data.table.data.frame = function(x, keep.rownames=FALSE, key=NULL, ...) {
   if (any(cols_with_dims(x))) {
     # a data.frame with a column that is data.frame needs to be expanded; test 2013.4
     # x may be a class with [[ method that behaves differently, so as.list first for default [[, #4526
-    return(as.data.table.list(as.list(x), keep.rownames=keep.rownames, ...))
+    return(as.data.table.list(as.list(x), keep.rownames=keep.rownames, key = key,...))
   }
   ans = copy(x)  # TO DO: change this deep copy to be shallow.
   setattr(ans, "row.names", .set_row_names(nrow(x)))
@@ -243,13 +250,14 @@ as.data.table.data.frame = function(x, keep.rownames=FALSE, key=NULL, ...) {
   ans
 }
 
-as.data.table.data.table = function(x, ...) {
+as.data.table.data.table = function(x, ..., key=NULL) {
   # as.data.table always returns a copy, automatically takes care of #473
   if (any(cols_with_dims(x))) { # for test 2089.2
-    return(as.data.table.list(x, ...))
+    return(as.data.table.list(x, key = key, ...))
   }
   x = copy(x) # #1681
   # fix for #1078 and #1128, see .resetclass() for explanation.
   setattr(x, 'class', .resetclass(x, "data.table"))
+  if (!missing(key)) setkeyv(x, key)
   x
 }

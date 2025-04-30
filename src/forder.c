@@ -59,7 +59,7 @@ static bool notFirst=false;
 static char msg[1001];
 // use STOP in this file (not error()) to ensure cleanup() is called first
 // snprintf to msg first in case nrow (just as an example) is provided in the message because cleanup() sets nrow to 0
-#define STOP(...) do {snprintf(msg, 1000, __VA_ARGS__); cleanup(); error("%s", msg);} while(0)      // http://gcc.gnu.org/onlinedocs/cpp/Swallowing-the-Semicolon.html#Swallowing-the-Semicolon
+#define STOP(...) do {snprintf(msg, 1000, __VA_ARGS__); cleanup(); error("%s", msg);} while(0) // # notranslate. http://gcc.gnu.org/onlinedocs/cpp/Swallowing-the-Semicolon.html#Swallowing-the-Semicolon
 
 #undef warning
 #define warning(...) Do not use warning in this file                // since it can be turned to error via warn=2
@@ -283,8 +283,8 @@ static void cradix(SEXP *x, int n)
   cradix_counts = (int *)calloc(ustr_maxlen*256, sizeof(int));  // counts for the letters of left-aligned strings
   cradix_xtmp = (SEXP *)malloc(ustr_n*sizeof(SEXP));
   if (!cradix_counts || !cradix_xtmp) {
-    free(cradix_counts); free(cradix_xtmp);
-    STOP(_("Failed to alloc cradix_counts and/or cradix_tmp"));
+    free(cradix_counts); free(cradix_xtmp); // # nocov
+    STOP(_("Failed to alloc cradix_counts and/or cradix_tmp")); // # nocov
   }
   cradix_r(x, n, 0);
   free(cradix_counts); cradix_counts=NULL;
@@ -362,8 +362,10 @@ static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max
     }
     // now use the 1-1 mapping from ustr to ustr2 to get the ordering back into original ustr, being careful to reset tl to 0
     int *tl = (int *)malloc(ustr_n * sizeof(int));
-    if (!tl)
+    if (!tl) {
+      free(ustr3); // # nocov
       STOP(_("Failed to alloc tl when converting strings to UTF8"));  // # nocov
+    }
     const SEXP *tt = STRING_PTR_RO(ustr2);
     for (int i=0; i<ustr_n; i++) tl[i] = TRUELENGTH(tt[i]);   // fetches the o in ustr3 into tl which is ordered by ustr
     for (int i=0; i<ustr_n; i++) SET_TRUELENGTH(ustr3[i], 0);    // reset to 0 tl of the UTF8 (and possibly non-UTF in ustr too)
@@ -488,11 +490,10 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
   if (LENGTH(ascArg) != LENGTH(by)) {
     if (LENGTH(ascArg)!=1)
       STOP(_("'order' length (%d) is different to by='s length (%d)"), LENGTH(ascArg), LENGTH(by));
-    SEXP recycleAscArg = PROTECT(allocVector(INTSXP, LENGTH(by)));
+    SEXP recycleAscArg = PROTECT(allocVector(INTSXP, LENGTH(by))); n_protect++;
     for (int j=0; j<LENGTH(recycleAscArg); j++)
       INTEGER(recycleAscArg)[j] = INTEGER(ascArg)[0];
     ascArg = recycleAscArg;
-    UNPROTECT(1); // recycleAscArg
   }
   nrow = length(VECTOR_ELT(DT,0));
   int n_cplx = 0;
@@ -511,7 +512,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
     STOP(_("retStats must be TRUE or FALSE")); // # nocov # covered in reuseSorting forder
   retstats = LOGICAL(retStatsArg)[0]==TRUE;
   if (!retstats && retgrp)
-    error("retStats must be TRUE whenever retGrp is TRUE"); // # nocov # covered in reuseSorting forder
+    error(_("retStats must be TRUE whenever retGrp is TRUE")); // # nocov # covered in reuseSorting forder
   if (!IS_TRUE_OR_FALSE(sortGroupsArg))
     STOP(_("sort must be TRUE or FALSE")); // # nocov # covered in reuseSorting forder
   sortType = LOGICAL(sortGroupsArg)[0]==TRUE;   // if sortType is 1, it is later flipped between +1/-1 according to ascArg. Otherwise ascArg is ignored when sortType==0
@@ -595,12 +596,12 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
       if (INHERITS(x, char_integer64)) {
         range_i64((int64_t *)REAL(x), nrow, &min, &max, &na_count);
       } else {
-        if (verbose && INHERITS(x, char_Date) && INTEGER(isReallyReal(x))[0]==0) {
-          Rprintf(_("\n*** Column %d passed to forder is a date stored as an 8 byte double but no fractions are present. Please consider a 4 byte integer date such as IDate to save space and time.\n"), col+1);
-          // Note the (slightly expensive) isReallyReal will only run when verbose is true. Prefix '***' just to make it stand out in verbose output
+        if (verbose && INHERITS(x, char_Date) && fitsInInt32(x)) {
+          // Note the (slightly expensive) fitsInInt32 will only run when verbose is true. Prefix '***' just to make it stand out in verbose output
           // In future this could be upgraded to option warning. But I figured that's what we use verbose to do (to trace problems and look for efficiencies).
           // If an automatic coerce is desired (see discussion in #1738) then this is the point to do that in this file. Move the INTSXP case above to be
           // next, do the coerce of Date to integer now to a tmp, and then let this case fall through to INTSXP in the same way as CPLXSXP falls through to REALSXP.
+          Rprintf(_("\n*** Column %d passed to forder is a date stored as an 8 byte double but no fractions are present. Please consider a 4 byte integer date such as IDate to save space and time.\n"), col+1);
         }
         range_d(REAL(x), nrow, &min, &max, &na_count, &infnan_count);
         if (min==0 && na_count<nrow) { min=3; max=4; } // column contains no finite numbers and is not-all NA; create dummies to yield positive min-2 later
@@ -665,8 +666,10 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
     for (int b=0; b<nbyte; b++) {
       if (key[nradix+b]==NULL) {
         uint8_t *tt = calloc(nrow, sizeof(uint8_t));  // 0 initialize so that NA's can just skip (NA is always the 0 offset)
-        if (!tt)
+        if (!tt) {
+          free(key); // # nocov
           STOP(_("Unable to allocate %"PRIu64" bytes of working memory"), (uint64_t)nrow*sizeof(uint8_t)); // # nocov
+        }
         key[nradix+b] = tt;
       }
     }
@@ -772,16 +775,15 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
       }}
       free_ustr();  // ustr could be left allocated and reused, but free now in case large and we're tight on ram
       break;
-    default:
-       internal_error_with_cleanup(__func__, "column not supported, not caught earlier");  // # nocov
+    default: // # nocov
+       internal_error_with_cleanup(__func__, "column not supported, not caught earlier"); // # nocov
     }
     nradix += nbyte-1+(spare==0);
     TEND(4)
-    // Rprintf(_("Written key for column %d\n"), col);
   }
   if (key[nradix]!=NULL) nradix++;  // nradix now number of bytes in key
   #ifdef TIMING_ON
-  Rprintf(_("nradix=%d\n"), nradix);
+  Rprintf("nradix=%d\n", nradix); // # notranslate
   #endif
 
   // global nth, TMP & UGRP
@@ -789,8 +791,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
   TMP =  (int *)malloc(nth*UINT16_MAX*sizeof(int)); // used by counting sort (my_n<=65536) in radix_r()
   UGRP = (uint8_t *)malloc(nth*256);                // TODO: align TMP and UGRP to cache lines (and do the same for stack allocations too)
   if (!TMP || !UGRP /*|| TMP%64 || UGRP%64*/) {
-    free(TMP); free(UGRP);
-    STOP(_("Failed to allocate TMP or UGRP or they weren't cache line aligned: nth=%d"), nth);
+    free(TMP); free(UGRP); // # nocov
+    STOP(_("Failed to allocate TMP or UGRP or they weren't cache line aligned: nth=%d"), nth); // # nocov
   }
   
   if (retgrp) {
@@ -798,8 +800,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
     gs_thread_alloc = calloc(nth, sizeof(int));
     gs_thread_n = calloc(nth, sizeof(int));
     if (!gs_thread || !gs_thread_alloc || !gs_thread_n) {
-      free(gs_thread); free(gs_thread_alloc); free(gs_thread_n);
-      STOP(_("Could not allocate (very tiny) group size thread buffers"));
+      free(gs_thread); free(gs_thread_alloc); free(gs_thread_n); // # nocov
+      STOP(_("Could not allocate (very tiny) group size thread buffers")); // # nocov
     }
   }
   if (nradix) {
@@ -869,9 +871,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
     for (int i=0; i<=last; i++) {
       Rprintf(_("Timing block %2d%s = %8.3f   %8d\n"), i, (i>=17&&i<=19)?"(*)":"   ", tblock[i], nblock[i]);
     }
-    for (int i=0; i<=256; i++) {
-      if (stat[i]) Rprintf(_("stat[%03d]==%20"PRIu64"\n"), i, (uint64_t)stat[i]);
-    }
+    for (int i=0; i<=256; i++) if (stat[i])
+      Rprintf("stat[%03d]==%20"PRIu64"\n", i, (uint64_t)stat[i]); // # notranslate
   }
   #endif
   return ans;
@@ -918,7 +919,7 @@ void radix_r(const int from, const int to, const int radix) {
     uint8_t *restrict my_key = key[radix]+from;  // safe to write as we don't use this radix again
     uint8_t *o = (uint8_t *)malloc(my_n * sizeof(uint8_t));
     if (!o)
-      STOP(_("Failed to allocate %d bytes for '%s'."), (int)(my_n * sizeof(uint8_t)), "o");
+      STOP(_("Failed to allocate %d bytes for '%s'."), (int)(my_n * sizeof(uint8_t)), "o"); // # nocov
     // if last key (i.e. radix+1==nradix) there are no more keys to reorder so we could reorder osub by reference directly and save allocating and populating o just
     // to use it once. However, o's type is uint8_t so many moves within this max-256 vector should be faster than many moves in osub (4 byte or 8 byte ints) [1 byte
     // type is always aligned]
@@ -987,8 +988,8 @@ void radix_r(const int from, const int to, const int radix) {
       // reorder osub and each remaining ksub
       int *TMP = malloc(my_n * sizeof(int));
       if (!TMP) {
-        free(o);
-        STOP(_("Failed to allocate %d bytes for '%s'."), (int)(my_n * sizeof(int)), "TMP");
+        free(o); // # nocov
+        STOP(_("Failed to allocate %d bytes for '%s'."), (int)(my_n * sizeof(int)), "TMP"); // # nocov
       }
       const int *restrict osub = anso+from;
       for (int i=0; i<my_n; i++) TMP[i] = osub[o[i]];
@@ -1010,7 +1011,7 @@ void radix_r(const int from, const int to, const int radix) {
     int ngrp=0; //minor TODO: could know number of groups with certainty up above
     int *my_gs = malloc(my_n * sizeof(int));
     if (!my_gs)
-      STOP(_("Failed to allocate %d bytes for '%s'."), (int)(my_n * sizeof(int)), "my_gs");
+      STOP(_("Failed to allocate %d bytes for '%s'."), (int)(my_n * sizeof(int)), "my_gs"); // # nocov
     my_gs[ngrp]=1;
     for (int i=1; i<my_n; i++) {
       if (my_key[i]!=my_key[i-1]) my_gs[++ngrp] = 1;
@@ -1112,7 +1113,7 @@ void radix_r(const int from, const int to, const int radix) {
     }
     int *my_gs = malloc((ngrp==0 ? 256 : ngrp) * sizeof(int)); // ngrp==0 when sort and skip==true; we didn't count the non-zeros in my_counts yet in that case
     if (!my_gs)
-      STOP(_("Failed to allocate %d bytes for '%s'."), (int)((ngrp==0 ? 256 : ngrp) * sizeof(int)), "my_gs");
+      STOP(_("Failed to allocate %d bytes for '%s'."), (int)((ngrp==0 ? 256 : ngrp) * sizeof(int)), "my_gs"); // # nocov
     if (sortType!=0) {
       ngrp=0;
       for (int i=0; i<256; i++) if (my_counts[i]) my_gs[ngrp++]=my_counts[i];  // this casts from uint16_t to int32, too
@@ -1142,8 +1143,8 @@ void radix_r(const int from, const int to, const int radix) {
   uint8_t  *ugrps =  malloc(nBatch*256*sizeof(uint8_t));
   int      *ngrps =  calloc(nBatch    ,sizeof(int));
   if (!counts || !ugrps || !ngrps) {
-    free(counts); free(ugrps); free(ngrps);
-    STOP(_("Failed to allocate parallel counts. my_n=%d, nBatch=%d"), my_n, nBatch);
+    free(counts); free(ugrps); free(ngrps); // # nocov
+    STOP(_("Failed to allocate parallel counts. my_n=%d, nBatch=%d"), my_n, nBatch); // # nocov
   }
 
   bool skip=true;
@@ -1243,7 +1244,7 @@ void radix_r(const int from, const int to, const int radix) {
 
   int *starts = calloc(nBatch*256, sizeof(int));  // keep starts the same shape and ugrp order as counts
   if (!starts)
-    STOP(_("Failed to allocate %d bytes for '%s'."), (int)(nBatch*256*sizeof(int)), "starts");
+    STOP(_("Failed to allocate %d bytes for '%s'."), (int)(nBatch*256*sizeof(int)), "starts"); // # nocov
   for (int j=0, sum=0; j<ngrp; j++) {  // iterate through columns (ngrp bytes)
     uint16_t *tmp1 = counts+ugrp[j];
     int      *tmp2 = starts+ugrp[j];
@@ -1260,7 +1261,7 @@ void radix_r(const int from, const int to, const int radix) {
   if (!skip) {
     int *TMP = malloc(my_n * sizeof(int));
     if (!TMP)
-      STOP(_("Unable to allocate TMP for my_n=%d items in parallel batch counting"), my_n);
+      STOP(_("Unable to allocate TMP for my_n=%d items in parallel batch counting"), my_n); // # nocov
     #pragma omp parallel for num_threads(getDTthreads(nBatch, false))
     for (int batch=0; batch<nBatch; batch++) {
       const int *restrict      my_starts = starts + batch*256;
@@ -1299,7 +1300,7 @@ void radix_r(const int from, const int to, const int radix) {
 
   int *my_gs = malloc(ngrp * sizeof(int));
   if (!my_gs)
-    STOP(_("Failed to allocate %d bytes for '%s'."), (int)(ngrp * sizeof(int)), "my_gs");
+    STOP(_("Failed to allocate %d bytes for '%s'."), (int)(ngrp * sizeof(int)), "my_gs"); // # nocov
   for (int i=1; i<ngrp; i++) my_gs[i-1] = starts[ugrp[i]] - starts[ugrp[i-1]];   // use the first row of starts to get totals
   my_gs[ngrp-1] = my_n - starts[ugrp[ngrp-1]];
 
@@ -1442,7 +1443,7 @@ SEXP issorted(SEXP x, SEXP by)
       types[j] = 3;
       ptrs[j] = (const char *)STRING_PTR_RO(col);
       break;
-    default:
+    default: // # nocov
       STOP(_("type '%s' is not yet supported"), type2char(TYPEOF(col)));  // # nocov
     }
   }
@@ -1476,7 +1477,7 @@ SEXP issorted(SEXP x, SEXP by)
                 strcmp(CHAR(p[0]), CHAR(p[-1]))) >= 0;
         }
       } break;
-      default :
+      default : // # nocov
         STOP(_("type '%s' is not yet supported"), type2char(TYPEOF(x)));  // # nocov
       }
       if (!ok) return ScalarLogical(FALSE);  // not sorted so return early
@@ -1619,9 +1620,9 @@ void putIndex(SEXP x, SEXP cols, SEXP o) {
 
 // isTRUE(getOption("datatable.use.index"))
 bool GetUseIndex(void) {
-  SEXP opt = GetOption(install("datatable.use.index"), R_NilValue);
+  SEXP opt = GetOption1(install("datatable.use.index"));
   if (!IS_TRUE_OR_FALSE(opt))
-    error("'datatable.use.index' option must be TRUE or FALSE"); // # nocov
+    error(_("'datatable.use.index' option must be TRUE or FALSE")); // # nocov
   return LOGICAL(opt)[0];
 }
 
@@ -1630,11 +1631,11 @@ bool GetAutoIndex(void) {
   // for now temporarily 'forder.auto.index' not 'auto.index' to disabled it by default
   // because it writes attr on .SD which is re-used by all groups leading to incorrect results
   // DT[, .(uN=uniqueN(.SD)), by=A]
-  SEXP opt = GetOption(install("datatable.forder.auto.index"), R_NilValue);
+  SEXP opt = GetOption1(install("datatable.forder.auto.index"));
   if (isNull(opt))
     return false;
   if (!IS_TRUE_OR_FALSE(opt))
-    error("'datatable.forder.auto.index' option must be TRUE or FALSE"); // # nocov
+    error(_("'datatable.forder.auto.index' option must be TRUE or FALSE")); // # nocov
   return LOGICAL(opt)[0];
 }
 
@@ -1651,25 +1652,25 @@ SEXP forderReuseSorting(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP
   if (verbose)
     tic = omp_get_wtime();
   if (isNull(DT))
-    error("DT is NULL");
+    error(_("DT is NULL"));
   if (!IS_TRUE_OR_FALSE(retGrpArg))
-    error("retGrp must be TRUE or FALSE");
+    error(_("retGrp must be TRUE or FALSE"));
   bool retGrp = (bool)LOGICAL(retGrpArg)[0];
   if (!IS_TRUE_OR_FALSE(retStatsArg))
-    error("retStats must be TRUE or FALSE");
+    error(_("retStats must be TRUE or FALSE"));
   bool retStats = (bool)LOGICAL(retStatsArg)[0];
   if (!retStats && retGrp)
-    error("retStats must be TRUE whenever retGrp is TRUE"); // retStats doesnt cost anything and it will be much easier to optimize use of index
+    error(_("retStats must be TRUE whenever retGrp is TRUE")); // retStats doesnt cost anything and it will be much easier to optimize use of index
   if (!IS_TRUE_OR_FALSE(sortGroupsArg))
-    error("sort must be TRUE or FALSE");
+    error(_("sort must be TRUE or FALSE"));
   bool sortGroups = (bool)LOGICAL(sortGroupsArg)[0];
   if (!isLogical(naArg) || LENGTH(naArg) != 1)
-    error("na.last must be logical TRUE, FALSE or NA of length 1");
+    error(_("na.last must be logical TRUE, FALSE or NA of length 1"));
   bool na = (bool)LOGICAL(naArg)[0];
   if (!isInteger(ascArg))
-    error("order must be integer"); // # nocov # coerced to int in R
+    error(_("order must be integer")); // # nocov # coerced to int in R
   if (!isLogical(reuseSortingArg) || LENGTH(reuseSortingArg) != 1)
-    error("reuseSorting must be logical TRUE, FALSE or NA of length 1");
+    error(_("reuseSorting must be logical TRUE, FALSE or NA of length 1"));
   int reuseSorting = LOGICAL(reuseSortingArg)[0];
   if (!length(DT))
     return allocVector(INTSXP, 0);
@@ -1681,7 +1682,7 @@ SEXP forderReuseSorting(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP
       opt = -1;
     } else {
       if (verbose)
-        Rprintf("forderReuseSorting: opt not possible: is.data.table(DT)=%d, sortGroups=%d, all1(ascArg)=%d\n", INHERITS(DT,char_datatable), sortGroups, all1(ascArg));
+        Rprintf(_("forderReuseSorting: opt not possible: is.data.table(DT)=%d, sortGroups=%d, all1(ascArg)=%d\n"), INHERITS(DT,char_datatable), sortGroups, all1(ascArg));
       opt = 0;
     }
   } else if (reuseSorting) {
@@ -1700,7 +1701,7 @@ SEXP forderReuseSorting(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP
     opt = 1; // keyOpt
     ans = PROTECT(allocVector(INTSXP, 0)); protecti++;
     if (verbose)
-      Rprintf("forderReuseSorting: using key: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
+      Rprintf(_("forderReuseSorting: using key: %s\n"), CHAR(STRING_ELT(idxName(DT, by), 0)));
   }
   if (opt == -1 && GetUseIndex()) {
     SEXP idx = getIndex(DT, by);
@@ -1735,23 +1736,23 @@ SEXP forderReuseSorting(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP
           opt = 2; // idxOpt but need to drop groups or stats
         } else if (!hasGrp && retGrp && !hasStats && retStats) {
           if (verbose)
-            Rprintf("forderReuseSorting: index found but not for retGrp and retStats: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
+            Rprintf(_("forderReuseSorting: index found but not for retGrp and retStats: %s\n"), CHAR(STRING_ELT(idxName(DT, by), 0)));
         } else if (!hasGrp && retGrp) {
           if (verbose)
-            Rprintf("forderReuseSorting: index found but not for retGrp: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
+            Rprintf(_("forderReuseSorting: index found but not for retGrp: %s\n"), CHAR(STRING_ELT(idxName(DT, by), 0)));
         } else if (!hasStats && retStats) {
           if (verbose)
-            Rprintf("forderReuseSorting: index found but not for retStats: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
+            Rprintf(_("forderReuseSorting: index found but not for retStats: %s\n"), CHAR(STRING_ELT(idxName(DT, by), 0)));
         } else {
           internal_error_with_cleanup(__func__, "reuseSorting forder index optimization unhandled branch of retGrp-retStats"); // # nocov
         }
       } else {
         if (!hasStats) {
           if (verbose)
-            Rprintf("forderReuseSorting: index found but na.last=TRUE and no stats available: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
+            Rprintf(_("forderReuseSorting: index found but na.last=TRUE and no stats available: %s\n"), CHAR(STRING_ELT(idxName(DT, by), 0)));
         } else if (idxAnyNF(idx)) {
           if (verbose)
-            Rprintf("forderReuseSorting: index found but na.last=TRUE and NAs present: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
+            Rprintf(_("forderReuseSorting: index found but na.last=TRUE and NAs present: %s\n"), CHAR(STRING_ELT(idxName(DT, by), 0)));
         } else {
           internal_error_with_cleanup(__func__, "reuseSorting forder index optimization unhandled branch of last.na=T"); // # nocov
         }
@@ -1759,7 +1760,7 @@ SEXP forderReuseSorting(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP
       if (opt == 2) {
         ans = idx;
         if (verbose)
-          Rprintf("forderReuseSorting: using existing index: %s\n", CHAR(STRING_ELT(idxName(DT, by), 0)));
+          Rprintf(_("forderReuseSorting: using existing index: %s\n"), CHAR(STRING_ELT(idxName(DT, by), 0)));
       }
     }
   }
@@ -1771,11 +1772,11 @@ SEXP forderReuseSorting(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP
         GetAutoIndex()) { // disabled by default, use datatable.forder.auto.index=T to enable, do not export/document, use for debugging only
       putIndex(DT, by, ans);
       if (verbose)
-        Rprintf("forderReuseSorting: setting index (retGrp=%d, retStats=%d) on DT: %s\n", retGrp, retStats, CHAR(STRING_ELT(idxName(DT, by), 0)));
+        Rprintf(_("forderReuseSorting: setting index (retGrp=%d, retStats=%d) on DT: %s\n"), retGrp, retStats, CHAR(STRING_ELT(idxName(DT, by), 0)));
     }
   }
   if (verbose)
-    Rprintf("forderReuseSorting: opt=%d, took %.3fs\n", opt, omp_get_wtime()-tic);
+    Rprintf(_("forderReuseSorting: opt=%d, took %.3fs\n"), opt, omp_get_wtime()-tic);
   UNPROTECT(protecti);
   return ans;
 }

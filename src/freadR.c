@@ -24,9 +24,10 @@ Secondary separator for list() columns, such as columns 11 and 12 in BED (no nee
 
 #define NUT  NUMTYPE+2  // +1 for "numeric" alias for "double"; +1 for CLASS fallback using as.class() at R level afterwards
 
-static int  typeSxp[NUT] =     {NILSXP,  LGLSXP,    LGLSXP,     LGLSXP,     LGLSXP,     LGLSXP,     INTSXP,    REALSXP,     REALSXP,    REALSXP,        REALSXP,        INTSXP,          REALSXP,         STRSXP,      REALSXP,    STRSXP   };
-static char typeRName[NUT][10]={"NULL",  "logical", "logical",  "logical",  "logical",  "logical",  "integer", "integer64", "double",   "double",       "double",       "IDate",         "POSIXct",       "character", "numeric",  "CLASS"  };
-static int  typeEnum[NUT] =    {CT_DROP, CT_EMPTY,  CT_BOOL8_N, CT_BOOL8_U, CT_BOOL8_T, CT_BOOL8_L, CT_INT32,  CT_INT64,    CT_FLOAT64, CT_FLOAT64_HEX, CT_FLOAT64_EXT, CT_ISO8601_DATE, CT_ISO8601_TIME, CT_STRING,   CT_FLOAT64, CT_STRING};
+// these correspond to typeName, typeSize in fread.c, with few exceptions notes above on the NUT macro.
+static int  typeSxp[NUT] =     {NILSXP,  LGLSXP,    LGLSXP,     LGLSXP,     LGLSXP,     LGLSXP,     LGLSXP,     INTSXP,    REALSXP,     REALSXP,    REALSXP,        REALSXP,        INTSXP,          REALSXP,         STRSXP,      REALSXP,    STRSXP   };
+static char typeRName[NUT][10]={"NULL",  "logical", "logical",  "logical",  "logical",  "logical",  "logical",  "integer", "integer64", "double",   "double",       "double",       "IDate",         "POSIXct",       "character", "numeric",  "CLASS"  };
+static int  typeEnum[NUT] =    {CT_DROP, CT_EMPTY,  CT_BOOL8_N, CT_BOOL8_U, CT_BOOL8_T, CT_BOOL8_L, CT_BOOL8_Y, CT_INT32,  CT_INT64,    CT_FLOAT64, CT_FLOAT64_HEX, CT_FLOAT64_EXT, CT_ISO8601_DATE, CT_ISO8601_TIME, CT_STRING,   CT_FLOAT64, CT_STRING};
 static colType readInt64As=CT_INT64;
 static SEXP selectSxp;
 static SEXP dropSxp;
@@ -66,6 +67,7 @@ SEXP freadR(
   SEXP verboseArg,
   SEXP warnings2errorsArg,
   SEXP logical01Arg,
+  SEXP logicalYNArg,
 
   // extras needed by callbacks from freadMain
   SEXP selectArg,
@@ -128,8 +130,9 @@ SEXP freadR(
     args.nrowLimit = (int64_t)(REAL(nrowLimitArg)[0]);
 
   args.logical01 = LOGICAL(logical01Arg)[0];
+  args.logicalYN = LOGICAL(logicalYNArg)[0];
   {
-    SEXP tt = PROTECT(GetOption(sym_old_fread_datetime_character, R_NilValue));
+    SEXP tt = PROTECT(GetOption1(sym_old_fread_datetime_character));
     args.oldNoDateTime = oldNoDateTime = isLogical(tt) && LENGTH(tt)==1 && LOGICAL(tt)[0]==TRUE;
     UNPROTECT(1);
   }
@@ -155,7 +158,8 @@ SEXP freadR(
   args.skipEmptyLines = LOGICAL(skipEmptyLinesArg)[0];
   args.fill = INTEGER(fillArg)[0];
   args.showProgress = LOGICAL(showProgressArg)[0];
-  if (INTEGER(nThreadArg)[0]<1) error(_("nThread(%d)<1"), INTEGER(nThreadArg)[0]);
+  if (INTEGER(nThreadArg)[0]<1)
+    error("nThread(%d)<1", INTEGER(nThreadArg)[0]); // # notranslate
   args.nth = (uint32_t)INTEGER(nThreadArg)[0];
   args.verbose = verbose;
   args.warningsAreErrors = warningsAreErrors;
@@ -228,8 +232,8 @@ static void applyDrop(SEXP items, int8_t *type, int ncol, int dropSource) {
     int k = itemsD[j];
     if (k==NA_INTEGER || k<1 || k>ncol) {
       static char buff[51];
-      if (dropSource==-1) snprintf(buff, 50, "drop[%d]", j+1);
-      else snprintf(buff, 50, "colClasses[[%d]][%d]", dropSource+1, j+1);
+      if (dropSource==-1) snprintf(buff, 50, "drop[%d]", j+1); // # notranslate
+      else snprintf(buff, 50, "colClasses[[%d]][%d]", dropSource+1, j+1); // # notranslate
       if (k==NA_INTEGER) {
         if (isString(items))
           DTWARN(_("Column name '%s' (%s) not found"), CHAR(STRING_ELT(items, j)), buff);
@@ -258,7 +262,7 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
     SEXP elem;
     if (colNames==NULL || colNames[i].len<=0) {
       char buff[12];
-      snprintf(buff,12,"V%d",i+1);
+      snprintf(buff,12,"V%d",i+1); // # notranslate
       elem = mkChar(buff);  // no PROTECT as passed immediately to SET_STRING_ELT
     } else {
       elem = mkCharLenCE(anchor+colNames[i].off, colNames[i].len, ienc);  // no PROTECT as passed immediately to SET_STRING_ELT
@@ -620,7 +624,7 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx)
     resj++;
     if (type[j]!=CT_STRING && type[j]>0) {
       if (thisSize == 8) {
-        double *dest = (double *)REAL(VECTOR_ELT(DT, resj)) + DTi;
+        double *dest = REAL(VECTOR_ELT(DT, resj)) + DTi;
         const char *src8 = (char*)buff8 + off8;
         for (int i=0; i<nRows; ++i) {
           *dest = *(double *)src8;
@@ -629,7 +633,7 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx)
         }
       } else
       if (thisSize == 4) {
-        int *dest = (int *)INTEGER(VECTOR_ELT(DT, resj)) + DTi;
+        int *dest = INTEGER(VECTOR_ELT(DT, resj)) + DTi;
         const char *src4 = (char*)buff4 + off4;
         // debug line for #3369 ... if (DTi>2638000) printf("freadR.c:460: thisSize==4, resj=%d, %"PRIu64", %d, %d, j=%d, done=%d\n", resj, (uint64_t)DTi, off4, rowSize4, j, done);
         for (int i=0; i<nRows; ++i) {
@@ -639,8 +643,8 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx)
         }
       } else
       if (thisSize == 1) {
-        if (type[j] > CT_BOOL8_L) STOP(_("Field size is 1 but the field is of type %d\n"), type[j]);
-        Rboolean *dest = (Rboolean *)LOGICAL(VECTOR_ELT(DT, resj)) + DTi;
+        if (type[j] > CT_BOOL8_Y) STOP(_("Field size is 1 but the field is of type %d\n"), type[j]);
+        int *dest = LOGICAL(VECTOR_ELT(DT, resj)) + DTi;
         const char *src1 = (char*)buff1 + off1;
         for (int i=0; i<nRows; ++i) {
           int8_t v = *(int8_t *)src1;
@@ -681,7 +685,7 @@ void progress(int p, int eta) {
     if (eta<3 || p>50) return;
     #pragma omp critical
     {
-      REprintf("|--------------------------------------------------|\n|");
+      REprintf("|--------------------------------------------------|\n|"); // # notranslate
       R_FlushConsole();
     }
     displayed = 0;
@@ -692,11 +696,11 @@ void progress(int p, int eta) {
   bar[toPrint] = '\0';
   #pragma omp critical
   {
-    REprintf("%s", bar);
+    REprintf("%s", bar); // # notranslate
     bar[toPrint] = '=';
     displayed = p;
     if (p==50) {
-      REprintf("|\n");
+      REprintf("|\n"); // # notranslate
       displayed = -1;
     }
     R_FlushConsole();
@@ -716,7 +720,7 @@ void __halt(bool warn, const char *format, ...) {
   // if (warn) warning(_("%s"), msg);
   //   this warning() call doesn't seem to honor warn=2 straight away in R 3.6, so now always call error() directly to be sure
   //   we were going via warning() before to get the (converted from warning) prefix in the message (which we could mimic in future)
-  error(_("%s"), msg); // include "%s" because data in msg might include '%'
+  error("%s", msg); // # notranslate. include "%s" because data in msg might include '%'
 }
 
 void prepareThreadContext(ThreadLocalFreadParsingContext *ctx) {}

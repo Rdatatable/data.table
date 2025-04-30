@@ -75,8 +75,9 @@ static freadMainArgs args = {0};  // global for use by DTPRINT; static implies =
   static int mmp_fd = -1;
 #endif
 
-const char typeName[NUMTYPE][10] = {"drop", "bool8", "bool8", "bool8", "bool8", "bool8", "int32", "int64", "float64", "float64", "float64", "int32", "float64", "string"};
-int8_t     typeSize[NUMTYPE]     = { 0,      1,       1,       1,       1,       1,       4,       8,       8,         8,         8,         4,       8       ,  8      };
+// See header for more explanation.
+const char typeName[NUMTYPE][10] = {"drop", "bool8", "bool8", "bool8", "bool8", "bool8", "bool8", "int32", "int64", "float64", "float64", "float64", "int32", "float64", "string"};
+int8_t     typeSize[NUMTYPE]     = { 0,      1,       1,       1,       1,       1,      1,       4,       8,       8,         8,         8,         4,       8       ,  8      };
 
 // In AIX, NAN and INFINITY don't qualify as constant literals. Refer: PR #3043
 // So we assign them through below init function.
@@ -423,26 +424,26 @@ static const char* filesize_to_str(size_t fsize)
     }
     if (ndigits == 0 || (fsize == (fsize >> shift << shift))) {
       if (i < NSUFFIXES) {
-        snprintf(output, BUFFSIZE, "%"PRIu64"%cB (%"PRIu64" bytes)",
+        snprintf(output, BUFFSIZE, "%"PRIu64"%cB (%"PRIu64" bytes)", // # notranslate
                  (uint64_t)(lsize >> shift), suffixes[i], (uint64_t)lsize);
         return output;
       }
     } else {
-      snprintf(output, BUFFSIZE, "%.*f%cB (%"PRIu64" bytes)",
+      snprintf(output, BUFFSIZE, "%.*f%cB (%"PRIu64" bytes)", // # notranslate
                ndigits, (double)fsize / (1LL << shift), suffixes[i], (uint64_t)lsize);
       return output;
     }
   }
   if (fsize == 1) return one_byte;
-  snprintf(output, BUFFSIZE, "%"PRIu64" bytes", (uint64_t)lsize);
+  snprintf(output, BUFFSIZE, "%"PRIu64" bytes", (uint64_t)lsize); // # notranslate
   return output;
 }
 double copyFile(size_t fileSize)  // only called in very very rare cases
 {
   double tt = wallclock();
-  mmp_copy = (char *)malloc((size_t)fileSize + 1 /* extra \0 */);
+  mmp_copy = (char *)malloc(fileSize + 1 /* extra \0 */);
   if (!mmp_copy)
-    return -1.0;
+    return -1.0; // # nocov
   memcpy(mmp_copy, mmp, fileSize);
   sof = mmp_copy;
   eof = (char *)mmp_copy + fileSize;
@@ -563,7 +564,7 @@ static void Field(FieldParseContext *ctx)
       if (ch!=ch2) fieldStart--;   // field ending is this sep|eol; neither (*1) or (*2) happened; opening quote wasn't really an opening quote
     }
     break;
-  default:
+  default: // # nocov
     return;  // # nocov Internal error: undefined quote rule
   }
   target->len = (int32_t)(ch - fieldStart);
@@ -579,11 +580,11 @@ static void Field(FieldParseContext *ctx)
   }
 }
 
-static void str_to_i32_core(const char **pch, int32_t *target)
+static void str_to_i32_core(const char **pch, int32_t *target, bool parse_date)
 {
   const char *ch = *pch;
 
-  if (*ch=='0' && args.keepLeadingZeros && IS_DIGIT(ch[1])) return;
+  if (*ch=='0' && args.keepLeadingZeros && IS_DIGIT(ch[1]) && !parse_date) return;
   bool neg = *ch=='-';
   ch += (neg || *ch=='+');
   const char *start = ch;  // to know if at least one digit is present
@@ -619,7 +620,7 @@ static void str_to_i32_core(const char **pch, int32_t *target)
 
 static void StrtoI32(FieldParseContext *ctx)
 {
-  str_to_i32_core(ctx->ch, (int32_t*) ctx->targets[sizeof(int32_t)]);
+  str_to_i32_core(ctx->ch, (int32_t*) ctx->targets[sizeof(int32_t)], false);
 }
 
 
@@ -965,7 +966,7 @@ static void parse_iso8601_date_core(const char **pch, int32_t *target)
 
   int32_t year=0, month=0, day=0;
 
-  str_to_i32_core(&ch, &year);
+  str_to_i32_core(&ch, &year, true);
 
   // .Date(.Machine$integer.max*c(-1, 1)):
   //  -5877641-06-24 -- 5881580-07-11
@@ -978,12 +979,12 @@ static void parse_iso8601_date_core(const char **pch, int32_t *target)
   bool isLeapYear = year % 4 == 0 && (year % 100 != 0 || year/100 % 4 == 0);
   ch++;
 
-  str_to_i32_core(&ch, &month);
+  str_to_i32_core(&ch, &month, true);
   if (month == NA_INT32 || month < 1 || month > 12 || *ch != '-')
     goto fail;
   ch++;
 
-  str_to_i32_core(&ch, &day);
+  str_to_i32_core(&ch, &day, true);
   if (day == NA_INT32 || day < 1 ||
       (day > (isLeapYear ? leapYearDays[month-1] : normYearDays[month-1])))
     goto fail;
@@ -1021,12 +1022,12 @@ static void parse_iso8601_timestamp(FieldParseContext *ctx)
     // allows date-only field in a column with UTC-marked datetimes to be parsed as UTC too; test 2150.13
   ch++;
 
-  str_to_i32_core(&ch, &hour);
+  str_to_i32_core(&ch, &hour, true);
   if (hour == NA_INT32 || hour < 0 || hour > 23 || *ch != ':')
     goto fail;
   ch++;
 
-  str_to_i32_core(&ch, &minute);
+  str_to_i32_core(&ch, &minute, true);
   if (minute == NA_INT32 || minute < 0 || minute > 59 || *ch != ':')
     goto fail;
   ch++;
@@ -1043,7 +1044,7 @@ static void parse_iso8601_timestamp(FieldParseContext *ctx)
     if (*ch == '+' || *ch == '-') {
       const char *start = ch; // facilitates distinguishing +04, +0004, +0000, +00:00
       // three recognized formats: [+-]AA:BB, [+-]AABB, and [+-]AA
-      str_to_i32_core(&ch, &tz_hour);
+      str_to_i32_core(&ch, &tz_hour, true);
       if (tz_hour == NA_INT32)
         goto fail;
       if (ch - start == 5 && tz_hour != 0) { // +AABB
@@ -1056,7 +1057,7 @@ static void parse_iso8601_timestamp(FieldParseContext *ctx)
           goto fail;
         if (*ch == ':') {
           ch++;
-          str_to_i32_core(&ch, &tz_minute);
+          str_to_i32_core(&ch, &tz_minute, true);
           if (tz_minute == NA_INT32)
             goto fail;
         }
@@ -1072,7 +1073,6 @@ static void parse_iso8601_timestamp(FieldParseContext *ctx)
 
   date_only:
 
-  //Rprintf("date=%d\thour=%d\tz_hour=%d\tminute=%d\ttz_minute=%d\tsecond=%.1f\n", date, hour, tz_hour, minute, tz_minute, second);
   // cast upfront needed to prevent silent overflow
   *target = 86400*(double)date + 3600*(hour - tz_hour) + 60*(minute - tz_minute) + second;
 
@@ -1155,6 +1155,21 @@ static void parse_bool_lowercase(FieldParseContext *ctx)
   }
 }
 
+/* Parse Y | y | N | n as boolean */
+static void parse_bool_yesno(FieldParseContext *ctx)
+{
+  const char *ch = *(ctx->ch);
+  int8_t *target = (int8_t*) ctx->targets[sizeof(int8_t)];
+  if (ch[0] == 'Y' || ch[0] == 'y') {
+    *target = 1;
+    *(ctx->ch) = ch + 1;
+  } else if (ch[0] == 'N' || ch[0] == 'n') {
+    *target = 0;
+    *(ctx->ch) = ch + 1;
+  } else {
+    *target = NA_BOOL8;
+  }
+}
 
 /* How to register a new parser
  *  (1) Write the parser
@@ -1171,6 +1186,7 @@ static reader_fun_t fun[NUMTYPE] = {
   (reader_fun_t) &parse_bool_uppercase,
   (reader_fun_t) &parse_bool_titlecase,
   (reader_fun_t) &parse_bool_lowercase,
+  (reader_fun_t) &parse_bool_yesno,
   (reader_fun_t) &StrtoI32,
   (reader_fun_t) &StrtoI64,
   (reader_fun_t) &parse_double_regular,
@@ -1233,9 +1249,13 @@ static int detect_types( const char **pch, int8_t type[], int ncol, bool *bumped
         }
       }
       ch = fieldStart;
-      if (autoDec && IS_DEC_TYPE(tmpType[field]) && dec == '.') { // . didn't parse a double; try ,
-        dec = ',';
-        continue;
+      if (autoDec && IS_DEC_TYPE(tmpType[field])) {
+        if (dec == '.') { // '.' didn't parse a double; try ','
+          dec = ',';
+          continue; // i.e., restart since tmpType not incremented
+        } else if (dec == ',') { // ',' didn't parse a double either; reset
+          dec = '\0';
+        }
       }
       while (++tmpType[field]<CT_STRING && disabled_parsers[tmpType[field]]) {};
       *bumped = true;
@@ -1323,7 +1343,9 @@ int freadMain(freadMainArgs _args) {
           strcmp(ch,"True")==0 || strcmp(ch,"False")==0)
         STOP(_("freadMain: NAstring <<%s>> is recognized as type boolean, this is not permitted."), ch);
       if ((strcmp(ch,"1")==0 || strcmp(ch,"0")==0) && args.logical01)
-        STOP(_("freadMain: NAstring <<%s>> and logical01=TRUE, this is not permitted."), ch);
+        STOP(_("freadMain: NAstring <<%s>> and %s=TRUE, this is not permitted."), ch, "logical01");
+      if ((strcmp(ch,"Y")==0 || strcmp(ch,"N")==0) && args.logicalYN)
+        STOP(_("freadMain: NAstring <<%s>> and %s=TRUE, this is not permitted."), ch, "logicalYN");
       char *end;
       errno = 0;
       (void)strtod(ch, &end);  // careful not to let "" get to here as strtod considers "" numeric
@@ -1332,15 +1354,16 @@ int freadMain(freadMainArgs _args) {
     nastr++;
   }
   disabled_parsers[CT_BOOL8_N] = !args.logical01;
+  disabled_parsers[CT_BOOL8_Y] = !args.logicalYN;
   disabled_parsers[CT_ISO8601_DATE] = disabled_parsers[CT_ISO8601_TIME] = args.oldNoDateTime; // temporary new option in v1.13.0; see NEWS
   if (verbose) {
     if (*NAstrings == NULL) {
       DTPRINT(_("  No NAstrings provided.\n"));
     } else {
-      DTPRINT(_("  NAstrings = ["));
+      DTPRINT("  NAstrings = ["); // # notranslate
       const char * const* s = NAstrings;
       while (*s++) DTPRINT(*s? "<<%s>>, " : "<<%s>>", s[-1]);
-      DTPRINT(_("]\n"));
+      DTPRINT("]\n");             // # notranslate
       if (any_number_like_NAstrings)
         DTPRINT(_("  One or more of the NAstrings looks like a number.\n"));
       else
@@ -1350,6 +1373,7 @@ int freadMain(freadMainArgs _args) {
     if (args.skipString) DTPRINT(_("  skip to string = <<%s>>\n"), args.skipString);
     DTPRINT(_("  show progress = %d\n"), args.showProgress);
     DTPRINT(_("  0/1 column will be read as %s\n"), args.logical01? "boolean" : "integer");
+    DTPRINT(_("  Y/N column will be read as %s\n"), args.logicalYN? "boolean" : "character");
   }
   if (*NAstrings==NULL ||                             // user sets na.strings=NULL
       (**NAstrings=='\0' && *(NAstrings+1)==NULL)) {  // user sets na.strings=""
@@ -1537,14 +1561,16 @@ int freadMain(freadMainArgs _args) {
         // In future, we may discover a way to mmap fileSize+1 on all OS when fileSize%4096==0, reliably. If and when, this clause can be updated with no code impact elsewhere.
         double time_taken = copyFile(fileSize);
         if (time_taken == -1.0) {
+          // # nocov start
           if (!verbose)
-            DTPRINT("%s. Attempt to copy file in RAM failed.", msg);
+            DTPRINT(_("%s. Attempt to copy file in RAM failed."), msg);
           STOP(_("Unable to allocate %s of contiguous virtual RAM."), filesize_to_str(fileSize));
+          // # nocov end
         }
         if (verbose)
           DTPRINT(_("  File copy in RAM took %.3f seconds.\n"), time_taken);
         else if (time_taken > 0.5)
-          DTPRINT(_("Avoidable file copy in RAM took %.3f seconds. %s.\n"), time_taken, msg);  // not warning as that could feasibly cause CRAN tests to fail, say, if test machine is heavily loaded
+          DTPRINT(_("Avoidable file copy in RAM took %.3f seconds. %s.\n"), time_taken, msg);  // # nocov. not warning as that could feasibly cause CRAN tests to fail, say, if test machine is heavily loaded
       }
     }
     *_const_cast(eof) = '\0';  // cow page
@@ -1704,8 +1730,10 @@ int freadMain(freadMainArgs _args) {
             topQuoteRule = quoteRule;
             firstJumpEnd = ch;  // to know how many bytes jump 0 is, for nrow estimate later (a less-good estimate when fill=true since line lengths vary more)
             if (verbose) {
-              DTPRINT((unsigned)sep<32 ? "  sep=%#02x" : "  sep='%c'", sep);
-              DTPRINT(_("  with %d fields using quote rule %d\n"), topNumFields, quoteRule);
+                DTPRINT((unsigned)sep<32
+                        ? _("  sep=%#02x  with %d fields using quote rule %d\n")
+                        : _("  sep='%c'  with %d fields using quote rule %d\n"),
+                        sep, topNumFields, quoteRule);
             }
           }
         } else {
@@ -1754,8 +1782,10 @@ int freadMain(freadMainArgs _args) {
             topSkip = thisRow-thisBlockLines;
             if (topSkip<0) topSkip=0;       // inelegant but will do for now to pass single row input such as test 890
             if (verbose) {
-              DTPRINT((unsigned)sep<32 ? "  sep=%#02x" : "  sep='%c'", sep);
-              DTPRINT(_("  with %d lines of %d fields using quote rule %d\n"), topNumLines, topNumFields, topQuoteRule);
+                DTPRINT((unsigned)sep<32
+                        ? _("  sep=%#02x  with %d lines of %d fields using quote rule %d\n")
+                        : _("  sep='%c'  with %d lines of %d fields using quote rule %d\n"),
+                        sep, topNumLines, topNumFields, topQuoteRule);
             }
           }
         }
@@ -1819,14 +1849,16 @@ int freadMain(freadMainArgs _args) {
       ASSERT(mmp_copy==NULL, "mmp has already been copied due to abrupt non-eol ending, so it does not end with 2 or more eol.%s", ""/*dummy arg for macro*/); // #nocov
       double time_taken = copyFile(fileSize);
       if (time_taken == -1.0) {
+        // # nocov start
         if (!verbose)
-          DTPRINT("%s. Attempt to copy file in RAM failed.", msg);
+          DTPRINT(_("%s. Attempt to copy file in RAM failed."), msg);
         STOP(_("Unable to allocate %s of contiguous virtual RAM."), filesize_to_str(fileSize));
+        // # nocov end
       }
       if (verbose)
         DTPRINT(_("  File copy in RAM took %.3f seconds.\n"), time_taken);
-      else if (tt>0.5)
-        DTPRINT(_("Avoidable file copy in RAM took %.3f seconds. %s.\n"), time_taken, msg);  // not warning as that could feasibly cause CRAN tests to fail, say, if test machine is heavily loaded
+      else if (tt>0.5) // # nocov
+        DTPRINT(_("Avoidable file copy in RAM took %.3f seconds. %s.\n"), time_taken, msg);  // # nocov. not warning as that could feasibly cause CRAN tests to fail, say, if test machine is heavily loaded
       pos = sof + (pos-(const char *)mmp);
       firstJumpEnd = sof + (firstJumpEnd-(const char *)mmp);
     } else {
@@ -1855,8 +1887,8 @@ int freadMain(freadMainArgs _args) {
   type =    (int8_t *)malloc((size_t)ncol * sizeof(int8_t));
   tmpType = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));  // used i) in sampling to not stop on errors when bad jump point and ii) when accepting user overrides
   if (!type || !tmpType) {
-    free(type); free(tmpType);
-    STOP(_("Failed to allocate 2 x %d bytes for type and tmpType: %s"), ncol, strerror(errno));
+    free(type); free(tmpType); // # nocov
+    STOP(_("Failed to allocate 2 x %d bytes for type and tmpType: %s"), ncol, strerror(errno)); // # nocov
   }
 
   if (sep == ',' && dec == '\0') { // if sep=',' detected, don't attempt to detect dec [NB: . is not par of seps]
@@ -1885,11 +1917,14 @@ int freadMain(freadMainArgs _args) {
     // *2 to get a good spacing. We don't want overlaps resulting in double counting.
   }
   if (verbose) {
-    DTPRINT(_("  Number of sampling jump points = %d because "), nJumps);
-    if (nrowLimit<INT64_MAX) DTPRINT(_("nrow limit (%"PRIu64") supplied\n"), (uint64_t)nrowLimit);
-    else if (jump0size==0) DTPRINT(_("jump0size==0\n"));
-    else DTPRINT(_("(%"PRIu64" bytes from row 1 to eof) / (2 * %"PRIu64" jump0size) == %"PRIu64"\n"),
-                 (uint64_t)sz, (uint64_t)jump0size, (uint64_t)(sz/(2*jump0size)));
+    if (nrowLimit<INT64_MAX) {
+      DTPRINT(_("  Number of sampling jump points = %d because nrow limit (%"PRIu64") supplied\n"), nJumps, (uint64_t)nrowLimit);
+    } else if (jump0size==0) {
+      DTPRINT(_("  Number of sampling jump points = %d because jump0size==0\n"), nJumps);
+    } else {
+      DTPRINT(_("  Number of sampling jump points = %d because (%"PRIu64" bytes from row 1 to eof) / (2 * %"PRIu64" jump0size) == %"PRIu64"\n"),
+              nJumps, (uint64_t)sz, (uint64_t)jump0size, (uint64_t)(sz/(2*jump0size)));
+    }
   }
   nJumps++; // the extra sample at the very end (up to eof) is sampled and format checked but not jumped to when reading
   if (nrowLimit<INT64_MAX && nrowLimit>0) nJumps=1; // when nrows>0 supplied by user, no jumps (not even at the end) and single threaded
@@ -1927,8 +1962,10 @@ int freadMain(freadMainArgs _args) {
       }
       if ( (thisNcol<ncol && ncol>1 && !fill) ||
            (!eol(&ch) && ch!=eof) ) {
-        if (verbose) DTPRINT(_("  A line with too-%s fields (%d/%d) was found on line %d of sample jump %d. %s\n"),
-                             thisNcol<ncol ? _("few") : _("many"), thisNcol, ncol, jumpLine, jump, jump>0 ? _("Most likely this jump landed awkwardly so type bumps here will be skipped.") : "");
+        if (verbose)
+          DTPRINT(thisNcol<ncol ? _("  A line with too-few fields (%d/%d) was found on line %d of sample jump %d. %s\n")
+                                : _("  A line with too-many fields (%d/%d) was found on line %d of sample jump %d. %s\n"),
+                  thisNcol, ncol, jumpLine, jump, jump>0 ? _("Most likely this jump landed awkwardly so type bumps here will be skipped.") : "");
         bumped = false;
         if (jump==0) lastRowEnd=eof;  // to prevent the end from being tested; e.g. a short file with blank line within first 100 like test 976
         break;
@@ -1938,7 +1975,7 @@ int freadMain(freadMainArgs _args) {
       int thisLineLen = (int)(ch-lineStart);  // ch is now on start of next line so this includes line ending already
       sampleLines++;
       sumLen += thisLineLen;
-      sumLenSq += thisLineLen*thisLineLen;
+      sumLenSq += (double)thisLineLen*thisLineLen; // avoid integer overflow, #6729
       if (thisLineLen<minLen) minLen=thisLineLen;
       if (thisLineLen>maxLen) maxLen=thisLineLen;
       if (jump==0 && bumped) {
@@ -2032,7 +2069,10 @@ int freadMain(freadMainArgs _args) {
     }
     if (verbose) {
       if (sampleLines==0) {
-        DTPRINT(_("  'header' determined to be %s because there are%s number fields in the first and only row\n"), args.header?"TRUE":"FALSE", args.header?_(" no"):"");
+        if (args.header)
+          DTPRINT(_("  'header' determined to be TRUE because there are no number fields in the first and only row\n"));
+        else
+          DTPRINT(_("  'header' determined to be FALSE because there are number fields in the first and only row\n"));
       } else {
         if (args.header)
           DTPRINT(_("  'header' determined to be true because all columns are type string and a better guess is not possible\n"));
@@ -2074,14 +2114,14 @@ int freadMain(freadMainArgs _args) {
     // sd can be very close to 0.0 sometimes, so apply a +10% minimum
     // blank lines have length 1 so for fill=true apply a +100% maximum. It'll be grown if needed.
     if (verbose) {
-      DTPRINT(_("  =====\n"));
+      DTPRINT("  =====\n"); // # notranslate
       DTPRINT(_("  Sampled %"PRIu64" rows (handled \\n inside quoted fields) at %d jump points\n"), (uint64_t)sampleLines, nJumps);
       DTPRINT(_("  Bytes from first data row on line %d to the end of last row: %"PRIu64"\n"), row1line, (uint64_t)bytesRead);
       DTPRINT(_("  Line length: mean=%.2f sd=%.2f min=%d max=%d\n"), meanLineLen, sd, minLen, maxLen);
       DTPRINT(_("  Estimated number of rows: %"PRIu64" / %.2f = %"PRIu64"\n"), (uint64_t)bytesRead, meanLineLen, (uint64_t)estnrow);
       DTPRINT(_("  Initial alloc = %"PRIu64" rows (%"PRIu64" + %d%%) using bytes/max(mean-2*sd,min) clamped between [1.1*estn, 2.0*estn]\n"),
               (uint64_t)allocnrow, (uint64_t)estnrow, (int)(100.0*allocnrow/estnrow-100.0));
-      DTPRINT(_("  =====\n"));
+      DTPRINT("  =====\n"); // # notranslate
     } else {
       if (sampleLines > allocnrow) INTERNAL_STOP("sampleLines(%"PRIu64") > allocnrow(%"PRIu64")", (uint64_t)sampleLines, (uint64_t)allocnrow); // # nocov
     }
@@ -2108,7 +2148,7 @@ int freadMain(freadMainArgs _args) {
   } else {
     colNames = (lenOff*) calloc((size_t)ncol, sizeof(lenOff));
     if (!colNames)
-      STOP(_("Unable to allocate %d*%d bytes for column name pointers: %s"), ncol, sizeof(lenOff), strerror(errno));
+      STOP(_("Unable to allocate %d*%d bytes for column name pointers: %s"), ncol, sizeof(lenOff), strerror(errno)); // # nocov
     if (sep==' ') while (*ch==' ') ch++;
     void *targets[9] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, colNames + autoFirstColName};
     FieldParseContext fctx = {
@@ -2163,7 +2203,7 @@ int freadMain(freadMainArgs _args) {
   rowSize8 = 0;
   size = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));  // TODO: remove size[] when we implement Pasha's idea to += size inside processor
   if (!size)
-    STOP(_("Failed to allocate %d bytes for '%s': %s"), (int)(ncol * sizeof(int8_t)), "size", strerror(errno));
+    STOP(_("Failed to allocate %d bytes for '%s': %s"), (int)(ncol * sizeof(int8_t)), "size", strerror(errno)); // # nocov
   nStringCols = 0;
   nNonStringCols = 0;
   for (int j=0; j<ncol; j++) {
@@ -2255,8 +2295,8 @@ int freadMain(freadMainArgs _args) {
   if (verbose) DTPRINT(_("[11] Read the data\n"));
   read:  // we'll return here to reread any columns with out-of-sample type exceptions, or dirty jumps
   restartTeam = false;
-  if (verbose) DTPRINT(_("  jumps=[%d..%d), chunk_size=%"PRIu64", total_size=%"PRIu64"\n"),
-                       jump0, nJumps, (uint64_t)chunkBytes, (uint64_t)(eof-pos));
+  if (verbose)
+    DTPRINT("  jumps=[%d..%d), chunk_size=%"PRIu64", total_size=%"PRIu64"\n", jump0, nJumps, (uint64_t)chunkBytes, (uint64_t)(eof-pos)); // # notranslate
   ASSERT(allocnrow <= nrowLimit, "allocnrow(%"PRIu64") <= nrowLimit(%"PRIu64")", (uint64_t)allocnrow, (uint64_t)nrowLimit);
   #pragma omp parallel num_threads(nth)
   {
@@ -2267,7 +2307,7 @@ int freadMain(freadMainArgs _args) {
       nth = omp_get_num_threads();
       if (me!=0) {
         // # nocov start
-        snprintf(internalErr, internalErrSize, "Master thread is not thread 0 but thread %d.\n", me);
+        snprintf(internalErr, internalErrSize, "Master thread is not thread 0 but thread %d.\n", me); // # notranslate
         stopTeam = true;
         // # nocov end
       }
@@ -2531,7 +2571,7 @@ int freadMain(freadMainArgs _args) {
         }
         else if (headPos!=thisJumpStart && nrowLimit>0) { // do not care for dirty jumps since we do not read data and only want to know types
            // # nocov start
-          snprintf(internalErr, internalErrSize, "invalid head position. jump=%d, headPos=%p, thisJumpStart=%p, sof=%p", jump, (void*)headPos, (void*)thisJumpStart, (void*)sof);
+          snprintf(internalErr, internalErrSize, "invalid head position. jump=%d, headPos=%p, thisJumpStart=%p, sof=%p", jump, (void*)headPos, (void*)thisJumpStart, (void*)sof); // # notranslate
           stopTeam = true;
           // # nocov end
         }
@@ -2604,7 +2644,7 @@ int freadMain(freadMainArgs _args) {
     }
     dropFill = (int *)malloc((size_t)ndropFill * sizeof(int));
     if (!dropFill)
-      STOP(_("Failed to allocate %d bytes for '%s'."), (int)(ndropFill * sizeof(int)), "dropFill");
+      STOP(_("Failed to allocate %d bytes for '%s'."), (int)(ndropFill * sizeof(int)), "dropFill"); // # nocov
     int i=0;
     for (int j=max_col; j<ncol; ++j) {
       type[j] = CT_DROP;
@@ -2618,7 +2658,7 @@ int freadMain(freadMainArgs _args) {
 
   if (stopTeam) {
     if (internalErr[0]!='\0') {
-      STOP("%s %s: %s. %s", _("Internal error in"), __func__, internalErr, _("Please report to the data.table issues tracker"));  // # nocov
+      STOP(_("Internal error in %s: %s. Please report to the data.table issues tracker"), __func__, internalErr); // # nocov
     }
     stopTeam = false;
 
@@ -2733,11 +2773,11 @@ int freadMain(freadMainArgs _args) {
   }
 
   if (verbose) {
-    DTPRINT(_("=============================\n"));
+    DTPRINT("=============================\n"); // # notranslate
     if (tTot<0.000001) tTot=0.000001;  // to avoid nan% output in some trivially small tests where tot==0.000s
     DTPRINT(_("%8.3fs (%3.0f%%) Memory map %.3fGB file\n"), tMap-t0, 100.0*(tMap-t0)/tTot, 1.0*fileSize/(1024*1024*1024));
     DTPRINT(_("%8.3fs (%3.0f%%) sep="), tLayout-tMap, 100.0*(tLayout-tMap)/tTot);
-      DTPRINT(sep=='\t' ? "'\\t'" : (sep=='\n' ? "'\\n'" : "'%c'"), sep);
+      DTPRINT(sep=='\t' ? "'\\t'" : (sep=='\n' ? "'\\n'" : "'%c'"), sep); // # notranslate
       DTPRINT(_(" ncol=%d and header detection\n"), ncol);
     DTPRINT(_("%8.3fs (%3.0f%%) Column type detection using %"PRIu64" sample rows\n"),
             tColType-tLayout, 100.0*(tColType-tLayout)/tTot, (uint64_t)sampleLines);
@@ -2757,7 +2797,7 @@ int freadMain(freadMainArgs _args) {
       // if type bumps happened, it's useful to see them at the end after the timing 2 lines up showing the reread time
       // TODO - construct and output the copy and pastable colClasses argument so user can avoid the reread time if they are
       //        reading this file or files formatted like it many times (say in a production environment).
-      DTPRINT("%s", typeBumpMsg);
+      DTPRINT("%s", typeBumpMsg); // # notranslate
       free(typeBumpMsg);  // local scope and only populated in verbose mode
     }
   }

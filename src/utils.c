@@ -11,7 +11,11 @@ bool within_int64_repres(double x) {
   return R_FINITE(x) && x <= (double)INT64_MAX && x >= (double)INT64_MIN;
 }
 
-static R_xlen_t firstNonInt(SEXP x) {
+// used to error if not passed type double but this needed extra is.double() calls in calling R code
+// which needed a repeat of the argument. Hence simpler and more robust to return false when not type double.
+bool fitsInInt32(SEXP x) {
+  if (!isReal(x))
+    return false;
   R_xlen_t n=xlength(x), i=0;
   const double *dx = REAL(x);
   while (i<n &&
@@ -19,22 +23,28 @@ static R_xlen_t firstNonInt(SEXP x) {
          (within_int32_repres(dx[i]) && dx[i]==(int)(dx[i])))) {
     i++;
   }
-  return i==n ? 0 : i+1;
+  return i==n;
 }
 
-bool isRealReallyInt(SEXP x) {
-  return isReal(x) ? firstNonInt(x)==0 : false;
-  // used to error if not passed type double but this needed extra is.double() calls in calling R code
-  // which needed a repeat of the argument. Hence simpler and more robust to return false when not type double.
+SEXP fitsInInt32R(SEXP x) {
+  return ScalarLogical(fitsInInt32(x));
 }
 
-SEXP isRealReallyIntR(SEXP x) {
-  return ScalarLogical(isRealReallyInt(x));
+bool fitsInInt64(SEXP x) {
+  if (!isReal(x))
+    return false;
+  R_xlen_t n=xlength(x), i=0;
+  const double *dx = REAL(x);
+  while (i<n &&
+         ( ISNA(dx[i]) ||
+         (within_int64_repres(dx[i]) && dx[i]==(int64_t)(dx[i])))) {
+    i++;
+  }
+  return i==n;
 }
 
-SEXP isReallyReal(SEXP x) {
-  return ScalarInteger(isReal(x) ? firstNonInt(x) : 0);
-  // return the 1-based location of first element which is really real (i.e. not an integer) otherwise 0 (false)
+SEXP fitsInInt64R(SEXP x) {
+  return ScalarLogical(fitsInInt64(x));
 }
 
 bool allNA(SEXP x, bool errorForBadType) {
@@ -125,7 +135,7 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent) {
       } else
         ricols = cols;
     } else if (isReal(cols)) {
-      if (!isRealReallyInt(cols))
+      if (!fitsInInt32(cols))
         error(_("argument specifying columns is type 'double' and one or more items in it are not whole integers"));
       ricols = PROTECT(coerceVector(cols, INTSXP)); protecti++;
     }
@@ -212,12 +222,20 @@ SEXP copyAsPlain(SEXP x) {
   }
   const int64_t n = XLENGTH(x);
   SEXP ans = PROTECT(allocVector(TYPEOF(x), n));
+  // aside: unlike R's duplicate we do not copy truelength here; important for dogroups.c which uses negative truelenth to mark its specials
+  if (ALTREP(ans))
+    internal_error(__func__, "copyAsPlain returning ALTREP for type '%s'", type2char(TYPEOF(x))); // # nocov
+  if (!n) { // cannot memcpy invalid pointer, #6819
+    DUPLICATE_ATTRIB(ans, x);
+    UNPROTECT(1);
+    return ans;
+  }
   switch (TYPEOF(x)) {
   case RAWSXP:
     memcpy(RAW(ans),     RAW(x),     n*sizeof(Rbyte));
     break;
   case LGLSXP:
-    memcpy(LOGICAL(ans), LOGICAL(x), n*sizeof(Rboolean));
+    memcpy(LOGICAL(ans), LOGICAL(x), n*sizeof(int));
     break;
   case INTSXP:
     memcpy(INTEGER(ans), INTEGER(x), n*sizeof(int));             // covered by 10:1 after test 178
@@ -240,9 +258,6 @@ SEXP copyAsPlain(SEXP x) {
     internal_error(__func__, "type '%s' not supported in %s", type2char(TYPEOF(x)), "copyAsPlain()"); // # nocov
   }
   DUPLICATE_ATTRIB(ans, x);
-  // aside: unlike R's duplicate we do not copy truelength here; important for dogroups.c which uses negative truelenth to mark its specials
-  if (ALTREP(ans))
-    internal_error(__func__, "copyAsPlain returning ALTREP for type '%s'", type2char(TYPEOF(x))); // # nocov
   UNPROTECT(1);
   return ans;
 }
@@ -388,7 +403,7 @@ SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg) {
     Rprintf(_("Coercing %s[%s] into %s[%s]\n"), type2char(TYPEOF(x)), class1(x), type2char(TYPEOF(as)), class1(as));
   const char *ret = memrecycle(/*target=*/ans, /*where=*/R_NilValue, /*start=*/0, /*len=*/LENGTH(x), /*source=*/x, /*sourceStart=*/0, /*sourceLen=*/-1, /*colnum=*/0, /*colname=*/"");
   if (ret)
-    warning(_("%s"), ret);
+    warning("%s", ret); // # notranslate
   UNPROTECT(1);
   return ans;
 }
@@ -399,7 +414,7 @@ SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg) {
 SEXP dt_zlib_version(void) {
   char out[71];
 #ifndef NOZLIB
-  snprintf(out, 70, "zlibVersion()==%s ZLIB_VERSION==%s", zlibVersion(), ZLIB_VERSION);
+  snprintf(out, 70, "zlibVersion()==%s ZLIB_VERSION==%s", zlibVersion(), ZLIB_VERSION); // # notranslate
 #else
   snprintf(out, 70, _("zlib header files were not found when data.table was compiled"));
 #endif

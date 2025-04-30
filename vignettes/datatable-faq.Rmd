@@ -6,8 +6,6 @@ output:
     options:
       toc: true
       number_sections: true
-    meta:
-      css: [default, css/toc.css]
 vignette: >
   %\VignetteIndexEntry{Frequently Asked Questions about data.table}
   %\VignetteEngine{knitr::knitr}
@@ -18,8 +16,19 @@ vignette: >
 h2 {
     font-size: 20px;
 }
-#TOC { width: 100%; }
+
+#TOC {
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding-left: 1em;
+  background: #f6f6f6;
+  width: 100%; 
+}
 </style>
+
+```{r echo=FALSE, file='_translation_links.R'}
+```
+`r .write.translation.links("Translations of this document are available in: %s")`
 
 ```{r, echo = FALSE, message = FALSE}
 library(data.table)
@@ -611,7 +620,10 @@ DT[ , b := rnorm(5)]  # 'replace' integer column with a numeric column
 
 ## Reading data.table from RDS or RData file
 
-`*.RDS` and `*.RData` are file types which can store in-memory R objects on disk efficiently. However, storing data.table into the binary file loses its column over-allocation. This isn't a big deal -- your data.table will be copied in memory on the next _by reference_ operation and throw a warning. Therefore it is recommended to call `setalloccol()` on each data.table loaded with `readRDS()` or `load()` calls.
+`*.RDS` and `*.RData` are file types which can store in-memory R objects on disk efficiently. However, storing `data.table` into a binary file loses its column over-allocation (see also `?truelength`). This isn't a big deal -- your `data.table` will be copied in memory on the next _by reference_ operation and throw a warning.  
+Therefore, it is recommended to call `setDT()` on each `data.table` loaded with `readRDS()` or `load()` calls to restore its internal attributes. If you only need to pre-allocate space for new columns, `setalloccol()` can also be used.  
+
+For more details, see `?setDT` and `?truelength`.
 
 # General questions about the package
 
@@ -632,7 +644,7 @@ Yes, for both 32-bit and 64-bit on all platforms. Thanks to CRAN. There are no s
 ## I think it's great. What can I do?
 Please file suggestions, bug reports and enhancement requests on our [issues tracker](https://github.com/Rdatatable/data.table/issues). This helps make the package better.
 
-Please do star the package on [GitHub](https://github.com/Rdatatable/data.table/wiki). This helps encourage the developers and helps other R users find the package.
+Please do star the package on [GitHub](https://github.com/Rdatatable/data.table). This helps encourage the developers and helps other R users find the package.
 
 You can submit pull requests to change the code and/or documentation yourself; see our [Contribution Guidelines](https://github.com/Rdatatable/data.table/blob/master/.github/CONTRIBUTING.md).
 

@@ -766,3 +766,10 @@ if (loaded[["nanotime"]]) {
   # respect dec=',' for nanotime, related to #6446, corresponding to tests 2281.*
   test(31, fwrite(data.table(as.nanotime(.POSIXct(0))), dec=',', sep=';'), output="1970-01-01T00:00:00,000000000Z")
 }
+
+# tables() with large environment #6607
+.e <- new.env() ## to not populate the .GlobalEnv
+.e[["DT"]] <- as.data.table(lapply(1:15,function(i) runif(20e6)))
+res <- tables(env=.e)
+test(32, res[, .(NAME,NROW,NCOL,MB)], data.table(NAME="DT",NROW=20000000L,NCOL=15L,MB=2288.0))
+rm(.e, res)

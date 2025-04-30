@@ -4,8 +4,9 @@
 #   2. Check the next line for a check like 'if (!x || !y)'
 alloc_linter = function(c_obj) {
   lines = c_obj$lines
-  # Be a bit more precise to avoid mentions in comments
-  alloc_lines = grep(R"{=\s*([(]\w+\s*[*][)])?[mc]alloc[(]}", lines)
+  # Be a bit more precise to avoid mentions in comments, and allow
+  #   malloc(0) to be used for convenience (e.g. #6757)
+  alloc_lines = grep(R"{=\s*([(]\w+\s*[*][)])?[mc]alloc[(][^0]}", lines)
   if (!length(alloc_lines)) return()
   # int *tmp=(int*)malloc(...); or just int tmp=malloc(...);
   alloc_keys = lines[alloc_lines] |>

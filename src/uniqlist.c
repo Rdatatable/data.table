@@ -94,7 +94,7 @@ SEXP uniqlist(SEXP l, SEXP order)
         }
       }
     } break;
-    default :
+    default : // # nocov
       error(_("Type '%s' is not supported"), type2char(TYPEOF(v)));  // # nocov
     }
   } else {
@@ -126,7 +126,7 @@ SEXP uniqlist(SEXP l, SEXP order)
             // to be stored, ii) many short-circuit early before the if (!b) anyway (negating benefit) and iii) we may not have needed LHS this time so logic would be complex.
           }
           break;
-        default :
+        default : // # nocov
           error(_("Type '%s' is not supported"), type2char(TYPEOF(v)));  // # nocov
         }
       }
@@ -207,7 +207,7 @@ SEXP rleid(SEXP l, SEXP cols) {
           Rcomplex *pz = COMPLEX(jcol);
           same = memcmp(&pz[i], &pz[i-1], sizeof(Rcomplex))==0; // compiler optimization should replace library call with best 16-byte fixed method
         } break;
-        default :
+        default : // # nocov
           error(_("Type '%s' is not supported"), type2char(TYPEOF(jcol)));  // # nocov
         }
       }
@@ -317,7 +317,7 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
           b = i64[j] ? ((int64_t *)xd)[thisi] >= ((int64_t *)xd)[previ] :
                        dtwiddle(xd[thisi]) >= dtwiddle(xd[previ]);
         } break;
-        default:
+        default: // # nocov
           error(_("Type '%s' is not supported"), type2char(TYPEOF(v)));  // # nocov
         }
       }
@@ -356,13 +356,13 @@ SEXP uniqueNlogical(SEXP x, SEXP narmArg) {
   const R_xlen_t n = xlength(x);
   if (n==0)
     return ScalarInteger(0);  // empty vector
-  Rboolean first = LOGICAL(x)[0];
+  int first = LOGICAL(x)[0];
   R_xlen_t i=0;
   const int *ix = LOGICAL(x);
   while (++i<n && ix[i]==first);
   if (i==n)
     return ScalarInteger(first==NA_INTEGER && narm ? 0 : 1); // all one value
-  Rboolean second = ix[i];
+  int second = ix[i];
   // we've found 2 different values (first and second). Which one didn't we find? Then just look for that.
   // NA_LOGICAL == INT_MIN checked in init.c
   const int third = (first+second == 1) ? NA_LOGICAL : ( first+second == INT_MIN ? TRUE : FALSE );

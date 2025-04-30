@@ -70,10 +70,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   SEXP ans=NULL, jval, thiscol, BY, N, I, GRP, iSD, xSD, rownames, s, RHS, target, source;
   Rboolean wasvector, firstalloc=FALSE, NullWarnDone=FALSE;
   const bool verbose = LOGICAL(verboseArg)[0]==1;
-  const bool showProgress = LOGICAL(showProgressArg)[0]==1;
   double tstart=0, tblock[10]={0}; int nblock[10]={0}; // For verbose printing, tstart is updated each block
-  double startTime = (showProgress) ? wallclock() : 0; // For progress printing, startTime is set at the beginning
-  double nextTime = (showProgress) ? startTime+3 : 0; // wait 3 seconds before printing progress
   bool hasPrinted = false;
 
   if (!isInteger(order)) internal_error(__func__, "order not integer vector"); // # nocov
@@ -89,6 +86,10 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   // fix for longstanding FR/bug, #495. E.g., DT[, c(sum(v1), lapply(.SD, mean)), by=grp, .SDcols=v2:v3] resulted in error.. the idea is, 1) we create .SDall, which is normally == .SD. But if extra vars are detected in jexp other than .SD, then .SD becomes a shallow copy of .SDall with only .SDcols in .SD. Since internally, we don't make a copy, changing .SDall will reflect in .SD. Hopefully this'll workout :-).
   SEXP SDall = PROTECT(findVar(install(".SDall"), env)); nprotect++;  // PROTECT for rchk
   SEXP SD = PROTECT(findVar(install(".SD"), env)); nprotect++;
+  
+  const bool showProgress = LOGICAL(showProgressArg)[0]==1 && ngrp > 1; // showProgress only if more than 1 group
+  double startTime = (showProgress) ? wallclock() : 0; // For progress printing, startTime is set at the beginning
+  double nextTime = (showProgress) ? startTime+3 : 0; // wait 3 seconds before printing progress
 
   defineVar(sym_BY, BY = PROTECT(allocVector(VECSXP, ngrpcols)), env); nprotect++;  // PROTECT for rchk
   SEXP bynames = PROTECT(allocVector(STRSXP, ngrpcols));  nprotect++;   // TO DO: do we really need bynames, can we assign names afterwards in one step?
@@ -106,7 +107,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   }
   setAttrib(BY, R_NamesSymbol, bynames); // Fix for #42 - BY doesn't retain names anymore
   R_LockBinding(sym_BY, env);
-  if (isNull(jiscols) && (length(bynames)!=length(groups) || length(bynames)!=length(grpcols))) error(_("!length(bynames)[%d]==length(groups)[%d]==length(grpcols)[%d]"),length(bynames),length(groups),length(grpcols));
+  if (isNull(jiscols) && (length(bynames)!=length(groups) || length(bynames)!=length(grpcols)))
+    error("!length(bynames)[%d]==length(groups)[%d]==length(grpcols)[%d]", length(bynames), length(groups), length(grpcols)); // # notranslate
   // TO DO: check this check above.
 
   N =   PROTECT(findVar(install(".N"), env));   nprotect++; // PROTECT for rchk
@@ -135,7 +137,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   // fetch names of .SD and prepare symbols. In case they are copied-on-write by user assigning to those variables
   // using <- in j (which is valid, useful and tested), they are repointed to the .SD cols for each group.
   SEXP names = PROTECT(getAttrib(SDall, R_NamesSymbol)); nprotect++;
-  if (length(names) != length(SDall)) error(_("length(names)!=length(SD)"));
+  if (length(names) != length(SDall))
+    internal_error(__func__, "length(names)!=length(SD)"); // # nocov
   SEXP *nameSyms = (SEXP *)R_alloc(length(names), sizeof(SEXP));
 
   for(int i=0; i<length(SDall); ++i) {
@@ -151,7 +154,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   }
 
   SEXP xknames = PROTECT(getAttrib(xSD, R_NamesSymbol)); nprotect++;
-  if (length(xknames) != length(xSD)) error(_("length(xknames)!=length(xSD)"));
+  if (length(xknames) != length(xSD))
+    internal_error(__func__, "length(xknames)!=length(xSD)"); // # nocov
   SEXP *xknameSyms = (SEXP *)R_alloc(length(xknames), sizeof(SEXP));
   for(int i=0; i<length(xSD); ++i) {
     if (SIZEOF(VECTOR_ELT(xSD, i))==0)
@@ -279,7 +283,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
       for (int j=0; j<LENGTH(jval); ++j) {
         thiscol = VECTOR_ELT(jval,j);
         if (isNull(thiscol)) continue;
-        if (!isVector(thiscol) || isFrame(thiscol))
+        if (!isVector(thiscol) || isDataFrame(thiscol))
           error(_("Entry %d for group %d in j=list(...) should be atomic vector or list. If you are trying something like j=list(.SD,newcol=mean(colA)) then use := by group instead (much quicker), or cbind or merge afterwards."), j+1, i+1);
         if (isArray(thiscol)) {
           SEXP dims = PROTECT(getAttrib(thiscol, R_DimSymbol));
@@ -400,7 +404,8 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
       } else {
         estn = ((double)ngrp/i)*1.1*(ansloc+maxn);
         if (verbose) Rprintf(_("dogroups: growing from %d to %d rows\n"), length(VECTOR_ELT(ans,0)), estn);
-        if (length(ans) != ngrpcols + njval) error(_("dogroups: length(ans)[%d]!=ngrpcols[%d]+njval[%d]"),length(ans),ngrpcols,njval);
+        if (length(ans) != ngrpcols + njval)
+          error("dogroups: length(ans)[%d]!=ngrpcols[%d]+njval[%d]", length(ans), ngrpcols, njval); // # notranslate
         for (int j=0; j<length(ans); ++j) SET_VECTOR_ELT(ans, j, growVector(VECTOR_ELT(ans,j), estn));
       }
     }
@@ -445,8 +450,11 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
       double avgTimePerGroup = (now-startTime)/(i+1);
       int ETA = (int)(avgTimePerGroup*(ngrp-i-1));
       if (hasPrinted || ETA >= 0) {
+        // # nocov start. Requires long-running test case
         if (verbose && !hasPrinted) Rprintf(_("\n"));
-        Rprintf(_("\rProcessed %d groups out of %d. %.0f%% done. Time elapsed: %ds. ETA: %ds."), i+1, ngrp, 100.0*(i+1)/ngrp, (int)(now-startTime), ETA);
+        Rprintf("\r"); // # notranslate. \r is not internationalizable
+        Rprintf(_("Processed %d groups out of %d. %.0f%% done. Time elapsed: %ds. ETA: %ds."), i+1, ngrp, 100.0*(i+1)/ngrp, (int)(now-startTime), ETA);
+        // # nocov end
       }
       nextTime = now+1;
       hasPrinted = true;
@@ -460,8 +468,11 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     else UNPROTECT(1);  // the jval. Don't want them to build up. The first jval can stay protected till the end ok.
   }
   if (showProgress && hasPrinted) {
-    Rprintf(_("\rProcessed %d groups out of %d. %.0f%% done. Time elapsed: %ds. ETA: %ds."), ngrp, ngrp, 100.0, (int)(wallclock()-startTime), 0);
-    Rprintf("\n"); // separated so this & the earlier message are identical for translation purposes.
+    // # nocov start. Requires long-running test case
+    Rprintf("\r"); // # notranslate. \r is not internationalizable
+    Rprintf(_("Processed %d groups out of %d. %.0f%% done. Time elapsed: %ds. ETA: %ds."), ngrp, ngrp, 100.0, (int)(wallclock()-startTime), 0);
+    Rprintf("\n"); // # notranslate. separated so this & the earlier message are identical for translation purposes.
+    // # nocov end
   }
   if (isNull(lhs) && ans!=NULL) {
     if (ansloc < LENGTH(VECTOR_ELT(ans,0))) {
@@ -505,10 +516,10 @@ SEXP keepattr(SEXP to, SEXP from)
   SET_ATTRIB(to, ATTRIB(from));
   if (isS4(from)) {
     to = PROTECT(asS4(to, TRUE, 1));
-    SET_OBJECT(to, OBJECT(from));
+    SET_OBJECT(to, isObject(from));
     UNPROTECT(1);
   } else {
-    SET_OBJECT(to, OBJECT(from));
+    SET_OBJECT(to, isObject(from));
   }
   return to;
 }
@@ -524,6 +535,11 @@ SEXP growVector(SEXP x, const R_len_t newlen)
   if (isNull(x)) error(_("growVector passed NULL"));
   PROTECT(newx = allocVector(TYPEOF(x), newlen));   // TO DO: R_realloc(?) here?
   if (newlen < len) len=newlen;   // i.e. shrink
+  if (!len) { // cannot memcpy invalid pointer, #6819
+    keepattr(newx, x);
+    UNPROTECT(1);
+    return newx;
+  }
   switch (TYPEOF(x)) {
   case RAWSXP:  memcpy(RAW(newx),     RAW(x),     len*SIZEOF(x)); break;
   case LGLSXP:  memcpy(LOGICAL(newx), LOGICAL(x), len*SIZEOF(x)); break;
@@ -540,7 +556,7 @@ SEXP growVector(SEXP x, const R_len_t newlen)
     for (int i=0; i<len; ++i)
       SET_VECTOR_ELT(newx, i, xd[i]);
   } break;
-  default :
+  default : // # nocov
     internal_error(__func__, "type '%s' not supported", type2char(TYPEOF(x)));  // # nocov
   }
   // if (verbose) Rprintf(_("Growing vector from %d to %d items of type '%s'\n"), len, newlen, type2char(TYPEOF(x)));
