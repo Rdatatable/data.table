@@ -27,7 +27,7 @@
    + Argument `in.place` to `droplevels` has been removed.
    + It's now an error to set `datatable.nomatch`, which has been warning since 1.15.0.
 
-3. The groupingsets() documentation now explicitly addresses scoping issues when using variables from outer environments (e.g., function parameters) in aggregation expressions. Previously, using such variables in j could lead to "object not found" errors due to evaluation environment mismatches. This is resolved by using jj = substitute(expr, list(param=value)) instead, which creates an expression with values directly substituted at call time, following R's evaluation rules (Chapter 6 of the R Language Definition manual). Three new examples demonstrate proper usage, including function parameter references (e.g., sum(value > threshold)) and multi-aggregation patterns.
+3. The `groupingsets()` documentation clarifies how to handle scoping issues when using variables from outer environments (e.g., function parameters) in aggregation expressions, [#5560](https://github.com/Rdatatable/data.table/issues/5560). Previously, using such variables in `j` could lead to "object not found" errors. This is resolved by creating a wrapper function that accepts a `j` argument and forwards it using `jj = substitute(j)`, which correctly captures the expression and its environment. A new example demonstrates this proper usage pattern.
 
 # data.table [v1.17.0](https://github.com/Rdatatable/data.table/milestone/34)  (20 Feb 2025)
 
