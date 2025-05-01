@@ -389,6 +389,29 @@ Users will usually want to substitute the function name rather than inserting th
 
 In case of any doubts on the `env` interface functioning, set `verbose = TRUE` to inspect how expressions are resolved internally.
 
+### Use `env` argument from inside another function
+
+It was a design decision that `env` argument will follow _Standard Evaluation_ rules. As a result, it does not require any special handling when being used from inside another function. As well it does not recognize data.table's `.()` alias for a `list()`.
+
+```{r env_se}
+fun = function(x, col.mean) {
+  stopifnot(is.character(col.mean), is.data.table(x))
+  x[, mean(.col), env = list(.col = col.mean)]
+}
+fun(DT, col.mean="Petal.Length")
+```
+
+If the outer function itself follows NSE (Non-Standard Evaluation) rules, then it has to resolve language objects the same way as when passing it's arguments to any other function.
+
+```{r nse}
+fun = function(x, col.mean) {
+  col.mean = substitute(col.mean)
+  stopifnot(is.name(col.mean), is.data.table(x))
+  x[, mean(.col), env = list(.col = col.mean)]
+}
+fun(DT, col.mean=Petal.Length)
+```
+
 ## Retired interfaces
 
 In `[.data.table`, it is also possible to use other mechanisms for variable substitution or for passing quoted expressions. These include `get` and `mget` for inline injection of variables by providing their names as strings, and `eval` that tells `[.data.table` that the expression we passed into an argument is a quoted expression and that it should be handled differently. Those interfaces should now be considered retired and we recommend using the new `env` argument, instead.
