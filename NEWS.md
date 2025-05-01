@@ -28,6 +28,7 @@
 
 7. `fwrite()` now avoids a crash when translating strings into a different encoding, [#6883](https://github.com/Rdatatable/data.table/issues/6883). Thanks @filipemsc for the report and @aitap for the fix.
 
+8. `forderv` could segfault if the number of needed recursion levels for radix sort were too high, [#4300](https://github.com/Rdatatable/data.table/issues/4300). This is a major problem since sorting is extensively used in `data.table`. Thanks @quantitative-technologies for the report and @ben-schwen for the fix.
 
 ## NOTES
 
