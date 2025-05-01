@@ -82,18 +82,7 @@ cube(DT, j = c(list(count=.N), lapply(.SD, sum)), by = c("color","year","status"
 groupingsets(DT, j = c(list(count=.N), lapply(.SD, sum)), by = c("color","year","status"),
              sets = list("color", c("year","status"), character()), id=TRUE)
 
-# Using jj argument with quote() for direct calls
-groupingsets(DT, jj = quote(c(list(count=.N), lapply(.SD, sum))), 
-             by = c("color","year","status"),  # Basic jj usage with quote()
-             sets = list("color", c("year","status"), character()), id = TRUE, .SDcols = "value") 
-groupingsets(DT, jj = quote(lapply(.SD, sum)),
-             by = c("color","year","status"),   # Simple aggregation with jj
-             sets = list("color", c("year","status"), character()), id = TRUE, .SDcols = "value")
-groupingsets(DT, jj = quote(list(count = .N, total = sum(value))),
-             by = c("color","year","status"), # jj with direct column references         
-             sets = list("color", c("year","status"), character()), id = TRUE)      
-
-# Wrapper around groupingsets demonstrating NSE with user-defined j expression
+# Using jj in a wrapper to handle outer variables
 mygrp = function(x, j) {
   groupingsets(x, jj = substitute(j),
                by = c("color", "year", "status"),
