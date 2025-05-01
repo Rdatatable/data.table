@@ -60,17 +60,17 @@ inline void write_chars(const char *x, char **pch)
   *pch = ch;
 }
 
-void writeBool8(const void *col, int64_t row, char **pch)
+void writeBool8(int8_t *col, int64_t row, char **pch)
 {
-  int8_t x = ((const int8_t *)col)[row];
+  int8_t x = col[row];
   char *ch = *pch;
   *ch++ = '0'+(x==1);
   *pch = ch-(x==INT8_MIN);  // if NA then step back, to save a branch
 }
 
-void writeBool32(const void *col, int64_t row, char **pch)
+void writeBool32(int32_t *col, int64_t row, char **pch)
 {
-  int32_t x = ((const int32_t *)col)[row];
+  int32_t x = col[row];
   char *ch = *pch;
   if (x==INT32_MIN) {  // TODO: when na=='\0' as recommended, use a branchless writer
     write_chars(na, &ch);
@@ -80,9 +80,9 @@ void writeBool32(const void *col, int64_t row, char **pch)
   *pch = ch;
 }
 
-void writeBool32AsString(const void *col, int64_t row, char **pch)
+void writeBool32AsString(int32_t *col, int64_t row, char **pch)
 {
-  int32_t x = ((const int32_t *)col)[row];
+  int32_t x = col[row];
   char *ch = *pch;
   if (x == INT32_MIN) {
     write_chars(na, &ch);
@@ -106,10 +106,10 @@ static inline void reverse(char *upp, char *low)
   }
 }
 
-void writeInt32(const void *col, int64_t row, char **pch)
+void writeInt32(int32_t *col, int64_t row, char **pch)
 {
   char *ch = *pch;
-  int32_t x = ((const int32_t *)col)[row];
+  int32_t x = col[row];
   if (x == INT32_MIN) {
     write_chars(na, &ch);
   } else {
@@ -122,10 +122,10 @@ void writeInt32(const void *col, int64_t row, char **pch)
   *pch = ch;
 }
 
-void writeInt64(const void *col, int64_t row, char **pch)
+void writeInt64(int64_t *col, int64_t row, char **pch)
 {
   char *ch = *pch;
-  int64_t x = ((const int64_t *)col)[row];
+  int64_t x = col[row];
   if (x == INT64_MIN) {
     write_chars(na, &ch);
   } else {
@@ -177,7 +177,7 @@ void genLookups() {
 }
 */
 
-void writeFloat64(const void *col, int64_t row, char **pch)
+void writeFloat64(double *col, int64_t row, char **pch)
 {
   // hand-rolled / specialized for speed
   // *pch is safely the output destination with enough space (ensured via calculating maxLineLen up front)
@@ -187,7 +187,7 @@ void writeFloat64(const void *col, int64_t row, char **pch)
   //  ii) no C libary calls such as sprintf() where the fmt string has to be interpretted over and over
   // iii) no need to return variables or flags.  Just writes.
   //  iv) shorter, easier to read and reason with in one self contained place.
-  double x = ((const double *)col)[row];
+  double x = col[row];
   char *ch = *pch;
   if (!isfinite(x)) {
     if (isnan(x)) {
@@ -301,9 +301,9 @@ void writeFloat64(const void *col, int64_t row, char **pch)
   *pch = ch;
 }
 
-void writeComplex(const void *col, int64_t row, char **pch)
+void writeComplex(Rcomplex *col, int64_t row, char **pch)
 {
-  Rcomplex x = ((const Rcomplex *)col)[row];
+  Rcomplex x = col[row];
   char *ch = *pch;
   writeFloat64(&x.r, 0, &ch);
   if (!ISNAN(x.i)) {
@@ -340,8 +340,8 @@ static inline void write_time(int32_t x, char **pch)
   *pch = ch;
 }
 
-void writeITime(const void *col, int64_t row, char **pch) {
-  write_time(((const int32_t *)col)[row], pch);
+void writeITime(int32_t *col, int64_t row, char **pch) {
+  write_time(col[row], pch);
 }
 
 static inline void write_date(int32_t x, char **pch)
@@ -394,16 +394,15 @@ static inline void write_date(int32_t x, char **pch)
   *pch = ch;
 }
 
-void writeDateInt32(const void *col, int64_t row, char **pch) {
-  write_date(((const int32_t *)col)[row], pch);
+void writeDateInt32(int32_t *col, int64_t row, char **pch) {
+  write_date(col[row], pch);
 }
 
-void writeDateFloat64(const void *col, int64_t row, char **pch) {
-  double x = ((const double *)col)[row];
-  write_date(isfinite(x) ? (int)(x) : INT32_MIN, pch);
+void writeDateFloat64(double *col, int64_t row, char **pch) {
+  write_date(isfinite(col[row]) ? (int)(col[row]) : INT32_MIN, pch);
 }
 
-void writePOSIXct(const void *col, int64_t row, char **pch)
+void writePOSIXct(double *col, int64_t row, char **pch)
 {
   // Write ISO8601 UTC by default to encourage ISO standards, stymie ambiguity and for speed.
   // R internally represents POSIX datetime in UTC always. Its 'tzone' attribute can be ignored.
@@ -412,7 +411,7 @@ void writePOSIXct(const void *col, int64_t row, char **pch)
   // All positive integers up to 2^53 (9e15) are exactly representable by double which is relied
   // on in the ops here; number of seconds since epoch.
 
-  double x = ((const double *)col)[row];
+  double x = col[row];
   char *ch = *pch;
   if (!isfinite(x)) {
     write_chars(na, &ch);
@@ -465,9 +464,9 @@ void writePOSIXct(const void *col, int64_t row, char **pch)
   *pch = ch;
 }
 
-void writeNanotime(const void *col, int64_t row, char **pch)
+void writeNanotime(int64_t *col, int64_t row, char **pch)
 {
-  int64_t x = ((const int64_t *)col)[row];
+  int64_t x = col[row];
   char *ch = *pch;
   if (x == INT64_MIN) {
     write_chars(na, &ch);
@@ -550,12 +549,12 @@ static inline void write_string(const char *x, char **pch)
 
 void writeString(const void *col, int64_t row, char **pch)
 {
-  write_string(getString((const SEXP *)col, row), pch);
+  write_string(getString(col, row), pch);
 }
 
 void writeCategString(const void *col, int64_t row, char **pch)
 {
-  write_string(getCategString((const SEXP *)col, row), pch);
+  write_string(getCategString(col, row), pch);
 }
 
 #ifndef NOZLIB
@@ -714,7 +713,7 @@ void fwriteMain(fwriteMainArgs args)
   }
   if (headerLen) {
     char *buff = malloc(headerLen);
-    if (!buff) STOP(_("Unable to allocate %zu MiB for header: %s"), headerLen / 1024 / 1024, strerror(errno));
+    if (!buff) STOP(_("Unable to allocate %d MiB for header: %s"), headerLen / 1024 / 1024, strerror(errno));
     char *ch = buff;
     if (args.bom) {*ch++=(char)0xEF; *ch++=(char)0xBB; *ch++=(char)0xBF; }  // 3 appears above (search for "bom")
     memcpy(ch, args.yaml, yamlLen);
@@ -736,7 +735,7 @@ void fwriteMain(fwriteMainArgs args)
     }
     if (f==-1) {
       *ch = '\0';
-      DTPRINT("%s", buff);
+      DTPRINT(buff);
       free(buff);
     } else {
       int ret1=0, ret2=0;
@@ -753,7 +752,7 @@ void fwriteMain(fwriteMainArgs args)
         char *zbuff = malloc(zbuffSize);
         if (!zbuff) {
           free(buff);                                                                                   // # nocov
-          STOP(_("Unable to allocate %zu MiB for zbuffer: %s"), zbuffSize / 1024 / 1024, strerror(errno));  // # nocov
+          STOP(_("Unable to allocate %d MiB for zbuffer: %s"), zbuffSize / 1024 / 1024, strerror(errno));  // # nocov
         }
         size_t zbuffUsed = zbuffSize;
         ret1 = compressbuff(&stream, zbuff, &zbuffUsed, buff, (size_t)(ch-buff));
@@ -820,7 +819,7 @@ void fwriteMain(fwriteMainArgs args)
   char *buffPool = malloc(nth*(size_t)buffSize);
   if (!buffPool) {
     // # nocov start
-    STOP(_("Unable to allocate %zu MB * %d thread buffers; '%d: %s'. Please read ?fwrite for nThread, buffMB and verbose options."),
+    STOP(_("Unable to allocate %d MB * %d thread buffers; '%d: %s'. Please read ?fwrite for nThread, buffMB and verbose options."),
          (size_t)buffSize/(1024^2), nth, errno, strerror(errno));
     // # nocov end
   }
@@ -831,7 +830,7 @@ void fwriteMain(fwriteMainArgs args)
     if (!zbuffPool) {
       // # nocov start
       free(buffPool);
-      STOP(_("Unable to allocate %zu MB * %d thread compressed buffers; '%d: %s'. Please read ?fwrite for nThread, buffMB and verbose options."),
+      STOP(_("Unable to allocate %d MB * %d thread compressed buffers; '%d: %s'. Please read ?fwrite for nThread, buffMB and verbose options."),
          (size_t)zbuffSize/(1024^2), nth, errno, strerror(errno));
       // # nocov end
     }
@@ -926,7 +925,7 @@ void fwriteMain(fwriteMainArgs args)
           errno=0;
           if (f==-1) {
             *ch='\0';  // standard C string end marker so DTPRINT knows where to stop
-            DTPRINT("%s", myBuff);
+            DTPRINT(myBuff);
           } else if ((args.is_gzip ? WRITE(f, myzBuff, (int)myzbuffUsed)
                                    : WRITE(f, myBuff,  (int)(ch-myBuff))) == -1) {
             failed=true;         // # nocov

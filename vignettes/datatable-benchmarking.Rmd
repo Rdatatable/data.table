@@ -2,23 +2,14 @@
 title: "Benchmarking data.table"
 date: "`r Sys.Date()`"
 output:
-  markdown::html_format:
-    options:
-      toc: true
-      number_sections: true
-    meta:
-      css: [default, css/toc.css]
+  rmarkdown::html_vignette:
+    toc: true
+    number_sections: true
 vignette: >
   %\VignetteIndexEntry{Benchmarking data.table}
-  %\VignetteEngine{knitr::knitr}
+  %\VignetteEngine{knitr::rmarkdown}
   \usepackage[utf8]{inputenc}
 ---
-
-<style>
-h2 {
-    font-size: 20px;
-}
-</style>
 
 This document is meant to guide on measuring performance of `data.table`. Single place to document best practices and traps to avoid.
 
