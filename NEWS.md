@@ -175,6 +175,8 @@ rowwiseDT(
 
 20. Fixed a memory issue causing segfaults in `forder`, [#6797](https://github.com/Rdatatable/data.table/issues/6797). Thanks @dkutner for the report and @MichaelChirico for the fix.
 
+13. `data.table` function is now more aligned to base R about names of the output when one of its input is a single column matrix object, [#4124](https://github.com/Rdatatable/data.table/issues/4124). Thanks to @PavoDive for reporting. For matrix column objects it will also ensure to return non-duplicated names, [#3193](https://github.com/Rdatatable/data.table/issues/3193).
+
 ## NOTES
 
 1. There is a new vignette on joins! See `vignette("datatable-joins")`. Thanks to Angel Feliz for authoring it! Feedback welcome. This vignette has been highly requested since 2017: [#2181](https://github.com/Rdatatable/data.table/issues/2181).

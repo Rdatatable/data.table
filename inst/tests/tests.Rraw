@@ -21103,16 +21103,16 @@ class(DF) = c("tbl_df", "tbl", "data.frame")
 test(2309.02, key(as.data.table(DF, key="t")), "t")
 
 # data.table keyed with "b"
-DT = data.table(a = 1:5, b = 1:5, x = 1:5, key = "b") 
-test(2309.03, key(as.data.table(DT, key="a")), "a")   
-test(2309.04, key(as.data.table(DT)), "b")            
-test(2309.05, key(as.data.table(DT, key=NULL)), NULL) 
+DT = data.table(a = 1:5, b = 1:5, x = 1:5, key = "b")
+test(2309.03, key(as.data.table(DT, key="a")), "a")
+test(2309.04, key(as.data.table(DT)), "b")
+test(2309.05, key(as.data.table(DT, key=NULL)), NULL)
 
 # non-keyed data.table
 DT = data.table(a = 1:5, b = 1:5, x = 1:5)
-test(2309.06, key(as.data.table(DT, key="a")), "a")   
-test(2309.07, key(as.data.table(DT)), NULL)          
-test(2309.08, key(as.data.table(DT, key=NULL)), NULL) 
+test(2309.06, key(as.data.table(DT, key="a")), "a")
+test(2309.07, key(as.data.table(DT)), NULL)
+test(2309.08, key(as.data.table(DT, key=NULL)), NULL)
 
 # as.data.table(x, keep.rownames=TRUE) keeps rownames for class(x)==c("*", "data.frame")
 df = structure(list(i = 1:2), class = c("tbl", "data.frame"), row.names = c("a","b"))
@@ -21147,3 +21147,13 @@ dt = data.table(id = 1:25)
 test(2314.1, any(grepl("<int>", tail(capture.output(print(dt, class = TRUE)), 2))), TRUE)
 # Test that class=TRUE with col.names="top" doesn't show classes at bottom
 test(2314.2, !any(grepl("<int>", tail(capture.output(print(dt, class = TRUE, col.names = "top")), 2))), TRUE)
+
+# Create a data.table when one vector is transposed doesn't respect the name defined by user #4124
+test(2315.1, data.table(a=1:2, b=matrix(1:2)), data.table(a=1:2, b=1:2))
+test(2315.2, names(data.table(a=1:2, b=matrix(1:2))), names(data.frame(a=1:2, b=matrix(1:2))))
+test(2315.3, data.table(a=1L[0L], b=matrix(1L)[0L]), data.table(a=1L[0L], b=1L[0L])) # length 0
+test(2315.4, names(data.table(a=1L[0L], b=matrix(1L)[0L])), names(data.frame(a=1L[0L], b=matrix(1L)[0L])))
+# data.table(vector, matrix) can return duplicate column names #3193
+is.unq = function(x) length(unique(x)) == length(x)
+test(2315.5, is.unq(names(data.table(1:5, matrix(6:15, nrow = 5L)))))
+test(2315.6, is.unq(names(data.table(1L[0L], matrix(6:15, nrow=5L)[0L]))))
