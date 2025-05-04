@@ -1,11 +1,13 @@
 #include <R.h>
 #include <Rinternals.h>
 
+#define SEXPPTR(x) ((SEXP *)DATAPTR(x))
+#if R_VERSION >= R_Version(3,5,0)
+
 // NOTE: All of this is copied from Defn.h: https://github.com/wch/r-source/blob/28de75af0541f93832c5899139b969d290bf422e/src/include/Defn.h
 // We intend to gradually remove the need for this header file
 
 // Writable vector/string pointer
-#define SEXPPTR(x) ((SEXP *)DATAPTR(x))
 
 #ifndef NAMED_BITS
 # define NAMED_BITS 16
@@ -84,3 +86,18 @@ typedef struct {
 // SET_GROWABLE_BIT: https://github.com/wch/r-source/blob/2640a203d13473f95c9c7508eb2976fefb5c931c/src/include/Defn.h#L374
 #define GROWBLE_MASK ((unsigned short)(1<<5))
 #define SET_GROWBLE_BIT(x) (LEVLS(x) |= GROWBLE_MASK)
+
+#else
+
+#define TRULEN TRUELENGTH
+#define SET_TRULEN SET_TRUELENGTH
+#define STDVEC_TRUELENGTH TRUELENGTH
+#define SET_LEN SETLENGTH
+#define LEVLS LEVELS
+#if R_VERSION >= R_Version(3,4,0)
+#define SET_GROWBLE_BIT SET_GROWABLE_BIT
+#else
+#define SET_GROWBLE_BIT(x)
+#endif
+
+#endif
