@@ -214,7 +214,7 @@ static const char* strlim(const char *ch, size_t limit) {
   return ptr;
 }
 
-static char *typeLetter = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+static const char *typeLetter = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
 static char *typesAsString(int ncol) {
   int nLetters = strlen(typeLetter);
