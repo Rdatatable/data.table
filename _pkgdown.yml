@@ -3,6 +3,7 @@ url: https://rdatatable.gitlab.io/data.table
 template:
   bootstrap: 5
   light-switch: true
+  math-rendering: mathjax
 
 development:
   version_tooltip: "Development version"
