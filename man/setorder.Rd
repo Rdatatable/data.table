@@ -48,7 +48,7 @@ when \code{b} is of type \code{character} as well. }
 \code{order} must be either \code{1} or equal to that of \code{cols}. If
 \code{length(order) == 1}, it is recycled to \code{length(cols)}. }
 \item{na.last}{ \code{logical}. If \code{TRUE}, missing values in the data are placed last; if \code{FALSE}, they are placed first; if \code{NA} they are removed.
-\code{na.last=NA} is valid only for \code{x[order(., na.last)]} and related \code{sort_by(x, .)} (\eqn{\R \ge 4.4.0}) and its
+\code{na.last=NA} is valid only for \code{x[order(., na.last)]} and related \code{sort_by(x, .)} (\R >= 4.4.0) and its
 default is \code{TRUE}. \code{setorder} and \code{setorderv} only accept
 \code{TRUE}/\code{FALSE} with default \code{FALSE}. }
 }
