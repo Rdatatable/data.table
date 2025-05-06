@@ -1,32 +1,53 @@
 #include "data.table.h"
 
-/* fast adaptive rolling mean - router
- * algo = 0: fadaptiverollmeanFast
- *   first pass cumsum based solution, second pass uses cumsum to calculate answer
- * algo = 1: fadaptiverollmeanExact
- *   recalculate whole mean for each observation, roundoff correction is adjusted, also support for NaN and Inf
+/* rolling adaptive fun - router for fun and algo
+ * rfun enum rollfun_t routes to rolling function
+ * algo = 0: fast
+ *   adding/removing in/out of sliding window of observations
+ * algo = 1: exact
+ *   recalculate whole fun for each observation, for mean roundoff correction is adjusted, also support for NaN and Inf
  */
-void fadaptiverollmean(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
+void frolladaptivefun(rollfun_t rfun, unsigned int algo, double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
   double tic = 0;
   if (verbose)
     tic = omp_get_wtime();
-  if (algo==0) {
-    fadaptiverollmeanFast(x, nx, ans, k, fill, narm, hasna, verbose);
-  } else if (algo==1) {
-    fadaptiverollmeanExact(x, nx, ans, k, fill, narm, hasna, verbose);
+  switch (rfun) {
+  case MEAN :
+    if (algo==0) {
+      frolladaptivemeanFast(x, nx, ans, k, fill, narm, hasna, verbose);
+    } else if (algo==1) {
+      frolladaptivemeanExact(x, nx, ans, k, fill, narm, hasna, verbose);
+    }
+    break;
+  case SUM :
+    if (algo==0) {
+      frolladaptivesumFast(x, nx, ans, k, fill, narm, hasna, verbose);
+    } else if (algo==1) {
+      frolladaptivesumExact(x, nx, ans, k, fill, narm, hasna, verbose);
+    }
+    break;
+  case MAX :
+    if (algo==0 && verbose) {
+      //frolladaptivemaxFast(x, nx, ans, k, fill, narm, hasna, verbose); // frolladaptivemaxFast does not exists as of now
+      snprintf(end(ans->message[0]), 500, _("%s: algo %u not implemented, fall back to %u\n"), __func__, algo, (unsigned int) 1);
+    }
+    frolladaptivemaxExact(x, nx, ans, k, fill, narm, hasna, verbose);
+    break;
+  default:
+    error(_("Internal error: Unknown rfun value in froll: %d"), rfun); // #nocov
   }
   if (verbose)
-    snprintf(end(ans->message[0]), 500, _("%s: processing algo %u took %.3fs\n"), __func__, algo, omp_get_wtime()-tic);
-  // implicit n_message limit discussed here: https://github.com/Rdatatable/data.table/issues/3423#issuecomment-487722586
+    snprintf(end(ans->message[0]), 500, _("%s: processing fun %d algo %u took %.3fs\n"), __func__, rfun, algo, omp_get_wtime()-tic);
 }
-/* fast adaptive rolling mean - fast
+
+/* fast rolling adaptive mean - fast
  * when no info on NA (hasNA argument) then assume no NAs run faster version
  * adaptive rollmean implemented as cumsum first pass, then diff cumsum by indexes `i` to `i-k[i]`
  * if NAs detected re-run rollmean implemented as cumsum with NA support
  */
-void fadaptiverollmeanFast(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
+void frolladaptivemeanFast(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
   if (verbose)
-    snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", hasna %d, narm %d\n"), "fadaptiverollmeanFast", (uint64_t)nx, hasna, (int) narm);
+    snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", hasna %d, narm %d\n"), "frolladaptivemeanFast", (uint64_t)nx, hasna, (int) narm);
   bool truehasna = hasna>0;                                     // flag to re-run if NAs detected
   long double w = 0.0;
   double *cs = malloc(nx*sizeof(double));                       // cumsum vector, same as double cs[nx] but no segfault
@@ -104,14 +125,14 @@ void fadaptiverollmeanFast(double *x, uint64_t nx, ans_t *ans, int *k, double fi
   } // end of truehasna
   free(cs);
 }
-/* fast adaptive rolling mean exact
+/* fast rolling adaptive mean exact
  * extra nested loop to calculate mean of each obs and error correction
  * requires much more cpu
  * uses multiple cores
  */
-void fadaptiverollmeanExact(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
+void frolladaptivemeanExact(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
   if (verbose)
-    snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", hasna %d, narm %d\n"), "fadaptiverollmeanExact", (uint64_t)nx, hasna, (int) narm);
+    snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", hasna %d, narm %d\n"), "frolladaptivemeanExact", (uint64_t)nx, hasna, (int) narm);
   bool truehasna = hasna>0;                                     // flag to re-run if NAs detected
   if (!truehasna || !narm) {                                    // narm=FALSE handled here as NAs properly propagated in exact algo
     #pragma omp parallel for num_threads(getDTthreads(nx, true))
@@ -200,22 +221,12 @@ void fadaptiverollmeanExact(double *x, uint64_t nx, ans_t *ans, int *k, double f
   } // end of truehasna
 }
 
-/* fast adaptive rolling sum */
-void fadaptiverollsum(unsigned int algo, double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
-  double tic = 0;
+/* fast rolling adaptive sum - fast
+ * same as adaptive mean fast
+ */
+void frolladaptivesumFast(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
   if (verbose)
-    tic = omp_get_wtime();
-  if (algo==0) {
-    fadaptiverollsumFast(x, nx, ans, k, fill, narm, hasna, verbose);
-  } else if (algo==1) {
-    fadaptiverollsumExact(x, nx, ans, k, fill, narm, hasna, verbose);
-  }
-  if (verbose)
-    snprintf(end(ans->message[0]), 500, _("%s: processing algo %u took %.3fs\n"), __func__, algo, omp_get_wtime()-tic);
-}
-void fadaptiverollsumFast(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
-  if (verbose)
-    snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", hasna %d, narm %d\n"), "fadaptiverollsumFast", (uint64_t)nx, hasna, (int) narm);
+    snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", hasna %d, narm %d\n"), "frolladaptivesumFast", (uint64_t)nx, hasna, (int) narm);
   bool truehasna = hasna>0;
   long double w = 0.0;
   double *cs = malloc(nx*sizeof(double));
@@ -293,9 +304,12 @@ void fadaptiverollsumFast(double *x, uint64_t nx, ans_t *ans, int *k, double fil
   }
   free(cs);
 }
-void fadaptiverollsumExact(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
+/* fast rolling adaptive sum - exact
+ * same as adaptive mean exact
+ */
+void frolladaptivesumExact(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
   if (verbose)
-    snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", hasna %d, narm %d\n"), "fadaptiverollsumExact", (uint64_t)nx, hasna, (int) narm);
+    snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", hasna %d, narm %d\n"), "frolladaptivesumExact", (uint64_t)nx, hasna, (int) narm);
   bool truehasna = hasna>0;
   if (!truehasna || !narm) {
     #pragma omp parallel for num_threads(getDTthreads(nx, true))
@@ -359,6 +373,69 @@ void fadaptiverollsumExact(double *x, uint64_t nx, ans_t *ans, int *k, double fi
           } else {
             ans->dbl_v[i] = 0.0;
           }
+        }
+      }
+    }
+  }
+}
+
+/* fast rolling adaptive max - exact
+ * for hasNA=FALSE it will not detect if any NAs were in the input, therefore could produce incorrect result, well documented
+ */
+void frolladaptivemaxExact(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasna, bool verbose) {
+  if (verbose)
+    snprintf(end(ans->message[0]), 500, _("%s: running in parallel for input length %"PRIu64", hasna %d, narm %d\n"), "frolladaptivemaxExact", (uint64_t)nx, hasna, (int) narm);
+  if (hasna==-1) { // fastest we can get for adaptive max as there is no algo='fast', therefore we drop any NA checks when hasNA=FALSE
+    #pragma omp parallel for num_threads(getDTthreads(nx, true))
+    for (uint64_t i=0; i<nx; i++) {
+      if (i+1 < k[i]) {
+        ans->dbl_v[i] = fill;
+      } else {
+        double w = R_NegInf;
+        for (int j=-k[i]+1; j<=0; j++) { //Rprintf("x[%d+%d] > w: %f > %f: %d\n", i, j, x[i+j], w, x[i+j] > w);
+          if (x[i+j] > w)
+            w = x[i+j];
+        }
+        ans->dbl_v[i] = w;
+      }
+    }
+  } else {
+    if (narm) {
+      #pragma omp parallel for num_threads(getDTthreads(nx, true))
+      for (uint64_t i=0; i<nx; i++) {
+        if (i+1 < k[i]) {
+          ans->dbl_v[i] = fill;
+        } else {
+          int nc = 0;
+          double w = R_NegInf;
+          for (int j=-k[i]+1; j<=0; j++) {
+            if (ISNAN(x[i+j]))
+              nc++;
+            else if (x[i+j] > w)
+              w = x[i+j];
+          }
+          if (nc < k[i])
+            ans->dbl_v[i] = w;
+          else
+            ans->dbl_v[i] = R_NegInf;
+        }
+      }
+    } else {
+      #pragma omp parallel for num_threads(getDTthreads(nx, true))
+      for (uint64_t i=0; i<nx; i++) {
+        if (i+1 < k[i]) {
+          ans->dbl_v[i] = fill;
+        } else {
+          double w = R_NegInf;
+          for (int j=-k[i]+1; j<=0; j++) {
+            if (ISNAN(x[i+j])) {
+              w = NA_REAL;
+              break;
+            } else if (x[i+j] > w) {
+              w = x[i+j];
+            }
+          }
+          ans->dbl_v[i] = w;
         }
       }
     }

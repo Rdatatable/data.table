@@ -310,7 +310,7 @@ test(6000.0671, frollmean(c(1:2,NA,4:10), 4), c(rep(NA_real_, 6), 5.5, 6.5, 7.5,
   "frollfunR: 1:",
   "frollmeanFast: running for input length 10, window 4, hasna 0, narm 0",
   "frollmeanFast: NA.*are present in input, skip non-NA attempt and run with extra care for NAs",
-  "frollmean: processing algo 0 took.*",
+  "frollfun: processing fun 0 algo 0 took.*",
   "frollfunR: processing.*took.*"
 ))
 test(6000.0672, frollmean(c(1:2,NA,4:10), 4, hasNA=FALSE), c(rep(NA_real_, 6), 5.5, 6.5, 7.5, 8.5), output=c(
@@ -319,7 +319,7 @@ test(6000.0672, frollmean(c(1:2,NA,4:10), 4, hasNA=FALSE), c(rep(NA_real_, 6), 5
   "frollfunR: 1:",
   "frollmeanFast: running for input length 10, window 4, hasna -1, narm 0",
   "frollmeanFast: NA.*are present in input, skip non-NA attempt and run with extra care for NAs",
-  "frollmean: processing algo 0 took.*",
+  "frollfun: processing fun 0 algo 0 took.*",
   "frollfunR: processing.*took.*"
 ), warning="hasNA=FALSE used but NA.*are present in input, use default hasNA=NA to avoid this warning")
 test(6000.0673, frollmean(c(1:2,NA,4:10), 2, hasNA=FALSE), c(NA, 1.5, NA, NA, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5), output=c(
@@ -328,7 +328,7 @@ test(6000.0673, frollmean(c(1:2,NA,4:10), 2, hasNA=FALSE), c(NA, 1.5, NA, NA, 4.
   "frollfunR: 1:",
   "frollmeanFast: running for input length 10, window 2, hasna -1, narm 0",
   "frollmeanFast: NA.*are present in input, re-running with extra care for NAs",
-  "frollmean: processing algo 0 took.*",
+  "frollfun: processing fun 0 algo 0 took.*",
   "frollfunR: processing.*took.*"
 ), warning="hasNA=FALSE used but NA.*are present in input, use default hasNA=NA to avoid this warning")
 test(6000.0674, frollmean(c(1:2,NA,4:10), 4, align="center"), c(rep(NA_real_, 4), 5.5, 6.5, 7.5, 8.5, NA, NA), output=c(
@@ -336,8 +336,8 @@ test(6000.0674, frollmean(c(1:2,NA,4:10), 4, align="center"), c(rep(NA_real_, 4)
   "frollfunR: 1 column.*1 window.*",
   "frollmeanFast: running for input length 10, window 4, hasna 0, narm 0",
   "frollmeanFast: NA.*are present in input, skip non-NA attempt and run with extra care for NAs",
-  "frollmean: align 0, shift answer by -2",
-  "frollmean: processing algo 0 took.*",
+  "frollfun: align 0, shift answer by -2",
+  "frollfun: processing fun 0 algo 0 took.*",
   "frollfunR: processing.*took.*"
 ))
 options(datatable.verbose=FALSE)
@@ -383,7 +383,7 @@ test(6000.093, frollmean(list(1:3, 4:6), 4), list(c(NA_real_, NA_real_, NA_real_
 test(6000.0931, frollmean(list(1:3, 4:6), 4, align="center"), list(c(NA_real_, NA_real_, NA_real_), c(NA_real_, NA_real_, NA_real_)))
 test(6000.0932, frollmean(list(1:3, 4:6), 4, align="left"), list(c(NA_real_, NA_real_, NA_real_), c(NA_real_, NA_real_, NA_real_)))
 options(datatable.verbose=TRUE)
-test(6000.0933, frollmean(list(1:3, 4:6), 4), list(c(NA_real_, NA_real_, NA_real_), c(NA_real_, NA_real_, NA_real_)), output="frollmean: window width longer than input vector, returning all NA vector")
+test(6000.0933, frollmean(list(1:3, 4:6), 4), list(c(NA_real_, NA_real_, NA_real_), c(NA_real_, NA_real_, NA_real_)), output="frollfun: window width longer than input vector, returning all NA vector")
 options(datatable.verbose=FALSE)
 #### n==length(x)
 test(6000.094, frollmean(list(1:3, 4:6), 3), list(c(NA_real_, NA_real_, 2), c(NA_real_, NA_real_, 5)))
@@ -436,9 +436,9 @@ test(6000.1196, frollmean(c(1:5,NA), 1:6, algo="exact", na.rm=TRUE, adaptive=TRU
   "frollfunR: allocating memory for results 1x1",
   "frollfunR: 1 column.*1 window.*, not entering parallel execution here because algo='exact' will compute results in parallel",
   "frollfunR: 1:",
-  "fadaptiverollmeanExact: running in parallel for input length 6, hasna 0, narm 1",
-  "fadaptiverollmeanExact: NA.*are present in input, re-running with extra care for NAs",
-  "fadaptiverollmean: processing algo 1 took.*",
+  "frolladaptivemeanExact: running in parallel for input length 6, hasna 0, narm 1",
+  "frolladaptivemeanExact: NA.*are present in input, re-running with extra care for NAs",
+  "frolladaptivefun: processing fun 0 algo 1 took.*",
   "frollfunR: processing.*took.*"
 ))
 #### exact na.rm=TRUE verbose=TRUE
@@ -448,7 +448,7 @@ test(6000.1197, frollmean(c(1:5,NA), 2, algo="exact", na.rm=TRUE), output=c(
   "frollfunR: 1:",
   "frollmeanExact: running in parallel for input length 6, window 2, hasna 0, narm 1",
   "frollmeanExact: NA.*are present in input, re-running with extra care for NAs",
-  "frollmean: processing algo 1 took.*",
+  "frollfun: processing fun 0 algo 1 took.*",
   "frollfunR: processing.*took.*"
 ))
 options(datatable.verbose=FALSE)
@@ -563,9 +563,16 @@ if (FALSE) {
 
 #### adaptive limitations
 test(6000.145, frollmean(1:2, 1:2, adaptive=TRUE, align="right"), c(1, 1.5))
-test(6000.146, frollmean(1:2, 1:2, adaptive=TRUE, align="center"), error="using adaptive TRUE and align argument different than 'right' is not implemented")
-test(6000.147, frollmean(1:2, 1:2, adaptive=TRUE, align="left"), error="using adaptive TRUE and align argument different than 'right' is not implemented")
-test(6000.148, frollmean(list(1:2, 1:3), list(1:2), adaptive=TRUE), error="adaptive rolling function can only process 'x' having equal length of elements, like data.table or data.frame. If you want to call rolling function on list having variable length of elements call it for each field separately")
+test(6000.146, frollmean(1:2, 1:2, adaptive=TRUE, align="center"), error="using adaptive TRUE and align 'center' is not implemented")
+test(6000.147, frollmean(list(1:2, 1:3), list(1:2), adaptive=TRUE), error="adaptive rolling function can only process 'x' having equal length of elements, like data.table or data.frame. If you want to call rolling function on list having variable length of elements call it for each field separately")
+
+#### adaptive align - added in #5441
+options(datatable.verbose=TRUE)
+test(6000.148, frollsum(c(1,3,4,2,0), c(3,2,2,3,2), adaptive=TRUE, align="left"), c(8,7,6,NA,NA), output=c("processing from align='right'"))
+options(datatable.verbose=FALSE)
+test(6000.1481, frollsum(c(1,3,4,2,0), list(c(3,2,2,3,2), c(3,3,3,3,3)), adaptive=TRUE, align="left"), list(c(8,7,6,NA,NA), c(8,9,6,NA,NA)))
+test(6000.1482, frollsum(list(c(1,3,4,2,0), c(3,1,4,2,0)), c(3,2,2,3,2), adaptive=TRUE, align="left"), list(c(8,7,6,NA,NA), c(8,5,6,NA,NA)))
+test(6000.1483, frollsum(list(c(1,3,4,2,0), c(3,1,4,2,0)), list(c(3,2,2,3,2), c(3,3,3,3,3)), adaptive=TRUE, align="left"), list(c(8,7,6,NA,NA),c(8,9,6,NA,NA),c(8,5,6,NA,NA),c(8,7,6,NA,NA)))
 
 #### adaptive exact
 fastama = function(x, n, na.rm, fill=NA) {
@@ -664,81 +671,81 @@ test(6000.171, frollmean(x, n), output=c(
   "frollfunR: 1 column.*1 window.*",
   "frollfunR: 1:",
   "frollmeanFast: running for input length 10, window 3, hasna 0, narm 0",
-  "frollmean: processing algo 0 took.*",
+  "frollfun: processing fun 0 algo 0 took.*",
   "frollfunR: processing.*took.*"))
 test(6000.172, frollmean(list(x, x+1), n), output=c(
   "frollfunR: allocating memory for results 2x1",
   "frollfunR: 2 column.*1 window.*",
   "frollfunR: 1:",
   "frollmeanFast: running for input length 10, window 3, hasna 0, narm 0",
-  "frollmean: processing algo 0 took.*",
+  "frollfun: processing fun 0 algo 0 took.*",
   "frollfunR: 2:",
   "frollmeanFast: running for input length 10, window 3, hasna 0, narm 0",
-  "frollmean: processing algo 0 took.*",
+  "frollfun: processing fun 0 algo 0 took.*",
   "frollfunR: processing.*took.*"))
 test(6000.173, frollmean(x, c(n, n+1)), output=c(
   "frollfunR: allocating memory for results 1x2",
   "frollfunR: 1 column.*2 window.*",
   "frollfunR: 1:",
   "frollmeanFast: running for input length 10, window 3, hasna 0, narm 0",
-  "frollmean: processing algo 0 took.*",
+  "frollfun: processing fun 0 algo 0 took.*",
   "frollfunR: 2:",
   "frollmeanFast: running for input length 10, window 4, hasna 0, narm 0",
-  "frollmean: processing algo 0 took.*",
+  "frollfun: processing fun 0 algo 0 took.*",
   "frollfunR: processing.*took.*"))
 test(6000.174, frollmean(list(x, x+1), c(n, n+1)), output=c(
   "frollfunR: allocating memory for results 2x2",
   "frollfunR: 2 column.*2 window.*",
   "frollfunR: 1:",
   "frollmeanFast: running for input length 10, window 3, hasna 0, narm 0",
-  "frollmean: processing algo 0 took.*",
+  "frollfun: processing fun 0 algo 0 took.*",
   "frollfunR: 2:",
   "frollmeanFast: running for input length 10, window 4, hasna 0, narm 0",
-  "frollmean: processing algo 0 took.*",
+  "frollfun: processing fun 0 algo 0 took.*",
   "frollfunR: 3:",
   "frollmeanFast: running for input length 10, window 3, hasna 0, narm 0",
-  "frollmean: processing algo 0 took.*",
+  "frollfun: processing fun 0 algo 0 took.*",
   "frollfunR: 4:",
   "frollmeanFast: running for input length 10, window 4, hasna 0, narm 0",
-  "frollmean: processing algo 0 took.*",
+  "frollfun: processing fun 0 algo 0 took.*",
   "frollfunR: processing.*took.*"))
 test(6000.175, frollmean(x, n, algo="exact"), output=c(
   "frollfunR: allocating memory for results 1x1",
   "frollfunR: 1 column.*1 window.*",
   "frollfunR: 1:",
   "frollmeanExact: running in parallel for input length 10, window 3, hasna 0, narm 0",
-  "frollmean: processing algo 1 took.*",
+  "frollfun: processing fun 0 algo 1 took.*",
   "frollfunR: processing.*took.*"))
 test(6000.176, frollmean(x, n, align="center"), output=c(
   "frollfunR: allocating memory for results 1x1",
   "frollfunR: 1 column.*1 window.*",
   "frollfunR: 1:",
   "frollmeanFast: running for input length 10, window 3, hasna 0, narm 0",
-  "frollmean: align 0, shift answer by -1",
-  "frollmean: processing algo 0 took.*",
+  "frollfun: align 0, shift answer by -1",
+  "frollfun: processing fun 0 algo 0 took.*",
   "frollfunR: processing.*took.*"))
 test(6000.177, frollmean(x, n, align="left"), output=c(
   "frollfunR: allocating memory for results 1x1",
   "frollfunR: 1 column.*1 window.*",
   "frollfunR: 1:",
   "frollmeanFast: running for input length 10, window 3, hasna 0, narm 0",
-  "frollmean: align -1, shift answer by -2",
-  "frollmean: processing algo 0 took.*",
+  "frollfun: align -1, shift answer by -2",
+  "frollfun: processing fun 0 algo 0 took.*",
   "frollfunR: processing.*took.*"))
 nn = c(1:4,2:3,1:4)
 test(6000.178, frollmean(x, nn, adaptive=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
   "frollfunR: 1 column.*1 window.*",
   "frollfunR: 1:",
-  "fadaptiverollmeanFast: running for input length 10, hasna 0, narm 0",
-  "fadaptiverollmean: processing algo 0 took.*",
+  "frolladaptivemeanFast: running for input length 10, hasna 0, narm 0",
+  "frolladaptivefun: processing fun 0 algo 0 took.*",
   "frollfunR: processing.*took.*"))
 test(6000.179, frollmean(x, nn, algo="exact", adaptive=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
   "frollfunR: 1 column.*1 window.*",
   "frollfunR: 1:",
-  "fadaptiverollmeanExact: running in parallel for input length 10, hasna 0, narm 0",
-  "fadaptiverollmean: processing algo 1 took.*",
+  "frolladaptivemeanExact: running in parallel for input length 10, hasna 0, narm 0",
+  "frolladaptivefun: processing fun 0 algo 1 took.*",
   "frollfunR: processing.*took.*"))
 
 x[8] = NA
@@ -748,7 +755,7 @@ test(6000.180, frollmean(x, n), output=c(
   "frollfunR: 1:",
   "frollmeanFast: running for input length 10, window 3, hasna 0, narm 0",
   "frollmeanFast: NA.*are present in input, re-running with extra care for NAs",
-  "frollmean: processing algo 0 took.*",
+  "frollfun: processing fun 0 algo 0 took.*",
   "frollfunR: processing.*took.*"))
 test(6000.181, frollmean(x, n, algo="exact"), output=c(
   "frollfunR: allocating memory for results 1x1",
@@ -756,23 +763,23 @@ test(6000.181, frollmean(x, n, algo="exact"), output=c(
   "frollfunR: 1:",
   "frollmeanExact: running in parallel for input length 10, window 3, hasna 0, narm 0",
   "frollmeanExact: NA.*are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run",
-  "frollmean: processing algo 1 took.*",
+  "frollfun: processing fun 0 algo 1 took.*",
   "frollfunR: processing.*took.*"))
 test(6000.182, frollmean(x, nn, adaptive=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
   "frollfunR: 1 column.*1 window.*",
   "frollfunR: 1:",
-  "fadaptiverollmeanFast: running for input length 10, hasna 0, narm 0",
-  "fadaptiverollmeanFast: NA.*are present in input, re-running with extra care for NAs",
-  "fadaptiverollmean: processing algo 0 took.*",
+  "frolladaptivemeanFast: running for input length 10, hasna 0, narm 0",
+  "frolladaptivemeanFast: NA.*are present in input, re-running with extra care for NAs",
+  "frolladaptivefun: processing fun 0 algo 0 took.*",
   "frollfunR: processing.*took.*"))
 test(6000.183, frollmean(x, nn, algo="exact", adaptive=TRUE), output=c(
   "frollfunR: allocating memory for results 1x1",
   "frollfunR: 1 column.*1 window.*",
   "frollfunR: 1:",
-  "fadaptiverollmeanExact: running in parallel for input length 10, hasna 0, narm 0",
-  "fadaptiverollmeanExact: NA.*are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run",
-  "fadaptiverollmean: processing algo 1 took.*",
+  "frolladaptivemeanExact: running in parallel for input length 10, hasna 0, narm 0",
+  "frolladaptivemeanExact: NA.*are present in input, na.rm was FALSE so in 'exact' implementation NAs were handled already, no need to re-run",
+  "frolladaptivefun: processing fun 0 algo 1 took.*",
   "frollfunR: processing.*took.*"))
 
 d = as.data.table(list(1:10/2, 10:1/4))
@@ -781,7 +788,7 @@ test(6000.184, frollmean(d[,1], 3, algo="exact"), output=c(
   "frollfunR: 1 column.*1 window.*",
   "frollfunR: 1:",
   "frollmeanExact: running in parallel for input length 10, window 3, hasna 0, narm 0",
-  "frollmean: processing algo 1 took.*",
+  "frollfun: processing fun 0 algo 1 took.*",
   "frollfunR: processing.*took.*"
 ))
 test(6000.185, frollmean(d, 3:4, algo="exact"), output=c(
@@ -789,16 +796,16 @@ test(6000.185, frollmean(d, 3:4, algo="exact"), output=c(
   "frollfunR: 2 column.*2 window.*",
   "frollfunR: 1:",
   "frollmeanExact: running in parallel for input length 10, window 3, hasna 0, narm 0",
-  "frollmean: processing algo 1 took.*",
+  "frollfun: processing fun 0 algo 1 took.*",
   "frollfunR: 2:",
   "frollmeanExact: running in parallel for input length 10, window 4, hasna 0, narm 0",
-  "frollmean: processing algo 1 took.*",
+  "frollfun: processing fun 0 algo 1 took.*",
   "frollfunR: 3:",
   "frollmeanExact: running in parallel for input length 10, window 3, hasna 0, narm 0",
-  "frollmean: processing algo 1 took.*",
+  "frollfun: processing fun 0 algo 1 took.*",
   "frollfunR: 4:",
   "frollmeanExact: running in parallel for input length 10, window 4, hasna 0, narm 0",
-  "frollmean: processing algo 1 took.*",
+  "frollfun: processing fun 0 algo 1 took.*",
   "frollfunR: processing.*took.*"
 ))
 options(datatable.verbose=FALSE)
@@ -839,12 +846,65 @@ options(datatable.verbose=TRUE)
 test(6000.219, frollsum(c(1:2,NA,4:10), rep(4L,10), adaptive=TRUE, algo="exact", na.rm=TRUE), c(rep(NA_real_, 3L), 7, 11, 15, 22, 26, 30, 34), output="re-running with extra care for NAs")
 test(6000.220, frollsum(c(1:2,NA,4:10), rep(4L,10), adaptive=TRUE, algo="exact"), c(rep(NA_real_, 6), 22, 26, 30, 34), output="NAs were handled already, no need to re-run")
 test(6000.221, frollsum(1:3, 2), c(NA, 3, 5), output="frollsumFast: running for input length")
-test(6000.222, frollsum(1:3, 2, align="left"), c(3, 5, NA), output="frollsum: align")
+test(6000.222, frollsum(1:3, 2, align="left"), c(3, 5, NA), output="frollfun: align")
 test(6000.223, frollsum(c(1,2,NA), 2), c(NA, 3, NA), output="re-running with extra care for NAs")
 test(6000.224, frollsum(c(NA,2,3), 2), c(NA, NA, 5), output="skip non-NA attempt and run with extra care for NAs")
-test(6000.225, frollsum(1:3, c(2,2,2), adaptive=TRUE), c(NA, 3, 5), output="fadaptiverollsumFast: running for input length")
+test(6000.225, frollsum(1:3, c(2,2,2), adaptive=TRUE), c(NA, 3, 5), output="frolladaptivesumFast: running for input length")
 test(6000.226, frollsum(c(NA,2,3), c(2,2,2), adaptive=TRUE), c(NA, NA, 5), output="re-running with extra care for NAs")
 options(datatable.verbose=FALSE)
+
+## frollmax
+options(datatable.verbose=TRUE) ## adaptive frollmax no fast algo
+test(6000.3, frollmax(1:4, c(2,2,2,2), adaptive=TRUE), output="frolladaptivefun: algo 0 not implemented, fall back to 1")
+test(6000.3001, frollmax(1:4, c(2,2,2,2), algo="fast", adaptive=TRUE), output="frolladaptivefun: algo 0 not implemented, fall back to 1")
+test(6000.3002, frollmax(1:4, c(2,2,2,2), algo="exact", adaptive=TRUE), notOutput="frolladaptivefun: algo 0 not implemented, fall back to 1")
+options(datatable.verbose=FALSE)
+n = c(3,2,2,4,2,1,4,8)
+x = c(7,2,3,6,3,2,6,6) # no NA
+test(6000.3111, frollmax(x, n, adaptive=TRUE), c(NA,7,3,7,6,2,6,7)) # hasNA=NA # narm=F
+test(6000.3112, frollmax(x, n, na.rm=TRUE, adaptive=TRUE), c(NA,7,3,7,6,2,6,7)) # narm=T
+test(6000.3121, frollmax(x, n, hasNA=FALSE, adaptive=TRUE), c(NA,7,3,7,6,2,6,7)) # hasNA=F
+test(6000.3122, frollmax(x, n, hasNA=FALSE, na.rm=TRUE, adaptive=TRUE), error="does not make sense")
+test(6000.3131, frollmax(x, n, hasNA=TRUE, adaptive=TRUE), c(NA,7,3,7,6,2,6,7)) # hasNA=T
+test(6000.3132, frollmax(x, n, hasNA=TRUE, na.rm=TRUE, adaptive=TRUE), c(NA,7,3,7,6,2,6,7))
+x = c(7,2,NA,6,3,NA,6,6) # NA
+test(6000.3211, frollmax(x, n, adaptive=TRUE), c(NA,7,NA,NA,6,NA,NA,NA))
+test(6000.3212, frollmax(x, n, na.rm=TRUE, adaptive=TRUE), c(NA,7,2,7,6,-Inf,6,7))
+test(6000.3221, frollmax(x, n, hasNA=FALSE, adaptive=TRUE), c(NA,7,2,7,6,-Inf,6,7)) ## expected incorrect results, see manual hasNA section for details, added in #5441
+test(6000.3222, frollmax(x, n, hasNA=FALSE, na.rm=TRUE, adaptive=TRUE), error="does not make sense")
+test(6000.3231, frollmax(x, n, hasNA=TRUE, adaptive=TRUE), c(NA,7,NA,NA,6,NA,NA,NA))
+test(6000.3232, frollmax(x, n, hasNA=TRUE, na.rm=TRUE, adaptive=TRUE), c(NA,7,2,7,6,-Inf,6,7))
+x = rep(NA_real_, 8) # all NA
+test(6000.3241, frollmax(x, n, adaptive=TRUE), rep(NA_real_, 8))
+test(6000.3242, frollmax(x, n, na.rm=TRUE, adaptive=TRUE), c(NA, rep(-Inf, 7)))
+test(6000.3251, frollmax(x, n, hasNA=FALSE, adaptive=TRUE), c(NA, rep(-Inf, 7)))
+test(6000.3252, frollmax(x, n, hasNA=FALSE, na.rm=TRUE, adaptive=TRUE), error="does not make sense")
+test(6000.3261, frollmax(x, n, hasNA=TRUE, adaptive=TRUE), rep(NA_real_, 8))
+test(6000.3262, frollmax(x, n, hasNA=TRUE, na.rm=TRUE, adaptive=TRUE), c(NA, rep(-Inf, 7)))
+x = c(NA,NaN,NA,NaN,NaN,NaN,NA,NA) # all NaN/NA
+test(6000.3271, frollmax(x, n, adaptive=TRUE), c(NA,NA,NA,NA,NaN,NaN,NA,NA))
+test(6000.3272, frollmax(x, n, na.rm=TRUE, adaptive=TRUE), c(NA,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf))
+test(6000.3281, frollmax(x, n, hasNA=FALSE, adaptive=TRUE), c(NA,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf)) ## expected incorrect results, see manual hasNA section for details, added in #5441
+test(6000.3282, frollmax(x, n, hasNA=FALSE, na.rm=TRUE, adaptive=TRUE), error="does not make sense")
+test(6000.3291, frollmax(x, n, hasNA=TRUE, adaptive=TRUE), c(NA,NA,NA,NA,NaN,NaN,NA,NA))
+test(6000.3292, frollmax(x, n, hasNA=TRUE, na.rm=TRUE, adaptive=TRUE), c(NA,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf))
+x = c(7,2,NA,6,3,Inf,6,6) # Inf
+test(6000.3311, frollmax(x, n, adaptive=TRUE), c(NA,7,NA,NA,6,Inf,Inf,NA))
+test(6000.3312, frollmax(x, n, na.rm=TRUE, adaptive=TRUE), c(NA,7,2,7,6,Inf,Inf,Inf))
+test(6000.3321, frollmax(x, n, hasNA=FALSE, adaptive=TRUE), c(NA,7,2,7,6,Inf,Inf,Inf)) ## expected incorrect results, see manual hasNA section for details, added in #5441
+test(6000.3322, frollmax(x, n, hasNA=FALSE, na.rm=TRUE, adaptive=TRUE), error="does not make sense")
+test(6000.3331, frollmax(x, n, hasNA=TRUE, adaptive=TRUE), c(NA,7,NA,NA,6,Inf,Inf,NA))
+test(6000.3332, frollmax(x, n, hasNA=TRUE, na.rm=TRUE, adaptive=TRUE), c(NA,7,2,7,6,Inf,Inf,Inf))
+x = c(7,2,-Inf,6,3,NA,6,6) # -Inf
+test(6000.3341, frollmax(x, n, adaptive=TRUE), c(NA,7,2,7,6,NA,NA,NA))
+test(6000.3342, frollmax(x, n, na.rm=TRUE, adaptive=TRUE), c(NA,7,2,7,6,-Inf,6,7))
+test(6000.3351, frollmax(x, n, hasNA=FALSE, adaptive=TRUE), c(NA,7,2,7,6,-Inf,6,7)) ## expected incorrect results, see manual hasNA section for details, added in #5441
+test(6000.3352, frollmax(x, n, hasNA=FALSE, na.rm=TRUE, adaptive=TRUE), error="does not make sense")
+test(6000.3361, frollmax(x, n, hasNA=TRUE, adaptive=TRUE), c(NA,7,2,7,6,NA,NA,NA))
+test(6000.3362, frollmax(x, n, hasNA=TRUE, na.rm=TRUE, adaptive=TRUE), c(NA,7,2,7,6,-Inf,6,7))
+
+#TODO frollmax dev
+#TODO frollmax tests
 
 ## validation
 
@@ -1063,6 +1123,7 @@ f = function(x) {
 #test(6010.106, head(frollapply(1:5, 3, f), 3L), c(NA_real_,NA_real_,1), output=c("frollapplyR: allocating memory.*","frollapply: took.*","frollapplyR: processing.*took.*")) # only head 3 is valid, rest is undefined as REAL is applied on logical type, can return garbage or fail with REAL error
 options(datatable.verbose=FALSE)
 #### test coverage
+test(6010.5, frollapply(1:3, c(3,3,3), sum, adaptive=TRUE), error="frollapply does not support 'adaptive' argument")
 test(6010.501, frollapply(1:3, "b", sum), error="n must be integer")
 test(6010.502, frollapply(1:3, 2.5, sum), error="n must be integer")
 test(6010.503, frollapply(1:3, integer(), sum), error="n must be non 0 length")

@@ -7,64 +7,50 @@
 \alias{rollmean}
 \alias{frollmean}
 \alias{rollsum}
+\alias{rollmax}
 \alias{frollsum}
+\alias{frollmax}
 \alias{rollapply}
 \alias{frollapply}
 \title{Rolling functions}
 \description{
-  Fast rolling functions to calculate aggregates on sliding windows. Function name and arguments are experimental.
+  Fast rolling functions to calculate aggregates on sliding windows.
 }
 \usage{
-frollmean(x, n, fill=NA, algo=c("fast", "exact"),
-          align=c("right", "left", "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE)
-frollsum(x, n, fill=NA, algo=c("fast","exact"),
-         align=c("right", "left", "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE)
-frollapply(x, n, FUN, \dots, fill=NA, align=c("right", "left", "center"))
+  frollmean(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"),
+    na.rm=FALSE, hasNA=NA, adaptive=FALSE)
+  frollsum(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"),
+    na.rm=FALSE, hasNA=NA, adaptive=FALSE)
+  frollmax(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"),
+    na.rm=FALSE, hasNA=NA, adaptive=FALSE)
+  frollapply(x, n, FUN, \dots, fill=NA, align=c("right","left","center"), adaptive)
 }
 \arguments{
   \item{x}{ Vector, \code{data.frame} or \code{data.table} of integer, numeric or logical columns over which to calculate the windowed aggregations. May also be a list, in which case the rolling function is applied to each of its elements. }
-  \item{n}{ Integer vector giving rolling window size(s). This is the \emph{total} number of included values. Adaptive rolling functions also accept a list of integer vectors. }
+  \item{n}{ Integer vector giving rolling window size(s). This is the \emph{total} number of included values in aggregate function. Adaptive rolling functions also accept a list of integer vectors when applying multiple window sizes. }
   \item{fill}{ Numeric; value to pad by. Defaults to \code{NA}. }
   \item{algo}{ Character, default \code{"fast"}. When set to \code{"exact"}, a slower (but more accurate) algorithm is used. It
     suffers less from floating point rounding errors by performing an extra pass, and carefully handles all non-finite values.
     It will use multiple cores where available. See Details for more information. }
   \item{align}{ Character, specifying the "alignment" of the rolling window, defaulting to \code{"right"}. \code{"right"} covers preceding rows (the window \emph{ends} on the current value); \code{"left"} covers following rows (the window \emph{starts} on the current value); \code{"center"} is halfway in between (the window is \emph{centered} on the current value, biased towards \code{"left"} when \code{n} is even). }
-  \item{na.rm}{ Logical, default \code{FALSE}. Should missing values be removed when
-    calculating window? For details on handling other non-finite values, see Details. }
-  \item{hasNA}{ Logical. If it is known that \code{x} contains \code{NA}
-    then setting this to \code{TRUE} will speed up calculation. Defaults to \code{NA}. }
-  \item{adaptive}{ Logical, default \code{FALSE}. Should the rolling function be calculated adaptively? See Details below. }
-  \item{FUN}{ The function to be applied to the rolling window; see Details for restrictions. }
+  \item{na.rm}{ Logical, default \code{FALSE}. Should missing values be removed when calculating window? }
+  \item{hasNA}{ Logical. If it is known that \code{x} contains \code{NA} (or \code{Nan}) then setting this to \code{TRUE} will speed up calculation. Defaults to \code{NA}. See \emph{hasNA argument} section below for details. }
+  \item{adaptive}{ Logical, default \code{FALSE}. Should the rolling function be calculated adaptively? See \emph{Adaptive rolling functions} section below for details. }
+  \item{FUN}{ The function to be applied to the rolling window in \code{frollapply}; See \emph{frollapply} section below for details. }
   \item{\dots}{ Extra arguments passed to \code{FUN} in \code{frollapply}. }
 }
 \details{
-  \code{froll*} functions accept vectors, lists, \code{data.frame}s or
-  \code{data.table}s. They always return a list except when the input is a
-  \code{vector} and \code{length(n)==1}, in which case a \code{vector}
-  is returned, for convenience. Thus, rolling functions can be used
-  conveniently within \code{data.table} syntax.
+  \code{froll*} functions accept vector, list, \code{data.frame} or \code{data.table}. Functions operate on a single vector; when passing a non-atomic input, then function is applied column-by-column, not to the complete set of columns at once.
 
-  Argument \code{n} allows multiple values to apply rolling functions on
-  multiple window sizes. If \code{adaptive=TRUE}, then \code{n} must be a list.
-  Each list element must be integer vector of window sizes corresponding
-  to every single observation in each column; see Examples.
+  Argument \code{n} allows multiple values to apply rolling function on multiple window sizes. If \code{adaptive=TRUE}, then \code{n} can be a list to specify multiple window sizes for adaptive rolling computation. See \emph{Adaptive rolling functions} section below for details.
 
-  When \code{algo="fast"} an \emph{"on-line"} algorithm is used, and
-  all of \code{NaN, +Inf, -Inf} are treated as \code{NA}.
-  Setting \code{algo="exact"} will make rolling functions to use a more
-  computationally-intensive algorithm that suffers less from floating point
-  rounding error (the same consideration applies to \code{\link[base]{mean}}).
-  \code{algo="exact"} also handles \code{NaN, +Inf, -Inf} consistently to
-  base R. In case of some functions (like \emph{mean}), it will additionally
-  make extra pass to perform floating point error correction. Error
-  corrections might not be truly exact on some platforms (like Windows)
-  when using multiple threads.
+  When multiple columns and/or multiple windows widths are provided, then computations run in parallel (except for \code{frollapply}. The exception is for \code{algo="exact"}, which runs in parallel even for a single column and single window width. By default, data.table uses only half of the available CPUs, see \code{\link{setDTthreads}} for details on how to tune CPU usage.
 
   Adaptive rolling functions are a special case where each
   observation has its own corresponding rolling window width. Due to the logic
   of adaptive rolling functions, the following restrictions apply:
   \itemize{
-    \item \code{align} only \code{"right"}. 
+    \item \code{align} only \code{"right"}.
     \item if list of vectors is passed to \code{x}, then all
       vectors within it must have equal length.
   }
@@ -83,37 +69,68 @@ frollapply(x, n, FUN, \dots, fill=NA, align=c("right", "left", "center"))
   to compute a rolling average is inefficient. It is also always single-threaded
   because there is no thread-safe API to R's C \code{eval}. Nevertheless we've
   seen the computation speed up vis-a-vis versions implemented in base R.
+
+  Setting \code{options(datatable.verbose=TRUE)} will display various
+  information about how rolling function processed. It will not print
+  information in real-time but only at the end of the processing.
 }
 \value{
-  A list except when the input is a \code{vector} and
-  \code{length(n)==1} in which case a \code{vector} is returned.
+  A list except when the input is a \code{vector} and \code{length(n)==1}, in which case a \code{vector} is returned, for convenience. Thus, rolling functions can be used conveniently within \code{data.table} syntax.
 }
 \note{
-  Users coming from most popular package for rolling functions
-  \code{zoo} might expect following differences in \code{data.table}
-  implementation.
+  Be aware that rolling functions operate on the physical order of input. If the intent is to roll values in a vector by a logical window, for example an hour, or a day, then one has to ensure that there are no gaps in input. For details see \href{https://github.com/Rdatatable/data.table/issues/3241}{issue #3241}.
+}
+\section{\code{hasNA} argument}{
+  \code{hasNA} can be used to speed up processing in cases when it is known if \code{x} contains \code{NA} (or \code{NaN}).
   \itemize{
-    \item rolling function will always return result of the same length as input.
-    \item \code{fill} defaults to \code{NA}. 
+    \item Default \code{hasNA=NA} will use faster NA unaware implementation, but when NAs are detected it will re-run NA aware implementation.
+    \item \code{hasNA=TRUE} will use NA aware implementation straightaway.
+    \item \code{hasNA=FALSE} will use faster NA unaware implementation. Then depending on the rolling function it will either:
+    \itemize{
+      \item (\emph{mean, sum}) detect NAs, raise warning, re-run NA aware.
+      \item (\emph{max}) does not detect NAs and may silently produce incorrect answer.
+    }
+    Therefore \code{hasNA=FALSE} should be used with care.
+  }
+}
+\section{Implementation}{
+  \itemize{
+    \item \code{algo="fast"} uses an \emph{"on-line"} algorithm, and all of \code{NaN}, \code{+Inf}, \code{-Inf} (Inf is to be changed!!) are treated as \code{NA}. Not all functions have a \emph{fast} implementation available. As of now, \emph{max} and \code{adaptive=TRUE} does not, therefore it will automatically fall back to \emph{exact} implementation. \code{datatable.verbose} option can be used to check that.
+    \item \code{algo="exact"} will make rolling functions to use a more computationally-intensive algorithm. For each observation from the input vector, it will compute a function on a window from scratch (complexity \eqn{O(n^2)}). Depending on the function, this algorithm may suffer less from floating point rounding error (the same consideration applies to base \code{\link[base]{mean}}). The algorithm also handles \code{NaN}, \code{+Inf}, \code{-Inf} consistently with base R, unless - for some functions (e.g. \emph{max}) - \code{hasNA} is \code{FALSE} but NAs are present. In the case of some functions (like \emph{mean}), it will additionally make an extra pass to perform floating point error correction. Error corrections might not be truly exact on some platforms (like Windows) when using multiple threads.
+  }
+}
+\section{Adaptive rolling functions}{
+  Adaptive rolling functions are a special case where each observation has its own corresponding rolling window width. Therefore, values passed to \code{n} argument must be series corresponding to observations in \code{x}. If multiple windows are meant to be computed, then a list of integer vectors is expected; each list element must be an integer vector of window size corresponding to observations in \code{x}; see Examples. Due to the logic or implementation of adaptive rolling functions, the following restrictions apply
+  \itemize{
+    \item \code{align} does not support \code{"center"}.
+    \item if list of vectors is passed to \code{x}, then all vectors within it must have equal length.
+    \item functionality is not supported in \code{frollapply} (to be changed).
+  }
+}
+\section{\code{frollapply}}{
+  \code{frollapply} computes rolling aggregate on arbitrary R functions. \code{adaptive} argument is not supported (to be changed). The input \code{x} (first argument) to the function \code{FUN} is coerced to \emph{numeric} beforehand(to be changed) and \code{FUN} has to return a scalar \emph{numeric} value (to be changed). Checks for that are made only during the first iteration when \code{FUN} is evaluated. Edge cases can be found in examples below. Any R function is supported, but it is not optimized using our own C implementation -- hence, for example, using \code{frollapply} to compute a rolling average is inefficient. It is also always single-threaded because there is no thread-safe API to R's C \code{eval}. Nevertheless we've seen the computation speed up vis-a-vis versions implemented in base R.
+}
+\section{\code{zoo} package users notice}{
+  Users coming from most popular package for rolling functions \code{zoo} might expect following differences in \code{data.table} implementation
+  \itemize{
+    \item rolling function will always return result of the same length
+      as input.
+    \item \code{fill} defaults to \code{NA}.
     \item \code{fill} accepts only constant values. It does not support
       for \emph{na.locf} or other functions.
-    \item \code{align} defaults to \code{"right"}. 
+    \item \code{align} defaults to \code{"right"}.
     \item \code{na.rm} is respected, and other functions are not needed
       when input contains \code{NA}.
-    \item integers and logical are always coerced to double. 
+    \item integers and logical are always coerced to double
+      (to be changed for frollapply).
     \item when \code{adaptive=FALSE} (default), then \code{n} must be a
       numeric vector. List is not accepted.
     \item when \code{adaptive=TRUE}, then \code{n} must be vector of
       length equal to \code{nrow(x)}, or list of such vectors.
     \item \code{partial} window feature is not supported, although it can
       be accomplished by using \code{adaptive=TRUE}, see
-      examples. \code{NA} is always returned for incomplete windows. 
+      examples. \code{NA} is always returned for incomplete windows.
   }
-
-  Be aware that rolling functions operates on the physical order of input.
-  If the intent is to roll values in a vector by a logical window, for
-  example an hour, or a day, one has to ensure that there are no gaps in
-  input. For details see \href{https://github.com/Rdatatable/data.table/issues/3241}{issue #3241}.
 }
 \examples{
 d = as.data.table(list(1:6/2, 3:8/4))
@@ -200,7 +217,7 @@ f = function(x) {             ## FUN is not type-stable
 try(frollapply(1:5, 3, f))
 }
 \seealso{
-  \code{\link{shift}}, \code{\link{data.table}}
+  \code{\link{shift}}, \code{\link{data.table}}, \code{\link{setDTthreads}}
 }
 \references{
   \href{https://en.wikipedia.org/wiki/Round-off_error}{Round-off error}
