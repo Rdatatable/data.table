@@ -241,7 +241,7 @@ system.time(DF1 <- read.csv("test.csv",stringsAsFactors=FALSE))
 # 3.9 sec (immediate repeat is faster, varies)
 
 system.time(DF2 <- read.table("test.csv",header=TRUE,sep=",",quote="",
-    stringsAsFactors=FALSE,nrows=n,
+    stringsAsFactors=FALSE,comment.char="",nrows=n,
     colClasses=c("integer","integer","numeric",
                  "character","numeric","integer")))
 # 1.2 sec (consistently). All known tricks and known nrows, see references.
