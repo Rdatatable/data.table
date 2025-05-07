@@ -683,7 +683,7 @@ cat("1.0E300L\n};\n", file=f, append=TRUE)
  */
 static void parse_double_regular_core(const char **pch, double *target)
 {
-  #define FLOAT_MAX_DIGITS 18
+  static const int_fast32_t FLOAT_MAX_DIGITS = 18;
   const char *ch = *pch;
 
   if (*ch=='0' && args.keepLeadingZeros && IS_DIGIT(ch[1])) return;
