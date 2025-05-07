@@ -403,7 +403,7 @@ fun(DT, col.mean="Petal.Length")
 
 If the outer function itself follows NSE (Non-Standard Evaluation) rules, then it has to resolve language objects the same way as when passing its arguments to any other SE function.
 
-```{r env_se}
+```{r env_nse}
 fun = function(x, col.mean) {
   col.mean = substitute(col.mean)
   stopifnot(is.name(col.mean), is.data.table(x))
