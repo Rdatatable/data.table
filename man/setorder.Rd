@@ -48,7 +48,7 @@ when \code{b} is of type \code{character} as well. }
 \code{order} must be either \code{1} or equal to that of \code{cols}. If
 \code{length(order) == 1}, it is recycled to \code{length(cols)}. }
 \item{na.last}{ \code{logical}. If \code{TRUE}, missing values in the data are placed last; if \code{FALSE}, they are placed first; if \code{NA} they are removed.
-\code{na.last=NA} is valid only for \code{x[order(., na.last)]} and related \code{sort_by(x, .)} (\eqn{\R \ge 4.4.0}) and its
+\code{na.last=NA} is valid only for \code{x[order(., na.last)]} and related \code{sort_by(x, .)} (\R \ifelse{html}{\out{&ge;}}{\eqn{\ge}} 4.4.0) and its
 default is \code{TRUE}. \code{setorder} and \code{setorderv} only accept
 \code{TRUE}/\code{FALSE} with default \code{FALSE}. }
 }
@@ -73,7 +73,7 @@ sets the \code{sorted} attribute.
 
 \code{na.last} argument, by default, is \code{FALSE} for \code{setorder} and
 \code{setorderv} to be consistent with \code{data.table}'s \code{setkey} and
-is \code{TRUE} for \code{x[order(.)]} and \code{sort_by(x, .)} (\eqn{\R \ge 4.4.0}) to be consistent with \code{base::order}.
+is \code{TRUE} for \code{x[order(.)]} and \code{sort_by(x, .)} (\R \ifelse{html}{\out{&ge;}}{\eqn{\ge}} 4.4.0) to be consistent with \code{base::order}.
 Only \code{x[order(.)]} (and related \code{sort_by(x, .)}) can have \code{na.last = NA} as it is a subset operation
 as opposed to \code{setorder} or \code{setorderv} which reorders the data.table
 by reference.
