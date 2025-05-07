@@ -391,7 +391,7 @@ In case of any doubts on the `env` interface functioning, set `verbose = TRUE` t
 
 ### Use `env` argument from inside another function
 
-It was a design decision that `env` argument will follow _Standard Evaluation_ rules. Therefore values passed to `env` are evaluated in their orignal scope as is. For more info on the topic see [R Language manual: Computing on the language](https://cran.r-project.org/doc/manuals/r-release/R-lang.html#Computing-on-the-language)). As a result, **using `env` argument from function does not require any special handling**. It also means that `.()` alias for a `list()` will not work: `env = .(.col="Petal.Length")`; and `env = list(.col="Petal.Length")` must be used.
+It was a design decision that `env` argument will follow _Standard Evaluation_ rules. Therefore values passed to `env` are evaluated in their orignal scope as is. For more info on the topic see [R Language manual: Computing on the language](https://cran.r-project.org/doc/manuals/r-release/R-lang.html#Computing-on-the-language)). As a result, **using `env` argument from a function does not require any special handling**. It also means that `.()` alias for a `list()` will not work: `env = .(.col="Petal.Length")`; and `env = list(.col="Petal.Length")` must be used.
 
 ```{r env_se}
 fun = function(x, col.mean) {
