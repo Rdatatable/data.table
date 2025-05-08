@@ -458,7 +458,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
       # if a warning containing this string occurs, ignore it. First need for #4182 where warning about 'timedatectl' only
       # occurs in R 3.4, and maybe only on docker too not for users running test.data.table().
       stopifnot(is.character(ignore.warning), !anyNA(ignore.warning), nchar(ignore.warning)>=1L)
-      for (msg in ignore.warning) observed = grep(msg, observed, value=TRUE, invert=TRUE) # allow multiple for translated messages rather than relying on '|' to always work
+      for (msg in ignore.warning) observed = grepv(msg, observed, invert=TRUE) # allow multiple for translated messages rather than relying on '|' to always work
     }
     if (length(expected) != length(observed) && (!foreign || is.null(ignore.warning))) {
       # nocov start
@@ -515,6 +515,8 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
   }
   if (!fail && !length(error) && (!length(output) || !missing(y))) {   # TODO test y when output=, too
     capture.output(y <- try(y, silent=TRUE)) # y might produce verbose output, just toss it
+    if (inherits(x, c("Date", "POSIXct"))) storage.mode(x) <- "numeric"
+    if (inherits(y, c("Date", "POSIXct"))) storage.mode(y) <- "numeric"
     if (identical(x,y)) return(invisible(TRUE))
     all.equal.result = TRUE
     if (is.data.frame(x) && is.data.frame(y)) {

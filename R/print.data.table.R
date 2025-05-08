@@ -142,7 +142,11 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
   if (nrow(toprint)>20L && col.names == "auto")
     # repeat colnames at the bottom if over 20 rows so you don't have to scroll up to see them
     #   option to shut this off per request of Oleg Bondar on SO, #1482
-    toprint = rbind(toprint, matrix(if (quote) old else colnames(toprint), nrow=1L)) # fixes bug #97
+    toprint = rbind(
+      toprint,
+      matrix(if (quote) old else colnames(toprint), nrow=1L), # see #97
+      if (isTRUE(class)) matrix(if (trunc.cols) abbs[cols_to_print] else abbs, nrow=1L) # #6902
+    )
   print_default(toprint)
   invisible(x)
 }
@@ -165,7 +169,7 @@ shouldPrint = function(x) {
 # for removing the head (column names) of matrix output entirely,
 #   as opposed to printing a blank line, for excluding col.names per PR #1483
 # be sure to remove colnames from any row where they exist, #4270
-cut_colnames = function(x) writeLines(grep("^\\s*(?:[0-9]+:|---)", capture.output(x), value=TRUE))
+cut_colnames = function(x) writeLines(grepv("^\\s*(?:[0-9]+:|---)", capture.output(x)))
 
 # for printing the dims for list columns #3671; used by format.data.table()
 paste_dims = function(x) {

@@ -646,8 +646,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       if (!*tc1) internal_error(__func__, "index name ends with trailing __"); // # nocov
       // check the position of the first appearance of an assigned column in the index.
       // the new index will be truncated to this position.
-      char *s4 = (char*) malloc(strlen(c1) + 3);
-      if(s4 == NULL){
+      char *s4 = malloc(strlen(c1) + 3);
+      if (!s4) {
         internal_error(__func__, "Couldn't allocate memory for s4"); // # nocov
       }
       memcpy(s4, c1, strlen(c1));
@@ -656,8 +656,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       int newKeyLength = strlen(c1);
       for(int i = 0; i < xlength(assignedNames); i++){
         tc2 = CHAR(STRING_ELT(assignedNames, i));
-        char *s5 = (char*) malloc(strlen(tc2) + 5); //4 * '_' + \0
-        if(s5 == NULL){
+        char *s5 = malloc(strlen(tc2) + 5); //4 * '_' + \0
+        if (!s5) {
           free(s4);                                                  // # nocov
           internal_error(__func__, "Couldn't allocate memory for s5"); // # nocov
         }
@@ -873,7 +873,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
         for (int k=0; k<nTargetLevels; ++k) SET_TRUELENGTH(targetLevelsD[k], 0);  // don't need those anymore
         if (nAdd) {
           // cannot grow the levels yet as that would be R call which could fail to alloc and we have no hook to clear up
-          SEXP *temp = (SEXP *)malloc(nAdd * sizeof(SEXP *));
+          SEXP *temp = malloc(sizeof(*temp) * nAdd);
           if (!temp) {
             // # nocov start
             for (int k=0; k<nSourceLevels; ++k) SET_TRUELENGTH(sourceLevelsD[k], 0);
@@ -1282,8 +1282,8 @@ void savetl_init(void) {
   }
   nsaved = 0;
   nalloc = 100;
-  saveds = (SEXP *)malloc(nalloc * sizeof(SEXP));
-  savedtl = (R_len_t *)malloc(nalloc * sizeof(R_len_t));
+  saveds = malloc(sizeof(*saveds) * nalloc);
+  savedtl = malloc(sizeof(*savedtl) * nalloc);
   if (!saveds || !savedtl) {
     free(saveds); free(savedtl);                                            // # nocov
     savetl_end();                                                           // # nocov

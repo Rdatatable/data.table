@@ -174,7 +174,7 @@ replace_dot_alias = function(e) {
         stopf("When by and keyby are both provided, keyby must be TRUE or FALSE")
     }
     if (missing(by)) { missingby=TRUE; by=bysub=NULL }  # possible when env is used, PR#4304
-    else if (verbose && !is.null(env)) catf("Argument '%s' after substitute: %s\n", "by", paste(deparse(bysub, width.cutoff=500L), collapse=" "))
+    else if (verbose && !is.null(env)) catf("Argument '%s' after substitute: %s\n", "by", paste(deparse(bysub, width.cutoff=500L), collapse="\n"))
   }
   bynull = !missingby && is.null(by) #3530
   byjoin = !is.null(by) && is.symbol(bysub) && bysub==".EACHI"
@@ -239,7 +239,7 @@ replace_dot_alias = function(e) {
         substitute2(.j, env),
         list(.j = substitute(j))
       ))
-      if (missing(jsub)) {j = substitute(); jsub=NULL} else if (verbose && !is.null(env)) catf("Argument '%s' after substitute: %s\n", "j", paste(deparse(jsub, width.cutoff=500L), collapse=" "))
+      if (missing(jsub)) {j = substitute(); jsub=NULL} else if (verbose && !is.null(env)) catf("Argument '%s' after substitute: %s\n", "j", paste(deparse(jsub, width.cutoff=500L), collapse="\n"))
     }
   }
   if (!missing(j)) {
@@ -328,7 +328,7 @@ replace_dot_alias = function(e) {
         substitute2(.i, env),
         list(.i = substitute(i))
       ))
-      if (missing(isub)) {i = substitute(); isub=NULL} else if (verbose && !is.null(env)) catf("Argument '%s' after substitute: %s\n", "i", paste(deparse(isub, width.cutoff=500L), collapse=" "))
+      if (missing(isub)) {i = substitute(); isub=NULL} else if (verbose && !is.null(env)) catf("Argument '%s' after substitute: %s\n", "i", paste(deparse(isub, width.cutoff=500L), collapse="\n"))
     }
   }
   if (!missing(i)) {
@@ -904,7 +904,7 @@ replace_dot_alias = function(e) {
             if (length(byvars) == 1L) tt = byvars
             else {
               # take the first variable that is (1) not eval (#3758) and (2) starts with a character that can't start a variable name
-              tt = grep("^eval$|^[^[:alpha:]. ]", byvars, invert=TRUE, value=TRUE)
+              tt = grepv("^eval$|^[^[:alpha:]. ]", byvars, invert=TRUE)
               # byvars but exclude functions or `0`+`1` becomes `+`
               tt = if (length(tt)) tt[1L] else all.vars(bysubl[[jj+1L]])[1L]
             }

@@ -16614,6 +16614,12 @@ test(2125.09, print(DT, trunc.cols=TRUE),
      output="4 variables not shown: [a, b, c, d]")
 test(2125.10, print(DT, trunc.cols=TRUE, class=TRUE),
      output="4 variables not shown: [a <char>, b <char>, c <char>, d <char>]")
+options("width" = 20L)
+# truncated cols with class and printing class at bottom #6929
+DT = data.table(a = 1:30,
+                b = "bbbbbbbbbbbbb")
+test(2125.11, print(DT, trunc.cols=TRUE, class=TRUE),
+     output="1 variable not shown: [b <char>]")
 options(old_width)
 
 # segfault when i is NULL or zero-column, #4060
@@ -21129,3 +21135,23 @@ test(2311.2, nlevels(DT$V1), 2L) # used to be 3
 # avoid translateChar*() in OpenMP threads, #6883
 DF = list(rep(iconv("\uf8", from = "UTF-8", to = "latin1"), 2e6))
 test(2312, fwrite(DF, nullfile(), encoding = "UTF-8", nThread = 2L), NULL)
+
+# avoid memcpy of 0-length inputs
+test(2313,
+     melt(data.table(a=numeric(), b=numeric(), c=numeric()), id.vars=c('a', 'b')),
+     data.table(a=numeric(), b=numeric(), variable=factor(levels='c'), value=numeric()))
+
+# Testing column footer display with col.names options in print.data.table #6902
+dt = data.table(id = 1:25)
+# Test with class=TRUE shows classes at bottom with default col.names="auto"
+test(2314.1, any(grepl("<int>", tail(capture.output(print(dt, class = TRUE)), 2))), TRUE)
+# Test that class=TRUE with col.names="top" doesn't show classes at bottom
+test(2314.2, !any(grepl("<int>", tail(capture.output(print(dt, class = TRUE, col.names = "top")), 2))), TRUE)
+
+# forder.c coverage
+N <- 70000L
+DT <- data.table(i = rep(2:1, c(1L, N-1L)))
+test(2315.1, tail(DT[order(i), i], 2L), 1:2)
+# wider range of numbers needed for further coverage
+DT[1L, i := 1000L]
+test(2315.2, tail(DT[order(i), i], 2L), c(1L, 1000L))

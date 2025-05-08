@@ -214,7 +214,7 @@ static const char* strlim(const char *ch, size_t limit) {
   return ptr;
 }
 
-static char *typeLetter = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+static const char *typeLetter = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
 static char *typesAsString(int ncol) {
   int nLetters = strlen(typeLetter);
@@ -441,7 +441,7 @@ static const char* filesize_to_str(size_t fsize)
 double copyFile(size_t fileSize)  // only called in very very rare cases
 {
   double tt = wallclock();
-  mmp_copy = (char *)malloc(fileSize + 1 /* extra \0 */);
+  mmp_copy = malloc(fileSize + 1 /* extra \0 */);
   if (!mmp_copy)
     return -1.0; // # nocov
   memcpy(mmp_copy, mmp, fileSize);
@@ -683,7 +683,7 @@ cat("1.0E300L\n};\n", file=f, append=TRUE)
  */
 static void parse_double_regular_core(const char **pch, double *target)
 {
-  #define FLOAT_MAX_DIGITS 18
+  static const int_fast32_t FLOAT_MAX_DIGITS = 18;
   const char *ch = *pch;
 
   if (*ch=='0' && args.keepLeadingZeros && IS_DIGIT(ch[1])) return;
@@ -1884,8 +1884,8 @@ int freadMain(freadMainArgs _args) {
   if (verbose) DTPRINT(_("[07] Detect column types, dec, good nrow estimate and whether first row is column names\n"));
   if (verbose && args.header!=NA_BOOL8) DTPRINT(_("  'header' changed by user from 'auto' to %s\n"), args.header?"true":"false");
 
-  type =    (int8_t *)malloc((size_t)ncol * sizeof(int8_t));
-  tmpType = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));  // used i) in sampling to not stop on errors when bad jump point and ii) when accepting user overrides
+  type =    malloc(sizeof(*type) * (size_t)ncol);
+  tmpType = malloc(sizeof(*tmpType) * (size_t)ncol);  // used i) in sampling to not stop on errors when bad jump point and ii) when accepting user overrides
   if (!type || !tmpType) {
     free(type); free(tmpType); // # nocov
     STOP(_("Failed to allocate 2 x %d bytes for type and tmpType: %s"), ncol, strerror(errno)); // # nocov
@@ -2201,9 +2201,9 @@ int freadMain(freadMainArgs _args) {
   rowSize1 = 0;
   rowSize4 = 0;
   rowSize8 = 0;
-  size = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));  // TODO: remove size[] when we implement Pasha's idea to += size inside processor
+  size = malloc(sizeof(*size) * (size_t)ncol);  // TODO: remove size[] when we implement Pasha's idea to += size inside processor
   if (!size)
-    STOP(_("Failed to allocate %d bytes for '%s': %s"), (int)(ncol * sizeof(int8_t)), "size", strerror(errno)); // # nocov
+    STOP(_("Failed to allocate %d bytes for '%s': %s"), (int)(sizeof(*size) * (size_t)ncol), "size", strerror(errno)); // # nocov
   nStringCols = 0;
   nNonStringCols = 0;
   for (int j=0; j<ncol; j++) {
@@ -2642,7 +2642,7 @@ int freadMain(freadMainArgs _args) {
       DTPRINT(_("  Provided number of fill columns: %d but only found %d\n"), ncol, max_col);
       DTPRINT(_("  Dropping %d overallocated columns\n"), ndropFill);
     }
-    dropFill = (int *)malloc((size_t)ndropFill * sizeof(int));
+    dropFill = malloc(sizeof(*dropFill) * (size_t)ndropFill);
     if (!dropFill)
       STOP(_("Failed to allocate %d bytes for '%s'."), (int)(ndropFill * sizeof(int)), "dropFill"); // # nocov
     int i=0;
@@ -2762,7 +2762,7 @@ int freadMain(freadMainArgs _args) {
           DTWARN(_("Stopped early on line %"PRIu64". Expected %d fields but found %d. Consider fill=%d or even more based on your knowledge of the input file. Use fill=Inf for reading the whole file for detecting the number of fields. First discarded non-empty line: <<%s>>"),
           (uint64_t)DTi+row1line, ncol, tt, tt, strlim(skippedFooter,500));
         } else {
-          DTWARN(_("Stopped early on line %"PRIu64". Expected %d fields but found %d. Consider fill=TRUE and comment.char=. First discarded non-empty line: <<%s>>"),
+          DTWARN(_("Stopped early on line %"PRIu64". Expected %d fields but found %d. Consider fill=TRUE. First discarded non-empty line: <<%s>>"),
           (uint64_t)DTi+row1line, ncol, tt, strlim(skippedFooter,500));
         }
       }
