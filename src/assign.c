@@ -647,7 +647,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       // check the position of the first appearance of an assigned column in the index.
       // the new index will be truncated to this position.
       char *s4 = malloc(strlen(c1) + 3);
-      if(s4 == NULL){
+      if(!s4){
         internal_error(__func__, "Couldn't allocate memory for s4"); // # nocov
       }
       memcpy(s4, c1, strlen(c1));
@@ -657,7 +657,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       for(int i = 0; i < xlength(assignedNames); i++){
         tc2 = CHAR(STRING_ELT(assignedNames, i));
         char *s5 = malloc(strlen(tc2) + 5); //4 * '_' + \0
-        if(s5 == NULL){
+        if(!s5){
           free(s4);                                                  // # nocov
           internal_error(__func__, "Couldn't allocate memory for s5"); // # nocov
         }
