@@ -1156,7 +1156,7 @@ void radix_r(const int from, const int to, const int radix) {
     uint8_t *my_ktmp = malloc(sizeof(*my_ktmp) * batchSize * n_rem);
     if (!my_otmp || !my_ktmp) {
       free(my_otmp); free(my_ktmp);
-      STOP(_("Failed to allocate 'my_otmp' and/or 'my_ktmp' arrays (%d bytes)."), (int)((sizeof(*my_otmp) + sizeof(*my_ktmp)) * batchSize)));
+      STOP(_("Failed to allocate 'my_otmp' and/or 'my_ktmp' arrays (%d bytes)."), (int)((sizeof(*my_otmp) + sizeof(*my_ktmp)) * batchSize));
     }
     // TODO: move these up above and point restrict[me] to them. Easier to Error that way if failed to alloc.
     #pragma omp for
