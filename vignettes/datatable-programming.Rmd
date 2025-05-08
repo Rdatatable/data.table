@@ -407,7 +407,7 @@ If the outer function itself follows NSE (Non-Standard Evaluation) rules, then i
 fun = function(x, col.mean) {
   col.mean = substitute(col.mean)
   stopifnot(is.name(col.mean), is.data.table(x))
-  x[, mean(.col), env = list(.col = col.mean)]
+  x[, .(col_avg = mean(.col)), env = list(.col = col.mean)]
 }
 fun(DT, col.mean=Petal.Length)
 ```
