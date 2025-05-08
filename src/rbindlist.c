@@ -132,7 +132,6 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
     int *colMapRaw = malloc(sizeof(*colMapRaw) * LENGTH(l)*ncol);  // the result of this scope used later
     int *uniqMap = malloc(sizeof(*uniqMap) * ncol); // maps the ith unique string to the first time it occurs in the final result
     int *dupLink = malloc(sizeof(*dupLink) * ncol); // if a colname has occurred before (a dup) links from the 1st to the 2nd time in the final result, 2nd to 3rd, etc
-``` typo
     if (!colMapRaw || !uniqMap || !dupLink) {
       // # nocov start
       for (int i=0; i<nuniq; ++i) SET_TRUELENGTH(uniq[i], 0);
