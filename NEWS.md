@@ -10,7 +10,9 @@
 
 3. `print.data.table()` now shows column classes at the bottom of large tables when `class=TRUE` and `col.names="auto"` (default) for tables with more than 20 rows, [#6902](https://github.com/Rdatatable/data.table/issues/6902). This follows the same behavior as column names at the bottom, making it easier to see column types for large tables without scrolling back to the top. Thanks to @TimTaylor for the suggestion and @Mukulyadav2004 for the PR.
 
-4. Multiple improvements has been added to rolling functions. Request came from @gpierard who needed left aligned, adaptive, rolling max, [#5438](https://github.com/Rdatatable/data.table/issues/5438). There was no `frollmax` function yet. Adaptive rolling functions did not have support for `align="left"`. `frollapply` did not support `adaptive=TRUE`. Available alternatives were base R `mapply` or self-join using `max` and grouping `by=.EACHI`. As a follow up of his request, following features has been or will be added:
+4. `as.Date()` method for `IDate` no longer coerces to `double` [#6922](https://github.com/Rdatatable/data.table/issues/6922). Thanks @MichaelChirico for the report and PR. The only effect should be on overly-strict tests that assert `Date` objects have `double` storage, which is not in general true, especially from R 4.5.0.
+
+5. Multiple improvements has been added to rolling functions. Request came from @gpierard who needed left aligned, adaptive, rolling max, [#5438](https://github.com/Rdatatable/data.table/issues/5438). There was no `frollmax` function yet. Adaptive rolling functions did not have support for `align="left"`. `frollapply` did not support `adaptive=TRUE`. Available alternatives were base R `mapply` or self-join using `max` and grouping `by=.EACHI`. As a follow up of his request, following features has been or will be added:
 - new function `frollmax`, applies `max` over a rolling window.
 - support for `align="left"` for adaptive rolling function.
 - support for `adaptive=TRUE` in `frollapply`.
@@ -44,7 +46,6 @@ microbenchmark::microbenchmark(
 #    sj(x) 3600.42771 3752.19359 4118.21755 4235.45856 4329.08728 4884.080    10
 #  fmax(x)   64.48627   73.07978   88.84932   76.64569   82.56115  198.438    10
 ```
-
 
 ## BUG FIXES
 
