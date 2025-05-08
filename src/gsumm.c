@@ -118,7 +118,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     int highSize = ((nrow-1)>>bitshift) + 1;
     //Rprintf(_("When assigning grp[o] = g, highSize=%d  nb=%d  bitshift=%d  nBatch=%d\n"), highSize, nb, bitshift, nBatch);
     int *counts = calloc(nBatch*highSize, sizeof(int));  // TODO: cache-line align and make highSize a multiple of 64
-    int *TMP   = malloc(nrow*2l*sizeof(int)); // must multiple the long int otherwise overflow may happen, #4295
+    int *TMP   = malloc(sizeof(*TMP) * nrow*2l); // must multiple the long int otherwise overflow may happen, #4295
     if (!counts || !TMP ) {
       free(counts); free(TMP); // # nocov
       error(_("Failed to allocate counts or TMP when assigning g in gforce")); // # nocov
@@ -1124,7 +1124,7 @@ SEXP gprod(SEXP x, SEXP narmArg) {
   const int n = nosubset ? length(x) : irowslen;
   //clock_t start = clock();
   if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, "gprod");
-  long double *s = malloc(ngrp * sizeof(long double));
+  long double *s = malloc(sizeof(*s) * ngrp);
   if (!s)
     error(_("Unable to allocate %d * %zu bytes for gprod"), ngrp, sizeof(long double)); // # nocov
   for (int i=0; i<ngrp; ++i) s[i] = 1.0;
