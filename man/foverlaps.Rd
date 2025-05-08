@@ -29,15 +29,15 @@ foverlaps(x, y, by.x = key(x) \%||\% key(y),
 \item{by.x, by.y}{A vector of column names (or numbers) to compute the overlap
 joins. The last two columns in both \code{by.x} and \code{by.y} should each
 correspond to the \code{start} and \code{end} interval columns in \code{x} and
-\code{y} respectively. And the \code{start} column should always be <= \code{end}
-column. If \code{x} is keyed,  \code{by.x} is equal to \code{key(x)}, else
+\code{y} respectively. We should always have \code{start <= end}.
+If \code{x} is keyed,  \code{by.x} is equal to \code{key(x)}, else
 \code{key(y)}. \code{by.y} defaults to \code{key(y)}. }
-\item{maxgap}{It should be a non-negative integer value, >= 0. Default is 0 (no
+\item{maxgap}{Non-negative integer, i.e., \code{maxgap >= 0}. Default is 0 (no
 gap). For intervals \code{[a,b]} and \code{[c,d]}, where \code{a<=b} and
 \code{c<=d}, when \code{c > b} or \code{d < a}, the two intervals don't overlap.
 If the gap between these two intervals is \code{<= maxgap}, these two intervals
 are considered as overlapping. Note: This is not yet implemented.}
-\item{minoverlap}{ It should be a positive integer value, > 0. Default is 1. For
+\item{minoverlap}{Positive integer, i.e., \code{minoverlap > 0}. Default is 1. For
 intervals \code{[a,b]} and \code{[c,d]}, where \code{a<=b} and \code{c<=d}, when
 \code{c<=b} and \code{d>=a}, the two intervals overlap. If the length of overlap
 between these two intervals is \code{>= minoverlap}, then these two intervals are

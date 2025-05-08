@@ -683,7 +683,7 @@ cat("1.0E300L\n};\n", file=f, append=TRUE)
  */
 static void parse_double_regular_core(const char **pch, double *target)
 {
-  static const sflimit FLOAT_MAX_DIGITS = 18;
+  static const int_fast32_t FLOAT_MAX_DIGITS = 18;
   const char *ch = *pch;
 
   if (*ch=='0' && args.keepLeadingZeros && IS_DIGIT(ch[1])) return;
@@ -2762,7 +2762,7 @@ int freadMain(freadMainArgs _args) {
           DTWARN(_("Stopped early on line %"PRIu64". Expected %d fields but found %d. Consider fill=%d or even more based on your knowledge of the input file. Use fill=Inf for reading the whole file for detecting the number of fields. First discarded non-empty line: <<%s>>"),
           (uint64_t)DTi+row1line, ncol, tt, tt, strlim(skippedFooter,500));
         } else {
-          DTWARN(_("Stopped early on line %"PRIu64". Expected %d fields but found %d. Consider fill=TRUE and comment.char=. First discarded non-empty line: <<%s>>"),
+          DTWARN(_("Stopped early on line %"PRIu64". Expected %d fields but found %d. Consider fill=TRUE. First discarded non-empty line: <<%s>>"),
           (uint64_t)DTi+row1line, ncol, tt, strlim(skippedFooter,500));
         }
       }
