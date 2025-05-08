@@ -280,7 +280,7 @@ static void cradix_r(SEXP *xsub, int n, int radix)
 
 static void cradix(SEXP *x, int n)
 {
-  cradix_counts = calloc(ustr_maxlen*256, sizeof(int));  // counts for the letters of left-aligned strings
+  cradix_counts = calloc(ustr_maxlen*256, sizeof(*cradix_counts));  // counts for the letters of left-aligned strings
   cradix_xtmp = malloc(sizeof(*cradix_xtmp) * ustr_n);
   if (!cradix_counts || !cradix_xtmp) {
     free(cradix_counts); free(cradix_xtmp); // # nocov
