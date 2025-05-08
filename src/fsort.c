@@ -140,8 +140,8 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   // and ii) for small vectors with just one batch
 
   t[1] = wallclock();
-  double *mins = (double *)malloc(nBatch * sizeof(double));
-  double *maxs = (double *)malloc(nBatch * sizeof(double));
+  double *mins = malloc(sizeof(*mins) * nBatch);
+  double *maxs = malloc(sizeof(*maxs) * nBatch);
   if (!mins || !maxs) {
     free(mins); free(maxs); // # nocov
     error(_("Failed to allocate %d bytes in fsort()."), (int)(2 * nBatch * sizeof(double))); // # nocov
@@ -300,7 +300,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
         uint64_t thisN = msbCounts[order[msb]];
 
         if (myworking==NULL) {
-          myworking = malloc(thisN * sizeof(double));
+          myworking = malloc(sizeof(*myworking) * thisN);
           if (!myworking) {
             failed=true; alloc_fail=true; continue;  // # nocov
           }
