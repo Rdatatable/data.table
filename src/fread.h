@@ -190,9 +190,9 @@ typedef struct ThreadLocalFreadParsingContext
   // be stored in memory buffer `buff1`.
   // Within each buffer the data is stored in row-major order, i.e. in the same
   // order as in the original CSV file.
-  void * restrict buff8;
-  void * restrict buff4;
-  void * restrict buff1;
+  void *restrict buff8;
+  void *restrict buff4;
+  void *restrict buff1;
 
   // Size (in bytes) for a single row of data within the buffers `buff8`,
   // `buff4` and `buff1` correspondingly.
