@@ -28,6 +28,7 @@
 
 7. `fwrite()` now avoids a crash when translating strings into a different encoding, [#6883](https://github.com/Rdatatable/data.table/issues/6883). Thanks @filipemsc for the report and @aitap for the fix.
 
+8. `fread()` no longer warns on certain systems on R 4.5.0+ where the file owner can't be resolved, [#6918](https://github.com/Rdatatable/data.table/issues/6918). Thanks @ProfFancyPants for the report and PR.
 
 ## NOTES
 
