@@ -16,7 +16,7 @@ This can be changed by setting \code{NAbounds} to \code{NA}.
 the intervals provided in \code{lower,upper}.
 }
 \usage{
-between(x, lower, upper, incbounds=TRUE, NAbounds=TRUE, check=FALSE)
+between(x, lower, upper, incbounds=TRUE, NAbounds=TRUE, check=FALSE, ignore_tzone=FALSE)
 x \%between\% y
 
 inrange(x, lower, upper, incbounds=TRUE)
