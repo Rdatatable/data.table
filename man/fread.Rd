@@ -139,7 +139,7 @@ Background :\cr
 \url{https://stackoverflow.com/a/9818473/403310}\cr
 \url{https://stackoverflow.com/questions/9608950/reading-huge-files-using-memory-mapped-files}
 
-finagler = "to get or achieve by guile or manipulation" \url{https://dictionary.reference.com/browse/finagler}
+finagle = "to obtain (something) by indirect or involved means", \url{https://www.merriam-webster.com/dictionary/finagler}
 
 On YAML, see \url{https://yaml.org/}.
 }

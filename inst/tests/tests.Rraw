@@ -16614,6 +16614,12 @@ test(2125.09, print(DT, trunc.cols=TRUE),
      output="4 variables not shown: [a, b, c, d]")
 test(2125.10, print(DT, trunc.cols=TRUE, class=TRUE),
      output="4 variables not shown: [a <char>, b <char>, c <char>, d <char>]")
+options("width" = 20L)
+# truncated cols with class and printing class at bottom #6929
+DT = data.table(a = 1:30,
+                b = "bbbbbbbbbbbbb")
+test(2125.11, print(DT, trunc.cols=TRUE, class=TRUE),
+     output="1 variable not shown: [b <char>]")
 options(old_width)
 
 # segfault when i is NULL or zero-column, #4060
@@ -21142,9 +21148,17 @@ test(2314.1, any(grepl("<int>", tail(capture.output(print(dt, class = TRUE)), 2)
 # Test that class=TRUE with col.names="top" doesn't show classes at bottom
 test(2314.2, !any(grepl("<int>", tail(capture.output(print(dt, class = TRUE, col.names = "top")), 2))), TRUE)
 
+# forder.c coverage
+N <- 70000L
+DT <- data.table(i = rep(2:1, c(1L, N-1L)))
+test(2315.1, tail(DT[order(i), i], 2L), 1:2)
+# wider range of numbers needed for further coverage
+DT[1L, i := 1000L]
+test(2315.2, tail(DT[order(i), i], 2L), c(1L, 1000L))
+
 # issue #6898, test that tzone behavior changes with ignore_tzone=TRUE
 tms = list(.POSIXct(1), .POSIXct(1, "UTC"))
-test(2315.1, between(tms[[1]], tms[[1]], tms[[2]]), error = "different tzone attributes")
-test(2315.2, between(tms[[1]], tms[[1]], tms[[2]], ignore_tzone=TRUE))
-test(2315.3, between(tms[[1]], tms[[2]], tms[[2]]), message = "mismatched tzone attributes")
-test(2315.4, between(tms[[1]], tms[[2]], tms[[2]], ignore_tzone=TRUE))
+test(2316.1, between(tms[[1]], tms[[1]], tms[[2]]), error = "different tzone attributes")
+test(2316.2, between(tms[[1]], tms[[1]], tms[[2]], ignore_tzone=TRUE))
+test(2316.3, between(tms[[1]], tms[[2]], tms[[2]]), message = "mismatched tzone attributes")
+test(2316.4, between(tms[[1]], tms[[2]], tms[[2]], ignore_tzone=TRUE))

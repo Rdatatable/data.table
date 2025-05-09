@@ -280,8 +280,8 @@ static void cradix_r(SEXP *xsub, int n, int radix)
 
 static void cradix(SEXP *x, int n)
 {
-  cradix_counts = (int *)calloc(ustr_maxlen*256, sizeof(int));  // counts for the letters of left-aligned strings
-  cradix_xtmp = (SEXP *)malloc(ustr_n*sizeof(SEXP));
+  cradix_counts = calloc(ustr_maxlen*256, sizeof(*cradix_counts));  // counts for the letters of left-aligned strings
+  cradix_xtmp = malloc(sizeof(*cradix_xtmp) * ustr_n);
   if (!cradix_counts || !cradix_xtmp) {
     free(cradix_counts); free(cradix_xtmp); // # nocov
     STOP(_("Failed to alloc cradix_counts and/or cradix_tmp")); // # nocov
@@ -342,7 +342,7 @@ static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max
   if (anynotutf8) {
     SEXP ustr2 = PROTECT(allocVector(STRSXP, ustr_n));
     for (int i=0; i<ustr_n; i++) SET_STRING_ELT(ustr2, i, ENC2UTF8(ustr[i]));
-    SEXP *ustr3 = (SEXP *)malloc(ustr_n * sizeof(SEXP));
+    SEXP *ustr3 = malloc(sizeof(*ustr3) * ustr_n);
     if (!ustr3)
       STOP(_("Failed to alloc ustr3 when converting strings to UTF8"));  // # nocov
     memcpy(ustr3, STRING_PTR_RO(ustr2), ustr_n*sizeof(SEXP));
@@ -361,7 +361,7 @@ static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max
       SET_TRUELENGTH(ustr3[i], --o);
     }
     // now use the 1-1 mapping from ustr to ustr2 to get the ordering back into original ustr, being careful to reset tl to 0
-    int *tl = (int *)malloc(ustr_n * sizeof(int));
+    int *tl = malloc(sizeof(*tl) * ustr_n);
     if (!tl) {
       free(ustr3); // # nocov
       STOP(_("Failed to alloc tl when converting strings to UTF8"));  // # nocov
@@ -788,8 +788,8 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
 
   // global nth, TMP & UGRP
   nth = getDTthreads(nrow, true);  // this nth is relied on in cleanup(); throttle=true/false debated for #5077
-  TMP =  (int *)malloc(nth*UINT16_MAX*sizeof(int)); // used by counting sort (my_n<=65536) in radix_r()
-  UGRP = (uint8_t *)malloc(nth*256);                // TODO: align TMP and UGRP to cache lines (and do the same for stack allocations too)
+  TMP =  malloc(sizeof(*TMP)*nth*UINT16_MAX); // used by counting sort (my_n<=65536) in radix_r()
+  UGRP = malloc(sizeof(*UGRP)*nth*256);                // TODO: align TMP and UGRP to cache lines (and do the same for stack allocations too)
   if (!TMP || !UGRP /*|| TMP%64 || UGRP%64*/) {
     free(TMP); free(UGRP); // # nocov
     STOP(_("Failed to allocate TMP or UGRP or they weren't cache line aligned: nth=%d"), nth); // # nocov
@@ -917,7 +917,7 @@ void radix_r(const int from, const int to, const int radix) {
     #endif
 
     uint8_t *restrict my_key = key[radix]+from;  // safe to write as we don't use this radix again
-    uint8_t *o = (uint8_t *)malloc(my_n * sizeof(uint8_t));
+    uint8_t *o = malloc(sizeof(*o) * my_n);
     if (!o)
       STOP(_("Failed to allocate %d bytes for '%s'."), (int)(my_n * sizeof(uint8_t)), "o"); // # nocov
     // if last key (i.e. radix+1==nradix) there are no more keys to reorder so we could reorder osub by reference directly and save allocating and populating o just
@@ -986,10 +986,10 @@ void radix_r(const int from, const int to, const int radix) {
     }
     if (!skip) {
       // reorder osub and each remaining ksub
-      int *TMP = malloc(my_n * sizeof(int));
+      int *TMP = malloc(sizeof(*TMP) * my_n);
       if (!TMP) {
         free(o); // # nocov
-        STOP(_("Failed to allocate %d bytes for '%s'."), (int)(my_n * sizeof(int)), "TMP"); // # nocov
+        STOP(_("Failed to allocate %d bytes for '%s'."), (int)(sizeof(*TMP) * my_n), "TMP"); // # nocov
       }
       const int *restrict osub = anso+from;
       for (int i=0; i<my_n; i++) TMP[i] = osub[o[i]];
@@ -997,7 +997,7 @@ void radix_r(const int from, const int to, const int radix) {
       for (int r=radix+1; r<nradix; r++) {
         const uint8_t *restrict ksub = key[r]+from;
         for (int i=0; i<my_n; i++) ((uint8_t *)TMP)[i] = ksub[o[i]];
-        memcpy((uint8_t *restrict)(key[r]+from), (uint8_t *)TMP, my_n);
+        memcpy((uint8_t *restrict)(key[r]+from), (const uint8_t *)TMP, my_n);
       }
       free(TMP);
       TEND(8)
@@ -1009,9 +1009,9 @@ void radix_r(const int from, const int to, const int radix) {
       return;
     }
     int ngrp=0; //minor TODO: could know number of groups with certainty up above
-    int *my_gs = malloc(my_n * sizeof(int));
+    int *my_gs = malloc(sizeof(*my_gs) * my_n);
     if (!my_gs)
-      STOP(_("Failed to allocate %d bytes for '%s'."), (int)(my_n * sizeof(int)), "my_gs"); // # nocov
+      STOP(_("Failed to allocate %d bytes for '%s'."), (int)(sizeof(*my_gs) * my_n), "my_gs"); // # nocov
     my_gs[ngrp]=1;
     for (int i=1; i<my_n; i++) {
       if (my_key[i]!=my_key[i-1]) my_gs[++ngrp] = 1;
@@ -1111,7 +1111,7 @@ void radix_r(const int from, const int to, const int radix) {
     if (!retgrp && radix+1==nradix) {
       return;  // we're done. avoid allocating and populating very last group sizes for last key
     }
-    int *my_gs = malloc((ngrp==0 ? 256 : ngrp) * sizeof(int)); // ngrp==0 when sort and skip==true; we didn't count the non-zeros in my_counts yet in that case
+    int *my_gs = malloc(sizeof(*my_gs) * (ngrp==0 ? 256 : ngrp)); // ngrp==0 when sort and skip==true; we didn't count the non-zeros in my_counts yet in that case
     if (!my_gs)
       STOP(_("Failed to allocate %d bytes for '%s'."), (int)((ngrp==0 ? 256 : ngrp) * sizeof(int)), "my_gs"); // # nocov
     if (sortType!=0) {
@@ -1139,9 +1139,9 @@ void radix_r(const int from, const int to, const int radix) {
   int batchSize = MIN(UINT16_MAX, 1+my_n/getDTthreads(my_n, true));  // (my_n-1)/nBatch + 1;   //UINT16_MAX == 65535
   int nBatch = (my_n-1)/batchSize + 1;   // TODO: make nBatch a multiple of nThreads?
   int lastBatchSize = my_n - (nBatch-1)*batchSize;
-  uint16_t *counts = calloc(nBatch*256,sizeof(uint16_t));
-  uint8_t  *ugrps =  malloc(nBatch*256*sizeof(uint8_t));
-  int      *ngrps =  calloc(nBatch    ,sizeof(int));
+  uint16_t *counts = calloc(nBatch*256,sizeof(*counts));
+  uint8_t  *ugrps =  malloc(sizeof(*ugrps)*nBatch*256);
+  int      *ngrps =  calloc(nBatch    ,sizeof(*ngrps));
   if (!counts || !ugrps || !ngrps) {
     free(counts); free(ugrps); free(ngrps); // # nocov
     STOP(_("Failed to allocate parallel counts. my_n=%d, nBatch=%d"), my_n, nBatch); // # nocov
@@ -1152,11 +1152,11 @@ void radix_r(const int from, const int to, const int radix) {
   TEND(16)
   #pragma omp parallel num_threads(getDTthreads(nBatch, false))
   {
-    int     *my_otmp = malloc(batchSize * sizeof(int)); // thread-private write
-    uint8_t *my_ktmp = malloc(batchSize * sizeof(uint8_t) * n_rem);
+    int     *my_otmp = malloc(sizeof(*my_otmp) * batchSize); // thread-private write
+    uint8_t *my_ktmp = malloc(sizeof(*my_ktmp) * batchSize * n_rem);
     if (!my_otmp || !my_ktmp) {
       free(my_otmp); free(my_ktmp);
-      STOP(_("Failed to allocate 'my_otmp' and/or 'my_ktmp' arrays (%d bytes)."), (int)(batchSize*(sizeof(int) + sizeof(uint8_t))));
+      STOP(_("Failed to allocate 'my_otmp' and/or 'my_ktmp' arrays (%d bytes)."), (int)((sizeof(*my_otmp) + sizeof(*my_ktmp)) * batchSize));
     }
     // TODO: move these up above and point restrict[me] to them. Easier to Error that way if failed to alloc.
     #pragma omp for
@@ -1259,7 +1259,7 @@ void radix_r(const int from, const int to, const int radix) {
 
   TEND(18 + notFirst*3)
   if (!skip) {
-    int *TMP = malloc(my_n * sizeof(int));
+    int *TMP = malloc(sizeof(*TMP) * my_n);
     if (!TMP)
       STOP(_("Unable to allocate TMP for my_n=%d items in parallel batch counting"), my_n); // # nocov
     #pragma omp parallel for num_threads(getDTthreads(nBatch, false))
@@ -1291,14 +1291,14 @@ void radix_r(const int from, const int to, const int radix) {
           ksub += len;
         }
       }
-      memcpy(key[radix+1+r]+from, (uint8_t *)TMP, my_n);
+      memcpy(key[radix+1+r]+from, (const uint8_t *)TMP, my_n);
     }
     free(TMP);
   }
   TEND(19 + notFirst*3)
   notFirst = true;
 
-  int *my_gs = malloc(ngrp * sizeof(int));
+  int *my_gs = malloc(sizeof(*my_gs) * ngrp);
   if (!my_gs)
     STOP(_("Failed to allocate %d bytes for '%s'."), (int)(ngrp * sizeof(int)), "my_gs"); // # nocov
   for (int i=1; i<ngrp; i++) my_gs[i-1] = starts[ugrp[i]] - starts[ugrp[i-1]];   // use the first row of starts to get totals
