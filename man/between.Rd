@@ -16,7 +16,7 @@ This can be changed by setting \code{NAbounds} to \code{NA}.
 the intervals provided in \code{lower,upper}.
 }
 \usage{
-between(x, lower, upper, incbounds=TRUE, NAbounds=TRUE, check=FALSE)
+between(x, lower, upper, incbounds=TRUE, NAbounds=TRUE, check=FALSE, ignore_tzone=FALSE)
 x \%between\% y
 
 inrange(x, lower, upper, incbounds=TRUE)
@@ -35,6 +35,7 @@ interpreted as \code{lower} and \code{y[[2]]} as \code{upper}.}
 It is set to \code{TRUE} by default for infix notations.}
 \item{NAbounds}{ If \code{lower} (\code{upper}) contains an \code{NA} what should \code{lower<=x} (\code{x<=upper}) return? By default \code{TRUE} so that a missing bound is interpreted as unlimited. }
 \item{check}{ Produce error if \code{any(lower>upper)}? \code{FALSE} by default for efficiency, in particular type \code{character}. }
+\item{ignore_tzone}{ \code{TRUE} means skip timezone checks among \code{x}, \code{lower}, and \code{upper}. }
 }
 \details{
 

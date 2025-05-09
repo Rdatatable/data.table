@@ -1,5 +1,5 @@
 # is x[i] in between lower[i] and upper[i] ?
-between = function(x, lower, upper, incbounds=TRUE, NAbounds=TRUE, check=FALSE) {
+between = function(x, lower, upper, incbounds=TRUE, NAbounds=TRUE, check=FALSE, ignore_tzone=FALSE) {
   if (is.logical(x)) stopf("between has been passed an argument x of type logical")
   if (is.logical(lower)) lower = as.integer(lower)   # typically NA (which is logical type)
   if (is.logical(upper)) upper = as.integer(upper)   # typically NA (which is logical type)
@@ -16,15 +16,12 @@ between = function(x, lower, upper, incbounds=TRUE, NAbounds=TRUE, check=FALSE) 
     stopifnot(is.px(x), is.px(lower), is.px(upper)) # nocov # internal
   }
   # POSIX check timezone match
-  if (is.px(x) && is.px(lower) && is.px(upper)) {
-    tzs = sapply(list(x,lower,upper), function(x) {
-      attr(x, "tzone", exact=TRUE) %||% ""
-    })
+  if (!ignore_tzone && is.px(x) && is.px(lower) && is.px(upper)) {
+    tzs = vapply_1c(list(x, lower, upper), function(x) attr(x, "tzone", exact=TRUE) %||% "")
     # lower/upper should be more tightly linked than x/lower, so error
     #   if the former don't match but only inform if they latter don't
     if (tzs[2L]!=tzs[3L]) {
       stopf("'between' lower= and upper= are both POSIXct but have different tzone attributes: %s. Please align their time zones.", brackify(tzs[2:3], quote=TRUE))
-      # otherwise the check in between.c that lower<=upper can (correctly) fail for this reason
     }
     if (tzs[1L]!=tzs[2L]) {
       messagef("'between' arguments are all POSIXct but have mismatched tzone attributes: %s. The UTC times will be compared.", brackify(tzs, quote=TRUE))
