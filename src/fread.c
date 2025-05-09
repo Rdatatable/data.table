@@ -409,35 +409,33 @@ double wallclock(void)
  */
 static const char* filesize_to_str(size_t fsize)
 {
-  #define NSUFFIXES 4
-  #define BUFFSIZE 100
-  static char suffixes[NSUFFIXES] = {'T', 'G', 'M', 'K'};
-  static char output[BUFFSIZE];
-  static const char one_byte[] = "1 byte";
+  static const char suffixes[] = {'T', 'G', 'M', 'K'};
+  static char output[100];
   size_t lsize = fsize;
-  for (int i = 0; i <= NSUFFIXES; i++) {
-    int shift = (NSUFFIXES - i) * 10;
+  for (int i = 0; i <= sizeof(suffixes); i++) {
+    int shift = (sizeof(suffixes) - i) * 10;
     if ((fsize >> shift) == 0) continue;
     int ndigits = 3;
     for (; ndigits >= 1; ndigits--) {
       if ((fsize >> (shift + 12 - ndigits * 3)) == 0) break;
     }
     if (ndigits == 0 || (fsize == (fsize >> shift << shift))) {
-      if (i < NSUFFIXES) {
-        snprintf(output, BUFFSIZE, "%"PRIu64"%cB (%"PRIu64" bytes)", // # notranslate
+      if (i < sizeof(suffixes)) {
+        snprintf(output, sizeof(output), "%"PRIu64"%cB (%"PRIu64" bytes)", // # notranslate
                  (uint64_t)(lsize >> shift), suffixes[i], (uint64_t)lsize);
         return output;
       }
     } else {
-      snprintf(output, BUFFSIZE, "%.*f%cB (%"PRIu64" bytes)", // # notranslate
+      snprintf(output, sizeof(output), "%.*f%cB (%"PRIu64" bytes)", // # notranslate
                ndigits, (double)fsize / (1LL << shift), suffixes[i], (uint64_t)lsize);
       return output;
     }
   }
-  if (fsize == 1) return one_byte;
-  snprintf(output, BUFFSIZE, "%"PRIu64" bytes", (uint64_t)lsize); // # notranslate
+  if (fsize == 1) return "1 byte";
+  snprintf(output, sizeof(output), "%"PRIu64" bytes", (uint64_t)lsize); // # notranslate
   return output;
 }
+
 double copyFile(size_t fileSize)  // only called in very very rare cases
 {
   double tt = wallclock();
