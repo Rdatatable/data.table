@@ -81,5 +81,14 @@ cube(DT, j = c(list(count=.N), lapply(.SD, sum)), by = c("color","year","status"
 # groupingsets
 groupingsets(DT, j = c(list(count=.N), lapply(.SD, sum)), by = c("color","year","status"),
              sets = list("color", c("year","status"), character()), id=TRUE)
+
+# Using jj in a wrapper to handle outer variables
+mygrp = function(x, j) {
+  groupingsets(x, jj = substitute(j),
+               by = c("color", "year", "status"),
+               sets = list("color", c("year", "status"), character()), id = TRUE)
+}
+multiplier = 2
+mygrp(DT, .(count = .N, total = sum(value) * multiplier))
 }
 \keyword{ data }
