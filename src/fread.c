@@ -1316,7 +1316,7 @@ int freadMain(freadMainArgs _args) {
     if (verbose) DTPRINT(_("  Using %d threads (omp_get_max_threads()=%d, nth=%d)\n"), nth, maxth, args.nth);
   }
 
-  uint64_t ui64 = NA_FLOAT64_I64;
+  const uint64_t ui64 = NA_FLOAT64_I64;
   memcpy(&NA_FLOAT64, &ui64, 8);
 
   int64_t nrowLimit = args.nrowLimit;
