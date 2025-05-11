@@ -88,7 +88,7 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
       on.exit(unlink(tmpFile), add=TRUE)
       # nocov end
     }
-    file_info = file.info(file)
+    file_info = file.info(file, extra_cols=FALSE)
     if (is.na(file_info$size)) stopf("File '%s' does not exist or is non-readable. getwd()=='%s'", file, getwd())
     if (isTRUE(file_info$isdir)) stopf("File '%s' is a directory. Not yet implemented.", file) # Could use dir.exists(), but we already ran file.info().
     if (!file_info$size) {

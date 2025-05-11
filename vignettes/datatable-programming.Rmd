@@ -376,6 +376,42 @@ print(j)
 DT[, j, env = list(j = j)]
 ```
 
+### Common mistakes
+
+It is important to understand the difference between passing an object and a name that points to an object. See the verbose output of following examples.
+
+```{r obj_vs_objname}
+DT[, fun(Petal.Width), env = list(fun = mean), verbose=TRUE]
+DT[, fun(Petal.Width), env = list(fun = "mean"), verbose=TRUE]
+```
+
+Users will usually want to substitute the function name rather than inserting the actual function body. Therefore, the second approach (passing a character string) is often preferred.
+
+In case of any doubts on the `env` interface functioning, set `verbose = TRUE` to inspect how expressions are resolved internally.
+
+### Use `env` argument from inside another function
+
+It was a design decision that `env` argument will follow _Standard Evaluation_ (SE) rules, i.e., values passed to `env` are evaluated in their original scope as-is. For more info on the topic see [R Language manual: Computing on the language](https://cran.r-project.org/doc/manuals/r-release/R-lang.html#Computing-on-the-language)). As a result, **using `env` argument from a function does not require any special handling**. It also means that the `.()` alias for a `list()`, _a la_ `env = .(.col="Petal.Length")`, will not work; use `env = list(.col="Petal.Length")` instead.
+
+```{r env_se}
+fun = function(x, col.mean) {
+  stopifnot(is.character(col.mean), is.data.table(x))
+  x[, .(col_avg = mean(.col)), env = list(.col = col.mean)]
+}
+fun(DT, col.mean="Petal.Length")
+```
+
+If the outer function itself follows NSE (Non-Standard Evaluation) rules, then it has to resolve language objects the same way as when passing its arguments to any other SE function.
+
+```{r env_nse}
+fun = function(x, col.mean) {
+  col.mean = substitute(col.mean)
+  stopifnot(is.name(col.mean), is.data.table(x))
+  x[, .(col_avg = mean(.col)), env = list(.col = col.mean)]
+}
+fun(DT, col.mean=Petal.Length)
+```
+
 ## Retired interfaces
 
 In `[.data.table`, it is also possible to use other mechanisms for variable substitution or for passing quoted expressions. These include `get` and `mget` for inline injection of variables by providing their names as strings, and `eval` that tells `[.data.table` that the expression we passed into an argument is a quoted expression and that it should be handled differently. Those interfaces should now be considered retired and we recommend using the new `env` argument, instead.

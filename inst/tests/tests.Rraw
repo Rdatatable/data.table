@@ -2832,9 +2832,8 @@ test(944.1, DT[, foo:=NULL], DT, warning="Tried to assign NULL to column 'foo', 
 test(944.2, DT[,a:=1L], data.table(a=1L))  # can now add columns to an empty data.table from v1.12.2
 test(944.3, DT[,aa:=NULL], data.table(a=1L), warning="Tried to assign NULL to column 'aa', but this column does not exist to remove")
 test(944.4, DT[,a:=NULL], data.table(NULL))
-if (base::getRversion() >= "3.4.0") {
-  test(944.5, typeof(structure(NULL, class=c("data.table","data.frame"))), 'list', warning="deprecated, as NULL cannot have attributes")  # R warns which is good and we like
-}
+# 944.5 used to test base R behaviour regarding structure(NULL, ...), which changed from warning to error in 4.6.0 and isn't used in data.table.
+
 DT = data.table(a=numeric())
 test(945, DT[,b:=a+1], data.table(a=numeric(),b=numeric()))
 
@@ -3220,6 +3219,10 @@ test(1034, as.data.table(x<-as.character(sample(letters, 5))), data.table(V1=x))
   setattr(DT$y, 'bar', 1:4)
   test(1035.12, attr(melt(DT, id.vars=1:2)$x, "foo"), "bla1")
   test(1035.13, attr(melt(DT, id.vars=1:2)$y, "bar"), 1:4)
+
+  # issue #6867 - id.vars=patterns().
+  DT=data.table(x_long=0, x_short=0, z=0, y1=1, y2=2)
+  test(1035.131, melt(DT, measure.vars=patterns("y"), id.vars=patterns("x")), data.table(x_long=0, x_short=0, variable=factor(c("y1","y2")), value=c(1,2)))
 
   # bug #699 - melt segfaults when vars are not in dt; was test 1316
   x = data.table(a=c(1,2),b=c(2,3),c=c(3,4))
@@ -10029,7 +10032,7 @@ if (!haszlib()) {
   test(1658.441, file.info(f3)$size, file.info(f1)$size)
   test(1658.442, file.info(f4)$size >= file.info(f1)$size)
   test(1658.443, file.info(f1)$size >= file.info(f5)$size)
-  test(1658.444, fread(f6, col.names = c("a", "b")), DT)
+  if (test_R.utils) test(1658.444, fread(f6, col.names = c("a", "b")), DT)
   unlink(c(f1,f2,f3,f4,f5,f6))
 }
 DT = data.table(a=1:3, b=list(1:4, c(3.14, 100e10), c("foo", "bar", "baz")))
@@ -16611,6 +16614,12 @@ test(2125.09, print(DT, trunc.cols=TRUE),
      output="4 variables not shown: [a, b, c, d]")
 test(2125.10, print(DT, trunc.cols=TRUE, class=TRUE),
      output="4 variables not shown: [a <char>, b <char>, c <char>, d <char>]")
+options("width" = 20L)
+# truncated cols with class and printing class at bottom #6929
+DT = data.table(a = 1:30,
+                b = "bbbbbbbbbbbbb")
+test(2125.11, print(DT, trunc.cols=TRUE, class=TRUE),
+     output="1 variable not shown: [b <char>]")
 options(old_width)
 
 # segfault when i is NULL or zero-column, #4060
@@ -21044,7 +21053,7 @@ test(2304.099, copy(DT)[2L, let(L1=list(NULL), L2=list(NULL))], ans)
 test(2304.100, set(copy(DT), i=2L, j=c("L1", "L2"), value=list(list(NULL), list(NULL))), ans)
 
 # the integer overflow in #6729 is only noticeable with UBSan
-test(2305, { fread(testDir("issue_6729.txt.bz2")); TRUE })
+if (test_R.utils) test(2305, { fread(testDir("issue_6729.txt.bz2")); TRUE })
 
 if (exists("sort_by", "package:base")) {
   # sort_by.data.table
@@ -21104,3 +21113,45 @@ DT = data.table(a = 1:5, b = 1:5, x = 1:5)
 test(2309.06, key(as.data.table(DT, key="a")), "a")   
 test(2309.07, key(as.data.table(DT)), NULL)          
 test(2309.08, key(as.data.table(DT, key=NULL)), NULL) 
+
+# as.data.table(x, keep.rownames=TRUE) keeps rownames for class(x)==c("*", "data.frame")
+df = structure(list(i = 1:2), class = c("tbl", "data.frame"), row.names = c("a","b"))
+test(2309.09, as.data.table(df, keep.rownames=TRUE), data.table(rn = c("a","b"), i=1:2))
+
+# as.data.frame(x) does not reset class(x) to "data.frame" #6874
+as.data.frame.no.reset = function(x) x
+DF = structure(list(a = 1:2), class = c("data.frame", "no.reset"), row.names = c(NA, -2L))
+test(2310.01, as.data.table(DF), data.table(a=1:2))
+
+# memrecycle() did not consider string encodings for factor levels #6886
+DT = data.table(factor(rep("\uf8", 3)))
+# identical() to V1's only level but stored in a different CHARSXP
+samelevel = iconv(levels(DT$V1), from = "UTF-8", to = "latin1")
+DT[1, V1 := samelevel]
+test(2311.1, nlevels(DT$V1), 1L) # used to be 2
+DT[1, V1 := factor("a", levels = c("a", samelevel))]
+test(2311.2, nlevels(DT$V1), 2L) # used to be 3
+
+# avoid translateChar*() in OpenMP threads, #6883
+DF = list(rep(iconv("\uf8", from = "UTF-8", to = "latin1"), 2e6))
+test(2312, fwrite(DF, nullfile(), encoding = "UTF-8", nThread = 2L), NULL)
+
+# avoid memcpy of 0-length inputs
+test(2313,
+     melt(data.table(a=numeric(), b=numeric(), c=numeric()), id.vars=c('a', 'b')),
+     data.table(a=numeric(), b=numeric(), variable=factor(levels='c'), value=numeric()))
+
+# Testing column footer display with col.names options in print.data.table #6902
+dt = data.table(id = 1:25)
+# Test with class=TRUE shows classes at bottom with default col.names="auto"
+test(2314.1, any(grepl("<int>", tail(capture.output(print(dt, class = TRUE)), 2))), TRUE)
+# Test that class=TRUE with col.names="top" doesn't show classes at bottom
+test(2314.2, !any(grepl("<int>", tail(capture.output(print(dt, class = TRUE, col.names = "top")), 2))), TRUE)
+
+# forder.c coverage
+N <- 70000L
+DT <- data.table(i = rep(2:1, c(1L, N-1L)))
+test(2315.1, tail(DT[order(i), i], 2L), 1:2)
+# wider range of numbers needed for further coverage
+DT[1L, i := 1000L]
+test(2315.2, tail(DT[order(i), i], 2L), c(1L, 1000L))
