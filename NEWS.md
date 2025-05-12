@@ -22,7 +22,7 @@
 
 For a comprehensive description about all available features see `?froll` manual.
 
-Adaptive `frollmax` has observed to be up to 50 times faster than second fastest solution (data.table self-join + `max` + `by=.EACHI`).
+Adaptive `frollmax` has observed to be up to 50 times faster than second fastest solution (data.table self-join using `max` and grouping `by=.EACHI`).
 ```r
 set.seed(108)
 setDTthreads(8)
@@ -35,16 +35,16 @@ x = data.table(
 
 baser = function(x) x[, mapply(function(from, to) max(value[from:to]), row, end_window)]
 sj = function(x) x[x, max(value), on=.(row >= row, row <= end_window), by=.EACHI]$V1
-fmax = function(x) x[, frollmax(value, len_window, adaptive=TRUE, align="left", hasNA=FALSE)]
+frmax = function(x) x[, frollmax(value, len_window, adaptive=TRUE, align="left", hasNA=FALSE)]
 microbenchmark::microbenchmark(
-  baser(x), sj(x), fmax(x),
+  baser(x), sj(x), frmax(x),
   times=10, check="identical"
 )
 #Unit: milliseconds
 #     expr        min         lq       mean     median         uq      max neval
 # baser(x) 4290.98557 4529.82841 4573.94115 4604.85827 4654.39342 4883.991    10
 #    sj(x) 3600.42771 3752.19359 4118.21755 4235.45856 4329.08728 4884.080    10
-#  fmax(x)   64.48627   73.07978   88.84932   76.64569   82.56115  198.438    10
+# frmax(x)   64.48627   73.07978   88.84932   76.64569   82.56115  198.438    10
 ```
 
 ## BUG FIXES
