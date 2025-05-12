@@ -81,7 +81,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   mask = (1<<bitshift)-1;
   highSize = ((ngrp-1)>>bitshift) + 1;
 
-  grp = (int *)R_alloc(nrow, sizeof(int));   // TODO: use malloc and made this local as not needed globally when all functions here use gather
+  grp = R_alloc(nrow, sizeof(*grp));   // TODO: use malloc and made this local as not needed globally when all functions here use gather
                                              // maybe better to malloc to avoid R's heap. This grp isn't global, so it doesn't need to be R_alloc
   const int *restrict fp = INTEGER(f);
 
@@ -163,15 +163,15 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     //Rprintf(_("gforce assign TMP [ (o,g) pairs ] back to grp took %.3f\n"), wallclock()-started); started=wallclock();
   }
 
-  high = (uint16_t *)R_alloc(nrow, sizeof(uint16_t));  // maybe better to malloc to avoid R's heap, but safer to R_alloc since it's done via eval()
-  low  = (uint16_t *)R_alloc(nrow, sizeof(uint16_t));
+  high = R_alloc(nrow, sizeof(*high));  // maybe better to malloc to avoid R's heap, but safer to R_alloc since it's done via eval()
+  low  = R_alloc(nrow, sizeof(*low));
   // global ghigh and glow because the g* functions (inside jsub) share this common memory
 
-  gx = (char *)R_alloc(nrow, sizeof(Rcomplex));  // enough for a copy of one column (or length(irows) if supplied)
+  gx = R_alloc(nrow, sizeof(*gx));  // enough for a copy of one column (or length(irows) if supplied)
   // TODO: reduce to the largest type present; won't be faster (untouched RAM won't be fetched) but it will increase the largest size that works.
 
-  counts = (int *)S_alloc(nBatch*highSize, sizeof(int));  // (S_ zeros) TODO: cache-line align and make highSize a multiple of 64
-  tmpcounts = (int *)R_alloc(getDTthreads(nBatch, false)*highSize, sizeof(int));
+  counts = S_alloc(nBatch*highSize, sizeof(*counts));  // (S_ zeros) TODO: cache-line align and make highSize a multiple of 64
+  tmpcounts = R_alloc(getDTthreads(nBatch, false)*highSize, sizeof(*tmpcounts));
 
   const int *restrict gp = grp;
   #pragma omp parallel for num_threads(getDTthreads(nBatch, false))   // schedule(dynamic,1)

@@ -1422,9 +1422,9 @@ SEXP issorted(SEXP x, SEXP by)
   const R_xlen_t nrow = xlength(VECTOR_ELT(x,0));
   // ncol>1
   // pre-save lookups to save deep switch later for each column type
-  size_t *sizes =          (size_t *)R_alloc(ncol, sizeof(size_t));
-  const char **ptrs = (const char **)R_alloc(ncol, sizeof(char *));
-  int *types =                (int *)R_alloc(ncol, sizeof(int));
+  size_t *sizes =     R_alloc(ncol, sizeof(*sizes));
+  const char **ptrs = R_alloc(ncol, sizeof(*ptrs));
+  int *types =        R_alloc(ncol, sizeof(*types));
   for (int j=0; j<ncol; ++j) {
     int c = INTEGER(by)[j];
     if (c<1 || c>length(x)) STOP(_("issorted 'by' [%d] out of range [1,%d]"), c, length(x));

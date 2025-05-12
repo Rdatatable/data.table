@@ -189,7 +189,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   if (verbose)
     Rprintf("maxBit=%d; MSBNbits=%d; shift=%d; MSBsize=%zu\n", maxBit, MSBNbits, shift, MSBsize); // # notranslate
 
-  uint64_t *counts = (uint64_t *)R_alloc(nBatch*MSBsize, sizeof(uint64_t));
+  uint64_t *counts = R_alloc(nBatch*MSBsize, sizeof(*counts));
   memset(counts, 0, nBatch*MSBsize*sizeof(uint64_t));
   // provided MSBsize>=9, each batch is a multiple of at least one 4k page, so no page overlap
 
@@ -248,8 +248,8 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
     uint64_t *msbCounts = counts + (nBatch-1)*MSBsize;
     // msbCounts currently contains the ending position of each MSB (the starting location of the next) even across empty
     if (msbCounts[MSBsize-1] != xlength(x)) internal_error(__func__, "counts[nBatch-1][MSBsize-1] != length(x)"); // # nocov
-    uint64_t *msbFrom = (uint64_t *)R_alloc(MSBsize, sizeof(uint64_t));
-    int *order = (int *)R_alloc(MSBsize, sizeof(int));
+    uint64_t *msbFrom = R_alloc(MSBsize, sizeof(*msbFrom));
+    int *order = R_alloc(MSBsize, sizeof(*order));
     uint64_t cumSum = 0;
     for (int i=0; i<MSBsize; ++i) {
       msbFrom[i] = cumSum;

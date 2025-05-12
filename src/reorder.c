@@ -51,7 +51,7 @@ SEXP reorder(SEXP x, SEXP order)
   while (idx[i] == i+1) --i;
   const int end=i, nmid=end-start+1;
 
-  uint8_t *seen = (uint8_t *)R_alloc(nmid, sizeof(uint8_t)); // detect duplicates
+  uint8_t *seen = R_alloc(nmid, sizeof(*seen)); // detect duplicates
   memset(seen, 0, nmid*sizeof(uint8_t));
   for (int i=start; i<=end; ++i) {
     if (idx[i]==NA_INTEGER || idx[i]-1<start || idx[i]-1>end || seen[idx[i]-1-start]++)
