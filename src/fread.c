@@ -419,17 +419,17 @@ static const char* filesize_to_str(const size_t fsize)
     if (ndigits == 0 || (fsize == (fsize >> shift << shift))) {
       if (i < sizeof(suffixes)) {
         snprintf(output, sizeof(output), "%"PRIu64"%cB (%"PRIu64" bytes)", // # notranslate
-                 (uint64_t)(fsize >> shift), suffixes[i], (uint64_t)fsize);
+                 (fsize >> shift), suffixes[i], fsize);
         return output;
       }
     } else {
       snprintf(output, sizeof(output), "%.*f%cB (%"PRIu64" bytes)", // # notranslate
-               ndigits, (double)fsize / (1LL << shift), suffixes[i], (uint64_t)fsize);
+               ndigits, (double)fsize / (1LL << shift), suffixes[i], fsize);
       return output;
     }
   }
   if (fsize == 1) return "1 byte";
-  snprintf(output, sizeof(output), "%"PRIu64" bytes", (uint64_t)fsize); // # notranslate
+  snprintf(output, sizeof(output), "%"PRIu64" bytes", fsize); // # notranslate
   return output;
 }
 
