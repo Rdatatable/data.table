@@ -1195,7 +1195,7 @@ static reader_fun_t fun[NUMTYPE] = {
 
 static int disabled_parsers[NUMTYPE] = {0};
 
-static int detect_types( const char **pch, int8_t type[], int ncol, bool *bumped) {
+static int detect_types(const char **pch, int ncol, bool *bumped) {
   // used in sampling column types and whether column names are present
   // test at most ncol fields. If there are fewer fields, the data read step later
   // will error (if fill==false) when the line number is known, so we don't need to handle that here.
@@ -1951,7 +1951,7 @@ int freadMain(freadMainArgs _args) {
 
     while(ch<eof && jumpLine++<jumpLines) {
       const char *lineStart = ch;
-      int thisNcol = detect_types(&ch, tmpType, ncol, &bumped);
+      int thisNcol = detect_types(&ch, ncol, &bumped);
       if (thisNcol==0 && skipEmptyLines) {
         if (eol(&ch)) ch++;
         continue;
@@ -2006,7 +2006,7 @@ int freadMain(freadMainArgs _args) {
     if (dec == '\0') { // in files without jumps, dec could still be undecided
       linesForDecDot = 0;
     }
-    detect_types(&ch, tmpType, ncol, &bumped);
+    detect_types(&ch, ncol, &bumped);
     if (dec == '\0') {
       dec = linesForDecDot < 0 ? ',' : '.';
       if (verbose) {
