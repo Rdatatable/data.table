@@ -314,7 +314,7 @@ static inline int countfields(const char **pch)
   static void *targets[9];
   targets[8] = (void*) &trash;
   const char *ch = *pch;
-  if (sep==' ') while (*ch==' ') ch++;  // multiple sep==' ' at the start does not mean sep
+  if (sep==' ' && !blank_is_a_NAstring) while (*ch==' ') ch++;  // multiple sep==' ' at the start does not mean sep
   skip_white(&ch);
   if (eol(&ch) || ch==eof) {
     *pch = ch+1;
@@ -329,7 +329,7 @@ static inline int countfields(const char **pch)
   while (ch<eof) {
     Field(&ctx);
     // Field() leaves *ch resting on sep, \r, \n or *eof=='\0'
-    if (sep==' ' && *ch==sep) {
+    if (sep==' ' && !blank_is_a_NAstring && *ch==sep) {
       while (ch[1]==' ') ch++;
       if (ch[1]=='\r' || ch[1]=='\n' || (ch[1]=='\0' && ch+1==eof)) {
         // reached end of line. Ignore padding spaces at the end of line.
@@ -1208,7 +1208,7 @@ static int detect_types( const char **pch, int8_t type[], int ncol, bool *bumped
     .targets = targets,
     .anchor = NULL,
   };
-  if (sep==' ') while (*ch==' ') ch++;  // multiple sep=' ' at the beginning of a line does not mean sep
+  if (sep==' ' && !blank_is_a_NAstring) while (*ch==' ') ch++;  // multiple sep=' ' at the beginning of a line does not mean sep
   skip_white(&ch);
   if (eol(&ch)) return 0;  // empty line
   int field=0;
@@ -1263,7 +1263,7 @@ static int detect_types( const char **pch, int8_t type[], int ncol, bool *bumped
       dec = '\0'; // reset for next parse
     }
     field++;
-    if (sep==' ' && *ch==sep) {
+    if (sep==' ' && !blank_is_a_NAstring && *ch==sep) {
       while (ch[1]==' ') ch++;
       if (ch[1]=='\n' || ch[1]=='\r' || (ch[1]=='\0' && ch+1<eof)) ch++;  // space at the end of line does not mean sep
     }
@@ -2145,7 +2145,7 @@ int freadMain(freadMainArgs _args) {
     colNames = (lenOff*) calloc((size_t)ncol, sizeof(lenOff));
     if (!colNames)
       STOP(_("Unable to allocate %d*%d bytes for column name pointers: %s"), ncol, sizeof(lenOff), strerror(errno)); // # nocov
-    if (sep==' ') while (*ch==' ') ch++;
+    if (sep==' ' && !blank_is_a_NAstring) while (*ch==' ') ch++;
     void *targets[9] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, colNames + autoFirstColName};
     FieldParseContext fctx = {
       .ch = &ch,
@@ -2159,7 +2159,7 @@ int freadMain(freadMainArgs _args) {
       Field(&fctx);  // stores the string length and offset as <uint,uint> in colNames[i]
       ((lenOff**) fctx.targets)[8]++;
       if (*ch!=sep) break;
-      if (sep==' ') {
+      if (sep==' ' && !blank_is_a_NAstring) {
         while (ch[1]==' ') ch++;
         if (ch[1]=='\r' || ch[1]=='\n' || ch[1]=='\0') { ch++; break; }
       }
@@ -2449,7 +2449,7 @@ int freadMain(freadMainArgs _args) {
         // then a penalty isn't paid everywhere.
         // TODO: reduce(slowerBranch++). So we can see in verbose mode if this is happening too much.
 
-        if (sep==' ') {
+        if (sep==' ' && !blank_is_a_NAstring) {
           while (*tch==' ') tch++;  // multiple sep=' ' at the tLineStart does not mean sep. We're at tLineStart because the fast branch above doesn't run when sep=' '
           fieldStart = tch;
           skip_white(&tch);          // skips \0 before eof
@@ -2482,7 +2482,7 @@ int freadMain(freadMainArgs _args) {
             }
             skip_white(&tch);
             if (end_of_field(tch)) {
-              if (sep==' ' && *tch==' ') {
+              if (sep==' ' && !blank_is_a_NAstring && *tch==' ') {
                 while (tch[1]==' ') tch++;  // multiple space considered one sep so move to last
                 if (tch[1]=='\r' || tch[1]=='\n' || tch+1==eof) tch++;
               }
