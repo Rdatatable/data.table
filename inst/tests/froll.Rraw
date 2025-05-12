@@ -1154,10 +1154,13 @@ f = function(x) {
 }
 #test(6010.106, head(frollapply(1:5, 3, f), 3L), c(NA_real_,NA_real_,1), output=c("frollapplyR: allocating memory.*","frollapply: took.*","frollapplyR: processing.*took.*")) # only head 3 is valid, rest is undefined as REAL is applied on logical type, can return garbage or fail with REAL error
 options(datatable.verbose=FALSE)
+
+# frollapply adaptive
+test(6010.201, frollapply(1:3, c(3,3,3), sum, adaptive=TRUE), c(NA,NA,6))
+#TODO tests
+
 #### test coverage
-test(6010.5, frollapply(1:3, c(3,3,3), sum, adaptive=TRUE), error="frollapply does not support 'adaptive' argument")
 test(6010.501, frollapply(1:3, "b", sum), error="n must be integer")
-test(6010.502, frollapply(1:3, 2.5, sum), error="n must be integer")
 test(6010.503, frollapply(1:3, integer(), sum), error="n must be non 0 length")
 test(6010.504, frollapply(1:3, 2L, sum, fill=1:2), error="fill must be a vector of length 1")
 test(6010.505, frollapply(1:3, 2L, sum, fill=NA_integer_), c(NA,3,5))

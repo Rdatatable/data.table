@@ -107,7 +107,6 @@
     \item \code{align} does not support \code{"center"}.
     \item if list of vectors is passed to \code{x}, then all vectors within it must have equal length.
     \item \code{partial=TRUE} is not supported.
-    \item functionality is not supported in \code{frollapply} (to be changed).
   }
 }
 \section{\code{partial} argument}{

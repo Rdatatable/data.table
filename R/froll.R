@@ -41,7 +41,7 @@ froll = function(fun, x, n, fill=NA, algo=c("fast", "exact"), align=c("right", "
   if (isTRUE(partial)) {
     if (isTRUE(adaptive))
       stopf("'partial' argument cannot be used together with 'adaptive'")
-    if (is.list(n)) ## duplicate two of C check to detect early
+    if (is.list(n))
       stopf("n must be integer, list is accepted for adaptive TRUE")
     if (!length(n))
       stopf("n must be non 0 length")
@@ -77,14 +77,37 @@ frollsum = function(x, n, fill=NA, algo=c("fast","exact"), align=c("right", "lef
 frollmax = function(x, n, fill=NA, algo=c("fast", "exact"), align=c("right", "left", "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE, partial=FALSE) {
   froll(fun="max", x=x, n=n, fill=fill, algo=algo, align=align, na.rm=na.rm, hasNA=hasNA, adaptive=adaptive, partial=partial)
 }
+
 frollapply = function(x, n, FUN, ..., fill=NA, align=c("right", "left", "center"), adaptive=FALSE, partial=FALSE) {
   FUN = match.fun(FUN)
   align = match.arg(align)
-  if (isTRUE(partial))
-    stopf("frollapply does not support 'partial' argument yet")
-  if (!missing(adaptive))
-    stopf("frollapply does not support 'adaptive' argument yet")
+  if (isTRUE(partial)) {
+    if (isTRUE(adaptive))
+      stopf("'partial' argument cannot be used together with 'adaptive'")
+    if (is.list(n))
+      stopf("n must be integer, list is accepted for adaptive TRUE")
+    if (!length(n))
+      stopf("n must be non 0 length")
+    n = partial2adaptive(x, n, align)
+    adaptive = TRUE
+  }
+  leftadaptive = isTRUE(adaptive) && align=="left"
+  if (leftadaptive) {
+    verbose = getOption("datatable.verbose")
+    rev2 = function(x) if (is.list(x)) lapply(x, rev) else rev(x)
+    if (verbose)
+      cat("froll: adaptive=TRUE && align='left' pre-processing for align='right'\n")
+    x = rev2(x)
+    n = rev2(n)
+    align = "right"
+  }
   rho = new.env()
-  ans = .Call(CfrollapplyR, FUN, x, n, fill, align, rho)
-  ans
+  ans = .Call(CfrollapplyR, FUN, x, n, fill, align, adaptive, rho)
+  if (!leftadaptive)
+    ans
+  else {
+    if (verbose)
+      cat("frollapply: adaptive=TRUE && align='left' post-processing from align='right'\n")
+    rev2(ans)
+  }
 }
