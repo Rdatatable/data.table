@@ -405,11 +405,10 @@ double wallclock(void)
  * multiple threads at the same time, or hold on to the value returned for
  * extended periods of time.
  */
-static const char* filesize_to_str(size_t fsize)
+static const char* filesize_to_str(const size_t fsize)
 {
   static const char suffixes[] = {'T', 'G', 'M', 'K'};
   static char output[100];
-  size_t lsize = fsize;
   for (int i = 0; i <= sizeof(suffixes); i++) {
     int shift = (sizeof(suffixes) - i) * 10;
     if ((fsize >> shift) == 0) continue;
@@ -420,17 +419,17 @@ static const char* filesize_to_str(size_t fsize)
     if (ndigits == 0 || (fsize == (fsize >> shift << shift))) {
       if (i < sizeof(suffixes)) {
         snprintf(output, sizeof(output), "%"PRIu64"%cB (%"PRIu64" bytes)", // # notranslate
-                 (uint64_t)(lsize >> shift), suffixes[i], (uint64_t)lsize);
+                 (fsize >> shift), suffixes[i], fsize);
         return output;
       }
     } else {
       snprintf(output, sizeof(output), "%.*f%cB (%"PRIu64" bytes)", // # notranslate
-               ndigits, (double)fsize / (1LL << shift), suffixes[i], (uint64_t)lsize);
+               ndigits, (double)fsize / (1LL << shift), suffixes[i], fsize);
       return output;
     }
   }
   if (fsize == 1) return "1 byte";
-  snprintf(output, sizeof(output), "%"PRIu64" bytes", (uint64_t)lsize); // # notranslate
+  snprintf(output, sizeof(output), "%"PRIu64" bytes", fsize); // # notranslate
   return output;
 }
 
