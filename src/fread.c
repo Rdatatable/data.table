@@ -11,13 +11,11 @@
 #endif
 #ifdef WIN32             // means WIN64, too, oddly
   #include <windows.h>
-  #include <stdbool.h>   // true and false
 #else
   #include <sys/mman.h>  // mmap
   #include <sys/stat.h>  // fstat for filesize
   #include <fcntl.h>     // open
   #include <unistd.h>    // close
-  #include <stdbool.h>   // true and false
   #include <ctype.h>     // isspace
   #include <errno.h>     // errno
   #include <string.h>    // strerror
