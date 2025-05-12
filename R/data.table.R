@@ -904,7 +904,7 @@ replace_dot_alias = function(e) {
             if (length(byvars) == 1L) tt = byvars
             else {
               # take the first variable that is (1) not eval (#3758) and (2) starts with a character that can't start a variable name
-              tt = grep("^eval$|^[^[:alpha:]. ]", byvars, invert=TRUE, value=TRUE)
+              tt = grepv("^eval$|^[^[:alpha:]. ]", byvars, invert=TRUE)
               # byvars but exclude functions or `0`+`1` becomes `+`
               tt = if (length(tt)) tt[1L] else all.vars(bysubl[[jj+1L]])[1L]
             }

@@ -409,39 +409,37 @@ double wallclock(void)
  */
 static const char* filesize_to_str(size_t fsize)
 {
-  #define NSUFFIXES 4
-  #define BUFFSIZE 100
-  static char suffixes[NSUFFIXES] = {'T', 'G', 'M', 'K'};
-  static char output[BUFFSIZE];
-  static const char one_byte[] = "1 byte";
+  static const char suffixes[] = {'T', 'G', 'M', 'K'};
+  static char output[100];
   size_t lsize = fsize;
-  for (int i = 0; i <= NSUFFIXES; i++) {
-    int shift = (NSUFFIXES - i) * 10;
+  for (int i = 0; i <= sizeof(suffixes); i++) {
+    int shift = (sizeof(suffixes) - i) * 10;
     if ((fsize >> shift) == 0) continue;
     int ndigits = 3;
     for (; ndigits >= 1; ndigits--) {
       if ((fsize >> (shift + 12 - ndigits * 3)) == 0) break;
     }
     if (ndigits == 0 || (fsize == (fsize >> shift << shift))) {
-      if (i < NSUFFIXES) {
-        snprintf(output, BUFFSIZE, "%"PRIu64"%cB (%"PRIu64" bytes)", // # notranslate
+      if (i < sizeof(suffixes)) {
+        snprintf(output, sizeof(output), "%"PRIu64"%cB (%"PRIu64" bytes)", // # notranslate
                  (uint64_t)(lsize >> shift), suffixes[i], (uint64_t)lsize);
         return output;
       }
     } else {
-      snprintf(output, BUFFSIZE, "%.*f%cB (%"PRIu64" bytes)", // # notranslate
+      snprintf(output, sizeof(output), "%.*f%cB (%"PRIu64" bytes)", // # notranslate
                ndigits, (double)fsize / (1LL << shift), suffixes[i], (uint64_t)lsize);
       return output;
     }
   }
-  if (fsize == 1) return one_byte;
-  snprintf(output, BUFFSIZE, "%"PRIu64" bytes", (uint64_t)lsize); // # notranslate
+  if (fsize == 1) return "1 byte";
+  snprintf(output, sizeof(output), "%"PRIu64" bytes", (uint64_t)lsize); // # notranslate
   return output;
 }
+
 double copyFile(size_t fileSize)  // only called in very very rare cases
 {
   double tt = wallclock();
-  mmp_copy = (char *)malloc(fileSize + 1 /* extra \0 */);
+  mmp_copy = malloc(fileSize + 1 /* extra \0 */);
   if (!mmp_copy)
     return -1.0; // # nocov
   memcpy(mmp_copy, mmp, fileSize);
@@ -1318,7 +1316,7 @@ int freadMain(freadMainArgs _args) {
     if (verbose) DTPRINT(_("  Using %d threads (omp_get_max_threads()=%d, nth=%d)\n"), nth, maxth, args.nth);
   }
 
-  uint64_t ui64 = NA_FLOAT64_I64;
+  const uint64_t ui64 = NA_FLOAT64_I64;
   memcpy(&NA_FLOAT64, &ui64, 8);
 
   int64_t nrowLimit = args.nrowLimit;
@@ -1884,8 +1882,8 @@ int freadMain(freadMainArgs _args) {
   if (verbose) DTPRINT(_("[07] Detect column types, dec, good nrow estimate and whether first row is column names\n"));
   if (verbose && args.header!=NA_BOOL8) DTPRINT(_("  'header' changed by user from 'auto' to %s\n"), args.header?"true":"false");
 
-  type =    (int8_t *)malloc((size_t)ncol * sizeof(int8_t));
-  tmpType = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));  // used i) in sampling to not stop on errors when bad jump point and ii) when accepting user overrides
+  type =    malloc(sizeof(*type) * (size_t)ncol);
+  tmpType = malloc(sizeof(*tmpType) * (size_t)ncol);  // used i) in sampling to not stop on errors when bad jump point and ii) when accepting user overrides
   if (!type || !tmpType) {
     free(type); free(tmpType); // # nocov
     STOP(_("Failed to allocate 2 x %d bytes for type and tmpType: %s"), ncol, strerror(errno)); // # nocov
@@ -2201,9 +2199,9 @@ int freadMain(freadMainArgs _args) {
   rowSize1 = 0;
   rowSize4 = 0;
   rowSize8 = 0;
-  size = (int8_t *)malloc((size_t)ncol * sizeof(int8_t));  // TODO: remove size[] when we implement Pasha's idea to += size inside processor
+  size = malloc(sizeof(*size) * (size_t)ncol);  // TODO: remove size[] when we implement Pasha's idea to += size inside processor
   if (!size)
-    STOP(_("Failed to allocate %d bytes for '%s': %s"), (int)(ncol * sizeof(int8_t)), "size", strerror(errno)); // # nocov
+    STOP(_("Failed to allocate %d bytes for '%s': %s"), (int)(sizeof(*size) * (size_t)ncol), "size", strerror(errno)); // # nocov
   nStringCols = 0;
   nNonStringCols = 0;
   for (int j=0; j<ncol; j++) {
@@ -2642,7 +2640,7 @@ int freadMain(freadMainArgs _args) {
       DTPRINT(_("  Provided number of fill columns: %d but only found %d\n"), ncol, max_col);
       DTPRINT(_("  Dropping %d overallocated columns\n"), ndropFill);
     }
-    dropFill = (int *)malloc((size_t)ndropFill * sizeof(int));
+    dropFill = malloc(sizeof(*dropFill) * (size_t)ndropFill);
     if (!dropFill)
       STOP(_("Failed to allocate %d bytes for '%s'."), (int)(ndropFill * sizeof(int)), "dropFill"); // # nocov
     int i=0;

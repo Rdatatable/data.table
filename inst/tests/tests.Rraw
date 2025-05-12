@@ -21147,3 +21147,11 @@ dt = data.table(id = 1:25)
 test(2314.1, any(grepl("<int>", tail(capture.output(print(dt, class = TRUE)), 2))), TRUE)
 # Test that class=TRUE with col.names="top" doesn't show classes at bottom
 test(2314.2, !any(grepl("<int>", tail(capture.output(print(dt, class = TRUE, col.names = "top")), 2))), TRUE)
+
+# forder.c coverage
+N <- 70000L
+DT <- data.table(i = rep(2:1, c(1L, N-1L)))
+test(2315.1, tail(DT[order(i), i], 2L), 1:2)
+# wider range of numbers needed for further coverage
+DT[1L, i := 1000L]
+test(2315.2, tail(DT[order(i), i], 2L), c(1L, 1000L))

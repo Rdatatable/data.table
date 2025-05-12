@@ -91,7 +91,7 @@ int dt_win_snprintf(char *dest, const size_t n, const char *fmt, ...)
   #define NDELIM 2
   const char delim[NDELIM+1] = "\x7f\x7f"; // tokenize temporary using 2 DELs
   specAlloc += narg*NDELIM + 1;  // +1 for final '\0'
-  char *spec = (char *)malloc(specAlloc);  // not R_alloc as we need to be thread-safe
+  char *spec = malloc(specAlloc);  // not R_alloc as we need to be thread-safe
   if (!spec) {
     // # nocov start
     snprintf(dest, n, "4 %d byte spec alloc failed", (int)specAlloc); // # notranslate

@@ -646,8 +646,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       if (!*tc1) internal_error(__func__, "index name ends with trailing __"); // # nocov
       // check the position of the first appearance of an assigned column in the index.
       // the new index will be truncated to this position.
-      char *s4 = (char*) malloc(strlen(c1) + 3);
-      if(s4 == NULL){
+      char *s4 = malloc(strlen(c1) + 3);
+      if (!s4) {
         internal_error(__func__, "Couldn't allocate memory for s4"); // # nocov
       }
       memcpy(s4, c1, strlen(c1));
@@ -656,8 +656,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       int newKeyLength = strlen(c1);
       for(int i = 0; i < xlength(assignedNames); i++){
         tc2 = CHAR(STRING_ELT(assignedNames, i));
-        char *s5 = (char*) malloc(strlen(tc2) + 5); //4 * '_' + \0
-        if(s5 == NULL){
+        char *s5 = malloc(strlen(tc2) + 5); //4 * '_' + \0
+        if (!s5) {
           free(s4);                                                  // # nocov
           internal_error(__func__, "Couldn't allocate memory for s5"); // # nocov
         }
@@ -873,7 +873,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
         for (int k=0; k<nTargetLevels; ++k) SET_TRUELENGTH(targetLevelsD[k], 0);  // don't need those anymore
         if (nAdd) {
           // cannot grow the levels yet as that would be R call which could fail to alloc and we have no hook to clear up
-          SEXP *temp = (SEXP *)malloc(nAdd * sizeof(SEXP *));
+          SEXP *temp = malloc(sizeof(*temp) * nAdd);
           if (!temp) {
             // # nocov start
             for (int k=0; k<nSourceLevels; ++k) SET_TRUELENGTH(sourceLevelsD[k], 0);
@@ -1046,7 +1046,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
     switch (TYPEOF(source)) {
     case RAWSXP:
       if (mc) {
-                    memcpy(td, RAW(source), slen*sizeof(Rbyte)); break;
+                    memcpy(td, RAW_RO(source), slen*sizeof(Rbyte)); break;
       } else        BODY(Rbyte, RAW,    Rbyte, val,                                     td[i]=cval)
     case LGLSXP:    BODY(int, LOGICAL,  Rbyte, val==1,                                  td[i]=cval)
     case INTSXP:    BODY(int, INTEGER,  Rbyte, (val>255 || val<0) ? 0 : val,            td[i]=cval)
@@ -1063,7 +1063,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
     case RAWSXP:    BODY(Rbyte, RAW,    int, val!=0,                                    td[i]=cval)
     case LGLSXP:
       if (mc) {
-                    memcpy(td, LOGICAL(source), slen*sizeof(int)); break;
+                    memcpy(td, LOGICAL_RO(source), slen*sizeof(int)); break;
       } else        BODY(int, LOGICAL,  int, val,                                       td[i]=cval)
     case INTSXP:    BODY(int, INTEGER,  int, val==NA_INTEGER ? NA_LOGICAL : val!=0,     td[i]=cval)
     case REALSXP:
@@ -1080,7 +1080,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
     case  LGLSXP:   // same as INTSXP ...
     case  INTSXP:
       if (mc) {
-                    memcpy(td, INTEGER(source), slen*sizeof(int)); break;
+                    memcpy(td, INTEGER_RO(source), slen*sizeof(int)); break;
       } else        BODY(int, INTEGER,  int, val,                                       td[i]=cval)
     case REALSXP:
       if (sourceIsI64)
@@ -1100,7 +1100,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
       case REALSXP:
         if (sourceIsI64) {
           if (mc) {
-                    memcpy(td, (int64_t *)REAL(source), slen*sizeof(int64_t)); break;
+                    memcpy(td, (const int64_t *)REAL_RO(source), slen*sizeof(int64_t)); break;
           } else    BODY(int64_t, REAL, int64_t, val,                                   td[i]=cval)
         } else      BODY(double, REAL,  int64_t, within_int64_repres(val) ? val : NA_INTEGER64,    td[i]=cval)
       case CPLXSXP: BODY(Rcomplex, COMPLEX, int64_t, ISNAN(val.r) ? NA_INTEGER64 : (int64_t)val.r, td[i]=cval)
@@ -1115,7 +1115,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
       case REALSXP:
         if (!sourceIsI64) {
           if (mc) {
-                    memcpy(td, (double *)REAL(source), slen*sizeof(double)); break;
+                    memcpy(td, (const double *)REAL_RO(source), slen*sizeof(double)); break;
           } else    BODY(double, REAL,  double, val,                                    td[i]=cval)
         } else      BODY(int64_t, REAL, double, val==NA_INTEGER64 ? NA_REAL : val,      td[i]=cval)
       case CPLXSXP: BODY(Rcomplex, COMPLEX, double, val.r,                              td[i]=cval)
@@ -1136,7 +1136,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
       else          BODY(double,  REAL, double, ISNAN(val)?(im=NA_REAL,NA_REAL):(im=0.0,val),         td[i].r=cval;td[i].i=im)
     case CPLXSXP:
       if (mc) {
-                    memcpy(td, COMPLEX(source), slen*sizeof(Rcomplex)); break;
+                    memcpy(td, COMPLEX_RO(source), slen*sizeof(Rcomplex)); break;
       } else        BODY(Rcomplex, COMPLEX, Rcomplex, val,                                            td[i]=cval)
     default:        COERCE_ERROR("complex");
     }
@@ -1282,8 +1282,8 @@ void savetl_init(void) {
   }
   nsaved = 0;
   nalloc = 100;
-  saveds = (SEXP *)malloc(nalloc * sizeof(SEXP));
-  savedtl = (R_len_t *)malloc(nalloc * sizeof(R_len_t));
+  saveds = malloc(sizeof(*saveds) * nalloc);
+  savedtl = malloc(sizeof(*savedtl) * nalloc);
   if (!saveds || !savedtl) {
     free(saveds); free(savedtl);                                            // # nocov
     savetl_end();                                                           // # nocov
