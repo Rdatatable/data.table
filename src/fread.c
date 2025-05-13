@@ -1912,7 +1912,6 @@ int freadMain(freadMainArgs _args) {
       DTPRINT(_("  Number of sampling jump points = %d because jump0size==0\n"), nJumps);
     } else {
       DTPRINT(_("  Number of sampling jump points = %d because (%ld bytes from row 1 to eof) / (2 * %ld jump0size) == %ld\n"),
-              // NB: ptrdiff_t should use '%td', but that's a C99 addition, which may not work with old Rtools (pre-Rtools42)
               nJumps, (long int)sz, (long int)jump0size, (long int)(sz/(2*jump0size)));
     }
   }
