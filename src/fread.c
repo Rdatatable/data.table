@@ -2042,8 +2042,8 @@ int freadMain(freadMainArgs _args) {
       if (fill) INTERNAL_STOP("fill=true but there is a previous row which should already have been filled"); // # nocov
       DTWARN(_("Detected %d column names but the data has %d columns. Filling rows automatically. Set fill=TRUE explicitly to avoid this warning.\n"), tt, ncol);
       fill = true;
-      type =    (int8_t *)realloc(type,    (size_t)tt * sizeof(int8_t));
-      tmpType = (int8_t *)realloc(tmpType, (size_t)tt * sizeof(int8_t));
+      type =    realloc(type, sizeof(*type) * tt);
+      tmpType = realloc(tmpType, sizeof(*tmpType) * tt);
       if (!type || !tmpType) STOP(_("Failed to realloc 2 x %d bytes for type and tmpType: %s"), tt, strerror(errno));
       for (int j=ncol; j<tt; j++) { tmpType[j] = type[j] = type0; }
       ncol = tt;
@@ -2141,9 +2141,9 @@ int freadMain(freadMainArgs _args) {
   if (args.header==false) {
     colNames = NULL;  // userOverride will assign V1, V2, etc
   } else {
-    colNames = (lenOff*) calloc((size_t)ncol, sizeof(lenOff));
+    colNames = calloc(ncol, sizeof(*colNames));
     if (!colNames)
-      STOP(_("Unable to allocate %d*%d bytes for column name pointers: %s"), ncol, sizeof(lenOff), strerror(errno)); // # nocov
+      STOP(_("Unable to allocate %d*%d bytes for column name pointers: %s"), ncol, sizeof(*colNames), strerror(errno)); // # nocov
     if (sep==' ') while (*ch==' ') ch++;
     void *targets[9] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, colNames + autoFirstColName};
     FieldParseContext fctx = {
@@ -2522,9 +2522,9 @@ int freadMain(freadMainArgs _args) {
                     (int)(tch-fieldStart), fieldStart, (uint64_t)(ctx.DTi+myNrow));
                   if (len > 1000) len = 1000;
                   if (len > 0) {
-                    typeBumpMsg = (char*) realloc(typeBumpMsg, typeBumpMsgSize + (size_t)len + 1);
+                    typeBumpMsg = realloc(typeBumpMsg, typeBumpMsgSize + len + 1);
                     strcpy(typeBumpMsg+typeBumpMsgSize, temp);
-                    typeBumpMsgSize += (size_t)len;
+                    typeBumpMsgSize += len;
                   }
                 }
                 nTypeBump++;
