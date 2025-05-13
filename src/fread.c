@@ -405,11 +405,10 @@ double wallclock(void)
  * multiple threads at the same time, or hold on to the value returned for
  * extended periods of time.
  */
-static const char* filesize_to_str(size_t fsize)
+static const char* filesize_to_str(const size_t fsize)
 {
   static const char suffixes[] = {'T', 'G', 'M', 'K'};
   static char output[100];
-  size_t lsize = fsize;
   for (int i = 0; i <= sizeof(suffixes); i++) {
     int shift = (sizeof(suffixes) - i) * 10;
     if ((fsize >> shift) == 0) continue;
@@ -420,17 +419,17 @@ static const char* filesize_to_str(size_t fsize)
     if (ndigits == 0 || (fsize == (fsize >> shift << shift))) {
       if (i < sizeof(suffixes)) {
         snprintf(output, sizeof(output), "%"PRIu64"%cB (%"PRIu64" bytes)", // # notranslate
-                 (uint64_t)(lsize >> shift), suffixes[i], (uint64_t)lsize);
+                 (fsize >> shift), suffixes[i], fsize);
         return output;
       }
     } else {
       snprintf(output, sizeof(output), "%.*f%cB (%"PRIu64" bytes)", // # notranslate
-               ndigits, (double)fsize / (1LL << shift), suffixes[i], (uint64_t)lsize);
+               ndigits, (double)fsize / (1LL << shift), suffixes[i], fsize);
       return output;
     }
   }
   if (fsize == 1) return "1 byte";
-  snprintf(output, sizeof(output), "%"PRIu64" bytes", (uint64_t)lsize); // # notranslate
+  snprintf(output, sizeof(output), "%"PRIu64" bytes", fsize); // # notranslate
   return output;
 }
 
@@ -1195,7 +1194,7 @@ static reader_fun_t fun[NUMTYPE] = {
 
 static int disabled_parsers[NUMTYPE] = {0};
 
-static int detect_types( const char **pch, int8_t type[], int ncol, bool *bumped) {
+static int detect_types(const char **pch, int ncol, bool *bumped) {
   // used in sampling column types and whether column names are present
   // test at most ncol fields. If there are fewer fields, the data read step later
   // will error (if fill==false) when the line number is known, so we don't need to handle that here.
@@ -1951,7 +1950,7 @@ int freadMain(freadMainArgs _args) {
 
     while(ch<eof && jumpLine++<jumpLines) {
       const char *lineStart = ch;
-      int thisNcol = detect_types(&ch, tmpType, ncol, &bumped);
+      int thisNcol = detect_types(&ch, ncol, &bumped);
       if (thisNcol==0 && skipEmptyLines) {
         if (eol(&ch)) ch++;
         continue;
@@ -2006,7 +2005,7 @@ int freadMain(freadMainArgs _args) {
     if (dec == '\0') { // in files without jumps, dec could still be undecided
       linesForDecDot = 0;
     }
-    detect_types(&ch, tmpType, ncol, &bumped);
+    detect_types(&ch, ncol, &bumped);
     if (dec == '\0') {
       dec = linesForDecDot < 0 ? ',' : '.';
       if (verbose) {
