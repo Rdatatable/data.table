@@ -125,7 +125,6 @@ R_CallMethodDef callMethods[] = {
 {"Cinrange", (DL_FUNC) &inrange, -1},
 {"Cbetween", (DL_FUNC) &between, -1},
 {"ChasOpenMP", (DL_FUNC) &hasOpenMP, -1},
-{"CbeforeR340", (DL_FUNC) &beforeR340, -1},
 {"CuniqueNlogical", (DL_FUNC) &uniqueNlogical, -1},
 {"CfrollfunR", (DL_FUNC) &frollfunR, -1},
 {"CdllVersion", (DL_FUNC) &dllVersion, -1},
