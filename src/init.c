@@ -380,7 +380,7 @@ int GetVerbose(void)
 {
   // don't call repetitively; save first in that case
   SEXP opt = GetOption1(sym_verbose);
-  if ((!isLogical(opt) && !isInteger(opt)) || LENGTH(opt)!=1 || INTEGER(opt)[0]==NA_INTEGER)
+  if ((!isLogical(opt) && !isInteger(opt)) || LENGTH(opt) != 1 || INTEGER(opt)[0] == NA_INTEGER)
     error(_("verbose option must be length 1 non-NA logical or integer"));
   return INTEGER(opt)[0];
 }
@@ -426,5 +426,5 @@ SEXP initLastUpdated(SEXP var)
 SEXP dllVersion(void)
 {
   // .onLoad calls this and checks the same as packageVersion() to ensure no R/C version mismatch, #3056
-  return (ScalarString(mkChar("1.17.1")));
+  return (ScalarString(mkChar("1.17.2")));
 }
