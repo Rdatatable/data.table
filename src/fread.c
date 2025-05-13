@@ -107,7 +107,7 @@ static void Field(FieldParseContext *ctx);
 #define ASSERT(cond, msg, ...) if (!(cond)) INTERNAL_STOP(msg, __VA_ARGS__) // # nocov
 
 #define AS_DIGIT(x) (uint_fast8_t)(x - '0')
-#define IS_DIGIT(x) AS_DIGIT(x) < 10
+#define IS_DIGIT(x) (AS_DIGIT(x) < 10)
 
 //=================================================================================================
 //
