@@ -34,7 +34,7 @@ partial2adaptive = function(x, n, align) {
   }
 }
 
-froll = function(fun, x, n, fill=NA, algo=c("fast", "exact"), align=c("right", "left", "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE, partial=FALSE) {
+froll = function(fun, x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE, partial=FALSE) {
   stopifnot(!missing(fun), is.character(fun), length(fun)==1L, !is.na(fun))
   algo = match.arg(algo)
   align = match.arg(align)
@@ -68,17 +68,17 @@ froll = function(fun, x, n, fill=NA, algo=c("fast", "exact"), align=c("right", "
   }
 }
 
-frollmean = function(x, n, fill=NA, algo=c("fast", "exact"), align=c("right", "left", "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE, partial=FALSE) {
+frollmean = function(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE, partial=FALSE) {
   froll(fun="mean", x=x, n=n, fill=fill, algo=algo, align=align, na.rm=na.rm, hasNA=hasNA, adaptive=adaptive, partial=partial)
 }
-frollsum = function(x, n, fill=NA, algo=c("fast","exact"), align=c("right", "left", "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE, partial=FALSE) {
+frollsum = function(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE, partial=FALSE) {
   froll(fun="sum", x=x, n=n, fill=fill, algo=algo, align=align, na.rm=na.rm, hasNA=hasNA, adaptive=adaptive, partial=partial)
 }
-frollmax = function(x, n, fill=NA, algo=c("fast", "exact"), align=c("right", "left", "center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE, partial=FALSE) {
+frollmax = function(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"), na.rm=FALSE, hasNA=NA, adaptive=FALSE, partial=FALSE) {
   froll(fun="max", x=x, n=n, fill=fill, algo=algo, align=align, na.rm=na.rm, hasNA=hasNA, adaptive=adaptive, partial=partial)
 }
 
-frollapply = function(x, n, FUN, ..., fill=NA, align=c("right", "left", "center"), adaptive=FALSE, partial=FALSE) {
+frollapply = function(x, n, FUN, ..., fill=NA, align=c("right","left","center"), adaptive=FALSE, partial=FALSE) {
   FUN = match.fun(FUN)
   align = match.arg(align)
   if (isTRUE(partial)) {
@@ -91,12 +91,14 @@ frollapply = function(x, n, FUN, ..., fill=NA, align=c("right", "left", "center"
     n = partial2adaptive(x, n, align)
     adaptive = TRUE
   }
+  if (isTRUE(adaptive) && base::getRversion() < "3.4.0") ## support SET_GROWABLE_BIT
+    stopf("frollapply adaptive=TRUE requires at least R 3.4.0"); # nocov
   leftadaptive = isTRUE(adaptive) && align=="left"
   if (leftadaptive) {
     verbose = getOption("datatable.verbose")
     rev2 = function(x) if (is.list(x)) lapply(x, rev) else rev(x)
     if (verbose)
-      cat("froll: adaptive=TRUE && align='left' pre-processing for align='right'\n")
+      cat("frollapply: adaptive=TRUE && align='left' pre-processing for align='right'\n")
     x = rev2(x)
     n = rev2(n)
     align = "right"

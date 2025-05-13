@@ -792,6 +792,41 @@ rowwiseDT(
 
 41. `tables()` is faster by default by excluding the size of character strings in R's global cache (which may be shared) and excluding the size of list column items (which also may be shared). `mb=` now accepts any function which accepts a `data.table` and returns a higher and better estimate of its size in bytes, albeit more slowly; e.g. `mb = utils::object.size`.
 
+42. Multiple improvements has been added to rolling functions. Request came from @gpierard who needed left aligned, adaptive, rolling max, [#5438](https://github.com/Rdatatable/data.table/issues/5438). There was no `frollmax` function yet. Adaptive rolling functions did not have support for `align="left"`. `frollapply` did not support `adaptive=TRUE`. Available alternatives were base R `mapply` or self-join using `max` and grouping `by=.EACHI`. As a follow up of his request, following features has been added:
+- new function `frollmax`, applies `max` over a rolling window.
+- support for `align="left"` for adaptive rolling function.
+- support for `adaptive=TRUE` in `frollapply`.
+- `partial` argument to trim window width to available observations rather than returning `NA` whenever window is not complete.
+
+For a comprehensive description about all available features see `?froll` manual.
+
+Adaptive `frollmax` has observed to be up to 50 times faster than second fastest solution (data.table self-join using `max` and grouping `by=.EACHI`).
+```r
+set.seed(108)
+setDTthreads(8)
+x = data.table(
+  value = cumsum(rnorm(1e6, 0.1)),
+  end_window = 1:1e6 + sample(50:500, 1e6, TRUE),
+  row = 1:1e6
+)[, "end_window" := pmin(end_window, .N)
+  ][, "len_window" := end_window-row+1L]
+
+baser = function(x) x[, mapply(function(from, to) max(value[from:to]), row, end_window)]
+sj = function(x) x[x, max(value), on=.(row >= row, row <= end_window), by=.EACHI]$V1
+frmax = function(x) x[, frollmax(value, len_window, adaptive=TRUE, align="left", hasNA=FALSE)]
+frapply = function(x) x[, frollapply(value, len_window, max, adaptive=TRUE, align="left")]
+microbenchmark::microbenchmark(
+  baser(x), sj(x), frmax(x), frapply(x),
+  times=10, check="identical"
+)
+#Unit: milliseconds
+#       expr       min         lq       mean     median         uq       max neval
+#   baser(x) 5472.2715 5596.11013 5763.93265 5659.06510 5935.11236 6338.0498    10
+#      sj(x) 4664.3359 4872.40122 4978.01860 4919.15975 5061.69718 5345.3508    10
+#   frmax(x)   70.0804   75.13598   91.35392   95.80486   99.99415  113.2648    10
+# frapply(x)  743.9082  833.65667  904.32891  893.75805  979.63510 1158.6030    10
+```
+
 ## BUG FIXES
 
 1. `by=.EACHI` when `i` is keyed but `on=` different columns than `i`'s key could create an invalidly keyed result, [#4603](https://github.com/Rdatatable/data.table/issues/4603) [#4911](https://github.com/Rdatatable/data.table/issues/4911). Thanks to @myoung3 and @adamaltmejd for reporting, and @ColeMiller1 for the PR. An invalid key is where a `data.table` is marked as sorted by the key columns but the data is not sorted by those columns, leading to incorrect results from subsequent queries.
