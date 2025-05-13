@@ -1894,12 +1894,12 @@ int freadMain(freadMainArgs _args) {
     tmpType[j] = type[j] = type0;
   }
 
-  size_t jump0size=(size_t)(firstJumpEnd-pos);  // the size in bytes of the first 100 lines from the start (jump point 0)
+  const ptrdiff_t jump0size = firstJumpEnd - pos;  // the size in bytes of the first 100 lines from the start (jump point 0)
   // how many places in the file to jump to and test types there (the very end is added as 11th or 101th)
   // not too many though so as not to slow down wide files; e.g. 10,000 columns.  But for such large files (50GB) it is
   // worth spending a few extra seconds sampling 10,000 rows to decrease a chance of costly reread even further.
   nJumps = 1;
-  size_t sz = (size_t)(eof - pos);
+  const ptrdiff_t sz = eof - pos;
   if (jump0size>0) {
     if (jump0size*100*2 < sz) nJumps=100;  // 100 jumps * 100 lines = 10,000 line sample
     else if (jump0size*10*2 < sz) nJumps=10;
@@ -1911,8 +1911,8 @@ int freadMain(freadMainArgs _args) {
     } else if (jump0size==0) {
       DTPRINT(_("  Number of sampling jump points = %d because jump0size==0\n"), nJumps);
     } else {
-      DTPRINT(_("  Number of sampling jump points = %d because (%"PRIu64" bytes from row 1 to eof) / (2 * %"PRIu64" jump0size) == %"PRIu64"\n"),
-              nJumps, (uint64_t)sz, (uint64_t)jump0size, (uint64_t)(sz/(2*jump0size)));
+      DTPRINT(_("  Number of sampling jump points = %d because (%td bytes from row 1 to eof) / (2 * %td jump0size) == %td\n"),
+              nJumps, sz, jump0size, sz/(2*jump0size));
     }
   }
   nJumps++; // the extra sample at the very end (up to eof) is sampled and format checked but not jumped to when reading
