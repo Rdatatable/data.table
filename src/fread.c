@@ -1917,7 +1917,7 @@ int freadMain(freadMainArgs _args) {
     } else if (jump0size==0) {
       DTPRINT(_("  Number of sampling jump points = %d because jump0size==0\n"), nJumps);
     } else {
-      DTPRINT(_("  Number of sampling jump points = %d because (%"PRIu64" bytes from row 1 to eof) / (2 * %"PRIu64" jump0size) == %"PRIu64"\n"),
+      DTPRINT(_("  Number of sampling jump points = %d because (%td bytes from row 1 to eof) / (2 * %td jump0size) == %td\n"),
               nJumps, sz, jump0size, sz/(2*jump0size));
     }
   }
