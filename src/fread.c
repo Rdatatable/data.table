@@ -1008,8 +1008,7 @@ static void parse_iso8601_timestamp(FieldParseContext *ctx)
   parse_iso8601_date_core(&ch, &date);
   if (date == NA_INT32)
     return;
-  if (*ch != ' ' && *ch != 'T')
-  {
+  if (*ch != ' ' && *ch != 'T') {
     *target = 86400 * (double)date;
     
     *(ctx->ch) = ch;
