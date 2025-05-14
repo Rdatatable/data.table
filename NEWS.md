@@ -3,6 +3,7 @@
 # data.table v1.17.12
 
 1. By-group operations on missing rows (e.g. `foo[c(i, NA), bar, by=grp]`) now avoid leaving in data from the previous groups, [#7442](https://github.com/Rdatatable/data.table/issues/7442). Thanks @aitap for the report and the fix.
+2. {data.table} now depends on R 3.4.0 (2017).
 
 # data.table [v1.17.10](https://github.com/Rdatatable/data.table/milestone/43)
 
