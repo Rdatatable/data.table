@@ -64,10 +64,6 @@ print.foo = function(x, ...) {
 }
 dt[, y := 1]                          # no
 
-# withAutoprint() testing (since R3.4.0)
-if (!exists("withAutoprint", baseenv())) {
-  q("no")
-}
 if (TRUE) withAutoprint({
   DT                                  # yes
   DT[1L, 1L]                          # yes
