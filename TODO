@@ -1,5 +1,7 @@
 This is the list of follow up issues that may be resolved after all rolling functions PRs will be merged. As of the current moment none of those is a bug fix or essentially necessary but rather good practice changes.
 
+- catf() instead of cat()
+
 - use `test(..., options(datatable.verbose=TRUE))` rather than `options(datatable.verbose=TRUE)`
 
 - verbose output `frolladaptivefun: algo 0 not implemented, fall back to 1` could be more intuitive

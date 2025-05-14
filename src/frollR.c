@@ -250,7 +250,8 @@ SEXP frollapplyR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP adaptiv
 
     nk = length(k);
     R_len_t i=0;
-    while (i < nk && INTEGER(ik)[i] > 0) i++;
+    int *iik = INTEGER(ik);
+    while (i < nk && iik[i] > 0) i++;
     if (i != nk)
       error(_("n must be positive integer values (> 0)"));
   } else {
