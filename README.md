@@ -15,6 +15,22 @@
 
 `data.table` provides a high-performance version of [base R](https://www.r-project.org/about.html)'s `data.frame` with syntax and feature enhancements for ease of use, convenience and programming speed.
 
+[//]: # (numfocus-fiscal-sponsor-attribution)
+
+The `data.table` project uses a [custom governance agreement](./GOVERNANCE.md) 
+and is fiscally sponsored by [NumFOCUS](https://numfocus.org/). Consider making 
+a [tax-deductible donation](https://numfocus.org/donate-to-data-table) to help the project 
+pay for developer time, professional services, travel, workshops, and a variety of other needs.
+
+<div align="center">
+  <a href="https://numfocus.org/project/data-table">
+    <img height="60px" 
+         src="https://raw.githubusercontent.com/numfocus/templates/master/images/numfocus-logo.png" 
+         align="center">
+  </a>
+</div>
+<br>
+
 ## Why `data.table`?
 
 * concise syntax: fast to type, fast to read
