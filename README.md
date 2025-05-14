@@ -101,3 +101,6 @@ A list of packages that significantly support, extend, or make use of `data.tabl
 ### Contributing
 
 Guidelines for filing issues / pull requests: [Contribution Guidelines](https://github.com/Rdatatable/data.table/blob/master/.github/CONTRIBUTING.md).
+
+[![Powered by NumFOCUS](https://img.shields.io/badge/powered%20by-NumFOCUS-orange.s
+vg?style=flat&colorA=E1523D&colorB=007D8A )](http://numfocus.org)
