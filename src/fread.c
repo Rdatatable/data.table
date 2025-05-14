@@ -1932,7 +1932,7 @@ int freadMain(freadMainArgs _args) {
       }
       firstRowStart = ch;
     } else {
-      ch = (jump == nJumps-1) ? eof - (0.5*jump0size) :  // to almost-surely sample the last line
+      ch = (jump == nJumps-1) ? eof - (ptrdiff_t)(0.5*jump0size) :  // to almost-surely sample the last line
                                 pos + jump*((eof-pos)/(nJumps-1));
       ch = nextGoodLine(ch, ncol);
     }
