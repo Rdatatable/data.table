@@ -2413,7 +2413,7 @@ int freadMain(freadMainArgs _args) {
             // DTPRINT(_("Field %d: '%.10s' as type %d  (tch=%p)\n"), j+1, tch, type[j], tch);
             fieldStart = tch;
             int8_t thisType = type[j];  // fetch shared type once. Cannot read half-written byte is one reason type's type is single byte to avoid atomic read here.
-            fun[abs(thisType)](&fctx);
+            fun[IGNORE_BUMP(thisType)](&fctx);
             if (*tch!=sep) break;
             int8_t thisSize = size[j];
             if (thisSize) ((char **) targets)[thisSize] += thisSize;  // 'if' for when rereading to avoid undefined NULL+0
@@ -2686,7 +2686,7 @@ int freadMain(freadMainArgs _args) {
     // if nTypeBump>0, not-bumped columns are about to be assigned parse type APPLY_BUMP(CT_STRING) for the reread, so we have to count
     // parse types now (for log). We can't count final column types afterwards because many parse types map to the same column type.
     for (int i=0; i<NUMTYPE; i++) typeCounts[i] = 0;
-    for (int i=0; i<ncol; i++) typeCounts[ abs(type[i]) ]++;
+    for (int i=0; i<ncol; i++) typeCounts[ IGNORE_BUMP(type[i]) ]++;
 
     if (nTypeBump) {
       if (verbose) DTPRINT(_("  %d out-of-sample type bumps: %s\n"), nTypeBump, typesAsString(ncol));
@@ -2697,7 +2697,7 @@ int freadMain(freadMainArgs _args) {
         if (type[j] == CT_DROP) continue;
         if (type[j]<0) {
           // column was bumped due to out-of-sample type exception
-          type[j] = -type[j];
+          type[j] = APPLY_BUMP(type[j]);
           size[j] = typeSize[type[j]];
           rowSize1 += (size[j] & 1);
           rowSize4 += (size[j] & 4);
