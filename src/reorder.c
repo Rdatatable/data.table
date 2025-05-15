@@ -102,7 +102,7 @@ SEXP reorder(SEXP x, SEXP order)
       }
     }
     // Unique and somber line. Not done lightly. Please read all comments in this file.
-    memcpy(((char *)DATAPTR_RO(v)) + size*start, TMP, size*nmid);
+    memcpy((char *)DATAPTR_RO(v) + size*start, TMP, size*nmid);
     // The one and only place in data.table where we write behind the write-barrier. Fundamental to setkey and data.table.
     // This file is unique and special w.r.t. the write-barrier: an utterly strict in-place shuffle.
     // This shuffle operation does not inc or dec named/refcnt, or anything similar in R: past, present or future.
