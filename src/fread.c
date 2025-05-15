@@ -115,7 +115,7 @@ static void Field(FieldParseContext *ctx);
 //   a sample of rows) winds up being incorrect when considering the
 //   full input.
 #define IGNORE_BUMP(x) abs(x)
-#define APPLY_BUMP(x) (-x)
+#define TOGGLE_BUMP(x) (-x)
 
 //=================================================================================================
 //
@@ -2495,7 +2495,7 @@ int freadMain(freadMainArgs _args) {
             // sure a single re-read will definitely work.
             typebump:
             while (++absType<CT_STRING && disabled_parsers[absType]) {};
-            thisType = APPLY_BUMP(absType);
+            thisType = TOGGLE_BUMP(absType);
             tch = fieldStart;
           }
 
@@ -2507,7 +2507,7 @@ int freadMain(freadMainArgs _args) {
               if (j+fieldsRemaining != ncol) break;
               checkedNumberOfFields = true;
             }
-            if (thisType <= APPLY_BUMP(NUMTYPE)) {
+            if (thisType <= TOGGLE_BUMP(NUMTYPE)) {
               break;  // Improperly quoted char field needs to be healed below, other columns will be filled #5041 and #4774
             }
             #pragma omp critical
@@ -2683,7 +2683,7 @@ int freadMain(freadMainArgs _args) {
   if (firstTime) {
     tReread = tRead = wallclock();
 
-    // if nTypeBump>0, not-bumped columns are about to be assigned parse type APPLY_BUMP(CT_STRING) for the reread, so we have to count
+    // if nTypeBump>0, not-bumped columns are about to be assigned parse type TOGGLE_BUMP(CT_STRING) for the reread, so we have to count
     // parse types now (for log). We can't count final column types afterwards because many parse types map to the same column type.
     for (int i=0; i<NUMTYPE; i++) typeCounts[i] = 0;
     for (int i=0; i<ncol; i++) typeCounts[ IGNORE_BUMP(type[i]) ]++;
@@ -2697,7 +2697,7 @@ int freadMain(freadMainArgs _args) {
         if (type[j] == CT_DROP) continue;
         if (type[j]<0) {
           // column was bumped due to out-of-sample type exception
-          type[j] = APPLY_BUMP(type[j]);
+          type[j] = TOGGLE_BUMP(type[j]);
           size[j] = typeSize[type[j]];
           rowSize1 += (size[j] & 1);
           rowSize4 += (size[j] & 4);
@@ -2706,7 +2706,7 @@ int freadMain(freadMainArgs _args) {
         } else if (type[j]>=1) {
           // we'll skip over non-bumped columns in the rerun, whilst still incrementing resi (hence not CT_DROP)
           // not -type[i] either because that would reprocess the contents of not-bumped columns wastefully
-          type[j] = APPLY_BUMP(CT_STRING);
+          type[j] = TOGGLE_BUMP(CT_STRING);
           size[j] = 0;
         }
       }
