@@ -1,5 +1,20 @@
 This is the list of follow up issues that may be resolved after all rolling functions PRs will be merged. As of the current moment none of those is a bug fix or essentially necessary but rather good practice changes.
 
+- fix malloc calls
+```
+bool *isnan = malloc(nx*sizeof(bool)); // isnan lookup - we use it to reduce ISNAN calls in nested loop
+## into
+bool *isnan = malloc(sizeof(*isnan)*nx);
+```
+
+- remove `free(NULL)`
+
+```
+free(isnan);
+```
+
+- as we moved to 3.4.0 dependency remove mentions of R < 3.4.0 related to set growable for frollapply adaptive
+
 - catf() instead of cat()
 
 - use `test(..., options(datatable.verbose=TRUE))` rather than `options(datatable.verbose=TRUE)`
