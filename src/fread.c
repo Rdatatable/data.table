@@ -109,6 +109,14 @@ static void Field(FieldParseContext *ctx);
 #define AS_DIGIT(x) (uint_fast8_t)(x - '0')
 #define IS_DIGIT(x) (AS_DIGIT(x) < 10)
 
+// Readability helpers for the ad-hoc type bumping system: flip e.g.
+//   type '1' to '-1' to mark out-of-sample type bumps, i.e., cases
+//   where the type inferred during auto-detection (which only uses
+//   a sample of rows) winds up being incorrect when considering the
+//   full input.
+#define IGNORE_BUMP(x) abs(x)
+#define APPLY_BUMP(x) (-x)
+
 //=================================================================================================
 //
 //   Utility functions
@@ -220,11 +228,11 @@ static char *typesAsString(int ncol) {
   static char str[101];
   int i=0;
   if (ncol<=100) {
-    for (; i<ncol; i++) str[i] = typeLetter[abs(type[i])];  // abs for out-of-sample type bumps (negative)
+    for (; i<ncol; i++) str[i] = typeLetter[IGNORE_BUMP(type[i])];
   } else {
-    for (; i<80; i++) str[i] = typeLetter[abs(type[i])];
+    for (; i<80; i++) str[i] = typeLetter[IGNORE_BUMP(type[i])];
     str[i++]='.'; str[i++]='.'; str[i++]='.';
-    for (int j=ncol-10; j<ncol; j++) str[i++] = typeLetter[abs(type[j])];
+    for (int j=ncol-10; j<ncol; j++) str[i++] = typeLetter[IGNORE_BUMP(type[j])];
   }
   str[i] = '\0';
   return str;
@@ -2455,7 +2463,7 @@ int freadMain(freadMainArgs _args) {
           fieldStart = tch;
           int8_t joldType = type[j];
           int8_t thisType = joldType;  // to know if it was bumped in (rare) out-of-sample type exceptions
-          int8_t absType = (int8_t)abs(thisType);
+          int8_t absType = (int8_t)IGNORE_BUMP(thisType);
 
           while (absType < NUMTYPE) {
             tch = fieldStart;
@@ -2468,7 +2476,7 @@ int freadMain(freadMainArgs _args) {
               if (!end_of_field(tch)) tch = afterSpace; // else it is the field_end, we're on closing sep|eol and we'll let processor write appropriate NA as if field was empty
               if (*tch==quote && quote) { quoted=true; tch++; }
             } // else Field() handles NA inside it unlike other processors e.g. ,, is interpreted as "" or NA depending on option read inside Field()
-            fun[abs(thisType)](&fctx);
+            fun[IGNORE_BUMP(thisType)](&fctx);
             if (quoted) {   // quoted was only set to true with '&& quote' above (=> quote!='\0' now)
               if (*tch==quote) tch++;
               else goto typebump;
@@ -2487,7 +2495,7 @@ int freadMain(freadMainArgs _args) {
             // sure a single re-read will definitely work.
             typebump:
             while (++absType<CT_STRING && disabled_parsers[absType]) {};
-            thisType = -absType;
+            thisType = APPLY_BUMP(absType);
             tch = fieldStart;
           }
 
@@ -2499,7 +2507,7 @@ int freadMain(freadMainArgs _args) {
               if (j+fieldsRemaining != ncol) break;
               checkedNumberOfFields = true;
             }
-            if (thisType <= -NUMTYPE) {
+            if (thisType <= APPLY_BUMP(NUMTYPE)) {
               break;  // Improperly quoted char field needs to be healed below, other columns will be filled #5041 and #4774
             }
             #pragma omp critical
@@ -2512,7 +2520,7 @@ int freadMain(freadMainArgs _args) {
                   int len = snprintf(temp, 1000,
                     _("Column %d%s%.*s%s bumped from '%s' to '%s' due to <<%.*s>> on row %"PRIu64"\n"),
                     j+1, colNames?" <<":"", colNames?(colNames[j].len):0, colNames?(colNamesAnchor+colNames[j].off):"", colNames?">>":"",
-                    typeName[abs(joldType)], typeName[abs(thisType)],
+                    typeName[IGNORE_BUMP(joldType)], typeName[IGNORE_BUMP(thisType)],
                     (int)(tch-fieldStart), fieldStart, (uint64_t)(ctx.DTi+myNrow));
                   if (len > 1000) len = 1000;
                   if (len > 0) {
@@ -2675,7 +2683,7 @@ int freadMain(freadMainArgs _args) {
   if (firstTime) {
     tReread = tRead = wallclock();
 
-    // if nTypeBump>0, not-bumped columns are about to be assigned parse type -CT_STRING for the reread, so we have to count
+    // if nTypeBump>0, not-bumped columns are about to be assigned parse type APPLY_BUMP(CT_STRING) for the reread, so we have to count
     // parse types now (for log). We can't count final column types afterwards because many parse types map to the same column type.
     for (int i=0; i<NUMTYPE; i++) typeCounts[i] = 0;
     for (int i=0; i<ncol; i++) typeCounts[ abs(type[i]) ]++;
@@ -2698,7 +2706,7 @@ int freadMain(freadMainArgs _args) {
         } else if (type[j]>=1) {
           // we'll skip over non-bumped columns in the rerun, whilst still incrementing resi (hence not CT_DROP)
           // not -type[i] either because that would reprocess the contents of not-bumped columns wastefully
-          type[j] = -CT_STRING;
+          type[j] = APPLY_BUMP(CT_STRING);
           size[j] = 0;
         }
       }
