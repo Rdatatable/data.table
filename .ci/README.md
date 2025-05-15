@@ -12,7 +12,7 @@ Test jobs:
 - `test-lin-rel-cran` - `--as-cran` on Linux, strict test for final status of `R CMD check`.
 - `test-lin-dev-gcc-strict-cran` - `--as-cran` on Linux, `r-devel` built with `-enable-strict-barrier --disable-long-double`, test for compilation warnings, test for new NOTEs/WARNINGs from `R CMD check`.
 - `test-lin-dev-clang-cran` - same as `gcc-strict` job but R built with `clang` and  no `--enable-strict-barrier --disable-long-double` flags.
-- `test-lin-ancient-cran` - Stated R dependency version (currently 3.3.0) on Linux.
+- `test-lin-ancient-cran` - Stated R dependency version (currently 3.4.0) on Linux.
 - `test-lin-dev-san` - `r-devel` on Linux built with `clang -fsanitize=address,undefined` (including LeakSanitizer), test for sanitizer output in tests and examples.
 - `test-win-rel` - `r-release` on Windows.
 - `test-win-dev` - `r-devel` on Windows.

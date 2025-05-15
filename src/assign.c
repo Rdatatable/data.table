@@ -220,11 +220,7 @@ SEXP setdt_nrows(SEXP x)
       error(_("Column %d has class 'POSIXlt'. Please convert it to POSIXct (using as.POSIXct) and run setDT() again. We do not recommend the use of POSIXlt at all because it uses 40 bytes to store one date."), i+1);
     }
     SEXP dim_xi = getAttrib(xi, R_DimSymbol);
-    R_len_t len_xi;
-    // NB: LENGTH() produces an undefined large number here on R 3.3.0.
-    //   There's also a note in NEWS for R 3.1.0 saying length() should always be used by packages,
-    //   but with some overhead for being a function/not macro...
-    R_len_t n_dim = length(dim_xi);
+    R_len_t len_xi, n_dim = length(dim_xi);
     if (n_dim) {
       if (test_matrix_cols && n_dim > 1) {
         warn_matrix_column(i+1);
@@ -356,10 +352,6 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   if (isNull(names)) error(_("dt passed to assign has no names"));
   if (length(names)!=oldncol)
     internal_error(__func__, "length of names (%d) is not length of dt (%d)", length(names), oldncol); // # nocov
-  if (isNull(dt)) {
-    error(_("data.table is NULL; malformed. A null data.table should be an empty list. typeof() should always return 'list' for data.table.")); // # nocov
-    // Not possible to test because R won't permit attributes be attached to NULL (which is good and we like); warning from R 3.4.0+ tested by 944.5
-  }
   const int nrow = LENGTH(dt) ? length(VECTOR_ELT(dt,0)) :
                                 (isNewList(values) && length(values) && (length(values)==length(cols)) ? length(VECTOR_ELT(values,0)) : length(values));
   //                            ^ when null data.table the new nrow becomes the fist column added

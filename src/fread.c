@@ -107,7 +107,7 @@ static void Field(FieldParseContext *ctx);
 #define ASSERT(cond, msg, ...) if (!(cond)) INTERNAL_STOP(msg, __VA_ARGS__) // # nocov
 
 #define AS_DIGIT(x) (uint_fast8_t)(x - '0')
-#define IS_DIGIT(x) AS_DIGIT(x) < 10
+#define IS_DIGIT(x) (AS_DIGIT(x) < 10)
 
 //=================================================================================================
 //
@@ -681,6 +681,8 @@ static void parse_double_regular_core(const char **pch, double *target)
   static const int_fast32_t FLOAT_MAX_DIGITS = 18;
   const char *ch = *pch;
 
+  *target = NA_FLOAT64;
+
   if (*ch=='0' && args.keepLeadingZeros && IS_DIGIT(ch[1])) return;
   bool neg, Eneg;
   ch += (neg = *ch=='-') + (*ch=='+');
@@ -710,7 +712,7 @@ static void parse_double_regular_core(const char **pch, double *target)
       ch++;
       e++;
     }
-    if (*ch!=dec && *ch!='e' && *ch!='E') goto fail;
+    if (*ch!=dec && *ch!='e' && *ch!='E') return;
   }
 
   // Read the fractional part of the number, if it's present
@@ -743,17 +745,17 @@ static void parse_double_regular_core(const char **pch, double *target)
     }
     // Check that at least 1 digit was present in either the integer or
     // fractional part ("+1" here accounts for the decimal point char).
-    if (ch == start + 1) goto fail;
+    if (ch == start + 1) return;
   }
   // If there is no fractional part, then check that the integer part actually
   // exists (otherwise it's not a valid number)...
   else {
-    if (ch == start) goto fail;
+    if (ch == start) return;
   }
 
   // Finally parse the "exponent" part of the number (if present)
   if (*ch=='E' || *ch=='e') {
-    if (ch==start) goto fail;  // something valid must be between [+|-] and E, character E alone is invalid.
+    if (ch==start) return;  // something valid must be between [+|-] and E, character E alone is invalid.
     ch += 1/*E*/ + (Eneg = ch[1]=='-') + (ch[1]=='+');
     int_fast32_t E = 0;
     if ((digit=AS_DIGIT(*ch))<10) {
@@ -769,11 +771,11 @@ static void parse_double_regular_core(const char **pch, double *target)
       }
     } else {
       // Not a single digit after "E"? Invalid number
-      goto fail;
+        return;
     }
     e += Eneg? -E : E;
   }
-  if (e<-350 || e>350) goto fail;
+  if (e<-350 || e>350) return;
 
   long double r = (long double)acc;
   if (e < -300 || e > 300) {
@@ -792,10 +794,6 @@ static void parse_double_regular_core(const char **pch, double *target)
   r = e < 0 ? r/pow10lookup[-e] : r*pow10lookup[e];
   *target = (double)(neg? -r : r);
   *pch = ch;
-  return;
-
-  fail:
-    *target = NA_FLOAT64;
 }
 
 static void parse_double_regular(FieldParseContext *ctx) {
@@ -903,7 +901,9 @@ static void parse_double_hexadecimal(FieldParseContext *ctx)
   uint64_t neg;
   bool Eneg, subnormal = 0;
   init();
+
   ch += (neg = (*ch=='-')) + (*ch=='+');
+  *target = NA_FLOAT64;
 
   if (ch[0]=='0' && (ch[1]=='x' || ch[1]=='X') &&
       (ch[2]=='1' || (subnormal = ch[2]=='0')) && ch[3]=='.') {
@@ -916,7 +916,7 @@ static void parse_double_hexadecimal(FieldParseContext *ctx)
       ch++;
     }
     size_t ndigits = (uint_fast8_t)(ch - ch0);
-    if (ndigits > 13 || !(*ch=='p' || *ch=='P')) goto fail;
+    if (ndigits > 13 || !(*ch=='p' || *ch=='P')) return;
     acc <<= (13 - ndigits) * 4;
     ch += 1 + (Eneg = ch[1]=='-') + (ch[1]=='+');
     uint64_t E = 0;
@@ -925,7 +925,7 @@ static void parse_double_hexadecimal(FieldParseContext *ctx)
       ch++;
     }
     E = 1023 + (Eneg? -E : E) - subnormal;
-    if (subnormal ? E : (E<1 || E>2046)) goto fail;
+    if (subnormal ? E : (E<1 || E>2046)) return;
 
     *((uint64_t*)target) = (neg << 63) | (E << 52) | (acc);
     *(ctx->ch) = ch;
@@ -942,9 +942,6 @@ static void parse_double_hexadecimal(FieldParseContext *ctx)
     *(ctx->ch) = ch + 8;
     return;
   }
-
-  fail:
-    *target = NA_FLOAT64;
 }
 
 /*
@@ -961,6 +958,8 @@ static void parse_iso8601_date_core(const char **pch, int32_t *target)
 
   int32_t year=0, month=0, day=0;
 
+  *target = NA_INT32;
+
   str_to_i32_core(&ch, &year, true);
 
   // .Date(.Machine$integer.max*c(-1, 1)):
@@ -968,7 +967,7 @@ static void parse_iso8601_date_core(const char **pch, int32_t *target)
   //  rather than fiddle with dates within those terminal years (unlikely
   //  to be showing up in data sets any time soon), just truncate towards 0
   if (year == NA_INT32 || year < -5877640 || year > 5881579 || *ch != '-')
-    goto fail;
+    return;
 
   // Multiples of 4, excluding 3/4 of centuries
   bool isLeapYear = year % 4 == 0 && (year % 100 != 0 || year/100 % 4 == 0);
@@ -976,13 +975,12 @@ static void parse_iso8601_date_core(const char **pch, int32_t *target)
 
   str_to_i32_core(&ch, &month, true);
   if (month == NA_INT32 || month < 1 || month > 12 || *ch != '-')
-    goto fail;
+    return;
   ch++;
 
   str_to_i32_core(&ch, &day, true);
-  if (day == NA_INT32 || day < 1 ||
-      (day > (isLeapYear ? leapYearDays[month-1] : normYearDays[month-1])))
-    goto fail;
+  if (day == NA_INT32 || day < 1 || (day > (isLeapYear ? leapYearDays[month-1] : normYearDays[month-1])))
+    return;
 
   *target =
     (year/400 - 4)*cumDaysCycleYears[400] + // days to beginning of 400-year cycle
@@ -991,10 +989,6 @@ static void parse_iso8601_date_core(const char **pch, int32_t *target)
     day-1; // day within month (subtract 1: 1970-01-01 -> 0)
 
   *pch = ch;
-  return;
-
-  fail:
-    *target = NA_INT32;
 }
 
 static void parse_iso8601_date(FieldParseContext *ctx) {
@@ -1009,27 +1003,33 @@ static void parse_iso8601_timestamp(FieldParseContext *ctx)
   int32_t date, hour=0, minute=0, tz_hour=0, tz_minute=0;
   double second=0;
 
+  *target = NA_FLOAT64;
+
   parse_iso8601_date_core(&ch, &date);
   if (date == NA_INT32)
-    goto fail;
-  if (*ch != ' ' && *ch != 'T')
-    goto date_only;
-    // allows date-only field in a column with UTC-marked datetimes to be parsed as UTC too; test 2150.13
+    return;
+  if (*ch != ' ' && *ch != 'T') {
+    *target = 86400 * (double)date;
+    
+    *(ctx->ch) = ch;
+    return;
+  }
+  // allows date-only field in a column with UTC-marked datetimes to be parsed as UTC too; test 2150.13
   ch++;
 
   str_to_i32_core(&ch, &hour, true);
   if (hour == NA_INT32 || hour < 0 || hour > 23 || *ch != ':')
-    goto fail;
+    return;
   ch++;
 
   str_to_i32_core(&ch, &minute, true);
   if (minute == NA_INT32 || minute < 0 || minute > 59 || *ch != ':')
-    goto fail;
+    return;
   ch++;
 
   parse_double_regular_core(&ch, &second);
   if (second == NA_FLOAT64 || second < 0 || second >= 60)
-    goto fail;
+    return;
 
   if (*ch == 'Z') {
     ch++; // "Zulu time"=UTC
@@ -1041,41 +1041,35 @@ static void parse_iso8601_timestamp(FieldParseContext *ctx)
       // three recognized formats: [+-]AA:BB, [+-]AABB, and [+-]AA
       str_to_i32_core(&ch, &tz_hour, true);
       if (tz_hour == NA_INT32)
-        goto fail;
+        return;
       if (ch - start == 5 && tz_hour != 0) { // +AABB
         if (abs(tz_hour) > 2400)
-          goto fail;
+          return;
         tz_minute = tz_hour % 100;
         tz_hour /= 100;
       } else if (ch - start == 3) {
         if (abs(tz_hour) > 24)
-          goto fail;
+          return;
         if (*ch == ':') {
           ch++;
           str_to_i32_core(&ch, &tz_minute, true);
           if (tz_minute == NA_INT32)
-            goto fail;
+            return;
         }
       }
     } else {
       if (!args.noTZasUTC)
-        goto fail;
+        return;
       // if neither Z nor UTC offset is present, then it's local time and that's not directly supported yet; see news for v1.13.0
       // but user can specify that the unmarked datetimes are UTC by passing tz="UTC"
       // if local time is UTC (env variable TZ is "" or "UTC", not unset) then local time is UTC, and that's caught by fread at R level too
     }
   }
 
-  date_only:
-
   // cast upfront needed to prevent silent overflow
   *target = 86400*(double)date + 3600*(hour - tz_hour) + 60*(minute - tz_minute) + second;
 
   *(ctx->ch) = ch;
-  return;
-
-  fail:
-    *target = NA_FLOAT64;
 }
 
 static void parse_empty(FieldParseContext *ctx)
@@ -1900,12 +1894,12 @@ int freadMain(freadMainArgs _args) {
     tmpType[j] = type[j] = type0;
   }
 
-  size_t jump0size=(size_t)(firstJumpEnd-pos);  // the size in bytes of the first 100 lines from the start (jump point 0)
+  const ptrdiff_t jump0size = firstJumpEnd - pos;  // the size in bytes of the first 100 lines from the start (jump point 0)
   // how many places in the file to jump to and test types there (the very end is added as 11th or 101th)
   // not too many though so as not to slow down wide files; e.g. 10,000 columns.  But for such large files (50GB) it is
   // worth spending a few extra seconds sampling 10,000 rows to decrease a chance of costly reread even further.
   nJumps = 1;
-  size_t sz = (size_t)(eof - pos);
+  const ptrdiff_t sz = eof - pos;
   if (jump0size>0) {
     if (jump0size*100*2 < sz) nJumps=100;  // 100 jumps * 100 lines = 10,000 line sample
     else if (jump0size*10*2 < sz) nJumps=10;
@@ -1917,8 +1911,8 @@ int freadMain(freadMainArgs _args) {
     } else if (jump0size==0) {
       DTPRINT(_("  Number of sampling jump points = %d because jump0size==0\n"), nJumps);
     } else {
-      DTPRINT(_("  Number of sampling jump points = %d because (%"PRIu64" bytes from row 1 to eof) / (2 * %"PRIu64" jump0size) == %"PRIu64"\n"),
-              nJumps, (uint64_t)sz, (uint64_t)jump0size, (uint64_t)(sz/(2*jump0size)));
+      DTPRINT(_("  Number of sampling jump points = %d because (%td bytes from row 1 to eof) / (2 * %td jump0size) == %td\n"),
+              nJumps, sz, jump0size, sz/(2*jump0size));
     }
   }
   nJumps++; // the extra sample at the very end (up to eof) is sampled and format checked but not jumped to when reading
@@ -2042,8 +2036,8 @@ int freadMain(freadMainArgs _args) {
       if (fill) INTERNAL_STOP("fill=true but there is a previous row which should already have been filled"); // # nocov
       DTWARN(_("Detected %d column names but the data has %d columns. Filling rows automatically. Set fill=TRUE explicitly to avoid this warning.\n"), tt, ncol);
       fill = true;
-      type =    (int8_t *)realloc(type,    (size_t)tt * sizeof(int8_t));
-      tmpType = (int8_t *)realloc(tmpType, (size_t)tt * sizeof(int8_t));
+      type =    realloc(type, sizeof(*type) * tt);
+      tmpType = realloc(tmpType, sizeof(*tmpType) * tt);
       if (!type || !tmpType) STOP(_("Failed to realloc 2 x %d bytes for type and tmpType: %s"), tt, strerror(errno));
       for (int j=ncol; j<tt; j++) { tmpType[j] = type[j] = type0; }
       ncol = tt;
@@ -2141,9 +2135,9 @@ int freadMain(freadMainArgs _args) {
   if (args.header==false) {
     colNames = NULL;  // userOverride will assign V1, V2, etc
   } else {
-    colNames = (lenOff*) calloc((size_t)ncol, sizeof(lenOff));
+    colNames = calloc(ncol, sizeof(*colNames));
     if (!colNames)
-      STOP(_("Unable to allocate %d*%d bytes for column name pointers: %s"), ncol, sizeof(lenOff), strerror(errno)); // # nocov
+      STOP(_("Unable to allocate %d*%d bytes for column name pointers: %s"), ncol, sizeof(*colNames), strerror(errno)); // # nocov
     if (sep==' ') while (*ch==' ') ch++;
     void *targets[9] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, colNames + autoFirstColName};
     FieldParseContext fctx = {
@@ -2522,9 +2516,9 @@ int freadMain(freadMainArgs _args) {
                     (int)(tch-fieldStart), fieldStart, (uint64_t)(ctx.DTi+myNrow));
                   if (len > 1000) len = 1000;
                   if (len > 0) {
-                    typeBumpMsg = (char*) realloc(typeBumpMsg, typeBumpMsgSize + (size_t)len + 1);
+                    typeBumpMsg = realloc(typeBumpMsg, typeBumpMsgSize + len + 1);
                     strcpy(typeBumpMsg+typeBumpMsgSize, temp);
-                    typeBumpMsgSize += (size_t)len;
+                    typeBumpMsgSize += len;
                   }
                 }
                 nTypeBump++;

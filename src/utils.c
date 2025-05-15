@@ -430,8 +430,7 @@ SEXP dt_has_zlib(void) {
 
 SEXP startsWithAny(const SEXP x, const SEXP y, SEXP start) {
   // for is_url in fread.R added in #5097
-  // startsWith was added to R in 3.3.0 so we need something to support R 3.1.0
-  // short and simple ascii-only
+  // basically any(startsWith()), short and simple ascii-only
   if (!isString(x) || !isString(y) || length(x)!=1 || length(y)<1 || !isLogical(start) || length(start)!=1 || LOGICAL(start)[0]==NA_LOGICAL)
     internal_error(__func__, "types or lengths incorrect");
   const char *xd = CHAR(STRING_ELT(x, 0));
