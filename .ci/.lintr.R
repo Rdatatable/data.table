@@ -16,6 +16,13 @@ linters = c(dt_linters, all_linters(
   # system_time_linter = undesirable_function_linter(c(
   #   system.time = "Only run timings in benchmark.Rraw"
   # )),
+  undesirable_function_linter(c(
+    cat = "Use catf to enable translations",
+    message = "Use messagef to avoid fragmented translations.",
+    warning = "Use warningf to avoid fragmented translations.",
+    stop = "Use stopf to avoid fragmented translations.",
+    NULL
+  )),
   # undesirable_function_linter(modify_defaults(
   #   default_undesirable_functions,
   #   ifelse = "Use fifelse instead.",
