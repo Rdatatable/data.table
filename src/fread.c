@@ -1919,8 +1919,8 @@ int freadMain(freadMainArgs _args) {
     } else if (jump0size==0) {
       DTPRINT(_("  Number of sampling jump points = %d because jump0size==0\n"), nJumps);
     } else {
-      DTPRINT(_("  Number of sampling jump points = %d because (%td bytes from row 1 to eof) / (2 * %td jump0size) == %td\n"),
-              nJumps, sz, jump0size, sz/(2*jump0size));
+      DTPRINT(_("  Number of sampling jump points = %d because (%ld bytes from row 1 to eof) / (2 * %ld jump0size) == %ld\n"),
+              nJumps, (long int)sz, (long int)jump0size, (long int)(sz/(2*jump0size)));
     }
   }
   nJumps++; // the extra sample at the very end (up to eof) is sampled and format checked but not jumped to when reading
