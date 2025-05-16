@@ -104,20 +104,20 @@ build:
 # force all suggests
 # flags: gcc -O3 -flto=auto -fno-common -Wunused-result
 # tests for compilation warnings
+# runs the --as-cran check, including the URL checks
 test-lin-rel:
   <<: *test-lin
   image: registry.gitlab.com/rdatatable/dockerfiles/r-data.table
   variables:
     _R_CHECK_COMPILATION_FLAGS_KNOWN_: "-Wvla"
-    _R_CHECK_CRAN_INCOMING_: "FALSE"
-    _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
     _R_CHECK_FORCE_SUGGESTS_: "TRUE"
     OPENBLAS_MAIN_FREE: "1"
   script:
     - *install-deps
+    - R -q -s -e 'install.packages(c("xml2", "commonmark", "curl", "V8"))'
     - echo 'CFLAGS=-g -O3 -flto=auto -fno-common -fopenmp -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
     - echo 'CXXFLAGS=-g -O3 -flto=auto -fno-common -fopenmp -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
-    - R CMD check $(ls -1t data.table_*.tar.gz | head -n 1)
+    - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
     - (! grep "warning:" data.table.Rcheck/00install.out)
 
 ## vanilla minimal
