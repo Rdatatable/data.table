@@ -1,6 +1,6 @@
 # data.table developer
 
-Inside this repository we provide some tools that improves development experience. Most notable one is `cc()` helper function that recompiles C sources, reload R sources and run tests.  
+Inside this repository we provide some tools to improves development experience. Most notable is the `cc()` helper function that recompiles C sources, reloads R sources, and runs tests.
 
 Typical development workflow will then look like:
 
@@ -15,8 +15,8 @@ Once we (and tests) are satisfied with changes, we then run complete package che
 0. in shell terminal
 1. run `make build`
 2. run `make check`
-3. (optionally) run `R=~/build/R-devel/bin/R make check`
-4. (optionally) run `R=~/build/R-340/bin/R make check`
+3. (optionally) run on `r-devel`, e.g. `R=~/build/R-devel/bin/R make check`
+4. (optionally) run on ancient R, e.g. `R=~/build/R-340/bin/R make check`
 5. `git commit -m '[changes description]'`
 6. `git push [remote] [branch]`
 
