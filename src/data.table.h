@@ -258,7 +258,8 @@ SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg);
 
 // types.c
 char *end(char *start);
-void ansMsg(ans_t *ans, int n, bool verbose, const char *func);
+void ansSetMsg(ans_t *ans, uint8_t status, const char *msg, const char *func);
+void ansGetMsgs(ans_t *ans, int n, bool verbose, const char *func);
 SEXP testMsgR(SEXP status, SEXP x, SEXP k);
 
 //fifelse.c
