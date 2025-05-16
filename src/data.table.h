@@ -10,6 +10,8 @@
 #  define INTEGER_RO INTEGER
 #  define REAL_RO REAL
 #  define COMPLEX_RO COMPLEX
+#  define RAW_RO RAW
+#  define LOGICAL_RO LOGICAL
 #  define R_Calloc(x, y) Calloc(x, y)         // #6380
 #  define R_Realloc(x, y, z) Realloc(x, y, z)
 #  define R_Free(x) Free(x)
