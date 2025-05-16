@@ -13,14 +13,14 @@ variables:
   TZ: "UTC"  ## to avoid 'Failed to create bus connection' from timedatectl via Sys.timezone() on Docker with R 3.4.
              ## Setting TZ for all GLCI jobs to isolate them from timezone. We could have a new GLCI job to test under
              ## a non-UTC timezone, although, that's what we do routinely in dev.
-  R_REL_VERSION:  "4.4" # only raise when RTOOLS for REL is available
-  R_REL_WIN_BIN:  "https://cloud.r-project.org/bin/windows/base/old/4.4.1/R-4.4.1-win.exe"
-  R_DEV_VERSION:  "4.5"
+  R_REL_VERSION:  "4.5" # only raise when RTOOLS for REL is available
+  R_REL_WIN_BIN:  "https://cloud.r-project.org/bin/windows/base/old/4.5.0/R-4.5.0-win.exe"
+  R_DEV_VERSION:  "4.6"
   R_DEV_WIN_BIN:  "https://cloud.r-project.org/bin/windows/base/R-devel-win.exe"
-  R_OLD_VERSION:  "4.3"
-  R_OLD_WIN_BIN:  "https://cloud.r-project.org/bin/windows/base/old/4.3.3/R-4.3.3-win.exe"  
-  R_REL_MAC_BIN:  "https://cloud.r-project.org/bin/macosx/big-sur-arm64/base/R-4.4.1-arm64.pkg"
-  R_OLD_MAC_BIN:  "https://cloud.r-project.org/bin/macosx/big-sur-arm64/base/R-4.3.3-arm64.pkg"
+  R_OLD_VERSION:  "4.4"
+  R_OLD_WIN_BIN:  "https://cloud.r-project.org/bin/windows/base/old/4.4.3/R-4.4.3-win.exe"
+  R_REL_MAC_BIN:  "https://cloud.r-project.org/bin/macosx/big-sur-arm64/base/R-4.5.0-arm64.pkg"
+  R_OLD_MAC_BIN:  "https://cloud.r-project.org/bin/macosx/big-sur-arm64/base/R-4.4.3-arm64.pkg"
 
 stages:
   - dependencies
