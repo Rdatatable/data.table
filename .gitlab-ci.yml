@@ -295,6 +295,8 @@ test-win-old:
   script:
     - R CMD check --no-manual $(ls -1t data.table_*.tar.gz | head -n 1)
     - R CMD INSTALL --build $(ls -1t data.table_*.tar.gz | head -n 1)
+    - >-
+        tail -n 1 data.table.Rcheck/00check.log | grep -q -e '^Status: [0-9]* NOTEs*$' -e '^Status: OK$'
   after_script:
     - mkdir -p bus/$CI_JOB_NAME
     - '[ -d data.table.Rcheck ] && mv data.table.Rcheck bus/$CI_JOB_NAME/'
