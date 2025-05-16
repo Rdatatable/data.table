@@ -1053,7 +1053,7 @@ static SEXP gvarsd1(SEXP x, SEXP narmArg, bool isSD)
           v += (subd[j]-(double)m) * (subd[j]-(double)m);
         }
         ansd[i] = (double)v/(nna-1);
-        if (isSD) ansd[i] = sqrtl(ansd[i]);
+        if (isSD) ansd[i] = (double)sqrtl((long double)ansd[i]);
       }
     }}
     break;
@@ -1084,7 +1084,7 @@ static SEXP gvarsd1(SEXP x, SEXP narmArg, bool isSD)
           v += (subd[j]-(double)m) * (subd[j]-(double)m);
         }
         ansd[i] = (double)v/(nna-1);
-        if (isSD) ansd[i] = sqrtl(ansd[i]);
+        if (isSD) ansd[i] = (double)sqrtl((long double)ansd[i]);
       }
     }}
     break;
