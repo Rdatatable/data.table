@@ -7,7 +7,7 @@ Typical development workflow will then look like:
 0. `git checkout -b [branch]`
 1. edit package files
 2. run `R`
-3. call `cc()`
+3. call `cc(TRUE)`
 4. (if needed) go to point 1.
 
 Once we (and tests) are satisfied with changes, we then run complete package checks:
