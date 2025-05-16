@@ -413,7 +413,7 @@ double wallclock(void)
  * multiple threads at the same time, or hold on to the value returned for
  * extended periods of time.
  */
-static const char* filesize_to_str(const size_t fsize)
+static const char* filesize_to_str(const uint64_t fsize)
 {
   static const char suffixes[] = {'T', 'G', 'M', 'K'};
   static char output[100];
@@ -427,7 +427,7 @@ static const char* filesize_to_str(const size_t fsize)
     if (ndigits == 0 || (fsize == (fsize >> shift << shift))) {
       if (i < sizeof(suffixes)) {
         snprintf(output, sizeof(output), "%"PRIu64"%cB (%"PRIu64" bytes)", // # notranslate
-                 (fsize >> shift), suffixes[i], fsize);
+                 fsize >> shift, suffixes[i], fsize);
         return output;
       }
     } else {
