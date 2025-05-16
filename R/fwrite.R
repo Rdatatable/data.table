@@ -115,5 +115,3 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   invisible()
 }
 
-haszlib = function() .Call(Cdt_has_zlib)
-

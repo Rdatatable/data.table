@@ -141,8 +141,7 @@ print.data.table = function(x, topn=getOption("datatable.print.topn"),
 }
 
 format.data.table = function (x, ..., justify="none") {
-  if (is.atomic(x) && !is.null(x)) { ## future R can use  if (is.atomic(x))
-
+  if (is.atomic(x) && !is.null(x)) {
     stopf("Internal structure doesn't seem to be a list. Possibly corrupt data.table.")
   }
   do.call("cbind", lapply(x, format_col, ..., justify=justify))

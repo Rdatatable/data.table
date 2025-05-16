@@ -2,10 +2,10 @@
 title: "Importing data.table"
 date: "`r Sys.Date()`"
 output:
-  markdown::html_format
+  rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Importing data.table}
-  %\VignetteEngine{knitr::knitr}
+  %\VignetteEngine{knitr::rmarkdown}
   \usepackage[utf8]{inputenc}
 ---
 

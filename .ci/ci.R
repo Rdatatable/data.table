@@ -185,3 +185,7 @@ function(pkgs,
   dp
 }
 
+## set repositories for CI tests
+if (as.logical(Sys.getenv("GITLAB_CI","false")) && identical(Sys.getenv("CI_PROJECT_NAME"), "data.table")) {
+  options("repos" = if (.Platform$OS.type == "windows") file.path("file://",getwd(),"bus/mirror-packages/cran") else file.path("file:", normalizePath("bus/mirror-packages/cran", mustWork=FALSE)))
+}
