@@ -37,7 +37,7 @@ options(with = 100L)
 ```
 
 ```{r}
-flights <- fread("../flights14.csv")
+flights <- fread("../flights14.csv.bz2")
 head(flights)
 dim(flights)
 ```

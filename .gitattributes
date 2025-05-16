@@ -3,6 +3,7 @@
 *.mo    -text
 *.png   -text
 *.RData -text
+*.bz2   -text
 # Important for test CSV files, where we definitely
 #   want to preserve the line endings robustly
 inst/tests/** -text
