@@ -402,10 +402,10 @@ double wallclock(void)
 /**
  * Helper function to print file's size in human-readable format. This will
  * produce strings such as:
- *     44.74GB (48043231704 bytes)
- *     921MB (965757797 bytes)
- *     2.206MB (2313045 bytes)
- *     38.69KB (39615 bytes)
+ *     44.74GiB (48043231704 bytes)
+ *     921MiB (965757797 bytes)
+ *     2.206MiB (2313045 bytes)
+ *     38.69KiB (39615 bytes)
  *     214 bytes
  *     0 bytes
  * The function returns a pointer to a static string buffer, so the caller
@@ -426,12 +426,12 @@ static const char* filesize_to_str(const uint64_t fsize)
     }
     if (ndigits == 0 || (fsize == (fsize >> shift << shift))) {
       if (i < sizeof(suffixes)) {
-        snprintf(output, sizeof(output), "%"PRIu64"%cB (%"PRIu64" bytes)", // # notranslate
+        snprintf(output, sizeof(output), "%"PRIu64"%ciB (%"PRIu64" bytes)", // # notranslate
                  fsize >> shift, suffixes[i], fsize);
         return output;
       }
     } else {
-      snprintf(output, sizeof(output), "%.*f%cB (%"PRIu64" bytes)", // # notranslate
+      snprintf(output, sizeof(output), "%.*f%ciB (%"PRIu64" bytes)", // # notranslate
                ndigits, (double)fsize / (1LL << shift), suffixes[i], fsize);
       return output;
     }
