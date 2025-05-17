@@ -57,6 +57,9 @@
 /vignettes/fr/*.Rmd @Rdatatable/french
 /vignettes/ru/*.Rmd @Rdatatable/russian
 
+# meta
+/.graphics/translation-team-logos/*.png @jmrung
+
 # printing
 /R/print.data.table.R @michaelchirico
 
