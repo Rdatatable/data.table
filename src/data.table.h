@@ -12,15 +12,8 @@
 #  define COMPLEX_RO COMPLEX
 #  define RAW_RO RAW
 #  define LOGICAL_RO LOGICAL
-#  define R_Calloc(x, y) Calloc(x, y)         // #6380
-#  define R_Realloc(x, y, z) Realloc(x, y, z)
-#  define R_Free(x) Free(x)
 #endif
-#if R_VERSION < R_Version(3, 4, 0)
-#  define SET_GROWABLE_BIT(x)  // #3292
-#endif
-// TODO: remove the `R_SVN_VERSION` check when R 4.5.0 is released (circa Apr. 2025)
-#if R_VERSION < R_Version(4, 5, 0) || R_SVN_REVISION < 86702
+#if R_VERSION < R_Version(4, 5, 0)
 #  define isDataFrame(x) isFrame(x) // #6180
 #endif
 #include <Rinternals.h>
@@ -44,8 +37,7 @@
 /* we mean the encoding bits, not CE_NATIVE in a UTF-8 locale */
 #define IS_UTF8(x)  (getCharCE(x) == CE_UTF8)
 #define IS_LATIN(x) (getCharCE(x) == CE_LATIN1)
-// TODO: remove the `R_SVN_VERSION` check when R 4.5.0 is released (circa Apr. 2025)
-#if R_VERSION < R_Version(4, 5, 0) || R_SVN_REVISION < 86789
+#if R_VERSION < R_Version(4, 5, 0)
 # define IS_ASCII(x) (LEVELS(x) & 64)
 #else
 # define IS_ASCII(x) (Rf_charIsASCII(x)) // no CE_ASCII
