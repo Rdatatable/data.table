@@ -112,8 +112,8 @@ x = 1:10
 test(3.01, nafill(x, "locf", fill=0L), x)
 test(3.02, setnafill(list(copy(x)), "locf", fill=0L), list(x))
 test(3.03, setnafill(x, "locf"), error="in-place update is supported only for list")
-test(3.04, nafill(letters[1:5], fill=0), error="must be numeric type, or list/data.table")
-test(3.05, setnafill(list(letters[1:5]), fill=0), error="must be numeric type, or list/data.table")
+test(3.04, nafill(as.raw(x), fill=0), error="argument must be")
+test(3.05, setnafill(list(as.raw(x)), fill=0), error="argument must be")
 test(3.06, nafill(x, fill=1:2), error="fill must be a vector of length 1")
 test(3.07, nafill(x, fill="asd"), x, warning=c("Coercing.*character.*integer","NAs introduced by coercion"))
 
@@ -317,12 +317,156 @@ test(11.09, coerceAs(1L, a), error="must not be matrix or array")
 
 # nafill, setnafill for character, factor and other types #3992
 ## logical
+x = c(NA,TRUE,FALSE,TRUE,FALSE,NA,NA,TRUE,TRUE,NA,TRUE,NA)
+test(12.01, nafill(x, fill=FALSE), c(FALSE,TRUE,FALSE,TRUE,FALSE,FALSE,FALSE,TRUE,TRUE,FALSE,TRUE,FALSE))
+test(12.02, nafill(x, fill=NA), x)
+test(12.03, nafill(x, "locf"), c(NA,TRUE,FALSE,TRUE,FALSE,FALSE,FALSE,TRUE,TRUE,TRUE,TRUE,TRUE))
+test(12.04, nafill(x, "nocb"), c(TRUE,TRUE,FALSE,TRUE,FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,NA))
+test(12.05, nafill(x, "locf", fill=FALSE), c(FALSE,TRUE,FALSE,TRUE,FALSE,FALSE,FALSE,TRUE,TRUE,TRUE,TRUE,TRUE))
+test(12.06, nafill(x, "nocb", fill=FALSE), c(TRUE,TRUE,FALSE,TRUE,FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,FALSE))
+X = data.table(x=x, y=x)
+test(12.11, setnafill(X, fill=FALSE, cols="x"), data.table(x=c(FALSE,TRUE,FALSE,TRUE,FALSE,FALSE,FALSE,TRUE,TRUE,FALSE,TRUE,FALSE), y=c(NA,TRUE,FALSE,TRUE,FALSE,NA,NA,TRUE,TRUE,NA,TRUE,NA)))
+X = data.table(x=x, y=x)
+test(12.12, setnafill(X, fill=NA, cols="x"), data.table(x = c(NA,TRUE,FALSE,TRUE,FALSE,NA,NA,TRUE,TRUE,NA,TRUE,NA), y = c(NA,TRUE,FALSE,TRUE,FALSE,NA,NA,TRUE,TRUE,NA,TRUE,NA)))
+X = data.table(x=x, y=x)
+test(12.13, setnafill(X, "locf", cols="x"), data.table(x = c(NA,TRUE,FALSE,TRUE,FALSE,FALSE,FALSE,TRUE,TRUE,TRUE,TRUE,TRUE), y = c(NA,TRUE,FALSE,TRUE,FALSE,NA,NA,TRUE,TRUE,NA,TRUE,NA)))
+X = data.table(x=x, y=x)
+test(12.14, setnafill(X, "nocb", cols="x"), data.table(x = c(TRUE,TRUE,FALSE,TRUE,FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,NA), y = c(NA,TRUE,FALSE,TRUE,FALSE,NA,NA,TRUE,TRUE,NA,TRUE,NA)))
+X = data.table(x=x, y=x)
+test(12.15, setnafill(X, "locf", fill=FALSE, cols="x"), data.table(x = c(FALSE,TRUE,FALSE,TRUE,FALSE,FALSE,FALSE,TRUE,TRUE,TRUE,TRUE,TRUE), y = c(NA,TRUE,FALSE,TRUE,FALSE,NA,NA,TRUE,TRUE,NA,TRUE,NA)))
+X = data.table(x=x, y=x)
+test(12.16, setnafill(X, "nocb", fill=FALSE, cols="x"), data.table(x = c(TRUE,TRUE,FALSE,TRUE,FALSE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,FALSE), y = c(NA,TRUE,FALSE,TRUE,FALSE,NA,NA,TRUE,TRUE,NA,TRUE,NA)))
 ## character
+x = c(NA,"a","b","c","d",NA,NA,"g","h",NA,"i",NA)
+test(13.01, nafill(x, fill="unknown"), c("unknown","a","b","c","d","unknown","unknown","g","h","unknown","i","unknown"))
+test(13.02, nafill(x, fill=NA), c(NA,"a","b","c","d",NA,NA,"g","h",NA,"i",NA))
+test(13.03, nafill(x, "locf"), c(NA,"a","b","c","d","d","d","g","h","h","i","i"))
+test(13.04, nafill(x, "nocb"), c("a","a","b","c","d","g","g","g","h","i","i",NA))
+test(13.05, nafill(x, "locf", fill="unknown"), c("unknown","a","b","c","d","d","d","g","h","h","i","i"))
+test(13.06, nafill(x, "nocb", fill="unknown"), c("a","a","b","c","d","g","g","g","h","i","i","unknown"))
+X = data.table(x=x, y=x)
+test(13.11, setnafill(X, fill="unknown", cols="x"), error="not yet implemented")
+#test(13.11, setnafill(X, fill="unknown", cols="x"), data.table(x=c("unknown","a","b","c","d","unknown","unknown","g","h","unknown","i","unknown"), y=c(NA,"a","b","c","d",NA,NA,"g","h",NA,"i",NA)))
+X = data.table(x=x, y=x)
+test(13.12, setnafill(X, fill=NA, cols="x"), error="not yet implemented")
+#test(13.12, setnafill(X, fill=NA, cols="x"), data.table(x = c(NA,"a","b","c","d",NA,NA,"g","h",NA,"i",NA), y = c(NA,"a","b","c","d",NA,NA,"g","h",NA,"i",NA)))
+X = data.table(x=x, y=x)
+test(13.13, setnafill(X, "locf", cols="x"), error="not yet implemented")
+#test(13.13, setnafill(X, "locf", cols="x"), data.table(x = c(NA,"a","b","c","d","d","d","g","h","h","i","i"), y = c(NA,"a","b","c","d",NA,NA,"g","h",NA,"i",NA)))
+X = data.table(x=x, y=x)
+test(13.14, setnafill(X, "nocb", cols="x"), error="not yet implemented")
+#test(13.14, setnafill(X, "nocb", cols="x"), data.table(x = c("a","a","b","c","d","g","g","g","h","i","i",NA), y = c(NA,"a","b","c","d",NA,NA,"g","h",NA,"i",NA)))
+X = data.table(x=x, y=x)
+test(13.15, setnafill(X, "locf", fill="unknown", cols="x"), error="not yet implemented")
+#test(13.15, setnafill(X, "locf", fill="unknown", cols="x"), data.table(x = c("unknown","a","b","c","d","d","d","g","h","h","i","i"), y = c(NA,"a","b","c","d",NA,NA,"g","h",NA,"i",NA)))
+X = data.table(x=x, y=x)
+test(13.16, setnafill(X, "nocb", fill="unknown", cols="x"), error="not yet implemented")
+#test(13.16, setnafill(X, "nocb", fill="unknown", cols="x"), data.table(x = c("a","a","b","c","d","g","g","g","h","i","i","unknown"), y = c(NA,"a","b","c","d",NA,NA,"g","h",NA,"i",NA)))
 ## factor
+x = factor(c(NA,"a","b","c","d",NA,NA,"g","h",NA,"i",NA))
+#test(14.01, nafill(x, fill=factor("unknown")), factor(c("unknown","a","b","c","d","unknown","unknown","g","h","unknown","i","unknown")))
+test(14.01, nafill(x, fill=factor("unknown")), error="not yet implemented")
+test(14.02, nafill(x, fill=factor(NA)), error="not yet implemented")
+test(14.03, nafill(x, "locf"), factor(c(NA,"a","b","c","d","d","d","g","h","h","i","i")))
+test(14.04, nafill(x, "nocb"), factor(c("a","a","b","c","d","g","g","g","h","i","i",NA)))
+#test(14.05, nafill(x, "locf", fill=factor("unknown")), factor(c("unknown","a","b","c","d","d","d","g","h","h","i","i")))
+test(14.05, nafill(x, "locf", fill=factor("unknown")), error="not yet implemented")
+#test(14.06, nafill(x, "nocb", fill=factor("unknown")), factor(c("a","a","b","c","d","g","g","g","h","i","i","unknown")))
+test(14.06, nafill(x, "nocb", fill=factor("unknown")), error="not yet implemented")
+#TODO setnafill
+X = data.table(x=x, y=x)
 ## Date
+x = as.Date(c(NA,1:4,NA,NA,5:6,NA,7L,NA), origin="1970-01-01")
+test(15.01, nafill(x, fill=as.Date("2021-05-26")), as.Date(c(18773L,1:4,18773L,18773L,5:6,18773L,7L,18773L), origin="1970-01-01"))
+test(15.02, nafill(x, fill=NA), as.Date(c(NA,1:4,NA,NA,5:6,NA,7L,NA), origin="1970-01-01"))
+test(15.03, nafill(x, "locf"), as.Date(c(NA,1:4,4L,4L,5:6,6L,7L,7L), origin="1970-01-01"))
+test(15.04, nafill(x, "nocb"), as.Date(c(1L,1:4,5L,5L,5:6,7L,7L,NA), origin="1970-01-01"))
+test(15.05, nafill(x, "locf", fill=as.Date("2021-05-26")), as.Date(c(18773L,1:4,4L,4L,5:6,6L,7L,7L), origin="1970-01-01"))
+test(15.06, nafill(x, "nocb", fill=as.Date("2021-05-26")), as.Date(c(1L,1:4,5L,5L,5:6,7L,7L,18773L), origin="1970-01-01"))
 ## POSIXct
+x = as.POSIXct(c(NA,1:4,NA,NA,5:6,NA,7L,NA), origin="1970-01-01")
+test(16.01, nafill(x, fill=as.POSIXct("2021-05-26 19:50:24")), as.POSIXct(c(1622051424L,1:4,1622051424L,1622051424L,5:6,1622051424L,7L,1622051424L), origin="1970-01-01"))
+test(16.02, nafill(x, fill=NA), as.POSIXct(c(NA,1:4,NA,NA,5:6,NA,7L,NA), origin="1970-01-01"))
+test(16.03, nafill(x, "locf"), as.POSIXct(c(NA,1:4,4L,4L,5:6,6L,7L,7L), origin="1970-01-01"))
+test(16.04, nafill(x, "nocb"), as.POSIXct(c(1L,1:4,5L,5L,5:6,7L,7L,NA), origin="1970-01-01"))
+test(16.05, nafill(x, "locf", fill=as.POSIXct("2021-05-26 19:50:24")), as.POSIXct(c(1622051424L,1:4,4L,4L,5:6,6L,7L,7L), origin="1970-01-01"))
+test(16.06, nafill(x, "nocb", fill=as.POSIXct("2021-05-26 19:50:24")), as.POSIXct(c(1L,1:4,5L,5L,5:6,7L,7L,1622051424L), origin="1970-01-01"))
 ## IDate
+x = as.IDate(c(NA,1:4,NA,NA,5:6,NA,7L,NA), origin="1970-01-01")
+test(17.01, nafill(x, fill=as.IDate("2021-05-26")), as.IDate(c(18773L,1:4,18773L,18773L,5:6,18773L,7L,18773L), origin="1970-01-01"))
+test(17.02, nafill(x, fill=NA), as.IDate(c(NA,1:4,NA,NA,5:6,NA,7L,NA), origin="1970-01-01"))
+test(17.03, nafill(x, "locf"), as.IDate(c(NA,1:4,4L,4L,5:6,6L,7L,7L), origin="1970-01-01"))
+test(17.04, nafill(x, "nocb"), as.IDate(c(1L,1:4,5L,5L,5:6,7L,7L,NA), origin="1970-01-01"))
+test(17.05, nafill(x, "locf", fill=as.IDate("2021-05-26")), as.IDate(c(18773L,1:4,4L,4L,5:6,6L,7L,7L), origin="1970-01-01"))
+test(17.06, nafill(x, "nocb", fill=as.IDate("2021-05-26")), as.IDate(c(1L,1:4,5L,5L,5:6,7L,7L,18773L), origin="1970-01-01"))
 ## ITime
+x = as.ITime(c(NA,1:4,NA,NA,5:6,NA,7L,NA))
+test(18.01, nafill(x, fill=as.ITime("19:59:11")), as.ITime(c(71951L,1:4,71951L,71951L,5:6,71951L,7L,71951L)))
+test(18.02, nafill(x, fill=NA), as.ITime(c(NA,1:4,NA,NA,5:6,NA,7L,NA)))
+test(18.03, nafill(x, "locf"), as.ITime(c(NA,1:4,4L,4L,5:6,6L,7L,7L)))
+test(18.04, nafill(x, "nocb"), as.ITime(c(1L,1:4,5L,5L,5:6,7L,7L,NA)))
+test(18.05, nafill(x, "locf", fill=as.ITime("19:59:11")), as.ITime(c(71951L,1:4,4L,4L,5:6,6L,7L,7L)))
+test(18.06, nafill(x, "nocb", fill=as.ITime("19:59:11")), as.ITime(c(1L,1:4,5L,5L,5:6,7L,7L,71951L)))
+## mixed types
+if (test_bit64) {
+  x = list(
+    dbl=c(NA,1.5,2,3,4,NA,NA,5,6,NA,7.5,NA),
+    chr=c(NA,"a","b","c","d",NA,NA,"g","h",NA,"i",NA),
+    int=c(NA,1L,2L,3L,4L,NA,NA,5L,6L,NA,7L,NA),
+    lgl=c(NA,TRUE,FALSE,TRUE,FALSE,NA,NA,TRUE,FALSE,NA,TRUE,NA),
+    i64=as.integer64(c(NA,3e9+1:4,NA,NA,3e9+5:6,NA,3e9+7,NA))
+    ## blocked by #5027
+    #,fct=as.factor(c(NA,"a","b","c","d",NA,NA,"g","h",NA,"i",NA))
+  )
+  expected = list(
+    dbl=c(0,1.5,2,3,4,0,0,5,6,0,7.5,0),
+    chr=c("0","a","b","c","d","0","0","g","h","0","i","0"),
+    int=c(0L,1L,2L,3L,4L,0L,0L,5L,6L,0L,7L,0L),
+    lgl=c(FALSE,TRUE,FALSE,TRUE,FALSE,FALSE,FALSE,TRUE,FALSE,FALSE,TRUE,FALSE),
+    i64=as.integer64(c(0,3e9+1:4,0,0,3e9+5:6,0,3e9+7,0))
+  )
+  test(21.01, nafill(x, fill=0L), expected)
+  test(21.02, nafill(x, fill=list(0, "0", 0L, FALSE, as.integer64(0L))), expected)
+  test(21.03, nafill(x, fill=NA), as.list(x))
+  test(21.04, nafill(x, fill=list(NA)), error="fill must be a vector of length")
+  test(21.05, nafill(x, fill=list(0, "0", 0L, FALSE)), error="fill must be a vector of length")
+  test(21.06, nafill(x, fill=list()), error="fill must be a vector of length")
+  test(21.07, nafill(x, fill=logical()), error="fill must be a vector of length")
+  test(21.08, nafill(x, fill=list(logical())), error="fill must be a vector of length")
+  test(21.09, nafill(x, fill=list(0)), error="fill must be a vector of length")
+  expected = list(
+    dbl=c(NA,1.5,2,3,4,4,4,5,6,6,7.5,7.5),
+    chr=c(NA,"a","b","c","d","d","d","g","h","h","i","i"),
+    int=c(NA,1L,2L,3L,4L,4L,4L,5L,6L,6L,7L,7L),
+    lgl=c(NA,TRUE,FALSE,TRUE,FALSE,FALSE,FALSE,TRUE,FALSE,FALSE,TRUE,TRUE),
+    i64=as.integer64(c(NA,3e9+1:4,3e9+4,3e9+4,3e9+5:6,3e9+6,3e9+7,3e9+7))
+  )
+  test(21.21, nafill(x, "locf"), expected)
+  expected = list(
+    dbl=c(1.5,1.5,2,3,4,5,5,5,6,7.5,7.5,NA),
+    chr=c("a","a","b","c","d","g","g","g","h","i","i",NA),
+    int=c(1L,1L,2L,3L,4L,5L,5L,5L,6L,7L,7L,NA),
+    lgl=c(TRUE,TRUE,FALSE,TRUE,FALSE,TRUE,TRUE,TRUE,FALSE,TRUE,TRUE,NA),
+    i64=as.integer64(c(3e9+1,3e9+1:4,3e9+5,3e9+5,3e9+5:6,3e9+7,3e9+7,NA))
+  )
+  test(21.22, nafill(x, "nocb"), expected)
+  expected = list(
+    dbl=c(0,1.5,2,3,4,4,4,5,6,6,7.5,7.5),
+    chr=c("0","a","b","c","d","d","d","g","h","h","i","i"),
+    int=c(0L,1L,2L,3L,4L,4L,4L,5L,6L,6L,7L,7L),
+    lgl=c(FALSE,TRUE,FALSE,TRUE,FALSE,FALSE,FALSE,TRUE,FALSE,FALSE,TRUE,TRUE),
+    i64=as.integer64(c(0,3e9+1:4,3e9+4,3e9+4,3e9+5:6,3e9+6,3e9+7,3e9+7))
+  )
+  test(21.31, nafill(x, "locf", fill=0L), expected)
+  expected = list(
+    dbl=c(1.5,1.5,2,3,4,5,5,5,6,7.5,7.5,0),
+    chr=c("a","a","b","c","d","g","g","g","h","i","i","0"),
+    int=c(1L,1L,2L,3L,4L,5L,5L,5L,6L,7L,7L,0L),
+    lgl=c(TRUE,TRUE,FALSE,TRUE,FALSE,TRUE,TRUE,TRUE,FALSE,TRUE,TRUE,FALSE),
+    i64=as.integer64(c(3e9+1,3e9+1:4,3e9+5,3e9+5,3e9+5:6,3e9+7,3e9+7,0))
+  )
+  test(21.32, nafill(x, "nocb", fill=0L), expected)
+}
 
 # related to !is.integer(verbose)
 test(99.1, data.table(a=1,b=2)[1,1, verbose=1], error="verbose must be logical or integer")
