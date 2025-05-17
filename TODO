@@ -1,5 +1,7 @@
 This is the list of follow up issues that may be resolved after all rolling functions PRs will be merged. As of the current moment none of those is a bug fix or essentially necessary but rather good practice changes.
 
+- Rename `has.nf` arg to `all.finite`?
+
 - fix malloc calls
 ```
 bool *isnan = malloc(nx*sizeof(bool)); // isnan lookup - we use it to reduce ISNAN calls in nested loop

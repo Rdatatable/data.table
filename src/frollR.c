@@ -22,7 +22,7 @@ SEXP coerceToRealListR(SEXP obj) {
   return x;
 }
 
-SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEXP narm, SEXP hasna, SEXP adaptive) {
+SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEXP narm, SEXP hasnf, SEXP adaptive) {
   int protecti = 0;
   const bool verbose = GetVerbose();
 
@@ -103,10 +103,10 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   if (!IS_TRUE_OR_FALSE(narm))
     error(_("%s must be TRUE or FALSE"), "na.rm");
 
-  if (!isLogical(hasna) || length(hasna)!=1)
-    error(_("hasNA must be TRUE, FALSE or NA"));
-  if (LOGICAL(hasna)[0]==FALSE && LOGICAL(narm)[0])
-    error(_("using hasNA FALSE and na.rm TRUE does not make sense, if you know there are NA values use hasNA TRUE, otherwise leave it as default NA"));
+  if (!isLogical(hasnf) || length(hasnf)!=1)
+    error(_("has.nf must be TRUE, FALSE or NA"));
+  if (LOGICAL(hasnf)[0]==FALSE && LOGICAL(narm)[0])
+    error(_("using has.nf FALSE and na.rm TRUE does not make sense, if you know there are non-finite values then use has.nf TRUE, otherwise leave it as default NA"));
 
   int ialign=-2;                                                   // decode align to integer
   if (!strcmp(CHAR(STRING_ELT(align, 0)), "right"))
@@ -162,10 +162,10 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
 
   bool bnarm = LOGICAL(narm)[0];
 
-  int ihasna =                                                  // plain C tri-state boolean as integer
-    LOGICAL(hasna)[0]==NA_LOGICAL ? 0 :                         // hasna NA, default, no info about NA
-    LOGICAL(hasna)[0]==TRUE ? 1 :                               // hasna TRUE, might be some NAs
-    -1;                                                         // hasna FALSE, there should be no NAs // or there must be no NAs for rollmax #5441
+  int ihasnf =                                                  // plain C tri-state boolean as integer
+    LOGICAL(hasnf)[0]==NA_LOGICAL ? 0 :                         // hasnf NA, default, no info about NA
+    LOGICAL(hasnf)[0]==TRUE ? 1 :                               // hasnf TRUE, might be some NAs
+    -1;                                                         // hasnf FALSE, there should be no NAs // or there must be no NAs for rollmax #5441
 
   unsigned int ialgo=-1;                                           // decode algo to integer
   if (!strcmp(CHAR(STRING_ELT(algo, 0)), "fast"))
@@ -185,9 +185,9 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   for (R_len_t i=0; i<nx; i++) {                                // loop over multiple columns
     for (R_len_t j=0; j<nk; j++) {                              // loop over multiple windows
       if (!badaptive) {
-        frollfun(rfun, ialgo, dx[i], inx[i], &dans[i*nk+j], iik[j], ialign, dfill, bnarm, ihasna, verbose);
+        frollfun(rfun, ialgo, dx[i], inx[i], &dans[i*nk+j], iik[j], ialign, dfill, bnarm, ihasnf, verbose);
       } else {
-        frolladaptivefun(rfun, ialgo, dx[i], inx[i], &dans[i*nk+j], ikl[j], dfill, bnarm, ihasna, verbose);
+        frolladaptivefun(rfun, ialgo, dx[i], inx[i], &dans[i*nk+j], ikl[j], dfill, bnarm, ihasnf, verbose);
       }
     }
   }
@@ -336,7 +336,6 @@ SEXP frollapplyR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP adaptiv
     dx[i] = REAL(VECTOR_ELT(x, i));
   }
 
-  double* dw;
   SEXP pw, pc;
 
   // in the outer loop we handle vectorized k argument
@@ -345,10 +344,9 @@ SEXP frollapplyR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP adaptiv
   if (!badaptive) {
     for (R_len_t j=0; j<nk; j++) {
       pw = PROTECT(allocVector(REALSXP, iik[j]));
-      dw = REAL(pw);
       pc = PROTECT(LCONS(fun, LCONS(pw, LCONS(R_DotsSymbol, R_NilValue))));
       for (R_len_t i=0; i<nx; i++) {
-        frollapply(dx[i], inx[i], dw, iik[j], &dans[i*nk+j], ialign, dfill, pc, rho, verbose);
+        frollapply(dx[i], inx[i], REAL(pw), iik[j], &dans[i*nk+j], ialign, dfill, pc, rho, verbose);
       }
       UNPROTECT(2);
     }
