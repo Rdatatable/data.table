@@ -197,14 +197,14 @@ static inline int64_t clamp_szt(int64_t x, int64_t lower, int64_t upper) {
  * is constructed manually (using say snprintf) that warning(), stop()
  * and Rprintf() are all called as warning(_("%s"), msg) and not warning(msg).
  */
-static const char* strlim(const char *ch, int64_t limit) {
+static const char* strlim(const char *ch, size_t limit) {
   static char buf[1002];
   static int flip = 0;
   char *ptr = buf + 501 * flip;
   flip = 1 - flip;
   char *ch2 = ptr;
   limit = imin(limit, 500);
-  int64_t width = 0;
+  size_t width = 0;
   while ((*ch>'\r' || (*ch!='\0' && *ch!='\r' && *ch!='\n')) && width++<limit) {
     *ch2++ = *ch++;
   }
@@ -2252,7 +2252,7 @@ int freadMain(freadMainArgs _args) {
   // For the 44GB file with 12875 columns, the max line len is 108,497. We may want each chunk to write to its
   // own page (4k) of the final column, hence 1000 rows of the smallest type (4 byte int) is just
   // under 4096 to leave space for R's header + malloc's header.
-  int64_t chunkBytes = umax((uint64_t)(1000*meanLineLen), 1ULL/*MB*/ *1024*1024);
+  size_t chunkBytes = umax((size_t)(1000*meanLineLen), 1ULL/*MB*/ *1024*1024);
   // Index of the first jump to read. May be modified if we ever need to restart
   // reading from the middle of the file.
   int jump0 = 0;
