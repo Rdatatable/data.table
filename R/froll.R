@@ -34,13 +34,7 @@ partial2adaptive = function(x, n, align) {
   }
 }
 
-froll = function(fun, x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"), na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, hasNA) {
-  stopifnot(!missing(fun), is.character(fun), length(fun)==1L, !is.na(fun))
-  if (!missing(hasNA)) {
-    warningf("hasNA is deprecated, use has.nf instead")
-    if (missing(has.nf)) has.nf = hasNA
-  } # remove check on next major release
-  algo = match.arg(algo)
+froll = function(fun, x, n, fill=NA, algo, align=c("right","left","center"), na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, FUN, rho) {
   align = match.arg(align)
   if (isTRUE(partial)) {
     if (isTRUE(adaptive))
@@ -61,8 +55,11 @@ froll = function(fun, x, n, fill=NA, algo=c("fast","exact"), align=c("right","le
     x = rev2(x)
     n = rev2(n)
     align = "right"
-  }
-  ans = .Call(CfrollfunR, fun, x, n, fill, algo, align, na.rm, has.nf, adaptive)
+  } ## support for left adaptive added in #5441
+  if (missing(FUN))
+    ans = .Call(CfrollfunR, fun, x, n, fill, algo, align, na.rm, has.nf, adaptive)
+  else
+    ans = .Call(CfrollapplyR, FUN, x, n, fill, align, adaptive, rho)
   if (!leftadaptive)
     ans
   else {
@@ -72,48 +69,32 @@ froll = function(fun, x, n, fill=NA, algo=c("fast","exact"), align=c("right","le
   }
 }
 
+frollfun = function(fun, x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"), na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, hasNA) {
+  stopifnot(!missing(fun), is.character(fun), length(fun)==1L, !is.na(fun))
+  if (!missing(hasNA)) {
+    if (!is.na(has.nf))
+      stopf("hasNA is deprecated, use has.nf instead")
+    warningf("hasNA is deprecated, use has.nf instead")
+    has.nf = hasNA
+  } # remove check on next major release
+  algo = match.arg(algo)
+  froll(fun=fun, x=x, n=n, fill=fill, algo=algo, align=align, na.rm=na.rm, has.nf=has.nf, adaptive=adaptive, partial=partial)
+}
+
 frollmean = function(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"), na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, hasNA) {
-  froll(fun="mean", x=x, n=n, fill=fill, algo=algo, align=align, na.rm=na.rm, has.nf=has.nf, adaptive=adaptive, partial=partial, hasNA=hasNA)
+  frollfun(fun="mean", x=x, n=n, fill=fill, algo=algo, align=align, na.rm=na.rm, has.nf=has.nf, adaptive=adaptive, partial=partial, hasNA=hasNA)
 }
 frollsum = function(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"), na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, hasNA) {
-  froll(fun="sum", x=x, n=n, fill=fill, algo=algo, align=align, na.rm=na.rm, has.nf=has.nf, adaptive=adaptive, partial=partial, hasNA=hasNA)
+  frollfun(fun="sum", x=x, n=n, fill=fill, algo=algo, align=align, na.rm=na.rm, has.nf=has.nf, adaptive=adaptive, partial=partial, hasNA=hasNA)
 }
 frollmax = function(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"), na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, hasNA) {
-  froll(fun="max", x=x, n=n, fill=fill, algo=algo, align=align, na.rm=na.rm, has.nf=has.nf, adaptive=adaptive, partial=partial, hasNA=hasNA)
+  frollfun(fun="max", x=x, n=n, fill=fill, algo=algo, align=align, na.rm=na.rm, has.nf=has.nf, adaptive=adaptive, partial=partial, hasNA=hasNA)
 }
 
 frollapply = function(x, n, FUN, ..., fill=NA, align=c("right","left","center"), adaptive=FALSE, partial=FALSE) {
-  FUN = match.fun(FUN)
-  align = match.arg(align)
-  if (isTRUE(partial)) {
-    if (isTRUE(adaptive))
-      stopf("'partial' argument cannot be used together with 'adaptive'")
-    if (is.list(n))
-      stopf("n must be integer, list is accepted for adaptive TRUE")
-    if (!length(n))
-      stopf("n must be non 0 length")
-    n = partial2adaptive(x, n, align)
-    adaptive = TRUE
-  }
   if (isTRUE(adaptive) && base::getRversion() < "3.4.0") ## support SET_GROWABLE_BIT
     stopf("frollapply adaptive=TRUE requires at least R 3.4.0"); # nocov
-  leftadaptive = isTRUE(adaptive) && align=="left"
-  if (leftadaptive) {
-    verbose = getOption("datatable.verbose")
-    rev2 = function(x) if (is.list(x)) lapply(x, rev) else rev(x)
-    if (verbose)
-      cat("frollapply: adaptive=TRUE && align='left' pre-processing for align='right'\n")
-    x = rev2(x)
-    n = rev2(n)
-    align = "right"
-  }
+  FUN = match.fun(FUN)
   rho = new.env()
-  ans = .Call(CfrollapplyR, FUN, x, n, fill, align, adaptive, rho)
-  if (!leftadaptive)
-    ans
-  else {
-    if (verbose)
-      cat("frollapply: adaptive=TRUE && align='left' post-processing from align='right'\n")
-    rev2(ans)
-  }
+  froll(FUN=FUN, rho=rho, x=x, n=n, fill=fill, align=align, adaptive=adaptive, partial=partial)
 }
