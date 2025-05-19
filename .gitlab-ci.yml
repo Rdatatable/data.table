@@ -290,6 +290,7 @@ test-win-old:
   before_script:
     - curl -O $R_BIN
     - sudo installer -pkg "$(ls -1t R-*-arm64.pkg | head -n 1)" -target /
+    - sudo Rscript -e "source('https://mac.R-project.org/bin/install.R'); install.libs('gettext')"
     - *install-deps
     - cp $(ls -1t bus/build/data.table_*.tar.gz | head -n 1) .
   script:
