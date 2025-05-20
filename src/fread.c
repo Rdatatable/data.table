@@ -1425,9 +1425,9 @@ int freadMain(freadMainArgs _args) {
         close(fd);                              // # nocov
         STOP(_("File is too large [%s > %s]: %s"), filesize_to_str(stat_buf.st_size), filesize_to_str(SIZE_MAX), fnam); // # nocov
       }
-      if (verbose) DTPRINT(_("  File opened, size = %s.\n"), filesize_to_str(stat_buf.st_size));
       fileSize = (size_t) stat_buf.st_size;
       if (fileSize == 0) {close(fd); STOP(_("File is empty: %s"), fnam);}
+      if (verbose) DTPRINT(_("  File opened, size = %s.\n"), filesize_to_str(fileSize));
 
       // No MAP_POPULATE for faster nrows=10 and to make possible earlier progress bar in row count stage
       // Mac doesn't appear to support MAP_POPULATE anyway (failed on CRAN when I tried).
@@ -1457,10 +1457,13 @@ int freadMain(freadMainArgs _args) {
       if (hFile==INVALID_HANDLE_VALUE) STOP(_("Unable to open file after %d attempts (error %lu): %s"), attempts, GetLastError(), fnam);
       LARGE_INTEGER liFileSize;
       if (GetFileSizeEx(hFile,&liFileSize)==0) { CloseHandle(hFile); STOP(_("GetFileSizeEx failed (returned 0) on file: %s"), fnam); }
-      if (verbose) DTPRINT(_("  File opened, size = %s.\n"), filesize_to_str(liFileSize.QuadPart));
-      if (liFileSize.QuadPart > SIZE_MAX) { CloseHandle(hFile); STOP(_("File is too large: %s"), fnam); }
+      if (liFileSize.QuadPart > SIZE_MAX) {
+        CloseHandle(hFile); // # nocov
+        STOP(_("File is too large [%s > %s]: %s"), filesize_to_str(stat_buf.st_size), filesize_to_str(SIZE_MAX), fnam); // # nocov
+      }
       fileSize = (size_t)liFileSize.QuadPart;
       if (fileSize==0) { CloseHandle(hFile); STOP(_("File is empty: %s"), fnam); }
+      if (verbose) DTPRINT(_("  File opened, size = %s.\n"), filesize_to_str(fileSize));
       HANDLE hMap=CreateFileMapping(hFile, NULL, PAGE_WRITECOPY, 0, 0, NULL);
       if (hMap==NULL) { CloseHandle(hFile); STOP(_("This is Windows, CreateFileMapping returned error %lu for file %s"), GetLastError(), fnam); }
       mmp = MapViewOfFile(hMap,FILE_MAP_COPY,0,0,fileSize);  // fileSize must be <= hilo passed to CreateFileMapping above.
