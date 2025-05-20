@@ -43,6 +43,12 @@
 
 3. {data.table} now depends on R 3.4.0 (2017).
 
+4. Changes to `fread()` output and errors:
+
+   + When the size of the file exceeds the size of the address space, `fread()` now signals an informative error instead of trying to map its size modulo the address space.
+   + On non-Windows systems, `fread()` now prints the reason why the file couldn't be opened, which could also be due to it being too large to map.
+   + With `verbose=TRUE`, file sizes are now printed using binary SI prefixes, since it's always used powers of `2^10` as multipliers.
+
 # data.table [v1.17.0](https://github.com/Rdatatable/data.table/milestone/34)  (20 Feb 2025)
 
 ## POTENTIALLY BREAKING CHANGES
