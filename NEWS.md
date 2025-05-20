@@ -178,6 +178,8 @@ rowwiseDT(
 
 20. Fixed a memory issue causing segfaults in `forder`, [#6797](https://github.com/Rdatatable/data.table/issues/6797). Thanks @dkutner for the report and @MichaelChirico for the fix.
 
+19. Joining with incompatible column times (e.g., `Date` with `POSIXt`) now provides a clear warning, [#6605](https://github.com/Rdatatable/data.table/issues/6605). Thanks to @al-obrien for the report and @r2evans for the PR.
+
 ## NOTES
 
 1. There is a new vignette on joins! See `vignette("datatable-joins")`. Thanks to Angel Feliz for authoring it! Feedback welcome. This vignette has been highly requested since 2017: [#2181](https://github.com/Rdatatable/data.table/issues/2181).
