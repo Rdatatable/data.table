@@ -1421,11 +1421,11 @@ int freadMain(freadMainArgs _args) {
         close(fd);                                                     // # nocov
         STOP(_("Opened file ok but couldn't obtain its size: %s"), fnam); // # nocov
       }
-      if (verbose) DTPRINT(_("  File opened, size = %s.\n"), filesize_to_str(stat_buf.st_size));
       if (stat_buf.st_size > SIZE_MAX) {
         close(fd);                              // # nocov
-        STOP(_("File is too large: %s"), fnam); // # nocov
+        STOP(_("File is too large [%s > %s]: %s"), filesize_to_str(stat_buf.st_size), filesize_to_str(SIZE_MAX), fnam); // # nocov
       }
+      if (verbose) DTPRINT(_("  File opened, size = %s.\n"), filesize_to_str(stat_buf.st_size));
       fileSize = (size_t) stat_buf.st_size;
       if (fileSize == 0) {close(fd); STOP(_("File is empty: %s"), fnam);}
 
