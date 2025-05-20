@@ -21,6 +21,7 @@
 - support for `align="left"` for adaptive rolling function.
 - support for `adaptive=TRUE` in `frollapply`.
 - `partial` argument to trim window width to available observations rather than returning `NA` whenever window is not complete.
+- `give.names` argument that can be used to automatically give the names based on the names of `x` and `n`.
 - `frollmean` and `frollsum` no longer treat `Inf` and `-Inf` as `NA`s as it used to be for `algo="fast"` (breaking change).
 - `hasNA` argument has been renamed to `has.nf` to convey that it is not only related to `NA/NaN` but other non-finite values (`Inf/-Inf`) as well.
 

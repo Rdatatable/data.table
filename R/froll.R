@@ -34,8 +34,10 @@ partial2adaptive = function(x, n, align) {
   }
 }
 
-froll = function(fun, x, n, fill=NA, algo, align=c("right","left","center"), na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, FUN, rho) {
+froll = function(fun, x, n, fill=NA, algo, align=c("right","left","center"), na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, FUN, rho, give.names=FALSE) {
   align = match.arg(align)
+  if (isTRUE(give.names))
+    orig = list(n=n, adaptive=adaptive)
   if (isTRUE(partial)) {
     if (isTRUE(adaptive))
       stopf("'partial' argument cannot be used together with 'adaptive'")
@@ -60,16 +62,24 @@ froll = function(fun, x, n, fill=NA, algo, align=c("right","left","center"), na.
     ans = .Call(CfrollfunR, fun, x, n, fill, algo, align, na.rm, has.nf, adaptive)
   else
     ans = .Call(CfrollapplyR, FUN, x, n, fill, align, adaptive, rho)
-  if (!leftadaptive)
-    ans
-  else {
+  if (leftadaptive) {
     if (verbose)
       cat("froll: adaptive=TRUE && align='left' post-processing from align='right'\n")
-    rev2(ans)
+    ans = rev2(ans)
   }
+  if (isTRUE(give.names) && is.list(ans)) {
+    n = orig$n
+    adaptive = orig$adaptive
+    nx = names(x)
+    nn = names(n)
+    if (is.null(nx)) nx = paste0("V", if (is.atomic(x)) 1L else seq_along(x))
+    if (is.null(nn)) nn = if (adaptive) paste0("N", if (is.atomic(n)) 1L else seq_along(n)) else paste("roll", as.character(n), sep="_")
+    setattr(ans, "names",  paste(rep(nx, each=length(nn)), nn, sep="_"))
+  }
+  ans
 }
 
-frollfun = function(fun, x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"), na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, hasNA) {
+frollfun = function(fun, x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"), na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, hasNA, give.names=FALSE) {
   stopifnot(!missing(fun), is.character(fun), length(fun)==1L, !is.na(fun))
   if (!missing(hasNA)) {
     if (!is.na(has.nf))
@@ -78,23 +88,23 @@ frollfun = function(fun, x, n, fill=NA, algo=c("fast","exact"), align=c("right",
     has.nf = hasNA
   } # remove check on next major release
   algo = match.arg(algo)
-  froll(fun=fun, x=x, n=n, fill=fill, algo=algo, align=align, na.rm=na.rm, has.nf=has.nf, adaptive=adaptive, partial=partial)
+  froll(fun=fun, x=x, n=n, fill=fill, algo=algo, align=align, na.rm=na.rm, has.nf=has.nf, adaptive=adaptive, partial=partial, give.names=give.names)
 }
 
-frollmean = function(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"), na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, hasNA) {
-  frollfun(fun="mean", x=x, n=n, fill=fill, algo=algo, align=align, na.rm=na.rm, has.nf=has.nf, adaptive=adaptive, partial=partial, hasNA=hasNA)
+frollmean = function(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"), na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, hasNA, give.names=FALSE) {
+  frollfun(fun="mean", x=x, n=n, fill=fill, algo=algo, align=align, na.rm=na.rm, has.nf=has.nf, adaptive=adaptive, partial=partial, hasNA=hasNA, give.names=give.names)
 }
-frollsum = function(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"), na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, hasNA) {
-  frollfun(fun="sum", x=x, n=n, fill=fill, algo=algo, align=align, na.rm=na.rm, has.nf=has.nf, adaptive=adaptive, partial=partial, hasNA=hasNA)
+frollsum = function(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"), na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, hasNA, give.names=FALSE) {
+  frollfun(fun="sum", x=x, n=n, fill=fill, algo=algo, align=align, na.rm=na.rm, has.nf=has.nf, adaptive=adaptive, partial=partial, hasNA=hasNA, give.names=give.names)
 }
-frollmax = function(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"), na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, hasNA) {
-  frollfun(fun="max", x=x, n=n, fill=fill, algo=algo, align=align, na.rm=na.rm, has.nf=has.nf, adaptive=adaptive, partial=partial, hasNA=hasNA)
+frollmax = function(x, n, fill=NA, algo=c("fast","exact"), align=c("right","left","center"), na.rm=FALSE, has.nf=NA, adaptive=FALSE, partial=FALSE, hasNA, give.names=FALSE) {
+  frollfun(fun="max", x=x, n=n, fill=fill, algo=algo, align=align, na.rm=na.rm, has.nf=has.nf, adaptive=adaptive, partial=partial, hasNA=hasNA, give.names=give.names)
 }
 
-frollapply = function(x, n, FUN, ..., fill=NA, align=c("right","left","center"), adaptive=FALSE, partial=FALSE) {
+frollapply = function(x, n, FUN, ..., fill=NA, align=c("right","left","center"), adaptive=FALSE, partial=FALSE, give.names=FALSE) {
   if (isTRUE(adaptive) && base::getRversion() < "3.4.0") ## support SET_GROWABLE_BIT
     stopf("frollapply adaptive=TRUE requires at least R 3.4.0"); # nocov
   FUN = match.fun(FUN)
   rho = new.env()
-  froll(FUN=FUN, rho=rho, x=x, n=n, fill=fill, align=align, adaptive=adaptive, partial=partial)
+  froll(FUN=FUN, rho=rho, x=x, n=n, fill=fill, align=align, adaptive=adaptive, partial=partial, give.names=give.names)
 }
