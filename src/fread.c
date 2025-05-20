@@ -1423,7 +1423,7 @@ int freadMain(freadMainArgs _args) {
       }
       if (stat_buf.st_size > SIZE_MAX) {
         close(fd);                              // # nocov
-        STOP(_("File is too large [%s > %s]: %s"), filesize_to_str(stat_buf.st_size), filesize_to_str(SIZE_MAX), fnam); // # nocov
+        STOP(_("File size [%s] exceeds the address space: %s"), filesize_to_str(stat_buf.st_size), fnam); // # nocov
       }
       fileSize = (size_t) stat_buf.st_size;
       if (fileSize == 0) {close(fd); STOP(_("File is empty: %s"), fnam);}
@@ -1459,7 +1459,7 @@ int freadMain(freadMainArgs _args) {
       if (GetFileSizeEx(hFile,&liFileSize)==0) { CloseHandle(hFile); STOP(_("GetFileSizeEx failed (returned 0) on file: %s"), fnam); }
       if (liFileSize.QuadPart > SIZE_MAX) {
         CloseHandle(hFile); // # nocov
-        STOP(_("File is too large [%s > %s]: %s"), filesize_to_str(stat_buf.st_size), filesize_to_str(SIZE_MAX), fnam); // # nocov
+        STOP(_("File size [%s] exceeds the address space: %s"), filesize_to_str(liFileSize.QuadPart), fnam); // # nocov
       }
       fileSize = (size_t)liFileSize.QuadPart;
       if (fileSize==0) { CloseHandle(hFile); STOP(_("File is empty: %s"), fnam); }
