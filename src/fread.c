@@ -205,27 +205,22 @@ static inline int64_t clamp_i64t(int64_t x, int64_t lower, int64_t upper) {
  * is constructed manually (using say snprintf) that warning(), stop()
  * and Rprintf() are all called as warning(_("%s"), msg) and not warning(msg).
  */
-static const char* strlim(const char *ch, size_t limit) {
-  static char buf[1002];
-  static int flip = 0;
-  char *ptr = buf + 501 * flip;
-  flip = 1 - flip;
-  char *ch2 = ptr;
+static const char* strlim(const char *ch, char buf[static 1002], size_t limit) {
+  char *ch2 = buf;
   limit = imin(limit, 500);
   size_t width = 0;
   while ((*ch>'\r' || (*ch!='\0' && *ch!='\r' && *ch!='\n')) && width++<limit) {
     *ch2++ = *ch++;
   }
   *ch2 = '\0';
-  return ptr;
+  return buf;
 }
 
 static const char *typeLetter = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
-static char *typesAsString(int ncol) {
+static char *typesAsString(char str[static 101], int ncol) {
   int nLetters = strlen(typeLetter);
   if (NUMTYPE>nLetters) INTERNAL_STOP("NUMTYPE(%d) > nLetters(%d)", NUMTYPE, nLetters); // # nocov
-  static char str[101];
   int i=0;
   if (ncol<=100) {
     for (; i<ncol; i++) str[i] = typeLetter[IGNORE_BUMP(type[i])];
@@ -413,10 +408,9 @@ double wallclock(void)
  * multiple threads at the same time, or hold on to the value returned for
  * extended periods of time.
  */
-static const char* filesize_to_str(const size_t fsize)
+static const char* filesize_to_str(char output[static 100], const size_t fsize)
 {
   static const char suffixes[] = {'T', 'G', 'M', 'K'};
-  static char output[100];
   for (int i = 0; i <= sizeof(suffixes); i++) {
     int shift = (sizeof(suffixes) - i) * 10;
     if ((fsize >> shift) == 0) continue;
@@ -426,18 +420,18 @@ static const char* filesize_to_str(const size_t fsize)
     }
     if (ndigits == 0 || (fsize == (fsize >> shift << shift))) {
       if (i < sizeof(suffixes)) {
-        snprintf(output, sizeof(output), "%"PRIu64"%cB (%"PRIu64" bytes)", // # notranslate
+        snprintf(output, 100, "%"PRIu64"%cB (%"PRIu64" bytes)", // # notranslate
                  (fsize >> shift), suffixes[i], fsize);
         return output;
       }
     } else {
-      snprintf(output, sizeof(output), "%.*f%cB (%"PRIu64" bytes)", // # notranslate
+      snprintf(output, 100, "%.*f%cB (%"PRIu64" bytes)", // # notranslate
                ndigits, (double)fsize / (1LL << shift), suffixes[i], fsize);
       return output;
     }
   }
   if (fsize == 1) return "1 byte";
-  snprintf(output, sizeof(output), "%"PRIu64" bytes", fsize); // # notranslate
+  snprintf(output, 100, "%"PRIu64" bytes", fsize); // # notranslate
   return output;
 }
 
@@ -1423,7 +1417,7 @@ int freadMain(freadMainArgs _args) {
       }
       fileSize = (size_t) stat_buf.st_size;
       if (fileSize == 0) {close(fd); STOP(_("File is empty: %s"), fnam);}
-      if (verbose) DTPRINT(_("  File opened, size = %s.\n"), filesize_to_str(fileSize));
+      if (verbose) DTPRINT(_("  File opened, size = %s.\n"), filesize_to_str((char[100]) {}, fileSize));
 
       // No MAP_POPULATE for faster nrows=10 and to make possible earlier progress bar in row count stage
       // Mac doesn't appear to support MAP_POPULATE anyway (failed on CRAN when I tried).
@@ -1455,7 +1449,7 @@ int freadMain(freadMainArgs _args) {
       if (GetFileSizeEx(hFile,&liFileSize)==0) { CloseHandle(hFile); STOP(_("GetFileSizeEx failed (returned 0) on file: %s"), fnam); }
       fileSize = (size_t)liFileSize.QuadPart;
       if (fileSize<=0) { CloseHandle(hFile); STOP(_("File is empty: %s"), fnam); }
-      if (verbose) DTPRINT(_("  File opened, size = %s.\n"), filesize_to_str(fileSize));
+      if (verbose) DTPRINT(_("  File opened, size = %s.\n"), filesize_to_str((char[100]) {}, fileSize));
       HANDLE hMap=CreateFileMapping(hFile, NULL, PAGE_WRITECOPY, 0, 0, NULL);
       if (hMap==NULL) { CloseHandle(hFile); STOP(_("This is Windows, CreateFileMapping returned error %lu for file %s"), GetLastError(), fnam); }
       mmp = MapViewOfFile(hMap,FILE_MAP_COPY,0,0,fileSize);  // fileSize must be <= hilo passed to CreateFileMapping above.
@@ -1464,7 +1458,7 @@ int freadMain(freadMainArgs _args) {
       if (mmp == NULL) {
     #endif
       int nbit = 8*sizeof(char *); // #nocov
-      STOP(_("Opened %s file ok but could not memory map it. This is a %dbit process. %s."), filesize_to_str(fileSize), nbit, // # nocov
+      STOP(_("Opened %s file ok but could not memory map it. This is a %dbit process. %s."), filesize_to_str((char[100]) {}, fileSize), nbit, // # nocov
            nbit<=32 ? _("Please upgrade to 64bit") : _("There is probably not enough contiguous virtual memory available")); // # nocov
     }
     sof = (const char*) mmp;
@@ -1561,7 +1555,7 @@ int freadMain(freadMainArgs _args) {
           // # nocov start
           if (!verbose)
             DTPRINT(_("%s. Attempt to copy file in RAM failed."), msg);
-          STOP(_("Unable to allocate %s of contiguous virtual RAM."), filesize_to_str(fileSize));
+          STOP(_("Unable to allocate %s of contiguous virtual RAM."), filesize_to_str((char[100]) {}, fileSize));
           // # nocov end
         }
         if (verbose)
@@ -1642,7 +1636,7 @@ int freadMain(freadMainArgs _args) {
   if (ch>=eof) STOP(_("Input is either empty, fully whitespace, or skip has been set after the last non-whitespace."));
   if (verbose) {
     if (lineStart>ch) DTPRINT(_("  Moved forward to first non-blank line (%d)\n"), row1line);
-    DTPRINT(_("  Positioned on line %d starting: <<%s>>\n"), row1line, strlim(lineStart, 30));
+    DTPRINT(_("  Positioned on line %d starting: <<%s>>\n"), row1line, strlim(lineStart, (char[1002]) {}, 30));
   }
   ch = pos = lineStart;
   }
@@ -1832,7 +1826,7 @@ int freadMain(freadMainArgs _args) {
   if (!fill && tt!=ncol) INTERNAL_STOP("first line has field count %d but expecting %d", tt, ncol); // # nocov
   if (verbose) {
     DTPRINT(_("  Detected %d columns on line %d. This line is either column names or first data row. Line starts as: <<%s>>\n"),
-            tt, row1line, strlim(pos, 30));
+            tt, row1line, strlim(pos, (char[1002]) {}, 30));
     DTPRINT(_("  Quote rule picked = %d\n"), quoteRule);
     DTPRINT(_("  fill=%s and the most number of columns found is %d\n"), fill?"true":"false", ncol);
   }
@@ -1849,7 +1843,7 @@ int freadMain(freadMainArgs _args) {
         // # nocov start
         if (!verbose)
           DTPRINT(_("%s. Attempt to copy file in RAM failed."), msg);
-        STOP(_("Unable to allocate %s of contiguous virtual RAM."), filesize_to_str(fileSize));
+        STOP(_("Unable to allocate %s of contiguous virtual RAM."), filesize_to_str((char[100]) {}, fileSize));
         // # nocov end
       }
       if (verbose)
@@ -1995,7 +1989,7 @@ int freadMain(freadMainArgs _args) {
       memcpy(type, tmpType, ncol);
     }
     if (verbose && (bumped || jump==0 || jump==nJumps-1)) {
-      DTPRINT(_("  Type codes (jump %03d)    : %s  Quote rule %d\n"), jump, typesAsString(ncol), quoteRule);
+      DTPRINT(_("  Type codes (jump %03d)    : %s  Quote rule %d\n"), jump, typesAsString((char[101]) {}, ncol), quoteRule);
     }
   }
 
@@ -2090,7 +2084,7 @@ int freadMain(freadMainArgs _args) {
         type[j] = tmpType[j];
       }
     }
-    if (verbose && bumped) DTPRINT(_("  Type codes (first row)   : %s  Quote rule %d\n"), typesAsString(ncol), quoteRule);
+    if (verbose && bumped) DTPRINT(_("  Type codes (first row)   : %s  Quote rule %d\n"), typesAsString((char[101]) {}, ncol), quoteRule);
   }
 
   estnrow=1;
@@ -2222,7 +2216,7 @@ int freadMain(freadMainArgs _args) {
     rowSize8 += (size[j] & 8);
     if (type[j] == CT_STRING) nStringCols++; else nNonStringCols++;
   }
-  if (verbose) DTPRINT(_("  After %d type and %d drop user overrides : %s\n"), nUserBumped, ndrop, typesAsString(ncol));
+  if (verbose) DTPRINT(_("  After %d type and %d drop user overrides : %s\n"), nUserBumped, ndrop, typesAsString((char[101]) {}, ncol));
   tColType = wallclock();
   }
 
@@ -2689,7 +2683,7 @@ int freadMain(freadMainArgs _args) {
     for (int i=0; i<ncol; i++) typeCounts[ IGNORE_BUMP(type[i]) ]++;
 
     if (nTypeBump) {
-      if (verbose) DTPRINT(_("  %d out-of-sample type bumps: %s\n"), nTypeBump, typesAsString(ncol));
+      if (verbose) DTPRINT(_("  %d out-of-sample type bumps: %s\n"), nTypeBump, typesAsString((char[101]) {}, ncol));
       rowSize1 = rowSize4 = rowSize8 = 0;
       nStringCols = 0;
       nNonStringCols = 0;
@@ -2725,7 +2719,7 @@ int freadMain(freadMainArgs _args) {
 
   double tTot = tReread-t0;  // tReread==tRead when there was no reread
   if (verbose) DTPRINT(_("Read %"PRIu64" rows x %d columns from %s file in %02d:%06.3f wall clock time\n"),
-       (uint64_t)DTi, ncol-ndrop, filesize_to_str(fileSize), (int)tTot/60, fmod(tTot,60.0));
+       (uint64_t)DTi, ncol-ndrop, filesize_to_str((char[100]) {}, fileSize), (int)tTot/60, fmod(tTot,60.0));
 
   //*********************************************************************************************
   // [12] Finalize the datatable
@@ -2750,23 +2744,23 @@ int freadMain(freadMainArgs _args) {
       while (ch<eof && *ch!='\n' && *ch!='\r') ch++;
       while (ch<eof && isspace(*ch)) ch++;
       if (ch==eof) {
-        DTWARN(_("Discarded single-line footer: <<%s>>"), strlim(skippedFooter,500));
+        DTWARN(_("Discarded single-line footer: <<%s>>"), strlim(skippedFooter, (char[1002]) {}, 500));
       }
       else {
         ch = headPos;
         int tt = countfields(&ch);
         if (fill>0) {
           DTWARN(_("Stopped early on line %"PRIu64". Expected %d fields but found %d. Consider fill=%d or even more based on your knowledge of the input file. Use fill=Inf for reading the whole file for detecting the number of fields. First discarded non-empty line: <<%s>>"),
-          (uint64_t)DTi+row1line, ncol, tt, tt, strlim(skippedFooter,500));
+          (uint64_t)DTi+row1line, ncol, tt, tt, strlim(skippedFooter, (char[1002]) {}, 500));
         } else {
           DTWARN(_("Stopped early on line %"PRIu64". Expected %d fields but found %d. Consider fill=TRUE. First discarded non-empty line: <<%s>>"),
-          (uint64_t)DTi+row1line, ncol, tt, strlim(skippedFooter,500));
+          (uint64_t)DTi+row1line, ncol, tt, strlim(skippedFooter, (char[1002]) {}, 500));
         }
       }
     }
   }
   if (quoteRuleBumpedCh!=NULL && quoteRuleBumpedCh<headPos) {
-    DTWARN(_("Found and resolved improper quoting out-of-sample. First healed line %"PRIu64": <<%s>>. If the fields are not quoted (e.g. field separator does not appear within any field), try quote=\"\" to avoid this warning."), (uint64_t)quoteRuleBumpedLine, strlim(quoteRuleBumpedCh, 500));
+    DTWARN(_("Found and resolved improper quoting out-of-sample. First healed line %"PRIu64": <<%s>>. If the fields are not quoted (e.g. field separator does not appear within any field), try quote=\"\" to avoid this warning."), (uint64_t)quoteRuleBumpedLine, strlim(quoteRuleBumpedCh, (char[1002]) {}, 500));
   }
 
   if (verbose) {
