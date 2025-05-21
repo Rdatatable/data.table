@@ -127,7 +127,7 @@ static void Field(FieldParseContext *ctx);
  * Drops `const` qualifier from a `const char*` variable, equivalent of
  * `const_cast<char*>` in C++.
  */
-static char* _const_cast(const char *ptr) {
+static char* const_cast(const char *ptr) {
   union { const char *a; char *b; } tmp = { ptr };
   return tmp.b;
 }
@@ -1570,7 +1570,7 @@ int freadMain(freadMainArgs _args) {
           DTPRINT(_("Avoidable file copy in RAM took %.3f seconds. %s.\n"), time_taken, msg);  // # nocov. not warning as that could feasibly cause CRAN tests to fail, say, if test machine is heavily loaded
       }
     }
-    *_const_cast(eof) = '\0';  // cow page
+    *const_cast(eof) = '\0';  // cow page
   }
   // else char* input already guaranteed to end with \0. We do not modify direct char* input at all, ever.
   // We have now ensured the input ends on eof and that *eof=='\0' too. Normally, lastEOLreplaced will be true.
@@ -1862,8 +1862,8 @@ int freadMain(freadMainArgs _args) {
       if (verbose) DTPRINT(_("  1-column file ends with 2 or more end-of-line. Restoring last eol using extra byte in cow page.\n"));
       eof++;
     }
-    *_const_cast(eof-1) = eol_one_r ? '\r' : '\n';
-    *_const_cast(eof) = '\0';
+    *const_cast(eof-1) = eol_one_r ? '\r' : '\n';
+    *const_cast(eof) = '\0';
   }
   }
 
