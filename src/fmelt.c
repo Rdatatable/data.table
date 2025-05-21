@@ -552,11 +552,11 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
           //TODO complex value type: case CPLXSXP: { } break;
         case REALSXP : {
           double *dtarget = REAL(target);
-          const double *dthiscol = REAL(thiscol);
+          const double *dthiscol = REAL_RO(thiscol);
           if (data->narm) {
             for (int k=0; k<thislen; ++k)
               dtarget[counter + k] = dthiscol[ithisidx[k]-1];
-          } else {
+          } else if (data->nrow) {
             memcpy(dtarget + j*data->nrow, dthiscol, data->nrow*size);
           }
         }
@@ -564,11 +564,11 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
         case INTSXP :
         case LGLSXP : {
           int *itarget = INTEGER(target);
-          const int *ithiscol = INTEGER(thiscol);
+          const int *ithiscol = INTEGER_RO(thiscol);
           if (data->narm) {
             for (int k=0; k<thislen; ++k)
               itarget[counter + k] = ithiscol[ithisidx[k]-1];
-          } else {
+          } else if (data->nrow) {
             memcpy(itarget + j*data->nrow, ithiscol, data->nrow*size);
           }
         } break;
@@ -704,7 +704,7 @@ SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data
     switch(TYPEOF(thiscol)) {
     case REALSXP : {
       double *dtarget = REAL(target);
-      const double *dthiscol = REAL(thiscol);
+      const double *dthiscol = REAL_RO(thiscol);
       if (data->narm) {
         for (int j=0; j<data->lmax; ++j) {
           SEXP thisidx = VECTOR_ELT(data->not_NA_indices, j);
@@ -714,7 +714,7 @@ SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data
             dtarget[counter + k] = dthiscol[ithisidx[k]-1];
           counter += thislen;
         }
-      } else {
+      } else if (data->nrow) {
         for (int j=0; j<data->lmax; ++j)
           memcpy(dtarget + j*data->nrow, dthiscol, data->nrow*size);
       }
@@ -723,7 +723,7 @@ SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data
     case INTSXP :
     case LGLSXP : {
       int *itarget = INTEGER(target);
-      const int *ithiscol = INTEGER(thiscol);
+      const int *ithiscol = INTEGER_RO(thiscol);
       if (data->narm) {
         for (int j=0; j<data->lmax; ++j) {
           SEXP thisidx = VECTOR_ELT(data->not_NA_indices, j);
@@ -733,7 +733,7 @@ SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data
             itarget[counter + k] = ithiscol[ithisidx[k]-1];
           counter += thislen;
         }
-      } else {
+      } else if (data->nrow) {
         for (int j=0; j<data->lmax; ++j)
           memcpy(itarget + j*data->nrow, ithiscol, data->nrow*size);
       }
