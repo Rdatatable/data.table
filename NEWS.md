@@ -2,6 +2,8 @@
 
 # data.table [v1.17.3](https://github.com/Rdatatable/data.table/milestone/39)
 
+1. The C code now avoids passing invalid data pointers from 0-length vectors to `memcpy()`, which previously caused undefined behaviour. Thanks to Prof. Brian D. Ripley for the report and Michael Chirico for the fix, [#6911](https://github.com/Rdatatable/data.table/pull/6911).
+
 # data.table [v1.17.2](https://github.com/Rdatatable/data.table/milestone/38) (7 May 2025)
 
 ## BUG FIXES
