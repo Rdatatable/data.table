@@ -348,6 +348,8 @@ rowwiseDT(
 
 14. Passing functions programmatically with `env=` doesn't produce an opaque error, e.g. `DT[, f(b), env = list(f=sum)]`, [#6026](https://github.com/Rdatatable/data.table/issues/6026). Note that it's much better to pass functions like `f="sum"` instead. Thanks to @MichaelChirico for the bug report and fix.
 
+15. If the first column of a key is a factor column containing unsorted levels (`setkey()` does not order the levels) and it is joined to a character column, then an invalidly keyed result would be produced. This could lead to a subsequent error/warning or silent incorrect results. Thanks to @gbrunick for the report and Benjamin Schwendinger for the fix.
+
 ## NOTES
 
 1. `transform()` method for data.table sped up substantially when creating new columns on large tables. Thanks to @OfekShilon for the report and PR. The implemented solution was proposed by @ColeMiller1.
