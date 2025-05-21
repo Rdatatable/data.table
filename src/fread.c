@@ -205,9 +205,8 @@ static inline int64_t clamp_i64t(int64_t x, int64_t lower, int64_t upper) {
  * is constructed manually (using say snprintf) that warning(), stop()
  * and Rprintf() are all called as warning(_("%s"), msg) and not warning(msg).
  */
-static const char* strlim(const char *ch, char buf[static 1002], size_t limit) {
+static const char* strlim(const char *ch, char buf[static 500], size_t limit) {
   char *ch2 = buf;
-  limit = imin(limit, 500);
   size_t width = 0;
   while ((*ch>'\r' || (*ch!='\0' && *ch!='\r' && *ch!='\n')) && width++<limit) {
     *ch2++ = *ch++;
@@ -1636,7 +1635,7 @@ int freadMain(freadMainArgs _args) {
   if (ch>=eof) STOP(_("Input is either empty, fully whitespace, or skip has been set after the last non-whitespace."));
   if (verbose) {
     if (lineStart>ch) DTPRINT(_("  Moved forward to first non-blank line (%d)\n"), row1line);
-    DTPRINT(_("  Positioned on line %d starting: <<%s>>\n"), row1line, strlim(lineStart, (char[1002]) {}, 30));
+    DTPRINT(_("  Positioned on line %d starting: <<%s>>\n"), row1line, strlim(lineStart, (char[500]) {}, 30));
   }
   ch = pos = lineStart;
   }
@@ -1826,7 +1825,7 @@ int freadMain(freadMainArgs _args) {
   if (!fill && tt!=ncol) INTERNAL_STOP("first line has field count %d but expecting %d", tt, ncol); // # nocov
   if (verbose) {
     DTPRINT(_("  Detected %d columns on line %d. This line is either column names or first data row. Line starts as: <<%s>>\n"),
-            tt, row1line, strlim(pos, (char[1002]) {}, 30));
+            tt, row1line, strlim(pos, (char[500]) {}, 30));
     DTPRINT(_("  Quote rule picked = %d\n"), quoteRule);
     DTPRINT(_("  fill=%s and the most number of columns found is %d\n"), fill?"true":"false", ncol);
   }
@@ -2744,23 +2743,23 @@ int freadMain(freadMainArgs _args) {
       while (ch<eof && *ch!='\n' && *ch!='\r') ch++;
       while (ch<eof && isspace(*ch)) ch++;
       if (ch==eof) {
-        DTWARN(_("Discarded single-line footer: <<%s>>"), strlim(skippedFooter, (char[1002]) {}, 500));
+        DTWARN(_("Discarded single-line footer: <<%s>>"), strlim(skippedFooter, (char[500]) {}, 500));
       }
       else {
         ch = headPos;
         int tt = countfields(&ch);
         if (fill>0) {
           DTWARN(_("Stopped early on line %"PRIu64". Expected %d fields but found %d. Consider fill=%d or even more based on your knowledge of the input file. Use fill=Inf for reading the whole file for detecting the number of fields. First discarded non-empty line: <<%s>>"),
-          (uint64_t)DTi+row1line, ncol, tt, tt, strlim(skippedFooter, (char[1002]) {}, 500));
+          (uint64_t)DTi+row1line, ncol, tt, tt, strlim(skippedFooter, (char[500]) {}, 500));
         } else {
           DTWARN(_("Stopped early on line %"PRIu64". Expected %d fields but found %d. Consider fill=TRUE. First discarded non-empty line: <<%s>>"),
-          (uint64_t)DTi+row1line, ncol, tt, strlim(skippedFooter, (char[1002]) {}, 500));
+          (uint64_t)DTi+row1line, ncol, tt, strlim(skippedFooter, (char[500]) {}, 500));
         }
       }
     }
   }
   if (quoteRuleBumpedCh!=NULL && quoteRuleBumpedCh<headPos) {
-    DTWARN(_("Found and resolved improper quoting out-of-sample. First healed line %"PRIu64": <<%s>>. If the fields are not quoted (e.g. field separator does not appear within any field), try quote=\"\" to avoid this warning."), (uint64_t)quoteRuleBumpedLine, strlim(quoteRuleBumpedCh, (char[1002]) {}, 500));
+    DTWARN(_("Found and resolved improper quoting out-of-sample. First healed line %"PRIu64": <<%s>>. If the fields are not quoted (e.g. field separator does not appear within any field), try quote=\"\" to avoid this warning."), (uint64_t)quoteRuleBumpedLine, strlim(quoteRuleBumpedCh, (char[500]) {}, 500));
   }
 
   if (verbose) {
