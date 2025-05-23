@@ -316,6 +316,9 @@ replace_dot_alias = function(e) {
         warningf("nomatch isn't relevant together with :=, ignoring nomatch")
         nomatch=NULL
       }
+      if (length(jsub) >= 3L && is.function(jsub[[3L]])) {
+        stopf("the right hand side of := should be a vector, list, data.frame, function or call, not a function,to store a function wrap it in a list: DT[, newcol := list(myfun)]")
+      }
     }
   }
 
