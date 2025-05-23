@@ -1,0 +1,281 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: fread 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: 2024-10-10 22:46+0100\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: hi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+
+#: fread.R:10
+msgid "Used more than one of the arguments input=, file=, text= and cmd=."
+msgstr "input=, file=, text= और cmd= में से एक से अधिक आर्ग्युमेंट (argument) का उपयोग किया गया है।"
+
+#: fread.R:23
+msgid "Argument 'encoding' must be 'unknown', 'UTF-8' or 'Latin-1'."
+msgstr "आर्ग्युमेंट (argument) 'encoding' 'unknown', 'UTF-8' या 'Latin-1' होना चाहिए।"
+
+#: fread.R:42
+msgid "'text=' is type %s but must be character."
+msgstr "'text=' का प्रकार %s है लेकिन इसे कैरेक्टर (character) होना चाहिए।"
+
+#: fread.R:55
+msgid ""
+"input= must be a single character string containing a file name, a system "
+"command containing at least one space, a URL starting 'http[s]://', "
+"'ftp[s]://' or 'file://', or, the input data itself containing at least one "
+"\\n or \\r"
+msgstr ""
+"input= एक सिंगल (single) कैरेक्टर (character) स्ट्रिंग (string) होनी चाहिए जिसमें एक फाइल (file) का नाम,"
+" कम से कम एक स्पेस (space) वाली सिस्टम (system) कमांड (command),"
+" 'http[s]://', 'ftp[s]://' या 'file://' से शुरू होने वाला URL, या स्वयं इनपुट (input) डेटा (data) हो जिसमें कम से कम"
+" एक \n या \r हो"
+
+#: fread.R:60
+msgid ""
+"input= contains no \\n or \\r, but starts with a space. Please remove the "
+"leading space, or use text=, file= or cmd="
+msgstr ""
+"input= में कोई \n या \r नहीं है, लेकिन यह स्पेस (space) से शुरू होता है।"
+" कृपया प्रारंभिक स्पेस (space) को हटाएं, या text=, file= या cmd= का उपयोग करें"
+
+#: fread.R:64
+msgid ""
+"Taking input= as a system command because it contains a space ('%s'). If it's "
+"a filename please remove the space, or use file= explicitly. A variable is "
+"being passed to input= and when this is taken as a system command there is a "
+"security concern if you are creating an app, the app could have a malicious "
+"user, and the app is not running in a secure environment; e.g. the app is "
+"running as root. Please read item 5 in the NEWS file for v1.11.6 for more "
+"information and for the option to suppress this message."
+msgstr ""
+"input= को एक सिस्टम (system) कमांड (command) के रूप में लिया जा रहा है क्योंकि इसमें एक स्पेस (space) ('%s') है।"
+" अगर यह एक फाइल (file) का नाम है, तो कृपया स्पेस (space) को हटा दें, या file= को स्पष्ट रूप से उपयोग करें।"
+" जब एक वैरिएबल (variable) input= में पास किया जाता है और इसे सिस्टम (system) कमांड (command) के रूप में लिया जाता है,"
+" तो यदि आप एक ऐप बना रहे हैं तो सुरक्षा का मुद्दा हो सकता है, ऐप में एक दुर्भावनापूर्ण उपयोगकर्ता हो सकता है,"
+" और ऐप सुरक्षित वातावरण में नहीं चल रहा है; उदाहरण के लिए, ऐप रूट के रूप में चल रहा है।"
+" अधिक जानकारी के लिए कृपया v1.11.6 के NEWS फ़ाइल (file) में आइटम (item) 5 पढ़ें और इस संदेश को दबाने के विकल्प के लिए।"
+
+#: fread.R:77
+msgid ""
+"file= must be a single character string containing a filename, or URL "
+"starting 'http[s]://', 'ftp[s]://' or 'file://'"
+msgstr ""
+"file= एक सिंगल (single) कैरेक्टर (character) स्ट्रिंग (string) होनी चाहिए जिसमें एक फाइल (file) का नाम,"
+" या 'http[s]://', 'ftp[s]://' या 'file://' से शुरू होने वाला URL हो"
+
+#: fread.R:90
+msgid "File '%s' does not exist or is non-readable. getwd()=='%s'"
+msgstr "फाइल (file) '%s' मौजूद नहीं है या पढ़ने योग्य नहीं है। getwd()=='%s'"
+
+#: fread.R:91
+msgid "File '%s' is a directory. Not yet implemented."
+msgstr "फाइल (file) '%s' एक डायरेक्टरी (directory) है। अभी तक लागू नहीं किया गया है।"
+
+#: fread.R:93
+msgid "File '%s' has size 0. Returning a NULL %s."
+msgstr "फाइल (file) '%s' का आकार 0 है। NULL %s लौटाई जा रही है।"
+
+#: fread.R:105
+msgid ""
+"Compressed files containing more than 1 file are currently not supported."
+msgstr ""
+"एक से अधिक फाइलें (file) वाली कंप्रेस्ड (compressed) फाइलें (file) वर्तमान में समर्थित नहीं हैं।"
+
+#: fread.R:115
+msgid ""
+"To read %s files directly, fread() requires 'R.utils' package which cannot be "
+"found. Please install 'R.utils' using 'install.packages('R.utils')'."
+msgstr ""
+"%s फाइलों (file) को सीधे पढ़ने के लिए, fread() को 'R.utils' पैकेज (package) की आवश्यकता होती है"
+" जो उपलब्ध नहीं है। कृपया 'install.packages('R.utils')' का उपयोग करके इसे इंस्टॉल  (install) करें।"
+
+#: fread.R:125
+msgid ""
+"'autostart' is now deprecated and ignored. Consider skip='string' or skip=n"
+msgstr ""
+"'autostart' अब अप्रचलित (deprecated) है और इसे अनदेखा किया जा रहा है। कृपया skip='string' या skip=n का उपयोग करने पर विचार करें"
+
+#: fread.R:127
+msgid ""
+"colClasses is type 'logical' which is ok if all NA but it has some TRUE or "
+"FALSE values in it which is not allowed. Please consider the drop= or select= "
+"argument instead. See ?fread."
+msgstr ""
+"colClasses का प्रकार 'logical' है, जो सभी NA के लिए ठीक है लेकिन इसमें कुछ TRUE या FALSE मान हैं,"
+" जो स्वीकार्य नहीं हैं। कृपया इसके बजाय drop= या select= आर्ग्युमेंट (argument) का उपयोग"
+" करने पर विचार करें। ?fread देखें।"
+
+#: fread.R:131
+msgid "colClasses is not type list or character vector"
+msgstr "colClasses का प्रकार लिस्ट (list) या कैरेक्टर (character) वेक्टर (vector) नहीं है"
+
+#: fread.R:136
+msgid ""
+"colClasses=\"NULL\" (quoted) is interpreted as colClasses=NULL (the default) "
+"as opposed to dropping every column."
+msgstr ""
+"colClasses=\"NULL\" (उद्धृत) को colClasses=NULL (डिफ़ॉल्ट) के रूप में लिया जाता है,"
+" हर कॉलम को हटाने के विपरीत"
+
+#: fread.R:148
+#, c-format
+msgid "na.strings[%d]==\"%s\" consists only of whitespace, ignoring"
+msgstr "na.strings[%d]=="%s" केवल स्पेस (space) से बना है, इसे अनदेखा किया जा रहा है"
+
+#: fread.R:151
+msgid ""
+"%s. Since strip.white=TRUE (default), use na.strings=\"\" to specify that any "
+"number of spaces in a string column should be read as <NA>."
+msgstr ""
+"%s. चूंकि strip.white=TRUE (डिफ़ॉल्ट (default)) है, na.strings="" का उपयोग करें ताकि स्ट्रिंग (string) कॉलम (column) में किसी भी"
+" संख्या में स्पेस (space) को <NA> के रूप में पढ़ा जाए।"
+
+#: fread.R:153
+msgid ""
+"%s. strip.white==TRUE (default) and \"\" is present in na.strings, so any "
+"number of spaces in string columns will already be read as <NA>."
+msgstr ""
+"%s. strip.white==TRUE (डिफ़ॉल्ट (default)) है और na.strings में "" मौजूद है, इसलिए स्ट्रिंग (string) कॉलम (column) में किसी भी संख्या में"
+" स्पेस (space) को पहले से ही <NA> के रूप में पढ़ा जाएगा।"
+
+#: fread.R:157
+msgid ""
+"%s. But strip.white=FALSE. Use strip.white=TRUE (default) together with na."
+"strings=\"\" to turn any number of spaces in string columns into <NA>"
+msgstr ""
+"%s. लेकिन strip.white=FALSE है। strip.white=TRUE (डिफ़ॉल्ट (default)) का उपयोग na.strings="" के साथ करें ताकि स्ट्रिंग (string) कॉलम (column) में"
+" किसी भी संख्या में स्पेस (space) को <NA> में परिवर्तित किया जा सके।"
+
+#: fread.R:164
+msgid ""
+"'data.table' relies on the package 'yaml' to parse the file header; please "
+"add this to your library with install.packages('yaml') and try again."
+msgstr ""
+"'data.table' फाइल (file) हेडर (header) को पार्स (parse) करने के लिए 'yaml' पैकेज (package)पर निर्भर करता है; कृपया इसे अपनी"
+" लाइब्रेरी (library) में install.packages('yaml') का उपयोग करके जोड़ें और फिर से प्रयास करें।"
+
+#: fread.R:168
+msgid ""
+"Combining a search string as 'skip' and reading a YAML header may not work as "
+"expected -- currently, reading will proceed to search for 'skip' from the "
+"beginning of the file, NOT from the end of the metadata; please file an issue "
+"on GitHub if you'd like to see more intuitive behavior supported."
+msgstr ""
+"एक खोज स्ट्रिंग (string) को 'skip' के रूप में जोड़ना और YAML हेडर (header) पढ़ना अपेक्षित रूप से काम"
+" नहीं कर सकता -- वर्तमान में, पढ़ाई फाइल (file) की शुरुआत से 'skip' के लिए खोज  करने"
+" के लिए आगे बढ़ेगी, मेटाडेटा (metadata) के अंत से नहीं; यदि आप अधिक सहज व्यवहार देखना चाहते हैं"
+" तो कृपया GitHub पर एक इशू दर्ज करें।"
+
+#: fread.R:178
+msgid ""
+"Encountered <%s%s> at the first unskipped line (%d), which does not "
+"constitute the start to a valid YAML header (expecting something matching "
+"regex \"%s\"); please check your input and try again."
+msgstr ""
+"पहले अनस्किप्ड पंक्ति (%d) पर <%s%s> का सामना किया, जो एक मान्य YAML"
+" हेडर (header) की शुरुआत का गठन नहीं करता (regex "%s" से मेल खाने की उम्मीद); कृपया अपनी"
+" इनपुट (input) जांचें और फिर से प्रयास करें।"
+
+#: fread.R:190
+msgid ""
+"Reached the end of the file before finding a completion to the YAML header. A "
+"valid YAML header is bookended by lines matching the regex \"%s\". Please "
+"double check the input file is a valid csvy."
+msgstr ""
+"YAML हेडर (header) को पूर्ण करने से पहले फाइल (file) का अंत आ गया। एक मान्य YAML हेडर (header)"
+" regex "%s" से मेल खाने वाली पंक्तियों से बुकेंड (bookended) किया गया है। कृपया"
+" सुनिश्चित करें कि इनपुट (input) फाइल (file) एक वैध csvy है।"
+
+#: fread.R:201
+msgid ""
+"Processed %d lines of YAML metadata with the following top-level fields: %s"
+msgstr "निम्नलिखित उच्च-स्तरीय फ़ील्ड (field) के साथ YAML मेटाडेटा (metadata) की %d पंक्तियां प्रोसेस की गईं: %s"
+
+#: fread.R:204
+msgid "User-supplied 'header' will override that found in metadata."
+msgstr "यूजर द्वारा दी गई 'header' मेटाडेटा (metadata) में पाई गई को ओवरराइड (override) करेगी।"
+
+#: fread.R:222
+msgid ""
+"User-supplied column names in 'col.names' will override those found in YAML "
+"metadata."
+msgstr ""
+"'col.names' में यूजर द्वारा दी गई कॉलम (column) के नाम YAML मेटाडेटा (metadata) में पाए गए को ओवरराइड (override) करेंगे।"
+
+#: fread.R:231
+msgid ""
+"colClasses dictated by user input and those read from YAML header are in "
+"conflict (specifically, for column(s) [%s]); the proceeding assumes the user "
+"input was an intentional override and will ignore the type(s) implied by the "
+"YAML header; please exclude the column(s) from colClasses if this was "
+"unintentional."
+msgstr ""
+"यूजर इनपुट (input) द्वारा दिए गए colClasses और YAML हेडर (header) से पढ़े गए के बीच विरोध है"
+" (विशेष रूप से, कॉलम (column) [%s] के लिए); आगे की प्रक्रिया यह मानती है कि यूजर इनपुट (input) एक जानबूझकर"
+" ओवरराइड (override) था और YAML हेडर (header) द्वारा निहित प्रकारों को अनदेखा करेगी; यदि यह अनजाने में था"
+" तो कृपया कॉलम (column) को colClasses से हटा दें।"
+
+#: fread.R:252
+msgid "User-supplied 'sep' will override that found in metadata."
+msgstr "यूजर द्वारा दी गई 'sep' मेटाडेटा (metadata) में पाई गई को ओवरराइड (override) करेगी।"
+
+#: fread.R:257
+msgid "User-supplied 'quote' will override that found in metadata."
+msgstr "यूजर द्वारा दी गई 'quote' मेटाडेटा (metadata) में पाई गई को ओवरराइड (override) करेगी।"
+
+#: fread.R:262
+msgid "User-supplied 'dec' will override that found in metadata."
+msgstr "यूजर द्वारा दिया गया 'dec' मेटाडेटा (metadata) में पाई गई को ओवरराइड (override) करेगा।"
+
+#: fread.R:266
+msgid "User-supplied 'na.strings' will override that found in metadata."
+msgstr "यूजर द्वारा दी गई 'na.strings' मेटाडेटा (metadata) में पाई गई को ओवरराइड (override) करेगी।"
+
+#: fread.R:318
+msgid ""
+"Column '%s' was requested to be '%s' but fread encountered the following "
+"warning:\n"
+"\t%s\n"
+"so the column has been left as type '%s'"
+msgstr ""
+"कॉलम (column) '%s' को '%s' अनुरोधित किया गया था लेकिन fread ने"
+" निम्नलिखित चेतावनी का सामना किया:\n\t%s\nइसलिए कॉलम (column)"
+" को '%s' प्रकार के रूप में छोड़ दिया गया है"
+
+#: fread.R:320
+msgid ""
+"Column '%s' was requested to be '%s' but fread encountered the following "
+"error:\n"
+"\t%s\n"
+"so the column has been left as type '%s'"
+msgstr ""
+"कॉलम (column) '%s' को '%s' अनुरोधित किया गया था लेकिन fread ने निम्नलिखित"
+" एरर (error) का सामना किया:\n\t%s\nइसलिए कॉलम (column) को"
+" '%s' प्रकार के रूप में छोड़ दिया गया है"
+
+#: fread.R:347
+msgid ""
+"key argument of data.table() must be a character vector naming columns (NB: "
+"col.names are applied before this)"
+msgstr ""
+"data.table() का key आर्ग्युमेंट (argument) कॉलम (column) के नामकरण के लिए एक कैरेक्टर (character) वेक्टर (vector)"
+" होना चाहिए (ध्यान दें: col.names इसके पहले लागू होते हैं)"
+
+#: fread.R:355
+msgid ""
+"index argument of data.table() must be a character vector naming columns (NB: "
+"col.names are applied before this)"
+msgstr ""
+"data.table() का index आर्ग्युमेंट (argument) कॉलम (column) के नामकरण के लिए एक कैरेक्टर (character) वेक्टर (vector) होना"
+" चाहिए (ध्यान दें: col.names इसके पहले लागू होते हैं)"
+
+#: fread.R:338
+msgid "stringsAsFactors=%s converted %d column: %s\n"
+msgid_plural "stringsAsFactors=%s converted %d columns: %s\n"
+msgstr[0] "stringsAsFactors=%s ने %d कॉलम (column) को परिवर्तित किया: %s\n"
+msgstr[1] "stringsAsFactors=%s ने %d कॉलम (column) को परिवर्तित किया: %s\n"
