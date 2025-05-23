@@ -120,8 +120,11 @@ test-lin-rel:
     - echo 'CFLAGS=-g -O3 -flto=auto -fno-common -fopenmp -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
     - echo 'CXXFLAGS=-g -O3 -flto=auto -fno-common -fopenmp -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
     - echo '_R_CHECK_COMPILATION_FLAGS_KNOWN_=-Wvla' >> ~/.Renviron
-    - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
-    - (! grep "warning:" data.table.Rcheck/00install.out)
+    - |
+        res1=0; R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1) || res1=$?
+        res2=0; grep -v "warning:" data.table.Rcheck/00install.out || res2=$?
+        res3=0; Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); if (!identical(l, "Status: 2 NOTEs")) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote("Status: 2 NOTEs"), " (CRAN incoming feasibility, non-API) but ", shQuote(l))' || res3=$?
+        if [ $res1 -ne 0 ] || [ $res2 -ne 0 ] || [ $res3 -ne 0 ]; then exit 1; fi
 
 ## vanilla minimal
 # no zlib
@@ -154,9 +157,10 @@ test-lin-rel-cran:
     - *install-deps
     - echo 'CFLAGS=-g -O2 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
     - echo 'CXXFLAGS=-g -O2 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
-    - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
-    - >-
-        Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); if (!identical(l, "Status: OK")) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote("Status: OK"), " but ", shQuote(l)) else q("no")'
+    - |
+        res1=0; R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1) || res1=$?
+        res2=0; Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); if (!identical(l, "Status: 2 NOTEs")) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote("Status: 2 NOTEs"), " (non-API, V8) but ", shQuote(l))' || res2=$?
+        if [ $res1 -ne 0 ] || [ $res2 -ne 0 ]; then exit 1; fi
 
 ## R-devel on Linux gcc strict
 # R built with --enable-strict-barrier --disable-long-double
@@ -178,7 +182,7 @@ test-lin-dev-gcc-strict-cran:
     - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
     - (! grep "warning:" data.table.Rcheck/00install.out)
     - >-
-        Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); notes<-"Status: 3 NOTEs"; if (!identical(l, notes)) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote(notes), " (size of tarball, installed package size, non-API calls) but ", shQuote(l)) else q("no")'
+        Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); notes<-"Status: 3 NOTEs"; if (!identical(l, notes)) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote(notes), " (size of tarball, non-API calls, V8 package) but ", shQuote(l)) else q("no")'
 
 ## R-devel on Linux clang
 # R compiled with clang, flags removed: -flto=auto -fopenmp
@@ -201,7 +205,7 @@ test-lin-dev-clang-cran:
     - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
     - (! grep "warning:" data.table.Rcheck/00install.out)
     - >-
-        Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); notes<-"Status: 2 NOTEs"; if (!identical(l, notes)) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote(notes), " (size of tarball, non-API calls) but ", shQuote(l)) else q("no")'
+        Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); notes<-"Status: 3 NOTEs"; if (!identical(l, notes)) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote(notes), " (size of tarball, non-API calls, V8 package) but ", shQuote(l)) else q("no")'
 
 # stated dependency on R
 test-lin-ancient-cran:
