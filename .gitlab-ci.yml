@@ -112,7 +112,6 @@ test-lin-rel:
   <<: *test-lin
   image: registry.gitlab.com/rdatatable/dockerfiles/r-data.table
   variables:
-    _R_CHECK_COMPILATION_FLAGS_KNOWN_: "-Wvla"
     _R_CHECK_FORCE_SUGGESTS_: "TRUE"
     OPENBLAS_MAIN_FREE: "1"
   script:
@@ -120,6 +119,7 @@ test-lin-rel:
     - R -q -s -e 'install.packages(c("xml2", "commonmark", "curl", "V8"))'
     - echo 'CFLAGS=-g -O3 -flto=auto -fno-common -fopenmp -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
     - echo 'CXXFLAGS=-g -O3 -flto=auto -fno-common -fopenmp -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
+    - echo '_R_CHECK_COMPILATION_FLAGS_KNOWN_=-Wvla' >> ~/.Renviron
     - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
     - (! grep "warning:" data.table.Rcheck/00install.out)
 
