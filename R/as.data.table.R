@@ -107,7 +107,8 @@ as.data.table.array = function(x, keep.rownames=FALSE, key=NULL, sorted=TRUE, va
   if (value.name %chin% names(val))
     stopf("Argument 'value.name' should not overlap with column names in result: %s", brackify(rev(names(val))))
   N = NULL
-  ans = data.table(do.call(CJ, c(val, sorted=FALSE)), N=as.vector(x))
+  ans = do.call(CJ, c(val, sorted=FALSE))
+  set(ans, j = "N", value = as.vector(x))
   if (isTRUE(na.rm))
     ans = ans[!is.na(N)]
   setnames(ans, "N", value.name)
