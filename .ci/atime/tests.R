@@ -252,4 +252,19 @@ test.list <- atime::atime_test_list(
     PR = "3630413ae493a5a61b06c50e80d166924d2ef89a"), # Close-to-last merge commit in the PR.
 
   tests=extra.test.list)
+
+
+  # Test case created directly using the atime code below (not adapted from any other benchmark), based on the issue/fix PR https://github.com/Rdatatable/data.table/pull/5054#issue-930603663 "melt should be more efficient when there are missing input columns."
+  "as.data.table.array improved in #7010" = atime::atime_test(
+    setup = {
+      dims = c(50, 50, 300, 10)
+      arr = array(1:prod(dims), dim = dims)
+    },
+    expr = data.table:::as.data.table(arr),
+    Slow = "73d79edf8ff8c55163e90631072192301056e336", 
+    Fast = "8397dc3c993b61a07a81c786ca68c22bc589befc"), # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/5054) that fixes the issue  # Test case created directly using the atime code below (not adapted from any other benchmark), based on the issue/fix PR https://github.com/Rdatatable/data.table/pull/5054#issue-930603663 "melt should be more efficient when there are missing input columns."
+
 # nolint end: undesirable_operator_linter.
+
+
+
