@@ -66,6 +66,10 @@ When you file a pull request, you should add some tests to this file with this i
 
 What numbers should be used for new tests? Numbers should be new relative to current master at the time of your PR. If another PR is merged before yours, then there may be a conflict, but that is no problem, as [a Committer will fix the test numbers when merging your PR](https://github.com/Rdatatable/data.table/pull/4731#issuecomment-768858134).
 
+#### Performance testing
+
+If your PR may have an effect on time/memory usage, please consider adding a performance test, either in the same PR, or a follow-up PR. See the [Performance testing](https://github.com/Rdatatable/data.table/wiki/Performance-testing) wiki page for details.
+
 #### Using `test`
 
 See [`?test`](https://rdatatable.gitlab.io/data.table/reference/test.html).
