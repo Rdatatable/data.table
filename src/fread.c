@@ -190,7 +190,7 @@ static inline uint64_t umin(uint64_t a, uint64_t b) { return a < b ? a : b; }
 static inline  int64_t imin( int64_t a,  int64_t b) { return a < b ? a : b; }
 
 /** Return value of `x` clamped to the range [upper, lower] */
-static inline int64_t clamp_szt(int64_t x, int64_t lower, int64_t upper) {
+static inline int64_t clamp_i64t(int64_t x, int64_t lower, int64_t upper) {
   return x < lower ? lower : x > upper? upper : x;
 }
 
@@ -2106,7 +2106,7 @@ int freadMain(freadMainArgs _args) {
     meanLineLen = (double)sumLen/sampleLines;
     estnrow = CEIL(bytesRead/meanLineLen);  // only used for progress meter and verbose line below
     double sd = sqrt( (sumLenSq - (sumLen*sumLen)/sampleLines)/(sampleLines-1) );
-    allocnrow = clamp_szt((size_t)(bytesRead / fmax(meanLineLen - 2*sd, minLen)),
+    allocnrow = clamp_i64t((size_t)(bytesRead / fmax(meanLineLen - 2*sd, minLen)),
                           (size_t)(1.1*estnrow), 2*estnrow);
     // sd can be very close to 0.0 sometimes, so apply a +10% minimum
     // blank lines have length 1 so for fill=true apply a +100% maximum. It'll be grown if needed.
