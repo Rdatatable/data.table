@@ -260,7 +260,7 @@ test.list <- atime::atime_test_list(
     },
     expr = data.table::as.data.table(arr),
     Slow = "73d79edf8ff8c55163e90631072192301056e336",   # Parent of the first commit https://github.com/Rdatatable/data.table/tree/73d79edf8ff8c55163e90631072192301056e336
-    Fast = "8397dc3c993b61a07a81c786ca68c22bc589befc"),  # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/5054) that fixes the issue 
+    Fast = "653e2eee6d280335fe4be60845e037c039b66b38"),  # Last commit in the PR (https://github.com/Rdatatable/data.table/pull/7019/commits) that fixes the slow code
 
     tests=extra.test.list)
 # nolint end: undesirable_operator_linter.
