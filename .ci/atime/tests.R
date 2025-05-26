@@ -129,6 +129,8 @@ test.list <- atime::atime_test_list(
       paste0('useDynLib(', new.Package_))
   },
 
+  # Constant overhead improvement https://github.com/Rdatatable/data.table/pull/6925
+  # Test case adapted from https://github.com/Rdatatable/data.table/pull/7022#discussion_r2107900643
   "fread disk overhead improved in #6925" = atime::atime_test(
     N = 2^seq(0, 20), # smaller N because we are doing multiple fread calls.
     setup = {
