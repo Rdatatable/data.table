@@ -14,7 +14,7 @@
 
 4. `as.Date()` method for `IDate` no longer coerces to `double` [#6922](https://github.com/Rdatatable/data.table/issues/6922). Thanks @MichaelChirico for the report and PR. The only effect should be on overly-strict tests that assert `Date` objects have `double` storage, which is not in general true, especially from R 4.5.0.
 
-5. `as.data.table()` is slightly faster at converting arrays to data.tables, [#7019](https://github.com/Rdatatable/data.table/pull/7019). Thanks @eliocamp.
+5. `as.data.table()` is slightly more efficient at converting arrays to data.tables, [#7019](https://github.com/Rdatatable/data.table/pull/7019). Thanks @eliocamp.
 
 ### BUG FIXES
 
