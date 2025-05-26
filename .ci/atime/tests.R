@@ -13,7 +13,7 @@ for (extra.arg in extra.args.6107){
       tmp_csv = tempfile()
       fwrite(DT, tmp_csv)
     },
-    Faster = "60a01fa65191c44d7997de1843e9a1dfe5be9f72", # First commit of the PR (https://github.com/Rdatatable/data.table/pull/6925/commits) that reduced time usage
+    FasterIO = "60a01fa65191c44d7997de1843e9a1dfe5be9f72", # First commit of the PR (https://github.com/Rdatatable/data.table/pull/6925/commits) that reduced time usage
     Slow = "e9087ce9860bac77c51467b19e92cf4b72ca78c7", # Parent of the merge commit (https://github.com/Rdatatable/data.table/commit/a77e8c22e44e904835d7b34b047df2eff069d1f2) of the PR (https://github.com/Rdatatable/data.table/pull/6107) that fixes the issue
     Fast = "a77e8c22e44e904835d7b34b047df2eff069d1f2") # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/6107) that fixes the issue
   this.test$expr = str2lang(sprintf("data.table::fread(tmp_csv, %s)", extra.arg))
