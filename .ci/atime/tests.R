@@ -130,6 +130,7 @@ test.list <- atime::atime_test_list(
   },
 
   "fread disk overhead improved in #6925" = atime::atime_test(
+    N = 2^seq(0, 20), # smaller N because we are doing multiple fread calls.
     setup = {
       fwrite(iris[1], iris.csv <- tempfile())
     },
