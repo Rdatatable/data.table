@@ -96,9 +96,9 @@ as.data.table.array = function(x, keep.rownames=FALSE, key=NULL, sorted=TRUE, va
   dnx = dimnames(x)
   # NULL dimnames will create integer keys, not character as in table method
   val = if (is.null(dnx)) {
-    lapply(dx, seq.int)
+    lapply(dx, seq_len)
   } else if (any(nulldnx <- vapply_1b(dnx, is.null))) {
-    dnx[nulldnx] = lapply(dx[nulldnx], seq.int) #3636
+    dnx[nulldnx] = lapply(dx[nulldnx], seq_len) #3636
     dnx
   } else dnx
   val = rev(val)
