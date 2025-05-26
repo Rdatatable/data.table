@@ -13,6 +13,7 @@ for (extra.arg in extra.args.6107){
       tmp_csv = tempfile()
       fwrite(DT, tmp_csv)
     },
+    FasterIO = "60a01fa65191c44d7997de1843e9a1dfe5be9f72", # First commit of the PR (https://github.com/Rdatatable/data.table/pull/6925/commits) that reduced time usage
     Slow = "e9087ce9860bac77c51467b19e92cf4b72ca78c7", # Parent of the merge commit (https://github.com/Rdatatable/data.table/commit/a77e8c22e44e904835d7b34b047df2eff069d1f2) of the PR (https://github.com/Rdatatable/data.table/pull/6107) that fixes the issue
     Fast = "a77e8c22e44e904835d7b34b047df2eff069d1f2") # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/6107) that fixes the issue
   this.test$expr = str2lang(sprintf("data.table::fread(tmp_csv, %s)", extra.arg))
@@ -127,6 +128,18 @@ test.list <- atime::atime_test_list(
       sprintf('useDynLib\\("?%s"?', Package_regex),
       paste0('useDynLib(', new.Package_))
   },
+
+  # Constant overhead improvement https://github.com/Rdatatable/data.table/pull/6925
+  # Test case adapted from https://github.com/Rdatatable/data.table/pull/7022#discussion_r2107900643
+  "fread disk overhead improved in #6925" = atime::atime_test(
+    N = 2^seq(0, 20), # smaller N because we are doing multiple fread calls.
+    setup = {
+      fwrite(iris[1], iris.csv <- tempfile())
+    },
+    expr = replicate(N, data.table::fread(iris.csv)),
+    Fast = "60a01fa65191c44d7997de1843e9a1dfe5be9f72", # First commit of the PR (https://github.com/Rdatatable/data.table/pull/6925/commits) that reduced time usage
+    Slow = "e25ea80b793165094cea87d946d2bab5628f70a6" # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/60a01fa65191c44d7997de1843e9a1dfe5be9f72)
+  ),
 
   # Performance regression discussed in https://github.com/Rdatatable/data.table/issues/4311
   # Test case adapted from https://github.com/Rdatatable/data.table/pull/4440#issuecomment-632842980 which is the fix PR.
