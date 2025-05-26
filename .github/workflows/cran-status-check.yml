@@ -19,3 +19,4 @@ jobs:
         uses: dieghernan/cran-status-check@v2
         with:
           create-issue: "true"
+          statuses: "WARN,ERROR"
