@@ -129,6 +129,15 @@ test.list <- atime::atime_test_list(
       paste0('useDynLib(', new.Package_))
   },
 
+  "fread disk overhead improved in #6925" = atime::atime_test(
+    setup = {
+      fwrite(iris[1], iris.csv <- tempfile())
+    },
+    expr = replicate(N, data.table::fread(iris.csv)),
+    Fast = "60a01fa65191c44d7997de1843e9a1dfe5be9f72", # First commit of the PR (https://github.com/Rdatatable/data.table/pull/6925/commits) that reduced time usage
+    Slow = "e25ea80b793165094cea87d946d2bab5628f70a6" # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/60a01fa65191c44d7997de1843e9a1dfe5be9f72)
+  ),
+
   # Performance regression discussed in https://github.com/Rdatatable/data.table/issues/4311
   # Test case adapted from https://github.com/Rdatatable/data.table/pull/4440#issuecomment-632842980 which is the fix PR.
   "shallow regression fixed in #4440" = atime::atime_test(
