@@ -177,8 +177,9 @@ test.list <- atime::atime_test_list(
   # Fixed in https://github.com/Rdatatable/data.table/pull/4558
   "DT[by] fixed in #4558" = atime::atime_test(
     setup = {
+      N9 <- as.integer(N * 0.9)
       d <- data.table(
-        id = sample(c(seq.int(N * 0.9), sample(N * 0.9, N * 0.1, TRUE))),
+        id = sample(c(seq.int(N9), sample(N9, N-N9, TRUE))),
         v1 = sample(5L, N, TRUE),
         v2 = sample(5L, N, TRUE)
       )
