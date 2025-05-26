@@ -253,9 +253,9 @@ test.list <- atime::atime_test_list(
 
   # Test case created directly using the atime code below (not adapted from any other benchmark), based on the PR  Removes unnecessary data.table call from as.data.table.array https://github.com/Rdatatable/data.table/pull/7010 
   "as.data.table.array improved in #7010" = atime::atime_test(
-    N = 1:5,
+    N = 1:10,
     setup = {
-      dims = N * c(10L, 10L, 60L, 2L)
+      dims = N * c(5L, 5L, 30L, 1L)
       arr = array(seq_len(prod(dims)), dim=dims)
     },
     expr = data.table::as.data.table(arr),
