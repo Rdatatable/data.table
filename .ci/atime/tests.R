@@ -251,15 +251,14 @@ test.list <- atime::atime_test_list(
     Before = "f339aa64c426a9cd7cf2fcb13d91fc4ed353cd31", # Parent of the first commit https://github.com/Rdatatable/data.table/commit/fcc10d73a20837d0f1ad3278ee9168473afa5ff1 in the PR https://github.com/Rdatatable/data.table/pull/6393/commits with major change to fwrite with gzip.
     PR = "3630413ae493a5a61b06c50e80d166924d2ef89a"), # Close-to-last merge commit in the PR.
 
-  # Test case created directly using the atime code below (not adapted from any other benchmark), based on the PR  Removes unnecessary data.table call from as.data.table.array https://github.com/Rdatatable/data.table/pull/7010 
+  # Test case created directly using the atime code below (not adapted from any other benchmark), based on the PR, Removes unnecessary data.table call from as.data.table.array https://github.com/Rdatatable/data.table/pull/7010 
   "as.data.table.array improved in #7010" = atime::atime_test(
-    N = 1:10,
     setup = {
-      dims = N * c(5L, 5L, 30L, 1L)
+      dims = c(N, 1, 1)
       arr = array(seq_len(prod(dims)), dim=dims)
     },
-    expr = data.table::as.data.table(arr),
-    Slow = "73d79edf8ff8c55163e90631072192301056e336",   # Parent of the first commit https://github.com/Rdatatable/data.table/tree/73d79edf8ff8c55163e90631072192301056e336
+    expr = data.table:::as.data.table.array(arr, na.rm=FALSE),
+    Slow = "73d79edf8ff8c55163e90631072192301056e336",   # Parent of the first commit in the PR (https://github.com/Rdatatable/data.table/commit/8397dc3c993b61a07a81c786ca68c22bc589befc)
     Fast = "653e2eee6d280335fe4be60845e037c039b66b38"),  # Last commit in the PR (https://github.com/Rdatatable/data.table/pull/7019/commits) that fixes the slow code
 
     tests=extra.test.list)
