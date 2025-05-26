@@ -200,7 +200,7 @@ SEXP frollfunR(SEXP fun, SEXP xobj, SEXP kobj, SEXP fill, SEXP algo, SEXP align,
     }
   }
 
-  ansMsg(dans, nx*nk, verbose, __func__);                       // raise errors and warnings, as of now messages are not being produced
+  ansGetMsgs(dans, nx*nk, verbose, __func__);                    // raise errors and warnings, as of now messages are not being produced
 
   if (verbose)
     Rprintf(_("%s: processing of %d column(s) and %d window(s) took %.3fs\n"), __func__, nx, nk, omp_get_wtime()-tic);

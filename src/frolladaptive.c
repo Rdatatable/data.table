@@ -1,24 +1,5 @@
 #include "data.table.h"
 
-#undef HASNFWARN
-#define HASNFWARN                                                                                                                                                   \
-{                                                                                                                                                                   \
-  ans->status = 2;                                                                                                                                                  \
-  snprintf(end(ans->message[2]), 500, _("%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning"), __func__);\
-}
-
-#undef HASNFMSGRERUN
-#define HASNFMSGRERUN                                                                                                                  \
-{                                                                                                                                      \
-  snprintf(end(ans->message[0]), 500, _("%s: non-finite values are present in input, re-running with extra care for NFs\n"), __func__);\
-}
-
-#undef HASNFMSGEXACTPROPAGATED
-#define HASNFMSGEXACTPROPAGATED                                                                                                                                                  \
-{                                                                                                                                                                                \
-  snprintf(end(ans->message[0]), 500, _("%s: non-finite values are present in input, na.rm=FALSE and algo='exact' propagates NFs properply, no need to re-run\n"), __func__);\
-}
-
 /* rolling adaptive fun - router for fun and algo
  * rfun enum rollfun_t routes to rolling function
  * algo = 0: fast
@@ -71,8 +52,7 @@ void frolladaptivemeanFast(double *x, uint64_t nx, ans_t *ans, int *k, double fi
   long double w = 0.0;
   double *cs = malloc(sizeof(*cs) * nx);                       // cumsum vector, same as double cs[nx] but no segfault
   if (!cs) {                                                    // # nocov start
-    ans->status = 3;                                            // raise error
-    snprintf(ans->message[3], 500, _("%s: Unable to allocate memory for cumsum"), __func__);
+    ansSetMsg(ans, 3, "%s: Unable to allocate memory for cumsum", __func__); // raise error
     free(cs);
     return;
   }                                                             // # nocov end
@@ -93,8 +73,10 @@ void frolladaptivemeanFast(double *x, uint64_t nx, ans_t *ans, int *k, double fi
         }
       }
     } else {                                                    // update truehasnf flag if NAs detected
-      if (hasnf==-1) HASNFWARN
-      if (verbose) HASNFMSGRERUN
+      if (hasnf==-1)
+        ansSetMsg(ans, 2, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning", __func__);
+      if (verbose)
+        ansSetMsg(ans, 0, "%s: non-finite values are present in input, re-running with extra care for NFs\n", __func__);
       w = 0.0; truehasnf = true;
     }
   }
@@ -102,22 +84,19 @@ void frolladaptivemeanFast(double *x, uint64_t nx, ans_t *ans, int *k, double fi
     uint64_t nc = 0, pinf = 0, ninf = 0;                        // running NA counter
     uint64_t *cn = malloc(nx*sizeof(uint64_t));                 // cumulative NA counter, used the same way as cumsum, same as uint64_t cn[nx] but no segfault
     if (!cn) {                                                  // # nocov start
-      ans->status = 3;                                          // raise error
-      snprintf(ans->message[3], 500, _("%s: Unable to allocate memory for cum NA counter"), __func__);
+      ansSetMsg(ans, 3, "%s: Unable to allocate memory for cum NA counter", __func__); // raise error
       free(cs); free(cn);
       return;
     }                                                           // # nocov end
     uint64_t *cpinf = malloc(nx*sizeof(uint64_t));
     if (!cpinf) {                                               // # nocov start
-      ans->status = 3;
-      snprintf(ans->message[3], 500, _("%s: Unable to allocate memory for cum Inf counter"), __func__);
+      ansSetMsg(ans, 3, "%s: Unable to allocate memory for cum Inf counter", __func__); // raise error
       free(cs); free(cn); free(cpinf);
       return;
     }                                                           // # nocov end
     uint64_t *cninf = malloc(nx*sizeof(uint64_t));
     if (!cninf) {                                               // # nocov start
-      ans->status = 3;                                          // raise error
-      snprintf(ans->message[3], 500, _("%s: Unable to allocate memory for cum -Inf counter"), __func__);
+      ansSetMsg(ans, 3, "%s: Unable to allocate memory for cum -Inf counter", __func__); // raise error
       free(cs); free(cn); free(cpinf); free(cninf);
       return;
     }                                           // # nocov end
@@ -234,10 +213,13 @@ void frolladaptivemeanExact(double *x, uint64_t nx, ans_t *ans, int *k, double f
       }
     }
     if (truehasnf) {
-      if (hasnf==-1) HASNFWARN
+      if (hasnf==-1)
+        ansSetMsg(ans, 2, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning", __func__);
       if (verbose) {
-        if (narm) HASNFMSGRERUN
-        else HASNFMSGEXACTPROPAGATED
+        if (narm)
+          ansSetMsg(ans, 0, "%s: non-finite values are present in input, re-running with extra care for NFs\n", __func__);
+        else
+          ansSetMsg(ans, 0, "%s: non-finite values are present in input, na.rm=FALSE and algo='exact' propagates NFs properply, no need to re-run\n", __func__);
       }
     }
   }
@@ -294,8 +276,7 @@ void frolladaptivesumFast(double *x, uint64_t nx, ans_t *ans, int *k, double fil
   long double w = 0.0;
   double *cs = malloc(sizeof(*cs) * nx);
   if (!cs) {                                                    // # nocov start
-    ans->status = 3;
-    snprintf(ans->message[3], 500, _("%s: Unable to allocate memory for cumsum"), __func__);
+    ansSetMsg(ans, 3, "%s: Unable to allocate memory for cumsum", __func__); // raise error
     free(cs);
     return;
   }                                                             // # nocov end
@@ -316,8 +297,10 @@ void frolladaptivesumFast(double *x, uint64_t nx, ans_t *ans, int *k, double fil
         }
       }
     } else {
-      if (hasnf==-1) HASNFWARN
-      if (verbose) HASNFMSGRERUN
+      if (hasnf==-1)
+        ansSetMsg(ans, 2, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning", __func__);
+      if (verbose)
+        ansSetMsg(ans, 0, "%s: non-finite values are present in input, re-running with extra care for NFs\n", __func__);
       w = 0.0; truehasnf = true;
     }
   }
@@ -325,22 +308,19 @@ void frolladaptivesumFast(double *x, uint64_t nx, ans_t *ans, int *k, double fil
     uint64_t nc = 0, pinf = 0, ninf = 0;                        // running NA counter
     uint64_t *cn = malloc(nx*sizeof(uint64_t));                 // cumulative NA counter, used the same way as cumsum, same as uint64_t cn[nx] but no segfault
     if (!cn) {                                                  // # nocov start
-      ans->status = 3;                                          // raise error
-      snprintf(ans->message[3], 500, _("%s: Unable to allocate memory for cum NA counter"), __func__);
+      ansSetMsg(ans, 3, "%s: Unable to allocate memory for cum NA counter", __func__); // raise error
       free(cs); free(cn);
       return;
     }                                                           // # nocov end
     uint64_t *cpinf = malloc(nx*sizeof(uint64_t));
     if (!cpinf) {                                               // # nocov start
-      ans->status = 3;
-      snprintf(ans->message[3], 500, _("%s: Unable to allocate memory for cum Inf counter"), __func__);
+      ansSetMsg(ans, 3, "%s: Unable to allocate memory for cum Inf counter", __func__); // raise error
       free(cs); free(cn); free(cpinf);
       return;
     }                                                           // # nocov end
     uint64_t *cninf = malloc(nx*sizeof(uint64_t));
     if (!cninf) {                                               // # nocov start
-      ans->status = 3;                                          // raise error
-      snprintf(ans->message[3], 500, _("%s: Unable to allocate memory for cum -Inf counter"), __func__);
+      ansSetMsg(ans, 3, "%s: Unable to allocate memory for cum -Inf counter", __func__); // raise error
       free(cs); free(cn); free(cpinf); free(cninf);
       return;
     }                                                           // # nocov end
@@ -450,10 +430,13 @@ void frolladaptivesumExact(double *x, uint64_t nx, ans_t *ans, int *k, double fi
       }
     }
     if (truehasnf) {
-      if (hasnf==-1) HASNFWARN
-        if (verbose) {
-          if (narm) HASNFMSGRERUN
-          else HASNFMSGEXACTPROPAGATED
+      if (hasnf==-1)
+        ansSetMsg(ans, 2, "%s: has.nf=FALSE used but non-finite values are present in input, use default has.nf=NA to avoid this warning", __func__);
+      if (verbose) {
+        if (narm)
+          ansSetMsg(ans, 0, "%s: non-finite values are present in input, re-running with extra care for NFs\n", __func__);
+        else
+          ansSetMsg(ans, 0, "%s: non-finite values are present in input, na.rm=FALSE and algo='exact' propagates NFs properply, no need to re-run\n", __func__);
       }
     }
   }
@@ -511,8 +494,7 @@ void frolladaptivemaxExact(double *x, uint64_t nx, ans_t *ans, int *k, double fi
   } else {
     bool *isnan = malloc(nx*sizeof(bool)); // isnan lookup - we use it to reduce ISNAN calls in nested loop
     if (!isnan) {                                                    // # nocov start
-      ans->status = 3;                                               // raise error
-      snprintf(ans->message[3], 500, _("%s: Unable to allocate memory for isnan"), __func__);
+      ansSetMsg(ans, 3, "%s: Unable to allocate memory for isnan", __func__); // raise error
       free(isnan);
       return;
     }                                                               // # nocov end
