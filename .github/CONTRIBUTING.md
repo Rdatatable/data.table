@@ -66,10 +66,6 @@ When you file a pull request, you should add some tests to this file with this i
 
 What numbers should be used for new tests? Numbers should be new relative to current master at the time of your PR. If another PR is merged before yours, then there may be a conflict, but that is no problem, as [a Committer will fix the test numbers when merging your PR](https://github.com/Rdatatable/data.table/pull/4731#issuecomment-768858134).
 
-#### Performance testing
-
-If your PR may have an effect on time/memory usage, please consider adding a performance test, either in the same PR, or a follow-up PR. See the [Performance testing](https://github.com/Rdatatable/data.table/wiki/Performance-testing) wiki page for details.
-
 #### Using `test`
 
 See [`?test`](https://rdatatable.gitlab.io/data.table/reference/test.html).
@@ -79,6 +75,10 @@ See [`?test`](https://rdatatable.gitlab.io/data.table/reference/test.html).
 1. **[How to Github: Fork, Branch, Track, Squash and Pull request](https://gun.io/blog/how-to-github-fork-branch-and-pull-request/)**.
 1. **[Squashing Github pull requests into a single commit](http://eli.thegreenplace.net/2014/02/19/squashing-github-pull-requests-into-a-single-commit)**.
 1. **[Github help](https://help.github.com/articles/using-pull-requests/)** - you'll need the *fork and pull* model.
+
+#### Performance testing
+
+If your PR may have an effect on time/memory usage, please consider adding a performance test, either in the same PR, or a follow-up PR. See the [Performance testing](https://github.com/Rdatatable/data.table/wiki/Performance-testing) wiki page for details.
 
 Minimal first time PR
 ---------------------
