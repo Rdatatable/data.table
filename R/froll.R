@@ -54,7 +54,7 @@ partial2adaptive = function(x, n, align, adaptive) {
       stopf("length of vectors in 'x' must match to length of adaptive window in 'n'")
     if (verbose)
       cat("partial2adaptive: froll adaptive=TRUE and partial=TRUE trimming 'n'\n")
-    lapply(n, align, FUN=triman)
+    lapply(n, align, FUN=trimnadaptive)
   }
 }
 
