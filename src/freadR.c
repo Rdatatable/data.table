@@ -708,7 +708,7 @@ void progress(int p, int eta) {
 }
 // # nocov end
 
-void __halt(bool warn, const char *format, ...) {
+void halt__(bool warn, const char *format, ...) {
   // Solves: http://stackoverflow.com/questions/18597123/fread-data-table-locks-files
   // TODO: always include fnam in the STOP message. For log files etc.
   va_list args;
