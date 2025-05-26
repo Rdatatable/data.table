@@ -253,11 +253,12 @@ test.list <- atime::atime_test_list(
 
   # Test case created directly using the atime code below (not adapted from any other benchmark), based on the PR  Removes unnecessary data.table call from as.data.table.array https://github.com/Rdatatable/data.table/pull/7010 
   "as.data.table.array improved in #7010" = atime::atime_test(
+    N = 1:5,
     setup = {
-      dims = c(50, 50, 300, 10)
-      arr = array(1:prod(dims), dim = dims)
+      dims = N * c(10L, 10L, 60L, 2L)
+      arr = array(seq_len(prod(dims)), dim=dims)
     },
-    expr = data.table:::as.data.table(arr),
+    expr = data.table::as.data.table(arr),
     Slow = "73d79edf8ff8c55163e90631072192301056e336",   # Parent of the first commit https://github.com/Rdatatable/data.table/tree/73d79edf8ff8c55163e90631072192301056e336
     Fast = "8397dc3c993b61a07a81c786ca68c22bc589befc"),  # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/5054) that fixes the issue 
 
