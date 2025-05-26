@@ -1,0 +1,21 @@
+name: check-cran-status
+
+on:
+  schedule:
+    - cron: '0 6 * * 1,3,5' # Runs at 06:00 on Mon/Wed/Fri
+    
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions: write-all # allows it to create issues
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        
+      - name: Check
+        uses: dieghernan/cran-status-check@v2
+        with:
+          create-issue: "true"
