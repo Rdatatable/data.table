@@ -263,6 +263,3 @@ test.list <- atime::atime_test_list(
 
     tests=extra.test.list)
 # nolint end: undesirable_operator_linter.
-
-
-
