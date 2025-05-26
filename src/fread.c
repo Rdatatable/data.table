@@ -211,7 +211,7 @@ static const char* strlim(const char *ch, size_t limit) {
   char *ptr = buf + 501 * flip;
   flip = 1 - flip;
   char *ch2 = ptr;
-  if (limit>500) limit=500;
+  limit = imin(limit, 500);
   size_t width = 0;
   while ((*ch>'\r' || (*ch!='\0' && *ch!='\r' && *ch!='\n')) && width++<limit) {
     *ch2++ = *ch++;
@@ -923,7 +923,7 @@ static void parse_double_hexadecimal(FieldParseContext *ctx)
       acc = (acc << 4) + digit;
       ch++;
     }
-    size_t ndigits = (uint_fast8_t)(ch - ch0);
+    ptrdiff_t ndigits = ch - ch0;
     if (ndigits > 13 || !(*ch=='p' || *ch=='P')) return;
     acc <<= (13 - ndigits) * 4;
     ch += 1 + (Eneg = ch[1]=='-') + (ch[1]=='+');
@@ -1876,7 +1876,7 @@ int freadMain(freadMainArgs _args) {
   int64_t estnrow=1;
   int64_t allocnrow=0;     // Number of rows in the allocated DataTable
   double meanLineLen=0.0; // Average length (in bytes) of a single line in the input file
-  size_t bytesRead=0;     // Bytes in the data section (i.e. excluding column names, header and footer, if any)
+  ptrdiff_t bytesRead=0;     // Bytes in the data section (i.e. excluding column names, header and footer, if any)
   {
   if (verbose) DTPRINT(_("[07] Detect column types, dec, good nrow estimate and whether first row is column names\n"));
   if (verbose && args.header!=NA_BOOL8) DTPRINT(_("  'header' changed by user from 'auto' to %s\n"), args.header?"true":"false");
@@ -1940,8 +1940,8 @@ int freadMain(freadMainArgs _args) {
       }
       firstRowStart = ch;
     } else {
-      ch = (jump == nJumps-1) ? eof - (size_t)(0.5*jump0size) :  // to almost-surely sample the last line
-                                pos + (size_t)jump*((size_t)(eof-pos)/(size_t)(nJumps-1));
+      ch = (jump == nJumps-1) ? eof - (ptrdiff_t)(0.5*jump0size) :  // to almost-surely sample the last line
+                                pos + jump*((eof-pos)/(nJumps-1));
       ch = nextGoodLine(ch, ncol);
     }
     if (ch<lastRowEnd) ch=lastRowEnd;  // Overlap when apx 1,200 lines (just over 11*100) with short lines at the beginning and longer lines near the end, #2157
@@ -1978,7 +1978,7 @@ int freadMain(freadMainArgs _args) {
       if (jump==0 && bumped) {
         // apply bumps after each line in the first jump from the start in case invalid line stopped early on is in the first 100 lines.
         // otherwise later jumps must complete fully before their bumps are applied. Invalid lines in those are more likely to be due to bad jump start.
-        memcpy(type, tmpType, (size_t)ncol);
+        memcpy(type, tmpType, ncol);
         bumped = false;  // detect_types() only updates &bumped when it's true. So reset to false here.
       }
     }
@@ -1992,7 +1992,7 @@ int freadMain(freadMainArgs _args) {
     if (bumped) {
       // when jump>0, apply the bumps (if any) at the end of the successfully completed jump sample
       ASSERT(jump>0, "jump(%d)>0", jump);
-      memcpy(type, tmpType, (size_t)ncol);
+      memcpy(type, tmpType, ncol);
     }
     if (verbose && (bumped || jump==0 || jump==nJumps-1)) {
       DTPRINT(_("  Type codes (jump %03d)    : %s  Quote rule %d\n"), jump, typesAsString(ncol), quoteRule);
@@ -2102,11 +2102,11 @@ int freadMain(freadMainArgs _args) {
     if (verbose) DTPRINT(_("  All rows were sampled since file is small so we know nrow=%"PRIu64" exactly\n"), (uint64_t)sampleLines);
     estnrow = allocnrow = sampleLines;
   } else {
-    bytesRead = (size_t)(eof - firstRowStart);
+    bytesRead = eof - firstRowStart;
     meanLineLen = (double)sumLen/sampleLines;
     estnrow = CEIL(bytesRead/meanLineLen);  // only used for progress meter and verbose line below
     double sd = sqrt( (sumLenSq - (sumLen*sumLen)/sampleLines)/(sampleLines-1) );
-    allocnrow = clamp_i64t((size_t)(bytesRead / fmax(meanLineLen - 2*sd, minLen)),
+    allocnrow = clamp_i64t(bytesRead / fmax(meanLineLen - 2*sd, minLen),
                           (size_t)(1.1*estnrow), 2*estnrow);
     // sd can be very close to 0.0 sometimes, so apply a +10% minimum
     // blank lines have length 1 so for fill=true apply a +100% maximum. It'll be grown if needed.
@@ -2187,7 +2187,7 @@ int freadMain(freadMainArgs _args) {
   {
   if (verbose) DTPRINT(_("[09] Apply user overrides on column types\n"));
   ch = pos;
-  memcpy(tmpType, type, (size_t)ncol) ;
+  memcpy(tmpType, type, ncol) ;
   if (!userOverride(type, colNames, colNamesAnchor, ncol)) { // colNames must not be changed but type[] can be
     if (verbose) DTPRINT(_("  Cancelled by user: userOverride() returned false.")); // # nocov
     freadCleanup(); // # nocov
@@ -2274,7 +2274,7 @@ int freadMain(freadMainArgs _args) {
     nJumps = (int)(bytesRead/chunkBytes);
     if (nJumps==0) nJumps=1;
     else if (nJumps>nth) nJumps = nth*(1+(nJumps-1)/nth);
-    chunkBytes = bytesRead / (size_t)nJumps;
+    chunkBytes = bytesRead / nJumps;
   } else {
     ASSERT(nJumps==1 /*when nrowLimit supplied*/ || nJumps==2 /*small files*/, "nJumps (%d) != 1|2", nJumps);
     nJumps=1;
@@ -2372,10 +2372,10 @@ int freadMain(freadMainArgs _args) {
         }
       }
 
-      const char *tch = jump==jump0 ? headPos : nextGoodLine(pos+(size_t)jump*chunkBytes, ncol);
+      const char *tch = jump==jump0 ? headPos : nextGoodLine(pos+jump*chunkBytes, ncol);
       const char *thisJumpStart = tch;   // "this" for prev/this/next adjective used later, rather than a (mere) t prefix for thread-local.
       const char *tLineStart = tch;
-      const char *nextJumpStart = jump<nJumps-1 ? nextGoodLine(pos+(size_t)(jump+1)*chunkBytes, ncol) : eof;
+      const char *nextJumpStart = jump<nJumps-1 ? nextGoodLine(pos+(jump+1)*chunkBytes, ncol) : eof;
 
       void *targets[9] = {NULL, ctx.buff1, NULL, NULL, ctx.buff4, NULL, NULL, NULL, ctx.buff8};
       FieldParseContext fctx = {
