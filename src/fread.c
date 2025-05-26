@@ -109,6 +109,14 @@ static void Field(FieldParseContext *ctx);
 #define AS_DIGIT(x) (uint_fast8_t)(x - '0')
 #define IS_DIGIT(x) (AS_DIGIT(x) < 10)
 
+// Readability helpers for the ad-hoc type bumping system: flip e.g.
+//   type '1' to '-1' to mark out-of-sample type bumps, i.e., cases
+//   where the type inferred during auto-detection (which only uses
+//   a sample of rows) winds up being incorrect when considering the
+//   full input.
+#define IGNORE_BUMP(x) abs(x)
+#define TOGGLE_BUMP(x) (-x)
+
 //=================================================================================================
 //
 //   Utility functions
@@ -182,7 +190,7 @@ static inline uint64_t umin(uint64_t a, uint64_t b) { return a < b ? a : b; }
 static inline  int64_t imin( int64_t a,  int64_t b) { return a < b ? a : b; }
 
 /** Return value of `x` clamped to the range [upper, lower] */
-static inline int64_t clamp_szt(int64_t x, int64_t lower, int64_t upper) {
+static inline int64_t clamp_i64t(int64_t x, int64_t lower, int64_t upper) {
   return x < lower ? lower : x > upper? upper : x;
 }
 
@@ -203,7 +211,7 @@ static const char* strlim(const char *ch, size_t limit) {
   char *ptr = buf + 501 * flip;
   flip = 1 - flip;
   char *ch2 = ptr;
-  if (limit>500) limit=500;
+  limit = imin(limit, 500);
   size_t width = 0;
   while ((*ch>'\r' || (*ch!='\0' && *ch!='\r' && *ch!='\n')) && width++<limit) {
     *ch2++ = *ch++;
@@ -220,11 +228,11 @@ static char *typesAsString(int ncol) {
   static char str[101];
   int i=0;
   if (ncol<=100) {
-    for (; i<ncol; i++) str[i] = typeLetter[abs(type[i])];  // abs for out-of-sample type bumps (negative)
+    for (; i<ncol; i++) str[i] = typeLetter[IGNORE_BUMP(type[i])];
   } else {
-    for (; i<80; i++) str[i] = typeLetter[abs(type[i])];
+    for (; i<80; i++) str[i] = typeLetter[IGNORE_BUMP(type[i])];
     str[i++]='.'; str[i++]='.'; str[i++]='.';
-    for (int j=ncol-10; j<ncol; j++) str[i++] = typeLetter[abs(type[j])];
+    for (int j=ncol-10; j<ncol; j++) str[i++] = typeLetter[IGNORE_BUMP(type[j])];
   }
   str[i] = '\0';
   return str;
@@ -915,7 +923,7 @@ static void parse_double_hexadecimal(FieldParseContext *ctx)
       acc = (acc << 4) + digit;
       ch++;
     }
-    size_t ndigits = (uint_fast8_t)(ch - ch0);
+    ptrdiff_t ndigits = ch - ch0;
     if (ndigits > 13 || !(*ch=='p' || *ch=='P')) return;
     acc <<= (13 - ndigits) * 4;
     ch += 1 + (Eneg = ch[1]=='-') + (ch[1]=='+');
@@ -1868,7 +1876,7 @@ int freadMain(freadMainArgs _args) {
   int64_t estnrow=1;
   int64_t allocnrow=0;     // Number of rows in the allocated DataTable
   double meanLineLen=0.0; // Average length (in bytes) of a single line in the input file
-  size_t bytesRead=0;     // Bytes in the data section (i.e. excluding column names, header and footer, if any)
+  ptrdiff_t bytesRead=0;     // Bytes in the data section (i.e. excluding column names, header and footer, if any)
   {
   if (verbose) DTPRINT(_("[07] Detect column types, dec, good nrow estimate and whether first row is column names\n"));
   if (verbose && args.header!=NA_BOOL8) DTPRINT(_("  'header' changed by user from 'auto' to %s\n"), args.header?"true":"false");
@@ -1911,8 +1919,8 @@ int freadMain(freadMainArgs _args) {
     } else if (jump0size==0) {
       DTPRINT(_("  Number of sampling jump points = %d because jump0size==0\n"), nJumps);
     } else {
-      DTPRINT(_("  Number of sampling jump points = %d because (%td bytes from row 1 to eof) / (2 * %td jump0size) == %td\n"),
-              nJumps, sz, jump0size, sz/(2*jump0size));
+      DTPRINT(_("  Number of sampling jump points = %d because (%ld bytes from row 1 to eof) / (2 * %ld jump0size) == %ld\n"),
+              nJumps, (long int)sz, (long int)jump0size, (long int)(sz/(2*jump0size)));
     }
   }
   nJumps++; // the extra sample at the very end (up to eof) is sampled and format checked but not jumped to when reading
@@ -1932,8 +1940,8 @@ int freadMain(freadMainArgs _args) {
       }
       firstRowStart = ch;
     } else {
-      ch = (jump == nJumps-1) ? eof - (size_t)(0.5*jump0size) :  // to almost-surely sample the last line
-                                pos + (size_t)jump*((size_t)(eof-pos)/(size_t)(nJumps-1));
+      ch = (jump == nJumps-1) ? eof - (ptrdiff_t)(0.5*jump0size) :  // to almost-surely sample the last line
+                                pos + jump*((eof-pos)/(nJumps-1));
       ch = nextGoodLine(ch, ncol);
     }
     if (ch<lastRowEnd) ch=lastRowEnd;  // Overlap when apx 1,200 lines (just over 11*100) with short lines at the beginning and longer lines near the end, #2157
@@ -1970,7 +1978,7 @@ int freadMain(freadMainArgs _args) {
       if (jump==0 && bumped) {
         // apply bumps after each line in the first jump from the start in case invalid line stopped early on is in the first 100 lines.
         // otherwise later jumps must complete fully before their bumps are applied. Invalid lines in those are more likely to be due to bad jump start.
-        memcpy(type, tmpType, (size_t)ncol);
+        memcpy(type, tmpType, ncol);
         bumped = false;  // detect_types() only updates &bumped when it's true. So reset to false here.
       }
     }
@@ -1984,7 +1992,7 @@ int freadMain(freadMainArgs _args) {
     if (bumped) {
       // when jump>0, apply the bumps (if any) at the end of the successfully completed jump sample
       ASSERT(jump>0, "jump(%d)>0", jump);
-      memcpy(type, tmpType, (size_t)ncol);
+      memcpy(type, tmpType, ncol);
     }
     if (verbose && (bumped || jump==0 || jump==nJumps-1)) {
       DTPRINT(_("  Type codes (jump %03d)    : %s  Quote rule %d\n"), jump, typesAsString(ncol), quoteRule);
@@ -2094,11 +2102,11 @@ int freadMain(freadMainArgs _args) {
     if (verbose) DTPRINT(_("  All rows were sampled since file is small so we know nrow=%"PRIu64" exactly\n"), (uint64_t)sampleLines);
     estnrow = allocnrow = sampleLines;
   } else {
-    bytesRead = (size_t)(eof - firstRowStart);
+    bytesRead = eof - firstRowStart;
     meanLineLen = (double)sumLen/sampleLines;
     estnrow = CEIL(bytesRead/meanLineLen);  // only used for progress meter and verbose line below
     double sd = sqrt( (sumLenSq - (sumLen*sumLen)/sampleLines)/(sampleLines-1) );
-    allocnrow = clamp_szt((size_t)(bytesRead / fmax(meanLineLen - 2*sd, minLen)),
+    allocnrow = clamp_i64t(bytesRead / fmax(meanLineLen - 2*sd, minLen),
                           (size_t)(1.1*estnrow), 2*estnrow);
     // sd can be very close to 0.0 sometimes, so apply a +10% minimum
     // blank lines have length 1 so for fill=true apply a +100% maximum. It'll be grown if needed.
@@ -2179,7 +2187,7 @@ int freadMain(freadMainArgs _args) {
   {
   if (verbose) DTPRINT(_("[09] Apply user overrides on column types\n"));
   ch = pos;
-  memcpy(tmpType, type, (size_t)ncol) ;
+  memcpy(tmpType, type, ncol) ;
   if (!userOverride(type, colNames, colNamesAnchor, ncol)) { // colNames must not be changed but type[] can be
     if (verbose) DTPRINT(_("  Cancelled by user: userOverride() returned false.")); // # nocov
     freadCleanup(); // # nocov
@@ -2266,7 +2274,7 @@ int freadMain(freadMainArgs _args) {
     nJumps = (int)(bytesRead/chunkBytes);
     if (nJumps==0) nJumps=1;
     else if (nJumps>nth) nJumps = nth*(1+(nJumps-1)/nth);
-    chunkBytes = bytesRead / (size_t)nJumps;
+    chunkBytes = bytesRead / nJumps;
   } else {
     ASSERT(nJumps==1 /*when nrowLimit supplied*/ || nJumps==2 /*small files*/, "nJumps (%d) != 1|2", nJumps);
     nJumps=1;
@@ -2364,10 +2372,10 @@ int freadMain(freadMainArgs _args) {
         }
       }
 
-      const char *tch = jump==jump0 ? headPos : nextGoodLine(pos+(size_t)jump*chunkBytes, ncol);
+      const char *tch = jump==jump0 ? headPos : nextGoodLine(pos+jump*chunkBytes, ncol);
       const char *thisJumpStart = tch;   // "this" for prev/this/next adjective used later, rather than a (mere) t prefix for thread-local.
       const char *tLineStart = tch;
-      const char *nextJumpStart = jump<nJumps-1 ? nextGoodLine(pos+(size_t)(jump+1)*chunkBytes, ncol) : eof;
+      const char *nextJumpStart = jump<nJumps-1 ? nextGoodLine(pos+(jump+1)*chunkBytes, ncol) : eof;
 
       void *targets[9] = {NULL, ctx.buff1, NULL, NULL, ctx.buff4, NULL, NULL, NULL, ctx.buff8};
       FieldParseContext fctx = {
@@ -2405,7 +2413,7 @@ int freadMain(freadMainArgs _args) {
             // DTPRINT(_("Field %d: '%.10s' as type %d  (tch=%p)\n"), j+1, tch, type[j], tch);
             fieldStart = tch;
             int8_t thisType = type[j];  // fetch shared type once. Cannot read half-written byte is one reason type's type is single byte to avoid atomic read here.
-            fun[abs(thisType)](&fctx);
+            fun[IGNORE_BUMP(thisType)](&fctx);
             if (*tch!=sep) break;
             int8_t thisSize = size[j];
             if (thisSize) ((char **) targets)[thisSize] += thisSize;  // 'if' for when rereading to avoid undefined NULL+0
@@ -2455,7 +2463,7 @@ int freadMain(freadMainArgs _args) {
           fieldStart = tch;
           int8_t joldType = type[j];
           int8_t thisType = joldType;  // to know if it was bumped in (rare) out-of-sample type exceptions
-          int8_t absType = (int8_t)abs(thisType);
+          int8_t absType = (int8_t)IGNORE_BUMP(thisType);
 
           while (absType < NUMTYPE) {
             tch = fieldStart;
@@ -2468,7 +2476,7 @@ int freadMain(freadMainArgs _args) {
               if (!end_of_field(tch)) tch = afterSpace; // else it is the field_end, we're on closing sep|eol and we'll let processor write appropriate NA as if field was empty
               if (*tch==quote && quote) { quoted=true; tch++; }
             } // else Field() handles NA inside it unlike other processors e.g. ,, is interpreted as "" or NA depending on option read inside Field()
-            fun[abs(thisType)](&fctx);
+            fun[IGNORE_BUMP(thisType)](&fctx);
             if (quoted) {   // quoted was only set to true with '&& quote' above (=> quote!='\0' now)
               if (*tch==quote) tch++;
               else goto typebump;
@@ -2487,7 +2495,7 @@ int freadMain(freadMainArgs _args) {
             // sure a single re-read will definitely work.
             typebump:
             while (++absType<CT_STRING && disabled_parsers[absType]) {};
-            thisType = -absType;
+            thisType = TOGGLE_BUMP(absType);
             tch = fieldStart;
           }
 
@@ -2499,7 +2507,7 @@ int freadMain(freadMainArgs _args) {
               if (j+fieldsRemaining != ncol) break;
               checkedNumberOfFields = true;
             }
-            if (thisType <= -NUMTYPE) {
+            if (thisType <= TOGGLE_BUMP(NUMTYPE)) {
               break;  // Improperly quoted char field needs to be healed below, other columns will be filled #5041 and #4774
             }
             #pragma omp critical
@@ -2512,7 +2520,7 @@ int freadMain(freadMainArgs _args) {
                   int len = snprintf(temp, 1000,
                     _("Column %d%s%.*s%s bumped from '%s' to '%s' due to <<%.*s>> on row %"PRIu64"\n"),
                     j+1, colNames?" <<":"", colNames?(colNames[j].len):0, colNames?(colNamesAnchor+colNames[j].off):"", colNames?">>":"",
-                    typeName[abs(joldType)], typeName[abs(thisType)],
+                    typeName[IGNORE_BUMP(joldType)], typeName[IGNORE_BUMP(thisType)],
                     (int)(tch-fieldStart), fieldStart, (uint64_t)(ctx.DTi+myNrow));
                   if (len > 1000) len = 1000;
                   if (len > 0) {
@@ -2675,10 +2683,10 @@ int freadMain(freadMainArgs _args) {
   if (firstTime) {
     tReread = tRead = wallclock();
 
-    // if nTypeBump>0, not-bumped columns are about to be assigned parse type -CT_STRING for the reread, so we have to count
+    // if nTypeBump>0, not-bumped columns are about to be assigned parse type TOGGLE_BUMP(CT_STRING) for the reread, so we have to count
     // parse types now (for log). We can't count final column types afterwards because many parse types map to the same column type.
     for (int i=0; i<NUMTYPE; i++) typeCounts[i] = 0;
-    for (int i=0; i<ncol; i++) typeCounts[ abs(type[i]) ]++;
+    for (int i=0; i<ncol; i++) typeCounts[ IGNORE_BUMP(type[i]) ]++;
 
     if (nTypeBump) {
       if (verbose) DTPRINT(_("  %d out-of-sample type bumps: %s\n"), nTypeBump, typesAsString(ncol));
@@ -2689,7 +2697,7 @@ int freadMain(freadMainArgs _args) {
         if (type[j] == CT_DROP) continue;
         if (type[j]<0) {
           // column was bumped due to out-of-sample type exception
-          type[j] = -type[j];
+          type[j] = TOGGLE_BUMP(type[j]);
           size[j] = typeSize[type[j]];
           rowSize1 += (size[j] & 1);
           rowSize4 += (size[j] & 4);
@@ -2698,7 +2706,7 @@ int freadMain(freadMainArgs _args) {
         } else if (type[j]>=1) {
           // we'll skip over non-bumped columns in the rerun, whilst still incrementing resi (hence not CT_DROP)
           // not -type[i] either because that would reprocess the contents of not-bumped columns wastefully
-          type[j] = -CT_STRING;
+          type[j] = TOGGLE_BUMP(CT_STRING);
           size[j] = 0;
         }
       }

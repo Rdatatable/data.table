@@ -56,7 +56,7 @@ Authors@R: c(
   person("Martin","Morgan",        role="ctb"),
   person("Michael","Quinn",        role="ctb"),
   person("@javrucebo","",          role="ctb"),
-  person("@marc-outins","",        role="ctb"),
+  person("Marc","Halperin",        role="ctb"),
   person("Roy","Storey",           role="ctb"),
   person("Manish","Saraswat",      role="ctb"),
   person("Morgan","Jacob",         role="ctb"),
@@ -101,5 +101,6 @@ Authors@R: c(
   person("Vijay", "Lulla",         role="ctb"),
   person("Aljaž", "Sluga",         role="ctb"),
   person("Bill", "Evans",          role="ctb"),
-  person("Reino", "Bruner",        role="ctb")
+  person("Reino", "Bruner",        role="ctb"),
+  person(comment=c(github="@badasahog"), role="ctb")
   )
