@@ -150,7 +150,7 @@ SEXP frollfunR(SEXP fun, SEXP xobj, SEXP kobj, SEXP fill, SEXP algo, SEXP align,
     dx[i] = REAL(VECTOR_ELT(x, i));                             // assign source columns to C pointers
   }
 
-  rollfun_t rfun; // adding fun needs to be here and data.table.h
+  rollfun_t rfun = MEAN; // adding fun needs to be here and data.table.h, initialize to keep compiler happy
   if (!strcmp(CHAR(STRING_ELT(fun, 0)), "mean")) {
     rfun = MEAN;
   } else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "sum")) {
