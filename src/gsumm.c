@@ -117,7 +117,7 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
     int bitshift = MAX(nb-8, 0);  // TODO: experiment nb/2.  Here it doesn't have to be /2 currently.
     int highSize = ((nrow-1)>>bitshift) + 1;
     //Rprintf(_("When assigning grp[o] = g, highSize=%d  nb=%d  bitshift=%d  nBatch=%d\n"), highSize, nb, bitshift, nBatch);
-    int *counts = calloc(nBatch*highSize, sizeof(int));  // TODO: cache-line align and make highSize a multiple of 64
+    int *counts = calloc(nBatch*highSize, sizeof(*counts));  // TODO: cache-line align and make highSize a multiple of 64
     int *TMP   = malloc(sizeof(*TMP) * nrow*2l); // must multiple the long int otherwise overflow may happen, #4295
     if (!counts || !TMP ) {
       free(counts); free(TMP); // # nocov
@@ -625,7 +625,7 @@ SEXP gmean(SEXP x, SEXP narmArg)
       for (int i=0; i<ngrp; i++) ansp[i] /= grpsize[i];
     } else {
       // narm==true and anyNA==true
-      int *restrict nna_counts = calloc(ngrp, sizeof(int));
+      int *restrict nna_counts = calloc(ngrp, sizeof(*nna_counts));
       if (!nna_counts)
         error(_("Unable to allocate %d * %zu bytes for non-NA counts in gmean na.rm=TRUE"), ngrp, sizeof(int)); // # nocov
       #pragma omp parallel for num_threads(getDTthreads(highSize, false))
@@ -678,8 +678,8 @@ SEXP gmean(SEXP x, SEXP narmArg)
       }
     } else {
       // narm==true and anyNA==true
-      int *restrict nna_counts_r = calloc(ngrp, sizeof(int));
-      int *restrict nna_counts_i = calloc(ngrp, sizeof(int));
+      int *restrict nna_counts_r = calloc(ngrp, sizeof(*nna_counts_r));
+      int *restrict nna_counts_i = calloc(ngrp, sizeof(*nna_counts_i));
       if (!nna_counts_r || !nna_counts_i) {
         // # nocov start
         free(nna_counts_r); free(nna_counts_i);

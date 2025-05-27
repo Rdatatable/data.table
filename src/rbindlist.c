@@ -92,11 +92,11 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
         SET_TRUELENGTH(s,-nuniq);
       }
     }
-    if (nuniq>0) uniq = realloc(uniq, nuniq*sizeof(SEXP));  // shrink to only what we need to release the spare
+    if (nuniq>0) uniq = realloc(uniq, sizeof(SEXP)*nuniq);  // shrink to only what we need to release the spare
 
     // now count the dups (if any) and how they're distributed across the items
-    int *counts = (int *)calloc(nuniq, sizeof(int)); // counts of names for each colnames
-    int *maxdup = (int *)calloc(nuniq, sizeof(int)); // the most number of dups for any name within one colname vector
+    int *counts = calloc(nuniq, sizeof(*counts)); // counts of names for each colnames
+    int *maxdup = calloc(nuniq, sizeof(*maxdup)); // the most number of dups for any name within one colname vector
     if (!counts || !maxdup) {
       // # nocov start
       for (int i=0; i<nuniq; ++i) SET_TRUELENGTH(uniq[i], 0);
@@ -445,7 +445,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
               if (allocLevel<INT_MAX) {
                 int64_t new = (int64_t)allocLevel+n-k+1024; // if all remaining levels in this item haven't been seen before, plus 1024 margin in case of many very short levels
                 allocLevel = (new>(int64_t)INT_MAX) ? INT_MAX : (int)new;
-                tt = (SEXP *)realloc(levelsRaw, allocLevel*sizeof(SEXP));  // first time levelsRaw==NULL and realloc==malloc in that case
+                tt = realloc(levelsRaw, sizeof(SEXP)*allocLevel);  // first time levelsRaw==NULL and realloc==malloc in that case
               }
               if (tt==NULL) {
                 // # nocov start

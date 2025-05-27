@@ -117,7 +117,7 @@ static void push(const int *x, const int n) {
   int newn = gs_thread_n[me] + n;
   if (gs_thread_alloc[me] < newn) {
     gs_thread_alloc[me] = (newn < nrow/3) ? (1+(newn*2)/4096)*4096 : nrow;  // [2|3] to not overflow and 3 not 2 to avoid allocating close to nrow (nrow groups occurs when all size 1 groups)
-    gs_thread[me] = realloc(gs_thread[me], gs_thread_alloc[me]*sizeof(int));
+    gs_thread[me] = realloc(gs_thread[me], sizeof(*gs_thread[me])*gs_thread_alloc[me]);
     if (gs_thread[me]==NULL) STOP(_("Failed to realloc thread private group size buffer to %d*4bytes"), (int)gs_thread_alloc[me]);
   }
   memcpy(gs_thread[me]+gs_thread_n[me], x, n*sizeof(int));
@@ -131,10 +131,10 @@ static void flush(void) {
   int newn = gs_n + n;
   if (gs_alloc < newn) {
     gs_alloc = (newn < nrow/3) ? (1+(newn*2)/4096)*4096 : nrow;
-    gs = realloc(gs, gs_alloc*sizeof(int));
+    gs = realloc(gs, sizeof(*gs)*gs_alloc);
     if (gs==NULL) STOP(_("Failed to realloc group size result to %d*4bytes"), (int)gs_alloc);
   }
-  memcpy(gs+gs_n, gs_thread[me], n*sizeof(int));
+  memcpy(gs+gs_n, gs_thread[me], sizeof(int)*n);
   gs_n += n;
   gs_thread_n[me] = 0;
 }
@@ -316,7 +316,7 @@ static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max
       if (ustr_alloc<=ustr_n) {
         ustr_alloc = (ustr_alloc==0) ? 16384 : ustr_alloc*2;  // small initial guess, negligible time to alloc 128KB (32 pages)
         if (ustr_alloc>n) ustr_alloc = n;  // clamp at n. Reaches n when fully unique (no dups)
-        ustr = realloc(ustr, ustr_alloc * sizeof(SEXP));
+        ustr = realloc(ustr, sizeof(SEXP) * ustr_alloc);
         if (ustr==NULL) STOP(_("Unable to realloc %d * %d bytes in range_str"), ustr_alloc, (int)sizeof(SEXP));  // # nocov
       }
       ustr[ustr_n++] = s;
@@ -345,7 +345,7 @@ static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max
     SEXP *ustr3 = malloc(sizeof(*ustr3) * ustr_n);
     if (!ustr3)
       STOP(_("Failed to alloc ustr3 when converting strings to UTF8"));  // # nocov
-    memcpy(ustr3, STRING_PTR_RO(ustr2), ustr_n*sizeof(SEXP));
+    memcpy(ustr3, STRING_PTR_RO(ustr2), sizeof(SEXP) * ustr_n);
     // need to reset ustr_maxlen because we need ustr_maxlen for utf8 strings
     ustr_maxlen = 0;
     for (int i=0; i<ustr_n; i++) {
@@ -551,9 +551,9 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
 
   int ncol=length(by);
   int keyAlloc = (ncol+n_cplx)*8 + 1;         // +1 for NULL to mark end; calloc to initialize with NULLs
-  key = calloc(keyAlloc, sizeof(uint8_t *));  // needs to be before loop because part II relies on part I, column-by-column.
+  key = calloc(keyAlloc, sizeof(*key));  // needs to be before loop because part II relies on part I, column-by-column.
   if (!key)
-    STOP(_("Unable to allocate %"PRIu64" bytes of working memory"), (uint64_t)keyAlloc*sizeof(uint8_t *));  // # nocov
+    STOP(_("Unable to allocate %"PRIu64" bytes of working memory"), (uint64_t)keyAlloc*sizeof(*key));  // # nocov
   nradix=0; // the current byte we're writing this column to; might be squashing into it (spare>0)
   int spare=0;  // the amount of bits remaining on the right of the current nradix byte
   bool isReal=false;
@@ -665,10 +665,10 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
 
     for (int b=0; b<nbyte; b++) {
       if (key[nradix+b]==NULL) {
-        uint8_t *tt = calloc(nrow, sizeof(uint8_t));  // 0 initialize so that NA's can just skip (NA is always the 0 offset)
+        uint8_t *tt = calloc(nrow, sizeof(*tt));  // 0 initialize so that NA's can just skip (NA is always the 0 offset)
         if (!tt) {
           free(key); // # nocov
-          STOP(_("Unable to allocate %"PRIu64" bytes of working memory"), (uint64_t)nrow*sizeof(uint8_t)); // # nocov
+          STOP(_("Unable to allocate %"PRIu64" bytes of working memory"), (uint64_t)nrow*sizeof(*tt)); // # nocov
         }
         key[nradix+b] = tt;
       }
@@ -796,9 +796,9 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
   }
   
   if (retgrp) {
-    gs_thread = calloc(nth, sizeof(int *));     // thread private group size buffers
-    gs_thread_alloc = calloc(nth, sizeof(int));
-    gs_thread_n = calloc(nth, sizeof(int));
+    gs_thread = calloc(nth, sizeof(*gs_thread));     // thread private group size buffers
+    gs_thread_alloc = calloc(nth, sizeof(*gs_thread_alloc));
+    gs_thread_n = calloc(nth, sizeof(*gs_thread_n));
     if (!gs_thread || !gs_thread_alloc || !gs_thread_n) {
       free(gs_thread); free(gs_thread_alloc); free(gs_thread_n); // # nocov
       STOP(_("Could not allocate (very tiny) group size thread buffers")); // # nocov
@@ -1242,9 +1242,9 @@ void radix_r(const int from, const int to, const int radix) {
   // the counts are uint16_t but the cumulate needs to be int32_t (or int64_t in future) to hold the offsets
   // If skip==true and we're already done, we still need the first row of this cummulate (diff to get total group sizes) to push() or recurse below
 
-  int *starts = calloc(nBatch*256, sizeof(int));  // keep starts the same shape and ugrp order as counts
+  int *starts = calloc(nBatch*256, sizeof(*starts));  // keep starts the same shape and ugrp order as counts
   if (!starts)
-    STOP(_("Failed to allocate %d bytes for '%s'."), (int)(nBatch*256*sizeof(int)), "starts"); // # nocov
+    STOP(_("Failed to allocate %d bytes for '%s'."), (int)(nBatch*256*sizeof(*starts)), "starts"); // # nocov
   for (int j=0, sum=0; j<ngrp; j++) {  // iterate through columns (ngrp bytes)
     uint16_t *tmp1 = counts+ugrp[j];
     int      *tmp2 = starts+ugrp[j];

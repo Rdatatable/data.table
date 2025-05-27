@@ -1291,14 +1291,14 @@ void savetl(SEXP s)
       internal_error(__func__, "reached maximum %d items for savetl", nalloc); // # nocov
     }
     nalloc = nalloc>(INT_MAX/2) ? INT_MAX : nalloc*2;
-    char *tmp = (char *)realloc(saveds, nalloc*sizeof(SEXP));
+    char *tmp = realloc(saveds, sizeof(SEXP)*nalloc);
     if (tmp==NULL) {
       // C spec states that if realloc() fails the original block is left untouched; it is not freed or moved. We rely on that here.
       savetl_end();                                                      // # nocov  free(saveds) happens inside savetl_end
       error(_("Failed to realloc saveds to %d items in savetl"), nalloc);   // # nocov
     }
     saveds = (SEXP *)tmp;
-    tmp = (char *)realloc(savedtl, nalloc*sizeof(R_len_t));
+    tmp = realloc(savedtl, sizeof(R_len_t)*nalloc);
     if (tmp==NULL) {
       savetl_end();                                                      // # nocov
       error(_("Failed to realloc savedtl to %d items in savetl"), nalloc);  // # nocov
