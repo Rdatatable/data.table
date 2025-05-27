@@ -96,8 +96,8 @@ static SEXP chmatchMain(SEXP x, SEXP table, int nomatch, bool chin, bool chmatch
     // For example: A,B,C,B,D,E,A,A   =>   A(TL=1),B(2),C(3),D(4),E(5)   =>   dupMap    1  2  3  5  6 | 8  7  4
     //                                                                        dupLink   7  8          |    6     (blank=0)
     unsigned int mapsize = tablelen+nuniq; // lto compilation warning #5760 // +nuniq to store a 0 at the end of each group
-    int *counts = (int *)calloc(nuniq, sizeof(int));
-    int *map =    (int *)calloc(mapsize, sizeof(int));
+    int *counts = calloc(nuniq, sizeof(*counts));
+    int *map =    calloc(mapsize, sizeof(*map));
     if (!counts || !map) {
       // # nocov start
       free(counts); free(map);
