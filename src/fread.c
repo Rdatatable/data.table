@@ -117,7 +117,7 @@ static void Field(FieldParseContext *ctx);
 #define IGNORE_BUMP(x) abs(x)
 #define TOGGLE_BUMP(x) (-x)
 
-#define OffsetPointer(x, offset) ((typeof(x))((char*)x + (offset)))
+#define OFFSET_POINTER(x, offset) ((typeof(x))((char*)x + (offset)))
 
 //=================================================================================================
 //
@@ -451,7 +451,7 @@ double copyFile(size_t fileSize)  // only called in very very rare cases
     return -1.0; // # nocov
   memcpy(mmp_copy, mmp, fileSize);
   sof = mmp_copy;
-  eof = (char*)OffsetPointer(mmp_copy, fileSize);
+  eof = (char*)OFFSET_POINTER(mmp_copy, fileSize);
   return wallclock()-tt;
 }
 
@@ -2400,9 +2400,9 @@ int freadMain(freadMainArgs _args) {
             break;
           }
           // shift current buffer positions, since `myBuffX`s were probably moved by realloc
-          fctx.targets[8] = OffsetPointer(ctx.buff8, myNrow * rowSize8);
-          fctx.targets[4] = OffsetPointer(ctx.buff4, myNrow * rowSize4);
-          fctx.targets[1] = OffsetPointer(ctx.buff1, myNrow * rowSize1);
+          fctx.targets[8] = OFFSET_POINTER(ctx.buff8, myNrow * rowSize8);
+          fctx.targets[4] = OFFSET_POINTER(ctx.buff4, myNrow * rowSize4);
+          fctx.targets[1] = OFFSET_POINTER(ctx.buff1, myNrow * rowSize1);
         }
         tLineStart = tch;  // for error message
         const char *fieldStart = tch;
