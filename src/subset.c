@@ -376,4 +376,3 @@ SEXP subsetVector(SEXP x, SEXP idx) { // idx is 1-based passed from R level
   UNPROTECT(nprotect);
   return ans;
 }
-

@@ -839,7 +839,8 @@ static SEXP gminmax(SEXP x, SEXP narm, const bool min)
             ansd[thisgrp] = elem;
         }
       }
-    }}
+    }
+  }
     break;
   case CPLXSXP:
     error(_("Type 'complex' has no well-defined min/max"));
@@ -972,7 +973,7 @@ static SEXP gfirstlast(SEXP x, const bool first, const int w, const bool headw) 
     } else {                                                                                       \
       /* w>1 && !first not supported because -i in R means everything-but-i and gnthvalue */       \
       /* currently takes n>0 only. However, we could still support n'th from the end, somehow */   \
-      internal_error(__func__, "unanticipated case first=%d w=%d headw=%d", first, w, headw);                \
+      internal_error(__func__, "unanticipated case first=%d w=%d headw=%d", first, w, headw);      \
     }                                                                                              \
   }
   switch(TYPEOF(x)) {
@@ -1282,4 +1283,3 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
   // consistency with plain shift(): "strip" the list in the 1-input case, for convenience
   return isVectorAtomic(x) && length(ans) == 1 ? VECTOR_ELT(ans, 0) : ans;
 }
-

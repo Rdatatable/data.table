@@ -125,4 +125,3 @@ SEXP setcolorder(SEXP x, SEXP o)
   UNPROTECT(1);
   return R_NilValue;
 }
-

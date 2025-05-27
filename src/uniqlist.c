@@ -45,7 +45,7 @@ SEXP uniqlist(SEXP l, SEXP order)
           iidx[len++] = i+1;                                                     \
           if (len>=isize) {                                                      \
             isize = MIN(nrow, (size_t)(1.1*(double)isize*((double)nrow/i)));     \
-            iidx = R_Realloc(iidx, isize, int);                                    \
+            iidx = R_Realloc(iidx, isize, int);                                  \
           }                                                                      \
         }                                                                        \
         prev = elem;                                                             \
@@ -372,4 +372,3 @@ SEXP uniqueNlogical(SEXP x, SEXP narmArg) {
     return ScalarInteger(3-narm);
   return ScalarInteger(2-(narm && third!=NA_LOGICAL));
 }
-

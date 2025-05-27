@@ -14,6 +14,8 @@
 
 4. `as.Date()` method for `IDate` no longer coerces to `double` [#6922](https://github.com/Rdatatable/data.table/issues/6922). Thanks @MichaelChirico for the report and PR. The only effect should be on overly-strict tests that assert `Date` objects have `double` storage, which is not in general true, especially from R 4.5.0.
 
+5. `as.data.table()` is slightly more efficient at converting arrays to data.tables, [#7019](https://github.com/Rdatatable/data.table/pull/7019). Thanks @eliocamp.
+
 ### BUG FIXES
 
 1. Custom binary operators from the `lubridate` package now work with objects of class `IDate` as with a `Date` subclass, [#6839](https://github.com/Rdatatable/data.table/issues/6839). Thanks @emallickhossain for the report and @aitap for the fix.
@@ -44,6 +46,12 @@
    + It's now an error to set `datatable.nomatch`, which has been warning since 1.15.0.
 
 3. {data.table} now depends on R 3.4.0 (2017).
+
+4. Changes to `fread()` output and errors:
+
+   + When the size of the file exceeds the size of the address space, `fread()` now signals an informative error instead of trying to map its size modulo the address space.
+   + On non-Windows systems, `fread()` now prints the reason why the file couldn't be opened, which could also be due to it being too large to map.
+   + With `verbose=TRUE`, file sizes are now printed using correct binary SI prefixes (the sizes have always been reported as bytes denominated in powers of `2^10`, so e.g. `1024*1024` bytes was reported as `1 MB` where `1 MiB` or `1.05 MB` is correct).
 
 ## data.table [v1.17.0](https://github.com/Rdatatable/data.table/milestone/34)  (20 Feb 2025)
 
