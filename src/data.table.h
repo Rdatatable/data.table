@@ -16,9 +16,6 @@
 #if R_VERSION < R_Version(4, 5, 0)
 #  define isDataFrame(x) isFrame(x) // #6180
 #endif
-#if !defined(R_VERSION) || R_VERSION < R_Version(3, 4, 0)
-#  define SET_GROWABLE_BIT(x) // frollapply adaptive #5441
-#endif
 #include <Rinternals.h>
 #define SEXPPTR_RO(x) ((const SEXP *)DATAPTR_RO(x))  // to avoid overhead of looped STRING_ELT and VECTOR_ELT
 #include <stdint.h>    // for uint64_t rather than unsigned long long

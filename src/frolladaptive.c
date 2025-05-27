@@ -53,7 +53,6 @@ void frolladaptivemeanFast(double *x, uint64_t nx, ans_t *ans, int *k, double fi
   double *cs = malloc(sizeof(*cs) * nx);                       // cumsum vector, same as double cs[nx] but no segfault
   if (!cs) {                                                    // # nocov start
     ansSetMsg(ans, 3, "%s: Unable to allocate memory for cumsum", __func__); // raise error
-    free(cs);
     return;
   }                                                             // # nocov end
   if (!truehasnf) {
@@ -82,22 +81,22 @@ void frolladaptivemeanFast(double *x, uint64_t nx, ans_t *ans, int *k, double fi
   }
   if (truehasnf) {
     uint64_t nc = 0, pinf = 0, ninf = 0;                        // running NA counter
-    uint64_t *cn = malloc(nx*sizeof(uint64_t));                 // cumulative NA counter, used the same way as cumsum, same as uint64_t cn[nx] but no segfault
+    uint64_t *cn = malloc(nx*sizeof(*cn));                      // cumulative NA counter, used the same way as cumsum, same as uint64_t cn[nx] but no segfault
     if (!cn) {                                                  // # nocov start
       ansSetMsg(ans, 3, "%s: Unable to allocate memory for cum NA counter", __func__); // raise error
+      free(cs);
+      return;
+    }                                                           // # nocov end
+    uint64_t *cpinf = malloc(nx*sizeof(*cpinf));
+    if (!cpinf) {                                               // # nocov start
+      ansSetMsg(ans, 3, "%s: Unable to allocate memory for cum Inf counter", __func__); // raise error
       free(cs); free(cn);
       return;
     }                                                           // # nocov end
-    uint64_t *cpinf = malloc(nx*sizeof(uint64_t));
-    if (!cpinf) {                                               // # nocov start
-      ansSetMsg(ans, 3, "%s: Unable to allocate memory for cum Inf counter", __func__); // raise error
-      free(cs); free(cn); free(cpinf);
-      return;
-    }                                                           // # nocov end
-    uint64_t *cninf = malloc(nx*sizeof(uint64_t));
+    uint64_t *cninf = malloc(nx*sizeof(*cninf));
     if (!cninf) {                                               // # nocov start
       ansSetMsg(ans, 3, "%s: Unable to allocate memory for cum -Inf counter", __func__); // raise error
-      free(cs); free(cn); free(cpinf); free(cninf);
+      free(cs); free(cn); free(cpinf);
       return;
     }                                           // # nocov end
     for (uint64_t i=0; i<nx; i++) {                             // loop over observations to calculate cumsum and cum NA counter
@@ -277,7 +276,6 @@ void frolladaptivesumFast(double *x, uint64_t nx, ans_t *ans, int *k, double fil
   double *cs = malloc(sizeof(*cs) * nx);
   if (!cs) {                                                    // # nocov start
     ansSetMsg(ans, 3, "%s: Unable to allocate memory for cumsum", __func__); // raise error
-    free(cs);
     return;
   }                                                             // # nocov end
   if (!truehasnf) {
@@ -306,22 +304,22 @@ void frolladaptivesumFast(double *x, uint64_t nx, ans_t *ans, int *k, double fil
   }
   if (truehasnf) {
     uint64_t nc = 0, pinf = 0, ninf = 0;                        // running NA counter
-    uint64_t *cn = malloc(nx*sizeof(uint64_t));                 // cumulative NA counter, used the same way as cumsum, same as uint64_t cn[nx] but no segfault
+    uint64_t *cn = malloc(nx*sizeof(*cn));                 // cumulative NA counter, used the same way as cumsum, same as uint64_t cn[nx] but no segfault
     if (!cn) {                                                  // # nocov start
       ansSetMsg(ans, 3, "%s: Unable to allocate memory for cum NA counter", __func__); // raise error
+      free(cs);
+      return;
+    }                                                           // # nocov end
+    uint64_t *cpinf = malloc(nx*sizeof(*cpinf));
+    if (!cpinf) {                                               // # nocov start
+      ansSetMsg(ans, 3, "%s: Unable to allocate memory for cum Inf counter", __func__); // raise error
       free(cs); free(cn);
       return;
     }                                                           // # nocov end
-    uint64_t *cpinf = malloc(nx*sizeof(uint64_t));
-    if (!cpinf) {                                               // # nocov start
-      ansSetMsg(ans, 3, "%s: Unable to allocate memory for cum Inf counter", __func__); // raise error
-      free(cs); free(cn); free(cpinf);
-      return;
-    }                                                           // # nocov end
-    uint64_t *cninf = malloc(nx*sizeof(uint64_t));
+    uint64_t *cninf = malloc(nx*sizeof(*cninf));
     if (!cninf) {                                               // # nocov start
       ansSetMsg(ans, 3, "%s: Unable to allocate memory for cum -Inf counter", __func__); // raise error
-      free(cs); free(cn); free(cpinf); free(cninf);
+      free(cs); free(cn); free(cpinf);
       return;
     }                                                           // # nocov end
     for (uint64_t i=0; i<nx; i++) {                             // loop over observations to calculate cumsum and cum NA counter
@@ -492,10 +490,9 @@ void frolladaptivemaxExact(double *x, uint64_t nx, ans_t *ans, int *k, double fi
       }
     }
   } else {
-    bool *isnan = malloc(nx*sizeof(bool)); // isnan lookup - we use it to reduce ISNAN calls in nested loop
+    bool *isnan = malloc(nx*sizeof(*isnan)); // isnan lookup - we use it to reduce ISNAN calls in nested loop
     if (!isnan) {                                                    // # nocov start
       ansSetMsg(ans, 3, "%s: Unable to allocate memory for isnan", __func__); // raise error
-      free(isnan);
       return;
     }                                                               // # nocov end
     bool truehasnf = hasnf>0;

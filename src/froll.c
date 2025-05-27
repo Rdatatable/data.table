@@ -573,10 +573,9 @@ void frollmaxExact(double *x, uint64_t nx, ans_t *ans, int k, double fill, bool 
       ans->dbl_v[i] = w;
     }
   } else {
-    bool *isnan = malloc(nx*sizeof(bool));                          // isnan lookup - we use it to reduce ISNAN calls in nested loop
+    bool *isnan = malloc(nx*sizeof(*isnan));                        // isnan lookup - we use it to reduce ISNAN calls in nested loop
     if (!isnan) {                                                   // # nocov start
       ansSetMsg(ans, 3, "%s: Unable to allocate memory for isnan", __func__); // raise error
-      free(isnan);
       return;
     }                                                               // # nocov end
     bool truehasnf = hasnf>0;

@@ -126,7 +126,6 @@
 }
 \section{\code{frollapply}}{
   \code{frollapply} computes rolling aggregate on arbitrary R functions. \code{adaptive} argument is not supported (to be changed). The input \code{x} (first argument) to the function \code{FUN} is coerced to \emph{numeric} beforehand(to be changed) and \code{FUN} has to return a scalar \emph{numeric} value (to be changed). Checks for that are made only during the first iteration when \code{FUN} is evaluated. Edge cases can be found in examples below. Any R function is supported, but it is not optimized using our own C implementation -- hence, for example, using \code{frollapply} to compute a rolling average is inefficient. It is also always single-threaded because there is no thread-safe API to R's C \code{eval}. Nevertheless we've seen the computation speed up vis-a-vis versions implemented in base R.
-  Support for \code{adaptive=TRUE} in \code{frollapply} requires R 3.4.0 or higher.
 }
 \section{\code{zoo} package users notice}{
   Users coming from most popular package for rolling functions \code{zoo} might expect following differences in \code{data.table} implementation
