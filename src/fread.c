@@ -402,10 +402,10 @@ double wallclock(void)
 /**
  * Helper function to print file's size in human-readable format. This will
  * produce strings such as:
- *     44.74GB (48043231704 bytes)
- *     921MB (965757797 bytes)
- *     2.206MB (2313045 bytes)
- *     38.69KB (39615 bytes)
+ *     44.74GiB (48043231704 bytes)
+ *     921MiB (965757797 bytes)
+ *     2.206MiB (2313045 bytes)
+ *     38.69KiB (39615 bytes)
  *     214 bytes
  *     0 bytes
  * The function returns a pointer to a static string buffer, so the caller
@@ -413,7 +413,7 @@ double wallclock(void)
  * multiple threads at the same time, or hold on to the value returned for
  * extended periods of time.
  */
-static const char* filesize_to_str(const size_t fsize)
+static const char* filesize_to_str(const uint64_t fsize)
 {
   static const char suffixes[] = {'T', 'G', 'M', 'K'};
   static char output[100];
@@ -426,12 +426,12 @@ static const char* filesize_to_str(const size_t fsize)
     }
     if (ndigits == 0 || (fsize == (fsize >> shift << shift))) {
       if (i < sizeof(suffixes)) {
-        snprintf(output, sizeof(output), "%"PRIu64"%cB (%"PRIu64" bytes)", // # notranslate
-                 (fsize >> shift), suffixes[i], fsize);
+        snprintf(output, sizeof(output), "%"PRIu64"%ciB (%"PRIu64" bytes)", // # notranslate
+                 fsize >> shift, suffixes[i], fsize);
         return output;
       }
     } else {
-      snprintf(output, sizeof(output), "%.*f%cB (%"PRIu64" bytes)", // # notranslate
+      snprintf(output, sizeof(output), "%.*f%ciB (%"PRIu64" bytes)", // # notranslate
                ndigits, (double)fsize / (1LL << shift), suffixes[i], fsize);
       return output;
     }
@@ -1415,11 +1415,15 @@ int freadMain(freadMainArgs _args) {
     const char* fnam = args.filename;
     #ifndef WIN32
       int fd = open(fnam, O_RDONLY);
-      if (fd==-1) STOP(_("File not found: %s"),fnam);
+      if (fd==-1) STOP(_("Couldn't open file %s: %s"),fnam, strerror(errno));
       struct stat stat_buf;
       if (fstat(fd, &stat_buf) == -1) {
         close(fd);                                                     // # nocov
         STOP(_("Opened file ok but couldn't obtain its size: %s"), fnam); // # nocov
+      }
+      if (stat_buf.st_size > SIZE_MAX) {
+        close(fd);                              // # nocov
+        STOP(_("File size [%s] exceeds the address space: %s"), filesize_to_str(stat_buf.st_size), fnam); // # nocov
       }
       fileSize = (size_t) stat_buf.st_size;
       if (fileSize == 0) {close(fd); STOP(_("File is empty: %s"), fnam);}
@@ -1453,8 +1457,12 @@ int freadMain(freadMainArgs _args) {
       if (hFile==INVALID_HANDLE_VALUE) STOP(_("Unable to open file after %d attempts (error %lu): %s"), attempts, GetLastError(), fnam);
       LARGE_INTEGER liFileSize;
       if (GetFileSizeEx(hFile,&liFileSize)==0) { CloseHandle(hFile); STOP(_("GetFileSizeEx failed (returned 0) on file: %s"), fnam); }
+      if (liFileSize.QuadPart > SIZE_MAX) {
+        CloseHandle(hFile); // # nocov
+        STOP(_("File size [%s] exceeds the address space: %s"), filesize_to_str(liFileSize.QuadPart), fnam); // # nocov
+      }
       fileSize = (size_t)liFileSize.QuadPart;
-      if (fileSize<=0) { CloseHandle(hFile); STOP(_("File is empty: %s"), fnam); }
+      if (fileSize==0) { CloseHandle(hFile); STOP(_("File is empty: %s"), fnam); }
       if (verbose) DTPRINT(_("  File opened, size = %s.\n"), filesize_to_str(fileSize));
       HANDLE hMap=CreateFileMapping(hFile, NULL, PAGE_WRITECOPY, 0, 0, NULL);
       if (hMap==NULL) { CloseHandle(hFile); STOP(_("This is Windows, CreateFileMapping returned error %lu for file %s"), GetLastError(), fnam); }
