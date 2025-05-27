@@ -120,7 +120,7 @@ static void push(const int *x, const int n) {
     gs_thread[me] = realloc(gs_thread[me], sizeof(*gs_thread[me])*gs_thread_alloc[me]);
     if (gs_thread[me]==NULL) STOP(_("Failed to realloc thread private group size buffer to %d*4bytes"), (int)gs_thread_alloc[me]);
   }
-  memcpy(gs_thread[me]+gs_thread_n[me], x, n*sizeof(int));
+  memcpy(gs_thread[me]+gs_thread_n[me], x, n*sizeof(*gs_thread[me]));
   gs_thread_n[me] += n;
 }
 
@@ -134,7 +134,7 @@ static void flush(void) {
     gs = realloc(gs, sizeof(*gs)*gs_alloc);
     if (gs==NULL) STOP(_("Failed to realloc group size result to %d*4bytes"), (int)gs_alloc);
   }
-  memcpy(gs+gs_n, gs_thread[me], sizeof(int)*n);
+  memcpy(gs+gs_n, gs_thread[me], sizeof(*gs)*n);
   gs_n += n;
   gs_thread_n[me] = 0;
 }
@@ -263,7 +263,7 @@ static void cradix_r(SEXP *xsub, int n, int radix)
   }
   memcpy(xsub, cradix_xtmp, n*sizeof(SEXP));
   if (radix == ustr_maxlen-1) {
-    memset(thiscounts, 0, 256*sizeof(int));
+    memset(thiscounts, 0, 256*sizeof(*thiscounts));
     return;
   }
   if (thiscounts[0] != 0) STOP(_("Logical error. counts[0]=%d in cradix but should have been decremented to 0. radix=%d"), thiscounts[0], radix);
@@ -454,9 +454,9 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
 {
 
 #ifdef TIMING_ON
-  memset(tblock, 0, MAX_NTH*NBLOCK*sizeof(double));
-  memset(nblock, 0, MAX_NTH*NBLOCK*sizeof(int));
-  memset(stat,   0, 257*sizeof(uint64_t));
+  memset(tblock, 0, MAX_NTH*NBLOCK*sizeof(*tblock));
+  memset(nblock, 0, MAX_NTH*NBLOCK*sizeof(*nblock));
+  memset(stat,   0, 257*sizeof(*stat));
   TBEG()
 #endif
 
@@ -993,7 +993,7 @@ void radix_r(const int from, const int to, const int radix) {
       }
       const int *restrict osub = anso+from;
       for (int i=0; i<my_n; i++) TMP[i] = osub[o[i]];
-      memcpy((int *restrict)(anso+from), TMP, my_n*sizeof(int));
+      memcpy((int *restrict)(anso+from), TMP, my_n*sizeof(*anso));
       for (int r=radix+1; r<nradix; r++) {
         const uint8_t *restrict ksub = key[r]+from;
         for (int i=0; i<my_n; i++) ((uint8_t *)TMP)[i] = ksub[o[i]];
@@ -1090,7 +1090,7 @@ void radix_r(const int from, const int to, const int radix) {
       } else {
         const int *restrict osub = anso+from;
         for (int i=0; i<my_n; i++) my_TMP[my_starts[my_key[i]]++] = osub[i];
-        memcpy(anso+from, my_TMP, my_n*sizeof(int));
+        memcpy(anso+from, my_TMP, my_n*sizeof(*anso));
       }
       TEND(13)
 
@@ -1113,7 +1113,7 @@ void radix_r(const int from, const int to, const int radix) {
     }
     int *my_gs = malloc(sizeof(*my_gs) * (ngrp==0 ? 256 : ngrp)); // ngrp==0 when sort and skip==true; we didn't count the non-zeros in my_counts yet in that case
     if (!my_gs)
-      STOP(_("Failed to allocate %d bytes for '%s'."), (int)((ngrp==0 ? 256 : ngrp) * sizeof(int)), "my_gs"); // # nocov
+      STOP(_("Failed to allocate %d bytes for '%s'."), (int)(sizeof(*my_gs) * (ngrp == 0 ? 256 : ngrp)), "my_gs"); // # nocov
     if (sortType!=0) {
       ngrp=0;
       for (int i=0; i<256; i++) if (my_counts[i]) my_gs[ngrp++]=my_counts[i];  // this casts from uint16_t to int32, too
@@ -1193,7 +1193,7 @@ void radix_r(const int from, const int to, const int radix) {
 
         // we haven't completed all batches, so we don't know where these groups should place yet
         // So for now we write the thread-private small now-grouped buffers back in-place. The counts and groups across all batches will be used below to move these blocks.
-        memcpy(anso+my_from, my_otmp, my_n*sizeof(int));
+        memcpy(anso+my_from, my_otmp, my_n*sizeof(*anso));
         for (int r=0; r<n_rem; r++) memcpy(key[radix+1+r]+my_from, my_ktmp+r*my_n, my_n*sizeof(uint8_t));
 
         // revert cumulate back to counts ready for vertical cumulate
@@ -1271,11 +1271,11 @@ void radix_r(const int from, const int to, const int radix) {
       const int                my_ngrp = ngrps[batch];
       for (int i=0; i<my_ngrp; i++, byte++) {
         const uint16_t len = my_counts[*byte];
-        memcpy(TMP+my_starts[*byte], osub, len*sizeof(int));
+        memcpy(TMP+my_starts[*byte], osub, len*sizeof(*TMP));
         osub += len;
       }
     }
-    memcpy(anso+from, TMP, my_n*sizeof(int));
+    memcpy(anso+from, TMP, my_n*sizeof(*anso));
 
     for (int r=0; r<n_rem; r++) {    // TODO: groups of sizeof(anso)  4 byte int currently  (in future 8).  To save team startup cost (but unlikely significant anyway)
       #pragma omp parallel for num_threads(getDTthreads(nBatch, false))
@@ -1300,7 +1300,7 @@ void radix_r(const int from, const int to, const int radix) {
 
   int *my_gs = malloc(sizeof(*my_gs) * ngrp);
   if (!my_gs)
-    STOP(_("Failed to allocate %d bytes for '%s'."), (int)(ngrp * sizeof(int)), "my_gs"); // # nocov
+    STOP(_("Failed to allocate %d bytes for '%s'."), (int)(sizeof(*my_gs) * ngrp), "my_gs"); // # nocov
   for (int i=1; i<ngrp; i++) my_gs[i-1] = starts[ugrp[i]] - starts[ugrp[i-1]];   // use the first row of starts to get totals
   my_gs[ngrp-1] = my_n - starts[ugrp[ngrp-1]];
 
@@ -1422,9 +1422,9 @@ SEXP issorted(SEXP x, SEXP by)
   const R_xlen_t nrow = xlength(VECTOR_ELT(x,0));
   // ncol>1
   // pre-save lookups to save deep switch later for each column type
-  size_t *sizes =          (size_t *)R_alloc(ncol, sizeof(size_t));
-  const char **ptrs = (const char **)R_alloc(ncol, sizeof(char *));
-  int *types =                (int *)R_alloc(ncol, sizeof(int));
+  size_t *sizes =          (size_t *)R_alloc(ncol, sizeof(*sizes));
+  const char **ptrs = (const char **)R_alloc(ncol, sizeof(*ptrs));
+  int *types =                (int *)R_alloc(ncol, sizeof(*types));
   for (int j=0; j<ncol; ++j) {
     int c = INTEGER(by)[j];
     if (c<1 || c>length(x)) STOP(_("issorted 'by' [%d] out of range [1,%d]"), c, length(x));

@@ -24,7 +24,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
   int64_t nrow=0, upperBoundUniqueNames=1;
   bool anyNames=false;
   int numZero=0, firstZeroCol=0, firstZeroItem=0;
-  int *eachMax = (int *)R_alloc(LENGTH(l), sizeof(int));
+  int *eachMax = (int *)R_alloc(LENGTH(l), sizeof(*eachMax));
   // pre-check for any errors here to save having to get cleanup right below when usenames
   for (int i=0; i<LENGTH(l); i++) {  // length(l)>0 checked above
     eachMax[i] = 0;
@@ -113,7 +113,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
       const SEXP cn = getAttrib(li, R_NamesSymbol);
       if (!length(cn)) continue;
       const SEXP *cnp = STRING_PTR_RO(cn);
-      memset(counts, 0, nuniq*sizeof(int));
+      memset(counts, 0, nuniq*sizeof(*counts));
       for (int j=0; j<thisncol; j++) {
         SEXP s = ENC2UTF8(cnp[j]); // convert different encodings for use.names #5452
         counts[ -TRUELENGTH(s)-1 ]++;
@@ -154,7 +154,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
         for (int j=0; j<thisncol; j++) colMapRaw[i*ncol + j] = j;
       } else {
         const SEXP *cnp = STRING_PTR_RO(cn);
-        memset(counts, 0, nuniq*sizeof(int));
+        memset(counts, 0, nuniq*sizeof(*counts));
         for (int j=0; j<thisncol; j++) {
           SEXP s = ENC2UTF8(cnp[j]); // convert different encodings for use.names #5452
           int w = -TRUELENGTH(s)-1;
@@ -180,13 +180,13 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
 
     // colMapRaw is still allocated. It was allocated with malloc because we needed to catch if the alloc failed.
     // move it to R's heap so it gets automatically free'd on exit, and on any error between now and the end of rbindlist.
-    colMap = (int *)R_alloc(LENGTH(l)*ncol, sizeof(int));
+    colMap = (int *)R_alloc(LENGTH(l)*ncol, sizeof(*colMap));
     // This R_alloc could fail with out-of-memory but given it is very small it's very unlikely. If it does fail, colMapRaw will leak.
     //   But colMapRaw leaking now in this very rare situation is better than colMapRaw leaking in the more likely but still rare conditions later.
     //   And it's better than having to trap all exit point from here to the end of rbindlist, which may not be possible; e.g. writeNA() could error inside it with unsupported type.
     //   This very unlikely leak could be fixed by using an on.exit() at R level rbindlist(); R-exts$6.1.2 refers to pwilcox for example. However, that would not
     //   solve the (mere) leak if we ever call rbindlist internally from other C functions.
-    memcpy(colMap, colMapRaw, LENGTH(l)*ncol*sizeof(int));
+    memcpy(colMap, colMapRaw, LENGTH(l)*ncol*sizeof(*colMap));
     free(colMapRaw);  // local scope in this branch to ensure can't be used below
 
     // to view map when debugging ...
