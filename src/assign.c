@@ -320,7 +320,7 @@ SEXP selfrefokwrapper(SEXP x, SEXP verbose) {
   return ScalarInteger(_selfrefok(x,FALSE,LOGICAL(verbose)[0]));
 }
 
-int *_Last_updated = NULL;
+int *Last_updated_ = NULL;
 
 SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
 {
@@ -381,7 +381,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     if (numToDo==0) {
       // isString(cols) is exclusive to calls from set()
       if (!length(newcolnames) && !isString(cols)) {
-        *_Last_updated = 0;
+        *Last_updated_ = 0;
         UNPROTECT(protecti);
         return(dt); // all items of rows either 0 or NA. !length(newcolnames) for #759
       }
@@ -393,7 +393,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   }
   if (!length(cols)) {
     if (verbose) Rprintf(_("length(LHS)==0; no columns to delete or assign RHS to."));   // test 1295 covers
-    *_Last_updated = 0;
+    *Last_updated_ = 0;
     UNPROTECT(protecti);
     return(dt);
   }
@@ -582,7 +582,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     if (ret) warning("%s", ret); // # notranslate
   }
 
-  *_Last_updated = numToDo;  // the updates have taken place with no error, so update .Last.updated now
+  *Last_updated_ = numToDo;  // the updates have taken place with no error, so update .Last.updated now
   assignedNames = PROTECT(allocVector(STRSXP, LENGTH(cols))); protecti++;
   for (int i=0; i<LENGTH(cols); ++i) SET_STRING_ELT(assignedNames,i,STRING_ELT(names,INTEGER(cols)[i]-1));
   key = getAttrib(dt, sym_sorted);
