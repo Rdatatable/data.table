@@ -4,3 +4,9 @@ expression E;
 @@
 - (T)
   malloc(E)
+
+- (T)
+  calloc(_, E)
+
+- (T)
+  realloc(_, E)

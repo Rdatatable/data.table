@@ -220,12 +220,12 @@ SEXP fwriteR(
   // allocate new `columns` vector and fetch the DATAPTR_RO() offset once up front here to reduce the complexity
   // in fread.c needing to know about the size of R's header, or calling R API. It won't be slower because only
   // this new vector of pointers is used by fread.c, but it does use a tiny bit more memory (ncol * 8 bytes).
-  args.columns = (void *)R_alloc(args.ncol, sizeof(const void *));
+  args.columns = (void *)R_alloc(args.ncol, sizeof(*args.columns));
 
   args.funs = funs;  // funs declared statically at the top of this file
 
   // Allocate and populate lookup vector to writer function for each column, whichFun[]
-  args.whichFun = (uint8_t *)R_alloc(args.ncol, sizeof(uint8_t));
+  args.whichFun = (uint8_t *)R_alloc(args.ncol, sizeof(*args.whichFun));
 
   // just for use at this level to control whichWriter() when called now for each column and
   // when called later for cell items of list columns (if any)
