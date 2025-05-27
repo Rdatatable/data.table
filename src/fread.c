@@ -409,7 +409,7 @@ double wallclock(void)
  * multiple threads at the same time, or hold on to the value returned for
  * extended periods of time.
  */
-static const char* filesize_to_str(char output[static 100], const size_t fsize)
+static const char* filesize_to_str(char output[static 100], const uint64_t fsize)
 {
   static const char suffixes[] = {'T', 'G', 'M', 'K'};
   for (int i = 0; i <= sizeof(suffixes); i++) {
