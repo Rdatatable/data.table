@@ -215,7 +215,7 @@ SEXP setdt_nrows(SEXP x)
      *   many operations still work in the presence of NULL columns and it might be convenient
      *   e.g. in package eplusr which calls setDT on a list when parsing JSON. Operations which
      *   fail for NULL columns will give helpful error at that point, #3480 and #3471 */
-    if (Rf_isNull(xi)) continue;
+    if (isNull(xi)) continue;
     if (Rf_inherits(xi, "POSIXlt")) {
       error(_("Column %d has class 'POSIXlt'. Please convert it to POSIXct (using as.POSIXct) and run setDT() again. We do not recommend the use of POSIXlt at all because it uses 40 bytes to store one date."), i+1);
     }
