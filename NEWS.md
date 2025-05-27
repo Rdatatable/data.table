@@ -8,6 +8,17 @@
 
 1. Rolling functions `frollmean` and `frollsum` used to treat `Inf` and `-Inf` as `NA` when using default `algo="fast"`. It has been changed now and infinite values are not treated as `NA` anymore. If your input into those functions has `Inf` or `-Inf` then you will be affected by this change.
 
+2. `frollapply` result is not coerced to numeric anymore. Users code could possibly break if it depends on forced coercion of input/output to numeric type.
+```r
+## before
+frollapply(c(F,T,F,F,F,T), 2, any)
+#[1] NA  1  1  0  0  1
+
+## 1.18.0
+frollapply(c(F,T,F,F,F,T), 2, any)
+#[1]    NA  TRUE  TRUE FALSE FALSE  TRUE
+```
+
 ### NEW FEATURES
 
 1. New `sort_by()` method for data.tables, [#6662](https://github.com/Rdatatable/data.table/issues/6662). It uses `forder()` to improve upon the data.frame method and also match `DT[order(...)]` behavior with respect to locale. Thanks @rikivillalba for the suggestion and PR.
@@ -54,6 +65,54 @@ microbenchmark::microbenchmark(
 #      sj(x) 4608.28940 4627.57186 4792.4031 4785.35306 4856.4475 5054.3301    10
 #   frmax(x)   70.41253   75.28659   91.3774   91.40227  102.0248  116.8622    10
 # frapply(x)  713.23108  742.34657  865.2524  848.31641  965.3599 1114.0531    10
+```
+
+6. Function `frollapply` has been completely rewritten. Be sure to read `frollapply` manual before using the function. There are following changes:
+
+- all basic types are now supported on input/output, not only double. Users code could possibly break if it depends on forced coercion of input/output to double type.
+- new argument `by.column` allowing to pass a multi-column subset of a data.table into a rolling function, closes [#4887](https://github.com/Rdatatable/data.table/issues/4887).
+```r
+x = as.data.table(iris)
+flow = function(x) {
+  v1 = x[[1L]]
+  v2 = x[[2L]]
+  (v1[2L] - v1[1L] * (1+v2[2L])) / v1[1L]
+}
+x[, "flow" := frollapply(.(Sepal.Length, Sepal.Width), 2, flow, by.column=FALSE),
+  by = Species][]
+#     Sepal.Length Sepal.Width Petal.Length Petal.Width   Species      flow
+#            <num>       <num>        <num>       <num>    <fctr>     <num>
+#  1:          5.1         3.5          1.4         0.2    setosa        NA
+#  2:          4.9         3.0          1.4         0.2    setosa -3.039216
+#  3:          4.7         3.2          1.3         0.2    setosa -3.240816
+#  4:          4.6         3.1          1.5         0.2    setosa -3.121277
+#  5:          5.0         3.6          1.4         0.2    setosa -3.513043
+# ---
+#146:          6.7         3.0          5.2         2.3 virginica -3.000000
+#147:          6.3         2.5          5.0         1.9 virginica -2.559701
+#148:          6.5         3.0          5.2         2.0 virginica -2.968254
+#149:          6.2         3.4          5.4         2.3 virginica -3.446154
+#150:          5.9         3.0          5.1         1.8 virginica -3.048387
+```
+
+- uses multiple CPU threads; evaluation of UDF is inherently slow so this can be a great help.
+```r
+x = rnorm(1e5)
+n = 500
+setDTthreads(1)
+system.time(
+  th1 <- frollapply(x, n, median, simplify=unlist)
+)
+#   user  system elapsed
+#  4.106   0.008   4.115
+setDTthreads(4)
+system.time(
+  th4 <- frollapply(x, n, median, simplify=unlist)
+)
+#   user  system elapsed
+#  5.778   0.140   1.498
+all.equal(th1, th4)
+#[1] TRUE
 ```
 
 ### BUG FIXES

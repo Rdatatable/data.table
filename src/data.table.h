@@ -235,11 +235,16 @@ void frolladaptivesumFast(double *x, uint64_t nx, ans_t *ans, int *k, double fil
 void frolladaptivesumExact(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasnf, bool verbose);
 //void frolladaptivemaxFast(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasnf, bool verbose); // does not exists as of now
 void frolladaptivemaxExact(double *x, uint64_t nx, ans_t *ans, int *k, double fill, bool narm, int hasnf, bool verbose);
-void frolladaptiveapply(double *x, int64_t nx, SEXP pw, int *k, ans_t *ans, double fill, SEXP call, SEXP rho, bool verbose);
 
 // frollR.c
 SEXP frollfunR(SEXP fun, SEXP xobj, SEXP kobj, SEXP fill, SEXP algo, SEXP align, SEXP narm, SEXP hasnf, SEXP adaptive);
-SEXP frollapplyR(SEXP fun, SEXP xobj, SEXP kobj, SEXP fill, SEXP align, SEXP adaptive, SEXP rho);
+
+// frollapply.c
+SEXP memcpyVector(SEXP dest, SEXP src, SEXP offset, SEXP size);
+SEXP memcpyDT(SEXP dest, SEXP src, SEXP offset, SEXP size);
+SEXP memcpyVectoradaptive(SEXP dest, SEXP src, SEXP offset, SEXP size);
+SEXP memcpyDTadaptive(SEXP dest, SEXP src, SEXP offset, SEXP size);
+SEXP setgrowable(SEXP x);
 
 // nafill.c
 void nafillDouble(double *x, uint_fast64_t nx, unsigned int type, double fill, bool nan_is_na, ans_t *ans, bool verbose);
