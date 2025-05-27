@@ -265,8 +265,8 @@ SEXP copyAsPlain(SEXP x) {
 void copySharedColumns(SEXP x) {
   const int ncol = length(x);
   if (!isNewList(x) || ncol==1) return;
-  bool *shared = (bool *)R_alloc(ncol, sizeof(bool)); // on R heap in case alloc fails
-  int *savetl = (int *)R_alloc(ncol, sizeof(int));  // on R heap for convenience but could be a calloc
+  bool *shared = (bool *)R_alloc(ncol, sizeof(*shared)); // on R heap in case alloc fails
+  int *savetl = (int *)R_alloc(ncol, sizeof(*savetl));  // on R heap for convenience but could be a calloc
   const SEXP *xp = SEXPPTR_RO(x);
   // first save the truelength, which may be negative on specials in dogroups, and set to zero; test 2157
   // the savetl() function elsewhere is for CHARSXP. Here, we are using truelength on atomic vectors.
