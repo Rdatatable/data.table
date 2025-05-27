@@ -38,10 +38,10 @@ frollsum(c(1,2,3,Inf,5,6), 2)
 
 For a comprehensive description about all available features see `?froll` manual.
 
-Adaptive `frollmax` has observed to be up to 50 times faster than second fastest solution (data.table self-join using `max` and grouping `by=.EACHI`). Note that important factor in performance is width of the rolling window. Code for the benchmark below has been taken from [this SO answer](https://stackoverflow.com/a/73408459/2490497).
+Adaptive `frollmax` has observed to be almost 100 times faster than second fastest solution (data.table self-join using `max` and grouping `by=.EACHI`). Note that important factor in performance is width of the rolling window. Code for the benchmark below has been taken from [this SO answer](https://stackoverflow.com/a/73408459/2490497).
 ```r
 set.seed(108)
-setDTthreads(8)
+setDTthreads(16)
 x = data.table(
   value = cumsum(rnorm(1e6, 0.1)),
   end_window = 1:1e6 + sample(50:500, 1e6, TRUE),
@@ -58,12 +58,14 @@ microbenchmark::microbenchmark(
   times=10, check="identical"
 )
 #Unit: milliseconds
-#       expr        min         lq      mean     median        uq       max neval
-#   baser(x) 5181.36076 5417.57505 5537.2929 5494.73652 5706.2721 5818.6627    10
-#      sj(x) 4608.28940 4627.57186 4792.4031 4785.35306 4856.4475 5054.3301    10
-#   frmax(x)   70.41253   75.28659   91.3774   91.40227  102.0248  116.8622    10
-# frapply(x)  713.23108  742.34657  865.2524  848.31641  965.3599 1114.0531    10
+#       expr        min         lq       mean     median         uq       max neval
+#   baser(x) 3795.27209 4051.33159 4170.51859 4187.30114 4315.97151 4413.3272    10
+#      sj(x) 2833.27588 2842.76144 2902.32128 2873.51706 2963.72514 2990.0901    10
+#   frmax(x)   29.81908   33.55922   37.24334   36.04337   42.35755   45.8010    10
+# frapply(x)  395.60000  417.02053  474.53025  449.81073  545.89983  563.4593    10
 ```
+
+As of now, adaptive rolling max has no _on-line_ implemention (`algo="fast"`), it uses a naive approach (`algo="exact"`). Therefore further speed up is still possible if `algo="fast"` gets implemented.
 
 ### BUG FIXES
 
