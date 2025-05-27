@@ -7,6 +7,15 @@
 ### BREAKING CHANGE
 
 1. Rolling functions `frollmean` and `frollsum` used to treat `Inf` and `-Inf` as `NA` when using default `algo="fast"`. It has been changed now and infinite values are not treated as `NA` anymore. If your input into those functions has `Inf` or `-Inf` then you will be affected by this change.
+```r
+## before
+frollsum(c(1,2,3,Inf,5,6), 2)
+#[1] NA  3  5 NA NA 11
+
+## 1.18.0
+frollsum(c(1,2,3,Inf,5,6), 2)
+#[1]  NA   3   5 Inf Inf  11
+```
 
 ### NEW FEATURES
 
