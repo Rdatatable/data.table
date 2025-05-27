@@ -347,4 +347,3 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   UNPROTECT(nprotect);
   return(ansVec);
 }
-

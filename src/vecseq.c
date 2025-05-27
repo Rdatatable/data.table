@@ -39,4 +39,3 @@ SEXP vecseq(SEXP x, SEXP len, SEXP clamp)
   UNPROTECT(1);
   return(ans);
 }
-
