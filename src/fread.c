@@ -451,7 +451,7 @@ double copyFile(size_t fileSize)  // only called in very very rare cases
     return -1.0; // # nocov
   memcpy(mmp_copy, mmp, fileSize);
   sof = mmp_copy;
-  eof = (char*)OFFSET_POINTER(mmp_copy, fileSize);
+  eof = (char *)OFFSET_POINTER(mmp_copy, fileSize);
   return wallclock()-tt;
 }
 
