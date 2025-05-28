@@ -125,7 +125,6 @@ R_CallMethodDef callMethods[] = {
 {"Cinrange", (DL_FUNC) &inrange, -1},
 {"Cbetween", (DL_FUNC) &between, -1},
 {"ChasOpenMP", (DL_FUNC) &hasOpenMP, -1},
-{"CbeforeR340", (DL_FUNC) &beforeR340, -1},
 {"CuniqueNlogical", (DL_FUNC) &uniqueNlogical, -1},
 {"CfrollfunR", (DL_FUNC) &frollfunR, -1},
 {"CdllVersion", (DL_FUNC) &dllVersion, -1},
@@ -210,16 +209,16 @@ void attribute_visible R_init_data_table(DllInfo *info)
   // According to IEEE (http://en.wikipedia.org/wiki/IEEE_754-1985#Zero) we can rely on 0.0 being all 0 bits.
   // But check here anyway just to be sure, just in case this answer is right (http://stackoverflow.com/a/2952680/403310).
   int i = 314;
-  memset(&i, 0, sizeof(int));
+  memset(&i, 0, sizeof(i));
   if (i != 0) error(_("Checking memset(&i,0,sizeof(int)); i == (int)0 %s"), msg);
   unsigned int ui = 314;
-  memset(&ui, 0, sizeof(unsigned int));
+  memset(&ui, 0, sizeof(ui));
   if (ui != 0) error(_("Checking memset(&ui, 0, sizeof(unsigned int)); ui == (unsigned int)0 %s"), msg);
   double d = 3.14;
-  memset(&d, 0, sizeof(double));
+  memset(&d, 0, sizeof(d));
   if (d != 0.0) error(_("Checking memset(&d, 0, sizeof(double)); d == (double)0.0 %s"), msg);
   long double ld = 3.14;
-  memset(&ld, 0, sizeof(long double));
+  memset(&ld, 0, sizeof(ld));
   if (ld != 0.0) error(_("Checking memset(&ld, 0, sizeof(long double)); ld == (long double)0.0 %s"), msg);
 
   // Check unsigned cast used in fread.c. This isn't overflow/underflow, just cast.
@@ -351,15 +350,6 @@ SEXP hasOpenMP(void) {
 
 }
 
-SEXP beforeR340(void) {
-  // used in onAttach.R for message about fread memory leak fix needing R 3.4.0
-  // at C level to catch if user upgrades R but does not reinstall data.table
-  #if R_VERSION < R_Version(3,4,0)
-  return ScalarLogical(true);
-  #else
-  return ScalarLogical(false);
-  #endif
-}
 // # nocov end
 
 extern int *_Last_updated;  // assign.c
@@ -374,4 +364,3 @@ SEXP dllVersion(void) {
   // .onLoad calls this and checks the same as packageVersion() to ensure no R/C version mismatch, #3056
   return(ScalarString(mkChar("1.17.99")));
 }
-

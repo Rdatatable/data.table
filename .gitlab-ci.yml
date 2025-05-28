@@ -203,13 +203,13 @@ test-lin-dev-clang-cran:
 # stated dependency on R
 test-lin-ancient-cran:
   <<: *test-lin
-  image: registry.gitlab.com/rdatatable/dockerfiles/r-3.3.0
+  image: registry.gitlab.com/rdatatable/dockerfiles/r-3.4.0
   variables:
     _R_CHECK_FORCE_SUGGESTS_: "FALSE" # can be removed if all dependencies are available (knitr, xts, etc.)
   script:
     - *install-deps
     # knitr requires evaluate, which requires R 3.6.0.
-    # Restore checking vignettes if upgrading our R dependency means knitr can be installed.
+    # Restore checking vignettes if upgrading our R dependency means knitr can be installed, or when we switch to litedown.
     - R CMD check --no-manual --no-build-vignettes --ignore-vignettes $(ls -1t data.table_*.tar.gz | head -n 1)
 
 # run the main checks with Address(+Leak),UBSanitizer enabled

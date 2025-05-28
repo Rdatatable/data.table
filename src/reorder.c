@@ -51,8 +51,8 @@ SEXP reorder(SEXP x, SEXP order)
   while (idx[i] == i+1) --i;
   const int end=i, nmid=end-start+1;
 
-  uint8_t *seen = (uint8_t *)R_alloc(nmid, sizeof(uint8_t)); // detect duplicates
-  memset(seen, 0, nmid*sizeof(uint8_t));
+  uint8_t *seen = (uint8_t *)R_alloc(nmid, sizeof(*seen)); // detect duplicates
+  memset(seen, 0, nmid*sizeof(*seen));
   for (int i=start; i<=end; ++i) {
     if (idx[i]==NA_INTEGER || idx[i]-1<start || idx[i]-1>end || seen[idx[i]-1-start]++)
       error(_("Item %d of order (%d) is either NA, out of range [1,%d], or is duplicated. The new order must be a strict permutation of 1:n"),
@@ -102,7 +102,7 @@ SEXP reorder(SEXP x, SEXP order)
       }
     }
     // Unique and somber line. Not done lightly. Please read all comments in this file.
-    memcpy(((char *)DATAPTR_RO(v)) + size*start, TMP, size*nmid);
+    memcpy((char *)DATAPTR_RO(v) + size*start, TMP, size*nmid);
     // The one and only place in data.table where we write behind the write-barrier. Fundamental to setkey and data.table.
     // This file is unique and special w.r.t. the write-barrier: an utterly strict in-place shuffle.
     // This shuffle operation does not inc or dec named/refcnt, or anything similar in R: past, present or future.
@@ -125,4 +125,3 @@ SEXP setcolorder(SEXP x, SEXP o)
   UNPROTECT(1);
   return R_NilValue;
 }
-
