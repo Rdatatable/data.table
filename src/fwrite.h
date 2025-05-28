@@ -120,4 +120,3 @@ typedef struct fwriteMainArgs
 } fwriteMainArgs;
 
 void fwriteMain(fwriteMainArgs args);
-

@@ -189,13 +189,13 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   if (verbose)
     Rprintf("maxBit=%d; MSBNbits=%d; shift=%d; MSBsize=%zu\n", maxBit, MSBNbits, shift, MSBsize); // # notranslate
 
-  uint64_t *counts = (uint64_t *)R_alloc(nBatch*MSBsize, sizeof(uint64_t));
-  memset(counts, 0, nBatch*MSBsize*sizeof(uint64_t));
+  uint64_t *counts = (uint64_t *)R_alloc(nBatch*MSBsize, sizeof(*counts));
+  memset(counts, 0, nBatch*MSBsize*sizeof(*counts));
   // provided MSBsize>=9, each batch is a multiple of at least one 4k page, so no page overlap
 
   if (verbose) Rprintf(_("counts is %dMB (%d pages per nBatch=%d, batchSize=%"PRIu64", lastBatchSize=%"PRIu64")\n"),
-                       (int)(nBatch*MSBsize*sizeof(uint64_t)/(1024*1024)),
-                       (int)(nBatch*MSBsize*sizeof(uint64_t)/(4*1024*nBatch)),
+                       (int)(nBatch*MSBsize*sizeof(*counts)/(1024*1024)),
+                       (int)(nBatch*MSBsize*sizeof(*counts)/(4*1024*nBatch)),
                        nBatch, (uint64_t)batchSize, (uint64_t)lastBatchSize);
   t[3] = wallclock();
   #pragma omp parallel for num_threads(nth)
@@ -248,8 +248,8 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
     uint64_t *msbCounts = counts + (nBatch-1)*MSBsize;
     // msbCounts currently contains the ending position of each MSB (the starting location of the next) even across empty
     if (msbCounts[MSBsize-1] != xlength(x)) internal_error(__func__, "counts[nBatch-1][MSBsize-1] != length(x)"); // # nocov
-    uint64_t *msbFrom = (uint64_t *)R_alloc(MSBsize, sizeof(uint64_t));
-    int *order = (int *)R_alloc(MSBsize, sizeof(int));
+    uint64_t *msbFrom = (uint64_t *)R_alloc(MSBsize, sizeof(*msbFrom));
+    int *order = (int *)R_alloc(MSBsize, sizeof(*order));
     uint64_t cumSum = 0;
     for (int i=0; i<MSBsize; ++i) {
       msbFrom[i] = cumSum;
@@ -273,7 +273,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
     {
       // each thread has its own small stack of counts
       // don't use VLAs here: perhaps too big for stack yes but more that VLAs apparently fail with schedule(dynamic)
-      uint64_t *restrict mycounts = calloc((toBit/8 + 1)*256, sizeof(uint64_t));
+      uint64_t *restrict mycounts = calloc((toBit/8 + 1)*256, sizeof(*mycounts));
       if (!mycounts) {
         failed=true; alloc_fail=true;  // # nocov
       }
@@ -347,4 +347,3 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   UNPROTECT(nprotect);
   return(ansVec);
 }
-
