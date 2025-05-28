@@ -21133,3 +21133,10 @@ test(2315.1, tail(DT[order(i), i], 2L), 1:2)
 # wider range of numbers needed for further coverage
 DT[1L, i := 1000L]
 test(2315.2, tail(DT[order(i), i], 2L), c(1L, 1000L))
+
+# issue #6898, test that tzone behavior changes with ignore_tzone=TRUE
+tms = list(.POSIXct(1), .POSIXct(1.0, "UTC"))
+test(2316.1, between(tms[[1]], tms[[1L]], tms[[2L]]), error = "different tzone attributes")
+test(2316.2, between(tms[[1]], tms[[1L]], tms[[2L]], ignore_tzone=TRUE))
+test(2316.3, between(tms[[1]], tms[[2L]], tms[[2L]]), message = "mismatched tzone attributes")
+test(2316.4, between(tms[[1]], tms[[2L]], tms[[2L]], ignore_tzone=TRUE))

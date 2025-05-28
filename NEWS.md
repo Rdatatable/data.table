@@ -16,6 +16,8 @@
 
 5. `as.data.table()` is slightly more efficient at converting arrays to data.tables, [#7019](https://github.com/Rdatatable/data.table/pull/7019). Thanks @eliocamp.
 
+6. `between()` gains the argument `ignore_tzone=FALSE`. Normally, a difference in time zone between `lower` and `upper` will produce an error, and a difference in time zone between `x` and either of the others will produce a message. Setting `ignore_tzone=TRUE` bypasses the checks, allowing both comparisons to proceed without error or message about time zones.
+
 ### BUG FIXES
 
 1. Custom binary operators from the `lubridate` package now work with objects of class `IDate` as with a `Date` subclass, [#6839](https://github.com/Rdatatable/data.table/issues/6839). Thanks @emallickhossain for the report and @aitap for the fix.
