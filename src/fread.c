@@ -1368,7 +1368,7 @@ int freadMain(freadMainArgs _args) {
       else
         DTPRINT(_("  None of the NAstrings look like numbers.\n"));
     }
-    if (args.skipNrow >= 0) DTPRINT(_("  skip num lines = %"PRId64"\n"), (int64_t)args.skipNrow);
+    if (args.skipNrow >= 0) DTPRINT(_("  skip num lines = %"PRId64"\n"), args.skipNrow);
     if (args.skipString) DTPRINT(_("  skip to string = <<%s>>\n"), args.skipString);
     DTPRINT(_("  show progress = %d\n"), args.showProgress);
     DTPRINT(_("  0/1 column will be read as %s\n"), args.logical01? "boolean" : "integer");
@@ -1621,8 +1621,8 @@ int freadMain(freadMainArgs _args) {
     pos = ch;
     ch = sof;
     while (ch<pos) row1line+=(*ch++=='\n');
-    if (verbose) DTPRINT(_("Found skip='%s' on line %"PRIu64". Taking this to be header row or first row of data.\n"),
-                         args.skipString, (uint64_t)row1line);
+    if (verbose) DTPRINT(_("Found skip='%s' on line %d. Taking this to be header row or first row of data.\n"),
+                         args.skipString, row1line);
     ch = pos;
   }
   else if (args.skipNrow >= 0) {
@@ -1635,12 +1635,12 @@ int freadMain(freadMainArgs _args) {
       }
     }
     if (ch > sof && verbose)
-      DTPRINT(_("  Skipped to line %"PRIu64" in the file"), (uint64_t)row1line);
+      DTPRINT(_("  Skipped to line %d in the file"), row1line);
     if (ch>=eof)
       STOP(Pl_(row1line,
-               "skip=%"PRIu64" but the input only has %"PRIu64" line",
-               "skip=%"PRIu64" but the input only has %"PRIu64" lines"),
-           (uint64_t)args.skipNrow, (uint64_t)row1line);
+               "skip=%"PRId64" but the input only has %d line",
+               "skip=%"PRId64" but the input only has %d lines"),
+           args.skipNrow, row1line);
     pos = ch;
   }
 
@@ -1925,7 +1925,7 @@ int freadMain(freadMainArgs _args) {
   }
   if (verbose) {
     if (nrowLimit<INT64_MAX) {
-      DTPRINT(_("  Number of sampling jump points = %d because nrow limit (%"PRIu64") supplied\n"), nJumps, (uint64_t)nrowLimit);
+      DTPRINT(_("  Number of sampling jump points = %d because nrow limit (%"PRId64") supplied\n"), nJumps, nrowLimit);
     } else if (jump0size==0) {
       DTPRINT(_("  Number of sampling jump points = %d because jump0size==0\n"), nJumps);
     } else {
@@ -2109,7 +2109,7 @@ int freadMain(freadMainArgs _args) {
   bytesRead=0;     // Bytes in the data section (i.e. excluding column names, header and footer, if any)
 
   if (sampleLines <= jumpLines) {
-    if (verbose) DTPRINT(_("  All rows were sampled since file is small so we know nrow=%"PRIu64" exactly\n"), (uint64_t)sampleLines);
+    if (verbose) DTPRINT(_("  All rows were sampled since file is small so we know nrow=%"PRId64" exactly\n"), sampleLines);
     estnrow = allocnrow = sampleLines;
   } else {
     bytesRead = eof - firstRowStart;
@@ -2122,19 +2122,19 @@ int freadMain(freadMainArgs _args) {
     // blank lines have length 1 so for fill=true apply a +100% maximum. It'll be grown if needed.
     if (verbose) {
       DTPRINT("  =====\n"); // # notranslate
-      DTPRINT(_("  Sampled %"PRIu64" rows (handled \\n inside quoted fields) at %d jump points\n"), (uint64_t)sampleLines, nJumps);
-      DTPRINT(_("  Bytes from first data row on line %d to the end of last row: %"PRIu64"\n"), row1line, (uint64_t)bytesRead);
+      DTPRINT(_("  Sampled %"PRId64" rows (handled \\n inside quoted fields) at %d jump points\n"), sampleLines, nJumps);
+      DTPRINT(_("  Bytes from first data row on line %d to the end of last row: %td\n"), row1line, bytesRead);
       DTPRINT(_("  Line length: mean=%.2f sd=%.2f min=%d max=%d\n"), meanLineLen, sd, minLen, maxLen);
-      DTPRINT(_("  Estimated number of rows: %"PRIu64" / %.2f = %"PRIu64"\n"), (uint64_t)bytesRead, meanLineLen, (uint64_t)estnrow);
-      DTPRINT(_("  Initial alloc = %"PRIu64" rows (%"PRIu64" + %d%%) using bytes/max(mean-2*sd,min) clamped between [1.1*estn, 2.0*estn]\n"),
-              (uint64_t)allocnrow, (uint64_t)estnrow, (int)(100.0*allocnrow/estnrow-100.0));
+      DTPRINT(_("  Estimated number of rows: %td / %.2f = %"PRId64"\n"), bytesRead, meanLineLen, estnrow);
+      DTPRINT(_("  Initial alloc = %"PRId64" rows (%"PRId64" + %d%%) using bytes/max(mean-2*sd,min) clamped between [1.1*estn, 2.0*estn]\n"),
+              allocnrow, estnrow, (int)(100.0*allocnrow/estnrow-100.0));
       DTPRINT("  =====\n"); // # notranslate
     } else {
-      if (sampleLines > allocnrow) INTERNAL_STOP("sampleLines(%"PRIu64") > allocnrow(%"PRIu64")", (uint64_t)sampleLines, (uint64_t)allocnrow); // # nocov
+      if (sampleLines > allocnrow) INTERNAL_STOP("sampleLines(%"PRId64") > allocnrow(%"PRId64")", sampleLines, allocnrow); // # nocov
     }
   }
   if (nrowLimit < allocnrow) {
-    if (verbose) DTPRINT(_("  Alloc limited to lower nrows=%"PRIu64" passed in.\n"), (uint64_t)nrowLimit);
+    if (verbose) DTPRINT(_("  Alloc limited to lower nrows=%"PRId64" passed in.\n"), nrowLimit);
     estnrow = allocnrow = nrowLimit;
   }
   }
@@ -2210,7 +2210,7 @@ int freadMain(freadMainArgs _args) {
   rowSize8 = 0;
   size = malloc(sizeof(*size) * ncol);  // TODO: remove size[] when we implement Pasha's idea to += size inside processor
   if (!size)
-    STOP(_("Failed to allocate %d bytes for '%s': %s"), (int)(sizeof(*size) * ncol), "size", strerror(errno)); // # nocov
+    STOP(_("Failed to allocate %zu bytes for '%s': %s"), sizeof(*size) * ncol, "size", strerror(errno)); // # nocov
   nStringCols = 0;
   nNonStringCols = 0;
   for (int j=0; j<ncol; j++) {
@@ -2241,8 +2241,8 @@ int freadMain(freadMainArgs _args) {
   //*********************************************************************************************
   if (verbose) {
     DTPRINT(_("[10] Allocate memory for the datatable\n"));
-    DTPRINT(_("  Allocating %d column slots (%d - %d dropped) with %"PRIu64" rows\n"),
-            ncol-ndrop, ncol, ndrop, (uint64_t)allocnrow);
+    DTPRINT(_("  Allocating %d column slots (%d - %d dropped) with %"PRId64" rows\n"),
+            ncol-ndrop, ncol, ndrop, allocnrow);
   }
   size_t DTbytes = allocateDT(type, size, ncol, ndrop, allocnrow);
   double tAlloc = wallclock();
@@ -2270,7 +2270,7 @@ int freadMain(freadMainArgs _args) {
   // For the 44GB file with 12875 columns, the max line len is 108,497. We may want each chunk to write to its
   // own page (4k) of the final column, hence 1000 rows of the smallest type (4 byte int) is just
   // under 4096 to leave space for R's header + malloc's header.
-  size_t chunkBytes = umax((size_t)(1000*meanLineLen), 1ULL/*MB*/ *1024*1024);
+  size_t chunkBytes = umax((uint64_t)(1000*meanLineLen), 1ULL/*MB*/ *1024*1024);
   // Index of the first jump to read. May be modified if we ever need to restart
   // reading from the middle of the file.
   int jump0 = 0;
@@ -2289,22 +2289,22 @@ int freadMain(freadMainArgs _args) {
     ASSERT(nJumps==1 /*when nrowLimit supplied*/ || nJumps==2 /*small files*/, "nJumps (%d) != 1|2", nJumps);
     nJumps=1;
   }
-  int64_t initialBuffRows = (int64_t)allocnrow / nJumps;
+  int64_t initialBuffRows = allocnrow / nJumps;
 
   // Catch initialBuffRows==0 when max_nrows is small, seg fault #2243
   // Rather than 10, maybe 1 would work too but then 1.5 grow factor * 1 would still be 1. This clamp
   // should only engage when max_nrows is supplied, and supplied small too, so doesn't matter too much.
   if (initialBuffRows < 10) initialBuffRows = 10;
 
-  if (initialBuffRows > INT32_MAX) STOP(_("Buffer size %"PRId64" is too large\n"), (int64_t)initialBuffRows);
+  if (initialBuffRows > INT32_MAX) STOP(_("Buffer size %"PRId64" is too large\n"), initialBuffRows);
   nth = imin(nJumps, nth);
 
   if (verbose) DTPRINT(_("[11] Read the data\n"));
   while(true){  // we'll return here to reread any columns with out-of-sample type exceptions, or dirty jumps
     restartTeam = false;
     if (verbose)
-      DTPRINT("  jumps=[%d..%d), chunk_size=%"PRIu64", total_size=%"PRIu64"\n", jump0, nJumps, (uint64_t)chunkBytes, (uint64_t)(eof-pos)); // # notranslate
-    ASSERT(allocnrow <= nrowLimit, "allocnrow(%"PRIu64") <= nrowLimit(%"PRIu64")", (uint64_t)allocnrow, (uint64_t)nrowLimit);
+      DTPRINT("  jumps=[%d..%d), chunk_size=%zu, total_size=%td\n", jump0, nJumps, chunkBytes, eof-pos); // # notranslate
+    ASSERT(allocnrow <= nrowLimit, "allocnrow(%"PRId64") <= nrowLimit(%"PRId64")", allocnrow, nrowLimit);
     #pragma omp parallel num_threads(nth)
     {
       int me = omp_get_thread_num();
@@ -2533,10 +2533,10 @@ int freadMain(freadMainArgs _args) {
                   if (verbose) {
                     char temp[1001];
                     int len = snprintf(temp, 1000,
-                      _("Column %d%s%.*s%s bumped from '%s' to '%s' due to <<%.*s>> on row %"PRIu64"\n"),
+                      _("Column %d%s%.*s%s bumped from '%s' to '%s' due to <<%.*s>> on row %"PRId64"\n"),
                       j+1, colNames?" <<":"", colNames?(colNames[j].len):0, colNames?(colNamesAnchor+colNames[j].off):"", colNames?">>":"",
                       typeName[IGNORE_BUMP(joldType)], typeName[IGNORE_BUMP(thisType)],
-                      (int)(tch-fieldStart), fieldStart, (uint64_t)(ctx.DTi+myNrow));
+                      (int)(tch-fieldStart), fieldStart, (int64_t)(ctx.DTi+myNrow));
                     if (len > 1000) len = 1000;
                     if (len > 0) {
                       typeBumpMsg = realloc(typeBumpMsg, typeBumpMsgSize + len + 1);
@@ -2583,7 +2583,7 @@ int freadMain(freadMainArgs _args) {
           }
           else if (headPos!=thisJumpStart && nrowLimit>0) { // do not care for dirty jumps since we do not read data and only want to know types
              // # nocov start
-            snprintf(internalErr, internalErrSize, "invalid head position. jump=%d, headPos=%p, thisJumpStart=%p, sof=%p", jump, (void*)headPos, (void*)thisJumpStart, (void*)sof); // # notranslate
+            snprintf(internalErr, internalErrSize, "invalid head position. jump=%d, headPos=%p, thisJumpStart=%p, sof=%p", jump, headPos, thisJumpStart, sof); // # notranslate
             stopTeam = true;
             // # nocov end
           }
@@ -2656,7 +2656,7 @@ int freadMain(freadMainArgs _args) {
       }
       dropFill = malloc(sizeof(*dropFill) * ndropFill);
       if (!dropFill)
-        STOP(_("Failed to allocate %d bytes for '%s'."), (int)(sizeof(*dropFill) * ndropFill), "dropFill"); // # nocov
+        STOP(_("Failed to allocate %zu bytes for '%s'."), sizeof(*dropFill) * ndropFill, "dropFill"); // # nocov
       int i=0;
       for (int j=max_col; j<ncol; ++j) {
         type[j] = CT_DROP;
@@ -2677,15 +2677,15 @@ int freadMain(freadMainArgs _args) {
       if (extraAllocRows && nrowLimit>0) { // no allocating needed for nrows=0
         allocnrow += extraAllocRows;
         if (allocnrow > nrowLimit) allocnrow = nrowLimit;
-        if (verbose) DTPRINT(_("  Too few rows allocated. Allocating additional %"PRIu64" rows (now nrows=%"PRIu64") and continue reading from jump %d\n"),
-                             (uint64_t)extraAllocRows, (uint64_t)allocnrow, jump0);
+        if (verbose) DTPRINT(_("  Too few rows allocated. Allocating additional %"PRId64" rows (now nrows=%"PRId64") and continue reading from jump %d\n"),
+                             extraAllocRows, allocnrow, jump0);
         allocateDT(type, size, ncol, ncol - nStringCols - nNonStringCols, allocnrow);
         extraAllocRows = 0;
         continue;
       }
       if (restartTeam && nrowLimit>0) { // no restarting needed for nrows=0 since we discard read data anyway
         if (verbose) DTPRINT(_("  Restarting team from jump %d. nSwept==%d quoteRule==%d\n"), jump0, nSwept, quoteRule);
-        ASSERT(nSwept>0 || quoteRuleBumpedCh!=NULL, "team restart but nSwept==%d and quoteRuleBumpedCh==%p", nSwept, (void *)quoteRuleBumpedCh); // # nocov
+        ASSERT(nSwept>0 || quoteRuleBumpedCh!=NULL, "team restart but nSwept==%d and quoteRuleBumpedCh==%p", nSwept, quoteRuleBumpedCh); // # nocov
         continue;
       }
       // else nrowLimit applied and stopped early normally
@@ -2773,17 +2773,17 @@ int freadMain(freadMainArgs _args) {
         ch = headPos;
         int tt = countfields(&ch);
         if (fill>0) {
-          DTWARN(_("Stopped early on line %"PRIu64". Expected %d fields but found %d. Consider fill=%d or even more based on your knowledge of the input file. Use fill=Inf for reading the whole file for detecting the number of fields. First discarded non-empty line: <<%s>>"),
-          (uint64_t)DTi+row1line, ncol, tt, tt, strlim(skippedFooter,500));
+          DTWARN(_("Stopped early on line %"PRId64". Expected %d fields but found %d. Consider fill=%d or even more based on your knowledge of the input file. Use fill=Inf for reading the whole file for detecting the number of fields. First discarded non-empty line: <<%s>>"),
+          DTi+row1line, ncol, tt, tt, strlim(skippedFooter,500));
         } else {
-          DTWARN(_("Stopped early on line %"PRIu64". Expected %d fields but found %d. Consider fill=TRUE. First discarded non-empty line: <<%s>>"),
-          (uint64_t)DTi+row1line, ncol, tt, strlim(skippedFooter,500));
+          DTWARN(_("Stopped early on line %"PRId64". Expected %d fields but found %d. Consider fill=TRUE. First discarded non-empty line: <<%s>>"),
+          DTi+row1line, ncol, tt, strlim(skippedFooter,500));
         }
       }
     }
   }
   if (quoteRuleBumpedCh!=NULL && quoteRuleBumpedCh<headPos) {
-    DTWARN(_("Found and resolved improper quoting out-of-sample. First healed line %"PRIu64": <<%s>>. If the fields are not quoted (e.g. field separator does not appear within any field), try quote=\"\" to avoid this warning."), (uint64_t)quoteRuleBumpedLine, strlim(quoteRuleBumpedCh, 500));
+    DTWARN(_("Found and resolved improper quoting out-of-sample. First healed line %"PRId64": <<%s>>. If the fields are not quoted (e.g. field separator does not appear within any field), try quote=\"\" to avoid this warning."), quoteRuleBumpedLine, strlim(quoteRuleBumpedCh, 500));
   }
 
   if (verbose) {
@@ -2793,14 +2793,14 @@ int freadMain(freadMainArgs _args) {
     DTPRINT(_("%8.3fs (%3.0f%%) sep="), tLayout-tMap, 100.0*(tLayout-tMap)/tTot);
       DTPRINT(sep=='\t' ? "'\\t'" : (sep=='\n' ? "'\\n'" : "'%c'"), sep); // # notranslate
       DTPRINT(_(" ncol=%d and header detection\n"), ncol);
-    DTPRINT(_("%8.3fs (%3.0f%%) Column type detection using %"PRIu64" sample rows\n"),
-            tColType-tLayout, 100.0*(tColType-tLayout)/tTot, (uint64_t)sampleLines);
-    DTPRINT(_("%8.3fs (%3.0f%%) Allocation of %"PRIu64" rows x %d cols (%.3fGB) of which %"PRIu64" (%3.0f%%) rows used\n"),
-      tAlloc-tColType, 100.0*(tAlloc-tColType)/tTot, (uint64_t)allocnrow, ncol, DTbytes/(1024.0*1024*1024), (uint64_t)DTi, 100.0*DTi/allocnrow);
+    DTPRINT(_("%8.3fs (%3.0f%%) Column type detection using %"PRId64" sample rows\n"),
+            tColType-tLayout, 100.0*(tColType-tLayout)/tTot, sampleLines);
+    DTPRINT(_("%8.3fs (%3.0f%%) Allocation of %"PRId64" rows x %d cols (%.3fGB) of which %"PRId64" (%3.0f%%) rows used\n"),
+      tAlloc-tColType, 100.0*(tAlloc-tColType)/tTot, allocnrow, ncol, DTbytes/(1024.0*1024*1024), DTi, 100.0*DTi/allocnrow);
     thRead/=nth; thPush/=nth;
     double thWaiting = tReread-tAlloc-thRead-thPush;
-    DTPRINT(_("%8.3fs (%3.0f%%) Reading %d chunks (%d swept) of %.3fMB (each chunk %d rows) using %d threads\n"),
-            tReread-tAlloc, 100.0*(tReread-tAlloc)/tTot, nJumps, nSwept, (double)chunkBytes/(1024*1024), (int)(DTi/nJumps), nth);
+    DTPRINT(_("%8.3fs (%3.0f%%) Reading %d chunks (%d swept) of %.3fMB (each chunk %"PRId64" rows) using% d threads\n"),
+            tReread-tAlloc, 100.0*(tReread-tAlloc)/tTot, nJumps, nSwept, (double)chunkBytes/(1024*1024), DTi/nJumps, nth);
     DTPRINT(_("   + %8.3fs (%3.0f%%) Parse to row-major thread buffers (grown %d times)\n"), thRead, 100.0*thRead/tTot, buffGrown);
     DTPRINT(_("   + %8.3fs (%3.0f%%) Transpose\n"), thPush, 100.0*thPush/tTot);
     DTPRINT(_("   + %8.3fs (%3.0f%%) Waiting\n"), thWaiting, 100.0*thWaiting/tTot);
