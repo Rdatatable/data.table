@@ -2683,8 +2683,11 @@ int freadMain(freadMainArgs _args) {
       }
       // else nrowLimit applied and stopped early normally
     }
-    
-    
+
+    // tell progress meter to finish up; e.g. write final newline
+    // if there's a reread, the progress meter will start again from 0
+    if (args.showProgress) progress(100, 0);
+
     if (firstTime) {
       tReread = tRead = wallclock();
     
