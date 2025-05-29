@@ -2,9 +2,9 @@
 trimn = function(n, len, align) {
   n = min(n, len) ## so frollsum(1:2, 3, partial=TRUE) works
   if (align=="right")
-    c(seq.int(n), rep.int(n, len-n))
+    c(seq_len(n), rep.int(n, len-n))
   else
-    c(rep.int(n, len-n), rev(seq.int(n)))
+    c(rep.int(n, len-n), rev(seq_len(n)))
 }
 trimnadaptive = function(n, align) {
   if (align=="right")
@@ -25,9 +25,11 @@ trimnadaptive = function(n, align) {
 # frollsum(list(1:4, 2:5), 2:3, partial=FALSE, adaptive=FALSE)
 # frollsum(list(1:4, 2:5), 2:3, partial=TRUE, adaptive=FALSE)
 partial2adaptive = function(x, n, align, adaptive) {
+  if (!length(n))
+    stopf("n must be non 0 length")
   if (align=="center")
     stopf("'partial' cannot be used together with align='center'")
-  if (is.list(x) && length(unique(lengths(x)))!=1L)
+  if (is.list(x) && length(unique(lengths(x))) != 1L)
     stopf("'partial' does not support variable length of columns in 'x'")
   len = if (is.list(x)) length(x[[1L]]) else length(x)
   verbose = getOption("datatable.verbose")
@@ -38,9 +40,11 @@ partial2adaptive = function(x, n, align, adaptive) {
       stopf("n must be an integer vector or a list of integer vectors")
     if (verbose)
       catf("partial2adaptive: froll partial=TRUE trimming 'n' and redirecting to adaptive=TRUE\n")
-    if (length(n)>1L) {
+    if (length(n) > 1L) {
+      ## c(2,3) -> list(c(1,2,2,2),c(1,2,3,3)) ## for x=1:4
       lapply(n, len, align, FUN=trimn)
     } else {
+      ## 3 -> c(1,2,3,3) ## for x=1:4
       trimn(n, len, align)
     }
   } else {
@@ -54,7 +58,13 @@ partial2adaptive = function(x, n, align, adaptive) {
       stopf("length of vectors in 'x' must match to length of adaptive window in 'n'")
     if (verbose)
       catf("partial2adaptive: froll adaptive=TRUE and partial=TRUE trimming 'n'\n")
-    lapply(n, align, FUN=trimnadaptive)
+    if (is.numeric(n)) {
+      ## c(3,3,3,2) -> c(1,2,3,2) ## for x=1:4
+      trimnadaptive(n, align)
+    } else {
+      ## list(c(3,3,3,2),c(4,2,3,3)) -> list(c(1,2,3,2),c(1,2,3,3)) ## for x=1:4
+      lapply(n, align, FUN = trimnadaptive)
+    }
   }
 }
 
@@ -63,8 +73,6 @@ froll = function(fun, x, n, fill=NA, algo, align=c("right","left","center"), na.
   if (isTRUE(give.names))
     orig = list(n=n, adaptive=adaptive)
   if (isTRUE(partial)) {
-    if (!length(n))
-      stopf("n must be non 0 length")
     n = partial2adaptive(x, n, align, adaptive)
     adaptive = TRUE
   }
