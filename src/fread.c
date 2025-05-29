@@ -27,7 +27,7 @@
 #include "freadLookups.h"
 
 // Private globals to save passing all of them through to highly iterated field processors
-static const char *sof, *eof;
+static  char *sof, *eof;
 static char sep;
 static char whiteChar; // what to consider as whitespace to skip: ' ', '\t' or 0 means both (when sep!=' ' && sep!='\t')
 static char quote, dec;
@@ -124,15 +124,6 @@ static void Field(FieldParseContext *ctx);
 //   Utility functions
 //
 //=================================================================================================
-
-/**
- * Drops `const` qualifier from a `const char*` variable, equivalent of
- * `const_cast<char*>` in C++.
- */
-static char* const_cast(const char *ptr) {
-  union { const char *a; char *b; } tmp = { ptr };
-  return tmp.b;
-}
 
 /**
  * Free any resources / memory buffers allocated by the fread() function, and
@@ -1580,7 +1571,7 @@ int freadMain(freadMainArgs _args) {
           DTPRINT(_("Avoidable file copy in RAM took %.3f seconds. %s.\n"), time_taken, msg);  // # nocov. not warning as that could feasibly cause CRAN tests to fail, say, if test machine is heavily loaded
       }
     }
-    *const_cast(eof) = '\0';  // cow page
+    *eof = '\0';  // cow page
   }
   // else char* input already guaranteed to end with \0. We do not modify direct char* input at all, ever.
   // We have now ensured the input ends on eof and that *eof=='\0' too. Normally, lastEOLreplaced will be true.
@@ -1872,8 +1863,8 @@ int freadMain(freadMainArgs _args) {
       if (verbose) DTPRINT(_("  1-column file ends with 2 or more end-of-line. Restoring last eol using extra byte in cow page.\n"));
       eof++;
     }
-    *const_cast(eof-1) = eol_one_r ? '\r' : '\n';
-    *const_cast(eof) = '\0';
+    *(eof-1) = eol_one_r ? '\r' : '\n';
+    *eof = '\0';
   }
   }
 
