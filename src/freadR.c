@@ -147,7 +147,7 @@ SEXP freadR(
   if (!isNull(NAstringsArg) && !isString(NAstringsArg))
     internal_error(__func__, "NAstringsArg is type '%s'. R level catches this", type2char(TYPEOF(NAstringsArg)));  // # nocov
   int nnas = length(NAstringsArg);
-  const char **NAstrings = (const char **)R_alloc((nnas + 1), sizeof(char*));  // +1 for the final NULL to save a separate nna variable
+  const char **NAstrings = (const char **)R_alloc((nnas + 1), sizeof(*NAstrings));  // +1 for the final NULL to save a separate nna variable
   for (int i=0; i<nnas; i++)
     NAstrings[i] = CHAR(STRING_ELT(NAstringsArg,i));
   NAstrings[nnas] = NULL;
@@ -708,7 +708,7 @@ void progress(int p, int eta) {
 }
 // # nocov end
 
-void __halt(bool warn, const char *format, ...) {
+void halt__(bool warn, const char *format, ...) {
   // Solves: http://stackoverflow.com/questions/18597123/fread-data-table-locks-files
   // TODO: always include fnam in the STOP message. For log files etc.
   va_list args;

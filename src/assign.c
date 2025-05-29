@@ -400,7 +400,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   // FR #2077 - set able to add new cols by reference
   if (isString(cols)) {
     PROTECT(tmp = chmatch(cols, names, 0)); protecti++;
-    buf = (int *) R_alloc(length(cols), sizeof(int));
+    buf = (int *) R_alloc(length(cols), sizeof(*buf));
     int k=0;
     for (int i=0; i<length(cols); ++i) {
       if (INTEGER(tmp)[i] == 0) buf[k++] = i;
@@ -699,7 +699,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   }
   if (ndelete) {
     // delete any columns assigned NULL (there was a 'continue' earlier in loop above)
-    int *tt = (int *)R_alloc(ndelete, sizeof(int));
+    int *tt = (int *)R_alloc(ndelete, sizeof(*tt));
     const int *colsd=INTEGER(cols), ncols=length(cols), ndt=length(dt);
     for (int i=0, k=0; i<ncols; ++i) {   // find which ones to delete and put them in tt
       // Aside: a new column being assigned NULL (something odd to do) would have been warned above, added above, and now deleted. Just
@@ -1055,7 +1055,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
     case RAWSXP:    BODY(Rbyte, RAW,    int, val!=0,                                    td[i]=cval)
     case LGLSXP:
       if (mc) {
-                    memcpy(td, LOGICAL_RO(source), slen*sizeof(int)); break;
+                    memcpy(td, LOGICAL_RO(source), slen*sizeof(*td)); break;
       } else        BODY(int, LOGICAL,  int, val,                                       td[i]=cval)
     case INTSXP:    BODY(int, INTEGER,  int, val==NA_INTEGER ? NA_LOGICAL : val!=0,     td[i]=cval)
     case REALSXP:
@@ -1072,7 +1072,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
     case  LGLSXP:   // same as INTSXP ...
     case  INTSXP:
       if (mc) {
-                    memcpy(td, INTEGER_RO(source), slen*sizeof(int)); break;
+                    memcpy(td, INTEGER_RO(source), slen*sizeof(*td)); break;
       } else        BODY(int, INTEGER,  int, val,                                       td[i]=cval)
     case REALSXP:
       if (sourceIsI64)
@@ -1092,7 +1092,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
       case REALSXP:
         if (sourceIsI64) {
           if (mc) {
-                    memcpy(td, (const int64_t *)REAL_RO(source), slen*sizeof(int64_t)); break;
+                    memcpy(td, (const int64_t *)REAL_RO(source), slen*sizeof(*td)); break;
           } else    BODY(int64_t, REAL, int64_t, val,                                   td[i]=cval)
         } else      BODY(double, REAL,  int64_t, within_int64_repres(val) ? val : NA_INTEGER64,    td[i]=cval)
       case CPLXSXP: BODY(Rcomplex, COMPLEX, int64_t, ISNAN(val.r) ? NA_INTEGER64 : (int64_t)val.r, td[i]=cval)
@@ -1291,14 +1291,14 @@ void savetl(SEXP s)
       internal_error(__func__, "reached maximum %d items for savetl", nalloc); // # nocov
     }
     nalloc = nalloc>(INT_MAX/2) ? INT_MAX : nalloc*2;
-    char *tmp = (char *)realloc(saveds, nalloc*sizeof(SEXP));
+    char *tmp = realloc(saveds, sizeof(SEXP)*nalloc);
     if (tmp==NULL) {
       // C spec states that if realloc() fails the original block is left untouched; it is not freed or moved. We rely on that here.
       savetl_end();                                                      // # nocov  free(saveds) happens inside savetl_end
       error(_("Failed to realloc saveds to %d items in savetl"), nalloc);   // # nocov
     }
     saveds = (SEXP *)tmp;
-    tmp = (char *)realloc(savedtl, nalloc*sizeof(R_len_t));
+    tmp = realloc(savedtl, sizeof(R_len_t)*nalloc);
     if (tmp==NULL) {
       savetl_end();                                                      // # nocov
       error(_("Failed to realloc savedtl to %d items in savetl"), nalloc);  // # nocov
@@ -1335,4 +1335,3 @@ SEXP setcharvec(SEXP x, SEXP which, SEXP newx)
   }
   return R_NilValue;
 }
-

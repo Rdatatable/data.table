@@ -21133,3 +21133,27 @@ test(2315.1, tail(DT[order(i), i], 2L), 1:2)
 # wider range of numbers needed for further coverage
 DT[1L, i := 1000L]
 test(2315.2, tail(DT[order(i), i], 2L), c(1L, 1000L))
+
+# issue #6898, test that tzone behavior changes with ignore_tzone=TRUE
+tms = list(.POSIXct(1), .POSIXct(1.0, "UTC"))
+test(2316.1, between(tms[[1]], tms[[1L]], tms[[2L]]), error = "different tzone attributes")
+test(2316.2, between(tms[[1]], tms[[1L]], tms[[2L]], ignore_tzone=TRUE))
+test(2316.3, between(tms[[1]], tms[[2L]], tms[[2L]]), message = "mismatched tzone attributes")
+test(2316.4, between(tms[[1]], tms[[2L]], tms[[2L]], ignore_tzone=TRUE))
+
+# tbl in i still allows 'i.' prefix reference for update join, #6998
+DT1 = data.table(a=1, b=2)
+DT2 = data.table(a=1, c=3)
+DF1 = data.frame(a=1, d=4)
+DF2 = data.frame(a=1, e=5)
+class(DF2) = c("tbl_df", "tbl", "data.frame")
+
+test(2317.1, DT1[DT2, on='a', c := i.c]$c, 3)
+test(2317.2, DT1[DT2, on='a', c2 := x.a + i.c]$c2, 4)
+test(2317.3, DT1[DT2, on='a', .(c = x.a + i.c)]$c, 4)
+test(2317.4, DT1[DF1, on='a', d := i.d]$d, 4)
+test(2317.5, DT1[DF1, on='a', d2 := x.a + i.d]$d2, 5)
+test(2317.6, DT1[DF1, on='a', .(d = x.a + i.d)]$d, 5)
+test(2317.7, DT1[DF2, on='a', e := i.e]$e, 5)
+test(2317.8, DT1[DF2, on='a', e2 := x.a + i.e]$e2, 6)
+test(2317.9, DT1[DF2, on='a', .(e = x.a + i.e)]$e, 6)

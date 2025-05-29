@@ -677,10 +677,12 @@ replace_dot_alias = function(e) {
     }
     ansvals = chmatch(ansvars, nx)
   } else {
-    if (is.data.table(i)) {
+    if (is.data.frame(i)) {
       idotprefix = paste0("i.", names_i)
       xdotprefix = paste0("x.", names_x)
-    } else idotprefix = xdotprefix = character(0L)
+    } else {
+      idotprefix = xdotprefix = character(0L)
+    }
 
     # j was substituted before dealing with i so that := can set allow.cartesian=FALSE (#800) (used above in i logic)
     if (is.null(jsub)) return(NULL)
