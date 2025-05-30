@@ -108,7 +108,7 @@ Please also make a note in the change log under [`# Governance history`](#govern
 
 # Finances and Funding
 
-The data.table project is fiscally sponsored by [NumFOCUS](https://numfocus.org/).  Donations to the project can be made at [numfocus.org/donate-to-data-table](https://numfocus.org/donate-to-data-table)
+data.table is a [NumFOCUS](https://numfocus.org/) project.  Donations to the data.table can be made at [https://numfocus.org/project/data-table]([https://numfocus.org/donate-to-data-table](https://app.hubspot.com/payments/FFWKWTTvKFdzqH?referrer=PAYMENT_LINK))
 
 *NumFOCUS is a 501(c)(3) non-profit charity in the United States; as such, donations to NumFOCUS are tax-deductible as allowed by law. As with any donation, you should consult with your personal tax adviser or the IRS about your particular tax situation.*
 
@@ -138,6 +138,8 @@ data.table Version line in DESCRIPTION typically has the following meanings
 * patch/hotfix development should occur on GitHub as z=odd (1.15.1) and release to CRAN as z=even (1.15.2).
 
 # Governance history
+
+May 2025: update Finance and CoC language for NumFOCUS incorporation.
 
 Feb 2025: add Finances and Funding section, update Code of Conduct section to be a brief summary and reference the broader CoC document.
 
