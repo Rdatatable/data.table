@@ -1,0 +1,200 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: fifelse 0.0\n"
+"POT-Creation-Date: 2024-10-10 22:46+0100\n"
+"PO-Revision-Date: 2024-10-10 22:46+0100\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: hi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: fifelse.c:11
+msgid "Argument 'test' must be logical."
+msgstr "आर्गुमेंट (argument) 'test' लॉजिकल (logical) होना चाहिए।"
+
+#: fifelse.c:15
+msgid "S4 class objects (except nanotime) are not supported."
+msgstr "S4 क्लास (class) के ऑब्जेक्ट्स (objects) (सिवाय nanotime) का समर्थन नहीं किया जाता है।"
+
+#: fifelse.c:30
+#, c-format
+msgid ""
+"Length of 'yes' is %<PRId64> but must be 1 or length of 'test' (%<PRId64>)."
+msgstr ""
+"'yes' की लेंथ (length) %<PRId64> है लेकिन इसे 1 या 'test' (%<PRId64>) की लेंथ (length) का होना चाहिए।"
+
+#: fifelse.c:32
+#, c-format
+msgid ""
+"Length of 'no' is %<PRId64> but must be 1 or length of 'test' (%<PRId64>)."
+msgstr ""
+"'no' की लेंथ (length) %<PRId64> है लेकिन इसे 1 या 'test' (%<PRId64>) की लेंथ (length) का होना चाहिए।"
+
+#: fifelse.c:34
+#, c-format
+msgid ""
+"Length of 'na' is %<PRId64> but must be 1 or length of 'test' (%<PRId64>)."
+msgstr ""
+"'na' की लेंथ (length) %<PRId64> है लेकिन इसे 1 या 'test' (%<PRId64>) की लेंथ (length) का होना चाहिए।"
+
+#: fifelse.c:52
+#, c-format
+msgid ""
+"'no' is of type %s but '%s' is %s. Please make all arguments have the same "
+"type."
+msgstr ""
+"'no' प्रकार %s का है लेकिन '%s' %s है।"
+"कृपया सभी आर्गुमेंट्स (arguments) को एक ही प्रकार का बनाएं।"
+
+#: fifelse.c:58
+#, c-format
+msgid ""
+"'na' is of type %s but '%s' is %s. Please make all arguments have the same "
+"type."
+msgstr ""
+"'no' प्रकार %s का है लेकिन '%s' %s है।"
+"कृपया सभी आर्गुमेंट्स (arguments) को एक ही प्रकार का बनाएं।"
+
+#: fifelse.c:63
+msgid ""
+"'yes' has different class than 'no'. Please make sure that both arguments "
+"have the same class."
+msgstr ""
+"'yes' की 'no' से अलग क्लास (class) है।"
+"कृपया सुनिश्चित करें कि दोनों आर्गुमेंट्स (arguments) की क्लास (class) समान हो।"
+
+#: fifelse.c:68
+msgid ""
+"'yes' has different class than 'na'. Please make sure that both arguments "
+"have the same class."
+msgstr ""
+"'yes' की 'na' से अलग क्लास (class) है।"
+"कृपया सुनिश्चित करें कि दोनों आर्गुमेंट्स (arguments) की क्लास (class) समान हो।"
+
+#: fifelse.c:73
+msgid ""
+"'no' has different class than 'na'. Please make sure that both arguments have "
+"the same class."
+msgstr ""
+"'no' की 'na' से अलग क्लास (class) है।"
+"कृपया सुनिश्चित करें कि दोनों आर्गुमेंट्स (arguments) की क्लास (class) समान हो।"
+
+#: fifelse.c:80
+msgid "'yes' and 'no' are both type factor but their levels are different."
+msgstr "'yes' और 'no' दोनों का प्रकार फ़ैक्टर (factor) हैं लेकिन उनके स्तर भिन्न हैं।"
+
+#: fifelse.c:85
+msgid "'yes' and 'na' are both type factor but their levels are different."
+msgstr "'yes' और 'na' दोनों का प्रकार फ़ैक्टर (factor) हैं लेकिन उनके स्तर भिन्न हैं।"
+
+#: fifelse.c:90
+msgid "'no' and 'na' are both type factor but their levels are different."
+msgstr "'no' और 'na' दोनों का प्रकार फ़ैक्टर (factor) हैं लेकिन उनके स्तर भिन्न हैं।"
+
+#: fifelse.c:199
+#, c-format
+msgid "Type '%s' is not supported"
+msgstr "प्रकार '%s' का समर्थन नहीं किया जाता है।"
+
+#: fifelse.c:213
+#, c-format
+msgid ""
+"Received %d inputs; please supply an even number of arguments in ..., "
+"consisting of logical condition, resulting value pairs (in that order). Note "
+"that the default argument must be named explicitly, e.g., default=0"
+msgstr ""
+"%d इनपुट (input) प्राप्त हुए; कृपया ... में आर्गुमेंट्स (arguments) की एक सम संख्या प्रदान करें"
+"जिसमें तार्किक स्थिति, परिणामस्वरूप मान के जोड़े (इस क्रम में) शामिल हों।"
+"ध्यान दें कि डिफ़ॉल्ट (default) आर्गुमेंट (argument) को स्पष्ट रूप से नामित किया जाना चाहिए, जैसे, default=0"
+
+#: fifelse.c:235
+msgid ""
+"S4 class objects (except nanotime) are not supported. Please see https://"
+"github.com/Rdatatable/data.table/issues/4131."
+msgstr ""
+"S4 क्लास (class) के ऑब्जेक्ट (object) (सिवाय nanotime) का समर्थन नहीं किया जाता है।"
+"कृपया https://github.com/Rdatatable/data.table/issues/4131 देखें।"
+
+#: fifelse.c:238
+#, c-format
+msgid "Argument #%d must be logical but was of type %s."
+msgstr "आर्गुमेंट (argument) #%d लॉजिकल (logical) होना चाहिए लेकिन यह %s प्रकार का है।"
+
+#: fifelse.c:260
+#, c-format
+msgid ""
+"Argument #%d has length %lld which differs from that of argument #1 (%lld). "
+"Please make sure all logical conditions have the same length."
+msgstr ""
+"आर्गुमेंट (argument) #%d की लेंथ (length) %lld है जो आर्गुमेंट (argument) #1 (%lld) से भिन्न है।"
+"कृपया सुनिश्चित करें कि सभी तार्किक स्थितियों की लेंथ (length) समान हो।"
+
+#: fifelse.c:266
+#, c-format
+msgid ""
+"Resulting value is of type %s but 'default' is of type %s. Please make sure "
+"that both arguments have the same type."
+msgstr ""
+"परिणामी मान प्रकार %s का है लेकिन 'डिफ़ॉल्ट’ ('default') प्रकार %s का है।"
+"कृपया सुनिश्चित करें कि दोनों आर्गुमेंट्स (arguments) का प्रकार समान हो।"
+
+#: fifelse.c:269
+#, c-format
+msgid ""
+"Argument #%d is of type %s, however argument #2 is of type %s. Please make "
+"sure all output values have the same type."
+msgstr ""
+"आर्गुमेंट (argument) #%d प्रकार %s का है, हालाँकि आर्गुमेंट (argument) #2 प्रकार %s का है।"
+"कृपया सुनिश्चित करें कि सभी आउटपुट (output) मान का प्रकार समान हो।"
+
+#: fifelse.c:277
+msgid ""
+"Resulting value has different class than 'default'. Please make sure that "
+"both arguments have the same class."
+msgstr ""
+"परिणामी मान की 'डिफ़ॉल्ट' (default) से अलग क्लास (class) है।"
+"कृपया सुनिश्चित करें कि दोनों आर्गुमेंट्स (arguments) की क्लास (class) समान हो।"
+
+#: fifelse.c:280
+#, c-format
+msgid ""
+"Argument #%d has different class than argument #2, Please make sure all "
+"output values have the same class."
+msgstr ""
+"आर्गुमेंट (argument) #%d की आर्गुमेंट (argument) #2 से अलग क्लास (class) है,"
+"कृपया सुनिश्चित करें कि सभी आउटपुट (output) मान की क्लास (class) समान हो।"
+
+#: fifelse.c:289
+msgid ""
+"Resulting value and 'default' are both type factor but their levels are "
+"different."
+msgstr ""
+"परिणामी मान और 'डिफ़ॉल्ट' (default) दोनों का प्रकार फ़ैक्टर (factor) हैं लेकिन उनके स्तर (levels) भिन्न हैं।"
+
+#: fifelse.c:291
+#, c-format
+msgid ""
+"Argument #2 and argument #%d are both factor but their levels are different."
+msgstr ""
+"आर्गुमेंट (argument) #2 और आर्गुमेंट (argument) #%d दोनों फ़ैक्टर (factor) हैं लेकिन उनके स्तर (levels) भिन्न हैं।"
+
+#: fifelse.c:300
+#, c-format
+msgid "Length of 'default' must be 1 or %lld."
+msgstr "'डिफ़ॉल्ट' ('default') की लेंथ (length) 1 या %lld होनी चाहिए।"
+
+#: fifelse.c:302
+#, c-format
+msgid ""
+"Length of output value #%d (%lld) must either be 1 or match the length of the "
+"logical condition (%lld)."
+msgstr ""
+"आउटपुट (output) मान #%d (%lld) की लेंथ (length) 1 होनी चाहिए या"
+"तार्किक स्थिति की लेंथ (length) (%lld) के साथ मेल खानी चाहिए।"
+
+#: fifelse.c:407
+#, c-format
+msgid "Type '%s' is not supported."
+msgstr "प्रकार '%s' का समर्थन नहीं किया जाता है।"
