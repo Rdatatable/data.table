@@ -38,7 +38,7 @@ frollsum(c(1,2,3,Inf,5,6), 2)
 
 For a comprehensive description about all available features see `?froll` manual.
 
-Adaptive `frollmax` has observed to be almost 100 times faster than second fastest solution (data.table self-join using `max` and grouping `by=.EACHI`). Note that important factor in performance is width of the rolling window. Code for the benchmark below has been taken from [this SO answer](https://stackoverflow.com/a/73408459/2490497).
+Adaptive `frollmax` has observed to be around 80 times faster than second fastest solution (data.table self-join using `max` and grouping `by=.EACHI`). Note that important factor in performance is width of the rolling window. Code for the benchmark below has been taken from [this SO answer](https://stackoverflow.com/a/73408459/2490497).
 ```r
 set.seed(108)
 setDTthreads(16)
@@ -58,11 +58,11 @@ microbenchmark::microbenchmark(
   times=10, check="identical"
 )
 #Unit: milliseconds
-#       expr        min         lq       mean     median         uq       max neval
-#   baser(x) 3795.27209 4051.33159 4170.51859 4187.30114 4315.97151 4413.3272    10
-#      sj(x) 2833.27588 2842.76144 2902.32128 2873.51706 2963.72514 2990.0901    10
-#   frmax(x)   29.81908   33.55922   37.24334   36.04337   42.35755   45.8010    10
-# frapply(x)  395.60000  417.02053  474.53025  449.81073  545.89983  563.4593    10
+#       expr        min         lq       mean     median         uq        max neval
+#   baser(x) 3094.88357 3097.84966 3186.74832 3163.58050 3251.66753 3370.33785    10
+#      sj(x) 2221.55456 2255.12083 2306.61382 2303.47883 2346.70293 2412.62975    10
+#   frmax(x)   17.45124   24.16809   28.10062   28.58153   32.79802   34.83941    10
+# frapply(x)  272.07830  316.47060  366.94771  396.23566  416.06699  421.38701    10
 ```
 
 As of now, adaptive rolling max has no _on-line_ implemention (`algo="fast"`), it uses a naive approach (`algo="exact"`). Therefore further speed up is still possible if `algo="fast"` gets implemented.
