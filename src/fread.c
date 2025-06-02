@@ -117,6 +117,8 @@ static void Field(FieldParseContext *ctx);
 #define IGNORE_BUMP(x) abs(x)
 #define TOGGLE_BUMP(x) (-x)
 
+#define OFFSET_POINTER(x, offset) ((typeof(x))((char*)x + (offset)))
+
 //=================================================================================================
 //
 //   Utility functions
@@ -127,7 +129,7 @@ static void Field(FieldParseContext *ctx);
  * Drops `const` qualifier from a `const char*` variable, equivalent of
  * `const_cast<char*>` in C++.
  */
-static char* _const_cast(const char *ptr) {
+static char* const_cast(const char *ptr) {
   union { const char *a; char *b; } tmp = { ptr };
   return tmp.b;
 }
@@ -402,10 +404,10 @@ double wallclock(void)
 /**
  * Helper function to print file's size in human-readable format. This will
  * produce strings such as:
- *     44.74GB (48043231704 bytes)
- *     921MB (965757797 bytes)
- *     2.206MB (2313045 bytes)
- *     38.69KB (39615 bytes)
+ *     44.74GiB (48043231704 bytes)
+ *     921MiB (965757797 bytes)
+ *     2.206MiB (2313045 bytes)
+ *     38.69KiB (39615 bytes)
  *     214 bytes
  *     0 bytes
  * The function returns a pointer to a static string buffer, so the caller
@@ -413,7 +415,7 @@ double wallclock(void)
  * multiple threads at the same time, or hold on to the value returned for
  * extended periods of time.
  */
-static const char* filesize_to_str(const size_t fsize)
+static const char* filesize_to_str(const uint64_t fsize)
 {
   static const char suffixes[] = {'T', 'G', 'M', 'K'};
   static char output[100];
@@ -426,12 +428,12 @@ static const char* filesize_to_str(const size_t fsize)
     }
     if (ndigits == 0 || (fsize == (fsize >> shift << shift))) {
       if (i < sizeof(suffixes)) {
-        snprintf(output, sizeof(output), "%"PRIu64"%cB (%"PRIu64" bytes)", // # notranslate
-                 (fsize >> shift), suffixes[i], fsize);
+        snprintf(output, sizeof(output), "%"PRIu64"%ciB (%"PRIu64" bytes)", // # notranslate
+                 fsize >> shift, suffixes[i], fsize);
         return output;
       }
     } else {
-      snprintf(output, sizeof(output), "%.*f%cB (%"PRIu64" bytes)", // # notranslate
+      snprintf(output, sizeof(output), "%.*f%ciB (%"PRIu64" bytes)", // # notranslate
                ndigits, (double)fsize / (1LL << shift), suffixes[i], fsize);
       return output;
     }
@@ -449,7 +451,7 @@ double copyFile(size_t fileSize)  // only called in very very rare cases
     return -1.0; // # nocov
   memcpy(mmp_copy, mmp, fileSize);
   sof = mmp_copy;
-  eof = (char *)mmp_copy + fileSize;
+  eof = (char *)OFFSET_POINTER(mmp_copy, fileSize);
   return wallclock()-tt;
 }
 
@@ -1366,7 +1368,7 @@ int freadMain(freadMainArgs _args) {
       else
         DTPRINT(_("  None of the NAstrings look like numbers.\n"));
     }
-    if (args.skipNrow >= 0) DTPRINT(_("  skip num lines = %"PRId64"\n"), (int64_t)args.skipNrow);
+    if (args.skipNrow >= 0) DTPRINT(_("  skip num lines = %"PRId64"\n"), args.skipNrow);
     if (args.skipString) DTPRINT(_("  skip to string = <<%s>>\n"), args.skipString);
     DTPRINT(_("  show progress = %d\n"), args.showProgress);
     DTPRINT(_("  0/1 column will be read as %s\n"), args.logical01? "boolean" : "integer");
@@ -1415,11 +1417,15 @@ int freadMain(freadMainArgs _args) {
     const char* fnam = args.filename;
     #ifndef WIN32
       int fd = open(fnam, O_RDONLY);
-      if (fd==-1) STOP(_("File not found: %s"),fnam);
+      if (fd==-1) STOP(_("Couldn't open file %s: %s"),fnam, strerror(errno));
       struct stat stat_buf;
       if (fstat(fd, &stat_buf) == -1) {
         close(fd);                                                     // # nocov
         STOP(_("Opened file ok but couldn't obtain its size: %s"), fnam); // # nocov
+      }
+      if (stat_buf.st_size > SIZE_MAX) {
+        close(fd);                              // # nocov
+        STOP(_("File size [%s] exceeds the address space: %s"), filesize_to_str(stat_buf.st_size), fnam); // # nocov
       }
       fileSize = (size_t) stat_buf.st_size;
       if (fileSize == 0) {close(fd); STOP(_("File is empty: %s"), fnam);}
@@ -1453,8 +1459,12 @@ int freadMain(freadMainArgs _args) {
       if (hFile==INVALID_HANDLE_VALUE) STOP(_("Unable to open file after %d attempts (error %lu): %s"), attempts, GetLastError(), fnam);
       LARGE_INTEGER liFileSize;
       if (GetFileSizeEx(hFile,&liFileSize)==0) { CloseHandle(hFile); STOP(_("GetFileSizeEx failed (returned 0) on file: %s"), fnam); }
+      if (liFileSize.QuadPart > SIZE_MAX) {
+        CloseHandle(hFile); // # nocov
+        STOP(_("File size [%s] exceeds the address space: %s"), filesize_to_str(liFileSize.QuadPart), fnam); // # nocov
+      }
       fileSize = (size_t)liFileSize.QuadPart;
-      if (fileSize<=0) { CloseHandle(hFile); STOP(_("File is empty: %s"), fnam); }
+      if (fileSize==0) { CloseHandle(hFile); STOP(_("File is empty: %s"), fnam); }
       if (verbose) DTPRINT(_("  File opened, size = %s.\n"), filesize_to_str(fileSize));
       HANDLE hMap=CreateFileMapping(hFile, NULL, PAGE_WRITECOPY, 0, 0, NULL);
       if (hMap==NULL) { CloseHandle(hFile); STOP(_("This is Windows, CreateFileMapping returned error %lu for file %s"), GetLastError(), fnam); }
@@ -1570,7 +1580,7 @@ int freadMain(freadMainArgs _args) {
           DTPRINT(_("Avoidable file copy in RAM took %.3f seconds. %s.\n"), time_taken, msg);  // # nocov. not warning as that could feasibly cause CRAN tests to fail, say, if test machine is heavily loaded
       }
     }
-    *_const_cast(eof) = '\0';  // cow page
+    *const_cast(eof) = '\0';  // cow page
   }
   // else char* input already guaranteed to end with \0. We do not modify direct char* input at all, ever.
   // We have now ensured the input ends on eof and that *eof=='\0' too. Normally, lastEOLreplaced will be true.
@@ -1611,8 +1621,8 @@ int freadMain(freadMainArgs _args) {
     pos = ch;
     ch = sof;
     while (ch<pos) row1line+=(*ch++=='\n');
-    if (verbose) DTPRINT(_("Found skip='%s' on line %"PRIu64". Taking this to be header row or first row of data.\n"),
-                         args.skipString, (uint64_t)row1line);
+    if (verbose) DTPRINT(_("Found skip='%s' on line %d. Taking this to be header row or first row of data.\n"),
+                         args.skipString, row1line);
     ch = pos;
   }
   else if (args.skipNrow >= 0) {
@@ -1625,12 +1635,12 @@ int freadMain(freadMainArgs _args) {
       }
     }
     if (ch > sof && verbose)
-      DTPRINT(_("  Skipped to line %"PRIu64" in the file"), (uint64_t)row1line);
+      DTPRINT(_("  Skipped to line %d in the file"), row1line);
     if (ch>=eof)
       STOP(Pl_(row1line,
-               "skip=%"PRIu64" but the input only has %"PRIu64" line",
-               "skip=%"PRIu64" but the input only has %"PRIu64" lines"),
-           (uint64_t)args.skipNrow, (uint64_t)row1line);
+               "skip=%"PRId64" but the input only has %d line",
+               "skip=%"PRId64" but the input only has %d lines"),
+           args.skipNrow, row1line);
     pos = ch;
   }
 
@@ -1862,8 +1872,8 @@ int freadMain(freadMainArgs _args) {
       if (verbose) DTPRINT(_("  1-column file ends with 2 or more end-of-line. Restoring last eol using extra byte in cow page.\n"));
       eof++;
     }
-    *_const_cast(eof-1) = eol_one_r ? '\r' : '\n';
-    *_const_cast(eof) = '\0';
+    *const_cast(eof-1) = eol_one_r ? '\r' : '\n';
+    *const_cast(eof) = '\0';
   }
   }
 
@@ -1915,12 +1925,12 @@ int freadMain(freadMainArgs _args) {
   }
   if (verbose) {
     if (nrowLimit<INT64_MAX) {
-      DTPRINT(_("  Number of sampling jump points = %d because nrow limit (%"PRIu64") supplied\n"), nJumps, (uint64_t)nrowLimit);
+      DTPRINT(_("  Number of sampling jump points = %d because nrow limit (%"PRId64") supplied\n"), nJumps, nrowLimit);
     } else if (jump0size==0) {
       DTPRINT(_("  Number of sampling jump points = %d because jump0size==0\n"), nJumps);
     } else {
-      DTPRINT(_("  Number of sampling jump points = %d because (%ld bytes from row 1 to eof) / (2 * %ld jump0size) == %ld\n"),
-              nJumps, (long int)sz, (long int)jump0size, (long int)(sz/(2*jump0size)));
+      DTPRINT(_("  Number of sampling jump points = %d because (%td bytes from row 1 to eof) / (2 * %td jump0size) == %td\n"),
+              nJumps, sz, jump0size, sz/(2*jump0size));
     }
   }
   nJumps++; // the extra sample at the very end (up to eof) is sampled and format checked but not jumped to when reading
@@ -2099,7 +2109,7 @@ int freadMain(freadMainArgs _args) {
   bytesRead=0;     // Bytes in the data section (i.e. excluding column names, header and footer, if any)
 
   if (sampleLines <= jumpLines) {
-    if (verbose) DTPRINT(_("  All rows were sampled since file is small so we know nrow=%"PRIu64" exactly\n"), (uint64_t)sampleLines);
+    if (verbose) DTPRINT(_("  All rows were sampled since file is small so we know nrow=%"PRId64" exactly\n"), sampleLines);
     estnrow = allocnrow = sampleLines;
   } else {
     bytesRead = eof - firstRowStart;
@@ -2112,19 +2122,19 @@ int freadMain(freadMainArgs _args) {
     // blank lines have length 1 so for fill=true apply a +100% maximum. It'll be grown if needed.
     if (verbose) {
       DTPRINT("  =====\n"); // # notranslate
-      DTPRINT(_("  Sampled %"PRIu64" rows (handled \\n inside quoted fields) at %d jump points\n"), (uint64_t)sampleLines, nJumps);
-      DTPRINT(_("  Bytes from first data row on line %d to the end of last row: %"PRIu64"\n"), row1line, (uint64_t)bytesRead);
+      DTPRINT(_("  Sampled %"PRId64" rows (handled \\n inside quoted fields) at %d jump points\n"), sampleLines, nJumps);
+      DTPRINT(_("  Bytes from first data row on line %d to the end of last row: %td\n"), row1line, bytesRead);
       DTPRINT(_("  Line length: mean=%.2f sd=%.2f min=%d max=%d\n"), meanLineLen, sd, minLen, maxLen);
-      DTPRINT(_("  Estimated number of rows: %"PRIu64" / %.2f = %"PRIu64"\n"), (uint64_t)bytesRead, meanLineLen, (uint64_t)estnrow);
-      DTPRINT(_("  Initial alloc = %"PRIu64" rows (%"PRIu64" + %d%%) using bytes/max(mean-2*sd,min) clamped between [1.1*estn, 2.0*estn]\n"),
-              (uint64_t)allocnrow, (uint64_t)estnrow, (int)(100.0*allocnrow/estnrow-100.0));
+      DTPRINT(_("  Estimated number of rows: %td / %.2f = %"PRId64"\n"), bytesRead, meanLineLen, estnrow);
+      DTPRINT(_("  Initial alloc = %"PRId64" rows (%"PRId64" + %d%%) using bytes/max(mean-2*sd,min) clamped between [1.1*estn, 2.0*estn]\n"),
+              allocnrow, estnrow, (int)(100.0*allocnrow/estnrow-100.0));
       DTPRINT("  =====\n"); // # notranslate
     } else {
-      if (sampleLines > allocnrow) INTERNAL_STOP("sampleLines(%"PRIu64") > allocnrow(%"PRIu64")", (uint64_t)sampleLines, (uint64_t)allocnrow); // # nocov
+      if (sampleLines > allocnrow) INTERNAL_STOP("sampleLines(%"PRId64") > allocnrow(%"PRId64")", sampleLines, allocnrow); // # nocov
     }
   }
   if (nrowLimit < allocnrow) {
-    if (verbose) DTPRINT(_("  Alloc limited to lower nrows=%"PRIu64" passed in.\n"), (uint64_t)nrowLimit);
+    if (verbose) DTPRINT(_("  Alloc limited to lower nrows=%"PRId64" passed in.\n"), nrowLimit);
     estnrow = allocnrow = nrowLimit;
   }
   }
@@ -2200,7 +2210,7 @@ int freadMain(freadMainArgs _args) {
   rowSize8 = 0;
   size = malloc(sizeof(*size) * ncol);  // TODO: remove size[] when we implement Pasha's idea to += size inside processor
   if (!size)
-    STOP(_("Failed to allocate %d bytes for '%s': %s"), (int)(sizeof(*size) * ncol), "size", strerror(errno)); // # nocov
+    STOP(_("Failed to allocate %zu bytes for '%s': %s"), sizeof(*size) * ncol, "size", strerror(errno)); // # nocov
   nStringCols = 0;
   nNonStringCols = 0;
   for (int j=0; j<ncol; j++) {
@@ -2231,8 +2241,8 @@ int freadMain(freadMainArgs _args) {
   //*********************************************************************************************
   if (verbose) {
     DTPRINT(_("[10] Allocate memory for the datatable\n"));
-    DTPRINT(_("  Allocating %d column slots (%d - %d dropped) with %"PRIu64" rows\n"),
-            ncol-ndrop, ncol, ndrop, (uint64_t)allocnrow);
+    DTPRINT(_("  Allocating %d column slots (%d - %d dropped) with %"PRId64" rows\n"),
+            ncol-ndrop, ncol, ndrop, allocnrow);
   }
   size_t DTbytes = allocateDT(type, size, ncol, ndrop, allocnrow);
   double tAlloc = wallclock();
@@ -2260,7 +2270,7 @@ int freadMain(freadMainArgs _args) {
   // For the 44GB file with 12875 columns, the max line len is 108,497. We may want each chunk to write to its
   // own page (4k) of the final column, hence 1000 rows of the smallest type (4 byte int) is just
   // under 4096 to leave space for R's header + malloc's header.
-  size_t chunkBytes = umax((size_t)(1000*meanLineLen), 1ULL/*MB*/ *1024*1024);
+  size_t chunkBytes = umax((uint64_t)(1000*meanLineLen), 1ULL/*MB*/ *1024*1024);
   // Index of the first jump to read. May be modified if we ever need to restart
   // reading from the middle of the file.
   int jump0 = 0;
@@ -2279,450 +2289,457 @@ int freadMain(freadMainArgs _args) {
     ASSERT(nJumps==1 /*when nrowLimit supplied*/ || nJumps==2 /*small files*/, "nJumps (%d) != 1|2", nJumps);
     nJumps=1;
   }
-  int64_t initialBuffRows = (int64_t)allocnrow / nJumps;
+  int64_t initialBuffRows = allocnrow / nJumps;
 
   // Catch initialBuffRows==0 when max_nrows is small, seg fault #2243
   // Rather than 10, maybe 1 would work too but then 1.5 grow factor * 1 would still be 1. This clamp
   // should only engage when max_nrows is supplied, and supplied small too, so doesn't matter too much.
   if (initialBuffRows < 10) initialBuffRows = 10;
 
-  if (initialBuffRows > INT32_MAX) STOP(_("Buffer size %"PRId64" is too large\n"), (int64_t)initialBuffRows);
+  if (initialBuffRows > INT32_MAX) STOP(_("Buffer size %"PRId64" is too large\n"), initialBuffRows);
   nth = imin(nJumps, nth);
 
   if (verbose) DTPRINT(_("[11] Read the data\n"));
-  read:  // we'll return here to reread any columns with out-of-sample type exceptions, or dirty jumps
-  restartTeam = false;
-  if (verbose)
-    DTPRINT("  jumps=[%d..%d), chunk_size=%"PRIu64", total_size=%"PRIu64"\n", jump0, nJumps, (uint64_t)chunkBytes, (uint64_t)(eof-pos)); // # notranslate
-  ASSERT(allocnrow <= nrowLimit, "allocnrow(%"PRIu64") <= nrowLimit(%"PRIu64")", (uint64_t)allocnrow, (uint64_t)nrowLimit);
-  #pragma omp parallel num_threads(nth)
-  {
-    int me = omp_get_thread_num();
-    bool myShowProgress = false;
-    #pragma omp master
+  while(true){  // we'll return here to reread any columns with out-of-sample type exceptions, or dirty jumps
+    restartTeam = false;
+    if (verbose)
+      DTPRINT("  jumps=[%d..%d), chunk_size=%zu, total_size=%td\n", jump0, nJumps, chunkBytes, eof-pos); // # notranslate
+    ASSERT(allocnrow <= nrowLimit, "allocnrow(%"PRId64") <= nrowLimit(%"PRId64")", allocnrow, nrowLimit);
+    #pragma omp parallel num_threads(nth)
     {
-      nth = omp_get_num_threads();
-      if (me!=0) {
-        // # nocov start
-        snprintf(internalErr, internalErrSize, "Master thread is not thread 0 but thread %d.\n", me); // # notranslate
-        stopTeam = true;
-        // # nocov end
-      }
-      myShowProgress = args.showProgress;
-    }
-    int64_t myNrow = 0; // the number of rows in my chunk
-    int64_t myBuffRows = initialBuffRows;  // Upon realloc, myBuffRows will increase to grown capacity
-    bool myStopEarly = false;      // true when an empty or too-short line is encountered when fill=false, or too-long row
-
-    // Allocate thread-private row-major `myBuff`s
-    ThreadLocalFreadParsingContext ctx = {
-      .anchor = NULL,
-      .buff8 = malloc(rowSize8 * myBuffRows + 8),
-      .buff4 = malloc(rowSize4 * myBuffRows + 4),
-      .buff1 = malloc(rowSize1 * myBuffRows + 1),
-      // NOCHECK
-      .rowSize8 = rowSize8,
-      .rowSize4 = rowSize4,
-      .rowSize1 = rowSize1,
-      .DTi = 0,  // which row in the final DT result I should start writing my chunk to
-      .nRows = allocnrow,
-      .threadn = me,
-      .quoteRule = quoteRule,
-      .stopTeam = &stopTeam,
-      #ifndef DTPY
-      .nStringCols = nStringCols,
-      .nNonStringCols = nNonStringCols
-      #endif
-    };
-    if ((rowSize8 && !ctx.buff8) || (rowSize4 && !ctx.buff4) || (rowSize1 && !ctx.buff1)) {
-      stopTeam = true;
-    }
-    prepareThreadContext(&ctx);
-
-    #pragma omp for ordered schedule(dynamic) reduction(+:thRead,thPush) reduction(max:max_col)
-    for (int jump = jump0; jump < nJumps; jump++) {
-      if (stopTeam) continue;  // must continue and not break. We desire not to depend on (relatively new) omp cancel directive, yet
-      double tLast = 0.0;      // thread local wallclock time at last measuring point for verbose mode only.
-      if (verbose) tLast = wallclock();
-      if (myNrow) {
-        // On the 2nd iteration onwards for this thread, push the data from the previous jump
-        // Convoluted because the ordered section has to be last in some OpenMP implementations :
-        // http://stackoverflow.com/questions/43540605/must-ordered-be-at-the-end
-        // Hence why loop goes to nJumps+nth. Logically, this clause belongs after the ordered section.
-
-        // Push buffer now to impl so that :
-        //   i) lenoff.off can be "just" 32bit int from a local anchor rather than a 64bit offset from a global anchor
-        //  ii) impl can do it in parallel if it wishes, and it can have an orphan critical directive if it wishes
-        // iii) myBuff is hot, so this is the best time to transpose it to result, and first time possible as soon
-        //      as we know the previous jump's number of rows.
-        //  iv) so that myBuff can be small
-        pushBuffer(&ctx);
-        myNrow = 0;
-        if (verbose || myShowProgress) {
-          double now = wallclock();
-          thPush += now-tLast;
-          tLast = now;
-          if (myShowProgress && /*wait for all threads to process 2 jumps*/jump>=nth*2) {
-            // Important for thread safety inside progress() that this is called not just from critical but that
-            // it's the master thread too, hence me==0. OpenMP doesn't allow '#pragma omp master' here, but we
-            // did check above that master's me==0.
-            int ETA = (int)(((now-tAlloc)/jump) * (nJumps-jump));
-            progress((int)(100.0*jump/nJumps), ETA);
-          }
-        }
-      }
-
-      const char *tch = jump==jump0 ? headPos : nextGoodLine(pos+jump*chunkBytes, ncol);
-      const char *thisJumpStart = tch;   // "this" for prev/this/next adjective used later, rather than a (mere) t prefix for thread-local.
-      const char *tLineStart = tch;
-      const char *nextJumpStart = jump<nJumps-1 ? nextGoodLine(pos+(jump+1)*chunkBytes, ncol) : eof;
-
-      void *targets[9] = {NULL, ctx.buff1, NULL, NULL, ctx.buff4, NULL, NULL, NULL, ctx.buff8};
-      FieldParseContext fctx = {
-        .ch = &tch,
-        .targets = targets,
-        .anchor = thisJumpStart,
-      };
-
-      while (tch<nextJumpStart && (nth>1 || DTi+myNrow<nrowLimit)) {  // setting nrowLimit sets nth to 1 to avoid bump or error on row after nrowLimit
-        if (myNrow == myBuffRows) {
-          // buffer full due to unusually short lines in this chunk vs the sample; e.g. #2070
-          myBuffRows *= 1.5;
-          #pragma omp atomic
-          buffGrown++;
-          ctx.buff8 = realloc(ctx.buff8, rowSize8 * myBuffRows + 8);
-          ctx.buff4 = realloc(ctx.buff4, rowSize4 * myBuffRows + 4);
-          ctx.buff1 = realloc(ctx.buff1, rowSize1 * myBuffRows + 1);
-          if ((rowSize8 && !ctx.buff8) || (rowSize4 && !ctx.buff4) || (rowSize1 && !ctx.buff1)) {
-            stopTeam = true;
-            break;
-          }
-          // shift current buffer positions, since `myBuffX`s were probably moved by realloc
-          fctx.targets[8] = (void*)((char*)ctx.buff8 + myNrow * rowSize8);
-          fctx.targets[4] = (void*)((char*)ctx.buff4 + myNrow * rowSize4);
-          fctx.targets[1] = (void*)((char*)ctx.buff1 + myNrow * rowSize1);
-        }
-        tLineStart = tch;  // for error message
-        const char *fieldStart = tch;
-        int j = 0;
-
-        //*** START HOT ***//
-        if (sep!=' ' && !any_number_like_NAstrings) {  // TODO:  can this 'if' be dropped somehow? Can numeric NAstrings be dealt with afterwards in one go as numeric comparison?
-          // Try most common and fastest branch first: no whitespace, no quoted numeric, ",," means NA
-          while (j < ncol) {
-            // DTPRINT(_("Field %d: '%.10s' as type %d  (tch=%p)\n"), j+1, tch, type[j], tch);
-            fieldStart = tch;
-            int8_t thisType = type[j];  // fetch shared type once. Cannot read half-written byte is one reason type's type is single byte to avoid atomic read here.
-            fun[IGNORE_BUMP(thisType)](&fctx);
-            if (*tch!=sep) break;
-            int8_t thisSize = size[j];
-            if (thisSize) ((char **) targets)[thisSize] += thisSize;  // 'if' for when rereading to avoid undefined NULL+0
-            tch++;
-            j++;
-          }
-          if (j > max_col) max_col = j;
-          //*** END HOT. START TEPID ***//
-          if (tch==tLineStart) {
-            skip_white(&tch);       // skips \0 before eof
-            if (*tch=='\0') break;  // empty last line
-            if (eol(&tch) && skipEmptyLines) { tch++; continue; }
-            tch = tLineStart;  // in case white space at the beginning may need to be including in field
-          }
-          else if (eol(&tch) && j<ncol) {   // j<ncol needed for #2523 (erroneous extra comma after last field)
-            int8_t thisSize = size[j];
-            if (thisSize) ((char **) targets)[thisSize] += thisSize;
-            j++;
-            if (j > max_col) max_col = j;
-            if (j==ncol) { tch++; myNrow++; continue; }  // next line. Back up to while (tch<nextJumpStart). Usually happens, fastest path
-          }
-          else {
-            tch = fieldStart; // restart field as int processor could have moved to A in ",123A,"
-          }
-          // if *tch=='\0' then *eof in mind, fall through to below
-        }
-        //*** END TEPID. NOW COLD.
-
-        // Either whitespace surrounds field in which case the processor will fault very quickly, it's numeric but quoted (quote will fault the non-string processor),
-        // it contains an NA string, or there's an out-of-sample type bump needed.
-        // In all those cases we're ok to be a bit slower. The rest of this line will be processed using the slower version.
-        // (End-of-file) is also dealt with now, as could be the highly unusual line ending /n/r
-        // This way (each line has new opportunity of the fast path) if only a little bit of the file is quoted (e.g. just when commas are present as fwrite does)
-        // then a penalty isn't paid everywhere.
-        // TODO: reduce(slowerBranch++). So we can see in verbose mode if this is happening too much.
-
-        if (sep==' ') {
-          while (*tch==' ') tch++;  // multiple sep=' ' at the tLineStart does not mean sep. We're at tLineStart because the fast branch above doesn't run when sep=' '
-          fieldStart = tch;
-          skip_white(&tch);          // skips \0 before eof
-          if (*tch=='\0') continue;  // tch==eof; empty last line
-          if (eol(&tch) && skipEmptyLines) { tch++; continue; }
-          tch = fieldStart;         // in case tabs at the beginning of the first field need to be included
-        }
-        bool checkedNumberOfFields = false;
-        if (fill || ncol==1 || (*tch!='\n' && *tch!='\r')) while (j < ncol) {
-          fieldStart = tch;
-          int8_t joldType = type[j];
-          int8_t thisType = joldType;  // to know if it was bumped in (rare) out-of-sample type exceptions
-          int8_t absType = (int8_t)IGNORE_BUMP(thisType);
-
-          while (absType < NUMTYPE) {
-            tch = fieldStart;
-            bool quoted = false;
-            if (absType<CT_STRING && absType>CT_DROP/*Field() too*/) {
-              skip_white(&tch);
-              const char *afterSpace = tch;
-              tch = end_NA_string(tch);
-              skip_white(&tch);
-              if (!end_of_field(tch)) tch = afterSpace; // else it is the field_end, we're on closing sep|eol and we'll let processor write appropriate NA as if field was empty
-              if (*tch==quote && quote) { quoted=true; tch++; }
-            } // else Field() handles NA inside it unlike other processors e.g. ,, is interpreted as "" or NA depending on option read inside Field()
-            fun[IGNORE_BUMP(thisType)](&fctx);
-            if (quoted) {   // quoted was only set to true with '&& quote' above (=> quote!='\0' now)
-              if (*tch==quote) tch++;
-              else goto typebump;
-            }
-            skip_white(&tch);
-            if (end_of_field(tch)) {
-              if (sep==' ' && *tch==' ') {
-                while (tch[1]==' ') tch++;  // multiple space considered one sep so move to last
-                if (tch[1]=='\r' || tch[1]=='\n' || tch+1==eof) tch++;
-              }
-              break;
-            }
-
-            // guess is insufficient out-of-sample, type is changed to negative sign and then bumped. Continue to
-            // check that the new type is sufficient for the rest of the column (and any other columns also in out-of-sample bump status) to be
-            // sure a single re-read will definitely work.
-            typebump:
-            while (++absType<CT_STRING && disabled_parsers[absType]) {};
-            thisType = TOGGLE_BUMP(absType);
-            tch = fieldStart;
-          }
-
-          if (thisType != joldType) {             // rare out-of-sample type exception.
-            if (!checkedNumberOfFields && !fill) {
-              // check this line has the correct number of fields. If not, don't apply the bump from this invalid line. Instead fall through to myStopEarly below.
-              const char *tt = fieldStart;
-              int fieldsRemaining = countfields(&tt);
-              if (j+fieldsRemaining != ncol) break;
-              checkedNumberOfFields = true;
-            }
-            if (thisType <= TOGGLE_BUMP(NUMTYPE)) {
-              break;  // Improperly quoted char field needs to be healed below, other columns will be filled #5041 and #4774
-            }
-            #pragma omp critical
-            {
-              joldType = type[j];  // fetch shared value again in case another thread bumped it while I was waiting.
-              // Can't print because we're likely not master. So accumulate message and print afterwards.
-              if (thisType < joldType) {   // thisType<0 (type-exception)
-                if (verbose) {
-                  char temp[1001];
-                  int len = snprintf(temp, 1000,
-                    _("Column %d%s%.*s%s bumped from '%s' to '%s' due to <<%.*s>> on row %"PRIu64"\n"),
-                    j+1, colNames?" <<":"", colNames?(colNames[j].len):0, colNames?(colNamesAnchor+colNames[j].off):"", colNames?">>":"",
-                    typeName[IGNORE_BUMP(joldType)], typeName[IGNORE_BUMP(thisType)],
-                    (int)(tch-fieldStart), fieldStart, (uint64_t)(ctx.DTi+myNrow));
-                  if (len > 1000) len = 1000;
-                  if (len > 0) {
-                    typeBumpMsg = realloc(typeBumpMsg, typeBumpMsgSize + len + 1);
-                    strcpy(typeBumpMsg+typeBumpMsgSize, temp);
-                    typeBumpMsgSize += len;
-                  }
-                }
-                nTypeBump++;
-                if (joldType>0) nTypeBumpCols++;
-                type[j] = thisType;
-              } // else another thread just bumped to a (negative) higher or equal type while I was waiting, so do nothing
-            }
-          }
-          int8_t thisSize = size[j];
-          if (thisSize) ((char**) targets)[size[j]] += size[j];  // 'if' to avoid undefined NULL+=0 when rereading
-          j++;
-          if (*tch==sep) { tch++; continue; }
-          if (fill && (*tch=='\n' || *tch=='\r' || tch==eof) && j<ncol) continue;  // reuse processors to write appropriate NA to target; saves maintenance of a type switch down here
-          break;
-        }
-        if (j<ncol || (!eol(&tch) && tch!=eof))  {
-          // Too few or too many columns observed (but not empty lines when skipEmptyLines as they were found and skipped earlier above).
-          // If fill==true, fields should already have been filled above due to continue inside while(j<ncol).
-          myStopEarly = true;
-          tch = tLineStart;
-          break;
-        }
-        if (tch!=eof) tch++;
-        myNrow++;
-      }
-      if (verbose) { double now = wallclock(); thRead += now-tLast; tLast = now; }
-      ctx.anchor = thisJumpStart;
-      ctx.nRows = myNrow;
-      postprocessBuffer(&ctx);
-
-      // if (tch>nextJumpStart) I know now that the next jump is dirty and should be swept. But, there might be earlier jumps
-      // already waiting at ordered that are dirty too; i.e. it's likely that thisJumpStart!=headPos. Therefore, sweeping must
-      // be triggered not here before ordered but when we're inside ordered and we're at headPos reliably.
-
-      #pragma omp ordered
+      int me = omp_get_thread_num();
+      bool myShowProgress = false;
+      #pragma omp master
       {
-        if (stopTeam) {             // A previous thread stopped while I was waiting my turn to enter ordered
-          myNrow = 0;               // # nocov; discard my buffer
-        }
-        else if (headPos!=thisJumpStart && nrowLimit>0) { // do not care for dirty jumps since we do not read data and only want to know types
-           // # nocov start
-          snprintf(internalErr, internalErrSize, "invalid head position. jump=%d, headPos=%p, thisJumpStart=%p, sof=%p", jump, (void*)headPos, (void*)thisJumpStart, (void*)sof); // # notranslate
+        nth = omp_get_num_threads();
+        if (me!=0) {
+          // # nocov start
+          snprintf(internalErr, internalErrSize, "Master thread is not thread 0 but thread %d.\n", me); // # notranslate
           stopTeam = true;
           // # nocov end
         }
-        else {
-          ctx.DTi = DTi;  // fetch shared DTi (where to write my results to the answer). The previous thread just told me.
-          if (ctx.DTi + myNrow > allocnrow) {
-            // Guess for DT's nrow was insufficient. We cannot realloc DT now because other threads are pushing to DT now in
-            // parallel. So, stop team, realloc and then restart reading from this jump.
-            extraAllocRows = (int64_t)((double)(DTi+myNrow)*nJumps/(jump+1) * 1.2) - allocnrow;
-            if (extraAllocRows < 1024) extraAllocRows = 1024;
-            myNrow = 0;    // discard my buffer even though it was read correctly; this one jump will be reread wastefully in this rare case
-            stopTeam = restartTeam = true;
-            jump0 = jump;
-          } else {
-            // tell next thread 2 things :
-            headPos = tch;  // i) advance headPos; the jump start up to which all rows have been pushed
-            DTi += myNrow;  // ii) which row in the final result next thread should start writing to since now I know myNrow.
-            ctx.nRows = myNrow;
-            orderBuffer(&ctx);
-            if (myStopEarly) {
-              if (quoteRule<3) {
-                quoteRule++;
-                if (quoteRuleBumpedCh == NULL) {
-                  // for warning message if the quote rule bump does in fact manage to heal it, e.g. test 1881
-                  quoteRuleBumpedCh = tLineStart;
-                  quoteRuleBumpedLine = row1line+DTi;
-                }
-                restartTeam = true;
-                jump0 = jump;  // this jump will restart from headPos, not from its beginning, e.g. test 1453
-              }
-              stopTeam = true;
-            } else if (headPos>nextJumpStart) {
-              nSwept++;         // next jump landed awkwardly and will be reread from headPos; i.e. next jump is dirty and will be swept
-              stopTeam = restartTeam = true;
-              jump0 = jump+1;   // restart team from next jump. jump0 always starts from headPos
-              // if too many jumps are dirty, scale down to single-threaded to save restarting team too much, wastefully. The file requires
-              // a single threaded read anyway due to its tortuous complexity with so many embedded newlines so often
-              if (nth>1 && nSwept>5 && (double)nSwept/jump > 0.10) nth=1;
+        myShowProgress = args.showProgress;
+      }
+      int64_t myNrow = 0; // the number of rows in my chunk
+      int64_t myBuffRows = initialBuffRows;  // Upon realloc, myBuffRows will increase to grown capacity
+      bool myStopEarly = false;      // true when an empty or too-short line is encountered when fill=false, or too-long row
+    
+      // Allocate thread-private row-major `myBuff`s
+      ThreadLocalFreadParsingContext ctx = {
+        .anchor = NULL,
+        .buff8 = malloc(rowSize8 * myBuffRows + 8),
+        .buff4 = malloc(rowSize4 * myBuffRows + 4),
+        .buff1 = malloc(rowSize1 * myBuffRows + 1),
+        // NOCHECK
+        .rowSize8 = rowSize8,
+        .rowSize4 = rowSize4,
+        .rowSize1 = rowSize1,
+        .DTi = 0,  // which row in the final DT result I should start writing my chunk to
+        .nRows = allocnrow,
+        .threadn = me,
+        .quoteRule = quoteRule,
+        .stopTeam = &stopTeam,
+        #ifndef DTPY
+        .nStringCols = nStringCols,
+        .nNonStringCols = nNonStringCols
+        #endif
+      };
+      if ((rowSize8 && !ctx.buff8) || (rowSize4 && !ctx.buff4) || (rowSize1 && !ctx.buff1)) {
+        stopTeam = true;
+      }
+      prepareThreadContext(&ctx);
+    
+      #pragma omp for ordered schedule(dynamic) reduction(+:thRead,thPush) reduction(max:max_col)
+      for (int jump = jump0; jump < nJumps; jump++) {
+        if (stopTeam) continue;  // must continue and not break. We desire not to depend on (relatively new) omp cancel directive, yet
+        double tLast = 0.0;      // thread local wallclock time at last measuring point for verbose mode only.
+        if (verbose) tLast = wallclock();
+        if (myNrow) {
+          // On the 2nd iteration onwards for this thread, push the data from the previous jump
+          // Convoluted because the ordered section has to be last in some OpenMP implementations :
+          // http://stackoverflow.com/questions/43540605/must-ordered-be-at-the-end
+          // Hence why loop goes to nJumps+nth. Logically, this clause belongs after the ordered section.
+    
+          // Push buffer now to impl so that :
+          //   i) lenoff.off can be "just" 32bit int from a local anchor rather than a 64bit offset from a global anchor
+          //  ii) impl can do it in parallel if it wishes, and it can have an orphan critical directive if it wishes
+          // iii) myBuff is hot, so this is the best time to transpose it to result, and first time possible as soon
+          //      as we know the previous jump's number of rows.
+          //  iv) so that myBuff can be small
+          pushBuffer(&ctx);
+          myNrow = 0;
+          if (verbose || myShowProgress) {
+            double now = wallclock();
+            thPush += now-tLast;
+            tLast = now;
+            if (myShowProgress && /*wait for all threads to process 2 jumps*/jump>=nth*2) {
+              // Important for thread safety inside progress() that this is called not just from critical but that
+              // it's the master thread too, hence me==0. OpenMP doesn't allow '#pragma omp master' here, but we
+              // did check above that master's me==0.
+              int ETA = (int)(((now-tAlloc)/jump) * (nJumps-jump));
+              progress((int)(100.0*jump/nJumps), ETA);
             }
           }
         }
-      }
-      // END ORDERED.
-      // Next thread can now start her ordered section and write her results to the final DT at the same time as me.
-      // Ordered has to be last in some OpenMP implementations currently. Logically though, pushBuffer happens now.
-    }
-    // End for loop over all jump points
-
-    // Push out all buffers one last time (only needed because of gomp ordered workaround above with push first in the loop)
-    // If stopped early, this will happen once for thread at headPos (the only one left with myNrow>0)
-    if (myNrow) {
-      double now = verbose ? wallclock() : 0;
-      pushBuffer(&ctx);
-      if (verbose) thPush += wallclock() - now;
-    }
-    // Each thread to free their own buffer.
-    free(ctx.buff8); ctx.buff8 = NULL;
-    free(ctx.buff4); ctx.buff4 = NULL;
-    free(ctx.buff1); ctx.buff1 = NULL;
-    freeThreadContext(&ctx);
-  }
-  //-- end parallel ------------------
-
-  // cleanup since fill argument for number of columns was too high
-  if (fill>1 && max_col<ncol && max_col>0) {
-    int ndropFill = ncol - max_col;
-    if (verbose) {
-      DTPRINT(_("  Provided number of fill columns: %d but only found %d\n"), ncol, max_col);
-      DTPRINT(_("  Dropping %d overallocated columns\n"), ndropFill);
-    }
-    dropFill = malloc(sizeof(*dropFill) * ndropFill);
-    if (!dropFill)
-      STOP(_("Failed to allocate %d bytes for '%s'."), (int)(sizeof(*dropFill) * ndropFill), "dropFill"); // # nocov
-    int i=0;
-    for (int j=max_col; j<ncol; ++j) {
-      type[j] = CT_DROP;
-      size[j] = 0;
-      ndrop++;
-      nNonStringCols--;
-      dropFill[i++] = j;
-    }
-    dropFilledCols(dropFill, ndropFill);
-  }
-
-  if (stopTeam) {
-    if (internalErr[0]!='\0') {
-      STOP(_("Internal error in %s: %s. Please report to the data.table issues tracker"), __func__, internalErr); // # nocov
-    }
-    stopTeam = false;
-
-    if (extraAllocRows && nrowLimit>0) { // no allocating needed for nrows=0
-      allocnrow += extraAllocRows;
-      if (allocnrow > nrowLimit) allocnrow = nrowLimit;
-      if (verbose) DTPRINT(_("  Too few rows allocated. Allocating additional %"PRIu64" rows (now nrows=%"PRIu64") and continue reading from jump %d\n"),
-                           (uint64_t)extraAllocRows, (uint64_t)allocnrow, jump0);
-      allocateDT(type, size, ncol, ncol - nStringCols - nNonStringCols, allocnrow);
-      extraAllocRows = 0;
-      goto read;
-    }
-    if (restartTeam && nrowLimit>0) { // no restarting needed for nrows=0 since we discard read data anyway
-      if (verbose) DTPRINT(_("  Restarting team from jump %d. nSwept==%d quoteRule==%d\n"), jump0, nSwept, quoteRule);
-      ASSERT(nSwept>0 || quoteRuleBumpedCh!=NULL, "team restart but nSwept==%d and quoteRuleBumpedCh==%p", nSwept, (void *)quoteRuleBumpedCh); // # nocov
-      goto read;
-    }
-    // else nrowLimit applied and stopped early normally
-  }
-
-  // tell progress meter to finish up; e.g. write final newline
-  // if there's a reread, the progress meter will start again from 0
-  if (args.showProgress) progress(100, 0);
-
-  if (firstTime) {
-    tReread = tRead = wallclock();
-
-    // if nTypeBump>0, not-bumped columns are about to be assigned parse type TOGGLE_BUMP(CT_STRING) for the reread, so we have to count
-    // parse types now (for log). We can't count final column types afterwards because many parse types map to the same column type.
-    for (int i=0; i<NUMTYPE; i++) typeCounts[i] = 0;
-    for (int i=0; i<ncol; i++) typeCounts[ IGNORE_BUMP(type[i]) ]++;
-
-    if (nTypeBump) {
-      if (verbose) DTPRINT(_("  %d out-of-sample type bumps: %s\n"), nTypeBump, typesAsString(ncol));
-      rowSize1 = rowSize4 = rowSize8 = 0;
-      nStringCols = 0;
-      nNonStringCols = 0;
-      for (int j=0; j<ncol; ++j) {
-        if (type[j] == CT_DROP) continue;
-        if (type[j]<0) {
-          // column was bumped due to out-of-sample type exception
-          type[j] = TOGGLE_BUMP(type[j]);
-          size[j] = typeSize[type[j]];
-          rowSize1 += (size[j] & 1);
-          rowSize4 += (size[j] & 4);
-          rowSize8 += (size[j] & 8);
-          if (type[j] == CT_STRING) nStringCols++; else nNonStringCols++;
-        } else if (type[j]>=1) {
-          // we'll skip over non-bumped columns in the rerun, whilst still incrementing resi (hence not CT_DROP)
-          // not -type[i] either because that would reprocess the contents of not-bumped columns wastefully
-          type[j] = TOGGLE_BUMP(CT_STRING);
-          size[j] = 0;
+    
+        const char *tch = jump==jump0 ? headPos : nextGoodLine(pos+jump*chunkBytes, ncol);
+        const char *thisJumpStart = tch;   // "this" for prev/this/next adjective used later, rather than a (mere) t prefix for thread-local.
+        const char *tLineStart = tch;
+        const char *nextJumpStart = jump<nJumps-1 ? nextGoodLine(pos+(jump+1)*chunkBytes, ncol) : eof;
+    
+        void *targets[9] = {NULL, ctx.buff1, NULL, NULL, ctx.buff4, NULL, NULL, NULL, ctx.buff8};
+        FieldParseContext fctx = {
+          .ch = &tch,
+          .targets = targets,
+          .anchor = thisJumpStart,
+        };
+    
+        while (tch<nextJumpStart && (nth>1 || DTi+myNrow<nrowLimit)) {  // setting nrowLimit sets nth to 1 to avoid bump or error on row after nrowLimit
+          if (myNrow == myBuffRows) {
+            // buffer full due to unusually short lines in this chunk vs the sample; e.g. #2070
+            myBuffRows *= 1.5;
+            #pragma omp atomic
+            buffGrown++;
+            ctx.buff8 = realloc(ctx.buff8, rowSize8 * myBuffRows + 8);
+            ctx.buff4 = realloc(ctx.buff4, rowSize4 * myBuffRows + 4);
+            ctx.buff1 = realloc(ctx.buff1, rowSize1 * myBuffRows + 1);
+            if ((rowSize8 && !ctx.buff8) || (rowSize4 && !ctx.buff4) || (rowSize1 && !ctx.buff1)) {
+              stopTeam = true;
+              break;
+            }
+            // shift current buffer positions, since `myBuffX`s were probably moved by realloc
+            fctx.targets[8] = OFFSET_POINTER(ctx.buff8, myNrow * rowSize8);
+            fctx.targets[4] = OFFSET_POINTER(ctx.buff4, myNrow * rowSize4);
+            fctx.targets[1] = OFFSET_POINTER(ctx.buff1, myNrow * rowSize1);
+          }
+          tLineStart = tch;  // for error message
+          const char *fieldStart = tch;
+          int j = 0;
+    
+          //*** START HOT ***//
+          if (sep!=' ' && !any_number_like_NAstrings) {  // TODO:  can this 'if' be dropped somehow? Can numeric NAstrings be dealt with afterwards in one go as numeric comparison?
+            // Try most common and fastest branch first: no whitespace, no quoted numeric, ",," means NA
+            while (j < ncol) {
+              // DTPRINT(_("Field %d: '%.10s' as type %d  (tch=%p)\n"), j+1, tch, type[j], tch);
+              fieldStart = tch;
+              int8_t thisType = type[j];  // fetch shared type once. Cannot read half-written byte is one reason type's type is single byte to avoid atomic read here.
+              fun[IGNORE_BUMP(thisType)](&fctx);
+              if (*tch!=sep) break;
+              int8_t thisSize = size[j];
+              if (thisSize) ((char **) targets)[thisSize] += thisSize;  // 'if' for when rereading to avoid undefined NULL+0
+              tch++;
+              j++;
+            }
+            if (j > max_col) max_col = j;
+            //*** END HOT. START TEPID ***//
+            if (tch==tLineStart) {
+              skip_white(&tch);       // skips \0 before eof
+              if (*tch=='\0') break;  // empty last line
+              if (eol(&tch) && skipEmptyLines) { tch++; continue; }
+              tch = tLineStart;  // in case white space at the beginning may need to be including in field
+            }
+            else if (eol(&tch) && j<ncol) {   // j<ncol needed for #2523 (erroneous extra comma after last field)
+              int8_t thisSize = size[j];
+              if (thisSize) ((char **) targets)[thisSize] += thisSize;
+              j++;
+              if (j > max_col) max_col = j;
+              if (j==ncol) { tch++; myNrow++; continue; }  // next line. Back up to while (tch<nextJumpStart). Usually happens, fastest path
+            }
+            else {
+              tch = fieldStart; // restart field as int processor could have moved to A in ",123A,"
+            }
+            // if *tch=='\0' then *eof in mind, fall through to below
+          }
+          //*** END TEPID. NOW COLD.
+    
+          // Either whitespace surrounds field in which case the processor will fault very quickly, it's numeric but quoted (quote will fault the non-string processor),
+          // it contains an NA string, or there's an out-of-sample type bump needed.
+          // In all those cases we're ok to be a bit slower. The rest of this line will be processed using the slower version.
+          // (End-of-file) is also dealt with now, as could be the highly unusual line ending /n/r
+          // This way (each line has new opportunity of the fast path) if only a little bit of the file is quoted (e.g. just when commas are present as fwrite does)
+          // then a penalty isn't paid everywhere.
+          // TODO: reduce(slowerBranch++). So we can see in verbose mode if this is happening too much.
+    
+          if (sep==' ') {
+            while (*tch==' ') tch++;  // multiple sep=' ' at the tLineStart does not mean sep. We're at tLineStart because the fast branch above doesn't run when sep=' '
+            fieldStart = tch;
+            skip_white(&tch);          // skips \0 before eof
+            if (*tch=='\0') continue;  // tch==eof; empty last line
+            if (eol(&tch) && skipEmptyLines) { tch++; continue; }
+            tch = fieldStart;         // in case tabs at the beginning of the first field need to be included
+          }
+          bool checkedNumberOfFields = false;
+          if (fill || ncol==1 || (*tch!='\n' && *tch!='\r')) while (j < ncol) {
+            fieldStart = tch;
+            int8_t joldType = type[j];
+            int8_t thisType = joldType;  // to know if it was bumped in (rare) out-of-sample type exceptions
+            int8_t absType = (int8_t)IGNORE_BUMP(thisType);
+    
+            while (absType < NUMTYPE) {
+              tch = fieldStart;
+              bool quoted = false;
+              if (absType<CT_STRING && absType>CT_DROP/*Field() too*/) {
+                skip_white(&tch);
+                const char *afterSpace = tch;
+                tch = end_NA_string(tch);
+                skip_white(&tch);
+                if (!end_of_field(tch)) tch = afterSpace; // else it is the field_end, we're on closing sep|eol and we'll let processor write appropriate NA as if field was empty
+                if (*tch==quote && quote) { quoted=true; tch++; }
+              } // else Field() handles NA inside it unlike other processors e.g. ,, is interpreted as "" or NA depending on option read inside Field()
+              fun[IGNORE_BUMP(thisType)](&fctx);
+    
+              bool typeBump = false;
+              if (quoted) {   // quoted was only set to true with '&& quote' above (=> quote!='\0' now)
+                if (*tch==quote) tch++;
+                else typeBump = true;
+              }
+    
+              if(!typeBump)
+              {
+                skip_white(&tch);
+                if (end_of_field(tch)) {
+                  if (sep==' ' && *tch==' ') {
+                    while (tch[1]==' ') tch++;  // multiple space considered one sep so move to last
+                    if (tch[1]=='\r' || tch[1]=='\n' || tch+1==eof) tch++;
+                  }
+                  break;
+                }
+              }
+              
+              // guess is insufficient out-of-sample, type is changed to negative sign and then bumped. Continue to
+              // check that the new type is sufficient for the rest of the column (and any other columns also in out-of-sample bump status) to be
+              // sure a single re-read will definitely work.
+              while (++absType<CT_STRING && disabled_parsers[absType]) {};
+              thisType = TOGGLE_BUMP(absType);
+              tch = fieldStart;
+            }
+    
+            if (thisType != joldType) {             // rare out-of-sample type exception.
+              if (!checkedNumberOfFields && !fill) {
+                // check this line has the correct number of fields. If not, don't apply the bump from this invalid line. Instead fall through to myStopEarly below.
+                const char *tt = fieldStart;
+                int fieldsRemaining = countfields(&tt);
+                if (j+fieldsRemaining != ncol) break;
+                checkedNumberOfFields = true;
+              }
+              if (thisType <= TOGGLE_BUMP(NUMTYPE)) {
+                break;  // Improperly quoted char field needs to be healed below, other columns will be filled #5041 and #4774
+              }
+              #pragma omp critical
+              {
+                joldType = type[j];  // fetch shared value again in case another thread bumped it while I was waiting.
+                // Can't print because we're likely not master. So accumulate message and print afterwards.
+                if (thisType < joldType) {   // thisType<0 (type-exception)
+                  if (verbose) {
+                    char temp[1001];
+                    int len = snprintf(temp, 1000,
+                      _("Column %d%s%.*s%s bumped from '%s' to '%s' due to <<%.*s>> on row %"PRId64"\n"),
+                      j+1, colNames?" <<":"", colNames?(colNames[j].len):0, colNames?(colNamesAnchor+colNames[j].off):"", colNames?">>":"",
+                      typeName[IGNORE_BUMP(joldType)], typeName[IGNORE_BUMP(thisType)],
+                      (int)(tch-fieldStart), fieldStart, (int64_t)(ctx.DTi+myNrow));
+                    if (len > 1000) len = 1000;
+                    if (len > 0) {
+                      typeBumpMsg = realloc(typeBumpMsg, typeBumpMsgSize + len + 1);
+                      strcpy(typeBumpMsg+typeBumpMsgSize, temp);
+                      typeBumpMsgSize += len;
+                    }
+                  }
+                  nTypeBump++;
+                  if (joldType>0) nTypeBumpCols++;
+                  type[j] = thisType;
+                } // else another thread just bumped to a (negative) higher or equal type while I was waiting, so do nothing
+              }
+            }
+            int8_t thisSize = size[j];
+            if (thisSize) ((char**) targets)[size[j]] += size[j];  // 'if' to avoid undefined NULL+=0 when rereading
+            j++;
+            if (*tch==sep) { tch++; continue; }
+            if (fill && (*tch=='\n' || *tch=='\r' || tch==eof) && j<ncol) continue;  // reuse processors to write appropriate NA to target; saves maintenance of a type switch down here
+            break;
+          }
+          if (j<ncol || (!eol(&tch) && tch!=eof))  {
+            // Too few or too many columns observed (but not empty lines when skipEmptyLines as they were found and skipped earlier above).
+            // If fill==true, fields should already have been filled above due to continue inside while(j<ncol).
+            myStopEarly = true;
+            tch = tLineStart;
+            break;
+          }
+          if (tch!=eof) tch++;
+          myNrow++;
         }
+        if (verbose) { double now = wallclock(); thRead += now-tLast; tLast = now; }
+        ctx.anchor = thisJumpStart;
+        ctx.nRows = myNrow;
+        postprocessBuffer(&ctx);
+    
+        // if (tch>nextJumpStart) I know now that the next jump is dirty and should be swept. But, there might be earlier jumps
+        // already waiting at ordered that are dirty too; i.e. it's likely that thisJumpStart!=headPos. Therefore, sweeping must
+        // be triggered not here before ordered but when we're inside ordered and we're at headPos reliably.
+    
+        #pragma omp ordered
+        {
+          if (stopTeam) {             // A previous thread stopped while I was waiting my turn to enter ordered
+            myNrow = 0;               // # nocov; discard my buffer
+          }
+          else if (headPos!=thisJumpStart && nrowLimit>0) { // do not care for dirty jumps since we do not read data and only want to know types
+             // # nocov start
+            snprintf(internalErr, internalErrSize, "invalid head position. jump=%d, headPos=%p, thisJumpStart=%p, sof=%p", jump, headPos, thisJumpStart, sof); // # notranslate
+            stopTeam = true;
+            // # nocov end
+          }
+          else {
+            ctx.DTi = DTi;  // fetch shared DTi (where to write my results to the answer). The previous thread just told me.
+            if (ctx.DTi + myNrow > allocnrow) {
+              // Guess for DT's nrow was insufficient. We cannot realloc DT now because other threads are pushing to DT now in
+              // parallel. So, stop team, realloc and then restart reading from this jump.
+              extraAllocRows = (int64_t)((double)(DTi+myNrow)*nJumps/(jump+1) * 1.2) - allocnrow;
+              if (extraAllocRows < 1024) extraAllocRows = 1024;
+              myNrow = 0;    // discard my buffer even though it was read correctly; this one jump will be reread wastefully in this rare case
+              stopTeam = restartTeam = true;
+              jump0 = jump;
+            } else {
+              // tell next thread 2 things :
+              headPos = tch;  // i) advance headPos; the jump start up to which all rows have been pushed
+              DTi += myNrow;  // ii) which row in the final result next thread should start writing to since now I know myNrow.
+              ctx.nRows = myNrow;
+              orderBuffer(&ctx);
+              if (myStopEarly) {
+                if (quoteRule<3) {
+                  quoteRule++;
+                  if (quoteRuleBumpedCh == NULL) {
+                    // for warning message if the quote rule bump does in fact manage to heal it, e.g. test 1881
+                    quoteRuleBumpedCh = tLineStart;
+                    quoteRuleBumpedLine = row1line+DTi;
+                  }
+                  restartTeam = true;
+                  jump0 = jump;  // this jump will restart from headPos, not from its beginning, e.g. test 1453
+                }
+                stopTeam = true;
+              } else if (headPos>nextJumpStart) {
+                nSwept++;         // next jump landed awkwardly and will be reread from headPos; i.e. next jump is dirty and will be swept
+                stopTeam = restartTeam = true;
+                jump0 = jump+1;   // restart team from next jump. jump0 always starts from headPos
+                // if too many jumps are dirty, scale down to single-threaded to save restarting team too much, wastefully. The file requires
+                // a single threaded read anyway due to its tortuous complexity with so many embedded newlines so often
+                if (nth>1 && nSwept>5 && (double)nSwept/jump > 0.10) nth=1;
+              }
+            }
+          }
+        }
+        // END ORDERED.
+        // Next thread can now start her ordered section and write her results to the final DT at the same time as me.
+        // Ordered has to be last in some OpenMP implementations currently. Logically though, pushBuffer happens now.
       }
-      allocateDT(type, size, ncol, ncol - nStringCols - nNonStringCols, DTi);
-      // reread from the beginning
-      DTi = 0;
-      headPos = pos;
-      jump0 = 0;
-      firstTime = false;
-      nSwept = 0;
-      goto read;
+      // End for loop over all jump points
+    
+      // Push out all buffers one last time (only needed because of gomp ordered workaround above with push first in the loop)
+      // If stopped early, this will happen once for thread at headPos (the only one left with myNrow>0)
+      if (myNrow) {
+        double now = verbose ? wallclock() : 0;
+        pushBuffer(&ctx);
+        if (verbose) thPush += wallclock() - now;
+      }
+      // Each thread to free their own buffer.
+      free(ctx.buff8); ctx.buff8 = NULL;
+      free(ctx.buff4); ctx.buff4 = NULL;
+      free(ctx.buff1); ctx.buff1 = NULL;
+      freeThreadContext(&ctx);
     }
-  } else {
-    tReread = wallclock();
-  }
+    //-- end parallel ------------------
+    
+    // cleanup since fill argument for number of columns was too high
+    if (fill>1 && max_col<ncol && max_col>0) {
+      int ndropFill = ncol - max_col;
+      if (verbose) {
+        DTPRINT(_("  Provided number of fill columns: %d but only found %d\n"), ncol, max_col);
+        DTPRINT(_("  Dropping %d overallocated columns\n"), ndropFill);
+      }
+      dropFill = malloc(sizeof(*dropFill) * ndropFill);
+      if (!dropFill)
+        STOP(_("Failed to allocate %zu bytes for '%s'."), sizeof(*dropFill) * ndropFill, "dropFill"); // # nocov
+      int i=0;
+      for (int j=max_col; j<ncol; ++j) {
+        type[j] = CT_DROP;
+        size[j] = 0;
+        ndrop++;
+        nNonStringCols--;
+        dropFill[i++] = j;
+      }
+      dropFilledCols(dropFill, ndropFill);
+    }
+    
+    if (stopTeam) {
+      if (internalErr[0]!='\0') {
+        STOP(_("Internal error in %s: %s. Please report to the data.table issues tracker"), __func__, internalErr); // # nocov
+      }
+      stopTeam = false;
+    
+      if (extraAllocRows && nrowLimit>0) { // no allocating needed for nrows=0
+        allocnrow += extraAllocRows;
+        if (allocnrow > nrowLimit) allocnrow = nrowLimit;
+        if (verbose) DTPRINT(_("  Too few rows allocated. Allocating additional %"PRId64" rows (now nrows=%"PRId64") and continue reading from jump %d\n"),
+                             extraAllocRows, allocnrow, jump0);
+        allocateDT(type, size, ncol, ncol - nStringCols - nNonStringCols, allocnrow);
+        extraAllocRows = 0;
+        continue;
+      }
+      if (restartTeam && nrowLimit>0) { // no restarting needed for nrows=0 since we discard read data anyway
+        if (verbose) DTPRINT(_("  Restarting team from jump %d. nSwept==%d quoteRule==%d\n"), jump0, nSwept, quoteRule);
+        ASSERT(nSwept>0 || quoteRuleBumpedCh!=NULL, "team restart but nSwept==%d and quoteRuleBumpedCh==%p", nSwept, quoteRuleBumpedCh); // # nocov
+        continue;
+      }
+      // else nrowLimit applied and stopped early normally
+    }
+    
+    // tell progress meter to finish up; e.g. write final newline
+    // if there's a reread, the progress meter will start again from 0
+    if (args.showProgress) progress(100, 0);
+    
+    if (firstTime) {
+      tReread = tRead = wallclock();
+    
+      // if nTypeBump>0, not-bumped columns are about to be assigned parse type TOGGLE_BUMP(CT_STRING) for the reread, so we have to count
+      // parse types now (for log). We can't count final column types afterwards because many parse types map to the same column type.
+      for (int i=0; i<NUMTYPE; i++) typeCounts[i] = 0;
+      for (int i=0; i<ncol; i++) typeCounts[ IGNORE_BUMP(type[i]) ]++;
+    
+      if (nTypeBump) {
+        if (verbose) DTPRINT(_("  %d out-of-sample type bumps: %s\n"), nTypeBump, typesAsString(ncol));
+        rowSize1 = rowSize4 = rowSize8 = 0;
+        nStringCols = 0;
+        nNonStringCols = 0;
+        for (int j=0; j<ncol; ++j) {
+          if (type[j] == CT_DROP) continue;
+          if (type[j]<0) {
+            // column was bumped due to out-of-sample type exception
+            type[j] = TOGGLE_BUMP(type[j]);
+            size[j] = typeSize[type[j]];
+            rowSize1 += (size[j] & 1);
+            rowSize4 += (size[j] & 4);
+            rowSize8 += (size[j] & 8);
+            if (type[j] == CT_STRING) nStringCols++; else nNonStringCols++;
+          } else if (type[j]>=1) {
+            // we'll skip over non-bumped columns in the rerun, whilst still incrementing resi (hence not CT_DROP)
+            // not -type[i] either because that would reprocess the contents of not-bumped columns wastefully
+            type[j] = TOGGLE_BUMP(CT_STRING);
+            size[j] = 0;
+          }
+        }
+        allocateDT(type, size, ncol, ncol - nStringCols - nNonStringCols, DTi);
+        // reread from the beginning
+        DTi = 0;
+        headPos = pos;
+        jump0 = 0;
+        firstTime = false;
+        nSwept = 0;
+        continue;
+      }
+    } else {
+      tReread = wallclock();
+    }
 
+    break;
+  }
   double tTot = tReread-t0;  // tReread==tRead when there was no reread
   if (verbose) DTPRINT(_("Read %"PRIu64" rows x %d columns from %s file in %02d:%06.3f wall clock time\n"),
        (uint64_t)DTi, ncol-ndrop, filesize_to_str(fileSize), (int)tTot/60, fmod(tTot,60.0));
@@ -2756,17 +2773,17 @@ int freadMain(freadMainArgs _args) {
         ch = headPos;
         int tt = countfields(&ch);
         if (fill>0) {
-          DTWARN(_("Stopped early on line %"PRIu64". Expected %d fields but found %d. Consider fill=%d or even more based on your knowledge of the input file. Use fill=Inf for reading the whole file for detecting the number of fields. First discarded non-empty line: <<%s>>"),
-          (uint64_t)DTi+row1line, ncol, tt, tt, strlim(skippedFooter,500));
+          DTWARN(_("Stopped early on line %"PRId64". Expected %d fields but found %d. Consider fill=%d or even more based on your knowledge of the input file. Use fill=Inf for reading the whole file for detecting the number of fields. First discarded non-empty line: <<%s>>"),
+          DTi+row1line, ncol, tt, tt, strlim(skippedFooter,500));
         } else {
-          DTWARN(_("Stopped early on line %"PRIu64". Expected %d fields but found %d. Consider fill=TRUE. First discarded non-empty line: <<%s>>"),
-          (uint64_t)DTi+row1line, ncol, tt, strlim(skippedFooter,500));
+          DTWARN(_("Stopped early on line %"PRId64". Expected %d fields but found %d. Consider fill=TRUE. First discarded non-empty line: <<%s>>"),
+          DTi+row1line, ncol, tt, strlim(skippedFooter,500));
         }
       }
     }
   }
   if (quoteRuleBumpedCh!=NULL && quoteRuleBumpedCh<headPos) {
-    DTWARN(_("Found and resolved improper quoting out-of-sample. First healed line %"PRIu64": <<%s>>. If the fields are not quoted (e.g. field separator does not appear within any field), try quote=\"\" to avoid this warning."), (uint64_t)quoteRuleBumpedLine, strlim(quoteRuleBumpedCh, 500));
+    DTWARN(_("Found and resolved improper quoting out-of-sample. First healed line %"PRId64": <<%s>>. If the fields are not quoted (e.g. field separator does not appear within any field), try quote=\"\" to avoid this warning."), quoteRuleBumpedLine, strlim(quoteRuleBumpedCh, 500));
   }
 
   if (verbose) {
@@ -2776,14 +2793,14 @@ int freadMain(freadMainArgs _args) {
     DTPRINT(_("%8.3fs (%3.0f%%) sep="), tLayout-tMap, 100.0*(tLayout-tMap)/tTot);
       DTPRINT(sep=='\t' ? "'\\t'" : (sep=='\n' ? "'\\n'" : "'%c'"), sep); // # notranslate
       DTPRINT(_(" ncol=%d and header detection\n"), ncol);
-    DTPRINT(_("%8.3fs (%3.0f%%) Column type detection using %"PRIu64" sample rows\n"),
-            tColType-tLayout, 100.0*(tColType-tLayout)/tTot, (uint64_t)sampleLines);
-    DTPRINT(_("%8.3fs (%3.0f%%) Allocation of %"PRIu64" rows x %d cols (%.3fGB) of which %"PRIu64" (%3.0f%%) rows used\n"),
-      tAlloc-tColType, 100.0*(tAlloc-tColType)/tTot, (uint64_t)allocnrow, ncol, DTbytes/(1024.0*1024*1024), (uint64_t)DTi, 100.0*DTi/allocnrow);
+    DTPRINT(_("%8.3fs (%3.0f%%) Column type detection using %"PRId64" sample rows\n"),
+            tColType-tLayout, 100.0*(tColType-tLayout)/tTot, sampleLines);
+    DTPRINT(_("%8.3fs (%3.0f%%) Allocation of %"PRId64" rows x %d cols (%.3fGB) of which %"PRId64" (%3.0f%%) rows used\n"),
+      tAlloc-tColType, 100.0*(tAlloc-tColType)/tTot, allocnrow, ncol, DTbytes/(1024.0*1024*1024), DTi, 100.0*DTi/allocnrow);
     thRead/=nth; thPush/=nth;
     double thWaiting = tReread-tAlloc-thRead-thPush;
-    DTPRINT(_("%8.3fs (%3.0f%%) Reading %d chunks (%d swept) of %.3fMB (each chunk %d rows) using %d threads\n"),
-            tReread-tAlloc, 100.0*(tReread-tAlloc)/tTot, nJumps, nSwept, (double)chunkBytes/(1024*1024), (int)(DTi/nJumps), nth);
+    DTPRINT(_("%8.3fs (%3.0f%%) Reading %d chunks (%d swept) of %.3fMB (each chunk %"PRId64" rows) using %d threads\n"),
+            tReread-tAlloc, 100.0*(tReread-tAlloc)/tTot, nJumps, nSwept, (double)chunkBytes/(1024*1024), DTi/nJumps, nth);
     DTPRINT(_("   + %8.3fs (%3.0f%%) Parse to row-major thread buffers (grown %d times)\n"), thRead, 100.0*thRead/tTot, buffGrown);
     DTPRINT(_("   + %8.3fs (%3.0f%%) Transpose\n"), thPush, 100.0*thPush/tTot);
     DTPRINT(_("   + %8.3fs (%3.0f%%) Waiting\n"), thWaiting, 100.0*thWaiting/tTot);

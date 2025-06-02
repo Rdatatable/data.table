@@ -130,12 +130,12 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
   }
   R_len_t nx = length(x);
 
-  double **dx = (double**)R_alloc(nx, sizeof(double*));
-  int32_t **ix = (int32_t**)R_alloc(nx, sizeof(int32_t*));
-  int64_t **i64x = (int64_t**)R_alloc(nx, sizeof(int64_t*));
-  uint_fast64_t *inx = (uint_fast64_t*)R_alloc(nx, sizeof(uint_fast64_t));
+  double **dx = (double**)R_alloc(nx, sizeof(*dx));
+  int32_t **ix = (int32_t**)R_alloc(nx, sizeof(*ix));
+  int64_t **i64x = (int64_t**)R_alloc(nx, sizeof(*i64x));
+  uint_fast64_t *inx = (uint_fast64_t*)R_alloc(nx, sizeof(*inx));
   SEXP ans = R_NilValue;
-  ans_t *vans = (ans_t *)R_alloc(nx, sizeof(ans_t));
+  ans_t *vans = (ans_t *)R_alloc(nx, sizeof(*vans));
   for (R_len_t i=0; i<nx; i++) {
     const SEXP xi = VECTOR_ELT(x, i);
     inx[i] = xlength(xi);
@@ -175,10 +175,10 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
     internal_error(__func__, "invalid %s argument in %s function should have been caught earlier", "type", "nafillR"); // # nocov
 
   bool hasFill = !isLogical(fill) || LOGICAL(fill)[0]!=NA_LOGICAL;
-  bool *isInt64 = (bool *)R_alloc(nx, sizeof(bool));
+  bool *isInt64 = (bool *)R_alloc(nx, sizeof(*isInt64));
   for (R_len_t i=0; i<nx; i++)
     isInt64[i] = INHERITS(VECTOR_ELT(x, i), char_integer64);
-  const void **fillp = (const void **)R_alloc(nx, sizeof(void*)); // fill is (or will be) a list of length nx of matching types, scalar values for each column, this pointer points to each of those columns data pointers
+  const void **fillp = (const void **)R_alloc(nx, sizeof(*fillp)); // fill is (or will be) a list of length nx of matching types, scalar values for each column, this pointer points to each of those columns data pointers
   if (hasFill) {
     if (nx!=length(fill) && length(fill)!=1)
       error(_("fill must be a vector of length 1 or a list of length of x"));

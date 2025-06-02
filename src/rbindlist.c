@@ -24,7 +24,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
   int64_t nrow=0, upperBoundUniqueNames=1;
   bool anyNames=false;
   int numZero=0, firstZeroCol=0, firstZeroItem=0;
-  int *eachMax = (int *)R_alloc(LENGTH(l), sizeof(int));
+  int *eachMax = (int *)R_alloc(LENGTH(l), sizeof(*eachMax));
   // pre-check for any errors here to save having to get cleanup right below when usenames
   for (int i=0; i<LENGTH(l); i++) {  // length(l)>0 checked above
     eachMax[i] = 0;
@@ -92,11 +92,11 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
         SET_TRUELENGTH(s,-nuniq);
       }
     }
-    if (nuniq>0) uniq = realloc(uniq, nuniq*sizeof(SEXP));  // shrink to only what we need to release the spare
+    if (nuniq>0) uniq = realloc(uniq, sizeof(SEXP)*nuniq);  // shrink to only what we need to release the spare
 
     // now count the dups (if any) and how they're distributed across the items
-    int *counts = (int *)calloc(nuniq, sizeof(int)); // counts of names for each colnames
-    int *maxdup = (int *)calloc(nuniq, sizeof(int)); // the most number of dups for any name within one colname vector
+    int *counts = calloc(nuniq, sizeof(*counts)); // counts of names for each colnames
+    int *maxdup = calloc(nuniq, sizeof(*maxdup)); // the most number of dups for any name within one colname vector
     if (!counts || !maxdup) {
       // # nocov start
       for (int i=0; i<nuniq; ++i) SET_TRUELENGTH(uniq[i], 0);
@@ -113,7 +113,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
       const SEXP cn = getAttrib(li, R_NamesSymbol);
       if (!length(cn)) continue;
       const SEXP *cnp = STRING_PTR_RO(cn);
-      memset(counts, 0, nuniq*sizeof(int));
+      memset(counts, 0, nuniq*sizeof(*counts));
       for (int j=0; j<thisncol; j++) {
         SEXP s = ENC2UTF8(cnp[j]); // convert different encodings for use.names #5452
         counts[ -TRUELENGTH(s)-1 ]++;
@@ -154,7 +154,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
         for (int j=0; j<thisncol; j++) colMapRaw[i*ncol + j] = j;
       } else {
         const SEXP *cnp = STRING_PTR_RO(cn);
-        memset(counts, 0, nuniq*sizeof(int));
+        memset(counts, 0, nuniq*sizeof(*counts));
         for (int j=0; j<thisncol; j++) {
           SEXP s = ENC2UTF8(cnp[j]); // convert different encodings for use.names #5452
           int w = -TRUELENGTH(s)-1;
@@ -180,13 +180,13 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
 
     // colMapRaw is still allocated. It was allocated with malloc because we needed to catch if the alloc failed.
     // move it to R's heap so it gets automatically free'd on exit, and on any error between now and the end of rbindlist.
-    colMap = (int *)R_alloc(LENGTH(l)*ncol, sizeof(int));
+    colMap = (int *)R_alloc(LENGTH(l)*ncol, sizeof(*colMap));
     // This R_alloc could fail with out-of-memory but given it is very small it's very unlikely. If it does fail, colMapRaw will leak.
     //   But colMapRaw leaking now in this very rare situation is better than colMapRaw leaking in the more likely but still rare conditions later.
     //   And it's better than having to trap all exit point from here to the end of rbindlist, which may not be possible; e.g. writeNA() could error inside it with unsupported type.
     //   This very unlikely leak could be fixed by using an on.exit() at R level rbindlist(); R-exts$6.1.2 refers to pwilcox for example. However, that would not
     //   solve the (mere) leak if we ever call rbindlist internally from other C functions.
-    memcpy(colMap, colMapRaw, LENGTH(l)*ncol*sizeof(int));
+    memcpy(colMap, colMapRaw, LENGTH(l)*ncol*sizeof(*colMap));
     free(colMapRaw);  // local scope in this branch to ensure can't be used below
 
     // to view map when debugging ...
@@ -198,7 +198,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
     // Ensure no missings in both cases, and (when usenames==NA) all columns in same order too
     // We proceeded earlier as if fill was true, so varying ncol items will have missing here
     char buff[1001] = "";
-    const char *extra = usenames==TRUE?"":_(" use.names='check' (default from v1.12.2) emits this message and proceeds as if use.names=FALSE for "\
+    const char *extra = usenames==TRUE?"":_(" use.names='check' (default from v1.12.2) emits this message and proceeds as if use.names=FALSE for "
                                             " backwards compatibility. See news item 5 in v1.12.2 for options to control this message.");
     for (int i=0; i<LENGTH(l); ++i) {
       SEXP li = VECTOR_ELT(l, i);
@@ -297,8 +297,8 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
       }
       SEXP thisCol = VECTOR_ELT(li, w);
       int thisType = TYPEOF(thisCol);
-      // Use >= for #546 -- TYPEORDER=0 for both LGLSXP and EXPRSXP (but also NULL)
-      if (TYPEORDER(thisType)>=TYPEORDER(maxType) && !isNull(thisCol)) maxType=thisType;
+      // Use >= for #546 -- RTYPE_ORDER=0 for both LGLSXP and EXPRSXP (but also NULL)
+      if (RTYPE_ORDER(thisType)>=RTYPE_ORDER(maxType) && !isNull(thisCol)) maxType=thisType;
       if (isFactor(thisCol)) {
         if (isNull(getAttrib(thisCol,R_LevelsSymbol))) error(_("Column %d of item %d has type 'factor' but has no levels; i.e. malformed."), w+1, i+1);
         factor = true;
@@ -445,7 +445,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
               if (allocLevel<INT_MAX) {
                 int64_t new = (int64_t)allocLevel+n-k+1024; // if all remaining levels in this item haven't been seen before, plus 1024 margin in case of many very short levels
                 allocLevel = (new>(int64_t)INT_MAX) ? INT_MAX : (int)new;
-                tt = (SEXP *)realloc(levelsRaw, allocLevel*sizeof(SEXP));  // first time levelsRaw==NULL and realloc==malloc in that case
+                tt = realloc(levelsRaw, sizeof(SEXP)*allocLevel);  // first time levelsRaw==NULL and realloc==malloc in that case
               }
               if (tt==NULL) {
                 // # nocov start
@@ -497,7 +497,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
                   }
                 }
               } else {
-                memcpy(targetd+ansloc, id, thisnrow*SIZEOF(thisCol));
+                memcpy(targetd+ansloc, id, thisnrow*RTYPE_SIZEOF(thisCol));
               }
             }
           } else {

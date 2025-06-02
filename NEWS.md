@@ -27,7 +27,11 @@ frollsum(c(1,2,3,Inf,5,6), 2)
 
 4. `as.Date()` method for `IDate` no longer coerces to `double` [#6922](https://github.com/Rdatatable/data.table/issues/6922). Thanks @MichaelChirico for the report and PR. The only effect should be on overly-strict tests that assert `Date` objects have `double` storage, which is not in general true, especially from R 4.5.0.
 
-5. Multiple improvements has been added to rolling functions. Request came from @gpierard who needed left aligned, adaptive, rolling max, [#5438](https://github.com/Rdatatable/data.table/issues/5438). There was no `frollmax` function yet. Adaptive rolling functions did not have support for `align="left"`. `frollapply` did not support `adaptive=TRUE`. Available alternatives were base R `mapply` or self-join using `max` and grouping `by=.EACHI`. As a follow up of his request, following features has been added:
+5. `as.data.table()` is slightly more efficient at converting arrays to data.tables, [#7019](https://github.com/Rdatatable/data.table/pull/7019). Thanks @eliocamp.
+
+6. `between()` gains the argument `ignore_tzone=FALSE`. Normally, a difference in time zone between `lower` and `upper` will produce an error, and a difference in time zone between `x` and either of the others will produce a message. Setting `ignore_tzone=TRUE` bypasses the checks, allowing both comparisons to proceed without error or message about time zones.
+
+7. Multiple improvements has been added to rolling functions. Request came from @gpierard who needed left aligned, adaptive, rolling max, [#5438](https://github.com/Rdatatable/data.table/issues/5438). There was no `frollmax` function yet. Adaptive rolling functions did not have support for `align="left"`. `frollapply` did not support `adaptive=TRUE`. Available alternatives were base R `mapply` or self-join using `max` and grouping `by=.EACHI`. As a follow up of his request, following features has been added:
 - new function `frollmax`, applies `max` over a rolling window.
 - support for `align="left"` for adaptive rolling function.
 - support for `adaptive=TRUE` in `frollapply`.
@@ -85,6 +89,8 @@ As of now, adaptive rolling max has no _on-line_ implemention (`algo="fast"`), i
 
 8. `fread()` no longer warns on certain systems on R 4.5.0+ where the file owner can't be resolved, [#6918](https://github.com/Rdatatable/data.table/issues/6918). Thanks @ProfFancyPants for the report and PR.
 
+9. Joins to extended data.frames, e.g. `x[i, col := x.col1 + i.col2]` where `i` is a `tbl`, can use the `x.` and `i.` prefix forms, [#6998](https://github.com/Rdatatable/data.table/issues/6998). Thanks @MichaelChirico for the bug and PR.
+
 ### NOTES
 
 1. Continued work to remove non-API C functions, [#6180](https://github.com/Rdatatable/data.table/issues/6180). Thanks Ivan Krylov for the PRs and for writing a clear and concise guide about the R API: https://aitap.codeberg.page/R-api/.
@@ -97,6 +103,12 @@ As of now, adaptive rolling max has no _on-line_ implemention (`algo="fast"`), i
    + It's now an error to set `datatable.nomatch`, which has been warning since 1.15.0.
 
 3. {data.table} now depends on R 3.4.0 (2017).
+
+4. Changes to `fread()` output and errors:
+
+   + When the size of the file exceeds the size of the address space, `fread()` now signals an informative error instead of trying to map its size modulo the address space.
+   + On non-Windows systems, `fread()` now prints the reason why the file couldn't be opened, which could also be due to it being too large to map.
+   + With `verbose=TRUE`, file sizes are now printed using correct binary SI prefixes (the sizes have always been reported as bytes denominated in powers of `2^10`, so e.g. `1024*1024` bytes was reported as `1 MB` where `1 MiB` or `1.05 MB` is correct).
 
 ## data.table [v1.17.0](https://github.com/Rdatatable/data.table/milestone/34)  (20 Feb 2025)
 
