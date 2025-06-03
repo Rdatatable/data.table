@@ -67,7 +67,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
       # Incompatible factor join: Factor vs (Not Factor and Not Character)
       # The 'message' attribute must match the *old* error for direct calls to bmerge (e.g., DT[otherDT])
       condition_message <- sprintf(
-        "Incompatible join types: %s (%s) and %s (%s)", # Exact match for tests like 2044.24
+        "Incompatible join types: %s (%s) and %s (%s). Factor columns must join to factor or character columns.", # Exact match for tests like 2044.24
         xname, x_merge_type,
         iname, i_merge_type
       )
