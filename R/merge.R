@@ -1,7 +1,8 @@
 merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FALSE, all.x = all,
                all.y = all, sort = TRUE, suffixes = c(".x", ".y"), no.dups = TRUE, allow.cartesian=getOption("datatable.allow.cartesian"), incomparables=NULL, ...) {
 
-  # NO user_x_name / user_y_name here to maintain original variable environment for tests
+  # NO user_x_name / user_y_name at the top to maintain original variable environment for most of the function
+  # They will be fetched *only* within the error handler if needed.
 
   if (!sort %in% c(TRUE, FALSE))
     stopf("Argument 'sort' should be logical TRUE/FALSE")
@@ -39,33 +40,32 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
     if (length(by.x) == 0L || !is.character(by.x) || !is.character(by.y))
       stopf("A non-empty vector of column names is required for `by.x` and `by.y`.")
     if (!all(idx <- by.x %chin% nm_x)) {
-      stopf("The following columns listed in `%s` are missing from %s: %s", "by.x", "x", brackify(by.x[!idx])) # Original: literal "x"
+      stopf("The following columns listed in `%s` are missing from %s: %s", "by.x", "x", brackify(by.x[!idx]))
     }
     if (!all(idx <- by.y %chin% nm_y)) {
-      stopf("The following columns listed in `%s` are missing from %s: %s", "by.y", "y", brackify(by.y[!idx])) # Original: literal "y"
+      stopf("The following columns listed in `%s` are missing from %s: %s", "by.y", "y", brackify(by.y[!idx]))
     }
     by = by.x
     names(by) = by.y
   } else {
     if (is.null(by))
       by = intersect(key(x), key(y))
-    if (!length(by))   # was is.null() before PR#5183  changed to !length()
+    if (!length(by))
       by = key(x)
     if (!length(by))
       by = intersect(nm_x, nm_y)
     if (length(by) == 0L || !is.character(by))
       stopf("A non-empty vector of column names for `by` is required.")
     if (!all(idx <- by %in% nm_x)) {
-      stopf("The following columns listed in `%s` are missing from %s: %s", "by", "x", brackify(by[!idx])) # Original: literal "x"
+      stopf("The following columns listed in `%s` are missing from %s: %s", "by", "x", brackify(by[!idx]))
     }
     if (!all(idx <- by %in% nm_y)) {
-      stopf("The following columns listed in `%s` are missing from %s: %s", "by", "y", brackify(by[!idx])) # Original: literal "y"
+      stopf("The following columns listed in `%s` are missing from %s: %s", "by", "y", brackify(by[!idx]))
     }
     by = unname(by)
     by.x = by.y = by
   }
 
-  # warn about unused arguments #2587
   if (length(list(...))) {
     ell = as.list(substitute(list(...)))[-1L]
     for (n in setdiff(names(ell), "")) warningf("Unknown argument '%s' has been passed.", n)
@@ -74,8 +74,8 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
       warningf("Passed %d unknown and unnamed arguments.", unnamed_n)
   }
 
-  start = setdiff(nm_x, by.x) # Original logic
-  end = setdiff(nm_y, by.y)   # Original logic
+  start = setdiff(nm_x, by.x)
+  end = setdiff(nm_y, by.y)
   dupnames = intersect(start, end)
   if (length(dupnames)) {
     start[chmatch(dupnames, start, 0L)] = paste0(dupnames, suffixes[1L])
@@ -86,62 +86,47 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
     end[chmatch(dupkeyx, end, 0L)] = paste0(dupkeyx, suffixes[2L])
   }
 
-  # implement incomparables argument #2587
   if (!is.null(incomparables)) {
-    # %fin% to be replaced when #5232 is implemented/closed
     "%fin%" = function(x_val, table_val) if (is.character(x_val) && is.character(table_val)) x_val %chin% table_val else x_val %in% table_val
-    xind = rowSums(x[, lapply(.SD, function(x_col_val) !(x_col_val %fin% incomparables)), .SDcols=by.x]) == length(by.x) # Original by.x usage
-    yind = rowSums(y[, lapply(.SD, function(y_col_val) !(y_col_val %fin% incomparables)), .SDcols=by.y]) == length(by.y) # Original by.y usage
-    # subset both so later steps still work
-    x = x[xind] # Original modification of x
-    y = y[yind] # Original modification of y
+    xind = rowSums(x[, lapply(.SD, function(x_col_val) !(x_col_val %fin% incomparables)), .SDcols=by.x]) == length(by.x)
+    yind = rowSums(y[, lapply(.SD, function(y_col_val) !(y_col_val %fin% incomparables)), .SDcols=by.y]) == length(by.y)
+    x = x[xind]
+    y = y[yind]
   }
 
-  # ----- MINIMAL MODIFICATION: tryCatch around the main join call -----
   dt <- tryCatch({
-      # Original join call, using 'by' as constructed by original logic above
       y[x, nomatch=if (all.x) NA else NULL, on=by, allow.cartesian=allow.cartesian]
     },
     bmerge_incompatible_type_error = function(e) {
-      # Get table names *locally* only when this specific error occurs.
-      # These x_arg_name and y_arg_name refer to the 'x' and 'y' arguments of merge.data.table
-      x_arg_name <- deparse1(substitute(x, env = parent.frame(2))) # Go up to merge.data.table's frame
-      y_arg_name <- deparse1(substitute(y, env = parent.frame(2))) # Go up to merge.data.table's frame
+      # For merge(x=DT1, y=DT2), DT1 (user's 'x') is bmerge's 'i'
+      #                            DT2 (user's 'y') is bmerge's 'x'
+      x_part_col_name <- e$c_bmerge_i_arg_bare_col_name
+      x_part_type     <- e$c_bmerge_i_arg_type
+      y_part_col_name <- e$c_bmerge_x_arg_bare_col_name
+      y_part_type     <- e$c_bmerge_x_arg_type
 
-      # Ensure arg names are single, non-empty strings
-      final_x_arg_name <- if (is.null(x_arg_name) || length(x_arg_name) != 1L || !nzchar(x_arg_name[1L])) "arg 'x'" else x_arg_name[1L]
-      final_y_arg_name <- if (is.null(y_arg_name) || length(y_arg_name) != 1L || !nzchar(y_arg_name[1L])) "arg 'y'" else y_arg_name[1L]
-
-      # Extract column/type details from error object 'e'
-      # Assumes attributes on 'e' are valid single character strings from R/bmerge.R
-      # Mapping: merge's 'x' is bmerge's 'i'; merge's 'y' is bmerge's 'x'
-      col_from_x_arg <- e$c_bmerge_i_arg_bare_col_name
-      type_from_x_arg <- e$c_bmerge_i_arg_type
-      col_from_y_arg <- e$c_bmerge_x_arg_bare_col_name
-      type_from_y_arg <- e$c_bmerge_x_arg_type
-
-      # Construct the concise error message
+      # Use literal "x." and "y." prefixes referring to the arguments of merge()
       msg <- sprintf(
-        "Incompatible join types for merge: table '%s' column '%s' (%s) and table '%s' column '%s' (%s). Factor columns must join to factor or character columns.",
-        final_x_arg_name, col_from_x_arg, type_from_x_arg,
-        final_y_arg_name, col_from_y_arg, type_from_y_arg
+        "Incompatible join types: x.%s (%s) and y.%s (%s). Factor columns must join to factor or character columns.",
+        x_part_col_name, x_part_type,  # Corresponds to merge() argument 'x'
+        y_part_col_name, y_part_type   # Corresponds to merge() argument 'y'
       )
       
-      stop(errorCondition(message = msg, class = c("datatable_merge_type_error", "data.table_error", "error", "condition"), call = NULL))
+      # Remove call = NULL to get "Error in merge.data.table(...): " prefix.
+      stop(errorCondition(message = msg, class = c("datatable_merge_type_error", "data.table_error", "error", "condition")))
     }
   )
-  # ----- END MINIMAL MODIFICATION -----
 
-  if (all.y && nrow(y)) {  # Original logic
+  if (all.y && nrow(y)) {
     missingyidx = y[!x, which=TRUE, on=by, allow.cartesian=allow.cartesian]
     if (length(missingyidx)) dt = rbind(dt, y[missingyidx], use.names=FALSE, fill=TRUE, ignore.attr=TRUE)
   }
   
-  newend = setdiff(nm_y, by.y) # Original logic
-  setcolorder(dt, c(by.y, setdiff(names(dt), c(by.y, newend)), newend)) # Original logic
-  setnames(dt, c(by.x, start, end)) # Original logic
+  newend = setdiff(nm_y, by.y)
+  setcolorder(dt, c(by.y, setdiff(names(dt), c(by.y, newend)), newend))
+  setnames(dt, c(by.x, start, end))
   if (nrow(dt) > 0L) {
-    setkeyv(dt, if (sort) by.x else NULL) # Original logic
+    setkeyv(dt, if (sort) by.x else NULL)
   }
 
   resultdupnames = names(dt)[duplicated(names(dt))]

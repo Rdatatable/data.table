@@ -75,7 +75,6 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
       condition <- structure(
         list(
           message = condition_message,
-          call = NULL,
           c_bmerge_x_arg_bare_col_name = names(x)[xcol],
           c_bmerge_x_arg_type          = x_merge_type,
           c_bmerge_i_arg_bare_col_name = names(i)[icol],
