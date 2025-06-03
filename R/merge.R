@@ -1,9 +1,5 @@
 merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FALSE, all.x = all,
                all.y = all, sort = TRUE, suffixes = c(".x", ".y"), no.dups = TRUE, allow.cartesian=getOption("datatable.allow.cartesian"), incomparables=NULL, ...) {
-
-  # NO user_x_name / user_y_name at the top to maintain original variable environment for most of the function
-  # They will be fetched *only* within the error handler if needed.
-
   if (!sort %in% c(TRUE, FALSE))
     stopf("Argument 'sort' should be logical TRUE/FALSE")
   if (!no.dups %in% c(TRUE, FALSE))
@@ -12,7 +8,7 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   if (!is.data.table(y)) {
     y = as.data.table(y)
     if (missing(by) && missing(by.x)) {
-      by = key(x) # Original logic
+      by = key(x)
     }
   }
   x0 = length(x) == 0L
@@ -21,17 +17,17 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
     if (x0 && y0)
       warningf("Neither of the input data.tables to join have columns.")
     else if (x0)
-      warningf("Input data.table '%s' has no columns.", "x") # Original: literal "x"
+      warningf("Input data.table '%s' has no columns.", "x")
     else
-      warningf("Input data.table '%s' has no columns.", "y") # Original: literal "y"
+      warningf("Input data.table '%s' has no columns.", "y")
   }
   check_duplicate_names(x)
   check_duplicate_names(y)
 
-  nm_x = names(x) # Original logic
-  nm_y = names(y) # Original logic
+  nm_x = names(x)
+  nm_y = names(y)
 
-  ## set up 'by'/'by.x'/'by.y' - RETAIN ORIGINAL LOGIC EXACTLY
+  ## set up 'by'/'by.x'/'by.y'
   if ((!is.null(by.x) || !is.null(by.y)) && length(by.x) != length(by.y))
     stopf("`by.x` and `by.y` must be of same length.")
   if (!missing(by) && !missing(by.x))
@@ -50,7 +46,7 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   } else {
     if (is.null(by))
       by = intersect(key(x), key(y))
-    if (!length(by))
+    if (!length(by))   # was is.null() before PR#5183  changed to !length()
       by = key(x)
     if (!length(by))
       by = intersect(nm_x, nm_y)
@@ -66,6 +62,7 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
     by.x = by.y = by
   }
 
+  # warn about unused arguments #2587
   if (length(list(...))) {
     ell = as.list(substitute(list(...)))[-1L]
     for (n in setdiff(names(ell), "")) warningf("Unknown argument '%s' has been passed.", n)
@@ -73,7 +70,10 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
     if (unnamed_n)
       warningf("Passed %d unknown and unnamed arguments.", unnamed_n)
   }
-
+  # with i. prefix in v1.9.3, this goes away. Left here for now ...
+  ## sidestep the auto-increment column number feature-leading-to-bug by
+  ## ensuring no names end in ".1", see unit test
+  ## "merge and auto-increment columns in y[x]" in test-data.frame.like.R
   start = setdiff(nm_x, by.x)
   end = setdiff(nm_y, by.y)
   dupnames = intersect(start, end)
@@ -81,11 +81,14 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
     start[chmatch(dupnames, start, 0L)] = paste0(dupnames, suffixes[1L])
     end[chmatch(dupnames, end, 0L)] = paste0(dupnames, suffixes[2L])
   }
+  # If no.dups = TRUE we also need to added the suffix to columns in y
+  # that share a name with by.x
   dupkeyx = intersect(by.x, end)
   if (no.dups && length(dupkeyx)) {
     end[chmatch(dupkeyx, end, 0L)] = paste0(dupkeyx, suffixes[2L])
   }
 
+  # implement incomparables argument #2587
   if (!is.null(incomparables)) {
     "%fin%" = function(x_val, table_val) if (is.character(x_val) && is.character(table_val)) x_val %chin% table_val else x_val %in% table_val
     xind = rowSums(x[, lapply(.SD, function(x_col_val) !(x_col_val %fin% incomparables)), .SDcols=by.x]) == length(by.x)
@@ -100,16 +103,16 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
     bmerge_incompatible_type_error = function(e) {
       # For merge(x=DT1, y=DT2), DT1 (user's 'x') is bmerge's 'i'
       #                            DT2 (user's 'y') is bmerge's 'x'
-      x_part_col_name <- e$c_bmerge_i_arg_bare_col_name
-      x_part_type     <- e$c_bmerge_i_arg_type
-      y_part_col_name <- e$c_bmerge_x_arg_bare_col_name
-      y_part_type     <- e$c_bmerge_x_arg_type
+      x_part_col_name <- e$bmerge_i_arg_col_name
+      x_part_type     <- e$bmerge_i_arg_type
+      y_part_col_name <- e$bmerge_x_arg_col_name
+      y_part_type     <- e$bmerge_x_arg_type
 
       # Use literal "x." and "y." prefixes referring to the arguments of merge()
       msg <- sprintf(
-        "Incompatible join types: x.%s (%s) and y.%s (%s). Factor columns must join to factor or character columns.",
-        x_part_col_name, x_part_type,  # Corresponds to merge() argument 'x'
-        y_part_col_name, y_part_type   # Corresponds to merge() argument 'y'
+        "Incompatible join types: x.%s (%s) and i.%s (%s). Factor columns must join to factor or character columns.",
+        x_part_col_name, x_part_type, 
+        y_part_col_name, y_part_type   
       )
       
       # Remove call = NULL to get "Error in merge.data.table(...): " prefix.
@@ -121,19 +124,23 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
     missingyidx = y[!x, which=TRUE, on=by, allow.cartesian=allow.cartesian]
     if (length(missingyidx)) dt = rbind(dt, y[missingyidx], use.names=FALSE, fill=TRUE, ignore.attr=TRUE)
   }
-  
+  # X[Y] syntax puts JIS i columns at the end, merge likes them alongside i.
   newend = setdiff(nm_y, by.y)
+  # fix for #1290, make sure by.y order is set properly before naming
   setcolorder(dt, c(by.y, setdiff(names(dt), c(by.y, newend)), newend))
   setnames(dt, c(by.x, start, end))
   if (nrow(dt) > 0L) {
     setkeyv(dt, if (sort) by.x else NULL)
   }
 
+  # Throw warning if there are duplicate column names in 'dt' (i.e. if
+  # `suffixes=c("","")`, to match behaviour in base:::merge.data.frame)
   resultdupnames = names(dt)[duplicated(names(dt))]
   if (length(resultdupnames)) {
     warningf("column names %s are duplicated in the result", brackify(resultdupnames))
   }
 
+  # retain custom classes of first argument that resulted in dispatch to this method, #1378
   setattr(dt, "class", class_x)
   dt
 }
