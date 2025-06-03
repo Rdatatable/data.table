@@ -92,10 +92,10 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
         list(
           message = raw_msg, # Generic message from bmerge's perspective
           call = NULL,       # Will be populated by stop() or handler
-          c_bmerge_x_arg_col_specifier = xname,        # e.g., "x.a" or "a"
-          c_bmerge_x_arg_type          = x_merge_type,  # e.g., "integer"
-          c_bmerge_i_arg_col_specifier = iname,        # e.g., "i.a" or "a"
-          c_bmerge_i_arg_type          = i_merge_type   # e.g., "factor"
+          c_bmerge_x_arg_bare_col_name = x_bare_colname_variable, # MUST be a valid string
+        c_bmerge_x_arg_type          = x_coltype_str_variable,  # MUST be a valid string
+        c_bmerge_i_arg_bare_col_name = i_bare_colname_variable, # MUST be a valid string
+        c_bmerge_i_arg_type          = i_coltype_str_variable   # MUST be a valid string
         ),
         class = c("bmerge_incompatible_type_error", "data.table_error", "error", "condition")
       )
