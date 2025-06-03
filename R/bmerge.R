@@ -70,8 +70,8 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
         if (verbose) catf("Matching %s factor levels to %s factor levels.\n", iname, xname)
         set(i, j=icol, value=chmatch(levels(i[[icol]]), levels(x[[xcol]]), nomatch=0L)[i[[icol]]])  # nomatch=0L otherwise a level that is missing would match to NA values
         next
-      } else { # One is factor, the other is not factor
-        if (x_merge_type=="character") { # i is factor, x is character
+      } else {
+        if (x_merge_type=="character") { 
           coerce_col(i, icol, "factor", "character", iname, xname, verbose=verbose)
           set(callersi, j=icol, value=i[[icol]])  # factor in i joining to character in x will return character and not keep x's factor; e.g. for antaresRead #3581
           next
@@ -83,40 +83,27 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
           next
         }
       }
-      # ----- BEGIN MODIFICATION -----
-      # If execution reaches here, it means:
-      # 1. One of (x_merge_type, i_merge_type) is "factor".
-      # 2. They are not BOTH "factor".
-      # 3. The non-factor column is NOT "character".
-      # This is the specific incompatibility: Factor joining with non-factor/non-character.
-
-      # Message for the condition object, from bmerge's perspective using its 'x' and 'i' arguments
-      # and their prefixed column names.
       condition_message <- sprintf(
-        "Incompatible join types: %s (%s) and %s (%s). Factor columns must join to factor or character columns.",
+        "Incompatible join types (from bmerge perspective): %s (%s) and %s (%s). Factor columns must join to factor or character columns.",
         xname, x_merge_type, # xname is like "x.colA", x_merge_type is its type
         iname, i_merge_type  # iname is like "i.colB", i_merge_type is its type
       )
-
       condition <- structure(
         list(
-          message = condition_message, # Raw message if not caught and rephrased
+          message = condition_message, # Raw message from bmerge if not caught and rephrased
           call = NULL,                 # Will be populated by stop() or handler
 
-          # Details for 'x' argument received by bmerge.R (e.g., DT2 in merge(DT1,DT2) or DT1 in DT1[DT2])
-          c_bmerge_x_arg_bare_col_name = names(x)[xcol], # Bare column name, e.g., "a"
-          c_bmerge_x_arg_type          = x_merge_type,  # Type string, e.g., "integer"
+          # Details for 'x' argument bmerge.R received (e.g., table y from merge(x,y) or table x from x[i])
+          c_bmerge_x_arg_bare_col_name = names(x)[xcol], # Bare column name from x, e.g., "a"
+          c_bmerge_x_arg_type          = x_merge_type,  # Type string for x's column, e.g., "integer"
 
-          # Details for 'i' argument received by bmerge.R (e.g., DT1 in merge(DT1,DT2) or DT2 in DT1[DT2])
-          c_bmerge_i_arg_bare_col_name = names(i)[icol], # Bare column name, e.g., "a"
-          c_bmerge_i_arg_type          = i_merge_type   # Type string, e.g., "factor"
+          # Details for 'i' argument bmerge.R received (e.g., table x from merge(x,y) or table i from x[i])
+          c_bmerge_i_arg_bare_col_name = names(i)[icol], # Bare column name from i, e.g., "a"
+          c_bmerge_i_arg_type          = i_merge_type   # Type string for i's column, e.g., "factor"
         ),
         class = c("bmerge_incompatible_type_error", "data.table_error", "error", "condition")
       )
       stop(condition)
-      # ----- END MODIFICATION -----
-    } # End of initial "if (x_merge_type=='factor' || i_merge_type=='factor')" block
-
     # we check factors first to cater for the case when trying to do rolling joins on factors
     if (x_merge_type == i_merge_type) {
       if (verbose) catf("%s has same type (%s) as %s. No coercion needed.\n", iname, x_merge_type, xname)
@@ -185,8 +172,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
         }
       }
     }
-  } # End of for loop iterating through join columns
-
+  }
   ## after all modifications of x, check if x has a proper key on all xcols.
   ## If not, calculate the order. Also for non-equi joins, the order must be calculated.
   non_equi = which.first(ops != 1L) # 1 is "==" operator
