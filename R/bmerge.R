@@ -1,5 +1,3 @@
-
-
 mergeType = function(x) {
   ans = typeof(x)
   if      (ans=="integer") { if (is.factor(x))             ans = "factor"    }
@@ -60,10 +58,11 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     xcol = xcols[a]
     x_merge_type = mergeType(x[[xcol]])
     i_merge_type = mergeType(i[[icol]])
-    xname = paste0("x.", names(x)[xcol])
-    iname = paste0("i.", names(i)[icol])
+    xname = paste0("x.", names(x)[xcol]) # Prefixed name for x's column (bmerge's perspective)
+    iname = paste0("i.", names(i)[icol]) # Prefixed name for i's column (bmerge's perspective)
     if (!x_merge_type %chin% supported) stopf("%s is type %s which is not supported by data.table join", xname, x_merge_type)
     if (!i_merge_type %chin% supported) stopf("%s is type %s which is not supported by data.table join", iname, i_merge_type)
+
     if (x_merge_type=="factor" || i_merge_type=="factor") {
       if (roll!=0.0 && a==length(icols))
         stopf("Attempting roll join on factor column when joining %s to %s. Only integer, double or character columns may be roll joined.", xname, iname)
@@ -71,12 +70,12 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
         if (verbose) catf("Matching %s factor levels to %s factor levels.\n", iname, xname)
         set(i, j=icol, value=chmatch(levels(i[[icol]]), levels(x[[xcol]]), nomatch=0L)[i[[icol]]])  # nomatch=0L otherwise a level that is missing would match to NA values
         next
-      } else {
-        if (x_merge_type=="character") {
+      } else { # One is factor, the other is not factor
+        if (x_merge_type=="character") { # i is factor, x is character
           coerce_col(i, icol, "factor", "character", iname, xname, verbose=verbose)
           set(callersi, j=icol, value=i[[icol]])  # factor in i joining to character in x will return character and not keep x's factor; e.g. for antaresRead #3581
           next
-        } else if (i_merge_type=="character") {
+        } else if (i_merge_type=="character") { # i is character, x is factor
           if (verbose) catf("Matching character column %s to factor levels in %s.\n", iname, xname)
           newvalue = chmatch(i[[icol]], levels(x[[xcol]]), nomatch=0L)
           if (anyNA(i[[icol]])) newvalue[is.na(i[[icol]])] = NA_integer_  # NA_character_ should match to NA in factor, #3809
@@ -84,29 +83,46 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
           next
         }
       }
-      raw_msg <- sprintf("Incompatible join types for bmerge: '%s' (%s) and '%s' (%s). Factor columns must join to factor or character columns.",
-                       xname, x_merge_type, # Details for C-bmerge 'x' argument
-                       iname, i_merge_type) # Details for C-bmerge 'i' argument
+      # ----- BEGIN MODIFICATION -----
+      # If execution reaches here, it means:
+      # 1. One of (x_merge_type, i_merge_type) is "factor".
+      # 2. They are not BOTH "factor".
+      # 3. The non-factor column is NOT "character".
+      # This is the specific incompatibility: Factor joining with non-factor/non-character.
+
+      # Message for the condition object, from bmerge's perspective using its 'x' and 'i' arguments
+      # and their prefixed column names.
+      condition_message <- sprintf(
+        "Incompatible join types: %s (%s) and %s (%s). Factor columns must join to factor or character columns.",
+        xname, x_merge_type, # xname is like "x.colA", x_merge_type is its type
+        iname, i_merge_type  # iname is like "i.colB", i_merge_type is its type
+      )
 
       condition <- structure(
         list(
-          message = raw_msg, # Generic message from bmerge's perspective
-          call = NULL,       # Will be populated by stop() or handler
-          c_bmerge_x_arg_bare_col_name = x_bare_colname_variable, # MUST be a valid string
-        c_bmerge_x_arg_type          = x_coltype_str_variable,  # MUST be a valid string
-        c_bmerge_i_arg_bare_col_name = i_bare_colname_variable, # MUST be a valid string
-        c_bmerge_i_arg_type          = i_coltype_str_variable   # MUST be a valid string
+          message = condition_message, # Raw message if not caught and rephrased
+          call = NULL,                 # Will be populated by stop() or handler
+
+          # Details for 'x' argument received by bmerge.R (e.g., DT2 in merge(DT1,DT2) or DT1 in DT1[DT2])
+          c_bmerge_x_arg_bare_col_name = names(x)[xcol], # Bare column name, e.g., "a"
+          c_bmerge_x_arg_type          = x_merge_type,  # Type string, e.g., "integer"
+
+          # Details for 'i' argument received by bmerge.R (e.g., DT1 in merge(DT1,DT2) or DT2 in DT1[DT2])
+          c_bmerge_i_arg_bare_col_name = names(i)[icol], # Bare column name, e.g., "a"
+          c_bmerge_i_arg_type          = i_merge_type   # Type string, e.g., "factor"
         ),
         class = c("bmerge_incompatible_type_error", "data.table_error", "error", "condition")
       )
       stop(condition)
-    }
+      # ----- END MODIFICATION -----
+    } # End of initial "if (x_merge_type=='factor' || i_merge_type=='factor')" block
+
     # we check factors first to cater for the case when trying to do rolling joins on factors
     if (x_merge_type == i_merge_type) {
       if (verbose) catf("%s has same type (%s) as %s. No coercion needed.\n", iname, x_merge_type, xname)
       next
     }
-    cfl = c("character", "logical", "factor")
+    cfl = c("character", "logical", "factor") # Note: 'factor' in cfl is effectively dead code here due to earlier factor handling
     if (x_merge_type %chin% cfl || i_merge_type %chin% cfl) {
       if (anyNA(i[[icol]]) && allNA(i[[icol]])) {
         coerce_col(i, icol, i_merge_type, x_merge_type, iname, xname, from_detail=gettext(" (all-NA)"), verbose=verbose)
@@ -116,6 +132,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
         coerce_col(x, xcol, x_merge_type, i_merge_type, xname, iname, from_detail=gettext(" (all-NA)"), verbose=verbose)
         next
       }
+      # This stopf is for other incompatible types not covered by the factor-specific error above
       stopf("Incompatible join types: %s (%s) and %s (%s)", xname, x_merge_type, iname, i_merge_type)
     }
     if (x_merge_type=="integer64" || i_merge_type=="integer64") {
@@ -168,7 +185,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
         }
       }
     }
-  }
+  } # End of for loop iterating through join columns
 
   ## after all modifications of x, check if x has a proper key on all xcols.
   ## If not, calculate the order. Also for non-equi joins, the order must be calculated.
