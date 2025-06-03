@@ -27,7 +27,6 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   nm_x = names(x)
   nm_y = names(y)
 
-  ## set up 'by'/'by.x'/'by.y'
   if ((!is.null(by.x) || !is.null(by.y)) && length(by.x) != length(by.y))
     stopf("`by.x` and `by.y` must be of same length.")
   if (!missing(by) && !missing(by.x))
@@ -77,7 +76,6 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
     start[chmatch(dupnames, start, 0L)] = paste0(dupnames, suffixes[1L])
     end[chmatch(dupnames, end, 0L)] = paste0(dupnames, suffixes[2L])
   }
-
   dupkeyx = intersect(by.x, end)
   if (no.dups && length(dupkeyx)) {
     end[chmatch(dupkeyx, end, 0L)] = paste0(dupkeyx, suffixes[2L])
@@ -91,36 +89,47 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
     y = y[yind]
   }
 
-  # Enhanced error handling during join
-  user_x_name = deparse1(substitute(x))
-  user_y_name = deparse1(substitute(y))
-  dt = tryCatch({
-    y[x, nomatch=if (all.x) NA else NULL, on=by, allow.cartesian=allow.cartesian]
-  }, bmerge_incompatible_type_error = function(e) {
-    col_from_user_x <- e$bmerge_i_arg_details$col_name
-    type_from_user_x <- e$bmerge_i_arg_details$type_str
+  # ----- BEGIN MODIFICATION -----
+  user_x_name <- deparse1(substitute(x))
+  user_y_name <- deparse1(substitute(y))
+  by_for_join <- by
+  dt <- tryCatch({
+      y[x, nomatch = if (all.x) NA else NULL, on = by_for_join, allow.cartesian = allow.cartesian]
+    },
+    bmerge_incompatible_type_error = function(e) {
+      safe_attr_get <- function(obj, attr_name, placeholder) {
+        val <- obj[[attr_name]]
+        if (is.null(val) || length(val) != 1L || is.na(val) || !nzchar(as.character(val)[1L])) {
+          warning(paste0("Problem retrieving attribute '", attr_name, "' from bmerge_incompatible_type_error object. Was: ", paste(capture.output(dput(val)), collapse = " ")))
+          return(placeholder)
+        }
+        return(as.character(val)[1L])
+      }
+      col_from_user_x_arg <- safe_attr_get(e, "c_bmerge_i_arg_bare_col_name", "[unknown column from x]")
+      type_from_user_x_arg <- safe_attr_get(e, "c_bmerge_i_arg_type", "[unknown type from x]")
+      col_from_user_y_arg <- safe_attr_get(e, "c_bmerge_x_arg_bare_col_name", "[unknown column from y]")
+      type_from_user_y_arg <- safe_attr_get(e, "c_bmerge_x_arg_type", "[unknown type from y]")
+      final_user_x_name <- if (is.null(user_x_name) || length(user_x_name) != 1L || !nzchar(user_x_name[1L])) "x" else user_x_name[1L]
+      final_user_y_name <- if (is.null(user_y_name) || length(user_y_name) != 1L || !nzchar(user_y_name[1L])) "y" else user_y_name[1L]
 
-    col_from_user_y <- e$bmerge_x_arg_details$col_name
-    type_from_user_y <- e$bmerge_x_arg_details$type_str
+      msg <- sprintf(
+        "When merging data.table '%s' (argument 'x') and data.table '%s' (argument 'y'):\n  Incompatible join types. Factor columns must join to factor or character columns.\n  Column '%s' from '%s' (arg 'x') has type: %s.\n  Column '%s' from '%s' (arg 'y') has type: %s.",
+        final_user_x_name,
+        final_user_y_name,
+        col_from_user_x_arg, final_user_x_name, type_from_user_x_arg,
+        col_from_user_y_arg, final_user_y_name, type_from_user_y_arg
+      )
 
-    by_col_name <- col_from_user_x
-
-    new_msg <- sprintf(
-      "When merging data.table '%s' (argument 'x') and data.table '%s' (argument 'y') on column '%s':\n  Incompatible join types. Factor columns must join to factor or character columns.\n  Type in '%s' (column '%s'%s): %s\n  Type in '%s' (column '%s'%s): %s",
-      user_x_name,
-      user_y_name,
-      by_col_name,
-      user_x_name, by_col_name, if (suffixes[1] != "") paste0(" becoming '", by_col_name, suffixes[1], "'") else "", type_from_user_x,
-      user_y_name, by_col_name, if (suffixes[2] != "") paste0(" becoming '", by_col_name, suffixes[2], "'") else "", type_from_user_y
-    )
-
-    stop(errorCondition(message = new_msg, class = c("datatable_merge_error", "error", "condition"), call = NULL))
-  })
+      stop(errorCondition(message = msg, class = c("datatable_merge_type_error", "data.table_error", "error", "condition"), call = NULL))
+    }
+  )
+  # ----- END MODIFICATION -----
 
   if (all.y && nrow(y)) {
     missingyidx = y[!x, which=TRUE, on=by, allow.cartesian=allow.cartesian]
     if (length(missingyidx)) dt = rbind(dt, y[missingyidx], use.names=FALSE, fill=TRUE, ignore.attr=TRUE)
   }
+
   newend = setdiff(nm_y, by.y)
   setcolorder(dt, c(by.y, setdiff(names(dt), c(by.y, newend)), newend))
   setnames(dt, c(by.x, start, end))
