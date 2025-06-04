@@ -1429,7 +1429,7 @@ SEXP issorted(SEXP x, SEXP by)
     int c = INTEGER(by)[j];
     if (c<1 || c>length(x)) STOP(_("issorted 'by' [%d] out of range [1,%d]"), c, length(x));
     SEXP col = VECTOR_ELT(x, c-1);
-    sizes[j] = SIZEOF(col);
+    sizes[j] = RTYPE_SIZEOF(col);
     switch(TYPEOF(col)) {
     case INTSXP: case LGLSXP:
       types[j] = 0;

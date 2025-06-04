@@ -46,8 +46,8 @@
 #define IS_FALSE(x) (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]==FALSE)
 #define IS_TRUE_OR_FALSE(x) (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]!=NA_LOGICAL)
 
-#define SIZEOF(x) __sizes[TYPEOF(x)]
-#define TYPEORDER(x) __typeorder[x]
+#define RTYPE_SIZEOF(x) r_type_sizes[TYPEOF(x)]
+#define RTYPE_ORDER(x) r_type_order[x]
 
 #ifdef MIN
 #  undef MIN
@@ -120,8 +120,8 @@ extern SEXP sym_as_posixct;
 extern double NA_INT64_D;
 extern long long NA_INT64_LL;
 extern Rcomplex NA_CPLX;  // initialized in init.c; see there for comments
-extern size_t __sizes[100];     // max appears to be FUNSXP = 99, see Rinternals.h
-extern size_t __typeorder[100]; // __ prefix otherwise if we use these names directly, the SIZEOF define ends up using the local one
+extern size_t r_type_sizes[100]; // max appears to be FUNSXP = 99, see Rinternals.h
+extern size_t r_type_order[100];
 
 long long DtoLL(double x);
 double LLtoD(long long x);

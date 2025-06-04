@@ -297,8 +297,8 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
       }
       SEXP thisCol = VECTOR_ELT(li, w);
       int thisType = TYPEOF(thisCol);
-      // Use >= for #546 -- TYPEORDER=0 for both LGLSXP and EXPRSXP (but also NULL)
-      if (TYPEORDER(thisType)>=TYPEORDER(maxType) && !isNull(thisCol)) maxType=thisType;
+      // Use >= for #546 -- RTYPE_ORDER=0 for both LGLSXP and EXPRSXP (but also NULL)
+      if (RTYPE_ORDER(thisType)>=RTYPE_ORDER(maxType) && !isNull(thisCol)) maxType=thisType;
       if (isFactor(thisCol)) {
         if (isNull(getAttrib(thisCol,R_LevelsSymbol))) error(_("Column %d of item %d has type 'factor' but has no levels; i.e. malformed."), w+1, i+1);
         factor = true;
@@ -497,7 +497,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
                   }
                 }
               } else {
-                memcpy(targetd+ansloc, id, thisnrow*SIZEOF(thisCol));
+                memcpy(targetd+ansloc, id, thisnrow*RTYPE_SIZEOF(thisCol));
               }
             }
           } else {
