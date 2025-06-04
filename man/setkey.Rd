@@ -39,6 +39,20 @@ ordering vector of the dataset's rows according to the provided columns. This or
 is stored as an attribute of the \code{data.table} and the dataset retains the original order
 of rows in memory. See the \href{../doc/datatable-secondary-indices-and-auto-indexing.html}{\code{vignette("datatable-secondary-indices-and-auto-indexing")}} for more details.
 
+\subsection{Key vs. Index Subsetting}{
+When using \code{setkey}:
+\itemize{
+  \item Subsetting can omit \code{on} (e.g., \code{DT[.(value)]})
+  \item Data is physically reordered in RAM
+}
+When using \code{setindex}:
+\itemize{
+  \item Must specify \code{on} (e.g., \code{DT[.(value), on = "col"]})
+  \item Multiple indices can coexist via \code{setindexv(x, list(cols))}
+  \item Original row order is preserved
+}
+}
+
 \code{key} returns the \code{data.table}'s key if it exists; \code{NULL} if none exists.
 
 \code{haskey} returns \code{TRUE}/\code{FALSE} if the \code{data.table} has a key.
@@ -141,6 +155,15 @@ setindex(DT, A)
 setindex(DT, B)
 indices(DT)           # get indices single vector
 indices(DT, vectors = TRUE) # get indices list
+
+# Keyed subsetting (no 'on' needed)
+setkey(DT, B)
+DT[.("e")]  # Returns row where B = "e"
+
+# Indexed subsetting (requires 'on')
+setindex(DT, B)
+DT[.("e"), on = "B"]  # Works
+# DT[.("e")]           # Would error (missing 'on')
 
 # Setting multiple indices at once
 DT = data.table(A = 5:1, B = letters[5:1], C = 10:6)

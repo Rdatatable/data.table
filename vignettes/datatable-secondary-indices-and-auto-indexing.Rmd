@@ -62,6 +62,49 @@ Secondary indices are similar to `keys` in *data.table*, except for two major di
 
 * There can be more than one secondary index for a data.table (as we will see below).
 
+#### 1.1 Keyed vs. Indexed Subsetting
+
+While both **keys** and **indices** enable fast binary search subsetting, they differ critically in usage:
+
+**Keyed subsetting** (implicit column matching)
+```{r}
+DT <- data.table(a = c(TRUE, FALSE), b = 1:2)
+setkey(DT, a)                # Set key
+DT[.(TRUE)]                  # No 'on' needed - key is used
+```
+
+**Indexed subsetting** (explicit column specification)
+
+```{r}
+DT <- data.table(a = c(TRUE, FALSE), b = 1:2)
+setindex(DT, a)              # Set index only (no reorder)
+DT[.(TRUE), on = "a"]        # Must specify 'on'
+```
+
+Always use `on`with indices to avoid errors. Keys establish permanent implicit matching, while indices require explicit direction for each operation.
+
+#### **Hierarchy of Lookup Operations**
+
+When `on` is specified, `data.table` uses this lookup order:
+
+- Existing keys matching `on` columns
+
+- Pre-built secondary indices matching `on` columns
+
+- Temporary auto-generated index (if none exist)
+
+**Example**: Error When Omitting on with Indices
+
+```{r}
+DT <- data.table(a = c(TRUE, FALSE), b = 1:2)
+setindex(DT, a)
+# DT[.(TRUE)] # Uncommenting this line causes: Error - must specify 'on'
+```
+
+- Use `DT[.(value)]` when the table is keyed by the relevant column(s).
+
+- Use `DT[.(value), on = "col"]` when using secondary indices or when no key is set.
+
 ### b) Set and get secondary indices
 
 #### -- How can we set the column `origin` as a secondary index in the *data.table* `flights`?
