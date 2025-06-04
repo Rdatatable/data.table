@@ -39,20 +39,6 @@ ordering vector of the dataset's rows according to the provided columns. This or
 is stored as an attribute of the \code{data.table} and the dataset retains the original order
 of rows in memory. See the \href{../doc/datatable-secondary-indices-and-auto-indexing.html}{\code{vignette("datatable-secondary-indices-and-auto-indexing")}} for more details.
 
-\subsection{Key vs. Index Subsetting}{
-When using \code{setkey}:
-\itemize{
-  \item Subsetting can omit \code{on} (e.g., \code{DT[.(value)]})
-  \item Data is physically reordered in RAM
-}
-When using \code{setindex}:
-\itemize{
-  \item Must specify \code{on} (e.g., \code{DT[.(value), on = "col"]})
-  \item Multiple indices can coexist via \code{setindexv(x, list(cols))}
-  \item Original row order is preserved
-}
-}
-
 \code{key} returns the \code{data.table}'s key if it exists; \code{NULL} if none exists.
 
 \code{haskey} returns \code{TRUE}/\code{FALSE} if the \code{data.table} has a key.
@@ -86,6 +72,20 @@ Note that \code{setkey} always uses "C-locale"; see the Details in the help for 
 The sort is \emph{stable}; i.e., the order of ties (if any) is preserved.
 
 For character vectors, \code{data.table} takes advantage of R's internal global string cache, also exported as \code{\link{chorder}}.
+}
+
+\section{Key vs. Index Subsetting}{
+When using \code{setkey}:
+\itemize{
+  \item Subsetting can omit \code{on} (e.g., \code{DT[.(value)]})
+  \item Data is physically reordered in RAM
+}
+When using \code{setindex}:
+\itemize{
+  \item Must specify \code{on} (e.g., \code{DT[.(value), on = "col"]})
+  \item Multiple indices can coexist via \code{setindexv(x, list(cols))}
+  \item Original row order is preserved
+}
 }
 
 \section{Good practice}{
@@ -157,14 +157,22 @@ indices(DT)           # get indices single vector
 indices(DT, vectors = TRUE) # get indices list
 
 # Keyed subsetting (no 'on' needed)
+DT = data.table(A=5:1,B=letters[5:1])
 setkey(DT, B)
 DT[.("e")]  # Returns row where B = "e"
 
 # Indexed subsetting (requires 'on')
+DT = data.table(A=5:1,B=letters[5:1])
 setindex(DT, B)
 DT[.("e"), on = "B"]  # Works
 # DT[.("e")]           # Would error (missing 'on')
 
+DT <- data.table(a = c(1,2,1,2), b = c("x", "x", "y", "y"), val = 1:4)
+# Set an index on a single column
+setindex(DT, a)
+# Set multiple indices at once using setindexv
+setindexv(DT, list("a", c("a", "b")))
+  
 # Setting multiple indices at once
 DT = data.table(A = 5:1, B = letters[5:1], C = 10:6)
 setindexv(DT, list(c("A", "B"), c("B", "C")))
