@@ -92,13 +92,25 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   if (!is.null(incomparables)) {
     # %fin% to be replaced when #5232 is implemented/closed
     "%fin%" = function(x, table) if (is.character(x) && is.character(table)) x %chin% table else x %in% table
-    xind = rowSums(x[, lapply(.SD, function(x) !(x %fin% incomparables)), .SDcols=by.x]) == length(by)
-    yind = rowSums(y[, lapply(.SD, function(x) !(x %fin% incomparables)), .SDcols=by.y]) == length(by)
+    xind = rowSums(x[, lapply(.SD, function(x) !(x %fin% incomparables)), .SDcols=by.x]) == length(by.x)
+    yind = rowSums(y[, lapply(.SD, function(x) !(x %fin% incomparables)), .SDcols=by.y]) == length(by.y)
     # subset both so later steps still work
     x = x[xind]
     y = y[yind]
   }
-  dt = y[x, nomatch=if (all.x) NA else NULL, on=by, allow.cartesian=allow.cartesian]   # includes JIS columns (with a i. prefix if conflict with x names)
+  dt = tryCatch({
+      y[x, nomatch=if (all.x) NA else NULL, on=by, allow.cartesian=allow.cartesian]
+    },
+    bmerge_incompatible_type_error = function(e) {
+      x_part_col_name = e$bmerge_i_arg_col_name
+      x_part_type     = e$bmerge_i_arg_type
+      y_part_col_name = e$bmerge_x_arg_col_name
+      y_part_type     = e$bmerge_x_arg_type
+
+      msg = sprintf("Incompatible join types: x.%s (%s) and i.%s (%s). Factor columns must join to factor or character columns.", x_part_col_name, x_part_type, y_part_col_name, y_part_type)
+      stop(errorCondition(message = msg, class = c("datatable_merge_type_error", "data.table_error", "error", "condition")))
+    }
+  )
 
   if (all.y && nrow(y)) {  # If y does not have any rows, no need to proceed
     # Perhaps not very commonly used, so not a huge deal that the join is redone here.

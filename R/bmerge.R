@@ -84,7 +84,18 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
           next
         }
       }
-      stopf("Incompatible join types: %s (%s) and %s (%s). Factor columns must join to factor or character columns.", xname, x_merge_type, iname, i_merge_type)
+      condition_message = sprintf("Incompatible join types: %s (%s) and %s (%s). Factor columns must join to factor or character columns.", xname, x_merge_type, iname, i_merge_type)
+      condition <- structure(
+        list(
+          message = condition_message,
+          bmerge_x_arg_col_name      = names(x)[xcol],
+          bmerge_x_arg_type          = x_merge_type,
+          bmerge_i_arg_col_name      = names(i)[icol],
+          bmerge_i_arg_type          = i_merge_type
+        ),
+        class = c("bmerge_incompatible_type_error", "data.table_error", "error", "condition")
+      )
+      stop(condition)
     }
     # we check factors first to cater for the case when trying to do rolling joins on factors
     if (x_merge_type == i_merge_type) {
