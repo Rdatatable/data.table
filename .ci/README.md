@@ -49,6 +49,33 @@ Base R implemented helper script, [originally proposed to base R](https://svn.r-
 
 Base R implemented helper script to orchestrate generation of most artifacts and to arrange them nicely. It is being used only in [_integration_ stage in GitLab CI pipeline](./../.gitlab-ci.yml).
 
+### [`lint.R`](./lint.R)
+
+Base R runner for the manual (non-`lintr`) lint checks to be run from GitHub Actions during the code quality check. The command line arguments are as follows:
+1. Path to the directory containing files defining the linters. A linter is a function that accepts one argument (typically the path to the file) and signals an error if it fails the lint check.
+2. Path to the directory containing files to check.
+3. A regular expression matching the files to check.
+4. An R expression evaluating to a function that processes a single file path into a form understood by the lint functions. Additionally, the function may return `NULL` to indicate that the file must be skipped.
+
+Example command lines:
+
+```sh
+# C linters expect a three-element named list, not the file path
+Rscript .ci/lint.R .ci/linters/c src '[.][ch]$' '
+  function (f) list(
+    c_obj = f, lines = readLines(f),
+    preprocessed = system2("gcc", shQuote(c("-fpreprocessed", "-E", f)), stdout = TRUE, stderr = FALSE)
+  )
+'
+# po linters must skip files that don't differ from master
+Rscript .ci/lint.R .ci/linters/po po '[.]po$' '
+  function (f) {
+    diff_v_master = system2("git", c("diff", "master", f), stdout=TRUE)
+    if (length(diff_v_master)) f
+  }
+'
+```
+
 ## GitLab Open Source Program
 
 We are currently part of the [GitLab for Open Source Program](https://about.gitlab.com/solutions/open-source/). This gives us 50,000 compute minutes per month for our GitLab CI. Our license needs to be renewed yearly (around July) and is currently managed by @ben-schwen.
