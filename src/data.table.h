@@ -10,15 +10,10 @@
 #  define INTEGER_RO INTEGER
 #  define REAL_RO REAL
 #  define COMPLEX_RO COMPLEX
-#  define R_Calloc(x, y) Calloc(x, y)         // #6380
-#  define R_Realloc(x, y, z) Realloc(x, y, z)
-#  define R_Free(x) Free(x)
+#  define RAW_RO RAW
+#  define LOGICAL_RO LOGICAL
 #endif
-#if R_VERSION < R_Version(3, 4, 0)
-#  define SET_GROWABLE_BIT(x)  // #3292
-#endif
-// TODO: remove the `R_SVN_VERSION` check when R 4.5.0 is released (circa Apr. 2025)
-#if R_VERSION < R_Version(4, 5, 0) || R_SVN_REVISION < 86702
+#if R_VERSION < R_Version(4, 5, 0)
 #  define isDataFrame(x) isFrame(x) // #6180
 #endif
 #include <Rinternals.h>
@@ -42,8 +37,7 @@
 /* we mean the encoding bits, not CE_NATIVE in a UTF-8 locale */
 #define IS_UTF8(x)  (getCharCE(x) == CE_UTF8)
 #define IS_LATIN(x) (getCharCE(x) == CE_LATIN1)
-// TODO: remove the `R_SVN_VERSION` check when R 4.5.0 is released (circa Apr. 2025)
-#if R_VERSION < R_Version(4, 5, 0) || R_SVN_REVISION < 86789
+#if R_VERSION < R_Version(4, 5, 0)
 # define IS_ASCII(x) (LEVELS(x) & 64)
 #else
 # define IS_ASCII(x) (Rf_charIsASCII(x)) // no CE_ASCII
@@ -52,8 +46,8 @@
 #define IS_FALSE(x) (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]==FALSE)
 #define IS_TRUE_OR_FALSE(x) (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]!=NA_LOGICAL)
 
-#define SIZEOF(x) __sizes[TYPEOF(x)]
-#define TYPEORDER(x) __typeorder[x]
+#define RTYPE_SIZEOF(x) r_type_sizes[TYPEOF(x)]
+#define RTYPE_ORDER(x) r_type_order[x]
 
 #ifdef MIN
 #  undef MIN
@@ -126,8 +120,8 @@ extern SEXP sym_as_posixct;
 extern double NA_INT64_D;
 extern long long NA_INT64_LL;
 extern Rcomplex NA_CPLX;  // initialized in init.c; see there for comments
-extern size_t __sizes[100];     // max appears to be FUNSXP = 99, see Rinternals.h
-extern size_t __typeorder[100]; // __ prefix otherwise if we use these names directly, the SIZEOF define ends up using the local one
+extern size_t r_type_sizes[100]; // max appears to be FUNSXP = 99, see Rinternals.h
+extern size_t r_type_order[100];
 
 long long DtoLL(double x);
 double LLtoD(long long x);
@@ -352,7 +346,6 @@ SEXP nqRecreateIndices(SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP fsort(SEXP, SEXP);
 SEXP inrange(SEXP, SEXP, SEXP, SEXP);
 SEXP hasOpenMP(void);
-SEXP beforeR340(void);
 SEXP uniqueNlogical(SEXP, SEXP);
 SEXP dllVersion(void);
 SEXP initLastUpdated(SEXP);
@@ -363,4 +356,3 @@ SEXP dt_has_zlib(void);
 SEXP startsWithAny(SEXP, SEXP, SEXP);
 SEXP convertDate(SEXP, SEXP);
 SEXP fastmean(SEXP);
-

@@ -927,8 +927,8 @@ void fwriteMain(fwriteMainArgs args)
     }
   }
 #ifndef NOZLIB
-  else {
-    // was unconditionally initialized for zbuffSize, not used for header
+  else if (args.is_gzip) {
+    // zstrm initialized for zbuffSize calculation, but not used for header
     deflateEnd(&strm);
   }
 #endif

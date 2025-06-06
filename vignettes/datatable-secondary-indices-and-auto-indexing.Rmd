@@ -191,6 +191,14 @@ flights[.("JFK", "LAX"), on = c("origin", "dest")][1:5]
 
 * Since the time to compute the secondary index is quite small, we don't have to use `setindex()`, unless, once again, the task involves repeated subsetting on the same column.
 
+* For clarity/readability, it might help to name the inputs in `i`, e.g.,
+
+```{r}
+flights[.(origin = "JFK", dest = "LAX"), on = c("origin", "dest")]
+```
+
+This makes it clear which entries in `j` correspond to which element of `on`.
+
 ### b) Select in `j`
 
 All the operations we will discuss below are no different to the ones we already saw in the [`vignette("datatable-keys-fast-subset", package="data.table")`](datatable-keys-fast-subset.html) vignette. Except we'll be using the `on` argument instead of setting keys.

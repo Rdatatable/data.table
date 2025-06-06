@@ -186,4 +186,3 @@ void avoid_openmp_hang_within_fork(void) {
   pthread_atfork(&when_fork, &after_fork, NULL);
 #endif
 }
-

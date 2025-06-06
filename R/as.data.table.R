@@ -96,9 +96,9 @@ as.data.table.array = function(x, keep.rownames=FALSE, key=NULL, sorted=TRUE, va
   dnx = dimnames(x)
   # NULL dimnames will create integer keys, not character as in table method
   val = if (is.null(dnx)) {
-    lapply(dx, seq.int)
+    lapply(dx, seq_len)
   } else if (any(nulldnx <- vapply_1b(dnx, is.null))) {
-    dnx[nulldnx] = lapply(dx[nulldnx], seq.int) #3636
+    dnx[nulldnx] = lapply(dx[nulldnx], seq_len) #3636
     dnx
   } else dnx
   val = rev(val)
@@ -107,7 +107,8 @@ as.data.table.array = function(x, keep.rownames=FALSE, key=NULL, sorted=TRUE, va
   if (value.name %chin% names(val))
     stopf("Argument 'value.name' should not overlap with column names in result: %s", brackify(rev(names(val))))
   N = NULL
-  ans = data.table(do.call(CJ, c(val, sorted=FALSE)), N=as.vector(x))
+  ans = do.call(CJ, c(val, sorted=FALSE))
+  set(ans, j="N", value=as.vector(x))
   if (isTRUE(na.rm))
     ans = ans[!is.na(N)]
   setnames(ans, "N", value.name)
@@ -214,8 +215,13 @@ as.data.table.list = function(x,
 }
 
 as.data.table.data.frame = function(x, keep.rownames=FALSE, key=NULL, ...) {
-  if (is.data.table(x)) return(as.data.table.data.table(x)) # S3 is weird, #6739. Also # nocov; this is tested in 2302.{2,3}, not sure why it doesn't show up in coverage.
-  if (!identical(class(x), "data.frame")) return(as.data.table(as.data.frame(x)))
+  if (is.data.table(x)) return(as.data.table.data.table(x, key=key)) # S3 is weird, #6739. Also # nocov; this is tested in 2302.{2,3}, not sure why it doesn't show up in coverage.
+  if (!identical(class(x), "data.frame")) {
+    class_orig = class(x)
+    x = as.data.frame(x)
+    if (identical(class(x), class_orig)) setattr(x, "class", "data.frame") # cater for cases when as.data.frame can generate a loop #6874
+    return(as.data.table.data.frame(x, keep.rownames=keep.rownames, key=key, ...))
+  }
   if (!isFALSE(keep.rownames)) {
     # can specify col name to keep.rownames, #575; if it's the same as key,
     #   kludge it to 'rn' since we only apply the new name afterwards, #4468
@@ -228,7 +234,7 @@ as.data.table.data.frame = function(x, keep.rownames=FALSE, key=NULL, ...) {
   if (any(cols_with_dims(x))) {
     # a data.frame with a column that is data.frame needs to be expanded; test 2013.4
     # x may be a class with [[ method that behaves differently, so as.list first for default [[, #4526
-    return(as.data.table.list(as.list(x), keep.rownames=keep.rownames, ...))
+    return(as.data.table.list(as.list(x), keep.rownames=keep.rownames, key = key,...))
   }
   ans = copy(x)  # TO DO: change this deep copy to be shallow.
   setattr(ans, "row.names", .set_row_names(nrow(x)))
@@ -245,13 +251,14 @@ as.data.table.data.frame = function(x, keep.rownames=FALSE, key=NULL, ...) {
   ans
 }
 
-as.data.table.data.table = function(x, ...) {
+as.data.table.data.table = function(x, ..., key=NULL) {
   # as.data.table always returns a copy, automatically takes care of #473
   if (any(cols_with_dims(x))) { # for test 2089.2
-    return(as.data.table.list(x, ...))
+    return(as.data.table.list(x, key = key, ...))
   }
   x = copy(x) # #1681
   # fix for #1078 and #1128, see .resetclass() for explanation.
   setattr(x, 'class', .resetclass(x, "data.table"))
+  if (!missing(key)) setkeyv(x, key)
   x
 }

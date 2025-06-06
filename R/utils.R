@@ -21,6 +21,12 @@ nan_is_na = function(x) {
   stopf("Argument 'nan' must be NA or NaN")
 }
 
+# R 4.4.0
+if (!exists("%||%", "package:base")) `%||%` <- function(x, y) if (is.null(x)) y else x # nolint: coalesce_linter.
+
+# R 4.5.0
+if (!exists("grepv", "package:base")) grepv <- function(...) grep(..., value=TRUE)
+
 internal_error = function(...) {
   e1 = gettext("Internal error in")
   e2 = deparse(head(tail(sys.calls(), 2L), 1L)[[1L]][[1L]])

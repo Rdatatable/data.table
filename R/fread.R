@@ -7,7 +7,7 @@ showProgress=getOption("datatable.showProgress",interactive()), data.table=getOp
 nThread=getDTthreads(verbose), logical01=getOption("datatable.logical01",FALSE),
 logicalYN=getOption("datatable.logicalYN", FALSE),
 keepLeadingZeros=getOption("datatable.keepLeadingZeros",FALSE),
-yaml=FALSE, autostart=NULL, tmpdir=tempdir(), tz="UTC")
+yaml=FALSE, tmpdir=tempdir(), tz="UTC")
 {
   if (missing(input)+is.null(file)+is.null(text)+is.null(cmd) < 3L) stopf("Used more than one of the arguments input=, file=, text= and cmd=.")
   input_has_vars = length(all.vars(substitute(input)))>0L  # see news for v1.11.6
@@ -88,7 +88,7 @@ yaml=FALSE, autostart=NULL, tmpdir=tempdir(), tz="UTC")
       on.exit(unlink(tmpFile), add=TRUE)
       # nocov end
     }
-    file_info = file.info(file)
+    file_info = file.info(file, extra_cols=FALSE)
     if (is.na(file_info$size)) stopf("File '%s' does not exist or is non-readable. getwd()=='%s'", file, getwd())
     if (isTRUE(file_info$isdir)) stopf("File '%s' is a directory. Not yet implemented.", file) # Could use dir.exists(), but we already ran file.info().
     if (!file_info$size) {
@@ -124,7 +124,6 @@ yaml=FALSE, autostart=NULL, tmpdir=tempdir(), tz="UTC")
 
     input = file
   }
-  if (!is.null(autostart)) stopf("'autostart' is deprecated. Consider skip='string' or skip=n. This argument will be removed in the next release.");
   if (is.logical(colClasses)) {
     if (!allNA(colClasses)) stopf("colClasses is type 'logical' which is ok if all NA but it has some TRUE or FALSE values in it which is not allowed. Please consider the drop= or select= argument instead. See ?fread.")
     colClasses = NULL
