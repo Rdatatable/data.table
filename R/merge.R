@@ -97,26 +97,16 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
     y = y[yind]
   }
 
-  dt <- tryCatch({
+  dt = tryCatch({
       y[x, nomatch=if (all.x) NA else NULL, on=by, allow.cartesian=allow.cartesian]
     },
-    bmerge_incompatible_type_error = function(e) {
-      # For merge(x=DT1, y=DT2), DT1 (user's 'x') is bmerge's 'i'
-      #                            DT2 (user's 'y') is bmerge's 'x'
-      x_part_col_name <- e$bmerge_i_arg_col_name
-      x_part_type     <- e$bmerge_i_arg_type
-      y_part_col_name <- e$bmerge_x_arg_col_name
-      y_part_type     <- e$bmerge_x_arg_type
+    dt_bmerge_incompatible_type_error = function(e) {
+      x_part_col_name = e$bmerge_i_arg_col_name
+      x_part_type     = e$bmerge_i_arg_type
+      y_part_col_name = e$bmerge_x_arg_col_name
+      y_part_type     = e$bmerge_x_arg_type
 
-      # Use literal "x." and "y." prefixes referring to the arguments of merge()
-      msg <- sprintf(
-        "Incompatible join types: x.%s (%s) and i.%s (%s). Factor columns must join to factor or character columns.",
-        x_part_col_name, x_part_type, 
-        y_part_col_name, y_part_type   
-      )
-      
-      # Remove call = NULL to get "Error in merge.data.table(...): " prefix.
-      stop(errorCondition(message = msg, class = c("datatable_merge_type_error", "data.table_error", "error", "condition")))
+      stopf("Incompatible join types: x.%s (%s) and i.%s (%s). Factor columns must join to factor or character columns.", x_part_col_name, x_part_type, y_part_col_name, y_part_type, class = "dt_merge_incompatible_type_error")
     }
   )
 
