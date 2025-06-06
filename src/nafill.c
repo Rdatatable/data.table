@@ -97,9 +97,9 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
   const bool verbose = GetVerbose();
 
   if (!xlength(obj))
-    return(obj);
+    return obj;
 
-  double tic=0.0;
+  double tic = 0.0;
   if (verbose)
     tic = omp_get_wtime();
 
@@ -122,7 +122,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
   SEXP ricols = PROTECT(colnamesInt(obj, cols, /* check_dups= */ ScalarLogical(TRUE), /* skip_absent= */ ScalarLogical(FALSE))); protecti++; // nafill cols=NULL which turns into seq_along(obj)
   x = PROTECT(allocVector(VECSXP, length(ricols))); protecti++;
   int *icols = INTEGER(ricols);
-  for (int i=0; i<length(ricols); i++) {
+  for (int i=0; i < length(ricols); i++) {
     SEXP this_col = VECTOR_ELT(obj, icols[i]-1);
     if (!isReal(this_col) && !isInteger(this_col))
       error(_("'x' argument must be numeric type, or list/data.table of numeric types"));

@@ -576,7 +576,7 @@ SEXP gsum(SEXP x, SEXP narmArg)
   copyMostAttrib(x, ans);
   if (verbose) { Rprintf(_("%.3fs\n"), wallclock()-started); }
   UNPROTECT(1);
-  return(ans);
+  return ans;
 }
 
 SEXP gmean(SEXP x, SEXP narmArg)
@@ -724,7 +724,7 @@ SEXP gmean(SEXP x, SEXP narmArg)
   copyMostAttrib(x, ans);
   if (verbose) { Rprintf(_("%.3fs\n"), wallclock()-started); }
   UNPROTECT(protecti);
-  return(ans);
+  return ans;
 }
 
 static SEXP gminmax(SEXP x, SEXP narm, const bool min)
@@ -852,7 +852,7 @@ static SEXP gminmax(SEXP x, SEXP narm, const bool min)
   copyMostAttrib(x, ans); // all but names,dim and dimnames. And if so, we want a copy here, not keepattr's SET_ATTRIB.
   UNPROTECT(1);  // ans
   // Rprintf(_("this gminmax took %8.3f\n"), 1.0*(clock()-start)/CLOCKS_PER_SEC);
-  return(ans);
+  return ans;
 }
 
 SEXP gmin(SEXP x, SEXP narm)
@@ -990,7 +990,7 @@ static SEXP gfirstlast(SEXP x, const bool first, const int w, const bool headw) 
   }
   copyMostAttrib(x, ans);
   UNPROTECT(1);
-  return(ans);
+  return ans;
 }
 
 SEXP glast(SEXP x) {

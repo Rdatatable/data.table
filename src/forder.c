@@ -1380,7 +1380,7 @@ SEXP issorted(SEXP x, SEXP by)
       x = VECTOR_ELT(x, INTEGER(by)[0]-1);
     }
     const int n = length(x);
-    if (n <= 1) return(ScalarLogical(TRUE));
+    if (n <= 1) return ScalarLogical(TRUE);
     if (!isVectorAtomic(x)) STOP(_("is.sorted does not work on list columns"));
     int i=1;
     switch(TYPEOF(x)) {
@@ -1492,7 +1492,7 @@ SEXP isOrderedSubset(SEXP x, SEXP nrowArg)
 // Ignores 0s but heeds NAs and any out-of-range (which result in NA)
 {
   if (!isNull(x) && !isInteger(x)) error(_("x must be either NULL or an integer vector"));
-  if (length(x)<=1) return(ScalarLogical(TRUE));  // a single NA when length(x)==1 is ordered (e.g. tests 128 & 130) otherwise anyNA => FALSE
+  if (length(x)<=1) return ScalarLogical(TRUE);  // a single NA when length(x)==1 is ordered (e.g. tests 128 & 130) otherwise anyNA => FALSE
   if (!isInteger(nrowArg) || LENGTH(nrowArg)!=1) error(_("nrow must be integer vector length 1"));
   const int nrow = INTEGER(nrowArg)[0];
   if (nrow<0) error(_("nrow==%d but must be >=0"), nrow);
@@ -1501,10 +1501,10 @@ SEXP isOrderedSubset(SEXP x, SEXP nrowArg)
     int elem = xd[i];
     if (elem==0) continue;
     if (elem<last || elem<0/*includes NA==INT_MIN*/ || elem>nrow)
-      return(ScalarLogical(FALSE));
+      return ScalarLogical(FALSE);
     last = elem;
   }
-  return(ScalarLogical(TRUE));
+  return ScalarLogical(TRUE);
 }
 
 SEXP binary(SEXP x)

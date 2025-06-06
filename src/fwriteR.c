@@ -310,5 +310,5 @@ SEXP fwriteR(
   fwriteMain(args);
 
   UNPROTECT(protecti);
-  return(R_NilValue);
+  return R_NilValue;
 }

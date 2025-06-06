@@ -5,7 +5,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type)
 {
   int nprotect=0;
   enum {LAG, LEAD/*, SHIFT*/,CYCLIC} stype = LAG; // currently SHIFT maps to LAG (see comments in #1708)
-  if (!xlength(obj)) return(obj); // NULL, list()
+  if (!xlength(obj)) return obj; // NULL, list()
   SEXP x;
   if (isVectorAtomic(obj)) {
     if (!isNull(getAttrib(obj, R_DimSymbol)))
