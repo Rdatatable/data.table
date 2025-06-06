@@ -1413,7 +1413,7 @@ replace_dot_alias = function(e) {
           stopf("RHS of `:=` is a length-1 list containing a function. `data.table` does not automatically recycle lists. To create a list-column, use `rep(list(myfun), .N)` to match the number of rows.")
         }
       }
-      # TODO?: use set() here now that it can add new columns. Then remove newnames and alloc logic above.
+      # TODO?: use set() here now that it can add new columns.Then remove newnames and alloc logic above.
       .Call(Cassign,x,irows,cols,newnames,jval)
       return(suppPrint(x))
     }
