@@ -351,22 +351,22 @@ haskey(kDT)                           # TRUE
 key(kDT)                              # "x"
 
 # Keyed subsetting (no 'on' needed)
-setkey(kDT, x)                        # Set a key on column 'x'
-kDT[.("a")]                            # Returns all rows where x = "a"
+setkey(DT, x)                        # Set a key on column 'x'
+DT[.("a")]                            # Returns all rows where x = "a"
 
 # Indexed subsetting (requires 'on')
-setindex(kDT, x)                       # Set an index on column 'x'
-kDT[.("b"), on = "x"]                  # Works, returns all rows where x = "b" (for detailed explanation visit setkey.rd)
-# kDT[.("b")]                          # this will throw error
+setindex(DT, x)                       # Set an index on column 'x'
+DT[.("b"), on = "x"]                  # Works, returns all rows where x = "b" (for detailed explanation visit setkey.rd)
+# DT[.("b")]                          # this will throw error
 
 # single and multiple indices
 # index on a single column ('y')
-setindex(kDT, y)
-indices(kDT)
+setindex(DT, y)
+indices(DT)
 
 # multi-column index
-setindexv(kDT, list("x", c("x", "y")))
-indices(kDT)                           # Shows an index on 'x' and a composite index on '(x,y)'
+setindexv(DT, list("x", c("x", "y")))
+indices(DT)                           # Shows an index on 'x' and a composite index on '(x,y)'
 
 # fast *keyed* subsets
 kDT["a"]                              # subset-as-join on *key* column 'x'
