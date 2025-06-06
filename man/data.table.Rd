@@ -350,6 +350,24 @@ setkeyv(kDT,v)                        # same
 haskey(kDT)                           # TRUE
 key(kDT)                              # "x"
 
+# Keyed subsetting (no 'on' needed)
+setkey(DT, x)                        # Set a key on column 'x'
+DT[.("a")]                            # Returns all rows where x = "a"
+
+# Indexed subsetting (requires 'on')
+setindex(DT, x)                       # Set an index on column 'x'
+DT[.("b"), on = "x"]                  # Works, returns all rows where x = "b" (for detailed explanation visit setkey.rd)
+# DT[.("b")]                          # this will throw error
+
+# single and multiple indices
+# index on a single column ('y')
+setindex(DT, y)
+indices(DT)
+
+# multi-column index
+setindexv(DT, list("x", c("x", "y")))
+indices(DT)                           # Shows an index on 'x' and a composite index on '(x,y)'
+
 # fast *keyed* subsets
 kDT["a"]                              # subset-as-join on *key* column 'x'
 kDT["a", on="x"]                      # same, being explicit using 'on=' (preferred)
