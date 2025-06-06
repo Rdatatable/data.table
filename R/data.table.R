@@ -1410,7 +1410,7 @@ replace_dot_alias = function(e) {
         if (is.function(jval)) {      
           stopf("RHS of `:=` is a function. To create a new column of functions, it must be a list column (e.g., wrap in `list()`).")
         } else if (is.list(jval) && length(jval) == 1 && is.function(jval[[1L]])) {
-          stopf("RHS of `:=` is a length-1 list containing a function. `data.table` does not automatically recycle lists. To create a list-column, use `rep(list(myfun), .N)` or `list(replicate(.N, myfun))` to match the number of rows.")
+          stopf("RHS of `:=` is a length-1 list containing a function. `data.table` does not automatically recycle lists. To create a list-column, use `rep(list(myfun), .N)` to match the number of rows.")
         }
       }
       # TODO?: use set() here now that it can add new columns. Then remove newnames and alloc logic above.
