@@ -26,8 +26,6 @@
 #include <stdbool.h>
 #include "freadLookups.h"
 
-extern colType readInt64As;
-
 // Private globals to save passing all of them through to highly iterated field processors
 static const char *sof, *eof;
 static char sep;
@@ -2513,8 +2511,8 @@ int freadMain(freadMainArgs _args) {
               // sure a single re-read will definitely work.
               while (++absType<CT_STRING && disabled_parsers[absType]) {};
 
-              if(readInt64As != CT_INT64 && absType == CT_INT64)
-                thisType = TOGGLE_BUMP(readInt64As);
+              if(args.readInt64As != CT_INT64 && absType == CT_INT64)
+                thisType = TOGGLE_BUMP(args.readInt64As);
               else
                 thisType = TOGGLE_BUMP(absType);
 
