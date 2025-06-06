@@ -334,14 +334,14 @@ bool need2utf8(SEXP x) {
   const SEXP *xd = STRING_PTR_RO(x);
   for (int i=0; i<xlen; i++) {
     if (NEED2UTF8(xd[i]))
-      return(true);
+      return true;
   }
-  return(false);
+  return false;
 }
 
 SEXP coerceUtf8IfNeeded(SEXP x) {
   if (!need2utf8(x))
-    return(x);
+    return x;
   const int xlen = length(x);
   SEXP ans = PROTECT(allocVector(STRSXP, xlen));
   const SEXP *xd = STRING_PTR_RO(x);
@@ -349,14 +349,14 @@ SEXP coerceUtf8IfNeeded(SEXP x) {
     SET_STRING_ELT(ans, i, ENC2UTF8(xd[i]));
   }
   UNPROTECT(1);
-  return(ans);
+  return ans;
 }
 
 // class1 is used by coerceAs only, which is used by frollR.c and nafill.c only
 const char *class1(SEXP x) {
   SEXP cl = getAttrib(x, R_ClassSymbol);
   if (length(cl))
-    return(CHAR(STRING_ELT(cl, 0)));
+    return CHAR(STRING_ELT(cl, 0));
   SEXP d = getAttrib(x, R_DimSymbol);
   int nd = length(d);
   if (nd) {
@@ -395,7 +395,7 @@ SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg) {
     if (verbose)
       Rprintf(_("copy=false and input already of expected type and class %s[%s]\n"), type2char(TYPEOF(x)), class1(x));
     copyMostAttrib(as, x); // so attrs like factor levels are same for copy=T|F
-    return(x);
+    return x;
   }
   int len = LENGTH(x);
   SEXP ans = PROTECT(allocNAVectorLike(as, len));

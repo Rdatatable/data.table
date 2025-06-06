@@ -102,7 +102,7 @@ SEXP dt_na(SEXP x, SEXP cols) {
     }
   }
   UNPROTECT(1);
-  return(ans);
+  return ans;
 }
 
 SEXP frank(SEXP xorderArg, SEXP xstartArg, SEXP xlenArg, SEXP ties_method) {
@@ -178,7 +178,7 @@ SEXP frank(SEXP xorderArg, SEXP xstartArg, SEXP xlenArg, SEXP ties_method) {
     }
   }
   UNPROTECT(1);
-  return(ans);
+  return ans;
 }
 
 // internal version of anyNA for data.tables

@@ -153,7 +153,7 @@ SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax, SEXP allowNA
     int elem = idxp[i];
     if ((elem<1 && (elem!=NA_INTEGER || !allowNA)) || elem>max) stop=true;
   }
-  if (!stop) return(idx); // most common case to return early: no 0, no negative; all idx either NA (if allowNA) or in range [1-max]
+  if (!stop) return idx; // most common case to return early: no 0, no negative; all idx either NA (if allowNA) or in range [1-max]
 
   // ---------
   // else massage the input to a standard idx where all items are either in range [1,max], or NA (if allowNA)
@@ -278,7 +278,7 @@ static void checkCol(SEXP col, int colNum, int nrow, SEXP x)
 SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md and man/cdt.Rd
   int nprotect=0;
   if (!isNewList(x)) internal_error(__func__, "Argument '%s' to %s is type '%s' not '%s'", "x", "CsubsetDT", type2char(TYPEOF(rows)), "list"); // # nocov
-  if (!length(x)) return(x);  // return empty list
+  if (!length(x)) return x;  // return empty list
 
   const int nrow = length(VECTOR_ELT(x,0));
   // check index once up front for 0 or NA, for branchless subsetVectorRaw which is repeated for each column

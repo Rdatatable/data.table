@@ -345,5 +345,5 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
     Rprintf(_("%d: %.3f (%4.1f%%)\n"), i, t[i]-t[i-1], 100.*(t[i]-t[i-1])/tot);
   }
   UNPROTECT(nprotect);
-  return(ansVec);
+  return ansVec;
 }

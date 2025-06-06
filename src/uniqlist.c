@@ -143,7 +143,7 @@ SEXP uniqlist(SEXP l, SEXP order)
   memcpy(INTEGER(ans), iidx, sizeof(int)*len); // sizeof is of type size_t - no integer overflow issues
   R_Free(iidx);
   UNPROTECT(1);
-  return(ans);
+  return ans;
 }
 
 SEXP uniqlengths(SEXP x, SEXP n) {
@@ -157,7 +157,7 @@ SEXP uniqlengths(SEXP x, SEXP n) {
   }
   if (len>0) INTEGER(ans)[len-1] = INTEGER(n)[0] - INTEGER(x)[len-1] + 1;
   UNPROTECT(1);
-  return(ans);
+  return ans;
 }
 
 // we could compute `uniqlist` and `uniqlengths` and then construct the result
@@ -166,7 +166,7 @@ SEXP uniqlengths(SEXP x, SEXP n) {
 SEXP rleid(SEXP l, SEXP cols) {
   R_xlen_t nrow = xlength(VECTOR_ELT(l, 0));
   R_len_t ncol = length(l), lencols = length(cols);
-  if (!nrow || !ncol) return(allocVector(INTSXP, 0));
+  if (!nrow || !ncol) return allocVector(INTSXP, 0);
   if (!isInteger(cols) || lencols==0) error(_("cols must be an integer vector with length >= 1"));
   int *icols = INTEGER(cols);
   for (int i=0; i<lencols; i++) {
@@ -249,7 +249,7 @@ SEXP rleid(SEXP l, SEXP cols) {
     }
   }
   UNPROTECT(1);
-  return(ans);
+  return ans;
 }
 
 SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP multArg) {
@@ -257,7 +257,7 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
   SEXP v, ans;
   if (!isNewList(l) || length(l) < 1) internal_error(__func__, "l is not a list length 1 or more"); // # nocov
   R_len_t nrows = length(VECTOR_ELT(l,0)), ncols = length(cols);
-  if (nrows==0) return(allocVector(INTSXP, 0));
+  if (nrows==0) return allocVector(INTSXP, 0);
   R_len_t thisi, previ, ansgrpsize=1000, nansgrp=0;
   R_len_t *ansgrp = R_Calloc(ansgrpsize, R_len_t), starts, grplen; // #3401 fix. Needs to be R_Calloc due to R_Realloc below .. else segfaults.
   R_len_t ngrps = length(grps);
@@ -344,7 +344,7 @@ SEXP nestedid(SEXP l, SEXP cols, SEXP order, SEXP grps, SEXP resetvals, SEXP mul
   }
   R_Free(ansgrp);
   UNPROTECT(1);
-  return(ans);
+  return ans;
 }
 
 SEXP uniqueNlogical(SEXP x, SEXP narmArg) {

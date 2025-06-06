@@ -506,7 +506,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     Rprintf(_("  eval(j) took %.3fs for %d calls\n"), 1.0*tblock[2], nblock[2]);
   }
   UNPROTECT(nprotect);
-  return(ans);
+  return ans;
 }
 
 SEXP keepattr(SEXP to, SEXP from)
