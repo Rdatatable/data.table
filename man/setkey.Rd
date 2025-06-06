@@ -155,23 +155,6 @@ setindex(DT, A)
 setindex(DT, B)
 indices(DT)           # get indices single vector
 indices(DT, vectors = TRUE) # get indices list
-
-# Keyed subsetting (no 'on' needed)
-DT = data.table(A=5:1,B=letters[5:1])
-setkey(DT, B)
-DT[.("e")]  # Returns row where B = "e"
-
-# Indexed subsetting (requires 'on')
-DT = data.table(A=5:1,B=letters[5:1])
-setindex(DT, B)
-DT[.("e"), on = "B"]  # Works
-# DT[.("e")]           # Would error (missing 'on')
-
-DT <- data.table(a = c(1,2,1,2), b = c("x", "x", "y", "y"), val = 1:4)
-# Set an index on a single column
-setindex(DT, a)
-# Set multiple indices at once using setindexv
-setindexv(DT, list("a", c("a", "b")))
   
 # Setting multiple indices at once
 DT = data.table(A = 5:1, B = letters[5:1], C = 10:6)
