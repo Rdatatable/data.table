@@ -1407,7 +1407,7 @@ replace_dot_alias = function(e) {
       newnames = setdiff(lhs, names(x))
     
       if (length(newnames) > 0) {
-        if (is.function(jval)) {      
+        if (is.function(jval)) {
           stopf("RHS of `:=` is a function. To create a new column of functions, it must be a list column (e.g., wrap in `list()`).")
         } else if (is.list(jval) && length(jval) == 1 && is.function(jval[[1L]])) {
           stopf("RHS of `:=` is a length-1 list containing a function. `data.table` does not automatically recycle lists. To create a list-column, use `rep(list(myfun), .N)` to match the number of rows.")
