@@ -2257,7 +2257,7 @@ int freadMain(freadMainArgs _args) {
   int max_col=0;
   char *typeBumpMsg=NULL;  size_t typeBumpMsgSize=0;
   int typeCounts[NUMTYPE];  // used for verbose output; needs populating after first read and before reread (if any) -- see later comment
-  char internalErr[1001]="";  // must be compile time size: the message is generated and we can't free before STOP
+  char internalErr[256]="";  // must be compile time size: the message is generated and we can't free before STOP
   int64_t DTi = 0;                  // the current row number in DT that we are writing to
   const char *headPos = pos;       // the jump start corresponding to DTi
   int nSwept = 0;                  // count the number of dirty jumps that were swept
@@ -2313,7 +2313,7 @@ int freadMain(freadMainArgs _args) {
         nth = omp_get_num_threads();
         if (me!=0) {
           // # nocov start
-          snprintf(internalErr, sizeof(internalErr) - 1, "Master thread is not thread 0 but thread %d.\n", me); // # notranslate
+          snprintf(internalErr, sizeof(internalErr), "Master thread is not thread 0 but thread %d.\n", me); // # notranslate
           stopTeam = true;
           // # nocov end
         }
@@ -2582,7 +2582,7 @@ int freadMain(freadMainArgs _args) {
           }
           else if (headPos!=thisJumpStart && nrowLimit>0) { // do not care for dirty jumps since we do not read data and only want to know types
              // # nocov start
-            snprintf(internalErr, sizeof(internalErr) - 1, "invalid head position. jump=%d, headPos=%p, thisJumpStart=%p, sof=%p", jump, headPos, thisJumpStart, sof); // # notranslate
+            snprintf(internalErr, sizeof(internalErr), "invalid head position. jump=%d, headPos=%p, thisJumpStart=%p, sof=%p", jump, headPos, thisJumpStart, sof); // # notranslate
             stopTeam = true;
             // # nocov end
           }
