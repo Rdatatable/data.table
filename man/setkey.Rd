@@ -149,7 +149,6 @@ setindex(DT, A)
 setindex(DT, B)
 indices(DT)           # get indices single vector
 indices(DT, vectors = TRUE) # get indices list
-  
 # Setting multiple indices at once
 DT = data.table(A = 5:1, B = letters[5:1], C = 10:6)
 setindexv(DT, list(c("A", "B"), c("B", "C")))
