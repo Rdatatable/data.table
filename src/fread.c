@@ -2530,7 +2530,7 @@ int freadMain(freadMainArgs _args) {
                 // Can't print because we're likely not master. So accumulate message and print afterwards.
                 if (thisType < joldType) {   // thisType<0 (type-exception)
                   if (verbose) {
-                    char buffer[250];
+                    char buffer[256];
                     int len = snprintf(buffer, sizeof(buffer),
                       _("Column %d%s%.*s%s bumped from '%s' to '%s' due to <<%.*s>> on row %"PRId64"\n"),
                       j+1, colNames?" <<":"", colNames?(colNames[j].len):0, colNames?(colNamesAnchor+colNames[j].off):"", colNames?">>":"",
