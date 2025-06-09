@@ -18,6 +18,9 @@ of \code{xts::first} is deployed. }
 \item{\dots}{ Not applicable for \code{data.table} first/last. Any arguments here
 are passed through to \code{xts}'s first/last. }
 }
+\details{
+Note: \code{first(x)} is not an exact replacement for \code{x[1]}. It differs in its handling of zero-length vectors (returning a zero-length vector instead of \code{NA}) and does not preserve attributes like names.
+}
 \value{
 If no other arguments are supplied it depends on the type of \code{x}. The first/last item
 of a vector or list. The first/last row of a \code{data.frame} or \code{data.table}.
