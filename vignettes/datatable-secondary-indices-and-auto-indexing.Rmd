@@ -62,7 +62,7 @@ Secondary indices are similar to `keys` in *data.table*, except for two major di
 
 * There can be more than one secondary index for a data.table (as we will see below).
 
-#### 1.1 Keyed vs. Indexed Subsetting
+#### Keyed vs. Indexed Subsetting
 
 While both **keys** and **indices** enable fast binary search subsetting, they differ significantly in usage:
 
@@ -81,16 +81,6 @@ DT = data.table(a = c(TRUE, FALSE), b = 1:2)
 setindex(DT, a)              # Set index only (no reorder)
 DT[.(TRUE), on = "a"]        # 'on' is required
 ```
-
-#### Hierarchy of Lookup Operations
-
-When `on` is specified, `data.table` uses this lookup order:
-
-- Existing keys matching `on` columns
-
-- Pre-built secondary indices matching `on` columns
-
-- Auto-generated secondary index (created if none exist; its optimized ordering is used internally for efficient joins)
 
 ### b) Set and get secondary indices
 
