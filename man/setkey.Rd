@@ -74,6 +74,14 @@ The sort is \emph{stable}; i.e., the order of ties (if any) is preserved.
 For character vectors, \code{data.table} takes advantage of R's internal global string cache, also exported as \code{\link{chorder}}.
 }
 
+\section{Keys vs. Indices}{
+Setting a key (with \code{setkey}) and an index (with \code{setindex}) are similar, but have very important distinctions.
+
+Setting a key physically reorders the data in RAM.
+
+Setting an index computes the sort order, but instead of applying the reordering, simply \emph{stores} this computed ordering. That means that multiple indices can coexist, and that the original row order is preserved.
+}
+
 \section{Good practice}{
 In general, it's good practice to use column names rather than numbers. This is
 why \code{setkey} and \code{setkeyv} only accept column names.
