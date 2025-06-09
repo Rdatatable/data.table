@@ -67,10 +67,11 @@ Secondary indices are similar to `keys` in *data.table*, except for two major di
 While both **keys** and **indices** enable fast binary search subsetting, they differ significantly in usage:
 
 **Keyed subsetting** (implicit column matching)
+
 ```{r}
 DT = data.table(a = c(TRUE, FALSE), b = 1:2)
-setkey(DT, a)                # Set key
-DT[.(TRUE)]                  # No 'on' needed - key is used
+setkey(DT, a)                # Set key, reordering DT
+DT[.(TRUE)]                  # 'on' is optional; if omitted, the key is used
 ```
 
 **Indexed subsetting** (explicit column specification)
@@ -78,10 +79,8 @@ DT[.(TRUE)]                  # No 'on' needed - key is used
 ```{r}
 DT = data.table(a = c(TRUE, FALSE), b = 1:2)
 setindex(DT, a)              # Set index only (no reorder)
-DT[.(TRUE), on = "a"]        # Must specify 'on'
+DT[.(TRUE), on = "a"]        # 'on' is required
 ```
-
-For join-like operations such as `DT[.(values)]` on an indexed table, the `on=` argument is essential to specify the join column(s). `setindex` does not establish the implicit matching that setkey does; thus, this `explicit` direction is needed.
 
 #### Hierarchy of Lookup Operations
 
