@@ -106,7 +106,7 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
       y_part_col_name = e$bmerge_x_arg_col_name
       y_part_type     = e$bmerge_x_arg_type
 
-      stopf("Incompatible join types: x.%s (%s) and i.%s (%s). Factor columns must join to factor or character columns.", x_part_col_name, x_part_type, y_part_col_name, y_part_type, class = "dt_merge_incompatible_type_error")
+      stopf("Incompatible join types: x.%s (%s) and y.%s (%s). Factor columns must join to factor or character columns.", x_part_col_name, x_part_type, y_part_col_name, y_part_type, class = "dt_merge_incompatible_type_error")
     }
   )
 
