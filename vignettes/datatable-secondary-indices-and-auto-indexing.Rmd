@@ -68,7 +68,7 @@ While both **keys** and **indices** enable fast binary search subsetting, they d
 
 **Keyed subsetting** (implicit column matching)
 
-```{r}
+```{r keyed_operations}
 DT = data.table(a = c(TRUE, FALSE), b = 1:2)
 setkey(DT, a)                # Set key, reordering DT
 DT[.(TRUE)]                  # 'on' is optional; if omitted, the key is used
@@ -76,7 +76,7 @@ DT[.(TRUE)]                  # 'on' is optional; if omitted, the key is used
 
 **Indexed subsetting** (explicit column specification)
 
-```{r}
+```{r unkeyed_operations}
 DT = data.table(a = c(TRUE, FALSE), b = 1:2)
 setindex(DT, a)              # Set index only (no reorder)
 DT[.(TRUE), on = "a"]        # 'on' is required
