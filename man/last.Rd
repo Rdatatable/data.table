@@ -19,7 +19,7 @@ of \code{xts::first} is deployed. }
 are passed through to \code{xts}'s first/last. }
 }
 \details{
-Note: \code{first(x)} is not an exact replacement for \code{x[1]}. It differs in its handling of zero-length vectors (returning a zero-length vector instead of \code{NA}) and does not preserve attributes like names.
+Note: \code{first(x)} and \code{last(x)} are not exact replacements for \code{x[1]} and \code{x[length(x)]}. They differ in handling of zero-length vectors (returning a zero-length vector instead of \code{NA}) and do not preserve attributes like names.
 }
 \value{
 If no other arguments are supplied it depends on the type of \code{x}. The first/last item
