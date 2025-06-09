@@ -128,7 +128,7 @@ static void flush(void) {
   if (!retgrp) return;
   int me = omp_get_thread_num();
   int n = gs_thread_n[me];
-  if (!n) return;
+  if (!n) return; // # nocov
   int newn = gs_n + n;
   if (gs_alloc < newn) {
     gs_alloc = (newn < nrow/3) ? (1+(newn*2)/4096)*4096 : nrow;
