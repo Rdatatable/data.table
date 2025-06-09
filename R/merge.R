@@ -98,7 +98,7 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   }
 
   dt = tryCatch(
-      y[x, nomatch=if (all.x) NA else NULL, on=by, allow.cartesian=allow.cartesian],
+    y[x, nomatch=if (all.x) NA else NULL, on=by, allow.cartesian=allow.cartesian],
     dt_bmerge_incompatible_type_error = function(e) {
       x_part_col_name = e$bmerge_i_arg_col_name
       x_part_type     = e$bmerge_i_arg_type
