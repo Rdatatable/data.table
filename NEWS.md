@@ -38,7 +38,9 @@
 
 9. Joins to extended data.frames, e.g. `x[i, col := x.col1 + i.col2]` where `i` is a `tbl`, can use the `x.` and `i.` prefix forms, [#6998](https://github.com/Rdatatable/data.table/issues/6998). Thanks @MichaelChirico for the bug and PR.
 
-10. Out of sample type bumps now respect `integer64=` selection, [#7032](https://github.com/Rdatatable/data.table/pull/7032)
+10. On a heavily loaded machine, a `forder` thread could try to perform a zero-length copy from a null pointer, which was de-facto harmless but is against the C standard and was caught by additional CRAN checks, [#7051](https://github.com/Rdatatable/data.table/issues/7051). Thanks to @helske for the report and @aitap for the PR.
+
+11. Out of sample type bumps now respect `integer64=` selection, [#7032](https://github.com/Rdatatable/data.table/pull/7032).
 
 ### NOTES
 
