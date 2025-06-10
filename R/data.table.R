@@ -1403,18 +1403,13 @@ replace_dot_alias = function(e) {
     }
 
     if (!is.null(lhs)) {
-      if (length(cols) == 1L) {
-        is_new_col <- cols > ncol(x)
-        if (is_new_col || !is.list(x[[cols]])) {
-          if (is.function(jval)) {
-            stopf("RHS of `:=` is a function. To create a new column of functions or assign to a non-list-column, it must be wrapped in a list(), e.g., `:= list(myfun)`.")
-          }
-          if (is.list(jval) && length(jval) == 1L && is.function(jval[[1L]]) && nrow(x) > 1L) {
-            stopf("RHS of `:=` is a length-1 list containing a function. `data.table` does not automatically recycle lists. To create a list-column, use `rep(list(myfun), .N)`.")
-          }
+      newnames = setdiff(lhs, names(x))
+    
+      if (length(newnames) > 0) {
+        if (is.function(jval)) {
+          stopf("RHS of `:=` is a function. To create a new column of functions, it must be a list column (e.g., wrap the function in `list()`).")
         }
       }
-      newnames = setdiff(lhs, names(x))
       # TODO?: use set() here now that it can add new columns.Then remove newnames and alloc logic above.
       .Call(Cassign,x,irows,cols,newnames,jval)
       return(suppPrint(x))
