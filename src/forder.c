@@ -128,6 +128,7 @@ static void flush(void) {
   if (!retgrp) return;
   int me = omp_get_thread_num();
   int n = gs_thread_n[me];
+  // normally doesn't happen, can be encountered under heavy load, #7051
   if (!n) return; // # nocov
   int newn = gs_n + n;
   if (gs_alloc < newn) {
