@@ -137,13 +137,6 @@ hours. Because \code{ITime} is stored in seconds, you can add it to a
 \code{POSIXct} object, but you should not add it to a \code{Date}
 object.
 
-
-\code{ITime} is a time-of-day class stored as the integer number of
-seconds in the day. \code{as.ITime} does not allow days longer than 24
-hours. Because \code{ITime} is stored in seconds, you can add it to a
-\code{POSIXct} object, but you should not add it to a \code{Date}
-object.
-
 For \code{as.ITime}, note that the string \code{"24:00:00"} is parsed as \code{"00:00:00"}.
 This is because the conversion uses \code{as.POSIXct}, which treats \code{"24:00:00"} as midnight of the next day. 
 This differs from ISO 8601 (which allows \code{"24:00:00"} to represent end-of-day), but aligns with POSIX standards.
