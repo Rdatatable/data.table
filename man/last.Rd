@@ -19,7 +19,7 @@ of \code{xts::first} is deployed. }
 are passed through to \code{xts}'s first/last. }
 }
 \details{
-Note: \code{first(x)} and \code{last(x)} are designed to behave like \code{head(x, 1)} and \code{tail(x, 1)}, respectively. Consequently, they differ from base R subsetting (\code{x[1]}): they return a zero-length vector for empty inputs (instead of \code{NA}) and do not preserve attributes like names.
+Note: \code{first(x)} and \code{last(x)} differ from base R subsetting (e.g. \code{x[1]}). In its handling of zero-length vectors, \code{first(x)} is designed to behave like \code{head(x, 1)}, returning an empty vector instead of \code{NA}. However, unlike both \code{head(x, 1)} and \code{x[1]}, \code{first(x)} strips attributes like names for performance.
 }
 \value{
 If no other arguments are supplied it depends on the type of \code{x}. The first/last item
