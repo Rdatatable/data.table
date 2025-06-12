@@ -8,7 +8,7 @@ SEXP transpose(SEXP l, SEXP fill, SEXP ignoreArg, SEXP keepNamesArg, SEXP listCo
   if (!isNewList(l))
     error(_("l must be a list."));
   if (!length(l))
-    return(copyAsPlain(l));
+    return copyAsPlain(l);
   if (!isLogical(ignoreArg) || LOGICAL(ignoreArg)[0]==NA_LOGICAL)
     error(_("ignore.empty should be logical TRUE/FALSE."));
   bool ignore = LOGICAL(ignoreArg)[0];

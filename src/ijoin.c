@@ -218,7 +218,7 @@ SEXP lookup(SEXP ux, SEXP xlen, SEXP indices, SEXP gaps, SEXP overlaps, SEXP mul
   pass3 = clock() - start;
   if (LOGICAL(verbose)[0])
     Rprintf(_("Final step in generating lookup ... done in %8.3f seconds\n"), 1.0*(pass3)/CLOCKS_PER_SEC);
-  return(R_NilValue);
+  return R_NilValue;
 }
 
 SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchArg, SEXP verbose) {
@@ -728,5 +728,5 @@ SEXP overlaps(SEXP ux, SEXP imatches, SEXP multArg, SEXP typeArg, SEXP nomatchAr
   if (LOGICAL(verbose)[0])
     Rprintf(_("Final step, fetching indices in overlaps ... done in %8.3f seconds\n"), 1.0*(end2)/CLOCKS_PER_SEC);
   UNPROTECT(1);
-  return(ans);
+  return ans;
 }

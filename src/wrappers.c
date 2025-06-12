@@ -20,7 +20,7 @@ SEXP setattrib(SEXP x, SEXP name, SEXP value)
     x = PROTECT(duplicate(x));
     setAttrib(x, name, MAYBE_REFERENCED(value) ? duplicate(value) : value);
     UNPROTECT(1);
-    return(x);
+    return x;
   }
   if (isNull(value) && isPairList(x) && strcmp(CHAR(STRING_ELT(name,0)),"names")==0) {
     // backport fix in R 3.2.0 to support R 3.1.0; #4048 #3802
@@ -34,7 +34,7 @@ SEXP setattrib(SEXP x, SEXP name, SEXP value)
     // TO DO: revisit. Enough to reproduce is: DT=data.table(a=1:3); DT[2]; DT[,b:=2]
     // ... Error: selfrefnames is ok but tl names [1] != tl [100]
   }
-  return(R_NilValue);
+  return R_NilValue;
 }
 
 // fix for #1142 - duplicated levels for factors
@@ -51,12 +51,12 @@ SEXP setlevels(SEXP x, SEXP levels, SEXP ulevels) {
   for (int i=0; i<nx; ++i) ix[i] = inewx[i];
   setAttrib(x, R_LevelsSymbol, ulevels);
   UNPROTECT(2);
-  return(x);
+  return x;
 }
 
 SEXP copy(SEXP x)
 {
-  return(duplicate(x));
+  return duplicate(x);
 }
 
 // Internal use only. So that := can update elements of a list of data.table, #2204. Just needed to overallocate/grow the VECSXP.
@@ -67,7 +67,7 @@ SEXP setlistelt(SEXP l, SEXP i, SEXP value)
   R_len_t i2 = INTEGER(i)[0];
   if (LENGTH(l) < i2 || i2<1) error(_("i (%d) is outside the range of items [1,%d]"),i2,LENGTH(l));
   SET_VECTOR_ELT(l, i2-1, value);
-  return(R_NilValue);
+  return R_NilValue;
 }
 
 // Internal use only. So that := can update elements of a slot of data.table, #6701.
@@ -76,7 +76,7 @@ SEXP setS4elt(SEXP obj, SEXP name, SEXP value)
   if (!isS4(obj)) internal_error(__func__, "First argument to setS4elt must be an S4 object");
   if (!isString(name) || LENGTH(name)!=1) internal_error(__func__, "Second argument to setS4elt must be a character string");
   R_do_slot_assign(obj, name, value);
-  return(R_NilValue);
+  return R_NilValue;
 }
 
 SEXP address(SEXP x)
@@ -84,7 +84,7 @@ SEXP address(SEXP x)
   // A better way than : http://stackoverflow.com/a/10913296/403310
   char buffer[32];
   snprintf(buffer, 32, "%p", (void *)x); // # notranslate
-  return(mkString(buffer));
+  return mkString(buffer);
 }
 
 SEXP expandAltRep(SEXP x)

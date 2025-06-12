@@ -10,7 +10,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
     error(_("use.names= should be TRUE, FALSE, or not used (\"check\" by default)"));  // R levels converts "check" to NA
   if (!isLogical(ignoreattrArg) || LENGTH(ignoreattrArg)!=1 || LOGICAL(ignoreattrArg)[0] == NA_LOGICAL)
     error(_("%s should be TRUE or FALSE"), "ignore.attr");
-  if (!length(l)) return(l);
+  if (!length(l)) return l;
   if (TYPEOF(l) != VECSXP) error(_("Input to rbindlist must be a list. This list can contain data.tables, data.frames or plain lists."));
   int usenames = LOGICAL(usenamesArg)[0];
   const bool fill = LOGICAL(fillArg)[0];
@@ -62,7 +62,7 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
                 "Column %d ['%s'] of item %d is length 0. This (and %d others like it) has been filled with NA (NULL for list columns) to make each item uniform."),
             firstZeroCol+1, ch, firstZeroItem+1, numZero-1);
   }
-  if (nrow==0 && ncol==0) return(R_NilValue);
+  if (nrow==0 && ncol==0) return R_NilValue;
   if (nrow>INT32_MAX) error(_("Total rows in the list is %"PRId64" which is larger than the maximum number of rows, currently %d"), (int64_t)nrow, INT32_MAX);
   if (usenames==TRUE && !anyNames) error(_("use.names=TRUE but no item of input list has any names"));
 
@@ -558,5 +558,5 @@ SEXP rbindlist(SEXP l, SEXP usenamesArg, SEXP fillArg, SEXP idcolArg, SEXP ignor
     }
   }
   UNPROTECT(nprotect); // ans, ansNames, coercedForFactor?
-  return(ans);
+  return ans;
 }
