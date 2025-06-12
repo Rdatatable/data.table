@@ -2257,8 +2257,7 @@ int freadMain(freadMainArgs _args) {
   int max_col=0;
   char *typeBumpMsg=NULL;  size_t typeBumpMsgSize=0;
   int typeCounts[NUMTYPE];  // used for verbose output; needs populating after first read and before reread (if any) -- see later comment
-  #define internalErrSize 1000
-  char internalErr[internalErrSize+1]="";  // must be compile time size: the message is generated and we can't free before STOP
+  char internalErr[256]="";  // must be compile time size: the message is generated and we can't free before STOP
   int64_t DTi = 0;                  // the current row number in DT that we are writing to
   const char *headPos = pos;       // the jump start corresponding to DTi
   int nSwept = 0;                  // count the number of dirty jumps that were swept
@@ -2314,7 +2313,7 @@ int freadMain(freadMainArgs _args) {
         nth = omp_get_num_threads();
         if (me!=0) {
           // # nocov start
-          snprintf(internalErr, internalErrSize, "Master thread is not thread 0 but thread %d.\n", me); // # notranslate
+          snprintf(internalErr, sizeof(internalErr), "Master thread is not thread 0 but thread %d.\n", me); // # notranslate
           stopTeam = true;
           // # nocov end
         }
@@ -2531,18 +2530,18 @@ int freadMain(freadMainArgs _args) {
                 // Can't print because we're likely not master. So accumulate message and print afterwards.
                 if (thisType < joldType) {   // thisType<0 (type-exception)
                   if (verbose) {
-                    char temp[1001];
-                    int len = snprintf(temp, 1000,
+                    char buffer[256];
+                    int len = snprintf(buffer, sizeof(buffer),
                       _("Column %d%s%.*s%s bumped from '%s' to '%s' due to <<%.*s>> on row %"PRId64"\n"),
                       j+1, colNames?" <<":"", colNames?(colNames[j].len):0, colNames?(colNamesAnchor+colNames[j].off):"", colNames?">>":"",
                       typeName[IGNORE_BUMP(joldType)], typeName[IGNORE_BUMP(thisType)],
                       (int)(tch-fieldStart), fieldStart, (int64_t)(ctx.DTi+myNrow));
-                    if (len > 1000) len = 1000;
-                    if (len > 0) {
-                      typeBumpMsg = realloc(typeBumpMsg, typeBumpMsgSize + len + 1);
-                      strcpy(typeBumpMsg+typeBumpMsgSize, temp);
-                      typeBumpMsgSize += len;
-                    }
+
+                    len = min(len, sizeof(buffer));
+
+                    typeBumpMsg = realloc(typeBumpMsg, typeBumpMsgSize + len + 1);
+                    strcpy(typeBumpMsg+typeBumpMsgSize, buffer);
+                    typeBumpMsgSize += len;
                   }
                   nTypeBump++;
                   if (joldType>0) nTypeBumpCols++;
@@ -2583,7 +2582,7 @@ int freadMain(freadMainArgs _args) {
           }
           else if (headPos!=thisJumpStart && nrowLimit>0) { // do not care for dirty jumps since we do not read data and only want to know types
              // # nocov start
-            snprintf(internalErr, internalErrSize, "invalid head position. jump=%d, headPos=%p, thisJumpStart=%p, sof=%p", jump, headPos, thisJumpStart, sof); // # notranslate
+            snprintf(internalErr, sizeof(internalErr), "invalid head position. jump=%d, headPos=%p, thisJumpStart=%p, sof=%p", jump, headPos, thisJumpStart, sof); // # notranslate
             stopTeam = true;
             // # nocov end
           }
