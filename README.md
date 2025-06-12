@@ -24,7 +24,7 @@ pay for developer time, professional services, travel, workshops, and a variety 
 
 <div align="center">
   <a href="https://numfocus.org/project/data-table">
-    <img height="60px" 
+    <img width="25%" 
          src="https://raw.githubusercontent.com/numfocus/templates/master/images/numfocus-logo.png" 
          align="center">
   </a>
