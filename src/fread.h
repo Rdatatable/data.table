@@ -167,6 +167,9 @@ typedef struct freadMainArgs
   // should datetime with no Z or UTZ-offset be read as UTC?
   bool noTZasUTC;
 
+  // Integer64 remap
+  colType readInt64As;
+
   char _padding[1];
 
   // Any additional implementation-specific parameters.

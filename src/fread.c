@@ -2300,7 +2300,7 @@ int freadMain(freadMainArgs _args) {
   nth = imin(nJumps, nth);
 
   if (verbose) DTPRINT(_("[11] Read the data\n"));
-  while(true){  // we'll return here to reread any columns with out-of-sample type exceptions, or dirty jumps
+  for (;;) {  // we'll return here to reread any columns with out-of-sample type exceptions, or dirty jumps
     restartTeam = false;
     if (verbose)
       DTPRINT("  jumps=[%d..%d), chunk_size=%zu, total_size=%td\n", jump0, nJumps, chunkBytes, eof-pos); // # notranslate
@@ -2510,7 +2510,12 @@ int freadMain(freadMainArgs _args) {
               // check that the new type is sufficient for the rest of the column (and any other columns also in out-of-sample bump status) to be
               // sure a single re-read will definitely work.
               while (++absType<CT_STRING && disabled_parsers[absType]) {};
-              thisType = TOGGLE_BUMP(absType);
+
+              if(args.readInt64As != CT_INT64 && absType == CT_INT64)
+                thisType = TOGGLE_BUMP(args.readInt64As);
+              else
+                thisType = TOGGLE_BUMP(absType);
+
               tch = fieldStart;
             }
     

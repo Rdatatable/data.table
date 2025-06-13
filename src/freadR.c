@@ -177,6 +177,8 @@ SEXP freadR(
     readInt64As = CT_FLOAT64;
   } else STOP(_("Invalid value integer64='%s'. Must be 'integer64', 'character', 'double' or 'numeric'"), tt);
 
+  args.readInt64As = readInt64As;
+
   colClassesSxp = colClassesArg;
 
   selectSxp = selectArg;
