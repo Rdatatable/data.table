@@ -137,7 +137,7 @@ replace_dot_alias = function(e) {
       if (is.character(j)) {
         if (length(j) != 1L) stopf("Cannot assign to an under-allocated recursively indexed list -- L[[i]][,:=] syntax is only valid when i is length 1, but its length is %d", length(j))
         j = match(j, names(k))
-        if (is.na(j)) internal_error("item '%s' not found in names of list", origj)
+        if (is.na(j)) internal_error("item '%s' not found in names of list", origj) # nocov
       }
     } else if (caller == "setDT") {
       if (length(j) == 1L) {
