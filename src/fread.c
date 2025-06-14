@@ -525,6 +525,8 @@ static void Field(FieldParseContext *ctx)
   //    the field is quoted and quotes are correctly escaped (quoteRule 0 and 1)
   // or the field is quoted but quotes are not escaped (quoteRule 2)
   // or the field is not quoted but the data contains a quote at the start (quoteRule 2 too)
+  // What if this string signifies an NA? Will find out after we're done parsing quotes
+  const char *field_after_NA = end_NA_string(fieldStart);
   fieldStart++;  // step over opening quote
   switch(quoteRule) {
   case 0:  // quoted with embedded quotes doubled; the final unescaped " must be followed by sep|eol
@@ -583,6 +585,8 @@ static void Field(FieldParseContext *ctx)
     if (ch==eof && quoteRule!=2) { target->off--; target->len++; }   // test 1324 where final field has open quote but not ending quote; include the open quote like quote rule 2
     while(target->len>0 && ((ch[-1]==' ' && stripWhite) || ch[-1]=='\0')) { target->len--; ch--; }  // test 1551.6; trailing whitespace in field [67,V37] == "\"\"A\"\" ST       "
   }
+  // Does end-of-field correspond to end-of-possible-NA?
+  if (field_after_NA == ch) target->len = INT32_MIN;
 }
 
 static void str_to_i32_core(const char **pch, int32_t *target, bool parse_date)

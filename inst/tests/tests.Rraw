@@ -21157,3 +21157,18 @@ test(2317.6, DT1[DF1, on='a', .(d = x.a + i.d)]$d, 5)
 test(2317.7, DT1[DF2, on='a', e := i.e]$e, 5)
 test(2317.8, DT1[DF2, on='a', e2 := x.a + i.e]$e2, 6)
 test(2317.9, DT1[DF2, on='a', .(e = x.a + i.e)]$e, 6)
+
+# allow na.strings to be quoted, #6974
+f = tempfile()
+DT = data.table(
+  "Date Example" = c("12/5/2012", NA),
+  "Question 1" = c("Yes", NA),
+  "Question 2" = c("Yes", NA),
+  "Site: Country" = c("Chile", "Virgin Islands, British")
+)
+fwrite(DT, f, na = '""')
+test(2318.1, fread(f, na.strings = '""'), DT)
+unlink(f)
+test(2318.2,
+     fread('"foo","bar","baz"\n"a","b","c"', na.strings = c('"foo"', '"bar"', '"baz"'), header = FALSE),
+     data.table(V1 = c(NA, "a"), V2 = c(NA, "b"), V3 = c(NA, "c")))
