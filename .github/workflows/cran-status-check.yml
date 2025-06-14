@@ -1,0 +1,39 @@
+name: check-cran-status
+
+on:
+  schedule:
+    - cron: '0 6 * * 1,3,5' # Runs at 06:00 on Mon/Wed/Fri
+    
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check for existing CRAN issues
+        id: check-issues
+        run: |
+          # Count open issues with CRAN-related labels
+          ISSUE_COUNT=$(gh issue list --label "cran-deadline" --state open --json number | jq length)
+          if [ $ISSUE_COUNT -eq 0 ] || [ $ARCHIVE_ISSUES -gt 0 ]; then
+            SHOULD_RUN="true"
+            echo "✅ Will run CRAN check"
+          else
+            SHOULD_RUN="false"
+            echo "⏭️  Skipping CRAN check - existing issues found"
+          fi
+          echo "should-run=$SHOULD_RUN" >> $GITHUB_OUTPUT
+       
+      - name: Check
+        if: steps.check-issues.outputs.should-run == 'true'
+        uses: dieghernan/cran-status-check@v2
+        with:
+          create-issue: "true"
+          labels: "cran-deadline"
+          statuses: "WARN,ERROR"
