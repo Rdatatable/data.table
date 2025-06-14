@@ -67,6 +67,12 @@
     setHook(packageEvent("knitr", "onLoad"), function(...) {
       registerS3method("knit_print", "data.table", knit_print.data.table, envir = asNamespace("knitr"))
     })
+    if (isNamespaceLoaded("xfun")) {
+      registerS3method("record_print", "data.table", record_print.data.table, envir = asNamespace("xfun"))
+    }
+    setHook(packageEvent("xfun", "onLoad"), function(...) {
+      registerS3method("record_print", "data.table", record_print.data.table, envir = asNamespace("xfun"))
+    })
   }
 
   # Set options for the speed boost in v1.8.0 by avoiding 'default' arg of getOption(,default=)
