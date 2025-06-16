@@ -190,6 +190,7 @@ bool freadCleanup(void)
 static inline uint64_t umax(uint64_t a, uint64_t b) { return a > b ? a : b; }
 static inline uint64_t umin(uint64_t a, uint64_t b) { return a < b ? a : b; }
 static inline  int64_t imin( int64_t a,  int64_t b) { return a < b ? a : b; }
+static inline   int iminInt(     int a,      int b) { return a < b ? a : b; }
 
 /** Return value of `x` clamped to the range [upper, lower] */
 static inline int64_t clamp_i64t(int64_t x, int64_t lower, int64_t upper) {
@@ -2537,7 +2538,7 @@ int freadMain(freadMainArgs _args) {
                       typeName[IGNORE_BUMP(joldType)], typeName[IGNORE_BUMP(thisType)],
                       (int)(tch-fieldStart), fieldStart, (int64_t)(ctx.DTi+myNrow));
 
-                    len = min(len, sizeof(buffer));
+                    len = iminInt(len, sizeof(buffer));
 
                     typeBumpMsg = realloc(typeBumpMsg, typeBumpMsgSize + len + 1);
                     strcpy(typeBumpMsg+typeBumpMsgSize, buffer);
