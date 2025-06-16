@@ -524,7 +524,7 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
           ithisidx = INTEGER(thisidx);
           thislen = length(thisidx);
         }
-        size_t size = SIZEOF(thiscol);
+        size_t size = RTYPE_SIZEOF(thiscol);
         switch (TYPEOF(target)) {
         case VECSXP :
           if (data->narm) {
@@ -697,7 +697,7 @@ SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data
   for (int i=0; i<data->lids; ++i) {
     int counter = 0;
     SEXP thiscol = VECTOR_ELT(DT, INTEGER(data->idcols)[i]-1);
-    size_t size = SIZEOF(thiscol);
+    size_t size = RTYPE_SIZEOF(thiscol);
     SEXP target;
     SET_VECTOR_ELT(ansids, i, target=allocVector(TYPEOF(thiscol), data->totlen) );
     copyMostAttrib(thiscol, target); // all but names,dim and dimnames. And if so, we want a copy here, not keepattr's SET_ATTRIB.

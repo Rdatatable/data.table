@@ -177,6 +177,8 @@ SEXP freadR(
     readInt64As = CT_FLOAT64;
   } else STOP(_("Invalid value integer64='%s'. Must be 'integer64', 'character', 'double' or 'numeric'"), tt);
 
+  args.readInt64As = readInt64As;
+
   colClassesSxp = colClassesArg;
 
   selectSxp = selectArg;
@@ -479,7 +481,7 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
     else if (selectRank) setAttrib(DT, sym_colClassesAs, subsetVector(colClassesAs, selectRank));  // reorder the colClassesAs
   }
   // TODO: move DT size calculation into a separate function (since the final size is different from the initial size anyways)
-  size_t DTbytes = SIZEOF(DT)*(ncol-ndrop)*2; // the VECSXP and its column names (exclude global character cache usage)
+  size_t DTbytes = RTYPE_SIZEOF(DT)*(ncol-ndrop)*2; // the VECSXP and its column names (exclude global character cache usage)
 
   // For each column we could have one of the following cases:
   //   * if the DataTable is "new", then make a new vector
@@ -520,7 +522,7 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
         setAttrib(thiscol, sym_tzone, ScalarString(char_UTC)); // see news for v1.13.0
       }
       SET_TRUELENGTH(thiscol, allocNrow);
-      DTbytes += SIZEOF(thiscol)*allocNrow;
+      DTbytes += RTYPE_SIZEOF(thiscol)*allocNrow;
     }
     resi++;
   }

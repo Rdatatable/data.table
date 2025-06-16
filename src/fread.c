@@ -2293,7 +2293,7 @@ int freadMain(freadMainArgs _args) {
   nth = imin(nJumps, nth);
 
   if (verbose) DTPRINT(_("[11] Read the data\n"));
-  while(true){  // we'll return here to reread any columns with out-of-sample type exceptions, or dirty jumps
+  for (;;) {  // we'll return here to reread any columns with out-of-sample type exceptions, or dirty jumps
     restartTeam = false;
     if (verbose)
       DTPRINT("  jumps=[%d..%d), chunk_size=%zu, total_size=%td\n", jump0, nJumps, chunkBytes, eof-pos); // # notranslate
@@ -2503,7 +2503,12 @@ int freadMain(freadMainArgs _args) {
               // check that the new type is sufficient for the rest of the column (and any other columns also in out-of-sample bump status) to be
               // sure a single re-read will definitely work.
               while (++absType<CT_STRING && disabled_parsers[absType]) {};
-              thisType = TOGGLE_BUMP(absType);
+
+              if(args.readInt64As != CT_INT64 && absType == CT_INT64)
+                thisType = TOGGLE_BUMP(args.readInt64As);
+              else
+                thisType = TOGGLE_BUMP(absType);
+
               tch = fieldStart;
             }
     
@@ -2792,7 +2797,7 @@ int freadMain(freadMainArgs _args) {
       tAlloc-tColType, 100.0*(tAlloc-tColType)/tTot, allocnrow, ncol, DTbytes/(1024.0*1024*1024), DTi, 100.0*DTi/allocnrow);
     thRead/=nth; thPush/=nth;
     double thWaiting = tReread-tAlloc-thRead-thPush;
-    DTPRINT(_("%8.3fs (%3.0f%%) Reading %d chunks (%d swept) of %.3fMB (each chunk %"PRId64" rows) using% d threads\n"),
+    DTPRINT(_("%8.3fs (%3.0f%%) Reading %d chunks (%d swept) of %.3fMB (each chunk %"PRId64" rows) using %d threads\n"),
             tReread-tAlloc, 100.0*(tReread-tAlloc)/tTot, nJumps, nSwept, (double)chunkBytes/(1024*1024), DTi/nJumps, nth);
     DTPRINT(_("   + %8.3fs (%3.0f%%) Parse to row-major thread buffers (grown %d times)\n"), thRead, 100.0*thRead/tTot, buffGrown);
     DTPRINT(_("   + %8.3fs (%3.0f%%) Transpose\n"), thPush, 100.0*thPush/tTot);

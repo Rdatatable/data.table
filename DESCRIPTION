@@ -102,5 +102,6 @@ Authors@R: c(
   person("Aljaž", "Sluga",         role="ctb"),
   person("Bill", "Evans",          role="ctb"),
   person("Reino", "Bruner",        role="ctb"),
-  person(comment=c(github="@badasahog"), role="ctb")
+  person(comment=c(github="@badasahog"), role="ctb"),
+  person("Vinit", "Thakur",        role="ctb")
   )
