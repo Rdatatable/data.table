@@ -19,12 +19,12 @@
 
 The `data.table` project uses a [custom governance agreement](./GOVERNANCE.md) 
 and is fiscally sponsored by [NumFOCUS](https://numfocus.org/). Consider making 
-a [tax-deductible donation](https://numfocus.org/donate-to-data-table) to help the project 
+a [tax-deductible donation](https://numfocus.org/project/data-table) to help the project 
 pay for developer time, professional services, travel, workshops, and a variety of other needs.
 
 <div align="center">
   <a href="https://numfocus.org/project/data-table">
-    <img height="60px" 
+    <img width="25%" 
          src="https://raw.githubusercontent.com/numfocus/templates/master/images/numfocus-logo.png" 
          align="center">
   </a>
