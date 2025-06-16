@@ -3070,6 +3070,16 @@ if (test_bit64) test(1017.1, fread(f), copy(DT)[,A:=as.integer64(A)])
 test(1017.2, fread(f, integer64="character"), DT)
 unlink(f)
 
+DT = data.table(a=seq(10000), b="100")
+DT[111, b := "1000000000000"]
+f = tempfile()
+fwrite(DT, f)
+
+test(1017.3, fread(f, integer64="numeric"), fread(f, colClasses=c("integer", "numeric")))
+test(1017.4, fread(f, integer64="character"), fread(f, colClasses=c("integer", "character")))
+
+unlink(f)
+
 # ERANGE errno handled, #106 #4165
 test(1018.1, identical(fread("1.46761e-313\n"), data.table(V1=1.46761e-313)))
 test(1018.2, identical(fread("1.46761e+313\n"), data.table(V1=1.46761e+313)))
