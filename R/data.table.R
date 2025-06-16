@@ -128,32 +128,29 @@ replace_dot_alias = function(e) {
   }
 }
 
-.assign_in_parent_exact = function(name, x, env, caller) {
+.assign_in_parent = function(name, value, env, err_msg_len, err_msg_na) {
   k = eval(name[[2L]], env, env)
   if (is.list(k)) {
     origj = j = if (name[[1L]] == "$") as.character(name[[3L]]) else eval(name[[3L]], env, env)
-
-    if (caller == "[.data.table") {
-      if (is.character(j)) {
-        if (length(j) != 1L) stopf("Cannot assign to an under-allocated recursively indexed list -- L[[i]][,:=] syntax is only valid when i is length 1, but its length is %d", length(j))
-        j = match(j, names(k))
-        if (is.na(j)) internal_error("item '%s' not found in names of list", origj) # nocov
-      }
-    } else if (caller == "setDT") {
-      if (length(j) == 1L) {
-        if (is.character(j)) {
-          j = match(j, names(k))
-          if (is.na(j))
-            stopf("Item '%s' not found in names of input list", origj)
+    if (length(j) != 1L) {
+      stopf(err_msg_len, length(j))
+    }
+    if (is.character(j)) {
+      idx = match(j, names(k))
+      if (is.na(idx)) {
+        if (is.null(err_msg_na)) {
+          internal_error("item '%s' not found in names of list", origj)
+        } else {
+          stopf(err_msg_na, origj)
         }
       }
+      j = idx
     }
-
-    .Call(Csetlistelt, k, as.integer(j), x)
-  } else if (is.environment(k) && exists(as.character(name[[3L]]), k)) {
-    assign(as.character(name[[3L]]), x, k, inherits = FALSE)
+    .Call(Csetlistelt, k, as.integer(j), value)
+  } else if (is.environment(k) && exists(as.character(name[[3L]]), k, inherits = FALSE)) {
+    assign(as.character(name[[3L]]), value, k, inherits = FALSE)
   } else if (isS4(k)) {
-    .Call(CsetS4elt, k, as.character(name[[3L]]), x)
+    .Call(CsetS4elt, k, as.character(name[[3L]]), value)
   }
 }
 
@@ -1244,7 +1241,11 @@ replace_dot_alias = function(e) {
             if (is.name(name)) {
               assign(as.character(name),x,parent.frame(),inherits=TRUE)
             } else if (.is_simple_extraction(name)) {
-              .assign_in_parent_exact(name, x, parent.frame(), caller = "[.data.table")
+              .assign_in_parent(
+                name, x, parent.frame(),
+                err_msg_len = "Cannot assign to an under-allocated recursively indexed list -- L[[i]][,:=] syntax is only valid when i is length 1, but its length is %d",
+                err_msg_na  = NULL # Triggers internal_error for this case # nocov
+              )
             } # TO DO: else if env$<- or list$<-
           }
         }
@@ -2988,7 +2989,12 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     name = as.character(name)
     assign(name, x, parent.frame(), inherits=TRUE)
   }  else if (.is_simple_extraction(name)) {
-    .assign_in_parent_exact(name, x, parent.frame(), caller = "setDT")
+    # common case is call from 'lapply()'
+    .assign_in_parent(
+      name, x, parent.frame(),
+      err_msg_len = "The index for recursive assignment must be length 1, but its length is %d.",
+      err_msg_na  = "Item '%s' not found in names of input list"
+    )
   } else if (name %iscall% "get") { # #6725
     # edit 'get(nm, env)' call to be 'assign(nm, x, envir=env)'
     name = match.call(get, name)
