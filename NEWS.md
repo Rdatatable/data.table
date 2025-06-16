@@ -42,6 +42,8 @@
 
 11. Out of sample type bumps now respect `integer64=` selection, [#7032](https://github.com/Rdatatable/data.table/pull/7032).
 
+12. `fread()` now handles the `na.strings` argument for quoted text columns, making it possible to specify `na.strings = '""'` and read empty quoted strings as `NA`s, [#6974](https://github.com/Rdatatable/data.table/issues/6974). Thanks to @AngelFelizR for the report and @aitap for the PR.
+
 ### NOTES
 
 1. Continued work to remove non-API C functions, [#6180](https://github.com/Rdatatable/data.table/issues/6180). Thanks Ivan Krylov for the PRs and for writing a clear and concise guide about the R API: https://aitap.codeberg.page/R-api/.
