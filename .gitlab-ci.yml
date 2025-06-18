@@ -233,8 +233,9 @@ test-lin-dev-clang-san:
     - |
         res1=0; ASAN_OPTIONS=detect_leaks=1 R CMD check --no-manual $(ls -1t data.table_*.tar.gz | head -n 1) || res1=$?
         res2=0; perl -nle '(print, $a=1) if /: runtime error: |ERROR: LeakSanitizer/../SUMMARY.*Sanitizer/ }{ exit $a' data.table.Rcheck/**/*.Rout* || res2=$?
+        res3=0; tail -n 1 data.table.Rcheck/00check.log | grep -q -e '^Status: [0-9]* NOTEs*$' -e '^Status: OK$' || res3=$?
         # fail if R CMD check had failed or if sanitizer output found
-        if [ $res1 -ne 0 ] || [ $res2 -ne 0 ]; then exit 1; fi
+        if [ $res1 -ne 0 ] || [ $res2 -ne 0 ] || [ $res3 -ne 0 ]; then exit 1; fi
 
 test-lin-dev-gcc-san:
   <<: *test-lin
@@ -250,8 +251,9 @@ test-lin-dev-gcc-san:
     - |
         res1=0; ASAN_OPTIONS=detect_leaks=1 R CMD check --no-manual $(ls -1t data.table_*.tar.gz | head -n 1) || res1=$?
         res2=0; perl -nle '(print, $a=1) if /: runtime error: |ERROR: LeakSanitizer/../SUMMARY.*Sanitizer/ }{ exit $a' data.table.Rcheck/**/*.Rout* || res2=$?
+        res3=0; tail -n 1 data.table.Rcheck/00check.log | grep -q -e '^Status: [0-9]* NOTEs*$' -e '^Status: OK$' || res3=$?
         # fail if R CMD check had failed or if sanitizer output found
-        if [ $res1 -ne 0 ] || [ $res2 -ne 0 ]; then exit 1; fi
+        if [ $res1 -ne 0 ] || [ $res2 -ne 0 ] || [ $res3 -ne 0 ]; then exit 1; fi
 
 .test-win-template: &test-win
   <<: *test
