@@ -100,7 +100,7 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
     \item{by}{ Column names are seen as if they are variables (as in \code{j} when \code{with=TRUE}). The \code{data.table} is then grouped by the \code{by} and \code{j} is evaluated within each group. The order of the rows within each group is preserved, as is the order of the groups. \code{by} accepts:
 
     \itemize{
-         \item A single unquoted column name or expression, e.g., \code{DT[, .(sa=sum(a)), by=x]} or \code{by=x\%\%2}. This is a convenience; for multiple expressions a \code{list()} is required .
+        \item A single unquoted column name or expression, e.g., \code{DT[, .(sa=sum(a)), by=x]} or \code{by=x\%\%2}. This is a convenience; for multiple expressions a \code{list()} is required .
 
         \item a \code{list()} of expressions of column names, e.g., \code{DT[, .(sa=sum(a)), by=.(x>0, y)]}. Use a named list to set the names of the resulting grouping columns, e.g., \code{by=.(x_is_positive=x>0, y)}. As a concise shortcut for a \emph{single} expression, you can also use parentheses to name the output column, e.g., \code{by=(grp = x \%\% 2)}.
 
