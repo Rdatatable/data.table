@@ -87,7 +87,7 @@ jobs:
       - name: Install dependencies
         run: Rscript -e 'remotes::install_deps(dependencies = TRUE)'
       - name: Check documentation and options consistency
-        run: Rscript .ci/code-quality-checks.R
+        run: Rscript .ci/check-options.R
       - name: Run R CMD check
         run: Rscript -e 'devtools::check()'
       
