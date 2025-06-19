@@ -24,124 +24,128 @@ options(datatable.print.topn = 10)
 }
 
 \section{Printing Options}{
-\details{
-    \describe{
-        \item{\code{datatable.print.topn}}{An integer. When a data.table is printed,
-            only the first topn and last topn rows are displayed. This prevents
-            cluttering the console for large tables.
-            Default: \code{5L}. See \code{\link{print.data.table}}.}
-        \item{\code{datatable.print.nrows}}{An integer. The total number of rows
-            to print before the topn logic is triggered.
-            Default: \code{100L}.}
-        \item{\code{datatable.print.class}}{A logical. If \code{TRUE}, the class of
-            each column is printed below the column name.
-            Default: \code{FALSE}.}
-        \item{\code{datatable.print.keys}}{A logical. If \code{TRUE}, the table's
-            keys are printed above the data.
-            Default: \code{FALSE}.}
-        \item{\code{datatable.print.trunc.cols}}{A logical. If \code{TRUE} and a
-            table has more columns than fit on the screen, it truncates the middle
-            columns for printing (e.g., a, b, ..., z). If \code{FALSE}, it wraps
-            the columns to the next line.
-            Default: \code{FALSE}.}
-        \item{\code{datatable.prettyprint.char}}{An integer. The maximum number of
-            characters to display in a character column cell before truncating
-            with ....
-            Default: \code{100L}.}
-        }
-        }
+  \describe{
+    \item{\code{datatable.print.topn}}{An integer. When a data.table is printed,
+      only the first topn and last topn rows are displayed.
+      Default: \code{5L}. See \code{\link{print.data.table}}.}
+    \item{\code{datatable.print.nrows}}{An integer. The total number of rows
+      to print before the topn logic is triggered.
+      Default: \code{100L}.}
+    \item{\code{datatable.print.class}}{A logical. If \code{TRUE}, the class of
+      each column is printed below its name.
+      Default: \code{FALSE}.}
+    \item{\code{datatable.print.keys}}{A logical. If \code{TRUE}, the table's
+      keys are printed above the data.
+      Default: \code{FALSE}.}
+    \item{\code{datatable.show.indices}}{A logical. A synonym for `datatable.print.keys` for historical reasons.
+      Default: \code{TRUE}.}
+    \item{\code{datatable.print.trunc.cols}}{A logical. If \code{TRUE} and a
+      table has more columns than fit on the screen, it truncates the middle
+      columns.
+      Default: \code{FALSE}.}
+    \item{\code{datatable.prettyprint.char}}{An integer. The maximum number of
+      characters to display in a character column cell before truncating.
+      Default: \code{100L}.}
+    \item{\code{datatable.print.colnames}}{A logical. If \code{TRUE}, prints column names.
+      Default: \code{TRUE}.}
+    \item{\code{datatable.print.rownames}}{A logical. If \code{TRUE}, prints row numbers.
+      Default: \code{TRUE}.}
+  }
+}
 
-        \section{File I/O Options (fread and fwrite)}{
-        \describe{
-        \item{\code{datatable.fread.input.cmd.message}}{A logical. If \code{TRUE},
-            fread will print the shell command it is using when the input is a
-            command (e.g., fread("grep ...")).
-            Default: \code{TRUE}. See \code{\link{fread}}.}
-        \item{\code{datatable.fread.datatable}}{A logical. If \code{TRUE}, fread
-            returns a data.table. If FALSE, it returns a data.frame.
-            Default: \code{TRUE}.}
-        \item{\code{datatable.integer64}}{A character string. Controls how fread
-            handles 64-bit integers. Can be "integer64" (requires bit64 package),
-            "double" (loses precision), or "character" (reads as text).
-            Default: \code{"integer64"}.}
-        \item{\code{datatable.logical01}}{A logical. If \code{TRUE}, fread will
-            interpret columns containing only 0 and 1 as logical FALSE/TRUE.
-            Default: \code{FALSE}.}
-        \item{\code{datatable.showProgress}}{An integer or logical. Controls whether
-            long-running operations like fread display a progress bar. Default
-            is \code{interactive()}, showing it only in interactive R sessions.}
-        }
-        }
+\section{File I/O Options (fread and fwrite)}{
+  \describe{
+    \item{\code{datatable.fread.input.cmd.message}}{A logical. If \code{TRUE},
+      `fread` will print the shell command it is using when the input is a
+      command (e.g., `fread("grep ...")`).
+      Default: \code{TRUE}. See \code{\link{fread}}.}
+    \item{\code{datatable.fread.datatable}}{A logical. If \code{TRUE}, `fread`
+      returns a `data.table`. If `FALSE`, it returns a `data.frame`.
+      Default: \code{TRUE}.}
+    \item{\code{datatable.integer64}}{A character string. Controls how `fread`
+      handles 64-bit integers. Can be "integer64", "double", or "character".
+      Default: \code{"integer64"}.}
+    \item{\code{datatable.logical01}}{A logical. If \code{TRUE}, `fread` will
+      interpret columns containing only 0 and 1 as logical.
+      Default: \code{FALSE}.}
+    \item{\code{datatable.keepLeadingZeros}}{A logical. If \code{TRUE}, `fread`
+      preserves leading zeros in character columns by reading them as strings;
+      otherwise they may be coerced to numeric.
+      Default: \code{FALSE}.}
+    \item{\code{datatable.logicalYN}}{A logical. If \code{TRUE}, `fread`
+      will interpret "Y" and "N" as logical.
+      Default: \code{FALSE}.}
+    \item{\code{datatable.na.strings}}{A character vector. Global default for strings that
+      `fread` should interpret as `NA`.
+      Default: \code{"NA"}.}
+    \item{\code{datatable.fwrite.sep}}{A character string. The default separator
+      used by `fwrite`.
+      Default: \code{","}.}
+    \item{\code{datatable.showProgress}}{An integer or logical. Controls whether
+      long-running operations like `fread` display a progress bar. Default
+      is \code{interactive()}.}
+  }
+}
 
-        \section{Join and Subset Options}{
-        \describe{
-        \item{\code{datatable.allow.cartesian}}{A logical. A safety feature to prevent
-            accidental memory-exploding joins. If FALSE (default), a join is not
-            allowed if the result would be more rows than max(nrow(x), nrow(i)),
-            which occurs when a row in i matches more than one row in x.
-            Default: \code{FALSE}. See \code{\link{data.table}}.}
-        \item{\code{datatable.nomatch}}{Controls the behavior of non-matching rows in
-            a join. The default is NA, which returns NA for columns of x when a
-            row in i has no match. Can be set to 0L to drop non-matching rows,
-            behaving like an inner join.
-            Default: \code{NA}.}
-        }
-        }
+\section{Join and Subset Options}{
+  \describe{
+    \item{\code{datatable.allow.cartesian}}{A logical. A safety feature. If `FALSE`, a join
+      is not allowed if the result would have more rows than the largest of the two tables.
+      Default: \code{FALSE}. See \code{\link{data.table}}.}
+    \item{\code{datatable.nomatch}}{Controls the behavior of non-matching rows in
+      a join. The default is `NA`. Can be set to `0L` to drop non-matching rows.
+      Default: \code{NA}.}
+  }
+}
 
-        \section{Performance and Indexing Options}{
-        \describe{
-        \item{\code{datatable.auto.index}}{A logical. If \code{TRUE}, data.table
-            automatically creates a secondary index on-the-fly the first time a column
-            is used in a query (e.g., DT[col == 'value']). This dramatically
-            speeds up all subsequent queries on that same column.
-            Default: \code{TRUE}.}
-        \item{\code{datatable.use.index}}{A logical. A global switch to control
-            whether existing indices are used for subsetting.
-            Default: \code{TRUE}.}
-        \item{\code{datatable.optimize}}{An integer controlling the GForce query
-            optimization engine. Set to Inf to enable all possible optimizations,
-            which data.table does by default. See \code{\link{datatable.optimize}}.
-            Default: \code{Inf}.}
-        \item{\code{datatable.alloccol}}{An integer. data.table pre-allocates
-            memory for a certain number of columns when first created. This option
-            controls the length of this pre-allocation, improving performance when
-            adding many columns via :=. See \code{\link{alloc.col}}.
-            Default: \code{1024L}.}
-        }
-        }
+\section{Performance and Indexing Options}{
+  \describe{
+    \item{\code{datatable.auto.index}}{A logical. If \code{TRUE}, `data.table`
+      automatically creates a secondary index on-the-fly when a column is first
+      used in a subset, speeding up all subsequent queries.
+      Default: \code{TRUE}.}
+    \item{\code{datatable.use.index}}{A logical. A global switch to control
+      whether existing secondary indices are used for subsetting.
+      Default: \code{TRUE}.}
+    \item{\code{datatable.forder.auto.index}}{A logical. Similar to `datatable.auto.index`,
+      but applies to ordering operations (`forder`).
+      Default: \code{TRUE}.}
+    \item{\code{datatable.optimize}}{An integer controlling the GForce query
+      optimization engine. The default enables all possible optimizations.
+      See \code{\link{datatable.optimize}}.
+      Default: \code{Inf}.}
+    \item{\code{datatable.alloccol}}{An integer. Controls the number of column
+      slots to pre-allocate, improving performance when adding many columns.
+      See \code{\link{alloc.col}}.
+      Default: \code{1024L}.}
+    \item{\code{datatable.reuse.sorting}}{A logical. If `TRUE`, `data.table`
+      can reuse the sorted order of a table in joins, improving performance.
+      Default: \code{TRUE}.}
+  }
+}
 
-        \section{Development and Verbosity Options}{
-        \describe{
-        \item{\code{datatable.verbose}}{A logical. If \code{TRUE}, data.table will
-            print detailed, step-by-step diagnostic information as it processes a
-            query. Extremely useful for debugging and performance tuning.
-            Default: \code{FALSE}.}
-        \item{\code{datatable.pedantic}}{A logical. If \code{TRUE}, data.table
-            enters a "pedantic" mode, issuing helpful warnings for situations that
-            are not technically errors but might be unintentional (e.g., when a
-            variable in j is found in the global environment instead of inside the
-            data.table).
-            Default: \code{FALSE}.}
-        \item{\code{datatable.dfdispatchwarn}}{A logical. If \code{TRUE}, warns
-            when a generic function from another package (e.g., dplyr::filter) is
-            applied to a data.table. This can be a useful reminder that you are not
-            using data.table's optimized methods.
-            Default: \code{TRUE}.}
-        }
-        }
-
-        \section{Internal Strings (Not User Options)}{
-        \describe{
-        \item{The following strings are not options to be set by users.}{They are
-        included here to assist developers searching the source code. They are typically
-        parts of URLs found in code comments or documentation.
-        \itemize{
-            \item \code{datatable.com}
-            \item \code{datatable.github.io}
-            \item \code{datatable.gitlab.io}
-        }
-        }
-    }
+\section{Development and Verbosity Options}{
+  \describe{
+    \item{\code{datatable.quiet}}{A logical. The master switch to suppress all
+      `data.table` status messages, including the startup message.
+      Default: \code{FALSE}.}
+    \item{\code{datatable.verbose}}{A logical. If \code{TRUE}, `data.table` will
+      print detailed diagnostic information as it processes a query.
+      Default: \code{FALSE}.}
+    \item{\code{datatable.pedantic}}{A logical. If \code{TRUE}, `data.table`
+      enters a "pedantic" mode, issuing helpful warnings for potentially
+      unintentional user behavior.
+      Default: \code{FALSE}.}
+    \item{\code{datatable.dfdispatchwarn}}{A logical. If \code{TRUE}, warns
+      when a generic function from another package is applied to a `data.table`.
+      Default: \code{TRUE}.}
+    \item{\code{datatable.warnredundantby}}{A logical. If \code{TRUE}, `data.table`
+      will warn when grouping by columns that are already the key of the table.
+      Default: \code{TRUE}.}
+    \item{\code{datatable.enlist}}{Experimental feature. If set to a function
+      (e.g., `list`), the `j` expression can return a `list`, which will then
+      be "enlisted" into columns in the result.
+      Default: \code{NULL}.}
   }
 }
 
