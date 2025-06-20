@@ -5,12 +5,12 @@
 
 // generate from 1 to n (a simple fun for melt, vecseq is convenient from R due to SEXP inputs)
 SEXP seq_int(int n, int start) {
-  if (n <= 0) return(R_NilValue);
+  if (n <= 0) return R_NilValue;
   SEXP ans = PROTECT(allocVector(INTSXP, n));
   int *ians = INTEGER(ans);
   for (int i=0; i<n; ++i) ians[i] = start+i;
   UNPROTECT(1);
-  return(ans);
+  return ans;
 }
 
 // very specific "set_diff" for integers
@@ -31,7 +31,7 @@ SEXP set_diff(SEXP x, int n) {
   SEXP ans = PROTECT(allocVector(INTSXP, n));
   if (n) memcpy(INTEGER(ans), buf, sizeof(int) * n); // sizeof is of type size_t - no integer overflow issues
   UNPROTECT(3);
-  return(ans);
+  return ans;
 }
 
 SEXP which(SEXP x, Rboolean val) {
@@ -51,7 +51,7 @@ SEXP which(SEXP x, Rboolean val) {
   if (n) memcpy(INTEGER(ans), buf, sizeof(int) * n);
 
   UNPROTECT(1);
-  return(ans);
+  return ans;
 }
 
 // whichwrapper for R
@@ -136,7 +136,7 @@ SEXP measurelist(SEXP measure, SEXP dtnames) {
     }
   }
   UNPROTECT(1);
-  return(ans);
+  return ans;
 }
 
 // internal function just to unlist integer lists
@@ -153,7 +153,7 @@ static SEXP unlist_(SEXP xint) {
       ians[k++] = itmp[j];
   }
   UNPROTECT(1);
-  return(ans);
+  return ans;
 }
 
 // convert NA in user-supplied integer vector input to -1 in order to
@@ -276,7 +276,7 @@ SEXP checkVars(SEXP DT, SEXP id, SEXP measure, Rboolean verbose) {
   SET_VECTOR_ELT(ans, 0, idcols);
   SET_VECTOR_ELT(ans, 1, valuecols);//List of integer vectors.
   UNPROTECT(protecti);
-  return(ans);
+  return ans;
 }
 
 struct processData {
@@ -584,7 +584,7 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
     }
   }
   UNPROTECT(2);  // flevels, ansvals. Not using two protection counters (protecti and thisprotecti) to keep rchk happy.
-  return(ansvals);
+  return ansvals;
 }
 
 SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, struct processData *data) {
@@ -689,7 +689,7 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
     }
   }
   UNPROTECT(protecti);
-  return(ansvars);
+  return ansvars;
 }
 
 SEXP getidcols(SEXP DT, SEXP dtnames, Rboolean verbose, struct processData *data) {
@@ -799,7 +799,7 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
   int ncol = LENGTH(DT);
   if (!ncol) {
     if (verbose) Rprintf(_("ncol(data) is 0. Nothing to melt. Returning original data.table."));
-    return(DT);
+    return DT;
   }
   int protecti=0;
   dtnames = PROTECT(getAttrib(DT, R_NamesSymbol)); protecti++;
@@ -849,5 +849,5 @@ SEXP fmelt(SEXP DT, SEXP id, SEXP measure, SEXP varfactor, SEXP valfactor, SEXP 
     setAttrib(ans, R_NamesSymbol, ansnames);
   }
   UNPROTECT(protecti);
-  return(ans);
+  return ans;
 }
