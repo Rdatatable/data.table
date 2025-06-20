@@ -77,3 +77,17 @@ jobs:
       - name: Lint
         run: for (f in list.files('.ci/linters/md', full.names=TRUE)) source(f)
         shell: Rscript {0}
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: r-lib/actions/setup-r@v2
+      - name: Install remotes
+        run: Rscript -e "install.packages('remotes')"
+      - name: Install dependencies
+        run: Rscript -e 'remotes::install_deps(dependencies = TRUE)'
+      - name: Check documentation and options consistency
+        run: Rscript .ci/check-options.R
+      - name: Run R CMD check
+        run: Rscript -e 'devtools::check()'
+      
