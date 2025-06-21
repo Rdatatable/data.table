@@ -40,6 +40,9 @@ linters = c(dt_linters, all_linters(
   # TODO(lintr#2442): Use this once x[ , j, by] is supported.
   commas_linter = NULL,
   commented_code_linter = NULL,
+  # mostly, we just use stopf() & friends, but ignore this for the
+  #   rare cases we need plain stop (e.g. #7048)
+  condition_call_linter = NULL,
   # TODO(linter->3.2.0): Activate this.
   consecutive_assertion_linter = NULL,
   cyclocomp_linter = NULL,
