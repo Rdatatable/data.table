@@ -653,9 +653,9 @@ ProductPriceHistory[ProductSales,
                     j = .(product_id, date, count, price)]
 ```
 
-## 7. Taking advantage of joining speed
+## 6. Taking advantage of joining speed
 
-### 7.1. Subsets as joins
+### 6.1. Subsets as joins
 
 As we just saw in the prior section the `x` table gets filtered by the values available in the `i` table. This process is faster than passing a Boolean expression to the `i` argument.
 
@@ -698,7 +698,7 @@ Products[!"popcorn",
 
 
 
-### 7.2. Updating by reference
+### 6.2. Updating by reference
 
 The `:=` operator in `data.table` is used for updating or adding columns by reference. This means it modifies the original `data.table` without creating a copy, which is very memory-efficient, especially for large datasets. When used inside a `data.table`, `:=` allows you to **add new columns** or **modify existing ones** as part of your query.
 
