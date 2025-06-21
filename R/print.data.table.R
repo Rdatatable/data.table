@@ -298,3 +298,7 @@ knit_print.data.table = function(x, ...) {
   if (!shouldPrint(x)) return(invisible(x))
   NextMethod()
 }
+record_print.data.table = function(x, ...) {
+  if (!shouldPrint(x)) return(character())
+  NextMethod()
+}
