@@ -23,7 +23,7 @@ sources = list.files(args[[2]], pattern = args[[3]], full.names = TRUE, recursiv
 if (!length(sources)) stop(
   "No files to lint found in directory ", dQuote(args[[2]]), " for mask ", dQuote(args[[3]])
 )
-preprocess = if (length(args) == 4) eval(parse(text = args[[4]])) else identity
+preprocess = if (length(args) == 4) eval(str2lang(args[[4]])) else identity
 sources = Filter(Negate(is.null), lapply(setNames(nm = sources), preprocess))
 
 okay = TRUE
