@@ -1,6 +1,6 @@
 # ensure that numbered list in each section is in sequence
 check_section_numbering = function(news) {
-  if (!grepl("NEWS", news)) return()
+  if (!grepl("NEWS", news)) return(invisible())
   news = readLines(news)
   # plain '#' catches some examples; 'd' for 'data.table'
   sections = grep("^#+ [A-Zd]", news)
