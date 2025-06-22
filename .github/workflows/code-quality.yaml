@@ -40,15 +40,7 @@ jobs:
         run: /usr/bin/sudo apt-get -y install coccinelle
       - name: Lint
         run: |
-          Rscript .ci/lint.R .ci/linters/c src '[.][ch]$' '
-            function (f) list(
-              c_obj = f, lines = readLines(f),
-              preprocessed = system2(
-                "gcc", shQuote(c("-fpreprocessed", "-E", f)),
-                stdout = TRUE, stderr = FALSE
-              )
-            )
-          '
+          Rscript .ci/lint.R .ci/linters/c src '[.][ch]$'
   lint-po:
     runs-on: ubuntu-latest
     steps:
@@ -61,12 +53,7 @@ jobs:
         # until a translation is added or the blank/fuzzy translations removed. We'd
         # rather only have the failure on one PR, then ignore these files later.
         run: |
-          Rscript .ci/lint.R .ci/linters/po po '[.]po$' "
-            function (f) {
-              diff_v_master = system2('git', c('diff', 'master', f), stdout=TRUE)
-              if (length(diff_v_master)) f
-            }
-          "
+          Rscript .ci/lint.R .ci/linters/po po '[.]po$'
   lint-md:
     runs-on: ubuntu-latest
     steps:

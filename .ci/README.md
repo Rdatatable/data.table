@@ -55,25 +55,15 @@ Base R runner for the manual (non-`lintr`) lint checks to be run from GitHub Act
 1. Path to the directory containing files defining the linters. A linter is a function that accepts one argument (typically the path to the file) and signals an error if it fails the lint check.
 2. Path to the directory containing files to check.
 3. A regular expression matching the files to check.
-4. An R expression evaluating to a function that processes a single file path into a form understood by the lint functions. Additionally, the function may return `NULL` to indicate that the file must be skipped.
+
+One of the files in the linter directory may define the `.preprocess` function, which must accept one file path and return a value that other linter functions will understand. The function may also return `NULL` to indicate that the file must be skipped.
 
 Example command lines:
 
 ```sh
-# C linters expect a three-element named list, not the file path
-Rscript .ci/lint.R .ci/linters/c src '[.][ch]$' '
-  function (f) list(
-    c_obj = f, lines = readLines(f),
-    preprocessed = system2("gcc", shQuote(c("-fpreprocessed", "-E", f)), stdout = TRUE, stderr = FALSE)
-  )
-'
-# po linters must skip files that don't differ from master
-Rscript .ci/lint.R .ci/linters/po po '[.]po$' '
-  function (f) {
-    diff_v_master = system2("git", c("diff", "master", f), stdout=TRUE)
-    if (length(diff_v_master)) f
-  }
-'
+Rscript .ci/lint.R .ci/linters/c src '[.][ch]$'
+Rscript .ci/lint.R .ci/linters/po po '[.]po$'
+Rscript .ci/lint.R .ci/linters/md . '[.]R?md$'
 ```
 
 ## GitLab Open Source Program
