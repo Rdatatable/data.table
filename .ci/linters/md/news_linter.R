@@ -49,5 +49,5 @@ check_gh_links = function(news) {
     "In line %d, link pointing to %s %s is written #%s\n",
     line_number, link_type, link_number, md_number
   )))
-  stop("Please fix the issues above.")
+  stop("Please fix the NEWS issues above.")
 }
