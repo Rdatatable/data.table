@@ -1,7 +1,7 @@
 # ensure that ids are limited to alphanumerics and dashes
 # (in particular, dots and underscores break the links)
 check_header_ids = function(md) {
-  if (!grepl('[.]Rmd$', md)) return()
+  if (!grepl('[.]Rmd$', md)) return(invisible())
   md = readLines(md)
   # A bit surprisingly, some headings don't start with a letter.
   # We're interested in those that set an id to link to, i.e., end with {#id}.
