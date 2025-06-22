@@ -22,7 +22,7 @@ check_section_numbering = function(news) {
       paste0("  [", section_entries[!matched], " --> ", intended_value[!matched], "]", collapse="\n")
     ))
   }
-  stopifnot("Please fix the issues above" = !any_mismatch)
+  stopifnot("Please fix the NEWS issues above" = !any_mismatch)
 }
 
 # ensure that GitHub link text & URL actually agree
