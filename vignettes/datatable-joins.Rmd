@@ -51,8 +51,6 @@ Products = rowwiseDT(
    4L,       "soda",   1.49, "ounce", "processed",
    NA, "toothpaste",   2.99,  "unit", "processed"
 )
-
-Products
 ```
 
 2. Defining a `data.table` showing the proportion of taxes to be applied for processed products based on their units.
