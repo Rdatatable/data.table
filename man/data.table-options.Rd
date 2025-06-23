@@ -18,7 +18,7 @@
     options(datatable.print.topn = 10)
   }
   This page provides a comprehensive, up-to-date list of all user-configurable
-  options.
+  options. NB: If you're reading this on the web, make sure the version numbers match with what you have installed.
 }
 
 \section{Printing Options}{
