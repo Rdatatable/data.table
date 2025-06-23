@@ -86,6 +86,22 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
       }
       stopf("Incompatible join types: %s (%s) and %s (%s). Factor columns must join to factor or character columns.", xname, x_merge_type, iname, i_merge_type)
     }
+    if (i_merge_type == "complex") {
+      if (any(Im(i[[icol]]) != 0, na.rm=TRUE)) {
+        stopf("Joining on complex numbers with non-zero imaginary part is not supported. Column: %s", iname)
+      }
+      from_detail = gettext(" (complex with zero imaginary part)")
+      coerce_col(i, icol, "complex", "double", iname, xname, from_detail=from_detail, verbose=verbose)
+      i_merge_type = "double"
+    }
+    if (x_merge_type == "complex") {
+      if (any(Im(x[[xcol]]) != 0, na.rm=TRUE)) {
+        stopf("Joining on complex numbers with non-zero imaginary part is not supported. Column: %s", xname)
+      }
+      from_detail = gettext(" (complex with zero imaginary part)")
+      coerce_col(x, xcol, "complex", "double", xname, iname, from_detail=from_detail, verbose=verbose)
+      x_merge_type = "double"
+    }
     # we check factors first to cater for the case when trying to do rolling joins on factors
     if (x_merge_type == i_merge_type) {
       if (verbose) catf("%s has same type (%s) as %s. No coercion needed.\n", iname, x_merge_type, xname)
