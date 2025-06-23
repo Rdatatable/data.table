@@ -6,21 +6,18 @@ check_options_documentation = function(rd_file) {
   get_options_from_code = function() {
     found = character(0)
     
-    walk_ast = function(expr) {
+    walk_for_dt_options = function(expr) {
       result = character(0)
       if (is.call(expr) && length(expr) >= 2 && identical(expr[[1]], quote(getOption)) && is.character(expr[[2]]) && startsWith(expr[[2]], "datatable.")) {
         result = expr[[2]]
-      }
-      if (is.recursive(expr)) {
-        result = c(result, unlist(lapply(expr, walk_ast)))
+      } else if (is.recursive(expr)) {
+        result = c(result, unlist(lapply(expr, walk_for_dt_options)))
       }
       result
     }
     r_files = list.files("R", pattern = "\\.R$", full.names = TRUE)
     for (file in r_files) {
-      tryCatch({
-        found = c(found, unlist(lapply(parse(file = file), walk_ast)))
-      }, error = function(e) {})
+      found = c(found, unlist(lapply(parse(file = file), walk_for_dt_options)))
     }
     sort(unique(found))
   }
