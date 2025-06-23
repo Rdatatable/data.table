@@ -26,7 +26,7 @@
    \describe{
     \item{\code{datatable.print.topn}}{An integer. When a data.table is printed,
       only the first topn and last topn rows are displayed.
-      Default: \code{5L}..}
+      Default: \code{5L}.}
     \item{\code{datatable.print.nrows}}{An integer. The total number of rows
       to print before the topn logic is triggered.
       Default: \code{100L}.}
