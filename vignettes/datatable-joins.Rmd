@@ -38,11 +38,11 @@ It assumes familiarity with the `data.table` syntax. If that is not the case, pl
 
 ## 1. Defining example data
 
-To illustrate how to use the method available with real life examples, let's simulate a **normalized database** from a little supermarket by performing the following steps:
+To illustrate how to use the method available with real life examples, let's simulate a **normalized database** from a little supermarket by defining the following tables in a database:
 
-1. Defining a `data.table` where each product is represented by a row with some qualities, but leaving one product without `id` to show how the framework deals with ***missing values***.
+1. `Products`, a table with rows giving characteristics of various products. To show how the framework deals with ***missing values***, one `id` is `NA`.
 
-```{r}
+```{r, define_products}
 Products = rowwiseDT(
   id=,        name=, price=,   unit=, type=,
    1L,     "banana",   0.63,  "unit", "natural",
@@ -53,9 +53,9 @@ Products = rowwiseDT(
 )
 ```
 
-2. Defining a `data.table` showing the proportion of taxes to be applied for processed products based on their units.
+2. `NewTax`, a table with rows defining some taxes associated with processed products based on their units.
 
-```{r}
+```{r define_new_tax}
 NewTax = data.table(
   unit = c("unit", "ounce"),
   type = "processed",
@@ -66,38 +66,36 @@ NewTax
 ```
 
 
-3. Defining a `data.table` simulating the products received every Monday with a `product_id` that is not present in the `Products` table.
+3. `ProductReceived`, a table with rows simulating weekly incoming inventory.
 
-```{r}
+```{r define_product_received}
 set.seed(2156)
 
+# NB: Jan 8, 2024 is a Monday.
+receipt_dates = seq(from=as.IDate("2024-01-08"), length.out=10L, by="week")
+
 ProductReceived = data.table(
-  id = 1:10,
-  date = seq(from = as.IDate("2024-01-08"), length.out = 10L, by = "week"),
-  product_id = sample(c(NA_integer_, 1:3, 6L), size = 10L, replace = TRUE),
-  count = sample(c(50L, 100L, 150L), size = 10L, replace = TRUE)
+  id=1:10, # unique identifier for an supply transaction
+  date=receipt_dates,
+  product_id=sample(c(NA, 1:3, 6L), size=10L, replace=TRUE), # NB: product '6' is not recorded in Products above.
+  count=sample(c(50L, 100L, 150L), size=10L, replace=TRUE)
 )
 
 ProductReceived
 ```
 
-4. Defining a `data.table` to show some sales that can take place on weekdays with another `product_id` that is not present in the `Products` table.
+4. `ProductSales`, a table with rows simulating customer transactions.
 
-```{r}
-sample_date = function(from, to, size, ...){
-  all_days = seq(from = from, to = to, by = "day")
-  weekdays = all_days[wday(all_days) %in% 2:6]
-  days_sample = sample(weekdays, size, ...)
-  days_sample_desc = sort(days_sample)
-  days_sample_desc
-}
-
+```{r define_product_sales}
 set.seed(5415)
+
+# Monday-Friday (4 days later) for each of the weeks present in ProductReceived
+possible_weekdays <- as.IDate(sapply(receipt_dates, `+`, 0:4))
 
 ProductSales = data.table(
   id = 1:10,
-  date = ProductReceived[, sample_date(min(date), max(date), 10L)],
-  product_id = sample(c(1:3, 7L), size = 10L, replace = TRUE),
+  date = sort(sample(possible_weekdays, 10L)),
+  product_id = sample(c(1:3, 7L), size = 10L, replace = TRUE), # NB: product '7' is in neither Products nor ProductReceived.
   count = sample(c(50L, 100L, 150L), size = 10L, replace = TRUE)
 )
 
