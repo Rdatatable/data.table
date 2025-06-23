@@ -27,7 +27,6 @@ check_options_documentation = function(rd_file) {
     if (!file.exists(rd_file)) return(character(0))
     
     tryCatch({
-      found = character(0)
       walk_rd = function(rd_element) {
         result = character(0)
         if (!is.list(rd_element)) return(character())
