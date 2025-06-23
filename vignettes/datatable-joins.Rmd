@@ -204,22 +204,21 @@ ProductsKeyed[ProductReceivedKeyed]
 
 #### 3.1.3. Operations after joining
 
-Most of the time after a join is complete we need to make some additional transformations. To make so we have the following alternatives:
+Most of the time after joining we need to make some additional transformations. To do so we have the following alternatives:
 
-- Chaining a new instruction by adding a pair of brakes `[]`.
+- Chaining a new instruction by adding a pair of brackets `[]`.
 - Passing a list with the columns that we want to keep or create to the `j` argument.
 
 Our recommendation is to use the second alternative if possible, as it is **faster** and uses **less memory** than the first one.
-
 
 ##### Managing shared column Names with the j argument
 
 The `j` argument has great alternatives to manage joins with tables **sharing the same names for several columns**. By default all columns are taking their source from the the `x` table, but we can also use the `x.` prefix to make clear the source and use the prefix `i.` to use any column form the table declared in the `i` argument of the `x` table.
 
-Going back to the little supermarket, after updating the `ProductReceived` table with the `Products` table, it seems convenient apply the following changes:
+Going back to the little supermarket, after updating the `ProductReceived` table with the `Products` table, suppose we want to apply the following changes:
 
-- Changing the columns names from `id` to `product_id` and from `i.id` to `received_id`.
-- Adding the `total_value`.
+- Change the columns names from `id` to `product_id` and from `i.id` to `received_id`.
+- Add the `total_value`.
 
 ```{r}
 Products[
@@ -238,9 +237,9 @@ Products[
 
 ##### Summarizing with `on` in `data.table`
 
-We can also use this alternative to return aggregated results based columns present in the `x` table.
+We can also use this alternative to return aggregated results based on the columns present in the `x` table.
 
-For example, we might interested in how much money we expend buying products each date regardless the products.
+For example, we might be interested in how much money we spend buying each product across days.
 
 ```{r}
 dt1 = ProductReceived[
@@ -250,7 +249,7 @@ dt1 = ProductReceived[
   j = .(total_value_received  = sum(price * count))
 ]
 
-
+# alternative using multiple [] queries
 dt2 = ProductReceived[
   Products,
   on = c("product_id" = "id"),
@@ -263,7 +262,7 @@ identical(dt1, dt2)
 
 #### 3.1.4. Joining based on several columns
 
-So far we have just joined `data.table` base on 1 column, but it's important to know that the package can join tables matching several columns.
+So far we have just joined `data.table`s based on 1 column, but it's important to know that the package can join tables matching several columns.
 
 To illustrate this, let's assume that we want to add the `tax_prop` from `NewTax` to **update** the `Products` table.
 
@@ -275,7 +274,7 @@ NewTax[Products, on = c("unit", "type")]
 
 Use this method if you need to combine columns from 2 tables based on one or more references but ***keeping only rows matched in both tables***.
 
-To perform this operation we just need to add `nomatch = NULL` or `nomatch = 0` to any of the prior join operations to return the same results.
+To perform this operation we just need to add `nomatch = NULL` to any of the prior join operations to return the same results.
 
 ```{r}
 # First Table
@@ -296,7 +295,7 @@ Despite both tables having the same information, there are some relevant differe
   - The `id` column in the first table has the same information as the `product_id` in the second table.
   - The `i.id` column in the first table has the same information as the `id` in the second table.
 
-### 3.3. Not join
+### 3.3. Anti-join
 
 This method **keeps only the rows that don't match with any row of a second table**.
 
