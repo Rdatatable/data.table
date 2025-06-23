@@ -5,7 +5,7 @@ check_options_documentation = function(rd_file) {
   # Find options in R code
   walk_for_dt_options = function(expr) {
     result = character()
-    if (is.call(expr) && length(expr) >= 2L && identical(expr[[1]], quote(getOption)) && is.character(e2 <- expr[[2L]]) && startsWith(e2, "datatable.")) {
+    if (is.call(expr) && length(expr) >= 2L && identical(expr[[1L]], quote(getOption)) && is.character(e2 <- expr[[2L]]) && startsWith(e2, "datatable.")) {
       result = e2
     } else if (is.recursive(expr)) {
       result = c(result, unlist(lapply(expr, walk_for_dt_options)))
@@ -21,24 +21,25 @@ check_options_documentation = function(rd_file) {
   }
   
   # Find options in documentation
+  walk_rd = function(rd_element) {
+    result = character(0)
+    if (!is.list(rd_element)) return(character())
+    if (isTRUE(attr(rd_element, "Rd_tag") == "\\code") && length(rd_element) >= 1L) {
+      content = rd_element[[1L]]
+      if (is.character(content) && startsWith(content, "datatable.")) {
+        result = content
+      }
+    }
+    c(result, unlist(lapply(rd_element, walk_rd)))
+  }
   get_options_from_doc = function(rd_file) {
     if (!file.exists(rd_file)) return(character(0))
-    
-    tryCatch({
-      walk_rd = function(rd_element) {
-        result = character(0)
-        if (!is.list(rd_element)) return(character())
-        if (isTRUE(attr(rd_element, "Rd_tag") == "\\code") && length(rd_element) >= 1L) {
-          content = rd_element[[1L]]
-          if (is.character(content) && startsWith(content, "datatable.")) {
-            result = content
-          }
-        }
-        c(result, unlist(lapply(rd_element, walk_rd)))
-      }
-      found = walk_rd(tools::parse_Rd(rd_file))
-      sort(unique(found))
-    }, error = function(e) character(0))
+
+    rd_file |>
+      tools::parse_Rd() |>
+      walk_rd() |>
+      unique() |>
+      sort()
   }
 
   code_opts = get_options_from_code()
