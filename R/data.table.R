@@ -2988,7 +2988,7 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
   if (is.name(name)) {
     name = as.character(name)
     assign(name, x, parent.frame(), inherits=TRUE)
-  }  else if (.is_simple_extraction(name)) {
+  } else if (.is_simple_extraction(name)) {
     # common case is call from 'lapply()'
     .assign_in_parent(
       name, x, parent.frame(),
