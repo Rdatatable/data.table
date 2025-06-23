@@ -43,36 +43,21 @@ To illustrate how to use the method available with real life examples, let's sim
 1. Defining a `data.table` where each product is represented by a row with some qualities, but leaving one product without `id` to show how the framework deals with ***missing values***.
 
 ```{r}
-Products = data.table(
-  id = c(1:4,
-         NA_integer_),
-  name = c("banana",
-           "carrots",
-           "popcorn",
-           "soda",
-           "toothpaste"),
-  price = c(0.63,
-            0.89,
-            2.99,
-            1.49,
-            2.99),
-  unit = c("unit",
-           "lb",
-           "unit",
-           "ounce",
-           "unit"),
-  type = c(rep("natural", 2L),
-           rep("processed", 3L))
+Products = rowwiseDT(
+  id=,        name=, price=,   unit=, type=,
+   1L,     "banana",   0.63,  "unit", "natural",
+   2L,    "carrots",   0.89,    "lb", "natural",
+   3L,    "popcorn",   2.99,  "unit", "processed",
+   4L,       "soda",   1.49, "ounce", "processed",
+   NA, "toothpaste",   2.99,  "unit", "processed"
 )
-
-Products
 ```
 
 2. Defining a `data.table` showing the proportion of taxes to be applied for processed products based on their units.
 
 ```{r}
 NewTax = data.table(
-  unit = c("unit","ounce"),
+  unit = c("unit", "ounce"),
   type = "processed",
   tax_prop = c(0.65, 0.20)
 )
