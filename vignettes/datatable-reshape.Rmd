@@ -153,7 +153,7 @@ DT
 ## 1 = female, 2 = male
 ```
 
-And you'd like to combine (`melt`) all the `dob` columns together, and `gender` columns together. Using the current functionality, we can do something like this:
+And you'd like to combine (`melt`) all the `dob` columns together, and `gender` columns together. Using the old functionality, we could do something like this:
 
 ```{r}
 DT.m1 = melt(DT, id.vars = c("family_id", "age_mother"))

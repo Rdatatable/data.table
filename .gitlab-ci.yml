@@ -13,14 +13,14 @@ variables:
   TZ: "UTC"  ## to avoid 'Failed to create bus connection' from timedatectl via Sys.timezone() on Docker with R 3.4.
              ## Setting TZ for all GLCI jobs to isolate them from timezone. We could have a new GLCI job to test under
              ## a non-UTC timezone, although, that's what we do routinely in dev.
-  R_REL_VERSION:  "4.4" # only raise when RTOOLS for REL is available
-  R_REL_WIN_BIN:  "https://cloud.r-project.org/bin/windows/base/old/4.4.1/R-4.4.1-win.exe"
-  R_DEV_VERSION:  "4.5"
+  R_REL_VERSION:  "4.5" # only raise when RTOOLS for REL is available
+  R_REL_WIN_BIN:  "https://cloud.r-project.org/bin/windows/base/old/4.5.0/R-4.5.0-win.exe"
+  R_DEV_VERSION:  "4.6"
   R_DEV_WIN_BIN:  "https://cloud.r-project.org/bin/windows/base/R-devel-win.exe"
-  R_OLD_VERSION:  "4.3"
-  R_OLD_WIN_BIN:  "https://cloud.r-project.org/bin/windows/base/old/4.3.3/R-4.3.3-win.exe"  
-  R_REL_MAC_BIN:  "https://cloud.r-project.org/bin/macosx/big-sur-arm64/base/R-4.4.1-arm64.pkg"
-  R_OLD_MAC_BIN:  "https://cloud.r-project.org/bin/macosx/big-sur-arm64/base/R-4.3.3-arm64.pkg"
+  R_OLD_VERSION:  "4.4"
+  R_OLD_WIN_BIN:  "https://cloud.r-project.org/bin/windows/base/old/4.4.3/R-4.4.3-win.exe"
+  R_REL_MAC_BIN:  "https://cloud.r-project.org/bin/macosx/big-sur-arm64/base/R-4.5.0-arm64.pkg"
+  R_OLD_MAC_BIN:  "https://cloud.r-project.org/bin/macosx/big-sur-arm64/base/R-4.4.3-arm64.pkg"
 
 stages:
   - dependencies
@@ -48,6 +48,9 @@ mirror-packages:
   cache:
     paths:
       - bus/$CI_JOB_NAME/cran
+  variables:
+    # TODO(R-ancient>=3.5.0): remove this; let it save PACKAGES.rds in version-3 format
+    R_DEFAULT_SERIALIZE_VERSION: 2
   script:
     - echo 'source(".ci/ci.R")' >> .Rprofile
     - mkdir -p bus/$CI_JOB_NAME/cran/src/contrib
@@ -104,21 +107,23 @@ build:
 # force all suggests
 # flags: gcc -O3 -flto=auto -fno-common -Wunused-result
 # tests for compilation warnings
+# runs the --as-cran check, including the URL checks
 test-lin-rel:
   <<: *test-lin
   image: registry.gitlab.com/rdatatable/dockerfiles/r-data.table
   variables:
-    _R_CHECK_COMPILATION_FLAGS_KNOWN_: "-Wvla"
-    _R_CHECK_CRAN_INCOMING_: "FALSE"
-    _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"
     _R_CHECK_FORCE_SUGGESTS_: "TRUE"
     OPENBLAS_MAIN_FREE: "1"
   script:
     - *install-deps
     - echo 'CFLAGS=-g -O3 -flto=auto -fno-common -fopenmp -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
     - echo 'CXXFLAGS=-g -O3 -flto=auto -fno-common -fopenmp -Wall -Wvla -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
-    - R CMD check $(ls -1t data.table_*.tar.gz | head -n 1)
-    - (! grep "warning:" data.table.Rcheck/00install.out)
+    - echo '_R_CHECK_COMPILATION_FLAGS_KNOWN_=-Wvla' >> ~/.Renviron
+    - |
+        res1=0; R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1) || res1=$?
+        res2=0; grep -v "warning:" data.table.Rcheck/00install.out || res2=$?
+        res3=0; Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); if (!identical(l, "Status: 2 NOTEs")) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote("Status: 2 NOTEs"), " (CRAN incoming feasibility, non-API) but ", shQuote(l))' || res3=$?
+        if [ $res1 -ne 0 ] || [ $res2 -ne 0 ] || [ $res3 -ne 0 ]; then exit 1; fi
 
 ## vanilla minimal
 # no zlib
@@ -151,9 +156,10 @@ test-lin-rel-cran:
     - *install-deps
     - echo 'CFLAGS=-g -O2 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars
     - echo 'CXXFLAGS=-g -O2 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' >> ~/.R/Makevars
-    - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
-    - >-
-        Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); if (!identical(l, "Status: OK")) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote("Status: OK"), " but ", shQuote(l)) else q("no")'
+    - |
+        res1=0; R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1) || res1=$?
+        res2=0; Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); if (!identical(l, "Status: 1 NOTE")) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote("Status: 1 NOTE"), " (non-API) but ", shQuote(l))' || res2=$?
+        if [ $res1 -ne 0 ] || [ $res2 -ne 0 ]; then exit 1; fi
 
 ## R-devel on Linux gcc strict
 # R built with --enable-strict-barrier --disable-long-double
@@ -175,7 +181,7 @@ test-lin-dev-gcc-strict-cran:
     - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
     - (! grep "warning:" data.table.Rcheck/00install.out)
     - >-
-        Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); notes<-"Status: 3 NOTEs"; if (!identical(l, notes)) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote(notes), " (size of tarball, installed package size, non-API calls) but ", shQuote(l)) else q("no")'
+        Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); notes<-"Status: 3 NOTEs"; if (!identical(l, notes)) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote(notes), " (size of tarball, non-API calls, V8 package) but ", shQuote(l)) else q("no")'
 
 ## R-devel on Linux clang
 # R compiled with clang, flags removed: -flto=auto -fopenmp
@@ -198,22 +204,22 @@ test-lin-dev-clang-cran:
     - R CMD check --as-cran $(ls -1t data.table_*.tar.gz | head -n 1)
     - (! grep "warning:" data.table.Rcheck/00install.out)
     - >-
-        Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); notes<-"Status: 2 NOTEs"; if (!identical(l, notes)) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote(notes), " (size of tarball, non-API calls) but ", shQuote(l)) else q("no")'
+        Rscript -e 'l=tail(readLines("data.table.Rcheck/00check.log"), 1L); notes<-"Status: 3 NOTEs"; if (!identical(l, notes)) stop("Last line of ", shQuote("00check.log"), " is not ", shQuote(notes), " (size of tarball, non-API calls, V8 package) but ", shQuote(l)) else q("no")'
 
 # stated dependency on R
 test-lin-ancient-cran:
   <<: *test-lin
-  image: registry.gitlab.com/rdatatable/dockerfiles/r-3.3.0
+  image: registry.gitlab.com/rdatatable/dockerfiles/r-3.4.0
   variables:
     _R_CHECK_FORCE_SUGGESTS_: "FALSE" # can be removed if all dependencies are available (knitr, xts, etc.)
   script:
     - *install-deps
     # knitr requires evaluate, which requires R 3.6.0.
-    # Restore checking vignettes if upgrading our R dependency means knitr can be installed.
+    # Restore checking vignettes if upgrading our R dependency means knitr can be installed, or when we switch to litedown.
     - R CMD check --no-manual --no-build-vignettes --ignore-vignettes $(ls -1t data.table_*.tar.gz | head -n 1)
 
-# run the main checks with Address(+Leak),UBSanitizer enabled
-test-lin-dev-san:
+# run the main checks with Address(+Leak),UBSanitizer enabled, GCC _and_ Clang
+test-lin-dev-clang-san:
   <<: *test-lin
   image: registry.gitlab.com/rdatatable/dockerfiles/r-devel-clang-san
   variables:
@@ -227,8 +233,27 @@ test-lin-dev-san:
     - |
         res1=0; ASAN_OPTIONS=detect_leaks=1 R CMD check --no-manual $(ls -1t data.table_*.tar.gz | head -n 1) || res1=$?
         res2=0; perl -nle '(print, $a=1) if /: runtime error: |ERROR: LeakSanitizer/../SUMMARY.*Sanitizer/ }{ exit $a' data.table.Rcheck/**/*.Rout* || res2=$?
+        res3=0; tail -n 1 data.table.Rcheck/00check.log | grep -q -e '^Status: [0-9]* NOTEs*$' -e '^Status: OK$' || res3=$?
         # fail if R CMD check had failed or if sanitizer output found
-        if [ $res1 -ne 0 ] || [ $res2 -ne 0 ]; then exit 1; fi
+        if [ $res1 -ne 0 ] || [ $res2 -ne 0 ] || [ $res3 -ne 0 ]; then exit 1; fi
+
+test-lin-dev-gcc-san:
+  <<: *test-lin
+  image: registry.gitlab.com/rdatatable/dockerfiles/r-devel-gcc-san
+  variables:
+    # must be set for most of the process because there are pseudo-leaks everywhere
+    ASAN_OPTIONS: "detect_leaks=0"
+    # fontconfig is known to leak; add more suppressions as discovered
+    LSAN_OPTIONS: "suppressions=$CI_PROJECT_DIR/.dev/lsan.supp"
+    UBSAN_OPTIONS: "print_stacktrace=1"
+  script:
+    - *install-deps
+    - |
+        res1=0; ASAN_OPTIONS=detect_leaks=1 R CMD check --no-manual $(ls -1t data.table_*.tar.gz | head -n 1) || res1=$?
+        res2=0; perl -nle '(print, $a=1) if /: runtime error: |ERROR: LeakSanitizer/../SUMMARY.*Sanitizer/ }{ exit $a' data.table.Rcheck/**/*.Rout* || res2=$?
+        res3=0; tail -n 1 data.table.Rcheck/00check.log | grep -q -e '^Status: [0-9]* NOTEs*$' -e '^Status: OK$' || res3=$?
+        # fail if R CMD check had failed or if sanitizer output found
+        if [ $res1 -ne 0 ] || [ $res2 -ne 0 ] || [ $res3 -ne 0 ]; then exit 1; fi
 
 .test-win-template: &test-win
   <<: *test
@@ -290,11 +315,14 @@ test-win-old:
   before_script:
     - curl -O $R_BIN
     - sudo installer -pkg "$(ls -1t R-*-arm64.pkg | head -n 1)" -target /
+    - sudo Rscript -e "source('https://mac.R-project.org/bin/install.R'); install.libs('gettext')"
     - *install-deps
     - cp $(ls -1t bus/build/data.table_*.tar.gz | head -n 1) .
   script:
     - R CMD check --no-manual $(ls -1t data.table_*.tar.gz | head -n 1)
     - R CMD INSTALL --build $(ls -1t data.table_*.tar.gz | head -n 1)
+    - >-
+        tail -n 1 data.table.Rcheck/00check.log | grep -q -e '^Status: [0-9]* NOTEs*$' -e '^Status: OK$'
   after_script:
     - mkdir -p bus/$CI_JOB_NAME
     - '[ -d data.table.Rcheck ] && mv data.table.Rcheck bus/$CI_JOB_NAME/'
@@ -329,7 +357,7 @@ integration:
     - saas-linux-medium-amd64
   only:
     - master
-  needs: ["mirror-packages","build","test-lin-rel","test-lin-rel-cran","test-lin-dev-gcc-strict-cran","test-lin-dev-clang-cran","test-lin-rel-vanilla","test-lin-ancient-cran","test-lin-dev-san","test-win-rel","test-win-dev" ,"test-win-old","test-mac-rel","test-mac-old"]
+  needs: ["mirror-packages","build","test-lin-rel","test-lin-rel-cran","test-lin-dev-gcc-strict-cran","test-lin-dev-clang-cran","test-lin-rel-vanilla","test-lin-ancient-cran","test-lin-dev-clang-san","test-lin-dev-gcc-san","test-win-rel","test-win-dev" ,"test-win-old","test-mac-rel","test-mac-old"]
   script:
     - R --version
     - *install-deps ## markdown pkg not present in r-pkgdown image

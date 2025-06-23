@@ -200,16 +200,6 @@ base_messages = list(
   NULL
 )
 
-# Ensure an operation uses C-locale sorting (#3502). For test set-ups/comparisons that use base operations, which are
-#   susceptible to locale-specific sorting issues, but shouldn't be needed for data.table code, which always uses C sorting.
-# TODO(R>=3.3.0): use order(method="radix") as a way to avoid needing this helper
-with_c_collate = function(expr) {
-  old = Sys.getlocale("LC_COLLATE")
-  on.exit(Sys.setlocale("LC_COLLATE", old))
-  Sys.setlocale("LC_COLLATE", "C")
-  expr
-}
-
 ##########################
 .do_not_rm = ls()  # objects that exist at this point should not be removed by rm_all(); e.g. test_*, base_messages, Ctest_dt_win_snprintf, prevtest, etc
 ##########################
@@ -1841,10 +1831,10 @@ test(609, chorder(character()), base::order(character()))
 test(610, chorder(""), base::order(""))
 # Extra tests of chorder and chgroup
 x = sample(LETTERS)
-test(610.1, chorder(x), with_c_collate(base::order(x)))
+test(610.1, chorder(x), base::order(x, method="radix"))
 test(610.2, chgroup(x), seq_along(x))
 x = sample(LETTERS,1000,replace=TRUE)
-test(610.3, chorder(x), with_c_collate(base::order(x)))
+test(610.3, chorder(x), base::order(x, method="radix"))
 test(610.4, unique(x[chgroup(x)]), unique(x))
 
 # := by group
@@ -3078,6 +3068,16 @@ DT[90, A:="321456789123456"]   # inside the sample
 write.table(DT,f,sep=",",row.names=FALSE,quote=FALSE)
 if (test_bit64) test(1017.1, fread(f), copy(DT)[,A:=as.integer64(A)])
 test(1017.2, fread(f, integer64="character"), DT)
+unlink(f)
+
+DT = data.table(a=seq(10000), b="100")
+DT[111, b := "1000000000000"]
+f = tempfile()
+fwrite(DT, f)
+
+test(1017.3, fread(f, integer64="numeric"), fread(f, colClasses=c("integer", "numeric")))
+test(1017.4, fread(f, integer64="character"), fread(f, colClasses=c("integer", "character")))
+
 unlink(f)
 
 # ERANGE errno handled, #106 #4165
@@ -4516,7 +4516,9 @@ for (nvars in seq_along(names(DT))) {
   combn(names(DT), nvars, simplify=FALSE, function(x) {  # simplify=FALSE needed for R 3.1.0
     for (i in seq_len(nrow(signs))) {
       test_no <<- test_no + 1L
-      ll = as.call(c(as.name("order"),
+      ll = as.call(c(
+        as.name("order"),
+        method="radix",
         lapply(seq_along(x), function(j) {
           if (signs[i,j] == 1L)
             as.name(x[j])
@@ -4528,7 +4530,7 @@ for (nvars in seq_along(names(DT))) {
           }
         })
       ))
-      test(1223.0 + test_no*0.001, forderv(DT, by=x, order=signs[i,]), with_c_collate(with(DT, eval(ll))))
+      test(1223.0 + test_no*0.001, forderv(DT, by=x, order=signs[i,]), with(DT, eval(ll)))
     }
     integer()
   })
@@ -4609,18 +4611,8 @@ test(1240.2, ans2, ans1)
 # i.e. a three-way match.
 base_order <- function(..., na.last=TRUE, method=c("shell","radix")) {
   ans1 = base::order(..., na.last=na.last, method="shell")
-  if (!is.na(na.last) || base::getRversion()>"3.3.3") {
-    ans2 = base::order(..., na.last=na.last, method="radix")
-    if (!identical(ans1,ans2)) stop("Base R's order(,method='shell') != order(,method='radix')")
-  } else {
-    # Only when na.last=NA in just R 3.3.0-3.3.3 we don't check shell==radix
-    # because there was a problem in base R's port of data.table code then when :
-    #     1) 2 or more vectors were passed to base::order(,method="radix")
-    # AND 2) na.last=NA
-    # AND 3) there is a subgroup of size exactly 2
-    # AND 4) one of those 2 items in the subgroup is NA and the other is not NA
-    # See tests 1728.3 and 1728.13.
-  }
+  ans2 = base::order(..., na.last=na.last, method="radix")
+  if (!identical(ans1, ans2)) stop("Base R's order(,method='shell') != order(,method='radix')")
   ans1
 }
 
@@ -4780,7 +4772,9 @@ for (i in seq_along(names(DT))) {
   ans[[i]] = combn(names(DT), i, function(x) {
     tmp = apply(cj, 1, function(y) {
       test_no <<- test_no + 1L
-      ll = as.call(c(as.name("base_order"),
+      ll = as.call(c(
+        as.name("base_order"),
+        method = "radix",
         lapply(seq_along(x), function(j) {
           if (y[j] == 1L)
             as.name(x[j])
@@ -4793,11 +4787,11 @@ for (i in seq_along(names(DT))) {
         })
       ))
       ans1 = forderv(DT, by=x, order=y, na.last=TRUE)         # adding tests for both nalast=TRUE and nalast=NA
-      test(1252.0 + test_no*0.001, ans1, with_c_collate(with(DT, eval(ll))))
+      test(1252.0 + test_no*0.001, ans1, with(DT, eval(ll)))
       test_no <<- test_no + 1L
       ll <- as.call(c(as.list(ll), na.last=NA))
       ans1 = forderv(DT, by=x, order=y, na.last=NA)           # nalast=NA here.
-      test(1252.0 + test_no*0.001, ans1[ans1 != 0], with_c_collate(with(DT, eval(ll))))
+      test(1252.0 + test_no*0.001, ans1[ans1 != 0], with(DT, eval(ll)))
     })
     dim(tmp)=NULL
     list(tmp)
@@ -12402,10 +12396,7 @@ DT1 = data.table(x = mixed_strings, y = c(latin1_strings, utf8_strings), z = 1:1
 DT2 = copy(DT1)
 setkey(DT1, x)
 setkey(DT2, y)
-# the ans is generated by `sort(c(utf8_strings, utf8_strings), method = "radix")`
-# but we should not use radix sort in the test because it's introduced after R3.3.0
-ans = c("El. pa\u00c5\u00a1tas", "El. pa\u00c5\u00a1tas", "fa\u00e7ile", "fa\u00e7ile",
-"\u00a1tas", "\u00a1tas", "\u00de", "\u00de", "\u00e7ile", "\u00e7ile")
+ans = sort(c(utf8_strings, utf8_strings), method = "radix")
 test(1864.1, DT1$x, ans)
 test(1864.2, DT2$y, ans)
 ans = c(1L, 6L, 2L, 7L, 3L, 8L, 4L, 9L, 5L, 10L)
@@ -17789,12 +17780,9 @@ x = factor(letters[1:10])
 DT = data.table(a = x)[1:5]
 test(2214.01, fdroplevels(factor()), droplevels(factor()))
 test(2214.02, fdroplevels(x[1:5]), droplevels(x[1:5]))
-if (base::getRversion() >= "3.4.0") {
-  # bug fix in R 3.4.0: "droplevels(f) now keeps <NA> levels when present."
-  test(2214.03, fdroplevels(x[1:5], c("b", "d")), droplevels(x[1:5], c("b", "d")))
-  test(2214.04, fdroplevels(x[1:5], letters[1:5]), droplevels(x[1:5], letters[1:5]))
-  test(2214.05, droplevels(DT, exclude=c("b", "d"))[["a"]], droplevels(DT[1:5,a], c("b", "d")))
-}
+test(2214.03, fdroplevels(x[1:5], c("b", "d")), droplevels(x[1:5], c("b", "d")))
+test(2214.04, fdroplevels(x[1:5], letters[1:5]), droplevels(x[1:5], letters[1:5]))
+test(2214.05, droplevels(DT, exclude=c("b", "d"))[["a"]], droplevels(DT[1:5,a], c("b", "d")))
 test(2214.06, droplevels(DT)[["a"]], droplevels(DT[1:5,a]))
 test(2214.07, droplevels(DT, 1)[["a"]], x[1:5])
 # 2214.08 was of defunct in.place argument
@@ -21155,3 +21143,27 @@ test(2315.1, tail(DT[order(i), i], 2L), 1:2)
 # wider range of numbers needed for further coverage
 DT[1L, i := 1000L]
 test(2315.2, tail(DT[order(i), i], 2L), c(1L, 1000L))
+
+# issue #6898, test that tzone behavior changes with ignore_tzone=TRUE
+tms = list(.POSIXct(1), .POSIXct(1.0, "UTC"))
+test(2316.1, between(tms[[1]], tms[[1L]], tms[[2L]]), error = "different tzone attributes")
+test(2316.2, between(tms[[1]], tms[[1L]], tms[[2L]], ignore_tzone=TRUE))
+test(2316.3, between(tms[[1]], tms[[2L]], tms[[2L]]), message = "mismatched tzone attributes")
+test(2316.4, between(tms[[1]], tms[[2L]], tms[[2L]], ignore_tzone=TRUE))
+
+# tbl in i still allows 'i.' prefix reference for update join, #6998
+DT1 = data.table(a=1, b=2)
+DT2 = data.table(a=1, c=3)
+DF1 = data.frame(a=1, d=4)
+DF2 = data.frame(a=1, e=5)
+class(DF2) = c("tbl_df", "tbl", "data.frame")
+
+test(2317.1, DT1[DT2, on='a', c := i.c]$c, 3)
+test(2317.2, DT1[DT2, on='a', c2 := x.a + i.c]$c2, 4)
+test(2317.3, DT1[DT2, on='a', .(c = x.a + i.c)]$c, 4)
+test(2317.4, DT1[DF1, on='a', d := i.d]$d, 4)
+test(2317.5, DT1[DF1, on='a', d2 := x.a + i.d]$d2, 5)
+test(2317.6, DT1[DF1, on='a', .(d = x.a + i.d)]$d, 5)
+test(2317.7, DT1[DF2, on='a', e := i.e]$e, 5)
+test(2317.8, DT1[DF2, on='a', e2 := x.a + i.e]$e2, 6)
+test(2317.9, DT1[DF2, on='a', .(e = x.a + i.e)]$e, 6)
