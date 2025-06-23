@@ -693,10 +693,7 @@ Products[c("banana","popcorn"),
 
 Products[!"popcorn",
          on = "name"]
-
 ```
-
-
 
 ### 7.2. Updating by reference
 
@@ -710,6 +707,8 @@ Update `Products` with prices from `ProductPriceHistory`:
 Products[ProductPriceHistory, 
          on = .(id = product_id), 
          price := i.price]
+
+Products
 ```
 
 - `i.price` refers to price from `ProductPriceHistory`.
@@ -724,6 +723,8 @@ Products[ProductPriceHistory,
          on = .(id = product_id),
          `:=`(price = last(i.price), last_updated = last(i.date)),
          by = .EACHI]
+
+Products
 ```
 
 - `by = .EACHI` groups by i's rows (1 group per ProductPriceHistory row).
@@ -738,6 +739,8 @@ cols <- setdiff(names(Products), "id")
 ProductPriceHistory[, (cols) := 
   Products[.SD, on = .(id = product_id), .SD, .SDcols = cols]]
 setnafill(ProductPriceHistory, fill=0, cols="price") # Handle missing values
+
+ProductPriceHistory
 ```
 
 - In `i`, `.SD` refers to `ProductPriceHistory`.
