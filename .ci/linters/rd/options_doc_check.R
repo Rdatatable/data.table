@@ -1,6 +1,6 @@
 # Ensure that data.table options in code match documentation
 check_options_documentation = function(rd_file) {
-  if (!grepl("data.table-options", rd_file)) return(invisible())
+  if (!grepl("\\name{data.table-options}", rd_file, fixed = TRUE)) return(invisible())
   
   # Find options in R code
   get_options_from_code = function() {
