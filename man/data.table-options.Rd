@@ -7,20 +7,16 @@
 \description{
   The data.table package uses a number of global options to control its
   behavior. These are regular R options that can be set with options()
-  and retrieved with getOption().
+  and retrieved with getOption(). For example:
+  \preformatted{
+    # Get the current value of an option
+    getOption("datatable.print.topn")
 
+    # Set a new value for an option
+    options(datatable.print.topn = 10)
+  }
   This page provides a comprehensive, up-to-date list of all user-configurable
   options.
-}
-
-\usage{
-\preformatted{
-# Get the current value of an option
-getOption("datatable.print.topn")
-
-# Set a new value for an option
-options(datatable.print.topn = 10)
-}
 }
 
 \section{Printing Options}{
@@ -132,16 +128,6 @@ options(datatable.print.topn = 10)
     \item{\code{datatable.verbose}}{A logical. If \code{TRUE}, `data.table` will
       print detailed diagnostic information as it processes a query.
       Default: \code{FALSE}.}
-    \item{\code{datatable.pedantic}}{A logical. If \code{TRUE}, `data.table`
-      enters a "pedantic" mode, issuing helpful warnings for potentially
-      unintentional user behavior.
-      Default: \code{FALSE}.}
-    \item{\code{datatable.dfdispatchwarn}}{A logical. If \code{TRUE}, warns
-      when a generic function from another package is applied to a `data.table`.
-      Default: \code{TRUE}.}
-    \item{\code{datatable.warnredundantby}}{A logical. If \code{TRUE}, `data.table`
-      will warn when grouping by columns that are already the key of the table.
-      Default: \code{TRUE}.}
     \item{\code{datatable.enlist}}{Experimental feature. If set to a function
       (e.g., `list`), the `j` expression can return a `list`, which will then
       be "enlisted" into columns in the result.
