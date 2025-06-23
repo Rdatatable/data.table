@@ -1,6 +1,8 @@
 \name{data.table-options}
 \alias{data.table-options}
 \alias{data.table.options}
+\alias{datatable.options}
+\alias{datatable-options}
 
 \title{Global Options for the data.table Package}
 
