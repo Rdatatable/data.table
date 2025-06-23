@@ -675,34 +675,59 @@ Products[c("banana","popcorn"),
 
 Products[!"popcorn",
          on = "name"]
-
 ```
-
-
 
 ### 6.2. Updating by reference
 
-The `:=` operator in `data.table` is used for updating or adding columns by reference. This means it modifies the original `data.table` without creating a copy, which is very memory-efficient, especially for large datasets. When used inside a `data.table`, `:=` allows you to **add new columns** or **modify existing ones** as part of your query.
+Use `:=` to modify columns **by reference** (no copy) during joins. General syntax: `x[i, on=, (cols) := val]`.
 
-Let's update our `Products` table with the latest price from `ProductPriceHistory`:
+**Simple One-to-One Update**  
+
+Update `Products` with prices from `ProductPriceHistory`:
 
 ```{r}
-copy(Products)[ProductPriceHistory,
-               on = .(id = product_id),
-               j = `:=`(price = tail(i.price, 1),
-                        last_updated = tail(i.date, 1)),
-               by = .EACHI][]
+Products[ProductPriceHistory, 
+         on = .(id = product_id), 
+         price := i.price]
+
+Products
 ```
 
-In this operation:
+- `i.price` refers to price from `ProductPriceHistory`.
+- Modifies `Products` in-place.
 
-- The function copy creates a ***deep*** copy of the `Products` table, preventing modifications made by `:=` from changing the original table by reference.
-- We join `Products` with `ProductPriceHistory` based on `id` and `product_id`.
-- We update the `price` column with the latest price from `ProductPriceHistory`.
-- We add a new `last_updated` column to track when the price was last changed.
-- The `by = .EACHI` ensures that the `tail` function is applied for each product in `ProductPriceHistory`.
+**Grouped Updates with `.EACHI`**
 
-***
+Get last price/date for each product:
+
+```{r Updating_with_the_Latest_Record}
+Products[ProductPriceHistory,
+         on = .(id = product_id),
+         `:=`(price = last(i.price), last_updated = last(i.date)),
+         by = .EACHI]
+
+Products
+```
+
+- `by = .EACHI` groups by i's rows (1 group per ProductPriceHistory row).
+- `last()` returns last value
+
+**Efficient Right Join Update**
+
+Add product details to `ProductPriceHistory` without copying:
+
+```{r}
+cols <- setdiff(names(Products), "id")
+ProductPriceHistory[, (cols) := 
+  Products[.SD, on = .(id = product_id), .SD, .SDcols = cols]]
+setnafill(ProductPriceHistory, fill=0, cols="price") # Handle missing values
+
+ProductPriceHistory
+```
+
+- In `i`, `.SD` refers to `ProductPriceHistory`.
+- In `j`, `.SD` refers to `Products`.
+- `:=` and `setnafill()` both update `ProductPriceHistory` by reference.
 
 ## Reference
 
