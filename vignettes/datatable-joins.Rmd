@@ -703,6 +703,7 @@ Products[!"popcorn",
 Use `:=` to modify columns **by reference** (no copy) during joins. General syntax: `x[i, on=, (cols) := val]`.
 
 **Simple One-to-One Update**  
+
 Update `Products` with prices from `ProductPriceHistory`:
 
 ```{r}
@@ -710,21 +711,26 @@ Products[ProductPriceHistory,
          on = .(id = product_id), 
          price := i.price]
 ```
+
 - `i.price` refers to price from `ProductPriceHistory`.
 - Modifies `Products` in-place.
 
 **Grouped Updates with `.EACHI`**
+
 Get last price/date for each product:
+
 ```{r Updating_with_the_Latest_Record}
 Products[ProductPriceHistory,
          on = .(id = product_id),
          `:=`(price = last(i.price), last_updated = last(i.date)),
          by = .EACHI]
 ```
+
 - `by = .EACHI` groups by i's rows (1 group per ProductPriceHistory row).
 - `last()` returns last value
 
 **Efficient Right Join Update**
+
 Add product details to `ProductPriceHistory` without copying:
 
 ```{r}
@@ -732,47 +738,49 @@ cols <- setdiff(names(Products), "id")
 ProductPriceHistory[, (cols) := 
   Products[.SD, on = .(id = product_id), .SD, .SDcols = cols]]
 ```
+
 - In `i`, `.SD` refers to `ProductPriceHistory`.
 - In `j`, `.SD` refers to `Products`.
 - Updates `ProductPriceHistory` by reference.
 
 **Handling Edge Cases and Dynamic Column Updates**
+
 To dynamically update columns and handle missing values:
+
 ```{r}
 cols <- setdiff(names(Products), "id")
 ProductPriceHistory[, (cols) := 
   Products[.SD, on = .(id = product_id), .SD, .SDcols = cols]]
 setnafill(ProductPriceHistory, fill=0, cols="price") # Handle missing values
 ```
+
 - Ensures unmatched values do not propagate `NA` unintentionally.
 
 **Dynamic Column Selection and Updates**
 Columns can be dynamically updated based on variable names:
+
 ```{r}
 my_var_name <- "price"
 Products[ProductPriceHistory, on = .(id = product_id), 
          (my_var_name) := i.price]
 ```
+
 - This approach allows flexibility in specifying columns programmatically.
 
 **Iterating Through Multiple Columns for Updates**
+
 Dynamically updating multiple columns from `ProductPriceHistory`:
+
 ```{r}
 update_cols <- intersect(c("price", "category", "stock"), names(ProductPriceHistory))
-```
 for (col in update_cols) {
   Products[ProductPriceHistory,
            on = .(id = product_id),
            (col) := i[[col]],
            env = list(col = col)]}
 ```
-- Ensures multiple columns are updated efficiently in a loop.
 
-**Summary**
-- `last(x)` vs `tail(x,1)`: Both return last element, but `tail()` returns list for lists.
-- `:=` always modifies `x`, never `i`. For right joins, update `i` directly via `i[, ... := x[.SD]]`.
-- `.EACHI` is crucial for per-row operations; simple joins use first match.
-***
+- Ensures multiple columns are updated efficiently in a loop.
 
 ## Reference
 
