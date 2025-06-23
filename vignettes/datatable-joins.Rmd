@@ -710,8 +710,8 @@ Products[ProductPriceHistory,
          on = .(id = product_id), 
          price := i.price]
 ```
-- `i.price` refers to price from `i` `(ProductPriceHistory)`.
-- Modifies Products in-place.
+- `i.price` refers to price from `ProductPriceHistory`.
+- Modifies `Products` in-place.
 
 **Grouped Updates with `.EACHI`**
 Get last price/date for each product:
@@ -722,11 +722,8 @@ Products[ProductPriceHistory,
          by = .EACHI]
 ```
 - `by = .EACHI` groups by i's rows (1 group per ProductPriceHistory row).
-- `last()` returns last value including `NA`:
+- `last()` returns last value
 
-```{r}
-data.table::last(c(1, NA))  # NA
-```
 **Efficient Right Join Update**
 Add product details to `ProductPriceHistory` without copying:
 
@@ -735,7 +732,8 @@ cols <- setdiff(names(Products), "id")
 ProductPriceHistory[, (cols) := 
   Products[.SD, on = .(id = product_id), .SD, .SDcols = cols]]
 ```
-- `.SD` refers to `ProductPriceHistory` during the join.
+- In `i`, `.SD` refers to `ProductPriceHistory`.
+- In `j`, `.SD` refers to `Products`.
 - Updates `ProductPriceHistory` by reference.
 
 **Handling Edge Cases and Dynamic Column Updates**
@@ -744,7 +742,7 @@ To dynamically update columns and handle missing values:
 cols <- setdiff(names(Products), "id")
 ProductPriceHistory[, (cols) := 
   Products[.SD, on = .(id = product_id), .SD, .SDcols = cols]]
-ProductPriceHistory[is.na(price), price := 0]  # Handle missing values
+setnafill(ProductPriceHistory, fill=0, cols="price") # Handle missing values
 ```
 - Ensures unmatched values do not propagate `NA` unintentionally.
 
@@ -761,7 +759,6 @@ Products[ProductPriceHistory, on = .(id = product_id),
 Dynamically updating multiple columns from `ProductPriceHistory`:
 ```{r}
 update_cols <- intersect(c("price", "category", "stock"), names(ProductPriceHistory))
-
 ```
 for (col in update_cols) {
   Products[ProductPriceHistory,
@@ -775,7 +772,6 @@ for (col in update_cols) {
 - `last(x)` vs `tail(x,1)`: Both return last element, but `tail()` returns list for lists.
 - `:=` always modifies `x`, never `i`. For right joins, update `i` directly via `i[, ... := x[.SD]]`.
 - `.EACHI` is crucial for per-row operations; simple joins use first match.
-- Note: Older functions like `mapvalues()` from the deprecated `plyr` package were previously used for recoding values. It is recommended to use data.table’s native update-join methods for efficient and future-proof code.
 ***
 
 ## Reference
