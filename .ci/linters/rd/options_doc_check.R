@@ -22,7 +22,7 @@ check_options_documentation = function(rd_file) {
   
   # Find options in documentation
   walk_rd = function(rd_element) {
-    result = character(0)
+    result = character()
     if (!is.list(rd_element)) return(character())
     if (isTRUE(attr(rd_element, "Rd_tag") == "\\code") && length(rd_element) >= 1L) {
       content = rd_element[[1L]]
@@ -32,18 +32,13 @@ check_options_documentation = function(rd_file) {
     }
     c(result, unlist(lapply(rd_element, walk_rd)))
   }
-  get_options_from_doc = function(rd_file) {
-    if (!file.exists(rd_file)) return(character(0))
-
-    rd_file |>
-      tools::parse_Rd() |>
-      walk_rd() |>
-      unique() |>
-      sort()
-  }
 
   code_opts = get_options_from_code()
-  doc_opts = get_options_from_doc(rd_file)
+  doc_opts = rd_file |>
+    tools::parse_Rd() |>
+    walk_rd() |>
+    unique() |>
+    sort()
   code_opts = setdiff(code_opts, "datatable.alloc")
 
   miss_in_doc = setdiff(code_opts, doc_opts)
