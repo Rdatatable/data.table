@@ -3,23 +3,21 @@ check_options_documentation = function(rd_file) {
   if (!grepl("\\name{data.table-options}", rd_file, fixed = TRUE)) return(invisible())
   
   # Find options in R code
+  walk_for_dt_options = function(expr) {
+    result = character()
+    if (is.call(expr) && length(expr) >= 2L && identical(expr[[1]], quote(getOption)) && is.character(e2 <- expr[[2L]]) && startsWith(e2, "datatable.")) {
+      result = e2
+    } else if (is.recursive(expr)) {
+      result = c(result, unlist(lapply(expr, walk_for_dt_options)))
+    }
+    result
+  }
   get_options_from_code = function() {
-    found = character(0)
-    
-    walk_for_dt_options = function(expr) {
-      result = character(0)
-      if (is.call(expr) && length(expr) >= 2 && identical(expr[[1]], quote(getOption)) && is.character(expr[[2]]) && startsWith(expr[[2]], "datatable.")) {
-        result = expr[[2]]
-      } else if (is.recursive(expr)) {
-        result = c(result, unlist(lapply(expr, walk_for_dt_options)))
-      }
-      result
-    }
-    r_files = list.files("R", pattern = "\\.R$", full.names = TRUE)
-    for (file in r_files) {
-      found = c(found, unlist(lapply(parse(file = file), walk_for_dt_options)))
-    }
-    sort(unique(found))
+    list.files("R", pattern = "\\.R$", full.names = TRUE) |>
+      lapply(\(f) lapply(parse(f), walk_for_dt_options)) |>
+      unlist() |>
+      unique() |>
+      sort()
   }
   
   # Find options in documentation
