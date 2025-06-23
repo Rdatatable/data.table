@@ -737,50 +737,12 @@ Add product details to `ProductPriceHistory` without copying:
 cols <- setdiff(names(Products), "id")
 ProductPriceHistory[, (cols) := 
   Products[.SD, on = .(id = product_id), .SD, .SDcols = cols]]
+setnafill(ProductPriceHistory, fill=0, cols="price") # Handle missing values
 ```
 
 - In `i`, `.SD` refers to `ProductPriceHistory`.
 - In `j`, `.SD` refers to `Products`.
-- Updates `ProductPriceHistory` by reference.
-
-**Handling Edge Cases and Dynamic Column Updates**
-
-To dynamically update columns and handle missing values:
-
-```{r}
-cols <- setdiff(names(Products), "id")
-ProductPriceHistory[, (cols) := 
-  Products[.SD, on = .(id = product_id), .SD, .SDcols = cols]]
-setnafill(ProductPriceHistory, fill=0, cols="price") # Handle missing values
-```
-
-- Ensures unmatched values do not propagate `NA` unintentionally.
-
-**Dynamic Column Selection and Updates**
-Columns can be dynamically updated based on variable names:
-
-```{r}
-my_var_name <- "price"
-Products[ProductPriceHistory, on = .(id = product_id), 
-         (my_var_name) := i.price]
-```
-
-- This approach allows flexibility in specifying columns programmatically.
-
-**Iterating Through Multiple Columns for Updates**
-
-Dynamically updating multiple columns from `ProductPriceHistory`:
-
-```{r}
-update_cols <- intersect(c("price", "category", "stock"), names(ProductPriceHistory))
-for (col in update_cols) {
-  Products[ProductPriceHistory,
-           on = .(id = product_id),
-           (col) := i[[col]],
-           env = list(col = col)]}
-```
-
-- Ensures multiple columns are updated efficiently in a loop.
+- `:=` and `setnafill()` both update `ProductPriceHistory` by reference.
 
 ## Reference
 
