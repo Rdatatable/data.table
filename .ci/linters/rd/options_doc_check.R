@@ -33,16 +33,14 @@ check_options_documentation = function(rd_file) {
       found = character(0)
       walk_rd = function(rd_element) {
         result = character(0)
-        if (is.list(rd_element)) {
-          if (!is.null(attr(rd_element, "Rd_tag")) && attr(rd_element, "Rd_tag") == "\\code" && length(rd_element) >= 1) {
-            content = rd_element[[1]]
-            if (is.character(content) && startsWith(content, "datatable.")) {
-              result = content
-            }
+        if (!is.list(rd_element)) return(character())
+        if (isTRUE(attr(rd_element, "Rd_tag") == "\\code") && length(rd_element) >= 1L) {
+          content = rd_element[[1L]]
+          if (is.character(content) && startsWith(content, "datatable.")) {
+            result = content
           }
-          result = c(result, unlist(lapply(rd_element, walk_rd)))
         }
-        result
+        c(result, unlist(lapply(rd_element, walk_rd)))
       }
       found = walk_rd(tools::parse_Rd(rd_file))
       sort(unique(found))
