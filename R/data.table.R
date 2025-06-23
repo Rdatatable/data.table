@@ -139,7 +139,7 @@ replace_dot_alias = function(e) {
       idx = match(j, names(k))
       if (is.na(idx)) {
         if (is.null(err_msg_na)) {
-          internal_error("item '%s' not found in names of list", origj)
+          internal_error("item '%s' not found in names of list", origj) # nocov
         } else {
           stopf(err_msg_na, origj)
         }
