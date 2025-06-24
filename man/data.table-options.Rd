@@ -71,8 +71,7 @@
 \section{Join and Subset Options}{
   \describe{
     \item{\code{datatable.allow.cartesian}}{A logical, default \code{FALSE}. Controls the default value of the 
-    allow.cartesian parameter; see \code{\link{data.table}}. If the value of this parameter is FALSE, an error is raised if 
-    a join would result in more rows than the sum of the two tables, as a safeguard against an explosive Cartesian join.}
+    \code{allow.cartesian} parameter; see \code{\link{data.table}}. If the value of this parameter is FALSE, an error is raised as a safeguard against an explosive Cartesian join.}
   }
 }
 
