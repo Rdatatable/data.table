@@ -63,13 +63,8 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   }
 
   # warn about unused arguments #2587
-  if (length(list(...))) {
-    ell = as.list(substitute(list(...)))[-1L]
-    for (n in setdiff(names(ell), "")) warningf("Unknown argument '%s' has been passed.", n)
-    unnamed_n = length(ell) - sum(nzchar(names(ell)))
-    if (unnamed_n)
-      warningf("Passed %d unknown and unnamed arguments.", unnamed_n)
-  }
+  .maybe_warn_merge_dots(...)
+
   # with i. prefix in v1.9.3, this goes away. Left here for now ...
   ## sidestep the auto-increment column number feature-leading-to-bug by
   ## ensuring no names end in ".1", see unit test
@@ -124,4 +119,29 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   # retain custom classes of first argument that resulted in dispatch to this method, #1378
   setattr(dt, "class", class_x)
   dt
+}
+
+.maybe_warn_merge_dots <- function(...) {
+  # TODO(R >= 3.5.0): use ...length()
+  n_dots <- length(dots <- list(...))
+  if (!n_dots) return(invisible())
+
+  nm <- names(dots)
+  if (is.null(nm)) {
+    warningf(ngettext(n_dots, "merge.data.table() received %d unnamed argument in '...' which will be ignored.",
+                              "merge.data.table() received %d unnamed arguments in '...' which will be ignored."),
+              n_dots)
+  } else {
+    named_idx = nzchar(nm)
+    if (all(named_idx)) {
+      warningf(ngettext(n_dots, "merge.data.table() received %d unknown keyword argument which will be ignored: %s",
+                                "merge.data.table() received %d unknown keyword arguments which will be ignored: %s"),
+                n_dots, brackify(nm))
+    } else {
+      n_named <- sum(named_idx)
+      unnamed_clause <- sprintf(ngettext(n_dots - n_named, "%d unnamed argument in '...'", "%d unnamed arguments in '...'"), n_dots - n_named)
+      named_clause <- sprintf(ngettext(n_named, "%d unknown keyword argument", "%d unknown keyword arguments"), n_named)
+      warningf("merge.data.table() received %s and %s, all of which will be ignored: %s", unnamed_clause, named_clause, brackify(nm[named_idx]))
+    }
+  }
 }
