@@ -17988,10 +17988,10 @@ test(2230.04, setDF(merge(DT, y, by="k2", incomparables=c(1, NA, 4, 5))), merge(
 test(2230.05, setDF(merge(DT, y, by="k2", incomparables=c(NA, 3, 4, 5))), merge(x, y, by="k2", incomparables=c(NA,3,4,5)))
 test(2230.06, merge(DT, y, by="k2", unk=1), merge(DT, y, by="k2"), warning="1 unknown keyword argument which will be ignored: [unk]")
 test(2230.07, merge(DT, y, by="k2", NULL, NULL, FALSE, FALSE, FALSE, TRUE, c(".x", ".y"), TRUE, getOption("datatable.allow.cartesian"), NULL, 1L),
-              merge(DT, y, by="k2"), warning=c("Supplied both `by` and `by.x`/`by.y`. `by` argument will be ignored.", "1 unnamed argument wound up in '...' and will be ignored."))
+              merge(DT, y, by="k2"), warning=c("Supplied both `by` and `by.x`/`by.y`. `by` argument will be ignored.", "1 unnamed argument in '...' which will be ignored."))
 test(2230.08, merge(DT, y, by="k2", unk1=1, unk2=2), merge(DT, y, by="k2"), warning="2 unknown keyword arguments which will be ignored: [unk1, unk2]")
 test(2230.09, merge(DT, y, by="k2", NULL, NULL, FALSE, FALSE, FALSE, TRUE, c(".x", ".y"), TRUE, getOption("datatable.allow.cartesian"), NULL, 1L, 2L),
-              merge(DT, y, by="k2"), warning=c("Supplied both `by` and `by.x`/`by.y`. `by` argument will be ignored.", "2 unnamed arguments wound up in '...' and will be ignored."))
+              merge(DT, y, by="k2"), warning=c("Supplied both `by` and `by.x`/`by.y`. `by` argument will be ignored.", "2 unnamed arguments in '...' which will be ignored."))
 test(2230.10, merge(DT, y, by="k2", NULL, NULL, FALSE, FALSE, FALSE, TRUE, c(".x", ".y"), TRUE, getOption("datatable.allow.cartesian"), NULL, unk=1L, 2L),
               merge(DT, y, by="k2"), warning=c("Supplied both `by` and `by.x`/`by.y`. `by` argument will be ignored.", "1 unnamed argument .*1 unknown keyword argument,.*\\[unk\\]"))
 test(2230.11, merge(DT, y, by="k2", NULL, NULL, FALSE, FALSE, FALSE, TRUE, c(".x", ".y"), TRUE, getOption("datatable.allow.cartesian"), NULL, unk1=1L, unk2=2L, 3L),
