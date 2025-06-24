@@ -63,7 +63,7 @@
       \code{fread} should interpret as \code{NA}.}
     \item{\code{datatable.fwrite.sep}}{A character string, default \code{","}. The default separator
       used by \code{fwrite}.}
-    \item{\code{datatable.showProgress}}{An integer or logical, default \code{\link{interactive}()}. Controls whether
+    \item{\code{datatable.showProgress}}{An integer or logical, default \code{\link[base]{interactive}()}. Controls whether
       long-running operations like \code{fread} display a progress bar.}
   }
 }
