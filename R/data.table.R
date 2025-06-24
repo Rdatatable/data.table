@@ -131,7 +131,7 @@ replace_dot_alias = function(e) {
 .reassign_extracted_table = function(name, value, env, err_msg_detail, err_msg_na) {
   k = eval(name[[2L]], env, env)
   if (is.list(k)) {
-    origj = j = if (name[[1L]] == "$") as.character(name[[3L]]) else eval(name[[3L]], env, env)
+    origj = j = if (name %iscall% "$") as.character(name[[3L]]) else eval(name[[3L]], env, env)
     if (length(j) != 1L) {
       stopf(
         "Cannot assign with a recursive index of length %d. The syntax %s is only valid when the index is length 1.",
