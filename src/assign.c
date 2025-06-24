@@ -277,10 +277,10 @@ int checkOverAlloc(SEXP x)
   if (!isInteger(x) && !isReal(x))
     error(_("getOption('datatable.alloccol') should be a number, by default 1024. But its type is '%s'."), type2char(TYPEOF(x)));
   if (LENGTH(x) != 1)
-    error(_("getOption('datatable.alloc') is a numeric vector ok but its length is %d. Its length should be 1."), LENGTH(x));
+    error(_("getOption('datatable.alloccol') is a numeric vector ok but its length is %d. Its length should be 1."), LENGTH(x));
   int ans = asInteger(x);
   if (ans<0)
-    error(_("getOption('datatable.alloc')==%d.  It must be >=0 and not NA."), ans);
+    error(_("getOption('datatable.alloccol')==%d.  It must be >=0 and not NA."), ans);
   return ans;
 }
 
