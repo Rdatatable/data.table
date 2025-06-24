@@ -76,7 +76,7 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
                                   "merge.data.table() received %d unknown keyword arguments which will be ignored: %s"),
                  n_dots, brackify(nm))
       } else {
-        unnamed_clause <- ngettext(n_unnamed, "%d unnamed argumentin '...'", "%d unnamed arguments in '...'")
+        unnamed_clause <- ngettext(n_dots - n_named, "%d unnamed argumentin '...'", "%d unnamed arguments in '...'")
         named_clause <- ngettext(n_named, "%d unknown keyword argument", "%d unknown keyword argument")
         warningf("merge.data.table() received %s and %s, all of which will be ignored: %s", unnamed_clause, named_clause, brackify(nm[named_idx]))
       }
