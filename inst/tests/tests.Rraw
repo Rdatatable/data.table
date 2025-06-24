@@ -21168,7 +21168,7 @@ test(2317.7, DT1[DF2, on='a', e := i.e]$e, 5)
 test(2317.8, DT1[DF2, on='a', e2 := x.a + i.e]$e2, 6)
 test(2317.9, DT1[DF2, on='a', .(e = x.a + i.e)]$e, 6)
 
-# Test for issue #6702: ensure setDT gives a user-friendly error on multi-element recursive indexes
+# Test for issue #6702
 test(2318.1, {
   data_store = list(nested = list(df_to_fix = data.frame(id = 1:3, val = letters[1:3])))
   setDT(data_store[[c("nested", "df_to_fix")]])
