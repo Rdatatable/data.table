@@ -134,7 +134,7 @@ replace_dot_alias = function(e) {
     origj = j = if (name %iscall% "$") as.character(name[[3L]]) else eval(name[[3L]], env, env)
     if (length(j) != 1L) {
       stopf(
-        "Cannot assign with a recursive index of length %d. The syntax %s is only valid when the index is length 1.",
+        "Cannot assign with a recursive index of length %d. The syntax %s is only valid when the index i is length 1.",
         length(j),
         err_msg_detail
       )
