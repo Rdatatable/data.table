@@ -78,7 +78,7 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
       } else {
         n_named <- sum(named_idx)
         unnamed_clause <- sprintf(ngettext(n_dots - n_named, "%d unnamed argument in '...'", "%d unnamed arguments in '...'"), n_dots - n_named)
-        named_clause <- sprintf(ngettext(n_named, "%d unknown keyword argument", "%d unknown keyword argument"), n_named)
+        named_clause <- sprintf(ngettext(n_named, "%d unknown keyword argument", "%d unknown keyword arguments"), n_named)
         warningf("merge.data.table() received %s and %s, all of which will be ignored: %s", unnamed_clause, named_clause, brackify(nm[named_idx]))
       }
     }
