@@ -69,12 +69,10 @@
 }
 
 \section{Join and Subset Options}{
-  See \code{\link{data.table}} for more related parameters and examples.
   \describe{
-    \item{\code{datatable.allow.cartesian}}{A logical, default \code{FALSE}. A safety feature. If \code{FALSE}, a join
-      is not allowed if the result would have more rows than the largest of the two tables.}
-    \item{\code{datatable.nomatch}}{Default \code{NA}. Controls the behavior of non-matching rows in
-      a join. Can be set to \code{0L} to drop non-matching rows.}
+    \item{\code{datatable.allow.cartesian}}{A logical, default \code{FALSE}. Controls the default value of the 
+    allow.cartesian parameter; see \code{\link{data.table}}. If the value of this parameter is FALSE, an error is raised if 
+    a join would result in more rows than the sum of the two tables, as a safeguard against an explosive Cartesian join.}
   }
 }
 
@@ -111,8 +109,8 @@
 }
 
 \seealso{
-  \code{\link{options}},
-  \code{\link{getOption}},
+  \code{\link[base]{options}},
+  \code{\link[base]{getOption}},
   \code{\link{data.table}}
 }
 

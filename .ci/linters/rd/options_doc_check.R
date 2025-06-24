@@ -1,16 +1,14 @@
 # Ensure that data.table options in code match documentation
 check_options_documentation = function(rd_file) {
-  if (!grepl("\\name{data.table-options}", rd_file, fixed = TRUE)) return(invisible())
+  if (!grepl("\\name{data.table-options}", readLines(rd_file), fixed = TRUE)) return(invisible())
 
   # Find options in R code
   walk_r_ast_for_options = function(expr) {
-    result = character()
     if (is.call(expr) && length(expr) >= 2L && identical(expr[[1L]], quote(getOption)) && is.character(e2 <- expr[[2L]]) && startsWith(e2, "datatable.")) {
-      result = e2
+      e2
     } else if (is.recursive(expr)) {
-      result = c(result, unlist(lapply(expr, walk_r_ast_for_options)))
+      unlist(lapply(expr, walk_r_ast_for_options))
     }
-    result
   }
 
   # Find options in documentation
@@ -29,8 +27,8 @@ check_options_documentation = function(rd_file) {
   code_opts = list.files("R", pattern = "\\.R$", full.names = TRUE) |>
     lapply(\(f) lapply(parse(f), walk_for_dt_options)) |>
     unlist() |>
-    unique() |>
-    setdiff("datatable.alloc")
+    unique() 
+
   doc_opts = rd_file |>
     tools::parse_Rd() |>
     walk_rd() |>
