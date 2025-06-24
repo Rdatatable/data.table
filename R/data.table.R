@@ -1248,7 +1248,7 @@ replace_dot_alias = function(e) {
               .reassign_extracted_table(
                 name, x, parent.frame(),
                 err_msg_detail = "L[[i]][,:=]",
-                err_msg_na     = NULL # Triggers internal_error
+                err_msg_na     = NULL # Shouldn't be needed; triggers internal error if so
               )
             } # TO DO: else if env$<- or list$<-
           }
