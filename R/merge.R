@@ -133,15 +133,37 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
               n_dots)
   } else {
     named_idx = nzchar(nm)
+    has_on <- "on" %chin% nm
     if (all(named_idx)) {
-      warningf(ngettext(n_dots, "merge.data.table() received %d unknown keyword argument which will be ignored: %s",
-                                "merge.data.table() received %d unknown keyword arguments which will be ignored: %s"),
-                n_dots, brackify(nm))
+      if (has_on) {
+        if (n_dots == 1L) {
+          warningf("Use by=, not on=, in merge.data.table().")
+        } else {
+          warningf(ngettext(n_dots - 1L, "Use by=, not on=, in merge.data.table(). Also received %d other unknown keyword argument which will be ignored: %s",
+                                         "Use by=, not on=, in merge.data.table(). Also received %d other unknown keyword arguments which will be ignored: %s"),
+                    n_dots - 1L, brackify(nm))
+        }
+      } else {
+        warningf(ngettext(n_dots, "merge.data.table() received %d unknown keyword argument which will be ignored: %s",
+                                  "merge.data.table() received %d unknown keyword arguments which will be ignored: %s"),
+                  n_dots, brackify(nm))
+      }
     } else {
       n_named <- sum(named_idx)
       unnamed_clause <- sprintf(ngettext(n_dots - n_named, "%d unnamed argument in '...'", "%d unnamed arguments in '...'"), n_dots - n_named)
-      named_clause <- sprintf(ngettext(n_named, "%d unknown keyword argument", "%d unknown keyword arguments"), n_named)
-      warningf("merge.data.table() received %s and %s, all of which will be ignored: %s", unnamed_clause, named_clause, brackify(nm[named_idx]))
+      if (has_on) {
+        if (n_named == 1L) {
+          warningf(ngettext(n_named - 1L, "Use by=, not on=, in merge.data.table(). Also received %d unknown argument which will be ignored.",
+                                          "Use by=, not on=, in merge.data.table(). Also received %d unknown arguments which will be ignored."),
+                   n_named - 1L)
+        } else {
+          named_clause <- sprintf(ngettext(n_named, "%d unknown keyword argument", "%d unknown keyword arguments"), n_named - 1L)
+          warningf("Use by=, not on=, in merge.data.table(). Also received %s and %s, all of which will be ignored: %s", unnamed_clause, named_clause, brackify(setdiff(nm[named_idx], "on")))
+        }
+      } else {
+        named_clause <- sprintf(ngettext(n_named, "%d unknown keyword argument", "%d unknown keyword arguments"), n_named)
+        warningf("merge.data.table() received %s and %s, all of which will be ignored: %s", unnamed_clause, named_clause, brackify(nm[named_idx]))
+      }
     }
   }
 }
