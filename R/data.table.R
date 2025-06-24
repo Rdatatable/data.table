@@ -1243,7 +1243,7 @@ replace_dot_alias = function(e) {
             } else if (.is_simple_extraction(name)) {
               .assign_in_parent(
                 name, x, parent.frame(),
-                err_msg_len = "Cannot assign to an under-allocated recursively indexed list -- L[[i]][,:=] syntax is only valid when i is length 1, but its length is %d",
+                err_msg_len = "The index for recursive assignment must be length 1, but its length is %d.",
                 err_msg_na  = NULL # Triggers internal_error for this case
               )
             } # TO DO: else if env$<- or list$<-
