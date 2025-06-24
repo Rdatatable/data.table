@@ -1244,7 +1244,7 @@ replace_dot_alias = function(e) {
             if (is.name(name)) {
               assign(as.character(name),x,parent.frame(),inherits=TRUE)
             } else if (.is_simple_extraction(name)) {
-              .reassign_extracted_table(name, x, parent.frame(), err_msg_detail = "L[[i]][,:=]")
+              .reassign_extracted_table(name, x, err_msg_detail = "L[[i]][,:=]")
             } # TO DO: else if env$<- or list$<-
           }
         }
