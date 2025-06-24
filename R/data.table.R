@@ -128,7 +128,7 @@ replace_dot_alias = function(e) {
   }
 }
 
-.reassign_extracted_table = function(name, value, env, err_msg_detail, err_msg_na) {
+.reassign_extracted_table = function(name, value, env = parent.frame(), err_msg_na, err_msg_detail = NULL) {
   k = eval(name[[2L]], env, env)
   if (is.list(k)) {
     origj = j = if (name %iscall% "$") as.character(name[[3L]]) else eval(name[[3L]], env, env)
@@ -1244,11 +1244,7 @@ replace_dot_alias = function(e) {
             if (is.name(name)) {
               assign(as.character(name),x,parent.frame(),inherits=TRUE)
             } else if (.is_simple_extraction(name)) {
-              .reassign_extracted_table(
-                name, x, parent.frame(),
-                err_msg_detail = "L[[i]][,:=]",
-                err_msg_na     = NULL # Shouldn't be needed; triggers internal error if so
-              )
+              .reassign_extracted_table(name, x, parent.frame(), err_msg_detail = "L[[i]][,:=]")
             } # TO DO: else if env$<- or list$<-
           }
         }
@@ -2993,11 +2989,7 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     assign(name, x, parent.frame(), inherits=TRUE)
   } else if (.is_simple_extraction(name)) {
     # common case is call from 'lapply()'
-    .reassign_extracted_table(
-      name, x, parent.frame(),
-      err_msg_detail = "setDT(L[[i]])",
-      err_msg_na     = "Item '%s' not found in names of input list"
-    )
+    .reassign_extracted_table(name, x, err_msg_detail = "setDT(L[[i]])", err_msg_na = "Item '%s' not found in names of input list")
   } else if (name %iscall% "get") { # #6725
     # edit 'get(nm, env)' call to be 'assign(nm, x, envir=env)'
     name = match.call(get, name)
