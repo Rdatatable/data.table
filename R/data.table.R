@@ -128,7 +128,7 @@ replace_dot_alias = function(e) {
   }
 }
 
-.reassign_extracted_table = function(name, value, err_msg_detail, env = parent.frame(2L), err_msg_na = NULL) {
+.reassign_extracted_table = function(name, value, err_msg_detail, env = parent.frame(2L)) {
   k = eval(name[[2L]], env, env)
   if (is.list(k)) {
     origj = j = if (name %iscall% "$") as.character(name[[3L]]) else eval(name[[3L]], env, env)
@@ -141,11 +141,7 @@ replace_dot_alias = function(e) {
     if (is.character(j)) {
       j = match(j, names(k))
       if (is.na(j)) {
-        if (is.null(err_msg_na)) {
-          internal_error("Attempt to do recursive set* operation to an unknown name %s", origj) # nocov
-        } else {
-          stopf(err_msg_na, origj)
-        }
+        stopf("Item '%s' not found in names of input list", origj)
       }
     }
     .Call(Csetlistelt, k, as.integer(j), value)
@@ -2988,7 +2984,7 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     assign(name, x, parent.frame(), inherits=TRUE)
   } else if (.is_simple_extraction(name)) {
     # common case is call from 'lapply()'
-    .reassign_extracted_table(name, x, err_msg_detail = "setDT(L[[i]])", err_msg_na = "Item '%s' not found in names of input list")
+    .reassign_extracted_table(name, x, err_msg_detail = "setDT(L[[i]])")
   } else if (name %iscall% "get") { # #6725
     # edit 'get(nm, env)' call to be 'assign(nm, x, envir=env)'
     name = match.call(get, name)
