@@ -31,7 +31,7 @@ options_documentation_linter = function(rd_file) {
 
   doc_opts = rd_file |>
     tools::parse_Rd() |>
-    walk_rd() |>
+    walk_rd_ast_for_options() |>
     unique()
 
   miss_in_doc = setdiff(code_opts, doc_opts)
