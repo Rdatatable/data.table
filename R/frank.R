@@ -16,11 +16,14 @@ frankv = function(x, cols=seq_along(x), order=1L, na.last=TRUE, ties.method=c("a
     if (!missing(cols) && !is.null(cols))
       stopf("x is a single vector, non-NULL 'cols' doesn't make sense")
     cols = 1L
+    x = copy(x)  # Deep copy atomic vectors
     x = as_list(x)
   } else {
     cols = colnamesInt(x, cols, check_dups=TRUE)
     if (!length(cols))
       stopf("x is a list, 'cols' can not be 0-length")
+    if (!is.data.frame(x))
+      x = copy(x)
   }
   # need to unlock for #4429
   x = .shallow(x, cols, unlock = TRUE) # shallow copy even if list..
