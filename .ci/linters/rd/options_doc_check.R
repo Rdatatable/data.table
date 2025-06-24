@@ -1,6 +1,6 @@
 # Ensure that data.table options in code match documentation
 options_documentation_linter = function(rd_file) {
-  if (!grepl("\\name{data.table-options}", readLines(rd_file), fixed = TRUE)) return(invisible())
+  if (!grepl("\\name{data.table-options}", readChar(rd_file, 100L), fixed = TRUE)) return(invisible())
 
   # Find options in R code
   walk_r_ast_for_options = function(expr) {
