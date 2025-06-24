@@ -63,12 +63,19 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   }
 
   # warn about unused arguments #2587
-  if (length(list(...))) {
-    ell = as.list(substitute(list(...)))[-1L]
-    for (n in setdiff(names(ell), "")) warningf("Unknown argument '%s' has been passed.", n)
-    unnamed_n = length(ell) - sum(nzchar(names(ell)))
-    if (unnamed_n)
-      warningf("Passed %d unknown and unnamed arguments.", unnamed_n)
+  # TODO(R >= 3.5.0): use ...length()
+  if (n_dots <- length(dots <- list(...))) {
+    if (is.null(nm <- names(dots))) {
+      warningf("%d unnamed arguments wound up in '...' and will be ignored.", n_dots)
+    } else {
+      named_idx <- nzchar(nm)
+      if (all(named_idx)) {
+        warningf("merge.data.table() received %d unknown keyword arguments which will be ignored: %s", n_dots, brackify(nm))
+      } else {
+        n_named <- sum(named_idx)
+        warningf("merge.data.table() received %d unnamed arguments in '...' and %d unknown keyword arguments, all of which will be ignored: %s", n_dots - n_named, n_named, brackify(nm[named_idx]))
+      }
+    }
   }
   # with i. prefix in v1.9.3, this goes away. Left here for now ...
   ## sidestep the auto-increment column number feature-leading-to-bug by
