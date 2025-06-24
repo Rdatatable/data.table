@@ -81,7 +81,7 @@ typedef struct freadMainArgs
   // Data buffer: a \0-terminated C string. When this parameter is given,
   // fread() will read from the provided string. This parameter is exclusive
   // with `filename`.
-  const char *input;
+  char *input;
 
   // Maximum number of rows to read, or INT64_MAX to read the entire dataset.
   // Note that even if `nrowLimit = 0`, fread() will scan a sample of rows in

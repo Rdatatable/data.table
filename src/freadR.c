@@ -87,7 +87,7 @@ SEXP freadR(
 
   if (!isString(inputArg) || LENGTH(inputArg)!=1)
     internal_error(__func__, "freadR input not a single character string: a filename or the data itself. Should have been caught at R level.");  // # nocov
-  const char *ch = (const char *)CHAR(STRING_ELT(inputArg,0));
+  char *ch = (char *)CHAR(STRING_ELT(inputArg,0));
   if (!isLogical(isFileNameArg) || LENGTH(isFileNameArg)!=1 || LOGICAL(isFileNameArg)[0]==NA_LOGICAL)
     internal_error(__func__, "freadR isFileNameArg not TRUE or FALSE");  // # nocov
   if (LOGICAL(isFileNameArg)[0]) {
