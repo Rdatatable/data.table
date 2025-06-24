@@ -13,8 +13,9 @@ options_documentation_linter = function(rd_file) {
 
   # Find options in documentation
   walk_rd_ast_for_options = function(rd_element) {
-    result = character()
     if (!is.list(rd_element)) return(character())
+
+    result = character()
     if (isTRUE(attr(rd_element, "Rd_tag") == "\\code") && length(rd_element) >= 1L) {
       content = rd_element[[1L]]
       if (is.character(content) && startsWith(content, "datatable.")) {
@@ -27,7 +28,8 @@ options_documentation_linter = function(rd_file) {
   code_opts = list.files("R", pattern = "\\.R$", full.names = TRUE) |>
     lapply(\(f) lapply(parse(f), walk_r_ast_for_options)) |>
     unlist() |>
-    unique() 
+    unique() |>
+    setdiff("datatable.nomatch") # ignore deprecated option(s)
 
   doc_opts = rd_file |>
     tools::parse_Rd() |>
