@@ -21183,3 +21183,8 @@ test(2317.6, DT1[DF1, on='a', .(d = x.a + i.d)]$d, 5)
 test(2317.7, DT1[DF2, on='a', e := i.e]$e, 5)
 test(2317.8, DT1[DF2, on='a', e2 := x.a + i.e]$e2, 6)
 test(2317.9, DT1[DF2, on='a', .(e = x.a + i.e)]$e, 6)
+
+# Test for incompatible factor joins rephrased by merge.data.table(#7048)
+DT1=data.table(a=factor('a'))
+DT2=data.table(a=1L)
+test(2318, merge(DT1, DT2, by = "a"), error = "Incompatible join types: x.a (factor) and y.a (integer). Factor columns must join to factor or character columns.")

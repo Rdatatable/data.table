@@ -85,15 +85,24 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
 
   # implement incomparables argument #2587
   if (!is.null(incomparables)) {
-    # %fin% to be replaced when #5232 is implemented/closed
-    "%fin%" = function(x, table) if (is.character(x) && is.character(table)) x %chin% table else x %in% table
-    xind = rowSums(x[, lapply(.SD, function(x) !(x %fin% incomparables)), .SDcols=by.x]) == length(by)
-    yind = rowSums(y[, lapply(.SD, function(x) !(x %fin% incomparables)), .SDcols=by.y]) == length(by)
-    # subset both so later steps still work
+    "%fin%" = function(x_val, table_val) if (is.character(x_val) && is.character(table_val)) x_val %chin% table_val else x_val %in% table_val
+    xind = rowSums(x[, lapply(.SD, function(x_col_val) !(x_col_val %fin% incomparables)), .SDcols=by.x]) == length(by.x)
+    yind = rowSums(y[, lapply(.SD, function(y_col_val) !(y_col_val %fin% incomparables)), .SDcols=by.y]) == length(by.y)
     x = x[xind]
     y = y[yind]
   }
-  dt = y[x, nomatch=if (all.x) NA else NULL, on=by, allow.cartesian=allow.cartesian]   # includes JIS columns (with a i. prefix if conflict with x names)
+
+  dt = tryCatch(
+    y[x, nomatch=if (all.x) NA else NULL, on=by, allow.cartesian=allow.cartesian],
+    dt_bmerge_incompatible_type_error = function(e) {
+      x_part_col_name = paste0("x.", e$bmerge_i_arg_col_name)
+      x_part_type     = e$bmerge_i_arg_type
+      y_part_col_name = paste0("y.", e$bmerge_x_arg_col_name)
+      y_part_type     = e$bmerge_x_arg_type
+
+      stopf("Incompatible join types: %s (%s) and %s (%s). Factor columns must join to factor or character columns.", x_part_col_name, x_part_type, y_part_col_name, y_part_type)
+    }
+  )
 
   if (all.y && nrow(y)) {  # If y does not have any rows, no need to proceed
     # Perhaps not very commonly used, so not a huge deal that the join is redone here.
