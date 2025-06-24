@@ -25,7 +25,7 @@ options_documentation_linter = function(rd_file) {
   }
 
   code_opts = list.files("R", pattern = "\\.R$", full.names = TRUE) |>
-    lapply(\(f) lapply(parse(f), walk_for_dt_options)) |>
+    lapply(\(f) lapply(parse(f), walk_r_ast_for_options)) |>
     unlist() |>
     unique() 
 
