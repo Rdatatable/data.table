@@ -139,15 +139,14 @@ replace_dot_alias = function(e) {
       )
     }
     if (is.character(j)) {
-      idx = match(j, names(k))
-      if (is.na(idx)) {
+      j = match(j, names(k))
+      if (is.na(j)) {
         if (is.null(err_msg_na)) {
           internal_error("item '%s' not found in names of list", origj) # nocov
         } else {
           stopf(err_msg_na, origj)
         }
       }
-      j = idx
     }
     .Call(Csetlistelt, k, as.integer(j), value)
   } else if (is.environment(k) && exists(as.character(name[[3L]]), k, inherits = FALSE)) {
