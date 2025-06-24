@@ -128,7 +128,7 @@ replace_dot_alias = function(e) {
   }
 }
 
-.reassign_extracted_table = function(name, value, env = parent.frame(2L), err_msg_na, err_msg_detail = NULL) {
+.reassign_extracted_table = function(name, value, err_msg_detail, env = parent.frame(2L), err_msg_na = NULL) {
   k = eval(name[[2L]], env, env)
   if (is.list(k)) {
     origj = j = if (name %iscall% "$") as.character(name[[3L]]) else eval(name[[3L]], env, env)
@@ -142,7 +142,7 @@ replace_dot_alias = function(e) {
       j = match(j, names(k))
       if (is.na(j)) {
         if (is.null(err_msg_na)) {
-          internal_error("item '%s' not found in names of list", origj) # nocov
+          internal_error("Attempt to do recursive set* operation to an unknown name %s", origj) # nocov
         } else {
           stopf(err_msg_na, origj)
         }
