@@ -66,8 +66,8 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
   # TODO(R >= 3.5.0): use ...length()
   if (n_dots <- length(dots <- list(...))) {
     if (is.null(nm <- names(dots))) {
-      warningf(ngettext(n_dots, "%d unnamed argument wound up in '...' and will be ignored.",
-                                "%d unnamed arguments wound up in '...' and will be ignored."),
+      warningf(ngettext(n_dots, "merge.data.table() received %d unnamed argument in '...' which will be ignored.",
+                                "merge.data.table() received %d unnamed arguments in '...' which will be ignored."),
                n_dots)
     } else {
       named_idx = nzchar(nm)
@@ -76,14 +76,9 @@ merge.data.table = function(x, y, by = NULL, by.x = NULL, by.y = NULL, all = FAL
                                   "merge.data.table() received %d unknown keyword arguments which will be ignored: %s"),
                  n_dots, brackify(nm))
       } else {
-        n_named = sum(named_idx)
-        n_unnamed = n_dots - n_named
-        warningf(ngettext(n_named,
-                          ngettext(n_unnamed, "merge.data.table() received %d unnamed argument in '...' and %d unknown keyword argument, all of which will be ignored: %s",
-                                              "merge.data.table() received %d unnamed arguments in '...' and %d unknown keyword argument, all of which will be ignored: %s"),
-                          ngettext(n_unnamed, "merge.data.table() received %d unnamed argument in '...' and %d unknown keyword arguments, all of which will be ignored: %s",
-                                              "merge.data.table() received %d unnamed arguments in '...' and %d unknown keyword arguments, all of which will be ignored: %s")),
-                 n_unnamed, n_named, brackify(nm[named_idx]))
+        unnamed_clause <- ngettext(n_unnamed, "%d unnamed argumentin '...'", "%d unnamed arguments in '...'")
+        named_clause <- ngettext(n_named, "%d unknown keyword argument", "%d unknown keyword argument")
+        warningf("merge.data.table() received %s and %s, all of which will be ignored: %s", unnamed_clause, named_clause, brackify(nm[named_idx]))
       }
     }
   }
