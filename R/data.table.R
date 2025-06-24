@@ -135,8 +135,7 @@ replace_dot_alias = function(e) {
     if (length(j) != 1L) {
       stopf(
         "Cannot assign with a recursive index of length %d. The syntax %s is only valid when the index i is length 1.",
-        length(j),
-        err_msg_detail
+        length(j), err_msg_detail
       )
     }
     if (is.character(j)) {
