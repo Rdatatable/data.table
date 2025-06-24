@@ -128,15 +128,12 @@ replace_dot_alias = function(e) {
   }
 }
 
-.reassign_extracted_table = function(name, value, err_msg_detail, env = parent.frame(2L)) {
+.reassign_extracted_table = function(name, value, env = parent.frame(2L)) {
   k = eval(name[[2L]], env, env)
   if (is.list(k)) {
     origj = j = if (name %iscall% "$") as.character(name[[3L]]) else eval(name[[3L]], env, env)
     if (length(j) != 1L) {
-      stopf(
-        "Cannot assign with a recursive index of length %d. The syntax %s is only valid when the index i is length 1.",
-        length(j), err_msg_detail
-      )
+      stopf("Invalid set* operation on a recursive index L[[i]] where i has length %d. Chain [[ instead.", length(j))
     }
     if (is.character(j)) {
       j = match(j, names(k))
@@ -1239,7 +1236,7 @@ replace_dot_alias = function(e) {
             if (is.name(name)) {
               assign(as.character(name),x,parent.frame(),inherits=TRUE)
             } else if (.is_simple_extraction(name)) {
-              .reassign_extracted_table(name, x, err_msg_detail = "L[[i]][,:=]")
+              .reassign_extracted_table(name, x)
             } # TO DO: else if env$<- or list$<-
           }
         }
@@ -2984,7 +2981,7 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     assign(name, x, parent.frame(), inherits=TRUE)
   } else if (.is_simple_extraction(name)) {
     # common case is call from 'lapply()'
-    .reassign_extracted_table(name, x, err_msg_detail = "setDT(L[[i]])")
+    .reassign_extracted_table(name, x)
   } else if (name %iscall% "get") { # #6725
     # edit 'get(nm, env)' call to be 'assign(nm, x, envir=env)'
     name = match.call(get, name)
