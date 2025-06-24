@@ -15880,7 +15880,7 @@ test(2074.03, data.table(grade=c(50L, 91L, 95L, 51L, 89L))[ , .N, by=evaluate(gr
 ## error: use recursive character list indexing to assign when also doing alloc.col()
 opt = options(datatable.alloccol=1L)
 l = list(foo = list(bar = data.table(a = 1:3, b = 4:6)))
-test(2074.04, l[[c('foo', 'bar')]][ , (letters) := 16:18], error = 'The index for recursive assignment must be length 1')
+test(2074.04, l[[c('foo', 'bar')]][ , (letters) := 16:18], error = 'Cannot assign with a recursive index of length')
 options(opt)
 ## alloc.col when using 0-truelength j assigning to a subset
 DT = data.table(a=1)
@@ -21172,4 +21172,4 @@ test(2317.9, DT1[DF2, on='a', .(e = x.a + i.e)]$e, 6)
 test(2318.1, {
   data_store = list(nested = list(df_to_fix = data.frame(id = 1:3, val = letters[1:3])))
   setDT(data_store[[c("nested", "df_to_fix")]])
-}, error = "index for recursive assignment must be length 1")
+}, error = "Cannot assign with a recursive index of length")

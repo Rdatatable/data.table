@@ -128,12 +128,16 @@ replace_dot_alias = function(e) {
   }
 }
 
-.assign_in_parent = function(name, value, env, err_msg_len, err_msg_na) {
+.assign_in_parent = function(name, value, env, err_msg_detail, err_msg_na) {
   k = eval(name[[2L]], env, env)
   if (is.list(k)) {
     origj = j = if (name[[1L]] == "$") as.character(name[[3L]]) else eval(name[[3L]], env, env)
     if (length(j) != 1L) {
-      stopf(err_msg_len, length(j))
+      stopf(
+        "Cannot assign with a recursive index of length %d. The syntax %s is only valid when the index is length 1.",
+        length(j),
+        err_msg_detail
+      )
     }
     if (is.character(j)) {
       idx = match(j, names(k))
@@ -1243,8 +1247,8 @@ replace_dot_alias = function(e) {
             } else if (.is_simple_extraction(name)) {
               .assign_in_parent(
                 name, x, parent.frame(),
-                err_msg_len = "The index for recursive assignment must be length 1, but its length is %d.",
-                err_msg_na  = NULL # Triggers internal_error for this case
+                err_msg_detail = "L[[i]][,:=]",
+                err_msg_na     = NULL # Triggers internal_error
               )
             } # TO DO: else if env$<- or list$<-
           }
@@ -2992,8 +2996,8 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     # common case is call from 'lapply()'
     .assign_in_parent(
       name, x, parent.frame(),
-      err_msg_len = "The index for recursive assignment must be length 1, but its length is %d.",
-      err_msg_na  = "Item '%s' not found in names of input list"
+      err_msg_detail = "setDT(L[[i]])",
+      err_msg_na     = "Item '%s' not found in names of input list"
     )
   } else if (name %iscall% "get") { # #6725
     # edit 'get(nm, env)' call to be 'assign(nm, x, envir=env)'
