@@ -117,6 +117,9 @@ static void Field(FieldParseContext *ctx);
 #define IGNORE_BUMP(x) abs(x)
 #define TOGGLE_BUMP(x) (-x)
 
+#if !defined(__STDC_VERSION__) || __STDC_VERSION__ < 202311L
+#  define typeof(x) __typeof__(x) // nonstandard but widely supported extension
+#endif
 #define OFFSET_POINTER(x, offset) ((typeof(x))((char*)x + (offset)))
 
 //=================================================================================================
