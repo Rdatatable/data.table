@@ -128,7 +128,7 @@ replace_dot_alias = function(e) {
   }
 }
 
-.assign_in_parent = function(name, value, env, err_msg_detail, err_msg_na) {
+.reassign_extracted_table = function(name, value, env, err_msg_detail, err_msg_na) {
   k = eval(name[[2L]], env, env)
   if (is.list(k)) {
     origj = j = if (name[[1L]] == "$") as.character(name[[3L]]) else eval(name[[3L]], env, env)
@@ -1245,7 +1245,7 @@ replace_dot_alias = function(e) {
             if (is.name(name)) {
               assign(as.character(name),x,parent.frame(),inherits=TRUE)
             } else if (.is_simple_extraction(name)) {
-              .assign_in_parent(
+              .reassign_extracted_table(
                 name, x, parent.frame(),
                 err_msg_detail = "L[[i]][,:=]",
                 err_msg_na     = NULL # Triggers internal_error
@@ -2994,7 +2994,7 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     assign(name, x, parent.frame(), inherits=TRUE)
   } else if (.is_simple_extraction(name)) {
     # common case is call from 'lapply()'
-    .assign_in_parent(
+    .reassign_extracted_table(
       name, x, parent.frame(),
       err_msg_detail = "setDT(L[[i]])",
       err_msg_na     = "Item '%s' not found in names of input list"
