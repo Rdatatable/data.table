@@ -15879,8 +15879,12 @@ test(2074.03, data.table(grade=c(50L, 91L, 95L, 51L, 89L))[ , .N, by=evaluate(gr
      data.table(evaluate=c('F', 'A', 'B'), N=c(2L, 2L, 1L)))
 ## error: use recursive character list indexing to assign when also doing alloc.col()
 opt = options(datatable.alloccol=1L)
-l = list(foo = list(bar = data.table(a = 1:3, b = 4:6)))
-test(2074.04, l[[c('foo', 'bar')]][ , (letters) := 16:18], error = 'under-allocated recursively indexed list')
+l = list(foo=list(bar=data.frame(a=1:3, b=4:6)))
+test(2074.041, setDT(l[[c('foo', 'bar')]]), error='Invalid set* operation on a recursive index L[[i]]')
+setDT(l[['foo']][['bar']])
+test(2074.042, is.data.table(l[[c('foo', 'bar')]]))
+l = list(foo=list(bar=data.table(a=1:3, b=4:6)))
+test(2074.043, l[[c('foo', 'bar')]][ , (letters) := 16:18], error='Invalid set* operation on a recursive index L[[i]]')
 options(opt)
 ## alloc.col when using 0-truelength j assigning to a subset
 DT = data.table(a=1)
@@ -17981,14 +17985,26 @@ test(2229.6, fread(testDir("multi-file.zip")), error="Compressed files containin
 x = data.frame(k1 = c(NA,NA,3,4,5), k2 = c(1,NA,NA,4,5), data = 1:5)
 y = data.frame(k1 = c(NA,2,NA,4,5), k2 = c(NA,NA,3,4,5), data = 1:5)
 DT = as.data.table(x)
-test(2230.1, setDF(merge(DT, y, by="k2", incomparables=NA)),         merge(x, y, by="k2", incomparables=NA))
-test(2230.2, setDF(merge(DT, y, by="k2", incomparables=c(NA,4))),    merge(x, y, by="k2", incomparables=c(NA,4)))
-test(2230.3, setDF(merge(DT, y, by="k2", incomparables=c(4,5))),     merge(x, y, by="k2", incomparables=c(4,5)))
-test(2230.4, setDF(merge(DT, y, by="k2", incomparables=c(1, NA, 4, 5))), merge(x, y, by="k2", incomparables=c(1,NA,4,5)))
-test(2230.5, setDF(merge(DT, y, by="k2", incomparables=c(NA, 3, 4, 5))), merge(x, y, by="k2", incomparables=c(NA,3,4,5)))
-test(2230.6, merge(DT, y, by="k2", unk=1), merge(DT, y, by="k2"), warning="Unknown argument 'unk' has been passed.")
-test(2230.7, merge(DT, y, by="k2", NULL, NULL, FALSE, FALSE, FALSE, TRUE, c(".x", ".y"), TRUE, getOption("datatable.allow.cartesian"), NULL, 1L),
-             merge(DT, y, by="k2"), warning=c("Supplied both `by` and `by.x`/`by.y`. `by` argument will be ignored.", "Passed 1 unknown and unnamed arguments."))
+test(2230.01, setDF(merge(DT, y, by="k2", incomparables=NA)),         merge(x, y, by="k2", incomparables=NA))
+test(2230.02, setDF(merge(DT, y, by="k2", incomparables=c(NA,4))),    merge(x, y, by="k2", incomparables=c(NA,4)))
+test(2230.03, setDF(merge(DT, y, by="k2", incomparables=c(4,5))),     merge(x, y, by="k2", incomparables=c(4,5)))
+test(2230.04, setDF(merge(DT, y, by="k2", incomparables=c(1, NA, 4, 5))), merge(x, y, by="k2", incomparables=c(1,NA,4,5)))
+test(2230.05, setDF(merge(DT, y, by="k2", incomparables=c(NA, 3, 4, 5))), merge(x, y, by="k2", incomparables=c(NA,3,4,5)))
+test(2230.06, merge(DT, y, by="k2", unk=1), merge(DT, y, by="k2"), warning="1 unknown keyword argument which will be ignored: [unk]")
+test(2230.07, merge(DT, y, by="k2", NULL, NULL, FALSE, FALSE, FALSE, TRUE, c(".x", ".y"), TRUE, getOption("datatable.allow.cartesian"), NULL, 1L),
+              merge(DT, y, by="k2"), warning=c("Supplied both `by` and `by.x`/`by.y`. `by` argument will be ignored.", "1 unnamed argument in '...' which will be ignored."))
+test(2230.08, merge(DT, y, by="k2", unk1=1, unk2=2), merge(DT, y, by="k2"), warning="2 unknown keyword arguments which will be ignored: [unk1, unk2]")
+test(2230.09, merge(DT, y, by="k2", NULL, NULL, FALSE, FALSE, FALSE, TRUE, c(".x", ".y"), TRUE, getOption("datatable.allow.cartesian"), NULL, 1L, 2L),
+              merge(DT, y, by="k2"), warning=c("Supplied both `by` and `by.x`/`by.y`. `by` argument will be ignored.", "2 unnamed arguments in '...' which will be ignored."))
+test(2230.10, merge(DT, y, by="k2", NULL, NULL, FALSE, FALSE, FALSE, TRUE, c(".x", ".y"), TRUE, getOption("datatable.allow.cartesian"), NULL, unk=1L, 2L),
+              merge(DT, y, by="k2"), warning=c("Supplied both `by` and `by.x`/`by.y`. `by` argument will be ignored.", "1 unnamed argument .*1 unknown keyword argument,.*\\[unk\\]"))
+test(2230.11, merge(DT, y, by="k2", NULL, NULL, FALSE, FALSE, FALSE, TRUE, c(".x", ".y"), TRUE, getOption("datatable.allow.cartesian"), NULL, unk1=1L, unk2=2L, 3L),
+              merge(DT, y, by="k2"), warning=c("Supplied both `by` and `by.x`/`by.y`. `by` argument will be ignored.", "1 unnamed argument .*2 unknown keyword arguments.*\\[unk1, unk2\\]"))
+test(2230.12, merge(DT, y, by="k2", NULL, NULL, FALSE, FALSE, FALSE, TRUE, c(".x", ".y"), TRUE, getOption("datatable.allow.cartesian"), NULL, unk=1L, 2L, 3L),
+              merge(DT, y, by="k2"), warning=c("Supplied both `by` and `by.x`/`by.y`. `by` argument will be ignored.", "2 unnamed arguments.*1 unknown keyword argument,.*\\[unk\\]"))
+test(2230.13, merge(DT, y, by="k2", NULL, NULL, FALSE, FALSE, FALSE, TRUE, c(".x", ".y"), TRUE, getOption("datatable.allow.cartesian"), NULL, unk1=1L, unk2=2L, 3L, 4L),
+              merge(DT, y, by="k2"), warning=c("Supplied both `by` and `by.x`/`by.y`. `by` argument will be ignored.", "2 unnamed arguments.*2 unknown keyword arguments.*\\[unk1, unk2\\]"))
+
 
 # weighted.mean GForce optimized, #3977
 old = options(datatable.optimize=1L)
