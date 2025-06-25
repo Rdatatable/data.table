@@ -2982,7 +2982,7 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
   } else if (.is_simple_extraction(name)) {
     # common case is call from 'lapply()'
     .reassign_extracted_table(name, x)
-  } else if (name %iscall% "get") { # #6725
+  } else if (name %iscall% c("get", "get0")) { # #6725
     # edit 'get(nm, env)' call to be 'assign(nm, x, envir=env)'
     name = match.call(get, name)
     name[[1L]] = quote(assign)
