@@ -71,7 +71,7 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
   }
   if (!is.null(cmd)) {
     tmpFile = tempfile(tmpdir=tmpdir)
-    on.exit(unlink(tmpFile), add=TRUE)  
+    on.exit(unlink(tmpFile), add=TRUE)
     status = suppressWarnings((if (.Platform$OS.type == "unix") system else shell)(paste0('(', cmd, ') > ', tmpFile)))
     if (status != 0) {
       stopf("External command failed with exit code %d. This can happen when the disk is full in the temporary directory ('%s'). See ?fread for the tmpdir argument.", status, tmpdir)
@@ -121,7 +121,7 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
         stopf("To read %s files directly, fread() requires 'R.utils' package which cannot be found. Please install 'R.utils' using 'install.packages('R.utils')'.", if (w<=2L || gzsig) "gz" else "bz2") # nocov
       FUN = if (w<=2L || gzsig) gzfile else bzfile
       decompFile = tempfile(tmpdir=tmpdir)
-      on.exit(unlink(decompFile), add=TRUE)  
+      on.exit(unlink(decompFile), add=TRUE)
       tryCatch({
         R.utils::decompressFile(file, decompFile, ext=NULL, FUN=FUN, remove=FALSE)
       }, error = function(e) {
