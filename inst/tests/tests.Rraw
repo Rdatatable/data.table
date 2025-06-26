@@ -21183,3 +21183,11 @@ test(2317.6, DT1[DF1, on='a', .(d = x.a + i.d)]$d, 5)
 test(2317.7, DT1[DF2, on='a', e := i.e]$e, 5)
 test(2317.8, DT1[DF2, on='a', e2 := x.a + i.e]$e2, 6)
 test(2317.9, DT1[DF2, on='a', .(e = x.a + i.e)]$e, 6)
+
+#6864
+ds = copy(datasets::iris)
+x = setDT(get("ds"))
+test(2319.1, !is.null(attr(ds, ".internal.selfref")))
+x = setDT(get0("ds"))
+test(2319.2, !is.null(attr(ds, ".internal.selfref")))
+test(2319.3, identical(ds, x))
