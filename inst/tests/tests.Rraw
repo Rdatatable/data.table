@@ -21185,9 +21185,12 @@ test(2317.8, DT1[DF2, on='a', e2 := x.a + i.e]$e2, 6)
 test(2317.9, DT1[DF2, on='a', .(e = x.a + i.e)]$e, 6)
 
 #6864
-ds = copy(datasets::iris)
-x = setDT(get("ds"))
-test(2319.1, !is.null(attr(ds, ".internal.selfref")))
-x = setDT(get0("ds"))
-test(2319.2, !is.null(attr(ds, ".internal.selfref")))
-test(2319.3, identical(ds, x))
+# issue #6864, test that setDT(get0(...)) preserves .internal.selfref with a simple dataset
+dt = data.frame(a = 1:3, b = letters[1:3])
+ds_get = copy(dt)
+x_get = setDT(get("ds_get"))
+test(2319.1, !is.null(attr(ds_get, ".internal.selfref")))
+ds_get0 = copy(dt)
+x_get0 = setDT(get0("ds_get0"))
+test(2319.2, !is.null(attr(ds_get0, ".internal.selfref")))
+test(2319.3, identical(ds_get0, x_get0))
