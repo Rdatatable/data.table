@@ -231,6 +231,12 @@ A \code{data.table} is a \code{list} of vectors, just like a \code{data.frame}. 
 
 See the \code{see also} section for the several other \emph{methods} that are available for operating on data.tables efficiently.
 
+
+A \code{data.table} supports joins on columns of type \code{complex}. The join logic is as follows:
+\itemize{
+    \item If a \code{complex} column contains values with only a zero imaginary part (e.g., \code{10+0i}), it is treated as a \code{double} for the join, allowing it to match with \code{integer} and \code{double} columns successfully.
+    \item If any value in a \code{complex} join column has a non-zero imaginary part (e.g., \code{10+2i}), the join will stop with an error, as there is no defined way to sort or match such a number against a real number.
+}
 }
 \references{
 \url{https://r-datatable.com} (\code{data.table} homepage)\cr
@@ -440,6 +446,27 @@ DT[, c(.(y=max(y)), lapply(.SD, min)), by=rleid(v), .SDcols=v:b]
 
 # Support guide and links:
 # https://github.com/Rdatatable/data.table/wiki/Support
+
+# Example: Joining with a system that uses complex IDs (#6627)
+
+# Case 1: Success - Joining a "clean" set of products.
+# Here, `products_clean` only contains IDs with zero imaginary parts.
+products_clean = data.table(id = c(101+0i, 103+0i), name = c("widget", "thingamajig"))
+sales = data.table(product_id = c(101, 103), units_sold = c(50, 75))
+
+# This join works because the 'id' column in `products_clean` has no non-zero imaginary parts.
+products_clean[sales, on = .(id = product_id), nomatch = 0]
+
+# Case 2: Error - Joining a list that includes "bad" IDs.
+# Here, `products_all` contains an ID with a non-zero imaginary part (102+1i).
+products_all = data.table(id = c(101+0i, 102+1i, 103+0i), name = c("widget", "gadget", "thingamajig"))
+
+# The join fails because the entire 'id' column is checked first.
+try(products_all[sales, on = .(id = product_id), nomatch = 0])
+
+\dontshow{
+  rm(products_clean, sales, products_all)
+}
 
 \dontrun{
 if (interactive()) {
