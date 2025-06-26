@@ -5,7 +5,7 @@
 [![CRAN status](https://badges.cranchecks.info/flavor/release/data.table.svg)](https://cran.r-project.org/web/checks/check_results_data.table.html)
 [![R-CMD-check](https://github.com/Rdatatable/data.table/workflows/R-CMD-check/badge.svg)](https://github.com/Rdatatable/data.table/actions)
 [![Codecov test coverage](https://codecov.io/github/Rdatatable/data.table/coverage.svg?branch=master)](https://app.codecov.io/github/Rdatatable/data.table?branch=master)
-[![GitLab CI build status](https://gitlab.com/Rdatatable/data.table/badges/master/pipeline.svg)](https://gitlab.com/Rdatatable/data.table/-/pipelines)
+[![GitLab CI build status](https://gitlab.com/Rdatatable/data.table/badges/master/pipeline.svg)](https://rdatatable.gitlab.io/data.table/web/checks/check_results_data.table.html)
 [![downloads](https://cranlogs.r-pkg.org/badges/data.table)](https://www.rdocumentation.org/trends)
 [![CRAN usage](https://jangorecki.gitlab.io/rdeps/data.table/CRAN_usage.svg?sanitize=true)](https://gitlab.com/jangorecki/rdeps)
 [![BioC usage](https://jangorecki.gitlab.io/rdeps/data.table/BioC_usage.svg?sanitize=true)](https://gitlab.com/jangorecki/rdeps)
