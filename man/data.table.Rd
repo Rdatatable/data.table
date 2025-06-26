@@ -449,7 +449,7 @@ DT[, c(.(y=max(y)), lapply(.SD, min)), by=rleid(v), .SDcols=v:b]
 
 # Example: Joining with a system that uses complex IDs (#6627)
 
-# Case 1: Success - Joining a "clean" set of products.
+# Case 1: Joining a "clean" set of products.
 # Here, `products_clean` only contains IDs with zero imaginary parts.
 products_clean = data.table(id = c(101+0i, 103+0i), name = c("widget", "thingamajig"))
 sales = data.table(product_id = c(101, 103), units_sold = c(50, 75))
@@ -457,7 +457,7 @@ sales = data.table(product_id = c(101, 103), units_sold = c(50, 75))
 # This join works because the 'id' column in `products_clean` has no non-zero imaginary parts.
 products_clean[sales, on = .(id = product_id), nomatch = 0]
 
-# Case 2: Error - Joining a list that includes "bad" IDs.
+# Case 2: Joining a list that includes "bad" IDs.
 # Here, `products_all` contains an ID with a non-zero imaginary part (102+1i).
 products_all = data.table(id = c(101+0i, 102+1i, 103+0i), name = c("widget", "gadget", "thingamajig"))
 
