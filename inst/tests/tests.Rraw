@@ -15746,7 +15746,7 @@ DT1 = data.table(a = sample(3L, 15L, TRUE) + .1, b=sample(c(TRUE, FALSE, NA), 15
 DT2 = data.table(a = sample(3L, 6L, TRUE) + .1, b=sample(c(TRUE, FALSE, NA), 6L, TRUE))
 test(2069.32, DT1[DT2, .(y = sum(b, na.rm=TRUE)), by=.EACHI, on=c(a = 'a', b="b")]$y, rep(0L, 6L))
 DT = data.table(z = 1i)
-test(2069.33, DT[DT, on = 'z'], error = "Type 'complex' is not supported for joining/merging")
+test(2069.33, DT[DT, on = 'z'], error = "Joining on complex numbers with non-zero imaginary part is not supported. Column: i.z")
 
 # forder verbose message when !isReallyReal Date, #1738
 date_dbl = as.Date(as.double(seq(as.Date("2015-01-01"), as.Date("2015-01-05"), by="days")), origin="1970-01-01")
@@ -17330,7 +17330,7 @@ test(2182.75, melt(data.table(a=10, b=20), measure.vars=list(n="a"), variable.fa
 measurev = function(cols)cols # user-defined function for computing measure.vars, same name as data.table::measure but user-defined version should be used.
 test(2183.00001, melt(DT.wide, measure.vars=measurev()), data.table(variable=factor(c("a2","b1","b2")), value=c(2,1,2)))
 measurev = list("foo", "bar")#measurev below should not use this since it is not a function.
-test(2183.00002, melt(DTid, measure.vars=measurev(list(value.name=NULL, num=as.complex), pattern="([ab])([12])")), error="Type 'complex' is not supported for joining/merging")
+test(2183.00002, melt(DTid, measure.vars=measurev(list(value.name=NULL, num=as.complex), pattern="([ab])([12])")), error="variable_table does not support column type 'complex' for column 'num'")
 test(2183.00004, melt(DTid, measure.vars=measurev(list(value.name=NULL, istr=NULL), pattern="([ab])([12])"))[order(b)], data.table(id=1, istr=paste(c(1,2)), a=c(NA, 2), b=c(1,2)))
 test(2183.00005, melt(DTid, measure.vars=measurev(list(column=NULL, istr=NULL), pattern="([ab])([12])", multiple.keyword="column"))[order(b)], data.table(id=1, istr=paste(c(1,2)), a=c(NA, 2), b=c(1,2)))#same computation but different multiple.keyword
 iris.dt = data.table(iris)
@@ -17353,7 +17353,7 @@ test(2183.00060, melt(DTid, measure.vars=measurev(list(letter=myfac, value.name=
 measure = function(cols)cols # user-defined function for computing measure.vars, same name as data.table::measure but user-defined version should be used.
 test(2183.01, melt(DT.wide, measure.vars=measure()), data.table(variable=factor(c("a2","b1","b2")), value=c(2,1,2)))
 measure = list("foo", "bar")#measure below should not use this since it is not a function.
-test(2183.02, melt(DTid, measure.vars=measure(value.name, num=as.complex, pattern="([ab])([12])")), error="Type 'complex' is not supported for joining/merging")
+test(2183.02, melt(DTid, measure.vars=measure(value.name, num=as.complex, pattern="([ab])([12])")), error="variable_table does not support column type 'complex' for column 'num'")
 test(2183.03, melt(DTid, measure.vars=structure(list(a=c(NA,"a2"),b=c("b1","b2")), variable_table=data.table(number=as.complex(1:2)))), error="variable_table does not support column type 'complex' for column 'number'")
 test(2183.04, melt(DTid, measure.vars=measure(value.name, istr, pattern="([ab])([12])"))[order(b)], data.table(id=1, istr=paste(c(1,2)), a=c(NA, 2), b=c(1,2)))
 test(2183.05, melt(DTid, measure.vars=measure(column, istr, pattern="([ab])([12])", multiple.keyword="column"))[order(b)], data.table(id=1, istr=paste(c(1,2)), a=c(NA, 2), b=c(1,2)))#same computation but different multiple.keyword
@@ -21183,3 +21183,41 @@ test(2317.6, DT1[DF1, on='a', .(d = x.a + i.d)]$d, 5)
 test(2317.7, DT1[DF2, on='a', e := i.e]$e, 5)
 test(2317.8, DT1[DF2, on='a', e2 := x.a + i.e]$e2, 6)
 test(2317.9, DT1[DF2, on='a', .(e = x.a + i.e)]$e, 6)
+
+#6627 
+test(2318.1, {
+  DT1 = data.table(a = complex(real = 1:3, imaginary = 0), x = letters[1:3])
+  DT2 = data.table(a = 2L)
+  res = DT1[DT2, on = "a"]
+  identical(res$x, "b") && is.numeric(res$a) && res$a == 2
+})
+test(2318.2, {
+  DT1 = data.table(a = complex(real = c(1, 2, 3), imaginary = 0), x = letters[1:3])
+  DT2 = data.table(a = c(2.0, 3.0))  # double
+  res = DT1[DT2, on = "a"]
+  identical(res$x, c("b", "c")) && typeof(res$a) == "double"
+}) 
+test(2318.3, {
+  DT1 = data.table(a = c(1L, 2L, 3L))  # integer
+  DT2 = data.table(a = complex(real = c(2, 3), imaginary = 0), y = letters[1:2])
+  res = DT1[DT2, on = "a"]
+  identical(res$y, c("a", "b")) && typeof(res$a) == "integer"
+})
+test(2318.4, {
+  DT1 = data.table(a = complex(real = c(1, 2, 3), imaginary = 0), x = letters[1:3])
+  DT2 = data.table(a = complex(real = c(2, 3), imaginary = 0))
+  res = DT1[DT2, on = "a"]
+  identical(res$x, c("b", "c")) && typeof(res$a) == "complex"
+})
+test(2318.5, {
+  DT1 = data.table(a = complex(real = c(1, 2), imaginary = c(0, 1)), x = letters[1:2])
+  DT2 = data.table(a = 2L)
+  msg = tryCatch(DT1[DT2, on = "a"], error = function(e) e$message)
+  grepl("non-zero imaginary part", msg)
+})
+test(2318.6, {
+  DT1 = data.table(a = 2L)
+  DT2 = data.table(a = complex(real = c(1, 2), imaginary = c(0, 1)), y = c("a", "b"))
+  msg = tryCatch(DT1[DT2, on = "a"], error = function(e) e$message)
+  grepl("non-zero imaginary part", msg)
+})
