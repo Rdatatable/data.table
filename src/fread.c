@@ -1501,7 +1501,8 @@ int freadMain(freadMainArgs _args) {
   if (eof > sof && (eof[-1] == '\x1A' || eof[-1] == '\0')) {
     char c = eof[-1];
     while (eof > sof && eof[-1] == c) eof--;
-    if (verbose) DTPRINT(_("  Last byte(s) of input found to be %s and removed.\n"), c ? "0x1A (Ctrl+Z)" : "0x00 (NUL)");
+    if (verbose) DTPRINT(_("  Last byte(s) of input found to be %s and removed.\n"),
+                         c ? "0x1A (Ctrl+Z)" : "0x00 (NUL)");
   }
   if (eof<=sof) STOP(_("Input is empty or only contains BOM or terminal control characters"));
   }
@@ -1606,7 +1607,8 @@ int freadMain(freadMainArgs _args) {
     pos = ch;
     ch = sof;
     while (ch < pos) row1line += (*ch++ == '\n');
-    if (verbose) DTPRINT(_("Found skip='%s' on line %d. Taking this to be header row or first row of data.\n"), args.skipString, row1line);
+    if (verbose) DTPRINT(_("Found skip='%s' on line %d. Taking this to be header row or first row of data.\n"),
+                         args.skipString, row1line);
     ch = pos;
   }
   else if (args.skipNrow >= 0) {
