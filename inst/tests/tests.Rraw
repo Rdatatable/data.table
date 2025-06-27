@@ -21198,6 +21198,6 @@ test(2320.1, fread(cmd="false"), error="External command failed with exit code")
 if (test_R.utils) {
   corrupted_data <- c(0x1F, 0x8B, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, rep(0xFF, 50), 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF)
   writeBin(as.raw(corrupted_data), f<-tempfile(fileext=".csv.gz"))
-  test(2320.2, fread(f), error="decompressFile.*failed|failed.*decompress")
+  test(2320.2, fread(f), error="R.utils::decompressFile failed to decompress") # Compressed file decompression error handling
   unlink(f)
 }
