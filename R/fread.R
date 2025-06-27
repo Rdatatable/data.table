@@ -72,7 +72,7 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
   if (!is.null(cmd)) {
     tmpFile = tempfile(tmpdir=tmpdir)
     on.exit(unlink(tmpFile), add=TRUE)
-    status = suppressWarnings((if (.Platform$OS.type == "unix") system else shell)(paste0('(', cmd, ') > ', tmpFile)))
+    status = (if (.Platform$OS.type == "unix") system else shell)(paste0('(', cmd, ') > ', tmpFile))
     if (status != 0) {
       stopf("External command failed with exit code %d. This can happen when the disk is full in the temporary directory ('%s'). See ?fread for the tmpdir argument.", status, tmpdir)
     }
@@ -123,11 +123,11 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
       decompFile = tempfile(tmpdir=tmpdir)
       on.exit(unlink(decompFile), add=TRUE)
       tryCatch({
-        R.utils::decompressFile(file, decompFile, ext=NULL, FUN=FUN, remove=FALSE)
+        R.utils::decompressFile(file, decompFile, ext=NULL, FUN=FUN, remove=FALSE)   # ext is not used by decompressFile when destname is supplied, but isn't optional
       }, error = function(e) {
-        stopf("Failed to decompress file '%s'. This can happen when the disk is full in the temporary directory ('%s'). See ?fread for the tmpdir argument.", file, tmpdir)
+        stopf("R.utils::decompressFile failed to decompress file '%s':\n  %s\n. This can happen when the disk is full in the temporary directory ('%s'). See ?fread for the tmpdir argument.", file, conditionMessage(e), tmpdir)
       })
-      file = decompFile
+      file = decompFile   # don't use 'tmpFile' symbol again, as tmpFile might be the http://domain.org/file.csv.gz download
     }
     file = enc2native(file) # CfreadR cannot handle UTF-8 if that is not the native encoding, see #3078.
 

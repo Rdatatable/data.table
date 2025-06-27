@@ -21183,3 +21183,11 @@ test(2317.6, DT1[DF1, on='a', .(d = x.a + i.d)]$d, 5)
 test(2317.7, DT1[DF2, on='a', e := i.e]$e, 5)
 test(2317.8, DT1[DF2, on='a', e2 := x.a + i.e]$e2, 6)
 test(2317.9, DT1[DF2, on='a', .(e = x.a + i.e)]$e, 6)
+
+# Improved fread error handling for cmd exe and decompression #5415
+test(2318.1, fread(cmd="false"), error="External command failed") # external command execution error handling
+if (test_R.utils) {
+  writeBin(c(0x1F, 0x8B, 0xFF, 0xFF), f<-tempfile(fileext=".csv.gz"))
+  test(2318.2, fread(f), error="Failed to decompress") # Compressed file decompression error handling
+  unlink(f)
+}
