@@ -1822,7 +1822,7 @@ int freadMain(freadMainArgs _args) {
     if (!fill && tt != ncol) INTERNAL_STOP("first line has field count %d but expecting %d", tt, ncol); // # nocov
     if (verbose) {
       DTPRINT(_("  Detected %d columns on line %d. This line is either column names or first data row. Line starts as: <<%s>>\n"),
-              tt, row1line, strlim(pos, 30));
+              tt, row1line, strlim(pos, (char[500]) {}, 30));
       DTPRINT(_("  Quote rule picked = %d\n"), quoteRule);
       DTPRINT(_("  fill=%s and the most number of columns found is %d\n"), fill ? "true" : "false", ncol);
     }
