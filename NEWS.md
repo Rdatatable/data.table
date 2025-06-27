@@ -198,6 +198,8 @@ rowwiseDT(
 
 20. Fixed a memory issue causing segfaults in `forder`, [#6797](https://github.com/Rdatatable/data.table/issues/6797). Thanks @dkutner for the report and @MichaelChirico for the fix.
 
+21. `setDT(get0('var'))` now correctly modifies `var` by reference, consistent with the long-standing behavior of `setDT(get('var'))`, [#6864](https://github.com/Rdatatable/data.table/issues/6864). Thanks to @rikivillalba for the report and @venom1204 for the fix.
+
 ### NOTES
 
 1. There is a new vignette on joins! See `vignette("datatable-joins")`. Thanks to Angel Feliz for authoring it! Feedback welcome. This vignette has been highly requested since 2017: [#2181](https://github.com/Rdatatable/data.table/issues/2181).

@@ -1,6 +1,6 @@
 # data.table continuous integration and deployment
 
-On each Pull Request opened in GitHub we run GitHub Actions test jobs to provide prompt feedback about the status of PR. Our more thorough main CI pipeline runs nightly on GitLab CI. GitLab repository automatically mirrors our GitHub repository and runs pipeline on `master` branch every night. It tests more environments and different configurations. It publishes a variety of artifacts such as our [homepage](https://rdatatable.gitlab.io/data.table/) and [CRAN-like website for dev version](https://rdatatable.gitlab.io/data.table/web/packages/data.table/index.html), including windows binaries for the dev version.
+On each Pull Request opened in GitHub we run GitHub Actions test jobs to provide prompt feedback about the status of PR. Our more thorough main CI pipeline runs nightly on GitLab CI. In addition to branches pushed directly, the GitLab repository automatically mirrors our GitHub repository and runs pipeline on the `master` branch every night. It tests more environments and different configurations. It publishes a variety of artifacts such as our [homepage](https://rdatatable.gitlab.io/data.table/) and [CRAN-like website for dev version](https://rdatatable.gitlab.io/data.table/web/packages/data.table/index.html), including windows binaries for the dev version.
 
 ## Environments
 

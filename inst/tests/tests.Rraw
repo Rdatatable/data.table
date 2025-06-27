@@ -21184,6 +21184,15 @@ test(2317.7, DT1[DF2, on='a', e := i.e]$e, 5)
 test(2317.8, DT1[DF2, on='a', e2 := x.a + i.e]$e2, 6)
 test(2317.9, DT1[DF2, on='a', .(e = x.a + i.e)]$e, 6)
 
+#6864
+dt_get = data.frame(a = 1:3, b = letters[1:3])
+setDT(get("dt_get"))
+test(2319.1, !is.null(attr(dt_get, ".internal.selfref")))
+
+dt_get0 = data.frame(a = 1:3, b = letters[1:3])
+setDT(get0("dt_get0"))
+test(2319.2, !is.null(attr(dt_get0, ".internal.selfref")))
+
 # Improved fread error handling for cmd exe and decompression #5415
 test(2318.1, fread(cmd="false"), error="External command failed") # external command execution error handling
 if (test_R.utils) {
