@@ -23,6 +23,12 @@ config.log
 .Rproj.user
 data.table.Rproj
 
+# VScode IDE files
+.vscode
+
+# zed editor
+.zed
+
 # produced vignettes
 vignettes/*.html
 vignettes/*.pdf

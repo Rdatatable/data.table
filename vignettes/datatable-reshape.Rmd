@@ -9,6 +9,10 @@ vignette: >
   \usepackage[utf8]{inputenc}
 ---
 
+```{r echo=FALSE, file='_translation_links.R'}
+```
+`r .write.translation.links("Translations of this document are available in: %s")`
+
 ```{r, echo = FALSE, message = FALSE}
 require(data.table)
 knitr::opts_chunk$set(
@@ -80,7 +84,7 @@ str(DT.m1)
 
 * `measure.vars` specify the set of columns we would like to collapse (or combine) together.
 
-* We can also specify column *indices* instead of *names*.
+* We can also specify column *positions* instead of *names*.
 
 * By default, `variable` column is of type `factor`. Set `variable.factor` argument to `FALSE` if you'd like to return a *`character`* vector instead.
 
@@ -126,12 +130,12 @@ dcast(DT.m1, family_id + age_mother ~ child, value.var = "dob")
 You can also pass a function to aggregate by in `dcast` with the argument `fun.aggregate`. This is particularly essential when the formula provided does not identify single observation for each cell.
 
 ```{r}
-dcast(DT.m1, family_id ~ ., fun.agg = function(x) sum(!is.na(x)), value.var = "dob")
+dcast(DT.m1, family_id ~ ., fun.aggregate = function(x) sum(!is.na(x)), value.var = "dob")
 ```
 
 Check `?dcast` for other useful arguments and additional examples.
 
-## 2. Limitations in current `melt/dcast` approaches
+## 2. Limitations in previous `melt/dcast` approaches
 
 So far we've seen features of `melt` and `dcast` that are implemented efficiently for `data.table`s, using internal `data.table` machinery (*fast radix ordering*, *binary search* etc.).
 
@@ -149,15 +153,15 @@ DT
 ## 1 = female, 2 = male
 ```
 
-And you'd like to combine (`melt`) all the `dob` columns together, and `gender` columns together. Using the current functionality, we can do something like this:
+And you'd like to combine (`melt`) all the `dob` columns together, and `gender` columns together. Using the old functionality, we could do something like this:
 
 ```{r}
-DT.m1 = melt(DT, id = c("family_id", "age_mother"))
+DT.m1 = melt(DT, id.vars = c("family_id", "age_mother"))
 DT.m1[, c("variable", "child") := tstrsplit(variable, "_", fixed = TRUE)]
 DT.c1 = dcast(DT.m1, family_id + age_mother + child ~ variable, value.var = "value")
 DT.c1
 
-str(DT.c1) ## gender column is character type now!
+str(DT.c1) ## gender column is class IDate now!
 ```
 
 #### Issues
@@ -166,7 +170,7 @@ str(DT.c1) ## gender column is character type now!
 
     As an analogy, imagine you've a closet with four shelves of clothes and you'd like to put together the clothes from shelves 1 and 2 together (in 1), and 3 and 4 together (in 3). What we are doing is more or less to combine all the clothes together, and then split them back on to shelves 1 and 3!
 
-2. The columns to `melt` may be of different types, as in this case (`character` and `integer` types). By `melt`ing them all together, the columns will be coerced in result, as explained by the warning message above and shown from output of `str(DT.c1)`, where `gender` has been converted to *`character`* type.
+2. The columns to `melt` may be of different types. By `melt`ing them all together, the columns will be coerced in result.
 
 3. We are generating an additional column by splitting the `variable` column into two columns, whose purpose is quite cryptic. We do it because we need it for *casting* in the next step.
 
@@ -187,7 +191,7 @@ The idea is quite simple. We pass a list of columns to `measure.vars`, where eac
 ```{r}
 colA = paste0("dob_child", 1:3)
 colB = paste0("gender_child", 1:3)
-DT.m2 = melt(DT, measure = list(colA, colB), value.name = c("dob", "gender"))
+DT.m2 = melt(DT, measure.vars = list(colA, colB), value.name = c("dob", "gender"))
 DT.m2
 
 str(DT.m2) ## col type is preserved
@@ -202,7 +206,7 @@ str(DT.m2) ## col type is preserved
 Usually in these problems, the columns we'd like to melt can be distinguished by a common pattern. We can use the function `patterns()`, implemented for convenience, to provide regular expressions for the columns to be combined together. The above operation can be rewritten as:
 
 ```{r}
-DT.m2 = melt(DT, measure = patterns("^dob", "^gender"), value.name = c("dob", "gender"))
+DT.m2 = melt(DT, measure.vars = patterns("^dob", "^gender"), value.name = c("dob", "gender"))
 DT.m2
 ```
 
@@ -241,7 +245,7 @@ melt(two.iris, measure.vars = measure(value.name, dim, sep="."))
 ```
 
 Using the code above we get one value column per flower part. If we
-instead want a value column for each measurement dimension, we can do
+instead want a value column for each measurement dimension, we can do:
 
 ```{r}
 melt(two.iris, measure.vars = measure(part, value.name, sep="."))
@@ -252,7 +256,7 @@ can see a more complex usage of `measure`, involving a function which
 is used to convert the `child` string values to integers:
 
 ```{r}
-DT.m3 = melt(DT, measure = measure(value.name, child=as.integer, sep="_child"))
+DT.m3 = melt(DT, measure.vars = measure(value.name, child=as.integer, sep="_child"))
 DT.m3
 ```
 

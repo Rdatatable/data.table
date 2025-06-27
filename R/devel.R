@@ -36,12 +36,12 @@ update_dev_pkg = function(pkg="data.table", repo="https://Rdatatable.gitlab.io/d
     if (upg) {
       unloadNamespace(pkg) ## hopefully will release dll lock on Windows
       utils::install.packages(pkg, repos=repo, type=type, lib=lib, ...)
+      msg_fmt = gettext("R %s package has been updated to %s (%s)\n")
+    } else {
+      msg_fmt = gettext("R %s package is up-to-date at %s (%s)\n")
     }
-    cat(sprintf("R %s package %s %s (%s)\n",
-                pkg,
-                c("is up-to-date at","has been updated to")[upg+1L],
-                unname(read.dcf(system.file("DESCRIPTION", package=pkg, lib.loc=lib, mustWork=TRUE), fields=field)[, field]),
-                utils::packageVersion(pkg, lib.loc=lib)))
+    field_val = unname(read.dcf(system.file("DESCRIPTION", package=pkg, lib.loc=lib, mustWork=TRUE), fields=field)[, field])
+    cat(sprintf(msg_fmt, pkg, field_val, utils::packageVersion(pkg, lib.loc=lib)))
   })
   invisible(upg)
 }

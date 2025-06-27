@@ -5,13 +5,13 @@ catf = function(fmt, ..., sep=" ", domain="R-data.table") {
 }
 
 raise_condition = function(signal, message, classes, immediate=FALSE, appendLF=FALSE) {
-  obj = list(message=message, call=sys.call(2))
+  obj = list(message=message, call=sys.call(sys.nframe()-2L))
   # NB: append _after_ translation
   if (appendLF) obj$message = paste0(obj$message, "\n")
   setattr(obj, "class", classes)
   # cannot set immediate.=TRUE through warning(), so use the description in ?warning to replicate this behavior ourselves. tested manually.
   if (immediate) {
-    old = options(warn=1)
+    old = options(warn=1L)
     on.exit(options(old))
   }
   signal(obj)

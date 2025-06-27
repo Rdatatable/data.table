@@ -3,7 +3,7 @@
 \alias{dcast}
 \title{Fast dcast for data.table}
 \description{
-  \code{dcast.data.table} is \code{data.table}'s long-to-wide reshaping tool. In the spirit of \code{data.table}, it is very fast and memory efficient, making it well-suited to handling large data sets in RAM.  More importantly, it is capable of handling very large data quite efficiently in terms of memory usage. \code{dcast.data.table} can also cast multiple \code{value.var} columns and accepts multiple functions to \code{fun.aggregate}. See Examples for more.
+  \code{dcast.data.table} is \code{data.table}'s long-to-wide reshaping tool. In the spirit of \code{data.table}, it is very fast and memory efficient, making it well-suited to handling large data sets in RAM. More importantly, it is capable of handling very large data quite efficiently in terms of memory usage. \code{dcast.data.table} can also cast multiple \code{value.var} columns and accepts multiple functions to \code{fun.aggregate}. See Examples for more.
 }
 
 \usage{
@@ -17,7 +17,7 @@
 \arguments{
   \item{data}{ A \code{data.table}.}
   \item{formula}{A formula of the form LHS ~ RHS to cast, see Details.}
-  \item{fun.aggregate}{Should the data be aggregated before casting? If the formula doesn't identify a single observation for each cell, then aggregation defaults to \code{length} with a message.
+  \item{fun.aggregate}{Should the data be aggregated before casting? If the formula doesn't identify a single observation for each cell, then aggregation defaults to \code{length} with a warning of class 'dt_missing_fun_aggregate_warning'.
 
   To use multiple aggregation functions, pass a \code{list}; see Examples. }
   \item{sep}{Character vector of length 1, indicating the separating character in variable names generated during casting. Default is \code{_} for backwards compatibility. }

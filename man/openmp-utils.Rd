@@ -15,7 +15,7 @@
   \item{threads}{ NULL (default) rereads environment variables. 0 means to use all logical CPUs available. Otherwise a number >= 1 }
   \item{restore_after_fork}{ Should data.table be multi-threaded after a fork has completed? NULL leaves the current setting unchanged which by default is TRUE. See details below. }
   \item{percent}{ If provided it should be a number between 2 and 100; the percentage of logical CPUs to use. By default on startup, 50\%. }
-  \item{throttle}{ 1024 (default) means that, roughly speaking, a single thread will be used when nrow(DT)<=1024, 2 threads when nrow(DT)<=2048, etc. The throttle is to speed up small data tasks (especially when repeated many times) by not incurring the overhead of managing multiple threads. Hence the number of threads is throttled (restricted) for small tasks. }
+  \item{throttle}{ 1024 (default) means that, roughly speaking, a single thread will be used when \code{nrow(DT)<=1024}, 2 threads when \code{nrow(DT)<=2048}, etc. The throttle is to speed up small data tasks (especially when repeated many times) by not incurring the overhead of managing multiple threads. Hence the number of threads is throttled (restricted) for small tasks. }
   \item{verbose}{ Display the value of relevant OpenMP settings plus the \code{restore_after_fork} internal option. }
 }
 \value{
@@ -41,17 +41,18 @@
     \item\file{cj.c} - \code{\link{CJ}()}
     \item\file{coalesce.c} - \code{\link{fcoalesce}()}
     \item\file{fifelse.c} - \code{\link{fifelse}()}
-    \item\file{fread.c} - \code{\link{fread}()}
+    \item\file{fread.c}, \file{freadR.c} - \code{\link{fread}(). Parallelized across row-based chunks of the file.}
     \item\file{forder.c}, \file{fsort.c}, and \file{reorder.c} - \code{\link{forder}()} and related
     \item\file{froll.c}, \file{frolladaptive.c}, and \file{frollR.c} - \code{\link{froll}()} and family
-    \item\file{fwrite.c} - \code{\link{fwrite}()}
-    \item\file{gsumm.c} - GForce in various places, see \link{GForce}
+    \item\file{fwrite.c} - \code{\link{fwrite}(). Parallelized across rows.}
+    \item\file{gsumm.c} - GForce in various places, see \link{GForce}. Parallelized across groups.
     \item\file{nafill.c} - \code{\link{nafill}()}
     \item\file{subset.c} - Used in \code{\link[=data.table]{[.data.table}} subsetting
     \item\file{types.c} - Internal testing usage
   }
+
+  We endeavor to keep this list up to date, but note that the canonical reference here is the source code itself.
 }
 \examples{
   getDTthreads(verbose=TRUE)
 }
-\keyword{ data }

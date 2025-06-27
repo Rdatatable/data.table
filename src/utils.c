@@ -11,7 +11,11 @@ bool within_int64_repres(double x) {
   return R_FINITE(x) && x <= (double)INT64_MAX && x >= (double)INT64_MIN;
 }
 
-static R_xlen_t firstNonInt(SEXP x) {
+// used to error if not passed type double but this needed extra is.double() calls in calling R code
+// which needed a repeat of the argument. Hence simpler and more robust to return false when not type double.
+bool fitsInInt32(SEXP x) {
+  if (!isReal(x))
+    return false;
   R_xlen_t n=xlength(x), i=0;
   const double *dx = REAL(x);
   while (i<n &&
@@ -19,22 +23,28 @@ static R_xlen_t firstNonInt(SEXP x) {
          (within_int32_repres(dx[i]) && dx[i]==(int)(dx[i])))) {
     i++;
   }
-  return i==n ? 0 : i+1;
+  return i==n;
 }
 
-bool isRealReallyInt(SEXP x) {
-  return isReal(x) ? firstNonInt(x)==0 : false;
-  // used to error if not passed type double but this needed extra is.double() calls in calling R code
-  // which needed a repeat of the argument. Hence simpler and more robust to return false when not type double.
+SEXP fitsInInt32R(SEXP x) {
+  return ScalarLogical(fitsInInt32(x));
 }
 
-SEXP isRealReallyIntR(SEXP x) {
-  return ScalarLogical(isRealReallyInt(x));
+bool fitsInInt64(SEXP x) {
+  if (!isReal(x))
+    return false;
+  R_xlen_t n=xlength(x), i=0;
+  const double *dx = REAL(x);
+  while (i<n &&
+         ( ISNA(dx[i]) ||
+         (within_int64_repres(dx[i]) && dx[i]==(int64_t)(dx[i])))) {
+    i++;
+  }
+  return i==n;
 }
 
-SEXP isReallyReal(SEXP x) {
-  return ScalarInteger(isReal(x) ? firstNonInt(x) : 0);
-  // return the 1-based location of first element which is really real (i.e. not an integer) otherwise 0 (false)
+SEXP fitsInInt64R(SEXP x) {
+  return ScalarLogical(fitsInInt64(x));
 }
 
 bool allNA(SEXP x, bool errorForBadType) {
@@ -75,7 +85,7 @@ bool allNA(SEXP x, bool errorForBadType) {
     return true;
   }
   case STRSXP: {
-    const SEXP *xd = STRING_PTR(x);
+    const SEXP *xd = STRING_PTR_RO(x);
     for (int i=0; i<n; ++i)    if (xd[i]!=NA_STRING) {
       return false;
     }
@@ -125,7 +135,7 @@ SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent) {
       } else
         ricols = cols;
     } else if (isReal(cols)) {
-      if (!isRealReallyInt(cols))
+      if (!fitsInInt32(cols))
         error(_("argument specifying columns is type 'double' and one or more items in it are not whole integers"));
       ricols = PROTECT(coerceVector(cols, INTSXP)); protecti++;
     }
@@ -212,24 +222,32 @@ SEXP copyAsPlain(SEXP x) {
   }
   const int64_t n = XLENGTH(x);
   SEXP ans = PROTECT(allocVector(TYPEOF(x), n));
+  // aside: unlike R's duplicate we do not copy truelength here; important for dogroups.c which uses negative truelenth to mark its specials
+  if (ALTREP(ans))
+    internal_error(__func__, "copyAsPlain returning ALTREP for type '%s'", type2char(TYPEOF(x))); // # nocov
+  if (!n) { // cannot memcpy invalid pointer, #6819
+    DUPLICATE_ATTRIB(ans, x);
+    UNPROTECT(1);
+    return ans;
+  }
   switch (TYPEOF(x)) {
   case RAWSXP:
-    memcpy(RAW(ans),     RAW(x),     n*sizeof(Rbyte));
+    memcpy(RAW(ans),     RAW_RO(x),     n*sizeof(Rbyte));
     break;
   case LGLSXP:
-    memcpy(LOGICAL(ans), LOGICAL(x), n*sizeof(Rboolean));
+    memcpy(LOGICAL(ans), LOGICAL_RO(x), n*sizeof(int));
     break;
   case INTSXP:
-    memcpy(INTEGER(ans), INTEGER(x), n*sizeof(int));             // covered by 10:1 after test 178
+    memcpy(INTEGER(ans), INTEGER_RO(x), n*sizeof(int));             // covered by 10:1 after test 178
     break;
   case REALSXP:
-    memcpy(REAL(ans),    REAL(x),    n*sizeof(double));          // covered by as.Date("2013-01-01")+seq(1,1000,by=10) after test 1075
+    memcpy(REAL(ans),    REAL_RO(x),    n*sizeof(double));          // covered by as.Date("2013-01-01")+seq(1,1000,by=10) after test 1075
     break;
   case CPLXSXP:
-    memcpy(COMPLEX(ans), COMPLEX(x), n*sizeof(Rcomplex));
+    memcpy(COMPLEX(ans), COMPLEX_RO(x), n*sizeof(Rcomplex));
     break;
   case STRSXP: {
-    const SEXP *xp=STRING_PTR(x);                                // covered by as.character(as.hexmode(1:500)) after test 642
+    const SEXP *xp=STRING_PTR_RO(x);                              // covered by as.character(as.hexmode(1:500)) after test 642
     for (int64_t i=0; i<n; ++i) SET_STRING_ELT(ans, i, xp[i]);
   } break;
   case VECSXP: {
@@ -237,12 +255,9 @@ SEXP copyAsPlain(SEXP x) {
     for (int64_t i=0; i<n; ++i) SET_VECTOR_ELT(ans, i, copyAsPlain(xp[i]));
   } break;
   default:                                                                                           // # nocov
-    error(_("Internal error: type '%s' not supported in %s"), type2char(TYPEOF(x)), "copyAsPlain()"); // # nocov
+    internal_error(__func__, "type '%s' not supported in %s", type2char(TYPEOF(x)), "copyAsPlain()"); // # nocov
   }
   DUPLICATE_ATTRIB(ans, x);
-  // aside: unlike R's duplicate we do not copy truelength here; important for dogroups.c which uses negative truelenth to mark its specials
-  if (ALTREP(ans))
-    error(_("Internal error: copyAsPlain returning ALTREP for type '%s'"), type2char(TYPEOF(x))); // # nocov
   UNPROTECT(1);
   return ans;
 }
@@ -250,8 +265,8 @@ SEXP copyAsPlain(SEXP x) {
 void copySharedColumns(SEXP x) {
   const int ncol = length(x);
   if (!isNewList(x) || ncol==1) return;
-  bool *shared = (bool *)R_alloc(ncol, sizeof(bool)); // on R heap in case alloc fails
-  int *savetl = (int *)R_alloc(ncol, sizeof(int));  // on R heap for convenience but could be a calloc
+  bool *shared = (bool *)R_alloc(ncol, sizeof(*shared)); // on R heap in case alloc fails
+  int *savetl = (int *)R_alloc(ncol, sizeof(*savetl));  // on R heap for convenience but could be a calloc
   const SEXP *xp = SEXPPTR_RO(x);
   // first save the truelength, which may be negative on specials in dogroups, and set to zero; test 2157
   // the savetl() function elsewhere is for CHARSXP. Here, we are using truelength on atomic vectors.
@@ -286,7 +301,11 @@ void copySharedColumns(SEXP x) {
       if (shared[i])
         SET_VECTOR_ELT(x, i, copyAsPlain(xp[i]));
     }
-    if (GetVerbose()) Rprintf(_("Found and copied %d column%s with a shared memory address\n"), nShared, nShared>1?"s":"");
+    if (GetVerbose())
+      Rprintf(Pl_(nShared,
+                  "Found and copied %d column with a shared memory address\n",
+                  "Found and copied %d columns with a shared memory address\n"),
+              nShared);
     // GetVerbose() (slightly expensive call of all options) called here only when needed
   }
 }
@@ -312,7 +331,7 @@ SEXP islockedR(SEXP DT) {
 
 bool need2utf8(SEXP x) {
   const int xlen = length(x);
-  SEXP *xd = STRING_PTR(x);
+  const SEXP *xd = STRING_PTR_RO(x);
   for (int i=0; i<xlen; i++) {
     if (NEED2UTF8(xd[i]))
       return(true);
@@ -325,7 +344,7 @@ SEXP coerceUtf8IfNeeded(SEXP x) {
     return(x);
   const int xlen = length(x);
   SEXP ans = PROTECT(allocVector(STRSXP, xlen));
-  SEXP *xd = STRING_PTR(x);
+  const SEXP *xd = STRING_PTR_RO(x);
   for (int i=0; i<xlen; i++) {
     SET_STRING_ELT(ans, i, ENC2UTF8(xd[i]));
   }
@@ -362,7 +381,7 @@ const char *class1(SEXP x) {
   }
 }
 
-// main motivation for this function is to have coercion helper that is aware of int64 NAs, unline base R coerce #3913
+// main motivation for this function is to have coercion helper that is aware of int64 NAs, unlike base R coerce #3913
 SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg) {
   // copyArg does not update in place, but only IF an object is of the same type-class as class to be coerced, it will return with no copy
   if (!isVectorAtomic(x))
@@ -384,7 +403,7 @@ SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg) {
     Rprintf(_("Coercing %s[%s] into %s[%s]\n"), type2char(TYPEOF(x)), class1(x), type2char(TYPEOF(as)), class1(as));
   const char *ret = memrecycle(/*target=*/ans, /*where=*/R_NilValue, /*start=*/0, /*len=*/LENGTH(x), /*source=*/x, /*sourceStart=*/0, /*sourceLen=*/-1, /*colnum=*/0, /*colname=*/"");
   if (ret)
-    warning(_("%s"), ret);
+    warning("%s", ret); // # notranslate
   UNPROTECT(1);
   return ans;
 }
@@ -395,7 +414,7 @@ SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg) {
 SEXP dt_zlib_version(void) {
   char out[71];
 #ifndef NOZLIB
-  snprintf(out, 70, "zlibVersion()==%s ZLIB_VERSION==%s", zlibVersion(), ZLIB_VERSION);
+  snprintf(out, 70, "zlibVersion()==%s ZLIB_VERSION==%s", zlibVersion(), ZLIB_VERSION); // # notranslate
 #else
   snprintf(out, 70, _("zlib header files were not found when data.table was compiled"));
 #endif
@@ -411,10 +430,9 @@ SEXP dt_has_zlib(void) {
 
 SEXP startsWithAny(const SEXP x, const SEXP y, SEXP start) {
   // for is_url in fread.R added in #5097
-  // startsWith was added to R in 3.3.0 so we need something to support R 3.1.0
-  // short and simple ascii-only
+  // basically any(startsWith()), short and simple ascii-only
   if (!isString(x) || !isString(y) || length(x)!=1 || length(y)<1 || !isLogical(start) || length(start)!=1 || LOGICAL(start)[0]==NA_LOGICAL)
-    error("Internal error: data.table's internal startsWithAny types or lengths incorrect");
+    internal_error(__func__, "types or lengths incorrect");
   const char *xd = CHAR(STRING_ELT(x, 0));
   const int n=length(y);
   if (LOGICAL(start)[0]) {
@@ -540,4 +558,15 @@ SEXP frev(SEXP x, SEXP copyArg) {
   }
   UNPROTECT(nprotect);
   return x;
+}
+
+void internal_error(const char *call_name, const char *format, ...) {
+  char buff[1024];
+  va_list args;
+  va_start(args, format);
+
+  vsnprintf(buff, 1023, format, args);
+  va_end(args);
+
+  error("%s %s: %s. %s", _("Internal error in"), call_name, buff, _("Please report to the data.table issues tracker."));
 }
