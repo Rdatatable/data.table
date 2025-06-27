@@ -218,8 +218,8 @@ test-lin-ancient-cran:
     # Restore checking vignettes if upgrading our R dependency means knitr can be installed, or when we switch to litedown.
     - R CMD check --no-manual --no-build-vignettes --ignore-vignettes $(ls -1t data.table_*.tar.gz | head -n 1)
 
-# run the main checks with Address(+Leak),UBSanitizer enabled
-test-lin-dev-san:
+# run the main checks with Address(+Leak),UBSanitizer enabled, GCC _and_ Clang
+test-lin-dev-clang-san:
   <<: *test-lin
   image: registry.gitlab.com/rdatatable/dockerfiles/r-devel-clang-san
   variables:
@@ -233,8 +233,27 @@ test-lin-dev-san:
     - |
         res1=0; ASAN_OPTIONS=detect_leaks=1 R CMD check --no-manual $(ls -1t data.table_*.tar.gz | head -n 1) || res1=$?
         res2=0; perl -nle '(print, $a=1) if /: runtime error: |ERROR: LeakSanitizer/../SUMMARY.*Sanitizer/ }{ exit $a' data.table.Rcheck/**/*.Rout* || res2=$?
+        res3=0; tail -n 1 data.table.Rcheck/00check.log | grep -q -e '^Status: [0-9]* NOTEs*$' -e '^Status: OK$' || res3=$?
         # fail if R CMD check had failed or if sanitizer output found
-        if [ $res1 -ne 0 ] || [ $res2 -ne 0 ]; then exit 1; fi
+        if [ $res1 -ne 0 ] || [ $res2 -ne 0 ] || [ $res3 -ne 0 ]; then exit 1; fi
+
+test-lin-dev-gcc-san:
+  <<: *test-lin
+  image: registry.gitlab.com/rdatatable/dockerfiles/r-devel-gcc-san
+  variables:
+    # must be set for most of the process because there are pseudo-leaks everywhere
+    ASAN_OPTIONS: "detect_leaks=0"
+    # fontconfig is known to leak; add more suppressions as discovered
+    LSAN_OPTIONS: "suppressions=$CI_PROJECT_DIR/.dev/lsan.supp"
+    UBSAN_OPTIONS: "print_stacktrace=1"
+  script:
+    - *install-deps
+    - |
+        res1=0; ASAN_OPTIONS=detect_leaks=1 R CMD check --no-manual $(ls -1t data.table_*.tar.gz | head -n 1) || res1=$?
+        res2=0; perl -nle '(print, $a=1) if /: runtime error: |ERROR: LeakSanitizer/../SUMMARY.*Sanitizer/ }{ exit $a' data.table.Rcheck/**/*.Rout* || res2=$?
+        res3=0; tail -n 1 data.table.Rcheck/00check.log | grep -q -e '^Status: [0-9]* NOTEs*$' -e '^Status: OK$' || res3=$?
+        # fail if R CMD check had failed or if sanitizer output found
+        if [ $res1 -ne 0 ] || [ $res2 -ne 0 ] || [ $res3 -ne 0 ]; then exit 1; fi
 
 .test-win-template: &test-win
   <<: *test
@@ -338,7 +357,7 @@ integration:
     - saas-linux-medium-amd64
   only:
     - master
-  needs: ["mirror-packages","build","test-lin-rel","test-lin-rel-cran","test-lin-dev-gcc-strict-cran","test-lin-dev-clang-cran","test-lin-rel-vanilla","test-lin-ancient-cran","test-lin-dev-san","test-win-rel","test-win-dev" ,"test-win-old","test-mac-rel","test-mac-old"]
+  needs: ["mirror-packages","build","test-lin-rel","test-lin-rel-cran","test-lin-dev-gcc-strict-cran","test-lin-dev-clang-cran","test-lin-rel-vanilla","test-lin-ancient-cran","test-lin-dev-clang-san","test-lin-dev-gcc-san","test-win-rel","test-win-dev" ,"test-win-old","test-mac-rel","test-mac-old"]
   script:
     - R --version
     - *install-deps ## markdown pkg not present in r-pkgdown image
