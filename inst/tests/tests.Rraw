@@ -21200,7 +21200,7 @@ if (test_R.utils) {
   tmp <- tempfile(fileext=".csv.gz")
   file.create(tmp)
   conn <- file(tmp, 'wb')
-  writeBin(as.raw(c(31, 139)), conn)
+  writeBin(as.raw(c(31, 139)), conn) # Gzip header starts with magic numbers: 0x1F 0x8B (decimal 31, 139) - these identify the file as gzip
   close(conn)
   test(2320.2, fread(tmp), error="R.utils::decompressFile failed to decompress") # Compressed file decompression error handling
   unlink(tmp)
