@@ -1,3 +1,11 @@
+Community and Governance
+------------------------
+
+Welcome, and thanks for your interest in contributing to `data.table`!
+We have always encouraged users to contribute back to the project, and even become project members/committers.
+* [GOVERNANCE.md](https://github.com/Rdatatable/data.table/blob/master/GOVERNANCE.md) defines our community governance model, and how you can obtain special roles/permissions in the project.
+* [The GitHub Teams Page](https://github.com/orgs/Rdatatable/teams/project-members/teams) is a list of special tasks that project members can help with -- if you are interested to help, please create an issue and contact the relevant team by mentioning, for example `@Rdatatable/revdep-managers`
+
 Filing issues
 -------------
 
@@ -68,6 +76,10 @@ See [`?test`](https://rdatatable.gitlab.io/data.table/reference/test.html).
 1. **[Squashing Github pull requests into a single commit](http://eli.thegreenplace.net/2014/02/19/squashing-github-pull-requests-into-a-single-commit)**.
 1. **[Github help](https://help.github.com/articles/using-pull-requests/)** - you'll need the *fork and pull* model.
 
+#### Performance testing
+
+If your PR may have an effect on time/memory usage, please consider adding a performance test, either in the same PR, or a follow-up PR. Note that first-time contributors _must_ do so in a follow-up PR, since the tests are only run on PRs from branches created directly in the Rdatatable/data.table repo. See the [Performance testing](https://github.com/Rdatatable/data.table/wiki/Performance-testing) wiki page for details.
+
 Minimal first time PR
 ---------------------
 
@@ -114,7 +126,7 @@ and then the `commit` and `push` shown above would push to the branch in the mai
 
 #### Translations
 
-`data.table` offers some translations so that our users can get feedback (errors, warnings, verbose messages) in their native language. Currently we only support Mandarin Chinese.
+`data.table` offers some translations so that our users can get feedback (errors, warnings, verbose messages) in their native language. There is a [translation team](https://github.com/orgs/Rdatatable/teams/translators/teams) for each currently supported translation.
 
 The data for these translations lives in the `po` folder. You do not need to make any changes here for your PR -- translations are updated in a batch before each CRAN release.
 

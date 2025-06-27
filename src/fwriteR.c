@@ -43,8 +43,8 @@ int getMaxStringLen(const SEXP *col, const int64_t n) {
 
 int getMaxCategLen(SEXP col) {
   col = getAttrib(col, R_LevelsSymbol);
-  if (!isString(col)) error(_("Internal error: col passed to getMaxCategLen is missing levels"));
-  return getMaxStringLen( STRING_PTR(col), LENGTH(col) );
+  if (!isString(col)) internal_error(__func__, "col passed to getMaxCategLen is missing levels");
+  return getMaxStringLen( STRING_PTR_RO(col), LENGTH(col) );
 }
 
 const char *getCategString(SEXP col, int64_t row) {
@@ -77,7 +77,7 @@ void writeList(const void *col, int64_t row, char **pch) {
   SEXP v = ((const SEXP *)col)[row];
   int32_t wf = whichWriter(v);
   if (TYPEOF(v)==VECSXP || wf==INT32_MIN || isFactor(v)) {
-    error(_("Internal error: getMaxListItemLen should have caught this up front."));  // # nocov
+    internal_error(__func__, "TYPEOF(v)!=VECSXP && wf!=INT32_MIN && !isFactor(v); getMaxListItem should have caught this up front");  // # nocov
   }
   char *ch = *pch;
   write_chars(sep2start, &ch);
@@ -105,7 +105,7 @@ int getMaxListItemLen(const SEXP *col, const int64_t n) {
     }
     int width = writerMaxLen[wf];
     if (width==0) {
-      if (wf!=WF_String) STOP(_("Internal error: row %"PRId64" of list column has no max length method implemented"), i+1); // # nocov
+      if (wf!=WF_String) internal_error(__func__, "row %"PRId64" of list column has no max length method implemented", i+1); // # nocov
       const int l = LENGTH(this);
       for (int j=0; j<l; ++j) width+=LENGTH(STRING_ELT(this, j));
     } else {
@@ -167,6 +167,7 @@ SEXP fwriteR(
   SEXP nThread_Arg,
   SEXP showProgress_Arg,
   SEXP is_gzip_Arg,
+  SEXP gzip_level_Arg,
   SEXP bom_Arg,
   SEXP yaml_Arg,
   SEXP verbose_Arg,
@@ -177,6 +178,7 @@ SEXP fwriteR(
 
   fwriteMainArgs args = {0};  // {0} to quieten valgrind's uninitialized, #4639
   args.is_gzip = LOGICAL(is_gzip_Arg)[0];
+  args.gzip_level = INTEGER(gzip_level_Arg)[0];
   args.bom = LOGICAL(bom_Arg)[0];
   args.yaml = CHAR(STRING_ELT(yaml_Arg, 0));
   args.verbose = LOGICAL(verbose_Arg)[0];
@@ -199,9 +201,8 @@ SEXP fwriteR(
       DFcoerced = PROTECT(allocVector(VECSXP, args.ncol));
       protecti++;
       // potentially large if ncol=1e6 as reported in #1903 where using large VLA caused stack overflow
-      SEXP s = PROTECT(allocList(2));
+      SEXP s = PROTECT(LCONS(R_NilValue, allocList(1)));
       // no protecti++ needed here as one-off UNPROTECT(1) a few lines below
-      SET_TYPEOF(s, LANGSXP);
       SETCAR(s, install("format.POSIXct"));
       for (int j=0; j<args.ncol; j++) {
         SEXP column = VECTOR_ELT(DF, j);
@@ -219,12 +220,12 @@ SEXP fwriteR(
   // allocate new `columns` vector and fetch the DATAPTR_RO() offset once up front here to reduce the complexity
   // in fread.c needing to know about the size of R's header, or calling R API. It won't be slower because only
   // this new vector of pointers is used by fread.c, but it does use a tiny bit more memory (ncol * 8 bytes).
-  args.columns = (void *)R_alloc(args.ncol, sizeof(const void *));
+  args.columns = (void *)R_alloc(args.ncol, sizeof(*args.columns));
 
   args.funs = funs;  // funs declared statically at the top of this file
 
   // Allocate and populate lookup vector to writer function for each column, whichFun[]
-  args.whichFun = (uint8_t *)R_alloc(args.ncol, sizeof(uint8_t));
+  args.whichFun = (uint8_t *)R_alloc(args.ncol, sizeof(*args.whichFun));
 
   // just for use at this level to control whichWriter() when called now for each column and
   // when called later for cell items of list columns (if any)
@@ -264,7 +265,7 @@ SEXP fwriteR(
       if (xlength(rn)!=2 || INTEGER(rn)[0]==NA_INTEGER) {
         // not R's default rownames c(NA,-nrow)
         if (xlength(rn) != args.nrow)
-           // Use (long long) to cast R_xlen_t to a fixed type to robustly avoid -Wformat compiler warnings, see #5768, PRId64 didnt work on M1
+           // Use (long long) to cast R_xlen_t to a fixed type to robustly avoid -Wformat compiler warnings, see #5768, PRId64 didn't work on M1
           error(_("input has specific integer rownames but their length (%lld) != nrow (%"PRId64")"), (long long)xlength(rn), args.nrow);  // # nocov
         args.rowNames = INTEGER(rn);
         args.rowNameFun = WF_Int32;

@@ -20,14 +20,20 @@ if (exists("test.data.table",.GlobalEnv,inherits=FALSE) ||
 test = data.table:::test
 INT = data.table:::INT
 
-if (any(duplicated(pkgs))) stop("Packages defined to be loaded for integration tests in 'inst/tests/other.Rraw' contains duplicates.")
+if (anyDuplicated(pkgs)) stop("Packages defined to be loaded for integration tests in 'inst/tests/other.Rraw' contains duplicates.")
 
 f = function(pkg) suppressWarnings(suppressMessages(isTRUE(
-  library(pkg, character.only=TRUE, logical.return=TRUE, quietly=TRUE, warn.conflicts=FALSE, pos="package:base")  # attach at the end for #5101
+  library(pkg, character.only=TRUE, logical.return=TRUE, warn.conflicts=FALSE, pos="package:base")  # attach at the end for #5101
 )))
 loaded = sapply(pkgs, f)
-if (any(!loaded)) {
-  stop("test.data.table('other.Rraw') is missing required package(s): ", paste(names(loaded)[!loaded], collapse=", "), ". If you can't install them and this is R CMD check, please set environment variable TEST_DATA_TABLE_WITH_OTHER_PACKAGES back to the default, false.")
+if (!all(loaded)) {
+  options(warning.length=8000)
+  stop(
+    "test.data.table('other.Rraw') failed to attach required package(s): ", toString(sort(names(loaded)[!loaded])), ".",
+    "\nHere's .libPaths():\n  ", paste(.libPaths(), collapse="|"),
+    "\nHere's all installed packages:\n  ", paste(sort(rownames(installed.packages())), collapse=","),
+    "\nHere's the search() path:\n  ", paste(search(), collapse="->"),
+    "\nIf you can't install them and this is R CMD check, please set environment variable TEST_DATA_TABLE_WITH_OTHER_PACKAGES back to the default, false; it's currently ", Sys.getenv("TEST_DATA_TABLE_WITH_OTHER_PACKAGES", "<unset>"), ".")
   # Would like to install them now for convenience but gitlab-ci.yml seems to install to bus/mirror-other-packages/cran.
   # If that's a cache, that's nice, but we don't know at this point whether this script is being run by GLCI or by a user or in dev.
   # We don't allow skipping (e.g. if _R_CHECK_FORCE_SUGGESTS_ is FALSE) to keep things simple and to keep things strict; i.e.
@@ -35,7 +41,7 @@ if (any(!loaded)) {
 }
 
 cat("\n")
-print(data.table(pkg=pkgs, loaded)[loaded==TRUE, version:=as.character(sapply(pkg, function(p) format(packageVersion(p))))][])
+print(data.table(pkg=pkgs, loaded)[loaded==TRUE, .(pkg, version=sapply(pkg, function(p) format(packageVersion(p))))])
 cat("\n")
 print(sessionInfo())
 cat("\n")
@@ -50,7 +56,9 @@ if (loaded[["ggplot2"]]) {
   test(1.2, DT[,print(ggplot(.SD,aes(b,f))+geom_point()),by=list(grp%%2L)],data.table(grp=integer()))  # %%2 to reduce time needed for ggplot2 to plot
   if (loaded[["hexbin"]]) {
     # Test reported by C Neff on 11 Oct 2011
-    test(1.3, names(print(ggplot(DT) + geom_hex(aes(b, f)) + facet_wrap(~grp)))[c(1,3)], c("data","scales"))
+    # TODO(r-lib/gtable#94): don't suppressWarnings() here.
+    x <- suppressWarnings(print(ggplot(DT) + geom_hex(aes(b, f)) + facet_wrap(~grp)))
+    test(1.3, names(x)[c(1L, 3L)], c("data", "scales"))
   }
   # Test plotting ITime with ggplot2 which seems to require an as.data.frame method for ITime, #1713
   datetimes = c("2011 NOV18 09:29:16", "2011 NOV18 10:42:40", "2011 NOV18 23:47:12",
@@ -97,7 +105,8 @@ if (loaded[["caret"]]) {
   # So I put the win-builder fail down to resource issues and moved this test into test.data.table("other.Rraw").
   DT = data.table(x = rnorm(10), y = rnorm(10))
   cv.ctrl = trainControl(method = 'repeatedcv', number = 5, repeats = 1)
-  fit = train(y ~ x, data = DT, 'lm', trControl = cv.ctrl)
+  # TODO(topepo/caret#1361): remove suppressWarnings() for partially matched args internal to caret
+  fit = suppressWarnings(train(y ~ x, data = DT, 'lm', trControl = cv.ctrl))
   test(4, names(DT), c("x", "y"))
 }
 
@@ -209,7 +218,7 @@ test(14.1, {example(':=', package='data.table', local=TRUE, echo=FALSE); TRUE})
 test(14.2, {example('CJ', package='data.table', local=TRUE, echo=FALSE); TRUE})
 
 if (loaded[["sf"]]) {  #2273
-  DT = as.data.table(st_read(system.file("shape/nc.shp", package = "sf")))
+  DT = as.data.table(st_read(system.file("shape/nc.shp", package = "sf"), quiet=TRUE))
   test(15, DT[1:3, .(NAME, FIPS, geometry)], output="Ashe.*-81.4.*Surry.*-80.4")
 
   dsf = sf::st_as_sf(data.table(x=1:10, y=1:10, s=sample(1:2, 10, TRUE)), coords=1:2)
@@ -405,7 +414,7 @@ if (loaded[["yaml"]]) {  # csvy; #1701. Was 2032-2033 in tests.Rraw, #5516
   fwrite(DT, f<-tempfile(), bom=TRUE, yaml=TRUE)
   fcon = file(f, encoding="UTF-8")  # Windows readLines needs to be told; see also test 1658.50 in tests.Rraw
   lines = readLines(fcon)
-  lines = lines[lines!=""]  # an extra "" after "eol: |2+" (line 16) on Linux but not Windows
+  lines = lines[nzchar(lines)]  # an extra "" after "eol: |2+" (line 16) on Linux but not Windows
                             # remove the blank here so we don't need to change this test if/when that changes in yaml package
   test(17.11, length(lines), 48L)
   close(fcon)
@@ -414,7 +423,7 @@ if (loaded[["yaml"]]) {  # csvy; #1701. Was 2032-2033 in tests.Rraw, #5516
   fwrite(DT, f<-tempfile(), bom=TRUE, yaml=TRUE)
   fcon = file(f, encoding="UTF-8")
   lines = readLines(fcon)
-  lines = lines[lines!=""]
+  lines = lines[nzchar(lines)]
   test(17.13, length(lines), 48L)
   close(fcon)
   test(17.14, fread(f), DT)
@@ -517,7 +526,7 @@ if (loaded[["xts"]]) {  # was 1465 in tests.Rraw, #5516
 
 # was 2108 in tests.Rraw, #5516
 # first and last should no longer load xts namespace, #3857, below commented test for interactive validation when xts present but not loaded or attached
-# stopifnot("xts"%in%installed.packages(), !"xts"%in%loadedNamespaces()); library(data.table); x=as.POSIXct("2019-01-01"); last(x); stopifnot(!"xts" %in% loadedNamespaces())
+# stopifnot("xts"%in%installed.packages(), !isNamespaceLoaded("xts")); library(data.table); x=as.POSIXct("2019-01-01"); last(x); stopifnot(!isNamespaceLoaded("xts"))
 x = as.POSIXct("2019-09-09")+0:1
 old = options(datatable.verbose=TRUE)
 test(19.01, last(x), x[length(x)], output="!is.xts(x)")
@@ -643,7 +652,7 @@ if (loaded[["nanotime"]]) {
   test(21.2, shift(x, fill=0L),           c(nanotime::nanotime(0L), x[1:3]))
   test(21.3, shift(x, 1,  type="cyclic"), c(x[4L], x[-4L]))
   test(21.4, shift(x, -1, type="cyclic"), c(x[-1L], x[1L]))
-  
+
   # was 1752 in tests.Rraw, #5516
   DT = data.table(A=nanotime(tt<-c("2016-09-28T15:30:00.000000070Z",
                                    "2016-09-29T23:59:00.000000001Z",
@@ -658,7 +667,7 @@ if (loaded[["nanotime"]]) {
                                    "1967-03-15T00:00:00.300000002Z",
                                    "1967-03-15T23:59:59.300000002Z")))
   test(22, capture.output(fwrite(DT, verbose=FALSE))[-1], tt)
-  
+
   # was 2060.401-405 in tests.Rraw, #5516
   nt = nanotime(c(1L, 2L, NA_integer_, 4L))
   nt_val = nanotime(1:4)
@@ -667,7 +676,7 @@ if (loaded[["nanotime"]]) {
   test(23.3, as.character(fcoalesce(nt, nanotime(rep(3, 4L)))), as.character(nt_val))
   test(23.4, fcoalesce(nt, 1), error='Item 2 has a different class than item 1')
   test(23.5, fcoalesce(nt, 1L), error = 'Item 2 is type integer but the first item is type double')
-  
+
   # was 2080.01-05 in tests.Rraw, #5516
   n = nanotime(1:4)
   n[2L] = NA
@@ -678,7 +687,7 @@ if (loaded[["nanotime"]]) {
   options(opt)
   test(24.4, between(1:10, nanotime(3), nanotime(6)), error="x is not integer64 but.*Please align classes")
   test(24.5, between(1:10, 3, nanotime(6)),           error="x is not integer64 but.*Please align classes")
-  
+
   # was 2085.11 in tests.Rraw, #5516
   n = nanotime(1:4)
   test(25, fifelse(c(TRUE,FALSE,NA,TRUE), n, n+100), c(n[1L], n[2L]+100, nanotime(NA), n[4]))
@@ -686,11 +695,36 @@ if (loaded[["nanotime"]]) {
   # was 2127.27 in tests.Rraw, #5516
   n = nanotime(1:12)
   test(26, fcase(c(-5L:5L<0L,NA), n, c(-5L:5L>0L,NA), n+100), c(n[1L:5L], nanotime(NA), n[7L:11L]+100, as.integer64(NA)))
-  
+
   # na.omit works for nanotime, #4744. Was 2205 in tests.Rraw, #5516
   DT = data.table(time=nanotime(c(1,NA,3)))
   test(27, na.omit(DT), DT[c(1,3)])
 
+  # rbind with vectors with class attributes #5309
+  x = data.table(a=1L, b=as.nanotime(0))
+  y = data.table(a=2L, b=NA)
+  test(27.01, rbind(x,y), data.table(a = c(1L, 2L), b=as.nanotime(c(0, NA))))
+  test(27.02, rbind(y,x), data.table(a = c(2L, 1L), b=as.nanotime(c(NA, 0))))
+  y[, b := NULL]
+  test(27.03, rbind(x,y, fill = TRUE), data.table(a = c(1L, 2L), b=as.nanotime(c(0, NA))))
+  test(27.04, rbind(y,x, fill = TRUE), data.table(a = c(2L, 1L), b=as.nanotime(c(NA, 0))))
+
+  # Was 1.91-1.94 in nafill.Rraw, #6139
+  l = list(a=nanotime(c(1:2,NA,4:5)), b=nanotime(c(NA,2L,NA,4L,NA)))
+  test(27.11, lapply(nafill(l, "locf"), as.character), lapply(list(a=nanotime(c(1:2,2L,4:5)), b=nanotime(c(NA,2L,2L,4L,4L))), as.character))
+  test(27.12, lapply(nafill(l, "nocb"), as.character), lapply(list(a=nanotime(c(1:2,4L,4:5)), b=nanotime(c(2L,2L,4L,4L,NA))), as.character))
+  test(27.13, lapply(nafill(l, fill=0), as.character), lapply(list(a=nanotime(c(1:2,0L,4:5)), b=nanotime(c(0L,2L,0L,4L,0L))), as.character))
+  test(27.14, lapply(nafill(l, fill=nanotime(0)), as.character), lapply(list(a=nanotime(c(1:2,0L,4:5)), b=nanotime(c(0L,2L,0L,4L,0L))), as.character))
+
+  # coerceAs verbose. Was 10.91-10.96 in nafill.Rraw, #6139
+  x = nanotime(1L)
+  test(27.21, options=c(datatable.verbose=2L), coerceAs(x, 1), 1, output="double[nanotime] into double[numeric]")
+  test(27.22, options=c(datatable.verbose=2L), coerceAs(x, 1L), 1L, output="double[nanotime] into integer[integer]")
+  test(27.23, options=c(datatable.verbose=2L), substring(coerceAs(x, "1"),1,11) %in% c("1","1970-01-01T"), output="double[nanotime] into character[character]")
+                                                     # ^ https://github.com/eddelbuettel/nanotime/issues/92; %in% so as not to break if nanotime adds as.character method
+  test(27.24, options=c(datatable.verbose=2L), coerceAs(1, x), x, output="double[numeric] into double[nanotime]")
+  test(27.25, options=c(datatable.verbose=2L), coerceAs(1L, x), x, output="integer[integer] into double[nanotime]")
+  test(27.26, options=c(datatable.verbose=2L), coerceAs("1", x), x, output="character[character] into double[nanotime]", warning="Coercing.*character")
 }
 
 # that plot works; moved from tests.Rraw 167 to here to save ram of loading graphics package and possible screen device issues on overloaded servers, #5517
@@ -722,3 +756,20 @@ if (FALSE) {  # moved from tests.Rraw in #5517 and not yet back on; wasn't sure 
   }
 }
 
+if (loaded[["dplyr"]]) {
+  # regression test for converting character->list column in a magrittr (dplyr) pipe, #2651
+  DT = data.table(a = 1, b = 2, c = '1,2,3,4', d = 4)
+  test(30, DT[, c := strsplit(c, ',', fixed = TRUE) %>% lapply(as.integer) %>% as.list]$c, list(1:4)) # nolint: pipe_call_linter. Mimicking MRE as filed.
+}
+
+if (loaded[["nanotime"]]) {
+  # respect dec=',' for nanotime, related to #6446, corresponding to tests 2281.*
+  test(31, fwrite(data.table(as.nanotime(.POSIXct(0))), dec=',', sep=';'), output="1970-01-01T00:00:00,000000000Z")
+}
+
+# tables() with large environment #6607
+.e <- new.env() ## to not populate the .GlobalEnv
+.e[["DT"]] <- as.data.table(lapply(1:15,function(i) runif(20e6)))
+res <- tables(env=.e)
+test(32, res[, .(NAME,NROW,NCOL,MB)], data.table(NAME="DT",NROW=20000000L,NCOL=15L,MB=2288.0))
+rm(.e, res)
