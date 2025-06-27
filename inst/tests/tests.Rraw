@@ -71,6 +71,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   setcoalesce = data.table:::setcoalesce
   setdiff_ = data.table:::setdiff_
   setreordervec = data.table:::setreordervec
+  setrev = data.table:::setrev
   shallow = data.table:::shallow # until exported
   .shallow = data.table:::.shallow
   split.data.table = data.table:::split.data.table
@@ -21215,3 +21216,58 @@ test(2319.1, !is.null(attr(dt_get, ".internal.selfref")))
 dt_get0 = data.frame(a = 1:3, b = letters[1:3])
 setDT(get0("dt_get0"))
 test(2319.2, !is.null(attr(dt_get0, ".internal.selfref")))
+
+# 5885 implement frev
+d = c(NA, NaN, Inf, -Inf)
+test(2320.00, frev(c(FALSE, NA)),     c(NA, FALSE))
+test(2320.01, frev(c(0L, NA)),        c(NA, 0L))
+test(2320.02, frev(d),                c(-Inf, Inf, NaN, NA))
+test(2320.03, frev(c(NA, 1, 0+2i)),   c(0+2i, 1, NA))
+test(2320.04, frev(as.raw(0:1)),      as.raw(1:0))
+test(2320.05, frev(NULL),             NULL)
+test(2320.06, frev(character(5)),     character(5))
+test(2320.07, frev(integer(0)),       integer(0))
+test(2320.08, frev(list(1, "a")),     list("a", 1))
+test(2320.09, setrev(c(0L, NA)),      c(NA, 0L))
+test(2320.10, setrev(d),              c(-Inf, Inf, NaN, NA))
+test(2320.11, setrev(c(NA, 1, 0+2i)), c(0+2i, 1, NA))
+test(2320.12, setrev(as.raw(0:1)),    as.raw(1:0))
+test(2320.13, setrev(NULL),           NULL)
+test(2320.14, setrev(character(5)),   character(5))
+test(2320.15, setrev(integer(0)),     integer(0))
+test(2320.16, setrev(list(1, "a")),   list("a", 1))
+test(2320.17, frev(1:1e2),            rev(1:1e2))
+# copy arguments
+x = 1:3
+test(2320.21, {frev(x);  x}, 1:3)
+test(2320.22, {setrev(x); x}, 3:1)
+test(2320.23, address(x) == address(setrev(x)))
+test(2320.24, address(x) != address(frev(x)))
+# do not alter on subsets
+test(2320.25, {setrev(x[1:2]);  x}, 1:3)
+# levels
+f = as.factor(letters)
+test(2320.31, frev(f), rev(f))
+test(2320.32, frev(as.IDate(1:10)), as.IDate(10:1))
+test(2320.33, frev(as.IDate(1:10)), as.IDate(10:1))
+# names
+x = c(a=1L, b=2L, c=3L)
+test(2320.41, frev(x), rev(x))
+test(2320.42, setrev(x), x)
+# attributes
+x = structure(1:10, class = c("IDate", "Date"), att = 1L)
+test(2320.51, attr(frev(x), "att"), attr(rev(x), "att"))
+test(2320.52, class(frev(x)), class(rev(x)))
+test(2320.53, attr(setrev(x), "att"), 1L)
+test(2320.54, class(setrev(x)), c("IDate", "Date"))
+x = structure(integer(0), att = 1L)
+test(2320.55, attr(frev(x), "att"), attr(rev(x), "att"))
+# errors
+test(2320.61, frev(data.table()), error="should not be data.frame or data.table")
+test(2320.62, frev(expression(1)), error="is not supported by frev")
+test(2320.63, frev(matrix(1)), error="should not be matrix or array")
+if (test_bit64) {
+  x = as.integer64(c(1, NA, 3))
+  test(2320.71, frev(x), rev(x))
+  test(2320.72, setrev(x), x)
+}
