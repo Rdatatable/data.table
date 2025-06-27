@@ -21194,9 +21194,9 @@ setDT(get0("dt_get0"))
 test(2319.2, !is.null(attr(dt_get0, ".internal.selfref")))
 
 # Improved fread error handling for cmd exe and decompression #5415
-test(2318.1, fread(cmd="false"), error="External command failed") # external command execution error handling
+test(2320.1, fread(cmd="false"), error="External command failed with exit code") # external command execution error handling
 if (test_R.utils) {
   writeBin(c(0x1F, 0x8B, 0xFF, 0xFF), f<-tempfile(fileext=".csv.gz"))
-  test(2318.2, fread(f), error="Failed to decompress") # Compressed file decompression error handling
+  test(2320.2, fread(f), error="R.utils::decompressFile failed to decompress") # Compressed file decompression error handling
   unlink(f)
 }
