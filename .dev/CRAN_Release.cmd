@@ -95,17 +95,6 @@ grep "PROTECT_PTR" ./src/*.c
 # No use of long long, instead use int64_t. TODO
 # grep "long long" ./src/*.c
 
-// No use of llu, lld, zd or zu
-grep -nE "(llu|lld|zd|zu)" src/*.[hc]
-// Comment moved here from fread.c on 19 Nov 2019
-// [Moved from fread.c on 19 Nov 2019] On Windows variables of type `size_t` cannot be printed
-// with "%zu" in the `snprintf()` function. For those variables we used to cast them into
-// `unsigned long long int` before printing, and defined (llu) to make the cast shorter.
-// We're now observing warnings from gcc-8 with -Wformat-extra-args, #4062. So
-// now we're more strict and cast to [u]int64_t and use PRIu64/PRId64 from <inttypes.h>
-// In many cases the format specifier is passed to our own macro (e.g. DTPRINT) or to Rprintf(),
-// error() etc, and even if they don't call sprintf() now, they could in future.
-
 # No tabs in C or R code (sorry, Richard Hendricks)
 grep -P "\t" ./R/*.R
 grep -P "\t" ./src/*.c
@@ -235,23 +224,23 @@ system.time(test.data.table(script="*.Rraw"))  # apx 8h = froll 3h + nafill 1m +
 
 
 ###############################################
-#  R 3.3.0 (stated dependency)
+#  R 3.4.0 (stated dependency)
 ###############################################
 
 ### ONE TIME BUILD
 sudo apt-get -y build-dep r-base
 cd ~/build
-wget http://cran.stat.ucla.edu/src/base/R-3/R-3.3.0.tar.gz
-tar xvf R-3.3.0.tar.gz
-cd R-3.3.0
+wget http://cran.stat.ucla.edu/src/base/R-3/R-3.4.0.tar.gz
+tar xvf R-3.4.0.tar.gz
+cd R-3.4.0
 CFLAGS="-fcommon" FFLAGS="-fallow-argument-mismatch" ./configure --without-recommended-packages
 make
-alias R330=~/build/R-3.3.0/bin/R
+alias R340=~/build/R-3.4.0/bin/R
 ### END ONE TIME BUILD
 
 cd ~/GitHub/data.table
-R330 CMD INSTALL ./data.table_1.16.99.tar.gz
-R330
+R340 CMD INSTALL ./data.table_1.16.99.tar.gz
+R340
 require(data.table)
 test.data.table(script="*.Rraw")
 

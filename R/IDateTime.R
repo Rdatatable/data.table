@@ -46,7 +46,6 @@ as.IDate.POSIXct = function(x, tz = attr(x, "tzone", exact=TRUE), ...) {
 as.IDate.IDate = function(x, ...) x
 
 as.Date.IDate = function(x, ...) {
-  x = as.numeric(x)
   class(x) = "Date"
   x
 }

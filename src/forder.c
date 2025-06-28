@@ -117,10 +117,10 @@ static void push(const int *x, const int n) {
   int newn = gs_thread_n[me] + n;
   if (gs_thread_alloc[me] < newn) {
     gs_thread_alloc[me] = (newn < nrow/3) ? (1+(newn*2)/4096)*4096 : nrow;  // [2|3] to not overflow and 3 not 2 to avoid allocating close to nrow (nrow groups occurs when all size 1 groups)
-    gs_thread[me] = realloc(gs_thread[me], gs_thread_alloc[me]*sizeof(int));
+    gs_thread[me] = realloc(gs_thread[me], sizeof(*gs_thread[me])*gs_thread_alloc[me]);
     if (gs_thread[me]==NULL) STOP(_("Failed to realloc thread private group size buffer to %d*4bytes"), (int)gs_thread_alloc[me]);
   }
-  memcpy(gs_thread[me]+gs_thread_n[me], x, n*sizeof(int));
+  memcpy(gs_thread[me]+gs_thread_n[me], x, n*sizeof(*gs_thread[me]));
   gs_thread_n[me] += n;
 }
 
@@ -128,13 +128,15 @@ static void flush(void) {
   if (!retgrp) return;
   int me = omp_get_thread_num();
   int n = gs_thread_n[me];
+  // normally doesn't happen, can be encountered under heavy load, #7051
+  if (!n) return; // # nocov
   int newn = gs_n + n;
   if (gs_alloc < newn) {
     gs_alloc = (newn < nrow/3) ? (1+(newn*2)/4096)*4096 : nrow;
-    gs = realloc(gs, gs_alloc*sizeof(int));
+    gs = realloc(gs, sizeof(*gs)*gs_alloc);
     if (gs==NULL) STOP(_("Failed to realloc group size result to %d*4bytes"), (int)gs_alloc);
   }
-  memcpy(gs+gs_n, gs_thread[me], n*sizeof(int));
+  memcpy(gs+gs_n, gs_thread[me], sizeof(*gs)*n);
   gs_n += n;
   gs_thread_n[me] = 0;
 }
@@ -263,7 +265,7 @@ static void cradix_r(SEXP *xsub, int n, int radix)
   }
   memcpy(xsub, cradix_xtmp, n*sizeof(SEXP));
   if (radix == ustr_maxlen-1) {
-    memset(thiscounts, 0, 256*sizeof(int));
+    memset(thiscounts, 0, 256*sizeof(*thiscounts));
     return;
   }
   if (thiscounts[0] != 0) STOP(_("Logical error. counts[0]=%d in cradix but should have been decremented to 0. radix=%d"), thiscounts[0], radix);
@@ -280,8 +282,8 @@ static void cradix_r(SEXP *xsub, int n, int radix)
 
 static void cradix(SEXP *x, int n)
 {
-  cradix_counts = (int *)calloc(ustr_maxlen*256, sizeof(int));  // counts for the letters of left-aligned strings
-  cradix_xtmp = (SEXP *)malloc(ustr_n*sizeof(SEXP));
+  cradix_counts = calloc(ustr_maxlen*256, sizeof(*cradix_counts));  // counts for the letters of left-aligned strings
+  cradix_xtmp = malloc(sizeof(*cradix_xtmp) * ustr_n);
   if (!cradix_counts || !cradix_xtmp) {
     free(cradix_counts); free(cradix_xtmp); // # nocov
     STOP(_("Failed to alloc cradix_counts and/or cradix_tmp")); // # nocov
@@ -316,7 +318,7 @@ static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max
       if (ustr_alloc<=ustr_n) {
         ustr_alloc = (ustr_alloc==0) ? 16384 : ustr_alloc*2;  // small initial guess, negligible time to alloc 128KB (32 pages)
         if (ustr_alloc>n) ustr_alloc = n;  // clamp at n. Reaches n when fully unique (no dups)
-        ustr = realloc(ustr, ustr_alloc * sizeof(SEXP));
+        ustr = realloc(ustr, sizeof(SEXP) * ustr_alloc);
         if (ustr==NULL) STOP(_("Unable to realloc %d * %d bytes in range_str"), ustr_alloc, (int)sizeof(SEXP));  // # nocov
       }
       ustr[ustr_n++] = s;
@@ -342,10 +344,10 @@ static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max
   if (anynotutf8) {
     SEXP ustr2 = PROTECT(allocVector(STRSXP, ustr_n));
     for (int i=0; i<ustr_n; i++) SET_STRING_ELT(ustr2, i, ENC2UTF8(ustr[i]));
-    SEXP *ustr3 = (SEXP *)malloc(ustr_n * sizeof(SEXP));
+    SEXP *ustr3 = malloc(sizeof(*ustr3) * ustr_n);
     if (!ustr3)
       STOP(_("Failed to alloc ustr3 when converting strings to UTF8"));  // # nocov
-    memcpy(ustr3, STRING_PTR_RO(ustr2), ustr_n*sizeof(SEXP));
+    memcpy(ustr3, STRING_PTR_RO(ustr2), sizeof(SEXP) * ustr_n);
     // need to reset ustr_maxlen because we need ustr_maxlen for utf8 strings
     ustr_maxlen = 0;
     for (int i=0; i<ustr_n; i++) {
@@ -361,7 +363,7 @@ static void range_str(const SEXP *x, int n, uint64_t *out_min, uint64_t *out_max
       SET_TRUELENGTH(ustr3[i], --o);
     }
     // now use the 1-1 mapping from ustr to ustr2 to get the ordering back into original ustr, being careful to reset tl to 0
-    int *tl = (int *)malloc(ustr_n * sizeof(int));
+    int *tl = malloc(sizeof(*tl) * ustr_n);
     if (!tl) {
       free(ustr3); // # nocov
       STOP(_("Failed to alloc tl when converting strings to UTF8"));  // # nocov
@@ -454,9 +456,9 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
 {
 
 #ifdef TIMING_ON
-  memset(tblock, 0, MAX_NTH*NBLOCK*sizeof(double));
-  memset(nblock, 0, MAX_NTH*NBLOCK*sizeof(int));
-  memset(stat,   0, 257*sizeof(uint64_t));
+  memset(tblock, 0, MAX_NTH*NBLOCK*sizeof(*tblock));
+  memset(nblock, 0, MAX_NTH*NBLOCK*sizeof(*nblock));
+  memset(stat,   0, 257*sizeof(*stat));
   TBEG()
 #endif
 
@@ -551,9 +553,9 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
 
   int ncol=length(by);
   int keyAlloc = (ncol+n_cplx)*8 + 1;         // +1 for NULL to mark end; calloc to initialize with NULLs
-  key = calloc(keyAlloc, sizeof(uint8_t *));  // needs to be before loop because part II relies on part I, column-by-column.
+  key = calloc(keyAlloc, sizeof(*key));  // needs to be before loop because part II relies on part I, column-by-column.
   if (!key)
-    STOP(_("Unable to allocate %"PRIu64" bytes of working memory"), (uint64_t)keyAlloc*sizeof(uint8_t *));  // # nocov
+    STOP(_("Unable to allocate %"PRIu64" bytes of working memory"), (uint64_t)keyAlloc*sizeof(*key));  // # nocov
   nradix=0; // the current byte we're writing this column to; might be squashing into it (spare>0)
   int spare=0;  // the amount of bits remaining on the right of the current nradix byte
   bool isReal=false;
@@ -665,10 +667,10 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
 
     for (int b=0; b<nbyte; b++) {
       if (key[nradix+b]==NULL) {
-        uint8_t *tt = calloc(nrow, sizeof(uint8_t));  // 0 initialize so that NA's can just skip (NA is always the 0 offset)
+        uint8_t *tt = calloc(nrow, sizeof(*tt));  // 0 initialize so that NA's can just skip (NA is always the 0 offset)
         if (!tt) {
           free(key); // # nocov
-          STOP(_("Unable to allocate %"PRIu64" bytes of working memory"), (uint64_t)nrow*sizeof(uint8_t)); // # nocov
+          STOP(_("Unable to allocate %"PRIu64" bytes of working memory"), (uint64_t)nrow*sizeof(*tt)); // # nocov
         }
         key[nradix+b] = tt;
       }
@@ -788,17 +790,17 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
 
   // global nth, TMP & UGRP
   nth = getDTthreads(nrow, true);  // this nth is relied on in cleanup(); throttle=true/false debated for #5077
-  TMP =  (int *)malloc(nth*UINT16_MAX*sizeof(int)); // used by counting sort (my_n<=65536) in radix_r()
-  UGRP = (uint8_t *)malloc(nth*256);                // TODO: align TMP and UGRP to cache lines (and do the same for stack allocations too)
+  TMP =  malloc(sizeof(*TMP)*nth*UINT16_MAX); // used by counting sort (my_n<=65536) in radix_r()
+  UGRP = malloc(sizeof(*UGRP)*nth*256);                // TODO: align TMP and UGRP to cache lines (and do the same for stack allocations too)
   if (!TMP || !UGRP /*|| TMP%64 || UGRP%64*/) {
     free(TMP); free(UGRP); // # nocov
     STOP(_("Failed to allocate TMP or UGRP or they weren't cache line aligned: nth=%d"), nth); // # nocov
   }
   
   if (retgrp) {
-    gs_thread = calloc(nth, sizeof(int *));     // thread private group size buffers
-    gs_thread_alloc = calloc(nth, sizeof(int));
-    gs_thread_n = calloc(nth, sizeof(int));
+    gs_thread = calloc(nth, sizeof(*gs_thread));     // thread private group size buffers
+    gs_thread_alloc = calloc(nth, sizeof(*gs_thread_alloc));
+    gs_thread_n = calloc(nth, sizeof(*gs_thread_n));
     if (!gs_thread || !gs_thread_alloc || !gs_thread_n) {
       free(gs_thread); free(gs_thread_alloc); free(gs_thread_n); // # nocov
       STOP(_("Could not allocate (very tiny) group size thread buffers")); // # nocov
@@ -917,7 +919,7 @@ void radix_r(const int from, const int to, const int radix) {
     #endif
 
     uint8_t *restrict my_key = key[radix]+from;  // safe to write as we don't use this radix again
-    uint8_t *o = (uint8_t *)malloc(my_n * sizeof(uint8_t));
+    uint8_t *o = malloc(sizeof(*o) * my_n);
     if (!o)
       STOP(_("Failed to allocate %d bytes for '%s'."), (int)(my_n * sizeof(uint8_t)), "o"); // # nocov
     // if last key (i.e. radix+1==nradix) there are no more keys to reorder so we could reorder osub by reference directly and save allocating and populating o just
@@ -986,18 +988,18 @@ void radix_r(const int from, const int to, const int radix) {
     }
     if (!skip) {
       // reorder osub and each remaining ksub
-      int *TMP = malloc(my_n * sizeof(int));
+      int *TMP = malloc(sizeof(*TMP) * my_n);
       if (!TMP) {
         free(o); // # nocov
-        STOP(_("Failed to allocate %d bytes for '%s'."), (int)(my_n * sizeof(int)), "TMP"); // # nocov
+        STOP(_("Failed to allocate %d bytes for '%s'."), (int)(sizeof(*TMP) * my_n), "TMP"); // # nocov
       }
       const int *restrict osub = anso+from;
       for (int i=0; i<my_n; i++) TMP[i] = osub[o[i]];
-      memcpy((int *restrict)(anso+from), TMP, my_n*sizeof(int));
+      memcpy((int *restrict)(anso+from), TMP, my_n*sizeof(*anso));
       for (int r=radix+1; r<nradix; r++) {
         const uint8_t *restrict ksub = key[r]+from;
         for (int i=0; i<my_n; i++) ((uint8_t *)TMP)[i] = ksub[o[i]];
-        memcpy((uint8_t *restrict)(key[r]+from), (uint8_t *)TMP, my_n);
+        memcpy((uint8_t *restrict)(key[r]+from), (const uint8_t *)TMP, my_n);
       }
       free(TMP);
       TEND(8)
@@ -1009,9 +1011,9 @@ void radix_r(const int from, const int to, const int radix) {
       return;
     }
     int ngrp=0; //minor TODO: could know number of groups with certainty up above
-    int *my_gs = malloc(my_n * sizeof(int));
+    int *my_gs = malloc(sizeof(*my_gs) * my_n);
     if (!my_gs)
-      STOP(_("Failed to allocate %d bytes for '%s'."), (int)(my_n * sizeof(int)), "my_gs"); // # nocov
+      STOP(_("Failed to allocate %d bytes for '%s'."), (int)(sizeof(*my_gs) * my_n), "my_gs"); // # nocov
     my_gs[ngrp]=1;
     for (int i=1; i<my_n; i++) {
       if (my_key[i]!=my_key[i-1]) my_gs[++ngrp] = 1;
@@ -1090,7 +1092,7 @@ void radix_r(const int from, const int to, const int radix) {
       } else {
         const int *restrict osub = anso+from;
         for (int i=0; i<my_n; i++) my_TMP[my_starts[my_key[i]]++] = osub[i];
-        memcpy(anso+from, my_TMP, my_n*sizeof(int));
+        memcpy(anso+from, my_TMP, my_n*sizeof(*anso));
       }
       TEND(13)
 
@@ -1111,9 +1113,9 @@ void radix_r(const int from, const int to, const int radix) {
     if (!retgrp && radix+1==nradix) {
       return;  // we're done. avoid allocating and populating very last group sizes for last key
     }
-    int *my_gs = malloc((ngrp==0 ? 256 : ngrp) * sizeof(int)); // ngrp==0 when sort and skip==true; we didn't count the non-zeros in my_counts yet in that case
+    int *my_gs = malloc(sizeof(*my_gs) * (ngrp==0 ? 256 : ngrp)); // ngrp==0 when sort and skip==true; we didn't count the non-zeros in my_counts yet in that case
     if (!my_gs)
-      STOP(_("Failed to allocate %d bytes for '%s'."), (int)((ngrp==0 ? 256 : ngrp) * sizeof(int)), "my_gs"); // # nocov
+      STOP(_("Failed to allocate %d bytes for '%s'."), (int)(sizeof(*my_gs) * (ngrp == 0 ? 256 : ngrp)), "my_gs"); // # nocov
     if (sortType!=0) {
       ngrp=0;
       for (int i=0; i<256; i++) if (my_counts[i]) my_gs[ngrp++]=my_counts[i];  // this casts from uint16_t to int32, too
@@ -1139,9 +1141,9 @@ void radix_r(const int from, const int to, const int radix) {
   int batchSize = MIN(UINT16_MAX, 1+my_n/getDTthreads(my_n, true));  // (my_n-1)/nBatch + 1;   //UINT16_MAX == 65535
   int nBatch = (my_n-1)/batchSize + 1;   // TODO: make nBatch a multiple of nThreads?
   int lastBatchSize = my_n - (nBatch-1)*batchSize;
-  uint16_t *counts = calloc(nBatch*256,sizeof(uint16_t));
-  uint8_t  *ugrps =  malloc(nBatch*256*sizeof(uint8_t));
-  int      *ngrps =  calloc(nBatch    ,sizeof(int));
+  uint16_t *counts = calloc(nBatch*256,sizeof(*counts));
+  uint8_t  *ugrps =  malloc(sizeof(*ugrps)*nBatch*256);
+  int      *ngrps =  calloc(nBatch    ,sizeof(*ngrps));
   if (!counts || !ugrps || !ngrps) {
     free(counts); free(ugrps); free(ngrps); // # nocov
     STOP(_("Failed to allocate parallel counts. my_n=%d, nBatch=%d"), my_n, nBatch); // # nocov
@@ -1152,11 +1154,11 @@ void radix_r(const int from, const int to, const int radix) {
   TEND(16)
   #pragma omp parallel num_threads(getDTthreads(nBatch, false))
   {
-    int     *my_otmp = malloc(batchSize * sizeof(int)); // thread-private write
-    uint8_t *my_ktmp = malloc(batchSize * sizeof(uint8_t) * n_rem);
+    int     *my_otmp = malloc(sizeof(*my_otmp) * batchSize); // thread-private write
+    uint8_t *my_ktmp = malloc(sizeof(*my_ktmp) * batchSize * n_rem);
     if (!my_otmp || !my_ktmp) {
       free(my_otmp); free(my_ktmp);
-      STOP(_("Failed to allocate 'my_otmp' and/or 'my_ktmp' arrays (%d bytes)."), (int)(batchSize*(sizeof(int) + sizeof(uint8_t))));
+      STOP(_("Failed to allocate 'my_otmp' and/or 'my_ktmp' arrays (%d bytes)."), (int)((sizeof(*my_otmp) + sizeof(*my_ktmp)) * batchSize));
     }
     // TODO: move these up above and point restrict[me] to them. Easier to Error that way if failed to alloc.
     #pragma omp for
@@ -1193,7 +1195,7 @@ void radix_r(const int from, const int to, const int radix) {
 
         // we haven't completed all batches, so we don't know where these groups should place yet
         // So for now we write the thread-private small now-grouped buffers back in-place. The counts and groups across all batches will be used below to move these blocks.
-        memcpy(anso+my_from, my_otmp, my_n*sizeof(int));
+        memcpy(anso+my_from, my_otmp, my_n*sizeof(*anso));
         for (int r=0; r<n_rem; r++) memcpy(key[radix+1+r]+my_from, my_ktmp+r*my_n, my_n*sizeof(uint8_t));
 
         // revert cumulate back to counts ready for vertical cumulate
@@ -1242,9 +1244,9 @@ void radix_r(const int from, const int to, const int radix) {
   // the counts are uint16_t but the cumulate needs to be int32_t (or int64_t in future) to hold the offsets
   // If skip==true and we're already done, we still need the first row of this cummulate (diff to get total group sizes) to push() or recurse below
 
-  int *starts = calloc(nBatch*256, sizeof(int));  // keep starts the same shape and ugrp order as counts
+  int *starts = calloc(nBatch*256, sizeof(*starts));  // keep starts the same shape and ugrp order as counts
   if (!starts)
-    STOP(_("Failed to allocate %d bytes for '%s'."), (int)(nBatch*256*sizeof(int)), "starts"); // # nocov
+    STOP(_("Failed to allocate %d bytes for '%s'."), (int)(nBatch*256*sizeof(*starts)), "starts"); // # nocov
   for (int j=0, sum=0; j<ngrp; j++) {  // iterate through columns (ngrp bytes)
     uint16_t *tmp1 = counts+ugrp[j];
     int      *tmp2 = starts+ugrp[j];
@@ -1259,7 +1261,7 @@ void radix_r(const int from, const int to, const int radix) {
 
   TEND(18 + notFirst*3)
   if (!skip) {
-    int *TMP = malloc(my_n * sizeof(int));
+    int *TMP = malloc(sizeof(*TMP) * my_n);
     if (!TMP)
       STOP(_("Unable to allocate TMP for my_n=%d items in parallel batch counting"), my_n); // # nocov
     #pragma omp parallel for num_threads(getDTthreads(nBatch, false))
@@ -1271,11 +1273,11 @@ void radix_r(const int from, const int to, const int radix) {
       const int                my_ngrp = ngrps[batch];
       for (int i=0; i<my_ngrp; i++, byte++) {
         const uint16_t len = my_counts[*byte];
-        memcpy(TMP+my_starts[*byte], osub, len*sizeof(int));
+        memcpy(TMP+my_starts[*byte], osub, len*sizeof(*TMP));
         osub += len;
       }
     }
-    memcpy(anso+from, TMP, my_n*sizeof(int));
+    memcpy(anso+from, TMP, my_n*sizeof(*anso));
 
     for (int r=0; r<n_rem; r++) {    // TODO: groups of sizeof(anso)  4 byte int currently  (in future 8).  To save team startup cost (but unlikely significant anyway)
       #pragma omp parallel for num_threads(getDTthreads(nBatch, false))
@@ -1291,16 +1293,16 @@ void radix_r(const int from, const int to, const int radix) {
           ksub += len;
         }
       }
-      memcpy(key[radix+1+r]+from, (uint8_t *)TMP, my_n);
+      memcpy(key[radix+1+r]+from, (const uint8_t *)TMP, my_n);
     }
     free(TMP);
   }
   TEND(19 + notFirst*3)
   notFirst = true;
 
-  int *my_gs = malloc(ngrp * sizeof(int));
+  int *my_gs = malloc(sizeof(*my_gs) * ngrp);
   if (!my_gs)
-    STOP(_("Failed to allocate %d bytes for '%s'."), (int)(ngrp * sizeof(int)), "my_gs"); // # nocov
+    STOP(_("Failed to allocate %d bytes for '%s'."), (int)(sizeof(*my_gs) * ngrp), "my_gs"); // # nocov
   for (int i=1; i<ngrp; i++) my_gs[i-1] = starts[ugrp[i]] - starts[ugrp[i-1]];   // use the first row of starts to get totals
   my_gs[ngrp-1] = my_n - starts[ugrp[ngrp-1]];
 
@@ -1422,14 +1424,14 @@ SEXP issorted(SEXP x, SEXP by)
   const R_xlen_t nrow = xlength(VECTOR_ELT(x,0));
   // ncol>1
   // pre-save lookups to save deep switch later for each column type
-  size_t *sizes =          (size_t *)R_alloc(ncol, sizeof(size_t));
-  const char **ptrs = (const char **)R_alloc(ncol, sizeof(char *));
-  int *types =                (int *)R_alloc(ncol, sizeof(int));
+  size_t *sizes =          (size_t *)R_alloc(ncol, sizeof(*sizes));
+  const char **ptrs = (const char **)R_alloc(ncol, sizeof(*ptrs));
+  int *types =                (int *)R_alloc(ncol, sizeof(*types));
   for (int j=0; j<ncol; ++j) {
     int c = INTEGER(by)[j];
     if (c<1 || c>length(x)) STOP(_("issorted 'by' [%d] out of range [1,%d]"), c, length(x));
     SEXP col = VECTOR_ELT(x, c-1);
-    sizes[j] = SIZEOF(col);
+    sizes[j] = RTYPE_SIZEOF(col);
     switch(TYPEOF(col)) {
     case INTSXP: case LGLSXP:
       types[j] = 0;

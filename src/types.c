@@ -67,7 +67,7 @@ SEXP testMsgR(SEXP status, SEXP x, SEXP k) {
 
   // TODO below chunk into allocansList helper, not for 1.12.4
   SEXP ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++;
-  ans_t *vans = (ans_t *)R_alloc(nx*nk, sizeof(ans_t));
+  ans_t *vans = (ans_t *)R_alloc(nx*nk, sizeof(*vans));
   if (verbose)
     Rprintf(_("%s: allocating memory for results %dx%d\n"), __func__, nx, nk);
   for (R_len_t i=0; i<nx; i++) {

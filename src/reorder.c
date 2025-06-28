@@ -18,20 +18,20 @@ SEXP reorder(SEXP x, SEXP order)
     ncol = length(x);
     for (int i=0; i<ncol; i++) {
       SEXP v = VECTOR_ELT(x,i);
-      if (SIZEOF(v)!=4 && SIZEOF(v)!=8 && SIZEOF(v)!=16 && SIZEOF(v)!=1)
-        error(_("Item %d of list is type '%s' which isn't yet supported (SIZEOF=%zu)"), i+1, type2char(TYPEOF(v)), SIZEOF(v));
+      if (RTYPE_SIZEOF(v)!=4 && RTYPE_SIZEOF(v)!=8 && RTYPE_SIZEOF(v)!=16 && RTYPE_SIZEOF(v)!=1)
+        error(_("Item %d of list is type '%s' which isn't yet supported (RTYPE_SIZEOF=%zu)"), i+1, type2char(TYPEOF(v)), RTYPE_SIZEOF(v));
       if (length(v)!=nrow)
         error(_("Column %d is length %d which differs from length of column 1 (%d). Invalid data.table."), i+1, length(v), nrow);
-      if (SIZEOF(v) > maxSize)
-        maxSize=SIZEOF(v);
+      if (RTYPE_SIZEOF(v) > maxSize)
+        maxSize=RTYPE_SIZEOF(v);
       if (ALTREP(v)) SET_VECTOR_ELT(x, i, copyAsPlain(v));
     }
     copySharedColumns(x); // otherwise two columns which point to the same vector would be reordered and then re-reordered, issues linked in PR#3768
   } else {
-    if (SIZEOF(x)!=4 && SIZEOF(x)!=8 && SIZEOF(x)!=16 && SIZEOF(x)!=1)
-      error(_("reorder accepts vectors but this non-VECSXP is type '%s' which isn't yet supported (SIZEOF=%zu)"), type2char(TYPEOF(x)), SIZEOF(x));
+    if (RTYPE_SIZEOF(x)!=4 && RTYPE_SIZEOF(x)!=8 && RTYPE_SIZEOF(x)!=16 && RTYPE_SIZEOF(x)!=1)
+      error(_("reorder accepts vectors but this non-VECSXP is type '%s' which isn't yet supported (RTYPE_SIZEOF=%zu)"), type2char(TYPEOF(x)), RTYPE_SIZEOF(x));
     if (ALTREP(x)) internal_error(__func__, "cannot reorder an ALTREP vector. Please see NEWS item 2 in v1.11.4"); // # nocov
-    maxSize = SIZEOF(x);
+    maxSize = RTYPE_SIZEOF(x);
     nrow = length(x);
     ncol = 1;
   }
@@ -51,8 +51,8 @@ SEXP reorder(SEXP x, SEXP order)
   while (idx[i] == i+1) --i;
   const int end=i, nmid=end-start+1;
 
-  uint8_t *seen = (uint8_t *)R_alloc(nmid, sizeof(uint8_t)); // detect duplicates
-  memset(seen, 0, nmid*sizeof(uint8_t));
+  uint8_t *seen = (uint8_t *)R_alloc(nmid, sizeof(*seen)); // detect duplicates
+  memset(seen, 0, nmid*sizeof(*seen));
   for (int i=start; i<=end; ++i) {
     if (idx[i]==NA_INTEGER || idx[i]-1<start || idx[i]-1>end || seen[idx[i]-1-start]++)
       error(_("Item %d of order (%d) is either NA, out of range [1,%d], or is duplicated. The new order must be a strict permutation of 1:n"),
@@ -67,7 +67,7 @@ SEXP reorder(SEXP x, SEXP order)
 
   for (int i=0; i<ncol; ++i) {
     const SEXP v = isNewList(x) ? VECTOR_ELT(x,i) : x;
-    const size_t size = SIZEOF(v);    // size_t, otherwise #61 (integer overflow in memcpy)
+    const size_t size = RTYPE_SIZEOF(v);    // size_t, otherwise #61 (integer overflow in memcpy)
     if (size==4) {
       const int *restrict vd = DATAPTR_RO(v);
       int *restrict tmp = (int *)TMP;
@@ -102,7 +102,7 @@ SEXP reorder(SEXP x, SEXP order)
       }
     }
     // Unique and somber line. Not done lightly. Please read all comments in this file.
-    memcpy(((char *)DATAPTR_RO(v)) + size*start, TMP, size*nmid);
+    memcpy((char *)DATAPTR_RO(v) + size*start, TMP, size*nmid);
     // The one and only place in data.table where we write behind the write-barrier. Fundamental to setkey and data.table.
     // This file is unique and special w.r.t. the write-barrier: an utterly strict in-place shuffle.
     // This shuffle operation does not inc or dec named/refcnt, or anything similar in R: past, present or future.
@@ -125,4 +125,3 @@ SEXP setcolorder(SEXP x, SEXP o)
   UNPROTECT(1);
   return R_NilValue;
 }
-
