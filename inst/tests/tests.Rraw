@@ -21194,7 +21194,7 @@ setDT(get0("dt_get0"))
 test(2319.2, !is.null(attr(dt_get0, ".internal.selfref")))
 
 # Improved fread error handling for cmd exe and decompression #5415
-test(2320.1, fread(cmd="false"), error="External command failed with exit code")
+test(2320.1, fread(cmd="false"), error="External command failed with exit code", warning = if (.Platform$OS.type=="windows") "execution failed")
 
 if (test_R.utils) local({
   tmp <- tempfile(fileext=".gz")
