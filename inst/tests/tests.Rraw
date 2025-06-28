@@ -21215,3 +21215,16 @@ test(2319.1, !is.null(attr(dt_get, ".internal.selfref")))
 dt_get0 = data.frame(a = 1:3, b = letters[1:3])
 setDT(get0("dt_get0"))
 test(2319.2, !is.null(attr(dt_get0, ".internal.selfref")))
+
+# Improved fread error handling for cmd exe and decompression #5415
+test(2320.1, fread(cmd="false"), error="External command failed with exit code", warning = if (.Platform$OS.type=="windows") "execution failed")
+
+if (test_R.utils) local({
+  tmp <- tempfile(fileext=".gz")
+  file.create(tmp); on.exit(unlink(tmp))
+  local({
+    conn <- file(tmp, 'wb'); on.exit(close(conn))
+    writeBin(as.raw(c(31L, 139L)), conn) # Gzip header magic numbers to trigger that read path
+  })
+  test(2320.2, fread(tmp), error="R.utils::decompressFile failed to decompress", warning="invalid")
+})
