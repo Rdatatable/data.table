@@ -167,9 +167,13 @@ rss = function() {  #5515 #5517
 }
 
 # convert char to factor retaining order #4837
-fctr = function(x, levels=unique(x), ..., rev=FALSE) {
+fctr = function(x, levels=unique(x), ..., sort=FALSE, rev=FALSE) {
+  if (!isTRUEorFALSE(sort))
+    stop("argument 'sort' must be TRUE or FALSE")
   if (!isTRUEorFALSE(rev))
     stop("argument 'rev' must be TRUE or FALSE")
-  factor(x, levels=if (rev) rev(levels) else levels, ...)
+  if (sort) levels = sort(levels)
+  if (rev) levels = rev(levels)
+  factor(x, levels=levels, ...)
 }
 
