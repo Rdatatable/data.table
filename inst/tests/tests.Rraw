@@ -21234,3 +21234,6 @@ test(2321.1, DT <- data.table(a=1:2, b=matrix(1:2)), data.table(a=1:2, b=1:2))
 test(2321.2, names(DT), names(data.frame(a=1:2, b=matrix(1:2))))
 test(2321.3, DT <- data.table(a=integer(), b=matrix(1L, nrow=0L, ncol=1L)), data.table(a=integer(), b=integer()))
 test(2321.4, names(DT), names(data.frame(a=integer(), b=matrix(1L, nrow=0L, ncol=1L))))
+## but respect named column vectors
+test(2321.5, DT <- data.table(a=1:2, cbind(b=3:4)), data.table(a=1:2, b=3:4))
+test(2321.6, names(DT), names(data.frame(a=1:2, cbind(b=3:4))))
