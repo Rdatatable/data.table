@@ -21194,14 +21194,14 @@ setDT(get0("dt_get0"))
 test(2319.2, !is.null(attr(dt_get0, ".internal.selfref")))
 
 # Improved fread error handling for cmd exe and decompression #5415
-test(2320.1, fread(cmd="false"), error="External command failed with exit code") # external command execution error handling
+test(2320.1, fread(cmd="false"), error="External command failed with exit code")
 
-if (test_R.utils) {
-  tmp <- tempfile(fileext=".csv.gz")
-  file.create(tmp)
-  conn <- file(tmp, 'wb')
-  writeBin(as.raw(c(31, 139)), conn) # Gzip header starts with magic numbers: 0x1F 0x8B (decimal 31, 139) - these identify the file as gzip
-  close(conn)
-  test(2320.2, fread(tmp), warning="R.utils::decompressFile") # Compressed file decompression error handling - catches warning first
-  unlink(tmp)
-}
+if (test_R.utils) local({
+  tmp <- tempfile(fileext=".gz")
+  file.create(tmp); on.exit(unlink(tmp))
+  local({
+    conn <- file(tmp, 'wb'); on.exit(close(conn))
+    writeBin(as.raw(c(31L, 139L)), conn) # Gzip header magic numbers to trigger that read path
+  })
+  test(2320.2, fread(tmp), error="R.utils::decompressFile failed to decompress", warning="invalid")
+})
