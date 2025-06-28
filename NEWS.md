@@ -46,6 +46,8 @@
 
 13. In rare cases, `data.table` failed to expand ALTREP columns when assigning a full column by reference. This could result in the target column getting modified unintentionally if the next call to the data.table was a modification by reference of the source column. E.g. in `DT[, b := as.character(a)]` the string conversion gets deferred and subsequent modification of column `a` would also modify column `b`, [#5400](https://github.com/Rdatatable/data.table/issues/5400). Thanks to @aquasync for the report and Václav Tlapák for the PR.
 
+14. `data.table()` function is now more aligned with `data.frame()` with respect to the names of the output when one of its inputs is a single-column matrix object, [#4124](https://github.com/Rdatatable/data.table/issues/4124). Thanks @PavoDive for the report and @jangorecki for the PR.
+
 ### NOTES
 
 1. Continued work to remove non-API C functions, [#6180](https://github.com/Rdatatable/data.table/issues/6180). Thanks Ivan Krylov for the PRs and for writing a clear and concise guide about the R API: https://aitap.codeberg.page/R-api/.
