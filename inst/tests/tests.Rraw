@@ -2281,15 +2281,38 @@ test(753.1, DT[,c("x1","x2"):=4:6, verbose = TRUE], data.table(a=letters[1:3],x=
             output = "RHS for item 2 has been duplicated")
 test(753.2, DT[2,x2:=7L], data.table(a=letters[1:3],x=3:1,x1=4:6,x2=c(4L,7L,6L),key="a"))
 DT = data.table(a=letters[3:1],x=1:3,y=4:6)
-test(754.1, DT[,c("x1","y1","x2"):=list(x,y)], error="Supplied 3 columns to be assigned 2 items. Please see NEWS for v1.12.2")
-test(754.2, DT[,c("x1","y1","x2"):=list(x,y,x)], data.table(a=letters[3:1],x=1:3,y=4:6,x1=1:3,y1=4:6,x2=1:3))
+test(754.01, DT[,c("x1","y1","x2"):=list(x,y)], error="Supplied 3 columns to be assigned 2 items. Please see NEWS for v1.12.2")
+test(754.02, DT[,c("x1","y1","x2"):=list(x,y,x)], data.table(a=letters[3:1],x=1:3,y=4:6,x1=1:3,y1=4:6,x2=1:3))
 # And non-recycling i.e. that a single column copy does copy the column
 DT = data.table(a=1:3)
-test(754.3, DT[,b:=a][1,a:=4L][2,b:=5L], data.table(a=INT(4,2,3),b=INT(1,5,3)))
-test(754.4, DT[,b:=a][3,b:=6L], data.table(a=INT(4,2,3),b=INT(4,2,6)))
-test(754.5, DT[,a:=as.character(a),verbose=TRUE], output="Direct plonk.*no copy")
+test(754.03, DT[, b := a][1, a := 4L][2, b := 5L], data.table(a=INT(4,2,3),b=INT(1,5,3)))
+test(754.04, DT[, b := a][3, b := 6L], data.table(a=INT(4,2,3),b=INT(4,2,6)))
+test(754.05, DT[, a := as.numeric(a), verbose=TRUE], output="Direct plonk.*no copy")
 RHS = as.integer(DT$a)
-test(754.6, DT[,a:=RHS,verbose=TRUE], output="RHS for item 1 has been duplicated")
+test(754.06, DT[, a:= RHS, verbose=TRUE], output="RHS for item 1 has been duplicated")
+# Expand ALTREPS in assign.c, #5400
+# String conversion gets deferred
+## first, a regression test of R itself -- we want to make sure our own test continues to be useful & testing its intended purpose
+test(754.07, {a = 1:10; .Internal(inspect(a)); b = as.character(a); .Internal(inspect(b))}, output = "\\bcompact\\b.*\\bdeferred string conversion\\b")
+test(754.08, DT[, a := as.character(a), verbose=TRUE], output="RHS for item 1 has been duplicated")
+# Executing the code inside of test expands the ALTREP so we repeat the code
+# in order to check the result after a further assignment
+DT = data.table(a=1:3)
+DT[, b := as.character(a)]
+DT[, a := 5L]
+test(754.09, DT, data.table(a=5L, b=as.character(1:3)))
+# This function returns an ALTREP wrapper if the input is at least length 64
+testFun = function(x) {
+  x[FALSE] = 1
+  x
+}
+DT = data.table(id=1:64, col1=0, col2=0)
+test(754.10, DT[, col1 := testFun(col2), verbose = TRUE], output="RHS for item 1 has been duplicated")
+DT = data.table(id=1:64, col1=0, col2=0)
+DT[, col1 := testFun(col2)]
+DT[, col2 := 999]
+test(754.11, DT, data.table(id=1:64, col1=0, col2=999))
+rm(testFun)
 
 # Used to test warning on redundant by (#2282) but by=.EACHI has now superseded
 DT = data.table(a=letters[1:3],b=rep(c("d","e"),each=3),x=1:6,key=c('a', 'b'))
@@ -21107,16 +21130,16 @@ class(DF) = c("tbl_df", "tbl", "data.frame")
 test(2309.02, key(as.data.table(DF, key="t")), "t")
 
 # data.table keyed with "b"
-DT = data.table(a = 1:5, b = 1:5, x = 1:5, key = "b") 
-test(2309.03, key(as.data.table(DT, key="a")), "a")   
-test(2309.04, key(as.data.table(DT)), "b")            
-test(2309.05, key(as.data.table(DT, key=NULL)), NULL) 
+DT = data.table(a = 1:5, b = 1:5, x = 1:5, key = "b")
+test(2309.03, key(as.data.table(DT, key="a")), "a")
+test(2309.04, key(as.data.table(DT)), "b")
+test(2309.05, key(as.data.table(DT, key=NULL)), NULL)
 
 # non-keyed data.table
 DT = data.table(a = 1:5, b = 1:5, x = 1:5)
-test(2309.06, key(as.data.table(DT, key="a")), "a")   
-test(2309.07, key(as.data.table(DT)), NULL)          
-test(2309.08, key(as.data.table(DT, key=NULL)), NULL) 
+test(2309.06, key(as.data.table(DT, key="a")), "a")
+test(2309.07, key(as.data.table(DT)), NULL)
+test(2309.08, key(as.data.table(DT, key=NULL)), NULL)
 
 # as.data.table(x, keep.rownames=TRUE) keeps rownames for class(x)==c("*", "data.frame")
 df = structure(list(i = 1:2), class = c("tbl", "data.frame"), row.names = c("a","b"))
@@ -21192,3 +21215,25 @@ test(2319.1, !is.null(attr(dt_get, ".internal.selfref")))
 dt_get0 = data.frame(a = 1:3, b = letters[1:3])
 setDT(get0("dt_get0"))
 test(2319.2, !is.null(attr(dt_get0, ".internal.selfref")))
+
+# Improved fread error handling for cmd exe and decompression #5415
+test(2320.1, fread(cmd="false"), error="External command failed with exit code", warning = if (.Platform$OS.type=="windows") "execution failed")
+
+if (test_R.utils) local({
+  tmp <- tempfile(fileext=".gz")
+  file.create(tmp); on.exit(unlink(tmp))
+  local({
+    conn <- file(tmp, 'wb'); on.exit(close(conn))
+    writeBin(as.raw(c(31L, 139L)), conn) # Gzip header magic numbers to trigger that read path
+  })
+  test(2320.2, fread(tmp), error="R.utils::decompressFile failed to decompress", warning="invalid")
+})
+
+# Create a data.table when one vector is transposed doesn't respect the name defined by user #4124
+test(2321.1, DT <- data.table(a=1:2, b=matrix(1:2)), data.table(a=1:2, b=1:2))
+test(2321.2, names(DT), names(data.frame(a=1:2, b=matrix(1:2))))
+test(2321.3, DT <- data.table(a=integer(), b=matrix(1L, nrow=0L, ncol=1L)), data.table(a=integer(), b=integer()))
+test(2321.4, names(DT), names(data.frame(a=integer(), b=matrix(1L, nrow=0L, ncol=1L))))
+## but respect named column vectors
+test(2321.5, DT <- data.table(a=1:2, cbind(b=3:4)), data.table(a=1:2, b=3:4))
+test(2321.6, names(DT), names(data.frame(a=1:2, cbind(b=3:4))))
