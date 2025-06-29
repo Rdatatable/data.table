@@ -18,6 +18,28 @@
 
 6. `between()` gains the argument `ignore_tzone=FALSE`. Normally, a difference in time zone between `lower` and `upper` will produce an error, and a difference in time zone between `x` and either of the others will produce a message. Setting `ignore_tzone=TRUE` bypasses the checks, allowing both comparisons to proceed without error or message about time zones.
 
+7. New helper function `fctr` as an extended version of `factor()`, [#4837](https://github.com/Rdatatable/data.table/issues/4837). Most notably, it supports (1) retaining input level ordering by default, i.e. `levels=unique(x)` as opposed to `levels = sort(unique(x))`; (2) `rev=` to reverse the levels; and (3) `sort=` to allow more feature parity with `factor()`. The choice of default is motivated by convenience in common case when order of elements needs be preserved, for example when using `dcast` or adding a legend to a plot.
+
+```r
+d = data.table(id1=rep(1:2, each=3L), id2=letters[c(4:3,5L,3:5)], v1=1:6)
+dcast(d, id1 ~ factor(id2))
+#      id1     c     d     e
+# 1:     1     2     1     3
+# 2:     2     4     5     6
+dcast(d, id1 ~ fctr(id2))
+#      id1     d     c     e
+# 1:     1     1     2     3
+# 2:     2     5     4     6
+dcast(d, id1 ~ fctr(id2, sort=TRUE)) # same as factor()
+#      id1     c     d     e
+# 1:     1     2     1     3
+# 2:     2     4     5     6
+dcast(d, id1 ~ fctr(id2, rev=TRUE))
+#      id1     e     c     d
+# 1:     1     3     2     1
+# 2:     2     6     4     5
+```
+
 ### BUG FIXES
 
 1. Custom binary operators from the `lubridate` package now work with objects of class `IDate` as with a `Date` subclass, [#6839](https://github.com/Rdatatable/data.table/issues/6839). Thanks @emallickhossain for the report and @aitap for the fix.
@@ -499,20 +521,6 @@ rowwiseDT(
 1. `shift` and `nafill` will now raise error `input must not be matrix or array` when `matrix` or `array` is provided on input, rather than giving useless result, [#5287](https://github.com/Rdatatable/data.table/issues/5287). Thanks to @ethanbsmith for reporting.
 
 ### NEW FEATURES
-
-0. New helper function `fctr` has been added, [#4837](https://github.com/Rdatatable/data.table/issues/4837). It is wrapper around base R `factor` using default arguments adjusted to retain original order. It has been added for convenience in case when order of elements needs be preserved, for example when using `dcast` or adding legend to plot.
-
-```r
-d = data.table(id1=1:2, id2=letters[c(4:3,3:4)], v1=1:4)
-dcast(d, id1 ~ id2)
-#     id1     c     d
-#1:     1     3     1
-#2:     2     2     4
-dcast(d, id1 ~ fctr(id2))
-#     id1     d     c
-#1:     1     1     3
-#2:     2     4     2
-```
 
 1. `nafill()` now applies `fill=` to the front/back of the vector when `type="locf|nocb"`, [#3594](https://github.com/Rdatatable/data.table/issues/3594). Thanks to @ben519 for the feature request. It also now returns a named object based on the input names. Note that if you are considering joining and then using `nafill(...,type='locf|nocb')` afterwards, please review `roll=`/`rollends=` which should achieve the same result in one step more efficiently. `nafill()` is for when filling-while-joining (i.e. `roll=`/`rollends=`/`nomatch=`) cannot be applied.
 
