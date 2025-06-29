@@ -2238,7 +2238,7 @@ int freadMain(freadMainArgs _args) {
   double tRead = 0, tReread = 0;
   double thRead = 0, thPush = 0;  // reductions of timings within the parallel region
   int max_col = 0;
-  char *typeBumpMsg = NULL;  size_t typeBumpMsgSize=0;
+  char *typeBumpMsg = NULL;  size_t typeBumpMsgSize = 0;
   int typeCounts[NUMTYPE];  // used for verbose output; needs populating after first read and before reread (if any) -- see later comment
   char internalErr[256] = "";  // must be compile time size: the message is generated and we can't free before STOP
 
