@@ -2524,7 +2524,7 @@ int freadMain(freadMainArgs _args) {
                       _("Column %d%s%.*s%s bumped from '%s' to '%s' due to <<%.*s>> on row %"PRId64"\n"),
                       j + 1, colNames ? " <<" : "", colNames ? (colNames[j].len) : 0, colNames ? (colNamesAnchor + colNames[j].off) : "", colNames ? ">>" : "",
                       typeName[IGNORE_BUMP(joldType)], typeName[IGNORE_BUMP(thisType)],
-                      (int)(tch-fieldStart), fieldStart, (int64_t)(ctx.DTi + myNrow));
+                      (int)(tch - fieldStart), fieldStart, (int64_t)(ctx.DTi + myNrow));
                     
                     len = iminInt(len, sizeof(buffer));
 
