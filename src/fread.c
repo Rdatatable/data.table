@@ -287,7 +287,7 @@ static inline bool end_of_field(const char *ch) {
   // default, and therefore characters in the range 0x80-0xFF are negative.
   // We use eol() because that looks at eol_one_r inside it w.r.t. \r
   // \0 (maybe more than one) before eof are part of field and do not end it; eol() returns false for \0 but the ch==eof will return true for the \0 at eof.
-  return *ch==sep || ((uint8_t)*ch <= 13 && (ch == eof || eol(&ch)));
+  return *ch == sep || ((uint8_t)*ch <= 13 && (ch == eof || eol(&ch)));
 }
 
 static inline const char *end_NA_string(const char *start) {
@@ -298,7 +298,7 @@ static inline const char *end_NA_string(const char *start) {
     const char *ch1 = start;
     const char *ch2 = *nastr;
     while (*ch1 == *ch2 && *ch2 != '\0') { ch1++; ch2++; }
-    if (*ch2=='\0' && ch1 > mostConsumed) mostConsumed = ch1;
+    if (*ch2 == '\0' && ch1 > mostConsumed) mostConsumed = ch1;
     nastr++;
   }
   return mostConsumed;
@@ -321,7 +321,7 @@ static inline int countfields(const char **pch)
   if (sep == ' ') while (*ch == ' ') ch++;  // multiple sep==' ' at the start does not mean sep
   skip_white(&ch);
   if (eol(&ch) || ch == eof) {
-    *pch = ch+1;
+    *pch = ch + 1;
     return 0;
   }
   int ncol = 1;
@@ -340,7 +340,7 @@ static inline int countfields(const char **pch)
         ch++;  // Move onto end of line character
       }
     }
-    if (*ch==sep) {
+    if (*ch == sep) {
       ch++;
       ncol++;
       continue;
@@ -564,7 +564,7 @@ static void Field(FieldParseContext *ctx)
   }
   target->len = (int32_t)(ch - fieldStart);
   target->off = (int32_t)(fieldStart - ctx->anchor);
-  if (*ch==quote) {   // quote=='\0' (user set quote="") would have returned earlier above in the same branch as quoteRule 3
+  if (*ch == quote) {   // quote=='\0' (user set quote="") would have returned earlier above in the same branch as quoteRule 3
     ch++;
     skip_white(&ch);
     *ctx->ch = ch;
@@ -918,7 +918,7 @@ static void parse_double_hexadecimal(FieldParseContext *ctx)
       E = 10 * E + digit;
       ch++;
     }
-    E = 1023 + (Eneg? -E : E) - subnormal;
+    E = 1023 + (Eneg ? -E : E) - subnormal;
     if (subnormal ? E : (E < 1 || E > 2046)) return;
 
     *((uint64_t*)target) = (neg << 63) | (E << 52) | (acc);
@@ -977,7 +977,7 @@ static void parse_iso8601_date_core(const char **pch, int32_t *target)
     return;
 
   *target =
-    (year / 400 - 4)*cumDaysCycleYears[400] + // days to beginning of 400-year cycle
+    (year / 400 - 4) * cumDaysCycleYears[400] + // days to beginning of 400-year cycle
     cumDaysCycleYears[year % 400] + // days to beginning of year within 400-year cycle
     (isLeapYear ? cumDaysCycleMonthsLeap[month - 1] : cumDaysCycleMonthsNorm[month - 1]) + // days to beginning of month within year
     day - 1; // day within month (subtract 1: 1970-01-01 -> 0)
@@ -1061,7 +1061,7 @@ static void parse_iso8601_timestamp(FieldParseContext *ctx)
   }
 
   // cast upfront needed to prevent silent overflow
-  *target = 86400*(double)date + 3600 * (hour - tz_hour) + 60 * (minute - tz_minute) + second;
+  *target = 86400 * (double)date + 3600 * (hour - tz_hour) + 60 * (minute - tz_minute) + second;
 
   *ctx->ch = ch;
 }
@@ -1318,7 +1318,7 @@ int freadMain(freadMainArgs _args) {
     } else {
       const char *ch = *nastr;
       size_t nchar = strlen(ch);
-      if (isspace(ch[0]) || isspace(ch[nchar-1]))
+      if (isspace(ch[0]) || isspace(ch[nchar - 1]))
         STOP(_("freadMain: NAstring <<%s>> has whitespace at the beginning or end"), ch);
       if (strcmp(ch,"T") == 0    || strcmp(ch,"F") == 0 ||
           strcmp(ch,"TRUE") == 0 || strcmp(ch,"FALSE") == 0 ||
@@ -1430,10 +1430,10 @@ int freadMain(freadMainArgs _args) {
       HANDLE hFile = INVALID_HANDLE_VALUE;
       int attempts = 0;
       while(hFile == INVALID_HANDLE_VALUE && attempts < 5) {
-        hFile = CreateFile(fnam, GENERIC_READ, FILE_SHARE_READ|FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+        hFile = CreateFile(fnam, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
         // FILE_SHARE_WRITE is required otherwise if the file is open in Excel, CreateFile fails. Should be ok now.
         if (hFile == INVALID_HANDLE_VALUE) {
-          if (GetLastError() == ERROR_FILE_NOT_FOUND) STOP(_("File not found: %s"),fnam);
+          if (GetLastError() == ERROR_FILE_NOT_FOUND) STOP(_("File not found: %s"), fnam);
           if (attempts < 4) Sleep(250);  // 250ms
         }
         attempts++;
@@ -1441,7 +1441,7 @@ int freadMain(freadMainArgs _args) {
       }
       if (hFile == INVALID_HANDLE_VALUE) STOP(_("Unable to open file after %d attempts (error %lu): %s"), attempts, GetLastError(), fnam);
       LARGE_INTEGER liFileSize;
-      if (GetFileSizeEx(hFile, &liFileSize)==0) { CloseHandle(hFile); STOP(_("GetFileSizeEx failed (returned 0) on file: %s"), fnam); }
+      if (GetFileSizeEx(hFile, &liFileSize) == 0) { CloseHandle(hFile); STOP(_("GetFileSizeEx failed (returned 0) on file: %s"), fnam); }
       if (liFileSize.QuadPart > SIZE_MAX) {
         CloseHandle(hFile); // # nocov
         STOP(_("File size [%s] exceeds the address space: %s"), filesize_to_str(liFileSize.QuadPart), fnam); // # nocov
@@ -1720,7 +1720,7 @@ int freadMain(freadMainArgs _args) {
               topQuoteRule = quoteRule;
               firstJumpEnd = ch;  // to know how many bytes jump 0 is, for nrow estimate later (a less-good estimate when fill=true since line lengths vary more)
               if (verbose) {
-                  DTPRINT((unsigned)sep<32
+                  DTPRINT((unsigned)sep < 32
                           ? _("  sep=%#02x  with %d fields using quote rule %d\n")
                           : _("  sep='%c'  with %d fields using quote rule %d\n"),
                           sep, topNumFields, quoteRule);
@@ -1750,7 +1750,7 @@ int freadMain(freadMainArgs _args) {
                 prevLineStart = NULL; lineStart = ch; thisRow++;
                 thisncol = countfields(&ch);
               }
-              if (thisncol>0) {
+              if (thisncol > 0) {
                 lastncol = thisncol;
                 thisBlockLines = 1;
                 thisBlockPrevStart = prevLineStart;  // remember previous line start in case it has column names to be filled
@@ -1769,7 +1769,7 @@ int freadMain(freadMainArgs _args) {
               firstJumpEnd = ch;
               topStart = thisBlockStart;
               prevStart = thisBlockPrevStart; // only used when line prior to contiguous block has a wrong number of column names to be filled
-              topSkip = thisRow-thisBlockLines;
+              topSkip = thisRow - thisBlockLines;
               if (topSkip < 0) topSkip = 0;       // inelegant but will do for now to pass single row input such as test 890
               if (verbose) {
                   DTPRINT((unsigned)sep < 32
@@ -1955,7 +1955,7 @@ int freadMain(freadMainArgs _args) {
         if (verbose)
           DTPRINT(thisNcol < ncol ? _("  A line with too-few fields (%d/%d) was found on line %d of sample jump %d. %s\n")
                                   : _("  A line with too-many fields (%d/%d) was found on line %d of sample jump %d. %s\n"),
-                  thisNcol, ncol, jumpLine, jump, jump>0 ? _("Most likely this jump landed awkwardly so type bumps here will be skipped.") : "");
+                  thisNcol, ncol, jumpLine, jump, jump > 0 ? _("Most likely this jump landed awkwardly so type bumps here will be skipped.") : "");
         bumped = false;
         if (jump == 0) lastRowEnd = eof;  // to prevent the end from being tested; e.g. a short file with blank line within first 100 like test 976
         break;
@@ -2225,7 +2225,7 @@ int freadMain(freadMainArgs _args) {
   if (verbose) {
     DTPRINT(_("[10] Allocate memory for the datatable\n"));
     DTPRINT(_("  Allocating %d column slots (%d - %d dropped) with %"PRId64" rows\n"),
-            ncol-ndrop, ncol, ndrop, allocnrow);
+            ncol - ndrop, ncol, ndrop, allocnrow);
   }
   size_t DTbytes = allocateDT(type, size, ncol, ndrop, allocnrow);
   double tAlloc = wallclock();
@@ -2507,7 +2507,7 @@ int freadMain(freadMainArgs _args) {
                 // check this line has the correct number of fields. If not, don't apply the bump from this invalid line. Instead fall through to myStopEarly below.
                 const char *tt = fieldStart;
                 int fieldsRemaining = countfields(&tt);
-                if (j+fieldsRemaining != ncol) break;
+                if (j + fieldsRemaining != ncol) break;
                 checkedNumberOfFields = true;
               }
               if (thisType <= TOGGLE_BUMP(NUMTYPE)) {
@@ -2524,7 +2524,7 @@ int freadMain(freadMainArgs _args) {
                       _("Column %d%s%.*s%s bumped from '%s' to '%s' due to <<%.*s>> on row %"PRId64"\n"),
                       j + 1, colNames ? " <<" : "", colNames ? (colNames[j].len) : 0, colNames ? (colNamesAnchor + colNames[j].off) : "", colNames ? ">>" : "",
                       typeName[IGNORE_BUMP(joldType)], typeName[IGNORE_BUMP(thisType)],
-                      (int)(tch-fieldStart), fieldStart, (int64_t)(ctx.DTi+myNrow));
+                      (int)(tch-fieldStart), fieldStart, (int64_t)(ctx.DTi + myNrow));
                     
                     len = iminInt(len, sizeof(buffer));
 
@@ -2556,7 +2556,7 @@ int freadMain(freadMainArgs _args) {
           if (tch != eof) tch++;
           myNrow++;
         }
-        if (verbose) { double now = wallclock(); thRead += now-tLast; tLast = now; }
+        if (verbose) { double now = wallclock(); thRead += now - tLast; tLast = now; }
         ctx.anchor = thisJumpStart;
         ctx.nRows = myNrow;
         postprocessBuffer(&ctx);
@@ -2598,7 +2598,7 @@ int freadMain(freadMainArgs _args) {
                   if (quoteRuleBumpedCh == NULL) {
                     // for warning message if the quote rule bump does in fact manage to heal it, e.g. test 1881
                     quoteRuleBumpedCh = tLineStart;
-                    quoteRuleBumpedLine = row1line+DTi;
+                    quoteRuleBumpedLine = row1line + DTi;
                   }
                   restartTeam = true;
                   jump0 = jump;  // this jump will restart from headPos, not from its beginning, e.g. test 1453
@@ -2646,13 +2646,12 @@ int freadMain(freadMainArgs _args) {
       dropFill = malloc(sizeof(*dropFill) * ndropFill);
       if (!dropFill)
         STOP(_("Failed to allocate %zu bytes for '%s'."), sizeof(*dropFill) * ndropFill, "dropFill"); // # nocov
-      int i=0;
-      for (int j = max_col; j < ncol; j++) {
+      for (int i = 0, j = max_col; j < ncol; j++, i++) {
         type[j] = CT_DROP;
         size[j] = 0;
         ndrop++;
         nNonStringCols--;
-        dropFill[i++] = j;
+        dropFill[i] = j;
       }
       dropFilledCols(dropFill, ndropFill);
     }
@@ -2763,10 +2762,10 @@ int freadMain(freadMainArgs _args) {
         int tt = countfields(&ch);
         if (fill > 0) {
           DTWARN(_("Stopped early on line %"PRId64". Expected %d fields but found %d. Consider fill=%d or even more based on your knowledge of the input file. Use fill=Inf for reading the whole file for detecting the number of fields. First discarded non-empty line: <<%s>>"),
-          DTi+row1line, ncol, tt, tt, strlim(skippedFooter, (char[500]) {}, 500));
+          DTi + row1line, ncol, tt, tt, strlim(skippedFooter, (char[500]) {}, 500));
         } else {
           DTWARN(_("Stopped early on line %"PRId64". Expected %d fields but found %d. Consider fill=TRUE. First discarded non-empty line: <<%s>>"),
-          DTi+row1line, ncol, tt, strlim(skippedFooter, (char[500]) {}, 500));
+          DTi + row1line, ncol, tt, strlim(skippedFooter, (char[500]) {}, 500));
         }
       }
     }
@@ -2779,7 +2778,7 @@ int freadMain(freadMainArgs _args) {
     DTPRINT("=============================\n"); // # notranslate
     if (tTot < 0.000001) tTot = 0.000001;  // to avoid nan% output in some trivially small tests where tot==0.000s
     DTPRINT(_("%8.3fs (%3.0f%%) Memory map %.3fGB file\n"), tMap - t0, 100.0 * (tMap - t0) / tTot, 1.0 * fileSize / (1024 * 1024 * 1024));
-    DTPRINT(_("%8.3fs (%3.0f%%) sep="), tLayout-tMap, 100.0 * (tLayout - tMap) / tTot);
+    DTPRINT(_("%8.3fs (%3.0f%%) sep="), tLayout - tMap, 100.0 * (tLayout - tMap) / tTot);
       DTPRINT(sep == '\t' ? "'\\t'" : (sep == '\n' ? "'\\n'" : "'%c'"), sep); // # notranslate
       DTPRINT(_(" ncol=%d and header detection\n"), ncol);
     DTPRINT(_("%8.3fs (%3.0f%%) Column type detection using %"PRId64" sample rows\n"),
