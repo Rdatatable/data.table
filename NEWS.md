@@ -20,25 +20,25 @@
 
 7. New helper function `fctr` as an extended version of `factor()`, [#4837](https://github.com/Rdatatable/data.table/issues/4837). Most notably, it supports (1) retaining input level ordering by default, i.e. `levels=unique(x)` as opposed to `levels = sort(unique(x))`; (2) `rev=` to reverse the levels; and (3) `sort=` to allow more feature parity with `factor()`. The choice of default is motivated by convenience in the common case when order of elements needs be preserved, for example when using `dcast` or adding a legend to a plot. This also matches the default sort ordering of groups in `by=`.
 
-```r
-d = data.table(id1=rep(1:2, each=3L), id2=letters[c(4:3,5L,3:5)], v1=1:6)
-dcast(d, id1 ~ factor(id2))
-#      id1     c     d     e
-# 1:     1     2     1     3
-# 2:     2     4     5     6
-dcast(d, id1 ~ fctr(id2))
-#      id1     d     c     e
-# 1:     1     1     2     3
-# 2:     2     5     4     6
-dcast(d, id1 ~ fctr(id2, sort=TRUE)) # same as factor()
-#      id1     c     d     e
-# 1:     1     2     1     3
-# 2:     2     4     5     6
-dcast(d, id1 ~ fctr(id2, rev=TRUE))
-#      id1     e     c     d
-# 1:     1     3     2     1
-# 2:     2     6     4     5
-```
+    ```r
+    d = data.table(id1=rep(1:2, each=3L), id2=letters[c(4:3,5L,3:5)], v1=1:6)
+    dcast(d, id1 ~ factor(id2))
+    #      id1     c     d     e
+    # 1:     1     2     1     3
+    # 2:     2     4     5     6
+    dcast(d, id1 ~ fctr(id2))
+    #      id1     d     c     e
+    # 1:     1     1     2     3
+    # 2:     2     5     4     6
+    dcast(d, id1 ~ fctr(id2, sort=TRUE)) # same as factor()
+    #      id1     c     d     e
+    # 1:     1     2     1     3
+    # 2:     2     4     5     6
+    dcast(d, id1 ~ fctr(id2, rev=TRUE))
+    #      id1     e     c     d
+    # 1:     1     3     2     1
+    # 2:     2     6     4     5
+    ```
 
 ### BUG FIXES
 
