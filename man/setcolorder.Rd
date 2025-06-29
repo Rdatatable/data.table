@@ -9,15 +9,16 @@
 }
 
 \usage{
-setcolorder(x, neworder=key(x), before=NULL, after=NULL)
+setcolorder(x, neworder=key(x), before=NULL, after=NULL, skip_absent=FALSE)
 }
 \arguments{
   \item{x}{ A \code{data.table}. }
   \item{neworder}{ Character vector of the new column name ordering. May also be column numbers. If \code{length(neworder) < length(x)}, the specified columns are moved in order to the "front" of \code{x}. By default, \code{setcolorder} without a specified \code{neworder} moves the key columns in order to the "front" of \code{x}. }
   \item{before, after}{ If one of them (not both) was provided with a column name or number, \code{neworder} will be inserted before or after that column. }
+  \item{skip_absent}{ Logical, default \code{FALSE}. If \code{neworder} includes columns not present in \code{x}, \code{TRUE} will silently ignore them, whereas \code{FALSE} will throw an error. }
 }
 \details{
-  To reorder \code{data.table} columns, the idiomatic way is to use \code{setcolorder(x, neworder)}, instead of doing \code{x <- x[, neworder, with=FALSE]}. This is because the latter makes an entire copy of the \code{data.table}, which maybe unnecessary in most situations. \code{setcolorder} also allows column numbers instead of names for \code{neworder} argument, although we recommend using names as a good programming practice.
+  To reorder \code{data.table} columns, the idiomatic way is to use \code{setcolorder(x, neworder)}, instead of doing \code{x <- x[, ..neworder]} (or \code{x <- x[, neworder, with=FALSE]}). This is because the latter makes an entire copy of the \code{data.table}, which maybe unnecessary in most situations. \code{setcolorder} also allows column numbers instead of names for \code{neworder} argument, although we recommend using names as a good programming practice.
 }
 \value{
     The input is modified by reference, and returned (invisibly) so it can be used in compound statements. If you require a copy, take a copy first (using \code{DT2 = copy(DT)}). See \code{?copy}.
@@ -34,6 +35,13 @@ setcolorder(DT, c("C", "A", "B"))
 
 #incomplete specification
 setcolorder(DT, "A")
+
+# insert new column as first column
+set(DT, j="D", value=sample(10))
+setcolorder(DT, "D", before=1)
+
+# move column to last column place
+setcolorder(DT, "A", after=ncol(DT))
 }
 \keyword{ data }
 

@@ -2,17 +2,24 @@
 #include "dt_stdio.h"  // PRId64 and PRIu64
 #include <R.h>
 #include <Rversion.h>
-#if !defined(R_VERSION) || R_VERSION < R_Version(3, 5, 0)  // R-exts$6.14
+#if R_VERSION < R_Version(3, 5, 0)  // R-exts$6.14
 #  define ALTREP(x) 0     // #2866
 #  define USE_RINTERNALS  // #3301
 #  define DATAPTR_RO(x) ((const void *)DATAPTR(x))
+#  define STRING_PTR_RO STRING_PTR
+#  define INTEGER_RO INTEGER
+#  define REAL_RO REAL
+#  define COMPLEX_RO COMPLEX
+#  define RAW_RO RAW
+#  define LOGICAL_RO LOGICAL
 #endif
-#if !defined(R_VERSION) || R_VERSION < R_Version(3, 4, 0)
-#  define SET_GROWABLE_BIT(x)  // #3292
+#if R_VERSION < R_Version(4, 5, 0)
+#  define isDataFrame(x) isFrame(x) // #6180
 #endif
 #include <Rinternals.h>
 #define SEXPPTR_RO(x) ((const SEXP *)DATAPTR_RO(x))  // to avoid overhead of looped STRING_ELT and VECTOR_ELT
 #include <stdint.h>    // for uint64_t rather than unsigned long long
+#include <stdarg.h>    // for va_list, va_start
 #include <stdbool.h>
 #include "types.h"
 #include "po.h"
@@ -27,15 +34,20 @@
 // #include <signal.h> // the debugging machinery + breakpoint aidee
 // raise(SIGINT);
 
-#define IS_UTF8(x)  (LEVELS(x) & 8)
-#define IS_ASCII(x) (LEVELS(x) & 64)
-#define IS_LATIN(x) (LEVELS(x) & 4)
+/* we mean the encoding bits, not CE_NATIVE in a UTF-8 locale */
+#define IS_UTF8(x)  (getCharCE(x) == CE_UTF8)
+#define IS_LATIN(x) (getCharCE(x) == CE_LATIN1)
+#if R_VERSION < R_Version(4, 5, 0)
+# define IS_ASCII(x) (LEVELS(x) & 64)
+#else
+# define IS_ASCII(x) (Rf_charIsASCII(x)) // no CE_ASCII
+#endif
 #define IS_TRUE(x)  (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]==TRUE)
 #define IS_FALSE(x) (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]==FALSE)
 #define IS_TRUE_OR_FALSE(x) (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]!=NA_LOGICAL)
 
-#define SIZEOF(x) __sizes[TYPEOF(x)]
-#define TYPEORDER(x) __typeorder[x]
+#define RTYPE_SIZEOF(x) r_type_sizes[TYPEOF(x)]
+#define RTYPE_ORDER(x) r_type_order[x]
 
 #ifdef MIN
 #  undef MIN
@@ -54,14 +66,6 @@
 // for use with CPLXSXP, no macro provided by R internals
 #define ISNAN_COMPLEX(x) (ISNAN((x).r) || ISNAN((x).i)) // TRUE if either real or imaginary component is NA or NaN
 
-// Backport macros added to R in 2017 so we don't need to update dependency from R 3.0.0
-#ifndef MAYBE_SHARED
-#  define MAYBE_SHARED(x) (NAMED(x) > 1)
-#endif
-#ifndef MAYBE_REFERENCED
-#  define MAYBE_REFERENCED(x) ( NAMED(x) > 0 )
-#endif
-
 // If we find a non-ASCII, non-NA, non-UTF8 encoding, we try to convert it to UTF8. That is, marked non-ascii/non-UTF8 encodings will
 // always be checked in UTF8 locale. This seems to be the best fix Arun could think of to put the encoding issues to rest.
 // Since the if-statement will fail with the first condition check in "normal" ASCII cases, there shouldn't be huge penalty issues in
@@ -69,10 +73,19 @@
 // TODO: compare 1.9.6 performance with 1.9.7 with huge number of ASCII strings, and again after Jan 2018 when made macro.
 // Matt moved this to be macro in Jan 2018 so that branch can benefit from branch prediction too wherever used inside loops.
 // This IS_ASCII will dereference s and that cache fetch is the part that may bite more than the branch, though. Without a call to
-// to ENC2UTF as all, the pointer value can just be compared by the calling code without deferencing it. It may still be worth
+// to ENC2UTF as all, the pointer value can just be compared by the calling code without dereferencing it. It may still be worth
 // timing the impact and manually avoiding (is there an IS_ASCII on the character vector rather than testing each item every time?)
 #define NEED2UTF8(s) !(IS_ASCII(s) || (s)==NA_STRING || IS_UTF8(s))
 #define ENC2UTF8(s) (!NEED2UTF8(s) ? (s) : mkCharCE(translateCharUTF8(s), CE_UTF8))
+
+// R has been providing a widely portable definition, but since that's not documented, define our own too
+#ifndef NORET
+# if defined(__GNUC__) && __GNUC__ >= 3
+#  define NORET __attribute__((__noreturn__))
+# else
+#  define NORET
+# endif
+#endif
 
 // init.c
 extern SEXP char_integer64;
@@ -93,11 +106,16 @@ extern SEXP char_datatable;
 extern SEXP char_dataframe;
 extern SEXP char_NULL;
 extern SEXP char_maxString;
+extern SEXP char_AsIs;
 extern SEXP sym_sorted;
 extern SEXP sym_index;
 extern SEXP sym_BY;
 extern SEXP sym_starts, char_starts;
 extern SEXP sym_maxgrpn;
+extern SEXP sym_anyna;
+extern SEXP sym_anyinfnan;
+extern SEXP sym_anynotascii;
+extern SEXP sym_anynotutf8;
 extern SEXP sym_colClassesAs;
 extern SEXP sym_verbose;
 extern SEXP SelfRefSymbol;
@@ -107,11 +125,12 @@ extern SEXP sym_tzone;
 extern SEXP sym_old_fread_datetime_character;
 extern SEXP sym_variable_table;
 extern SEXP sym_as_character;
+extern SEXP sym_as_posixct;
 extern double NA_INT64_D;
 extern long long NA_INT64_LL;
 extern Rcomplex NA_CPLX;  // initialized in init.c; see there for comments
-extern size_t __sizes[100];     // max appears to be FUNSXP = 99, see Rinternals.h
-extern size_t __typeorder[100]; // __ prefix otherwise if we use these names directly, the SIZEOF define ends up using the local one
+extern size_t r_type_sizes[100]; // max appears to be FUNSXP = 99, see Rinternals.h
+extern size_t r_type_order[100];
 
 long long DtoLL(double x);
 double LLtoD(long long x);
@@ -134,8 +153,10 @@ int checkOverAlloc(SEXP x);
 // forder.c
 int StrCmp(SEXP x, SEXP y);
 uint64_t dtwiddle(double x);
-SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg);
+SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg);
+SEXP forderReuseSorting(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg, SEXP reuseSortingArg); // reuseSorting wrapper to forder
 int getNumericRounding_C(void);
+NORET void internal_error_with_cleanup(const char *call_name, const char *format, ...);
 
 // reorder.c
 SEXP reorder(SEXP x, SEXP order);
@@ -175,16 +196,17 @@ SEXP dt_na(SEXP x, SEXP cols);
 SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose);
 const char *memrecycle(const SEXP target, const SEXP where, const int start, const int len, SEXP source, const int sourceStart, const int sourceLen, const int colnum, const char *colname);
 SEXP shallowwrapper(SEXP dt, SEXP cols);
+void warn_matrix_column(int i);
 
 SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols,
                 SEXP xjiscols, SEXP grporder, SEXP order, SEXP starts,
                 SEXP lens, SEXP jexp, SEXP env, SEXP lhs, SEXP newnames,
-                SEXP on, SEXP verbose);
+                SEXP on, SEXP verbose, SEXP showProgressArg);
 
 // bmerge.c
-SEXP bmerge(SEXP iArg, SEXP xArg, SEXP icolsArg, SEXP xcolsArg, SEXP isorted,
-                SEXP xoArg, SEXP rollarg, SEXP rollendsArg, SEXP nomatchArg,
-                SEXP multArg, SEXP opArg, SEXP nqgrpArg, SEXP nqmaxgrpArg);
+SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg,
+            SEXP xoArg, SEXP rollarg, SEXP rollendsArg, SEXP nomatchArg,
+            SEXP multArg, SEXP opArg, SEXP nqgrpArg, SEXP nqmaxgrpArg);
 
 // quickselect
 double dquickselect(double *x, int n);
@@ -232,11 +254,14 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAbounds, SEXP
 SEXP coalesce(SEXP x, SEXP inplace);
 
 // utils.c
-bool isRealReallyInt(SEXP x);
-SEXP isRealReallyIntR(SEXP x);
-SEXP isReallyReal(SEXP x);
+bool within_int32_repres(double x);
+bool within_int64_repres(double x);
+bool fitsInInt32(SEXP x);
+SEXP fitsInInt32R(SEXP x);
+bool fitsInInt64(SEXP x);
+SEXP fitsInInt64R(SEXP x);
 bool allNA(SEXP x, bool errorForBadType);
-SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups);
+SEXP colnamesInt(SEXP x, SEXP cols, SEXP check_dups, SEXP skip_absent);
 bool INHERITS(SEXP x, SEXP char_);
 SEXP copyAsPlain(SEXP x);
 void copySharedColumns(SEXP x);
@@ -247,6 +272,7 @@ SEXP islockedR(SEXP x);
 bool need2utf8(SEXP x);
 SEXP coerceUtf8IfNeeded(SEXP x);
 SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg);
+NORET void internal_error(const char *call_name, const char *format, ...);
 
 // types.c
 char *end(char *start);
@@ -255,7 +281,7 @@ SEXP testMsgR(SEXP status, SEXP x, SEXP k);
 
 //fifelse.c
 SEXP fifelseR(SEXP l, SEXP a, SEXP b, SEXP na);
-SEXP fcaseR(SEXP na, SEXP rho, SEXP args);
+SEXP fcaseR(SEXP rho, SEXP args);
 
 //snprintf.c
 int dt_win_snprintf(char *dest, size_t n, const char *fmt, ...);
@@ -273,6 +299,7 @@ SEXP notchin(SEXP x, SEXP table);
 SEXP setattrib(SEXP, SEXP, SEXP);
 SEXP assign(SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP copy(SEXP);
+SEXP setdt_nrows(SEXP);
 SEXP alloccolwrapper(SEXP, SEXP, SEXP);
 SEXP selfrefokwrapper(SEXP, SEXP);
 SEXP truelength(SEXP);
@@ -280,14 +307,15 @@ SEXP setcharvec(SEXP, SEXP, SEXP);
 SEXP chmatch_R(SEXP, SEXP, SEXP);
 SEXP chmatchdup_R(SEXP, SEXP, SEXP);
 SEXP chin_R(SEXP, SEXP);
-SEXP freadR(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
-SEXP fwriteR(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
-SEXP rbindlist(SEXP, SEXP, SEXP, SEXP);
+SEXP freadR(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+SEXP fwriteR(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+SEXP rbindlist(SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP setlistelt(SEXP, SEXP, SEXP);
+SEXP setS4elt(SEXP, SEXP, SEXP);
 SEXP address(SEXP);
 SEXP expandAltRep(SEXP);
 SEXP fmelt(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
-SEXP fcast(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+SEXP fcast(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP issorted(SEXP, SEXP);
 SEXP gforce(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP gsum(SEXP, SEXP);
@@ -304,7 +332,7 @@ SEXP lookup(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP overlaps(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP whichwrapper(SEXP, SEXP);
 SEXP shift(SEXP, SEXP, SEXP, SEXP);
-SEXP transpose(SEXP, SEXP, SEXP, SEXP);
+SEXP transpose(SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP anyNA(SEXP, SEXP);
 SEXP setlevels(SEXP, SEXP, SEXP);
 SEXP rleid(SEXP, SEXP);
@@ -315,6 +343,7 @@ SEXP glast(SEXP);
 SEXP gfirst(SEXP);
 SEXP gnthvalue(SEXP, SEXP);
 SEXP dim(SEXP);
+SEXP warn_matrix_column_r(SEXP);
 SEXP gvar(SEXP, SEXP);
 SEXP gsd(SEXP, SEXP);
 SEXP gprod(SEXP, SEXP);
@@ -326,7 +355,6 @@ SEXP nqRecreateIndices(SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP fsort(SEXP, SEXP);
 SEXP inrange(SEXP, SEXP, SEXP, SEXP);
 SEXP hasOpenMP(void);
-SEXP beforeR340(void);
 SEXP uniqueNlogical(SEXP, SEXP);
 SEXP dllVersion(void);
 SEXP initLastUpdated(SEXP);
@@ -337,4 +365,3 @@ SEXP dt_has_zlib(void);
 SEXP startsWithAny(SEXP, SEXP, SEXP);
 SEXP convertDate(SEXP, SEXP);
 SEXP fastmean(SEXP);
-

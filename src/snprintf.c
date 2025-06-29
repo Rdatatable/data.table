@@ -1,7 +1,7 @@
 // For translations (#4402) we need positional specifiers (%n$), a non-C99 POSIX extension.
 // On Linux and Mac, standard snprintf supports positional specifiers.
 // On Windows, we tried many things but just couldn't achieve linking to _sprintf_p. Even
-// if we managed that on AppVeyor we may have fragility in the future on Windows given
+// if we managed that on AppVeyor (now GHA) we may have fragility in the future on Windows given
 // varying Windows versions, compile environments/flags, and dll libraries. This may be
 // why R uses a third party library, trio, on Windows. But R does not expose trio for use
 // by packages.
@@ -19,6 +19,7 @@
 #include "data.table.h"
 #include <stdarg.h>
 #include <ctype.h>  // isdigit
+#include <string.h>  // strncpy
 #undef snprintf // on Windows, just in this file, we do want to use the C library's snprintf
 
 int dt_win_snprintf(char *dest, const size_t n, const char *fmt, ...)
@@ -47,7 +48,7 @@ int dt_win_snprintf(char *dest, const size_t n, const char *fmt, ...)
       // an error() call is not thread-safe; placing error in dest is better than a crash. This way
       // we have a better chance of the user reporting the strange error and we'll see it's a fmt issue
       // in the message itself.
-      snprintf(dest, n, "0 %-5s does not end with recognized type letter", ch);
+      snprintf(dest, n, "0 %-5s does not end with recognized type letter", ch); // # notranslate
       return -1;
     }
     const char *d = ch+1;
@@ -58,14 +59,14 @@ int dt_win_snprintf(char *dest, const size_t n, const char *fmt, ...)
       int pos = atoi(ch+1);
       if (pos<1 || pos>99) {
         // up to 99 supported here; should not need more than 99 in a message
-        snprintf(dest, n, "1 %.*s outside range [1,99]", (int)(d-ch+1), ch);
+        snprintf(dest, n, "1 %.*s outside range [1,99]", (int)(d-ch+1), ch); // # notranslate
         return -1;
       }
       if (pos>narg) narg=pos;
       if (strp[pos-1]) {
         // no dups allowed because it's reasonable to not support dups, but this wrapper
         // could not cope with the same argument formatted differently; e.g. "%1$d %1$5d"
-        snprintf(dest, n, "2 %%%d$ appears twice", pos);
+        snprintf(dest, n, "2 %%%d$ appears twice", pos); // # notranslate
         return -1;
       }
       strp[pos-1] = strchr(ch, '$')+1;
@@ -78,7 +79,7 @@ int dt_win_snprintf(char *dest, const size_t n, const char *fmt, ...)
   }
   if (posSpec && nonPosSpec) {
     // Standards state that if one specifier uses position, they all must; good.
-    snprintf(dest, n, "3 some %%n$ but not all");
+    snprintf(dest, n, "3 some %%n$ but not all"); // # notranslate
     return -1;
   }
   if (!posSpec) {
@@ -90,10 +91,10 @@ int dt_win_snprintf(char *dest, const size_t n, const char *fmt, ...)
   #define NDELIM 2
   const char delim[NDELIM+1] = "\x7f\x7f"; // tokenize temporary using 2 DELs
   specAlloc += narg*NDELIM + 1;  // +1 for final '\0'
-  char *spec = (char *)malloc(specAlloc);  // not R_alloc as we need to be thread-safe
+  char *spec = malloc(specAlloc);  // not R_alloc as we need to be thread-safe
   if (!spec) {
     // # nocov start
-    snprintf(dest, n, "4 %d byte spec alloc failed", (int)specAlloc);
+    snprintf(dest, n, "4 %d byte spec alloc failed", (int)specAlloc); // # notranslate
     return -1;
     // # nocov end
   }
@@ -101,12 +102,12 @@ int dt_win_snprintf(char *dest, const size_t n, const char *fmt, ...)
   for (int i=0; i<narg; ++i) {
     if (!strp[i] || strl[i]<1) {
       // if %n$ is present, then %[1:n]$ must all be present
-      snprintf(dest, n, "5 %%%d$ missing", i+1);
+      snprintf(dest, n, "5 %%%d$ missing", i+1); // # notranslate
       free(spec);
       return -1;
     }
     *ch2++ = '%';
-    strncpy(ch2, strp[i], strl[i]); // write the reordered specifers without the n$ part
+    strncpy(ch2, strp[i], strl[i]); // write the reordered specifiers without the n$ part
     ch2 += strl[i];
     strcpy(ch2, delim); // includes '\0'
     ch2 += NDELIM;      // now resting on the '\0'
@@ -114,12 +115,12 @@ int dt_win_snprintf(char *dest, const size_t n, const char *fmt, ...)
   char *buff = malloc(n); // for the result of the specifiers
   if (!buff) {
     // # nocov start
-    snprintf(dest, n, "6 %d byte buff alloc failed", (int)n);
+    snprintf(dest, n, "6 %d byte buff alloc failed", (int)n); // # notranslate
     free(spec);
     return -1;
     // # nocov end
   }
-  // now spec contains the specifiers (minus their $n parts) in the same oder as ap
+  // now spec contains the specifiers (minus their $n parts) in the same order as ap
   int res = vsnprintf(buff, n, spec, ap); // C library does all the (non-positional) hard work here
   va_end(ap);
   if (res>=n) {
@@ -128,7 +129,7 @@ int dt_win_snprintf(char *dest, const size_t n, const char *fmt, ...)
     char *new = realloc(buff, res+1);
     if (!new) {
       // # nocov start
-      snprintf(dest, n, "7 %d byte buff realloc failed", (int)res+1);
+      snprintf(dest, n, "7 %d byte buff realloc failed", (int)res+1); // # notranslate
       free(spec);
       free(buff);
       return -1;
@@ -140,7 +141,7 @@ int dt_win_snprintf(char *dest, const size_t n, const char *fmt, ...)
     va_end(ap);
     if (newres!=res) {
       // # nocov start
-      snprintf(dest, n, "8 %d %d second vsnprintf", newres, res);
+      snprintf(dest, n, "8 %d %d second vsnprintf", newres, res); // # notranslate
       free(spec);
       free(buff);
       return -1;
@@ -148,7 +149,7 @@ int dt_win_snprintf(char *dest, const size_t n, const char *fmt, ...)
     }
   } else if (res<1) { // negative is error, cover 0 as error too here
     // # nocov start
-    snprintf(dest, n, "9 %d clib error", res);
+    snprintf(dest, n, "9 %d clib error", res); // # notranslate
     free(spec);
     free(buff);
     return -1;
