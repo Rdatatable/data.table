@@ -18,7 +18,7 @@
 
 6. `between()` gains the argument `ignore_tzone=FALSE`. Normally, a difference in time zone between `lower` and `upper` will produce an error, and a difference in time zone between `x` and either of the others will produce a message. Setting `ignore_tzone=TRUE` bypasses the checks, allowing both comparisons to proceed without error or message about time zones.
 
-7. New helper function `fctr` as an extended version of `factor()`, [#4837](https://github.com/Rdatatable/data.table/issues/4837). Most notably, it supports (1) retaining input level ordering by default, i.e. `levels=unique(x)` as opposed to `levels = sort(unique(x))`; (2) `rev=` to reverse the levels; and (3) `sort=` to allow more feature parity with `factor()`. The choice of default is motivated by convenience in common case when order of elements needs be preserved, for example when using `dcast` or adding a legend to a plot.
+7. New helper function `fctr` as an extended version of `factor()`, [#4837](https://github.com/Rdatatable/data.table/issues/4837). Most notably, it supports (1) retaining input level ordering by default, i.e. `levels=unique(x)` as opposed to `levels = sort(unique(x))`; (2) `rev=` to reverse the levels; and (3) `sort=` to allow more feature parity with `factor()`. The choice of default is motivated by convenience in the common case when order of elements needs be preserved, for example when using `dcast` or adding a legend to a plot. This also matches the default sort ordering of groups in `by=`.
 
 ```r
 d = data.table(id1=rep(1:2, each=3L), id2=letters[c(4:3,5L,3:5)], v1=1:6)
