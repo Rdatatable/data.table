@@ -13,7 +13,7 @@ fctr(x, levels=unique(x), ..., sort=FALSE, rev=FALSE)
   \item{levels}{ Levels for new factor, by default, unlike base R, \code{unique(x)}. }
   \item{\dots}{ Other arguments passed to code{\link[base:factor]{factor}}. }
   \item{sort}{ Logical, decides if \code{levels} should sorted. }
-  \item{rev}{ Logical, decides if order of \code{levels} should be reversed. }
+  \item{rev}{ Logical, decides if order of \code{levels} should be reversed. Applied \emph{after} \code{sort}. }
 }
 \value{
   Factor vector having levels ordered according to the order of elements in input and arguments \code{sort}, \code{rev}.
