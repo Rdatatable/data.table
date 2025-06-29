@@ -1,19 +1,21 @@
 \name{fctr}
 \alias{fctr}
 \alias{factor}
-\title{Create a factor retaining original order}
+\title{Create a factor retaining original ordering}
 \description{
-  Calls code{\link[base:factor]{factor}} using default arguments adjusted to retain original order.
+  Creates a code{\link[base:factor]{factor}}.
+
+  By default, the output will have its levels in the original order, i.e., \code{levels = unique(x)}, as opposed to \code{factor}'s default where \code{levels = sort(unique(x))}.
 }
 \usage{
 fctr(x, levels=unique(x), ..., sort=FALSE, rev=FALSE)
 }
 \arguments{
-  \item{x}{ Object to be turned into factor. }
-  \item{levels}{ Levels for new factor, by default, unlike base R, \code{unique(x)}. }
+  \item{x}{ Object to be turned into a factor. }
+  \item{levels}{ Levels for the new factor; \code{unique(x)} by default. }
   \item{\dots}{ Other arguments passed to code{\link[base:factor]{factor}}. }
-  \item{sort}{ Logical, decides if \code{levels} should sorted. }
-  \item{rev}{ Logical, decides if order of \code{levels} should be reversed. Applied \emph{after} \code{sort}. }
+  \item{sort}{ Logical, default \code{FALSE}. Should \code{levels} be sorted? }
+  \item{rev}{ Logical, default \code{FALSE}. Should \code{levels} be reversed? Applied \emph{after} \code{sort}. }
 }
 \value{
   Factor vector having levels ordered according to the order of elements in input and arguments \code{sort}, \code{rev}.
