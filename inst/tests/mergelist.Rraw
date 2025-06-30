@@ -70,3 +70,6 @@ ans = cbindlist(l)
 test(13.04, key(ans), "id1")
 test(13.05, indices(ans), c("id1","id2","id3","id1__id2__id3","id6","id7","id9"))
 test(13.06, ii, lapply(l, indices)) ## this tests that original indices have not been touched, shallow_duplicate in mergeIndexAttrib
+ans = cbindlist(list(data.table(a=1:2), data.table(b=3:4, key="b")))
+test(13.07, ans, data.table(a=1:2, b=3:4, key="b"))
+test(13.08, key(ans), "b")

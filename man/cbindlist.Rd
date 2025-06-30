@@ -26,11 +26,13 @@
   \code{\link{data.table}}, \code{\link{rbindlist}}
 }
 \examples{
-l = list(
-  d1 = data.table(x=1:3, v1=1L),
-  d2 = data.table(y=3:1, v2=2L),
-  d3 = data.table(z=2:4, v3=3L)
-)
-cbindlist(l)
+d1 = data.table(x=1:3, v1=1L, key="x")
+d2 = data.table(y=3:1, v2=2L, key="y")
+d3 = data.table(z=2:4, v3=3L)
+cbindlist(list(d1, d2, d3))
+cbindlist(list(d1, d1))
+d4 = cbindlist(list(d1), copy=FALSE)
+d4[, v1:=2L]
+identical(d4, d1)
 }
 \keyword{ data }

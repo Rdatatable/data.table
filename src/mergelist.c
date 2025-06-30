@@ -6,15 +6,14 @@ void mergeIndexAttrib(SEXP to, SEXP from) {
   if (isNull(from))
     return;
   SEXP t = ATTRIB(to), f = ATTRIB(from);
-  if (isNull(f))
+  if (isNull(f))  // nothing to merge
     return;
-  if (isNull(t))
+  if (isNull(t)) // target has no attributes -> overwrite
     SET_ATTRIB(to, shallow_duplicate(f));
   else {
-    for (t = ATTRIB(to); CDR(t) != R_NilValue; t = CDR(t));
+    for (t = ATTRIB(to); CDR(t) != R_NilValue; t = CDR(t)); // traverse to end of attributes list of to
     SETCDR(t, shallow_duplicate(f));
   }
-  return;
 }
 
 SEXP cbindlist(SEXP x, SEXP copyArg) {
@@ -72,6 +71,8 @@ SEXP cbindlist(SEXP x, SEXP copyArg) {
       key = getAttrib(thisx, sym_sorted);
     UNPROTECT(protecti);
   }
+  if (isNull(ATTRIB(index)))
+    setAttrib(ans, sym_index, R_NilValue);
   setAttrib(ans, R_NamesSymbol, names);
   setAttrib(ans, sym_sorted, key);
   if (verbose)
