@@ -2048,7 +2048,7 @@ replace_dot_alias = function(e) {
   #5361 merging on keyed factor with character, check if resulting character is really sorted
   if (identical(vapply_1c(.shallow(i, leftcols), typeof), vapply_1c(.shallow(x, rightcols), typeof)))
     return(new_key)
-  
+
   if (!is.sorted(ans, by=new_key))
     return(NULL)
   new_key
