@@ -28,7 +28,7 @@ local({
   test(11.04, length(intersect(addresses(ans), addresses(l))), ncol(expected))
 })
 
-test(11.05, cbindlist(list(data.table(a=1L), data.table(), data.table(d=2L), data.table(f=3L))), data.table(a=1L,d=2L,f=3L))
+test(11.05, cbindlist(list(data.table(a=1L), data.table(), data.table(d=2L), data.table(f=3L))), data.table(a=1L, d=2L, f=3L))
 ## codecov
 test(12.01, cbindlist(data.frame(a=1L), data.frame(b=1L)), error="must be a list")
 test(12.02, cbindlist(TRUE, FALSE), error="must be a list")
@@ -41,13 +41,13 @@ test(12.08, cbindlist(list(data.table(a=integer()), list(b=integer()))), data.ta
 ## duplicated names
 test(12.09, cbindlist(list(data.table(a=1L, b=2L), data.table(b=3L, d=4L))), data.table(a=1L, b=2L, b=3L, d=4L))
 local({
-  ans = cbindlist(list(setindexv(data.table(a=2:1, b=1:2),"a"), data.table(a=1:2, b=2:1, key="a"), data.table(a=2:1, b=1:2)))
+  ans = cbindlist(list(setindexv(data.table(a=2:1, b=1:2), "a"), data.table(a=1:2, b=2:1, key="a"), data.table(a=2:1, b=1:2)))
   test(12.10, ans, data.table(a=2:1, b=1:2, a=1:2, b=2:1, a=2:1, b=1:2))
   test(12.11, indices(ans), NULL)
 })
 ## recycling, first ensure cbind recycling that we want to match to
-test(12.12, cbind(data.table(x=integer()), data.table(a=1:2)), data.table(x=c(NA_integer_,NA), a=1:2))
-test(12.13, cbind(data.table(x=1L), data.table(a=1:2)), data.table(x=c(1L,1L), a=1:2))
+test(12.12, cbind(data.table(x=integer()), data.table(a=1:2)), data.table(x=c(NA_integer_, NA), a=1:2))
+test(12.13, cbind(data.table(x=1L), data.table(a=1:2)), data.table(x=c(1L, 1L), a=1:2))
 test(12.14, cbindlist(list(data.table(a=integer()), data.table(b=1:2))), error="recycling.*not yet implemented")
 test(12.15, cbindlist(list(data.table(a=1L), data.table(b=1:2))), error="recycling.*not yet implemented")
 test(12.16, cbindlist(list(data.table(a=integer()), data.table(b=1:2)), copy=FALSE), error="has to have equal nrow")
@@ -58,7 +58,7 @@ local({
   d = data.table(x=1:2, y=2:1, z=2:1, v1=1:2) ## ensure setDT will retain key and indices when it is called on the list, bc Ccbindlist returns list
   setkeyv(d, "x"); setindexv(d, list("y", "z"))
   a = attributes(d)
-  attributes(d) = a[!names(a) %in% c("class",".internal.selfref","row.names")]
+  attributes(d) = a[!names(a) %in% c("class", ".internal.selfref", "row.names")]
   test(13.01, class(d), "list")
   setDT(d)
   test(13.02, key(d), "x")
@@ -75,7 +75,7 @@ local({
   ii = lapply(l, indices)
   ans = cbindlist(l)
   test(13.04, key(ans), "id1")
-  test(13.05, indices(ans), c("id1","id2","id3","id1__id2__id3","id6","id7","id9"))
+  test(13.05, indices(ans), c("id1", "id2", "id3", "id1__id2__id3", "id6", "id7", "id9"))
   test(13.06, ii, lapply(l, indices)) ## this tests that original indices have not been touched, shallow_duplicate in mergeIndexAttrib
   ans = cbindlist(list(data.table(a=1:2), data.table(b=3:4, key="b")))
   test(13.07, ans, data.table(a=1:2, b=3:4, key="b"))
