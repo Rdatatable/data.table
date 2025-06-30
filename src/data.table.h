@@ -272,6 +272,12 @@ SEXP islockedR(SEXP x);
 bool need2utf8(SEXP x);
 SEXP coerceUtf8IfNeeded(SEXP x);
 SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg);
+int n_rows(SEXP x);
+int n_columns(SEXP x);
+bool isDataTable(SEXP x);
+bool isRectangularList(SEXP x);
+bool perhapsDataTable(SEXP x);
+SEXP perhapsDataTableR(SEXP x);
 NORET void internal_error(const char *call_name, const char *format, ...);
 
 // types.c

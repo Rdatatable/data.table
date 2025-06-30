@@ -453,6 +453,95 @@ SEXP startsWithAny(const SEXP x, const SEXP y, SEXP start) {
   return ScalarLogical(false);
 }
 
+// if (length(x)) length(x[[1L]]) else 0L
+// used in src/mergelist.c and below in commented out set_row_names
+int n_rows(SEXP x) {
+  if (!LENGTH(x))
+    return 0; // # nocov. Not yet reached from anywhere, cbindlist uses it but escapes for !n_columns(x)
+  return length(VECTOR_ELT(x, 0));
+}
+
+// length(x)
+// used in src/mergelist.c
+// to be an abstraction layer on C level
+int n_columns(SEXP x) {
+  return LENGTH(x);
+}
+
+/*
+ Below commented out functions will be uncommented when addressing #4439
+ // c("data.table","data.frame")
+ static SEXP char2_dtdf() {
+ SEXP char2_dtdf = PROTECT(allocVector(STRSXP, 2));
+ SET_STRING_ELT(char2_dtdf, 0, char_datatable);
+ SET_STRING_ELT(char2_dtdf, 1, char_dataframe);
+ UNPROTECT(1);
+ return char2_dtdf;
+ }
+ 
+ // .set_row_names(x)
+ static SEXP set_row_names(int n) {
+ SEXP ans = R_NilValue;
+ if (n) {
+ ans = PROTECT(allocVector(INTSXP, 2));
+ INTEGER(ans)[0] = NA_INTEGER;
+ INTEGER(ans)[1] = -n;
+ } else {
+ ans = PROTECT(allocVector(INTSXP, 0));
+ }
+ UNPROTECT(1);
+ return ans;
+ }
+ 
+ // setDT(x) ## not in-place!
+ SEXP setDT(SEXP x) {
+ if (!isNewList(x))
+ error("internal error: C setDT should be called only on a list"); // # nocov
+ setAttrib(x, R_ClassSymbol, char2_dtdf());
+ setAttrib(x, sym_rownames, set_row_names(n_rows(x)));
+ return alloccolwrapper(x, GetOption(sym_alloccol, R_NilValue), GetOption(sym_verbose, R_NilValue));
+ }*/
+
+// inherits(x, "data.table")
+bool isDataTable(SEXP x) {
+  return INHERITS(x, char_datatable);
+}
+
+// rectangular list; NB does not allow length-1 recycling
+// length(x) <= 1L || length(unique(lengths(x))) == 1L
+static inline bool isRectangular(SEXP x) {
+  int n = LENGTH(x);
+  if (n < 2)
+    return true;
+  R_xlen_t nr = xlength(VECTOR_ELT(x, 0));
+  for (int i=1; i<n; ++i) {
+    if (xlength(VECTOR_ELT(x, i)) != nr)
+      return false;
+  }
+  return true;
+}
+
+// setDT()-friendly rectangular list, i.e.
+//   a named list() with all entries of equal length()
+bool isRectangularList(SEXP x) {
+  if (!isNewList(x))
+    return false;
+  if (!LENGTH(x))
+    return true;
+  if (isNull(getAttrib(x, R_NamesSymbol)))
+    return false;
+  return isRectangular(x);
+}
+
+// TODO: use isDataFrame (when included in any R release).
+// isDataTable(x) || isFrame(x) || isRectangularList(x)
+bool perhapsDataTable(SEXP x) {
+  return isDataTable(x) || isFrame(x) || isRectangularList(x);
+}
+SEXP perhapsDataTableR(SEXP x) {
+  return ScalarLogical(perhapsDataTable(x));
+}
+
 void internal_error(const char *call_name, const char *format, ...) {
   char buff[1024];
   va_list args;
