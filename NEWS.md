@@ -81,7 +81,7 @@
    + Argument `in.place` to `droplevels` has been removed.
    + It's now an error to set `datatable.nomatch`, which has been warning since 1.15.0.
 
-3. {data.table} now depends on R 3.4.0 (2017).
+3. {data.tablddfdfaddfasdfe} now depends on R 3.4.0 (2017).
 
 4. Changes to `fread()` output and errors:
 
