@@ -1,5 +1,5 @@
 # is x[i] in between lower[i] and upper[i] ?
-between = function(x, lower, upper, incbounds=TRUE, NAbounds=TRUE, check=FALSE) {
+between = function(x, lower, upper, incbounds=TRUE, NAbounds=TRUE, check=FALSE, ignore_tzone=FALSE) {
   if (is.logical(x)) stopf("between has been passed an argument x of type logical")
   if (is.logical(lower)) lower = as.integer(lower)   # typically NA (which is logical type)
   if (is.logical(upper)) upper = as.integer(upper)   # typically NA (which is logical type)
@@ -16,16 +16,12 @@ between = function(x, lower, upper, incbounds=TRUE, NAbounds=TRUE, check=FALSE) 
     stopifnot(is.px(x), is.px(lower), is.px(upper)) # nocov # internal
   }
   # POSIX check timezone match
-  if (is.px(x) && is.px(lower) && is.px(upper)) {
-    tzs = sapply(list(x,lower,upper), function(x) {
-      tt = attr(x,"tzone",exact=TRUE)
-      if (is.null(tt)) "" else tt
-    })
+  if (!ignore_tzone && is.px(x) && is.px(lower) && is.px(upper)) {
+    tzs = vapply_1c(list(x, lower, upper), function(x) attr(x, "tzone", exact=TRUE) %||% "")
     # lower/upper should be more tightly linked than x/lower, so error
     #   if the former don't match but only inform if they latter don't
     if (tzs[2L]!=tzs[3L]) {
       stopf("'between' lower= and upper= are both POSIXct but have different tzone attributes: %s. Please align their time zones.", brackify(tzs[2:3], quote=TRUE))
-      # otherwise the check in between.c that lower<=upper can (correctly) fail for this reason
     }
     if (tzs[1L]!=tzs[2L]) {
       messagef("'between' arguments are all POSIXct but have mismatched tzone attributes: %s. The UTC times will be compared.", brackify(tzs, quote=TRUE))
@@ -60,7 +56,7 @@ between = function(x, lower, upper, incbounds=TRUE, NAbounds=TRUE, check=FALSE) 
     y = eval.parent(ysub)
   }
   if ((l <- length(y)) != 2L) {
-    suggestion <- if (ysub %iscall% 'c') gettextf("Perhaps you meant %s? ", capture.output(print(`[[<-`(ysub, 1L, quote(list))))) else ""
+    suggestion = if (ysub %iscall% 'c') gettextf("Perhaps you meant %s? ", capture.output(print(`[[<-`(ysub, 1L, quote(list))))) else ""
     stopf("RHS has length() %d; expecting length 2. %sThe first element should be the lower bound(s); the second element should be the upper bound(s).", l, suggestion)
   }
   between(x, y[[1L]], y[[2L]], incbounds=TRUE)
@@ -75,11 +71,14 @@ inrange = function(x,lower,upper,incbounds=TRUE) {
   ops = if (incbounds) c(4L, 2L) else c(5L, 3L) # >=,<= and >,<
   verbose = isTRUE(getOption("datatable.verbose"))
   if (verbose) {last.started.at=proc.time();catf("forderv(query) took ... ");flush.console()}
-  if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()}
+  if (verbose) {cat(timetaken(last.started.at),"\n"); flush.console()} # notranslate
   ans = bmerge(
     shallow(subject), query,
-    icols=1L:2L, xcols=c(1L,1L),
-    roll=0.0, rollends=c(FALSE, TRUE), nomatch=0L, mult="all", ops, verbose) # fix for #1819, turn on verbose messages
+    icols=1L:2L, xcols=c(1L, 1L),
+    roll=0.0, rollends=c(FALSE, TRUE),
+    nomatch=0L, mult="all",
+    ops=ops, verbose=verbose # fix for #1819, turn on verbose messages
+  )
   xo = ans$xo
   options(datatable.verbose=FALSE)
   setDT(ans[c("starts", "lens")], key=c("starts", "lens"))

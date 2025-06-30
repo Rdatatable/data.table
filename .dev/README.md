@@ -1,5 +1,25 @@
 # data.table developer
 
+Inside this repository we provide some tools to improves development experience. Most notable is the `cc()` helper function that recompiles C sources, reloads R sources, and runs tests.
+
+Typical development workflow will then look like:
+
+0. `git checkout -b [branch]`
+1. edit package files
+2. run `R`
+3. call `cc(TRUE)`
+4. (if needed) go to point 1.
+
+Once we (and tests) are satisfied with changes, we then run complete package checks:
+
+0. in shell terminal
+1. run `make build`
+2. run `make check`
+3. (optionally) run on `r-devel`, e.g. `R=~/build/R-devel/bin/R make check`
+4. (optionally) run on ancient R, e.g. `R=~/build/R-340/bin/R make check`
+5. `git commit -m '[changes description]'`
+6. `git push [remote] [branch]`
+
 ## Setup
 
 To use the optional helper function `cc()`, one needs to set up the project path and source `.dev/cc.R` to use `cc()` conveniently. This works through creating an additional `.Rprofile` in the `data.table` directory.

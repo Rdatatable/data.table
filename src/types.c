@@ -14,13 +14,13 @@ char *end(char *start) {
 void ansMsg(ans_t *ans, int n, bool verbose, const char *func) {
   for (int i=0; i<n; i++) {
     if (verbose && (ans[i].message[0][0] != '\0'))
-      Rprintf("%s: %d:\n%s", func, i+1, ans[i].message[0]);
+      Rprintf("%s: %d:\n%s", func, i+1, ans[i].message[0]); // # notranslate
     if (ans[i].message[1][0] != '\0')
-      REprintf("%s: %d:\n%s", func, i+1, ans[i].message[1]);
+      REprintf("%s: %d:\n%s", func, i+1, ans[i].message[1]); // # notranslate
     if (ans[i].message[2][0] != '\0')
-      warning("%s: %d:\n%s", func, i+1, ans[i].message[2]);
+      warning("%s: %d:\n%s", func, i+1, ans[i].message[2]); // # notranslate
     if (ans[i].status == 3)
-      error("%s: %d:\n%s:", func, i+1, ans[i].message[3]);
+      error("%s: %d:\n%s:", func, i+1, ans[i].message[3]); // # notranslate
   }
 }
 
@@ -28,6 +28,7 @@ void ansMsg(ans_t *ans, int n, bool verbose, const char *func) {
  * R interface to test ansMsg function
  * see inst/tests/types.Rraw
  */
+// # notranslate start
 void testRaiseMsg(ans_t *ans, int istatus, bool verbose) {
   if (verbose) {
     snprintf(end(ans->message[0]), 500, "%s: stdout 1 message\n", __func__);
@@ -66,7 +67,7 @@ SEXP testMsgR(SEXP status, SEXP x, SEXP k) {
 
   // TODO below chunk into allocansList helper, not for 1.12.4
   SEXP ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++;
-  ans_t *vans = (ans_t *)R_alloc(nx*nk, sizeof(ans_t));
+  ans_t *vans = (ans_t *)R_alloc(nx*nk, sizeof(*vans));
   if (verbose)
     Rprintf(_("%s: allocating memory for results %dx%d\n"), __func__, nx, nk);
   for (R_len_t i=0; i<nx; i++) {
@@ -87,3 +88,4 @@ SEXP testMsgR(SEXP status, SEXP x, SEXP k) {
   UNPROTECT(protecti);
   return ans;
 }
+// # notranslate end

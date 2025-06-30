@@ -19,7 +19,7 @@ multiple columns simultaneously.
 \arguments{
 \item{data}{ A \code{data.table} object to melt.}
 \item{id.vars}{vector of id variables. Can be integer (corresponding id
-column numbers) or character (id column names) vector. If missing, all
+column numbers) or character (id column names) vector, perhaps created using \code{patterns()}. If missing, all
 non-measure columns will be assigned to it. If integer, must be positive; see Details. }
 \item{measure.vars}{Measure variables for \code{melt}ing. Can be missing, vector, list, or pattern-based.
 
@@ -131,6 +131,7 @@ melt(DT, id.vars=1, measure.vars=c("c_1", "c_2"), na.rm=TRUE) # remove NA
 # melt "f_1,f_2" and "d_1,d_2" simultaneously, retain 'factor' attribute
 # convenient way using internal function patterns()
 melt(DT, id.vars=1:2, measure.vars=patterns("^f_", "^d_"), value.factor=TRUE)
+melt(DT, id.vars=patterns("[in]"), measure.vars=patterns("^f_", "^d_"), value.factor=TRUE)
 # same as above, but provide list of columns directly by column names or indices
 melt(DT, id.vars=1:2, measure.vars=list(3:4, c("d_1", "d_2")), value.factor=TRUE)
 # same as above, but provide names directly:

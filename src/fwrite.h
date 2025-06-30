@@ -113,10 +113,10 @@ typedef struct fwriteMainArgs
   int nth;
   bool showProgress;
   bool is_gzip;
+  int gzip_level;
   bool bom;
   const char *yaml;
   bool verbose;
 } fwriteMainArgs;
 
 void fwriteMain(fwriteMainArgs args);
-

@@ -1,15 +1,8 @@
 # nocov start
 
-.pkg.store = new.env()
-.pkg.store$.unsafe.done = FALSE
 .unsafe.opt = function() {
-  if (.pkg.store$.unsafe.done) return(invisible())
-  val = getOption("datatable.nomatch")
-  if (is.null(val)) return(invisible())  # not defined (it hasn't been defined in .onLoad since v1.12.4)
-  warningf("Option 'datatable.nomatch' is defined but is now ignored. Please see note 11 in v1.12.4 NEWS (Oct 2019), and note 14 in v1.14.2.")
-  # leave this as warning for a long time
-  .pkg.store$.unsafe.done = TRUE
-  invisible()
+  if (!is.null(getOption("datatable.nomatch")))
+    stopf("Option 'datatable.nomatch' is defined but is now ignored. Please see note 11 in v1.12.4 NEWS (Oct 2019), and note 14 in v1.14.2.")
 }
 
 .Last.updated = vector("integer", 1L) # exported variable; number of rows updated by the last := or set(), #1885
@@ -119,7 +112,7 @@
   add1 = address(DF$a)
   add2 = address(DF$b)
   add3 = address(DF)
-  DF[2L, "b"] = 7  # changed b but not a
+  DF[2L, "b"] = 7L  # changed b but not a
   add4 = address(DF$a)
   add5 = address(DF$b)
   add6 = address(DF)

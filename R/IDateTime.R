@@ -40,13 +40,12 @@ as.IDate.POSIXct = function(x, tz = attr(x, "tzone", exact=TRUE), ...) {
   if (is_utc(tz))
     (setattr(as.integer(as.numeric(x) %/% 86400L), "class", c("IDate", "Date")))  # %/% returns new object so can use setattr() on it; wrap with () to return visibly
   else
-    as.IDate(as.Date(x, tz =  if (is.null(tz)) '' else tz, ...))
+    as.IDate(as.Date(x, tz =  tz %||% '', ...))
 }
 
 as.IDate.IDate = function(x, ...) x
 
 as.Date.IDate = function(x, ...) {
-  x = as.numeric(x)
   class(x) = "Date"
   x
 }
@@ -147,7 +146,7 @@ as.ITime.default = function(x, ...) {
 
 as.ITime.POSIXct = function(x, tz = attr(x, "tzone", exact=TRUE), ...) {
   if (is_utc(tz)) as.ITime(unclass(x), ...)
-  else as.ITime(as.POSIXlt(x, tz = if (is.null(tz)) '' else tz, ...), ...)
+  else as.ITime(as.POSIXlt(x, tz = tz %||% '', ...), ...)
 }
 
 as.ITime.numeric = function(x, ms = 'truncate', ...) {
@@ -186,7 +185,7 @@ as.ITime.POSIXlt = function(x, ms = 'truncate', ...) {
 }
 
 as.ITime.times = function(x, ms = 'truncate', ...) {
-  secs = 86400 * (unclass(x) %% 1)
+  secs = 86400L * (unclass(x) %% 1L)
   secs = clip_msec(secs, ms)
   (setattr(secs, "class", "ITime"))  # the first line that creates sec will create a local copy so we can use setattr() to avoid potential copy of class()<-
 }
@@ -235,19 +234,19 @@ rep.ITime = function(x, ...)
   y
 }
 
-round.ITime <- function(x, digits = c("hours", "minutes"), ...)
+round.ITime = function(x, digits = c("hours", "minutes"), ...)
 {
   (setattr(switch(match.arg(digits),
-                  hours = as.integer(round(unclass(x)/3600)*3600),
-                  minutes = as.integer(round(unclass(x)/60)*60)),
+                  hours = as.integer(round(unclass(x)/3600.0)*3600.0),
+                  minutes = as.integer(round(unclass(x)/60.0)*60.0)),
            "class", "ITime"))
 }
 
-trunc.ITime <- function(x, units = c("hours", "minutes"), ...)
+trunc.ITime = function(x, units = c("hours", "minutes"), ...)
 {
   (setattr(switch(match.arg(units),
-                  hours = as.integer(unclass(x)%/%3600*3600),
-                  minutes = as.integer(unclass(x)%/%60*60)),
+                  hours = as.integer(unclass(x)%/%3600.0*3600.0),
+                  minutes = as.integer(unclass(x)%/%60.0*60.0)),
            "class", "ITime"))
 }
 
@@ -280,7 +279,7 @@ IDateTime.default = function(x, ...) {
 
 # POSIXt support
 
-as.POSIXct.IDate = function(x, tz = "UTC", time = 0, ...) {
+as.POSIXct.IDate = function(x, tz = "UTC", time = 0.0, ...) {
   if (missing(time) && inherits(tz, "ITime")) {
     time = tz # allows you to use time as the 2nd argument
     tz = "UTC"

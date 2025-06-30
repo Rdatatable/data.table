@@ -9,6 +9,10 @@ vignette: >
   \usepackage[utf8]{inputenc}
 ---
 
+```{r echo=FALSE, file='../_translation_links.R'}
+```
+`r .write.translation.links("Translations of this document are available in: %s")`
+
 ```{r, echo = FALSE, message = FALSE}
 require(data.table)
 knitr::opts_chunk$set(
@@ -312,7 +316,7 @@ ans
 
 On aurait pu faire la même opération en écrivant `nrow(flights[origin == "JFK" & month == 6L])`. Néanmoins il aurait fallu d'abord dissocier la `data.table` entière  en fonction des *indices de lignes* dans `i` *puis* renvoyer les lignes en utilisant `nrow()`, ce qui est inutile et pas efficace. Nous aborderons en détails ce sujet et d'autres aspects de l'optimisation dans la vignette *architecture de `data.table`*.
 
-### h) Super !  Mais comment référencer les colonnes par nom dans `j` (comme avec un `data.frame`) ? {#refer_j}
+### h) Super !  Mais comment référencer les colonnes par nom dans `j` (comme avec un `data.frame`) ? {#refer-j}
 
 Si vous imprimez le nom des colonnes explicitement, il n'y a pas de différence avec un `data.frame` (depuis v1.9.8).
 
@@ -418,7 +422,7 @@ ans
     
     Nous utiliserons cette forme pratique chaque fois que cela sera possible.
 
-#### -- Comment calculer le nombre de voyages au départ de chaque aéroport pour le transporteur ayant le code `"AA"`? {#origin-.N}
+#### -- Comment calculer le nombre de voyages au départ de chaque aéroport pour le transporteur ayant le code `"AA"`? {#origin-N}
 
 Le code unique de transporteur `"AA"` correspond à *American Airlines Inc.*
 
@@ -431,7 +435,7 @@ ans
 
 * En utilisant ces *index de ligne*, nous obtenons le nombre de lignes groupées par `origine`. Une fois de plus, aucune colonne n'est matérialisée ici, car l'expression `j' ne nécessite aucune colonne pour définir le sous-ensemble et le calcul est donc rapide et peu gourmand en mémoire.
 
-#### -- Comment obtenir le nombre total de voyages pour chaque paire `origin, dest` du transporteur ayant pour code `"AA"`? {#origin-dest-.N}
+#### -- Comment obtenir le nombre total de voyages pour chaque paire `origin, dest` du transporteur ayant pour code `"AA"`? {#origin-dest-N}
 
 ```{r}
 ans <- flights[carrier == "AA", .N, by = .(origin, dest)]
@@ -479,7 +483,7 @@ Nous en apprendrons plus au sujet des `clés` dans la vignette *Clés et sous-en
 
 ### c) Chaînage
 
-Considérons la tâche consistant à [récupérer le nombre total de voyages pour chaque couple `origin, dest` du transporteur *"AA"*](#origin-dest-.N).
+Considérons la tâche consistant à [récupérer le nombre total de voyages pour chaque couple `origin, dest` du transporteur *"AA"*](#origin-dest-N).
 
 ```{r}
 ans <- flights[carrier == "AA", .N, by = .(origin, dest)]
@@ -579,7 +583,7 @@ Nous y sommes presque. Il reste encore une petite chose à régler. Dans notre `
 
 En utilisant l'argument `.SDcols`. Il accepte soit des noms soit des indices de colonnes. Par exemple, `.SDcols = c("arr_delay", "dep_delay")` permet que `.SD` ne comporte que ces deux colonnes pour chaque groupe.
 
-De la même manière que [part g)](#refer_j), vous pouvez également spécifier les colonnes à supprimer au lieu des colonnes à garder en utilisant le `-` ou `!`. De plus, vous pouvez sélectionner des colonnes consécutives avec `colA:colB` et les désélectionner avec `!(colA:colB)` ou `-(colA:colB)`.
+De la même manière que [part g)](#refer-j), vous pouvez également spécifier les colonnes à supprimer au lieu des colonnes à garder en utilisant le `-` ou `!`. De plus, vous pouvez sélectionner des colonnes consécutives avec `colA:colB` et les désélectionner avec `!(colA:colB)` ou `-(colA:colB)`.
 
 Maintenant essayons d'utiliser `.SD` avec `.SDcols` pour obtenir la moyenne `mean()` des colonnes `arr_delay` et `dep_delay` groupées par `origin`, `dest` et `month`.
 

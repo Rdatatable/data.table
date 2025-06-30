@@ -26,9 +26,9 @@ h2 {
 }
 </style>
 
-Translations of this document are available in
-
-* [French](https://rdatatable.gitlab.io/data.table/articles/fr/datatable-faq.html)
+```{r echo=FALSE, file='_translation_links.R'}
+```
+`r .write.translation.links("Translations of this document are available in: %s")`
 
 ```{r, echo = FALSE, message = FALSE}
 library(data.table)
@@ -620,7 +620,10 @@ DT[ , b := rnorm(5)]  # 'replace' integer column with a numeric column
 
 ## Reading data.table from RDS or RData file
 
-`*.RDS` and `*.RData` are file types which can store in-memory R objects on disk efficiently. However, storing data.table into the binary file loses its column over-allocation. This isn't a big deal -- your data.table will be copied in memory on the next _by reference_ operation and throw a warning. Therefore it is recommended to call `setalloccol()` on each data.table loaded with `readRDS()` or `load()` calls.
+`*.RDS` and `*.RData` are file types which can store in-memory R objects on disk efficiently. However, storing `data.table` into a binary file loses its column over-allocation (see also `?truelength`). This isn't a big deal -- your `data.table` will be copied in memory on the next _by reference_ operation and throw a warning.  
+Therefore, it is recommended to call `setDT()` on each `data.table` loaded with `readRDS()` or `load()` calls to restore its internal attributes. If you only need to pre-allocate space for new columns, `setalloccol()` can also be used.  
+
+For more details, see `?setDT` and `?truelength`.
 
 # General questions about the package
 
