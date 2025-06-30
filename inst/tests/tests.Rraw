@@ -7101,6 +7101,14 @@ test(1483.72, y[x, on="x"], data.table(x=rlet, b=rlet, a=rlet))
 test(1483.73, merge(x, y, by="x"), data.table(x=let, a=let, b=let, key="x"))
 test(1483.74, merge(y, x, by="x"), data.table(x=let, b=let, a=let, key="x"))
 
+some_letters <- c("c", "b", "a")
+some_more_letters <- rep(c("a", "b", "c"), 2L)
+dt1 <- data.table(x = some_letters, y=1:3)
+dt2 <- data.table(x = factor(some_more_letters, levels=some_letters), z=1:6, key=c("x", "z"))
+dt3 <- merge(dt1, dt2, by="x")
+test(1483.81, key(dt3), NULL)
+test(1483.82, nrow(dt3[x %in% "c", ]), 2L)
+
 # NULL items should be removed when making data.table from list, #842
 # Original fix for #842 added a branch in as.data.table.list() using point()
 # Then PR#3471 moved logic from data.table() into as.data.table.list() and now removes NULL items up front, so longer need for the branch
