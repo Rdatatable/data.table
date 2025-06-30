@@ -3,7 +3,7 @@
 \alias{dcast}
 \title{Fast dcast for data.table}
 \description{
-  \code{dcast.data.table} is \code{data.table}'s long-to-wide reshaping tool. In the spirit of \code{data.table}, it is very fast and memory efficient, making it well-suited to handling large data sets in RAM.  More importantly, it is capable of handling very large data quite efficiently in terms of memory usage. \code{dcast.data.table} can also cast multiple \code{value.var} columns and accepts multiple functions to \code{fun.aggregate}. See Examples for more.
+  \code{dcast.data.table} is \code{data.table}'s long-to-wide reshaping tool. In the spirit of \code{data.table}, it is very fast and memory efficient, making it well-suited to handling large data sets in RAM. More importantly, it is capable of handling very large data quite efficiently in terms of memory usage. \code{dcast.data.table} can also cast multiple \code{value.var} columns and accepts multiple functions to \code{fun.aggregate}. See Examples for more.
 }
 
 \usage{

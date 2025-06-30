@@ -34,15 +34,11 @@ else
     NOZLIB=0
     lib=`pkg-config --libs zlib`
     cflag=`pkg-config --cflags zlib`
-    expr -- "$lib" : ".*-lz$" >> config.log  # -- for FreeBSD, #4652
+    echo "$lib" | grep -qE '[-]lz($| )' >> config.log
     if [ $? -ne 0 ]; then
-      expr -- "$lib" : ".*-lz " >> config.log
-      # would use \b in one expr but MacOS does not support \b
-      if [ $? -ne 0 ]; then
-        echo "*** pkg-config is installed and 'pkg-config --exists zlib' succeeds but"
-        echo "*** 'pkg-config --libs zlib' returns '${lib}' which does not include the standard -lz."
-        msg=1
-      fi
+      echo "*** pkg-config is installed and 'pkg-config --exists zlib' succeeds but"
+      echo "*** 'pkg-config --libs zlib' returns '${lib}' which does not include the standard -lz."
+      msg=1
     fi
   fi
 fi
@@ -126,6 +122,7 @@ detect_openmp () {
     if CPPFLAGS="${CPPFLAGS} -fopenmp" "${R_HOME}/bin/R" CMD SHLIB test-omp.c >> config.log 2>&1; then
       echo "yes"
       export PKG_CFLAGS="${PKG_CFLAGS} -fopenmp"
+      export PKG_LIBS="${PKG_LIBS} -fopenmp"
       export R_OPENMP_ENABLED=1
       return
     else

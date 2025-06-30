@@ -1,22 +1,15 @@
 # reshape2 dependency was originally abandoned because (1) we wanted to be in control
 #   of the R version dependency and (2) reshape2::dcast is not generic.
-#   reshape2 package is deprecated since December 2017, so we'll deprecate our
+#   reshape2 package is deprecated since December 2017, so we've deprecated our
 #   redirection as well
 
 melt = function(data, ..., na.rm = FALSE, value.name = "value") {
   UseMethod("melt", data)
 }
 
+# TODO(>=1.19.0): Remove this, just let dispatch to 'default' method fail.
 melt.default = function(data, ..., na.rm = FALSE, value.name = "value") {
-  # if no registered method exists for data, attempts to redirect data to reshape2::melt;
-  # CRAN package edarf and others fail without the redirection
-  # nocov start
-  data_name = deparse(substitute(data))
-  ns = tryCatch(getNamespace("reshape2"), error=function(e)
-    stopf("The %1$s generic in data.table has been passed a %2$s, but data.table::%1$s currently only has a method for data.tables. Please confirm your input is a data.table, with setDT(%3$s) or as.data.table(%3$s). If you intend to use a method from reshape2, try installing that package first, but do note that reshape2 is superseded and is no longer actively developed.", "melt", class1(data), data_name))
-  warningf("The %1$s generic in data.table has been passed a %2$s and will attempt to redirect to the relevant reshape2 method; please note that reshape2 is superseded and is no longer actively developed, and this redirection is now deprecated. To continue using melt methods from reshape2 while both packages are attached, e.g. melt.list, you can prepend the namespace, i.e. reshape2::%1$s(%3$s). In the next version, this warning will become an error.", "melt", class1(data), data_name)
-  ns$melt(data, ..., na.rm=na.rm, value.name=value.name)
-  # nocov end
+  stopf("The %1$s generic in data.table has been passed a %2$s and will attempt to redirect to the relevant reshape2 method; please note that reshape2 is superseded and is no longer actively developed, and this redirection is now deprecated. To continue using melt methods from reshape2 while both packages are attached, e.g. melt.list, you can prepend the namespace, i.e. reshape2::%1$s(%3$s). In the next version, this warning will become an error.", "melt", class1(data), deparse(substitute(data))) # nocov
 }
 
 patterns = function(..., cols=character(0L), ignore.case=FALSE, perl=FALSE, fixed=FALSE, useBytes=FALSE) {
@@ -38,7 +31,7 @@ patterns = function(..., cols=character(0L), ignore.case=FALSE, perl=FALSE, fixe
 
 measure = function(..., sep="_", pattern, cols, multiple.keyword="value.name") {
   mcall = match.call()
-  L = as.list(mcall)[-1]
+  L = as.list(mcall)[-1L]
   formal.names = names(formals())
   formal.i.vec = which(names(L) %in% formal.names)
   fun.list = L[-formal.i.vec]
@@ -59,7 +52,7 @@ measure = function(..., sep="_", pattern, cols, multiple.keyword="value.name") {
   # evaluate each value in ... and stop if not function.
   for (fun.i in which(user.named)) {
     fun = eval(fun.list[[fun.i]], parent.frame(1L))
-    if (!is.function(fun) || length(formals(args(fun)))==0) {
+    if (!is.function(fun) || length(formals(args(fun)))==0L) {
       stopf("each ... argument to measure must be a function with at least one argument, problem: %s", names(fun.list)[[fun.i]])
     }
     fun.list[[fun.i]] = fun
@@ -73,13 +66,13 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
   if (!missing(sep) && !missing(pattern)) {
     stopf("both sep and pattern arguments used; must use either sep or pattern (not both)")
   }
-  if (!(is.character(multiple.keyword) && length(multiple.keyword)==1 && !is.na(multiple.keyword) && nzchar(multiple.keyword))) {
+  if (!(is.character(multiple.keyword) && length(multiple.keyword)==1L && !is.na(multiple.keyword) && nzchar(multiple.keyword))) {
     stopf("multiple.keyword must be a character string with nchar>0")
   }
   if (!is.character(cols)) {
     stopf("cols must be a character vector of column names")
   }
-  prob.i <- if (is.null(names(fun.list))) {
+  prob.i = if (is.null(names(fun.list))) {
     seq_along(fun.list)
   } else {
     which(!nzchar(names(fun.list)))
@@ -96,7 +89,7 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
       stopf("pattern must be character string")
     }
     match.vec = regexpr(pattern, cols, perl=TRUE)
-    measure.vec.i = which(0 < match.vec)
+    measure.vec.i = which(match.vec > 0L)
     if (length(measure.vec.i) == 0L) {
       stopf("pattern did not match any cols, so nothing would be melted; fix by changing pattern")
     }
@@ -108,7 +101,7 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
       stopf("number of elements of fun.list (%d) must be the same as the number of capture groups in pattern (%d)", length(fun.list), ncol(start))
     }
     end = attr(match.vec, "capture.length")[measure.vec.i,]+start-1L
-    measure.vec <- cols[measure.vec.i]
+    measure.vec = cols[measure.vec.i]
     names.mat = matrix(measure.vec, nrow(start), ncol(start))
     substr(names.mat, start, end)
   } else { #pattern not specified, so split using sep.
@@ -118,7 +111,7 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
     list.of.vectors = strsplit(cols, sep, fixed=TRUE)
     vector.lengths = lengths(list.of.vectors)
     n.groups = max(vector.lengths)
-    if (n.groups == 1) {
+    if (n.groups == 1L) {
       stopf("each column name results in only one item after splitting using sep, which means that all columns would be melted; to fix please either specify melt on all columns directly without using measure, or use a different sep/pattern specification")
     }
     if (n.groups != length(fun.list)) {
@@ -142,7 +135,7 @@ measurev = function(fun.list, sep="_", pattern, cols, multiple.keyword="value.na
   for (group.i in fun.i.vec) {
     group.name = names(fun.list)[[group.i]]
     fun = fun.list[[group.i]]
-    if (!is.function(fun) || length(formals(args(fun)))==0) {
+    if (!is.function(fun) || length(formals(args(fun))) == 0L) {
       stopf("in the measurev fun.list, each non-NULL element must be a function with at least one argument, problem: %s", group.name)
     }
     group.val = fun(group.dt[[group.name]])
@@ -189,13 +182,17 @@ melt.data.table = function(data, id.vars, measure.vars, variable.name = "variabl
        value.name = "value", ..., na.rm = FALSE, variable.factor = TRUE, value.factor = FALSE,
        verbose = getOption("datatable.verbose")) {
   if (!is.data.table(data)) stopf("'data' must be a data.table")
-  if (missing(id.vars)) id.vars=NULL
-  if (missing(measure.vars)) measure.vars = NULL
-  measure.sub = substitute(measure.vars)
-  if (is.call(measure.sub)) {
-    eval.result = eval_with_cols(measure.sub, names(data))
-    if (!is.null(eval.result)) {
-      measure.vars = eval.result
+  for(type.vars in c("id.vars","measure.vars")){
+    sub.lang <- substitute({
+      if (missing(VAR)) VAR=NULL
+      substitute(VAR)
+    }, list(VAR=as.symbol(type.vars)))
+    sub.result = eval(sub.lang)
+    if (is.call(sub.result)) {
+      eval.result = eval_with_cols(sub.result, names(data))
+      if (!is.null(eval.result)) {
+        assign(type.vars, eval.result)
+      }
     }
   }
   if (is.list(measure.vars)) {
