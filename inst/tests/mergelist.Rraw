@@ -80,5 +80,4 @@ local({
   test(13.06, ii, lapply(l, indices)) ## this tests that original indices have not been touched, shallow_duplicate in mergeIndexAttrib
   ans = cbindlist(list(data.table(a=1:2), data.table(b=3:4, key="b")))
   test(13.07, ans, data.table(a=1:2, b=3:4, key="b"))
-  test(13.08, key(ans), "b")
 })
