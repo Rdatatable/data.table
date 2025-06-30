@@ -49,8 +49,8 @@ local({
 ## recycling, first ensure cbind recycling that we want to match to
 test(12.12, cbind(data.table(x=integer()), data.table(a=1:2)), data.table(x=c(NA_integer_, NA), a=1:2))
 test(12.13, cbind(data.table(x=1L), data.table(a=1:2)), data.table(x=c(1L, 1L), a=1:2))
-test(12.14, cbindlist(list(data.table(a=integer()), data.table(b=1:2))), error="recycling.*not yet implemented")
-test(12.15, cbindlist(list(data.table(a=1L), data.table(b=1:2))), error="recycling.*not yet implemented")
+test(12.14, cbindlist(list(data.table(a=integer()), data.table(b=1:2))), error="Recycling.*not yet implemented")
+test(12.15, cbindlist(list(data.table(a=1L), data.table(b=1:2))), error="Recycling.*not yet implemented")
 test(12.16, cbindlist(list(data.table(a=integer()), data.table(b=1:2)), copy=FALSE), error="has to have equal nrow")
 test(12.17, cbindlist(list(data.table(a=1L), data.table(b=1:2)), copy=FALSE), error="has to have equal nrow")
 
