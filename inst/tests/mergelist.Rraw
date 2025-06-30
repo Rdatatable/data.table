@@ -20,11 +20,11 @@ l = list(
 ans = cbindlist(l)
 expected = data.table(l$d1, l$d2, l$d3)
 test(11.01, ans, expected)
-test(11.02, intersect(addresses(ans), addresses(expected)), character())
+test(11.02, intersect(addresses(ans), addresses(l)), character())
 ans = cbindlist(l, copy=FALSE)
 expected = setDT(c(l$d1, l$d2, l$d3))
 test(11.03, ans, expected)
-test(11.04, length(intersect(addresses(ans), addresses(expected))), ncol(expected))
+test(11.04, length(intersect(addresses(ans), addresses(l))), ncol(expected))
 test(11.05, cbindlist(list(data.table(a=1L), data.table(), data.table(d=2L), data.table(f=3L))), data.table(a=1L,d=2L,f=3L))
 rm(expected)
 ## codecov
