@@ -31,7 +31,7 @@ test(11.05, cbindlist(list(data.table(a=1L), data.table(), data.table(d=2L), dat
 test(12.01, cbindlist(data.frame(a=1L), data.frame(b=1L)), error="must be a list")
 test(12.02, cbindlist(TRUE, FALSE), error="must be a list")
 test(12.03, cbindlist(list(), NA), error="must be TRUE or FALSE")
-test(12.04, cbindlist(list(data.table(a=1L), 1L)), error="is not of data.table type")
+test(12.04, cbindlist(list(data.table(a=1L), 1L)), error="is not a data.table")
 test(12.05, options = c(datatable.verbose=TRUE), cbindlist(list(data.table(a=1:2), data.table(b=1:2))), data.table(a=1:2, b=1:2), output="cbindlist.*took")
 test(12.06, cbindlist(list(data.table(), data.table(a=1:2), data.table(b=1:2))), data.table(a=1:2, b=1:2))
 test(12.07, cbindlist(list(data.table(), data.table(a=1:2), list(b=1:2))), data.table(a=1:2, b=1:2))
@@ -49,8 +49,8 @@ test(12.12, cbind(data.table(x=integer()), data.table(a=1:2)), data.table(x=c(NA
 test(12.13, cbind(data.table(x=1L), data.table(a=1:2)), data.table(x=c(1L, 1L), a=1:2))
 test(12.14, cbindlist(list(data.table(a=integer()), data.table(b=1:2))), error="Recycling.*not yet implemented")
 test(12.15, cbindlist(list(data.table(a=1L), data.table(b=1:2))), error="Recycling.*not yet implemented")
-test(12.16, cbindlist(list(data.table(a=integer()), data.table(b=1:2)), copy=FALSE), error="has to have equal nrow")
-test(12.17, cbindlist(list(data.table(a=1L), data.table(b=1:2)), copy=FALSE), error="has to have equal nrow")
+test(12.16, cbindlist(list(data.table(a=integer()), data.table(b=1:2)), copy=FALSE), error="have to have the same number of rows")
+test(12.17, cbindlist(list(data.table(a=1L), data.table(b=1:2)), copy=FALSE), error="have to have the same number of rows")
 
 ## retain indices
 local({
