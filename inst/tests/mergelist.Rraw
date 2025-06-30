@@ -19,7 +19,7 @@ local({
   ans = cbindlist(l)
   expected = data.table(l$d1, l$d2, l$d3)
   test(11.01, ans, expected)
-  test(11.02, intersect(vapply(ans, address, ""), unlist(lapply(l, vapply, address, "")), character())
+  test(11.02, intersect(vapply(ans, address, ""), unlist(lapply(l, vapply, address, ""))), character())
   ans = cbindlist(l, copy=FALSE)
   expected = setDT(c(l$d1, l$d2, l$d3))
   test(11.03, ans, expected)
