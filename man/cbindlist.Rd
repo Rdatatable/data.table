@@ -11,7 +11,7 @@
 }
 \arguments{
   \item{l}{ \code{list} of \code{data.table}s to merge. }
-  \item{copy}{ \code{logical}, decides if columns has to be copied into resulting object (default) or just referred. }
+  \item{copy}{ Logical, default \code{FALSE}. If \code{TRUE}, the resulting columns will be a shared reference to the originals, otherwise copies will be made. }
 }
 \details{
   Column bind only stacks input elements. Works like \code{\link{data.table}}, but takes \code{list} type on input. Zero-column tables in \code{l} are omitted. Tables in \code{l} should have matching row count; recycling of length-1 rows is not yet implemented. Indices of the input tables are transferred to the resulting table, as well as the \emph{key} of the first keyed table.
