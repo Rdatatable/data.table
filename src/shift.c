@@ -38,7 +38,7 @@ SEXP shift(SEXP obj, SEXP k, SEXP fill, SEXP type)
   SEXP ans = PROTECT(allocVector(VECSXP, nk * nx)); nprotect++;
   for (int i=0; i<nx; i++) {
     SEXP elem  = VECTOR_ELT(x, i);
-    size_t size  = SIZEOF(elem);
+    size_t size  = RTYPE_SIZEOF(elem);
     R_xlen_t xrows = xlength(elem);
     SEXP thisfill = PROTECT(coerceAs(fill, elem, ScalarLogical(0)));  // #4865 use coerceAs for type coercion
     switch (TYPEOF(elem)) {
