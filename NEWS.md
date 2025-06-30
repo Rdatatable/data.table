@@ -70,7 +70,7 @@
 
 14. `data.table()` function is now more aligned with `data.frame()` with respect to the names of the output when one of its inputs is a single-column matrix object, [#4124](https://github.com/Rdatatable/data.table/issues/4124). Thanks @PavoDive for the report and @jangorecki for the PR.
 
-15. If the first column of a key is a factor column containing unsorted levels (`setkey()` does not order the levels) and it is joined to a character column, then an invalidly keyed result would be produced. This could lead to a subsequent error/warning or silent incorrect results. Thanks to @gbrunick for the report and Benjamin Schwendinger for the fix.
+15. Fixed incorrect sorting of merges where the first column of a key is a factor with non-`sort()`-ed levels (e.g. `factor(1:2, 2:1)` and it is joined to a character column, [#5361](https://github.com/Rdatatable/data.table/issues/5361). Thanks to @gbrunick for the report and Benjamin Schwendinger for the fix.
 
 ### NOTES
 
