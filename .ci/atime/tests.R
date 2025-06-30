@@ -1,3 +1,5 @@
+pval.thresh <- 0.001 # to reduce false positives.
+
 # Test case adapted from https://github.com/Rdatatable/data.table/issues/6105#issue-2268691745 which is where the issue was reported.
 # https://github.com/Rdatatable/data.table/pull/6107 fixed performance across 3 ways to specify a column as Date, and we test each individually.
 extra.args.6107 <- c(
@@ -13,11 +15,37 @@ for (extra.arg in extra.args.6107){
       tmp_csv = tempfile()
       fwrite(DT, tmp_csv)
     },
+    FasterIO = "60a01fa65191c44d7997de1843e9a1dfe5be9f72", # First commit of the PR (https://github.com/Rdatatable/data.table/pull/6925/commits) that reduced time usage
     Slow = "e9087ce9860bac77c51467b19e92cf4b72ca78c7", # Parent of the merge commit (https://github.com/Rdatatable/data.table/commit/a77e8c22e44e904835d7b34b047df2eff069d1f2) of the PR (https://github.com/Rdatatable/data.table/pull/6107) that fixes the issue
     Fast = "a77e8c22e44e904835d7b34b047df2eff069d1f2") # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/6107) that fixes the issue
   this.test$expr = str2lang(sprintf("data.table::fread(tmp_csv, %s)", extra.arg))
   extra.test.list[[sprintf("fread(%s) improved in #6107", extra.arg)]] <- this.test
 }
+
+# Test case adapted from https://github.com/Rdatatable/data.table/pull/4386#issue-602528139 which is where the performance was improved.
+for(retGrp_chr in c("T","F"))extra.test.list[[sprintf(
+  "forderv(retGrp=%s) improved in #4386", retGrp_chr
+)]] <- list(
+  setup = quote({
+    dt <- data.table(group = rep(1:2, l=N))
+  }),
+  expr = substitute({
+    old.opt <- options(datatable.forder.auto.index = TRUE) # required for test, un-documented, comments in forder.c say it is for debugging only.
+    data.table:::forderv(dt, "group", retGrp = RETGRP)
+    options(old.opt) # so the option does not affect other tests.
+  }, list(RETGRP=eval(str2lang(retGrp_chr)))),
+  ## From ?bench::mark, "Each expression will always run at least twice,
+  ## once to measure the memory allocation and store results
+  ## and one or more times to measure timing."
+  ## So for atime(times=10) that means 11 times total.
+  ## First time for memory allocation measurement,
+  ## (also sets the index of dt in this example),
+  ## then 10 more times for time measurement.
+  ## Timings should be constant if the cached index is used (Fast),
+  ## and (log-)linear if the index is re-computed (Slow).
+  Slow = "b1b1832b0d2d4032b46477d9fe6efb15006664f4", # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/b0efcf59442a7d086c6df17fa6a45c81b082322e) in the PR (https://github.com/Rdatatable/data.table/pull/4386/commits) where the performance was improved.
+  Fast = "ffe431fbc1fe2d52ed9499f78e7e16eae4d71a93" # Last commit of the PR (https://github.com/Rdatatable/data.table/pull/4386/commits) where the performance was improved.
+)
 
 # A list of performance tests.
 #
@@ -92,11 +120,28 @@ test.list <- atime::atime_test_list(
       file.path("src", "init.c"),
       paste0("R_init_", Package_regex),
       paste0("R_init_", gsub("[.]", "_", new.Package_)))
+    # allow compilation on new R versions where 'Calloc' is not defined
+    pkg_find_replace(
+      file.path("src", "*.c"),
+      "\\b(Calloc|Free|Realloc)\\b",
+      "R_\\1")
     pkg_find_replace(
       "NAMESPACE",
       sprintf('useDynLib\\("?%s"?', Package_regex),
       paste0('useDynLib(', new.Package_))
   },
+
+  # Constant overhead improvement https://github.com/Rdatatable/data.table/pull/6925
+  # Test case adapted from https://github.com/Rdatatable/data.table/pull/7022#discussion_r2107900643
+  "fread disk overhead improved in #6925" = atime::atime_test(
+    N = 2^seq(0, 20), # smaller N because we are doing multiple fread calls.
+    setup = {
+      fwrite(iris[1], iris.csv <- tempfile())
+    },
+    expr = replicate(N, data.table::fread(iris.csv)),
+    Fast = "60a01fa65191c44d7997de1843e9a1dfe5be9f72", # First commit of the PR (https://github.com/Rdatatable/data.table/pull/6925/commits) that reduced time usage
+    Slow = "e25ea80b793165094cea87d946d2bab5628f70a6" # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/60a01fa65191c44d7997de1843e9a1dfe5be9f72)
+  ),
 
   # Performance regression discussed in https://github.com/Rdatatable/data.table/issues/4311
   # Test case adapted from https://github.com/Rdatatable/data.table/pull/4440#issuecomment-632842980 which is the fix PR.
@@ -147,8 +192,9 @@ test.list <- atime::atime_test_list(
   # Fixed in https://github.com/Rdatatable/data.table/pull/4558
   "DT[by] fixed in #4558" = atime::atime_test(
     setup = {
+      N9 <- as.integer(N * 0.9)
       d <- data.table(
-        id = sample(c(seq.int(N * 0.9), sample(N * 0.9, N * 0.1, TRUE))),
+        id = sample(c(seq.int(N9), sample(N9, N-N9, TRUE))),
         v1 = sample(5L, N, TRUE),
         v2 = sample(5L, N, TRUE)
       )
@@ -206,7 +252,30 @@ test.list <- atime::atime_test_list(
     },
     expr = data.table:::melt(DT, measure.vars = measure.vars),
     Slow = "fd24a3105953f7785ea7414678ed8e04524e6955", # Parent of the merge commit (https://github.com/Rdatatable/data.table/commit/ed72e398df76a0fcfd134a4ad92356690e4210ea) of the PR (https://github.com/Rdatatable/data.table/pull/5054) that fixes the issue
-    Fast = "ed72e398df76a0fcfd134a4ad92356690e4210ea"), # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/5054) that fixes the issue
+    Fast = "ed72e398df76a0fcfd134a4ad92356690e4210ea"), # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/5054) that fixes the issue  # Test case created directly using the atime code below (not adapted from any other benchmark), based on the issue/fix PR https://github.com/Rdatatable/data.table/pull/5054#issue-930603663 "melt should be more efficient when there are missing input columns."
 
-  tests=extra.test.list)
+  # Test case created from @tdhock's comment https://github.com/Rdatatable/data.table/pull/6393#issuecomment-2327396833, in turn adapted from @philippechataignon's comment https://github.com/Rdatatable/data.table/pull/6393#issuecomment-2326714012
+  "fwrite refactored in #6393" = atime::atime_test(
+    setup = {
+      set.seed(1)
+      NC = 10L
+      L <- data.table(i=1:N)
+      L[, paste0("V", 1:NC) := replicate(NC, rnorm(N), simplify=FALSE)]
+      out.csv <- tempfile()
+    },
+    expr = data.table::fwrite(L, out.csv, compress="gzip"),
+    Before = "f339aa64c426a9cd7cf2fcb13d91fc4ed353cd31", # Parent of the first commit https://github.com/Rdatatable/data.table/commit/fcc10d73a20837d0f1ad3278ee9168473afa5ff1 in the PR https://github.com/Rdatatable/data.table/pull/6393/commits with major change to fwrite with gzip.
+    PR = "3630413ae493a5a61b06c50e80d166924d2ef89a"), # Close-to-last merge commit in the PR.
+
+  # Test case created directly using the atime code below (not adapted from any other benchmark), based on the PR, Removes unnecessary data.table call from as.data.table.array https://github.com/Rdatatable/data.table/pull/7010 
+  "as.data.table.array improved in #7010" = atime::atime_test(
+    setup = {
+      dims = c(N, 1, 1)
+      arr = array(seq_len(prod(dims)), dim=dims)
+    },
+    expr = data.table:::as.data.table.array(arr, na.rm=FALSE),
+    Slow = "73d79edf8ff8c55163e90631072192301056e336",   # Parent of the first commit in the PR (https://github.com/Rdatatable/data.table/commit/8397dc3c993b61a07a81c786ca68c22bc589befc)
+    Fast = "8397dc3c993b61a07a81c786ca68c22bc589befc"),  # Commit in the PR (https://github.com/Rdatatable/data.table/pull/7019/commits) that removes inefficiency
+
+    tests=extra.test.list)
 # nolint end: undesirable_operator_linter.

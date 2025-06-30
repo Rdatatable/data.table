@@ -134,4 +134,3 @@ SEXP fastmean(SEXP args)
       COMPLEX(ans)[0].i = (double) si;
       break;
 */
-
