@@ -1336,7 +1336,7 @@ replace_dot_alias = function(e) {
         ans[xcolsAns] = .Call(CsubsetDT, x, irows, xcols)
         setattr(ans, "names", ansvars)
         # NB: could be NULL
-        setattr(ans, "sorted", .join_result_key(x, i, if (!missing(on)) names(on), ansvars, leftcols, rightcols, names_i, irows, roll))
+        setattr(ans, "sorted", .join_result_key(x, i, ans, if (!missing(on)) names(on), ansvars, leftcols, rightcols, names_i, irows, roll))
         setattr(ans, "class", class(x))  # retain class that inherits from data.table, #64
         setattr(ans, "row.names", .set_row_names(length(ans[[1L]])))
         setalloccol(ans)
@@ -2009,7 +2009,7 @@ replace_dot_alias = function(e) {
 }
 
 # can the specified merge of x and i be marked as sorted? return the columns for which this is true, otherwise NULL
-.join_result_key <- function(x, i, on_lhs, ansvars, leftcols, rightcols, names_i, irows, roll) {
+.join_result_key <- function(x, i, ans, on_lhs, ansvars, leftcols, rightcols, names_i, irows, roll) {
   x_key <- key(x)
   if (is.null(x_key))
     return(NULL)
