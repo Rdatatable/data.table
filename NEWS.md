@@ -89,7 +89,7 @@
    + On non-Windows systems, `fread()` now prints the reason why the file couldn't be opened, which could also be due to it being too large to map.
    + With `verbose=TRUE`, file sizes are now printed using correct binary SI prefixes (the sizes have always been reported as bytes denominated in powers of `2^10`, so e.g. `1024*1024` bytes was reported as `1 MB` where `1 MiB` or `1.05 MB` is correct).
 
-5. Using a double vector in `set()`'s `j=` no longer throws a warning about preferring integer, [#6594](https://github.com/Rdatatable/data.table/issues/6594). While it may improve efficiency to use integer, there's no guarantee it's an improvement and the difference is likely to be minimal. The coercion will still be reported under `datatable.verbose=TRUE`. For package/production use cases, static analyzers such as `lintr::implicit_integer_linter()` can also report when numeric literals should be rewritten as integer literals.
+5. Using a double vector in `set()`'s `i=` and/or `j=` no longer throws a warning about preferring integer, [#6594](https://github.com/Rdatatable/data.table/issues/6594). While it may improve efficiency to use integer, there's no guarantee it's an improvement and the difference is likely to be minimal. The coercion will still be reported under `datatable.verbose=TRUE`. For package/production use cases, static analyzers such as `lintr::implicit_integer_linter()` can also report when numeric literals should be rewritten as integer literals.
 
 ## data.table [v1.17.0](https://github.com/Rdatatable/data.table/milestone/34)  (20 Feb 2025)
 

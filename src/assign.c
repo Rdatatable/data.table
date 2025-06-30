@@ -365,7 +365,8 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   } else {
     if (isReal(rows)) {
       rows = PROTECT(coerceVector(rows, INTSXP)); protecti++;
-      warning(_("Coerced i from numeric to integer. Please pass integer for efficiency; e.g., 2L rather than 2"));
+      if (verbose)
+        Rprintf(_("Coerced %s from numeric to integer. Passing integer directly may be more efficient, e.g., 2L rather than 2"), "i");
     }
     if (!isInteger(rows))
       error(_("i is type '%s'. Must be integer, or numeric is coerced with warning. If i is a logical subset, simply wrap with which(), and take the which() outside the loop if possible for efficiency."), type2char(TYPEOF(rows)));
@@ -419,7 +420,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     if (isReal(cols)) {
       cols = PROTECT(coerceVector(cols, INTSXP)); protecti++;
       if (verbose)
-        Rprintf(_("Coerced j from numeric to integer. Please pass integer for efficiency; e.g., 2L rather than 2"));
+        Rprintf(_("Coerced %s from numeric to integer. Passing integer directly may be more efficient, e.g., 2L rather than 2"), "j");
     }
     if (!isInteger(cols))
       error(_("j is type '%s'. Must be integer, character, or numeric is coerced with warning."), type2char(TYPEOF(cols)));
