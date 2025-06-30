@@ -18578,8 +18578,8 @@ test(2251.15, dim(fread(text, fill=Inf)), c(9L, 9L))
 
 .datatable.aware = FALSE
 dt = data.table(a = 1L)
-test(2252.1, dt[, b:=2L], error = "\\[ was called on a dtest(2252.2, dt[, let(b=2L)], error = "\\[ was called on a data.table.*not data.table-aware.*'let'ata.table.*not data.table-aware.*':='")
-")
+test(2252.1, dt[, b:=2L], error = "\\[ was called on a data.table.*not data.table-aware.*':='")
+test(2252.2, dt[, let(b=2L)], error = "\\[ was called on a data.table.*not data.table-aware.*'let'")
 rm(.datatable.aware)
 
 # tests for trunc.char handling wide characters # 5096
