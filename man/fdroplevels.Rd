@@ -12,13 +12,12 @@
 fdroplevels(x, exclude = if (anyNA(levels(x))) NULL else NA, \dots)
 setdroplevels(x, except = NULL, exclude = NULL)
 
-\method{droplevels}{data.table}(x, except = NULL, exclude, in.place = FALSE, \dots)
+\method{droplevels}{data.table}(x, except = NULL, exclude, \dots)
 }
 \arguments{
   \item{x}{ \code{factor} or \code{data.table} where unused levels should be dropped. }
   \item{exclude}{ A \code{character} vector of factor levels which are dropped no matter of presented or not. }
   \item{except}{ An \code{integer} vector of indices of data.table columns which are not modified by dropping levels. }
-  \item{in.place}{ logical (default is \code{FALSE}). If \code{TRUE} levels of factors of \code{data.table} are modified in-place. }
   \item{\dots}{ further arguments passed to methods }
 }
 

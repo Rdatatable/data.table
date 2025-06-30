@@ -30,8 +30,8 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg, S
   const bool verbose = GetVerbose();
 
   if (isInteger(x)) {
-    if ((isInteger(lower) || isRealReallyInt(lower)) &&
-        (isInteger(upper) || isRealReallyInt(upper))) { // #3517 coerce to num to int when possible
+    if ((isInteger(lower) || fitsInInt32(lower)) &&
+        (isInteger(upper) || fitsInInt32(upper))) { // #3517 coerce to num to int when possible
       if (!isInteger(lower)) {
         lower = PROTECT(coerceVector(lower, INTSXP)); nprotect++;
       }
@@ -192,7 +192,7 @@ SEXP between(SEXP x, SEXP lower, SEXP upper, SEXP incbounds, SEXP NAboundsArg, S
     }
     if (verbose) Rprintf(_("between non-parallel processing of character took %8.3fs\n"), omp_get_wtime()-tic);
   } break;
-  default:
+  default: // # nocov
     internal_error(__func__, "unsupported type '%s' should have been caught at R level", type2char(TYPEOF(x)));  // # nocov
   }
   UNPROTECT(nprotect);

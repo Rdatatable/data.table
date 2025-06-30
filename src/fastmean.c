@@ -79,7 +79,7 @@ SEXP fastmean(SEXP args)
       }
       REAL(ans)[0] = (double) s;
       break;
-    default:
+    default: // # nocov
       internal_error(__func__, "type '%s' not caught earlier in fastmean", type2char(TYPEOF(x)));  // # nocov
     }
   } else {  // narm==FALSE
@@ -107,7 +107,7 @@ SEXP fastmean(SEXP args)
       }
       REAL(ans)[0] = (double) s;
       break;
-    default:
+    default: // # nocov
       internal_error(__func__, "type '%s' not caught earlier in fastmean", type2char(TYPEOF(x)));  // # nocov
     }
   }
@@ -134,4 +134,3 @@ SEXP fastmean(SEXP args)
       COMPLEX(ans)[0].i = (double) si;
       break;
 */
-

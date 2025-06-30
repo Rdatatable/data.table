@@ -1,13 +1,13 @@
-any_mismatch = FALSE
-
 # ensure that numbered list in each section is in sequence
 check_section_numbering = function(news) {
+  if (!grepl("NEWS", news)) return(invisible())
+  news = readLines(news)
   # plain '#' catches some examples; 'd' for 'data.table'
   sections = grep("^#+ [A-Zd]", news)
   entries = grep("^[0-9]+[.]", news)
   entry_value = as.integer(gsub("^([0-9]+)[.].*", "\\1", news[entries]))
   section_id = findInterval(entries, sections)
-  
+
   any_mismatch = FALSE
   for (id in unique(section_id)) {
     section_entries = entry_value[section_id == id]
@@ -22,11 +22,12 @@ check_section_numbering = function(news) {
       paste0("  [", section_entries[!matched], " --> ", intended_value[!matched], "]", collapse="\n")
     ))
   }
-  return(any_mismatch)
+  stopifnot("Please fix the NEWS issues above" = !any_mismatch)
 }
 
 # ensure that GitHub link text & URL actually agree
 check_gh_links = function(news) {
+  news = readLines(news)
   gh_links_info = gregexpr(
     "\\[#(?<md_number>[0-9]+)\\]\\(https://github.com/Rdatatable/data.table/(?<link_type>[^/]+)/(?<link_number>[0-9]+)\\)",
     news,
@@ -48,14 +49,5 @@ check_gh_links = function(news) {
     "In line %d, link pointing to %s %s is written #%s\n",
     line_number, link_type, link_number, md_number
   )))
-  return(TRUE)
+  stop("Please fix the NEWS issues above.")
 }
-
-any_error = FALSE
-for (news in list.files(pattern = "NEWS")) {
-  cat(sprintf("Checking NEWS file %s...\n", news))
-  news_lines = readLines(news)
-  any_error = check_section_numbering(news_lines) || any_error
-  any_error = check_gh_links(news_lines) || any_error
-}
-if (any_error) stop("Please fix the NEWS issues above.")
