@@ -21246,3 +21246,7 @@ test(2322.12, levels(fctr(c("b","a","c"), rev=NA)), error="TRUE or FALSE")
 test(2322.21, levels(fctr(c("b","a","c"), sort=TRUE)), c("a","b","c"))
 test(2322.22, levels(fctr(c("b","a","c"), sort=NA)), error="TRUE or FALSE")
 test(2322.31, levels(fctr(c("b","a","c"), rev=TRUE, sort=TRUE)), c("c","b","a"))
+
+# data.frame() uses provided names of ITime inputs
+test(2323.1, names(data.frame(COL = as.ITime('00:00:00'))), "COL")
+test(2323.2, names(data.frame(b = 1, COL = as.ITime('00:00:00'))), c("b", "COL"))
