@@ -2028,10 +2028,6 @@ replace_dot_alias = function(e) {
   if (!key_length)
     return(NULL)
 
-  ## check key on i as well!
-  if (is.logical(i))
-    return(head(x_key, key_length))
-
   # i has the correct key, #3061
   if (identical(head(key(i), length(leftcols)), names_i[leftcols]))
     return(head(x_key, key_length))
