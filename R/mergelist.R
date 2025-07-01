@@ -13,12 +13,15 @@ setcbindlist = function(l) cbindlist_impl_(l, copy=FALSE)
 
 # when 'on' is missing then use keys, used only for inner and full join
 onkeys = function(x, y) {
-  if (is.null(x) && !is.null(y)) y
-  else if (!is.null(x) && is.null(y)) x
-  else if (!is.null(x) && !is.null(y)) {
-    if (length(x)>=length(y)) intersect(y, x) ## align order to shorter|rhs key
-    else intersect(x, y)
-  } else NULL # nocov ## internal error is being called later in mergepair
+  if (is.null(x) && !is.null(y)) return(y)
+  if (!is.null(x) && is.null(y)) return(x)
+  if (!is.null(x) && !is.null(y)) {
+    if (length(x) >= length(y))
+      return(intersect(y, x)) ## align order to shorter|rhs key
+    else
+      return(intersect(x, y))
+  }
+  NULL # nocov. Internal error is being called later in mergepair
 }
 someCols = function(x, cols, drop=character(), keep=character(), retain.order=FALSE) {
   keep = colnamesInt(x, keep)
