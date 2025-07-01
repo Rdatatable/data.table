@@ -1,7 +1,7 @@
 Package: data.table
 Version: 1.17.99
 Title: Extension of `data.frame`
-Depends: R (>= 3.3.0)
+Depends: R (>= 3.4.0)
 Imports: methods
 Suggests: bit64 (>= 4.0.0), bit (>= 4.0.4), R.utils, xts, zoo (>= 1.8-1), yaml, knitr, markdown
 Description: Fast aggregation of large data (e.g. 100GB in RAM), fast ordered joins, fast add/modify/delete of columns by group using no copies at all, list columns, friendly and fast character-separated-value read/write. Offers a natural and flexible syntax, for faster development.
@@ -55,8 +55,8 @@ Authors@R: c(
   person("James","Sams",           role="ctb"),
   person("Martin","Morgan",        role="ctb"),
   person("Michael","Quinn",        role="ctb"),
-  person("@javrucebo","",          role="ctb"),
-  person("@marc-outins","",        role="ctb"),
+  person(given="@javrucebo",       role="ctb", comment="GitHub user"),
+  person("Marc","Halperin",        role="ctb"),
   person("Roy","Storey",           role="ctb"),
   person("Manish","Saraswat",      role="ctb"),
   person("Morgan","Jacob",         role="ctb"),
@@ -100,5 +100,9 @@ Authors@R: c(
   person("Vincent", "Rocher",      role="ctb"),
   person("Vijay", "Lulla",         role="ctb"),
   person("Aljaž", "Sluga",         role="ctb"),
-  person("Bill", "Evans",          role="ctb")
+  person("Bill", "Evans",          role="ctb"),
+  person("Reino", "Bruner",        role="ctb"),
+  person(given="@badasahog",       role="ctb", comment="GitHub user"),
+  person("Vinit", "Thakur",        role="ctb"),
+  person("Mukul", "Kumar",         role="ctb")
   )

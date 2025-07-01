@@ -18,6 +18,7 @@ if (exists("test.data.table",.GlobalEnv,inherits=FALSE) ||
 }
 
 test = data.table:::test
+coerceAs = data.table:::coerceAs
 INT = data.table:::INT
 
 if (anyDuplicated(pkgs)) stop("Packages defined to be loaded for integration tests in 'inst/tests/other.Rraw' contains duplicates.")

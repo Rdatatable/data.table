@@ -6,7 +6,7 @@ alloc_linter = function(c_obj) {
   lines = c_obj$lines
   # Be a bit more precise to avoid mentions in comments, and allow
   #   malloc(0) to be used for convenience (e.g. #6757)
-  alloc_lines = grep(R"{=\s*([(]\w+\s*[*][)])?[mc]alloc[(][^0]}", lines)
+  alloc_lines = grep(R"{=\s*([(]\s*\w+\s*[*]\s*[)])?\s*[mc]alloc[(][^0]}", lines)
   if (!length(alloc_lines)) return()
   # int *tmp=(int*)malloc(...); or just int tmp=malloc(...);
   alloc_keys = lines[alloc_lines] |>
@@ -31,7 +31,7 @@ alloc_linter = function(c_obj) {
       cat("FILE: ", c_obj$path, "; LINES: ", head(bad_lines_idx, 1L), "-", tail(bad_lines_idx, 1L), "\n", sep="")
       writeLines(lines[bad_lines_idx])
       cat(strrep("-", max(nchar(lines[bad_lines_idx]))), "\n", sep="")
-      stop("Expected the malloc()/calloc() usage above to be followed immediately by error checking.", call.=FALSE)
+      stop("Expected the malloc()/calloc() usage above to be followed immediately by error checking (using '!', not '==NULL').", call.=FALSE)
     }
   })
 }

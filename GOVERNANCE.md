@@ -108,23 +108,14 @@ Please also make a note in the change log under [`# Governance history`](#govern
 
 # Finances and Funding
 
-There is currently no mechanism for the data.table project to receive funding as an entity.  
+data.table is a [NumFOCUS](https://numfocus.org/) project.  Donations to the data.table can be made at [https://numfocus.org/project/data-table]([https://numfocus.org/donate-to-data-table](https://app.hubspot.com/payments/FFWKWTTvKFdzqH?referrer=PAYMENT_LINK))
 
-Funding support for this project therefore may come in two forms:
+*NumFOCUS is a 501(c)(3) non-profit charity in the United States; as such, donations to NumFOCUS are tax-deductible as allowed by law. As with any donation, you should consult with your personal tax adviser or the IRS about your particular tax situation.*
 
-## Individual external funding
 
-Any individual developer or community member of data.table may apply for and receive funding for their work on the project.  Individuals or groups seeking funding support are strongly encouraged to consult directly with the data.table Project Members (by initiating an Issue on GitHub) to ensure funds are used meaningfully. Formally, however, decisions about use of funds are governed by the individual grantee(s) and their contract with the funding agency. 
+## Decision-making for funding use
 
-There is no guarantee that funded work will be incorporated into the data.table package; any contributions, whether funded or unfunded, are subject to the same review process as outlined above.
-
-## Direct donations
-
-Direct donations to the project may be made via GitHub Sponsorships, which allow individuals to fund a specific developer.  If the current CRAN Maintainer offers a personal sponsorship option, donations may be made to them to support the project in general.
-
-## Decision-making for future opportunities
-
-We here outline a procedure for disbursing funds, should this project in the future become a directly fundable entity (e.g. an LLC or a subsidiary of an umbrella LLC).
+We here outline a procedure for disbursing funds acquired through direct donations via NumFOCUS or grant-style research funding.
 
 Funds acquired by the data.table project will be disbursed at the discretion of the **Committers**, defined as above.  The **CRAN Maintainer** will have authority to make final decisions in the event that no consensus is reached among committers prior to deadlines for use of funds, and will be responsible for disbursement logistics.
 
@@ -147,6 +138,8 @@ data.table Version line in DESCRIPTION typically has the following meanings
 * patch/hotfix development should occur on GitHub as z=odd (1.15.1) and release to CRAN as z=even (1.15.2).
 
 # Governance history
+
+May 2025: update Finance and CoC language for NumFOCUS incorporation.
 
 Feb 2025: add Finances and Funding section, update Code of Conduct section to be a brief summary and reference the broader CoC document.
 

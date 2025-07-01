@@ -62,6 +62,26 @@ Secondary indices are similar to `keys` in *data.table*, except for two major di
 
 * There can be more than one secondary index for a data.table (as we will see below).
 
+#### Keyed vs. Indexed Subsetting
+
+While both **keys** and **indices** enable fast binary search subsetting, they differ significantly in usage:
+
+**Keyed subsetting** (implicit column matching)
+
+```{r keyed_operations}
+DT = data.table(a = c(TRUE, FALSE), b = 1:2)
+setkey(DT, a)                # Set key, reordering DT
+DT[.(TRUE)]                  # 'on' is optional; if omitted, the key is used
+```
+
+**Indexed subsetting** (explicit column specification)
+
+```{r unkeyed_operations}
+DT = data.table(a = c(TRUE, FALSE), b = 1:2)
+setindex(DT, a)              # Set index only (no reorder)
+DT[.(TRUE), on = "a"]        # 'on' is required
+```
+
 ### b) Set and get secondary indices
 
 #### -- How can we set the column `origin` as a secondary index in the *data.table* `flights`?
@@ -190,6 +210,14 @@ flights[.("JFK", "LAX"), on = c("origin", "dest")][1:5]
 * `on` argument accepts a character vector of column names corresponding to the order provided to `i-argument`.
 
 * Since the time to compute the secondary index is quite small, we don't have to use `setindex()`, unless, once again, the task involves repeated subsetting on the same column.
+
+* For clarity/readability, it might help to name the inputs in `i`, e.g.,
+
+```{r}
+flights[.(origin = "JFK", dest = "LAX"), on = c("origin", "dest")]
+```
+
+This makes it clear which entries in `j` correspond to which element of `on`.
 
 ### b) Select in `j`
 

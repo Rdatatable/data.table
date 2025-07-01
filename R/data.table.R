@@ -128,6 +128,27 @@ replace_dot_alias = function(e) {
   }
 }
 
+.reassign_extracted_table = function(name, value, env = parent.frame(2L)) {
+  k = eval(name[[2L]], env, env)
+  if (is.list(k)) {
+    origj = j = if (name %iscall% "$") as.character(name[[3L]]) else eval(name[[3L]], env, env)
+    if (length(j) != 1L) {
+      stopf("Invalid set* operation on a recursive index L[[i]] where i has length %d. Chain [[ instead.", length(j))
+    }
+    if (is.character(j)) {
+      j = match(j, names(k))
+      if (is.na(j)) {
+        stopf("Item '%s' not found in names of input list", origj)
+      }
+    }
+    .Call(Csetlistelt, k, as.integer(j), value)
+  } else if (is.environment(k) && exists(as.character(name[[3L]]), k, inherits = FALSE)) {
+    assign(as.character(name[[3L]]), value, k, inherits = FALSE)
+  } else if (isS4(k)) {
+    .Call(CsetS4elt, k, as.character(name[[3L]]), value)
+  }
+}
+
 "[.data.table" = function(x, i, j, by, keyby, with=TRUE, nomatch=NA, mult="all", roll=FALSE, rollends=if (roll=="nearest") c(TRUE,TRUE) else if (roll>=0.0) c(FALSE,TRUE) else c(TRUE,FALSE), which=FALSE, .SDcols, verbose=getOption("datatable.verbose"), allow.cartesian=getOption("datatable.allow.cartesian"), drop=NULL, on=NULL, env=NULL, showProgress=getOption("datatable.showProgress", interactive()))
 {
   # ..selfcount <<- ..selfcount+1  # in dev, we check no self calls, each of which doubles overhead, or could
@@ -174,7 +195,7 @@ replace_dot_alias = function(e) {
         stopf("When by and keyby are both provided, keyby must be TRUE or FALSE")
     }
     if (missing(by)) { missingby=TRUE; by=bysub=NULL }  # possible when env is used, PR#4304
-    else if (verbose && !is.null(env)) catf("Argument '%s' after substitute: %s\n", "by", paste(deparse(bysub, width.cutoff=500L), collapse=" "))
+    else if (verbose && !is.null(env)) catf("Argument '%s' after substitute: %s\n", "by", paste(deparse(bysub, width.cutoff=500L), collapse="\n"))
   }
   bynull = !missingby && is.null(by) #3530
   byjoin = !is.null(by) && is.symbol(bysub) && bysub==".EACHI"
@@ -200,7 +221,7 @@ replace_dot_alias = function(e) {
     }
     return(x)
   }
-  if (!mult %chin% c("first","last","all")) stopf("mult argument can only be 'first', 'last' or 'all'")
+  if (!mult %chin% c("first", "last", "all")) stopf("mult argument can only be 'first', 'last' or 'all'")
   missingroll = missing(roll)
   if (length(roll)!=1L || is.na(roll)) stopf("roll must be a single TRUE, FALSE, positive/negative integer/double including +Inf and -Inf or 'nearest'")
   if (is.character(roll)) {
@@ -239,7 +260,7 @@ replace_dot_alias = function(e) {
         substitute2(.j, env),
         list(.j = substitute(j))
       ))
-      if (missing(jsub)) {j = substitute(); jsub=NULL} else if (verbose && !is.null(env)) catf("Argument '%s' after substitute: %s\n", "j", paste(deparse(jsub, width.cutoff=500L), collapse=" "))
+      if (missing(jsub)) {j = substitute(); jsub=NULL} else if (verbose && !is.null(env)) catf("Argument '%s' after substitute: %s\n", "j", paste(deparse(jsub, width.cutoff=500L), collapse="\n"))
     }
   }
   if (!missing(j)) {
@@ -328,7 +349,7 @@ replace_dot_alias = function(e) {
         substitute2(.i, env),
         list(.i = substitute(i))
       ))
-      if (missing(isub)) {i = substitute(); isub=NULL} else if (verbose && !is.null(env)) catf("Argument '%s' after substitute: %s\n", "i", paste(deparse(isub, width.cutoff=500L), collapse=" "))
+      if (missing(isub)) {i = substitute(); isub=NULL} else if (verbose && !is.null(env)) catf("Argument '%s' after substitute: %s\n", "i", paste(deparse(isub, width.cutoff=500L), collapse="\n"))
     }
   }
   if (!missing(i)) {
@@ -448,7 +469,7 @@ replace_dot_alias = function(e) {
     if (is.data.frame(i)) {
       if (missing(on)) {
         if (!haskey(x)) {
-          stopf("When i is a data.table (or character vector), the columns to join by must be specified using 'on=' argument (see ?data.table), by keying x (i.e. sorted, and, marked as sorted, see ?setkey), or by sharing column names between x and i (i.e., a natural join). Keyed joins might have further speed benefits on very large data due to x being sorted in RAM.")
+          stopf("When i is a data.table (or character vector), the columns to join by must be specified using the 'on=' argument (see ?data.table); by keying x (i.e., x is sorted and marked as such, see ?setkey); or by using 'on = .NATURAL' to indicate using the shared column names between x and i (i.e., a natural join). Keyed joins might have further speed benefits on very large data due to x being sorted in RAM.")
         }
       } else if (identical(substitute(on), as.name(".NATURAL"))) {
         naturaljoin = TRUE
@@ -640,7 +661,7 @@ replace_dot_alias = function(e) {
       # Doing this once here, helps speed later when repeatedly subsetting each column. R's [irows] would do this for each
       # column when irows contains negatives.
     }
-    if (which) return( if (is.null(irows)) seq_len(nrow(x)) else irows )
+    if (which) return(irows %||% seq_len(nrow(x)))
   } else {  # missing(i)
     i = NULL
   }
@@ -677,19 +698,18 @@ replace_dot_alias = function(e) {
     }
     ansvals = chmatch(ansvars, nx)
   } else {
-    if (is.data.table(i)) {
+    if (is.data.frame(i)) {
       idotprefix = paste0("i.", names_i)
       xdotprefix = paste0("x.", names_x)
-    } else idotprefix = xdotprefix = character(0L)
+    } else {
+      idotprefix = xdotprefix = character(0L)
+    }
 
     # j was substituted before dealing with i so that := can set allow.cartesian=FALSE (#800) (used above in i logic)
     if (is.null(jsub)) return(NULL)
 
     if (!with) {
-      if (jsub %iscall% ":=") {
-        # TODO(>=1.18.0): Simplify this error
-        stopf("with=FALSE together with := was deprecated in v1.9.4 released Oct 2014; this has been warning since v1.15.0. Please wrap the LHS of := with parentheses; e.g., DT[,(myVar):=sum(b),by=a] to assign to column name(s) held in variable myVar. See ?':=' for other examples.")
-      }
+      if (jsub %iscall% ":=") stopf("`:=` is only supported under with=TRUE, see ?`:=`.")
       # missingby was already checked above before dealing with i
       if (jsub %iscall% c("!", "-") && length(jsub)==2L) {  # length 2 to only match unary, #2109
         notj = TRUE
@@ -757,7 +777,7 @@ replace_dot_alias = function(e) {
         if (".I" %in% bysubl) {  #1732
           if (!is.symbol(bysub) && (length(bysubl)!=2L || !is.symbol(bysubl[[2L]]) || !(bysubl[[1L]] %chin% c(".","c","list"))))
             stopf("'by' contains .I but only the following are currently supported: by=.I, by=.(.I), by=c(.I), by=list(.I)")
-          bysub = if (is.null(irows)) seq_len(nrow(x)) else irows
+          bysub = irows %||% seq_len(nrow(x))
           bysuborig = as.symbol("I")
         }
         if (is.name(bysub) && !(bysub %chin% names_x)) {  # TO DO: names(x),names(i),and i. and x. prefixes
@@ -907,7 +927,7 @@ replace_dot_alias = function(e) {
             if (length(byvars) == 1L) tt = byvars
             else {
               # take the first variable that is (1) not eval (#3758) and (2) starts with a character that can't start a variable name
-              tt = grep("^eval$|^[^[:alpha:]. ]", byvars, invert=TRUE, value=TRUE)
+              tt = grepv("^eval$|^[^[:alpha:]. ]", byvars, invert=TRUE)
               # byvars but exclude functions or `0`+`1` becomes `+`
               tt = if (length(tt)) tt[1L] else all.vars(bysubl[[jj+1L]])[1L]
             }
@@ -1215,21 +1235,8 @@ replace_dot_alias = function(e) {
             setalloccol(x, n, verbose=verbose)   # always assigns to calling scope; i.e. this scope
             if (is.name(name)) {
               assign(as.character(name),x,parent.frame(),inherits=TRUE)
-            } else if (.is_simple_extraction(name)) { # TODO(#6702): use a helper here as the code is very similar to setDT().
-              k = eval(name[[2L]], parent.frame(), parent.frame())
-              if (is.list(k)) {
-                origj = j = if (name[[1L]] == "$") as.character(name[[3L]]) else eval(name[[3L]], parent.frame(), parent.frame())
-                if (is.character(j)) {
-                  if (length(j)!=1L) stopf("Cannot assign to an under-allocated recursively indexed list -- L[[i]][,:=] syntax is only valid when i is length 1, but its length is %d", length(j))
-                  j = match(j, names(k))
-                  if (is.na(j)) internal_error("item '%s' not found in names of list", origj) # nocov
-                }
-                .Call(Csetlistelt,k,as.integer(j), x)
-              } else if (is.environment(k) && exists(as.character(name[[3L]]), k)) {
-                assign(as.character(name[[3L]]), x, k, inherits=FALSE)
-              } else if (isS4(k)) {
-                .Call(CsetS4elt, k, as.character(name[[3L]]), x)
-              }
+            } else if (.is_simple_extraction(name)) {
+              .reassign_extracted_table(name, x)
             } # TO DO: else if env$<- or list$<-
           }
         }
@@ -1724,7 +1731,7 @@ replace_dot_alias = function(e) {
                 jl__ = as.list(jsubl[[i_]])[-1L] # just keep the '.' from list(.)
                 if (isTRUE(nzchar(names(jsubl)[i_]))) {
                   # Fix for #2311, prepend named list arguments of c() to that list's names. See tests 2283.*
-                  njl__ = if (is.null(names(jl__))) rep("", length(jl__)) else names(jl__)
+                  njl__ = names(jl__) %||% rep("", length(jl__))
                   njl__nonblank = nzchar(names(jl__))
                   if (length(jl__) > 1L) {
                     jn__ = paste0(names(jsubl)[i_], seq_along(jl__))
@@ -1733,7 +1740,7 @@ replace_dot_alias = function(e) {
                   }
                   jn__[njl__nonblank] = paste(names(jsubl)[i_], njl__[njl__nonblank], sep=".")
                 } else {
-                  jn__ = if (is.null(names(jl__))) rep("", length(jl__)) else names(jl__)
+                  jn__ = names(jl__) %||% rep("", length(jl__))
                 }
                 idx  = unlist(lapply(jl__, function(x) is.name(x) && x == ".I"))
                 if (any(idx))
@@ -2164,7 +2171,7 @@ as.matrix.data.table = function(x, rownames=NULL, rownames.value=NULL, ...) {
     # retain highest type of input for empty output, #4762
     if (length(X)!=0L)
       internal_error("length(X)==%d but a dimension is zero", length(X))  # nocov
-    return(array(if (is.null(X)) NA else X, dim = dm, dimnames = list(rownames.value, cn)))
+    return(array(X %||% NA, dim=dm, dimnames=list(rownames.value, cn)))
   }
   dim(X) = c(n, length(X)/n)
   dimnames(X) = list(rownames.value, unlist(collabs, use.names = FALSE))
@@ -2974,23 +2981,8 @@ setDT = function(x, keep.rownames=FALSE, key=NULL, check.names=FALSE) {
     assign(name, x, parent.frame(), inherits=TRUE)
   } else if (.is_simple_extraction(name)) {
     # common case is call from 'lapply()'
-    k = eval(name[[2L]], parent.frame(), parent.frame())
-    if (is.list(k)) {
-      origj = j = if (name[[1L]] == "$") as.character(name[[3L]]) else eval(name[[3L]], parent.frame(), parent.frame())
-      if (length(j) == 1L) {
-        if (is.character(j)) {
-          j = match(j, names(k))
-          if (is.na(j))
-            stopf("Item '%s' not found in names of input list", origj)
-        }
-      }
-      .Call(Csetlistelt, k, as.integer(j), x)
-    } else if (is.environment(k) && exists(as.character(name[[3L]]), k)) {
-      assign(as.character(name[[3L]]), x, k, inherits=FALSE)
-    } else if (isS4(k)) {
-      .Call(CsetS4elt, k, as.character(name[[3L]]), x)
-    }
-  } else if (name %iscall% "get") { # #6725
+    .reassign_extracted_table(name, x)
+  } else if (name %iscall% c("get", "get0")) { # #6725
     # edit 'get(nm, env)' call to be 'assign(nm, x, envir=env)'
     name = match.call(get, name)
     name[[1L]] = quote(assign)
