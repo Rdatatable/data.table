@@ -40,6 +40,8 @@
     # 2:     2     6     4     5
     ```
 
+8. `groupingsets()` gets a new argument `enclos` for use together with the `jj` argument in functions wrapping `groupingsets()`, including the existing wrappers `rollup()` and `cube()`. When forwarding a `j`-expression as `groupingsets(jj = substitute(j))`, make sure to pass `enclos = parent.frame()` as well, so that the `j`-expression will be evaluated in the right context. This makes it possible for `j` to refer to variables outside the `data.table`.
+
 ### BUG FIXES
 
 1. Custom binary operators from the `lubridate` package now work with objects of class `IDate` as with a `Date` subclass, [#6839](https://github.com/Rdatatable/data.table/issues/6839). Thanks @emallickhossain for the report and @aitap for the fix.
