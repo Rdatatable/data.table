@@ -136,6 +136,7 @@ dtmerge = function(x, i, on, how, mult, join.many, void=FALSE, verbose) {
   if (length(ans$xo) && length(xrows))
     xrows = ans$xo[xrows]
   len.x = length(xrows)
+
   if (len.i != len.x)
     internal_error("dtmerge out len.i != len.x") # nocov
 
