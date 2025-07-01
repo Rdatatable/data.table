@@ -774,7 +774,7 @@ static void parse_double_regular_core(const char **pch, double *target)
       // Not a single digit after "E"? Invalid number
         return;
     }
-    e += Eneg? -E : E;
+    e += Eneg ? -E : E;
   }
   if (e < -350 || e > 350) return;
 
@@ -1422,7 +1422,7 @@ int freadMain(freadMainArgs _args) {
       // Mac doesn't appear to support MAP_POPULATE anyway (failed on CRAN when I tried).
       // TO DO?: MAP_HUGETLB for Linux but seems to need admin to setup first. My Hugepagesize is 2MB (>>2KB, so promising)
       //         https://www.kernel.org/doc/Documentation/vm/hugetlbpage.txt
-      mmp = mmap(NULL, fileSize, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);  // COW for last page lastEOLreplaced
+      mmp = mmap(NULL, fileSize, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);  // COW for last page lastEOLreplaced
       #ifdef __EMSCRIPTEN__
         mmp_fd = fd;
       #else
@@ -1451,11 +1451,11 @@ int freadMain(freadMainArgs _args) {
         STOP(_("File size [%s] exceeds the address space: %s"), filesize_to_str(liFileSize.QuadPart), fnam); // # nocov
       }
       fileSize = (size_t)liFileSize.QuadPart;
-      if (fileSize==0) { CloseHandle(hFile); STOP(_("File is empty: %s"), fnam); }
+      if (fileSize == 0) { CloseHandle(hFile); STOP(_("File is empty: %s"), fnam); }
       if (verbose) DTPRINT(_("  File opened, size = %s.\n"), filesize_to_str(fileSize));
       HANDLE hMap = CreateFileMapping(hFile, NULL, PAGE_WRITECOPY, 0, 0, NULL);
       if (hMap == NULL) { CloseHandle(hFile); STOP(_("This is Windows, CreateFileMapping returned error %lu for file %s"), GetLastError(), fnam); }
-      mmp = MapViewOfFile(hMap,FILE_MAP_COPY,0,0,fileSize);  // fileSize must be <= hilo passed to CreateFileMapping above.
+      mmp = MapViewOfFile(hMap, FILE_MAP_COPY, 0, 0, fileSize);  // fileSize must be <= hilo passed to CreateFileMapping above.
       CloseHandle(hMap);  // we don't need to keep the file open; the MapView keeps an internal reference;
       CloseHandle(hFile); //   see https://msdn.microsoft.com/en-us/library/windows/desktop/aa366537(v=vs.85).aspx
       if (mmp == NULL) {
@@ -1504,7 +1504,7 @@ int freadMain(freadMainArgs _args) {
     if (verbose) DTPRINT(_("  Last byte(s) of input found to be %s and removed.\n"),
                          c ? "0x1A (Ctrl+Z)" : "0x00 (NUL)");
   }
-  if (eof<=sof) STOP(_("Input is empty or only contains BOM or terminal control characters"));
+  if (eof <= sof) STOP(_("Input is empty or only contains BOM or terminal control characters"));
   }
 
   //*********************************************************************************************
@@ -2274,7 +2274,7 @@ int freadMain(freadMainArgs _args) {
     chunkBytes = bytesRead / nJumps;
   } else {
     ASSERT(nJumps == 1 /*when nrowLimit supplied*/ || nJumps == 2 /*small files*/, "nJumps (%d) != 1|2", nJumps);
-    nJumps=1;
+    nJumps = 1;
   }
   int64_t initialBuffRows = allocnrow / nJumps;
 
@@ -2425,7 +2425,7 @@ int freadMain(freadMainArgs _args) {
               if (eol(&tch) && skipEmptyLines) { tch++; continue; }
               tch = tLineStart;  // in case white space at the beginning may need to be including in field
             }
-            else if (eol(&tch) && j<ncol) {   // j<ncol needed for #2523 (erroneous extra comma after last field)
+            else if (eol(&tch) && j < ncol) {   // j<ncol needed for #2523 (erroneous extra comma after last field)
               int8_t thisSize = size[j];
               if (thisSize) ((char **) targets)[thisSize] += thisSize;
               j++;
