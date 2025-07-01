@@ -72,6 +72,7 @@
   \describe{
     \item{\code{datatable.allow.cartesian}}{A logical, default \code{FALSE}. Controls the default value of the 
     \code{allow.cartesian} parameter; see \code{\link{data.table}}. If the value of this parameter is FALSE, an error is raised as a safeguard against an explosive Cartesian join.}
+    \item{\code{datatable.join.many}}{A logical. Stub description to be embellished later in PR #4370. }
   }
 }
 
