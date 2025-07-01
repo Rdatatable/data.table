@@ -1,6 +1,7 @@
 #include "data.table.h"
 
-SEXP vecseq(SEXP x, SEXP len, SEXP clamp) {
+SEXP vecseq(SEXP x, SEXP len, SEXP clamp)
+{
   // Name taken from bit::vecseq, but,
   //   * implemented in C rather than R
   //   * takes len rather than y endpoints
