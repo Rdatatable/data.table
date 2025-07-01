@@ -21291,3 +21291,15 @@ unlink(f)
 test(2325.2,
      fread('"foo","bar","baz"\n"a","b","c"', na.strings=c('"foo"', '"bar"', '"baz"'), header=FALSE),
      data.table(V1=c(NA, "a"), V2=c(NA, "b"), V3=c(NA, "c")))
+
+## ensure setDT will retain key and indices when it is called on the list (cbindlist assumes this)
+local({
+  d = data.table(x=1:2, y=2:1, z=2:1, v1=1:2)
+  setkeyv(d, "x"); setindexv(d, list("y", "z"))
+  a = attributes(d)
+  attributes(d) = a[!names(a) %in% c("class", ".internal.selfref", "row.names")]
+  test(2326.1, class(d), "list")
+  setDT(d)
+  test(2326.2, key(d), "x")
+  test(2326.3, indices(d), c("y", "z"))
+})
