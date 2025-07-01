@@ -21301,5 +21301,5 @@ local({
   test(2326.1, class(d), "list")
   setDT(d)
   test(2326.2, key(d), "x")
-  test(2326.3, hasindex(d, "y") && hasindex(d, "z"))
+  test(2326.3, indices(d), c("y", "z"))
 })
