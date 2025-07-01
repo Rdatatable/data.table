@@ -373,7 +373,7 @@ print(j)
 DT[, j, env = list(j = j)]
 ```
 
-### Injecting functions using strings in `env`
+### Substituting functions using strings in `env`
 
 In `data.table`, you can inject functions into your expressions by passing their names as strings in the `env` parameter. This method allows you to use function names directly as strings, and `data.table` will automatically interpret these strings as the corresponding functions. This approach simplifies the process and makes it easier to work with function names dynamically.
 

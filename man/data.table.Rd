@@ -177,7 +177,7 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
         See examples as well as \href{../doc/datatable-secondary-indices-and-auto-indexing.html}{\code{vignette("datatable-secondary-indices-and-auto-indexing")}}.
     }
 
-  \item{env}{ List or an environment, passed to \code{\link{substitute2}} for substitution of parameters in \code{i}, \code{j} and \code{by} (or \code{keyby}). For function names, you can use them as strings (e.g., \code{"sum"}) or pass function objects directly (e.g., \code{sum}). Use \code{verbose} to preview constructed expressions. For more details, see \href{../doc/datatable-programming.html}{\code{vignette("datatable-programming")}}.}
+  \item{env}{ List or an environment, passed to \code{\link{substitute2}} for substitution of parameters in \code{i}, \code{j} and \code{by} (or \code{keyby}). Use \code{verbose} to preview constructed expressions. For more details see \href{../doc/datatable-programming.html}{\code{vignette("datatable-programming")}}. }
 
   \item{showProgress}{ \code{TRUE} shows progress indicator with estimated time to completion for lengthy "by" operations. }
 }
@@ -403,7 +403,6 @@ print(DT["b", v2:=84L, on="x"])       # subassign to new column by reference (NA
 
 DT[, m:=mean(v), by=x][]              # add new column by reference by group
                                       # NB: postfix [] is shortcut to print()
-
 # advanced usage
 DT = data.table(x=rep(c("b","a","c"),each=3), v=c(1,1,1,2,2,1,1,2,2), y=c(1,3,6), a=1:9, b=9:1)
 
