@@ -21252,3 +21252,27 @@ it <- as.ITime('00:00:00')
 test(2323.1, names(data.frame(COL = it)), "COL")
 test(2323.2, names(data.frame(b = 1, COL = it)), c("b", "COL"))
 test(2323.3, names(as.data.frame(it, optional=TRUE)), NULL)
+
+# 'sets' is a local variable in groupingsets(), cube(), rollup() and shouldn't leak into the 'j' expression
+n = 24L
+set.seed(25)
+DT = data.table(
+    color = sample(c("green","yellow","red"), n, TRUE),
+    year = as.Date(sample(paste0(2011:2015,"-01-01"), n, TRUE)),
+    status = as.factor(sample(c("removed","active","inactive","archived"), n, TRUE)),
+    amount = sample(1:5, n, TRUE),
+    value = sample(c(3, 3.5, 2.5, 2), n, TRUE)
+)
+sets = 0
+test(2324.0,
+  groupingsets(DT, j = c(list(count=.N + ..sets)), by = c("color","year","status"), sets = list("color", c("year","status"), character()), id=TRUE),
+  groupingsets(DT, j = c(list(count=.N + 0)), by = c("color","year","status"), sets = list("color", c("year","status"), character()), id=TRUE)
+)
+test(2324.1,
+  cube(DT, j = sum(value) + ..sets, by = c("color","year","status"), id=TRUE),
+  cube(DT, j = sum(value), by = c("color","year","status"), id=TRUE)
+)
+test(2324.2,
+  rollup(DT, j = sum(value) + ..sets, by=c("color","year","status"), label="total"),
+  rollup(DT, j = sum(value), by=c("color","year","status"), label="total")
+)

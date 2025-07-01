@@ -13,7 +13,7 @@ rollup.data.table = function(x, j, by, .SDcols, id = FALSE, label = NULL, ...) {
   sets = lapply(length(by):0L, function(i) by[0L:i])
   # redirect to workhorse function
   jj = substitute(j)
-  groupingsets.data.table(x, by=by, sets=sets, .SDcols=.SDcols, id=id, jj=jj, label=label)
+  groupingsets.data.table(x, by=by, sets=sets, .SDcols=.SDcols, id=id, jj=jj, label=label, enclos = parent.frame())
 }
 
 cube = function(x, ...) {
@@ -35,13 +35,13 @@ cube.data.table = function(x, j, by, .SDcols, id = FALSE, label = NULL, ...) {
   sets = lapply((2L^n):1L, function(jj) by[keepBool[jj, ]])
   # redirect to workhorse function
   jj = substitute(j)
-  groupingsets.data.table(x, by=by, sets=sets, .SDcols=.SDcols, id=id, jj=jj, label=label)
+  groupingsets.data.table(x, by=by, sets=sets, .SDcols=.SDcols, id=id, jj=jj, label=label, enclos = parent.frame())
 }
 
 groupingsets = function(x, ...) {
   UseMethod("groupingsets")
 }
-groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, label = NULL, ...) {
+groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, label = NULL, enclos = parent.frame(), ...) {
   # input data type basic validation
   if (!is.data.table(x))
     stopf("Argument 'x' must be a data.table object")
@@ -112,7 +112,10 @@ groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, labe
     .SDcols = if (".SD" %chin% av) setdiff(names(x), by) else NULL
   if (length(names(by))) by = unname(by)
   # 0 rows template data.table to keep colorder and type
-  empty = if (length(.SDcols)) x[0L, eval(jj), by, .SDcols=.SDcols] else x[0L, eval(jj), by]
+  # inline all arguments that might clash with enclosing environment
+  pcall = substitute(x[0L, jj, by], list(x = x, jj = jj, by = by))
+  if (length(.SDcols)) pcall$.SDcols = .SDcols
+  empty = eval(pcall, list(.datatable.aware = TRUE), enclos)
   if (id && "grouping" %chin% names(empty)) # `j` could have been evaluated to `grouping` field
     stopf("When using `id=TRUE` the 'j' expression must not evaluate to a column named 'grouping'.")
   if (anyDuplicated(names(empty)) > 0L)
@@ -150,8 +153,12 @@ groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, labe
     stopf("Using integer64 class columns require to have 'bit64' package installed.") # nocov
   int64.by.cols = intersect(int64.cols, by)
   # aggregate function called for each grouping set
+  # inline all arguments that might clash with enclosing environment
+  pcall = substitute(x[, jj], list(x = x, jj = jj))
+  if (length(.SDcols)) pcall$.SDcols = .SDcols
   aggregate.set = function(by.set) {
-    r = if (length(.SDcols)) x[, eval(jj), by.set, .SDcols=.SDcols] else x[, eval(jj), by.set]
+    pcall$by = by.set
+    r = eval(pcall, list(.datatable.aware = TRUE), enclos)
     if (id) {
       # integer bit mask of aggregation levels: http://www.postgresql.org/docs/9.5/static/functions-aggregate.html#FUNCTIONS-GROUPING-TABLE
       # 3267: strtoi("", base = 2L) output apparently unstable across platforms
