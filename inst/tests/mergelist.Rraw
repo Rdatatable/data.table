@@ -17,8 +17,9 @@ addresses = function(x) vapply(x, address, "")
 copied = function(ans, l) {
   !any(addresses(ans) %chin% unlist(recursive=FALSE, lapply(l, addresses)))
 }
-notcopied = function(ans, l, how="left", unless=character()) {
-  if (how %chin% unless) return(copied(ans, l)) ## used during looping tests for easier escape
+# check that the "baseline" table (as inferred from 'how') is _not_ copied in
+#   cases where it need not necessarily be copied.
+notcopied = function(ans, l, how="left") {
   if (how == "full") return( ## either side, left|right, notcopied is fine
     all(addresses(l[[1L]]) %chin% addresses(ans)) ||
       all(addresses(l[[length(l)]]) %chin% addresses(ans))
@@ -171,7 +172,11 @@ local({
       test(22 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]])
       test(22 + (frac <- frac + 0.001), copied(ans, l))
       test(22 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]])
-      test(22 + (frac <- frac + 0.001), notcopied(ans, l, how=how, unless="full"))
+      if (how == "full") {
+        test(22 + (frac <- frac + 0.001), copied(ans, l))
+      } else {
+        test(22 + (frac <- frac + 0.001), notcopied(ans, l, how=how))
+      }
     }
   }
 })
@@ -196,7 +201,11 @@ local({
       test(23 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]])
       test(23 + (frac <- frac + 0.001), copied(ans, l))
       test(23 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]])
-      test(23 + (frac <- frac + 0.001), notcopied(ans, l, how=how, unless="inner"))
+      if (how == "inner") {
+        test(23 + (frac <- frac + 0.001), copied(ans, l))
+      } else {
+        test(23 + (frac <- frac + 0.001), notcopied(ans, l, how=how))
+      }
     }
   }
 })
@@ -221,7 +230,11 @@ local({
       test(24 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]])
       test(24 + (frac <- frac + 0.001), copied(ans, l))
       test(24 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]])
-      test(24 + (frac <- frac + 0.001), notcopied(ans, l, how=how, unless=c("inner", "full")))
+      if (how %in% c("inner", "full")) {
+        test(24 + (frac <- frac + 0.001), copied(ans, l))
+      } else {
+        test(24 + (frac <- frac + 0.001), notcopied(ans, l, how=how))
+      }
     }
   }
 })
@@ -246,7 +259,11 @@ local({
       test(25 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]])
       test(25 + (frac <- frac + 0.001), copied(ans, l))
       test(25 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]])
-      test(25 + (frac <- frac + 0.001), notcopied(ans, l, how=how, unless=c("inner", "full")))
+      if (how %in% c("inner", "full")) {
+        test(25 + (frac <- frac + 0.001), copied(ans, l))
+      } else {
+        test(25 + (frac <- frac + 0.001), notcopied(ans, l, how=how))
+      }
     }
   }
 })
@@ -321,7 +338,11 @@ local({
       test(28 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]])
       test(28 + (frac <- frac + 0.001), copied(ans, l))
       test(28 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]])
-      test(28 + (frac <- frac + 0.001), notcopied(ans, l, how=how, unless="inner"))
+      if (how == "inner") {
+        test(28 + (frac <- frac + 0.001), copied(ans, l))
+      } else {
+        test(28 + (frac <- frac + 0.001), notcopied(ans, l, how=how))
+      }
     }
   }
 })
@@ -343,7 +364,6 @@ local({
     frac = frac + 0.1
     for (mult in c("all", "first", "last", "error")) {
       frac = frac + 0.01
-      cat(sprintf("\nhow=%s, mult=%s, frac=%.04f\n", how, mult, frac))
       test(29 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]])
       test(29 + (frac <- frac + 0.001), copied(ans, l))
       test(29 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]])
