@@ -332,20 +332,15 @@ local({
     lhs = data.table(id1=1:2, v1=1:2),
     rhs = data.table(id1=2:1, v2=2:1)
   )
-  expected = list(
-    inner = data.table(id1=1:2, v1=1:2, v2=1:2),
-    left = data.table(id1=1:2, v1=1:2, v2=1:2),
-    right = data.table(id1=2:1, v1=2:1, v2=2:1),
-    full = data.table(id1=2:1, v1=2:1, v2=2:1)
-  )
+  expected = data.table(id1=1:2, v1=1:2, v2=1:2)
   frac = 0.0
   for (how in c("inner", "left", "right", "full")) {
     frac = frac + 0.1
     for (mult in c("all", "first", "last", "error")) {
       frac = frac + 0.01
-      test(29 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]])
+      test(29 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected)
       test(29 + (frac <- frac + 0.001), copied(ans, l))
-      test(29 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]])
+      test(29 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected)
       test(29 + (frac <- frac + 0.001), notcopied(ans, l, how=how))
     }
   }
