@@ -203,7 +203,7 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
     copy_x = TRUE
     ## ensure no duplicated column names in merge results
     if (any(dup.i <- names(out.i) %chin% names(out.x)))
-      stopf("merge result has duplicated column names, use 'cols' argument or rename columns in 'l' tables, duplicated column(s): %s", brackify(names(out.i)[dup.i]))
+      stopf("merge result has duplicated column names [%s], use 'cols' argument or rename columns in 'l' tables", brackify(names(out.i)[dup.i]))
   }
 
   ## stack i and x
@@ -216,21 +216,24 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
     ## we made left join side above, proceed to right join side, so swap tbls
     join_from = rhs; from_cols = rhs.cols; join_to = lhs; to_cols = lhs.cols
 
-    cp.r = FALSE
+    copy_r = FALSE
     if (!is.null(mult) && (mult == "first" || mult == "last")) {
       join_from = fdistinct(join_from, on=on, mult=mult, cols=from_cols, copy=FALSE)
-      cp.r = nrow(join_from) != nrow(rhs) ## nrow(rhs) bc join_from=rhs
+      copy_r = nrow(join_from) != nrow(rhs) ## nrow(rhs) bc join_from=rhs
     } ## mult=="error" check was made on one side already, below we do on the second side, test 101.43
 
-    ## binary merge anti join
-    bns = dtmerge(x=join_to, i=join_from, on=on, how="anti", mult=if (!is.null(mult) && mult!="all") mult, verbose=verbose, join.many=join.many)
+    ## binary merge anti join; only need to keep 'irows'
+    mult = if (!is.null(mult) && mult != "all") mult
+    supplement_rows = dtmerge(x=join_to, i=join_from, on=on, how="anti", mult=mult, verbose=verbose, join.many=join.many)$irows
 
     ## make anti join side
-    out.r = if (is.null(bns$irows))
-      .shallow(join_from, cols=someCols(join_from, from_cols, keep=on), retain.key=TRUE) ## retain.key is used only in the edge case when !nrow(out.i)
-    else
-      .Call(CsubsetDT, join_from, bns$irows, someCols(join_from, from_cols, keep=on))
-    cp.r = cp.r || !is.null(bns$irows)
+    cols_r = someCols(join_from, from_cols, keep=on)
+    if (is.null(supplement_rows)) {
+      out.r = .shallow(join_from, cols=cols_r, retain.key=TRUE) ## retain.key is used only in the edge case when !nrow(out.i)
+    } else {
+      out.r = .Call(CsubsetDT, join_from, supplement_rows, cols_r)
+      copy_r = TRUE
+    }
 
     ## short circuit to avoid rbindlist to empty sets and retains keys
     if (!nrow(out.r)) { ## possibly also !nrow(out.i)
@@ -238,8 +241,8 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
       #if (!copy_x && copy) out.x = copy(out.x) ## as of now copy_x always TRUE, search for #4409 here
       out = .Call(Ccbindlist, list(out.i, out.x), FALSE)
     } else if (!nrow(out.i)) { ## but not !nrow(out.r)
-      if (!cp.r && copy) out.r = copy(out.r)
-      if (length(add<-setdiff(names(out.i), names(out.r)))) { ## add missing columns of proper types NA
+      if (!copy_r && copy) out.r = copy(out.r)
+      if (length(add <- setdiff(names(out.i), names(out.r)))) { ## add missing columns of proper types NA
         neworder = copy(names(out.i)) #set(out.r, NULL, add, lapply(unclass(out.i)[add], `[`, 1L)) ## 291.04 overalloc exceed fail during set()
         out.i = lapply(unclass(out.i)[add], `[`, seq_len(nrow(out.r))) ## could eventually remove this when cbindlist recycle 0 rows up, note that we need out.r not to be copied
         out.r = .Call(Ccbindlist, list(out.r, out.i), FALSE)
