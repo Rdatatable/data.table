@@ -1,5 +1,6 @@
 #include "data.table.h"
 #include <Rdefines.h>
+#include <string.h>
 
 // Wrappers for R internal functions. We can't rely on calling
 // Rf_setAttrib and Rf_duplicate directly from .Call in R on
@@ -48,7 +49,9 @@ SEXP setlevels(SEXP x, SEXP levels, SEXP ulevels) {
     SET_STRING_ELT(xchar, i, STRING_ELT(levels, ix[i]-1));
   newx = PROTECT(chmatch(xchar, ulevels, NA_INTEGER));
   int *inewx = INTEGER(newx);
-  for (int i=0; i<nx; ++i) ix[i] = inewx[i];
+  
+  memcpy(ix, inewx, nx);
+
   setAttrib(x, R_LevelsSymbol, ulevels);
   UNPROTECT(2);
   return(x);
