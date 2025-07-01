@@ -19,8 +19,6 @@ void mergeIndexAttrib(SEXP to, SEXP from) {
 SEXP cbindlist(SEXP x, SEXP copyArg) {
   if (!isNewList(x) || isFrame(x))
     error(_("'%s' must be a list"), "x");
-  if (!IS_TRUE_OR_FALSE(copyArg))
-    error(_("'%s' must be TRUE or FALSE"), "copy");
   bool copy = (bool)LOGICAL(copyArg)[0];
   const bool verbose = GetVerbose();
   double tic = 0;
