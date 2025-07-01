@@ -172,7 +172,6 @@ SEXP int_vec_init(R_len_t n, int val);
 
 // vecseq.c
 SEXP vecseq(SEXP x, SEXP len, SEXP clamp);
-SEXP seqexp(SEXP x);
 
 // uniqlist.c
 SEXP uniqlist(SEXP l, SEXP order);
