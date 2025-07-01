@@ -160,8 +160,8 @@ local({
   expected = list(
     inner = data.table(id1=1:2, v1=1:2, v2=1:2),
     left = data.table(id1=1:2, v1=1:2, v2=1:2),
-    right = data.table(id1=1:3, v1=c(1:2,NA), v2=1:3),
-    full = data.table(id1=1:3, v1=c(1:2,NA), v2=1:3)
+    right = data.table(id1=1:3, v1=c(1:2, NA), v2=1:3),
+    full = data.table(id1=1:3, v1=c(1:2, NA), v2=1:3)
   )
   frac = 0.0
   for (how in c("inner", "left", "right", "full")) {
@@ -184,9 +184,9 @@ local({
   )
   expected = list(
     inner = data.table(id1=1:2, v1=1:2, v2=1:2),
-    left = data.table(id1=1:3, v1=1:3, v2=c(1:2,NA)),
+    left = data.table(id1=1:3, v1=1:3, v2=c(1:2, NA)),
     right = data.table(id1=1:2, v1=1:2, v2=1:2),
-    full = data.table(id1=1:3, v1=1:3, v2=c(1:2,NA))
+    full = data.table(id1=1:3, v1=1:3, v2=c(1:2, NA))
   )
   frac = 0.0
   for (how in c("inner", "left", "right", "full")) {
@@ -204,14 +204,14 @@ local({
 ### LHS single nonmatch RHS on both sides: no copy in left, right
 local({
   l = list(
-    lhs = data.table(id1=3:1, v1=1:3),
-    rhs = data.table(id1=c(4L,2:1), v2=1:3)
+    lhs = data.table(id1=c(3L, 2:1), v1=1:3),
+    rhs = data.table(id1=c(4L, 2:1), v2=1:3)
   )
   expected = list(
     inner = data.table(id1=2:1, v1=2:3, v2=2:3),
-    left = data.table(id1=3:1, v1=1:3, v2=c(NA,2:3)),
-    right = data.table(id1=c(4L,2:1), v1=c(NA,2:3), v2=1:3),
-    full = data.table(id1=c(3:1,4L), v1=c(1:3,NA), v2=c(NA,2:3,1L))
+    left = data.table(id1=c(3L, 2:1), v1=1:3, v2=c(NA, 2:3)),
+    right = data.table(id1=c(4L, 2:1), v1=c(NA, 2:3), v2=1:3),
+    full = data.table(id1=c(3:1, 4L), v1=c(1:3, NA), v2=c(NA, 2:3, 1L))
   )
   frac = 0.0
   for (how in c("inner", "left", "right", "full")) {
@@ -234,9 +234,9 @@ local({
   )
   expected = list(
     inner = data.table(id1=integer(), v1=integer(), v2=integer()),
-    left = data.table(id1=2:1, v1=1:2, v2=c(NA_integer_,NA)),
-    right = data.table(id1=3:4, v1=c(NA_integer_,NA), v2=1:2),
-    full = data.table(id1=c(2:1,3:4), v1=c(1:2,NA,NA), v2=c(NA,NA,1:2))
+    left = data.table(id1=2:1, v1=1:2, v2=NA_integer_),
+    right = data.table(id1=3:4, v1=NA_integer_, v2=1:2),
+    full = data.table(id1=c(2:1, 3:4), v1=c(1:2, NA, NA), v2=c(NA, NA, 1:2))
   )
   frac = 0.0
   for (how in c("inner", "left", "right", "full")) {
@@ -285,13 +285,13 @@ local({
   expected = list(
     inner = data.table(id1=integer(), v1=integer(), v2=integer()),
     left = data.table(id1=integer(), v1=integer(), v2=integer()),
-    right = data.table(id1=2:1, v1=c(NA_integer_,NA), v2=1:2),
-    full = data.table(id1=2:1, v1=c(NA_integer_,NA), v2=1:2)
+    right = data.table(id1=2:1, v1=NA_integer_, v2=1:2),
+    full = data.table(id1=2:1, v1=NA_integer_, v2=1:2)
   )
   frac = 0.0
   for (how in c("inner", "left", "right", "full")) {
     frac = frac + 0.1
-    for (mult in c("all", "first", "last" ,"error")) {
+    for (mult in c("all", "first", "last", "error")) {
       frac = frac + 0.01
       test(27 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]])
       test(27 + (frac <- frac + 0.001), copied(ans, l))
@@ -309,9 +309,9 @@ local({
   )
   expected = list(
     inner = data.table(id1=integer(), v1=integer(), v2=integer()),
-    left = data.table(id1=2:1, v1=1:2, v2=c(NA_integer_,NA)),
+    left = data.table(id1=2:1, v1=1:2, v2=NA_integer_),
     right = data.table(id1=integer(), v1=integer(), v2=integer()),
-    full = data.table(id1=2:1, v1=1:2, v2=c(NA_integer_,NA))
+    full = data.table(id1=2:1, v1=1:2, v2=NA_integer_)
   )
   frac = 0.0
   for (how in c("inner", "left", "right", "full")) {
