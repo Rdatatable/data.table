@@ -18,6 +18,30 @@
 
 6. `between()` gains the argument `ignore_tzone=FALSE`. Normally, a difference in time zone between `lower` and `upper` will produce an error, and a difference in time zone between `x` and either of the others will produce a message. Setting `ignore_tzone=TRUE` bypasses the checks, allowing both comparisons to proceed without error or message about time zones.
 
+7. New helper function `fctr` as an extended version of `factor()`, [#4837](https://github.com/Rdatatable/data.table/issues/4837). Most notably, it supports (1) retaining input level ordering by default, i.e. `levels=unique(x)` as opposed to `levels = sort(unique(x))`; (2) `rev=` to reverse the levels; and (3) `sort=` to allow more feature parity with `factor()`. The choice of default is motivated by convenience in the common case when order of elements needs be preserved, for example when using `dcast` or adding a legend to a plot. This also matches the default sort ordering of groups in `by=`.
+
+    ```r
+    d = data.table(id1=rep(1:2, each=3L), id2=letters[c(4:3,5L,3:5)], v1=1:6)
+    dcast(d, id1 ~ factor(id2))
+    #      id1     c     d     e
+    # 1:     1     2     1     3
+    # 2:     2     4     5     6
+    dcast(d, id1 ~ fctr(id2))
+    #      id1     d     c     e
+    # 1:     1     1     2     3
+    # 2:     2     5     4     6
+    dcast(d, id1 ~ fctr(id2, sort=TRUE)) # same as factor()
+    #      id1     c     d     e
+    # 1:     1     2     1     3
+    # 2:     2     4     5     6
+    dcast(d, id1 ~ fctr(id2, rev=TRUE))
+    #      id1     e     c     d
+    # 1:     1     3     2     1
+    # 2:     2     6     4     5
+    ```
+
+8. `groupingsets()` gets a new argument `enclos` for use together with the `jj` argument in functions wrapping `groupingsets()`, including the existing wrappers `rollup()` and `cube()`. When forwarding a `j`-expression as `groupingsets(jj = substitute(j))`, make sure to pass `enclos = parent.frame()` as well, so that the `j`-expression will be evaluated in the right context. This makes it possible for `j` to refer to variables outside the `data.table`.
+
 ### BUG FIXES
 
 1. Custom binary operators from the `lubridate` package now work with objects of class `IDate` as with a `Date` subclass, [#6839](https://github.com/Rdatatable/data.table/issues/6839). Thanks @emallickhossain for the report and @aitap for the fix.
@@ -42,7 +66,15 @@
 
 11. Out of sample type bumps now respect `integer64=` selection, [#7032](https://github.com/Rdatatable/data.table/pull/7032).
 
-12. `fread()` now handles the `na.strings` argument for quoted text columns, making it possible to specify `na.strings = '""'` and read empty quoted strings as `NA`s, [#6974](https://github.com/Rdatatable/data.table/issues/6974). Thanks to @AngelFelizR for the report and @aitap for the PR.
+12. Internal functions used to signal errors are now marked as non-returning, silencing a compiler warning about potentially unchecked allocation failure. Thanks to Prof. Brian D. Ripley for the report and @aitap for the fix, [#7070](https://github.com/Rdatatable/data.table/pull/7070).
+
+13. In rare cases, `data.table` failed to expand ALTREP columns when assigning a full column by reference. This could result in the target column getting modified unintentionally if the next call to the data.table was a modification by reference of the source column. E.g. in `DT[, b := as.character(a)]` the string conversion gets deferred and subsequent modification of column `a` would also modify column `b`, [#5400](https://github.com/Rdatatable/data.table/issues/5400). Thanks to @aquasync for the report and Václav Tlapák for the PR.
+
+14. `data.table()` function is now more aligned with `data.frame()` with respect to the names of the output when one of its inputs is a single-column matrix object, [#4124](https://github.com/Rdatatable/data.table/issues/4124). Thanks @PavoDive for the report and @jangorecki for the PR.
+
+15. Including an `ITime` object as a named input to `data.frame()` respects the provided name, i.e. `data.frame(a = as.ITime(...))` will have column `a`, [#4673](https://github.com/Rdatatable/data.table/issues/4673). Thanks @shrektan for the report and @MichaelChirico for the fix.
+
+16. `fread()` now handles the `na.strings` argument for quoted text columns, making it possible to specify `na.strings = '""'` and read empty quoted strings as `NA`s, [#6974](https://github.com/Rdatatable/data.table/issues/6974). Thanks to @AngelFelizR for the report and @aitap for the PR.
 
 ### NOTES
 
@@ -197,6 +229,8 @@ rowwiseDT(
 19. An integer overflow in `fread()` with lines longer than `2^(31/2)` bytes is prevented, [#6729](https://github.com/Rdatatable/data.table/issues/6729). The typical impact was no worse than a wrong initial allocation size, corrected later. Thanks to @TaikiSan21 for the report and @aitap for the fix.
 
 20. Fixed a memory issue causing segfaults in `forder`, [#6797](https://github.com/Rdatatable/data.table/issues/6797). Thanks @dkutner for the report and @MichaelChirico for the fix.
+
+21. `setDT(get0('var'))` now correctly modifies `var` by reference, consistent with the long-standing behavior of `setDT(get('var'))`, [#6864](https://github.com/Rdatatable/data.table/issues/6864). Thanks to @rikivillalba for the report and @venom1204 for the fix.
 
 ### NOTES
 

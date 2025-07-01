@@ -277,10 +277,10 @@ int checkOverAlloc(SEXP x)
   if (!isInteger(x) && !isReal(x))
     error(_("getOption('datatable.alloccol') should be a number, by default 1024. But its type is '%s'."), type2char(TYPEOF(x)));
   if (LENGTH(x) != 1)
-    error(_("getOption('datatable.alloc') is a numeric vector ok but its length is %d. Its length should be 1."), LENGTH(x));
+    error(_("getOption('datatable.alloccol') is a numeric vector ok but its length is %d. Its length should be 1."), LENGTH(x));
   int ans = asInteger(x);
   if (ans<0)
-    error(_("getOption('datatable.alloc')==%d.  It must be >=0 and not NA."), ans);
+    error(_("getOption('datatable.alloccol')==%d.  It must be >=0 and not NA."), ans);
   return ans;
 }
 
@@ -550,11 +550,12 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
     if (length(rows)==0 && targetlen==vlen && (vlen>0 || nrow==0)) {
       if (  MAYBE_SHARED(thisvalue) ||  // set() protects the NAMED of atomic vectors from .Call setting arguments to 2 by wrapping with list
          (TYPEOF(values)==VECSXP && i>LENGTH(values)-1) || // recycled RHS would have columns pointing to others, #185.
-         (TYPEOF(values)!=VECSXP && i>0) // assigning the same values to a second column. Have to ensure a copy #2540
+         (TYPEOF(values)!=VECSXP && i>0) || // assigning the same values to a second column. Have to ensure a copy #2540
+         ALTREP(thisvalue) // Some ALTREP wrappers have survived to here, e.g. #5400
          ) {
         if (verbose) {
-          Rprintf(_("RHS for item %d has been duplicated because MAYBE_REFERENCED==%d MAYBE_SHARED==%d, but then is being plonked. length(values)==%d; length(cols)==%d\n"),
-                  i+1, MAYBE_REFERENCED(thisvalue), MAYBE_SHARED(thisvalue), length(values), length(cols));
+          Rprintf(_("RHS for item %d has been duplicated because MAYBE_REFERENCED==%d MAYBE_SHARED==%d ALTREP==%d, but then is being plonked. length(values)==%d; length(cols)==%d\n"),
+                  i+1, MAYBE_REFERENCED(thisvalue), MAYBE_SHARED(thisvalue), ALTREP(thisvalue), length(values), length(cols));
         }
         thisvalue = copyAsPlain(thisvalue);   // PROTECT not needed as assigned as element to protected list below.
       } else {

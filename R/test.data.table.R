@@ -229,8 +229,9 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   # notranslate start
   cat("\n", date(),   # so we can tell exactly when these tests ran on CRAN to double-check the result is up to date
     "  endian==", .Platform$endian,
-    ", sizeof(long double)==", .Machine$sizeof.longdouble,
-    ", longdouble.digits==", .Machine$longdouble.digits, # 64 normally, 53 for example under valgrind where some high accuracy tests need turning off, #4639
+    ", sizeof(long double)==", format(.Machine$sizeof.longdouble),
+    ", capabilities('long.double')==", capabilities('long.double'), # almost certainly overkill, but that's OK; see #6154
+    ", longdouble.digits==", format(.Machine$longdouble.digits), # 64 normally, 53 for example under valgrind where some high accuracy tests need turning off, #4639
     ", sizeof(pointer)==", .Machine$sizeof.pointer,
     ", TZ==", if (is.na(tz)) "unset" else paste0("'",tz,"'"),
     ", Sys.timezone()=='", suppressWarnings(Sys.timezone()), "'",

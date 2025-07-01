@@ -38,41 +38,26 @@ It assumes familiarity with the `data.table` syntax. If that is not the case, pl
 
 ## 1. Defining example data
 
-To illustrate how to use the method available with real life examples, let's simulate a **normalized database** from a little supermarket by performing the following steps:
+To illustrate how to use the method available with real life examples, let's simulate a **normalized database** from a little supermarket by defining the following tables in a database:
 
-1. Defining a `data.table` where each product is represented by a row with some qualities, but leaving one product without `id` to show how the framework deals with ***missing values***.
+1. `Products`, a table with rows giving characteristics of various products. To show how the framework deals with ***missing values***, one `id` is `NA`.
 
-```{r}
-Products = data.table(
-  id = c(1:4,
-         NA_integer_),
-  name = c("banana",
-           "carrots",
-           "popcorn",
-           "soda",
-           "toothpaste"),
-  price = c(0.63,
-            0.89,
-            2.99,
-            1.49,
-            2.99),
-  unit = c("unit",
-           "lb",
-           "unit",
-           "ounce",
-           "unit"),
-  type = c(rep("natural", 2L),
-           rep("processed", 3L))
+```{r, define_products}
+Products = rowwiseDT(
+  id=,        name=, price=,   unit=, type=,
+   1L,     "banana",   0.63,  "unit", "natural",
+   2L,    "carrots",   0.89,    "lb", "natural",
+   3L,    "popcorn",   2.99,  "unit", "processed",
+   4L,       "soda",   1.49, "ounce", "processed",
+   NA, "toothpaste",   2.99,  "unit", "processed"
 )
-
-Products
 ```
 
-2. Defining a `data.table` showing the proportion of taxes to be applied for processed products based on their units.
+2. `NewTax`, a table with rows defining some taxes associated with processed products based on their units.
 
-```{r}
+```{r define_new_tax}
 NewTax = data.table(
-  unit = c("unit","ounce"),
+  unit = c("unit", "ounce"),
   type = "processed",
   tax_prop = c(0.65, 0.20)
 )
@@ -81,38 +66,36 @@ NewTax
 ```
 
 
-3. Defining a `data.table` simulating the products received every Monday with a `product_id` that is not present in the `Products` table.
+3. `ProductReceived`, a table with rows simulating weekly incoming inventory.
 
-```{r}
+```{r define_product_received}
 set.seed(2156)
 
+# NB: Jan 8, 2024 is a Monday.
+receipt_dates = seq(from=as.IDate("2024-01-08"), length.out=10L, by="week")
+
 ProductReceived = data.table(
-  id = 1:10,
-  date = seq(from = as.IDate("2024-01-08"), length.out = 10L, by = "week"),
-  product_id = sample(c(NA_integer_, 1:3, 6L), size = 10L, replace = TRUE),
-  count = sample(c(50L, 100L, 150L), size = 10L, replace = TRUE)
+  id=1:10, # unique identifier for an supply transaction
+  date=receipt_dates,
+  product_id=sample(c(NA, 1:3, 6L), size=10L, replace=TRUE), # NB: product '6' is not recorded in Products above.
+  count=sample(c(50L, 100L, 150L), size=10L, replace=TRUE)
 )
 
 ProductReceived
 ```
 
-4. Defining a `data.table` to show some sales that can take place on weekdays with another `product_id` that is not present in the `Products` table.
+4. `ProductSales`, a table with rows simulating customer transactions.
 
-```{r}
-sample_date = function(from, to, size, ...){
-  all_days = seq(from = from, to = to, by = "day")
-  weekdays = all_days[wday(all_days) %in% 2:6]
-  days_sample = sample(weekdays, size, ...)
-  days_sample_desc = sort(days_sample)
-  days_sample_desc
-}
-
+```{r define_product_sales}
 set.seed(5415)
+
+# Monday-Friday (4 days later) for each of the weeks present in ProductReceived
+possible_weekdays <- as.IDate(sapply(receipt_dates, `+`, 0:4))
 
 ProductSales = data.table(
   id = 1:10,
-  date = ProductReceived[, sample_date(min(date), max(date), 10L)],
-  product_id = sample(c(1:3, 7L), size = 10L, replace = TRUE),
+  date = sort(sample(possible_weekdays, 10L)),
+  product_id = sample(c(1:3, 7L), size = 10L, replace = TRUE), # NB: product '7' is in neither Products nor ProductReceived.
   count = sample(c(50L, 100L, 150L), size = 10L, replace = TRUE)
 )
 
@@ -221,22 +204,21 @@ ProductsKeyed[ProductReceivedKeyed]
 
 #### 3.1.3. Operations after joining
 
-Most of the time after a join is complete we need to make some additional transformations. To make so we have the following alternatives:
+Most of the time after joining we need to make some additional transformations. To do so we have the following alternatives:
 
-- Chaining a new instruction by adding a pair of brakes `[]`.
+- Chaining a new instruction by adding a pair of brackets `[]`.
 - Passing a list with the columns that we want to keep or create to the `j` argument.
 
 Our recommendation is to use the second alternative if possible, as it is **faster** and uses **less memory** than the first one.
-
 
 ##### Managing shared column Names with the j argument
 
 The `j` argument has great alternatives to manage joins with tables **sharing the same names for several columns**. By default all columns are taking their source from the the `x` table, but we can also use the `x.` prefix to make clear the source and use the prefix `i.` to use any column form the table declared in the `i` argument of the `x` table.
 
-Going back to the little supermarket, after updating the `ProductReceived` table with the `Products` table, it seems convenient apply the following changes:
+Going back to the little supermarket, after updating the `ProductReceived` table with the `Products` table, suppose we want to apply the following changes:
 
-- Changing the columns names from `id` to `product_id` and from `i.id` to `received_id`.
-- Adding the `total_value`.
+- Change the columns names from `id` to `product_id` and from `i.id` to `received_id`.
+- Add the `total_value`.
 
 ```{r}
 Products[
@@ -255,9 +237,9 @@ Products[
 
 ##### Summarizing with `on` in `data.table`
 
-We can also use this alternative to return aggregated results based columns present in the `x` table.
+We can also use this alternative to return aggregated results based on the columns present in the `x` table.
 
-For example, we might interested in how much money we expend buying products each date regardless the products.
+For example, we might be interested in how much money we spend buying each product across days.
 
 ```{r}
 dt1 = ProductReceived[
@@ -267,7 +249,7 @@ dt1 = ProductReceived[
   j = .(total_value_received  = sum(price * count))
 ]
 
-
+# alternative using multiple [] queries
 dt2 = ProductReceived[
   Products,
   on = c("product_id" = "id"),
@@ -280,7 +262,7 @@ identical(dt1, dt2)
 
 #### 3.1.4. Joining based on several columns
 
-So far we have just joined `data.table` base on 1 column, but it's important to know that the package can join tables matching several columns.
+So far we have just joined `data.table`s based on 1 column, but it's important to know that the package can join tables matching several columns.
 
 To illustrate this, let's assume that we want to add the `tax_prop` from `NewTax` to **update** the `Products` table.
 
@@ -292,7 +274,7 @@ NewTax[Products, on = c("unit", "type")]
 
 Use this method if you need to combine columns from 2 tables based on one or more references but ***keeping only rows matched in both tables***.
 
-To perform this operation we just need to add `nomatch = NULL` or `nomatch = 0` to any of the prior join operations to return the same results.
+To perform this operation we just need to add `nomatch = NULL` to any of the prior join operations to return the same results.
 
 ```{r}
 # First Table
@@ -313,7 +295,7 @@ Despite both tables having the same information, there are some relevant differe
   - The `id` column in the first table has the same information as the `product_id` in the second table.
   - The `i.id` column in the first table has the same information as the `id` in the second table.
 
-### 3.3. Not join
+### 3.3. Anti-join
 
 This method **keeps only the rows that don't match with any row of a second table**.
 
@@ -653,9 +635,9 @@ ProductPriceHistory[ProductSales,
                     j = .(product_id, date, count, price)]
 ```
 
-## 7. Taking advantage of joining speed
+## 6. Taking advantage of joining speed
 
-### 7.1. Subsets as joins
+### 6.1. Subsets as joins
 
 As we just saw in the prior section the `x` table gets filtered by the values available in the `i` table. This process is faster than passing a Boolean expression to the `i` argument.
 
@@ -693,34 +675,59 @@ Products[c("banana","popcorn"),
 
 Products[!"popcorn",
          on = "name"]
-
 ```
 
+### 6.2. Updating by reference
 
+Use `:=` to modify columns **by reference** (no copy) during joins. General syntax: `x[i, on=, (cols) := val]`.
 
-### 7.2. Updating by reference
+**Simple One-to-One Update**  
 
-The `:=` operator in `data.table` is used for updating or adding columns by reference. This means it modifies the original `data.table` without creating a copy, which is very memory-efficient, especially for large datasets. When used inside a `data.table`, `:=` allows you to **add new columns** or **modify existing ones** as part of your query.
-
-Let's update our `Products` table with the latest price from `ProductPriceHistory`:
+Update `Products` with prices from `ProductPriceHistory`:
 
 ```{r}
-copy(Products)[ProductPriceHistory,
-               on = .(id = product_id),
-               j = `:=`(price = tail(i.price, 1),
-                        last_updated = tail(i.date, 1)),
-               by = .EACHI][]
+Products[ProductPriceHistory, 
+         on = .(id = product_id), 
+         price := i.price]
+
+Products
 ```
 
-In this operation:
+- `i.price` refers to price from `ProductPriceHistory`.
+- Modifies `Products` in-place.
 
-- The function copy creates a ***deep*** copy of the `Products` table, preventing modifications made by `:=` from changing the original table by reference.
-- We join `Products` with `ProductPriceHistory` based on `id` and `product_id`.
-- We update the `price` column with the latest price from `ProductPriceHistory`.
-- We add a new `last_updated` column to track when the price was last changed.
-- The `by = .EACHI` ensures that the `tail` function is applied for each product in `ProductPriceHistory`.
+**Grouped Updates with `.EACHI`**
 
-***
+Get last price/date for each product:
+
+```{r Updating_with_the_Latest_Record}
+Products[ProductPriceHistory,
+         on = .(id = product_id),
+         `:=`(price = last(i.price), last_updated = last(i.date)),
+         by = .EACHI]
+
+Products
+```
+
+- `by = .EACHI` groups by i's rows (1 group per ProductPriceHistory row).
+- `last()` returns last value
+
+**Efficient Right Join Update**
+
+Add product details to `ProductPriceHistory` without copying:
+
+```{r}
+cols <- setdiff(names(Products), "id")
+ProductPriceHistory[, (cols) := 
+  Products[.SD, on = .(id = product_id), .SD, .SDcols = cols]]
+setnafill(ProductPriceHistory, fill=0, cols="price") # Handle missing values
+
+ProductPriceHistory
+```
+
+- In `i`, `.SD` refers to `ProductPriceHistory`.
+- In `j`, `.SD` refers to `Products`.
+- `:=` and `setnafill()` both update `ProductPriceHistory` by reference.
 
 ## Reference
 

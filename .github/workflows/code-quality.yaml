@@ -40,40 +40,31 @@ jobs:
         run: /usr/bin/sudo apt-get -y install coccinelle
       - name: Lint
         run: |
-          linter_env = new.env()
-          for (f in list.files('.ci/linters/c', full.names=TRUE)) sys.source(f, linter_env)
-          for (f in list.files('src', pattern='[.][ch]$', full.names=TRUE)) {
-            c_obj = list(path = f, lines = readLines(f))
-            c_obj$preprocessed = system2("gcc", c("-fpreprocessed", "-E", f), stdout=TRUE, stderr=FALSE)
-            for (linter in ls(linter_env)) linter_env[[linter]](c_obj)
-            # TODO(#6272): Incorporate more checks from CRAN_Release
-          }
-        shell: Rscript {0}
+          Rscript .ci/lint.R .ci/linters/c src '[.][ch]$'
   lint-po:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: r-lib/actions/setup-r@v2
       - name: Check translations
+        # only pay attention to files edited in the current PR, otherwise we can get
+        # a situation like after #6424 where some untranslated messages were added
+        # as part of non-translation maintenance, but this GHA would go red repeatedly
+        # until a translation is added or the blank/fuzzy translations removed. We'd
+        # rather only have the failure on one PR, then ignore these files later.
         run: |
-          linter_env = new.env()
-          for (f in list.files('.ci/linters/po', full.names=TRUE)) sys.source(f, linter_env)
-          for (po_file in list.files(pattern = "[.]po$", full.names=TRUE)) {
-            # only pay attention to files edited in the current PR, otherwise we can get
-            #   a situation like after #6424 where some untranslated messages were added
-            #   as part of non-translation maintenance, but this GHA would go red repeatedly
-            #   until a translation is added or the blank/fuzzy translations removed. We'd
-            #   rather only have the failure on one PR, then ignore these files later.
-            diff_v_master = system2("git", c("diff", "master", po_file), stdout=TRUE)
-            if (!length(diff_v_master)) next
-            for (linter in ls(linter_env)) linter_env[[linter]](po_file)
-          }
-        shell: Rscript {0}
+          Rscript .ci/lint.R .ci/linters/po po '[.]po$'
   lint-md:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: r-lib/actions/setup-r@v2
       - name: Lint
-        run: for (f in list.files('.ci/linters/md', full.names=TRUE)) source(f)
-        shell: Rscript {0}
+        run: Rscript .ci/lint.R .ci/linters/md . '[.]R?md$'
+  lint-rd:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: r-lib/actions/setup-r@v2
+      - name: Lint Rd files
+        run: Rscript .ci/lint.R .ci/linters/rd man '[.]Rd$'
