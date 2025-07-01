@@ -24,6 +24,9 @@ nan_is_na = function(x) {
 # R 4.4.0
 if (!exists("%||%", "package:base")) `%||%` <- function(x, y) if (is.null(x)) y else x # nolint: coalesce_linter.
 
+# R 4.5.0
+if (!exists("grepv", "package:base")) grepv <- function(...) grep(..., value=TRUE)
+
 internal_error = function(...) {
   e1 = gettext("Internal error in")
   e2 = deparse(head(tail(sys.calls(), 2L), 1L)[[1L]][[1L]])
@@ -214,6 +217,17 @@ rss = function() {  #5515 #5517
   if (length(ans)!=1L || !is.numeric(ans)) ans=NA_real_ # just in case
   round(ans / 1024.0, 1L)  # return MB
   # nocov end
+}
+
+# convert char to factor retaining order #4837
+fctr = function(x, levels=unique(x), ..., sort=FALSE, rev=FALSE) {
+  if (!isTRUEorFALSE(sort))
+    stopf("argument 'sort' must be TRUE or FALSE")
+  if (!isTRUEorFALSE(rev))
+    stopf("argument 'rev' must be TRUE or FALSE")
+  if (sort) levels = sort(levels)
+  if (rev) levels = rev(levels)
+  factor(x, levels=levels, ...)
 }
 
 formula_vars = function(f, x) { # .formula2varlist is not API and seems to have appeared after R-4.2, #6841

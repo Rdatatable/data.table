@@ -70,9 +70,13 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
     }
   }
   if (!is.null(cmd)) {
-    (if (.Platform$OS.type == "unix") system else shell)(paste0('(', cmd, ') > ', tmpFile<-tempfile(tmpdir=tmpdir)))
-    file = tmpFile
+    tmpFile = tempfile(tmpdir=tmpdir)
     on.exit(unlink(tmpFile), add=TRUE)
+    status = (if (.Platform$OS.type == "unix") system else shell)(paste0('(', cmd, ') > ', tmpFile))
+    if (status != 0) {
+      stopf("External command failed with exit code %d. This can happen when the disk is full in the temporary directory ('%s'). See ?fread for the tmpdir argument.", status, tmpdir)
+    }
+    file = tmpFile
   }
   if (!is.null(file)) {
     if (!is.character(file) || length(file)!=1L)
@@ -88,7 +92,7 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
       on.exit(unlink(tmpFile), add=TRUE)
       # nocov end
     }
-    file_info = file.info(file)
+    file_info = file.info(file, extra_cols=FALSE)
     if (is.na(file_info$size)) stopf("File '%s' does not exist or is non-readable. getwd()=='%s'", file, getwd())
     if (isTRUE(file_info$isdir)) stopf("File '%s' is a directory. Not yet implemented.", file) # Could use dir.exists(), but we already ran file.info().
     if (!file_info$size) {
@@ -116,9 +120,14 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC")
       if (!requireNamespace("R.utils", quietly = TRUE))
         stopf("To read %s files directly, fread() requires 'R.utils' package which cannot be found. Please install 'R.utils' using 'install.packages('R.utils')'.", if (w<=2L || gzsig) "gz" else "bz2") # nocov
       FUN = if (w<=2L || gzsig) gzfile else bzfile
-      R.utils::decompressFile(file, decompFile<-tempfile(tmpdir=tmpdir), ext=NULL, FUN=FUN, remove=FALSE)   # ext is not used by decompressFile when destname is supplied, but isn't optional
-      file = decompFile   # don't use 'tmpFile' symbol again, as tmpFile might be the http://domain.org/file.csv.gz download
+      decompFile = tempfile(tmpdir=tmpdir)
       on.exit(unlink(decompFile), add=TRUE)
+      tryCatch({
+        R.utils::decompressFile(file, decompFile, ext=NULL, FUN=FUN, remove=FALSE)   # ext is not used by decompressFile when destname is supplied, but isn't optional
+      }, error = function(e) {
+        stopf("R.utils::decompressFile failed to decompress file '%s':\n  %s\n. This can happen when the disk is full in the temporary directory ('%s'). See ?fread for the tmpdir argument.", file, conditionMessage(e), tmpdir)
+      })
+      file = decompFile   # don't use 'tmpFile' symbol again, as tmpFile might be the http://domain.org/file.csv.gz download
     }
     file = enc2native(file) # CfreadR cannot handle UTF-8 if that is not the native encoding, see #3078.
 

@@ -1,3 +1,5 @@
+pval.thresh <- 0.001 # to reduce false positives.
+
 # Test case adapted from https://github.com/Rdatatable/data.table/issues/6105#issue-2268691745 which is where the issue was reported.
 # https://github.com/Rdatatable/data.table/pull/6107 fixed performance across 3 ways to specify a column as Date, and we test each individually.
 extra.args.6107 <- c(
@@ -13,6 +15,7 @@ for (extra.arg in extra.args.6107){
       tmp_csv = tempfile()
       fwrite(DT, tmp_csv)
     },
+    FasterIO = "60a01fa65191c44d7997de1843e9a1dfe5be9f72", # First commit of the PR (https://github.com/Rdatatable/data.table/pull/6925/commits) that reduced time usage
     Slow = "e9087ce9860bac77c51467b19e92cf4b72ca78c7", # Parent of the merge commit (https://github.com/Rdatatable/data.table/commit/a77e8c22e44e904835d7b34b047df2eff069d1f2) of the PR (https://github.com/Rdatatable/data.table/pull/6107) that fixes the issue
     Fast = "a77e8c22e44e904835d7b34b047df2eff069d1f2") # Merge commit of the PR (https://github.com/Rdatatable/data.table/pull/6107) that fixes the issue
   this.test$expr = str2lang(sprintf("data.table::fread(tmp_csv, %s)", extra.arg))
@@ -117,11 +120,28 @@ test.list <- atime::atime_test_list(
       file.path("src", "init.c"),
       paste0("R_init_", Package_regex),
       paste0("R_init_", gsub("[.]", "_", new.Package_)))
+    # allow compilation on new R versions where 'Calloc' is not defined
+    pkg_find_replace(
+      file.path("src", "*.c"),
+      "\\b(Calloc|Free|Realloc)\\b",
+      "R_\\1")
     pkg_find_replace(
       "NAMESPACE",
       sprintf('useDynLib\\("?%s"?', Package_regex),
       paste0('useDynLib(', new.Package_))
   },
+
+  # Constant overhead improvement https://github.com/Rdatatable/data.table/pull/6925
+  # Test case adapted from https://github.com/Rdatatable/data.table/pull/7022#discussion_r2107900643
+  "fread disk overhead improved in #6925" = atime::atime_test(
+    N = 2^seq(0, 20), # smaller N because we are doing multiple fread calls.
+    setup = {
+      fwrite(iris[1], iris.csv <- tempfile())
+    },
+    expr = replicate(N, data.table::fread(iris.csv)),
+    Fast = "60a01fa65191c44d7997de1843e9a1dfe5be9f72", # First commit of the PR (https://github.com/Rdatatable/data.table/pull/6925/commits) that reduced time usage
+    Slow = "e25ea80b793165094cea87d946d2bab5628f70a6" # Parent of the first commit (https://github.com/Rdatatable/data.table/commit/60a01fa65191c44d7997de1843e9a1dfe5be9f72)
+  ),
 
   # Performance regression discussed in https://github.com/Rdatatable/data.table/issues/4311
   # Test case adapted from https://github.com/Rdatatable/data.table/pull/4440#issuecomment-632842980 which is the fix PR.
@@ -172,8 +192,9 @@ test.list <- atime::atime_test_list(
   # Fixed in https://github.com/Rdatatable/data.table/pull/4558
   "DT[by] fixed in #4558" = atime::atime_test(
     setup = {
+      N9 <- as.integer(N * 0.9)
       d <- data.table(
-        id = sample(c(seq.int(N * 0.9), sample(N * 0.9, N * 0.1, TRUE))),
+        id = sample(c(seq.int(N9), sample(N9, N-N9, TRUE))),
         v1 = sample(5L, N, TRUE),
         v2 = sample(5L, N, TRUE)
       )
@@ -246,5 +267,15 @@ test.list <- atime::atime_test_list(
     Before = "f339aa64c426a9cd7cf2fcb13d91fc4ed353cd31", # Parent of the first commit https://github.com/Rdatatable/data.table/commit/fcc10d73a20837d0f1ad3278ee9168473afa5ff1 in the PR https://github.com/Rdatatable/data.table/pull/6393/commits with major change to fwrite with gzip.
     PR = "3630413ae493a5a61b06c50e80d166924d2ef89a"), # Close-to-last merge commit in the PR.
 
-  tests=extra.test.list)
+  # Test case created directly using the atime code below (not adapted from any other benchmark), based on the PR, Removes unnecessary data.table call from as.data.table.array https://github.com/Rdatatable/data.table/pull/7010 
+  "as.data.table.array improved in #7010" = atime::atime_test(
+    setup = {
+      dims = c(N, 1, 1)
+      arr = array(seq_len(prod(dims)), dim=dims)
+    },
+    expr = data.table:::as.data.table.array(arr, na.rm=FALSE),
+    Slow = "73d79edf8ff8c55163e90631072192301056e336",   # Parent of the first commit in the PR (https://github.com/Rdatatable/data.table/commit/8397dc3c993b61a07a81c786ca68c22bc589befc)
+    Fast = "8397dc3c993b61a07a81c786ca68c22bc589befc"),  # Commit in the PR (https://github.com/Rdatatable/data.table/pull/7019/commits) that removes inefficiency
+
+    tests=extra.test.list)
 # nolint end: undesirable_operator_linter.
