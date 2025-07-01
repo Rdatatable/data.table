@@ -6,8 +6,6 @@ void mergeIndexAttrib(SEXP to, SEXP from) {
   if (isNull(from))
     return;
   SEXP t = ATTRIB(to), f = ATTRIB(from);
-  if (isNull(f))  // nothing to merge
-    return;
   if (isNull(t)) // target has no attributes -> overwrite
     SET_ATTRIB(to, shallow_duplicate(f));
   else {
