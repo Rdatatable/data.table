@@ -21276,3 +21276,18 @@ test(2324.2,
   rollup(DT, j = sum(value) + ..sets, by=c("color","year","status"), label="total"),
   rollup(DT, j = sum(value), by=c("color","year","status"), label="total")
 )
+
+# allow na.strings to be quoted, #6974
+f = tempfile()
+DT = data.table(
+  "Date Example"=c("12/5/2012", NA),
+  "Question 1"=c("Yes", NA),
+  "Question 2"=c("Yes", NA),
+  "Site: Country"=c("Chile", "Virgin Islands, British")
+)
+fwrite(DT, f, na='""')
+test(2325.1, fread(f, na.strings='""'), DT)
+unlink(f)
+test(2325.2,
+     fread('"foo","bar","baz"\n"a","b","c"', na.strings=c('"foo"', '"bar"', '"baz"'), header=FALSE),
+     data.table(V1=c(NA, "a"), V2=c(NA, "b"), V3=c(NA, "c")))
