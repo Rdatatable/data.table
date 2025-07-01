@@ -4,9 +4,9 @@
 SEXP copyCols(SEXP x, SEXP cols) {
   // used in R/mergelist.R
   if (!isDataTable(x))
-    error("'x' must be a data.table"); // # nocov
+    internal_error(__func__, "'x' must be a data.table"); // # nocov
   if (!isInteger(cols))
-    error("'cols' must be integer"); // # nocov
+    internal_error(__func__, "'cols' must be integer"); // # nocov
   int nx = length(x), ncols = LENGTH(cols), *colsp = INTEGER(cols);
   if (!nx || !ncols)
     return R_NilValue;
