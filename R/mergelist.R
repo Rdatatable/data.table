@@ -145,96 +145,95 @@ dtmerge = function(x, i, on, how, mult, join.many, void=FALSE, verbose) {
 
 # atomic join between two tables
 mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=names(rhs), copy=TRUE, join.many=TRUE, verbose=FALSE) {
-  semianti = how=="semi" || how=="anti"
-  innerfull = how=="inner" || how=="full"
-  {
-    if (how!="cross") {
-      if (is.null(on)) {
-        if (how=="left" || semianti) on = key(rhs)
-        else if (how=="right") on = key(lhs)
-        else if (innerfull) on = onkeys(key(lhs), key(rhs))
-        if (is.null(on))
-          stopf("'on' is missing and necessary key is not present")
-      }
-      if (any(bad.on <- !on %chin% names(lhs)))
-        stopf("'on' argument specify columns to join [%s] that are not present in LHS table [%s]", brackify(on[bad.on]), brackify(names(lhs)))
-      if (any(bad.on <- !on %chin% names(rhs)))
-        stopf("'on' argument specify columns to join [%s] that are not present in RHS table [%s]", brackify(on[bad.on]), brackify(names(rhs)))
-    } else if (is.null(on)) {
-      on = character() ## cross join only
+  semi_or_anti = how == "semi" || how == "anti"
+  inner_or_full = how == "inner" || how == "full"
+
+  if (how != "cross") {
+    if (is.null(on)) {
+      if (how == "left" || semi_or_anti) on = key(rhs)
+      else if (how == "right") on = key(lhs)
+      else if (inner_or_full) on = onkeys(key(lhs), key(rhs))
+      if (is.null(on))
+        stopf("'on' is missing and necessary key is not present")
     }
-  } ## on
-  {
-    if (how!="right") {
-      jnfm = lhs; fm.cols = lhs.cols; jnto = rhs; to.cols = rhs.cols
-    } else {
-      jnfm = rhs; fm.cols = rhs.cols; jnto = lhs; to.cols = lhs.cols
-    }
-  } ## join-to and join-from tables and columns (right outer join swap)
+    if (any(bad.on <- !on %chin% names(lhs)))
+      stopf("'on' argument specifies columns to join [%s] that are not present in %s table [%s]", brackify(on[bad.on]), "LHS", brackify(names(lhs)))
+    if (any(bad.on <- !on %chin% names(rhs)))
+      stopf("'on' argument specifies columns to join [%s] that are not present in %s table [%s]", brackify(on[bad.on]), "RHS", brackify(names(rhs)))
+  } else if (is.null(on)) {
+    on = character() ## cross join only
+  }
+
+  ## join-to and join-from tables and columns (right outer join-->swap)
+  if (how != "right") {
+    join_from = lhs; from_cols = lhs.cols; join_to = rhs; to_cols = rhs.cols
+  } else {
+    join_from = rhs; from_cols = rhs.cols; join_to = lhs; to_cols = lhs.cols
+  }
 
   ## ensure symmetric join for inner|full join, apply mult on both tables, bmerge do only 'x' table
-  cp.i = FALSE ## copy marker of out.i
-  if ((innerfull) && !is.null(mult) && (mult=="first" || mult=="last")) {
-    jnfm = fdistinct(jnfm, on=on, mult=mult, cols=fm.cols, copy=FALSE) ## might not copy when already unique by 'on'
-    cp.i = nrow(jnfm)!=nrow(lhs) ## nrow(lhs) bc how='inner|full' so jnfm=lhs
-  } else if (how=="inner" && (is.null(mult) || mult=="error")) { ## we do this branch only to raise error from bmerge, we cannot use forder to just find duplicates because those duplicates might not have matching rows in another table, full join checks mult='error' during two non-void bmerges
-    dtmerge(x=jnfm, i=jnto, on=on, how=how, mult=mult, verbose=verbose, join.many=join.many, void=TRUE)
+  copy_i = FALSE ## copy marker of out.i
+  if (inner_or_full && !is.null(mult) && (mult == "first" || mult == "last")) {
+    join_from = fdistinct(join_from, on=on, mult=mult, cols=from_cols, copy=FALSE) ## might not copy when already unique by 'on'
+    copy_i = nrow(join_from) != nrow(lhs) ## nrow(lhs) bc how='inner|full' so join_from=lhs
+  } else if (how == "inner" && (is.null(mult) || mult == "error")) { ## we do this branch only to raise error from bmerge, we cannot use forder to just find duplicates because those duplicates might not have matching rows in another table, full join checks mult='error' during two non-void bmerges
+    dtmerge(x=join_from, i=join_to, on=on, how=how, mult=mult, verbose=verbose, join.many=join.many, void=TRUE)
   }
 
   ## binary merge
-  ans = dtmerge(x=jnto, i=jnfm, on=on, how=how, mult=mult, verbose=verbose, join.many=join.many)
+  ans = dtmerge(x=join_to, i=join_from, on=on, how=how, mult=mult, verbose=verbose, join.many=join.many)
 
   ## make i side
   out.i = if (is.null(ans$irows))
-    .shallow(jnfm, cols=someCols(jnfm, fm.cols, keep=on, retain.order=semianti), retain.key=TRUE)
+    .shallow(join_from, cols=someCols(join_from, from_cols, keep=on, retain.order=semi_or_anti), retain.key=TRUE)
   else
-    .Call(CsubsetDT, jnfm, ans$irows, someCols(jnfm, fm.cols, keep=on, retain.order=semianti))
-  cp.i = cp.i || !is.null(ans$irows)
+    .Call(CsubsetDT, join_from, ans$irows, someCols(join_from, from_cols, keep=on, retain.order=semi_or_anti))
+  copy_i = copy_i || !is.null(ans$irows)
 
   ## make x side
-  if (semianti) {
-    out.x = list(); cp.x = TRUE
+  if (semi_or_anti) {
+    out.x = list(); copy_x = TRUE
   } else {
     out.x = if (is.null(ans$xrows)) ## as of now xrows cannot be NULL #4409 thus nocov below
-      internal_error("dtmerge()$xrows returned NULL, #4409 been resolved but related code has not been updated?") #.shallow(jnto, cols=someCols(jnto, to.cols, drop=on), retain.key=TRUE) # nocov ## as of now nocov does not make difference r-lib/covr#279
+      internal_error("dtmerge()$xrows returned NULL, #4409 been resolved but related code has not been updated?") #.shallow(join_to, cols=someCols(join_to, to_cols, drop=on), retain.key=TRUE) # nocov ## as of now nocov does not make difference r-lib/covr#279
     else
-      .Call(CsubsetDT, jnto, ans$xrows, someCols(jnto, to.cols, drop=on))
-    cp.x = !is.null(ans$xrows)
+      .Call(CsubsetDT, join_to, ans$xrows, someCols(join_to, to_cols, drop=on))
+    copy_x = !is.null(ans$xrows)
     ## ensure no duplicated column names in merge results
-    if (any(dup.i<-names(out.i) %chin% names(out.x)))
+    if (any(dup.i <- names(out.i) %chin% names(out.x)))
       stopf("merge result has duplicated column names, use 'cols' argument or rename columns in 'l' tables, duplicated column(s): %s", brackify(names(out.i)[dup.i]))
   }
 
   ## stack i and x
-  if (how!="full") {
-    if (!cp.i && copy) out.i = copy(out.i)
-    #if (!cp.x && copy) out.x = copy(out.x) ## as of now cp.x always TRUE, search for #4409 here
+  if (how != "full") {
+    if (!copy_i && copy) out.i = copy(out.i)
+    #if (!copy_x && copy) out.x = copy(out.x) ## as of now copy_x always TRUE, search for #4409 here
     out = .Call(Ccbindlist, list(out.i, out.x), FALSE)
-    if (how=="right") setcolorder(out, neworder=c(on, names(out.x))) ## arrange columns: i.on, x.cols, i.cols
+    if (how == "right") setcolorder(out, neworder=c(on, names(out.x))) ## arrange columns: i.on, x.cols, i.cols
   } else { # how=="full"
     ## we made left join side above, proceed to right join side, so swap tbls
-    jnfm = rhs; fm.cols = rhs.cols; jnto = lhs; to.cols = lhs.cols
+    join_from = rhs; from_cols = rhs.cols; join_to = lhs; to_cols = lhs.cols
 
     cp.r = FALSE
-    if (!is.null(mult) && (mult=="first" || mult=="last")) {
-      jnfm = fdistinct(jnfm, on=on, mult=mult, cols=fm.cols, copy=FALSE)
-      cp.r = nrow(jnfm)!=nrow(rhs) ## nrow(rhs) bc jnfm=rhs
+    if (!is.null(mult) && (mult == "first" || mult == "last")) {
+      join_from = fdistinct(join_from, on=on, mult=mult, cols=from_cols, copy=FALSE)
+      cp.r = nrow(join_from) != nrow(rhs) ## nrow(rhs) bc join_from=rhs
     } ## mult=="error" check was made on one side already, below we do on the second side, test 101.43
 
     ## binary merge anti join
-    bns = dtmerge(x=jnto, i=jnfm, on=on, how="anti", mult=if (!is.null(mult) && mult!="all") mult, verbose=verbose, join.many=join.many)
+    bns = dtmerge(x=join_to, i=join_from, on=on, how="anti", mult=if (!is.null(mult) && mult!="all") mult, verbose=verbose, join.many=join.many)
 
     ## make anti join side
     out.r = if (is.null(bns$irows))
-      .shallow(jnfm, cols=someCols(jnfm, fm.cols, keep=on), retain.key=TRUE) ## retain.key is used only in the edge case when !nrow(out.i)
+      .shallow(join_from, cols=someCols(join_from, from_cols, keep=on), retain.key=TRUE) ## retain.key is used only in the edge case when !nrow(out.i)
     else
-      .Call(CsubsetDT, jnfm, bns$irows, someCols(jnfm, fm.cols, keep=on))
+      .Call(CsubsetDT, join_from, bns$irows, someCols(join_from, from_cols, keep=on))
     cp.r = cp.r || !is.null(bns$irows)
 
     ## short circuit to avoid rbindlist to empty sets and retains keys
     if (!nrow(out.r)) { ## possibly also !nrow(out.i)
-      if (!cp.i && copy) out.i = copy(out.i)
-      #if (!cp.x && copy) out.x = copy(out.x) ## as of now cp.x always TRUE, search for #4409 here
+      if (!copy_i && copy) out.i = copy(out.i)
+      #if (!copy_x && copy) out.x = copy(out.x) ## as of now copy_x always TRUE, search for #4409 here
       out = .Call(Ccbindlist, list(out.i, out.x), FALSE)
     } else if (!nrow(out.i)) { ## but not !nrow(out.r)
       if (!cp.r && copy) out.r = copy(out.r)
