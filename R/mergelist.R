@@ -257,7 +257,7 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
   setDT(out)
 }
 
-mergelist = function(l, on, cols, how=c("left", "inner", "full", "right", "semi", "anti", "cross"), mult, copy=TRUE, join.many=getOption("datatable.join.many")) {
+mergelist_impl_ = function(l, on, cols, how, mult, copy) {
   verbose = getOption("datatable.verbose")
   if (verbose)
     p = proc.time()[[3L]]
@@ -294,8 +294,6 @@ mergelist = function(l, on, cols, how=c("left", "inner", "full", "right", "semi"
   if (length(mult) != n - 1L || !all(vapply_1b(mult, function(x) is.null(x) || (is.character(x) && length(x) == 1L && !anyNA(x) && x %chin% c("error", "all", "first", "last")))))
     stopf("'mult' must be one of [error, all, first, last] or NULL, or a list of such whose length must be length(l)-1L")
 
-  if (missing(how) || is.null(how))
-    how = match.arg(how)
   if (!is.list(how))
     how = rep(list(how), n-1L)
   if (length(how)!=n-1L || !all(vapply_1b(how, function(x) is.character(x) && length(x)==1L && !anyNA(x) && x %chin% c("left", "inner", "full", "right", "semi", "anti", "cross"))))
@@ -346,6 +344,17 @@ mergelist = function(l, on, cols, how=c("left", "inner", "full", "right", "semi"
   if (verbose)
     catf("mergelist: merging %d tables, took %.3fs\n", n, proc.time()[[3L]] - p)
   out
+}
+
+mergelist = function(l, on, cols, how=c("left", "inner", "full", "right", "semi", "anti", "cross"), mult, join.many=getOption("datatable.join.many")) {
+  if (missing(how) || is.null(how))
+    how = match.arg(how)
+  mergelist_impl_(l, on, cols, how, mult, join.many, copy=TRUE)
+}
+setmergelist = function(l, on, cols, how=c("left", "inner", "full", "right", "semi", "anti", "cross"), mult, join.many=getOption("datatable.join.many")) {
+  if (missing(how) || is.null(how))
+    how = match.arg(how)
+  mergelist_impl_(l, on, cols, how, mult, join.many, copy=FALSE)
 }
 
 # Previously, we had a custom C implementation here, which is ~2x faster,

@@ -1,14 +1,17 @@
 \name{mergelist}
 \alias{mergelist}
+\alias{setmergelist}
 \title{Merge multiple data.tables}
 \description{
   Faster merge of multiple \code{data.table}s.
 }
 \usage{
   mergelist(l, on, cols,
-    how = c("left","inner","full","right","semi","anti","cross"),
-    mult, copy = TRUE,
-    join.many = getOption("datatable.join.many"))
+    how=c("left", "inner", "full", "right", "semi", "anti", "cross"),
+    mult, join.many=getOption("datatable.join.many"))
+  setmergelist(l, on, cols,
+    how=c("left", "inner", "full", "right", "semi", "anti", "cross"),
+    mult, join.many=getOption("datatable.join.many"))
 }
 \arguments{
   \item{l}{ \code{list} of \code{data.table}s to merge. }
@@ -16,7 +19,6 @@
   \item{cols}{ \code{list} of \code{character} column names corresponding to tables in \code{l}, used to subset columns during merges. }
   \item{how}{ \code{character} scalar, controls how to merge tables. Allowed values are \code{"left"} (default), \code{"inner"}, \code{"full"}, \code{"right"}, \code{"semi"}, \code{"anti"}, \code{"cross"}. See Details. }
   \item{mult}{ \code{character} scalar, controls how to proceed when multiple rows in \emph{join-to} table match to the row in \emph{join-from} table. Allowed values are \code{"error"}, \code{"all"}, \code{"first"}, \code{"last"}. Default depends on \code{how}, described in \emph{details} below. See examples on how to detect duplicated matches. Using \code{"all"} is recommended together with \code{join.many=FALSE}, unless rows explosion or cartesian product are intended. }
-  \item{copy}{ \code{logical}, defaults to \code{TRUE}, when \code{FALSE}, then resulting object may share columns with tables in \code{l}, depending on matches. }
   \item{join.many}{ \code{logical}, defaults to \code{getOption("datatable.join.many")}, which is \code{TRUE} by default; when \code{FALSE} and \code{mult="all"}, then extra check is made to ensure no \emph{many-to-many} matches exist between tables, and if they exist, then exception is raised. Works similarly to \code{allow.cartesian} option in \code{[.data.table} but is more strict. An option \code{"datatable.join.many"} controls that globally for \code{mergelist} and \code{[.data.table}. }
 }
 \details{
@@ -52,6 +54,8 @@
 }
 \value{
   A new \code{data.table} based on the merged objects.
+
+  For \code{setmergelist}, if possible, a \code{\link{copy}} of the inputs is avoided.
 }
 \note{
   Using \code{how="inner|full"} together with \code{mult!="all"} is sub-efficient. Unlike during join in \code{[.data.table}, it will apply \code{mult} on both tables. It is to ensure that the join is symmetric so \emph{LHS} and \emph{RHS} tables can be swapped, regardless of \code{mult} argument. It is always possible to apply \code{mult}-like filter manually and join using \code{mult="all"}.
@@ -182,8 +186,8 @@ rm(ans)
 #### same but no unnecessary copies
 ans = mergelist(list(
   fact,
-  mergelist(time, copy=FALSE),
-  mergelist(rev(geog), how="right", copy=FALSE)
+  setmergelist(time),
+  setmergelist(rev(geog), how="right")
 ))
 }
 \keyword{ data }
