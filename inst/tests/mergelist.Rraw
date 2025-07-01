@@ -15,7 +15,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
 
 addresses = function(x) vapply(x, address, "")
 copied = function(ans, l) {
-  all(!addresses(ans) %chin% unlist(recursive=FALSE, lapply(l, addresses)))
+  !any(addresses(ans) %chin% unlist(recursive=FALSE, lapply(l, addresses)))
 }
 notcopied = function(ans, l, how="left", unless=character()) {
   if (how %chin% unless) return(copied(ans, l)) ## used during looping tests for easier escape
