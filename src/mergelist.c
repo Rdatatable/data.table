@@ -23,22 +23,17 @@ void mergeIndexAttrib(SEXP to, SEXP from) {
   if (isNull(from))
     return;
   SEXP t = ATTRIB(to), f = ATTRIB(from);
-  if (isNull(f))
-    return;
-  if (isNull(t))
+  if (isNull(t)) // target has no attributes -> overwrite
     SET_ATTRIB(to, shallow_duplicate(f));
   else {
-    for (t = ATTRIB(to); CDR(t) != R_NilValue; t = CDR(t));
+    for (t = ATTRIB(to); CDR(t) != R_NilValue; t = CDR(t)); // traverse to end of attributes list of to
     SETCDR(t, shallow_duplicate(f));
   }
-  return;
 }
 
 SEXP cbindlist(SEXP x, SEXP copyArg) {
   if (!isNewList(x) || isFrame(x))
     error(_("'%s' must be a list"), "x");
-  if (!IS_TRUE_OR_FALSE(copyArg))
-    error(_("'%s' must be TRUE or FALSE"), "copy");
   bool copy = (bool)LOGICAL(copyArg)[0];
   const bool verbose = GetVerbose();
   double tic = 0;
@@ -87,12 +82,14 @@ SEXP cbindlist(SEXP x, SEXP copyArg) {
     mergeIndexAttrib(index, getAttrib(thisx, sym_index));
     if (isNull(key)) // first key is retained
       key = getAttrib(thisx, sym_sorted);
-    UNPROTECT(protecti);
+    UNPROTECT(protecti); // thisnames, thisxcol
   }
+  if (isNull(ATTRIB(index)))
+    setAttrib(ans, sym_index, R_NilValue);
   setAttrib(ans, R_NamesSymbol, names);
   setAttrib(ans, sym_sorted, key);
   if (verbose)
     Rprintf(_("cbindlist: took %.3fs\n"), omp_get_wtime()-tic);
-  UNPROTECT(3);
+  UNPROTECT(3); // ans, index, names
   return ans;
 }
