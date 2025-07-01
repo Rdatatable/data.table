@@ -65,7 +65,7 @@ SEXP cbindlist(SEXP x, SEXP copyArg) {
     mergeIndexAttrib(index, getAttrib(thisx, sym_index));
     if (isNull(key)) // first key is retained
       key = getAttrib(thisx, sym_sorted);
-    UNPROTECT(protecti);
+    UNPROTECT(protecti); // thisnames, thisxcol
   }
   if (isNull(ATTRIB(index)))
     setAttrib(ans, sym_index, R_NilValue);
@@ -73,6 +73,6 @@ SEXP cbindlist(SEXP x, SEXP copyArg) {
   setAttrib(ans, sym_sorted, key);
   if (verbose)
     Rprintf(_("cbindlist: took %.3fs\n"), omp_get_wtime()-tic);
-  UNPROTECT(3);
+  UNPROTECT(3); // ans, index, names
   return ans;
 }
