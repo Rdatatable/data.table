@@ -653,13 +653,18 @@ flights[, `:=`(makeup = dep_delay - arr_delay)]
 makeup.models <- flights[, .(fit = list(lm(makeup ~ distance))), by = .(month)]
 makeup.models[, .(coefdist = coef(fit[[1]])[2], rsq = summary(fit[[1]])$r.squared), by = .(month)]
 ```
+
 Using data.frames, we need more complicated code to obtain same result.
+
 ```{r}
 setDF(flights)
 flights.split <- split(flights, f = flights$month)
 makeup.models.list <- lapply(flights.split, function(df) c(month = df$month[1], fit = list(lm(makeup ~ distance, data = df))))
 makeup.models.df <- do.call(rbind, makeup.models.list)
-sapply(makeup.models.df[, "fit"], function(model) c(coefdist = coef(model)[2], rsq =  summary(model)$r.squared)) |> t() |> data.frame()
+data.frame(t(sapply(
+  makeup.models.df[, "fit"],
+  function(model) c(coefdist = coef(model)[2L], rsq =  summary(model)$r.squared)
+)))
 setDT(flights)
 ```
 
