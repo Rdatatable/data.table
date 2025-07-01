@@ -1,5 +1,22 @@
 #include "data.table.h"
 
+// set(x, NULL, cols, copy(unclass(x)[cols])) ## but keeps the index
+SEXP copyCols(SEXP x, SEXP cols) {
+  // used in R/mergelist.R
+  if (!isDataTable(x))
+    internal_error(__func__, "'x' must be a data.table"); // # nocov
+  if (!isInteger(cols))
+    internal_error(__func__, "'cols' must be integer"); // # nocov
+  int nx = length(x), ncols = LENGTH(cols), *colsp = INTEGER(cols);
+  if (!nx || !ncols)
+    return R_NilValue;
+  for (int i=0; i<ncols; ++i) {
+    int thiscol = colsp[i]-1;
+    SET_VECTOR_ELT(x, thiscol, duplicate(VECTOR_ELT(x, thiscol)));
+  }
+  return R_NilValue;
+}
+
 void mergeIndexAttrib(SEXP to, SEXP from) {
   if (!isInteger(to) || LENGTH(to)!=0)
     internal_error(__func__, "'to' must be integer() already"); // # nocov
