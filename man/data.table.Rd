@@ -418,8 +418,7 @@ DT[, list(MySum=sum(v),
           MyMax=max(v)),
     by=.(x, y\%\%2)]                    # by 2 expressions
 
-DT[, .(f=f(a)), by=b, verbose=TRUE,
-    env=list(f="sum", b="x")] # subtitution via env arg
+DT[, .(f=f(a)), by=grp_var, env=list(f="sum", grp_var="x")] # programmatic query with env=
 
 DT[, .(a = .(a), b = .(b)), by=x]     # list columns
 DT[, .(seq = min(a):max(b)), by=x]    # j is not limited to just aggregations
