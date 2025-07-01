@@ -23,14 +23,16 @@ onkeys = function(x, y) {
   }
   NULL # nocov. Internal error is being called later in mergepair
 }
+
 someCols = function(x, cols, drop=character(), keep=character(), retain.order=FALSE) {
   keep = colnamesInt(x, keep)
   drop = colnamesInt(x, drop)
   cols = colnamesInt(x, cols)
   ans = union(keep, setdiff(cols, drop))
   if (!retain.order) return(ans)
-  intersect(colnamesInt(x, NULL), ans)
+  sort(ans)
 }
+
 hasindex = function(x, by, retGrp=FALSE) {
   index = attr(x, "index", TRUE)
   if (is.null(index)) return(FALSE)
