@@ -4,9 +4,9 @@
 SEXP copyCols(SEXP x, SEXP cols) {
   // used in R/mergelist.R
   if (!isDataTable(x))
-    error("'x' must be a data.table"); // # nocov
+    internal_error(__func__, "'x' must be a data.table"); // # nocov
   if (!isInteger(cols))
-    error("'cols' must be integer"); // # nocov
+    internal_error(__func__, "'cols' must be integer"); // # nocov
   int nx = length(x), ncols = LENGTH(cols), *colsp = INTEGER(cols);
   if (!nx || !ncols)
     return R_NilValue;
@@ -19,26 +19,21 @@ SEXP copyCols(SEXP x, SEXP cols) {
 
 void mergeIndexAttrib(SEXP to, SEXP from) {
   if (!isInteger(to) || LENGTH(to)!=0)
-    error("'to' must be integer() already"); // # nocov
+    internal_error(__func__, "'to' must be integer() already"); // # nocov
   if (isNull(from))
     return;
   SEXP t = ATTRIB(to), f = ATTRIB(from);
-  if (isNull(f))
-    return;
-  if (isNull(t))
+  if (isNull(t)) // target has no attributes -> overwrite
     SET_ATTRIB(to, shallow_duplicate(f));
   else {
-    for (t = ATTRIB(to); CDR(t) != R_NilValue; t = CDR(t));
+    for (t = ATTRIB(to); CDR(t) != R_NilValue; t = CDR(t)); // traverse to end of attributes list of to
     SETCDR(t, shallow_duplicate(f));
   }
-  return;
 }
 
 SEXP cbindlist(SEXP x, SEXP copyArg) {
-  if (!isNewList(x) || INHERITS(x, char_dataframe))
-    error("'x' must be a list");
-  if (!IS_TRUE_OR_FALSE(copyArg))
-    error("'copy' must be TRUE or FALSE");
+  if (!isNewList(x) || isFrame(x))
+    error(_("'%s' must be a list"), "x");
   bool copy = (bool)LOGICAL(copyArg)[0];
   const bool verbose = GetVerbose();
   double tic = 0;
@@ -49,22 +44,22 @@ SEXP cbindlist(SEXP x, SEXP copyArg) {
   for (int i=0; i<nx; ++i) {
     SEXP thisx = VECTOR_ELT(x, i);
     if (!perhapsDataTable(thisx))
-      error("The %d element of 'l' list is not of data.table type", i+1);
-    nnx[i] = NCOL(thisx);
+      error(_("Element %d of 'l' list is not a data.table."), i+1);
+    nnx[i] = n_columns(thisx);
     if (!nnx[i])
       continue;
-    int thisnr = NROW(thisx);
+    int thisnr = n_rows(thisx);
     if (nr < 0) // first (non-zero length table) iteration
       nr = thisnr;
     else if (nr != thisnr) {
       if (!copy)
-        error("For copy=FALSE all non-zero length tables in 'l' has to have equal nrow, element %d has different nrow (%d) than the previous non-zero length element nrow (%d)", i+1, thisnr, nr);
+        error(_("For copy=FALSE all non-empty tables in 'l' have to have the same number of rows, but l[[%d]] has %d rows which differs from the previous non-zero number of rows (%d)."), i+1, thisnr, nr);
       recycle = true;
     }
     nans += nnx[i];
   }
   if (recycle)
-    error("Rows recycling for objects of different nrow is not yet implemented"); // dont we have a routines for that already somewhere?
+    error(_("Recycling rows is not yet implemented.")); // dont we have a routines for that already somewhere?
   SEXP ans = PROTECT(allocVector(VECSXP, nans));
   SEXP index = PROTECT(allocVector(INTSXP, 0));
   SEXP key = R_NilValue;
@@ -87,12 +82,14 @@ SEXP cbindlist(SEXP x, SEXP copyArg) {
     mergeIndexAttrib(index, getAttrib(thisx, sym_index));
     if (isNull(key)) // first key is retained
       key = getAttrib(thisx, sym_sorted);
-    UNPROTECT(protecti);
+    UNPROTECT(protecti); // thisnames, thisxcol
   }
+  if (isNull(ATTRIB(index)))
+    setAttrib(ans, sym_index, R_NilValue);
   setAttrib(ans, R_NamesSymbol, names);
   setAttrib(ans, sym_sorted, key);
   if (verbose)
-    Rprintf("cbindlist: took %.3fs\n", omp_get_wtime()-tic);
-  UNPROTECT(3);
+    Rprintf(_("cbindlist: took %.3fs\n"), omp_get_wtime()-tic);
+  UNPROTECT(3); // ans, index, names
   return ans;
 }

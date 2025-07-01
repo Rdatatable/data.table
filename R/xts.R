@@ -1,3 +1,4 @@
+# nocov start. See tests 18.* in other.Rraw, not in the main suite.
 as.data.table.xts = function(x, keep.rownames = TRUE, key=NULL, ...) {
   stopifnot(requireNamespace("xts"), !missing(x), xts::is.xts(x))
   if (length(keep.rownames) != 1L) stopf("keep.rownames must be length 1")
@@ -18,11 +19,12 @@ as.data.table.xts = function(x, keep.rownames = TRUE, key=NULL, ...) {
 as.xts.data.table = function(x, numeric.only = TRUE, ...) {
   stopifnot(requireNamespace("xts"), !missing(x), is.data.table(x))
   if (!xts::is.timeBased(x[[1L]])) stopf("data.table must have a time based column in first position, use `setcolorder` function to change the order, or see ?timeBased for supported types")
-  r <- x[, -1L]# exclude first col, xts index
+  r = x[, -1L]# exclude first col, xts index
   if (numeric.only) {
     colsNumeric = vapply_1b(r, is.numeric)
     if (!all(colsNumeric)) warningf("Following columns are not numeric and will be omitted: %s", brackify(names(colsNumeric)[!colsNumeric]))
-    r <- r[, .SD, .SDcols = names(colsNumeric)[colsNumeric]]
+    r = r[, .SD, .SDcols = names(colsNumeric)[colsNumeric]]
   }
-  return(xts::xts(as.matrix(r), order.by = if (inherits(x[[1L]], "IDate")) as.Date(x[[1L]]) else x[[1L]]))
+  xts::xts(as.matrix(r), order.by = if (inherits(x[[1L]], "IDate")) as.Date(x[[1L]]) else x[[1L]])
 }
+# nocov end

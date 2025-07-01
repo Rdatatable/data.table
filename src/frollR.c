@@ -86,7 +86,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
       }
     }
   }
-  int **ikl = (int**)R_alloc(nk, sizeof(int*));                 // to not recalculate `length(x[[i]])` we store it in extra array
+  int **ikl = (int**)R_alloc(nk, sizeof(*ikl));                 // to not recalculate `length(x[[i]])` we store it in extra array
   if (badaptive) {
     for (int j=0; j<nk; j++) ikl[j] = INTEGER(VECTOR_ELT(kl, j));
   }
@@ -99,7 +99,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   if (LOGICAL(hasna)[0]==FALSE && LOGICAL(narm)[0])
     error(_("using hasNA FALSE and na.rm TRUE does not make sense, if you know there are NA values use hasNA TRUE, otherwise leave it as default NA"));
 
-  int ialign;                                                   // decode align to integer
+  int ialign=-2;                                                   // decode align to integer
   if (!strcmp(CHAR(STRING_ELT(align, 0)), "right"))
     ialign = 1;
   else if (!strcmp(CHAR(STRING_ELT(align, 0)), "center"))
@@ -115,9 +115,9 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
   SEXP ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++; // allocate list to keep results
   if (verbose)
     Rprintf(_("%s: allocating memory for results %dx%d\n"), __func__, nx, nk);
-  ans_t *dans = (ans_t *)R_alloc(nx*nk, sizeof(ans_t));         // answer columns as array of ans_t struct
-  double** dx = (double**)R_alloc(nx, sizeof(double*));         // pointers to source columns
-  uint64_t* inx = (uint64_t*)R_alloc(nx, sizeof(uint64_t));     // to not recalculate `length(x[[i]])` we store it in extra array
+  ans_t *dans = (ans_t *)R_alloc(nx*nk, sizeof(*dans));         // answer columns as array of ans_t struct
+  double** dx = (double**)R_alloc(nx, sizeof(*dx));         // pointers to source columns
+  uint64_t* inx = (uint64_t*)R_alloc(nx, sizeof(*inx));     // to not recalculate `length(x[[i]])` we store it in extra array
   for (R_len_t i=0; i<nx; i++) {
     inx[i] = xlength(VECTOR_ELT(x, i));                         // for list input each vector can have different length
     for (R_len_t j=0; j<nk; j++) {
@@ -133,7 +133,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
     dx[i] = REAL(VECTOR_ELT(x, i));                             // assign source columns to C pointers
   }
 
-  enum {MEAN, SUM} sfun;
+  enum {MEAN, SUM} sfun=0;
   if (!strcmp(CHAR(STRING_ELT(fun, 0)), "mean")) {
     sfun = MEAN;
   } else if (!strcmp(CHAR(STRING_ELT(fun, 0)), "sum")) {
@@ -156,7 +156,7 @@ SEXP frollfunR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP algo, SEXP align, SEX
     LOGICAL(hasna)[0]==TRUE ? 1 :                               // hasna TRUE, might be some NAs
     -1;                                                         // hasna FALSE, there should be no NAs
 
-  unsigned int ialgo;                                           // decode algo to integer
+  unsigned int ialgo=-1;                                           // decode algo to integer
   if (!strcmp(CHAR(STRING_ELT(algo, 0)), "fast"))
     ialgo = 0;                                                  // fast = 0
   else if (!strcmp(CHAR(STRING_ELT(algo, 0)), "exact"))
@@ -229,7 +229,7 @@ SEXP frollapplyR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP rho) {
 
   if (!isInteger(k)) {
     if (isReal(k)) {
-      if (isRealReallyInt(k)) {
+      if (fitsInInt32(k)) {
         SEXP ik = PROTECT(coerceVector(k, INTSXP)); protecti++;
         k = ik;
       } else {
@@ -244,7 +244,7 @@ SEXP frollapplyR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP rho) {
     error(_("n must be non 0 length"));
   int *ik = INTEGER(k);
 
-  int ialign;
+  int ialign=-2;
   if (!strcmp(CHAR(STRING_ELT(align, 0)), "right")) {
     ialign = 1;
   } else if (!strcmp(CHAR(STRING_ELT(align, 0)), "center")) {
@@ -265,9 +265,9 @@ SEXP frollapplyR(SEXP fun, SEXP obj, SEXP k, SEXP fill, SEXP align, SEXP rho) {
   SEXP ans = PROTECT(allocVector(VECSXP, nk * nx)); protecti++;
   if (verbose)
     Rprintf(_("%s: allocating memory for results %dx%d\n"), __func__, nx, nk);
-  ans_t *dans = (ans_t *)R_alloc(nx*nk, sizeof(ans_t));
-  double** dx = (double**)R_alloc(nx, sizeof(double*));
-  uint64_t* inx = (uint64_t*)R_alloc(nx, sizeof(uint64_t));
+  ans_t *dans = (ans_t *)R_alloc(nx*nk, sizeof(*dans));
+  double** dx = (double**)R_alloc(nx, sizeof(*dx));
+  uint64_t* inx = (uint64_t*)R_alloc(nx, sizeof(*inx));
   for (R_len_t i=0; i<nx; i++) {
     inx[i] = xlength(VECTOR_ELT(x, i));
     for (R_len_t j=0; j<nk; j++) {

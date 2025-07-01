@@ -31,8 +31,7 @@ it does so in "C-locale". This has some subtle implications; see Examples.
 out what level of optimisation is required. The default value \code{Inf}
 activates \emph{all} available optimisations.
 
-At optimisation level \code{>= 1}, i.e., \code{getOption("datatable.optimize")}
->= 1, these are the optimisations:
+For \code{getOption("datatable.optimize") >= 1}, these are the optimisations:
 
 \itemize{
     \item The base function \code{order} is internally replaced with
@@ -52,7 +51,7 @@ At optimisation level \code{>= 1}, i.e., \code{getOption("datatable.optimize")}
     is an S3 generic and gets slow with many groups.
 }
 
-At optimisation level \code{>= 2}, i.e., \code{getOption("datatable.optimize")} >= 2, additional optimisations are implemented on top of the optimisations already shown above.
+For \code{getOption("datatable.optimize") >= 2}, additional optimisations are implemented on top of the optimisations already shown above.
 
 \itemize{
 
@@ -81,7 +80,7 @@ At optimisation level \code{>= 2}, i.e., \code{getOption("datatable.optimize")} 
     discussed above.
 }
 
-At optimisation level \code{>= 3}, i.e., \code{getOption("datatable.optimize")} >= 3, additional optimisations for subsets in i are implemented on top of the optimisations already shown above. Subsetting operations are - if possible - translated into joins to make use of blazing fast binary search using indices and keys. The following queries are optimized:
+For \code{getOption("datatable.optimize") >= 3}, additional optimisations for subsets in i are implemented on top of the optimisations already shown above. Subsetting operations are - if possible - translated into joins to make use of blazing fast binary search using indices and keys. The following queries are optimized:
 
 \itemize{
 

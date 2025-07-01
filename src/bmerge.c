@@ -67,13 +67,13 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP r
     if (xcols[col]==NA_INTEGER)
       internal_error(__func__, "xcols[%d] is NA", col); // # nocov
     if (icols[col]>LENGTH(idt) || icols[col]<1)
-      error(_("icols[%d]=%d outside range [1,length(i)=%d]"), col, icols[col], LENGTH(idt));
+      internal_error(__func__, "icols[%d]=%d outside range [1,length(i)=%d]", col, icols[col], LENGTH(idt)); // # nocov. Should have been caught already.
     if (xcols[col]>LENGTH(xdt) || xcols[col]<1)
-      error(_("xcols[%d]=%d outside range [1,length(x)=%d]"), col, xcols[col], LENGTH(xdt));
+      internal_error(__func__, "xcols[%d]=%d outside range [1,length(x)=%d]", col, xcols[col], LENGTH(xdt)); // # nocov
     int it = TYPEOF(VECTOR_ELT(idt, icols[col]-1));
     int xt = TYPEOF(VECTOR_ELT(xdt, xcols[col]-1));
     if (iN && it!=xt)
-      error(_("typeof x.%s (%s) != typeof i.%s (%s)"), CHAR(STRING_ELT(getAttrib(xdt,R_NamesSymbol),xcols[col]-1)), type2char(xt), CHAR(STRING_ELT(getAttrib(idt,R_NamesSymbol),icols[col]-1)), type2char(it));
+      error("typeof x.%s (%s) != typeof i.%s (%s)", CHAR(STRING_ELT(getAttrib(xdt,R_NamesSymbol),xcols[col]-1)), type2char(xt), CHAR(STRING_ELT(getAttrib(idt,R_NamesSymbol),icols[col]-1)), type2char(it)); // # notranslate
     if (iN && it!=LGLSXP && it!=INTSXP && it!=REALSXP && it!=STRSXP)
       error(_("Type '%s' is not supported for joining/merging"), type2char(it));
   }
@@ -81,8 +81,8 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP r
   // rollArg, rollendsArg
   roll = 0.0; rollToNearest = FALSE;
   if (isString(rollarg)) {
-    if (strcmp(CHAR(STRING_ELT(rollarg,0)),"nearest") != 0)
-      error(_("roll is character but not 'nearest'"));
+    if (strcmp(CHAR(STRING_ELT(rollarg, 0)), "nearest") != 0)
+      internal_error(__func__, "roll is character but not 'nearest'"); // # nocov. Only [.data.table exposes roll= directly, and this is already checked there.
     if (ncol>0 && TYPEOF(VECTOR_ELT(idt, icols[ncol-1]-1))==STRSXP)
       error(_("roll='nearest' can't be applied to a character column, yet."));
     roll=1.0; rollToNearest=TRUE;       // the 1.0 here is just any non-0.0, so roll!=0.0 can be used later
@@ -179,7 +179,8 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP r
   protecti += 2;
 
   SEXP ascArg = PROTECT(ScalarInteger(1));
-  SEXP oSxp = PROTECT(forderReuseSorting(idt, icolsArg, /* retGrpArg= */ScalarLogical(FALSE), /* retStatsArg= */ScalarLogical(FALSE), /* sortGroupsArg= */ScalarLogical(TRUE), ascArg, /* naArg= */ScalarLogical(FALSE), /* reuseSortingArg= */ScalarLogical(TRUE))); protecti++;
+  SEXP reuseSortingArg = INHERITS(idt, char_datatable) ? ScalarLogical(TRUE) : ScalarLogical(FALSE);
+  SEXP oSxp = PROTECT(forderReuseSorting(idt, icolsArg, /* retGrpArg= */ScalarLogical(FALSE), /* retStatsArg= */ScalarLogical(FALSE), /* sortGroupsArg= */ScalarLogical(TRUE), ascArg, /* naArg= */ScalarLogical(FALSE), reuseSortingArg)); protecti++;
   UNPROTECT(2); // down stack to 'ascArg'
   PROTECT(oSxp);
 
@@ -205,7 +206,7 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP r
       bmerge_r(-1,xN,-1,iN,scols,kk+1,1,1);
     }
     if (verbose)
-      Rprintf("bmerge: looping bmerge_r took %.3fs\n", omp_get_wtime()-tic0);
+      Rprintf(_("bmerge: looping bmerge_r took %.3fs\n"), omp_get_wtime()-tic0);
   }
   ctr += iN;
   if (nqmaxgrp > 1 && mult == ALL) {
@@ -237,7 +238,7 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP r
     R_Free(retIndex);
   }
   if (verbose)
-    Rprintf("bmerge: took %.3fs\n", omp_get_wtime()-tic);
+    Rprintf(_("bmerge: took %.3fs\n"), omp_get_wtime()-tic);
   UNPROTECT(protecti);
   return (ans);
 }
@@ -399,8 +400,8 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     }
     break;
   // supported types were checked up front to avoid handling an error here in (future) parallel region
-  default:
-    error(_("Type '%s' is not supported for joining/merging"), type2char(TYPEOF(xc)));
+  default: // # nocov
+    internal_error("Invalid join/merge type '%s' should have been caught earlier", type2char(TYPEOF(xc))); // # nocov
   }
 
   if (xlow<xupp-1 || rollLow || rollUpp) { // if value found, xlow and xupp surround it, unlike standard binary search where low falls on it

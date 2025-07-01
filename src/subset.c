@@ -79,7 +79,7 @@ void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
       for (int i=0; i<n; i++) {                     SET_STRING_ELT(ans, i, sp[idxp[i]-1]); }
     }
   } break;
-  case VECSXP : {
+  case VECSXP: case EXPRSXP: {
     const SEXP *sp = SEXPPTR_RO(source);
     if (anyNA) {
       for (int i=0; i<n; i++) { int elem = idxp[i]; SET_VECTOR_ELT(ans, i, elem==NA_INTEGER ? R_NilValue : sp[elem-1]); }
@@ -97,7 +97,7 @@ void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
     Rbyte *ap = RAW(ans);
     PARLOOP(0)
   } break;
-  default :
+  default : // # nocov
     internal_error(__func__, "column type '%s' not supported by data.table subset, but all known types are supported", type2char(TYPEOF(source)));  // # nocov
   }
 }
@@ -215,7 +215,7 @@ SEXP convertNegAndZeroIdx(SEXP idx, SEXP maxArg, SEXP allowOverMax, SEXP allowNA
     }
   } else {
     // idx is all negative without any NA but perhaps some zeros
-    bool *keep = (bool *)R_alloc(max, sizeof(bool));    // 4 times less memory that INTSXP in src/main/subscript.c
+    bool *keep = (bool *)R_alloc(max, sizeof(*keep));    // 4 times less memory that INTSXP in src/main/subscript.c
     for (int i=0; i<max; i++) keep[i] = true;
     int countRemoved=0, countDup=0, countBeyond=0;   // idx=c(-10,-5,-10) removing row 10 twice
     int firstBeyond=0, firstDup=0;
@@ -272,8 +272,9 @@ static void checkCol(SEXP col, int colNum, int nrow, SEXP x)
 *   2) Originally for subsetting vectors in fcast and now the beginnings of [.data.table ported to C
 *   3) Immediate need is for R 3.1 as lglVec[1] now returns R's global TRUE and we don't want := to change that global [think 1 row data.tables]
 *   4) Could do it other ways but may as well go to C now as we were going to do that anyway
+*
+*  OpenMP is used here to parallelize the loops that perform the subsetting of vectors, with conditional checks and filtering of data. 
 */
-
 SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md and man/cdt.Rd
   int nprotect=0;
   if (!isNewList(x)) internal_error(__func__, "Argument '%s' to %s is type '%s' not '%s'", "x", "CsubsetDT", type2char(TYPEOF(rows)), "list"); // # nocov
@@ -286,7 +287,7 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md
     SEXP max = PROTECT(ScalarInteger(nrow)); nprotect++;
     rows = PROTECT(convertNegAndZeroIdx(rows, max, ScalarLogical(TRUE), ScalarLogical(TRUE))); nprotect++;
     const char *err = check_idx(rows, nrow, &anyNA, &orderedSubset);
-    if (err!=NULL) error("%s", err);
+    if (err!=NULL) error("%s", err); // # notranslate
   }
 
   if (!isInteger(cols)) internal_error(__func__, "Argument '%s' to %s is type '%s' not '%s'", "cols", "Csubset", type2char(TYPEOF(cols)), "integer"); // # nocov
@@ -295,7 +296,7 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md
     if (this<1 || this>LENGTH(x)) error(_("Item %d of cols is %d which is outside the range [1,ncol(x)=%d]"), i+1, this, LENGTH(x));
   }
 
-  int overAlloc = checkOverAlloc(GetOption(install("datatable.alloccol"), R_NilValue));
+  int overAlloc = checkOverAlloc(GetOption1(install("datatable.alloccol")));
   SEXP ans = PROTECT(allocVector(VECSXP, LENGTH(cols)+overAlloc)); nprotect++;  // doing alloc.col directly here; eventually alloc.col can be deprecated.
 
   // user-defined and superclass attributes get copied as from v1.12.0
@@ -375,4 +376,3 @@ SEXP subsetVector(SEXP x, SEXP idx) { // idx is 1-based passed from R level
   UNPROTECT(nprotect);
   return ans;
 }
-
