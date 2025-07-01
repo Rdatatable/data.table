@@ -8,7 +8,7 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
   test = data.table:::test
 }
 
-# cbindlist
+# cbindlist, setcbindlist
 
 local({
   l = list(
@@ -20,7 +20,7 @@ local({
   expected = data.table(l$d1, l$d2, l$d3)
   test(11.01, ans, expected)
   test(11.02, intersect(vapply(ans, address, ""), unlist(lapply(l, vapply, address, ""))), character())
-  ans = cbindlist(l, copy=FALSE)
+  ans = setcbindlist(l)
   expected = setDT(c(l$d1, l$d2, l$d3))
   test(11.03, ans, expected)
   test(11.04, length(intersect(vapply(ans, address, ""), unlist(lapply(l, vapply, address, "")))), ncol(expected))
@@ -49,8 +49,8 @@ test(12.12, cbind(data.table(x=integer()), data.table(a=1:2)), data.table(x=c(NA
 test(12.13, cbind(data.table(x=1L), data.table(a=1:2)), data.table(x=c(1L, 1L), a=1:2))
 test(12.14, cbindlist(list(data.table(a=integer()), data.table(b=1:2))), error="Recycling.*not yet implemented")
 test(12.15, cbindlist(list(data.table(a=1L), data.table(b=1:2))), error="Recycling.*not yet implemented")
-test(12.16, cbindlist(list(data.table(a=integer()), data.table(b=1:2)), copy=FALSE), error="have to have the same number of rows")
-test(12.17, cbindlist(list(data.table(a=1L), data.table(b=1:2)), copy=FALSE), error="have to have the same number of rows")
+test(12.16, setcbindlist(list(data.table(a=integer()), data.table(b=1:2))), error="have to have the same number of rows")
+test(12.17, setcbindlist(list(data.table(a=1L), data.table(b=1:2))), error="have to have the same number of rows")
 
 ## retain indices
 local({
@@ -63,9 +63,9 @@ local({
   setkeyv(l[[1L]], "id1"); setindexv(l[[1L]], list("id1", "id2", "id3", c("id1","id2","id3"))); setindexv(l[[3L]], list("id6", "id7")); setindexv(l[[4L]], "id9")
   ii = lapply(l, indices)
   ans = cbindlist(l)
-  test(13.04, key(ans), "id1")
-  test(13.05, indices(ans), c("id1", "id2", "id3", "id1__id2__id3", "id6", "id7", "id9"))
-  test(13.06, ii, lapply(l, indices)) ## this tests that original indices have not been touched, shallow_duplicate in mergeIndexAttrib
+  test(13.01, key(ans), "id1")
+  test(13.02, indices(ans), c("id1", "id2", "id3", "id1__id2__id3", "id6", "id7", "id9"))
+  test(13.03, ii, lapply(l, indices)) ## this tests that original indices have not been touched, shallow_duplicate in mergeIndexAttrib
 })
-test(13.07, cbindlist(list(data.table(a=1:2), data.table(b=3:4, key="b"))), data.table(a=1:2, b=3:4, key="b"))
-# test(13.08, cbindlist(list(data.table(a=1:2, key="a"), data.table(b=3:4, key="b"))), data.table(a=1:2, b=3:4, key=c("a", "b")))
+test(13.04, cbindlist(list(data.table(a=1:2), data.table(b=3:4, key="b"))), data.table(a=1:2, b=3:4, key="b"))
+# test(13.05, cbindlist(list(data.table(a=1:2, key="a"), data.table(b=3:4, key="b"))), data.table(a=1:2, b=3:4, key=c("a", "b")))
