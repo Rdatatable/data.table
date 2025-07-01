@@ -19,7 +19,7 @@ static const char *sep2start, *sep2end;
 // if there are no list columns, set sep2=='\0'
 // Non-agnostic helpers ...
 
-const char *getString(const SEXP *col, int64_t row) {   // TODO: inline for use in fwrite.c
+const char *getString(const SEXP *col, int64_t row) {   // todo: inline for use in fwrite.c
   SEXP x = col[row];
   return x==NA_STRING ? NULL : ENCODED_CHAR(x);
 }

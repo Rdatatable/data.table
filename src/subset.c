@@ -69,7 +69,7 @@ void subsetVectorRaw(SEXP ans, SEXP source, SEXP idx, const bool anyNA)
     // To go parallel here would need access to NODE_IS_OLDER, at least. Given gcgen, mark and named
     // are upper bounded and max 3, REFCNT==REFCNTMAX could be checked first and then critical SET_ if not.
     // Inside that critical just before SET_ it could check REFCNT<REFCNTMAX still held. Similarly for gcgen.
-    // TODO - discuss with Luke Tierney. Produce benchmarks on integer/double to see if it's worth making a safe
+    // todo: discuss with Luke Tierney. Produce benchmarks on integer/double to see if it's worth making a safe
     //        API interface for package use for STRSXP.
     // Aside: setkey() is a separate special case (a permutation) and does do this in parallel without using SET_*.
     const SEXP *sp = SEXPPTR_RO(source);
@@ -113,7 +113,7 @@ const char *check_idx(SEXP idx, int max, bool *anyNA_out, bool *orderedSubset_ou
   int *idxp = INTEGER(idx), n=LENGTH(idx);
   for (int i=0; i<n; i++) {
     int elem = idxp[i];
-    if (elem<=0 && elem!=NA_INTEGER) return "Internal inefficiency: idx contains negatives or zeros. Should have been dealt with earlier.";  // e.g. test 762  (TODO-fix)
+    if (elem<=0 && elem!=NA_INTEGER) return "Internal inefficiency: idx contains negatives or zeros. Should have been dealt with earlier.";  // e.g. test 762  (todo: fix)
     if (elem>max) return "Internal inefficiency: idx contains an item out-of-range. Should have been dealt with earlier.";                   // e.g. test 1639.64
     anyNA |= elem==NA_INTEGER;
     anyLess |= elem<last;
@@ -315,7 +315,7 @@ SEXP subsetDT(SEXP x, SEXP rows, SEXP cols) { // API change needs update NEWS.md
       SEXP thisCol = VECTOR_ELT(x, colD[i]-1);
       checkCol(thisCol, colD[i], nrow, x);
       SET_VECTOR_ELT(ans, i, copyAsPlain(thisCol));
-      // materialize the column subset as we have always done for now, until REFCNT is on by default in R (TODO)
+      // todo: materialize the column subset as we have always done for now, until REFCNT is on by default in R
     }
   } else {
     ansn = LENGTH(rows);  // has been checked not to contain zeros or negatives, so this length is the length of result

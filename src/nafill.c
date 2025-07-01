@@ -139,7 +139,7 @@ SEXP nafillR(SEXP obj, SEXP type, SEXP fill, SEXP nan_is_na_arg, SEXP inplace, S
   for (R_len_t i=0; i<nx; i++) {
     const SEXP xi = VECTOR_ELT(x, i);
     inx[i] = xlength(xi);
-    // not sure why these pointers are being constructed like this; TODO: simplify structure // A: because they are used in `ans_t` struct, strictly speaking, one of them, the expected one, is used in that struct.
+    // not sure why these pointers are being constructed like this; todo: simplify structure // A: because they are used in `ans_t` struct, strictly speaking, one of them, the expected one, is used in that struct.
     if (isReal(xi)) {
       dx[i] = REAL(xi);
       i64x[i] = (int64_t *)REAL(xi);

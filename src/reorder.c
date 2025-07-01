@@ -40,7 +40,7 @@ SEXP reorder(SEXP x, SEXP order)
   if (length(order) != nrow)
     error("nrow(x)[%d]!=length(order)[%d]", nrow, length(order)); // # notranslate
   int nprotect = 0;
-  if (ALTREP(order)) { order=PROTECT(copyAsPlain(order)); nprotect++; }  // TODO: if it's an ALTREP sequence some optimizations are possible rather than expand
+  if (ALTREP(order)) { order=PROTECT(copyAsPlain(order)); nprotect++; }  // todo: if it's an ALTREP sequence some optimizations are possible rather than expand
 
   const int *restrict idx = INTEGER(order);
   int i=0;

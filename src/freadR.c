@@ -480,7 +480,7 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
     if (none) setAttrib(DT, sym_colClassesAs, R_NilValue);
     else if (selectRank) setAttrib(DT, sym_colClassesAs, subsetVector(colClassesAs, selectRank));  // reorder the colClassesAs
   }
-  // TODO: move DT size calculation into a separate function (since the final size is different from the initial size anyways)
+  // todo: move DT size calculation into a separate function (since the final size is different from the initial size anyways)
   size_t DTbytes = RTYPE_SIZEOF(DT)*(ncol-ndrop)*2; // the VECSXP and its column names (exclude global character cache usage)
 
   // For each column we could have one of the following cases:
@@ -612,7 +612,7 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx)
             }
             source += cnt8;
           }
-          done++; // if just one string col near the start, don't loop over the other 10,000 cols. TODO? start on first too
+          done++; // if just one string col near the start, don't loop over the other 10,000 cols. todo: start on first too
         }
         off8 += (size[j] == 8);
       }
@@ -712,7 +712,7 @@ void progress(int p, int eta) {
 
 void halt__(bool warn, const char *format, ...) {
   // Solves: http://stackoverflow.com/questions/18597123/fread-data-table-locks-files
-  // TODO: always include fnam in the STOP message. For log files etc.
+  // todo: always include fnam in the STOP message. For log files etc.
   va_list args;
   va_start(args, format);
   char msg[2000];

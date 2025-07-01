@@ -1,8 +1,8 @@
 #include "data.table.h"
 
-#define INSERT_THRESH 200  // TODO: expose via api and test
+#define INSERT_THRESH 200  // tpdo: expose via api and test
 
-static void dinsert(double *x, const int n) {   // TODO: if and when twiddled, double => ull
+static void dinsert(double *x, const int n) {   // todo: if and when twiddled, double => ull
   if (n<2) return;
   for (int i=1; i<n; ++i) {
     double xtmp = x[i];
@@ -119,13 +119,13 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
     error(_("%s must be TRUE or FALSE"), "verbose");
   int verbose = LOGICAL(verboseArg)[0];
   if (!isNumeric(x)) error(_("x must be a vector of type double currently"));
-  // TODO: not only detect if already sorted, but if it is, just return x to save the duplicate
+  // todo: not only detect if already sorted, but if it is, just return x to save the duplicate
 
   SEXP ansVec = PROTECT(allocVector(REALSXP, xlength(x)));
   int nprotect = 1;
   double *ans = REAL(ansVec);
   // allocate early in case fails if not enough RAM
-  // TODO: document this is much cheaper than a copy followed by in-place.
+  // todo: document this is much cheaper than a copy followed by in-place.
 
   int nth = getDTthreads(xlength(x), true);
   int nBatch=nth*2;  // at least nth; more to reduce last-man-home; but not too large to keep counts small in cache
@@ -154,7 +154,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
     double myMin=*d, myMax=*d;
     d++;
     for (uint64_t j=1; j<thisLen; ++j) {
-      // TODO: test for sortedness here as well.
+      // todo: test for sortedness here as well.
       if (*d<myMin) myMin=*d;
       else if (*d>myMax) myMax=*d;
       d++;
@@ -165,14 +165,14 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   t[2] = wallclock();
   double min=mins[0], max=maxs[0];
   for (int i=1; i<nBatch; ++i) {
-    // TODO: if boundaries are sorted then we only need sort the unsorted batches known above
+    // todo: if boundaries are sorted then we only need sort the unsorted batches known above
     if (mins[i]<min) min=mins[i];
     if (maxs[i]>max) max=maxs[i];
   }
   free(mins); free(maxs);
   if (verbose) Rprintf(_("Range = [%g,%g]\n"), min, max);
   if (min < 0.0) error(_("Cannot yet handle negatives."));
-  // TODO: -0ULL should allow negatives
+  // todo: -0ULL should allow negatives
   //       avoid twiddle function call as expensive in recent tests (0.34 vs 2.7)
   //       possibly twiddle once to *ans, then untwiddle at the end in a fast parallel sweep
 
@@ -232,7 +232,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
       ansi64[ thisCounts[(*source - minULL) >> shift]++ ] = *source;
       // This assignment to ans is not random access as it may seem, but cache efficient by
       // design since target pages are written to contiguously. MSBsize * 4k < cache.
-      // TODO: therefore 16 bit MSB seems too big for this step. Time this step and reduce 16 a lot.
+      // todo: therefore 16 bit MSB seems too big for this step. Time this step and reduce 16 a lot.
       //       20MB cache / nth / 4k => MSBsize=160
       source++;
     }
@@ -260,7 +260,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
     qsort_data = msbCounts;
     qsort(order, MSBsize, sizeof(int), qsort_cmp);  // find order of the sizes, largest first
     // Would have liked to define qsort_cmp() inside this function right here, but not sure that's fully portable.
-    // TODO: time this qsort but likely insignificant.
+    // todo: time this qsort but likely insignificant.
 
     if (verbose) {
       Rprintf(_("Top 20 MSB counts: ")); for(int i=0; i<MIN(MSBsize,20); i++) Rprintf(_("%"PRId64" "), (int64_t)msbCounts[order[i]]); Rprintf(_("\n"));
@@ -336,7 +336,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   }
   t[7] = wallclock();
 
-  // TODO: parallel sweep to check sorted using <= on original input. Feasible that twiddling messed up.
+  // todo: parallel sweep to check sorted using <= on original input. Feasible that twiddling messed up.
   //       After a few years of heavy use remove this check for speed, and move into unit tests.
   //       It's a perfectly contiguous and cache efficient parallel scan so should be relatively negligible.
 

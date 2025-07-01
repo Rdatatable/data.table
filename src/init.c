@@ -310,7 +310,7 @@ inline long long DtoLL(double x) {
   // is undefined by C standards. This may have been the cause of 1.10.2 failing on 31 Jan 2017
   // under clang 3.9.1 -O3 and solaris-sparc but not solaris-x86 or gcc.
   // There is now a grep in CRAN_Release.cmd; use this union method instead.
-  // int64_t may help rather than 'long long' (TODO: replace all long long with int64_t)
+  // int64_t may help rather than 'long long' (todo: replace all long long with int64_t)
   // The two types must be the same size. That is checked in R_init_data_table (above)
   // where sizeof(int64_t)==sizeof(double)==8 is checked.
   // Endianness should not matter because whether big or little, endianness is the same

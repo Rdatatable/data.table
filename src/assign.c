@@ -78,7 +78,7 @@ closest I got to getting it to pass all tests :
   setAttrib(x, SelfRefSymbol, p = R_MakeExternalPtr(
     R_NilValue,         // for identical() to return TRUE. identical() doesn't look at tag and prot
     R_NilValue, //getAttrib(x, R_NamesSymbol), // to detect if names has been replaced and its tl lost, e.g. setattr(DT,"names",...)
-    PROTECT(            // needed when --enable-strict-barrier it seems, iiuc. TO DO: test under that flag and remove if not needed.
+    PROTECT(            // needed when --enable-strict-barrier it seems, iiuc. todo: test under that flag and remove if not needed.
       env               // wrap x in env to avoid an infinite loop in object.size() if prot=x were here
     )
   ));
@@ -151,10 +151,10 @@ static SEXP shallow(SEXP dt, SEXP cols, R_len_t n)
   // called from alloccol where n is checked carefully, or from shallow() at R level
   // where n is set to truelength (i.e. a shallow copy only with no size change)
   int protecti=0;
-  SEXP newdt = PROTECT(allocVector(VECSXP, n)); protecti++;   // to do, use growVector here?
+  SEXP newdt = PROTECT(allocVector(VECSXP, n)); protecti++;   // todo: use growVector here?
   SHALLOW_DUPLICATE_ATTRIB(newdt, dt);
 
-  // TO DO: keepattr() would be faster, but can't because shallow isn't merely a shallow copy. It
+  // todo: keepattr() would be faster, but can't because shallow isn't merely a shallow copy. It
   //        also increases truelength. Perhaps make that distinction, then, and split out, but marked
   //        so that the next change knows to duplicate.
   //        keepattr() also merely points to the entire attributes list and thus doesn't allow replacing
@@ -255,7 +255,7 @@ SEXP alloccol(SEXP dt, R_len_t n, Rboolean verbose)
   if (!selfrefok(dt,verbose))
     return shallow(dt,R_NilValue,(n>l) ? n : l);  // e.g. test 848 and 851 in R > 3.0.2
     // added (n>l) ? ... for #970, see test 1481.
-  // TO DO:  test realloc names if selfrefnamesok (users can setattr(x,"name") themselves for example.
+  // todo:  test realloc names if selfrefnamesok (users can setattr(x,"name") themselves for example.
   // if (TRUELENGTH(getAttrib(dt,R_NamesSymbol))!=tl)
   //    internal_error(__func__, "tl of dt passes checks, but tl of names (%d) != tl of dt (%d)", tl, TRUELENGTH(getAttrib(dt,R_NamesSymbol))); // # nocov
 
@@ -377,7 +377,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
       if (rowsd[i]>=0) numToDo++;
     }
     if (verbose) Rprintf(_("Assigning to %d row subset of %d rows\n"), numToDo, nrow);
-    // TODO: include in message if any rows are assigned several times (e.g. by=.EACHI with dups in i)
+    // todo: include in message if any rows are assigned several times (e.g. by=.EACHI with dups in i)
     if (numToDo==0) {
       // isString(cols) is exclusive to calls from set()
       if (!length(newcolnames) && !isString(cols)) {
@@ -506,7 +506,7 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   // modify DT by reference. Other than if new columns are being added and the allocVec() fails with
   // out-of-memory. In that case the user will receive hard halt and know to rerun.
   if (length(newcolnames)) {
-    oldtncol = TRUELENGTH(dt);   // TO DO: oldtncol can be just called tl now, as we won't realloc here any more.
+    oldtncol = TRUELENGTH(dt);   // todo: oldtncol can be just called tl now, as we won't realloc here any more.
 
     if (oldtncol<oldncol) {
       if (oldtncol==0) error(_("This data.table has either been loaded from disk (e.g. using readRDS()/load()) or constructed manually (e.g. using structure()). Please run setDT() or setalloccol() on it first (to pre-allocate space for new columns) before assigning by reference to it."));   // #2996
@@ -1258,7 +1258,7 @@ SEXP allocNAVector(SEXPTYPE type, R_len_t n)
 
 SEXP allocNAVectorLike(SEXP x, R_len_t n) {
   // writeNA needs the attribute retained to write NA_INTEGER64, #3723
-  // TODO: remove allocNAVector above when usage in fastmean.c, fcast.c and fmelt.c can be adjusted; see comments in PR3724
+  // todo: remove allocNAVector above when usage in fastmean.c, fcast.c and fmelt.c can be adjusted; see comments in PR3724
   SEXP v = PROTECT(allocVector(TYPEOF(x), n));
   copyMostAttrib(x, v);
   writeNA(v, 0, n, false);

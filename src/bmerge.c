@@ -152,7 +152,7 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP r
   } else { // equi joins (or) non-equi join but no multiple matches
     retFirstArg = PROTECT(allocVector(INTSXP, anslen));
     retFirst = INTEGER(retFirstArg);
-    retLengthArg = PROTECT(allocVector(INTSXP, anslen)); // TODO: no need to allocate length at all when
+    retLengthArg = PROTECT(allocVector(INTSXP, anslen)); // todo: no need to allocate length at all when
     retLength = INTEGER(retLengthArg);                   // mult = "first" / "last"
     retIndexArg = PROTECT(allocVector(INTSXP, 0));
     retIndex = INTEGER(retIndexArg);
@@ -162,7 +162,7 @@ SEXP bmerge(SEXP idt, SEXP xdt, SEXP icolsArg, SEXP xcolsArg, SEXP xoArg, SEXP r
     // defaults need to populated here as bmerge_r may well not touch many locations, say if the last row of i is before the first row of x.
     retFirst[j] = nomatch;   // default to no match for NA goto below
   }
-  // retLength[j] = 0;   // TO DO: do this to save the branch below and later branches at R level to set .N to 0
+  // retLength[j] = 0;   // todo: do this to save the branch below and later branches at R level to set .N to 0
   int retLengthVal = (int)(nomatch != 0);
   for (int j=0; j<anslen; j++)
     retLength[j] = retLengthVal;
@@ -271,12 +271,12 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
       XVAL;                                                                                       \
       if (CMP1) {   /* relies on NA_INTEGER==INT_MIN, tested in init.c */                         \
         xlow=mid;                                                                                 \
-      } else if (CMP2)  {   /* TO DO: switch(sign(xval-ival)) ? */                                \
+      } else if (CMP2)  {   /* todo: switch(sign(xval-ival)) ? */                                \
         xupp=mid;                                                                                 \
       } else {                                                                                    \
         /* xval == ival  including NA_INTEGER==NA_INTEGER                                         \
            branch mid to find start and end of this group in this column                          \
-           TO DO?: not if mult=first|last and col<ncol-1 */                                       \
+           todo: not if mult=first|last and col<ncol-1 */                                       \
         int tmplow = mid;                                                                         \
         while (tmplow<xupp-1) {                                                                   \
           int mid = tmplow + (xupp-tmplow)/2;                                                     \
@@ -341,7 +341,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
       }                                                                                           \
     }                                                                                             \
     int tmplow = lir;                                                                             \
-    while (tmplow<iupp-1) { /* TO DO: could double up from lir rather than halving from iupp */   \
+    while (tmplow<iupp-1) { /* todo: could double up from lir rather than halving from iupp */   \
       int mid = tmplow + (iupp-tmplow)/2;                                                         \
       if (WRAP(icv[ o ? o[mid]-1 : mid ]) == IVAL) tmplow=mid; else iupp=mid;                     \
       /* if we could guarantee ivals to be *always* sorted for all columns independently          \
@@ -375,7 +375,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
     #define WRAP(x) (ENC2UTF8(x))
     DO(int tmp=StrCmp(ENC2UTF8(xcv[XIND(mid)]), ival), tmp<0, tmp>0, int, 0, 0, ival)
     // NA_STRING are allowed and joined to; does not do ENC2UTF8 again inside StrCmp
-    // TO DO: deal with mixed encodings and locale optionally; could StrCmp non-ascii in a thread-safe non-alloc manner
+    // todo: deal with mixed encodings and locale optionally; could StrCmp non-ascii in a thread-safe non-alloc manner
   } break;
   case REALSXP :
     if (INHERITS(xc, char_integer64)) {
@@ -391,7 +391,7 @@ void bmerge_r(int xlowIn, int xuppIn, int ilowIn, int iuppIn, int col, int thisg
       const double *icv = REAL(ic);
       const double *xcv = REAL(xc);
       const double ival = icv[ir];
-      const uint64_t ivalt = dtwiddle(ival); // TO: remove dtwiddle by dealing with NA, NaN, -Inf, +Inf up front
+      const uint64_t ivalt = dtwiddle(ival); // todo: remove dtwiddle by dealing with NA, NaN, -Inf, +Inf up front
       #undef ISNAT
       #undef WRAP
       #define ISNAT(x) (ISNAN(x))

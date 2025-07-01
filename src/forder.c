@@ -161,7 +161,7 @@ static void flush(void) {
 #endif
 
 // range_* functions return [min,max] of the non-NAs as common uint64_t type
-// TODO parallelize these; not a priority according to TIMING_ON though (contiguous read with prefetch)
+// todo: parallelize these; not a priority according to TIMING_ON though (contiguous read with prefetch)
 
 static void range_i32(const int32_t *x, const int n, uint64_t *out_min, uint64_t *out_max, int *out_na_count)
 {
@@ -577,7 +577,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
     }
     //Rprintf(_("sortType = %d\n"), sortType);
     switch(TYPEOF(x)) {
-    case INTSXP : case LGLSXP :  // TODO skip LGL and assume range [0,1]
+    case INTSXP : case LGLSXP :  // todo: skip LGL and assume range [0,1]
       range_i32(INTEGER(x), nrow, &min, &max, &na_count);
       break;
     case CPLXSXP : {
@@ -711,7 +711,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
     //     So, we may as well bit-pack as done above.
     //     Retaining appearance-order within key-byte-column is still advatangeous for when we do encounter column-grouped data (to avoid data movement); and
     //       the ordering will be appearance-order preserving in that case (just at the byte level).
-    // TODO: in future we could provide an option to return 'any' group order for efficiency, which would be the byte-appearance order. But for now, the
+    // todo: in future we could provide an option to return 'any' group order for efficiency, which would be the byte-appearance order. But for now, the
     //     the forder afterwards on o__[f__] (in [.data.table) is not significant.
 
     switch(TYPEOF(x)) {
@@ -720,7 +720,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
       #pragma omp parallel for num_threads(getDTthreads(nrow, true))
       for (int i=0; i<nrow; i++) {
         uint64_t elem=0;
-        if (xd[i]==NA_INTEGER) {  // TODO: go branchless if na_count==0
+        if (xd[i]==NA_INTEGER) {  // todo: go branchless if na_count==0
           if (nalast==-1) anso[i]=0;
           elem = naval;
         } else {
@@ -744,7 +744,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
           WRITE_KEY
         }
       } else {
-        double *xd = REAL(x);     // TODO: revisit double compression (skip bytes/mult by 10,100 etc) as currently it's often 6-8 bytes even for 3.14,3.15
+        double *xd = REAL(x);     // todo: revisit double compression (skip bytes/mult by 10,100 etc) as currently it's often 6-8 bytes even for 3.14,3.15
         #pragma omp parallel for num_threads(getDTthreads(nrow, true))
         for (int i=0; i<nrow; i++) {
           uint64_t elem=0;
@@ -755,7 +755,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
               elem = ISNA(xd[i]) ? naval : nanval;
             }
           } else {
-            elem = dtwiddle(xd[i]);  // TODO: could avoid twiddle() if all positive finite which could be known from range_d.
+            elem = dtwiddle(xd[i]);  // todo: could avoid twiddle() if all positive finite which could be known from range_d.
                                      //       also R_FINITE is repeated within dtwiddle() currently, wastefully given the if() above
           }
           WRITE_KEY
@@ -791,7 +791,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
   // global nth, TMP & UGRP
   nth = getDTthreads(nrow, true);  // this nth is relied on in cleanup(); throttle=true/false debated for #5077
   TMP =  malloc(sizeof(*TMP)*nth*UINT16_MAX); // used by counting sort (my_n<=65536) in radix_r()
-  UGRP = malloc(sizeof(*UGRP)*nth*256);                // TODO: align TMP and UGRP to cache lines (and do the same for stack allocations too)
+  UGRP = malloc(sizeof(*UGRP)*nth*256);                // todo: align TMP and UGRP to cache lines (and do the same for stack allocations too)
   if (!TMP || !UGRP /*|| TMP%64 || UGRP%64*/) {
     free(TMP); free(UGRP); // # nocov
     STOP(_("Failed to allocate TMP or UGRP or they weren't cache line aligned: nth=%d"), nth); // # nocov
@@ -836,7 +836,7 @@ SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsA
 
   if (retgrp) {
     SEXP tt;
-    int final_gs_n = (gs_n==0) ? gs_thread_n[0] : gs_n;   // TODO: find a neater way to do this
+    int final_gs_n = (gs_n==0) ? gs_thread_n[0] : gs_n;   // todo: find a neater way to do this
     int *final_gs  = (gs_n==0) ? gs_thread[0] : gs;
     setAttrib(ans, sym_starts, tt = allocVector(INTSXP, final_gs_n));
     int *ss = INTEGER(tt);
@@ -902,7 +902,7 @@ static bool sort_ugrp(uint8_t *x, const int n)
 void radix_r(const int from, const int to, const int radix) {
   TBEG();
   const int my_n = to-from+1;
-  if (my_n==1) {  // minor TODO: batch up the 1's instead in caller (and that's only needed when retgrp anyway)
+  if (my_n==1) {  // minor todo: batch up the 1's instead in caller (and that's only needed when retgrp anyway)
     push(&my_n, 1);
     TEND(5);
     return;
@@ -1010,7 +1010,7 @@ void radix_r(const int from, const int to, const int radix) {
     if (radix+1==nradix && !retgrp) {
       return;
     }
-    int ngrp=0; //minor TODO: could know number of groups with certainty up above
+    int ngrp=0; //minor todo: could know number of groups with certainty up above
     int *my_gs = malloc(sizeof(*my_gs) * my_n);
     if (!my_gs)
       STOP(_("Failed to allocate %d bytes for '%s'."), (int)(sizeof(*my_gs) * my_n), "my_gs"); // # nocov
@@ -1038,7 +1038,7 @@ void radix_r(const int from, const int to, const int radix) {
                                     // a stack of counts anyway since this is called recursively and these counts are needed to make the recursive calls.
                                     // This thread-private stack alloc has no chance of false sharing and gives omp and compiler best chance.
     uint8_t *restrict my_ugrp = UGRP + omp_get_thread_num()*256;  // uninitialized is fine; will use the first ngrp items. Only used if sortType==0
-    // TODO: ensure my_counts, my_grp and my_tmp below are cache line aligned on both Linux and Windows.
+    // todo: ensure my_counts, my_grp and my_tmp below are cache line aligned on both Linux and Windows.
     const uint8_t *restrict my_key = key[radix]+from;
     int ngrp = 0;          // number of groups (items in ugrp[]). Max value 256 but could be uint8_t later perhaps if 0 is understood as 1.
     bool skip = true;      // i) if already _grouped_ and sortType==0 then caller can skip, ii) if already _grouped and sorted__ when sort!=0 then caller can skip too
@@ -1076,7 +1076,8 @@ void radix_r(const int from, const int to, const int radix) {
 
       // cumulate; for forwards-assign to give cpu prefetch best chance (cpu may not support prefetch backwards).
       uint16_t my_starts[256], my_starts_copy[256];
-      // TODO: could be allocated up front (like my_TMP below), or are they better on stack like this? TODO: allocating up front would provide to cache-align them.
+      // todo: could be allocated up front (like my_TMP below), or are they better on stack like this?
+      // todo: allocating up front would provide to cache-align them.
       if (sortType!=0) {
         for (int i=0, sum=0; i<256; i++) { int tmp=my_counts[i]; my_starts[i]=my_starts_copy[i]=sum; sum+=tmp; ngrp+=(tmp>0);}  // cumulate through 0's too (won't be used)
       } else {
@@ -1139,7 +1140,7 @@ void radix_r(const int from, const int to, const int radix) {
   // else parallel batches. This is called recursively but only once or maybe twice before resolving to UINT16_MAX branch above
 
   int batchSize = MIN(UINT16_MAX, 1+my_n/getDTthreads(my_n, true));  // (my_n-1)/nBatch + 1;   //UINT16_MAX == 65535
-  int nBatch = (my_n-1)/batchSize + 1;   // TODO: make nBatch a multiple of nThreads?
+  int nBatch = (my_n-1)/batchSize + 1;   // todo: make nBatch a multiple of nThreads?
   int lastBatchSize = my_n - (nBatch-1)*batchSize;
   uint16_t *counts = calloc(nBatch*256,sizeof(*counts));
   uint8_t  *ugrps =  malloc(sizeof(*ugrps)*nBatch*256);
@@ -1160,7 +1161,7 @@ void radix_r(const int from, const int to, const int radix) {
       free(my_otmp); free(my_ktmp);
       STOP(_("Failed to allocate 'my_otmp' and/or 'my_ktmp' arrays (%d bytes)."), (int)((sizeof(*my_otmp) + sizeof(*my_ktmp)) * batchSize));
     }
-    // TODO: move these up above and point restrict[me] to them. Easier to Error that way if failed to alloc.
+    // todo: move these up above and point restrict[me] to them. Easier to Error that way if failed to alloc.
     #pragma omp for
     for (int batch=0; batch<nBatch; batch++) {
       const int my_n = (batch==nBatch-1) ? lastBatchSize : batchSize;  // lastBatchSize == batchSize when my_n is a multiple of batchSize
@@ -1279,7 +1280,7 @@ void radix_r(const int from, const int to, const int radix) {
     }
     memcpy(anso+from, TMP, my_n*sizeof(*anso));
 
-    for (int r=0; r<n_rem; r++) {    // TODO: groups of sizeof(anso)  4 byte int currently  (in future 8).  To save team startup cost (but unlikely significant anyway)
+    for (int r=0; r<n_rem; r++) {    // todo: groups of sizeof(anso)  4 byte int currently  (in future 8).  To save team startup cost (but unlikely significant anyway)
       #pragma omp parallel for num_threads(getDTthreads(nBatch, false))
       for (int batch=0; batch<nBatch; batch++) {
         const int *restrict      my_starts = starts + batch*256;
@@ -1312,7 +1313,7 @@ void radix_r(const int from, const int to, const int radix) {
     TEND(23)
   }
   else {
-    // TODO: explicitly repeat parallel batch for any skew bins
+    // todo: explicitly repeat parallel batch for any skew bins
     bool anyBig = false;
     for (int i=0; i<ngrp; i++) if (my_gs[i]>UINT16_MAX) { anyBig=true; break; }
     if (anyBig) {
@@ -1371,7 +1372,7 @@ SEXP issorted(SEXP x, SEXP by)
   // Always increasing order with NA's first
   // Similar to base:is.unsorted but accepts NA at the beginning (standard in data.table and considered sorted) rather than
   // returning NA when NA present, and is multi-column.
-  // TODO: test in big steps first to return faster if unsortedness is at the end (a common case of rbind'ing data to end)
+  // todo: test in big steps first to return faster if unsortedness is at the end (a common case of rbind'ing data to end)
   // These are all sequential access to x, so quick and cache efficient. Could be parallel by checking continuity at batch boundaries.
 
   if (!isNull(by) && !isInteger(by)) internal_error_with_cleanup(__func__, "issorted 'by' must be NULL or integer vector");
@@ -1396,7 +1397,7 @@ SEXP issorted(SEXP x, SEXP by)
         while (i<n && xd[i]>=xd[i-1]) i++;
       } else {
         double *xd = REAL(x);
-        while (i<n && dtwiddle(xd[i])>=dtwiddle(xd[i-1])) i++;  // TODO: change to loop over any NA or -Inf at the beginning and then proceed without dtwiddle() (but rounding)
+        while (i<n && dtwiddle(xd[i])>=dtwiddle(xd[i-1])) i++;  // todo: change to loop over any NA or -Inf at the beginning and then proceed without dtwiddle() (but rounding)
       }
       break;
     case STRSXP : {
@@ -1463,7 +1464,7 @@ SEXP issorted(SEXP x, SEXP by)
       } break;
       case 1: {   // regular double in REALSXP
         const double *p = (const double *)colp;
-        ok = dtwiddle(p[0])>dtwiddle(p[-1]);  // TODO: avoid dtwiddle by looping over any NA at the beginning, and remove NumericRounding.
+        ok = dtwiddle(p[0])>dtwiddle(p[-1]);  // todo: avoid dtwiddle by looping over any NA at the beginning, and remove NumericRounding.
       } break;
       case 2: {  // integer64 in REALSXP
         const int64_t *p = (const int64_t *)colp;
@@ -1474,7 +1475,7 @@ SEXP issorted(SEXP x, SEXP by)
         if (*p==NA_STRING) {
           ok = false; // previous value not NA (otherwise memcmp would have returned equal above) so can't be ordered
         } else {
-          ok = (NEED2UTF8(p[0]) || NEED2UTF8(p[-1]) ?  // TODO: provide user option to choose ascii-only mode
+          ok = (NEED2UTF8(p[0]) || NEED2UTF8(p[-1]) ?  // todo: provide user option to choose ascii-only mode
                 strcmp(CHAR(ENC2UTF8(p[0])), CHAR(ENC2UTF8(p[-1]))) :
                 strcmp(CHAR(p[0]), CHAR(p[-1]))) >= 0;
         }
