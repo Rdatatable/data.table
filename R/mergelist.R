@@ -41,7 +41,7 @@ hasindex = function(x, by, retGrp=FALSE) {
   idx = attr(index, idx_name, TRUE)
   if (is.null(idx)) return(FALSE)
   if (!retGrp) return(TRUE)
-  return(!is.null(attr(idx, "starts", TRUE)))
+  !is.null(attr(idx, "starts", TRUE))
 }
 
 # fdistinct applies mult='first|last'
@@ -140,7 +140,7 @@ dtmerge = function(x, i, on, how, mult, join.many, void=FALSE, verbose) {
   if (len.i != len.x)
     internal_error("dtmerge out len.i != len.x") # nocov
 
-  return(list(ans=ans, irows=irows, xrows=xrows))
+  list(ans=ans, irows=irows, xrows=xrows)
 }
 
 # Previously, we had a custom C implementation here, which is ~2x faster,
