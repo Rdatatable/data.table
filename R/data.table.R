@@ -545,7 +545,7 @@ replace_dot_alias = function(e) {
           if (allLen1) {
             irows = f__
           } else {
-            join.many = isTRUE(getOption("datatable.join.many", TRUE)) # #914, default TRUE for backward compatibility
+            join.many = isTRUE(getOption("datatable.join.many")) # #914, default TRUE for backward compatibility
             anyDups = !notjoin &&
               (
                 # #698. When notjoin=TRUE, ignore allow.cartesian. Rows in answer will never be > nrow(x).
