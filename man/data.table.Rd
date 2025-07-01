@@ -174,7 +174,7 @@ data.table(\dots, keep.rownames=FALSE, check.names=FALSE, key=NULL, stringsAsFac
             \item For convenience during interactive scenarios, it is also possible to use \code{.()} syntax as \code{X[Y, on=.(a, b)]}.
             \item From v1.9.8, (non-equi) joins using binary operators \code{>=, >, <=, <} are also possible, e.g., \code{X[Y, on=c("x>=a", "y<=b")]}, or for interactive use as \code{X[Y, on=.(x>=a, y<=b)]}.
         }
-        See examples as well as \href{../doc/datatable-secondary-indices-and-auto-indexing.html}{\code{vignette("datatable-secondary-indices-and-auto-indexing")}}.
+        Note that providing \code{on} is \emph{required} for \code{X[Y]} joins when \code{X} is unkeyed. See examples as well as \href{../doc/datatable-secondary-indices-and-auto-indexing.html}{\code{vignette("datatable-secondary-indices-and-auto-indexing")}}.
     }
 
   \item{env}{ List or an environment, passed to \code{\link{substitute2}} for substitution of parameters in \code{i}, \code{j} and \code{by} (or \code{keyby}). Use \code{verbose} to preview constructed expressions. For more details see \href{../doc/datatable-programming.html}{\code{vignette("datatable-programming")}}. }
@@ -298,7 +298,9 @@ DT[, sum(v), by=x][order(x)]   # same but by chaining expressions together
 
 # fast ad hoc row subsets (subsets as joins)
 DT["a", on="x"]                # same as x == "a" but uses binary search (fast)
+                               #   NB: requires DT to be keyed!
 DT["a", on=.(x)]               # same, for convenience, no need to quote every column
+                               #   NB: works regardless of whether or not DT is keyed!
 DT[.("a"), on="x"]             # same
 DT[x=="a"]                     # same, single "==" internally optimised to use binary search (fast)
 DT[x!="b" | y!=3]              # not yet optimized, currently vector scan subset

@@ -1,44 +1,53 @@
-cbindlist = function(l, copy=TRUE) {
+cbindlist_impl_ = function(l, copy) {
   ans = .Call(Ccbindlist, l, copy)
   if (anyDuplicated(names(ans))) { ## invalidate key and index
     setattr(ans, "sorted", NULL)
-    setattr(ans, "index", integer())
+    setattr(ans, "index", NULL)
   }
   setDT(ans)
   ans
 }
 
+cbindlist = function(l) cbindlist_impl_(l, copy=TRUE)
+setcbindlist = function(l) cbindlist_impl_(l, copy=FALSE)
+
 # when 'on' is missing then use keys, used only for inner and full join
 onkeys = function(x, y) {
-  if (is.null(x) && !is.null(y)) y
-  else if (!is.null(x) && is.null(y)) x
-  else if (!is.null(x) && !is.null(y)) {
-    if (length(x)>=length(y)) intersect(y, x) ## align order to shorter|rhs key
-    else intersect(x, y)
-  } else NULL # nocov ## internal error is being called later in mergepair
+  if (is.null(x) && !is.null(y)) return(y)
+  if (!is.null(x) && is.null(y)) return(x)
+  if (!is.null(x) && !is.null(y)) {
+    if (length(x) >= length(y))
+      return(intersect(y, x)) ## align order to shorter|rhs key
+    else
+      return(intersect(x, y))
+  }
+  NULL # nocov. Internal error is being called later in mergepair
 }
+
+# column index selection helper
 someCols = function(x, cols, drop=character(), keep=character(), retain.order=FALSE) {
   keep = colnamesInt(x, keep)
   drop = colnamesInt(x, drop)
   cols = colnamesInt(x, cols)
   ans = union(keep, setdiff(cols, drop))
   if (!retain.order) return(ans)
-  intersect(colnamesInt(x, NULL), ans)
+  sort(ans)
 }
+
 hasindex = function(x, by, retGrp=FALSE) {
   index = attr(x, "index", TRUE)
   if (is.null(index)) return(FALSE)
-  idx_name = paste0("__",by,collapse="")
+  idx_name = paste0("__", by, collapse="")
   idx = attr(index, idx_name, TRUE)
   if (is.null(idx)) return(FALSE)
   if (!retGrp) return(TRUE)
-  return(!is.null(attr(idx, "starts", TRUE)))
+  !is.null(attr(idx, "starts", TRUE))
 }
 
 # fdistinct applies mult='first|last'
 # for mult='first' it is unique(x, by=on)[, c(on, cols), with=FALSE]
 # it may not copy when copy=FALSE and x is unique by 'on'
-fdistinct = function(x, on=key(x), mult=c("first","last"), cols=seq_along(x), copy=TRUE) {
+fdistinct = function(x, on=key(x), mult=c("first", "last"), cols=seq_along(x), copy=TRUE) {
   if (!perhaps.data.table(x))
     stopf("'x' must be data.table")
   if (!is.character(on) || !length(on) || anyNA(on) || !all(on %chin% names(x)))
@@ -61,9 +70,9 @@ fdistinct = function(x, on=key(x), mult=c("first","last"), cols=seq_along(x), co
     return(ans)
   }
   f = attr(o, "starts", exact=TRUE)
-  if (mult=="last") {
+  if (mult == "last") {
     if (!sort) internal_error("sort must be TRUE when computing mult='last'") # nocov
-    f = c(f[-1L]-1L, nrow(x)) ## last of each group
+    f = c(f[-1L] - 1L, nrow(x)) ## last of each group
   }
   if (length(o)) f = o[f]
   if (sort && length(o <- forderv(f))) f = f[o] ## this rolls back to original order
@@ -73,14 +82,19 @@ fdistinct = function(x, on=key(x), mult=c("first","last"), cols=seq_along(x), co
 # extra layer over bmerge to provide ready to use row indices (or NULL for 1:nrow)
 # NULL to avoid extra copies in downstream code, it turned out that avoiding copies precisely is costly and enormously complicates code, need #4409 and/or handle 1:nrow in subsetDT
 dtmerge = function(x, i, on, how, mult, join.many, void=FALSE, verbose) {
-  nomatch = switch(how, "inner"=, "semi"=, "anti"=, "cross"= 0L, "left"=, "right"=, "full"= NA_integer_)
+  nomatch = switch(how,
+                   inner=, semi=, anti=, cross= 0L,
+                   left=, right=, full=NA_integer_)
   nomatch0 = identical(nomatch, 0L)
   if (is.null(mult))
-    mult = switch(how, "semi"=, "anti"= "last", "cross"= "all", "inner"=, "left"=, "right"=, "full"= "error")
-  if (void && mult!="error")
-    internal_error("void must be used with mult='error'") # nocov
-  if (how=="cross") { ## short-circuit bmerge results only for cross join
-    if (length(on) || mult!="all" || !join.many)
+    mult = switch(how,
+                  semi=, anti="last",
+                  cross="all",
+                  inner=, left=, right=, full="error")
+  if (void && mult != "error")
+    internal_error("'void' must be used with mult='error'") # nocov
+  if (how == "cross") { ## short-circuit bmerge results only for cross join
+    if (length(on) || mult != "all" || !join.many)
       stopf("cross join must be used with zero-length on, mult='all', join.many=TRUE")
     if (void)
       internal_error("cross join must be used with void=FALSE") # nocov
@@ -88,20 +102,24 @@ dtmerge = function(x, i, on, how, mult, join.many, void=FALSE, verbose) {
   } else {
     if (!length(on))
       stopf("'on' must be non-zero length character vector")
-    if (mult=="all" && (how=="semi" || how=="anti"))
+    if (mult == "all" && (how == "semi" || how == "anti"))
       stopf("semi and anti joins must be used with mult!='all'")
     icols = colnamesInt(i, on, check_dups=TRUE)
     xcols = colnamesInt(x, on, check_dups=TRUE)
     ans = bmerge(i, x, icols, xcols, roll=0, rollends=c(FALSE, TRUE), nomatch=nomatch, mult=mult, ops=rep.int(1L, length(on)), verbose=verbose)
     if (void) { ## void=T is only for the case when we want raise error for mult='error', and that would happen in above line
       return(invisible(NULL))
-    } else if (how=="semi" || how=="anti") { ## semi and anti short-circuit
-      irows = which(if (how=="semi") ans$lens!=0L else ans$lens==0L) ## we will subset i rather than x, thus assign to irows, not to xrows
-      if (length(irows)==length(ans$lens)) irows = NULL
+    } else if (how == "semi" || how == "anti") { ## semi and anti short-circuit
+      ## we will subset i rather than x, thus assign to irows, not to xrows
+      if (how == "semi")
+        irows = which(ans$lens != 0L)
+      else
+        irows = which(ans$lens == 0L)
+      if (length(irows) == length(ans$lens)) irows = NULL
       return(list(ans=ans, irows=irows))
-    } else if (mult=="all" && !ans$allLen1 && !join.many && ## join.many, like allow.cartesian, check
-      !(length(ans$starts)==1L && ans$lens==nrow(x)) && ## special case of scalar i match to const duplicated x, not handled by anyDuplicate: data.table(x=c(1L,1L))[data.table(x=1L), on="x"]
-      anyDuplicated(ans$starts, incomparables=c(0L,NA_integer_))
+    } else if (mult == "all" && !ans$allLen1 && !join.many && ## join.many, like allow.cartesian, check
+      !(length(ans$starts) == 1L && ans$lens == nrow(x)) && ## special case of scalar i match to const duplicated x, not handled by anyDuplicate: data.table(x=c(1L,1L))[data.table(x=1L), on="x"]
+      anyDuplicated(ans$starts, incomparables=c(0L, NA_integer_))
     )
       stopf("Joining resulted in many-to-many join. Perform quality check on your data, use mult!='all', or set 'datatable.join.many' option to TRUE to allow rows explosion.")
   }
@@ -112,17 +130,16 @@ dtmerge = function(x, i, on, how, mult, join.many, void=FALSE, verbose) {
   len.x = length(xrows) ## as of now cannot optimize to NULL, search for #4409 here
 
   ## irows, join-from
-  irows = if (!(ans$allLen1 && (!nomatch0 || len.x==length(ans$starts)))) seqexp(ans$lens)
+  irows = if (!(ans$allLen1 && (!nomatch0 || len.x == length(ans$starts)))) seqexp(ans$lens)
   len.i = if (is.null(irows)) nrow(i) else length(irows)
 
   if (length(ans$xo) && length(xrows))
     xrows = ans$xo[xrows]
   len.x = length(xrows)
-
-  if (len.i!=len.x)
+  if (len.i != len.x)
     internal_error("dtmerge out len.i != len.x") # nocov
 
-  return(list(ans=ans, irows=irows, xrows=xrows))
+  list(ans=ans, irows=irows, xrows=xrows)
 }
 
 # atomic join between two tables
