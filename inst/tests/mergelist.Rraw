@@ -30,7 +30,7 @@ test(11.05, cbindlist(list(data.table(a=1L), data.table(), data.table(d=2L), dat
 ## codecov
 test(12.01, cbindlist(data.frame(a=1L)), error="must be a list")
 test(12.02, cbindlist(TRUE), error="must be a list")
-test(12.03, cbindlist(list(list(), NA)), error="must be TRUE or FALSE")
+test(12.03, cbindlist(list(), NA), error="must be TRUE or FALSE")
 test(12.04, cbindlist(list(data.table(a=1L), 1L)), error="is not a data.table")
 test(12.05, options = c(datatable.verbose=TRUE), cbindlist(list(data.table(a=1:2), data.table(b=1:2))), data.table(a=1:2, b=1:2), output="cbindlist.*took")
 test(12.06, cbindlist(list(data.table(), data.table(a=1:2), data.table(b=1:2))), data.table(a=1:2, b=1:2))
