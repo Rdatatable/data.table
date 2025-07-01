@@ -19,10 +19,12 @@ copied = function(ans, l) {
 }
 notcopied = function(ans, l, how="left", unless=character()) {
   if (how %chin% unless) return(copied(ans, l)) ## used during looping tests for easier escape
-  if (how=="full") return( ## either side, left|right, notcopied is fine
-    all(addresses(l[[1L]]) %chin% addresses(ans)) || all(addresses(l[[length(l)]]) %chin% addresses(ans))
+  if (how == "full") return( ## either side, left|right, notcopied is fine
+    all(addresses(l[[1L]]) %chin% addresses(ans)) ||
+      all(addresses(l[[length(l)]]) %chin% addresses(ans))
   )
-  all(addresses(if (how=="right") l[[length(l)]] else l[[1L]]) %chin% addresses(ans))
+  idx = if (how == "right") length(l) else 1L
+  all(addresses(l[[idx]]) %chin% addresses(ans))
 }
 
 # internal helpers
