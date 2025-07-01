@@ -54,16 +54,6 @@ test(12.17, cbindlist(list(data.table(a=1L), data.table(b=1:2)), copy=FALSE), er
 
 ## retain indices
 local({
-  d = data.table(x=1:2, y=2:1, z=2:1, v1=1:2) ## ensure setDT will retain key and indices when it is called on the list, bc Ccbindlist returns list
-  setkeyv(d, "x"); setindexv(d, list("y", "z"))
-  a = attributes(d)
-  attributes(d) = a[!names(a) %in% c("class", ".internal.selfref", "row.names")]
-  test(13.01, class(d), "list")
-  setDT(d)
-  test(13.02, key(d), "x")
-  # test(13.03, hasindex(d, "y") && hasindex(d, "z"))
-})
-local({
   l = list(
     data.table(id1=1:5, id2=5:1, id3=1:5, v1=1:5),
     data.table(id4=5:1, id5=1:5, v2=1:5),

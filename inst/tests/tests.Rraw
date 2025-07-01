@@ -21252,3 +21252,15 @@ it <- as.ITime('00:00:00')
 test(2323.1, names(data.frame(COL = it)), "COL")
 test(2323.2, names(data.frame(b = 1, COL = it)), c("b", "COL"))
 test(2323.3, names(as.data.frame(it, optional=TRUE)), NULL)
+
+## ensure setDT will retain key and indices when it is called on the list (cbindlist assumes this)
+local({
+  d = data.table(x=1:2, y=2:1, z=2:1, v1=1:2)
+  setkeyv(d, "x"); setindexv(d, list("y", "z"))
+  a = attributes(d)
+  attributes(d) = a[!names(a) %in% c("class", ".internal.selfref", "row.names")]
+  test(2324.01, class(d), "list")
+  setDT(d)
+  test(2324.02, key(d), "x")
+  test(2324.03, hasindex(d, "y") && hasindex(d, "z"))
+})
