@@ -183,22 +183,24 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
   ## binary merge
   ans = dtmerge(x=join_to, i=join_from, on=on, how=how, mult=mult, verbose=verbose, join.many=join.many)
 
-  ## make i side
-  out.i = if (is.null(ans$irows))
-    .shallow(join_from, cols=someCols(join_from, from_cols, keep=on, retain.order=semi_or_anti), retain.key=TRUE)
-  else
-    .Call(CsubsetDT, join_from, ans$irows, someCols(join_from, from_cols, keep=on, retain.order=semi_or_anti))
-  copy_i = copy_i || !is.null(ans$irows)
+  ## make i side; avoid subsetting if possible
+  cols_i = someCols(join_from, from_cols, keep=on, retain.order=semi_or_anti)
+  if (is.null(ans$irows)) {
+    out.i = .shallow(join_from, cols=cols_i, retain.key=TRUE)
+  } else {
+    out.i = .Call(CsubsetDT, join_from, ans$irows, cols_i)
+    copy_i = TRUE
+  }
 
   ## make x side
+  copy_x = TRUE
   if (semi_or_anti) {
-    out.x = list(); copy_x = TRUE
+    out.x = list()
   } else {
-    out.x = if (is.null(ans$xrows)) ## as of now xrows cannot be NULL #4409 thus nocov below
-      internal_error("dtmerge()$xrows returned NULL, #4409 been resolved but related code has not been updated?") #.shallow(join_to, cols=someCols(join_to, to_cols, drop=on), retain.key=TRUE) # nocov ## as of now nocov does not make difference r-lib/covr#279
-    else
-      .Call(CsubsetDT, join_to, ans$xrows, someCols(join_to, to_cols, drop=on))
-    copy_x = !is.null(ans$xrows)
+    if (is.null(ans$xrows)) ## as of now xrows cannot be NULL #4409 thus nocov below
+      internal_error("dtmerge()$xrows returned NULL, #4409 been resolved but related code has not been updated?") # nocov
+    out.x = .Call(CsubsetDT, join_to, ans$xrows, someCols(join_to, to_cols, drop=on))
+    copy_x = TRUE
     ## ensure no duplicated column names in merge results
     if (any(dup.i <- names(out.i) %chin% names(out.x)))
       stopf("merge result has duplicated column names, use 'cols' argument or rename columns in 'l' tables, duplicated column(s): %s", brackify(names(out.i)[dup.i]))
