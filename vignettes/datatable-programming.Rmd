@@ -156,22 +156,6 @@ substitute2(
 
 We can see in the output that both the functions names, as well as the names of the variables passed to those functions, have been replaced. We used `substitute2` for convenience. In this simple case, base R's `substitute` could have been used as well, though it would've required usage of `lapply(env, as.name)`.
 
-Note that `outer = sqrt`, i.e., providing the _symbol_ instead of the function as a _character string_ is supported, and sometimes required (e.g. for namespace-qualified names like `pkg::foo`), but that there are some subtle differences between the two approaches. To get a hint of this, observe:
-
-```{r hypotenuse_substitute2_symbol}
-substitute2(
-  outer(inner(var1) + inner(var2)),
-  env = list(
-    outer = sqrt,
-    inner = "square",
-    var1 = "a",
-    var2 = "b"
-  )
-)
-```
-
-The implications of this are beyond the scope of this vignette. We only note here that similar considerations apply for whether to specify `what=` in `do.call()` as a string or a symbol.
-
 Now, to use substitution inside `[.data.table`, we don't need to call the `substitute2` function. As it is now being used internally, all we have to do is to provide `env` argument, the same way as we've provided it to the `substitute2` function in the example above. Substitution can be applied to the `i`, `j` and `by` (or `keyby`) arguments of the `[.data.table` method. Note that setting the `verbose` argument to `TRUE` can be used to print expressions after substitution is applied. This is very useful for debugging.
 
 Let's use the `iris` data set as a demonstration. Just as an example, let's pretend we want to compute the `Sepal.Hypotenuse`, treating the sepal width and length as if they were legs of a right triangle.
@@ -218,6 +202,33 @@ DT[filter_col %in% filter_val,
      filter_val = I(c("versicolor", "virginica")),
      by_col =  "Species"
   )]
+```
+
+### Substitute functions
+
+A tiny clarification may be useful on how we can substitute a function name in an expression.
+Note that providing `outer="sqrt"` (string) vs. `outer=sqrt` (symbol) is very different:
+```{r substitute_fun1, result='hide'}
+DT[, outer(Sepal.Length), env = list(outer="sqrt"), verbose=TRUE]
+#Argument 'j' after substitute: sqrt(Sepal.Length)
+## DT[, sqrt(Sepal.Length)]
+
+DT[, outer(Sepal.Length), env = list(outer=sqrt), verbose=TRUE]
+#Argument 'j' after substitute: .Primitive("sqrt")(Sepal.Length)
+## DT[, .Primitive("sqrt")(Sepal.Length)]
+```
+And while `.Primitive("sqrt")(Sepal.Length)` still works, it is almost never the desired form.
+
+Even more importantly, if the symbol form is meant to be used, then it can, and should, be used directly in the expression, as there is no need for substitution.
+```{r substitute_fun2, result='hide'}
+DT[, sqrt(Sepal.Length)]
+```
+
+If function name to be substituted needs to be namespace-qualified then namespace and function name can be substituted as any other symbol in the expression:
+```{r substitute_fun3, result='hide'}
+DT[, ns::fun(Sepal.Length), env = list(ns="base", fun="sqrt"), verbose=TRUE]
+#Argument 'j' after substitute: base::sqrt(Sepal.Length)
+## DT[, base::sqrt(Sepal.Length)]
 ```
 
 ### Substitute variables and character values
