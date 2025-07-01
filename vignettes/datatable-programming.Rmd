@@ -9,6 +9,10 @@ vignette: >
   \usepackage[utf8]{inputenc}
 ---
 
+```{r echo=FALSE, file='_translation_links.R'}
+```
+`r .write.translation.links("Translations of this document are available in: %s")`
+
 ```{r init, include = FALSE}
 require(data.table)
 knitr::opts_chunk$set(
@@ -19,7 +23,6 @@ knitr::opts_chunk$set(
  collapse = TRUE
 )
 ```
-
 
 ## Introduction
 
@@ -373,28 +376,41 @@ print(j)
 DT[, j, env = list(j = j)]
 ```
 
-### Substituting functions using strings in `env`
+### Common mistakes
 
-In `data.table`, you can inject functions into your expressions by passing their names as strings in the `env` parameter. This method allows you to use function names directly as strings, and `data.table` will automatically interpret these strings as the corresponding functions. This approach simplifies the process and makes it easier to work with function names dynamically.
+It is important to understand the difference between passing an object and a name that points to an object. See the verbose output of following examples.
 
-Suppose you want to calculate the total of `Sepal.Length` in the `iris` dataset using the `sum` function. You can inject the `sum` function by passing its name as a string in the `env` parameter.
-
-```{r sum_example}
-result <- DT[, f(Sepal.Length), env = list(f = "sum")]
-print(result)
+```{r obj_vs_objname}
+DT[, fun(Petal.Width), env = list(fun = mean), verbose=TRUE]
+DT[, fun(Petal.Width), env = list(fun = "mean"), verbose=TRUE]
 ```
 
-In this example, the string `"sum"` is mapped to the `f` function. The `env` parameter allows `data.table` to recognize this `f` as the `sum` function, so it computes the total of `Sepal.Length` accordingly.
+Users will usually want to substitute the function name rather than inserting the actual function body. Therefore, the second approach (passing a character string) is often preferred.
 
-You can also inject multiple functions at once by specifying their names as strings in the `env` list. This is useful for performing various calculations within a single expression.
+In case of any doubts on the `env` interface functioning, set `verbose = TRUE` to inspect how expressions are resolved internally.
 
-```{r multi_example}
-result <- DT[, .(total = f(Sepal.Length), average = d(Sepal.Length)), 
-             env = list(f = "sum", d = "mean")]
-print(result)
+### Use `env` argument from inside another function
+
+It was a design decision that `env` argument will follow _Standard Evaluation_ (SE) rules, i.e., values passed to `env` are evaluated in their original scope as-is. For more info on the topic see [R Language manual: Computing on the language](https://cran.r-project.org/doc/manuals/r-release/R-lang.html#Computing-on-the-language)). As a result, **using `env` argument from a function does not require any special handling**. It also means that the `.()` alias for a `list()`, _a la_ `env = .(.col="Petal.Length")`, will not work; use `env = list(.col="Petal.Length")` instead.
+
+```{r env_se}
+fun = function(x, col.mean) {
+  stopifnot(is.character(col.mean), is.data.table(x))
+  x[, .(col_avg = mean(.col)), env = list(.col = col.mean)]
+}
+fun(DT, col.mean="Petal.Length")
 ```
 
-In this example, both `"sum"` and `"mean"` are passed as strings. The `env` parameter maps these strings to their respective functions, allowing you to calculate both the total and the average of `Sepal.Length` in one go.
+If the outer function itself follows NSE (Non-Standard Evaluation) rules, then it has to resolve language objects the same way as when passing its arguments to any other SE function.
+
+```{r env_nse}
+fun = function(x, col.mean) {
+  col.mean = substitute(col.mean)
+  stopifnot(is.name(col.mean), is.data.table(x))
+  x[, .(col_avg = mean(.col)), env = list(.col = col.mean)]
+}
+fun(DT, col.mean=Petal.Length)
+```
 
 ## Retired interfaces
 

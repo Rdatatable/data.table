@@ -43,7 +43,7 @@ int getMaxStringLen(const SEXP *col, const int64_t n) {
 
 int getMaxCategLen(SEXP col) {
   col = getAttrib(col, R_LevelsSymbol);
-  if (!isString(col)) error(_("Internal error: col passed to getMaxCategLen is missing levels"));
+  if (!isString(col)) internal_error(__func__, "col passed to getMaxCategLen is missing levels");
   return getMaxStringLen( STRING_PTR_RO(col), LENGTH(col) );
 }
 
@@ -77,7 +77,7 @@ void writeList(const void *col, int64_t row, char **pch) {
   SEXP v = ((const SEXP *)col)[row];
   int32_t wf = whichWriter(v);
   if (TYPEOF(v)==VECSXP || wf==INT32_MIN || isFactor(v)) {
-    error(_("Internal error: getMaxListItemLen should have caught this up front."));  // # nocov
+    internal_error(__func__, "TYPEOF(v)!=VECSXP && wf!=INT32_MIN && !isFactor(v); getMaxListItem should have caught this up front");  // # nocov
   }
   char *ch = *pch;
   write_chars(sep2start, &ch);
@@ -105,7 +105,7 @@ int getMaxListItemLen(const SEXP *col, const int64_t n) {
     }
     int width = writerMaxLen[wf];
     if (width==0) {
-      if (wf!=WF_String) STOP(_("Internal error: row %"PRId64" of list column has no max length method implemented"), i+1); // # nocov
+      if (wf!=WF_String) internal_error(__func__, "row %"PRId64" of list column has no max length method implemented", i+1); // # nocov
       const int l = LENGTH(this);
       for (int j=0; j<l; ++j) width+=LENGTH(STRING_ELT(this, j));
     } else {
@@ -167,6 +167,7 @@ SEXP fwriteR(
   SEXP nThread_Arg,
   SEXP showProgress_Arg,
   SEXP is_gzip_Arg,
+  SEXP gzip_level_Arg,
   SEXP bom_Arg,
   SEXP yaml_Arg,
   SEXP verbose_Arg,
@@ -177,6 +178,7 @@ SEXP fwriteR(
 
   fwriteMainArgs args = {0};  // {0} to quieten valgrind's uninitialized, #4639
   args.is_gzip = LOGICAL(is_gzip_Arg)[0];
+  args.gzip_level = INTEGER(gzip_level_Arg)[0];
   args.bom = LOGICAL(bom_Arg)[0];
   args.yaml = CHAR(STRING_ELT(yaml_Arg, 0));
   args.verbose = LOGICAL(verbose_Arg)[0];
@@ -218,12 +220,12 @@ SEXP fwriteR(
   // allocate new `columns` vector and fetch the DATAPTR_RO() offset once up front here to reduce the complexity
   // in fread.c needing to know about the size of R's header, or calling R API. It won't be slower because only
   // this new vector of pointers is used by fread.c, but it does use a tiny bit more memory (ncol * 8 bytes).
-  args.columns = (void *)R_alloc(args.ncol, sizeof(const void *));
+  args.columns = (void *)R_alloc(args.ncol, sizeof(*args.columns));
 
   args.funs = funs;  // funs declared statically at the top of this file
 
   // Allocate and populate lookup vector to writer function for each column, whichFun[]
-  args.whichFun = (uint8_t *)R_alloc(args.ncol, sizeof(uint8_t));
+  args.whichFun = (uint8_t *)R_alloc(args.ncol, sizeof(*args.whichFun));
 
   // just for use at this level to control whichWriter() when called now for each column and
   // when called later for cell items of list columns (if any)

@@ -68,4 +68,3 @@ double i64quickselect(int64_t *x, int n) {
   int64_t a, b;
   BODY(i64swap);
 }
-

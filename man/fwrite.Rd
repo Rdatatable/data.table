@@ -12,12 +12,12 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   na = "", dec = ".", row.names = FALSE, col.names = TRUE,
   qmethod = c("double","escape"),
   logical01 = getOption("datatable.logical01", FALSE),  # due to change to TRUE; see NEWS
-  logicalAsInt = logical01,  # deprecated
   scipen = getOption('scipen', 0L),
   dateTimeAs = c("ISO","squash","epoch","write.csv"),
   buffMB = 8L, nThread = getDTthreads(verbose),
   showProgress = getOption("datatable.showProgress", interactive()),
   compress = c("auto", "none", "gzip"),
+  compressLevel = 6L,
   yaml = FALSE,
   bom = FALSE,
   verbose = getOption("datatable.verbose", FALSE),
@@ -41,7 +41,6 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
 	\item "double" (default, same as \code{write.csv}), in which case the double quote is doubled with another one.
       }}
   \item{logical01}{Should \code{logical} values be written as \code{1} and \code{0} rather than \code{"TRUE"} and \code{"FALSE"}?}
-  \item{logicalAsInt}{Deprecated. Old name for `logical01`. Name change for consistency with `fread` for which `logicalAsInt` would not make sense.}
   \item{scipen}{ \code{integer} In terms of printing width, how much of a bias should there be towards printing whole numbers rather than scientific notation? See Details. }
   \item{dateTimeAs}{ How \code{Date}/\code{IDate}, \code{ITime} and \code{POSIXct} items are written.
       \itemize{
@@ -58,6 +57,7 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   \item{nThread}{The number of threads to use. Experiment to see what works best for your data on your hardware.}
   \item{showProgress}{ Display a progress meter on the console? Ignored when \code{file==""}. }
   \item{compress}{If \code{compress = "auto"} and if \code{file} ends in \code{.gz} then output format is gzipped csv else csv. If \code{compress = "none"}, output format is always csv. If \code{compress = "gzip"} then format is gzipped csv. Output to the console is never gzipped even if \code{compress = "gzip"}. By default, \code{compress = "auto"}.}
+  \item{compressLevel}{Level of compression between 1 and 9, 6 by default. See \url{https://www.gnu.org/software/gzip/manual/html_node/Invoking-gzip.html} for details.}
   \item{yaml}{If \code{TRUE}, \code{fwrite} will output a CSVY file, that is, a CSV file with metadata stored as a YAML header, using \code{\link[yaml]{as.yaml}}. See \code{Details}. }
   \item{bom}{If \code{TRUE} a BOM (Byte Order Mark) sequence (EF BB BF) is added at the beginning of the file; format 'UTF-8 with BOM'.}
   \item{verbose}{Be chatty and report timings?}

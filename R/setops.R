@@ -6,7 +6,7 @@ setdiff_ = function(x, y, by.x=seq_along(x), by.y=seq_along(y), use.names=FALSE)
   by.x = colnamesInt(x, by.x, check_dups=TRUE)
   if (!nrow(y)) return(unique(x, by=by.x))
   by.y = colnamesInt(y, by.y, check_dups=TRUE)
-  if (length(by.x) != length(by.y)) stopf("length(by.x) != length(by.y)")
+  if (length(by.x) != length(by.y)) stopf("length(by.x) != length(by.y)", domain=NA)
   # factor in x should've factor/character in y, and vice-versa
   for (a in seq_along(by.x)) {
     lc = by.y[a]
@@ -42,15 +42,17 @@ funique = function(x) {
   if (!identical(names(x), names(y))) stopf("x and y must have the same column order")
   bad_types = c("raw", "complex", if (block_list) "list")
   found = bad_types %chin% c(vapply_1c(x, typeof), vapply_1c(y, typeof))
-  if (any(found)) stopf("unsupported column type(s) found in x or y: %s", brackify(bad_types[found]))
+  if (any(found))
+    stopf(ngettext(sum(found), "unsupported column type found in x or y: %s", "unsupported column types found in x or y: %s"),
+          brackify(bad_types[found]), domain=NA)
   super = function(x) {
     # allow character->factor and integer->numeric because from v1.12.4 i's type is retained by joins, #3820
-    ans = class(x)[1L]
+    ans = class1(x)
     switch(ans, factor="character", integer="numeric", ans)
   }
   if (!identical(sx<-sapply(x, super), sy<-sapply(y, super))) {
     w = which.first(sx!=sy)
-    stopf("Item %d of x is '%s' but the corresponding item of y is '%s'.", w, class(x[[w]])[1L], class(y[[w]])[1L])
+    stopf("Item %d of x is '%s' but the corresponding item of y is '%s'.", w, class1(x[[w]]), class1(y[[w]]))
   }
   if (.seqn && ".seqn" %chin% names(x)) stopf("None of the datasets should contain a column named '.seqn'")
 }
@@ -143,7 +145,7 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
     targetTypes = vapply_1c(target, squashClass)
     currentTypes = vapply_1c(current, squashClass)
     if (length(targetTypes) != length(currentTypes))
-      stopf("Internal error: ncol(current)==ncol(target) was checked above") # nocov
+      internal_error("ncol(current)==ncol(target) was checked above") # nocov
     if (any( d<-(targetTypes != currentTypes))) {
       w = head(which(d),3L)
       return(paste0("Datasets have different column classes. First 3: ",paste(
@@ -155,9 +157,9 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
     k1 = key(target)
     k2 = key(current)
     if (!identical(k1, k2)) {
-      return(gettextf(
-        "Datasets have different %s. 'target': %s. 'current': %s.",
-        "keys",
+      return(sprintf(
+        "%s. 'target': %s. 'current': %s.",
+        gettext("Datasets have different keys"),
         if(length(k1)) brackify(k1) else gettextf("has no key"),
         if(length(k2)) brackify(k2) else gettextf("has no key")
       ))
@@ -166,9 +168,9 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
     i1 = indices(target)
     i2 = indices(current)
     if (!identical(i1, i2)) {
-      return(gettextf(
-        "Datasets have different %s. 'target': %s. 'current': %s.",
-        "indices",
+      return(sprintf(
+        "%s. 'target': %s. 'current': %s.",
+        gettext("Datasets have different indices"),
         if(length(i1)) brackify(i1) else gettextf("has no index"),
         if(length(i2)) brackify(i2) else gettextf("has no index")
       ))
@@ -191,25 +193,25 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
     bad.type = setNames(c("raw","complex","list") %chin% c(vapply_1c(current, typeof), vapply_1c(target, typeof)), c("raw","complex","list"))
     if (any(bad.type))
       stopf("Datasets to compare with 'ignore.row.order' must not have unsupported column types: %s", brackify(names(bad.type)[bad.type]))
-    if (between(tolerance, 0, sqrt(.Machine$double.eps), incbounds=FALSE)) {
+    if (between(tolerance, 0.0, sqrt(.Machine$double.eps), incbounds=FALSE)) {
       warningf("Argument 'tolerance' was forced to lowest accepted value `sqrt(.Machine$double.eps)` from provided %s", format(tolerance, scientific=FALSE))
       tolerance = sqrt(.Machine$double.eps)
     }
     target_dup = as.logical(anyDuplicated(target))
     current_dup = as.logical(anyDuplicated(current))
-    tolerance.msg = if (identical(tolerance, 0)) ", be aware you are using `tolerance=0` which may result into visually equal data" else ""
+    tolerance.msg = if (identical(tolerance, 0.0)) ", be aware you are using `tolerance=0` which may result into visually equal data" else ""
     if (target_dup || current_dup) {
       # handling 'tolerance' for duplicate rows - those `msg` will be returned only when equality with tolerance will fail
-      if (any(vapply_1c(target,typeof)=="double") && !identical(tolerance, 0)) {
+      if (any(vapply_1c(target, typeof) == "double") && !identical(tolerance, 0.0)) {
         if (target_dup && !current_dup) msg = c(msg, "Dataset 'target' has duplicate rows while 'current' doesn't")
         else if (!target_dup && current_dup) msg = c(msg, "Dataset 'current' has duplicate rows while 'target' doesn't")
         else { # both
           if (!identical(tolerance, sqrt(.Machine$double.eps))) # non-default will raise error
             stopf("Duplicate rows in datasets, numeric columns and ignore.row.order cannot be used with non 0 tolerance argument")
           msg = c(msg, "Both datasets have duplicate rows, they also have numeric columns, together with ignore.row.order this force 'tolerance' argument to 0")
-          tolerance = 0
+          tolerance = 0.0
         }
-      } else { # no numeric columns or tolerance==0L
+      } else { # no numeric columns or tolerance==0
         if (target_dup && !current_dup)
           return(sprintf("Dataset 'target' has duplicate rows while 'current' doesn't%s", tolerance.msg))
         if (!target_dup && current_dup)
@@ -217,17 +219,17 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
       }
     }
     # handling 'tolerance' for factor cols - those `msg` will be returned only when equality with tolerance will fail
-    if (any(vapply_1b(target,is.factor)) && !identical(tolerance, 0)) {
+    if (any(vapply_1b(target, is.factor)) && !identical(tolerance, 0.0)) {
       if (!identical(tolerance, sqrt(.Machine$double.eps))) # non-default will raise error
         stopf("Factor columns and ignore.row.order cannot be used with non 0 tolerance argument")
       msg = c(msg, "Using factor columns together together with ignore.row.order, this force 'tolerance' argument to 0")
-      tolerance = 0
+      tolerance = 0.0
     }
     jn.on = copy(names(target)) # default, possible altered later on
-    dbl.cols = vapply_1c(target,typeof)=="double"
-    if (!identical(tolerance, 0)) {
+    dbl.cols = vapply_1c(target, typeof)=="double"
+    if (!identical(tolerance, 0.0)) {
       if (!any(dbl.cols)) { # dbl.cols handles (removed) "all character columns" (char.cols) case as well
-        tolerance = 0
+        tolerance = 0.0
       } else {
         jn.on = jn.on[c(which(!dbl.cols), which(dbl.cols))] # double column must be last for rolling join
       }
@@ -238,7 +240,7 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
       jn.on = c(".seqn", jn.on)
     }
     # roll join to support 'tolerance' argument, conditional to retain support for factor when tolerance=0
-    ans = if (identical(tolerance, 0)) target[current, nomatch=NA, which=TRUE, on=jn.on] else {
+    ans = if (identical(tolerance, 0.0)) target[current, nomatch=NA, which=TRUE, on=jn.on] else {
       ans1 = target[current, roll=tolerance, rollends=TRUE, which=TRUE, on=jn.on]
       ans2 = target[current, roll=-tolerance, rollends=TRUE, which=TRUE, on=jn.on]
       pmin(ans1, ans2, na.rm=TRUE)
@@ -248,7 +250,7 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
       return(msg)
     }
     # rolling join other way around
-    ans = if (identical(tolerance, 0)) current[target, nomatch=NA, which=TRUE, on=jn.on] else {
+    ans = if (identical(tolerance, 0.0)) current[target, nomatch=NA, which=TRUE, on=jn.on] else {
       ans1 = current[target, roll=tolerance, rollends=TRUE, which=TRUE, on=jn.on]
       ans2 = current[target, roll=-tolerance, rollends=TRUE, which=TRUE, on=jn.on]
       pmin(ans1, ans2, na.rm=TRUE)
@@ -263,7 +265,7 @@ all.equal.data.table = function(target, current, trim.levels=TRUE, check.attribu
       x = target[[i]]
       y = current[[i]]
       if (XOR(is.factor(x), is.factor(y)))
-        stopf("Internal error: factor type mismatch should have been caught earlier") # nocov
+        internal_error("factor type mismatch should have been caught earlier") # nocov
       cols.r = TRUE
       if (is.factor(x)) {
         if (!identical(levels(x),levels(y))) {

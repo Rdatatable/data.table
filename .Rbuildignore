@@ -1,4 +1,5 @@
 .dir-locals.el
+.check.translations.R
 ^\.Rprofile$
 ^data\.table_.*\.tar\.gz$
 ^config\.log$
@@ -16,6 +17,7 @@
 ^\.devcontainer$
 ^\.graphics$
 ^\.github$
+^\.vscode$
 ^\.zed$
 
 ^\.gitlab-ci\.yml$
@@ -27,6 +29,7 @@
 ^src/Makevars$
 ^CODEOWNERS$
 ^GOVERNANCE\.md$
+^Seal_of_Approval\.md$
 
 ^\.RData$
 ^\.Rhistory$
