@@ -412,11 +412,11 @@ SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg) {
 #include <zlib.h>
 #endif
 SEXP dt_zlib_version(void) {
-  char out[71];
+  char out[70];
 #ifndef NOZLIB
-  snprintf(out, 70, "zlibVersion()==%s ZLIB_VERSION==%s", zlibVersion(), ZLIB_VERSION); // # notranslate
+  snprintf(out, sizeof(out), "zlibVersion()==%s ZLIB_VERSION==%s", zlibVersion(), ZLIB_VERSION); // # notranslate
 #else
-  snprintf(out, 70, _("zlib header files were not found when data.table was compiled"));
+  snprintf(out, sizeof(out), _("zlib header files were not found when data.table was compiled"));
 #endif
   return ScalarString(mkChar(out));
 }
@@ -547,7 +547,7 @@ void internal_error(const char *call_name, const char *format, ...) {
   va_list args;
   va_start(args, format);
 
-  vsnprintf(buff, 1023, format, args);
+  vsnprintf(buff, sizeof(buff), format, args);
   va_end(args);
 
   error("%s %s: %s. %s", _("Internal error in"), call_name, buff, _("Please report to the data.table issues tracker."));

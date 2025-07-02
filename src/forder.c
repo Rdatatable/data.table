@@ -104,7 +104,7 @@ void internal_error_with_cleanup(const char *call_name, const char *format, ...)
   va_list args;
   va_start(args, format);
 
-  vsnprintf(buff, 1023, format, args);
+  vsnprintf(buff, sizeof(buff), format, args);
   va_end(args);
 
   cleanup();
