@@ -117,7 +117,10 @@ local({
     data.table(id6=5:1, id7=1:5, v3=1:5),
     data.table(id8=5:1, id9=5:1, v4=1:5)
   )
-  setkeyv(l[[1L]], "id1"); setindexv(l[[1L]], list("id1", "id2", "id3", c("id1", "id2", "id3"))); setindexv(l[[3L]], list("id6", "id7")); setindexv(l[[4L]], "id9")
+  setkeyv(l[[1L]], "id1")
+  setindexv(l[[1L]], list("id1", "id2", "id3", c("id1", "id2", "id3")))
+  setindexv(l[[3L]], list("id6", "id7"))
+  setindexv(l[[4L]], "id9")
   ii = lapply(l, indices)
   ans = cbindlist(l)
   test(13.1, key(ans), "id1")
@@ -674,7 +677,8 @@ local({
   PetAccessories = data.table(AccessoryName=c("Ball", "Bone", "Mouse"), PetName=c("Rover", "Rover", "Fifi"), key="AccessoryName")
   expected = data.table(PetName=c("Rover", "Rover", NA, "Fifi"), PersonName=c("Alice", "Alice", "Bob", "Charles"), AccessoryName=c("Ball", "Bone", NA, "Mouse"))
   test(105.11, Pets[PetAccessories, on="PetName", nomatch=NULL][Persons, on="PersonName"], expected) ## test [.data.table
-  setcolorder(expected, "PersonName"); setkeyv(expected, "PersonName") ## ignore.row.order, ignore.col.order, check.attributes=FALSE
+  setcolorder(expected, "PersonName")
+  setkeyv(expected, "PersonName") ## ignore.row.order, ignore.col.order, check.attributes=FALSE
   test(105.12, mergelist(list(Pets, PetAccessories, Persons), how=list("inner", "right"), on=list("PetName", "PersonName"), mult="all"), expected)
 })
 
@@ -692,7 +696,8 @@ local({
   test(107.02, mergelist(l, how="semi", on="x", mult="first"), data.table(x=c(3:2, 2L), y=c("c", "b", "b"))) ## rows order of x, not i
   test(107.03, mergelist(list(data.table(id1=1:4, id2=4:1, v1=1L), data.table(id2=3:5, v2=2L)), on="id2", how="semi"), data.table(id1=1:2, id2=4:3, v1=1L)) ## columns order of x, not i
   l = list(data.table(id=c(3L, 1L, 2L, 1L, 1L), g=c("A", "A", "B", "B", "A"), v=10L * (1:5)), data.table(id=c(1L, 1:3), g="A"))
-  test(107.11, mergelist(l, how="semi", on=c("id", "g"), mult="first"), l[[1L]][ sort(unique(l[[1L]][l[[2L]], on=names(l[[2L]]), nomatch=0L, which=TRUE]))])
+  expected = l[[1L]][sort(unique(l[[1L]][l[[2L]], on=names(l[[2L]]), nomatch=0L, which=TRUE]))]
+  test(107.11, mergelist(l, how="semi", on=c("id", "g"), mult="first"), expected)
 })
 
 test(107.81, mergelist(list(data.table(a=1:2), data.table(b=1:2), data.table(a=1:2, b=1:2)), how=list("cross", "semi"), on=list(character(), c("a", "b"))), data.table(a=1:2, b=1:2)) ### mult default
@@ -728,7 +733,8 @@ local({
 ## retain index
 local({
   l = list(data.table(id1=1:3, id2=c(2L, 1L, 2L), v1=1:3), data.table(id1=3:1, v2=1:3))
-  setkeyv(l[[1L]], "id1"); setindexv(l[[1L]], "id2")
+  setkeyv(l[[1L]], "id1")
+  setindexv(l[[1L]], "id2")
 
   ans = mergelist(l, on="id1")
   test(110.01, ans, data.table(id1=1:3, id2=c(2L, 1L, 2L), v1=1:3, v2=3:1, key="id1"))
@@ -750,14 +756,16 @@ local({
 })
 local({
   l = list(data.table(id1=integer(), v1=integer()), data.table(id1=1:2, id2=2:1, v2=1:2))
-  setkeyv(l[[2L]], "id1"); setindexv(l[[2L]], "id2")
+  setkeyv(l[[2L]], "id1")
+  setindexv(l[[2L]], "id2")
   ans = mergelist(l, on="id1", how="full")
   test(110.10, ans, data.table(id1=1:2, v1=c(NA_integer_, NA), id2=2:1, v2=1:2, key="id1"))
   test(110.11, hasindex(ans, "id2"))
 })
 local({
   l = list(data.table(id1=3:1, v1=1:3), data.table(id1=1:3, id2=c(2L, 1L, 2L), v2=1:3))
-  setkeyv(l[[2L]], "id1"); setindexv(l[[2L]], "id2")
+  setkeyv(l[[2L]], "id1")
+  setindexv(l[[2L]], "id2")
 
   ans = mergelist(l, on="id1", how="right")
   test(110.12, ans, data.table(id1=1:3, v1=3:1, id2=c(2L, 1L, 2L), v2=1:3, key="id1"))
