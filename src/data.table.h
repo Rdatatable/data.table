@@ -6,18 +6,18 @@
 #  define ALTREP(x) 0     // #2866
 #  define USE_RINTERNALS  // #3301
 #  define DATAPTR_RO(x) ((const void *)DATAPTR(x))
-#  define R_Calloc(x, y) Calloc(x, y)         // #6380
-#  define R_Realloc(x, y, z) Realloc(x, y, z)
-#  define R_Free(x) Free(x)
+#  define STRING_PTR_RO STRING_PTR
+#  define INTEGER_RO INTEGER
+#  define REAL_RO REAL
+#  define COMPLEX_RO COMPLEX
+#  define RAW_RO RAW
+#  define LOGICAL_RO LOGICAL
 #endif
-// #if R_VERSION < R_Version(3, 4, 0)
-// #  define SET_GROWABLE_BIT(x)  // #3292
-// #endif
+#if R_VERSION < R_Version(4, 5, 0)
+#  define isDataFrame(x) isFrame(x) // #6180
+#endif
 #include <Rinternals.h>
 #define SEXPPTR_RO(x) ((const SEXP *)DATAPTR_RO(x))  // to avoid overhead of looped STRING_ELT and VECTOR_ELT
-#ifndef STRING_PTR_RO
-#define STRING_PTR_RO SEXPPTR
-#endif
 #include <stdint.h>    // for uint64_t rather than unsigned long long
 #include <stdarg.h>    // for va_list, va_start
 #include <stdbool.h>
@@ -38,13 +38,17 @@
 /* we mean the encoding bits, not CE_NATIVE in a UTF-8 locale */
 #define IS_UTF8(x)  (getCharCE(x) == CE_UTF8)
 #define IS_LATIN(x) (getCharCE(x) == CE_LATIN1)
-#define IS_ASCII(x) (LEVLS(x) & 64) // API expected in R >= 4.5
+#if R_VERSION < R_Version(4, 5, 0)
+# define IS_ASCII(x) (LEVELS(x) & 64)
+#else
+# define IS_ASCII(x) (Rf_charIsASCII(x)) // no CE_ASCII
+#endif
 #define IS_TRUE(x)  (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]==TRUE)
 #define IS_FALSE(x) (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]==FALSE)
 #define IS_TRUE_OR_FALSE(x) (TYPEOF(x)==LGLSXP && LENGTH(x)==1 && LOGICAL(x)[0]!=NA_LOGICAL)
 
-#define SIZEOF(x) __sizes[TYPEOF(x)]
-#define TYPEORDER(x) __typeorder[x]
+#define RTYPE_SIZEOF(x) r_type_sizes[TYPEOF(x)]
+#define RTYPE_ORDER(x) r_type_order[x]
 
 #ifdef MIN
 #  undef MIN
@@ -74,6 +78,15 @@
 // timing the impact and manually avoiding (is there an IS_ASCII on the character vector rather than testing each item every time?)
 #define NEED2UTF8(s) !(IS_ASCII(s) || (s)==NA_STRING || IS_UTF8(s))
 #define ENC2UTF8(s) (!NEED2UTF8(s) ? (s) : mkCharCE(translateCharUTF8(s), CE_UTF8))
+
+// R has been providing a widely portable definition, but since that's not documented, define our own too
+#ifndef NORET
+# if defined(__GNUC__) && __GNUC__ >= 3
+#  define NORET __attribute__((__noreturn__))
+# else
+#  define NORET
+# endif
+#endif
 
 // init.c
 extern SEXP char_integer64;
@@ -117,8 +130,8 @@ extern SEXP sym_as_posixct;
 extern double NA_INT64_D;
 extern long long NA_INT64_LL;
 extern Rcomplex NA_CPLX;  // initialized in init.c; see there for comments
-extern size_t __sizes[100];     // max appears to be FUNSXP = 99, see Rinternals.h
-extern size_t __typeorder[100]; // __ prefix otherwise if we use these names directly, the SIZEOF define ends up using the local one
+extern size_t r_type_sizes[100]; // max appears to be FUNSXP = 99, see Rinternals.h
+extern size_t r_type_order[100];
 
 long long DtoLL(double x);
 double LLtoD(long long x);
@@ -144,7 +157,7 @@ uint64_t dtwiddle(double x);
 SEXP forder(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg);
 SEXP forderReuseSorting(SEXP DT, SEXP by, SEXP retGrpArg, SEXP retStatsArg, SEXP sortGroupsArg, SEXP ascArg, SEXP naArg, SEXP reuseSortingArg); // reuseSorting wrapper to forder
 int getNumericRounding_C(void);
-void internal_error_with_cleanup(const char *call_name, const char *format, ...);
+NORET void internal_error_with_cleanup(const char *call_name, const char *format, ...);
 
 // reorder.c
 SEXP reorder(SEXP x, SEXP order);
@@ -260,7 +273,13 @@ SEXP islockedR(SEXP x);
 bool need2utf8(SEXP x);
 SEXP coerceUtf8IfNeeded(SEXP x);
 SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg);
-void internal_error(const char *call_name, const char *format, ...);
+int n_rows(SEXP x);
+int n_columns(SEXP x);
+bool isDataTable(SEXP x);
+bool isRectangularList(SEXP x);
+bool perhapsDataTable(SEXP x);
+SEXP perhapsDataTableR(SEXP x);
+NORET void internal_error(const char *call_name, const char *format, ...);
 
 // types.c
 char *end(char *start);
@@ -280,6 +299,10 @@ SEXP substitute_call_arg_namesR(SEXP expr, SEXP env);
 //negate.c
 SEXP notchin(SEXP x, SEXP table);
 
+// mergelist.c
+SEXP cbindlist(SEXP x, SEXP copyArg);
+SEXP copyCols(SEXP x, SEXP cols);
+
 // functions called from R level .Call/.External and registered in init.c
 // these now live here to pass -Wstrict-prototypes, #5477
 // all arguments must be SEXP since they are called from R level
@@ -295,10 +318,11 @@ SEXP setcharvec(SEXP, SEXP, SEXP);
 SEXP chmatch_R(SEXP, SEXP, SEXP);
 SEXP chmatchdup_R(SEXP, SEXP, SEXP);
 SEXP chin_R(SEXP, SEXP);
-SEXP freadR(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
-SEXP fwriteR(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+SEXP freadR(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+SEXP fwriteR(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP rbindlist(SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP setlistelt(SEXP, SEXP, SEXP);
+SEXP setS4elt(SEXP, SEXP, SEXP);
 SEXP address(SEXP);
 SEXP expandAltRep(SEXP);
 SEXP fmelt(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
@@ -342,7 +366,6 @@ SEXP nqRecreateIndices(SEXP, SEXP, SEXP, SEXP, SEXP);
 SEXP fsort(SEXP, SEXP);
 SEXP inrange(SEXP, SEXP, SEXP, SEXP);
 SEXP hasOpenMP(void);
-SEXP beforeR340(void);
 SEXP uniqueNlogical(SEXP, SEXP);
 SEXP dllVersion(void);
 SEXP initLastUpdated(SEXP);
@@ -353,4 +376,3 @@ SEXP dt_has_zlib(void);
 SEXP startsWithAny(SEXP, SEXP, SEXP);
 SEXP convertDate(SEXP, SEXP);
 SEXP fastmean(SEXP);
-

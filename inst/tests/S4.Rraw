@@ -109,3 +109,26 @@ DT = data.table(a = rep(1:2, c(1, 100)))
 # Set the S4 bit on a simple object
 DT[, b := asS4(seq_len(.N))]
 test(6, DT[, b, by=a, verbose=TRUE][, isS4(b)], output="dogroups: growing")
+
+# setDT() works for a data.frame slot, #6701
+setClass("DataFrame", slots=c(x="data.frame"))
+DF = new("DataFrame", x=data.frame(a=1))
+setDT(DF@x)
+test(7.1, is.data.table(DF@x))
+# Similar code for under-allocated data.tables in S4 slots, #6704
+setClass("DataTable", slots=c(x="data.table"))
+test(7.2, options=c(datatable.alloccol=0L), {DT = new("DataTable", x=data.table(a=1)); DT@x[, b := 2L]; DT@x$b}, 2L) # NB: requires assigning DT to test assignment back to that object
+
+# IDate was not visible as Date to S4 dispatch, #6839
+CustomDurationClass <- setClass("CustomDurationClass", contains = "integer")
+setGeneric("%foo%", function(e1, e2) stop("dispatch to default method"))
+setMethod(`%foo%`, c("Date", "CustomDurationClass"), function (e1, e2) e1 - e2@.Data)
+test(8, as.IDate("2025-03-01") %foo% CustomDurationClass(1), as.IDate("2025-02-28"))
+removeGeneric("%foo%")
+removeClass("CustomDurationClass")
+
+# data.table(s4) #6874 should work
+s4cl = setClass("s4cl", slots=list(x="integer"))
+DT = setalloccol(structure(list(a=new("s4cl", x=1L)), row.names=c(NA, -1L), class=c("data.table", "data.frame")))
+test(9, data.table(a=s4cl(x=1L)), DT)
+removeClass("s4cl")
