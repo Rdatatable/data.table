@@ -51,7 +51,7 @@
     \item{ When \code{how \%in\% c("inner", full")}, if only one table has a key, then this key is used; if both tables have keys, then \code{on = intersect(key(lhs), key(rhs))}, having its order aligned to shorter key. }
   }
 
-  When joining tables that are not directly linked to a single table, e.g. a snowflake schema, a \emph{right} outer join can be used to optimize the sequence of merges, see Examples.
+  When joining tables that are not directly linked to a single table, e.g. a snowflake schema (see References), a \emph{right} outer join can be used to optimize the sequence of merges, see Examples.
 }
 \value{
   A new \code{data.table} based on the merged objects.
@@ -66,6 +66,10 @@
 \seealso{
   \code{\link{[.data.table}}, \code{\link{merge.data.table}}
 }
+\references{
+  \url{https://en.wikipedia.org/wiki/Snowflake_schema}, \url{https://en.wikipedia.org/wiki/Star_schema}
+}
+
 \examples{
 l = list(
   data.table(id1=c(1:4, 2:5), v1=1:8),
