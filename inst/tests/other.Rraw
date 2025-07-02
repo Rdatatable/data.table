@@ -791,11 +791,11 @@ if (loaded[["DBI"]] && loaded[["RSQLite"]]) {
   # produce SQL statement
   # ln, rn: lhs names, rhs names, symmult: symmetric mult
   mult_all = function(tbl, cols, ...) sprintf(
-    "(\n  SELECT %s FROM %s\n) %s",
+    "(\n  SELECT %s FROM %s \n) %s",
     paste(setdiff(cols,"row_id"), collapse=", "), tbl, tbl
   )
   mult_one = function(tbl, cols, on, mult) sprintf(
-    "(SELECT %s FROM (\n  SELECT *, ROW_NUMBER() OVER (PARTITION BY %s ORDER BY row_id %s) AS rownum FROM %s\n) %s WHERE rownum=1) %s",
+    "(SELECT %s FROM (\n  SELECT *, ROW_NUMBER() OVER (PARTITION BY %s ORDER BY row_id %s) AS rownum FROM %s \n) %s WHERE rownum=1) %s",
     paste(setdiff(cols,c("row_id","rownum")), collapse=", "),
     paste(on, collapse=", "),
     if (mult=="first") "ASC" else "DESC",
@@ -806,7 +806,7 @@ if (loaded[["DBI"]] && loaded[["RSQLite"]]) {
     # building sql query
     if (how=="full") {
       return(sprintf(
-        "%s\nUNION ALL\n%s",
+        "%s \n UNION ALL \n %s",
         sql("left", on, mult, ln, rn, symmult=mult%in%c("first","last")),
         sql("right", on, mult, ln, rn, symmult=mult%in%c("first","last"), notjoin=TRUE)
       ))
@@ -816,21 +816,21 @@ if (loaded[["DBI"]] && loaded[["RSQLite"]]) {
     using = sprintf("USING (%s)", paste(on, collapse=", "))
     lhs = "lhs"; rhs = "rhs"
     join = if (how=="inner") {
-      if (mult=="all") sprintf("%s\nINNER JOIN\n%s\n%s", mult_all(lhs, nm[[lhs]]), mult_all(rhs, nm[[rhs]]), using)
-      else sprintf("%s\nINNER JOIN\n%s\n%s", mult_one(lhs, nm[[lhs]], on, mult), mult_one(rhs, nm[[rhs]], on, mult), using)
+      if (mult=="all") sprintf("%s \n INNER JOIN \n %s \n %s", mult_all(lhs, nm[[lhs]]), mult_all(rhs, nm[[rhs]]), using)
+      else sprintf("%s \n INNER JOIN \n %s \n %s", mult_one(lhs, nm[[lhs]], on, mult), mult_one(rhs, nm[[rhs]], on, mult), using)
     } else if (how=="left") {
-      if (mult=="all") sprintf("%s\nLEFT JOIN\n%s\n%s", mult_all(lhs, nm[[lhs]]), mult_all(rhs, nm[[rhs]]), using)
-      else sprintf("%s\nLEFT JOIN\n%s\n%s", (if (symmult) mult_one else mult_all)(lhs, nm[[lhs]], on, mult), mult_one(rhs, nm[[rhs]], on, mult), using)
+      if (mult=="all") sprintf("%s \n LEFT JOIN \n %s \n %s", mult_all(lhs, nm[[lhs]]), mult_all(rhs, nm[[rhs]]), using)
+      else sprintf("%s \n LEFT JOIN \n %s \n %s", (if (symmult) mult_one else mult_all)(lhs, nm[[lhs]], on, mult), mult_one(rhs, nm[[rhs]], on, mult), using)
     } else if (how=="right") { ## lhs-rhs swap happens here, mult_one is applied on new rhs
-      if (mult=="all") sprintf("%s\nLEFT JOIN\n%s\n%s", mult_all(rhs, nm[[rhs]]), mult_all(lhs, nm[[lhs]]), using)
-      else sprintf("%s\nLEFT JOIN\n%s\n%s", (if (symmult) mult_one else mult_all)(rhs, nm[[rhs]], on, mult), mult_one(lhs, nm[[lhs]], on, mult), using)
+      if (mult=="all") sprintf("%s \n LEFT JOIN \n %s \n %s", mult_all(rhs, nm[[rhs]]), mult_all(lhs, nm[[lhs]]), using)
+      else sprintf("%s \n LEFT JOIN \n %s \n %s", (if (symmult) mult_one else mult_all)(rhs, nm[[rhs]], on, mult), mult_one(lhs, nm[[lhs]], on, mult), using)
     }
     if (how=="right") {lhs = "rhs"; rhs = "lhs"} ## this name swap is for notjoin and select below
     where = if (!notjoin) "" else sprintf("\nWHERE %s IS NULL", paste(rhs, on, sep="."))
     select = sprintf("%s, %s, %s", paste(lhs, on, sep="."),
                     paste("lhs", setdiff(nm[["lhs"]], c("row_id",on)),sep=".",collapse=", "),
                     paste("rhs", setdiff(nm[["rhs"]], c("row_id",on)),sep=".",collapse=", "))
-    sprintf("SELECT %s FROM\n%s%s", select, join, where)
+    sprintf("SELECT %s FROM \n %s%s", select, join, where)
   }
 
   # .conn SQLite connection, if provided it will use it instead of creating temporary one
