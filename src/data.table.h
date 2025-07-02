@@ -272,6 +272,12 @@ SEXP islockedR(SEXP x);
 bool need2utf8(SEXP x);
 SEXP coerceUtf8IfNeeded(SEXP x);
 SEXP coerceAs(SEXP x, SEXP as, SEXP copyArg);
+int n_rows(SEXP x);
+int n_columns(SEXP x);
+bool isDataTable(SEXP x);
+bool isRectangularList(SEXP x);
+bool perhapsDataTable(SEXP x);
+SEXP perhapsDataTableR(SEXP x);
 SEXP frev(SEXP x, SEXP copyArg);
 NORET void internal_error(const char *call_name, const char *format, ...);
 
@@ -292,6 +298,10 @@ SEXP substitute_call_arg_namesR(SEXP expr, SEXP env);
 
 //negate.c
 SEXP notchin(SEXP x, SEXP table);
+
+// mergelist.c
+SEXP cbindlist(SEXP x, SEXP copyArg);
+SEXP copyCols(SEXP x, SEXP cols);
 
 // functions called from R level .Call/.External and registered in init.c
 // these now live here to pass -Wstrict-prototypes, #5477
