@@ -115,6 +115,7 @@ groupingsets.data.table = function(x, j, by, sets, .SDcols, id = FALSE, jj, labe
   # inline all arguments that might clash with enclosing environment
   pcall = substitute(x[0L, jj, by], list(x = x, jj = jj, by = by))
   if (length(.SDcols)) pcall$.SDcols = .SDcols
+  # suppress e.g. the min(double()) warning, #6964
   empty = suppressWarnings(eval(pcall, list(.datatable.aware = TRUE), enclos))
   if (id && "grouping" %chin% names(empty)) # `j` could have been evaluated to `grouping` field
     stopf("When using `id=TRUE` the 'j' expression must not evaluate to a column named 'grouping'.")
