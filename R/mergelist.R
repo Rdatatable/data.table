@@ -299,7 +299,7 @@ mergelist_impl_ = function(l, on, cols, how, mult, copy) {
   if (length(how)!=n-1L || !all(vapply_1b(how, function(x) is.character(x) && length(x)==1L && !anyNA(x) && x %chin% c("left", "inner", "full", "right", "semi", "anti", "cross"))))
     stopf("'how' must be one of [left, inner, full, right, semi, anti, cross], or a list of such whose length must be length(l)-1L")
 
-  if (missing(cols) || is.null(cols)) {
+  if (is.null(cols)) {
     cols = vector("list", n)
   } else {
     if (!is.list(cols))
@@ -346,12 +346,12 @@ mergelist_impl_ = function(l, on, cols, how, mult, copy) {
   out
 }
 
-mergelist = function(l, on, cols, how=c("left", "inner", "full", "right", "semi", "anti", "cross"), mult, join.many=getOption("datatable.join.many")) {
+mergelist = function(l, on, cols=NULL, how=c("left", "inner", "full", "right", "semi", "anti", "cross"), mult, join.many=getOption("datatable.join.many")) {
   if (missing(how) || is.null(how))
     how = match.arg(how)
   mergelist_impl_(l, on, cols, how, mult, join.many, copy=TRUE)
 }
-setmergelist = function(l, on, cols, how=c("left", "inner", "full", "right", "semi", "anti", "cross"), mult, join.many=getOption("datatable.join.many")) {
+setmergelist = function(l, on, cols=NULL, how=c("left", "inner", "full", "right", "semi", "anti", "cross"), mult, join.many=getOption("datatable.join.many")) {
   if (missing(how) || is.null(how))
     how = match.arg(how)
   mergelist_impl_(l, on, cols, how, mult, join.many, copy=FALSE)

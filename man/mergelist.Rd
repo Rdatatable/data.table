@@ -6,17 +6,17 @@
   Faster merge of multiple \code{data.table}s.
 }
 \usage{
-  mergelist(l, on, cols,
+  mergelist(l, on, cols=NULL,
     how=c("left", "inner", "full", "right", "semi", "anti", "cross"),
     mult, join.many=getOption("datatable.join.many"))
-  setmergelist(l, on, cols,
+  setmergelist(l, on, cols=NULL,
     how=c("left", "inner", "full", "right", "semi", "anti", "cross"),
     mult, join.many=getOption("datatable.join.many"))
 }
 \arguments{
   \item{l}{ \code{list} of \code{data.table}s to merge. }
-  \item{on}{ \code{character} vector of column names to merge on; when missing, the \emph{key} of \emph{join-to} table is used. }
-  \item{cols}{ \code{list} of \code{character} column names corresponding to tables in \code{l}, used to subset columns during merges. }
+  \item{on}{ \code{character} vector of column names to merge on; when missing, the \code{\link{key}} of the \emph{join-to} table is used (see Details). }
+  \item{cols}{ Optional \code{list} of \code{character} column names corresponding to tables in \code{l}, used to subset columns during merges. }
   \item{how}{ \code{character} scalar, controls how to merge tables. Allowed values are \code{"left"} (default), \code{"inner"}, \code{"full"}, \code{"right"}, \code{"semi"}, \code{"anti"}, \code{"cross"}. See Details. }
   \item{mult}{ \code{character} scalar, controls how to proceed when multiple rows in \emph{join-to} table match to the row in \emph{join-from} table. Allowed values are \code{"error"}, \code{"all"}, \code{"first"}, \code{"last"}. Default depends on \code{how}, described in \emph{details} below. See examples on how to detect duplicated matches. Using \code{"all"} is recommended together with \code{join.many=FALSE}, unless rows explosion or cartesian product are intended. }
   \item{join.many}{ \code{logical}, defaults to \code{getOption("datatable.join.many")}, which is \code{TRUE} by default; when \code{FALSE} and \code{mult="all"}, then extra check is made to ensure no \emph{many-to-many} matches exist between tables, and if they exist, then exception is raised. Works similarly to \code{allow.cartesian} option in \code{[.data.table} but is more strict. An option \code{"datatable.join.many"} controls that globally for \code{mergelist} and \code{[.data.table}. }
