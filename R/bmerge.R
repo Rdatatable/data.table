@@ -27,6 +27,7 @@ coerce_col = function(dt, col, from_type, to_type, from_name, to_name, from_deta
 
 # data.table::as.ITime, chron::times, nanotime::nanotime
 .known_time_classes = c("Date", "POSIXt", "ITime", "times", "nanotime")
+# nolint next: object_length_linter.
 .maybe_warn_mismatched_time_types = function(x_class, i_class, x_name, i_name) {
   x_class_time = intersect(class(x[[xcol]]), .known_time_classes)
   if (!length(x_class_time)) return(invisible())
