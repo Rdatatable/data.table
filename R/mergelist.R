@@ -157,9 +157,9 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
         stopf("'on' is missing and necessary key is not present")
     }
     if (any(bad.on <- !on %chin% names(lhs)))
-      stopf("'on' argument specifies columns to join [%s] that are not present in %s table [%s]", brackify(on[bad.on]), "LHS", brackify(names(lhs)))
+      stopf("'on' argument specifies columns to join %s that are not present in %s table %s", brackify(on[bad.on]), "LHS", brackify(names(lhs)))
     if (any(bad.on <- !on %chin% names(rhs)))
-      stopf("'on' argument specifies columns to join [%s] that are not present in %s table [%s]", brackify(on[bad.on]), "RHS", brackify(names(rhs)))
+      stopf("'on' argument specifies columns to join %s that are not present in %s table %s", brackify(on[bad.on]), "RHS", brackify(names(rhs)))
   } else if (is.null(on)) {
     on = character() ## cross join only
   }
@@ -203,7 +203,7 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
     copy_x = TRUE
     ## ensure no duplicated column names in merge results
     if (any(dup.i <- names(out.i) %chin% names(out.x)))
-      stopf("merge result has duplicated column names [%s], use 'cols' argument or rename columns in 'l' tables", brackify(names(out.i)[dup.i]))
+      stopf("merge result has duplicated column names %s, use 'cols' argument or rename columns in 'l' tables", brackify(names(out.i)[dup.i]))
   }
 
   ## stack i and x
@@ -269,7 +269,7 @@ mergelist_impl_ = function(l, on, cols, how, mult, join.many, copy) {
   if (!all(idx <- lengths(l) > 0L))
     stopf("Tables in 'l' must all have columns, but these entries have 0: %s", brackify(which(!idx)))
   if (any(idx <- vapply_1i(l, function(x) anyDuplicated(names(x))) > 0L))
-    stopf("Column names in individual 'l' entries must be unique, but these have some duplicates: [%s]", brackify(which(idx)))
+    stopf("Column names in individual 'l' entries must be unique, but these have some duplicates: %s", brackify(which(idx)))
 
   if (!isTRUEorFALSE(copy))
     stopf("'%s' must be TRUE or FALSE", "copy")
