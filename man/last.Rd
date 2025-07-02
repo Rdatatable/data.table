@@ -17,6 +17,9 @@ last(x, n=1L, na.rm=FALSE, \dots)
 \item{\dots}{ Not applicable for \code{data.table} first/last. Any arguments here
 are passed through to \code{xts}'s first/last. }
 }
+\note{
+For zero-length vectors, \code{first(x)} and \code{last(x)} mimic \code{head(x, 1)} and \code{tail(x, 1)} by returning an empty vector instead of \code{NA}. However, unlike \code{head()}/\code{tail()} and base R subsetting (e.g., \code{x[1]}), they do not preserve attributes like names.
+}
 \value{
 The first/last \code{n} items of a vector or list.
 When \code{na.rm=TRUE} the first/last item in each column of a \code{data.frame} or \code{data.table}.

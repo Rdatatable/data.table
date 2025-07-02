@@ -2,10 +2,10 @@
 
 void negateByRef(SEXP x) {
   if(TYPEOF(x) != LGLSXP) {
-    error("not logical or integer vector");  // # nocov
+    error(_("not logical or integer vector"));  // # nocov
   }
   const int n = length(x);
-  Rboolean *ansd = (Rboolean *)LOGICAL(x);
+  int *ansd = LOGICAL(x);
   for(int i=0; i<n; ++i) {
     ansd[i] ^= (ansd[i] != NA_LOGICAL);  // invert true/false but leave NA alone
   }
@@ -19,4 +19,3 @@ SEXP notchin(SEXP x, SEXP table) {
   UNPROTECT(1);
   return result;
 }
-

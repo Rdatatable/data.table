@@ -12,11 +12,13 @@ last = function(x, n=1L, na.rm=FALSE, ...) {
 }
 
 .firstlast = function(x, n=1L, na.rm=FALSE, first=TRUE, ...) {
+  # nocov start. Tests 19.* in other.Rraw, not in the main suite.
   if (inherits(x, "xts")) {
     if (isTRUE(getOption("datatable.verbose", FALSE)))
       catf("using %s\n", if (first) "xts::first" else "xts::last")
     return((if (first) xts::first else xts::last)(x, n=n, na.rm=na.rm, ...))
   }
+  # nocov end.
   stopifnot(isTRUEorFALSE(na.rm) || identical(na.rm,"row"))
   stopifnot(is.numeric(n), length(n)==1L, n>=0L)
   n = as.integer(n)
@@ -79,4 +81,3 @@ last = function(x, n=1L, na.rm=FALSE, ...) {
   # gforce_dynamic in gsumm.c either. n=1 na.rm=TRUE returns empty when all-NA so is still a vector result not recycled when length-1.
   ans
 }
-

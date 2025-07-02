@@ -23,6 +23,10 @@
 /src/programming.c @jangorecki
 /vignettes/datatable-programming.Rmd @jangorecki
 
+# roll-up & setops
+/R/groupingsets.R @jangorecki
+/R/setops.R @jangorecki
+
 # GForce groupby
 /src/gsumm.c @ben-schwen
 # datetime classes
@@ -35,11 +39,23 @@
 /src/shift.c @ben-schwen @michaelchirico
 /man/shift.Rd @ben-schwen @michaelchirico
 
+# rbind
+/src/rbindlist.c @ben-schwen
+/man/rbindlist.Rd @ben-schwen
+
 # translations
 /inst/po/ @michaelchirico
 /po/ @michaelchirico
 /R/translation.R @michaelchirico
 /src/po.h @michaelchirico
+/po/*.pot @Rdatatable/translators
+/po/*es.po @Rdatatable/spanish
+/po/*fr.po @Rdatatable/french
+/po/*pt_BR.po @Rdatatable/brazil
+/po/*ru.po @Rdatatable/russian
+/po/*zh_CN.po @Rdatatable/chinese
+/vignettes/fr/*.Rmd @Rdatatable/french
+/vignettes/ru/*.Rmd @Rdatatable/russian
 
 # printing
 /R/print.data.table.R @michaelchirico
@@ -56,3 +72,15 @@
 # performance testing
 /.ci/atime/tests.R @tdhock @Anirban166
 /.github/workflows/performance-tests.yaml @Anirban166
+
+# docs
+/man/openmp-utils.Rd @Anirban166
+/Seal_of_Approval.md @tdhock
+/GOVERNANCE.md: @Rdatatable/committers
+
+# GLCI
+.gitlab-ci.yml @jangorecki @ben-schwen
+
+# C code tricks
+/src/chmatch.c @aitap
+/src/fread.c @aitap

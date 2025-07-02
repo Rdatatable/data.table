@@ -1,0 +1,58 @@
+# adapted from a similar check run by {arrow}
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+name: 'rchk'
+
+jobs:
+  rchk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: r-lib/actions/setup-r@v2
+        with:
+            r-version: 'devel'
+      - name: Build
+        run: |
+          ls -l | cat
+          R CMD build --no-build-vignettes .
+          mkdir packages
+          mv data.table_*.tar.gz packages
+      - name: Run rchk
+        run: |
+          docker run -v `pwd`/packages:/rchk/packages kalibera/rchk:latest /rchk/packages/data.table_*.tar.gz |& tee rchk.out
+      - name: Confirm that rchk has no errors
+        # Suspicious call, [UP], and [PB] are all of the error types currently at
+        # https://github.com/kalibera/cran-checks/tree/HEAD/rchk/results
+        # though this might not be exhaustive, there does not appear to be a way to have rchk return an error code
+        # CRAN also will remove some of the outputs (especially those related to Rcpp and strptime, e.g.
+        # ERROR: too many states (abstraction error?))
+        # https://github.com/kalibera/rchk
+        run: |
+          cat rchk.out
+          if [ $(grep -Fc "Suspicious call" rchk.out) -gt 0 ] || [ $(grep -F "[UP]" rchk.out | grep -Fvc "results will be incomplete") -gt 0 ] || [ $(grep -Fc "[PB]" rchk.out) -gt 0 ]; then
+            echo "Found rchk errors"
+            exit 1
+          fi
+        if: always()
+      - name: Dump rchk output logs
+        run: cat rchk.out
+        if: always()
