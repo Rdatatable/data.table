@@ -109,8 +109,6 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
       stopf("Incompatible join types: %s (%s) and %s (%s). Factor columns must join to factor or character columns.", xname, x_merge_type, iname, i_merge_type)
     }
 
-    .maybe_warn_mismatched_time_types(class(x[[xcol]]), class(i[[icol]]), x_name, i_name)
-
     if (x_merge_type == i_merge_type) {
       if (verbose) catf("%s has same type (%s) as %s. No coercion needed.\n", iname, x_merge_type, xname)
       next
@@ -178,6 +176,8 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
       }
     }
   }
+
+  .maybe_warn_mismatched_time_types(class(x[[xcol]]), class(i[[icol]]), x_name, i_name)
 
   ## after all modifications of x, check if x has a proper key on all xcols.
   ## If not, calculate the order. Also for non-equi joins, the order must be calculated.
