@@ -305,7 +305,7 @@ mergelist_impl_ = function(l, on, cols, how, mult, copy) {
     if (!is.list(cols))
       stopf("'%s' must be a list", "cols")
     if (length(cols) != n)
-      stopf("'cols' must be same length as 'l'")
+      stopf("'cols' must be same length as 'l' (%d != %d)", length(cols), n)
     skip = vapply_1b(cols, is.null)
     if (!all(vapply_1b(cols[!skip], function(x) is.character(x) && !anyNA(x) && !anyDuplicated(x))))
       stopf("'cols' must be a list of non-zero length, non-NA, non-duplicated, character vectors, or eventually NULLs (all columns)")
