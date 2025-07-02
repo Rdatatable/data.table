@@ -9,6 +9,10 @@ vignette: >
   \usepackage[utf8]{inputenc}
 ---
 
+```{r echo=FALSE, file='../_translation_links.R'}
+```
+`r .write.translation.links("Translations of this document are available in: %s")`
+
 ```{r, echo = FALSE, message = FALSE}
 require(data.table)
 knitr::opts_chunk$set(
@@ -125,7 +129,7 @@ dcast(DT.m1, family_id + age_mother ~ child, value.var = "dob")
 Vous pouvez également passer une fonction d'agrégation dans `dcast` avec l'argument `fun.aggregate`. Ceci est particulièrement essentiel lorsque la formule fournie ne permet pas d'identifier une seule observation pour chaque cellule.
 
 ```{r}
-dcast(DT.m1, family_id ~ ., fun.agg = function(x) sum(!is.na(x)), value.var = "dob")
+dcast(DT.m1, family_id ~ ., fun.aggregate = function(x) sum(!is.na(x)), value.var = "dob")
 ```
 
 Voir `?dcast` pour d'autres arguments utiles et des exemples supplémentaires.
@@ -152,7 +156,7 @@ DT
 Et vous aimeriez combiner (avec `melt`) toutes les colonnes `dob` ensemble, ainsi que toutes les colonnes `gender` ensemble. Avec la fonctionnalité actuelle, nous pouvons faire quelque chose comme ceci :
 
 ```{r}
-DT.m1 = melt(DT, id = c("family_id", "age_mother"))
+DT.m1 = melt(DT, id.vars = c("family_id", "age_mother"))
 DT.m1[, c("variable", "child") := tstrsplit(variable, "_", fixed = TRUE)]
 DT.c1 = dcast(DT.m1, family_id + age_mother + child ~ variable, value.var = "value")
 DT.c1
@@ -187,7 +191,7 @@ L'idée est assez simple. Nous passons une liste de colonnes à `measure.vars`, 
 ```{r}
 colA = paste0("dob_child", 1:3)
 colB = paste0("gender_child", 1:3)
-DT.m2 = melt(DT, measure = list(colA, colB), value.name = c("dob", "gender"))
+DT.m2 = melt(DT, measure.vars = list(colA, colB), value.name = c("dob", "gender"))
 DT.m2
 
 str(DT.m2) ## le type de col est préservé
@@ -202,7 +206,7 @@ str(DT.m2) ## le type de col est préservé
 En général, dans ce type de problème, les colonnes que l'on souhaite transformer avec `melt` peuvent être distinguées par un motif commun. Nous pouvons utiliser la fonction `patterns()`, implémentée pour faciliter cette tâche, pour fournir des expressions régulières correspondant aux colonnes à combiner ensemble. L'opération ci-dessus peut alors être réécrite comme suit :
 
 ```{r}
-DT.m2 = melt(DT, measure = patterns("^dob", "^gender"), value.name = c("dob", "gender"))
+DT.m2 = melt(DT, measure.vars = patterns("^dob", "^gender"), value.name = c("dob", "gender"))
 DT.m2
 ```
 
@@ -237,7 +241,7 @@ melt(two.iris, measure.vars = measure(part, value.name, sep="."))
 En revenant à l'exemple des données sur les familles et les enfants, nous pouvons voir une utilisation plus complexe de `measure`, impliquant une fonction utilisée pour convertir les valeurs de la chaîne `child` en entiers :
 
 ```{r}
-DT.m3 = melt(DT, measure = measure(value.name, child=as.integer, sep="_child"))
+DT.m3 = melt(DT, measure.vars = measure(value.name, child=as.integer, sep="_child"))
 DT.m3
 ```
 

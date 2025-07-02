@@ -1,4 +1,4 @@
-pkgs = c("ggplot2", "hexbin", "plyr", "dplyr", "caret", "zoo", "xts", "gdata", "nlme", "bit64", "knitr", "parallel", "sf", "nanotime", "R.utils", "yaml")
+pkgs = c("bit64", "caret", "dplyr", "gdata", "ggplot2", "hexbin", "knitr", "nanotime", "nlme", "parallel", "plyr", "R.utils", "sf", "vctrs", "xts", "yaml", "zoo")
 # First expression of this file must be as above: .gitlab-ci.yml uses parse(,n=1L) to read one expression from this file and installs pkgs.
 # So that these dependencies of other.Rraw are maintained in a single place.
 # TEST_DATA_TABLE_WITH_OTHER_PACKAGES is off by default so this other.Rraw doesn't run on CRAN. It is run by GLCI, locally in dev, and by
@@ -18,6 +18,7 @@ if (exists("test.data.table",.GlobalEnv,inherits=FALSE) ||
 }
 
 test = data.table:::test
+coerceAs = data.table:::coerceAs
 INT = data.table:::INT
 
 if (anyDuplicated(pkgs)) stop("Packages defined to be loaded for integration tests in 'inst/tests/other.Rraw' contains duplicates.")
@@ -220,6 +221,7 @@ test(14.2, {example('CJ', package='data.table', local=TRUE, echo=FALSE); TRUE})
 if (loaded[["sf"]]) {  #2273
   DT = as.data.table(st_read(system.file("shape/nc.shp", package = "sf"), quiet=TRUE))
   test(15, DT[1:3, .(NAME, FIPS, geometry)], output="Ashe.*-81.4.*Surry.*-80.4")
+  test(15.1, DT, output="MULTIPOLYGON (((") # make sure individual list items are formatted, #6637, #5224
 
   dsf = sf::st_as_sf(data.table(x=1:10, y=1:10, s=sample(1:2, 10, TRUE)), coords=1:2)
   test(16, split(dsf, dsf$s), list(`1` = dsf[dsf$s == 1, ], `2` = dsf[dsf$s == 2, ]))
@@ -773,3 +775,9 @@ if (loaded[["nanotime"]]) {
 res <- tables(env=.e)
 test(32, res[, .(NAME,NROW,NCOL,MB)], data.table(NAME="DT",NROW=20000000L,NCOL=15L,MB=2288.0))
 rm(.e, res)
+
+if (loaded[["vctrs"]]) {
+  # vctrs::list_of() columns are treated the same as other list() columns
+  DT = data.table(a = 1, b = list_of(mtcars))
+  test(33, DT, output="<vctrs_list_of>.*<data\\.frame\\[32x11\\]>")
+}

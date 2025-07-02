@@ -132,7 +132,7 @@ SEXP freadR(
   args.logical01 = LOGICAL(logical01Arg)[0];
   args.logicalYN = LOGICAL(logicalYNArg)[0];
   {
-    SEXP tt = PROTECT(GetOption(sym_old_fread_datetime_character, R_NilValue));
+    SEXP tt = PROTECT(GetOption1(sym_old_fread_datetime_character));
     args.oldNoDateTime = oldNoDateTime = isLogical(tt) && LENGTH(tt)==1 && LOGICAL(tt)[0]==TRUE;
     UNPROTECT(1);
   }
@@ -147,7 +147,7 @@ SEXP freadR(
   if (!isNull(NAstringsArg) && !isString(NAstringsArg))
     internal_error(__func__, "NAstringsArg is type '%s'. R level catches this", type2char(TYPEOF(NAstringsArg)));  // # nocov
   int nnas = length(NAstringsArg);
-  const char **NAstrings = (const char **)R_alloc((nnas + 1), sizeof(char*));  // +1 for the final NULL to save a separate nna variable
+  const char **NAstrings = (const char **)R_alloc((nnas + 1), sizeof(*NAstrings));  // +1 for the final NULL to save a separate nna variable
   for (int i=0; i<nnas; i++)
     NAstrings[i] = CHAR(STRING_ELT(NAstringsArg,i));
   NAstrings[nnas] = NULL;
@@ -176,6 +176,8 @@ SEXP freadR(
   } else if (strcmp(tt,"double")==0 || strcmp(tt,"numeric")==0) {
     readInt64As = CT_FLOAT64;
   } else STOP(_("Invalid value integer64='%s'. Must be 'integer64', 'character', 'double' or 'numeric'"), tt);
+
+  args.readInt64As = readInt64As;
 
   colClassesSxp = colClassesArg;
 
@@ -231,9 +233,9 @@ static void applyDrop(SEXP items, int8_t *type, int ncol, int dropSource) {
   for (int j=0; j<n; ++j) {
     int k = itemsD[j];
     if (k==NA_INTEGER || k<1 || k>ncol) {
-      static char buff[51];
-      if (dropSource==-1) snprintf(buff, 50, "drop[%d]", j+1);
-      else snprintf(buff, 50, "colClasses[[%d]][%d]", dropSource+1, j+1);
+      static char buff[50];
+      if (dropSource==-1) snprintf(buff, sizeof(buff), "drop[%d]", j + 1); // # notranslate
+      else snprintf(buff, sizeof(buff), "colClasses[[%d]][%d]", dropSource + 1, j + 1); // # notranslate
       if (k==NA_INTEGER) {
         if (isString(items))
           DTWARN(_("Column name '%s' (%s) not found"), CHAR(STRING_ELT(items, j)), buff);
@@ -262,7 +264,7 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
     SEXP elem;
     if (colNames==NULL || colNames[i].len<=0) {
       char buff[12];
-      snprintf(buff,12,"V%d",i+1);
+      snprintf(buff, sizeof(buff), "V%d", i + 1); // # notranslate
       elem = mkChar(buff);  // no PROTECT as passed immediately to SET_STRING_ELT
     } else {
       elem = mkCharLenCE(anchor+colNames[i].off, colNames[i].len, ienc);  // no PROTECT as passed immediately to SET_STRING_ELT
@@ -479,7 +481,7 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
     else if (selectRank) setAttrib(DT, sym_colClassesAs, subsetVector(colClassesAs, selectRank));  // reorder the colClassesAs
   }
   // TODO: move DT size calculation into a separate function (since the final size is different from the initial size anyways)
-  size_t DTbytes = SIZEOF(DT)*(ncol-ndrop)*2; // the VECSXP and its column names (exclude global character cache usage)
+  size_t DTbytes = RTYPE_SIZEOF(DT)*(ncol-ndrop)*2; // the VECSXP and its column names (exclude global character cache usage)
 
   // For each column we could have one of the following cases:
   //   * if the DataTable is "new", then make a new vector
@@ -520,7 +522,7 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
         setAttrib(thiscol, sym_tzone, ScalarString(char_UTC)); // see news for v1.13.0
       }
       SET_TRUELENGTH(thiscol, allocNrow);
-      DTbytes += SIZEOF(thiscol)*allocNrow;
+      DTbytes += RTYPE_SIZEOF(thiscol)*allocNrow;
     }
     resi++;
   }
@@ -624,7 +626,7 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx)
     resj++;
     if (type[j]!=CT_STRING && type[j]>0) {
       if (thisSize == 8) {
-        double *dest = (double *)REAL(VECTOR_ELT(DT, resj)) + DTi;
+        double *dest = REAL(VECTOR_ELT(DT, resj)) + DTi;
         const char *src8 = (char*)buff8 + off8;
         for (int i=0; i<nRows; ++i) {
           *dest = *(double *)src8;
@@ -633,7 +635,7 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx)
         }
       } else
       if (thisSize == 4) {
-        int *dest = (int *)INTEGER(VECTOR_ELT(DT, resj)) + DTi;
+        int *dest = INTEGER(VECTOR_ELT(DT, resj)) + DTi;
         const char *src4 = (char*)buff4 + off4;
         // debug line for #3369 ... if (DTi>2638000) printf("freadR.c:460: thisSize==4, resj=%d, %"PRIu64", %d, %d, j=%d, done=%d\n", resj, (uint64_t)DTi, off4, rowSize4, j, done);
         for (int i=0; i<nRows; ++i) {
@@ -644,7 +646,7 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx)
       } else
       if (thisSize == 1) {
         if (type[j] > CT_BOOL8_Y) STOP(_("Field size is 1 but the field is of type %d\n"), type[j]);
-        Rboolean *dest = (Rboolean *)LOGICAL(VECTOR_ELT(DT, resj)) + DTi;
+        int *dest = LOGICAL(VECTOR_ELT(DT, resj)) + DTi;
         const char *src1 = (char*)buff1 + off1;
         for (int i=0; i<nRows; ++i) {
           int8_t v = *(int8_t *)src1;
@@ -685,7 +687,7 @@ void progress(int p, int eta) {
     if (eta<3 || p>50) return;
     #pragma omp critical
     {
-      REprintf("|--------------------------------------------------|\n|");
+      REprintf("|--------------------------------------------------|\n|"); // # notranslate
       R_FlushConsole();
     }
     displayed = 0;
@@ -696,11 +698,11 @@ void progress(int p, int eta) {
   bar[toPrint] = '\0';
   #pragma omp critical
   {
-    REprintf("%s", bar);
+    REprintf("%s", bar); // # notranslate
     bar[toPrint] = '=';
     displayed = p;
     if (p==50) {
-      REprintf("|\n");
+      REprintf("|\n"); // # notranslate
       displayed = -1;
     }
     R_FlushConsole();
@@ -708,13 +710,13 @@ void progress(int p, int eta) {
 }
 // # nocov end
 
-void __halt(bool warn, const char *format, ...) {
+void halt__(bool warn, const char *format, ...) {
   // Solves: http://stackoverflow.com/questions/18597123/fread-data-table-locks-files
   // TODO: always include fnam in the STOP message. For log files etc.
   va_list args;
   va_start(args, format);
   char msg[2000];
-  vsnprintf(msg, 2000, format, args);
+  vsnprintf(msg, sizeof(msg), format, args);
   va_end(args);
   freadCleanup(); // this closes mmp hence why we just copied substrings from mmp to msg[] first since mmp is now invalid
   // if (warn) warning(_("%s"), msg);

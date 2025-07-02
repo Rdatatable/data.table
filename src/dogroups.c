@@ -101,7 +101,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     copyMostAttrib(VECTOR_ELT(groups, j), VECTOR_ELT(BY,i));  // not names, otherwise test 778 would fail
     SET_STRING_ELT(bynames, i, STRING_ELT(getAttrib(groups,R_NamesSymbol), j));
     defineVar(install(CHAR(STRING_ELT(bynames,i))), VECTOR_ELT(BY,i), env);      // by vars can be used by name in j as well as via .BY
-    if (SIZEOF(VECTOR_ELT(BY,i))==0)
+    if (RTYPE_SIZEOF(VECTOR_ELT(BY,i))==0)
       internal_error(__func__, "unsupported size-0 type '%s' in column %d of 'by' should have been caught earlier", type2char(TYPEOF(VECTOR_ELT(BY, i))), i+1); // # nocov
     SET_TRUELENGTH(VECTOR_ELT(BY,i), -1); // marker for anySpecialStatic(); see its comments
   }
@@ -139,11 +139,11 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   SEXP names = PROTECT(getAttrib(SDall, R_NamesSymbol)); nprotect++;
   if (length(names) != length(SDall))
     internal_error(__func__, "length(names)!=length(SD)"); // # nocov
-  SEXP *nameSyms = (SEXP *)R_alloc(length(names), sizeof(SEXP));
+  SEXP *nameSyms = (SEXP *)R_alloc(length(names), sizeof(*nameSyms));
 
   for(int i=0; i<length(SDall); ++i) {
     SEXP this = VECTOR_ELT(SDall, i);
-    if (SIZEOF(this)==0 && TYPEOF(this)!=EXPRSXP)
+    if (RTYPE_SIZEOF(this)==0 && TYPEOF(this)!=EXPRSXP)
       internal_error(__func__, "size-0 type %d in .SD column %d should have been caught earlier", TYPEOF(this), i); // # nocov
     if (LENGTH(this) != maxGrpSize)
       internal_error(__func__, "SDall %d length = %d != %d", i+1, LENGTH(this), maxGrpSize); // # nocov
@@ -156,9 +156,9 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
   SEXP xknames = PROTECT(getAttrib(xSD, R_NamesSymbol)); nprotect++;
   if (length(xknames) != length(xSD))
     internal_error(__func__, "length(xknames)!=length(xSD)"); // # nocov
-  SEXP *xknameSyms = (SEXP *)R_alloc(length(xknames), sizeof(SEXP));
+  SEXP *xknameSyms = (SEXP *)R_alloc(length(xknames), sizeof(*xknameSyms));
   for(int i=0; i<length(xSD); ++i) {
-    if (SIZEOF(VECTOR_ELT(xSD, i))==0)
+    if (RTYPE_SIZEOF(VECTOR_ELT(xSD, i))==0)
       internal_error(__func__, "type %d in .xSD column %d should have been caught by now", TYPEOF(VECTOR_ELT(xSD, i)), i); // # nocov
     xknameSyms[i] = install(CHAR(STRING_ELT(xknames, i)));
   }
@@ -283,7 +283,7 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
       for (int j=0; j<LENGTH(jval); ++j) {
         thiscol = VECTOR_ELT(jval,j);
         if (isNull(thiscol)) continue;
-        if (!isVector(thiscol) || isFrame(thiscol))
+        if (!isVector(thiscol) || isDataFrame(thiscol))
           error(_("Entry %d for group %d in j=list(...) should be atomic vector or list. If you are trying something like j=list(.SD,newcol=mean(colA)) then use := by group instead (much quicker), or cbind or merge afterwards."), j+1, i+1);
         if (isArray(thiscol)) {
           SEXP dims = PROTECT(getAttrib(thiscol, R_DimSymbol));
@@ -450,8 +450,11 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
       double avgTimePerGroup = (now-startTime)/(i+1);
       int ETA = (int)(avgTimePerGroup*(ngrp-i-1));
       if (hasPrinted || ETA >= 0) {
+        // # nocov start. Requires long-running test case
         if (verbose && !hasPrinted) Rprintf(_("\n"));
-        Rprintf(_("\rProcessed %d groups out of %d. %.0f%% done. Time elapsed: %ds. ETA: %ds."), i+1, ngrp, 100.0*(i+1)/ngrp, (int)(now-startTime), ETA);
+        Rprintf("\r"); // # notranslate. \r is not internationalizable
+        Rprintf(_("Processed %d groups out of %d. %.0f%% done. Time elapsed: %ds. ETA: %ds."), i+1, ngrp, 100.0*(i+1)/ngrp, (int)(now-startTime), ETA);
+        // # nocov end
       }
       nextTime = now+1;
       hasPrinted = true;
@@ -465,8 +468,11 @@ SEXP dogroups(SEXP dt, SEXP dtcols, SEXP groups, SEXP grpcols, SEXP jiscols, SEX
     else UNPROTECT(1);  // the jval. Don't want them to build up. The first jval can stay protected till the end ok.
   }
   if (showProgress && hasPrinted) {
-    Rprintf(_("\rProcessed %d groups out of %d. %.0f%% done. Time elapsed: %ds. ETA: %ds."), ngrp, ngrp, 100.0, (int)(wallclock()-startTime), 0);
-    Rprintf("\n"); // separated so this & the earlier message are identical for translation purposes.
+    // # nocov start. Requires long-running test case
+    Rprintf("\r"); // # notranslate. \r is not internationalizable
+    Rprintf(_("Processed %d groups out of %d. %.0f%% done. Time elapsed: %ds. ETA: %ds."), ngrp, ngrp, 100.0, (int)(wallclock()-startTime), 0);
+    Rprintf("\n"); // # notranslate. separated so this & the earlier message are identical for translation purposes.
+    // # nocov end
   }
   if (isNull(lhs) && ans!=NULL) {
     if (ansloc < LENGTH(VECTOR_ELT(ans,0))) {
@@ -510,10 +516,10 @@ SEXP keepattr(SEXP to, SEXP from)
   SET_ATTRIB(to, ATTRIB(from));
   if (isS4(from)) {
     to = PROTECT(asS4(to, TRUE, 1));
-    SET_OBJECT(to, OBJECT(from));
+    SET_OBJECT(to, isObject(from));
     UNPROTECT(1);
   } else {
-    SET_OBJECT(to, OBJECT(from));
+    SET_OBJECT(to, isObject(from));
   }
   return to;
 }
@@ -529,12 +535,17 @@ SEXP growVector(SEXP x, const R_len_t newlen)
   if (isNull(x)) error(_("growVector passed NULL"));
   PROTECT(newx = allocVector(TYPEOF(x), newlen));   // TO DO: R_realloc(?) here?
   if (newlen < len) len=newlen;   // i.e. shrink
+  if (!len) { // cannot memcpy invalid pointer, #6819
+    keepattr(newx, x);
+    UNPROTECT(1);
+    return newx;
+  }
   switch (TYPEOF(x)) {
-  case RAWSXP:  memcpy(RAW(newx),     RAW(x),     len*SIZEOF(x)); break;
-  case LGLSXP:  memcpy(LOGICAL(newx), LOGICAL(x), len*SIZEOF(x)); break;
-  case INTSXP:  memcpy(INTEGER(newx), INTEGER(x), len*SIZEOF(x)); break;
-  case REALSXP: memcpy(REAL(newx),    REAL(x),    len*SIZEOF(x)); break;
-  case CPLXSXP: memcpy(COMPLEX(newx), COMPLEX(x), len*SIZEOF(x)); break;
+  case RAWSXP:  memcpy(RAW(newx),     RAW_RO(x),     len*RTYPE_SIZEOF(x)); break;
+  case LGLSXP:  memcpy(LOGICAL(newx), LOGICAL_RO(x), len*RTYPE_SIZEOF(x)); break;
+  case INTSXP:  memcpy(INTEGER(newx), INTEGER_RO(x), len*RTYPE_SIZEOF(x)); break;
+  case REALSXP: memcpy(REAL(newx),    REAL_RO(x),    len*RTYPE_SIZEOF(x)); break;
+  case CPLXSXP: memcpy(COMPLEX(newx), COMPLEX_RO(x), len*RTYPE_SIZEOF(x)); break;
   case STRSXP : {
     const SEXP *xd = SEXPPTR_RO(x);
     for (int i=0; i<len; ++i)

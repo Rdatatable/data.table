@@ -1,4 +1,4 @@
-#include<stdint.h>
+#include <stdint.h>
 
 /*
  * a struct to carry out results of embarrassingly parallel computation
