@@ -520,7 +520,7 @@ replace_dot_alias = function(e) {
       }
       i = .shallow(i, retain.key = TRUE)
       ans = bmerge(i, x, leftcols, rightcols, roll, rollends, nomatch, mult, ops, verbose=verbose)
-      if (mult == "error") mult = "all"
+      if (mult == "error") mult = "all" ## error should have been raised inside bmerge() call above already, if it wasn't continue as mult="all"
       xo = ans$xo ## to make it available for further use.
       # temp fix for issue spotted by Jan, test #1653.1. TODO: avoid this
       # 'setorder', as there's another 'setorder' in generating 'irows' below...
