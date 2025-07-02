@@ -1240,7 +1240,7 @@ local({
 
 ## NAs in join columns
 
-### LHS equal to RHS and having NA on
+### LHS equal to RHS and having missing values in on= column
 local({
   l = list(lhs = data.table(id1=c(1:2, NA), v1=1:3), rhs = data.table(id1=c(1:2, NA), v2=1:3))
   expected = data.table(id1=c(1:2, NA), v1=1:3, v2=1:3)
@@ -1252,7 +1252,7 @@ local({
   test(251.06, notcopied(setmergelist(l, on="id1", how="left", mult="error"), l))
 })
 
-### Single match and RHS having NA on
+### Single match and RHS having missing values in on= column
 local({
   l = list(lhs = data.table(id1=1:2, v1=1:2), rhs = data.table(id1=c(1L, NA, 3L), v2=1:3))
   test(251.11, mergelist(l, on="id1", how="inner", mult="all"), data.table(id1=1L, v1=1L, v2=1L))
@@ -1266,12 +1266,13 @@ local({
 ## exceeds overalloc for a table
 
 local({
-  ac = getOption("datatable.alloccol")
-  l = list(lhs = as.data.table(c(list(id1=integer()), setNames(replicate(ac + 10L, integer()), paste0("v", seq_len(ac + 10L))))), rhs=data.table(id1=2:1))
+  n_cols = getOption("datatable.alloccol") + 11L
+  l = list(lhs = setDT(replicate(n_cols, integer())), rhs=data.table(id1=2:1))
+  setnames(l$lhs, "V1", "id1")
   test(291.01, mergelist(l, on="id1", how="inner", mult="all"), l$lhs[0L])
   test(291.02, mergelist(l, on="id1", how="left", mult="all"), l$lhs[0L])
   test(291.03, mergelist(l, on="id1", how="right", mult="all"), l$lhs[1:2][, "id1" := 2:1][])
-  ## test overalloc for how=="full" && !nrow(out.i) && nrow(out.r) && length(setdiff(names(out.i), names(out.r))) that was failing when used set()
+  ## test overalloc for how=="full" && !nrow(out.i) && nrow(out.r) && length(setdiff(names(out.i), names(out.r))) that was failing when using set()
   test(291.04, mergelist(l, on="id1", how="full", mult="all"), rbindlist(l, use.names=TRUE, fill=TRUE))
   test(291.05, copied(mergelist(l, on="id1", how="left", mult="error"), l))
   test(291.06, notcopied(setmergelist(l, on="id1", how="left", mult="error"), l))
