@@ -109,7 +109,7 @@ l = list(
 lapply(l[-1L], `[`, j = if (.N>1L) .SD, by = "id1") ## duplicated rows
 try(mergelist(l, on="id1"))
 
-## 'star schema' and 'snowflake schema' examples
+## 'star schema' and 'snowflake schema' examples (realistic data sizes)
 
 ### populate fact: US population by state and date
 
@@ -144,9 +144,10 @@ rm(gt, tt)
 ### denormalize 'star schema'
 
 l = list(fact, time, geog)
-ans = mergelist(l)
+str(l)
+mergelist(l)
 
-rm(l, ans)
+rm(l)
 
 ### turn 'star schema' into 'snowflake schema'
 
@@ -155,6 +156,7 @@ make.lvl = function(x, cols) {
   lvl = x[, unique(.SD), .SDcols=cols]
   setkeyv(lvl, cols[1L])
   setindexv(lvl, as.list(cols))
+  lvl
 }
 time = list(
   date = make.lvl(
@@ -174,9 +176,10 @@ geog = list(
 
 #### left join all
 l = c(list(fact=fact), time, geog)
-ans = mergelist(l)
+str(l)
+mergelist(l)
 
-rm(ans)
+rm(l)
 #### merge hierarchies alone, reduce sizes in merges of geog dimension
 ans = mergelist(list(
   fact,
