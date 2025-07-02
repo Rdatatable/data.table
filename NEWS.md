@@ -82,7 +82,7 @@
 
 19. Spurious warnings from internal code in `cube()`, `rollup()`, and `groupingsets()` are no longer surfaced to the caller, [#6964](https://github.com/Rdatatable/data.table/issues/6964). Thanks @ferenci-tamas for the report and @venom1204 for the fix.
 
-20. Joining with incompatible column times (e.g., `Date` with `POSIXt`) now provides a clear warning, [#6605](https://github.com/Rdatatable/data.table/issues/6605). Thanks to @al-obrien for the report and @r2evans for the PR.
+20. Joining on two columns with incompatible time classes (e.g., `Date` with `POSIXt`) now provides a clear warning, [#6605](https://github.com/Rdatatable/data.table/issues/6605). Thanks to @al-obrien for the report and @r2evans for the PR.
 
 ### NOTES
 
