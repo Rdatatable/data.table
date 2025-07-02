@@ -542,6 +542,15 @@ SEXP perhapsDataTableR(SEXP x) {
   return ScalarLogical(perhapsDataTable(x));
 }
 
+SEXP setDT(SEXP x) {
+  // used by gsumm.c to return a barebones DT (e.g. no names, not over-allocated) to gforce when n is a vector of shifts
+  SEXP class;
+  setAttrib(x, R_ClassSymbol, class=allocVector(STRSXP, 2));
+  SET_STRING_ELT(class,0,char_datatable);
+  SET_STRING_ELT(class,1,char_dataframe);
+  return x;
+}
+
 void internal_error(const char *call_name, const char *format, ...) {
   char buff[1024];
   va_list args;

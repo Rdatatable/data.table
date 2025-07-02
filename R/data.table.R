@@ -1668,7 +1668,8 @@ replace_dot_alias = function(e) {
            (jsub %iscall% "[[" && is.name(jsub[[2L]]) && eval(call('is.atomic', jsub[[2L]]), x, parent.frame()))) &&
         (is.numeric(jsub[[3L]]) || jsub[[3L]] == ".N")
       headopt = jsub %iscall% c("head", "tail")
-      firstopt = jsub %iscall% c("first", "last") # fix for #2030
+      firstopt = jsub %iscall% c("first", "last") &&                    # 2030, 4239
+                 !identical(match.call(first, jsub)[["na.rm"]], "row")  # first's signature same as last's
       if ((length(jsub) >= 2L && jsub[[2L]] == ".SD") &&
           (subopt || headopt || firstopt)) {
         if (headopt && length(jsub)==2L) jsub[["n"]] = 6L # head-tail n=6 when missing #3462
@@ -1893,7 +1894,9 @@ replace_dot_alias = function(e) {
     assign(".N", len__, thisEnv) # For #334
     #fix for #1683
     if (use.I) assign(".I", seq_len(nrow(x)), thisEnv)
-    ans = gforce(thisEnv, jsub, o__, f__, len__, irows) # irows needed for #971.
+    ans = gforce(thisEnv, jsub, o__, f__, len__, irows,  # irows needed for #971
+                 .Call(CsubsetVector, groups, grpcols),  # just a list() subset to make C level neater; doesn't copy column contents
+                 lhs)  # for now this just prevents := with new feature first/last n>1; in future see TODO below
     gi = if (length(o__)) o__[f__] else f__
     g = lapply(grpcols, function(i) .Call(CsubsetVector, groups[[i]], gi)) # use CsubsetVector instead of [ to preserve attributes #5567
 
@@ -1955,10 +1958,10 @@ replace_dot_alias = function(e) {
   # Grouping by by: i is by val, icols NULL, o__ may be subset of x, f__ points to o__ (or x if !length o__)
   # TO DO: setkey could mark the key whether it is unique or not.
   if (!is.null(lhs)) {
-    if (GForce) { # GForce should work with := #1414
-      vlen = length(ans[[1L]])
+    if (GForce) { # GForce should work with := #1414. TODO: move down into gforce at C level to save creating/rep'ing ans and grpcols wastefully
+      vlen = length(ans[[1L]])   # TODO: this might be ngrp when na.rm=TRUE and one group has 2 and another 0, so needs enhancing here (by passing all-1 back from gans?)
       # replicate vals if GForce returns 1 value per group
-      jvals = if (vlen==length(len__)) lapply(tail(ans, -length(g)), rep, times=len__) else tail(ans, -length(g))  # see comment in #4245 for why rep instead of rep.int
+      jvals = if (vlen==length(len__)) lapply(tail(ans, -length(grpcols)), rep, times=len__) else tail(ans, -length(grpcols))  # see comment in #4245 for why rep instead of rep.int
       jrows = vecseq(f__,len__,NULL)
       if (length(o__)) jrows = o__[jrows]
       if (length(irows)) jrows = irows[jrows]
@@ -3124,8 +3127,8 @@ gfuns = c(gdtfuns,
 `g[` = `g[[` = function(x, n) .Call(Cgnthvalue, x, as.integer(n)) # n is of length=1 here.
 ghead = function(x, n) .Call(Cghead, x, as.integer(n))
 gtail = function(x, n) .Call(Cgtail, x, as.integer(n))
-gfirst = function(x) .Call(Cgfirst, x)
-glast = function(x) .Call(Cglast, x)
+gfirst = function(x, n=1L, na.rm=FALSE) .Call(Cgfirst, x, as.integer(n), na.rm)
+glast = function(x, n=1L, na.rm=FALSE) .Call(Cglast, x, as.integer(n), na.rm)
 gsum = function(x, na.rm=FALSE) .Call(Cgsum, x, na.rm)
 gmean = function(x, na.rm=FALSE) .Call(Cgmean, x, na.rm)
 gweighted.mean = function(x, w, ..., na.rm=FALSE) {
@@ -3150,7 +3153,7 @@ gshift = function(x, n=1L, fill=NA, type=c("lag", "lead", "shift", "cyclic")) {
   stopifnot(is.numeric(n))
   .Call(Cgshift, x, as.integer(n), fill, type)
 }
-gforce = function(env, jsub, o, f, l, rows) .Call(Cgforce, env, jsub, o, f, l, rows)
+gforce = function(env, jsub, o, f, l, rows, grpcols, lhs) .Call(Cgforce, env, jsub, o, f, l, rows, grpcols, lhs)
 
 # GForce needs to evaluate all arguments not present in the data.table before calling C part #5547
 # Safe cases: variables [i], calls without variables [c(0,1), list(1)] # TODO extend this list

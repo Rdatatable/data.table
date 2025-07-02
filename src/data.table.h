@@ -112,6 +112,7 @@ extern SEXP sym_index;
 extern SEXP sym_BY;
 extern SEXP sym_starts, char_starts;
 extern SEXP sym_maxgrpn;
+extern SEXP sym_gforce_dynamic;
 extern SEXP sym_anyna;
 extern SEXP sym_anyinfnan;
 extern SEXP sym_anynotascii;
@@ -278,6 +279,7 @@ bool isDataTable(SEXP x);
 bool isRectangularList(SEXP x);
 bool perhapsDataTable(SEXP x);
 SEXP perhapsDataTableR(SEXP x);
+SEXP setDT(SEXP list);
 NORET void internal_error(const char *call_name, const char *format, ...);
 
 // types.c

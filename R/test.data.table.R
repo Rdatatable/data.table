@@ -514,6 +514,40 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
       # nocov end
     }
   }
+  if (!fail) for (type in c("warning","error","message")) {
+    observed = actual[[type]]
+    expected = get(type)
+    if (type=="warning" && length(observed) && !is.null(ignore.warning)) {
+      # if a warning containing this string occurs, ignore it. First need for #4182 where warning about 'timedatectl' only
+      # occurs in R 3.4, and maybe only on docker too not for users running test.data.table().
+      stopifnot(length(ignore.warning)==1L, is.character(ignore.warning), !is.na(ignore.warning), nchar(ignore.warning)>=1L)
+      observed = grep(ignore.warning, observed, value=TRUE, invert=TRUE)
+    }
+    if (length(expected) != length(observed)) {
+      # nocov start
+      catf("Test %s produced %d %ss but expected %d\n%s\n%s\n", numStr, length(observed), type, length(expected),
+            paste("Expected:", expected, collapse="\n"),
+            paste("Observed:", observed, collapse="\n"))
+      fail = TRUE
+      # nocov end
+    } else {
+      # the expected type occurred and, if more than 1 of that type, in the expected order
+      for (i in seq_along(expected)) {
+        if (!foreign && !string_match(expected[i], observed[i])) {
+          # nocov start
+          catf("Test %s didn't produce the correct %s:\nExpected: %s\nObserved: %s\n", numStr, type, expected[i], observed[i])
+          fail = TRUE
+          # nocov end
+        }
+      }
+    }
+  }
+  if (fail && exists("out",inherits=FALSE)) {
+    # nocov start
+    catf("Output captured before unexpected warning/error/message:\n")
+    writeLines(out)
+    # nocov end
+  }
   if (!fail && !length(error) && (!length(output) || !missing(y))) {   # TODO test y when output=, too
     capture.output(y <- try(y, silent=TRUE)) # y might produce verbose output, just toss it
     if (inherits(x, c("Date", "POSIXct"))) storage.mode(x) <- "numeric"

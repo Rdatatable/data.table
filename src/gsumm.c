@@ -21,6 +21,9 @@ static int *oo = NULL;
 static int *ff = NULL;
 static int isunsorted = 0;
 
+// for first/last with n>1 to error when used with :=, until implemented
+static bool assignByRef = false;
+
 // from R's src/cov.c (for variance / sd)
 #ifdef HAVE_LONG_DOUBLE
 # define SQRTL sqrtl
@@ -42,9 +45,11 @@ static int nbit(int n)
     grouped summaries over a large data.table. OpenMP is used here to
     parallelize operations involved in calculating common group-wise statistics.
 */
-SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
+SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg, SEXP grpcols, SEXP lhs) {
+  int nprotect=0;
   double started = wallclock();
   const bool verbose = GetVerbose();
+  assignByRef = !isNull(lhs);
   if (TYPEOF(env) != ENVSXP) error(_("env is not an environment"));
   // The type of jsub is pretty flexible in R, so leave checking to eval() below.
   if (!isInteger(o)) error(_("%s is not an integer vector"), "o");
@@ -205,16 +210,212 @@ SEXP gforce(SEXP env, SEXP jsub, SEXP o, SEXP f, SEXP l, SEXP irowsArg) {
   oo = INTEGER(o);
   ff = INTEGER(f);
 
-  SEXP ans = PROTECT( eval(jsub, env) );
+  SEXP gans = PROTECT( eval(jsub, env) );  nprotect++; // just the gforce result columns; the group columns are added below when we know the shape
   if (verbose) { Rprintf(_("gforce eval took %.3f\n"), wallclock()-started); started=wallclock(); }
   // if this eval() fails with R error, R will release grp for us. Which is why we use R_alloc above.
-  if (isVectorAtomic(ans)) {
-    SEXP tt = PROTECT(allocVector(VECSXP, 1));
-    SET_VECTOR_ELT(tt, 0, ans);
-    UNPROTECT(2);
-    return tt;
+  if (isVectorAtomic(gans)) {
+    SEXP tt = PROTECT(allocVector(VECSXP, 1)); nprotect++;
+    SET_VECTOR_ELT(tt, 0, gans);
+    gans = tt;
   }
-  UNPROTECT(1);
+  
+  // TODO: refine these comments
+  //
+  // Now replicate group values to match the number of rows in each group.
+  // In most cases (e.g. mean, sum) gfuns return one value per group and there is nothing left to do because
+  // each column in ans is ngrp long.
+  // gforce_fixed_over_1 and gforce_dynamic
+  // However, first/last with n>1 and na.rm=false results in MIN(grpsize[g], n) items per group. This is
+  // still referred to as gforce_dynamic (because it's not a fixed 1 per group) but the gfun doesn't need
+  // to return how many each group has (the lens att is null); all it needs return is the n it was passed.
+  // shift is the same as first/last with n>1 and na.rm=false; i.e., just returns n and lens can be empty.
+  // Currently just first/last with na.rm=true (regardless of n) returns the lens attribute because the
+  // number of items for each group does depend on the data in that case; e.g. it can be 0 when all NA. 
+  // Further, if the query consists of several calls to first/last, each call could have a
+  // different value of n and/or na.rm=TRUE which would result in the group results not being aligned
+  // across the columns of ans. Any gfun call which can result in not-1-value-per-group should attach
+  // sym_gforce_dynamic to tell us here how to align the groups across the columns in ans.
+  // For example, first/last with the default n=1 and na.rm=FALSE does not attach sym_gforce_dynamic
+  // because it it returns a length-ngrp result.
+  // If one of the ans columns contains a gforce_dynamic result, then the non-dynamic other columns
+  // are replicated to match.
+  // If there is only one column (very common) and it is gforce_dynamic then the gaps will now be removed
+  // since each group was allocated to accomodate the largest result per group: max(grpsize[], n).
+  
+  // If there are many columns (e.g. 10,000) and many small groups (e.g. size 1-5 rows) then we wish to
+  // avoid each dynamic gfun from allocating a new lens (ngrp long) if that can be avoided; e.g. shift(.SD)
+  // always returns .N rows for each group; that shape is known before calling shift. If lens was allocated
+  // and populated it would be the same as grpsize[], every time for each column.
+  
+  // 3 states :    i) no gforce_dynamic at all (including n=1 na.rm=false)
+  //              ii) 1 < n < maxgrpn meaning min(n, grp_size[g]) must be summed.  We might have less than ngrp when na.rm=TRUE due to all-NA groups
+  //             iii) n >= maxgrpn and na.rm=false meaning all groups are size grpsize[]; e.g. shift sets n=INT_MAX 
+  // If we have reached maxgrpn, then we can stop there; e.g. shifting a lot of small groups which is within scope to do a good job on
+  
+  // We can point lens to be the grpsize[] and find maximum n that clamps the grpsize
+  
+  // Having one final lens, though, with max_dynamic_n clamped, is desirable, to pass to the eval of rep.int for example. Just one allocation is dramatically better than on each of the 10,000 gans columns.
+  
+  const int ngans=length(gans);
+  SEXP lens=NULL;
+  int max_w=0;
+  bool lensCopied=false;
+  for (int i=0; i<ngans; ++i) {
+    SEXP tt;
+    if (!isNull(tt=getAttrib(VECTOR_ELT(gans, i), sym_gforce_dynamic))) {
+      if (isNull(VECTOR_ELT(tt, 0))) {
+        int this_w=INTEGER(VECTOR_ELT(tt, 2))[0];
+        if (this_w>max_w) max_w=this_w;
+      } else {
+        if (!lens) {
+          lens=VECTOR_ELT(tt, 0);  // find the first dynamic column's lens and use it directly without copying it if there are no other dynamic columns
+        } else {
+          if (!lensCopied) {
+            // upon the 2nd lens, we need to allocate a new lens to hold the max of the 2-or-more dynamic result with lens
+            // allocate a new lens to calc the max size of each group across the dynamic columns
+            // original gforce_dynamic attributes need to be retained so we can navigate those columns after we find the max
+            //int *newlens = (int *)R_alloc(ngrp, sizeof(int));
+            lens=PROTECT(duplicate(lens)); nprotect++;
+            lensCopied=true;
+          }
+          int *lensp=INTEGER(lens);
+          const int *ss=INTEGER(VECTOR_ELT(tt, 0));
+          for (int g=0; g<ngrp; ++g)
+            if (ss[g]>lensp[g]) lensp[g]=ss[g];
+        }
+      }
+    }
+  }
+  if (max_w) {
+    if (!lens) {
+      // construct a lens because we currently need it to pass to rep.int below
+      lens = PROTECT(allocVector(INTSXP, ngrp)); nprotect++;
+      int *lensp = INTEGER(lens);
+      for (int g=0; g<ngrp; ++g)
+        lensp[g]=MIN(grpsize[g], max_w);
+    } else {    
+      // there is a mixture of non-lens and lens; e.g. .(first(colA,n=3), first(colB,n=3,na.rm=TRUE))
+      if (!lensCopied) {
+        // there is a single dynamic column so it wasn't copied yet
+        lens=PROTECT(duplicate(lens)); nprotect++;
+        lensCopied=true;
+      }
+      int *lensp = INTEGER(lens);
+      for (int g=0; g<ngrp; ++g) {
+        int this_w=MIN(grpsize[g], max_w);
+        if (this_w>lensp[g]) lensp[g]=this_w;
+      }
+    }
+  }
+  // we have now maximized over any combination of over_1 and dynamic which determines the final shape in lens
+  // TODO if max_w>=grpsize_max then further savings can be made
+
+  // TODO: First we replicate group values to match the number of rows in each group if necessary
+  // TODO: DT[, .(first(A,n=2), last(B,n=3)), by=group] -- missing test
+  
+  // We could require that vector output functions have to be returned in a list column but that could be expensive and likely would be flattened afterwards by user anyway.
+  // If user really doesn't want flattening, then they can wrap with list().
+  
+  const int ngrpcol=length(grpcols);
+  SEXP ans = PROTECT(allocVector(VECSXP, ngrpcol+ngans)); nprotect++;
+  SEXP first_each_group = PROTECT( length(o) ? subsetVector(o, f) : f ); nprotect++;
+  
+  for (int i=0; i<ngrpcol; ++i) {
+    const SEXP in = VECTOR_ELT(grpcols, i);
+    SEXP out;
+    SET_VECTOR_ELT(ans, i, out=allocVector(TYPEOF(in), ngrp));
+    copyMostAttrib(in, out);
+    subsetVectorRaw(out, in, first_each_group, /*anyNA=*/false);
+    // avoiding subsetVector()'s check that idx is in bounds in case both ngrp and ngrpcol are large 
+    // this is rep.int'd below when group results have more than 1-row.
+    // TODO: for those cases avoid this subset first by enabling the rep.int to accept first_each_group
+  }
+  
+  if (!lens) {
+    // every group is length-1 (no dynamic or fixed_over_1 results) so can just use the gans as-is and we're done
+    for (int i=0; i<ngans; ++i) {
+      SET_VECTOR_ELT(ans, ngrpcol+i, VECTOR_ELT(gans, i));
+    }
+  } else {
+    // There is one or more gforce_dynamic columns, gap removal and/or padding within groups may be necessary
+    // and the non-gforce-dynamic columns (including group values) need to be replicated to align with the dynamic columns
+    // Either we create another column, or we budge up/down the padding within the same allocated column
+    // budging up/down many small groups will take a lot of reads and writes, albeit saving total memory. The
+    // extra memory is only one-at-a-time per column though, so choose speed over memory here.
+    // gforce_dynamic includes any result where the number of values per group may not be 1; e.g. shift() simply sets
+    // its lens to equal the grp lens to save an allocation
+    
+    int anslen=0;  // to be populated when no dynamic is just the length of the first ans column
+    const int *lensp = INTEGER(lens);
+    // if (lens==grpsize) {
+    //  if (max_dynamic_n <= 1) error("Internal error: max_dynamic_n<=1"); // is not considered dynamic and should not be marked as such
+    //  if (max_dynamic_n >= maxgrpn) anslen=nrow;                               // e.g. last(.SD, 2) where biggest group is 2 rows
+    //  else for (int g=0; g<ngrp; ++g) anslen+=MIN(grpsize[g], max_dynamic_n);  // e.g. last(.SD, 2) where biggest group is >2 rows, and there might be some 1-row groups
+    //} else {
+    
+    for (int g=0; g<ngrp; ++g) anslen+=lensp[g];  // contiguous sweep insignificant time not worth trying to save; e.g. by including the sum in the gforce_dynamic attribute returned for when there's just one column and it's dynamic
+    
+    for (int i=0; i<ngrpcol; ++i) {
+      SET_VECTOR_ELT(ans, i, eval(PROTECT(lang3(install("rep.int"), VECTOR_ELT(ans, i), lens)), R_GlobalEnv));
+      UNPROTECT(1);
+      // use R's rep.int for now, no C API for it afaik. R's rep.int will be summing lens here on each call which we can avoid (TODO).
+      // TODO: expand subsetVector to accept 'rep=' and 'len=' so that subset and rep.int can be done in one step avoiding intermediate subset of first_each_group, and pass len=anslen which we know already
+    }
+
+    for (int i=0; i<ngans; ++i) {
+      SEXP tt = VECTOR_ELT(gans, i);
+      SEXP att = getAttrib(tt, sym_gforce_dynamic);  // how long the items are, we won't parallelize within column so we can sweep forwards
+      if (isNull(att)) {
+        // e.g. the mean in .(mean(colA), first(colB, n=2));    TODO test
+        SET_VECTOR_ELT(ans, ngrpcol+i, eval(PROTECT(lang3(install("rep.int"), tt, lens)), R_GlobalEnv));
+        UNPROTECT(1);
+      } else {
+        // att can be i) empty lens vec in which case this ans col's shape is min(grpsize,w). If this matches the end result shape (i.e. all ans columns are the same, then no need to allocate copy)
+        //           ii) presence of lens vec always needs a copy and pad? (or could loop it and test if the same since looping through ngrp is much faster than nrow vector) 
+        const int *ss = isNull(VECTOR_ELT(att,0)) ? NULL : INTEGER(VECTOR_ELT(att,0));
+        const bool first = LOGICAL(VECTOR_ELT(att, 1))[0];
+        const int w = INTEGER(VECTOR_ELT(att,2))[0];
+        SEXP newcol = PROTECT(allocVector(TYPEOF(tt), anslen));
+        copyMostAttrib(tt, newcol);
+        setAttrib(newcol, sym_gforce_dynamic, R_NilValue);
+        int ansi=0, k=0;
+
+        #define DO(CTYPE, RTYPE, RNA, ASSIGN) {                                                        \
+        const CTYPE *xd = (const CTYPE *)RTYPE(tt);                                                    \
+        CTYPE *ansd = (CTYPE *)RTYPE(newcol);                                                          \
+        CTYPE val = RNA;                                                                               \
+        for (int g=0; g<ngrp; ++g) {                                                                   \
+          const int grp_allocated = MIN(grpsize[g], w);                                                \
+          const int thislen = ss ? ss[g] : grp_allocated;                                              \
+          const int targetlen = lensp[g];                                                              \
+          const int napad = targetlen-thislen;                                                         \
+          k += (!first)*(grp_allocated-thislen);                                                       \
+          for (int i=0; i<thislen; ++i) { val=xd[k++]; ASSIGN; }                                       \
+          val=RNA; for (int i=0; i<napad; ++i) ASSIGN;                                                 \
+          k += (first)*(grp_allocated-thislen);                                                        \
+        }                                                                                              \
+        ansd++; /* just to suppress unused-variable warning in STRSXP and VECSXP cases */              \
+        } break;
+
+        switch(TYPEOF(tt)) {
+        case RAWSXP:  DO(Rbyte,    RAW,     0,            ansd[ansi++]=val)
+        case LGLSXP:  DO(int,      LOGICAL, NA_LOGICAL,   ansd[ansi++]=val)
+        case INTSXP:  DO(int,      INTEGER, NA_INTEGER,   ansd[ansi++]=val)
+        case REALSXP: if (INHERITS(tt, char_integer64)) {
+                      DO(int64_t,  REAL,    NA_INTEGER64, ansd[ansi++]=val)
+             } else { DO(double,   REAL,    NA_REAL,      ansd[ansi++]=val) }
+        case CPLXSXP: DO(Rcomplex, COMPLEX, NA_CPLX,      ansd[ansi++]=val)
+        case STRSXP:  DO(SEXP,  STRING_PTR, NA_STRING,    SET_STRING_ELT(newcol,ansi++,val))
+        case VECSXP:  DO(SEXP,  SEXPPTR_RO, ScalarLogical(NA_LOGICAL), SET_VECTOR_ELT(newcol,ansi++,val))       /* TODO: global replace ScalarLogical() with fixed constant R_NAValue, depending on R dependency */
+        default:
+          error(_("Type '%s' is not supported by gforce padding."), type2char(TYPEOF(tt)));
+        }
+        SET_VECTOR_ELT(ans, ngrpcol+i, newcol);
+        UNPROTECT(1); // newcol
+      }
+    }
+  }
+  UNPROTECT(nprotect);
   return ans;
 }
 
@@ -920,52 +1121,82 @@ SEXP gmedian(SEXP x, SEXP narmArg) {
   return ans;
 }
 
-static SEXP gfirstlast(SEXP x, const bool first, const int w, const bool headw) {
-  // w: which item (1 other than for gnthvalue when could be >1)
-  // headw: select 1:w of each group when first=true, and (n-w+1):n when first=false (i.e. tail)
+static SEXP gfirstlast(const SEXP x, const bool first, const SEXP nArg, const bool nthvalue, const SEXP narmArg) {
+  if (!IS_TRUE_OR_FALSE(narmArg))
+    error(_("%s must be TRUE or FALSE"), "na.rm");  // # nocov
+  const bool narm = LOGICAL(narmArg)[0];
+  if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<0)
+    error(_("Internal error, gfirstlast is not implemented for n<0. This should have been caught before. Please report to data.table issue tracker.")); // # nocov
+  const int w = INTEGER(nArg)[0];
+  if (w>1 && assignByRef)
+    error(_("Is first/last/head/tail with n>1 and := by group intentional? Please provide a use case to the GitHub issue tracker. It could be implemented."));
+  // select 1:w when first=TRUE, and (n-w+1):n when first=FALSE
+  // or select w'th item when nthvalue=TRUE; e.g. the n=0 case in test 280
   const bool nosubset = irowslen == -1;
   const bool issorted = !isunsorted; // make a const-bool for use inside loops
   const int n = nosubset ? length(x) : irowslen;
   if (nrow != n) error(_("nrow [%d] != length(x) [%d] in %s"), nrow, n, first?"gfirst":"glast");
-  if (w==1 && headw) internal_error(__func__, "headw should only be true when w>1");
   int anslen = ngrp;
-  if (headw) {
+  if (!nthvalue && w>1) {
     anslen = 0;
     for (int i=0; i<ngrp; ++i) {
       anslen += MIN(w, grpsize[i]);
     }
   }
   SEXP ans = PROTECT(allocVector(TYPEOF(x), anslen));
+  int *anslens = NULL;
+  if (narm || (w>1 && !nthvalue)) {  // w>1 because some groups may be smaller than w so we need to save w
+    // narm=true needing gforce_dynamic is clear
+    // when w>1 and narm=false, we could avoid gforce_dynamic since each group result in MIN(w,grpsize[g]) 
+    // how many non-NA were found for each group im
+    SEXP att, v;
+    setAttrib(ans, sym_gforce_dynamic, att=allocVector(VECSXP, 3));
+    SET_VECTOR_ELT(att, 0, v = narm ? allocVector(INTSXP, ngrp) : R_NilValue);
+    SET_VECTOR_ELT(att, 1, ScalarLogical(first)); // so gforce knows which end the data is (last writes from the end of the alloc)
+    SET_VECTOR_ELT(att, 2, ScalarInteger(w));     // to know how many were allocated for each group; i.e. MIN(w,grpsize[i])
+    if (narm) anslens = INTEGER(v);
+  }
   int ansi = 0;
+  #undef DO
   #define DO(CTYPE, RTYPE, RNA, ASSIGN) {                                                          \
     const CTYPE *xd = (const CTYPE *)RTYPE(x);                                                     \
-    if (headw) {                                                                                   \
-      /* returning more than 1 per group; w>1 */                                                   \
-      for (int i=0; i<ngrp; ++i) {                                                                 \
-        const int grpn = grpsize[i];                                                               \
+    CTYPE *ansd = (CTYPE *)RTYPE(ans);                                                             \
+    if (w==1 || !nthvalue) {                                                                       \
+      const int inc = first ? +1 : -1;                                                             \
+      for (int g=0; g<ngrp; ++g) {                                                                 \
+        const int grpn = grpsize[g];                                                               \
         const int thisn = MIN(w, grpn);                                                            \
-        const int jstart = ff[i]-1+ (!first)*(grpn-thisn);                                         \
-        const int jend = jstart+thisn;                                                             \
-        for (int j=jstart; j<jend; ++j) {                                                          \
-          const int k = issorted ? j : oo[j]-1;                                                    \
-          /* ternary on const-bool assumed to be branch-predicted and ok inside loops */           \
+        const int jstart = ff[g]-1 + !first*(grpn-1);                                              \
+        if (!first) ansi+=thisn-1;                                                                 \
+        int read=0, write=0;                                                                       \
+        while (write<thisn && read<grpn) {                                                         \
+          const int k = issorted ? jstart+inc*read : oo[jstart+inc*read]-1;                        \
           const CTYPE val = nosubset ? xd[k] : (irows[k]==NA_INTEGER ? RNA : xd[irows[k]-1]);      \
-          ASSIGN;                                                                                  \
+          /* ternaries on const-bools isorted and nosubset above assumed branch-predicted and */   \
+          /* insignificant inside loop  */                                                         \
+          read++;                                                                                  \
+          if (narm && ISNAT(val)) continue;                                                        \
+          /* const-bool narm and short-circuit-&& means above if() insignificant */                \
+          ASSIGN; write++;                                                                         \
         }                                                                                          \
+        if (anslens) anslens[g]=write;                                                              \
+        const CTYPE val = RNA;                                                                     \
+        while (write<thisn) { ASSIGN; write++; }  /* when not enough non-NA pad with NA */         \
+        /* if NAs can be removed when narm=TRUE, that's done up in gforce() afterwards when     */ \
+        /* we know what the results are from the other gforce columns are to align with. When   */ \
+        /* there's just one column, and narm=TRUE too, and there are NAs removed, it would      */ \
+        /* save removing the NAs in gforce() by not doing the padding now and just continuing   */ \
+        /* to write the next group's results straight after this group. A special case and      */ \
+        /* likely only measureable speedup for string columns but relatively easy to do.        */ \
+        if (!first) ansi+=write+1; /* we wrote backwards so pass over what we wrote */             \
       }                                                                                            \
-    } else if (w==1) {                                                                             \
-      for (int i=0; i<ngrp; ++i) {                                                                 \
-        const int j = ff[i]-1 + (first ? 0 : grpsize[i]-1);                                        \
-        const int k = issorted ? j : oo[j]-1;                                                      \
-        const CTYPE val = nosubset ? xd[k] : (irows[k]==NA_INTEGER ? RNA : xd[irows[k]-1]);        \
-        ASSIGN;                                                                                    \
-      }                                                                                            \
-    } else if (w>1 && first) {                                                                     \
+    } else if (first) {                                                                            \
       /* gnthvalue */                                                                              \
-      for (int i=0; i<ngrp; ++i) {                                                                 \
-        const int grpn = grpsize[i];                                                               \
-        if (w>grpn) { const CTYPE val=RNA; ASSIGN; continue; }                                     \
-        const int j = ff[i]-1+w-1;                                                                 \
+      const int inc=1;                                                                             \
+      for (int g=0; g<ngrp; ++g) {                                                                 \
+        const int grpn = grpsize[g];                                                               \
+        if (w>grpn || w==0) { const CTYPE val=RNA; ASSIGN; continue; }                             \
+        const int j = ff[g]-1+w-1;                                                                 \
         const int k = issorted ? j : oo[j]-1;                                                      \
         const CTYPE val = nosubset ? xd[k] : (irows[k]==NA_INTEGER ? RNA : xd[irows[k]-1]);        \
         ASSIGN;                                                                                    \
@@ -973,18 +1204,45 @@ static SEXP gfirstlast(SEXP x, const bool first, const int w, const bool headw) 
     } else {                                                                                       \
       /* w>1 && !first not supported because -i in R means everything-but-i and gnthvalue */       \
       /* currently takes n>0 only. However, we could still support n'th from the end, somehow */   \
-      internal_error(__func__, "unanticipated case first=%d w=%d headw=%d", first, w, headw);      \
+      internal_error(__func__, "unanticipated case first=%d w=%d nthvalue=%d", first, w, nthvalue); \
     }                                                                                              \
+    ansd++; /* just to suppress unused-variable warning in STRSXP and VECSXP cases */              \
   }
   switch(TYPEOF(x)) {
-  case LGLSXP:  { int      *ansd=LOGICAL(ans); DO(int,      LOGICAL, NA_LOGICAL,   ansd[ansi++]=val) } break;
-  case INTSXP:  { int      *ansd=INTEGER(ans); DO(int,      INTEGER, NA_INTEGER,   ansd[ansi++]=val) } break;
+  case LGLSXP:  {
+    #undef ISNAT
+    #define ISNAT(x) ((x)==NA_INTEGER)
+    DO(int,      LOGICAL, NA_LOGICAL,   ansd[ansi]=val; ansi+=inc)
+  } break;
+  case INTSXP:  {
+    #undef ISNAT
+    #define ISNAT(x) ((x)==NA_INTEGER)
+    DO(int,      INTEGER, NA_INTEGER,   ansd[ansi]=val; ansi+=inc)
+  } break;
   case REALSXP: if (INHERITS(x, char_integer64)) {
-           int64_t *ansd=(int64_t *)REAL(ans); DO(int64_t,  REAL,    NA_INTEGER64, ansd[ansi++]=val) }
-           else { double      *ansd=REAL(ans); DO(double,   REAL,    NA_REAL,      ansd[ansi++]=val) } break;
-  case CPLXSXP: { Rcomplex *ansd=COMPLEX(ans); DO(Rcomplex, COMPLEX, NA_CPLX,      ansd[ansi++]=val) } break;
-  case STRSXP:  DO(SEXP, STRING_PTR_RO, NA_STRING,              SET_STRING_ELT(ans,ansi++,val))        break;
-  case VECSXP:  DO(SEXP, SEXPPTR_RO, ScalarLogical(NA_LOGICAL), SET_VECTOR_ELT(ans,ansi++,val))        break;
+    #undef ISNAT
+    #define ISNAT(x) ((x)==NA_INTEGER64)
+    DO(int64_t,  REAL,    NA_INTEGER64, ansd[ansi]=val; ansi+=inc)
+    } else {
+    #undef ISNAT
+    #define ISNAT(x) (ISNAN(x))
+    DO(double,   REAL,    NA_REAL,      ansd[ansi]=val; ansi+=inc)
+  } break;
+  case CPLXSXP: {
+    #undef ISNAT
+    #define ISNAT(x) (ISNAN_COMPLEX(x))
+    DO(Rcomplex, COMPLEX, NA_CPLX,      ansd[ansi]=val; ansi+=inc)
+  } break;
+  case STRSXP: {
+    #undef ISNAT
+    #define ISNAT(x) ((x)==NA_STRING)
+    DO(SEXP,  STRING_PTR_RO, NA_STRING,    SET_STRING_ELT(ans,ansi,val); ansi+=inc)
+  } break;
+  case VECSXP: {
+    #undef ISNAT
+    #define ISNAT(x) (isNull(x) || (isLogical(x) && LENGTH(x)==1 && LOGICAL(x)[0]==NA_LOGICAL))
+    DO(SEXP, SEXPPTR_RO, ScalarLogical(NA_LOGICAL), SET_VECTOR_ELT(ans,ansi,val); ansi+=inc)       /* global replace ScalarLogical() with fixed constant R_FalseValue somehow */
+  } break;
   default:
     error(_("Type '%s' is not supported by GForce head/tail/first/last/`[`. Either add the namespace prefix (e.g. utils::head(.)) or turn off GForce optimization using options(datatable.optimize=1)"), type2char(TYPEOF(x)));
   }
@@ -993,29 +1251,24 @@ static SEXP gfirstlast(SEXP x, const bool first, const int w, const bool headw) 
   return(ans);
 }
 
-SEXP glast(SEXP x) {
-  return gfirstlast(x, false, 1, false);
+SEXP glast(const SEXP x, const SEXP nArg, const SEXP narmArg) {
+  return gfirstlast(x, /*first=*/false, nArg, /*nthvalue=*/false, narmArg);
 }
 
-SEXP gfirst(SEXP x) {
-  return gfirstlast(x, true, 1, false);
+SEXP gfirst(const SEXP x, const SEXP nArg, const SEXP narmArg) {
+  return gfirstlast(x, true, nArg, false, narmArg);
 }
 
-SEXP gtail(SEXP x, SEXP nArg) {
-  if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) internal_error(__func__, "gtail is only implemented for n>0. This should have been caught before"); // # nocov
-  const int n=INTEGER(nArg)[0];
-  return n==1 ? glast(x) : gfirstlast(x, false, n, true);
+SEXP gtail(const SEXP x, const SEXP nArg) {
+  return gfirstlast(x, false, nArg, false, ScalarLogical(0));
 }
 
-SEXP ghead(SEXP x, SEXP nArg) {
-  if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) internal_error(__func__, "gtail is only implemented for n>0. This should have been caught before"); // # nocov
-  const int n=INTEGER(nArg)[0];
-  return n==1 ? gfirst(x) : gfirstlast(x, true, n, true);
+SEXP ghead(const SEXP x, const SEXP nArg) {
+  return gfirstlast(x, true, nArg, false, ScalarLogical(0));
 }
 
-SEXP gnthvalue(SEXP x, SEXP nArg) {
-  if (!isInteger(nArg) || LENGTH(nArg)!=1 || INTEGER(nArg)[0]<1) internal_error(__func__, "`g[` (gnthvalue) is only implemented single value subsets with positive index, e.g., .SD[2]. This should have been caught before"); // # nocov
-  return gfirstlast(x, true, INTEGER(nArg)[0], false);
+SEXP gnthvalue(const SEXP x, const SEXP nArg) {
+  return gfirstlast(x, /*first=*/true, nArg, /*nthvalue=*/true, ScalarLogical(0));
 }
 
 // TODO: gwhich.min, gwhich.max
@@ -1221,6 +1474,16 @@ SEXP gshift(SEXP x, SEXP nArg, SEXP fillArg, SEXP typeArg) {
   for (int i=0; i<nk; i++) if (kd[i]==NA_INTEGER) error(_("Item %d of n is NA"), i+1);
 
   SEXP ans = PROTECT(allocVector(VECSXP, nk)); nprotect++;
+  setDT(ans);  // to tell gforce() clearly that these are columns without ambiguity over being a list column when DT or the group has 1 row
+  
+  // TODO: do we still need to set gforce dynamic here???
+  SEXP att = PROTECT(allocVector(VECSXP, 3)); nprotect++;
+  SET_VECTOR_ELT(att, 0, R_NilValue);
+  SET_VECTOR_ELT(att, 1, ScalarLogical(true));    // first/last doesn't matter for gshift which returns the same length as its input
+  SET_VECTOR_ELT(att, 2, ScalarInteger(INT_MAX)); // i.e. grpsize; TODO: perhaps point lens directly to grpsize instead
+  setAttrib(ans, sym_gforce_dynamic, att);
+  //
+  
   SEXP thisfill = PROTECT(coerceAs(fillArg, x, ScalarLogical(0))); nprotect++;
   for (int g=0; g<nk; g++) {
     lag = stype == LAG || stype == CYCLIC;
