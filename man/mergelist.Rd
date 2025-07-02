@@ -47,8 +47,8 @@
 
   When the \code{on} argument is missing, it will be determined based \code{how} argument:
   \enumerate{
-    \item{ When \code{how \%in\% c("left", right", "semi", "anti")}, \code{on} becomes the key columns of the \emph{join-to} table. }
-    \item{ When \code{how \%in\% c("inner", full")}, if only one table has key, then this key is used; if both tables have keys, then \code{on = intersect(key(lhs), key(rhs))}, having its order aligned to shorter key. }
+    \item{ When \code{how \%in\% c("left", right", "semi", "anti")}, \code{on} becomes the key column(s) of the \emph{join-to} table. }
+    \item{ When \code{how \%in\% c("inner", full")}, if only one table has a key, then this key is used; if both tables have keys, then \code{on = intersect(key(lhs), key(rhs))}, having its order aligned to shorter key. }
   }
 
   When joining tables that are not directly linked to a single table, e.g. a snowflake schema, a \emph{right} outer join can be used to optimize the sequence of merges, see Examples.
@@ -106,8 +106,8 @@ l = list(
   data.table(id1=c(2:3, 2L), v2=1:3),  ## dups in RHS
   data.table(id1=3:5, v3=1:3)
 )
-#mergelist(l, on="id1") # ERROR: mult='error' and multiple matches during merge
 lapply(l[-1L], `[`, j = if (.N>1L) .SD, by = "id1") ## duplicated rows
+try(mergelist(l, on="id1"))
 
 ## 'star schema' and 'snowflake schema' examples
 
