@@ -792,13 +792,13 @@ if (loaded[["DBI"]] && loaded[["RSQLite"]]) {
   # ln, rn: lhs names, rhs names, symmult: symmetric mult
   mult_all = function(tbl, cols, ...) sprintf(
     "(\n  SELECT %s FROM %s \n) %s",
-    paste(setdiff(cols, "row_id"), collapse=", "), tbl, tbl
+    toString(setdiff(cols, "row_id")), tbl, tbl
   )
   mult_one = function(tbl, cols, on, mult) sprintf(
     "(SELECT %s FROM (\n  SELECT *, ROW_NUMBER() OVER (PARTITION BY %s ORDER BY row_id %s) AS rownum FROM %s \n) %s WHERE rownum=1) %s",
-    paste(setdiff(cols, c("row_id", "rownum")), collapse=", "),
-    paste(on, collapse=", "),
-    if (mult=="first") "ASC" else "DESC",
+    toString(setdiff(cols, c("row_id", "rownum"))),
+    toString(on),
+    if (mult == "first") "ASC" else "DESC",
     tbl, tbl, tbl
   )
   sql = function(how, on, mult, ln, rn, symmult=FALSE, notjoin=FALSE) {
@@ -813,7 +813,7 @@ if (loaded[["DBI"]] && loaded[["RSQLite"]]) {
     }
     nm = list()
     nm[["lhs"]] = ln; nm[["rhs"]] = rn
-    using = sprintf("USING (%s)", paste(on, collapse=", "))
+    using = sprintf("USING (%s)", toString(on))
     lhs = "lhs"; rhs = "rhs"
     join = if (how == "inner") {
       if (mult == "all") sprintf("%s \n INNER JOIN \n %s \n %s", mult_all(lhs, nm[[lhs]]), mult_all(rhs, nm[[rhs]]), using)
@@ -834,7 +834,7 @@ if (loaded[["DBI"]] && loaded[["RSQLite"]]) {
     sprintf("SELECT %s FROM \n %s%s", select, join, where)
   }
 
-  dbSend <- function(..., silent=FALSE) try(suppressWarnings(DBI::dbSendQuery(...)), silent=silent)
+  dbSend = function(..., silent=FALSE) try(suppressWarnings(DBI::dbSendQuery(...)), silent=silent)
 
   # .conn SQLite connection, if provided it will use it instead of creating temporary one
   # .drop logical TRUE (default) will drop db tables before and after and populate new, when FALSE it expects tables to be populated
@@ -844,7 +844,7 @@ if (loaded[["DBI"]] && loaded[["RSQLite"]]) {
     names(l) = c("lhs", "rhs")
     lhs = l[["lhs"]]; rhs = l[["rhs"]]
     stopifnot(is.data.table(lhs), is.data.table(rhs),
-              is.character(how), is.character(mult), length(mult)==1L,
+              is.character(how), is.character(mult), length(mult) == 1L,
               is.character(on),
               is.logical(allow.cartesian), is.logical(.drop))
     if (err && mult == "error") {
@@ -875,7 +875,7 @@ if (loaded[["DBI"]] && loaded[["RSQLite"]]) {
     s = sql(how, on, mult, names(lhs), names(rhs))
     s = paste0(s, ";\n")
     # run data.table and SQLite
-    dt = mergelist(list(lhs[,!"row_id"], rhs[,!"row_id"]), on=on, how=how, mult=mult)
+    dt = mergelist(list(lhs[, !"row_id"], rhs[, !"row_id"]), on=on, how=how, mult=mult)
     sq = try(silent=TRUE, as.data.table(DBI::dbGetQuery(conn, s)))
     if (inherits(sq, "try-error")) {
       if (.debug) {message("error during sql statement"); browser()}
@@ -921,7 +921,7 @@ if (loaded[["DBI"]] && loaded[["RSQLite"]]) {
     if (!isTRUE(a)) {
       if (.debug) browser()
       cat(sep="\n", c(
-        sprintf("# dtq:\nmergelist(l, on='%s', how='%s', mult='%s')", paste(on, collapse=", "), how, mult),
+        sprintf("# dtq:\nmergelist(l, on='%s', how='%s', mult='%s')", toString(on), how, mult),
         sprintf("# sql:\n%s", s),
         a, "\n"))
     }
@@ -949,13 +949,13 @@ if (loaded[["DBI"]] && loaded[["RSQLite"]]) {
       DBI::dbWriteTable(conn, name="lhs", value=lhs)
       DBI::dbWriteTable(conn, name="rhs", value=rhs)
       len = prod(length(cases), length(hows), length(mults))
-      if (len > (len.warn <- getOption("tests.length.warning", 1e3)))
+      if (len > (len.warn <- getOption("tests.length.warning", 1000L)))
         warning("You are about to run ", len.warn, " tests. To suppress this warning use the 'tests.length.warning' option.")
       for (how in hows) {
         ans[[case]][[how]] = list()
         for (mult in mults) {
           if (!is.null(ans[[case]][[how]][[mult]])) {
-            dup_n = dup_n+1L
+            dup_n = dup_n + 1L
             next #warning("Some tests are duplicated, so far ", dup_n)
           }
           ans[[case]][[how]][[mult]] = join.sql.equal(list(lhs=lhs, rhs=rhs), on=on, how=how, mult=mult, .conn=conn, .drop=FALSE, .debug=.debug)
@@ -970,7 +970,7 @@ if (loaded[["DBI"]] && loaded[["RSQLite"]]) {
     ans
   }
   case_data = function(case) {
-    set.seed(108)
+    set.seed(108L)
     if (case == 1L) {         # 2 match
       lhs = data.table(id = c(1L, 5L, 3L, 7L), v1=1:4)
       rhs = data.table(id = c(2L, 4L, 3L, 5L), v2=1:4)
@@ -1005,8 +1005,8 @@ if (loaded[["DBI"]] && loaded[["RSQLite"]]) {
       lhs = data.table(id = c(1L, 1L, 1L, 1L), v1=1:4)
       rhs = data.table(id = c(2L, 2L, 2L, 2L), v2=1:4)
     } else if (case == 12L) { # no match, no overlap
-      lhs = data.table(id = c(1:4), v1=1:4)
-      rhs = data.table(id = c(6:9), v2=1:4)
+      lhs = data.table(id = 1:4, v1=1:4)
+      rhs = data.table(id = 6:9, v2=1:4)
     } else if (case == 13L) { # all i matches
       lhs = data.table(id = c(1L, 5L, 3L, 7L, 9L), v1=1:5)
       rhs = data.table(id = c(7L, 5L, 3L, 1L), v2=1:4)
@@ -1023,48 +1023,48 @@ if (loaded[["DBI"]] && loaded[["RSQLite"]]) {
       lhs = data.table(id = sample(10L, 10L, TRUE), v1=1:10)
       rhs = data.table(id = sample(10L, 10L, TRUE), v2=1:10)
     } else if (case == 17L) {
-      lhs = data.table(id = sample(1e2L, 1e2L, TRUE), v1=1:1e2)
-      rhs = data.table(id = sample(1e2L, 1e2L, TRUE), v2=1:1e2)
+      lhs = data.table(id = sample(100L, 100L, TRUE), v1=1:100)
+      rhs = data.table(id = sample(100L, 100L, TRUE), v2=1:100)
     } else if (case == 18L) {
-      lhs = data.table(id = sample(1e2L, 1e2L, TRUE), v1=1:1e2)
-      rhs = data.table(id = sample(10L, 20L, TRUE), v2=1:1e2)
-    } else if (case==19L) {
-      lhs = as.data.table(list(id=sample(1e3), v1=1:1e3))
-      rhs = as.data.table(list(id=sample(1e3), v2=1:1e3))
-    } else if (case==20L) {
-      lhs = as.data.table(list(id=sample(1e3*2L, 1e3), v1=1:1e3))
-      rhs = as.data.table(list(id=sample(1e3*2L, 1e3), v2=1:1e3))
-    } else if (case==21L) {
-      lhs = as.data.table(list(id=sample(1e3, 1e3*2L, TRUE), v1=1:1e3))
-      rhs = as.data.table(list(id=sample(1e3, 1e3*2L, TRUE), v2=1:1e3))
-    } else if (case==22L) { ## LHS equals RHS
+      lhs = data.table(id = sample(100L, 100L, TRUE), v1=1:100)
+      rhs = data.table(id = sample(10L, 20L, TRUE), v2=1:100)
+    } else if (case == 19L) {
+      lhs = as.data.table(list(id=sample(1000L), v1=1:1000))
+      rhs = as.data.table(list(id=sample(1000L), v2=1:1000))
+    } else if (case == 20L) {
+      lhs = as.data.table(list(id=sample(2000L, 1000L), v1=1:1000))
+      rhs = as.data.table(list(id=sample(2000L, 1000L), v2=1:1000))
+    } else if (case == 21L) {
+      lhs = as.data.table(list(id=sample(1000L, 2000L, TRUE), v1=1:1000))
+      rhs = as.data.table(list(id=sample(1000L, 2000L, TRUE), v2=1:1000))
+    } else if (case == 22L) { ## LHS equals RHS
       lhs = data.table(id=1:2, v1=1:2)
       rhs = data.table(id=1:2, v2=1:2)
-    } else if (case==23L) { ## cross join
+    } else if (case == 23L) { ## cross join
       lhs = data.table(id=c(1L, 1L), v1=1:2)
       rhs = data.table(id=c(1L, 1L), v2=1:2)
-    } else if (case==24L) { ## cartesian match, dups on both sides of match
+    } else if (case == 24L) { ## cartesian match, dups on both sides of match
       lhs = data.table(id=c(1L, 1:2), v1=1:3)
       rhs = data.table(id=c(1L, 1L, 3L), v2=1:3)
-    } else if (case==25L) { ## duplicates in RHS
+    } else if (case == 25L) { ## duplicates in RHS
       lhs = data.table(id=1:2, v1=1:2)
       rhs = data.table(id=c(2L, 2:3), v2=1:3)
-    } else if (case==26L) { ## duplicates in RHS and LHS, some RHS dups does not have matches in LHS (merge.data.table+mult fails)
+    } else if (case == 26L) { ## duplicates in RHS and LHS, some RHS dups does not have matches in LHS (merge.data.table+mult fails)
       lhs = data.table(id=c(1:3, 3L), v1=1:4)
       rhs = data.table(id=c(1L, 1L, 3:4, 4L), v2=1:5)
-    } else if (case==27L) { ## duplicates in RHS and LHS, some LHS dups does not have matches in RHS
+    } else if (case == 27L) { ## duplicates in RHS and LHS, some LHS dups does not have matches in RHS
       lhs = data.table(id=c(1L, 1L, 3:4, 4L), v1=1:5)
       rhs = data.table(id=c(1:3, 3L), v2=1:4)
-    } else if (case==28L) { ## duplicates in RHS and LHS
+    } else if (case == 28L) { ## duplicates in RHS and LHS
       lhs = data.table(id=c(1:3, 3L), v1=1:4)
       rhs = data.table(id=c(1L, 1L, 3:4), v2=1:4)
-    } else if (case==29L) { ## duplicates in RHS
+    } else if (case == 29L) { ## duplicates in RHS
       lhs = data.table(id=1:2, v1=1:2)
       rhs = data.table(id=c(2L, 2:3), v2=1:3)
-    } else if (case==30L) { ## duplicates in LHS
+    } else if (case == 30L) { ## duplicates in LHS
       lhs = data.table(id=c(1:2, 2L), v1=1:3)
       rhs = data.table(id=2:3, v2=1:2)
-    } else if (case==31L) {
+    } else if (case == 31L) {
       lhs = data.table(id=integer(), v1=integer())
       rhs = data.table(id=integer(), v2=integer())
     } else stop("case not found")
