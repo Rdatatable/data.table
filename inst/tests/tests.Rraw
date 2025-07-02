@@ -21350,10 +21350,9 @@ local({
 
 #6964
 # Test 1: No warning from min() with simple data
-SimData = data.table(var = rep(c("a", "b", "c"), each = 3), value = 1:9)
-test(2327.1, cube(SimData, .(min(value)), "var"),
-     data.table(var = c("a", "b", "c", NA), V1 = c(1, 4, 7, 1)))
-test(2327.2,
-     tryCatch({ min(NA_real_, na.rm = TRUE); "no warning" },
-     warning = function(w) conditionMessage(w)),
-     "no non-missing arguments to min; returning Inf")
+DT = data.table(var = c("a", "b", "c", "d"), c(1:3, NA))
+test(2327.1, cube(DT, .(min(value)), "var"),
+     data.table(var = c("a", "b", "c", "d", NA), V1 = c(1:3, NA, NA)))
+test(2327.2, cube(DT, .(min(value)), "var"),
+     data.table(var = c("a", "b", "c", "d", NA), V1 = c(1:3, Inf, 1.0)),
+     warning="no non-missing arguments to min")
