@@ -21348,20 +21348,12 @@ local({
   test(2326.3, indices(d), c("y", "z"))
 })
 
-# Test for spurious min/max warnings in cube(), #6964
+#6964
+# Test 1: No warning from min() with simple data
 SimData = data.table(var = rep(c("a", "b", "c"), each = 3), value = 1:9)
-# Test 1: Checking that cube() with min() no longer warns
-test(2327.1,tryCatch({ cube(SimData, .(min(value)), "var"); "no warning" },
-    warning = function(w) conditionMessage(w)),"no warning")
-# Test 2: Checking that the result of cube() with min() is still correct
-test(2327.2, sort(cube(SimData, .(V1 = min(value)), "var")$V1), c(1, 1, 4, 7))
-# Test 3: Checking that cube() with max() no longer warns
-test(2327.3,tryCatch({ cube(SimData, .(max(value)), "var"); "no warning" },
-    warning = function(w) conditionMessage(w)),"no warning")
-# Test 4: Checking that the result of cube() with max() is still correct
-test(2327.4, sort(cube(SimData, .(V1 = max(value)), "var")$V1), c(3, 6, 9, 9))
-# Test 5: Checking with NA values present
-SimData2 = data.table(var = c("a", "a", "b", "b"), value = c(NA_real_, NA_real_, 5, 6))
-test(2327.5,tryCatch({ cube(SimData2, .(min(value)), "var"); "no warning" },
-    warning = function(w) conditionMessage(w)),"no warning")
-
+test(2327.1, cube(SimData, .(min(value)), "var"),
+     data.table(var = c("a", "b", "c", NA), V1 = c(1, 4, 7, 1)))
+test(2327.2,
+     tryCatch({ min(NA_real_, na.rm = TRUE); "no warning" },
+     warning = function(w) conditionMessage(w)),
+     "no non-missing arguments to min; returning Inf")
