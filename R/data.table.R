@@ -1348,21 +1348,8 @@ replace_dot_alias = function(e) {
         ans[icolsAns] = .Call(CsubsetDT, i, ii,    icols)
         ans[xcolsAns] = .Call(CsubsetDT, x, irows, xcols)
         setattr(ans, "names", ansvars)
-        if (haskey(x)) {
-          keylen = which.first(!key(x) %chin% ansvars)-1L
-          if (is.na(keylen)) keylen = length(key(x))
-          len = length(rightcols)
-          # fix for #1268, #1704, #1766 and #1823
-          chk = if (len && !missing(on)) !identical(head(key(x), len), names(on)) else FALSE
-          if ( (keylen>len || chk) && !.Call(CisOrderedSubset, irows, nrow(x))) {
-            keylen = if (!chk) len else 0L # fix for #1268
-          }
-          ## check key on i as well!
-          ichk = is.data.table(i) && haskey(i) &&
-                 identical(head(key(i), length(leftcols)), names_i[leftcols]) # i has the correct key, #3061
-          if (keylen && (ichk || is.logical(i) || (.Call(CisOrderedSubset, irows, nrow(x)) && ((roll == FALSE) || length(irows) == 1L)))) # see #1010. don't set key when i has no key, but irows is ordered and roll != FALSE
-            setattr(ans,"sorted",head(key(x),keylen))
-        }
+        # NB: could be NULL
+        setattr(ans, "sorted", .join_result_key(x, i, ans, if (!missing(on)) names(on), ansvars, leftcols, rightcols, names_i, irows, roll))
         setattr(ans, "class", class(x))  # retain class that inherits from data.table, #64
         setattr(ans, "row.names", .set_row_names(length(ans[[1L]])))
         setalloccol(ans)
@@ -2032,6 +2019,48 @@ replace_dot_alias = function(e) {
     setattr(ans, "sorted", names(ans)[seq_along(grpcols)])
   }
   setalloccol(ans)   # TODO: overallocate in dogroups in the first place and remove this line
+}
+
+# can the specified merge of x and i be marked as sorted? return the columns for which this is true, otherwise NULL
+.join_result_key <- function(x, i, ans, on_lhs, ansvars, leftcols, rightcols, names_i, irows, roll) {
+  x_key <- key(x)
+  if (is.null(x_key))
+    return(NULL)
+
+  key_length = which.first(!x_key %chin% ansvars) - 1L
+  if (is.na(key_length))
+    key_length = length(x_key)
+
+  rhs_length = length(rightcols)
+  # fix for #1268, #1704, #1766 and #1823
+  chk = rhs_length && !is.null(on_lhs) && !identical(head(x_key, rhs_length), on_lhs)
+  if ( (key_length > rhs_length || chk) && !.Call(CisOrderedSubset, irows, nrow(x))) {
+    key_length = if (chk) 0L else rhs_length # fix for #1268
+  }
+
+  if (!key_length)
+    return(NULL)
+
+  # i has the correct key, #3061
+  if (identical(head(key(i), length(leftcols)), names_i[leftcols]))
+    return(head(x_key, key_length))
+
+  if (!.Call(CisOrderedSubset, irows, nrow(x)))
+    return(NULL)
+
+  # see #1010. don't set key when i has no key, but irows is ordered and !roll
+  if (roll && length(irows) != 1L)
+    return(NULL)
+
+  new_key <- head(x_key, key_length)
+
+  #5361 merging on keyed factor with character, check if resulting character is really sorted
+  if (identical(vapply_1c(.shallow(i, leftcols), typeof), vapply_1c(.shallow(x, rightcols), typeof)))
+    return(new_key)
+
+  if (!is.sorted(ans, by=new_key))
+    return(NULL)
+  new_key
 }
 
 # What's the name of the top-level call in 'j'?
