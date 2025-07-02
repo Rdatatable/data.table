@@ -257,7 +257,7 @@ mergepair = function(lhs, rhs, on, how, mult, lhs.cols=names(lhs), rhs.cols=name
   setDT(out)
 }
 
-mergelist_impl_ = function(l, on, cols, how, mult, copy) {
+mergelist_impl_ = function(l, on, cols, how, mult, join.many, copy) {
   verbose = getOption("datatable.verbose")
   if (verbose)
     p = proc.time()[[3L]]
