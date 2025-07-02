@@ -474,12 +474,15 @@ test(102.613, copied(ans1, l))
 test(102.614, copied(ans2, l))
 ans1 = setmergelist(l, how="left")
 ans2 = setmergelist(rev(l), how="right")
+ans3 = setmergelist(l) # testing default
 test(102.621, all.equal(ans1, ans2, ignore.col.order=TRUE))
 test(102.622, ans1, data.table(key="id", region_id=rep(1:2, 8), division_id=rep(1:4, 4), state_id=rep(1:8, 2), id=1:16, population=1))
 test(102.623, notcopied(ans1, l))
 test(102.624, notcopied(ans2, rev(l), how="right"))
 test(102.625, !notcopied(ans1, l, how="right")) ## test notcopied helper function rather than mergelist
 test(102.626, !notcopied(ans2, rev(l), how="left")) ## test notcopied
+test(102.627, all.equal(ans1, ans3))
+
 l = list( ## duplicates on one level
   fact = data.table(id=1:16, state_id=1:8, population=1, key="id"),
   state = data.table(state_id=1:8, division_id=1:4, key="state_id"),
