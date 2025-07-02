@@ -25,6 +25,21 @@ coerce_col = function(dt, col, from_type, to_type, from_name, to_name, from_deta
   set(dt, j=col, value=cast_with_attrs(dt[[col]], cast_fun))
 }
 
+# data.table::as.ITime, chron::times, nanotime::nanotime
+.known_time_classes = c("Date", "POSIXt", "ITime", "times", "nanotime")
+.maybe_warn_mismatched_time_types = function(x_class, i_class, x_name, i_name) {
+  x_class_time = intersect(class(x[[xcol]]), .known_time_classes)
+  if (!length(x_class_time)) return(invisible())
+
+  i_class_time = intersect(class(i[[icol]]), .known_time_classes)
+  if (!length(i_class_time)) return(invisible())
+
+  if (identical(x_class_time, i_class_time)) return(invisible())
+
+  warningf("Attempting to join column %s (%s) with column %s (%s). They are likely to be incompatible, so we suggest you convert one to the other's class.",
+           xname, toString(x_class_time), iname, toString(i_class_time))
+}
+
 bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbose)
 {
   if (roll != 0.0 && length(icols)) {
@@ -92,14 +107,9 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
       }
       stopf("Incompatible join types: %s (%s) and %s (%s). Factor columns must join to factor or character columns.", xname, x_merge_type, iname, i_merge_type)
     }
-    # data.table::as.ITime, chron::times, nanotime::nanotime
-    time_classes = c("Date", "POSIXt", "ITime", "times", "nanotime")
-    x_class_time = intersect(class(x[[xcol]]), time_classes)
-    i_class_time = intersect(class(i[[icol]]), time_classes)
-    if (length(x_class_time) > 0L && length(i_class_time) > 0L && !identical(x_class_time, i_class_time)) {
-      warningf("Attempting to join column %s (%s) with column %s (%s). They are likely to be incompatible, so we suggest you convert one to the other's class.",
-               xname, toString(x_class_time), iname, toString(i_class_time))
-    }
+
+    .maybe_warn_mismatched_time_types(class(x[[xcol]]), class(i[[icol]]), x_name, i_name)
+
     if (x_merge_type == i_merge_type) {
       if (verbose) catf("%s has same type (%s) as %s. No coercion needed.\n", iname, x_merge_type, xname)
       next
