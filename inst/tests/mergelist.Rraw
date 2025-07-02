@@ -389,9 +389,8 @@ local({
   test(101.05, intersect(addresses(d), addresses(ans)), character())
   test(101.06, ans <- setmergelist(l, on="x", how="left", mult="first"), d)
   test(101.07, addresses(d), addresses(ans))
+  test(101.08, options=c(datatable.verbose=TRUE), mergelist(l, on="x"), d, output="mergelist.*1 table.*took")
 })
-
-test(101.08, options=c(datatable.verbose=TRUE), mergelist(l, on="x"), d, output="mergelist.*1 table.*took")
 
 local({
   l = list(data.table(x=1:2), data.table(x=2:3))
@@ -660,12 +659,15 @@ local({
   test(104.19, mergelist(l, on="x", how="left"), error="multiple matches during merge")
   test(104.20, l$to[l$fm, on="x", mult="error"], error="multiple matches during merge")
 
+  l = list(fm=d(3L), to=d(2L))
   test(104.21, l$to[l$fm, on="x"], error="Check for duplicate key values")
   test(104.22, mergelist(l, on="x", how="left", mult="all"), l$to[l$fm, on="x", allow.cartesian=TRUE])
 
+  l = list(fm=d(2L), to=d(3L))
   test(104.23, l$to[l$fm, on="x"], error="Check for duplicate key values")
   test(104.24, mergelist(l, on="x", how="left", mult="all"), l$to[l$fm, on="x", allow.cartesian=TRUE])
 
+  l = list(fm=d(3L), to=d(3L))
   test(104.25, l$to[l$fm, on="x"], error="Check for duplicate key values")
   test(104.26, mergelist(l, on="x", how="left", mult="all"), l$to[l$fm, on="x", allow.cartesian=TRUE])
 })
