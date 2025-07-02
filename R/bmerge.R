@@ -29,10 +29,10 @@ coerce_col = function(dt, col, from_type, to_type, from_name, to_name, from_deta
 .known_time_classes = c("Date", "POSIXt", "ITime", "times", "nanotime")
 # nolint next: object_length_linter.
 .maybe_warn_mismatched_time_types = function(x_class, i_class, x_name, i_name) {
-  x_class_time = intersect(class(x[[xcol]]), .known_time_classes)
+  x_class_time = intersect(x_class, .known_time_classes)
   if (!length(x_class_time)) return(invisible())
 
-  i_class_time = intersect(class(i[[icol]]), .known_time_classes)
+  i_class_time = intersect(i_class, .known_time_classes)
   if (!length(i_class_time)) return(invisible())
 
   if (identical(x_class_time, i_class_time)) return(invisible())
