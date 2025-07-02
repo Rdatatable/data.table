@@ -233,9 +233,9 @@ static void applyDrop(SEXP items, int8_t *type, int ncol, int dropSource) {
   for (int j=0; j<n; ++j) {
     int k = itemsD[j];
     if (k==NA_INTEGER || k<1 || k>ncol) {
-      static char buff[51];
-      if (dropSource==-1) snprintf(buff, 50, "drop[%d]", j+1); // # notranslate
-      else snprintf(buff, 50, "colClasses[[%d]][%d]", dropSource+1, j+1); // # notranslate
+      static char buff[50];
+      if (dropSource==-1) snprintf(buff, sizeof(buff), "drop[%d]", j + 1); // # notranslate
+      else snprintf(buff, sizeof(buff), "colClasses[[%d]][%d]", dropSource + 1, j + 1); // # notranslate
       if (k==NA_INTEGER) {
         if (isString(items))
           DTWARN(_("Column name '%s' (%s) not found"), CHAR(STRING_ELT(items, j)), buff);
@@ -264,7 +264,7 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
     SEXP elem;
     if (colNames==NULL || colNames[i].len<=0) {
       char buff[12];
-      snprintf(buff,12,"V%d",i+1); // # notranslate
+      snprintf(buff, sizeof(buff), "V%d", i + 1); // # notranslate
       elem = mkChar(buff);  // no PROTECT as passed immediately to SET_STRING_ELT
     } else {
       elem = mkCharLenCE(anchor+colNames[i].off, colNames[i].len, ienc);  // no PROTECT as passed immediately to SET_STRING_ELT
@@ -716,7 +716,7 @@ void halt__(bool warn, const char *format, ...) {
   va_list args;
   va_start(args, format);
   char msg[2000];
-  vsnprintf(msg, 2000, format, args);
+  vsnprintf(msg, sizeof(msg), format, args);
   va_end(args);
   freadCleanup(); // this closes mmp hence why we just copied substrings from mmp to msg[] first since mmp is now invalid
   // if (warn) warning(_("%s"), msg);

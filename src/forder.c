@@ -99,17 +99,19 @@ static void cleanup(void) {
   savetl_end();  // Restore R's own usage of tl. Must run after the for loop in free_ustr() since only CHARSXP which had tl>0 (R's usage) are stored there.
 }
 
+// # nocov start
 void internal_error_with_cleanup(const char *call_name, const char *format, ...) {
   char buff[1024];
   va_list args;
   va_start(args, format);
 
-  vsnprintf(buff, 1023, format, args);
+  vsnprintf(buff, sizeof(buff), format, args);
   va_end(args);
 
   cleanup();
   error("%s %s: %s. %s", _("Internal error in"), call_name, buff, _("Please report to the data.table issues tracker."));
 }
+// # nocov end
 
 static void push(const int *x, const int n) {
   if (!retgrp) return;  // clearer to have the switch here rather than before each call
