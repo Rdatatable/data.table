@@ -94,9 +94,9 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
     }
     # data.table::as.ITime, chron::times, nanotime::nanotime
     time_classes = c("Date", "POSIXt", "ITime", "times", "nanotime")
-    x_class_time = intersect(class(x[[xc]]), time_classes)
-    i_class_time = intersect(class(i[[ic]]), time_classes)
-    if (length(x_class_time) > 0L && length(i_class_time) > 0L && !identical(sort(x_class_time), sort(i_class_time))) {
+    x_class_time = intersect(class(x[[xcol]]), time_classes)
+    i_class_time = intersect(class(i[[icol]]), time_classes)
+    if (length(x_class_time) > 0L && length(i_class_time) > 0L && !identical(x_class_time, i_class_time)) {
       warningf("Attempting to join column %s (%s) with column %s (%s). They are likely to be incompatible, so we suggest you convert one to the other's class.",
                xname, toString(x_class_time), iname, toString(i_class_time))
     }
