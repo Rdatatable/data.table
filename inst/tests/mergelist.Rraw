@@ -6,10 +6,26 @@ if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
 } else {
   require(data.table)
   test = data.table:::test
+  mergepair = data.table:::mergepair
   perhaps.data.table = data.table:::perhaps.data.table
   hasindex = data.table:::hasindex
   fdistinct = data.table:::fdistinct
   forderv = data.table:::forderv
+}
+
+addresses = function(x) vapply(x, address, "")
+copied = function(ans, l) {
+  !any(addresses(ans) %chin% unlist(recursive=FALSE, lapply(l, addresses)))
+}
+# check that the "baseline" table (as inferred from 'how') is _not_ copied in
+#   cases where it need not necessarily be copied.
+notcopied = function(ans, l, how="left") {
+  if (how == "full") return( ## either side, left|right, notcopied is fine
+    all(addresses(l[[1L]]) %chin% addresses(ans)) ||
+      all(addresses(l[[length(l)]]) %chin% addresses(ans))
+  )
+  idx = if (how == "right") length(l) else 1L
+  all(addresses(l[[idx]]) %chin% addresses(ans))
 }
 
 # internal helpers
@@ -24,8 +40,6 @@ test(2.02, fdistinct(data.table(x=c(1L, 1:2)), on="z", mult="last"), error="must
 test(2.03, fdistinct(data.table(x=c(1L, 1:2)), on="x", mult="last", cols=character()), error="must be non-zero length, non-NA, integer or character columns of")
 test(2.04, fdistinct(data.table(x=c(1L, 1:2, y=1:3)), on="x", mult="last", copy=NA), error="must be TRUE or FALSE")
 local({
-  addresses = function(x) vapply(x, address, "")
-
   d = data.table(x=1:2, y=1:2)
   test(2.05, ans <- fdistinct(d, on="x", mult="last"), d)
   test(2.06, intersect(addresses(ans), addresses(d)), character())
@@ -113,6 +127,251 @@ local({
 test(13.4, cbindlist(list(data.table(a=1:2), data.table(b=3:4, key="b"))), data.table(a=1:2, b=3:4, key="b"))
 # TODO(#7116): this could be supported
 # test(13.5, cbindlist(list(data.table(a=1:2, key="a"), data.table(b=3:4, key="b"))), data.table(a=1:2, b=3:4, key=c("a", "b")))
+
+# mergepair
+
+## test copy-ness argument in mergepair
+
+### LHS equal to RHS: no copy in all cases
+local({
+  l = list(
+    lhs = data.table(id1=1:2, v1=1:2),
+    rhs = data.table(id1=1:2, v2=1:2)
+  )
+  expected = data.table(id1=1:2, v1=1:2, v2=1:2)
+  frac = 0.0
+  for (how in c("inner", "left", "right", "full")) {
+    frac = frac + 0.1
+    for (mult in c("all", "first", "last", "error")) {
+      frac = frac + 0.01
+      test(21 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected) ## copy=TRUE: no shared columns
+      test(21 + (frac <- frac + 0.001), copied(ans, l))
+      test(21 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected) ## copy=FALSE: LHS shared but no RHS
+      test(21 + (frac <- frac + 0.001), notcopied(ans, l, how=how))
+    }
+  }
+})
+
+### RHS includes LHS: no copy in inner, left, right
+local({
+  l = list(
+    lhs = data.table(id1=1:2, v1=1:2),
+    rhs = data.table(id1=1:3, v2=1:3)
+  )
+  expected = list(
+    inner = data.table(id1=1:2, v1=1:2, v2=1:2),
+    left = data.table(id1=1:2, v1=1:2, v2=1:2),
+    right = data.table(id1=1:3, v1=c(1:2, NA), v2=1:3),
+    full = data.table(id1=1:3, v1=c(1:2, NA), v2=1:3)
+  )
+  frac = 0.0
+  for (how in c("inner", "left", "right", "full")) {
+    frac = frac + 0.1
+    for (mult in c("all", "first", "last", "error")) {
+      frac = frac + 0.01
+      test(22 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]])
+      test(22 + (frac <- frac + 0.001), copied(ans, l))
+      test(22 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]])
+      if (how == "full") {
+        test(22 + (frac <- frac + 0.001), copied(ans, l))
+      } else {
+        test(22 + (frac <- frac + 0.001), notcopied(ans, l, how=how))
+      }
+    }
+  }
+})
+
+### LHS includes RHS: no copy in left, right, full
+local({
+  l = list(
+    lhs = data.table(id1=1:3, v1=1:3),
+    rhs = data.table(id1=1:2, v2=1:2)
+  )
+  expected = list(
+    inner = data.table(id1=1:2, v1=1:2, v2=1:2),
+    left = data.table(id1=1:3, v1=1:3, v2=c(1:2, NA)),
+    right = data.table(id1=1:2, v1=1:2, v2=1:2),
+    full = data.table(id1=1:3, v1=1:3, v2=c(1:2, NA))
+  )
+  frac = 0.0
+  for (how in c("inner", "left", "right", "full")) {
+    frac = frac + 0.1
+    for (mult in c("all", "first", "last", "error")) {
+      frac = frac + 0.01
+      test(23 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]])
+      test(23 + (frac <- frac + 0.001), copied(ans, l))
+      test(23 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]])
+      if (how == "inner") {
+        test(23 + (frac <- frac + 0.001), copied(ans, l))
+      } else {
+        test(23 + (frac <- frac + 0.001), notcopied(ans, l, how=how))
+      }
+    }
+  }
+})
+
+### LHS single nonmatch RHS on both sides: no copy in left, right
+local({
+  l = list(
+    lhs = data.table(id1=c(3L, 2:1), v1=1:3),
+    rhs = data.table(id1=c(4L, 2:1), v2=1:3)
+  )
+  expected = list(
+    inner = data.table(id1=2:1, v1=2:3, v2=2:3),
+    left = data.table(id1=c(3L, 2:1), v1=1:3, v2=c(NA, 2:3)),
+    right = data.table(id1=c(4L, 2:1), v1=c(NA, 2:3), v2=1:3),
+    full = data.table(id1=c(3:1, 4L), v1=c(1:3, NA), v2=c(NA, 2:3, 1L))
+  )
+  frac = 0.0
+  for (how in c("inner", "left", "right", "full")) {
+    frac = frac + 0.1
+    for (mult in c("all", "first", "last", "error")) {
+      frac = frac + 0.01
+      test(24 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]])
+      test(24 + (frac <- frac + 0.001), copied(ans, l))
+      test(24 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]])
+      if (how %in% c("inner", "full")) {
+        test(24 + (frac <- frac + 0.001), copied(ans, l))
+      } else {
+        test(24 + (frac <- frac + 0.001), notcopied(ans, l, how=how))
+      }
+    }
+  }
+})
+
+### LHS zero match RHS: no copy in left, right
+local({
+  l = list(
+    lhs = data.table(id1=2:1, v1=1:2),
+    rhs = data.table(id1=3:4, v2=1:2)
+  )
+  expected = list(
+    inner = data.table(id1=integer(), v1=integer(), v2=integer()),
+    left = data.table(id1=2:1, v1=1:2, v2=NA_integer_),
+    right = data.table(id1=3:4, v1=NA_integer_, v2=1:2),
+    full = data.table(id1=c(2:1, 3:4), v1=c(1:2, NA, NA), v2=c(NA, NA, 1:2))
+  )
+  frac = 0.0
+  for (how in c("inner", "left", "right", "full")) {
+    frac = frac + 0.1
+    for (mult in c("all", "first", "last", "error")) {
+      frac = frac + 0.01
+      test(25 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]])
+      test(25 + (frac <- frac + 0.001), copied(ans, l))
+      test(25 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]])
+      if (how %in% c("inner", "full")) {
+        test(25 + (frac <- frac + 0.001), copied(ans, l))
+      } else {
+        test(25 + (frac <- frac + 0.001), notcopied(ans, l, how=how))
+      }
+    }
+  }
+})
+
+### LHS and RHS zero nrow: no copies
+local({
+  l = list(
+    lhs = data.table(id1=integer(), v1=integer()),
+    rhs = data.table(id1=integer(), v2=integer())
+  )
+  expected = list(
+    inner = data.table(id1=integer(), v1=integer(), v2=integer()),
+    left = data.table(id1=integer(), v1=integer(), v2=integer()),
+    right = data.table(id1=integer(), v1=integer(), v2=integer()),
+    full = data.table(id1=integer(), v1=integer(), v2=integer())
+  )
+  frac = 0.0
+  for (how in c("inner", "left", "right", "full")) {
+    frac = frac + 0.1
+    for (mult in c("all", "first", "last", "error")) {
+      frac = frac + 0.01
+      test(26 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]])
+      test(26 + (frac <- frac + 0.001), copied(ans, l))
+      test(26 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]])
+      test(26 + (frac <- frac + 0.001), notcopied(ans, l, how=how))
+    }
+  }
+})
+
+### LHS has zero nrow: no copies
+local({
+  l = list(
+    lhs = data.table(id1=integer(), v1=integer()),
+    rhs = data.table(id1=2:1, v2=1:2)
+  )
+  expected = list(
+    inner = data.table(id1=integer(), v1=integer(), v2=integer()),
+    left = data.table(id1=integer(), v1=integer(), v2=integer()),
+    right = data.table(id1=2:1, v1=NA_integer_, v2=1:2),
+    full = data.table(id1=2:1, v1=NA_integer_, v2=1:2)
+  )
+  frac = 0.0
+  for (how in c("inner", "left", "right", "full")) {
+    frac = frac + 0.1
+    for (mult in c("all", "first", "last", "error")) {
+      frac = frac + 0.01
+      test(27 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]])
+      test(27 + (frac <- frac + 0.001), copied(ans, l))
+      test(27 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]])
+      test(27 + (frac <- frac + 0.001), notcopied(ans, l, how=how))
+    }
+  }
+})
+
+### RHS has zero nrow
+local({
+  l = list(
+    lhs = data.table(id1=2:1, v1=1:2),
+    rhs = data.table(id1=integer(), v2=integer())
+  )
+  expected = list(
+    inner = data.table(id1=integer(), v1=integer(), v2=integer()),
+    left = data.table(id1=2:1, v1=1:2, v2=NA_integer_),
+    right = data.table(id1=integer(), v1=integer(), v2=integer()),
+    full = data.table(id1=2:1, v1=1:2, v2=NA_integer_)
+  )
+  frac = 0.0
+  for (how in c("inner", "left", "right", "full")) {
+    frac = frac + 0.1
+    for (mult in c("all", "first", "last", "error")) {
+      frac = frac + 0.01
+      test(28 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]])
+      test(28 + (frac <- frac + 0.001), copied(ans, l))
+      test(28 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]])
+      if (how == "inner") {
+        test(28 + (frac <- frac + 0.001), copied(ans, l))
+      } else {
+        test(28 + (frac <- frac + 0.001), notcopied(ans, l, how=how))
+      }
+    }
+  }
+})
+
+### LHS and RHS same, different order
+local({
+  l = list(
+    lhs = data.table(id1=1:2, v1=1:2),
+    rhs = data.table(id1=2:1, v2=2:1)
+  )
+  expected = list(
+    inner = data.table(id1=1:2, v1=1:2, v2=1:2),
+    left = data.table(id1=1:2, v1=1:2, v2=1:2),
+    right = data.table(id1=2:1, v1=2:1, v2=2:1),
+    full = data.table(id1=1:2, v1=1:2, v2=1:2)
+  )
+  frac = 0.0
+  for (how in c("inner", "left", "right", "full")) {
+    frac = frac + 0.1
+    for (mult in c("all", "first", "last", "error")) {
+      frac = frac + 0.01
+      test(29 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=TRUE), expected[[how]])
+      test(29 + (frac <- frac + 0.001), copied(ans, l))
+      test(29 + (frac <- frac + 0.001), ans <- mergepair(l$lhs, l$rhs, on="id1", how=how, mult=mult, copy=FALSE), expected[[how]])
+      test(29 + (frac <- frac + 0.001), notcopied(ans, l, how=how))
+    }
+  }
+})
+
 
 ## fdistinct, another round
 
