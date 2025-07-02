@@ -21347,3 +21347,12 @@ local({
   test(2326.2, key(d), "x")
   test(2326.3, indices(d), c("y", "z"))
 })
+
+#6964
+# Test 1: No warning from min() with simple data
+DT = data.table(var = c("a", "b", "c", "d"), value=c(1:3, NA))
+test(2327.1, cube(DT, .(min(value)), "var"),
+     data.table(var = c("a", "b", "c", "d", NA), V1 = c(1.0, 2.0, 3.0, NA, NA)))
+test(2327.2, cube(DT, .(as.numeric(base::min(value, na.rm=TRUE))), "var"),
+     data.table(var = c("a", "b", "c", "d", NA), V1 = c(1.0, 2.0, 3.0, Inf, 1.0)),
+     warning="no non-missing arguments to min")
