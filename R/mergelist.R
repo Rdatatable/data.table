@@ -271,8 +271,6 @@ mergelist_impl_ = function(l, on, cols, how, mult, join.many, copy) {
   if (any(idx <- vapply_1i(l, function(x) anyDuplicated(names(x))) > 0L))
     stopf("Column names in individual 'l' entries must be unique, but these have some duplicates: %s", brackify(which(idx)))
 
-  if (!isTRUEorFALSE(copy))
-    stopf("'%s' must be TRUE or FALSE", "copy")
   n = length(l)
   if (n < 2L) {
     out = if (n) l[[1L]] else as.data.table(l)
