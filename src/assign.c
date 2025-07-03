@@ -735,12 +735,11 @@ SEXP assign(SEXP dt, SEXP rows, SEXP cols, SEXP newcolnames, SEXP values)
   return(dt);  // needed for `*tmp*` mechanism (when := isn't used), and to return the new object after a := for compound syntax.
 }
 
-#define MSGSIZE 1000
-static char memrecycle_message[MSGSIZE+1]; // returned to rbindlist so it can prefix with which one of the list of data.table-like objects
+static char memrecycle_message[1000]; // returned to rbindlist so it can prefix with which one of the list of data.table-like objects
 
 const char *columnDesc(int colnum, const char *colname) {
-  static char column_desc[MSGSIZE+1]; // can contain column names, hence relatively large allocation.
-  snprintf(column_desc, MSGSIZE, _("(column %d named '%s')"), colnum, colname);
+  static char column_desc[sizeof(memrecycle_message)]; // can contain column names, hence relatively large allocation.
+  snprintf(column_desc, sizeof(memrecycle_message), _("(column %d named '%s')"), colnum, colname);
   return column_desc;
 }
 
@@ -941,7 +940,7 @@ const char *memrecycle(const SEXP target, const SEXP where, const int start, con
         if (COND) {                                                                                                         \
           const char *sType = sourceIsI64 ? "integer64" : type2char(TYPEOF(source));                                        \
           const char *tType = targetIsI64 ? "integer64" : type2char(TYPEOF(target));                                        \
-          snprintf(memrecycle_message, MSGSIZE, FMT,                                                                        \
+          snprintf(memrecycle_message, sizeof(memrecycle_message), FMT,                                                     \
             FMTVAL, sType, i+1, tType,                                                                                      \
             /* NB: important for () to be part of the translated string as a signal of nominative case to translators */    \
             colnum == 0 ? _("(target vector)") : columnDesc(colnum, colname));                                              \
