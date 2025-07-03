@@ -151,7 +151,7 @@ test-lin-rel-cran:
     _R_CHECK_CRAN_INCOMING_: "TRUE"           ## stricter --as-cran checks should run in dev pipelines continuously (not sure what they are though)
     _R_CHECK_CRAN_INCOMING_REMOTE_: "FALSE"   ## Other than no URL checking (takes many minutes) or 'Days since last update 0' NOTEs needed, #3284
     _R_CHECK_CRAN_INCOMING_TARBALL_THRESHOLD_: "7500000" ## bytes
-    _R_CHECK_PKG_SIZES_THRESHOLD_: "10"        ## MB 'checking installed package size' NOTE increased due to po
+    _R_CHECK_PKG_SIZES_THRESHOLD_: "10"        ## MiB 'checking installed package size' NOTE increased due to po
   script:
     - *install-deps
     - echo 'CFLAGS=-g -O2 -fopenmp -Wall -pedantic -fstack-protector-strong -D_FORTIFY_SOURCE=2' > ~/.R/Makevars

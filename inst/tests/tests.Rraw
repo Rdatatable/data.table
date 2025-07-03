@@ -5468,7 +5468,7 @@ test(1333.2, fread('A,B\nfoo,1\n"Analyst\\" ,2\nbar,3', strip.white=FALSE), data
 test(1334, fread('A,B\nfoo,1\n"Analyst\\" ,",2\nbar,3'), data.table(A=c('foo', 'Analyst\\" ,', 'bar'), B=1:3))
 test(1335, fread('A,B\nfoo,1\n"Analyst\\\\",2\nbar,3'), data.table(A=c('foo','Analyst\\\\','bar'), B=1:3))
 
-# data from 12GB file in comments on http://stackoverflow.com/a/23858323/403310 ...
+# data from 12GiB file in comments on http://stackoverflow.com/a/23858323/403310 ...
 # note that read.csv gets this wrong and puts jacoleman high school into the previous field, then fills the rest of the line silently.
 cat('A,B,C,D,E,F
 "12",0,"teacher private nfp\\\\\\\\"",""jacoleman high school","",""
