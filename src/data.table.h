@@ -23,6 +23,7 @@
 #include <stdbool.h>
 #include "types.h"
 #include "po.h"
+#include "R_Defn.h"
 #ifdef WIN32  // positional specifiers (%n$) used in translations; #4402
 #  define snprintf dt_win_snprintf  // see our snprintf.c; tried and failed to link to _sprintf_p on Windows
 #endif
