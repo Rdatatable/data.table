@@ -28,7 +28,7 @@ coerce_col = function(dt, col, from_type, to_type, from_name, to_name, from_deta
 # data.table::as.ITime, chron::times, nanotime::nanotime
 .known_time_classes = c("Date", "POSIXt", "ITime", "times", "nanotime")
 # nolint next: object_length_linter.
-.maybe_warn_mismatched_time_types = function(x_class, i_class, x_name, i_name) {
+.maybe_warn_mismatched_time_types = function(x_class, i_class, xname, iname) {
   x_class_time = intersect(x_class, .known_time_classes)
   if (!length(x_class_time)) return(invisible())
 
@@ -109,7 +109,7 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
       stopf("Incompatible join types: %s (%s) and %s (%s). Factor columns must join to factor or character columns.", xname, x_merge_type, iname, i_merge_type)
     }
 
-    .maybe_warn_mismatched_time_types(class(x[[xcol]]), class(i[[icol]]), x_name, i_name)
+    .maybe_warn_mismatched_time_types(class(x[[xcol]]), class(i[[icol]]), xname, iname)
 
     if (x_merge_type == i_merge_type) {
       if (verbose) catf("%s has same type (%s) as %s. No coercion needed.\n", iname, x_merge_type, xname)
