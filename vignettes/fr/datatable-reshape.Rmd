@@ -1,6 +1,6 @@
 ---
 title: "Restructurer efficacement avec les data.tables"
-date: "`r Sys.Date()`"
+date: "`{r} Sys.Date()`"
 output:
   markdown::html_format
 vignette: >
@@ -9,9 +9,9 @@ vignette: >
   \usepackage[utf8]{inputenc}
 ---
 
-```{r echo=FALSE, file='../_translation_links.R'}
+```{r, echo=FALSE, file='../_translation_links.R'}
 ```
-`r .write.translation.links("Translations of this document are available in: %s")`
+`{r} .write.translation.links("Translations of this document are available in: %s")`
 
 ```{r, echo = FALSE, message = FALSE}
 require(data.table)
@@ -28,7 +28,7 @@ Cette vignette traite de l'utilisation par défaut des fonctions de transformati
 
 ***
 
-```{r echo = FALSE}
+```{r, echo = FALSE}
 options(with = 100L)
 ```
 
