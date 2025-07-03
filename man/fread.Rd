@@ -72,7 +72,7 @@ yaml=FALSE, tmpdir=tempdir(), tz="UTC"
 
 A sample of 10,000 rows is used for a very good estimate of column types. 100 contiguous rows are read from 100 equally spaced points throughout the file including the beginning, middle and the very end. This results in a better guess when a column changes type later in the file (e.g. blank at the beginning/only populated near the end, or 001 at the start but 0A0 later on). This very good type guess enables a single allocation of the correct type up front once for speed, memory efficiency and convenience of avoiding the need to set \code{colClasses} after an error. Even though the sample is large and jumping over the file, it is almost instant regardless of the size of the file because a lazy on-demand memory map is used. If a jump lands inside a quoted field containing newlines, each newline is tested until 5 lines are found following it with the expected number of fields. The lowest type for each column is chosen from the ordered list: \code{logical}, \code{integer}, \code{integer64}, \code{double}, \code{character}. Rarely, the file may contain data of a higher type in rows outside the sample (referred to as an out-of-sample type exception). In this event \code{fread} will \emph{automatically} reread just those columns from the beginning so that you don't have the inconvenience of having to set \code{colClasses} yourself; particularly helpful if you have a lot of columns. Such columns must be read from the beginning to correctly distinguish "00" from "000" when those have both been interpreted as integer 0 due to the sample but 00A occurs out of sample. Set \code{verbose=TRUE} to see a detailed report of the logic deployed to read your file.
 
-There is no line length limit, not even a very large one. Since we are encouraging \code{list} columns (i.e. \code{sep2}) this has the potential to encourage longer line lengths. So the approach of scanning each line into a buffer first and then rescanning that buffer is not used. There are no buffers used in \code{fread}'s C code at all. The field width limit is limited by R itself: the maximum width of a character string (currently 2^31-1 bytes, 2GB).
+There is no line length limit, not even a very large one. Since we are encouraging \code{list} columns (i.e. \code{sep2}) this has the potential to encourage longer line lengths. So the approach of scanning each line into a buffer first and then rescanning that buffer is not used. There are no buffers used in \code{fread}'s C code at all. The field width limit is limited by R itself: the maximum width of a character string (currently 2^31-1 bytes, 2GiB).
 
 The filename extension (such as .csv) is irrelevant for "auto" \code{sep} and \code{sep2}. Separator detection is entirely driven by the file contents. This can be useful when loading a set of different files which may not be named consistently, or may not have the extension .csv despite being csv. Some datasets have been collected over many years, one file per day for example. Sometimes the file name format has changed at some point in the past or even the format of the file itself. So the idea is that you can loop \code{fread} through a set of files and as long as each file is regular and delimited, \code{fread} can read them all. Whether they all stack is another matter but at least each one is read quickly without you needing to vary \code{colClasses} in \code{read.table} or \code{read.csv}.
 
@@ -231,8 +231,8 @@ DT[2,e:=+Inf]
 DT[3,e:=-Inf]
 
 write.table(DT,"test.csv",sep=",",row.names=FALSE,quote=FALSE)
-cat("File size (MB):", round(file.info("test.csv")$size/1024^2),"\n")
-# 50 MB (1e6 rows x 6 columns)
+cat("File size (MiB):", round(file.info("test.csv")$size/1024^2),"\n")
+# 50 MiB (1e6 rows x 6 columns)
 
 system.time(DF1 <-read.csv("test.csv",stringsAsFactors=FALSE))
 # 5.4 sec (first time in fresh R session)
@@ -257,13 +257,15 @@ l = vector("list",10)
 for (i in 1:10) l[[i]] = DT
 DTbig = rbindlist(l)
 tables()
-write.table(DTbig,"testbig.csv",sep=",",row.names=FALSE,quote=FALSE)
-# 500MB csv (10 million rows x 6 columns)
+write.table(DTbig, "testbig.csv", sep=",", row.names=FALSE, quote=FALSE)
+# ~500MiB csv (10 million rows x 6 columns)
 
-system.time(DF <- read.table("testbig.csv",header=TRUE,sep=",",
-    quote="",stringsAsFactors=FALSE,comment.char="",nrows=1e7,
-    colClasses=c("integer","integer","numeric",
-                 "character","numeric","integer")))
+system.time({
+  DF <- read.table("testbig.csv", header=TRUE, sep=",",
+    quote="", stringsAsFactors=FALSE, comment.char="", nrows=1e7,
+    colClasses=c("integer", "integer", "numeric",
+                 "character", "numeric", "integer"))
+})
 # 17.0 sec (varies)
 
 system.time(DT <- fread("testbig.csv"))
