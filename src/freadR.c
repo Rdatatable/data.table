@@ -25,9 +25,9 @@ Secondary separator for list() columns, such as columns 11 and 12 in BED (no nee
 #define NUT  (NUMTYPE + 2)  // +1 for "numeric" alias for "double"; +1 for CLASS fallback using as.class() at R level afterwards
 
 // these correspond to typeName, typeSize in fread.c, with few exceptions notes above on the NUT macro.
-static int  typeSxp[NUT] =       { NILSXP,  LGLSXP,    LGLSXP,     LGLSXP,     LGLSXP,     LGLSXP,     LGLSXP,     INTSXP,    REALSXP,     REALSXP,    REALSXP,        REALSXP,        INTSXP,          REALSXP,         STRSXP,      REALSXP,    STRSXP    };
+static int  typeSxp[NUT]       = { NILSXP,  LGLSXP,    LGLSXP,     LGLSXP,     LGLSXP,     LGLSXP,     LGLSXP,     INTSXP,    REALSXP,     REALSXP,    REALSXP,        REALSXP,        INTSXP,          REALSXP,         STRSXP,      REALSXP,    STRSXP    };
 static char typeRName[NUT][10] = { "NULL",  "logical", "logical",  "logical",  "logical",  "logical",  "logical",  "integer", "integer64", "double",   "double",       "double",       "IDate",         "POSIXct",       "character", "numeric",  "CLASS"   };
-static int  typeEnum[NUT] =      { CT_DROP, CT_EMPTY,  CT_BOOL8_N, CT_BOOL8_U, CT_BOOL8_T, CT_BOOL8_L, CT_BOOL8_Y, CT_INT32,  CT_INT64,    CT_FLOAT64, CT_FLOAT64_HEX, CT_FLOAT64_EXT, CT_ISO8601_DATE, CT_ISO8601_TIME, CT_STRING,   CT_FLOAT64, CT_STRING };
+static int  typeEnum[NUT]      = { CT_DROP, CT_EMPTY,  CT_BOOL8_N, CT_BOOL8_U, CT_BOOL8_T, CT_BOOL8_L, CT_BOOL8_Y, CT_INT32,  CT_INT64,    CT_FLOAT64, CT_FLOAT64_HEX, CT_FLOAT64_EXT, CT_ISO8601_DATE, CT_ISO8601_TIME, CT_STRING,   CT_FLOAT64, CT_STRING };
 static colType readInt64As = CT_INT64;
 static SEXP selectSxp;
 static SEXP dropSxp;
@@ -174,7 +174,7 @@ SEXP freadR(
     readInt64As = CT_INT64;
   } else if (strcmp(tt, "character") == 0) {
     readInt64As = CT_STRING;
-  } else if (strcmp(tt,"double") == 0 || strcmp(tt, "numeric") == 0) {
+  } else if (strcmp(tt, "double") == 0 || strcmp(tt, "numeric") == 0) {
     readInt64As = CT_FLOAT64;
   } else STOP(_("Invalid value integer64='%s'. Must be 'integer64', 'character', 'double' or 'numeric'"), tt);
 
@@ -439,7 +439,6 @@ bool userOverride(int8_t *type, lenOff *colNames, const char *anchor, const int 
   return true;
 }
 
-
 size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size_t allocNrow) {
   // save inputs for use by pushBuffer
   size = sizeArg;
@@ -466,8 +465,8 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
       UNPROTECT(nprotect);
     }
     if (selectRank) {
-      SEXP tt = PROTECT(allocVector(INTSXP, ncol-ndrop));
-      int *ttD = INTEGER(tt), *rankD = INTEGER(selectRank), rank=1;
+      SEXP tt = PROTECT(allocVector(INTSXP, ncol - ndrop));
+      int *ttD = INTEGER(tt), *rankD = INTEGER(selectRank), rank = 1;
       for (int i = 0; i < ncol; i++) if (type[i] != CT_DROP) ttD[rankD[i] - 1] = rank++;
       SET_VECTOR_ELT(RCHK, 3, selectRank = tt);
       // selectRank now holds the order not the rank (so its name is now misleading). setFinalNRow passes it to setcolorder
@@ -523,7 +522,7 @@ size_t allocateDT(int8_t *typeArg, int8_t *sizeArg, int ncolArg, int ndrop, size
         setAttrib(thiscol, sym_tzone, ScalarString(char_UTC)); // see news for v1.13.0
       }
       SET_TRUELENGTH(thiscol, allocNrow);
-      DTbytes += RTYPE_SIZEOF(thiscol)*allocNrow;
+      DTbytes += RTYPE_SIZEOF(thiscol) * allocNrow;
     }
     resi++;
   }
@@ -633,8 +632,7 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx)
           src8 += rowSize8;
           dest++;
         }
-      } else
-      if (thisSize == 4) {
+      } else if (thisSize == 4) {
         int *dest = INTEGER(VECTOR_ELT(DT, resj)) + DTi;
         const char *src4 = (char*)buff4 + off4;
         // debug line for #3369 ... if (DTi>2638000) printf("freadR.c:460: thisSize==4, resj=%d, %"PRIu64", %d, %d, j=%d, done=%d\n", resj, (uint64_t)DTi, off4, rowSize4, j, done);
@@ -643,8 +641,7 @@ void pushBuffer(ThreadLocalFreadParsingContext *ctx)
           src4 += rowSize4;
           dest++;
         }
-      } else
-      if (thisSize == 1) {
+      } else if (thisSize == 1) {
         if (type[j] > CT_BOOL8_Y) STOP(_("Field size is 1 but the field is of type %d\n"), type[j]);
         int *dest = LOGICAL(VECTOR_ELT(DT, resj)) + DTi;
         const char *src1 = (char*)buff1 + off1;
