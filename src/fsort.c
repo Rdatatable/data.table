@@ -193,7 +193,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   memset(counts, 0, nBatch*MSBsize*sizeof(*counts));
   // provided MSBsize>=9, each batch is a multiple of at least one 4k page, so no page overlap
 
-  if (verbose) Rprintf(_("counts is %dMB (%d pages per nBatch=%d, batchSize=%"PRIu64", lastBatchSize=%"PRIu64")\n"),
+  if (verbose) Rprintf(_("counts is %dMiB (%d pages per nBatch=%d, batchSize=%"PRIu64", lastBatchSize=%"PRIu64")\n"),
                        (int)(nBatch*MSBsize*sizeof(*counts)/(1024*1024)),
                        (int)(nBatch*MSBsize*sizeof(*counts)/(4*1024*nBatch)),
                        nBatch, (uint64_t)batchSize, (uint64_t)lastBatchSize);
