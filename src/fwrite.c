@@ -791,7 +791,7 @@ void fwriteMain(fwriteMainArgs args)
   }
   char *buffPool = malloc(alloc_size);
   if (!buffPool) {
-    STOP(_("Unable to allocate %zu MB * %d thread buffers; '%d: %s'. Please read ?fwrite for nThread, buffMB and verbose options."), // # nocov
+    STOP(_("Unable to allocate %zu MiB * %d thread buffers; '%d: %s'. Please read ?fwrite for nThread, buffMB and verbose options."), // # nocov
          buffSize / MEGA, nth, errno, strerror(errno)); // # nocov
   }
 

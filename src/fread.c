@@ -1420,7 +1420,7 @@ int freadMain(freadMainArgs _args) {
 
       // No MAP_POPULATE for faster nrows=10 and to make possible earlier progress bar in row count stage
       // Mac doesn't appear to support MAP_POPULATE anyway (failed on CRAN when I tried).
-      // TO DO?: MAP_HUGETLB for Linux but seems to need admin to setup first. My Hugepagesize is 2MB (>>2KB, so promising)
+      // TO DO?: MAP_HUGETLB for Linux but seems to need admin to setup first. My Hugepagesize is 2MiB (>>2KiB, so promising)
       //         https://www.kernel.org/doc/Documentation/vm/hugetlbpage.txt
       mmp = mmap(NULL, fileSize, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);  // COW for last page lastEOLreplaced
       #ifdef __EMSCRIPTEN__
@@ -1901,7 +1901,7 @@ int freadMain(freadMainArgs _args) {
 
   const ptrdiff_t jump0size = firstJumpEnd - pos;  // the size in bytes of the first 100 lines from the start (jump point 0)
   // how many places in the file to jump to and test types there (the very end is added as 11th or 101th)
-  // not too many though so as not to slow down wide files; e.g. 10,000 columns.  But for such large files (50GB) it is
+  // not too many though so as not to slow down wide files; e.g. 10,000 columns.  But for such large files (50GiB) it is
   // worth spending a few extra seconds sampling 10,000 rows to decrease a chance of costly reread even further.
   nJumps = 1;
   const ptrdiff_t sz = eof - pos;
@@ -2254,10 +2254,10 @@ int freadMain(freadMainArgs _args) {
   int buffGrown = 0;
   // chunkBytes is the distance between each jump point; it decides the number of jumps
   // We may want each chunk to write to its own page of the final column, hence 1000*maxLen
-  // For the 44GB file with 12875 columns, the max line len is 108,497. We may want each chunk to write to its
+  // For the 44GiB file with 12875 columns, the max line len is 108,497. We may want each chunk to write to its
   // own page (4k) of the final column, hence 1000 rows of the smallest type (4 byte int) is just
   // under 4096 to leave space for R's header + malloc's header.
-  size_t chunkBytes = umax((uint64_t)(1000 * meanLineLen), 1ULL * 1024 * 1024/*MB*/);
+  size_t chunkBytes = umax((uint64_t)(1000 * meanLineLen), 1ULL * 1024 * 1024/*MiB*/);
   // Index of the first jump to read. May be modified if we ever need to restart
   // reading from the middle of the file.
   int jump0 = 0;

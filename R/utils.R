@@ -212,10 +212,10 @@ edit.data.table = function(name, ...) {
 
 rss = function() {  #5515 #5517
   # nocov start
-  cmd = paste0("ps -o rss --no-headers ", Sys.getpid()) # ps returns KB
+  cmd = paste0("ps -o rss --no-headers ", Sys.getpid()) # ps returns KiB
   ans = tryCatch(as.numeric(system(cmd, intern=TRUE)), warning=function(w) NA_real_, error=function(e) NA_real_)
   if (length(ans)!=1L || !is.numeric(ans)) ans=NA_real_ # just in case
-  round(ans / 1024.0, 1L)  # return MB
+  round(ans / 1024.0, 1L)  # return MiB
   # nocov end
 }
 
