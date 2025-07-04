@@ -69,7 +69,7 @@ For \code{getOption("datatable.optimize") >= 2}, additional optimisations are im
     (which can get costly with large number of groups) by implementing it
     specifically for a particular function. As a result, it is extremely fast.
 
-    \item In addition to all the functions above, `.N` is also optimised to
+    \item In addition to all the functions above, \code{.N} is also optimised to
     use GForce, when used separately or when combined with the functions mentioned
     above. Note further that GForce-optimized functions must be used separately,
     i.e., code like \code{DT[ , max(x) - min(x), by=z]} will \emph{not} currently

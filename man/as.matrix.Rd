@@ -23,7 +23,7 @@ be used.}
 \code{rownames} in the returned \code{matrix}. It must be the same length
 as \code{nrow(x)}.}
 
-\item{\dots}{ Required to be present because the generic `as.matrix` generic has it. Arguments here are not currently used or passed on by this method. }
+\item{\dots}{ Required to be present because the generic \code{as.matrix} generic has it. Arguments here are not currently used or passed on by this method. }
 
 }
 
