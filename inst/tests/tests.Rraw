@@ -2290,7 +2290,7 @@ test(754.04, DT[, b := a][3, b := 6L], data.table(a=INT(4,2,3),b=INT(4,2,6)))
 test(754.05, DT[, a := as.numeric(a), verbose=TRUE], output="Direct plonk.*no copy")
 RHS = as.integer(DT$a)
 test(754.06, DT[, a:= RHS, verbose=TRUE], output="RHS for item 1 has been duplicated")
-if (getRversion() >= "3.5.0") { # TODO(R>=3.5.0): test unconditionally
+if (base::getRversion() >= "3.5.0") { # TODO(R>=3.5.0): test unconditionally
   # Expand ALTREPS in assign.c, #5400
   # String conversion gets deferred
   ## first, a regression test of R itself -- we want to make sure our own test continues to be useful & testing its intended purpose
@@ -5468,7 +5468,7 @@ test(1333.2, fread('A,B\nfoo,1\n"Analyst\\" ,2\nbar,3', strip.white=FALSE), data
 test(1334, fread('A,B\nfoo,1\n"Analyst\\" ,",2\nbar,3'), data.table(A=c('foo', 'Analyst\\" ,', 'bar'), B=1:3))
 test(1335, fread('A,B\nfoo,1\n"Analyst\\\\",2\nbar,3'), data.table(A=c('foo','Analyst\\\\','bar'), B=1:3))
 
-# data from 12GB file in comments on http://stackoverflow.com/a/23858323/403310 ...
+# data from 12GiB file in comments on http://stackoverflow.com/a/23858323/403310 ...
 # note that read.csv gets this wrong and puts jacoleman high school into the previous field, then fills the rest of the line silently.
 cat('A,B,C,D,E,F
 "12",0,"teacher private nfp\\\\\\\\"",""jacoleman high school","",""
@@ -9770,7 +9770,7 @@ test(1640.2, x[y, c(.SD, .(x.aa=x.aa)), on=c(aa="bb")], data.table(aa=3:5, cc=c(
 nq_fun = function(n=100L) {
   i1 = sample(sample.int(n, 10L), n, TRUE)
   i2 = sample.int(n, n, TRUE) - as.integer(n/2)    # this used to be type numeric before #5517 which didn't seem intentional
-  i3 = sample.int(2e6, n, TRUE) - as.integer(1e6)  # used to sample from -1e6:1e6 which if allocated would be 8MB, #5517
+  i3 = sample.int(2e6, n, TRUE) - as.integer(1e6)  # used to sample from -1e6:1e6 which if allocated would be 8MiB, #5517
   i4 = sample(c(NA_integer_, sample.int(n*2L, 10L, FALSE)-n), n, TRUE)
 
   d1 = sample(rnorm(10L), n, TRUE)
@@ -9861,7 +9861,7 @@ y = na.omit(dt2)
 
 if (.Machine$sizeof.pointer>4) {
 
-  # temporarily off due to hitting 2GB limit on 32bit, #2767
+  # temporarily off due to hitting 2GiB limit on 32bit, #2767
   # turn off temporarily using FALSE when using valgrind, too, as very slow
 
   set.seed(1509611616L)
@@ -11964,7 +11964,7 @@ test(1800.2, fread("A\n1e55555555\n-1e+234056\n2e-59745"), data.table(A=c("1e555
 #
 # Tests thanks to Pasha copied verbatim from his PR#2200
 #
-# Test files with "round" sizes (different multiples of 2, from 512B to 64KB)
+# Test files with "round" sizes (different multiples of 2, from 512B to 64KiB)
 for (mul in c(16, 128, 512, 1024, 2048)) {
   ff = file(f<-tempfile(), open="wb")
   cat(strrep("1234,5678,9012,3456,7890,abcd,4\x0A", mul), file=ff)
@@ -12943,7 +12943,7 @@ test(1903.2, fread(",A,B\n1,0,1\n2,0,1\n3,1,1\n", logical01=TRUE), data.table(V1
 txt = 'A,   B,    C\n17,  34, 2.3\n3.,  NA,   1\nNA ,  2, NA \n0,0.1,0'
 test(1904.1, fread(txt, na.strings="NA", verbose=TRUE),
   ans <- data.table(A=c(17,3,NA,0), B=c(34,NA,2,0.1), C=c(2.3,1.0,NA,0.0)),
-  output = c("Number of sampling jump points = 1 because.*Reading 1 chunks \\(0 swept\\) of 1.000MB \\(each chunk 4 rows\\) using 1 thread.*Rereading 0 columns"))
+  output = c("Number of sampling jump points = 1 because.*Reading 1 chunks \\(0 swept\\) of 1.000MiB \\(each chunk 4 rows\\) using 1 thread.*Rereading 0 columns"))
 test(1904.2, fread(txt, na.strings=c("NA", " ")), ans, warning='na.strings\\[2\\]==" " consists only of whitespace, ignoring. Since strip.white=TRUE.*use.*"".*<NA>')
 test(1904.3, fread(txt, na.strings=c("NA", "")), ans)
 test(1904.4, fread(txt, na.strings=c("NA", "", " ")), ans, warning='na.strings\\[3\\]==" ".*only.*whitespace.*will already be read as <NA>')
@@ -17973,7 +17973,7 @@ DT = data.table(x = sample(letters[1:5], 20, TRUE),
                 c = sample(c(0+3i,1,-1-1i,NA), 20, TRUE),
                 l = sample(c(TRUE, FALSE, NA), 20, TRUE),
                 r = as.raw(sample(1:5, 20, TRUE)))
-load(testDir("test2224.Rdata")) # 47KB array 24x8 where each cell contains a length-20 result
+load(testDir("test2224.Rdata")) # 47KiB array 24x8 where each cell contains a length-20 result
 if (test_bit64) {
   DT[, i64:=as.integer64(sample(c(-2L,0L,2L,NA), 20, TRUE))]
 } else {
@@ -17984,7 +17984,7 @@ for (col in names(DT)[-1]) {
   for (n in list(1, 5, -1, -5, c(1,2), c(-1,1))) {
     for (type in c('lag','lead','shift','cyclic')) {
       # fill is tested by group in tests 2218.*; see comments in #5205
-      # sapply(sapply()) changed to for(for(for())) to save 29MB, #5517
+      # sapply(sapply()) changed to for(for(for())) to save 29MiB, #5517
       test(2224.1+i/10000,  # 192 tests here when test_bit64=TRUE; 168 when FALSE
            EVAL(sprintf("DT[, shift(%s, %d, type='%s'), by=x]$V1", col, n, type)),
            ans[[i]])

@@ -2237,7 +2237,7 @@ tail.data.table = function(x, n=6L, ...) {
 
 "[<-.data.table" = function(x, i, j, value) {
   # [<- is provided for consistency, but := is preferred as it allows by group and by reference to subsets of columns
-  # with no copy of the (very large, say 10GB) columns at all. := is like an UPDATE in SQL and we like and want two symbols to change.
+  # with no copy of the (very large, say 10GiB) columns at all. := is like an UPDATE in SQL and we like and want two symbols to change.
   if (!cedta()) {
     x = if (nargs()<4L) `[<-.data.frame`(x, i, value=value)
         else `[<-.data.frame`(x, i, j, value)

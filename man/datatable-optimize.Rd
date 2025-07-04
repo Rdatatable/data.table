@@ -110,7 +110,7 @@ old = options(datatable.optimize = Inf)
 set.seed(1L)
 DT = lapply(1:20, function(x) sample(c(-100:100), 5e6L, TRUE))
 setDT(DT)[, id := sample(1e5, 5e6, TRUE)]
-print(object.size(DT), units="Mb") # 400MB, not huge, but will do
+print(object.size(DT), units="MiB") # 400MiB, not huge, but will do
 
 # 'order' optimisation
 options(datatable.optimize = 1L) # optimisation 'on'

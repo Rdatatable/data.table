@@ -1420,7 +1420,7 @@ int freadMain(freadMainArgs _args) {
 
       // No MAP_POPULATE for faster nrows=10 and to make possible earlier progress bar in row count stage
       // Mac doesn't appear to support MAP_POPULATE anyway (failed on CRAN when I tried).
-      // TO DO?: MAP_HUGETLB for Linux but seems to need admin to setup first. My Hugepagesize is 2MB (>>2KB, so promising)
+      // TO DO?: MAP_HUGETLB for Linux but seems to need admin to setup first. My Hugepagesize is 2MiB (>>2KiB, so promising)
       //         https://www.kernel.org/doc/Documentation/vm/hugetlbpage.txt
       mmp = mmap(NULL, fileSize, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);  // COW for last page lastEOLreplaced
       #ifdef __EMSCRIPTEN__
@@ -1901,7 +1901,7 @@ int freadMain(freadMainArgs _args) {
 
   const ptrdiff_t jump0size = firstJumpEnd - pos;  // the size in bytes of the first 100 lines from the start (jump point 0)
   // how many places in the file to jump to and test types there (the very end is added as 11th or 101th)
-  // not too many though so as not to slow down wide files; e.g. 10,000 columns.  But for such large files (50GB) it is
+  // not too many though so as not to slow down wide files; e.g. 10,000 columns.  But for such large files (50GiB) it is
   // worth spending a few extra seconds sampling 10,000 rows to decrease a chance of costly reread even further.
   nJumps = 1;
   const ptrdiff_t sz = eof - pos;
@@ -2254,10 +2254,10 @@ int freadMain(freadMainArgs _args) {
   int buffGrown = 0;
   // chunkBytes is the distance between each jump point; it decides the number of jumps
   // We may want each chunk to write to its own page of the final column, hence 1000*maxLen
-  // For the 44GB file with 12875 columns, the max line len is 108,497. We may want each chunk to write to its
+  // For the 44GiB file with 12875 columns, the max line len is 108,497. We may want each chunk to write to its
   // own page (4k) of the final column, hence 1000 rows of the smallest type (4 byte int) is just
   // under 4096 to leave space for R's header + malloc's header.
-  size_t chunkBytes = umax((uint64_t)(1000 * meanLineLen), 1ULL * 1024 * 1024/*MB*/);
+  size_t chunkBytes = umax((uint64_t)(1000 * meanLineLen), 1ULL * 1024 * 1024/*MiB*/);
   // Index of the first jump to read. May be modified if we ever need to restart
   // reading from the middle of the file.
   int jump0 = 0;
@@ -2781,17 +2781,17 @@ int freadMain(freadMainArgs _args) {
   if (verbose) {
     DTPRINT("=============================\n"); // # notranslate
     if (tTot < 0.000001) tTot = 0.000001;  // to avoid nan% output in some trivially small tests where tot==0.000s
-    DTPRINT(_("%8.3fs (%3.0f%%) Memory map %.3fGB file\n"), tMap - t0, 100.0 * (tMap - t0) / tTot, 1.0 * fileSize / (1024 * 1024 * 1024));
+    DTPRINT(_("%8.3fs (%3.0f%%) Memory map %.3fGiB file\n"), tMap - t0, 100.0 * (tMap - t0) / tTot, 1.0 * fileSize / (1024 * 1024 * 1024));
     DTPRINT(_("%8.3fs (%3.0f%%) sep="), tLayout - tMap, 100.0 * (tLayout - tMap) / tTot);
       DTPRINT(sep == '\t' ? "'\\t'" : (sep == '\n' ? "'\\n'" : "'%c'"), sep); // # notranslate
       DTPRINT(_(" ncol=%d and header detection\n"), ncol);
     DTPRINT(_("%8.3fs (%3.0f%%) Column type detection using %"PRId64" sample rows\n"),
             tColType - tLayout, 100.0 * (tColType - tLayout) / tTot, sampleLines);
-    DTPRINT(_("%8.3fs (%3.0f%%) Allocation of %"PRId64" rows x %d cols (%.3fGB) of which %"PRId64" (%3.0f%%) rows used\n"),
+    DTPRINT(_("%8.3fs (%3.0f%%) Allocation of %"PRId64" rows x %d cols (%.3fGiB) of which %"PRId64" (%3.0f%%) rows used\n"),
       tAlloc - tColType, 100.0 * (tAlloc - tColType) / tTot, allocnrow, ncol, DTbytes / (1024.0 * 1024 * 1024), DTi, 100.0 * DTi / allocnrow);
     thRead /= nth; thPush /= nth;
     double thWaiting = tReread - tAlloc - thRead - thPush;
-    DTPRINT(_("%8.3fs (%3.0f%%) Reading %d chunks (%d swept) of %.3fMB (each chunk %"PRId64" rows) using %d threads\n"),
+    DTPRINT(_("%8.3fs (%3.0f%%) Reading %d chunks (%d swept) of %.3fMiB (each chunk %"PRId64" rows) using %d threads\n"),
             tReread - tAlloc, 100.0 * (tReread - tAlloc) / tTot, nJumps, nSwept, (double)chunkBytes / (1024 * 1024), DTi / nJumps, nth);
     DTPRINT(_("   + %8.3fs (%3.0f%%) Parse to row-major thread buffers (grown %d times)\n"), thRead, 100.0 * thRead / tTot, buffGrown);
     DTPRINT(_("   + %8.3fs (%3.0f%%) Transpose\n"), thPush, 100.0 * thPush / tTot);

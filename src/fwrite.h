@@ -109,7 +109,7 @@ typedef struct fwriteMainArgs
                           //   iff scipen >= 3=8-5
   bool squashDateTime;
   bool append;
-  int buffMB;             // [1-1024] default 8MB
+  int buffMB;             // [1-1024] default 8MiB
   int nth;
   bool showProgress;
   bool is_gzip;
