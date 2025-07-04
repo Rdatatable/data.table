@@ -101,6 +101,8 @@
    + On non-Windows systems, `fread()` now prints the reason why the file couldn't be opened, which could also be due to it being too large to map.
    + With `verbose=TRUE`, file sizes are now printed using correct binary SI prefixes (the sizes have always been reported as bytes denominated in powers of `2^10`, so e.g. `1024*1024` bytes was reported as `1 MB` where `1 MiB` or `1.05 MB` is correct).
 
+5. The default `format_list_item()` method (and hence `print.data.table()`) annotates truncated list items with their length, [#605](https://github.com/Rdatatable/data.table/issues/605). Thanks Matt Dowle for the original report (2012!) and @MichaelChirico for the fix.
+
 ## data.table [v1.17.0](https://github.com/Rdatatable/data.table/milestone/34)  (20 Feb 2025)
 
 ### POTENTIALLY BREAKING CHANGES
