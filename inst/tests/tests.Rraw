@@ -21358,3 +21358,19 @@ test(2327.1, cube(DT, .(min(value)), "var"),
 test(2327.2, cube(DT, .(as.numeric(base::min(value, na.rm=TRUE))), "var"),
      data.table(var = c("a", "b", "c", "d", NA), V1 = c(1.0, 2.0, 3.0, Inf, 1.0)),
      warning="no non-missing arguments to min")
+
+# '..1' is ...elt(1), not a variable named '1', when doing "up-a-level" search (#5460)
+DT = data.table(a=1.0)
+sqrt_dot_sym = function(...) sqrt(..1)
+test(2328.1, lapply(DT, function(...) sqrt(..1)), list(a=1.0))
+test(2328.2, lapply(DT, sqrt_dot_sym), list(a=1.0))
+test(2328.3, DT[, lapply(.SD, function(...) sqrt(..1))], data.table(a=1.0))
+test(2328.4, DT[, lapply(.SD, sqrt_dot_sym)], data.table(a=1.0))
+sqrt_elt_sym = function(...) sqrt(...elt(1))
+# TODO(R>=3.5.0): run this unconditionally
+if (!inherits(tryCatch(sqrt_elt_sym(1), error=identity), "error")) {
+  test(2328.5, lapply(DT, sqrt_elt_sym), list(a=1.0))
+  test(2328.6, lapply(DT, function(...) sqrt(...elt(1L))), list(a=1.0))
+  test(2328.7, DT[, lapply(.SD, sqrt_elt_sym)], data.table(a=1.0))
+  test(2328.8, DT[, lapply(.SD, function(...) sqrt(...elt(1L)))], data.table(a=1.0))
+}
