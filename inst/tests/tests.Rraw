@@ -2290,7 +2290,7 @@ test(754.04, DT[, b := a][3, b := 6L], data.table(a=INT(4,2,3),b=INT(4,2,6)))
 test(754.05, DT[, a := as.numeric(a), verbose=TRUE], output="Direct plonk.*no copy")
 RHS = as.integer(DT$a)
 test(754.06, DT[, a:= RHS, verbose=TRUE], output="RHS for item 1 has been duplicated")
-if (getRversion() >= "3.5.0") { # TODO(R>=3.5.0): test unconditionally
+if (base::getRversion() >= "3.5.0") { # TODO(R>=3.5.0): test unconditionally
   # Expand ALTREPS in assign.c, #5400
   # String conversion gets deferred
   ## first, a regression test of R itself -- we want to make sure our own test continues to be useful & testing its intended purpose
