@@ -217,7 +217,7 @@ accounting for both year transitions and varying day counts per week.
 }
 \references{
 
-  G. Grothendieck and T. Petzoldt, "Date and Time Classes in R",
+  G. Grothendieck and T. Petzoldt, \dQuote{Date and Time Classes in R},
   R News, vol. 4, no. 1, June 2004.
 
   H. Wickham, https://gist.github.com/hadley/10238.

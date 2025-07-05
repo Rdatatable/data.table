@@ -24,7 +24,7 @@ setnames(x, old, new, skip_absent=FALSE)
 
   \code{setattr} is a more general function that allows setting of any attribute to an object \emph{by reference}.
 
-  A very welcome change in R 3.1+ was that \code{\link[base]{names<-}} and \code{\link[base]{colnames<-}} no longer copy the \emph{entire} object as they used to (up to 4 times), see examples below. They now take a shallow copy. The \code{set*} functions in data.table are still useful because they don't even take a shallow copy. This allows changing names and attributes of a (usually very large) \code{data.table} in the global environment \emph{from within functions}. Like a database.
+  A very welcome change in R 3.1+ was that \code{\link[base]{names<-}} and \code{\link[base]{colnames<-}} no longer copy the \emph{entire} object as they used to (up to 4 times), see examples below. They now take a shallow copy. The \samp{set*} functions in data.table are still useful because they don't even take a shallow copy. This allows changing names and attributes of a (usually very large) \code{data.table} in the global environment \emph{from within functions}. Like a database.
 
   }
 \value{
