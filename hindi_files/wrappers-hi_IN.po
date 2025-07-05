@@ -20,6 +20,8 @@ msgid ""
 "table' or 'data.frame'. Use 'as.data.table()' or 'as.data.frame()' methods "
 "instead."
 msgstr ""
+"आंतरिक संरचना सूची (list) नहीं लगती। 'data.table' या 'data.frame' के रूप में class सेट नहीं की जा सकती।”
+“कृपया इसके बजाय 'as.data.table()' या 'as.data.frame()' विधियों का उपयोग करें।"
 
 #: wrappers.c:66
 msgid "First argument to setlistelt must be a list()"
