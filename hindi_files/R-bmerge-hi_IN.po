@@ -39,7 +39,9 @@ msgstr "कैरेक्टर (character) कॉलम %s को %s में
 msgid ""
 "Incompatible join types: %s (%s) and %s (%s). Factor columns must join to "
 "factor or character columns."
-msgstr ""
+msgstr
+"असंगत जॉइन (join) प्रकार: %s (%s) और %s (%s)। फ़ैक्टर (factor) कॉलम (column) केवल फ़ैक्टर (factor)"
+" या कैरेक्टर (character) कॉलम (column) से ही जोड़े जा सकते हैं।"
 
 #: bmerge.R:74
 msgid "%s has same type (%s) as %s. No coercion needed."
