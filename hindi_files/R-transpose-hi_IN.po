@@ -79,7 +79,7 @@ msgid ""
 "element (a function) but an object of type '%s' was provided."
 msgstr ""
 "आर्ग्युमेंट (argument) 'type.convert' TRUE/FALSE, एक फ़ंक्शन (function), फंक्शन्स (functions) की लिस्ट (list),”
-“या 'fun=indices' की नाम सहित जोड़े लिस्ट (list) की सूची होनी चाहिए, जिसमें वैकल्पिक रूप से एक नामरहित तत्व (एक फ़ंक्शन (function)) हो सकता है,”
+“या 'fun=indices' की नाम सहित जोड़े की लिस्ट (list) होनी चाहिए, जिसमें वैकल्पिक रूप से एक नामरहित तत्व (एक फ़ंक्शन (function)) हो सकता है,”
 “लेकिन '%s' प्रकार की ऑब्जेक्ट (object) दी गई थी।"
 
 #: transpose.R:88
