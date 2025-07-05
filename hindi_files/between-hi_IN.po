@@ -17,6 +17,8 @@ msgid ""
 "length(upper)==%d. Each should be either length 1 or the length of the "
 "longest."
 msgstr ""
+"असंगत वेक्टर (vector) लेंथ (length): length(x)==%d length(lower)==%d length(upper)==%d।"
+“प्रत्येक की लेंथ (length) या तो 1 होनी चाहिए या सबसे लंबी लेंथ (length) के बराबर होनी चाहिए।"
 
 #: between.c:22 between.c:28
 #, c-format
