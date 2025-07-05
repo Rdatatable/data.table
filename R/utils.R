@@ -21,6 +21,12 @@ nan_is_na = function(x) {
   stopf("Argument 'nan' must be NA or NaN")
 }
 
+# R 4.4.0
+if (!exists("%||%", "package:base")) `%||%` <- function(x, y) if (is.null(x)) y else x # nolint: coalesce_linter.
+
+# R 4.5.0
+if (!exists("grepv", "package:base")) grepv <- function(...) grep(..., value=TRUE)
+
 internal_error = function(...) {
   e1 = gettext("Internal error in")
   e2 = deparse(head(tail(sys.calls(), 2L), 1L)[[1L]][[1L]])
@@ -206,9 +212,28 @@ edit.data.table = function(name, ...) {
 
 rss = function() {  #5515 #5517
   # nocov start
-  cmd = paste0("ps -o rss --no-headers ", Sys.getpid()) # ps returns KB
+  cmd = paste0("ps -o rss --no-headers ", Sys.getpid()) # ps returns KiB
   ans = tryCatch(as.numeric(system(cmd, intern=TRUE)), warning=function(w) NA_real_, error=function(e) NA_real_)
   if (length(ans)!=1L || !is.numeric(ans)) ans=NA_real_ # just in case
-  round(ans / 1024.0, 1L)  # return MB
+  round(ans / 1024.0, 1L)  # return MiB
   # nocov end
+}
+
+# convert char to factor retaining order #4837
+fctr = function(x, levels=unique(x), ..., sort=FALSE, rev=FALSE) {
+  if (!isTRUEorFALSE(sort))
+    stopf("argument 'sort' must be TRUE or FALSE")
+  if (!isTRUEorFALSE(rev))
+    stopf("argument 'rev' must be TRUE or FALSE")
+  if (sort) levels = sort(levels)
+  if (rev) levels = rev(levels)
+  factor(x, levels=levels, ...)
+}
+
+formula_vars = function(f, x) { # .formula2varlist is not API and seems to have appeared after R-4.2, #6841
+  terms <- terms(f)
+  setNames(
+    eval(attr(terms, "variables"), x, environment(f)),
+    attr(terms, "term.labels")
+  )
 }

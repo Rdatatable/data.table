@@ -29,7 +29,7 @@ void fadaptiverollmeanFast(double *x, uint64_t nx, ans_t *ans, int *k, double fi
     snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", hasna %d, narm %d\n"), "fadaptiverollmeanFast", (uint64_t)nx, hasna, (int) narm);
   bool truehasna = hasna>0;                                     // flag to re-run if NAs detected
   long double w = 0.0;
-  double *cs = malloc(nx*sizeof(double));                       // cumsum vector, same as double cs[nx] but no segfault
+  double *cs = malloc(sizeof(*cs) * nx);                       // cumsum vector, same as double cs[nx] but no segfault
   if (!cs) {                                                    // # nocov start
     ans->status = 3;                                            // raise error
     snprintf(ans->message[3], 500, _("%s: Unable to allocate memory for cumsum"), __func__);
@@ -65,7 +65,7 @@ void fadaptiverollmeanFast(double *x, uint64_t nx, ans_t *ans, int *k, double fi
   }
   if (truehasna) {
     uint64_t nc = 0;                                            // running NA counter
-    uint64_t *cn = malloc(nx*sizeof(uint64_t));                 // cumulative NA counter, used the same way as cumsum, same as uint64_t cn[nx] but no segfault
+    uint64_t *cn = malloc(sizeof(*cn) * nx);                 // cumulative NA counter, used the same way as cumsum, same as uint64_t cn[nx] but no segfault
     if (!cn) {                                                  // # nocov start
       ans->status = 3;                                          // raise error
       snprintf(ans->message[3], 500, _("%s: Unable to allocate memory for cum NA counter"), __func__);
@@ -218,7 +218,7 @@ void fadaptiverollsumFast(double *x, uint64_t nx, ans_t *ans, int *k, double fil
     snprintf(end(ans->message[0]), 500, _("%s: running for input length %"PRIu64", hasna %d, narm %d\n"), "fadaptiverollsumFast", (uint64_t)nx, hasna, (int) narm);
   bool truehasna = hasna>0;
   long double w = 0.0;
-  double *cs = malloc(nx*sizeof(double));
+  double *cs = malloc(sizeof(*cs) * nx);
   if (!cs) {                                                    // # nocov start
     ans->status = 3;
     snprintf(ans->message[3], 500, _("%s: Unable to allocate memory for cumsum"), __func__);
@@ -254,7 +254,7 @@ void fadaptiverollsumFast(double *x, uint64_t nx, ans_t *ans, int *k, double fil
   }
   if (truehasna) {
     uint64_t nc = 0;
-    uint64_t *cn = malloc(nx*sizeof(uint64_t));
+    uint64_t *cn = malloc(sizeof(*cn) * nx);
     if (!cn) {                                                  // # nocov start
       ans->status = 3;
       snprintf(ans->message[3], 500, _("%s: Unable to allocate memory for cum NA counter"), __func__);
