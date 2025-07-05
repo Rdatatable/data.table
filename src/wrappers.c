@@ -83,7 +83,7 @@ SEXP address(SEXP x)
 {
   // A better way than : http://stackoverflow.com/a/10913296/403310
   char buffer[32];
-  snprintf(buffer, 32, "%p", (void *)x); // # notranslate
+  snprintf(buffer, sizeof(buffer), "%p", (void*)x); // # notranslate
   return(mkString(buffer));
 }
 

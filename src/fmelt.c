@@ -612,7 +612,7 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
         for (int j=0, ansloc=0, level=1; j<data->lmax; ++j) {
           const int thislen = data->narm ? length(VECTOR_ELT(data->not_NA_indices, j)) : data->nrow;
           char buff[20];
-          snprintf(buff, 20, "%d", level++); // # notranslate
+          snprintf(buff, sizeof(buff), "%d", level++); // # notranslate
           for (int k=0; k<thislen; ++k) SET_STRING_ELT(target, ansloc++, mkChar(buff));
         }
       }
@@ -649,7 +649,7 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
         for (int j=0, ansloc=0; j<data->lmax; ++j) {
           const int thislen = data->narm ? length(VECTOR_ELT(data->not_NA_indices, j)) : data->nrow;
           char buff[20];
-          snprintf(buff, 20, "%d", nlevel+1); // # notranslate
+          snprintf(buff, sizeof(buff), "%d", nlevel + 1); // # notranslate
           SET_STRING_ELT(levels, nlevel++, mkChar(buff));  // generate levels = 1:nlevels
           for (int k=0; k<thislen; ++k) td[ansloc++] = nlevel;
         }

@@ -163,7 +163,7 @@ SEXP fwriteR(
   SEXP logical01_Arg,      // TRUE|FALSE
   SEXP scipen_Arg,
   SEXP dateTimeAs_Arg,     // 0=ISO(yyyy-mm-dd),1=squash(yyyymmdd),2=epoch,3=write.csv
-  SEXP buffMB_Arg,         // [1-1024] default 8MB
+  SEXP buffMB_Arg,         // [1-1024] default 8MiB
   SEXP nThread_Arg,
   SEXP showProgress_Arg,
   SEXP is_gzip_Arg,

@@ -51,7 +51,7 @@ DT[,`:=`(b = rev(b),
          a = NULL)]
 identical(DT,DT2)
 
-DT$d = ave(DT$b, DT$c, FUN=max)               # copies entire DT, even if it is 10GB in RAM
+DT$d = ave(DT$b, DT$c, FUN=max)               # copies entire DT, even if it is 10GiB in RAM
 DT = DT[, transform(.SD, d=max(b)), by="c"]   # same, but even worse as .SD is copied for each group
 DT[, d:=max(b), by="c"]                       # same result, but much faster, shorter and scales
 

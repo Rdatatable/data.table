@@ -93,7 +93,7 @@ int qsort_cmp(const void *a, const void *b) {
   uint64_t x = qsort_data[*(int *)a];
   uint64_t y = qsort_data[*(int *)b];
   // return x-y;  would like this, but this is long and the cast to int return may not preserve sign
-  // We have long vectors in mind (1e10(74GB), 1e11(740GB)) where extreme skew may feasibly mean the largest count
+  // We have long vectors in mind (1e10(74GiB), 1e11(740GiB)) where extreme skew may feasibly mean the largest count
   // is greater than 2^32. The first split is (currently) 16 bits so should be very rare but to be safe keep 64bit counts.
   return (x<y)-(x>y);   // largest first in a safe branchless way casting long to int
 }
@@ -193,7 +193,7 @@ SEXP fsort(SEXP x, SEXP verboseArg) {
   memset(counts, 0, nBatch*MSBsize*sizeof(*counts));
   // provided MSBsize>=9, each batch is a multiple of at least one 4k page, so no page overlap
 
-  if (verbose) Rprintf(_("counts is %dMB (%d pages per nBatch=%d, batchSize=%"PRIu64", lastBatchSize=%"PRIu64")\n"),
+  if (verbose) Rprintf(_("counts is %dMiB (%d pages per nBatch=%d, batchSize=%"PRIu64", lastBatchSize=%"PRIu64")\n"),
                        (int)(nBatch*MSBsize*sizeof(*counts)/(1024*1024)),
                        (int)(nBatch*MSBsize*sizeof(*counts)/(4*1024*nBatch)),
                        nBatch, (uint64_t)batchSize, (uint64_t)lastBatchSize);

@@ -515,6 +515,8 @@ static void Field(FieldParseContext *ctx)
   //    the field is quoted and quotes are correctly escaped (quoteRule 0 and 1)
   // or the field is quoted but quotes are not escaped (quoteRule 2)
   // or the field is not quoted but the data contains a quote at the start (quoteRule 2 too)
+  // What if this string signifies an NA? Will find out after we're done parsing quotes
+  const char *field_after_NA = end_NA_string(fieldStart);
   fieldStart++;  // step over opening quote
   switch(quoteRule) {
   case 0:  // quoted with embedded quotes doubled; the final unescaped " must be followed by sep|eol
@@ -573,6 +575,8 @@ static void Field(FieldParseContext *ctx)
     if (ch == eof && quoteRule != 2) { target->off--; target->len++; }   // test 1324 where final field has open quote but not ending quote; include the open quote like quote rule 2
     while(target->len > 0 && ((ch[-1] == ' ' && stripWhite) || ch[-1] == '\0')) { target->len--; ch--; }  // test 1551.6; trailing whitespace in field [67,V37] == "\"\"A\"\" ST       "
   }
+  // Does end-of-field correspond to end-of-possible-NA?
+  if (field_after_NA == ch) target->len = INT32_MIN;
 }
 
 static void str_to_i32_core(const char **pch, int32_t *target, bool parse_date)
@@ -770,7 +774,7 @@ static void parse_double_regular_core(const char **pch, double *target)
       // Not a single digit after "E"? Invalid number
         return;
     }
-    e += Eneg? -E : E;
+    e += Eneg ? -E : E;
   }
   if (e < -350 || e > 350) return;
 
@@ -1418,7 +1422,7 @@ int freadMain(freadMainArgs _args) {
       // Mac doesn't appear to support MAP_POPULATE anyway (failed on CRAN when I tried).
       // todo: MAP_HUGETLB for Linux but seems to need admin to setup first. My Hugepagesize is 2MB (>>2KB, so promising)
       //         https://www.kernel.org/doc/Documentation/vm/hugetlbpage.txt
-      mmp = mmap(NULL, fileSize, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);  // COW for last page lastEOLreplaced
+      mmp = mmap(NULL, fileSize, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);  // COW for last page lastEOLreplaced
       #ifdef __EMSCRIPTEN__
         mmp_fd = fd;
       #else
@@ -1447,11 +1451,11 @@ int freadMain(freadMainArgs _args) {
         STOP(_("File size [%s] exceeds the address space: %s"), filesize_to_str(liFileSize.QuadPart), fnam); // # nocov
       }
       fileSize = (size_t)liFileSize.QuadPart;
-      if (fileSize==0) { CloseHandle(hFile); STOP(_("File is empty: %s"), fnam); }
+      if (fileSize == 0) { CloseHandle(hFile); STOP(_("File is empty: %s"), fnam); }
       if (verbose) DTPRINT(_("  File opened, size = %s.\n"), filesize_to_str(fileSize));
       HANDLE hMap = CreateFileMapping(hFile, NULL, PAGE_WRITECOPY, 0, 0, NULL);
       if (hMap == NULL) { CloseHandle(hFile); STOP(_("This is Windows, CreateFileMapping returned error %lu for file %s"), GetLastError(), fnam); }
-      mmp = MapViewOfFile(hMap,FILE_MAP_COPY,0,0,fileSize);  // fileSize must be <= hilo passed to CreateFileMapping above.
+      mmp = MapViewOfFile(hMap, FILE_MAP_COPY, 0, 0, fileSize);  // fileSize must be <= hilo passed to CreateFileMapping above.
       CloseHandle(hMap);  // we don't need to keep the file open; the MapView keeps an internal reference;
       CloseHandle(hFile); //   see https://msdn.microsoft.com/en-us/library/windows/desktop/aa366537(v=vs.85).aspx
       if (mmp == NULL) {
@@ -1500,7 +1504,7 @@ int freadMain(freadMainArgs _args) {
     if (verbose) DTPRINT(_("  Last byte(s) of input found to be %s and removed.\n"),
                          c ? "0x1A (Ctrl+Z)" : "0x00 (NUL)");
   }
-  if (eof<=sof) STOP(_("Input is empty or only contains BOM or terminal control characters"));
+  if (eof <= sof) STOP(_("Input is empty or only contains BOM or terminal control characters"));
   }
 
   //*********************************************************************************************
@@ -1897,7 +1901,7 @@ int freadMain(freadMainArgs _args) {
 
   const ptrdiff_t jump0size = firstJumpEnd - pos;  // the size in bytes of the first 100 lines from the start (jump point 0)
   // how many places in the file to jump to and test types there (the very end is added as 11th or 101th)
-  // not too many though so as not to slow down wide files; e.g. 10,000 columns.  But for such large files (50GB) it is
+  // not too many though so as not to slow down wide files; e.g. 10,000 columns.  But for such large files (50GiB) it is
   // worth spending a few extra seconds sampling 10,000 rows to decrease a chance of costly reread even further.
   nJumps = 1;
   const ptrdiff_t sz = eof - pos;
@@ -2250,10 +2254,10 @@ int freadMain(freadMainArgs _args) {
   int buffGrown = 0;
   // chunkBytes is the distance between each jump point; it decides the number of jumps
   // We may want each chunk to write to its own page of the final column, hence 1000*maxLen
-  // For the 44GB file with 12875 columns, the max line len is 108,497. We may want each chunk to write to its
+  // For the 44GiB file with 12875 columns, the max line len is 108,497. We may want each chunk to write to its
   // own page (4k) of the final column, hence 1000 rows of the smallest type (4 byte int) is just
   // under 4096 to leave space for R's header + malloc's header.
-  size_t chunkBytes = umax((uint64_t)(1000 * meanLineLen), 1ULL * 1024 * 1024/*MB*/);
+  size_t chunkBytes = umax((uint64_t)(1000 * meanLineLen), 1ULL * 1024 * 1024/*MiB*/);
   // Index of the first jump to read. May be modified if we ever need to restart
   // reading from the middle of the file.
   int jump0 = 0;
@@ -2270,7 +2274,7 @@ int freadMain(freadMainArgs _args) {
     chunkBytes = bytesRead / nJumps;
   } else {
     ASSERT(nJumps == 1 /*when nrowLimit supplied*/ || nJumps == 2 /*small files*/, "nJumps (%d) != 1|2", nJumps);
-    nJumps=1;
+    nJumps = 1;
   }
   int64_t initialBuffRows = allocnrow / nJumps;
 
@@ -2421,7 +2425,7 @@ int freadMain(freadMainArgs _args) {
               if (eol(&tch) && skipEmptyLines) { tch++; continue; }
               tch = tLineStart;  // in case white space at the beginning may need to be including in field
             }
-            else if (eol(&tch) && j<ncol) {   // j<ncol needed for #2523 (erroneous extra comma after last field)
+            else if (eol(&tch) && j < ncol) {   // j<ncol needed for #2523 (erroneous extra comma after last field)
               int8_t thisSize = size[j];
               if (thisSize) ((char **) targets)[thisSize] += thisSize;
               j++;
@@ -2777,17 +2781,17 @@ int freadMain(freadMainArgs _args) {
   if (verbose) {
     DTPRINT("=============================\n"); // # notranslate
     if (tTot < 0.000001) tTot = 0.000001;  // to avoid nan% output in some trivially small tests where tot==0.000s
-    DTPRINT(_("%8.3fs (%3.0f%%) Memory map %.3fGB file\n"), tMap - t0, 100.0 * (tMap - t0) / tTot, 1.0 * fileSize / (1024 * 1024 * 1024));
+    DTPRINT(_("%8.3fs (%3.0f%%) Memory map %.3fGiB file\n"), tMap - t0, 100.0 * (tMap - t0) / tTot, 1.0 * fileSize / (1024 * 1024 * 1024));
     DTPRINT(_("%8.3fs (%3.0f%%) sep="), tLayout - tMap, 100.0 * (tLayout - tMap) / tTot);
       DTPRINT(sep == '\t' ? "'\\t'" : (sep == '\n' ? "'\\n'" : "'%c'"), sep); // # notranslate
       DTPRINT(_(" ncol=%d and header detection\n"), ncol);
     DTPRINT(_("%8.3fs (%3.0f%%) Column type detection using %"PRId64" sample rows\n"),
             tColType - tLayout, 100.0 * (tColType - tLayout) / tTot, sampleLines);
-    DTPRINT(_("%8.3fs (%3.0f%%) Allocation of %"PRId64" rows x %d cols (%.3fGB) of which %"PRId64" (%3.0f%%) rows used\n"),
+    DTPRINT(_("%8.3fs (%3.0f%%) Allocation of %"PRId64" rows x %d cols (%.3fGiB) of which %"PRId64" (%3.0f%%) rows used\n"),
       tAlloc - tColType, 100.0 * (tAlloc - tColType) / tTot, allocnrow, ncol, DTbytes / (1024.0 * 1024 * 1024), DTi, 100.0 * DTi / allocnrow);
     thRead /= nth; thPush /= nth;
     double thWaiting = tReread - tAlloc - thRead - thPush;
-    DTPRINT(_("%8.3fs (%3.0f%%) Reading %d chunks (%d swept) of %.3fMB (each chunk %"PRId64" rows) using %d threads\n"),
+    DTPRINT(_("%8.3fs (%3.0f%%) Reading %d chunks (%d swept) of %.3fMiB (each chunk %"PRId64" rows) using %d threads\n"),
             tReread - tAlloc, 100.0 * (tReread - tAlloc) / tTot, nJumps, nSwept, (double)chunkBytes / (1024 * 1024), DTi / nJumps, nth);
     DTPRINT(_("   + %8.3fs (%3.0f%%) Parse to row-major thread buffers (grown %d times)\n"), thRead, 100.0 * thRead / tTot, buffGrown);
     DTPRINT(_("   + %8.3fs (%3.0f%%) Transpose\n"), thPush, 100.0 * thPush / tTot);

@@ -53,7 +53,7 @@ fwrite(x, file = "", append = FALSE, quote = "auto",
   This option applies to vectors of date/time in list column cells, too. \cr \cr
   A fully flexible format string (such as \code{"\%m/\%d/\%Y"}) is not supported. This is to encourage use of ISO standards and because that flexibility is not known how to make fast at C level. We may be able to support one or two more specific options if required.
   }
-  \item{buffMB}{The buffer size (MB) per thread in the range 1 to 1024, default 8MB. Experiment to see what works best for your data on your hardware.}
+  \item{buffMB}{The buffer size (MiB) per thread in the range 1 to 1024, default 8MiB. Experiment to see what works best for your data on your hardware.}
   \item{nThread}{The number of threads to use. Experiment to see what works best for your data on your hardware.}
   \item{showProgress}{ Display a progress meter on the console? Ignored when \code{file==""}. }
   \item{compress}{If \code{compress = "auto"} and if \code{file} ends in \code{.gz} then output format is gzipped csv else csv. If \code{compress = "none"}, output format is always csv. If \code{compress = "gzip"} then format is gzipped csv. Output to the console is never gzipped even if \code{compress = "gzip"}. By default, \code{compress = "auto"}.}
@@ -115,7 +115,7 @@ fwrite(DT, sep="|", sep2=c("{",",","}"))
 
 set.seed(1)
 DT = as.data.table( lapply(1:10, sample,
-         x=as.numeric(1:5e7), size=5e6))                            #     382MB
+         x=as.numeric(1:5e7), size=5e6))                            #    382MiB
 system.time(fwrite(DT, "/dev/shm/tmp1.csv"))                        #      0.8s
 system.time(write.csv(DT, "/dev/shm/tmp2.csv",                      #     60.6s
                       quote=FALSE, row.names=FALSE))
@@ -135,7 +135,7 @@ DT = data.table(
   str6=sample(c("M","F"),N,TRUE),
   int1=sample(ceiling(rexp(1e6)), N, replace=TRUE),
   int2=sample(N,N,replace=TRUE)-N/2
-)                                                                   #     774MB
+)                                                                   #    775MiB
 system.time(fwrite(DT,"/dev/shm/tmp1.csv"))                         #      1.1s
 system.time(write.csv(DT,"/dev/shm/tmp2.csv",                       #     63.2s
                       row.names=FALSE, quote=FALSE))
