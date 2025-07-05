@@ -21,7 +21,7 @@ Functions to check if an object is \code{data.table}, or coerce it if possible.
 \usage{
 as.data.table(x, keep.rownames=FALSE, \dots)
 
-\method{as.data.table}{data.table}(x, \dots)
+\method{as.data.table}{data.table}(x, \dots, key=NULL)
 
 \method{as.data.table}{array}(x, keep.rownames=FALSE, key=NULL, sorted=TRUE,
               value.name="value", na.rm=TRUE, \dots)

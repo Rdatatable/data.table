@@ -23,6 +23,10 @@
 /src/programming.c @jangorecki
 /vignettes/datatable-programming.Rmd @jangorecki
 
+# roll-up & setops
+/R/groupingsets.R @jangorecki
+/R/setops.R @jangorecki
+
 # GForce groupby
 /src/gsumm.c @ben-schwen
 # datetime classes
@@ -52,6 +56,9 @@
 /po/*zh_CN.po @Rdatatable/chinese
 /vignettes/fr/*.Rmd @Rdatatable/french
 /vignettes/ru/*.Rmd @Rdatatable/russian
+
+# meta
+/.graphics/translation-team-logos/*.png @jmrung
 
 # printing
 /R/print.data.table.R @michaelchirico

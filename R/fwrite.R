@@ -3,8 +3,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
            sep2=c("","|",""), eol=if (.Platform$OS.type=="windows") "\r\n" else "\n",
            na="", dec=".", row.names=FALSE, col.names=TRUE,
            qmethod=c("double","escape"),
-           logical01=getOption("datatable.logical01", FALSE), # due to change to TRUE; see NEWS
-           logicalAsInt=NULL,
+           logical01=getOption("datatable.logical01", FALSE),
            scipen=getOption('scipen', 0L),
            dateTimeAs = c("ISO","squash","epoch","write.csv"),
            buffMB=8L, nThread=getDTthreads(verbose),
@@ -23,9 +22,6 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   compress = match.arg(compress)
   dateTimeAs = match.arg(dateTimeAs)
   dateTimeAs = chmatch(dateTimeAs, c("ISO", "squash", "epoch", "write.csv")) - 1L
-  if (!is.null(logicalAsInt)) {
-    stopf("logicalAsInt has been renamed logical01 for consistency with fread.")
-  }
   scipen = if (is.numeric(scipen)) as.integer(scipen) else 0L
   buffMB = as.integer(buffMB)
   nThread = as.integer(nThread)
@@ -80,7 +76,7 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   }
   if (NCOL(x)==0L && file!="") {
     if (file.exists(file)) {
-      suggested <- if (append) "" else gettextf("\nIf you intended to overwrite the file at %s with an empty one, please use file.remove first.", file)
+      suggested = if (append) "" else gettextf("\nIf you intended to overwrite the file at %s with an empty one, please use file.remove first.", file)
       warningf("Input has no columns; doing nothing.%s", suggested)
       return(invisible())
     } else {
@@ -115,6 +111,15 @@ fwrite = function(x, file="", append=FALSE, quote="auto",
   }
   # nocov end
   file = enc2native(file) # CfwriteR cannot handle UTF-8 if that is not the native encoding, see #3078.
+  # pre-encode any strings or factor levels to avoid translateChar trying to allocate from OpenMP threads
+  if (encoding %chin% c("UTF-8", "native")) {
+    enc = switch(encoding, "UTF-8" = enc2utf8, "native" = enc2native)
+    x = lapply(x, function(x) {
+      if (is.character(x)) x = enc(x)
+      if (is.factor(x)) levels(x) = enc(levels(x))
+      x
+    })
+  }
   .Call(CfwriteR, x, file, sep, sep2, eol, na, dec, quote, qmethod=="escape", append,
         row.names, col.names, logical01, scipen, dateTimeAs, buffMB, nThread,
         showProgress, is_gzip, compressLevel, bom, yaml, verbose, encoding)

@@ -19,4 +19,3 @@ SEXP notchin(SEXP x, SEXP table) {
   UNPROTECT(1);
   return result;
 }
-

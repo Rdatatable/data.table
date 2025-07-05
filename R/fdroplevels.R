@@ -5,11 +5,10 @@ fdroplevels = function(x, exclude = if (anyNA(levels(x))) NULL else NA, ...) {
   ans = match(as.integer(x), lev)
   setattr(ans, 'levels', levels(x)[lev])
   setattr(ans, 'class', class(x))
-  return(ans)
+  ans
 }
 
-droplevels.data.table = function(x, except=NULL, exclude, in.place=NULL, ...){
-  if (!is.null(in.place)) stopf("droplevels() with in.place=TRUE is deprecated. Use setdroplevels() instead.")
+droplevels.data.table = function(x, except=NULL, exclude, ...){
   x = copy(x)
   if (missing(exclude)) exclude = NULL
   setdroplevels(x, except, exclude)[]

@@ -1,4 +1,4 @@
-FROM registry.gitlab.com/jangorecki/dockerfiles/r-3.3.0
+FROM registry.gitlab.com/rdatatable/dockerfiles/r-3.4.0
 
 RUN apt-get -qq update \
   && apt-get install -y --no-install-recommends git

@@ -27,8 +27,9 @@ jobs:
           # GHA does run these jobs concurrently but even so reducing the load seems like a good idea.
           - {os: windows-latest, r: 'devel'}
           # - {os: macOS-latest, r: 'release'}    # test-coverage.yaml uses macOS
-          - {os: ubuntu-20.04, r: 'release', rspm: "https://packagemanager.rstudio.com/cran/__linux__/focal/latest"}
-          # - {os: ubuntu-20.04,   r: 'devel', rspm: "https://packagemanager.rstudio.com/cran/__linux__/focal/latest", http-user-agent: "R/4.1.0 (ubuntu-20.04) R (4.1.0 x86_64-pc-linux-gnu x86_64 linux-gnu) on GitHub Actions" }
+          # TODO(remotes>2.5.0): Use 24.04[noble?]
+          - {os: ubuntu-22.04, r: 'release', rspm: "https://packagemanager.rstudio.com/cran/__linux__/jammy/latest"}
+          # - {os: ubuntu-22.04,   r: 'devel', rspm: "https://packagemanager.rstudio.com/cran/__linux__/jammy/latest", http-user-agent: "R/4.1.0 (ubuntu-22.04) R (4.1.0 x86_64-pc-linux-gnu x86_64 linux-gnu) on GitHub Actions" }
           #   GLCI covers R-devel; no need to delay contributors in dev due to changes in R-devel in recent days
 
     env:
@@ -64,7 +65,7 @@ jobs:
           while read -r cmd
           do
             eval sudo $cmd
-          done < <(Rscript -e 'writeLines(remotes::system_requirements("ubuntu", "20.04"))')
+          done < <(Rscript -e 'writeLines(remotes::system_requirements("ubuntu", "22.04"))')
 
       - name: Install dependencies
         run: |

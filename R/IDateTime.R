@@ -40,13 +40,12 @@ as.IDate.POSIXct = function(x, tz = attr(x, "tzone", exact=TRUE), ...) {
   if (is_utc(tz))
     (setattr(as.integer(as.numeric(x) %/% 86400L), "class", c("IDate", "Date")))  # %/% returns new object so can use setattr() on it; wrap with () to return visibly
   else
-    as.IDate(as.Date(x, tz =  if (is.null(tz)) '' else tz, ...))
+    as.IDate(as.Date(x, tz =  tz %||% '', ...))
 }
 
 as.IDate.IDate = function(x, ...) x
 
 as.Date.IDate = function(x, ...) {
-  x = as.numeric(x)
   class(x) = "Date"
   x
 }
@@ -147,7 +146,7 @@ as.ITime.default = function(x, ...) {
 
 as.ITime.POSIXct = function(x, tz = attr(x, "tzone", exact=TRUE), ...) {
   if (is_utc(tz)) as.ITime(unclass(x), ...)
-  else as.ITime(as.POSIXlt(x, tz = if (is.null(tz)) '' else tz, ...), ...)
+  else as.ITime(as.POSIXlt(x, tz = tz %||% '', ...), ...)
 }
 
 as.ITime.numeric = function(x, ms = 'truncate', ...) {
@@ -210,7 +209,7 @@ as.character.ITime = format.ITime = function(x, ...) {
   res
 }
 
-as.data.frame.ITime = function(x, ...) {
+as.data.frame.ITime = function(x, ..., optional=FALSE) {
   # This method is just for ggplot2, #1713
   # Avoids the error "cannot coerce class '"ITime"' into a data.frame", but for some reason
   # ggplot2 doesn't seem to call the print method to get axis labels, so still prints integers.
@@ -220,7 +219,8 @@ as.data.frame.ITime = function(x, ...) {
   # ans = list(as.POSIXct(x,tzone=""))  # ggplot2 gives "Error: Discrete value supplied to continuous scale"
   setattr(ans, "class", "data.frame")
   setattr(ans, "row.names", .set_row_names(length(x)))
-  setattr(ans, "names", "V1")
+  # require 'optional' support for passing back to e.g. data.frame() without overriding names there
+  if (!optional) setattr(ans, "names", "V1")
   ans
 }
 
@@ -235,7 +235,7 @@ rep.ITime = function(x, ...)
   y
 }
 
-round.ITime <- function(x, digits = c("hours", "minutes"), ...)
+round.ITime = function(x, digits = c("hours", "minutes"), ...)
 {
   (setattr(switch(match.arg(digits),
                   hours = as.integer(round(unclass(x)/3600.0)*3600.0),
@@ -243,7 +243,7 @@ round.ITime <- function(x, digits = c("hours", "minutes"), ...)
            "class", "ITime"))
 }
 
-trunc.ITime <- function(x, units = c("hours", "minutes"), ...)
+trunc.ITime = function(x, units = c("hours", "minutes"), ...)
 {
   (setattr(switch(match.arg(units),
                   hours = as.integer(unclass(x)%/%3600.0*3600.0),

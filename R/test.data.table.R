@@ -229,8 +229,9 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
   # notranslate start
   cat("\n", date(),   # so we can tell exactly when these tests ran on CRAN to double-check the result is up to date
     "  endian==", .Platform$endian,
-    ", sizeof(long double)==", .Machine$sizeof.longdouble,
-    ", longdouble.digits==", .Machine$longdouble.digits, # 64 normally, 53 for example under valgrind where some high accuracy tests need turning off, #4639
+    ", sizeof(long double)==", format(.Machine$sizeof.longdouble),
+    ", capabilities('long.double')==", capabilities('long.double'), # almost certainly overkill, but that's OK; see #6154
+    ", longdouble.digits==", format(.Machine$longdouble.digits), # 64 normally, 53 for example under valgrind where some high accuracy tests need turning off, #4639
     ", sizeof(pointer)==", .Machine$sizeof.pointer,
     ", TZ==", if (is.na(tz)) "unset" else paste0("'",tz,"'"),
     ", Sys.timezone()=='", suppressWarnings(Sys.timezone()), "'",
@@ -276,13 +277,13 @@ test.data.table = function(script="tests.Rraw", verbose=FALSE, pkg=".", silent=F
     y = head(order(-diff(timings$RSS)), 10L)
     ans = timings[, diff := c(NA_real_, round(diff(RSS), 1L))][y + 1L]
     ans[, time:=NULL]  # time is distracting and influenced by gc() calls; just focus on RAM usage here
-    catf("10 largest RAM increases (MB); see plot for cumulative effect (if any)\n")
+    catf("10 largest RAM increases (MiB); see plot for cumulative effect (if any)\n")
     print(ans, class=FALSE)
     get("dev.new")(width=14.0, height=7.0)
     get("par")(mfrow=1:2)
-    get("plot")(timings$RSS, main=paste(basename(fn),"\nylim[0]=0 for context"), ylab="RSS (MB)", ylim=c(0.0, max(timings$RSS)))
+    get("plot")(timings$RSS, main=paste(basename(fn),"\nylim[0]=0 for context"), ylab="RSS (MiB)", ylim=c(0.0, max(timings$RSS)))
     get("mtext")(lastRSS<-as.integer(ceiling(last(timings$RSS))), side=4L, at=lastRSS, las=1L, font=2L)
-    get("plot")(timings$RSS, main=paste(basename(fn),"\nylim=range for inspection"), ylab="RSS (MB)")
+    get("plot")(timings$RSS, main=paste(basename(fn),"\nylim=range for inspection"), ylab="RSS (MiB)")
     get("mtext")(lastRSS, side=4L, at=lastRSS, las=1L, font=2L)
   }
 
@@ -315,7 +316,7 @@ INT = function(...) { as.integer(c(...)) }   # utility used in tests.Rraw
 
 gc_mem = function() {
   # nocov start
-  # gc reports memory in MB
+  # gc reports memory in MiB
   m = colSums(gc()[, c(2L, 4L, 6L)])
   names(m) = c("GC_used", "GC_gc_trigger", "GC_max_used")
   m
@@ -413,19 +414,19 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
   actual = list2env(list(warning=NULL, error=NULL, message=NULL))
   wHandler = function(w) {
     # Thanks to: https://stackoverflow.com/a/4947528/403310
-    actual$warning <- c(actual$warning, conditionMessage(w))
+    actual$warning = c(actual$warning, conditionMessage(w))
     invokeRestart("muffleWarning")
   }
   eHandler = function(e) {
-    actual$error <- conditionMessage(e)
+    actual$error = conditionMessage(e)
     e
   }
   mHandler = function(m) {
-    actual$message <- c(actual$message, conditionMessage(m))
+    actual$message = c(actual$message, conditionMessage(m))
     m
   }
   if (!is.null(options)) {
-    old_options <- do.call(base::options, as.list(options)) # as.list(): allow passing named character vector for convenience
+    old_options = do.call(base::options, as.list(options)) # as.list(): allow passing named character vector for convenience
     on.exit(base::options(old_options), add=TRUE)
   }
   if (is.null(output) && is.null(notOutput)) {
@@ -439,7 +440,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
     # some of the options passed to test() may break internal data.table use below (e.g. invalid datatable.alloccol), so undo them ASAP
     base::options(old_options)
     # this is still registered for on.exit(), keep empty
-    old_options <- list()
+    old_options = list()
   }
   fail = FALSE
   if (.test.data.table && num>0.0) {
@@ -458,7 +459,7 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
       # if a warning containing this string occurs, ignore it. First need for #4182 where warning about 'timedatectl' only
       # occurs in R 3.4, and maybe only on docker too not for users running test.data.table().
       stopifnot(is.character(ignore.warning), !anyNA(ignore.warning), nchar(ignore.warning)>=1L)
-      for (msg in ignore.warning) observed = grep(msg, observed, value=TRUE, invert=TRUE) # allow multiple for translated messages rather than relying on '|' to always work
+      for (msg in ignore.warning) observed = grepv(msg, observed, invert=TRUE) # allow multiple for translated messages rather than relying on '|' to always work
     }
     if (length(expected) != length(observed) && (!foreign || is.null(ignore.warning))) {
       # nocov start
@@ -515,6 +516,8 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
   }
   if (!fail && !length(error) && (!length(output) || !missing(y))) {   # TODO test y when output=, too
     capture.output(y <- try(y, silent=TRUE)) # y might produce verbose output, just toss it
+    if (inherits(x, c("Date", "POSIXct"))) storage.mode(x) <- "numeric"
+    if (inherits(y, c("Date", "POSIXct"))) storage.mode(y) <- "numeric"
     if (identical(x,y)) return(invisible(TRUE))
     all.equal.result = TRUE
     if (is.data.frame(x) && is.data.frame(y)) {
@@ -527,8 +530,8 @@ test = function(num,x,y=TRUE,error=NULL,warning=NULL,message=NULL,output=NULL,no
         xc=copy(x)
         yc=copy(y)  # so we don't affect the original data which may be used in the next test
         # drop unused levels in factors
-        if (length(x)) for (i in which(vapply_1b(x,is.factor))) {.xi=x[[i]];xc[[i]]<-factor(.xi)}
-        if (length(y)) for (i in which(vapply_1b(y,is.factor))) {.yi=y[[i]];yc[[i]]<-factor(.yi)}
+        if (length(x)) for (i in which(vapply_1b(x,is.factor))) {.xi = x[[i]]; xc[[i]] = factor(.xi)}
+        if (length(y)) for (i in which(vapply_1b(y,is.factor))) {.yi = y[[i]]; yc[[i]] = factor(.yi)}
         if (is.data.table(xc)) setattr(xc,"row.names",NULL)  # for test 165+, i.e. x may have row names set from inheritance but y won't, consider these equal
         if (is.data.table(yc)) setattr(yc,"row.names",NULL)
         setattr(xc,"index",NULL)   # too onerous to create test RHS with the correct index as well, just check result

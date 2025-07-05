@@ -15,10 +15,9 @@ h2 {
 }
 </style>
 
-Translations of this document are available in
-
-* [French](https://rdatatable.gitlab.io/data.table/articles/fr/datatable-importing.html)
-* [Russian](https://rdatatable.gitlab.io/data.table/articles/ru/datatable-importing.html)
+```{r echo=FALSE, file='_translation_links.R'}
+```
+`r .write.translation.links("Translations of this document are available in: %s")`
 
 This document is focused on using `data.table` as a dependency in other R packages. If you are interested in using `data.table` C code from a non-R application, or in calling its C functions directly, jump to the [last section](#non-r-api) of this vignette.
 
@@ -76,7 +75,7 @@ dt2 = aggr(dt)
 stopifnot(nrow(dt2) < 100)
 ```
 
-When testing your package, you may want to use `R CMD check --no-stop-on-test-error`, which will continue after an error and run all your tests (as opposed to stopping on the first line of script that failed) NB this requires R 3.4.0 or greater.
+When testing your package, you may want to use `R CMD check --no-stop-on-test-error`, which will continue after an error and run all your tests (as opposed to stopping on the first line of script that failed).
 
 ## Testing using `testthat`
 
