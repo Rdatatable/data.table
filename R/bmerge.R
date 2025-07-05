@@ -25,6 +25,22 @@ coerce_col = function(dt, col, from_type, to_type, from_name, to_name, from_deta
   set(dt, j=col, value=cast_with_attrs(dt[[col]], cast_fun))
 }
 
+# data.table::as.ITime, chron::times, nanotime::nanotime
+.known_time_classes = c("Date", "POSIXt", "ITime", "times", "nanotime")
+# nolint next: object_length_linter.
+.maybe_warn_mismatched_time_types = function(x_class, i_class, xname, iname) {
+  x_class_time = intersect(x_class, .known_time_classes)
+  if (!length(x_class_time)) return(invisible())
+
+  i_class_time = intersect(i_class, .known_time_classes)
+  if (!length(i_class_time)) return(invisible())
+
+  if (identical(x_class_time, i_class_time)) return(invisible())
+
+  warningf("Attempting to join column %s (%s) with column %s (%s). They are likely to be incompatible, so we suggest you convert one to the other's class.",
+           xname, toString(x_class_time), iname, toString(i_class_time))
+}
+
 bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbose)
 {
   if (roll != 0.0 && length(icols)) {
@@ -92,6 +108,9 @@ bmerge = function(i, x, icols, xcols, roll, rollends, nomatch, mult, ops, verbos
       }
       stopf("Incompatible join types: %s (%s) and %s (%s). Factor columns must join to factor or character columns.", xname, x_merge_type, iname, i_merge_type)
     }
+
+    .maybe_warn_mismatched_time_types(class(x[[xcol]]), class(i[[icol]]), xname, iname)
+
     if (x_merge_type == i_merge_type) {
       if (verbose) catf("%s has same type (%s) as %s. No coercion needed.\n", iname, x_merge_type, xname)
       next
