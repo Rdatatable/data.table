@@ -204,6 +204,33 @@ DT[filter_col %in% filter_val,
   )]
 ```
 
+### Substitute functions
+
+A tiny clarification may be useful on how we can substitute a function name in an expression.
+Note that providing `outer="sqrt"` (string) vs. `outer=sqrt` (symbol) is very different:
+```{r substitute_fun1, result='hide'}
+DT[, outer(Sepal.Length), env = list(outer="sqrt"), verbose=TRUE]
+#Argument 'j' after substitute: sqrt(Sepal.Length)
+## DT[, sqrt(Sepal.Length)]
+
+DT[, outer(Sepal.Length), env = list(outer=sqrt), verbose=TRUE]
+#Argument 'j' after substitute: .Primitive("sqrt")(Sepal.Length)
+## DT[, .Primitive("sqrt")(Sepal.Length)]
+```
+And while `.Primitive("sqrt")(Sepal.Length)` still works, it is almost never the desired form.
+
+Even more importantly, if the symbol form is meant to be used, then it can, and should, be used directly in the expression, as there is no need for substitution.
+```{r substitute_fun2, result='hide'}
+DT[, sqrt(Sepal.Length)]
+```
+
+If function name to be substituted needs to be namespace-qualified then namespace and function name can be substituted as any other symbol in the expression:
+```{r substitute_fun3, result='hide'}
+DT[, ns::fun(Sepal.Length), env = list(ns="base", fun="sqrt"), verbose=TRUE]
+#Argument 'j' after substitute: base::sqrt(Sepal.Length)
+## DT[, base::sqrt(Sepal.Length)]
+```
+
 ### Substitute variables and character values
 
 In the above example, we have seen a convenient feature of `substitute2`: automatic conversion from strings into names/symbols. An obvious question arises: what if we actually want to substitute a parameter with a *character* value, so as to have base R `substitute` behaviour. We provide a mechanism to escape automatic conversion by wrapping the elements into base R `I()` call. The `I` function marks an object as *AsIs*, preventing its arguments from character-to-symbol automatic conversion. (Read the `?AsIs` documentation for more details.) If base R behaviour is desired for the whole `env` argument, then it's best to wrap the whole argument in `I()`. Alternatively, each list element can be wrapped in `I()` individually. Let's explore both cases below.
