@@ -17,7 +17,7 @@ SEXP seq_int(int n, int start) {
 SEXP set_diff(SEXP x, int n) {
   if (TYPEOF(x) != INTSXP) error(_("'x' must be an integer"));
   if (n <= 0) error(_("'n' must be a positive integer"));
-  SEXP table = PROTECT(seq_int(n, 1));       // TODO: using match to 1:n seems odd here, why use match at all
+  SEXP table = PROTECT(seq_int(n, 1));       // todo: using match to 1:n seems odd here, why use match at all
   SEXP xmatch = PROTECT(match(x, table, 0)); // Old comment:took a while to realise: matches vec against x - thanks to comment from Matt in assign.c!
   const int *ixmatch = INTEGER(xmatch);
   int *buf = (int *) R_alloc(n, sizeof(*buf));
@@ -328,8 +328,8 @@ static void preprocess(SEXP DT, SEXP id, SEXP measure, SEXP varnames, SEXP valna
     if (data->leach[i] > data->lmax) {
       data->lmax = data->leach[i];
     }
-    data->isidentical[i] = 1;  // TODO - why 1 and not Rboolean TRUE?
-    data->isfactor[i] = 0;  // seems to hold 2 below, so not an Rboolean FALSE here. TODO - better name for variable?
+    data->isidentical[i] = 1;  // todo: why 1 and not Rboolean TRUE?
+    data->isfactor[i] = 0;  // seems to hold 2 below, so not an Rboolean FALSE here. todo: better name for variable?
     data->maxtype[i] = 0;   // R_alloc doesn't initialize so careful to here, relied on below
     for (int j=0; j<data->leach[i]; ++j) { // for each input column.
       int this_col_num = INTEGER(tmp)[j];
@@ -386,7 +386,7 @@ static SEXP combineFactorLevels(SEXP factorLevels, SEXP target, int * factorType
 // Finds unique levels directly in one pass with no need to create hash tables. Creates integer factor
 // too in the same single pass. Previous version called factor(x, levels=unique) where x was type character
 // and needed hash table.
-// TODO keep the original factor columns as factor and use new technique in rbindlist.c. The calling
+// todo: keep the original factor columns as factor and use new technique in rbindlist.c. The calling
 // environments are a little difference hence postponed for now (e.g. rbindlist calls writeNA which
 // a general purpose combiner would need to know how many to write)
 // factorType is 1 for factor and 2 for ordered
@@ -549,7 +549,7 @@ SEXP getvaluecols(SEXP DT, SEXP dtnames, Rboolean valfactor, Rboolean verbose, s
             for (int k=0; k<data->nrow; ++k) SET_STRING_ELT(target, j*data->nrow + k, STRING_ELT(thiscol, k));
           }
           break;
-          //TODO complex value type: case CPLXSXP: { } break;
+          //todo: complex value type: case CPLXSXP: { } break;
         case REALSXP : {
           double *dtarget = REAL(target);
           const double *dthiscol = REAL_RO(thiscol);
@@ -601,7 +601,7 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
     }
     if (!varfactor) {
       SET_VECTOR_ELT(ansvars, 0, target=allocVector(STRSXP, data->totlen));
-      if (data->lvalues == 1) {//one value column to output. TODO #5247 change to !data->measure_is_list
+      if (data->lvalues == 1) {//one value column to output. todo: #5247 change to !data->measure_is_list
         const int *thisvaluecols = INTEGER(VECTOR_ELT(data->valuecols, 0));
         for (int j=0, ansloc=0; j<data->lmax; ++j) {
           const int thislen = data->narm ? length(VECTOR_ELT(data->not_NA_indices, j)) : data->nrow;
@@ -620,7 +620,7 @@ SEXP getvarcols(SEXP DT, SEXP dtnames, Rboolean varfactor, Rboolean verbose, str
       SET_VECTOR_ELT(ansvars, 0, target=allocVector(INTSXP, data->totlen));
       SEXP levels;
       int *td = INTEGER(target);
-      if (data->lvalues == 1) {//one value column to output. TODO #5247 change to !data->measure_is_list
+      if (data->lvalues == 1) {//one value column to output. todo: #5247 change to !data->measure_is_list
         SEXP thisvaluecols = VECTOR_ELT(data->valuecols, 0);
         int len = length(thisvaluecols);
         levels = PROTECT(allocVector(STRSXP, len)); protecti++;

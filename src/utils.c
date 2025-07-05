@@ -533,7 +533,7 @@ bool isRectangularList(SEXP x) {
   return isRectangular(x);
 }
 
-// TODO: use isDataFrame (when included in any R release).
+// todo: use isDataFrame (when included in any R release).
 // isDataTable(x) || isFrame(x) || isRectangularList(x)
 bool perhapsDataTable(SEXP x) {
   return isDataTable(x) || isFrame(x) || isRectangularList(x);
