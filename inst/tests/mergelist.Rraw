@@ -1314,3 +1314,9 @@ local({
   test(301.01, data.table(x=unique(dt$x)), ans) ## OK
   test(301.02, fdistinct(dt, on="x"), ans)      ## force sort=TRUE for the moment
 })
+
+# output from set* functions is returned invisibly
+l = list(data.table(a=1:3), data.table(b=2:4))
+test(302.1, capture.output(setcbindlist(l)), character()) # NB test(notOutput=) doesn't work since print() is explicitly run
+l = list(data.table(a=1:3), data.table(a=2:4))
+test(302.2, capture.output(setmergelist(l, on='a')), character())

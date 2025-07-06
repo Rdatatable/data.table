@@ -9,7 +9,7 @@ cbindlist_impl_ = function(l, copy) {
 }
 
 cbindlist = function(l) cbindlist_impl_(l, copy=TRUE)
-setcbindlist = function(l) cbindlist_impl_(l, copy=FALSE)
+setcbindlist = function(l) invisible(cbindlist_impl_(l, copy=FALSE))
 
 # when 'on' is missing then use keys, used only for inner and full join
 onkeys = function(x, y) {
@@ -352,7 +352,7 @@ mergelist = function(l, on, cols=NULL, how=c("left", "inner", "full", "right", "
 setmergelist = function(l, on, cols=NULL, how=c("left", "inner", "full", "right", "semi", "anti", "cross"), mult, join.many=getOption("datatable.join.many")) {
   if (missing(how) || is.null(how))
     how = match.arg(how)
-  mergelist_impl_(l, on, cols, how, mult, join.many, copy=FALSE)
+  invisible(mergelist_impl_(l, on, cols, how, mult, join.many, copy=FALSE))
 }
 
 # Previously, we had a custom C implementation here, which is ~2x faster,
