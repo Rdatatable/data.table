@@ -1,3 +1,5 @@
+## NB: extensive SQLite reference tests are in other.Rraw
+
 require(methods)
 
 if (exists("test.data.table", .GlobalEnv, inherits=FALSE)) {
@@ -1312,7 +1314,3 @@ local({
   test(301.01, data.table(x=unique(dt$x)), ans) ## OK
   test(301.02, fdistinct(dt, on="x"), ans)      ## force sort=TRUE for the moment
 })
-
-## SQLite reference tests can be launched via
-
-### Rscript -e inst/tests/sqlite.Rraw.manual
