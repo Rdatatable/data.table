@@ -69,7 +69,7 @@ For \code{getOption("datatable.optimize") >= 2}, additional optimisations are im
     (which can get costly with large number of groups) by implementing it
     specifically for a particular function. As a result, it is extremely fast.
 
-    \item In addition to all the functions above, `.N` is also optimised to
+    \item In addition to all the functions above, \code{.N} is also optimised to
     use GForce, when used separately or when combined with the functions mentioned
     above. Note further that GForce-optimized functions must be used separately,
     i.e., code like \code{DT[ , max(x) - min(x), by=z]} will \emph{not} currently
@@ -110,7 +110,7 @@ old = options(datatable.optimize = Inf)
 set.seed(1L)
 DT = lapply(1:20, function(x) sample(c(-100:100), 5e6L, TRUE))
 setDT(DT)[, id := sample(1e5, 5e6, TRUE)]
-print(object.size(DT), units="Mb") # 400MB, not huge, but will do
+print(object.size(DT), units="MiB") # 400MiB, not huge, but will do
 
 # 'order' optimisation
 options(datatable.optimize = 1L) # optimisation 'on'

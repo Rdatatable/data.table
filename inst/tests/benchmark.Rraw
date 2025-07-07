@@ -24,7 +24,7 @@ test(476, nrow(as.matrix(ans)), 2L*N)
 
 # Test that as.list.data.table no longer copies via unclass, so speeding up sapply(DT,class) and lapply(.SD,...) etc, #2000
 N = 1e6
-DT = data.table(a=1:N,b=1:N,c=1:N,d=1:N)   # 15MB in dev testing, but test with N=1e7
+DT = data.table(a=1:N,b=1:N,c=1:N,d=1:N)   # 15MiB in dev testing, but test with N=1e7
 test(603, system.time(sapply(DT,class))["user.self"] < 0.1)
 
 
@@ -96,7 +96,7 @@ local({
 
 # fwrite showProgress test 1735. Turned off as too long/big for CRAN.
 if (FALSE) {
-  N = 6e8  # apx 6GB
+  N = 6e8  # apx 6GiB
   DT = data.table(C1=sample(100000,N,replace=TRUE), C2=sample(paste0(LETTERS,LETTERS,LETTERS), N, replace=TRUE))
   gc()
   d = "/dev/shm/"
@@ -232,15 +232,15 @@ DT = data.table(A=rep(1:2,c(100000,1)), B=runif(100001))
 before = gc()["Vcells",2]
 for (i in 1:50) DT[, sum(B), by=A]
 after = gc()["Vcells",2]
-test(1157, after < before+3)  # +3 = 3MB
-# Before the patch, Vcells grew dramatically from 6MB to 60MB. Now stable at 6MB. Increase 50 to 1000 and it grew to over 1GB for this case.
+test(1157, after < before+3)  # +3 = 3MiB
+# Before the patch, Vcells grew dramatically from 6MiB to 60MiB. Now stable at 6MiB. Increase 50 to 1000 and it grew to over 1GiB for this case.
 
 # Similar for when dogroups writes less rows than allocated, #2648.
 DT = data.table(k = 1:50, g = 1:20, val = rnorm(1e4))
 before = gc()["Vcells",2]
 for (i in 1:50) DT[ , unlist(.SD), by = 'k']
 after = gc()["Vcells",2]
-test(1158, after < before+3)  # 177.6MB => 179.2MB. Needs to be +3 now from v1.9.8 with alloccol up from 100 to 1024
+test(1158, after < before+3)  # 177.6MiB => 179.2MiB. Needs to be +3 now from v1.9.8 with alloccol up from 100 to 1024
 
 #  fix DT[TRUE, :=] using too much working memory for i, #1249
 if (!inherits(try(Rprofmem(NULL), silent=TRUE), "try-error")) {  # in case R not compiled with memory profiling enabled
@@ -311,7 +311,7 @@ unlink(f)
 # test no memory leak, #2191 and #2284
 # These take a few seconds each, and it's important to run these on CRAN to check no leak
 gc(); before = gc()["Vcells","(Mb)"]
-for (i in 1:2000) { DT = data.table(1:3); rm(DT) }  # in 1.8.2 would leak 3MB
+for (i in 1:2000) { DT = data.table(1:3); rm(DT) }  # in 1.8.2 would leak 3MiB
 gc(); after = gc()["Vcells","(Mb)"]
 test(861, after < before+0.5)   # close to 0.0 difference, but 0.5 for safe margin
 gc(); before = gc()["Vcells","(Mb)"]
@@ -327,7 +327,7 @@ test(863, after < before+0.5)
 
 # fread should use multiple threads on single column input.
 # tests 2 threads; the very reasonable limit on CRAN
-# file needs to be reasonably large for threads to kick in (minimum chunkSize is 1MB currently)
+# file needs to be reasonably large for threads to kick in (minimum chunkSize is 1MiB currently)
 if (getDTthreads() == 1L) {
   cat("Test 1760 not run because this session either has no OpenMP or has been limited to one thread (e.g. under UBSAN and ASAN)\n")
 } else {
@@ -369,7 +369,7 @@ for(i in 1:100) {
 gc()  # extra gc() (i.e. two including the one on next line) seems to reduce `after`
       # from 29.7 to 27.2 (exactly `before`). Keeping the extra gc() as no harm.
 after = sum(gc()[, 2])
-test(1912.1, after < before + 10)  # 10MB very wide margin. With the gc race, heap usage grew much more which is all we're testing here (no blow up).
+test(1912.1, after < before + 10)  # 10MiB very wide margin. With the gc race, heap usage grew much more which is all we're testing here (no blow up).
 #
 before = sum(gc()[, 2])
 fff = function(aref) {
