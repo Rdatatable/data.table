@@ -143,10 +143,10 @@ as.data.table.list = function(x,
         valid_names = names(xi)
         if(any(nzchar(valid_names))) {
           vector_rownames = valid_names
-          x[[i]] = unname(xi) 
+          x[[i]] = unname(xi)
           break
         }
-      } 
+      }
     }
   }
   for (i in seq_len(n)) {
