@@ -21369,5 +21369,5 @@ test(2328.2, droplevels(DT), data.table(f=factor(), i=integer(), f2=factor()))
 # Row name extraction from multiple vectors, #7136
 x <- c(1, 2, 3)  
 y <- setNames(c(4, 5, 6), c("A", "B", "C"))  
-test(2329.1, as.data.table.list(list(x, y), keep.rownames=TRUE), data.table(rn=c("A", "B", "C"), V1=c(1L, 2L, 3L), V2=c(4L, 5L, 6L)))
-test(2329.2, as.data.table.list(list(x, y), keep.rownames="custom"), data.table(custom=c("A", "B", "C"), V1=c(1L, 2L, 3L), V2=c(4L, 5L, 6L)))
+test(2329.1, as.data.table.list(list(x, y), keep.rownames=TRUE), data.table(rn=c("A", "B", "C"), V1=c(1, 2, 3), V2=c(4, 5, 6)))
+test(2329.2, as.data.table.list(list(x, y), keep.rownames="custom"), data.table(custom=c("A", "B", "C"), V1=c(1, 2, 3), V2=c(4, 5, 6)))
