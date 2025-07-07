@@ -261,7 +261,7 @@ void writeFloat64(const void *col, int64_t row, char **pch)
       //      30460  => l=3046, sf=4, exp=4      dr=0; dl0=1; width=5
       //      0.0072 => l=72, sf=2, exp=-3       dr=4; dl0=1; width=6
       if (width <= sf + (sf > 1) + 2 + (abs(exp) > 99 ? 3 : 2) + scipen) {
-        //                   ^^^^ to not include 1 char for dec in -7e-04 where sf==1
+        //               ^^^^^^ to not include 1 char for dec in -7e-04 where sf==1
         //                         ^ 2 for 'e+'/'e-'
         // decimal format ...
         ch += width - 1;
