@@ -82,7 +82,9 @@
 
 19. Spurious warnings from internal code in `cube()`, `rollup()`, and `groupingsets()` are no longer surfaced to the caller, [#6964](https://github.com/Rdatatable/data.table/issues/6964). Thanks @ferenci-tamas for the report and @venom1204 for the fix.
 
-20. Ellipsis elements like `..1` are correctly excluded when searching for variables in "up-a-level" syntax inside `[`, [#5460](https://github.com/Rdatatable/data.table/issues/5460). Thanks @ggrothendieck for the report and @MichaelChirico for the fix.
+20. `droplevels()` works on 0-row data.tables, [#7043](https://github.com/Rdatatable/data.table/issues/7043). The result will have factor columns `factor(character())`, consistent with the data.frame method. Thanks @advieser for the report and @MichaelChirico for the fix.
+
+21. Ellipsis elements like `..1` are correctly excluded when searching for variables in "up-a-level" syntax inside `[`, [#5460](https://github.com/Rdatatable/data.table/issues/5460). Thanks @ggrothendieck for the report and @MichaelChirico for the fix.
 
 ### NOTES
 
